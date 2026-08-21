@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: 六道关卡（lint→typecheck→quality→tickets→unit→build+e2e）
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖（npm ci，lockfile 冻结）
+        run: npm ci
+
+      - name: 依赖变更尾注检查（[dep-change]）
+        shell: bash
+        run: |
+          if git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '^(package(-lock)?\.json)$' >/dev/null; then
+            if ! git log -1 --format=%B | grep -q '\[dep-change\]'; then
+              echo "::error::package.json/lock 变更必须带 [dep-change] 提交尾注（K4 依赖防线）"
+              exit 1
+            fi
+          fi
+          echo "依赖无变更或已带尾注"
+
+      - name: 受锁文件完整性（locks）
+        run: node scripts/check-locks.mjs
+
+      - name: 质量扫描（quality）
+        run: node scripts/check-quality.mjs
+
+      - name: 工单一致性（tickets）
+        run: node scripts/check-tickets.mjs
+
+      - name: Lint（max-lines 500 + 分层边界）
+        run: npm run lint
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 单测 + 契约 + 覆盖率（vitest）
+        run: npm run test -- --coverage
+
+      - name: 构建（electron-vite build）
+        run: npm run build
+        env:
+          # Electron 二进制缓存
+          ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+
+      - name: e2e（Playwright _electron）
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+
+      - name: 依赖审计（高危即红）
+        run: npm audit --omit=dev --audit-level=high
+
+  lock-change-guard:
+    name: manifest 变更尾注检查（[locked-change]）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: 检查 locks/manifest.json 变更需带 [locked-change]
+        shell: bash
+        run: |
+          if git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '^locks/manifest\.json$' >/dev/null; then
+            if ! git log -1 --format=%B | grep -q '\[locked-change\]'; then
+              echo "::error::manifest 变更必须带 [locked-change] 提交尾注（K2 防作弊双锁）"
+              exit 1
+            fi
+          fi
+          echo "manifest 无变更或已带尾注"

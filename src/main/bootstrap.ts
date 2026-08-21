@@ -1,0 +1,141 @@
+/**
+ * 组装根（SR-INFRA-11，已完成）——应用启动顺序的唯一编排处。
+ *
+ * 顺序（不可调换）：userData 定位 → 目录初始化 → DB 打开+迁移 → fileStore →
+ * repos → services → 协议注册 → CSP → IPC 注册 → 主窗口。
+ *
+ * 环境钩子：
+ * - SYNAPSE_USER_DATA：e2e 用，覆盖 userData 到临时目录（隔离测试状态）
+ * - SYNAPSE_DEV_SERVER：electron-vite dev 的 HMR 地址（存在即视为开发模式）
+ */
+import { readFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import {
+  BrowserWindow,
+  net,
+  protocol,
+  screen,
+  session,
+  shell,
+  type App
+} from 'electron'
+import {
+  DEFAULT_CONTACT_EMAIL,
+  MANAGED_FILES_DIR,
+  DB_FILE_NAME,
+  SETTINGS_FILE_NAME
+} from '../shared/constants'
+import { openDatabase } from './db/connection'
+import { migrate } from './db/migrate'
+import { createRepos } from './db/repos'
+import { createFileStore } from './services/import_/file-store'
+import { createServices } from './services'
+import { createIpcHandlers } from './ipc'
+import { registerIpc } from './ipc/register'
+import { registerAppFileProtocol } from './protocol/app-file.protocol'
+import { applyCsp } from './security/csp'
+import { createElectronDialogs } from './dialogs'
+import { createMainWindow } from './windows/main-window'
+import { loadBounds, saveBounds, type WindowBounds } from './windows/window-state'
+import { fetchJson, fetchText, pingHost } from './http/http-client'
+import { EVENT_CHANNELS } from '../shared/ipc/api-surface'
+
+export interface BootstrapContext {
+  window: BrowserWindow
+  shutdown: () => void
+}
+
+export async function bootstrap(app: App): Promise<BootstrapContext> {
+  const override = process.env.SYNAPSE_USER_DATA
+  if (override) app.setPath('userData', override)
+  const userDataDir = app.getPath('userData')
+  const filesDir = join(userDataDir, MANAGED_FILES_DIR)
+  await mkdir(filesDir, { recursive: true })
+
+  // ── 数据层 ──
+  const db = openDatabase(join(userDataDir, DB_FILE_NAME))
+  migrate(db)
+  const repos = createRepos(db)
+  const fileStore = createFileStore(filesDir)
+
+  // ── 出网（Electron net.fetch 跟随系统代理；安全：host 白名单在 http-client 内强制）──
+  const fetchLike = net.fetch as unknown as typeof globalThis.fetch
+  const contactEmail = await readContactEmail(userDataDir)
+
+  const services = createServices({
+    repos,
+    fileStore,
+    contactEmail: () => contactEmail,
+    sendProgress: (e) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send(EVENT_CHANNELS.importProgress, e)
+      }
+    },
+    http: {
+      fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
+      fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })
+    }
+  })
+
+  // ── 协议 / CSP / IPC ──
+  registerAppFileProtocol(
+    protocol,
+    async (paperId) => repos.papers.fileRefById(paperId),
+    fileStore
+  )
+  registerIpc(
+    createIpcHandlers({
+      services,
+      dialogs: createElectronDialogs(),
+      shell,
+      sendProgress: () => undefined, // 实际推送经 services.sendProgress（上面注入）
+      userDataDir,
+      ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike })
+    })
+  )
+  applyCsp(session.defaultSession)
+
+  // ── 主窗口 ──
+  const isDev = process.env.SYNAPSE_DEV_SERVER !== undefined
+  const bounds: WindowBounds = await loadBounds(userDataDir)
+  const workArea = screen.getPrimaryDisplay().workArea
+  const window = createMainWindow(
+    BrowserWindow,
+    {
+      devServerUrl: process.env.SYNAPSE_DEV_SERVER,
+      entryFile: join(__dirname, '../renderer/index.html'),
+      isDev
+    },
+    {
+      x: bounds.x,
+      y: bounds.y,
+      width: Math.min(bounds.width, workArea.width),
+      height: Math.min(bounds.height, workArea.height)
+    }
+  )
+  window.on('close', () => {
+    if (!window.isDestroyed() && window.isVisible()) {
+      const b = window.getBounds()
+      void saveBounds(userDataDir, { x: b.x, y: b.y, width: b.width, height: b.height })
+    }
+  })
+
+  return {
+    window,
+    shutdown: () => db.close()
+  }
+}
+
+async function readContactEmail(userDataDir: string): Promise<string> {
+  try {
+    const raw = await readFile(join(userDataDir, SETTINGS_FILE_NAME), 'utf-8')
+    const parsed = JSON.parse(raw) as { contactEmail?: unknown }
+    if (typeof parsed.contactEmail === 'string' && parsed.contactEmail.includes('@')) {
+      return parsed.contactEmail
+    }
+  } catch {
+    // 无设置文件：用默认值
+  }
+  return DEFAULT_CONTACT_EMAIL
+}

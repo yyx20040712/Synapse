@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+out/
+dist/
+coverage/
+.vite/
+
+# 测试产物
+playwright-report/
+test-results/
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db
+
+# 工具残留
+.mimosa/
+.zcode/
+
+# TypeScript 增量构建缓存
+*.tsbuildinfo
