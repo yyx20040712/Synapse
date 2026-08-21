@@ -7,7 +7,8 @@
 
 ## 当前基线（制定时快照；2026-08-21 架构修复轮更新）
 
-- 工单：72 = infra done 17 + open 55（weak 52 / strong 3）
+- 工单：72 = done 34（infra 17 + DB 5 + services 3 + ipc 2 + library-ui 5 + ui-kit/hooks 2）+ open 38
+  （weak 35 / strong 3）——Phase 1/2 已于 2026-08-21 同日完成
 - 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；81 受锁文件
   （本轮扩容：playwright / electron.vite / tsconfig×3 入锁）
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
@@ -20,12 +21,10 @@
 
 ## 行动清单（2026-08-21 定稿；随执行滚动更新，完成后回写勾选）
 
-1. **Phase 1（本日执行）**：SR-DB-01~05 五工单并行领单；完成后按 DEVELOPMENT §4
-   覆盖率计划收紧 repos 门槛至 85%（vitest.config 变更走 [locked-change]）。
-2. **Phase 2（本日执行）**：纵切波次——A{SR-SVC-04, SR-SVC-01} → B{SR-SVC-03,
-   SR-IPC-01} → C{SR-IPC-05, SR-LIB-06, SR-LIB-07, SR-LIB-02, SR-LIB-03} →
-   D{SR-LIB-01}；UI 基建（SR-UI-03 Toast / SR-HK-01 useAsync）按规约需要随波次
-   提前（Phase 5 注记允许"按需先做"）。
+1. **Phase 1（本日执行）✅**：SR-DB-01~05 五工单并行领单；repos 覆盖率门槛已收紧
+   至 85%（实际 ~90%）。
+2. **Phase 2（本日执行）✅**：纵切波次全部完成（含提前的 UI 基建 SR-UI-03/SR-HK-01）；
+   e2e smoke 3 绿，导入→列表链路端到端可用。
 3. **Phase 3 前置（可提前调研，不在关键路径）**：Electron 升级门调研（当期支持线 +
    better-sqlite3 prebuild 矩阵 + ELECTRON_ABI_MAP 补表）与 pdf.js spike（ADR-0002）。
 4. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
@@ -40,7 +39,7 @@
 | 验收 | CI 两次连续绿：首跑红（Node 20 无预编译，已修）→ 第二跑全绿 → 第三跑（本次 ROADMAP 勾选提交） |
 | 备注 | 通电过程沉淀两个环境事实进 AGENTS.md：CI Node 必须 24（勿改回）；MinGit 走代理需 OpenSSL TLS 后端 |
 
-## Phase 1：数据基座（repos）☐
+## Phase 1：数据基座（repos）✅（2026-08-21）
 
 | 项 | 内容 |
 | --- | --- |
@@ -50,7 +49,7 @@
 | 风险 | papers.repo 规约最重（FTS 联查 + 分页 + 排序），注意 repo ≤300 行机检——超了拆映射函数不是拆文件 |
 | 依赖 | 无（schema/fts.ts/migrate 已就绪） |
 
-## Phase 2：导入闭环（第一条可用链路）☐
+## Phase 2：导入闭环（第一条可用链路）✅（2026-08-21）
 
 | 项 | 内容 |
 | --- | --- |

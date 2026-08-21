@@ -70,7 +70,7 @@ AD-6 Electron 升级延期至打包门。阶段编排见 `docs/ROADMAP.md`。
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅壳/🚧功能<br/>features: library · reader · notes · tags · settings"]
+    UI["React SPA ✅壳+文献库闭环 · 🚧阅读器/其余<br/>features: library ✅ · reader · notes · tags · settings 🚧"]
     WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
@@ -78,8 +78,8 @@ flowchart TB
   subgraph M["Main 进程（Node 20 · 单实例锁）"]
     direction TB
     REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
-    SVC["services/ 🚧 SR-SVC-*<br/>业务用例 · 事务编排"]
-    REPO["repos/ 🚧 SR-DB-01~05<br/>db.prepare 参数绑定"]
+    SVC["services/ ✅SVC-01/03/04 · 🚧其余 7<br/>业务用例 · 事务编排"]
+    REPO["repos/ ✅ SR-DB-01~05<br/>db.prepare 参数绑定"]
     DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
     PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
     FSTORE["file-store ✅<br/>sha256 去重 · 受管目录"]
@@ -194,7 +194,7 @@ flowchart TB
   L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据 ✅<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒 ✅"]
   L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关 ✅<br/>preload 白名单桥，零 ipcRenderer 泄漏 ✅"]
   L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval ✅<br/>connect-src 'self'（renderer 禁直连出网）✅"]
-  L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery ✅（SQL 层 🚧 工单兑现）<br/>app-file:// paperId 白名单 → 受管根前缀校验 ✅<br/>renderer 零路径 · 写盘仅经系统对话框 ✅"]
+  L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery ✅（repos 已实现，33 测试锁定）<br/>app-file:// paperId 白名单 → 受管根前缀校验 ✅<br/>renderer 零路径 · 写盘仅经系统对话框 ✅"]
   L1 --> L2 --> L3 --> L4 --> L5
 ```
 
@@ -203,7 +203,7 @@ flowchart TB
 ```mermaid
 flowchart TB
   subgraph LOOP["单人 + AI 弱模型领单循环"]
-    RG2["tickets/registry.ts ✅<br/>72 工单 = 17 done + 55 open<br/>（weak 52 / strong 3）"]
+    RG2["tickets/registry.ts ✅<br/>72 工单 = 34 done + 38 open<br/>（Phase 1/2 完成：DB 5 + 服务 3 + IPC 2 + 库 UI 5 + 基建 2）"]
     SPEC["源文件头五层规约<br/>= 自包含任务书"]
     IMPL["弱模型只改工单文件"]
     GD["guardedDescribe(ticketId)<br/>open → skip · done → 激活<br/>未知工单号当场炸"]
