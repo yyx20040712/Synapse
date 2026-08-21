@@ -66,7 +66,8 @@
 
 ## 环境事实
 
-- Windows + Electron 33 + Node 20（本地开发 Node 24 / npm 12 可跑测试）
+- Windows + Electron 33 + Node 24（本地与 CI 一致；engines 仍 >=20，但 CI 用 20 会因
+  better-sqlite3 v12.11.1 缺 node-v115 预编译而源码编译失败——首跑实证，勿改回）
 - 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
   （electron + better-sqlite3），`scripts/sqlite-abi.mjs` 下载 GitHub 优先、镜像兜底
 - better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；

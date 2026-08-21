@@ -1,9 +1,9 @@
 {
-    "generatedAt":  "2026-08-21T12:39:58.4493514Z",
+    "generatedAt":  "2026-08-21T14:28:49.9701889Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
-                      "sha256":  "68b404460d4f03dc45c10e9fdb949e0c1f91e2d223cc67494ef2701cc78424d0"
+                      "sha256":  "a79111eebdad603b964576a464f41071bc4a2f45c1d8a0dd911305b736f94be7"
                   },
                   {
                       "path":  "electron.vite.config.ts",

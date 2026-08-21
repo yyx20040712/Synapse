@@ -23,7 +23,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 24（ABI 137）与本地开发一致：better-sqlite3 12.11.1 的预编译
+          # 资产只在 npmmirror 镜像上有 node-v137；Node 20（ABI 115）无预编译
+          # 会回退 node-gyp 源码编译并在 runner 的 VS 18 上失败（首跑实证）。
+          # Electron 运行时不受影响——e2e/build 用 electron-v130 绑定独立切换。
+          node-version: 24
           cache: npm
 
       - name: 安装依赖（npm ci，lockfile 冻结）
