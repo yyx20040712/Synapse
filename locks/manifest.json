@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T10:52:37.7459077Z",
+    "generatedAt":  "2026-08-21T10:57:00.6117284Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -135,7 +135,7 @@
                   },
                   {
                       "path":  "tests/unit/http/http-client.test.ts",
-                      "sha256":  "a3af24f54e79254e7fbd2c0506fc8aa6bbc7f820f1d1683356d60a313ca340d1"
+                      "sha256":  "30fe63b746ca3021a1fec24d85e77672c810a46ecebd49334bf6e01292821245"
                   },
                   {
                       "path":  "tests/unit/ipc/enrich.test.ts",
@@ -227,7 +227,7 @@
                   },
                   {
                       "path":  "tests/unit/services/file-store.test.ts",
-                      "sha256":  "0ba02fab8c5a620ddb16e5245b0d839c23dbcc7534b869d1ef191b0f613dfedc"
+                      "sha256":  "1025989446484d6a6927881bf4c0aa5d121ac2e7a87b567ea953e801c35b5adc"
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",

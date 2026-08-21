@@ -1,8 +1,10 @@
 /**
  * 出网客户端（SR-INFRA-05，已完成）。
- *
  * 职责：主进程唯一的 HTTP 出口。强制 host 白名单（安全 §6.4）、超时、
- * 有限重试（429/5xx/网络错误退避）、响应 zod 校验。renderer 永远不能直接出网。
+ * 有限重试（429/5xx/网络错误退避）、响应 zod 校验、响应体大小上限。
+ * 重定向策略：redirect: 'error'——一律不跟随（白名单外的 3xx 目标连请求都不发，
+ * 防 SSRF/开放重定向绕过；三个上游 API 均为直连端点，无合法重定向场景）。
+ * renderer 永远不能直接出网。
  *
  * fetch 实现可注入：Electron 运行时注入 net.fetch（跟随系统代理），
  * 单元测试注入桩实现（tests/unit/http/http-client.test.ts）。
@@ -12,6 +14,9 @@ import type { AppErrorCode } from '../../shared/app-error'
 import { ALLOWED_REMOTE_HOSTS, HTTP_MAX_RETRIES, HTTP_TIMEOUT_MS } from '../../shared/constants'
 
 const zUnknown = z.unknown()
+
+/** 响应体硬上限（防超大/恶意响应耗尽内存） */
+export const HTTP_MAX_RESPONSE_BYTES = 20 * 1024 * 1024
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -32,7 +37,9 @@ export interface HttpClientOptions {
   fetchImpl?: FetchLike
   timeoutMs?: number
   maxRetries?: number
-  /** 礼貌池标识（CrossRef/OpenAlex），拼入 User-Agent */
+  /** 响应体大小上限（默认 HTTP_MAX_RESPONSE_BYTES；测试可调小） */
+  maxResponseBytes?: number
+  /** 礼貌池标识（Crossref/OpenAlex），拼入 User-Agent */
   contactEmail?: string
 }
 
@@ -79,6 +86,7 @@ export async function fetchJson<T>(rawUrl: string, opts: HttpGetJsonOptions): Pr
     try {
       const res = await doFetch(url.toString(), {
         signal: controller.signal,
+        redirect: 'error',
         headers: { 'User-Agent': userAgent, Accept: 'application/json' }
       })
       if (res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) {
@@ -91,7 +99,7 @@ export async function fetchJson<T>(rawUrl: string, opts: HttpGetJsonOptions): Pr
       if (!res.ok) {
         throw new HttpFetchError('UPSTREAM_ERROR', `上游返回 HTTP ${res.status}`, res.status)
       }
-      const body: unknown = await res.json()
+      const body: unknown = JSON.parse(await readBodyCapped(res, opts.maxResponseBytes ?? HTTP_MAX_RESPONSE_BYTES))
       const parsed = opts.schema.safeParse(body)
       if (!parsed.success) {
         throw new HttpFetchError(
@@ -151,6 +159,7 @@ export async function fetchText(rawUrl: string, opts: HttpClientOptions): Promis
     try {
       const res = await doFetch(url.toString(), {
         signal: controller.signal,
+        redirect: 'error',
         headers: { 'User-Agent': 'SynapseRemake/0.1', Accept: 'text/xml, text/plain, */*' }
       })
       if (res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) {
@@ -161,7 +170,7 @@ export async function fetchText(rawUrl: string, opts: HttpClientOptions): Promis
         continue
       }
       if (!res.ok) throw new HttpFetchError('UPSTREAM_ERROR', `上游返回 HTTP ${res.status}`, res.status)
-      return await res.text()
+      return await readBodyCapped(res, opts.maxResponseBytes ?? HTTP_MAX_RESPONSE_BYTES)
     } catch (e) {
       if (e instanceof HttpFetchError && e.code === 'UPSTREAM_ERROR') throw e
       lastError = new HttpFetchError(
@@ -177,4 +186,37 @@ export async function fetchText(rawUrl: string, opts: HttpClientOptions): Promis
 
 function backoffMs(attempt: number): number {
   return 500 * 2 ** (attempt - 1)
+}
+
+/** 读响应体并强制大小上限：预检 Content-Length，流式累计超限即中断（防内存耗尽） */
+async function readBodyCapped(res: Response, cap: number): Promise<string> {
+  const declared = Number(res.headers?.get?.('content-length') ?? NaN)
+  if (Number.isFinite(declared) && declared > cap) {
+    throw new HttpFetchError('UPSTREAM_ERROR', `响应体超过上限（声明 ${declared} 字节）`)
+  }
+  if (res.body && typeof res.body.getReader === 'function') {
+    const reader = res.body.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (value) {
+        total += value.byteLength
+        if (total > cap) {
+          await reader.cancel().catch(() => undefined)
+          throw new HttpFetchError('UPSTREAM_ERROR', `响应体超过上限（已读 ${total} 字节，中断）`)
+        }
+        chunks.push(value)
+      }
+    }
+    const merged = new Uint8Array(total)
+    let offset = 0
+    for (const chunk of chunks) {
+      merged.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return new TextDecoder().decode(merged)
+  }
+  return res.text()
 }

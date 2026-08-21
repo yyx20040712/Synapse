@@ -67,11 +67,32 @@ describe('file-store —— 受管存储（含路径穿越攻击向量）', () =
     })
   })
 
-  it('源文件不存在（IO_ERROR，消息含路径但不含堆栈）', async () => {
+  it('源文件不存在（IO_ERROR，消息只含文件名不含本机路径）', async () => {
     const store = createFileStore(await newStoreDir())
-    await expect(store.storePdfFromPath('E:/不存在/xx.pdf')).rejects.toMatchObject({
-      code: 'IO_ERROR'
-    })
+    let caught: unknown
+    try {
+      await store.storePdfFromPath('E:/不存在/xx.pdf')
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(FileStoreError)
+    expect((caught as FileStoreError).code).toBe('IO_ERROR')
+    expect((caught as Error).message).not.toContain('E:/不存在')
+    expect((caught as Error).message).toContain('xx.pdf')
+  })
+
+  it('原子写自愈：截断的历史残留文件（大小不符）会被重写修复', async () => {
+    const store = createFileStore(await newStoreDir())
+    const bytes = createTinyPdf()
+    const stored = await store.storePdfFromBytes(bytes, 'a.pdf')
+    // 模拟旧版直写崩溃留下的截断残留
+    const fs = await import('node:fs/promises')
+    const abs = store.resolveManagedPath(stored.fileRef)
+    await fs.writeFile(abs, bytes.subarray(0, 10))
+    const again = await store.storePdfFromBytes(bytes, 'b.pdf')
+    expect(again.fileRef).toBe(stored.fileRef)
+    const back = await store.readFileBytes(stored.fileRef)
+    expect(Buffer.from(back).equals(Buffer.from(bytes))).toBe(true)
   })
 
   it('穿越攻击向量：resolveManagedPath 拒绝绝对路径/..//反斜杠/非 pdf', () => {

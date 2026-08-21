@@ -107,6 +107,35 @@ describe('http-client —— host 白名单与超时退避', () => {
     expect(text).toContain('<feed>')
   })
 
+  it('重定向策略：所有请求一律 redirect=error（不跟随，白名单外 3xx 目标零请求）', async () => {
+    const seen: Array<string | undefined> = []
+    const fetchImpl = async (_u: string, init?: RequestInit) => {
+      seen.push(init?.redirect)
+      return jsonResponse({ message: { title: 'ok' } })
+    }
+    await fetchJson('https://api.crossref.org/works', { fetchImpl, schema: okSchema, maxRetries: 0 })
+    await fetchText('https://export.arxiv.org/api/query', { fetchImpl, maxRetries: 0 })
+    expect(seen).toEqual(['error', 'error'])
+  })
+
+  it('响应体超限：超上限即拒（UPSTREAM_ERROR，可注入小上限验证）', async () => {
+    const fetchImpl = async () => new Response('x'.repeat(1024), { status: 200 })
+    await expect(
+      fetchText('https://export.arxiv.org/api/query', {
+        fetchImpl,
+        maxRetries: 0,
+        maxResponseBytes: 512
+      })
+    ).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' })
+    // 对照：上限内正常返回
+    const okText = await fetchText('https://export.arxiv.org/api/query', {
+      fetchImpl,
+      maxRetries: 0,
+      maxResponseBytes: 2048
+    })
+    expect(okText.length).toBe(1024)
+  })
+
   it('白名单外 URL 的 fetchText 在发请求前即拒绝', async () => {
     let called = false
     const fetchImpl = async () => {

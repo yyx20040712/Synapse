@@ -9,7 +9,7 @@
  * 安全（§6.3）：file_ref 一律相对路径+正斜杠；解析结果必须在受管根内。
  * 测试：tests/unit/services/file-store.test.ts（去重/穿越攻击向量/非 PDF 拒绝）。
  */
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, stat } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 import type { AppErrorCode } from '../../../shared/app-error'
@@ -52,10 +52,11 @@ export function createFileStore(rootDir: string): FileStore {
     const fileRef = `${sha256.slice(0, 2)}/${sha256.slice(2, 4)}/${sha256}.pdf`
     const dest = resolveManagedPath(fileRef)
     await mkdir(dirname(dest), { recursive: true })
-    try {
-      await stat(dest)
-      // 已存在：同内容文件，直接复用（去重）
-    } catch {
+    const existing = await stat(dest).catch(() => null)
+    if (existing && existing.size === bytes.length) {
+      // 已存在且大小一致：同内容文件，直接复用（去重）
+    } else {
+      // 不存在，或历史残留的截断文件（大小不符）：原子重写
       await copyOrWrite(dest, bytes)
     }
     return { fileRef, sha256, sizeBytes: bytes.length, fileName }
@@ -84,9 +85,10 @@ export function createFileStore(rootDir: string): FileStore {
       try {
         bytes = await readFile(srcPath)
       } catch (e) {
+        // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）
         throw new FileStoreError(
           'IO_ERROR',
-          `读取源文件失败：${srcPath}（${e instanceof Error ? e.message : String(e)}）`
+          `读取源文件失败：${basename(srcPath)}（${e instanceof Error ? e.message : String(e)}）`
         )
       }
       const fileName = basename(srcPath)
@@ -136,14 +138,20 @@ function basename(p: string): string {
 }
 
 async function copyOrWrite(dest: string, bytes: Uint8Array): Promise<void> {
-  // bytes 已在内存（PDF 单文件量级 MB 级），直接写入；失败包装为 IO_ERROR
-  const { writeFile } = await import('node:fs/promises')
+  // 原子写：先写同目录临时文件，成功后 rename 到最终路径。
+  // 直写目标路径一旦中途崩溃会留下截断文件，而文件名=内容 sha256 会让去重逻辑
+  // 永久复用损坏文件（无法通过重新导入自愈）；rename 在同卷上原子。
+  // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）。
+  const { writeFile, rename, rm } = await import('node:fs/promises')
+  const tmp = `${dest}.tmp-${randomUUID()}`
   try {
-    await writeFile(dest, bytes)
+    await writeFile(tmp, bytes)
+    await rename(tmp, dest)
   } catch (e) {
+    await rm(tmp, { force: true }).catch(() => undefined)
     throw new FileStoreError(
       'IO_ERROR',
-      `写入受管文件失败：${dest}（${e instanceof Error ? e.message : String(e)}）`
+      `写入受管文件失败：${basename(dest)}（${e instanceof Error ? e.message : String(e)}）`
     )
   }
 }
