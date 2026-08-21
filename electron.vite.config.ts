@@ -2,6 +2,27 @@ import { resolve } from 'node:path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import type { Plugin } from 'vite'
+import { cspHeaderValue } from './src/main/security/csp'
+
+/**
+ * CSP 单真相源：策略常量在 src/main/security/csp.ts，本插件把它的完整值作为
+ * meta 注入 index.html（dev 与 build 一致）。生产走 file://，onHeadersReceived
+ * 不拦截本地文件请求——meta 是实际生效的 CSP，必须与策略常量完全一致
+ * （tests/security/csp-meta.test.ts + e2e 运行时断言双重强制）。
+ */
+function cspMetaPlugin(): Plugin {
+  return {
+    name: 'synapse-csp-meta',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: cspHeaderValue() },
+        injectTo: 'head-prepend'
+      }
+    ]
+  }
+}
 
 /**
  * electron-vite 三段构建配置。
@@ -34,7 +55,7 @@ export default defineConfig({
   },
   renderer: {
     root: 'src/renderer',
-    plugins: [react(), tailwindcss()],
+    plugins: [cspMetaPlugin(), react(), tailwindcss()],
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/renderer/index.html') }
