@@ -26,7 +26,14 @@ export default defineConfig({
         lines: 40,
         statements: 40,
         functions: 40,
-        branches: 30
+        branches: 30,
+        // Phase 1 完成后按 DEVELOPMENT §4 收紧：repos 层 85%（当前实际 ~90%）
+        'src/main/db/repos/**/*.ts': {
+          lines: 85,
+          statements: 85,
+          functions: 85,
+          branches: 85
+        }
       }
     }
   }

@@ -40,8 +40,8 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 
 | 时点 | 动作 |
 | --- | --- |
-| Phase 1 完成（repos 全绿） | repos/services 85% |
-| Phase 2 完成（library UI） | renderer 逻辑层 60% |
+| Phase 1 完成（repos 全绿）✅ 2026-08-21 | repos 层 85% 已生效（实际 ~90%）；services 门槛待其工单完成后随全局线收紧 |
+| Phase 2 完成（library UI） | renderer 逻辑层 60%（需先把 renderer 逻辑文件纳入 coverage.include，随 [locked-change]） |
 | Phase 5 完成 | 全局 lines ≥70% |
 
 ## 5. 排错
