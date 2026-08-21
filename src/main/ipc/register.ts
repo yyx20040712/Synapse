@@ -39,8 +39,8 @@ function summarizeIssues(error: z.ZodError): string {
 }
 
 /** 装配：按接线表逐通道注册（register 薄壳，不测）。
- *  注意：handlers 可能是 unimplementedObject 代理（骨架期），访问其属性即抛
- *  NotImplementedError——所以 fn 的取用必须发生在 invoke 闭包内（经
+ *  注意：骨架期 handlers 可能是"未实现占位代理"（见 app-error 的 stub 机制），
+ *  访问其属性即抛 NotImplementedError——所以 fn 的取用必须发生在 invoke 闭包内（经
  *  makeChannelHandler 折叠为 Result），绝不能在注册阶段探测。 */
 export function registerIpc(handlers: ApiHandlers): void {
   const surface = API_SURFACE as Record<string, Record<string, { channel: string; Req: z.ZodType }>>
