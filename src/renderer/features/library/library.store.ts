@@ -1,5 +1,5 @@
 /**
- * [SR-LIB-07] library.store —— 文献库状态（工单：open / weak）
+ * [SR-LIB-07] library.store —— 文献库状态（工单：done / weak）
  *
  * ── 行为层 ──
  * - Zustand store：{ papers: PaperSummary[]; total: number; query: LibraryQuery;
@@ -21,8 +21,8 @@
  * - 测试：tests/unit/renderer/library.store.test.ts（已锁定，api 桩）
  */
 import { create } from 'zustand'
+import { api, ApiClientError, unwrap } from '../../api/client'
 import type { LibraryQuery, PaperSummary } from '@shared/models/paper'
-import { NotImplementedError } from '@shared/app-error'
 
 export interface LibraryStore {
   papers: PaperSummary[]
@@ -47,13 +47,30 @@ export function createLibraryStoreInitialState() {
   }
 }
 
-const notImpl = (method: string): never => {
-  throw new NotImplementedError('SR-LIB-07', `library.store.${method}`)
-}
+/** 列表加载失败的兜底中文消息（仅捕获到非 ApiClientError 的意外异常时使用） */
+const LIST_LOAD_FAILED = '文献列表加载失败'
 
-export const useLibraryStore = create<LibraryStore>()(() => ({
+export const useLibraryStore = create<LibraryStore>()((set, get) => ({
   ...createLibraryStoreInitialState(),
-  load: () => notImpl('load'),
-  setQuery: (_patch) => notImpl('setQuery'),
-  selectPaper: (_id) => notImpl('selectPaper')
+  // 列表型错误契约：失败不抛、保留旧 papers/total，写 error 供内联展示
+  load: async () => {
+    set({ loading: true, error: null })
+    try {
+      const { items, total } = await unwrap(api.library.list(get().query))
+      set({ papers: items, total, loading: false })
+    } catch (e) {
+      set({
+        loading: false,
+        error: e instanceof ApiClientError ? e.message : LIST_LOAD_FAILED
+      })
+    }
+  },
+  // 合并筛选条件并回到第一页（offset 归零），随后用新查询自动重载
+  setQuery: (patch) => {
+    set({ query: { ...get().query, ...patch, offset: 0 } })
+    void get().load()
+  },
+  selectPaper: (id) => {
+    set({ selectedId: id })
+  }
 }))
