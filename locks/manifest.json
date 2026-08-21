@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T14:28:49.9701889Z",
+    "generatedAt":  "2026-08-21T15:20:17.3072997Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -27,7 +27,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "871d7594da3ed207abe2d0b1c26ac92e891d5ace6dd3e346b5feb2cb97db7c33"
+                      "sha256":  "ac2ce470ad84078b59aa65c689d0286678f8a578103fd568e7595ddd6a5e11bc"
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
@@ -91,11 +91,11 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "5738b7091c194893e94c5886a1062bab82bf42bd40c9bfb94560ba7572b664b9"
+                      "sha256":  "bc211e504bdee5eddace9756ab30aea47a26a32005634d1f04cead970260b321"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
-                      "sha256":  "4d91275e8e476438a568bd9cadf6aec6973d16136629733697569baf90c79c50"
+                      "sha256":  "fff854b2eae15be8a00189ef15d8500638eae454513211a2c3d40472e56cf2ac"
                   },
                   {
                       "path":  "tests/contracts/preload-surface.test.ts",
@@ -135,7 +135,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",
-                      "sha256":  "72d871ad129129bc4ed554e1e822e855ad2731e12f4181debb27afa8b10d9f7b"
+                      "sha256":  "71f012ffea4ebb95f2feebf05b10b92b889efe264981f4f33d9885a093da72a6"
                   },
                   {
                       "path":  "tests/unit/db/repos/collections.repo.test.ts",
@@ -143,7 +143,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/notes.repo.test.ts",
-                      "sha256":  "fa18b0f4b1c6ce40bd8744d7583938af90406ec5c0c97625219a3a4e90e9c966"
+                      "sha256":  "63220b9ee70ec3e9eb288fc3725b2d105aa926b159f3c967c9804ba9226d925b"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",

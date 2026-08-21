@@ -33,19 +33,20 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
   })
 
   it('unimplementedObject 可完整满足 ApiHandlers 类型（骨架期类型自洽证明）', () => {
+    // 样例号用非工单号字符串：真实工单号会随对应工单完成而被占位桩检查判红
     const handlers: ApiHandlers = {
-      library: unimplementedObject('SR-IPC-01', 'x'),
-      reader: unimplementedObject('SR-IPC-02', 'x'),
-      notes: unimplementedObject('SR-IPC-03', 'x'),
-      tags: unimplementedObject('SR-IPC-04', 'x'),
-      import_: unimplementedObject('SR-IPC-05', 'x'),
-      enrich: unimplementedObject('SR-IPC-06', 'x'),
-      export_: unimplementedObject('SR-IPC-07', 'x'),
-      settings: unimplementedObject('SR-IPC-08', 'x'),
-      system: unimplementedObject('SR-IPC-09', 'x')
+      library: unimplementedObject('SAMPLE-IPC', 'x'),
+      reader: unimplementedObject('SAMPLE-IPC', 'x'),
+      notes: unimplementedObject('SAMPLE-IPC', 'x'),
+      tags: unimplementedObject('SAMPLE-IPC', 'x'),
+      import_: unimplementedObject('SAMPLE-IPC', 'x'),
+      enrich: unimplementedObject('SAMPLE-IPC', 'x'),
+      export_: unimplementedObject('SAMPLE-IPC', 'x'),
+      settings: unimplementedObject('SAMPLE-IPC', 'x'),
+      system: unimplementedObject('SAMPLE-IPC', 'x')
     }
     expect(() => handlers.library.list).toThrow(NotImplementedError)
-    expect(() => handlers.library.list).toThrow('SR-IPC-01')
+    expect(() => handlers.library.list).toThrow('SAMPLE-IPC')
     const _types: PreloadApi = handlers as never
     void _types
   })

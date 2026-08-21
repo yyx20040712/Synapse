@@ -22,7 +22,7 @@ function input(over: Partial<AnnotationInput> = {}): AnnotationInput {
 
 function seedPaper(db: SqliteDb, id = 'p-1'): void {
   db.prepare(
-    `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,'a.pdf','s-'+?,'t','t')`
+    `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,'a.pdf','s-'||?,'t','t')`
   ).run(id, id)
 }
 

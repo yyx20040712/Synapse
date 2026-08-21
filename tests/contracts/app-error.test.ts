@@ -18,9 +18,9 @@ describe('shared/app-error —— 错误模型', () => {
   })
 
   it('toAppError：NotImplementedError → NOT_IMPLEMENTED + 工单号', () => {
-    const e = toAppError(new NotImplementedError('SR-DB-01', 'papers.repo'))
+    const e = toAppError(new NotImplementedError('SAMPLE-1', 'papers.repo'))
     expect(e.code).toBe('NOT_IMPLEMENTED')
-    expect(e.detail).toContain('SR-DB-01')
+    expect(e.detail).toContain('SAMPLE-1')
   })
 
   it('toAppError：普通 Error → INTERNAL，detail 留诊断信息', () => {
@@ -47,13 +47,14 @@ describe('shared/app-error —— 错误模型', () => {
     interface Dummy {
       hello(name: string): string
     }
-    // 工单号必须是 registry 真实存在的 open 工单（check-tickets 扫描 tests 的引用）
-    const dummy = unimplementedObject<Dummy>('SR-DB-01', 'dummy')
+    // 样例号用非工单号字符串（不匹配 SR-域-编号 格式）：挂真实工单号会随工单
+    // 完成而被 check-tickets 的占位桩检查判红（tests 侧只查占位调用模式）
+    const dummy = unimplementedObject<Dummy>('SAMPLE-1', 'dummy')
     expect(() => dummy.hello('a')).toThrow(NotImplementedError)
     try {
       dummy.hello('a')
     } catch (e) {
-      expect((e as NotImplementedError).ticket).toBe('SR-DB-01')
+      expect((e as NotImplementedError).ticket).toBe('SAMPLE-1')
       expect((e as Error).message).toContain('dummy.hello')
     }
   })

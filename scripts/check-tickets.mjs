@@ -41,17 +41,38 @@ for (const t of tickets) {
   }
 }
 
-// 2) 代码中的工单号引用一致性（src + tests：tests 的 guardedDescribe/激活条件
-//    引用错号会让整组测试静默消失，必须与 src 同等校验）
+// 2) 代码中的工单号引用一致性（src 与 tests 规则不同）：
+//    - src：任何 done 工单号的引用（本工单文件自身除外）都是占位残留，红；
+//      open 号引用 = 未完成占位，合法（57 行"不存在"兜底防错号）
+//    - tests：guardedDescribe('号') 是激活机制的合法引用（guard.ts：翻 done 即激活，
+//      注释与断言同理）；仅占位调用受限——unimplementedObject('号')/NotImplementedError('号')
+//      的号必须存在，且不得指向 done 工单（防样例挂真实号随工单完成而失效）
 const srcFiles = [
   ...walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p)),
   ...walk(join(root, 'tests'), (p) => /\.(ts|tsx|mjs)$/.test(p))
 ]
 const ticketRefRe = /SR-[A-Z]+-\d+/g
+const placeholderCallRe = /(unimplementedObject|NotImplementedError)\(\s*'(SR-[A-Z]+-\d+)'/g
 for (const f of srcFiles) {
   const rel = relative(root, f).replaceAll('\\', '/')
   const content = readFileSync(f, 'utf-8')
+  if (rel.startsWith('tests/')) {
+    let pc
+    placeholderCallRe.lastIndex = 0
+    while ((pc = placeholderCallRe.exec(content)) !== null) {
+      const t = byId.get(pc[2])
+      if (!t) {
+        violations.push(`${rel}: 占位桩引用了不存在的工单号 ${pc[2]}`)
+        continue
+      }
+      if (t.status === 'done') {
+        violations.push(`${rel}: 占位桩引用已完成工单 ${t.id}（样例应改用非工单号字符串，如 'SAMPLE-1'）`)
+      }
+    }
+    continue
+  }
   let ref
+  ticketRefRe.lastIndex = 0
   while ((ref = ticketRefRe.exec(content)) !== null) {
     const t = byId.get(ref[0])
     if (!t) {

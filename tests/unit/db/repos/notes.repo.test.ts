@@ -32,8 +32,11 @@ guardedDescribe('SR-DB-03', 'notes.repo —— 笔记 upsert 与 FTS', () => {
   })
 
   it('search：FTS 命中标题或正文', () => {
+    db.prepare(
+      `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('p-2','b.pdf','s2','t','t')`
+    ).run()
     repo.upsert({ paperId: 'p-1', title: '漏损笔记', contentMd: '' })
-    repo.upsert({ paperId: 'p-1', title: '另一篇', contentMd: '管网水力模型讨论' })
+    repo.upsert({ paperId: 'p-2', title: '另一篇', contentMd: '管网水力模型讨论' })
     expect(repo.search('漏损')).toHaveLength(1)
     expect(repo.search('水力模型')).toHaveLength(1)
     expect(repo.search('不存在词')).toHaveLength(0)
