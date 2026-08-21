@@ -55,6 +55,11 @@ export default defineConfig({
   },
   renderer: {
     root: 'src/renderer',
+    // @shared 别名与 vitest.config.ts / tsconfig.*.json 保持一致——三处缺一，
+    // 第一个 import '@shared/*' 的 UI 工单就会在 build 关卡炸（已实测）
+    resolve: {
+      alias: { '@shared': resolve(__dirname, 'src/shared') }
+    },
     plugins: [cspMetaPlugin(), react(), tailwindcss()],
     build: {
       rollupOptions: {
