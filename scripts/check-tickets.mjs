@@ -41,8 +41,12 @@ for (const t of tickets) {
   }
 }
 
-// 2) 代码中的工单号引用一致性
-const srcFiles = walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p))
+// 2) 代码中的工单号引用一致性（src + tests：tests 的 guardedDescribe/激活条件
+//    引用错号会让整组测试静默消失，必须与 src 同等校验）
+const srcFiles = [
+  ...walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p)),
+  ...walk(join(root, 'tests'), (p) => /\.(ts|tsx|mjs)$/.test(p))
+]
 const ticketRefRe = /SR-[A-Z]+-\d+/g
 for (const f of srcFiles) {
   const rel = relative(root, f).replaceAll('\\', '/')

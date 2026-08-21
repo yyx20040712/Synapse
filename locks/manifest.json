@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T11:13:24.1475813Z",
+    "generatedAt":  "2026-08-21T11:17:13.0264155Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "3ec94cd3d6f899944f88fd0c7c08bce7a2700391715eaf464c4d50197d841f29"
+                      "sha256":  "0169df227faca1b536a2b684a977e1fc874af9ccbf6fc8a419d9ea7900113818"
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
@@ -15,11 +15,11 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "337610dcfe92d3d5a99721dc879349a5dad3451c81f601157ca1033b6f0ae04a"
+                      "sha256":  "e2d0bd23ed8aa0dd59c19f3cfbe66fbaa9db16db0c81d48a17011d0a120a9604"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "8e57be8743ab69feef2f87d47e24b3eb9352f106ca4ef673d092295d1fb4132d"
+                      "sha256":  "871d7594da3ed207abe2d0b1c26ac92e891d5ace6dd3e346b5feb2cb97db7c33"
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
@@ -163,7 +163,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/make-handler.test.ts",
-                      "sha256":  "20d1329c58a9b908d993f6de62f4a9b958fbbcdbba900f31d4d7d16078ea750e"
+                      "sha256":  "7563b62376c8e2d7a6e462338cbcd63d8c98486cd56e29061a5a369377dacb26"
                   },
                   {
                       "path":  "tests/unit/ipc/notes.test.ts",

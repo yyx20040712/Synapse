@@ -5,7 +5,7 @@
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 
 const root = process.cwd()
 const violations = []
@@ -60,6 +60,46 @@ for (const f of srcFiles.filter((p) => p.startsWith(featuresRoot))) {
       readdirSync(featuresRoot).some((d) => d === firstSeg && statSync(join(featuresRoot, d)).isDirectory())
     ) {
       violations.push(`${relative(root, f)}: 跨 feature 引用 ${m[1]}（共享代码下沉 renderer/shared）`)
+    }
+  }
+}
+
+// 4) 行数分级（全局 ≤500 由 ESLint max-lines error；此处补 AGENTS 的分层上限）
+//    repo ≤300 行；renderer 组件（.tsx）≤250 行——弱模型填充期最容易超的就是这两类
+for (const f of srcFiles) {
+  const rel = relative(root, f).replaceAll('\\', '/')
+  const lines = readFileSync(f, 'utf-8').split('\n').length
+  if (/^src\/main\/db\/repos\/.*\.repo\.ts$/.test(rel) && lines > 300) {
+    violations.push(`${rel}: repo 文件 ${lines} 行超上限 300（拆查询/映射子函数）`)
+  }
+  if (/^src\/renderer\/.*\.tsx$/.test(rel) && lines > 250) {
+    violations.push(`${rel}: 组件文件 ${lines} 行超上限 250（拆子组件）`)
+  }
+}
+
+// 5) 分层方向（解析后绝对路径判断——ESLint glob 分不清 shared/ipc 契约与 main/ipc 层）
+//    services 不得 import main/ipc；db 不得 import services / main/ipc
+const layerRules = [
+  { layer: join(root, 'src', 'main', 'services'), forbids: [join(root, 'src', 'main', 'ipc')] },
+  {
+    layer: join(root, 'src', 'main', 'db'),
+    forbids: [join(root, 'src', 'main', 'services'), join(root, 'src', 'main', 'ipc')]
+  }
+]
+const relImportRe = /from\s+['"](\.[^'"]+)['"]/g
+for (const { layer, forbids } of layerRules) {
+  for (const f of srcFiles.filter((p) => p.startsWith(layer))) {
+    const content = readFileSync(f, 'utf-8')
+    let m
+    while ((m = relImportRe.exec(content)) !== null) {
+      const target = resolve(dirname(f), m[1])
+      for (const bad of forbids) {
+        if (target === bad || target.startsWith(bad + sep)) {
+          violations.push(
+            `${relative(root, f)}: 分层违规，import 了 ${m[1]}（${relative(root, bad).replaceAll('\\', '/')} 是上层，依赖只能单向）`
+          )
+        }
+      }
     }
   }
 }

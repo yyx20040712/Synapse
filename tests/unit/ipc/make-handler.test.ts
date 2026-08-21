@@ -36,12 +36,13 @@ describe('ipc/register.makeChannelHandler —— 校验/异常折叠三路径', 
 
   it('service 抛 NotImplementedError：折叠为 NOT_IMPLEMENTED + 工单号 detail', async () => {
     const handler = makeChannelHandler(reqSchema, async () => {
-      throw new NotImplementedError('SR-SVC-99', '测试模块')
+      // 工单号必须真实存在于 registry（check-tickets 扫描 tests 的引用）
+      throw new NotImplementedError('SR-SVC-01', '测试模块')
     })
     const r = (await handler({ paperId: 'p' })) as { ok: boolean; error: { code: string; message: string; detail: string } }
     expect(r.error.code).toBe('NOT_IMPLEMENTED')
-    expect(r.error.message).toContain('SR-SVC-99')
-    expect(r.error.detail).toContain('SR-SVC-99')
+    expect(r.error.message).toContain('SR-SVC-01')
+    expect(r.error.detail).toContain('SR-SVC-01')
   })
 
   it('service 抛普通 Error：折叠为 INTERNAL，消息兜底不裸抛堆栈', async () => {

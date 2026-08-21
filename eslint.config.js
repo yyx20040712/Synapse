@@ -55,7 +55,8 @@ export default tseslint.config(
               message: 'renderer 是沙箱 UI 层，禁止接触 Node/Electron API（架构规则 §三）'
             },
             {
-              group: ['**/main/**', '**/preload/**'],
+              // 含裸目录形式（'../main'）：glob '**/main/**' 不匹配无斜杠结尾的目录 import
+              group: ['**/main/**', '**/main', '**/preload/**', '**/preload'],
               message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
             }
           ]
@@ -96,6 +97,24 @@ export default tseslint.config(
     }
   },
   {
+    files: ['src/main/db/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              // 注意：不含 '**/ipc/**'——shared/ipc 是共享契约目录，glob 分不清；
+              // services/ipc 方向的禁令由 check-quality.mjs 按解析路径强制
+              group: ['**/services/**', '**/services', '**/http/**', '**/windows/**', '**/protocol/**', '**/security/**', 'electron'],
+              message: 'db 层是最底层：禁止反向依赖上层或 Electron（ipc→services→repos→db 单向）'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     files: ['src/main/services/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -104,7 +123,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ['**/db/connection*', '**/db/migrate*', '**/db/migrations/**'],
-              message: 'services 只能经 repos 访问数据库（ipc→services→repos→db 单向）'
+              message: 'services 只能经 repos 访问数据库（ipc→services→repos→db 单向）；不得上探 main/ipc（check-quality 按解析路径强制）'
             }
           ]
         }
