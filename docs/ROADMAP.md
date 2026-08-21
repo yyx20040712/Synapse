@@ -10,8 +10,8 @@
 - 工单：72 = infra done 17 + open 55（weak 52 / strong 3）
 - 防线：`npm run verify` 全绿；quality / tickets / locks 三关全绿；75 受锁文件
 - CI：workflow 已按生产标准就绪，**尚未推送通电**（教训 E1）
-- 加固轮新增的硬约束清单见 `docs/HANDOFF.md`（LF 纪律 / preload CJS / CSP 单源 /
-  redirect 禁跟随等，勿回退）
+- 加固轮硬约束（LF 纪律 / preload CJS / CSP 单源 / redirect 禁跟随等）已沉淀在
+  `docs/architecture.md`、`AGENTS.md` 与代码/测试本身，勿回退
 
 ---
 
@@ -43,24 +43,21 @@
 | 风险 | 导入进度推送已由 bootstrap 注入 services 桶——ipc 层不碰 sendProgress（SR-IPC-05 任务书已修正，按修正后的做） |
 | 依赖 | Phase 1 |
 
-## ⚠️ 开放决策：Electron 升级门位置（进 Phase 3 前必须定案）
+## ✅ 已定案：Electron 升级门 = Phase 3 阅读器之前（ADR-0006 修订版）
 
-当前 ADR-0006 定在 **Phase 6 打包前**。备选方案是**提前到 Phase 3 阅读器之前**：
-
-- **提前案（建议）**：阅读器是全项目唯一重度依赖 Chromium 渲染行为的模块，且其核心
-  工单 SR-RDR-01/02/03 是 strong 归属（训练数据顾虑最小）；在最终 Electron 上构建
-  阅读器，省掉"升级后重验渲染"环节。前置检查：目标 Electron 版本的 better-sqlite3
-  prebuild 可用性 + `ELECTRON_ABI_MAP` 补表。
-- **维持案（Phase 6）**：完全可辩护，代价是升级后需一轮阅读器人工视检（e2e 只断言
-  文本可见，不覆盖像素级）。
-
-采纳提前案 = 修订 ADR-0006（普通提交，ADR 不受锁）；不定案则默认维持案。
+- 阅读器是全项目唯一重度依赖 Chromium 渲染行为的模块，且其核心工单
+  SR-RDR-01/02/03 是 strong 归属（训练数据顾虑最小）——在最终 Electron 上构建，
+  省掉"升级后重验渲染"环节。
+- 升级执行清单：目标版本选定（当期支持线）→ **先查 better-sqlite3 prebuild
+  可用性**（无预编译则连带评估 better-sqlite3 升级）→ `ELECTRON_ABI_MAP` 补表 →
+  全量 verify + e2e → ADR + [dep-change] 提交。未完成不得开工 Phase 3 工单。
+- Phase 6 打包前仅需复核：版本仍在支持线（若期间又出了新的大版本线，按需小步跟）。
 
 ## Phase 3：阅读器（含决策门）☐
 
 | 项 | 内容 |
 | --- | --- |
-| 前置 | ① pdf.js spike 决策门（`docs/adr/0002`：验证 pdfjs-dist 4.10.38 的 canvas 渲染 + getTextContent 路线在本项目可行，产出结论修订 ADR-0002 状态）② Electron 升级门定案（见上） |
+| 前置 | ① **Electron 升级门**（ADR-0006 修订版：升级至当期支持线，清单见上节）② pdf.js spike 决策门（`docs/adr/0002`：验证 pdfjs-dist 4.10.38 的 canvas 渲染 + getTextContent 路线在本项目可行，产出结论修订 ADR-0002 状态） |
 | 工单 | strong：SR-RDR-01（annotation-anchor 纯函数）、SR-RDR-02（PdfCanvas）、SR-RDR-03（TextLayer）；weak：SR-RDR-04 ~ SR-RDR-09 + SR-SVC-02（reader.service）+ SR-IPC-02（12 个） |
 | 目标 | 双击文献打开阅读器；翻页/缩放/目录；文本可选择（为 Phase 4 标注铺路） |
 | 验收 | **`tests/e2e/reader-text.spec.ts` 激活并转绿**（依赖工单 AND 条件已接线：SR-RDR-02 + SR-LIB-01 + SR-LIB-02 + SR-RDR-04）——这是"文字真实可见"的最终裁判 |
@@ -91,7 +88,7 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 前置 | Electron 升级门（ADR-0006——若未在 Phase 3 前执行）：升级至当期支持线 + `ELECTRON_ABI_MAP` 补表 + 全量 verify/e2e + 阅读器人工视检 |
+| 前置 | 复核 Electron 版本仍在支持线（升级已在 Phase 3 前完成，见 ADR-0006 修订版） |
 | 任务 | electron-builder 配置（NSIS）、图标、安装包冒烟（干净虚拟机装一次） |
 | 验收 | 安装包在无开发环境的 Windows 上：装→导入→阅读→标注→导出 全链路可用 |
 | 依赖 | Phase 5 |
@@ -106,4 +103,4 @@
    依赖变更 `[dep-change]`。
 3. strong 工单（阅读器三件套）由强模型会话完成，不进弱模型队列。
 4. 任何"防线要改"的冲动 → 停下报告人类（教训：不许删检查、不许放宽断言）。
-5. 每 Phase 收尾：更新本文勾选 + `docs/HANDOFF.md` 快照 + 提交。
+5. 每 Phase 收尾：更新本文勾选与基线快照 + 提交。

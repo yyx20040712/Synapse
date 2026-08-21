@@ -48,6 +48,9 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 
 - vitest 报 window 未定义：renderer store 测试须先 `vi.stubGlobal('window', { api: 桩 })` 再动态 import。
 - e2e 起不来：确认先 `npm run build`；e2e 用 `SYNAPSE_USER_DATA` 隔离数据。
+- 手动调试主进程（不进 dev、直接跑产物）：
+  `SYNAPSE_USER_DATA=<临时目录> node_modules\electron\dist\electron.exe out\main\index.js`
+  （bootstrap 失败会 console.error + 原生错误框）。
 - better-sqlite3 ABI 报错：它是 V8 直接绑定（Node/Electron 各需一份），由 `scripts/sqlite-abi.mjs` 自动切换；若手动动过 `node_modules`，重跑 `npm ci`。
 - 中文乱码：统一 UTF-8；PowerShell 重定向用 `Out-File -Encoding utf8`；CI 有 mojibake 关卡兜底。
 

@@ -66,7 +66,9 @@
 
 ## 环境事实
 
-- Windows + Electron 33 + Node 20（本地开发 Node 24 可跑测试）
+- Windows + Electron 33 + Node 20（本地开发 Node 24 / npm 12 可跑测试）
+- 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
+  （electron + better-sqlite3），`scripts/sqlite-abi.mjs` 下载 GitHub 优先、镜像兜底
 - better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；
   双 ABI 由 `scripts/sqlite-abi.mjs` 管理（abi-cache 两份预编译，npm scripts 自动切换）
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）
