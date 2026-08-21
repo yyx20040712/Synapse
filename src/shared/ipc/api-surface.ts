@@ -78,6 +78,11 @@ export const EVENT_CHANNELS = {
   importProgress: 'import/progress/event'
 } as const
 
+/** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
+export type PreloadEvents = {
+  onImportProgress(cb: (e: S.ImportProgressEvent) => void): () => void
+}
+
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────
 // Ep 用 infer 约束保留精确 schema 类型；直接索引会被泛型擦除。
 

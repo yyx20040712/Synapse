@@ -29,16 +29,31 @@ describe('shared/app-error —— 错误模型', () => {
     expect(e.detail).toBe('disk full')
   })
 
+  it('toAppError：带合法 code 的域错误（FileStoreError/HttpFetchError 形状）保留 code', () => {
+    const domain = Object.assign(new Error('读取源文件失败：xx.pdf'), { code: 'IO_ERROR' })
+    const e = toAppError(domain)
+    expect(e.code).toBe('IO_ERROR')
+    expect(e.message).toContain('xx.pdf')
+
+    const http = Object.assign(new Error('上游暂不可用'), { code: 'RATE_LIMITED' })
+    expect(toAppError(http).code).toBe('RATE_LIMITED')
+
+    // 非法 code 字符串不透传（防任意枚举注入），回落 INTERNAL
+    const bogus = Object.assign(new Error('weird'), { code: 'TOTALLY_FAKE' })
+    expect(toAppError(bogus).code).toBe('INTERNAL')
+  })
+
   it('unimplementedObject：访问任意方法抛带工单号的 NotImplementedError', () => {
     interface Dummy {
       hello(name: string): string
     }
-    const dummy = unimplementedObject<Dummy>('SR-X-00', 'dummy')
+    // 工单号必须是 registry 真实存在的 open 工单（check-tickets 扫描 tests 的引用）
+    const dummy = unimplementedObject<Dummy>('SR-DB-01', 'dummy')
     expect(() => dummy.hello('a')).toThrow(NotImplementedError)
     try {
       dummy.hello('a')
     } catch (e) {
-      expect((e as NotImplementedError).ticket).toBe('SR-X-00')
+      expect((e as NotImplementedError).ticket).toBe('SR-DB-01')
       expect((e as Error).message).toContain('dummy.hello')
     }
   })

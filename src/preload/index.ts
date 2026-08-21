@@ -6,7 +6,7 @@
  * 契约：tests/contracts/preload-surface.test.ts 断言运行时暴露面与接线表一致。
  */
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import { API_SURFACE, EVENT_CHANNELS, type PreloadApi } from '../shared/ipc/api-surface'
+import { API_SURFACE, EVENT_CHANNELS, type PreloadApi, type PreloadEvents } from '../shared/ipc/api-surface'
 import type { ImportProgressEvent } from '../shared/ipc/schemas'
 
 function buildApi(): PreloadApi {
@@ -21,10 +21,10 @@ function buildApi(): PreloadApi {
   return api as unknown as PreloadApi
 }
 
-/** 事件订阅（main→renderer 单向推送），返回退订函数 */
-function buildEvents(): { onImportProgress(cb: (e: ImportProgressEvent) => void): () => void } {
+/** 事件订阅（main→renderer 单向推送），返回退订函数；形状来自 PreloadEvents（单一真相源） */
+function buildEvents(): PreloadEvents {
   return {
-    onImportProgress(cb) {
+    onImportProgress(cb: (e: ImportProgressEvent) => void): () => void {
       const listener = (_e: IpcRendererEvent, payload: ImportProgressEvent): void => cb(payload)
       ipcRenderer.on(EVENT_CHANNELS.importProgress, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.importProgress, listener)

@@ -45,12 +45,40 @@ export function err(code: AppErrorCode, message: string, detail?: string): Resul
   return { ok: false, error: detail === undefined ? { code, message } : { code, message, detail } }
 }
 
+/** AppErrorCode 全集（toAppError 的结构化识别用；新增码必须同步这里） */
+const APP_ERROR_CODES: readonly AppErrorCode[] = [
+  'NOT_IMPLEMENTED',
+  'INVALID_REQUEST',
+  'NOT_FOUND',
+  'CONFLICT',
+  'DUPLICATE_FILE',
+  'UNSUPPORTED_FILE',
+  'IO_ERROR',
+  'DB_ERROR',
+  'NETWORK_ERROR',
+  'RATE_LIMITED',
+  'UPSTREAM_ERROR',
+  'PARSE_ERROR',
+  'CANCELLED',
+  'INTERNAL'
+]
+
+function asAppErrorCode(v: unknown): AppErrorCode | undefined {
+  return typeof v === 'string' && APP_ERROR_CODES.includes(v as AppErrorCode)
+    ? (v as AppErrorCode)
+    : undefined
+}
+
 /** 将任意抛出的异常折叠为 AppError（main 侧 IPC 出口统一使用） */
 export function toAppError(e: unknown): AppError {
   if (e instanceof NotImplementedError) {
     return { code: 'NOT_IMPLEMENTED', message: e.message, detail: `工单 ${e.ticket}` }
   }
   if (e instanceof Error) {
+    // 结构化域错误（FileStoreError/HttpFetchError 等带 code 字段）：保留 code 与
+    // 面向用户的消息——前端要按码分支（取消/重试/提示差异），一律折叠 INTERNAL 会埋掉语义
+    const code = asAppErrorCode((e as { code?: unknown }).code)
+    if (code !== undefined) return { code, message: e.message }
     return { code: 'INTERNAL', message: '发生未预期的内部错误', detail: e.message }
   }
   return { code: 'INTERNAL', message: '发生未预期的内部错误', detail: String(e) }

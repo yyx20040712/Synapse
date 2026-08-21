@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T11:05:20.4022445Z",
+    "generatedAt":  "2026-08-21T11:08:13.9879665Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -47,7 +47,7 @@
                   },
                   {
                       "path":  "src/shared/app-error.ts",
-                      "sha256":  "bce123a6156a66b34717f6200bdb0a8380f80b5c0510cbcac68cb765f89b6a0e"
+                      "sha256":  "ee3052e77242f221a87b49a03fbb7ac1902ef654de388221dc12b93a2001681d"
                   },
                   {
                       "path":  "src/shared/constants.ts",
@@ -55,7 +55,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "e2c4668e8115208d46ae88caf6b58eb0d32f47f63bd0e60fc9fd038f47e7cc50"
+                      "sha256":  "afb0e4644da6bf64a3fca468ec6ec974f93f205a319ba0efc05e1b5512dde0fd"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
-                      "sha256":  "d25a395507cd26d4e223bf3459267a50ab2820d1934f32d0ac928057ac659772"
+                      "sha256":  "4d91275e8e476438a568bd9cadf6aec6973d16136629733697569baf90c79c50"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
