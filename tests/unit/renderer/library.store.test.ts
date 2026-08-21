@@ -62,6 +62,35 @@ guardedDescribe('SR-LIB-07', 'library.store —— 列表/筛选/选中', () => 
     expect(list).toHaveBeenCalledTimes(1)
   })
 
+  it('setQuery 清空选中态——旧选中可能已被新查询过滤掉（防详情与列表脱钩）', async () => {
+    const list = vi.fn(async () => ({ ok: true as const, data: { items: [], total: 0 } }))
+    const useStore = await loadStore({ library: { list } })
+    useStore.setState({ selectedId: 'p-1' })
+    await useStore.getState().setQuery({ search: '水务' })
+    expect(useStore.getState().selectedId).toBe(null)
+  })
+
+  it('load 竞态：先发后至的旧响应不得覆盖新响应，也不得提前熄灭 loading', async () => {
+    // 场景：setQuery 连续变更 / StrictMode 双挂载——第一次请求慢、第二次先完成
+    let resolveFirst!: (v: { ok: true; data: { items: PaperSummary[]; total: number } }) => void
+    const slowOld = new Promise<{ ok: true; data: { items: []; total: 0 } }>((r) => {
+      resolveFirst = r as typeof resolveFirst
+    })
+    const list = vi
+      .fn()
+      .mockReturnValueOnce(slowOld)
+      .mockReturnValueOnce(Promise.resolve({ ok: true as const, data: { items: [summary], total: 1 } }))
+    const useStore = await loadStore({ library: { list } })
+    const p1 = useStore.getState().load() // 旧查询：慢
+    const p2 = useStore.getState().load() // 新查询：先完成
+    await p2
+    expect(useStore.getState().papers).toEqual([summary]) // 新结果已落
+    resolveFirst({ ok: true, data: { items: [], total: 0 } }) // 旧响应晚到
+    await p1
+    expect(useStore.getState().papers).toEqual([summary]) // 旧响应被丢弃
+    expect(useStore.getState().loading).toBe(false)
+  })
+
   it('selectPaper 更新选中', async () => {
     const useStore = await loadStore({ library: { list: vi.fn() } })
     useStore.getState().selectPaper('p-9')

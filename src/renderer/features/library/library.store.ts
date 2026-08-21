@@ -4,7 +4,9 @@
  * ── 行为层 ──
  * - Zustand store：{ papers: PaperSummary[]; total: number; query: LibraryQuery;
  *     selectedId: string | null; loading: boolean; error: string | null }
- * - load()：unwrap(api.library.list(query))；setQuery(patch) 合并后自动 load
+ * - load()：unwrap(api.library.list(query))；带请求序号 stale-guard——并发 load
+ *   （setQuery 连发 / StrictMode 双挂载）时晚到的旧响应直接丢弃，不得覆盖新结果
+ * - setQuery(patch) 合并后自动 load，并清空 selectedId（旧选中可能已被新查询过滤）
  * - selectPaper(id)；openPaper(id)：切 reader tab（经 ui 事件，见 ReaderPage 规约）
  *
  * ── 接口层 ──
@@ -50,27 +52,36 @@ export function createLibraryStoreInitialState() {
 /** 列表加载失败的兜底中文消息（仅捕获到非 ApiClientError 的意外异常时使用） */
 const LIST_LOAD_FAILED = '文献列表加载失败'
 
-export const useLibraryStore = create<LibraryStore>()((set, get) => ({
-  ...createLibraryStoreInitialState(),
-  // 列表型错误契约：失败不抛、保留旧 papers/total，写 error 供内联展示
-  load: async () => {
-    set({ loading: true, error: null })
-    try {
-      const { items, total } = await unwrap(api.library.list(get().query))
-      set({ papers: items, total, loading: false })
-    } catch (e) {
-      set({
-        loading: false,
-        error: e instanceof ApiClientError ? e.message : LIST_LOAD_FAILED
-      })
+export const useLibraryStore = create<LibraryStore>()((set, get) => {
+  // 请求序号（模块内闭包）：只认最后一次发起的 load
+  let loadSeq = 0
+  return {
+    ...createLibraryStoreInitialState(),
+    // 列表型错误契约：失败不抛、保留旧 papers/total，写 error 供内联展示
+    load: async () => {
+      const seq = ++loadSeq
+      set({ loading: true, error: null })
+      try {
+        const { items, total } = await unwrap(api.library.list(get().query))
+        // 旧响应晚到：丢弃（loading 由最新请求负责熄灭）
+        if (seq !== loadSeq) return
+        set({ papers: items, total, loading: false })
+      } catch (e) {
+        if (seq !== loadSeq) return
+        set({
+          loading: false,
+          error: e instanceof ApiClientError ? e.message : LIST_LOAD_FAILED
+        })
+      }
+    },
+    // 合并筛选条件并回到第一页（offset 归零），随后用新查询自动重载；
+    // 清空选中——旧选中项可能已被新查询过滤出列表，残留会致详情与列表脱钩
+    setQuery: (patch) => {
+      set({ query: { ...get().query, ...patch, offset: 0 }, selectedId: null })
+      void get().load()
+    },
+    selectPaper: (id) => {
+      set({ selectedId: id })
     }
-  },
-  // 合并筛选条件并回到第一页（offset 归零），随后用新查询自动重载
-  setQuery: (patch) => {
-    set({ query: { ...get().query, ...patch, offset: 0 } })
-    void get().load()
-  },
-  selectPaper: (id) => {
-    set({ selectedId: id })
   }
-}))
+})
