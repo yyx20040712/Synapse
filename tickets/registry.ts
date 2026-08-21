@@ -81,7 +81,7 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR-SVC-01', file: 'src/main/services/library.service.ts', area: 'service', owner: 'weak', status: 'open', summary: '文献库用例：列表筛选/详情聚合/元数据编辑' },
   { id: 'SR-SVC-02', file: 'src/main/services/reader.service.ts', area: 'service', owner: 'weak', status: 'open', summary: '阅读用例：取文件引用/标注读写/进度' },
   { id: 'SR-SVC-03', file: 'src/main/services/import_/import.service.ts', area: 'service', owner: 'weak', status: 'open', summary: '导入编排：对话框→file-store→抽取→入库' },
-  { id: 'SR-SVC-04', file: 'src/main/services/import_/pdf-meta.extract.ts', area: 'service', owner: 'weak', status: 'open', summary: 'PDF 内嵌元数据与 DOI 抽取（纯函数）' },
+  { id: 'SR-SVC-04', file: 'src/main/services/import_/pdf-meta.extract.ts', area: 'service', owner: 'weak', status: 'done', summary: 'PDF 内嵌元数据与 DOI 抽取（纯函数）' },
   { id: 'SR-SVC-05', file: 'src/main/services/enrich/enrich.service.ts', area: 'service', owner: 'weak', status: 'open', summary: '增强编排：DOI/标题→provider→回写' },
   { id: 'SR-SVC-06', file: 'src/main/services/export_/export.service.ts', area: 'service', owner: 'weak', status: 'open', summary: '导出编排：对话框→序列化→写文件' },
   { id: 'SR-SVC-07', file: 'src/main/services/export_/bibtex.serializer.ts', area: 'service', owner: 'weak', status: 'open', summary: 'BibTeX 转义与序列化（纯函数）' },
