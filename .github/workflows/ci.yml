@@ -5,12 +5,21 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     name: 六道关卡（lint→typecheck→quality→tickets→unit→build+e2e）
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
+      # fetch-depth 0：尾注检查需要 origin/main..HEAD 的提交范围（PR 事件下
+      # merge commit 的 git log -1 拿不到源提交的尾注，会误杀合法 PR）
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -23,8 +32,10 @@ jobs:
       - name: 依赖变更尾注检查（[dep-change]）
         shell: bash
         run: |
-          if git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '^(package(-lock)?\.json)$' >/dev/null; then
-            if ! git log -1 --format=%B | grep -q '\[dep-change\]'; then
+          RANGE="HEAD^ HEAD"
+          if git rev-parse --verify -q origin/main >/dev/null 2>&1; then RANGE="origin/main..HEAD"; fi
+          if git diff --name-only $RANGE 2>/dev/null | grep -E '^(package(-lock)?\.json)$' >/dev/null; then
+            if ! git log --format=%B $RANGE 2>/dev/null | grep -q '\[dep-change\]'; then
               echo "::error::package.json/lock 变更必须带 [dep-change] 提交尾注（K4 依赖防线）"
               exit 1
             fi
@@ -51,14 +62,22 @@ jobs:
 
       - name: 构建（electron-vite build）
         run: npm run build
-        env:
-          # Electron 二进制缓存
-          ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
 
-      - name: e2e（Playwright _electron）
-        run: npm run test:e2e
+      - name: e2e（Playwright _electron，产物已就绪不重复构建）
+        run: npx playwright test
         env:
           CI: 'true'
+
+      - name: 上传 e2e 失败产物（报告与 trace）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: 依赖审计（高危即红）
         run: npm audit --omit=dev --audit-level=high
@@ -66,15 +85,18 @@ jobs:
   lock-change-guard:
     name: manifest 变更尾注检查（[locked-change]）
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - name: 检查 locks/manifest.json 变更需带 [locked-change]
         shell: bash
         run: |
-          if git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '^locks/manifest\.json$' >/dev/null; then
-            if ! git log -1 --format=%B | grep -q '\[locked-change\]'; then
+          RANGE="HEAD^ HEAD"
+          if git rev-parse --verify -q origin/main >/dev/null 2>&1; then RANGE="origin/main..HEAD"; fi
+          if git diff --name-only $RANGE 2>/dev/null | grep -E '^locks/manifest\.json$' >/dev/null; then
+            if ! git log --format=%B $RANGE 2>/dev/null | grep -q '\[locked-change\]'; then
               echo "::error::manifest 变更必须带 [locked-change] 提交尾注（K2 防作弊双锁）"
               exit 1
             fi
