@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T10:57:00.6117284Z",
+    "generatedAt":  "2026-08-21T11:01:23.1393539Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -40,6 +40,10 @@
                   {
                       "path":  "src/main/db/migrations/001_init.sql",
                       "sha256":  "9520b146c9eaffaf10ab120b1221c2459fd60c1ea94be1af1f644daafd5d5169"
+                  },
+                  {
+                      "path":  "src/main/db/migrations/002_indexes.sql",
+                      "sha256":  "9ae7965b97f721a2db5dedd918f229779db4a917ec7c71d0324bc3b928322f05"
                   },
                   {
                       "path":  "src/shared/app-error.ts",
@@ -103,7 +107,7 @@
                   },
                   {
                       "path":  "tests/unit/db/connection.test.ts",
-                      "sha256":  "e0fa60f09a15bb92394f86527841cb2a7aca0cc11e66281e5b721721910bb12f"
+                      "sha256":  "3827179e3e05ebaad507df1020ad08a99c40b48df82a4c21a5780ee4320ee53e"
                   },
                   {
                       "path":  "tests/unit/db/fts.test.ts",
@@ -111,7 +115,7 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "4a44b32143e31b025abef43f623524b7601278037f9dffd8fa80baaedd8f006d"
+                      "sha256":  "cba7c85b99886fb8312c81416b59b4b27cc7e45b211ba8ecfb48a0a0857c816b"
                   },
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",

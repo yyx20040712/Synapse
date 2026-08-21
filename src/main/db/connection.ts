@@ -14,7 +14,9 @@ export const DB_PRAGMAS: readonly string[] = [
   'journal_mode = WAL',
   'foreign_keys = ON',
   'synchronous = NORMAL',
-  'temp_store = MEMORY'
+  'temp_store = MEMORY',
+  // 外部工具（DB Browser 等）同时打开库时，写锁短暂等待而非立即抛 SQLITE_BUSY
+  'busy_timeout = 5000'
 ]
 
 /** 打开数据库并应用 pragma。dbPath 传 ':memory:' 用于单元测试。 */

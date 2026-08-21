@@ -7,9 +7,37 @@ describe('db/migrate —— 迁移执行器', () => {
   it('新库：全量应用，user_version = 最新版本', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([1])
+    expect(result.appliedVersions).toEqual([1, 2])
     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
     expect(readUserVersion(db)).toBe(result.currentVersion)
+    db.close()
+  })
+
+  it('迁移失败整体回滚：user_version 不变、半成品表不残留（注入坏迁移验证）', () => {
+    const db = openDatabase(':memory:')
+    const bad = [
+      {
+        version: 9,
+        name: 'bad',
+        sql: 'CREATE TABLE rollback_probe_a (x); CREATE TABLE rollback_probe_b (y;'
+      }
+    ]
+    expect(() => migrate(db, bad)).toThrow()
+    expect(readUserVersion(db)).toBe(0)
+    const leftover = db
+      .prepare("SELECT name FROM sqlite_master WHERE name LIKE 'rollback_probe_%'")
+      .all() as Array<{ name: string }>
+    expect(leftover).toEqual([])
+    db.close()
+  })
+
+  it('002 索引在位：按集合过滤与 added_at 排序不再全表扫', () => {
+    const db = createTestDb()
+    const indexes = (
+      db.prepare("SELECT name FROM sqlite_master WHERE type='index'").all() as Array<{ name: string }>
+    ).map((r) => r.name)
+    expect(indexes).toContain('idx_paper_collections_collection')
+    expect(indexes).toContain('idx_papers_added_at')
     db.close()
   })
 

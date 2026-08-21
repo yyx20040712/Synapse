@@ -28,5 +28,12 @@ describe('db/connection —— SQLite 连接与 pragma', () => {
   it('DB_PRAGMAS 覆盖关键安全/性能项', () => {
     expect(DB_PRAGMAS).toContain('foreign_keys = ON')
     expect(DB_PRAGMAS).toContain('journal_mode = WAL')
+    expect(DB_PRAGMAS).toContain('busy_timeout = 5000')
+  })
+
+  it('busy_timeout 生效（外部工具持锁时写操作短暂等待而非立即 BUSY）', () => {
+    const db = openDatabase(':memory:')
+    expect(readPragma(db, 'busy_timeout')).toBe(5000)
+    db.close()
   })
 })

@@ -9,6 +9,7 @@
  */
 import type { SqliteDb } from './connection'
 import initSql from './migrations/001_init.sql?raw'
+import indexesSql from './migrations/002_indexes.sql?raw'
 
 export interface Migration {
   version: number
@@ -18,7 +19,8 @@ export interface Migration {
 
 /** 迁移清单：新增迁移在此追加（文件放 migrations/ 并 import ?raw） */
 export const MIGRATIONS: readonly Migration[] = [
-  { version: 1, name: 'init', sql: initSql }
+  { version: 1, name: 'init', sql: initSql },
+  { version: 2, name: 'indexes', sql: indexesSql }
 ]
 
 export interface MigrateResult {
