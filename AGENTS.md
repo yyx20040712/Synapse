@@ -73,5 +73,7 @@
 - better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；
   双 ABI 由 `scripts/sqlite-abi.mjs` 管理（abi-cache 两份预编译，npm scripts 自动切换）
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）
-- git 在 `E:\class\智慧水务\tools\MinGit`（若系统 PATH 没有全局 git）
+- git 在 `E:\class\智慧水务\tools\MinGit`（若系统 PATH 没有全局 git）；远端 origin 已配
+  github.com/yyx20040712/Synapse。MinGit 默认 schannel 经代理握手失败——已配
+  repo-local `http.sslBackend=openssl` + 自带 CA bundle（勿删 .git/config 里这几行）
 - 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）

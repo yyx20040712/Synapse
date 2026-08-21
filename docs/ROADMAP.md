@@ -10,20 +10,21 @@
 - 工单：72 = infra done 17 + open 55（weak 52 / strong 3）
 - 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；81 受锁文件
   （本轮扩容：playwright / electron.vite / tsconfig×3 入锁）
-- CI：workflow 已按生产标准就绪（本轮已修：触发分支 main 对齐、尾注检查基线兼容
-  push 事件），**尚未推送通电**（教训 E1）——Phase 0 剩余动作仅为提供远端并 push
+- CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
+  Node 20 缺 better-sqlite3 v12.11.1 预编译→已修为 Node 24，次跑全绿）。尾注检查
+  基线兼容 push 事件（PR base sha / push before），manifest 变更关卡已真实拦截验证
 - 加固轮硬约束（LF 纪律 / preload CJS / CSP 单源 / redirect 禁跟随等）已沉淀在
   `docs/architecture.md`、`AGENTS.md` 与代码/测试本身，勿回退
 
 ---
 
-## Phase 0（收尾）：CI 通电 ☐
+## Phase 0（收尾）：CI 通电 ✅（2026-08-21）
 
 | 项 | 内容 |
 | --- | --- |
-| 任务 | 用户提供 GitHub 远端 → push → 确认 Actions 六关卡真实跑绿 |
-| 验收 | CI 两次连续绿（初始 push + 任一后续提交） |
-| 备注 | 在此之前不要开始 Phase 1——防线没通电前填充，等于回到 Synapse 老路 |
+| 任务 | ~~用户提供 GitHub 远端 → push → 确认 Actions 六关卡真实跑绿~~ 已完成 |
+| 验收 | CI 两次连续绿：首跑红（Node 20 无预编译，已修）→ 第二跑全绿 → 第三跑（本次 ROADMAP 勾选提交） |
+| 备注 | 通电过程沉淀两个环境事实进 AGENTS.md：CI Node 必须 24（勿改回）；MinGit 走代理需 OpenSSL TLS 后端 |
 
 ## Phase 1：数据基座（repos）☐
 
