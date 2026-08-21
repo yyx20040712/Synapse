@@ -71,7 +71,7 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR-IPC-09', file: 'src/main/ipc/system.ts', area: 'ipc', owner: 'weak', status: 'open', summary: '系统域 handler（外链守卫打开）' },
 
   // ── repos 数据访问层（weak）─────────────────────────────────────
-  { id: 'SR-DB-01', file: 'src/main/db/repos/papers.repo.ts', area: 'db', owner: 'weak', status: 'open', summary: 'papers 表仓储（含 FTS 联查）' },
+  { id: 'SR-DB-01', file: 'src/main/db/repos/papers.repo.ts', area: 'db', owner: 'weak', status: 'done', summary: 'papers 表仓储（含 FTS 联查）' },
   { id: 'SR-DB-02', file: 'src/main/db/repos/annotations.repo.ts', area: 'db', owner: 'weak', status: 'open', summary: 'annotations 表仓储' },
   { id: 'SR-DB-03', file: 'src/main/db/repos/notes.repo.ts', area: 'db', owner: 'weak', status: 'open', summary: 'notes 表仓储（含 FTS）' },
   { id: 'SR-DB-04', file: 'src/main/db/repos/tags.repo.ts', area: 'db', owner: 'weak', status: 'open', summary: 'tags/paper_tags 仓储' },
