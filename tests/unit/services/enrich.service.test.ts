@@ -71,7 +71,9 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     annotations: {} as Repos['annotations'],
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
-    collections: {} as Repos['collections']
+    collections: {} as Repos['collections'],
+    // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
+    withTransaction: <T>(fn: () => T): T => fn()
   }
 }
 

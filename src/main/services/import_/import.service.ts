@@ -1,5 +1,5 @@
 /**
- * [SR-SVC-03] import.service —— 导入编排（工单：open / weak）
+ * [SR-SVC-03] import.service —— 导入编排（工单：done / weak）
  *
  * ── 行为层 ──
  * - importFiles(paths)：逐个 file-store 拷贝（sha256 去重）→ extractPdfMeta → 入库
@@ -98,9 +98,9 @@ export function createImportService(deps: {
    * 单文件流水线：拷贝（含 sha256）→ 查重 → 抽取 → 入库 → 挂集合。
    * 任一步抛错（非 PDF / 读源失败等）都折叠成 failed，不中断整批。
    *
-   * 写入顺序说明：insert 在前、attach 在后（paper_collections 有 papers(id) 外键）。
-   * deps 只注入 repos 桶、无事务句柄，而 better-sqlite3 单连接同步执行——两条写入
-   * 相邻调用间无并发窗口（与 collections.repo 的 upsert 注释同口径），故不开显式事务。
+   * 写入顺序：insert 在前、attach 在后（paper_collections 有 papers(id) 外键）。
+   * 两条写入包在 repos.withTransaction 里——attach 失败（SQLITE_BUSY/IO 等）时
+   * insert 一并回滚：没有事务时"失败"的文献已入库且 sha 被判重占用，永远无法重导。
    */
   async function importOne(
     entry: BatchEntry,
@@ -137,12 +137,12 @@ export function createImportService(deps: {
         updated_at: now,
         last_read_page: 0
       }
-      repos.papers.insert(row)
-      const collectionNames: string[] = []
-      if (entry.collection !== null) {
-        repos.collections.attach(row.id, entry.collection.id)
-        collectionNames.push(entry.collection.name)
-      }
+      const collection = entry.collection
+      repos.withTransaction(() => {
+        repos.papers.insert(row)
+        if (collection !== null) repos.collections.attach(row.id, collection.id)
+      })
+      const collectionNames: string[] = collection !== null ? [collection.name] : []
       return { kind: 'imported', summary: toSummary(row, meta.authors, collectionNames) }
     } catch (e) {
       // FileStoreError（UNSUPPORTED_FILE/IO_ERROR）的 message 已是中文；兜底防空串

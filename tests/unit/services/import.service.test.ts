@@ -32,7 +32,8 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
     collections: createCollectionsRepo(db),
     annotations: {} as Repos['annotations'],
     notes: {} as Repos['notes'],
-    tags: {} as Repos['tags']
+    tags: {} as Repos['tags'],
+    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
 
@@ -130,5 +131,41 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     expect(inCollection).toBeTruthy()
     const rootPaper = result.imported.find((p) => p.collectionNames.length === 0)
     expect(rootPaper).toBeTruthy()
+  })
+
+  it('挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'tx-'))
+    dirs.push(storeDir)
+    const { mkdir, writeFile } = await import('node:fs/promises')
+    await mkdir(join(storeDir, '合集'), { recursive: true })
+    await writeFile(join(storeDir, '合集', 'a.pdf'), createTinyPdf())
+
+    // 模拟第二条写入语句失败（SQLITE_BUSY/IO 类）：attach 抛错
+    const realCollections = createCollectionsRepo(db)
+    const brokenRepos: Repos = {
+      ...makeRepos(db),
+      collections: { ...realCollections, attach: () => { throw new Error('模拟：挂接失败') } }
+    }
+    const defaults = { title: '', authors: [], year: null, doi: null, arxivId: null }
+    const failed = createImportService({
+      repos: brokenRepos,
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      extractMeta: async () => defaults
+    })
+    const r1 = await failed.importFolder(storeDir)
+    expect(r1.failed).toHaveLength(1)
+    // 核心断言：insert 不得残留（无事务时行已入库且 sha 判重导致永远无法重导）
+    const rows = db.prepare('SELECT COUNT(*) AS c FROM papers').get() as { c: number }
+    expect(rows.c).toBe(0)
+
+    // 修复语义的实用后果：同一文件重导（attach 正常）必须能成功
+    const retry = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      extractMeta: async () => defaults
+    })
+    const r2 = await retry.importFolder(storeDir)
+    expect(r2.imported).toHaveLength(1)
   })
 })

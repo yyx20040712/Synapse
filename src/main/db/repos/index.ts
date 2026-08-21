@@ -15,6 +15,10 @@ export interface Repos {
   notes: NotesRepo
   tags: TagsRepo
   collections: CollectionsRepo
+  /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
+   *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
+   *  的半写残留——并发无关，缺的是多语句原子性。 */
+  withTransaction<T>(fn: () => T): T
 }
 
 export function createRepos(db: SqliteDb): Repos {
@@ -23,7 +27,8 @@ export function createRepos(db: SqliteDb): Repos {
     annotations: createAnnotationsRepo(db),
     notes: createNotesRepo(db),
     tags: createTagsRepo(db),
-    collections: createCollectionsRepo(db)
+    collections: createCollectionsRepo(db),
+    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
 
