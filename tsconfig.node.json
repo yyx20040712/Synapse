@@ -23,6 +23,7 @@
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
+    "src/renderer/env.d.ts",
     "tickets/**/*.ts",
     "tests/**/*.ts",
     "electron.vite.config.ts",

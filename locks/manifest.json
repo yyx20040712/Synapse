@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T15:49:59.2559365Z",
+    "generatedAt":  "2026-08-21T15:58:09.5253344Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -315,7 +315,7 @@
                   },
                   {
                       "path":  "tsconfig.node.json",
-                      "sha256":  "dceb78eae68e22bc0aab78e81a03e0f222b951d0ed49b80f7f2867ea893db3a2"
+                      "sha256":  "e564c915b67df399d1195d99bc6d8d034a26e567ce89952531cdf5d5fe477a6d"
                   },
                   {
                       "path":  "tsconfig.web.json",
