@@ -61,3 +61,181 @@ AD-6 Electron 升级延期至打包门。阶段编排见 `docs/ROADMAP.md`。
 ## 6. 数据模型
 
 7 张表 + 3 个 FTS5（external content + 触发器）：papers / collections / paper_collections / tags / paper_tags / annotations / notes。标注定位器采用 W3C Web Annotation 思路（quote/prefix/suffix + startOffset/endOffset + rects + sortKey）。迁移只追加（`db/migrations/`，受锁）。
+
+## 7. 架构图纸（2026-08-21 修复轮起；状态标注：✅已实现 / 🚧占位待工单）
+
+### 7.1 系统全景（三进程 + 外部边界）
+
+```mermaid
+flowchart TB
+  subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
+    direction TB
+    UI["React SPA ✅壳/🚧功能<br/>features: library · reader · notes · tags · settings"]
+    WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
+    UI --> WA
+  end
+
+  subgraph M["Main 进程（Node 20 · 单实例锁）"]
+    direction TB
+    REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
+    SVC["services/ 🚧 SR-SVC-*<br/>业务用例 · 事务编排"]
+    REPO["repos/ 🚧 SR-DB-01~05<br/>db.prepare 参数绑定"]
+    DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
+    PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
+    FSTORE["file-store ✅<br/>sha256 去重 · 受管目录"]
+    HTTP["http-client ✅<br/>白名单 · redirect:error · 20MB 上限"]
+  end
+
+  subgraph E["外部（全部仅手动触发）"]
+    CR["CrossRef"]:::ext
+    OA["OpenAlex"]:::ext
+    AX["arXiv"]:::ext
+    DLG["系统对话框（选 PDF / 保存）"]
+    BRW["系统浏览器（openExternalGuarded）"]
+  end
+
+  WA == "invoke(channel, req)" ==> REG
+  REG --> SVC --> REPO --> DB
+  SVC --> FSTORE
+  SVC --> HTTP -.-> CR & OA & AX
+  SVC == "webContents.send(import/progress)" ==> WA
+  UI -- "app-file://paperId（无路径）" --> PROTO --> FSTORE
+  M -.-> DLG & BRW
+  classDef ext fill:#eee,stroke:#999,stroke-dasharray: 5 5
+```
+
+### 7.2 主进程分层与依赖方向（违者 CI 红）
+
+```mermaid
+flowchart LR
+  subgraph SHARED["src/shared（受锁 · 契约冻结）"]
+    SURF["api-surface.ts 接线表<br/>通道 + Req/Res zod"]
+    MODELS["models/* + schemas.ts"]
+    ERR["app-error.ts Result/错误码"]
+  end
+  IPC["ipc/* 薄分发 🚧<br/>禁 import repos/db"] --> SVC2["services/* 🚧<br/>禁 import connection/migrations"]
+  SVC2 --> REPO2["repos/* 🚧<br/>禁 import 上层"]
+  REPO2 --> CONN["db/connection.ts ✅<br/>WAL·FK·busy_timeout"]
+  MIG["db/migrations/*.sql（受锁）✅"] --> CONN
+  FTS["db/fts.ts escapeFtsQuery ✅"] --> REPO2
+  SEC["security/ csp + shell-guard ✅"] --> BOOT["bootstrap.ts 装配根 ✅"]
+  WIN["windows/ main-window ✅<br/>sandbox·contextIsolation·禁导航"] --> BOOT
+  BOOT --> IPC
+  IPC -.->|类型| SURF
+  SVC2 -.->|类型 ApiHandlers| SURF
+  SURF --- MODELS & ERR
+```
+
+### 7.3 数据流 A：导入一篇 PDF（Phase 2 目标链路）
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UI as renderer<br/>ImportDropZone 🚧SR-LIB-06
+  participant P as preload ✅
+  participant I as ipc/import_ 🚧SR-IPC-05
+  participant S as import.service 🚧SR-SVC-03
+  participant F as file-store ✅
+  participant R as papers.repo 🚧SR-DB-01
+  participant D as SQLite ✅
+
+  UI->>P: api.import_.fromDialog({})
+  P->>I: invoke("import/from-dialog")
+  I->>I: Req zod strict 校验
+  I->>S: importFiles(dialog.pickPdfFiles())
+  Note over I,S: 路径只存在于 main 侧
+  S->>F: storePdfFromPath(path)
+  F-->>S: {paperId, sha256} / DUPLICATE_FILE
+  S->>S: extractPdfMeta（标题/DOI）
+  S->>R: insert(paper)（跨表事务）
+  R->>D: db.prepare 参数绑定
+  S-->>P: 进度 onProgress → send("import/progress")
+  S-->>UI: ImportResult {added, duplicates, failed}
+```
+
+### 7.4 数据流 B：阅读与标注锚定（Phase 3/4 目标链路）
+
+```mermaid
+flowchart TB
+  A["双击文献<br/>library.openPaper 🚧"] --> B["api.reader.open(paperId)"]
+  B --> C["reader.service 🚧SR-SVC-02<br/>file_ref 查询 + lastReadPage"]
+  C --> D["fileUrl = app-file://paperId<br/>（renderer 全程无路径）"]
+  D --> E["PdfCanvas 🚧SR-RDR-02<br/>唯一 import pdfjs-dist；worker ?url"]
+  E --> F["TextLayer 🚧SR-RDR-03<br/>--scale-factor 必设（旧项目教训）"]
+  F --> G["SelectionLayer 🚧SR-RDR-05<br/>划选 → 定位器三元组"]
+  G --> H["annotation-anchor 🚧SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
+  H --> I["AnnotationLayer 🚧SR-RDR-06<br/>重开时 verifyQuote 重锚，失败回退 rects"]
+  H --> J["持久化：annotations.repo 🚧SR-DB-03"]
+  subgraph NOTE["窗口尺寸变化 = 纯函数重算，不依赖像素坐标"]
+    I
+  end
+```
+
+### 7.5 契约机制：一张接线表长出三方（防漂移核心）
+
+```mermaid
+flowchart TB
+  SRC["API_SURFACE（api-surface.ts，受锁）<br/>channel + Req + Res 一条记录一通道"]
+  SRC -->|"infer 推导 z.input"| PA["PreloadApi 类型<br/>preload buildApi() ✅ 运行时生成"]
+  SRC -->|"infer 推导 z.output"| AH["ApiHandlers 类型<br/>漏/多通道 = 编译错误 ✅"]
+  SRC -->|"遍历注册"| RG["register.ts ✅<br/>Req safeParse → service → Result"]
+  SRC --> EV["EVENT_CHANNELS<br/>importProgress 单向事件"]
+  T1["tests/contracts/api-surface.test.ts ✅<br/>通道唯一/命名/strict"]
+  T2["tests/contracts/preload-surface.test.ts ✅（本轮补齐）<br/>运行时暴露面逐域逐方法对账"]
+  SRC -.-> T1 & T2
+  PA -.-> T2
+```
+
+### 7.6 安全边界（纵深，由外向内）
+
+```mermaid
+flowchart TB
+  L1["① 出网：http-client 白名单 3 host + redirect:error + 20MB 上限 ✅"]
+  L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据 ✅<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒 ✅"]
+  L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关 ✅<br/>preload 白名单桥，零 ipcRenderer 泄漏 ✅"]
+  L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval ✅<br/>connect-src 'self'（renderer 禁直连出网）✅"]
+  L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery ✅（SQL 层 🚧 工单兑现）<br/>app-file:// paperId 白名单 → 受管根前缀校验 ✅<br/>renderer 零路径 · 写盘仅经系统对话框 ✅"]
+  L1 --> L2 --> L3 --> L4 --> L5
+```
+
+### 7.7 治理体系：工单 → 实现 → 关卡 → 状态闭环
+
+```mermaid
+flowchart TB
+  subgraph LOOP["单人 + AI 弱模型领单循环"]
+    RG2["tickets/registry.ts ✅<br/>72 工单 = 17 done + 55 open<br/>（weak 52 / strong 3）"]
+    SPEC["源文件头五层规约<br/>= 自包含任务书"]
+    IMPL["弱模型只改工单文件"]
+    GD["guardedDescribe(ticketId)<br/>open → skip · done → 激活<br/>未知工单号当场炸"]
+    RG2 --> SPEC --> IMPL --> GD
+    GD -->|"人类审查 git diff 后翻状态"| RG2
+  end
+  subgraph GATES["关卡（verify = CI 同口径，本轮并轨）"]
+    Q["quality:占位/乱码/跨域/行数/分层方向"]
+    T["tickets:工单号一致性 + done 残留占位即红"]
+    LK["locks:81 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
+    V["lint → typecheck → test → build"]
+  end
+  GD --> GATES
+  GATES -->|"红 = 返工，禁放宽断言"| IMPL
+  LK --> MANIFEST["locks/manifest.json<br/>变更须 [locked-change] 尾注"]
+```
+
+### 7.8 构建与 ABI 双轨（Windows 环境事实）
+
+```mermaid
+flowchart LR
+  subgraph NODE["vitest（Node ABI 137）"]
+    UT["单测/契约/安全"]
+  end
+  subgraph ELEC["electron-vite（Electron ABI 130）"]
+    BUILD2["main(CJS) + preload(cjs, zod 内联) + renderer(ESM+React)"]
+    E2E["Playwright _electron"]
+  end
+  ABI["scripts/sqlite-abi.mjs ✅（本轮修数值选版）<br/>abi-cache: node-v* + electron-v* 两份预编译"]
+  POST["postinstall: setup 抓双份"]
+  POST --> ABI
+  ABI -->|"use node（自校验 require）"| NODE
+  ABI -->|"use electron"| ELEC
+  NPMRC[".npmrc npmmirror 二进制镜像<br/>GitHub 优先 · 镜像兜底"] --> POST
+```
