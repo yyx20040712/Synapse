@@ -2,7 +2,7 @@
  * 应用骨架（infra，无工单）：侧栏三入口 + 视图切换 + 错误边界。
  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
  */
-import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
+import { Component, Fragment, type ErrorInfo, type ReactNode, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -16,8 +16,11 @@ const NAV: Array<{ id: ViewId; label: string }> = [
   { id: 'settings', label: '设置' }
 ]
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
-  override state = { message: null as string | null }
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { message: string | null; retry: number }
+> {
+  override state = { message: null as string | null, retry: 0 }
 
   static getDerivedStateFromError(error: Error): { message: string } {
     return { message: error.message }
@@ -39,7 +42,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { message: string
             <button
               className="mt-3 rounded px-3 py-1 text-xs text-white"
               style={{ background: 'var(--accent)' }}
-              onClick={() => this.setState({ message: null })}
+              // 重试 = 清错误 + 递增 retry 作子树 key 强制重挂载：出错组件带着旧状态
+              // 重渲染大概率立刻再抛同一错误，remount 才是真正的"重试"
+              onClick={() => this.setState((s) => ({ message: null, retry: s.retry + 1 }))}
             >
               重试
             </button>
@@ -47,7 +52,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { message: string
         </div>
       )
     }
-    return this.props.children
+    return <Fragment key={this.state.retry}>{this.props.children}</Fragment>
   }
 }
 
