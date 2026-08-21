@@ -5,7 +5,8 @@
  * message 已是中文）；App 根部挂一次 `<ToastHost />` 负责渲染（右上角堆叠）。
  *
  * - info/success 3.5s 自动消失，error 6s（错误文案需要更长阅读时间）
- * - 同文案 1s 内去重（防连点/批量失败刷屏）
+ * - 同文案同 kind 1s 内去重（防连点/批量失败刷屏）；按 message+kind 记忆——
+ *   A→B→A 穿插序列仍拦第二条 A，不同 kind 同文案不互吞
  * - 自包含模块级订阅，不依赖状态库；Host 未挂载时调用安全（只入队不渲染）
  */
 import { type CSSProperties, useEffect, useState } from 'react'
@@ -44,8 +45,9 @@ const CARD_STYLE: CSSProperties = {
 // ── 模块级队列（自包含订阅，与 React 树解耦） ──
 let items: ToastItem[] = []
 let nextId = 1
-let lastMessage = ''
-let lastShownAt = 0
+/** 最近展示记忆：key=`${kind}:${message}` → 展示时刻。单槽会被穿插序列（A→B→A）
+ *  洗掉，故用 Map；每次入队顺手清过期项，天然有界。 */
+const recentShown = new Map<string, number>()
 const listeners = new Set<(snapshot: ToastItem[]) => void>()
 const timers = new Map<number, number>()
 
@@ -64,14 +66,19 @@ function dismiss(id: number): void {
 }
 
 /**
- * 弹出一条通知。同文案在 1s 窗口内重复调用只生效一次。
+ * 弹出一条通知。同文案同 kind 在 1s 窗口内重复调用只生效一次
+ * （A→B→A 穿插仍拦第二条 A；不同 kind 同文案不互吞）。
  * kind 缺省 info；error 停留 6s，其余 3.5s。
  */
 export function showToast(message: string, kind: ToastKind = 'info'): void {
   const now = Date.now()
-  if (message === lastMessage && now - lastShownAt < DEDUPE_MS) return
-  lastMessage = message
-  lastShownAt = now
+  const key = `${kind}:${message}`
+  // 过期项清理：窗口仅 1s，条目天然稀少，Map 保持有界
+  for (const [k, at] of recentShown) {
+    if (now - at >= DEDUPE_MS) recentShown.delete(k)
+  }
+  if (now - (recentShown.get(key) ?? -Infinity) < DEDUPE_MS) return
+  recentShown.set(key, now)
 
   const item: ToastItem = { id: nextId, message, kind }
   nextId += 1

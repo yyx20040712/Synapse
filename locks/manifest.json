@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T23:04:43.7710807Z",
+    "generatedAt":  "2026-08-21T23:32:13.4376428Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -111,7 +111,7 @@
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
-                      "sha256":  "720082ed51c7ec06b4f0343b41956777ce75e902fd4e91d81e428295c00bfe06"
+                      "sha256":  "aafdea71d42f76ea9dd1340884ebc3eb0b18a66ca461a458df5e158773f65ad3"
                   },
                   {
                       "path":  "tests/security/shell-guard.test.ts",
@@ -207,7 +207,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library.store.test.ts",
-                      "sha256":  "348acda120fcb065e9b287e98104121d9545ac13386a695c52d20ebeb48b141b"
+                      "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
@@ -226,6 +226,10 @@
                       "sha256":  "8bd7d09bea9f03675dcec2d65cf386bfec7cc195d90842f83050185f99d5fe98"
                   },
                   {
+                      "path":  "tests/unit/renderer/toast.test.tsx",
+                      "sha256":  "29b9f24cca275dfa92a37e576592d25a0d5ad9f3e79eafb18b86c1464a5f242f"
+                  },
+                  {
                       "path":  "tests/unit/renderer/useAsync.test.tsx",
                       "sha256":  "13386953ebce837fdbbafb61aaeaddb1b5168234a15b8239b8cb4b46416f9caf"
                   },
@@ -239,7 +243,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "994e9aee68b32026e6c84962b7f102e05914e2b4969164d89b402207c9a0f8f3"
+                      "sha256":  "743c6995e101bfad207ce7844ae1557f5f89e63b5669f8474c3afaffe37b4e05"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -251,7 +255,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "35082c89a1217198e64b886458f5deded283b8a15a1af5e6d7d6f39eb8c212c3"
+                      "sha256":  "0b6aa95b0aeb4428d2877072a6999053a78b8bb9d1c2e2d23ef385ee2bd8a0f0"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -267,7 +271,7 @@
                   },
                   {
                       "path":  "tests/unit/services/pdf-meta.extract.test.ts",
-                      "sha256":  "9e27218ee1338d87d3278e3867e9536d5541646cb9a0d2a174c1f4e17b43e3f2"
+                      "sha256":  "611ca73927cfce9e9863fd4b6a7ee72f498ad433b4be85e8c342ab516b3602ad"
                   },
                   {
                       "path":  "tests/unit/services/providers/arxiv.test.ts",

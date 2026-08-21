@@ -21,7 +21,9 @@ describe('security/csp-meta —— CSP 单真相源', () => {
       "default-src 'self'",
       "script-src 'self'",
       "worker-src 'self' blob:", // pdf.js worker 依赖
-      "connect-src 'self'",
+      // 阅读器 pdf.js getDocument 经 fetch 拉 PDF 的唯一取数通道——
+      // 被移除时 e2e 的 app-file 探测会红，这里收紧到完整指令形态双保险
+      "connect-src 'self' app-file:",
       "object-src 'none'",
       "frame-src 'none'",
       "base-uri 'none'",

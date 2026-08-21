@@ -1,5 +1,5 @@
 /**
- * [SR-IPC-05] ipc/import_ —— 导入域装配（工单：open / weak）
+ * [SR-IPC-05] ipc/import_ —— 导入域装配（工单：done / weak）
  *
  * ── 行为层 ──
  * - fromDialog：deps.dialogs.pickPdfFiles() → null（用户取消）返回空结果
