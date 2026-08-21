@@ -1,0 +1,11 @@
+# 统一 LF：locks/manifest.json 的 sha256 以 LF 字节为基准。
+# 任何平台 checkout 都必须还原为 LF，否则 CRLF 会让受锁文件对账全部误报「被修改」。
+* text=auto eol=lf
+
+# 二进制类型显式声明（防 auto 误判）
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
