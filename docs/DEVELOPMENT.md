@@ -5,7 +5,7 @@
 ## 1. 日常命令
 
 ```bash
-npm run verify        # 提交前必跑：lint + typecheck + test + build
+npm run verify        # 提交前必跑：quality + tickets + locks + lint + typecheck + test + build（与 CI 同口径）
 npm run dev           # 开发模式（HMR）
 npm run test          # vitest（单测/契约/安全）
 npm run build         # electron-vite build（产物 out/）

@@ -18,6 +18,20 @@
 
 ---
 
+## 行动清单（2026-08-21 定稿；随执行滚动更新，完成后回写勾选）
+
+1. **Phase 1（本日执行）**：SR-DB-01~05 五工单并行领单；完成后按 DEVELOPMENT §4
+   覆盖率计划收紧 repos 门槛至 85%（vitest.config 变更走 [locked-change]）。
+2. **Phase 2（本日执行）**：纵切波次——A{SR-SVC-04, SR-SVC-01} → B{SR-SVC-03,
+   SR-IPC-01} → C{SR-IPC-05, SR-LIB-06, SR-LIB-07, SR-LIB-02, SR-LIB-03} →
+   D{SR-LIB-01}；UI 基建（SR-UI-03 Toast / SR-HK-01 useAsync）按规约需要随波次
+   提前（Phase 5 注记允许"按需先做"）。
+3. **Phase 3 前置（可提前调研，不在关键路径）**：Electron 升级门调研（当期支持线 +
+   better-sqlite3 prebuild 矩阵 + ELECTRON_ABI_MAP 补表）与 pdf.js spike（ADR-0002）。
+4. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
+
+---
+
 ## Phase 0（收尾）：CI 通电 ✅（2026-08-21）
 
 | 项 | 内容 |
