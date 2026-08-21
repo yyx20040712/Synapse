@@ -60,7 +60,7 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR-INFRA-17', file: 'src/main/ipc/index.ts', area: 'infra', owner: 'strong', status: 'done', summary: 'IPC 装配桶（对话框/事件胶水）' },
 
   // ── ipc 薄分发层（weak）────────────────────────────────────────
-  { id: 'SR-IPC-01', file: 'src/main/ipc/library.ts', area: 'ipc', owner: 'weak', status: 'done', summary: '文献库域 handler（list/detail/update-meta/collections）' },
+  { id: 'SR-IPC-01', file: 'src/main/ipc/library.ts', area: 'ipc', owner: 'weak', status: 'open', summary: '文献库域 handler（list/detail/update-meta/collections）' },
   { id: 'SR-IPC-02', file: 'src/main/ipc/reader.ts', area: 'ipc', owner: 'weak', status: 'open', summary: '阅读器域 handler（open/标注读写/进度）' },
   { id: 'SR-IPC-03', file: 'src/main/ipc/notes.ts', area: 'ipc', owner: 'weak', status: 'open', summary: '笔记域 handler' },
   { id: 'SR-IPC-04', file: 'src/main/ipc/tags.ts', area: 'ipc', owner: 'weak', status: 'open', summary: '标签域 handler' },
