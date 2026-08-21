@@ -3,7 +3,6 @@
  * 各域装配在 ipc/<域>.ts（各自工单）；本文件只做接线与依赖形状定义。
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { ImportProgressEvent } from '../../shared/ipc/schemas'
 import type { ServiceBundle } from '../services'
 import type { Dialogs } from '../dialogs'
 import type { ShellLike } from '../security/shell-guard'
@@ -21,8 +20,6 @@ export interface IpcDeps {
   services: ServiceBundle
   dialogs: Dialogs
   shell: ShellLike
-  /** 导入进度推送到 renderer（webContents.send 的包装） */
-  sendProgress: (e: ImportProgressEvent) => void
   /** settings.json 所在目录 */
   userDataDir: string
   /** 网络诊断探活（http-client.pingHost 的包装，探 ALLOWED_REMOTE_HOSTS） */

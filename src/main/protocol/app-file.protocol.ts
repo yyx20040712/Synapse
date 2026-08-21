@@ -9,7 +9,7 @@
  * 测试：tests/unit/protocol/app-file.protocol.test.ts（URL 解析纯函数 + 桶桩）。
  */
 import { access, constants } from 'node:fs/promises'
-import type { Protocol, ProtocolResponse } from 'electron'
+import type { Protocol } from 'electron'
 import { APP_FILE_SCHEME } from '../../shared/constants'
 import type { FileStore } from '../services/import_/file-store'
 
@@ -93,5 +93,3 @@ export function registerAppFileProtocol(
 ): void {
   protocol.handle(APP_FILE_SCHEME, createAppFileHandler(lookup, fileStore))
 }
-
-export type { ProtocolResponse }

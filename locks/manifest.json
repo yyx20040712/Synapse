@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T10:16:23.3902524Z",
+    "generatedAt":  "2026-08-21T10:52:37.7459077Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -283,7 +283,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "3989c32975fcddbbd518cbf708c7ff678deb269259c792f17ed32272d5ca7018"
+                      "sha256":  "64634dec219b3fd8eaf5d2f420d58f91db5a1839ada5aeb17f5d6e84eec827b7"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

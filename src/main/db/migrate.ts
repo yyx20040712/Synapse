@@ -26,12 +26,23 @@ export interface MigrateResult {
   currentVersion: number
 }
 
-export function migrate(db: SqliteDb): MigrateResult {
+/**
+ * 应用迁移。migrations 参数仅供测试注入（构造坏迁移验证回滚）；生产调用留空。
+ */
+export function migrate(
+  db: SqliteDb,
+  migrations: readonly Migration[] = MIGRATIONS
+): MigrateResult {
   const current = readUserVersion(db)
   const applied: number[] = []
 
-  for (const migration of [...MIGRATIONS].sort((a, b) => a.version - b.version)) {
+  for (const migration of [...migrations].sort((a, b) => a.version - b.version)) {
     if (migration.version <= current) continue
+    // user_version 经字符串插值写入 pragma（pragma 无法参数绑定）——
+    // 值只允许整数，杜绝任何拼接来源（AGENTS.md SQL 禁令的自证）
+    if (!Number.isInteger(migration.version)) {
+      throw new Error(`迁移版本号必须是整数：${String(migration.version)}`)
+    }
     const runMigration = db.transaction(() => {
       db.exec(migration.sql)
       db.pragma(`user_version = ${migration.version}`)

@@ -37,7 +37,12 @@ export async function loadBounds(userDataDir: string): Promise<WindowBounds> {
     const raw = await readFile(join(userDataDir, 'window-state.json'), 'utf-8')
     const parsed = JSON.parse(raw) as Partial<WindowBounds>
     if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
-      return { x: parsed.x, y: parsed.y, width: parsed.width, height: parsed.height }
+      return {
+        x: typeof parsed.x === 'number' ? parsed.x : undefined,
+        y: typeof parsed.y === 'number' ? parsed.y : undefined,
+        width: parsed.width,
+        height: parsed.height
+      }
     }
   } catch {
     // 首次启动或损坏：回退默认

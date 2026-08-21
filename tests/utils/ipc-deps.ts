@@ -5,13 +5,11 @@
 import type { IpcDeps } from '../../src/main/ipc'
 import type { ServiceBundle } from '../../src/main/services'
 import type { Dialogs } from '../../src/main/dialogs'
-import type { ImportProgressEvent } from '../../src/shared/ipc/schemas'
 
 export interface IpcDepsOverrides {
   services?: Partial<ServiceBundle>
   dialogs?: Partial<Dialogs>
   shell?: IpcDeps['shell']
-  sendProgress?: (e: ImportProgressEvent) => void
   ping?: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   userDataDir?: string
 }
@@ -38,7 +36,6 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       over.shell ?? {
         openExternal: async () => undefined
       },
-    sendProgress: over.sendProgress ?? (() => undefined),
     userDataDir: over.userDataDir ?? 'C:/synapse-test-user-data',
     ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 }))
   }

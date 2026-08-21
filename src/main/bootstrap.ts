@@ -8,11 +8,11 @@
  * - SYNAPSE_USER_DATA：e2e 用，覆盖 userData 到临时目录（隔离测试状态）
  * - SYNAPSE_DEV_SERVER：electron-vite dev 的 HMR 地址（存在即视为开发模式）
  */
-import { readFile } from 'node:fs/promises'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   BrowserWindow,
+  Menu,
   net,
   protocol,
   screen,
@@ -89,7 +89,6 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       services,
       dialogs: createElectronDialogs(),
       shell,
-      sendProgress: () => undefined, // 实际推送经 services.sendProgress（上面注入）
       userDataDir,
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike })
     })
@@ -97,14 +96,19 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   applyCsp(session.defaultSession)
 
   // ── 主窗口 ──
-  const isDev = process.env.SYNAPSE_DEV_SERVER !== undefined
+  // isDev 以打包状态为准：打包后的应用即使在残留 SYNAPSE_DEV_SERVER 环境变量的
+  // 机器上运行，也绝不加载外部 URL / 开 DevTools
+  const devServerUrl = app.isPackaged ? undefined : process.env.SYNAPSE_DEV_SERVER
+  const isDev = devServerUrl !== undefined
+  Menu.setApplicationMenu(null)
   const bounds: WindowBounds = await loadBounds(userDataDir)
   const workArea = screen.getPrimaryDisplay().workArea
   const window = createMainWindow(
     BrowserWindow,
     {
-      devServerUrl: process.env.SYNAPSE_DEV_SERVER,
+      devServerUrl,
       entryFile: join(__dirname, '../renderer/index.html'),
+      preloadScript: join(__dirname, '../preload/index.cjs'),
       isDev
     },
     {
@@ -121,9 +125,15 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     }
   })
 
+  // 幂等 shutdown：window-all-closed 与 before-quit 都会触发，二次 close 未定义
+  let dbClosed = false
   return {
     window,
-    shutdown: () => db.close()
+    shutdown: () => {
+      if (dbClosed) return
+      dbClosed = true
+      db.close()
+    }
   }
 }
 

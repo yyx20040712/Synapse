@@ -6,7 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 /**
  * electron-vite 三段构建配置。
  * - main：Node 侧，better-sqlite3 等原生依赖 external，SQL 迁移经 ?raw 内联打包
- * - preload：沙箱桥，仅暴露白名单 API
+ * - preload：沙箱桥（CJS .cjs——沙箱渲染器不支持 ESM preload；zod 打进 bundle，
+ *   沙箱 preload 只允许 require('electron')，不能加载外部模块）
  * - renderer：React SPA，root 限定 src/renderer，禁止访问 main/preload 源码
  */
 export default defineConfig({
@@ -19,10 +20,15 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ['zod'] })],
     build: {
       rollupOptions: {
-        input: { index: resolve(__dirname, 'src/preload/index.ts') }
+        input: { index: resolve(__dirname, 'src/preload/index.ts') },
+        output: {
+          format: 'cjs',
+          entryFileNames: '[name].cjs',
+          chunkFileNames: '[name].cjs'
+        }
       }
     }
   },
