@@ -73,6 +73,9 @@
   在 better-sqlite3 12.11.1 上无 win32 预编译，而带 v148 的 12.11.2/12.12.0 只有
   GitHub release 未发 npm、v13.x 无任何 win 预编译——故落 42（v146 现成）。
   版本→ABI 映射数据源：npm 包 `node-abi`（registry.npmmirror.com 可下）
+- **Electron 42 起 npm 包无 postinstall**（41 尚有、42 移除，实证）：二进制改为首次
+  require 时同步懒下载（卡在意想不到的位置）——postinstall 已显式串 `install-electron`
+  （幂等，dist 在则秒过），把下载失败暴露在 npm install 阶段；bin 由 electron 包提供
 - 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
   （electron + better-sqlite3），`scripts/sqlite-abi.mjs` 下载 GitHub 优先、镜像兜底
 - better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；
