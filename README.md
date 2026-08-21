@@ -10,7 +10,7 @@
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm run verify` | lint + typecheck + test + build（提交前必跑） |
+| `npm run verify` | quality + tickets + locks + lint + typecheck + test + build（提交前必跑，与 CI 同口径） |
 | `npm run dev` | 启动开发（HMR） |
 | `npm run test` / `npm run test:e2e` | 单测 / 端到端（e2e 需先 build） |
 | `npm run quality:check` / `tickets:check` / `locks:check` | 三道防作弊关卡 |

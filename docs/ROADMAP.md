@@ -5,11 +5,13 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照）
+## 当前基线（制定时快照；2026-08-21 架构修复轮更新）
 
 - 工单：72 = infra done 17 + open 55（weak 52 / strong 3）
-- 防线：`npm run verify` 全绿；quality / tickets / locks 三关全绿；75 受锁文件
-- CI：workflow 已按生产标准就绪，**尚未推送通电**（教训 E1）
+- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；81 受锁文件
+  （本轮扩容：playwright / electron.vite / tsconfig×3 入锁）
+- CI：workflow 已按生产标准就绪（本轮已修：触发分支 main 对齐、尾注检查基线兼容
+  push 事件），**尚未推送通电**（教训 E1）——Phase 0 剩余动作仅为提供远端并 push
 - 加固轮硬约束（LF 纪律 / preload CJS / CSP 单源 / redirect 禁跟随等）已沉淀在
   `docs/architecture.md`、`AGENTS.md` 与代码/测试本身，勿回退
 

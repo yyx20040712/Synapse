@@ -29,7 +29,7 @@
 
 ### 完成定义（Definition of Done）
 
-- [ ] `npm run verify` 全绿（lint + typecheck + test + build，不是 README 数字）
+- [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build，与 CI 同口径，不是 README 数字）
 - [ ] `grep` 无 `TODO|FIXME|placeholder`（CI quality 关卡）
 - [ ] 无乱码：中文内容工具验证可读（CI mojibake 关卡）
 - [ ] `git diff --stat` 无范围蔓延
@@ -56,7 +56,7 @@
 
 - **禁止新增依赖**，确需新增 → 先 ADR + [dep-change] 尾注。运行时依赖预算 ≤15 个。
 - `package.json`/lockfile 变更必须带 `[dep-change]` 尾注（CI 检查）。
-- 受锁文件（tests/shared/migrations/CI/lint 配置/脚本）变更必须带 `[locked-change]` 尾注。
+- 受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 `[locked-change]` 尾注。
 - 每次 AI 改动一个逻辑单元一个 commit；提交前 `git diff --stat` 自查。
 - 中文一律 UTF-8；Windows 下写文件后验证可读。
 

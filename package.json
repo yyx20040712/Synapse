@@ -19,7 +19,7 @@
     "test": "node scripts/sqlite-abi.mjs use node && vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "verify": "npm run quality:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "quality:check": "node scripts/check-quality.mjs",
     "tickets:check": "node scripts/check-tickets.mjs",
     "locks:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1 -GenerateOnly",
