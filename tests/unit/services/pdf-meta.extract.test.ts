@@ -18,6 +18,28 @@ guardedDescribe('SR-SVC-04', 'pdf-meta.extract —— 真实 PDF 抽取', () => 
     expect(meta.arxivId).toBe('2401.12345')
   })
 
+  it('arXiv 裸 ID（无标注形态，前邻空格）', async () => {
+    const bytes = createTinyPdf('see 2401.12345 for details')
+    const meta = await extractPdfMeta(bytes)
+    expect(meta.arxivId).toBe('2401.12345')
+  })
+
+  it('arXiv 裸 ID 不得咬 DOI 尾段：含 10.1234/2023.01234 的文本只出 doi 不出 arxivId', async () => {
+    const bytes = createTinyPdf('DOI: 10.1234/2023.01234 water systems')
+    const meta = await extractPdfMeta(bytes)
+    expect(meta.doi).toBe('10.1234/2023.01234')
+    expect(meta.arxivId).toBe(null)
+  })
+
+  it('Info 标题含未转义平衡括号（PDF 规范合法形态）：完整解析不放弃候选', async () => {
+    // 工厂会转义括号，此形态必须手搓最小 PDF（魔数 + Info 字典 + 特征邻键）
+    const pdf = new TextEncoder().encode(
+      '%PDF-1.4\n<< /Title (A Review of Deep Learning (2020)) /Producer (synapse-test) >>\n%%EOF'
+    )
+    const meta = await extractPdfMeta(pdf)
+    expect(meta.title).toBe('A Review of Deep Learning (2020)')
+  })
+
   it('坏 PDF：不抛，返回全默认值', async () => {
     const meta = await extractPdfMeta(new Uint8Array([1, 2, 3]))
     expect(meta).toEqual({ title: '', authors: [], year: null, doi: null, arxivId: null })

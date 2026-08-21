@@ -23,7 +23,8 @@
  *   退 windows-1252（PDFDocEncoding 的常用近似）
  * - DOI 正则：/10\.\d{4,9}\/[^\s"<>]+/i（取首个匹配，去尾部标点）
  * - arXiv 正则：/arXiv:(\d{4}\.\d{4,5})(?:v\d+)?/i；无标注时退回裸 ID 形态
- *   （前后不能紧邻字母/数字/点，避免咬到 DOI 尾段或版本号片段）
+ *   （前邻不能是字母/数字/点/斜杠——斜杠即 DOI 尾段与 URL 路径上下文，一律不吃；
+ *   代价是无标注 URL 形态不识别，标注形态不受影响）
  * - 解析异常（坏 PDF）→ 返回已抽到的部分或全默认值并 console.warn，不抛
  *
  * ── 生命周期层 ──
@@ -123,9 +124,11 @@ function parseStringAfterKey(bytes: Uint8Array, p: number): string | null {
   return null
 }
 
-/** 从 '(' 起扫描到未转义的 ')'，返回夹层原始字节（转义序列保留原文，后续统一解） */
+/** 从 '(' 起扫描到配对的 ')'。PDF 规范允许字面量串内**未转义但成对平衡**的括号
+ *  （如标题 "Deep Learning (2020)"），按深度计数保留为字面字节；转义序列保留原文 */
 function parseLiteralString(bytes: Uint8Array, open: number): { raw: Uint8Array } | null {
   const out: number[] = []
+  let depth = 0
   let i = open + 1
   while (i < bytes.length) {
     const b = bytes[i]
@@ -136,8 +139,19 @@ function parseLiteralString(bytes: Uint8Array, open: number): { raw: Uint8Array 
       i += 2
       continue
     }
-    if (b === 0x29) return { raw: Uint8Array.from(out) }
-    if (b === 0x28) return null // 未转义的 '('：非法定界，放弃该候选
+    if (b === 0x28) {
+      depth++
+      out.push(b)
+      i++
+      continue
+    }
+    if (b === 0x29) {
+      if (depth === 0) return { raw: Uint8Array.from(out) }
+      depth--
+      out.push(b)
+      i++
+      continue
+    }
     if (b !== undefined) out.push(b)
     i++
   }
@@ -357,10 +371,12 @@ function matchDoi(text: string): string | null {
 }
 
 function matchArxivId(text: string): string | null {
-  const labeled = /arXiv:(\d{4}\.\d{4,5})(?:v\d+)?/i.exec(text)
+  const labeled = text.match(/arXiv:(\d{4}\.\d{4,5})(?:v\d+)?/i)
   if (labeled !== null) return labeled[1] ?? null
-  // 裸 ID：前邻非字母/数字/点（不吃 DOI 尾段），后邻非数字（不吃更长数字串）
-  const bare = /(?:^|[^A-Za-z0-9.])(\d{4}\.\d{4,5})(?:v\d+)?(?!\d)/.exec(text)
+  // 裸 ID：前邻非字母/数字/点/斜杠（斜杠即 DOI 尾段/URL 路径上下文，一律不吃——
+  // 代价是 arxiv.org/abs/<id> 这类无标注 URL 不再识别，标注形态不受影响），
+  // 后邻非数字（不吃更长数字串）
+  const bare = text.match(/(?:^|[^A-Za-z0-9./])(\d{4}\.\d{4,5})(?:v\d+)?(?!\d)/)
   return bare !== null ? bare[1] ?? null : null
 }
 
