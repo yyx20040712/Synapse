@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T11:08:13.9879665Z",
+    "generatedAt":  "2026-08-21T11:13:24.1475813Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -91,7 +91,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "dea0638f913741911a7b6933f3d426bafaa591eb90c3fa473fcf321d89ff6208"
+                      "sha256":  "e9b3cc57808048eca5a70d22758dc8dc9b540a1122e135ffcb103d46f7313a05"
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
@@ -135,7 +135,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "b805b6510ab9b7058eb74e8c3ddf1b9e2cc2329f6964a10b72492ec8be9a4f26"
+                      "sha256":  "7ab87a45c238a74f299ea3771fa28facbd2d3c8624b7cf4f7a05fee1e4d9727b"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
@@ -287,7 +287,7 @@
                   },
                   {
                       "path":  "tests/utils/guard.ts",
-                      "sha256":  "f2069753d7b60b939a6a74014da09d5f8aac8b7587694df875d5728f76ad7e3d"
+                      "sha256":  "8f49350cb5f63e8ff59261c3d4a3f161a232530cac2cbd653e4b301218a862c5"
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
@@ -295,7 +295,7 @@
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",
-                      "sha256":  "af8feac8ca6642cb5d1bec3097c3f67f8fb8ceaa4dc4f4372897118c190c7d9b"
+                      "sha256":  "c4b02db298b119ed1fc69634ee11af10b894e5284696d5508b91e128a68be445"
                   },
                   {
                       "path":  "vitest.config.ts",

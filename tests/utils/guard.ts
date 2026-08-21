@@ -8,9 +8,16 @@
  * 桩夹具统一从 ./fixtures 拿。
  */
 import { describe } from 'vitest'
-import { isTicketDone } from '../../tickets/registry'
+import { isTicketDone, TICKET_MAP } from '../../tickets/registry'
 
 export function guardedDescribe(ticketId: string, title: string, fn: () => void): void {
+  if (!TICKET_MAP.has(ticketId)) {
+    // 未知工单号必须当场炸：静默 skip 会让整组测试无声消失（比延期更危险）
+    throw new Error(
+      `guardedDescribe 收到未知工单号：${ticketId}（请核对 tickets/registry.ts；` +
+        'check-tickets 关卡也会扫描本目录的工单号引用）'
+    )
+  }
   const done = isTicketDone(ticketId)
   const label = done ? `${title} [${ticketId}]` : `${title} [${ticketId}]（延期：工单未完成）`
   if (done) {

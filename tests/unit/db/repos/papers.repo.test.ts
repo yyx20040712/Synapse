@@ -120,7 +120,7 @@ guardedDescribe(
         expect(r.items.map((i) => i.id)).toEqual(['p-1'])
       })
 
-      it('FTS 英文词干命中（unicode61 分词）', () => {
+      it('FTS 英文词干命中（trigram 分词）', () => {
         const r = repo.searchSummaries({ search: 'quality', sort: 'added_desc', offset: 0, limit: 50 })
         expect(r.items.map((i) => i.id)).toEqual(['p-2'])
       })
