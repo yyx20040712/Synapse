@@ -19,7 +19,9 @@
 - 通道全显式注册；请求 zod `.strict()` 校验（未知字段拒绝——历史教训：不许删类型保护）
 - SQL 全预编译参数化；FTS 输入经 `escapeFtsQuery`（注入向量集在 tests/unit/db/fts.test.ts）
 - renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）
+- 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`）
 - 写盘仅经系统对话框路径（dialogs.ts 是唯一出口）
+- 出网重定向一律不跟随（`redirect: 'error'`）：白名单外 3xx 目标零请求，防 SSRF/开放重定向
 
 ## 4. 外链与网络
 
@@ -29,9 +31,10 @@
 
 ## 5. 供应链
 
-- lockfile 入库；`npm ci` 冻结；electron/pdfjs-dist/better-sqlite3/react 精确钉版
+- lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/zustand/zod/electron）精确钉版，无 `^` 范围
 - 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
+- Electron 33 已 EOL：升级延期至 Phase 6 打包门（见 docs/adr/0006）
 
 ## 6. 数据
 

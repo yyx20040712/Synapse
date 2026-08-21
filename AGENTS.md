@@ -67,6 +67,8 @@
 ## 环境事实
 
 - Windows + Electron 33 + Node 20（本地开发 Node 24 可跑测试）
-- better-sqlite3 是 N-API 模块，Node/Electron 通用，**无需 electron-rebuild**
+- better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；
+  双 ABI 由 `scripts/sqlite-abi.mjs` 管理（abi-cache 两份预编译，npm scripts 自动切换）
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）
 - git 在 `E:\class\智慧水务\tools\MinGit`（若系统 PATH 没有全局 git）
+- 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）

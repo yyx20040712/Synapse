@@ -48,5 +48,14 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 
 - vitest 报 window 未定义：renderer store 测试须先 `vi.stubGlobal('window', { api: 桩 })` 再动态 import。
 - e2e 起不来：确认先 `npm run build`；e2e 用 `SYNAPSE_USER_DATA` 隔离数据。
-- better-sqlite3 ABI 报错：不需要 electron-rebuild（N-API 通用）；多为 Node 版本切换导致，重跑 `npm ci`。
+- better-sqlite3 ABI 报错：它是 V8 直接绑定（Node/Electron 各需一份），由 `scripts/sqlite-abi.mjs` 自动切换；若手动动过 `node_modules`，重跑 `npm ci`。
 - 中文乱码：统一 UTF-8；PowerShell 重定向用 `Out-File -Encoding utf8`；CI 有 mojibake 关卡兜底。
+
+## 6. 数据位置与备份（用户需知）
+
+- 数据库：`%APPDATA%\Synapse Remake\synapse.db`（WAL 模式，运行时会伴生
+  `synapse.db-wal` / `synapse.db-shm` 侧车文件）。
+- 受管 PDF：`%APPDATA%\Synapse Remake\files\<sha 分桶>\<sha256>.pdf`（内容寻址，天然去重）。
+- 设置：`%APPDATA%\Synapse Remake\settings.json`（contactEmail / theme）。
+- **备份方法：完全退出应用后，整个 `%APPDATA%\Synapse Remake` 目录复制到安全位置。**
+  WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
