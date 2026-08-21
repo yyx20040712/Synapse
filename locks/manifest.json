@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T21:58:32.8533164Z",
+    "generatedAt":  "2026-08-21T23:00:45.9635007Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -107,7 +107,7 @@
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "3e817bf70f6c3435d31629143f910ad06e4588aaf0a5c7c8718f65fe1c9ca4b6"
+                      "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
