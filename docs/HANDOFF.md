@@ -1,53 +1,56 @@
-# HANDOFF —— 下一会话续接指南（2026-08-21 晚）
+# HANDOFF —— 下一会话续接指南（2026-08-21 深夜，生产级加固后）
 
-> 本文档为「骨架收尾」交接快照。读完后按「剩余步骤」执行即可，无需回溯历史会话。
-> 规则正本：`AGENTS.md`（AI 宪法）+ `docs/architecture.md`。
+> 本文档为快照。规则正本：`AGENTS.md`（AI 宪法）+ `docs/architecture.md`。
+> 弱模型填充工作流见 `docs/DEVELOPMENT.md` §2。
 
 ## 当前状态（已全部完成 ✅）
 
-- **源码约 120 文件**：`src/shared` 契约（冻结）、强模块 17 个（已实现）、规约化 stub 55 个工单
-- **测试**：47 文件 / 185 用例——62 过、123 按工单延期（guardedDescribe）、0 挂
-- **`npm run verify` 全绿**：lint → typecheck → vitest → electron-vite build
-- **e2e smoke 通过**（2 过 + 1 按工单延期）：应用可启动、侧栏三入口可切换
-- **better-sqlite3 双 ABI 方案**：`scripts/sqlite-abi.mjs`（abi-cache 两份预编译；
-  npm scripts 已接线——`test` 前切 node 绑定，`build/dev` 前切 electron 绑定，postinstall 自动 setup）
-- **依赖**：electron 33.4.11 / better-sqlite3 12.11.1 / pdfjs-dist 4.10.38 / react 18.3.1；
-  npm 12 的 allowScripts 已批准三包（package.json 内已有字段）
-- **当日攻克的坑**（均已修复，勿回退）：
-  - `registerIpc` 禁止在注册期探测 handlers（unimplementedObject 代理访问即抛）——fn 取用必须在 invoke 闭包内
-  - FTS 用 **trigram** 分词器（unicode61 对中文无子串匹配）；repo 搜索策略：≥3 字 FTS / 短词 LIKE
-  - `isPdfBytes` 要求 `%PDF-` 后跟版本数字；shell-guard 拒绝一切 IPv4 字面量；
-    `app-file://` URL 只允许 `scheme://<id>` 可带尾斜杠
+- **git 基线 + 锁机制 + CI 就绪**：13 个提交；75 个受锁文件（manifest+只读）
+- **生产级加固轮（2026-08-21）已全部落地**：审查发现的 P0/P1/P2/P3 全部修复，
+  唯一例外是 Electron 33 升级——按 `docs/adr/0006` 延期至 Phase 6 打包门
+- **`npm run verify` 全绿**：lint → typecheck → vitest（71 过 / 123 按工单延期）→ build
+- **e2e**：3 过（smoke 含 preload/CSP 运行时断言）+ 1 按工单延期（reader-text）
+- **三道关卡全绿**：quality（含行数分级+解析路径分层）/ tickets（含 tests 工单号扫描）/
+  locks（75 文件一致）
 
-## 剩余步骤（按序，本会话未做）
+## 加固轮新增的硬约束（后续开发不得回退）
 
-1. **git 基线**：系统 PATH 无 git，用 `"E:\class\智慧水务\tools\MinGit\cmd\git.exe"`。
-   在 `E:\class\智慧水务\Synapse_remake` 执行：`init` → `config --local user.name "user"` /
-   `config --local user.email "user@local"` → `add -A` → 首次 commit
-   （信息：`骨架基线：契约+强模块+规约化stub+测试系统`）。
-   ⚠️ 只读文件（若已设只读）git add 不受影响；.gitignore 已就位（node_modules/out/dist 等）。
-2. **锁机制上线**：`npm run locks:apply`（生成 locks/manifest.json + 设只读）→
-   再次 commit（信息末尾必须带 `[locked-change]` 尾注）→ `npm run locks:check` 确认绿。
-3. **三道关卡快检**：`node scripts/check-quality.mjs`、`node scripts/check-tickets.mjs`（应输出：
-   72 工单 / open 55（weak 52，strong 3））。
-4. **（可选）推送 GitHub 启用 CI**：用户提供远端后 push；CI 六关卡在
-   `.github/workflows/ci.yml`。推送后确认 Actions 真实跑绿（教训 E1：防线要通电）。
-5. **最终汇报**：向用户交付——工单统计、防线状态、弱模型填充工作流
-   （领单：`tickets/registry.ts` → 读文件头规约 + 对应锁定测试 → 实现 → verify 绿 →
-   人工翻状态合入；流程详见 `AGENTS.md` 与 `docs/DEVELOPMENT.md`）。
+- **`.gitattributes` 强制 LF**：locks 的 sha256 以 LF 为准，勿删（CI/fresh clone 会炸）
+- **preload 是 CJS（out/preload/index.cjs）**：沙箱渲染器不支持 ESM preload；
+  zod 由 electron.vite 配置打进 bundle（沙箱只许 require('electron')）
+- **CSP 单真相源**：策略只在 `src/main/security/csp.ts`，构建期 cspMetaPlugin 注入
+  index.html；源码 html 禁止手写 meta（契约测试+e2e 断言双锁）
+- **出网重定向一律不跟随**（redirect:'error'）+ 响应体 20MB 上限（http-client）
+- **file-store 原子写**（temp+rename）；错误消息不含本机路径
+- **权限请求 handler 挂在 session 上**（`webContents.session.setPermissionRequestHandler`，
+  webContents 上没有这个方法——踩过的坑）
+- **migrate 可注入 migrations 参数**（测试验证回滚用）
+- **check-tickets 扫描 tests/** 的工单号引用：测试里只能用真实存在的工单号
+- **guard.ts 未知工单号当场抛错**：不允许静默 skip
+
+## 剩余步骤
+
+1. **（待用户）推送 GitHub 启用 CI**：`.github/workflows/ci.yml` 已按生产标准强化
+   （fetch-depth 0 + origin/main..HEAD 尾注范围检查 + timeout/concurrency + 失败产物上传）。
+   推送后确认 Actions 真实跑绿（教训 E1：防线要通电）。
+2. **主线开发**：按 Phase 1（repos SR-DB-01~05）→ Phase 2（导入+文献库 UI）→
+   Phase 3（阅读器，SR-RDR-01/02/03 决策门 + docs/adr/0002）→ ……
+3. **Phase 6 打包前**：按 `docs/adr/0006` 升级 Electron 至当期支持线（[dep-change] +
+   `scripts/sqlite-abi.mjs` 的 ELECTRON_ABI_MAP 补表 + e2e 全绿）。
 
 ## 环境事实
 
-- Node 24.18 / npm 12（install-scripts 需 allowScripts，package.json 已配）
-- 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 镜像（electron +
-  better-sqlite3 二进制）；`scripts/sqlite-abi.mjs` 下载也是 GitHub 优先、npmmirror 兜底
+- Node 24.18 / npm 12（本地）；CI Node 20
+- 网络代理 127.0.0.1:7890；`.npmrc` 配 npmmirror 二进制镜像
+  （electron + better-sqlite3；`scripts/sqlite-abi.mjs` GitHub 优先、镜像兜底）
+- better-sqlite3 是 **V8 直接绑定**（非 N-API）：双 ABI 由 sqlite-abi.mjs 切换
 - e2e：先 `npm run build` 再 `npx playwright test`（`npm run test:e2e` 已含）
 - electron 调试：`SYNAPSE_USER_DATA=<临时目录> node_modules\electron\dist\electron.exe out\main\index.js`
+- git 在 `E:\class\智慧水务\tools\MinGit\cmd\git.exe`；已加 safe.directory + LF 纪律
 
 ## 工单全景（tickets/registry.ts）
 
-- infra（strong/done）17 个；open 55 个 = weak 52（repos×5 / services×10 / providers×3 /
-  ipc×9 / UI×22 / hooks×2 / reader 弱件×6...以 registry 为准） + strong-open 3
-  （SR-RDR-01/02/03：annotation-anchor、PdfCanvas、TextLayer——Phase 3 阅读器决策门）
-- 后续阶段：Phase 1 repos → Phase 2 导入+文献库 UI → Phase 3 阅读器（strong 工单 +
-  pdf.js spike 决策门，见 docs/adr/0002）→ Phase 4 标注笔记 → Phase 5 增强导出 → Phase 6 打包
+- infra（strong/done）17 个；open 55 = weak 52 + strong 3
+  （SR-RDR-01/02/03：annotation-anchor、PdfCanvas、TextLayer——Phase 3 决策门）
+- 领单流程：registry 找 open+weak → 读文件头五层规约 + 对应锁定测试 → 实现 →
+  verify 绿 → 人工审查翻状态（详见 AGENTS.md / DEVELOPMENT.md）
