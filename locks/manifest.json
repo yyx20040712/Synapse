@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T15:23:54.2694700Z",
+    "generatedAt":  "2026-08-21T15:49:59.2559365Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -175,7 +175,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/make-handler.test.ts",
-                      "sha256":  "7563b62376c8e2d7a6e462338cbcd63d8c98486cd56e29061a5a369377dacb26"
+                      "sha256":  "d579e006efd359b10868e30989fae381f48e8dfbc922612efd71af72c51badb4"
                   },
                   {
                       "path":  "tests/unit/ipc/notes.test.ts",
