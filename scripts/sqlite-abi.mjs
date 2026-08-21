@@ -90,11 +90,13 @@ async function fetchBinding(runtime, abi, version) {
 }
 
 async function useBinding(runtime) {
-  // 找该 runtime 的缓存绑定（版本升级后 ABI 目录变化，取最新的一个）
-  const candidates = readdirSync(cacheDir)
-    .filter((d) => d.startsWith(`${runtime}-v`))
-    .sort()
-  const latest = candidates.at(-1)
+  // 找该 runtime 的缓存绑定（版本升级后 ABI 目录变化，取 ABI 数值最大的一个——
+  // 字典序会把 node-v93 排在 node-v115 之后，选错旧绑定）
+  const prefix = `${runtime}-v`
+  const latest = readdirSync(cacheDir)
+    .filter((d) => d.startsWith(prefix))
+    .sort((a, b) => (parseInt(a.slice(prefix.length), 10) || 0) - (parseInt(b.slice(prefix.length), 10) || 0))
+    .at(-1)
   if (!latest) throw new Error(`abi-cache 缺 ${runtime} 绑定——先运行 setup`)
   await mkdir(releaseDir, { recursive: true })
   await copyFile(join(cacheDir, latest, bindingName), join(releaseDir, bindingName))

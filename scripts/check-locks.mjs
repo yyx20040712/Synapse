@@ -32,6 +32,11 @@ function protectedFiles() {
     join(root, 'vitest.config.ts'),
     join(root, 'eslint.config.js'),
     join(root, '.github', 'workflows', 'ci.yml'),
+    join(root, 'playwright.config.ts'),
+    join(root, 'electron.vite.config.ts'),
+    join(root, 'tsconfig.json'),
+    join(root, 'tsconfig.node.json'),
+    join(root, 'tsconfig.web.json'),
     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
   ].filter((p) => existsSync(p))
   return [...new Set(files)].sort()

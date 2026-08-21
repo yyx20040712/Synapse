@@ -1,17 +1,25 @@
 {
-    "generatedAt":  "2026-08-21T11:20:51.3998464Z",
+    "generatedAt":  "2026-08-21T12:39:58.4493514Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
-                      "sha256":  "abc3f947e616dc3c582a28fa5fb07032c3314e7c9c5b90afa26e2acc461ee0b6"
+                      "sha256":  "68b404460d4f03dc45c10e9fdb949e0c1f91e2d223cc67494ef2701cc78424d0"
+                  },
+                  {
+                      "path":  "electron.vite.config.ts",
+                      "sha256":  "b5c4c2a4c117da22d10825bd82f41988760881391412beddde7ae24011a3bd3b"
                   },
                   {
                       "path":  "eslint.config.js",
                       "sha256":  "0169df227faca1b536a2b684a977e1fc874af9ccbf6fc8a419d9ea7900113818"
                   },
                   {
+                      "path":  "playwright.config.ts",
+                      "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
+                  },
+                  {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "dd1f43bf917b538613336d02038e25b3407a15e226095c76d41278375b75e371"
+                      "sha256":  "0a71490009eef4ae0038cfe800c36ecc5184b437ef289844133878776b073558"
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
@@ -23,7 +31,7 @@
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
-                      "sha256":  "b59f34d14c88c7cbab9c83c348eca43d2a1eac4fe9b0cdf8cdab61fde2317917"
+                      "sha256":  "056918661ceb45952424ede4d26a5b21f5d9982a5e65293aad74dc67116833e2"
                   },
                   {
                       "path":  "scripts/new-ticket.ps1",
@@ -31,11 +39,11 @@
                   },
                   {
                       "path":  "scripts/sqlite-abi.mjs",
-                      "sha256":  "b04ac471e9468b2c01ae8571a9eeb2d69f5cc3e3ddb6699b3accfce224c0d58c"
+                      "sha256":  "b0c7f3ac2a05bbf3a36f433b7188b83bc75992088976d022fd6bc4af2354cdcd"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
-                      "sha256":  "6ffe3440e43ab3218b592190aba6ecec387b0027c8f3dfb58a2cd085a98a435b"
+                      "sha256":  "ad26aca64f57ac0fae2eedcad8dd2fda87e8a47e92b1bd86b2b21de41f4b0fab"
                   },
                   {
                       "path":  "src/main/db/migrations/001_init.sql",
@@ -88,6 +96,10 @@
                   {
                       "path":  "tests/contracts/app-error.test.ts",
                       "sha256":  "4d91275e8e476438a568bd9cadf6aec6973d16136629733697569baf90c79c50"
+                  },
+                  {
+                      "path":  "tests/contracts/preload-surface.test.ts",
+                      "sha256":  "ea448a13a0ff4b87ec0c082a093e64f4b404616419ba1f455ea55cc8e4071c76"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
@@ -296,6 +308,18 @@
                   {
                       "path":  "tests/utils/pdf-factory.ts",
                       "sha256":  "c4b02db298b119ed1fc69634ee11af10b894e5284696d5508b91e128a68be445"
+                  },
+                  {
+                      "path":  "tsconfig.json",
+                      "sha256":  "a2427c01af8409130ad12790cb61680904f7661ed887670bce223a623fb2408f"
+                  },
+                  {
+                      "path":  "tsconfig.node.json",
+                      "sha256":  "dceb78eae68e22bc0aab78e81a03e0f222b951d0ed49b80f7f2867ea893db3a2"
+                  },
+                  {
+                      "path":  "tsconfig.web.json",
+                      "sha256":  "989ea38656fa42cccb837a2accba9a48700e3be859638b65f7ca2c84100553b6"
                   },
                   {
                       "path":  "vitest.config.ts",

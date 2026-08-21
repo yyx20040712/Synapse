@@ -15,8 +15,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      # fetch-depth 0：尾注检查需要 origin/main..HEAD 的提交范围（PR 事件下
-      # merge commit 的 git log -1 拿不到源提交的尾注，会误杀合法 PR）
+      # fetch-depth 0：尾注检查需要事件基线（push 的 before / PR 的 base sha）
+      # 出现在本地历史内；merge commit 的 git log -1 拿不到源提交的尾注，会误杀合法 PR
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,10 +32,13 @@ jobs:
       - name: 依赖变更尾注检查（[dep-change]）
         shell: bash
         run: |
-          RANGE="HEAD^ HEAD"
-          if git rev-parse --verify -q origin/main >/dev/null 2>&1; then RANGE="origin/main..HEAD"; fi
-          if git diff --name-only $RANGE 2>/dev/null | grep -E '^(package(-lock)?\.json)$' >/dev/null; then
-            if ! git log --format=%B $RANGE 2>/dev/null | grep -q '\[dep-change\]'; then
+          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::notice::基线不可用（新分支首推或强推重写），跳过尾注检查"
+            exit 0
+          fi
+          if git diff --name-only "$BASE..HEAD" | grep -E '^(package(-lock)?\.json)$' >/dev/null; then
+            if ! git log --format=%B "$BASE..HEAD" | grep -q '\[dep-change\]'; then
               echo "::error::package.json/lock 变更必须带 [dep-change] 提交尾注（K4 依赖防线）"
               exit 1
             fi
@@ -93,10 +96,13 @@ jobs:
       - name: 检查 locks/manifest.json 变更需带 [locked-change]
         shell: bash
         run: |
-          RANGE="HEAD^ HEAD"
-          if git rev-parse --verify -q origin/main >/dev/null 2>&1; then RANGE="origin/main..HEAD"; fi
-          if git diff --name-only $RANGE 2>/dev/null | grep -E '^locks/manifest\.json$' >/dev/null; then
-            if ! git log --format=%B $RANGE 2>/dev/null | grep -q '\[locked-change\]'; then
+          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::notice::基线不可用（新分支首推或强推重写），跳过尾注检查"
+            exit 0
+          fi
+          if git diff --name-only "$BASE..HEAD" | grep -E '^locks/manifest\.json$' >/dev/null; then
+            if ! git log --format=%B "$BASE..HEAD" | grep -q '\[locked-change\]'; then
               echo "::error::manifest 变更必须带 [locked-change] 提交尾注（K2 防作弊双锁）"
               exit 1
             fi
