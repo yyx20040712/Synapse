@@ -1,5 +1,5 @@
 /**
- * [SR-HK-01] useAsync —— 异步调用 hook（工单：open / weak）
+ * [SR-HK-01] useAsync —— 异步调用 hook（工单：done / weak）
  *
  * ── 行为层 ──
  * - const { data, loading, error, run } = useAsync<T>(fn, deps)
@@ -11,13 +11,53 @@
  *     { data: T | null; loading: boolean; error: string | null; run(): Promise<void> }
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 测试：tests/unit/renderer/useAsync.test.ts（已锁定，fake timers + 桩）
+ * - 测试：tests/unit/renderer/useAsync.test.tsx（已锁定，jsdom + renderProbe 挂具）
  */
-import { NotImplementedError } from '@shared/app-error'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+/** 始终持有入参最新快照：run() 执行时调用最新闭包，但 deps 变化本身不触发执行 */
+interface AsyncSnapshot<T> {
+  fn: () => Promise<T>
+  deps: unknown[]
+}
 
 export function useAsync<T>(
-  _fn: () => Promise<T>,
-  _deps: unknown[]
+  fn: () => Promise<T>,
+  deps: unknown[]
 ): { data: T | null; loading: boolean; error: string | null; run(): Promise<void> } {
-  throw new NotImplementedError('SR-HK-01', 'useAsync')
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const snapshotRef = useRef<AsyncSnapshot<T>>({ fn, deps })
+  useEffect(() => {
+    snapshotRef.current = { fn, deps }
+  })
+
+  // 卸载标记：cleanup 置 false，之后 resolve/reject 一律不再 setState
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const run = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await snapshotRef.current.fn()
+      if (!mountedRef.current) return
+      setData(result)
+      setLoading(false)
+    } catch (err) {
+      if (!mountedRef.current) return
+      setError(err instanceof Error ? err.message : String(err))
+      setLoading(false)
+    }
+  }, [])
+
+  return { data, loading, error, run }
 }
