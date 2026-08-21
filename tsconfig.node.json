@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "composite": true,
     "noEmit": true,
     "target": "ES2022",
     "module": "ESNext",
@@ -24,7 +23,6 @@
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
-    "src/renderer/**/*.ts",
     "tickets/**/*.ts",
     "tests/**/*.ts",
     "electron.vite.config.ts",

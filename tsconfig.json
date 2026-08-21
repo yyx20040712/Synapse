@@ -2,3 +2,5 @@
   "files": [],
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
 }
+// 说明：typecheck 脚本直接 `tsc -p` 两个子配置（非 tsc -b），references 仅作结构索引。
+// 子配置不带 composite（noEmit 直查模式），测试文件经相对 import 跟随解析跨项目源码。
