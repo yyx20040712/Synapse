@@ -4,6 +4,8 @@
  * ── 行为层 ──
  * - { tags: Array<Tag & { paperCount: number }>; loading: boolean }
  * - refresh()：api.tags.list
+ * - 错误契约（全 store 统一）：refresh 属列表型——失败不抛、保留旧 tags，由 toast 层
+ *   反馈（锁定测试已按此断言）
  *
  * ── 接口层 ──
  * - export const useTagsStore: UseBoundStore<...>

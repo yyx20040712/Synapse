@@ -13,6 +13,9 @@
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
+ * - 错误契约（全 store 统一）：列表型动作（load 等，持续展示型）失败不抛、保留旧数据，
+ *   写 error 字段供内联展示；动作型动作（openPaper/save/diagnose 等，单次触发型）
+ *   失败上抛（unwrap 的 ApiClientError），由调用组件 catch 后 toast
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/library.store.test.ts（已锁定，api 桩）

@@ -5,6 +5,9 @@
  * - { noteByPaper: Record<string, { title: string; contentMd: string; saving: boolean;
  *     savedAt: string | null }> }
  * - load(paperId)、edit(paperId, patch)（标记 dirty）、saveSoon(paperId)（防抖 1.5s）
+ * - 错误契约（全 store 统一）：load/save 属动作型——失败上抛（unwrap 的 ApiClientError），
+ *   由 NotesPanel catch 后 toast；saveSoon 失败时 saving 必须复位，下一次 edit 再次
+ *   触发 saveSoon 即自然重试（不静默丢稿：savedAt 未更新 = 仍有未保存内容）
  *
  * ── 接口层 ──
  * - export const useNotesStore: UseBoundStore<...>

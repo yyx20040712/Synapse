@@ -9,6 +9,8 @@
  *   加载 annotations（api.reader.listAnnotations）
  * - setPage/zoom/color；saveProgress 防抖 2s（api.reader.saveProgress）
  * - addAnnotation/updateAnnotation/removeAnnotation：调 api 后刷新本地数组
+ * - 错误契约（全 store 统一）：openPaper 属动作型——失败上抛（unwrap 的 ApiClientError），
+ *   由调用组件 catch 后 toast，store 不吞错（锁定测试已按此断言）
  *
  * ── 接口层 ──
  * - export const useReaderStore: UseBoundStore<...>（形状如上）
