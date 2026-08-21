@@ -2,7 +2,7 @@
 /**
  * sqlite-abi.mjs —— better-sqlite3 原生绑定按运行时切换（受锁文件）。
  *
- * 背景：better-sqlite3 非 N-API，Node（ABI 137）与 Electron（ABI 130）各需一份绑定。
+ * 背景：better-sqlite3 非 N-API，Node（ABI 137）与 Electron（ABI 146）各需一份绑定。
  * 方案：abi-cache 缓存两份预编译 .node；`use node|electron` 切换 build/Release 里的当前绑定。
  *
  * 用法：
@@ -26,7 +26,11 @@ const releaseDir = join(pkgDir, 'build', 'Release')
 const bindingName = 'better_sqlite3.node'
 
 // Electron 大版本 → ABI（新增 Electron 版本时补表；ELECTRON_ABI 环境变量可覆盖）
-const ELECTRON_ABI_MAP = { 32: 128, 33: 130, 34: 132, 35: 133, 36: 135 }
+// 数据源：electron/node-abi 的 abi_registry（npm 包 node-abi，4.33.0 核对）
+const ELECTRON_ABI_MAP = {
+  32: 128, 33: 130, 34: 132, 35: 133, 36: 135, 37: 136, 38: 139, 39: 140,
+  40: 143, 41: 145, 42: 146, 43: 148, 44: 149
+}
 
 async function main() {
   const [cmd, arg] = process.argv.slice(2)

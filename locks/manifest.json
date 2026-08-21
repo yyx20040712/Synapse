@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T15:58:09.5253344Z",
+    "generatedAt":  "2026-08-21T21:58:32.8533164Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -39,7 +39,7 @@
                   },
                   {
                       "path":  "scripts/sqlite-abi.mjs",
-                      "sha256":  "b0c7f3ac2a05bbf3a36f433b7188b83bc75992088976d022fd6bc4af2354cdcd"
+                      "sha256":  "67c11aecfc7d29501807346d64164f1980a43007c48b0ffbb182d8dadace1040"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
