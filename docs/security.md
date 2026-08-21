@@ -34,7 +34,8 @@
 - lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/zustand/zod/electron）精确钉版，无 `^` 范围
 - 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
-- Electron 33 已 EOL：升级延期至 Phase 6 打包门（见 docs/adr/0006）
+- Electron 33 已 EOL：升级门在 **Phase 3 阅读器开工之前**（ADR-0006 修订版；
+  Phase 6 打包前仅复核仍在支持线）
 
 ## 6. 数据
 
