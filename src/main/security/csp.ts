@@ -5,8 +5,10 @@
  * 1. 构建期：electron.vite.config.ts 的 cspMetaPlugin 把完整策略注入 index.html
  *    meta——生产走 file://，webRequest 不拦截本地文件，meta 是实际防线
  * 2. 运行期：applyCsp 给 dev server 响应补响应头（防中间层剥离）
- * 禁 unsafe-eval；worker-src blob: 仅为 pdf.js worker；connect-src 'self' 禁止
- * renderer 直连外网（所有出网经 main 的 http-client，host 白名单校验）。
+ * 禁 unsafe-eval；worker-src blob: 仅为 pdf.js worker；connect-src 'self' + app-file:
+ * （受管文件协议，Phase 3 阅读器经 pdf.js getDocument 拉取 PDF 的唯一取数通道；
+ * 不放行则 fetch 被 CSP 拦截——2026-08-22 升级核查轮实证）禁止 renderer 直连外网
+ * （所有出网经 main 的 http-client，host 白名单校验）。
  * 测试：tests/security/csp-meta.test.ts（单真相源 + 指令完整性）+ e2e 运行时断言。
  */
 import type { Session } from 'electron'
@@ -18,7 +20,7 @@ export const CSP_POLICY: readonly string[] = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' app-file: data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' app-file:",
   "object-src 'none'",
   "frame-src 'none'",
   "base-uri 'none'",
