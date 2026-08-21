@@ -5,7 +5,7 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照；2026-08-21 架构修复轮更新）
+## 当前基线（制定时快照；2026-08-22 Phase 3 前置轮更新）
 
 - 工单：72 = done 34（infra 17 + DB 5 + services 3 + ipc 2 + library-ui 5 + ui-kit/hooks 2）+ open 38
   （weak 35 / strong 3）——Phase 1/2 已于 2026-08-21 同日完成
@@ -14,6 +14,12 @@
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
   Node 20 缺 better-sqlite3 v12.11.1 预编译→已修为 Node 24，次跑全绿）。尾注检查
   基线兼容 push 事件（PR base sha / push before），manifest 变更关卡已真实拦截验证
+- **Electron 升级门已过（2026-08-22）**：33.4.11 → **42.9.3**（支持线中位，ABI 146，
+  better-sqlite3 维持 12.11.1——prebuild 矩阵核查结论见 ADR-0006 执行记录；
+  运行时 audit 0 漏洞，verify + e2e smoke 3 绿）
+- pdf.js spike 决策门已过（2026-08-22）：canvas + 官方 TextLayer 路线在真实
+  Electron 42 上 13 项断言全过，ADR-0002 维持库 API 路线（结论与 Phase 3 实证输入
+  见其文末）
 - 加固轮硬约束（LF 纪律 / preload CJS / CSP 单源 / redirect 禁跟随等）已沉淀在
   `docs/architecture.md`、`AGENTS.md` 与代码/测试本身，勿回退
 
@@ -25,8 +31,9 @@
    至 85%（实际 ~90%）。
 2. **Phase 2（本日执行）✅**：纵切波次全部完成（含提前的 UI 基建 SR-UI-03/SR-HK-01）；
    e2e smoke 3 绿，导入→列表链路端到端可用。
-3. **Phase 3 前置（可提前调研，不在关键路径）**：Electron 升级门调研（当期支持线 +
-   better-sqlite3 prebuild 矩阵 + ELECTRON_ABI_MAP 补表）与 pdf.js spike（ADR-0002）。
+3. **Phase 3 前置 ✅（2026-08-22）**：Electron 升级门已执行（33.4.11→42.9.3，
+   prebuild 矩阵核查→ADR-0006 执行记录）与 pdf.js spike 已通过（13 项断言全绿→
+   ADR-0002 决策门结论）。**Phase 3 工单解除封锁。**
 4. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
 
 ---
@@ -69,11 +76,11 @@
   全量 verify + e2e → ADR + [dep-change] 提交。未完成不得开工 Phase 3 工单。
 - Phase 6 打包前仅需复核：版本仍在支持线（若期间又出了新的大版本线，按需小步跟）。
 
-## Phase 3：阅读器（含决策门）☐
+## Phase 3：阅读器（含决策门）☐（前置两门已于 2026-08-22 通过，工单可开工）
 
 | 项 | 内容 |
 | --- | --- |
-| 前置 | ① **Electron 升级门**（ADR-0006 修订版：升级至当期支持线，清单见上节）② pdf.js spike 决策门（`docs/adr/0002`：验证 pdfjs-dist 4.10.38 的 canvas 渲染 + getTextContent 路线在本项目可行，产出结论修订 ADR-0002 状态） |
+| 前置 | ① **Electron 升级门 ✅**（2026-08-22：42.9.3 落地，ELECTRON_ABI_MAP 补表 37~44，见 ADR-0006 执行记录）② pdf.js spike 决策门 ✅（2026-08-22：canvas+TextLayer+选择+DPR 13 项断言全过，ADR-0002 维持库 API 路线） |
 | 工单 | strong：SR-RDR-01（annotation-anchor 纯函数）、SR-RDR-02（PdfCanvas）、SR-RDR-03（TextLayer）；weak：SR-RDR-04 ~ SR-RDR-09 + SR-SVC-02（reader.service）+ SR-IPC-02（12 个） |
 | 目标 | 双击文献打开阅读器；翻页/缩放/目录；文本可选择（为 Phase 4 标注铺路） |
 | 验收 | **`tests/e2e/reader-text.spec.ts` 激活并转绿**（依赖工单 AND 条件已接线：SR-RDR-02 + SR-LIB-01 + SR-LIB-02 + SR-RDR-04）——这是"文字真实可见"的最终裁判 |

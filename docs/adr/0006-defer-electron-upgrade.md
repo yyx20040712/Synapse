@@ -38,3 +38,20 @@
   稀薄 → 弱模型幻觉风险"在此不适用；其后填充的 weak UI 工单是纯 React 代码，
   不接触 Electron API，受版本影响接近零。
 
+## 执行记录（2026-08-22，升级门已过）
+
+- **目标选定：Electron 42.9.3**（Chromium M148 / Node 24，支持至 2026-10-20）。
+  当期支持线 {41, 42, 43} 中，prebuild 矩阵核查结果：41（ABI 145）与 42（ABI 146）
+  在 better-sqlite3 12.11.1 上有现成 win32-x64 预编译；**43（ABI 148）没有**——
+  带 v148 资产的 12.11.2/12.12.0 只有 GitHub release 未发 npm registry，
+  v13.x 无任何 win 预编译。按本 ADR"prebuild 可用性优先"清单落 42，
+  better-sqlite3 维持 12.11.1 不动（无连带升级）。
+- 41 当日距 EOL 仅 3 天（2026-08-25），排除；43 的备选路径（GitHub-URL 依赖 /
+  源码编译）均破坏 npmmirror 纯 npm 可复现安装策略，排除。
+- 执行内容：electron 33.4.11→42.9.3（精确钉版）、`ELECTRON_ABI_MAP` 补表 37~44
+  （数据源 node-abi 4.33.0）、`npm run verify` 全绿（132 过/66 按工单跳过）、
+  e2e smoke 3 绿（Playwright 1.49 `_electron` 驱动 42 无兼容问题）。
+- `npm audit --omit=dev`：运行时 **0 漏洞**（升级前 40+ CVE）。剩余 dev 侧为构建链
+  （electron-builder 25→26 属破坏性变更、esbuild dev-server、tar），留 Phase 6 决策。
+- Phase 6 打包前复核：版本仍在支持线（42 于 2026-10-20 出线，届时按同清单小步跟）。
+

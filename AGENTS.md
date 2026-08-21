@@ -66,8 +66,13 @@
 
 ## 环境事实
 
-- Windows + Electron 33 + Node 24（本地与 CI 一致；engines 仍 >=20，但 CI 用 20 会因
-  better-sqlite3 v12.11.1 缺 node-v115 预编译而源码编译失败——首跑实证，勿改回）
+- Windows + Electron 42（42.9.3，2026-08-22 升级门执行，ABI 146）+ Node 24（本地与
+  CI 一致；engines 仍 >=20，但 CI 用 20 会因 better-sqlite3 v12.11.1 缺 node-v115
+  预编译而源码编译失败——首跑实证，勿改回）
+- **升 Electron 前先查 prebuild 矩阵**（教训实证 2026-08-22）：Electron 43（ABI 148）
+  在 better-sqlite3 12.11.1 上无 win32 预编译，而带 v148 的 12.11.2/12.12.0 只有
+  GitHub release 未发 npm、v13.x 无任何 win 预编译——故落 42（v146 现成）。
+  版本→ABI 映射数据源：npm 包 `node-abi`（registry.npmmirror.com 可下）
 - 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
   （electron + better-sqlite3），`scripts/sqlite-abi.mjs` 下载 GitHub 优先、镜像兜底
 - better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；

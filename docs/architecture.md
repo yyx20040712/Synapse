@@ -228,7 +228,7 @@ flowchart LR
   subgraph NODE["vitest（Node ABI 137）"]
     UT["单测/契约/安全"]
   end
-  subgraph ELEC["electron-vite（Electron ABI 130）"]
+  subgraph ELEC["electron-vite（Electron ABI 146）"]
     BUILD2["main(CJS) + preload(cjs, zod 内联) + renderer(ESM+React)"]
     E2E["Playwright _electron"]
   end
