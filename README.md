@@ -25,7 +25,7 @@ src/preload     contextBridge 白名单桥
 src/renderer    React SPA（features 按域组织）
 tickets/        工单注册表（开发控制面）
 tests/          锁定的测试系统（e2e + 契约 + 安全 + 单测）
-docs/           architecture / security / DEVELOPMENT / adr
+docs/           architecture / security / DEVELOPMENT / ROADMAP / HANDOFF / adr
 ```
 
 测试数、覆盖率等一切数字以 CI 输出为准，本文档不写具体数字。

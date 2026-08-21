@@ -13,9 +13,12 @@ Main (Node)
 shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结）
 ```
 
-依赖规则（ESLint + CI 强制）：
-- `renderer → shared`；`renderer ↛ main/preload/electron/node`
-- `main → shared`；main 内 `ipc → services → repos → db` 禁跨层（services 禁 import connection；ipc 禁 import repos）
+依赖规则（ESLint + check-quality 双重强制）：
+- `renderer → shared`；`renderer ↛ main/preload/electron/node`（glob 含裸目录形式）
+- `main → shared`；main 内 `ipc → services → repos → db` 禁跨层：ipc 禁 import repos/db；
+  services 禁 import connection/migrations 与 main/ipc；**db 禁反向 import services/ipc
+  及一切上层**。方向性规则由 `check-quality.mjs` 按解析后绝对路径强制（ESLint glob
+  分不清 `shared/ipc` 契约与 `main/ipc` 层）
 - renderer 内 features 域之间禁止互相 import（共享下沉 `renderer/shared`），由 `check-quality.mjs` 扫描
 
 ## 2. 数据流示例（导入一篇 PDF）
@@ -29,20 +32,31 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 ## 3. 契约机制（防漂移的核心）
 
 - `src/shared/ipc/api-surface.ts` 是 IPC 的**单一接线表**：通道名 + Req/Res zod schema。
-- preload 按表生成桥；`ipc/register.ts` 按表注册（zod 校验→service→Result 折叠，横切只写一次）；service 接口类型 `ApiHandlers` 由表推导——漏/多通道 = 编译错误。
+- preload 按表生成桥（**CJS `.cjs` 输出**——沙箱渲染器不支持 ESM preload；zod 打进
+  bundle）；`ipc/register.ts` 按表注册（zod 校验→service→Result 折叠，横切只写一次）；
+  service 接口类型 `ApiHandlers` 由表推导——漏/多通道 = 编译错误。事件桥形状
+  `PreloadEvents` 与全局声明 `env.d.ts` 同源，禁止两处手写。
 - 所有响应 = `{ok:true,data} | {ok:false,error:{code,message}}`；`AppErrorCode` 封闭枚举。
+- CSP 单真相源：策略只在 `src/main/security/csp.ts`，构建期 cspMetaPlugin 注入
+  index.html meta（生产 file:// 下 meta 是实际防线），源码 html 禁止手写。
 - 契约文件受锁（sha256 对账），改动需 [locked-change]。
 
 ## 4. 骨架期机制（工单填充模式）
 
 - 每个文件头部五层规约（行为/接口/架构/生命周期/文化）= 弱模型的自包含任务书。
 - 未完成实现 = `unimplementedObject(ticket)`（方法调用时抛）或 UI 占位（`data-ticket` 徽标）。
-- `tickets/registry.ts` 控制测试激活：`guardedDescribe(ticketId)` 在工单 open 时 skip，翻 done 即激活——main 恒绿、防"不实现就翻状态"。
-- 三道 CI 关卡：quality（占位/乱码/跨域引用）、tickets（工单号一致性）、locks（sha256 对账）。
+- `tickets/registry.ts` 控制测试激活：`guardedDescribe(ticketId)` 在工单 open 时 skip，
+  翻 done 即激活——main 恒绿、防"不实现就翻状态"；**未知工单号当场抛错**（防整组
+  测试静默消失），tests 内只允许引用真实存在的工单号。
+- 三道 CI 关卡：quality（占位/乱码/跨域引用 + 行数分级 repo≤300/组件≤250 + 分层
+  方向解析检查）、tickets（工单号一致性，**含 tests 目录扫描**）、locks（sha256 对账，
+  行尾由 `.gitattributes` 强制 LF）。
 
 ## 5. 关键设计决策
 
-见 `docs/adr/`：AD-1 Electron 单语言；AD-2 pdf.js 库 API 路线（含 Phase 3 决策门）；AD-3 FTS5 触发器同步；AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）。
+见 `docs/adr/`：AD-1 Electron 单语言；AD-2 pdf.js 库 API 路线（含 Phase 3 决策门）；
+AD-3 FTS5 触发器同步（trigram）；AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；
+AD-6 Electron 升级延期至打包门。阶段编排见 `docs/ROADMAP.md`。
 
 ## 6. 数据模型
 
