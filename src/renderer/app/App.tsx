@@ -6,6 +6,7 @@ import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { ToastHost } from '../shared/ui/Toast'
 
 type ViewId = 'library' | 'reader' | 'settings'
 
@@ -75,6 +76,7 @@ export function App(): JSX.Element {
           {view === 'settings' && <SettingsPage />}
         </ErrorBoundary>
       </main>
+      <ToastHost />
     </div>
   )
 }
