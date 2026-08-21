@@ -43,7 +43,7 @@ if (!existsSync(manifestPath)) {
   process.exit(1)
 }
 
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8').replace(/^\uFEFF/, ''))
 const recorded = new Map(manifest.files.map((e) => [entryNormalize(entryPath(e)), entryHash(e)]))
 function entryPath(e) { return e.path }
 function entryHash(e) { return e.sha256 }

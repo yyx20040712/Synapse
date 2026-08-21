@@ -1,4 +1,4 @@
-# unlock-protected.ps1 —— 解除受锁文件只读（人工操作入口）
+﻿# unlock-protected.ps1 —— 解除受锁文件只读（人工操作入口）
 # 用法：npm run locks:unlock
 # 修改完成后必须：npm run locks:apply 重新锁定并更新 manifest，提交带 [locked-change]。
 $ErrorActionPreference = 'Stop'

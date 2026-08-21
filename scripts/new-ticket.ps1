@@ -1,4 +1,4 @@
-# new-ticket.ps1 —— 打印工单模板（配合 tickets/registry.ts 使用）
+﻿# new-ticket.ps1 —— 打印工单模板（配合 tickets/registry.ts 使用）
 param([string]$Id = 'SR-XXX-00', [string]$File = 'src/path/to/module.ts', [string]$Summary = '一句话职责')
 
 $template = @"

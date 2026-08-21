@@ -1,4 +1,4 @@
-# lock-protected.ps1 —— 生成/应用受锁文件保护（受锁文件）
+﻿# lock-protected.ps1 —— 生成/应用受锁文件保护（受锁文件）
 # 用法：
 #   npm run locks:apply     解锁→重算 sha256→写 manifest→设只读
 #   npm run locks:generate  仅重算 manifest（不设只读）
@@ -29,17 +29,18 @@ Get-ProtectedFiles | ForEach-Object { try { $_.IsReadOnly = $false } catch {} }
 # 2) 重算 manifest
 $entries = @()
 foreach ($f in (Get-ProtectedFiles)) {
-  $rel = [IO.Path]::GetRelativePath($root, $f.FullName) -replace '\\', '/'
+  $rel = $f.FullName.Substring($root.Length + 1) -replace '\\', '/'
   $hash = (Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
   $entries += [ordered]@{ path = $rel; sha256 = $hash }
 }
 $manifest = [ordered]@{
-  generatedAt = (Get-Date).ToUtcTime().ToString('o')
+  generatedAt = (Get-Date).ToUniversalTime().ToString('o')
   files       = $entries
 }
 $locksDir = Join-Path $root 'locks'
 New-Item -ItemType Directory -Force -Path $locksDir | Out-Null
-$manifest | ConvertTo-Json -Depth 4 | Out-File -FilePath (Join-Path $locksDir 'manifest.json') -Encoding utf8
+$manifestJson = $manifest | ConvertTo-Json -Depth 4
+[IO.File]::WriteAllText((Join-Path $locksDir 'manifest.json'), $manifestJson, [Text.UTF8Encoding]::new($false))
 
 # 3) 设只读（GenerateOnly 跳过）
 if (-not $GenerateOnly) {

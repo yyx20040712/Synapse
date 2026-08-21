@@ -1,0 +1,297 @@
+{
+    "generatedAt":  "2026-08-21T10:16:23.3902524Z",
+    "files":  [
+                  {
+                      "path":  ".github/workflows/ci.yml",
+                      "sha256":  "38d1cb96c924b455fe14992e92e99c3814ba5b77dd96850ef32efbe4b60437b2"
+                  },
+                  {
+                      "path":  "eslint.config.js",
+                      "sha256":  "3ec94cd3d6f899944f88fd0c7c08bce7a2700391715eaf464c4d50197d841f29"
+                  },
+                  {
+                      "path":  "scripts/check-locks.mjs",
+                      "sha256":  "dd1f43bf917b538613336d02038e25b3407a15e226095c76d41278375b75e371"
+                  },
+                  {
+                      "path":  "scripts/check-quality.mjs",
+                      "sha256":  "337610dcfe92d3d5a99721dc879349a5dad3451c81f601157ca1033b6f0ae04a"
+                  },
+                  {
+                      "path":  "scripts/check-tickets.mjs",
+                      "sha256":  "8e57be8743ab69feef2f87d47e24b3eb9352f106ca4ef673d092295d1fb4132d"
+                  },
+                  {
+                      "path":  "scripts/lock-protected.ps1",
+                      "sha256":  "b59f34d14c88c7cbab9c83c348eca43d2a1eac4fe9b0cdf8cdab61fde2317917"
+                  },
+                  {
+                      "path":  "scripts/new-ticket.ps1",
+                      "sha256":  "213dd645b830b3d5a8737c8b7a3ecb571a03973370107f0f45fefaefaeba2be9"
+                  },
+                  {
+                      "path":  "scripts/sqlite-abi.mjs",
+                      "sha256":  "b04ac471e9468b2c01ae8571a9eeb2d69f5cc3e3ddb6699b3accfce224c0d58c"
+                  },
+                  {
+                      "path":  "scripts/unlock-protected.ps1",
+                      "sha256":  "6ffe3440e43ab3218b592190aba6ecec387b0027c8f3dfb58a2cd085a98a435b"
+                  },
+                  {
+                      "path":  "src/main/db/migrations/001_init.sql",
+                      "sha256":  "9520b146c9eaffaf10ab120b1221c2459fd60c1ea94be1af1f644daafd5d5169"
+                  },
+                  {
+                      "path":  "src/shared/app-error.ts",
+                      "sha256":  "bce123a6156a66b34717f6200bdb0a8380f80b5c0510cbcac68cb765f89b6a0e"
+                  },
+                  {
+                      "path":  "src/shared/constants.ts",
+                      "sha256":  "6a2574c005af11db12e663e56a022f34edeab684fa6f1dd55d2a4f5ee7dcfed8"
+                  },
+                  {
+                      "path":  "src/shared/ipc/api-surface.ts",
+                      "sha256":  "e2c4668e8115208d46ae88caf6b58eb0d32f47f63bd0e60fc9fd038f47e7cc50"
+                  },
+                  {
+                      "path":  "src/shared/ipc/schemas.ts",
+                      "sha256":  "c0869113aefafc1302e6943fd6b8ae2fec28b97addfa9f456c36e9db894036a1"
+                  },
+                  {
+                      "path":  "src/shared/models/annotation.ts",
+                      "sha256":  "4e7f918482aa44a7a0b3590a316b4d8615cc873f2047c18f987b547eb960e034"
+                  },
+                  {
+                      "path":  "src/shared/models/collection.ts",
+                      "sha256":  "9712c7defec62a558c8a0b1415dcf4cd5b761823cd171bad68409a4e65294bce"
+                  },
+                  {
+                      "path":  "src/shared/models/note.ts",
+                      "sha256":  "b9dfc2d1eee448f44a4c72e2fbe32b3530445f0e8f7c51e7fae63027b85d4319"
+                  },
+                  {
+                      "path":  "src/shared/models/paper.ts",
+                      "sha256":  "706a7c1e5d78d88ada4fdaf36f3c323a649316a5f4e8d28eab2ac50d0a6ebe6c"
+                  },
+                  {
+                      "path":  "src/shared/models/tag.ts",
+                      "sha256":  "7d5f9fd435a4c7bd815d646e94bbdef442e4b557a23bbfeeb952a12d5bf44572"
+                  },
+                  {
+                      "path":  "tests/contracts/api-surface.test.ts",
+                      "sha256":  "5738b7091c194893e94c5886a1062bab82bf42bd40c9bfb94560ba7572b664b9"
+                  },
+                  {
+                      "path":  "tests/contracts/app-error.test.ts",
+                      "sha256":  "d25a395507cd26d4e223bf3459267a50ab2820d1934f32d0ac928057ac659772"
+                  },
+                  {
+                      "path":  "tests/e2e/reader-text.spec.ts",
+                      "sha256":  "dea0638f913741911a7b6933f3d426bafaa591eb90c3fa473fcf321d89ff6208"
+                  },
+                  {
+                      "path":  "tests/e2e/smoke.spec.ts",
+                      "sha256":  "1e154df5bcdb5573cad1accab84957740d50d6016afaa08eadd040c5631f4773"
+                  },
+                  {
+                      "path":  "tests/security/shell-guard.test.ts",
+                      "sha256":  "fd66e7daf30b53433b97ffe44352f4190e4bb3e95bab37a33dbd6c7391c67299"
+                  },
+                  {
+                      "path":  "tests/security/web-preferences.test.ts",
+                      "sha256":  "b0e2213d30e5c886b399bc7d366373fb921d496d337a057e6994c7b5742e5c4a"
+                  },
+                  {
+                      "path":  "tests/unit/db/connection.test.ts",
+                      "sha256":  "e0fa60f09a15bb92394f86527841cb2a7aca0cc11e66281e5b721721910bb12f"
+                  },
+                  {
+                      "path":  "tests/unit/db/fts.test.ts",
+                      "sha256":  "744d318ebc08b41c64a8778d2692a09f39bd088ece22e18549303158df9511c3"
+                  },
+                  {
+                      "path":  "tests/unit/db/migrate.test.ts",
+                      "sha256":  "4a44b32143e31b025abef43f623524b7601278037f9dffd8fa80baaedd8f006d"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/annotations.repo.test.ts",
+                      "sha256":  "72d871ad129129bc4ed554e1e822e855ad2731e12f4181debb27afa8b10d9f7b"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/collections.repo.test.ts",
+                      "sha256":  "e1c9c7126092054687ba2afa87a4c7c10174e9cf31866be4b4159112cdd56d42"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/notes.repo.test.ts",
+                      "sha256":  "fa18b0f4b1c6ce40bd8744d7583938af90406ec5c0c97625219a3a4e90e9c966"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/papers.repo.test.ts",
+                      "sha256":  "b805b6510ab9b7058eb74e8c3ddf1b9e2cc2329f6964a10b72492ec8be9a4f26"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/tags.repo.test.ts",
+                      "sha256":  "a6cff2d4b021d9b1c742805a121fba50c6b77b0a6b5d5c56aa410b01bb446799"
+                  },
+                  {
+                      "path":  "tests/unit/http/http-client.test.ts",
+                      "sha256":  "a3af24f54e79254e7fbd2c0506fc8aa6bbc7f820f1d1683356d60a313ca340d1"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/enrich.test.ts",
+                      "sha256":  "cc53824ef06396dab040f932a286db8fecd003b8efa5905058a8fa835e672a44"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/export_.test.ts",
+                      "sha256":  "c597bea516178d88ad3e4c13c331fcc0693e29f1df451298e6e11267fb1deeeb"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/import_.test.ts",
+                      "sha256":  "94d1244527e658f45e79885a8ac33bbf7b164662d89a82acb562a3b0b72ff40b"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/library.test.ts",
+                      "sha256":  "d082bf1ff772c45a86be42eb465fec36543f1a714450405b22360b855ae482da"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/make-handler.test.ts",
+                      "sha256":  "20d1329c58a9b908d993f6de62f4a9b958fbbcdbba900f31d4d7d16078ea750e"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/notes.test.ts",
+                      "sha256":  "5a4cceca818b523f3a22b9e77dbbcee4ac3dbda0b4e3a2c33349ff28e3d0cfb3"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/reader.test.ts",
+                      "sha256":  "eaad033e3bf91864d0fe0fd1d6a6342042007ceab82e2842b7566840cc99528f"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/settings.test.ts",
+                      "sha256":  "09e980529cdf3f72268203704e6d3c9408f6f5e6f640adcdabddbb2177ca0358"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/system.test.ts",
+                      "sha256":  "043a9ad762b3aeaf985e3b426243fc40ca4d918055721062a27f92062527e6c8"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/tags.test.ts",
+                      "sha256":  "7855dbf78c9f66015e16ca0546b28cef9a72f3b669b8282f98e303ff3ebf200b"
+                  },
+                  {
+                      "path":  "tests/unit/protocol/app-file.protocol.test.ts",
+                      "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+                      "sha256":  "42552a8455867ac616d8974935177deb424f35c67ded0c5631af3823bddb5897"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/library.store.test.ts",
+                      "sha256":  "348acda120fcb065e9b287e98104121d9545ac13386a695c52d20ebeb48b141b"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/notes.store.test.ts",
+                      "sha256":  "dd2f5cdf491d4e4242b56272892c0abc70a12fefa7e1528aef139c53252a56c0"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader.store.test.ts",
+                      "sha256":  "617fe76cc43ed883c0d78f38939be03e5f783d500e82545baca002287d9794e8"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/settings.store.test.ts",
+                      "sha256":  "56d30415b1d3c9cdffb18deedb30588d7e246637403aead4a9c73c77b3088c5f"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/tags.store.test.ts",
+                      "sha256":  "8bd7d09bea9f03675dcec2d65cf386bfec7cc195d90842f83050185f99d5fe98"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/useAsync.test.tsx",
+                      "sha256":  "13386953ebce837fdbbafb61aaeaddb1b5168234a15b8239b8cb4b46416f9caf"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/useDebounce.test.tsx",
+                      "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
+                  },
+                  {
+                      "path":  "tests/unit/services/bibtex.serializer.test.ts",
+                      "sha256":  "8a47804aed6632829ff40345a2974e3efe7e1fd7e16d7223f8960c74ae91aac1"
+                  },
+                  {
+                      "path":  "tests/unit/services/enrich.service.test.ts",
+                      "sha256":  "994e9aee68b32026e6c84962b7f102e05914e2b4969164d89b402207c9a0f8f3"
+                  },
+                  {
+                      "path":  "tests/unit/services/export.service.test.ts",
+                      "sha256":  "057861c47b0e8dbf70a262dd7548b8cf1b56654b38c34edffe7055ddba79fe78"
+                  },
+                  {
+                      "path":  "tests/unit/services/file-store.test.ts",
+                      "sha256":  "0ba02fab8c5a620ddb16e5245b0d839c23dbcc7534b869d1ef191b0f613dfedc"
+                  },
+                  {
+                      "path":  "tests/unit/services/import.service.test.ts",
+                      "sha256":  "35082c89a1217198e64b886458f5deded283b8a15a1af5e6d7d6f39eb8c212c3"
+                  },
+                  {
+                      "path":  "tests/unit/services/library.service.test.ts",
+                      "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                  },
+                  {
+                      "path":  "tests/unit/services/markdown.report.test.ts",
+                      "sha256":  "67bb1092b7dbb9d53a6f626d8b9c431cfea48ae266f5a4180ea27fc3802b4de1"
+                  },
+                  {
+                      "path":  "tests/unit/services/notes.service.test.ts",
+                      "sha256":  "52bd750564c4e16d8525e61872cca224698567b607230758a3d76ad4125a8e90"
+                  },
+                  {
+                      "path":  "tests/unit/services/pdf-meta.extract.test.ts",
+                      "sha256":  "9e27218ee1338d87d3278e3867e9536d5541646cb9a0d2a174c1f4e17b43e3f2"
+                  },
+                  {
+                      "path":  "tests/unit/services/providers/arxiv.test.ts",
+                      "sha256":  "21058e8c0f770187c6dd329f5a09bf4e0ada93dca04280e1367a911d95caab03"
+                  },
+                  {
+                      "path":  "tests/unit/services/providers/crossref.test.ts",
+                      "sha256":  "583f58a07f63ec57b1412cfee844f0c40f3a8544a04a21d27748116a476fce6f"
+                  },
+                  {
+                      "path":  "tests/unit/services/providers/openalex.test.ts",
+                      "sha256":  "121161611744b50781a4876f20f9b6256fdbfeba9e9388b9a086a8ce02000934"
+                  },
+                  {
+                      "path":  "tests/unit/services/reader.service.test.ts",
+                      "sha256":  "05cc27d3c7793bf8782836d1a4fd3b6809024355053b9372d1cacae1f7397af0"
+                  },
+                  {
+                      "path":  "tests/unit/services/tags.service.test.ts",
+                      "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                  },
+                  {
+                      "path":  "tests/unit/windows/window-state.test.ts",
+                      "sha256":  "7e13732d7252a56a5c8a1956adff6f565cd6ca9aa4432b5cb2ee1efb31595497"
+                  },
+                  {
+                      "path":  "tests/utils/fixtures.ts",
+                      "sha256":  "407343b3814aada42271a94652686766edf32f8b41f595e141304a7c93a4ca96"
+                  },
+                  {
+                      "path":  "tests/utils/guard.ts",
+                      "sha256":  "f2069753d7b60b939a6a74014da09d5f8aac8b7587694df875d5728f76ad7e3d"
+                  },
+                  {
+                      "path":  "tests/utils/ipc-deps.ts",
+                      "sha256":  "3989c32975fcddbbd518cbf708c7ff678deb269259c792f17ed32272d5ca7018"
+                  },
+                  {
+                      "path":  "tests/utils/pdf-factory.ts",
+                      "sha256":  "af8feac8ca6642cb5d1bec3097c3f67f8fb8ceaa4dc4f4372897118c190c7d9b"
+                  },
+                  {
+                      "path":  "vitest.config.ts",
+                      "sha256":  "692d3e53ea4d35a4ac849888e6318c9170c350947dc8335875657193b146a29d"
+                  }
+              ]
+}
