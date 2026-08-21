@@ -20,10 +20,23 @@
  * ── 文化层 ──
  * - 测试：tests/unit/ipc/import_.test.ts（已锁定，dialogs/services 桩）
  */
-import { unimplementedObject } from '../../shared/app-error'
+import type { ImportResult } from '../../shared/ipc/schemas'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './index'
 
-export function createImportIpc(_deps: IpcDeps): ApiHandlers['import_'] {
-  return unimplementedObject<ApiHandlers['import_']>('SR-IPC-05', 'ipc.import_')
+/** 空结果字面量每次新建，避免跨调用共享同一可变对象 */
+const emptyImportResult = (): ImportResult => ({ imported: [], duplicates: [], failed: [] })
+
+export function createImportIpc(deps: IpcDeps): ApiHandlers['import_'] {
+  return {
+    // 对话框取消（null）不是错误：返回空结果，不触发导入、不上抛
+    fromDialog: async () => {
+      const paths = await deps.dialogs.pickPdfFiles()
+      return paths === null ? emptyImportResult() : deps.services.import_.importFiles(paths)
+    },
+    fromFolder: async () => {
+      const folder = await deps.dialogs.pickFolder()
+      return folder === null ? emptyImportResult() : deps.services.import_.importFolder(folder)
+    }
+  }
 }
