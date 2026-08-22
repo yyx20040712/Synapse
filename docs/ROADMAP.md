@@ -9,14 +9,17 @@
 
 - 工单：72 = done 34（infra 17 + DB 5 + services 3 + ipc 2 + library-ui 5 + ui-kit/hooks 2）+ open 38
   （weak 35 / strong 3）——Phase 1/2 已于 2026-08-21 同日完成
-- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；81 受锁文件
-  （本轮扩容：playwright / electron.vite / tsconfig×3 入锁）
+- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；82 受锁文件
+  （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁）
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
   Node 20 缺 better-sqlite3 v12.11.1 预编译→已修为 Node 24，次跑全绿）。尾注检查
   基线兼容 push 事件（PR base sha / push before），manifest 变更关卡已真实拦截验证
 - **Electron 升级门已过（2026-08-22）**：33.4.11 → **42.9.3**（支持线中位，ABI 146，
   better-sqlite3 维持 12.11.1——prebuild 矩阵核查结论见 ADR-0006 执行记录；
-  运行时 audit 0 漏洞，verify + e2e smoke 3 绿）
+  运行时 audit 0 漏洞；升级时点验收 verify 全绿 + e2e smoke 3 绿，现 e2e smoke
+  4 绿——已补 IPC invoke 全链路与 app-file:// fetch CSP 回归两道防线）
+- 两轮系统性 Bug 检查已闭环（2026-08-22）：业务层 7 项修复 + 防线层加固（ABI 精确
+  选择 / 键序无关解析 / guardedDescribe 绑定对账），取舍与地雷登记于 ADR-0007
 - pdf.js spike 决策门已过（2026-08-22）：canvas + 官方 TextLayer 路线在真实
   Electron 42 上 13 项断言全过，ADR-0002 维持库 API 路线（结论与 Phase 3 实证输入
   见其文末）

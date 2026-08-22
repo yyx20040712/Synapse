@@ -29,6 +29,8 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - **Result 形状**：service 内抛错（`DomainError` 带 code），`register` 统一折叠；renderer 永远拿 Result。
 - **新 IPC 通道**：改 `src/shared/ipc/schemas.ts` + `api-surface.ts`（[locked-change]，一般不需要）。
 - **SQL**：`db.prepare('... WHERE id = ?').run(id)`；FTS 匹配串必须 `escapeFtsQuery(userInput)`。
+- **多表写入**：service 层组合多条写入必须 `repos.withTransaction(() => {...})` 包裹
+  （attach 失败整体回滚，防"failed 的文献已入库且 sha 被占用"半写状态）。
 - **时间/ID**：`new Date().toISOString()` / `crypto.randomUUID()`。
 - **样式**：颜色一律 `var(--accent)` 等主题变量（theme.css）；Tailwind 只用于布局类（flex/p-2/text-sm）。
 - **zod**：一律 `.strict()`；带默认值字段在 z.input 侧可省略。
@@ -51,7 +53,9 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - 手动调试主进程（不进 dev、直接跑产物）：
   `SYNAPSE_USER_DATA=<临时目录> node_modules\electron\dist\electron.exe out\main\index.js`
   （bootstrap 失败会 console.error + 原生错误框）。
-- better-sqlite3 ABI 报错：它是 V8 直接绑定（Node/Electron 各需一份），由 `scripts/sqlite-abi.mjs` 自动切换；若手动动过 `node_modules`，重跑 `npm ci`。
+- better-sqlite3 ABI 报错：它是 V8 直接绑定（Node/Electron 各需一份），由 `scripts/sqlite-abi.mjs` 自动切换（按当前运行时精确 ABI 选缓存，缺哪个会点名报错，如
+  `abi-cache 缺 electron-v146 绑定`）；若手动动过 `node_modules`，重跑 `npm ci`
+  （升级 better-sqlite3 版本时必须删 abi-cache，见 ADR-0007 §4）。
 - 中文乱码：统一 UTF-8；PowerShell 重定向用 `Out-File -Encoding utf8`；CI 有 mojibake 关卡兜底。
 
 ## 6. 数据位置与备份（用户需知）

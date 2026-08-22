@@ -11,7 +11,7 @@
 ## 2. 内容边界（机检：CSP 断言）
 
 - 只加载本地内容（打包产物 / dev server）；`will-navigate` 一律阻止；`setWindowOpenHandler` 一律 deny；权限请求默认全拒
-- CSP：`default-src 'self'; script-src 'self'; worker-src 'self' blob:(pdf.js); style-src 'self' 'unsafe-inline'; img-src 'self' app-file: data: blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'`
+- CSP：`default-src 'self'; script-src 'self'; worker-src 'self' blob:(pdf.js); style-src 'self' 'unsafe-inline'; img-src 'self' app-file: data: blob:; connect-src 'self' app-file:(受管文件协议，阅读器取数通道); object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'`
 - 无 unsafe-eval；无 iframe 嵌套内容
 
 ## 3. IPC 与注入防护（机检：契约/单测）
@@ -34,8 +34,8 @@
 - lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/zustand/zod/electron）精确钉版，无 `^` 范围
 - 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
-- Electron 33 已 EOL：升级门在 **Phase 3 阅读器开工之前**（ADR-0006 修订版；
-  Phase 6 打包前仅复核仍在支持线）
+- Electron 42.9.3（当期支持线，2026-08-22 升级门执行，prebuild 矩阵核查见
+  ADR-0006 执行记录）；Phase 6 打包前复核仍在支持线（42 于 2026-10-20 出线）
 
 ## 6. 数据
 

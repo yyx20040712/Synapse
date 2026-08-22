@@ -47,16 +47,19 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 - 未完成实现 = `unimplementedObject(ticket)`（方法调用时抛）或 UI 占位（`data-ticket` 徽标）。
 - `tickets/registry.ts` 控制测试激活：`guardedDescribe(ticketId)` 在工单 open 时 skip，
   翻 done 即激活——main 恒绿、防"不实现就翻状态"；**未知工单号当场抛错**（防整组
-  测试静默消失），tests 内只允许引用真实存在的工单号。
+  测试静默消失），tests 内只允许引用真实存在的工单号，且 guardedDescribe 的工单号
+  必须与测试文件 import 的被测文件绑定（check-tickets 第 5 关，防挂错块永久 skip）。
 - 三道 CI 关卡：quality（占位/乱码/跨域引用 + 行数分级 repo≤300/组件≤250 + 分层
-  方向解析检查）、tickets（工单号一致性，**含 tests 目录扫描**）、locks（sha256 对账，
-  行尾由 `.gitattributes` 强制 LF）。
+  方向解析检查）、tickets（工单号一致性 + 绑定对账，**含 tests 目录扫描**）、locks
+  （sha256 对账，行尾由 `.gitattributes` 强制 LF）。
 
 ## 5. 关键设计决策
 
-见 `docs/adr/`：AD-1 Electron 单语言；AD-2 pdf.js 库 API 路线（含 Phase 3 决策门）；
-AD-3 FTS5 触发器同步（trigram）；AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；
-AD-6 Electron 升级延期至打包门。阶段编排见 `docs/ROADMAP.md`。
+见 `docs/adr/`：AD-1 Electron 单语言；AD-2 pdf.js 库 API 路线（Phase 3 决策门已过：
+canvas+TextLayer+选择+DPR 13 项断言全绿）；AD-3 FTS5 触发器同步（trigram）；
+AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-6 Electron 升级门
+（已执行：42.9.3，prebuild 矩阵核查）；AD-7 已登记取舍与地雷。阶段编排见
+`docs/ROADMAP.md`。
 
 ## 6. 数据模型
 
@@ -75,7 +78,7 @@ flowchart TB
     UI --> WA
   end
 
-  subgraph M["Main 进程（Node 20 · 单实例锁）"]
+  subgraph M["Main 进程（Node 24 · 单实例锁）"]
     direction TB
     REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
     SVC["services/ ✅SVC-01/03/04 · 🚧其余 7<br/>业务用例 · 事务编排"]
@@ -131,12 +134,12 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   autonumber
-  participant UI as renderer<br/>ImportDropZone 🚧SR-LIB-06
+  participant UI as renderer<br/>ImportDropZone ✅SR-LIB-06
   participant P as preload ✅
-  participant I as ipc/import_ 🚧SR-IPC-05
-  participant S as import.service 🚧SR-SVC-03
+  participant I as ipc/import_ ✅SR-IPC-05
+  participant S as import.service ✅SR-SVC-03
   participant F as file-store ✅
-  participant R as papers.repo 🚧SR-DB-01
+  participant R as papers.repo ✅SR-DB-01
   participant D as SQLite ✅
 
   UI->>P: api.import_.fromDialog({})
@@ -145,12 +148,12 @@ sequenceDiagram
   I->>S: importFiles(dialog.pickPdfFiles())
   Note over I,S: 路径只存在于 main 侧
   S->>F: storePdfFromPath(path)
-  F-->>S: {paperId, sha256} / DUPLICATE_FILE
-  S->>S: extractPdfMeta（标题/DOI）
-  S->>R: insert(paper)（跨表事务）
+  F-->>S: {fileRef, sha256} / DUPLICATE_FILE
+  S->>S: extractPdfMeta（标题/DOI/arXiv）
+  S->>R: repos.withTransaction(insert + attach)（原子）
   R->>D: db.prepare 参数绑定
   S-->>P: 进度 onProgress → send("import/progress")
-  S-->>UI: ImportResult {added, duplicates, failed}
+  S-->>UI: ImportResult {imported, duplicates, failed}
 ```
 
 ### 7.4 数据流 B：阅读与标注锚定（Phase 3/4 目标链路）
@@ -193,7 +196,7 @@ flowchart TB
   L1["① 出网：http-client 白名单 3 host + redirect:error + 20MB 上限 ✅"]
   L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据 ✅<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒 ✅"]
   L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关 ✅<br/>preload 白名单桥，零 ipcRenderer 泄漏 ✅"]
-  L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval ✅<br/>connect-src 'self'（renderer 禁直连出网）✅"]
+  L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval ✅<br/>connect-src 'self' app-file:（出网仍禁，app-file 为受管文件取数通道）✅"]
   L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery ✅（repos 已实现，33 测试锁定）<br/>app-file:// paperId 白名单 → 受管根前缀校验 ✅<br/>renderer 零路径 · 写盘仅经系统对话框 ✅"]
   L1 --> L2 --> L3 --> L4 --> L5
 ```
@@ -213,7 +216,7 @@ flowchart TB
   subgraph GATES["关卡（verify = CI 同口径，本轮并轨）"]
     Q["quality:占位/乱码/跨域/行数/分层方向"]
     T["tickets:工单号一致性 + done 残留占位即红"]
-    LK["locks:81 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
+    LK["locks:82 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
     V["lint → typecheck → test → build"]
   end
   GD --> GATES
