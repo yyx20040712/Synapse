@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-21T23:32:13.4376428Z",
+    "generatedAt":  "2026-08-22T00:20:50.5758902Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -27,7 +27,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "ac2ce470ad84078b59aa65c689d0286678f8a578103fd568e7595ddd6a5e11bc"
+                      "sha256":  "ac052b3e05ee2875c0b5b9725682ec8fb8677a72c26d5a49ac57fadecb45fd5a"
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
@@ -39,7 +39,7 @@
                   },
                   {
                       "path":  "scripts/sqlite-abi.mjs",
-                      "sha256":  "67c11aecfc7d29501807346d64164f1980a43007c48b0ffbb182d8dadace1040"
+                      "sha256":  "e68baceb4d1aea5c007224af0025248760ed23f647d9d0809d5c1fefb48c7b5e"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
