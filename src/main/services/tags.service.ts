@@ -1,5 +1,5 @@
 /**
- * [SR-SVC-09] tags.service —— 标签用例（工单：open / weak）
+ * [SR-SVC-09] tags.service —— 标签用例（工单：done / weak）
  *
  * ── 行为层 ──
  * - list：repos.tags.listWithCounts()
@@ -18,10 +18,31 @@
  * ── 文化层 ──
  * - 测试：tests/unit/services/tags.service.test.ts（已锁定，repos 桩）
  */
-import { unimplementedObject } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
 
-export function createTagsService(_deps: { repos: Repos }): ApiHandlers['tags'] {
-  return unimplementedObject<ApiHandlers['tags']>('SR-SVC-09', 'tags.service')
+export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
+  const { tags } = deps.repos
+
+  return {
+    async list(_req) {
+      return tags.listWithCounts()
+    },
+
+    // 同名幂等由 repo 的 upsertByName 保证；service 只做输入清理（去首尾空格）
+    async upsert(req) {
+      return tags.upsertByName(req.name.trim())
+    },
+
+    // INSERT OR IGNORE：重复挂接幂等，无需存在性分支
+    async attach(req) {
+      tags.attach(req.paperId, req.tagId)
+      return { ok: true as const }
+    },
+
+    async detach(req) {
+      tags.detach(req.paperId, req.tagId)
+      return { ok: true as const }
+    }
+  }
 }
