@@ -8,6 +8,10 @@
  * - verifyQuote(root, { prefix, quote, suffix, start }): number | null
  *   —— 用前缀/后缀/引文校验 startOffset 是否仍有效；失效时尝试重定位
  * - rectsFromRange(range, pageSize): AnnotationRect[]（归一化 0..1）
+ * - selectionToAnchor(root, selection): SelectionAnchor | null（2026-08-22 契约演进，
+ *   Phase 4 标注链前置）——用户划选（Selection）→ 锚定三元组
+ *   { start, end, quote, prefix, suffix, rects }，SelectionLayer 的保存入口；
+ *   边界点→全局偏移用 probe-range 文本长度探测（文本/元素容器统一成立）
  *
  * 偏移约定：页内全文 = 按文档序拼接全部文本节点（节点间无间隙）；区间为半开
  * [start, end)；verifyQuote 的 start 与返回值均指 quote 首字符的页内偏移。
@@ -171,6 +175,102 @@ function matchAt(text: string, i: number, prefix: string, quote: string, suffix:
     return false
   }
   return true
+}
+
+/** 划选锚定结果：saveAnnotation 输入的全部定位字段（rects.page 恒 0，调用方改写实际页码） */
+export interface SelectionAnchor {
+  start: number
+  end: number
+  quote: string
+  prefix: string
+  suffix: string
+  rects: AnnotationRect[]
+}
+
+/** 引文前后上下文截取窗口（prefix/suffix 长度，WADM textQuote 惯例） */
+const CONTEXT_CHARS = 32
+
+/**
+ * 用户划选 → 页内锚定。选区任一边界在 root 之外（跨页/页外）返回 null，
+ * 由调用方提示"仅支持单页内标注"。quote 为空（纯元素/零宽选择）同样返回 null。
+ */
+export function selectionToAnchor(
+  root: HTMLElement,
+  selection: Selection
+): SelectionAnchor | null {
+  if (selection.rangeCount === 0 || selection.isCollapsed) {
+    return null
+  }
+  const range = selection.getRangeAt(0)
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) {
+    return null
+  }
+  const { spans, total } = collectSpans(root)
+  if (total === 0) {
+    return null
+  }
+  // 边界点 → 全局偏移：probe-range 的文本长度（文档序拼接口径与 collectSpans 一致）
+  const leadLen = probeTextLength(root, range.startContainer, range.startOffset, 'start')
+  const tailLen = probeTextLength(root, range.endContainer, range.endOffset, 'end')
+  if (leadLen === null || tailLen === null) {
+    return null
+  }
+  const start = leadLen
+  const end = total - tailLen
+  if (end <= start) {
+    return null
+  }
+  const text = spans.map((s) => s.node.data).join('')
+  const first = offsetToPoint(spans, start)
+  const last = offsetToPoint(spans, end)
+  if (first === null || last === null) {
+    return null
+  }
+  return {
+    start,
+    end,
+    quote: text.slice(start, end),
+    prefix: text.slice(Math.max(0, start - CONTEXT_CHARS), start),
+    suffix: text.slice(end, Math.min(total, end + CONTEXT_CHARS)),
+    rects: rectsBetweenPoints(first, last, pixelBoxOf(root))
+  }
+}
+
+/**
+ * probe-range 文本长度：side='start' 探 [root 起..边界) → 长度即边界全局偏移；
+ * side='end' 探 [边界..root 尾) → 长度是其后文长度（调用方用 total 相减）。
+ * Range.toString 按文档序拼接相交文本节点的命中区间，元素/文本容器统一成立
+ */
+function probeTextLength(
+  root: HTMLElement,
+  container: Node,
+  offset: number,
+  side: 'start' | 'end'
+): number | null {
+  try {
+    const probe = document.createRange()
+    probe.selectNodeContents(root)
+    if (side === 'start') {
+      probe.setEnd(container, offset)
+    } else {
+      probe.setStart(container, offset)
+    }
+    return probe.toString().length
+  } catch {
+    // 节点脱离文档等异常：无法探测，交由调用方按 null 放弃本次划选
+    return null
+  }
+}
+
+/** 全局偏移 → DOM 边界点；end 允许等于 total（贴页尾时取末节点终点） */
+function offsetToPoint(spans: NodeSpan[], global: number): DomPoint | null {
+  for (const s of spans) {
+    if (global < s.end) {
+      return { node: s.node, offset: global - s.start }
+    }
+  }
+  const last = spans[spans.length - 1]
+  return last === undefined ? null : { node: last.node, offset: last.end - last.start }
 }
 
 export function rectsFromRange(

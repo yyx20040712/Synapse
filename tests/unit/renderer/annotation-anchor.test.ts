@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { expect, it } from 'vitest'
+import { afterEach, expect, it } from 'vitest'
 import {
   findRangeAtOffset,
   rectsFromRange,
+  selectionToAnchor,
   verifyQuote
 } from '../../../src/renderer/features/reader/annotation-anchor'
 import { guardedDescribe } from '../../utils/guard'
@@ -77,5 +78,75 @@ guardedDescribe('SR-RDR-01', 'annotation-anchor —— 文本偏移↔DOM 定位
       expect(rect.y).toBeGreaterThanOrEqual(0)
       expect(rect.y + rect.h).toBeLessThanOrEqual(1.0001)
     }
+  })
+
+  // selectionToAnchor 需要 Selection API：jsdom 要求选区相关节点挂在文档上才可靠
+  afterEach(() => {
+    document.getSelection()?.removeAllRanges()
+    document.body.replaceChildren()
+  })
+
+  it('selectionToAnchor：文本节点边界 → start/end/quote/prefix/suffix', () => {
+    const root = buildPage()
+    document.body.append(root)
+    const p2Text = (root.children[1]!).firstChild as Text
+    const sel = document.getSelection()
+    const range = document.createRange()
+    range.setStart(p2Text, 2) // "正文" 之前是 "中段"
+    range.setEnd(p2Text, 4)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    const a = selectionToAnchor(root, sel as Selection)
+    expect(a).not.toBeNull()
+    expect(a!.start).toBe(7)
+    expect(a!.end).toBe(9)
+    expect(a!.quote).toBe('正文')
+    // CONTEXT_CHARS=32 大于页内全文，prefix/suffix 覆盖到页首/页尾
+    expect(a!.prefix).toBe('前文第一段中段')
+    expect(a!.suffix).toBe('内容后文第三段')
+    expect(a!.rects.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('selectionToAnchor：元素边界（offset 是子节点索引）同样成立', () => {
+    const root = buildPage()
+    document.body.append(root)
+    const p2 = root.children[1]!
+    const sel = document.getSelection()
+    const range = document.createRange()
+    range.setStart(p2, 0)
+    range.setEnd(p2, p2.childNodes.length)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    const a = selectionToAnchor(root, sel as Selection)
+    expect(a).not.toBeNull()
+    expect(a!.start).toBe(5)
+    expect(a!.end).toBe(11)
+    expect(a!.quote).toBe('中段正文内容')
+  })
+
+  it('selectionToAnchor：选区跨出 root → null（跨页/页外不算本页锚定）', () => {
+    const root = buildPage()
+    const outside = document.createElement('p')
+    outside.textContent = '外部文本'
+    document.body.append(root, outside)
+    const sel = document.getSelection()
+    const range = document.createRange()
+    range.setStart(outside.firstChild as Text, 0)
+    range.setEnd((root.children[1]!).firstChild as Text, 2)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    expect(selectionToAnchor(root, sel as Selection)).toBeNull()
+  })
+
+  it('selectionToAnchor：collapsed / 空 rangeCount → null', () => {
+    const root = buildPage()
+    document.body.append(root)
+    const sel = document.getSelection()
+    const range = document.createRange()
+    range.setStart((root.children[0]!).firstChild as Text, 1)
+    range.collapse(true)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    expect(selectionToAnchor(root, sel as Selection)).toBeNull()
   })
 })
