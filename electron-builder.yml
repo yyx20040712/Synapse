@@ -1,0 +1,36 @@
+# [SR-PKG-01] electron-builder.yml —— NSIS 打包配置单真相源（工单：open / strong）
+#
+# ── 行为层 ──
+# - `npm run dist` 一条命令产出 NSIS 安装包（dist/<artifactName>.exe），硬约束：
+#   ① 打包前经 scripts/sqlite-abi.mjs use electron 确保 better_sqlite3.node 为
+#      electron-v146 绑定（由 dist.mjs 编排，非本文件职责）；
+#   ② npmRebuild: false + buildDependenciesFromSource: false——绑定已预置，
+#      禁止 electron-builder 触发源码重编译（本机无工具链且会覆盖正确绑定）；
+#   ③ electronDist 指向 node_modules/electron/dist——复用本地 Electron 42.9.3，
+#      免二次下载（网络事实：GitHub 直连不稳）；
+#   ④ NSIS/winCodeSign 工具链经 ELECTRON_BUILDER_BINARIES_MIRROR（npmmirror）
+#      下载，由 dist.mjs 设 env；
+#   ⑤ renderer 已由 vite 打包自足（out/renderer 资产含 pdf.worker），files 排除
+#      纯渲染期依赖（react/react-dom/zustand/pdfjs-dist）减体积；主进程
+#      externalizeDeps 的运行时依赖（better-sqlite3/zod）必须保留；
+#   ⑥ asar 打包，asarUnpack 显式 '**/*.node'。
+# - 验收：dist 产出 .exe；npx asar list 断言 out/ 三段产物与
+#   better_sqlite3.node 在包内且为 electron 绑定（打包前 dist.mjs 已切换并校验）。
+#
+# ── 接口层 ──
+# - 本文件即接口：electron-builder 配置（appId/productName/files/nsis/win 等）。
+#   dist 编排逻辑在 scripts/dist.mjs（同工单），package.json 增加 "dist" script。
+#
+# ── 架构层 ──
+# - 依赖：electron-builder@25.1.8（既有 devDependency，不新增依赖）、
+#   scripts/sqlite-abi.mjs。分层：构建基础设施；产物 dist/ 已 gitignore。
+#
+# ── 生命周期层 ──
+# - 预留：artifactName 带 ${version}（随 package.json version 递增）。
+# - 不做：其他平台目标、自动更新、portable 版（单机本地应用）。
+#
+# ── 文化层 ──
+# - 错误：配置错误在 builder 阶段即红，不静默降级；禁止占位实现残留。
+# - 完成后：删除本注释中的占位状态（工单翻 done）→ npm run verify 绿 → 审计 → 提交。
+
+# （SR-PKG-01 实现中填充——工单 open）
