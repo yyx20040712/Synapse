@@ -11,6 +11,12 @@
   --accent-soft: #dbeafe;
   --danger: #dc2626;
   --ok: #16a34a;
+  /* 标注调色板（与 ANNOTATION_COLORS 一一对应）：阅读器色板/标注层统一取色 */
+  --annotation-yellow: #fde047;
+  --annotation-green: #86efac;
+  --annotation-blue: #93c5fd;
+  --annotation-red: #fca5a5;
+  --annotation-purple: #d8b4fe;
 }
 
 html,

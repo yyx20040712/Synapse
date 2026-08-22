@@ -96,6 +96,15 @@ export function ReaderPage(): JSX.Element {
     if (renderedPage - 1 !== page) setPage(renderedPage - 1)
   }
 
+  /** 适应宽度：滚动容器内宽 ÷ 页面原始宽（原始宽 = 当前盒宽 / 当前缩放）；夹取由 store 兜底 */
+  const fitWidth = (): void => {
+    const scrollArea = pageRootRef.current?.parentElement ?? null
+    if (scrollArea === null || pageText === null) return
+    const naturalWidth = pageText.box.w / zoom
+    // 24px ≈ 滚动区两侧 p-3 内边距（clientWidth 含 padding，需扣除）
+    setZoom((scrollArea.clientWidth - 24) / naturalWidth)
+  }
+
   if (paperId === null || fileUrl === null) {
     return (
       <div
@@ -118,6 +127,7 @@ export function ReaderPage(): JSX.Element {
         onNavigate={setPage}
         onZoom={setZoom}
         onColor={setColor}
+        onFitWidth={fitWidth}
       />
       <div className="flex min-h-0 flex-1">
         {outlineOpen ? (
