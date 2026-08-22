@@ -57,6 +57,8 @@
 - **禁止新增依赖**，确需新增 → 先 ADR + [dep-change] 尾注。运行时依赖预算 ≤15 个。
 - `package.json`/lockfile 变更必须带 `[dep-change]` 尾注（CI 检查）。
 - 受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 `[locked-change]` 尾注。
+- 触碰锁定文件的提交**即时** `locks:apply`（manifest 与该提交同步），禁止跨提交
+  延迟重生成——CI 只查 push head，中间提交锁不同步会造成按提交回溯时的假绿。
 - 每次 AI 改动一个逻辑单元一个 commit；提交前 `git diff --stat` 自查。
 - 中文一律 UTF-8；Windows 下写文件后验证可读。
 
