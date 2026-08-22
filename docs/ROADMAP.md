@@ -5,11 +5,11 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照；2026-08-22 Phase 3 收官轮更新）
+## 当前基线（制定时快照；2026-08-22 Phase 4 收官轮更新）
 
-- 工单：72 = done 43（infra 17 + DB 5 + services 4 + ipc 3 + library-ui 5 + reader 7 +
-  ui-kit/hooks 2）+ open 29（weak 29 / strong 0）——Phase 1/2 于 2026-08-21、
-  Phase 3 于 2026-08-22 完成
+- 工单：72 = done 49（infra 17 + DB 5 + services 5 + ipc 4 + library-ui 5 + reader 9 +
+  notes-ui 2 + ui-kit/hooks 2）+ open 23（weak 23 / strong 0）——Phase 1/2 于
+  2026-08-21、Phase 3/4 于 2026-08-22 完成
 - 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；83 受锁文件
   （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁；
   Phase 3 期间 tests/e2e/seed-paper.mjs 作为新测试基础设施入锁）
@@ -18,8 +18,9 @@
   基线兼容 push 事件（PR base sha / push before），manifest 变更关卡已真实拦截验证
 - **Electron 升级门已过（2026-08-22）**：33.4.11 → **42.9.3**（支持线中位，ABI 146，
   better-sqlite3 维持 12.11.1——prebuild 矩阵核查结论见 ADR-0006 执行记录；
-  运行时 audit 0 漏洞；升级时点验收 verify 全绿 + e2e smoke 3 绿，现 e2e **5 绿**
-  ——reader-text 已激活转绿（Phase 3 验收门），另有 IPC invoke 全链路与
+  运行时 audit 0 漏洞；升级时点验收 verify 全绿 + e2e smoke 3 绿，现 e2e **6 绿**
+  ——reader-text 两测（渲染文本 + Phase 4 标注链后半：划选→高亮→重开原位→编辑→
+  删除，位置断言归一 canvas 盒参照系），另有 IPC invoke 全链路与
   app-file:// fetch CSP 回归两道防线）
 - 两轮系统性 Bug 检查已闭环（2026-08-22）：业务层 7 项修复 + 防线层加固（ABI 精确
   选择 / 键序无关解析 / guardedDescribe 绑定对账），取舍与地雷登记于 ADR-0007
@@ -46,7 +47,15 @@
    updateReadPage；e2e 种子在 Playwright 进程内加载原生模块遭 Windows 自锁→子进程
    化落库）；PdfCanvas 三次契约演进（onDocInfo / onPageRender 载荷补 styles+lang /
    onDocReady），均随消费方同批送审。
-5. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
+5. **Phase 4（2026-08-22）✅**：6/6 工单清零（SR-RDR-05/06 标注链 + 笔记链四单
+   SR-SVC-10/SR-IPC-03/SR-NOTE-02/SR-NOTE-01）；e2e reader-text 后半激活转绿
+   （全套 6/6）。过程沉淀：annotation-anchor 契约演进一次（selectionToAnchor——
+   划选→锚定三元组，probe-range 边界探测 [locked-change]）；首版 e2e 位置断言被
+   人工复跑抓出约两成假阳性 flaky（跨 session 比窗口绝对坐标，窗口几何不逐像素
+   一致）→ 修正为归一 canvas 盒参照系 [locked-change]——"恒绿和随机绿一样危险"；
+   色板样式第 3 处消费触发 Rule of Three 抽取 annotation-style.ts。NotesPanel
+   装配点随 SR-LIB-04（Phase 5）。
+6. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
 
 ---
 
@@ -100,13 +109,14 @@
 | 风险 | pdf.js worker 的 CSP 已放行（worker-src blob:）；canvas 高分屏 devicePixelRatio 处理在 spike 里验证 |
 | 依赖 | Phase 2 |
 
-## Phase 4：标注与笔记 ☐
+## Phase 4：标注与笔记 ✅（2026-08-22，工单 6/6）
 
 | 项 | 内容 |
 | --- | --- |
 | 工单 | SR-RDR-05（SelectionLayer）、SR-RDR-06（AnnotationLayer）、SR-SVC-10（notes.service）、SR-IPC-03（notes ipc）、SR-NOTE-01/02（6 个；annotations repo 已在 Phase 1、reader ipc 已在 Phase 3 完成） |
 | 目标 | 划选文本 → 高亮/下划线/批注，重开应用后标注按 quote+prefix+suffix 锚定恢复；笔记面板 Markdown 编辑（textarea，不做富文本——负面清单） |
-| 验收 | ① 对应锁定测试绿；② 手动视检：改窗口大小后标注位置仍正确（锚定纯函数的核心价值）；③ 标注随删除文献级联清库（已有级联测试） |
+| 验收 | ① 对应锁定测试绿；② 手动视检：改窗口大小后标注位置仍正确（锚定纯函数的核心价值）；③ 标注随删除文献级联清库（已有级联测试）——①③ ✅；② 的等价路径由 e2e 重开原位断言覆盖（归一化矩形 0..1 相对页盒 + verifyQuote 显示级重锚），真机拖拽视检待随手验 |
+| 结果 | 全部工单验收达成。过程沉淀详见行动清单 5；笔记面板（SR-NOTE-01）已完成待装配，消费方 PaperDetailPanel 属 Phase 5 |
 | 风险 | WADM 锚定是项目最难的纯函数模块（SR-RDR-01，strong）——它排在 Phase 3 头部做，失败早暴露 |
 | 依赖 | Phase 3 |
 
@@ -115,7 +125,7 @@
 | 项 | 内容 |
 | --- | --- |
 | 工单 | 标签链：SR-SVC-09、SR-IPC-04、SR-TAG-01~03；详情与筛选：SR-LIB-04/05；增强链：SR-SVC-05、SR-NET-01~03、SR-IPC-06；导出链：SR-SVC-06/07/08、SR-IPC-07；设置与系统：SR-SET-01/02、SR-IPC-08/09；UI 基建（按需先做）：SR-UI-01/02、SR-HK-02（SR-UI-03/SR-HK-01 已提前于 Phase 2 完成）（共 23 个） |
-| 目标 | 全部剩余 weak 工单清零；38 → 0 |
+| 目标 | 全部剩余 weak 工单清零；23 → 0 |
 | 验收 | ① registry 无 open 工单（check-tickets 输出 open 0）；② 手动视检：BibTeX 导出可被 Zotero 导入、读书报告含高亮与笔记、设置页网络诊断显示三 host 探活结果 |
 | 风险 | 增强是唯一出网功能：手动触发（负面清单禁后台任务）、白名单 3 host 已锁死；导出文件名安全化规约必须遵守 |
 | 依赖 | Phase 2（标签/详情可与之并行）；增强/导出依赖 Phase 4（要读到标注笔记） |

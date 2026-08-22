@@ -73,7 +73,7 @@ AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅壳+文献库+阅读器闭环 · 🚧标注/笔记/其余<br/>features: library ✅ · reader ✅ · notes · tags · settings 🚧"]
+    UI["React SPA ✅壳+文献库+阅读器+标注闭环 · 🚧笔记装配/标签/其余<br/>features: library ✅ · reader ✅（含标注链） · notes ✅面板 · tags · settings 🚧"]
     WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
@@ -81,7 +81,7 @@ flowchart TB
   subgraph M["Main 进程（Node 24 · 单实例锁）"]
     direction TB
     REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
-    SVC["services/ ✅SVC-01/02/03/04 · 🚧其余 6<br/>业务用例 · 事务编排"]
+    SVC["services/ ✅SVC-01/02/03/04/10 · 🚧其余 5<br/>业务用例 · 事务编排"]
     REPO["repos/ ✅ SR-DB-01~05<br/>db.prepare 参数绑定"]
     DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
     PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
@@ -165,9 +165,9 @@ flowchart TB
   C --> D["fileUrl = app-file://paperId<br/>（renderer 全程无路径）"]
   D --> E["PdfCanvas ✅SR-RDR-02<br/>唯一 import pdfjs-dist；worker ?url；DPR/取消队列"]
   E --> F["TextLayer ✅SR-RDR-03<br/>--scale-factor 必设（旧项目教训）；鸭子 viewport"]
-  F --> G["SelectionLayer 🚧SR-RDR-05<br/>划选 → 定位器三元组"]
+  F --> G["SelectionLayer ✅SR-RDR-05<br/>划选 → 工具条 → selectionToAnchor 三元组（锚定根=页内 .textLayer）"]
   G --> H["annotation-anchor ✅SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
-  H --> I["AnnotationLayer 🚧SR-RDR-06<br/>重开时 verifyQuote 重锚，失败回退 rects"]
+  H --> I["AnnotationLayer ✅SR-RDR-06<br/>重开时 verifyQuote 显示级重锚，失败回退 rects"]
   H --> J["持久化：annotations.repo ✅SR-DB-03"]
   subgraph NOTE["窗口尺寸变化 = 纯函数重算，不依赖像素坐标"]
     I
@@ -206,7 +206,7 @@ flowchart TB
 ```mermaid
 flowchart TB
   subgraph LOOP["单人 + AI 弱模型领单循环"]
-    RG2["tickets/registry.ts ✅<br/>72 工单 = 34 done + 38 open<br/>（Phase 1/2 完成：DB 5 + 服务 3 + IPC 2 + 库 UI 5 + 基建 2）"]
+    RG2["tickets/registry.ts ✅<br/>72 工单 = 49 done + 23 open<br/>（Phase 1~4 完成：infra 17 + DB 5 + 服务 5 + IPC 4 + 库 UI 5 + reader 9 + notes 2 + 基建 2）"]
     SPEC["源文件头五层规约<br/>= 自包含任务书"]
     IMPL["弱模型只改工单文件"]
     GD["guardedDescribe(ticketId)<br/>open → skip · done → 激活<br/>未知工单号当场炸"]
@@ -216,7 +216,7 @@ flowchart TB
   subgraph GATES["关卡（verify = CI 同口径，本轮并轨）"]
     Q["quality:占位/乱码/跨域/行数/分层方向"]
     T["tickets:工单号一致性 + done 残留占位即红"]
-    LK["locks:82 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
+    LK["locks:83 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
     V["lint → typecheck → test → build"]
   end
   GD --> GATES
