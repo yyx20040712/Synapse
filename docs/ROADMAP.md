@@ -5,11 +5,11 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照；2026-08-22 Phase 5 收官轮更新）
+## 当前基线（制定时快照；2026-08-22 Phase 6 收官轮更新）
 
-- 工单：72 = done 72 + open 0——Phase 1~5 全部完成（1/2 于 2026-08-21，3/4/5 于
-  2026-08-22）；Phase 6 打包工单 SR-PKG-01/02 即将开单（area=infra）
-- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；83 受锁文件；覆盖率门槛三组已生效（全局 70 / repos 85 / renderer 逻辑层 60）
+- 工单：74 = done 74 + open 0——Phase 1~6 全部完成（1/2 于 2026-08-21，3/4/5/6 于
+  2026-08-22）；打包分发链路就绪（npm run dist 产 NSIS 安装包 + npm run smoke:installer 冒烟）
+- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；85 受锁文件；覆盖率门槛三组已生效（全局 70 / repos 85 / renderer 逻辑层 60）
   （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁；
   Phase 3 期间 tests/e2e/seed-paper.mjs 作为新测试基础设施入锁）
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
@@ -56,7 +56,8 @@
    装配点随 SR-LIB-04（Phase 5）。
 6. **Phase 5 收官 ✅（2026-08-22）**：23 工单清零 + DEVELOPMENT §4 两项覆盖率承诺兑现
    （a9bfe2e/0cafe84，三子代理流水线审计）+ e2e 6/6 + 收官报告 docs/reports/2026-08-22_phase5-closeout.md。
-7. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
+7. **Phase 6（2026-08-22）✅**：SR-PKG-01/02 开单（f5c0eda）→实现→双模型审计→收官（5520bd2/2ebe766）；三子代理流水线全程运转，审计四轮修复循环记录见 docs/reports/2026-08-22_SR-PKG-02.md。
+8. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
 
 ---
 
@@ -132,13 +133,14 @@
 | 结果 | 23 工单清零（最后一批 SR-SET-01/02 于 542ca4d）；收官兑现 DEVELOPMENT §4 两项覆盖率承诺（提交 a9bfe2e 全局 70 收紧 + 0cafe84 renderer 逻辑层 60 组，终态实测 77.35/88.97/81.21 lines）；e2e 6/6 绿；verify exit 0。审计与收官报告：docs/reports/2026-08-22_T2-coverage-threshold.md、docs/reports/2026-08-22_T2b-renderer-coverage.md、docs/reports/2026-08-22_phase5-closeout.md。留用户随手验三项（Zotero 导入/设置页诊断目视/真机拖拽标注视检）不阻塞 Phase 6 |
 | 依赖 | Phase 2（标签/详情可与之并行）；增强/导出依赖 Phase 4（要读到标注笔记） |
 
-## Phase 6：打包分发 ☐
+## Phase 6：打包分发 ✅（2026-08-22，工单 2/2 + 自动化冒烟）
 
 | 项 | 内容 |
 | --- | --- |
 | 前置 | 复核 Electron 版本仍在支持线（升级已在 Phase 3 前完成，见 ADR-0006 修订版） |
 | 任务 | electron-builder 配置（NSIS）、图标、安装包冒烟（干净虚拟机装一次） |
-| 验收 | 安装包在无开发环境的 Windows 上：装→导入→阅读→标注→导出 全链路可用 |
+| 验收 | 安装包在无开发环境的 Windows 上：装→导入→阅读→标注→导出 全链路可用——工单级 ✅（自动化冒烟：装得上/起得来/卸得掉，含注册表强断言）；原验收（干净机全链路）未闭合，留用户人工验收随手验（不阻塞收官） |
+| 结果 | SR-PKG-01/02 清零（5520bd2/2ebe766）；产物 Synapse-Remake-0.1.0-setup.exe（113.5MB，asar 断言+绑定 sha256=electron-v146+打包应用启动验证过）；冒烟五次真跑全绿；审计报告 docs/reports/2026-08-22_SR-PKG-01.md、docs/reports/2026-08-22_SR-PKG-02.md。过程沉淀：上游 electron-builder#1298 空目录壳裁决（方案 a 规约对齐+加严断言，方案 b 钩子存档）；winCodeSign symlink 新机首跑需预置缓存（报告 §4）；体积优化项存档。留用户：干净机（无开发环境/虚拟机）装→导入→阅读→标注→导出全链路随手验 |
 | 依赖 | Phase 5 |
 
 ---
