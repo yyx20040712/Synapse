@@ -73,7 +73,7 @@ AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅壳+文献库闭环 · 🚧阅读器/其余<br/>features: library ✅ · reader · notes · tags · settings 🚧"]
+    UI["React SPA ✅壳+文献库+阅读器闭环 · 🚧标注/笔记/其余<br/>features: library ✅ · reader ✅ · notes · tags · settings 🚧"]
     WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
@@ -81,7 +81,7 @@ flowchart TB
   subgraph M["Main 进程（Node 24 · 单实例锁）"]
     direction TB
     REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
-    SVC["services/ ✅SVC-01/03/04 · 🚧其余 7<br/>业务用例 · 事务编排"]
+    SVC["services/ ✅SVC-01/02/03/04 · 🚧其余 6<br/>业务用例 · 事务编排"]
     REPO["repos/ ✅ SR-DB-01~05<br/>db.prepare 参数绑定"]
     DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
     PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
@@ -160,13 +160,13 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-  A["双击文献<br/>library.openPaper 🚧"] --> B["api.reader.open(paperId)"]
-  B --> C["reader.service 🚧SR-SVC-02<br/>file_ref 查询 + lastReadPage"]
+  A["双击文献<br/>library.openPaper ✅（open-paper-bus 事件+闩锁）"] --> B["api.reader.open(paperId)"]
+  B --> C["reader.service ✅SVC-02<br/>fileUrl/fileName 组装 + lastReadPage"]
   C --> D["fileUrl = app-file://paperId<br/>（renderer 全程无路径）"]
-  D --> E["PdfCanvas 🚧SR-RDR-02<br/>唯一 import pdfjs-dist；worker ?url"]
-  E --> F["TextLayer 🚧SR-RDR-03<br/>--scale-factor 必设（旧项目教训）"]
+  D --> E["PdfCanvas ✅SR-RDR-02<br/>唯一 import pdfjs-dist；worker ?url；DPR/取消队列"]
+  E --> F["TextLayer ✅SR-RDR-03<br/>--scale-factor 必设（旧项目教训）；鸭子 viewport"]
   F --> G["SelectionLayer 🚧SR-RDR-05<br/>划选 → 定位器三元组"]
-  G --> H["annotation-anchor 🚧SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
+  G --> H["annotation-anchor ✅SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
   H --> I["AnnotationLayer 🚧SR-RDR-06<br/>重开时 verifyQuote 重锚，失败回退 rects"]
   H --> J["持久化：annotations.repo ✅SR-DB-03"]
   subgraph NOTE["窗口尺寸变化 = 纯函数重算，不依赖像素坐标"]

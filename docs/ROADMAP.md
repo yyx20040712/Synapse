@@ -5,19 +5,22 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照；2026-08-22 Phase 3 前置轮更新）
+## 当前基线（制定时快照；2026-08-22 Phase 3 收官轮更新）
 
-- 工单：72 = done 34（infra 17 + DB 5 + services 3 + ipc 2 + library-ui 5 + ui-kit/hooks 2）+ open 38
-  （weak 35 / strong 3）——Phase 1/2 已于 2026-08-21 同日完成
-- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；82 受锁文件
-  （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁）
+- 工单：72 = done 43（infra 17 + DB 5 + services 4 + ipc 3 + library-ui 5 + reader 7 +
+  ui-kit/hooks 2）+ open 29（weak 29 / strong 0）——Phase 1/2 于 2026-08-21、
+  Phase 3 于 2026-08-22 完成
+- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；83 受锁文件
+  （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁；
+  Phase 3 期间 tests/e2e/seed-paper.mjs 作为新测试基础设施入锁）
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
   Node 20 缺 better-sqlite3 v12.11.1 预编译→已修为 Node 24，次跑全绿）。尾注检查
   基线兼容 push 事件（PR base sha / push before），manifest 变更关卡已真实拦截验证
 - **Electron 升级门已过（2026-08-22）**：33.4.11 → **42.9.3**（支持线中位，ABI 146，
   better-sqlite3 维持 12.11.1——prebuild 矩阵核查结论见 ADR-0006 执行记录；
-  运行时 audit 0 漏洞；升级时点验收 verify 全绿 + e2e smoke 3 绿，现 e2e smoke
-  4 绿——已补 IPC invoke 全链路与 app-file:// fetch CSP 回归两道防线）
+  运行时 audit 0 漏洞；升级时点验收 verify 全绿 + e2e smoke 3 绿，现 e2e **5 绿**
+  ——reader-text 已激活转绿（Phase 3 验收门），另有 IPC invoke 全链路与
+  app-file:// fetch CSP 回归两道防线）
 - 两轮系统性 Bug 检查已闭环（2026-08-22）：业务层 7 项修复 + 防线层加固（ABI 精确
   选择 / 键序无关解析 / guardedDescribe 绑定对账），取舍与地雷登记于 ADR-0007
 - pdf.js spike 决策门已过（2026-08-22）：canvas + 官方 TextLayer 路线在真实
@@ -37,7 +40,13 @@
 3. **Phase 3 前置 ✅（2026-08-22）**：Electron 升级门已执行（33.4.11→42.9.3，
    prebuild 矩阵核查→ADR-0006 执行记录）与 pdf.js spike 已通过（13 项断言全绿→
    ADR-0002 决策门结论）。**Phase 3 工单解除封锁。**
-4. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
+4. **Phase 3（2026-08-22）✅**：9/9 工单清零（strong 3 + weak 6，含 SR-RDR-01/02/03
+   三件套与 SR-SVC-02/SR-IPC-02/SR-RDR-04/07/08/09）；e2e reader-text 激活转绿
+   （5/5）。期间两次锁定测试缺陷经 [locked-change] 修复（reader.service 测试桩漏
+   updateReadPage；e2e 种子在 Playwright 进程内加载原生模块遭 Windows 自锁→子进程
+   化落库）；PdfCanvas 三次契约演进（onDocInfo / onPageRender 载荷补 styles+lang /
+   onDocReady），均随消费方同批送审。
+5. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
 
 ---
 
@@ -79,14 +88,15 @@
   全量 verify + e2e → ADR + [dep-change] 提交。未完成不得开工 Phase 3 工单。
 - Phase 6 打包前仅需复核：版本仍在支持线（若期间又出了新的大版本线，按需小步跟）。
 
-## Phase 3：阅读器（含决策门）☐（前置两门已于 2026-08-22 通过，工单可开工）
+## Phase 3：阅读器（含决策门）✅（2026-08-22，工单 9/9）
 
 | 项 | 内容 |
 | --- | --- |
 | 前置 | ① **Electron 升级门 ✅**（2026-08-22：42.9.3 落地，ELECTRON_ABI_MAP 补表 37~44，见 ADR-0006 执行记录）② pdf.js spike 决策门 ✅（2026-08-22：canvas+TextLayer+选择+DPR 13 项断言全过，ADR-0002 维持库 API 路线） |
 | 工单 | strong：SR-RDR-01（annotation-anchor 纯函数）、SR-RDR-02（PdfCanvas）、SR-RDR-03（TextLayer）；weak：SR-RDR-04、SR-RDR-07 ~ 09 + SR-SVC-02（reader.service）+ SR-IPC-02（共 9 个；SR-RDR-05/06 属 Phase 4 标注链，勿在此实现） |
 | 目标 | 双击文献打开阅读器；翻页/缩放/目录；文本可选择（为 Phase 4 标注铺路） |
-| 验收 | **`tests/e2e/reader-text.spec.ts` 激活并转绿**（依赖工单 AND 条件已接线：SR-RDR-02 + SR-LIB-01 + SR-LIB-02 + SR-RDR-04）——这是"文字真实可见"的最终裁判 |
+| 验收 | **`tests/e2e/reader-text.spec.ts` 激活并转绿**（依赖工单 AND 条件已接线：SR-RDR-02 + SR-LIB-01 + SR-LIB-02 + SR-RDR-04）——这是"文字真实可见"的最终裁判 ✅（2026-08-22 首次真执行即绿，e2e 全套 5/5） |
+| 结果 | 全部验收达成。过程沉淀：两个锁定测试缺陷 [locked-change] 修复（详见行动清单 4）；PdfCanvas 三次契约演进（onDocInfo / onPageRender 补 styles+lang / onDocReady）；TextLayer 官方 CSS 采用提取版（6 个 :root 块不引入，防主题泄漏） |
 | 风险 | pdf.js worker 的 CSP 已放行（worker-src blob:）；canvas 高分屏 devicePixelRatio 处理在 spike 里验证 |
 | 依赖 | Phase 2 |
 
