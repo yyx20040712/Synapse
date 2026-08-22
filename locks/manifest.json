@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-22T11:49:22.9379184Z",
+    "generatedAt":  "2026-08-22T12:11:46.3337541Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -331,7 +331,7 @@
                   },
                   {
                       "path":  "vitest.config.ts",
-                      "sha256":  "7f9823a95ba7c1588fa208be6c2b50f733df2beb0ec50e4a540671c1b5e3db58"
+                      "sha256":  "af9cdb4774a2cc27d65feda4152f6af330a3d5a7511f5d897e7f95b42115c96d"
                   }
               ]
 }
