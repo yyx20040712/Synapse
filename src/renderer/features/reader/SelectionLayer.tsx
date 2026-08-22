@@ -1,5 +1,5 @@
 /**
- * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：open / weak，依赖 SR-RDR-01）
+ * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：open / weak，依赖 annotation-anchor 模块）
  *
  * ── 行为层 ──
  * - 监听文本层 selectionchange/mouseup：window.getSelection() 非空时弹出标注工具条

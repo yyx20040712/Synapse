@@ -1,5 +1,5 @@
 /**
- * [SR-RDR-06] AnnotationLayer —— 标注渲染与命中（工单：open / weak，依赖 SR-RDR-01）
+ * [SR-RDR-06] AnnotationLayer —— 标注渲染与命中（工单：open / weak，依赖 annotation-anchor 模块）
  *
  * ── 行为层 ──
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定，
