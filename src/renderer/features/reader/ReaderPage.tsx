@@ -28,6 +28,7 @@
 import { useEffect, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
+import { AnnotationLayer } from './AnnotationLayer'
 import { OutlinePanel } from './OutlinePanel'
 import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
 import { ReaderToolbar } from './ReaderToolbar'
@@ -193,7 +194,15 @@ export function ReaderPage(): JSX.Element {
                 onSaved={addAnnotation}
               />
             )}
-            {/* Phase 4 标注链落位处：SelectionLayer / AnnotationLayer（见文件头行为层） */}
+            {pageText !== null && pageText.page === page + 1 && (
+              <AnnotationLayer
+                annotations={annotations}
+                page={page}
+                pageRoot={pageRoot}
+                // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
+                onChanged={() => undefined}
+              />
+            )}
           </div>
           <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
         </div>
