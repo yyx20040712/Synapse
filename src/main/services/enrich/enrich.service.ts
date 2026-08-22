@@ -1,12 +1,13 @@
 /**
- * [SR-SVC-05] enrich.service —— 元数据增强编排（工单：open / weak）
+ * [SR-SVC-05] enrich.service —— 元数据增强编排（工单：done / weak）
  *
  * ── 行为层 ──
  * - enrichPaper(paperId)：只对该篇文献执行——
  *   1) 有 doi → crossref.byDoi；命中即回写（source='crossref'）
  *   2) 未命中 → openalex.byTitle(title)；命中回写（source='openalex'）
- *   3) 有 arxivId 或 openalex 命中 arXiv 灌木 → arxiv.byId 补充
- *   4) 全部未命中 → enrich_status='failed'（不覆盖已有字段）
+ *   3) 无 doi 且标题也查空但有 arxivId → arxiv.byId（source='arxiv'）；
+ *      命中项带 arxivId 时也用 arxiv 补充空字段
+ *   4) 全部未命中 → enrich_status='failed'（source 保持原值，不覆盖已有字段）
  *   5) 成功 → enrich_status='done'；返回最新 PaperDetail
  * - 回写只填"当前为空的字段"（用户手填的值优先，source 除外）
  *
@@ -18,8 +19,8 @@
  *   }): { enrichPaper(paperId: string): Promise<PaperDetail> }
  *
  * ── 架构层 ──
- * - 上游异常（HttpFetchError）捕获后 enrich_status='failed' 并回写，不向上抛——
- *   增强失败是可预期结果不是异常
+ * - 上游异常（HttpFetchError 等）捕获后按 failed 回写，不向上抛——增强失败是
+ *   可预期结果不是异常；礼貌池 contactEmail 由 http 层注入（本层不重复传递）
  *
  * ── 生命周期层 ──
  * - 不做：批量增强/自动后台任务（安全负面清单：出网仅手动触发）
@@ -27,17 +28,109 @@
  * ── 文化层 ──
  * - 测试：tests/unit/services/enrich.service.test.ts（已锁定，providers 用桩）
  */
-import { unimplementedObject } from '../../../shared/app-error'
-import type { PaperDetail } from '../../../shared/models/paper'
+import type { PaperSource } from '../../../shared/models/paper'
+import type { PaperDetail, PaperMetaPatch } from '../../../shared/models/paper'
+import type { AppErrorCode } from '../../../shared/app-error'
 import type { Repos } from '../../db/repos'
+import type { CrossrefProvider, EnrichedWork } from './providers/crossref'
+import type { OpenalexProvider } from './providers/openalex'
+import type { ArxivProvider } from './providers/arxiv'
 
-export function createEnrichService(_deps: {
+export interface EnrichProviders {
+  crossref: CrossrefProvider
+  openalex: OpenalexProvider
+  arxiv: ArxivProvider
+}
+
+/** 域错误：目标文献不存在（与 library/reader 的 DomainError 同构） */
+class EnrichDomainError extends Error {
+  readonly code: AppErrorCode
+
+  constructor(code: AppErrorCode, message: string) {
+    super(message)
+    this.name = 'EnrichDomainError'
+    this.code = code
+  }
+}
+
+/** 增强命中候选（三源统一为 EnrichedWork；openalex/arxiv 附带 arxivId） */
+type Candidate = EnrichedWork & { arxivId?: string | null }
+
+/** 只填当前为空的字段（用户手填值优先；title 例外——文件名标题常不可靠，同样只补空） */
+function fillEmptyPatch(row: { authors_json: string; year: number | null; venue: string; doi: string | null; abstract: string; title: string }, work: Candidate): PaperMetaPatch {
+  const patch: PaperMetaPatch = {}
+  if (row.title === '' && work.title !== '') patch.title = work.title
+  if (JSON.parse(row.authors_json).length === 0 && work.authors.length > 0) patch.authors = work.authors
+  if (row.year === null && work.year !== null) patch.year = work.year
+  if (row.venue === '' && work.venue !== '') patch.venue = work.venue
+  if (row.doi === null && work.doi !== null) patch.doi = work.doi
+  if (row.abstract === '' && work.abstract !== '') patch.abstract = work.abstract
+  return patch
+}
+
+export function createEnrichService(deps: {
   repos: Repos
-  providers: unknown
+  providers: EnrichProviders
   contactEmail: () => string
 }): { enrichPaper(paperId: string): Promise<PaperDetail> } {
-  return unimplementedObject<{ enrichPaper(paperId: string): Promise<PaperDetail> }>(
-    'SR-SVC-05',
-    'enrich.service'
-  )
+  const { repos, providers } = deps
+
+  return {
+    async enrichPaper(paperId) {
+      const row = repos.papers.findById(paperId)
+      if (row === null) {
+        throw new EnrichDomainError('NOT_FOUND', `文献不存在：${paperId}`)
+      }
+
+      let work: Candidate | null = null
+      let source: PaperSource = row.source
+      try {
+        if (row.doi !== null) {
+          work = await providers.crossref.byDoi(row.doi)
+          if (work !== null) source = 'crossref'
+        }
+        if (work === null && row.title !== '') {
+          work = await providers.openalex.byTitle(row.title)
+          if (work !== null) source = 'openalex'
+        }
+        if (work === null && row.arxiv_id !== null) {
+          const ax = await providers.arxiv.byId(row.arxiv_id)
+          if (ax !== null) {
+            // arXiv 命中无 venue/doi，统一到 Candidate 形状（venue 留空待补）
+            work = { ...ax, venue: '', doi: null }
+          }
+          if (work !== null) source = 'arxiv'
+        }
+        // arXiv 补充：命中项带 arxivId 且正文/作者仍空时补齐（失败不影响主结果）
+        if (work !== null && work.arxivId !== null && work.arxivId !== undefined) {
+          try {
+            const extra = await providers.arxiv.byId(work.arxivId)
+            if (extra !== null) {
+              work = {
+                ...work,
+                abstract: work.abstract === '' ? extra.abstract : work.abstract,
+                authors: work.authors.length === 0 ? extra.authors : work.authors
+              }
+            }
+          } catch {
+            // 补充源失败：按已命中的主结果继续
+          }
+        }
+      } catch {
+        // 上游异常（网络/HTTP）→ 按未命中处理，走 failed 回写
+        work = null
+      }
+
+      repos.papers.applyEnrichment(paperId, {
+        source,
+        enrichStatus: work !== null ? 'done' : 'failed',
+        patch: work === null ? {} : fillEmptyPatch(row, work)
+      })
+      const detail = repos.papers.detailById(paperId)
+      if (detail === null) {
+        throw new EnrichDomainError('NOT_FOUND', `文献不存在：${paperId}`)
+      }
+      return detail
+    }
+  }
 }

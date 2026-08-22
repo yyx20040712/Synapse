@@ -2,9 +2,9 @@
  * [SR-NET-03] arxiv provider —— arXiv Atom API 封装（工单：done / weak）
  *
  * ── 行为层 ──
- * - byId(arxivId)：GET https://export.arxiv.org/api/query?id_list={id}
- *   （id 形如 2401.12345 或 2401.12345v2；点保留原样）
- * - 解析 Atom XML（fetchText 抓取，本文件内正则解析：<entry> 块内的
+ * - byId(arxivId)：GET export.arxiv.org 的 Atom query 接口（id_list=指定 id，
+ *   查询串经 URLSearchParams 参数化构造；id 形如 2401.12345 或 2401.12345v2）
+ * - 解析 Atom XML（fetchText 抓取，本文件内静态正则解析：<entry> 块内的
  *   <title>、<name>（多个 <author>）、<published>（取年份）、<summary>）
  * - 无 <entry>（不存在）→ null；HTTP 错原样抛
  *
@@ -14,9 +14,9 @@
  * - export function createArxivProvider(deps: { fetchText }): ArxivProvider
  *
  * ── 架构层 ──
- * - main 进程无 DOMParser，静态正则解析（Atom 结构稳定且只取五个字段；
- *   不构造动态正则——标签名全是本文件内固定字面量）
+ * - main 进程无 DOMParser，静态正则解析（Atom 结构稳定且只取五个字段）
  * - XML 转义反转义（&amp; &lt; &gt; &quot; &#39;）；summary 空白规整为单空格
+ * - host 白名单由 http-client 强制（export.arxiv.org 在 src/shared/constants）
  *
  * ── 生命周期层 ──
  * - 不做：全文下载（负面清单：PDF 下载管线不做）
@@ -62,20 +62,20 @@ export function createArxivProvider(deps: {
 }): ArxivProvider {
   return {
     async byId(arxivId) {
-      const xml = await deps.fetchText(
-        `https://export.arxiv.org/api/query?id_list=${encodeURIComponent(arxivId)}`
-      )
+      const query = new URLSearchParams({ id_list: arxivId }).toString()
+      const xml = await deps.fetchText(`https://export.arxiv.org/api/query?${query}`)
       const entry = /<entry>([\s\S]*?)<\/entry>/.exec(xml)
-      if (entry === null) {
+      if (entry === null || entry[1] === undefined) {
         return null
       }
-      const block = entry[1]
+      const block: string = entry[1]
       const title = TITLE_RE.exec(block)?.[1]
       const summary = SUMMARY_RE.exec(block)?.[1]
       const published = PUBLISHED_RE.exec(block)?.[1]
-      const authors = [...block.matchAll(AUTHOR_NAME_RE)].map((m) =>
-        collapseSpace(unescapeXml(m[1]))
-      )
+      const authors = [...block.matchAll(AUTHOR_NAME_RE)].map((m) => {
+        const name: string = m[1] ?? ''
+        return collapseSpace(unescapeXml(name))
+      })
       const yearText = published === undefined ? undefined : /(\d{4})/.exec(published)?.[1]
       return {
         title: title === undefined ? '' : collapseSpace(unescapeXml(title)),
