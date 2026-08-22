@@ -10,10 +10,13 @@
  *
  * ── 接口层 ──
  * - export interface PdfCanvasProps { fileUrl: string; pageNumber: number; zoom: number;
- *     onPageRender(page: number, textContent: PdfTextItem[]): void; onError(msg: string): void }
+ *     onPageRender(page: number, textContent: PdfTextItem[]): void; onError(msg: string): void;
+ *     onDocInfo?(info: { numPages: number }): void }
  * - export function PdfCanvas(props: PdfCanvasProps): JSX.Element
  * - PdfTextItem 是 pdfjs TextItem 的结构子集（主入口未导出该类型）：消费方
  *   （TextLayer/SelectionLayer/ReaderPage）只从本文件取类型与数据，不 import pdfjs-dist
+ * - onDocInfo（2026-08-22 契约演进，SR-RDR-04 接线前置）：文档加载完成时回调页数，
+ *   供 reader.store.setTotalPages——此前 totalPages 无数据生产者；旧消费方不传不受影响
  *
  * ── 架构层 ──
  * - 唯一允许 import pdfjs-dist 的文件；TextLayer/SelectionLayer 依赖它回调的 textContent
@@ -63,6 +66,8 @@ export interface PdfCanvasProps {
   zoom: number
   onPageRender(page: number, textContent: PdfTextItem[]): void
   onError(msg: string): void
+  /** 文档加载完成时上报页数（totalPages 的数据生产者，见文件头接口层） */
+  onDocInfo?(info: { numPages: number }): void
 }
 
 function errorMessage(err: unknown): string {
@@ -77,8 +82,10 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
   // 回调走 latest-ref：父组件传内联箭头函数不应触发本组件的重渲染队列
   const onPageRenderRef = useRef(props.onPageRender)
   const onErrorRef = useRef(props.onError)
+  const onDocInfoRef = useRef(props.onDocInfo)
   onPageRenderRef.current = props.onPageRender
   onErrorRef.current = props.onError
+  onDocInfoRef.current = props.onDocInfo
 
   // 文档生命周期：fileUrl 变化 → 弃旧文档（销毁连带 worker 侧资源）→ 异步加载新文档
   useEffect(() => {
@@ -89,6 +96,8 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
     task.promise
       .then((loaded) => {
         if (!cancelled) {
+          // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
+          onDocInfoRef.current?.({ numPages: loaded.numPages })
           setDoc(loaded)
         }
       })
