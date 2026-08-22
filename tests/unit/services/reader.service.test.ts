@@ -76,7 +76,7 @@ guardedDescribe('SR-SVC-02', 'reader.service —— 打开与标注读写', () =
   })
 
   it('saveAnnotation 转调 insert；update/delete/list 透传', async () => {
-    const svc = createReaderService({ repos: stubRepos({ papers: { detailById: () => detail } }) })
+    const svc = createReaderService({ repos: stubRepos({ papers: { detailById: () => detail, updateReadPage: () => undefined } }) })
     const input: AnnotationInput = {
       page: 0,
       kind: 'highlight',
