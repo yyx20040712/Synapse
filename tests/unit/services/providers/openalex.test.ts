@@ -12,11 +12,11 @@ const openalexResponse = {
       primary_location: { source: { display_name: 'Journal of Hydrology' } },
       doi: 'https://doi.org/10.1000/xyz',
       abstract_inverted_index: {
-        water: [0, 5],
+        water: [0, 4],
         management: [1],
         in: [2],
         cities: [3],
-        matters: [4]
+        matters: [5]
       },
       ids: { openalex: 'https://openalex.org/W1' }
     }
