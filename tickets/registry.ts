@@ -96,7 +96,7 @@ export const TICKETS: readonly Ticket[] = [
 
   // ── reader 强模型模块（strong-open，Phase 3 决策门后实现）──────────
   { id: 'SR-RDR-01', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '文本偏移↔DOM 定位纯函数（WADM 思路）' },
-  { id: 'SR-RDR-02', file: 'src/renderer/features/reader/PdfCanvas.tsx', area: 'reader', owner: 'strong', status: 'open', summary: 'pdf.js canvas 渲染封装（v4 API）' },
+  { id: 'SR-RDR-02', file: 'src/renderer/features/reader/PdfCanvas.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'pdf.js canvas 渲染封装（v4 API）' },
   { id: 'SR-RDR-03', file: 'src/renderer/features/reader/TextLayer.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '官方 TextLayer CSS 接线' },
 
   // ── renderer UI（weak）─────────────────────────────────────────
