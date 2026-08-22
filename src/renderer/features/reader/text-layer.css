@@ -1,0 +1,83 @@
+/**
+ * [SR-RDR-03] 文本层样式 —— 提取自 pdfjs-dist 4.10.38 官方 web/pdf_viewer.css 的
+ * .textLayer 规则（逐字保留；官方 .highlight 系列、.highlighting、编辑器规则与
+ * 6 个 :root 变量块未提取——后者会把全局自定义属性泄漏进应用主题 theme.css）。
+ *
+ * 纪律：
+ * - 升级 pdfjs-dist（须 ADR + [dep-change]）时必须重新提取并核对 diff；
+ * - 本文件只允许被 TextLayer.tsx 引入（官方 CSS 唯一入口，见其架构层）；
+ * - --scale-factor 不在此定义：由 TextLayer 组件按当前缩放内联设置在容器上
+ *   （官方 :root 默认值 1 仅是兜底，运行时真实缩放才是正确值）。
+ */
+.textLayer{
+  position:absolute;
+  text-align:initial;
+  inset:0;
+  overflow:clip;
+  opacity:1;
+  line-height:1;
+  -webkit-text-size-adjust:none;
+     -moz-text-size-adjust:none;
+          text-size-adjust:none;
+  forced-color-adjust:none;
+  transform-origin:0 0;
+  caret-color:CanvasText;
+  z-index:0;
+}
+
+.textLayer :is(span,br){
+    color:transparent;
+    position:absolute;
+    white-space:pre;
+    cursor:text;
+    transform-origin:0% 0%;
+  }
+
+.textLayer  > :not(.markedContent),.textLayer .markedContent span:not(.markedContent){
+    z-index:1;
+  }
+
+.textLayer span.markedContent{
+    top:0;
+    height:0;
+  }
+
+.textLayer span[role="img"]{
+    -webkit-user-select:none;
+       -moz-user-select:none;
+          user-select:none;
+    cursor:default;
+  }
+
+.textLayer ::-moz-selection{
+    background:rgba(0 0 255 / 0.25);
+    background:color-mix(in srgb, AccentColor, transparent 75%);
+  }
+
+.textLayer ::selection{
+    background:rgba(0 0 255 / 0.25);
+    background:color-mix(in srgb, AccentColor, transparent 75%);
+  }
+
+.textLayer br::-moz-selection{
+    background:transparent;
+  }
+
+.textLayer br::selection{
+    background:transparent;
+  }
+
+.textLayer .endOfContent{
+    display:block;
+    position:absolute;
+    inset:100% 0 0;
+    z-index:0;
+    cursor:default;
+    -webkit-user-select:none;
+       -moz-user-select:none;
+          user-select:none;
+  }
+
+.textLayer.selecting .endOfContent{
+    top:0;
+  }
