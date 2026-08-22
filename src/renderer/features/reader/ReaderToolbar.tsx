@@ -21,28 +21,12 @@
 import { useEffect, useState } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
+import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
 
 /** 缩放步进（0.1，浮点累积经 round2 消除） */
 const ZOOM_STEP = 0.1
 
 const round2 = (v: number): number => Math.round(v * 100) / 100
-
-/** 色板取色（theme.css 的 --annotation-*，禁止散落硬编码色值） */
-const COLOR_SWATCH: Record<AnnotationColor, string> = {
-  yellow: 'var(--annotation-yellow)',
-  green: 'var(--annotation-green)',
-  blue: 'var(--annotation-blue)',
-  red: 'var(--annotation-red)',
-  purple: 'var(--annotation-purple)'
-}
-
-const COLOR_LABEL: Record<AnnotationColor, string> = {
-  yellow: '黄',
-  green: '绿',
-  blue: '蓝',
-  red: '红',
-  purple: '紫'
-}
 
 export function ReaderToolbar(props: {
   page: number

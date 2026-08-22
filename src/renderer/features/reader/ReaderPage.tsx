@@ -9,9 +9,9 @@
  * - 接收 library 侧"打开文献"事件（简单事件总线：window.dispatchEvent CustomEvent
  *   'synapse:open-paper'，library.store.openPaper 派发；本页监听并切 tab 由 App 层处理）。
  *   事件派发时本页尚未挂载（App 才切 tab），故挂载时经 takePendingOpenPaper 补读闩锁
- * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链（ROADMAP：勿在 Phase 3 实现），
- *   且其占位件按流内渲染会撑破页面盒（页根高度=canvas），Phase 3 不挂载，
- *   SR-RDR-05/06 落地时在此按其冻结 props 接线
+ * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，
+ *   SelectionLayer 划选保存经 onSaved → store.addAnnotation；AnnotationLayer 渲染
+ *   store.annotations 中当前页的标注（换页/换文献经 store 状态驱动重锚）
  *
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
@@ -25,12 +25,13 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本（本工单落地即激活——最终裁判）
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
 import { OutlinePanel } from './OutlinePanel'
 import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
 import { ReaderToolbar } from './ReaderToolbar'
+import { SelectionLayer } from './SelectionLayer'
 import { TextLayer } from './TextLayer'
 import { useReaderStore } from './reader.store'
 
@@ -54,12 +55,15 @@ export function ReaderPage(): JSX.Element {
   const setZoom = useReaderStore((s) => s.setZoom)
   const setColor = useReaderStore((s) => s.setColor)
   const setTotalPages = useReaderStore((s) => s.setTotalPages)
+  const addAnnotation = useReaderStore((s) => s.addAnnotation)
 
   const [pageText, setPageText] = useState<PageText | null>(null)
   const [outlineOpen, setOutlineOpen] = useState(true)
   // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfCanvas onDocReady 上报，换文档即弃
   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
-  const pageRootRef = useRef<HTMLDivElement | null>(null)
+  // 页根用回调 ref 存 state（而非 useRef）：标注层要拿它作 props，ref.current
+  // 赋值不触发重渲染，首帧后标注层会一直拿到 null
+  const [pageRoot, setPageRoot] = useState<HTMLDivElement | null>(null)
 
   // 打开请求两路：挂载时闩锁补读（事件派发时本页未挂载）+ 已挂载期间的实时监听。
   // openPaper 属动作型：失败上抛在此 catch → toast（store 不吞错）
@@ -87,7 +91,7 @@ export function ReaderPage(): JSX.Element {
 
   /** PdfCanvas 渲染完成回报：带回该页文本载荷，并量测 canvas CSS 盒（覆盖层定位基准） */
   const handlePageRender = (renderedPage: number, text: PdfTextContent): void => {
-    const canvas = pageRootRef.current?.querySelector('canvas[data-pdf-canvas]') ?? null
+    const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
     if (canvas === null) return
     const rect = canvas.getBoundingClientRect()
     setPageText({
@@ -101,7 +105,7 @@ export function ReaderPage(): JSX.Element {
 
   /** 适应宽度：滚动容器内宽 ÷ 页面原始宽（原始宽 = 当前盒宽 / 当前缩放）；夹取由 store 兜底 */
   const fitWidth = (): void => {
-    const scrollArea = pageRootRef.current?.parentElement ?? null
+    const scrollArea = pageRoot?.parentElement ?? null
     if (scrollArea === null || pageText === null) return
     const naturalWidth = pageText.box.w / zoom
     // 24px ≈ 滚动区两侧 p-3 内边距（clientWidth 含 padding，需扣除）
@@ -162,8 +166,8 @@ export function ReaderPage(): JSX.Element {
         )}
         <div className="min-w-0 flex-1 overflow-auto p-3">
           {/* 页根：canvas 与覆盖层的共同定位盒（w-fit 收敛到 canvas 尺寸，
-              TextLayer absolute inset-0 + 显式宽高精确叠合） */}
-          <div ref={(el) => (pageRootRef.current = el)} className="relative mx-auto w-fit">
+              TextLayer absolute inset-0 + 显式宽高精确叠合；标注层/划选条在其上） */}
+          <div ref={setPageRoot} className="relative mx-auto w-fit">
             <PdfCanvas
               fileUrl={fileUrl}
               pageNumber={page + 1}
@@ -179,6 +183,14 @@ export function ReaderPage(): JSX.Element {
                 viewportScale={zoom}
                 pageWidth={pageText.box.w}
                 pageHeight={pageText.box.h}
+              />
+            )}
+            {pageText !== null && pageText.page === page + 1 && (
+              <SelectionLayer
+                pageRoot={pageRoot}
+                paperId={paperId}
+                page={page}
+                onSaved={addAnnotation}
               />
             )}
             {/* Phase 4 标注链落位处：SelectionLayer / AnnotationLayer（见文件头行为层） */}
