@@ -113,7 +113,7 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR-LIB-05', file: 'src/renderer/features/library/FilterBar.tsx', area: 'library-ui', owner: 'weak', status: 'open', summary: '搜索与筛选栏' },
   { id: 'SR-LIB-06', file: 'src/renderer/features/library/ImportDropZone.tsx', area: 'library-ui', owner: 'weak', status: 'done', summary: '导入入口（拖拽+按钮）' },
   { id: 'SR-LIB-07', file: 'src/renderer/features/library/library.store.ts', area: 'library-ui', owner: 'weak', status: 'done', summary: '文献库状态（列表/筛选/选中）' },
-  { id: 'SR-NOTE-01', file: 'src/renderer/features/notes/NotesPanel.tsx', area: 'notes-ui', owner: 'weak', status: 'open', summary: '笔记面板（Markdown 编辑）' },
+  { id: 'SR-NOTE-01', file: 'src/renderer/features/notes/NotesPanel.tsx', area: 'notes-ui', owner: 'weak', status: 'done', summary: '笔记面板（Markdown 编辑）' },
   { id: 'SR-NOTE-02', file: 'src/renderer/features/notes/notes.store.ts', area: 'notes-ui', owner: 'weak', status: 'done', summary: '笔记状态' },
   { id: 'SR-TAG-01', file: 'src/renderer/features/tags/TagEditor.tsx', area: 'tags-ui', owner: 'weak', status: 'open', summary: '标签编辑器' },
   { id: 'SR-TAG-02', file: 'src/renderer/features/tags/TagFilter.tsx', area: 'tags-ui', owner: 'weak', status: 'open', summary: '标签筛选器' },
