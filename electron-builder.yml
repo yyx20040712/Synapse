@@ -1,4 +1,4 @@
-# [SR-PKG-01] electron-builder.yml —— NSIS 打包配置单真相源（工单：open / strong）
+# [SR-PKG-01] electron-builder.yml —— NSIS 打包配置单真相源（工单：done / strong）
 #
 # ── 行为层 ──
 # - `npm run dist` 一条命令产出 NSIS 安装包（dist/<artifactName>.exe），硬约束：
@@ -31,6 +31,34 @@
 #
 # ── 文化层 ──
 # - 错误：配置错误在 builder 阶段即红，不静默降级；禁止占位实现残留。
-# - 完成后：删除本注释中的占位状态（工单翻 done）→ npm run verify 绿 → 审计 → 提交。
+# - 完成记录（2026-08-22）：占位已删、工单已翻 done；dist 首跑 winCodeSign symlink 问题经一次性缓存预置解决（机器本地）。
 
-# （SR-PKG-01 实现中填充——工单 open）
+appId: io.github.yyx20040712.synapse
+productName: Synapse Remake
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - '!node_modules/react/**'
+  - '!node_modules/react-dom/**'
+  - '!node_modules/zustand/**'
+  - '!node_modules/pdfjs-dist/**'
+  - '!node_modules/better-sqlite3/abi-cache/**'
+asar: true
+asarUnpack:
+  - '**/*.node'
+electronDist: node_modules/electron/dist
+npmRebuild: false
+buildDependenciesFromSource: false
+win:
+  icon: build/icon.ico
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  artifactName: Synapse-Remake-${version}-setup.${ext}

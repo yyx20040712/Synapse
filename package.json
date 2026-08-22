@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "本地学术文献管理 + PDF 阅读标注（智慧水务课程科研工具）",
   "private": true,
+  "author": "yyx20040712",
   "main": "out/main/index.js",
   "type": "module",
   "engines": {
@@ -13,6 +14,7 @@
     "postinstall": "install-electron && node scripts/sqlite-abi.mjs setup",
     "dev": "node scripts/sqlite-abi.mjs use electron && electron-vite dev",
     "build": "node scripts/sqlite-abi.mjs use electron && electron-vite build",
+    "dist": "node scripts/dist.mjs",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint .",

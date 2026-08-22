@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-22T12:36:26.7280516Z",
+    "generatedAt":  "2026-08-22T12:49:17.1487968Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -31,7 +31,7 @@
                   },
                   {
                       "path":  "scripts/dist.mjs",
-                      "sha256":  "08ab4a16aa3ecdac9c1f2acbe6216581aa875c9377652c298771fb230de21557"
+                      "sha256":  "4cdafec1ac639b005e6e9d418ff29ecfc68423aa49cd6c4d13742fed6599dc85"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
