@@ -1,5 +1,5 @@
 /**
- * [SR-UI-01] Button —— 按钮（工单：open / weak）
+ * [SR-UI-01] Button —— 按钮（工单：done / weak）
  *
  * ── 行为层 ──
  * - 变体：primary（accent 底白字）/ secondary（边框）/ danger（红）/ ghost（无边框）
@@ -13,19 +13,49 @@
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 颜色一律 var(--*)，禁止 Tailwind 调色板硬编码
  */
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
-export function Button(_props: {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
+type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
+
+/** 变体底色/边框（全部走主题变量） */
+const VARIANT_STYLE: Record<Variant, CSSProperties> = {
+  primary: { background: 'var(--accent)', color: '#ffffff', borderColor: 'var(--accent)' },
+  secondary: { background: 'var(--panel)', color: 'var(--text)', borderColor: 'var(--border)' },
+  danger: { background: 'var(--panel)', color: 'var(--danger)', borderColor: 'var(--danger)' },
+  ghost: { background: 'transparent', color: 'var(--text)' }
+}
+
+const SIZE_CLASS: Record<'sm' | 'md', string> = {
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-3 py-1.5 text-sm'
+}
+
+export function Button(props: {
+  variant?: Variant
   size?: 'sm' | 'md'
   loading?: boolean
   disabled?: boolean
   onClick: () => void
   children: ReactNode
 }): JSX.Element {
+  const { variant = 'secondary', size = 'md', loading = false, disabled = false, onClick, children } = props
+  const inactive = disabled || loading
   return (
-    <button data-ticket="SR-UI-01" disabled className="rounded px-2 py-1 text-xs" style={{ color: 'var(--text-dim)' }}>
-      工单未完成：SR-UI-01
+    <button
+      type="button"
+      disabled={inactive}
+      className={`inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
+      style={{ ...VARIANT_STYLE[variant], ...(variant === 'ghost' ? { border: 'none' } : {}) }}
+      onClick={() => {
+        if (!inactive) onClick()
+      }}
+    >
+      {loading && (
+        <span aria-hidden className="inline-block animate-spin">
+          ⟳
+        </span>
+      )}
+      {children}
     </button>
   )
 }
