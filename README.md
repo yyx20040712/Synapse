@@ -15,6 +15,8 @@
 | `npm run test` / `npm run test:e2e` | 单测 / 端到端（e2e 需先 build） |
 | `npm run quality:check` / `tickets:check` / `locks:check` | 三道防作弊关卡 |
 | `npm run locks:apply` / `locks:unlock` | 锁定/解锁受保护文件（变更需 [locked-change]） |
+| `npm run dist` | 打包 NSIS 安装包（electron ABI 绑定前置 + npmmirror 镜像，产物 dist/） |
+| `npm run smoke:installer` | 安装包冒烟：静默装→沙箱启动→存活断言→静默卸载（需先 dist） |
 
 ## 目录导览
 

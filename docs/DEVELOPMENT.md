@@ -10,6 +10,8 @@ npm run dev           # 开发模式（HMR）
 npm run test          # vitest（单测/契约/安全）
 npm run build         # electron-vite build（产物 out/）
 npm run test:e2e      # Playwright（先 build）
+npm run dist            # 打包 NSIS 安装包（镜像 env→electron 绑定→build→electron-builder，产物 dist/）
+npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断言→静默卸载（先 dist）
 ```
 
 ## 2. 领工单流程（弱模型）
@@ -66,3 +68,16 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - 设置：`%APPDATA%\Synapse Remake\settings.json`（contactEmail / theme）。
 - **备份方法：完全退出应用后，整个 `%APPDATA%\Synapse Remake` 目录复制到安全位置。**
   WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
+
+## 7. 打包与分发（Phase 6 起）
+
+- `npm run dist` 产 `dist/Synapse-Remake-<version>-setup.exe`；scripts/dist.mjs 自动编排：
+  npmmirror 镜像 env（SKIP_MIRROR=1 跳过）→ sqlite-abi 切 electron 绑定 → 三段 build →
+  electron-builder NSIS（electronDist 复用本地 node_modules/electron/dist，npmRebuild 关闭）。
+- **新机器首跑**：winCodeSign-2.6.0 含 darwin symlink，无管理员权限解压失败——一次性预置
+  `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\winCodeSign-2.6.0`（操作细节见
+  docs/reports/2026-08-22_SR-PKG-01.md §4）。
+- `npm run smoke:installer` 只验「装得上/起得来/卸得掉」（含卸载注册表 HKCU/HKLM 强断言）；
+  全链路（导入→阅读→标注→导出）需在无开发环境的机器人工验收。
+- 已知上游行为：静默卸载可留空安装目录壳（electron-builder#1298）——冒烟脚本已代清理，
+  且断言文件清零与注册表清空。
