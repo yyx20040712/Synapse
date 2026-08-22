@@ -11,27 +11,27 @@
  *   承担文本命中，透明非文本区不参与视觉——官方 CSS 语义）
  *
  * ── 接口层 ──
- * - export interface TextLayerProps { textContent: PdfTextItem[]; viewportScale: number;
+ * - export interface TextLayerProps { textContent: PdfTextContent; viewportScale: number;
  *     pageWidth: number; pageHeight: number }
  * - export function TextLayer(props: TextLayerProps): JSX.Element
- * - textContent 类型从 unknown[] 收紧为 PdfTextItem[]（取自 PdfCanvas 的
- *   onPageRender 回调，同批配套契约）
+ * - textContent 为 PdfCanvas 回调的完整载荷（items + styles + lang）：TextLayer 按
+ *   fontName 查 styles 无回退，styles 必须真实传自 getTextContent（集成期实证）
  *
  * ── 架构层 ──
  * - 唯一允许 import pdfjs-dist 文本层 API 与官方 CSS 的文件
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 与 PdfCanvas 同批实现；e2e 断言"文字可选中"（tests/e2e/reader-text.spec.ts，
- *   随 SR-RDR-04 完成激活）
+ *   随阅读器页面组装完成激活）
  */
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
-import type { PdfTextItem } from './PdfCanvas'
+import type { PdfTextContent } from './PdfCanvas'
 import './text-layer.css'
 
 export interface TextLayerProps {
-  textContent: PdfTextItem[]
+  textContent: PdfTextContent
   viewportScale: number
   pageWidth: number
   pageHeight: number
@@ -70,18 +70,22 @@ export function TextLayer(props: TextLayerProps): JSX.Element {
     // 清掉上一次渲染的 span（cancel 不回滚已入 DOM 的节点；StrictMode 双挂载亦靠此去重；
     // 空文本（纯图页）同样要清——否则上一页文字残留可选中）
     container.replaceChildren()
-    if (textContent.length === 0) {
+    if (textContent.items.length === 0) {
       return
     }
     const layer = new PdfJsTextLayer({
-      // lang 留空走默认字体量测；PdfCanvas 的回调契约只透传 items（钉版下影响可忽略）
-      textContentSource: { items: textContent, styles: {}, lang: '' },
+      // 完整载荷直传（items+styles+lang）：按 fontName 查 styles 无回退，
+      // 自造空 styles 会让首个文本项崩——集成期实证
+      textContentSource: textContent,
       container,
       viewport: duckViewport(viewportScale, pageWidth, pageHeight)
     })
     // props 变化/卸载 → cancel() 令 render() 拒绝属正常控制流；其余失败仅损失
-    // 文本选择能力（canvas 阅读不受影响），本组件 props 契约无错误通道，静默降级
-    void layer.render().catch(() => undefined)
+    // 文本选择能力（canvas 阅读不受影响），本组件 props 契约无错误通道——
+    // 降级但留 console 供排查（曾因缺 styles 全静默，靠 e2e 20s 超时才发现）
+    void layer.render().catch((err: unknown) => {
+      console.error('[TextLayer] 渲染失败：', err)
+    })
     return () => layer.cancel()
   }, [textContent, viewportScale, pageWidth, pageHeight])
 

@@ -10,7 +10,8 @@
  *
  * ── 接口层 ──
  * - export function PaperList(props: { papers: PaperSummary[]; selectedId: string | null;
- *     onSelect(id: string): void }): JSX.Element
+ *     onSelect(id: string): void; onOpen?: (id: string) => void }): JSX.Element
+ * - onOpen（阅读器接线时加入，可选）：双击打开阅读器；未传时降级为确认选中
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 纯展示组件（无 store 依赖）；行内容渲染委托 PaperRow
@@ -45,8 +46,9 @@ export function PaperList(props: {
   papers: PaperSummary[]
   selectedId: string | null
   onSelect: (id: string) => void
+  onOpen?: (id: string) => void
 }): JSX.Element {
-  const { papers, selectedId, onSelect } = props
+  const { papers, selectedId, onSelect, onOpen } = props
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
   // 选中变化（含键盘移动）后把选中行滚进可视区；block:'nearest' 已在视野内时不产生滚动
@@ -87,7 +89,6 @@ export function PaperList(props: {
     >
       {papers.map((paper) => {
         const selected = paper.id === selectedId
-        // 契约无 onOpen 出口（纯展示、不接 store）：双击打开阅读器待上层接线，当前降级为确认选中
         const handleActivate = () => onSelect(paper.id)
         return (
           <div
@@ -100,7 +101,8 @@ export function PaperList(props: {
               paper={paper}
               selected={selected}
               onClick={handleActivate}
-              onOpen={handleActivate}
+              // 双击打开：上层传入 onOpen 时接通阅读器，否则降级为确认选中
+              onOpen={onOpen === undefined ? handleActivate : () => onOpen(paper.id)}
             />
           </div>
         )

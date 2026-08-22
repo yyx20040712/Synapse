@@ -2,11 +2,12 @@
  * 应用骨架（infra，无工单）：侧栏三入口 + 视图切换 + 错误边界。
  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
  */
-import { Component, Fragment, type ErrorInfo, type ReactNode, useState } from 'react'
+import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { ToastHost } from '../shared/ui/Toast'
+import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 
 type ViewId = 'library' | 'reader' | 'settings'
 
@@ -58,6 +59,13 @@ class ErrorBoundary extends Component<
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
+
+  // "打开文献"请求：切到阅读器 tab（请求本体的补读/监听在 ReaderPage，见 open-paper-bus）
+  useEffect(() => {
+    const handler = (): void => setView('reader')
+    window.addEventListener(OPEN_PAPER_EVENT, handler)
+    return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+  }, [])
 
   return (
     <div className="flex h-full">

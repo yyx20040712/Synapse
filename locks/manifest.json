@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-22T02:20:20.1165236Z",
+    "generatedAt":  "2026-08-22T03:07:35.0263273Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -103,7 +103,11 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "e9b3cc57808048eca5a70d22758dc8dc9b540a1122e135ffcb103d46f7313a05"
+                      "sha256":  "8e1f20ee1d55f7f5dbe1163492cb01eb762cba17ae8b66bde7d91a686f233da8"
+                  },
+                  {
+                      "path":  "tests/e2e/seed-paper.mjs",
+                      "sha256":  "5a5ff9f057d88dd9a01069c7e206d20b252b131a786d7a5fa6bc3654566068ce"
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",

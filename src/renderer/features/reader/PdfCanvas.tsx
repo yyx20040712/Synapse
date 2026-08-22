@@ -10,12 +10,14 @@
  *
  * ── 接口层 ──
  * - export interface PdfCanvasProps { fileUrl: string; pageNumber: number; zoom: number;
- *     onPageRender(page: number, textContent: PdfTextItem[]): void; onError(msg: string): void;
+ *     onPageRender(page: number, textContent: PdfTextContent): void; onError(msg: string): void;
  *     onDocInfo?(info: { numPages: number }): void }
  * - export function PdfCanvas(props: PdfCanvasProps): JSX.Element
- * - PdfTextItem 是 pdfjs TextItem 的结构子集（主入口未导出该类型）：消费方
- *   （TextLayer/SelectionLayer/ReaderPage）只从本文件取类型与数据，不 import pdfjs-dist
- * - onDocInfo（2026-08-22 契约演进，SR-RDR-04 接线前置）：文档加载完成时回调页数，
+ * - PdfTextItem/PdfTextStyle/PdfTextContent 是 pdfjs 对应类型的结构子集（主入口未导出）：
+ *   消费方（TextLayer/SelectionLayer/ReaderPage）只从本文件取类型与数据，不 import pdfjs-dist
+ * - onPageRender 回调 2026-08-22 二次演进：items 之外补 styles（字体名→样式）与 lang——
+ *   TextLayer 按字体名查 styles 无回退，缺省会崩（集成期实证）；旧签名只传 items 是设计缺口
+ * - onDocInfo（2026-08-22 契约演进，阅读器页面接线前置）：文档加载完成时回调页数，
  *   供 reader.store.setTotalPages——此前 totalPages 无数据生产者；旧消费方不传不受影响
  *
  * ── 架构层 ──
@@ -30,7 +32,7 @@
  *   Electron 42 上实证；渲染完成后回调 textContent 供 TextLayer 生成可选中文本
  *
  * ── 文化层 ──
- * - 测试：tests/e2e/reader-text.spec.ts（渲染文本断言，随 SR-RDR-04 完成激活）+ anchor 单测配合
+ * - 测试：tests/e2e/reader-text.spec.ts（渲染文本断言，随阅读器页面组装完成激活）+ anchor 单测配合
  */
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -60,11 +62,32 @@ export interface PdfTextItem {
   hasEOL: boolean
 }
 
+/**
+ * 字体样式（pdfjs TextStyle 结构子集）：TextLayer 排版（ascent/descent）与
+ * 文本朝向（vertical）计算必需，按 items 里的 fontName 索引
+ */
+export interface PdfTextStyle {
+  fontFamily: string
+  ascent: number
+  descent: number
+  vertical: boolean
+}
+
+/**
+ * 页文本内容：TextLayer 生成可选中文本层的完整输入。styles 缺省会令其按
+ * fontName 的样式查找拿到 undefined 而崩——集成期实证，不再是可省字段
+ */
+export interface PdfTextContent {
+  items: PdfTextItem[]
+  styles: Record<string, PdfTextStyle>
+  lang: string | null
+}
+
 export interface PdfCanvasProps {
   fileUrl: string
   pageNumber: number
   zoom: number
-  onPageRender(page: number, textContent: PdfTextItem[]): void
+  onPageRender(page: number, textContent: PdfTextContent): void
   onError(msg: string): void
   /** 文档加载完成时上报页数（totalPages 的数据生产者，见文件头接口层） */
   onDocInfo?(info: { numPages: number }): void
@@ -159,11 +182,12 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
       if (cancelled) {
         return
       }
-      onPageRenderRef.current(
-        pageNo,
+      onPageRenderRef.current(pageNo, {
         // includeMarkedContent 默认关闭，防御性过滤掉无 str 的结构项
-        textContent.items.filter((item): item is PdfTextItem => 'str' in item)
-      )
+        items: textContent.items.filter((item): item is PdfTextItem => 'str' in item),
+        styles: textContent.styles,
+        lang: textContent.lang
+      })
     }
     render().catch((err: unknown) => {
       if (cancelled || err instanceof RenderingCancelledException) {
@@ -178,9 +202,10 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
   }, [doc, pageNumber, zoom])
 
   return (
-    <div className="flex justify-center p-2">
+    <div className="flex justify-center">
       {/* data-pdf-canvas：ReaderPage 以此度量页面 CSS 尺寸（TextLayer 的
-          pageWidth/pageHeight/viewportScale 输入），不另设尺寸回调通道 */}
+          pageWidth/pageHeight/viewportScale 输入）；外层不留内边距——覆盖层
+          （TextLayer/标注层）按本容器绝对定位，加了 padding 会错位 */}
       <canvas ref={canvasRef} data-pdf-canvas="true" aria-label="PDF 页面渲染" />
     </div>
   )

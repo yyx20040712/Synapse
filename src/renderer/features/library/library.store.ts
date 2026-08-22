@@ -24,6 +24,7 @@
  */
 import { create } from 'zustand'
 import { api, ApiClientError, unwrap } from '../../api/client'
+import { requestOpenPaper } from '../../shared/open-paper-bus'
 import type { LibraryQuery, PaperSummary } from '@shared/models/paper'
 
 export interface LibraryStore {
@@ -36,6 +37,7 @@ export interface LibraryStore {
   load(): Promise<void>
   setQuery(patch: Partial<LibraryQuery>): void
   selectPaper(id: string | null): void
+  openPaper(id: string): void
 }
 
 export function createLibraryStoreInitialState() {
@@ -82,6 +84,10 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => {
     },
     selectPaper: (id) => {
       set({ selectedId: id })
+    },
+    // 切 reader tab（经 open-paper-bus 事件；文档加载由 reader.store.openPaper 负责）
+    openPaper: (id) => {
+      requestOpenPaper(id)
     }
   }
 })

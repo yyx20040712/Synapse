@@ -34,6 +34,7 @@ export function LibraryPage(): JSX.Element {
   const load = useLibraryStore((s) => s.load)
   const setQuery = useLibraryStore((s) => s.setQuery)
   const selectPaper = useLibraryStore((s) => s.selectPaper)
+  const openPaper = useLibraryStore((s) => s.openPaper)
 
   // 挂载即拉取（useAsync 是显式 run 语义，故在 effect 中手动触发一次）
   const { run } = useAsync(load, [load])
@@ -69,7 +70,7 @@ export function LibraryPage(): JSX.Element {
               正在加载文献列表…
             </p>
           )}
-          <PaperList papers={papers} selectedId={selectedId} onSelect={selectPaper} />
+          <PaperList papers={papers} selectedId={selectedId} onSelect={selectPaper} onOpen={openPaper} />
         </div>
         <aside className="w-80 shrink-0 overflow-auto">
           <PaperDetailPanel paperId={selectedId} />
