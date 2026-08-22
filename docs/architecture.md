@@ -168,7 +168,7 @@ flowchart TB
   F --> G["SelectionLayer 🚧SR-RDR-05<br/>划选 → 定位器三元组"]
   G --> H["annotation-anchor 🚧SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
   H --> I["AnnotationLayer 🚧SR-RDR-06<br/>重开时 verifyQuote 重锚，失败回退 rects"]
-  H --> J["持久化：annotations.repo 🚧SR-DB-03"]
+  H --> J["持久化：annotations.repo ✅SR-DB-03"]
   subgraph NOTE["窗口尺寸变化 = 纯函数重算，不依赖像素坐标"]
     I
   end

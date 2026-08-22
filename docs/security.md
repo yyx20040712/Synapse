@@ -11,7 +11,7 @@
 ## 2. 内容边界（机检：CSP 断言）
 
 - 只加载本地内容（打包产物 / dev server）；`will-navigate` 一律阻止；`setWindowOpenHandler` 一律 deny；权限请求默认全拒
-- CSP：`default-src 'self'; script-src 'self'; worker-src 'self' blob:(pdf.js); style-src 'self' 'unsafe-inline'; img-src 'self' app-file: data: blob:; connect-src 'self' app-file:(受管文件协议，阅读器取数通道); object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'`
+- CSP：`default-src 'self'; script-src 'self'; worker-src 'self' blob:(pdf.js); style-src 'self' 'unsafe-inline'; img-src 'self' app-file: data: blob:; font-src 'self' data:; connect-src 'self' app-file:(受管文件协议，阅读器取数通道); object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'`
 - 无 unsafe-eval；无 iframe 嵌套内容
 
 ## 3. IPC 与注入防护（机检：契约/单测）
@@ -31,7 +31,7 @@
 
 ## 5. 供应链
 
-- lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/zustand/zod/electron）精确钉版，无 `^` 范围
+- lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/react-dom/zod/zustand 共 6 个，预算 ≤15）精确钉版，无 `^` 范围；Electron 在 devDependencies 精确钉版（随构建进产物）
 - 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
 - Electron 42.9.3（当期支持线，2026-08-22 升级门执行，prebuild 矩阵核查见

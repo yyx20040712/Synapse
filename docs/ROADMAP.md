@@ -84,7 +84,7 @@
 | 项 | 内容 |
 | --- | --- |
 | 前置 | ① **Electron 升级门 ✅**（2026-08-22：42.9.3 落地，ELECTRON_ABI_MAP 补表 37~44，见 ADR-0006 执行记录）② pdf.js spike 决策门 ✅（2026-08-22：canvas+TextLayer+选择+DPR 13 项断言全过，ADR-0002 维持库 API 路线） |
-| 工单 | strong：SR-RDR-01（annotation-anchor 纯函数）、SR-RDR-02（PdfCanvas）、SR-RDR-03（TextLayer）；weak：SR-RDR-04 ~ SR-RDR-09 + SR-SVC-02（reader.service）+ SR-IPC-02（12 个） |
+| 工单 | strong：SR-RDR-01（annotation-anchor 纯函数）、SR-RDR-02（PdfCanvas）、SR-RDR-03（TextLayer）；weak：SR-RDR-04、SR-RDR-07 ~ 09 + SR-SVC-02（reader.service）+ SR-IPC-02（共 9 个；SR-RDR-05/06 属 Phase 4 标注链，勿在此实现） |
 | 目标 | 双击文献打开阅读器；翻页/缩放/目录；文本可选择（为 Phase 4 标注铺路） |
 | 验收 | **`tests/e2e/reader-text.spec.ts` 激活并转绿**（依赖工单 AND 条件已接线：SR-RDR-02 + SR-LIB-01 + SR-LIB-02 + SR-RDR-04）——这是"文字真实可见"的最终裁判 |
 | 风险 | pdf.js worker 的 CSP 已放行（worker-src blob:）；canvas 高分屏 devicePixelRatio 处理在 spike 里验证 |
@@ -104,8 +104,8 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 工单 | 标签链：SR-SVC-09、SR-IPC-04、SR-TAG-01~03；详情与筛选：SR-LIB-04/05；增强链：SR-SVC-05、SR-NET-01~03、SR-IPC-06；导出链：SR-SVC-06/07/08、SR-IPC-07；设置与系统：SR-SET-01/02、SR-IPC-08/09；UI 基建（按需先做）：SR-UI-01~03、SR-HK-01/02（共 21 个） |
-| 目标 | 全部剩余 weak 工单清零；55 → 0 |
+| 工单 | 标签链：SR-SVC-09、SR-IPC-04、SR-TAG-01~03；详情与筛选：SR-LIB-04/05；增强链：SR-SVC-05、SR-NET-01~03、SR-IPC-06；导出链：SR-SVC-06/07/08、SR-IPC-07；设置与系统：SR-SET-01/02、SR-IPC-08/09；UI 基建（按需先做）：SR-UI-01/02、SR-HK-02（SR-UI-03/SR-HK-01 已提前于 Phase 2 完成）（共 23 个） |
+| 目标 | 全部剩余 weak 工单清零；38 → 0 |
 | 验收 | ① registry 无 open 工单（check-tickets 输出 open 0）；② 手动视检：BibTeX 导出可被 Zotero 导入、读书报告含高亮与笔记、设置页网络诊断显示三 host 探活结果 |
 | 风险 | 增强是唯一出网功能：手动触发（负面清单禁后台任务）、白名单 3 host 已锁死；导出文件名安全化规约必须遵守 |
 | 依赖 | Phase 2（标签/详情可与之并行）；增强/导出依赖 Phase 4（要读到标注笔记） |
