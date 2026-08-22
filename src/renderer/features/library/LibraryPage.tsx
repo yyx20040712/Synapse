@@ -11,8 +11,8 @@
  *
  * ── 架构层 ──
  * - 只 import 本域组件与 store、shared/ui、shared/hooks；禁止 import 其他 features
- * - FilterBar/PaperDetailPanel 为 Phase 5 工单（SR-LIB-04/05），当前按其冻结
- *   props 契约接线渲染占位，工单完成后自动替换为真实现
+ * - FilterBar/PaperDetailPanel 按冻结 props 契约接线，占位件随工单完成替换为
+ *   真实现（两者作为组合根跨域引用 notes/tags 子组件，见 check-quality 白名单）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 布局：左列表右详情；详情在选中行时出现。测试见 tests/e2e/smoke.spec.ts
