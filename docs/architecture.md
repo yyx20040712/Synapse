@@ -65,7 +65,7 @@ AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-
 
 7 张表 + 3 个 FTS5（external content + 触发器）：papers / collections / paper_collections / tags / paper_tags / annotations / notes。标注定位器采用 W3C Web Annotation 思路（quote/prefix/suffix + startOffset/endOffset + rects + sortKey）。迁移只追加（`db/migrations/`，受锁）。
 
-## 7. 架构图纸（2026-08-21 修复轮起；状态标注：✅已实现 / 🚧占位待工单）
+## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 
 ### 7.1 系统全景（三进程 + 外部边界）
 
@@ -73,7 +73,7 @@ AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅壳+文献库+阅读器+标注闭环 · 🚧笔记装配/标签/其余<br/>features: library ✅ · reader ✅（含标注链） · notes ✅面板 · tags · settings 🚧"]
+    UI["React SPA ✅ Phase 1~5 全量实现<br/>features: library ✅ · reader ✅（含标注链） · notes ✅ · tags ✅ · settings ✅"]
     WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
@@ -81,7 +81,7 @@ flowchart TB
   subgraph M["Main 进程（Node 24 · 单实例锁）"]
     direction TB
     REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
-    SVC["services/ ✅SVC-01/02/03/04/10 · 🚧其余 5<br/>业务用例 · 事务编排"]
+    SVC["services/ ✅ SVC-01~10 全量<br/>业务用例 · 事务编排"]
     REPO["repos/ ✅ SR-DB-01~05<br/>db.prepare 参数绑定"]
     DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
     PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
@@ -116,8 +116,8 @@ flowchart LR
     MODELS["models/* + schemas.ts"]
     ERR["app-error.ts Result/错误码"]
   end
-  IPC["ipc/* 薄分发 🚧<br/>禁 import repos/db"] --> SVC2["services/* 🚧<br/>禁 import connection/migrations"]
-  SVC2 --> REPO2["repos/* 🚧<br/>禁 import 上层"]
+  IPC["ipc/* 薄分发 ✅<br/>禁 import repos/db"] --> SVC2["services/* ✅<br/>禁 import connection/migrations"]
+  SVC2 --> REPO2["repos/* ✅<br/>禁 import 上层"]
   REPO2 --> CONN["db/connection.ts ✅<br/>WAL·FK·busy_timeout"]
   MIG["db/migrations/*.sql（受锁）✅"] --> CONN
   FTS["db/fts.ts escapeFtsQuery ✅"] --> REPO2

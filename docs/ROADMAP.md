@@ -5,12 +5,11 @@
 > 本文与 registry 冲突时以 registry 为准，并回来修本文。
 > 每个 Phase 收尾时更新本文的勾选状态。
 
-## 当前基线（制定时快照；2026-08-22 Phase 4 收官轮更新）
+## 当前基线（制定时快照；2026-08-22 Phase 5 收官轮更新）
 
-- 工单：72 = done 49（infra 17 + DB 5 + services 5 + ipc 4 + library-ui 5 + reader 9 +
-  notes-ui 2 + ui-kit/hooks 2）+ open 23（weak 23 / strong 0）——Phase 1/2 于
-  2026-08-21、Phase 3/4 于 2026-08-22 完成
-- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；83 受锁文件
+- 工单：72 = done 72 + open 0——Phase 1~5 全部完成（1/2 于 2026-08-21，3/4/5 于
+  2026-08-22）；Phase 6 打包工单 SR-PKG-01/02 即将开单（area=infra）
+- 防线：`npm run verify` 全绿（已并入 quality / tickets / locks 三关，与 CI 同口径）；83 受锁文件；覆盖率门槛三组已生效（全局 70 / repos 85 / renderer 逻辑层 60）
   （2026-08-22 起：playwright / electron.vite / tsconfig×3 入锁；toast.test.tsx 入锁；
   Phase 3 期间 tests/e2e/seed-paper.mjs 作为新测试基础设施入锁）
 - CI：**已通电**（2026-08-21 push 至 github.com/yyx20040712/Synapse；首跑红于
@@ -55,7 +54,9 @@
    一致）→ 修正为归一 canvas 盒参照系 [locked-change]——"恒绿和随机绿一样危险"；
    色板样式第 3 处消费触发 Rule of Three 抽取 annotation-style.ts。NotesPanel
    装配点随 SR-LIB-04（Phase 5）。
-6. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
+6. **Phase 5 收官 ✅（2026-08-22）**：23 工单清零 + DEVELOPMENT §4 两项覆盖率承诺兑现
+   （a9bfe2e/0cafe84，三子代理流水线审计）+ e2e 6/6 + 收官报告 docs/reports/2026-08-22_phase5-closeout.md。
+7. 每 Phase 收尾：更新本文勾选 + architecture.md §7 图纸状态标注 + push 触发 CI。
 
 ---
 
@@ -120,14 +121,15 @@
 | 风险 | WADM 锚定是项目最难的纯函数模块（SR-RDR-01，strong）——它排在 Phase 3 头部做，失败早暴露 |
 | 依赖 | Phase 3 |
 
-## Phase 5：标签 / 集合 / 详情 / 增强 / 导出 / 设置 ☐
+## Phase 5：标签 / 集合 / 详情 / 增强 / 导出 / 设置 ✅（2026-08-22，工单 23/23 + 收尾两承诺）
 
 | 项 | 内容 |
 | --- | --- |
 | 工单 | 标签链：SR-SVC-09、SR-IPC-04、SR-TAG-01~03；详情与筛选：SR-LIB-04/05；增强链：SR-SVC-05、SR-NET-01~03、SR-IPC-06；导出链：SR-SVC-06/07/08、SR-IPC-07；设置与系统：SR-SET-01/02、SR-IPC-08/09；UI 基建（按需先做）：SR-UI-01/02、SR-HK-02（SR-UI-03/SR-HK-01 已提前于 Phase 2 完成）（共 23 个） |
 | 目标 | 全部剩余 weak 工单清零；23 → 0 |
-| 验收 | ① registry 无 open 工单（check-tickets 输出 open 0）；② 手动视检：BibTeX 导出可被 Zotero 导入、读书报告含高亮与笔记、设置页网络诊断显示三 host 探活结果 |
+| 验收 | ① registry 无 open 工单（check-tickets 输出 open 0）；② 手动视检：BibTeX 导出可被 Zotero 导入、读书报告含高亮与笔记、设置页网络诊断显示三 host 探活结果——① ✅；② 读书报告/诊断单测与 golden 佐证 ✅，Zotero 导入与设置页目视留用户随手验（见结果行） |
 | 风险 | 增强是唯一出网功能：手动触发（负面清单禁后台任务）、白名单 3 host 已锁死；导出文件名安全化规约必须遵守 |
+| 结果 | 23 工单清零（最后一批 SR-SET-01/02 于 542ca4d）；收官兑现 DEVELOPMENT §4 两项覆盖率承诺（提交 a9bfe2e 全局 70 收紧 + 0cafe84 renderer 逻辑层 60 组，终态实测 77.35/88.97/81.21 lines）；e2e 6/6 绿；verify exit 0。审计与收官报告：docs/reports/2026-08-22_T2-coverage-threshold.md、docs/reports/2026-08-22_T2b-renderer-coverage.md、docs/reports/2026-08-22_phase5-closeout.md。留用户随手验三项（Zotero 导入/设置页诊断目视/真机拖拽标注视检）不阻塞 Phase 6 |
 | 依赖 | Phase 2（标签/详情可与之并行）；增强/导出依赖 Phase 4（要读到标注笔记） |
 
 ## Phase 6：打包分发 ☐
