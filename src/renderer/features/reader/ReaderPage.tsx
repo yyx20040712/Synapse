@@ -57,6 +57,8 @@ export function ReaderPage(): JSX.Element {
 
   const [pageText, setPageText] = useState<PageText | null>(null)
   const [outlineOpen, setOutlineOpen] = useState(true)
+  // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfCanvas onDocReady 上报，换文档即弃
+  const [pdfDoc, setPdfDoc] = useState<unknown>(null)
   const pageRootRef = useRef<HTMLDivElement | null>(null)
 
   // 打开请求两路：挂载时闩锁补读（事件派发时本页未挂载）+ 已挂载期间的实时监听。
@@ -77,9 +79,10 @@ export function ReaderPage(): JSX.Element {
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [openPaper])
 
-  // 换文献：丢弃旧页文本（TextLayer 以 pageText.page 对齐当前页才渲染，避免陈旧文本层）
+  // 换文献：丢弃旧页文本与文档句柄（TextLayer 以 pageText.page 对齐当前页才渲染，避免陈旧文本层）
   useEffect(() => {
     setPageText(null)
+    setPdfDoc(null)
   }, [fileUrl])
 
   /** PdfCanvas 渲染完成回报：带回该页文本载荷，并量测 canvas CSS 盒（覆盖层定位基准） */
@@ -144,8 +147,7 @@ export function ReaderPage(): JSX.Element {
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
-              {/* pdfDoc 句柄 PdfCanvas 暂未暴露（SR-RDR-08 落地时演进契约），先传 null */}
-              <OutlinePanel pdfDoc={null} currentPage={page} onNavigate={setPage} />
+              <OutlinePanel pdfDoc={pdfDoc} currentPage={page} onNavigate={setPage} />
             </div>
           </aside>
         ) : (
@@ -169,6 +171,7 @@ export function ReaderPage(): JSX.Element {
               onPageRender={handlePageRender}
               onError={(msg) => showToast(msg, 'error')}
               onDocInfo={(info) => setTotalPages(info.numPages)}
+              onDocReady={setPdfDoc}
             />
             {pageText !== null && pageText.page === page + 1 && (
               <TextLayer

@@ -19,6 +19,9 @@
  *   TextLayer 按字体名查 styles 无回退，缺省会崩（集成期实证）；旧签名只传 items 是设计缺口
  * - onDocInfo（2026-08-22 契约演进，阅读器页面接线前置）：文档加载完成时回调页数，
  *   供 reader.store.setTotalPages——此前 totalPages 无数据生产者；旧消费方不传不受影响
+ * - onDocReady（2026-08-22 契约演进，目录/缩略图侧栏接线前置）：上报 PDFDocumentProxy
+ *   本体（OutlinePanel 需要 getOutline/getPage/getPageIndex）；句柄生命周期归本组件
+ *   （换文档/卸载即销毁），消费方按 unknown 收窄、不得跨文档长期持有
  *
  * ── 架构层 ──
  * - 唯一允许 import pdfjs-dist 的文件；TextLayer/SelectionLayer 依赖它回调的 textContent
@@ -91,6 +94,8 @@ export interface PdfCanvasProps {
   onError(msg: string): void
   /** 文档加载完成时上报页数（totalPages 的数据生产者，见文件头接口层） */
   onDocInfo?(info: { numPages: number }): void
+  /** 文档句柄上报（目录/缩略图侧栏的数据源，见文件头接口层） */
+  onDocReady?(doc: PDFDocumentProxy): void
 }
 
 function errorMessage(err: unknown): string {
@@ -106,9 +111,11 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
   const onPageRenderRef = useRef(props.onPageRender)
   const onErrorRef = useRef(props.onError)
   const onDocInfoRef = useRef(props.onDocInfo)
+  const onDocReadyRef = useRef(props.onDocReady)
   onPageRenderRef.current = props.onPageRender
   onErrorRef.current = props.onError
   onDocInfoRef.current = props.onDocInfo
+  onDocReadyRef.current = props.onDocReady
 
   // 文档生命周期：fileUrl 变化 → 弃旧文档（销毁连带 worker 侧资源）→ 异步加载新文档
   useEffect(() => {
@@ -121,6 +128,7 @@ export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
         if (!cancelled) {
           // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
           onDocInfoRef.current?.({ numPages: loaded.numPages })
+          onDocReadyRef.current?.(loaded)
           setDoc(loaded)
         }
       })
