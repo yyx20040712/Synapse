@@ -44,8 +44,18 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 }
 
 // 3) renderer features 跨域互引（依赖只能下沉到 renderer/shared）
+//    组合根例外（工单冻结规约明文声明，键=文件正斜杠路径 → 值=允许引用的目标模块
+//    相对 features 根的路径）：SR-LIB-04 "由本文件作为组合根引用子组件"、
+//    SR-LIB-05 "TagFilter 组件嵌于此"。仅此三个文件-模块对，白名单外仍是红线
+const COMPOSITION_ROOT_ALLOW = new Map([
+  ['src/renderer/features/library/PaperDetailPanel.tsx', ['notes/NotesPanel', 'tags/TagEditor']],
+  ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']]
+])
+
 const featuresRoot = join(root, 'src', 'renderer', 'features')
 for (const f of srcFiles.filter((p) => p.startsWith(featuresRoot))) {
+  const relFromFile = relative(root, f).replaceAll('\\', '/')
+  const allowed = COMPOSITION_ROOT_ALLOW.get(relFromFile) ?? []
   const content = readFileSync(f, 'utf-8')
   const importRe = /from\s+['"](\.[^'"]+)['"]/g
   let m
@@ -57,9 +67,10 @@ for (const f of srcFiles.filter((p) => p.startsWith(featuresRoot))) {
     if (
       !rel.startsWith('..') &&
       firstSeg !== myFeature &&
+      !allowed.includes(rel) &&
       readdirSync(featuresRoot).some((d) => d === firstSeg && statSync(join(featuresRoot, d)).isDirectory())
     ) {
-      violations.push(`${relative(root, f)}: 跨 feature 引用 ${m[1]}（共享代码下沉 renderer/shared）`)
+      violations.push(`${relFromFile}: 跨 feature 引用 ${m[1]}（共享代码下沉 renderer/shared）`)
     }
   }
 }
