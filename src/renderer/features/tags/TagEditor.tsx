@@ -1,26 +1,155 @@
 /**
- * [SR-TAG-01] TagEditor —— 标签编辑器（工单：open / weak）
+ * [SR-TAG-01] TagEditor —— 标签编辑器（工单：done / weak）
  *
  * ── 行为层 ──
  * - 展示某文献已有标签（chip，点 × 移除 → api.tags.detach）
- * - 输入回车新建并挂接（api.tags.upsert + attach）；已存在标签名提示复用
- * - 下拉建议：tags.store.list 里已有标签（前缀匹配前 5 个）
+ * - 输入回车新建并挂接（api.tags.upsert + attach）；已挂接的同名标签提示已存在
+ * - 下拉建议：tags.store 里已有标签（前缀匹配前 5 个，排除已挂接）
  *
  * ── 接口层 ──
  * - export function TagEditor(props: { paperId: string;
- *     tags: Array<{ id: string; name: string }> }): JSX.Element
+ *     tags: Array<{ id: string; name: string }>; onChanged: () => void }): JSX.Element
  *
- * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 操作后回调 onChanged() 让父组件刷新
+ * ── 架构层 ──
+ * - 挂接/移除成功后经 onChanged() 让父组件（PaperDetailPanel）重读详情；
+ *   建议数据自取 tags.store（挂载时 refresh，与 TagFilter 共享单一数据源）
+ *
+ * ── 生命周期层 ── / ── 文化层 ──
+ * - api 失败统一 toast；busy 期间禁输入防重复提交
  */
-export function TagEditor(_props: {
+import { useEffect, useState } from 'react'
+import { api, unwrap, ApiClientError } from '../../api/client'
+import { showToast } from '../../shared/ui/Toast'
+import { useTagsStore } from './tags.store'
+
+/** 意外异常（非 ApiClientError）时的兜底中文消息 */
+const TAG_OP_FAILED = '标签操作失败'
+
+export function TagEditor(props: {
   paperId: string
   tags: Array<{ id: string; name: string }>
   onChanged: () => void
 }): JSX.Element {
+  const { paperId, tags, onChanged } = props
+  const [input, setInput] = useState('')
+  const [busy, setBusy] = useState(false)
+  const allTags = useTagsStore((s) => s.tags)
+  const refreshTags = useTagsStore((s) => s.refresh)
+
+  // 建议数据源：挂载即拉（列表型失败由 store 契约静默，建议区为空即可）
+  useEffect(() => {
+    void refreshTags()
+  }, [refreshTags])
+
+  /** 挂接已有标签（建议点击路径） */
+  async function attachExisting(tagId: string): Promise<void> {
+    if (busy) return
+    setBusy(true)
+    try {
+      await unwrap(api.tags.attach({ paperId, tagId }))
+      onChanged()
+    } catch (e) {
+      showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** 回车：新建（或复用同名）并挂接 */
+  async function createAndAttach(): Promise<void> {
+    const name = input.trim()
+    if (name === '' || busy) return
+    if (tags.some((t) => t.name === name)) {
+      showToast(`标签「${name}」已挂接`, 'info')
+      setInput('')
+      return
+    }
+    setBusy(true)
+    try {
+      const tag = await unwrap(api.tags.upsert({ name }))
+      await unwrap(api.tags.attach({ paperId, tagId: tag.id }))
+      setInput('')
+      onChanged()
+    } catch (e) {
+      showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** ×：移除挂接（不动标签本身——删除标签 v2） */
+  async function removeTag(tagId: string): Promise<void> {
+    if (busy) return
+    setBusy(true)
+    try {
+      await unwrap(api.tags.detach({ paperId, tagId }))
+      onChanged()
+    } catch (e) {
+      showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const attachedIds = new Set(tags.map((t) => t.id))
+  const suggestions = allTags
+    .filter((t) => !attachedIds.has(t.id) && t.name.startsWith(input.trim()) && input.trim() !== '')
+    .slice(0, 5)
+
   return (
-    <div data-ticket="SR-TAG-01" className="p-6 text-sm" style={{ color: 'var(--text-dim)' }}>
-      工单未完成：SR-TAG-01（标签编辑器）
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-1" aria-label="已挂接标签">
+        {tags.length === 0 && (
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
+            暂无标签
+          </span>
+        )}
+        {tags.map((t) => (
+          <span
+            key={t.id}
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+            style={{ borderColor: 'var(--border)', background: 'var(--accent-soft)' }}
+          >
+            {t.name}
+            <button
+              type="button"
+              aria-label={`移除标签 ${t.name}`}
+              disabled={busy}
+              style={{ color: 'var(--text-dim)' }}
+              onClick={() => void removeTag(t.id)}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <input
+        aria-label="新增标签"
+        className="rounded border px-2 py-1 text-xs disabled:opacity-50"
+        style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
+        value={input}
+        disabled={busy}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void createAndAttach()
+        }}
+      />
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1" aria-label="标签建议">
+          {suggestions.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+              style={{ borderColor: 'var(--border)' }}
+              disabled={busy}
+              onClick={() => void attachExisting(t.id)}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
