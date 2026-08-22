@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-22T00:20:50.5758902Z",
+    "generatedAt":  "2026-08-22T00:22:09.1044403Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -115,7 +115,7 @@
                   },
                   {
                       "path":  "tests/security/shell-guard.test.ts",
-                      "sha256":  "fd66e7daf30b53433b97ffe44352f4190e4bb3e95bab37a33dbd6c7391c67299"
+                      "sha256":  "f424a65b56a698823e5b5e7e4bff34003f0d5fd6d889cac9fd786f9a2d9bf196"
                   },
                   {
                       "path":  "tests/security/web-preferences.test.ts",

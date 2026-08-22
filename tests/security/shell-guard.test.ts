@@ -29,6 +29,20 @@ describe('security/shell-guard —— 外链守卫攻击向量', () => {
     }
   })
 
+  it('拒绝 IPv4 简写形态（整数/十六进制/八进制——WHATWG URL 已规范化为点分）', () => {
+    // 依赖前提锁死：new URL 会把 2130706433/0x7f000001/0177.0.0.1 等简写规范化成
+    // 点分十进制 hostname，点分正则即覆盖全形态；若解析行为变化本测试红
+    const vectors = [
+      'https://2130706433/x', // 127.0.0.1 的无点十进制
+      'https://0x7f000001/x', // 127.0.0.1 的十六进制
+      'https://0177.0.0.1/x', // 八进制首段
+      'https://0x7f.0.0.1/x' // 混合形态
+    ]
+    for (const v of vectors) {
+      expect(checkExternalUrl(v), `应拒绝：${v}`).toMatchObject({ safe: false })
+    }
+  })
+
   it('公网 IP 形如 8.8.8.8 不在私网段——但按规则仍拒（IP 字面量全拒）', () => {
     expect(checkExternalUrl('https://8.8.8.8/x').safe).toBe(false)
   })

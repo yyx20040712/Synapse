@@ -37,6 +37,9 @@ export function checkExternalUrl(raw: string): ExternalLinkCheck {
 
 function isPrivateIPv4Literal(host: string): boolean {
   // 策略：拒绝一切 IPv4 字面量（含公网）。本地应用没有理由直连 IP 形态主机。
+  // 只匹配点分十进制即够：WHATWG URL 解析已把整数（2130706433）/十六进制
+  // （0x7f000001）/八进制（0177.0.0.1）等简写规范化为点分 hostname
+  // （tests/security/shell-guard.test.ts 的简写向量锁死该前提）。
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(host)
 }
 
