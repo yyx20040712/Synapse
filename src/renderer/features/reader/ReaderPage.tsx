@@ -25,13 +25,14 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本（本工单落地即激活——最终裁判）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
 import { AnnotationLayer } from './AnnotationLayer'
 import { OutlinePanel } from './OutlinePanel'
 import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
-import { ReaderToolbar } from './ReaderToolbar'
+import { useReaderShortcuts } from './ReaderShortcuts'
+import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
 import { SelectionLayer } from './SelectionLayer'
 import { TextLayer } from './TextLayer'
 import { useReaderStore } from './reader.store'
@@ -57,6 +58,28 @@ export function ReaderPage(): JSX.Element {
   const setColor = useReaderStore((s) => s.setColor)
   const setTotalPages = useReaderStore((s) => s.setTotalPages)
   const addAnnotation = useReaderStore((s) => s.addAnnotation)
+
+  // 快捷键装配（ReaderShortcuts 工单落点）：动作经 getState 取最新 store 态——回调恒定身份，
+  // 避免每次翻页/缩放重挂监听（INV-14 友好）；页码/缩放夹取由 store setPage/setZoom 持有
+  useReaderShortcuts(
+    useMemo(
+      () => ({
+        prevPage: () => {
+          const s = useReaderStore.getState()
+          s.setPage(s.page - 1)
+        },
+        nextPage: () => {
+          const s = useReaderStore.getState()
+          s.setPage(s.page + 1)
+        },
+        zoomStep: (dir: 1 | -1) => {
+          const s = useReaderStore.getState()
+          s.setZoom(round2(s.zoom + dir * ZOOM_STEP))
+        }
+      }),
+      []
+    )
+  )
 
   const [pageText, setPageText] = useState<PageText | null>(null)
   const [outlineOpen, setOutlineOpen] = useState(true)

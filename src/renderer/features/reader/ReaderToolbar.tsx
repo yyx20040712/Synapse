@@ -23,10 +23,12 @@ import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
 import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
 
-/** 缩放步进（0.1，浮点累积经 round2 消除） */
-const ZOOM_STEP = 0.1
+/** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
+ *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */
+export const ZOOM_STEP = 0.1
 
-const round2 = (v: number): number => Math.round(v * 100) / 100
+/** 两位小数舍入（浮点累积消除）——同上单源导出 */
+export const round2 = (v: number): number => Math.round(v * 100) / 100
 
 export function ReaderToolbar(props: {
   page: number
