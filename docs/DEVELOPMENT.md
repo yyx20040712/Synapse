@@ -81,3 +81,26 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
   全链路（导入→阅读→标注→导出）需在无开发环境的机器人工验收。
 - 已知上游行为：静默卸载可留空安装目录壳（electron-builder#1298）——冒烟脚本已代清理，
   且断言文件清零与注册表清空。
+
+## 8. 工程惯例速查（时序/接缝/不变量——防三类骨架盲区）
+
+> 背景：工单和五层规约治理静态结构；以下惯例治理它们管不到的三个维度。宪法对应条款
+> 见 AGENTS.md「状态与不变量纪律」；跨模块不变量登记册见 `docs/invariants.md`。
+
+- **异步 store 一律带请求序号 stale-guard**（闭包 `let loadSeq = 0`，落地前
+  `if (seq !== loadSeq) return`，成功/失败两路径都要守）。先例：library / notes /
+  tags / reader 四个 store；新增 store 抄这个形状，锁定测试须含"迟到旧响应被丢弃"
+  用例（INV-03）。
+- **错误反馈两型**：动作型（load/save/增强）失败上抛或 error 字段 + 消费方 toast；
+  列表型失败记 store.error 由消费方 watch（带迁移守卫：挂载残留旧错不重播）——禁止
+  静默吞错（INV-02）。先例：notes.store（动作型）/ tags.store + TagEditor（列表型）。
+- **状态机先行**：涉及并发时序的模块，先写态空间表（状态 × 事件 → 迁移），跨格序列
+  （A 态的产物在 B 态到达）显式枚举后再实现；同类竞态第二次出现 = 重构触发线。
+- **e2e 感知断言**：断言"看得见"必须查计算样式（background-color / opacity /
+  mix-blend-mode），几何可见（toBeVisible）不算——历史 D1/L7 两度"测试全绿但肉眼
+  不可见"（INV-06）。先例：reader-text.spec 标注链。
+- **性质测试现状**：未引入 fast-check（新增依赖须 ADR + [dep-change]）；零依赖替代 =
+  锁定测试内手写固定种子的伪随机操作序列攻击不变量。
+- **不变量工作流**：改动跨模块行为 → 同步 `docs/invariants.md`（含锚定状态）→ 补锚
+  优先级 lint/CI > 单测 > e2e > 人审。
+
