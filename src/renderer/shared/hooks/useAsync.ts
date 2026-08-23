@@ -5,6 +5,8 @@
  * - const { data, loading, error, run } = useAsync<T>(fn, deps)
  * - run() 触发；组件卸载后 setState 静默跳过（防泄漏警告）
  * - deps 变化不自动跑（显式 run 语义）；初始不跑
+ * - 请求令牌：新 run 取代旧 run 后，旧调用的迟到成功/失败一律丢弃
+ *   （旧失败不得把 error 残留在新 data 上；loading 只由最新请求熄灭）
  *
  * ── 接口层 ──
  * - export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]):
@@ -43,17 +45,23 @@ export function useAsync<T>(
     }
   }, [])
 
+  // 请求令牌（UBS 批四 A3）：每次 run 自增，settle 时比对——被新 run 取代的
+  // 旧调用，其迟到的成功/失败一律丢弃（旧失败不得把 error 残留在新 data 上，
+  // 旧成功不得把 data 拉回旧值；loading 只由最新请求熄灭）
+  const runSeqRef = useRef(0)
+
   const run = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return
+    const seq = ++runSeqRef.current
     setLoading(true)
     setError(null)
     try {
       const result = await snapshotRef.current.fn()
-      if (!mountedRef.current) return
+      if (!mountedRef.current || seq !== runSeqRef.current) return
       setData(result)
       setLoading(false)
     } catch (err) {
-      if (!mountedRef.current) return
+      if (!mountedRef.current || seq !== runSeqRef.current) return
       setError(err instanceof Error ? err.message : String(err))
       setLoading(false)
     }
