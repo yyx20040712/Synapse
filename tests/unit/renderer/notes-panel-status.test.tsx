@@ -32,4 +32,19 @@ guardedDescribe('SR-NOTE-01', 'NotesPanel —— 保存状态推导（deriveSave
     // 已保存：无在飞周期、无失败、无待落库编辑
     expect(derive(false, false, false)).toBe('已保存')
   })
+
+  it('周期结束失败判定（detectSaveFailed）：终点帧按 savedAt 推进与否裁决，非终点帧不动', async () => {
+    const mod = await import('../../../src/renderer/features/notes/NotesPanel')
+    const detect = mod.detectSaveFailed
+    // 周期失败：saving true→false 且 savedAt 未推进 → true（这次保存没有落上）
+    expect(detect(true, false, 't1', 't1')).toBe(true)
+    expect(detect(true, false, null, null)).toBe(true)
+    // 周期成功：saving true→false 且 savedAt 推进 → false
+    expect(detect(true, false, 't1', 't2')).toBe(false)
+    // 非终点帧：false→false（无周期）/false→true（派发起跑）/true→true（周期在飞）
+    // → null（不动失败态）
+    expect(detect(false, false, 't1', 't1')).toBeNull()
+    expect(detect(false, true, 't1', 't1')).toBeNull()
+    expect(detect(true, true, 't1', 't2')).toBeNull()
+  })
 })

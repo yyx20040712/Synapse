@@ -49,6 +49,19 @@ export function deriveSaveStatus(saving: boolean, saveFailed: boolean, pending: 
   return '已保存'
 }
 
+/** 周期结束失败判定（单一判定点，纯函数锁定）：saving true→false 的终点帧按
+ *  savedAt 是否推进裁决（INV-04：失败不推进 savedAt）；非终点帧返回 null
+ *  （不动失败态——savedAt 前进来源含合并落地，不能证明本面板周期成功） */
+export function detectSaveFailed(
+  prevSaving: boolean,
+  saving: boolean,
+  prevSavedAt: string | null,
+  savedAt: string | null
+): boolean | null {
+  if (!prevSaving || saving) return null
+  return prevSavedAt === savedAt
+}
+
 export function NotesPanel(props: { paperId: string }): JSX.Element {
   const { paperId } = props
   const entry = useNotesStore((s) => s.noteByPaper[paperId])
@@ -84,14 +97,13 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
   }, [paperId, load])
 
   useEffect(() => {
-    // 保存周期结束（saving true→false）：savedAt 与周期开始前相同 → 这次保存
-    // 没有落上（失败）。saveFailed 只在本判定点与用户动作（编辑/重试）清除——
-    // savedAt 的前进来源含合并落地（服务器值），不能证明本面板周期成功，故
-    // 记账无条件进行、失败态不因 savedAt 前进而清。
-    // "未保存"显示不在本地推（旧实现的 savedAt 前进清 unsaved 会把合并落地
-    // 误判成已保存），一律由 store 的 pending 镜像给出
-    if (prevSaving.current && !saving) {
-      setSaveFailed(prevSavedAt.current === savedAt)
+    // 周期终点判定走 detectSaveFailed（单一判定点，纯函数锁定）；非终点帧不动
+    // 失败态。saveFailed 只在本判定点与用户动作（编辑/重试）清除——savedAt 的前进
+    // 来源含合并落地（服务器值），不能证明本面板周期成功；记账无条件进行。
+    // "未保存"显示不在本地推，一律由 store 的 pending 镜像给出（见 deriveSaveStatus）
+    const verdict = detectSaveFailed(prevSaving.current, saving, prevSavedAt.current, savedAt)
+    if (verdict !== null) {
+      setSaveFailed(verdict)
     }
     prevSaving.current = saving
     prevSavedAt.current = savedAt
