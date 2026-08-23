@@ -108,6 +108,25 @@ test('打开文献后页面渲染出已知文本', async () => {
 
   await win.getByText('智慧水务 e2e 测试文献').first().dblclick()
   await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // INV-01「文档永不滚」e2e 锚定（Q1 实锤→U4 上锁）。注：几何断言形状
+  // （scrollWidth<=clientWidth）实测不可用——overflow:hidden 只裁剪不收缩内容
+  // 度量，锁在位时 documentElement.scrollHeight 仍可 >clientHeight（内部滚动
+  // 容器的合法出血被裁掉即可）。故锚机制声明本身：html/body/#root 三层 overflow
+  // 计算样式必须全 hidden（theme.css 单点声明的完整形状）——严于行为级（overflow
+  // 传播下个别层为 visible 未必产生文档滚动，但任何偏离声明形状的改动都应显式
+  // 过 theme.css 评审，在此即红）
+  const overflowState = await win.evaluate(() => {
+    const of = (el: Element | null): string => (el === null ? 'missing' : getComputedStyle(el).overflow)
+    return {
+      html: of(document.documentElement),
+      body: of(document.body),
+      root: of(document.getElementById('root'))
+    }
+  })
+  expect(overflowState.html, 'INV-01: html 必须 overflow:hidden').toBe('hidden')
+  expect(overflowState.body, 'INV-01: body 必须 overflow:hidden').toBe('hidden')
+  expect(overflowState.root, 'INV-01: #root 必须 overflow:hidden').toBe('hidden')
   await app.close()
 })
 
