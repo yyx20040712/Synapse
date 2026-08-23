@@ -100,8 +100,10 @@ export const detachTagReqSchema = attachTagReqSchema
 
 // ── notes ───────────────────────────────────────────────────────
 export const noteGetResSchema = noteSchema.nullable()
+/** 笔记标题长度上限（INV-11 单一真相源：schema 校验与面板 maxLength 同源消费，禁止两处字面量对齐） */
+export const NOTE_TITLE_MAX = 200
 export const noteSaveReqSchema = z
-  .object({ paperId: z.string().min(1), title: z.string().max(200), contentMd: z.string() })
+  .object({ paperId: z.string().min(1), title: z.string().max(NOTE_TITLE_MAX), contentMd: z.string() })
   .strict()
 export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
 

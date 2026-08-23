@@ -25,10 +25,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import { useNotesStore } from './notes.store'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const LOAD_FAILED = '笔记加载失败'
+
+/** 标题接近上限计数器的显示阈（UI 显示策略，面板本地派生不自立字面量） */
+const TITLE_WARN = Math.floor(NOTE_TITLE_MAX * 0.9)
 
 export function NotesPanel(props: { paperId: string }): JSX.Element {
   const { paperId } = props
@@ -101,14 +105,13 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
           style={inputStyle}
           value={entry?.title ?? ''}
           disabled={loadFailed}
-          // 与 src/shared/ipc/schemas.ts title max(200) 对齐（改动需同步）
-          maxLength={200}
-          title="标题最长 200 字"
+          maxLength={NOTE_TITLE_MAX}
+          title={`标题最长 ${NOTE_TITLE_MAX} 字`}
           onChange={(e) => onEdit({ title: e.target.value })}
         />
-        {titleLength > 180 && (
+        {titleLength > TITLE_WARN && (
           <span className="shrink-0 text-xs" style={{ color: 'var(--danger)' }}>
-            {titleLength}/200
+            {titleLength}/{NOTE_TITLE_MAX}
           </span>
         )}
         <span

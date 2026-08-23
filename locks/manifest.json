@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-23T04:32:01.8336580Z",
+    "generatedAt":  "2026-08-23T04:44:01.4385607Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -75,7 +75,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "c0869113aefafc1302e6943fd6b8ae2fec28b97addfa9f456c36e9db894036a1"
+                      "sha256":  "edda59b8e36093d9b13e012e4a2cb3b5d36d1673a452786cc5328851c4ae279b"
                   },
                   {
                       "path":  "src/shared/models/annotation.ts",
