@@ -52,7 +52,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       })
     )
     const useStore = await loadStore({ notes: { get: vi.fn(), save } })
-    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null } } })
+    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
     useStore.getState().saveSoon('p-1')
     await vi.advanceTimersByTimeAsync(1600)
     expect(useStore.getState().noteByPaper['p-1']?.savedAt).toBe('t2')
@@ -267,13 +267,91 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     const loading = useStore.getState().load('p-1') // 首载挂起
     useStore.getState().edit('p-1', { contentMd: '用户输入' }) // 挂起期编辑（首载门控吞防抖）
     await loading // 合并落地：contentMd 保用户输入；排补存
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true) // 合并产物未落库——面板显示"未保存"
     await vi.advanceTimersByTimeAsync(1600) // 补存到期：保存失败——触碰记录必须仍在
     expect(save).toHaveBeenCalledTimes(1)
     expect(useStore.getState().noteByPaper['p-1']?.saving).toBe(false)
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true) // 失败保留——面板经周期判定显示"保存失败"
 
     await useStore.getState().load('p-1') // 切回再 load：仍须合并保用户输入
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('用户输入') // 保存失败不得使下次合并退化为整版取服务器
     expect(merged?.title).toBe('服务器标题')
+    expect(merged?.savedAt).toBe('t') // 服务器值未变（保存失败）——面板周期比对不误判成功
+    expect(merged?.pending).toBe(true) // S5 跨格序列终点：显示输入仍为"有未落库编辑"
+  })
+
+  // ── pending 生命周期（UBS 批三 A4：pendingEdit 的响应式镜像，四个同步点）──
+  // 锁定「面板诚实显示」的 store 契约：pending=true 表示草稿含未落库编辑，
+  // 面板据此显示"未保存"（合并落地窗口/防抖窗口内切回 remount 不再误显"已保存"）
+
+  it('pending：edit 置 true；保存成功（派发后无新编辑）清 false；失败保留', async () => {
+    const get = vi.fn(async () => ({ ok: true as const, data: null }))
+    const save = vi.fn()
+      .mockImplementationOnce(async () => ({
+        ok: true as const,
+        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+      }))
+      .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'E', message: '写盘失败' } }))
+    const useStore = await loadStore({ notes: { get, save } })
+    await useStore.getState().load('p-1') // 首载成功（空草稿）——过首载门控，否则 saveSoon 被吞
+    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
+
+    useStore.getState().edit('p-1', { contentMd: 'x' })
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+
+    useStore.getState().saveSoon('p-1')
+    await vi.advanceTimersByTimeAsync(1600) // 成功且派发后无新编辑 → 清
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
+
+    useStore.getState().edit('p-1', { contentMd: 'y' })
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+    useStore.getState().saveSoon('p-1')
+    await vi.advanceTimersByTimeAsync(1600) // 失败 → 保留（未保存态延续）
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+  })
+
+  it('pending：保存成功但派发后又有新编辑（编辑序号前进）→ 保留 true', async () => {
+    let resolveSave!: (v: { ok: true; data: { id: string; paperId: string; title: string; contentMd: string; createdAt: string; updatedAt: string } }) => void
+    const get = vi.fn(async () => ({ ok: true as const, data: null }))
+    const save = vi.fn().mockImplementationOnce(() => new Promise<{ ok: true; data: { id: string; paperId: string; title: string; contentMd: string; createdAt: string; updatedAt: string } }>((r) => { resolveSave = r }))
+    const useStore = await loadStore({ notes: { get, save } })
+    await useStore.getState().load('p-1') // 首载成功——过首载门控，否则 saveSoon 被吞
+    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
+
+    useStore.getState().edit('p-1', { contentMd: '第一次' })
+    useStore.getState().saveSoon('p-1')
+    await vi.advanceTimersByTimeAsync(1600) // 派发（快照 seq=1），保存悬挂
+    useStore.getState().edit('p-1', { contentMd: '第二次' }) // 派发后新编辑（seq=2）
+    resolveSave({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't3' } })
+    await vi.advanceTimersByTimeAsync(0)
+    // 成功不清：新编辑仍未落库（由重排防抖收尾）
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+  })
+
+  it('pending：load 合并落地保持 true（补存落库前不得谎称已保存）；整版落地 false', async () => {
+    const get = vi.fn(async () => ({
+      ok: true as const,
+      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't-saved' }
+    }))
+    const save = vi.fn(async () => ({
+      ok: true as const,
+      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '用户输入', createdAt: 't', updatedAt: 't-saved2' }
+    }))
+    const useStore = await loadStore({ notes: { get, save } })
+
+    // 合并路径：挂起期编辑 → load 落地合并（补存已排程未派发）→ 此刻必须 pending=true
+    const loading = useStore.getState().load('p-1')
+    useStore.getState().edit('p-1', { contentMd: '用户输入' })
+    await loading
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+
+    // 补存成功后清
+    await vi.advanceTimersByTimeAsync(1600)
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
+
+    // 整版路径：无未保存编辑 → pending=false
+    await useStore.getState().load('p-1')
+    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
   })
 })

@@ -7,9 +7,10 @@
  *   加载中不禁用输入（store 有编辑期保护：发起后的 edit 不被响应覆盖），
  *   仅加载失败禁用；面板已切文献时迟到的失败不再作用（发起时记 paperId）
  * - 自动保存防抖 1.5s（内容变化后 store.saveSoon → api.notes.save）
- * - 保存状态指示：已保存 / 保存中… / 失败重试按钮——保存周期结束（saving
- *   true→false）而 savedAt 未推进即判失败（store 契约：失败不推进 savedAt），
- *   重试= 再次 saveSoon
+ * - 保存状态指示（deriveSaveStatus 四态：保存中/保存失败/未保存/已保存）：
+ *   "未保存"来自 store 的 pending 镜像（草稿含未落库编辑）——合并落地窗口、
+ *   防抖窗口内切走切回（remount）均不误显"已保存"；失败判定=保存周期结束
+ *   （saving true→false）而 savedAt 未推进（store 契约 INV-04），重试=再次 saveSoon
  *
  * ── 接口层 ──
  * - export function NotesPanel(props: { paperId: string }): JSX.Element
@@ -34,6 +35,20 @@ const LOAD_FAILED = '笔记加载失败'
 /** 标题接近上限计数器的显示阈（UI 显示策略，面板本地派生不自立字面量） */
 const TITLE_WARN = Math.floor(NOTE_TITLE_MAX * 0.9)
 
+/** 保存状态指示四态（显示诚实性契约：未保存来自 store 的 pending 镜像——
+ *  合并落地窗口/防抖窗口内切回不得误显"已保存"） */
+export type SaveStatus = '保存中…' | '保存失败' | '未保存' | '已保存'
+
+/** 保存状态推导（单一推导点，纯函数锁定）：优先级 保存中 > 保存失败 > 未保存 > 已保存。
+ *  saving=周期在飞；saveFailed=周期结束而 savedAt 未推进（INV-04 消费）；
+ *  pending=草稿含未落库编辑（store pendingEdit 镜像） */
+export function deriveSaveStatus(saving: boolean, saveFailed: boolean, pending: boolean): SaveStatus {
+  if (saving) return '保存中…'
+  if (saveFailed) return '保存失败'
+  if (pending) return '未保存'
+  return '已保存'
+}
+
 export function NotesPanel(props: { paperId: string }): JSX.Element {
   const { paperId } = props
   const entry = useNotesStore((s) => s.noteByPaper[paperId])
@@ -42,10 +57,10 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
   const saveSoon = useNotesStore((s) => s.saveSoon)
 
   const [loadFailed, setLoadFailed] = useState(false)
-  const [unsaved, setUnsaved] = useState(false)
   const [saveFailed, setSaveFailed] = useState(false)
   const saving = entry?.saving ?? false
   const savedAt = entry?.savedAt ?? null
+  const pending = entry?.pending ?? false
   // 上一帧的 saving/savedAt：判定"保存周期结束而 savedAt 未推进 = 失败"
   const prevSaving = useRef(false)
   const prevSavedAt = useRef<string | null>(null)
@@ -69,30 +84,27 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
   }, [paperId, load])
 
   useEffect(() => {
+    // 保存周期结束（saving true→false）：savedAt 与周期开始前相同 → 这次保存
+    // 没有落上（失败）。saveFailed 只在本判定点与用户动作（编辑/重试）清除——
+    // savedAt 的前进来源含合并落地（服务器值），不能证明本面板周期成功，故
+    // 记账无条件进行、失败态不因 savedAt 前进而清。
+    // "未保存"显示不在本地推（旧实现的 savedAt 前进清 unsaved 会把合并落地
+    // 误判成已保存），一律由 store 的 pending 镜像给出
     if (prevSaving.current && !saving) {
-      // 保存周期结束：savedAt 与周期开始前相同 → 这次保存没有落上（失败）
       setSaveFailed(prevSavedAt.current === savedAt)
-      setUnsaved(prevSavedAt.current === savedAt)
-      prevSaving.current = saving
-      return
     }
     prevSaving.current = saving
-    if (savedAt !== prevSavedAt.current) {
-      prevSavedAt.current = savedAt
-      setUnsaved(false)
-      setSaveFailed(false)
-    }
+    prevSavedAt.current = savedAt
   }, [saving, savedAt])
 
-  /** 编辑入口：写 store 草稿 + 标记未保存 + 重排防抖自动保存 */
+  /** 编辑入口：写 store 草稿（pending 镜像随 edit 置 true）+ 重排防抖自动保存 */
   const onEdit = (patch: { title?: string; contentMd?: string }): void => {
     setSaveFailed(false)
-    setUnsaved(true)
     edit(paperId, patch)
     saveSoon(paperId)
   }
 
-  const status = saving ? '保存中…' : saveFailed ? '保存失败' : unsaved ? '未保存' : '已保存'
+  const status = deriveSaveStatus(saving, saveFailed, pending)
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
   const titleLength = entry?.title.length ?? 0
 
@@ -114,13 +126,17 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
             {titleLength}/{NOTE_TITLE_MAX}
           </span>
         )}
-        <span
-          className="shrink-0 text-xs"
-          style={{ color: saveFailed ? 'var(--danger)' : 'var(--text-dim)' }}
-          role="status"
-        >
-          {status}
-        </span>
+        {/* 加载中（entry 未到）不显示保存状态——四态无一为真，显示即误导；
+            正文区另有"笔记加载中…"覆盖层 */}
+        {entry !== undefined && (
+          <span
+            className="shrink-0 text-xs"
+            style={{ color: saveFailed ? 'var(--danger)' : 'var(--text-dim)' }}
+            role="status"
+          >
+            {status}
+          </span>
+        )}
         {saveFailed && (
           <button
             type="button"

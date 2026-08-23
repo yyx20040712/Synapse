@@ -3,7 +3,8 @@
  *
  * ── 行为层 ──
  * - { noteByPaper: Record<string, { title: string; contentMd: string; saving: boolean;
- *     savedAt: string | null }> }
+ *     savedAt: string | null; pending: boolean }> }（pending=未落库编辑镜像，见
+ *     NoteDraft 字段注释——面板"未保存/已保存"诚实显示的依据）
  * - load(paperId)：unwrap(api.notes.get) 重建草稿（无笔记 → 空草稿，savedAt=null）；
  *   带请求序号 stale-guard（对齐 library.store）——晚到的旧响应（含旧失败）直接
  *   丢弃。落地不变量：本地存在未保存编辑（模块级 pendingEdit，save 成功清、
@@ -42,6 +43,10 @@ export interface NoteDraft {
   contentMd: string
   saving: boolean
   savedAt: string | null
+  /** 草稿含未落库编辑（模块级 pendingEdit 的响应式镜像，面板"未保存"显示依据）。
+   *  四个同步点与 pendingEdit 一一对应：edit 置 true / save 成功且派发后无新编辑
+   *  清 false / 合并落地置 true / 整版落地置 false（save 失败与派发后有新编辑不动） */
+  pending: boolean
 }
 
 export interface NotesStore {
@@ -54,7 +59,7 @@ export interface NotesStore {
 /** 自动保存防抖窗口（毫秒） */
 const SAVE_DEBOUNCE_MS = 1500
 
-const EMPTY_DRAFT: NoteDraft = { title: '', contentMd: '', saving: false, savedAt: null }
+const EMPTY_DRAFT: NoteDraft = { title: '', contentMd: '', saving: false, savedAt: null, pending: false }
 
 /** 每篇文献最近一次 edit 的时刻（Date.now()）——saveSoon 首载门控的判定依据（仅取存在性） */
 const lastEditedAt = new Map<string, number>()
@@ -123,7 +128,10 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
             title: touched?.title ? draft.title : serverTitle,
             contentMd: touched?.contentMd ? draft.contentMd : serverContent,
             saving: false,
-            savedAt: serverSavedAt
+            savedAt: serverSavedAt,
+            // 合并产物仍是未落库的用户内容（补存尚未派发/落库）——镜像置 true，
+            // 面板不得因 savedAt 被赋服务器值而误显"已保存"
+            pending: true
           })
           // 触碰记录不清：合并后的草稿仍是未落库的用户内容（补存失败或挂起时，
           // 下次合并须继续按 touched 保用户字段）；作废点在 save 成功回调（与
@@ -140,7 +148,8 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
           title: serverTitle,
           contentMd: serverContent,
           saving: false,
-          savedAt: serverSavedAt
+          savedAt: serverSavedAt,
+          pending: false
         })
         loadedOnce.add(paperId)
       } catch (e) {
@@ -161,7 +170,7 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       if (patch.title !== undefined) touched.title = true
       if (patch.contentMd !== undefined) touched.contentMd = true
       touchedFields.set(paperId, touched)
-      setDraft(paperId, patch)
+      setDraft(paperId, { ...patch, pending: true })
     },
 
     saveSoon(paperId) {
@@ -191,11 +200,17 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
             if ((editSeq.get(paperId) ?? 0) === seqAtDispatch) {
               pendingEdit.delete(paperId)
               touchedFields.delete(paperId)
+              // 与 pendingEdit 同点同条件清镜像：草稿自此等于服务器基线
+              setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: false })
+            } else {
+              // 派发后又有新编辑：pendingEdit 保留，镜像显式置 true（与同步点对偶，
+              // 不靠"上一帧必为 true"的隐式假设）
+              setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
             }
-            setDraft(paperId, { saving: false, savedAt: saved.updatedAt })
           })
           .catch(() => {
-            // 失败不推进 savedAt（未保存态延续）；saving 复位后下次 edit→saveSoon 重试
+            // 失败不推进 savedAt（未保存态延续）；saving 复位后下次 edit→saveSoon 重试；
+            // pendingEdit 与镜像 pending 均保留——内容未落库，面板继续显示未保存
             setDraft(paperId, { saving: false })
           })
       }, SAVE_DEBOUNCE_MS)
