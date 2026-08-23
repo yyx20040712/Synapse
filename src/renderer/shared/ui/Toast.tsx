@@ -104,7 +104,9 @@ export function ToastHost(): JSX.Element {
   if (list.length === 0) return <></>
 
   return (
-    <div className="fixed right-4 top-4 z-50 flex w-80 flex-col gap-2">
+    // 容器穿透（pointer-events-none）：右上 320px 常驻区域不得拦截底层 UI 的点击
+    // （此前无卡片处也挡），卡片自身恢复可交互（× 关闭按钮）
+    <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2">
       {list.map((item) => (
         <ToastCard key={item.id} item={item} onClose={() => dismiss(item.id)} />
       ))}
@@ -117,7 +119,7 @@ function ToastCard(props: { item: ToastItem; onClose: () => void }): JSX.Element
   return (
     <div
       role={item.kind === 'error' ? 'alert' : 'status'}
-      className="flex items-start gap-2 rounded border px-3 py-2 text-sm"
+      className="pointer-events-auto flex items-start gap-2 rounded border px-3 py-2 text-sm"
       style={{ ...CARD_STYLE, borderLeft: `3px solid ${KIND_COLOR[item.kind]}` }}
     >
       <span className="min-w-0 flex-1 break-words">{item.message}</span>
