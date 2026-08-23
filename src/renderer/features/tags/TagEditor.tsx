@@ -17,7 +17,7 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - api 失败统一 toast；busy 期间禁输入防重复提交
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { useTagsStore } from './tags.store'
@@ -35,11 +35,23 @@ export function TagEditor(props: {
   const [busy, setBusy] = useState(false)
   const allTags = useTagsStore((s) => s.tags)
   const refreshTags = useTagsStore((s) => s.refresh)
+  const listError = useTagsStore((s) => s.error)
 
-  // 建议数据源：挂载即拉（列表型失败由 store 契约静默，建议区为空即可）
+  // 建议数据源：挂载即拉；列表型失败经 store.error 暴露，在此 toast（建议区退空可用）。
+  // 迁移守卫：挂载时已残留的旧失败不重播（本次挂载已触发新 refresh，结果以新为准），
+  // 仅"挂载期间 null→失败"的转变才 toast
   useEffect(() => {
     void refreshTags()
   }, [refreshTags])
+  const seenError = useRef(listError)
+  useEffect(() => {
+    if (listError !== seenError.current) {
+      seenError.current = listError
+      if (listError !== null) {
+        showToast(`标签列表刷新失败：${listError}`, 'error')
+      }
+    }
+  }, [listError])
 
   /** 挂接已有标签（建议点击路径） */
   async function attachExisting(tagId: string): Promise<void> {

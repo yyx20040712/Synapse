@@ -16,7 +16,8 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - 空标签库显示引导文案（先在详情侧栏打标签）
  */
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { showToast } from '../../shared/ui/Toast'
 import { useTagsStore } from './tags.store'
 
 export function TagFilter(props: {
@@ -26,10 +27,23 @@ export function TagFilter(props: {
   const { selectedTagId, onFilterChange } = props
   const tags = useTagsStore((s) => s.tags)
   const refresh = useTagsStore((s) => s.refresh)
+  const listError = useTagsStore((s) => s.error)
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+  // 列表型失败经 store.error 暴露，在此 toast（与 TagEditor 同口径）。迁移守卫：
+  // 挂载时已残留的旧失败不重播（本次挂载已触发新 refresh），仅"挂载期间
+  // null→失败"的转变才 toast——重挂载不再对历史失败刷屏
+  const seenError = useRef(listError)
+  useEffect(() => {
+    if (listError !== seenError.current) {
+      seenError.current = listError
+      if (listError !== null) {
+        showToast(`标签列表刷新失败：${listError}`, 'error')
+      }
+    }
+  }, [listError])
 
   if (tags.length === 0) {
     return (
