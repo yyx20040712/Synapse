@@ -202,7 +202,7 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
 })
 
 /** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */
-async function seedAndLaunch(title: string): Promise<{ app: ReturnType<typeof launch>; userData: string }> {
+async function seedAndLaunch(title: string): Promise<{ app: ElectronApplication; userData: string }> {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
   const seedApp = await launch(userData)
