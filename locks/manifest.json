@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-23T05:40:30.3171650Z",
+    "generatedAt":  "2026-08-23T05:48:38.7324281Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -231,7 +231,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
-                      "sha256":  "56d30415b1d3c9cdffb18deedb30588d7e246637403aead4a9c73c77b3088c5f"
+                      "sha256":  "3aef2cc0abb2752a82e838074e84472ec8cd421a0519e62a34f5759e6570b208"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",

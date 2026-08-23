@@ -3,7 +3,9 @@
  *
  * ── 行为层 ──
  * - { settings: AppSettings | null; saving: boolean; diag: NetDiagItem[] | null }
- * - load()：api.settings.get({})；save(patch)：api.settings.set → 整体替换本地 settings
+ * - load()：api.settings.get({})；带 settings 版本守卫（仅 save 成功落地抬升；
+ *   跨通道乱序晚到的旧快照丢弃，失败期间在途 load 照常应用——INV-03 收口）
+ * - save(patch)：api.settings.set → 整体替换本地 settings
  * - diagnose()：api.settings.diagNetwork({}) → diag
  *
  * ── 接口层 ──
@@ -35,32 +37,47 @@ export interface SettingsStore {
   diagnose(): Promise<void>
 }
 
-export const useSettingsStore = create<SettingsStore>()((set) => ({
-  settings: null,
-  saving: false,
-  diag: null,
+export const useSettingsStore = create<SettingsStore>()((set) => {
+  // settings 版本计数（store 闭包，INV-03 settings 侧收口）：ipc/settings 的 get/set
+  // 是异步处理器，ipcMain.handle 不保证跨通道回复有序——load 的旧快照可能晚于
+  // save 的落地到达。仅在 save 成功落地时抬一次版本：晚于成功点到达的一切在途
+  // load 快照作废（跨通道乱序两类窗由此全覆盖）；成功点之前到达的照常应用（瞬态
+  // 旧值，save 落地无条件覆盖纠正终态）；save 失败不抬版本——失败期间在途 load
+  // 读到的就是持久层（settings.json）真值，应用是真话。diagnose 切片独立不读
+  // settings 且页面有 busy 守卫，不参与本计数
+  let settingsSeq = 0
 
-  async load() {
-    const settings = await unwrap(api.settings.get({}))
-    set({ settings })
-  },
+  return {
+    settings: null,
+    saving: false,
+    diag: null,
 
-  async save(patch) {
-    set({ saving: true })
-    try {
-      // 原样透传（锁定测试断言 set 收到的参数恰为 patch）：contactEmail 必填的
-      // 前置条件由调用方（设置页）先校验，此处只做类型收窄不做合并
-      const saved = await unwrap(
-        api.settings.set(patch as Parameters<typeof api.settings.set>[0])
-      )
-      set({ settings: saved })
-    } finally {
-      set({ saving: false })
+    async load() {
+      const seq = settingsSeq
+      const settings = await unwrap(api.settings.get({}))
+      // 版本已前进（save 已成功落地）：本快照过期，丢弃
+      if (seq !== settingsSeq) return
+      set({ settings })
+    },
+
+    async save(patch) {
+      set({ saving: true })
+      try {
+        // 原样透传（锁定测试断言 set 收到的参数恰为 patch）：contactEmail 必填的
+        // 前置条件由调用方（设置页）先校验，此处只做类型收窄不做合并
+        const saved = await unwrap(
+          api.settings.set(patch as Parameters<typeof api.settings.set>[0])
+        )
+        settingsSeq += 1
+        set({ settings: saved })
+      } finally {
+        set({ saving: false })
+      }
+    },
+
+    async diagnose() {
+      const diag = await unwrap(api.settings.diagNetwork({}))
+      set({ diag })
     }
-  },
-
-  async diagnose() {
-    const diag = await unwrap(api.settings.diagNetwork({}))
-    set({ diag })
   }
-}))
+})
