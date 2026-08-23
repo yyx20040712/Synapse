@@ -3,7 +3,7 @@
 - 日期：2026-08-23（UBS 战役批四 D1 裁决）
 - 状态：已裁决——不重构（维持现状）
 - 关联：docs/invariants.md INV-04；docs/reports/2026-08-23_defect-campaign.md U2；
-  docs/reports/2026-08-23_ubs-sweep.md §D1
+  docs/reports/2026-08-23_ubs-sweep.md §D1；docs/reports/2026-08-23_ubs-campaign.md §3
 
 ## 背景
 

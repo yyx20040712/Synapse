@@ -11,7 +11,7 @@
   （deepseek 审计 15 轮 + GLM 二审 15 份，全轨迹存
   %TEMP%\synapse_workflow\audits\UBS-*）；两次 BLOCKING 经机器事实证伪携证重审
 
-## 1. 提交清单（9 个代码单元 + 本 docs 单元）
+## 1. 提交清单（11 个代码单元 + 本 docs 单元）
 
 | 单元 | 提交 | 内容 | 测试增量 |
 | --- | --- | --- | --- |
@@ -20,12 +20,12 @@
 | C1 | 95c3f3f | INV-01 e2e 锚定（改锚取证：几何形状不可用→机制计算样式锁） | 0（e2e 内断言） |
 | C2 | 1afc058 | INV-06 underline/note 两链（三 kind e2e 全覆盖）+种子配方收敛 | e2e 6→8 |
 | C3+B4 | b774d5c | 工单模板状态机+错误反馈两型条款（lint 化不可行实证降级规约化） | 0（生成器核对） |
-| fix | （C2 后） | C2 类型注解缺陷修复（playwright 不查类型的教训） | 0 |
+| fix | bb302b4 | C2 类型注解缺陷修复（playwright 不查类型的教训） | 0 |
 | A1 | 0adffd0 | settings.store 乱序守卫（仅成功落地抬版本；INV-03 store 侧收口） | +4（→237） |
-| A4 | 0eeb3d0 | NotesPanel 保存指示诚实化（NoteDraft.pending 镜像+deriveSaveStatus） | +3+1 文件（→242/244） |
+| A4 | 0eeb3d0 | NotesPanel 保存指示诚实化（NoteDraft.pending 镜像+deriveSaveStatus） | +4（store×3+deriveSaveStatus×1，→245） |
 | A4b | 7c08159 | detectSaveFailed 纯函数化+锁定（闭 A4 三审余 WARN） | +1 |
-| A3 | （批四） | useAsync 请求令牌（迟到 settle 丢弃；INV-03 hook 族收口） | +3（→246） |
-| D2 | （批四） | 固定种子伪随机性质攻击落地（12 种子×24 步内容安全/savedAt 单调） | +1 |
+| A3 | a439163 | useAsync 请求令牌（迟到 settle 丢弃；INV-03 hook 族收口） | +3（→245） |
+| D2 | cd07ff7 | 固定种子伪随机性质攻击落地（12 种子×24 步内容安全/savedAt 单调） | +1（→246） |
 | docs | 本提交 | ADR-0008/0009 + invariants.md 六行回写 + 本报告 | — |
 
 ## 2. 登记册状态总变化（docs/invariants.md）
