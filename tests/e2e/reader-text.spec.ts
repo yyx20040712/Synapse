@@ -132,25 +132,10 @@ test('打开文献后页面渲染出已知文本', async () => {
 
 test('划选高亮后重开仍在原位；批注编辑与删除可用', async () => {
   skipIfPending(ANNOTATION_DEPS)
-  const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
-
-  // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
-
-  // 受管文件 + 种子落库（与上一测同一配方；标题带"标注链"区分）
+  // 受管文件 + 种子落库 + 二次启动（seedAndLaunch 共用配方；标题带"标注链"区分）
   const title = '智慧水务 e2e 标注链文献'
-  const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
-  const sha = createHash('sha256').update(bytes).digest('hex')
-  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
-  const abs = join(userData, 'files', ...fileRef.split('/'))
-  mkdirSync(dirname(abs), { recursive: true })
-  writeFileSync(abs, bytes)
-  await seedPaperRow(userData, fileRef, sha, title)
-
+  const { app, userData } = await seedAndLaunch(title)
   // 第一程：划选 → 工具条 → 高亮 → 色块出现并记取位置
-  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
@@ -214,4 +199,77 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await editor.getByRole('button', { name: '删除' }).click()
   await expect(win2.getByTestId('annotation-rect')).toHaveCount(0)
   await app2.close()
+})
+
+/** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */
+async function seedAndLaunch(title: string): Promise<{ app: ReturnType<typeof launch>; userData: string }> {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
+  // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+  const seedApp = await launch(userData)
+  await (await seedApp.firstWindow()).waitForTimeout(500)
+  await seedApp.close()
+  const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, title)
+  return { app: await launch(userData), userData }
+}
+
+test('划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言）', async () => {
+  skipIfPending(ANNOTATION_DEPS)
+  const title = '智慧水务 e2e 下划线链文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '下划线' }).click()
+
+  const rect = win.getByTestId('annotation-rect')
+  await expect(rect.first()).toBeVisible()
+  // INV-06：几何可见 ≠ 视觉可见——kind=underline 的渲染形态必须是合并行盒下沿
+  // 2px 实条（U3 修复语义），颜色/不透明度到位才谈得上"看得见"
+  await expect(rect.first()).toHaveCSS('height', '2px')
+  await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
+  await expect(rect.first()).toHaveCSS('opacity', '1')
+  // 「行盒下沿」位置语义：实条底边贴合已知文本 span 的行盒底边（±4px 容差吞
+  // 字度量测噪声），宽度覆盖选区（≥80%，防窄条悬空）
+  const underlineBox = await rect.first().boundingBox()
+  const textBox = await known.boundingBox()
+  expect(underlineBox).not.toBeNull()
+  expect(textBox).not.toBeNull()
+  expect(Math.abs(underlineBox!.y + underlineBox!.height - (textBox!.y + textBox!.height))).toBeLessThanOrEqual(4)
+  expect(underlineBox!.width).toBeGreaterThanOrEqual(textBox!.width * 0.8)
+  await app.close()
+})
+
+test('划选备注后渲染为整行色块（note kind 渲染存在性，INV-06）', async () => {
+  skipIfPending(ANNOTATION_DEPS)
+  const title = '智慧水务 e2e 备注链文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '备注' }).click()
+
+  const rect = win.getByTestId('annotation-rect')
+  await expect(rect.first()).toBeVisible()
+  // note 呈整行高色块（正向断言：≥8px 的实块高度才谈得上行内可见标记——1px/2px
+  // 退化即红；该形态与 underline 的 2px 实条构成 kind 互斥区分度）
+  await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
+  const noteHeight = await rect.first().evaluate((el) => parseFloat(getComputedStyle(el).height))
+  expect(noteHeight).toBeGreaterThanOrEqual(8)
+  await app.close()
 })
