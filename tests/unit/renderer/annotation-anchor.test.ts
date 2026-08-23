@@ -2,6 +2,7 @@
 import { afterEach, expect, it } from 'vitest'
 import {
   findRangeAtOffset,
+  mergeLineRects,
   rectsFromRange,
   selectionToAnchor,
   verifyQuote
@@ -148,5 +149,79 @@ guardedDescribe('SR-RDR-01', 'annotation-anchor —— 文本偏移↔DOM 定位
     sel?.removeAllRanges()
     sel?.addRange(range)
     expect(selectionToAnchor(root, sel as Selection)).toBeNull()
+  })
+})
+
+/** 合成像素矩形（mergeLineRects 纯函数用例：jsdom 无布局，不经 DOM 量测） */
+function px(x: number, y: number, w: number, h: number): { x: number; y: number; w: number; h: number } {
+  return { x, y, w, h }
+}
+
+guardedDescribe('SR-RDR-01', 'mergeLineRects —— clientRects 行级合并', () => {
+  it('同行两片段（y 重叠、x 相邻）合并为一个矩形：x 并集、y/h 取主导（面积最大者）', () => {
+    const out = mergeLineRects([px(10, 100, 50, 12), px(60, 101, 40, 10)], 600)
+    expect(out.length).toBe(1)
+    expect(out[0]!.x).toBe(10)
+    expect(out[0]!.w).toBe(90) // 10..100 并集
+    expect(out[0]!.y).toBe(100) // 主导 = 50×12 首矩形
+    expect(out[0]!.h).toBe(12)
+  })
+
+  it('不同行（y 区间不重叠）不合并：两矩形按 y 升序输出', () => {
+    const out = mergeLineRects([px(10, 130, 80, 12), px(10, 100, 90, 12)], 600)
+    expect(out.length).toBe(2)
+    expect(out[0]!.y).toBe(100)
+    expect(out[1]!.y).toBe(130)
+  })
+
+  it('同行大 x 间隙断段（防多栏桥接）：间隙 > max(1.5×主导高, 页宽 2%) 处分开', () => {
+    // 主导高 12 → 1.5×12=18 > 600×2%=12 → 阈值 18；间隙 100 > 18 必断
+    const out = mergeLineRects([px(10, 100, 90, 12), px(200, 100, 60, 12)], 600)
+    expect(out.length).toBe(2)
+    expect(out[0]!.x).toBe(10)
+    expect(out[1]!.x).toBe(200)
+    // 对照：间隙 8 ≤ 18 不断段（同一行连续文本）
+    const joined = mergeLineRects([px(10, 100, 90, 12), px(108, 100, 42, 12)], 600)
+    expect(joined.length).toBe(1)
+    expect(joined[0]!.w).toBe(140)
+  })
+
+  it('同形重复矩形（亚像素量测差）去重', () => {
+    const out = mergeLineRects([px(10, 100, 50, 12), px(10.2, 100.1, 50, 12)], 600)
+    expect(out.length).toBe(1)
+  })
+
+  it('高瘦矩形（旋转/竖排形态，h 超主导高 2 倍）不并入行簇：独立成簇输出', () => {
+    const tall = px(300, 100, 10, 80) // h=80，行高 12 的 6.7 倍
+    const line1 = px(10, 110, 90, 12) // y 与 tall 区间重叠但高度不可比
+    const out = mergeLineRects([tall, line1], 600)
+    expect(out.length).toBe(2)
+    const tallOut = out.find((r) => r.h === 80)
+    const lineOut = out.find((r) => r.h === 12)
+    expect(tallOut).toBeDefined() // 高瘦矩形保持自身几何，未被行簇 y/h 吞并
+    expect(lineOut!.y).toBe(110)
+    expect(lineOut!.w).toBe(90)
+  })
+
+  it('混排字号同行（上标 h=8 vs 主文本 h=12）同簇合并，y/h 取主导', () => {
+    const out = mergeLineRects([px(10, 100, 60, 12), px(70, 103, 10, 8)], 600)
+    expect(out.length).toBe(1)
+    expect(out[0]!.w).toBe(70) // 10..80
+    expect(out[0]!.y).toBe(100)
+    expect(out[0]!.h).toBe(12) // 主导（60×12 > 10×8）
+  })
+
+  it('相邻行亚像素重叠（紧行距舍入，重叠 <25% 较小高度）不并簇', () => {
+    // 行盒 h=12、行间重叠 1.2px（重叠率 0.1）：同行片段重叠率近 1，判别带清晰
+    const out = mergeLineRects([px(10, 100, 90, 12), px(10, 111.2, 80, 12)], 600)
+    expect(out.length).toBe(2)
+    expect(out[0]!.y).toBe(100)
+    expect(out[1]!.y).toBeCloseTo(111.2, 5)
+  })
+
+  it('单矩形与空数组透传', () => {
+    expect(mergeLineRects([], 600)).toEqual([])
+    const one = px(5, 5, 5, 5)
+    expect(mergeLineRects([one], 600)).toEqual([one])
   })
 })

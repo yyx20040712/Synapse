@@ -2,8 +2,10 @@
  * [SR-RDR-06] AnnotationLayer —— 标注渲染与命中（工单：done / weak，依赖 annotation-anchor）
  *
  * ── 行为层 ──
- * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定，
- *   高亮/备注透明度 0.35，下划线为矩形下沿 2px 实条）
+ * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
+ *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
+ *   下划线为合并后行矩形下沿 2px 实条，每行一条、底边平齐——rects 行级合并见
+ *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径）
  * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
  *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
  *   requestAnimationFrame 合并重算
@@ -43,7 +45,8 @@ const DELETE_CONFIRM = '删除这条标注？'
 /** 重锚后的显示矩形（id → rects；缺项回退存量 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>
 
-/** kind+color+归一化矩形 → 色块样式（高亮/备注整块半透明，下划线为下沿实条） */
+/** kind+color+归一化矩形 → 色块样式（荧光笔语义：multiply 混合下色块不透明——
+ *  白纸×色=色、黑字×色=黑字；下划线为合并矩形下沿 2px 实条，底边随行盒平齐） */
 function rectStyle(kind: AnnotationKind, color: AnnotationColor, r: AnnotationRect): CSSProperties {
   const base: CSSProperties = {
     left: `${r.x * 100}%`,
@@ -53,9 +56,9 @@ function rectStyle(kind: AnnotationKind, color: AnnotationColor, r: AnnotationRe
     cursor: 'pointer'
   }
   if (kind === 'underline') {
-    return { ...base, top: `calc(${(r.y + r.h) * 100}% - 2px)`, height: '2px', opacity: 0.9 }
+    return { ...base, top: `calc(${(r.y + r.h) * 100}% - 2px)`, height: '2px', opacity: 1 }
   }
-  return { ...base, top: `${r.y * 100}%`, height: `${r.h * 100}%`, opacity: 0.35 }
+  return { ...base, top: `${r.y * 100}%`, height: `${r.h * 100}%`, opacity: 1 }
 }
 
 /** 正在编辑的标注（连同命中矩形，供弹层定位） */
@@ -162,7 +165,14 @@ export function AnnotationLayer(props: {
 
   return (
     <>
-      <div className="absolute inset-0" style={{ zIndex: 5, pointerEvents: 'none' }}>
+      <div
+        data-testid="annotation-layer"
+        className="absolute inset-0"
+        style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
+      >
+        {/* multiply 必须上容器级：本容器（absolute+zIndex:5）是 stacking context 隔离组，
+            rect 级混合只与容器内透明背景混合（无效）且同标注矩形会互相叠乘（正是要
+            消灭的叠深）；整层作为单元与页面背景混合，内部重叠为 source-over 不加深 */}
         {pageAnnotations.map((a) =>
           (resolved[a.id] ?? a.rects).map((r, i) => (
             <div
