@@ -76,4 +76,75 @@ guardedDescribe('SR-RDR-09', 'reader.store —— 打开/标注/进度', () => {
     useStore.getState().setColor('green')
     expect(useStore.getState().color).toBe('green')
   })
+
+  // ── stale-guard 锁定用例（INV-03）：openSeq 双检点 + close 抬序号 ──
+  // 红证方式：变异（移除 seq 检查/close 抬序号）→ 本组用例精确红（战役 U2/U3 先例）
+
+  it('stale-guard：并发 open 时晚到的旧 open 响应丢弃（第一检点）', async () => {
+    type OpenOk = { ok: true; data: { fileUrl: string; fileName: string; lastReadPage: number } }
+    let resolveA!: (v: OpenOk) => void
+    const open = vi
+      .fn()
+      // p-1 的 open 悬挂（模拟慢响应）
+      .mockImplementationOnce(() => new Promise<OpenOk>((r) => { resolveA = r }))
+      // p-2 的 open 立即成功
+      .mockImplementationOnce(async () => ({
+        ok: true as const,
+        data: { fileUrl: 'app-file://p-2', fileName: 'b.pdf', lastReadPage: 0 }
+      }))
+    const listAnnotations = vi.fn(async () => ({ ok: true as const, data: [] as Annotation[] }))
+    const useStore = await loadStore({ reader: { open, listAnnotations } })
+    const pA = useStore.getState().openPaper('p-1')
+    await useStore.getState().openPaper('p-2')
+    expect(useStore.getState().paperId).toBe('p-2')
+    // 旧响应此刻才到：必须被丢弃，不得覆盖 p-2
+    resolveA({ ok: true, data: { fileUrl: 'app-file://p-1', fileName: 'a.pdf', lastReadPage: 3 } })
+    await pA
+    expect(useStore.getState().paperId).toBe('p-2')
+    expect(useStore.getState().fileName).toBe('b.pdf')
+    // 旧请求在第一检点即被拦，不应再发标注请求
+    expect(listAnnotations).toHaveBeenCalledTimes(1)
+  })
+
+  it('stale-guard：旧请求越过第一检点后，晚到的标注响应丢弃（第二检点）', async () => {
+    const open = vi.fn(async (req: { paperId: string }) => ({
+      ok: true as const,
+      data: { fileUrl: `app-file://${req.paperId}`, fileName: `${req.paperId}.pdf`, lastReadPage: 0 }
+    }))
+    let resolveAnnA!: (v: { ok: true; data: Annotation[] }) => void
+    const listAnnotations = vi
+      .fn()
+      // p-1 的标注请求悬挂（open 已过、标注未回）
+      .mockImplementationOnce(() => new Promise<{ ok: true; data: Annotation[] }>((r) => { resolveAnnA = r }))
+      .mockImplementationOnce(async () => ({ ok: true as const, data: [] as Annotation[] }))
+    const useStore = await loadStore({ reader: { open, listAnnotations } })
+    const pA = useStore.getState().openPaper('p-1')
+    // 让 p-1 先走过第一检点、停在悬挂的标注请求上（once mock 按调用序消费，
+    // 不等这一步会让 p-2 抢到悬挂的那一份）
+    await vi.waitFor(() => { expect(listAnnotations).toHaveBeenCalledTimes(1) })
+    await useStore.getState().openPaper('p-2')
+    expect(useStore.getState().paperId).toBe('p-2')
+    expect(useStore.getState().annotations).toEqual([])
+    // 旧标注响应此刻才到：不得把 p-1 的标注写进当前状态
+    resolveAnnA({ ok: true, data: [ann] })
+    await pA
+    expect(useStore.getState().paperId).toBe('p-2')
+    expect(useStore.getState().annotations).toEqual([])
+  })
+
+  it('stale-guard：close 抬序号作废在途 open（响应到达不落地）', async () => {
+    type OpenOk = { ok: true; data: { fileUrl: string; fileName: string; lastReadPage: number } }
+    let resolveA!: (v: OpenOk) => void
+    const open = vi.fn().mockImplementationOnce(() => new Promise<OpenOk>((r) => { resolveA = r }))
+    const listAnnotations = vi.fn(async () => ({ ok: true as const, data: [] as Annotation[] }))
+    const useStore = await loadStore({ reader: { open, listAnnotations } })
+    const pA = useStore.getState().openPaper('p-1')
+    useStore.getState().close()
+    resolveA({ ok: true, data: { fileUrl: 'app-file://p-1', fileName: 'a.pdf', lastReadPage: 2 } })
+    await pA
+    // close 之后到达的响应一律作废：状态保持复位后的初始态
+    expect(useStore.getState().paperId).toBeNull()
+    expect(useStore.getState().fileUrl).toBeNull()
+    expect(useStore.getState().annotations).toEqual([])
+  })
 })
