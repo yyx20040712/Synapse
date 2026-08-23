@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-22T14:15:28.2326085Z",
+    "generatedAt":  "2026-08-23T01:44:52.5745212Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -223,7 +223,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
-                      "sha256":  "dd2f5cdf491d4e4242b56272892c0abc70a12fefa7e1528aef139c53252a56c0"
+                      "sha256":  "ad6b11231b4d016b2dffdb0182c9018466e3199e956180a0d1b56e4bea5b477f"
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",

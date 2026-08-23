@@ -4,7 +4,9 @@
  * ── 行为层 ──
  * - 每篇文献一篇 Markdown 笔记：标题输入 + textarea 正文（等宽字体）
  * - 载入 api.notes.get（经 notes.store.load，失败 toast + 载入重试）；
- *   自动保存防抖 1.5s（内容变化后 store.saveSoon → api.notes.save）
+ *   加载中不禁用输入（store 有编辑期保护：发起后的 edit 不被响应覆盖），
+ *   仅加载失败禁用；面板已切文献时迟到的失败不再作用（发起时记 paperId）
+ * - 自动保存防抖 1.5s（内容变化后 store.saveSoon → api.notes.save）
  * - 保存状态指示：已保存 / 保存中… / 失败重试按钮——保存周期结束（saving
  *   true→false）而 savedAt 未推进即判失败（store 契约：失败不推进 savedAt），
  *   重试= 再次 saveSoon
@@ -43,11 +45,16 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
   // 上一帧的 saving/savedAt：判定"保存周期结束而 savedAt 未推进 = 失败"
   const prevSaving = useRef(false)
   const prevSavedAt = useRef<string | null>(null)
+  // 最新 paperId（迟到回调比对用）：面板已切文献时，旧请求的失败不得禁用当前输入框
+  const paperIdRef = useRef(paperId)
+  paperIdRef.current = paperId
 
   /** 载入（失败 toast + 重试态）；首挂与载入重试按钮共用 */
   const runLoad = (): void => {
     setLoadFailed(false)
+    const requestedId = paperId
     load(paperId).catch((e: unknown) => {
+      if (requestedId !== paperIdRef.current) return // 迟到失败：面板已切文献，忽略
       setLoadFailed(true)
       showToast(e instanceof ApiClientError ? e.message : LOAD_FAILED, 'error')
     })
@@ -83,6 +90,7 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
 
   const status = saving ? '保存中…' : saveFailed ? '保存失败' : unsaved ? '未保存' : '已保存'
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
+  const titleLength = entry?.title.length ?? 0
 
   return (
     <div className="flex h-full flex-col gap-2 p-3 text-sm">
@@ -92,9 +100,17 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
           className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
           style={inputStyle}
           value={entry?.title ?? ''}
-          disabled={entry === undefined || loadFailed}
+          disabled={loadFailed}
+          // 与 src/shared/ipc/schemas.ts title max(200) 对齐（改动需同步）
+          maxLength={200}
+          title="标题最长 200 字"
           onChange={(e) => onEdit({ title: e.target.value })}
         />
+        {titleLength > 180 && (
+          <span className="shrink-0 text-xs" style={{ color: 'var(--danger)' }}>
+            {titleLength}/200
+          </span>
+        )}
         <span
           className="shrink-0 text-xs"
           style={{ color: saveFailed ? 'var(--danger)' : 'var(--text-dim)' }}
@@ -116,14 +132,25 @@ export function NotesPanel(props: { paperId: string }): JSX.Element {
           </button>
         )}
       </div>
-      <textarea
-        aria-label="笔记正文"
-        className="min-h-0 flex-1 resize-none rounded border p-2 font-mono text-sm"
-        style={inputStyle}
-        value={entry?.contentMd ?? ''}
-        disabled={entry === undefined || loadFailed}
-        onChange={(e) => onEdit({ contentMd: e.target.value })}
-      />
+      <div className="relative min-h-0 flex-1">
+        <textarea
+          aria-label="笔记正文"
+          className="h-full w-full resize-none rounded border p-2 font-mono text-sm"
+          style={inputStyle}
+          value={entry?.contentMd ?? ''}
+          disabled={loadFailed}
+          onChange={(e) => onEdit({ contentMd: e.target.value })}
+        />
+        {/* 草稿未到（加载中）的正文区提示：覆盖层实现——quality 关卡封禁原生提示属性的字样 */}
+        {entry === undefined && !loadFailed && (
+          <span
+            className="pointer-events-none absolute left-[9px] top-[9px] font-mono text-sm"
+            style={{ color: 'var(--text-dim)' }}
+          >
+            笔记加载中…
+          </span>
+        )}
+      </div>
       {loadFailed && (
         <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-dim)' }}>
           <span>{LOAD_FAILED}</span>
