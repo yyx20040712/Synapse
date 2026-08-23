@@ -5,6 +5,9 @@
  * 1. 代码中引用的工单号必须真实存在
  * 2. done 工单的文件里不得再引用自己的工单号以外的地方引用（自引用规约头除外）
  * 3. open 的 UI 组件工单文件必须含 data-ticket 占位标记（或非组件文件）
+ * 6. v2 工单防线（B4 条款，2026-08-23）：SR2-* 工单文件头必须携带 "// b3: P7-X"
+ *    裁决指针注释行，且 P7-X 必须是 docs/ROADMAP.md Phase 7+ 的已裁决候选——
+ *    增量候选须经 B3 增量裁决先落 ROADMAP，再开工单（防工单化阶段任意加塞）
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -16,7 +19,7 @@ const registry = readFileSync(registryPath, 'utf-8')
 const tickets = []
 // 键序无关解析：先按对象字面量切块，再逐字段提取（旧版单正则锁 id→file→owner→status
 // 顺序，键序重排的工单会从所有检查中静默消失）
-const objRe = /\{[^{}]*?\bid:\s*'(SR-[A-Z]+-\d+)'[^{}]*?\}/g
+const objRe = /\{[^{}]*?\bid:\s*'(SR2?-[A-Z]+-\d+)'[^{}]*?\}/g
 let m
 while ((m = objRe.exec(registry)) !== null) {
   const body = m[0]
@@ -66,8 +69,8 @@ const srcFiles = [
   ...walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p)),
   ...walk(join(root, 'tests'), (p) => /\.(ts|tsx|mjs)$/.test(p))
 ]
-const ticketRefRe = /SR-[A-Z]+-\d+/g
-const placeholderCallRe = /(unimplementedObject|NotImplementedError)\(\s*'(SR-[A-Z]+-\d+)'/g
+const ticketRefRe = /SR2?-[A-Z]+-\d+/g
+const placeholderCallRe = /(unimplementedObject|NotImplementedError)\(\s*'(SR2?-[A-Z]+-\d+)'/g
 for (const f of srcFiles) {
   const rel = relative(root, f).replaceAll('\\', '/')
   const content = readFileSync(f, 'utf-8')
@@ -123,7 +126,7 @@ for (const t of tickets.filter((x) => x.status === 'open' && x.file.endsWith('.t
 // 5) guardedDescribe 工单号 ↔ 被测文件绑定（K3 盲区补防：把 done 工单的测试挂进
 //    别人的 open 块会永久 skip 且恒绿——测试文件必须 import 该工单登记的被测文件）
 const testFiles = walk(join(root, 'tests'), (p) => /\.test\.tsx?$/.test(p))
-const guardRe = /guardedDescribe\(\s*'(SR-[A-Z]+-\d+)'/g
+const guardRe = /guardedDescribe\(\s*'(SR2?-[A-Z]+-\d+)'/g
 const importSpecRe = /(?:from\s+|import\()\s*'([^']+)'/g
 for (const f of testFiles) {
   const rel = relative(root, f).replaceAll('\\', '/')
@@ -144,6 +147,35 @@ for (const f of testFiles) {
           `${t.file}（挂错块的测试会随工单状态被静默 skip）`
       )
     }
+  }
+}
+
+// 6) v2 工单防线（B4 条款，2026-08-23）：SR2-* 工单必须携带 b3 裁决指针，且 scope
+//    必须是 ROADMAP Phase 7+ 已裁决候选（由 ### P7-X: 标题行构成已裁决集）——
+//    增量候选先经 B3 增量裁决落 ROADMAP，再开工单
+const roadmapContent = readFileSync(join(root, 'docs', 'ROADMAP.md'), 'utf-8')
+const decidedScopes = new Set([...roadmapContent.matchAll(/^### (P7-[A-Z])：/gm)].map((x) => x[1]))
+for (const t of tickets) {
+  if (!t.id.startsWith('SR2-')) continue
+  const p = join(root, t.file.replaceAll('/', '\\'))
+  if (!existsSync(p)) continue // 文件缺失已在规则 1 报告
+  const content = readFileSync(p, 'utf-8')
+  // 指针必须位于文件头注释区（首个代码语句之前）——放正文/尾部不算（deepseek 一审 WARN 收紧）
+  const codeStart = /\n\s*(?:import|export|const|let|function|class)\b/.exec(content)
+  const headerRegion = codeStart === null ? content : content.slice(0, codeStart.index)
+  const bm = /^\s*\/\/\s*b3:\s*(P7-[A-Z])\s*$/m.exec(headerRegion)
+  if (bm === null) {
+    violations.push(
+      `${t.id}（v2 工单）缺少 B3 裁决指针——文件头注释区须有 "// b3: P7-X" 注释行` +
+        `（X=docs/ROADMAP.md Phase 7+ 已裁决候选；置于正文/尾部无效）`
+    )
+    continue
+  }
+  if (!decidedScopes.has(bm[1])) {
+    violations.push(
+      `${t.id} 的 B3 裁决指针 ${bm[1]} 不在 ROADMAP Phase 7+ 已裁决候选集内` +
+        `（现有：${[...decidedScopes].sort().join('/') || '无'}）——增量候选须经 B3 增量裁决先落 ROADMAP`
+    )
   }
 }
 
