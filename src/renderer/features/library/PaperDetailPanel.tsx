@@ -19,7 +19,8 @@
  *   落地前点击按错误契约 toast，UI 形态先行
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - 错误统一 ApiClientError → toast；元数据/标签变更后 bump reload 重读详情
+ * - 动作类错误统一 ApiClientError → toast；详情加载失败走内联红条 + 重试
+ *   （首载失败占位整栏，刷新失败窄条提示旧数据）；元数据/标签变更后 bump reload 重读详情
  */
 import { useEffect, useState } from 'react'
 import type { PaperSource, EnrichStatus } from '@shared/models/paper'
@@ -70,13 +71,15 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   const [enriching, setEnriching] = useState(false)
   const [exporting, setExporting] = useState(false)
 
-  const { data: detail, run } = useAsync(
+  const { data: detail, error, run } = useAsync(
     () => (paperId === null ? Promise.resolve(null) : unwrap(api.library.detail({ paperId }))),
     [paperId, reloadKey]
   )
+  // run 是恒稳定引用，paperId/reloadKey 变化必须在这里触发重取
+  // （useAsync 的 deps 只做快照不自动执行，漏列即详情永不更新）
   useEffect(() => {
     void run()
-  }, [run])
+  }, [run, paperId, reloadKey])
 
   /** 动作型按钮统一收口：错误 toast + 成功后的刷新/提示 */
   async function runAction(action: 'enrich' | 'report' | 'doi'): Promise<void> {
@@ -90,8 +93,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
     }
     try {
       if (action === 'enrich') {
-        await unwrap(api.enrich.fetch({ paperId: detail.id }))
-        showToast('元数据增强完成', 'success')
+        const refreshed = await unwrap(api.enrich.fetch({ paperId: detail.id }))
+        if (refreshed.enrichStatus === 'failed') {
+          showToast('元数据增强失败：上游未响应或无匹配', 'error')
+        } else {
+          showToast('元数据增强完成', 'success')
+        }
         setReloadKey((k) => k + 1)
       } else if (action === 'report') {
         const r = await unwrap(api.export_.report({ paperId: detail.id }))
@@ -115,6 +122,25 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
     )
   }
   if (detail === null) {
+    if (error !== null) {
+      return (
+        <div
+          className="m-3 flex items-center justify-between rounded border px-3 py-2 text-xs"
+          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+          role="alert"
+        >
+          <span>{`加载详情失败：${error}`}</span>
+          <button
+            type="button"
+            className="rounded px-2 py-0.5"
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+            onClick={() => void run()}
+          >
+            重试
+          </button>
+        </div>
+      )
+    }
     return (
       <div className="p-6 text-xs" style={{ color: 'var(--text-dim)' }}>
         正在加载详情…
@@ -124,6 +150,23 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
 
   return (
     <div className="flex flex-col gap-3 p-3">
+      {error !== null && (
+        <div
+          className="flex items-center justify-between rounded border px-3 py-1 text-xs"
+          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+          role="alert"
+        >
+          <span>详情刷新失败，显示的是旧数据</span>
+          <button
+            type="button"
+            className="rounded px-2 py-0.5"
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+            onClick={() => void run()}
+          >
+            重试
+          </button>
+        </div>
+      )}
       <h2 className="text-sm font-medium leading-5">{detail.title}</h2>
       <div className="flex flex-col gap-1">
         <Row label="作者">{detail.authors.join('、')}</Row>
