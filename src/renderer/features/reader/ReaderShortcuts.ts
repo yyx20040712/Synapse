@@ -26,7 +26,7 @@
  * - export function useReaderShortcuts(actions: ReaderShortcutActions): void
  *
  * ── 架构层 ──
- * - 消费 src/renderer/shared/keymap（SR2-KEY-01 先行）；动作经参数注入
+ * - 消费 src/renderer/shared/keymap（keymap 模块先行）；动作经参数注入
  *   （reader.store 的调用由消费方 ReaderPage 组装，本模块不 import store——可测性）
  * - 接缝声明：ReaderPage.tsx（Phase 3 阅读器组合根）装配本 hook 属本工单改动面
  *
