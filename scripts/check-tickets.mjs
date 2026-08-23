@@ -123,6 +123,22 @@ for (const t of tickets.filter((x) => x.status === 'open' && x.file.endsWith('.t
   }
 }
 
+// 4b) done 工单文件不得残留骨架占位：自身 data-ticket 属性，或文件内任何以工单号
+//     字面量初值的 *_STUB 导出（骨架文件结构上只含自身 STUB；即便出现他单 STUB 亦属
+//     残留同样该红——窄化到「工单号初值」形态避免误伤正常常量命名）。
+//     完成定义「占位实现已删除」的机器防线（P7-A 工单化单元 deepseek W6 处置）
+for (const t of tickets.filter((x) => x.status === 'done')) {
+  const p = join(root, t.file.replaceAll('/', '\\'))
+  if (!existsSync(p)) continue
+  const content = readFileSync(p, 'utf-8')
+  if (content.includes(`data-ticket="${t.id}"`)) {
+    violations.push(`${t.id} 已 done，但文件仍含自身 data-ticket 骨架占位：${t.file}`)
+  }
+  if (/export const [A-Z][A-Z0-9_]*_STUB\s*=\s*'SR2?-[A-Z]+-\d+'/.test(content)) {
+    violations.push(`${t.id} 已 done，但文件仍含工单号初值的 *_STUB 骨架导出：${t.file}`)
+  }
+}
+
 // 5) guardedDescribe 工单号 ↔ 被测文件绑定（K3 盲区补防：把 done 工单的测试挂进
 //    别人的 open 块会永久 skip 且恒绿——测试文件必须 import 该工单登记的被测文件）
 const testFiles = walk(join(root, 'tests'), (p) => /\.test\.tsx?$/.test(p))
