@@ -34,15 +34,22 @@
   保存失败交叠时可能误显"已保存"（战役报告 §5 观察项）。核实可达性，可达则修。
 
 ### B. 接缝（跨模块行为归责）
-- B1 IPC Result 折叠面清点（INV-13）：`grep -n "ok: true" src/main/services` 逐处核对
-  ——已知 `enrich.service.ts:126`（enrichStatus:'failed' 折叠，消费方已分支）与
-  `reader.service.ts:68-71`（幂等删除 ok:true，消费方语义核对）。其余折叠点逐个核对
-  消费方是否无条件按成功处理；发现 enrich 同型即修（模式：按折叠字段分支提示）。
+- B1 IPC Result 折叠面清点（INV-13）：**逐 service 通读全部正常返回路径**，找"以状态
+  字段/幂等语义表达业务失败"的折叠点。检索只作辅助：`grep -rn "failed\|幂等\|Status"
+  src/main/services`——注意 `grep "ok: true"` 会漏检 enrich 原型（enrich.service 以
+  enrichStatus:'failed' 折叠，文件内无 "ok: true" 字面量，机器实测 0 命中）。已知点：
+  `enrich.service.ts:126`（enrichStatus:'failed'，消费方已分支）、`reader.service.ts:68-71`
+  （幂等删除 ok:true，消费方语义核对）。每个折叠点核对消费方是否无条件按成功处理；
+  发现 enrich 同型即修（模式：按折叠字段分支提示）。
 - B2 注释互斥扫描：全部 `*.store.ts` 错误契约注释 × 其消费方组件注释逐对核对（先例：
   tags.store"归 toast 层" vs TagEditor"静默"互斥）。发现互斥即按宪法停下裁决。
 - B3 标题 max(200) 常量化（INV-11 残留，U2 NIT 存档）：schemas.ts:104 与
   NotesPanel.tsx maxLength=200 靠注释对齐——提升为共享常量（落点 src/shared/，
   [locked-change]）。
+- B4 工单模板状态面断链修复：宪法「状态机前置」约束存在，但工单生成模板
+  （`scripts/new-ticket.ps1` 产出的五层规约骨架）无状态面提示——弱模型触点断链。
+  评估在模板行为层骨架中加"涉及异步+用户输入须先给状态/迁移表"占位条款（受锁
+  [locked-change]），与 C3 的错误反馈两型条款同批落。
 
 ### C. 不变量锚定（docs/invariants.md 全部"未锚定/部分"条目逐条补防线）
 - C1 INV-01：e2e 增 documentElement 不溢出断言（`scrollWidth <= clientWidth` +
@@ -50,7 +57,8 @@
 - C2 INV-06：补 underline 创建最小 e2e 链路（划选→下划线→计算样式断言
   background-color 非 none + height 2px 形态）；note kind 至少补渲染存在性。
 - C3 INV-02：评估"吞错检测"lint 化可行性（如 store 文件空 catch 告警）；不可 lint 化
-  则把两型错误反馈模式写进工单模板文化层并登记人审。
+  则降级为规约化——两型错误反馈模式条款落进工单生成模板 `scripts/new-ticket.ps1`
+  的文化层骨架（与 B4 同批，受锁 [locked-change]）。
 - C4 INV-07：架构评审条款保留人审，但登记核实（dialogs.ts 仍是唯一路径出口）。
 
 ### D. 复杂度热点（重构评估——纪律：先出态设计文档再动，结论可以是"不动"）
@@ -61,10 +69,12 @@
   裁决不引入，落地零依赖替代（DEVELOPMENT §8：固定种子伪随机序列锁定测试，先例可
   写进 notes 或 tags store）。
 
-## 3. 执行批次（每项独立 commit，走双门流水线）
+## 3. 执行批次（修复项独立 commit 走双门流水线；批一为只读分析不入库——分析产物存
+   Temp，如担心易失可同步副本入 docs/reports/ 附录随批二首提交）
 1. **批一（只读清点）**：A/B/C 全量核实 → 产出 `analyses/UBS-sweep.md`（Temp 工作流目录，
    每项：核实结论/优先级 P1-P3/预估动作）；本批不修任何东西。
-2. **批二（锚定批，低风险先行）**：C1/C2/C3 + A2 + B3——测试/lint/常量化，全部先红后绿。
+2. **批二（锚定批，低风险先行）**：C1/C2/C3+B4 + A2 + B3——测试/lint/常量化/模板条款，
+   全部先红后绿（模板类无红面，以生成器输出断言或人工核对记录替代）。
 3. **批三（状态机批）**：A1/A4（若批一判可达）——每项先态空间表后实现，deepseek 审计
    按态空间+跨格序列审。
 4. **批四（重构裁决批）**：A3/B1（修或存档裁决文档）/D1（ADR）/D2（ADR 或零依赖落地）。
@@ -80,9 +90,14 @@
 - D1/D2 类重构裁决"不动"是合法结论，但必须落 ADR/登记册并给量化依据。
 
 ## 5. 基础设施与历史教训（infra 就绪，直接复用）
-- deepseek 审计调用器：`C:\Users\yyx\AppData\Local\Temp\synapse_workflow\deepseek_audit.py`
-  （key 从 zcode 配置读、api.deepseek.com 直连不走代理、32K 输出预算、900s 超时；输入
-  过重会导致推理耗尽预算/超时——大输入先在简报顶部加聚焦声明，教训实证）。
-- 简报/审计产物目录：同上 `Temp\synapse_workflow\{briefs,diffs,audits,analyses}\`。
+- deepseek 审计调用器：**库内权威副本 `scripts/deepseek_audit.py`**（随本规划修复提交入库；
+  .py 不在锁清单（scripts/ 仅收 *.mjs/*.ps1），非受锁，改动无需 [locked-change]；三种模式
+  --mode diff|analysis|plan，plan 模式审规划/制度文档）。key 运行时从
+  `~\.zcode\v2\config.json` 读（脚本本身无密钥）；api.deepseek.com 直连不走代理、32K
+  输出预算、900s 超时；输入过重会导致推理耗尽预算/超时——大输入先在简报顶部加聚焦
+  声明（战役实测教训）。
+- 简报/审计产物工作目录：`%TEMP%\synapse_workflow\{briefs,diffs,audits,analyses}\`
+  （仅会话缓存，易失——批一结论等长寿命产物按 §3 说明入库；战役历史审计轨迹也在该
+  目录，见 docs/reports/2026-08-23_defect-campaign.md §7，如需长期存档另行立项）。
 - 战役全部审计轨迹索引：`docs/reports/2026-08-23_defect-campaign.md` §7。
 - 教训文档：`AI辅助开发经验教训.md`（九节）；宪法「会话开工纪律」即其制度化产物。
