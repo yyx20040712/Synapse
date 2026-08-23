@@ -87,7 +87,11 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   registerIpc(
     createIpcHandlers({
       services,
-      dialogs: createElectronDialogs(),
+      // 对话框绑主窗口（模态）：装配在窗口创建之前，惰性 getter 在实际弹出时取
+      // 窗口（取首个存活窗口；销毁/未就绪时对话框无父退化，可用性优先）
+      dialogs: createElectronDialogs(
+        () => BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) ?? null
+      ),
       shell,
       userDataDir,
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike })
