@@ -24,6 +24,10 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  /* 桌面应用不变量：文档永不滚——所有滚动只发生在应用内 overflow 容器
+     （main / 阅读器滚动区）。缺这把锁时任何瞬态溢出都会泄漏成 viewport
+     整页滚动条，且下方露出的是 body 背景纯空白（Q1 用户实锤） */
+  overflow: hidden;
   font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);

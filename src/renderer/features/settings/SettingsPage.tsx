@@ -89,7 +89,7 @@ export function SettingsPage(): JSX.Element {
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4 p-6 text-sm">
+    <div className="mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">通用</h2>
         <label className="flex flex-col gap-1">
