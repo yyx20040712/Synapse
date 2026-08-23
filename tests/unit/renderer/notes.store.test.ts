@@ -354,4 +354,80 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore.getState().load('p-1')
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
   })
+
+  // ── D2 零依赖性质测试（ADR-0009）：固定种子伪随机交错攻击 store 竞态不变量 ──
+  // 不变量（U2 内容安全）：任意操作序列下，草稿正文字段恒等于最后一条用户输入
+  // （合并保 touched 字段 / 整版仅发生在无未保存编辑即服务器值已等于该输入）；
+  // savedAt 单调不回退（服务器单写者模型）。fast-check 引入被 ADR-0009 否决，
+  // 固定种子序列 = 可复现、可锁定、零依赖的性质攻击。
+
+  /** mulberry32：确定性 PRNG（种子相同 → 序列相同，失败可精确复现） */
+  function mulberry32(seed: number): () => number {
+    let a = seed >>> 0
+    return () => {
+      a = (a + 0x6d2b79f5) | 0
+      let t = Math.imul(a ^ (a >>> 15), 1 | a)
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+  }
+
+  it('固定种子伪随机交错攻击：草稿正文恒等于最后一条用户输入；savedAt 单调', async () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const rng = mulberry32(seed)
+      // 单写者服务器模型：save 成功推进服务器状态（savedAt 零填充计数——字典序即时间序）；
+      // load 读服务器当前值；save 三成概率失败
+      let serverContent = '服务器初值'
+      let saveCounter = 0
+      let serverSavedAt = 't0000'
+      const save = vi.fn(async (req: { title: string; contentMd: string }) => {
+        if (rng() < 0.3) {
+          return { ok: false as const, error: { code: 'E', message: '写盘失败' } }
+        }
+        serverContent = req.contentMd
+        serverSavedAt = `t${String(++saveCounter).padStart(4, '0')}`
+        return { ok: true as const, data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt } }
+      })
+      const get = vi.fn(async () => ({
+        ok: true as const,
+        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt }
+      }))
+      const useStore = await loadStore({ notes: { get, save } })
+      await useStore.getState().load('p-1') // 首载基线（过首载门控）
+
+      let lastUser = '服务器初值'
+      let maxSavedAt = 't0000'
+      const assertInvariants = (): void => {
+        const d = useStore.getState().noteByPaper['p-1']
+        expect(d?.contentMd, `seed=${seed} 内容安全不变量（步骤后）`).toBe(lastUser)
+        // 本模型服务器恒有笔记：首载后 savedAt 为 null/undefined 本身即回归
+        expect(d?.savedAt ?? null, `seed=${seed} savedAt 不得置空`).not.toBeNull()
+        if (d?.savedAt !== null && d?.savedAt !== undefined) {
+          expect(d.savedAt >= maxSavedAt, `seed=${seed} savedAt 单调`).toBe(true)
+          if (d.savedAt > maxSavedAt) {
+            maxSavedAt = d.savedAt
+          }
+        }
+      }
+
+      for (let step = 0; step < 24; step++) {
+        const op = rng()
+        if (op < 0.45) {
+          lastUser = `用户输入-${seed}-${step}`
+          useStore.getState().edit('p-1', { contentMd: lastUser })
+        } else if (op < 0.75) {
+          useStore.getState().saveSoon('p-1')
+          await vi.advanceTimersByTimeAsync(1600) // 派发+settle（成功则服务器推进）
+        } else {
+          await useStore.getState().load('p-1') // 合并或整版（按 pendingEdit 分岔）
+        }
+        assertInvariants()
+      }
+      // 收尾排空：最终保存落库后再 load 整版——终态同样守恒
+      useStore.getState().saveSoon('p-1')
+      await vi.advanceTimersByTimeAsync(1600)
+      await useStore.getState().load('p-1')
+      assertInvariants()
+    }
+  })
 })
