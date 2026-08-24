@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T11:02:28.5587006Z",
+    "generatedAt":  "2026-08-24T13:14:46.7679196Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -236,6 +236,10 @@
                   {
                       "path":  "tests/unit/renderer/notes-panel-status.test.tsx",
                       "sha256":  "a53579d92d3bf2298bb90c3b3a45963012014aad1ac45b208dff69f9b685d377"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
+                      "sha256":  "a6066aae93b557e2dc98c506362cc1b8d24c636977e50ad22d724474d7ab3ee7"
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",

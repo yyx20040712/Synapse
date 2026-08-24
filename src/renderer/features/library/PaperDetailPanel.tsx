@@ -5,7 +5,9 @@
  * - 展示 PaperDetail 全量元数据（标题/作者/年份/期刊/DOI/摘要/来源/增强状态）
  * - 操作区：编辑元数据（MetaEditDialog 表单，保存走 api.library.updateMeta）、
  *   添加/移除标签（TagEditor）、打开笔记（NotesPanel）、增强按钮（api.enrich.fetch）、
- *   导出本篇报告（api.export_.report）、DOI 外链（api.system.openExternal）
+ *   导出本篇报告（api.export_.report）、导出 BibTeX 题录（api.export_.bibtex——
+ *   2026-08-24 链条核查修复：后端链一直完整但 UI 无入口，见
+ *   docs/reports/2026-08-24_chain-audit.md §3.1）、DOI 外链（api.system.openExternal）
  * - 增强中禁用按钮并显示 spinner 态文案
  *
  * ── 接口层 ──
@@ -82,12 +84,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }, [run, paperId, reloadKey])
 
   /** 动作型按钮统一收口：错误 toast + 成功后的刷新/提示 */
-  async function runAction(action: 'enrich' | 'report' | 'doi'): Promise<void> {
+  async function runAction(action: 'enrich' | 'report' | 'bibtex' | 'doi'): Promise<void> {
     if (detail === null) return
     if (action === 'enrich') {
       if (enriching) return
       setEnriching(true)
-    } else if (action === 'report') {
+    } else if (action === 'report' || action === 'bibtex') {
       if (exporting) return
       setExporting(true)
     }
@@ -103,6 +105,9 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       } else if (action === 'report') {
         const r = await unwrap(api.export_.report({ paperId: detail.id }))
         showToast(`已导出 ${r.count} 条内容：${r.filePath}`, 'success')
+      } else if (action === 'bibtex') {
+        const r = await unwrap(api.export_.bibtex({ paperIds: [detail.id] }))
+        showToast(`已导出 ${r.count} 条题录：${r.filePath}`, 'success')
       } else if (detail.doi !== null) {
         await unwrap(api.system.openExternal({ url: `https://doi.org/${detail.doi}` }))
       }
@@ -194,6 +199,9 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         </Button>
         <Button size="sm" loading={exporting} onClick={() => void runAction('report')}>
           导出读书报告
+        </Button>
+        <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex')}>
+          导出 BibTeX
         </Button>
         {detail.doi !== null && (
           <Button size="sm" variant="ghost" onClick={() => void runAction('doi')}>
