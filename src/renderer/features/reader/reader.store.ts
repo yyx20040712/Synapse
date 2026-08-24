@@ -31,9 +31,10 @@
  *        activeId=null（空态）；order 收缩序正确
  *     S3 加载中切换：open(A) loading → open(B) ready → A 响应迟到 → 只写入
  *        A 的 tab（B 展示不受干扰）；loading 中 close(A) → A 迟到响应丢弃（规则①）
- * - 进度防抖：PROGRESS_DEBOUNCE_MS=2000 单定时器 + 闭包快照 {paperId, page}
- *   （换 tab 不误写他 tab 进度）；closeTab 时 pending 进度属被关 tab → 立即
- *   flush 落库（尽力而为，catch 吞——进度非关键数据，规约记录依据）
+ * - 进度防抖：PROGRESS_DEBOUNCE_MS=2000 单定时器 + pendingProgress 集合
+ *   （Record<paperId, page>——多 tab 各自翻页各自落账，换 tab 不误写不丢写）；
+ *   closeTab 时该 tab 的 pending 进度立即 flush（尽力而为，catch 吞——进度
+ *   非关键数据，规约记录依据）
  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
  *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
  *
@@ -63,16 +64,27 @@ import { create } from 'zustand'
 import { api, unwrap } from '../../api/client'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
 
-export interface ReaderStore {
-  paperId: string | null
-  fileUrl: string | null
+export interface TabState {
+  paperId: string
+  fileUrl: string
   fileName: string
   page: number
   totalPages: number
   zoom: number
   color: AnnotationColor
   annotations: Annotation[]
+  status: 'loading' | 'ready' | 'error'
+  /** 灰点信号位（SR2-TABS-03 写入；本单恒 false） */
+  dirty: boolean
+}
+
+export interface ReaderStore {
+  tabs: Record<string, TabState>
+  order: string[]
+  activeId: string | null
   openPaper(id: string): Promise<void>
+  activateTab(id: string): void
+  closeTab(id: string): void
   close(): void
   setPage(page: number): void
   setZoom(zoom: number): void
@@ -85,24 +97,61 @@ export interface ReaderStore {
 
 export function createReaderStoreInitialState() {
   return {
-    paperId: null as string | null,
-    fileUrl: null as string | null,
-    fileName: '',
-    page: 0,
-    totalPages: 0,
-    zoom: 1,
-    color: 'yellow' as AnnotationColor,
-    annotations: [] as Annotation[]
+    tabs: {} as Record<string, TabState>,
+    order: [] as string[],
+    activeId: null as string | null
   }
 }
 
 /** 进度防抖窗口：翻页后静置 2s 才落库（与 ReaderPage 规约一致） */
 const PROGRESS_DEBOUNCE_MS = 2000
 
+/** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading） */
+function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
+  if (prev !== undefined) {
+    return { ...prev, status: 'loading' }
+  }
+  return {
+    paperId,
+    fileUrl: '',
+    fileName: '',
+    page: 0,
+    totalPages: 0,
+    zoom: 1,
+    color: 'yellow',
+    annotations: [],
+    status: 'loading',
+    dirty: false
+  }
+}
+
 export const useReaderStore = create<ReaderStore>()((set, get) => {
-  // openPaper 请求序号（模块内闭包）：只认最后一次发起的打开
-  let openSeq = 0
+  // 加载总序号：每次 openPaper 发起自增；tabLoadSeq 记录每 tab 最新发起的序号
+  // （迟到响应三规则的判定输入）；inflightOpen 让 loading 态重入尾随在途加载
+  // （不提前 resolve——重入方 await 到的是同一加载的完成信号，失败由首调方报告）
+  let loadSeq = 0
+  const tabLoadSeq = new Map<string, number>()
+  const inflightOpen = new Map<string, Promise<void>>()
   let progressTimer: ReturnType<typeof setTimeout> | null = null
+  /** 待落库进度集合：paperId → 最近翻到的页（多 tab 各自记账，到点批量落库） */
+  let pendingProgress: Record<string, number> = {}
+
+  /** 本次响应是否仍是该 tab 的最新加载（规则①②判定：tab 已关或已被新一轮顶替即过期） */
+  const isCurrentLoad = (paperId: string, seq: number): boolean => {
+    return get().tabs[paperId] !== undefined && tabLoadSeq.get(paperId) === seq
+  }
+
+  const flushProgress = (paperId: string, page: number): void => {
+    // 防抖落库失败不上抛：进度属尽力而为，不打断阅读（下次翻页会再试）
+    void api.reader.saveProgress({ paperId, page }).catch(() => undefined)
+  }
+
+  const flushAllPending = (): void => {
+    for (const [pid, page] of Object.entries(pendingProgress)) {
+      flushProgress(pid, page)
+    }
+    pendingProgress = {}
+  }
 
   const clearProgressTimer = (): void => {
     if (progressTimer !== null) {
@@ -112,78 +161,172 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
   }
 
   const scheduleProgress = (): void => {
-    const { paperId, page } = get()
-    if (paperId === null) {
-      return
-    }
     clearProgressTimer()
     progressTimer = setTimeout(() => {
       progressTimer = null
-      // 防抖落库失败不上抛：进度属尽力而为，不打断阅读（下次翻页会再试）
-      void api.reader.saveProgress({ paperId, page }).catch(() => undefined)
+      flushAllPending()
     }, PROGRESS_DEBOUNCE_MS)
+  }
+
+  /** 作用于 active tab 的统一入口（activeId=null 时 no-op——空态规约） */
+  const updateActiveTab = (fn: (tab: TabState) => TabState): void => {
+    const { activeId, tabs } = get()
+    if (activeId === null) return
+    const tab = tabs[activeId]
+    if (tab === undefined) return
+    set({ tabs: { ...tabs, [activeId]: fn(tab) } })
+  }
+
+  /** 关单个 tab：pending 进度立即 flush；关 active 时收缩到右邻（无右邻左邻，全空 null） */
+  const closeOne = (id: string): void => {
+    // 该 tab 的 pending 进度立即落库（关 tab 后无人再等防抖窗口）
+    const pending = pendingProgress[id]
+    if (pending !== undefined) {
+      flushProgress(id, pending)
+      delete pendingProgress[id]
+    }
+    tabLoadSeq.delete(id)
+    inflightOpen.delete(id)
+    const { tabs, order, activeId } = get()
+    const nextTabs = { ...tabs }
+    delete nextTabs[id]
+    const nextOrder = order.filter((x) => x !== id)
+    let nextActive = activeId
+    if (activeId === id) {
+      const idx = order.indexOf(id)
+      nextActive = nextOrder[idx] ?? nextOrder[idx - 1] ?? null
+    }
+    set({ tabs: nextTabs, order: nextOrder, activeId: nextActive })
+  }
+
+  /** 关闭全部（App 切视图/全关语义）：全部 pending 进度落账后整体复位 */
+  const closeAll = (): void => {
+    flushAllPending()
+    tabLoadSeq.clear()
+    inflightOpen.clear()
+    clearProgressTimer()
+    set(createReaderStoreInitialState())
   }
 
   return {
     ...createReaderStoreInitialState(),
 
     async openPaper(id) {
-      const seq = ++openSeq
-      const d = await unwrap(api.reader.open({ paperId: id }))
-      if (seq !== openSeq) {
+      const existing = get().tabs[id]
+      if (existing !== undefined && (existing.status === 'ready' || existing.status === 'loading')) {
+        set({ activeId: id })
+        // loading 重入：尾随在途加载（吞 rejection——失败 toast 由首调方报告，不双弹）
+        const inflight = inflightOpen.get(id)
+        if (existing.status === 'loading' && inflight !== undefined) {
+          await inflight.catch(() => undefined)
+        }
         return
       }
-      const anns = await unwrap(api.reader.listAnnotations({ paperId: id }))
-      if (seq !== openSeq) {
-        return
-      }
-      // 整体替换打开状态（清掉上一篇的派生选中态：页码/标注数组）
-      clearProgressTimer()
-      set({
-        paperId: id,
-        fileUrl: d.fileUrl,
-        fileName: d.fileName,
-        page: d.lastReadPage,
-        annotations: anns
-      })
+      // absent（新建）或 error（重试）→ loading
+      const seq = ++loadSeq
+      tabLoadSeq.set(id, seq)
+      set((s) => ({
+        tabs: { ...s.tabs, [id]: makeLoadingTab(id, existing) },
+        order: s.order.includes(id) ? s.order : [...s.order, id],
+        activeId: id
+      }))
+      let load: Promise<void> | null = null
+      const p = (async (): Promise<void> => {
+        try {
+          const d = await unwrap(api.reader.open({ paperId: id }))
+          if (!isCurrentLoad(id, seq)) return
+          const anns = await unwrap(api.reader.listAnnotations({ paperId: id }))
+          if (!isCurrentLoad(id, seq)) return
+          set((s) => ({
+            tabs: {
+              ...s.tabs,
+              [id]: {
+                ...(s.tabs[id] ?? makeLoadingTab(id, undefined)),
+                fileUrl: d.fileUrl,
+                fileName: d.fileName,
+                page: d.lastReadPage,
+                annotations: anns,
+                status: 'ready'
+              }
+            }
+          }))
+        } catch (e) {
+          if (!isCurrentLoad(id, seq)) return
+          // 最新加载的失败才可见（旧一轮失败已被重试顶替，静默）；tab 置 error
+          // 占位（tab 栏可显示，重入即重试），错误仍上抛消费方 toast
+          set((s) => ({
+            tabs: s.tabs[id] === undefined ? s.tabs : { ...s.tabs, [id]: { ...s.tabs[id]!, status: 'error' } }
+          }))
+          throw e
+        } finally {
+          // 身份校验：仅当 Map 记录仍是本加载才删（closeTab 后立即重开同 id 时，
+          // Map 里已是新加载的记录，旧 finally 不得误删——deepseek r2 BLOCKING 修复）
+          if (load !== null && inflightOpen.get(id) === load) {
+            inflightOpen.delete(id)
+          }
+        }
+      })()
+      load = p
+      inflightOpen.set(id, load)
+      return load
+    },
+
+    activateTab(id) {
+      if (get().tabs[id] === undefined) return
+      set({ activeId: id })
+    },
+
+    closeTab(id) {
+      closeOne(id)
     },
 
     close() {
-      // 抬序号让在途的 openPaper 失效，再整体复位
-      openSeq += 1
-      clearProgressTimer()
-      set(createReaderStoreInitialState())
+      closeAll()
     },
 
     setPage(page) {
       // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由 PdfCanvas 侧兜底
-      const clamped = Math.max(0, Math.min(Math.floor(page), get().totalPages - 1))
-      set({ page: clamped })
-      scheduleProgress()
+      const { activeId } = get()
+      if (activeId === null) return
+      updateActiveTab((tab) => ({
+        ...tab,
+        page: Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
+      }))
+      const tab = get().tabs[activeId]
+      if (tab !== undefined) {
+        pendingProgress[activeId] = tab.page
+        scheduleProgress()
+      }
     },
 
     setZoom(zoom) {
-      set({ zoom: Math.min(3, Math.max(0.5, zoom)) })
+      updateActiveTab((tab) => ({ ...tab, zoom: Math.min(3, Math.max(0.5, zoom)) }))
     },
 
     setTotalPages(total) {
-      set({ totalPages: Math.max(0, Math.floor(total)) })
+      updateActiveTab((tab) => ({ ...tab, totalPages: Math.max(0, Math.floor(total)) }))
     },
 
     setColor(color) {
-      set({ color })
+      updateActiveTab((tab) => ({ ...tab, color }))
     },
 
     addAnnotation(a) {
-      set({ annotations: [...get().annotations, a] })
+      updateActiveTab((tab) => ({ ...tab, annotations: [...tab.annotations, a] }))
     },
 
     updateAnnotation(a) {
-      set({ annotations: get().annotations.map((x) => (x.id === a.id ? a : x)) })
+      updateActiveTab((tab) => ({
+        ...tab,
+        annotations: tab.annotations.map((x) => (x.id === a.id ? a : x))
+      }))
     },
 
     removeAnnotation(id) {
-      set({ annotations: get().annotations.filter((x) => x.id !== id) })
+      updateActiveTab((tab) => ({
+        ...tab,
+        annotations: tab.annotations.filter((x) => x.id !== id)
+      }))
     }
   }
 })

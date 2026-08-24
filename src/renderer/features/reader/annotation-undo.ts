@@ -18,7 +18,7 @@
  * - redo 不做（用户需求只有撤销；全文 undo 依赖 textarea 原生——B1 §7-3 对策）
  * - 触发：ctrl+z 经 keymap 注册（editable 避让自动生效——textarea 内是原生
  *   undo，本栈不接管编辑场景）；栈空时 no-op
- * - 依赖序（plan 门 W4 处置）：**依赖 SR2-TABS-01**（closeTab 清理接缝），可与
+ * - 依赖序（plan 门 W4 处置）：**依赖 TABS-01**（closeTab 清理接缝），可与
  *   TABS-02/03/04 并行，禁先于 TABS-01 实施
  *
  * ── 接口层 ──
@@ -44,7 +44,11 @@
  */
 import { unimplementedObject } from '@shared/app-error'
 
-export const annotationUndoApi = unimplementedObject<typeof import('./annotation-undo')>(
+export const pushUndo = unimplementedObject<(paperId: string, entry: never) => void>(
   'SR2-UNDO-01',
-  '标注操作级撤销栈'
+  'pushUndo 撤销栈入栈'
+)
+export const undo = unimplementedObject<(paperId: string) => Promise<void>>(
+  'SR2-UNDO-01',
+  'undo 撤销栈执行'
 )

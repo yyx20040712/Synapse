@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T13:30:04.7861229Z",
+    "generatedAt":  "2026-08-24T13:49:17.5739552Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -243,7 +243,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "a372ada87e6bf91a43784f09355817892089c5b05258847ae5cd4f37a2d2f997"
+                      "sha256":  "31f5ab08a2fa51a03e86e92b67a32987adff5963d5bc8397702db7ee67a4f6b6"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",

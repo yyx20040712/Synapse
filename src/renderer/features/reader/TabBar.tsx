@@ -7,7 +7,7 @@
  *   fileName/status）——纯展示+回调上交，不持有本地状态
  * - 每个 tab 项：标题（fileName 去扩展名，超长截断省略）、激活态高亮、
  *   loading 态 spinner、error 态红字、关闭叉（closeTab）
- * - 点击 tab 体 = activateTab(id)（换 tab 暂停非卸载——SR2-TABS-01 语义）
+ * - 点击 tab 体 = activateTab(id)（换 tab 暂停非卸载——TABS-01 语义）
  * - 空态：无 tab（order 空）时整栏不渲染
  * - 键盘可达：容器 role="tablist"，tab 项 role="tab" + roving tabindex
  *   （ArrowLeft/Right 在项间移动焦点——TabBar 组件主语管理；焦点内按键属
@@ -15,7 +15,7 @@
  *
  * ── 接口层 ──
  * - export function TabBar(): JSX.Element（数据自取 store；无 props——
- *   装配点是 ReaderPage.tsx:151 返回根 div 顶部，SR2-TABS-01 选择器同族）
+ *   装配点是 ReaderPage.tsx:151 返回根 div 顶部，TABS-01 选择器同族）
  *
  * ── 架构层 ──
  * - renderer features/reader 域内组件；只 import reader.store 与 shared/ui；

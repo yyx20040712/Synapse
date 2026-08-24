@@ -8,7 +8,7 @@
  *     （即时持久化面的失败残留——失败后未重试即 dirty）
  *   ② notes 面：notes.store 的 pendingEdit/saveFailed（论文级总评未落库/保存失败）
  * - 聚合：isTabDirty(paperId, signals) → boolean（纯函数：任一写面 dirty 即真）；
- *   状态归 TabState.dirty（SR2-TABS-01 预留位）——信号写入点在对应失败路径
+ *   状态归 TabState.dirty（TABS-01 预留位）——信号写入点在对应失败路径
  *   （AnnotationLayer 失败分支 / notes.store 状态镜像），成功重试后清除
  * - 消费：TabBar.tsx 灰点渲染 + 关闭脏 tab 二次确认（confirm 文案含文献名）+
  *   退出拦截上报（SR2-TABS-04 的 dirty 输入=任一 tab dirty）
@@ -38,7 +38,11 @@
  */
 import { unimplementedObject } from '@shared/app-error'
 
-export const tabDirtyApi = unimplementedObject<typeof import('./tab-dirty')>(
+export const isTabDirty = unimplementedObject<(paperId: string, signals: unknown) => boolean>(
   'SR2-TABS-03',
-  'tab-dirty 灰点信号聚合'
+  'isTabDirty 灰点聚合'
+)
+export const useTabDirtyAggregate = unimplementedObject<() => boolean>(
+  'SR2-TABS-03',
+  'useTabDirtyAggregate 聚合钩子'
 )

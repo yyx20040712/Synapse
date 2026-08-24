@@ -37,6 +37,7 @@ import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
 import { SelectionLayer } from './SelectionLayer'
 import { TextLayer } from './TextLayer'
 import { useReaderStore } from './reader.store'
+import { readActiveTab, useActiveTab } from './useActiveTab'
 
 /** 当前页文本与几何（成对更新：页码 + 文本载荷 + 页面 CSS 盒） */
 interface PageText {
@@ -46,13 +47,15 @@ interface PageText {
 }
 
 export function ReaderPage(): JSX.Element {
-  const paperId = useReaderStore((s) => s.paperId)
-  const fileUrl = useReaderStore((s) => s.fileUrl)
-  const page = useReaderStore((s) => s.page)
-  const totalPages = useReaderStore((s) => s.totalPages)
-  const zoom = useReaderStore((s) => s.zoom)
-  const color = useReaderStore((s) => s.color)
-  const annotations = useReaderStore((s) => s.annotations)
+  // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）
+  const tab = useActiveTab()
+  const paperId = tab?.paperId ?? null
+  const fileUrl = tab !== null && tab.status === 'ready' && tab.fileUrl !== '' ? tab.fileUrl : null
+  const page = tab?.page ?? 0
+  const totalPages = tab?.totalPages ?? 0
+  const zoom = tab?.zoom ?? 1
+  const color = tab?.color ?? 'yellow'
+  const annotations = tab?.annotations ?? []
   const openPaper = useReaderStore((s) => s.openPaper)
   const setPage = useReaderStore((s) => s.setPage)
   const setZoom = useReaderStore((s) => s.setZoom)
@@ -66,16 +69,16 @@ export function ReaderPage(): JSX.Element {
     useMemo(
       () => ({
         prevPage: () => {
-          const s = useReaderStore.getState()
-          s.setPage(s.page - 1)
+          const t = readActiveTab()
+          if (t !== undefined) useReaderStore.getState().setPage(t.page - 1)
         },
         nextPage: () => {
-          const s = useReaderStore.getState()
-          s.setPage(s.page + 1)
+          const t = readActiveTab()
+          if (t !== undefined) useReaderStore.getState().setPage(t.page + 1)
         },
         zoomStep: (dir: 1 | -1) => {
-          const s = useReaderStore.getState()
-          s.setZoom(round2(s.zoom + dir * ZOOM_STEP))
+          const t = readActiveTab()
+          if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
         }
       }),
       []
@@ -138,13 +141,14 @@ export function ReaderPage(): JSX.Element {
   }
 
   if (paperId === null || fileUrl === null) {
+    // 空态三形合一：无 tab（引导）/loading/error——TabBar 可视化前的反馈面
     return (
       <div
         className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center text-sm"
-        style={{ color: 'var(--text-dim)' }}
+        style={{ color: tab?.status === 'error' ? 'var(--danger)' : 'var(--text-dim)' }}
       >
-        <p>阅读器</p>
-        <p className="text-xs">从文献库打开一篇文献（双击文献行）</p>
+        <p>{paperId === null ? '阅读器' : tab?.status === 'error' ? '打开文献失败' : '正在打开文献…'}</p>
+        {paperId === null && <p className="text-xs">从文献库打开一篇文献（双击文献行）</p>}
       </div>
     )
   }

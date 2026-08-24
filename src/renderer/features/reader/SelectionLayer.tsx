@@ -64,7 +64,8 @@ export function SelectionLayer(props: {
   const { pageRoot, paperId, page, onSaved } = props
   const [pending, setPending] = useState<PendingSelection | null>(null)
   const [busy, setBusy] = useState(false)
-  const color = useReaderStore((s) => s.color)
+  // per-tab 选择器（TABS-01）：颜色取 active tab（无 tab 时回退默认黄）
+  const color = useReaderStore((s) => s.tabs[s.activeId ?? '']?.color ?? 'yellow')
   const setColor = useReaderStore((s) => s.setColor)
   const toolbarRef = useRef<HTMLDivElement | null>(null)
 
