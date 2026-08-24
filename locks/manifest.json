@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T15:00:10.8156489Z",
+    "generatedAt":  "2026-08-24T15:24:33.7358263Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -23,7 +23,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "ec6cc2f8b9b948de20d166d97cf9ff9abe853ff5fe7d035404c7ae8257f542d8"
+                      "sha256":  "fbbaffbb1a48a0dc83010ab2648840874c5273ece44be349ba2f966a71cfa2c9"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -259,7 +259,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tab-bar.test.tsx",
-                      "sha256":  "34b5de24d66ab1eae07fb5489dbbcfffb18269f82d4e6714d3f927543bb0da9c"
+                      "sha256":  "542fa10299d76aa80a455d14becf2c5d7ce0462f61a4b203bba5f0df2adb790f"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/tab-dirty.test.tsx",
+                      "sha256":  "120a877440a46abdf4eafd8c4c74ddc17768370a70ea377f194d686e26b6bbb8"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",

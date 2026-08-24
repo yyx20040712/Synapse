@@ -6,7 +6,7 @@
  * - 状态形状：{ tabs: Record<paperId, TabState>; order: paperId[]; activeId: string | null }
  *   TabState = { paperId; fileUrl; fileName; page; totalPages; zoom; color;
  *   annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
- *   （dirty 建位于本单、恒 false——信号写入路径归 SR2-TABS-03（其改动面含本
+ *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
  *   文件）；undo 栈不进 TabState，归 SR2-UNDO-01 模块级自持，plan 门 W2 裁决）
  *   （顶层便捷字段全部下钻 TabState——单一真相源，禁投影双源；消费方经
  *   s.tabs[s.activeId ?? ''] 选择器取）
@@ -50,7 +50,7 @@
  *   AnnotationLayer.tsx:146/176 零改动（方法签名不变）
  *
  * ── 生命周期层 ──
- * - 预留：TabState.dirty 信号写入（SR2-TABS-03）；不做：tab 拖拽排序、会话恢复
+ * - 预留：TabState.dirty 信号写入（TABS-03）；不做：tab 拖拽排序、会话恢复
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/reader.store.test.ts 随本单迁移（受锁
@@ -74,7 +74,7 @@ export interface TabState {
   color: AnnotationColor
   annotations: Annotation[]
   status: 'loading' | 'ready' | 'error'
-  /** 灰点信号位（SR2-TABS-03 写入；本单恒 false） */
+  /** 灰点信号位（TABS-03 写入；本单恒 false） */
   dirty: boolean
 }
 
@@ -93,6 +93,10 @@ export interface ReaderStore {
   addAnnotation(a: Annotation): void
   updateAnnotation(a: Annotation): void
   removeAnnotation(id: string): void
+  /** annotations 面灰点信号（TABS-03）：保存失败置位/重试成功清除（参数化
+   *  paperId——异步失败可能迟到于 tab 切换） */
+  markTabDirty(paperId: string): void
+  clearTabDirty(paperId: string): void
 }
 
 export function createReaderStoreInitialState() {
@@ -327,6 +331,18 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
         ...tab,
         annotations: tab.annotations.filter((x) => x.id !== id)
       }))
+    },
+
+    markTabDirty(paperId) {
+      const { tabs } = get()
+      if (tabs[paperId] === undefined) return
+      set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: true } } })
+    },
+
+    clearTabDirty(paperId) {
+      const { tabs } = get()
+      if (tabs[paperId] === undefined) return
+      set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: false } } })
     }
   }
 })

@@ -9,10 +9,11 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
 import type { TabState } from '../../../src/renderer/features/reader/reader.store'
 import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 构造指定状态的 tab（默认 ready 态完整形状） */
@@ -56,6 +57,8 @@ function tabLabels(items: HTMLElement[]): string[] {
 
 beforeEach(() => {
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
+  useNotesStore.setState({ noteByPaper: {} })
+  vi.restoreAllMocks()
 })
 
 afterEach(() => {

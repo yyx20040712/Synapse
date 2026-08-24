@@ -8,7 +8,7 @@
  * - 退出拦截状态机：
  *   | 态 | 含义 | 事件→迁移 |
  *   | clean | renderer 上报 dirty=false（或启动初值） | close 请求 → 直接放行（默认行为） |
- *   | dirty | 任一 tab 有未落库/保存失败（SR2-TABS-03 聚合上报） | close 请求 → preventDefault +
+ *   | dirty | 任一 tab 有未落库/保存失败（TABS-03 聚合上报） | close 请求 → preventDefault +
  *     main 侧 showMessageBox 二次确认（「有未保存修改，确认退出？」确认/取消） |
  *   | dirty + 确认 | 用户确认退出 | win.destroy() 强制关闭（绕过 close 再拦截） |
  *   | dirty + 取消 | 用户取消 | 回 dirty 态（窗口保持） |
@@ -29,7 +29,7 @@
  * - 接缝（本工单改动面，file:line）：shared/ipc/api-surface.ts（set-quit-dirty
  *   通道记录，受锁 [locked-change]）/ ipc/system.ts:1-（通道 handler 注册）/
  *   renderer 上报点=App.tsx 或 reader 组合根 effect watch useTabDirtyAggregate
- *   （SR2-TABS-03 产出）→ api.system.setQuitDirty
+ *   （TABS-03 产出）→ api.system.setQuitDirty
  *
  * ── 生命周期层 ──
  * - 预留：before-quit 级联（多窗口未来不适用——单窗口负面清单）；不做：

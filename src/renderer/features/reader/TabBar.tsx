@@ -21,7 +21,7 @@
  * ── 架构层 ──
  * - renderer features/reader 域内组件；只 import reader.store；
  *   接缝：ReaderPage.tsx 顶部装配（本工单改动面）
- * - 灰点位（tab 项上的圆点标记）与关闭脏 tab 确认框属 SR2-TABS-03——本单
+ * - 灰点位（tab 项上的圆点标记）与关闭脏 tab 确认框属 TABS-03——本单
  *   关闭即关（无确认），dirty 信号接入后升级
  *
  * ── 生命周期层 ──
@@ -36,6 +36,7 @@
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useReaderStore } from './reader.store'
+import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './tab-dirty'
 import type { TabState } from './reader.store'
 
 /** tab 项标题：fileName 去扩展名；loading/error 态的占位文案 */
@@ -51,6 +52,9 @@ export function TabBar(): JSX.Element | null {
   const tabs = useReaderStore((s) => s.tabs)
   const activateTab = useReaderStore((s) => s.activateTab)
   const closeTab = useReaderStore((s) => s.closeTab)
+  // notes 面灰点信号（TABS-03）：per-paper pending 镜像（字典订阅——dirty
+  // 写频极低，细粒度化按 Rule of Three 缓议）
+  const notesByPaper = useNotesDrafts()
   // roving 焦点位：焦点所在项 tabIndex=0（未聚焦时=激活项）；Arrow 移动后随焦点走
   const [focusedId, setFocusedId] = useState<string | null>(null)
 
@@ -88,6 +92,11 @@ export function TabBar(): JSX.Element | null {
         if (tab === undefined) return null
         const active = id === activeId
         const title = tabTitle(tab)
+        // 两写面灰点（TABS-03）：annotations 失败残留 ∥ notes 未落库
+        const dirty = isTabDirty(id, {
+          annoDirty: tab.dirty,
+          notesPending: notesByPaper[id] ?? false
+        })
         return (
           <div
             key={id}
@@ -105,16 +114,28 @@ export function TabBar(): JSX.Element | null {
             onFocus={() => setFocusedId(id)}
             onKeyDown={(ev) => {
               // 键盘激活（div[role=tab] 无内建行为）：Enter/Space 等价点击 tab 体；
-              // Delete 关闭（关闭叉已退出 Tab 序——纯键盘用户的关闭替代路径）
+              // Delete 关闭（关闭叉已退出 Tab 序——纯键盘用户的关闭替代路径）。
+              // 两者均经 confirmCloseDirty 守门（dirty tab 二次确认）
               if (ev.key === 'Enter' || ev.key === ' ') {
                 ev.preventDefault()
                 activateTab(id)
               } else if (ev.key === 'Delete') {
                 ev.preventDefault()
-                closeTab(id)
+                if (confirmCloseDirty(id)) closeTab(id)
               }
             }}
           >
+            {dirty && (
+              <span
+                title="有未保存修改"
+                aria-label="有未保存修改"
+                data-testid="tab-dirty-dot"
+                className="shrink-0 text-[10px] leading-none"
+                style={{ color: 'var(--warning, orange)' }}
+              >
+                ●
+              </span>
+            )}
             <span className="truncate">{title}</span>
             <button
               type="button"
@@ -124,7 +145,7 @@ export function TabBar(): JSX.Element | null {
               style={{ color: 'var(--text-dim)' }}
               onClick={(ev) => {
                 ev.stopPropagation()
-                closeTab(id)
+                if (confirmCloseDirty(id)) closeTab(id)
               }}
             >
               ✕

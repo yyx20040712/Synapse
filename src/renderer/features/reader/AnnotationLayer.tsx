@@ -144,9 +144,12 @@ export function AnnotationLayer(props: {
       const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
       const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
       useReaderStore.getState().updateAnnotation(saved)
+      useReaderStore.getState().clearTabDirty(a.paperId)
       setEditing(null)
       onChanged()
     } catch (e) {
+      // 保存失败：tab 灰点置位（TABS-03 两写面之一）
+      useReaderStore.getState().markTabDirty(a.paperId)
       showToast(e instanceof ApiClientError ? e.message : UPDATE_FAILED, 'error')
     } finally {
       setBusy(false)
@@ -174,10 +177,13 @@ export function AnnotationLayer(props: {
     try {
       await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
       useReaderStore.getState().removeAnnotation(a.id)
+      useReaderStore.getState().clearTabDirty(a.paperId)
       setEditing(null)
       setMenu(null)
       onChanged()
     } catch (e) {
+      // 删除失败：tab 灰点置位（TABS-03 两写面之一）
+      useReaderStore.getState().markTabDirty(a.paperId)
       showToast(e instanceof ApiClientError ? e.message : DELETE_FAILED, 'error')
     } finally {
       setBusy(false)

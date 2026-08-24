@@ -160,9 +160,13 @@ export function SelectionLayer(props: {
     try {
       const saved = await unwrap(api.reader.saveAnnotation({ paperId, annotation: input }))
       onSaved(saved)
+      // 保存落地即清除该面灰点（TABS-03 乐观清除语义）
+      useReaderStore.getState().clearTabDirty(paperId)
       setPending(null)
       window.getSelection()?.removeAllRanges()
     } catch (e) {
+      // 保存失败：tab 灰点置位（失败残留可见——TABS-03 两写面之一）
+      useReaderStore.getState().markTabDirty(paperId)
       showToast(e instanceof ApiClientError ? e.message : SAVE_FAILED, 'error')
     } finally {
       setBusy(false)

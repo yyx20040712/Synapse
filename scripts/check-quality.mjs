@@ -46,10 +46,14 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 // 3) renderer features 跨域互引（依赖只能下沉到 renderer/shared）
 //    组合根例外（工单冻结规约明文声明，键=文件正斜杠路径 → 值=允许引用的目标模块
 //    相对 features 根的路径）：SR-LIB-04 "由本文件作为组合根引用子组件"、
-//    SR-LIB-05 "TagFilter 组件嵌于此"。仅此三个文件-模块对，白名单外仍是红线
+//    SR-LIB-05 "TagFilter 组件嵌于此"。SR2-TABS-03（2026-08-24）：tab-dirty 是
+//    灰点信号的跨域聚合器（B3 裁决 α 双层两写面=reader 的 TabState.dirty +
+//    notes 的 pending 镜像），聚合职责即消费 notes.store——受控例外，reader
+//    域其余文件引用 notes 仍是红线
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['notes/NotesPanel', 'tags/TagEditor']],
-  ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']]
+  ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
+  ['src/renderer/features/reader/tab-dirty.ts', ['notes/notes.store']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')
