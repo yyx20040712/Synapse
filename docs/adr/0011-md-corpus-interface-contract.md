@@ -1,9 +1,11 @@
 # ADR-0011：md 语料接口契约 v1（DB 真相源 + 版本化投影 + 工具说明书入口）
 
-- 日期：2026-08-25
-- 状态：已裁决——v1 契约冻结，P7-C 工单化按此验收；AI 链条扩展位预留
+- 日期：2026-08-25（同日修订：fulltext/figures 纳入 v1——蓝图 D6 裁决，
+  为多模态模型消费面考虑）
+- 状态：已裁决——v1 契约冻结（P7-C 实现前修订，不构成破坏性变更），P7-C
+  工单化按此验收；AI 链条扩展位预留
 - 关联：B3 裁决问3（DB 唯一真相源+md 投影）；ROADMAP P7-C/P8+ 愿景范畴；
-  AI 蓝图 docs/reports/2026-08-25_ai-sensor-blueprint.md
+  AI 蓝图 docs/reports/2026-08-25_ai-sensor-blueprint.md（§4.1 裁决记录）
 
 ## 背景
 
@@ -19,21 +21,33 @@ AI 链条（后续工单）按此消费。
 SQLite 是唯一真相源（事务性/FTS/单写者）；md 文件是**投影**——任何时候可由
 DB 全量重导出，md 本身不回写 DB。丢 md 不丢数据；md 的消费者只读。
 
-### 导出物形态（一个目录三件套）
+### 导出物形态（一个目录五件套）
 
 ```
 <用户经系统对话框选择的目录>/     ← INV-07：路径只出自 main 侧对话框
 ├── INTERFACE.md                  ← 工具说明书（AI 消费者入口，静态生成）
 ├── manifest.json                 ← 导出索引（机器可读）
-└── corpus/<paperId>.md           ← 每篇文献一份语料
+├── corpus/<paperId>.md           ← 每篇文献一份语料（标注+笔记+引文块）
+├── fulltext/<paperId>.txt        ← 全文本层（pdf.js textContent 按页拼接，
+│                                    页界以 \f 分隔——孙智能体一阶消费）
+└── figures/<paperId>/            ← 多模态消费面（D6 裁决）
+    ├── page-<N>.png              ← 页级快照（pdf.js canvas 渲染导出）
+    └── anno-<annotationId>.png   ← 标注区域裁剪（WADM 归一化 rects 从页图裁出）
 ```
 
 - **INTERFACE.md**：面向 AI 消费者的说明书——目录结构、front-matter 字段表、
-  引文块语法、排序规则、版本承诺。zcode 类代理读文件系统即可理解接口，
+  引文块语法、排序规则、版本承诺、fulltext/figures 的消费说明（页界符/页码
+  基准/裁剪图与标注的对应关系）。zcode 类代理读文件系统即可理解接口，
   无需训练适配（「传感器」定位：应用只负责把数据说明白）。
 - **manifest.json**：`{ schemaVersion, exportedAt, papers: [{ paperId, file,
-  title, contentSha, exportedAt }] }`。contentSha 供增量导出对比（v1 全量导出，
-  增量为预留字段不实现）。
+  title, contentSha, fulltextSha, figures: [...], exportedAt }] }`。
+  contentSha/fulltextSha 供增量导出对比（v1 全量导出，增量为预留字段不实现）；
+  进度可见性（D1 三读队列的建档状态）由 AI 侧工具基于 manifest 维护，应用
+  只保证导出幂等（同库重导出内容确定）。
+- **分层消费**（蓝图 D3 裁决）：孙智能体（一阶）= fulltext+figures+corpus；
+  梳理智能体（二阶）= corpus（标记+笔记语料）。同一目录不同子集。
+- **图提取边界**：页级快照+标注区域裁剪两级；对象级图像 XObject 提取不做
+  （成本高/收益边际）。PNG 导出走 pdf.js 既有渲染管线（无新依赖）。
 
 ### front-matter schema（版本化）
 
@@ -42,6 +56,12 @@ schemaVersion: 1
 paperId / title / authors / year / venue / doi / source / citationKey
 annotationCount / noteCount / exportedAt
 ```
+
+含金量指标元信息（蓝图 D4 裁决，enrich 域既有数据装配，零新增出网）：
+`citedByCount`（OpenAlex/CrossRef 缓存值+取数时间戳）与 `venueTier`（内置
+学科映射表的人工先验，允许用户改）作为**可选字段**纳入 v1——消费侧用于
+领域基线归一，不做跨领域原始值比较（偏倚处理归 AI 侧工具，指标口径在
+INTERFACE.md 声明）。
 
 演进规则：**新增字段必须可选；删除或改名=破坏性变更（禁止），只能升
 schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
