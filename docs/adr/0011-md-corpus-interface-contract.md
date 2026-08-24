@@ -1,7 +1,8 @@
 # ADR-0011：md 语料接口契约 v1（DB 真相源 + 版本化投影 + 工具说明书入口）
 
 - 日期：2026-08-25（同日修订：fulltext/figures 纳入 v1——蓝图 D6 裁决，
-  为多模态模型消费面考虑）
+  为多模态模型消费面考虑；同日第三轮 v1.1：计划审查定稿六项契约收紧——
+  见文末修订记录）
 - 状态：已裁决——v1 契约冻结（P7-C 实现前修订，不构成破坏性变更），P7-C
   工单化按此验收；AI 链条扩展位预留
 - 关联：B3 裁决问3（DB 唯一真相源+md 投影）；ROADMAP P7-C/P8+ 愿景范畴；
@@ -89,3 +90,25 @@ schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
 - AI 链条工单化时：消费侧只依赖本契约+INTERFACE.md，不依赖 DB 内部结构——
   接口稳定面收窄到目录三件套。
 - 增量导出、AI 语料写入面：v2 契约范围，届时升 schemaVersion。
+
+## 修订记录 v1.1（2026-08-25 第三轮：计划审查定稿——实现前修订，非破坏性）
+
+> 审查与裁决实录=docs/reports/2026-08-25_ai-plan-review.md（R4~R9）；工单化母本
+> =ai-module-plan v1.1。以下条款并入上方 v1 契约正文口径。
+
+1. **[ai:*] 段装配入 v1**（D3 独立表既决）：ai_notes 表随 SR2-AI-01 落地，corpus
+   md 装配 `[ai:*]` 段（语法不变——消费者按前缀忽略未知段）。**v1 无生产者**：
+   生产者=测试夹具，消费者=导出装配，写入面=未来回灌工单另行立项。
+2. **front-matter 去 exportedAt**：per-paper corpus md 的 front-matter **不含**
+   exportedAt（时间戳只进 manifest per-paper 条目）——保证 contentSha=文件字节
+   sha256 的幂等口径（同库重导逐字节稳定）。
+3. **manifest 写入协议**：终局单写+原子替换（临时文件+rename）；导出会话开始即
+   删旧 manifest 并清空重建 corpus/fulltext/figures 三子目录。「manifest 存在=
+   导出完整就绪」是工具侧唯一激活判据；中断=无 manifest=不可消费，重跑即修复；
+   进度不走 manifest（走应用 UI 事件）。
+4. **manifest schema 增补**：可选 `errors: [{paperId, reason}]`（提取失败篇——
+   文件缺失/损坏；papers[] 只列成功篇）。
+5. **figures 范围口径**：全页快照（每篇每页 page-N.png——D1「数据基座尽可能
+   不失真」同哲学）；体积/时长预期由 INTERFACE.md 声明；未来收窄（如仅标注页）
+   属版本化修订（INTERFACE 版本号联动）。
+6. **导出并发语义**：单会话单飞——进行中拒绝第二会话（错误码 EXPORT_BUSY）。
