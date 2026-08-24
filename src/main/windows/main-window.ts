@@ -1,10 +1,46 @@
+// b3: P7-B
 /**
- * 主窗口（SR-INFRA-09，已完成）。
+ * [SR2-TABS-04] 主窗口 —— 退出拦截（工单：open / strong）
+ * （承接 SR-INFRA-09 安全 webPreferences 职责——历史规约见 git；本头注为
+ * P7-B 增量工单规约，安全件现状=配置即测试全部保留）
  *
- * 职责：安全 webPreferences 的唯一出处（配置即测试）+ 窗口级护栏。
- * 安全（§6.1/§6.2）：sandbox/contextIsolation 全开、禁导航、禁弹窗、
- * 权限请求默认拒绝；devTools 仅开发模式。
- * 测试：tests/security/web-preferences.test.ts。
+ * ── 行为层 ──
+ * - 退出拦截状态机：
+ *   | 态 | 含义 | 事件→迁移 |
+ *   | clean | renderer 上报 dirty=false（或启动初值） | close 请求 → 直接放行（默认行为） |
+ *   | dirty | 任一 tab 有未落库/保存失败（SR2-TABS-03 聚合上报） | close 请求 → preventDefault +
+ *     main 侧 showMessageBox 二次确认（「有未保存修改，确认退出？」确认/取消） |
+ *   | dirty + 确认 | 用户确认退出 | win.destroy() 强制关闭（绕过 close 再拦截） |
+ *   | dirty + 取消 | 用户取消 | 回 dirty 态（窗口保持） |
+ * - dirty 上报通道（新 IPC，api-surface 受锁 [locked-change]）：
+ *   system/set-quit-dirty { dirty: boolean } → void——renderer 在聚合 dirty
+ *   变化沿（false→true / true→false）上报；main 侧模块级缓存最近值（push 模式，
+ *   避免 close 时反向询问 renderer 的时序复杂度）
+ * - 防重入：确认对话框弹出期间再点 close → 忽略（对话框模态天然挡住，记录依据）
+ *
+ * ── 接口层 ──
+ * - export function createMainWindow(...) 不变（装配内加 close 监听）
+ * - export function quitDirtyGuard deps 注入（dialogs.showMessageBox）——纯逻辑
+ *   可测（决定 preventDefault 与否的判定函数导出）
+ *
+ * ── 架构层 ──
+ * - main/windows 层；新通道走 shared/ipc/api-surface.ts 接线表（zod strict，
+ *   preload 自动生成桥——架构 §3 契约机制）；不引入 renderer 反向 invoke
+ * - 接缝（本工单改动面，file:line）：shared/ipc/api-surface.ts（set-quit-dirty
+ *   通道记录，受锁 [locked-change]）/ ipc/system.ts:1-（通道 handler 注册）/
+ *   renderer 上报点=App.tsx 或 reader 组合根 effect watch useTabDirtyAggregate
+ *   （SR2-TABS-03 产出）→ api.system.setQuitDirty
+ *
+ * ── 生命周期层 ──
+ * - 预留：before-quit 级联（多窗口未来不适用——单窗口负面清单）；不做：
+ *   保存并退出一键动作（autosave-first 下确认即放弃未落库增量）
+ *
+ * ── 文化层 ──
+ * - 测试：tests/unit/windows/quit-dirty-guard.test.ts（新建，受锁）：clean
+ *   放行/dirty 拦截+确认 destroy/dirty 拦截+取消保持 + tests/unit/ipc/system.test.ts
+ *   扩展（新通道注册断言）+ tests/contracts/preload-surface.test.ts 自动对账
+ *   （新通道桥暴露）——IPC 闭环三面锚，plan 门 NIT2 处置；
+ *   web-preferences.test.ts 安全面全量保留不回归
  */
 import type { BrowserWindow, HandlerDetails, WebPreferences } from 'electron'
 
