@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T10:11:49.4728992Z",
+    "generatedAt":  "2026-08-24T10:49:35.8284153Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -248,6 +248,10 @@
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
                       "sha256":  "3aef2cc0abb2752a82e838074e84472ec8cd421a0519e62a34f5759e6570b208"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/split-pane.test.tsx",
+                      "sha256":  "e520d2bf1a658bedfe0414e3f483a9acf28bce847dfa877b58e97101652a3a53"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",

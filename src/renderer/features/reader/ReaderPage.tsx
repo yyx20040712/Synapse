@@ -29,7 +29,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
 import { AnnotationLayer } from './AnnotationLayer'
-import { OutlinePanel } from './OutlinePanel'
+import { OutlineAside } from './OutlineAside'
+import { SplitPane } from '../../shared/ui/SplitPane'
 import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
 import { useReaderShortcuts } from './ReaderShortcuts'
 import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
@@ -148,6 +149,51 @@ export function ReaderPage(): JSX.Element {
     )
   }
 
+  // 主区（开/收两分支共用，避免重复定义）：页根与覆盖层的宿主
+  const mainContent = (
+    <div className="min-w-0 flex-1 overflow-auto p-3">
+      {/* 页根：canvas 与覆盖层的共同定位盒（w-fit 收敛到 canvas 尺寸，
+          TextLayer absolute inset-0 + 显式宽高精确叠合；标注层/划选条在其上） */}
+      <div ref={setPageRoot} className="relative mx-auto w-fit">
+        <PdfCanvas
+          fileUrl={fileUrl}
+          pageNumber={page + 1}
+          zoom={zoom}
+          onPageRender={handlePageRender}
+          onError={(msg) => showToast(msg, 'error')}
+          onDocInfo={(info) => setTotalPages(info.numPages)}
+          onDocReady={setPdfDoc}
+        />
+        {pageText !== null && pageText.page === page + 1 && (
+          <TextLayer
+            textContent={pageText.text}
+            viewportScale={zoom}
+            pageWidth={pageText.box.w}
+            pageHeight={pageText.box.h}
+          />
+        )}
+        {pageText !== null && pageText.page === page + 1 && (
+          <SelectionLayer
+            pageRoot={pageRoot}
+            paperId={paperId}
+            page={page}
+            onSaved={addAnnotation}
+          />
+        )}
+        {pageText !== null && pageText.page === page + 1 && (
+          <AnnotationLayer
+            annotations={annotations}
+            page={page}
+            pageRoot={pageRoot}
+            // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
+            onChanged={() => undefined}
+          />
+        )}
+      </div>
+      <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
+    </div>
+  )
+
   return (
     <div className="flex h-full flex-col">
       <ReaderToolbar
@@ -162,22 +208,26 @@ export function ReaderPage(): JSX.Element {
       />
       <div className="flex min-h-0 flex-1">
         {outlineOpen ? (
-          <aside
-            className="flex w-56 shrink-0 flex-col border-r"
-            style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
-          >
-            <div className="flex items-center justify-between border-b px-2 py-1 text-xs"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
-            >
-              <span>目录 / 缩略图</span>
-              <button type="button" className="rounded px-1" onClick={() => setOutlineOpen(false)}>
-                收起
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <OutlinePanel pdfDoc={pdfDoc} currentPage={page} onNavigate={setPage} />
-            </div>
-          </aside>
+          // 可拖拽侧栏（SplitPane）：宽度持久化 localStorage；main 槽传 null——
+          // 主内容外置为下方稳定子节点，折叠/展开不重挂 PdfCanvas 等主子树
+          <SplitPane
+            paneId="reader-outline"
+            side="left"
+            defaultWidth={224}
+            min={160}
+            max={480}
+            children={{
+              pane: (
+                <OutlineAside
+                  pdfDoc={pdfDoc}
+                  currentPage={page}
+                  onNavigate={setPage}
+                  onCollapse={() => setOutlineOpen(false)}
+                />
+              ),
+              main: null
+            }}
+          />
         ) : (
           <button
             type="button"
@@ -188,47 +238,7 @@ export function ReaderPage(): JSX.Element {
             目录
           </button>
         )}
-        <div className="min-w-0 flex-1 overflow-auto p-3">
-          {/* 页根：canvas 与覆盖层的共同定位盒（w-fit 收敛到 canvas 尺寸，
-              TextLayer absolute inset-0 + 显式宽高精确叠合；标注层/划选条在其上） */}
-          <div ref={setPageRoot} className="relative mx-auto w-fit">
-            <PdfCanvas
-              fileUrl={fileUrl}
-              pageNumber={page + 1}
-              zoom={zoom}
-              onPageRender={handlePageRender}
-              onError={(msg) => showToast(msg, 'error')}
-              onDocInfo={(info) => setTotalPages(info.numPages)}
-              onDocReady={setPdfDoc}
-            />
-            {pageText !== null && pageText.page === page + 1 && (
-              <TextLayer
-                textContent={pageText.text}
-                viewportScale={zoom}
-                pageWidth={pageText.box.w}
-                pageHeight={pageText.box.h}
-              />
-            )}
-            {pageText !== null && pageText.page === page + 1 && (
-              <SelectionLayer
-                pageRoot={pageRoot}
-                paperId={paperId}
-                page={page}
-                onSaved={addAnnotation}
-              />
-            )}
-            {pageText !== null && pageText.page === page + 1 && (
-              <AnnotationLayer
-                annotations={annotations}
-                page={page}
-                pageRoot={pageRoot}
-                // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
-                onChanged={() => undefined}
-              />
-            )}
-          </div>
-          <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
-        </div>
+        {mainContent}
       </div>
     </div>
   )
