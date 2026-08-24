@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-23T13:52:57.5722943Z",
+    "generatedAt":  "2026-08-24T10:11:49.4728992Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -216,6 +216,10 @@
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
                       "sha256":  "c31a4f5052f2c2be34499d74519f6fd7dbc759d9cc3e4e784c1b32f798c3a74a"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/annotation-menu.test.tsx",
+                      "sha256":  "006fec34e5a9f0ef6d54507ae86cb6ce04526e9b8f43a468af331addc0525e67"
                   },
                   {
                       "path":  "tests/unit/renderer/keymap.test.ts",

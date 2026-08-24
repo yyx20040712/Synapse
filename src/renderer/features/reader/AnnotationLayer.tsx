@@ -9,9 +9,11 @@
  * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
  *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
  *   requestAnimationFrame 合并重算
- * - 点击标注：弹批注编辑（AnnotationEditor，comment textarea，保存
- *   api.reader.updateAnnotation）；删除按钮 → confirm → api.reader.deleteAnnotation；
- *   成功后经 reader.store.updateAnnotation/removeAnnotation 同步本地数组并回调 onChanged
+ * - 点击标注：弹四选项菜单（AnnotationMenu：复制引文→剪贴板+失败 toast；删除→
+ *   confirm→api.reader.deleteAnnotation；添加笔记→开批注编辑 AnnotationEditor
+ *   （comment textarea，保存 api.reader.updateAnnotation）；取消收起）——点击他条
+ *   标注=切目标，不残留双弹层；成功后经 reader.store.updateAnnotation/
+ *   removeAnnotation 同步本地数组并回调 onChanged
  * - sortKey 由仓储层生成（"页码:页内序号"），渲染按 props 顺序即可
  *
  * ── 接口层 ──
@@ -21,7 +23,7 @@
  * ── 架构层 ──
  * - 重锚根是页根内 .textLayer 容器（与 SelectionLayer 同口径）；annotation-anchor
  *   是唯一 DOM 遍历点；api 调用 + store 三方法同步在本层，AnnotationEditor 纯展示
- * - 色块层 pointer-events:none 仅矩形可命中——点击标注即编辑，代价是矩形上方
+ * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单，代价是矩形上方
  *   无法发起文本重选（v1 约束：从矩形外起选）
  *
  * ── 生命周期层 ── / ── 文化层 ──
@@ -34,6 +36,7 @@ import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
 import { AnnotationEditor } from './AnnotationEditor'
+import { AnnotationMenu } from './AnnotationMenu'
 import { COLOR_SWATCH } from './annotation-style'
 import { useReaderStore } from './reader.store'
 
@@ -61,11 +64,15 @@ function rectStyle(kind: AnnotationKind, color: AnnotationColor, r: AnnotationRe
   return { ...base, top: `${r.y * 100}%`, height: `${r.h * 100}%`, opacity: 1 }
 }
 
-/** 正在编辑的标注（连同命中矩形，供弹层定位） */
-interface Editing {
+/** 弹层目标（连同命中矩形，供菜单/编辑器定位）——菜单与编辑器互斥使用同形 */
+interface PopupTarget {
   annotation: Annotation
   rect: AnnotationRect
 }
+
+/** 复制失败的动作型提示（同步抛错与写入拒绝双路径共用；提示重试路径——
+ *  菜单已乐观收起，重试=重新点击标注） */
+const COPY_FAILED = '复制到剪贴板失败，可点击标注重试'
 
 export function AnnotationLayer(props: {
   annotations: Annotation[]
@@ -75,7 +82,8 @@ export function AnnotationLayer(props: {
 }): JSX.Element | null {
   const { annotations, page, pageRoot, onChanged } = props
   const [resolved, setResolved] = useState<ResolvedRects>({})
-  const [editing, setEditing] = useState<Editing | null>(null)
+  const [menu, setMenu] = useState<PopupTarget | null>(null)
+  const [editing, setEditing] = useState<PopupTarget | null>(null)
   const [busy, setBusy] = useState(false)
 
   const pageAnnotations = annotations.filter((a) => a.page === page)
@@ -145,7 +153,19 @@ export function AnnotationLayer(props: {
     }
   }
 
-  /** 删除：confirm 确认 → api → store 同步 → 收起 → onChanged 通知 */
+  /** 复制引文：双路径失败 toast（同步异常/写入拒绝，INV-02 动作型）→ 收起菜单 */
+  function copyQuote(a: Annotation): void {
+    setMenu(null)
+    try {
+      void navigator.clipboard.writeText(a.quoteText).catch(() => {
+        showToast(COPY_FAILED, 'error')
+      })
+    } catch {
+      showToast(COPY_FAILED, 'error')
+    }
+  }
+
+  /** 删除：confirm 确认 → api → store 同步 → 收起（菜单/编辑器一并）→ onChanged 通知 */
   async function deleteAnnotation(a: Annotation): Promise<void> {
     if (busy || !window.confirm(DELETE_CONFIRM)) {
       return
@@ -155,6 +175,7 @@ export function AnnotationLayer(props: {
       await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
       useReaderStore.getState().removeAnnotation(a.id)
       setEditing(null)
+      setMenu(null)
       onChanged()
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : DELETE_FAILED, 'error')
@@ -183,11 +204,29 @@ export function AnnotationLayer(props: {
               title={a.comment !== '' ? a.comment : a.quoteText}
               className="absolute"
               style={rectStyle(a.kind, a.color, r)}
-              onClick={() => setEditing({ annotation: a, rect: r })}
+              onClick={() => {
+                // 点击他条标注=切目标：菜单接管，既有编辑器一并收起（不残留双弹层）
+                setMenu({ annotation: a, rect: r })
+                setEditing(null)
+              }}
             />
           ))
         )}
       </div>
+      {menu !== null && (
+        <AnnotationMenu
+          annotation={menu.annotation}
+          rect={menu.rect}
+          busy={busy}
+          onCopy={() => copyQuote(menu.annotation)}
+          onDelete={() => void deleteAnnotation(menu.annotation)}
+          onAddNote={() => {
+            setEditing(menu)
+            setMenu(null)
+          }}
+          onCancel={() => setMenu(null)}
+        />
+      )}
       {editing !== null && (
         <AnnotationEditor
           key={editing.annotation.id}
