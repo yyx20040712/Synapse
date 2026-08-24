@@ -31,6 +31,7 @@ import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-
 import { AnnotationLayer } from './AnnotationLayer'
 import { OutlineAside } from './OutlineAside'
 import { SplitPane } from '../../shared/ui/SplitPane'
+import { TabBar } from './TabBar'
 import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
 import { useReaderShortcuts } from './ReaderShortcuts'
 import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
@@ -63,8 +64,7 @@ export function ReaderPage(): JSX.Element {
   const setTotalPages = useReaderStore((s) => s.setTotalPages)
   const addAnnotation = useReaderStore((s) => s.addAnnotation)
 
-  // 快捷键装配（ReaderShortcuts 工单落点）：动作经 getState 取最新 store 态——回调恒定身份，
-  // 避免每次翻页/缩放重挂监听（INV-14 友好）；页码/缩放夹取由 store setPage/setZoom 持有
+  // 快捷键装配：动作经 getState 取最新 store 态——回调恒定身份，避免重挂监听（INV-14 友好）
   useReaderShortcuts(
     useMemo(
       () => ({
@@ -89,12 +89,9 @@ export function ReaderPage(): JSX.Element {
   const [outlineOpen, setOutlineOpen] = useState(true)
   // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfCanvas onDocReady 上报，换文档即弃
   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
-  // 页根用回调 ref 存 state（而非 useRef）：标注层要拿它作 props，ref.current
-  // 赋值不触发重渲染，首帧后标注层会一直拿到 null
   const [pageRoot, setPageRoot] = useState<HTMLDivElement | null>(null)
 
-  // 打开请求两路：挂载时闩锁补读（事件派发时本页未挂载）+ 已挂载期间的实时监听。
-  // openPaper 属动作型：失败上抛在此 catch → toast（store 不吞错）
+  // 打开请求两路：挂载时闩锁补读+实时监听；openPaper 失败上抛在此 catch → toast
   useEffect(() => {
     const open = (id: string): void => {
       openPaper(id).catch((e: unknown) => {
@@ -141,23 +138,25 @@ export function ReaderPage(): JSX.Element {
   }
 
   if (paperId === null || fileUrl === null) {
-    // 空态三形合一：无 tab（引导）/loading/error——TabBar 可视化前的反馈面
+    // 空态三形合一（无 tab/loading/error）；TabBar 保留——error tab 必须可见可关可切
     return (
-      <div
-        className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center text-sm"
-        style={{ color: tab?.status === 'error' ? 'var(--danger)' : 'var(--text-dim)' }}
-      >
-        <p>{paperId === null ? '阅读器' : tab?.status === 'error' ? '打开文献失败' : '正在打开文献…'}</p>
-        {paperId === null && <p className="text-xs">从文献库打开一篇文献（双击文献行）</p>}
+      <div className="flex h-full flex-col">
+        <TabBar />
+        <div
+          className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm"
+          style={{ color: tab?.status === 'error' ? 'var(--danger)' : 'var(--text-dim)' }}
+        >
+          <p>{paperId === null ? '阅读器' : tab?.status === 'error' ? '打开文献失败' : '正在打开文献…'}</p>
+          {paperId === null && <p className="text-xs">从文献库打开一篇文献（双击文献行）</p>}
+        </div>
       </div>
     )
   }
-
   // 主区（开/收两分支共用，避免重复定义）：页根与覆盖层的宿主
   const mainContent = (
     <div className="min-w-0 flex-1 overflow-auto p-3">
-      {/* 页根：canvas 与覆盖层的共同定位盒（w-fit 收敛到 canvas 尺寸，
-          TextLayer absolute inset-0 + 显式宽高精确叠合；标注层/划选条在其上） */}
+      {/* 页根：canvas 与覆盖层共同定位盒（w-fit 收敛 canvas 尺寸；TextLayer
+          absolute inset-0+显式宽高精确叠合——覆盖层定位基准，勿改布局方式） */}
       <div ref={setPageRoot} className="relative mx-auto w-fit">
         <PdfCanvas
           fileUrl={fileUrl}
@@ -200,6 +199,7 @@ export function ReaderPage(): JSX.Element {
 
   return (
     <div className="flex h-full flex-col">
+      <TabBar />
       <ReaderToolbar
         page={page}
         totalPages={totalPages}

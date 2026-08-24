@@ -141,7 +141,7 @@ export const TICKETS: readonly Ticket[] = [
   //    TABS-01→02→03→04，UNDO-01 依赖 TABS-01（closeTab 清理接缝）可与 02/03/04
   //    并行；每单独立 verify+审查+翻状态，禁同批多单）──
   { id: 'SR2-TABS-01', file: 'src/renderer/features/reader/reader.store.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'reader.store per-tab 多文献字典重构（tab 生命周期状态机+竞态守卫 per-tab 化）' },
-  { id: 'SR2-TABS-02', file: 'src/renderer/features/reader/TabBar.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '阅读器多标签栏（order/activeId 消费，loading/error 态，关闭叉）' },
+  { id: 'SR2-TABS-02', file: 'src/renderer/features/reader/TabBar.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '阅读器多标签栏（order/activeId 消费，loading/error 态，关闭叉）' },
   { id: 'SR2-TABS-03', file: 'src/renderer/features/reader/tab-dirty.ts', area: 'reader', owner: 'strong', status: 'open', summary: '灰点信号聚合（annotations 失败+notes pending 两写面 → tab dirty 投影）' },
   { id: 'SR2-TABS-04', file: 'src/main/windows/main-window.ts', area: 'infra', owner: 'strong', status: 'open', summary: '退出拦截（close preventDefault+dirty 上报通道+二次确认）' },
   { id: 'SR2-UNDO-01', file: 'src/renderer/features/reader/annotation-undo.ts', area: 'reader', owner: 'strong', status: 'open', summary: '标注操作级撤销栈（create/delete/comment-edit 逆操作，per-tab）' }
