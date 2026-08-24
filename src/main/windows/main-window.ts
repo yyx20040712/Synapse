@@ -32,12 +32,19 @@ export function windowOpenPolicy(): { action: 'deny' } {
   return { action: 'deny' }
 }
 
-export function denyAllPermissions(): (
+/**
+ * 权限策略：最小放行清单——仅剪贴板写（'clipboard-sanitized-write'，复制引文/选区
+ * 功能所需；内容全部本地自有，CSP 锁死无远程文档，无注入面），其余（通知/定位/
+ * 摄像头/剪贴板读…）一律拒绝。剪贴板读保持拒绝：应用无读剪贴板需求。
+ */
+const ALLOWED_PERMISSIONS: ReadonlySet<string> = new Set(['clipboard-sanitized-write'])
+
+export function permissionPolicy(): (
   _wc: unknown,
-  _permission: string,
+  permission: string,
   callback: (granted: boolean) => void
 ) => void {
-  return (_wc, _permission, callback) => callback(false)
+  return (_wc, permission, callback) => callback(ALLOWED_PERMISSIONS.has(permission))
 }
 
 /** 创建主窗口并挂载护栏（BrowserWindow 类型由调用方传入避免测试依赖 electron） */
@@ -63,8 +70,9 @@ export function createMainWindow(
   // 护栏：禁止任何导航与弹窗（内容只来自本地构建产物/dev server）
   win.webContents.on('will-navigate', (event) => event.preventDefault())
   win.webContents.setWindowOpenHandler((_details: HandlerDetails) => windowOpenPolicy())
-  // 护栏：权限请求一律拒绝（未挂载时 Electron 默认全部授予；handler 挂在 session 上）
-  win.webContents.session.setPermissionRequestHandler(denyAllPermissions())
+  // 护栏：权限请求按最小放行清单处理（仅剪贴板写，见 permissionPolicy；
+  // 未挂载时 Electron 默认全部授予；handler 挂在 session 上）
+  win.webContents.session.setPermissionRequestHandler(permissionPolicy())
 
   if (load.devServerUrl) {
     void win.loadURL(load.devServerUrl)

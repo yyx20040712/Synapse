@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   WINDOW_SECURITY_FLAGS,
   windowOpenPolicy,
-  denyAllPermissions
+  permissionPolicy
 } from '../../src/main/windows/main-window'
 import { CSP_POLICY, cspHeaderValue } from '../../src/main/security/csp'
 
@@ -21,13 +21,19 @@ describe('security —— Electron 安全配置（配置即测试，改错即红
     expect(windowOpenPolicy()).toEqual({ action: 'deny' })
   })
 
-  it('权限请求：默认全部拒绝', () => {
-    const handler = denyAllPermissions()
-    let granted: boolean | null = null
-    handler(null, 'notifications', (g) => {
-      granted = g
-    })
-    expect(granted).toBe(false)
+  it('权限策略：仅剪贴板写（复制功能）放行，其余一律拒绝', () => {
+    const handler = permissionPolicy()
+    const ask = (p: string): boolean => {
+      let granted: boolean | null = null
+      handler(null, p, (g) => {
+        granted = g
+      })
+      return granted === true
+    }
+    expect(ask('clipboard-sanitized-write')).toBe(true)
+    expect(ask('clipboard-read')).toBe(false)
+    expect(ask('notifications')).toBe(false)
+    expect(ask('geolocation')).toBe(false)
   })
 
   it('CSP：禁 eval/object/frame，pdf.js worker 放行 blob:，出网禁到 self', () => {

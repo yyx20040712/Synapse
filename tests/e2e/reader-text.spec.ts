@@ -189,11 +189,18 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   expect(Math.abs(box1!.width - box2!.width)).toBeLessThanOrEqual(2)
   expect(Math.abs(box1!.height - box2!.height)).toBeLessThanOrEqual(2)
 
-  // 点击色块 → 批注编辑弹层 → 删除（confirm 自动接受）→ 色块消失
+  // 点击色块 → 四选项菜单 → 添加笔记开编辑弹层 → 删除（confirm 自动接受）→ 色块消失
+  // （P7-A 菜单前置后编辑器只能经「添加笔记」到达——直开路径已收口）
   win2.on('dialog', (d) => {
     void d.accept()
   })
   await rect2.first().click()
+  const menu = win2.getByTestId('annotation-menu')
+  await expect(menu).toBeVisible()
+  for (const label of ['复制引文', '删除', '添加笔记', '取消']) {
+    await expect(menu.getByRole('button', { name: label })).toBeVisible()
+  }
+  await menu.getByRole('button', { name: '添加笔记' }).click()
   const editor = win2.getByTestId('annotation-editor')
   await expect(editor).toBeVisible()
   await editor.getByRole('button', { name: '删除' }).click()
@@ -271,5 +278,62 @@ test('划选备注后渲染为整行色块（note kind 渲染存在性，INV-06�
   await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
   const noteHeight = await rect.first().evaluate((el) => parseFloat(getComputedStyle(el).height))
   expect(noteHeight).toBeGreaterThanOrEqual(8)
+  await app.close()
+})
+
+/** P7-A 交互基建依赖：快捷键两单 + 菜单 + 分隔条（v2 首批四单） */
+const P7A_DEPS = [...ANNOTATION_DEPS, 'SR2-KEY-01', 'SR2-KEY-02', 'SR2-UIK-01'] as const
+
+test('P7-A 交互：ctrl 滚轮缩放与侧栏分隔条拖拽（ReaderToolbar/ReaderShortcuts/SplitPane 集成）', async () => {
+  skipIfPending(P7A_DEPS)
+  const title = '智慧水务 e2e 交互链文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // ctrl+滚轮缩放：工具栏百分比读数 100% → 上滚一步 110%（ReaderShortcuts→store→
+  // ReaderToolbar 全链；data-testid 锚定——工具栏另有静态「100%」复位按钮，
+  // 文本类选择器会严格模式双命中）
+  const zoomLabel = win.getByTestId('zoom-label')
+  await expect(zoomLabel).toHaveText('100%')
+  await win.keyboard.down('Control')
+  await win.mouse.wheel(0, -120)
+  await win.keyboard.up('Control')
+  await expect(zoomLabel).toHaveText('110%')
+
+  // 分隔条拖拽：pane 计算宽度随拖拽增大（SplitPane 指针会话 → 宽度状态 → 样式）
+  const pane = win.getByTestId('split-pane-pane')
+  const widthBefore = await pane.evaluate((el) => parseFloat(getComputedStyle(el).width))
+  const handleBox = await win.getByRole('separator').boundingBox()
+  expect(handleBox).not.toBeNull()
+  const hx = handleBox!.x + handleBox!.width / 2
+  const hy = handleBox!.y + Math.min(handleBox!.height / 2, 200)
+  await win.mouse.move(hx, hy)
+  await win.mouse.down()
+  await win.mouse.move(hx + 80, hy, { steps: 4 })
+  await win.mouse.up()
+  const widthAfter = await pane.evaluate((el) => parseFloat(getComputedStyle(el).width))
+  expect(widthAfter - widthBefore).toBeGreaterThanOrEqual(70)
+  await app.close()
+})
+
+test('P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成）', async () => {
+  skipIfPending(P7A_DEPS)
+  const title = '智慧水务 e2e 复制链文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  // 程序化选区 + ctrl+c → 主进程 clipboard 模块读回断言（渲染进程 readText 无权限
+  // ——NotAllowedError 实证；主进程读取即真实系统剪贴板，集成语义不打折）
+  await known.selectText()
+  await win.keyboard.press('Control+c')
+  const clipped = await app.evaluate(({ clipboard }) => clipboard.readText())
+  expect(clipped).toContain(PDF_KNOWN_TEXT)
   await app.close()
 })

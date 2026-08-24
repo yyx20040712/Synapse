@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T10:49:35.8284153Z",
+    "generatedAt":  "2026-08-24T11:02:28.5587006Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -111,7 +111,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "9a86223eb567a65e7b54f39cdf2be581a8cfd5b248c42b5619e30e2b8a4a38e9"
+                      "sha256":  "261103142b338adcaab31f0c5860a7be789d54fd01c1e92ed443d2edde96101f"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -131,7 +131,7 @@
                   },
                   {
                       "path":  "tests/security/web-preferences.test.ts",
-                      "sha256":  "b0e2213d30e5c886b399bc7d366373fb921d496d337a057e6994c7b5742e5c4a"
+                      "sha256":  "f3fe060606b0ccf2dbf9f6f26181e447cf6ea52de96e99454a69c9e46d74652f"
                   },
                   {
                       "path":  "tests/unit/db/connection.test.ts",

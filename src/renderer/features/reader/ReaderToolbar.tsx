@@ -108,7 +108,7 @@ export function ReaderToolbar(props: {
         >
           −
         </button>
-        <span className="w-10 text-center" style={{ color: 'var(--text-dim)' }}>
+        <span data-testid="zoom-label" className="w-10 text-center" style={{ color: 'var(--text-dim)' }}>
           {Math.round(zoom * 100)}%
         </span>
         <button
