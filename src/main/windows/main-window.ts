@@ -1,6 +1,6 @@
 // b3: P7-B
 /**
- * [SR2-TABS-04] 主窗口 —— 退出拦截（工单：open / strong）
+ * [SR2-TABS-04] 主窗口 —— 退出拦截（工单：done / strong）
  * （承接 SR-INFRA-09 安全 webPreferences 职责——历史规约见 git；本头注为
  * P7-B 增量工单规约，安全件现状=配置即测试全部保留）
  *
@@ -117,4 +117,57 @@ export function createMainWindow(
   }
 
   return win
+}
+
+// ── 退出拦截（TABS-04 行为层）──────────────────────────────────────
+
+/** renderer push 上报的 dirty 缓存（push 模式：close 时无需反向询问 renderer，
+ *  规避 close 事件内再等 renderer 应答的时序复杂度——头注行为层裁决） */
+let quitDirtyCached = false
+
+/** IPC 上报落点（bootstrap 注入 IpcDeps.setQuitDirty → 此处） */
+export function setQuitDirty(dirty: boolean): void {
+  quitDirtyCached = dirty
+}
+
+export function getQuitDirty(): boolean {
+  return quitDirtyCached
+}
+
+/** 判定函数（头注接口层要求导出）：dirty → 拦截；clean → 放行默认关闭 */
+export function quitDirtyGuard(dirty: boolean): boolean {
+  return dirty
+}
+
+/** 确认框文案单源（测试锚定同一常量——INV-11 精神） */
+export const QUIT_CONFIRM_MESSAGE =
+  '有未保存的修改（灰点标记的标签页），退出后将丢失未落库部分。确认退出？'
+
+export interface QuitGuardDeps {
+  /** 确认框（模态）：resolve true=确认退出，false=取消 */
+  confirmQuit: (message: string) => Promise<boolean>
+}
+
+/**
+ * close 事件守卫流（导出供测试与 bootstrap 装配复用）：
+ * clean 放行；dirty → preventDefault → 确认框 → 确认=destroy 强制关闭（destroy
+ * 不再触发 close，无重入）/取消=窗口保持（dirty 缓存不迁）。确认框模态天然挡住
+ * 弹出期间的重复 close（头注防重入依据）。对话框异常按取消处理：窗口保持可
+ * 重试，避免 preventDefault 后关闭路径死锁（deepseek W1 处置）。
+ */
+export async function handleCloseWithQuitGuard(
+  dirty: boolean,
+  event: { preventDefault(): void },
+  win: { destroy(): void },
+  deps: QuitGuardDeps
+): Promise<void> {
+  if (!quitDirtyGuard(dirty)) return
+  event.preventDefault()
+  let confirmed = false
+  try {
+    confirmed = await deps.confirmQuit(QUIT_CONFIRM_MESSAGE)
+  } catch {
+    confirmed = false
+  }
+  if (confirmed) win.destroy()
 }

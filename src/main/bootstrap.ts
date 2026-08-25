@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import {
   BrowserWindow,
   Menu,
+  dialog,
   net,
   protocol,
   screen,
@@ -36,7 +37,7 @@ import { registerIpc } from './ipc/register'
 import { registerAppFileProtocol } from './protocol/app-file.protocol'
 import { applyCsp } from './security/csp'
 import { createElectronDialogs } from './dialogs'
-import { createMainWindow } from './windows/main-window'
+import { createMainWindow, handleCloseWithQuitGuard, getQuitDirty, setQuitDirty } from './windows/main-window'
 import { loadBounds, saveBounds, type WindowBounds } from './windows/window-state'
 import { fetchJson, fetchText, pingHost } from './http/http-client'
 import { EVENT_CHANNELS } from '../shared/ipc/api-surface'
@@ -94,7 +95,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       ),
       shell,
       userDataDir,
-      ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike })
+      ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
+      setQuitDirty
     })
   )
   applyCsp(session.defaultSession)
@@ -127,6 +129,26 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       const b = window.getBounds()
       void saveBounds(userDataDir, { x: b.x, y: b.y, width: b.width, height: b.height })
     }
+  })
+
+  // TABS-04 退出拦截：dirty 态 close → preventDefault+模态二次确认（确认=destroy
+  // 强制关闭——destroy 不再触发 close 无重入）。注册在 saveBounds 监听之后：
+  // 确认退出路径下窗口几何已由前一个监听保存。
+  window.on('close', (event) => {
+    void handleCloseWithQuitGuard(getQuitDirty(), event, window, {
+      confirmQuit: (message) =>
+        dialog
+          .showMessageBox(window, {
+            type: 'warning',
+            message,
+            buttons: ['确认退出', '取消'],
+            // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据（deepseek W2）
+            defaultId: 1,
+            cancelId: 1,
+            noLink: true
+          })
+          .then((r) => r.response === 0)
+    })
   })
 
   // 幂等 shutdown：window-all-closed 与 before-quit 都会触发，二次 close 未定义

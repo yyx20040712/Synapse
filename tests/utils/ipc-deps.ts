@@ -12,6 +12,7 @@ export interface IpcDepsOverrides {
   shell?: IpcDeps['shell']
   ping?: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   userDataDir?: string
+  setQuitDirty?: (dirty: boolean) => void
 }
 
 export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
@@ -37,6 +38,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
         openExternal: async () => undefined
       },
     userDataDir: over.userDataDir ?? 'C:/synapse-test-user-data',
-    ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 }))
+    ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 })),
+    setQuitDirty: over.setQuitDirty ?? (() => {})
   }
 }

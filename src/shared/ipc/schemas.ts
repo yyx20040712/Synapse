@@ -127,3 +127,6 @@ export const netDiagResSchema = z.array(netDiagItemSchema)
 
 // ── system（外链经守卫后由系统浏览器打开）──────────────────────────
 export const openExternalReqSchema = z.object({ url: z.string().min(1).max(2048) }).strict()
+
+/** 退出拦截 dirty 上报（TABS-04：renderer 聚合信号变化沿 push 到 main 缓存） */
+export const setQuitDirtyReqSchema = z.object({ dirty: z.boolean() }).strict()

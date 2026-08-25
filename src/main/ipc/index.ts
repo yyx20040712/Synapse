@@ -24,6 +24,8 @@ export interface IpcDeps {
   userDataDir: string
   /** 网络诊断探活（http-client.pingHost 的包装，探 ALLOWED_REMOTE_HOSTS） */
   ping: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
+  /** TABS-04 退出拦截：renderer dirty 上报落点（main-window 模块缓存） */
+  setQuitDirty: (dirty: boolean) => void
 }
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {

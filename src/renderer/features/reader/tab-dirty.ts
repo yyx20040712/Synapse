@@ -11,7 +11,7 @@
  *   状态归 TabState.dirty（TABS-01 建位）——信号写入点在对应失败路径
  *   （AnnotationLayer 失败分支 / notes.store 状态镜像读取），成功重试后清除
  * - 消费：TabBar.tsx 灰点渲染 + 关闭脏 tab 二次确认（confirm 文案含文献名）+
- *   退出拦截上报（SR2-TABS-04 的 dirty 输入=任一 tab dirty）
+ *   退出拦截上报（TABS-04 的 dirty 输入=任一 tab dirty）
  *
  * ── 接口层 ──
  * - export function isTabDirty(...): boolean（纯函数核心）

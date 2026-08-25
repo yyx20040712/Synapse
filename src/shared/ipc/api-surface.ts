@@ -69,7 +69,8 @@ export const API_SURFACE = {
     diagNetwork: { channel: 'settings/diag-network', Req: S.voidReqSchema, Res: S.netDiagResSchema }
   },
   system: {
-    openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema }
+    openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema },
+    setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema }
   }
 } satisfies Record<string, Record<string, Endpoint>>
 

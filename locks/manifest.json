@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-24T15:24:33.7358263Z",
+    "generatedAt":  "2026-08-25T04:40:26.4665195Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -71,11 +71,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "afb0e4644da6bf64a3fca468ec6ec974f93f205a319ba0efc05e1b5512dde0fd"
+                      "sha256":  "9acc8191b3015c5e9fb68a2600e251c8e3133d1866bf0190c8d60e53b1226c09"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "edda59b8e36093d9b13e012e4a2cb3b5d36d1673a452786cc5328851c4ae279b"
+                      "sha256":  "b8b7a9b0d93b4bd8d8dbee8b38e69033e6a5d696b3e8dab91f3f384b318d073e"
                   },
                   {
                       "path":  "src/shared/models/annotation.ts",
@@ -338,6 +338,10 @@
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
                   },
                   {
+                      "path":  "tests/unit/windows/quit-dirty-guard.test.ts",
+                      "sha256":  "69df8acb312b4eac4767b019c1615e62ea977811184ec56a17ea3ded6a6cb9a6"
+                  },
+                  {
                       "path":  "tests/unit/windows/window-state.test.ts",
                       "sha256":  "7e13732d7252a56a5c8a1956adff6f565cd6ca9aa4432b5cb2ee1efb31595497"
                   },
@@ -351,7 +355,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "64634dec219b3fd8eaf5d2f420d58f91db5a1839ada5aeb17f5d6e84eec827b7"
+                      "sha256":  "a0a25af30a05c261b3d1af715e5902b6dd6efd61ee0b249e5517146971924ad2"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

@@ -8,6 +8,7 @@ import { ReaderPage } from '../features/reader/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
+import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
 
 type ViewId = 'library' | 'reader' | 'settings'
 
@@ -59,6 +60,13 @@ class ErrorBoundary extends Component<
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
+  // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
+  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer
+  const quitDirty = useTabDirtyAggregate()
+  useEffect(() => {
+    // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
+    window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)
+  }, [quitDirty])
 
   // "打开文献"请求：切到阅读器 tab（请求本体的补读/监听在 ReaderPage，见 open-paper-bus）
   useEffect(() => {
