@@ -234,6 +234,13 @@
 > 装配入 v1 且 v1 无生产者显式声明）；INV-16~18 预登记；导出会话状态机表就绪
 > （AI-02/03 工单头注母本）。审查与裁决实录=docs/reports/2026-08-25_ai-plan-review.md。
 
+> **执行实况注记（2026-08-27）**：应用面第一批工单化完成（1516a97——SR2-AI-01~05
+> 五张票面过 deepseek plan 门 r2 PW+GLM 二审；状态机迁移表/载荷 schema/目录隔离
+> 守卫/幂等范围/断点语义边界全数入票面）。**SR2-AI-01 ✅**（222962c——迁移 003+
+> repo 六方法+AiNote 单源契约+INV-25 级联语义登记已锚定；TDD 红证 8/8→verify
+> 389 用例）。下一单 SR2-AI-02（票面已就位=src/renderer/features/reader/
+> CorpusExtractor.ts 头注——含四态迁移表与 corpusItemSchema 字段清单）。
+
 > **第四轮裁决增容（2026-08-25 蓝图 §4.3，ADR-0015）——SR2-AI-06~10 回灌与联动组**：
 > 06 伴随进程文件协议（pending job/status+心跳/产物 corpus-ai——应用零 LLM 出网
 > 保持，E1=B'）；07 回灌导入器（ai-notes/import+list 通道 [locked-change]，幂等，
