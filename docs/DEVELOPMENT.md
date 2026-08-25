@@ -36,6 +36,14 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - **时间/ID**：`new Date().toISOString()` / `crypto.randomUUID()`。
 - **样式**：颜色一律 `var(--accent)` 等主题变量（theme.css）；Tailwind 只用于布局类（flex/p-2/text-sm）。
 - **zod**：一律 `.strict()`；带默认值字段在 z.input 侧可省略。
+- **片段/标注排序**：一切排序消费 `sortByDocumentOrder`（`@shared/annotation-order`，
+  INV-24 单源——禁字符串字典序比较）；「页码:序号」字符串仅显示用。
+- **笔记保存状态显示**：`deriveSaveStatus`/`detectSaveFailed` 在
+  `renderer/shared/save-status.ts`（单一推导点；消费方禁本地另推）。
+- **Toast 在 .ts（非组件）消费**：`import { showToast } from '.../shared/ui/toast-store'`
+  （组件才走 Toast.tsx 再导出——typecheck jsx 关卡强制）。
+- **锚点跳转**：一切「跳到某标注」经 `locateAnchor`（reader/anchor-locate.ts，
+  INV-20 单入口三层防线 exact/page/paper）——禁各写降级。
 - **不要**：axios/dayjs/lodash/immer——用原生 fetch/Date/展开运算符/Zustand set。
 
 ## 4. 覆盖率门槛收紧计划
