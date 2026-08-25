@@ -34,6 +34,7 @@
 | INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+锚点定位服务（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享） | 单测（定位服务三防线）+消费方用例（P7-C N1/SR2-AI-08/LG-04） | 未锚定（规划期预登记；锚定随 P7-C N1 与 SR2-AI-08） |
 | INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 未锚定（规划期预登记；锚定随 SR2-AI-10） |
 | INV-22 | 退出拦截 dirty 链路：renderer 聚合信号（useTabDirtyAggregate）沿变化沿 push 上报 system/set-quit-dirty（禁止 close 事件内反向拉取 renderer）；main 模块缓存值为 close 守卫唯一判定源；dirty close=preventDefault+模态二次确认（默认焦点=取消），确认=destroy（不再触发 close，无重入），对话框异常按取消处理（窗口保持可重试）。已知窄窗（deepseek r2 WARN 存档）：push 模式存在一跳上报延迟——工单头注裁决权衡过，pull 模式时序复杂度更差不采 | main-window.ts（SR2-TABS-04，2026-08-25 deepseek W1/W2 处置后定稿）+P7-B B3-问2 退出拦截裁决 | 单测（quit-dirty-guard.test 七用例：判定/缓存/放行/确认/取消/对话框异常/通道透传）+装配级 e2e（P7-B 收官「退」序列收口后升已锚定） | 部分（单元级已锚 2026-08-25；装配级待 P7-B 收官 e2e） |
+| INV-23 | 撤销栈语义：栈 per-tab 模块级自持（随 closeTab 清理，不跨 tab）；LIFO+深度 50 FIFO 截断；api 失败不弹栈可重试；同篇 in-flight 互斥（busy，他篇不阻塞——Set 互斥）；delete 逆重建新 id 后全栈 remap 旧 id 引用（按对象身份跳过被撤条目）；成功后按对象身份移除（indexOf——await 期间入栈/FIFO 截断致下标漂移不误删） | annotation-undo.ts（SR2-UNDO-01，2026-08-25 deepseek r2~r6 五轮收敛定稿） | 单测（annotation-undo.test 15 用例：三逆操作/remap 三跨格序列/互斥含并发篇/身份移除含截断挤出/截断/失败重试/空栈/隔离） | 已锚定（单测级，2026-08-25） |
 
 ## 维护规则
 

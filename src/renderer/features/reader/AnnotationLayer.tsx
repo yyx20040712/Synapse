@@ -35,6 +35,7 @@ import type { Annotation, AnnotationColor, AnnotationKind, AnnotationRect } from
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
+import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
 import { COLOR_SWATCH } from './annotation-style'
@@ -48,8 +49,7 @@ const DELETE_CONFIRM = '删除这条标注？'
 /** 重锚后的显示矩形（id → rects；缺项回退存量 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>
 
-/** kind+color+归一化矩形 → 色块样式（荧光笔语义：multiply 混合下色块不透明——
- *  白纸×色=色、黑字×色=黑字；下划线为合并矩形下沿 2px 实条，底边随行盒平齐） */
+/** kind+color+归一化矩形 → 色块样式（荧光笔语义：multiply 混合下色块不透明；下划线为合并矩形下沿 2px 实条底边平齐） */
 function rectStyle(kind: AnnotationKind, color: AnnotationColor, r: AnnotationRect): CSSProperties {
   const base: CSSProperties = {
     left: `${r.x * 100}%`,
@@ -70,8 +70,7 @@ interface PopupTarget {
   rect: AnnotationRect
 }
 
-/** 复制失败的动作型提示（同步抛错与写入拒绝双路径共用；提示重试路径——
- *  菜单已乐观收起，重试=重新点击标注） */
+/** 复制失败的动作型提示（双路径共用；菜单已乐观收起，重试=重新点击标注） */
 const COPY_FAILED = '复制到剪贴板失败，可点击标注重试'
 
 export function AnnotationLayer(props: {
@@ -88,8 +87,7 @@ export function AnnotationLayer(props: {
 
   const pageAnnotations = annotations.filter((a) => a.page === page)
 
-  // 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算
-  // rects；任一步失败回退存量 rects。仅显示层重锚，不回写库（避免每次打开放大写量）
+  // 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算 rects；失败回退存量，仅显示层不回写库
   useEffect(() => {
     if (pageRoot === null) {
       return
@@ -144,6 +142,7 @@ export function AnnotationLayer(props: {
       const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
       const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
       useReaderStore.getState().updateAnnotation(saved)
+      pushUndo(a.paperId, { kind: 'comment-edit', before: a })
       useReaderStore.getState().clearTabDirty(a.paperId)
       setEditing(null)
       onChanged()
@@ -177,6 +176,7 @@ export function AnnotationLayer(props: {
     try {
       await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
       useReaderStore.getState().removeAnnotation(a.id)
+      pushUndo(a.paperId, { kind: 'delete', annotation: a })
       useReaderStore.getState().clearTabDirty(a.paperId)
       setEditing(null)
       setMenu(null)

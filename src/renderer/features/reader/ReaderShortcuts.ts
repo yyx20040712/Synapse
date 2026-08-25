@@ -10,6 +10,8 @@
  *   editable 目标由 keymap 避让（原生复制/粘贴透传）
  * - 翻页键位映射表：PageUp/PageDown、ArrowLeft/ArrowRight → prevPage/nextPage
  *   （表驱动注册——P7-F 连续滚动时键位语义迁移只改本表）
+ * - ctrl+z：撤销标注操作栈（actions.undo——reader.store.undo 动作面）；editable
+ *   焦点由 keymap 避让走 textarea 原生 undo（UNDO-01：本栈不接管编辑场景）
  * - ctrl+滚轮缩放：document wheel 监听（本模块统一持有，成对注销，passive:false
  *   以允许 preventDefault 阻止 Chromium 页面缩放）；ctrlKey 时 preventDefault 并调
  *   actions.zoomStep(±1)（deltaY<0=上滚放大）；无 ctrl 透传
@@ -69,13 +71,15 @@ export interface ReaderShortcutActions {
   prevPage(): void
   nextPage(): void
   zoomStep(dir: 1 | -1): void
+  undo(): void
 }
 
 export function useReaderShortcuts(actions: ReaderShortcutActions): void {
-  const { prevPage, nextPage, zoomStep } = actions
+  const { prevPage, nextPage, zoomStep, undo } = actions
   useEffect(() => {
     const bindings: readonly KeyBinding[] = [
       { key: 'c', ctrl: true, preventDefault: true, handler: copySelection },
+      { key: 'z', ctrl: true, preventDefault: true, handler: undo },
       // 翻页键 preventDefault：阻断可滚动视口的原生滚动，防「滚动+翻页」双移动
       ...PAGE_KEYS.map(
         (p): KeyBinding => ({
@@ -101,5 +105,5 @@ export function useReaderShortcuts(actions: ReaderShortcutActions): void {
       unregisterKeymap(KEYMAP_ID)
       document.removeEventListener('wheel', onWheel)
     }
-  }, [prevPage, nextPage, zoomStep])
+  }, [prevPage, nextPage, zoomStep, undo])
 }

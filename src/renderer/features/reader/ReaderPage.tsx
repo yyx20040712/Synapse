@@ -79,12 +79,12 @@ export function ReaderPage(): JSX.Element {
         zoomStep: (dir: 1 | -1) => {
           const t = readActiveTab()
           if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
-        }
+        },
+        undo: () => void useReaderStore.getState().undo()
       }),
       []
     )
   )
-
   const [pageText, setPageText] = useState<PageText | null>(null)
   const [outlineOpen, setOutlineOpen] = useState(true)
   // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfCanvas onDocReady 上报，换文档即弃

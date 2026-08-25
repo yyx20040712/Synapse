@@ -67,7 +67,8 @@ function makeActions() {
   return {
     prevPage: vi.fn(),
     nextPage: vi.fn(),
-    zoomStep: vi.fn()
+    zoomStep: vi.fn(),
+    undo: vi.fn()
   }
 }
 
@@ -92,6 +93,15 @@ guardedDescribe('SR2-KEY-02', 'ReaderShortcuts —— 阅读器快捷键与滚�
     expect(pu.defaultPrevented).toBe(true)
     key(document, { key: 'ArrowLeft' })
     expect(a.prevPage).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('ctrl+z：撤销标注操作栈触发（UNDO-01 键位面；editable 避让由 keymap 层保障——textarea 内为原生 undo）', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const z = key(document, { key: 'z', ctrlKey: true })
+    expect(a.undo).toHaveBeenCalledTimes(1)
+    expect(z.defaultPrevented).toBe(true)
     unmount()
   })
 

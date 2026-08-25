@@ -7,7 +7,7 @@
  *   TabState = { paperId; fileUrl; fileName; page; totalPages; zoom; color;
  *   annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
  *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
- *   文件）；undo 栈不进 TabState，归 SR2-UNDO-01 模块级自持，plan 门 W2 裁决）
+ *   文件）；undo 栈不进 TabState，归 UNDO-01 模块级自持，plan 门 W2 裁决）
  *   （顶层便捷字段全部下钻 TabState——单一真相源，禁投影双源；消费方经
  *   s.tabs[s.activeId ?? ''] 选择器取）
  * - tab 生命周期状态机（宪法状态机前置；跨格序列为审计重点）。事件×态全表
@@ -63,6 +63,8 @@
 import { create } from 'zustand'
 import { api, unwrap } from '../../api/client'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
+import { clearStack, undo as runUndo, type UndoOutcome } from './annotation-undo'
+import { showToast } from '../../shared/ui/toast-store'
 
 export interface TabState {
   paperId: string
@@ -97,6 +99,8 @@ export interface ReaderStore {
    *  paperId——异步失败可能迟到于 tab 切换） */
   markTabDirty(paperId: string): void
   clearTabDirty(paperId: string): void
+  /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
+  undo(): Promise<void>
 }
 
 export function createReaderStoreInitialState() {
@@ -191,6 +195,8 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     }
     tabLoadSeq.delete(id)
     inflightOpen.delete(id)
+    // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
+    clearStack(id)
     const { tabs, order, activeId } = get()
     const nextTabs = { ...tabs }
     delete nextTabs[id]
@@ -343,6 +349,39 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       const { tabs } = get()
       if (tabs[paperId] === undefined) return
       set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: false } } })
+    },
+
+    async undo() {
+      // paperId 在 await 前捕获——undo 期间切换 tab 不得把同步落到别的 tab（INV-03 同族）
+      const paperId = get().activeId
+      if (paperId === null) return
+      let outcome: UndoOutcome
+      try {
+        outcome = await runUndo(paperId)
+      } catch (e) {
+        // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误（deepseek r3 W2）
+        console.error('[reader.store] undo 异常', e)
+        showToast('撤销失败，请重试', 'error')
+        return
+      }
+      if (!outcome.done) {
+        if (outcome.reason === 'api-failed') {
+          showToast('撤销失败，请重试', 'error')
+        }
+        return
+      }
+      const { tabs } = get()
+      const tab = tabs[paperId]
+      // undo 期间 tab 被关：DB 已撤销，列表随重开对齐，不追写已删 TabState
+      if (tab === undefined) return
+      const act = outcome.apply
+      const next =
+        act.type === 'remove'
+          ? tab.annotations.filter((x) => x.id !== act.id)
+          : tab.annotations.some((x) => x.id === act.annotation.id)
+            ? tab.annotations.map((x) => (x.id === act.annotation.id ? act.annotation : x))
+            : [...tab.annotations, act.annotation]
+      set({ tabs: { ...tabs, [paperId]: { ...tab, annotations: next } } })
     }
   }
 })

@@ -8,26 +8,14 @@
  * - 同文案同 kind 1s 内去重（防连点/批量失败刷屏）；按 message+kind 记忆——
  *   A→B→A 穿插序列仍拦第二条 A，不同 kind 同文案不互吞
  * - 自包含模块级订阅，不依赖状态库；Host 未挂载时调用安全（只入队不渲染）
+ * - 2026-08-25 拆分：队列纯逻辑移 toast-store.ts（.ts 消费方可导入，不被
+ *   tsconfig.node 的 jsx 关卡拦）；本文件再导出 showToast，既有消费方零改动
  */
 import { type CSSProperties, useEffect, useState } from 'react'
+import { dismiss, getToastItems, subscribeToasts, type ToastItem, type ToastKind } from './toast-store'
 
-export type ToastKind = 'info' | 'error' | 'success'
-
-interface ToastItem {
-  id: number
-  message: string
-  kind: ToastKind
-}
-
-/** 自动消失时长（ms） */
-const AUTO_DISMISS_MS: Record<ToastKind, number> = {
-  info: 3500,
-  success: 3500,
-  error: 6000
-}
-
-/** 同文案去重窗口（ms） */
-const DEDUPE_MS = 1000
+export { showToast } from './toast-store'
+export type { ToastKind } from './toast-store'
 
 /** 变体主题色：info 强调 / success 成功 / danger 危险（theme.css 变量） */
 const KIND_COLOR: Record<ToastKind, string> = {
@@ -42,64 +30,11 @@ const CARD_STYLE: CSSProperties = {
   color: 'var(--text)'
 }
 
-// ── 模块级队列（自包含订阅，与 React 树解耦） ──
-let items: ToastItem[] = []
-let nextId = 1
-/** 最近展示记忆：key=`${kind}:${message}` → 展示时刻。单槽会被穿插序列（A→B→A）
- *  洗掉，故用 Map；每次入队顺手清过期项，天然有界。 */
-const recentShown = new Map<string, number>()
-const listeners = new Set<(snapshot: ToastItem[]) => void>()
-const timers = new Map<number, number>()
-
-function notify(): void {
-  for (const update of listeners) update(items)
-}
-
-function dismiss(id: number): void {
-  const timer = timers.get(id)
-  if (timer !== undefined) {
-    window.clearTimeout(timer)
-    timers.delete(id)
-  }
-  items = items.filter((it) => it.id !== id)
-  notify()
-}
-
-/**
- * 弹出一条通知。同文案同 kind 在 1s 窗口内重复调用只生效一次
- * （A→B→A 穿插仍拦第二条 A；不同 kind 同文案不互吞）。
- * kind 缺省 info；error 停留 6s，其余 3.5s。
- */
-export function showToast(message: string, kind: ToastKind = 'info'): void {
-  const now = Date.now()
-  const key = `${kind}:${message}`
-  // 过期项清理：窗口仅 1s，条目天然稀少，Map 保持有界
-  for (const [k, at] of recentShown) {
-    if (now - at >= DEDUPE_MS) recentShown.delete(k)
-  }
-  if (now - (recentShown.get(key) ?? -Infinity) < DEDUPE_MS) return
-  recentShown.set(key, now)
-
-  const item: ToastItem = { id: nextId, message, kind }
-  nextId += 1
-  items = [...items, item]
-  timers.set(item.id, window.setTimeout(() => dismiss(item.id), AUTO_DISMISS_MS[kind]))
-  notify()
-}
-
 /** 挂在 App 根部：订阅通知队列，右上角堆叠渲染（可手动 × 关闭） */
 export function ToastHost(): JSX.Element {
-  const [list, setList] = useState<ToastItem[]>(items)
+  const [list, setList] = useState<ToastItem[]>(getToastItems)
 
-  useEffect(() => {
-    const update = (snapshot: ToastItem[]): void => {
-      setList(snapshot)
-    }
-    listeners.add(update)
-    return () => {
-      listeners.delete(update)
-    }
-  }, [])
+  useEffect(() => subscribeToasts(setList), [])
 
   if (list.length === 0) return <></>
 

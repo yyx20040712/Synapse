@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T04:40:26.4665195Z",
+    "generatedAt":  "2026-08-25T11:16:45.7401884Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -222,6 +222,10 @@
                       "sha256":  "006fec34e5a9f0ef6d54507ae86cb6ce04526e9b8f43a468af331addc0525e67"
                   },
                   {
+                      "path":  "tests/unit/renderer/annotation-undo.test.ts",
+                      "sha256":  "0c3fec0f4c0db142a602a72f899347459370cde4a9fe183b9ee8ec2f69287f5c"
+                  },
+                  {
                       "path":  "tests/unit/renderer/keymap.test.ts",
                       "sha256":  "e9cf9ddb57956e898a3610ff8f6a36da32d32e4f0cd65856af1bc12fd0b7d307"
                   },
@@ -247,7 +251,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
-                      "sha256":  "f41ffdc956bd2e0c78b847052ae6f6064306af93c15b7d140454df5bad27845b"
+                      "sha256":  "1f39613d523bfea1f6e39bf11cc60106114f2276b2fecf88904d63940eded59f"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

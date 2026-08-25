@@ -32,6 +32,7 @@ import { ANNOTATION_COLORS } from '@shared/constants'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './annotation-anchor'
+import { pushUndo } from './annotation-undo'
 import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
 import { useReaderStore } from './reader.store'
 
@@ -160,6 +161,8 @@ export function SelectionLayer(props: {
     try {
       const saved = await unwrap(api.reader.saveAnnotation({ paperId, annotation: input }))
       onSaved(saved)
+      // 撤销栈：create 逆=delete（UNDO-01 成功路径入栈）
+      pushUndo(paperId, { kind: 'create', annotation: saved })
       // 保存落地即清除该面灰点（TABS-03 乐观清除语义）
       useReaderStore.getState().clearTabDirty(paperId)
       setPending(null)
