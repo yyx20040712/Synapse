@@ -30,6 +30,9 @@
 | INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件（类型消费循 PdfCanvas 再导出模式）；白名单变更=改 ESLint 规则+[locked-change]，禁第四处直连 | 本册+eslint.config.js no-restricted-imports（2026-08-25 计划审查 R1 定稿——原「PdfCanvas 单点」表述与 TextLayer.tsx:29 事实不符，白名单化收口） | ESLint 强制 | 未锚定（2026-08-25 规划期预登记；锚定随 SR2-AI-02 落地） |
 | INV-17 | 语料导出幂等：corpus md front-matter 不含 exportedAt（时间戳只进 manifest）；contentSha/fulltextSha=文件字节 sha256；同库重导出逐字节稳定 | ADR-0011 v1.1+corpus.assemble.ts（2026-08-25 计划审查 R6 定稿——消除「sha 不含 exportedAt」与 front-matter 含时间戳的口径矛盾） | golden+结构断言（SR2-AI-03） | 未锚定（规划期预登记；锚定随 SR2-AI-03） |
 | INV-18 | 导出会话协议：manifest 终局单写（临时文件+rename 原子替换）；会话开始删旧 manifest+清空重建 corpus/fulltext/figures；单会话单飞（EXPORT_BUSY）；中断=无 manifest=工具侧不可激活，重跑即修复 | ADR-0011 v1.1+corpus.export.service（2026-08-25 计划审查 R5/R8/R9 定稿；状态机表=ai-plan-review §6） | 单测+e2e（SR2-AI-03/04） | 未锚定（规划期预登记；锚定随 SR2-AI-03/04） |
+| INV-19 | AI 锚定段渲染对等、存储独立：AI 笔记经 verifyQuote 重锚入标注层同一几何管线渲染（七问分色单源）；数据永不写 annotations 表；AI 标注 v1 只读（无编辑/删除写路径） | ADR-0015+AnnotationLayer 消费面（2026-08-25 N2 裁决——D3 独立表的渲染面延伸） | 单测+组件测试（SR2-AI-09） | 未锚定（规划期预登记；锚定随 SR2-AI-09） |
+| INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+锚点定位服务（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享） | 单测（定位服务三防线）+消费方用例（P7-C N1/SR2-AI-08/LG-04） | 未锚定（规划期预登记；锚定随 P7-C N1 与 SR2-AI-08） |
+| INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 未锚定（规划期预登记；锚定随 SR2-AI-10） |
 
 ## 维护规则
 

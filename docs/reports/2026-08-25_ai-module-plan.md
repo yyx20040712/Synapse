@@ -13,6 +13,11 @@
 > 保幂等 sha 口径（R6）；⑥figures 定全页快照（R7）；⑦ai_notes v1 无生产者
 > 显式声明+[ai:*] 装配入 v1（R4，ADR-0011 v1.1 同步）；⑧骨架增补四件+工具面
 > 测试定 vitest（R11/R14）。§2.2/§2.3/§2.6/§4 已按定稿改写。
+> **第四轮落档（2026-08-25 蓝图 §4.3 裁决）**：⑨ai_notes 粒度改一行一锚定段+
+> question 列（N2，§2.1 DDL 已改）；⑩回灌与联动组 SR2-AI-06~10（B' 伴随进程文件
+> 协议，ADR-0015）+脉络组 SR2-LG-01~05（ADR-0014）排期见 ROADMAP P7-G 增容节与
+> P7-H 新节——本计划仍是 AI-01~05 的工单化母本，06~10/LG 组规约随各自工单化批次
+> 另出（前置=ADR-0015/0014 契约）。
 
 ## 1. 总体架构：单仓库两面
 
@@ -43,12 +48,15 @@ CREATE TABLE ai_notes (
   annotation_id TEXT REFERENCES annotations(id) ON DELETE SET NULL,
     -- 可空：篇级语料（无锚）∥ 挂用户/AI 标注的段级语料
   role         TEXT NOT NULL,              -- 'first-read' | 'second-read' | 'adjudicate'
+  question     TEXT NOT NULL,              -- 'Q1'..'Q7' | 'divergence'（N2：一行=一锚定段+
+                                           --   一问；divergence=裁决者分歧报告节。可空锚=
+                                           --   篇级回答，Q3/Q6/Q7 允许无锚——Q3 缺失物无原文）
   model        TEXT NOT NULL,              -- 实际模型标识（D2b 可配置的运行时记录）
   quote_text   TEXT NOT NULL DEFAULT '',   -- 自持锚定三元组（与 annotations 解耦——
   prefix_text  TEXT NOT NULL DEFAULT '',   --   AI 语料不污染用户标注 schema；渲染/装配
   suffix_text  TEXT NOT NULL DEFAULT '',   --   走 verifyQuote 文本重锚既有路径）
   anchor_page  INTEGER,                    -- AI 报告的页码（1 基，辅助定位）
-  content_md   TEXT NOT NULL,              -- 七问分节 md（schema 见蓝图 §4.2）
+  content_md   TEXT NOT NULL,              -- 单段内容（该问在该锚定段的回答；N2 粒度）
   created_at   TEXT NOT NULL,
   updated_at   TEXT NOT NULL
 );
@@ -60,6 +68,10 @@ CREATE INDEX idx_ai_notes_paper ON ai_notes(paper_id, role, created_at);
 由导出装配消费，写入只经应用 IPC（未来 AI-6 若需回灌再立项，v1 工具侧语料
 落 `corpus-ai/` 目录与导出目录同级，应用导入器不做）。FTS：ai_notes 不入
 FTS（v1——检索面先由 zcode 侧 grep 承担，接入应用搜索属 P7-E 候选）。
+**（第四轮修订，2026-08-25 蓝图 §4.3 N2 + ADR-0015：粒度改一行一锚定段+
+question 列；回灌经 ADR-0015 B' 文件协议由 SR2-AI-06~10 落地——「v1 无生产者」
+声明解除时点=SR2-AI-07 导入器；[ai:*] 装配按 role→question 分组，ADR-0011 语法
+不变。）**
 
 ### 2.2 全文与图提取管线（跨进程数据流——本模块最难接缝）
 
@@ -164,7 +176,7 @@ tests/unit/tools/queue.test.ts                   （vitest 宿主——弃 node:
 
 | # | 工单 | file | 依赖 | 验收要点（v1.1 增补并入） |
 | --- | --- | --- | --- | --- |
-| SR2-AI-01 | ai_notes 数据基座 | migrations/003+repo | P7-C | repo 单测全绿；annotations 零改动证明（diff 空）；DDL 含 role CHECK；头注载明「v1 无生产者（生产者=测试夹具，消费者=导出装配，写入面=未来回灌工单）」 |
+| SR2-AI-01 | ai_notes 数据基座 | migrations/003+repo | P7-C | repo 单测全绿；annotations 零改动证明（diff 空）；DDL 含 role+question CHECK（一行一锚定段，N2/ADR-0015）；头注载明「生产者=SR2-AI-07 导入器（此前=测试夹具），消费者=导出装配」 |
 | SR2-AI-02 | 全文/图提取管线 | CorpusExtractor.ts+事件桥 | 01 | 多页夹具页界断言/全页快照+裁剪数学断言/事件通道契约三面锚；**ESLint pdfjs 白名单（[locked-change]）+PdfCanvas:27/TextLayer:21 头注修正**；Extractor 自持生命周期（无 ReaderPage 耦合证明） |
 | SR2-AI-03 | 语料导出五件套 | corpus.export.service+assemble | 02 | golden+结构断言（ADR-0011 **v1.1** 口径：含 [ai:*] 段装配）+幂等重导逐字节稳定；**manifest 终局单写+errors+会话清空重建**；装配单源接续 P7-C 的 corpus.assemble.ts |
 | SR2-AI-04 | 导出 UI 入口 | SettingsPage 扩展 | 03 | CorpusExportSection 组件+进度+**App 层订阅（useExportCorpusEvents 成对清理）+完成/失败 toast（INV-02）**+e2e 全链（含中断重跑序列） |
