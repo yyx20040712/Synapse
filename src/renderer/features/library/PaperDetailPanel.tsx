@@ -1,28 +1,36 @@
+// b3: P7-C
 /**
- * [SR-LIB-04] PaperDetailPanel —— 文献详情侧栏（工单：done / weak）
+ * [SR2-C-06] PaperDetailPanel —— 库侧笔记编辑面下线（工单：open / strong；
+ * 历史工单 SR-LIB-04 产物承载——详情侧栏本体与导出/增强面维持）
  *
  * ── 行为层 ──
- * - 展示 PaperDetail 全量元数据（标题/作者/年份/期刊/DOI/摘要/来源/增强状态）
- * - 操作区：编辑元数据（MetaEditDialog 表单，保存走 api.library.updateMeta）、
- *   添加/移除标签（TagEditor）、打开笔记（NotesPanel）、增强按钮（api.enrich.fetch）、
- *   导出本篇报告（api.export_.report）、导出 BibTeX 题录（api.export_.bibtex——
- *   2026-08-24 链条核查修复：后端链一直完整但 UI 无入口，见
- *   docs/reports/2026-08-24_chain-audit.md §3.1）、DOI 外链（api.system.openExternal）
- * - 增强中禁用按钮并显示 spinner 态文案
+ * - 「方案切换=删除旧方案」红线：α 双层笔记编辑面自库侧下线——移除 noteOpen
+ *   state+「打开笔记」按钮+NotesPanel 挂载区+import（符号锚=noteOpen/NotesPanel
+ *   两标识符；C-02 先行实现行号会漂以符号锚为准）；编辑面唯一归阅读器侧栏
+ * - 替代入口：按钮「去阅读器写笔记」→ requestOpenPaper(detail.id)
+ *   （open-paper-bus.ts:17 同总线；App 切视图+ReaderPage 打开链既有零新增）；
+ *   本文件涉及「打开笔记（NotesPanel）」描述行同步删除，导出语料 md 入口
+ *   （SR2-C-02 产物）不动
  *
  * ── 接口层 ──
- * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
+ * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
  *
  * ── 架构层 ──
- * - 数据自取：useAsync(() => unwrap(api.library.detail({ paperId })))；
- *   标签/笔记组件从各自 features import——例外：由本文件作为组合根引用子组件
- *   （组合发生在页面层，store 不跨域）
- * - 增强/导出/外链按钮已接通全部后端（增强链/导出链/系统域随 Phase 5 落地）
- *   落地前点击按错误契约 toast，UI 形态先行
+ * - 改动面：本文件（净减约 30 行）/notes/NotesPanel.tsx（**删除**——纯 UI 组件
+ *   无其他消费方，save-status 纯函数已随 SR2-C-03 下沉 shared）/
+ *   scripts/check-quality.mjs 白名单**删** `PaperDetailPanel → notes/NotesPanel`
+ *   条目（:54）[locked-change]；`tab-dirty → notes/notes.store`（:56）与
+ *   `ReaderNotesPanel → notes/notes.store`（C-03 增）条目保持——notes.store
+ *   留驻 notes 域（五模块 ADR-0008+两消费方）
+ * - 核对义务：paper-detail-export.test.ts（受锁）mock 链若含 NotesPanel 面随本单
+ *   核对（预期零触碰）；FTS 连续性=notes 写路径不变（api.notes.save 同通道，
+ *   回归由既有 notes.store.test+FTS 用例覆盖——P7-C 验收锚点）
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - 动作类错误统一 ApiClientError → toast；详情加载失败走内联红条 + 重试
- *   （首载失败占位整栏，刷新失败窄条提示旧数据）；元数据/标签变更后 bump reload 重读详情
+ * - notes feature 剩 notes.store.ts（store 无 UI 依赖合法）；不做库侧只读笔记
+ *   预览（可发现性归阅读器，B3 裁决 1 原文）
+ * - 验收：verify 全绿+[locked-change] 尾注+人工视检（库侧无编辑面/「去阅读器
+ *   写笔记」到位/阅读器编辑可用）+翻 done 前移除根元素 data-ticket（规则 4b）
  */
 import { useEffect, useState } from 'react'
 import type { PaperSource, EnrichStatus } from '@shared/models/paper'
@@ -154,7 +162,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div data-ticket="SR2-C-06" className="flex flex-col gap-3 p-3">
       {error !== null && (
         <div
           className="flex items-center justify-between rounded border px-3 py-1 text-xs"

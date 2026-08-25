@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T11:54:12.9417210Z",
+    "generatedAt":  "2026-08-25T13:04:43.4505143Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -60,6 +60,10 @@
                   {
                       "path":  "src/main/db/migrations/002_indexes.sql",
                       "sha256":  "9ae7965b97f721a2db5dedd918f229779db4a917ec7c71d0324bc3b928322f05"
+                  },
+                  {
+                      "path":  "src/shared/annotation-order.ts",
+                      "sha256":  "d2eb78ea5b3461af3bbad2a37d17b2627325cba3e4a5be70a94d04822738bfe3"
                   },
                   {
                       "path":  "src/shared/app-error.ts",
