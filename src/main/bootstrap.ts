@@ -73,6 +73,11 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
         win.webContents.send(EVENT_CHANNELS.importProgress, e)
       }
     },
+    sendExportEvent: (e) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
+      }
+    },
     http: {
       fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
       fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })

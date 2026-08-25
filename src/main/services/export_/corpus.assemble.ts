@@ -54,6 +54,7 @@
  *   断言（无 exportedAt/引文数=标注数/序=C-01 序）+service 与 ipc 通道契约
  */
 import { sortByDocumentOrder } from '../../../shared/annotation-order'
+import type { AiNote, AiNoteQuestion, AiNoteRole } from '../../../shared/models/ai-note'
 import type { Annotation } from '../../../shared/models/annotation'
 import type { Note } from '../../../shared/models/note'
 import type { PaperDetail } from '../../../shared/models/paper'
@@ -70,6 +71,45 @@ export interface AiNoteEntry {
   source: string
   content: string
   page?: number
+}
+
+/** orderAiNotes 的有序产物（sourceRole/question 供消费方断言与分组展示） */
+export interface OrderedAiNoteEntry extends AiNoteEntry {
+  sourceRole: AiNoteRole
+  question: string
+}
+
+const ROLE_ORDER: Record<AiNoteRole, number> = {
+  'first-read': 0,
+  'second-read': 1,
+  adjudicate: 2
+}
+
+function questionOrder(q: AiNoteQuestion): number {
+  return q === 'divergence' ? 99 : Number(q.replace('Q', ''))
+}
+
+/**
+ * ai_notes 行 → 装配条目（AI-03 延展，R12 单源内）：排序=role（一读→二读→
+ * 裁决）→question（Q1..Q7，divergence 殿后）→createdAt→id（repo 基础序同键
+ * 兜底）；content 组装=`question: 内容`（question 标记入段——INTERFACE.md 声明）。
+ */
+export function orderAiNotes(notes: readonly AiNote[]): OrderedAiNoteEntry[] {
+  return [...notes]
+    .sort((a, b) => {
+      const roleDelta = ROLE_ORDER[a.role] - ROLE_ORDER[b.role]
+      if (roleDelta !== 0) return roleDelta
+      const qDelta = questionOrder(a.question) - questionOrder(b.question)
+      if (qDelta !== 0) return qDelta
+      return a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1
+    })
+    .map((n) => ({
+      source: n.model,
+      content: `${n.question}: ${n.contentMd}`,
+      page: n.anchorPage ?? undefined,
+      sourceRole: n.role,
+      question: n.question
+    }))
 }
 
 export interface CorpusAssembleInput {

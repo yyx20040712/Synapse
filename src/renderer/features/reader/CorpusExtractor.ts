@@ -53,7 +53,7 @@
  * - IPC 契约 [受锁]（本单已落）：api-surface export_ 域 corpusItem 通道+
  *   EVENT_CHANNELS.exportCorpus+schemas corpusItemReqSchema/事件两载荷；
  *   preload onExportCorpus 桥；main 侧 handler=stub（NOT_IMPLEMENTED 随
- *   SR2-AI-03 落地——真回传消费/落盘在 AI-03）
+ *   AI-03 落地——真回传消费/落盘随其工单）
  *
  * ── 生命周期层 ──
  * - 不做：取消 UI（v1 极简——会话单飞拒绝归 AI-03）；阅读器句柄复用（R2

@@ -22,6 +22,7 @@ export type AppErrorCode =
   | 'UPSTREAM_ERROR' // 上游返回异常数据
   | 'PARSE_ERROR' // 解析失败（PDF/PDF 元数据/BibTeX 上游 JSON）
   | 'CANCELLED' // 用户取消（如关闭对话框）
+  | 'EXPORT_BUSY' // 导出会话单飞：进行中拒绝第二会话（INV-18，AI-03 落地）
   | 'INTERNAL' // 未预期错误（兜底）
 
 export interface AppError {
@@ -47,6 +48,7 @@ export function err(code: AppErrorCode, message: string, detail?: string): Resul
 
 /** AppErrorCode 全集（toAppError 的结构化识别用；新增码必须同步这里） */
 const APP_ERROR_CODES: readonly AppErrorCode[] = [
+  'EXPORT_BUSY',
   'NOT_IMPLEMENTED',
   'INVALID_REQUEST',
   'NOT_FOUND',

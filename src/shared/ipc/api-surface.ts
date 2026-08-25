@@ -53,7 +53,8 @@ export const API_SURFACE = {
     report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
     corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },
-    corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema }
+    corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema },
+    corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },

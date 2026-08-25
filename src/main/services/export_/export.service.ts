@@ -29,6 +29,7 @@
  * ── 文化层 ──
  * - 测试：tests/unit/services/export.service.test.ts（已锁定，repos 桩）
  */
+import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { AppErrorCode } from '../../../shared/app-error'
@@ -190,6 +191,14 @@ export function createExportService(deps: { repos: Repos }): ExportService {
     },
 
     async writeCorpusSet(dir, entries) {
+      // 目录隔离守卫（AI-03 通道判定条款）：目标目录含五件套 manifest 时拒绝
+      // ——防轻量 md 覆盖 corpus/ 后工具按残留 manifest 误激活读新旧混合语料
+      if (existsSync(join(dir, 'manifest.json'))) {
+        throw new ExportDomainError(
+          'CONFLICT',
+          '目标目录已是五件套导出目录（含 manifest.json）——请选择其他目录，避免覆盖 AI 语料基座'
+        )
+      }
       const corpusDir = join(dir, 'corpus')
       try {
         await mkdir(corpusDir, { recursive: true })

@@ -48,7 +48,7 @@
  *   （时间戳只进 manifest per-paper 条目）；contentSha/fulltextSha=文件字节
  *   sha256（node:crypto 先例）；**逐字节稳定的范围=产物文件**（corpus/
  *   fulltext/figures 及其 sha）——manifest 自身含 exportedAt 不参与逐字节
- *   断言（golden 区分：内容 golden 逐字节+manifest 结构断言）
+ *   断言（golden 区分：内容 golden+manifest 结构断言）
  * - 单飞（R9，迁移表 idle 行）：进行中拒第二会话=app-error 新码 EXPORT_BUSY
  *   [受锁新增]——INV-18 单飞条款锚定；消费方折叠分支=UI 提示（INV-13 语义
  *   ——折叠面消费方必须分支处理，AI-04 接线）
@@ -69,13 +69,21 @@
  * - INTERFACE.md（interface-template.ts 静态单源，INV-11）：目录结构/
  *   front-matter 字段表/引文块语法/排序规则/页码基准（p.N 1 基——corpus.
  *   assemble 头注口径同源）/fulltext 页界 \f/figures 消费说明/版本承诺
+ * - **实现裁决（2026-08-27，开工落地）**：①通道名=export/corpus-session
+ *   （母本 §2.3 的 export/corpus 已被 C-02 单篇导出占用——更名避撞，交接书
+ *   v3 预警兑现）②目录选择经 ipc 层系统对话框（C-02 exportTo 同型——
+ *   dialogs 在 ipc 层；service 收已选 dir，单飞判定仍在本 service 单例）
+ *   ③progress 事件走 exportCorpus 通道（sendEvent 注入——sendProgress
+ *   同型先例，bootstrap 装配桶）
  *
  * ── 接口层 ──
  * - export function createCorpusExportService(deps): CorpusExportService
- * - IPC [受锁]：export/corpus {paperIds?} → {dir, fileCount, errorCount}
- *   （全库默认；会话终局 resolve）；export/corpus-item（AI-02 建通道，本单
+ * - exportCorpusSession({dir, paperIds?})：终局 resolve {dir,fileCount,errorCount}
+ * - corpusItem(req)：AI-02 回传通道消费端（流式落盘+会话推进；载荷失配
+ *   →INVALID_REQUEST 防御拒绝不扰动在途会话）
+ * - IPC [受锁]：export/corpus-session 通道（Req corpusSessionReqSchema/
+ *   Res corpusSessionResSchema）；export/corpus-item（AI-02 建通道，本单
  *   main 侧消费流式落盘）；exportCorpus 事件发送器经 bootstrap 装配桶注入
- *   （importProgress/sendProgress 同型先例）
  *
  * ── 架构层 ──
  * - main/services/export_ 域；依赖 repos（papers/annotations/notes/ai_notes
@@ -103,27 +111,277 @@
  *   原文）
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
+import { createHash } from 'node:crypto'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import type { AppErrorCode } from '../../../shared/app-error'
+import type {
+  CorpusItemReq,
+  CorpusSessionRes,
+  ExportCorpusEvent,
+  ExtractRequestEvent
+} from '../../../shared/ipc/schemas'
+import type { PaperDetail } from '../../../shared/models/paper'
+import type { Repos } from '../../db/repos'
+import type { FileStore } from '../import_/file-store'
+import { assembleCorpusMd, orderAiNotes } from './corpus.assemble'
+import { INTERFACE_MD } from './interface-template'
 
-import { NotImplementedError } from '../../../shared/app-error'
-import type { CorpusItemReq } from '../../../shared/ipc/schemas'
+/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等） */
+class SessionError extends Error {
+  readonly code: AppErrorCode
+  constructor(code: AppErrorCode, message: string) {
+    super(message)
+    this.code = code
+  }
+}
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'
+export interface CorpusExportDeps {
+  repos: Repos
+  fileStore: Pick<FileStore, 'resolveManagedPath'>
+  /** main→renderer 单向事件出口（bootstrap 注入——sendProgress 同型先例） */
+  sendEvent: (e: ExportCorpusEvent) => void
+  /** 时间源（测试注入——manifest exportedAt/幂等不参与产物断言） */
+  now?: () => string
+}
 
-/**
- * 会话服务工厂（AI-03 实现前占位形态）：corpusItem 消费端随本工单落地——
- * AI-02 已建 renderer 侧回传通道（CorpusExtractor+export/corpus-item 契约），
- * 本占位经 register 折叠 NOT_IMPLEMENTED → renderer failed 路径（链路可测）。
- */
+interface ManifestPaper {
+  paperId: string
+  file: string
+  title: string
+  contentSha: string
+  fulltextSha: string
+  figures: string[]
+  exportedAt: string
+}
+
+/** 在途会话态（单飞——工厂闭包唯一实例；终局即销毁不驻留） */
+interface ActiveSession {
+  sessionId: string
+  dir: string
+  queue: PaperDetail[]
+  current: { paperId: string; fulltext: string[]; figures: string[] } | null
+  papers: ManifestPaper[]
+  errors: Array<{ paperId: string; reason: string }>
+  done: number
+  total: number
+  resolve: (r: CorpusSessionRes) => void
+  reject: (e: SessionError) => void
+}
+
 export interface CorpusExportService {
-  /** 提取回传消费端：流式落盘+会话推进随本工单（AI-03）实现 */
+  /** 五件套会话（目录经 ipc 层系统对话框已选——INV-07；终局 resolve） */
+  exportCorpusSession(input: { dir: string; paperIds?: string[] }): Promise<CorpusSessionRes>
+  /** renderer 回传消费端（AI-02 通道：流式落盘+会话推进） */
   corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
 }
 
-export function createCorpusExportService(): CorpusExportService {
+const MANIFEST_TMP = 'manifest.tmp.json'
+
+export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportService {
+  const now = deps.now ?? (() => new Date().toISOString())
+  let session: ActiveSession | null = null
+
+  /** 会话开始清空重建（迁移表 idle 行）：三子目录+manifest 本体+tmp 残留；
+   *  目录根用户其他文件不动 */
+  async function cleanRebuild(dir: string): Promise<void> {
+    await rm(join(dir, 'manifest.json'), { force: true })
+    await rm(join(dir, MANIFEST_TMP), { force: true })
+    for (const sub of ['corpus', 'fulltext', 'figures']) {
+      await rm(join(dir, sub), { recursive: true, force: true })
+      await mkdir(join(dir, sub), { recursive: true })
+    }
+    await writeFile(join(dir, 'INTERFACE.md'), INTERFACE_MD, 'utf8')
+  }
+
+  function sendProgress(s: ActiveSession, phase: 'preparing' | 'streaming' | 'finalizing'): void {
+    deps.sendEvent({ type: 'progress', sessionId: s.sessionId, done: s.done, total: s.total, phase })
+  }
+
+  /** streaming→下一篇或 finalizing（advance——迁移表 streaming 行） */
+  async function advance(s: ActiveSession): Promise<void> {
+    const next = s.queue.shift()
+    if (next !== undefined) {
+      await startPaper(s, next)
+      return
+    }
+    // finalizing：manifest 终局单写（tmp+rename 原子替换）
+    sendProgress(s, 'finalizing')
+    const manifest = {
+      schemaVersion: 1,
+      exportedAt: now(),
+      papers: s.papers,
+      ...(s.errors.length > 0 ? { errors: s.errors } : {})
+    }
+    await writeFile(join(s.dir, MANIFEST_TMP), JSON.stringify(manifest, null, 2), 'utf8')
+    await rename(join(s.dir, MANIFEST_TMP), join(s.dir, 'manifest.json'))
+    const res: CorpusSessionRes = {
+      dir: s.dir,
+      fileCount: s.papers.length,
+      errorCount: s.errors.length
+    }
+    session = null
+    s.resolve(res)
+  }
+
+  /** 对一篇发 extract-request（url=app-file://<id>——papers.repo fileUrl 同源） */
+  async function startPaper(s: ActiveSession, paper: PaperDetail): Promise<void> {
+    s.current = { paperId: paper.id, fulltext: [], figures: [] }
+    const annotations = deps.repos.annotations.listByPaper(paper.id)
+    const req: ExtractRequestEvent = {
+      type: 'extract-request',
+      sessionId: s.sessionId,
+      paperId: paper.id,
+      url: `app-file://${paper.id}`,
+      annotations: annotations.map((a) => ({ id: a.id, rects: a.rects }))
+    }
+    sendProgress(s, 'streaming')
+    deps.sendEvent(req)
+  }
+
+  /** 篇终局（complete 成功落账 / error 进 errors[]）→advance */
+  async function finishPaper(
+    s: ActiveSession,
+    paperId: string,
+    outcome: { ok: true; detail: PaperDetail } | { ok: false; reason: string }
+  ): Promise<void> {
+    const cur = s.current
+    s.current = null
+    s.done += 1
+    if (!outcome.ok) {
+      s.errors.push({ paperId, reason: outcome.reason })
+      await advance(s)
+      return
+    }
+    // fulltext 终写（页界 \f）+sha；contentSha 重读 corpus md 文件字节
+    const fulltext = cur?.fulltext.join('\f') ?? ''
+    await writeFile(join(s.dir, 'fulltext', `${paperId}.txt`), fulltext, 'utf8')
+    const fulltextSha = createHash('sha256').update(fulltext, 'utf8').digest('hex')
+    const contentSha = createHash('sha256')
+      .update(await readFile(join(s.dir, 'corpus', `${paperId}.md`), 'utf8'), 'utf8')
+      .digest('hex')
+    s.papers.push({
+      paperId,
+      file: `corpus/${paperId}.md`,
+      title: outcome.detail.title,
+      contentSha,
+      fulltextSha,
+      figures: cur?.figures ?? [],
+      exportedAt: now()
+    })
+    await advance(s)
+  }
+
+  /** 落盘/编排异常=会话 failed（manifest 不写；session 释放重跑修复） */
+  async function failSession(s: ActiveSession, message: string): Promise<void> {
+    // 先清理后释放单飞锁（deepseek W2：清理期间新会话的 manifest.tmp 不被误删）
+    await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
+    session = null
+    s.reject(new SessionError('IO_ERROR', message))
+  }
+
   return {
-    async corpusItem(_req: CorpusItemReq): Promise<{ ok: true }> {
-      throw new NotImplementedError('SR2-AI-03')
+    async exportCorpusSession(input) {
+      if (session !== null) {
+        throw new SessionError('EXPORT_BUSY', '导出会话进行中，请等待完成后再发起')
+      }
+      // preparing：清空重建+逐篇装配 corpus md（失败篇进 errors[] 不进 streaming）
+      // 显式传入去重（schema 只限 min/max 不限唯一——重复 id 会重复装配+manifest 重复条目）
+      const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]
+      let created!: ActiveSession
+      const promise = new Promise<CorpusSessionRes>((resolve, reject) => {
+        created = {
+          sessionId: `cs-${now()}-${Math.trunc(Math.random() * 1e6)}`,
+          dir: input.dir,
+          queue: [],
+          current: null,
+          papers: [],
+          errors: [],
+          done: 0,
+          total: ids.length,
+          resolve,
+          reject
+        }
+      })
+      const active = created
+      session = active
+      sendProgress(active, 'preparing')
+      try {
+        await cleanRebuild(input.dir)
+        for (const id of ids) {
+          const detail = deps.repos.papers.detailById(id)
+          if (detail === null) {
+            // done/total=全篇口径（含 preparing 失败篇）——进度条始终收敛到 total
+            active.errors.push({ paperId: id, reason: '文献记录不存在' })
+            active.done += 1
+            continue
+          }
+          const managedPath = deps.fileStore.resolveManagedPath(detail.fileName)
+          let fileExists = true
+          await stat(managedPath).catch(() => {
+            fileExists = false
+          })
+          if (!fileExists) {
+            active.errors.push({ paperId: id, reason: '源 PDF 文件缺失' })
+            active.done += 1
+            continue
+          }
+          const md = assembleCorpusMd({
+            paper: detail,
+            note: deps.repos.notes.findByPaper(id),
+            annotations: deps.repos.annotations.listByPaper(id),
+            aiNotes: orderAiNotes(deps.repos.aiNotes.listByPaper(id))
+          })
+          await writeFile(join(input.dir, 'corpus', `${id}.md`), md, 'utf8')
+          active.queue.push(detail)
+        }
+        await advance(active)
+      } catch (e) {
+        await failSession(active, `导出会话失败：${e instanceof Error ? e.message : String(e)}`)
+      }
+      return promise
+    },
+
+    async corpusItem(req) {
+      const s = session
+      // 防御：载荷失配（无会话/异会话/异篇）→INVALID_REQUEST（不扰动在途会话）
+      if (
+        s === null ||
+        s.current === null ||
+        req.sessionId !== s.sessionId ||
+        req.paperId !== s.current.paperId
+      ) {
+        throw new SessionError('INVALID_REQUEST', '回传载荷与会话在途篇不匹配')
+      }
+      const cur = s.current
+      try {
+        if (req.kind === 'fulltext') {
+          cur.fulltext.push(req.payload)
+        } else if (req.kind === 'figure') {
+          const figDir = join(s.dir, 'figures', cur.paperId)
+          await mkdir(figDir, { recursive: true })
+          // renderer 载荷自由串不裸拼路径（路径穿越防御——C-02 safeId 同型）：
+          // id 由应用生成本可信，纵深防御防篡改载荷（annotationId 含 ../ 等）
+          const safeName = (raw: string): string => raw.replace(/[^a-zA-Z0-9_-]/g, '_')
+          const name =
+            req.figure === 'anno'
+              ? `anno-${safeName(req.annotationId ?? 'unknown')}.png`
+              : `page-${req.page}.png`
+          await writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))
+          cur.figures.push(`figures/${cur.paperId}/${name}`)
+        } else if (req.kind === 'complete') {
+          const detail = deps.repos.papers.detailById(cur.paperId)
+          if (detail === null) throw new SessionError('INTERNAL', '篇详情在会话中消失')
+          await finishPaper(s, cur.paperId, { ok: true, detail })
+        } else {
+          await finishPaper(s, cur.paperId, { ok: false, reason: req.reason })
+        }
+      } catch (e) {
+        if (e instanceof SessionError && e.code === 'INVALID_REQUEST') throw e
+        await failSession(s, `提取回传落盘失败：${e instanceof Error ? e.message : String(e)}`)
+        throw e
+      }
+      return { ok: true }
     }
   }
 }

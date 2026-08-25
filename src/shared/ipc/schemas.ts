@@ -165,6 +165,18 @@ export const exportProgressEventSchema = z
 export type ExportProgressEvent = z.infer<typeof exportProgressEventSchema>
 export type ExportCorpusEvent = ExtractRequestEvent | ExportProgressEvent
 
+// ── export_ corpus-session（AI-03：五件套导出会话——通道名避开 C-02 的 export/corpus）──
+/** 会话发起：paperIds 缺省=全库；目录经 main 侧系统对话框选择（INV-07——ipc 层选，service 收已选 dir） */
+export const corpusSessionReqSchema = z
+  .object({ paperIds: z.array(z.string().min(1)).min(1).max(1000).optional() })
+  .strict()
+
+/** 会话终局 resolve（终局=manifest 已写或明确失败；篇级失败见 errorCount） */
+export const corpusSessionResSchema = z
+  .object({ dir: z.string(), fileCount: z.number().int().min(0), errorCount: z.number().int().min(0) })
+  .strict()
+export type CorpusSessionRes = z.infer<typeof corpusSessionResSchema>
+
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
 export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()

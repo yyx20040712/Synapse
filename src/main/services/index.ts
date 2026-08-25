@@ -5,13 +5,16 @@
  */
 import type { z } from 'zod'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { ImportProgressEvent } from '../../shared/ipc/schemas'
+import type { ExportCorpusEvent, ImportProgressEvent } from '../../shared/ipc/schemas'
 import type { PaperDetail } from '../../shared/models/paper'
 import type { Repos } from '../db/repos'
 import type { FileStore } from './import_/file-store'
 import { createImportService, type ImportService } from './import_/import.service'
 import { createExportService, type ExportService } from './export_/export.service'
-import { createCorpusExportService, type CorpusExportService } from './export_/corpus.export.service'
+import {
+  createCorpusExportService,
+  type CorpusExportService
+} from './export_/corpus.export.service'
 import { extractPdfMeta } from './import_/pdf-meta.extract'
 import { createLibraryService } from './library.service'
 import { createReaderService } from './reader.service'
@@ -37,6 +40,8 @@ export interface ServiceDeps {
   http: HttpFns
   /** 导入进度事件出口（main→renderer 推送），bootstrap 注入 */
   sendProgress?: (e: ImportProgressEvent) => void
+  /** AI 语料导出会话事件出口（main→renderer 单向——extract-request/progress） */
+  sendExportEvent?: (e: ExportCorpusEvent) => void
 }
 
 export interface EnrichServiceShape {
@@ -50,7 +55,7 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  export_: ExportService & Pick<CorpusExportService, 'corpusItem'>
+  export_: ExportService & CorpusExportService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -72,7 +77,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     }),
     export_: {
       ...createExportService({ repos: deps.repos }),
-      corpusItem: createCorpusExportService().corpusItem
+      ...createCorpusExportService({
+        repos: deps.repos,
+        fileStore: deps.fileStore,
+        sendEvent: deps.sendExportEvent ?? (() => undefined),
+      })
     }
   }
 }

@@ -70,6 +70,19 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
   return {
     corpusItem: (req) => deps.services.export_.corpusItem(req),
 
+    corpusSession: async (req) => {
+      // INV-07：目录只出自 main 侧系统对话框（C-02 exportTo 同型——dialog 在
+      // ipc 层；单飞判定在 service 单例，dialog 期间并发由模态性+BUSY 兜底）
+      const dir = await deps.dialogs.pickFolder()
+      if (dir === null) {
+        throw new ExportIpcError('CANCELLED', '已取消选择导出目录')
+      }
+      return deps.services.export_.exportCorpusSession({
+        dir,
+        paperIds: req.paperIds
+      })
+    },
+
     bibtex: (req) =>
       exportTo('synapse-export.bib', BIB_FILTER, () =>
         deps.services.export_.buildBibtex(req.paperIds), req.paperIds.length),

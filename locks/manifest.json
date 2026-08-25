@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T19:45:13.2413035Z",
+    "generatedAt":  "2026-08-25T23:19:03.4167606Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -71,7 +71,7 @@
                   },
                   {
                       "path":  "src/shared/app-error.ts",
-                      "sha256":  "ee3052e77242f221a87b49a03fbb7ac1902ef654de388221dc12b93a2001681d"
+                      "sha256":  "0d9ca73aae244b4b19fdd329cbbfd0dfe1300822bf073cb6b96f74e82dd6c01b"
                   },
                   {
                       "path":  "src/shared/constants.ts",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "18098543ae312e24238f60e4bc9444acb8fffd98e7946d55fd481ed95673c2f7"
+                      "sha256":  "d8b853c4a7c854cc242b50204aee4b8ac80926bca23baad645e1e03e0824c07a"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "01c62a756dd7fa1b56d3a95d52d08f8aa0c2497f96d84decd7774eaa123ba0f3"
+                      "sha256":  "0c75a734428f5199d0edd6841f1f7ab23cd6f54b0af36ed9bf67cd20c151cc85"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -328,6 +328,10 @@
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
                       "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
+                  },
+                  {
+                      "path":  "tests/unit/services/corpus.export.test.ts",
+                      "sha256":  "9ef18208afb1a825d33f2ae670c9dd6e8275695ccb00b705d01bfcc1fea78feb"
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
