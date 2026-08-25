@@ -29,38 +29,17 @@ import { showToast } from '../../shared/ui/Toast'
 import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import { useNotesStore } from './notes.store'
 
+// 保存状态推导已下沉 renderer/shared（C-03——阅读器 ReaderNotesPanel 共治
+// 同一显示诚实性契约）；此处 re-export 保库侧既有消费方编译（C-06 随本面板删除）
+export { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
+export type { SaveStatus } from '../../shared/save-status'
+import { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
+
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const LOAD_FAILED = '笔记加载失败'
 
 /** 标题接近上限计数器的显示阈（UI 显示策略，面板本地派生不自立字面量） */
 const TITLE_WARN = Math.floor(NOTE_TITLE_MAX * 0.9)
-
-/** 保存状态指示四态（显示诚实性契约：未保存来自 store 的 pending 镜像——
- *  合并落地窗口/防抖窗口内切回不得误显"已保存"） */
-export type SaveStatus = '保存中…' | '保存失败' | '未保存' | '已保存'
-
-/** 保存状态推导（单一推导点，纯函数锁定）：优先级 保存中 > 保存失败 > 未保存 > 已保存。
- *  saving=周期在飞；saveFailed=周期结束而 savedAt 未推进（INV-04 消费）；
- *  pending=草稿含未落库编辑（store pendingEdit 镜像） */
-export function deriveSaveStatus(saving: boolean, saveFailed: boolean, pending: boolean): SaveStatus {
-  if (saving) return '保存中…'
-  if (saveFailed) return '保存失败'
-  if (pending) return '未保存'
-  return '已保存'
-}
-
-/** 周期结束失败判定（单一判定点，纯函数锁定）：saving true→false 的终点帧按
- *  savedAt 是否推进裁决（INV-04：失败不推进 savedAt）；非终点帧返回 null
- *  （不动失败态——savedAt 前进来源含合并落地，不能证明本面板周期成功） */
-export function detectSaveFailed(
-  prevSaving: boolean,
-  saving: boolean,
-  prevSavedAt: string | null,
-  savedAt: string | null
-): boolean | null {
-  if (!prevSaving || saving) return null
-  return prevSavedAt === savedAt
-}
 
 export function NotesPanel(props: { paperId: string }): JSX.Element {
   const { paperId } = props
