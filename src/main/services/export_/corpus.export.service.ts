@@ -104,5 +104,26 @@
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 
+import { NotImplementedError } from '../../../shared/app-error'
+import type { CorpusItemReq } from '../../../shared/ipc/schemas'
+
 /** 工单骨架标记（实现单元替换为真实实现） */
 export const CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'
+
+/**
+ * 会话服务工厂（AI-03 实现前占位形态）：corpusItem 消费端随本工单落地——
+ * AI-02 已建 renderer 侧回传通道（CorpusExtractor+export/corpus-item 契约），
+ * 本占位经 register 折叠 NOT_IMPLEMENTED → renderer failed 路径（链路可测）。
+ */
+export interface CorpusExportService {
+  /** 提取回传消费端：流式落盘+会话推进随本工单（AI-03）实现 */
+  corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
+}
+
+export function createCorpusExportService(): CorpusExportService {
+  return {
+    async corpusItem(_req: CorpusItemReq): Promise<{ ok: true }> {
+      throw new NotImplementedError('SR2-AI-03')
+    }
+  }
+}

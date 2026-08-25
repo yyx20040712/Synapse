@@ -58,6 +58,39 @@ export default tseslint.config(
               // 含裸目录形式（'../main'）：glob '**/main/**' 不匹配无斜杠结尾的目录 import
               group: ['**/main/**', '**/main', '**/preload/**', '**/preload'],
               message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
+            },
+            {
+              // INV-16：pdfjs-dist 运行时 import 白名单三文件（PdfCanvas/TextLayer/
+              // CorpusExtractor）——本条对白名单外 renderer 文件生效；白名单 override
+              // 块在下方重申完整 patterns（flat config 同规则后块覆盖，无法只豁免一条）
+              group: ['pdfjs-dist', 'pdfjs-dist/**'],
+              message: 'pdfjs-dist 只许白名单三文件 import（PdfCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    // INV-16 白名单 override：三文件重申 renderer 全部禁令但不含 pdfjs 条目
+    // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口）
+    files: [
+      'src/renderer/features/reader/PdfCanvas.tsx',
+      'src/renderer/features/reader/TextLayer.tsx',
+      'src/renderer/features/reader/CorpusExtractor.ts'
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', 'node:*', 'fs', 'path', 'os', 'crypto', 'better-sqlite3'],
+              message: 'renderer 是沙箱 UI 层，禁止接触 Node/Electron API（架构规则 §三）'
+            },
+            {
+              group: ['**/main/**', '**/main', '**/preload/**', '**/preload'],
+              message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
             }
           ]
         }

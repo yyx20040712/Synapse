@@ -68,6 +68,8 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
   }
 
   return {
+    corpusItem: (req) => deps.services.export_.corpusItem(req),
+
     bibtex: (req) =>
       exportTo('synapse-export.bib', BIB_FILTER, () =>
         deps.services.export_.buildBibtex(req.paperIds), req.paperIds.length),

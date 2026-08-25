@@ -4,6 +4,7 @@
  * 渲染层永不出现在这里出现任何文件路径（安全 §6.3）。
  */
 import { z } from 'zod'
+import { annotationRectSchema } from '../models/annotation'
 import { paperSummarySchema, pagedSchema, paperMetaPatchSchema } from '../models/paper'
 import { annotationSchema, annotationInputSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
@@ -89,6 +90,80 @@ export const exportResSchema = z
   .strict()
 
 export const reportReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+
+// ── export_ corpus-item（AI-02：五件套提取回传 renderer→main 常规 invoke）──
+/** 逐项回传判别联合（背压：每页/每图一 invoke，await ack 后发下一项） */
+export const corpusItemReqSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('fulltext'),
+    sessionId: z.string().min(1),
+    paperId: z.string().min(1),
+    page: z.number().int().min(1),
+    payload: z.string()
+  }).strict(),
+  z.object({
+    kind: z.literal('figure'),
+    figure: z.enum(['page', 'anno']),
+    sessionId: z.string().min(1),
+    paperId: z.string().min(1),
+    page: z.number().int().min(1),
+    annotationId: z.string().min(1).optional(),
+    payload: z.string()
+  }).strict(),
+  z.object({
+    kind: z.literal('complete'),
+    sessionId: z.string().min(1),
+    paperId: z.string().min(1)
+  }).strict(),
+  z.object({
+    kind: z.literal('error'),
+    sessionId: z.string().min(1),
+    paperId: z.string().min(1),
+    reason: z.string()
+  }).strict()
+])
+  .refine(
+    (v) =>
+      v.kind !== 'figure' ||
+      (v.figure === 'anno'
+        ? v.annotationId !== undefined
+        : v.annotationId === undefined),
+    { message: 'anno 图必带 annotationId；page 图不得携带 annotationId' }
+  )
+export type CorpusItemReq = z.infer<typeof corpusItemReqSchema>
+
+/** 导出会话事件载荷（main→renderer 单向，判别联合；annotations=裁剪数据源随请求下发） */
+export const extractRequestEventSchema = z
+  .object({
+    type: z.literal('extract-request'),
+    sessionId: z.string().min(1),
+    paperId: z.string().min(1),
+    url: z.string().min(1),
+    annotations: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            rects: z.array(annotationRectSchema)
+          })
+          .strict()
+      )
+      .max(5000)
+  })
+  .strict()
+export type ExtractRequestEvent = z.infer<typeof extractRequestEventSchema>
+
+export const exportProgressEventSchema = z
+  .object({
+    type: z.literal('progress'),
+    sessionId: z.string().min(1),
+    done: z.number().int().min(0),
+    total: z.number().int().min(0),
+    phase: z.enum(['preparing', 'streaming', 'finalizing'])
+  })
+  .strict()
+export type ExportProgressEvent = z.infer<typeof exportProgressEventSchema>
+export type ExportCorpusEvent = ExtractRequestEvent | ExportProgressEvent
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */

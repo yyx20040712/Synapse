@@ -7,7 +7,7 @@
  */
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { API_SURFACE, EVENT_CHANNELS, type PreloadApi, type PreloadEvents } from '../shared/ipc/api-surface'
-import type { ImportProgressEvent } from '../shared/ipc/schemas'
+import type { ExportCorpusEvent, ImportProgressEvent } from '../shared/ipc/schemas'
 
 function buildApi(): PreloadApi {
   const api: Record<string, Record<string, (req: unknown) => Promise<unknown>>> = {}
@@ -28,6 +28,11 @@ function buildEvents(): PreloadEvents {
       const listener = (_e: IpcRendererEvent, payload: ImportProgressEvent): void => cb(payload)
       ipcRenderer.on(EVENT_CHANNELS.importProgress, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.importProgress, listener)
+    },
+    onExportCorpus(cb: (e: ExportCorpusEvent) => void): () => void {
+      const listener = (_e: IpcRendererEvent, payload: ExportCorpusEvent): void => cb(payload)
+      ipcRenderer.on(EVENT_CHANNELS.exportCorpus, listener)
+      return () => ipcRenderer.removeListener(EVENT_CHANNELS.exportCorpus, listener)
     }
   }
 }

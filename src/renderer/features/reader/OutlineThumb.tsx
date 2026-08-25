@@ -3,7 +3,7 @@
  * 卸载取消在途任务。渲染调用全走句柄方法，不引入 pdfjs 运行时依赖。
  */
 import { useEffect, useRef } from 'react'
-import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
+import type { PDFDocumentProxy, RenderTask } from './PdfCanvas'
 
 /** 缩略图渲染比例（规约：scale 0.2） */
 export const THUMB_SCALE = 0.2

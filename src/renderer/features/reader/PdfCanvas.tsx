@@ -24,7 +24,8 @@
  *   （换文档/卸载即销毁），消费方按 unknown 收窄、不得跨文档长期持有
  *
  * ── 架构层 ──
- * - 唯一允许 import pdfjs-dist 的文件；TextLayer/SelectionLayer 依赖它回调的 textContent
+ * - pdfjs-dist import 白名单三文件之一（INV-16：PdfCanvas/TextLayer/CorpusExtractor——
+ *   ESLint no-restricted-imports 机器锚）；TextLayer/SelectionLayer 依赖它回调的 textContent
  * - 卸载时清理（pdf doc.destroy()）
  *
  * ── 生命周期层 ──
@@ -50,6 +51,10 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 // worker 本地打包（ADR-0002 硬约束：禁 CDN）；?url 在 dev 是 dev-server 地址、
 // 构建后是产物内文件 URL，两者都在 CSP worker-src 'self' 范围内（spike 实证）
 GlobalWorkerOptions.workerSrc = workerUrl
+
+/** pdfjs 类型再导出（INV-16：白名单外文件的类型消费统一经本文件——OutlinePanel/
+ *  OutlineThumb 等消费方不 import pdfjs-dist，含 import type） */
+export type { PDFDocumentProxy, RenderTask }
 
 /**
  * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。

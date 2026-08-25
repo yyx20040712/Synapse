@@ -52,7 +52,8 @@ export const API_SURFACE = {
     csv: { channel: 'export/csv', Req: S.exportSelectionReqSchema, Res: S.exportResSchema },
     report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
-    corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema }
+    corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },
+    corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
@@ -78,12 +79,14 @@ export const API_SURFACE = {
 
 /** main→renderer 单向事件通道 */
 export const EVENT_CHANNELS = {
-  importProgress: 'import/progress/event'
+  importProgress: 'import/progress/event',
+  exportCorpus: 'export/corpus/event'
 } as const
 
 /** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
 export type PreloadEvents = {
   onImportProgress(cb: (e: S.ImportProgressEvent) => void): () => void
+  onExportCorpus(cb: (e: S.ExportCorpusEvent) => void): () => void
 }
 
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────

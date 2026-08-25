@@ -18,7 +18,8 @@
  *   fontName 查 styles 无回退，styles 必须真实传自 getTextContent（集成期实证）
  *
  * ── 架构层 ──
- * - 唯一允许 import pdfjs-dist 文本层 API 与官方 CSS 的文件
+ * - pdfjs-dist import 白名单三文件之一（INV-16：PdfCanvas/TextLayer/CorpusExtractor）
+ *   ——文本层 API 与官方 CSS 的消费点
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 与 PdfCanvas 同批实现；e2e 断言"文字可选中"（tests/e2e/reader-text.spec.ts，

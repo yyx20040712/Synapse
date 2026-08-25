@@ -58,3 +58,32 @@ function assemblePdf(objects: string[]): Uint8Array {
   }
   return out
 }
+
+/**
+ * 多页变体（AI-02：CorpusExtractor 多页提取测试——页序/逐页回传断言用）。
+ * 每页单行文本 `P<n> <text>`（页序可断言）。对象布局：1=Catalog 2=Pages
+ * 3..p+2=Page  p+3..2p+2=Contents  2p+3=Font（数组序=id 序）。
+ */
+export function createMultiPagePdf(pages: number, text = PDF_KNOWN_TEXT): Uint8Array {
+  const kids: string[] = []
+  for (let n = 1; n <= pages; n += 1) kids.push(`${2 + n} 0 R`)
+  const objects: string[] = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${pages} >>`
+  ]
+  for (let n = 1; n <= pages; n += 1) {
+    objects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${2 * pages + 3} 0 R >> >> /Contents ${pages + 2 + n} 0 R >>`
+    )
+  }
+  for (let n = 1; n <= pages; n += 1) {
+    const stream = `BT /F1 18 Tf 72 ${720 - (n - 1) * 24} Td (P${n} ${esc(text)}) Tj ET`
+    const streamBytes = new TextEncoder().encode(stream).length
+    objects.push(`<< /Length ${streamBytes} >>
+stream
+${stream}
+endstream`)
+  }
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
+  return assemblePdf(objects)
+}

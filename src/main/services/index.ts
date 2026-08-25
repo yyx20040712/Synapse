@@ -11,6 +11,7 @@ import type { Repos } from '../db/repos'
 import type { FileStore } from './import_/file-store'
 import { createImportService, type ImportService } from './import_/import.service'
 import { createExportService, type ExportService } from './export_/export.service'
+import { createCorpusExportService, type CorpusExportService } from './export_/corpus.export.service'
 import { extractPdfMeta } from './import_/pdf-meta.extract'
 import { createLibraryService } from './library.service'
 import { createReaderService } from './reader.service'
@@ -49,7 +50,7 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  export_: ExportService
+  export_: ExportService & Pick<CorpusExportService, 'corpusItem'>
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -69,7 +70,10 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       providers: buildProviders(deps.http),
       contactEmail: deps.contactEmail
     }),
-    export_: createExportService({ repos: deps.repos })
+    export_: {
+      ...createExportService({ repos: deps.repos }),
+      corpusItem: createCorpusExportService().corpusItem
+    }
   }
 }
 

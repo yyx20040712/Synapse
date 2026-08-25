@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T17:32:34.8880608Z",
+    "generatedAt":  "2026-08-25T19:45:13.2413035Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "0169df227faca1b536a2b684a977e1fc874af9ccbf6fc8a419d9ea7900113818"
+                      "sha256":  "089fe97c14ab832d5abcab088b4322995dde44ce6ff99ca900a37fd868495a9f"
                   },
                   {
                       "path":  "playwright.config.ts",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "96a004e7f791b9c5693153dc9616cd327b93e9c10eba8048dd4ef876bf0a1e9f"
+                      "sha256":  "18098543ae312e24238f60e4bc9444acb8fffd98e7946d55fd481ed95673c2f7"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "2c656a20c99a0355c74e6677899e9e21ac12e5562fc523fd7130bdc28e19a421"
+                      "sha256":  "01c62a756dd7fa1b56d3a95d52d08f8aa0c2497f96d84decd7774eaa123ba0f3"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -246,6 +246,10 @@
                       "sha256":  "0c3fec0f4c0db142a602a72f899347459370cde4a9fe183b9ee8ec2f69287f5c"
                   },
                   {
+                      "path":  "tests/unit/renderer/corpus-extractor.test.ts",
+                      "sha256":  "c13eb90c1b6ac8c547cae47af53b64fe770f085f960920177a9c839ca92f74b8"
+                  },
+                  {
                       "path":  "tests/unit/renderer/keymap.test.ts",
                       "sha256":  "e9cf9ddb57956e898a3610ff8f6a36da32d32e4f0cd65856af1bc12fd0b7d307"
                   },
@@ -403,7 +407,7 @@
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",
-                      "sha256":  "c4b02db298b119ed1fc69634ee11af10b894e5284696d5508b91e128a68be445"
+                      "sha256":  "dd43990527832007d5f84c9f0ac12111080df212a076fb2f14214785855a089f"
                   },
                   {
                       "path":  "tsconfig.json",
