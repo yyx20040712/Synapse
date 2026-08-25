@@ -2,19 +2,15 @@
  * [SR-DB-01] papers.repo —— papers 表仓储（工单：done）
  *
  * ── 行为层 ──
- * - 单表 CRUD + FTS 联查的列表页查询（搜索/筛选/排序/分页/计数）
- * - 列表聚合（标签名/集合名/标注数/笔记数）由 JOIN 子查询完成，一次往返
+ * - 单表 CRUD + FTS 联查列表页查询（搜索/筛选/排序/分页/计数；聚合 JOIN 子查询一次往返）
  *
  * ── 接口层 ──
  * - export interface PaperRow：表行形状（authors_json 等原始列）
  * - export interface PapersRepo：方法签名见下方接口定义，此处只记行为约定
- * - searchSummaries 搜索策略（FTS 为 trigram 分词器，支持中文子串但查询串须 ≥3 字符）：
- *     · q.trim().length >= 3 → papers_fts MATCH escapeFtsQuery(q)（db/fts.ts，
- *       索引覆盖 title/abstract/authors）
- *     · 更短（如 2 字中文"漏损"）→ LIKE '%...%' 兜底，只搜 title/authors_json
- *       （锁定测试合约：短串不搜 abstract；% 与 _ 用 ESCAPE '\' 转义，参数绑定）
- *   其余过滤：tagId/collectionId/year；sort 对应 added_at DESC / year DESC / title ASC；
- *   total 为过滤后总数（不含分页）；listSummariesByIds 保持入参顺序、跳过缺失 id
+ * - searchSummaries：FTS（≥3 字 escapeFtsQuery）/短串 LIKE 兜底（只搜
+ *   title/authors_json，锁定合约见 papers.repo.test）；过滤/排序/total 语义
+ *   同锁定测试；listSummariesByIds 保序跳缺；listAllIds=全库 id（added_at
+ *   DESC——corpusSet 全库取数，C-02）
  *
  * ── 架构层 ──
  * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量
@@ -28,8 +24,7 @@
  *
  * ── 文化层 ──
  * - 测试：tests/unit/db/repos/papers.repo.test.ts（已锁定；先读测试再实现）
- * - 时间戳 new Date().toISOString()（UTC）；id 由上层（import.service）生成后整行传入
- * - updateMeta/applyEnrichment 同步 updated_at；updateReadPage 只动阅读进度列
+ * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
  */
 import { escapeFtsQuery } from '../fts'
 import { APP_FILE_SCHEME } from '../../../shared/constants'
@@ -77,6 +72,7 @@ export interface PapersRepo {
   updateReadPage(id: string, page: number): void
   searchSummaries(q: LibraryQuery): Paged<PaperSummary>
   listSummariesByIds(ids: string[]): PaperSummary[]
+  listAllIds(): string[]
   detailById(id: string): PaperDetail | null
 }
 
@@ -271,6 +267,10 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
         const s = byId.get(id)
         return s === undefined ? [] : [s]
       })
+    },
+    listAllIds() {
+      const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, id DESC').all() as Array<{ id: string }>
+      return rows.map((r) => r.id)
     },
     detailById(id) {
       const r = stmt(DETAIL_SQL).get(id) as DetailRow | undefined

@@ -22,6 +22,7 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/ipc/export_.test.ts（已锁定，dialogs/services 桩）
  */
+import { join } from 'node:path'
 import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './index'
@@ -79,6 +80,30 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
       const detail = await deps.services.library.detail({ paperId: req.paperId })
       return exportTo(`${safeFileName(detail.title)}.md`, MD_FILTER, () =>
         deps.services.export_.buildReport(req.paperId), 1)
+    },
+
+    corpus: async (req) => {
+      const detail = await deps.services.library.detail({ paperId: req.paperId })
+      return exportTo(`${safeFileName(detail.title)}.md`, MD_FILTER, () =>
+        deps.services.export_.buildCorpus(req.paperId), 1)
+    },
+
+    corpusSet: async () => {
+      // 先构建后询问路径（构建失败不弹框——exportTo 同序）；skipped 随 Res 回传，
+      // 消费方成功 toast 附「跳过 M 篇」（INV-02 可见性）
+      const { entries, skipped } = await deps.services.export_.buildCorpusSet()
+      if (entries.length === 0) {
+        const detail = skipped.length > 0 ? `（${skipped.length} 篇取数失败）` : ''
+        throw new ExportIpcError('NOT_FOUND', `没有可导出的文献${detail}`)
+      }
+      const dir = await deps.dialogs.pickFolder()
+      if (dir === null) {
+        throw new ExportIpcError('CANCELLED', '已取消保存')
+      }
+      const count = await deps.services.export_.writeCorpusSet(dir, entries)
+      // filePath 指真实落盘位置 <dir>/corpus（deepseek N1——目录级返回会让
+      // 消费方 toast 误导用户找错层级）
+      return { filePath: join(dir, 'corpus'), count, skipped }
     }
   }
 }

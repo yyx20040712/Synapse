@@ -29,7 +29,8 @@
  * ── 文化层 ──
  * - 测试：tests/unit/services/export.service.test.ts（已锁定，repos 桩）
  */
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { AppErrorCode } from '../../../shared/app-error'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
@@ -38,6 +39,7 @@ import {
   serializeBibtex,
   type BibtexEntryData
 } from './bibtex.serializer'
+import { assembleCorpusMd } from './corpus.assemble'
 import { buildReadingReport } from './markdown.report'
 
 /** 域错误：NOT_FOUND（报告目标不存在）与 IO_ERROR（写盘失败）载体 */
@@ -51,10 +53,27 @@ class ExportDomainError extends Error {
   }
 }
 
+export interface CorpusSetEntry {
+  paperId: string
+  content: string
+}
+
+export interface CorpusSetResult {
+  entries: CorpusSetEntry[]
+  /** 单篇取数失败清单（不中断全库——消费方 toast 承载可见性，INV-02） */
+  skipped: Array<{ paperId: string; reason: string }>
+}
+
 export interface ExportService {
   buildBibtex(paperIds: string[]): Promise<string>
   buildCsv(paperIds: string[]): Promise<string>
   buildReport(paperId: string): Promise<string>
+  /** 单篇 corpus md（C-02：装配纯函数单源=corpus.assemble.ts——R12 条款） */
+  buildCorpus(paperId: string): Promise<string>
+  /** 全库语料（listAllIds 逐篇；失败篇入 skipped 不中断） */
+  buildCorpusSet(): Promise<CorpusSetResult>
+  /** 集合落盘：mkdir corpus/ 前置+逐篇写 <dir>/corpus/<paperId>.md，返回成功数 */
+  writeCorpusSet(dir: string, entries: CorpusSetEntry[]): Promise<number>
   writeToFile(path: string, content: string): Promise<void>
 }
 
@@ -119,6 +138,74 @@ export function createExportService(deps: { repos: Repos }): ExportService {
         annotations: annotations.listByPaper(paperId),
         note: notes.findByPaper(paperId)
       })
+    },
+
+    async buildCorpus(paperId) {
+      const detail = papers.detailById(paperId)
+      if (detail === null) {
+        throw new ExportDomainError('NOT_FOUND', `文献不存在：${paperId}`)
+      }
+      return assembleCorpusMd({
+        paper: detail,
+        note: notes.findByPaper(paperId),
+        annotations: annotations.listByPaper(paperId)
+      })
+    },
+
+    async buildCorpusSet() {
+      const entries: CorpusSetEntry[] = []
+      const skipped: Array<{ paperId: string; reason: string }> = []
+      const ids = papers.listAllIds()
+      for (let i = 0; i < ids.length; i += 1) {
+        const id = ids[i]
+        if (id === undefined) continue
+        // 每 25 篇让出事件循环（better-sqlite3 同步取数+装配，大库不卡 main——deepseek W1）
+        if (i > 0 && i % 25 === 0) {
+          await new Promise<void>((resolve) => setImmediate(resolve))
+        }
+        try {
+          const detail = papers.detailById(id)
+          if (detail === null) {
+            throw new ExportDomainError('NOT_FOUND', `文献不存在：${id}`)
+          }
+          entries.push({
+            paperId: id,
+            content: assembleCorpusMd({
+              paper: detail,
+              note: notes.findByPaper(id),
+              annotations: annotations.listByPaper(id)
+            })
+          })
+        } catch (e) {
+          // 仅业务性跳过（NOT_FOUND）入 skipped；程序缺陷（转义/类型等意外异常）
+          // 上抛失败可见——不把 bug 静默折叠成「跳过」（deepseek W3）
+          if (e instanceof ExportDomainError) {
+            skipped.push({ paperId: id, reason: e.message })
+          } else {
+            throw e
+          }
+        }
+      }
+      return { entries, skipped }
+    },
+
+    async writeCorpusSet(dir, entries) {
+      const corpusDir = join(dir, 'corpus')
+      try {
+        await mkdir(corpusDir, { recursive: true })
+        for (const e of entries) {
+          // paperId 消防消毒（id 由 import.service 生成本可信——纵深防御，
+          // deepseek N6：异常 id 不越出 corpus 目录）
+          const safeId = e.paperId.replace(/[^a-zA-Z0-9_-]/g, '_')
+          await writeFile(join(corpusDir, `${safeId}.md`), e.content, 'utf8')
+        }
+      } catch (e) {
+        throw new ExportDomainError(
+          'IO_ERROR',
+          `语料导出写盘失败（已写入的部分文件保留，重跑导出将覆盖）：${e instanceof Error ? e.message : String(e)}`
+        )
+      }
+      return entries.length
     },
 
     async writeToFile(path, content) {

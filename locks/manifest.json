@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T13:18:43.9074499Z",
+    "generatedAt":  "2026-08-25T14:05:51.7716199Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -75,11 +75,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "9acc8191b3015c5e9fb68a2600e251c8e3133d1866bf0190c8d60e53b1226c09"
+                      "sha256":  "96a004e7f791b9c5693153dc9616cd327b93e9c10eba8048dd4ef876bf0a1e9f"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "b8b7a9b0d93b4bd8d8dbee8b38e69033e6a5d696b3e8dab91f3f384b318d073e"
+                      "sha256":  "2c656a20c99a0355c74e6677899e9e21ac12e5562fc523fd7130bdc28e19a421"
                   },
                   {
                       "path":  "src/shared/models/annotation.ts",
@@ -292,6 +292,10 @@
                   {
                       "path":  "tests/unit/services/bibtex.serializer.test.ts",
                       "sha256":  "8a47804aed6632829ff40345a2974e3efe7e1fd7e16d7223f8960c74ae91aac1"
+                  },
+                  {
+                      "path":  "tests/unit/services/corpus.assemble.test.ts",
+                      "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",

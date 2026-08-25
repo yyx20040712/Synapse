@@ -90,6 +90,22 @@ export const exportResSchema = z
 
 export const reportReqSchema = z.object({ paperId: z.string().min(1) }).strict()
 
+// ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
+/** 单篇语料导出（与 reportReq 同形：目标文献 id） */
+export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+
+/** 全库语料集合导出（v1 无选择语义——空对象） */
+export const corpusSetReqSchema = z.object({}).strict()
+
+/** 集合导出专属 Res：skipped 回传取数失败篇（消费方 toast 可见性，INV-02） */
+export const corpusSetResSchema = z
+  .object({
+    filePath: z.string(),
+    count: z.number().int().min(1),
+    skipped: z.array(z.object({ paperId: z.string(), reason: z.string() }).strict())
+  })
+  .strict()
+
 // ── tags ────────────────────────────────────────────────────────
 export const tagWithCountSchema = tagSchema.extend({ paperCount: z.number().int().min(0) })
 export const tagNameReqSchema = z.object({ name: z.string().min(1).max(50) }).strict()

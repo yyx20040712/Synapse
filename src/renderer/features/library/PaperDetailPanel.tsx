@@ -6,11 +6,9 @@
  * ── 行为层 ──
  * - 「方案切换=删除旧方案」红线：α 双层笔记编辑面自库侧下线——移除 noteOpen
  *   state+「打开笔记」按钮+NotesPanel 挂载区+import（符号锚=noteOpen/NotesPanel
- *   两标识符；C-02 先行实现行号会漂以符号锚为准）；编辑面唯一归阅读器侧栏
+ *   两标识符）；编辑面唯一归阅读器侧栏（C-03/04 已就绪，C-06 排其后为此）
  * - 替代入口：按钮「去阅读器写笔记」→ requestOpenPaper(detail.id)
- *   （open-paper-bus.ts:17 同总线；App 切视图+ReaderPage 打开链既有零新增）；
- *   本文件涉及「打开笔记（NotesPanel）」描述行同步删除，导出语料 md 入口
- *   （C-02 产物）不动
+ *   （open-paper-bus.ts:17 同总线——App 切视图+ReaderPage 打开链既有零新增）
  *
  * ── 接口层 ──
  * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
@@ -19,18 +17,14 @@
  * - 改动面：本文件（净减约 30 行）/notes/NotesPanel.tsx（**删除**——纯 UI 组件
  *   无其他消费方，save-status 纯函数已随 C-03 下沉 shared）/
  *   scripts/check-quality.mjs 白名单**删** `PaperDetailPanel → notes/NotesPanel`
- *   条目（:54）[locked-change]；`tab-dirty → notes/notes.store`（:56）与
- *   `ReaderNotesPanel → notes/notes.store`（C-03 增）条目保持——notes.store
- *   留驻 notes 域（五模块 ADR-0008+两消费方）
- * - 核对义务：paper-detail-export.test.ts（受锁）mock 链若含 NotesPanel 面随本单
- *   核对（预期零触碰）；FTS 连续性=notes 写路径不变（api.notes.save 同通道，
- *   回归由既有 notes.store.test+FTS 用例覆盖——P7-C 验收锚点）
+ *   条目 [locked-change]；tab-dirty/ReaderNotesPanel→notes.store 条目保持——
+ *   notes.store 留驻（五模块 ADR-0008+两消费方）
+ * - 核对义务：paper-detail-export.test（受锁）mock 链核对（预期零触碰）；
+ *   FTS 连续性=notes 写路径不变（既有 notes.store.test+FTS 用例回归锚）
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - notes feature 剩 notes.store.ts（store 无 UI 依赖合法）；不做库侧只读笔记
- *   预览（可发现性归阅读器，B3 裁决 1 原文）
- * - 验收：verify 全绿+[locked-change] 尾注+人工视检（库侧无编辑面/「去阅读器
- *   写笔记」到位/阅读器编辑可用）+翻 done 前移除根元素 data-ticket（规则 4b）
+ * - notes feature 剩 notes.store.ts；不做库侧只读笔记预览（B3 裁决 1）
+ * - 验收：verify 全绿+[locked-change]+视检+翻 done 前移除根 data-ticket（4b）
  */
 import { useEffect, useState } from 'react'
 import type { PaperSource, EnrichStatus } from '@shared/models/paper'
@@ -92,12 +86,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }, [run, paperId, reloadKey])
 
   /** 动作型按钮统一收口：错误 toast + 成功后的刷新/提示 */
-  async function runAction(action: 'enrich' | 'report' | 'bibtex' | 'doi'): Promise<void> {
+  async function runAction(action: 'enrich' | 'report' | 'bibtex' | 'corpus' | 'doi'): Promise<void> {
     if (detail === null) return
     if (action === 'enrich') {
       if (enriching) return
       setEnriching(true)
-    } else if (action === 'report' || action === 'bibtex') {
+    } else if (action === 'report' || action === 'bibtex' || action === 'corpus') {
       if (exporting) return
       setExporting(true)
     }
@@ -116,6 +110,9 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       } else if (action === 'bibtex') {
         const r = await unwrap(api.export_.bibtex({ paperIds: [detail.id] }))
         showToast(`已导出 ${r.count} 条题录：${r.filePath}`, 'success')
+      } else if (action === 'corpus') {
+        const r = await unwrap(api.export_.corpus({ paperId: detail.id }))
+        showToast(`已导出语料 md：${r.filePath}`, 'success')
       } else if (detail.doi !== null) {
         await unwrap(api.system.openExternal({ url: `https://doi.org/${detail.doi}` }))
       }
@@ -210,6 +207,9 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         </Button>
         <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex')}>
           导出 BibTeX
+        </Button>
+        <Button size="sm" loading={exporting} onClick={() => void runAction('corpus')}>
+          导出语料 md
         </Button>
         {detail.doi !== null && (
           <Button size="sm" variant="ghost" onClick={() => void runAction('doi')}>

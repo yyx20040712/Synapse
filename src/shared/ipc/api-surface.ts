@@ -50,7 +50,9 @@ export const API_SURFACE = {
   export_: {
     bibtex: { channel: 'export/bibtex', Req: S.exportSelectionReqSchema, Res: S.exportResSchema },
     csv: { channel: 'export/csv', Req: S.exportSelectionReqSchema, Res: S.exportResSchema },
-    report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema }
+    report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
+    corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
+    corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
