@@ -246,6 +246,15 @@
 > export/corpus 通道名已被 C-02 单篇导出占用，五件套会话通道须更名
 > （如 export/corpus-session）**，随 AI-03 实现简报记录）。
 
+> **SR2-AI-03 ✅**（2026-08-27 c9ea6ec——五件套会话状态机全表落地：manifest
+> 终局单写 tmp+rename/清空重建（目录根用户文件不动）/单飞 EXPORT_BUSY/幂等
+> （范围=产物文件）/corpusItem 流式消费+路径穿越消毒/corpusSet 目录隔离守卫/
+> orderAiNotes 装配延展（R12 单源内）/INTERFACE.md 静态单源；通道更名
+> corpus-session 落地；INV-17/18 翻已锚定（INV-18 e2e 面随 AI-04）；双门
+> r1 FAIL（1B 证伪+1B 采纳）→r2 PW 全处置→GLM PASS；verify 69 文件 409
+> 用例）。下一单 SR2-AI-04（票面已就位；AI-02 的会话超时兜底观察项随其
+> e2e 评估）。
+
 > **第四轮裁决增容（2026-08-25 蓝图 §4.3，ADR-0015）——SR2-AI-06~10 回灌与联动组**：
 > 06 伴随进程文件协议（pending job/status+心跳/产物 corpus-ai——应用零 LLM 出网
 > 保持，E1=B'）；07 回灌导入器（ai-notes/import+list 通道 [locked-change]，幂等，
