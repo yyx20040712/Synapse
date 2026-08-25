@@ -197,21 +197,21 @@ export function AnnotationLayer(props: {
         className="absolute inset-0"
         style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
       >
-        {/* multiply 必须上容器级：本容器（absolute+zIndex:5）是 stacking context 隔离组，
-            rect 级混合只与容器内透明背景混合（无效）且同标注矩形会互相叠乘（正是要
-            消灭的叠深）；整层作为单元与页面背景混合，内部重叠为 source-over 不加深 */}
+        {/* multiply 上容器级（stacking context 隔离，rect 级混合无效且叠乘） */}
         {pageAnnotations.map((a) =>
           (resolved[a.id] ?? a.rects).map((r, i) => (
             <div
               key={`${a.id}:${i}`}
               data-testid="annotation-rect"
+              data-annotation-id={a.id}
               role="button"
               aria-label={`标注：${a.quoteText}`}
               title={a.comment !== '' ? a.comment : a.quoteText}
               className="absolute"
               style={rectStyle(a.kind, a.color, r)}
               onClick={() => {
-                // 点击他条标注=切目标：菜单接管，既有编辑器一并收起（不残留双弹层）
+                // 点击他条=切目标（菜单接管收起编辑器）；反向同步侧栏高亮（C-05）
+                useReaderStore.getState().notifyNoteHighlight(a.id)
                 setMenu({ annotation: a, rect: r })
                 setEditing(null)
               }}

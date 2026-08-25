@@ -42,7 +42,8 @@
  * - 组件测试 tests/unit/renderer/outline-aside.test.tsx：三项切换/选中记忆/
  *   笔记 tab 挂载/目录跳页经 store/片段单击页级定位/空态
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { locateAnchor } from './anchor-locate'
 import { OutlinePanel } from './OutlinePanel'
 import { ReaderNotesPanel } from './ReaderNotesPanel'
 import { useReaderStore } from './reader.store'
@@ -57,22 +58,37 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
   const [tab, setTab] = useState<AsideTab>('outline')
   const activeTab = useActiveTab()
   const currentPage = activeTab?.page ?? 0
+  const noteHighlight = useReaderStore((s) => s.noteHighlight)
 
   /** 目录/缩略图跳页：作用于 active tab（store 自取——props 链收敛） */
   const navigate = (page: number): void => {
     useReaderStore.getState().setPage(page)
   }
 
-  /** 片段单击页级定位（C-05 升级为三层防线的替换点） */
+  /** 片段单击定位（C-05 三层防线服务——INV-20 单入口，页级只是降级链一环） */
   const locateFragment = (annotationId: string): void => {
-    const t = useReaderStore.getState()
-    const activeId = t.activeId
+    const activeId = useReaderStore.getState().activeId
     if (activeId === null) return
-    const target = t.tabs[activeId]?.annotations.find((a) => a.id === annotationId)
-    if (target !== undefined) {
-      t.setPage(target.page)
-    }
+    const a = useReaderStore.getState().tabs[activeId]?.annotations.find((x) => x.id === annotationId)
+    if (a === undefined) return
+    void locateAnchor({
+      paperId: a.paperId,
+      annotationId: a.id,
+      anchor: {
+        quoteText: a.quoteText,
+        prefixText: a.prefixText,
+        suffixText: a.suffixText,
+        anchorPage: a.page,
+        startOffset: a.startOffset
+      }
+    })
   }
+
+  // 标注单击反向同步（C-05 N1 方案a）：自动切笔记 tab（高亮滚动由
+  // FragmentNotesList 消费 highlightAnnotationId 信号完成）
+  useEffect(() => {
+    if (noteHighlight !== null) setTab('notes')
+  }, [noteHighlight])
 
   return (
     <aside
@@ -120,6 +136,7 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
           <ReaderNotesPanel
             annotations={activeTab?.annotations ?? []}
             onLocate={locateFragment}
+            highlightAnnotationId={noteHighlight?.annotationId ?? null}
           />
         )}
       </div>

@@ -84,6 +84,8 @@ export interface ReaderStore {
   tabs: Record<string, TabState>
   order: string[]
   activeId: string | null
+  /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
+  noteHighlight: { annotationId: string; seq: number } | null
   openPaper(id: string): Promise<void>
   activateTab(id: string): void
   closeTab(id: string): void
@@ -102,6 +104,8 @@ export interface ReaderStore {
   /** pdf 加载/渲染失败置 tab error（open IPC 失败类的补全——INV-15 装配级 e2e
    *  实证缺口：缺失文件走此路径，失败必须在 tab 级可见可关可重试） */
   markTabError(paperId: string): void
+  /** 标注单击→侧栏同步高亮信号（C-05）：OutlineAside 消费（切笔记 tab+滚动） */
+  notifyNoteHighlight(annotationId: string): void
   /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
   undo(): Promise<void>
 }
@@ -110,7 +114,8 @@ export function createReaderStoreInitialState() {
   return {
     tabs: {} as Record<string, TabState>,
     order: [] as string[],
-    activeId: null as string | null
+    activeId: null as string | null,
+    noteHighlight: null as { annotationId: string; seq: number } | null
   }
 }
 
@@ -359,6 +364,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       const tab = tabs[paperId]
       if (tab === undefined || tab.status === 'error') return
       set({ tabs: { ...tabs, [paperId]: { ...tab, status: 'error' } } })
+    },
+
+    notifyNoteHighlight(annotationId) {
+      const prev = get().noteHighlight
+      set({ noteHighlight: { annotationId, seq: (prev?.seq ?? 0) + 1 } })
     },
 
     async undo() {
