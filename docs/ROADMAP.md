@@ -237,9 +237,14 @@
 > **执行实况注记（2026-08-27）**：应用面第一批工单化完成（1516a97——SR2-AI-01~05
 > 五张票面过 deepseek plan 门 r2 PW+GLM 二审；状态机迁移表/载荷 schema/目录隔离
 > 守卫/幂等范围/断点语义边界全数入票面）。**SR2-AI-01 ✅**（222962c——迁移 003+
-> repo 六方法+AiNote 单源契约+INV-25 级联语义登记已锚定；TDD 红证 8/8→verify
-> 389 用例）。下一单 SR2-AI-02（票面已就位=src/renderer/features/reader/
-> CorpusExtractor.ts 头注——含四态迁移表与 corpusItemSchema 字段清单）。
+> repo 六方法+AiNote 单源契约+INV-25 级联语义登记已锚定；TDD 红证 8/8）。
+> **SR2-AI-02 ✅**（102df65——CorpusExtractor 四态迁移+背压+裁剪数学+真 pdfjs
+> 集成用例；ESLint pdfjs 白名单 INV-16 翻已锚定（lint 实证拦截 R1 漏扫的
+> OutlinePanel/OutlineThumb 类型直连）；IPC 契约（corpusItem 通道+exportCorpus
+> 事件单向）落地；事件载荷两处契约修正（annotations 随发+rect.page 单源）。
+> verify 68 文件 399 用例）。下一单 SR2-AI-03（票面已就位——**注意：母本的
+> export/corpus 通道名已被 C-02 单篇导出占用，五件套会话通道须更名
+> （如 export/corpus-session）**，随 AI-03 实现简报记录）。
 
 > **第四轮裁决增容（2026-08-25 蓝图 §4.3，ADR-0015）——SR2-AI-06~10 回灌与联动组**：
 > 06 伴随进程文件协议（pending job/status+心跳/产物 corpus-ai——应用零 LLM 出网
