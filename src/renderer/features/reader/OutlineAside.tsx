@@ -10,10 +10,10 @@
  * - 选中态记忆=本地 useState（v1 不持久化——重启回目录）；e2e 坑③（role=tab
  *   域污染）：本 tablist 与 TabBar 同 role——新增查询一律限定容器
  *   （data-testid="reader-aside"，本单建位）
- * - 笔记 tab 渲染 ReaderNotesPanel（SR2-C-03）：paperId/annotations 经
+ * - 笔记 tab 渲染 ReaderNotesPanel（C-03）：paperId/annotations 经
  *   useActiveTab 自取——**ReaderPage 不新增 props**（249/250 满员守恒）；
  *   onLocate=页级定位（useReaderStore.getState().setPage(annotation.page)——
- *   本单先页级，SR2-C-05 接缝升级三层防线，本行即替换点）；highlightAnnotationId
+ *   本单先页级，C-05 接缝升级三层防线，本行即替换点）；highlightAnnotationId
  *   接 reader.store（C-05 建位；本单传 undefined）
  * - 目录/缩略图跳页 onNavigate 收敛为 store 自取（setPage via getState——原经
  *   props 下传的 currentPage/onNavigate 移除；pdfDoc 保留 props——pdfDoc 是

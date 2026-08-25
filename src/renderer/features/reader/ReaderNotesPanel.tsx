@@ -15,9 +15,9 @@
  *     （C-06 随面板删除）；notes-panel-status.test.ts 仅改 import 路径
  *     [locked-change]，断言零改动）
  *   · 片段层：FragmentNotesList 子组件（本单新文件，独立可测）：
- *     sortByDocumentOrder(annotations)（SR2-C-01 单源）序渲染；每条=kind 色点+
+ *     sortByDocumentOrder(annotations)（C-01 单源）序渲染；每条=kind 色点+
  *     quote 首行截断+comment 摘要；单击条目 → onLocate(annotation.id)（本单
- *     消费方仅回调上抛——接缝在 SR2-C-04 接页级、SR2-C-05 升三层防线）；
+ *     消费方仅回调上抛——接缝在 C-04 接页级、C-05 升三层防线）；
  *     highlightAnnotationId 条目高亮+scrollIntoView（C-05 标注单击反向同步的
  *     消费面）
  *   · 空态：无标注显示「在正文中划选即可添加片段笔记」

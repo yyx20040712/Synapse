@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T13:04:43.4505143Z",
+    "generatedAt":  "2026-08-25T13:18:43.9074499Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -63,7 +63,7 @@
                   },
                   {
                       "path":  "src/shared/annotation-order.ts",
-                      "sha256":  "d2eb78ea5b3461af3bbad2a37d17b2627325cba3e4a5be70a94d04822738bfe3"
+                      "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
                   },
                   {
                       "path":  "src/shared/app-error.ts",
@@ -344,6 +344,10 @@
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                  },
+                  {
+                      "path":  "tests/unit/shared/annotation-order.test.ts",
+                      "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
                   },
                   {
                       "path":  "tests/unit/windows/quit-dirty-guard.test.ts",

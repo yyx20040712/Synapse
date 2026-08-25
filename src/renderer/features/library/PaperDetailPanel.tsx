@@ -10,14 +10,14 @@
  * - 替代入口：按钮「去阅读器写笔记」→ requestOpenPaper(detail.id)
  *   （open-paper-bus.ts:17 同总线；App 切视图+ReaderPage 打开链既有零新增）；
  *   本文件涉及「打开笔记（NotesPanel）」描述行同步删除，导出语料 md 入口
- *   （SR2-C-02 产物）不动
+ *   （C-02 产物）不动
  *
  * ── 接口层 ──
  * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
  *
  * ── 架构层 ──
  * - 改动面：本文件（净减约 30 行）/notes/NotesPanel.tsx（**删除**——纯 UI 组件
- *   无其他消费方，save-status 纯函数已随 SR2-C-03 下沉 shared）/
+ *   无其他消费方，save-status 纯函数已随 C-03 下沉 shared）/
  *   scripts/check-quality.mjs 白名单**删** `PaperDetailPanel → notes/NotesPanel`
  *   条目（:54）[locked-change]；`tab-dirty → notes/notes.store`（:56）与
  *   `ReaderNotesPanel → notes/notes.store`（C-03 增）条目保持——notes.store
