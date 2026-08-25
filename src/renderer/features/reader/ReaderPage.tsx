@@ -224,8 +224,6 @@ export function ReaderPage(): JSX.Element {
               pane: (
                 <OutlineAside
                   pdfDoc={pdfDoc}
-                  currentPage={page}
-                  onNavigate={setPage}
                   onCollapse={() => setOutlineOpen(false)}
                 />
               ),

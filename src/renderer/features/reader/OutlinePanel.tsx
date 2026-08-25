@@ -1,14 +1,16 @@
 /**
- * [SR-RDR-08] OutlinePanel —— 目录/缩略图侧栏（工单：done / weak）
+ * [SR-RDR-08] OutlinePanel —— 目录/缩略图面板（工单：done / weak；C-04 mode 化：
+ * tablist 已上移 OutlineAside，本组件按 mode prop 单面渲染）
  *
  * ── 行为层 ──
- * - Tab1 目录：pdf.getOutline() 树形列表；点击跳页（resolve 目的地页码）；
+ * - mode='outline'：pdf.getOutline() 树形列表；点击跳页（resolve 目的地页码）；
  *   无目录显示"本文档无书签目录"
- * - Tab2 缩略图：当前页 ±10 页的 canvas 小图（scale 0.2，懒渲染 IntersectionObserver）
+ * - mode='thumbs'：当前页 ±10 页的 canvas 小图（scale 0.2，懒渲染 IntersectionObserver）
  *
  * ── 接口层 ──
  * - export function OutlinePanel(props: { pdfDoc: unknown;
- *     currentPage: number; onNavigate(page: number): void }): JSX.Element
+ *     mode: 'outline' | 'thumbs'; currentPage: number;
+ *     onNavigate(page: number): void }): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - pdfDoc 以 getDocument 句柄传入（类型 unknown，内部窄化为 pdfjs 类型）；
@@ -53,11 +55,11 @@ function isPdfDoc(v: unknown): v is PDFDocumentProxy {
 
 export function OutlinePanel(props: {
   pdfDoc: unknown
+  mode: 'outline' | 'thumbs'
   currentPage: number
   onNavigate: (page: number) => void
 }): JSX.Element {
-  const { pdfDoc, currentPage, onNavigate } = props
-  const [tab, setTab] = useState<'outline' | 'thumbs'>('outline')
+  const { pdfDoc, mode, currentPage, onNavigate } = props
   const [outline, setOutline] = useState<OutlineNode[] | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -142,28 +144,9 @@ export function OutlinePanel(props: {
       : []
 
   return (
-    <div className="flex h-full flex-col text-sm">
-      <div className="flex shrink-0 border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
-        {(['outline', 'thumbs'] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className="flex-1 px-2 py-1 text-xs"
-            style={
-              tab === id
-                ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--accent)' }
-                : { color: 'var(--text-dim)' }
-            }
-            onClick={() => setTab(id)}
-          >
-            {id === 'outline' ? '目录' : '缩略图'}
-          </button>
-        ))}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto p-1">
-        {tab === 'outline' ? (
+    <div className="h-full text-sm">
+      <div className="h-full overflow-auto p-1">
+        {mode === 'outline' ? (
           loading ? (
             <p className="p-2 text-xs" style={{ color: 'var(--text-dim)' }}>
               正在读取目录…
