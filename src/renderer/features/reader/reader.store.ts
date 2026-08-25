@@ -99,6 +99,9 @@ export interface ReaderStore {
    *  paperId——异步失败可能迟到于 tab 切换） */
   markTabDirty(paperId: string): void
   clearTabDirty(paperId: string): void
+  /** pdf 加载/渲染失败置 tab error（open IPC 失败类的补全——INV-15 装配级 e2e
+   *  实证缺口：缺失文件走此路径，失败必须在 tab 级可见可关可重试） */
+  markTabError(paperId: string): void
   /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
   undo(): Promise<void>
 }
@@ -349,6 +352,13 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       const { tabs } = get()
       if (tabs[paperId] === undefined) return
       set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: false } } })
+    },
+
+    markTabError(paperId) {
+      const { tabs } = get()
+      const tab = tabs[paperId]
+      if (tab === undefined || tab.status === 'error') return
+      set({ tabs: { ...tabs, [paperId]: { ...tab, status: 'error' } } })
     },
 
     async undo() {

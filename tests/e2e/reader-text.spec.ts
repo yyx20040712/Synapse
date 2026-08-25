@@ -60,7 +60,13 @@ function launch(userData: string): Promise<ElectronApplication> {
  * electron.launch（错 ABI 启动即崩）——子进程退出即释放文件锁，还原必然成功。
  * 命令行只有 node 与静态脚本路径，落库值经环境变量传入（不经 argv/shell）。
  */
-async function seedPaperRow(userData: string, fileRef: string, sha: string, title: string): Promise<void> {
+async function seedPaperRow(
+  userData: string,
+  fileRef: string,
+  sha: string,
+  title: string,
+  id = 'e2e-seed-paper'
+): Promise<void> {
   const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
   const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
   const cacheDir = join(pkgDir, 'abi-cache')
@@ -76,7 +82,8 @@ async function seedPaperRow(userData: string, fileRef: string, sha: string, titl
       SEED_DB: join(userData, 'synapse.db'),
       SEED_FILE_REF: fileRef,
       SEED_SHA: sha,
-      SEED_TITLE: title
+      SEED_TITLE: title,
+      SEED_ID: id
     } as NodeJS.ProcessEnv)
   } finally {
     await writeFile(releaseBinding, electronBinding)
@@ -206,6 +213,108 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await editor.getByRole('button', { name: '删除' }).click()
   await expect(win2.getByTestId('annotation-rect')).toHaveCount(0)
   await app2.close()
+})
+
+/** P7-B 三序列依赖：渲染链 + tab 骨架（TABS-01/02）+ 退出拦截（TABS-04） */
+const TABS_DEPS = [...DEPS, 'SR2-TABS-01', 'SR2-TABS-02', 'SR2-TABS-04'] as const
+
+test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截', async () => {
+  skipIfPending(TABS_DEPS)
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-p7b-'))
+  // 第一跳：建库迁移
+  const seedApp = await launch(userData)
+  await (await seedApp.firstWindow()).waitForTimeout(500)
+  await seedApp.close()
+
+  // 种子三篇：甲/乙真实文件；丙只种行不落文件（error 场景）。正文断言用
+  // ASCII 单 run 标记词——CJK 会被 pdfjs 文本层逐字分项，getByText 单节点匹配不到
+  const papers = [
+    { id: 'e2e-seed-a', title: 'P7B 甲文献', marker: 'P7BA-MARK' },
+    { id: 'e2e-seed-b', title: 'P7B 乙文献', marker: 'P7BB-MARK' }
+  ] as const
+  for (const p of papers) {
+    const bytes = createTinyPdf(`${p.marker} ${PDF_KNOWN_TEXT}`)
+    const sha = createHash('sha256').update(bytes).digest('hex')
+    const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+    const abs = join(userData, 'files', ...fileRef.split('/'))
+    mkdirSync(dirname(abs), { recursive: true })
+    writeFileSync(abs, bytes)
+    await seedPaperRow(userData, fileRef, sha, p.title, p.id)
+  }
+  const ghostSha = createHash('sha256').update('P7B-ghost-file').digest('hex')
+  const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
+  await seedPaperRow(userData, ghostRef, ghostSha, 'P7B 丙缺失文件', 'e2e-seed-ghost')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  // tab 查询限定 TabBar 容器——侧栏目录/缩略图切换器也有 role=tab（域隔离）；
+  // 真实 tab 标题=fileRef 基名（sha.pdf），按 order 位置定位（打开序=甲0/乙1/丙2）
+  const tabBar = win.getByRole('tablist', { name: '打开的文献' })
+  const tabAt = (i: number) => tabBar.getByRole('tab').nth(i)
+
+  // —— 序列一：换 tab 状态保持（S1 装配级：per-tab 状态不失忆）——
+  await win.getByText('P7B 甲文献').first().dblclick()
+  await expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 20_000 })
+  await win.getByRole('button', { name: '文献库' }).click()
+  await win.getByText('P7B 乙文献').first().dblclick()
+  await expect(win.getByText('P7BB-MARK').first()).toBeVisible({ timeout: 20_000 })
+  await expect(tabBar.getByRole('tab')).toHaveCount(2)
+  // 切回甲：内容立即可见（切换走 per-tab 状态，非重载）
+  await tabAt(0).click()
+  await expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 10_000 })
+
+  // —— 序列二：error tab 可见可切可关（INV-15 装配级：打开失败不 UI 死锁）+ 收缩序 ——
+  await win.getByRole('button', { name: '文献库' }).click()
+  await win.getByText('P7B 丙缺失文件').first().dblclick()
+  const errTab = tabBar.getByRole('tab', { name: /打开失败/ })
+  await expect(errTab).toBeVisible({ timeout: 10_000 })
+  await expect(tabBar.getByRole('tab')).toHaveCount(3)
+  // error tab 可切走再切回（多 tab 失败场景可切回其他 tab——INV-15 完整语义）
+  await tabAt(0).click()
+  await expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 10_000 })
+  await errTab.click()
+  // 关闭 error tab（叉）→ 剩两 tab；再关乙 → 收缩到甲（关 active 取左邻）
+  await errTab.getByRole('button').click()
+  await expect(tabBar.getByRole('tab')).toHaveCount(2)
+  await tabAt(1).click()
+  await tabAt(1).getByRole('button').click()
+  await expect(tabBar.getByRole('tab')).toHaveCount(1)
+  await expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 10_000 })
+
+  // —— 序列三：退出拦截（TABS-04 装配级，INV-22 收口）——
+  // dirty 经通道直发（renderer 聚合效应为单元级已锚；装配级锁 main 全链：
+  // 缓存→close 守卫→模态确认→destroy）。app.evaluate 注入 electron 模块（main 为
+  // ESM 无 require）；关闭经渲染侧 window.close()（等价触发 close 事件链）。
+  const aliveWindows = (): Promise<number> =>
+    app
+      .evaluate((electron) =>
+        electron.BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).length
+      )
+      .catch(() => -1) // -1=主进程已退出（比窗口归零更强的终局信号）
+  // dirty 经通道直发并 await 落地（void 早返回会让 window.close() 抢在 main
+  // 处理上报前到达——缓存仍 false 直通退出，装配链假阴）
+  // 关闭触发走 main 侧（注入 electron 模块；渲染侧 window.close() 的语义差异排除）
+  const closeMain = (): Promise<unknown> =>
+    app.evaluate((electron) => {
+      electron.BrowserWindow.getAllWindows()[0]?.close()
+    })
+  await win.evaluate(() => window.api.system.setQuitDirty({ dirty: true }))
+  await app.evaluate((electron) => {
+    ;(electron.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
+      .showMessageBox = async () => ({ response: 1 })
+  })
+  await closeMain()
+  // 取消：preventDefault 生效，窗口保持
+  await expect.poll(aliveWindows).toBe(1)
+  // 确认：destroy 强制关闭 → 窗口归零（或主进程随之退出）
+  await app.evaluate((electron) => {
+    ;(electron.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
+      .showMessageBox = async () => ({ response: 0 })
+  })
+  await closeMain()
+  await expect.poll(aliveWindows).toBeLessThan(1)
+  await app.close().catch(() => undefined)
 })
 
 /** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */

@@ -4,7 +4,8 @@
  * better-sqlite3（node ABI 绑定）会让 spec 侧 finally 的绑定还原 EBUSY、
  * build/Release 残留 node 绑定毒化后续 electron.launch——详见 spec 头注释。
  * 数据经环境变量传入（SEED_DB/SEED_FILE_REF/SEED_SHA/SEED_TITLE，不经 shell）；
- * SQL 一律 prepare 预编译 + 参数绑定。
+ * SQL 一律 prepare 预编译 + 参数绑定。SEED_ID 可选（多篇种子场景——P7-B 三序列；
+ * 缺省 'e2e-seed-paper' 保持既有单篇调用零改动）。
  */
 import Database from 'better-sqlite3'
 
@@ -12,8 +13,13 @@ const db = new Database(process.env.SEED_DB)
 try {
   db.prepare(
     'INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at)' +
-      " VALUES ('e2e-seed-paper', ?, ?, ?, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')"
-  ).run(process.env.SEED_FILE_REF, process.env.SEED_SHA, process.env.SEED_TITLE)
+      " VALUES (?, ?, ?, ?, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')"
+  ).run(
+    process.env.SEED_ID ?? 'e2e-seed-paper',
+    process.env.SEED_FILE_REF,
+    process.env.SEED_SHA,
+    process.env.SEED_TITLE
+  )
 } finally {
   db.close()
 }

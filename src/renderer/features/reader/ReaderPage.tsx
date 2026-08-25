@@ -3,24 +3,21 @@
  *
  * ── 行为层 ──
  * - 无打开文档：空态引导（"从文献库打开一篇文献"）
- * - 打开：reader.store.openPaper(paperId) → PdfCanvas + TextLayer + SelectionLayer +
- *   AnnotationLayer + ReaderToolbar + OutlinePanel 布局（左右侧栏可折叠）
+ * - 打开：reader.store.openPaper(paperId) → PdfCanvas + TextLayer + SelectionLayer + AnnotationLayer + ReaderToolbar + OutlinePanel 布局（左右侧栏可折叠）
  * - 定时保存阅读进度（翻页后 2s 防抖 api.reader.saveProgress）——已内置于 reader.store.setPage
- * - 接收 library 侧"打开文献"事件（简单事件总线：window.dispatchEvent CustomEvent
- *   'synapse:open-paper'，library.store.openPaper 派发；本页监听并切 tab 由 App 层处理）。
- *   事件派发时本页尚未挂载（App 才切 tab），故挂载时经 takePendingOpenPaper 补读闩锁
- * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，
- *   SelectionLayer 划选保存经 onSaved → store.addAnnotation；AnnotationLayer 渲染
- *   store.annotations 中当前页的标注（换页/换文献经 store 状态驱动重锚）
+ * - 接收 library 侧"打开文献"事件（window CustomEvent 'synapse:open-paper'，library.store 派发；
+ *   App 层切 tab）。事件派发时本页尚未挂载，故挂载时经 takePendingOpenPaper 补读闩锁
+ * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，划选保存经
+ *   onSaved → store.addAnnotation；AnnotationLayer 渲染 store.annotations 当前页标注（状态驱动重锚）
  *
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  *
  * ── 架构层 ──
  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
- * - 文本/几何的页内契约：PdfCanvas onPageRender 回报（页码,文本项）+ 本页量测
- *   canvas CSS 盒（data-pdf-canvas）→ TextLayer 定位输入；回报页码与 store 页码
- *   不一致（lastReadPage 越界被 PdfCanvas 夹取）时回写自愈
+ * - 文本/几何的页内契约：PdfCanvas onPageRender 回报（页码,文本项）+ 本页量测 canvas CSS
+ *   盒（data-pdf-canvas）→ TextLayer 定位输入；回报页码与 store 页码不一致（lastReadPage
+ *   越界被 PdfCanvas 夹取）时回写自愈
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本（本工单落地即激活——最终裁判）
@@ -163,7 +160,10 @@ export function ReaderPage(): JSX.Element {
           pageNumber={page + 1}
           zoom={zoom}
           onPageRender={handlePageRender}
-          onError={(msg) => showToast(msg, 'error')}
+          onError={(msg) => {
+            showToast(msg, 'error')
+            if (paperId !== null) useReaderStore.getState().markTabError(paperId)
+          }}
           onDocInfo={(info) => setTotalPages(info.numPages)}
           onDocReady={setPdfDoc}
         />
