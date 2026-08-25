@@ -10,7 +10,7 @@ import { guardedDescribe } from '../../utils/guard'
 async function loadPanel() {
   vi.resetModules()
   vi.stubGlobal('window', { api: {}, apiEvents: {} })
-  const mod = await import('../../../src/renderer/features/notes/NotesPanel')
+  const mod = await import('../../../src/renderer/shared/save-status')
   return mod.deriveSaveStatus
 }
 
@@ -34,7 +34,7 @@ guardedDescribe('SR-NOTE-01', 'NotesPanel —— 保存状态推导（deriveSave
   })
 
   it('周期结束失败判定（detectSaveFailed）：终点帧按 savedAt 推进与否裁决，非终点帧不动', async () => {
-    const mod = await import('../../../src/renderer/features/notes/NotesPanel')
+    const mod = await import('../../../src/renderer/shared/save-status')
     const detect = mod.detectSaveFailed
     // 周期失败：saving true→false 且 savedAt 未推进 → true（这次保存没有落上）
     expect(detect(true, false, 't1', 't1')).toBe(true)

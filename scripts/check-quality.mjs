@@ -53,7 +53,7 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 //    α 双层的阅读器编辑面（B3 裁决 1——总评层消费 notes.store 与库侧同语义，
 //    notes.store 留驻 notes 域），tab-dirty 同型受控例外
 const COMPOSITION_ROOT_ALLOW = new Map([
-  ['src/renderer/features/library/PaperDetailPanel.tsx', ['notes/NotesPanel', 'tags/TagEditor']],
+  ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
   ['src/renderer/features/reader/tab-dirty.ts', ['notes/notes.store']],
   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']]

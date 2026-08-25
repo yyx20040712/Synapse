@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T15:48:17.7893566Z",
+    "generatedAt":  "2026-08-25T16:03:08.0699942Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -23,7 +23,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "66ce7f24e2ac161fd1072189c553aaf2902e146566a7a9f8cbc9a6805c66a390"
+                      "sha256":  "85ce4530680425f6d3708fefbaa25530ec0a086b16f2cd22dac43388bb37d295"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -247,7 +247,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/notes-panel-status.test.tsx",
-                      "sha256":  "a53579d92d3bf2298bb90c3b3a45963012014aad1ac45b208dff69f9b685d377"
+                      "sha256":  "1af718155225ffb0c2eb39616b562894d5f9394938e288a62d002ccb9aa5a51c"
                   },
                   {
                       "path":  "tests/unit/renderer/outline-aside.test.tsx",
@@ -256,6 +256,10 @@
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
                       "sha256":  "a6066aae93b557e2dc98c506362cc1b8d24c636977e50ad22d724474d7ab3ee7"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/paper-detail-notes-off.test.tsx",
+                      "sha256":  "afd0f1092c10ddaa1ea67e5dbc34a00af7227a982c7fdea5255d9d75dc3667d3"
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",

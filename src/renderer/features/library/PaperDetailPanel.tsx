@@ -32,7 +32,7 @@ import { api, unwrap, ApiClientError } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
-import { NotesPanel } from '../notes/NotesPanel'
+import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { TagEditor } from '../tags/TagEditor'
 import { MetaEditDialog } from './MetaEditDialog'
 
@@ -71,7 +71,6 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   // 元数据/标签变更后 bump 触发重读（TagEditor onChanged 亦走这里）
   const [reloadKey, setReloadKey] = useState(0)
   const [editing, setEditing] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(false)
   const [enriching, setEnriching] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -159,7 +158,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   return (
-    <div data-ticket="SR2-C-06" className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-3">
       {error !== null && (
         <div
           className="flex items-center justify-between rounded border px-3 py-1 text-xs"
@@ -196,8 +195,8 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         <Button size="sm" onClick={() => setEditing(true)}>
           编辑元数据
         </Button>
-        <Button size="sm" onClick={() => setNoteOpen((v) => !v)}>
-          {noteOpen ? '收起笔记' : '打开笔记'}
+        <Button size="sm" onClick={() => requestOpenPaper(detail.id)}>
+          去阅读器写笔记
         </Button>
         <Button size="sm" loading={enriching} disabled={enrichStatusDone(detail.enrichStatus)} onClick={() => void runAction('enrich')}>
           {enriching ? '增强中…' : '增强元数据'}
@@ -222,11 +221,6 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         tags={detail.tags}
         onChanged={() => setReloadKey((k) => k + 1)}
       />
-      {noteOpen && (
-        <div className="min-h-64 rounded border" style={{ borderColor: 'var(--border)' }}>
-          <NotesPanel paperId={detail.id} />
-        </div>
-      )}
       {editing && (
         <MetaEditDialog
           key={detail.updatedAt}
