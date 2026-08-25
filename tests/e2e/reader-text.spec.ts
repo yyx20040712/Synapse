@@ -446,3 +446,56 @@ test('P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShort
   expect(clipped).toContain(PDF_KNOWN_TEXT)
   await app.close()
 })
+
+/** P7-C 收官依赖：渲染链 + 三栏宿主（C-04）+ 笔记面（C-03）+ 定位服务（C-05）+ 库侧下线（C-06） */
+const C_DEPS = [...DEPS, 'SR2-C-03', 'SR2-C-04', 'SR2-C-05', 'SR2-C-06'] as const
+
+test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久', async () => {
+  skipIfPending(C_DEPS)
+  const title = '智慧水务 e2e 笔记面板文献'
+  const { app, userData } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  // 三栏宿主：目录/缩略图/笔记（e2e 坑③——查询限定 reader-aside 容器）
+  const aside = win.getByTestId('reader-aside')
+  for (const label of ['目录', '缩略图', '笔记']) {
+    await expect(aside.getByRole('tab', { name: label })).toBeVisible()
+  }
+
+  // 划选高亮（既有配方）→ 片段层实时出现该条目（TabState.annotations 投影）
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '高亮' }).click()
+  await expect(win.getByTestId('annotation-rect').first()).toBeVisible()
+
+  // 切到笔记 tab：片段列表含划选引文（C-01 文档序消费）；总评层 autosave 四态
+  await aside.getByRole('tab', { name: '笔记' }).click()
+  const panel = win.getByTestId('reader-notes-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel.getByTestId('fragment-list')).toBeVisible()
+  await expect(panel.locator('[data-fragment-id]')).toHaveCount(1)
+  const body = panel.getByLabel('笔记正文')
+  await body.fill('e2e 总评内容')
+  await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
+
+  // 片段单击 → C-05 定位服务：同页 exact → 标注元素滚动+locate-flash 闪烁
+  await panel.locator('[data-fragment-id] button').first().click()
+  await expect(win.locator('.locate-flash')).toBeVisible({ timeout: 5_000 })
+  await app.close()
+
+  // 第二程：重开同一文献——DB 真相源（总评+片段持久；md 投影的真相在库）
+  const app2 = await launch(userData)
+  const win2 = await app2.firstWindow()
+  await expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win2.getByText(title).first().dblclick()
+  await expect(win2.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+  await win2.getByTestId('reader-aside').getByRole('tab', { name: '笔记' }).click()
+  const panel2 = win2.getByTestId('reader-notes-panel')
+  await expect(panel2.locator('[data-fragment-id]')).toHaveCount(1, { timeout: 10_000 })
+  await expect(panel2.getByLabel('笔记正文')).toHaveValue('e2e 总评内容')
+  await app2.close()
+})
