@@ -31,6 +31,7 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
     papers: papers as unknown as Repos['papers'],
     collections: createCollectionsRepo(db),
     annotations: {} as Repos['annotations'],
+    aiNotes: {} as Repos['aiNotes'],
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()

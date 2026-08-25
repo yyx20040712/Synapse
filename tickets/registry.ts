@@ -163,7 +163,7 @@ export const TICKETS: readonly Ticket[] = [
   //    契约=ADR-0011 v1.1 五件套；INV-16/17/18 预登记随 02/03/04 锚定；依赖
   //    =偏序（02 依赖 01；03 依赖 02；04 依赖 03；05 依赖 03——目录契约），
   //    执行按号序串行领取逐单提交（禁同批多单）──
-  { id: 'SR2-AI-01', file: 'src/main/db/repos/ai_notes.repo.ts', area: 'db', owner: 'strong', status: 'open', summary: 'ai_notes 数据基座（迁移 003+repo：一行一锚定段×一问 N2 粒度+role CHECK+自持锚定三元组与 annotations 解耦；v1 无生产者声明 R4）' },
+  { id: 'SR2-AI-01', file: 'src/main/db/repos/ai_notes.repo.ts', area: 'db', owner: 'strong', status: 'done', summary: 'ai_notes 数据基座（迁移 003+repo：一行一锚定段×一问 N2 粒度+role CHECK+自持锚定三元组与 annotations 解耦；v1 无生产者声明 R4）' },
   { id: 'SR2-AI-02', file: 'src/renderer/features/reader/CorpusExtractor.ts', area: 'reader', owner: 'strong', status: 'open', summary: '全文/图提取器（pdfjs 白名单三文件 INV-16+ESLint 机器锚+自持文档生命周期 R2+事件桥单向 R3+逐页背压）' },
   { id: 'SR2-AI-03', file: 'src/main/services/export_/corpus.export.service.ts', area: 'service', owner: 'strong', status: 'open', summary: '五件套导出会话（manifest 终局单写+清空重建+单飞 EXPORT_BUSY INV-18+幂等 sha INV-17+corpus.assemble 延展 R12+通道保留判定）' },
   { id: 'SR2-AI-04', file: 'src/renderer/features/settings/CorpusExportSection.tsx', area: 'settings-ui', owner: 'strong', status: 'open', summary: '设置页 AI 语料导出节（进度行+单飞 disabled+App 层订阅 useExportCorpusEvents INV-14+toast INV-02+e2e 全链含中断重跑）' },

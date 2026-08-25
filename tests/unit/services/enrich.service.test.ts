@@ -69,6 +69,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
       ...over
     } as Repos['papers'],
     annotations: {} as Repos['annotations'],
+    aiNotes: {} as Repos['aiNotes'],
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
     collections: {} as Repos['collections'],

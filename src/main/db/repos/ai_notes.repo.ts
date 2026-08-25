@@ -15,6 +15,9 @@
  * - 级联语义：paper 删→CASCADE；annotation 删→SET NULL（锚定段降级篇级，
  *   语料不丢）；FTS v1 不入（检索面先由 zcode 侧 grep 承担，接入应用搜索
  *   属 P7-E 候选）
+ * - listByPaper 基础序=created_at,id：**确定性兜底非业务序**（同键 id 稳定
+ *   全序——同库同序；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
+ *   INV-24 同哲学分工）
  * - **v1 无生产者声明（计划审查 R4，死代码红线豁免依据）**：生产者=测试
  *   夹具（本单）；真实生产者=回灌联动组导入器（AI-07，未开单）；消费者=
  *   语料导出装配（corpus.assemble 的 aiNotes 入参面，AI-03 会话接线）
@@ -48,6 +51,117 @@
  *   同步+[locked-change] 尾注（禁跨提交延迟重生成）
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
+import { randomUUID } from 'node:crypto'
+import type { AiNote, AiNoteInput, AiNoteRole } from '../../../shared/models/ai-note'
+import type { SqliteDb } from '../connection'
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const AI_NOTES_REPO_STUB = 'SR2-AI-01'
+export interface AiNotesRepo {
+  insert(input: AiNoteInput): AiNote
+  updateContent(id: string, contentMd: string): AiNote | null
+  deleteByPaper(paperId: string): number
+  listByPaper(paperId: string): AiNote[]
+  listByRole(paperId: string, role: AiNoteRole): AiNote[]
+  countByPaper(paperId: string): number
+}
+
+/** ai_notes 表行形状（列名原样，蛇形） */
+interface AiNoteRow {
+  id: string
+  paper_id: string
+  annotation_id: string | null
+  role: string
+  question: string
+  model: string
+  quote_text: string
+  prefix_text: string
+  suffix_text: string
+  anchor_page: number | null
+  content_md: string
+  created_at: string
+  updated_at: string
+}
+
+function toNote(row: AiNoteRow): AiNote {
+  return {
+    id: row.id,
+    paperId: row.paper_id,
+    annotationId: row.annotation_id,
+    role: row.role as AiNote['role'],
+    question: row.question as AiNote['question'],
+    model: row.model,
+    quoteText: row.quote_text,
+    prefixText: row.prefix_text,
+    suffixText: row.suffix_text,
+    anchorPage: row.anchor_page,
+    contentMd: row.content_md,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
+  const insertStmt = db.prepare(
+    `INSERT INTO ai_notes (id, paper_id, annotation_id, role, question, model,
+       quote_text, prefix_text, suffix_text, anchor_page, content_md, created_at, updated_at)
+     VALUES (@id, @paperId, @annotationId, @role, @question, @model,
+       @quoteText, @prefixText, @suffixText, @anchorPage, @contentMd, @now, @now)`
+  )
+  const listByPaperStmt = db.prepare(
+    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id`
+  )
+  const countStmt = db.prepare(`SELECT COUNT(*) AS n FROM ai_notes WHERE paper_id = ?`)
+  const byIdStmt = db.prepare(`SELECT * FROM ai_notes WHERE id = ?`)
+  const updateContentStmt = db.prepare(
+    `UPDATE ai_notes SET content_md = ?, updated_at = ? WHERE id = ?`
+  )
+  const deleteByPaperStmt = db.prepare(`DELETE FROM ai_notes WHERE paper_id = ?`)
+  const listByRoleStmt = db.prepare(
+    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, id`
+  )
+
+  return {
+    insert(input: AiNoteInput): AiNote {
+      const now = new Date().toISOString()
+      const note: AiNote = { ...input, id: randomUUID(), createdAt: now, updatedAt: now }
+      insertStmt.run({
+        id: note.id,
+        paperId: note.paperId,
+        annotationId: note.annotationId,
+        role: note.role,
+        question: note.question,
+        model: note.model,
+        quoteText: note.quoteText,
+        prefixText: note.prefixText,
+        suffixText: note.suffixText,
+        anchorPage: note.anchorPage,
+        contentMd: note.contentMd,
+        now
+      })
+      return note
+    },
+
+    updateContent(id: string, contentMd: string): AiNote | null {
+      const row = byIdStmt.get(id) as AiNoteRow | undefined
+      if (row === undefined) return null
+      const now = new Date().toISOString()
+      updateContentStmt.run(contentMd, now, id)
+      return { ...toNote(row), contentMd, updatedAt: now }
+    },
+
+    deleteByPaper(paperId: string): number {
+      return deleteByPaperStmt.run(paperId).changes
+    },
+
+    listByPaper(paperId: string): AiNote[] {
+      return (listByPaperStmt.all(paperId) as AiNoteRow[]).map(toNote)
+    },
+
+    listByRole(paperId: string, role: AiNoteRole): AiNote[] {
+      return (listByRoleStmt.all(paperId, role) as AiNoteRow[]).map(toNote)
+    },
+
+    countByPaper(paperId: string): number {
+      return (countStmt.get(paperId) as { n: number }).n
+    }
+  }
+}

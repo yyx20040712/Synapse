@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T16:10:54.2903519Z",
+    "generatedAt":  "2026-08-25T17:32:34.8880608Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -62,6 +62,10 @@
                       "sha256":  "9ae7965b97f721a2db5dedd918f229779db4a917ec7c71d0324bc3b928322f05"
                   },
                   {
+                      "path":  "src/main/db/migrations/003_ai_notes.sql",
+                      "sha256":  "41ccc316b8dc291562950257dc573f0f1ed00866dc7b9dc694636da18c949333"
+                  },
+                  {
                       "path":  "src/shared/annotation-order.ts",
                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
                   },
@@ -80,6 +84,10 @@
                   {
                       "path":  "src/shared/ipc/schemas.ts",
                       "sha256":  "2c656a20c99a0355c74e6677899e9e21ac12e5562fc523fd7130bdc28e19a421"
+                  },
+                  {
+                      "path":  "src/shared/models/ai-note.ts",
+                      "sha256":  "9cda19b8aa65afa89bf07aa34dbd74cce5c4004542f4767c1eafaa63340d1d8f"
                   },
                   {
                       "path":  "src/shared/models/annotation.ts",
@@ -147,7 +155,11 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "cba7c85b99886fb8312c81416b59b4b27cc7e45b211ba8ecfb48a0a0857c816b"
+                      "sha256":  "19044736ad276f032e57dcebbd4bc7fda88a78294f7ced46199ca11dd4021d32"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
+                      "sha256":  "53c2a8e40bce35481365d0007f3216b5300fdd465da2f294150890eaa3f39ea5"
                   },
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",
@@ -315,7 +327,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "743c6995e101bfad207ce7844ae1557f5f89e63b5669f8474c3afaffe37b4e05"
+                      "sha256":  "a366ecd140fcdb6c30de136c0f36c00146215fe7004e85ae36d30f767b839311"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -327,7 +339,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "0b6aa95b0aeb4428d2877072a6999053a78b8bb9d1c2e2d23ef385ee2bd8a0f0"
+                      "sha256":  "383df337a925ac9f6476b2da701289db3b75db19c795517a50af65e8fbddeb7f"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",

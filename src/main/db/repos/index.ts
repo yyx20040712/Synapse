@@ -6,6 +6,7 @@ import type { SqliteDb } from '../connection'
 import { createPapersRepo, type PaperRow, type PapersRepo } from './papers.repo'
 import { createAnnotationsRepo, type AnnotationsRepo } from './annotations.repo'
 import { createNotesRepo, type NotesRepo } from './notes.repo'
+import { createAiNotesRepo, type AiNotesRepo } from './ai_notes.repo'
 import { createTagsRepo, type TagsRepo } from './tags.repo'
 import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
 
@@ -13,6 +14,7 @@ export interface Repos {
   papers: PapersRepo
   annotations: AnnotationsRepo
   notes: NotesRepo
+  aiNotes: AiNotesRepo
   tags: TagsRepo
   collections: CollectionsRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
@@ -26,10 +28,11 @@ export function createRepos(db: SqliteDb): Repos {
     papers: createPapersRepo(db),
     annotations: createAnnotationsRepo(db),
     notes: createNotesRepo(db),
+    aiNotes: createAiNotesRepo(db),
     tags: createTagsRepo(db),
     collections: createCollectionsRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
 
-export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, TagsRepo, CollectionsRepo }
+export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, TagsRepo, CollectionsRepo }
