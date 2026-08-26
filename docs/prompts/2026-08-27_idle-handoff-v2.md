@@ -6,7 +6,12 @@
 > （v1 §6 强制）。**§0~§5 为本会话实况与下一会话任务书；上一版（v1）的
 > §0 身份规则/§1 预裁决表/§3 环境纪律/§4 双门纪律/§5 终止条件全数沿用
 > （效力不变，本文不重复——冲突时以 AGENTS.md > idle 系列最新版为准）**。
-> 人工会话注意：idle 系列本版为最新基线（含批二工单化实况）。
+> **§1 预裁决表修订（2026-08-27 用户裁决）**：「每会话节奏=恰好一个逻辑
+> 单元」的**上限取消**——单会话可在上下文 60% 边界与 §5 终止条件内连续
+> 完成多个逻辑单元；**工单逐单提交纪律不变**（每单独立 verify+双门+翻
+> 状态+commit）。
+> 人工会话注意：idle 系列本版为最新基线（含批二工单化实况）；正常模式
+> 交接=next-session-handoff-v6（同日，本文姊妹篇）。
 
 ## 0. 实况（本会话做了什么——证据指针化）
 
@@ -59,7 +64,8 @@
 locks 110+树净（仅登记残留 dist_new/）。
 **push 实况**：§1 条件授权五项全满足后执行 push——TLS connect error
 （代理 127.0.0.1:7890 闲时窗口大概率未运行），按「网络失败=记录后停不重试」
-本地停：**f7876fa（工单主体）+本文所在提交两笔在本地待推**（本文经 amend，
+本地停：**工单主体 f7876fa+本文等 docs 提交在本地待推**（笔数以
+`git log origin/main..HEAD` 现查为准——本文经 amend，禁引本文自身哈希，
 哈希以 `git log -2` 现查为准——禁引本文自身哈希，自引用陷阱），下一会话
 开工自检通过后直接 `git push origin main`（或用户人工推）。
 
@@ -93,8 +99,8 @@ worktrees（宪法 git 纪律完全约束）、brainstorming（设计已裁决�
 ## 2. 下一步（基于实际进度的任务指针）
 
 - **首单=SR2-AI-06 实现**（票面已就位：状态机表+跨格序列+failed 消解不变量+
-  双目录 CLI+companion 整合形态全入头注；一个逻辑单元=一张实现单一会话——
-  卡 §1 预裁决「每会话节奏」条款）。要点：IPC 两通道 [locked-change]（ai-sensor/
+  双目录 CLI+companion 整合形态全入头注；会话节奏=头注修订后规则——可连续
+  多单至 60% 边界，逐单提交纪律不变）。要点：IPC 两通道 [locked-change]（ai-sensor/
   request-read+status——schemas+api-surface 受锁先 `npm run locks:unlock`）；
   新测试文件 tests/unit/services/ai-sensor.service.test.ts [受锁新增]
   locks:generate；companion.mjs+SKILL.md 工具面；e2e 无（06 单无 e2e 面，
