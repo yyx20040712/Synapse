@@ -9,6 +9,7 @@ import { SettingsPage } from '../features/settings/SettingsPage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
+import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 
 type ViewId = 'library' | 'reader' | 'settings'
 
@@ -63,6 +64,9 @@ export function App(): JSX.Element {
   // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
   // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer
   const quitDirty = useTabDirtyAggregate()
+  // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
+  // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
+  useExportCorpusEvents()
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
     window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)

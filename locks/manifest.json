@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-25T23:19:03.4167606Z",
+    "generatedAt":  "2026-08-26T00:12:19.9861087Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -23,7 +23,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "85ce4530680425f6d3708fefbaa25530ec0a086b16f2cd22dac43388bb37d295"
+                      "sha256":  "3ee30e5c4397e4a0243bbeb00d6152c0b09c6a3e2c94206d02c096a7cfccdd27"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -120,6 +120,10 @@
                   {
                       "path":  "tests/contracts/preload-surface.test.ts",
                       "sha256":  "ea448a13a0ff4b87ec0c082a093e64f4b404616419ba1f455ea55cc8e4071c76"
+                  },
+                  {
+                      "path":  "tests/e2e/corpus-export.spec.ts",
+                      "sha256":  "973bf57ff6c1e68b233cae913202d3763246c714636ba8b6050e060a677adac5"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
@@ -244,6 +248,10 @@
                   {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
                       "sha256":  "0c3fec0f4c0db142a602a72f899347459370cde4a9fe183b9ee8ec2f69287f5c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/corpus-export.test.tsx",
+                      "sha256":  "71557bb0ad91ece54198574f7d7409d1a6ede656563272d5f048ca215c59f77d"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-extractor.test.ts",

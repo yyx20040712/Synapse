@@ -239,14 +239,14 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     deps.sendEvent(req)
   }
 
-  /** 篇终局（complete 成功落账 / error 进 errors[]）→advance */
+  /** 篇终局（complete 成功落账 / error 进 errors[]）→advance。
+   *  cur 由调用方同步摘牌传入（防回复-定时窗内重复终局 invoke 双推进）。 */
   async function finishPaper(
     s: ActiveSession,
-    paperId: string,
+    cur: { paperId: string; fulltext: string[]; figures: string[] },
     outcome: { ok: true; detail: PaperDetail } | { ok: false; reason: string }
   ): Promise<void> {
-    const cur = s.current
-    s.current = null
+    const paperId = cur.paperId
     s.done += 1
     if (!outcome.ok) {
       s.errors.push({ paperId, reason: outcome.reason })
@@ -274,10 +274,25 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
 
   /** 落盘/编排异常=会话 failed（manifest 不写；session 释放重跑修复） */
   async function failSession(s: ActiveSession, message: string): Promise<void> {
+    // 防御（门一 N2 采纳）：悬挂的终局推进不得误清新会话单飞锁/二次 reject——
+    // 该不变量不依赖提取器串行协议成立
+    if (session !== s) return
     // 先清理后释放单飞锁（deepseek W2：清理期间新会话的 manifest.tmp 不被误删）
     await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
     session = null
     s.reject(new SessionError('IO_ERROR', message))
+  }
+
+  /** 篇终局推进延后至本 invoke 回复之后（setImmediate=检查阶段，晚于回复的微任务
+   *  与 renderer 侧回复续体/extracting 复位）：complete 的处理器内同步发下一篇
+   *  extract-request 会让事件先于回复到达 renderer——提取器仍在途（extracting
+   *  未复位）按防御分支丢弃请求，串行链死锁（e2e 多篇序列实证 2026-08-27） */
+  function deferOutcome(s: ActiveSession, run: () => Promise<void>): void {
+    setImmediate(() => {
+      run().catch((e) => {
+        void failSession(s, `提取回传落盘失败：${e instanceof Error ? e.message : String(e)}`)
+      })
+    })
   }
 
   return {
@@ -316,11 +331,17 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
             active.done += 1
             continue
           }
-          const managedPath = deps.fileStore.resolveManagedPath(detail.fileName)
-          let fileExists = true
-          await stat(managedPath).catch(() => {
-            fileExists = false
-          })
+          // file_ref 全路径解析（PaperDetail.fileName 是基名——丢了 xx/yy/ 目录层，
+          // e2e 真环境实证基名 stat 必失败；协议层 fileRefById 同源单点）
+          const fileRef = deps.repos.papers.fileRefById(id)
+          const managedPath =
+            fileRef !== null ? deps.fileStore.resolveManagedPath(fileRef) : null
+          let fileExists = managedPath !== null
+          if (managedPath !== null) {
+            await stat(managedPath).catch(() => {
+              fileExists = false
+            })
+          }
           if (!fileExists) {
             active.errors.push({ paperId: id, reason: '源 PDF 文件缺失' })
             active.done += 1
@@ -372,9 +393,12 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
         } else if (req.kind === 'complete') {
           const detail = deps.repos.papers.detailById(cur.paperId)
           if (detail === null) throw new SessionError('INTERNAL', '篇详情在会话中消失')
-          await finishPaper(s, cur.paperId, { ok: true, detail })
+          // 同步摘牌（防窗内重复终局双推进）+延后推进（回复先于下一篇请求到达）
+          s.current = null
+          deferOutcome(s, () => finishPaper(s, cur, { ok: true, detail }))
         } else {
-          await finishPaper(s, cur.paperId, { ok: false, reason: req.reason })
+          s.current = null
+          deferOutcome(s, () => finishPaper(s, cur, { ok: false, reason: req.reason }))
         }
       } catch (e) {
         if (e instanceof SessionError && e.code === 'INVALID_REQUEST') throw e

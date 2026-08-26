@@ -270,7 +270,10 @@ export function createCorpusExtractor(deps: {
     handleEvent(e: ExportCorpusEvent): void {
       if (e.type !== 'extract-request') return
       if (extracting) {
-        // 防御分支：main 编排保证串行；在途忽略新请求（含 sessionId 不同——日志可辨）
+        // 防御分支：main 编排保证串行（上一篇 complete/error 后才发下一篇），该分支仅防事件重发；
+        // 串行不死锁的时序前提=main 侧 complete/error 的篇推进延后至 invoke 回复之后
+        // （corpus.export.service deferOutcome——事件先于回复到达时本分支会永久丢请求，
+        // e2e 多篇序列 2026-08-27 实证）；sessionId 不同=日志+忽略
         console.warn('CorpusExtractor 忽略在途期间的 extract-request', e.sessionId)
         return
       }

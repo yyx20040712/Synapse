@@ -51,12 +51,17 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 //    notes 的 pending 镜像），聚合职责即消费 notes.store——受控例外，reader
 //    域其余文件引用 notes 仍是红线。SR2-C-03（2026-08-26）：ReaderNotesPanel 是
 //    α 双层的阅读器编辑面（B3 裁决 1——总评层消费 notes.store 与库侧同语义，
-//    notes.store 留驻 notes 域），tab-dirty 同型受控例外
+//    notes.store 留驻 notes 域），tab-dirty 同型受控例外。SR2-AI-04（2026-08-27）：
+//    useExportCorpusEvents 是提取管线的 App 层组合根（AI-02 票面明文：生产组装=
+//    该 hook 注入 loadPdfDocument+corpusItem——CorpusExtractor 留驻 reader 域因
+//    INV-16 pdfjs 白名单锚定其路径），聚合职责即消费提取器——受控例外，settings
+//    域其余文件引用 reader 仍是红线
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
   ['src/renderer/features/reader/tab-dirty.ts', ['notes/notes.store']],
-  ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']]
+  ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
+  ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/CorpusExtractor']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')
