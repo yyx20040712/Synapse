@@ -1,0 +1,286 @@
+================================================================================
+审计档：P7-G 第二批五张工单票面对抗式深审（门一 / plan 门）
+================================================================================
+- 日期：2026-08-26
+- 审计器：门一对抗深审子代理（最大恶意找错立场）
+- 对象：SR2-AI-06~10 五张 stub 票面（文件头五层规约）+ tickets/registry.ts 五条登记
+- 模式：只读审查——未运行任何 npm/test/build/git 写命令；未改 src/tickets/docs
+  任何文件；唯一可写产物=本档
+- 技能清点（宪法开工纪律）：code-review-excellence=用（对抗式审查正对面）；
+  systematic-debugging / test-driven-development / verification-before-completion=
+  不用（纯票面只读审查，无实现面、无调试面、铁律禁跑命令）；writing-plans /
+  writing-skills=不用（产物为审计档非计划/技能）。配置自查：无子代理派发，
+  本机为纯文本审查，无等级配错面。
+
+母本与契约面已全量核对：ADR-0015 全文、ROADMAP.md 280~288、蓝图 §4.2/§4.3、
+handoff-v5 §2、idle-handoff-v1 §4、invariants.md（INV-02/08/11/13/14/19/20/21）、
+ai-note.ts、ai_notes.repo.ts、003_ai_notes.sql、SKILL.md、queue.mjs 形态、
+anchor-locate.ts、annotation-anchor.ts（:130/:280/:373 行号核实无误）、
+annotation-style.ts、ReaderNotesPanel.tsx 头注、check-tickets.mjs 全文、
+locks/manifest.json（110 文件）、CorpusExportSection.tsx 头注。
+
+--------------------------------------------------------------------------------
+零、三处自裁的专项审查裁决（审计工单 A 项点名，先裁后进入逐条 finding）
+--------------------------------------------------------------------------------
+
+【自裁① corpus-ai/archive 落协议根——裁决：通过】
+票面声称机器依据=「07 导入器须在不感知用户自选导出目录的前提下目录扫描产物
+——userData/ai-sensor 是唯一裁决在案的应用可知目录」。核对：ADR-0015 §1:21
+协议根=userData/ai-sensor（应用管），§1:27 与 §2:40 提及 corpus-ai/ 与
+archive/ 但未规定根归属；用户语料目录对应用不可知（main 对话框外无记录，
+CorpusExportSection.tsx:7「renderer 不传路径」同族）。自裁有机器依据、已在
+票面声明理由。附带核查通过：SKILL.md:49 现行红线「禁写应用 DB 与导出目录内
+manifest/corpus/fulltext/figures」不覆盖 userData 协议根，工具侧写协议根不踩
+既有禁区；「方案切换=删除旧方案」红线由「SKILL.md 随本单实现更新」（06 票面
+:69）条款承接，旧 corpus-ai/<paperId>/ 分角色 md 形态将被删除而非并存。通过。
+
+【自裁② companion.mjs 双目录 CLI 发现机制——裁决：原则通过，附条件（见 06-3）】
+票面自称「最小发明」并请 plan 门专项审查。核对：ADR-0015 未规定发现机制；
+queue.mjs 单目录 CLI 先例（SKILL.md:16 `node tools/ai-sensor/queue.mjs <语料目录>`）
+延展为双目录=最小增量；协议目录路径由 AI-10 展示（发现 UX 闭环的协议侧半边）。
+原则通过。条件：companion 与 queue/SKILL 工作循环的整合形态未声明（finding
+06-3，W 级）；语料目录参数的用户侧来源（zcode 会话 CWD 语境）应在 SKILL.md
+更新时写明，否则双目录参数对用户是半悬空指令。
+
+【自裁③ 07 幂等=archive 账本 sha 去重——裁决：前提经推演成立，但支撑事实
+未声明（见 07-1，W 级）】
+攻击记录：v1 无 AI 笔记删除面为真（ai_notes 写面唯一=本导入器），但该前提
+隐含依赖两条未声明事实——(a) papers.id=randomUUID 不复用
+（import.service.ts:124），故 DB 重建/换库后旧 archive 条目不会命中新 paperId；
+(b) papers 删除时 ai_notes ON DELETE CASCADE（003_ai_notes.sql:14）清库侧，
+archive 残留无害因 importAll 只扫 corpus-ai 不扫 archive。两条经本审计独立
+核实均成立，故不升级 B；但「经审计核实」不能替代「票面书面登记」——宪法
+禁止依赖未声明默认假设，且后续单据无本档上下文。要求 07 票面补声明（07-1）。
+
+--------------------------------------------------------------------------------
+一、逐条 finding
+--------------------------------------------------------------------------------
+
+[B] 06-1：状态机消解了母本速记明列的 failed 态，却既未规定工具侧失败时 job
+    的处置、也未书面声明消解依据——失败路径的观测面悬空。
+    票面原文：「| reading | 心跳新鲜（job(P) 在或 currentPaper=P） | 心跳过期
+    且 job(P) 仍在 → pending（工具中断，与未拾取同观测面——统一『等待 zcode』
+    呈现）|」；交付面：「companion.mjs（工具侧拾取/心跳/产物落盘/job 移除）」。
+    为何错：母本 handoff-v5:75-77「06 的 job 状态机（pending→running→done/
+    failed+心跳超时态）」明列 failed；ADR-0015 本身未细定义 failed 观测（两
+    母本张力——票面两条路都没走完：翻译 failed 需定义 fs 观测（无据），
+    消解 failed 需书面声明（缺失））。更实质的空洞：companion 执行失败/跳过
+    （模型调用失败、语料缺篇）时移不移 job 票面未规定——若移除且无产物，
+    观测坍缩回 no-job（08 呈现=hidden/idle，「已请求 AI 阅读」提示无声消失，
+    用户无从知晓失败）；「心跳新鲜但 job 已被移除且产物未落盘」瞬态（审计
+    工单 B 项点名格）同根无家可归。违反 idle-handoff-v1:75「有据照译、一丝
+    无据设计空白→终止留人」纪律。建议修法：票面行为层补一段「失败语义」
+    ——规定工具侧失败=保留 pending job（心跳过期→统一坍缩为 pending 呈现，
+    即把 failed 观测并等待 zcode 面），或明文声明「fs 协议下 failed 不可单独
+    观测，坍缩依据=ADR §1 心跳判活唯一」并同步 handoff 速记差异。
+
+[B] 08-1：hidden 态「无行无节」与「AI 读文献」按钮呈现面矛盾——首次发起
+    入口悬空，潜在功能死锁。
+    票面原文：「| hidden | 无 job(P)+心跳不论+无未导入产物+无 DB 数据 | 无行
+    无节 |」；序列④「按钮在 done/imported 态可用；disabled=pending/queued/
+    reading 三态」。
+    为何错：首次使用必处 hidden（无 DB 数据无 job 无产物）——若节不渲染，
+    按钮（票面将按钮与状态行并列于本组件行为层）不可见，则永远无法写第一个
+    job；idle 态（有 DB 数据）同样未声明按钮可见性。序列④的可用/禁用枚举
+    只覆盖 done/imported/pending/queued/reading 五态，hidden/idle 两格空白。
+    E1 按钮是本批工单的存在理由（ADR-0015 背景：「笔记 tab 增『AI 读文献』
+    按钮」），入口呈现=票面必备条款。建议修法：明文规定按钮常驻分节头部
+    （hidden 态=仅按钮无分节数据；idle=按钮+分节），并同步修 hidden 态呈现
+    定义与序列④的可用/禁用全枚举。
+
+[B] 10-1：协议目录路径展示串=母本无据发明且未标注工程裁量，同时自行放宽
+    宪法安全禁令的字面而无先例佐证。
+    票面原文：「协议目录路径展示= userData/ai-sensor——路径串为 main 侧 IPC
+    返回的只读展示串（安全禁令语义=路径来源 main、renderer 不构造不作 FS
+    消费；用户复制给 zcode 用=AI-06 双目录 CLI 的发现面）」；态表：「|
+    installed-idle | … | 『已装技能，未运行』+协议目录路径展示（复制面…）|」。
+    为何错：三层叠加——(1) ADR-0015 §4（58-65 行）全文无「路径展示/复制」
+    条款，N4 三档+装技能之外无此面，票面未像 06 双目录 CLI 那样标注「最小
+    发明/工程裁量/请专项审查」；(2) AGENTS.md:52 安全禁令原文括号明文「路径
+    只能来自 main 侧系统对话框」——展示串来源=main IPC getPath 计算非系统
+    对话框，票面以「语义=来源 main、不构造不消费」自行放宽解释，票面无权重
+    释宪法；(3) 无先例：CorpusExportSection.tsx:7「对话框——INV-07，renderer
+    不传路径」，renderer 显示绝对路径在 repo 内零先例——一旦落地即成为后续
+    一切票面可援引的放宽先例（错误地基传播性）。建议修法：票面显式标注
+    「路径展示=工程裁量（母本无据）」，并将「renderer 经 IPC 展示 main 侧
+    绝对路径串是否作为 AGENTS 安全禁令的已裁决例外」升为留给用户的裁决问题
+    （或在 ADR-0015 增补一句），通过前不实现。
+
+[W] 06-2：imported 态无独立 fs 事实定义且超出 06 服务接口的可观测面。
+    票面原文：「| done/imported | 同上 | 重按按钮写新 job → pending |」
+    （「同上」回指 done 的「job(P) 无+corpus-ai/P.json 存在」）；接口层仅
+    requestRead/readStatus/hasPendingJob/productExists 四方法。
+    为何错：imported 的 fs 事实应为「corpus-ai/P.json 无+archive/P.json 有
+    （∨DB 有数据）」，与 done 的 fs 事实互斥，表内却借「同上」含糊带过；
+    更重要的是 imported 无法由四方法推出（productExists=false 时与 no-job
+    无从区分，需 archive 探测或 07 的 list 面）——态表引入自家接口推不出
+    的态。08 表的 imported 判据=「list 有数据」（DB 面，归 07 通道），恰证
+    观测权在 08 不在 06。建议修法：06 表将 imported 拆出独立行并标注「观测
+    归 08（DB 面），本服务不提供 imported 判定」，或补 archiveExists 方法。
+
+[W] 06-3：companion.mjs 与 queue.mjs/SKILL.md 工作循环的整合形态未声明。
+    票面原文：「交付面…tools/ai-sensor/companion.mjs（工具侧拾取/心跳/产物
+    落盘/job 移除…）+SKILL.md 工作循环更新+queue.d.mts 类型延展」；序列④
+    「queue 既有串行语义，reading 期以 currentPaper 示队列进度」。
+    为何错：ADR §1:27「轮询 pending→执行三读（queue 既有幂等）」有据，但
+    票面未落成结构——companion 是包壳复用 queue 的幂等/断点原语（经
+    import queue.mjs），还是替代现有循环另起？SKILL.md 现行工作循环三步
+    （SKILL.md:34-45：queue 计划→逐篇三读→--done 标记）改写后的步骤序是
+    什么？queue.d.mts「类型延展」延展哪些类型（job/心跳/产物形状？）？
+    两套队列（应用侧 pending job 队列 vs 工具侧语料 progress 队列）如何
+    合流？均空白，实现者将无据设计（idle-handoff §4 红线）。建议修法：票面
+    交付面补三行——companion 与 queue 的调用关系、SKILL.md 新循环步骤序
+    （含语料目录参数来源=zcode 会话 CWD 的说明）、queue.d.mts 延展类型清单。
+
+[W] 07-1：「archive 与 DB 一致」前提依赖两条未声明事实（前提本身经本审计
+    独立核实成立，见零-自裁③）。
+    票面原文：「v1 无 AI 笔记删除面故 archive 记录与 DB 一致性前提成立」。
+    为何错：宪法（AGENTS 状态与不变量纪律）禁依赖未声明的默认假设。前提
+    实际还依赖：(a) papers.id=randomUUID 不复用（import.service.ts:124），
+    使 DB 重建/换库后旧 archive 条目永不命中新 paperId；(b) papers 删除
+    CASCADE 清 ai_notes（003_ai_notes.sql:14）后 archive 残留因 importAll
+    只扫 corpus-ai 而无害。两条不写进票面，后续维护者改动 id 生成或扫描面
+    时无从知道幂等前提的支撑链。建议修法：票面幂等条款补一句前提登记
+    （「前提：paperId=randomUUID 不复用+papers 级联删后 archive 残留不参与
+    扫描——两事实破坏时幂等前提失效需重裁」）。
+
+[W] 07-2：「role/question 枚举=zod 单源」与既有契约头注措辞互斥（接缝归责
+    纪律：发现互斥即报告，不得顺手改一侧）。
+    票面原文：「校验面：aiNoteInputSchema 逐行校验（role/question 枚举=zod
+    单源，七问 v1 冻结不扩枚举——ai-note.ts 头注契约）」。
+    为何错：ai-note.ts:6-8 头注明文「role 枚举真相=迁移 003 DDL CHECK…
+    本文件 zod 枚举为镜像消费」（question 才是 zod 单源——DDL 不加 CHECK）。
+    票面把 role 也归 zod 单源，与被引用的头注契约自相矛盾；虽然「经 zod
+    校验导入」这个行为本身正确（应用边界校验），措辞互斥会在将来 role 扩
+    枚举时误导实现者只改 zod 不出新迁移（正是 INV-11 接缝锚定要防的事故）。
+    建议修法：票面改为「role=DDL 真相+zod 镜像校验；question=zod 单源」。
+
+[W] 08-2：idle 与 imported 两态触发事实完全相同、呈现不同——态空间非正交。
+    票面原文：「| idle | 同上但有 DB 数据 | 仅分节（无状态行）|」「| imported
+    | 导入完成（list 有数据） | 分节刷新+toast 汇总（三桶）|」。
+    为何错：两格的 fs/DB 事实同为「无 job+无未导入产物+DB 有数据」，状态机
+    由事实推导的原则下同一事实不得有两种呈现——imported 实为「导入动作完成」
+    的瞬时反馈（事件）而非稳态（态）。宪法状态机前置纪律要求态空间枚举无歧
+    义，非正交表会在实现时迫使实现者私加隐藏判据（如刚导入标记）=无据设计。
+    建议修法：删 imported 稳态，改记「导入完成=动作事件（toast+刷新），
+    稳态回落 idle」，序列⑤同步改「idle→pending（重读）」。
+
+[W] 08-3：INV-20 exact 层对 AI 段的滚动目标接缝空白——ADR ①层「滚动+闪烁」
+    对 AI 面静默打折。
+    票面原文（08）：「条目单击→locateAnchor（INV-20 单入口消费方——C-05
+    服务…）」；（09）：「跳转降级归 INV-20 locateAnchor 三防线，渲染面禁
+    各写降级」。
+    为何错：locateAnchor 的 exact 层滚动+闪烁目标绑 [data-annotation-id]
+    元素（anchor-locate.ts:14-15），LocateTarget.annotationId 注释明文
+    「缺省则 exact 只完成页级停驻」（anchor-locate.ts:77-79）。AI 条目无
+    annotationId（自持三元组，07 票面 D3 声明）——则 08 条目单击的 exact
+    结果=只停页不滚动不闪烁，而 ADR §3:53-54 ①层字面=「verifyQuote 重锚
+    （滚动+闪烁）」。09 渲染的 AI rect 明明有精确位置，却未规定 DOM 锚标记
+    （如 data-ai-note-id）供定位消费；08 也未声明「AI 面 exact=页级停驻」为
+    接受的工程裁量。两票都没处置这个三文件接缝（08/09/anchor-locate），
+    违反接缝归责纪律。建议修法：09 票面规定 AI rect 的 data-ai-note-id 标记
+    +08 声明消费方式（传锚或显式声明页级停驻=AI 面裁量并记入 INV-20 登记
+    册备注），二选一落到票面。
+
+[W] 09-1：对「08∥09」偏序的静默收紧——09 硬依赖 08 交付物，票面本体未声明
+    执行序依赖。
+    票面原文（09 架构层）：「依赖 annotation-anchor…+ai-note-style（08 交付）
+    +AiNote 类型…数据单源=ai-notes.store（AI-08 交付）」。
+    为何错：母本偏序=06→07→08∥09（ROADMAP:288、handoff-v5 §2、ADR 后果
+    节），∥=可并行；但 09 消费 08 的两个交付物（ai-note-style.ts、
+    ai-notes.store.ts）→实际为串行依赖 08。registry 注释（registry.ts:176
+    「建议执行序 08 先于 09」）有兜底但「建议」弱于票面本体条款，且 09 票面
+    自身无对应声明——按号序串行领取时风险低，但票面完备性要求写明（并行
+    分支的假象会误导后续排期/回炉分析）。建议修法：09 行为层或架构层补一行
+    「执行序实依赖 08（消费其交付物）；∥仅为母本逻辑分组，特此收紧声明」。
+
+[W] 09-2：INV-20 消费方级用例的归属两票重复声明，且 09 侧声明与其自身行为
+    面/依赖面错位。
+    票面原文（08）：「本单补 INV-20 跨视图消费方级用例」；（09）：「INV-20
+    三层防线验收条款（消费方级）：AI 段点击跳面板面=08 条目 onLocate 消费
+    locateAnchor；exact/page/paper 三结果呈现各归其位（本单用例断言三防线
+    消费路径——INV-20 登记册『跨视图消费方级随 P7-G 补』兑现）」。
+    为何错：三防线（exact/page/paper）是 PDF 定位语义；09 的点击行为=
+    onJumpToNote 上抛跳面板（非 PDF 定位），且 09 架构层依赖清单无
+    locateAnchor（「零 DB/零 IPC 直调」）——「本单用例断言三防线消费路径」
+    在 09 自身行为面上无法直接执行，真正的消费路径断言只能落在 08（条目
+    单击→locateAnchor）。两票都揽同一兑现面（registry 注释「随 08/09 补」
+    同病），兑现职责含糊+09 侧条款自相矛盾。建议修法：INV-20 消费方级用例
+    明确归 08；09 改为「断言点击→onJumpToNote 上抛+面板滚动高亮（链路的
+    09 段）」，registry 注释同步改「随 08 补」。
+
+[W] 10-2：检测四态表缺 status.json 损坏分支（审计工单 B 项点名格）。
+    票面原文：态表四格=zcode-not-found/found-skill-missing/installed-idle/
+    running；文化层「检测失败=态降级呈现+重试按钮（动作型 toast INV-02）」。
+    为何错：06 readStatus 明文「损坏=上抛中文错误（三态分离）」——技能已装
+    且 status.json 损坏时（installed 前提下）四态无家可归；「检测失败=态
+    降级」未定义降到哪一格、是否引入第五态（error），子格含糊。对照 08 对
+    同一事实有显式条款（「连续失败 3 次显示离线提示行」），10 缺席。建议
+    修法：态表补第五格 error（readStatus 抛错→「状态文件损坏」+重试）或在
+    迁移段明文「损坏→按 not-running 呈现+可展开错误详情」。
+
+[N] 08-4：queued 态「currentPaper≠P」未拆 currentPaper=null 子格——「当前：
+    他篇」文案对 null（工具活着但队列空、job 未拾取竞态）错误。
+    建议：文案按 currentPaper null/他篇分两句，或态表补注。
+
+[N] 06-4：readStatus 在 status.json missing 时的 SensorStatus 形状未定义
+    （running=false+空串占位还是可空字段）。建议接口层写明。
+
+[N] 08-5（含 10）：STATUS_POLL_MS=5s 在 08/10 两票各写一份，未声明归属。
+    按 Rule of Three 第 2 次保持重复，各自域私有合法；但同名同值暗示同一
+    概念，宜一句话声明「各自域私有常量，非共享单源」或收归单源，消除
+    INV-11 歧义。
+
+[N] 06-5：ai-sensor 通道的 preload 桥归属未声明——06 交付面列 ipc/register+
+    services 装配但未列 preload；07 对自家通道列了「preload+renderer client
+    全链」；08 只笼统写「window.api 类型面」。建议 06 交付面补一句 preload
+    归属（随 06 交付或显式归 08）。
+
+[N] 10-4：「~/.zcode 目录存在=CLI 痕迹」是最弱痕迹（zcode 已装未运行过可能
+    无该目录→误报「未发现 zcode」）。建议安装指引文案留余量（「若已安装
+    zcode 但显示未发现，请先运行一次 zcode」）或声明启发式取舍。
+
+[N] 06-6：协议根与 pending/corpus-ai/archive 子目录的初始化策略未声明
+    （首次 requestRead 时 mkdir recursive？由谁建、何时建）。原子写 tmp+
+    rename 在目录缺失时会失败。建议架构层补一行。
+
+--------------------------------------------------------------------------------
+二、其余审计面核对记录（无 finding 的通过面，备查）
+--------------------------------------------------------------------------------
+- 母本翻译覆盖：ADR-0015 五节条款在五票均有对应（§1→06、§2→07、§3→08/09、
+  §4→10、§5 密钥=工具侧不动，五票零密钥面✓）；HEARTBEAT_FRESH_MS=10min 已
+  标注「tunable 常量」=工程裁量声明合规✓；10 三档拆四态已声明拆分理由✓；
+  08 的 role×question 分节与 ADR §3「装配按 role→question 分组」一致✓。
+- 通道/服务/props 名两端一致：ai-sensor/request-read、ai-sensor/status、
+  ai-notes/import、ai-notes/list、ai-notes.store、ai-note-style、
+  highlightAiNoteId（08 props ↔ 09 上抛宿主接线）、locateAnchor 逐一双端
+  核对无误；HEARTBEAT_FRESH_MS 单源在 06 服务（running 输出）、10 不双写
+  阈值✓。
+- 06 done vs 08 done-unimported 判定一致（job 无+corpus-ai 在）✓；08 表
+  done-unimported 在心跳新鲜（工具跑他篇）时呈现合理，两表无互斥矛盾✓。
+- 宪法红线：五票分层单向声明合规（06 ipc→services→fs 不触 db、07 四层）；
+  负面清单守住（08 md 不渲染/无自动导入、10 无后台常驻、06 无 main 定时器）；
+  受锁声明齐（06/07/10 的 schemas+api-surface [locked-change]、五票受锁测试
+  locks:generate+apply）✓；electron-builder.yml「不受锁」声明经 locks/
+  manifest.json（110 文件）核实为真✓；SKILL.md/queue.d.mts 不在锁清单✓。
+- check-tickets 机检面：五票 b3 指针=P7-G（ROADMAP 已裁决集内）✓；三张 tsx
+  的 data-ticket 占位齐✓；五文件全号（SR2-AI-XX）仅出现自身 id 各 2 次
+  （注释头+STUB/data-ticket），对已 done 的 AI-01~05 引用全部用短号（AI-XX）
+  规避规则 2 红线，grep 逐文件核实✓。
+- registry 一致性：五条 summary/area/owner/status 与票面头注逐条对齐✓；
+  注释块依赖偏序+「建议执行序 08 先于 09」与票面一致（其弱化问题见 09-1）✓。
+- 08 e2e 的 SYNAPSE_USER_DATA 隔离直写先例存在（smoke/reader-text/
+  corpus-export spec 均用）✓；annotation-anchor 三个函数行号（130/280/373）
+  核实无误✓；annotation-style 色板=CSS 变量单源先例成立，08 的 ai-note-style
+  「取色只允许 theme.css 变量」同型合规✓。
+
+--------------------------------------------------------------------------------
+三、统计与总评
+--------------------------------------------------------------------------------
+B=3（06-1、08-1、10-1）  W=9（06-2、06-3、07-1、07-2、08-2、08-3、09-1、
+09-2、10-2）  N=6（08-4、06-4、08-5、06-5、10-4、06-6）  合计 18 条。
+
+总评：FAIL——存在 3 条未处置 BLOCKING（06 失败观测面悬空 / 08 首次发起入口
+悬空 / 10 路径展示无据发明+宪法边缘），地基级空白须在票面层修复后重过门一；
+三处自裁中①②通过、③前提成立但须书面登记（07-1）。
+================================================================================
