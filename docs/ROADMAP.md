@@ -255,6 +255,28 @@
 > 用例）。下一单 SR2-AI-04（票面已就位；AI-02 的会话超时兜底观察项随其
 > e2e 评估）。
 
+> **SR2-AI-04 ✅**（2026-08-27 5310975——设置页导出节三件套（store 进度态
+> 单源投影/useExportCorpusEvents App 层事件桥——INV-14 成对清理+终局 toast
+> busy 变化沿 R14/CorpusExportSection 单飞 disabled）+**e2e 受锁新 spec：
+> pdfjs render→canvas→PNG 渲染面首次真环境覆盖**+INV-17/18 e2e 面+INV-14
+> 扩面（事件订阅同族）；**e2e 首跑即抓出 AI-03 两处真缺陷并修复**：①
+> preparing 源文件判定 fileRefById 全路径（PaperDetail.fileName 是基名丢目录
+> 层——单测桩恒等映射不可达面）②deferOutcome 篇终局推进延后至 invoke 回复
+> 后（处理器内同步发下一篇 extract-request→事件先于回复→提取器防御分支丢
+> 请求→串行链死锁——时序契约入 INV-18 补条）；超时兜底观察项裁决=v1 进程组
+> 同死语义可接受（报告 §2.3）；双门 FAIL 轻量→全处置→GLM PASS；verify 70
+> 文件 426 用例+e2e 13/13）。
+
+> **SR2-AI-05 ✅ → 应用面第一批全役收官**（2026-08-27 9fea57e——queue.mjs
+> 纯函数三件（diff/幂等/断点续跑六用例 vitest 宿主）+IO 骨架（planSession
+> 激活判据/markDone 原子写）+CLI+SKILL.md+config.template+prompts×4+README；
+> 零 npm 依赖零出网；门一 PW（W1 readJson 三态分离——损坏静默重置实锤修复）
+> →门二 11 探针终审 PASS+N-新1 undefined 哨兵随手修；verify 71 文件 432
+> 用例+locks 110+工单 94 open 0。**AI-01~05 五单全役 ✅**——战役报告=
+> docs/reports/2026-08-27_ai-campaign.md（交付清单/双门战绩/随手验清单/
+> 教训七条/手动视检留用户清单）。第二批 AI-06~10（ADR-0015 回灌与联动组）
+> 票面未工单化按增容节顺排。）
+
 > **第四轮裁决增容（2026-08-25 蓝图 §4.3，ADR-0015）——SR2-AI-06~10 回灌与联动组**：
 > 06 伴随进程文件协议（pending job/status+心跳/产物 corpus-ai——应用零 LLM 出网
 > 保持，E1=B'）；07 回灌导入器（ai-notes/import+list 通道 [locked-change]，幂等，
