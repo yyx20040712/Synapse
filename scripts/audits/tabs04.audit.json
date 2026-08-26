@@ -1,0 +1,71 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "window.on('close', ...) 内 void handleCloseWithQuitGuard(...)",
+      "issue": "close 守卫中 confirmQuit 弹框 Promise 无拒绝兜底：若 dialog.showMessageBox 在窗口状态异常时 reject，close 已被 preventDefault，窗口将无法通过该路径关闭，且产生 unhandled rejection。",
+      "evidence": "diff: window.on('close', (event) => { void handleCloseWithQuitGuard(getQuitDirty(), event, window, {...}) })",
+      "suggestion": "在 handleCloseWithQuitGuard 中对 deps.confirmQuit 包 try/catch（或用 .catch 兜底），reject 时视为取消（不 destroy），并 console.error 记录。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "issue": "确认框默认焦点落在「确认退出」，用户误触回车/空格会直接确认退出并丢弃未落库数据，与退出拦截防丢数据的目标相悖。",
+      "evidence": "diff: buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "suggestion": "将 defaultId 改为 1（取消）、cancelId 改为 0，使默认动作是取消退出。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/ipc/system.ts",
+      "line_hint": "文件头注「- 测试：tests/unit/ipc/system.test.ts（已锁定，shell 桩 + 攻击向量 + 通道透传）」",
+      "issue": "头注声明通道透传测试在 system.test.ts，但实际 system.test.ts 零 diff，透传测试落在 tests/unit/windows/quit-dirty-guard.test.ts 的第二个 guardedDescribe。声明与事实互斥，后续维护者会被指引到错误文件。",
+      "evidence": "diff: system.test.ts 未出现在 diff 中（简报：已精确还原零 diff）；实际测试在新建的 tests/unit/windows/quit-dirty-guard.test.ts",
+      "suggestion": "把头注改为准确指向 tests/unit/windows/quit-dirty-guard.test.ts，并注明 check-tickets 规则 5 机器裁定的落位原因。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md（diff 未见改动）",
+      "line_hint": "新增跨模块链路：renderer useTabDirtyAggregate → window.api.system.setQuitDirty → main 模块缓存 → close 守卫",
+      "issue": "按宪法「新增跨模块行为不登记本册视同未完成」，本次新增的 dirty 上报→缓存→退出拦截跨模块行为未在 docs/invariants.md 中看到登记；若确未登记，则工单翻 done 不符合 DoD。",
+      "evidence": "AGENTS.md: 「跨模块/跨时间的行为不变量一律登记 docs/invariants.md……新增跨模块行为不登记本册视同未完成」；diff 中无 docs/invariants.md 变更",
+      "suggestion": "在 docs/invariants.md 登记「quitDirty 缓存与 renderer 聚合 dirty 最终一致（push 沿上报）+ close 守卫流」，注明声明处与强制方式；若已有相关条目，请人工确认并在审计结论中说明。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/windows/main-window.ts",
+      "line_hint": "handleCloseWithQuitGuard 中 await deps.confirmQuit(...)",
+      "issue": "确认框弹出期间若再次收到 close（程序化 win.close/app.quit 等二级路径），会再次进入守卫流程；当前依赖「模态天然挡住」但无信号量防护，也无重复 close 序列测试。",
+      "evidence": "注释: 「确认框模态天然挡住弹出期间的重复 close」；测试未覆盖 confirming→confirming 跨格序列",
+      "suggestion": "增加 isConfirming 标志（或扩展 win 类型后检查 isDestroyed()）防重入，并补一条重复 close 的序列测试。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/app/App.tsx",
+      "line_hint": "void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "issue": "IPC 调用未处理失败（无 catch），通道异常时产生 unhandled rejection 且 dirty 状态可能未能同步到 main。",
+      "evidence": "diff: void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "suggestion": "建议 .catch(() => {}) 或 console.warn，失败时保持 main 缓存不变，避免 unhandled rejection 噪音。"
+    }
+  ],
+  "summary": "实现与 SR2-TABS-04 头注四态规约一致，IPC 三面（判定/缓存/守卫流）测试闭环完整，锁文件与 registry 流程合规，未发现安全禁令违反或 BLOCKING 级缺陷。主要问题集中在健壮性（确认框 Promise 无兜底、默认按钮偏危险）与文档一致性（system.ts 头注与实际测试落位互斥、跨模块行为未见 invariants 登记），建议修复 WARN 后合入。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 9835,
+      "completion_tokens": 19410,
+      "total_tokens": 29245,
+      "prompt_tokens_details": {
+        "cached_tokens": 1664
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 18137
+      },
+      "prompt_cache_hit_tokens": 1664,
+      "prompt_cache_miss_tokens": 8171
+    },
+    "finish_reason": "stop"
+  }
+}

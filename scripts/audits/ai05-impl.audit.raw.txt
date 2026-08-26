@@ -1,0 +1,61 @@
+全部实证完成。以下是 SR2-AI-05 深审裁决书。
+
+---
+
+# SR2-AI-05 深审裁决书（对抗式代码审计 · 第一门）
+
+**审计对象**：`tools/ai-sensor/`（queue.mjs + queue.d.mts + SKILL.md + config.template.json + prompts/×4 + README.md）+ `tests/unit/tools/queue.test.ts`（锁定合约）+ `.gitignore`/`tickets/registry.ts` 接线。审计基线=工作区待提交态（HEAD=5310975 AI-04；queue.mjs 修改态，余为未跟踪新增，registry 已翻 done 未提交）。
+
+## 实证记录（机器关卡逐项）
+
+| 关卡 | 结果 |
+| --- | --- |
+| `npm run locks:check` | 绿（110 受锁文件含 `tests/unit/tools/queue.test.ts`，manifest 已同步） |
+| `npx eslint tools/ai-sensor/queue.mjs` | 绿（tools/ 入 eslint 覆盖实证，max-lines 对 .mjs 生效，170 行） |
+| `npm run typecheck` | 绿（exit 0——间接实证 queue.d.mts 经 queue.test.ts import 链被 tsc 解析：缺失或签名不兼容必红） |
+| `npx vitest run tests/unit/tools/queue.test.ts` | 6/6 绿（ABI 切 node 后跑、已切回 electron） |
+| `npm run tickets:check` / `npm run quality:check` | 绿 / 绿（无占位标记、无乱码、无跨域引用） |
+| CLI 临时目录实测 | happy path（队列→--done→空队）✓；**损坏注入两场景见 W1（实锤）** |
+| `grep TODO|FIXME|placeholder tools/ai-sensor/` | 零命中 |
+| 接缝契约比对 | 应用侧 `corpus.export.service.ts:148-156/210-217/258` 与 queue.d.mts/diffQueue 逐字段比对：papers[] 七字段、`fulltext/<paperId>.txt`、`corpus/<paperId>.md`、figures 命名**全部一致**；唯顶层 `exportedAt` 镜像缺失（N1） |
+| 枚举同源 | prompts 的 Q1..Q7 + `## divergence` 与 `src/shared/models/ai-note.ts:20` `AI_NOTE_QUESTIONS` 一致；synthesize 为库级收尾不属 ai_notes role，无冲突 |
+| 不变量登记 | `docs/invariants.md` INV-18 条目已含「中断=无 manifest=工具侧不可激活」——应用↔工具接缝已归责登记；INV-21 与 SKILL.md「应用永不 spawn」声明一致 |
+
+## 发现清单
+
+**【W1】WARN｜`tools/ai-sensor/queue.mjs:96-102`（readJson catch-all）——「不存在/读失败/解析失败」三态合并，静默丢失进度 + 失实诊断（双后果实测实锤）**
+
+- **后果 (a) progress.json 损坏 → 已读进度静默全量重置**。实测序列：`--done p1` 后 `队列：0 篇待读 / 1/1 已完成` → 写入 `{BROKEN` 损坏 progress.json → 重跑输出 `队列：1 篇待读 / 0/1 已完成`，**EXIT=0、零警告**——已 done 篇被静默打回 pending。三读是全库 LLM 重成本操作，静默重置=成本事故面；且用户不知情继续 `--done` 时，markDone 会用 fresh 种子覆写 progress.json，旧进度永久丢失。断点续跑承诺（票面核心语义）在损坏场景下静默失效。
+- **后果 (b) manifest.json 存在但损坏 → 报错口径失实**。实测：损坏 manifest 与空目录两种场景输出**逐字相同**（「manifest.json 不存在——导出未完成或目录不对」）。ADR-0011 v1.1 判据是「manifest **存在**=导出完整就绪」——损坏文件在磁盘上存在，却按不存在分支走，用户被误导回应用全量重导（清空重建，GB 级成本）；若真实故障是文件被外部工具改坏，重导修不了根因。
+- **修复建议**（约 5 行，纯 IO 面，不动锁定测试）：`readJson` 捕获后按 `e.code === 'ENOENT'` 才返回 fallback；解析/读取失败单独上抛，由 CLI 兜底 `console.error + process.exit(1)`（progress.json 损坏时明示「进度文件损坏，将全量重读」并要求显式确认/手动删除，至少不得静默）。
+
+**【N1】NIT｜`tools/ai-sensor/queue.d.mts:20-24`——CorpusManifest 镜像缺顶层 `exportedAt` 字段**
+
+应用侧实际 manifest 形状为 `{ schemaVersion, exportedAt, papers, errors? }`（`corpus.export.service.ts:210-215` 实证）；d.mts 头注自称「manifest.json 产物契约的镜像消费」却漏声明 `exportedAt: string`。无运行时影响（JSON.parse 对多余字段无害，测试 fixture 同样不含），但未来按 d.mts 理解契约的 zcode 会话会漏知该字段——文档性契约漂移。修复：接口补一行 `exportedAt: string`。
+
+**【N2】NIT｜`tools/ai-sensor/queue.mjs:48/65/120`——schemaVersion 只写不读，无版本守门**
+
+`PROGRESS_SCHEMA_VERSION` 写入每个 ProgressState 但任何读取路径都不校验：读到未知 schemaVersion（未来 v2）的 progress 会按 v1 语义静默处理；`applyDone:65` 更会把任何输入版本**静默降级重写**回 1。版本位存在的全部意义就是守门，当前是「有版本位无版本门」——宪法「禁止依赖默认假设」（默认 progress 永远 v1）盲区。当下唯一版本=1 故无实际触发面。修复：`planSession` 读入后校验 `schemaVersion === PROGRESS_SCHEMA_VERSION`，不匹配 → stderr 报版本不匹配 + exit 1。
+
+**【N3】NIT｜`tools/ai-sensor/queue.mjs:125-132/136-150`——CLI/markDone 输入防御三缺口**
+
+(a) `--done` 不校验 paperId ∈ manifest（manifest 在 markDone 里已读到手上，一行校验可拦打错 ID：现状打印「已标记完成：p-typo」成功假象，幽灵条目仅事后经 staleIds 间接可见，真篇仍 pending 重读）；(b) 未知 flag 静默忽略（`node queue.mjs dir --foo` 按无 flag 跑，用户以为参数生效）；(c) `--done` 零 outputs 放行——SKILL.md「篇级产物落盘后才置 done」纯靠调用方纪律，可加 outputs 非空校验（甚至 stat 存在性校验）拦截。三者合并为输入面完备性缺口。
+
+**【N4】NIT｜IO 面零单测——激活判据语义无覆盖**
+
+「manifest 不存在=不激活」是 ADR-0011 v1.1 唯一激活判据 + INV-18 工具侧语义，但无任何测试覆盖（锁定六用例均纯函数面；queue.mjs 头注/测试头注明文「IO 骨架与纯函数分离，不在单测面」——属票面已知范围，故 N 而非 W）。本次 W1 实测即证明 IO 面行为只有人工探针才能发现。建议后续以注入 fs 或临时目录补 planSession 两分支 + progress 损坏分支最小单测（W1 修复落地时顺带）。
+
+## 已核查不作发现（证伪/已知决策/票面范围）
+
+- `applyDone` append 未知 paperId（queue.mjs:64）——重导后新篇在旧种子外标记完成的**正常必需路径**，且 staleIds 报告兜底可见。
+- queue.d.mts 手工对齐（已知决策）——五个导出+六个签名逐项比对一致（除 N1）；typecheck 绿实证 d.mts 在 tsc 编译面内（缺失必红），并非完全无检查。
+- tmp 固定名并发竞态——单用户串行假设已由 SKILL.md 工作循环（batchSize=1、逐篇串行）+ config.template 声明覆盖。
+- config.template.json 无代码消费——三读主循环=提示词工程不工单化（票面明文），config 消费者=zcode 会话内三读过程，SKILL.md 表述自洽。
+- 零 npm 依赖（仅 node:fs/promises、node:url、node:path）、不 import 应用 src、禁写应用 DB/manifest（只读 manifest、只写 progress.json+corpus-ai）、行数 170≤500、中文 UTF-8 可读、无占位标记、.gitignore/registry/locks 接线——全部核对通过。
+- 断点续跑两层互不相干（INV-18）语义在 queue.mjs 头注/SKILL.md/README.md 三处声明一致无互斥。
+
+## 总裁决：**PW（PASS with warnings）**
+
+无 BLOCKING。票面核心承诺（diff/幂等/断点续跑/schema 形状/原子写/零依赖/边界铁律/锁定测试六面/locks 同立/eslint 覆盖/枚举同源）全部兑现且机器关卡全绿。W1 为实测实锤的真实缺陷（静默丢进度 + 失实诊断），建议**提交前顺手修复**（5 行改动，不触碰任何锁定文件）；若明示接受（单用户工具、progress 为可再生衍生状态、最坏代价=三读重跑成本），可带 1W+4N 提交。提交提醒：本单含 `tests/**` 新增（受锁），提交信息须带 `[locked-change]` 尾注；工作区另有 `dist_new/`、`scripts/audits/` 未跟踪残留，staging 须显式列文件（宪法纪律，防误扫）。
+
+尾注：实证遗留两个系统临时目录（`/tmp/tmp.wCQcvLMGc2`、`/tmp/tmp.SwH235Ar0G`，各含一个几字节 json），无害、系统自动清理。

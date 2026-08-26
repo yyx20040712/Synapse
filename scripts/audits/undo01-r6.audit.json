@@ -1,0 +1,55 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 中 remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)",
+      "issue": "delete 逆操作在 await 期间若有新操作入栈，s.length 已变化，skipIdx=s.length-1 不再指向正在被撤销的 top。remap 会把该 delete 条目自身也改写为新 id，随后 s.indexOf(top) 为 -1，导致该条目未被移除而残留栈中且已指向新 id；后续撤销会产生重复 re-create/删除。与代码注释和 INV-23 宣称的『await 期间新入栈不错弹』相违背。",
+      "evidence": "pushUndo 不受 undoInFlightPapers 限制，测试『撤销 await 期间新操作入栈』明确支持该路径；但 remap 的 skipIdx 在 await 后用 s.length - 1，未考虑等待期间追加的新条目。",
+      "suggestion": "在 remap 前先 const topIdx = s.indexOf(top)；若 topIdx !== -1，把 topIdx 作为 skipIdx 传给 remapStackIds，remap 后再 s.splice(topIdx, 1)；若 topIdx === -1（已被 FIFO 挤出），则不需要 remap。补一条『delete 逆操作 + await 期间入栈』的跨格用例。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "INV-23 行",
+      "issue": "不变量登记与实现不一致：INV-23 写『成功后按捕获下标 splice 精确移除』，但实现实际按对象身份 s.indexOf(top) 移除；且 INV-23 写 13 用例，diff 中新增测试文件实际有 14 个 it 块。",
+      "evidence": "INV-23 文本与 annotation-undo.ts 注释『按身份移除（非下标——await 期间…deepseek r5b）』及 tests/unit/renderer/annotation-undo.test.ts 的 it 数量不符。",
+      "suggestion": "把 INV-23 更新为『按对象身份精确移除（await 期间新入栈不错弹）』，并将用例数改为实际数字。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "行为层头注",
+      "issue": "宪法『状态机前置』要求 store+异步+用户输入的修改先给出显式状态/迁移表（枚举态空间）；当前头注只有行为列表和 UndoOutcome 判别联合，没有以表格式枚举 empty/busy/api-failed/success 等状态及迁移。",
+      "evidence": "AGENTS.md：『行为层规约必须先给出状态/迁移表（枚举态空间）』；该文件头注未提供状态/迁移表。",
+      "suggestion": "在文件头注补一张状态迁移表，明确：空栈→empty、撤销执行中→busy、api 失败→api-failed 且不弹栈、成功→弹栈+apply，并标注并发/重试路径。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "showToast('撤销失败，请重试')",
+      "issue": "失败提示未指定 kind，toast-store 默认 info（3.5s）；api 失败/异常提示应使用 error（6s）语义，否则失败提示视觉强调不足。",
+      "evidence": "toast-store.ts：showToast(message, kind: ToastKind = 'info')；reader.store 中 api-failed 与 catch 两条路径均未传 'error'。",
+      "suggestion": "改为 showToast('撤销失败，请重试', 'error')。"
+    }
+  ],
+  "summary": "撤销栈主体设计清晰、测试面较全，接缝与分层基本守约；但 delete 逆操作的 id remap 在 await 期间有新入栈时 skipIdx 计算错误，会造成脏栈残留，属于必须修复的跨格正确性缺陷。另有 INV-23 登记与实现不一致、状态机前置未显式满足等纪律性问题，建议一并修正。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 19756,
+      "completion_tokens": 24156,
+      "total_tokens": 43912,
+      "prompt_tokens_details": {
+        "cached_tokens": 4224
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 23145
+      },
+      "prompt_cache_hit_tokens": 4224,
+      "prompt_cache_miss_tokens": 15532
+    },
+    "finish_reason": "stop"
+  }
+}

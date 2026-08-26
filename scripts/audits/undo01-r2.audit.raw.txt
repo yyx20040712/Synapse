@@ -1,0 +1,668 @@
+== reasoning ==
+We need to audit this diff. Need output only JSON. Need be thorough. We need inspect all relevant aspects.
+
+We have AGENTS.md, task brief, diff. We need identify issues according to priorities. Need not invent.
+
+Let's parse.
+
+Changes:
+- locks/manifest.json updated: new test file annotation-undo.test.ts, reader-shortcuts.test.tsx sha changed. This is locked-change? The test files are locked; CI checks sha. The manifest updated. Fine if locks:apply done. Also generatedAt. Need note maybe reader-shortcuts.test.tsx change is locked-change but no [locked-change] tail in commit? The AGENTS says "受锁文件…变更必须带 [locked-change] 尾注". The diff doesn't show commit message, so can't assess. The brief says [locked-change] same batch update. No evidence of commit messages. likely not issue.
+
+- AnnotationLayer.tsx: adds import pushUndo, adds pushUndo on saveComment success and delete success. Comment compression. Need check annotation-undo. In saveComment, after updateAnnotation, pushUndo(a.paperId, { kind: 'comment-edit', before: a }). But `a` is the previous annotation? Let's see context. It computes `const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }` then saves, updates store with saved, pushUndo(before a). Is `a` the original? Need verify in context. It has `const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))`. That uses `next` with old `a` plus new comment. pushUndo before: a appears to be original annotation from props? likely yes. Need comment-edit undo: `undo` calls updateAnnotation({ annotation: top.before }); apply upsert r.data. That restores old comment. Good.
+
+But subtle: if user edits comment multiple times: undo stack has [comment-edit before=v1, comment-edit before=v2]. Undo first restores v2, second restores v1. Good.
+
+- Delete: pushUndo(a.paperId, { kind: 'delete', annotation: a }) after delete. Seems okay.
+
+- ReaderPage: adds undo action to actions object. It's `undo: () => void useReaderStore.getState().undo()`. Fine. Note useReaderStore.getState().undo returns Promise<void>, `void` discards. Could be okay.
+
+- ReaderShortcuts: adds ctrl+z key binding, preventDefault true. Need think: keymap layer "editable 避让" likely handled elsewhere. The comment says keymap avoids when editable. Test covers. Fine.
+
+- SelectionLayer: after saveAnnotation success, pushUndo(paperId, { kind: 'create', annotation: saved }); clearTabDirty. Good.
+
+- annotation-undo.ts big rewrite. Need inspect correctness and edge cases.
+
+Class:
+- UndoEntry union with kind create/delete/comment-edit. create holds annotation (new saved), delete holds annotation (deleted), comment-edit holds before.
+- UndoApply remove/upsert.
+- UndoOutcome.
+- UNDO_DEPTH_MAX = 50.
+- stacks Record<string, UndoEntry[]>. Simple mutable object.
+
+pushUndo: creates array if needed; push; if >50 splice(0, s.length-50) removes oldest. Good.
+
+clearStack: delete.
+
+toInput: strips id/paperId/createdAt/updatedAt. Does it strip anything else? AnnotationInput likely type has fields? Need ensure exactly matches schema. It includes comment, rects. It omits maybe annotation type? Let's see annotation model? Diff shows type Annotation, AnnotationInput. It includes page, kind, color, quoteText, prefixText, suffixText, startOffset, endOffset, rects, comment. Could be AnnotationInput has `quoteText: string | null`? toInput always string. Fine. Does AnnotationInput accept id? likely no. Good.
+
+undo:
+```
+const s=stacks[paperId]; if (s undefined||0) return {done:false,reason:'empty'}
+const top=s[s.length-1]!
+let apply
+try {
+ if top.kind create:
+   r= await api.reader.deleteAnnotation({annotationId: top.annotation.id})
+   if !r.ok return {done:false,reason:'api-failed'}
+   apply = {type:'remove', id: top.annotation.id}
+ else if top.kind delete:
+   r= await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })
+   if !r.ok return {done:false,reason:'api-failed'}
+   apply={type:'upsert', annotation: r.data}
+ else:
+   r= await api.reader.updateAnnotation({ annotation: top.before })
+   if !r.ok return {done:false,reason:'api-failed'}
+   apply={type:'upsert', annotation: r.data}
+} catch { return {done:false,reason:'api-failed'} }
+s.pop()
+return {done:true, apply}
+```
+Potential issues:
+1. `api` import from '../../api/client'. In tests they stub window.api. How does api/client work? likely global window.api. Fine.
+
+2. If API returns ok but `r.data` missing? For save/update likely data. Test uses data. If API returns ok with data undefined maybe apply annotation undefined causing bug. But contract likely ok data.
+
+3. **Race/concurrency**: Multiple rapid ctrl+z? The undo function is async; reader.store.undo() calls runUndo(paperId) without serialization. Suppose user presses ctrl+z twice quickly. First runUndo grabs top A, awaits api. Second runUndo grabs same top A (since stack not popped until after api success), invokes same delete twice, then both pop? Actually each call after await does s.pop() unconditionally if successful. Both see top A, both do api delete. If both succeed, first pops top (removes A), second then pops next top (B) but the api call was for A! Disaster: double undo of same op and stack desync. This is a real concurrency/race. The brief mentions race? They only mention paperId captured before await in store undo to prevent switching tab. But no lock. Is this within scope? The UI could trigger repeated ctrl+z. User can press ctrl+z quickly. This is a classic async undo race. Need check if keymap perhaps prevents repeat? Not likely. Need flag as WARN or BLOCKING? It's a correctness bug in logic. Severity BLOCKING per criteria (correctness). But is it realistic? Ctrl+z can fire multiple times before promise resolves? `useReaderShortcuts` keydown handler calls `actions.undo()` directly; if key repeat? ctrl+z held triggers keydown repeats. Could indeed call multiple times. No serialization. Also in reader.store.undo(), after `await runUndo`, it updates store. If two calls, both may update. first apply remove A => tab.annotations filter A; second apply remove B => filter B from original? Let's simulate: store tab.annotations [A,B]. Undo1 awaits runUndo(A delete). Undo2 awaits runUndo (also A). Both return remove A. Undo1 set annotations [B], Undo2 set annotations [B] (from current tabs? Actually after await, get tabs anew; both capture tabs after? JS event loop: both get tabs after both promises resolved. Could both get original? If both resolve same microtask? API async might resolve separate microtasks, but eventually both set. If first set updates then second get tabs sees updated? Actually get() inside undo after await gets current state; if first set happened, second sees [B], so second remove A no-op. Stack: both pop: first pops A, second pops B. Then stack now C... while store removed A only. Next undo will undo C but stack's B was already popped (deleted A's inverse already applied redundantly). This means B's inverse is lost without being applied. Major.
+
+Even with sequential calls after previous complete, if user presses ctrl+z after first done, okay. But connected rapid keydown can be issue. Need decide if this is in diff? The diff implements undo without reentrancy guard. The brief does not mention. It's a legitimate finding.
+
+Need see if `reader.store.undo()` maybe uses `await runUndo(paperId)` while `paperId` captured. It doesn't check if another undo in flight. Could also conflict with other actions. This is likely important.
+
+4. **Stack not cleaned if tab closed while undo in-flight**: In reader.store.undo, captures paperId, await runUndo. If tab closed during await, `clearStack(id)` called in closeOne. The stack for that paperId is cleared. Then runUndo returns apply maybe. Since `s` local? In annotation-undo.undo, it grabs `s` at start. If clearStack deletes stacks[paperId] while api in flight, the local `s` still references old array, then after api success `s.pop()` mutates the old array but it's no longer in stacks. Outcome returns apply. Then store.undo checks tab undefined? It captured tabs, if tab closed, tab undefined return. DB updated, stack cleared. Fine. But if tab closed and reopened same paperId before old undo resolves? Reopen may push new stack? The old apply won't be applied to new tab's state, but DB changed maybe for same paperId. It says undo during tab close: DB already undone, list aligns on reopen. But if a new tab for same paperId opened with old annotations before DB undone? Hard race. Probably not flag.
+
+5. **delete undo re-create uses new id, but `toInput` strips id. However, comment-edit undo passes `top.before` full Annotation including id. updateAnnotation likely updates by id, so fine.
+
+6. **Delete undo after original delete?** If original delete was triggered, pushUndo with annotation a. Then undo saveAnnotation with toInput(a) creates new annotation with new id, store upsert adds. But what about the `Annotation` saved data? `r.data` is returned from API. Good.
+
+But there is a subtle issue with `AnnotationInput` having `id?`? The type maybe doesn't accept id. `toInput` omits. Test asserts.
+
+7. **create undo: deleteAnnotation by id then store remove. If annotation had already been deleted by user later? Example: create A, create B, delete A. Stack: create A, create B, delete A? Wait original operations: push create A, push create B, push delete A (delete A is itself an operation). Undo sequence: undo deleteA re-creates A; undo createB deletes B; undo createA deletes A. If A already deleted, but undo re-creates then later deletes. Good. But consider create A, delete A, then undo: stack [create A, delete A]. undo deleteA re-creates A (upsert with new id), then undo createA deletes original A id, but the re-created A has new id so now A remains. This is a classic "delete then undo" mismatch. Actually if user creates annotation A, then deletes it, that's create+delete two ops. Undo should undo delete, bringing A back; second undo should undo create, removing A. Since re-created A uses new id, the second undo (create inverse) deletes by old id, which no longer exists, leaving re-created A in place. This is a serious correctness bug: a created-then-deleted annotation cannot be fully undone; creates duplicate. Let's verify. PushUndo for create A with annotation id a-1. Delete A operation pushUndo delete with annotation a-1. Stack top is delete. Undo top: saveAnnotation(toInput(a-1)) returns new annotation with id a-new (repo randomUUID). Store upsert adds a-new. Pop delete. Next undo top create a-1: deleteAnnotation(a-1) returns maybe ok but no rows? API likely returns ok even if not found? Then apply remove id a-1 (no-op in store because a-1 not there). a-new remains. So stale annotation. Is this acceptable? The spec says delete undo re-create with new id because repo insert doesn't accept explicit id; same id residue cleared. But this scenario shows re-create with new id breaks paired create/delete undo sequence. Did the plan consider? It notes "re-create 用新 id；同 id 残留清点=无其他表/组件长期持有 annotation id，安全". They assumed no same id residual in other components, but missed stack's own create entries referencing old id. This is a critical bug. Let's think: In typical undo stack, delete inverse re-creates same annotation with same identity to allow later create inverse to delete same. If new id, then earlier create entry's target is wrong. Could possibly mitigate by when undoing create, if annotation id doesn't exist, should remove by current id? But no mapping. Or when re-creating on delete undo, perhaps update create entry's id to new id? But the create entry is below and needs to know new id. They could mutate stack entry's annotation.id or use mapping. Not done. This is a BLOCKING correctness defect.
+
+Is this within diff? Yes, annotation-undo.ts implements toInput and undo. The diff's tests don't cover create+delete pair. The short "same id residue clearing" says no other table/component holds id; but the undo stack itself holds old ids in older entries. They didn't consider. This is strong.
+
+Let's also consider create A, edit comment A, delete A? Undo: delete restore A new id; comment-edit before old id update old id (nonexistent) -> api ok? update by id maybe no-op or error? Then create delete old id. Bad.
+
+9. **Depth trimming: `splice(0, s.length - UNDO_DEPTH_MAX)` with FIFO. Test expects after MAX+1, deep=MAX, ids not contain a0, contains a1..aMAX. Fine. But if MAX=50, after 51 push, 0 removed. Good.
+
+10. **Stack per paperId memory leak? After clearStack for tab closed, okay. If tab closed without closeOne? not.
+
+11. **`stacks` global mutable not cleared when app reload? Not issue.
+
+12. **Comment-edit undo: `updateAnnotation({ annotation: top.before })`. `top.before` includes `updatedAt` old timestamp. Repo may update updatedAt on update? If API returns new updatedAt, store upsert with returned. Good. But does updateAnnotation require comment? Fine.
+
+13. **`api.reader.updateAnnotation` may expect `AnnotationInput`? top.before is Annotation with id, which includes id. likely okay. But maybe updateAnnotation API accepts full annotation. fine.
+
+14. **ReaderPage: removed blank line? no issue.
+
+15. **ReaderShortcuts test**: `key(document, { key: 'z', ctrlKey: true })` but the keymap maybe uses `event.key` lowercase? `key` helper maybe. Existing tests. Fine.
+
+16. **toast-store extraction**: Toast.tsx changed to import from './toast-store'. Need ensure `ToastHost` useEffect returns cleanup correctly: `useEffect(() => subscribeToasts(setList), [])`, subscribeToasts returns () => void. Fine.
+
+Potential issue: `getToastItems` returns internal `items` array directly. React state set to array; then state is same reference if no changes? It only used initial useState. Fine. If ToastHost mounts after items exist, it'll show. Good.
+
+17. **API client import path**: annotation-undo imports { api } from '../../api/client'. reader.store imports { showToast } from '../../shared/ui/toast-store'. directory: features/reader -> '../../shared/ui/toast-store' maybe correct? Features/reader/reader.store.ts: from src/renderer/features/reader to src/renderer/shared/ui = ../../shared/ui. Good. Toast.tsx in shared/ui imports './toast-store'. Good.
+
+18. **TypeScript: `import { clearStack, undo as runUndo } from './annotation-undo'` and `import { showToast } from '../../shared/ui/toast-store'` in reader.store.ts. In reader.store.ts, it already had `import { api, unwrap } from '../../api/client'`. There may be circular dependency? annotation-undo imports api; reader.store imports annotation-undo and toast-store. Annotation-undo does not import reader.store. Toast-store no. So no cycle.
+
+19. **Architecture/layering**: renderer → window.api → ipc. annotation-undo imports api directly. That's layer allowed? "renderer → window.api → ipc" likely okay. It says annotation-undo pure logic + api call; reader.store consumes. But `annotation-undo` itself calls api, not via reader.store. That's within renderer API. Fine.
+
+20. **AnnotationLayer imports pushUndo from './annotation-undo'** directly. This is okay? The architecture note says "组件不直接 import 本模块——api 调用与 store 同步收口单点" in original header? Actually after diff, architecture: "组件不直接执行 undo", but components push. They import pushUndo. Fine.
+
+21. **Potential issue: pushUndo called before or after store update?** In saveComment, push after updateAnnotation store update and before clearTabDirty. If push throws? It won't. Good.
+
+22. **Edge: comment-edit triggered even if comment unchanged?** Not relevant.
+
+23. **Edge: `create` push after save success. But if saveAnnotation returns `saved`, then `pushUndo` uses saved. If `saved` has id. Good.
+
+24. **ann function in tests: rects: [], comment default. The Annotation type may require `updatedAt` etc. Fine.
+
+25. **The test file is locked? It's new, added to manifest. Good.
+
+26. **Violation of "tests are locked contract"? They modified reader-shortcuts.test.tsx (locked) with [locked-change] mentioned. Need accept.
+
+27. **`locks/manifest.json` regenerated. But AGENTS says "新增受锁路径需先 npm run locks:generate 再 apply"; they added annotation-undo.test.ts to manifest. Fine.
+
+28. **Registry status flip open→done. Good? Work ticket says done. But no placeholder. Fine.
+
+29. **`tickets/registry.ts` is it locked? It's perhaps tickets. No issue.
+
+30. **Line counts?** AnnotationLayer/ReaderPage line count? They claim 250/250 exactly. Need not verify.
+
+31. **No new dependencies.
+
+32. **Security**: no node integration etc. API calls to internal. No issues.
+
+33. **`api.reader.deleteAnnotation` in undo create: if annotation not found, maybe returns `ok:false`? If annotation already deleted externally, then undo fails permanently. But since stack should only have create if it exists, okay. However with create+delete bug, second undo fails if deleteAnnotation returns ok:false for missing id? Actually API might return ok true even if no rows? If returns ok false, then second undo returns api-failed and never pops, hangs. Could be worse.
+
+34. **Undo of comment edit after delete?** As above.
+
+35. **When undo of delete re-creates annotation with new id, `toInput` drops `createdAt` and `updatedAt`; repo sets new createdAt/updatedAt. Then if user had originally created then edited comment, the annotation's comment is preserved; the comment-edit undo below? Scenario: create A (comment c1), edit comment to c2, delete A. Stack [create A id1, comment-edit before A(c1), delete A]. Undo delete -> re-create A id2 comment c2 (because deleted annotation had c2). Undo comment-edit -> update id2 to c1 (since before A c1 but id id1? Wait `before` is original Annotation object with id id1. updateAnnotation({ annotation: before }) updates by id1, not id2. So comment-edit undo updates id1 (nonexistent) instead of id2. Then undo create deletes id1. Result: A id2 c2 remains. This is even more broken: after undo all three, the comment edit is not reverted because id mismatch. So fundamental.
+
+Thus the design's decision to re-create with new id is incompatible with multiple operations on same annotation. Need flag.
+
+The brief claims "annotations.repo.ts:167 内部 randomUUID——头注预判成立：re-create 用新 id, toInput 剥离 id/paperId/时间戳，同 id 残留清点=无其他表/组件长期持有 annotation id". But stack entries themselves are components with ids; older entries for same original id become stale. If they had thought "no other table/component long-term holds annotation id", they ignored stack.
+
+This is likely the biggest finding.
+
+Potential fix suggestions: Perhaps refactor undo entries to not rely on annotation id identity; for create inverse, instead of delete by id, maybe remove by a "logical annotation" reference? Or on delete undo re-create, update all older stack entries referencing old id to new id. Or better: if repo.insert doesn't accept id, could add optional id support behind a migration? But AGENTS prohibits changing contract without plan. Or use store-level mapping from logical id to current id. Simpler: after re-create, walk stack entries below and replace any references to old id with new id. But need consider the delete entry itself? For comment-edit before has old id; after re-create, before ids should be new id. For create entries, annotation.id should be new id. For other delete entries containing old id? If there are operations after? Since stack is LIFO, all entries below the delete being undone are older, and may reference same original id (e.g., create/edit). Need update them. This is possible but not done. Another alternative: insert accepts explicit id (requires repo change and locked tests maybe), but that may be simpler. Need mention.
+
+Also concurrency race.
+
+36. **Undo stack and deleteAnnotation for create undo can remove an annotation that was re-created?** If after create A, user does nothing else, undo create deletes A. Good. If user re-creates? No.
+
+37. **Store update for remove uses `tab.annotations.filter(x => x.id !== act.id)`. If annotation was already removed (e.g., due to race or because delete undo previously removed? no). Fine.
+
+38. **Store update for upsert: if annotation id exists map else append. For comment-edit undo, `r.data` likely same id, so maps. For delete undo, new id, appends. Good.
+
+39. **Reader.store.undo no-op if no active tab. Good.
+
+40. **`clearStack(id)` in closeOne called after tabLoadSeq.delete and inflightOpen.delete. Good.
+
+41. **Maybe clearStack should also be called on app close? no.
+
+42. **Potential issue: AnnotationLayer saveComment: `pushUndo(a.paperId, { kind: 'comment-edit', before: a })` after `useReaderStore.getState().updateAnnotation(saved)` but before clearTabDirty. If `updateAnnotation` updates store and tab's annotations replaced with saved. `a` is original from props? Need confirm `a` is the annotation from `annotations` prop? It likely is. If props are stale? Suppose annotation object from props has comment 'c1'. Save comment 'c2' returns saved. push before c1. Good. If user had already changed comment? This component's state? Fine.
+
+43. **SelectionLayer save: pushUndo after onSaved(saved). If `onSaved` triggers store update? Not issue.
+
+44. **ReaderShortcuts dependency array includes undo. ReaderPage passes new arrow function every render? It uses useMemo with [] as second arg? Let's see ReaderPage diff: it creates actions object inside `useMemo` with callback? Need see original around diff: 
+```
+const actions = useMemo(
+  () => ({
+    copySelection: () => { ... },
+    prevPage: ...,
+    nextPage: ...,
+    zoomStep: ...,
+    undo: () => void useReaderStore.getState().undo()
+  }),
+  []
+)
+```
+If actions useMemo with [], all functions stable. Good.
+
+But `undo: () => void useReaderStore.getState().undo()` returns void; if useReaderStore.getState().undo() throws? It's async, handle? A thrown async? no.
+
+45. **Potential issue: toast-store extraction means Toast.tsx still has `export type { ToastKind } from './toast-store'` and exports showToast. Existing imports `showToast` from '../../shared/ui/Toast'` will still work. Good.
+
+46. **Type of `AUTO_DISMISS_MS` and DEDUPE_MS moved. No issues.
+
+47. **`getToastItems` returns `items` directly without copy; subscriber notify passes `items` array. `setList(snapshot)` state may receive same array reference if notify called with same reference? dismiss/ showToast always assign new array. fine.
+
+48. **Test quality: The test for depth truncation: "撤空全程 a-0 永不在栈内" checks del.mock.calls ids not contain a-0. Good. But it doesn't check each undo's apply? Fine.
+
+49. **The annotation-undo test's `loadModule` stubs global window.api. But annotation-undo imports `api` from '../../api/client' at module load. How does api client use window.api? Need ensure it reads at call time or from closure. If at call time, stub works. If imported with const api = window.api at module top, resetModules needed. They reset modules. Fine. Tests likely pass.
+
+50. **A possible issue: `undo` function accesses `top.annotation` fields after API calls; no.
+
+51. **Potential issue: `undo` catches all exceptions including programming errors and converts to api-failed. This could mask bugs, but okay. Not BLOCKING.
+
+52. **Does `annotation-undo.ts` file length exceed 500? It's 142 lines. fine.
+
+53. **No dead code? `UndoOutcome` reason 'empty' maybe used in tests and store. `getToastItems` etc. `dismiss` exported and used in Toast.tsx? Wait Toast.tsx imports `dismiss` from './toast-store'? Let's see diff: Toast.tsx imports `dismiss, getToastItems, subscribeToasts, ...`. It likely uses dismiss for manual close buttons later in file. So yes.
+
+54. **Need check import in Toast.tsx line: `import { dismiss, getToastItems, subscribeToasts, type ToastItem, type ToastKind } from './toast-store'` and `export { showToast }`. The diff says "export { showToast } from './toast-store'" and "export type { ToastKind }". It also imports dismiss. If `dismiss` is used in Toast.tsx, okay. No issue.
+
+55. **Potential issue with `type ToastItem` import used in ToastHost? likely map.
+
+56. **Reader.store undo `showToast('撤销失败，请重试')` called for api-failed. Good. But if outcome done:false reason empty, no toast. Good.
+
+57. **Store undo updating state after tab closed: comment in code says DB already undone, list aligns on reopen, not writing deleted TabState. But if user closes tab during undo, closeOne also clearStack. Since stack cleared, no further undo. Fine. But what if user switches tab (not close) during undo: paperId captured, so store updates the correct tab even if no longer active. Good.
+
+58. **Concurrency with switching tabs? It captures paperId, but if active tab switched and then another undo is initiated for new tab, two undo asyncs can run concurrently on different stacks. That's okay because different paperId. But if switch back quickly, same issue.
+
+59. **Potential issue: The undo stack is per paperId but if file can be opened in multiple tabs? TabState unique paperId. Good.
+
+60. **Could there be a "create" operation for annotations created via other paths? Only SelectionLayer save is create. Might be seed? Not.
+
+61. **Does deleteAnnotation API return ok even if annotation not found? Not know.
+
+62. **Maybe the test of `reader-shortcuts.test.tsx` uses `key(document, { key: 'z', ctrlKey: true })`. Need check `key` helper in test utils might create KeyboardEvent with key lowercase 'z'. Keymap binding in ReaderShortcuts has key 'z'. Good. Does keymap support `ctrl` vs `ctrlKey`? likely.
+
+63. **Could ctrl+z in textarea be intercepted by keymap? ReaderShortcuts comment says editable avoidance by keymap. If keymap `bindings` include ctrl+z and handler preventDefault true, does keymap skip if target is editable? Need inspect not in diff. The test only checks non-editable. But if keymap doesn't skip editable, ctrl+z would be blocked and undo stack applied instead of textarea native undo, causing wrong behavior. The comment claims "editable 避让=keymap 层既有". Is there evidence? Not in diff. Could be okay.
+
+64. **Potential issue: ctrl+z binding in keymap may not respect when focus in textarea, but AGENTS says editable avoid by keymap layer? The ReaderShortcuts header says editable target by keymap avoidance. This is likely existing feature. Fine.
+
+65. **No "undo" action in keymap for mac? ctrl+z vs cmd+z? The app is Windows only. Fine.
+
+66. **`undo` in ReaderShortcutActions required, all callers updated? Only ReaderPage constructs actions, tests updated. Are there other callers? `useReaderShortcuts` maybe used elsewhere? Search diff no. Fine.
+
+67. **Potential issue in `AnnotationLayer` delete: after api.deleteAnnotation success, pushUndo then removeAnnotation. If `removeAnnotation` fails? store sync no fail. Good.
+
+68. **PushUndo if stack over depth trims. If user redoes? no.
+
+69. **No dead placeholder `unimplementedObject` removed. Good.
+
+70. **No TODO/FIXME. Good.
+
+Now, the task asks "审计维度（按优先级）：1. 契约与纪律；2. 正确性；3. 安全；4. 生产质量；5. 测试纪律". Need produce JSON.
+
+We need decide verdict. With critical bug in undo semantics (create+delete pair) and concurrency, definitely FAIL. Need include findings.
+
+Need be careful: "不要编造 diff 里不存在的内容；引用证据必须来自输入材料。" The create+delete bug is not explicitly in diff but derived from diff logic. It is valid as analysis. Need evidence from diff: `undo` re-creates with new id via `saveAnnotation({ paperId, annotation: toInput(top.annotation) })` and `create` inverse deletes by `top.annotation.id`. The stack stores entry with old id. This is evidence.
+
+Let's formulate findings.
+
+Findings:
+
+1. BLOCKING: annotation-undo.ts – identity mismatch when undoing a delete that was preceded by create/comment-edit on same annotation. Evidence: delete undo calls `api.reader.saveAnnotation` with `toInput(top.annotation)`; since `annotations.repo.ts:167` generates new UUID, the re-created annotation gets a new id, while older stack entries (e.g., `kind:'create'` with old id, `kind:'comment-edit'` with `before.id` old) still reference old id. Undoing those later calls `deleteAnnotation({ annotationId: top.annotation.id })` / `updateAnnotation({ annotation: top.before })` on an id that no longer exists, leaving the re-created annotation in place. This violates the "undo" contract in header (three inverse operations). Need fix. Suggestion: either preserve identity by allowing repo.insert to accept explicit id (requires locked-change), or on delete-undo re-create, remap old id → new id in all lower stack entries (and possibly in other store consumers); add test for create→delete→undo→undo.
+
+Should we mention "create→delete→undo→undo" or "create→edit→delete→undo→undo→undo"? Good.
+
+2. BLOCKING: annotation-undo.ts / reader.store.ts – async reentrancy race on repeated ctrl+z. Evidence: `undo()` reads `s[s.length - 1]`, awaits API, then `s.pop()`; no in-flight guard. `reader.store.undo()` calls `runUndo` without serialization. Rapid repeated ctrl+z can both pick same top entry, execute its inverse twice, then pop two different entries, losing one undo. Suggest add an `undoInFlight`/mutex per paperId (or disable while pending) in store or module, and/or queue. This is a correctness bug.
+
+Need think if severity BLOCKING? It is a race. The standards say BLOCKING=correctness defect. Yes.
+
+3. WARN: `annotation-undo.ts` – catch-all `catch` converts any exception to `api-failed`. Could mask programming errors; but not major. Maybe NIT. But maybe not necessary.
+
+4. WARN or NIT: `clearStack` not called for tab close while undo in-flight? Already handled by local ref; not.
+
+5. WARN: `reader.store.undo()` if `runUndo` returns `api-failed`, the stack is not popped, but `reader.store` shows toast. Good.
+
+6. NIT: `undo` function could be called for a paperId that is no longer active; store captures activeId before await. If user switches tab, undo applies to old tab but UI maybe old tab still in background; that's okay. However, the user expectation of ctrl+z in new tab? If switch during in-flight, it may change background tab. Not.
+
+7. Need check if "line count" issue? not.
+
+8. Maybe mention `locks/manifest.json` and modified locked test file without visible `[locked-change]`? The diff doesn't show commit messages, so cannot audit. The brief says `[locked-change]` used. Avoid.
+
+9. Maybe mention `tests/unit/renderer/annotation-undo.test.ts` new test is locked and added to manifest. Good.
+
+10. Potential issue with "no tests for create+delete pair" as test discipline. Can combine.
+
+Let's evaluate other possible critical issue: **`pushUndo` for create is called after `onSaved(saved)` and `clearTabDirty`. But if `saved`'s paperId differs from `paperId`? no.
+
+**`commit-edit` push before** uses `a` from closure. Need ensure `a` is not mutated later? In saveComment handler:
+```
+const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
+const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
+useReaderStore.getState().updateAnnotation(saved)
+pushUndo(a.paperId, { kind: 'comment-edit', before: a })
+...
+```
+This uses `a` from the map callback. If there are two rapid edits, closure for first has old a; for second, `a` from props might be updated? Since AnnotationLayer re-renders with new annotations, the handler closure uses current `a`. If user edits, saves, then edits again, second handler has current a (c2). Good. If two saves in flight? Not.
+
+**Potential issue: comment-edit undo stores `before` full annotation including old `updatedAt`. If before.updatedAt old timestamp, undo restores it? Api returns with new updatedAt maybe. Fine.
+
+**Another issue: `delete` undo (re-create) might fail if the paperId is different? It uses paperId passed to undo. For a delete operation, the paperId is `a.paperId`, but `undo` called with active paperId. If annotation belongs to active paperId, fine. If somehow stack entry pushed with paperId different? In delete handler, `pushUndo(a.paperId, ...)` where `a` is annotation on current page, so same. Good.
+
+**Per-tab stack: `pushUndo(paperId, entry)` in SelectionLayer uses `paperId` param (current). Good.
+
+**Potential issue with `undo` when a delete re-create uses `paperId` from current active tab rather than `top.annotation.paperId`. If the stack entry somehow belongs to a different paperId? Since push uses matching, okay. But if re-create should use `top.annotation.paperId` to be safe. In delete handler, `pushUndo(a.paperId, { kind: 'delete', annotation: a })` so top.annotation.paperId = a.paperId. In create handler, pushUndo uses paperId same. Comment-edit uses a.paperId. So okay. If `undo` called with paperId p, top is for p. Good.
+
+**Potential issue in test `delete 逆操作`: `const saved = ann('a-new')` has paperId 'p-1'; but delete inverse uses `saveAnnotation({ paperId, annotation: toInput(top.annotation) })`, where top.annotation paperId 'p-1'. Good.
+
+**Potential issue: `ann` helper sets `createdAt:'t'` etc. toInput strips.
+
+**Potential issue: `undo` returns `reason: 'api-failed'` even when `r.ok` is false. It does not pop. Good.
+
+**Potential issue: When API fails for create inverse, stack remains, but maybe the API actually performed deletion then returned ok:false? network? no.
+
+**Potential issue: In `reader.store.undo`, if `outcome.done` true and tab exists, it updates state. If the tab is no longer active, it still updates. If user has switched to another tab, the background tab's annotations update but maybe not visible; okay.
+
+**Potential issue: `showToast` now imported from toast-store; `Toast.tsx` re-exports. `toast-store.ts` line 83 maybe okay. File line count 83. Good.
+
+**Potential issue: `ReaderShortcuts` key binding ctrl+z maybe conflicts with browser "undo" when focus not editable; no.
+
+**Potential issue: `undo` action in ReaderPage uses `void useReaderStore.getState().undo()`; if `undo` Promise rejects due to unexpected exception, unhandled rejection. In `undo` function, try/catch catches all API errors and returns. But `reader.store.undo()` itself can't throw? It awaits runUndo, no throw. If `showToast` throws? no. So no unhandled.
+
+**Potential issue: `pushUndo` in SelectionLayer and AnnotationLayer after successful API call but before store state update? In saveComment: updateAnnotation store then push. If pushUndo's array allocation throws? no. In delete: removeAnnotation store then push. In Selection: onSaved(saved) then push. Good.
+
+**Potential issue: `onSaved` in SelectionLayer could be async? Not.
+
+**Potential issue: `pushUndo` in saveComment uses `a` not `saved`; if `a` doesn't include `paperId`? Type Annotation includes. Good.
+
+**Potential issue: `deleteAnnotation` in undo create uses `top.annotation.id`; if the create was later edited (comment) and then undo create directly, should delete the annotation with current content; yes by id. Good.
+
+Now, regarding "审计维度按优先级" and "输出一个 JSON". Need include `summary`. Verdict FAIL. We can include findings for both blocking bugs and maybe WARN for concurrency, but both blocking.
+
+Let's craft JSON with strings maybe containing Chinese. Need no markdown code fences. Ensure JSON valid.
+
+Findings structure:
+{
+ "severity": "BLOCKING",
+ "file": "src/renderer/features/reader/annotation-undo.ts",
+ "line_hint": "undo() delete 分支（saveAnnotation + toInput） / create 分支（deleteAnnotation by old id）",
+ "issue": "...",
+ "evidence": "...",
+ "suggestion": "..."
+}
+
+Need line_hint maybe "annotation-undo.ts undo() 的 delete 分支" not exact line numbers. Accept.
+
+For concurrency:
+file "src/renderer/features/reader/reader.store.ts" and annotation-undo. line_hint "undo()/runUndo await 前后无互斥". Evidence "undo 先取 s[s.length-1]，await api 后才 s.pop()；reader.store.undo() 直接并发调 runUndo". Suggest "per-tab in-flight 锁/队列，或 disallow while pending".
+
+Maybe include a WARN about tests missing the create+delete pair? Could be part of first finding. To avoid too many, maybe add a NIT/WARN: "测试只覆盖单操作逆，未覆盖『create→delete→undo→undo』跨格序列，而宪法状态机前置要求跨格序列审计". This is relevant! The AGENTS specifically says status machine and cross-cell sequences, and "18 格单格全过... 跨格序列丢稿". This bug is exactly a cross-sequence missing in tests. The brief mentions tests include LIFO and depth, but not the create+delete sequence. Add as WARN? But it's linked to blocking. Could include in first finding suggestion. Maybe a separate WARN: "测试面缺 create→delete→undo→undo 跨格用例，导致重 id 问题漏网" severity WARN. However, because it's test discipline, maybe nice. But the findings should not be too many. We can include.
+
+Potential additional WARN: "`undo` 的 catch 把一切异常(含编程错误)当 api-failed，掩盖缺陷". Is that worth? It is a quality concern but not necessarily. Could be NIT. Maybe include to show thoroughness.
+
+Potential NIT: "`stacks` Record 不设原型 null? Record<string,...> fine. If paperId `__proto__`? paperId from file, maybe not.
+
+Potential NIT: "`undo` uses non-null assertion `s[s.length - 1]!`; after empty check safe. Fine.
+
+Potential NIT: "文件头注释 'repo.insert 不接受显式 id' relies on annotations.repo.ts:167 not in diff; line number evidence not from diff? Actually in brief. Could mention in finding.
+
+Let's think if there is any security issue: no.
+
+Now, need ensure summary "两三句总体判断". Example:
+"撤销栈主体实现清晰、接缝收口与测试面良好，但存在两个必须回修的正确性缺陷：删除逆操纵用新 id 使较老栈项指向失效 id，create+delete 序列无法完整撤销；异步 undo 无并发保护，连按 ctrl+z 会丢栈/重复执行。建议修复并补跨格序列测试后重跑全量 verify。"
+
+Need "verdict": "FAIL".
+
+Need maybe include exact evidence quotes from diff. Let's craft.
+
+Finding 1:
+"issue": "delete 逆操作通过 saveAnnotation(toInput(...)) 重建标注，repo.insert 内部 randomUUID（头注 annotations.repo.ts:167）导致新 id；而该标注更早的 create/comment-edit 栈项仍持旧 id。undo 顺序 create→delete 时，第一次 undo 重建出新 id 后，第二次 undo 按旧 id deleteAnnotation，旧 id 已不存在，重建的标注残留；create→comment-edit→delete 序列同样使 comment-edit 的 updateAnnotation 落在失效 id 上。"
+Evidence: "diff 中 undo(): `r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })` 且 toInput 剥离 id；而 create 分支 `deleteAnnotation({ annotationId: top.annotation.id })`、comment-edit 分支 `updateAnnotation({ annotation: top.before })` 均使用原 id。"
+Suggestion: "为仓库 insert 增加接受显式 id 的通道（需 locked-change），或在 delete-undo 重建后把栈内所有旧 id 引用 remap 为新 id；至少补 create→delete→undo→undo（含 comment-edit）跨格测试并 red-green 验证。"
+
+Finding 2:
+"issue": "异步 undo 无重入保护。连续触发两次 ctrl+z 时，两个 runUndo 都先读取同一个栈顶，各自执行同一逆操作，成功后各自 pop，导致一次逆操作重复执行、下一项被误弹。"
+Evidence: "undo(): `const top = s[s.length-1]!` ... await api ... `s.pop()`；reader.store.undo() 中 `const outcome = await runUndo(paperId)` 无 in-flight 标记。"
+Suggestion: "在 annotation-undo 或 reader.store 增加 per-paperId 的 in-flight 互斥/队列；或 undo 执行期间忽略新的 undo 请求，并加连续两次 ctrl+z 的测试。"
+
+Finding 3 WARN:
+"测试纪律": 
+"issue": "新增测试覆盖了单操作逆、LIFO、深度截断、失败重试，但没有覆盖同一标注多操作叠加的跨格序列（create→delete→undo→undo），这正是身份 remap 缺陷的暴露面；不符合宪法「跨格序列交审计」的状态机纪律。"
+Evidence: "测试文件 annotation-undo.test.ts 8 用例，无 create/delete/comment-edit 同 id 叠加后逐级 undo 用例；AGENTS.md 要求跨格序列审计。"
+Suggestion: "补 create→delete→undo→undo 与 create→comment-edit→delete→undo×3 用例，先红后绿。"
+
+Maybe include a NIT about catch-all? Should we? Desired oververbosity 5, but not necessary. But maybe include as NIT:
+"undo() 的 catch 全部吞掉并返回 api-failed，会掩盖非 API 的编程错误；建议 catch 只包 api 调用或区分异常类型。" Severity NIT. Is that "编造"? It's suggestion. Could include. But "findings" maybe enough with 3. We can include 4 if valuable. Since output JSON only, no length issue. But not overdo.
+
+Let's also check if there is a finding about `toInput` not aligning with `AnnotationInput` "omit 同源" but hand-written duplicate, violating "类型单一真相源"? They say "input 口径与 annotationInputSchema 对齐（omit 同源）". In diff, toInput manually enumerates fields. It may duplicate AnnotationInput type fields. Could be considered "手写两份等价类型"? But it's a runtime transform, not type declaration. `AnnotationInput` type imported; toInput returns AnnotationInput. It doesn't define type manually. It does repeat field list. Is that a violation of "类型单一真相源"? Not really.
+
+Potential issue: In `toInput`, it manually lists all fields; if `AnnotationInput` later changes, could mismatch. But "omit same source" maybe because it omits same fields as schema. Could use object destructuring to avoid. Not worth.
+
+Potential issue: The `undo` outcome apply uses `r.data` from API. For `deleteAnnotation` maybe API returns `ok:true` without data, okay. For save/update, if `r.data` undefined due to API contract, app might crash. Not.
+
+Potential issue: **`reader.store.undo()` not updating `dirty` state?** If undo modifies annotations, should it set tab dirty? The dirty flag indicates unsaved changes? Actually dirty used for tab close confirmation and gray point. Undo calls API to persist immediately, so no unsaved changes; no need dirty. If API succeeds, DB has changed. If store dirty was false before, stays false. If dirty true? Could be after failed save? Example: new annotation creation failed? But pushUndo only after successful save, so dirty cleared. Not issue.
+
+Potential issue: **Tab dirty after undo of create?** Undo removes an annotation from DB. If tab had some other unsaved? Not.
+
+Potential issue: **Undo stack not cleared when annotations loaded from an external change?** no.
+
+Potential issue: **`resetModules` in tests can produce side effects? no.
+
+Potential issue: **Locked file `annotation-undo.ts`?** It's not locked? It's source. Fine.
+
+Potential issue: **`ReaderShortcuts.ts` comment "editable 焦点由 keymap 避让走 textarea 原生 undo"** But ctrl+z in a textarea may still be intercepted by global keymap if keymap doesn't check target. The keymap layer "既有" likely does. Test doesn't cover editable target. Could be WARN? But no evidence.
+
+Potential issue: **`ReaderShortcuts` dependency array includes `undo`; if `actions.undo` changes identity each render due to useMemo? In ReaderPage it's stable. Fine.
+
+Potential issue: **`AnnotationLayer` line count? It's 250? They compressed comments. No.
+
+Potential issue: **`toast-store` moved but Toast.tsx still contains export type? It imports `type ToastItem` maybe used in ToastHost? If Toast.tsx imports and uses `ToastItem` type? likely. Not issue.
+
+Potential issue: **Test `reader-shortcuts.test.tsx` modified locked file; they added `[locked-change]` but in diff no commit message. We can't judge. Not mention.
+
+Could there be a violation of "禁止 renderer 引入任何 Node/Electron API" no.
+
+Could there be "`api` import from '../../api/client'` in renderer layer is okay? window.api. yes.
+
+Now, let's make sure JSON is valid. Use double quotes around keys/strings. No trailing commas. Chinese string content with escaped newlines? We'll use single-line strings. Need avoid unescaped quotes inside. Use Chinese quotes maybe.
+
+Let's draft final JSON:
+
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 delete 分支（saveAnnotation+toInput）与 create/comment-edit 分支（按旧 id 操作）",
+      "issue": "delete 的逆操作通过 saveAnnotation(toInput(...)) 重建标注，repo.insert 内部 randomUUID 会分配新 id；但同一标注更早入栈的 create/comment-edit 项仍引用旧 id。于是 create→delete 后连续两次 undo：第一次重建出新 id，第二次按旧 id deleteAnnotation 命中不到，重建标注永久残留；create→comment-edit→delete 时 comment-edit 的 updateAnnotation 也落在失效 id 上，撤销序列不可信。",
+      "evidence": "diff 中 undo(): `r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })`，toInput 剥离 id/paperId/时间戳；而 create 分支 `deleteAnnotation({ annotationId: top.annotation.id })`、comment-edit 分支 `updateAnnotation({ annotation: top.before })` 均使用旧 id。任务简报亦明言 repo.insert 不接显式 id（annotations.repo.ts:167 randomUUID）。",
+      "suggestion": "让 repo.insert 支持显式 id（需 locked-change 流程），或在 delete-undo 重建成功后把栈内所有旧 id 引用 remap 为新 id；并补 create→delete→undo→undo、create→comment-edit→delete→undo×3 跨格用例。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "undo() 动作面：await runUndo(paperId) 无 in-flight 互斥",
+      "issue": "异步撤销没有重入保护。快速连按 Ctrl+Z（或键重复）会让两个 undo() 同时读到同一栈顶，各自执行同一逆操作，之后各自 pop，导致一次逆操作重复执行、下一层被误弹，栈与 store 状态错位。",
+      "evidence": "annotation-undo.undo(): `const top = s[s.length - 1]!` → await api → `s.pop()`；reader.store.undo(): `const outcome = await runUndo(paperId)` 前后无锁/无 in-flight 标记。",
+      "suggestion": "为 per-paperId 增加 undo 互斥或队列（如 pending 标志/串行 Promise 链），in-flight 期间忽略或排队新的 undo；补连续两次 ctrl+z 的测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/annotation-undo.test.ts",
+      "line_hint": "8 个用例覆盖",
+      "issue": "测试面缺「同一标注多操作叠加后逐级 undo」的跨格序列。单操作逆/LIFO/深度截断/失败重试都过了，但 create→delete→undo→undo 这种跨格序列正是 id remap 缺陷的暴露面，不符合宪法要求跨格序列交审计。",
+      "evidence": "AGENTS.md：「按『态空间 + 跨格序列』交审计——单格枚举盖不住跨格序列」；diff 新增测试无同 id 叠加后多级 undo 用例。",
+      "suggestion": "补 create→delete→undo→undo 与 create→comment-edit→delete→undo×3 用例，先红后绿再提交。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 catch{}",
+      "issue": "catch 把所有异常（包括编程错误）一律转成 reason:'api-failed'，会掩盖非 API 层缺陷，只报 toast 后可重试。",
+      "evidence": "diff 中 `} catch { return { done: false, reason: 'api-failed' } }` 包住了整个分支逻辑。",
+      "suggestion": "尽量只把 api.* 调用放进 try，或区分 ApiClientError 与其它异常；编程错误应上抛/记录而非伪装成可重试。"
+    }
+  ],
+  "summary": "撤销栈主体、接缝与 toast 拆分的实现质量尚可，但存在两个必须回修的正确性缺陷：delete 逆重建采用新 id 使栈内旧引用失效，create+delete 等跨格序列无法完整撤销；异步 undo 无重入保护，连按快捷键会丢栈/重复执行。修复后应补对应跨格测试并重跑全量 verify。"
+}
+
+Need ensure "line_hint" maybe "line_hint" should be string. Fine.
+
+Double-check if "evidence" line with nested quotes okay: In JSON, strings can contain backticks and Chinese quotes; no unescaped double quotes. I have used `"`? Let's see: `delete` uses double quotes in `"api-failed"`, would break JSON. Need escape quotes inside strings or use single quotes. In JSON strings, unescaped double quote is not allowed. I should replace internal double quotes with single quotes or escaped. Let's adjust. In the strings, I used backticks and Chinese quotes; but I also used `reason:'api-failed'` with single quotes. In evidence I wrote `return { done: false, reason: 'api-failed' }` using single quotes inside; okay. I wrote `const outcome = await runUndo(paperId)` no double. In suggestion, "in-flight" no double. I wrote `undo×3` okay. In first issue, I wrote `create→delete→undo→undo` no quotes. Need maybe "「...」" okay. No raw double quotes except maybe in `toInput`? I wrote `saveAnnotation(toInput(...))` no. Good.
+
+But "evidence": "diff 中 `r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })`，toInput 剥离 id/paperId/时间戳；..." uses `{` and `}` okay. No double quotes.
+
+Need ensure no code fence.
+
+Let's maybe improve finding 2 severity? It's a race. Is it truly reproducible? Key repeat can trigger multiple `keydown` events. The keymap handler likely is `document.addEventListener`? If holding ctrl+z, keydown repeats. Even if not, fast press. So yes blocking.
+
+Potential issue: The `undo` in `ReaderShortcuts` preventDefault true, but `key` helper in test only dispatches once. If key repeats, multiple.
+
+Could there be a possibility that `api.deleteAnnotation` for two concurrent calls on same id—second may fail because missing, returning api-failed? Then stack pop? Let's examine race more carefully: Both runUndo call starts, both read top A. Both call deleteAnnotation(A). If both succeed ok (SQL DELETE maybe returns ok even if row count 0), both pop. If second actually failed because not found, it returns api-failed without popping. Then first pops A, second stack remains A? Actually second did not pop. Now stack has A (top) and B below? Let's simulate:
+Stack [A, B]. Undo1 reads top A, calls delete.
+Undo2 reads top A, calls delete.
+If race: Undo2 returns api-failed due to not found while Undo1 returns success and pops A. Stack becomes [B]. Undo2's failure doesn't pop. Then user retries undo, top B, so B undo executed. A was already undone. Fine? But if Undo1 and Undo2 both succeed, both pop: first pops A, second pops B. Then stack empty while B not undone. So either duplicate execution or lost undo. Bad.
+
+Need mention "各自 pop" leads to losing next item. Good.
+
+Could there be a scenario where `s.pop()` called twice on same array but after second, array length decreases two; second pop removes B while its API acted on A. Yes.
+
+Now, maybe the create+delete bug could be partially mitigated because `deleteAnnotation` in repo might delete by id or by position? No, by id. So bug stands.
+
+Let's consider if `toInput` strips id, but `saveAnnotation` maybe uses `paperId` from request and annotation fields; repo inserts new id. Yes.
+
+Need maybe mention that `clearStack` and `stacks` are module-level and not reactive; no issue.
+
+Let's also think about "header note says '同 id 残留清点=无其他表/组件长期持有 annotation id'" — we can quote in finding? Maybe.
+
+Should we include "locks/manifest.json" issue? No.
+
+Should we include "reader-shortcuts.test.tsx is locked changed without [locked-change] in diff"? Since diff doesn't show commit message, cannot. The brief says [locked-change] same batch. Not.
+
+Should we include "tests/** locked and annotation-undo.test.ts is new test file; adding it to locks manifest okay." Fine.
+
+One more potential issue: `ann` function in test creates `comment` default; `toInput` includes `comment: a.comment`; if comment undefined? no.
+
+Potential issue: In test "深度截断", after push MAX+1, they expect `ids` not contain a-0 and contain a-1. Let's calculate: For i from 0 to 50 inclusive (MAX+1 = 51) push a-0..a-50. splice removes length-50 = 1, remove a-0. Stack [a-1..a-50]. Undo all: calls del ids a-50 down to a-1. So ids not contain a-0, contains a-1, contains a-50. Good.
+
+Potential issue: `stackDepth` function returns 0 for no stack. Good.
+
+Potential issue: The test for delete undo asserts request.annot not have 'createdAt' etc. `toInput` doesn't explicitly omit updatedAt? It doesn't include, so good.
+
+Potential issue: `toInput` doesn't include `id` but if `AnnotationInput` includes `paperId`? It expects paperId in request separately, not in annotation. In original saveAnnotation input maybe `{ paperId, annotation: AnnotationInput }`. Good.
+
+Potential issue: The `toInput` function's comment says "omit 同源" but it is a manually written subset. Could use `const { id, paperId, createdAt, updatedAt, ...rest } = a; return rest` to avoid drift. Maybe NIT. But not necessary.
+
+Potential issue: In `AnnotationLayer.saveComment`, pushUndo after store update. If `pushUndo` throws because stacks array over max? no.
+
+Potential issue: No handling if `pushUndo` is called for paperId whose stack was cleared because tab closed? No, component unmounted.
+
+Potential issue: `clearStack` isn't exported? It is exported. Good.
+
+Potential issue: `undo` action in `ReaderStore` interface documented. okay.
+
+Potential issue: In `ReaderPage`, the `undo` action is `() => void useReaderStore.getState().undo()`; because it's a promise, `void` discards. Some linters require no-floating-promises; void satisfies. Fine.
+
+Potential issue: If `undo` fails api and shows toast, the `undo` action in `actions` returns void, so no unhandled.
+
+Potential issue: `showToast` called in `reader.store` (a .ts module) but `showToast` from toast-store is pure queue. Good.
+
+Potential issue: `toast-store.ts` uses `window.setTimeout`; in a non-browser environment (tests node) if showToast called, `window` undefined. But toast-store tests? Existing toast.test.tsx maybe stubs? The new toast-store uses `window.setTimeout` inside showToast. Before extraction, Toast.tsx also used `window.setTimeout`. It is only called in renderer. Reader.store in tests? reader.store tests may import and call undo with api failure? Existing tests maybe not cover. But if a unit test imports reader.store in node environment (tsconfig.node) and calls undo with api-failed, showToast -> window.setTimeout. In tests, window may be jsdom? The test environment likely jsdom. Not issue.
+
+Wait, reader.store.ts is a .ts file in renderer; it's pulled into tsconfig.node because tests/**/*.ts import it? The brief says they split Toast to allow reader.store import from .ts tests. In the tests, if they call undo api-failed, `showToast` may touch window. But tests might not call. The toast-store's `showToast` uses `window.setTimeout`, which is available if jsdom. But tsconfig.node includes tests/**/*.ts but typecheck with DOM libs? If tsconfig.node doesn't include DOM, `window` type may not be defined? The brief says typecheck tsconfig.node failed because Toast.tsx import jsx. Then they split to pure .ts. `toast-store.ts` references `window.setTimeout`, `window.clearTimeout`, and `document`? no, `window`. Does tsconfig.node include DOM lib? If not, `window` would be undefined type. But maybe tsconfig.node includes DOM. Need not.
+
+Actually, `toast-store.ts` is in src/renderer/shared/ui, but tsconfig.node includes tests/**/*.ts, which imports reader.store.ts, which imports toast-store. Thus toast-store is typechecked under tsconfig.node. If tsconfig.node has no DOM libs, `window` would be a type error. But the brief says the issue was only jsx, and they fixed. Maybe tsconfig.node has DOM. Not our concern.
+
+Potential issue: `toast-store.ts` uses `window.setTimeout`; in SSR? no.
+
+Potential issue: `ToastHost` `useEffect(() => subscribeToasts(setList), [])` returns cleanup. Good.
+
+Potential issue: `ToastHost` initial state `useState<ToastItem[]>(getToastItems)` uses function reference as lazy initializer. `getToastItems` returns `items` array. Good.
+
+Potential issue: `export type { ToastKind }` from Toast.tsx now re-exports; but `Toast.tsx` imports `type ToastItem` and uses it? It may use `ToastItem` in map; yes.
+
+Potential issue: `toast-store.ts` exports `dismiss`; Toast.tsx imports it but not re-export. Existing code might import dismiss from Toast? Let's check diff: Toast.tsx previously exported only showToast; dismiss was internal. Existing consumers probably don't import dismiss. Fine.
+
+Potential issue: `getToastItems` and `subscribeToasts` are new exports. Fine.
+
+Now, should "summary" mention "PASS_WITH_WARNINGS"? No, FAIL.
+
+Let's ensure no markdown. Output just JSON.
+
+Before final, think if there are other protected rules violated:
+- "状态机前置" for store+async+user input. They did header state? The header includes behavior/interface/architecture/lifecycle/culture, but no explicit state/migration table for undo stack? Actually no. However, the header describes operations and stack behavior but no formal state table. The AGENTS says "凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须先给出状态/迁移表（枚举态空间），并按「态空间 + 跨格序列」交审计". The diff's header has no state table, but maybe plan docs? The brief says plan W2 etc. Could be a violation? The header includes behavior layer but not a state machine table. However, the undo stack is a store (module-level) + async + user input. Strictly, they should have state/migration table. The task brief says "单元定位 ... 规约=annotation-undo.ts 头注五层（自包含）". Not sure if header has state table. It doesn't. Could be a WARN about contract discipline. But the "状态机前置" may be specifically for state-machine-like tabs; undo stack also. We already have WARN about cross-sequence testing. Maybe not necessary.
+
+- "文件 ≤500 行" no issue.
+
+- "分层单向" no issue.
+
+- "方案切换 = 删除旧方案": They extracted toast-store but did not delete Toast.tsx; that's intended. no.
+
+- "死代码即删": `unimplementedObject` removed. no.
+
+- "类型单一真相源": no.
+
+- "禁止对未过 shell-guard 的 URL openExternal" no.
+
+- "禁止新增出网 host" no.
+
+- "测试纪律": They modified reader-shortcuts.test.tsx locked with [locked-change]. But per AGENTS, "禁止修改 tests/** ... 发现测试本身有错 → 报告人类，走 [locked-change]，不得自行修改让代码通过". Here they modified test to add new requirements, not to make code pass. Is that allowed? The locked change process says "受锁文件变更必须带 [locked-change] 尾注". The brief says [locked-change] same batch. But the hard rule "禁止修改 tests/**" seems absolute? Actually it says "测试是锁定的合约：禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）。发现测试本身有错 → 报告人类，走 [locked-change]，不得自行修改让代码通过。" This seems to disallow any modification to tests except via locked-change? Wait "受锁文件变更必须带 [locked-change] 尾注" and "locks:unlock". So modifications are possible with process. The test was changed to extend contract for new feature. Is that a violation? The hard rule says "禁止修改 tests/**..." perhaps emphatic. But then [locked-change] exists. In project, when adding a new feature, you need to add tests, which are locked. They did add new test file and modified reader-shortcuts.test.tsx. Since the task involves changing behavior, adding tests is expected. The brief says [locked-change]. I think okay.
+
+However, they modified `reader-shortcuts.test.tsx` to add undo stub and ctrl+z case. Is that "修改测试让代码通过"? No, it's extending tests for new behavior. The "不得自行修改让代码通过" means don't weaken assertions. They strengthened. Fine.
+
+- "每个测试必须能失败一次（写完先红再绿）": They say red-green done. Fine.
+
+- "受锁 e2e spec 改动后必须全量 verify": They changed unit test not e2e. Verify done.
+
+- "禁止新增依赖": no.
+
+- "中文一律 UTF-8": no issue.
+
+- "clearStack 随 closeTab 清理" done.
+
+Maybe another issue: **`reader.store.undo()` calls `runUndo(paperId)` even if no active tab? checks. Good.
+
+Potential hidden issue: **`undo` in ReaderShortcuts is added to actions but `copySelection` existing key binding uses `preventDefault: true`; if keymap event for ctrl+z in textarea is not skipped, native text undo is blocked.** We could mention as WARN if no proof. But maybe not.
+
+Let's think about tests in reader-shortcuts.test.tsx: They use `key(document, { key: 'z', ctrlKey: true })`, not event target in textarea. They don't assert editable avoid. But keymap layer's avoidance is existing and tested elsewhere perhaps. No.
+
+Potential issue: **`toast-store.ts` uses `window.setTimeout` but `window.clearTimeout` in dismiss. If showToast called in a module where `window` undefined (e.g., Node tests without jsdom), could throw. But existing reader.store tests could import it. However, the test environment likely jsdom because vitest config? Not sure. Not in diff. Not flag.
+
+Potential issue: **`annotation-undo.ts` imports `api` from '../../api/client'. In renderer, `api` object is likely global `window.api`. In tests, they stub global window.api before import. But `api/client` might read `window.api` at module top and store it. `resetModules` ensures fresh import. Good. If `api/client` also imports other things requiring `window`? Probably.
+
+Potential issue: **The test for "api 失败不弹栈+重试成功": `let fail = true` captured in closure. Because `loadModule` reads `api` object once; the `del` mock uses `fail` variable. Good.
+
+Potential issue: **The stack is module-level; `vi.resetModules()` before each import ensures fresh stacks. Good.
+
+Potential issue: **In `reader.store.undo`, if `runUndo` returns `done:false, reason:'empty'`, no toast. Good.
+
+Potential issue: **`clearStack` called in closeOne after `inflightOpen.delete(id)`. If `closeOne` called while a `load` is in-flight, clear stack maybe okay.
+
+Potential issue: **`reader.store.undo` uses `tabs[paperId]` from `get()` after await. If the same paperId was closed and reopened as a new tab before the apply, `tab` exists (new tab), then it applies old undo to the new tab, which may not match DB state. But user cannot reopen same paperId within milliseconds? Possible via file open? Race. But not major.
+
+Potential issue: **`undo` of delete re-create with new id; if `r.data` is undefined, apply upsert with undefined -> `act.annotation.id` throws. But API contract likely returns data. Not.
+
+Potential issue: **`saveAnnotation` might update `updatedAt` to now. `toInput` strips updatedAt, so new annotation has fresh createdAt/updatedAt. Good.
+
+Potential issue: **`undo` of comment-edit uses `top.before` (full annotation) including `paperId`, but updateAnnotation API may require only annotation without paperId? It takes `{ annotation: next }` in saveComment where next is Annotation with paperId. So okay.
+
+Potential issue: **The delete inverse's `toInput` includes `comment` but if comment null? Annotation comment likely string. Fine.
+
+Potential issue: **`stacks` not a Map, so if paperId is `__proto__`, `stacks[paperId]` could be weird. PaperId likely UUID. NIT not.
+
+Potential issue: **`undo` uses `s[s.length - 1]!` non-null assertion. No.
+
+Potential issue: **`pushUndo` for create uses `saved` which is from API; API may return `AnnotationInput`? Type says annotation. Good.
+
+Potential issue: **`ReaderPage` actions memo may omit `undo` from dependencies? It's inside memo with no deps; all actions use `useReaderStore.getState()` dynamic, so fine.
+
+Potential issue: **In `AnnotationLayer` import order no.
+
+Now, perhaps should include a finding about "line count exact 250/250" no.
+
+Let's decide final findings list. I think 4 findings: two BLOCKING, one WARN for tests, one NIT for catch. That is reasonable.
+
+Could the WARN about tests be redundant because first finding suggestion already mentions. But include as separate to satisfy test discipline dimension. Good.
+
+Let's refine first finding's evidence: "任务简报亦明言 repo.insert 不接显式 id（annotations.repo.ts:167 randomUUID）." That's from input materials (brief). Good.
+
+Need maybe mention "头注预判成立" but no.
+
+One more thought: Is the create+delete bug actually a "history" issue? If user creates A, deletes A, then presses undo, the expected result is A restored. Then presses undo again, expected A removed. The spec's inverse operations say "create 逆=delete; delete 逆=re-create". In a stack, that should compose. But due to new id, it doesn't. So definitely bug.
+
+Maybe there is a more direct bug: If user creates A, then deletes A, stack has [create A, delete A]. Undo delete re-creates A as new id. But stack's create A still old id. If user then creates B and undoes B, stack pops B, then create A undo deletes old id, leaving new A. Exactly. Good.
+
+Maybe the fix by remapping all lower entries would require updating `top.before.id` and `top.annotation.id` in all entries of same logical annotation. But also if there are multiple delete entries? Example create A, delete A, create A? Actually create after delete would be new annotation with new id, not same logical. Fine.
+
+Should we suggest "不要在 undo 里 re-create by new id; instead modify repo.insert to accept explicit id" perhaps more robust. AGENTS says "方案切换 = 删除旧方案" etc. But okay.
+
+Another potential issue: The `undo` function's `catch` catches exceptions from `toInput`? no.
+
+Potential issue: `undo` returns `api-failed` but doesn't rethrow; the store shows toast. Good.
+
+Now, final JSON.
+
+Need ensure if "findings" order by severity: BLOCKING first, then WARN/NIT. Good.
+
+Let's craft final answer.
+
+But wait, user said "只输出一个 JSON 对象，不要 markdown 代码围栏，不要多余文字". So final should be just JSON. Do not include "```json". Good.
+
+Let's write final. Ensure no unescaped newline in strings; use literal JSON string no newline inside? We can keep one-line each string. In the final message, line breaks between fields okay. Within strings, no actual newline. Use Chinese punctuation.
+
+Let's produce.
+
+== content ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 delete 分支（saveAnnotation + toInput）与 create/comment-edit 分支（按旧 id 操作）",
+      "issue": "delete 的逆操作通过 saveAnnotation(toInput(...)) 重建标注，repo.insert 内部 randomUUID 会分配新 id；但同一标注更早入栈的 create/comment-edit 项仍引用旧 id。于是 create→delete 后连续两次 undo：第一次重建出新 id，第二次按旧 id deleteAnnotation 命中不到，重建标注永久残留；create→comment-edit→delete 时 comment-edit 的 updateAnnotation 也落在失效 id 上，撤销序列不可信。",
+      "evidence": "diff 中 undo(): `r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })`，toInput 剥离 id/paperId/时间戳；而 create 分支 `deleteAnnotation({ annotationId: top.annotation.id })`、comment-edit 分支 `updateAnnotation({ annotation: top.before })` 均使用旧 id。任务简报亦明言 repo.insert 不接显式 id（annotations.repo.ts:167 randomUUID）。",
+      "suggestion": "让 repo.insert 支持显式 id（需 locked-change 流程），或在 delete-undo 重建成功后把栈内所有旧 id 引用 remap 为新 id；并补 create→delete→undo→undo、create→comment-edit→delete→undo×3 跨格用例。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "undo() 动作面：await runUndo(paperId) 无 in-flight 互斥",
+      "issue": "异步撤销没有重入保护。快速连按 Ctrl+Z（或键重复）会让两个 undo() 同时读到同一栈顶，各自执行同一逆操作，之后各自 pop，导致一次逆操作重复执行、下一层被误弹，栈与 store 状态错位。",
+      "evidence": "annotation-undo.undo(): `const top = s[s.length - 1]!` → await api → `s.pop()`；reader.store.undo(): `const outcome = await runUndo(paperId)` 前后无锁、无 in-flight 标记。",
+      "suggestion": "为 per-paperId 增加 undo 互斥或队列（如 pending 标志或串行 Promise 链），in-flight 期间忽略或排队新的 undo；补连续两次 ctrl+z 的测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/annotation-undo.test.ts",
+      "line_hint": "8 个用例覆盖",
+      "issue": "测试面缺「同一标注多操作叠加后逐级 undo」的跨格序列。单操作逆/LIFO/深度截断/失败重试都过了，但 create→delete→undo→undo 这种跨格序列正是 id remap 缺陷的暴露面，不符合宪法要求跨格序列交审计。",
+      "evidence": "AGENTS.md：「按『态空间 + 跨格序列』交审计——单格枚举盖不住跨格序列」；diff 新增测试无同 id 叠加后多级 undo 用例。",
+      "suggestion": "补 create→delete→undo→undo 与 create→comment-edit→delete→undo×3 用例，先红后绿再提交。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 catch{}",
+      "issue": "catch 把所有异常（包括编程错误）一律转成 reason:'api-failed'，会掩盖非 API 层缺陷，只报 toast 后可重试。",
+      "evidence": "diff 中 `} catch { return { done: false, reason: 'api-failed' } }` 包住了整个分支逻辑。",
+      "suggestion": "尽量只把 api.* 调用放进 try，或区分 ApiClientError 与其它异常；编程错误应上抛/记录，而非伪装成可重试。"
+    }
+  ],
+  "summary": "撤销栈主体、接缝与 toast 拆分的实现质量尚可，但存在两个必须回修的正确性缺陷：delete 逆重建采用新 id 使栈内旧引用失效，create+delete 等跨格序列无法完整撤销；异步 undo 无重入保护，连按快捷键会丢栈/重复执行。修复后应补对应跨格测试并重跑全量 verify。"
+}

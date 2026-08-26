@@ -1,0 +1,759 @@
+== reasoning ==
+The user wants me to audit a code diff for an Electron + TypeScript desktop app. Let me carefully analyze the diff against the project constitution (AGENTS.md) and the task brief.
+
+Let me understand the context first:
+- This is SR2-AI-02 - a work order for implementing a CorpusExtractor (text/figure extraction from PDFs)
+- The brief says this is an "r2 重审版" (r2 review version) - a net incremental diff after r1 fixes
+- The brief asks to adjudicate three specific things:
+  1. B1 fix - whether the runtime defect (drawFrom source parameter type chain) is eliminated
+  2. W2 integration test - whether it satisfies the multi-page fixture clause
+  3. Whether the fixes introduce new surfaces (workerUrl static import whitelist/once flag/refine semantics)
+
+Wait, the brief is in Chinese and mentions "请只裁三清单（同 r2 版）：1. B1 修型是否消除运行时缺陷（drawFrom 源参类型链）？2. W2 集成用例（真 getTextContent+假 render 边界）是否满足票面多页夹具条款？3. 处置是否引入新面（workerUrl 静态 import 白名单内/once 标志/refine 语义）？输出 JSON（务必留预算给 content——推理从简）。"
+
+So the briefing says: only adjudicate three lists:
+1. Does B1 fix eliminate the runtime defect (drawFrom source parameter type chain)?
+2. Does W2 integration test case (real getTextContent + fake render boundary) satisfy the ticket's multi-page fixture terms?
+3. Does the fix introduce new surfaces (workerUrl static import whitelist / once flag / refine semantics)?
+
+Let me systematically analyze the diff.
+
+The diff contains:
+1. `docs/invariants.md` - updates INV-16 from "未锚定" to "已锚定" with details about ESLint enforcement
+2. `src/renderer/features/reader/CorpusExtractor.ts` - the main implementation replacing the stub
+3. `src/shared/ipc/schemas.ts` - new zod schemas for corpus-item requests and events
+4. `tests/unit/renderer/corpus-extractor.test.ts` - new test file
+
+Wait — but the constitution says `tests/**` are locked files. And the diff shows a new test file being added (`corpus-extractor.test.ts` is new). Also `src/shared/**` are locked. The diff modifies `src/shared/ipc/schemas.ts` — that's a locked-change. The brief says the IPC contract changes require [locked-change] annotation. Let me check if the commit message or diff has the annotation... The diff doesn't show a commit message, just the diff. But the conventions require `[locked-change]` tail note in the commit. We can't see commit messages.
+
+Actually wait — tests/unit/renderer/corpus-extractor.test.ts is a NEW file. Adding a new test file is allowed? The constitution says "禁止修改 tests/**" — locked, CI sha256. But this is a new file, not modifying an existing test. The brief says the ticket is to implement CorpusExtractor with tests. Hmm, but "受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 [locked-change] 尾注" — adding a test file is adding to tests/**, which would be a locked-change. New files need `npm run locks:generate` then apply. We can't verify from the diff.
+
+Let me focus on the technical correctness analysis.
+
+## 1. B1 fix: drawFrom source parameter type chain
+
+The original r1 had an issue: `drawFrom` source parameter type chain runtime defect. Let me look at the current implementation:
+
+```typescript
+export type CanvasImageSourceLike = unknown
+export interface CanvasRenderingContext2DLike {
+  [key: string]: unknown
+}
+export interface RenderCanvas {
+  readonly width: number
+  readonly height: number
+  readonly ctx: CanvasRenderingContext2DLike
+  readonly source: CanvasImageSourceLike
+  drawFrom(src: RenderCanvas, box: { sx: number; sy: number; sw: number; sh: number }): void
+  toPngBase64(): string
+}
+```
+
+And `createDomCanvas`:
+```typescript
+function createDomCanvas(width: number, height: number): RenderCanvas {
+  const el = document.createElement('canvas')
+  ...
+  drawFrom(src, box) {
+    ctx.drawImage(
+      src.source as CanvasImageSource,
+      box.sx,
+      box.sy,
+      box.sw,
+      box.sh,
+      0,
+      0,
+      box.sw,
+      box.sh
+    )
+  }
+```
+
+Hmm. `CanvasImageSourceLike = unknown`. In `createDomCanvas`, `ctx.drawImage(src.source as CanvasImageSource, ...)`. The `as` cast from `unknown` to `CanvasImageSource` — is that a runtime fix? The B1 issue was "drawFrom 源参类型链" — the source parameter type chain. The question: is the runtime defect eliminated?
+
+The previous r1 version apparently had `drawFrom` type chain issue. Now, `source: unknown` and the production drawFrom casts to `CanvasImageSource`. This is a type-level fix, not a runtime fix per se. The runtime behavior: in production, `src.source` is a `HTMLCanvasElement` (the `el` in createDomCanvas), which IS a valid `CanvasImageSource`. So `drawImage` works.
+
+But wait — there's a subtle issue. In the production code, `annoCanvas.drawFrom(pageCanvas, box)` — `pageCanvas` is created by `createCanvas(...)` which defaults to `createDomCanvas`. So `pageCanvas.source` = the actual canvas element. Good, runtime OK.
+
+But in the test, canvasStub returns `source: null`. In tests, `drawFrom: () => undefined` so source isn't used. OK.
+
+The type `CanvasImageSourceLike = unknown` — this means any test stub can pass. Is that "type abuse" (any)? It's `unknown`, which is safer than `any`, but it does weaken the contract. However, the comment explains: "node 测试环境无 DOM lib 类型——生产=canvas 元素". Hmm, but actually the renderer code does have DOM lib types... Actually the issue: in the test environment (vitest node), the DOM lib types aren't available, but that's a compile-time concern. The source file itself is compiled with DOM libs I assume. Using `unknown` as an alias and then casting via `as CanvasImageSource` in the production drawFrom — this is a type-safety escape hatch.
+
+Is the runtime defect eliminated? The B1 issue was about "drawFrom 源参类型链" — perhaps in r1, `drawFrom` took `src: RenderCanvas` and used `src.source` which was typed in a way that caused a runtime issue, or the production code attempted something that failed. Looking at current: `ctx.drawImage(src.source as CanvasImageSource, ...)` — in production, `src.source` is the actual canvas element. This works at runtime. The fix seems to be: explicitly define `drawFrom(src: RenderCanvas, ...)` and the production uses `src.source`. I think the B1 fix is adequate — the source is now consistently the canvas element, passed through the RenderCanvas abstraction.
+
+But hold on — let me look more carefully. `CanvasRenderingContext2DLike` has index signature `[key: string]: unknown`. And pdfjs `render({ canvasContext: pageCanvas.ctx, viewport }).promise` — pdfjs render expects a `CanvasRenderingContext2D` with many methods. The ctx typed as `{[key:string]: unknown}` is cast to `CanvasRenderingContext2DLike` from a real 2D context. At runtime, it's the real ctx, so pdfjs works. OK.
+
+Actually wait — there IS a potential type issue: `ctx: ctx as unknown as CanvasRenderingContext2DLike` — this is a double cast from `CanvasRenderingContext2D` to unknown to `CanvasRenderingContext2DLike`. That's fine.
+
+Hmm, but the B1 question says "drawFrom 源参类型链". Let me re-read: "B1 修型是否消除运行时缺陷（drawFrom 源参类型链）". So B1 in r1 was a BLOCKING finding about drawFrom's source parameter type chain causing a runtime defect. The fix: `source: CanvasImageSourceLike = unknown` + production cast. 
+
+Wait, is there still a runtime issue? In `createDomCanvas.drawFrom`, `ctx.drawImage(src.source as CanvasImageSource, ...)`. But what if `src` is a stub or the pageCanvas created by createCanvas? In production, pageCanvas is always created by `createCanvas` (which defaults to `createDomCanvas` unless injected). So src.source is always an HTMLCanvasElement in production. Fine.
+
+Actually, let me check the anno drawing more carefully:
+
+```typescript
+const viewport = page.getViewport({ scale: EXPORT_SNAPSHOT_SCALE })
+const pageCanvas = createCanvas(viewport.width, viewport.height)
+await page.render({ canvasContext: pageCanvas.ctx, viewport }).promise
+...
+const box = cropBoxPixels(pageRects, viewport.width, viewport.height)
+const annoCanvas = createCanvas(box.sw, box.sh)
+annoCanvas.drawFrom(pageCanvas, box)
+```
+
+`box` from cropBoxPixels may have `sw`/`sh` as 0 if all rects have zero width/height? Rectangles from annotations presumably have positive w/h. But edge case: if rects are present but degenerate (w=0 or h=0), then `createCanvas(0, 0)` — canvas with 0 dims, drawImage with 0 width. `toPngBase64` would produce a 0x0 PNG. That's an edge case but probably acceptable; annotation rects should be valid. Not a major finding.
+
+Also, `cropBoxPixels` doesn't clamp the box to the page bounds. If annotation rects are normalized (0..1), then sx, sy, sw, sh should be within page bounds as long as x, y, w, h are in [0,1] and x+w ≤ 1. The schema `annotationRectSchema` — we don't see it, but presumably validates 0..1. If rects span outside (e.g., x=0.9, w=0.2 → x+w=1.1), the drawImage would draw outside source bounds — canvas drawImage with source rect outside destination? Actually drawImage with sx+sw > source width is clipped by canvas per spec. It won't throw. The annoCanvas would just have empty/padded content. Minor.
+
+## 2. W2 integration test
+
+The W2 requirement: "W2 真 pdfjs 集成用例（真 getTextContent+假 render 边界）是否满足票面多页夹具条款？"
+
+The ticket (from the header comment in CorpusExtractor.ts) says: "测试：tests/unit/renderer/corpus-extractor.test.ts：多页页序/背压 max in-flight/anno 分页匹配与裁剪数学/failed 跨格接续/加载失败/destroy 尽力而为/防御分支/事件契约三面"
+
+Hmm wait, the header comment lists: "多页页序/背压 max in-flight/anno 分页匹配与裁剪数学/failed 跨格接续/加载失败/destroy 尽力而为/防御分支/事件契约三面" — note it doesn't explicitly mention "真 pdfjs 集成" in the current list. But the test file has a test "真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e）" that uses `createMultiPagePdf(2, 'INTEGRATION')` and real pdfjs getDocument.
+
+The brief asks: does W2 integration test satisfy the ticket's multi-page fixture terms? The test uses `createMultiPagePdf(2, 'INTEGRATION')` — 2 pages with text 'INTEGRATION'. Then asserts fulltext[0].payload contains 'P1' and 'INTEGRATION', fulltext[1].payload contains 'P2', last sent is complete.
+
+Hmm — "多页夹具" (multi-page fixture) clause. What exactly does the ticket require? The brief mentions "票面多页夹具条款" — the ticket's multi-page fixture clause. From the header: "多页页序" is tested in the first test (3 pages). The integration test uses 2 pages. The question: does the integration test satisfy the multi-page fixture clause? A 2-page fixture with real pdfjs — text from page 1 and page 2 both asserted. Wait, asserts only that payload[0] contains 'P1' and 'INTEGRATION', and payload[1] contains 'P2'. Does 'P2' get checked for page 2? Yes: `expect((fulltexts[1] as { payload: string }).payload).toContain('P2')`. Hmm, but does multi-page fixture require page separation / distinct text per page? The assert checks content contains 'P1'/'P2', which are distinct per page, and that both pages were produced. That seems to satisfy multi-page.
+
+But wait — is `createMultiPagePdf` actually creating a real multi-page PDF with text on each page? We can't see that util. It's imported from `../../utils/pdf-factory`. This is a new test helper potentially. The test asserts "P1" and "P2" appear. If createMultiPagePdf generates PDFs with text 'P1... P2...' per page... We can't verify without the util. 
+
+Hmm — one thing though: the W2 boundary "真 getTextContent+假 render 边界" — the test does real getTextContent but fake render. The header of the test says the snapshot rendering is deferred to AI-04 e2e. That's a reasonable boundary stated for the ticket. 
+
+But here's a concern from the constitution: "e2e 必须断言"渲染出真实文本"（历史：52 测试全绿但文字不可见）" and tests must be able to fail once, not be tautological. The integration test asserts real text from a real pdfjs parse — that's a genuine assertion that can fail.
+
+Is there an issue with the integration test's `flushAll` fixed loop count? `for (let i = 0; i < pages * 8 + 16; i += 1) await settle()` — each item send involves a setTimeout. For 2 pages, the chain: loadDocument (sync Promise.resolve), page 1 getTextContent (async), sendItem fulltext (setTimeout), render (resolved), sendItem page figure (setTimeout), no anno, page 2... complete. So about 5 sends → 5 macro tasks + the initial chain. 2*8+16 = 32 iterations, plenty. This is acceptable.
+
+But wait — the flushAll uses `pages * 8 + 16` — a magic number. If the chain is longer, the test could pass trivially due to not enough iterations? Actually no — if iterations are insufficient, the test would fail (assertions on sent array would be wrong). If iterations are many, no harm. So it's fine functionally, though a `while` loop waiting for terminal state would be more robust. NIT at most.
+
+## 3. workerUrl static import whitelist / once flag / refine semantics
+
+New surfaces introduced by the fix:
+
+a) `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` — a dynamic import with `?url` suffix. Is this a new surface concerned by INV-16? INV-16 says: "pdfjs-dist 运行时 import 白名单单源：仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件". The `?url` import is a Vite-specific asset URL import — it's not a runtime import of pdfjs-dist `main` entry but imports the worker .mjs file as URL. Is this covered by the ESLint `no-restricted-imports` rule? The rule configured for `pdfjs-dist` package may not catch `pdfjs-dist/build/pdf.worker.min.mjs?url` because the import path is `pdfjs-dist/build/...` not `pdfjs-dist`. Actually `no-restricted-imports` with patterns like `pdfjs-dist` matches imports starting with that. But with the `?url` suffix, does the rule still match? Vite's `?url` suffix — the module id would be `pdfjs-dist/build/pdf.worker.min.mjs?url`. ESLint `no-restricted-imports` matches the literal or pattern against the import source string. If the config uses pattern `pdfjs-dist`, and import is `pdfjs-dist/build/pdf.worker.min.mjs?url`, does pattern `pdfjs-dist` match? By default, `no-restricted-imports` patterns match via `path` module — "pdfjs-dist" pattern matches only import sources that are exactly "pdfjs-dist" or... actually the docs: patterns are matched similarly to `import/no-restricted-paths`? Let me recall: ESLint no-restricted-imports with `patterns` option: "This option is similar to `paths`, but it uses a regex-like pattern. The pattern is matched against the module name." Actually it uses `ignore` pattern? The `patterns` option entries have `group` (an array of glob-like patterns) matched against the import source. Wait, I think `group` uses the `minimatch` style? Hmm, in ESLint docs: 
+```
+"no-restricted-imports": ["error", {
+    "patterns": [{
+        "group": ["utils/*"],
+        "message": "..."
+    }]
+}]
+```
+The `group` patterns — the docs say: "Patterns to match against the module names. ... This is similar to the `paths` option but with more complex matching capabilities" — it uses `path` matching where `*` matches any single path segment? Actually I recall it uses `minimatch` with `matchBase` off and the pattern supports `*` and `**`. Whatever — the exact matching of `pdfjs-dist/build/pdf.worker.min.mjs?url` against pattern `pdfjs-dist` — likely the pattern `pdfjs-dist` (without wildcards) matches only the exact string `pdfjs-dist`. Hmm, actually if pattern is just "pdfjs-dist" and import is "pdfjs-dist/build/...", it would NOT match because `*` isn't there. But the INV-16 note says "ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦，该缺口由架构评审面覆盖，机器锚以 static import 为准" — so the known boundary is documented. The worker import `?url` is in the whitelisted file (CorpusExtractor.ts), so it's within the whitelist file. That's fine per INV-16.
+
+But here's a question: is `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` a runtime import of pdfjs-dist that's NOT in the whitelist semantics? The whitelist says "仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件" — the import happens IN CorpusExtractor.ts, so it's allowed. The `?url` suffix is a build asset URL, a new way to consume pdfjs. The brief asks "处置是否引入新面（workerUrl 静态 import 白名单内/once 标志/refine 语义）" — is the workerUrl static import within the whitelist? Yes, the file is whitelisted. Is the once flag an issue? `workerConfigured` module-level flag — module-level mutable state. The comment says "与 PdfCanvas 模块级设置同值幂等——两消费点独立初始化均安全". But is it truly safe? `GlobalWorkerOptions.workerSrc` is set once per module instance. Both PdfCanvas and CorpusExtractor set the same workerSrc value (presumably). Since it's the same URL value, whichever sets it first is fine. The `workerConfigured` flag prevents re-setting within CorpusExtractor module. Safe.
+
+Wait — actually there's a subtle issue: `workerConfigured` is module-level shared state that is only guarding `GlobalWorkerOptions.workerSrc` assignment in CorpusExtractor. If PdfCanvas.tsx sets workerSrc to a different value (e.g., a different regex or path), then loadPdfDocument would not re-set it. But the comment claims "与 PdfCanvas 模块级设置同值" — same value as PdfCanvas. Is that guaranteed? The worker is bundled locally per ADR-0002, and Pandoc? Hmm. We can't verify PdfCanvas.tsx in the diff. The invariant INV-16 says "worker 本地打包与 PdfCanvas 同源（ADR-0002）". If both use the same `?url` import of the same file, they get the same URL. OK.
+
+BUT: `workerConfigured` is a module-scoped `let` — this creates state that could be an issue if `loadPdfDocument` is imported in a test environment or if the worker module import fails. Also, module-level `let` in a file with no exports of that state — it's fine.
+
+Hmm wait, there's a more subtle concern. The `Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')])` — imports both the main pdfjs module and the worker URL. In a typecheck context (`tsc`), will `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` pass typecheck? The `?url` suffix needs a type declaration. Vite usually provides `vite/client` types for `*?url` module declarations. If the tsconfig includes `vite/client`, fine. Unverifiable. The test file imports the test from `pdf-factory` — new util. We can't see it.
+
+b) `refine` semantics — the schema `corpusItemReqSchema` has a `.refine()` that enforces: figure anno must have annotationId; figure page must not have annotationId. The brief asks if refine semantics introduce a new surface. The refine is on the discriminated union, validation logic. The type `z.infer<typeof corpusItemReqSchema>` — does the refine narrow the type to expose `annotationId` for anno figures? In zod, `.refine()` doesn't narrow the output type unless you use `.superRefine` with custom type or `z.discriminatedUnion` then `.refine` keeps the union type. So `CorpusItemReq` type still has `annotationId?: string` optional even for anno figure. When the consumer (main side, AI-03) handles the item, they'd need to narrow by `figure === 'anno'` to access annotationId. That's fine — z.infer with refine doesn't change the type, so no type-level narrowing. The refine is runtime validation. Would it be better to use a discriminated union on both `kind` and `figure`? The refine is a reasonable approach but pushes the modeling into validator-space. This is a possible WARN-level design nit, but not blocking.
+
+Actually, let me think about whether refine semantics could be a real problem: the refine message: "anno 图必带 annotationId；page 图不得携带 annotationId". The refine only fires for `v.kind === 'figure'`. Good.
+
+However — hmm, the refine is a `.refine()` applied to the whole discriminated union. Zod's discriminatedUnion already narrows to the member. The refine checks cross-field constraint. OK.
+
+Another observation: the `extractRequestEventSchema` annotations array has `.max(5000)` — a cap. Good. But the schema requires `url: z.string().min(1)`; the extraction fetches `req.url` via `getDocument(url)`. The URL comes from main via the extract-request event. Since main-side sends it from repo (trusted?), but it's a URL — `app-file://x.pdf` in test. Could a malicious URL cause issues? pdfjs getDocument with an arbitrary URL in renderer could fetch network resources. But the event comes from main (trusted orchestration). The renderer has CSP. This is within the app's own IPC. Not a real security issue, though "出网白名单" — pdfjs fetching a URL from the event: if main sends an http:// URL, pdfjs would fetch it from renderer. But the renderer CSP should block? pdfjs uses fetch/XHR which CSP governs. The app CSP probably restricts connect-src. We can't verify. The url comes from main process which is trusted within the app (single-user local app). Also INV-16 etc. I'd not flag.
+
+c) A notable issue: `payload: z.string()` for figure — base64 PNG as string with no size cap. The schema has no max length for payload. IPC payload could be huge — but backpressure awaits ack per item, and this is local IPC. The main side will write to disk. A 5000-annotation cap on the event; but figure payloads can be large (page snapshots at 2x scale). No limit — but that's by design for an export pipeline. Minor.
+
+d) The `extractRequestEventSchema` — `annotations` array with `z.array(...).max(5000)`. But also there's no `.min(0)` needed. OK.
+
+e) The invariants.md change — INV-16 flipped from 未锚定 to 已锚定 with a note about the dynamic import blind spot. The question is: does the worker `?url` import count as a "第四处直连" — no, whitelist is about FILES not import kinds. CorpusExtractor is a whitelisted file. OK.
+
+But WAIT — major issue: INV-16 is in docs/invariants.md, which is a tracked file. The constitution says docs can be changed... but is invariants.md a locked file? The locked files list: "tests/shared/migrations/CI/lint/构建/测试配置/脚本". docs/invariants.md is not in the locked list per AGENTS.md. So modifying it is fine without [locked-change]. But the constitution says "不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md... 新增跨模块行为不登记本册视同未完成" — updating it is required. Good.
+
+Now — the schema file `src/shared/ipc/schemas.ts` IS in `src/shared/**`, which is locked. The diff modifies it. Per constitution: "受锁文件... 变更必须带 [locked-change] 尾注" and "受锁文件修改前先 npm run locks:unlock ... 改完即时 npm run locks:apply". We can't see commit message or whether locks were applied. The diff doesn't tell us. The header comment in CorpusExtractor says "IPC 契约 [受锁]（本单已落）... [locked-change]". So it's claimed. We can't verify from the diff alone — the audit is on the diff. Should I flag it? The brief says "引用证据必须来自输入材料" — there's no commit message in the input, so I can't assert violation of the [locked-change] annotation requirement. But the header comment claims "本单已落" with [locked-change]. Hmm, also the schemas.ts addition references `annotationRectSchema` from '../models/annotation' — imported. Both are in shared, so both locked. OK.
+
+Also — modifications to `src/shared/**` per the constitution "禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）" — but that's for AI agents: "发现测试本身有错 → 报告人类，走 [locked-change]，不得自行修改让代码通过". The workflow says locked changes are allowed with the [locked-change] workflow. The brief itself is a ticket for implementing the feature, which requires schemas changes — presumably approved via the locked-change process. Header claims it. Fine.
+
+Now the TEST file — tests are locked too. It's a NEW file (`new file mode`). Adding a new test file — is that a locked-change? The sha256 lock typically covers existing files. New files need `npm run locks:generate` then apply — but the diff shows a new test file under tests/** — that's the ticket's deliverable ("测试：tests/unit/renderer/corpus-extractor.test.ts"). The header comment lists it. So it's intended. Can't verify locks status.
+
+Let me look for correctness issues in the implementation more carefully.
+
+### CorpusExtractor implementation logic
+
+```typescript
+export function createCorpusExtractor(deps: {
+  loadDocument: LoadDocument
+  sendItem: SendItem
+  createCanvas?: CreateCanvas
+}): CorpusExtractor {
+  const createCanvas = deps.createCanvas ?? createDomCanvas
+  let extracting = false
+
+  async function runExtraction(req: ExtractRequestEvent): Promise<void> {
+    ...
+  }
+
+  return {
+    handleEvent(e: ExportCorpusEvent): void {
+      if (e.type !== 'extract-request') return
+      if (extracting) { warn; return }
+      extracting = true
+      void runExtraction(e)
+    }
+  }
+}
+```
+
+**Race / state machine issue**: `extracting = true` set synchronously before `runExtraction` starts. Good — prevents reentry. `extracting = false` in finally. Good.
+
+But — `handleEvent` returns `void`, and `runExtraction` is fire-and-forget (`void runExtraction(e)`). If `runExtraction` throws synchronously before the try? `runExtraction` is async, so any synchronous throw becomes a rejected promise. The function body: 
+```typescript
+async function runExtraction(req) {
+  const base = {...}
+  const sendChecked = async (item) => {...}
+  let doc = null
+  try {
+    doc = await deps.loadDocument(req.url)
+    ...
+  } catch (e) {
+    ... send error ...
+  } finally {
+    ... destroy ...
+    extracting = false
+  }
+}
+```
+Everything is inside try/catch/finally. But `sendChecked` is defined before try — if defining `base`/`sendChecked` throws (it won't — just object creation), it'd be an unhandled rejection. Not realistic.
+
+**But there's a subtle state issue**: In the catch, if `deps.sendItem({kind:'error'...})` throws (not return !ok, but actually REJECTS), it's caught by the inner try/catch and logged. Good — no error loop. But what if `deps.sendItem` for the error itself returns `{ok:false}`? Then sendChecked isn't used for error — it calls `deps.sendItem` directly without checking ok. So if error report is "rejected" (ok:false), it's silently swallowed — no log. The comment says "sendItem 自身失败不再追报——避免错误循环". But returning ok:false is not "自身失败" (throw) — it's a folded error that's swallowed without even a console log. Minor observability gap. WARN-level at most? Actually, the result is folded error on a failure path; the destination (main) already knows the extract failed (since it's the one that would reject the ack). Hmm, but the error upload failing is useful for debugging. There's a console.error for throw-case but not for ok:false. NIT.
+
+**Backpressure with anno loop**: The per-page flow: sendChecked fulltext, then create canvas+render, sendChecked page figure, then loop over ALL annotations filtering rects for this page — for each anno sendChecked. So per-page multiple sends, each awaited. Good backpressure (max in-flight 1 per test). 
+
+**Wait — a real issue**: in the anno loop, `for (const anno of req.annotations)` filters `r.page === n - 1`. `r.page` — annotation rect page. The `cropBoxPixels` function:
+```typescript
+export function cropBoxPixels(rects, width, height) {
+  ... uses r.x, r.y, r.w, r.h ...
+}
+```
+But nothing filters rects by page inside cropBoxPixels — the caller filters. Good. However — `cropBoxPixels` operates on `r.page`-filtered rects, but rects for a single annotation could span multiple pages. The filter keeps only the current-page rects, then crops the bounding box of only those rects from the page snapshot. But multiple rects on the same page for one annotation → they crop the union bbox. That matches the doc: "归一化 rects 包围盒从页图裁". OK.
+
+**Boundary bug potential**: `viewport.width`/`height` — pdfjs returns floats? `getViewport({scale}).width` can be a float (612*2=1224 exactly, but other PDFs could have fractional). `createCanvas(viewport.width, viewport.height)` — canvas width/height must be integers per HTML spec; non-integer is clamped/floored? Actually setting `canvas.width = 1234.5` — the spec says the value must be a finite positive number; browsers floor/round? Actually, canvas width/height are `unsigned long` — setting a non-integer triggers... HTML spec: "If the value is not a finite number, or is negative, throw an IndexSizeError". For non-integers, I believe the value is floored/rounded. On floats, `el.width = 1234.5` — in practice browsers truncate? Actually the IDL is `[EnforceRange] unsigned long` — hmm, no, CSS `unsigned long`? For canvas, the attribute is `unsigned long` with no enforce range I think; assigning 1234.5 → it gets converted to an unsigned long, which floors? Actually "conversion to unsigned long" for 1234.5 → 1234 (truncation per WebIDL: "long" conversion truncates toward zero). So `viewport.width` float 1234.5 → canvas.width = 1234. The doc: "测试断言 PNG 尺寸=页原始尺寸×常量" — if original page is fractional, dims get truncated. Minor precision concern but real-world PDFs use integer point sizes usually. NIT.
+
+**Empty rects → zero-size canvas**: if an annotation has rects all on a page but the union bbox has sw or sh of 0 (degenerate zero-width rect), `createCanvas(0, 0)` — canvas 0x0; `toPngBase64` works (1x1? or 0x0 PNG data URL 100 bytes?). Actually canvas with width=0 height=0 — `toDataURL` returns a tiny PNG. And `drawFrom` drawImage with 0-width source... would be a no-op. Data would be bad downstream (main side AI-03). Edge case, but schemas presumably enforce positive w/h? We don't see annotationRectSchema. Skip — NIT.
+
+**A significant one: `sendChecked` throws on ack failure — but the thrown error message is generic ('回传被拒绝（会话侧错误）'), losing the underlying error details.** The error reason reported to main would be the generic message, not the actual ack error. In the test, ackFailAt returns `{ok:false, error:{code:'INTERNAL', message:'ack 拒绝（会话侧）'}}` — the Error thrown is '回传被拒绝（会话侧错误）'. Then the catch sends `{kind:'error', reason:'回传被拒绝（会话侧错误）'}`. The actual session-side error message is lost. For observability (the error goes back to the main session which likely toasts it), a generic "回传被拒绝" is less useful. WARN-level — but is this blocking? No. It's a design choice to avoid leaking IPC details. I'd call it NIT/WARN.
+
+**Another significant one**: In the failed path after loadDocument fails, `catch` sends `{kind:'error', reason: 'bad url'}`. Then `finally` destroys doc (null — skipped), sets extracting=false. Good — cross-gap sequence works (test covers it).
+
+**Session/paper matching on error/complete**: `complete` sent via `deps.sendItem` directly (not sendChecked) — so if complete ack fails, it goes unhandled? Look: 
+```typescript
+await deps.sendItem({ ...base, kind: 'complete' })
+```
+This is inside the try. If sendItem rejects (throws), catch → sends error. If sendItem returns ok:false (folded), no throw — the complete "failure" is swallowed, and the extraction proceeds to finally → done. Hmm — complete ack failure means main didn't accept the completion. Since the whole point of complete is to signal the session, an ok:false should probably be treated as an error → but sendItem direct call doesn't check. The test for ackFailAt=1: the error path is triggered for the FIRST item (fulltext page 1) via sendChecked throw → error. But if the complete itself were rejected, no error path. That's an inconsistency: fulltext/page figure/anno use sendChecked (throw on !ok), but complete does NOT use sendChecked. Also the error payload uses direct sendItem. So the backpressure contract "sendItem 注入" with Result folding — the complete call should use sendChecked for consistency... but wait, if complete fails, sending error AFTER complete failed might be weird (the session may already be torn down). Actually the design: sendChecked throws → catch sends error. If complete's ack fails, we're at the end — sending an error after a failed complete could be pointless but consistent. The current code swallows complete ack failure. Inconsistent — WARN.
+
+Hmm, wait — actually let me recheck: `await deps.sendItem({ ...base, kind: 'complete' })` — yes, direct, no ok check. And the error path's sendItem is direct on purpose (avoid error loop). The complete one seems like an oversight — should it be sendChecked? If the complete returns ok:false, the extraction silently ends without the main session being notified that everything is done. But "complete" failing with ok:false means the main rejected the completion — the session would presumably know? The main side is the one rejecting. So the main session already knows something's wrong. But the renderer would be silent, and the session might be stuck. This is a genuine minor correctness gap: folded errors on complete are ignored. WARN.
+
+**Now, the schema question — "四 kind 判别联合"**: corpusItemReqSchema is `z.discriminatedUnion('kind', [...])`. Discriminated union requires each member to have the discriminator `kind`. Four members. Good. `.strict()` on each. Good. The refine after the discriminated union — Hmm, does zod's discriminatedUnion preserve the discriminated union type after `.refine`? Yes, refine returns ZodEffects but `z.infer` still yields the union. But — will `.refine` be properly applied when the schema is used with `safeParse`? Yes.
+
+**Type-level issue**: `CorpusItemReq` — with the refine not narrowing, downstream consumers (main AI-03) using `item.annotationId` on a figure item would get TS error (property doesn't exist on the union member without annotationId)? Actually the figure member has `annotationId?: string` optional — so accessing `item.annotationId` after narrowing by kind==='figure' but not figure==='anno' returns `string | undefined`; need further narrowing on figure. Fine.
+
+### The invariants.md update — correctness of the claim
+
+The INV-16 update claims: "ESLint 强制（no-restricted-imports——renderer 主块禁 pdfjs-dist+白名单三文件 override 块重申其余禁令；2026-08-27 随 SR2-AI-02 落地，lint 拦截 OutlinePanel/OutlineThumb 两处漏扫的类型直连实证防线生效并当场改走 PdfCanvas 再导出）" — and "已锚定" plus known boundary: dynamic import() checks vary by ESLint version.
+
+This is a documentation change claiming the ESLint rule was landed in this ticket. But the diff doesn't include eslint.config.js changes! The diff files: docs/invariants.md, CorpusExtractor.ts, schemas.ts, corpus-extractor.test.ts. No eslint.config.js. So INV-16 claims "本单落地 ESLint 规则" and "随 SR2-AI-02 落地" — but the eslint config change is NOT in this diff. That's a discrepancy: the invariant says it's anchored by ESLint, and the anchor (eslint.config.js no-restricted-imports) is claimed to have landed with this ticket, but the diff doesn't include it.
+
+Hmm — but wait, the diff is the "净增量 diff" of r2. Maybe the eslint.config.js change was in r1? Or in another commit? The INV-16 update text says "2026-08-27 随 SR2-AI-02 落地". The INV row change from 未锚定 to 已锚定 in THIS diff. If the ESLint rule was already in place from a previous commit, then flipping INV-16 to 已锚定 is consistent. But then the brief says "处置是否引入新面（workerUrl 静态 import 白名单内/once 标志/refine 语义）" and the INV-16 note explicitly acknowledges the dynamic import gap. The diff's CorpusExtractor introduces a NEW runtime import of pdfjs: `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` — within the whitelisted file, so fine for INV-16.
+
+Actually, hold on — there's a subtle issue with INV-16 and the worker import. INV-16 says "仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件（类型消费循 PdfCanvas 再导出模式）". The `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` is a NEW import path — pdfjs-dist's worker build. Does the ESLint rule (no-restricted-imports for `pdfjs-dist` in the renderer main block) permit `pdfjs-dist/build/pdf.worker.min.mjs?url`? If the rule bans the package prefix, the `?url` worker import might ALSO be banned in non-whitelisted files — that's good. In whitelisted files, overrides allow `pdfjs-dist` — does the override allow sub-paths too? Unknown. Since we don't see eslint.config.js, we rely on the claimed behavior. The INV-16 note honestly documents the dynamic-import blind spot. Since CorpusExtractor is whitelisted, the worker import is legit regardless.
+
+BUT — the constitution says "重复资产（pdf.js worker 只允许一份）" — "pdf.js worker 只允许一份". The worker import `pdf.worker.min.mjs?url` in CorpusExtractor — is this a SECOND copy of the pdf.js worker? PdfCanvas.tsx already presumably imports the worker (`?url` or via GlobalWorkerOptions). If both import the SAME bundled worker file (same asset), it's one asset, two references. "重复资产（pdf.js worker 只允许一份）" means one worker FILE, not one import site. Since both use the same build asset, fine. But if CorpusExtractor introduces a SECOND pdfjs worker asset (e.g., a different build or module variant like .mjs vs .min.mjs), that violates "pdf.js worker 只允许一份". `pdfjs-dist/build/pdf.worker.min.mjs` — is this the same file PdfCanvas uses? The comment says "worker 本地打包与 PdfCanvas 同源（ADR-0002）" — claims same source. Plausible. Can't verify without PdfCanvas. NIT/WARN? I'd mention as WARN — need to confirm the worker asset is the same single file.
+
+Actually the INV-16 comment says "worker 本地打包与 PdfCanvas 同源（ADR-0002）" — "同源" (same origin/source). Good enough claim. But — note that the import is `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` — with the `?url` Vite suffix, the bundled asset URL. In the unit test node environment, this import never runs (loadDocument is stubbed). In production, Vite bundles it. OK.
+
+### Test quality concerns
+
+Per the constitution: "每个测试必须能失败一次" — can the tests fail? Test assertions are on actual sent items, real assertions. The integration test uses real pdfjs getDocument — the payload assertions can fail if the generated PDF text differs. Non-tautological. Good.
+
+But there's the `flushAll` problem: uses fixed iteration counts based on page count. For the ack-fail test: `flushAll(2)` = 2*8+16 = 32 settles. The error path: fulltext p1 → ackFail (setTimeout) → sendChecked throws → catch → error sendItem (setTimeout) → finally → extracting=false. Chain of maybe 4-5 macro tasks. 32 enough. For the integration test with 2 pages: loads... maybe 6-8 macro tasks plus real pdfjs async — 32 probably enough. Actually pdfjs getDocument in node — async with many microtasks but a few macrotasks? The flushAll settles via setTimeout each iteration. Real async I/O in pdfjs might take more than 32 macrotask turns? pdfjs is mostly promise-based (microtasks) with occasional setTimeout. The `for...await settle()` loop is 32 rounds of setTimeout. Since the ack waits are setTimeout(0) per sendItem round-trip, each sendChain step is one macrotask. 32 macrotask rounds — probably enough. But: **the "真 pdfjs 集成" test loads a real PDF from a data array**, and pdfjs's worker? In node, pdfjs `getDocument({data})` — does it use the worker? pdfjs-node? In tests, pdfjs can use fake worker / no worker with `disableWorker`? Modern pdfjs-dist in node: uses `@napi-rs/canvas` for some things, or a fake worker. Actually pdfjs-dist v4+ in Node requires setting up `GlobalWorkerOptions.workerSrc` or disabling worker. When run under vitest (node environment), `getDocument` may spawn a worker via `node:worker_threads` or fall back to "fake worker" (main thread). The test imports pdfjs-dist and calls getDocument — if it tries to load the worker from a URL (workerSrc not set), in node it might fail... but the test is in the diff and presumably was run green by the agent. The `?url` import isn't in the test. Actually the test directly `import('pdfjs-dist')` — no worker config. pdfjs v4: when no workerSrc, it warns and uses fake worker in the main thread (loader "fake"). In Node ≥20 the fake worker works. Probably fine.
+
+Hmm — but wait: does the "真 pdfjs 集成" test satisfy the "票面多页夹具条款"? The ticket text in the header says fulltext "多页页序" — the first mock test uses 3 pages with distinct text and asserts page order and text order. The integration test uses a 2-page real PDF and asserts both pages' text. Sounds satisfying.
+
+Now — one important thing about the W2 test: it's in the tests/ folder, which is locked. Adding a test file — the test references `pdf-factory` util `createMultiPagePdf` — which is NOT in the diff. So a new file `tests/unit/...` imports from `../../utils/pdf-factory` — if that util doesn't already exist, the test can't compile → verify would fail. The diff only shows the one test file. `pdf-factory` util isn't in the diff, so it must pre-exist (probably added by an earlier SR2 ticket, e.g., SR2-AI-03's fixtures?). If it pre-exists, fine. But — hold on: the constitution says tests are locked and CI sha256 checks. Adding a new test file requires locks:generate+apply. Can't verify.
+
+Let me check the header comment's test list vs actual tests:
+Header: "多页页序/背压 max in-flight/anno 分页匹配与裁剪数学/failed 跨格接续/加载失败/destroy 尽力而为/防御分支/事件契约三面"
+Actual test file has:
+1. 全链：逐页 fulltext+页图回传（页序与文本序）→complete 终局 ✓ 多页页序
+2. 背压：任一时刻在途 invoke ≤1 ✓
+3. anno 裁剪：标注随所在页回传 ✓ 分页匹配（annotationId 载荷）
+4. invoke 折叠错误：failed 路径 ✓ 失败跨格接续
+5. 文档加载失败 ✓
+6. destroy 失败不阻断 ✓
+7. 在途收第二请求：忽略 ✓ 防御分支
+8. cropBoxPixels 裁剪数学 ✓
+9. 事件契约三面 ✓
+10. 真 pdfjs 集成 ✓
+
+All covered. Note the header doesn't list the integration test in its test list — header says "测试：tests/unit/renderer/corpus-extractor.test.ts：多页页序/背压 max in-flight/anno 分页匹配与裁剪数学/failed 跨格接续/加载失败/destroy 尽力而为/防御分支/事件契约三面" — the "真 pdfjs 集成" test is added in the diff beyond the header list. That's a scope addition (W2 resolution). It's aligned with the review requirement (W2 真 pdfjs 集成用例). OK.
+
+### Security check
+
+- `url` from the event passed to `getDocument(url)` — if url is `file://` or `app-file://`, pdfjs fetches it. In renderer with contextIsolation and sandbox, fetch of file:// would fail? Actually pdfjs with standard HTML fetch can't read arbitrary file:// — but this is Electron renderer with nodeIntegration off; `fetch('file://')` is blocked. But the real app uses a custom protocol (app-file://) registered? pdfjs fetches via the registered protocol URL — allowed by CSP in main? The renderer CSP's connect-src should include app-file://. Can't verify. The URL is provided by main from the repo (paper.filePath?) — trusted. No path traversal here since it's not constructing a path itself — pdfjs handles the URL. OK.
+- No SQL involved. No openExternal. No eval. Dynamic import `import('pdfjs-dist')` — this is webpack/vite dynamic import, not eval. CSP with unsafe-eval blocked — Vite builds handle dynamic imports statically. OK.
+- The `?url` import — a Vite asset URL — fine.
+- XSS: `payload` strings from PDF text — sent back via IPC to main for file writing. Not rendered in DOM by this module. The fulltext text could contain HTML but isn't inserted into DOM here. OK.
+- The IPC schema `.strict()` helps prevent injection of extra fields. Good.
+
+### The B1 question — deeper look
+
+"B1 修型是否消除运行时缺陷（drawFrom 源参类型链）？"
+
+In r1, the BLOCKING finding B1 was about drawFrom's source parameter type chain. Current code:
+
+```typescript
+export type CanvasImageSourceLike = unknown
+...
+readonly source: CanvasImageSourceLike
+...
+drawFrom(src, box) {
+  ctx.drawImage(src.source as CanvasImageSource, ...)
+}
+```
+
+The type chain: `source: CanvasImageSourceLike = unknown`. `drawFrom` takes `src: RenderCanvas`, uses `src.source as CanvasImageSource`. The cast `as CanvasImageSource` from `unknown` — TypeScript allows casting unknown to anything. At runtime: production source is `el` (HTMLCanvasElement). The test stub sets `source: null` and `drawFrom` is a no-op — so no runtime issue. 
+
+Is the runtime defect eliminated? In production: drawFrom(src=pageCanvas) → ctx.drawImage(pageCanvas.source) → pageCanvas.source is the canvas element → drawImage accepts canvas. ✓ Runtime-correct.
+
+Remaining risk: if someone injects a custom `createCanvas` whose `source` is not a valid CanvasImageSource, drawImage would throw at runtime — but types say `unknown`, so no compile-time protection. This is the tradeoff. The B1 fix works but via a type escape (unknown + cast). Given the test env constraint, acceptable. Actually — wait, could the type be `CanvasImageSource` directly? Node test env without DOM libs: the CorpusExtractor.ts file itself is typechecked in both renderer (DOM lib) and test/typecheck contexts? Vitest typecheck — the test file imports types from CorpusExtractor; if CorpusExtractor declared `source: CanvasImageSource`, the test file (running under node without DOM lib) would fail to resolve `CanvasImageSource`. That's exactly why they used `CanvasImageSourceLike = unknown`. The production code then casts. This is a **known type-abuse workaround**. The constitution's "类型滥用(any)" is a review dimension. `unknown` isn't `any`, and there's a comment explaining. I'd say it's an acceptable, documented compromise — WARN at most, arguably NIT. Given the brief explicitly asks us to adjudicate whether B1's fix eliminates the runtime defect — I'd say YES, with the caveat that the cast weakens type safety (documented).
+
+### The W2 question — verdict
+
+"W2 集成用例（真 getTextContent+假 render 边界）是否满足票面多页夹具条款？"
+
+The test: 2-page real PDF; asserts fulltext[0] contains 'P1'+'INTEGRATION', fulltext[1] contains 'P2', last = complete. Multi-page: yes (2 pages). Real text: yes (real getTextContent). The fake render boundary is explicitly stated: "render no-op（node 无 2d canvas——快照渲染面归 AI-04 e2e 真环境）". 
+
+Hmm — "票面多页夹具条款" — the ticket's multi-page fixture clause. Where is this clause stated? The brief says "W2 真 pdfjs 集成用例（真 getTextContent+假 render 边界）是否满足票面多页夹具条款". From the r1 review (mentioned in the brief): "W2 真 pdfjs 集成用例". The r2 简报 says "W2 真 pdfjs 集成用例（真 getTextContent+假 render 边界）". So the requirement is: a REAL pdfjs integration test with real getTextContent, and the render is fake (node has no canvas). Multi-page fixture: the test uses 2 pages. Does it verify page-1 vs page-2 text separation? Assertions: payload[0] contains P1 and INTEGRATION; payload[1] contains P2. But does payload[1] also contain INTEGRATION? The factory presumably writes "P1 ... INTEGRATION" on page 1 and "P2 ... INTEGRATION" on page 2? The assertion only checks payload[0] for INTEGRATION, not payload[1]. If page 2's text were empty or identical, the assertion might not catch page separation issues? Actually payload[1] contains 'P2' — so page 2 has distinct text. That's adequate for multi-page separation. Also there's a brief "真文本链路（getTextContent/getViewport 委托真实页）" — both pages are actually read. I'd say the integration test satisfies the requirement. One weakness: the test doesn't assert that page 1 and page 2 text are DIFFERENT in content beyond P1/P2 substring — the factory might include 'P1' even on page 2? Unlikely if it writes per-page. And fulltext[0] toContain 'P1', fulltext[1] toContain 'P2' — if the factory wrote all pages with "P1 P2 INTEGRATION" on each, this test would still pass (weak fixture design) — but that's a test-util property we can't see. The assertion style (toContain rather than toEqual) is a bit loose; but combined with the mock-based test asserting exact text order, the suite is fine.
+
+Actually, hold on. Let me reconsider: the W2 test asserts `payload` contains 'P1' and 'INTEGRATION' on page 1, 'P2' on page 2. If the fixture's page 2 text is just "P2" without the INTEGRATION marker, that's fine for page-separation. The test cannot fail to catch a "single-page-only extraction" bug because both pages' payloads are present. OK — verdict on W2: satisfied.
+
+### The once flag / workerConfigured
+
+`let workerConfigured = false` — module-scope mutable flag. The concern from the brief: "once 标志" as a new surface. Is there a risk? If `loadPdfDocument` is called, `Promise.all` imports both modules. If the worker import fails, workerConfigured stays false, and the pdfjs import also failed → getDocument never runs → catch → error. Fine. If GlobalWorkerOptions.workerSrc assignment happens, then later another module (PdfCanvas) sets workerSrc to something — the comment says same value. OK.
+
+But wait — actually there's a subtle problem: `workerConfigured` is checked AFTER both imports resolve. If two concurrent calls to loadPdfDocument happen (impossible — extracting guard ensures one at a time)... fine.
+
+Another subtle issue: PdfCanvas sets workerSrc at its own module level with its own flag. If PdfCanvas's workerSrc uses a DIFFERENT URL (e.g., the min vs non-min — PdfCanvas might use `new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url)` or a locally copied worker per ADR-0002 "worker 本地打包"), then CorpusExtractor's `?url` import would be a SECOND worker asset → violates "pdf.js worker 只允许一份". The comment asserts "worker 本地打包与 PdfCanvas 同源（ADR-0002）" — claims same source. Without seeing PdfCanvas, I flag this as a WARN: confirm the single worker asset. Actually — the comment says 同源 (same source), and the INV update says "worker 本地打包与 PdfCanvas 同源". The word 同源 might mean "same asset as PdfCanvas" — if true, no violation. I'll raise it as a WARN to verify — no, wait. Let me think about whether this is a legitimate concern to raise. The brief explicitly asks: "处置是否引入新面（workerUrl 静态 import 白名单内/once 标志/refine 语义）". So the review is asking us to check whether the fix introduces NEW surfaces: the workerUrl static import (is it in whitelist?), the once flag, and the refine semantics. So I should explicitly adjudicate these three.
+
+1. **workerUrl 静态 import 白名单内**: `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` — in CorpusExtractor.ts (whitelisted). INV-16: "pdfjs-dist 运行时 import 白名单单源：仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件". The worker URL import of `pdfjs-dist/build/pdf.worker.min.mjs?url` — is it within "pdfjs-dist" as the restricted package? It's in a whitelisted file. But INV-16's phrasing "pdfjs-dist 运行时 import" — the worker import IS a runtime import of pdfjs-dist (a sub-path build). The file is whitelisted → allowed. But there's a NEW nuance: the whitelist rule was presumably written with `import { getDocument } from 'pdfjs-dist'` in mind; a `?url` worker import is a different KIND of import (asset URL, not module import). The good news: INV-16's known-boundary note says ESLint dynamic-import checking varies. But the worker import is a *static* asset import (dynamic import syntax but statically analyzable; Vite turns `?url` into a fixed URL string). Hmm — is the `?url` import checked by no-restricted-imports? In Vite, `import('...?url')` is a statically-analyzable dynamic import. ESLint `no-restricted-imports` DOES check dynamic imports (import()) — but the `?url` suffix means the source string is `pdfjs-dist/build/pdf.worker.min.mjs?url`, which may NOT match `no-restricted-imports` pattern `pdfjs-dist` depending on config (pattern matches the exact module specifier; `pdfjs-dist` pattern might only match the literal `pdfjs-dist`). Since the import is in the whitelisted file, this doesn't matter for THIS file. If a non-whitelisted file did `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`, would the ban catch it? The INV-16 note says "非白名单文件的动态直连可能不拦" — acknowledges the gap. The worker import adds a new variant that the ESLint anchor might not enumerate. But since it's in a whitelisted file, INV-16 is satisfied. I'd note as a NIT/WARN: the INV-16 anchoring for the worker URL import depends on the file-level whitelist; the ESLint rule may not recognize the `?url` sub-path, but since it's in a whitelisted file, fine.
+
+2. **once 标志**: `workerConfigured` module-level `let` — idempotent guard. Could this be a "state" that violates the state machine discipline? The state machine documented only covers extracting/idle/done/failed. `workerConfigured` is separate module-level initialization state — a new cross-module implicit state (PdfCanvas and CorpusExtractor both configure workerSrc — "两消费点独立初始化均安全"). This is an unregistered cross-module invariant: "GlobalWorkerOptions.workerSrc must be the same single local asset from both initialization points". The constitution requires invariants registered in docs/invariants.md. The INV-16 update mentions the worker whitelist/raw "worker 本地打包与 PdfCanvas 同源（ADR-0002）" — actually that text is in the CorpusExtractor header comment, not in INV-16. INV-16's update text doesn't mention the worker workerSrc single-asset invariant. The header comment in CorpusExtractor says "未打开过 PDF 时 PdfCanvas 未加载，pdfjs 会回退默认 worker 路径（出网风险——CSP 拦截后提取失败）；worker 本地打包与 PdfCanvas 同源（ADR-0002）". There's a claim "出网风险——CSP 拦截后提取失败" — so setting workerSrc before getDocument avoids the PDFJS trying to fetch a default worker from CDN (network-egress risk). This is a real concern: without workerSrc set, pdfjs's default workerSrc is `cdnjs.cloudflare.com/ajax/libs/pdf.js/...` (in older versions) — a network egress. In v4/v5? pdfjs default workerSrc might be an empty string or a CDN URL? Actually pdfjs by default tries `pdfjs-dist/build/pdf.worker.min.mjs` via a URL derived from the current script — but without workerSrc, the fallback load may use `GlobalWorkerOptions.workerSrc || default` where default is a CDN URL (docs mention for non-module builds). In recent versions, workerSrc default might attempt to load from the same origin as the pdfjs module (a bundled worker path), not necessarily CDN. The concern is "出网白名单" — if pdfjs fetches a CDN worker, that's an external network call violating "禁止新增出网 host". The code sets workerSrc to the local bundled `?url` asset BEFORE getDocument — preventing CDN fallback. Good. But the claim "与 PdfCanvas 同源" — if PdfCanvas sets the same URL, fine.
+
+   Hmm — actually the once flag: is there a scenario where loadPdfDocument is called when PdfCanvas has NOT set workerSrc and the local `?url` asset import fails? Then pdfjs getDocument would attempt fallback. The `?url` import is statically bundled by Vite → local asset → reliable. OK.
+
+   The once-flag's real concern for the audit: the workerConfigured flag means that if `loadPdfDocument` is somehow imported/called in a test context where the `?url` import yields a mock or something weird, the promise.all could break — but tests inject loadDocument stub so production loadPdfDocument never runs in tests. OK. I'd say the once flag is acceptable — the idempotent workerSrc setting is a safe design. WARN-level: the two init points' "同值" assumption is an unregistered cross-module invariant. Actually wait — the INV-16 text in the diff doesn't register the workerSrc single-asset invariant. The header comment of CorpusExtractor mentions it. The constitution: "跨模块/跨时间的行为不变量一律登记 docs/invariants.md（声明处 + 强制方式 + 锚定状态）". The workerSrc shared initialization is cross-module (PdfCanvas + CorpusExtractor). Is it registered? Not in the INV-16 diff text. Hmm — INV-16 is titled "pdfjs-dist 运行时 import 白名单单源" — it's about import whitelist, not workerSrc. The "workerSrc single asset from two init points" — that could be considered an extension of INV-16's domain, but INV-16's text says "白名单变更=改 ESLint 规则+[locked-change]，禁第四处直连" — workerSrc isn't mentioned. So the workerSrc same-asset invariant is NOT registered in the invariants corpus per the diff. That's a WARN-level miss per the constitution ("未登记 = 未定义行为"). But — maybe it's covered elsewhere (ADR-0002). The header says "worker 本地打包与 PdfCanvas 同源（ADR-0002）". ADR-0002 could have the invariant. We don't see ADR-0002. If the ADR documents it, then it's registered at the ADR level (invariants.md references? INV-16's 依据 includes "eslint.config.js no-restricted-imports"). I'd soften to NIT/WARN — verify the invariant is registered; if ADR covers it, fine.
+
+3. **refine 语义**: The corpusItemReqSchema refine — the cross-field constraint (anno ⇔ annotationId). It's a runtime validation on the IPC boundary. Does the refine introduce a NEW rejection mode that could brick the session? If a valid figure anno lacks annotationId — schema rejects. The extractor always includes annotationId for anno figures. Main side validates incoming requests. If the main handler (AI-03 stub for now) rejects with a zod error, that's the "回传被拒绝（会话侧错误）" path → error report. Since sendItem wraps in Result folding (per test), zod rejection → ok:false → sendChecked throws → error path → session notified. Good design. The refine message and the type behavior: `z.infer` doesn't enforce annotationId-only-for-anno at the type level — a consumer could build `{kind:'figure', figure:'anno'}` without annotationId and TS wouldn't complain (annotationId optional). The runtime refine catches it. This is a "type doesn't reflect runtime constraint" gap — the single source of truth for the payload shape is schema+refine, and TS types derived from z.infer don't encode the cross-field constraint. The draft could be tightened by modeling `figure` as a nested discriminated union. This is a design/quality NIT — the brief asks whether refine semantics introduce a new surface. Answer: refine semantics are a new runtime validation surface on a locked schema, but they're tested (事件契约三面 covers strict form but not the refine specifically!). Hmm — wait, does the test cover the refine? The "事件契约三面" test covers extractRequestEventSchema strict/reject. No test covers corpusItemReqSchema's refine (anno-without-id rejection). The refine is shipped but untested. The constitution: "每个测试必须能失败一次" — refine logic is a new validation branch not covered... well, the refine could be tested by the consumer tests in r? Actually — corpusItemReqSchema isn't exercised directly anywhere in the diff's tests! The extractor builds items that presumably pass the refine (anno items include annotationId). A test asserting a bad anno figure item fails validation is missing. That's a test-coverage gap for the new refine surface. Minor — WARN? Actually the main-side handler (AI-03) will test it. The ticket scope is renderer-side. NIT at most. But given the constitution's testing discipline and that the refine is one of the three surfaces the brief asks about, I'll include it as a WARN/NIT: add a test for the refine branch.
+
+### Now — bigger structural issues
+
+Let me check the "文件 ≤500 行" rule: CorpusExtractor.ts — the diff shows it's about 280 lines? Let's estimate: the header comment is long, plus the code. The diff shows the file going from ~65 lines to ~280 lines. Well under 500. The test file is 254 lines — under 500. OK.
+
+"死代码即删": `CORPUS_EXTRACTOR_STUB` removed — good. New exports — `EXPORT_SNAPSHOT_SCALE`, `cropBoxPixels`, `loadPdfDocument` — all used. `CanvasRenderingContext2DLike` index signature `[key: string]: unknown` — hmm, `render` in the test does `(canvasContext as { markRendered?: () => void }).markRendered?.()` — the stub's ctx has markRendered. The interface is just a type. OK.
+
+Type abuse: `ctx: ctx as unknown as CanvasRenderingContext2DLike` — double cast. `src.source as CanvasImageSource`. `getDocument(url).promise as unknown as PdfjsDocumentLike`. `real.getViewport(params)` — the real pdfjs viewport has width/height/scale etc. The structural type `PdfjsPageLike` narrows — fine. These casts are documented workarounds. Not ideal but acceptable.
+
+Hmm — one thing: `export type CanvasImageSourceLike = unknown` — with `unknown`, `createDomCanvas`'s `source: el` — el is HTMLCanvasElement, assignable to unknown ✓. Test stub `source: null` ✓. Then drawFrom casts. Fine.
+
+**Line count of the test**: 254 lines including heavy comments — OK.
+
+**The `handleEvent` ignores progress events silently**: `if (e.type !== 'extract-request') return` — progress ignored, documented. ✓.
+
+**The extraction loop and the state machine table in the header**: The table says "extracting | 第二 extract-request 到达 | extracting（忽略）——防御分支". The implementation: handleEvent checks extracting flag — matches. "done/failed（瞬时态）→idle" — implemented via finally. ✓.
+
+**But — a REAL state machine concern**: `extracting = false` is set in `finally` AFTER the error report. But `handleEvent` returns immediately after setting extracting=true; the state transitions are all internal. The state table says extracting→done→idle and extracting→failed→idle. With the fire-and-forget `void runExtraction(e)`, if `runExtraction` somehow rejects UNHANDLED (e.g., the `base`/`sendChecked` definition throwing before try — impossible; but what about `page.render(...).promise` rejecting? — that's inside try → catch → fine). Actually the only unhandled-rejection risk: synchronous throw in runExtraction before try — the body has `const base = {...}` and `const sendChecked = ...` — no throw possible. So no unhandled rejection. ✓.
+
+**Missing: `req.url` with `app-file://`** — in test, 'app-file://x.pdf' is just a string passed to stub. In production, main sends a URL. The header says loadDocument calls getDocument(url). pdfjs fetching a `app-file://` protocol — requires the protocol registered in the renderer (protocol.handle in main). Known to work from AI-04? Presumably. OK.
+
+### Now the "contract and discipline" dimension
+
+1. **The schemas.ts change** — modifying `src/shared/**` (locked). Header claims [locked-change]. The diff doesn't show the tail note (commit message). Since we only audit the diff, we note it's a locked-file modification requiring the workflow; the code claims compliance. The audit can't verify. I won't flag as BLOCKING.
+
+2. **The test file** — NEW locked-path file. The constitution: "受锁文件修改前先 npm run locks:unlock...新增受锁路径需先 npm run locks:generate 再 apply". New test file → new locked path → needs locks:generate. Can't verify. Also "测试是锁定的合约：禁止修改 tests/**" — adding a new test file is an addition, not a modification; tickets deliver tests as their own scope (the header says tests file is part of the 完成定义). Since the ticket explicitly includes the test file as a deliverable, it's expected.
+
+3. **INV-16 flip** — the invariants.md change is NOT a locked file per the listed set. But — careful: the constitution says "新增跨模块行为不登记本册视同未完成" — they DID update the INVs. ✓.
+
+But wait — there's a discrepancy in the INV-16 update: "本单落地 ESLint 规则即 INV-16 由未锚定翻已锚定" in the new header says "本单落地 ESLint 规则...由未锚定翻已锚定" and the INV row says "2026-08-27 随 SR2-AI-02 落地". The diff does NOT include eslint.config.js. If the ESLint rule was landed in an earlier commit (r1?), then the INV flip in this diff correctly marks it 已锚定. But the diff itself doesn't show the eslint.config.js change — so within THIS diff, the anchor isn't visible. However, the audit input is "净增量 diff" — the r1 fixes were already applied. The INV row's claim "2026-08-27 随 SR2-AI-02 落地" — the eslint config might have been part of the same work-order's earlier commits that the brief summarizes ("r1 处置修复面四文件：Extractor/schemas/测试/INV 册" — hmm, the brief says r1 fixes were across FOUR files: Extractor/schemas/tests/INV 册 — no eslint.config.js!). Wait, re-read the brief: "本版=净增量 diff（r1 处置修复面四文件：Extractor/schemas/测试/INV 册）". So r1's fixed files: CorpusExtractor.ts, schemas.ts, the test, and invariants.md. The eslint.config.js is NOT among them. But the INV-16 update says the ESLint rule landed "2026-08-27 随 SR2-AI-02 落地" — yet this diff doesn't include eslint.config.js, and the brief lists only four files. So THE ESLINT RULE IS NOT PART OF THIS DIFF. INV-16 flipping to 已锚定 based on an ESLint rule that isn't in the diff is a **premature anchoring** — unless the rule was landed in a PREVIOUS commit (before r1). The original INV-16 said "未锚定（2026-08-25 规划期预登记；锚定随 SR2-AI-02 落地）" — so the plan was for THIS ticket to anchor it. The diff flips it to 已锚定, claiming the ESLint rule landed. But the four-file list doesn't include eslint.config.js. Hmm — was the ESLint change part of an earlier r? The brief says "r1 处置修复面四文件" — those are the files fixed in response to r1 findings. The eslint.config.js might have been already modified in an even earlier submission (the initial r1 submission may have included eslint.config.js, and then r1 review fixed four files). The "净增量 diff" we're auditing — its stated content is the four files. If the initial submission (pre-r1) included eslint.config.js, then the INV flip is consistent. The brief says "简报携带 r1 全部裁决与处置表（见 ai02-impl-brief-r2.md 处置表——B1 source 字段/W1 workerSrc/W2 真 pdfjs 集成用例/W3 部分采纳边界声明/W4 INV 登记/N1 sendChecked/N2 refine 收紧）". 
+
+   Interesting! The 处置表 lists the r1 dispositions:
+   - B1 source 字段
+   - W1 workerSrc
+   - W2 真 pdfjs 集成用例
+   - W3 部分采纳边界声明
+   - W4 INV 登记
+   - N1 sendChecked
+   - N2 refine 收紧
+
+   So the current diff incorporates: B1 fix (source field), W1 (workerSrc — the once flag and worker config), W2 (the integration test), W3 (boundary declarations — the INV-16 known-boundary note), W4 (INV registration — the INV-16 row update), N1 (sendChecked), N2 (refine 收紧 — the refine in the schema).
+
+   So INV-16 anchoring — "W4 INV 登记" is the invariants.md update. But the actual ESLint rule — was it landed in the pre-r1 initial submission? The INV-16 row says "2026-08-27 随 SR2-AI-02 落地" — and the known boundary "2026-08-27 随 SR2-AI-02 落地". If the initial submission had eslint.config.js, then this diff's INV flip is accurate. The r1 findings don't include "eslint config missing" — W4 is just the INV registration. So plausibly the ESLint rule was in the initial submission (not this净增量 diff) and the INV flip merely documents it. I cannot conclude a violation. Given the brief explicitly tells us what to adjudicate (the three lists), and the INV text documents the reality, I'll not flag this. But I might mention as a NIT that the INV-16 "已锚定" claim depends on an eslint.config.js change not present in this diff — verify it's in the work-order commit history.
+
+   Hold on — the task says "请只裁三清单" — only adjudicate the three lists. So my findings should focus on:
+   1. B1 fix adequacy
+   2. W2 integration test adequacy
+   3. New surfaces introduced
+
+   I should still be a "资深软件审计工程师" first-pass auditor, but the brief narrows the scope. I'll organize findings around these three, plus any BLOCKING-level issue that's clearly visible.
+
+Let me now very carefully hunt for a BLOCKING issue.
+
+### Hunt for BLOCKING issues
+
+**1. The `complete` ack not checked (sendChecked not used for complete).** Is this the kind of "正确性缺陷" that's BLOCKING? The failure mode: main side folds complete rejection as ok:false — the renderer proceeds to idle silently; main session might handle it. Given the backpressure contract ("背压：每项一 invoke，await ack 后发下一项" and "sendItem 注入"), the complete is the final terminator. If the main handler rejects complete (e.g., the session was already marked failed), the renderer's silence is probably fine — the session state already reflects failure. Since this is a local single-user app and the failure mode is "silent noop at the very end," it's WARN not BLOCKING.
+
+**2. `cropBoxPixels` with empty rects** — if `pageRects.length === 0` the caller skips. ✓. But what if `rects` array in the event is empty — annotations could have empty rects? `annotationRectSchema` presumably allows arrays. If anno.rects = [] on all pages — no anno send. Fine.
+
+**3. Race: handleEvent called during runExtraction's final microtask.** The `extracting` flag is set true synchronously, false in finally after all sends. So a second extract-request DURING the final `await deps.sendItem(complete)` would be ignored (extracting still true). Main waiting for complete ack would then send the next request → it arrives right as extracting flips false? The finally sets extracting=false AFTER complete's await resolves — but complete's ack resolution and handleEvent of the next event: main can only send the next request after receiving the complete ack (invoke response). The renderer's extracting=false happens after `deps.sendItem(complete)` resolves — which IS the moment the invoke returns to main. So: sendItem(complete) resolves → main's invoke returns → main sends next extract-request → handleEvent sees extracting... what's the ordering? In the renderer: `await deps.sendItem(complete)` — the promise resolves in the renderer's microtask queue; the actual IPC message to main is what triggers main to continue. The main can't send the next request before receiving the complete response, which is the IPC response to the sendItem invoke — meaning the renderer's promise already resolved. Then finally sets extracting=false. Then the next extract-request arrives at the renderer. Since the IPC response roundtrip is much slower than the microtask continuation, extracting=false will be set before the next request arrives. No race. ✓.
+
+**4. pdfjs worker `?url` import in a whitelisted file — but is the worker even needed?** getDocument with `app-file://` — fetching the PDF from a custom protocol and parsing needs a worker? pdfjs can parse in the main thread without a worker (fake worker) — slower but works. Setting workerSrc makes it instantiate a web worker with the bundled URL — under Electron sandboxed renderer, `new Worker(url)` — is the URL reachable? Vite `?url` in Electron with `loadFile` — the asset URL might be a relative path or a blob? In production build, `?url` gives a hashed asset URL relative to the base. Under `file://` loading... Electron renderer loads via file:// or a custom protocol; Worker from file:// URL — may be blocked by CSP/security? Chromium blocks `new Worker('file://...')`? Actually Chromium allows file:// workers only under certain flags — modern Chrome disallows file:// workers by default... In Electron, file:// workers ARE allowed? Hmm. Electron with default webPreferences loads file:// — Workers from file:// are actually allowed in Electron? I recall Chromium deprecated file:// workers. Web worker from file:// is allowed in Electron since webSecurity is usually on but file:// is treated as a secure context? Actually, Chrome did block `new Worker('file://')` in 2021+? There's a known issue: file:// workers are not supported in Chrome but work in Firefox. In Electron, file:// is a trusted scheme, and workers from file:// do work? I'm not certain. The safer approach in Electron renderer is to not use a worker — but the code sets workerSrc and pdfjs may spawn a worker. If the worker fails to load from the file:// asset path, pdfjs falls back to fake worker? If workerSrc fails to fetch, pdfjs logs a warning and uses fake worker ("Setting up fake worker"). In pdfjs v4, when workerSrc is invalid, it falls back to fake worker with a console error 'No workerSrc specified' — actually if workerSrc is set but the worker script fails, the Promise rejects with "Setting up fake worker failed"? The behavior: getDocument tries `PDFWorker.fromPort`/`_setupFakeWorkerGlobal` — if the worker script URL fails to load or the worker errors, pdfjs falls back to fake worker only if `GlobalWorkerOptions.workerSrc` is unset? If workerSrc is SET and fails, the document loading REJECTS. Hmm. This is a deployment-environment concern beyond the diff. Given the project already has PdfCanvas working with the same worker (per ADR-0002 and pre-existing W1 disposition), the pattern is established. Not flagging.
+
+**5. Test-file guards**: `guardedDescribe('SR2-AI-02', ...)` — the guard utility presumably skips tests if the ticket isn't enabled. Is `guardedDescribe` a "放宽断言/删检查" pattern? The constitution says "不许删检查、不许放宽断言". `guardedDescribe` is a pre-existing util ('tests/utils/guard') that presumably ties tests to ticket gates. If the guard can silently skip the whole suite, that's a testing-discipline risk. But it's the project's established pattern (mentioned in the header of test files presumably). Not new.
+
+**6. The `flushAll` loop count**: for the integration test with real pdfjs, `flushAll(2)` = 32 settle rounds. Real pdfjs text extraction involves multiple microtask/macrotask boundaries — e.g., the worker thread communicates via... in node fake worker, it's synchronous-ish. If pdfjs uses the real worker (worker_threads), messages could take more than 32 setTimeout rounds? Node worker_threads message delivery is asynchronous — each message passing is a macrotask-ish. Extraction of 2 pages: load (~5-10 events), page1 text (~5), sends (~4 per page), page2 (~9), complete... could approach 30+ macrotasks? The fixed 32 rounds might be marginal. If it were insufficient, the test would fail (notable) — flaky, not silently-passing. Actually it could be flaky on slow CI. But wait — pdfjs in node without canvas — `getDocument({data})` in Node with the provided data — does it need a font/encoding setup? The text extraction should work. And the flushAll is generous enough (each sync chain step between sendItems requires: ack setTimeout → next item sent → next ack setTimeout — roughly 2 macrotasks per item; ~9 sends = 18 needed, plus pdfjs load ~10 — total ~28 < 32). Marginal but probably OK. NIT-flaky risk at most. Actually, if real pdfjs uses `setTimeout` internally or `Atomics.waitAsync`? pdfjs in Node uses the fake worker (no Atomics in main thread?). For 2-page simple PDF, 32 rounds is likely fine.
+
+**7. Now the BIG one I should double-check — `page.render` requires a canvas context; `pageCanvas.ctx` is `CanvasRenderingContext2DLike` = `{[key:string]: unknown}`.** pdfjs's render parameter `canvasContext` — pdfjs v4 render accepts any object with the required methods (it uses an interface). Passing a real 2D ctx works. The type is cast. ✓.
+
+**8. `toPngBase64` data URL slice** — `dataUrl.slice('data:image/png;base64,'.length)` — the production toDataURL returns 'data:image/png;base64,...' ✓. If a different mime... 'image/png' fixed ✓.
+
+**9. The annotation rect page conversion**: storage uses 0-based page (r.page === n-1), doc says "存储 0 基页码→提取循环 1 基页换算 a.page === n-1" ✓ consistent with the test (rect page:1 → sent page:2). ✓.
+
+**10. The `complete` send AFTER all pages — but what if the LAST page's anno sends fail (ok:false)?** sendChecked throws → catch → error send → no complete → session gets error. ✓ correct.
+
+**11. What if `numPages` is 0** (empty PDF)? Loop doesn't run → complete sent. Reasonable.
+
+**12. Schema: `exportProgressEventSchema` — progress events have done/total/phase; the extractor ignores them. The `ExportCorpusEvent` union includes progress. handleEvent ignores non-extract-request. ✓.
+
+**13. Security — `extractRequestEventSchema` url string min(1)** — no protocol restriction. If a compromised renderer sent extract-request... but this event comes from main. Renderer receives it via preload's onExportCorpus. The preload presumably validates with this schema. The url could be any URL → pdfjs fetches → potential SSRF-ish (local app reading an arbitrary URL)? The event originates from main's repo data (the paper's file path). A malicious PDF entry couldn't change the URL. This is a single-user local app; the main process flow: user clicks export → main reads paper record → sends event with the stored file path URL. Not attacker-controlled beyond the local DB the user controls. Not a security finding.
+
+**14. The CONTENT of fulltext payload — page-boundary `\f`?** — The old header said "页界 \f；逐页 invoke" and the r2 diff changed it: "fulltext：全页 getTextContent items 拼接，逐页 invoke export/corpus-item...（页界 \f 拼接归 main 侧落盘——AI-03）". So the \f page separator moved to main side. The renderer no longer appends \f. Is the main side contract updated accordingly? We don't see main side. The change is documented as AI-03's responsibility. But — is this consistent with the existing AI-03 plan/ticket? The header says "页界 \f 拼接归 main 侧落盘——AI-03". This is a cross-module contract change made in this ticket's comments. If the AI-03 ticket/plan expects the renderer to send \f-terminated fulltext, there's a contract mismatch. We can't see AI-03's spec. Hmm — the brief's disposition table mentions "W3 部分采纳边界声明" — the boundary declaration change (页界 \f 归 main 侧) might be the W3 disposition: partially-accepted boundary declaration. The INV-16 known-boundary note is also a boundary declaration. OK, this was reviewed in r1. Not re-opening.
+
+**15. IMPORTANT — the `invariants.md` flip for INV-16 says "lint 拦截 OutlinePanel/OutlineThumb 两处漏扫的类型直连实证防线生效并当场改走 PdfCanvas 再导出"** — this claims the ESLint rule caught two real violations and files were changed to route through PdfCanvas. Those changes (OutlinePanel/OutlineThumb) are NOT in this diff — presumably in earlier commits. It's historical narrative. Fine.
+
+**16. The test file's first test — ordering assertion**: 
+```typescript
+const order = ctx.sent.map(...)
+expect(order[0]).toBe('ft1')
+expect(order[1]).toBe('fig1')
+expect(order[2]).toBe('ft2')
+```
+For 3 pages, the full expected order would be ft1,fig1,ft2,fig2,ft3,fig3,complete. Only the first three + last. Fine.
+
+**17. Test "anno 裁剪" test asserts `annos[0]).toMatchObject({page: 2, annotationId: 'anno-9'})`** — rect page 1 for anno-9 → page 2 in payload ✓ matches the storage conversion. ✓.
+
+**18. cropBoxPixels test**: rects page:0 and page:0 — wait, the test cropBoxPixels uses rects with `page: 0` and directly calls cropBoxPixels (which ignores page). The jsdoc says "归一化 rects → 像素包围盒". The function doesn't verify that all rects share the same page — the caller filters. Direct consumers could misuse. Documented? The jsdoc doesn't say "pre-filtered by page". NIT.
+
+**19. Type import from `../../../shared/models/annotation` — `AnnotationRect`** — fine.
+
+**20. The `guardedDescribe` import from `../../utils/guard`** — pre-existing util? If 'tests/utils/guard' doesn't exist, the test fails to compile. Not in this diff. Presumably pre-existing (the header of the test references the guard). Can't verify. The brief said "W2 真 pdfjs 集成用例" was dispositioned — the util createMultiPagePdf in 'tests/utils/pdf-factory' — NOT in diff. If pdf-factory was already created for AI-03 (multi-page fixture term) fine. I'll note a NIT: verify pdf-factory util exists (if it's newly introduced, it needs to be in the diff/locks).
+
+Hmm wait — actually let me re-read the brief: "W2 集成用例（真 getTextContent+假 render 边界）是否满足票面多页夹具条款？" — the "票面" (ticket face) multi-page fixture clause. The ticket's original spec (from the pre-r1 header) said: "测试：tests/unit/renderer/corpus-extractor.test.ts：多页夹具页界 \f/文本序/全页快照+裁剪 rects 归一化数学断言（离屏 canvas mock）/事件通道契约三面/背压序（逐页 await ack）/状态机跨格序列" — the OLD test list mentions "多页夹具页界 \f" — a multi-page fixture with \f page separators. The r2 diff REMOVED the \f from the renderer's contract (moved to main). The current integration test uses `createMultiPagePdf(2, 'INTEGRATION')` and asserts page-1/page-2 text. If the "票面多页夹具条款" means the ORIGINAL ticket's "多页夹具页界 \f" — the new test doesn't use \f (it was moved to main side), but the W2 disposition says "真 getTextContent+假 render 边界" — the multi-page fixture requirement, per the r1 disposition, is the real-pdf multi-page fixture. The test has 2 pages with distinct text per page. I'd say it satisfies the multi-page fixture clause (as refined by r1's W2 disposition). The \f problem explicitly moved to AI-03.
+
+So for the W2 verdict: YES, satisfied — real getTextContent on a real 2-page PDF, per-page text asserted, fake render clearly bounded & documented, and the page-separation logic (per-page payload) re-tested in the mock test.
+
+### Now — is there any BLOCKING issue at all?
+
+Let me scan the diff once more for hard-rule violations:
+
+- "禁止 string 拼接 SQL" — no SQL.
+- "禁止 eval/new Function" — no.
+- "禁止新增出网 host" — the workerSrc is a local asset; no new network host. ✓. But wait — does setting `GlobalWorkerOptions.workerSrc` to a local asset prevent egress, or does pdfjs ALSO have a default CDN fallback somewhere? The code sets workerSrc explicitly — good.
+- "文件 ≤500 行" — CorpusExtractor.ts ~280 lines ✓; test 254 ✓; schemas.ts — the diff adds ~80 lines to a file that had ~100 before → ~180 ✓.
+- "分层单向" — CorpusExtractor is renderer feature → uses window.api (via injected sendItem). The module imports from '../../../shared/...' — shared types OK. No direct DB. ✓.
+- "死代码" — all new code is referenced. `loadPdfDocument` is exported — referenced? The production assembly (useExportCorpusEvents in AI-04) uses it — not in this diff. Since the header says "生产组装=useExportCorpusEvents（AI-04）" — the function is exported awaiting AI-04's use. Is `loadPdfDocument` currently UNUSED in the diff (dead code until AI-04)? The diff's own code: `createCorpusExtractor` receives loadDocument via deps; `loadPdfDocument` is the production default that AI-04 will wire. In THIS diff, nothing imports `loadPdfDocument` (tests inject stubs). So within this commit, `loadPdfDocument` is exported-but-unused. Is that a violation of "死代码即删（提交前确认新文件被引用）"? The constitution: "死代码即删：孤儿组件、重复资产（pdf.js worker 只允许一份）。提交前确认新文件被引用。" — loadPdfDocument is part of the ticket's API surface for AI-04 (W1 disposition — workerSrc config must live with the loadDocument factory). Since the work order explicitly defers assembly to AI-04 (documented in the header), exported-but-unused-until-next-ticket is the plan. It's not orphaned dead code in the "forgotten" sense; it's the intended seam. Not a violation, but a WARN? Hmm — the ticket's contract ("完成后：删除 STUB → npm run verify 绿") — with the stub removed and the module exported, verify green. AI-04 will consume. Acceptable — I'll note as NIT: verify loadPdfDocument is genuinely consumed by AI-04 in the next ticket (not orphaned).
+
+- "方案切换 = 删除旧方案" — the stub is deleted ✓.
+- "类型单一真相源" — the schema is single-sourced in schemas.ts; CorpusExtractor doesn't re-declare payload shapes ✓ (imports CorpusItemReq).
+- "测试是锁定的合约：禁止修改 tests/**、**/*.test.ts" — the diff ADDS a test file. Since it's a new file delivered by the ticket (the ticket's list includes it), and locked-change workflow applies — not a violation within the ticket intent.
+- "受锁文件... 变更必须带 [locked-change] 尾注" — schemas.ts (shared) modified; the header claims [locked-change]. The COMMIT message is not in the diff. Can't verify — and the brief says output evidence from input material. I'll not flag.
+
+**Correctness — a real one: The schema `corpusItemReqSchema` union member for 'figure' has `payload: z.string()` WITHOUT size cap, but critically — `annotationId` for figure anno is `z.string().min(1).optional()`.** The refine enforces: anno→has annotationId, page→no annotationId. Fine.
+
+But hmm — the **`complete` item via `deps.sendItem` — the schema's complete member requires sessionId+paperId — the extractor's `base` has both ✓.**
+
+**One potential runtime bug — `cropBoxPixels` return values can be fractional and used directly as `createCanvas(box.sw, box.sh)`** — canvas dims must be positive integers; fractional gets truncated by WebIDL (as discussed). Also, if rects sum to 0 width — createCanvas(0, h) — 0-width canvas → toDataURL with 0 dims → returns a 1x1? Actually canvas with width 0: data URL "data:," or "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB..." (1x1). Then main writes a corrupt 1x1 figure. Very marginal — annotation schema presumably requires positive w/h. Skip or NIT.
+
+**The invariants.md INV-14 line — it says "读写 INV-14 ... 快捷键（keymap）..." — unchanged except no. Actually INV-14 row and others unchanged. Only INV-16 changed. ✓.**
+
+OK let me also examine the B1 issue once more, since the brief asks explicitly:
+
+"B1 修型是否消除运行时缺陷（drawFrom 源参类型链）？"
+
+The r1 B1 finding was: "B1 source 字段" — the source field. Looking at the current code, the production `createDomCanvas.drawFrom` uses `ctx.drawImage(src.source as CanvasImageSource, ...)`. The source is `el` (the canvas element). So at RUNTIME: `src.source` is a real HTMLCanvasElement → `drawImage` succeeds. The type chain `RenderCanvas.source: unknown` + cast resolves the "type chain" defect (r1 presumably had a type that mis-decoded — e.g., `source` was typed poorly causing either a compile error or a runtime null). The fix is: source is `unknown` with cast at use-site; stubs use null (never drawn in tests since drawFrom is a no-op stub). In production the real element is used. So the runtime defect IS eliminated — the source param is held as the actual canvas and cast to CanvasImageSource at the drawImage call. 
+
+Is there a residual risk? If `createCanvas` were overridden (only in tests) with drawFrom relying on source — but tests stub drawFrom as no-op. Production: safe. One more: `ctx.drawImage(src.source as CanvasImageSource, sx, sy, sw, sh, 0, 0, sw, sh)` — if sx+sw exceeds the source canvas width, drawImage clips per spec. If `box.sw`/`sh` are 0 → drawImage with 0 dims → no-op, no throw. So no runtime crash. ✓ B1 satisfied — the verdict should say yes with a caveat about the type escape (documented).
+
+Actually — wait, one subtlety: `src.source as CanvasImageSource` — the cast occurs on the module-level `source` at the production drawFrom. But the `RenderCanvas.source` is typed `CanvasImageSourceLike` (unknown) — for the test stub it's null. In the real app path, `annoCanvas.drawFrom(pageCanvas, box)` — pageCanvas is created WITH `createCanvas` — which in production is `createDomCanvas` → source = el ✓. So there's no path where a null-source canvas is drawn. ✓.
+
+Now — **N1 sendChecked**: The brief's r1 dispositions include "N1 sendChecked" — the sendChecked wrapper added. In the current code, sendChecked is used for fulltext/figure/anno items but NOT for complete and not for error. As discussed, complete ack failure swallowed. Is that an N1 regression? The disposition "N1 sendChecked" means r1 wanted sendChecked to be the single point for ack checking. The current code uses it for the three content item types; complete/error use raw sendItem. The header says "回传+ack 校验单点（折叠错误→throw→failed 路径——多调用面共用）" — "多调用面共用" (shared across multiple call sites) — but complete and error bypass it. The error bypass is intentional & documented ("sendItem 自身失败不再追报"). The complete bypass is NOT documented. Given the dispatch table says "backpressure: 每项一 invoke, await ack" — complete is an item too; its ack is the signal for main to start the next paper. If complete's folded error is ignored, main might fail to advance the session — but again, main is the one returning ok:false; IT knows. The silent swallow in renderer is a WARN.
+
+Hmm, actually let me reconsider — is this even W2/W3-adjacent per the brief scope? The brief says "请只裁三清单". But as an auditor I should report what I find. The three lists are the adjudication focuses; findings beyond them are allowed if genuine. I'll include the complete-ack gap as WARN.
+
+**Now — the W2 test and the "真 pdfjs 集成" — a problem with pdfjs in unit tests and the "worker"**: The test does `import('pdfjs-dist')` WITHOUT setting GlobalWorkerOptions.workerSrc. In a Node/vitest environment, pdfjs will try to set up a worker. Default workerSrc is empty string — pdfjs in Node with `getDocument` and no workerSrc: it picks a "fake worker" (main-thread execution) if `isWorkerDisabled`/`useWorkerFetch`? In pdfjs-dist v4, in a Node environment without workerSrc, `PDFWorker` falls back to "fake worker" (the loader's `_setupFakeWorker`). It logs "Setting up fake worker" and works. ✓ so the test works. But — the production code path ALWAYS sets workerSrc to the local asset (W1 disposition). Under vitest node, if this test had used `loadPdfDocument` (the production loader), the `?url` import would break (Vite processes `?url` but vitest? Vitest supports `?url` via Vite transforms → returns the file path string? In node env, the worker file isn't a browser script — but the test stubs loadDocument, so production loader never runs in tests. ✓.
+
+**A question on the "真 pdfjs 集成" test's pdf-factory**: `createMultiPagePdf(2, 'INTEGRATION')` — we don't see this util. The test asserts payload contains 'P1' — so the factory writes 'P1' on page 1. If the factory doesn't exist, the test breaks. The brief's W2 disposition presumably required a multi-page fixture — the factory likely was added in r1 or is pre-existing from an earlier SR2 ticket (AI-03 might have created it — "多页夹具条款"). NIT: the pdf-factory util isn't in this diff — ensure it's committed (or its addition was part of the locked-change).
+
+**Check INV-16 known boundary — the `?url` import as a NEW whitelist member?** The whitelist: "仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件". The new import `pdfjs-dist/build/pdf.worker.min.mjs?url` — the INV-16 text says "pdfjs-dist 运行时 import 白名单单源" — the worker URL import is a pdfjs-dist runtime import (via sub-path). The whitelist is FILE-based, so CorpusExtractor is allowed. But the ESLint no-restricted-imports rule — if its pattern is `pdfjs-dist` (the bare package name), it might NOT match `pdfjs-dist/build/pdf.worker.min.mjs?url` in NON-whitelisted files, meaning the rule wouldn't block a fourth file from importing the worker. INV-16's "已知边界" only mentions dynamic import() checking variance, NOT the sub-path/query-suffix evasion. The worker `?url` import is a new surface that partially sidesteps the INV-16 machine anchor IF the rule is exact-match on the package specifier. The brief asks: "处置是否引入新面（workerUrl 静态 import 白名单内...）" — my answer: the workerUrl import stays within the whitelist (file-level), but the `?url` sub-path import adds an evasion vector for the ESLint anchor — the anchor's coverage of `?url`-suffixed sub-path imports should be verified (the rule config may need a `patterns` entry like `pdfjs-dist/*` or `*pdfjs*` to catch worker imports in non-whitelist files). This is a WARN.
+
+Also the "once flag": `workerConfigured` — a module-level mutable init guard. It's idempotent and safe. But it introduces a subtle cross-module reliance: if PdfCanvas sets workerSrc FIRST to the same value, the CorpusExtractor's check prevents re-setting — OK. If someone later changes the worker asset URL in one place without the other, the invariant silently holds (the first-set wins) but the OTHER might need a different worker. Both import the same `pdf.worker.min.mjs?url` asset — if the file is replaced, both URLs update together (same asset). Actually — wait, PdfCanvas might import the worker via a DIFFERENT mechanism (e.g., a locally-copied asset under `src/renderer/assets/` per ADR-0002 "worker 本地打包"). If PdfCanvas uses `new URL('@/assets/pdf.worker.min.mjs', import.meta.url)` and CorpusExtractor uses `pdfjs-dist/build/pdf.worker.min.mjs?url` — the two URLs point to DIFFERENT FILES (one copied asset, one node_modules build) — violating "pdf.js worker 只允许一份" (two worker assets!). The CorpusExtractor header says "worker 本地打包与 PdfCanvas 同源（ADR-0002）" — but the code imports from `pdfjs-dist/build/...` — from node_modules, NOT a local asset! "本地打包" — the `?url` import makes Vite bundle/copy the node_modules worker as a local asset at build time. After build, it IS a local asset. Whether PdfCanvas uses the same bundled asset — can't verify. The phrase "同源" claims it. I'll put this in the WARN for "verify single worker asset".
+
+Hmm — actually the constitution says "重复资产（pdf.js worker 只允许一份）". If both import `pdfjs-dist/build/pdf.worker.min.mjs?url`, Vite would produce ONE hashed asset (same module → same asset) — one file, two references — compliant. If PdfCanvas imports a different worker file (e.g., min.js instead of min.mjs), then TWO assets. The code chose `pdf.worker.min.mjs` — Vite URL. Can't verify PdfCanvas. This is a verification item, WARN/NIT.
+
+### Decision on verdict
+
+BLOCKING-level: none found. The three adjudication questions:
+1. B1 fix — resolves the runtime defect (source chain now consistent; production source is real canvas element; cast documented). ✓
+2. W2 integration test — satisfies the multi-page fixture clause (real 2-page PDF, per-page text assertions, real getTextContent, fake render bounded). ✓
+3. New surfaces — workerUrl import stays in whitelist but adds `?url` sub-path to INV-16's ESLint anchor coverage (WARN); once flag is safe/idempotent but relies on unverified single-worker-asset (WARN/NIT); refine adds runtime cross-field validation that's untested (WARN/NIT).
+
+WARN-level findings:
+- W1: `complete`/`error` ack folding not checked (sendChecked not applied to complete — ack failure silently swallowed). Actually the error path's direct sendItem is intentional. The complete one is the gap.
+- W2: complete-ack failure — same as above. Let me separate: (a) complete ack swallowed.
+- W3: INV-16 ESLint anchor vs `?url` sub-path import — verify the rule covers non-whitelist files importing the worker; the known-boundary note covers dynamic import but not sub-path query.
+- W4: worker single-asset — verify PdfCanvas and CorpusExtractor use the same worker asset (constitution "pdf.js worker 只允许一份").
+- W5: refine cross-field constraint untested (no test asserts anno-without-id rejected on corpusItemReqSchema).
+
+NITs:
+- flushAll fixed iteration count — fragile/flaky risk for real-pdfjs test.
+- cropBoxPixels non-integer dims → canvas truncation.
+- complete-ack... hmm that's WARN.
+- `loadPdfDocument` exported but unconsumed in this diff (AI-04 next).
+- INV-16 已锚定 claim depends on eslint.config.js not in this diff (verify presence in the work-order commit history).
+
+Hmm, wait — let me reconsider the complete-ack thing. Is it actually fine? In a "Result 折叠" IPC convention (INV-13): "service 把业务失败折叠为正常返回时...消费方必须分支处理、不得无条件按成功提示". INV-13 is in the invariants doc — the consumption side must branch on folded errors. The extractor's `complete` send does NOT branch — it treats the result as success unconditionally. That's exactly the pattern INV-13 forbids! "消费方必须分支处理、不得无条件按成功提示". The `complete` send calls `deps.sendItem(...)` and ignores the returned Result entirely — an unconditional-success assumption. The fulltext/figure/anno items use sendChecked (branching ✓), but complete does NOT. This is a genuine INV-13 violation within the diff. INV-13: "IPC Result 折叠约定：service 把业务失败折叠为正常返回时（如 enrichStatus:'failed'、幂等删除 ok:true），消费方必须分支处理、不得无条件按成功提示". 
+
+Hmm — is the complete item's folded failure a "业务失败折叠" case? Yes — the main-side handler could return `{ok:false, error:...}` (a session-side rejection), and the renderer would treat the extraction as a clean end (extracting=false, no error report). This produces the "silent swallowed failure" that INV-13 was specifically created to prevent (the enrich precedent where a failure was silently treated as success). Given INV-13 is a project invariant, this is a WARN at minimum, arguably BLOCKING per "违反硬规则"... but wait, INV-13 is an invariant registered in docs/invariants.md, and the constitution says invariants are behavior contracts with enforcement "人审" (human review). Is violating INV-13 "违反硬规则"? The hard rules are the AGENTS.md items; INV-13 is a registered invariant whose enforcement is 人审. The verdict standard says "BLOCKING=违反硬规则/正确性缺陷/安全问题". A folded-error silent swallow on the terminal complete signal is a correctness defect per the project's own invariant. I'd call it WARN-BLOCKING boundary... 
+
+Let me think about the actual impact: complete ack fails with ok:false → the main session knows (it returned the failure). The renderer goes idle; the main session is in whatever state it's in — if the session was "finalizing" and the complete was rejected because session marked failed, then no harm. If the complete was rejected for a transient reason, main might not retry but it's main-controlled. The renderer not reporting an error for a FAILED COMPLETE is actually the right call in some designs (the error is the session's to handle). The ENTIRE point of complete is "I'm done, no more payloads" — a rejected complete means "don't continue" — the renderer already has nothing more to send. So the impact is low. But per INV-13's letter, the consumer must branch. The error case (sendItem THROWS) on complete — unhandled? No — it's inside the try → catch → sends error. Only the folded ok:false case is silently swallowed. Given the impact is low and the invariant's letter is violated, I'll rate it WARN with clear reference to INV-13.
+
+Hmm, actually — wait. Let me recheck: is `complete` sent via `deps.sendItem` inside the try? 
+```typescript
+try {
+  doc = await deps.loadDocument(req.url)
+  for (...) { ... }
+  await deps.sendItem({ ...base, kind: 'complete' })
+} catch (e) {
+  ... send error ...
+}
+```
+Yes — complete is inside try. A THROW from sendItem → catch → error report (good). A folded `{ok:false}` → ignored (INV-13 gap). WARN.
+
+Now — let me also reconsider whether there's a BLOCKING issue I'm missing in the "contract & discipline" dimension regarding the locked files. The diff modifies `src/shared/ipc/schemas.ts` and adds a test file, both locked paths. The header claims [locked-change]. The diff itself doesn't carry a commit message with the tail note. As an auditor with only the diff, I can't verify the tail note, and the project's own workflow expects the commit message to carry it. The brief's narrative treats these changes as approved (the ticket's scope includes schemas + tests). I won't BLOCK on unverifiable process compliance.
+
+Hmm — but wait. There's one more possible BLOCKING: **the schemas.ts change is in `src/shared/`**, and the constitution says: "禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）" — this is under "测试纪律". But the same section allows: "发现测试本身有错 → 报告人类，走 [locked-change]". So locked changes ARE part of the workflow (the locked-change tail note), not absolute prohibitions. The work order's header explicitly says the schemas change is part of the ticket ("IPC 契约 [受锁]（本单已落）"). So it's a sanctioned locked-change. OK.
+
+Another angle — **the test file imports `guard` and `pdf-factory` from tests/utils.** If those are NEW files not in this diff AND not pre-existing, the diff is incomplete (broken build). The brief describes this as the "净增量 diff" of r2 after r1 fixes — the util files might have been added in r1's four-file fix? No — r1 fixed Extractor/schemas/测试/INV. The 「测试」 file IS the diff's test file. If pdf-factory was introduced inside the test file's import... it must pre-exist or be part of another ticket. Wait — "多页夹具条款" — the ticket requires multi-page fixtures; maybe tests/utils/pdf-factory.ts already existed for another SR2 ticket (e.g., SR2-AI-03 e2e fixtures). It's plausible. Since createMultiPagePdf is asserted to produce multi-page PDFs with 'P1'/'P2' text and the brief explicitly asks whether W2 satisfies the fixture clause, the fixture is expected to exist. If missing, the whole thing fails verification — the agent would have caught it. I'll make it a NIT "confirm pdf-factory & guard utils are committed elsewhere".
+
+Now, let me also double-check the **背压 test** and the **max in-flight** measurement:
+```typescript
+const sendItem = (item) => {
+  ctx.inflight += 1
+  ctx.maxInflight = Math.max(...)
+  return new Promise((resolve) => {
+    setTimeout(() => { ctx.sent.push(item); ctx.inflight -= 1; ... resolve(...) }, 0)
+  })
+}
+```
+The in-flight window: from sendItem call to its setTimeout resolution — since each sendItem is awaited before the next send, maxInflight = 1 ✓ (each new sendItem call happens only after the previous resolve → inflight decremented before the next += 1 in the same microtask... hmm: `await sendChecked(...)` → inside, `await deps.sendItem(item)` → when the promise resolves, inflight -= 1 runs in the setTimeout callback, THEN the promise resolves → await continuation runs later in microtask → next sendItem → inflight += 1. So inflight never exceeds 1 ✓.
+
+But note: `render`'s promise — `page.render(...)` is awaited WITHOUT the ctx.inflight counter (it's not a sendItem). So the "max in-flight invoke" measures only sendItem invokes, not pdfjs operations — the backpressure contract is about invokes, ✓.
+
+**The first test's page-order assertion**: `expect(order[0]).toBe('ft1'); expect(order[1]).toBe('fig1'); expect(order[2]).toBe('ft2')` — for a 3-page doc, sent sequence should be ft1, fig1, ft2... ✓.
+
+**Now — the `req()` helper**: `extractRequestEventSchema.parse({...})` — validates. Annotations default []. ✓.
+
+**cropBoxPixels y-direction**: The jsdoc says "y 向下——AnnotationLayer rectStyle 同口径". In the test: y0 = 0.4, sy = 0.4*H — if the coordinate system were y-up, sy would be (1 - y1)*H or similar. The doc claims y-down matches the annotation layer. The bbox math is just min/max — the test asserts the math, not the semantic orientation. The orientation correctness depends on the page canvas coordinate system — the annotation rects are normalized to the page, and the page snapshot canvas is drawn in y-down (canvas default), so sx,sy from y-down normalized coords map to canvas pixels directly ✓. The claim "y 向下同 AnnotationLayer 口径" is a cross-module convention — registered in the header comment. Is it registered in invariants.md? Not in this diff (only INV-16 changed). The convention "annotation rects are normalized y-down" is presumably in the annotation model. OK.
+
+**Wait — I want to check one thing about `page.render` in production**: `await page.render({ canvasContext: pageCanvas.ctx, viewport }).promise`. pdfjs render's `canvasContext` must be a CanvasRenderingContext2D with the required methods/properties. pageCanvas.ctx = the real ctx (cast). pdfjs sets `ctx.save/restore/transform/...` and calls `ctx.canvas` — the real ctx has `.canvas` property ✓. Works.
+
+**And `pageCanvas.toPngBase64()` — after render, the canvas holds the page snapshot ✓.**
+
+**What about the pageCanvas being discarded each page — canvas GC'd ✓.**
+
+**Memory: the fulltext payload is a concatenated string of ALL text items on the page — could be large for dense pages — but backpressured per page; IPC of a large string over Electron's structured clone is OK. Not a finding.**
+
+Let me now also sanity-check the **schemas' `.max(5000)` on annotations** — 5000 annotations max, each with rects array. Total payload of the event could be large but bounded-ish (5000 × rects count unbounded!) — the anno rects array is NOT capped (`z.array(annotationRectSchema)` no .max). An annotation with a million rects → huge event. The event comes from main (trusted). Not a finding.
+
+**Also: the event schema's annotations are `.strict()` objects with id+rects only. The 'anno' figure items require annotationId. The extractor sends annotationId: anno.id ✓ matches.**
+
+**`payload: z.string()` — for figure page, payload is the page PNG base64 — no max size — main side AI-03 will write it. Not our scope.**
+
+OK. Let me also consider the **"事件桥单向"** claim: "本模块只消费 main→renderer 事件（progress 载荷忽略——UI 面）；renderer→main 一律常规 invoke（sendItem 注入）" — ✓ matches implementation.
+
+**Now — the state machine table says "extracting | 第二 extract-request 到达 | extracting（忽略）——...sessionId 不同=日志+忽略"** — implementation logs for ALL in-flight rejections (including same sessionId). The table says "sessionId 不同=日志+忽略" — implying same-session duplicate would be... ignored WITHOUT log? The implementation warns for both. Minor deviation (more logging than spec) — benign. NIT.
+
+Alright — let me also verify **line counts**:
+- CorpusExtractor.ts: the diff fragment shows header ~90 lines + code ~120 → ~230-280 lines. Under 500 ✓.
+- corpus-extractor.test.ts: 254 lines ✓.
+- schemas.ts: base file was ~110 lines (indices 4-90 with content), +80 → ~190 ✓.
+
+**Verdict**: PASS_WITH_WARNINGS. No BLOCKING.
+
+Findings list (ordered by severity):
+
+1. WARN — CorpusExtractor.ts — complete ack folded error not branched (INV-13 violation). `await deps.sendItem({ ...base, kind: 'complete' })` ignores the Result; if main returns ok:false, renderer silently exits to idle without error report. Per INV-13 "消费方必须分支处理、不得无条件按成功提示". Suggest using sendChecked for complete or at least log/branch on !ok (and consider error-report except when the failure is session-finalized).
+
+2. WARN — CorpusExtractor.ts/schemas — `?url` worker import (pdfjs-dist/build/pdf.worker.min.mjs?url) adds a sub-path+query-suffix pdfjs import that the INV-16 ESLint no-restricted-imports anchor may not match outside whitelisted files. The known-boundary note covers dynamic import variance, not specifier variants. Suggest extending the ESLint pattern (e.g., group pattern `pdfjs-dist*` / `*pdfjs*` sub-paths) and/or enumerating `pdfjs-dist/**` in the no-restricted-imports group, then re-running lint.
+
+3. WARN — worker single-asset — verify PdfCanvas and CorpusExtractor resolve to the SAME worker asset (both `pdfjs-dist/build/pdf.worker.min.mjs?url` or one local copy). The once-flag comment claims "同值幂等" and "同源" — if PdfCanvas uses a different worker file, two worker assets exist → violates "pdf.js worker 只允许一份". Evidence: the comment in loadPdfDocument and INV-16's "worker 本地打包与 PdfCanvas 同源（ADR-0002）".
+
+4. WARN (or NIT?) — refine branch untested — corpusItemReqSchema's `.refine` (anno必须带 annotationId / page 不得带) has no test. The schema change is a new validation surface; the test suite's "事件契约三面" covers only extractRequestEventSchema. Add a case asserting `{kind:'figure', figure:'anno'}` without annotationId fails, and page figure with annotationId fails.
+
+5. NIT — test flushAll fixed-round loop — the real-pdfjs integration test relies on a magic iteration count (pages*8+16); if pdfjs's fake-worker event chain grows, the test may flakily fail/truncate. Suggest awaiting a terminal condition (e.g., poll until last kind is complete/error or a timeout).
+
+6. NIT — INV-16 flip to 已锚定 references eslint.config.js enforcement not present in this diff — confirm the no-restricted-imports rule was committed in the work-order's history (this净增量 diff only carries the INV registration). 
+
+7. NIT — cropBoxPixels/createCanvas with fractional or zero dims — viewport dims may be float; canvas width/height truncate per WebIDL; degenerate zero-size boxes (w/h=0 rects) would produce 0-dim canvases. Suggest clamping/rounding to integers and guarding sw/sh > 0. Hmm — is this real? `createCanvas(viewport.width, viewport.height)` where viewport.width is a float — e.g., 595.28 * 2 = 1190.56 → canvas width 1190 (truncated). The page snapshot dims would differ from the exact viewport dims — but the same viewport object is used for cropBoxPixels (width = viewport.width float) and the crop's drawImage uses sx/sy from float math on the DOM canvas — drawImage source rect with fractional coords (e.g., sx=0.1*1190.56=119.056) — fractional source rects are fine for drawImage (subpixel sampling? Actually drawImage source rect coords are floored per CSS pixels? — The canvas drawImage spec uses the source rectangle "in CSS pixels" — fractional allowed, samples accordingly). And the pageCanvas width is 1190 while viewport.width is 1190.56 — the sx*sw maybe slightly off the actual clipped box. Precision nit. Also `cropBoxPixels` test uses W=612*2=1224 exact — the production precision issue wouldn't be caught. I'd put this as NIT.
+
+8. NIT — loadPdfDocument exported but not consumed in the current diff (tests inject stubs; production wiring deferred to AI-04). Confirm it's not orphaned. Actually — the header says assembly = AI-04 hook. This is per-plan. NIT-level "确认后续消费" — or leave it out? The constitution: "提交前确认新文件被引用". loadPdfDocument is referenced by... nothing in this diff! In the repo, the only references would be the test file (doesn't use it) and AI-04 (future). So within this commit, `loadPdfDocument` is dead code (unreferenced export). The constitution's "死代码即删" is a hard rule. Hmm. But the ticket's own header says the production assembly (useExportCorpusEvents with loadPdfDocument) is AI-04's work. And the W1 disposition (workerSrc) requirement is exactly WHY loadPdfDocument exists here — the worker config must be set where getDocument is called (in the loader). If they'd made AI-04 write it, the workerSrc logic would be duplicated. So loadPdfDocument is the deliberately-placed seam. Being unrereferenced within this commit is the intended inter-ticket handoff (AI-04 consumes). The alternative (having AI-04 write loadPdfDocument itself) would defer the W1 fix and leave the worker-egress risk until then. I'll note as NIT with the rationale.
+
+Hmm — should I also flag the "测试必须能失败一次" — let me check if any test is tautological... The backpressure test: `expect(ctx.maxInflight).toBe(1)` — if the extractor sent everything at once, maxInflight would be >1 (all in parallel, resolves over timers → maxInflight 2+since all sends happen in the same tick before any timer fires? If no await between sends, calls: send1 → inflight1 → send2 → inflight2 → send3...; maxInflight ≥ 2 → test fails ✓ meaningful. The single-send test ✓. All assertions can fail. ✓.
+
+What about the "事件契约三面" — asserts safeParse success/failure — ✓ can fail.
+
+The integration test — asserts real parsed text — can fail ✓.
+
+The failed-to-idle continuation test — meaningful ✓.
+
+OK — the W2 question final answer: satisfied ✓. The test uses a real 2-page PDF via createMultiPagePdf, delegates getTextContent/getViewport to real pdfjs, fake-renders only the canvas-raster boundary (documented as AI-04's e2e domain), asserts per-page text presence and terminal complete. The multi-page fixture clause (both pages' text streams independently) is met.
+
+B1 final answer: resolved ✓. RenderCanvas.source is now an explicit field on the abstraction; production drawFrom consumes `src.source` (the real canvas element) cast to CanvasImageSource; stubs/nullable sources never reach production drawImage. The type chain is consistent and runtime-safe. One residual: `unknown` alias + cast = weakened type surface (documented for node-test env), acceptable.
+
+New surfaces final answer: 
+- workerUrl static import: within INV-16's whitelist (CorpusExtractor is a whitelisted file) ✓, but introduces a `?url` sub-path import that the no-restricted-imports anchor may not block in other files — extend rule patterns + update the INV-16 known-boundary note (WARN).
+- once flag (workerConfigured): safe/idempotent; depends on the "PdfCanvas same workerSrc value" assumption — verify single worker asset (WARN) and consider registering the workerSrc single-asset invariant in invariants.md (it's currently only in the module comment/ADR reference) (NIT/WARN).
+- refine semantics: adds runtime cross-field validation; untested in the current suite; type layer (z.infer) does not encode the cross-field constraint — acceptable but add a test (WARN/NIT).
+
+Also the complete-ack INV-13 WARN.
+
+Now the summary: A short 2-3 sentence overall judgment.
+
+Let me now write the JSON. Format:
+```json
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [...],
+  "summary": "..."
+}
+```
+
+Findings entries with severity, file, line_hint, issue, evidence, suggestion.
+
+Let me be careful about line_hint — reference the diff's structure: e.g., "CorpusExtractor.ts 的 runExtraction 中 complete 回传行" / "CorpusExtractor.ts loadPdfDocument 的 Promise.all worker import" / "schemas.ts corpusItemReqSchema .refine" / "tests/... corpus-extractor.test.ts flushAll" etc.
+
+Evidence strings must come from the materials:
+- For INV-13: "INV-13 | IPC Result 折叠约定：service 把业务失败折叠为正常返回时（如 enrichStatus:'failed'、幂等删除 ok:true），消费方必须分支处理、不得无条件按成功提示" + code line "await deps.sendItem({ ...base, kind: 'complete' })".
+- For worker: "import('pdfjs-dist/build/pdf.worker.min.mjs?url')" and INV-16 "ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异".
+- For single-worker: "worker 本地打包与 PdfCanvas 同源（ADR-0002）" + AGENTS.md "重复资产（pdf.js worker 只允许一份）".
+- For refine untested: "事件契约三面" test + corpusItemReqSchema `.refine(...)` in schemas.ts.
+- For flushAll: "for (let i = 0; i < pages * 8 + 16; i += 1) await settle()".
+- For INV-16 flip: "已锚定（2026-08-27 SR2-AI-02；……机器锚以 static import 为准）" and the diff not showing eslint.config.js.
+- For fractional dims: "createCanvas(viewport.width, viewport.height)" / "cropBoxPixels" min/max math.
+- For loadPdfDocument: "export async function loadPdfDocument" — no consumer in diff.
+
+Order the findings by severity. I'll do:
+
+1. WARN — complete ack INV-13.
+2. WARN — INV-16 ESLint anchor vs `?url` sub-path import.
+3. WARN — single-worker-asset assumption (once flag).
+4. WARN — refine untested (maybe NIT? The brief asks about refine semantics as a new surface; untested new validation — I'll make it WARN since tests are one of the project's core disciplines. Hmm — "WARN=应当修但不阻塞" — adding a test for the refine is a should-fix. WARN.)
+5. NIT — flushAll magic rounds.
+6. NIT — INV-16 已锚定依赖 eslint.config.js 变更不在本 diff.
+7. NIT — fractional/zero crop dims.
+8. NIT — loadPdfDocument 当前 diff 无消费方.
+
+That's 8 findings. Reasonable.
+
+Wait — should I include the "complete ack" as one of the three adjudication-relevant? The brief's N1 disposition is "sendChecked" — it exists. The complete gap is a genuine finding. Keep.
+
+Let me double check the W2 verdict once more — is there any argument that the integration test does NOT satisfy the fixture clause? "票面多页夹具条款" — the original ticket says "多页夹具页界 \f/文本序" — \f moved to main (W3 boundary — the r1 disposition accepted moving \f to main per the brief "W3 部分采纳边界声明"). So the fixture clause now = multi-page + text order. The integration test asserts page 1 & page 2 text presence but NOT the ORDER of pages in a single text stream (because fulltext is per-page now, not a \f-joined stream). Page order is asserted in the mock test (pages [1,2,3]). The integration test shows both pages individually. Combined: multi-page fixture ✓. Also the factory `createMultiPagePdf(2, 'INTEGRATION')` — the name suggests it creates a multi-page PDF. OK — satisfied.
+
+One more check — the B1 question "drawFrom 源参类型链" — do I need to verify the type chain compiles? `src.source as CanvasImageSource` — `CanvasImageSource` is a DOM lib type (HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame...). Since the renderer tsconfig includes DOM lib, `CanvasImageSource` resolves ✓. In the test file (node env), the production `createDomCanvas` isn't type-checked? The test file imports from CorpusExtractor.ts — vitest typecheck runs over the imported module too; CorpusExtractor.ts compiled with DOM lib in the project's tsconfig — the `?url` import needs "vite/client" types — otherwise typecheck fails on `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`. That's a real verification point: if tsconfig doesn't include vite/client, `?url` module has no declaration → TS error. But the original header says the module already had pdfjs runtime imports; Vite/client types likely included. And the W1 disposition (workerSrc) already landed in r1 — the same `?url` import presumably already existed then and passed verify. Actually — the r2 diff may have introduced it newly (W1 fix). The brief's r1 dispositions W1 = workerSrc. So the `?url` import appeared in r1's fix (already verified green then?) or in this r2... The diff we're auditing includes it; if CI verifies and the agent claims green, the type declaration exists. I'll fold the `?url` module-declaration check into the INV-16 ESLint WARN? No — separate concern but same area. I'll mention in the worker finding's suggestion: "并确认 tsc 对 ?url 模块声明的覆盖(vite/client)与 ESLint 对该写法的拦截". Keep it as one WARN on the workerUrl import surface.
+
+Hmm, actually the ESLint concern — wait, the INV-16 known-boundary says dynamic import checks vary; the worker import here uses dynamic import() syntax with `?url`. In non-whitelisted files, if the rule bans `pdfjs-dist` via a `paths` entry with exact specifier, `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` does NOT match (specifier is the sub-path+query). So the worker import is effectively an un-flagged route. In whitelisted files it's fine (this file). But INV-16's goal "禁第四处直连" — a fourth file doing `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` would bypass. That's the anchor gap. WARN.
+
+Alright — also, should the once flag be a separate finding from single-worker? The once flag itself (workerConfigured) is benign. Its risk is tied to the same-asset assumption. I'll fold into one WARN: "worker 单源假设未机器锚定（once 标志与两消费点 workerSrc 同值假设）".
+
+Let me also reconsider whether to include a NIT about `CanvasImageSourceLike = unknown` being type abuse. The question: "类型滥用(any)" — `unknown` with a cast is a deliberate, commented workaround for node-test type environment. It's the B1 fix itself. I'll mention it as part of the B1 verdict in the summary (acceptable with documented caveat), not as a separate finding — or add a NIT "source 类型为 unknown+cast 削弱类型安全（有注释说明，可行但建议后续在 shared 定义 DOM 无关的 CanvasImageSource 极小接口）". Hmm — could the type be a structural minimal interface like `{ el: ... }` instead of unknown? They chose unknown deliberately. I'll add a NIT for the type-escape.
+
+That'd be 9 findings — that's fine, but let me be economical. The instructions want a focused first-pass audit. Let me decide the final list:
+
+1. WARN — complete ack ignored (INV-13).
+2. WARN — `?url` worker import vs INV-16 anchor (workerUrl 面).
+3. WARN — worker 单源/同值假设未登记锚定（once 标志面）.
+4. WARN — refine 判别约束无测试覆盖（refine 面）.
+5. NIT — flushAll 固定轮数脆弱.
+6. NIT — INV-16 已锚定依赖 eslint.config.js 变更不在本 diff（核验项）.
+7. NIT — crop 尺寸浮点/零宽缺防御.
+8. NIT — loadPdfDocument 本 diff 无消费方（AI-04 接缝，确认不孤儿）.
+9. NIT — source: unknown+强转的类型逃逸（B1 修型可接受但有文档化代价）.
+
+Hmm — is #6 fair? The diff updates INV-16 from 未锚定 to 已锚定 citing "2026-08-27 随 SR2-AI-02 落地" and "机器锚以 static import 为准". The eslint.config.js isn't in the diff. Since the brief says this is the 净增量 diff after r1, the eslint change may be in an earlier part of the work order. But the 处置表 lists only four files for r1 fixes. The eslint.config.js was presumably part of the ORIGINAL submission (pre-r1). The original INV-16 said "锚定随 SR2-AI-02 落地" — so the original submission included the ESLint rule + [locked-change]. The r1/r2 iterations then fixed Extractor/schemas/测试/INV. So #6 is a "verify it's in the commit history" — an audit note, not a defect. I'll keep it as NIT with "核验" framing. Actually — hmm, do I risk "编造 diff 里不存在的内容"? No — I'm saying the anchor isn't in THIS diff, which is objectively true, and asking to verify. That's an evidence-based observation.
+
+Also — should I really include #8? The header explicitly says AI-04 does the assembly with useExportCorpusEvents. "提交前确认新文件被引用" — within the repo, the corpus-extractor.test.ts references createCorpusExtractor, cropBoxPixels, EXPORT_SNAPSHOT_SCALE, types. loadPdfDocument is only exported. In the work-order plan, AI-04's hook consumes it. The plan documents it. I'll keep as NIT.
+
+Now — severity assignment for the refine-uncovered test: The project's test discipline is strict ("每个测试必须能失败一次" etc.). New validation logic (refine) with zero test coverage — "应当修但不阻塞" → WARN. OK.
+
+Wait — one more consideration on the refine: does the `corpusItemReqSchema` refine actually WORK with zod discriminatedUnion `.refine`? zod's `.refine` on a discriminated union: the input passes through union validation first, then refine runs on the parsed value. ✓ works.
+
+But another subtlety: `z.discriminatedUnion('kind', [...])` — the members must be ZodObject each with the `kind` literal. ✓. And `.strict()` on each ✓. But — the `.refine` — for kind 'complete'/'error'/'fulltext', refine's `v.kind !== 'figure'` → true → passes ✓.
+
+Hmm — the refine's message is on the WHOLE union, fine.
+
+Also — one thing in the schemas diff: `extractRequestEventSchema.annotations` uses `z.array(annotationRectSchema)` — annotationRectSchema is imported from '../models/annotation'. Is annotationRectSchema exported there with `.strict()`? Unknown. The test asserts that `annotations: [{id:'a', rects: [], extra: 1}]` fails — because the inner object schema is `.strict()`. That's the wrapper object (id+rects) — `.strict()` is on the wrapper ✓. annotationRectSchema itself might allow extra fields — unknown. Not a finding.
+
+Let me also do a final check on the **schemas' `payload: z.string()` for fulltext — could be empty string ✓ allowed. `reason: z.string()` for error — error path always provides reason ✓.**
+
+**The `extractRequestEventSchema` url — z.string().min(1) — the test uses 'app-file://x.pdf' ✓.**
+
+Now, one last possible BLOCKING candidate: **the invariants.md change and the "受锁文件" rule** — docs/invariants.md is NOT in the locked list explicitly (tests/shared/migrations/CI/lint/构建/测试配置/脚本) — docs aren't listed → no [locked-change] needed ✓.
+
+And **is invariants.md modification itself "测试/契约" tampering? No.** ✓.
+
+Also — the AGENTS.md hard rule "受锁文件修改前先 npm run locks:unlock... 改完即时 npm run locks:apply" — schemas.ts and the new test file are locked paths. The diff cannot show lock workflow compliance. The brief's context treats the ticket as sanctioned. I'll fold a verification note into the INV-16 NIT? Or ignore. I'll keep findings focused; process compliance beyond the diff is not verifiable — mention in summary? The summary should be brief. I'll leave it.
+
+Final check on the three adjudication verdicts for the summary:
+1. B1: 消除 ✓ — source 字段抽象一致，生产路径 source=真实 canvas 元素，drawImage 运行时合法；类型由 unknown+cast 提供（文档化代价）。
+2. W2: 满足 ✓ — 真实 pdfjs 多页工厂 PDF、getTextContent 真解析、render 假实现边界显式声明，逐页文本断言。
+3. 新面: workerUrl 在文件白名单内但锚定有子路径盲区（WARN）；once 标志安全但依赖同值假设（WARN）；refine 语义正确但无测试覆盖（WARN）。
+
+Verdict: PASS_WITH_WARNINGS.
+
+Let me write the findings in Chinese (the input is Chinese; output JSON with Chinese issue text is appropriate).
+
+Now write the JSON carefully. The instruction: "只输出一个 JSON 对象，不要 markdown 代码围栏，不要多余文字". So the response must be raw JSON only.
+
+Let me draft:
+
+```json
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "runExtraction 尾部 `await deps.sendItem({ ...base, kind: 'complete' })`",
+      "issue": "complete 终局回传未走 sendChecked，折叠错误（ok:false）被静默吞掉——违反 INV-13『消费方必须分支处理、不得无条件按成功提示』；fulltext/figure/anno 三面均已分支，唯独终局项不分支，失败时渲染侧静默回 idle，主会话可能停留在未完成状态且无任何日志。",
+      "evidence": "diff：`await deps.sendItem({ ...base, kind: 'complete' })`（直接调用、未校验 ack.ok）；INV-13：『service 把业务失败折叠为正常返回时……消费方必须分支处理、不得无条件按成功提示』",
+      "suggestion": "complete 改为 sendChecked 同构分支（!ok 时记日志或在终局阶段允许仅日志不上报——需与 AI-03 会话终止语义对齐并在注释说明），至少不得无痕吞掉。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "loadPdfDocument 的 `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`",
+      "issue": "新增 workerUrl 动态 import 是 pdfjs-dist 子路径+`?url` 查询串的新消费形态；INV-16 的 no-restricted-imports 机器锚按包名书写时很可能匹配不到该写法，非白名单文件可用同样写法绕过『禁第四处直连』。INV-16 已知边界只声明了 dynamic import 检查依版本而异，未涵盖子路径/查询串变体。",
+      "evidence": "diff：`import('pdfjs-dist/build/pdf.worker.min.mjs?url')`；INV-16：『ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦，该缺口由架构评审面覆盖，机器锚以 static import 为准』",
+      "suggestion": "把 eslint no-restricted-imports 的 group 扩展为覆盖 `pdfjs-dist/**` 子路径与 `?url` 后缀（如 group: ['pdfjs-dist', 'pdfjs-dist/*', '*pdfjs*worker*']），并在 INV-16 已知边界中补记该变体；同时确认 tsc 对 `?url` 模块声明的覆盖（vite/client）。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "`let workerConfigured = false` + loadPdfDocument 注释",
+      "issue": "once 标志与『workerSrc 与 PdfCanvas 同值幂等』是新的跨模块假设：两消费点独立初始化，若任一消费点 worker 资产路径不一致，则出现第二份 worker 资产，违反『pdf.js worker 只允许一份』；该不变量未登记入 invariants.md（仅模块注释+ADR
+
+== content ==

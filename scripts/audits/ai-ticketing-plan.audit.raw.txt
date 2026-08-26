@@ -1,0 +1,145 @@
+== reasoning ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "行为层：状态机全表（跨格序列七行）",
+      "issue": "AI-03 头注声称「状态机全表，母本=ai-plan-review §6；INV-18 随单锚定」，但票面内只列出七行跨格序列，没有给出会话状态机的完整态空间（各状态的定义/合法进入条件/出口）——母本 §6 原文不在 diff 中，无法据此验证 7 行跨格表是否闭合；且规划简报审计请求第 2 条要求先审「表本身的完整性」，当前票面自带的只是序列清单而非完整迁移表。",
+      "evidence": "『会话编排（状态机全表，母本=ai-plan-review §6；INV-18 随单锚定）：idle → preparing（清目录+写 corpus md）→ streaming（逐篇提取回传）→ finalizing（manifest 终写）→ done ｜ failed ｜ interrupted（进程/窗口死）跨格序列七行（全表，实现须逐格闭合）』",
+      "suggestion": "将母本 ai-plan-review §6 的完整会话状态机表（态/事件/迁移/守卫/终态）直接复制进 AI-03 头注，并在 AI-02 头注保留指向 AI-03 的互指；若母本不可得，则本批次应阻塞直到补齐该表。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "行为层：状态机（renderer 侧提取器）",
+      "issue": "AI-02 头注的四态表同样只有态语义和一列跨格序列，缺少完整迁移事件/守卫（例如 extracting 态下收 extract-request 的串行排队——事件是排队还是丢弃？done/failed 后回 idle 的触发条件是 complete/error 上报还是另有信号？）；该四态表还被称为「会话状态机的 renderer 侧投影」，但简报中「会话全表母本=ai-plan-review §6 归 AI-03 头注」指向的 AI-03 头注实际也不含完整迁移表，两层互指落空。",
+      "evidence": "『状态机（renderer 侧提取器；会话全表母本=ai-plan-review §6，main 侧会话态归 AI-03）：| 态 | 语义 | ... 跨格序列：①在途收第二请求→串行排队（会话内不并发，事件序即提取序）②invoke 折叠错误→failed+{kind:'error'} 上报 ③destroy 失败不阻断...④文档加载失败→failed 同②』",
+      "suggestion": "AI-02 头注补完整的四态迁移表（每个态 x 每个事件 → 下一态 + 动作/守卫）；并在本批次先落 AI-03 的完整会话状态机表，AI-02 再作投影互指。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "tickets/registry.ts",
+      "line_hint": "AI-03 registry 行",
+      "issue": "registry 登记 AI-03 摘要写『单飞 EXPORT_BUSY INV-18』，而 AI-03 票面行为层写『幂等（R6，INV-17 随单锚定）』和『单飞（R9）：进行中拒第二会话=app-error 新码 EXPORT_BUSY [受锁新增]（INV-13 折叠消费分支=UI 提示，AI-04 接线）』——INV 编号自相矛盾：同一票面内 INV-17 与 INV-18 随单锚定的对象和 registry 摘要不一致。",
+      "evidence": "AI-03 头注：『幂等（R6，INV-17 随单锚定）』『单飞（R9）：...EXPORT_BUSY [受锁新增]（INV-13 折叠消费分支...）』；registry：『单飞 EXPORT_BUSY INV-18+幂等 sha INV-17』；简报：『幂等 sha（R6，INV-17/18 随单锚定）』",
+      "suggestion": "统一 INV 编号归属：明确 INV-18 是会话状态机锚定还是 EXPORT_BUSY 单飞锚定；在各处使用同一编号，并同步修正 registry 摘要与简报验收对照。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "行为层：manifest 终局单写（R5/R8）",
+      "issue": "规划只写「临时文件+rename 原子替换」和「会话开始删旧 manifest+清空重建」，但「清空重建」与「先删旧 manifest 再在终局写新 manifest」在中断恢复场景的时序未定义：若会话在清空目录后、终局写 manifest 前被杀，目录中已无旧 manifest，而工具侧激活判据是「manifest 存在=导出完整就绪」，那么激活判据退化为可靠假；「清空」是否包含 manifest 本身、临时文件命名、fsync 等均未决议。",
+      "evidence": "『manifest 终局单写（R5/R8）：临时文件+rename 原子替换；会话开始删旧 manifest+清空重建...「manifest 存在=导出完整就绪」=工具侧唯一激活判据』",
+      "suggestion": "在票面补中断原子性条款：建议采用「新会话先写 pending 标记或临时目录，终局 rename 换 manifest；旧 manifest 在终局 rename 成功后才删除」；若选择先删后建，则必须把「无 manifest=未完成」显式写入恢复判定，并约定中断后重跑清理逻辑。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "行为层：跨格序列『渲染器逐页回传』",
+      "issue": "状态机跨格表把「renderer 逐页回传」列为一条跨格序列，但它不是状态迁移，而是 streaming 态内的数据流机制；与 `export/corpus-item`（IPC）和 AI-02 背压「每页一 invoke，await ack 后发下一页」之间的回传/ack 协议在主从两票中未定义具体载荷 shape（除 kind/paperId/page/payload 外），导致实现单可解释空间过大。",
+      "evidence": "AI-03：『| renderer 逐页回传 | 每页一 invoke，await ack 后发下一页（天然背压） |』；AI-02：『每页一 invoke，await ack 后发下一页（禁大 payload 整块）』",
+      "suggestion": "在 AI-02 接口层补 corpusItemSchema 的完整字段清单（kind: fulltext|figure|complete|error, paperId, page?, payload?），并在 AI-03 接口层明确 export/corpus-item 的 main 侧 ack/error 返回语义。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "架构层：依赖 repos（papers/annotations/notes/ai_notes）",
+      "issue": "AI-03 申明依赖四个 repos 并负责「五件套全量会话」，但没有说明从哪个数据源组装 corpus 的正文全文和 figures——引文块从 annotations 取，[ai:*] 段从 ai_notes 取，正文/全文/图来自哪里（PDF 文件重提取？还是已有 fulltext 表？）未交代。母本 ADR-0011 v1.1 五件套含 fulltext/figures 提取（GB 级），而本批次 AI-02 是 renderer 提取器、AI-05 是传感器工具，AI-03 跨格表里「篇失败（文件缺失/损坏）」暗示正文依赖 PDF 源文件，但依赖清单里没有 pdf 文件读取服务。",
+      "evidence": "AI-01：『FTS v1 不入（检索面先由 zcode 侧 grep 承担...）』；AI-03：『依赖 repos（papers/annotations/notes/ai_notes）+corpus.assemble+file-store（app-file:// url 解析——提取请求 url 下发）』；AI-02：『收 {type:'extract-request', sessionId, paperId, url} → 自持 pdfjs 文档生命周期』",
+      "suggestion": "在 AI-02/AI-03 票面明确定义「fulltext/figures 数据面」：是导出时由 AI-02 对 PDF 做实时提取并流式落盘（那 AI-03 的“依赖”实际还包含 AI-02 的 invoke 通道），还是复用既有存储；避免实现单各自猜测。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tools/ai-sensor/queue.mjs",
+      "line_hint": "行为层：queue.mjs",
+      "issue": "AI-05 声称「manifest ↔ progress.json diff → 未建档队列」和「已 done 篇不重跑」，但 progress.json 的 schema/存储位置/与 manifest 的键联结（paperId？文件相对路径？）未定义；且「断点续跑」依赖 progress.json 在中断时已写入——中断发生在篇级产物落盘前还是后、progress 写入时机（先写后做还是先做后写）未定义。「manifest 存在=导出完整就绪=唯一激活判据」意味着 queue 由 AI-03 生成的 manifest 激活，但 export 中断后无 manifest 则工具根本不会激活，那「断点续跑」到底在哪个断点续？",
+      "evidence": "AI-05：『queue.mjs：manifest ↔ progress.json diff → 未建档队列 → 按篇三读调度（断点续跑：篇级产物落盘后才置 done；幂等重跑——已 done 篇不重跑）；进度写 progress.json（D1 三护栏的实现位）』；AI-03：『「manifest 存在=导出完整就绪」=工具侧唯一激活判据』",
+      "suggestion": "在 AI-05 头注定义 progress.json 的字段与写入时机（每篇产物落盘后原子更新）；并在 AI-03 的恢复条款中允许“会话中断但有部分产物、无 manifest”时工具侧的触发方式——例如导出会话重跑时保留原 progress.json 以跳过已完成篇，或者明确“断点续跑只指工具内部三读队列，导出中断后的重跑是 AI-03 清空重建全量”两种语义取一。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/settings/CorpusExportSection.tsx",
+      "line_hint": "行为层：e2e 全链含中断重跑",
+      "issue": "AI-04 测试约定 e2e「含中断重跑序列，INV-18 锚定」，但 e2e 如何制造确定性中断（进程/窗口杀？）以及中断后如何验证“无 manifest→工具不可激活”与“重跑=清空重建（幂等）”未给步骤；playwright 杀进程在 CI 的稳定性风险未评估；且 e2e 依赖“磁盘五件套存在性+manifest 一致——app.evaluate 侧通道读文件”，这一侧通道是否属于受锁 e2e spec/测试基础设施需要 [locked-change]？",
+      "evidence": "AI-04 文化层：『e2e 全链（导入夹具→导出→磁盘五件套存在性+manifest 一致——app.evaluate 侧通道读文件；含中断重跑序列，INV-18 锚定）』",
+      "suggestion": "把中断重跑 e2e 降级为单元/集成层状态机模拟，或给出确定性中断方案（如导出过程中删除源文件触发篇失败）并评估稳定性；明确 app.evaluate 读文件是否落在受锁 e2e 基建变更范围。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "接口层：IPC [受锁]：export/corpus",
+      "issue": "AI-03 接口层声明 IPC export/corpus 返回 `{dir, fileCount, errorCount}`，但会话含 interrupted 终态（进程/窗口死）——这种终态下不存在 IPC resolve，状态机表里也把 interrupted 列为终态；同时 AI-02 说 renderer 侧只有 idle/extracting/done/failed 四态，main 侧会话 interrupted 如何投影到 renderer 四态未定义（映射缺失会导致 AI-04 无法呈现 interrupted 反馈或按钮卡死）。",
+      "evidence": "AI-03：『idle → preparing...→ done ｜ failed ｜ interrupted（进程/窗口死）』『export/corpus {paperIds?} → {dir, fileCount, errorCount}（全库默认；会话终局 resolve）』；AI-02：『状态机（renderer 侧提取器...）：idle/extracting/done/failed』",
+      "suggestion": "明确 interrupted 在 IPC 语义下的处理：如果进程死则不可能 resolve，那么 renderer 应靠事件通道的会话结束/超时判定进入 failed；或在 AI-02 四态增加 interrupted 投影映射（例如 main 会话 interrupted → renderer 收到会话终局事件 → 回 idle 并提示重跑）。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tickets/registry.ts",
+      "line_hint": "AI-02 registry 行 vs 票面",
+      "issue": "registry AI-02 摘要写『pdfjs 白名单三文件 INV-16+ESLint 机器锚』，票面写『pdfjs-dist 运行时 import 白名单第三成员（INV-16）』——INV-16 究竟锚定三个文件还是第三成员？若 INV-16 是既有不变量，本批次将其“扩展”或“登记”为三文件清单，应说明这是新增不变量还是对既有 INV-16 的修订；「白名单三文件」与「白名单第三成员」在译读上可能指同一事，但编号/登记册一致性要求措辞统一。",
+      "evidence": "registry：『pdfjs 白名单三文件 INV-16+ESLint 机器锚』；AI-02 头注：『pdfjs-dist 运行时 import 白名单第三成员（INV-16）：仅许 PdfCanvas/TextLayer/本文件三处』",
+      "suggestion": "在票面/registry 统一表述：INV-16 的既有范围是什么、本单是将其扩展为三处还是新增机器锚；并在 docs/invariants.md 预登记条目里写清。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "行为层：figures",
+      "issue": "「离屏 canvas 全页快照」在 Electron renderer 中离屏 canvas 的尺寸/分辨率/缩放（devicePixelRatio）未定义，且与既有 PdfCanvas 渲染路径的关系（是复用既有 canvas 绘制还是独立快照路径）未说明；R7 全页快照在 AI-03 中引用为『全页快照 R7 ✅（AI-02 票面 figures 行）』，但票面未给快照的像素标准。",
+      "evidence": "AI-02：『figures：page-N.png（离屏 canvas 全页快照，R7）+anno-<id>.png（WADM 归一化 rects 从页图裁）』",
+      "suggestion": "在 AI-02 测试规约中补快照尺寸/缩放的固定约定（如 2x DPR、页宽 1400px），并为 R7 单独列不变量/锚定。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "架构层：目录形态与会话语义分层",
+      "issue": "AI-03 通道判定：“C-02 既有 corpus/corpusSet 通道保留……两者共用 corpus.assemble 装配纯函数（装配单源不破）——目录形态与会话语义分层，非双实现”。但宪法「方案切换=删除旧方案」与「不允许两套 PDF 方案、两个 ORM 并存」的类比下，保留两套导出通道（轻量 md 面 vs 五件套全量会话）是否构成“两套并存”需更明确界定：二通道各自产出目录形态是否重叠（corpus/ 同名目录）？若用户先跑旧通道再跑新通道会否互相覆盖/污染？",
+      "evidence": "AI-03：『C-02 既有 corpus/corpusSet 通道保留（单篇 md 快速导出+库页 md 集合，轻量面）；本单新增 export/corpus 通道=五件套全量会话...目录形态与会话语义分层，非双实现』；宪法：『方案切换=删除旧方案。不允许两套 PDF 方案、两个 ORM 并存』",
+      "suggestion": "在票面补两条通道的目录隔离方案（如旧通道输出 corpus/ 保持不变，新通道输出 corpus-export/ 或同目录但 manifest 区分），并写清两者不存在“同一语义双实现”的裁决依据（分别对应轻量 md 面与全量传感器面）。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "行为层：幂等（R6，INV-17）",
+      "issue": "「同库重导逐字节稳定」与「manifest 含 exportedAt/exportedAt per-paper」潜在地冲突：manifest 内 exportedAt 每次导出必然不同，那么“逐字节稳定”只能是对 corpus/fulltext/figures 文件与 papers[].contentSha/fulltextSha，而不是整体 manifest；但票面没有明确“逐字节稳定”的范围。",
+      "evidence": "AI-03：『manifest 终局单写...schema 含 schemaVersion/exportedAt/papers[]{contentSha,fulltextSha,figures,exportedAt}...；幂等（R6，INV-17 随单锚定）：corpus md front-matter 不含 exportedAt（时间戳只进 manifest per-paper 条目）；contentSha/fulltextSha=文件字节 sha256（node:crypto 先例）；同库重导逐字节稳定（golden 锚定）』",
+      "suggestion": "将“逐字节稳定”限定为产物文件与内容哈希，并允许 manifest 的 exportedAt 字段变化；在测试规约里区分“内容 golden”与“manifest 结构断言”。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "行为层：question 列 v1 取值 'Q1'..'Q7'|'divergence'",
+      "issue": "question 列取值枚举与 role CHECK 的枚举真相归属不一致：role 的枚举真相=DDL，question 的枚举真相=zod 应用层；但票面又说七问 v1 冻结、扩展性优先。将来若 Q8 加入，zod 消费方与 DDL 的 CHECK 不存在（不冲突），但应明确 zod 枚举更新是否算 [locked-change]（shared/models 受锁）。",
+      "evidence": "AI-01：『role CHECK 约束（...枚举真相=DDL，shared/models/ai-note.ts zod 枚举镜像消费）...question 列 v1 取值 'Q1'..'Q7'|'divergence'（七问 v1 冻结，蓝图 §4.2），DDL 不加 CHECK（应用层校验归 zod——DDL 收窄需迁移，扩展性优先）』",
+      "suggestion": "在票面注明七问枚举变化时 shared/models 的 [locked-change] 流程（如有），避免实现单绕过锁定。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "接口层：交付面受锁新增",
+      "issue": "AI-01 交付面将新增受锁文件（migrations/003、shared/models/ai-note.ts、tests 等），但当前骨架批次没有执行任何 locks 相关命令（简报称“无受锁文件触碰”）。按宪法「受锁文件修改前先 unlock，改完 apply」，实现单必须带 [locked-change] 且 CI 会检查，但票面未把 `locks:generate` / `locks:apply` 纳入完成定义；弱模型/后续会话可能忘记。",
+      "evidence": "AI-01：『交付面：migrations/003_ai_notes.sql [受锁新增]+shared/models/ai-note.ts [受锁新增]...』；简报：『无任何实现面、无受锁文件触碰（五主文件均非受锁路径；受锁面随各实现单[locked-change]）』",
+      "suggestion": "在每张票的「完成后」行显式加入「新增受锁文件后运行 npm run locks:generate && locks:apply 并即时提交」；或利用 registry 的 check 规则确保 [locked-change] 尾注存在。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tickets/registry.ts",
+      "line_hint": "AI-05 registry 行",
+      "issue": "AI-05 文件是 tools/ai-sensor/queue.mjs，但 registry 工单的 file 字段只登记 queue.mjs；票面行为层还包含 SKILL.md、config.template.json、prompts/ 等多个交付物，registry 单文件映射与“只改这一个文件”的弱模型守则冲突（虽然 owner 是 strong；check-tickets 可能只校验 file 指向的文件头注存在）。",
+      "evidence": "registry：『{ id: 'SR2-AI-05', file: 'tools/ai-sensor/queue.mjs', ...}』；AI-05 票面：『SKILL.md：...；config.template.json：...；prompts/...』",
+      "suggestion": "将 AI-05 的交付面在 registry file 字段或票面显式声明为多文件工单（例如 file: 'tools/ai-sensor/queue.mjs' + 交付面多文件），避免 check-tickets 按单文件校验时误判或实现单漏建其余文件。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/settings/CorpusExportSection.tsx",
+      "line_hint": "文化层：组件测试",
+      "issue": "AI-04 测试约定「组件测试（进度行渲染/按钮 disabled 态/errorCount）+hook 成对清理用例」未指明所用测试框架/工具（vitest + RTL？）；考虑到 AI-05 强调「弃 node:test 防两套测试基建」，AI-04 若引入组件测试框架需先确认既有 renderer 测试基建是否已有 RTL，否则会产生新测试基建。",
+      "evidence": "AI-04：『测试：组件测试...』；AI-05：『vitest 宿主，R11——弃 node:test 防两套测试基建』",
+      "suggestion": "在 AI-04 票面写明组件测试沿用既有 renderer 测试工具链（vitest + @testing-library/react 若已存在），避免新增第二套测试基建。"
+    }
+  ],
+  "summary": "规划整体结构严谨，五张骨架票+registry 与宪法/母本引用到位，但存在两个 BLOCKING 级别问题：AI-02/AI-03 声称的“完整状态机表”实际只是序列清单且互指落空，INV-17/18 在 AI-03/registry/简报间的锚定对象互相矛盾。另有若干 WARN 级语义缺口（导出原子性、数据面依赖、progress.json 时序、IPC 中断终态投影、通道目录隔离），建议补齐票面后放行。"
+}
+
+== content ==

@@ -1,0 +1,47 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "let undoInFlightPaper: string | null = null",
+      "issue": "in-flight 互斥实现缺陷：单个模块级变量无法支持多个 paper 并发撤销。当 p1 撤销 await 期间，p2 撤销会覆盖 undoInFlightPaper，随后 p1 再次撤销不再被拦截，导致同篇撤销并发执行。并发执行共用 topIdx/splice 会错误移除栈条目，破坏撤销栈结构与数据一致性。",
+      "evidence": "diff 中 `let undoInFlightPaper: string | null = null`、`undoInFlightPaper = paperId`、`finally { undoInFlightPaper = null }`；头注声称「per-paper 互斥——同篇撤销进行中再触发 → busy，他篇互不阻塞」，但单变量无法同时记录多篇在途状态。",
+      "suggestion": "改为 `const undoInFlightPapers = new Set<string>()`：进入时 `if (undoInFlightPapers.has(paperId)) return busy`，然后 `undoInFlightPapers.add(paperId)`；`finally` 中 `undoInFlightPapers.delete(paperId)`。这样同篇互斥、他篇并行均正确。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "无（本次 diff 未涉及）",
+      "issue": "新增跨模块行为不变量未登记：撤销栈的 per-tab 隔离、FIFO 截断、in-flight 互斥、closeTab 清理语义等属于跨模块/跨时间行为不变量，按宪法要求应登记到 docs/invariants.md，否则视为未定义行为。",
+      "evidence": "AGENTS.md：「不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md（声明处 + 强制方式 + 锚定状态）；未登记 = 未定义行为。」diff 与简报中均无 docs/invariants.md 变更记录。",
+      "suggestion": "在 docs/invariants.md 中补充撤销栈语义条目，锚定 annotation-undo.ts 头注及 reader.store.closeOne 调用点。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/shared/ui/toast-store.ts",
+      "line_hint": "window.setTimeout / window.clearTimeout",
+      "issue": "toast-store.ts 被非组件 .ts 模块（reader.store）引用，而 node 环境（如某些 .ts 测试）下 `window` 未定义。当前仅在 renderer 运行期调用时访问 window，类型检查通过，但环境耦合不如直接使用 `setTimeout` 干净。",
+      "evidence": "diff 中 toast-store.ts 使用 `window.setTimeout(() => dismiss(item.id), ...)` 与 `window.clearTimeout(timer)`；原 Toast.tsx 同样使用 window，属于既有惯例。",
+      "suggestion": "如无需强 window 语义，可改为全局 `setTimeout`/`clearTimeout`，或在模块顶部做安全兼容（如 `const safeSetTimeout = typeof window !== 'undefined' ? window.setTimeout.bind(window) : setTimeout`）。"
+    }
+  ],
+  "summary": "撤销栈主体实现与测试覆盖较扎实，但 in-flight 互斥的模块级单变量设计存在真实竞态，无法支持设计文档宣称的 per-paper 并行撤销，可能导致栈结构错误与数据不一致，必须回修。另需补登记不变量到 docs/invariants.md 以符合宪法要求；其余改动（Toast 拆分、键位绑定、锁文件更新）未见违约。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 18002,
+      "completion_tokens": 11469,
+      "total_tokens": 29471,
+      "prompt_tokens_details": {
+        "cached_tokens": 4224
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 10616
+      },
+      "prompt_cache_hit_tokens": 4224,
+      "prompt_cache_miss_tokens": 13778
+    },
+    "finish_reason": "stop"
+  }
+}

@@ -1,0 +1,802 @@
+== reasoning ==
+We need audit the diff. Need output JSON only. We need examine for violations. Need careful.
+
+We have project constitution AGENTS.md, work order, diff. Need identify issues.
+
+Let's analyze diff in detail.
+
+First, hard rules:
+- File ≤500 lines. repo ≤300, components ≤250. Need check changed files line counts? We don't have full files but diff indicators. annotation-undo.ts from 54 to 190 lines? diff shows +190? Actually "1,54 +1,190" in original? It says index 439fdcd..df1db3f, @@ -1,54 +1,190 @@ meaning file now 190 lines, ok ≤500. New toast-store.ts 84 lines. Reader.store maybe? diff shows reader.store additions but unknown length, likely <=500? Need not fabricate. AnnotationLayer/ReaderPage line counts? We can infer AnnotationLayer maybe 250? In work summary "AnnotationLayer/ReaderPage 行数守恒：注释压缩+undo 动作单行化（250/250 恰好合规——quality 行数算法尾行+1 已计入）". So fine.
+
+- Layering: renderer → window.api → ipc; services→repos→db. annotation-undo.ts imports api client? It is renderer feature, using api. OK. reader.store imports toast-store and annotation-undo. annotation-undo imports api and shared types. Fine.
+
+- Security: no nodeIntegration etc not touched. SQL no. No eval. Outbound no. Path not.
+
+- Tests locked: They modified reader-shortcuts.test.tsx, which is locked test? AGENTS says tests/** locked, must [locked-change] note. Diff doesn't include commit message; but work brief says [locked-change] same batch update. Manifest updated with sha. In diff, tests modified plus manifest updated; no [locked-change] in diff text? The diff itself doesn't show commit tail note, but task brief says [locked-change] same batch. Since we only get diff and AGENTS maybe commit tail note not in diff. Could be warning if lack tail note in actual commit? Our input doesn't include commit message. Not necessarily finding unless we can see? Maybe not.
+
+- Check-tickets rule: Work brief says reader.store head comment had historical ticket number prefix removed. Diff shows reader.store comment changed from "SR2-UNDO-01" to "UNDO-01". This was to pass check-tickets, likely because check-tickets rule 2 "历史文本含本工单号"? Need understand. Is this a concern? It modifies a comment to remove ticket id from a historical comment, perhaps violates evidence? The work brief says "check-tickets 规则 2：reader.store 头注 TABS-01 历史文本含本工单号——去前缀（SR2-UNDO-01→UNDO-01，先例处置）。" Is that acceptable? It alters "historical text" to avoid rule? Need examine. This is potentially a process violation? The constitution says "禁止修改 tests/** etc"? reader.store not locked. But removing ticket id from comment because check-tickets flagged it may hide history? Isn't that gaming the check? Need determine if this is a "放宽/删检查" or test loosening? It's not test; it's a lint/ticket check. Work brief calls "先例处置" (precedent) maybe allowed by check-tickets rule? We don't have rule text. Could be warning. We need be cautious, no fabrication. The diff shows they changed comment "SR2-UNDO-01" to "UNDO-01", which arguably loses traceability. Why? It says "reader.store 头注 TABS-01 历史文本含本工单号". Maybe check-tickets rule 2: ticket IDs in file headers must match file? Actually if a file has historical ticket ids in header comments, maybe check requires all ticket IDs referenced in a file? Let's infer.
+
+We need audit only diff. Let's inspect code correctness.
+
+Major component annotation-undo.ts.
+
+Undo stack per-tab module-level. pushUndo create/delete/comment-edit. undo: if busy return busy; if empty return empty. Add inFlight. top = last. For create: delete annotation. If api returns !ok -> api-failed; but note: in try block, if !r.ok return { done:false, reason:'api-failed' } inside try, finally delete inFlight. Good. For delete: saveAnnotation with toInput(top.annotation). If !ok return api-failed. Then remapStackIds(s, oldId, newId, s.length-1). apply upsert. For comment-edit: updateAnnotation with top.before. If !ok return. apply upsert r.data.
+
+Then "按身份移除（非下标——await 期间同篇入栈触发 FIFO 截断会使下标左移甚至把本条挤出栈；身份不在则自然跳过；互斥保证无并发撤销写栈。deepseek r5b） const idx = s.indexOf(top); if (idx !== -1) s.splice(idx,1)". Wait: top is object reference from s before await. If during await pushUndo occurs, s.push can append new entries. `indexOf(top)` uses object identity, so finds exact object if still in array. Good. If push FIFO truncation removed it, indexOf -1 skip.
+
+But subtle: remapStackIds uses skipIdx=s.length-1 to skip the top being undone. However if during await? Actually remap happens after api response, before removal, within same synchronous block after await. No interleaving except api call resolved. But what about new entries pushed while await in progress? In delete undo: we have `const r = await api.reader.saveAnnotation(...)`. During await, user could push new entries (as tests). Then after await, remapStackIds(s, oldId, newId, s.length - 1). But s.length may have increased due to new pushes. The top being undone is no longer necessarily at s.length-1; it may be at original position but new entries appended, so old top is at e.g. original length-1, new length = original+2, so skipIdx = s.length-1 points to latest new entry, not the undone entry. That means remapStackIds will NOT skip the undone entry's old id; it may rewrite the undone entry's `annotation.id` to new id. But then after remap, they do `const idx = s.indexOf(top)` and remove `top`. Since `top` object identity is unchanged but its property mutated? Wait remapStackIds sets `s[i] = { kind: ..., annotation: {...} }` — it replaces the array element with new object. If i points to the undone top, it replaces `s[i]` with a new object, so `top` (old object) is no longer in array. Then `indexOf(top)` returns -1, so removal skipped. That would leave the undone entry (now remapped to new id) in stack, perhaps with other new entries. That's a bug.
+
+But note comment says "skipIdx=正被撤销的条目（即将移除，不需改写——且保持其对象身份稳定供成功后按身份移除）". So they intended to skip the top being undone, but use `s.length - 1` at time after await. If new entries were pushed during await, `s.length - 1` is wrong. Is this possible in practice? The `undo` function has in-flight mutex per paper, but pushUndo is not blocked by in-flight; user can perform new annotation operations during an undo API call. The test "撤销 await 期间新操作入栈：精确移除被撤条目（身份匹配），不错弹新条目" covers create undo: no remap. They also have remap test but not with in-flight push. The FIFO truncation test covers create undo too. So there is a real race for delete undo with concurrent push.
+
+But is this BLOCKING? It affects correctness in rare race. Need assess. The AGENTS rules emphasize cross-sequence states and races. This could be a hidden race. The diff's own comment claims identity stable for removal, but remap can replace it if skipIdx wrong. Wait, even without new pushes, after `await`, s.length unchanged, top is at length-1, skip correct. With new pushes, s.length changed. So yeah.
+
+However, is `remapStackIds` called before `splice`. It uses `skipIdx = s.length - 1`. Could use `s.indexOf(top)` before remap, or since top known at index before await? Actually after await, top may have been moved due to FIFO truncation? FIFO truncation only splices from beginning, so top's index may decrease if truncation removes items before it, but top is last, so if enough pushes to truncate, top may be removed entirely. If not removed, top stays at the end? Let's examine: pushUndo appends to end and if length > 50 splice from start. If top is at index s.length-1 before await. New pushes append to end. If no truncation, top is no longer at end; its index remains oldIndex, s.length increased. If truncation occurs, items from start removed, top index decreases; if top was within first removed range? Since top was last, to remove it need >50 pushes, in which case all original entries removed. So top either gone or at some index < s.length-1. Therefore using `s.length-1` as skipIdx after await is wrong if any push occurred and top still present.
+
+Thus for delete undo, if during await new entries are pushed, remap will rewrite the top being undone as well (since not skipped), changing its id to new id. Then `indexOf(top)` returns -1 because object replaced, so no removal. That leaves an incorrect entry (probably still kind delete with old annotation now new id) in stack. Then future undo operations may operate on new id in wrong order. This is a correctness bug.
+
+Would tests catch? No. Need mention. Severity BLOCKING? It's a race, not common, but the project constitution emphasizes "跨格序列" and "状态机前置", and this race is exactly cross-sequence. It violates correctness of "按身份移除" design. Could be WARN or BLOCKING? It is a real bug in logic. But maybe not likely because user can't click UI while undo API in flight? Actually undo is via ctrl+z; API call is async maybe fast, but user can use mouse to create/delete while undo in progress? Annotation operations require mouse, but keyboard undo only one action at a time; possible. In-flight mutex only guards concurrent undo, not push. So yes.
+
+Another issue: `remapStackIds` changes all entries referencing oldId to newId, including entries *older than the deleted annotation's creation*? Let's think. Suppose stack has create(a-old), delete(a-old), with delete top. Undo delete recreates a-new, remap earlier create to new id. Also comment-edit etc. But what about operations on other annotations whose annotation ids coincidentally equal old id? Ids unique, fine.
+
+But there is a subtle semantic issue: When undoing delete of an annotation that was edited before delete, stack entries might include comment-edit before old id. Example: create(old) -> comment-edit(before old) -> delete(old). Undo delete: re-create new id and remap older create/comment-edit to new. Then stack: create(new), comment-edit(before new), delete? Wait top removed. Then undo comment-edit: update annotation to before new (old comment). Then undo create: delete new. Good.
+
+What if stack has delete(old) after create(old) but also other annotations? remap all old id references good.
+
+Potential issue: When undo create (delete annotation), if annotation was already deleted by a later user action but stack still has create? Actually create push at creation. If user later deletes same annotation, then stack has create then delete. Undo delete first recreates; then undo create deletes new. If user instead manually deletes annotation without push? AnnotationLayer delete pushes. Good.
+
+Potential issue: If re-create uses saveAnnotation with toInput stripped ids, repo assigns new id. But what about `createdAt`/`updatedAt`? Annotation model maybe has those required; toInput omits; API input type maybe has those? They say input 口径与 annotationInputSchema 对齐. Need verify with shared types maybe not in diff. Not fabricate.
+
+Potential issue: `toInput` includes `comment` etc but does not include `paperId`; saveAnnotation({ paperId, annotation: input }) passes paperId separately. Fine.
+
+Another issue: In `undo` for comment-edit, they call `api.reader.updateAnnotation({ annotation: top.before })`. `top.before` is full Annotation including id, paperId, timestamps. That's correct to restore all fields, but maybe API only allows comment? It's update annotation full object? likely.
+
+Potential issue: If API returns ok but data undefined? For updateAnnotation, r.data could be saved annotation. Tests provide data. Fine.
+
+Potential issue: The `catch` catches all errors; if api returns !ok, returns api-failed; if ApiClientError, returns api-failed without console; if other exception, console.error and api-failed. Good.
+
+Potential issue: `undoInFlightPapers.delete(paperId)` in finally. If `return` inside try before catch? finally runs. Good.
+
+Potential issue: `clearStack` while undo in-flight? ReaderPage closeOne clearStack(id) may be called while undo for that paper is in-flight. After await, undo returns outcome maybe done true; reader.store.undo then gets tab undefined returns. Fine. But module-level stack cleared; if undo deletes DB but not stack, ok. If undo is adding? no.
+
+Potential issue: reader.store.undo: `const paperId = get().activeId` at start; then await runUndo(paperId). After await, `const { tabs } = get(); const tab = tabs[paperId]`. If user closed tab and reopened same paperId before undo resolves, `tabs[paperId]` may be a new tab with same paperId (maybe annotations state fresh from DB). Then the apply from old undo could apply to new tab—but DB was modified, and new tab's annotations may not include the change. If act is remove, filtering by id might remove annotation that exists in new tab—could be okay? Actually if reopened after undo, the new tab would have loaded DB after undo? Not necessarily: tab was closed during undo, then reopened before undo resolves maybe load from DB at that time, likely after undo? The undo API call already completed if we reach apply; DB changed. New tab load may race. This is a cross-sequence edge. But reader.store code comments "undo 期间 tab 被关：DB 已撤销，列表随重开对齐，不追写已删 TabState" only handles tab undefined. If tab closed and reopened same id, it's not undefined; it will apply stale outcome. Is that a potential bug? Let's reason: user presses ctrl+z, undo starts (API call). User closes tab (during API), then immediately reopens same PDF (same paperId) before API resolves. closeOne clears stack. Reader store may create new tab state; depending on load, could be loading. When undo resolves, `tab = tabs[paperId]` exists (new tab). It then applies `act` to the new tab's annotations. This might corrupt the new tab state or duplicate annotation. Is this plausible? The comment says "undo 期间 tab 被关：DB 已撤销，列表随重开对齐，不追写已删 TabState" and they check `if (tab === undefined) return`. But if tab was closed and reopened same paperId before await resolves, tab is not undefined. They didn't guard against tab identity change. They should perhaps capture tab identity (e.g., `tab` object before await) or use a tabId/session id. This is a real race. However maybe reopen can't happen before undo API resolves (fast) but possible. The project's INV-03 is "paperId 于 await 前捕获防串 tab"; they only captured paperId, not tab instance. They use `tabs[paperId]` after await, which is vulnerable to reopen. It might be considered BLOCKING? The work brief claims "undo 期间 tab 被关则弃置同步，DB 已撤销随重开对齐" but doesn't handle reopen. Should check if closeOne removes tab and if same paperId reopened, `tabs[paperId]` is new. So could apply old outcome to new tab. However, would the new tab's annotations state be from DB? If renderer store tab load fetches annotations after mount; if undo API returned before fetch, maybe state loading; applying remove/upsert to annotations array might be wrong. But not necessarily corrupt? Example: undo delete (recreate annotation). During API, close and reopen same paper. When undo resolves, `act = upsert new annotation`. Tab exists (new) and has no annotation (or loading). Applying upsert would add annotation to new tab, which is actually good (DB has it), if tab didn't fetch yet. But if tab had fetched old DB before undo? Wait undo API completed in DB before apply. If reopen fetch occurs after undo completion, DB already has annotation, so new tab should include it; applying upsert again would duplicate? Let's see: If new tab's annotations already include the recreated annotation (because fetch after DB updated), then `some` check would find it and replace (no duplicate). If fetch before DB update (but API completed just after fetch), tab doesn't include it; apply adds it. So upsert is fine. For remove: undo create (delete annotation). During API, close/reopen. If new tab fetch after DB deletion, it won't include annotation; apply filter no effect. If fetch before deletion, it includes annotation; apply removes it. So okay. Actually applying outcome to new tab same paperId may be beneficial. But if new tab has user made further changes? Hard. Could be acceptable. Yet it deviates from "dispose sync". Not necessarily bug.
+
+But issue: `readActiveTab`? They use paperId. Not a finding maybe.
+
+Another issue: In ReaderShortcuts, `useReaderShortcuts` destructures `undo` from actions and uses in dependency array. `ReaderPage` creates actions object via `useMemo(..., [])`? Let's inspect ReaderPage diff context: uses `useMemo` with empty deps? The actions object includes undo. It is stable. Fine.
+
+Potential issue: `ReaderShortcuts` ctrl+z binding with `preventDefault: true`. Does keymap avoid editable targets? They mention keymap layer avoids editable. Test asserts defaultPrevented. Fine.
+
+Potential issue: In tests, `loadModule` uses `vi.stubGlobal('window', { api })`. But annotation-undo imports `api` from '../../api/client'. How does api use window.api? Probably `api` object has methods delegating to window.api? Let's infer. `annotation-undo.ts` imports `{ api, ApiClientError } from '../../api/client'`. The tests stub global window with api, then call module. This suggests module's `api` object reads window.api at method call time? Likely. Fine.
+
+Potential issue: Tests "in-flight 互斥" and "并发篇场景" use `release` variable capture in promise. In concurrent test, `releases` map keyed by annotationId. But both del calls maybe? It sets releases for a-1 and a-2. Fine. Yet in `undo`, for p2 busy returns immediately, no release. Good.
+
+Potential issue: Test "撤销 await 期间入栈致 FIFO 截断挤出被撤条目" behavior: They push victim, start undo (api pending), then push UNDO_DEPTH_MAX entries a-flood-0..49. Since victim plus 50 = 51 > 50, push last will splice first, removing victim. Then release. `p` resolves with apply remove a-victim; stackDepth 50. Then p2 undo: top is a-flood-49. But wait after first undo, the stack includes 50 flood entries, yes. p2 starts undo for top a-flood-49, calls delete, release, done. Good. This test passes.
+
+Potential issue: The `undo` function's `remapStackIds` is called for `kind: 'delete'` only. For create undo no remap. For comment-edit undo no remap. Good.
+
+Potential issue: `remapStackIds` loops over stack entries and replaces entries with `{ kind: e.kind, annotation: {...} }` for create/delete. For comment-edit, only if `before.id === oldId`, replaces with before new id. But what if `top` is delete and there is another entry below it that is a delete of same old id? Could that happen? A delete of an annotation is only pushed when annotation existed; after delete, the annotation is gone, so another delete of same annotation cannot occur unless re-created. But re-created has new id after undo. Prior to undo, there can't be two deletes of same old id? Actually delete operation removes annotation; to delete again, user must recreate it (new id) then delete, so old id not same. Unless undo recreated with same id? They don't. So fine.
+
+Potential issue: Depth FIFO truncation: pushUndo drops oldest if >50. If in-flight undo on top and pushUndo flood drops top while awaiting, then after API returns, `s.indexOf(top)` -1 so no removal, but also `apply` returned and store applies action. Stack contains only flood entries. That's exactly test. Good.
+
+Potential issue: `stackDepth` returns `stacks[paperId]?.length ?? 0`. If paperId undefined? Type string.
+
+Potential issue: Module-level `stacks` persists across tests? They resetModules each test. Good.
+
+Potential issue: `clearStack` doesn't clear inFlight. If tab closed while undo in-flight, and reopened, undoInFlightPapers still contains paperId until finally deletes. New undo would be busy until old finish. Acceptable. But if module's clearStack called while undo in-flight and then undo resolves, it may still apply to DB, and stack is empty. Fine.
+
+Potential issue: The `reader.store` imports `showToast` from '../../shared/ui/toast-store'. But `Toast.tsx` still has `export { showToast } from './toast-store'` and `export type ToastKind`. Existing consumers import `{ showToast } from '../../shared/ui/Toast'`; fine. But note in AnnotationLayer diff, `import { showToast } from '../../shared/ui/Toast'` still there. Fine.
+
+Potential issue: toast-store uses `ReturnType<typeof setTimeout>` for timers. In DOM and node types, `clearTimeout` overloads may accept both. Fine.
+
+Potential issue: Toast.tsx's `useEffect(() => subscribeToasts(setList), [])` returns the unsubscribe function directly. `subscribeToasts` returns `() => void`, good. However `setList` (React setState) is stable. Fine.
+
+Potential issue: `dismiss` exports from toast-store but Toast.tsx no longer uses it? Actually ToastHost for close button uses dismiss? Let's inspect diff: Toast.tsx after removal still has JSX for close button? The diff only shows header and removed logic, then remaining `ToastHost`. We need see if ToastHost uses `dismiss` from import. In diff, `import { dismiss, getToastItems, subscribeToasts, type ToastItem, type ToastKind } from './toast-store'`; so yes likely close button uses dismiss. Fine.
+
+Potential issue: The comment in Toast.tsx says "队列纯逻辑移 toast-store.ts（.ts 消费方可导入，不被 tsconfig.node 的 jsx 关卡拦）". Good.
+
+Potential issue: `annotations.repo.insert 不接受显式 id` referenced but evidence not in diff. Fine.
+
+Now bigger: The inventory/hard rule "状态机前置": This change modifies store + async + user input (undo). Did they provide state/migration table? In file header there is behavior layer describing operations and outcomes. It may satisfy? It doesn't have formal state table maybe but detailed. The task brief says state machine? Not sure. But hard rule says state machine must be given first for store + async + user input. The work brief doesn't include a state/migration table; annotation-undo.ts header lists behaviors but no explicit state machine. Could be violation? However the header is extensive, with conditions, outcomes. But it doesn't formally enumerate states. The AGENTS.md explicitly says "行为层规约必须先给出状态/迁移表（枚举态空间）". The module header does not show a state/migration table, just bullet list. The diff header includes "行为层" but no table with states like `idle / busy / empty` etc. Is that a hard rule violation? It says "凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须先给出状态/迁移表". This is a rendered "hard rule". The diff doesn't include a state/migration table. It has a "行为层" list describing behaviors, but no state table. The work brief even says "状态机前置" in summary? Not mention. This could be a BLOCKING? We audit code diff; if missing required artifact, but diff is code not docs. AGENTS requires behavior specification before work; hard rule is process, not necessarily committed in code. The diff may rely on header comment. The header lacks state table. Could be a warning. But is it "working process" not visible in diff? The task brief says "文件头五层规约就是完整任务书" and the header includes no state table. It may violate. However we need avoid fabricated "diff doesn't contain" state table? It doesn't. But maybe this audit's input includes task brief that says deepseek r2~r4 etc; no state table. Could flag.
+
+But output should focus on code diff issues, not process maybe. Still, hard rules all. However, if we flag "missing state table" as BLOCKING, it's not a code defect but contract violation. The instructions say BLOCKING=违反硬规则/正确性缺陷/安全问题. Missing state table is violation of hard rule. But perhaps the header's `行为层` with tables (original operation/inverse operation) counts? The rule says "状态/迁移表" specifically. The header has tables for inverse operations but not for state machine (idle/busy etc). There is an in-flight mutex state described. Could argue "行为层" is enough? Need decide.
+
+Let's examine other potential violations.
+
+- Hard rule: "新增跨模块行为不登记本册视同未完成." They added INV-23 in docs/invariants.md. Good.
+
+- "同类缺陷二次触发即重构" not relevant.
+
+- "接缝归责": They checked AnnotationLayer/SelectionLayer etc. Fine.
+
+- "方案切换=删除旧方案" no.
+
+- "死代码即删" no.
+
+- "类型单一真相源": annotation-undo imports `Annotation, AnnotationInput` from shared. Good.
+
+- "重复 3 次以上" no.
+
+- Security: no.
+
+- "完成定义: grep no TODO|FIXME|placeholder" diff shows no TODO. But annotation-undo.ts before had unimplementedObject placeholder; now removed. Good.
+
+- "占位实现已删除" yes.
+
+- "工单在 tickets/registry.ts 翻状态" yes.
+
+- "新增受锁文件已 locks:apply" yes manifest includes annotation-undo.test.ts.
+
+- "禁止修改 tests/** unless locked-change" They modified tests with locked-change? In diff, tests/unit/renderer/reader-shortcuts.test.tsx modified; manifest sha updated. The work brief says [locked-change]. But the diff itself not include tag. However commit message may. We can't judge. Could mention? If no evidence of tag in diff, maybe not.
+
+- "受锁 e2e spec 改动后必须全量 verify" no e2e.
+
+- "每个测试必须能失败一次": New tests? They have tests. Work brief says red before green. Not in diff. Fine.
+
+- "禁止修改 src/shared/**: locked" They didn't modify src/shared. annotation-undo.ts imports shared but not modify. Fine.
+
+- "check-tickets 规则 2: reader.store 头注改 ticket id prefix". Is that a warning? Let's examine more.
+
+The diff changes:
+```
+ *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
+- *   文件）；undo 栈不进 TabState，归 SR2-UNDO-01 模块级自持，plan 门 W2 裁决）
++ *   文件）；undo 栈不进 TabState，归 UNDO-01 模块级自持，plan 门 W2 裁决）
+```
+They removed `SR2-` prefix from a comment referencing the same current ticket. Why? Work brief: "check-tickets 规则 2：reader.store 头注 TABS-01 历史文本含本工单号——去前缀（SR2-UNDO-01→UNDO-01，先例处置）". This sounds like they modified historical text in a comment (not necessarily "historical text" from TABS-01? It says "TABS-01 历史文本" maybe the comment originally from TABS-01 and contains SR2-UNDO-01? Actually the comment is in reader.store.ts header, it's current text about undo stack. It's not historical? It's a comment that now mentions the ticket id. The check-tickets rule maybe: ticket ID in comment should be in registry as status open? Let's infer: `check-tickets` may parse files and ensure that any ticket IDs referenced in source code are statuses? Since SR2-UNDO-01 was open at time before implementation; after implementation status done, maybe check-tickets allows? No.
+
+Why remove prefix? Maybe "check-tickets 规则 2" says ticket references in comments must not be in "历史文本" of other tickets? Hmm.
+
+Could be an attempt to game CI: If check-tickets rule 2 says any ticket ID in source comments must correspond to ticket with file? Let's not speculate. Since task brief says "先例处置" (precedent handling), likely accepted by maintainers. Not a finding.
+
+Now code line limit: AnnotationLayer has two lines changed comment compression to keep 250 lines. ReaderPage compressed blank line. No issue.
+
+Potential issue: `AnnotationLayer` imports `pushUndo` but not use `type`? fine.
+
+Potential issue: `SelectionLayer` push `kind:'create'` with `saved` (full Annotation returned by API). Good.
+
+Potential issue: `AnnotationLayer.saveComment` push before `clearTabDirty`. If `pushUndo` throws? It doesn't. Fine.
+
+Potential issue: AnnotationLayer delete push after `removeAnnotation` store update, before clearTabDirty. Fine.
+
+Potential issue: If `api.reader.deleteAnnotation` returns ok but data? Doesn't need. Fine.
+
+Potential issue: `undo` for `delete`: calls `api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })`. But `top.annotation` may have been remapped? The delete entry itself may have been remapped in prior undo? Let's trace. Suppose stack has create(old), delete(old), comment-edit(before old). Undo delete: remap all entries (except skip) from old to new. The delete top is removed. Stack remains create(new), comment-edit(before new). Now undo comment-edit: top.before.id is new; update old comment. Then undo create: top.annotation.id new; delete new. Good. If a stack contains delete(old) but not create (e.g., annotation was already in DB before stack started? Actually every annotation created through app has create pushed; but if app loaded existing annotations, user deletes one, delete entry sits at bottom. Undo delete recreates new id. No earlier create entry to remap, but that's fine; the delete entry removed, no stale old id in stack. If there is a comment-edit before old below delete, remap rewrites it to new, good. If there is a create below, good.
+
+Potential issue: `remapStackIds` replaces all entries including earlier delete entries with same old id (which can't happen) and comment-edit before old. But what about `create` entries with `annotation.id === oldId` that are *after* the delete? Can't be after because once deleted, re-created entries have different id; unless user creates same annotation again with old id (not possible because repo random). fine.
+
+Potential issue: `undo` for `create` does not check that the annotation still exists in store. Suppose user created annotation, then manually deleted it via undo? Actually deletion via UI pushes delete, stack includes create+delete; undo delete first, then undo create. If stack only has create (because user manually deleted annotation outside undo? There is no outside), already gone? If DB delete failed? fine.
+
+Potential issue: `reader.store.undo` after outcome.done calls `get().tabs` and applies to tab. It doesn't call `clearTabDirty` after undo. If dirty was set? Undoing a create/delete/comment should restore previous state; should it clear dirty? Let's see. Operations push undo on success and also clearTabDirty. Undo action modifies DB; should it mark tab dirty? The tab might have been marked dirty due to unsaved changes? Actually `clearTabDirty` after each save means saved operations clear dirty. Undo is a save/delete, so after undo, dirty should probably be false. But reader.store.undo doesn't clearTabDirty. Is that a correctness issue? Let's examine. `dirty` in TabState tracks unsaved changes maybe "tab dirty" signal. If after undo, maybe DB and store match, so dirty should be false. But if before undo dirty was false (because all previous operations saved and cleared), then after undo no need. If before undo dirty was true (e.g., annotation create save failed? not pushed), no. If undo itself is a successful DB mutation, dirty should be false unless store not synced. But store sync happens. Could leave dirty true incorrectly? Let's trace: Create annotation: saveAnnotation success -> pushUndo + clearTabDirty. Delete: deleteAnnotation success -> pushUndo + clearTabDirty. Comment save: success -> pushUndo + clearTabDirty. So after each operation dirty false. Undo occurs later; before undo dirty likely false (unless some other unsaved action). Undo's API operations are all successful DB changes, but if there are pending unsaved notes? `dirty` is global signal for tab with unsaved changes? The `clearTabDirty` after operations suggests any saved operation clears dirty. Undo is also a saved operation. Should clear. But if before undo dirty true due to a pending note, and undo occurs, should dirty remain true because note still unsaved? Wait `dirty` might aggregate multiple write surfaces (annotations failures + notes pending). If a note pending exists, dirty true. Undoing an annotation shouldn't clear the note pending. So not clearing is arguably correct. If dirty was set by annotation operation? Annotation operations clear dirty after success; so before undo dirty false anyway. Thus no issue. But if API call for original annotation failed and dirty set, no undo entry pushed, so no undo. Fine.
+
+Potential issue: reader.store.undo uses `tabs[paperId]` but doesn't confirm it's active anymore, but paperId captured. It's okay.
+
+Potential issue: reader.store.undo catch: If `runUndo` throws unexpected, shows toast. But `runUndo` catches normally, so only programming errors. Good.
+
+Potential issue: `showToast` from toast-store imported directly; But work brief said "api 失败 toast 在 store 消费边界发". It imports toast-store not Toast.tsx to avoid jsx. Good.
+
+Potential issue: `docs/invariants.md` INV-23 says "成功后按捕获下标 splice 精确移除（await 期间新入栈不错弹）" But implementation now uses identity not captured index. The invariant text says "按捕获下标 splice 精确移除" but code comment says "按身份移除（非下标——await 期间... deepseek r5b）". This is a mismatch! The INV-23 row says "成功后按捕获下标 splice 精确移除（await 期间新入栈不错弹）", but code uses `s.indexOf(top)` identity after await, not captured index. This is a documentation/invariant mismatch. It could be WARN or NIT. It is not behaviorally wrong (identity is better than index) but invariant statement is stale/inaccurate. Need flag. Actually the work brief says "deepseek r5b" changed from index to identity. The invariants.md row wasn't updated to reflect "按身份" instead of "按捕获下标". That's a failure to keep docs/invariants aligned with behavior. AGENTS says invariants registration must reflect declaration + enforcement; if stale, bad. Severity WARN.
+
+Potential issue: `INV-23` text also says "同篇 in-flight 互斥（busy，他篇不阻塞）" code uses Set per-paper, good. "delete 逆重建新 id 后全栈 remap 旧 id 引用" code yes. "成功后按捕获下标 splice 精确移除" stale.
+
+Potential issue: `INV-23` says "单测（annotation-undo.test 13 用例...）" but actual new test file has 12? Let's count tests: 
+1 create inverse
+2 delete inverse
+3 comment-edit
+4 LIFO
+5 depth truncation
+6 api failure retry
+7 empty
+8 per-tab + clearStack
+9 remap create-delete
+10 remap triple
+11 in-flight mutex
+12 concurrent set mutex
+13 await new push precise removal
+14 FIFO squeeze
+Wait that's 14? Let's count from diff:
+- create 逆操作
+- delete 逆操作
+- comment-edit 逆操作
+- LIFO
+- 深度截断
+- api 失败
+- 空栈
+- per-tab 隔离 + clearStack
+- 跨格序列 id remap create→delete
+- 跨格序列 create→comment-edit→delete
+- in-flight 互斥
+- 并发篇场景
+- 撤销 await 期间新操作入栈
+- 撤销 await 期间入栈致 FIFO 截断
+So 14 tests. INV-23 says 13 用例. Maybe one test? The file header says "8 用例" in work brief earlier? Actually work brief says "annotation-undo.test.ts（新建受锁，8 用例）" but diff shows 14. The invariants says 13, maybe prior count? This is stale. Could be NIT. But not code correctness.
+
+Wait the work brief summary "tests/unit/renderer/annotation-undo.test.ts（新建受锁，8 用例）" but diff has 14 it blocks. They may count blocks? guardedDescribe + 14 tests. The invariants says 13. There is mismatch. But not critical. We can mention as NIT.
+
+Potential issue: In `annotation-undo.ts` header culture layer says tests include "深度截断、api 失败不弹栈+重试、空栈 no-op、per-tab 隔离+clearStack" but doesn't mention in-flight/remap/splice. Not critical.
+
+Potential issue: The diff for reader.store changes imports `showToast` from '../../shared/ui/toast-store'. But there is also Toast.tsx that re-exports. Good.
+
+Potential issue: In Toast.tsx `import { dismiss, getToastItems, subscribeToasts, type ToastItem, type ToastKind } from './toast-store'`; `dismiss` used in JSX. But `ToastItem` type used? yes. Fine.
+
+Potential issue: In toast-store.ts, `listeners` is a Set; `subscribeToasts` adds listener and returns unsubscribe. But if `useEffect` cleanup runs, it removes listener. Good.
+
+Potential issue: In toast-store.ts, `getToastItems` returns internal array reference, which is mutated? It returns `items`; ToastHost initial state captures snapshot at first render. But `showToast` reassigns `items = [...items, item]`, so original array remains immutable. `dismiss` filter creates new array. Good.
+
+Potential issue: toast-store `timers` typed `Map<number, ReturnType<typeof setTimeout>>`. In Node, setTimeout returns NodeJS.Timeout; in DOM, number. `clearTimeout(timer)` overload should accept both. TypeScript with DOM+node? Might cause type issue if lib includes both; but ReturnType infers from environment? In .ts file in renderer? They said tsconfig.node issue. The toast-store is pure .ts and imported by both renderer and node tests? It uses `setTimeout` global; type may be NodeJS.Timeout under node. TS libdom? Could be fine.
+
+Potential issue: `annotation-undo.ts` uses `console.error` in catch. Fine.
+
+Potential issue: `api.reader.saveAnnotation` signature: second arg? They call `api.reader.saveAnnotation({ paperId, annotation: input })`. Existing SelectionLayer uses `api.reader.saveAnnotation({ paperId, annotation: input })`. Good.
+
+Potential issue: `api.reader.deleteAnnotation` returns `{ ok: true, data: undefined }`? They treat r.ok. Good.
+
+Potential issue: `UndoEntry` kind `'comment-edit'` has `before: Annotation` full snapshot. But when undoing comment edit, they restore `before` including all fields. If before snapshot contains old id which may have been remapped earlier by a delete undo, good.
+
+Potential issue: When a comment-edit entry is below a delete entry, and delete undo remaps it to new id, it replaces `before` with `{...e.before, id: newId}`. But it also keeps `paperId`, timestamps, all fields. Good. If `before` originally had `createdAt/updatedAt` from old annotation; changing id only. When later undo comment-edit, updateAnnotation sends before with new id and old timestamps. The repo update might preserve createdAt, update updatedAt to now? API response r.data maybe new updatedAt; store applies r.data. Good.
+
+Potential issue: `toInput` doesn't preserve `updatedAt`; repo will generate new timestamps. That's fine.
+
+Potential issue: The `undo` function's API failure handling: When `api.reader.deleteAnnotation` returns `{ ok: false }`, returns `api-failed` without throwing. In `reader.store.undo`, shows toast. Good. But if `ok: false` and `error` info? Not used. Fine.
+
+Potential issue: The catch block checks `e instanceof ApiClientError`; if ApiClientError from api layer, they don't console.error, but API error may be due to network. Fine.
+
+Potential issue: `undoInFlightPapers.add(paperId)` after checking empty; if stack is empty, no busy. Good.
+
+Potential issue: The Set `undoInFlightPapers` is never cleared by `clearStack`; but finally always clears after undo. If undo promise somehow never resolves (api never settles), busy forever. Same as any in-flight. Could be acceptable.
+
+Potential issue: `remapStackIds` skipIdx may also be wrong if while await for saveAnnotation, the top entry itself is pushed again? No.
+
+Let's investigate the remap skip issue more. It's a real correctness bug. Need articulate.
+
+Scenario: stack = [create(a-old), delete(a-old)]; user initiates undo (delete top). During API await, user creates new annotation b? Actually create pushes {kind:'create', annotation:b}. Stack becomes [create(a-old), delete(a-old), create(b)] (undo in-flight on delete). After API resolves, save returns a-new. `remapStackIds(s, 'a-old', 'a-new', s.length - 1)` -> s.length=3, skipIdx=2 (create b). Loop i=0: create a-old -> new; i=1: delete a-old -> new; i=2: create b skip. Now `top` original delete object is no longer in array; `indexOf(top)` -1. So the delete entry remains (now with new id) at index 1. Stack = [create(a-new), delete(a-new), create(b)] but note delete should have been removed; it wasn't. Then `undo` returns apply upsert a-new. Store adds a-new. Now stack has delete(a-new) at index 1. Next undo will undo comment? Actually top is create(b) (undeleted? Wait create b is a create action, so next undo will delete b, not delete a-new). After that, undo delete(a-new): it will re-save a-new to new id a-new2, and remap etc, leaving another delete? This creates garbage. The recreated annotation is already in stack as delete entry, causing later duplicate undo. This is a serious bug.
+
+Would in-flight mutex prevent new pushes? No. The work order itself mentions "await 期间新入栈不错弹" and test covers create undo, but not delete undo remap skip. Could be a hidden bug.
+
+How to fix: capture `const topIdx = s.length - 1` before await, or use `s.indexOf(top)` before remap and pass that as skipIdx. But during await, top may be removed/spliced. If top still present, indexOf before remap works. If top removed, no need remap? Actually if top removed due to FIFO, then after API returns, we should still apply to DB but not modify stack (top gone). But remap would still be needed for older entries referencing old id? If top removed by FIFO, it means >50 pushes occurred while undo in flight; old entries including top were removed from stack. But DB operation still recreates annotation. There's no stack entry to remove (already gone). Should we remap older entries? There are no older entries? Wait top was last; if it got removed by FIFO truncation, all older entries were also removed because truncation removes from start; but >50 pushes could leave only new entries, so no old id references remain. So remap no-op. If top still present but no longer last, use its found index as skip. So fix: before remap, `const topIdx = s.indexOf(top); if (topIdx !== -1) remapStackIds(s, oldId, newId, topIdx);` then after removal? Actually if topIdx != -1, remap skip topIdx, then splice topIdx. If topIdx -1, skip remap or still remap? If top removed, no old refs? Future entries after top? Wait if top removed by FIFO, then stack contains only entries pushed during await, which cannot reference old id? They could be operations on the same annotation? No, old annotation is deleted (being undone); user could not delete it again because it's gone. They could create new annotation with new id. So no old refs. So no remap needed. Simple.
+
+But maybe new entries pushed during undo could be comment-edit on the old annotation? No, old annotation DB delete in progress; no UI action can edit it.
+
+Thus `remapStackIds` should use `s.indexOf(top)` as skipIdx.
+
+Another related bug: For delete undo, if new entries are pushed during await, `remapStackIds` also rewrites new entries if they somehow reference old id; impossible. But it will also rewrite the `delete` top to new id as described.
+
+This is a BLOCKING correctness bug because despite INV-23 claim "await 期间新入栈不错弹", it can leave an extra delete entry. The test suite doesn't cover remap + concurrent push. Should flag.
+
+Potential issue: In `undo`, after `api.reader.saveAnnotation` returns r.data, `remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)`. If `s.length - 1` references a newer entry, and that newer entry gets skipped (not remapped), but newer entries don't reference old id. So only top issue.
+
+Potential issue: Also `s.indexOf(top)` after remap is wrong because remap may have replaced top if skipIdx wrong. If fixed skip, top remains. Good.
+
+Potential issue: There is another race: `undo` for `create` uses `top.annotation.id` to delete. During await, if user manually deletes same annotation (via UI) before undo API completes? Since undo in-flight, user could trigger delete via mouse on same annotation; but annotation still in store until undo API deletes? Actually create undo deletes annotation from DB; user could click delete while API in flight? The UI might still show annotation, so user can delete it, pushing delete entry. Meanwhile first undo's deleteAnnotation also runs. Race can cause one of them to fail (annotation not found) or double delete. In-flight mutex only guards undo actions, not regular delete. If user deletes via UI while undo create is in flight, `AnnotationLayer.deleteAnnotation` calls api.deleteAnnotation and on success pushes delete. Both API calls race. This could lead to weird state. But this is a general concurrency issue in app (no operation mutex for annotation ops). Is it in scope? The undo module doesn't coordinate with normal operations. Work order didn't promise. Could be WARN? The "in-flight 互斥" only for undo, not all operations. But user could perform actions concurrently? Desktop UI is single-threaded but async API calls allow interleaving. However UI buttons remain active during async; could click quickly. Potential race exists. But maybe existing app has similar races (save/delete). Not introduced? Undo adds another concurrent writer. Could mention as WARN? We need avoid overreaching. The diff comments claim "互斥保证无并发撤销写栈" only concurrent undo, not concurrent normal operations. The issue "撤销 await 期间新操作入栈" is intentionally allowed and handled by identity removal; for create undo it handles. For delete undo, remap skip bug.
+
+Potential issue: `remapStackIds` modifies stack entries with `s[i] = { kind: 'comment-edit', before: { ...e.before, id: newId } }`. If `e.kind === 'delete'` and `e.annotation.id === oldId`, replaces with `{ kind: e.kind, annotation: { ...e.annotation, id: newId } }`. This includes `e.annotation` which might be `top`? skip prevents. Good.
+
+Potential issue: The `undo` function's catch: If `api.reader.saveAnnotation` throws an `ApiClientError`, returns api-failed. But if it throws after server actually committed but response lost, retry may duplicate. Impossible to solve. Fine.
+
+Potential issue: `reader.store.undo` when `outcome.reason === 'empty'` no toast. Good.
+
+Potential issue: The `useReaderShortcuts` dependency array includes `undo`, but `undo` from actions object in ReaderPage is a closure from `useMemo` with `[]`? It may be stable. If not stable, keymap re-registers on each render. ReaderPage defines actions object with `undo: () => void useReaderStore.getState().undo()` but is it in useMemo with empty deps? The diff context:
+```
+        undo: () => void useReaderStore.getState().undo()
+      }),
+      []
+    )
+```
+So yes inside useMemo [] stable. But useMemo captured `round2`, `ZOOM_STEP`, `readActiveTab`? Those imported constants/functions stable. Fine.
+
+Potential issue: `ReaderShortcuts` `useEffect` destructures `undo` from actions. Because it's stable, no issue. If not, test not.
+
+Potential issue: `ctrl+z` binding with `preventDefault` may block textarea native undo even if keymap should avoid editable? Comments say editable avoided by keymap layer. Test doesn't verify editable avoidance. Existing tests for ctrl+c maybe verify non-editable only. Fine.
+
+Potential issue: There is no `onChanged()` after undo? AnnotationLayer operations call `onChanged()` after pushUndo. Undo in reader.store doesn't call `onChanged` (callback to parent for dirty?) Maybe `onChanged` used to notify something? Let's see AnnotationLayer: after saveComment, `onChanged()`; after delete, `onChanged()`; SelectionLayer.onSaved? maybe calls onChanged? Undo in reader.store doesn't have `onChanged` because it's store action. Could be needed to propagate changes to notes? Perhaps `onChanged` is for tab dirty? But clearTabDirty already. Maybe onChanged reloads notes? Not in diff. Hard to know. The undo action should perhaps call same notifications as inverse operations. It only updates annotations in store; doesn't call any external callback. Could be okay because store is source. But if `onChanged` in AnnotationLayer triggers something else (e.g., update outline), undo may miss. Not enough evidence.
+
+Potential issue: `SelectionLayer` pushUndo after `onSaved(saved)` but before `clearTabDirty`. If pushUndo throws? no. If pushUndo causes stack overflow? no.
+
+Potential issue: The new file `toast-store.ts` is 84 lines, ok. But it moved logic from Toast.tsx. Is this a "方案切换 = 删除旧方案"? It deletes old implementation from Toast.tsx and moves to new file, not duplicate. Good.
+
+Potential issue: `Toast.tsx` still exports `ToastHost`. Fine.
+
+Potential issue: `Toast.tsx` removed `export type ToastKind`? It re-exports type. It no longer exports `showToast`? It does. Good.
+
+Potential issue: The diff for toast-store.ts says "计时器句柄类型双环境兼容（DOM 下 number / node 类型下 Timeout）" and uses `ReturnType<typeof setTimeout>`. In Node types, setTimeout returns NodeJS.Timeout; in DOM types, number. `clearTimeout` in TS may have overload accepting `NodeJS.Timeout | number | undefined` in Node vs `number` in DOM. If both libs, sometimes errors. They claim typecheck passed. Fine.
+
+Potential issue: `reader.store` imports `showToast` from toast-store; but toast-store uses `setTimeout` and `Date`; in Node unit tests, global exists. Fine.
+
+Potential issue: New tests import from '../../../src/shared/models/annotation'; not src/shared? That's under shared but test imports okay. They didn't modify shared.
+
+Potential issue: Tests use `vi.stubGlobal('window', { api })` without restoring? `resetModules` and stubGlobal maybe leftover? Each loadModule stubs new. Vitest auto unstub? `vi.stubGlobal` persists unless `vi.unstubAllGlobals`; but they call each time. Could leak. Existing pattern. Not our issue.
+
+Potential issue: Test "api 失败" uses `{ ok: false as const }` without data, but type of API response may require data? They use vi.fn async returns; no type checking? The api object from annotation-undo expects? It's untyped stub. Fine.
+
+Potential issue: Test "delete 逆操作" expectations: `req!.annotation` not have property 'id', 'paperId', 'createdAt', 'updatedAt'. This tests toInput. Good.
+
+Potential issue: Test "深度截断" expects `ids` not contain 'a-0' and contain 'a-1','a-50'. With `UNDO_DEPTH_MAX=50`, pushing 51 entries leaves a-1..a-50. Undoing 50 times calls delete for a-50 down to a-1, so ids contains a-1 and a-50, not a-0. Good. However their assertion `expect(ids).toContain(\`a-${m.UNDO_DEPTH_MAX}\`)` works. Fine.
+
+Potential issue: In test "并发篇场景", they set releases keyed by annotationId. For p2 `undo('p-2')`, top is a-2, api delete immediately pending and registers release. Then `m.undo('p-1')` returns busy synchronously? Actually undo is async; it checks Set and returns `Promise.resolve({ done:false, reason:'busy' })`. Since async function returns resolved promise; `await` yields microtask. So `expect(await m.undo('p-1'))` works. Then release a-1 and a-2. But if `releases.get('a-1')` not set yet? pa1 started, yes. Fine.
+
+Potential issue: In test "撤销 await 期间新操作入栈", after releasing p, `expect(await p)` with p from m.undo. Then p2 starts, release. Good.
+
+Potential issue: "撤销 await 期间入栈致 FIFO 截断挤出被撤条目" pushes 50 entries while one in-flight. Since max 50, the victim plus 50 pushes = 51, so victim removed. Good.
+
+Potential issue: The code comment in `undo`: "按身份移除（非下标——await 期间同篇入栈触发 FIFO 截断会使下标左移甚至把本条挤出栈；身份不在则自然跳过；互斥保证无并发撤销写栈。deepseek r5b）". Actually if FIFO truncation removes top, `indexOf(top)` is -1 and skip removal. But if no truncation and new pushes, top's index doesn't change; good. If truncation removes some elements before top but top remains, top index decreases; indexOf works. So identity good. But remap skip bug.
+
+Potential issue: The `undo` function returns `UndoOutcome` but for `create` if delete API returns `ok:true` but `data` undefined, apply remove with top.annotation.id. Good.
+
+Potential issue: Does `api.reader.deleteAnnotation` maybe return `{ok:true, data: void}`? yes.
+
+Potential issue: Hard rule "禁止新增出网 host"; none.
+
+Potential issue: "分层单向"; annotation-undo imports api client directly, but maybe should go through `reader.store`? No, component uses api. Fine.
+
+Potential issue: "store + async + user input" — reader.store.undo is async and triggered by keyboard. Did they add state machine? Not explicit. Could be considered missing. But we already have enough findings.
+
+Potential issue: `docs/invariants.md` row added INV-23. It says "成功后按捕获下标 splice 精确移除" but code uses identity; should update. Also says "单测 13 用例" but actual 14. Also maybe says "delete 逆重建新 id 后全栈 remap 旧 id 引用" good.
+
+Potential issue: New invariant row "已锚定（单测级，2026-08-25）". Good.
+
+Potential issue: Work brief says "reader.store closeOne 加 clearStack（一行）+ undo() 动作（paperId 于 await 前捕获防串 tab——INV-03 同族；undo 期间 tab 被关则弃置同步，DB 已撤销随重开对齐；api 失败 toast 在 store 消费边界发）." We discussed reopen race. Should we flag? Let's see if there is an actual guard against tab closed and reopened. They only check `tab === undefined`. If closed and reopened, tab not undefined. Could apply stale outcome to new tab. Is that harmful? Let's explore more deeply.
+
+Scenario: user has tab for paper P with annotation A. Press ctrl+z to undo create A. `runUndo(P)` starts async deleteAnnotation. During await, user closes tab (closeOne) and quickly reopens P. Reader store creates new TabState for P with status loading, annotations maybe [] (or fetched from DB). The undo API completes and DB deletes A. `runUndo` returns done remove A. reader.store.undo: `tabs[P]` exists (new tab), `tab.annotations` maybe [] (or if already loaded, maybe contains A? Let's determine load sequence). The store `openTab` sets status loading and probably asynchronously fetches annotations. If fetch started before undo DB delete, it might fetch old list containing A. Then after fetch completes, annotations [A]. Meanwhile undo apply remove arrives maybe after fetch? If after, tab.annotations filter out A -> [] correct. If undo apply arrives before fetch completes, `tab.annotations` initial [] -> remove no-op. Then fetch later returns [A]? Since DB delete already committed before fetch? If fetch started before DB delete and response read after, it might return stale [A], causing UI to show deleted annotation. But that's a general race between async fetch and undo; not specifically tab reopen. Existing store may have load sequence guards? There is tabLoadSeq to prevent out-of-order? They have `tabLoadSeq.delete(id)` in closeOne, so new load? Need know. If reopen same id, load sequence might guard. Hard.
+
+If apply upsert (undo delete) to new tab after fetch old DB (without A), then add A -> correct. If fetch after DB update, tab includes A, upsert replace -> correct. So applying to new tab seems okay generally. The comment "DB 已撤销，列表随重开对齐" suggests they intended to drop store sync if tab closed; but if tab re-opened before resolve, dropping would be wrong? Actually if drop, new tab fetch from DB would eventually reflect undo, so also okay. But applying also okay. Race with fetch remains but likely handled by load seq.
+
+Given uncertainty, not flag.
+
+Potential issue: In reader.store.undo, after `outcome.done`, it uses `const { tabs } = get()`. But `get()` returns store state; `tabs` could have changed. It then checks `tab = tabs[paperId]`. If tab still exists but not active, it still updates. Is that intended? The undo was requested via keyboard while active. If user switched tabs during undo, should it update the tab where action started or active tab? They capture paperId from active before await, so update that tab even if no longer active. Good. If tab closed, skip. If reopened same id, update. Fine.
+
+Potential issue: `closeOne` calls `clearStack(id)` before deleting tab. If undo in-flight for same id, then after it resolves, reader.store.undo sees tab undefined and returns. But the stack was cleared and recreated maybe; no stale. Good.
+
+Potential issue: `clearStack` doesn't clear `undoInFlightPapers`; if tab closed and reopened same id while old undo still in flight, new undo for that tab returns busy until old finishes. That's fine.
+
+Potential issue: `AnnotationLayer.saveComment` builds `next` with `updatedAt: new Date().toISOString()` then pushes `before: a` where `a` was original annotation before edit. Good. But if API returns saved object with different id? no.
+
+Potential issue: `AnnotationLayer.deleteAnnotation` pushes `a` (the annotation object passed to component). But `a` may be from store; after `removeAnnotation(a.id)` store updates, pushUndo with `a` full object. Good.
+
+Potential issue: `SelectionLayer` pushes `kind:'create'` with `saved` from API. But if API returns annotation with paperId maybe different? no.
+
+Potential issue: The `AnnotationLayer` delete path calls `api.reader.deleteAnnotation({ annotationId: a.id })` then `removeAnnotation(a.id)` then `pushUndo(a.paperId, {kind:'delete', annotation:a})`. If pushUndo throws? no. If removeAnnotation fails? no.
+
+Potential issue: The `api` module's `reader.saveAnnotation` maybe requires `AnnotationInput` where `paperId` should not be included; `toInput` strips. Good.
+
+Potential issue: In `remapStackIds`, for comment-edit, they replace `s[i]` even if `e.before.id === oldId`; but they don't update `e.before.paperId` if paperId could differ? Same paper. Fine.
+
+Potential issue: In `remapStackIds`, if `e.kind === 'delete'` with old id and it is *below* a top delete, it rewrites; but if a `delete` entry for old id is followed by `create` entry for same old id? Impossible.
+
+Potential issue: The new invariant INV-23 "成功后按捕获下标 splice 精确移除" might indicate design originally used index. But code changed to identity. Update docs.
+
+Potential issue: `locks/manifest.json` generatedAt changed and sha for reader-shortcuts.test.tsx changed. Also new file hash. It also changed? The diff includes test file hash updated. Good. But `annotation-undo.test.ts` is new and included in manifest. Fine. Did they update `reader-shortcuts.test.tsx` hash with locked-change? Yes.
+
+Potential issue: The diff doesn't include `[locked-change]` note. But as JSON audit, we could mention "受锁测试修改未见 locked-change 尾注（若提交信息已带则忽略）" as WARN? But the task brief says it has. Since input materials don't include commit message, we shouldn't flag missing note. But maybe we can say "若提交未带 [locked-change] 则违规" but instructions say don't fabricate. Better not.
+
+Potential issue: `tickets/registry.ts` status changed open->done. Good. But if tests/registry are locked? registry.ts maybe not tests? It's source. Fine.
+
+Potential issue: `docs/invariants.md` row "SR2-UNDO-01" maybe check-tickets rule 2: It contains ticket id in docs, fine.
+
+Potential issue: `annotation-undo.ts` header says "工单：done / strong" and "b3: P7-B" maybe fine.
+
+Potential issue: In `annotation-undo.ts` header, "依赖序（plan 门 W4 处置）" removed? It no longer says depends on TABS-01; now implemented. Fine.
+
+Potential issue: The module-level `stacks` is not exported for testing except `stackDepth`. Good.
+
+Potential issue: `pushUndo` not exported? It is exported. Good.
+
+Potential issue: `undo` function and `pushUndo` are standalone; if `paperId` undefined? type string.
+
+Potential issue: `clearStack` does not reset `stacks[paperId]`? It deletes. Good.
+
+Potential issue: "深度 50 FIFO 截断丢最旧" pushUndo `if (s.length > UNDO_DEPTH_MAX) s.splice(0, s.length - UNDO_DEPTH_MAX)`. If length 51, splice 0,1 -> length 50. Good.
+
+Potential issue: Potential memory leak: stacks Record never cleaned if tab not closed? closeOne calls clearStack. If app closes? no.
+
+Potential issue: The `reader.store` `undo()` action is added to interface and implementation at end of object. It doesn't use `set`/`get` destructured? yes.
+
+Potential issue: In `reader.store` undo, after applying, it doesn't call `set` with `dirty` unaffected. Fine.
+
+Potential issue: The reader.store imports `showToast` from toast-store; but annotation-undo doesn't import Toast. Good.
+
+Potential issue: If `runUndo` returns `{done:false, reason:'empty'}` and user presses ctrl+z, no toast. Fine.
+
+Potential issue: If `runUndo` returns `{done:false, reason:'busy'}` and user long presses ctrl+z, no toast. Fine.
+
+Potential issue: If `runUndo` returns `{done:false, reason:'api-failed'}`, showToast. Good.
+
+Potential issue: `toast-store` shows "撤销失败，请重试" generic. Fine.
+
+Potential issue: `api` import from `../../api/client` in annotation-undo. The path from features/reader is ../../api/client, correct. It also imports type from `@shared/models/annotation` using alias. Good.
+
+Potential issue: `annotation-undo.ts` new file 190 lines okay but maybe component/components? It's a module, not component. Fine.
+
+Potential issue: `AnnotationLayer.tsx` line count 250? Work brief says exactly. We can't verify but trust.
+
+Potential issue: `ReaderPage.tsx` line count maybe 250. Fine.
+
+Potential issue: The diff in `AnnotationLayer.tsx` removed detailed comments to keep line count. Not an issue.
+
+Potential issue: "repo ≤300 行" not relevant.
+
+Potential issue: "Rule of Three": toInput duplicates annotation input shape? Maybe there is existing function in SelectionLayer to build input? Let's inspect diff: SelectionLayer probably has `input` construction before save. `toInput` in annotation-undo duplicates the shape. Could violate Rule of Three? It's second occurrence maybe allowed. Not flag.
+
+Potential issue: "类型单一真相源": `AnnotationInput` imported from shared, good.
+
+Potential issue: "禁止 renderer 引入任何 Node/Electron API" annotation-undo uses `console.error`, `setTimeout`? In renderer, `console` is web API, fine.
+
+Potential issue: "出网白名单" no.
+
+Potential issue: "no eval" no.
+
+Potential issue: "FTS escape" no.
+
+Potential issue: "forbidden external URL" no.
+
+Now consider whether to include the missing state table as finding. The audit's task is to evaluate diff, including contract/discipline. The diff code header doesn't include a state/migration table. But the work order "任务简报" maybe includes "状态机前置" in AGENTS; implementation summary doesn't mention state table. It says "单元定位...规约=annotation-undo.ts 头注五层（自包含）". The header "行为层" has lists but not a state table. The hard rule "状态机前置" is a process that should have been done before work, not necessarily visible in diff. Audit can note "未在头注/工单中看到显式状态/迁移表" as WARN. But if we label BLOCKING, maybe too strict. The user wants "契约与纪律" as first dimension. We should mention if violated.
+
+Let's read exact AGENTS: "**状态机前置**：凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须**先**给出状态/迁移表（枚举态空间），并按「态空间 + 跨格序列」交审计——单格枚举盖不住跨格序列（历史：...）". The module is store+async+user input. The header has no explicit state/migration table. It does describe states `empty`, `busy`, `api-failed` in outcome, but not a table with transitions. Is that enough? Maybe `UndoOutcome` type enumerates states, and behavior bullets describe transitions. But not "状态/迁移表". This could be a WARN at least.
+
+However, the audit output should not over-focus on process if the code appears good. But the hard rule is explicit, and this task is "审计代码变更 diff". If diff doesn't include docs/artifacts showing state machine, maybe violation. The work brief says "单元定位 P7-B 收官第二步" and implementation summary; no mention of state table. I'd include as WARN/NIT? Since it's a hard rule, maybe BLOCKING? But because "状态机前置" is about the development process, and the final header has enough behavioral specification to allow audit, maybe the violation is not in diff. The user says "是否违反项目宪法（AGENTS.md 硬规则）". Hard rule says must first give state/migration table. There is no evidence in the provided diff that it was given. But we cannot prove it wasn't given in task brief? The task brief includes "单元定位 ... 规约=annotation-undo.ts 头注五层（自包含）". It does not show a state/migration table. The code header itself doesn't. So yes.
+
+But maybe `UndoOutcome` union `'empty'|'api-failed'|'busy'` and `done:true` is a state machine representation. There is no "idle" state; the stack is either has entries or not, in-flight set. Could argue.
+
+Let's keep as NIT/WARN? We have a clear BLOCKING already. Additional WARN about INV-23 mismatch. We can include state machine as WARN "行为层规约未给出显式状态/迁移表，只有行为列表" with suggestion. But the output's severity should align: WARN okay.
+
+Let's verify if there are any security issues with path traversal? No.
+
+Potential issue: `reader.store.undo` catch calls `showToast('撤销失败，请重试')` but doesn't specify kind error; default info, so error appears 3.5s not 6s. In `api-failed` branch also showToast without kind. Existing code maybe uses `showToast('...', 'error')`. In diff, they call showToast without kind, so it's info style (blue) not error. Is that a problem? The Toast store's default kind is info; error would be red and longer. For failures, should be error kind. In AnnotationLayer/SelectionLayer existing code uses `showToast(..., 'error')`? Let's inspect diff contexts? In AnnotationLayer diff, existing `showToast` import remains, but no call shown in diff except not. The work brief says "api 失败 toast 在 store 消费边界发". The new calls in reader.store `showToast('撤销失败，请重试')` omit kind. Is this consistent? The Toast docs say "kind 缺省 info". A failure notification should probably use 'error'. This is a minor UI correctness. But maybe all toasts default info? Let's see original Toast.tsx had `showToast(message, kind: ToastKind = 'info')`; so default info. The codebase may use showToast('复制失败...', 'error') etc? In AnnotationLayer, `COPY_FAILED` maybe `showToast(COPY_FAILED, 'error')`? Not in diff. The new failure toasts should probably be `'error'`. This is a NIT/WARN. Not critical.
+
+Potential issue: `reader.store.undo` catches unexpected programming errors and shows toast '撤销失败，请重试' but doesn't return. Fine.
+
+Potential issue: In toast-store.ts, `dismiss` uses `clearTimeout(timer)` but if `timer` is `NodeJS.Timeout`, after clear still in map? It deletes. Fine.
+
+Potential issue: The toast-store moved `recentShown` Map and `listeners` etc. It also changed `dismiss` to exported. In original Toast.tsx, `dismiss` was not exported; now it is. Fine.
+
+Potential issue: `Toast.tsx` imports `dismiss` from toast-store, but ToastHost close button's `onClick` maybe `() => dismiss(item.id)`? yes.
+
+Potential issue: The original Toast.tsx used `window.clearTimeout`; toast-store uses `clearTimeout` (global). In renderer, same. In node tests, global clearTimeout exists. Fine.
+
+Potential issue: `getToastItems` returns `items`; `ToastHost` initial state uses `getToastItems` as lazy initializer? `useState<ToastItem[]>(getToastItems)` passes function, so React calls it. Good.
+
+Potential issue: `subscribeToasts(setList)` returns unsubscribe; React useEffect cleanup will call it. Good.
+
+Potential issue: The `timers` map in toast-store purges? `dismiss` deletes. Good.
+
+Potential issue: In `showToast`, `recentShown` map cleanup iterates and deletes during iteration; safe.
+
+Potential issue: In `showToast`, `timers.set(item.id, setTimeout(...))`. If item auto-dismisses, `notify` called. Fine.
+
+Potential issue: Tests for toast-store? Not in diff. Existing toast.test.tsx unaffected. Good.
+
+Potential issue: If a toast is dismissed manually before 1s and same message shown again, `recentShown` may block it for remaining dedupe window. Same as previous behavior. Fine.
+
+Potential issue: The diff moved logic, but did it change semantics? Original `dismiss` used `window.clearTimeout`; new uses `clearTimeout`; same. Original `listeners` etc. The component import `useState` still. Good.
+
+Potential issue: `toast-store.ts` line 84 includes "从 Toast.tsx 拆出" comment. Fine.
+
+Potential issue: `AnnotationLayer.tsx` changed comment lines "kind+color..." compression; no code change.
+
+Potential issue: `ReaderPage.tsx` blank line removed; no.
+
+Potential issue: `ReaderShortcuts.ts` header comment says "ctrl+z：撤销标注操作栈（actions.undo——reader.store.undo 动作面）；editable 焦点由 keymap 避让走 textarea 原生 undo". Good.
+
+Potential issue: `ReaderShortcutActions` interface now requires `undo`. Any other consumers of `useReaderShortcuts` besides ReaderPage? Maybe tests only. The test makeActions updated. If another component uses it, typecheck would catch. Fine.
+
+Potential issue: `useReaderShortcuts` no longer uses `keymap`? fine.
+
+Potential issue: In `reader.store.ts`, added `undo()` method at end of store implementation, but does it use `tabs` from `get()` which may be stale? Zustand set with functional? It uses `const { tabs } = get()` before set. Since synchronous after await, okay. If multiple updates, could overwrite concurrent changes? Zustand set({tabs: {...tabs, [paperId]: {...tab, annotations: next}}}) replaces whole tabs object based on snapshot. If another state update happens between `get()` and `set()`? In single-threaded JS, no await between; only synchronous. But could another store action have been scheduled? no. If `set` triggers subscribers that cause updates? no. Fine.
+
+Potential issue: In reader.store.undo, if act.type === 'upsert' and tab.annotations contains an annotation with same id, it maps replace; else append. If there are duplicate ids? no.
+
+Potential issue: If undo outcome removes an annotation that is currently being edited in some component (e.g., AnnotationEditor editing a comment), undo could remove it while editor open. The store updates `annotations`; AnnotationEditor may be tied to editing state in AnnotationLayer. But undo is a keyboard shortcut; if user is editing a textarea, ctrl+z native undo not our shortcut due to editable avoidance. So not while editor open? Could be if annotation menu open. Fine.
+
+Potential issue: If undo creates a new annotation via delete inverse, store appends it. It may appear. Good.
+
+Potential issue: `AnnotationLayer`'s `deleteAnnotation` push `kind: 'delete'` with `a` (full annotation including `paperId`). If `a.paperId` undefined? no.
+
+Potential issue: `SelectionLayer` push `kind:'create'` with `saved` (full annotation). Good.
+
+Potential issue: The `annotation-undo` module's `toInput` uses `rects: a.rects`. If `rects` is readonly? no.
+
+Potential issue: The `UndoApply` for remove only `id`; for create undo, if the annotation was later modified by a comment edit and then undo create? Stack would be create then comment-edit then maybe? Undo LIFO: if top is comment-edit, undo restores before; then undo delete? Wait undo create (original create) removes entire annotation regardless of subsequent edits. But if there was a comment-edit after create and then user triggers undo twice? Let's trace: create a, comment-edit a, no delete. Stack [create(a), comment-edit(before a)]. User undo: comment-edit inverse updates to old comment (a). Stack [create(a)]. User undo: create inverse deletes a. The comment-edit's changes (between before and after) are discarded because create undo deletes the annotation entirely. Is that correct undo semantics? If the user undoes past edits to delete the annotation, yes, all later edits are undone too. Good.
+
+Potential issue: If stack [create(a), delete(a)] and user undo delete (recreates a-new), then if user redoes? no redo. Fine.
+
+Potential issue: "同篇 in-flight 互斥（busy，他篇不阻塞）" Code uses Set, good. But there is no timeout; if API hangs, undo blocked forever. Existing APIs probably have timeout? Not in diff. Could be WARN? Not introduced.
+
+Potential issue: The `remapStackIds` function mutates `s` in place (replaces elements). If `s` is `undefined`? Called with s from stack. Good.
+
+Potential issue: `stackDepth` returns 0 for unknown paper. Good.
+
+Potential issue: `clearStack` doesn't return anything. Fine.
+
+Potential issue: `AnnotationLayer`/`SelectionLayer` pushUndo after successful API but before store update? In SelectionLayer, `onSaved(saved)` called, then pushUndo. In AnnotationLayer saveComment, store update before pushUndo. If pushUndo throws (not), store updated but no undo entry. Not issue.
+
+Potential issue: The `api-failed` outcome from `undo` causes toast; but if API fails, the original operation (e.g., delete) may have actually succeeded but response lost? no.
+
+Potential issue: The `undo` function treats `r.ok` false as api-failed without throwing; but if `api.reader.deleteAnnotation` returns `ok:false` and `error` maybe should not toast generic? It does. Fine.
+
+Potential issue: The test "api 失败" uses `del` that returns `{ ok: false as const }`; after retry success. Good.
+
+Potential issue: The `reader.store.undo` catches unexpected errors and shows toast, but if `runUndo` returns `busy`, no toast. Fine.
+
+Potential issue: In `AnnotationLayer`, the import `pushUndo` from './annotation-undo' but the file may be under `features/reader/annotation-undo.ts`. Correct.
+
+Potential issue: The new tests include `vi.resetModules()` and `vi.stubGlobal`, but they don't `vi.unstubAllGlobals` after. Since `loadModule` is called in each test, old `window` stub replaced. Potential test pollution if tests run in same worker? The global `window` gets overwritten each time; after suite, remains last stub. Could affect other tests? Existing pattern. Not a code product issue.
+
+Potential issue: `annotations.repo.insert` not accepting explicit id is mentioned but not in diff. If repo actually accepts explicit id and test would have failed? They observed. Fine.
+
+Potential issue: Dead code: `AnnotationLayer` comment "白纸×色=色、黑字×色=黑字" removed. No.
+
+Potential issue: `toast-store.ts` and `Toast.tsx` both export `showToast` re-export. Is there a circular dependency? Toast.tsx imports from toast-store and re-exports showToast. toast-store doesn't import Toast. No cycle. Good.
+
+Potential issue: The move to toast-store changes import path for reader.store, but other non-component modules could import Toast directly and fail; but they re-export. Good.
+
+Potential issue: In `Toast.tsx`, `KIND_COLOR` uses `ToastKind` imported from toast-store. Good.
+
+Potential issue: `toast-store.ts` comment "从 Toast.tsx 拆出（2026-08-25 UNDO-01：reader.store 等非组件 .ts 模块需要 showToast，而 .ts 消费方 import Toast.tsx 会被 tsconfig.node（无 jsx）拒绝）" Good.
+
+Potential issue: Is `toast-store.ts` within file ≤500. yes.
+
+Potential issue: `locks/manifest.json` formatting changed? Only generatedAt, added file, hash. Good.
+
+Potential issue: `docs/invariants.md` row contains pipe `|` in text? It uses `\`? No.
+
+Potential issue: In `reader.store.ts` diff, the comment "dirty 建位于本单、恒 false" may be stale? Not our issue.
+
+Potential issue: `reader.store` closeOne clearStack call: It appears after `tabLoadSeq.delete(id)` and `inflightOpen.delete(id)`, before deleting tab. If `undo` in-flight and `clearStack` deletes stack while `undo` is using `s` variable? The `undo` function has already captured `s` reference before await, then clearStack `delete stacks[paperId]` does not mutate the array, only removes map entry. So `s` remains referenced by closure. After await, remapStackIds mutates the old array even though no longer in stacks. Then `indexOf` removal mutates old array too. But the array is orphaned (not in map). No effect. Good. But if tab reopened same paper and new stack created, old undo modifies orphaned array, not new stack. Good.
+
+Potential issue: In `undo`, `const s = stacks[paperId]`; if `clearStack` deletes map but doesn't clear inFlight, after await, `s` still exists. Removing from s doesn't affect new stack. Good.
+
+Potential issue: `reader.store.undo` after `runUndo` may apply to new tab as discussed, but if stack was cleared and new stack created, `runUndo` operated on old stack; DB changes still valid. Applying to new tab might be okay. fine.
+
+Potential issue: `undo` returns `api-failed` if `r.ok` false, but finally deletes inFlight. However it also returns inside try before reaching `s.indexOf`, so stack unchanged. Good.
+
+Potential issue: `undo` catch: if an unexpected error occurs before `apply` assigned, returns api-failed. But if unexpected error occurs after API success but during remap or after removal, it returns api-failed even though DB changed. Then store won't apply. This is a possible inconsistency. Example: `remapStackIds` throws? It shouldn't. `indexOf`/splice no throw. So only if API throws. If API throws after server committed, unavoidable. Fine.
+
+Potential issue: The `UndoOutcome` for `api-failed` doesn't distinguish `ok:false` vs network error. Fine.
+
+Potential issue: In `remapStackIds`, for `comment-edit`, it replaces the entry but only if `before.id === oldId`. If `before.id` is oldId and `e.before` is also referenced elsewhere? no.
+
+Potential issue: The remap function does not update `createdAt`/`updatedAt` in recreated annotation? `r.data` from API has new. Good.
+
+Potential issue: `toInput` strips `paperId` but `saveAnnotation` API maybe expects `annotation` includes paperId? Existing SelectionLayer passes `{ paperId, annotation: input }`; fine.
+
+Potential issue: The new tests use `guardedDescribe`; not know. Fine.
+
+Potential issue: The diff doesn't show changes to `src/shared/constants.ts` for undo depth? They define in module. Good.
+
+Potential issue: "UNDO_DEPTH_MAX=50" in module, but invariants says 50. Good.
+
+Potential issue: There is no "redo" implementation. Good.
+
+Potential issue: "ctrl+z" shortcut may conflict with browser default "undo" in non-editable? preventDefault. Good.
+
+Potential issue: In `ReaderShortcuts`, ctrl+z binding is ordered after ctrl+c, before page keys. Keymap might match both ctrl+z and something else? no.
+
+Potential issue: `ReaderShortcutActions` undo is required; any existing tests or code using `useReaderShortcuts` with object missing undo will fail typecheck. They updated makeActions. Fine.
+
+Potential issue: In ReaderPage, `undo: () => void useReaderStore.getState().undo()` returns Promise but typed as () => void by wrapping void. Good.
+
+Potential issue: The reader.store.undo method typed `undo(): Promise<void>`; implementation returns async. Fine.
+
+Potential issue: Does `useReaderStore.getState().undo()` need `.bind`? no.
+
+Potential issue: `showToast` import in reader.store from toast-store is a .ts module, good.
+
+Potential issue: In `reader.store` top header, the comment mentions "undo 栈不进 TabState，归 UNDO-01" (removed SR2 prefix). Good.
+
+Potential issue: In `docs/invariants.md`, INV-23 says "同篇 in-flight 互斥（busy，他篇不阻塞）" but not "busy 可重试". fine.
+
+Potential issue: Could there be a bug where `undo` of delete re-creates annotation with new id, but the `paperId` used in `saveAnnotation` is the argument to undo. The original annotation's `paperId` might differ if user moved? no.
+
+Potential issue: If `undoInFlightPapers` is a Set and `undo` is called with same paperId after finishing, it removes. Good.
+
+Potential issue: If `undo` is called with paperId whose stack exists but empty? `s.length === 0` returns empty. Good.
+
+Potential issue: `stacks` record never removes empty arrays except clearStack; if all entries undone, `stacks[paperId]` remains empty array. `stackDepth` returns 0. Memory tiny. If tab remains open, empty array persists. Not issue. Could `pushUndo` later uses same array. Good.
+
+Potential issue: If `clearStack` is not called on tab close because `closeOne` maybe not always? It is. Good.
+
+Potential issue: In `AnnotationLayer.deleteAnnotation`, if `a.paperId` is undefined due to annotation loaded from old data? no.
+
+Potential issue: The diff in AnnotationLayer saveComment pushes `before: a` before await? Actually they push after API success. But `a` is the annotation object from props at time of render. If user changes comment and quickly saves, `a` might be stale? It's the before snapshot; correct.
+
+Potential issue: If `saveComment` called with `a` that already includes prior unsaved comment? No, `a` is store's current annotation before saving. Good.
+
+Potential issue: In SelectionLayer, `pushUndo(paperId, { kind: 'create', annotation: saved })` after `onSaved(saved)`; if multiple annotations created quickly, stack order. Good.
+
+Potential issue: Could `api.reader.saveAnnotation` return `ok:true` but `data` not annotation? type ensures. fine.
+
+Potential issue: In `annotation-undo.ts`, import `ApiClientError` from `../../api/client` as value. Is `ApiClientError` a class exported? likely. Good.
+
+Potential issue: `console.error` in renderer may be acceptable.
+
+Potential issue: Hard rule "中文内容工具验证可读" new comments Chinese UTF-8. fine.
+
+Potential issue: "行尾纪律" no.
+
+Now final verdict. We need decide PASS/PASS_WITH_WARNINGS/FAIL. Given there is a real BLOCKING race in remap skip, verdict should be FAIL? The criteria: BLOCKING = 违反硬规则/正确性缺陷/安全问题，必须回修. If any BLOCKING, verdict should be FAIL? The output allows verdict "FAIL" for blocking. Yes. So likely FAIL.
+
+But we need be sure the remap race is indeed in scope and not already handled. Let's revisit code to ensure no hidden guard prevents push during undo. `undo` sets `undoInFlightPapers` for the paper, but `pushUndo` does NOT check it. The tests explicitly test "撤销 await 期间新操作入栈：精确移除被撤条目（身份匹配），不错弹新条目" for create undo. So pushes during await are expected. For delete undo, the same possible. Therefore `remapStackIds` using `s.length - 1` after await is wrong. This is a strong finding.
+
+Let's formulate evidence:
+- In `undo`, after `await api.reader.saveAnnotation`, `remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)`. `s.length` may have increased by entries pushed during await; the entry being undone may no longer be at `s.length-1` (or may be removed by FIFO). So the skip index is wrong. It can rewrite the in-flight `top` entry (since not skipped), causing `s.indexOf(top)` to return -1 and leaving a stale delete entry in stack. Violates INV-23 "await 期间新入栈不错弹".
+- Suggestion: Capture `const topIdx = s.indexOf(top)` before `remapStackIds` and pass it as skipIdx only if != -1; if -1 (top discarded by FIFO), skip remap. Or use `s.indexOf(top)` before remap and then splice that index after remap.
+
+Line hint: `src/renderer/features/reader/annotation-undo.ts` near `remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)`.
+
+Also the mismatch in INV-23:
+- evidence: docs row says "成功后按捕获下标 splice 精确移除" but code comment says "按身份移除（非下标——deepseek r5b）".
+- severity WARN.
+
+Maybe another WARN: `reader.store.undo` failure toasts don't use `'error'` kind.
+- Evidence: `showToast('撤销失败，请重试')` default kind info; existing Toast kind documented info/success/error, error lasts 6s. User-facing failure should be error.
+- Severity NIT or WARN? It's a minor UX, NIT.
+
+Maybe WARN: Missing state/migration table in header. But we already have FAIL; adding WARN not necessary but could. Should we include? Let's decide.
+
+Given user expects only findings based on evidence. The absence of state table is not in diff evidence except header lacks it. We can say "行为层规约未给出显式状态/迁移表（只有行为列表和 UndoOutcome 联合），与宪法状态机前置不符" as WARN. However, is it fair? The header's "UndoOutcome" is essentially state. But no table. I might include as WARN to satisfy discipline dimension. But could be seen as false positive because the work was done across multiple iterations and audit already reviewed. The user wants strict. Let's include as WARN? Hmm.
+
+The audit brief says "契约与纪律：是否违反项目宪法（AGENTS.md 硬规则）". The hard rule is clear. The diff includes `annotation-undo.ts` header "行为层" but no state/migration table. A strict auditor would flag. But if we flag as BLOCKING, might be too pedantic. WARN better.
+
+Need also consider if "undo" is store + async + user input but not "user input"? It's keyboard shortcut. Yes.
+
+Let's see if the header has "状态/迁移表" hidden? It has:
+- 栈 per-tab, depth
+- undo execution: api failure -> no pop; success -> pop+apply
+- in-flight mutex
+- stack empty no-op
+This is a verbose state description. Could be considered a state/transition table in prose. But "表" literally table. They have a table for inverse ops. Not enough. I'll mention as NIT maybe to avoid overblocking.
+
+Another possible finding: The `docs/invariants.md` INV-23 says "单测（annotation-undo.test 13 用例...）" but diff has 14 `it` blocks. It's a stale doc. Combine with "按捕获下标" mismatch into one WARN about invariants stale. In evidence, cite both? It's two separate mismatches in same row. Could have one finding "INV-23 与实现不一致：splice 说明和用例数" severity WARN.
+
+Another potential issue: The tests are locked, and work brief says "红证=临时翻 done 后 8 用例失败实录（桩抛错），实现后 8/8 绿" but diff has 14 tests. Maybe the 8 in brief was before adding more? Not important.
+
+Potential issue: In `annotation-undo.ts`, `toInput` returns `AnnotationInput` but omits `paperId`; however `AnnotationInput` type might include `paperId`? If so type error. Since typecheck passed, not.
+
+Potential issue: The test "delete 逆操作" expects `req!.annotation` not have `paperId`; but `AnnotationInput` might include `paperId` optional? They don't pass. Good.
+
+Potential issue: The `undo` function's `remapStackIds` may not be tested for concurrent push; we can mention add test case.
+
+Now let's decide final JSON structure. Need output only JSON object, no markdown fences. We'll list findings.
+
+Findings list:
+
+1. BLOCKING:
+severity: "BLOCKING"
+file: "src/renderer/features/reader/annotation-undo.ts"
+line_hint: "remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)"
+issue: "delete 逆操作撤销 await 期间若有新操作入栈，s.length 已变化，skipIdx=s.length-1 不再指向正被撤销的 top；remap 会把 top 也改写为新 id，随后 s.indexOf(top) 为 -1 导致该 delete 条目残留栈中（该条目已改指新 id），后续再撤会错误地再次 re-create/删除，违反 INV-23『await 期间新入栈不错弹』。"
+evidence: "代码中 `const s = stacks[paperId]` 在 await 前捕获，pushUndo 不受 undo in-flight 限制；测试已覆盖 create 逆操作的 await 期间入栈，但删除逆操作 remap 的 skipIdx 仍用 await 后的 s.length - 1。"
+suggestion: "在 remap 前先 `const topIdx = s.indexOf(top)`；若 topIdx !== -1 将 skipIdx 传 topIdx；若 topIdx === -1（已被 FIFO 挤出）则无需对旧 id remap（旧条目已不在栈内）。同时补一条『delete 逆操作 + await 期间入栈』的跨格用例。"
+
+2. WARN:
+file: "docs/invariants.md"
+line_hint: "INV-23 行"
+issue: "不变量登记与实现不一致：INV-23 写『成功后按捕获下标 splice 精确移除』，但代码实际按对象身份 `s.indexOf(top)` 移除（deepseek r5b）；且用例数为 13，diff 中实际新增 14 个 it 块。"
+evidence: "INV-23 文本与 annotation-undo.ts 中注释『按身份移除（非下标——await 期间…deepseek r5b）』及新增测试文件 it 计数不符。"
+suggestion: "更新 INV-23 为『按对象身份移除（await 期间新入栈不错弹）』并把用例数改为 14（或按实际 count）。"
+
+3. WARN:
+file: "src/renderer/features/reader/annotation-undo.ts"
+line_hint: "行为层头注"
+issue: "宪法状态机前置要求『store+异步+用户输入』先给出显式状态/迁移表；头注只有行为列表/判别联合，未以表格枚举 idle/empty/busy/api-failed 等状态及迁移。"
+evidence: "AGENTS.md 硬规则：行为层规约必须先给出状态/迁移表（枚举态空间）。当前头注无状态表。"
+suggestion: "在文件头注补一个状态迁移表（空栈→撤销中→成功/失败→可重试等）；或将 UndoOutcome 各状态 + 迁移列成表。"
+
+Wait, is this WARN too speculative? I'd maybe omit to keep focus. The instruction says "不要编造 diff 里不存在的内容"; the missing state table is absence, not content. It's a valid absence. But maybe the "行为层" with `UndoOutcome` is the state table. I might not include to avoid false positive. Let's consider if BLOCKING finding already enough. The final summary can mention "另有 INV-23 文档过期" etc.
+
+Maybe also add NIT about failure toast not error kind:
+severity NIT
+file: "src/renderer/features/reader/reader.store.ts"
+line_hint: "showToast('撤销失败，请重试')"
+issue: "失败提示未指定 kind，Toast 默认 info（3.5s），对 api 失败/异常应使用 error（6s）语义。"
+evidence: "toast-store.ts `showToast(message, kind: ToastKind = 'info')`；reader.store 两处失败路径均未传 'error'。"
+suggestion: "改为 showToast('撤销失败，请重试', 'error')。"
+
+Should we include? It's minor but valid. Severity NIT.
+
+Maybe also include "reader.store.undo 在新 tab reopen 场景会应用旧 outcome" as WARN? Let's decide if it's a real bug. Given uncertainty, not include.
+
+Maybe include "header check-tickets 去前缀" as NIT? No.
+
+Now final summary: "撤销栈主体实现扎实，测试面强，但 delete 逆操作的 remap 在 await 期间有新入栈时会跳过错误条目，导致残留脏栈，属于跨格正确性缺陷，必须修复；另 INV-23 登记与实现有出入需同步。其余接缝/安全/分层未见问题。"
+
+Verdict: FAIL due to BLOCKING. If they expect PASS_WITH_WARNINGS? The BLOCKING is solid, so FAIL.
+
+Let's ensure JSON valid. Use double quotes. No trailing commas. Need escape? We can include Chinese.
+
+Let's craft final JSON.
+
+Potential finding line_hint should be concise. Use file paths.
+
+Need include all findings. We have 4 findings (BLOCKING, WARN, NIT). Is the WARN state machine credible? It might be seen as overreach. Maybe replace with a more concrete WARN: "INV-23 text stale" already one WARN. Another WARN maybe about `remapStackIds` skip bug is BLOCKING. We could omit state machine to avoid noise. But "契约与纪律" was a priority; the absence of state table is a real constitutional violation. Let's include as WARN.
+
+Also include NIT for error toast maybe.
+
+Let's ensure no "BLOCKING" finding about `tests` modification without locked-change. Since work brief says locked-change, no.
+
+Let's examine if the remap race also impacts create/comment? For create, no remap. For comment, no remap. Only delete. Good.
+
+Let's maybe include line_hint "annotation-undo.ts: undo() 中 remapStackIds 调用" no exact line. fine.
+
+Need mention evidence from diff or spec. For remap bug evidence: "pushUndo 在 undo 进行中不检查 in-flight，测试『撤销 await 期间新操作入栈』已证明该路径被预期支持；但 remap 的 skipIdx 使用 await 后的 s.length-1". Good.
+
+Let's ensure JSON string properly escaped. We'll output raw JSON.
+
+One more thought: Is the remap race really not protected by `undoInFlightPapers` in pushUndo? pushUndo doesn't check. But could a user push during undo? In UI, undo triggered by ctrl+z; while in-flight (API call), the user might not be able to trigger another annotation operation because API call duration maybe milliseconds; but async operations can interleave. Tests intentionally allow new operations during await. So yes.
+
+Let's think about the exact consequences to describe accurately:
+- Suppose s=[create(old), delete(old)]; undo in-flight on delete.
+- During await, user creates annotation b → s=[create(old), delete(old), create(b)].
+- After save returns new id, remap with skipIdx=2 skips create(b), rewrites create(old) and delete(old) to new id. So s=[create(new), delete(new), create(b)].
+- `indexOf(top)` finds no original delete object (replaced by new object). So delete(new) remains at index 1.
+- The current undo returns apply upsert new. Store adds new annotation.
+- Stack now has delete(new) as a future undo action. Next undo will undo create(b) (delete b). Then undo delete(new) will re-create new from new id causing duplicate/garbage. So indeed wrong.
+
+Suggestion: remap should skip the exact top object by using its index before remap; if top gone, no old refs remain. Also after remap removal by identity? If we pass topIdx, `s[topIdx]` remains top object? Actually remap skips topIdx, so top stays. Then `s.splice(topIdx, 1)` can remove by index instead of indexOf. But if new entries pushed and FIFO truncation occurred before remap? If top still present, its index may have changed due to truncation; using `s.indexOf(top)` before remap gives current index. If top gone, skip. Good.
+
+Need maybe mention "如果 top 已被 FIFO 挤出，remap 也无需执行（旧 id 引用不会残留）" but what if old id references exist in new entries? no. Good.
+
+Let's produce final.
+
+Final JSON:
+
+{
+  "verdict": "FAIL",
+  "findings": [
+    { severity BLOCKING ...},
+    { severity WARN ...},
+    { severity WARN state table ...},
+    { severity NIT ...}
+  ],
+  "summary": "..."
+}
+
+Do we need include all? Maybe the state table WARN could be contentious. The user's instruction "不要编造 diff 里不存在的内容" – "absence of state table" is not fabricated; we can say "diff 的头注未包含" based on provided diff. Fine.
+
+But if we include state table WARN, the summary may say "另状态机前置未显式满足". Good.
+
+Let's ensure "evidence" for state table cites AGENTS.md: "行为层规约必须先给出状态/迁移表（枚举态空间）". Good.
+
+Potential issue: The AGENTS.md says "任何工作启动时，先枚举技能清单..." The work brief includes skill clearing. Good.
+
+Potential issue: "配置自查随清点一并完成" work brief includes. Good.
+
+Now final answer.
+
+== content ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 中 remapStackIds(s, top.annotation.id, r.data.id, s.length - 1)",
+      "issue": "delete 逆操作在 await 期间若有新操作入栈，s.length 已变化，skipIdx=s.length-1 不再指向正在被撤销的 top。remap 会把该 delete 条目自身也改写为新 id，随后 s.indexOf(top) 为 -1，导致该条目未被移除而残留栈中且已指向新 id；后续撤销会产生重复 re-create/删除。与代码注释和 INV-23 宣称的『await 期间新入栈不错弹』相违背。",
+      "evidence": "pushUndo 不受 undoInFlightPapers 限制，测试『撤销 await 期间新操作入栈』明确支持该路径；但 remap 的 skipIdx 在 await 后用 s.length - 1，未考虑等待期间追加的新条目。",
+      "suggestion": "在 remap 前先 const topIdx = s.indexOf(top)；若 topIdx !== -1，把 topIdx 作为 skipIdx 传给 remapStackIds，remap 后再 s.splice(topIdx, 1)；若 topIdx === -1（已被 FIFO 挤出），则不需要 remap。补一条『delete 逆操作 + await 期间入栈』的跨格用例。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "INV-23 行",
+      "issue": "不变量登记与实现不一致：INV-23 写『成功后按捕获下标 splice 精确移除』，但实现实际按对象身份 s.indexOf(top) 移除；且 INV-23 写 13 用例，diff 中新增测试文件实际有 14 个 it 块。",
+      "evidence": "INV-23 文本与 annotation-undo.ts 注释『按身份移除（非下标——await 期间…deepseek r5b）』及 tests/unit/renderer/annotation-undo.test.ts 的 it 数量不符。",
+      "suggestion": "把 INV-23 更新为『按对象身份精确移除（await 期间新入栈不错弹）』，并将用例数改为实际数字。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "行为层头注",
+      "issue": "宪法『状态机前置』要求 store+异步+用户输入的修改先给出显式状态/迁移表（枚举态空间）；当前头注只有行为列表和 UndoOutcome 判别联合，没有以表格式枚举 empty/busy/api-failed/success 等状态及迁移。",
+      "evidence": "AGENTS.md：『行为层规约必须先给出状态/迁移表（枚举态空间）』；该文件头注未提供状态/迁移表。",
+      "suggestion": "在文件头注补一张状态迁移表，明确：空栈→empty、撤销执行中→busy、api 失败→api-failed 且不弹栈、成功→弹栈+apply，并标注并发/重试路径。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "showToast('撤销失败，请重试')",
+      "issue": "失败提示未指定 kind，toast-store 默认 info（3.5s）；api 失败/异常提示应使用 error（6s）语义，否则失败提示视觉强调不足。",
+      "evidence": "toast-store.ts：showToast(message, kind: ToastKind = 'info')；reader.store 中 api-failed 与 catch 两条路径均未传 'error'。",
+      "suggestion": "改为 showToast('撤销失败，请重试', 'error')。"
+    }
+  ],
+  "summary": "撤销栈主体设计清晰、测试面较全，接缝与分层基本守约；但 delete 逆操作的 id remap 在 await 期间有新入栈时 skipIdx 计算错误，会造成脏栈残留，属于必须修复的跨格正确性缺陷。另有 INV-23 登记与实现不一致、状态机前置未显式满足等纪律性问题，建议一并修正。"
+}

@@ -1,0 +1,946 @@
+== reasoning ==
+我们需要审计这个 diff。先读 AGENTS.md 硬规则，再对照 diff 找问题。注意：输出只给 JSON。需要认真分析。
+
+先列出硬规则相关：
+
+- 会话开工纪律：技能清点——简报里有，这是输入内容。
+- 状态与不变量：状态机前置、不变量登记 INV-16 等。
+- 代码组织：文件 ≤500 行；分层单向；死代码；类型单一真相源；重复逻辑。
+- 安全禁令：禁 nodeIntegration 等；禁止 renderer 引入 Node/Electron API 或绝对文件路径；openExternal 校验；SQL 注入；eval; 出网白名单。
+- 完成定义：verify 全绿，无 TODO/FIXME/placeholder，无乱码，diff 无范围蔓延，占位实现已删除，工单翻状态，受锁文件 locks:apply。
+- 测试纪律：禁止修改 tests/**、src/shared/** 除非 locked-change；每个测试必须能失败一次；变异红证；受锁 e2e 改动后全量 verify；修核心模块前先跑测试；e2e 必须断言真实文本。
+- 工单工作流：只改一个文件，不引入新依赖等。
+- 依赖与提交：禁止新增依赖；package.json/lockfile 变更必须 [dep-change]；受锁文件变更必须 [locked-change]；受锁文件修改前 unlock，改完即时 apply；提交一个逻辑单元；staging 显式列；中文 UTF-8。
+- 明确不做：如多窗口等。
+
+diff 涉及文件众多，需要检查是否有违规。特别是：
+
+1. `eslint.config.js` 修改——受锁文件，需 [locked-change] 尾注。简报说 ESLint 白名单 [受锁]，但 diff 本身没有 commit message 尾注？审计对象是代码 diff，通常 commit message 不在范围内，但简报提到了。这里不一定要算，因为我们只看到 diff，没看到 commit message。但注意 AGENTS.md 说“受锁文件变更必须带 [locked-change] 尾注（CI 检查）”。如果 diff 没有 commit message 上下文，我们无法验证。不过简报提到“ESLint 白名单 [受锁]：renderer 主块增 pdfjs-dist pattern（message 载明 INV-16+[locked-change]）”。这是代码注释里的。commit 尾注不在 diff 里。所以不以此作为 finding，除非 diff 内证据显示缺尾注。不编造。
+
+2. `src/shared/ipc/schemas.ts` 修改——受锁文件。按规则受锁文件变更必须 [locked-change]。简报里说 IPC 契约 [受锁]，但没有显式说 commit 尾注。同样 diff 不包含 commit message。
+
+3. `tests/unit/renderer/corpus-extractor.test.ts` 新增——测试文件受锁？AGENTS.md 说禁止修改 tests/**，除非 locked-change。新增测试文件算修改 tests 吗？规则说“禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）”。新增测试文件属于 tests/ 下，也在锁 manifest 中新增条目（locks/manifest.json 增加了 tests/unit/renderer/corpus-extractor.test.ts）。也就是说这个新测试文件被锁定为受锁文件，需要 [locked-change]。简报提到 new test 六受锁面 generate+apply。所以有 apply。同样 commit message 不在 diff。
+
+4. `src/main/services/export_/corpus.export.service.ts` 新增 stub——占位实现。AGENTS.md 完成定义说“占位实现已删除；工单在 tickets/registry.ts 翻状态”。但这里明确是 SR2-AI-03 的占位，因为 AI-02 需要链路可测而 AI-03 还未实现。工单工作流规则：“占位挂 open 工单合法形态”。这里 stub 在 AI-03 open 文件，且 registry 中 SR2-AI-03 仍 open。所以不违反。但有个问题：registry.ts 中 SR2-AI-02 状态翻为 done，但 SR2-AI-02 的“完成定义”要求“占位实现已删除”？SR2-AI-02 原来是 STUB，现在已实现，检查 CORPUS_EXTRACTOR_STUB 是否还在 diff 里？diff 中 `export const CORPUS_EXTRACTOR_STUB = 'SR2-AI-02'` 被删除了。但 `CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'` 保留。这是另一个工单的占位，没问题。
+
+5. 安全审计：
+   - renderer 中 `loadPdfDocument` 使用 `await import('pdfjs-dist')` 动态导入。AGENTS.md 禁止 renderer 引入 Node/Electron API，pdfjs 不是 Node API，OK。但 CSP 是否允许 dynamic import？项目 CSP 未知，但 pdfjs 是白名单。dynamic import 边界在简报中声明为已知边界。审计要检查是否构成安全风险：动态导入可能绕过 no-restricted-imports，但这是白名单文件，且规则本身对 dynamic import 覆盖因 ESLint 版本而异。简报已记录。不算 BLOCKING。
+   - `createDomCanvas` 中的 `drawFrom` 实现：`(src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement)`。这里 `src` 是 RenderCanvas 类型，没有 `el` 属性。`createDomCanvas` 返回的对象没有 `el` 属性，所以 `src.el` 是 undefined，然后 `src as unknown as HTMLCanvasElement` 强制转换。但测试桩 canvasStub 也没有 el 属性。生产 drawFrom 调用时 `pageCanvas` 和 `annoCanvas` 都是 `createDomCanvas` 创建的，没有 `el` 属性，所以 `(src as { el?: HTMLCanvasElement }).el` 是 undefined，`(src as unknown as HTMLCanvasElement)` 是把一个不含 canvas 元素的对象当作 HTMLCanvasElement 传给 drawImage。这会导致运行时错误：drawImage 接收的不是 CanvasImageSource。这是一个正确性 bug！等等，仔细看 `createDomCanvas` 返回对象是 `{ width, height, ctx, drawFrom, toPngBase64 }`，它没有 `el`。但 `ctx` 是 `el.getContext('2d')` 的 context。`drawFrom` 的 `src` 参数是 RenderCanvas，如果要 drawImage，需要的是 HTMLCanvasElement 本身。当前实现把 `src` 本身作为 drawImage 的第一参数，但 `src` 不是 canvas 元素。除非调用方传入的是原始 canvas 元素？代码中 `annoCanvas.drawFrom(pageCanvas, box)`，`pageCanvas` 是 `createCanvas(viewport.width, viewport.height)` 的返回，即 createDomCanvas 的返回值，不是 canvas 元素。所以运行时 `drawImage(pageCanvas, ...)` 会抛异常（参数不是 CanvasImageSource）。这是 BLOCKING 正确性缺陷。但是等等，`drawImage` 也可以接受 OffscreenCanvas，但这里不是。所以这确实是个 bug。
+
+   不过还需要确认：`createDomCanvas` 返回的 `ctx` 被赋给了 `pageCanvas.ctx`，然后 `page.render({ canvasContext: pageCanvas.ctx, viewport })`——OK。然后 `pageCanvas.toPngBase64()` 用 `el.toDataURL`——OK。然后 `annoCanvas.drawFrom(pageCanvas, box)`——这里 `drawFrom` 实现从 `src` 取 `el`，但 `src` 没有 `el`。它 fallback 到 `src as unknown as HTMLCanvasElement`，即把整个对象传进去。drawImage 会失败。这是肯定的。测试中 canvasStub 的 drawFrom 是 no-op，所以单测没覆盖这个生产实现。这应该作为 BLOCKING 发现。建议：在 RenderCanvas 接口中暴露 `el` 或 `canvas` 字段，或者 drawFrom 直接使用 `src` 的底层 canvas。也可以让 createDomCanvas 返回的对象包含 `el` 或 `canvas` 属性，并让 drawFrom 用 `src.canvas`。当前代码 `(src as { el?: HTMLCanvasElement }).el` 暗示本意是返回对象应该有 `el`，但实际没有。这是实现不一致。
+
+   另一个思路：也许 `createDomCanvas` 返回的 `ctx` 就是 context，drawImage 可以从 context 的 canvas 拿？没有。所以确实 bug。
+
+   但等一下：`page.render({ canvasContext: pageCanvas.ctx, viewport })` 之后，pdfjs 渲染到 pageCanvas.ctx。然后 `annoCanvas.drawFrom(pageCanvas, box)`。`annoCanvas` 的 ctx 是另一个 canvas 的 2D context。`drawImage` 第一个参数需要图像源，可以是 canvas 元素。正确的实现应为 `ctx.drawImage(pageCanvas.el, ...)`，但 pageCanvas 没有 el。所以必须修改。这是一个正确性 bug，应该 BLOCKING。
+
+   然而，这个 bug 会不会在测试中暴露？测试用 stub，所以没暴露。生产会直接失败。这违反“必须能失败一次”的测试纪律吗？测试没覆盖生产 drawFrom 的真实路径，只覆盖了 stub。但这是一个实现 bug。审计应该发现。
+
+6. `cropBoxPixels` 的数学：`sx: x0 * width`。AnnotationRect 坐标是归一化 (0~1)？注释说 “归一化 rects → 像素包围盒”。x0 是 min(x)，如果 rect 坐标范围是 0..1，乘以 width 像素。OK。`sw: (x1 - x0) * width`。如果 x0=0.1, x1=0.75, width=1224, sw=0.65*1224=795.6。返回值可能不是整数，canvas 支持浮点尺寸？HTMLCanvasElement width 属性必须是整数，但 box.sw 用于 drawImage 的尺寸，可以是浮点。cropBoxPixels 返回浮点，而 `createCanvas(box.sw, box.sh)` 会把浮点赋给 `el.width`，HTMLCanvasElement.width 是 unsigned long，会取整。可能不是大问题。但如果是 0 宽或负值怎么办？空 rects 数组会返回 sx=Infinity, sy=Infinity, sw=-Infinity, sh=-Infinity。调用方先 filter `pageRects.length === 0` 则 continue，所以不会用空数组。但如果所有 rect 坐标非法（如负数或 >1），可能产生负宽。没有校验。AnnotationRect 来自数据库，可能已经被 zod 校验过范围？要看 annotationRectSchema 是否限定 0..1。从 shared/models/annotation 导入，未知。但值得 WARN。
+
+7. `runExtraction` 中 `for (const anno of req.annotations)` 里的 anno 裁剪：`pageRects = anno.rects.filter((r) => r.page === n - 1)`。如果 anno 的 rects 分布在多页，那么跨页标注会在每页都发 anno 图（用当页 rects 裁剪）。注释说“跨页标注只裁当页 rects”，合理。但 `cropBoxPixels(pageRects, viewport.width, viewport.height)` 接收的是当页 rects，viewport 尺寸来自当前页。OK。
+
+8. 状态机：`handleEvent` 对 progress 事件返回，对 extract-request 且 extracting=false 起 runExtraction。`extracting` 在 finally 中设为 false。如果 `runExtraction` 中 sendItem('complete') 失败，会进入 catch，发送 error，然后 finally destroy。但 complete 失败意味着 main 会话可能已消失，再发 error 可能无意义，但代码 try/catch 包住 error 上报。注意：如果 `deps.sendItem({ ...base, kind: 'complete' })` 本身 reject（而不是 resolve ok:false），`await` 抛异常，进入 catch，发 error。OK。但 complete 的 ack 没有检查 `ok`。`await deps.sendItem({ ...base, kind: 'complete' })` 忽略了返回值。如果 complete 的 ack 是 `{ ok: false }`，代码不会当作失败处理，之后 finally，状态回 idle。这算不算错误？complete 回传被拒绝，可能 main 侧会话已失效，但提取仍算完成。合理。但状态机表说“篇毕 sendItem complete；destroy；→idle”，没提 ack 检查。所以不算违规。但有没有可能 complete 返回 ok:false 时应该触发 error？业务上 complete 是最终通知，无需 ack。可以 NIT。
+
+9. `SendItem` 类型为 `(item: CorpusItemReq) => Promise<Result<void>>`。生产 `window.api.export_.corpusItem` 返回 `Promise<Result<void>>`？api-surface 中 `Res: S.trueAckSchema`。trueAckSchema 形状未知，但 Result 折叠约定。Invoke 返回的 Result 可能是 `{ok:true,data...}` 或 `{ok:false,error}`。sendItem 返回 Result<void>。OK。
+
+10. `extractRequestEventSchema` 中 `annotations` 有 `.max(5000)`。如果标注过多，事件 payload 很大。但这是设计。`z.array(annotationRectSchema)`，annotationRectSchema 是 shared/model。这里 import `annotationRectSchema` 从 `../models/annotation`，但同一文件下部有 `import { annotationSchema, annotationInputSchema } from '../models/annotation'`，重复 import？看 diff：schemas.ts 开头增加了 `import { annotationRectSchema } from '../models/annotation'`。而原文件已有 `import { annotationSchema, annotationInputSchema } from '../models/annotation'`。这会造成两个 import 语句从同一模块导入，是重复导入。ESLint 可能不允许？但没有规则禁 duplicate imports（import/no-duplicates 可能没开）。风格 NIT。但更重要的是：按照“类型单一真相源”和代码组织，没问题。只是重复。
+
+11. `exportProgressEventSchema` 定义了，但 `ExportCorpusEvent = ExtractRequestEvent | ExportProgressEvent`。PreloadEvents.onExportCorpus 用 ExportCorpusEvent。main 侧将来会发 progress。目前 main 侧 stub 不发。OK。
+
+12. `src/main/ipc/export_.ts` 增加 `corpusItem: (req) => deps.services.export_.corpusItem(req)`。`deps.services.export_` 类型是 `ExportService & Pick<CorpusExportService, 'corpusItem'>`。但 `createExportService` 返回的 `ExportService` 可能有很多方法。合并 OK。但这里 `corpusItem` 没有做任何 Result 折叠或错误处理？`deps.services.export_.corpusItem(req)` 返回 Promise<{ok:true}>，而 `corpusItem` stub 抛 NotImplementedError。IPC handler 直接返回会怎样？NotImplementedError 会被主进程 IPC 捕获，reject renderer invoke。renderer sendItem 得到 rejected promise？`SendItem` 类型是 `Promise<Result<void>>`，但实际 invoke 可能 reject 而不是 resolve Result。CorpusExtractor 中 `const ackText = await deps.sendItem(...)` 如果不 catch，会抛异常，进入 catch，然后发送 error。但 error 的 sendItem 也会 reject，再次进入 catch 被 console.error。状态回 idle。所以链路可测。但 `NotImplementedError` 是什么？从 shared/app-error 导入。需要看 app-error 的实现是否满足 Result 折叠？也许 NotImplementedError 会被 register 折叠？简报说“register 折叠 NOT_IMPLEMENTED→renderer failed 路径”。这里 IPC handler 是直接调用 service，没有经过 register？实际上 export_.ts 中 `corpusItem: (req) => deps.services.export_.corpusItem(req)` 没有看到错误折叠。也许 api-surface 或 ipc 封装层会统一处理错误折叠成 Result。必须查 ts 代码，但 diff 没显示。不能断言。不过最直接：`createCorpusExportService().corpusItem` 是 async 函数 throw NotImplementedError。返回的 promise reject。IPC 层可能 catch 后折叠成 `{ok:false,error}`？项目有这样的机制。简报提到“register 折叠 NOT_IMPLEMENTED→renderer failed 路径”。应该没问题。
+
+13. **动态 import 与安全**：`loadPdfDocument` 中 `await import('pdfjs-dist')` 没有指定路径参数。URL 来自 extract-request 事件载荷，由 main 发出。如果 main 被攻破或有恶意事件，可能加载 file:// 或其他？pdfjs getDocument(url) 接受 URL 字符串。url 来自 main 的事件，renderer 不直接控制。但如果 main 发出了恶意 url，pdfjs 可能请求网络？pdf.js 可以加载远程 PDF。项目安全规则禁止后台自动网络任务，只手动触发；这里提取是显式用户操作，但 url 可能是本地文件。pdfjs getDocument 是否允许网络？在 Electron renderer 中，如果 pdfjs 的 worker 可以 fetch 远程 URL，可能违反 CSP connect-src。但 workerSrc 是本地。getDocument(url) 如果 url 是 http，pdfjs 会 fetch。CSP 可能限制 connect-src，但出于安全最好校验 url 协议。然而事件来自 main，url 是 main 下发的，如果 main 只允许 file:// 路径，应该没问题。diff 中 `loadDocument` 直接 `getDocument(url)`，没有协议校验。但这是设计，main 生成 url。不算问题，可能 WARN。
+
+14. `createDomCanvas` 使用 `document.createElement('canvas')`。renderer 沙箱内合法。`toDataURL('image/png')` 可能产生大字符串，base64 后通过 IPC 发送，payload 可能很大。背压逐项，但每项 PNG base64 可能几 MB。IPC 性能问题，但设计如此。
+
+15. 测试文件行数：222 行，OK。CorpusExtractor.ts 263 行（从 diff 看实现约 200+），OK。schemas.ts 增加 75 行，整个文件可能超 500？需要确认原文件行数。diff 没显示总行数。简报说 diff 639 行 15 文件。如果 schemas.ts 超 500，ESLint max-lines 会拦。所以应该没超。不过新增部分在 schemas.ts 可能使文件超过 500？原 schemas.ts 应该是几百行。CI lint 过了，所以没超。
+
+16. `eslint.config.js` 白名单 override 结构：`files` 匹配三个文件，但 `eslint.config.js` 中 override 块没有 `rules` 里的其他原有规则？它重申了完整的 no-restricted-imports patterns，但没有其他规则。flat config 中 override 块只覆盖指定 rules，其他规则继承。但 no-restricted-imports 的规则配置是整体覆盖，所以需要完整 patterns。注释说明。但少了一条：原 renderer 块的 patterns 有三组：node/electron、main/preload、pdfjs-dist。override 块只有前两组。这正是意图。但问题：白名单三文件中，CorpusExtractor.ts 现在动态 import pdfjs-dist（`await import('pdfjs-dist')`）。ESLint no-restricted-imports 对 dynamic import 的检查？通常 no-restricted-imports 会检查 import 声明和 require，对 import() 表达式在 ESLint 8+ 会检查吗？实际上 `no-restricted-imports` 的 `patterns` 选项检查所有 import 语句，包括动态 import()。但 ESLint 版本可能影响。如果检查动态 import，那么 override 白名单允许 CorpusExtractor 动态导入。如果没有 override，会被拦。现在 override 三文件 allow pdfjs。所以 OK。
+
+    但注意：`src/renderer/features/reader/PdfCanvas.tsx` 有静态 import `import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'` 和 `import { GlobalWorkerOptions } from 'pdfjs-dist'`。TextLayer 有静态 CSS import？白名单 OK。
+
+    但 OutlinePanel/OutlineThumb 改为从 PdfCanvas 导入类型。PdfCanvas 使用 `export type { PDFDocumentProxy, RenderTask }`，需要确认 PdfCanvas 本身是否 import 了这些类型？PdfCanvas 肯定有 `import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'`？从 diff 看，PdfCanvas 增加了 re-export 但没有显示 import 来源。原文件已经使用 pdfjs，所以应该有 import。OK。
+
+17. **INV-16 锚定**：invariants.md 更新，但注意 `docs/invariants.md` 是受锁文件吗？AGENTS.md 受锁文件变更必须 [locked-change]。invariants.md 在 locks/manifest.json 中吗？diff 没有更新 manifest 中 invariants.md 的 sha？locks/manifest.json diff 中没有看到 docs/invariants.md。这说明 docs/invariants.md 可能不在锁清单中？AGENTS.md 说受锁文件包括 tests/shared/migrations/CI/lint/构建/测试配置/脚本。docs/invariants.md 不在列举中，可能不受锁。OK。
+
+18. `tickets/registry.ts` 修改：registry.ts 是否受锁？受锁文件列表未包含 tickets/registry.ts？AGENTS.md 完成定义要求工单在 tickets/registry.ts 翻状态。registry.ts 可能不在锁清单。OK。
+
+19. **测试纪律**：tests/utils/pdf-factory.ts 修改——tests/** 受锁。diff 有修改。需要 [locked-change]。同样 commit message 不在。
+
+20. **测试文件中的 guard**：`guardedDescribe` 来自 tests/utils/guard。可能是条件跳过。无所谓。
+
+21. **fake 测试恒真断言**：测试中 `expect(ctx.maxInflight).toBe(1)` 有意义，背压断言。但如果实现完全串行，maxInflight 恒 1。不错。但测试里 `flushAll` 轮询次数 `pages*8+16` 可能不足？如果 sendItem 链有更多宏任务，可能测出假绿或假红。之前简报说调试过。OK。
+
+22. **潜在问题：`cropBoxPixels` 的 rect 过滤基于 `r.page === n - 1`，但 `AnnotationRect` 的 `page` 是 0 基。注释说“存储 0 基页码→提取循环 1 基页换算”。** 在 `anno.rects` 中可能有 page < n-1 的 rect，会被 filter 掉。如果 rects 的 page 字段都是同一页的混合，OK。但如果 AnnotationRect.page 是页码（1 基）呢？需要确认 annotationRectSchema 的语义。从注释和测试看，测试 rect `{ page: 1 }` 期望 anno 图在第 2 页回传（n=2, n-1=1）。所以 0 基。OK。
+
+23. **安全问题：IPC payload 中 `url` 来自 main，传给 pdfjs。** main 侧将来发送 url 可能来自 DB 的路径。如果 DB 路径被注入，renderer 加载任意文件？但 renderer 是沙箱，pdfjs 读取文件通过 main 的 file 协议？`getDocument(url)` 在 renderer 中会用 fetch 加载 URL。Electron file:// 可能被 fetch 限制。CSP 可能限制。但事件通道是 main→renderer，renderer 无法随意触发。威胁模型低。可以 NIT。
+
+24. **`RenderCanvas` 接口的 `ctx` 类型是 `CanvasRenderingContext2DLike`，有 index signature `[key: string]: unknown`。** pdfjs 的 render 需要真正的 2D context，但类型上 unknown 索引不兼容？`page.render({ canvasContext: pageCanvas.ctx, viewport })`，render 的参数类型来自 PdfjsPageLike 定义：`render(params: { canvasContext: unknown; viewport: unknown })`。所以类型 OK。但生产 pdfjs 的 render 期望 canvasContext 是 CanvasRenderingContext2D，pageCanvas.ctx 是 `ctx as unknown as CanvasRenderingContext2DLike`，运行时是真正的 context，OK。
+
+25. **`drawFrom` 类型中 `src: RenderCanvas`，但实现需要底层 canvas。** 已经发现。这是最严重。
+
+26. **`createDomCanvas` 的 `drawFrom` 中 `(src as { el?: HTMLCanvasElement }).el` 如果 `src` 是 createDomCanvas 返回的对象，没有 el，所以 fallback `src as unknown as HTMLCanvasElement`。** 但 `src` 对象没有 canvas 元素，drawImage 调用时会抛 TypeError。而且 `drawFrom` 的 `box` 是 cropBoxPixels 结果，坐标是相对于 viewport 的像素。OK。
+
+    建议：修改 RenderCanvas 接口增加 `readonly el: HTMLCanvasElement` 或在 createDomCanvas 返回 `el`，并在 drawFrom 中用 `(src as RenderCanvas & { el: HTMLCanvasElement }).el`。
+
+27. **另一个潜在 bug：`pageCanvas` 的宽高是 `viewport.width` / `viewport.height`，但 `cropBoxPixels` 的宽高参数传的是 `viewport.width` / `viewport.height`。** 如果 viewport 有旋转或缩放，也许应该用 canvas 像素。OK。
+
+28. **`loadPdfDocument` 返回 `getDocument(url).promise as unknown as PdfjsDocumentLike`。** `getDocument` 参数是 `DocumentInitParameters` 或 string。传入 url 字符串 OK。但 pdfjs 可能要求 `url` 是 URL 对象或路径。OK。
+
+29. **`runExtraction` 中 `doc.numPages` 循环 `n <= doc.numPages`。** 如果 numPages 是 0，循环不执行，发送 complete。PDF 不可能 0 页，但防御可以。OK。
+
+30. **失败路径：如果 `loadDocument` reject，doc 为 null，catch 发送 error，finally 不 destroy，extracting=false。** OK。
+
+31. **如果 `sendItem('error')` 也失败，会 console.error。但 `runExtraction` 的 catch 块中 `await deps.sendItem(...)` 在 try 内，如果 sendItem reject，会跳出到外层？不，catch 块内没有再包 try，`await` 会抛异常，导致 runExtraction 的 promise reject，但调用方 `void runExtraction(e)` 不处理，成为 unhandled rejection。** 看代码：
+
+    ```ts
+    } catch (e) {
+      const reason = ...
+      try {
+        await deps.sendItem({ ...base, kind: 'error', reason })
+      } catch (sendErr) {
+        console.error(...)
+      }
+    } finally { ... }
+    ```
+
+    有 catch 包围，所以不会 unhandled。OK。
+
+32. **`handleEvent` 在 `extracting` 为 true 时忽略新请求。但如果第一个请求已完成（状态机最后 `extracting=false`），第二个请求已经发出但第一个的 runExtraction 还没走到 finally？** `extracting` 在 finally 设为 false。在 runExtraction 的最后一个动作 `await deps.sendItem({ ...base, kind: 'complete' })` 之后，finally 执行，extracting=false。如果 complete ack 未返回，第二个请求到达，`extracting` 仍为 true，被忽略。符合防御分支。OK。
+
+33. **进度事件消费**：`handleEvent` 对 `type !== 'extract-request'` 直接 return。OK。
+
+34. **IPC 契约**：`corpusItemReqSchema` 中 `figure` 分支允许 `annotationId` 可选，但没有规定 `figure: 'page'` 时不能带 annotationId。`.strict()` 允许可选字段。所以 `figure: 'page', annotationId: 'xxxx'` 也能通过。这是宽松类型，不影响安全。NIT。
+
+35. **`extractRequestEventSchema` 中 `url: z.string().min(1)`，没有校验协议。** main 侧事件来源可信。但如果 renderer 被 XSS，能通过 preload 的 onExportCorpus 订阅？XSS 不能给 main 发事件（通道单向）。XSS 可以调用 window.api.export_.corpusItem 发送伪造回传？这需要 sessionId，且 main 侧 stub 会拒绝。未来 AI-03 实现会消费。威胁面低。OK。
+
+36. **`exportProgressEventSchema` 的 `done` 和 `total` 是 int，但 `phase` 有枚举。** 没有约束 done <= total。将来 main 发事件可能违反，但那是 AI-03。NIT。
+
+37. **`tests/utils/pdf-factory.ts` 新增多页变体，但锁 manifest 更新了 sha。** 原 createMultiPagePdf 可能没有测试？新增函数未被测试直接使用？CorpusExtractor 测试用的是 docStub，不是 createMultiPagePdf！测试文件没有 import createMultiPagePdf。这意味着新增的 `createMultiPagePdf` 函数没有被任何测试使用，是死代码。AGENTS.md 说死代码即删。这是一个 WARN。但是也许未来的 AI-03/04 会用它。但当前提交没有引用。简报说“pdf-factory [受锁]：createMultiPagePdf 多页变体”，但没有说测试使用。审计 diff 显示 tests/unit/renderer/corpus-extractor.test.ts 没有使用 pdf-factory，它用 docStub。因此 `createMultiPagePdf` 当前未引用。这违反“死代码即删”原则。但要注意，它可能被其他测试文件引用？diff 中看不到其他文件。只能判断在当前 diff 中未使用。作为 WARN。
+
+38. **行数**：CorpusExtractor.ts 从 STUB 到 263 行，如果加上注释可能 >500？diff 显示文件包含大量注释，最终约 260 行。OK。
+
+39. **类型单一真相源**：preload 修改从 schemas 导入 ExportCorpusEvent，api-surface 的 PreloadEvents 也引用 S.ExportCorpusEvent。OK。
+
+40. **`export_.ts` 修改**：在 createExportIpc 返回对象中新增 `corpusItem`。但 `ApiHandlers['export_']` 类型是否允许？api-surface 增加 corpusItem 通道，ApiHandlers 类型从 API_SURFACE 推导，所以必须实现。OK。
+
+41. **`services/index.ts` 中 `export_: { ...createExportService({ repos: deps.repos }), corpusItem: createCorpusExportService().corpusItem }`。** 每次 createServices 调用都会创建一个新的 CorpusExportService 实例。如果将来有状态，会出现多实例问题。当前占位无状态。AI-03 应该注意。NIT。
+
+42. **`CorpusExportService` 接口的 `corpusItem` 返回 `Promise<{ ok: true }>`，与 IPC 的 Result 类型不匹配？** api-surface 的 Res 是 `S.trueAckSchema`，可能形状是 `{ ok: true }`。OK。
+
+43. **测试的 `guardedDescribe` 可能依赖环境变量，如果测试被 guard 跳过，那么 9 个用例不会跑，verify 仍绿？** 这是 guard 机制既有设计。不算。
+
+44. **`extractRequestEventSchema` 的 `.max(5000)` 是防止超大 payload。但 `annotations` 数组每个 anno 的 rects 没有 max。如果一个标注有数万个 rect，事件很大。** AnnotationRect 来自 DB，可能有大量。`.strict()` 和 annotationRectSchema 也许限制。NIT。
+
+45. **`cropBoxPixels` 没有对空数组或非法值防御。** 调用方保证非空。但如果 rect 坐标有负值或 >1，结果可能超出页面。annotationRectSchema 是否校验 0..1？未知。如果校验了，没问题。如果不校验，可能越界裁剪。WARN。
+
+46. **安全：`createDomCanvas` 使用 `document.createElement`，`toDataURL` 生成 base64 字符串。** 通过 IPC 发送 base64，可能较大。但背压。OK。
+
+47. **动态 import pdfjs 在 renderer 的 CSP 下是否允许？** Electron 默认 CSP 也许限制 script-src 'self'。动态 import 的模块在本地打包，属于 self。OK。
+
+48. **`loadPdfDocument` 没有处理 pdfjs worker 初始化。** pdfjs-dist 的 getDocument 在 renderer 中需要 worker。PdfCanvas 设置了 GlobalWorkerOptions.workerSrc。但 CorpusExtractor 模块零静态依赖，它动态 import pdfjs-dist 后，GlobalWorkerOptions 可能尚未设置？如果用户先触发提取，尚未打开任何 PDF，workerSrc 未设置，pdfjs 会尝试从默认路径加载 worker，可能失败。PdfCanvas 是 reader 组件，可能已挂载？但提取器独立于阅读器，可能在设置页触发，reader 未打开，PdfCanvas 未挂载，GlobalWorkerOptions.workerSrc 未设置。这是个 bug！pdfjs-dist 如果不设置 workerSrc，会 fallback 到假 worker（在主页线程运行）或报错？在模块环境中，pdfjs 可能尝试加载 `pdf.worker.min.mjs` 相对于当前脚本。可能可以，但性能和安全。更重要的是：白名单三文件之一 CorpusExtractor 动态 import pdfjs，它不应该依赖 PdfCanvas 先设置全局。CorpusExtractor 应该自己设置 GlobalWorkerOptions.workerSrc。但代码没有。这可能导致提取时 worker 加载失败。这是 WARN 或 BLOCKING？运行时会出问题。pdf.js v4 中，如果不设置 workerSrc，且不是 Node，会尝试使用 fake worker。可能会警告。能工作但慢。所以 WARN。
+
+49. **`RenderCanvas` 的 `drawFrom` 的 box 参数可能是浮点，drawImage 允许。** OK。
+
+50. **`exportProgressEventSchema` 中 `done` 和 `total` 语义：`done <= total` 不校验。** 未来 UI 可能显示进度 >100%。NIT。
+
+51. **`schemas.ts` 重复 import**：`import { annotationRectSchema } from '../models/annotation'` 和原 `import { annotationSchema, annotationInputSchema } from '../models/annotation'` 可以合并。NIT。
+
+52. **`CorpusExtractor.ts` 中 `CanvasRenderingContext2DLike` 的 index signature `[key: string]: unknown`，这允许任意属性，类型宽松。** 但注释说“pdfjs render 只需要可调用的 2D 上下文（形状不校验方法集——render 桩/真实现同构）”。pdfjs render 可能调用 `ctx.save`, `ctx.restore` 等，但类型上 unknown，运行时如果是真正 context 没问题。测试 stub 只有 markRendered，但 pdfjs render 桩不调用其他。OK。
+
+53. **测试文件中的 `docStub` 中 `getPage: (n: number) => Promise.resolve(pageStub(pages[n - 1] ?? ''))`，如果 n 超出 pages 长度，返回空文本页。** 不会发生。OK。
+
+54. **测试中 `flushAll(pages)` 轮询 `pages*8+16` 次。** 如果由于宏任务计时导致不够，可能假红；测试断言如果失败会明显。OK。
+
+55. **`createMultiPagePdf` 的对象编号：`Contents ${pages + 2 + n} 0 R`。** 数组对象 index：0 是 Catalog? 数组从 0 开始，PDF 对象 id 从 1 开始。`objects` 数组：
+    - objects[0] = Catalog (id 1)
+    - objects[1] = Pages (id 2)
+    - 然后 for n=1..pages 添加 Page 对象，id 3..p+2。对应 kids 指向 `2+n 0 R`：n=1 -> 3 0 R，n=2 -> 4 0 R ... n=p -> p+2 0 R。OK。
+    - Contents id `pages + 2 + n`：n=1 -> p+3，n=p -> 2p+2。对应 after pages 循环，contents 循环添加，第一个 contents 在数组下标 `2 + pages`，id `pages + 3`。OK。
+    - Font id `2*pages + 3`。数组最后一个对象。总数 = 2 + pages + pages + 1 = 2p+3 个对象，最大 id = 2p+3。OK。
+    - 但内容流中 `Td` 的 y 坐标 `720 - (n - 1) * 24`，n=1 -> 720，n=2 -> 696。OK。
+    - `esc(text)` 函数存在？原文件有。OK。
+    所以 createMultiPagePdf 正确。但未使用。
+
+56. **`locks/manifest.json` 中新增 `tests/unit/renderer/corpus-extractor.test.ts`，但没有列出 `docs/invariants.md`（可能不在锁）。** 新增测试文件需要 apply。OK。
+
+57. **`eslint.config.js` 的 override 块中 patterns 与主块不完全一致：主块有 pdfjs 条目，override 没有；但 override 应该覆盖主块？在 flat config 中，later config 的 rules 覆盖 earlier config 的相同规则。override 块是单独的配置对象，它的 rules 会合并？flat config 中多个 config 对象对同一文件的规则：最后一个匹配的 config 的 rules 完全覆盖之前的相同规则。所以对于白名单三文件，最终生效的 no-restricted-imports 是 override 的 patterns（不含 pdfjs）。这正是意图。但主块除了 no-restricted-imports 还有其他规则吗？override 只设置 no-restricted-imports，其他规则沿用。OK。但注释说“重申 renderer 全部其余禁令”，实际上 override 的 patterns 是完整复制了主块的其他 pattern，除了 pdfjs。所以 OK。
+
+58. **潜在问题：override 块没有应用主块的 `files: ['src/renderer/**']`？** override 有 `files` 三文件列表。主块对 renderer 全部生效，override 对三文件覆盖 no-restricted-imports。OK。
+
+59. **`OutlinePanel.tsx` 和 `OutlineThumb.tsx` 的 import type 改为 `./PdfCanvas`，但 PdfCanvas 是 `.tsx`，包含运行时代码，`import type` 仅类型，不会引入运行时。OK。** 但这样让 OutlinePanel 依赖 PdfCanvas 模块，可能引入循环依赖？PdfCanvas 是否 import OutlinePanel？不太可能。OK。
+
+60. **`PdfCanvas.tsx` re-export `PDFDocumentProxy` 和 `RenderTask` 类型。这些类型是从 pdfjs-dist 导入的类型。** 原来 PdfCanvas 内部是否已经 import 了？从 diff 看，增加 re-export 但未显示 import 行。也许原有 `import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'` 已经存在。OK。
+
+61. **类型 re-export 是否会导致 PdfCanvas 的 API 表面扩大？** 允许。
+
+62. **`CorpusExtractor.ts` 中 `loadPdfDocument` 是 export async function，返回 PdfjsDocumentLike。** 测试不调用它。它属于生产。OK。
+
+63. **`createCorpusExtractor` 的 deps.createCanvas 可选，默认 createDomCanvas。** 测试传 stub。OK。
+
+64. **`SendItem` 是 `(item: CorpusItemReq) => Promise<Result<void>>`。** `Result<void>` 来自 app-error。OK。
+
+65. **如果 `sendItem` 返回 `{ ok: false }`，代码抛 Error('fulltext 回传被拒绝...')，进入 catch。catch 再 sendItem error。error 的 sendItem 如果返回 ok:false（而不是 reject），代码只 await 不检查，不会抛。所以 error 上报成功。** 然后 finally。OK。
+
+66. **但注意：`ackFailAt` 逻辑中，如果 ack 失败，`ctx.sent` 已经 push 了该项。所以 sent 包含失败的 fulltext 和后续 error。测试断言 `kinds[kinds.length - 1] === 'error'`。** OK。
+
+67. **测试“文档加载失败”中 `makeCtx(Promise.reject(new Error('bad url')) as unknown as PdfjsDocumentLike)`。** `loadDocument` 是 `() => { const d = doc; return Promise.resolve(d) }`，但 doc 是 rejected promise？`Promise.resolve(d)` 如果 d 是 Promise，会跟随它，得到 rejection。所以 loadDocument 返回 rejected promise。OK。
+
+68. **`runExtraction` 中 `const base = { sessionId: req.sessionId, paperId: req.paperId }`。** `paperId` 可能用于 main 侧查找文档？OK。
+
+69. **`CorpusExtractor` 没有导出 `PdfjsTextItem` 等接口到外部？** 不需要。
+
+70. **`cropBoxPixels` 的 `sx` etc 没有取整，drawImage 时源矩形坐标可以是浮点，但 drawImage 对浮点取整。** 可能造成 1px 误差。NIT。
+
+71. **`EXPORT_SNAPSHOT_SCALE` 定义为 2.0，但测试中 `W = 612 * EXPORT_SNAPSHOT_SCALE`。** OK。
+
+72. **`extractRequestEventSchema` 的 `annotations` 数组 max(5000)。** 如果超过 5000 个标注，事件校验失败，main 的 extract-request 被拒，提取不开始。这可能导致功能不可用，但防御合理。NIT。
+
+73. **`ExportCorpusEvent` 是 union，但 `handleEvent` 只用 extract-request，progress 忽略。** 未来 progress 由 UI 面消费。OK。
+
+74. **preload 的 `onExportCorpus` 监听 EVENT_CHANNELS.exportCorpus。** api-surface 中 EVENT_CHANNELS.exportCorpus 值 'export/corpus/event'。OK。
+
+75. **`src/shared/ipc/api-surface.ts` 中 EVENT_CHANNELS 增加 exportCorpus，但没有在 PreloadEvents 的类型中增加？** 有。OK。
+
+76. **`src/main/ipc/export_.ts` 中 `corpusItem: (req) => deps.services.export_.corpusItem(req)`。** 但 `ApiHandlers['export_']` 类型的方法可能要求返回 `Promise<Result<unknown>>`。`corpusItem` stub 返回 `Promise<{ok:true}>`，与 trueAckSchema 匹配。但 stub 抛 NotImplementedError，IPC 层如果不用 wrapper，invoke 会 reject。这在简报中说明会被 register 折叠。所以不深究。
+
+77. **`services/index.ts` 中 `export_: ExportService & Pick<CorpusExportService, 'corpusItem'>`。** `createExportService` 返回 `ExportService`，然后用 spread 合并。但 `Pick<CorpusExportService, 'corpusItem'>` 只取 corpusItem 类型。OK。但如果 ExportService 已经有 corpusItem？不会。OK。
+
+78. **`createCorpusExportService` 每次调用都会创建一个新对象，`createServices` 中调用一次。** 无状态。
+
+79. **`NotImplementedError` 是否来自 shared/app-error？它可能是 Error 子类。** 抛 throw 在 async 函数中产生 rejected promise。OK。
+
+80. **测试中 `type PdfjsDocumentLike` 从 CorpusExtractor 导入，是结构类型。** 测试的 docStub 满足接口。OK。
+
+81. **`guardedDescribe` 的使用：如果 guard 返回 skip，则所有用例不跑。** 这是既有工具。
+
+82. **新增测试文件在 locks/manifest.json 中登记 sha。但测试文件本身包含 `SR2-AI-02` 字符串，check-tickets 可能检查占位？** 测试文件里有工单号引用，但 check-tickets 规则大概是禁止 done 文件里有 NotImplementedError 或全形工单号？测试文件不在实现文件，应该允许。OK。
+
+83. **`corpus.export.service.ts` 的 stub 在 AI-03 open 文件。但 AI-02 的 diff 修改了 AI-03 的文件。这违反“只改这一个文件”吗？** 这条规则是弱模型领单专用，AI-02 是 strong owner？简报说 owner: strong。工单工作流第 3 条“只改这一个文件（+ 必要时新文件）”可能适用于所有？但 AGENTS.md 说“工单工作流（弱模型领单专用）”。所以 strong 模型不受此限制。而且在简报中解释了占位位置裁决。OK。
+
+84. **`tests/utils/pdf-factory.ts` 新增了未被使用的 `createMultiPagePdf`——死代码。** 虽然是测试工具，但“死代码即删”是硬规则。不过它可能为了后续工单准备，但当前未引用。可以 WARN。但注意，死代码删除是硬规则，违反即返工？AGENTS.md 代码组织部分“死代码即删：孤儿组件、重复资产……提交前确认新文件被引用。”这是硬规则。如果 `createMultiPagePdf` 未被引用，违反。但也许它在原文件已有 `esc` 和 `PDF_KNOWN_TEXT`，新函数可以被后续测试引用，但当前提交中无引用。这是 WARN 或 BLOCKING？因为硬规则说“死代码即删”，违反即返工是总体原则。但严格说，它没有被项目代码引用，但作为测试工具，可能被未来使用。不能算“孤儿”因为它在 utils 中，可能有其他测试用？当前 diff 中只有新增，没有使用。我认为 WARN，因为不是生产死代码，且它是测试工具库的一部分，未来 AI-03 可能用。但按规则，提交前确认新文件被引用。这里新函数未被引用。因此 WARN。
+
+85. **`CORPUS_EXPORT_SERVICE_STUB` 常量保留，是否违反“无 TODO/FIXME/placeholder” quality 关卡？** 完成定义中说 `grep` 无 TODO|FIXME|placeholder。但 `CORPUS_EXPORT_SERVICE_STUB` 不是字符串 'STUB'？它是常量名包含 STUB。quality 关卡可能 grep "STUB|TODO|FIXME|placeholder"？如果 grep 包含 STUB，会拦。但 verify 已绿，说明 quality 关卡可能只查特定模式或允许 open 工单占位？简报说 check-tickets 规则“open 工单占位合法形态”。quality 关卡可能排除 open 工单的 STUB。所以 OK。
+
+86. **`CorpusExtractor.ts` 中 `console.warn` 和 `console.error` 在生产代码中合理。** NIT 不算。
+
+87. **`loadPdfDocument` 的 dynamic import 没有错误处理，如果 pdfjs 加载失败，reject 会被 catch。** OK。
+
+88. **`createDomCanvas` 的 `ctx: ctx as unknown as CanvasRenderingContext2DLike`。** 类型转换绕过了类型安全，但运行时是 context。`CanvasRenderingContext2DLike` 有 index signature，所以 `pageCanvas.ctx` 可以传给 pdfjs render 的 `canvasContext: unknown`。OK。
+
+89. **`RenderCanvas` 接口 `ctx` 暴露为 `CanvasRenderingContext2DLike`，而不是真正的 context。`drawFrom` 实现依赖 `src` 的底层元素。** 接口设计有缺陷。
+
+90. **还有一个问题：`createDomCanvas` 中 `drawFrom` 实现为：**
+    ```ts
+    drawFrom(src, box) {
+      ctx.drawImage(
+        (src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement),
+        ...
+      )
+    }
+    ```
+    如果 `src` 是 createDomCanvas 返回的对象，没有 el，fallback 到对象本身。但 `createDomCanvas` 返回的对象不是 HTMLCanvasElement。即使我们修改 `createDomCanvas` 让它把 `el` 暴露出来，fallback 的 `src as unknown as HTMLCanvasElement` 仍然是错误路径。所以必须改。
+
+    另外，`toPngBase64` 中 `dataUrl.slice('data:image/png;base64,'.length)` 假设 dataURL 前缀长度。OK。
+
+91. **`cropBoxPixels` 中 `x0` 初始 Infinity，如果 `rects` 非空但所有 rect 的 x 都是 NaN？** 不会。OK。
+
+92. **测试的 `req` 函数调用 `extractRequestEventSchema.parse`，如果 future 测试想传非法载荷，需 safeParse。** OK。
+
+93. **`flushAll` 的轮询次数 `pages*8+16`：每页有 fulltext ack, page figure ack, anno acks。anno 数可变。测试中的 anno 用例 flushAll(2) 可能不够？** 该用例有两个 anno? 只有 1 个 anno，总 send 项：页1 fulltext, fig1, 页2 fulltext, fig2, anno(页2), complete = 6 项，每项 setTimeout 宏任务。pages*8+16 = 32 轮，足够。即使有多个 anno，也可能够，但理论最大不保证。这是测试设计的健壮性问题。如果未来改测试添加很多 anno，可能不够而假红。但当前通过。NIT。
+
+94. **测试“事件契约三面”中 `annotations: [{ id: 'a', rects: [], extra: 1 }]` 期望 false。** strict 模式拒绝额外字段。OK。
+
+95. **`extractRequestEventSchema` 的 `annotations` 字段 `.max(5000)` 没有 `.min(0)`？** z.array 默认允许空数组。OK。
+
+96. **`annotationRectSchema` 导入可能在 schemas.ts 中已存在？** 原 import 只有 annotationSchema 和 annotationInputSchema，如果 annotationRectSchema 也在同一模块，重复导入。NIT。
+
+97. **`eslint.config.js` 中 pdfjs pattern 用了 `group: ['pdfjs-dist', 'pdfjs-dist/**']`。** 这能匹配主包和子路径。OK。
+
+98. **`locks/manifest.json` 中 `eslint.config.js` sha 更新，但新增白名单 override 后，CI 锁同步。** OK。
+
+99. **`docs/invariants.md` 中 INV-16 状态翻已锚定，但 INV-16 的强制方式列更新为 ESLint 强制（no-restricted-imports），并提到动态 import 边界未在规则中拦截？** 简报提到“防线缺口=非白名单文件 dynamic import pdfjs 可能不拦（记录为已知边界）”。INV-16 登记册写了吗？invariants.md diff 中“ESLint 强制（no-restricted-imports——renderer 主块禁 pdfjs-dist+白名单三文件 override 块重申其余禁令；2026-08-27 随 SR2-AI-02 落地，lint 拦截 OutlinePanel/OutlineThumb 两处漏扫的类型直连实证防线生效并当场改走 PdfCanvas 再导出）”。没有提到 dynamic import 边界。而简报说记录为已知边界，审计面覆盖。AGENTS.md 要求不变量登记必须包含“声明处 + 强制方式 + 锚定状态”。如果没有写明 dynamic import 缺口，未来第四处 dynamic import 可能不拦，防线不完整。但这是 INV-16 的已知限制。是否应该 WARN？可能。但 INV-16 的白名单是“运行时 import 白名单”，dynamic import 也是运行时 import。ESLint 规则没有拦截非白名单 dynamic import，所以 INV-16 的机器锚不完整。不过简报明确记录为已知边界。但在 invariants.md 中没有记录该边界，可能会让未来审查者误以为完全机器强制。这算 WARN。
+
+100. **`src/shared/ipc/schemas.ts` 中 `exportProgressEventSchema` 的 `done` 和 `total` 使用 `z.number().int().min(0)`，但没有 `done <= total`。** 如果进度事件错误，UI 显示问题。NIT。
+
+101. **`preload/index.ts` 中 `onExportCorpus` 返回清理函数，符合 INV-14 成对？** INV-14 是关于输入接缝注册/注销成对。事件监听也是接缝。返回 removeListener 函数。OK。
+
+102. **`src/main/ipc/export_.ts` 修改了 `ApiHandlers['export_']` 的实现，但它是否在 ipc 注册层？** 需要看更多上下文。但 diff 显示 `corpusItem: (req) => deps.services.export_.corpusItem(req)`。如果 `req` 尚未经 zod 校验，IPC 层可能统一校验。OK。
+
+103. **`corpusItem` stub 的 `async corpusItem(_req: CorpusItemReq): Promise<{ ok: true }> { throw new NotImplementedError('SR2-AI-03') }`。** `NotImplementedError` 是否带 message 且不是 Result 折叠？如果 register 不 catch，renderer 的 `sendItem` 会 reject。测试中 `sendItem` 桩 resolve Result，所以测试没测真实 stub。但 AI-02 简报说“链路 AI-02 独立可测”。实际上 corpusItem 的真实 IPC 调用会 reject，CorpusExtractor 会在 `await deps.sendItem(...)` 处抛异常，进入 catch，尝试发 error 但 error 也 reject，console.error。链路可测但错误信息不是 error 载荷。不过这只是占位，AI-03 会实现。所以不算。
+
+104. **`tests/utils/pdf-factory.ts` 新增 `createMultiPagePdf` 后，`locks/manifest.json` 更新了 sha。但 `createMultiPagePdf` 没有测试覆盖，是死代码。** 已提。
+
+105. **`OutlookPanel/OutlineThumb` 类型导入改道，但 `PdfCanvas` re-export `PDFDocumentProxy, RenderTask` 是类型。** 如果 `PdfCanvas` 内部没有从 pdfjs-dist import 这些类型，re-export 会失败。从 diff 看，PdfCanvas 头注说“pdfjs-dist import 白名单三文件之一”，且原文件有 import。所以应该有。但不能确定。如果 PdfCanvas 原来没有 import RenderTask，re-export 一个不存在的类型会导致 typecheck 失败，而 verify 已绿。所以肯定有。OK。
+
+106. **`tests/unit/renderer/corpus-extractor.test.ts` 的 `flushAll` 循环中 `pages * 8 + 16` 是一个魔数。** 如果 sendItem 的 setTimeout 是 0ms，Event loop 可能把多个宏任务合并？在 Node 中 setTimeout 0 不会合并。OK。
+
+107. **`makeCtx` 中 `loadDocument = () => { const d = doc; return Promise.resolve(d) }`。如果 doc 是 rejected promise，`Promise.resolve(d)` 跟随它。但 `d` 是一个 Promise 实例（Promise.reject），`Promise.resolve(d)` 返回新的 promise 跟着 reject。OK。
+
+108. **`docStub` 的 `destroy` failDestroy 时 reject。测试断言 complete 已上报。** 因为 finally 中 destroy 失败仅 warn，不改变已发送的 complete。OK。
+
+109. **`CorpusExtractor` 的 `runExtraction` 中，如果 `destroy` 失败，不影响 extracting=false。** OK。
+
+110. **如果 `page.render` 抛异常或返回 rejected promise，`await` 抛出，进入 catch，发送 error。** 但 page.render 的 `promise` 是 `Promise<void>`，`await page.render(...).promise` 会等渲染完成。如果渲染失败，pdfjs 的 render promise reject，捕获。OK。
+
+111. **`page.getViewport({ scale: EXPORT_SNAPSHOT_SCALE })` 在 `getTextContent` 之后。** OK。
+
+112. **`pageCanvas.toPngBase64()` 在 render promise resolve 后调用。** OK。
+
+113. **`annoCanvas.drawFrom(pageCanvas, box)` 的 bug 是核心。** 生产路径必然失败。但单测没覆盖，因为 stub。这是 BLOCKING。需要建议修复：让 `createDomCanvas` 返回的对象包含 `get canvas() { return el }` 或直接暴露 `el`，并在 `drawFrom` 中使用 `src.el`。
+
+114. **还有潜在的类型问题：`CanvasRenderingContext2DLike` 用 index signature 让 `ctx` 成为任意对象，但 `createDomCanvas` 的返回对象中 `drawFrom` 使用了 `ctx`（闭包变量），而 `RenderCanvas` 接口的 `drawFrom` 使用 `src: RenderCanvas`。** 由于接口缺少 `el`，修 bug 必须改接口。这是一个设计缺陷。
+
+115. **`loadPdfDocument` 中的 `getDocument(url).promise`：pdfjs 的 `getDocument` 接受 `DocumentInitParameters` 或 string。** 传入 string OK。但 `getDocument` 返回 `PDFDocumentLoadingTask`，`.promise` 是 `Promise<PDFDocumentProxy>`。转换为 PdfjsDocumentLike。OK。
+
+116. **如果 `getDocument` 需要 `useWorkerFetch` 或 `disableWorker` 等配置？** 不需要。
+
+117. **`extractRequestEventSchema` 中 `url` 可能是普通字符串，但 `loadPdfDocument` 直接传给 pdfjs。** 如果 main 侧下发的是 `file://` URL，pdfjs 在 renderer 中通过 fetch 加载 file:// 可能被 CSP 或 Chromium 禁止。Electron 的 file 协议默认 fetch 不允许。但项目已有 PDF 打开功能，应该已有方案。也许 URL 是自定义协议或 blob。但这是 AI-02 的提取器，从事件获取 url。如果 url 是 main 侧从对话框选择的路径，可能需要转换成 `file://` 或通过 custom protocol。pdfjs 在 renderer 加载本地文件通常用 `fetch` file:// 在某些 Electron 版本被禁止。项目既有 PdfCanvas 打开 PDF 可能用了同样的 url。所以不是新问题。但提取器不依赖 ReaderPage，需要独立加载。如果 url 需要 main 侧提供可访问的资源，AI-03/04 需要处理。当前 stub 链路。不算审计发现？可能 WARN：url 来源的可用性未验证。但 diff 中 `extract-request` 事件契约只有 url 字符串，没有其他上下文。如果 pdfjs 无法加载该 url，提取失败会进入 error 路径。功能符合错误处理。所以不算。
+
+118. **`exportProgressEventSchema` 和 `extractRequestEventSchema` 的 strict 模式。** 事件来自 main，如果 main 发额外字段会被 zod 拒，但事件桥不校验？preload 直接透传 payload，renderer hook 可能校验。OK。
+
+119. **`evt.onExportCorpus` 回调参数类型 `ExportCorpusEvent`，但 ipcRenderer.on 接收的 payload 未做运行时校验。** 如果 main 发畸形事件，renderer 会收到。CorpusExtractor.handleEvent 对类型检查 `e.type !== 'extract-request'`。如果 payload 不是对象，`e.type` 会 undefined，return。安全。progress 事件被忽略。OK。
+
+120. **`createDomCanvas` 中 `el.getContext('2d')` 可能返回 null，抛出 Error。** OK。
+
+121. **`toPngBase64` 可能产生超大字符串，IPC sendItem 序列化。** OK。
+
+122. **`cropBoxPixels` 返回的 `sx/sy/sw/sh` 未四舍五入，createCanvas 时 `el.width = box.sw` 会取整，但 `drawFrom` 用的 box 是原浮点，与 canvas 尺寸可能不匹配。** 如果 `box.sw` 是 795.6，`annoCanvas.width` 变成 795，但 drawFrom 目标是 795.6，编译会在 drawImage 时缩小，可能 1px 误差。NIT。
+
+123. **`AnnotationRect` 的 `page` 字段类型是 number 还是 optional？** 测试用 `{ page: 1, x: ... }`。OK。
+
+124. **`export_.ts` 中新增 `corpusItem` 时没有在 ipc 层做任何 user-facing 错误 toast。** IPC 层通常不负责 UI。OK。
+
+125. **`src/main/services/export_/corpus.export.service.ts` 中接口注释“corpusItem 消费端随本工单落地——AI-02 已建 renderer 侧回传通道”，这个文件在 SR2-AI-03 工单名下，但 AI-02 修改了它。** 这可能违反“禁止顺手实现别的工单”？但它只是占位，不是实现 AI-03。简报解释。OK。
+
+126. **`tickets/registry.ts` 中 SR2-AI-02 翻 done，但 `docs/invariants.md` INV-16 锚定完成。OK。**
+
+127. **测试文件新增但没有在 `tests/unit/renderer/` 目录的索引中注册？** vitest 会自动发现。
+
+128. **`locks/manifest.json` 中 `generatedAt` 更新为 2026-08-25T19:18:44，但简报日期 2026-08-27。** 时间戳不一致？manifest 的 generatedAt 是 2026-08-25，而简报是 2026-08-27。这可能是系统时间错误或简报日期不是真实？AGENTS.md 环境事实里提到 2026-08-22 等。这里 manifest generatedAt 是 2026-08-25 19:18，但 diff 是 2026-08-27 提交。如果 manifest 生成时间早于代码修改，可能说明 locks 不一致？但 sha 已经更新。生成时间戳可能是 CI 的 UTC 时间？2026-08-25 vs 2026-08-27 差两天。这说明 manifest 生成时间不是当前提交时间。但 AGENTS.md 说“触碰锁定文件的提交即时 locks:apply（manifest 与该提交同步）”。如果 generatedAt 是 08-25，而当前是 08-27，可能锁不是本提交生成的？但 sha 与 diff 匹配（eslint.config.js sha 089f... 与 diff 一致）。所以可能简报中的日期 2026-08-27 是规划的，实际提交时间 2026-08-25？或者 manifest generatedAt 是上一次生成的时间？diff 显示 generatedAt 从 17:32 变到 19:18，都是 08-25。说明本次 apply 发生在 08-25 19:18。但简报标题 2026-08-27。矛盾。这可能是一个 WARN：文档日期与锁时间不同步？也许简报日期是任务编号，不重要。不深究。
+
+129. **`docs/invariants.md` 中 INV-16 的锚定记录文字提到“OutlinePanel/OutlineThumb 两处漏扫的类型直连实证防线生效并当场改走 PdfCanvas 再导出”。** 这与 diff 一致。OK。
+
+130. **`extractRequestEventSchema` 的 `.strict()` 在 `z.discriminatedUnion` 中有没有效果？** 每个分支对象都有 strict。OK。
+
+131. **`corpusItemReqSchema` 的 `.refine` 在 discriminatedUnion 之后。** 如果 `kind: 'figure'` 且 `figure: 'anno'` 但没有 annotationId，refine 失败。OK。
+
+132. **`ExportCorpusEvent` 类型是 union，但 `handleEvent` 的参数是 `ExportCorpusEvent`，检查 `e.type !== 'extract-request'` 后，`e` 收窄为 `ExtractRequestEvent`。** TypeScript 可以通过 discriminate union。OK。
+
+133. **`CorpusExtractor` 的 `runExtraction` 中 `const base = { sessionId: req.sessionId, paperId: req.paperId }`，`paperId` 类型 string。** OK。
+
+134. **如果 `doc.numPages` 很大（如 1000 页），会发送 2000+ 消息。背压串行，可能很慢。但这是设计。** OK。
+
+135. **`page.text` 拼接时没有加空格或页界。原设计说页界 \f 归 main 侧落盘。但当前 fulltext payload 只是该页文本，没有页界。AI-03 需要知道页界。AIN-?** 注释说“页界 \f 拼接归 main 侧落盘——AI-03”。所以 AI-03 负责加 \f。OK。
+
+136. **`cropBoxPixels` 的 `rects` 可能包含 page 不同，但调用方已 filter。** OK。
+
+137. **`test` 中 `req({ annotations: [{ id: 'anno-9', rects }] })`，`rects` page 1，在第二页回传。** 但第一页的 fulltext/页图先回传，然后第二页的 fulltext/页图，然后 anno。** 测试没有断言 anno 的顺序，只断言有 1 个 anno 在第 2 页。** OK。
+
+138. **如果 anno 的 rects 跨多页，会在每页都发 anno 图，但 annotationId 相同。main 侧可能需要区分？** 也许 main 用 page+annotationId 区分。OK。
+
+139. **`createDomCanvas` 的 `drawFrom` 中 `ctx.drawImage` 的目标坐标是 `0,0,box.sw,box.sh`，源坐标 `box.sx,box.sy,box.sw,box.sh`。** 如果源 box 超出页图边界，drawImage 会裁剪。OK。
+
+140. **`RenderCanvas` 的 `drawFrom` 方法在 `createDomCanvas` 中接收 `src: RenderCanvas`，但 `src` 没有 canvas 元素导致 bug。** 已提。
+
+141. **`CanvasRenderingContext2DLike` 的 index signature 会让类型变得非常宽，任何对象都能当作 ctx。** 测试可以。但生产类型不安全。NIT。
+
+142. **`src/shared/ipc/schemas.ts` 中 `exportProgressEventSchema` 的 `phase` 枚举有 'preparing' | 'streaming' | 'finalizing'。** 与 AI-03 会话状态机对应。OK。
+
+143. **`api-surface.ts` 中 `corpusItem` 通道的 Res 是 `S.trueAckSchema`。** 需要确认 trueAckSchema 存在且是 `{ ok: true }`。diff 没有显示，但在原文件应存在。OK。
+
+144. **`src/main/services/index.ts` 中 `export_: { ...createExportService(...), corpusItem: ... }` 的类型是 `ExportService & Pick<CorpusExportService, 'corpusItem'>`。** 但 `createExportService` 可能返回对象包含 `corpusItem`？不会。
+
+145. **`createCorpusExportService().corpusItem` 是未绑定 this 的方法。如果未来实现依赖 this，直接提取方法会丢 this。** 当前 stub 无 this 依赖。NIT。
+
+146. **`CorpusExportService` 接口的 `corpusItem` 返回 `Promise<{ ok: true }>`，但 stub 抛 NotImplementedError。** 接口契约应该允许 throw。OK。
+
+147. **`tests/unit/renderer/corpus-extractor.test.ts` 的 `makeCtx` 中 `const d = doc; return Promise.resolve(d)` 是多余的。直接 `return Promise.resolve(doc)`。** 风格。NIT。
+
+148. **`runExtraction` 中如果 `sendItem('complete')` 返回 `{ok:false}`，忽略。** 已提，NIT。
+
+149. **进度事件 `exportProgressEventSchema` 已定义但 main 侧没有发送方。** 这不是问题，AI-03/04。
+
+150. **`eslint.config.js` 的 override 块没有添加任何注释说明同步维护要求？** 有注释。OK。
+
+151. **`outline` 文件的类型导入改道后，`PdfCanvas` 成为类型再导出中心。INV-16 的“类型消费循 PdfCanvas 再导出模式”已实现。** OK。
+
+152. **`TextLayer.tsx` 头注改动，未涉及代码逻辑。** OK。
+
+153. **`PDFDocumentProxy` 和 `RenderTask` 类型 re-export 自 PdfCanvas，但 OutlineThumb 使用 `RenderTask` 可能需要在运行时？** import type，不会运行时。OK。
+
+154. **`createMultiPagePdf` 中 `assembled` 的 PDF 对象引用：`/Font << /F1 ${2 * pages + 3} 0 R >>`。** 2*pages+3 是字体对象 id。OK。`/Contents ${pages + 2 + n} 0 R` 对应第 n 页的内容流。OK。`/Parent 2 0 R`。OK。
+
+155. **`pdf-factory.ts` 中 `esc(text)` 可能转义括号。** 原函数。OK。
+
+156. **`tests/unit/renderer/corpus-extractor.test.ts` 没有使用 `createMultiPagePdf`，所以 pdf-factory 的新增是死代码。** 再次确认。也许未来 AI-03 会用它，但当前不该提交。WARN。
+
+157. **`locks/manifest.json` 新增的测试文件 sha 是 798c89b...，但该文件在 diff 中的内容是否匹配？** 无法验证。假设 CI 会验证。
+
+158. **还有一个正确性 bug：`runExtraction` 中 `for (const anno of req.annotations)` 里 `const pageRects = anno.rects.filter((r) => r.page === n - 1)`。如果 `anno.rects` 很大，每次循环都 filter，性能 O(pages*anno*rects)。** 可以提前按页分组。但单篇文献规模小，NIT。
+
+159. **`extractRequestEventSchema` 的 `annotations` 数组 max 5000，但每个 anno 的 rects 可能也很大，没有 max。** 已提。
+
+160. **`CorpusExtractor` 的 `handleEvent` 是同步方法，但 `runExtraction` 是 async 并 `void`。如果调用者想等待完成（如测试），无法直接 await。测试用 flushAll。生产 main 不等待。** 设计如此。OK。
+
+161. **`SendItem` 返回 `Result<void>`，但 main 侧 handler stub 抛 NotImplementedError，invoke 会 reject。** 在真实生产链路，如果用户触发提取（AI-04 尚未实现），不会调用。AI-03 实现后正常。当前没有 UI 触发，所以不会出错。OK。
+
+162. **`createDomCanvas` 的 `drawFrom` 使用 `src as unknown as HTMLCanvasElement`，如果 `src` 是测试 stub 传入生产？生产不混用。** OK。
+
+163. **`page.render` 的 `canvasContext` 类型 unknown，但 pdfjs 类型需要 `CanvasRenderingContext2D`，这里传 unknown 类型编译通过是因为 `PdfjsPageLike.render` 参数类型是 `{ canvasContext: unknown; viewport: unknown }`。但实际调用的 `page` 对象来自 `docStub` 或真实 pdfjs 的 `PDFPageProxy`。真实 pdfjs 的 `render` 参数类型是 `RenderParameters`，其中 `canvasContext: CanvasRenderingContext2D`。`PdfjsPageLike` 接口是结构子集，`page.render({ canvasContext: pageCanvas.ctx, viewport })` 中 `pageCanvas.ctx` 类型是 `CanvasRenderingContext2DLike`（index signature），而接口要求 `unknown`，所以兼容。运行时 pdfjs 会调用 ctx 的方法，真实 context 有。OK。
+
+164. **`loadPdfDocument` 返回类型 `PdfjsDocumentLike` 与真实 PDFDocumentProxy 结构兼容。** 但 `PDFDocumentProxy.destroy` 方法存在。OK。
+
+165. **`PdfjsDocumentLike` 接口 `getPage(pageNumber: number): Promise<PdfjsPageLike>`，真实 PDFDocumentProxy 的 getPage 参数 number。OK。**
+
+166. **测试中 `pageStub.render` 的 `canvasContext` 参数类型未知，但调用了 `c.markRendered?.()`。** 如果 pdfjs render 桩在真实实现中没有调用，不会影响。OK。
+
+167. **`createMultiPagePdf` 新增在 tests/utils/pdf-factory.ts，但这个文件是受锁的。** 已提。
+
+168. **`docs/invariants.md` 中 INV-16 的“强制方式”列改为了长文本，可能超出表格格式？** 文档美观。NIT。
+
+169. **`extractRequestEventSchema` 中使用 `z.string().min(1)` for url。如果 url 是绝对文件路径，如 `C:\...`，在 zod 中没问题。** 安全。
+
+170. **`CorpusExtractor` 提取的 `payload` 文本可能包含任意内容，通过 IPC 传回 main。main 侧未来落盘时要防路径注入等。** AI-03 负责。当前是字符串。OK。
+
+171. **`figure` 分支的 `annotationId` 可选，但 refine 只要求 anno 必须有。** 如果 figure=page 且带 annotationId，不拒绝。NIT。
+
+172. **`ExportCorpusEvent` 类型没有使用 `z.infer` 导出 progress 类型？有。** OK。
+
+173. **`preload/index.ts` 的 `buildEvents` 返回对象中，onExportCorpus 方法在 `onImportProgress` 之后添加。** OK。
+
+174. **`preload` 的 API 是否需要在 `env.d.ts` 中声明？api-surface 是源。** OK。
+
+175. **`src/renderer/features/reader/CorpusExtractor.ts` 的 `createDomCanvas` 使用 DOM API，但模块零 window 依赖？注释说“模块零 window/pdfjs 静态依赖（deps 全注入）”。** 但 `createDomCanvas` 是默认依赖，函数内部使用 `document.createElement`，模块加载时不执行，只有在调用 createCorpusExtractor 且未传 createCanvas 时才用。所以模块本身没有顶层 window 访问。OK。
+
+176. **`loadPdfDocument` 是生产函数，模块顶层只有一个 `export`，没有 window。** OK。
+
+177. **`CorpusExtractor.ts` 文件行数：diff 中从第 62 行到第 260 行，约 200 行实现，加上注释 300 行。没超 500。** OK。
+
+178. **`schemas.ts` 添加了 75 行，原文件可能 400+？如果超过 500，lint 失败。** verify 绿，说明没超。OK。
+
+179. **`eslint.config.js` 的 override 块中 files 列表包含 `src/renderer/features/reader/CorpusExtractor.ts`，但该文件扩展名 .ts（不是 .tsx）。** OK。
+
+180. **`no-restricted-imports` 的 pattern `pdfjs-dist/**` 会匹配 `pdfjs-dist/build/pdf.worker.min.mjs?url` 吗？** ESLint 的 minimatch pattern 可能不匹配 query string？`pdfjs-dist/build/pdf.worker.min.mjs?url` 中的 `?url` 可能使 pattern `pdfjs-dist/**` 不匹配，因为 `?` 不是正常字符。这会导致 PdfCanvas.tsx 的 `import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'` 被 no-restricted-imports 拦截吗？但 PdfCanvas 在白名单 override 中，override 不包含 pdfjs pattern，所以即使 pattern 不匹配，也没问题。白名单外文件即使 import query 也会被 `pdfjs-dist/**` 或 `pdfjs-dist` 匹配吗？`pdfjs-dist/**` 可以匹配 `pdfjs-dist/build/...`，但 `pdfjs-dist/build/pdf.worker.min.mjs?url` 中的 query 可能使 glob `**` 不匹配 `?url`，因为 `?` 匹配任意单个字符？minimatch pattern `**` 可以匹配包含 `?` 的路径？通常 `**` 匹配任意字符包括 `?`。但 `?` 在 glob 中本身是通配符，所以 `pdfjs-dist/**` 会匹配。OK。而且通过 `group: ['pdfjs-dist', 'pdfjs-dist/**']`。安全。
+
+181. **ESLint 的 `no-restricted-imports` 对 `import type` 也检查。** Outline 文件的 import type 改为 `./PdfCanvas`，不再受限。PdfCanvas 自身的 `import type` 不受限制（白名单）。OK。
+
+182. **`src/renderer/features/reader/OutlineThumb.tsx` 的 `import type { PDFDocumentProxy, RenderTask } from './PdfCanvas'`。** 但 `PdfCanvas` 只 re-export `PDFDocumentProxy, RenderTask` 两种，OutlineThumb 是否还需要其他类型？diff 只显示这两个。OK。
+
+183. **`OutlinePanel.tsx` 原来 `import type { PDFDocumentProxy } from 'pdfjs-dist'`，现在从 `./PdfCanvas`。** 但 `PdfCanvas` 的 re-export 可能包含 `PDFDocumentProxy` 类型，OK。
+
+184. **`PdfCanvas.tsx` 的 re-export 类型来自 pdfjs-dist，但模块本身是白名单。** 如果未来白名单外文件 `import type { X } from './PdfCanvas'`，而 PdfCanvas  re-export 所有需要类型，OK。INV-16 闭合。
+
+185. **`tests/utils/pdf-factory.ts` 新增函数未被使用，但 locks sha 更新。** 已提。
+
+186. **`locks/manifest.json` 中 `generatedAt` 时间与 diff 日期不符。** 不深究。
+
+187. **`docs/invariants.md` 中 INV-16 的“未锚定”改为“已锚定”，但 `locks/manifest.json` 没有 invariants.md。** OK。
+
+188. **`src/main/services/export_/corpus.export.service.ts` 中 `CORPUS_EXPORT_SERVICE_STUB` 常量在文件顶部定义后，下方 import 语句出现在注释之后。** 代码风格：import 在常量后？看 diff：`import { NotImplementedError } from ...` 出现在 `export const CORPUS_EXPORT_SERVICE_STUB` 之前？实际上 diff 中：
+
+    ```
+     import { NotImplementedError } from '../../../shared/app-error'
+     import type { CorpusItemReq } from '../../../shared/ipc/schemas'
+     
+     /** 工单骨架标记（实现单元替换为真实实现） */
+     export const CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'
+    ```
+
+    这是正常的 import 先于代码。** OK。
+
+189. **`src/main/services/export_/corpus.export.service.ts` 的文件头注释说“完成后：删除 STUB → npm run verify 绿...”，这是模板。** 现在文件仍有 STUB，但工单 open。OK。
+
+190. **`CorpusExtractor.ts` 文件头注释说“完成后：删除 STUB → npm run verify 绿...”。** 该文件已无 STUB。OK。
+
+191. **`src/main/services/index.ts` 的 `createServices` 中 `export_: { ...createExportService({ repos: deps.repos }), corpusItem: createCorpusExportService().corpusItem }`，这种组合方式将来 AI-03 实现时，`createCorpusExportService` 可能需要 deps（repos、路径等），现在无参。** AI-03 会改。NIT。
+
+192. **`CorpusExtractor` 的 `runExtraction` 中 `if (!ackText.ok) throw new Error(...)`。** 如果 ack 是 `{ ok: false, error: { code: 'VALIDATION' } }`，错误消息没带上具体错误。** 可改进。NIT。
+
+193. **测试中 `ackFailAt === ctx.sent.length` 导致第一个 ack 失败。** 因为 sent.push 发生在 resolve 后，所以 sent.length 在判定时是当前序列号。OK。
+
+194. **测试“背压 maxInflight”中，inflight 在 setTimeout 回调中递减，但 `maxInflight` 在进入时递增。如果 sendItem 被并发调用（不应该），maxInflight 会 >1。** OK。
+
+195. **`flushAll` 的轮询等待：settle 是 setTimeout 0。每个 sendItem 的 setTimeout 0 也是一个宏任务。轮询次数足够。** 但可能存在事件循环 setTimeout 0 堆积，轮询可能先于 sendItem 回调执行？轮询本身也是 setTimeout 0，它们会排队。循环里每次 await settle 会插入一个 setTimeout 0，与 sendItem 的 setTimeout 0 交替执行，应该能推进。OK。
+
+196. **`CorpusExtractor` 没有提供取消机制，明确“不做：取消 UI”。** OK。
+
+197. **`cropBoxPixels` 是纯函数并导出，有单测。** OK。
+
+198. **`createDomCanvas` 没有测试覆盖，这正是 drawFrom bug 未被发现的原因。** 这是一个测试盲区。按测试纪律“每个测试必须能失败一次”，生产 drawFrom 没有对应测试。可以建议增加 createDomCanvas 的测试或集成测试。WARN。
+
+199. **`loadPdfDocument` 没有测试，因为 dynamic import。** 但它是薄封装。OK。
+
+200. **`src/shared/ipc/schemas.ts` 中 `annotationRectSchema` 导入后，是否与 `annotationSchema` 有命名冲突？** 没有。
+
+201. **`tests/unit/renderer/corpus-extractor.test.ts` 中 `import type { AnnotationRect } from '../../../src/shared/models/annotation'`，而 schemas 中 annotationRectSchema 也导入了。类型与 schema 对应。** OK。
+
+202. **`ExportCorpusEvent` 的 union 包含 progress 事件，但 `ExtractRequestEvent` 有 `annotations` 字段，`ExportProgressEvent` 没有。** 在 handleEvent 中 `if (e.type !== 'extract-request') return` 后 `e` 收窄为 `ExtractRequestEvent`，可以直接用 `e.annotations`。OK。
+
+203. **`CorpusExtractor` 的 deps 类型内联在函数签名中，没有单独 interface 命名。** 风格。NIT。
+
+204. **`SendItem` 类型导出吗？** 它没有 export，但类型用于内部。OK。
+
+205. **`PdfjsTextItem` 的 `str?: string` 可能 undefined，代码用 `?? ''`。** OK。
+
+206. **`pageStub` 的 getTextContent 返回 items 只有 str，没有其他属性。** 生产 pdfjs TextItem 有更多，但接口只取 str。OK。
+
+207. **`render` 参数中 `viewport` 类型 unknown，但调用时传真实 viewport。** OK。
+
+208. **`createDomCanvas` 返回的 `ctx` 被类型断言为 `CanvasRenderingContext2DLike`，但 `page.render` 的 `promise` 可能使用 `ctx.canvas`?** pdfjs 只用 ctx 绘制。OK。
+
+209. **安全：`console.warn` 中输出 `e.sessionId`，sessionId 是内部值，不算敏感。** OK。
+
+210. **`extractRequestEventSchema` 的 `url` 字段可能包含查询参数，pdfjs getDocument 会 fetch。** 如果 url 是 `http://`，在 renderer CSP connect-src 下可能被阻止或允许？Electron CSP 可能默认限制 connect-src 'self'。如果允许 self，且 url 是 file:// 不算 self。可能失败。但这会导致 error，不会任意出网。除非 CSP 允许。项目 CSP 未知。但 AGENTS.md 安全禁令“禁止新增出网 host”。url 来自 main 的提取请求，不是 renderer 主动添加。所以不算。
+
+211. **`loadPdfDocument` 的 dynamic import 可能增加 bundle 体积。** 懒加载。OK。
+
+212. **`eslint.config.js` 的 override 块是三文件白名单，但 `TextLayer.tsx` 是否真的需要 pdfjs import？** 它可能 import `pdfjs-dist` 的 CSS 或 API？反正白名单。OK。
+
+213. **`docs/invariants.md` 中 INV-16 的“白名单变更=改 ESLint 规则+[locked-change]”，本次修改符合。** OK。
+
+214. **`tickets/registry.ts` SR2-AI-02 翻 done，但 `registry.ts` 中的 `summary` 没有更新？** 状态翻 done，summary 不变。OK。
+
+215. **`registry.ts` 是锁文件吗？不在列表。** OK。
+
+216. **`src/main/ipc/export_.ts` 中 `corpusItem: (req) => deps.services.export_.corpusItem(req)`。`req` 的类型是 `CorpusItemReq`，但 IPC 层可能先通过 `api-surface` 的 Schema 校验。** 如果 `export_.ts` 的 `createExportIpc` 返回类型是 `ApiHandlers['export_']`，那么 `corpusItem` 方法签名应该与 api-surface 一致。OK。
+
+217. **`src/main/services/index.ts` 中 `export_` 合并后，`ExportService` 类型可能是一个接口，把它 spread 到对象会丢失方法？** `...createExportService(...)` 会复制所有可枚举属性。如果 ExportService 的方法定义在原型链上，会丢失。但 createExportService 返回对象字面量，方法在自身。OK。
+
+218. **`createCorpusExportService()` 返回一个对象，其 `corpusItem` 方法。在 `services/index.ts` 中直接取 `.corpusItem`，OK。**
+
+219. **`src/shared/ipc/api-surface.ts` 中 `corpusItem` 通道的 Res `S.trueAckSchema`。** 如果 trueAckSchema 是 `z.literal({ok:true})`，那么 service 返回 `{ok:true}` 匹配。但 stub 会 throw。OK。
+
+220. **测试文件用 `guardedDescribe`，如果 guard 跳过，9 个用例不执行。** 这是既有模式。但 AGENTS.md 要求每个测试必须能失败一次；如果 guard 导致测试从未运行，可能假绿。但 guard 机制是项目已有，且 CI 环境应该运行。不深究。
+
+221. **`cropBoxPixels` 的 `y0` 等使用 `Number.POSITIVE_INFINITY`，如果所有 rect 坐标都是 0，x0=0, x1=0。`sw=0`。createCanvas(0,0) 会产生 0 尺寸 canvas，toDataURL 可能返回空？** 但这种情况是 annotation rect 全零，可能非法。如果发生，annoCanvas 0x0，drawFrom 也不绘制，toPngBase64 返回空 PNG。然后发送 payload 空。AI-03 落盘可能失败。但 rect 全零不太可能。WARN：cropBoxPixels 对零面积 rect 无防御。
+
+222. **`annotationRectSchema` 是否校验 w/h 为正？** 未知。如果允许 0，可能出现 0 尺寸。建议在 cropBoxPixels 或 schema 中校验。NIT/WARN。
+
+223. **`extractRequestEventSchema` 的 annotations max 5000，但没有 min(1)，允许空数组。** 空数组时提取器只发 fulltext 和 page figures，不发 anno。OK。
+
+224. **`src/renderer/features/reader/CorpusExtractor.ts` 中 `createDomCanvas` 的 `drawFrom` 中 `ctx.drawImage` 的最后一个参数 `box.sh` 作为目标高度，源高度也是 `box.sh`。** 如果 box.sh 是负值（非法 rect），会抛异常。已提。
+
+225. **`loadPdfDocument` 中 `await import('pdfjs-dist')` 的返回类型，`getDocument` 可能有多个重载。** OK。
+
+226. **`CorpusExtractor.ts` 中 `PdfjsDocumentLike` 接口的 `destroy()` 在 pdfjs v4 中可能不是 Promise？** 它是 Promise。OK。
+
+227. **`PdfjsPageLike.render` 的 `viewport` 参数是 unknown，但如果测试的 viewport 缺少某些字段，pdfjs 运行时可能失败。** 生产 viewport 来自 getViewport。OK。
+
+228. **`createCanvas` 默认 `createDomCanvas` 需要 DOM，测试传 stub。** 生产在 renderer。OK。
+
+229. **`CorpusExtractor` 没有处理 `extract-request` 的 url 为空？zod 校验 min(1)。** OK。
+
+230. **`src/shared/ipc/schemas.ts` 中 `import { annotationRectSchema } from '../models/annotation'` 与下面的 import 分开，可能违反 ESLint 的 import/order？** 如果启用。verify 绿，所以没开或允许。
+
+231. **`locks/manifest.json` 中新增测试文件的 sha 与 diff 内容不一定匹配，但 CI 会验证。** 假设。
+
+232. **整体 diff 大小 639 行 15 文件，简报与 diff 一致。** 没有范围蔓延。
+
+233. **`AGENTS.md` 硬规则“方案切换=删除旧方案”**：没有旧方案。OK。
+
+234. **“重复 3 次以上抽函数”**：`if (!ackX.ok) throw new Error(...)` 重复了 4 次（fulltext, page figure, anno figure, complete 没检查）。可以抽函数。但 Rule of Three 说第 2 次保持重复，第 3 次以上可抽？原文“重复 3 次以上的逻辑抽函数；第 2 次保持重复”。这里出现了 3 次，应该抽函数。这是一个 NIT/WARN。代码有 3 处 `if (!ack.ok) throw new Error('...回传被拒绝（会话侧错误）')`。建议抽 `assertAck` helper。NIT。
+
+235. **`CorpusExtractor` 中 `extracting` 状态用布尔，如果 runExtraction 抛异常（如同步错误）会走到 finally 设置 false。** OK。
+
+236. **`handleEvent` 中对 progress 事件的处理：`if (e.type !== 'extract-request') return`，没有日志。** OK。
+
+237. **`ExportCorpusEvent` 联合类型，未来 main 可能发其他事件（如 cancel），会破坏判别联合。** AI-03 扩展。OK。
+
+238. **`createDomCanvas` 的 `drawFrom` 中 fallback 到 `src` 本身，如果 `src` 恰好是 HTMLCanvasElement（调用方误传），能工作。但当前调用传 RenderCanvas 对象，所以 bug。** 确认。
+
+239. **有没有可能 `createDomCanvas` 的返回对象实际上被压成 HTMLCanvasElement？不，返回对象字面量。** 确认。
+
+240. **因此，生产代码一运行到 anno 图裁剪就会抛异常，导致提取失败并发送 error。** 这会导致整个提取功能在含有标注的文档上失败。BLOCKING。
+
+241. **此外，`pageCanvas` 在 `toPngBase64()` 后仍可被 drawFrom 使用。** 但 bug 存在。
+
+242. **修复建议：在 `RenderCanvas` 接口添加 `readonly canvas: HTMLCanvasElement`（或 `el`），`createDomCanvas` 返回 `el`，`drawFrom` 使用 `src.canvas`。同时 `toPngBase64` 也使用 `el`。** 测试 stub 同步。
+
+243. **`cropBoxPixels` 的 `sx` 等未取整。** 在 createCanvas 时 `el.width = box.sw` 会取整，但 drawFrom 使用浮点。NIT。
+
+244. **`drawFrom` 的 `box` 参数可能是 cropBoxPixels 返回值，其中 sw/sh 可能为 0。** 建议 clamp。NIT。
+
+245. **`test` 中没有测试 `createDomCanvas` 的 drawFrom，建议增加。** WARN 或 NIT。
+
+246. **`loadPdfDocument` 的 dynamic import 会导致 pdfjs 的 `GlobalWorkerOptions.workerSrc` 可能未设置。** 这是 WARN。让我分析多严重。
+
+    在 pdfjs-dist v4 (ESM) 中，如果不设置 GlobalWorkerOptions.workerSrc，pdf.js 在浏览器环境会尝试使用 fake worker，并打印警告。在模块环境中，它可能从 `pdf.worker.min.mjs` 相对路径加载？实际上 pdfjs 的 `getDocument` 如果 `GlobalWorkerOptions.workerSrc` 为空，而当前环境是 DOM，会尝试 `new Worker(workerSrc)`，如果 workerSrc 未定义，会抛错误：“No workerSrc specified”。查 pdf.js 源码：setupFakeWorkerGlobal 中，如果 `GlobalWorkerOptions.workerSrc` 为空，且 `isNodeJS` 为 false，在浏览器中会尝试使用 `pdfjs-dist/build/pdf.worker.min.mjs` 的防盗链版本的 fake worker？在 v4 中，如果没有指定 workerSrc，会尝试动态下载默认 worker？我不确定。但 PdfCanvas 已经设置了 `GlobalWorkerOptions.workerSrc = workerUrl`。如果 CorpusExtractor 在 PdfCanvas 之后被调用，workerSrc 已设置。提取器可能在阅读器已经打开 PDF 后触发（用户从阅读器界面操作），所以 PdfCanvas 已挂载并设置 workerSrc。但设置页导出功能可能在不打开 PDF 时从主界面触发？AI-04 是“设置页 AI 语料导出节”，用户可能在设置页选择导出，ReaderPage 可能未挂载。此时 PdfCanvas 未渲染，`GlobalWorkerOptions.workerSrc` 未设置。CorpusExtractor 动态 import pdfjs 后，pdfjs 模块加载时是否读取 workerSrc？`GlobalWorkerOptions.workerSrc` 是模块级单例，未设置则默认空。getDocument 时用 fake worker 或报错。所以提取时可能失败。这是架构性问题：CorpusExtractor 是 pdfjs 白名单成员，应负责设置自己的 workerSrc，或从某个注入点获取。但当前没有。这可能导致提取在未打开 PDF 时失败。是否 BLOCKING？取决于 pdfjs 是否能在无 workerSrc 时工作。在 pdf.js 中，如果未设置 workerSrc 且不是 Node，加载 `pdf.worker.min.mjs` 时，会尝试用 fake worker（运行在主线程）并发出警告，功能仍可工作，但性能下降。在 v4 中，fake worker 可以工作。所以是 WARN（性能和可能的 CSP 问题）。另外，`PdfCanvas` 设置的 workerUrl 来自 `?url`，是打包后的文件 URL。CorpusExtractor 如果自己设置需要 import workerUrl，可能也要用 `?url`。但动态 import 白名单只允许 pdfjs-dist 主包，worker 子路径是否允许？可以。但当前没做。
+
+    这个 WARN 有依据：`CorpusExtractor` 不设置 `GlobalWorkerOptions.workerSrc`，而模块自称零静态依赖，不依赖 PdfCanvas。如果 PdfCanvas 未挂载，pdfjs 无 workerSrc 配置。建议在 `loadPdfDocument` 中设置 `GlobalWorkerOptions.workerSrc`，或通过 deps 注入。但要注意动态 import 不能静态 import workerUrl？可以用 `await import('pdfjs-dist/build/pdf.worker.min.mjs?url')` 获取 URL？不确定。或者复用 PdfCanvas 的 workerUrl 导出。但为了最小面，也许 AI-04 会挂载 hook 且 reader 已打开。但提取器是独立生命周期 R2，明确不复用 ReaderPage。所以这个 bug 是真实的。WARN。
+
+247. **`GlobalWorkerOptions` 设置是全局副作用，如果多个模块设置，可能冲突。** 不深究。
+
+248. **另一种方式：`loadPdfDocument` 可以设置 `getDocument({ url, disableWorker: true })` 以避免 worker。** 但性能差。建议修复。
+
+249. **`createMultiPagePdf` 未使用**——已提。
+
+250. **`docs/invariants.md` 中没有记录 dynamic import 边界。** 已提。
+
+251. **`tests/unit/renderer/corpus-extractor.test.ts` 的 `req` 使用 `extractRequestEventSchema.parse`，如果 schema 是受锁共享，测试修改 schema 需要 locked-change。** 测试通过。OK。
+
+252. **`locks/manifest.json` 中新增测试文件，但测试文件本身被锁，未来修改测试需要 locked-change。** 符合。
+
+253. **`src/shared/ipc/schemas.ts` 中 `corpusItemReqSchema` 的四个 kind 是 discriminate union，`figure` 字段在 fulltext/complete/error 分支不存在，`.strict()` 会拒绝额外字段。** OK。
+
+254. **`sendItem` 的 `Result<void>` 与 `trueAckSchema` 可能不匹配：`trueAckSchema` 可能是 `z.object({ ok: z.literal(true) })`，而 `Result<void>` 的 ok:true 时 `data` 是 void。** IPC 返回时 main 会序列化 `{ok:true,data:undefined}`，renderer 收到。sendItem 类型不关心。OK。
+
+255. **`CreateCanvas` 类型别名没有导出？** 在模块内。OK。
+
+256. **`EXPORT_SNAPSHOT_SCALE` 导出，测试使用。** OK。
+
+257. **`cropBoxPixels` 导出，纯函数。** OK。
+
+258. **`CorpusExtractor` 的 `handleEvent` 返回 void，如果调用者需要知道请求是否被忽略，无法知道。** 生产不需要。OK。
+
+259. **`loadPdfDocument` 的 `getDocument(url)` 中 url 可能是 `app-file://x.pdf`？测试用 `app-file://x.pdf`。pdfjs 能否加载自定义协议？取决于 main 是否注册 protocol。AI-03 或已有 PDF 功能。** 不深究。
+
+260. **`extractRequestEventSchema` 事件载荷包含 `annotations` 数组，数组可能包含大量 rect，通过 IPC 事件发送，可能阻塞主进程。** 设计。NIT。
+
+261. **`docs/invariants.md` 的 INV-16 锚定记录里“白名单三文件 override 块重申其余禁令”，但没有提到 dynamic import 边界。** 已提。
+
+262. **`eslint.config.js` 新增 pdfjs pattern 的 message 中写了“INV-16——白名单变更=[locked-change]”，符合。** OK。
+
+263. **`tests/utils/pdf-factory.ts` 新增 `createMultiPagePdf` 函数后，没有在 locks 中新增文件（因为文件已存在，只改 sha）。** OK。
+
+264. **`createMultiPagePdf` 的 text 参数默认 `PDF_KNOWN_TEXT`，该常量可能包含多行文本？** 每页内容流 `(P${n} ${esc(text)}) Tj` 如果 text 包含换行符，会破坏 PDF 流？esc 应该转义。如果 PDF_KNOWN_TEXT 包含特殊字符，esc 处理。OK。
+
+265. **`createMultiPagePdf` 未使用，但它的存在增加了 tests/utils 的代码。** 死代码。
+
+266. **`CorpusExtractor.ts` 中 `runExtraction` 的 `catch (e)` 中 `const reason = e instanceof Error ? e.message : String(e)`。** OK。
+
+267. **`destroy` 失败 warn，但 `extracting = false` 在 finally 中，所以即使 destroy 失败，状态仍重置。** OK。
+
+268. **`handleEvent` 中 `console.warn('CorpusExtractor 忽略在途期间的 extract-request', e.sessionId)`。** 如果 main 重发，日志。OK。
+
+269. **`extracting` 布尔变量在 `createCorpusExtractor` 闭包中，多个 extractor 实例独立。** OK。
+
+270. **`Import` 语法：`import { z } from 'zod'` 已经存在，现在增加 `annotationRectSchema`。** OK。
+
+271. **`exportProgressEventSchema` 定义了但 preload 的监听器 `onExportCorpus` 会收到 progress 事件。`ExportCorpusEvent` union 包含 progress，消费方 AI-04 会处理。** OK。
+
+272. **`PreloadEvents` 增加 `onExportCorpus`，但 renderer 的 window.api 类型声明是否更新？** api-surface 是唯一类型源，preload 从那里导入 PreloadApi/PreloadEvents。OK。
+
+273. **`src/main/ipc/export_.ts` 中 `corpusItem` handler 没有对 req 做额外校验（如 sessionId/paperId 是否存在）。** IPC 层 schema 校验。AI-03 实现时会校验。当前 stub 直接抛。OK。
+
+274. **`createCorpusExportService` 工厂没有 deps，未来 AI-03 需要 repo 等，会改签名。** 占位。OK。
+
+275. **`services/index.ts` 中 `createCorpusExportService()` 调用无参，未来需要传 deps。** 占位。OK。
+
+276. **`tests/unit/renderer/corpus-extractor.test.ts` 中 `expect(fulltexts.map((i) => (i as { page: number }).page)).toEqual([1, 2, 3])`。** 类型断言在测试中常见。OK。
+
+277. **`flushAll` 硬编码 `pages * 8 + 16` 可能低效，但测试规模小。** NIT。
+
+278. **`cropBoxPixels` 测试用 `EXPECT_SNAPSHOT_SCALE` 计算 W/H，与实现一致。** OK。
+
+279. **`extractRequestEventSchema` 的 `annotations` 元素 strict，要求只有 id 和 rects。** 未来如果 anno 有其他字段，会被拒。设计。OK。
+
+280. **`AnnotationRect` 的 `page` 字段在 annotationRectSchema 中是否 optional？** 测试 rect 有 page。OK。
+
+281. **`src/renderer/features/reader/OutlineThumb.tsx` 中 `RenderTask` 类型来自 PdfCanvas，但 OutlineThumb 可能有自己的 cancel 逻辑。** 只改 import。OK。
+
+282. **`docs/invariants.md` 中 INV-16 的表格单元格包含大量文本，可能 markdown 渲染问题。** NIT。
+
+283. **`AGENTS.md` 硬规则“禁止 renderer 引入任何 Node/Electron API 或绝对文件路径”。** CorpusExtractor 中 `url` 是字符串，可能是绝对路径，但来自事件。它不直接访问。`createDomCanvas` 无 Node。OK。
+
+284. **`AGENTS.md` 安全禁令“禁止对未过 shell-guard 校验的 URL 调 openExternal”。** 没有 openExternal。OK。
+
+285. **“禁止字符串拼接 SQL”** 无。OK。
+
+286. **“禁止 eval / new Function / unsafe-eval”** 无。OK。
+
+287. **“禁止新增出网 host”** 无新增依赖或网络请求，pdfjs 加载是已有依赖。OK。
+
+288. **`AGENTS.md` 完成定义“`git diff --stat` 无范围蔓延”**：15 文件，但都关联工单。OK。
+
+289. **“新增受锁文件已 npm run locks:apply”**：manifest 更新。OK。
+
+290. **“占位实现已删除；工单在 tickets/registry.ts 翻状态”**：SR2-AI-02 占位已删，翻 done。但 corpus.export.service.ts 中新增了 stub（原文件已有 STUB？原文件是 stub 文件？看 diff 前该文件有 CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03' 和注释。现在新增了工厂。这是 AI-03 的占位更完整。它属于 AI-03 工单，但 AI-03 仍 open，所以占位合法。** OK。
+
+291. **`locks/manifest.json` 中新增 `tests/unit/renderer/corpus-extractor.test.ts`，但 `tests/utils/pdf-factory.ts` sha 更新。** 新测试文件受锁意味着未来 AI-02 测试修改要 locked-change。符合。
+
+292. **`eslint.config.js` 的 override 块没有包含 `TextLayer.tsx` 的 CSS import？** no-restricted-imports 只限制 JS import，CSS 不在 patterns。OK。
+
+293. **`PdfCanvas.tsx` 的 workerUrl import 是 `pdfjs-dist/build/pdf.worker.min.mjs?url`，可能被 pdfjs pattern 匹配并允许（白名单）。** OK。
+
+294. **`CorpusExtractor.ts` 动态 import `pdfjs-dist` 会触发 eslint no-restricted-imports 吗？** 如果 ESLint 版本检查 import()，白名单允许。如果不检查，也无所谓。OK。
+
+295. **`src/shared/ipc/schemas.ts` 的 `corpusItemReqSchema` 中 `payload` 是 string，没有大小限制。** 恶意 renderer 可以发送超大 payload 占内存。但 renderer 沙箱，且 main 侧 stub 拒绝。AI-03 实现时要注意。当前 NIT。
+
+296. **`extractRequestEventSchema` 的 `annotations` 数组 max 5000，但每个 rect 的坐标未限制 0..1。** annotationRectSchema 应该限。OK。
+
+297. **`ExportProgressEvent` 的 `phase` 枚举，未来 main 发未知 phase 会被 zod 拒，但 preload 不校验。** AI-04 处理。OK。
+
+298. **`CorpusExtractor.ts` 中模块顶部 import 类型 `AnnotationRect` 来自 shared/models，这是跨层 import？** renderer → shared 允许。分层单向允许 renderer → shared。OK。
+
+299. **`src/renderer/features/reader/CorpusExtractor.ts` 的模块位于 renderer features，使用 `window.api`？没有，通过 deps 注入。** 生产组装在 AI-04 useExportCorpusEvents。OK。
+
+300. **`createServices` 中 `export_: { ...createExportService(...), corpusItem: ... }` 的 spread 会复制所有方法，但如果 ExportService 有 getter，可能失效。** 不深究。
+
+现在综合判断 verdict。存在 BLOCKING：`createDomCanvas` 的 `drawFrom` 生产实现必然失败。这是正确性缺陷，会导致 anno 图提取失败。应该 FAIL。
+
+还有其他 WARN：
+- pdfjs workerSrc 可能未设置，导致提取在未打开 PDF 时 worker 初始化失败或性能问题。
+- `createMultiPagePdf` 死代码未使用。
+- INV-16 动态 import 边界未在 invariants.md 记录（但简报记录）。
+- 重复 ack 检查可抽函数（NIT）。
+- `cropBoxPixels` 对非法 rect 无防御（NIT）。
+- 测试未覆盖 `createDomCanvas`，导致 drawFrom bug 漏网（WARN）。
+- `export_.ts` 中 corpusItem 直接透传 stub，IPC 错误折叠不一致？简报说 register 折叠，但 diff 没显示。不确定。不列为发现。
+- 事件载荷中 `figure: 'page'` 允许带 annotationId，宽松（NIT）。
+- `extractRequestEventSchema` 的 annotations max 5000 但 rects 无上限（NIT）。
+
+输出要求：只输出一个 JSON 对象，不要 markdown 围栏。findings 按严重程度。需要给 line_hint 尽量具体。
+
+Line hints 需要从 diff 中引用。对于 drawFrom bug，文件是 `src/renderer/features/reader/CorpusExtractor.ts`，位置在 `createDomCanvas` 的 `drawFrom` 方法。可以写“createDomCanvas -> drawFrom 的 ctx.drawImage 调用附近（新增行）”。evidence 引用 diff 中的代码片段。
+
+对于 workerSrc，文件也是 CorpusExtractor.ts，`loadPdfDocument` 函数。证据：没有设置 GlobalWorkerOptions.workerSrc，而 PdfCanvas 设置。line_hint: `loadPdfDocument`。
+
+对于死代码，`tests/utils/pdf-factory.ts` 的 `createMultiPagePdf` 新增。evidence: diff 中新增的 createMultiPagePdf 未被任何测试引用（当前 diff 中只有定义，没有调用）。line_hint: createMultiPagePdf 函数。
+
+对于 INV-16 边界，`docs/invariants.md` 的 INV-16 行，未记录 dynamic import 边界。但简报说记录为已知边界。文件是 docs/invariants.md。这可以 WARN，但证据只有简报，不在 diff 中？简报属于输入材料，可以作为依据？审计要求引用证据必须来自输入材料，简报也是输入材料。所以可以。但 diff 内没有显示简报。输出要求 evidence 用“diff 或规约中的原文依据”。简报是规约吗？算任务简报。可以引用。但为了严谨，不列这条，因为 INV-16 登记册已经写了强制方式，且简报是设计文档。不过评审面覆盖。可以 NIT 提示补充。
+
+对于重复 ack 检查，CorpusExtractor.ts 中三处 `if (!ackX.ok) throw`。evidence from diff。NIT。
+
+对于测试未覆盖 createDomCanvas，tests/unit/renderer/corpus-extractor.test.ts 中 canvasStub 是 no-op。line_hint: canvasStub 定义。WARN 或 NIT。鉴于它导致生产 bug 漏网，算 WARN。
+
+还可以列出 `cropBoxPixels` 对零尺寸/非法 rect 无防御。NIT。
+
+现在考虑 BLOCKING 是否确实。让我们再确认 drawFrom bug 是否真的会运行时失败。
+
+```ts
+function createDomCanvas(width: number, height: number): RenderCanvas {
+  const el = document.createElement('canvas')
+  el.width = width
+  el.height = height
+  const ctx = el.getContext('2d')
+  if (ctx === null) throw new Error('canvas 2d context 获取失败')
+  return {
+    width,
+    height,
+    ctx: ctx as unknown as CanvasRenderingContext2DLike,
+    drawFrom(src, box) {
+      ctx.drawImage(
+        (src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement),
+        box.sx,
+        box.sy,
+        box.sw,
+        box.sh,
+        0,
+        0,
+        box.sw,
+        box.sh
+      )
+    },
+    toPngBase64(): string {
+      const dataUrl = el.toDataURL('image/png')
+      return dataUrl.slice('data:image/png;base64,'.length)
+    }
+  }
+}
+```
+
+`ctx.drawImage` 的第一个参数类型是 CanvasImageSource。`(src as { el?: HTMLCanvasElement }).el` —— `src` 是 createDomCanvas 返回的对象 `{ width, height, ctx, drawFrom, toPngBase64 }`。这个对象没有 `el` 属性，所以 `.el` 是 undefined。`??` 左侧 falsy，取右侧 `(src as unknown as HTMLCanvasElement)`，即把该普通对象强转成 HTMLCanvasElement 传给 drawImage。drawImage 内部会检查参数是否是 CanvasImageSource，如果不是，抛出 `TypeError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The provided value is not of type 'CanvasImageSource'`。因此生产路径必然抛异常。这个异常发生在 for 循环内的 `annoCanvas.drawFrom(pageCanvas, box)` 中。`runExtraction` 的 try/catch 会捕获，发送 error 载荷，提取在第一个有标注的页失败。如果没有任何 anno.rects 匹配当页，则不会调用 drawFrom。但如果文档有标注，失败。所以 BLOCKING 正确。
+
+修复建议：修改 RenderCanvas 接口增加 `el: HTMLCanvasElement`（或 `get canvas()`），在 createDomCanvas 返回中暴露 el，drawFrom 使用 `src.el`。或者更简洁：`drawFrom` 直接接收 `sourceCanvas: HTMLCanvasElement`，但接口抽象会变。也可以让 `createDomCanvas` 返回的对象包含 `el` 并在 drawFrom 中使用。注意测试 stub 也需要加 el 字段（可以 mock 空对象），否则类型错误。
+
+另一个可能修复：在 drawFrom 中 `const srcCanvas = (src as unknown as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement)`，并把 `el` 暴露在 createDomCanvas 返回对象中。建议。
+
+好，最终 JSON。verdict 应该是 FAIL，因为有 BLOCKING。findings 数组可以包含多个。summary 两三句。
+
+注意输出要求：severity 可以是 "BLOCKING" | "WARN" | "NIT"。file, line_hint, issue, evidence, suggestion。
+
+我们尽量全面但不冗余。列出 5-7 个 findings。
+
+severity 分配：
+
+1. BLOCKING: drawFrom 生产实现错误。
+2. WARN: pdfjs workerSrc 未配置。
+3. WARN: createMultiPagePdf 死代码未使用。
+4. WARN: 测试未覆盖真实 createDomCanvas，drawFrom bug 漏网（可以并入 1 的 suggestion，但单独列可以提醒测试纪律）。可能算 WARN。
+5. WARN: INV-16 动态 import 防线缺口未在 invariants.md 登记。
+6. NIT: 重复 ack 检查可抽函数。
+7. NIT: figure: 'page' 允许带 annotationId。
+
+也许还有：cropBoxPixels 无空数组防御（但调用方保证）不列。
+
+关于 workerSrc，是否确定？在 pdfjs-dist v4 中，如果不设置 workerSrc，会尝试加载 `pdf.worker.min.mjs` 的默认路径？我记得 pdf.js 在 v4 中，如果不设置 workerSrc，它会尝试从当前模块路径推断 worker URL。在 Vite 打包的模块中，`await import('pdfjs-dist')` 后，pdfjs 的 `GlobalWorkerOptions.workerSrc` 可能是空字符串。`getDocument` 时，`PDFWorker` 会检查 `workerSrc`，如果为空，会尝试 `new Worker('')` 或使用 fake worker。实际上 pdf.js 源码中有：
+
+```js
+if (!GlobalWorkerOptions.workerSrc && !isNodeJS) {
+  workerSrc = await new Promise(...)
+}
+```
+
+在 v4 的 `_fetchDocument` 中，它会尝试 dynamic import worker？具体不确定。但 PdfCanvas 显式设置了 workerSrc，说明项目认为必须设置。CorpusExtractor 没有设置，因此这是一个真实风险。就算 pdfjs 能用 fake worker，它也会因为 worker 缺失而警告或性能问题。另外，如果 pdfjs 在无 workerSrc 时尝试加载默认 worker 指向 CDN（因为一些构建版本默认的 workerSrc 是 `https://unpkg.com/pdfjs-dist@.../build/pdf.worker.min.mjs`？），那就违反出网禁止。pdf.js 的默认 workerSrc 确实是一个 CDN URL（在 `pdf.mjs` 中有 `const workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`` 吗？）我记得 pdf.js 在未指定 workerSrc 时，会使用一个假的 worker（fake worker）并警告，不会出网。但仍有性能问题。所以 WARN 合理。
+
+另外，是否还有更严重的：`createDomCanvas` 的 `el` 未暴露，导致即使我们想用 `src.el` 也不行。这是同一个 BLOCKING。
+
+测试未覆盖真实 canvas：这实际上是 BLOCKING 的一部分，但可以单独 WARN 指向测试纪律“每个测试必须能失败一次”和“e2e 必须断言真实文本”。但这里的单测没有覆盖真实现。WARN。
+
+INV-16 dynamic import 边界：简报中说“防线缺口=非白名单文件 dynamic import pdfjs 可能不拦（记录为已知边界，评审面覆盖）”。但 invariants.md 的强制方式没有提。这个如果未来非白名单文件用动态 import，ESLint 可能不拦（取决于版本）。因此 INV-16 机器锚不完整。但当前没有违规。WARN 可接受。
+
+死代码 createMultiPagePdf：按硬规则“死代码即删”是硬规则，但工具函数未使用，严重性 WARN 合适。如果要严格按“违反即返工”，可以是 BLOCKING？但“死代码即删”是代码组织部分，应算规则。但很多项目允许测试工具预留。不过 AGENTS.md 明确“死代码即删：孤儿组件、重复资产……提交前确认新文件被引用。” 新增函数未被引用，违反此规则。但考虑到它可能是给 AI-03 用的，且 tests/utils 是工具库，不一定算孤儿。我定为 WARN。
+
+还有 `createMultiPagePdf` 在 pdf-factory.ts 中，文件受锁。未使用也算测试面蔓延？WARN。
+
+`cropBoxPixels` 未对空数组防御但调用方滤空，NIT。
+
+还有一个：`loadPdfDocument` 动态 import 没有设置 pdfjs worker，且 `GlobalWorkerOptions` 是模块级，如果 PdfCanvas 设置了，则共享。如果 PdfCanvas 未挂载，无 workerSrc。但用户触发导出时可能打开了设置页而不是阅读器。所以这是一个真实功能缺陷。WARN。
+
+再考虑 `cropBoxPixels` 的坐标 0 基页码：`anno.rects.filter((r) => r.page === n - 1)`。如果 `annotationRectSchema` 中的 `page` 是「页序号（1基）」？测试用 `page: 1` 会在第二页回传，表明 0 基。注释也说明。OK。
+
+最后输出 JSON。注意不要 markdown 围栏。确保 JSON 合法。
+
+编写 summary：主要发现是生产 drawFrom 实现错误导致带标注文档提取必然失败；此外 worker 初始化、死代码和测试覆盖不足需要补。verdict FAIL。
+
+现在组织 JSON：
+
+```json
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "createDomCanvas -> drawFrom 内 ctx.drawImage 调用",
+      "issue": "生产 drawFrom 实现无法取到底层 HTMLCanvasElement：createDomCanvas 返回对象没有 el 属性，drawImage 收到的是普通对象而非 CanvasImageSource，运行到标注裁剪必然抛 TypeError，导致整篇提取走 error 路径。",
+      "evidence": "ctx.drawImage((src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement), ...) 而 createDomCanvas 返回 { width, height, ctx, drawFrom, toPngBase64 }，且页面图与 anno 图都用该工厂返回对象调用 drawFrom。",
+      "suggestion": "在 RenderCanvas 接口暴露 readonly el: HTMLCanvasElement（或 canvas），createDomCanvas 返回时带上 el；drawFrom 改为 ctx.drawImage(src.el, ...)。同步更新测试 stub 补 el 字段并增加一条针对 createDomCanvas 的真实 drawImage 冒烟测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "loadPdfDocument",
+      "issue": "提取器不配置 pdfjs GlobalWorkerOptions.workerSrc，且设计上不与 ReaderPage/PdfCanvas 挂载耦合；若用户未先打开过 PDF 而直接从设置页触发导出（AI-04 场景），pdfjs worker 可能使用 fake worker 或默认 workerSrc，存在性能和潜在出网风险。",
+      "evidence": "模块注释宣称零 window/pdfjs 静态依赖、独立生命周期（R2），但 loadPdfDocument 仅 await import('pdfjs-dist') 后直接 getDocument(url)，未设置 workerSrc；项目内唯一 workerSrc 设置在 PdfCanvas.tsx 模块级。",
+      "suggestion": "在 loadPdfDocument 中显式设置 GlobalWorkerOptions.workerSrc（复用现有 workerUrl 打包资源，或经 deps 注入），或调用 getDocument 时禁用 worker（disableWorker）并说明取舍。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/utils/pdf-factory.ts",
+      "line_hint": "createMultiPagePdf 新增函数",
+      "issue": "新增的 createMultiPagePdf 在当前 diff 中没有任何引用（corpus-extractor.test.ts 用的是 docStub/canvasStub 纯注入桩），属于未使用的新代码，违反『死代码即删/提交前确认新文件被引用』。",
+      "evidence": "pdf-factory.ts 新增约 30 行 createMultiPagePdf；tests/unit/renderer/corpus-extractor.test.ts 全文未 import 该函数，只定义了 docStub/pageStub/canvasStub。",
+      "suggestion": "当前删除该函数，待后续工单（如 AI-03/04）确实需要多页 PDF 夹具时再随测试一并提交；或在本工单测试中实际使用它替换 docStub 以覆盖真实 PDF 解析路径。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/corpus-extractor.test.ts",
+      "line_hint": "canvasStub 定义与 createDomCanvas 未测",
+      "issue": "生产 createDomCanvas 的 drawFrom/toPngBase64 完全未被测试覆盖（canvasStub 为 no-op），导致上述 BLOCKING 缺陷在 9/9 全绿下漏网；测试纪律要求每个测试能失败一次，当前对核心裁剪路径的断言只在桩上成立。",
+      "evidence": "canvasStub 中 drawFrom: () => undefined，toPngBase64: () => `PNG(${w}x${h})`；测试列表中没有针对 createDomCanvas 的用例。",
+      "suggestion": "为 createDomCanvas 增加独立单测（真实 canvas 上下文 + 最小绘制矩形后断言像素或 width/height），或在提取器测试中注入一个会执行 drawImage 的薄桩来覆盖 anno 裁剪调用链。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "INV-16 行 强制方式 单元格",
+      "issue": "简报自认 dynamic import('pdfjs-dist') 可能不被 ESLint no-restricted-imports 拦截（非白名单文件的缺口），但 INV-16 登记册只写了静态规则与白名单 override，未记录该已知缺口，未来第四处动态直连可能被误认为已由机器强制拦截。",
+      "evidence": "简报 §2：『dynamic 侧白名单文件 override 已豁免，防线缺口=非白名单文件 dynamic import pdfjs 可能不拦（记录为已知边界，评审面覆盖）』；invariants.md 对应单元格无该边界描述。",
+      "suggestion": "在 invariants.md INV-16 的强制方式/锚定状态中补一句：『非白名单文件 dynamic import 不受 no-restricted-imports 机器锚覆盖，依赖人审』，使登记册与真实防线一致。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "runExtraction 内的三处 if (!ackX.ok) throw",
+      "issue": "fulltext/页图/anno 三处回传 ack 检查重复，且异常消息字符串近似，符合『重复 3 次以上抽函数』的规则。",
+      "evidence": "if (!ackText.ok) throw new Error('fulltext 回传被拒绝（会话侧错误）'); if (!ackPage.ok) ...; if (!ackAnno.ok) ...",
+      "suggestion": "抽一个 assertAck(ack, label) 小函数或 helper，统一错误消息并减少重复。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "corpusItemReqSchema figure 分支",
+      "issue": "figure:'page' 分支也允许可选 annotationId，实际语义上只有 anno 图需要 annotationId，当前 refine 只保证 anno 必带，不拒绝 page 携带，契约略宽松。",
+      "evidence": "figure 分支中 annotationId: z.string().min(1).optional()，refine 仅校验 v.figure !== 'anno' || v.annotationId !== undefined。",
+      "suggestion": "可改为 discriminatedUnion 内联子对象区分 figure:'page'（无 annotationId，strict 拒绝）与 figure:'anno'（必含 annotationId），或保留现状并注明宽松是兼容设计。"
+    }
+  ],
+  "summary": "本次 SR2-AI-02 主体架构（背压状态机、事件契约、INV-16 落地）方向正确，但有 BLOCKING：生产 drawFrom 拿不到 canvas 元素，anno 裁剪必然运行时报错；另有 pdfjs workerSrc 未配置、新增多页夹具死代码、真实 canvas 路径无测试覆盖等 WARN。建议回修 BLOCKING 并补齐测试后再合入。"
+}
+```
+
+需要注意 JSON 转义。在 JSON 字符串中，`if (!ackText.ok) throw new Error('fulltext 回传被拒绝（会话侧错误）');` 包含单引号，没问题。`drawFrom` 代码片段包含双引号？evidence 里用双引号包围整个字符串，内部有多行？JSON 字符串不能有字面换行，需要使用 `\n`。上面 evidence 中的代码片段有换行，需要转义为 `\n` 或者保持单行。为了简化，把 evidence 改成单行。同样 issue 中的代码引用。确保 JSON 合法。
+
+另外，severity 顺序先 BLOCKING 再 WARN 再 NIT。OK。
+
+注意：输出要求“只输出一个 JSON 对象，不要 markdown 代码围栏，不要多余文字”。所以直接输出 JSON。
+
+最后检查：有没有遗漏更严重的？比如 `tests/unit/renderer/corpus-extractor.test.ts` 使用 `guardedDescribe` 可能跳过，但不算。`locks` 时间戳不一致不列。`extractRequestEventSchema` 的 url 无协议校验不列。`figure: 'page'` 带 annotationId 是 NIT。重复 import 不列。`cropBoxPixels` 零尺寸不列。
+
+还有一个值得考虑：`createDomCanvas` 的 `drawFrom` fallback 到 `src as unknown as HTMLCanvasElement`，如果 `src` 恰好是 HTMLCanvasElement 就会工作，但调用方传的是 RenderCanvas。所以 BLOCKING。
+
+再想想：`pageCanvas` 是通过 `createCanvas(viewport.width, viewport.height)` 创建的。如果生产 deps.createCanvas 未提供，使用 createDomCanvas。`annoCanvas.drawFrom(pageCanvas, box)` 中 `src` 是 pageCanvas，也是 createDomCanvas 返回对象，没有 el。是的。
+
+另外，`createDomCanvas` 返回对象中 `ctx` 是真正的 CanvasRenderingContext2D。如果我们在 drawFrom 中使用 `ctx.drawImage((src as any).el ?? ...)`，但 `src` 没有 el。如果 `src` 是后来被修改有 el 属性？没有。
+
+修复建议里我提到在 RenderCanvas 接口暴露 el。但这样测试 stub 也要改。OK。
+
+现在最终 JSON。注意转义：在 evidence 中，`drawFrom: () => undefined` 有单引号吗？没有。OK。在 suggestion 中用了中文引号，没问题。
+
+输出。
+
+== content ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "createDomCanvas -> drawFrom 内 ctx.drawImage 调用",
+      "issue": "生产 drawFrom 实现取不到底层 HTMLCanvasElement：createDomCanvas 返回对象没有 el 属性，drawImage 收到的是普通对象而非 CanvasImageSource，运行到标注裁剪时必然抛 TypeError，导致整篇提取走 error 路径。",
+      "evidence": "ctx.drawImage((src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement), ...) 而 createDomCanvas 返回 { width, height, ctx, drawFrom, toPngBase64 }，页图与 anno 图都来自该工厂，调用链 annoCanvas.drawFrom(pageCanvas, box) 中 src 无 el。",
+      "suggestion": "在 RenderCanvas 接口暴露 readonly el: HTMLCanvasElement（或 canvas），createDomCanvas 返回时带上 el；drawFrom 改为 ctx.drawImage(src.el, ...)。同步更新测试 stub 补 el 字段，并为 createDomCanvas 增加真实 drawImage 冒烟测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "loadPdfDocument",
+      "issue": "提取器不配置 pdfjs GlobalWorkerOptions.workerSrc，又与 ReaderPage/PdfCanvas 解耦；若用户未先打开过 PDF 而直接从设置页触发导出，pdfjs worker 可能回退到 fake worker 或默认 workerSrc，存在性能与潜在出网风险。",
+      "evidence": "模块注释宣称零 window/pdfjs 静态依赖、独立生命周期（R2），但 loadPdfDocument 仅 await import('pdfjs-dist') 后直接 getDocument(url)，未设置 workerSrc；项目内唯一 workerSrc 设置存在于 PdfCanvas.tsx 模块级。",
+      "suggestion": "在 loadPdfDocument 中显式设置 GlobalWorkerOptions.workerSrc（复用现有打包 workerUrl 或经 deps 注入），或在 getDocument 时禁用 worker（disableWorker）并说明取舍。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/utils/pdf-factory.ts",
+      "line_hint": "createMultiPagePdf 新增函数",
+      "issue": "新增的 createMultiPagePdf 在当前 diff 中没有任何引用（corpus-extractor.test.ts 用的是 docStub/pageStub/canvasStub 纯注入桩），属于未使用的新代码，违反『死代码即删/提交前确认新文件被引用』。",
+      "evidence": "pdf-factory.ts 新增约 30 行 createMultiPagePdf；tests/unit/renderer/corpus-extractor.test.ts 全文未 import 该函数。",
+      "suggestion": "当前删除该函数，待后续工单需要多页 PDF 夹具时再随测试一并提交；或在本工单测试中实际使用它替换 docStub，覆盖真实 PDF 解析路径。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/corpus-extractor.test.ts",
+      "line_hint": "canvasStub 定义与 createDomCanvas 未测",
+      "issue": "生产 createDomCanvas 的 drawFrom/toPngBase64 完全未被测试覆盖（canvasStub 为 no-op），导致上述 BLOCKING 缺陷在 9/9 全绿下漏网；测试纪律要求每个测试能失败一次，当前对核心裁剪路径的断言只在桩上成立。",
+      "evidence": "canvasStub 中 drawFrom: () => undefined，toPngBase64: () => `PNG(${w}x${h})`；测试列表中没有针对 createDomCanvas 的用例。",
+      "suggestion": "为 createDomCanvas 增加独立单测（真实 canvas 上下文 + 最小绘制后断言尺寸/像素），或在提取器测试中注入一个会执行 drawImage 的薄桩来覆盖 anno 裁剪调用链。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "INV-16 行 强制方式 单元格",
+      "issue": "简报自认 dynamic import('pdfjs-dist') 可能不被 ESLint no-restricted-imports 拦截（非白名单文件的缺口），但 INV-16 登记册只写了静态规则与白名单 override，未记录该已知缺口，未来第四处动态直连可能被误认为已由机器强制拦截。",
+      "evidence": "简报 §2：『dynamic 侧白名单文件 override 已豁免，防线缺口=非白名单文件 dynamic import pdfjs 可能不拦（记录为已知边界，评审面覆盖）』；invariants.md 对应单元格无该边界描述。",
+      "suggestion": "在 invariants.md INV-16 的强制方式/锚定状态中补一句：『非白名单文件 dynamic import 不受 no-restricted-imports 机器锚覆盖，依赖人审』，使登记册与真实防线一致。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "runExtraction 内的三处 if (!ackX.ok) throw",
+      "issue": "fulltext/页图/anno 三处回传 ack 检查重复，且异常消息字符串近似，符合『重复 3 次以上抽函数』的规则。",
+      "evidence": "if (!ackText.ok) throw new Error('fulltext 回传被拒绝（会话侧错误）'); if (!ackPage.ok) ...; if (!ackAnno.ok) ...",
+      "suggestion": "抽一个 assertAck(ack, label) 小函数或 helper，统一错误消息并减少重复。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "corpusItemReqSchema figure 分支",
+      "issue": "figure:'page' 分支也允许可选 annotationId，实际语义上只有 anno 图需要 annotationId，当前 refine 只保证 anno 必带，不拒绝 page 携带，契约略宽松。",
+      "evidence": "figure 分支中 annotationId: z.string().min(1).optional()，refine 仅校验 v.figure !== 'anno' || v.annotationId !== undefined。",
+      "suggestion": "可改为不单独设可选 annotationId，而用两个 figure 子分支（page 严格拒绝、anno 必含），或保留现状并注明宽松是兼容设计。"
+    }
+  ],
+  "summary": "SR2-AI-02 的状态机、背压与 IPC 契约设计总体成立，但存在一个必须回修的 BLOCKING：生产 drawFrom 取不到 canvas 元素，anno 裁剪必然运行时报错；此外 pdfjs workerSrc 未配置、新增多页夹具死代码、真实 canvas 路径无测试覆盖等 WARN 也应在合入前处理。建议修复 drawFrom 并补真实 canvas 冒烟测试后重新 verify。"
+}

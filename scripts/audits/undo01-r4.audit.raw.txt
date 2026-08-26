@@ -1,0 +1,399 @@
+== reasoning ==
+我们被要求审计一个 Electron + TypeScript 桌面应用的代码变更 diff。需要输出一个 JSON 对象，包含 verdict、findings、summary。
+
+首先，我们需要理解项目宪法（AGENTS.md）中的硬规则，以及任务简报、diff 内容。根据项目宪法，有很多硬规则需要遵守。让我们仔细分析 diff。
+
+diff 主要包含：
+1. locks/manifest.json 更新（新增 annotation-undo.test.ts 的 sha256，更新 reader-shortcuts.test.tsx 的 sha256）——这看起来是受锁文件更新，带 [locked-change] 尾注？在 diff 中没有看到尾注，但这是 lock 文件本身，应该是 locks:apply 的结果。
+2. src/renderer/features/reader/AnnotationLayer.tsx：import pushUndo，在 saveComment 和 deleteAnnotation 成功路径 pushUndo。
+3. src/renderer/features/reader/ReaderPage.tsx：在 actions 中增加 undo 动作。
+4. src/renderer/features/reader/ReaderShortcuts.ts：增加 ctrl+z 绑定。
+5. src/renderer/features/reader/SelectionLayer.tsx：在保存成功路径 pushUndo create。
+6. src/renderer/features/reader/annotation-undo.ts：实现撤销栈。
+7. src/renderer/features/reader/reader.store.ts：新增 undo() 动作，并在 closeOne 中 clearStack。
+8. src/renderer/shared/ui/Toast.tsx：拆分，导出 showToast from toast-store。
+9. src/renderer/shared/ui/toast-store.ts：新建，包含队列逻辑。
+10. tests/unit/renderer/annotation-undo.test.ts：新建测试。
+11. tests/unit/renderer/reader-shortcuts.test.tsx：增加 undo stub 和 ctrl+z 测试。
+12. tickets/registry.ts：更新 SR2-UNDO-01 状态为 done。
+
+现在需要按照审计维度：
+1. 契约与纪律：是否违反项目宪法硬规则
+2. 正确性：逻辑错误、边界条件、错误处理缺失、竞态
+3. 安全：SQL 注入、路径穿越、XSS、不安全 API、出网白名单外联
+4. 生产质量：类型滥用(any)、死代码、占位实现、行数超标(文件≤500行)
+5. 测试纪律：是否有为过测试而放宽断言/删检查的迹象
+
+需要检查 diff 中是否有违反宪法的地方。
+
+先看项目宪法的硬规则：
+
+- 文件 ≤500 行：需要检查新文件 toast-store.ts 和 annotation-undo.ts 的行数。toast-store.ts 从 diff 看是 83 行，annotation-undo.ts 是 185 行（diff 中显示从 54 行变为 185 行），都符合。AnnotationLayer.tsx 等文件行数变化不大，应该不会超标。
+
+- 分层单向：renderer → window.api → ipc。annotation-undo.ts 直接 import api from '../../api/client'，这是允许的（renderer 可以直接调用 api）。reader.store 也 import api。注意选中：annotation-undo 是纯逻辑+api 调用收口。应该没问题。
+
+- 禁止 renderer 引入任何 Node/Electron API 或绝对文件路径：annotation-undo.ts 只 import api 和 Annotation 类型，没有 Node API。toast-store.ts 使用 window.setTimeout，在 renderer 中允许。但是注意 toast-store.ts 中的 `window.setTimeout`：这个在非浏览器环境下可能有问题，但渲染进程有 window。应该没问题。
+
+- 禁止新增出网 host：没有涉及。
+
+- 类型单一真相源：一切跨进程类型来自 src/shared/。annotation-undo.ts 从 @shared/models/annotation 导入类型，符合。
+
+- 死代码即删：看起来没有增加死代码。
+
+- 方案切换 = 删除旧方案：Toast.tsx 拆分后，原来的实现被移除，没有两套并存。toast-store.ts 是新的，Toast.tsx 再导出。符合。
+
+- 测试纪律：禁止修改 tests/**、**/*.test.ts、src/shared/**，除非 [locked-change]。diff 中修改了 tests/unit/renderer/reader-shortcuts.test.tsx，这是受锁文件。任务简报说这是 [locked-change] 同批更新。但是 diff 中没有显示尾注？actually，diff 中只有代码变更，尾注通常写在 commit message 中，审计者无法看到 commit message。我们需要从简报中看到信息。简报说“[locked-change] 同批更新：makeActions 工厂补 undo 桩+新增 ctrl+z 用例（强化非放宽）”。所以是符合流程的。另外新建了 tests/unit/renderer/annotation-undo.test.ts，这也是受锁文件，但是新建文件需要 locks:apply，manifest 中已加入。
+
+- 禁止修改 src/shared/**：diff 中没有修改 src/shared 下的文件。toast-store.ts 在 src/renderer/shared/ui/ 下，这不是 src/shared（注意大小写：src/shared 是跨进程类型，src/renderer/shared 是渲染进程内部共享），所以可以。
+
+- 不可机检的审查：需要判断是否违反纪律。例如，项目宪法要求“状态机前置”：凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须先给出状态/迁移表。任务简报中 annotation-undo.ts 头注有五层规约，但没有明确的状态机。不过这是撤销栈，不是 store 状态机？虽然 reader.store 增加了 undo 动作，但 undo 逻辑在 annotation-undo 内部，有自己的状态（in-flight 互斥）。可能不涉及 store 的状态机？但是 reader.store 本身是 store + 异步，这个工单修改了 reader.store 增加了 undo 动作。宪法要求“凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须先给出状态/迁移表”。这个修改是给 reader.store 增加一个异步动作 undo，涉及用户输入（ctrl+z），所以应该需要状态机？但 annotation-undo 模块内部实现了自己的状态管理，而 reader.store 的 undo 动作只是调用了 runUndo 并根据结果更新 annotations。是否已经提供了状态机？在 diff 中 annotation-undo.ts 的头注描述了行为，但没有显式的状态/迁移表。不过任务简报提到“状态机前置”，并且 annotation-undo 有“in-flight 互斥”状态，这实际上是一个小的状态机（idle → busy → idle）。可能已经满足，因为头注中描述了。审计时我们只能基于 diff 和简报判断，不能过度推断。也许需要检查是否有违反，但可能 NIT。
+
+- 禁止字符串拼接 SQL：没有涉及。
+
+- 安全：没有明显不安全代码。api 调用是预编译的，路径等都是安全的。
+
+- 正确性：需要细致检查。
+
+现在逐文件分析：
+
+### annotation-undo.ts
+
+关键点：
+- 类型 UndoEntry 判别联合：create/delete/comment-edit。其中 delete 的载荷是 annotation（完整对象），comment-edit 是 before（完整 Annotation）。create 也是 annotation。
+- pushUndo：如果栈不存在则创建，push，如果超过 MAX，splice(0, length - MAX) 丢弃最旧。正确。
+- clearStack：删除。
+- toInput：将 Annotation 转换为 AnnotationInput，剥离 id/paperId/createdAt/updatedAt。这里注意 AnnotationInput 类型定义在 @shared/models/annotation。检查字段：page, kind, color, quoteText, prefixText, suffixText, startOffset, endOffset, rects, comment。应该与 schema 对齐。但注意是否有其他字段？Annotation 可能还有别的字段？通常还包括 createdAt, updatedAt, id, paperId。这里剥离了。好。
+- remapStackIds：遍历栈，更新所有引用旧 id 的条目为 new id。逻辑：
+  - 对于 comment-edit，只更新 before.id；如果之前已经是新 id 则不变。但注意 comment-edit 的 before 是完整 Annotation，可能有其他字段。更新为 { ...e.before, id: newId }。
+  - 对于 create/delete，更新 annotation.id。
+  有一个潜在问题：如果同一个标注在栈中有多个条目（create, comment-edit, delete），例如 create(a-old), comment-edit(before=a-old), delete(a-old)。当 delete 逆操作重建新 id a-new 后，remapStackIds 会将栈中所有 id===oldId 的条目改为 newId。这样 create 条目变为 create(a-new)，comment-edit 变为 before(a-new)。之后撤销 comment-edit 时 update 用 before（新 id），正确。撤销 create 时 delete 新 id，正确。这个逻辑是对的。
+
+- undo 函数：
+  - 先检查 undoInFlightPaper === paperId 则返回 busy。这是一个模块级变量，per-paper 互斥只允许一个 paper 同时撤销，其他 paper 不阻塞（因为变量是单个 string，同一时间只能一个 paper in-flight。如果 p1 撤销中，p2 撤销不会被阻塞，因为 undoInFlightPaper 是 p1，p2 !== p1，所以可以执行。那如果 p1 撤销中，p2 也开始撤销，undoInFlightPaper 会被设置为 p2，覆盖 p1。当 p1 完成时，finally 会设置 undoInFlightPaper = null，这会清除 p2 的互斥标志，导致 p2 还没完成时，再触发 p2 的撤销会进入。这是一个竞态 bug！考虑：p1 undo 开始，undoInFlightPaper='p1'；p2 undo 开始，进入时检查 p2 !== 'p1'，通过，设置 undoInFlightPaper='p2'；此时 p1 完成，finally 设置 null；p3（p2 同篇）undo 开始，检查 p3 === null 不匹配，进入，设置 undoInFlightPaper='p2'（或 p3? 实际上如果 p3 也是 paper2，那么会检查 p3==='p2'? 但此时 undoInFlightPaper 是 null，所以不相等，进入，从而两个 p2 的撤销并行）。所以这个互斥实现实际上只能保护最后进入的 paper，不能保护并发。这是一个正确性缺陷。任务简报声称“per-paper 互斥——同篇撤销进行中再触发返回 busy（消费方静默合并）”，但实现实际上无法保证 per-paper 互斥，因为 single 变量不能同时跟踪多个 paper。这违反了设计意图。严重吗？并发撤销发生在用户快速按 ctrl+z 时，由于 JS 单线程，两个 undo 调用是顺序的（第一个进入 async，await api 时挂起，第二个事件循环可以进入）。如果用户对 p1 触发撤销，在 api 等待期间切换到 p2 并触发撤销，然后 p1 完成，再切回 p1 再次触发撤销，p1 的第二个撤销会在第一个 p1 还没完成？不对，第一个 p1 在 await 时已经挂起，第二个 p1 触发时 undoInFlightPaper 此时是 p2（因为 p2 已将变量设为 p2），所以第二个 p1 检查 p1 === 'p2' 不成立，进入，导致 p1 两个撤销并行。这确实是个 bug。但 ui 上用户能多快切换 tab？不太可能，但在异步 API 返回期间，用户可能通过快捷键或点击快速操作。这是一个真实的竞态。
+
+  但是，在实践中，renderer 是单线程，undo 调用是异步的，但只有用户操作（如 ctrl+z）才能触发。如果在 p1 撤销进行中，用户切换到 p2 并按 ctrl+z，然后切回 p1 按 ctrl+z，确实会并行。所以这是一个 WARN 或 BLOCKING 级别的问题。鉴于设计文档明确要求 per-paper 互斥，实现不正确，这属于正确性缺陷，可能导致重复撤销（同一个操作被撤销两次？）。需要看具体影响：如果两个 undo 并行执行，它们都会从栈顶读取同一个 top（因为 splice 还没执行），然后都调用 deleteAnnotation(id)。第一个成功后 splice 移除，第二个也可能成功，但之后 splice(topIdx,1) 可能栈长度已变，导致移除错误条目？由于两个 async 并发，第二个在 await api 时，第一个可能已经完成了 splice。那么第二个在完成后也会执行 s.splice(topIdx, 1)。此时 topIdx 是之前计算的栈顶索引。如果第一个已经 splice 了同一个索引，第二个 splice 会移除新的栈顶（可能是新入栈的条目），或者越界？我们看代码：topIdx = s.length - 1 在调用时计算。如果有两个并发的 undo，第二个进入时 s.length 可能还是原来的，topIdx 相同。第一个完成后，s.splice(topIdx,1) 移除了栈顶数组元素，s.length 减 1。第二个完成后，s.splice(topIdx,1) 中 topIdx 可能等于当前 s.length（如果之前栈只有一个条目，现在 s.length=0，topIdx=0，splice(0,1) 在空数组上返回 []，不会报错，但栈空）。如果栈有多个条目，第二次 splice 会移除错误的条目。所以这可能导致撤销行为错误。
+
+  正确的互斥应该使用 Set<paperId> 记录正在撤销的 papers。这是一个明显的逻辑缺陷。
+
+  但等等，undoInFlightPaper 是模块级变量，类型为 string | null。设计意图是每次只能一个 paper 撤销？头注说“per-paper 互斥——同篇撤销进行中再触发返回 busy（消费方静默合并——连按 ctrl+z 等价一次撤销）；他篇互不阻塞（各自独立栈，并行安全——deepseek r3 W1 处置）”。所以设计意图是每个 paper 独立互斥，多个 paper 可以并行。但实现用单个变量，无法做到“他篇互不阻塞”的同时“同篇互斥”，因为单变量无法同时记录多个 in-flight paper。他篇 undo 会覆盖变量，导致前一个 paper 失去互斥保护。所以这是实现与设计不符，是一个正确性 bug。
+
+  然而，这可能是一个极端场景，影响较小。但根据判级标准，正确性缺陷算 BLOCKING。我们需要考虑是否严重到 BLOCKING。用户场景：本地应用，单用户，快速操作概率低，但确实可能发生。因为 undo 的 api 调用是 IPC，可能很快（本地数据库），也可能慢（大文件）。如果在慢的时候用户切换标签并撤销，就会出现。这可能导致栈状态损坏。我认为这是 WARN 级别或 BLOCKING？宪法说“正确性缺陷”是 BLOCKING。但实际问题是否会导致严重后果？可能导致错误的撤销或栈错乱。需要回修。我应该列为 BLOCKING。
+
+  另外，还有一处：在 undo 函数中，当 top.kind === 'delete' 时，调用 api.saveAnnotation({ paperId, annotation: toInput(top.annotation) })。这里 saveAnnotation 返回的 r.data 是新的 Annotation（带新 id）。但注意，saveAnnotation 可能返回的 annotation 包含 paperId 等。然后 apply = { type: 'upsert', annotation: r.data }。之后 remapStackIds(s, top.annotation.id, r.data.id) 将栈中旧 id 改为新 id。这正确。但是，如果 saveAnnotation 成功，但随后 splice 前发生了异常？没有。
+
+  还有一个潜在问题：在 `catch` 块中，如果抛出的不是 ApiClientError，会 console.error，然后返回 api-failed。但这样，即使由于编程错误（如将 before 传给 update 时 schema 不符）导致 API 抛出非 ApiClientError？其实 api 调用通常返回 Result 对象，异常可能是网络错误。ApiClientError 应该是 api 层统一错误。如果其他异常，记录日志并返回可重试。可接受。
+
+  另外，`undo` 函数在成功时返回 `{ done: true, apply }`，但不返回被撤销的 entry 供调用方使用。调用方 reader.store 根据 apply 更新 annotations。对于 delete 逆操作，apply 是 upsert，store 会添加新标注。对于 comment-edit，upsert 会替换原标注（因为 id 相同）。对于 create，remove。这正确。
+
+  但是，注意 comment-edit 逆操作：top.before 是编辑前的完整 Annotation，包括 id。api.updateAnnotation({ annotation: top.before }) 会更新此标注。但如果在创建该标注之后、评论编辑之前，该标注的其他属性（如颜色）也被修改了？本工单只支持 comment-edit，其他属性修改（如颜色）可能不走 undo。所以 before 全量快照可能会在 undo 时把其他字段也回滚到编辑前的状态。但这符合“逆操作”设计，因为 comment-edit 操作本身就替换了整个 annotation（在 AnnotationLayer.saveComment 中，next = { ...a, comment, updatedAt }，所以只改变了 comment 和 updatedAt。before 是 a，所以 undo 会把 comment 和 updatedAt 都回滚到旧值。updatedAt 回滚可能不是一个理想行为，但语义正确（返回到编辑前状态）。不过 updatedAt 是时间戳，回滚可能影响排序？不严重。
+
+  另外，在 pushUndo 中，传入的 entry 直接保存引用（例如 AnnotationLayer 中 pushUndo(a.paperId, { kind: 'comment-edit', before: a })）。a 是当前注解对象。注意这个 a 是渲染进程中的对象，之后如果 store 更新（如 updateAnnotation(saved)），a 可能被替换，但 before 保存的是原引用，后续查询不会改变它。OK。
+
+  还有一个问题：AnnotationLayer 中 pushUndo 在 updateAnnotation 成功之后调用，但 before 是 a，而 a 是当前渲染时的对象。如果在 saveComment 过程中用户又快速修改了注释，a 可能不是最终编辑前状态？由于 saveComment 是异步，用户在等待期间不能编辑（editing 被锁定？可能）。看代码：setEditing(null) 在 pushUndo 之后，但在 await 成功之前 editing 可能仍为当前，用户可能无法同时编辑。不太可能。但更严谨：应该在调用 api 之前捕获 before，这里 a 就是传入的参数，所以正确。
+
+### reader.store.ts 的 undo()
+
+- 首先获取 activeId 在 await 之前，捕获 paperId。好。
+- await runUndo(paperId) 可能抛异常？annotation-undo 内部 catch 了所有异常，一般不会抛，但如果是模块本身的意外错误，catch 兜底。好。
+- 如果 outcome.done 为 false，根据 reason 显示 toast（只有 api-failed 时显示）。busy 和 empty 静默。合理。
+- 成功后，检查 tab 是否存在。如果 tab 已被关闭，return。但注意：这里 paperId 是 activeId 的快照。如果 undo 期间用户切换 tab，tab 仍存在，那么 store 会更新 *当前仍存在的那个 tab*（paperId），即原来的 tab，即使当前活动标签已改变，这个操作会作用于非活动标签的 annotations。这是有意为之（因为撤销的是原 tab 的操作）。但如果用户关闭了该 tab，则丢弃。合理。
+- 更新 annotations 的逻辑：
+  - remove：过滤掉 id。
+  - upsert：如果存在相同 id，替换；否则追加。
+  这正确。
+
+- 但这里有一个 subtle 的问题：store 的 undo() 在 runUndo 成功之后，才更新 store。但 runUndo 的 apply 是基于 annotation-undo 模块中的栈。如果在 await 期间，同一个 tab 又有新的标注操作 pushUndo（比如用户通过 UI 添加了新标注），那么 undo 成功后，store 会更新 annotations，但新标注已经在 store 中（因为 SelectionLayer 保存时也调用了 onSaved + store.updateAnnotation？实际上 SelectionLayer 保存成功路径是调用 onSaved(saved)，onSaved 由 AnnotationLayer 传入，会更新 store。然后 pushUndo。所以新标注在 store 中。undo 操作撤销的是栈顶，可能不是新标注（如果新标注在 await 期间 push，栈顶会变？注意 undo 函数在开始时捕获 topIdx，然后 await。如果在 await 期间新 push，栈顶变了，但 undo 完成后 splice(topIdx,1) 会移除捕获的那个条目，而不是新条目。这正是测试中「await 期间新操作入栈」场景。所以 undo 撤销的是发起时的栈顶，即捕获的 top。store 更新 apply 也是那个 top 对应的操作。所以栈和 store 保持一致。这个设计很好。
+
+  但是，在 undo 的 await 期间，如果新的操作入栈，并且该操作也修改了 store（例如新创建了标注），那么 undo 的 apply 是 remove 一个旧标注，store 更新会移除旧标注，但保留新标注。这正确。
+
+  如果 undo 的逆操作是 upsert（删除后重建），apply.upsert 会添加一个标注（新 id）。但如果 await 期间，该标注被用户重新创建（有相同的语义但没有 id），store 可能会有两个类似标注？但概率低。因为用户不太可能在撤销过程中同时编辑。可接受。
+
+### 与硬规则相关的问题
+
+- 受锁文件修改：tests/unit/renderer/reader-shortcuts.test.tsx 被修改，并且 lock manifest 更新了 sha256。这符合 [locked-change] 流程。但注意，项目宪法说“受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 [locked-change] 尾注”。diff 中无法看到 commit message，但简报说明已处理。我们不能仅根据 diff 判断。作为审计，应基于输入材料。输入材料中明确了 [locked-change] 同批更新。所以通过。
+
+- 新建测试文件：也需要受锁。manifest 中添加了。符合。
+
+- 状态机前置：任务简报说“状态机前置”可能是针对 reader.store 的 TABS 等。本工单新增 undo 动作，是否违反？annotation-undo 模块的头注提供了详细的行为层描述，并且在实现中有 in-flight 互斥、栈状态。可以视为状态机已给出（idle/busy）。可能 OK。
+
+- 文件行数：annotation-undo.ts 共 185 行，<500。toast-store.ts 83 行。OK。
+
+- 类型滥用 any：测试中有 `Record<string, unknown>` 类型，不是 any。没有发现问题。
+
+- 占位实现：diff 将 unimplementedObject 替换为真实实现，无占位。
+
+- 死代码：没有。
+
+- 安全：没有。
+
+现在仔细看 Toast.tsx 拆分。原本 Toast.tsx 是 100+ 行，拆分为 toast-store.ts 后，Toast.tsx 变小。但是注意，toast-store.ts 中 `window.setTimeout` 和 `window.clearTimeout` 使用了 window。在测试环境中，window 存在吗？测试可能使用 jsdom。但是，toast-store.ts 被 reader.store 导入，而 reader.store 又被 .ts 测试拉入 node 工程，toast-store.ts 使用了 `window`，在 node 环境下 `window` 未定义。这正是简报中提到的“typecheck tsconfig.node（收 tests/**/*.ts）：reader.store（被 .ts 测试拉入 node 工程）import Toast.tsx 触发「--jsx 未设」——拆 Toast 为 toast-store.ts（纯 .ts 队列逻辑）”。但 toast-store.ts 仍然使用 `window.setTimeout` / `window.clearTimeout`。在 node 环境下，`window` 未定义，这会不会导致类型错误？TypeScript 中，如果 lib 包含 DOM，`window` 类型存在，但在 node 环境下运行时可能 ReferenceError。但 toast-store 的函数只在调用时才访问 window，类型检查可以通过（因为 DOM lib 已包含）。运行时，如果 reader.store 在 node 环境导入 toast-store，但没有调用 showToast，则不会报错。测试中 reader.store 可能会 import toast-store，但如果测试不触发 showToast，没问题。但如果有代码路径在 node 环境调用 showToast？那是测试或在 node 脚本中，可能吗？reader.store 的 undo() 在 api-failed 时调用 showToast，这是运行时行为，在 renderer 环境有 window。测试中如果模拟 undo api-failed，会调用 showToast，此时 window 可能未定义（如果测试在 node 环境）。但测试文件 annotation-undo.test.ts 直接测试 annotation-undo，不涉及 reader.store。reader.store 的测试可能已有，但本 diff 没有修改 reader.store.test.ts。所以没有测试 reader.store 的 undo 动作。所以这个风险是潜在的。但项目宪法的 environment 是 Electron 渲染进程，window 存在。
+
+然而，toast-store.ts 使用 `window.setTimeout` 而不是 `setTimeout`，这是一个值得注意的点。原本在 Toast.tsx 中也是用 `window.setTimeout`，所以行为未变。
+
+另一个点：Toast.tsx 现在 `export { showToast } from './toast-store'`，并 `export type { ToastKind } from './toast-store'`。但原来的消费方可能 import { showToast, ToastKind } from './Toast'，现在仍可。原 Toast.tsx 还导出了 ToastHost。但注意，原 Toast.tsx 中 `ToastItem` 接口是局部的，没有导出。所以没有问题。
+
+### AnnotationLayer.tsx 中的 pushUndo 位置
+
+- 在 saveComment 中，pushUndo 在 updateAnnotation 成功、store 更新和 clearTabDirty 之后，setEditing(null) 之前。顺序：调用 api → store 更新 → pushUndo → clearTabDirty → setEditing。如果 pushUndo 抛异常（不可能，纯内存操作），会中断。没关系。
+- 注意 before 是 a，但 a 在 updateAnnotation 之前是什么？a 是当前标注对象，来自 props.annotations。在编辑过程中，a 可能已经被修改？实际上 a 是从 annotations 数组中找出的，用户输入 comment 在本地 state 中，直到保存才构造 next。所以 before 是原始 a。正确。
+
+- 在 deleteAnnotation 中，pushUndo(a.paperId, { kind: 'delete', annotation: a }) 在 api 成功、store 更新后。正确。
+
+- 注意：这两个 pushUndo 都在 store 更新之后。如果在 pushUndo 操作期间（同步），没有并发问题。
+
+### SelectionLayer.tsx 中的 pushUndo
+
+- 在 saveAnnotation 成功、onSaved(saved) 之后，pushUndo(paperId, { kind: 'create', annotation: saved })。这里 saved 是 api 返回的新标注。注意 onSaved 可能更新 store，然后 pushUndo。顺序：api 成功 → onSaved(saved)（store 添加）→ pushUndo。这样栈条目和 store 一致。
+
+- 潜在问题：如果 onSaved 抛出？不会。如果 pushUndo 之后 clearTabDirty 抛？不会。
+
+### 关于 toInput 的注释
+
+"annotationInputSchema 对齐（omit 同源）" — 我们不知道 schema 是否还有字段，例如 paperId 被剥离，但 saveAnnotation 的 API 输入是否需要 paperId？在调用 saveAnnotation({ paperId, annotation: toInput(...) }) 中，paperId 是单独参数，所以 annotation 输入不包含 paperId。好。
+
+### reader-shortcuts.test.tsx
+
+- makeActions 增加了 undo: vi.fn()。原有测试未变。新增测试 ctrl+z 断言 undo 调用。这没有问题。
+- 注意：这个测试文件是受锁的，修改符合 [locked-change]。但是否“强化非放宽”？是的，增加了断言。
+
+### 其他
+
+- ReaderShortcuts.ts 的 useEffect 依赖数组增加了 undo。因为 actions 对象是 useMemo 创建？ReaderPage 中 useMemo 返回新对象每次都会变吗？看 ReaderPage 的 diff：它返回一个对象，useMemo 依赖是 []？实际上代码中 `useMemo(() => ({ ... }), [])` 可能？我们只看到 `ready: () => ...` 等。在 diff 中，ReaderPage.tsx 的 useMemo 没有显示完整依赖。原代码可能是 `useMemo(() => ({ ... }), [])` 或类似。如果依赖数组是 []，那么 actions 对象稳定，undo 函数也稳定。ReaderShortcuts 的 effect 依赖增加 undo，如果 undo 函数稳定，不会重新绑定。如果 actions 对象每次渲染都变化（因为没有 memo 或依赖变化），则 effect 会重新绑定。这在之前也存在。我们无法从 diff 知道。但 ReaderShortcuts 注释说“成对注销”，应该可以。
+
+- ReaderPage.tsx 中 `undo: () => void useReaderStore.getState().undo()` 是异步函数，返回 void。注意 `void` 运算符调用异步函数但不等待，可能产生 unhandled rejection？如果 undo() 内部抛出异常，它自己 catch 了，所以不会。但 `void` 不处理 Promise 的 rejection。由于 reader.store.undo() 有 try/catch 包住 await runUndo，且 catch 内部 console.error + showToast，不会 reject。所以安全。
+
+- reader.store.ts 中 import { showToast } from '../../shared/ui/toast-store'。注意路径：reader.store 在 src/renderer/features/reader/，toast-store 在 src/renderer/shared/ui/，相对路径是 ../../shared/ui/toast-store。正确。
+
+- AnnotationLayer.tsx 和 SelectionLayer.tsx import pushUndo from './annotation-undo'。正确。
+
+### 测试文件 annotation-undo.test.ts
+
+- 使用 vi.resetModules + stubGlobal window 模拟。注意 `vi.stubGlobal('window', { api })` 会影响全局 window。但 window 在 node 环境原本不存在？vitest 环境可能是 jsdom 或 node。如果是 jsdom，stubGlobal 覆盖。如果 node，添加。对模块导入，annotation-undo.ts 中没有直接使用 window，只 import api from '../../api/client'，而 api 模块可能会使用 window？测试中通过 stub window.api 使得 api 模块能够访问。这可能是可行的。
+
+- 测试中 loadModule 返回模块对象，每个测试重新加载模块以获得干净的栈。这正确。
+
+- 测试用例覆盖全面。没有发现为了通过测试而放宽断言。
+
+### 潜在正确性问题：remapStackIds 对 comment-edit 条目只更新 before.id，但 before 中的其他引用？不需要。
+
+### 潜在正确性问题：pushUndo 中的 entry 未经深度克隆。如果调用方之后修改了 annotation 对象（例如 store 更新会替换数组中的对象，但不会原地修改），通常不会。但如果调用方持有引用并修改，可能导致栈内数据变化。在 AnnotationLayer.saveComment 中，pushUndo 传入 before: a，之后 a 对象没有被修改？后续 `useReaderStore.getState().updateAnnotation(saved)` 会用 saved 替换 store 中的对象，但 a 对象不会被修改。SelectionLayer 中 saved 对象也不会被修改。所以安全。
+
+### 关于“方案切换 = 删除旧方案”
+
+Toast.tsx 拆分为 toast-store.ts，这是职责拆分，不是新方案。符合。
+
+### 关于“禁止 renderer 引入任何 Node/Electron API 或绝对文件路径”
+
+toast-store.ts 使用 `window`，不是 Node。OK。
+
+### 安全
+
+没有新依赖，没有出网。
+
+### 结论
+
+主要问题是 undo 的 in-flight 互斥实现缺陷（单变量无法支持多 paper 并发），以及可能潜在的其他问题。
+
+我们还需要检查 diff 中是否有未发现的违反宪法的地方，特别是“状态机前置”和“同类缺陷二次触发即重构”等不可机检规则。我们无法知道同类缺陷是否第二次出现，所以不评论。
+
+“不变量登记”：新增跨模块行为不登记 docs/invariants.md 视同未完成。annotation-undo 的 per-tab 栈、in-flight 互斥等是否属于跨模块行为不变量？是否需要在 docs/invariants.md 登记？任务简报没有提到。宪法说“跨模块/跨时间的行为不变量一律登记 docs/invariants.md；未登记 = 未定义行为。” 这个撤销栈的 per-tab 隔离、FIFO 截断、in-flight 互斥等是跨模块行为吗？选择层、标注层、reader.store 都依赖它。这应该是需要登记的不变量。diff 中没有看到 docs/invariants.md 的变更。这是一个潜在的违反。但是否已经在之前登记了？因为我们只能看 diff，不能假设。任务简报没有提及登记。所以这可能是问题。但也许这些不变量都写在 annotation-undo.ts 头注中，头注本身充当“声明处+锚定状态”？宪法要求登记到 docs/invariants.md，未登记未定义。因此，如果本次实现引入了新的跨模块行为不变量（撤销栈语义），应该新增登记。这是 WARN 或 BLOCKING？宪法是硬规则，“未登记 = 未定义行为”。违反硬规则应该 BLOCKING。但我们需要确认 docs/invariants.md 是否已存在相关内容。由于 diff 中没有显示 doc 改动，而这是一项新功能，很可能没有登记。这是一个可以指出的问题。
+
+但是，也可能项目的不变量登记是按需做的，而这次没有新增不变量（因为撤销栈是模块内自持，不进 TabState，已经在头注中声明了）。宪法中的“不变量登记”是“跨模块/跨时间的行为不变量”，例如“每个 tab 的撤销栈随 tab 关闭持久性”等。这确实跨模块（reader.store closeOne 调用 clearStack）。所以应该登记。审慎起见，我将其列为 WARN（因为无法确证是否已在之前登记过，但 diff 中无体现，且简报也没有说登记了，因此默认未登记）。
+
+还有一个问题：`tickets/registry.ts` 将 SR2-UNDO-01 状态改为 done。根据工单工作流，做完工单后“人类翻 registry 状态”，这里已经翻了，可以。但宪法说弱模型领单步骤，不适用于 strong。没问题。
+
+### 行数检查
+
+- annotation-undo.ts：185 行，OK。
+- toast-store.ts：83 行，OK。
+- annotation-undo.test.ts：235 行，OK。
+- AnnotationLayer.tsx：原本可能 250 行，现在增加 pushUndo，但压缩了注释，保持 250。任务简报说“AnnotationLayer/ReaderPage 行数守恒：注释压缩+undo 动作单行化（250/250 恰好合规）”。符合 ≤250 的组件行数限制。ReaderPage 也在限制内。
+
+### 其他注意
+
+在 ReaderShortcuts.ts 中，新增了 undo 到 actions interface 和 bindings。但注意 `preventDefault: true`。在 textarea 内 ctrl+z 会被拦截吗？注释说 editable 避让由 keymap 层确保。keymap 应该是如果目标是 editable，则不触发。所以 OK。
+
+### 关于测试纪律
+
+- 修改 reader-shortcuts.test.tsx 是 [locked-change]。简报说明同批更新。是否“强化非放宽”？是。
+- 新建测试没有为了通过而放宽。例如深度截断测试断言 a-0 不出现，是符合语义的。
+- 没有删除断言。
+
+### 最终 verdict
+
+我需要决定 PASS_WITH_WARNINGS 还是 FAIL。
+
+考虑到有一个正确性缺陷（in-flight 互斥实现不完善）和一个可能的纪律问题（不变量未登记），我认为至少是 PASS_WITH_WARNINGS 或 FAIL。正确性缺陷按判级标准是 BLOCKING，因此应该是 FAIL。
+
+但我们要评估这个 in-flight 互斥缺陷是否真的是 BLOCKING。由于它可能导致撤销错乱，影响数据一致性（重复删除或错误移除），这是正确性缺陷。所以应该 BLOCKING。因此 verdict = FAIL。
+
+但是，我们也要考虑任务简报中声称 deepseek r3 W1 修复了 in-flight 互斥（per-paper），实际上没有完全修复。这是一个事实性错误，进一步佐证。
+
+让我再仔细分析互斥缺陷：
+
+```ts
+let undoInFlightPaper: string | null = null
+
+export async function undo(paperId: string): Promise<UndoOutcome> {
+  if (undoInFlightPaper === paperId) {
+    return { done: false, reason: 'busy' }
+  }
+  ...
+  undoInFlightPaper = paperId
+  ...
+  finally {
+    undoInFlightPaper = null
+  }
+}
+```
+
+场景：
+1. undo('p1') 开始：检查 null !== 'p1'，设置 undoInFlightPaper='p1'，进入 await deleteAnnotation。
+2. undo('p2') 开始（用户切换 tab 按 ctrl+z）：检查 'p1' !== 'p2'，进入，设置 undoInFlightPaper='p2'，进入 await saveAnnotation。
+3. undo('p1') 再次触发（用户切回 p1 按 ctrl+z）：检查 'p2' !== 'p1'，进入，设置 undoInFlightPaper='p1'，进入 await deleteAnnotation。此时 p1 的两个撤销并发。
+4. 如果 p1 的两个撤销都指向同一个栈顶，它们都会调用 deleteAnnotation(id)，可能导致第二次删除失败（因为 id 已删除），返回 ok:false，不弹栈。但其中一个可能成功并 splice，另一个失败返回 api-failed，不弹栈。结果栈中那个条目被移除了，但第二个撤销失败。用户界面上显示“撤销失败”，但实际上第一个成功。虽然最终一致（一个撤销成功），但用户体验和栈状态可能不一致。
+
+更糟的是，第二个撤销在成功后 splice 时，可能因为栈已被第一个 splice 改变而移除错误条目。看代码：`const topIdx = s.length - 1` 在第二个撤销进入时计算。如果第一个撤销还没完成（还在 await），s.length 没变，topIdx 相同。两个都拿到同一个 top。第一个完成后 splice(topIdx,1)。第二个完成后也 splice(topIdx,1)。如果 splice 时栈长度已减少，第二个 splice(topIdx,1) 会移除新栈的 topIdx 位置元素，可能是一个不同的条目。这就导致错误的撤销。
+
+因此这是实际的数据损坏风险。BLOCKING。
+
+另一个问题：`undoInFlightPaper` 在 finally 中总是置 null，如果并发的其他 undo 还在进行，会提前清除它们的互斥。所以即使不并发，也可能导致互斥失效。比如 p1 undo 挂起，p2 undo 开始，p1 先完成，finally 置 null，p2 还在挂起，此时 p2 同篇再触发 undo，会通过检查（null !== p2），导致同篇并发。所以单变量设计有本质缺陷。
+
+修复建议：使用 Set<string> 记录 in-flight papers，进入时 add，finally 时 delete。或者每篇单独标志（如 `const inFlight = new Set<string>()`）。
+
+因此，这是一个明确的 BLOCKING finding。
+
+其他发现：
+
+- 不变量登记缺失（WARN?）。如果输入材料中确实没有提到 docs/invariants.md 变更，可以列为 WARN。但原始 repo 可能已有登记？由于无法确认，但既然这是新功能，且宪法明确要求，我倾向于列一个 WARN（因为可能之前登记过，但 diff 无证据，无法作为 BLOCKING）。不过也可以作为 NIT。
+
+- 还有一个可能的问题：在 AnnotationLayer.saveComment 中，pushUndo 在 store.updateAnnotation 之后，但 before 是 a。如果 updateAnnotation 返回的 saved 与 a 相比，除了 comment/updatedAt 外还有没有其他变化？没有。所以 OK。
+
+- 在 reader.store.undo() 中，如果 tab 已关闭（tab === undefined），直接 return。但 DB 已撤销，下次打开时 annotations 会从 DB 重新加载，正确。但栈已经 clear 了。没有问题。
+
+- 在 reader.store.closeOne 中，调用 clearStack(id) 在删除 tab 之前？看 diff：在 `delete nextTabs[id]` 之前还是之后？diff 中显示：
+
+```
+    tabLoadSeq.delete(id)
+    inflightOpen.delete(id)
++    // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
++    clearStack(id)
+    const { tabs, order, activeId } = get()
+    const nextTabs = { ...tabs }
+    delete nextTabs[id]
+```
+
+所以 clearStack 在删除 tabs 之前。正确。
+
+- clearStack 是同步的，不会影响。
+
+- 注意：closeOne 中调用 clearStack(id) 后，如果存在一个正在进行的 undo for that paper（async 进行中），clearStack 清除了栈，但 undo 函数的局部引用 s 仍指向旧数组？实际上 undo 函数在开始时获取 `const s = stacks[paperId]`，然后 await。如果 clearStack 删除了 stacks[paperId]，s 仍指向原来的数组。之后 undo 完成后 splice(topIdx,1) 会修改原来数组，但 stacks[paperId] 已经是 undefined，所以不影响。但该 undo 的 store 同步（reader.store.undo 中）会发现 tab undefined 而丢弃。所以一致。但注意 undo 完成后，reader.store.undo 又可能向 store 添加操作，但 tab 已不存在，丢弃。OK。
+
+- 但有一个边缘：closeOne 中 clearStack 后，如果 undo 正在执行（in-flight），该 undo 可能已经调用了 api 删除或重建 annotation，DB 已变。下一次打开 tab 时会从 DB 重新加载，所以最终一致。但如果在 close 之后、DB 操作完成之前，用户重新打开同一 paper，可能加载的是旧数据？实际上 close 后，DB 操作异步进行，如果用户快速重开，可能读到旧的 annotation（如果删除还没完成）。不过这是异步操作的普遍竞态，不在此 diff 范围内。
+
+- 另一个：annotation-undo.ts 中 `const stacks: Record<string, UndoEntry[]> = {}` 是模块级单例。在测试中通过 resetModules 重置。生产环境 OK。但如果多个 renderer 窗口？项目不支持多窗口。
+
+### 关于“测试必须能失败一次”
+
+我们无法从 diff 判断。但测试设计似乎合理。
+
+### 关于“每个测试必须能失败一次”对测试文件的修改
+
+reader-shortcuts.test.tsx 新增的测试是新的，应该能失败（如果没有 undo 动作）。符合。
+
+### 关于“禁止修改 src/shared/**”
+
+没有。
+
+### 关于“锁定的合约”禁止修改 tests/**，除非 [locked-change]
+
+修改了 reader-shortcuts.test.tsx，简报说明 [locked-change]。我们应假定合法。
+
+### 关于 “range of diff”
+
+locks/manifest.json 更新，包含新测试文件 sha256。注意新文件 annotation-undo.test.ts 的 sha256 是什么？从 diff 看是 `8145bf...`。锁文件生成是自动的。
+
+### 潜在的测试问题
+
+在 annotation-undo.test.ts 中，loadModule 使用 `vi.stubGlobal('window', { api })`。但 annotation-undo.ts 的 import 是 `import { api, ApiClientError } from '../../api/client'`。api.client 可能是在模块加载时立即引用 window？例如 `const api = window.api` 可能出错。测试 stub 了 window，所以模块加载时 window.api 存在。但在 node 环境，window 未定义，stubGlobal 会在 global 上设置。这可以。但要知道，如果 api.client 在加载时没有立即读取 window.api，而是在函数调用时读取，那么 stub 可能不需要。但我们不知道。测试通过即可。
+
+### 最终输出
+
+我将列出 findings：
+
+1. BLOCKING: annotation-undo.ts undoInFlightPaper 单变量互斥缺陷，无法支持并发多 paper 撤销，导致同篇撤销可能并发执行，破坏栈结构，产生错误撤销。
+   - evidence: `let undoInFlightPaper: string | null = null` + 设置/清除逻辑。
+   - suggestion: 改为 `const undoInFlightPapers = new Set<string>()`，进入时 add，finally delete；检查 `has(paperId)`。
+
+2. WARN: 未登记不变量到 docs/invariants.md。宪法要求跨模块行为不变量登记。新增撤销栈的 per-tab 隔离、FIFO 截断、in-flight 互斥等属于跨模块不变量，diff 中未见 docs/invariants.md 变更。
+   - 但需要谨慎：也许之前已登记？但 diff 无显示，简报无提及。列为 WARN 比 BLOCKING 温和。
+
+3. NIT: Toast.tsx 拆分后，toast-store.ts 模块级别使用 window，如果未来在 node 环境（如某些测试）调用 showToast 可能 ReferenceError，但在 renderer 环境安全。可以考虑使用 setTimeout 而不是 window.setTimeout（如果需要更严格的环境无关）。不过这不是重大问题。
+
+还有其他问题吗？
+
+让我再检查一下 deepseek 提到的“深度截断断言写反——LIFO 弹顶语义下应证「a-0 永不在栈内」而非「首撤即 a-1」，实现无错、用例错，已改”。测试现在是正确的。没问题。
+
+检查类型完整性：AnnotationLayer.tsx 中 pushUndo(a.paperId, { kind: 'comment-edit', before: a })。a 是 Annotation，符合 UndoEntry。SelectionLayer 中 pushUndo(paperId, { kind: 'create', annotation: saved })，saved 是 saveAnnotation 的返回数据，类型是 Annotation。OK。
+
+一个可能的问题：在 undo 函数中，对于 kind === 'delete' 的情况，调用 api.saveAnnotation。saveAnnotation 的签名是 saveAnnotation({ paperId, annotation }) 返回 { ok, data }。data 是 Annotation。然后 remapStackIds 更新栈。但是，如果 saveAnnotation 成功，data.id 可能与 oldId 相同（如果 repo 实际上保留了 id？但简报说 repo.insert 不接受显式 id，内部 randomUUID，所以一定不同）。但如果未来 repo 改变，这个假设会碎。但这不是当前问题。
+
+另一个潜在正确性问题：在 comment-edit 逆操作中，undo 调用 updateAnnotation({ annotation: top.before })。top.before 包含 paperId 和 id。api.updateAnnotation 可能期望 annotation 对象包含 id, paperId 等。OK。但 after update, reader.store 会 upsert 返回的 r.data。r.data 可能和 before 有 updatedAt 不同（因为 DB 会更新 updatedAt）。所以回滚后 updatedAt 是最新的，而不是“旧值”。这可能不是问题。
+
+另一个：如果 comment-edit 的 before 对象在 await 期间被其他操作修改（如同一个标注被另一个线程修改？不可能，renderer 单线程）。
+
+### 考虑“状态机前置”是否违反
+
+任务简报没有给出状态迁移表，但 annotation-undo 头注描述了行为。宪法要求“行为层规约必须先给出状态/迁移表”。annotation-undo.ts 的头注有“行为层”，但没有显式状态机表格。in-flight 互斥是一个状态，但可能不需要完整状态机，因为 undo 逻辑相对简单。如果严格审查，这可以是 NIT。但鉴于简报声称 deepseek 已经做了多轮修复，可能已经满足精神。不列为问题。
+
+### 不变量登记
+
+我决定列为一个 WARN。因为宪法是硬规则，但实际影响轻微，可以修正。或者，也可以在 summary 中提及。为了保险，列为 WARN。
+
+### 输出格式
+
+需要 JSON。没有 markdown 围栏。注意只输出 JSON 对象。
+
+verdict 应该是 FAIL，因为有 BLOCKING。
+
+summary：两三句总体判断，指出主要问题。
+
+编写 JSON。
+
+注意：findings 中的 file 和 line_hint 需要引用 diff 中的位置。对于 BLOCKING，可以写 `src/renderer/features/reader/annotation-undo.ts`，line_hint 为 `undoInFlightPaper` 相关行。对于 WARN，写 docs/invariants.md 未变更（无法引用行）。可以使用 line_hint 为空或不适用。
+
+需要确保 “evidence” 来自 diff 或规约原文。例如：`let undoInFlightPaper: string | null = null` 来自 diff；宪法条文引自 AGENTS.md。
+
+我现在写 JSON。
+
+== content ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "let undoInFlightPaper: string | null = null",
+      "issue": "in-flight 互斥实现缺陷：单个模块级变量无法支持多个 paper 并发撤销。当 p1 撤销 await 期间，p2 撤销会覆盖 undoInFlightPaper，随后 p1 再次撤销不再被拦截，导致同篇撤销并发执行。并发执行共用 topIdx/splice 会错误移除栈条目，破坏撤销栈结构与数据一致性。",
+      "evidence": "diff 中 `let undoInFlightPaper: string | null = null`、`undoInFlightPaper = paperId`、`finally { undoInFlightPaper = null }`；头注声称「per-paper 互斥——同篇撤销进行中再触发 → busy，他篇互不阻塞」，但单变量无法同时记录多篇在途状态。",
+      "suggestion": "改为 `const undoInFlightPapers = new Set<string>()`：进入时 `if (undoInFlightPapers.has(paperId)) return busy`，然后 `undoInFlightPapers.add(paperId)`；`finally` 中 `undoInFlightPapers.delete(paperId)`。这样同篇互斥、他篇并行均正确。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "无（本次 diff 未涉及）",
+      "issue": "新增跨模块行为不变量未登记：撤销栈的 per-tab 隔离、FIFO 截断、in-flight 互斥、closeTab 清理语义等属于跨模块/跨时间行为不变量，按宪法要求应登记到 docs/invariants.md，否则视为未定义行为。",
+      "evidence": "AGENTS.md：「不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md（声明处 + 强制方式 + 锚定状态）；未登记 = 未定义行为。」diff 与简报中均无 docs/invariants.md 变更记录。",
+      "suggestion": "在 docs/invariants.md 中补充撤销栈语义条目，锚定 annotation-undo.ts 头注及 reader.store.closeOne 调用点。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/shared/ui/toast-store.ts",
+      "line_hint": "window.setTimeout / window.clearTimeout",
+      "issue": "toast-store.ts 被非组件 .ts 模块（reader.store）引用，而 node 环境（如某些 .ts 测试）下 `window` 未定义。当前仅在 renderer 运行期调用时访问 window，类型检查通过，但环境耦合不如直接使用 `setTimeout` 干净。",
+      "evidence": "diff 中 toast-store.ts 使用 `window.setTimeout(() => dismiss(item.id), ...)` 与 `window.clearTimeout(timer)`；原 Toast.tsx 同样使用 window，属于既有惯例。",
+      "suggestion": "如无需强 window 语义，可改为全局 `setTimeout`/`clearTimeout`，或在模块顶部做安全兼容（如 `const safeSetTimeout = typeof window !== 'undefined' ? window.setTimeout.bind(window) : setTimeout`）。"
+    }
+  ],
+  "summary": "撤销栈主体实现与测试覆盖较扎实，但 in-flight 互斥的模块级单变量设计存在真实竞态，无法支持设计文档宣称的 per-paper 并行撤销，可能导致栈结构错误与数据不一致，必须回修。另需补登记不变量到 docs/invariants.md 以符合宪法要求；其余改动（Toast 拆分、键位绑定、锁文件更新）未见违约。"
+}

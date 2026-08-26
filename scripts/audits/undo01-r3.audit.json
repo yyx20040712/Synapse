@@ -1,0 +1,55 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undoInFlight 模块级单例 + undo() 末尾 s.pop()",
+      "issue": "in-flight 互斥是全局布尔而非 per-tab，且 pushUndo 不参与互斥：1) tab A 撤销进行中，tab B 按 ctrl+z 会被 busy 静默丢弃（跨 tab 互相阻塞）；2) undo 的 await 期间同一 tab 若有新操作入栈（如新建标注），undo 完成后 s.pop() 弹出的是新入栈条目而非正在撤销的条目，造成撤销栈错序——被撤销的 delete 条目仍留在栈顶附近，后续连撤会逆操作错误对象。",
+      "evidence": "diff 中 `let undoInFlight = false` 为模块级；`pushUndo` 直接 `s.push(entry)` 无 in-flight 检查；undo() 成功路径 `s.pop()` 无条件弹栈顶。",
+      "suggestion": "将 in-flight 改为 per-tab 标记（Record<paperId, boolean>）；pushUndo 在对应 paperId 处于 in-flight 时暂缓入栈或直接拒绝（返回 false），undo 完成后再放行；或至少在 pop 前校验栈顶仍是捕获的 top（`if (s[s.length-1] !== top) return api-failed/busy`），避免错弹。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "async undo() 实现体",
+      "issue": "reader.store.undo() 无顶层 try/catch。虽然 runUndo 内部捕获了 ApiClientError 等异常，但 showToast、store set 或意外编程错误会直接成为 unhandled rejection，违反「禁止渲染层挂未捕获异常」的稳健性要求（同样问题存在于运行时打 console.error 的生产路径）。",
+      "evidence": "diff 中 `async undo() { const paperId = get().activeId; ... const outcome = await runUndo(paperId); ... set({ tabs: ... }) }` 全程无 try/catch。",
+      "suggestion": "在 store.undo() 外层包裹 try/catch，非预期异常打 console.error 并 showToast『撤销失败，请重试』，保证 Promise 不泄漏为 unhandled rejection。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 中 delete 逆操作分支",
+      "issue": "delete 逆操作成功时未防御 r.data 缺失：`remapStackIds(s, top.annotation.id, r.data.id)` 与 `apply = { type: 'upsert', annotation: r.data }` 在 ok:true 但 data 为 undefined 时会 TypeError。类型契约上 ok:true 应带 data，但运行时缺防御成本极低。",
+      "evidence": "diff 中 `const r = await api.reader.saveAnnotation(...); if (!r.ok) {...} remapStackIds(s, top.annotation.id, r.data.id)`。",
+      "suggestion": "在 !r.ok 之后补 `if (r.data === undefined) return { done: false, reason: 'api-failed' }`。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/shared/ui/Toast.tsx / toast-store.ts",
+      "line_hint": "Toast.tsx 拆分与再导出",
+      "issue": "Toast.tsx → toast-store.ts 拆分在简报中有充分理由（tsconfig.node 无 jsx 关卡），但严格按工单纪律这属于范围蔓延（SR2-UNDO-01 的接缝清单未列 Toast 重构）；虽然 toast.test.tsx 锁定面仍覆盖拆分后的行为，后续改动 toast-store.ts 不受 manifest 直接保护。",
+      "evidence": "diff 中 Toast.tsx 从 82 行瘦身为 30 行再导出，新增 toast-store.ts 83 行；简报说明这是 typecheck 强制的架构拆分。",
+      "suggestion": "建议在 commit message 或工单注释中显式标注此超出原接缝清单的架构变更，未来拆分纯逻辑模块时优先考虑放入 src/shared/ 或受锁覆盖面，保持契约视图完整。"
+    }
+  ],
+  "summary": "实现质量高：三逆操作、id remap、in-flight 互斥均有测试锚定，跨格序列测试覆盖到位，受锁文件变更与 manifest 同步合规，无安全与类型滥用的迹象。主要风险集中在模块级 in-flight 互斥的全局性与 push 交错竞态（WARN），以及 store 层无异常外溢保护；其余为可在后续迭代打磨的 NIT。整体可放行，但建议在合入前评估 WARN 修正方案。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 17415,
+      "completion_tokens": 13571,
+      "total_tokens": 30986,
+      "prompt_tokens_details": {
+        "cached_tokens": 3072
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 12418
+      },
+      "prompt_cache_hit_tokens": 3072,
+      "prompt_cache_miss_tokens": 14343
+    },
+    "finish_reason": "stop"
+  }
+}

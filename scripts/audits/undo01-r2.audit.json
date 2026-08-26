@@ -1,0 +1,55 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 delete 分支（saveAnnotation + toInput）与 create/comment-edit 分支（按旧 id 操作）",
+      "issue": "delete 的逆操作通过 saveAnnotation(toInput(...)) 重建标注，repo.insert 内部 randomUUID 会分配新 id；但同一标注更早入栈的 create/comment-edit 项仍引用旧 id。于是 create→delete 后连续两次 undo：第一次重建出新 id，第二次按旧 id deleteAnnotation 命中不到，重建标注永久残留；create→comment-edit→delete 时 comment-edit 的 updateAnnotation 也落在失效 id 上，撤销序列不可信。",
+      "evidence": "diff 中 undo(): `r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })`，toInput 剥离 id/paperId/时间戳；而 create 分支 `deleteAnnotation({ annotationId: top.annotation.id })`、comment-edit 分支 `updateAnnotation({ annotation: top.before })` 均使用旧 id。任务简报亦明言 repo.insert 不接显式 id（annotations.repo.ts:167 randomUUID）。",
+      "suggestion": "让 repo.insert 支持显式 id（需 locked-change 流程），或在 delete-undo 重建成功后把栈内所有旧 id 引用 remap 为新 id；并补 create→delete→undo→undo、create→comment-edit→delete→undo×3 跨格用例。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "undo() 动作面：await runUndo(paperId) 无 in-flight 互斥",
+      "issue": "异步撤销没有重入保护。快速连按 Ctrl+Z（或键重复）会让两个 undo() 同时读到同一栈顶，各自执行同一逆操作，之后各自 pop，导致一次逆操作重复执行、下一层被误弹，栈与 store 状态错位。",
+      "evidence": "annotation-undo.undo(): `const top = s[s.length - 1]!` → await api → `s.pop()`；reader.store.undo(): `const outcome = await runUndo(paperId)` 前后无锁、无 in-flight 标记。",
+      "suggestion": "为 per-paperId 增加 undo 互斥或队列（如 pending 标志或串行 Promise 链），in-flight 期间忽略或排队新的 undo；补连续两次 ctrl+z 的测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/annotation-undo.test.ts",
+      "line_hint": "8 个用例覆盖",
+      "issue": "测试面缺「同一标注多操作叠加后逐级 undo」的跨格序列。单操作逆/LIFO/深度截断/失败重试都过了，但 create→delete→undo→undo 这种跨格序列正是 id remap 缺陷的暴露面，不符合宪法要求跨格序列交审计。",
+      "evidence": "AGENTS.md：「按『态空间 + 跨格序列』交审计——单格枚举盖不住跨格序列」；diff 新增测试无同 id 叠加后多级 undo 用例。",
+      "suggestion": "补 create→delete→undo→undo 与 create→comment-edit→delete→undo×3 用例，先红后绿再提交。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 的 catch{}",
+      "issue": "catch 把所有异常（包括编程错误）一律转成 reason:'api-failed'，会掩盖非 API 层缺陷，只报 toast 后可重试。",
+      "evidence": "diff 中 `} catch { return { done: false, reason: 'api-failed' } }` 包住了整个分支逻辑。",
+      "suggestion": "尽量只把 api.* 调用放进 try，或区分 ApiClientError 与其它异常；编程错误应上抛/记录，而非伪装成可重试。"
+    }
+  ],
+  "summary": "撤销栈主体、接缝与 toast 拆分的实现质量尚可，但存在两个必须回修的正确性缺陷：delete 逆重建采用新 id 使栈内旧引用失效，create+delete 等跨格序列无法完整撤销；异步 undo 无重入保护，连按快捷键会丢栈/重复执行。修复后应补对应跨格测试并重跑全量 verify。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 15585,
+      "completion_tokens": 17543,
+      "total_tokens": 33128,
+      "prompt_tokens_details": {
+        "cached_tokens": 15488
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 16460
+      },
+      "prompt_cache_hit_tokens": 15488,
+      "prompt_cache_miss_tokens": 97
+    },
+    "finish_reason": "stop"
+  }
+}

@@ -1,0 +1,81 @@
+== reasoning ==
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "tickets/registry.ts",
+      "line_hint": "AI-05 registry 行",
+      "issue": "AI-05 在 registry 中登记 file 为 tools/ai-sensor/queue.mjs，但头注声明交付面为多文件（SKILL.md/config.template.json/prompts//README.md）；此前的 N3 处置并未使 registry 或工单文件头注给出「交付面清单」的机器可读落点，新会话读取 registry 单文件路径时仍无法知道完整交付面。",
+      "evidence": "registry 行 'file: tools/ai-sensor/queue.mjs'；AI-05 头注 '多文件工单声明（owner=strong 惯例）：registry file 字段=主文件（queue.mjs），交付面以本头注清单为准'；N3 处置 'AI-05 补多文件工单声明（file=主文件，交付面以头注清单为准——P8 owner=strong 惯例）'。",
+      "suggestion": "在 registry 中为 AI-05 增加交付面字段，或在 AI-05 头注顶部加一行显式清单「交付面=queue.mjs/SKILL.md/config.template.json/prompts//README.md」，使新会话不需要先记住 P8 惯例才知道完整实现面。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/settings/CorpusExportSection.tsx",
+      "line_hint": "文化层 e2e 段",
+      "issue": "e2e 全链测试依赖「导出目录五件套存在性+manifest 一致性」，但未声明断言读取方式是走 app.evaluate 后 main 侧文件系统读取还是 renderer 侧路径。且未指定目录隔离守卫（AI-03 交付的 corpusSet 目录含 manifest 拒绝）的 e2e 用例，可能导致 W9 的守卫只在单元测试覆盖而未在真实链路验证。",
+      "evidence": "AI-04 文化层 'e2e 全链 [受锁新增 spec]：导入夹具→导出→磁盘五件套存在性+manifest 一致（app.evaluate 侧通道读文件——P7-C 重启读 DB 同型先例）'；AI-03 目录隔离条款 'corpusSet 写入前置守卫=目标目录含 manifest.json 时拒绝'。",
+      "suggestion": "在 AI-04 e2e 用例清单中显式增加一条：目标目录预置 manifest.json 时导出被拒且 UI 提示选空目录。若该守卫的 e2e 代价过高，则声明其由 AI-03 单元跨格用例闭合并在 e2e 中只测正常链路，避免验收时出现覆盖盲区。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "迁移表 idle 行 '目录既有残留'",
+      "issue": "idle 事件行把「目录既有残留」作为 idle 的常规处理并归入 preparing 内清空，但事件表没有把「创建会话」与「会话进行中再次 invoke」区分为两个入口事件；虽然单飞守卫覆盖了进行中第二会话，但「idle 且目录有历史残留」本身就包含了「上次会话中断后用户无 manifest 重跑」和「用户手动放入任意文件后被工具清空」两类情况。当前迁移表对后者没有任何保护或提示，可能与 W9 对 corpusSet 的保守原则不一致：corpusSet 拒绝含 manifest 目录，而五件套通道却无条件清空重建用户可能手动放置的文件。",
+      "evidence": "AI-03 迁移表 idle 行 '（目录既有残留） | preparing 内清空 | 删旧 manifest+清空重建 corpus/fulltext/figures（残留 tmp 文件同删）'；W9 处置 'corpusSet 前置守卫=目录含 manifest.json 拒绝+提示'。",
+      "suggestion": "在 AI-03 的生命周期层或文化层补一句「五件套会话只清空 corpus/fulltext/figures 三子目录与 manifest，不删除用户放置的其他文件；若目标目录含非本工具文件，仍清空三子目录但提示用户注意」或显式声明「五件套目录=本工具专用，使用者须选空目录」。至少让清空范围不超出导出产物面，避免误删用户文件。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "接口层 corpusItemSchema payload 字段",
+      "issue": "corpusItemSchema 的 payload 字段定义为 string，并注明 figure=base64 PNG；但全页快照 PNG 以 base64 存在 IPC 载荷中可能达到 MB 级。虽然背压逐页 invoke 已控制并发，但未声明 IPC 单条载荷上限或分块策略。Electron IPC 对超大字符串虽然一般可用，但大 payload 会带来明显内存与序列化开销；母本背压只说「禁大 payload 整块」，而一页 fulltext 文本通常很小，figure base64 却可能很大。",
+      "evidence": "AI-02 接口层 "payload?: string（fulltext=该页文本；figure=base64 PNG）"；母本背压 '每页一 invoke，await ack 后发下一页（禁大 payload 整块）'。",
+      "suggestion": "在 AI-02 行为层或接口层补一句「单页快照 payload 上限（如 4MB）或声明 v1 接受逐页 base64 IPC 载荷，若遇超大页可分块（pageChunk）或降采样」；至少把该风险记录在工单中，避免实现时才发现进度/内存问题。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tickets/registry.ts",
+      "line_hint": "SR2-AI-02/AI-03/AI-04 依赖链",
+      "issue": "registry 注明依赖偏序 02 依赖 01、03 依赖 02、04 依赖 03、05 依赖 03，并说「执行按号序串行领取逐单提交」。但 AI-04 的设计面明显需要 AI-03 的 exportCorpus 事件、EXPORT_BUSY 折叠分支和 manifest 写入才能完成 e2e；AI-05 的 SKILL.md 激活条件依赖 AI-03 的 manifest 终局语义。这些依赖已经写在偏序里，但「逐单提交」的完成定义中没有说明相邻工单交付后是否需要回读/联调（例如 03 落地后 04 的 e2e 是否必须重跑）。",
+      "evidence": "registry 注释 '依赖=偏序（02 依赖 01；03 依赖 02；04 依赖 03；05 依赖 03——目录契约），执行按号序串行领取逐单提交（禁同批多单）'。",
+      "suggestion": "在偏序注释中补一句「每单完成后，若其下游工单已开工则需补跑下游受影响测试；否则在下游工单开始时回读上游最终实现」。避免串行提交后 04 的 e2e 因为 03 的细节实现与票面不符而返工。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tools/ai-sensor/queue.mjs",
+      "line_hint": "接口层 diffQueue 与 config 环境依赖",
+      "issue": "AI-05 声明 queue.mjs 使用 node 内置模块、零 npm 依赖，并通过 zcode 会话内建模能力调用模型；但「zcode 会话内建模能力」是外部环境能力而非仓库内脚本可自动验证的。CI 的 verify 无法检查该集成是否可用；config.template.json 中的 models 三键如何被 zcode 加载也未说明（由 SKILL.md 描述）。这可能导致 AI-05 交付的 queue.mjs 在渲染面无测试，真实可用性只能靠人工在 zcode 中验证。",
+      "evidence": "AI-05 接口层 '工具侧零 npm 依赖（node 内置模块；模型调用=zcode 会话内建模能力，工具只编排不直连 API——零出网面）'；行为层 'SKILL.md：zcode 技能声明——激活条件…配置读取'。",
+      "suggestion": "在 AI-05 的完成定义或文化层补「人工验收：在 zcode 中按 SKILL.md 跑通一次三读队列（可只用 1 篇夹具）」；否则该工单可能 test 全绿但实际不可用。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "行为层态空间定义",
+      "issue": "态空间定义中把 done/failed 描述为「终态（会话对象生命周期结束）」，而迁移表里没有「任意态→done/failed」之外从 done/failed 出发的行；这自洽。但同一段又写「新会话从 idle 起」，容易被理解为 done/failed 也是可驻留态。建议在态空间段明确「done/failed=会话对象销毁，不驻留」。",
+      "evidence": "AI-03 'done/failed=终态（会话对象生命周期结束，新会话从 idle 起）'. ",
+      "suggestion": "将此处改为「done/failed=会话对象终态（立即销毁，不驻留；新会话从 idle 起）」即可消除歧义。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "行为层状态机 failed 行",
+      "issue": "状态机 failed 行「→failed」随后「→idle」，但表结构没有把 failed 列为驻留态；跨格序列只是叙述，建议在表内增加一行「failed | （上报完成） | →idle | 上报后立即回 idle」以与 done 行对称，否则表格本身缺失 failed 的出口迁移。",
+      "evidence": "AI-02 迁移表 'extracting | 文档加载失败/... | →failed | invoke corpus-item{kind:'error',reason}；destroy…；→idle'。",
+      "suggestion": "在迁移表中增加一行「failed | 上报完 | →idle | 与 done 同型」或把该行目标改为「→idle（经 failed 瞬时）」，使表格严格闭合。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "迁移表 streaming 行",
+      "issue": "streaming 态只有「篇 complete」「篇 error」「chunk invoke 折叠错误」三个事件，但没有「流式落盘写盘失败」事件（如 fulltext/figures 写入磁盘中途失败）。虽然可归入「chunk invoke 折叠错误」或「finalizing 写盘异常」，但 streaming 态内落盘失败与 consume 回传失败是两类失败，建议显式补一行以防实现时漏判。",
+      "evidence": "AI-03 迁移表 streaming 行：'篇 complete'、'篇 error（文件缺失/损坏）'、'chunk invoke 折叠错误'。",
+      "suggestion": "在 streaming 行补「streaming | 落盘（fulltext/figures 写入）异常 | →failed | 折叠错误 resolve；manifest 不写；重跑修复」或显式声明「落盘异常并入 chunk invoke 折叠错误处理」。"
+    }
+  ],
+  "summary": "规划整体质量高：r1 十六条逐条处置落点清晰，状态机迁移表、编号锚定与受锁流程基本闭合，四份产物的相互引用一致，风险控制与重构纪律优于常规规划。主要问题集中在「多文件工单交付面在 registry 中不可检索」「目录清理边界与 corpusSet 守卫的保守性不对齐」以及若干待显式化的边界（大 base64 payload、e2e 泄漏面、zcode 人工验收缺位），均可在实现前以票面注释补丁解决，不构成目标落空。"
+}
+
+== content ==

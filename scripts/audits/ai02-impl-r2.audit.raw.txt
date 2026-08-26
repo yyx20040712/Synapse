@@ -1,0 +1,1039 @@
+== reasoning ==
+We need audit diff against AGENTS and brief. Need output JSON only. Need careful.
+
+We need inspect diff for issues.
+
+First, understand project: Electron TS. Diff modifies many files. Need audit priorities.
+
+Key scope: SR2-AI-02 implementation of CorpusExtractor + ESLint INV-16 + main stub + IPC schemas etc.
+
+Need identify findings.
+
+Let's go through diff systematically.
+
+AGENTS hard rules:
+- file ≤500 lines etc.
+- layered architecture.
+- security.
+- tests locked; cannot modify tests/shared. But diff modifies src/shared/ipc/schemas.ts and src/shared/ipc/api-surface.ts and locks manifest, tests/utils/pdf-factory.ts, tests/unit/renderer new. Wait AGENTS says "禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）。发现测试本身有错 → 报告人类，走 [locked-change]，不得自行修改让代码通过。" But task is SR2-AI-02 which explicitly requires IPC contract [locked-change] to schemas/api-surface, and adding tests? It says tests are locked. However there is a locked-change process: "受锁文件变更必须带 [locked-change] 尾注。受锁文件修改前先 `npm run locks:unlock`..." So changes to src/shared and tests are allowed if tagged [locked-change]? The hard rule says "禁止修改 tests/**" but then "发现测试本身有错 → ... 走 [locked-change]" implies test modifications may be necessary but through process? Also brief mentions "新增受锁文件已 npm run locks:apply" and "schemas/pdf-factory/eslint/api-surface/preload/测试两轮 generate+apply". So modifications accepted if locked-change. Need check diff includes [locked-change] in commit? We only see diff, not commit message. AGENTS says package.json/lockfile changes must have [dep-change] note; locked file changes must have [locked-change] tail note. Did commit message contain? Not visible. But maybe not our concern? Could mention if evidence.
+
+Need audit content for correctness/security.
+
+Potential issues in CorpusExtractor:
+
+1. `loadPdfDocument` does dynamic import of 'pdfjs-dist/build/pdf.worker.min.mjs?url'. Is that a static import? Actually `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` is dynamic, returned as module with default likely string URL. White-list no-restricted-imports checks static imports? They mention dynamic import boundary in INV-16: ESLint no-restricted-imports check on dynamic import depends on version; non-whitelist direct dynamic may not be blocked. But this file itself is whitelisted, so okay. However pdf worker URL is an asset URL with `?url` suffix. Is it in white-list? W2 says "白名单内静态资产 import". Need verify constants? Not given. Could be okay.
+
+2. Race/concurrency: `handleEvent` sets extracting=true then `void runExtraction(e)`. If runExtraction fails before finally? It has try/finally, so extracting false. okay. But calling `handleEvent` with progress event ignored. okay.
+
+3. `runExtraction` error handling: If `deps.sendItem` for fulltext/figure/complete fails or throws, catch sends error item. But if failure occurs at `sendChecked` inside try, catch sends error. If failure occurs at `deps.sendItem({kind:'complete'})` in try? Actually complete is outside sendChecked? Let's see:
+
+```
+for ...
+  await sendChecked(...)
+...
+await deps.sendItem({ ...base, kind: 'complete' })
+} catch (e) {
+  const reason...
+  try { await deps.sendItem({ ...base, kind: 'error', reason }) } catch {}
+} finally { destroy; extracting=false}
+```
+
+If complete sendItem fails with folded error (returns {ok:false}), sendChecked not used, so catch won't trigger. It will not report error; it will go to finally and extracting=false. The request ends without complete/error. Main may hang? They didn't use sendChecked for complete. Actually `const sendChecked` single point only for fulltext/figure. They said "sendChecked 单点（sendItem+ack 判定+throw）——Rule of Three 阈值" but complete also is sendItem; if complete ack fails, should report error? But if session has already closed? Need examine. In catch, error reporting uses sendItem directly and if fails no retry. But for complete, because they didn't await ack, if it returns folded error, no error report. Is that a correct issue? This is WARN maybe. Need see patterns: "complete" terminal; if ack rejected maybe main should know? Actually error path should send error. But if complete is rejected, maybe no need? Backpressure contract: every invoke ack? For complete they don't use sendChecked. Also if complete sendItem **throws** (not folded), catch catches and sends error. But if folded error, no. Could be considered bug. Need assess severity.
+
+But wait: sendItem with complete returns Result<void>; they ignore ok. The brief's disposal: "sendChecked single point" but incomplete? N1 acceptance: "抽 sendChecked 单点（sendItem+ack 判定+throw）——Rule of Three 阈值" They should use it for complete too? Maybe yes. If complete ack fails, should error send? However if complete send fails because session gone, sending error may also fail. Not important. But they didn't use sendChecked for complete; not necessarily violation because "complete" maybe needs no ack? But they said "背压：每项一 invoke，await ack 后发下一项"; complete is final, no next. It should check ack? Maybe not critical.
+
+4. `flushAll` in tests uses `pages*8+16` settle loops. Potential flaky but test.
+
+5. `loadPdfDocument`: `GlobalWorkerOptions.workerSrc = (workerModule as { default: string }).default`. The `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` returns module namespace. If bundler (Vite?) returns `{ default: url }`. okay. But "workerUrl static asset import" using dynamic import might not be transformed? In Vite, `?url` works with dynamic import? It may return a Promise module. This is codemod? Need maybe okay.
+
+6. White-list ESLint rule. Need analyze risk: They add `no-restricted-imports` rule to renderer main block, then override for three whitelisted files. But because flat config "同规则后块覆盖，无法只豁免一条", in override they reassert all other patterns, including Node/Electron and main/preload. They omit pdfjs-dist. Good. However they did NOT include `pdfjs-dist/**` in whitelisted override? They omit both pdfjs-dist and pdfjs-dist/** from patterns. That's desired.
+
+But possible issue: The main renderer config patterns group includes `['pdfjs-dist', 'pdfjs-dist/**']`. For whitelist override, they only specify `patterns` and not `imports`? Need no-restricted-imports has options `paths` and `patterns`. They specify only patterns, so okay. But in main block, they maybe had `paths` too? Let's infer. In diff, first block at lines around 58 includes adding new group within existing `patterns` array. Original block likely had `patterns: [...]` with electron and main. Fine. In override, they set `rules: { 'no-restricted-imports': ['error', { patterns: [...] }] }`. This completely replaces the rule, losing any `paths`? If original had paths (specific package imports), then override loses them. That's a potential violation: they intended "三文件重申 renderer 全部禁令" but only included patterns, not paths. We don't know original config. Need inspect context in diff: First hunk shows at top:
+```
+export default tseslint.config(
+  {
+    // ...
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            // maybe paths already above?
+```
+We only see diff context: In first hunk, they added a new object after a message 'renderer 禁止直接 import main/preload ...'. So in same `patterns` array. There may also be `paths` before `patterns`? We can't see. In override, they only provide patterns. If original rule had both `paths` and `patterns`, override would drop paths. But the current file may not use `paths`. Need not flag without evidence? Could be assumption. They say "与上方 renderer 块的其余 patterns 保持同步维护" indicates both blocks only patterns. okay.
+
+7. `src/main/ipc/export_.ts` adds `corpusItem: (req) => deps.services.export_.corpusItem(req)`. Need check ApiHandlers['export_'] type from api-surface includes corpusItem. Yes.
+
+8. `src/main/services/export_/corpus.export.service.ts`: This file likely had stub comment at top. Diff adds imports and factory. Need check file size. It's a stub; has `CORPUS_EXPORT_SERVICE_STUB` constant remains? Let's inspect header: "工单骨架标记（实现单元替换为真实实现）" remains. They add `NotImplementedError`. Fine. But AGENTS DoD: `grep` no TODO|FIXME|placeholder. "工单骨架标记" maybe stub but not TODO. `NotImplementedError` is not placeholder? It is a deliberate stub for AI-03. This is planned. Could be okay.
+
+But maybe "main 侧 handler=stub（NOT_IMPLEMENTED 随 SR2-AI-03 落地——真回传消费/落盘在 AI-03）". Since ticket SR2-AI-02 required extractor only, okay. But AGENTS "占位实现已删除；工单在 tickets/registry.ts 翻状态" So for this ticket, stub is acceptable? The stub is in another ticket's file; ticket AI-03 will implement. Hmm.
+
+9. `src/shared/ipc/schemas.ts`: Adds `corpusItemReqSchema` as discriminatedUnion strict. `z.discriminatedUnion('kind', [z.object...])` with `.strict()` each. Then `.refine` for figure. Potential type issue: `annotationId` optional. Good.
+
+But `extractRequestEventSchema` includes annotations max(5000). Could be okay. URL string from main? `url` is string min(1). Is there path traversal? It's renderer receiving URL from main event; used to load PDF via `getDocument(url)`. Could be `file://` URL. pdfjs getDocument with URL may fetch via standard URL; in renderer sandbox, file:// or custom protocol? It could be an app-file:// protocol. Security? pdfjs loads local PDF from URL. But renderer cannot access arbitrary file? It receives URL from main, so trusted. okay.
+
+10. `src/preload/index.ts`: Adds `onExportCorpus` event listener. Need check type `PreloadApi` etc. Fine. But `buildApi` builds generic methods from API_SURFACE, so `export_.corpusItem` automatically exposed. Good.
+
+11. `src/renderer/features/reader/OutlinePanel.tsx` and OutlineThumb.tsx change import type from 'pdfjs-dist' to './PdfCanvas'. Good.
+
+12. `PdfCanvas.tsx` exports types. But `export type { PDFDocumentProxy, RenderTask }` from where? It imports them at top probably:
+```
+import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
+```
+Diff doesn't show import, but likely. Re-export. Good.
+
+13. Potential issue: `PdfCanvas.tsx` file now `<500` lines? Diff adds few lines.
+
+14. `CorpusExtractor.ts` file length? Diff adds ~218 lines; file might be >500? Need estimate from diff: original had comment before stub; diff shows after removing around 40 lines and adding 218, total could be >300? Let's approximate: Header ~80 lines + implementation 218 + tests? File maybe ~300-400. Need maybe not >500. Could flag NIT? Not without line count.
+
+15. `tests/unit/renderer/corpus-extractor.test.ts` new file 254 lines (shown as +254). AGENTS says repo ≤300 lines? For test files? It says "repo ≤300 行、组件 ≤250 行". This is a test file, not repo? Test file 254, okay. Component file maybe under 250? CorpusExtractor is not component, but repo? "repo" maybe repository? No, likely each file "repo ≤300" for repositories? Hmm "文件 ≤500 行（ESLint max-lines error）。repo ≤300 行、组件 ≤250 行。" Repo = repository data access? But file 254 okay.
+
+16. `tests/utils/pdf-factory.ts`: Adds `createMultiPagePdf` and `esc` function? Diff uses `esc(text)`, but was `esc` defined earlier? Need check original file context. The diff hunk starts at line 58, and uses `esc(text)` but not shown. Is `esc` defined in file? Likely existing helper. If not, compile error. Need verify from diff: At line 58 of original, function assemblePdf ends. They add createMultiPagePdf, which calls `esc(text)`. Was `esc` defined before? In original pdf-factory.ts maybe had `esc` function for single page. We can infer yes because original had PDF_KNOWN_TEXT and likely esc used in content stream. If `esc` not in scope, test would fail. But no need.
+
+17. `extractRequestEventSchema` union? `ExportCorpusEvent` is union of ExtractRequestEvent | ExportProgressEvent. But `extractRequestEventSchema` is only extract; progress schema separate. Event bridge onExportCorpus sends both? Preload listener typed `ExportCorpusEvent`; main will emit both. Good.
+
+18. `CorpusExtractor.handleEvent` ignores progress. Good.
+
+19. Potential major bug: `extractRequestEventSchema` uses `annotationRectSchema` from `../../models/annotation`. Need check annotationRectSchema shape includes `page`? Probably `{ page: number, x: number, y: number, w: number, h: number }`. Good.
+
+20. `cropBoxPixels` doesn't ensure rectangles within [0,1] or positive; if rects empty, returns `Infinity` values? But caller only calls if `pageRects.length > 0`. If pageRects contains invalid? Zod ensures? annotationRectSchema may not have min/max ranges. Could result x0 negative etc. Not issue.
+
+21. `cropBoxPixels` uses `Rect.page` to filter but then passes all rects; if annotation has rects for multiple pages, it filters to current page. Good.
+
+22. `RenderCanvas.drawFrom` signature: takes `src: RenderCanvas` and box. In `createDomCanvas`, `drawFrom` uses `ctx.drawImage(src.source as CanvasImageSource, ...)`. If `src.source` is a canvas element, good. For test stub source null, but drawFrom not used because canvasStub drawFrom no-op. Good.
+
+But design: B1 fixed "drawFrom 取不到底层 canvas" by adding source field. However `drawFrom` still accepts `src: RenderCanvas` not `CanvasImageSource`. Production passes `pageCanvas` which has source. Good. But in `createDomCanvas`, `source: el`, where `el` is HTMLCanvasElement. In type `CanvasImageSourceLike = unknown`; cast to CanvasImageSource. okay.
+
+23. Potential issue: `RenderCanvas.ctx` is typed as `CanvasRenderingContext2DLike` which is `{ [key: string]: unknown }`. `page.render({ canvasContext: pageCanvas.ctx, viewport }).promise` pdfjs `render` expects `CanvasRenderingContext2D` (or `Object`?). At runtime, pdfjs checks context? Actually pdf.js render parameter `canvasContext` can be any object with certain methods? In pdf.js, rendering uses context to draw; it will call methods like `canvasContext.save`, `restore`, etc. If we pass real 2D context cast to interface `{[key:string]: unknown}` no issue runtime because real object has methods. Good.
+
+But `CanvasRenderingContext2DLike` with index signature `[key: string]: unknown` means TypeScript can't call methods, but they don't call methods on ctx; they pass to pdfjs render whose param type is `unknown`, so okay.
+
+24. `loadPdfDocument` returns `getDocument(url).promise as unknown as PdfjsDocumentLike`. pdfjs' `PDFDocumentLoadingTask.promise` type is `PDFDocumentProxy`. They cast to `PdfjsDocumentLike`. But `PdfjsDocumentLike` has `destroy(): Promise<void>`, but PDFDocumentProxy's `destroy()` returns `Promise<void>`? In pdf.js, `destroy()` returns Promise<void>. Good.
+
+25. Dynamic import of `pdfjs-dist` and worker in parallel: If worker import fails (asset missing), getDocument import maybe fail? Actually Promise.all fails, loadDocument rejects, runExtraction catch handles. okay.
+
+26. `workerConfigured` race: The comment says once flag with PdfCanvas module-level same value idempotent. But `workerConfigured` is module-local to CorpusExtractor; PdfCanvas has own `GlobalWorkerOptions.workerSrc = workerUrl` at module top. If PdfCanvas already imported, workerSrc set. CorpusExtractor's workerConfigured is false, so it sets again from dynamic workerModule. Same value? They claim same value idempotent. Probably same URL. Not an issue. But if workerModule's default URL differs? Both from same asset? Probably same. If not, could override with equivalent. okay.
+
+27. Use of `console.warn/error` in renderer. Fine.
+
+28. Test "文档加载失败" passes `Promise.reject(...)` as doc? They call `makeCtx(Promise.reject(new Error('bad url')) as unknown as PdfjsDocumentLike)`. Then `loadDocument = () => { const d = doc; return Promise.resolve(d) }`. If `doc` is a Promise<never>? Actually `Promise.reject(new Error)` is a Promise, not a callable. Passing as `PdfjsDocumentLike` due cast. `loadDocument` returns `Promise.resolve(d)`; since d is a rejected promise, `Promise.resolve(promise)` adopts its state, so returns rejected promise. `await deps.loadDocument(req.url)` throws. Good. But weird.
+
+29. Test `flushAll` maybe not robust; but no block.
+
+30. `sendChecked`: It checks `if (!ack.ok)` throw. If `deps.sendItem` itself rejects (not Result), throw propagates, caught. Good.
+
+31. In catch, `const reason = e instanceof Error ? e.message : String(e)`. If `sendItem` throws due to network error, reason message might be "回传被拒绝（会话侧错误）" etc. okay.
+
+32. Duplicate error report? If sendChecked throws due to ack failure, catch attempts to send error. But that sendItem is another one; if it returns folded error, it's ignored. okay.
+
+33. State machine: `extracting` boolean is set false in finally, but if multiple handleEvent calls after complete? okay. But handleEvent is synchronous, runExtraction async. It sets extracting=true before void. Good.
+
+34. "防御分支：main 编排保证串行；在途忽略新请求" They ignore but don't send error for second request. Main maybe expects complete/error for each request? But main guarantees serial; if duplicate due event replay, ignoring may leave that session hanging. But they explicitly chose ignore. Could be WARN maybe? The header says "防御分支——main 编排保证串行（上一篇 complete/error 后才发下一篇），该分支仅防事件重发；sessionId 不同=日志+忽略". So intentional.
+
+35. Security: Renderer receives `url` and passes to pdfjs. It could be `file://` path. In sandbox, pdfjs can fetch? If webSecurity disabled? But they don't disable. Loading local `file://` from renderer may be blocked by Chromium unless webSecurity off. But they likely use a custom protocol `app-file://` registered with privileged? Need not.
+
+36. `src/shared/ipc/schemas.ts` adds `corpusItemReqSchema`, but in API_SURFACE it's associated with `S.trueAckSchema`. Is `trueAckSchema` defined in schemas? Existing maybe. If not, compile fail but verify green claimed. okay.
+
+37. `src/main/services/index.ts` type change: `export_: ExportService & Pick<CorpusExportService, 'corpusItem'>`. `createCorpusExportService().corpusItem` returns function. Good. But they create new service object on every call? Actually `createCorpusExportService()` inside createServices, fine.
+
+38. `src/main/ipc/export_.ts` `corpusItem: (req) => deps.services.export_.corpusItem(req)` returns Promise<{ok:true}> or throws NotImplementedError (which likely is a `Result`? Wait `createCorpusExportService().corpusItem` throws `NotImplementedError`. The IPC handler will invoke and throw; how does IPC layer handle? Need inspect. If IPC handler throws, what's response? In project, services fold errors to Result. Throwing from IPC handler might result in rejected promise to renderer rather than folded `{ ok:false, error }`. The comment says "本占位经 register 折叠 NOT_IMPLEMENTED → renderer failed 路径（链路可测）". Does `register` catch service errors and fold? Need not. But in `export_.ts`, `corpusItem` returns `deps.services.export_.corpusItem(req)` **without `.catch`/fold**. Other handlers like `bibtex` also return promise from service. Maybe `register` wrapper catches. Not in diff. okay.
+
+39. `src/main/services/export_/corpus.export.service.ts` file header says at top comment "工单骨架标记（实现单元替换为真实实现）". It also imports `NotImplementedError` from '../../../shared/app-error'. Need check path: from `src/main/services/export_` to `src/shared/app-error` is `../../../shared/app-error` yes.
+
+40. Is there any modifying locked files without [locked-change] in commit? We don't have commit message. locked manifest updated with new files. But note they modified `eslint.config.js` (locked) and `src/shared/ipc/schemas.ts` (locked) and `tests/utils/pdf-factory.ts` (locked) and added test file (new locked). In brief, they mention "schemas/pdf-factory/eslint/api-surface/preload/测试两轮 generate+apply". So they did locks process. Need not flag.
+
+41. "方案切换 = 删除旧方案": They changed from "唯一" to "白名单三文件", not two PDF solutions. okay.
+
+42. "分层单向": `CorpusExtractor` in renderer imports `pdfjs-dist` (allowed), no main import. good.
+
+43. "Renderer 禁止引入任何 Node/Electron API 或绝对文件路径": `CorpusExtractor` uses `document`, canvas, console. okay. `OutlinePanel` import type from './PdfCanvas' avoids pdfjs type direct. good.
+
+44. "禁止新增出网 host": worker import is local asset, not network. okay.
+
+45. "类型单一真相源": They define structural types in CorpusExtractor for pdfjs (PdfjsTextItem, etc.) while also importing types from PdfCanvas. Could be considered duplicate contract? They are local structural subset for test stubs, not cross-process. okay. But `CanvasRenderingContext2DLike` `[key:string]: unknown` could be risky because pdfjs render expects a real context; at runtime works.
+
+46. "不变量登记": They updated INV-16. Good. But `dynamic import` boundary new known boundary. okay.
+
+47. "完成定义": `npm run verify` green claimed. Good.
+
+Now need find actual bugs.
+
+Potential issue in ESLint config: In main renderer block, they add no-restricted-imports for pdfjs-dist. But the whitelisted files are in `src/renderer/features/reader/`. The main block's `files`? Need see original config: likely `files: ['src/renderer/**/*.{ts,tsx}']`. Then override for three files. But `CorpusExtractor.ts` is in same directory; override files array exactly three files. However `eslint.config.js` flat config overrides with same rules: later override wins, but it **replaces** rule options, not merges. They reassert others. Good.
+
+But does the override omit `paths` if original had? unknown.
+
+Potential issue: `OutlinePanel.tsx` and `OutlineThumb.tsx` now import types from `./PdfCanvas`, which is a `.tsx` file? `PdfCanvas.tsx` exports types. That's okay. But `OutlinePanel.tsx` may import at runtime? It uses `import type`, so no runtime. Good.
+
+Potential issue: `PdfCanvas.tsx` `export type { PDFDocumentProxy, RenderTask }` is allowed even though PdfCanvas imports those from pdfjs-dist. Waits, `export type` re-export doesn't import at runtime. Good.
+
+Potential issue: `CorpusExtractor.ts` module is allowed to import pdfjs-dist dynamically. But ESLint no-restricted-imports might catch dynamic? They note "ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦". This means the machine anchor is incomplete. They acknowledge. Could be a WARN: INV-16's "机器锚" is not fully enforced due dynamic import blind spot. But they logged known boundary and architecture review. That's acceptable? The hard rule demands machine anchor? Actually AGENTS requires "禁止新增出网 host" etc; no-restricted-imports is not a hard rule from AGENTS but INV-16. They made best effort.
+
+Potential issue: `loadPdfDocument` uses dynamic import so ESLint whitelist does not actually enforce? No, within whitelisted file it's allowed anyway.
+
+Potential issue: The `source` field as `unknown` may cause any object accepted; but only internal. fine.
+
+Potential issue: Test "真 pdfjs 集成" imports `pdfjs-dist` directly in a test file. Does ESLint no-restricted-imports apply to tests? The whitelist rule is for renderer files only? Maybe tests are in `tests/**` not subject to renderer rule. Fine.
+
+Potential issue: `tests/utils/pdf-factory.ts` maybe under `tests/**` locked; modified with new function. It uses `TextEncoder` (Node global). okay.
+
+Potential issue: In `createMultiPagePdf`, `esc` likely escapes parentheses/backslash. But if not, text injection? PDF text strings need escaping. Existing function probably has. okay.
+
+Potential issue: `streamBytes` computed via `new TextEncoder().encode(stream).length` in JS, but PDF content stream may use binary? It's ASCII. okay.
+
+Potential issue: PDF xref/offsets not shown; assembler uses object offsets. okay.
+
+Potential issue: `createMultiPagePdf(pages, text)` writes text on page n at y = 720 - (n-1)*24. For page 1, y=720; within MediaBox 792 height, baseline y 720 is near top, good. Page 2 y=696. okay.
+
+Potential issue: `flushAll` uses `pages * 8 + 16` macro tasks. For real pdfjs integration with 2 pages, operations might take longer? getTextContent async microtasks, plus setTimeout? The `sendItem` ack is setTimeout 0. The extraction for real page includes `real.getTextContent()` which is async but resolves in microtask; render no-op. `flushAll` loops 32 times; each loop waits a macrotask. Might be enough. If not, flaky. Could mention NIT? Not necessary.
+
+Potential issue: Tests assert `maxInflight` equals 1. But because `sendItem` callback increments before setTimeout resolves, and runExtraction awaits ack before next sendItem, maxInflight should be 1. Good.
+
+Potential issue: In `sendItem` stub, `ctx.sent` is pushed **after** setTimeout, and `ctx.ackFailAt` compared to `ctx.sent.length` after pushing but before resolving. So ackFailAt===1 means first item will get ackFail. Good.
+
+Potential issue: Test "invoke 折叠错误: failed path" expects `error` at end. After first item fails, sendChecked throws, catch sends error. Since sendItem ack for error? It uses `deps.sendItem` directly and awaits; `ackFailAt` still 1? Let's see: `ackFailAt` compared `ctx.sent.length`. First send pushes item and sees length=1, sets fail true. Then resolve `{ok:false}`. sendChecked throws. Catch calls `deps.sendItem(error)`. It increments inflight, timeout pushes error, sent.length=2, ackFailAt=1, condition false, resolves ok true. So error recorded. Good. Then finally. New request with ackFailAt null. Good.
+
+Potential issue: In `runExtraction`, when page render fails (e.g., canvas context missing), catch sends error. But if `sendChecked` for page figure already succeeded, and then anno draw fails, error send after some data already sent. Main may need handle partial. Not an issue for AI-03.
+
+Potential issue: `sendChecked` only validates `ack.ok`, but `Result<void>` maybe has `ok: true, data: undefined` or `ok: false, error`. They do `if (!ack.ok) throw`. Good.
+
+Potential issue: If `sendItem` returns `undefined` (not Result), `ack.ok` would throw TypeError "Cannot read properties of undefined (reading 'ok')" caught? It would be caught, send error, but then `deps.sendItem` for error maybe also returns undefined, causing `await` ok and no throw? Actually catch sends error and if it returns undefined, no error. But type says Result so okay.
+
+Potential issue: `createCorpusExtractor` doesn't expose a destroy/cancel method. Not needed.
+
+Potential issue: `EXPORT_SNAPSHOT_SCALE` exported; used in tests. okay.
+
+Potential issue: `cropBoxPixels` computes `x0 * width` etc but doesn't clamp to viewport. If rect coordinates outside 0..1, could produce negative source rect. drawImage with negative/overflow may throw? Actually drawImage with source rectangle outside source may be clipped silently? HTML spec clips. Not issue.
+
+Potential issue: If `anno.rects` has rects on multiple pages, filter by current page; for each annotation, if multiple rects same page, cropBoxPixels union. Good. If annotation rects span multiple pages, each page gets separate crop from union of rects on that page. okay.
+
+Potential issue: Does `annotationRectSchema` have `page` 0-based? Need check from models/annotation. In code comment says storage 0 based. okay.
+
+Potential issue: In `extractRequestEventSchema`, annotations are array of `{ id, rects }` but not include `annotation type` or color. Not needed for cropping.
+
+Potential issue: `exportProgressEventSchema` is defined but not used in CorpusExtractor; okay.
+
+Potential issue: `EVENT_CHANNELS.exportCorpus` is added. In preload, `buildEvents` includes onExportCorpus. But renderer `window.api` type? Need env.d.ts maybe updated? Diff not shown. api-surface `PreloadApi` derived? It includes export_.corpusItem and events. `preload/env.d.ts` maybe locked and updated? Not in diff, maybe unchanged? Wait diff includes `src/preload/index.ts` but not `src/preload/env.d.ts` or `src/renderer/global.d.ts`? The brief says "preload/env.d.ts 同源 onExportCorpus" in original header, changed to "preload onExportCorpus 桥"; not mention env.d.ts. Is env.d.ts modified? Not in diff. Could be because PreloadApi type derives from api-surface, and env.d.ts just declares `window.api: PreloadApi`. If it uses imported type, no change needed. okay.
+
+Potential issue: Main process event emission for exportCorpus is not in diff. Maybe none yet (AI-04). okay.
+
+Potential issue: `src/main/ipc/export_.ts` adding `corpusItem` without validation? The IPC layer likely validates request against `API_SURFACE.export_.corpusItem.Req` automatically. Need see how `ApiHandlers` built. Probably.
+
+Potential issue: "出网白名单外联": `loadPdfDocument` imports worker from local asset, no network. pdfjs getDocument(url) could fetch URL scheme `app-file://`. If URL is `http://...` from main? Main sends url only for local paper PDFs. But if malicious renderer could invoke event? Renderer cannot send event to main; main sends event to renderer. But a compromised renderer could trigger? Not in scope.
+
+Potential issue: `createDomCanvas` uses `document.createElement('canvas')`, `getContext('2d')` which may return null; throws. Good.
+
+Potential issue: `toPngBase64` returns data URL slice. For canvas larger than max? Not.
+
+Potential issue: In loadPdfDocument, they `await Promise.all([import('pdfjs-dist'), import('...worker.mjs?url')])`; if worker import succeeds but pdfjs import fails, workerConfigured stays false, no issue. If worker import fails, load fails. okay.
+
+Potential issue: `GlobalWorkerOptions.workerSrc` set after both imports. Could be too late? No, before getDocument. Good.
+
+Potential issue: If two extractions run concurrently? `extracting` prevents. But what if `handleEvent` called while extracting is false but `runExtraction` not yet started? It is synchronous void, so extracting true before next event. Good.
+
+Potential issue: If `runExtraction` returns early on unexpected synchronous throw before try? The whole body in try starts at `let doc...`; but `const base` and `sendChecked` defined before try. If defining sendChecked throws? no. `doc` initialization no.
+
+Potential issue: `extracting` is module-level? No, per instance. If two extractor instances (maybe one per app) both could run concurrently because `extracting` is instance-specific, not module-level. App layer probably creates one instance. But if multiple? Header says App layer listens. Could create one. Fine.
+
+Potential issue: The test "在途收第二请求: ignored" with same instance. Good.
+
+Potential issue: `PdfCanvas.tsx` re-export type `RenderTask` from 'pdfjs-dist'. But `OutlineThumb` uses `RenderTask` values? It imports type only. okay.
+
+Potential issue: ESLint rule for `import type { PDFDocumentProxy } from './PdfCanvas'`? It imports from local file, allowed.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` file declared `export interface CorpusExportService { corpusItem(req): Promise<{ok:true}> }` but `createExportService` returns `ExportService`; combined in `ServiceBundle`. Good.
+
+Potential issue: `NotImplementedError` from `shared/app-error` - Does it exist? If not, compile fail. But verify green. okay.
+
+Potential issue: `CORPUS_EXPORT_SERVICE_STUB` constant remains and may be for tests; not dead.
+
+Potential issue: `src/main/ipc/export_.ts` `corpusItem` handler might violate "register folds NOT_IMPLEMENTED" if no register? But likely.
+
+Potential issue: In `schemas.ts`, `corpusItemReqSchema` uses `.refine` after `.discriminatedUnion` but the refinement function parameter `v` type is union. In `v.figure === 'anno'` and `v.annotationId !== undefined`. For figure variants, `figure` is enum. Good. But in third and fourth variants, no `figure` property; the refinement's `v.kind !== 'figure'` short-circuits. TypeScript may complain: `v.figure` doesn't exist on non-figure variants? In discriminated union refinement, within callback TS should narrow based on `v.kind !== 'figure'`; if `v.kind` is 'fulltext' then `v.figure` not accessed due OR short-circuit? They write `v.kind !== 'figure' || (v.figure === 'anno' ? ...)`. TypeScript knows if first false, v is figure variant, so v.figure exists. Good.
+
+Potential issue: `export type CorpusItemReq = z.infer<typeof corpusItemReqSchema>`; But `corpusItemReqSchema` is a `ZodEffects` due refine, so infer maybe `{ kind:'fulltext'... } | ...` not original? ZodEffects infer output may still be input? Actually `.refine` doesn't transform, output type is same union. Good. But when using `z.infer` on ZodEffects, it returns output type of inner schema. okay.
+
+Potential issue: In `API_SURFACE`, `corpusItem` points to `S.trueAckSchema`; but maybe `trueAckSchema` Res = `{ ok: true }`? In service returns `Promise<{ok:true}>`; good.
+
+Potential issue: Security of `corpusItemReqSchema.payload` arbitrary string could be huge, leading memory DoS. But renderer trusted? Could be malicious content from PDF? It sends text/base64; main will handle in AI-03. Not in this ticket. Maybe not.
+
+Potential issue: `extractRequestEventSchema.annotations.max(5000)` but no limit on rects per annotation. A malicious main event could have huge annotations. But main is trusted. okay.
+
+Potential issue: `createMultiPagePdf` page count zero? If `pages` is 0, Kids empty, Count 0, PDF invalid. Test passes 2. okay.
+
+Potential issue: `createDomCanvas` not exported; tests use stub. okay.
+
+Potential issue: `loadPdfDocument` not exported? Yes exported. Good.
+
+Potential issue: Type `CanvasRenderingContext2DLike` as `{ [key: string]: unknown }` plus pdfjs render's `canvasContext` parameter type in `PdfjsPageLike` is `unknown`; okay.
+
+Potential issue: In `PdfjsPageLike.render` type, params `{ canvasContext: unknown; viewport: unknown }`, but pdfjs actual render expects viewport and canvasContext. In loadPdfDocument cast `as unknown as PdfjsDocumentLike` from PDFDocumentProxy, then when calling `page.render({ canvasContext: pageCanvas.ctx, viewport }).promise`, we pass `viewport` object from `page.getViewport` which has width/height and other pdfjs viewport properties. Type `unknown` accepts. okay.
+
+Potential issue: `page.render` may need `canvasContext` to be an actual CanvasRenderingContext2D, and `viewport` to be `PDFPageViewport`. At runtime yes.
+
+Potential issue: The `source` field in RenderCanvas is `CanvasImageSourceLike = unknown`. `createDomCanvas` sets `source: el`, and `drawFrom` casts. But if a stub sets source null and code accidentally uses drawFrom in production? Not.
+
+Potential issue: `cropBoxPixels` returns `sh` maybe zero if rects have zero height; then createCanvas(0,0) would throw? Canvas with width 0 allowed? `createCanvas(box.sw, box.sh)` if 0, HTMLCanvasElement width=0 is valid? It may have zero area, toDataURL maybe "data:,". But if all rects degenerate, crop empty. Annotation rects likely nonzero. Not.
+
+Potential issue: `runExtraction` on complete: after `await deps.sendItem({ ...base, kind:'complete' })`, if the ack is `{ok:false}` they don't throw. As noted. Also if complete ack is `{ok:false}`, they silently proceed. Is that a real correctness bug? According to contract, every invocation should await ack and check? The state table says "篇毕 → done | sendItem complete；destroy；→idle" In error handling, "invoke 折叠错误→failed | sendItem error+reason". The state machine table row "extracting | invoke 折叠错误/提取异常" includes all invoke folded errors, including complete? It says "文档加载失败/invoke 折叠错误/提取异常 → failed". If `complete` invoke returns folded error, per state table should go to failed? Actually "invoke 折叠错误" means when a sendItem returns non-ok, they should send error. But they don't check complete ack, so folded error on complete won't transition to failed; it'll end as done. Is that a violation of state machine? Could be WARN/BLOCKING? Need evaluate impact: If main's session side already rejects complete (e.g., session not found), renderer ends idle silently; main maybe already knows. But "invoke 折叠错误" could also mean fulltext/figure. The state table explicitly says "invoke 折叠错误" not "except complete". Also sendChecked was supposed to be single point used for all sends? They mention N1 "抽 sendChecked 单点（sendItem+ack 判定+throw）——Rule of Three 阈值". Rule of Three: They use sendChecked 3+ times? Actually fulltext, figure page, figure anno = 3 calls, complete direct = 1, error direct = 1. If they used sendChecked for complete, it would be 4. So Rule of Three triggered, but they left complete outside. This is a likely issue. Let's mark WARN or BLOCKING? It is a correctness defect: terminal ack failure not handled, may hang main waiting? But since ack received (folded error) means main got the complete? "折叠错误" means main service returned error result, so main knows? Actually if the invoke reached main, main processed it but returned an error result. Main likely knows complete failed, maybe session not found because already complete? Not sure. The renderer should probably treat as error? The state table says yes. Severity WARN perhaps. But "正确性" bug. We can mention.
+
+Need inspect `sendChecked` definition: Used for fulltext/page figure/anno figure. But complete should also await ack? The comment "背压：每项一 invoke，await ack 后发下一项" — complete has no next, but should check ack for consistency. It's a NIT/WARN. I'd say WARN.
+
+Another potential bug: In `runExtraction`, final `complete` is sent via `deps.sendItem` directly, not `sendChecked`. So if `ack.ok` false, no throw, no error report. Also if it throws, catch sends error. But if it returns folded error, no action. Could cause main to not advance? The main receives the complete request and returns error; main knows anyway. Not huge.
+
+Another issue: When `sendChecked` for fulltext fails due to `ack.ok=false`, catch sends `error` but **does not stop**? It does stop because catch after for loop? Let's see: inside try, the for loop with `await sendChecked` throws, so exits to catch. Good. It doesn't continue sending later pages. good.
+
+Potential issue: In catch, they send `error` but don't use `sendChecked`; if error sendItem returns `{ok:false}` (folded), they ignore and still proceed to finally. okay.
+
+Potential issue: The final `complete` is sent even if some figure send failed? No, exception would jump to catch. okay.
+
+Potential issue: `extracting=true` is set before `runExtraction`; but if `handleEvent` gets called twice in same tick, second ignored. Good.
+
+Potential issue: `flushAll` test uses `pages * 8 + 16` settle loops; for 3 pages max 40 loops. Each loop `setTimeout(r,0)` plus microtasks. But the extraction loop has multiple awaits per page: sendItem ack (timeout), getPage, getTextContent, render, etc. For 3 pages, maybe 3*(fulltext+figure+anno?) maybe >40? But they said 8 per page +16, enough. Could be okay but if CI slow, maybe flaky. The test itself not production. Not need.
+
+Potential issue: "每个测试必须能失败一次" is a process rule, not assessable.
+
+Potential issue: "受锁 e2e spec 改动后必须全量 verify" no e2e changes.
+
+Potential issue: "变异红证" no.
+
+Potential issue: `tests/utils/pdf-factory.ts` is locked? It was modified and manifest updated. okay.
+
+Potential issue: `locks/manifest.json` generatedAt changed. It includes new file `tests/unit/renderer/corpus-extractor.test.ts`. Good.
+
+Potential issue: Does `locks/manifest.json` need include `src/renderer/features/reader/CorpusExtractor.ts`? No, maybe not locked. okay.
+
+Potential issue: The new `corpusItemReqSchema` is added to `src/shared/ipc/schemas.ts`, but `src/shared` is locked. Manifest updated. Good.
+
+Potential issue: But `tests/unit/renderer/corpus-extractor.test.ts` is a new test file. AGENTS says tests are locked and "禁止修改 tests/**" but creating new test is modifying tests dir. However ticket explicitly includes test creation? The brief says "新增第 10 用例" and "tests/utils/pdf-factory.ts". In project, new tests under tests/** are locked and need `locks:generate` + apply. They did. So okay.
+
+Potential issue: In `eslint.config.js`, the whitelist override only applies to three files. But what about `src/renderer/features/reader/CorpusExtractor.ts` dynamic import of `pdfjs-dist/build/pdf.worker.min.mjs?url`? The rule pattern includes group `['pdfjs-dist', 'pdfjs-dist/**']`; the specifier `pdfjs-dist/build/pdf.worker.min.mjs?url` matches `pdfjs-dist/**`? ESLint no-restricted-imports pattern matching? It likely matches the module path prefix before query? Actually import specifier includes `?url`, pattern `pdfjs-dist/**` may not match because of query? For dynamic import in whitelisted file, not restricted. For non-whitelisted, if someone does `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`, would it be blocked? Pattern `pdfjs-dist/**` probably matches up to query? `picomatch` matches `pdfjs-dist/build/pdf.worker.min.mjs?url` against `pdfjs-dist/**`? The `?` is glob wildcard? In glob, `?` matches any single char, so maybe matches. But anyway. Not issue.
+
+Potential issue: The whitelisted files override lacks `paths`, so if original config `no-restricted-imports` includes `paths` for `electron` etc, the override could allow those. We need know. Since AGENTS says "renderer 禁止直接 import main/preload 源码", this is enforced by current ESLint. If override inadvertently drops `paths`, whitelisted files could import some restricted module by path? But they still have patterns for main/preload. If `paths` was used to block `electron` package specifically, note they blocked via group `['electron']` in override patterns. Good.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` now uses `NotImplementedError`. Is `NotImplementedError` a subclass of? okay. But the file header at top still has "工单骨架标记（实现单元替换为真实实现）" and maybe TODO? It's not TODO. But "stub" remains. AGENTS DoD: "占位实现已删除；工单在 tickets/registry.ts 翻状态". Since AI-03 is separate ticket, stub is expected. okay.
+
+Potential issue: tickets/registry.ts changed status SR2-AI-02 open→done. But the diff includes changes to main service stub for AI-03, which belongs to SR2-AI-03's file. AGENTS "只改这一个文件（+ 必要时新文件）。禁止顺手实现别的工单" for weak model. SR2-AI-02 owner strong? The workflow for weak model not relevant? The ticket SR2-AI-02 file is CorpusExtractor.ts. But diff modifies many files including `src/main/services/export_/corpus.export.service.ts` (SR2-AI-03's file), `src/shared/ipc/schemas.ts`, `api-surface.ts`, `preload`, `main/ipc/export_.ts`, `main/services/index.ts`, `OutlinePanel/Thumb`, `PdfCanvas/TextLayer`, `eslint`, `tests`, `locks`, `tickets`. Is this scope creep? The ticket summary says "pdfjs 白名单三文件 INV-16+ESLint 机器锚+自持文档生命周期 R2+事件桥单向 R3+逐页背压" and "IPC 契约 [受锁]（本单已落）". So modifying shared schemas/preload/main ipc is within ticket (IPC contract). Modifying `corpus.export.service.ts` stub for AI-02? They added a stub so `corpusItem` handler can be wired; is that "顺手实现别的工单"? It's a stub that will be replaced by AI-03, necessary to close the IPC contract. But it modifies another ticket's file, which AGENTS says only modify one file? However those rules specifically "工单工作流（弱模型领单专用）" maybe for weak models. SR2-AI-02 owner 'strong'? In registry, owner strong. So not applicable. Still DoD "git diff --stat 无范围蔓延" maybe this diff is broad but justified by contract. Could mention? The brief says "累积制" with W2 etc, so scope expected.
+
+Potential issue: `src/main/ipc/export_.ts` uses `deps.services.export_.corpusItem` but the `ExportService` type from `./export_/export.service` may not include corpusItem; they changed ServiceBundle to intersection. good.
+
+Potential issue: In `src/main/services/index.ts`, they use `createCorpusExportService().corpusItem`. That creates a service object whose `corpusItem` is bound to that object. Fine. But if `createCorpusExportService` returns an object with `corpusItem` method using `this`, no `this`. fine.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` import path `../../../shared/app-error`. Because file is in `src/main/services/export_/`, `../../../` goes to `src/`? Let's calculate: `src/main/services/export_/` -> `../` = `src/main/services/`, `../../` = `src/main/`, `../../../` = `src/`, then `shared/app-error` = `src/shared/app-error`. yes.
+
+Potential issue: `src/main/ipc/export_.ts` `corpusItem: (req) => deps.services.export_.corpusItem(req)` might not validate `req` because `req` typed by handler. okay.
+
+Potential issue: `src/preload/index.ts` `buildEvents` returns object with methods. Existing `onImportProgress` returns cleanup. New `onExportCorpus` okay. But `buildEvents` maybe returns `PreloadEvents` type; okay.
+
+Potential issue: `EVENT_CHANNELS` and `PreloadEvents` in api-surface; but `preload/index.ts` imports `PreloadEvents` and uses type. okay.
+
+Potential issue: `src/shared/ipc/schemas.ts` import order: `import { annotationRectSchema } from '../models/annotation'` then later `import { annotationSchema, annotationInputSchema } from '../models/annotation'`. Duplicate import from same module in two separate import statements. ESLint `no-duplicate-imports`? Maybe not enabled. Not issue. But could be NIT. They added a new import line before existing annotation import. Could merge. Not important.
+
+Potential issue: `src/shared/ipc/schemas.ts` type `ExportCorpusEvent` union; but `EVENT_CHANNELS` exports strings. okay.
+
+Potential issue: `ExportCorpusEvent` used in preload callback; main event emitter might send `ExtractRequestEvent` or `ExportProgressEvent`. Good.
+
+Potential issue: `extractRequestEventSchema` has `.max(5000)` on annotations array but `annotations` default? It requires array even empty. okay.
+
+Potential issue: The `corpusItemReqSchema` is a discriminated union with `.strict()` on each member. `.refine` returns ZodEffects, and `z.infer` works. good.
+
+Potential issue: In `corpusItemReqSchema`, `figure: z.enum(['page','anno'])` is required for all figure items. Good.
+
+Potential issue: Refinement's message "anno 图必带 annotationId；page 图不得携带 annotationId" but it only checks `v.figure === 'anno' ? v.annotationId !== undefined : v.annotationId === undefined`. Because `figure` only exists in figure variant, and `annotationId` optional. Good. But what if `annotationId` is empty string? It's `.min(1)`, so if present and empty, fails before refine. good.
+
+Potential issue: `cropBoxPixels` with `rects` as readonly array but `AnnotationRect[]` mutable. okay.
+
+Potential issue: `EXPORT_SNAPSHOT_SCALE = 2.0`; "变更=INTERFACE 版本号联动". okay.
+
+Potential issue: The tests import `type Result` from '../../../src/shared/app-error'. Is `Result<void>` with ok true? okay.
+
+Potential issue: The `makeCtx` uses `ctx.extractor = null as unknown as Ctx['extractor']` then create; okay.
+
+Potential issue: In test "文档加载失败", `makeCtx(Promise.reject(...) as unknown as PdfjsDocumentLike)`; `loadDocument` returns `Promise.resolve(d)` where d is rejected Promise. Actually `Promise.resolve(rejectedPromise)` returns a new promise that rejects with same reason. yes.
+
+Potential issue: The test's `pageStub` `getTextContent` returns `{ items: [{ str: text }] }`. If text contains `P${n} ${esc(text)}`, got.
+
+Potential issue: `esc` in pdf-factory likely escapes parentheses. If not, content stream may break. But existing helper. okay.
+
+Potential issue: In `createMultiPagePdf`, objects array order: Page objects are `3..p+2`, Contents `p+3..2p+2`, Font `2p+3`. The font is last object with id `2p+3`. But Pages Kids refer to pages 3..p+2. Good. Catalog references Pages 2. Page resources references Font `2p+3`. Content streams referenced from page objects. Good. But `kids` array uses `${2 + n} 0 R` for n=1..pages => 3..pages+2. Good.
+Object ids: for n=1..pages, page object id 2+n (3..p+2), contents id p+2+n (p+3..2p+2), font id 2p+3. Last object pushed at end id should be 2p+3? Let's count: initial 2 objects (ids 1,2). Then loop pages: push page (ids 3..p+2). Then loop pages: push contents (ids p+3..2p+2). Then push font id 2p+3. Good.
+
+Potential issue: In stream length, `new TextEncoder().encode(stream).length` where stream includes newlines after `stream\n`? The original likely used same method. okay.
+
+Potential issue: `createMultiPagePdf` exported; tests locked. fine.
+
+Potential issue: `loadPdfDocument` uses `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` but `pdfjs-dist` package path? Maybe the worker file is `.mjs` with `?url`; Vite supports. okay.
+
+Potential issue: `GlobalWorkerOptions.workerSrc` is a global; setting from two modules with maybe different values (the `?url` import in CorpusExtractor may produce a hashed URL; PdfCanvas's static import also). If both use same asset, same. If bundle splits, could differ? They claim same. no.
+
+Potential issue: The worker URL import uses dynamic import, but ESM dynamic import of asset URL in Vite returns a module with default containing URL string. In build, dynamic import for `?url` may be inlined as a static asset URL? okay.
+
+Potential issue: In `loadPdfDocument`, `GlobalWorkerOptions.workerSrc = (workerModule as { default: string }).default`. But in Vite, `import('...?url')` returns `{ default: "/assets/xxx.mjs" }`. yes.
+
+Potential issue: The `once` flag `workerConfigured` is set true after workerSrc set. If assignment throws? unlikely. If two module instances? okay.
+
+Potential issue: `extracting` variable is not reset if `runExtraction` throws before try? It can't. But if `runExtraction` function has `const base = ...` before try; if `req` is invalid? handleEvent checks type but not schema? It receives event from preload, likely validated? In runExtraction, req.url etc. If req is progress, ignored. If req is malformed extract-request missing fields, handleEvent still sets extracting and runExtraction accesses req.sessionId etc; if undefined, base undefined, but sendItem might throw, caught. It could produce weird. But preload event should be validated? Actually main sends event through IPC; renderer receives, no validation? The `handleEvent` is called with event object from preload? In App layer, `window.events.onExportCorpus(e => extractor.handleEvent(e))`. The payload could be trusted from main. okay.
+
+Potential issue: `src/main/ipc/export_.ts` `corpusItem` handler at top of object before `bibtex`. okay.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` is 129 lines? It adds imports and factory. File header has "Stub" but not dead.
+
+Potential issue: `src/renderer/features/reader/CorpusExtractor.ts` contains `let workerConfigured = false` and `loadPdfDocument` uses dynamic imports. Because module is pure TS, but `workerConfigured` module-level means if multiple extractor instances, only one worker config. okay.
+
+Potential issue: In `createDomCanvas`, `ctx: ctx as unknown as CanvasRenderingContext2DLike`. Since pdfjs `render` gets an object with index signature but at runtime actual context. okay.
+
+Potential issue: The `drawFrom` in `createDomCanvas` uses `ctx.drawImage(src.source as CanvasImageSource, box.sx, ...)`. If `src.source` is a canvas element, okay. If source is an HTMLCanvasElement but its width/height are 0? no.
+
+Potential issue: `cropBoxPixels` returns `sx`, `sy` possibly not integers. drawImage accepts floats. okay.
+
+Potential issue: `toPngBase64` slices "data:image/png;base64," but if `toDataURL` returns "data:," for empty canvas, slicing gives weird. But canvas has size. okay.
+
+Potential issue: In `CorpusExtractor.ts`, the type `CanvasImageSourceLike = unknown` and `source: CanvasImageSourceLike` with docs "生产=canvas 元素；drawFrom 用 src.source". The B1 fix specifically said "桩 source:null——类型面闭合，运行时 drawImage 收真 canvas". okay.
+
+Potential issue: In `loadPdfDocument`, the `getDocument(url)` returns PDFDocumentLoadingTask with `promise`; but if url is a file URL in renderer, pdfjs may use DOMMatrix etc. good.
+
+Potential issue: "禁止 renderer 引入任何 Node/Electron API 或绝对文件路径（路径只能来自 main 侧系统对话框）" Here `url` in event comes from main, but it's `file://...` maybe considered absolute path? It's a URL. It comes from main, so okay.
+
+Potential issue: `EXPORT_SNAPSHOT_SCALE` not in shared constants; okay.
+
+Potential issue: `src/shared/ipc/schemas.ts` now imports `annotationRectSchema` from '../models/annotation' but `annotationRectSchema` may not be exported? likely.
+
+Potential issue: "测试纪律：禁止修改 tests/**" – they added `tests/utils/pdf-factory.ts` but that's test utility. Did they have a [locked-change] tail? Not in diff. The locks manifest proves apply. Could there be a rule "package.json/lockfile changes must dep-change"; no.
+
+Potential issue: We need determine fail/pass. Likely should be PASS_WITH_WARNINGS due to complete ack handling and maybe state machine. Need find any BLOCKING? Let's dig deeper for real security/correctness.
+
+Let's think about `sendItem` interface with `Result<void>`. In `CorpusExtractor.runExtraction`, on final complete, they use `deps.sendItem({ ...base, kind:'complete' })` without checking. As discussed. Also in the catch path for error reporting, they use `deps.sendItem` and if it returns `{ok:false}` they ignore. That's fine.
+
+What about `sendChecked` defined as `const sendChecked = async (item: CorpusItemReq): Promise<void> => { const ack = await deps.sendItem(item); if (!ack.ok) throw new Error('回传被拒绝（会话侧错误）') }`. If `ack` is `{ok:true, data: undefined}`, fine. If `ack` is undefined because service throws? no.
+
+What about `runExtraction` calling `await deps.sendItem({ ...base, kind: 'complete' })` but if it throws, catch sends error. But then after catch, finally destroy. Good.
+
+Potential issue: If complete sendItem returns `{ok:false}` and no throw, the state machine ends as done though main flagged error. In this scenario, main's session might be in "extracting" waiting for complete? But the request reached main, so main can process. If main returned an error because session already failed, renderer doesn't care. If main returns error because payload invalid (e.g., schema validation failed), the request never reached main? Actually IPC validation before handler would reject? Not sure. If validation fails, the promise would reject, not return folded error. So complete folded error unlikely. So WARN.
+
+Another issue: `loadPdfDocument` imports `pdfjs-dist/build/pdf.worker.min.mjs?url` via dynamic import. Is this considered "renderer 引入绝对文件路径"? no.
+
+What about the type `PdfjsDocumentLike.destroy(): Promise<void>` but `PDFDocumentProxy.destroy()` in pdfjs returns `Promise<void>`? In pdf.js v4, destroy returns `Promise<void>`? Actually `PDFDocumentProxy.destroy()` returns `Promise<void>`. okay.
+
+Potential issue: In `CorpusExtractor.ts`, `export function createCorpusExtractor(deps: {...}): CorpusExtractor` uses `createDomCanvas` as default. This function references `document`, so if this module is imported in Node tests without calling loadPdfDocument/createCorpusExtractor? Actually `createCorpusExtractor` default `createCanvas` is `createDomCanvas` only when invoked. Tests pass custom createCanvas, so no DOM. Good.
+
+Potential issue: In `runExtraction`, for each annotation, they create `annoCanvas` and drawFrom. But `pageCanvas` was already sent as page figure before annotation. If `drawFrom` or `toPngBase64` fails, catch sends error. But the page figure for that page may have been sent; main may have already stored it. Error means session fails, okay.
+
+Potential issue: The page figure is sent **before** annotation figures. If annotation cropping fails, main has page figure and fulltext for that page; partial data maybe okay for AI-03 error handling. no.
+
+Potential issue: If `req.annotations` contains annotation with rects page=0 (first page), filter `r.page === n - 1` works for n=1 -> page 0. Good.
+
+Potential issue: If annotation has rects with page negative, not. schema maybe.
+
+Potential issue: The extraction loop uses 1-based page n. `doc.getPage(n)` expects 1-based. Good.
+
+Potential issue: For multi-page PDF, text extraction order: page 1 fulltext, page 1 page fig, annotations, page 2 etc. Good.
+
+Potential issue: `flushAll` and tests with real pdfjs: It uses `createMultiPagePdf(2, 'INTEGRATION')`, but `realDoc` passed to `makeCtx`; `makeCtx`'s `loadDocument = () => Promise.resolve(d)`. But `d` is `realDoc`, not a PDFDocumentProxy. They wrap. okay.
+
+Potential issue: In real integration test, `realDoc.getPage` calls `pdf.getPage(n)` then wraps. `pdf.getPage` returns `PDFPageProxy` with `getTextContent()` and `getViewport()`. They call `real.getTextContent()` (returns Promise), `real.getViewport(params)`. `params` type `{ scale: number }`; real `getViewport` expects `{ scale: number }`? In pdfjs, `getViewport({ scale, rotation })`. okay. They return object with render no-op. Good.
+
+Potential issue: In `makeCtx`, `loadDocument = () => { const d = doc; return Promise.resolve(d) }`. If `doc` is a Promise (rejected), it returns `Promise.resolve(rejectedPromise)` and adopts rejection. As noted.
+
+Potential issue: In test "destroy 失败不阻断", `docStub(['a'], true)` has destroy rejecting; `runExtraction` finally catches and logs console.warn. Test doesn't assert no unhandled rejection. But `doc.destroy()` in finally is caught, so okay.
+
+Potential issue: In catch, when sendItem for error itself fails, console.error. Good.
+
+Potential issue: `console.error('CorpusExtractor error 上报失败', sendErr)` and `console.warn` could be considered leaving log noise. no.
+
+Potential issue: The new file `CorpusExtractor.ts` has `workerConfigured` module-level boolean. If `loadPdfDocument` is called and then `PdfCanvas` module later imports (maybe after), `GlobalWorkerOptions.workerSrc` set to URL from dynamic import. Then PdfCanvas module top-level sets `GlobalWorkerOptions.workerSrc = workerUrl` (static). Both same? If different due bundling, PdfCanvas's static import might override with possibly different URL. But it's after? Module import order could matter. If PdfCanvas is imported later, its top-level assignment runs and might override `workerSrc` to a different URL (still local). That's not a destructive difference. But both should be same. If CorpusExtractor sets workerConfigured true, then later if PdfCanvas changes workerSrc, no issue because one assignment occurs. But if PdfCanvas was loaded first, its static import set workerSrc; CorpusExtractor later sets same. Good.
+
+Potential issue: The `workerConfigured` flag is local, so if PdfCanvas already set workerSrc but CorpusExtractor hasn't loaded, it will still set again. okay.
+
+Potential issue: In `loadPdfDocument`, they load both pdfjs and worker in parallel. If worker import resolves after pdfjs, and pdfjs's `getDocument` may start before workerSrc? Actually they don't call getDocument until after Promise.all resolves. Good.
+
+Potential issue: `getDocument(url)` maybe needs `worker` parameter or `GlobalWorkerOptions.workerSrc` before call. set.
+
+Potential issue: "白名单内静态资产 import" W2. good.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` creates `CorpusExportService` with `corpusItem` throwing `NotImplementedError`. If the IPC layer does not catch, renderer's `sendItem` may reject (not Result). The `CorpusExtractor`'s `sendChecked` assumes `ack` is Result; if `sendItem` promise rejects, `await deps.sendItem(item)` throws before `const ack = ...`. That's caught by runExtraction's catch? Yes, because sendChecked is inside try? Let's see `sendChecked` defined before try, but called inside try. If it throws due to rejected promise, catch catches and sends error (also may reject). The comment "本占位经 register 折叠 NOT_IMPLEMENTED → renderer failed 路径（链路可测）" suggests register folds. Need know if register does. If IPC handler throws, electron IPC `invoke` rejects; preload `ipcRenderer.invoke` returns rejected promise. `window.api.export_.corpusItem` will reject. The `sendItem` type is `(item) => Promise<Result<void>>`, but actual function from preload might reject rather than return Result. In `CorpusExtractor.sendChecked`, `await deps.sendItem(item)` could throw; that's caught and error sent. Good. So chain testable anyway. If it returns folded error, also caught. So okay.
+
+Potential issue: In `runExtraction` catch, if `deps.sendItem` for error itself throws, they catch. But what if `deps.sendItem` for error returns folded error with ok false? They don't check, but no need.
+
+Potential issue: `src/main/ipc/export_.ts` doesn't explicitly validate the req. The generic IPC registration likely does. okay.
+
+Potential issue: `src/preload/index.ts` `onExportCorpus` callback type `(cb: (e: ExportCorpusEvent) => void)` but `buildEvents` returns `PreloadEvents`; `api` object maybe used. okay.
+
+Potential issue: `src/shared/ipc/api-surface.ts` adds `corpusItem` to `export_` domain with `S.trueAckSchema`. Does API_SURFACE's generic handler automatically create `window.api.export_.corpusItem` in preload? Yes `buildApi` iterates `API_SURFACE` and uses `ipcRenderer.invoke`. Good.
+
+Potential issue: `src/main/ipc/export_.ts` return object type `ApiHandlers['export_']`; `corpusItem` function likely matches. Good.
+
+Potential issue: The renderer `CorpusExtractor` uses `sendItem` endpoint from `window.api.export_.corpusItem`; but no code wires it yet (App layer AI-04). That's okay.
+
+Potential issue: `src/shared/ipc/schemas.ts` `corpusItemReqSchema` `.refine` is applied to a discriminatedUnion of strict objects. But because `.strict()` is applied to each object, unknown keys rejected. good.
+
+Potential issue: In `extractRequestEventSchema`, `url` may contain newlines? no.
+
+Potential issue: "FTS 输入必须经 escapeFtsQuery" no SQL.
+
+Potential issue: "禁止 eval/new Function" no.
+
+Potential issue: "CSP" no.
+
+Potential issue: "新增出网 host" no.
+
+Potential issue: "nodeIntegration" etc no.
+
+Potential issue: `src/renderer/features/reader/PdfCanvas.tsx` re-export types `PDFDocumentProxy, RenderTask`. But `OutlinePanel` imports `PDFDocumentProxy` from './PdfCanvas'. `PdfCanvas.tsx` has `export type { PDFDocumentProxy, RenderTask }` but did it import those types? The diff doesn't show adding import statements; maybe already imported. If not, compile error. But verify green means yes.
+
+Potential issue: The diff changes `TextLayer.tsx` comment only. okay.
+
+Potential issue: `src/shared/ipc/schemas.ts` `exportProgressEventSchema` phase enum includes 'preparing','streaming','finalizing'. good.
+
+Potential issue: The new `ExportCorpusEvent` type is union of two schemas. `handleEvent` checks `e.type !== 'extract-request'`; so progress ignored. good.
+
+Potential issue: In `loadPdfDocument`, the worker URL is imported from `pdfjs-dist/build/pdf.worker.min.mjs?url`; but pdf.js may look for worker at `GlobalWorkerOptions.workerSrc`; using `?url` asset URL. good.
+
+Potential issue: The test "真 pdfjs 集成" imports `getDocument` from `pdfjs-dist` directly. But W2 says "真 pdfjs 集成用例覆盖 loadDocument→getTextContent 链". Wait test actually uses `getDocument` directly, not `loadPdfDocument` from CorpusExtractor. It doesn't test `loadPdfDocument` (worker config). Is that an issue? W2 requirement: "新增第 10 用例「真 pdfjs 集成」——getDocument({data: 多页工厂 PDF})→真 getTextContent 文本断言". So it's as specified. It doesn't test worker config. okay.
+
+Potential issue: In test "真 pdfjs 集成", they don't use `EXPECT` for `render`? They assert payload contains P1 INTEGRATION and complete. good.
+
+Potential issue: The `flushAll` in real integration test uses `pages * 8 + 16` = 32 loops. Could be enough. But if pdfjs `getTextContent` takes longer than macrotask? It's promise, microtask. The `sendItem` ack uses setTimeout macro. The loop's `for` triggers `sendItem` for each item; each sendItem schedules a setTimeout. The flushAll's `settle()` waits 0ms. In Node, after 32 timeouts, likely enough. But there are multiple awaits in runExtraction; each `sendItem` introduces a setTimeout; `flushAll` waiting 0ms after each might allow all to settle because each time flushAll awaits, it yields to timer queue. It should work. Not a production issue.
+
+Potential issue: "tests are locked; cannot modify to make pass" no deletion.
+
+Potential issue: The new test file imports `pdfjs-dist` directly. ESLint config might restrict `tests/**`? The no-restricted-imports in renderer block likely only applies to renderer. Good.
+
+Potential issue: `src/shared/ipc/schemas.ts` line count maybe grows; file maybe >500? It had 90+80=170 lines, still under 500.
+
+Potential issue: `CorpusExtractor.ts` line count perhaps >500? Let's approximate: The file before diff had maybe 70 lines header + stub ~? After diff, header ~70 + code ~218 = 288. Under 500.
+
+Potential issue: `eslint.config.js` line count maybe under 500. okay.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` line count maybe 130. okay.
+
+Potential issue: There is a `CORPUS_EXPORT_SERVICE_STUB` constant in `corpus.export.service.ts` but now the file also has interface/factory. Could be okay. The constant may be used in tests? no.
+
+Potential issue: The file header in `corpus.export.service.ts` says "完成后：删除 STUB → npm run verify 绿". The stub is still there for AI-03. okay.
+
+Potential issue: In `CorpusExtractor.ts`, the module header says "本模块零 window/pdfjs 静态依赖" but `createDomCanvas` uses `document` and the default createCanvas creates DOM. That's not a static dependency, just runtime. okay.
+
+Potential issue: `cropBoxPixels` exported pure function for tests. good.
+
+Potential issue: `export const EXPORT_SNAPSHOT_SCALE = 2.0` maybe should be integer? no.
+
+Potential issue: In `createDomCanvas`, `toPngBase64` returns data URL slice; if the browser returns data URL with charset? Usually exactly prefix. okay.
+
+Potential issue: `CorpusExtractor` catches all errors and sends `reason`. If error is a DOMException with message "The operation is insecure" because canvas tainted (PDF from file:// with images), reason string sent. okay.
+
+Potential issue: `source` field on RenderCanvas for test stub null; but `drawFrom` in canvasStub no-op, so not used. okay.
+
+Potential issue: In `createCorpusExtractor`, `extracting` is a closure variable. If `runExtraction` completes synchronously? It's async, returns promise, but `void` not awaited. `extracting` remains true until finally. Good.
+
+Potential issue: If `handleEvent` called with extract-request while `extracting` true, it ignores. But because `runExtraction` may have already finished (extracting false) but a progress event arrives, ignored due type check. okay.
+
+Potential issue: The "背压" requirement says "每项一 invoke，await ack 后发下一项". For annotation figures, they wait ack before next item. Good. But they also do sequential page fulltext/page figure/annos; no parallel. Good.
+
+Potential issue: For page figures, they render page after fulltext send. If fulltext send fails, no render. okay.
+
+Potential issue: `sendChecked` throws, catch sends error. But if there are multiple annotations, error may be sent after some annotation figures for the same page. okay.
+
+Potential issue: Could there be a case where `runExtraction` finishes with complete and then `extracting=false`, but a previous `runExtraction` is still running? no, because single flag.
+
+Potential issue: In `runExtraction`, `const base = { sessionId: req.sessionId, paperId: req.paperId }` before try. If `req.sessionId` undefined (malformed), base undefined? no, it's object with undefined values. But handleEvent only passes valid from main. no.
+
+Potential issue: The `annotations` in extract request may be 0; loop skip. good.
+
+Potential issue: If `createMultiPagePdf(2, 'INTEGRATION')` text includes parentheses? no.
+
+Potential issue: "No new dependencies" no package changes. good.
+
+Potential issue: "Worker 未配置" W1 resolved. good.
+
+Potential issue: "createDomCanvas 零覆盖" W3 partial. okay.
+
+Potential issue: "N2 page 图可携带 annotationId" refined. yes.
+
+Potential issue: "N1 三处 ack 检查重复" sendChecked for three calls, as noted complete not included. Could be NIT? Actually N1 says "三处 ack 检查重复——抽 sendChecked 单点（sendItem+ack 判定+throw）——Rule of Three 阈值". In implementation, there are 3 sendChecked uses plus 2 direct sendItem uses. It doesn't use sendChecked for complete/error. Is that a violation? Not necessarily because error/complete are terminal. But "Rule of Three" would suggest once repeated 3 times, extract. They did. But if the rule is "重复 3 次以上的逻辑抽函数；第 2 次保持重复", having 3 call sites and 2 direct duplicates could be okay. Still not a big issue.
+
+Potential issue: "接缝归责": They updated PdfCanvas header from "唯一允许" to "白名单三文件之一" and TextLayer similarly, consistent with INV-16. Good.
+
+Potential issue: "状态机前置": Header has state machine. good.
+
+Potential issue: "不变量登记": updated INV-16. good.
+
+Potential issue: "同类缺陷二次触发即重构": no.
+
+Potential issue: "分层单向": `src/renderer/features/reader/CorpusExtractor.ts` imports from `../../../shared/ipc/schemas` and `../../../shared/app-error` and `../../../shared/models/annotation`—shared types are allowed. It also imports `pdfjs-dist`—allowed. No renderer→main import. good.
+
+Potential issue: "类型单一真相源": `CorpusExtractor` defines structural pdfjs types, not cross-process. `corpusItemReq` from schemas. good.
+
+Potential issue: The `RenderCanvas` interface duplicates `CanvasRenderingContext2DLike` with index signature; okay.
+
+Potential issue: "禁止 renderer 引入任何 Node/Electron API" no.
+
+Potential issue: "禁止对未过 shell-guard 校验的 URL 调 openExternal" no.
+
+Potential issue: "禁止字符串拼接 SQL" no.
+
+Potential issue: "禁止新增出网 host" no.
+
+Potential issue: "CSP 已封死" no.
+
+Potential issue: Is `ImportProgressEvent` type in preload import changed? It now imports `ExportCorpusEvent, ImportProgressEvent`. okay.
+
+Potential issue: The `EVENT_CHANNELS` addition in api-surface changes `PreloadEvents`, which is used by `preload/env.d.ts` maybe. okay.
+
+Potential issue: The diff does not include `src/renderer/features/reader/CorpusExtractor.ts` at top? Actually yes.
+
+Potential issue: `src/main/ipc/export_.ts` uses `deps.services.export_.corpusItem` but `ExportService` type maybe has `corpus` and `corpusSet` already. okay.
+
+Potential issue: In `src/main/services/index.ts`, `export_: ExportService & Pick<CorpusExportService, 'corpusItem'>`; but `createExportService` returns `ExportService`, which likely includes `corpus`, `corpusSet`, `bibtex`, etc. They spread it and add corpusItem. good.
+
+Potential issue: `createCorpusExportService` only returns `{ corpusItem }`; no other methods. good.
+
+Potential issue: The stub throws `NotImplementedError` but `NotImplementedError` may not be a known `Result` error; if IPC layer expects `Result`, throwing may be okay? There is no evidence. Could be a WARN: service stub throwing may not be folded into Result, and the comment claims "经 register 折叠" but no diff evidence. However if register catches, fine. If not, renderer's `sendItem` rejection still handled by catch. The "链路可测" comment implies tests? No test for main stub. Not issue.
+
+Potential issue: Are there any failing lint due to `console.warn`? no.
+
+Potential issue: `src/renderer/features/reader/CorpusExtractor.ts` uses `void runExtraction(e)`. This is a floating promise; if `runExtraction` rejects unexpectedly outside try? It has try/catch/finally covering entire body, so it shouldn't reject. Unless `sendChecked` definition itself throws before try? no. If `sendItem` called in catch throws caught by inner try. finally destroy errors caught. So runExtraction never rejects. good.
+
+Potential issue: If `doc.destroy()` in finally throws and the inner catch catches, no unhandled rejection. good.
+
+Potential issue: `console.warn('CorpusExtractor 忽略在途...', e.sessionId)` If e is progress event, handleEvent returns before log. okay.
+
+Potential issue: `extractRequestEventSchema` annotation `rects: z.array(annotationRectSchema)` no `.min(1)`. An annotation with zero rects would be accepted, then no figures. okay.
+
+Potential issue: `cropBoxPixels` if rects has more than one but from different pages? It doesn't care. good.
+
+Potential issue: The `render` method in `PdfjsPageLike` returns `{ promise: Promise<void> }`, but pdfjs render returns `RenderTask` whose `promise` resolves when rendering complete. They await render promise. Good.
+
+Potential issue: In `runExtraction`, after `page.render(...).promise`, they don't check render promise for error? The await will throw if render fails. good.
+
+Potential issue: If `page.render` returns a promise that never resolves, extraction hangs. Not our concern.
+
+Potential issue: The `pageCanvas.toPngBase64()` is called before `sendChecked`; if canvas tainted, toDataURL throws, caught. good.
+
+Potential issue: `drawFrom` for annotation: `src.source` is canvas element; but `box.sx/sy` from cropBoxPixels are in pageCanvas's viewport pixel coordinates. `pageCanvas` width/height = viewport.width/height. good.
+
+Potential issue: `drawFrom` uses `ctx.drawImage` with `box.sw` as both source width and dest width, so no scaling. Since annoCanvas dimensions = box.sw/sh, 1:1. good.
+
+Potential issue: `cropBoxPixels` returns `sx` etc based on `width` and `height`; x/y normalized relative to page size. viewport width/height correspond. good.
+
+Potential issue: "y 向下同 AnnotationLayer 口径" okay.
+
+Potential issue: Does `annotationRectSchema` include `page` as number and x,y,w,h normalized? likely.
+
+Potential issue: In `schemas.ts`, `extractRequestEventSchema` import `annotationRectSchema` from annotation. But there is also `annotationSchema` import; no duplicate issue.
+
+Potential issue: The test "事件契约三面" uses `safeParse` success; okay.
+
+Potential issue: "tests are locked" but they created new test file; `locks/manifest` includes it. Good.
+
+Potential issue: In `CorpusExtractor.ts`, the header says "pdfjs 经 lazy dynamic import" but `PdfCanvas.tsx` uses static import. The INV-16 says "运行时 import 白名单" includes static imports in PdfCanvas/TextLayer. okay.
+
+Potential issue: `loadPdfDocument` is exported and uses dynamic import; if user calls it in a non-browser bundler context? It's renderer. okay.
+
+Potential issue: The comments in Chinese contain "dom canvas 绘制面归 AI-04 e2e 全链" etc. no.
+
+Potential issue: The "work log" requirement: "任何工作启动时，先枚举技能清单..." not in diff. Probably not part of code diff.
+
+Potential issue: "完成定义 quality gate grep TODO/FIXME/placeholder" The code uses "占位" and "STUB" comment but not TODO. okay.
+
+Potential issue: `CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'` maybe is a placeholder marker. DoD "占位实现已删除" for SR2-AI-02? The stub is for another ticket, so okay. But the new `CorpusExportService` implementation is a placeholder that throws. Is that considered a placeholder in repo that CI quality gate might flag? The grep checks TODO|FIXME|placeholder in text; "stub" not. However "占位形态" in comment. Not a code token. The constant `CORPUS_EXPORT_SERVICE_STUB` not a placeholder? It is a stub constant. Could be a "placeholder implementation" prohibited if not corresponding to open ticket. But it corresponds to SR2-AI-03 open. Need not.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` line count and not in ticket? okay.
+
+Potential issue: The new test file is 254 lines, but `guardedDescribe` wrapper maybe skips unless env? Need check `tests/utils/guard.ts`. It might skip by ticket. Not issue.
+
+Potential issue: In test "文档加载失败", they pass `Promise.reject(...)` as doc to `makeCtx`; but `makeCtx` typed `doc: PdfjsDocumentLike`; cast. The `loadDocument` function `const d = doc; return Promise.resolve(d)`; as noted, `Promise.resolve(rejectedPromise)` returns rejected promise. Actually `Promise.resolve` with a thenable returns a promise that follows it, so rejects. Good. But if `doc` is a native Promise, `Promise.resolve(d)` returns the **same promise**? It returns a promise adopted. yes.
+
+Potential issue: `flushAll` after handleEvent: Since handleEvent calls `void runExtraction(e)`, runExtraction starts synchronously until first await (loadDocument). loadDocument returns resolved promise; then await yields microtask. flushAll starts with setTimeout 0. good.
+
+Potential issue: In test "在途收第二请求: ignored", `handleEvent` twice synchronously; second sees extracting true. Good.
+
+Potential issue: In test "背压", they assert maxInflight=1. The first sendItem ack scheduled setTimeout, before it resolves, runExtraction is awaiting. It won't initiate second until ack. Good.
+
+Potential issue: Test "全链" expects order `ft1, fig1, ft2...` but what about annotation? no annotations. good.
+
+Potential issue: `cropBoxPixels` test: rects union yields x0=0.1, y0=0.4, x1=0.75? First rect x+w=0.75, second x+w=0.3, so x1=0.75 => sw=0.65; y1: first y+h=0.7, second 0.7 => sh=0.3. good.
+
+Potential issue: The `render` method in `pageStub` takes `{ canvasContext }` and calls `c.markRendered?.()`. But `canvasContext` in tests is `{ markRendered }` from canvasStub. Good. This means render no-op but calls markRendered. Not used. okay.
+
+Potential issue: In `createDomCanvas`, `getContext('2d')` might return `CanvasRenderingContext2D` but TS type not available in test node; they cast. In renderer TS with DOM libs, `getContext('2d')` returns `CanvasRenderingContext2D | null`. Cast okay.
+
+Potential issue: In `drawFrom`, `ctx.drawImage(src.source as CanvasImageSource, ...)`. If `src.source` is an HTMLCanvasElement, type `CanvasImageSource` includes HTMLCanvasElement. good.
+
+Potential issue: The `CanvasImageSourceLike = unknown` type alias means `source: unknown`. The comment says "生产=el 元素；桩 source:null". okay.
+
+Potential issue: The `RenderCanvas.source` field is a "CanvasImageSourceLike" not `CanvasImageSource` because Node types. good.
+
+Potential issue: The `PdfjsPageLike.render` uses `viewport: unknown`; in `createDomCanvas` render call passes viewport object. In tests, `pageStub.render` ignores viewport. okay.
+
+Potential issue: The `LoadDocument` type says `(url: string) => Promise<PdfjsDocumentLike>`. But `loadPdfDocument` returns `Promise<PdfjsDocumentLike>` via cast. good.
+
+Potential issue: In `CorpusExtractor.ts`, the `runExtraction` function defines `sendChecked` inside. It uses `deps.sendItem`, which if it returns a result with `ok:false`, throws `Error('回传被拒绝（会话侧错误）')`. This loses the actual error code/message from the Result. Maybe not ideal but okay.
+
+Potential issue: If sendItem returns `{ok:false, error: {code:'SESSION_EXPIRED', message:'...'}}`, sendChecked throws generic message. The error reason sent to main is generic, not the actual error. Could be a WARN: losing diagnostic info. But not required.
+
+Potential issue: In `runExtraction` catch, `reason` is generic "回传被拒绝（会话侧错误）" for ack failures. The main session may not know why ack failed. But it's the one that returned failure, so it knows. okay.
+
+Potential issue: In test "invoke 折叠错误", the error payload sent reason "回传被拒绝（会话侧错误）" not asserted. okay.
+
+Potential issue: The `ExportProgressEvent` schema phase enum and done/total; not used yet. okay.
+
+Potential issue: The `extractRequestEventSchema` includes `url` string but no URL validation. In renderer, if main sends malicious url? main trusted. okay.
+
+Potential issue: "main 从 repo 取 annotations" The event includes annotations in request; main must assemble. AI-04. okay.
+
+Potential issue: `CorpusExtractor` only handles extract-request; progress ignored. okay.
+
+Potential issue: Is there a risk of event listener leak? Preload's onExportCorpus returns cleanup; App layer must call. AI-04. okay.
+
+Potential issue: `src/preload/index.ts` uses `_e` unused. fine.
+
+Potential issue: `src/shared/ipc/api-surface.ts` export_ domain adds corpusItem. But `ApiHandlers` type in main maybe requires handler for all entries. `export_.ts` adds. good.
+
+Potential issue: `locks/manifest.json` includes `eslint.config.js` sha changed; good. But `src/shared/ipc/api-surface.ts` sha changed; manifest includes. `src/preload/index.ts` not locked? maybe not. `src/shared/ipc/schemas.ts` changed. `tests/unit/renderer/corpus-extractor.test.ts` added. `tests/utils/pdf-factory.ts` changed. All good.
+
+Potential issue: "新增受锁文件已 npm run locks:apply" manifest includes test file. good.
+
+Potential issue: `locks/manifest.json` diff shows `generatedAt` changed but not `version`; okay.
+
+Potential issue: In `src/main/services/export_/corpus.export.service.ts`, they add `import { NotImplementedError } from '../../../shared/app-error'`. Is `app-error` in `src/shared` and locked? If imported, not modifying. okay.
+
+Potential issue: `src/main/ipc/export_.ts` adding `corpusItem` before `bibtex` but not adding to `createExportIpc`'s return if the type expects? yes.
+
+Potential issue: Is `deps.services.export_.corpusItem` available at type level? yes because ServiceBundle type changed. good.
+
+Potential issue: Does `createCorpusExportService` throwing `NotImplementedError` require an error code? `NotImplementedError` likely a custom Error. okay.
+
+Potential issue: The file `src/main/services/export_/corpus.export.service.ts` header says "会话服务工厂（AI-03 实现前占位形态）：corpusItem 消费端随本工单落地——AI-02 已建 renderer 侧回传通道..." It's okay.
+
+Potential issue: The test "真 pdfjs 集成" imports `pdfjs-dist` directly in test, but `pdfjs-dist` is ESM? In Node, maybe works with vitest. They empirically passed. okay.
+
+Potential issue: "fake worker/出网路径" resolved via local worker. But `loadPdfDocument` uses `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` in renderer; if the app is built with Vite, `?url` returns a URL that may be outside CSP? They mention worker-src 'self'. Local asset is same origin. okay.
+
+Potential issue: Could `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` in a test environment fail? They only call loadPdfDocument in production, not tests. okay.
+
+Potential issue: Is there any `any` type misuse? `source: null` in test stub not typed as `null` but `source` type `CanvasImageSourceLike = unknown`, so null is valid? Actually `unknown` accepts null. okay. `makeCtx` uses `null as unknown as Ctx['extractor']` typical. `CanvasRenderingContext2DLike` has index signature instead of `any`, okay. No `any` in diff? There is no `any` keyword. Good.
+
+Potential issue: `Promise.reject(new Error('bad url')) as unknown as PdfjsDocumentLike` a type cast. okay.
+
+Potential issue: In `loadPdfDocument`, `(workerModule as { default: string }).default` is a cast to custom shape. Not `any`. okay.
+
+Potential issue: "TypeScript no any" yes.
+
+Potential issue: The new test uses `expect(fulltexts.map((i) => (i as { page: number }).page))`; type assertions. fine.
+
+Potential issue: `src/renderer/features/reader/CorpusExtractor.ts` uses `export type CanvasImageSourceLike = unknown`; but `source` field as unknown; B1 was to close type chain. It does.
+
+Potential issue: "drawFrom 源参类型链是否闭合?" The drawFrom method takes `src: RenderCanvas` and casts `src.source as CanvasImageSource` in production. But the type of `drawFrom` doesn't require source to be a CanvasImageSource; if a stub passes source null, drawFrom would cast null to CanvasImageSource and drawImage(null) would throw. But production only passes real. The type chain isn't fully closed because any RenderCanvas can have `source` unknown. But they intentionally made stub source null. Could this be a WARN? The B1 requirement: "RenderCanvas 增 source: CanvasImageSourceLike（生产=el 元素；drawFrom 用 src.source）；桩 source:null——类型面闭合，运行时 drawImage 收真 canvas". They accepted. The type is unknown, so it's not compile-time guaranteed, but doc comment. It's okay.
+Could there be a better type: `source: CanvasImageSource | null` but Node tests lack DOM. They chose unknown. Not a bug.
+
+Potential issue: In `createDomCanvas`, `drawFrom` uses `src.source as CanvasImageSource`; if `src.source` is not actually a canvas (e.g., if someone passes a RenderCanvas from another context with source maybe null), runtime error. But only internal call from same module to `annoCanvas.drawFrom(pageCanvas, box)` where `pageCanvas` from `createCanvas`. If `createCanvas` is injected (test stub), drawFrom no-op. If someone injects a custom createCanvas returning source null and calls drawFrom, it's their fault. okay.
+
+Potential issue: "out of whitelist dynamic import can bypass". They added known boundary. okay.
+
+Potential issue: In `eslint.config.js`, the added group message says "pdfjs-dist 只许白名单三文件 import（PdfCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）". The override only applies to those three files; but does it allow `pdfjs-dist` in other files under `src/renderer/features/reader/`? No, main block denies. Good.
+
+Potential issue: In `src/renderer/features/reader/PdfCanvas.tsx`, the diff changes the header from "唯一允许 import pdfjs-dist 的文件" to "pdfjs-dist import 白名单三文件之一". The INV-16 says type consumption via PdfCanvas re-export. `OutlinePanel`/OutlineThumb changed. But `TextLayer.tsx` might still import pdfjs-dist directly (allowed). `CorpusExtractor` allowed. Good.
+
+Potential issue: Are there any other files importing pdfjs-dist that were not changed? Not in diff. The ESLint rule would catch. Verify green. okay.
+
+Potential issue: The diff doesn't modify `src/renderer/features/reader/SelectionLayer.tsx` if it imported pdfjs types? Maybe it already uses PdfCanvas types. okay.
+
+Potential issue: `src/main/ipc/export_.ts` uses `corpusItem: (req) => deps.services.export_.corpusItem(req)`; if `corpusItem` throws `NotImplementedError`, the IPC handler itself doesn't catch; but maybe the `register` wrapper catches. Could be okay. But let's see other handlers in diff: `bibtex` handler uses `exportTo('...', ...)`, not throwing directly? Hard to know. We can't assume. But no evidence.
+
+Potential issue: The service stub throws `NotImplementedError` before any validation? The IPC layer likely validates request against schema before calling handler. okay.
+
+Potential issue: "promise.all" of two imports could lead to both imports being triggered when the file is loaded? no, lazy.
+
+Potential issue: In `loadPdfDocument`, if `GlobalWorkerOptions.workerSrc` is already set by PdfCanvas, workerConfigured false, they set it again. If `workerModule.default` is undefined in some build (e.g., test), assignment to `workerSrc` undefined. But in Vite build it's defined. okay.
+
+Potential issue: The `workerConfigured` flag is module-level; if first call to `loadPdfDocument` fails during Promise.all before setting flag, false, next call retries. good.
+
+Potential issue: `runExtraction` sets `extracting = true` but if the event is invalid and `runExtraction` throws synchronously before try (e.g., accessing req.annotations when req is null) then `extracting` remains true forever? Let's inspect: `handleEvent` after setting extracting true calls `void runExtraction(e)`. If `runExtraction` throws synchronously before entering try, the call to `runExtraction(e)` returns a rejected promise? Actually async function always returns a promise; any synchronous throw inside is converted to promise rejection. But because the entire body from `const base...` is before `try`? Let's look:
+
+```
+async function runExtraction(req) {
+  const base = { sessionId: req.sessionId, paperId: req.paperId }
+  const sendChecked = async ...
+  let doc = null
+  try { ... } catch ... finally { extracting=false }
+}
+```
+
+If `req` is null or `req.sessionId` undefined, `const base = { sessionId: req.sessionId, ... }` won't throw; `req.sessionId` on null would throw before try, causing promise rejection. But `handleEvent` only calls with `e` after checking `e.type === 'extract-request'`, so e is object. If malformed missing annotations? `req.annotations` is accessed inside try, so okay. If `req.sessionId` is undefined, no throw. So no issue. But if `req` is a primitive? type check prevents.
+
+Potential issue: If `runExtraction` rejects before try, `extracting` never set false. Could be an edge case if `req` is null, but not possible. Still, robust code would set extracting after try? Not needed.
+
+Potential issue: `extracting` flag set false in finally only after runExtraction completes. Good.
+
+Potential issue: In catch, they `await deps.sendItem({ ...base, kind: 'error', reason })` where `base` maybe includes `sessionId` and `paperId`; if error occurs before `base` defined? no.
+
+Potential issue: If fulltext extraction on page 2 fails due to `getPage` throwing, catch sends error with no page info. okay.
+
+Potential issue: The `error` payload reason can be huge if exception message contains payload? not.
+
+Potential issue: `cropBoxPixels` is pure, but no validation for width/height zero. caller passes viewport >0.
+
+Potential issue: In `pageStub`, `getViewport` ignores `scale`? It uses it. good.
+
+Potential issue: `canvasStub` returns `width: w, height: h` but doesn't set `source` as `null`? It does. Type `source: null` okay because unknown.
+
+Potential issue: In test "destroy 失败不阻断", `console.warn` in finally will print. okay.
+
+Potential issue: The `tests/utils/pdf-factory.ts` change modifies a locked file, but was it generated? manifest sha updated. yes.
+
+Potential issue: The new test file uses a relative import to `../../utils/guard`. Does `guardedDescribe` exist? likely. If not, verify fail. okay.
+
+Potential issue: In `corpus-extractor.test.ts`, `const req = (over: Partial<ExtractRequestEvent> = {}): ExtractRequestEvent => extractRequestEventSchema.parse({...})`. `ExtractRequestEvent` is a union type; `Partial<ExtractRequestEvent>` may not be exact; but `over` is `Partial` of union, which is awkward. TypeScript may not compile? It likely does because `Partial` distributes? Hmm. In TS, `Partial<ExtractRequestEvent>` where `ExtractRequestEvent` is a union of object types yields `Partial<ExtractRequestEvent>` maybe union of partials? It may allow only common keys? Let's think: `ExtractRequestEvent = ExtractRequestEvent | ExportProgressEvent`? Actually `export type ExportCorpusEvent = ExtractRequestEvent | ExportProgressEvent`, but `ExtractRequestEvent` is just the request type. So `Partial<ExtractRequestEvent>` is `Partial<{type:'extract-request', sessionId...}>`. It's okay. They spread `...over` after defaults; type `over` has all fields optional. Good. But if `over` contains `type:'progress'`, not allowed because ExtractRequestEvent only literal. okay.
+
+Potential issue: In test, `req({ sessionId: 's-2' })` works.
+
+Potential issue: In `runExtraction`, `for (const anno of req.annotations)` but `req.annotations` could be undefined if not present? Schema requires, and event from main validated? If not, `for...of` on undefined throws; caught, sends error. okay.
+
+Potential issue: "annotations max(5000)" prevents huge arrays but not rects. okay.
+
+Potential issue: The schemas are in `src/shared`, and `src/shared` is locked; no [locked-change] in diff. But brief says locked changes done. okay.
+
+Potential issue: "Package.json/lockfile no changes" yes.
+
+Potential issue: "New dependencies no" yes.
+
+Potential issue: "No TODO/FIXME/placeholder" There is a comment "占位形态" in `corpus.export.service.ts` but not TODO. "Stub" in constant name. Could gate grep catch `placeholder` in comments? "占位形态" is Chinese, not placeholder. no.
+
+Potential issue: "CI quality gate" probably uses grep for English TODO/FIXME/placeholder. no.
+
+Potential issue: "Mojibake" no.
+
+Potential issue: "行尾纪律" no.
+
+Potential issue: "单窗口" no.
+
+Potential issue: "e2e must assert rendered text" not relevant.
+
+Potential issue: "弱模型领单" no.
+
+Potential issue: "Skill inventory" no.
+
+Potential issue: "Same module same class bug" no.
+
+Potential issue: "Do not delete checks or relax assertions" no.
+
+Potential issue: "每个测试必须能失败一次" no.
+
+Potential issue: "Locks sync" yes.
+
+Potential issue: In `src/main/services/export_/corpus.export.service.ts`, they add `CORPUS_EXPORT_SERVICE_STUB` but the file header might also have `/** 工单骨架标记（实现单元替换为真实实现） */` at top. The diff shows at line 104:
+```
+ /** 工单骨架标记（实现单元替换为真实实现） */
+ export const CORPUS_EXPORT_SERVICE_STUB = 'SR2-AI-03'
++
++import { NotImplementedError }...
+```
+The `CORPUS_EXPORT_SERVICE_STUB` is not removed. This file belongs to AI-03 open; keeping stub is fine. But now there is both a stub constant and a real factory throwing NotImplementedError. The constant may become dead? It's exported, maybe used for tests? Not in diff. Not a problem.
+
+Potential issue: `src/main/ipc/export_.ts` calling a stub for corpusItem means if user triggers export corpus from UI before AI-03, they get error; but AI-04 UI not built yet. okay.
+
+Potential issue: Does the renderer-side `CorpusExtractor` ever get used before main can send event? No wiring yet. okay.
+
+Potential issue: The `loadPdfDocument` is not used in tests; the test uses pdfjs directly, so "worker not configured" path not unit-tested. W1 said loadPdfDocument should load workerUrl + once flag. They implemented. Not tested but okay.
+
+Potential issue: `loadPdfDocument` uses `import('pdfjs-dist')` inside a function. But `pdfjs-dist` is ESM only? It may be CJS/ESM. Vite handles. okay.
+
+Potential issue: `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`—is this string a const? no.
+
+Potential issue: "白名单内静态资产 import" W2 includes `?url`. okay.
+
+Potential issue: Could the worker URL import be considered a network fetch? It's local. no.
+
+Potential issue: In `CorpusExtractor.ts`, the comment for `workerConfigured`: "与 PdfCanvas 模块级同值幂等——两消费点独立初始化均安全". But if `PdfCanvas` and `CorpusExtractor` are in different chunks, they might have separate copies of `GlobalWorkerOptions`? Actually pdfjs-dist module is shared? Vite may bundle? If duplicated, workerSrc in one copy may not affect the other? They both set `GlobalWorkerOptions` from their own module instance. If pdfjs-dist is duplicated, then `getDocument` in CorpusExtractor uses its own copy, set. If PdfCanvas uses its own copy, also set. safe.
+Potential issue: If `pdfjs-dist` is duplicated, two copies of worker? no.
+
+Potential issue: In `loadPdfDocument`, `const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([...])`; if `pdfjs-dist` import fails, worker import still runs, but no issue.
+
+Potential issue: In `src/renderer/features/reader/PdfCanvas.tsx`, the re-export `export type { PDFDocumentProxy, RenderTask }` is a type-only re-export. Does it need `export type` with source? It is valid TS 5. yes.
+
+Potential issue: In OutlinePanel, import type from './PdfCanvas' instead of 'pdfjs-dist' means if PdfCanvas module fails to load (runtime? no, type only erased). okay.
+
+Potential issue: "No duplicate assets" worker? They use same worker URL as PdfCanvas; not duplicating. okay.
+
+Potential issue: `src/renderer/features/reader/CorpusExtractor.ts` exports `LoadDocument` type and `SendItem` type; they are local. okay.
+
+Potential issue: `src/shared/ipc/schemas.ts` `corpusItemReqSchema` is at top? no.
+
+Potential issue: The IPC channel `export/corpus-item` is renderer→main. But `API_SURFACE.export_.corpusItem.Req` references `S.corpusItemReqSchema`; `Res` is `S.trueAckSchema`. Is `trueAckSchema` already defined? likely. If not, would compile fail but passed. okay.
+
+Potential issue: Did they add `corpusItemReqSchema` to the shared schemas but not update `src/shared/ipc/api-surface.ts`'s `ApiHandlers` type? It's derived. okay.
+
+Potential issue: In `src/main/services/index.ts`, `export_: ExportService & Pick<CorpusExportService, 'corpusItem'>`; but `ExportService` may be an interface with many methods. Intersection okay. The `createExportService` returns object; spread into new object loses prototype? no.
+
+Potential issue: `createCorpusExportService()` is called inline each time `createServices` runs; only once. okay.
+
+Potential issue: "main side session state belongs to AI-03" no.
+
+Potential issue: The stub's `corpusItem` signature `Promise<{ ok: true }>` but renderer's `sendItem` expects `Result<void>`. The main's actual service should return `Result<void>`, not `{ok:true}`? Wait, the `CorpusExportService` interface in `corpus.export.service.ts` says:
+```
+corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
+```
+But `CorpusItemReq` is the req type. The IPC API surface says Res = `S.trueAckSchema`. If `trueAckSchema` is `z.object({ ok: z.literal(true) }).strict()` then it's indeed `{ ok: true }` not `Result<void>`. But the `SendItem` type in CorpusExtractor is `Promise<Result<void>>`. Is there a mismatch? Let's examine. The renderer `sendItem` endpoint type from `window.api.export_.corpusItem` is derived from `API_SURFACE.export_.corpusItem.Res`: maybe `trueAckSchema`. If `trueAckSchema` is `z.object({ ok: z.literal(true) })`, then the return type is `{ ok: true }`, not `Result<void>`. But the `SendItem` type in CorpusExtractor says `Promise<Result<void>>`, where `Result<void>` likely has `ok` boolean and `data` or `error`. Are these structurally compatible? Let's think: `Result<void>` might be `{ ok: true; data?: void } | { ok: false; error: AppError }`. `{ok:true}` is a subset assignable to `{ ok: true; data?: void }`, so `Promise<{ok:true}>` is assignable to `Promise<Result<void>>` if `Result<void>` union includes `{ ok: true; data?: undefined }`? The true branch has `data` property maybe required? Data type void can be undefined, so property `data: undefined` required? In TypeScript, `{ ok: true }` is missing `data`, so not assignable to `{ ok: true; data: undefined }`. But `Result<void>` definition might be `{ ok: true; data: void }` with `data: void` optional? Need know. In diff they import `type Result` from app-error. Could be a generic `type Result<T> = { ok: true; data: T } | { ok: false; error: AppError }`. If so, `{ok:true}` is not assignable because missing `data`. But in tests, they construct `{ ok: true, data: undefined }`. So `Result<void>` likely requires `data` property (possibly undefined). The actual `window.api.export_.corpusItem` return type from API surface is `trueAckSchema` inferred: `{ ok: true }` (no data). Then passing that as `SendItem` would be a type error unless `trueAckSchema` includes `data`. Let's inspect API_SURFACE: `corpusItem: { channel, Req, Res: S.trueAckSchema }`. The preload's `buildApi` returns `Promise<unknown>`? Actually `PreloadApi` type is `Record<string, Record<string, (req: unknown) => Promise<unknown>>>`, not strongly typed? Wait in `preload/index.ts`, `buildApi` returns `PreloadApi` but it uses `Record<string, ...>`. The actual `window.api` type might be declared in `env.d.ts` as `PreloadApi` from api-surface. `PreloadApi` maybe derived from API_SURFACE with `Res` types via `z.infer`. If `trueAckSchema` is `{ ok: true }`, then `window.api.export_.corpusItem` returns `Promise<{ ok: true }>`. Then `SendItem` type `Promise<Result<void>>` would not match. But where is `SendItem` wired? In AI-04 App layer, they might pass `window.api.export_.corpusItem` to `createCorpusExtractor`; TypeScript would complain. But currently `createCorpusExtractor` is not wired to actual `window.api`, so no compile error. This is a potential contract mismatch! Need inspect `trueAckSchema` definition. Not in diff, but likely exists. In schemas.ts there is `exportResSchema` etc. What is `trueAckSchema`? It might be `z.object({ ok: z.literal(true) })` or `z.union`? We need infer from name. They use `Res: S.trueAckSchema` for ack-only endpoints. In many projects, trueAckSchema is `z.object({ ok: z.literal(true) }).strict()`. Then renderer `corpusItem` returns `{ok:true}`. The service stub returns `Promise<{ok:true}>` indeed. But `CorpusExtractor.SendItem` type is `Promise<Result<void>>`; `Result<void>` maybe is `{ ok: true; data?: void } | { ok: false; error: AppError }`? If data optional, then `{ok:true}` assignable. But from tests they resolve `{ ok: true, data: undefined }`, not necessarily required? They set data: undefined because type required. Need know app-error. Could be `export type Result<T> = { ok: true; data: T } | { ok: false; error: AppError }`. With T=void, data property type void, but void type in TS means only undefined can be assigned; a property `data: void` is weird but can be missing? Let's check TypeScript: `type Result<T> = { ok: true; data: T } | { ok: false; error: Error }`. For `Result<void>`, `{ ok: true, data: undefined }` is needed; `{ ok: true }` is not assignable. If so, `trueAckSchema` returns `{ ok: true }`, not `Result<void>`. However the `SendItem` is only a type used in the module; actual wiring will need a cast? They might do `const sendItem = async (item) => { const res = await window.api.export_.corpusItem(item); return res as Result<void> }` or `trueAckSchema` maybe includes `data: undefined`. Let's inspect other uses of `trueAckSchema` in codebase? Not in diff. The existing API_SURFACE likely uses `trueAckSchema` for operations returning `{ ok: true }` (e.g., delete). The main services return Result and IPC layer maybe transforms? Not know. Let's infer from `export_.ts` `corpusItem: (req) => deps.services.export_.corpusItem(req)`. If `deps.services.export_.corpusItem` returns `Promise<{ok:true}>` (stub), and the IPC handler's expected return type from ApiHandlers is `z.infer<typeof trueAckSchema>` -> `{ok:true}`, matches. So the intended contract across IPC is `{ok:true}`, not `Result<void>`. But the renderer's `SendItem` type says `Result<void>`, which may be inconsistent with actual API surface. Wait, maybe `Result<void>`'s success branch is `{ ok: true }` no data? Let's look at test:
+```
+resolve(
+  ackFail
+    ? { ok: false, error: { code: 'INTERNAL', message: 'ack 拒绝（会话侧）' } }
+    : { ok: true, data: undefined }
+)
+```
+The `Result<void>` success branch requires `data` because they set `data: undefined`. If data were optional, they could omit; they set because type. So `Result<void>` likely has `data: void` required. That suggests `SendItem` type doesn't match actual `corpusItem` return type. But maybe `trueAckSchema` is not `{ok:true}`; it might be a result wrapper? Name "trueAck" could be `z.object({ ok: z.literal(true), data: z.undefined() })`? unlikely. Let's look at API_SURFACE: existing `importRes` etc maybe use `voidReqSchema` and `exportResSchema`. `trueAckSchema` perhaps defined earlier as `z.object({ ok: z.literal(true) }).strict()`. There is no diff showing its definition, but maybe it was already in schemas. If it's `{ok:true}`, then `CorpusExtractor.SendItem` should be `Promise<{ ok: true }>` but it's typed `Promise<Result<void>>`. However `CorpusExtractor` module is self-contained and not yet wired to actual `window.api`; but when AI-04 wires it, there will be a type error unless they cast. This could be a WARN or BLOCKING? It's a type contract mismatch in the interface. The brief says "corpusItem 消费端随本工单落地" and "类型消费循 PdfCanvas 再导出模式" etc. Should we flag? Need be certain.
+
+Let's examine `app-error` type. In `src/shared/app-error.ts`, perhaps:
+```
+export type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: AppError }
+```
+They import `type Result` in `CorpusExtractor.ts` and `tests`. The test success object includes `data: undefined` because required. So yes. `trueAckSchema` perhaps:
+```
+export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
+```
+If so, `SendItem` should be `(item: CorpusItemReq) => Promise<{ ok: true }>` or `Promise<Result<void>>` if the preload bridges fold? Need see `src/preload/index.ts` `buildApi`: It creates `ipcRenderer.invoke` returning `Promise<unknown>`; no transformation. The `PreloadApi` type from api-surface uses `Res` schemas. So `window.api.export_.corpusItem` returns `Promise<z.infer<typeof trueAckSchema>>` = `Promise<{ok:true}>`. Then `SendItem` type in CorpusExtractor is `Promise<Result<void>>`—mismatch. Unless `trueAckSchema` is `z.object({ ok: z.literal(true), data: z.undefined() })`. But name "trueAck" suggests just `{ok:true}`. Let's check existing API_SURFACE in diff: `exportResSchema` maybe used for `Res` of export endpoints. They don't show trueAck. But maybe `trueAckSchema` is:
+```
+export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
+```
+This is common. In code, `exportResSchema` maybe `{ ok: true, filePath?: string }`. `trueAck` no data.
+
+Now, is the `corpusItemReq` expected response in the renderer's extraction logic just an ack, and any non-ok result should be treated as failure. But if the IPC returns only `{ok:true}` on success, then `Result<void>` is overly general but structurally: `Result<void>` union's success branch requires `data` property; `{ok:true}` is not assignable. If `SendItem` is used only internally and `deps.sendItem` is injected in tests with correct `Result<void>`, no compile error. But when AI-04 passes actual `window.api.export_.corpusItem`, TypeScript will complain. This is a latent issue. Should we flag WARN. Severity? It's a type contract mismatch, not current compile failure, but it will be a problem at integration. Since the current ticket claims the IPC contract is done and "链路可测", the type should be consistent. This is a WARN or maybe BLOCKING because it's a correctness/type issue? Let's see if `Result<void>` and `{ ok: true }` maybe are compatible if `data` optional in `Result`. But test set `data: undefined` because `Result<void>` success `data` is required. If data optional, the test could just `{ ok: true }`; they didn't. So data is required. Therefore mismatch.
+
+But maybe in `src/shared/app-error.ts`, `Result<T> = { ok: true; data: T } | { ok: false; error: AppError }`, and T is `void`. In TypeScript, an object literal `{ ok: true }` assigned to `Result<void>`? Let's recall: A type with property `data: void` means the property must exist and be of type void. But `void` as a property type is unusual; the TS compiler may accept missing property? Actually for a property of type `void`, only `undefined` is assignable. If the property is not declared in the source object, it is missing, so not assignable. So yes mismatch.
+
+But wait, maybe `trueAckSchema` is not `{ok:true}`; it could be `z.object({ ok: z.literal(true), data: z.void() })`. The name "trueAck" could be a result with data void. Hmm. Let's infer from `API_SURFACE`: `corpusSet` Res is `S.corpusSetResSchema`; `corpus` Res is `S.exportResSchema`; `corpusItem` Res is `S.trueAckSchema`. If `trueAckSchema` were `{ ok: true, data: void }`, then service stub `Promise<{ ok: true }>` would not match API handler type (missing data). But maybe `trueAckSchema` is indeed `{ ok: true }` and the service stub matches. So likely `trueAckSchema` is `{ok:true}`. Then `SendItem` mismatch.
+
+Let's see `src/main/services/export_/corpus.export.service.ts` `CorpusExportService.corpusItem` returns `Promise<{ ok: true }>` to match the API surface's `trueAckSchema` (if `trueAck` is `{ok:true}`). If the renderer expects `Result<void>`, that's another sign of mismatch. However the renderer's `SendItem` type could be wrong; it should be `Promise<{ ok: true }>`? But then how to detect failure? The IPC contract `trueAckSchema` only describes success; errors are probably thrown/rejected, not folded Result. In this project, maybe IPC always returns `Result` for service calls? Let's examine `export_.ts` other handlers: `bibtex: (req) => exportTo(...)`. `exportResSchema` maybe is `{ ok: true, filePath: string }` not Result. The API surface uses `Res: S.exportResSchema`, not `Result`. So IPC responses are not necessarily `Result`; they might be plain data. Service errors are folded in the main `ipc/register` layer? Not sure. The `Result` type from app-error may be used inside services to fold business failure, but the IPC `Res` schemas are the success shapes; if service returns error, the IPC layer may wrap as rejection? The comment in `CorpusExtractor` header says "sendItem（生产=window.api.export_.corpusItem；Result 折叠错误=failed 路径）" and "sendItem 注入". This indicates the actual `window.api.export_.corpusItem` returns a `Result`? But API_SURFACE says Res `trueAckSchema`. If `trueAckSchema` is `{ ok: true }`, then it's not `Result<void>` (which has `data`). Yet perhaps `trueAckSchema` is:
+```
+export const trueAckSchema = z.object({ ok: z.literal(true), data: z.undefined() }).strict()
+```
+Then service stub `Promise<{ ok: true }>` missing data, so not matching. Unless `trueAckSchema`'s `data` is optional. Not enough.
+
+Could inspect diff: In `api-surface.ts`, existing `trueAckSchema` is used elsewhere? The diff around API_SURFACE shows `corpusSet: { channel, Req, Res: S.corpusSetResSchema }`. It doesn't show `trueAckSchema` definition. The name "trueAckSchema" likely from existing project. In many codebases, an ack schema might be `z.object({ ok: z.literal(true) })`. I'd flag as WARN with caveat "若 trueAckSchema 为 {ok:true}，与 SendItem 的 Result<void> 不一致，需要在 AI-04 接线前统一". Is that allowed? Need evidence from diff: The diff itself shows the API_SURFACE entry uses `S.trueAckSchema`; and the service stub returns `Promise<{ ok: true }>`. The renderer `SendItem` type is `Promise<Result<void>>`. This is enough to suggest inconsistency. Let's mark WARN.
+
+Another possible issue: The main stub's `corpusItem` returns `Promise<{ ok: true }>` but throws `NotImplementedError`; it never actually returns `{ok:true}`. If a caller catches the error? Not problem.
+
+Potential issue: `Result<void>` in `SendItem` means when `ack.ok` is true, they don't use `ack.data`. fine.
+
+Potential issue: If actual API returns `{ok:true}` without data, `SendItem` should perhaps be `Promise<{ ok: true }>` and the failure path would be rejection. Then `sendChecked` would need try/catch instead of `!ack.ok` because ack.ok always true. But in current code, `ack.ok` check works for `Result<void>`. If actual API returns a plain success object, then a rejected promise (on failure) would be caught by runExtraction. But `sendChecked` would not catch the rejection? Wait, if `deps.sendItem` is actual API returning `Promise<{ok:true}>`, in `sendChecked`:
+```
+const ack = await deps.sendItem(item)
+if (!ack.ok) throw ...
+```
+If the promise rejects, the `await` throws, so caught by outer catch. So the code would still work even if failure is rejection. The only mismatch is TypeScript type of `deps.sendItem` parameter injection in AI-04. The current module's `SendItem` type is not aligned with actual API surface. Since `createCorpusExtractor` deps will be wired in AI-04, it's a latent type bug. WARN.
+
+Potential issue: The `Main` stub's `corpusItem` returns `Promise<{ ok: true }>`; but `ExportService & Pick<CorpusExportService,'corpusItem'>` expects `corpusItem` function. The `ApiHandlers['export_']` type from api-surface expects `(req: CorpusItemReq) => Promise<z.infer<typeof trueAckSchema>>`. The service stub matches if trueAckSchema `{ok:true}`. okay.
+
+Potential issue: Another significant issue: In `CorpusExtractor`, the `sendItem` for complete is not checked. If actual API rejects, catch sends error. If it returns `{ok:false}`, no error. As discussed. Could combine with SendItem mismatch.
+
+Potential issue: `extractRequestEventSchema` includes `annotations` from main, but there is no `figure` request type? okay.
+
+Potential issue: In `src/main/ipc/export_.ts`, adding `corpusItem` handler after `bibtex` but before `report` maybe? no.
+
+Potential issue: Could the new ESLint rule break the test file because `tests/unit/renderer/corpus-extractor.test.ts` is under `src/renderer`? It's under `tests`, not `src/renderer`. So no.
+
+Potential issue: Could `eslint.config.js` override for whitelist files also apply to `CorpusExtractor.ts` but omit `pdfjs-dist` restriction; however that file also imports from `../../../shared/...` which is not in restricted patterns. fine.
+
+Potential issue: The `no-restricted-imports` rule in main block patterns uses `pdfjs-dist` and `pdfjs-dist/**`. For the whitelisted override, they did not include those patterns, so whitelisted files can import pdfjs-dist. Good. But the override also **replaces** the main block's rule entirely. If later someone adds a new restricted import to the main block (e.g., `node:child_process`), they must update the override too. The comment says "保持同步维护——漂移即防线破口". okay.
+
+Potential issue: The override for three files is in `eslint.config.js` with `files` array. But the main renderer block likely had `files: ['src/renderer/**/*.{ts,tsx}']`. Flat config later override with `files` that are more specific? ESLint applies all matching configs; if same rule in multiple configs, later overrides. Here the override block comes after main block, so for those three files, rule options replaced. Good.
+
+Potential issue: `src/renderer/features/reader/CorpusExtractor.ts` uses `import('pdfjs-dist/build/pdf.worker.min.mjs?url')`; in ESLint no-restricted-imports, dynamic `import()` is maybe considered by `no-restricted-imports`? The rule by default only checks static imports? In ESLint, no-restricted-imports has an `allowDynamicImport` option? Actually the rule reports both static and dynamic imports? I think `no-restricted-imports` checks `ImportDeclaration` and `CallExpression` with callee `import`? Need recall: ESLint `no-restricted-imports` has options `paths` and `patterns`, and it has a `allowDynamicImport` option? Let's recall: `no-restricted-imports` by default checks all imports including dynamic `import()`? There is an option `allowDynamicImport` (default false) for `paths`? I think the rule has `allowDynamicImport` option. If false (default), dynamic imports are also restricted. In that case the INV-16 known boundary note "ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异" is questionable; but not relevant because whitelisted file.
+
+Potential issue: The `loadPdfDocument` dynamic import itself would be restricted for non-whitelisted files? It may be blocked if dynamic imports checked. For whitelisted, allowed. okay.
+
+Potential issue: The `trueAckSchema` type mismatch could be considered a "contract" issue with locked shared types. But perhaps the team should align `SendItem` with actual schema. Let's search in diff context: In `CorpusExtractor.ts` header:
+```
+- * - corpusItemSchema（export/corpus-item Req，随本单入 schemas [受锁]）：
+...
++ * - corpusItemReq 载荷契约=schemas.ts corpusItemReqSchema（四 kind 判别联合，
++ *   单源——本模块不重复声明形状）
+```
+It doesn't define response type. It defines `SendItem = (item: CorpusItemReq) => Promise<Result<void>>`. It doesn't reference `trueAckSchema`. The shared API surface says Res trueAck. There is indeed a possibility of mismatch. Because `Result<void>` is an app-error type with `data`, while `trueAckSchema` likely is `{ok:true}`. If the actual IPC returns `{ok:true}`, then the renderer's `sendItem` should be `Promise<{ ok: true }>` or `Promise<Result<void>>` with schema matching. Since they import `Result` from app-error, maybe app-error's `Result` success doesn't have data? Let's think: A common `Result<T> = { ok: true; value: T } | { ok: false; error: ... }`? But they use `{ ok: true, data: undefined }` in tests, suggesting success shape is `{ ok: true; data: T }`. If the API surface's `trueAckSchema` is `{ ok: true }`, mismatch. Could be a WARN.
+
+But maybe `trueAckSchema` is exactly `z.object({ ok: z.literal(true), data: z.undefined() })` or `Result<void>` schema. If so, service stub `Promise<{ ok: true }>` would not match, and main typecheck would fail. Since verify passed, the service stub's return `Promise<{ ok: true }>` must be assignable to the expected `ApiHandlers['export_'].corpusItem` return type? Wait `ApiHandlers` is derived from API_SURFACE's `Res` schema. If `Res: S.trueAckSchema` returns `{ ok: true }`, then stub matches. If `trueAckSchema` returns `{ ok: true; data: undefined }`, stub wouldn't match unless `{ok:true}` assignable due void? It's not. Since verify green, likely `trueAckSchema` is `{ok:true}`. Thus `SendItem` mismatch. But wait, `createExportIpc(deps): ApiHandlers['export_']` type checks `corpusItem: (req) => deps.services.export_.corpusItem(req)`. If `deps.services.export_.corpusItem` returns `Promise<{ok:true}>` and `ApiHandlers` expects same, green. If `SendItem` in renderer is not connected to `ApiHandlers`, no type error. So yes latent.
+
+Should we flag? Severity WARN because when AI-04 wires it, they'll need a type assertion or the shared contract needs data. The brief asks "其余处置有无引入新面". This is a new face? Could be.
+
+Potential issue: In `CorpusExtractor.ts`, `SendItem` return `Promise<Result<void>>`; but production `window.api.export_.corpusItem` returns `Promise<trueAckSchema>` maybe `{ok:true}`. The code's `sendChecked` uses `if (!ack.ok)`; if actual ack always has `ok:true`, no failure branch. But failures from IPC are probably rejected promises, so it's fine. The type mismatch might not matter in TypeScript if they cast in AI-04. But better to align.
+
+Potential issue: Another contract mismatch: The main stub's `CorpusExportService.corpusItem` returns `Promise<{ ok: true }>`. But the extractor's `sendItem` expects `Promise<Result<void>>`; if in AI-04 they pass `window.api.export_.corpusItem` directly, TypeScript error as above. If they wrap it to map rejection to Result, then okay. But they didn't create that wrapper in this ticket. The type `SendItem` claims production is `window.api.export_.corpusItem`; not exactly. In comment:
+```
+/** 回传端点（生产=window.api.export_.corpusItem；Result 折叠错误=failed 路径） */
+export type SendItem = (item: CorpusItemReq) => Promise<Result<void>>
+```
+This is a self-contained claim. If the actual API surface's Res is `trueAckSchema` not `Result`, then the comment is false. Could be WARN.
+
+Potential issue: The `Result<void>` in `sendItem` also might be incorrect because `trueAckSchema` success doesn't include `data`; but `Result<void>` success requires `data: undefined`. However because `void` property is optional? Let's confirm TypeScript behavior. In TypeScript, when a property type is `void`, is the property required? The property is required unless marked `?`. `data: void` means the property must be present and value must be undefined. Actually `void` is a top type? In TS, `void` as a type is assignable only from undefined/null? `void` accepts `undefined`, and a function return `void` can ignore. For property, `{ data: void }` requires data property with value undefined; object literal `{ data: undefined }` works. Missing property fails. So yes. Therefore `SendItem` doesn't match actual API if `trueAckSchema` only `{ok:true}`. But the tests use `{ ok: true, data: undefined }` for `Result<void>`, which confirms.
+
+Could this be BLOCKING? It is a type contract issue in shared IPC. But since current code compiles and the integration is later, I'd call WARN. The audit asks "契约与纪律" first. The contract between sendItem type and shared schema is a "类型单一真相源" issue—cross-process types should come from shared, and the renderer shouldn't declare a divergent shape. Actually `SendItem` uses `Result<void>` from app-error, not duplicating, but the `trueAckSchema` says `{ok:true}`. The renderer's `SendItem` should perhaps use `Result<z.infer<typeof trueAckSchema>>`? Not. The IPC response is likely `trueAckSchema` not `Result`. This is a WARN.
+
+Potential issue: The test file's `sendItem` stub returns `Result<void>` objects. If actual window api returns `{ok:true}` no data, the `ack.ok` check would work but test stub differ. no.
+
+Potential issue: Another potential issue: The main `export_.ts` handler for `corpusItem` simply forwards to service stub which throws. But the service stub throws `NotImplementedError` **after the IPC request has been validated**. If the renderer `sendItem` returns a rejected promise, `sendChecked` in `runExtraction` will throw and outer catch will send an `error` item, which will also reject because stub still throws NotImplementedError (since error item goes through same service). Then inner catch logs "error 上报失败". So on first actual usage before AI-03, extraction will fail and log an error. That's intended? The comment says "本占位经 register 折叠 NOT_IMPLEMENTED → renderer failed 路径（链路可测）" But if the stub throws for all items, including `error`, then the renderer's error report also fails, so main session may not get error. But AI-03 not implemented; no real usage. okay.
+
+Potential issue: Does "NOT_IMPLEMENTED" get folded by register? If yes, `sendItem` returns `{ok:false}`, so `sendChecked` throws and outer catch sends error; that error item also returns `{ok:false}`, but ignored. okay.
+
+Potential issue: The service stub's `corpusItem` throws for every item, including `complete` and `error`. If the extractor sends fulltext first, it fails; it then tries to send error, which also fails. The renderer cannot report errors until AI-03. But since no main event before AI-04, okay. W2 says "链路可测" maybe means tests not live. okay.
+
+Potential issue: `src/main/services/export_/corpus.export.service.ts` file header still says "完成后：删除 STUB" but the ticket AI-03. okay.
+
+Potential issue: "状态机前置: 跨格序列" They document. okay.
+
+Potential issue: Could there be a "race" between `workerConfigured` and `PdfCanvas.tsx` static import? `PdfCanvas.tsx` sets `GlobalWorkerOptions.workerSrc = workerUrl` at module evaluation. `CorpusExtractor.loadPdfDocument` might run before PdfCanvas module is imported, sets workerSrc. Good.
+
+Potential issue: `loadPdfDocument` dynamic imports pdfjs-dist, but `PdfCanvas` may also static import pdfjs-dist. The bundler will include pdfjs-dist in both chunks; pdfjs-dist might have side effects? It's fine.
+
+Potential issue: In `loadPdfDocument`, the worker import is `pdfjs-dist/build/pdf.worker.min.mjs?url`. This is a `?url` asset import, which is Vite-specific. But the project uses Electron + Vite? likely. okay.
+
+Potential issue: The new `ExportProgressEvent` schema's `phase` values maybe should align with AI-04. okay.
+
+Potential issue: The `extractRequestEventSchema.annotations` max(5000) but no min? okay.
+
+Potential issue: "renderer 是沙箱 UI 层" and `console.warn` is okay.
+
+Potential issue: In test `guardedDescribe`, if it's disabled unless ticket open? It might skip tests when ticket done? Need know. If `guardedDescribe('SR2-AI-02', ...)` skips when ticket not open? Actually it might guard against running unrelated tests. Not issue.
+
+Potential issue: The new test file is added to locks manifest. good.
+
+Potential issue: There are 399 tests; new 10. okay.
+
+Potential issue: Could `cropBoxPixels` with rects containing page not equal current page? The function is called only with filtered rects. okay.
+
+Potential issue: If `pageRects` has `x`/`y` undefined? schema. okay.
+
+Potential issue: `EXPORT_SNAPSHOT_SCALE` is number 2.0; used in `getViewport({ scale: EXPORT_SNAPSHOT_SCALE })`. In pdfjs, if original PDF has a different rotation, viewport may account. okay.
+
+Potential issue: The `render` method in `PdfjsPageLike` returns `{ promise: Promise<void> }`, but pdfjs `render` may return a RenderTask whose `promise` can be canceled; they await. good.
+
+Potential issue: Does `canvasContext` need to be cast to `CanvasRenderingContext2D` for pdfjs to recognize? At runtime no. In typed `loadPdfDocument`, `getDocument` returns real pdfjs types, but they cast to `PdfjsDocumentLike` whose `render` accepts `canvasContext: unknown`. When calling `page.render({canvasContext: pageCanvas.ctx, viewport}).promise`, the type of `pageCanvas.ctx` is `CanvasRenderingContext2DLike` (index signature). Since `render` expects `unknown`, no issue. Runtime pdfjs receives actual context. good.
+
+Potential issue: The `viewport` passed is from `page.getViewport`, which is a `PDFPageViewport` object with `width` and `height`; but type `render` params uses `viewport: unknown`, so no type issue. Runtime pdfjs uses the viewport object. good.
+
+Potential issue: `createMultiPagePdf` uses `TextEncoder` but `tests/utils/pdf-factory.ts` may run in Node; global TextEncoder available in Node 24. okay.
+
+Potential issue: `esc` function might not handle newline? no.
+
+Potential issue: `streamBytes` uses length of text encoded, but the stream content also has `BT /F1 18 Tf ... ET` all ASCII; if `text` contains non-ASCII, `esc` maybe escapes? Not important for tests.
+
+Potential issue: The `pages` parameter in createMultiPagePdf could be 1; works. Could be 0; not used.
+
+Potential issue: The new test file's `flushAll` uses a fixed number of macrotask waits; if CI is loaded, maybe flaky. This is a test quality nit. But not enough.
+
+Potential issue: The `maxInflight` assertion could fail due to extra sendItem error? In first test no failure. okay.
+
+Potential issue: The test "在途收第二请求" after first completes, there is one complete. But if the second request is ignored, no error/complete for s-2. They only assert completes length 1. okay.
+
+Potential issue: In "invoke 折叠错误" after first failed request, they send error and then handle new request with same ctx. The `extracting` flag is false after finally. But the first run's catch sends error and then finally destroy; after `flushAll(2)`, maybe by the time flushAll ends, runExtraction's finally might still be executing? flushAll waits enough. Then they call handleEvent again. okay.
+
+Potential issue: In "文档加载失败", `flushAll(1)` with pages=1 means 8+16=24 settle loops. Enough. okay.
+
+Potential issue: The `render` method in `pageStub` is not awaited? Actually `await page.render(...).promise`. good.
+
+Potential issue: The `canvasStub` `ctx: { markRendered: (): void => undefined }`; `pageStub.render` calls `c.markRendered?.()`. good.
+
+Potential issue: The `realDoc` in integration test `getViewport: (params) => real.getViewport(params)`; real getViewport expects `{ scale: number, rotation?: number }`; `params` type `{ scale: number }` okay. But `real.getViewport` may return a viewport with width/height; they use only for width/height. good.
+
+Potential issue: In integration test, `fulltexts[0].payload` toContain('P1') and 'INTEGRATION'. The PDF content stream from `createMultiPagePdf` uses `(P${n} ${esc(text)}) Tj`. Text extraction may include line breaks? It may return "P1 INTEGRATION" with no trailing.
+
+== content ==

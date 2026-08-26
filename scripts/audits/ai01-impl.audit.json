@@ -1,0 +1,79 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "seedPaper/seedAnnotation 及级联用例中的 DELETE 语句（约第 24-46 行）",
+      "issue": "测试夹具与 DELETE 语句使用字符串拼接 SQL，违反宪法安全禁令「禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定」。该禁令是硬规则一票否决项，无生产/测试豁免。",
+      "evidence": "diff 中原句：`INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('${id}','a.pdf','s-${id}','t','t')` 以及 `DELETE FROM papers WHERE id = 'p-1'`",
+      "suggestion": "全部改用 prepared statement 参数绑定：`db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run(id, 'a.pdf', 's-'+id, 't', 't')`；SET NULL 用例的 DELETE 改为 `db.prepare('DELETE FROM annotations WHERE id = ?').run('a-2')`。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/db/migrations/003_ai_notes.sql / src/shared/models/ai-note.ts",
+      "line_hint": "003 SQL 头注级联声明与 ai-note.ts 接缝锚定（INV-11）",
+      "issue": "ai_notes 新表引入跨模块行为不变量（paper 删除 → CASCADE 清空；annotation 删除 → SET NULL 降级篇级；question 应用边界枚举），但 diff 中未见 docs/invariants.md 的登记变更。宪法要求「跨模块/跨时间的行为不变量一律登记 docs/invariants.md；新增跨模块行为不登记本册视同未完成」。",
+      "evidence": "宪法原文：「不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md」「新增跨模块行为不登记本册视同未完成」；本次 diff 未包含 docs/invariants.md 改动。",
+      "suggestion": "确认 docs/invariants.md 已登记 ai_notes 的级联语义与 question 应用边界；若无，补登记（声明处 + 强制方式 + 锚定状态）并随本提交携带 [locked-change] 尾注。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/db/migrations/003_ai_notes.sql",
+      "line_hint": "CREATE TABLE 中外键级联子句（约第 18-19 行）",
+      "issue": "CASCADE/SET NULL 级联依赖 SQLite 连接级 PRAGMA foreign_keys=ON，但本次 diff 未触及 src/main/db/connection.ts，无法确认生产连接已开启该开关。测试通过只能证明 createTestDb 开启了。",
+      "evidence": "diff 中 003 SQL：`paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE`、`annotation_id TEXT REFERENCES annotations(id) ON DELETE SET NULL`；SQLite 默认 foreign_keys=OFF。",
+      "suggestion": "确认生产连接初始化处执行了 `PRAGMA foreign_keys = ON`（若既有 annotations 外键已依赖该开关则本项可关闭）；建议在连接层加一行注释锚定该不变量。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "updateContent 用例断言（约第 127 行）",
+      "issue": "用例名宣称「updatedAt 推进」，但断言用 `updated.updatedAt >= n.updatedAt`，`>=` 允许相等（同一毫秒时钟粒度），与「推进」语义不符。",
+      "evidence": "diff 原句：`expect(updated !== null && updated.updatedAt >= n.updatedAt).toBe(true)`",
+      "suggestion": "要么改断言为 `>` 并使用可控时钟（vi.useFakeTimers + setSystemTime 保证严格递增），要么将用例名改为「updatedAt 不倒退」以匹配 `>=` 语义。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "第一个用例中两次 `expect(list).toHaveLength(1)`",
+      "issue": "同一断言重复出现两次，无额外验证价值。",
+      "evidence": "diff 原句：`expect(list).toHaveLength(1)` 连续出现两行。",
+      "suggestion": "删除其中一行重复断言。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "listByPaperStmt / listByRole 的 `ORDER BY created_at, id`",
+      "issue": "created_at 为毫秒 ISO 字符串，id 为随机 uuid v4（非单调）；同毫秒批量插入多条时，稳定基础序实为随机序。若未来 AI-07 批量导入产生同毫秒多行，下游装配层可能拿到不稳定顺序。",
+      "evidence": "diff 原句：`SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id`；insert 中 `id: randomUUID()`。",
+      "suggestion": "若装配层需要严格插入序，建议增加自增序列列（如 INTEGER PRIMARY KEY AUTOINCREMENT 的 seq）作为 tiebreaker，或将 created_at 粒度提升到微秒；若维持现状，请在 docs/invariants.md 注明「同毫秒数组内顺序不确定」。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/models/ai-note.ts",
+      "line_hint": "aiNoteInputSchema.annotationId 可空 + 文件头注「Q3/Q6/Q7 允许无锚篇级回答」",
+      "issue": "头注暗示 Q1/Q2/Q4/Q5 等 question 应要求锚定（annotationId 非空），但 schema 与 DDL 对所有 question 都允许 annotationId 为空。当前 v1 无生产者可接受，但未来 AI-07 导入器若经 IPC 边界 zod 校验，该业务规则不会触发，可能产生语义意外的篇级数据。",
+      "evidence": "diff 原句：`annotationId: z.string().min(1).nullable()` 及头注「Q3/Q6/Q7 允许无锚篇级回答」。",
+      "suggestion": "在 ai-note.ts 头注或 future AI-07 工单契约中显式声明「Q1/Q2/Q4/Q5 若有锚要求，由导入器应用层强制校验，zod 不表达」；或在 AI-07 边界加条件 zod refine。当前不阻塞。"
+    }
+  ],
+  "summary": "整体设计稳健：迁移 003、zod 契约与 repo 六方法同既有仓库惯例一致，级联双向路径有真实外键测试覆盖，locks manifest 与受锁面同步，verify 全绿可复现。阻塞项是测试夹具中的字符串拼接 SQL 直接违反宪法安全禁令一票否决项（即使输入为常量也无豁免），必须回修为参数绑定；另需人类确认跨模块不变量登记与生产连接外键开关，以及若干小风格建议。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 12210,
+      "completion_tokens": 14190,
+      "total_tokens": 26400,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 12457
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 12210
+    },
+    "finish_reason": "stop"
+  }
+}

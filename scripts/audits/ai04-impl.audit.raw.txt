@@ -1,0 +1,77 @@
+# SR2-AI-04 对抗式审计记录（第一门：深审）
+
+**审计对象**：设置页 AI 语料导出节 + App 层事件桥 + e2e 全链 + AI-03 服务文件两处缺陷修复
+**审计方式**：净 diff 逐行 + 12 个实现/支撑文件全读 + 单测实证（service 10 用例绿、renderer 16 用例绿，`scripts/sqlite-abi.mjs use node` 后按项目口径运行）+ `npm run typecheck` 绿 + CI 工作流核对（`ci.yml:73` 确认 e2e 在 CI 六道关卡内）
+
+---
+
+## 发现清单
+
+### BLOCKING（B 级）
+
+**无。** 对抗式排查过且排除的 B 级候选（存档供复核）：
+
+1. **分层/安全**：store/hook/组件仅 import `api/client`（`window.api` 门面）+ `@shared` 类型与 zustand，无 Node/Electron API、无绝对路径；main 侧 service 只依赖 repos/fileStore/assemble，无反向依赖。`sendEvent` 载荷中 `url=app-file://<id>`（corpus.export.service.ts:236），无本机路径泄漏。✓
+2. **deferOutcome 时序契约**（修复②）：`setImmediate`（check 阶段）注册晚于 handler return 后 promise resolve 处的回复发送（微任务）——回复先出、事件后出，与 renderer 侧 `extracting` 复位（ack 续体）构成安全序；时序前提已作为补条回写 INV-18（invariants.md），且受锁 e2e 多篇序列真环境锚定。**兼容性实证**：AI-03 受锁测试 `tests/unit/services/corpus.export.test.ts` 用 `nextExtract` 5ms 轮询（:105-113）+ `await session`（:137，resolve 在 manifest 写完后），与 setImmediate 异步化天然兼容——10 用例全绿，未改任何受锁测试（diff 不含该文件）。✓
+3. **重复终局双推进**：`corpusItem` complete/error 分支同步摘牌 `s.current=null`（corpus.export.service.ts:394/397）后再 deferOutcome，窗内重复终局 invoke 落入 `s.current===null` 防御分支 INVALID_REQUEST，不扰动会话。✓
+4. **悬挂 deferOutcome 误杀新会话单飞锁**（failSession 无 `session===s` 守卫，:276-281）：推演结论=被提取器串行协议结构性排除——complete ack ok 后提取器 destroy 归 idle，不再有后续 corpusItem 能触发 failSession；而新会话启动前提 `session===null` 只能由终局/失败造成，此时无排队 finishPaper。降为 N2（防御性建议）。
+5. **fileRef 全路径修复**（修复①）：`fileRefById`（papers.repo.ts:234）返回完整 `xx/yy/sha.pdf`，与 file-store 校验器（`resolveManagedPath` 拒绝 `..`/绝对路径/非 .pdf，file-store.ts:61-75）正确衔接；e2e 种子写三层 file_ref（spec :110-111）真环境锚定，且 **e2e 在 CI 关卡内**（非仅本地）。✓
+6. **INV-14/INV-02/INV-13/INV-03**：事件+store 订阅成对注销（hook :64-67，单测锚）；终局 toast 双档（error/success/info 含部分成功文案）；折叠错误 message 直达 toast（CANCELLED 先例=LibraryPage.tsx:50「取消也是用户可见反馈」同型一致）；applyProgress busy=false 迟到守卫。✓
+7. **locks**：check-quality.mjs sha 已更新、新增两个测试文件已入 manifest（diff :33-60）；invariants.md 非 locks 清单成员（manifest 无此路径），无需重锁。✓
+
+### WARN（W 级）
+
+**【W1】单测「初始态」用例自证恒真——store 真实默认值失锚**
+- 位置：`tests/unit/renderer/corpus-export.test.tsx:157-167`（用例本体）+ `:138-145`（beforeEach `resetStore`）
+- 论证：用例断言 `useCorpusExportStore.getState()` 的初始值，但 beforeEach 的 `resetStore()` 已用测试自带的字面量 setState 覆盖过——断言的值永远是 resetStore 写入的值，**自证**。具体失败场景：有人把 store 默认 `busy: true`（corpus-export.store.ts:57），16 个单测仍全绿；唯一防线是 e2e（按钮点不动→60s 超时红），定位成本高且慢。违反宪法「恒真断言=假阳性，比没测试更危险」的测试纪律精神。
+- 修复建议：文件顶层（beforeEach 首次执行前）捕获 `const initialSnapshot = { ...useCorpusExportStore.getState() }`，初始态用例改为断言 `resetStore()` 后 `getState()` 深等于 `initialSnapshot`——锁定「重置值≡真实初始值」，默认值改动即红。注意该文件已入 locks manifest，补测属受锁变更：`locks:unlock` → 改 → `locks:apply`，提交带 `[locked-change]`。
+
+**【W2】`sendItem` 映射的 not-ok 分支无测试锚定——该分支是防会话死锁的关键接线面**
+- 位置：实现 `src/renderer/features/settings/useExportCorpusEvents.ts:40-43`；测试 `tests/unit/renderer/corpus-export.test.tsx:264-272`（仅测 `r.ok` 为 true 的路径）
+- 论证：映射 `return r.ok ? { ok: true, data: undefined } : r` 若退化为无条件返回 ok（重构事故面），corpusItem 的折叠拒绝（如 INVALID_REQUEST）会被吞成成功 ack：提取器以为 complete 成功→destroy→idle，main 侧永远等不到合法终局→**会话悬挂、无 toast、按钮永久 busy**——正是 deferOutcome 所修的同族死锁的镜像面。当前实现正确，但合约未锁。
+- 修复建议：生产组装用例补一条断言——`stubApi.export_.corpusItem.mockResolvedValue({ ok: false, error: { code: 'INVALID_REQUEST', message: 'x' } })`，`await deps.sendItem(item)` 结果 `toEqual` 该 not-ok 形状。同 W1 受锁流程。
+
+### NIT（N 级）
+
+**【N1】`applyProgress` 不校验 sessionId——跨会话迟到 progress 可短暂污染新会话进度显示**
+- 位置：`src/renderer/features/settings/corpus-export.store.ts:84-87`
+- 论证：busy 守卫只挡「终局后迟到」，挡不住「会话 A 的迟到 progress 在会话 B 在途期间到达」（事件通道与 invoke 回复无序，窗口极窄）。影响仅限进度行数字短暂错乱——终局源=invoke resolve（INV-11），最终一致性不受损。建议：store 增存当前 sessionId（progress 载荷已带），不匹配即忽略；非必须。
+
+**【N2】`failSession` 无 `session === s` 守卫**
+- 位置：`src/main/services/export_/corpus.export.service.ts:276-281`（配合 :287-293 deferOutcome）
+- 论证：理论误杀面（悬挂 deferOutcome 抛错时把新会话的单飞锁置 null + 二次 reject）已被提取器串行协议结构性排除（见 B 级候选 4 推演）。建议防御性加 `if (session !== s) return` 一行，使不变量不依赖跨进程协议成立——与该文件「同步摘牌防窗内双推进」的既有防御风格一致。
+
+**【N3】e2e PNG 体积下限断言（>1000 字节）依赖渲染产物体积**
+- 位置：`tests/e2e/corpus-export.spec.ts:190`
+- 论证：纯白背景+少量文字的 PNG 在 pdfjs/字体栈变化后可能跌破 1KB 造成误红（当前真跑绿）。建议改为 PNG magic + `length > 0` +（如需）IDHR 宽高解析断言；非阻塞。
+
+**【N4】日期口径不一致：注释/登记多处 2026-08-27，系统日期与 locks manifest 为 2026-08-26**
+- 位置：`corpus.export.service.ts:285`、`CorpusExtractor.ts:276`、`docs/invariants.md` INV-14/18 回写行、`tests/unit/services/corpus.export.test.ts:46`（now 桩）vs `locks/manifest.json` generatedAt `2026-08-26T00:00:26Z`
+- 论证：审计记录与事故溯源依赖日期一致；若是时区/笔误建议统一。不影响正确性。
+
+**【N5】`safeName` 洗涤碰撞面：不同 annotationId 洗涤后同名会互相覆盖**
+- 位置：`src/main/services/export_/corpus.export.service.ts:383-388`
+- 论证：如 `a/b` 与 `a_b` 洗涤后同名，manifest figures 出现重复路径。annotationId 为应用生成 UUID，实际碰撞面为零——纵深防御自身的小缺口，登记即可。
+
+---
+
+## 已知实现决策复核（审计输入声明项，均论证无错误，不作发现）
+
+- store 终局源=invoke resolve / applyProgress busy 守卫：正确（INV-11/INV-03 同族，单测双向锚定）。
+- 终局 toast 在 App 层 hook（busy 变化沿）：正确——且 `mountHook` 的 Probe 不含 SettingsPage，单测形态恰好等价锚定了「设置节卸载后 toast 不丢」（R14 跨格序列的组件级闭合）。
+- check-quality 组合根白名单新增条目：正当（AI-02 票面指定组装点 + INV-16 锚定 CorpusExtractor 路径 + tab-dirty 同型先例；白名单粒度精确到单文件单目标）。
+- e2e 不杀进程 / 对话框桩：票面裁决 + quit-dirty showMessageBox 同型先例。
+
+## 实证记录
+
+- `node scripts/sqlite-abi.mjs use node && npx vitest run tests/unit/services/corpus.export.test.ts`：**10/10 绿**（deferOutcome 修复后受锁合约兼容）。
+- `npx vitest run tests/unit/renderer/corpus-export.test.tsx`：**16/16 绿**（首次直跑因我绕过 ABI 切换报 NODE_MODULE_VERSION 错，按项目口径重跑即绿——非代码问题）。
+- `npm run typecheck`：绿（tsconfig.node + tsconfig.web 双工程）。
+- 乱码/占位词人工扫描：新文件中文全部可读，无 TODO/FIXME/placeholder。
+
+---
+
+## 总裁决：**FAIL（轻量——仅 W1/W2 两条测试面补强，实现本体零缺陷）**
+
+- B 级发现 0：两处 AI-03 修复论证正确且各有真环境锚定（修复①=fileRefById+e2e 三层 file_ref 种子且 e2e 在 CI 关卡内；修复②=deferOutcome 时序论证成立+受锁 e2e 锚定+AI-03 受锁测试实证兼容）；renderer 三件（store/hook/组件）分层、INV-02/03/11/13/14 全部合规。
+- 阻塞点=W1/W2 两条测试补强（合计约 10 行测试代码），因目标文件已 locks:apply，须走 `locks:unlock → 补测 → locks:apply → [locked-change]` 流程。补齐并 `npm run verify` 绿后可直接翻 **PASS**，无需重审实现面（N1-N5 建议随下个触碰该域的工单顺带处置，不阻塞）。

@@ -1,0 +1,1097 @@
+== reasoning ==
+我们需要对一个 Electron + TypeScript 桌面应用的代码变更 diff 做第一道独立审计。需要输出一个 JSON 对象。
+
+首先阅读项目宪法 AGENTS.md 的硬规则，再对照 diff 找违反点。
+
+审计维度优先级：
+1. 契约与纪律：违反 AGENTS.md 硬规则
+2. 正确性：逻辑错误、边界条件、错误处理缺失、竞态
+3. 安全：SQL 注入、路径穿越、XSS、不安全 API、出网白名单外联
+4. 生产质量：类型滥用(any)、死代码、占位实现、行数超标(文件≤500行)
+5. 测试纪律：为过测试放宽断言/删检查迹象
+
+输出要求：只输出一个 JSON 对象。
+
+先看看 diff 的关键改动：
+
+1. `docs/invariants.md`：INV-17 和 INV-18 从“未锚定”改为“已锚定”，更新测试锚定信息。这看起来是记录锚定状态，符合规约。注意 INV-17 说“幂等范围=产物文件，manifest 含 exportedAt 不参与逐字节断言”。这个是文档更新。
+
+2. `locks/manifest.json`：更新了锁文件的 sha256，新增了 `tests/unit/services/corpus.export.test.ts` 的锁条目。这看起来是正常流程（受锁文件变更后重新 apply）。注意 `generatedAt` 是 2026-08-25T23:12:44，但测试文件里用的是 `2026-08-27T00:00:00.000Z`？也许时间不同。等等，manifest 生成时间 2026-08-25，而 docs/invariants 说 2026-08-27 SR2-AI-03 锚定。2026-08-25T23:12? 这是当天深夜。也许系统时间。不管。
+
+3. `src/main/bootstrap.ts`：添加 `sendExportEvent`，遍历所有 BrowserWindow 发送 `EVENT_CHANNELS.exportCorpus`。需要确认 `EVENT_CHANNELS.exportCorpus` 是否存在于 shared。由于 diff 只是添加这个，我们需要从已有代码推断。看起来合理，类似 sendProgress。
+
+4. `src/main/ipc/export_.ts`：添加 `corpusSession` IPC handler，调用 `deps.dialogs.pickFolder()`，如果返回 null 则抛 `ExportIpcError('CANCELLED', '已取消选择导出目录')`。注意这里是 IPC 层，对话框调用是主进程侧，符合 INV-07 目录只出自 main 侧系统对话框。之后调用 service 的 `exportCorpusSession`。
+
+5. `src/main/services/export_/corpus.assemble.ts`：添加 `OrderedAiNoteEntry` 接口，`ROLE_ORDER`、`questionOrder` 函数和 `orderAiNotes` 函数。排序逻辑：role（一读→二读→裁决）→question（Q1..Q7，divergence 殿后）→createdAt→id。这里有个细节：`questionOrder` 对 `divergence` 返回 99，对 `Q` 后数字转换。问题：如果 question 不是以 Q 开头也不是 divergence，`Number(q.replace('Q', ''))` 会返回 NaN，排序不稳定。但 ai-note 的 question 类型应该是有限的（AiNoteQuestion），所以可能没问题。但注意 `q === 'divergence' ? 99 : Number(q.replace('Q', ''))`，如果 q 是别的，比如空字符串，`Number('')` 是 0，可能导致顺序差异。但按类型系统，question 只能是 Q1..Q7 或 divergence。所以没问题。另外 `a.id < b.id ? -1 : 1`：如果 `a.id === b.id` 会返回 1（因为小于不成立），但 id 应该唯一，所以可以。不过更好的安全写法是返回 0，但这不是大问题。
+
+6. `src/main/services/export_/corpus.export.service.ts`：这是核心实现。大量新增代码。需要仔细审计。
+
+   - 导入 `createHash`、fs/promises、path、类型等。
+   - 定义 `SessionError` 类，code 为 `AppErrorCode`。
+   - 定义 `CorpusExportDeps` 接口。
+   - 定义 `ManifestPaper`、`ActiveSession` 接口。
+   - 移除 stub `CORPUS_EXPORT_SERVICE_STUB`。
+   - 实现 `createCorpusExportService`。
+   
+   需要详细看逻辑。
+
+   - `cleanRebuild`：删除 manifest.json、MANIFEST_TMP、重建 corpus/fulltext/figures 目录，写 INTERFACE.md。注意它先 `rm(join(dir, sub), ...)` 再 `mkdir`。这符合“清空重建”。但是，对于目录根，它只动这几个子目录和文件，不会动用户其他文件。测试也验证了。
+   
+   - `sendProgress`：通过 `deps.sendEvent` 发送 progress 事件。
+   
+   - `advance`：从队列 shift 下一篇，如果没有则 finalizing：写 manifest.tmp.json，然后 rename 到 manifest.json。注意这里 finalizing 写 manifest 是在 streaming 全部完成后，但 `s.done` 可能还没等于 total（因为有错误篇被跳过时 done 在 preparing 已经加了，但正常篇的 done 在 finishPaper 里加）。需要判断是否所有篇都处理完。看 `advance` 被调用的时机：`exportCorpusSession` 中 preparing 完成后调用 `advance(active)`；`finishPaper` 中调用 `advance`；`startPaper` 中... 等等，`startPaper` 不调用 advance。关键点：当队列为空时进入 finalizing。但 preparing 阶段会把所有成功篇（存在且 detail 非空）push 到 queue，失败篇直接记 errors 并 done+1。然后 advance 开始处理队列。每篇完成后 finishPaper 调 advance，直到队列空。所以 finalizing 时所有 queue 中的篇都处理完了，done = 成功处理的篇数 + preparing 失败的篇数 = total？其实是的，因为 total 是 ids.length，每个 id 要么进 queue（最终会被 finish），要么在 preparing 中 errors+done+1。所以 done 最终会等于 total。不过如果 session 中途失败，那就不会到 finalizing。
+
+   注意 `advance` 在 finalizing 时写 manifest，然后设置 `session = null`，然后 `s.resolve(res)`。但是这里的顺序：`session = null` 在 resolve 之前。好。
+
+   - `startPaper`：从 repos 获取 annotations，构造 extract-request 事件，发送。注意这里 url 是 `app-file://${paper.id}`，注释说“papers.repo fileUrl 同源”。需要确认 app-file 协议是否注册？这个不是本 diff 范围，但可能是已有机制。假设合理。
+
+   - `finishPaper`：先 `s.current = null`，`s.done += 1`。如果失败，push errors 然后 advance。如果成功，写 fulltext，计算 sha，读 corpus md 计算 contentSha，push manifest paper，advance。这里有几个问题：
+   
+     a) `const fulltext = cur?.fulltext.join('\f') ?? ''`——如果 `cur` 是 null（理论上不可能，因为 finishPaper 在 startPaper 之后调用，且 current 已设置），用 `?? ''` 兜底。但若 cur 为 null，fulltext 为空字符串，仍会写文件并计入成功？不过 `cur` 应该总是存在，除非并发问题。因为 corpusItem 校验了 current 非空。但 finishPaper 被调用时 current 是存在的。`s.current = null` 在开头，但 `cur` 已经在之前获取吗？看代码：`const cur = s.current` 之后 `s.current = null`，所以没问题。
+     
+     b) 写 fulltext 用 `writeFile(join(s.dir, 'fulltext', `${paperId}.txt`), fulltext, 'utf8')`。这里 paperId 来自数据库或回传，应该安全？paperId 不是用户直接输入，但需要看是否有路径穿越风险。paperId 来自 db，是应用生成的 ID 吗？如果是 paper.id，可能类似 `p-1`，由应用生成。但也可能是用户导入的 PDF 文件名？需要看 paper 模型。由于 service 从 repos.papers.detailById 获取，id 应该是受管的。但 `corpusItem` 中的 paperId 来自 renderer 回传（req.paperId），在 `finishPaper` 中并没有直接用 req.paperId 拼路径，而是用 `cur.paperId`（来自 startPaper 时从 db 取得的 paper.id）。所以安全。
+     
+     c) `contentSha` 使用 `readFile(join(s.dir, 'corpus', `${paperId}.md`), 'utf8')`——corpus md 在 preparing 中写入，所以存在。
+     
+     d) `exportedAt: now()` 每个 paper 一个时间戳，manifest 里 exportedAt 是会话时间。INV-17 说 front-matter 不含 exportedAt，时间戳只进 manifest。这里 per-paper 也有 exportedAt，没问题。
+
+   - `failSession`：清理 MANIFEST_TMP，释放 session，reject。注意它 catch 了 rm 的错误。但有一个问题：如果 `failSession` 在 `exportCorpusSession` 的 catch 中被调用，然后 `return promise`，promise 最终会 reject。但如果 failSession 本身出错（比如 rm 也失败），会怎样？`failSession` 用了 `catch(() => undefined)`，所以不会抛。好。
+   
+   - `exportCorpusSession`：
+     - 检查 session 非空，抛 EXPORT_BUSY。
+     - `ids = input.paperIds ?? deps.repos.papers.listAllIds()`
+     - 创建 Promise，`created` 在 executor 内被赋值。这里用了 `let created!: ActiveSession` definite assignment。这是 N1 的“采纳：definite assignment（created!）”在 r1 裁决中。TypeScript 的 definite assignment 允许在闭包中先使用？实际上 `const active = created` 在 Promise executor 执行后才执行。Promise executor 是同步执行的，所以 `created` 会被赋值。但 TypeScript 可能无法推断，所以用了 `created!`。这是可接受的。
+     - 然后 `session = active`，`try { await cleanRebuild...; ...; await advance(active) } catch (e) { await failSession(...) }`，最后 `return promise`。
+     
+     这里有一个关键并发问题：`exportCorpusSession` 是一个 async 函数，它在 `session = active` 之后，`await cleanRebuild` 之前，如果有第二个调用进入，此时 `session` 已经非空，会抛 EXPORT_BUSY。好，单飞锁在异步操作开始前就设置了。但是，注意在 Promise executor 里 `created` 被赋值，然后 `session = active` 在 executor 之后同步执行，所以没有 gap。
+     
+     还有一个问题：如果 `cleanRebuild` 抛错，进入 catch 调用 `failSession(active, ...)`。`failSession` 会 `session = null` 并 reject。好。
+     
+     - preparing 循环：`for (const id of ids)`，对每个 id：
+       - `detail = deps.repos.papers.detailById(id)`，如果 null，errors.push + done+1。
+       - `managedPath = deps.fileStore.resolveManagedPath(detail.fileName)`，stat 检测存在。如果不存在，errors+done+1。
+       - `md = assembleCorpusMd(...)`，写 `corpus/${id}.md`。
+       - `active.queue.push(detail)`
+       之后 `await advance(active)`。
+     
+     注意 `total` 是 `ids.length`，而 `done` 在 preparing 中递增，但 `total` 没有变化。最终 done 会等于 total 吗？如果所有篇都成功，queue 长度 = ids.length，每篇 finish 时 done 加一，最终 done = ids.length。如果有些篇在 preparing 失败，done 增加了，queue 变少，最终 done 仍然是 total。好。
+     
+     一个潜在问题：`assembleCorpusMd` 写文件用 `${id}.md`，id 来自 db。如果 id 包含路径分隔符？如前所述，id 应该是受管的。但这里没有消毒。不过考虑到在 repo 中 id 是主键，由应用生成，不是用户自由输入。可以。
+     
+     另一个问题：`cleanRebuild` 会删除整个 `corpus`、`fulltext`、`figures` 目录并重建。如果用户选择的目录是比如 `C:\Users\me`，会删除用户目录下的 corpus/fulltext/figures 子目录？但 EXPORT_BUSY 和对话框让用户选择目录。这是设计行为。测试中验证“目录根用户文件不动”。但这本身是一个风险：如果用户选错了目录（比如 D 盘根目录），会删除根目录下的 corpus/fulltext/figures。不过这是产品设计，不是审计点。但也许应该警告？不属于硬规则。
+
+   - `corpusItem`：
+     - 检查 s 非空、current 非空、sessionId 匹配、paperId 匹配，否则抛 INVALID_REQUEST。
+     - 根据 kind 处理：
+       - `fulltext`：`cur.fulltext.push(req.payload)`。注意 req.payload 是 string。这里没有限制大小，可能内存膨胀？但如果 pdf 很大，fulltext 可能很大。不过这是设计。没有背压？注释里没有提到背压。但 renderer 的 CorpusExtractor 可能有逐页背压（AI-02）。service 这边只是收集。
+       - `figure`：目录 `figures/<paperId>`，mkdir recursive。然后 `safeName` 消毒 `req.annotationId`，文件名 `anno-<safeName>.png` 或 `page-<req.page>.png`。这里对 annotationId 做了消毒，防止路径穿越，符合 B2 处置。但注意 `req.page` 是 number，直接拼进文件名。如果 page 是负数或 NaN？schema 可能校验。`page-${req.page}.png`，page 应该是整数。如果 page 是 0 或负？rep 可能。但这只是文件名，不会路径穿越。base64 解码 `Buffer.from(req.payload, 'base64')`，如果 payload 不是合法 base64，可能产生空 buffer，但不影响路径安全。
+       - `complete`：detail 必须存在，然后 finishPaper。
+       - 其他 kind：视为错误，finishPaper 失败。
+     - catch：如果异常是 INVALID_REQUEST 就 rethrow；否则 failSession 并 rethrow。
+     
+     这里有个问题：对于 `kind: 'fulltext'`，`req.payload` 直接 push 到 `cur.fulltext`，没有大小限制，也没有校验是否为字符串？schema 当然会校验。另一个：如果 `kind` 不是 'fulltext' | 'figure' | 'complete' | 'error'，代码走到 `else` 分支调用 `finishPaper(s, cur.paperId, { ok: false, reason: req.reason })`。如果 req.kind 是 'error'，`req.reason` 存在。但如果 kind 是别的（比如 'foo'），`req.reason` 可能 undefined，reason 变成 `undefined`，errors 里 reason 是 undefined。但 schema 是 discriminated union，应该只有这些 kind。不担心。
+
+     还有一个问题：`corpusItem` 对 `figure` 的写入是 `await writeFile` 顺序执行。每次 figure 都 await，所以慢。但正确。
+
+     关于 `finishPaper` 中 contentSha 的读取：`readFile(join(s.dir, 'corpus', `${paperId}.md`), 'utf8')`。如果文件不存在（比如被外部删除），会抛异常，进入 catch -> failSession。整个会话失败。这合理。
+
+7. `src/main/services/export_/export.service.ts`：添加了目录隔离守卫。`writeCorpusSet` 如果目标目录包含 `manifest.json` 则抛 `CONFLICT`。这是为了防止轻量 md 导出覆盖 corpus/ 后工具按残留 manifest 误激活读新旧混合语料。这看起来是好的防御。注意 `existsSync` 导入。
+
+8. `src/main/services/export_/interface-template.ts`：新文件，INTERFACE.md 模板。47 行，符合文件行数限制。注意 “全文” 的 “全文” 两个字是否正常运行？看起来是正常的。
+
+9. `src/main/services/index.ts`：装配。注意 `...createCorpusExportService({ repos, fileStore, sendEvent: deps.sendExportEvent ?? (() => undefined) })` 这里末尾有个多余的逗号？看 diff：
+```
+      ...createCorpusExportService({
+        repos: deps.repos,
+        fileStore: deps.fileStore,
+        sendEvent: deps.sendExportEvent ?? (() => undefined),
+      })
+```
+最后一行 `sendEvent: deps.sendExportEvent ?? (() => undefined),` 末尾有逗号，是合法的。没问题。
+
+但是注意：`createCorpusExportService` 的 deps 需要 `repos`、`fileStore`、`sendEvent`、`now?`。这里没有传 `now`，所以用默认。测试传了 now。
+
+另一个问题：`service.index` 中 `export_: ExportService & CorpusExportService`。`CorpusExportService` 接口现在有 `exportCorpusSession` 和 `corpusItem`。而 `createExportService` 返回的 ExportService 也有其他方法。合并后 export_ 域有全部。IPC handler 中 `corpusSession` 调用 `deps.services.export_.exportCorpusSession`，`corpusItem` 调用 `deps.services.export_.corpusItem`。好。
+
+10. `src/renderer/features/reader/CorpusExtractor.ts`：注释更新，从“stub”改为“AI-03 落地”。没有逻辑改动。
+
+11. `src/shared/app-error.ts`：新增 `EXPORT_BUSY` code，并加入 APP_ERROR_CODES 数组。
+
+12. `src/shared/ipc/api-surface.ts`：新增 `corpusSession` 通道。
+
+13. `src/shared/ipc/schemas.ts`：新增 `corpusSessionReqSchema` 和 `corpusSessionResSchema`。注意 `corpusSessionReqSchema` 中 `paperIds` 是 `z.array(z.string().min(1)).min(1).max(1000).optional()`。这意味着如果没有传 paperIds，则是全库导出。但全库可能超过 1000？`max(1000)` 只限制显式传入时的数组长度，不限制全库。全库应该是所有 paper 的 id 列表，可能超过 1000？如果库里有 5000 篇，全库导出会导出 5000 篇。这也许不是问题，但 schema 限制显式传入最多 1000，全库则无上限。可以认为是设计。
+
+14. `tests/unit/services/corpus.export.test.ts`：新测试文件，374 行。测试覆盖了正常链路、幂等、篇失败、EXPORT_BUSY、落盘失败、清空重建、载荷失配、目录隔离守卫、orderAiNotes 排序。看起来测试很全面。
+
+现在开始从审计维度寻找问题。
+
+**1. 契约与纪律**
+
+- 文件行数：`corpus.export.service.ts` 需要看完整文件行数。diff 显示原文件 100+ 行，新增约 274 行，最终文件可能 300+ 行。测试文件 374 行 ≤500 行。interface-template.ts 47 行。其他变更都不超。没有发现行数超标。
+- 分层单向：`ipc → services → repos → db`。新增 `export_.ts` IPC handler 调用 `deps.dialogs.pickFolder()`（ipc 层）和 `deps.services.export_.exportCorpusSession`（service）。service 调用 repos。没有越层。Renderer 的 CorpusExtractor 通过 window.api 调 IPC（已有）。OK。
+- 类型单一真相源：新增的 `corpusSessionReqSchema`/`corpusSessionResSchema` 在 `src/shared/ipc/schemas.ts`，类型经 `z.infer` 导出。`corpus.export.service.ts` 从 ../../../shared/ipc/schemas 导入 `CorpusItemReq, CorpusSessionRes, ExportCorpusEvent, ExtractRequestEvent`。没有手写两套等价类型。OK。
+- 死代码即删：原 stub `CORPUS_EXPORT_SERVICE_STUB` 被删除，NotImplementedError 导入移除。OK。
+- 禁止 renderer 引入 Node/Electron API：CorpusExtractor 仅注释更新。没有新增 renderer 的 Node 使用。OK。
+- 禁止字符串拼接 SQL：测试文件里有 SQL 字符串，但那是测试代码，直接写字符串插入 fixture，不是生产代码。生产代码没有 SQL 拼接。OK。
+- 出网白名单：没有新增出网 host。OK。
+- 依赖：没有新增依赖。OK。
+- 受锁文件：`locks/manifest.json` 更新，新增测试文件加入锁。`src/shared/app-error.ts`、`src/shared/ipc/api-surface.ts`、`src/shared/ipc/schemas.ts` 是受锁文件（shared 目录），它们的 sha 在 manifest 中更新了。`tests/unit/services/corpus.export.test.ts` 新文件被加入 manifest。这些变更需要 `[locked-change]` 尾注。diff 本身没有显示 commit message，我们无法知道是否带尾注。但这是我们能看到的 diff，无法判断 commit message。作为审计，我们只能根据 diff 内容判断。通常这些受锁文件变更应该有尾注。我们无法看到提交信息，所以不能断言违规。也许简报里说“请裁：处置是否闭合；B1 证伪证据是否成立”，所以重点是检查处置是否闭合。受锁文件变更本身是流程的一部分（SR2-AI-03 实现必然要改 shared 和 tests），如果 commit message 没有带尾注，那是问题，但 diff 中没有 commit message。也许我们只能忽略或提示。
+
+  等等，简报提到这是一个审计请求，输入包括 AGENTS.md、任务简报/工单规约、待审计 diff。我们只能从这些材料判断。任务简报说“机检：verify 真退出码 exit 0 + 10/10 用例绿 + typecheck 0”，说明 verify 已通过，包括 locks 对账。所以受锁文件变更应该是正确应用了 locks。但 commit message 尾注无法验证。不强行。
+
+- 状态机前置：工单要求“凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须先给出状态/迁移表”。这个 diff 是 SR2-AI-03 的实现，它应该已经有一个状态机表（在服务头注释里提到“迁移表 idle 行”“streaming 行”）。在 service 头注释中可以看到引用了状态机表（R9 迁移表）。实现与状态机是否一致？测试也覆盖了状态机六用例。看起来符合。
+
+- 不变量登记：INV-17/18 已登记并锚定。INV-07 在注释中被引用。OK。
+
+**2. 正确性**
+
+需要仔细找逻辑错误。
+
+**问题 A：`questionOrder` 的稳定性/边界**
+
+`questionOrder`:
+```ts
+function questionOrder(q: string): number {
+  return q === 'divergence' ? 99 : Number(q.replace('Q', ''))
+}
+```
+如果 `q` 不是 'divergence' 且不以 Q 开头，比如 `q = 'q1'`（小写），`Number('q1'.replace('Q',''))` = `Number('q1')` = NaN。NaN 在排序比较中总是返回 false？`(NaN - NaN)` = NaN，比较 `NaN !== 0` 为 true，所以会落到 `a.createdAt === b.createdAt ? ...`。但 `qDelta = NaN - NaN` 是 NaN，`if (qDelta !== 0)` 为 true，返回 `NaN`，Array.sort 期待数字，但 NaN 会被当作 0？实际上 JS sort 的 comparator 返回 NaN 时行为是不确定的（通常当作 0）。这可能导致不稳定。但根据类型系统，`AiNoteQuestion` 应该只有 'Q1'...'Q7' 或 'divergence'。所以输入受控。不值得 WARN。但也许可以 NIT：建议对 questionOrder 使用 hasOwnProperty 或显式映射。
+
+**问题 B：`advance` 中等待 `startPaper` 的异步性**
+
+`advance` 是 async：
+```ts
+async function advance(s: ActiveSession): Promise<void> {
+  const next = s.queue.shift()
+  if (next !== undefined) {
+    await startPaper(s, next)
+    return
+  }
+  // finalizing...
+}
+```
+`startPaper` 是 async，但它里面没有 await，都是同步操作（repos、sendEvent）。所以 `await startPaper` 实际上同步完成。没问题。
+
+**问题 C：`exportCorpusSession` 中 promise 的 rejection 时机**
+
+在 `exportCorpusSession` 中：
+```ts
+try {
+  await cleanRebuild(input.dir)
+  ...
+  await advance(active)
+} catch (e) {
+  await failSession(active, `导出会话失败：${e instanceof Error ? e.message : String(e)}`)
+}
+return promise
+```
+如果 `cleanRebuild` 或 preparing 循环或 `advance` 抛出错误，会调用 `failSession`，它 `s.reject(...)`。`failSession` 本身是 async，返回 promise。但这里用 `await failSession(...)`，所以 catch 块会等待 failSession 完成。failSession 里先 rm（await），然后 session=null，然后 s.reject。reject 之后 promise 被拒绝。然后 catch 块完成，函数返回 promise。这没问题。
+
+但有一个微妙问题：如果 `failSession` 中的 `s.reject` 被调用，之后当前函数返回的 promise 已经 rejected。然而，如果 `failSession` 中的 `rm` 因为权限等原因抛错？failSession 里 `await rm(...).catch(() => undefined)` 捕获了。所以不会抛。
+
+**问题 D：`corpusItem` 中的 `finishPaper` 调用与 `catch`**
+
+```ts
+try {
+  if (req.kind === 'fulltext') { ... }
+  else if (req.kind === 'figure') { ... }
+  else if (req.kind === 'complete') {
+    const detail = deps.repos.papers.detailById(cur.paperId)
+    if (detail === null) throw new SessionError('INTERNAL', '篇详情在会话中消失')
+    await finishPaper(s, cur.paperId, { ok: true, detail })
+  } else {
+    await finishPaper(s, cur.paperId, { ok: false, reason: req.reason })
+  }
+} catch (e) {
+  if (e instanceof SessionError && e.code === 'INVALID_REQUEST') throw e
+  await failSession(s, `提取回传落盘失败：${e instanceof Error ? e.message : String(e)}`)
+  throw e
+}
+return { ok: true }
+```
+
+注意：如果 `finishPaper` 成功执行，它内部会调用 `advance`，而 `advance` 可能 start 下一篇或 finalizing。`finishPaper` 里 `s.current = null` 在开头，所以处理下一篇时 current 会更新。没问题。
+
+但是：`finishPaper` 的 `advance` 是 await 的，如果它抛错（比如写 fulltext 失败），错误会被 catch，failSession。但注意，`finishPaper` 已经设置了 `s.current = null` 并 `s.done += 1`，然后写文件失败，进入 catch -> failSession。failSession 清理并 reject。但此时 `s.done` 已经增加了 1，如果后续有重跑，session 是新的，无所谓。
+
+一个更微妙的问题：`corpusItem` 中 `finishPaper` 被 await，如果 finishPaper 内部 advance 里 startPaper 发出 extract-request，这个 await 会等到 `startPaper` 完成（同步）。然后 `corpusItem` 返回 `{ ok: true }`。这没问题。
+
+**问题 E：`current` 在 `finishPaper` 中的 null 安全**
+
+`finishPaper` 开头：
+```ts
+const cur = s.current
+s.current = null
+s.done += 1
+if (!outcome.ok) {
+  s.errors.push({ paperId, reason: outcome.reason })
+  await advance(s)
+  return
+}
+const fulltext = cur?.fulltext.join('\f') ?? ''
+```
+如果 `cur` 为 null（理论上不会，因为 corpusItem 校验了 current 非空，而且 startPaper 设置 current），`cur?.fulltext` 是 undefined，`undefined.join` 不会执行，因为 `cur?.fulltext` 如果 undefined，`cur?.fulltext.join` 实际上会怎样？`cur?.fulltext.join` 中 optional chaining 只作用于 `cur?.fulltext`，如果 `cur` 是 null，`cur?.fulltext` 返回 undefined，然后 `.join` 会抛 TypeError？等等：`cur?.fulltext.join('\f')` 的语义是如果 `cur` 是 null/undefined，整个表达式返回 undefined，不会调用 `.join`。因为 `?.` 短路。所以 `const fulltext = cur?.fulltext.join('\f') ?? ''` 不会抛。如果 cur 是 undefined，fulltext 为 ''。所以安全。但这样会写入空文件并计入成功。但理论不可达。
+
+**问题 F：`cleanRebuild` 与 `writeCorpusSet` 的 `CONFLICT` 守卫的交互**
+
+`cleanRebuild` 会删除 `manifest.json`。`writeCorpusSet` 的守卫检查 `existsSync(join(dir, 'manifest.json'))`。也就是说，如果用户先跑了五件套导出，目录里有 manifest.json，然后用户再用轻量 md 导出（`writeCorpusSet`）到同一目录，会被拒绝。但如果用户先跑轻量导出（没有 manifest，只有 corpus/），然后再跑五件套导出，`cleanRebuild` 会删除 corpus/ 并重建，没问题。这是好的。
+
+但是注意：`cleanRebuild` 删除 `manifest.json` 和 `manifest.tmp.json`。`writeCorpusSet` 只检查 `manifest.json`，不检查 `manifest.tmp.json`。如果之前五件套导出中断在写 manifest tmp 阶段（tmp 存在但 manifest 不存在），那么 `writeCorpusSet` 不会拒绝，会直接写 corpus/，然后留下 tmp 文件？不过 tmp 文件是 JSON，可能会在之后被误读？但 manifest.tmp.json 不是激活判据。这不算大问题。而且 cleanRebuild 会删除 tmp。
+
+**问题 G：`failSession` 的锁序（W2 处置）**
+
+W2 要求“先清理 tmp 后释放单飞锁”。实现中 `failSession` 先 `rm(MANIFEST_TMP)` 再 `session = null`。正确。
+
+**问题 H：`exportCorpusSession` 中 `paperIds` 为空数组？**
+
+Schema 要求 `paperIds` 数组 min(1)，所以 IPC 层不会传空数组。但 service 层直接调用（比如测试）可能传 `[]`。`ids = input.paperIds ?? deps.repos.papers.listAllIds()`——`??` 只对 null/undefined，空数组会保留。空数组时，preparing 循环不执行，queue 空，直接 advance -> finalizing，写 manifest，papers 空，fileCount 0。这合理吗？可能允许空导出。但 schema 已经防止从 IPC 传入空数组。服务层也许应该拒绝？但不算 bug。
+
+**问题 I：`exportCorpusSession` 中 `cleanRebuild` 在 `session` 设置之后才执行，如果用户在准备阶段取消？**
+
+没有取消路径，只有失败路径。OK。
+
+**问题 J：`corpusItem` 中 `figure` 写入，`req.annotationId` 可能是未定义？**
+
+Schema 中 annotationId 可能需要存在，取决于 figure 类型。`req.figure === 'anno'` 时 `req.annotationId` 是必填？如果是，safeName(raw ?? 'unknown') 处理了 undefined 变成 'unknown'。好。
+
+**问题 K：`progress` 事件与 `done`/`total`**
+
+`sendProgress` 在 startPaper 时发送，phase 'streaming'，此时 done 是已完成的篇数，total 是总篇数。在 preparing 完成时没有发送 'preparing' progress？看代码：`exportCorpusSession` 中的 `cleanRebuild` 后没有 sendProgress。`sendProgress` 只在 `advance` 到 finalizing 时发 'finalizing' 和 `startPaper` 时发 'streaming'。那么 'preparing' 阶段不会发送 progress？`sendProgress` 有 phase 参数包括 'preparing'，但实际调用只有 `sendProgress(s, 'streaming')`（startPaper）和 `sendProgress(s, 'finalizing')`（advance 末尾）。`sendProgress` 函数虽然支持 'preparing'，但没有调用。也许 renderer 端期望在会话开始时收到 preparing 事件？让我看看 `ExportCorpusEvent` 类型，progress 事件包含 phase，可能 renderer 需要 preparing 来初始化进度条？但是否必须？可能不是，renderer 可以在发起会话时就显示“准备中”。但 `EVENT_CHANNELS.exportCorpus` 事件流可能包括 preparing。如果 UI 依赖，可能缺失。但这不是正确性 bug，可能只是 UI 体验。不过如果协议规定了 phase，实现就应该发送。看看 schema 中 `ExportProgressEvent` 的 phase 定义？diff 里没有显示 `exportProgressEventSchema` 的具体定义，但函数签名支持 'preparing' | 'streaming' | 'finalizing'。注释说“preparing：清空重建+逐篇装配 corpus md”，但没有发送 preparing 事件。这可能是个问题：renderer 可能永远收不到 preparing 事件。但这不会被测试捕获（测试只关心 extract-request 和最终结果）。这算一个 WARN？也许。
+
+实际上，`sendProgress` 在 `startPaper` 中被调用，phase 'streaming'。在 finalizing 前调用 phase 'finalizing'。没有 preparing。如果 AI-04 的 UI 需要 preparing 事件来显示“准备中”，那么这里少了。但也许 UI 会在发起时自己设置 preparing 状态。这个可以指出。
+
+**问题 L：`sendExportEvent` 在 bootstrap 中遍历所有窗口**
+
+```ts
+sendExportEvent: (e) => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
+  }
+},
+```
+如果窗口已销毁？`getAllWindows()` 返回存在的窗口，但可能 webContents 正在销毁？发送到销毁中的 webContents 可能抛异常？通常 `win.webContents.send` 对已销毁的 webContents 会返回 false 但不抛？可能安全。与 sendProgress 同型，没问题。
+
+**问题 M：`corpusSessionReqSchema` 的 `paperIds` 与 `exportCorpusSession` 中 `paperIds` 传递**
+
+IPC handler:
+```ts
+corpusSession: async (req) => {
+  const dir = await deps.dialogs.pickFolder()
+  if (dir === null) {
+    throw new ExportIpcError('CANCELLED', '已取消选择导出目录')
+  }
+  return deps.services.export_.exportCorpusSession({
+    dir,
+    paperIds: req.paperIds
+  })
+},
+```
+这里 `req.paperIds` 是 `string[] | undefined`。OK。
+
+**问题 N：`orderAiNotes` 中 `sourceRole` 和 `question` 字段加入 `AiNoteEntry`**
+
+`AiNoteEntry` 原有字段 `source`、`content`、`page`？看接口定义在 assemble 中：
+```ts
+export interface AiNoteEntry {
+  source: string
+  content: string
+  page?: number
+}
+```
+`OrderedAiNoteEntry extends AiNoteEntry` 添加 `sourceRole` 和 `question`。然后 `orderAiNotes` 返回 `OrderedAiNoteEntry[]`。`assembleCorpusMd` 现有的参数 `aiNotes` 类型是 `AiNoteEntry[]` 还是 `readonly AiNoteEntry[]`？如果是 `AiNoteEntry[]`，`OrderedAiNoteEntry[]` 可以赋值。OK。
+
+`orderAiNotes` 的排序：`ROLE_ORDER` 对象键是 `AiNoteRole`，包括 'first-read' | 'second-read' | 'adjudicate'。如果未来新增 role，类型会报错。OK。
+
+**问题 O：潜在的数据竞争 / 竞态**
+
+`exportCorpusSession` 是 async，它在整个过程中保持 session 非空。`corpusItem` 从 renderer 接收回传。`corpusItem` 在处理时改变了 session.current。`advance` 可能在 `corpusItem` 的 `finishPaper` 中被调用，它可能 start 下一篇。所有这些都是异步的，但 JS 单线程。`exportCorpusSession` 的 `await cleanRebuild` 会挂起，此时 session 已设置，但还没有发送 extract-request。renderer 可能已经收到事件？事件流：`exportCorpusSession` 调用 IPC handler 后，先 pickFolder（await），然后调用 service。service 设置 session，然后 cleanRebuild（await fs 操作），然后 preparing 循环（writeFile 等），然后 advance 发出第一个 extract-request。在此之前，IPC handler 的 promise 尚未 resolve（因为 service 的 promise 在最终 resolve）。所以 renderer 在收到 extract-request 之前，`exportCorpusSession` 的 IPC promise 还挂着。OK。
+
+一个竞态：如果 renderer 在会话进行中发送了 `corpusItem`，而同时 `exportCorpusSession` 的 promise 被 resolve 了？不会，resolve 只在 finalizing 之后。
+
+**问题 P：`cleanRebuild` 删除目录的 TOCTOU**
+
+`cleanRebuild` 先 `rm(join(dir, sub), ...)` 再 `mkdir`。如果目录被外部替换为符号链接？对于本地单用户应用，威胁不大。如果 `dir` 是用户选择的目录，可能包含符号链接子目录？比如 `corpus` 是指向其他位置的符号链接，`rm(..., {recursive: true, force: true})` 会删除符号链接本身还是目标内容？需要知道 Node 的行为：`fs.rm` 对符号链接，默认 `recursive: true` 会删除链接本身（不会跟随）。所以安全。`mkdir` 创建新目录。OK。
+
+**问题 Q：路径穿越防护的覆盖**
+
+B2 处置：safeName 消毒 annotationId。但 fulltext 文件名和 corpus md 文件名使用 `paperId` 直接拼接。paperId 来自 db。但 `corpusItem` 回传的 `req.paperId` 用于校验 `req.paperId !== s.current.paperId`，没有直接拼路径。所以路径拼接受控于 service 从 db 读到的 paper.id。但 `startPaper` 中 `url: \`app-file://${paper.id}\``，也是 db 值。所以路径穿越风险主要在 annotationId，已消毒。但 `page-${req.page}.png` 中 req.page 来自 renderer，虽然类型是 number，但 schema 可能允许任意整数。如果 page 是 `-1` 或 `0`，文件名是 `page--1.png` 或 `page-0.png`，不会路径穿越。如果 page 很大，也只是文件名。OK。
+
+`figure` 目录名 `cur.paperId` 来自 db。OK。
+
+**问题 R：`safeName` 对 annotationId 的消毒是否足够？**
+
+`raw.replace(/[^a-zA-Z0-9_-]/g, '_')`——将任何非字母数字下划线连字符替换为下划线。这阻止了 `..`、`/`、`\` 等。但注意，如果 raw 是 `'..'`，变成 `'__'`，不会路径穿越。如果 raw 是 `'a/b'`，变成 `'a_b'`。安全。但如果 raw 是 `'..\\..\\foo'`，反斜杠变成下划线。安全。B2 采纳。
+
+但注意 safeName 在每次 figure 写入时定义在函数内。这没问题。
+
+**问题 S：`corpusItem` 的 `kind: 'error'` 分支**
+
+```ts
+} else {
+  await finishPaper(s, cur.paperId, { ok: false, reason: req.reason })
+}
+```
+如果 `req.kind` 是 'error'，`req.reason` 是 string。如果 schema 保证了 reason 存在。OK。
+
+**问题 T：`exportCorpusSession` 中 `total` 为 0**
+
+如果 `ids` 长度为 0（比如空库且没有显式 paperIds），`total = 0`。preparing 循环不执行，advance 直接 finalizing。此时 `papers: []`，manifest 写出来。`fileCount: 0`。这是合理的空会话。但 `sendProgress` 不会发送任何 progress？advance 到 finalizing 会发送 `progress` phase 'finalizing'，done=0 total=0。OK。
+
+**问题 U：`finishPaper` 中 `fulltext` 的 join 顺序**
+
+`cur.fulltext` 是一个数组，按 renderer 回传顺序 push。如果 renderer 并发回传 fulltext 页（乱序），fulltext 会乱序。但 AI-02 可能有逐页顺序回传。看测试中 emulateExtractor 顺序发送。schema 可能没有保证顺序。如果 renderer 并发发送多个 fulltext 页，`cur.fulltext.push` 的顺序取决于 IPC 到达顺序。Electron IPC 是顺序的吗？`ipcRenderer.send` 是异步但有序？实际上 Electron IPC 消息按顺序传递，对于同一个 renderer 到 main 的 send，是 FIFO。所以不会乱序。OK。
+
+**问题 V：`advance` 中 finalizing 写 manifest 时，如果 `s.papers` 很大，JSON.stringify 可能阻塞事件循环**
+
+对于本地单用户，可能不是大问题。但如果有上千篇，写一个大 JSON 文件可能耗时。不是审计硬伤。
+
+**问题 W：`sessionId` 生成**
+
+`sessionId: \`cs-${now()}-${Math.trunc(Math.random() * 1e6)}\``。如果 now 相同（测试固定时间），Math.random 提供随机性。但如果有两个会话在同一毫秒且随机数碰撞，概率极低。而且单飞锁保证同时只有一个会话。OK。
+
+**问题 X：`corpusItem` 的防御校验返回 INVALID_REQUEST 而不是忽略**
+
+如果 renderer 发来一个旧的、属于上一个会话的回传（比如上一个会话结束后迟到的 complete），`s` 可能是 null（新会话未开始）或 s.current 是 null（在新会话的 preparing 阶段）。那么抛 INVALID_REQUEST。这可能会被 renderer 当作错误处理。但注释说“防御拒绝不扰动在途会话”。OK。
+
+**问题 Y：`failSession` 后 session 释放，但 `corpusItem` 中 catch 到 `failSession` 后 rethrow 原始错误**
+
+如果原始错误是 `SessionError` 且 code 是 'INVALID_REQUEST'，rethrow。否则 failSession 并 rethrow。但注意：如果 failSession 中的 `s.reject` 被调用，然后 rethrow 原始错误，渲染端会收到 IPC 错误（promise rejection），同时 `exportCorpusSession` 的 promise 也被 reject。这是双路径，可能重复。但 renderer 的 `corpusItem` 调用方（CorpusExtractor）可能会 catch 错误并停止提取。而 `exportCorpusSession` 的 promise 的 rejection 会被设置页 UI 捕获。这也许可以。
+
+**问题 Z：`SessionError` 与 `toAppError` 的映射**
+
+`SessionError` 的 code 是 `AppErrorCode`，注释说“code 经 register toAppError 结构化保留”。IPC 层错误如何映射？在 `export_.ts` 中，`corpusSession` 直接调用 service，如果 service 抛 `SessionError`，它可能被 ipc 包装层捕获并转为 app-error。需要确认错误映射是否注册了 EXPORT_BUSY。`app-error.ts` 添加了 `EXPORT_BUSY` 到 `APP_ERROR_CODES` 数组。如果 `toAppError` 使用这个数组识别 SessionError？`SessionError` 是 Error 子类，不是 Result 类型。可能 IPC handler 包装层会捕获任意 Error，如果它有 `code` 属性，转为 AppError。不深究。
+
+现在检查 **测试纪律**。
+
+测试代码中直接写 SQL INSERT 到 h.db，这没问题。测试是否恒真？`nextExtract` 轮询最多 200 次，每次 5ms，超时抛错。这可以失败。测试断言了真实输出（corpus md 内容、fulltext 页界、figures 文件名、manifest sha）。符合“e2e 必须断言渲染出真实文本”的精神（虽然不是 e2e）。
+
+但注意测试中的 `emulateExtractor` 和 `nextExtract` 配合。`nextExtract` 的 afterIndex 逻辑：它从 events 中筛选 extract-request，返回 `reqs[afterIndex]`。在幂等重导测试中，`extractSeq` 在第一次 run 后 +1，第二次 run 时会寻找 `reqs[1]`。但 events 数组是累积的，第一次 run 已经产生了一个 extract-request，第二次会产生第二个，所以 `reqs[1]` 是第二个。OK。但注意 `emulateExtractor` 在内部调用 `h.svc.corpusItem`，这些不会产生新的 extract-request，所以序号正确。
+
+在“落盘失败”测试中：
+```ts
+const retry = h.svc.exportCorpusSession({ dir: h.dir })
+await emulateExtractor(h, await nextExtract(h, 1))
+const r2 = await retry
+expect(r2.errorCount).toBe(0)
+```
+这里 nextExtract(h, 1) 等待第二个 extract-request。第一个 extract-request 在原始会话中已产生。但是，原始会话因写盘失败 failSession，此时 events 里可能有 1 个 extract-request。重试会话会再产生一个。nextExtract(h, 1) 会等待第二个，正确。但注意在 failSession 时，events 中可能没有第二个。重试后会有。OK。
+
+测试“EXPORT_BUSY”：
+```ts
+await expect(h.svc.exportCorpusSession({ dir: h.dir })).rejects.toMatchObject({ code: 'EXPORT_BUSY' })
+```
+这验证了单飞锁。OK。
+
+测试“目录隔离守卫”用的是 `createExportService`，不是 `createCorpusExportService`。它验证 `writeCorpusSet` 拒绝含 manifest 的目录。OK。
+
+测试“orderAiNotes”直接调用 `orderAiNotes`，验证排序。OK。
+
+测试文件 374 行，符合 ≤500。
+
+现在看是否有违反“禁止修改 tests/**”的迹象？没有，这是新增测试文件，而且加了锁。在 r1 裁决中，测试新增是预期的。
+
+**安全审计**
+
+- SQL 注入：生产代码无 SQL 拼接。
+- 路径穿越：annotationId 消毒。paperId 来自 db。但需要看 `app-file://${paper.id}` 是否可能被恶意利用？paper.id 来自 db，应用生成。不是用户直接输入。
+- XSS：新代码没有渲染用户内容到 HTML？INTERFACE.md 是文本。corpus md 内容由 renderer 的标注生成，但导出为文件，不展示。不涉及 XSS。
+- 不安全 API：`nodeIntegration` 没有改动。
+- 出网白名单：没有新增 host。`fetch` 之类没有新增。
+
+**生产质量**
+
+- `as unknown as` 有没有新增？N1 已经改成 definite assignment，diff 中 `let created!: ActiveSession`。没有 `as unknown as`。好。
+- 死代码：`sendProgress` 的 'preparing' 分支没有被调用，但函数体支持，不算死代码。
+- 占位实现：stub 删除。
+- 文件行数：需要确认 `corpus.export.service.ts` 总行数。diff 显示原文件头注释大约 100+ 行，新增约 274 行，最终可能 400+ 行。可能接近 500，但应该没超。测试 374 行。interface-template 47 行。没有超。
+- 重复逻辑：`safeName` 与 `writeCorpusSet` C-02 safeId 同型先例——这里重新实现了一个 safeName，而没有复用。宪法说“重复 3 次以上的逻辑抽函数；第 2 次保持重复”。这是第二次出现，所以保持重复是允许的。但也许 safeName 应该放在共享工具？不违反。
+
+**可能的 WARN/NIT 候选**
+
+1. **`sendProgress` 的 'preparing' 事件从未发送**。这是协议的一部分（schemas 中 phase 包含 preparing？需要看 diff 中 schemas 的 `exportProgressEventSchema` 是否包含 'preparing'。diff 没有显示 `exportProgressEventSchema` 的内容，只显示 `exportProgressEventSchema` 和 `ExportProgressEvent` 类型定义。`corpus.export.service.ts` 中 `sendProgress` 的参数类型是 `'preparing' | 'streaming' | 'finalizing'`。这个类型也许在 shared 中定义？`ExportProgressEvent` 是 `ExtractRequestEvent | ExportProgressEvent`，而 `ExportProgressEvent` 在 schemas.ts 中已有定义（来自之前的 AI-02）。它的 phase 可能只允许 'preparing' | 'streaming' | 'finalizing' 或其他。由于 diff 没有显示，我们只能从 service 内部看到。如果 phase 包含 'preparing'，但从不发送，可能 UI 收不到准备事件。这算一个 NIT 或 WARN？如果 renderer 依赖 preparing 来重置进度条，可能会有问题。但 AI-04 还没实现，所以现在不会暴露。可以报 WARN。
+
+   不过注意：`exportCorpusSession` 在调用 `cleanRebuild` 之前没有发送任何事件。但也许 renderer 端在调用 IPC 时已经知道会话开始，可以自己显示 preparing。因为 IPC handler 会先让用户选目录，然后才进入 service。选目录期间 UI 可以先显示“准备中”。所以缺少 preparing 事件可能不是问题。
+
+2. **`orderAiNotes` 的排序对 `question` 为 `NaN` 的情况**。如果未来 question 字符串不是 Q 开头也不是 divergence，排序不稳定。但类型系统限制了。NIT。
+
+3. **`cleanRebuild` 删除整个 `corpus`/`fulltext`/`figures` 目录**，如果用户误选目录，会删除这些子目录。但这个行为在 INV-18 中明确是“清空重建”，属于设计。不报。
+
+4. **`exportCorpusSession` 的 `total` 只用于 progress，但 `done` 可能在 preparing 阶段递增，导致 UI 进度条在会话开始前就有部分进度**。比如 100 篇中 10 篇失败，在发第一个 extract-request 之前，done 已经 10。progress 事件在 startPaper 时发送，done 已经包含失败的 10。UI 可能会看到进度从 10/100 开始。但这也许合理。NIT。
+
+5. **`corpusItem` 的 `fulltext` 分支无条件 push，没有检查 `req.page` 顺序**。如果 renderer 恶意乱序，fulltext 拼接错乱。但这是可信 renderer。不报。
+
+6. **`export_.ts` IPC handler 的 `corpusSession` 没有校验 `req.paperIds` 中的重复项**。比如 paperIds: ['p1','p1']，会导出两次？在 preparing 循环中重复处理同一个 id，queue 中会有两个相同 detail。第一个 finish 后 advance 处理第二个，两个都会写到同一个 corpus md 文件（覆盖），manifest 中会有两个相同 paperId 的条目。fileCount 会算两次。这是个逻辑 bug！如果 renderer 传了重复 paperIds，会导致重复导出。但 schema 允许数组，没有 `.unique()`。renderer 是应用自己，会传重复吗？AI-04 可能传库中选中的 id，不会重复。但防御性编程应该去重。这是一个 WARN 或 NIT？从正确性看，如果用户勾选了重复（UI 不可能），不会发生。但 API 是公开的（IPC），可以被 renderer 调用。也许应该去重。不过考虑到这是本地应用，renderer 受信任，风险低。可能 NIT。
+
+   等等，`ids = input.paperIds ?? deps.repos.papers.listAllIds()`。如果显式传入重复，会重复处理。在 `preparing` 循环中，第一次写入 `corpus/p1.md`，第二次再次写入同一个文件（内容相同），queue 中 push 两个 detail。streaming 阶段 startPaper 两次，发两个 extract-request，最终 manifest papers 里有两个 p1 条目。这会破坏幂等性和结构。虽然 UI 不可能传重复，但作为 API 应该去重。这个可以报 WARN，建议在 schema 或 service 中 `[...new Set(ids)]`。
+
+   实际上，schema 中的 `z.array(z.string().min(1)).min(1).max(1000).optional()` 没有去重。也许可以在 service 中 `ids = [...new Set(input.paperIds ?? ...)]`。这是一个改进点。
+
+7. **`exportCorpusSession` 中 `paperIds` 为空数组时**，schema 不允许，但 service 直接调用可以。空数组会生成空 manifest。也许应该不允许。但这是 API 契约，服务层可以信任调用方。NIT。
+
+8. **`finishPaper` 中 `contentSha` 读取 corpus md 文件用的是 `readFile(..., 'utf8')` 然后 `createHash().update(content, 'utf8')`**。如果文件是二进制？corpus md 是 UTF-8 文本，没问题。但是，`createHash('sha256').update(fulltext, 'utf8')` 与测试中的 `createHash('sha256').update(ft1).digest('hex')`（无编码参数，默认 utf8）一致。OK。
+
+9. **`manifest` 中 `exportedAt` 每个 paper 都和会话 exportedAt 一样**，因为 now 在写每个 paper 时调用。这是设计。INV-17 说时间戳只进 manifest，front-matter 不含。这里 per-paper exportedAt 也是 manifest 内，没问题。
+
+10. **`export.service.ts` 的 `writeCorpusSet` 守卫只检查 `manifest.json`，不检查 `INTERFACE.md`**。如果目标目录是五件套但 manifest 被删除（中断状态），轻量导出会覆盖。但中断状态没有 manifest，工具不会激活，所以问题不大。
+
+11. **`src/main/ipc/export_.ts` 中 `ExportIpcError`** 是已有类吗？从上下文看，`exportTo` 可能用它。`corpusSession` 抛 `ExportIpcError('CANCELLED', ...)`。如果 `ExportIpcError` 的 code 参数是特定的？可能已有。不深究。
+
+12. **`bootstrap.ts` 的 `sendExportEvent` 使用 `EVENT_CHANNELS.exportCorpus`**。需要确认 `EVENT_CHANNELS` 有 `exportCorpus`。schemas 中提到了 `EVENT_CHANNELS.exportCorpus`（在 CorpusExtractor 注释里），所以已存在。OK。
+
+13. **`CorpusExtractor.ts` 注释说“main 侧 handler=stub（NOT_IMPLEMENTED 随 AI-03 落地——真回传消费/落盘随其工单）”**，但更新后说“AI-03 落地”。这没问题。
+
+现在考虑 **r1 裁决处置是否闭合**：
+
+- B1 证伪：diff 中没有 `${` 字面量。我们看到的代码中有 `\`cs-${now()}-${Math.trunc(...)}\`` 模板字符串，但这是 JS 模板插值，不是未被转义的 `${}` 字面量。B1 指控的是 INTERFACE 模板中的 `${}`。interface-template.ts 中使用了反引号模板字符串，里面没有 `${}` 字面量（没有需要转义的）。实际模板内容中 `\`manifest.json\`` 等是反引号转义，没有 `${`。所以 B1 证伪成立。
+- B2 采纳：safeName 已实现，并用于 anno 文件名。闭合。
+- W1 采纳：stat 探测在 preparing 中实现，且测试覆盖。闭合。
+- W2 采纳：failSession 先清理 tmp 后释放锁。闭合。
+- N1 采纳：definite assignment `created!`。闭合。
+- N2 采纳：注释口径？N2 说“schemas 注释口径”目录选择归 ipc 层。在 schemas.ts 中 `corpusSessionReqSchema` 注释写道“目录经 main 侧系统对话框选择（INV-07——ipc 层选，service 收已选 dir）”。符合。闭合。
+
+所以处置闭合。B1 证伪成立。
+
+现在决定最终 verdict。
+
+有没有 BLOCKING 级别的问题？我们发现的：
+- 重复 paperIds 未去重：正确性缺陷，但不太可能发生。也许 WARN。
+- `sendProgress` 的 preparing 事件缺失：协议/UI 问题，也许 WARN。
+- 其他都是 NIT。
+
+有没有违反硬规则？没有明显违反。受锁文件变更应该有 `[locked-change]` 尾注，但 diff 无法显示 commit message。如果 commit message 没有尾注，那是违规。但我们不能推断。同样 package.json 没有变更。
+
+测试纪律：没有放宽断言，测试很全面。
+
+所以 verdict 应该是 `PASS_WITH_WARNINGS`。
+
+但等等，需要更仔细看是否有隐藏的 BLOCKING。
+
+**检查 `exportCorpusSession` 的 Promise executor 中 `created` 变量**
+
+```ts
+let created!: ActiveSession
+const promise = new Promise<CorpusSessionRes>((resolve, reject) => {
+  created = {
+    ...
+  }
+})
+const active = created
+session = active
+```
+
+Promise executor 是同步执行的，所以 `created` 会被赋值。`created!` 是 definite assignment assertion，告诉 TS 它已初始化。这在运行时是安全的。但是否有规范问题？AGENTS.md 没有禁止 definite assignment。N1 就是要求用 definite assignment 替代 `as unknown as`。所以这是采纳。
+
+**检查 `advance` 中 finalizing 的 writeFile + rename 原子性**
+
+`writeFile(MANIFEST_TMP)` 然后 `rename(MANIFEST_TMP, 'manifest.json')`。在 Windows 上，`rename` 如果目标已存在会失败吗？Node 的 `fs.rename` 在 Windows 上，如果目标存在，会替换吗？实际上 `fs.rename` 在 Windows 上，如果 newPath 已存在且是文件，会覆盖（类似 MoveFileEx with MOVEFILE_REPLACE_EXISTING）。所以原子替换成立。但注意如果 `rename` 失败，catch 会 failSession，清理 tmp，reject。此时可能旧的 manifest 还在？cleanRebuild 已经删除了旧的 manifest，所以没有旧的。如果 rename 失败，目录里只有 tmp，没有 manifest。重跑修复。OK。
+
+**检查 `cleanRebuild` 中 `rm(join(dir, sub), { recursive: true, force: true })` 后 `mkdir`，如果 `join(dir, sub)` 是文件（比如用户目录下有一个名为 `corpus` 的文件），`rm` 会删除文件，然后 mkdir 创建目录。这可能导致用户文件丢失。但这是“清空重建”设计。用户选择了导出目录，应用会管理这些子路径。但如果不小心选了含有同名文件/目录的目录，会删除。这是设计，但也许应该在 UI 中警告。不算 bug。
+
+**检查 `startPaper` 中 `app-file://${paper.id}`**
+
+`app-file://` 协议是否是注册的？如果 main 进程有协议处理，renderer 用这个 URL 来加载 PDF。如果 paper.id 包含特殊字符（如 `#`），URL 可能解析错误。但 paper.id 是应用生成的 ID，如 `p-1`。OK。
+
+**检查 `corpusItem` 中 `kind: 'figure'` 的 base64 解码**
+
+`Buffer.from(req.payload, 'base64')` 如果 payload 非法，会返回空 buffer 或忽略非法字符。如果 payload 很大（比如整页 PNG），解成 buffer 后在内存中。之后写文件。没问题。
+
+**检查 `corpusItem` 中 `cur.figures.push(\`figures/${cur.paperId}/${name}\`)`**
+
+`name` 经过 safeName 或 `page-${req.page}.png`。`req.page` 是 number，不是字符串，没有消毒。如果 `req.page` 是 `1`，name 是 `page-1.png`。如果 page 是 `0.5`？schema 应该限制整数。不深究。
+
+**检查 `exportCorpusSession` 中 `active.errors.push({ paperId: id, reason: '文献记录不存在' })` 时 `active.done += 1`**，但 total 是 ids.length。如果所有篇都不存在，done 会等于 total，queue 空，advance 进入 finalizing，写 manifest（papers 空，errors 有）。fileCount 0，errorCount N。`exportCorpusSession` resolve。这与“中断=无 manifest”不一致？不，这是正常完成，有 manifest，只是没有成功篇。工具侧可以激活，看到 0 篇。也许合理。
+
+**检查测试中 seedAiNote 的 `insert` 调用**
+
+测试调 `h.repos.aiNotes.insert({...})`，这是真实 repo，会写库。没问题。
+
+**检查 `orderAiNotes` 的 `content` 拼接**
+
+`content: \`${n.question}: ${n.contentMd}\``——如果 contentMd 为空，产生 `Q1: `。可能空行？但 AI 笔记应该有内容。OK。
+
+**检查 `assembleCorpusMd` 的调用**
+
+`assembleCorpusMd({ paper, note, annotations, aiNotes: orderAiNotes(...) })`。`aiNotes` 参数类型是否与 OrderAiNoteEntry[] 兼容？如果 `assembleCorpusMd` 期望 `readonly AiNoteEntry[]`，兼容。OK。
+
+**检查 `interface-template.ts` 中的内容**
+
+模板字符串中包含反引号吗？内容里写的是：
+```
+- \`INTERFACE.md\`：本说明书
+```
+这是转义了反引号，所以不会破坏模板字符串。还有 `manifest.json` 等均为普通文本。没有 `${`。OK。
+
+**检查 `locks/manifest.json` 变更**
+
+`src/shared/app-error.ts` sha 从 ee3052e 变为 0d9ca73。我们看 diff 中 app-error.ts 增加了两行（EXPORT_BUSY），所以 sha 变化是合理的。`src/shared/ipc/api-surface.ts` 和 `schemas.ts` 也变化。新增 `tests/unit/services/corpus.export.test.ts`。这些都是受锁文件。locks:apply 已更新。OK。
+
+但有一个问题：`locks/manifest.json` 的 `generatedAt` 是 2026-08-25T23:12:44，而测试文件里的 `now: () => '2026-08-27T00:00:00.000Z'` 以及 docs/invariants 写的锚定日期 2026-08-27。manifest generatedAt 比 inv 锚定日期早？也许系统日期不一致。不重要。
+
+**检查是否有遗漏的受锁文件变更**
+
+diff 里还有 `src/renderer/features/reader/CorpusExtractor.ts`（注释改动）和 `docs/invariants.md`、`tickets/registry.ts`。`src/renderer/features/reader/CorpusExtractor.ts` 不是受锁文件（不在 manifest 中？）因为它在 `src/renderer/` 下，受锁的是 shared、tests、migrations、CI、lint 等。CorpusExtractor 不是受锁。docs 和 tickets 也不是。OK。
+
+**检查 tickets/registry.ts 状态翻为 done**
+
+这符合完成定义。OK。
+
+现在综合判断：
+
+- 有没有 BLOCKING？我认为没有。也许有人会认为重复 paperIds 是 BLOCKING 正确性缺陷。但由于 schema 和调用方（AI-04 UI 勾选）不会产生重复，且服务层没有明确要求去重，我判断为 WARN。
+
+- WARN 候选：
+  1. `exportCorpusSession` 不处理 `paperIds` 去重，IPC schema 也没有 `unique` 约束，若调用方传重复 id 会导致 manifest 出现重复条目、文件被重复处理。
+  2. `sendProgress` 从未发送 `phase: 'preparing'` 事件，但类型和协议暗示该 phase 存在，AI-04 设置页可能依赖它来展示准备阶段进度。
+  3. 其他 NIT：`questionOrder` 对非 Q 字符串返回 NaN 导致不稳定排序（但类型限制）。
+
+也许还有一个 WARN：`corpusItem` 对 `req.figure === 'anno'` 时，`annotationId` 来自 renderer，且在文件名中使用。虽然 safeName 消毒了，但如果 `annotationId` 是 100 个字符，文件名很长。不是问题。
+
+还有一个潜在 WARN：`cleanRebuild` 在会话开始时不检查 `dir` 是否为空或是否为应用可以管理的目录，直接 `rm` 三个子目录。如果用户选择的目录是某个重要目录且恰好包含 `corpus` 子目录（比如用户自己的工作目录），会被完全删除。这是一个数据丢失风险。但 INV-18 明确要求“会话开始删旧 manifest+清空重建 corpus/fulltext/figures”，这是设计。而且对话框让用户选择导出目录，用户应该知道。不算违规。但产品上也许应该在 UI 确认。不报。
+
+另一个潜在 WARN：`writeCorpusSet` 的目录隔离守卫只检查 `manifest.json`，但五件套目录可能包含 `manifest.json` 被用户删除后，轻量导出会覆盖 `corpus/`，造成新旧混合。但守卫的目的就是防止激活状态的误覆盖，如果 manifest 被删，工具不激活，混合风险降低。不报。
+
+现在决定 NIT 列表：
+- `questionOrder` 的 NaN 风险。
+- `sendProgress` 的 preparing 事件缺失（也许算 WARN）。
+- `exportCorpusSession` 中 paperIds 去重（也许算 WARN）。
+- `process` 事件 done/total 顺序？不。
+
+等等，还需要检查 **`CorpusExportService` 接口与实现**：
+
+```ts
+export interface CorpusExportService {
+  exportCorpusSession(input: { dir: string; paperIds?: string[] }): Promise<CorpusSessionRes>
+  corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
+}
+```
+
+实现中 `corpusItem` 可能抛 SessionError（INVALID_REQUEST、INTERNAL、IO_ERROR），但返回类型是 `Promise<{ ok: true }>`，抛错也算符合。OK。
+
+**`service.index` 中 export_ 合并的顺序**
+
+```ts
+export_: {
+  ...createExportService({ repos: deps.repos }),
+  ...createCorpusExportService({...})
+}
+```
+如果两个 service 有同名方法，后者覆盖前者。`createExportService` 有 `writeCorpusSet`、`buildBibtex` 等，`createCorpusExportService` 有 `exportCorpusSession`、`corpusItem`。没有冲突。OK。
+
+**`bootstrap.ts` 的 sendExportEvent 与 service 注入**
+
+`createServices` 接收 `sendExportEvent`。`bootstrap.ts` 传入 `sendExportEvent`。OK。
+
+**`export_.ts` IPC 的 `corpusSession` 需要 `deps.dialogs.pickFolder()`**
+
+`IpcDeps` 是否有 `dialogs`？从上下文看，`exportTo` 已经用了 `dialog` 相关。`corpusItem` 使用 `deps.dialogs.pickFolder()`。这个 API 存在吗？我们看 `exportTo` 函数：
+```ts
+exportTo('synapse-export.bib', BIB_FILTER, () => ..., req.paperIds.length)
+```
+`exportTo` 内部可能用 `deps.dialog.showSaveDialog`。`pickFolder` 可能已存在。不深究。如果不存在，typecheck 不会过。简报说 typecheck 0，所以存在。
+
+**检查 `EVENT_CHANNELS.exportCorpus` 事件与会话的关联**
+
+`sendExportEvent` 发送的事件包含 `sessionId`，renderer 可以区分。OK。
+
+**检查 `schemas.ts` 中 `ExportCorpusEvent` 类型**
+
+`ExportCorpusEvent = ExtractRequestEvent | ExportProgressEvent`。`exportProgressEventSchema` 在之前已有。`corpus.export.service.ts` 中 `sendEvent: (e: ExportCorpusEvent) => void`，发送的 `req` 是 `ExtractRequestEvent`，`progress` 是 `ExportProgressEvent`。OK。
+
+**检查 `progress` 事件的 `phase` 类型**
+
+`sendProgress(s, phase: 'preparing' | 'streaming' | 'finalizing')`。而 `ExportProgressEvent` 的 `phase` 类型可能只包含 `'preparing' | 'streaming' | 'finalizing'`。如果 `ExportProgressEvent` 的 phase 是 `'importing' | 'processing'` 呢？不可能，因为 sendProgress 调用编译通过，说明类型兼容。OK。
+
+现在，关于 **`nextExtract` 测试中的轮询 EventEmitter 模式**：
+
+测试中没有使用真正的 EventEmitter，而是轮询数组。这可能导致测试慢（200*5ms=1s max），但可接受。
+
+**测试中是否可能误报？**
+
+`nextExtract` 轮询条件 `reqs.length > afterIndex && hit !== undefined`。如果 events 数组中第二个 extract-request 还没出现，循环等待。但如果 afterIndex 已经超出最终数量，会超时抛错。这会导致测试失败。所以不是恒真。OK。
+
+**检查测试中对 `reads` 的断言**
+
+`expect(figs1).toEqual(['anno-a-1.png', 'page-1.png'])`。`readdir` 返回排序？`readdir` 在 Node 中不保证顺序，但测试中 `.sort()` 了。OK。
+
+**检查 `seedAnnotation` 的 SQL 中的列名**
+
+`annotations` 表列名是否与 repo 一致？`page`、`kind`、`quote_text` 等。测试直接写 SQL，如果表结构不匹配，会抛错。但测试通过了。OK。
+
+现在整理最终输出。
+
+Verdict: PASS_WITH_WARNINGS。
+
+Findings:
+
+1. WARN：`src/main/services/export_/corpus.export.service.ts` line_hint: `exportCorpusSession` 中 `const ids = input.paperIds ?? deps.repos.papers.listAllIds()`，未对显式传入的 `paperIds` 去重。IPC schema `corpusSessionReqSchema` 也未加 `unique`。若有重复 id，preparing 会重复装配同一篇、queue 出现重复项，最终 manifest.papers 含重复 paperId、fileCount 虚高，破坏幂等结构。建议 `const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]`。
+
+2. WARN：`src/main/services/export_/corpus.export.service.ts` line_hint: `sendProgress` 支持 `phase: 'preparing'` 但会话准备阶段未发送任何 progress 事件（`startPaper` 直接发 streaming、finalizing 前发 finalizing）。若 AI-04 设置页依赖 preparing 事件做状态展示，会出现缺口。建议在 `cleanRebuild` 前发送一次 `{type:'progress', phase:'preparing'}` 或明确从类型/协议中移除该 phase。
+
+   等等，我们不知道协议是否期望 preparing。但 sendProgress 函数签名显示支持。如果协议中 `ExportProgressEvent` 的 phase 类型包含 'preparing'，那确实应该发。如果不包含，为什么 sendProgress 的参数类型有这个值？这个类型是从哪来的？可能是本地定义的 `'preparing' | 'streaming' | 'finalizing'`，而 `ExportProgressEvent` 的 phase 可能是 `string`？不，如果 phase 类型不匹配，编译会失败。所以 shared 协议一定允许 'preparing'。因此不发是协议缺口。好，WARN。
+
+3. NIT：`src/main/services/export_/corpus.assemble.ts` line_hint: `questionOrder` 对非 `divergence` 且非 `Q<数字>` 的字符串返回 NaN，导致排序比较不稳定。当前类型约束下不可达，建议用显式映射或 `Number.parseInt` + `Number.isNaN` 兜底。
+
+4. NIT：`src/main/services/export_/corpus.export.service.ts` line_hint: `exportCorpusSession` 的 preparing 失败篇在首个 extract-request 前就递增 `done`，导致 progress 事件从 `done > 0` 开始，进度条初始跳变。建议单独统计 preparing 失败或调整 total 口径。
+
+   这个算 NIT 吗？可能。
+
+还有别的吗？
+
+**检查安全方面**：
+
+- `corpusItem` 中 `kind: 'figure'` 写入 base64 数据。如果 `req.payload` 是 `'../../../../etc/passwd'` 这种 base64 字符串，解码后是二进制垃圾，写入 `page-1.png`。文件名安全，内容无害。OK。
+
+- `corpusSession` IPC handler 的 `dir` 来自 `pickFolder()`，所以是系统对话框选中的绝对路径。service 的 `cleanRebuild` 在此 dir 下操作。如果 pickFolder 返回不可信路径？不，来自对话框。
+
+**检查 `app-error.ts` 的 `APP_ERROR_CODES` 顺序**
+
+添加了 `EXPORT_BUSY` 在数组开头。顺序无关。OK。
+
+**检查 `schema` 的 `.strict()`**
+
+`corpusSessionReqSchema` 是 strict，禁止额外字段。OK。
+
+**检查 `corpusSessionResSchema`**
+
+`dir` 是 string，`fileCount`、`errorCount` 是 int min 0。OK。
+
+**检查 `schema` 中 `paperIds` 的 `max(1000)`**
+
+全库导出不经过 schema？IPChandler 接收的 `req` 是 `corpusSessionReqSchema` 解析后的。如果 renderer 不传 paperIds，`req.paperIds` 是 undefined，服务层用 `listAllIds()`。所以全库不受 1000 限制。这是设计。但如果全库超过 1000，没有问题。OK。
+
+**检查测试是否锁定了 `tests/unit/services/corpus.export.test.ts`**
+
+locks/manifest 新增该文件 sha256。OK。
+
+**检查 `tickets/registry.ts` 状态**
+
+SR2-AI-03 翻 done。OK。
+
+现在考虑是否要有 BLOCKING？
+
+让我再想想重复 paperIds 是否可能通过 IPC 发生。renderer 的 AI-04 是设置页，用户勾选论文后点击导出。UI 通常会去重。但 IPC 通道是 `window.api` 暴露的，任何 renderer 代码都可以调用。renderer 代码受信任，但可能存在 bug 导致重复。服务层作为底层，应该防御。不过这不是安全漏洞，只是数据正确性。如果重复 id 导致 manifest 有重复 paperId，AI 消费者（zcode）读取时可能按 paperId 索引，重复条目会覆盖或混乱。但概率低。我保持 WARN。
+
+`sendProgress` 的 preparing 缺失：如果 UI 不依赖，不是问题。但协议中有这个值却不用，会导致 UI 在用户选择目录后到第一个 extract-request 之间没有反馈。用户可能以为卡住了。这其实值得 WARN。
+
+另一个值得注意的点：**`cleanRebuild` 在 `session` 设置后、`try` 块内执行。如果 `cleanRebuild` 抛错，`failSession` 会 reject promise。但此时 `session` 已经释放。如果失败发生在 `cleanRebuild` 中（比如 `dir` 不存在？`rm` force 不会抛，`mkdir` 会创建父目录，所以不太会抛）。如果 `writeFile(INTERFACE.md)` 失败（磁盘只读），会抛，failSession。OK。
+
+**检查 `fileStore.resolveManagedPath(detail.fileName)`**
+
+`detail.fileName` 来自 db 的 file_ref。`resolveManagedPath` 可能返回一个受管目录下的路径。测试中它返回 `join(dir, 'files', fileRef)`。如果 fileName 包含 `../`，`resolveManagedPath` 可能会解析到超出受管目录？这是 FileStore 的职责，不在本 diff。但注意 `stat(managedPath)` 只检查存在性，不检查路径是否在受管目录内。如果 fileName 来自 db 且受控，OK。
+
+**检查 `startPaper` 中的 `annotations: deps.repos.annotations.listByPaper(paper.id)`**
+
+如果某个 annotation 的 rects 很大，事件载荷会很大。但 extract-request 只是元数据。OK。
+
+**检查 `advance` 中 `queue.shift()` 的作用**
+
+queue 是数组，shift 从头部取，O(n) 但 n 可能上千，性能可接受。NIT 不算。
+
+**检查 `failSession` 后的 `session = null` 是否在 reject 之前**
+
+`failSession`:
+```ts
+await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
+session = null
+s.reject(new SessionError('IO_ERROR', message))
+```
+先置 null 再 reject。如果在 reject 时又有新会话开始，不会与旧会话冲突。好。
+
+**检查 `failSession` 中 `s.reject` 之后，调用方 catch 块继续**
+
+`exportCorpusSession` 的 catch 调用 `await failSession(...)`，failSession 内 reject 后返回。然后 `return promise`。此时 promise 已 reject，但函数返回的 promise 是同一个 promise，所以调用方会收到 reject。但注意：`exportCorpusSession` 的 async 函数在 `return promise` 时，因为 promise 已经 reject，async 函数会等待 promise 状态？实际上 async 函数的返回值如果是一个 promise，async 会将其“展开”（assimilate）。如果 promise 已经 reject，返回的 promise 也是 reject。所以 IPC 调用方会收到 reject。OK。
+
+但有一个问题：在 `exportCorpusSession` 中，如果 `cleanRebuild` 抛错，进入 catch，调用 `failSession`，它会 reject `s.reject`。但之后 `return promise`，而 promise 已经 reject。这正常。但如果 failSession 中 `rm` 因为意外（比如权限）抛错？failSession 内部 catch 了 rm，但 `s.reject` 本身不抛。所以 failSession 正常返回。OK。
+
+**检查 `corpusItem` catch 中 `if (e instanceof SessionError && e.code === 'INVALID_REQUEST') throw e`**
+
+如果一个非 INVALID_REQUEST 的 SessionError（比如 INTERNAL）在 `detail === null` 时抛出，catch 会调用 failSession 并 rethrow。failSession reject 导出 promise，然后 rethrow INTERNAL 给 corpusItem 调用方。这导致导出会话失败，同时 corpusItem 返回错误。合理。
+
+**检查进度事件的 total**
+
+`total` 在创建 session 时设为 ids.length。preparing 中失败篇不改变 total。progress 事件在 startPaper 时发送，done 是当前已完成篇数。如果 preparing 阶段有失败，done 从失败数开始。这可能会让 UI 显示“已完成 x/y”但 y 包含那些已失败的篇。合理，因为那些篇已经处理完毕（失败也算处理）。所以不是 bug。
+
+**检查 `INTERFACE.md` 中的 “全文” 用词**
+
+没有乱码。OK。
+
+**检查 `corpus.assemble.ts` 中 `AI_Note` 导入**
+
+`import type { AiNote, AiNoteRole } from '../../../shared/models/ai-note'`。如果 shared 模型有这些类型，OK。注意 `AiNote` 类型在哪定义？`src/shared/models/ai-note.ts`。OK。
+
+**检查 `OrderedAiNoteEntry` 的 `question: string`**
+
+`AiNote` 的 `question` 类型是 `AiNoteQuestion`（'Q1'..'Q7' | 'divergence'）。`orderAiNotes` 映射为 string。OK。
+
+现在，有没有可能违反 **“单会话单飞（EXPORT_BUSY）”** 的语义？`exportCorpusSession` 在 `cleanRebuild` 期间 session 非空，所以第二会话会拒绝。但注意：`exportCorpusSession` 的 IPC handler 先 `await deps.dialogs.pickFolder()`，然后调用 service。如果用户 A 在选目录时，用户 B 发起另一个导出并选目录？单窗口应用，不会并发。但理论上 dialog 是模态的。W2 已经接受“对话框期间并发由模态性+BUSY 兜底”。OK。
+
+**检查 `corpusItem` 的 `INVALID_REQUEST` 是否可能误伤**
+
+在 `corpusItem` 中，如果 `s.current === null`，说明当前没有正在提取的篇。可能发生在：
+- 会话在 preparing 阶段（尚未 startPaper）
+- 会话在 finalizing 阶段（所有篇完成，current 为 null）
+- 会话已结束（session 为 null）
+
+renderer 的 CorpusExtractor 只会对 extract-request 事件回传。如果 extract-request 后 current 已设置，不会被误伤。在 finalizing 阶段，renderer 不应该再发。但如果网络/异步延迟导致 complete 在 finalizing 之后到达（不可能，因为 finishPaper 的 advance 是同步链）。如果 renderer 并发发送了一个 complete 和一个 figure，两个消息到达顺序可能交错？Electron IPC 保持发送顺序，所以如果 renderer 按顺序发送，main 按顺序接收。但如果 renderer 在发送 complete 之后又发送了一个迟到的 figure（逻辑错误），会 INVALID_REQUEST。防御有效。
+
+**检查 `exportCorpusSession` 的 `exportedAt` 时间**
+
+`now: () => '2026-08-27T00:00:00.000Z'` 在测试中，manifest.exportedAt 和 per-paper exportedAt 都是这个固定值。幂等测试断言 `manifest exportedAt 不参与逐字节断言`，但没有断言 manifest 内容。OK。
+
+**检查 `corpus.export.service.ts` 文件行数**
+
+我们需要估计完整文件行数。diff 显示原文件约 110 行（到 `@@ -103,27 +111,274 @@` 前）。新文件从 111 行开始有 274 行新增，但实际新文件总行数 = 原文件前面部分 + 新增部分 + 后面保留部分。原文件从 1 到约 130 行（因为第二段 hunk 显示 `@@ -103,27 +111,274 @@`，说明原 103-129 行，新 111-384 行）。所以总行数可能 384+。如果原文件有 130 行，新文件约 390 行。没有超过 500。OK。
+
+**检查 `corpus.export.test.ts` 的 guardedDescribe**
+
+`guardedDescribe` 来自测试工具，可能根据环境跳过。这不是问题。
+
+**检查 `locks/manifest.json` 中新增测试文件的 sha256**
+
+`9ef18208afb1a825d33f2ae670c9dd6e8275695ccb00b705d01bfcc1fea78feb`。我们无法验证，但 CI 会验证。OK。
+
+**检查 `src/main/services/export_/export.service.ts` 的 `existsSync` 导入**
+
+`import { existsSync } from 'node:fs'`——这个 import 放在其他 import 之后？看 diff：
+```
+@@ -29,6 +29,7 @@
+  * ── 文化层 ──
+  * - 测试：tests/unit/services/export.service.test.ts（已锁定，repos 桩）
+  */
++import { existsSync } from 'node:fs'
+ import { mkdir, writeFile } from 'node:fs/promises'
+ import { join } from 'node:path'
+```
+ESLint 可能要求 import 顺序？但 verify 已过。OK。
+
+**检查 `writeCorpusSet` 守卫的 `existsSync` 是同步的，在 async 函数中**
+
+`writeCorpusSet` 是 async，但开头用同步 `existsSync`。这会阻塞事件循环，但只是检查一个文件，可接受。NIT：可以用 `access` 异步。但既然 verify 过了，也可能 lint 允许。
+
+**检查 `corpusItem` 中 `await mmkdir(figDir, { recursive: true })` 每次 figure 都创建目录**
+
+重复 mkdir recursive 不会报错，性能可接受。NIT。
+
+**检查 `finishPaper` 中 `fulltext = cur?.fulltext.join('\f') ?? ''`，如果 fulltext 为空数组，写入空文件**
+
+如果 renderer 没有发送 fulltext 就 complete，fulltext 文件为空。这不是错误吗？也许应该校验 fulltext 非空？但可能存在合法空文本？不太可能。但协议可能允许。`fulltext` 页界 \f 分隔，页数可以从 \f 数量推断。如果空文件，可能 AI 消费端困惑。但 renderer 提取失败会发 error。如果成功但没有文本（图片 PDF），fulltext 为空。这可能合法。所以不报。
+
+**检查 manifest 中的 `figures` 数组**
+
+`cur?.figures ?? []`——如果 cur 为 null，figures 为空。理论不可达。
+
+**检查 `exportCorpusSession` 中 `if (session !== null)` 抛 EXPORT_BUSY，但 `session` 是闭包变量，类型是 `ActiveSession | null`。在 `failSession` 中置 null。如果 `exportCorpusSession` 的 promise 被 resolve（finalizing），session 也被置 null。如果 promise 被 reject，session 也被置 null。所以单飞锁总是释放。OK。
+
+**检查 `exportCorpusSession` 中 `const active = created` 后 `session = active`。如果 `new Promise` 的 executor 抛错？executor 里只有赋值，不会抛。OK。
+
+**检查 `cleanRebuild` 是否会失败如果 `dir` 不存在？**
+
+`rm(join(dir, 'manifest.json'), { force: true })` 对不存在的文件 force 不会抛。`rm(join(dir, sub), { recursive: true, force: true })` 对不存在目录 force 不会抛。`mkdir(join(dir, sub), { recursive: true })` 会创建。`writeFile(join(dir, 'INTERFACE.md'), ...)` 要求 dir 存在，如果 dir 不存在会抛。但 dir 来自 pickFolder，应该存在。如果用户删除目录，会失败。failSession 处理。OK。
+
+**检查 `INTERFACE.md` 中的“全文”是否应为“全文”**
+
+`fulltext` 翻译为“全文”是合理的。
+
+**检查 `interface-template.ts` 的 `INTERFACE_MD` 导出**
+
+`export const INTERFACE_MD = \`...\``。模板字符串中如果有反引号，已转义。检查是否有 `\${`? 没有。OK。
+
+现在，我想是否应该把重复 paperIds 作为 WARN。还有一个潜在问题：**`exportCorpusSession` 的 `paperIds` 是 optional，但 schema 的 `min(1)` 意味着如果传入，至少 1 个。但服务层不检查空数组**。如果 renderer 传 `[]`，schema 会拒绝（INVALID_REQUEST），不会到达服务层。所以服务层不需要。OK。
+
+**检查 `corpusSessionResSchema` 的 `dir` 是否应该为绝对路径？**
+
+`z.string()` 接受任意。服务层返回 `s.dir`（来自 pickFolder 的绝对路径）。OK。
+
+**检查 `ExportCorpusEvent` 的 `extract-request` 载荷**
+
+`annotations: annotations.map((a) => ({ id: a.id, rects: a.rects }))`。如果 `a.rects` 是 `AnnotationRect[]`，且包含 page，renderer 需要知道页码。OK。
+
+**检查 `exportSession` 与 `corpusItem` 的 `sessionId` 校验**
+
+`req.sessionId !== s.sessionId` 时抛 INVALID_REQUEST。但 `s.sessionId` 是 `cs-<timestamp>-<random>`。OK。
+
+**检查 `errorCount` 的统计**
+
+`active.errors.push` 在 preparing 和 finishPaper 失败时都会 push。`fileCount` 是 `s.papers.length`。最终 manifest 可选 errors。OK。
+
+**检查 `exportCorpusSession` 中 `detail === null` 时 `active.done += 1`，但 `active.errors.push({ paperId: id, reason: '文献记录不存在' })` 中的 `id` 来自用户传入的 paperIds 或 listAllIds。如果是用户传入不存在的 id，会记 error。OK。
+
+**检查 `stat(managedPath)` 探测文件存在，但如果文件是目录？**
+
+`stat` 对目录也会成功（exists）。但 `managedPath` 应该是 PDF 文件路径。如果是一个目录，`fileExists` 为 true，会继续装配 corpus md，但 renderer 用 `app-file://` 加载时会失败。这是小问题。可以 `stat.info.isFile()` 检查。但考虑到 `resolveManagedPath` 返回受管路径，不太可能。NIT 候选。
+
+**检查 `corpusItem` 的 `figure` 分支中 `req.figure` 的值**
+
+如果 `req.figure` 是 `'anno'` 但 `req.annotationId` 是 undefined，safeName('unknown')，文件名 anno-unknown.png。这可以。如果 `req.figure` 是其他值，走 `page-${req.page}.png`。schema 可能限制为 'page' | 'anno'。OK。
+
+**检查 `cur.figures.push(\`figures/${cur.paperId}/${name}\`)` 中 cur.paperId 来自 db，如果包含特殊字符？**
+
+paperId 来自应用生成，如 `p-1`。OK。
+
+**检查 `writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))` 没有指定编码**
+
+Buffer 直接写，OK。
+
+**检查 `writeFile(join(s.dir, 'fulltext', \`${paperId}.txt\`), fulltext, 'utf8')` 中如果 fulltext 很大，写文件没有流式**
+
+可能会占用大量内存，但这是设计。AI-02 的 renderer 分页回传，service 累积在 `cur.fulltext` 中，最终一次写。对于很大的 PDF，可能内存压力。但本地单篇 PDF 几百页，fulltext 几 MB，可接受。NIT。
+
+**检查 `sendEvent(req)` 没有 await 或错误处理**
+
+`deps.sendEvent` 返回 void（bootstrap 里 send 不返回 promise）。如果 webContents 已销毁，可能抛？`webContents.send` 对已销毁的不会抛，但警告？也许安全。与 sendProgress 同型。OK。
+
+**检查 `service.index` 中 `sendEvent: deps.sendExportEvent ?? (() => undefined)`**
+
+如果 `sendExportEvent` 未注入（比如在其他测试或初始化路径），事件静默丢弃。OK。
+
+**检查 `app-error.ts` 的注释**
+
+`EXPORT_BUSY` 注释“INV-18，AI-03 落地”。OK。
+
+**检查 `api-surface.ts` 新增行的格式**
+
+`corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema }`——行可能很长，但 lint 可能允许？verify 通过。OK。
+
+**检查 `schemas.ts` 新增 schema 的位置**
+
+`corpusSessionReqSchema` 插入在 `ExportCorpusEvent` 类型之后，`corpus` schema 之前。格式 OK。
+
+现在总结 findings。
+
+可能还需要考虑 **测试纪律** 的一个点：`corpus.export.test.ts` 中使用了 `h.db.prepare('INSERT INTO papers ...').run(id, ...)`，其中 `'t'` 作为 added_at/updated_at 的占位。数据库表可能要求 timestamp 格式，'t' 是无效日期，但 SQLite 不会校验。这可能会影响排序（listAllIds 按 added_at DESC）。测试注释说“两篇同刻插入序不写死”，但实际插入的 added_at 都是 't'，排序结果可能依赖于 SQLite 的排序规则（文本比较）。这不影响测试正确性，因为测试动态获取顺序。OK。
+
+**检查测试中 `emulateExtractor` 对每个 annotation 发送 figure**
+
+它发送 `kind: 'figure', figure: 'anno', page: 1, annotationId: a.id`。然后测试期望 `anno-a-1.png`。OK。
+
+**检查测试中 `nextExtract` 的 `afterIndex` 在“EXPORT_BUSY”测试中的使用**
+
+```ts
+const first = h.svc.exportCorpusSession({ dir: h.dir })
+await nextExtract(h, 0)
+...
+await emulateExtractor(h, (await nextExtract(h, 0)))
+```
+这里 `nextExtract(h, 0)` 调用两次，第一次等待第一个 extract-request，第二次又等待第一个（因为 afterIndex 0），此时第一个已存在，立即返回。所以用同一个 r。OK。
+
+**检查“落盘失败”测试**
+
+`mkdir(join(h.dir, 'figures', r.paperId, 'page-1.png'), { recursive: true })`——创建了一个名为 `page-1.png` 的目录。然后 `corpusItem` 的 figure 分支 `writeFile(join(figDir, name))` 时，figDir 是 `figures/p-1`，name 是 `page-1.png`，writeFile 到已存在的目录会抛 EISDIR 或 ENOTDIR？测试注释说 ENOTDIR。然后 catch -> failSession，reject session。之后删除 figures 目录，重试。OK。
+
+**检查是否有任何被锁的测试文件被修改？**
+
+diff 中没有修改现有测试文件，只新增。OK。
+
+**检查 `docs/invariants.md` 的修改是否与实现一致**
+
+INV-17 锚定：测试中 golden 断言 `assembleCorpusMd` 输出逐字节，manifest contentSha/fulltextSha=文件字节。实现中 `contentSha` 从写入的 corpus md 文件读取计算，`fulltextSha` 从写入的 fulltext 字符串计算。测试断言。一致。
+
+INV-18 锚定：测试覆盖终局单写、清空重建、EXPORT_BUSY、落盘失败。实现一致。
+
+**检查 INV-07 的引用**
+
+`corpusSession` IPC handler 注释 “INV-07：目录只出自 main 侧系统对话框”。service 接收 dir。一致。
+
+**检查 INV-16 白名单**
+
+`corpus.assemble.ts` 没有直接 import pdfjs。OK。
+
+**检查 INV-14 事件订阅**
+
+AI-04 是设置页订阅，不在本 diff。但 bootstrap 注入 sendExportEvent，renderer 侧 preload 已有 onExportCorpus 桥（AI-02 已建）。OK。
+
+**检查 INV-13 语义**
+
+注释提到“消费方折叠分支=UI 提示（INV-13 语义——折叠面消费方必须分支处理，AI-04 接线）”。本 diff 没有 renderer 消费方，AI-04 做。OK。
+
+**检查是否有 `TODO|FIXME|placeholder`**
+
+diff 中没有。`grep` 应该通过。
+
+**检查是否有乱码**
+
+中文正常。
+
+现在，有一个点值得注意：**`export_.ts` 的 IPC handler `corpusSession` 在 `pickFolder` 返回 null 时抛 `ExportIpcError('CANCELLED', ...)`**。这个错误会在 IPC 层被序列化。`ExportIpcError` 是已有类吗？搜索 diff 中没有定义。可能在 `export_.ts` 其他部分。OK。
+
+另一个点：**`sendExportEvent` 的类型 `(e: ExportCorpusEvent) => void`**，在 bootstrap 中使用了 `BrowserWindow.getAllWindows()`。如果有多个窗口（尽管 v1 负面清单禁止多窗口），会发送到所有窗口。这里遍历所有窗口，可能发送到非设置页窗口。但单窗口应用。OK。
+
+**检查 `service.index` 中的 `sendExportEvent` 可选，但 `CorpusExportDeps.sendEvent` 必填，用 `?? (() => undefined)` 兜底**。这可能导致在其它入口（非 bootstrap）创建服务时事件丢失。但默认兜底保证不会崩溃。OK。
+
+现在，确定 final output。
+
+Verdict: PASS_WITH_WARNINGS
+
+Findings 列表（按严重度排序）：
+
+1. WARN - `src/main/services/export_/corpus.export.service.ts` - `exportCorpusSession` 不对 `paperIds` 去重。schema 也未约束唯一性。重复 id 会导致同一篇被装配多次、manifest 出现重复 paperId 条目、fileCount 虚高。建议 `const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]`。
+
+2. WARN - `src/main/services/export_/corpus.export.service.ts` - `sendProgress` 支持 `phase: 'preparing'` 但会话准备阶段（cleanRebuild+逐篇装配）未发出任何 progress 事件，协议存在该值时消费方（AI-04）无法感知准备阶段。建议在 preparing 开始/结束发送 progress（如 done 0/total N）或从协议类型中去掉未用 phase。
+
+3. NIT - `src/main/services/export_/corpus.assemble.ts` - `questionOrder` 对非 `divergence` 且不以 Q 开头的字符串返回 NaN，比较结果不稳定。当前 `AiNoteQuestion` 类型约束下不可达，但函数签名接受 `string`，建议 `Number.parseInt` 并处理 NaN 或显式映射。
+
+4. NIT - `src/main/services/export_/corpus.export.service.ts` - preparing 阶段失败篇递增 `done` 使首个 progress 事件自带已完成数，进度条初始跳变；且 `total` 含未成功篇可能导致进度“虚”。若 UI 介意可单独累计 preparing 失败数，progress 的 done/total 只反映 streaming 已处理篇数。
+
+也许第 4 个 NIT 可以不写，避免噪音。或者保留。
+
+还有没有 WARN 关于 `stat` 不检查 `isFile`？也许 NIT。
+
+还可以加一个 NIT：`cleanRebuild` 对 `dir` 下固定子目录直接 `rm -rf`，若用户误选非空目录会删除同名子目录。但这是 INV-18 设计行为，且“目录根用户文件不动”测试说明是故意。不报。
+
+**检查是否有 BLOCKING 遗漏**
+
+再想想有没有正确性硬伤：
+
+- `finishPaper` 中 `const fulltext = cur?.fulltext.join('\f') ?? ''`——如果 `cur` 为 null，写入空文件并计入成功。但 `cur` 不可能为 null，因为 `corpusItem` 校验过。如果 `finishPaper` 被 `advance` 正常调用，`cur` 非空。OK。
+
+- `advance` 在 finalizing 写 manifest 后 `session = null; s.resolve(res)`。如果 `s.resolve` 抛错？Promise resolve 不会抛。OK。
+
+- `exportCorpusSession` 中 `await advance(active)` 在 try 内。如果 advance 中 finalizing 的 `writeFile/rename` 失败，会抛入 catch，failSession。但注意：`advance` 在 finalizing 前已经把 `session` 置为 null 吗？不，`session = null` 在成功写完之后。如果 `writeFile(MANIFEST_TMP)` 失败，session 还没置 null，catch 中 failSession 会清理 tmp 并置 null。OK。
+
+- 但是：如果 `advance` 在 finalizing 过程中 `rename` 成功，`session = null` 已执行，然后 `s.resolve(res)`。如果 `s.resolve` 之后（同步）没有再抛，try 正常结束。然后 `return promise`。但注意：`advance` 返回后，`exportCorpusSession` 的 try 结束，函数最终 `return promise`。此时 promise 已被 resolve。OK。但如果 `s.resolve(res)` 触发 renderer 的 then 回调，该回调可能同步执行一些操作（比如 UI 更新），如果它抛错，会被 async 函数捕获？`s.resolve` 调用后，promise 的 then 回调是微任务，不会在执行栈内同步抛给 `s.resolve`。所以不会影响。
+
+- `corpusItem` 中 `finishPaper` 被 await。如果 `finishPaper` 成功并 `advance` 到 finalizing，`advance` 内 `session = null`，然后 resolve 导出 promise。随后 `corpusItem` 返回 `{ ok: true }`。此时导出已完成。OK。
+
+- `corpusItem` 的 `fulltext` 分支：`cur.fulltext.push(req.payload)` 不是 await，然后函数结束返回 `{ ok: true }`。如果随后立即有 figure 消息，仍然顺序处理。OK。
+
+- 在 `corpusItem` 中，`catch` 内 `await failSession(s, ...)`。如果 failSession 成功 reject，然后 `throw e` 将原始错误抛出。但此时 `session` 已 null。如果有新的 `corpusItem` 消息（迟到的），会 INVALID_REQUEST。OK。
+
+- 一个潜在问题：`corpusItem` 的 catch 会捕获 `finishPaper` 中 `advance` 到 finalizing 后 `s.resolve` 之前可能抛的错误。如果在 `rename` 成功后、resolve 前有代码抛错（不会有），session 已 null，failSession 会再次尝试 `rm(MANIFEST_TMP)`（但 MANIFEST_TMP 已经 rename 成 manifest.json，rm force 不抛），然后 `session = null`（已 null），`s.reject`（但 promise 已 resolve，reject 无效）。所以安全。
+
+- 另一个潜在问题：`failSession` 中 `session = null` 无条件执行。如果 `failSession` 被并发调用两次（两个 corpusItem 同时出错），第一个置 null，第二个也置 null，没问题。但如果第一个 reject 后，第二个 failSession 再次 reject 同一个 promise，第二次无效。OK。
+
+- `exportCorpusSession` 的 `try/catch` 可能捕获 `advance` 中由于 renderer 回传错误导致的异常吗？`advance` 只是发送事件和写 manifest，不会等 renderer。renderer 的错误通过 `corpusItem` 的 `error` kind 处理。所以不会。
+
+- `startPaper` 中 `deps.sendEvent(req)` 如果 renderer 没有监听，事件丢失，renderer 不会回传，会话卡住。这是 AI-02 的契约：renderer 必须监听。如果 renderer 崩溃，会话永远不会结束（没有超时）。这可能是一个正确性问题：会话缺少超时机制，renderer 崩溃会导致 session 卡死，EXPORT_BUSY 永远锁住，直到应用重启。这是一个值得考虑的 WARN。AGENTS.md 的 INV-18 状态机有“中断=无 manifest=工具侧不可激活，重跑即修复”，但如果 session 对象驻留，重跑会被 EXPORT_BUSY 拒绝。测试中“落盘失败”测试显示 failSession 后 session 释放。但如果是 renderer 无响应（没有 complete 也没有 error），session 不会释放。没有超时。这是一个真实的正确性缺陷：导出会话可能永久卡住。但 AI-02/04 可能设计为 renderer 提示？有没有超时机制？diff 中没有定时器。`ActiveSession` 没有 timeout 字段。`startPaper` 发请求后，没有设置超时。如果 renderer 提取器抛错（比如 PDF 加载失败），CorpusExtractor 会发 error 事件（AI-03 测试中有 kind: 'error'）。但如果 renderer 进程崩溃，不会发。对于本地应用，renderer 崩溃概率低，但存在。这算 WARN 还是 NIT？我认为是一个 WARN，因为会导致应用功能锁死（EXPORT_BUSY 无法重跑）。建议增加会话超时（比如每篇超时或整体超时），超时后 failSession。
+
+  但注意：renderer 崩溃后，窗口可能销毁，但 main 进程还活着。session 驻留。用户无法再导出。直到重启应用。这是一个问题。
+
+  然而，v1 负面清单没有要求超时，但正确性审计应该指出。我认为值得 WARN。
+
+  但任务简报说“中断=无 manifest=工具侧不可激活，重跑即修复”——中断定义为会话失败（落盘失败）或 renderer 报告错误。renderer 崩溃是另一种中断。也许“重跑即修复”隐含了 session 释放。如果 session 不释放，重跑不能修复。所以这与 INV-18 的“中断=重跑即修复”不变量有潜在冲突。这可以是一个 WARN。
+
+  有没有代码处理 renderer 失联？没有。`corpusItem` 只处理主动回传。所以 session 会一直驻留。这确实是一个缺口。
+
+  建议：在 `startPaper` 或整体会话中加超时，超时后 failSession。或者监听 renderer 的 did-finish-load / destroyed 事件？但 service 层不应该依赖 renderer 生命周期。简单做法是每篇超时（比如 60s）用 `setTimeout` 清理。
+
+  注意：如果添加定时器，需要在测试中处理。当前测试没有超时。
+
+  我认为这是一个值得报告的 WARN。但会不会是过度设计？对于本地单用户，renderer 崩溃不太可能，但一旦发生，应用体验糟糕（EXPORT_BUSY 永远锁死）。考虑到 INV-18 的“中断=重跑即修复”，这个缺口更值得报告。
+
+  好，加一个 WARN：会话无超时机制，renderer 失联（崩溃/关窗）时 session 永久驻留，EXPORT_BUSY 无法释放，违反“重跑即修复”语义。建议增加整体或篇级超时，超时后 failSession。
+
+现在 findings 数量：3 WARN + 2 NIT？有点多但合理。
+
+让我们确定最终列表：
+
+1. WARN: 无超时机制，renderer 失联导致会话永久占锁。
+2. WARN: paperIds 未去重，重复 id 导致 manifest 重复条目。
+3. WARN: preparing phase progress 事件缺失。
+4. NIT: questionOrder NaN。
+5. NIT: preparing 失败计入 done，进度条初始跳变。
+
+也许第 3 个可以降为 NIT？如果协议中确有 preparing phase，消费方可能依赖，算 WARN。保留 WARN。
+
+1 和 2 是正确性 WARN。
+
+现在写 summary：总体实现与状态机/INV-17/18 锚定一致，测试覆盖完整，未发现硬规则违反；但会话缺少 renderer 失联超时、paperIds 未去重、preparing 进度事件缺失，建议修复后合入。
+
+Verdict: PASS_WITH_WARNINGS。
+
+现在要注意：输出必须是 JSON 对象，不要 markdown 围栏。需要确保 JSON 是合法 JSON，不能有 undefined。
+
+写入 evidence 时引用 diff 中的原句。
+
+例如：
+
+WARN 1 evidence: "`startPaper` 发出 extract-request 后没有任何超时/失联兜底；`ActiveSession` 无 timeout 字段，`exportCorpusSession` 的 promise 只有在 `corpusItem` 回传 complete/error 或落盘异常时才 settle。"
+
+WARN 2 evidence: "`exportCorpusSession` 中 `const ids = input.paperIds ?? deps.repos.papers.listAllIds()`，未去重；`corpusSessionReqSchema` 为 `z.array(z.string().min(1)).min(1).max(1000).optional()` 无 `.unique()`。"
+
+WARN 3 evidence: "`sendProgress` 支持 `phase: 'preparing'`，但整条调用路径只有 `startPaper` 发 `'streaming'`、finalizing 前发 `'finalizing'`（`advance` 内）；`cleanRebuild` 与逐篇装配阶段无任何 progress 事件。"
+
+NIT 1 evidence: "`function questionOrder(q: string): number { return q === 'divergence' ? 99 : Number(q.replace('Q', '')) }`——非 Q 前缀字符串会得到 NaN，比较器返回 NaN 行为未定义。"
+
+NIT 2 evidence: "preparing 中 `active.errors.push(...); active.done += 1`，使首个 progress 事件的 done 已包含失败篇。"
+
+建议也需要具体。
+
+对于 WARN 1 的 suggestion：`在 ActiveSession 增加 deadline/每篇 timer，startPaper 时启动（如 60s），超时调用 failSession；或在会话层设置整 session 超时并清理 session 锁。注意与测试的 now 注入配合使用可注入时钟。`
+
+对于 WARN 2 的 suggestion：`在 service 侧 `const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]`，或在 schema 加 `.superRefine` 校验唯一；两者取一即可。`
+
+对于 WARN 3 的 suggestion：`在 `exportCorpusSession` 中 `cleanRebuild` 前/后发送一次 `{ type:'progress', phase:'preparing', done:0, total:ids.length }`；若 AI-04 无需该 phase，则从 shared 协议类型和 sendProgress 参数中删除 'preparing'，避免未使用分支。`
+
+对于 NIT 1 的 suggestion：`改为 `const m = /^Q(\d+)$/.exec(q); return q === 'divergence' ? 99 : m ? Number(m[1]) : Number.MAX_SAFE_INTEGER` 或显式 Map<AiNoteQuestion, number>。`
+
+对于 NIT 2 的 suggestion：`可拆分两个计数器（preparedFails/streamedDone），progress 的 done 只统计 streaming 完成篇，或保持现状并在 UI 侧不依赖初值。`
+
+现在，确保 JSON 转义正确。比如 `paperIds` 中有引号不需要转义，但 JSON 字符串内如果有反引号没关系。
+
+输出时不要任何多余文字，只输出 JSON。
+
+再检查一次是否有 BLOCKING 漏掉。受锁文件变更没有 `[locked-change]` 尾注可见——但我们不能确定 commit message。也许简报说“机检 verify exit 0”说明 locks 对账通过，所以变更已正确 apply。没有 BLOCKING。
+
+关于“禁止修改测试”规则：新增测试文件是允许的（测试纪律说“发现测试本身有错→报告人类，不得自行修改”，但不是禁止新增测试）。新增测试加锁了。OK。
+
+关于“文件≤500行”：`corpus.export.service.ts` 目前 384 行（从 hunk 计算）？实际上新文件可能 400+。但 verify 的 lint 包含 max-lines error，所以没超。OK。
+
+关于“死代码即删”：`sendProgress` 的 `'preparing'` 分支未用，但函数签名说明它可能在未来用。不构成死代码。`ROLE_ORDER` 和 `questionOrder` 被 orderAiNotes 使用。OK。
+
+关于“禁止新增依赖”：没有 package.json 变更。OK。
+
+关于“方案切换 = 删除旧方案”：stub 删除，新实现就位。没有两套方案。OK。
+
+关于“分层单向”：`corpus.export.service.ts` 直接依赖 `repos` 和 `fileStore`，属于 service 层。OK。`interface-template.ts` 在 service 层。OK。
+
+关于“测试纪律 - 每个测试必须能失败一次”：我们无法验证测试是否先红，但测试断言具体，不是恒真。OK。
+
+现在输出。
+
+== content ==
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "startPaper / ActiveSession（无超时字段）",
+      "issue": "导出会话没有超时/失联兜底：startPaper 发出 extract-request 后，只有 renderer 回传 complete/error 或落盘异常才会推进会话；若 renderer 崩溃、关窗或回传丢失，session 对象永久驻留，EXPORT_BUSY 无法释放，后续重跑被拒，违反 INV-18『中断=重跑即修复』语义。",
+      "evidence": "ActiveSession 仅含 sessionId/dir/queue/current/papers/errors/done/total/resolve/reject，无 deadline/timer；startPaper 内 deps.sendEvent(req) 后无任何超时机制。",
+      "suggestion": "在 ActiveSession 增加篇级或会话级超时（如 startPaper 时启动 60s timer，超时调 failSession(s, 'extract 超时')），并在测试中注入可控时钟；timer 在 finishPaper/failSession 时清除。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "exportCorpusSession 中 const ids = input.paperIds ?? deps.repos.papers.listAllIds()",
+      "issue": "未对显式传入的 paperIds 去重。IPC schema 也只限制 min/max 不要求唯一；若调用方传入重复 id，preparing 会重复装配同一篇、queue 出现重复项，manifest.papers 出现重复 paperId、fileCount 虚高，破坏幂等结构与 AI 消费端按 paperId 索引的稳定性。",
+      "evidence": "corpusSessionReqSchema = z.object({ paperIds: z.array(z.string().min(1)).min(1).max(1000).optional() }).strict()，无 .unique()；service 直接使用 input.paperIds 而非 [...new Set(...)]。",
+      "suggestion": "在 service 侧改为 const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]，或在 schema 用 superRefine 校验数组内唯一，二选一。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "sendProgress(s, phase: 'preparing' | 'streaming' | 'finalizing')",
+      "issue": "协议与实现支持 phase='preparing'，但实际调用路径从未发送 preparing 事件——cleanRebuild 与逐篇装配阶段无任何 progress；消费方（AI-04 设置页）无法区分『目录已选、准备中』与『无响应』，可能误判卡死。",
+      "evidence": "sendProgress 参数含 'preparing'，但整条链路只见到 startPaper 发 'streaming'（sendProgress(s, 'streaming')）和 advance finalizing 前发 'finalizing'（sendProgress(s, 'finalizing')），exportCorpusSession 内无 preparing 事件。",
+      "suggestion": "在 exportCorpusSession 的 cleanRebuild 前发送一次 { type:'progress', phase:'preparing', done:0, total:ids.length }；若 AI-04 不需要，则从 shared 协议类型和 sendProgress 参数中删除 'preparing' 分支，避免未用协议面。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.assemble.ts",
+      "line_hint": "function questionOrder(q: string): number",
+      "issue": "questionOrder 对非 'divergence' 且非 Q<数字> 的字符串返回 NaN，Array.sort 对 NaN 比较行为未定义，排序结果不稳定。当前 AiNoteQuestion 类型约束下不可达，但函数签名接受 string，属于潜在脆点。",
+      "evidence": "return q === 'divergence' ? 99 : Number(q.replace('Q', ''))；Number('abc') = NaN，NaN - NaN = NaN。",
+      "suggestion": "改为显式映射：const Q_ORDER: Record<Exclude<AiNoteQuestion,'divergence'>, number> = {...}，或用 /^Q(\\d+)$/ 正则提取并做 NaN 兜底。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "preparing 中 active.errors.push(...) 后 active.done += 1",
+      "issue": "preparing 阶段的失败篇在首个 extract-request 前就把 done 递增，导致第一条 streaming progress 的 done 已包含失败数，进度条初始跳变且 total 含未真正流式处理的篇数，口径不完全直观。",
+      "evidence": "for (const id of ids) { ... active.errors.push({...}); active.done += 1; continue; } 之后才 await advance(active) → startPaper → sendProgress(s, 'streaming')。",
+      "suggestion": "可将 preparing 失败数单独统计，progress 的 done/total 仅反映 streaming 已处理篇数；或保持现状但确保 AI-04 UI 不依赖首条 progress 的数值含义。"
+    }
+  ],
+  "summary": "SR2-AI-03 实现与 INV-17/INV-18 锚定一致，r1 裁决 B1 证伪成立、B2/W1/W2/N1/N2 均已闭合，测试覆盖完整，未发现硬规则违反。主要风险在于导出会话缺少 renderer 失联超时（可能永久占锁 EXPORT_BUSY）、paperIds 未去重、preparing 进度事件缺失，建议修复后合入；其余为排序健壮性与进度口径的小问题。"
+}

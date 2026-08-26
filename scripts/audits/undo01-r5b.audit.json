@@ -1,0 +1,31 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 中 await 之后的 s.splice(topIdx, 1)（topIdx 在 await 前捕获）",
+      "issue": "撤销执行前捕获的 topIdx 在 await 期间可能失效：若同篇在等待期间有新操作入栈并触发 FIFO 截断（pushUndo 用 s.splice(0, s.length - UNDO_DEPTH_MAX) 从头部丢最旧），原栈顶元素下标会左移，甚至原栈顶可能被截断挤出。此时 s.splice(topIdx, 1) 会弹掉新入栈的条目或误删其他条目，而不是被撤销的条目。这违反了 INV-23『成功后按捕获下标 splice 精确移除（await 期间新入栈不错弹）』的不变量。",
+      "evidence": "diff 中：const topIdx = s.length - 1 / const top = s[topIdx]! 在 await 前；await api... 成功后 s.splice(topIdx, 1)；而 pushUndo 中 if (s.length > UNDO_DEPTH_MAX) s.splice(0, s.length - UNDO_DEPTH_MAX)。现有测试『撤销 await 期间新操作入栈』只覆盖了未达到深度上限、不发生 FIFO 截断的场景。",
+      "suggestion": "await 返回后、remap 之前，用条目对象重新定位：const idx = s.indexOf(top)（top 是 UndoEntry 对象，栈内唯一）；if (idx !== -1) s.splice(idx, 1)；若 idx === -1（原条目已被截断挤出）则跳过删除。并补一个『栈满时 await 期间新入栈触发 FIFO 截断』的回归测试。"
+    }
+  ],
+  "summary": "实现整体完成度高：三逆操作、id remap、in-flight 互斥、失败不弹栈、per-tab 清理均有测试与接缝落实，未发现安全、契约或测试放宽问题。但 undo 的 await 期间并发入栈与 FIFO 截断组合会弹错条目，违反 INV-23 精确移除语义，属于正确性缺陷，需修复后合入。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 19280,
+      "completion_tokens": 32578,
+      "total_tokens": 51858,
+      "prompt_tokens_details": {
+        "cached_tokens": 7552
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 32042
+      },
+      "prompt_cache_hit_tokens": 7552,
+      "prompt_cache_miss_tokens": 11728
+    },
+    "finish_reason": "stop"
+  }
+}

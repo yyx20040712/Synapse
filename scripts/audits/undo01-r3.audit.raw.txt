@@ -1,0 +1,404 @@
+== reasoning ==
+好的，我来仔细审这个 diff。这是一个涉及撤销栈实现的大型变更。我需要按照审计维度一步步分析。
+
+先看整体情况：这是一个 Electron + TypeScript 学术文献管理应用，实现了标注操作级撤销栈（SR2-UNDO-01 工单）。
+
+首先我注意到的几个关键点：
+
+1. **契约与纪律维度**：
+   - 技能清点在简报里有，看起来是走流程了
+   - 受锁文件变更：tests/unit/renderer/annotation-undo.test.ts 是新建受锁文件，reader-shortcuts.test.tsx 是修改（有 [locked-change] 标注）；locks/manifest.json 已更新
+   - 但有一个疑虑：Toast.tsx 和 toast-store.ts 的拆分——这个改动不是工单范围内的（SR2-UNDO-01），属于范围蔓延。不过简报里解释了这是 typecheck 强制的架构拆分，是为了满足 tsconfig.node 的编译要求。这是一个合理的解释，但按宪法「git diff --stat 无范围蔓延」的标准，这算范围蔓延吗？有可能算 WARN。
+   - reader.store 头注历史文本 TABS-01 含本工单号——已处置（去前缀）
+   - 分层：reader.store 调用 clearStack/undo，没问题；AnnotationLayer/SelectionLayer 调用 pushUndo，这符合「renderer → window.api → ipc」？不对，pushUndo 是纯前端模块，不涉及跨层。
+   - 等等，AnnotationLayer/SelectionLayer 直接 import pushUndo 是否符合「组件不直接 import 本模块」？看头注接口层写的是「组件不直接 import 本模块——api 调用与 store 同步收口单点」，但实际实现是组件直接调用 pushUndo！这是一个契约违反。但再仔细看，pushUndo 不是 api 调用，是纯前端入栈操作；头注写的是「api 调用与 store 同步收口单点」指 undo() 的执行。pushUndo 在组件成功 save 后调用，这本身是设计好的。头注架构层也写了「SelectionLayer.save 成功路径 push create、AnnotationLayer.saveComment/deleteAnnotation 成功路径 push」，所以这不是违反。好。
+
+2. **正确性维度**：
+   - toInput 函数剥 id/paperId/时间戳，这是正确的，因为 repo.insert 不接受显式 id
+   - remapStackIds 处理重建后 id 引用，有跨格序列测试覆盖
+   - in-flight 互斥用模块级 undoInFlight 变量——这里有个问题：undoInFlight 是模块级的，不是 per-tab 的。如果两个 tab 同时 undo，会被互相阻塞。但这是否有问题？看代码：undo(paperId) 里 if (undoInFlight) return busy。如果 tab A undo 进行中，tab B 触发 undo，会被返回 busy。这在单用户桌面应用里影响不大（一次只能有一个用户交互），但语义上可以接受——busy 时不弹栈，可重试。WARN 级别。
+   - 还有：undoInFlight 是模块级单例，如果 pushUndo 和 undo 交错？pushUndo 不参与互斥，可能出现「undo 进行中同时 push 新操作」——在撤销（删除标注）进行中，用户又创建一个标注，push 到同一栈。撤销完成时 pop 的是栈顶，而栈顶可能已经不是刚才读到的 top 了？不对，看代码：undo 先设置 undoInFlight = true 后读栈顶，然后 await api。如果 await 期间有新 push（创建标注成功），栈顶变了，但 undo 还是按读到的 top 执行并 pop。pop 会把最后 push 的操作弹掉，而不是撤销的那个。这是一个竞态缺陷。但实际上，在 UI 层面，撤销进行中用户还能创建新标注吗？undo 时没有禁用 UI。不过这个场景很 corner——api 调用很快，但严格来说存在。WARN 级别。
+   - server-side API 失败后不弹栈是可重试的，这是设计决定。如果 api 调用实际成功但响应丢失（网络问题），重试会导致重复逆操作。但这在本地 app 里较少见，且是常见权衡。NIT 或 WARN。
+   - comment-edit 的 before 是「预编辑快照」——push 的是编辑前的完整对象。undo 时 updateAnnotation(top.before)。但是！undo 成功返回 r.data，store 用 apply.upsert(annotation: r.data) 更新。如果 updateAnnotation 服务端返回的对象没有正确更新 updatedAt 或其他字段？这是 api 返回什么就存什么，通常没问题。
+   - 关键问题：comment-edit 撤销时，undo 里 updateAnnotation({ annotation: top.before })——top.before 是编辑前的 Annotation，包含旧的 updatedAt。如果 repo.updateAnnotation 会自己生成新 updatedAt 而忽略传入的？看 refs：AnnotationLayer 保存时构造 next = { ...a, comment, updatedAt: new Date().toISOString() } 传给 api。所以 updateAnnotation 接受完整 Annotation（含 updatedAt）。undo 传旧快照（含旧 updatedAt），恢复旧时间戳。合理。
+   - 但等一下：comment-edit push 的 before 是编辑前的 `a`，其中包含了 id。undo updateAnnotation({ annotation: top.before }) 包含 id，正常。
+   - create 逆操作的 apply 是 remove，store 里 filter。如果撤销时标注已被其它路径删除（比如手动删了）？remove 是幂等的（filter 就行）。
+   - delete 逆操作的 apply 是 upsert，store 里 some→map→replace 或 append。如果撤销重建时标注已存在（比如手动重建了同 id？不可能，因为 id 是新的）——不会冲突。
+   - 一个比较隐蔽的问题：delete→undo 逆重建得到新 id，store upsert 追加。但如果重建的新 id 恰好等于 store 里已有的某个标注？不可能，uuid 非重复。
+   - reader.store.undo() 里：先捕获 paperId，await runUndo，然后 get().tabs[paperId] 检查 tab 是否存在。如果 tab 被关了，DB 已撤销但 store 不更新——「DB 已撤销，列表随重开对齐」，可接受。
+   - 还有一个问题：undo 期间 tab 被关再重开同一 paperId 时，clearStack 已清栈，没问题。
+
+3. **安全维度**：没有发现 SQL 注入、路径穿越等问题。api 调用都是既有的抽象。toInput 不涉及安全问题。undo 里 api.reader.deleteAnnotation 用的是 id，不是注入面。okay。
+
+4. **生产质量维度**：
+   - annotation-undo.ts 新文件 181 行（diff 里显示 +181），没超过 500 行
+   - toast-store.ts 83 行，合规
+   - 不变式：`for (let i = 0; i < s.length; i++)` 用 `s[i]!`。
+   - 类型方面：测试里用 `vi.fn(async () => ({ ok: true as const, data: undefined as never }))`——`as never` 有点 hacky，但测试代码不做硬规则限制。
+   - annotations.repo 相关，头注引用了「annotations.repo.ts:167 内部 randomUUID」——这是假设/推断，没有实际看到 repo 代码。简报说 repo.insert 不收显式 id。如果这个假设错误，会出 bug。但测试覆盖了「toInput 去 id」的断言，红证也做了。这更多是无法在这个 diff 里验证的。
+   - 有一个地方：annotation-undo.ts 里 `undo()` 的 catch 块：`if (!(e instanceof ApiClientError)) { console.error(...) }`——`console.error` 在 production 里是否应该保留？这不是大问题。
+   - 代码组织：undo/redo 逻辑统一在一个文件，push 分散在调用方。这符合设计（push 需要操作成功后的数据）。
+   - Toast.tsx 拆分的注释里写了「2026-08-25 拆分」，没问题。
+
+5. **测试纪律维度**：
+   - 新建受锁测试 annotation-undo.test.ts，有 8+ 用例（实际 11 个 it）
+   - reader-shortcuts.test.tsx 修改是「强化非放宽」——加了 undo 桩和 ctrl+z 用例，符合要求
+   - 测试用 resetModules 模拟模块态，每用例干净
+   - in-flight 互斥测试里：`const p1 = m.undo('p-1'); const p2 = m.undo('p-1'); expect(await p2)...`——这里注意 JavaScript 微任务时序：p1 先调用，进入 undo()，设置 undoInFlight=true，await api（pending）。p2 调用时看到 undoInFlight=true，立即返回 busy。这是对的。
+   - 但测试里最后一段：`const p3 = m.undo('p-1'); release!(); expect(await p3)`——这里有个时序问题：p1 完成时 undoInFlight=false，p3 调用时重新出发。release!() 同时会被 p3 的 promise 捕获？看细节：del 的实现是每个调用创建新 promise 并设置 release。第一次 p1 创建 promise A（release 指向 resA）。release 后 p1 resolve。p3 调用 undo 重进，又调用 del 创建 promise B（release 重新指向 resB）。第二次 release!() 触发 promise B。这测试是对的。
+   - 没有看到「测试放宽断言」的迹象。
+   - 测试里 id remap 的用例断言了 a-new 等，合理。
+
+再想想契约和纪律的更多问题：
+
+6. **locks/manifest.json 更新**：新增 annotation-undo.test.ts 条目，更新 reader-shortcuts.test.tsx 哈希。但注意——manifest.json 本身是受锁文件吗？locks/manifest.json 在加锁文件里，它的变更是否带 [locked-change]？manifest 更新是 locks:apply 的正常结果，通常不需要 [locked-change]，因为 CI 对 manifest 本身有特殊处理。commit message 没有提供，无法判断。简报说「[locked-change] 同批更新」，应该 commit 里有标注。
+
+7. **toast-store.ts 是新增文件，不属于受锁范围**——checksum 清单不会拦它。但它是从受锁文件 Toast.tsx 拆出的（Toast.tsx 内容被修改）。Toast.tsx 在受锁列表吗？locks/manifest.json 里具体列表没全展示，但 Toast.tsx 属于 src/renderer/shared/ui/，很可能在受锁清单里（如果 src/shared/ 或关键 UI 有加锁）。diff 里 Toast.tsx 的 sha256 变化有没有在 manifest 里体现？看 diff 只看到 annotation-undo.test.ts 新增和 reader-shortcuts.test.tsx 哈希变化，没有看到 Toast.tsx 的哈希变化！这是个大问题——如果 Toast.tsx 是受锁文件，它的内容被修改了，manifest.json 应该更新其 sha256。但 diff 的 manifest 部分只显示了这两处变化。这需要核实 Toast.tsx 是否受锁。
+
+审视 diff 中 manifest 部分的上下文：从列表看有 annotation-menu.test.tsx、annotation-undo.test.ts、keymap.test.ts、reader-shortcuts.test.tsx 等测试文件。这些都是 tests 下的受锁文件。Toast.tsx 是否也在 manifest 里？测试文件和 src 下的受锁文件可能都在。manifest 是完整 JSON 的 diff，如果有 Toast.tsx 条目变更，diff 会显示。没有显示意味着 Toast.tsx 不在 manifest 里，或者它的 sha256 没变（不可能，内容确实变了）。
+
+所以要么 Toast.tsx 不在受锁清单，要么这是一个漏网。但更合理的解释是：受锁清单主要针对 tests/**、src/shared/**、CI 配置等。Toast.tsx 不在 src/shared/（是 src/renderer/shared/），可能不受锁。但如果 Toast.tsx 未受锁，那 toast-store.ts 也不受锁，这正是 typecheck 障碍的绕行方案（虽然是合理的）。
+
+等等，再仔细看——宪法说「受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 [locked-change]」。这里的 shared 应该指 src/shared/。Toast.tsx 在 src/renderer/shared/ui/，不在 src/shared/ 下。所以 Toast.tsx 不受锁。合理。但 tests/unit/renderer/reader-shortcuts.test.tsx 是受锁的，manifest 也更新了。annotation-undo.test.ts 是新增受锁文件，manifest 也加了。这些都符合。
+
+但有一个问题：Toast.tsx 虽然不在受锁清单里，但从受锁文件 Toast.tsx 拆分出去的主体逻辑放在了不受锁的新文件 toast-store.ts。如果下一次有人改动 toast-store.ts（不受锁），会绕过测试锁定？不对，toast-store.ts 没有被 tests 锁定，但它的行为有 Toast 相关测试吗？tests/ 下如果有 toast.test.tsx（简报提到「toast.test.tsx 未动全绿」），那 toast.test.tsx 是受锁的，它测试的是 Toast.tsx 的行为。但现在队列逻辑搬到了 toast-store.ts，toast.test.tsx 还能测到吗？如果 toast.test.tsx import 的是 Toast.tsx（再导出 showToast），行为一致，测试通过。但这是「测试对象」的迁移——原本测试 toast 行为的测试现在测试的是走了一遍 re-export 的代码。虽然行为等价，但锁定的契约文件变了。这算不算绕过锁定？严格来说，把受测逻辑从受锁文件移动到不受锁文件，是规避锁定的一种手段。不过 toast-store.ts 属于「新文件必须被引用」的当前工单的一部分（虽然是 typecheck 强制的），且功能等价、测试全绿。我认为这是一个值得注意的 WARN——把受锁测试覆盖的逻辑拆到不受锁文件，future 变更可能绕过测试锁定。但是等一下，toast.test.tsx 是否真的存在？简报里提到「toast.test.tsx 未动全绿」。如果 toast.test.tsx import showToast from '@/renderer/shared/ui/Toast'，那它是锁定行为面的测试。拆分后 showToast 来自 toast-store.ts，但 toast.test.tsx 的 import 路径可能没变（因为 Toast.tsx 再导出）。所以锁定面依然覆盖 toast-store.ts 的行为。如果未来有人改 toast-store.ts 的队列逻辑，toast.test.tsx 会失败。所以锁定依然有效。这不是绕过，只是文件移动。WARN 去掉，NIT 级别可以提。
+
+真正的问题：Toast.tsx 已经不是「自包含模块级订阅」了，它的再导出让受锁面变复杂。但注释里说明了原因。可以给 NIT。
+
+8. **reader.store.ts 的行数**：reader.store.ts 从 diff 看增加了约 32 行（+31 行左右）。之前文件多大？不超过 500 行吧（没展示）。注释里 AnnotationLayer/ReaderPage 行数守恒提到 250/250，reader.store 没说，应该没超。
+
+9. **ReaderPage.tsx 的改动**：加了 undo 动作。这没有行数问题（+2 行）。
+
+10. **另一个正确性问题**：SelectionLayer 的 save 成功后 `pushUndo(paperId, { kind: 'create', annotation: saved })`——`saved` 是 api 返回的 Annotation（含服务端生成的 id）。撤销时 deleteAnnotation(saved.id)。如果 saved.id 与调用时创建的对象一致？正常。
+
+11. **AnnotationLayer deleteAnnotation 的 push**：`pushUndo(a.paperId, { kind: 'delete', annotation: a })`——a 是删除前的完整对象。undo 时 toInput 后 saveAnnotation 重建。如果重建时服务端对 paperId 有校验？saveAnnotation 的请求体是 { paperId, annotation: input }，input 里没有 paperId，请求外层有 paperId。undo 里调用 `api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })` 传入了 paperId。正确。
+
+12. **一个值得注意的点**：comment-edit 撤销后的 apply.upsert 用的是 api 返回的 r.data（更新后的对象），而不是 top.before。这可能看起来「不是恢复原样」——但 updateAnnotation 的 r.data 应该就是 after 状态（即 before）。这取决于后端实现。如果 r.data 是服务端处理后返回的（可能覆盖了某些字段），某些字段可能回到旧值但 updatedAt 被更新了？不得而知，但这是 api 契约。
+
+13. **再看一下 in-flight 互斥的跨 tab 问题**：undoInFlight 是模块级单例。tab A 撤销 await 期间，tab B 撤销会被 busy。这在单窗口阅读器里，一次只能操作一个 tab，影响可控。但如果 tab A 撤销很慢（API 慢），用户切到 tab B 按 ctrl+z，会收到 toast「撤销失败，请重试」（store 层对 api-failed 发 toast）？不对：busy 不是 api-failed，store 里只对 api-failed 发 toast，busy 静默。所以 tab B 按 ctrl+z 静默无操作。这符合「连按 ctrl+z 等价一次撤销」但跨 tab 场景可能让用户困惑（切到 tab B 按 ctrl+z 没反应）。可以考虑 per-tab in-flight，但复杂度高。WARN 或 NIT。我认为 WARN 合适。
+
+14. **竞态**：push 与 undo 交错（前面提到）。考虑更实际一点的场景：undo delete 操作（重建标注）进行中，用户刚好在另一个 tab 创建新标注？push 到另一个 tab 的栈，不受影响。若是同 tab：undo 重建标注 await 期间，用户点击标注开编辑（不修改则不 push），或者正好保存 comment 修改（push comment-edit 到同栈）。undo 完成后 s.pop() 弹掉的是栈顶（新 push 的 comment-edit），而 undo 实际逆操作的是 delete（重建）。这会导致撤销栈错乱：本应撤销的 delete 条目还在栈里（被 pop 的是新的 comment-edit）。这是一个真实的竞态 bug。但触发条件苛刻（API 延迟 + 用户在撤销未完成时完成另一个操作）。另外注意：undo 期间 UI 没有禁用。轻微但存在。WARN。
+
+15. **再想想 undoInFlight 的全局性对测试的影响**：模块级变量，测试要 resetModules 才能隔离。测试里已经处理。
+
+16. **检查 pushUndo 的边界**：pushUndo 在一个已 clearStack 的 tab 会新建栈，正常。splice(0, s.length - UNDO_DEPTH_MAX)——length 恒大于 MAX，s.length - MAX 是正数。正确。
+
+17. **深度截断时 FIFO 丢最旧**：push MAX+1 时截掉最旧的。测试断言 a-0 不出现、a-1 在栈底。正确。
+
+18. **undo 执行顺序**：undo 里先设 undoInFlight=true，读 top=s[s.length-1]（此时栈顶是 LIFO 下最新操作），然后 await api，成功后 pop。如果不成功（api-failed），不 pop，可重试。但注意：如果 api 实际成功但响应 ok:false？这种情况视为未执行（不弹栈），重试可能重复执行。不过这属于 API 契约问题。
+
+19. **没有看到的**：AnnotationLayer 的 saveComment 里 pushUndo 用的是 `a`（编辑前的原始对象？）。看代码：
+```
+const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
+const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
+useReaderStore.getState().updateAnnotation(saved)
+pushUndo(a.paperId, { kind: 'comment-edit', before: a })
+```
+这里 `a` 是闭包里的哪种？从注释「before=预编辑快照」看，a 是编辑开始时的标注对象，不是保存时的 next。正确。但如果编辑过程中标注被其他路径修改了？同进程内 unlikely。
+
+20. **SelectionLayer 的 push 位置**：在 `useReaderStore.getState().clearTabDirty(paperId)` 之前。顺序无影响。
+
+21. **ReaderPage undo 动作**：
+```
+undo: () => void useReaderStore.getState().undo()
+```
+void 操作符 + Promise，fire-and-forget。异常捕获在 undo 内部。但如果 runUndo 抛异常（例如 api 层之外的 bug），reader.store.undo() 里没有 try/catch，异常会冒泡到 void 操作符的表达式，成为 unhandled rejection？看 reader.store.undo()：
+```
+async undo() {
+  const paperId = get().activeId
+  if (paperId === null) return
+  const outcome = await runUndo(paperId)
+  ...
+}
+```
+runUndo 内部有 try/catch 捕获所有异常（非 ApiClientError 打 console.error 后返回 api-failed）。所以 runUndo 不会抛异常（除了 catch 块自身抛错或 undoInFlight 访问等 bug）。但 reader.store.undo() 本身如果有其它意外（如 showToast 抛错？）会 unhandled。低风险。但更严格的做法是在 store undo 里包裹 try/catch。NIT。
+
+22. **finally 陷阱**：undo() 里 `return { done: false, reason: 'api-failed' }` 出现在 try/catch/finally 中——finally 里 reset undoInFlight。try 里的 return 会先执行 finally 再返回。正确。catch 里的 return 也一样。最后一行 `return { done: true, apply }` 也在 try 里。注意一个特殊情况：if(!r.ok) return api-failed 在 try 中，finally 会重置。正确。
+
+23. **检查 remapStackIds 的语义**：撤销 delete 重建后，栈里所有引用旧 id 的条目改指新 id。但注意，这里包括「当前正在执行的 delete 条目」本身吗？`s[i]` 遍历整个栈，包括栈顶（当前 delete 条目）。栈顶 delete 条目里的 annotation.id 是旧 id，remap 后变成新 id。但紧接着 `s.pop()` 把它弹掉——所以改不改无所谓（pop 前改了，pop 后消失）。不影响。其余更早条目被改。逻辑正确。
+   
+   另一个问题：remap 时原来 create 条目的 annotation 也被改了 id。create 条目的逆操作是 delete，撤销它会按新 id 删除重建的标注。正确（本就是同一个标注实体的生命周期延续）。
+
+   但如果栈里还有一个独立的 delete 条目引用同 id 的旧对象（手动删除后 undo 重建又删除？）——remap 会把它也改了。这个语义是否错误？考虑：同一标注实体只有一条创建链，所有操作都是同一 id。重建后实体换新 id，旧 id 的所有历史操作都应指向新 id。remap 全部处理是合理的。
+
+24. **测试文件的类型**：`import { guardedDescribe } from '../../utils/guard'`——这是项目测试框架的 guard 机制，合理。
+
+25. **manifest 的 generatedAt 更新**：10:30:59 比 04:40:26 晚，这是 locks:apply 生成的，没问题。
+
+26. **检查宪法硬规则的具体违反**：
+   - 文件行数：新文件 annotation-undo.ts 181 行（从 54 行扩展到 181 行，+127）——OK
+   - 死代码：test 里 unimplementedObject 被替换为真实实现，无残留
+   - TODO/FIXME：没看到
+   - 依赖：无新增依赖
+   - 类型单一真相源：Annotation/AnnotationInput 从 @shared/models/annotation 导入，没有手写等价类型
+   - 跨层：无跨层问题
+   - 安全禁令：无触碰
+   - 出网：无新增
+   - **测试保留**：改的是受锁测试文件（reader-shortcuts.test.tsx）和新增受锁测试（annotation-undo.test.ts）——按宪法「禁止修改 tests/**」吗？「测试是锁定的合约：禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256 对账）。发现测试本身有错 → 报告人类，走 [locked-change]，不得自行修改让代码通过。」修 reader-shortcuts.test.tsx 的 makeActions 是必要的（新接口 undo），且是「强化非放宽」——给受锁测试增加契约。带 [locked-change] 尾注（简报里提到）。这符合流程要求。
+   - **受锁文件修改先 unlock 再 apply**：简报说做了 locks:apply（manifest 更新证据）。
+
+27. **更仔细地看 Toast 拆分**——toast-store.ts 用了 `window.setTimeout` 和 `window.clearTimeout`。toast-store.ts 是纯 .ts 文件（无 DOM/React），但引用了 window。这没问题，renderer 环境有 window。但测试环境（node 工程）里 window 是否可用？toast-store.ts 只在 renderer 消费方导入（reader.store 被 .ts 测试拉入 node 工程时，import toast-store，模块加载时没有立即调用 window，只有 showToast 调用时用 window）。reader.store 的测试会调用 undo()，api 失败时会 showToast → window.setTimeout。测试环境里 window 有吗？简报说「reader.store 18 用例全绿」，应该已处理（vitest 环境或 stubGlobal）。这是既有代码的测试环境问题，不阻塞。
+
+28. **还有一个细节**：undo() 里对 create 的逆操作调用 `api.reader.deleteAnnotation({ annotationId: top.annotation.id })`。如果删除的标注已被其他路径删除（比如用户先手动删除又按撤销？不对——手动删除会 push delete 条目，undo 应该先撤销 delete 再撤 create。但如果手动删除的是另一处？比如数据库被外部清掉），deleteAnnotation 返回 !ok，不弹栈，用户看到撤销失败。可接受。
+
+29. **Notification 之类没有**。
+
+现在综合判断严重级别：
+
+BLOCKING 级别的可能候选：
+- 竞态（push 交错）——真实存在的并发缺陷，但触发条件苛刻，且无因；让我评估是否 BLOCKING。宪法对正确性缺陷直接 BLOCKING。这是边缘场景。我认为可以定为 WARN，因为它需要「api 延迟 + 用户操作交错」同时满足，桌面本地应用里 api 调用是 IPC 本地进程，延迟毫秒级，用户很难在同一毫秒完成另一操作。但测试层面做了 in-flight 互斥说明团队重视并发正确性。可以给 WARN 并建议具体修复（per-tab in-flight + push 时检查 in-flight 标记）。
+- reader.store.undo 无异常保护——NIT。
+- undoInFlight 全局而非 per-tab——WARN。
+
+没有明显 BLOCKING。
+
+等等，让我重新检查一个更严重的问题：**undone delete 后重建标注的 store 同步**。
+
+undo() 返回 { done: true, apply: { type: 'upsert', annotation: r.data } }。reader.store.undo() 里：
+```
+act.type === 'remove'
+  ? tab.annotations.filter(...)
+  : tab.annotations.some(...)
+    ? tab.annotations.map(...)
+    : [...tab.annotations, act.annotation]
+```
+upsert 逻辑正确（有则替换，无则追加）。
+
+**但如果 store 里 annotations 已经以某种 order 排过序（按页/按创建时间）**，追加到末尾可能显示在错误位置。看现有代码：AnnotationLayer 等都以 annotations 数组渲染，顺序可能由 load 决定。追加新创建标注到末尾——SelectionLayer.save 时 onSaved(saved) 也是追加到 store（api 创建的标注也追加）吗？如果既有语义就是追加，则一致。不深入太多，保持一致即可。
+
+**再检查一个：undo 里 delete 逆操作 saveAnnotation 的返回 r.data.id 与 test 预期一致**。测试里 data 是 ann('a-new')。实际后端生成的 id。remapStackIds 用了 r.data.id。正确。
+
+**检查 remap 是否会错过 comment-edit 的 before 引用但保留 delete 的 annotation 引用？** remap 函数遍历所有条目：
+- comment-edit：检查 e.before.id === oldId → 改 before
+- 其他（create/delete）：检查 e.annotation.id === oldId → 改 annotation
+
+看起来覆盖全面。但有一个 edge：UndoEntry 中只有这三种 kind，create 和 delete 都带 annotation 字段，comment-edit 带 before。所以条件分支覆盖所有情况。正确。
+
+**在来看一个更隐蔽的：redo 不做，但 undo create 后系统里标注被删除——这没问题。undo delete 后重建 + remap——如果用户之后又创建一个标注（新 push）？栈顺序是什么？** 
+示例：create a1 → delete a1 → undo（重建 a1'）→ 用户创建 a2。栈：create a1（remap 后 create a1'）+ delete a1（remap 后 delete a1'，被 pop）+ create a2。栈里还有 create a1'。第一次 undo 撤 a2，第二次 undo 撤 a1'（删除 a1'）。逻辑正确。
+
+**再看：comment-edit 撤销后，原文标注其他字段被改过（比如颜色）且 push 了其他条目？** 语义上是操作栈，只要每条逆操作正确反向执行，整体回退就正确。但存在「多次 comment-edit 同一标注」的情况：create a → comment-edit（before=old1）→ comment-edit（before=old2）。第一次 undo 恢复 old2，第二次 undo 恢复 old1。栈里有 create（annotation=初始）和两个 comment-edit。正常。
+
+**但如果 delete → undo 重建后，栈里旧 create 的 annotation 被 remap 到新 id，而后续 comment-edit 条目的 before 也被 remap**。没问题。
+
+好，我再检查测试里的一个断言：深度截断测试里 `expect(ids).toContain(`a-${m.UNDO_DEPTH_MAX}`)`——push MAX+1 保留的是 a-1 到 a-MAX（共 50 个），最旧 a-0 被丢。ID 包含 a-MAX（最后 push 的）。正确。
+
+**in-flight 测试的 p2 时序**：p1 调用 undo → 设置 in-flight → await del（pending）。p2 调用 undo → 看到 in-flight → 返回 busy（同步？async 函数返回 Promise，但内部立即 return，所以 await p2 直接 resolve）。测试 await p2 得到 busy。释放 p1。p3。都正确。
+
+**再看 api-failed 测试里 `fail ? { ok: false as const } : { ok: true as const, data: undefined as never }`**——第一次调用返回 ok:false，undo 返回 api-failed。注意！key 的一个细节：api.reader.deleteAnnotation 的标准 ok 响应是否带 data？这里 data: undefined，undo 里 create 逆不检查 data 直接用 id。合理。
+
+**有没有可能 undo 里 delete 逆操作的 saveAnnotation 返回 ok 但 data 缺失**（r.data 为 undefined）？代码里 `remapStackIds(s, top.annotation.id, r.data.id)` 会 crash。如果 ok:true 但 data undefined 是类型违规（TypeScript 会要求 data），但运行时可能。预防应该检查 r.data。这是防御性编程缺失。如果后端的 api 契约保证 ok:true 必有 data，则没关系。但「API 层封装」的 ok/data 响应类型通常这样保证。不阻塞。NIT。
+
+**现在整理发现**：
+
+1. WARN：undoInFlight 模块级单例，跨 tab 互斥——tab A undo 期间 tab B 按 ctrl+z 静默无操作。且与 pushUndo 不互斥：undo 期间同 tab 新操作入栈会在 undo pop 时被误弹（错序撤销）。
+
+2. WARN：toast-store.ts 拆分——把受测逻辑从 Toast.tsx 移到不受锁的新文件。虽然功能等价且测试锁定仍覆盖，但未来对 toast-store.ts 的修改不受 manifest 保护。不过 toast.test.tsx 还在且锁定，实际约束在。这是「NIT/WARN」级别。考虑到宪法 DoD「grep 无 TODO/FIXME」等不涉及，且这是合理拆分，我给 NIT 或 WARN？让我想——不存在「绕过锁定」的直接证据，因为 toast.test.tsx 未改（如果它存在且锁定）。举报什么？「受锁面外移」是一个风险提示。给 NIT。
+
+3. WARN：范围蔓延——Toast.tsx/toast-store.ts 拆分虽被说明为 typecheck 强制，但确实不属于 SR2-UNDO-01 的工单面（是并发改动）。宪法说「方案切换=删除旧方案」「死代码即删」，这里把旧逻辑移动并精简了。严格按「git diff --stat 无范围蔓延」，这算蔓延但理由充分。给 NIT 吧，不算硬违反。
+
+4. NIT：reader.store.undo() 无顶层 try/catch，若 runUndo 或 store 操作意外抛错会 unhandled rejection。
+
+5. NIT：undo 内部对 ok:true 但 data 缺失的防御缺失（r.data.id 会 crash）。
+
+6. NIT：console.error 保留——生产路径打 console 不是问题，桌面应用本地调试有益。
+
+7. 可能有 WARN 的点：**跨格序列测试中 id remap 使用「模拟保存生成新 id」的假设依赖 repo.insert 不收显式 id**。简报里说核实过 repo 契约，diff 里看不到。不列。
+
+8. 让我再看看有没有 BLOCKING 被忽略：**AnnotationLayer 的 pushUndo 位置**：
+```
+pushUndo(a.paperId, { kind: 'comment-edit', before: a })
+```
+a 是编辑前对象。但 save 之前如果 a 被 store 内的 update 改过？看 saveComment 从哪里拿到 a——大概是有 editing 目标。看 diff 上下文不太全。但既有代码这样调用是合理的。
+
+9. **SelectionLayer.save 的 push**：创建成功后 pushUndo(paperId, { kind:'create', annotation: saved })。但 save 对应的「操作」是否应该更早 push——比如 pending 创建但未保存时？no，成功路径才 push 是对的（未保存的创建失败不产生操作）。
+
+10. **undo() 对 active tab 的处理**：reader.store.undo() 用 activeId 而不用参数。ReaderShortcuts 传入的 undo 动作由 keymap 全局监听，理论上当 key 事件发生在非 active 的场景？单窗口有多个 pdf 视图吗？多标签单视图，active 是当前显示。如果用户正 hover 一个非 active tab（多标签仍显示 active 内容），key 事件作用于 active。合理。但如果之后有多视图？v1 单窗口。OK。
+
+11. 让我评估 **undo 期间 tab 关闭的时序**：undo() 里 paperId 捕获在 await 前，如果 await runUndo 期间 tab 被关，runUndo 仍然执行 api。但 reader.store.closeOne 里 clearStack 已清理。undo 完成后 store 检查 tab 不存在则丢弃。DB 已更新（撤销生效），下次打开对齐。符合设计说明。但有一个小问题：**undo 期间 tab 被关，栈被 clear，undo 的 done 结果被丢弃，栈也空了**——但 store 层丢弃，没问题。而如果 tab 关闭后同一个 paperId 重新打开（新 tab），新栈是空的，DB 里已撤销。用户看到的是撤销后的状态。这是一致的。
+
+12. **busy 的消费者行为**：连按 ctrl+z 会调用两次 undo()。第一次 runUndo in-flight，第二次看到 busy 返回，store 静默。等第一次完成后，isBusy 为 false，下一次按下才会再次撤销。这符合「连按等价一次」吗？不完全是——**第一次 undo 完成后，如果用户还按着 ctrl+z 触发新的 keydown**（实际会有新的 keydown），新 undo 会执行第二次撤销。但「连按 ctrl+z」通常指快速多次按下，每次 keydown 间隔 > api 延迟（本地 IPC 微秒-毫秒级），所以第二次按下时第一次已释放，会执行第二次撤销。这很好（用户连续撤销）。in-flight 拦截只针对同一次 keydown 重复调用（key repeat 或按住不放？），合理。
+
+好，我再特别检查一下「**reader.store 行数**」——加了 31+ 行。如果 reader.store.ts 原本 400 行会变成 430，不超 500。如果原本 480，可能超。diff 无法确定。简报只提了 AnnotationLayer/ReaderPage 行数守恒，没提 reader.store。reader.store 有「18 用例」说明文件很大。但大概 400 行左右。让我从 diff 上下文估算：@ -63,6 +63,8 @ 到 @ -343,6 +349,31 @，文件至少 350 行。加上头部注释和 interface 定义，可能 450+。加 30 行可能到 480。不超 500 但接近。NIT 或 WARN？如果是 480 依然合规，合规就不报。但「reader.store 未拆」——宪法说 500 行上限 error。文件只有 diff 无法知道总行数。看 @ -343,6 +349,31 表示新文件 349 之后还有内容（比如 createReaderStoreInitialState 的初始状态定义）。总长可能 380-400。加 31 行 = 430 左右。假设合规，不报。
+
+现在判定：Verdict 应该是 PASS_WITH_WARNINGS。因为有一两个合理的 WARN（in-flight 全局性/竞态），其余 NIT。
+
+但让我重新想一下竞态问题是否该给 BLOCKING。
+
+宪法的 BLOCKING 标准：「正确性缺陷/安全问题」。push 与 undo 交错的竞态是正确性缺陷吗？是。但它需要 undo 的 api 调用期间用户完成另一个操作（创建/编辑/删除）。api 调用是 IPC（本地），通常 <10ms。用户通过 UI 完成操作至少几百 ms 点击。所以实际触发概率极低。但「低概率正确性缺陷」仍算正确性缺陷。是否 BLOCKING？看这个 bug 的影响：撤销栈错乱，之后 undo 可能逆操作错误对象（但不是数据损坏——操作的逆操作虽然错序但各自逆转，最终状态可能错误：本应撤销的 delete 未撤销，反而撤销了一个 comment-edit）。对用户来说是混乱但可恢复（继续撤销）。考虑到触发条件极苛刻（api 延迟 + 同步操作），我倾向 WARN 而不是 BLOCKING。这里要用工程判断：本地 IPC 快，几乎不可触发。但既然做了 in-flight 互斥来防双弹，对 push 交错不加防护是同一个层面的缺口。可以建议在 pushUndo 里检查 in-flight 状态（若 in-flight，把 push 挂起或忽略？）——更好的方案是 per-tab busy 标记。给 WARN。
+
+另一个值得注意的：**undoInFlight 的全局变量使 pushUndo 交错问题的修复变复杂**。如果改成 per-tab in-flight 标记，跨 tab 操作更准确。建议具体化。
+
+现在想想是否有 BLOCKING 遗漏：
+
+**关于 toast-store.ts 的 window 引用**：toast-store.ts 是纯逻辑，但使用了 window。在测试（node）环境，如果 reader.store 测试调用 undo() 且 api 失败 → showToast → window.setTimeout——vitest 环境默认有 window 吗？vitest 的 node 环境默认没有 window（除非 jsdom/happy-dom）。reader.store.test.ts 是否 stub window？简报说「沿用 reader.store.test 的 resetModules+stubGlobal 桩法」——这是 annotation-undo.test.ts 的做法（loadModule 里 stubGlobal('window', { api })）。但 annotation-undo.test.ts 测试 undo() 时 window 被 stub 成 { api }，没有 setTimeout！等等，undo() 内部的 catch 处理不涉及 window；undo() 的成功路径也不涉及 window。showToast 由 reader.store 调用，annotation-undo.test 不测 reader.store。而 reader.store 测试（既有）调用 undo 时需要通过 api mock 返回失败来触发 showToast——reader.store 测试的环境如果有 window.setTimeout 吗？既有的 reader.store.test.ts 18 用例全绿了（简报），说明测试环境处理了。可能是 vitest 默认有 setTimeout 全局（node 有 setTimeout 全局，但代码用的是 window.setTimeout！node 全局没有 window）。**如果 node 环境调用 window.setTimeout 会 ReferenceError**。但 toast-store.ts 的 dismiss/showToast 用 window.setTimeout。reader.store 测试若触发 showToast 会 crash。但测试全绿说明没触发，或者测试环境有 jsdom。vitest 配置文件可以设 environment jsdom。diff 里没看到 vitest config 变化。既有 toast.test.tsx 是 tsx（React 组件测试）可能用 jsdom。reader.store.test.ts 的环境？如果它也 jsdom，有 window。不知。不报，因为简报说全绿。
+
+**还有一个点：toast-store.ts 的定时器**：`timers.set(item.id, window.setTimeout(() => dismiss(item.id), AUTO_DISMISS_MS[kind]))`——在 Host 未挂载时调用 showToast 也会设置定时器，到期 dismiss 调用 notify（listeners 空则 no-op）。安全。
+
+**再检查 AnnotationLayer 的 delete 操作 push 用的 `a` 对象**：push { kind: 'delete', annotation: a }。a 是删除操作发生时的完整对象。undo 时 toInput(a) 重建。toInput 用 a.page/kind/color/quoteText/prefixText/suffixText/startOffset/endOffset/rects/comment。如果标注的 rects 是在运行中重锚过（显示层自愈），store 里 a 的 rects 是缓存值。重建时 rects 用旧值。这是可以接受的（锚定数据原样恢复）。
+
+**撤销 create 后 store 里 removeAnnotation？** store undo 的 apply remove 用 filter 删除。SelectionLayer save 后 onSaved(saved) 怎么加入 store？没看到 saveAnnotation 后 store 更新的代码，但 create 撤销时 filter 删除肯定在。
+
+**reader.store undo() 里 `set({ tabs: { ...tabs, [paperId]: { ...tab, annotations: next } } })`**——注意这里 `tabs` 是 get() 时拿的，如果 await runUndo 期间有其它 store 更新（其他 tab 的状态、activeId 变化等），这里用旧 tabs 展开合并会**覆盖**其他并发的 store 更新？zustand 的 set 是浅合并，展开的旧 tabs 对象含旧字段（比如其它 tab 的 annotations 更新被带旧），然后 set({ tabs: { ...tabs, [paperId]: updated } })——**这会把并发期间其它 tab 的更新冲掉**！因为这里用 `get().tabs` 在 await 之后？看代码：
+```
+const { tabs } = get()
+const tab = tabs[paperId]
+```
+这是在 `await runUndo` **之后** get() 的！重新读了一次。所以拿到的是最新 tabs。没有覆盖问题。
+
+但 undo() 里 showToast 之前 get() 两次（第一次取 activeId 在 await 前，第二次拿 tabs 在 await 后）。正确。
+
+**ReaderShortcuts 的 undo 依赖**：`const { prevPage, nextPage, zoomStep, undo } = actions` + useEffect deps [prevPage, nextPage, zoomStep, undo]。ReaderPage 里 useMemo(() => ({ ... undo: () => void ... }), []) 每次渲染同一个 actions 对象（deps []）。所以 undo 引用稳定。useEffect 不会无限重跑。正确。
+
+**ReaderPage 的 actions 对象已包含 undo，接口契约 ReaderShortcutActions 增加了 undo，调用方 ReaderPage 提供。测试 makeActions 也加了。所有实现方都更新。** 正确。
+
+好，我现在整理 findings：
+
+F1 (WARN)：annotation-undo.ts undoInFlight 模块级全局互斥：a) 跨 tab 互相阻塞——tab A 撤销中 tab B 按 ctrl+z 静默丢弃；b) pushUndo 不参与互斥——undo 的 await 期间新操作入栈，undo 完成时 pop 的是新操作而非正被撤销的条目，撤销栈错序。
+
+F2 (WARN)：toast-store.ts 从受锁契约视图外移——Toast.tsx（若原本受锁？实际上不在受锁清单）到 toast-store.ts（不受 manifest 保护）。再想想，Toast.tsx 是否真的受锁？让我再确认一下 manifest diff 的上下文。diff 显示 manifest 片段里在 annotation-menu.test.tsx 和 keymap.test.ts 周围，这些是 tests 文件。没有 src 文件。那么 Toast.tsx 不在 manifest 里吗？受锁清单包含「tests/shared/migrations/CI/lint/构建/测试配置/脚本」，不包含 src/renderer。所以 Toast.tsx 不在受锁清单。拆分后 toast-store.ts 也不受锁。那这个 F2 不成立——因为原本 Toast.tsx 就不受锁，谈不上「外移绕过锁定」。但是 toast.test.tsx 呢？它锁定的是行为，不受文件位置影响。所以无 WARN。撤销 F2，最多 NIT 提醒「新文件不复用 toast-store 的 getToastItems 导出等（已用）」无。
+
+F2 (NIT)：reader.store.undo() 无 try/catch——意外异常成为 unhandled rejection。虽然 runUndo 有内部 catch，但 showToast/store 操作无保护。
+
+F3 (NIT)：undo() 中 ok:true 但 r.data 为 undefined 时 `r.data.id` 会 TypeError——缺防御。api 契约保证 data 存在则无碍，但成本低。
+
+F4 (NIT)：范围蔓延——Toast.tsx/toast-store.ts 拆分虽然理由充分（typecheck 强制），但超出工单面。这是一个 NIT，不算违反。
+
+再来确认有没有「测试放宽」迹象：无，反而是加测试。
+
+有没有占位实现残留？无（unimplementedObject 被替换）。
+
+有没有「方案切换 = 删除旧方案」？Toast 拆分是移动而非双方案并存。旧 Toast.tsx 保留 re-export（不是双实现）。undo 只有一个实现。OK。
+
+**行数**：annotation-undo.ts 从 54 到 181 行。OK。
+**AnnotationLayer 250 行守恒**：简报说压缩注释保持 250/250。diff 里只看到顺带压缩注释。合理。
+
+**工作流**：registry 更新 open→done。OK。
+
+**lock 流程**：manifest 更新了（新增测试 + reader-shortcuts 哈希）。但注意——diff 里 manifest 的 reader-shortcuts.test.tsx 哈希已经更新了。有没有「触碰锁定文件的提交即时 locks:apply」的违反？简报没说历史，当前 diff 是单 commit（看不到）。不报。
+
+现在确定 verdict。有没有 BLOCKING？让我做最后一遍扫描：
+
+- 合约纪律：技能清点在简报里做了（对话记录）。没有明显违反。
+- 代码组织：行数合规、无死代码、无重复类型。
+- 安全：无。
+- 生产质量：无严重问题。
+- 测试纪律：加用例强化，无放宽。
+
+所以我给 PASS_WITH_WARNINGS，两个 WARN（in-flight 全局性/竞态；reader.store undo 无异常保护的 unhandled rejection 风险其实很低…… 让我重新评估）。
+
+竞态问题（整个栈的 in-flight 设计）是核心的 WARN。但还有没有更实质的？
+
+**重新检查一个语义问题：delete 逆操作重建后，apply.upsert 里的 annotation 是 r.data——但这时 store 里可能已经有同一个 paperId 的其它标注处于某种排序**——不是问题。
+
+**检查 store undo 对 activeId 的依赖**：ReaderShortcuts 触发 undo 时，activeId 是当前 tab。如果用户正在编辑标注（editable textarea），keymap 避让 textarea 原生 undo——所以不会触发这个 undo。若用户正在编辑普通页面选中标注（菜单），可能触发 ctrl+z 撤销上一个操作。行为合理。
+
+**还有个细节：undo() 成功后 store 更新、但没有 clearTabDirty**。撤销操作后 tab 的 dirty 状态（未保存退出警告）应该变化吗？undo 操作改变了 DB（删除/重建/改回），这是一种数据变化。TabState.dirty 用于退出拦截（有未保存更改）。撤销操作本身已持久化，不应标记 dirty。现有代码 markTabDirty 是标注创建失败/notes pending 时设置。撤销是成功持久化的操作，不设 dirty 合理。
+
+**检查 undo 与 annotations 列表的加载同步**：undo 调整 store 的 annotations。如果 store 的 annotations 字段不包含所有页的所有标注（按需加载）？AnnotationLayer 按 page 过滤，说明 annotations 是全量列表。OK。
+
+好，最终 verdict: PASS_WITH_WARNINGS。
+
+具体 findings 排序：
+
+1. WARN —— in-flight 全局性（跨 tab）+ push 交错竞态
+   file: src/renderer/features/reader/annotation-undo.ts
+   line_hint: undoInFlight 定义 + undo() 入口
+   evidence: `let undoInFlight = false` + pushUndo 不入互斥
+   suggestion: per-tab in-flight 标记（Record<paperId, boolean>）；pushUndo 检查 in-flight（同 paperId 时延迟入栈或拒绝并在 undo 完成后重放）
+
+2. WARN —— busy 静默合并但 store.undo 未区分 busy 与 empty，导致跨 tab 静默无反馈。这其实是 F1 的一部分，合并。
+
+3. NIT —— reader.store.undo() 无顶层异常保护
+   file: src/renderer/features/reader/reader.store.ts
+   evidence: `async undo() { ... const outcome = await runUndo(paperId) ... }` 无 try/catch
+   suggestion: 包裹 try/catch，unexpected 打 console + toast
+
+4. NIT —— undo() 成功路径假设 r.data 存在，缺防御
+   file: src/renderer/features/reader/annotation-undo.ts
+   evidence: `remapStackIds(s, top.annotation.id, r.data.id)` / `apply = { type: 'upsert', annotation: r.data }`——ok:true 但 data undefined 时 TypeError
+   suggestion: 校验 r.data 存在再继续，不存在按 api-failed 处理
+
+5. NIT —— 范围蔓延说明（Toast 拆分）——但这不是缺陷，可以不报。或者作为 NIT 提示注意工单纪律。
+
+我可能还需要提一下**「undo 期间 tab 关闭且重开同 paperId」**——不影响。
+
+再翻一遍 diff 看有没有漏的：
+- AnnotationLayer 注释压缩——纯格式。
+- ReaderPage 加逗号和 undo——OK。
+- ReaderShortcuts 键位表：`{ key: 'z', ctrl: true, preventDefault: true, handler: undo }`。preventDefault: true 会不会阻止 textarea 的 ctrl+z？注释说 editable 由 keymap 避让（keymap 层检测 editable）。如果 keymap 的避让逻辑有效，就不该触发。这里靠既有机制。测试只验证了非 editable 场景。评审时相信既有机制。不报。
+  但等一下——ctrl+z 的 handler 是 `undo`，而 undo 是 actions.undo。在非 editable 焦点下，文档没有可撤销的原生操作，preventDefault 阻止浏览器默认的「撤销上次输入」？在无默认操作时无影响。行为正常。
+
+- AnnotationLayer push 位置三处正确。
+- reader.store closeOne 中 clearStack 在调用删除 tab 状态之前。OK。
+- clearStack 不会清 undoInFlight——如果 undo 进行中 tab 关闭（栈清了），等待中的 undo 完成后 in-flight 释放。下次 undo 空栈。OK。
+
+- 测试文件 211 行，符合行数限制。
+
+现在写 summary：实现完整度高，契约处理（受锁文件 [locked-change]、manifest 同步）合规，测试覆盖强（跨格序列、in-flight、重试）；主要风险在模块级 in-flight 互斥的全局性及 push 交错竞态，建议按 per-tab 加锁收敛。
+
+最后再权衡一下 F1 的级别。会不会有人反对说「本地 IPC 快，竞态不可能」？但 undo() 的 await 也可能因为 IPC 排队而变慢。而且代码里有 in-flight 互斥说明这个团队重视这种竞态。push 交错竞态是真实缺陷，WARN 合理。per-tab in-flight 是干净的修复。就这么定。
+
+还有一个我想加入检查的：**api-failed 时的幂等风险**——api 实际成功但响应 ok:false（如网络层丢包），重试会重复执行。这在本地 IPC 里几乎不存在（响应丢失会被 IPC 当作错误且 api 可能已执行）。但这是通用分布式问题。对本地应用不太适用。NIT 可提但我不想太发散。
+
+**还有个宪法点：任务简报说「头注预判成立：re-create 用新 id，toInput 剥离 id/paperId/时间戳，同 id 残留清点=无其他表/组件长期持有 annotation id」**。这是「清点断言」——如果后面发现组件持有 id 会出问题。diff 里看不到清点过程。这是 process 层面的信任，不报。
+
+我的 final 输出会包含 4 个发现（2 WARN + 2 NIT），verdict PASS_WITH_WARNINGS。
+
+等下，再考虑一下 F2 NIT 是否值得写。判断标准：NIT 是风格建议。reader.store.undo 异常保护确实有价值（unhandled rejection 是 shell 层行为，在 Electron renderer 里可能导致 console 污染但不会 crash）。写。
+
+另外我在思考：**toast-store.ts 的拆分是否产生重复职责**——Toast.tsx 的再导出和 toast-store.ts 的队列。这是 re-export 模式，不算冲突。但「方案切换=删除旧方案」的宪法——这里旧方案（Toast 内部队列）已删除到 toast-store，新文件是迁移。合理。
+
+**最后注意没有看到 git diff 中 package.json 或 locks 配置文件的变更**——无依赖变更，完全符合。
+
+好，写 final JSON。
+
+等一下，让我再看看 diff 中 manifest 的 reader-shortcuts.test.tsx 哈希变化背后——测试文件被修改了。受锁文件的修改本身需要 [locked-change] 尾注。简报里有。diff 里没显示 commit message（只有文件 diff），所以我没法验证尾注。审计时通常把简报里的流程记录当作证据。简报明确写了「[locked-change] 同批更新」。所以合规。
+
+哦对，还有一点值得写成 WARN 或 NIT：**manifest.json 与 reader-shortcuts.test.tsx 的哈希更新是「同批」的吗？** diff 显示同一个 commit 里 manifest 和测试文件都变了，是同步的。合规。
+
+再检查 annotation-undo.test.ts 的「in-flight 互斥」测试里 `release!()` 的类型标注——这是测试代码，没问题。
+
+好，输出。
+
+== content ==
+```json
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undoInFlight 模块级单例 + undo() 末尾 s.pop()",
+      "issue": "in-flight 互斥是全局布尔而非 per-tab，且 pushUndo 不参与互斥：1) tab A 撤销进行中，tab B 按 ctrl+z 会被 busy 静默丢弃（跨 tab 互相阻塞）；2) undo 的 await 期间同一 tab 若有新操作入栈（如新建标注），undo 完成后 s.pop() 弹出的是新入栈条目而非正在撤销的条目，造成撤销栈错序——被撤销的 delete 条目仍留在栈顶附近，后续连撤会逆操作错误对象。",
+      "evidence": "diff 中 `let undoInFlight = false` 为模块级；`pushUndo` 直接 `s.push(entry)` 无 in-flight 检查；undo() 成功路径 `s.pop()` 无条件弹栈顶。",
+      "suggestion": "将 in-flight 改为 per-tab 标记（Record<paperId, boolean>）；pushUndo 在对应 paperId 处于 in-flight 时暂缓入栈或直接拒绝（返回 false），undo 完成后再放行；或至少在 pop 前校验栈顶仍是捕获的 top（`if (s[s.length-1] !== top) return api-failed/busy`），避免错弹。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/reader.store.ts",
+      "line_hint": "async undo() 实现体",
+      "issue": "reader.store.undo() 无顶层 try/catch。虽然 runUndo 内部捕获了 ApiClientError 等异常，但 showToast、store set 或意外编程错误会直接成为 unhandled rejection，违反「禁止渲染层挂未捕获异常」的稳健性要求（同样问题存在于运行时打 console.error 的生产路径）。",
+      "evidence": "diff 中 `async undo() { const paperId = get().activeId; ... const outcome = await runUndo(paperId); ... set({ tabs: ... }) }` 全程无 try/catch。",
+      "suggestion": "在 store.undo() 外层包裹 try/catch，非预期异常打 console.error 并 showToast『撤销失败，请重试』，保证 Promise 不泄漏为 unhandled rejection。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/annotation-undo.ts",
+      "line_hint": "undo() 中 delete 逆操作分支",
+      "issue": "delete 逆操作成功时未防御 r.data 缺失：`remapStackIds(s, top.annotation.id, r.data.id)` 与 `apply = { type: 'upsert', annotation: r.data }` 在 ok:true 但 data 为 undefined 时会 TypeError。类型契约上 ok:true 应带 data，但运行时缺防御成本极低。",
+      "evidence": "diff 中 `const r = await api.reader.saveAnnotation(...); if (!r.ok) {...} remapStackIds(s, top.annotation.id, r.data.id)`。",
+      "suggestion": "在 !r.ok 之后补 `if (r.data === undefined) return { done: false, reason: 'api-failed' }`。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/shared/ui/Toast.tsx / toast-store.ts",
+      "line_hint": "Toast.tsx 拆分与再导出",
+      "issue": "Toast.tsx → toast-store.ts 拆分在简报中有充分理由（tsconfig.node 无 jsx 关卡），但严格按工单纪律这属于范围蔓延（SR2-UNDO-01 的接缝清单未列 Toast 重构）；虽然 toast.test.tsx 锁定面仍覆盖拆分后的行为，后续改动 toast-store.ts 不受 manifest 直接保护。",
+      "evidence": "diff 中 Toast.tsx 从 82 行瘦身为 30 行再导出，新增 toast-store.ts 83 行；简报说明这是 typecheck 强制的架构拆分。",
+      "suggestion": "建议在 commit message 或工单注释中显式标注此超出原接缝清单的架构变更，未来拆分纯逻辑模块时优先考虑放入 src/shared/ 或受锁覆盖面，保持契约视图完整。"
+    }
+  ],
+  "summary": "实现质量高：三逆操作、id remap、in-flight 互斥均有测试锚定，跨格序列测试覆盖到位，受锁文件变更与 manifest 同步合规，无安全与类型滥用的迹象。主要风险集中在模块级 in-flight 互斥的全局性与 push 交错竞态（WARN），以及 store 层无异常外溢保护；其余为可在后续迭代打磨的 NIT。整体可放行，但建议在合入前评估 WARN 修正方案。"
+}
+```

@@ -1,0 +1,55 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "updateContent / deleteByPaper / listByRole 方法体",
+      "issue": "SQL prepare 风格不一致：insert/listByPaper/countByPaper 在工厂顶层预编译，而 updateContent/deleteByPaper/listByRole 每次调用都重新 db.prepare",
+      "evidence": "diff 中 updateContent 内 `db.prepare(\"SELECT * FROM ai_notes WHERE id = ?\")`、deleteByPaper 内 `db.prepare(\"DELETE FROM ai_notes WHERE paper_id = ?\")`、listByRole 内 `db.prepare(...)`；而 insertStmt/listByPaperStmt/countStmt 为工厂级常量",
+      "suggestion": "将 update/delete/listByRole 语句提升为工厂内预编译常量，与 insert/list/count 保持一致，避免每调一语句重新编译一次"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "insert() 入口（AiNoteInput 消费面）",
+      "issue": "aiNoteInputSchema（含 .strict()）已在 shared 定义但 repo 仅 type-only import，insert/updateContent 未做运行时 zod 校验；当前 v1 无生产者靠类型系统兜底，AI-07 导入器若直接复用 repo 会让非法 question 等数据绕过校验进入 DB",
+      "evidence": "diff 中 `import type { AiNote, AiNoteInput, AiNoteRole } from '../../../shared/models/ai-note'`；ai-note.ts 已定义 `aiNoteInputSchema = aiNoteSchema.omit({...}).strict()`",
+      "suggestion": "在 repo insert 入口先 `aiNoteInputSchema.parse(input)`（失败抛错），或至少在 AI-07 导入器 IPC 边界强制 schema 校验，保持 question 枚举单一真相不被旁路"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/services/enrich.service.test.ts（同款在 import.service.test.ts）",
+      "line_hint": "makeRepos 返回对象新增行",
+      "issue": "新增 `aiNotes: {} as Repos['aiNotes']` 空对象 cast，若未来 enrich/import 服务误调用 aiNotes 任何方法会在运行时以 undefined function 崩溃而非显式失败；属既有测试夹具模式，但本次扩展了空 cast 面",
+      "evidence": "diff 中 enrich.service.test.ts 新增 `aiNotes: {} as Repos['aiNotes']`，import.service.test.ts 同款；既有 annotations 也是 `{} as`",
+      "suggestion": "为 aiNotes 注入最小显式 stub（如每个方法 `() => { throw new Error('not wired') }` 或 vitest mock），让误调用第一时间红而不是静默崩在方法内部"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/models/ai-note.ts（与 INV-24 交叉接缝）",
+      "line_hint": "anchorPage 字段注释（1 基辅助定位）",
+      "issue": "ai_notes 的 anchor_page 明确定义为 1 基辅助定位，而 INV-24 登记图片段序比较器采用 0 基存储页码；两处语义并存且 INV-24 点名「未来 AI 装配与回灌消费按同一比较器排序」，存在 AI-03 误将 anchor_page 当作 0 基比较键的接缝风险",
+      "evidence": "003_ai_notes.sql 注释 `anchor_page INTEGER, -- AI 报告的页码（1 基，辅助定位；可空）`；INV-24 文本 `页码（0 基存储；显示形态 1 基，与 corpus p.N 同口径）——排序禁止字符串字典序比较`",
+      "suggestion": "在 ai-note.ts 头注或 INV-24 补一句交叉引用：anchor_page 属 AI 侧 1 基辅助定位字段，不参与 INV-24 页码比较器，防止装配层误用"
+    }
+  ],
+  "summary": "B1 参数绑定修复彻底：全 diff 内所有 SQL（含测试 seed 与两条 DELETE）均为 db.prepare + 参数绑定，无任何变量插值；W2 证伪成立（既有连接级 DB_PRAGMAS 常开 foreign_keys=ON，且 repo 级联单测在真实外键行为下通过）；INV-25 登记条目的声明处/强制方式/锚定状态三栏完整，符合登记册规约。实现符合分层单向、类型单一真相源、安全禁令与行数约束，级联/CHECK/幂等/未知 id 均有真实可失败的用例覆盖，未发现放宽断言或删检查迹象，仅 4 项 NIT 级改进建议，不阻塞验收。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 12925,
+      "completion_tokens": 20462,
+      "total_tokens": 33387,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 19313
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 12541
+    },
+    "finish_reason": "stop"
+  }
+}

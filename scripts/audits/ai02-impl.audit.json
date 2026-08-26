@@ -1,0 +1,79 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "createDomCanvas -> drawFrom 内 ctx.drawImage 调用",
+      "issue": "生产 drawFrom 实现取不到底层 HTMLCanvasElement：createDomCanvas 返回对象没有 el 属性，drawImage 收到的是普通对象而非 CanvasImageSource，运行到标注裁剪时必然抛 TypeError，导致整篇提取走 error 路径。",
+      "evidence": "ctx.drawImage((src as { el?: HTMLCanvasElement }).el ?? (src as unknown as HTMLCanvasElement), ...) 而 createDomCanvas 返回 { width, height, ctx, drawFrom, toPngBase64 }，页图与 anno 图都来自该工厂，调用链 annoCanvas.drawFrom(pageCanvas, box) 中 src 无 el。",
+      "suggestion": "在 RenderCanvas 接口暴露 readonly el: HTMLCanvasElement（或 canvas），createDomCanvas 返回时带上 el；drawFrom 改为 ctx.drawImage(src.el, ...)。同步更新测试 stub 补 el 字段，并为 createDomCanvas 增加真实 drawImage 冒烟测试。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "loadPdfDocument",
+      "issue": "提取器不配置 pdfjs GlobalWorkerOptions.workerSrc，又与 ReaderPage/PdfCanvas 解耦；若用户未先打开过 PDF 而直接从设置页触发导出，pdfjs worker 可能回退到 fake worker 或默认 workerSrc，存在性能与潜在出网风险。",
+      "evidence": "模块注释宣称零 window/pdfjs 静态依赖、独立生命周期（R2），但 loadPdfDocument 仅 await import('pdfjs-dist') 后直接 getDocument(url)，未设置 workerSrc；项目内唯一 workerSrc 设置存在于 PdfCanvas.tsx 模块级。",
+      "suggestion": "在 loadPdfDocument 中显式设置 GlobalWorkerOptions.workerSrc（复用现有打包 workerUrl 或经 deps 注入），或在 getDocument 时禁用 worker（disableWorker）并说明取舍。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/utils/pdf-factory.ts",
+      "line_hint": "createMultiPagePdf 新增函数",
+      "issue": "新增的 createMultiPagePdf 在当前 diff 中没有任何引用（corpus-extractor.test.ts 用的是 docStub/pageStub/canvasStub 纯注入桩），属于未使用的新代码，违反『死代码即删/提交前确认新文件被引用』。",
+      "evidence": "pdf-factory.ts 新增约 30 行 createMultiPagePdf；tests/unit/renderer/corpus-extractor.test.ts 全文未 import 该函数。",
+      "suggestion": "当前删除该函数，待后续工单需要多页 PDF 夹具时再随测试一并提交；或在本工单测试中实际使用它替换 docStub，覆盖真实 PDF 解析路径。"
+    },
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/corpus-extractor.test.ts",
+      "line_hint": "canvasStub 定义与 createDomCanvas 未测",
+      "issue": "生产 createDomCanvas 的 drawFrom/toPngBase64 完全未被测试覆盖（canvasStub 为 no-op），导致上述 BLOCKING 缺陷在 9/9 全绿下漏网；测试纪律要求每个测试能失败一次，当前对核心裁剪路径的断言只在桩上成立。",
+      "evidence": "canvasStub 中 drawFrom: () => undefined，toPngBase64: () => `PNG(${w}x${h})`；测试列表中没有针对 createDomCanvas 的用例。",
+      "suggestion": "为 createDomCanvas 增加独立单测（真实 canvas 上下文 + 最小绘制后断言尺寸/像素），或在提取器测试中注入一个会执行 drawImage 的薄桩来覆盖 anno 裁剪调用链。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md",
+      "line_hint": "INV-16 行 强制方式 单元格",
+      "issue": "简报自认 dynamic import('pdfjs-dist') 可能不被 ESLint no-restricted-imports 拦截（非白名单文件的缺口），但 INV-16 登记册只写了静态规则与白名单 override，未记录该已知缺口，未来第四处动态直连可能被误认为已由机器强制拦截。",
+      "evidence": "简报 §2：『dynamic 侧白名单文件 override 已豁免，防线缺口=非白名单文件 dynamic import pdfjs 可能不拦（记录为已知边界，评审面覆盖）』；invariants.md 对应单元格无该边界描述。",
+      "suggestion": "在 invariants.md INV-16 的强制方式/锚定状态中补一句：『非白名单文件 dynamic import 不受 no-restricted-imports 机器锚覆盖，依赖人审』，使登记册与真实防线一致。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/CorpusExtractor.ts",
+      "line_hint": "runExtraction 内的三处 if (!ackX.ok) throw",
+      "issue": "fulltext/页图/anno 三处回传 ack 检查重复，且异常消息字符串近似，符合『重复 3 次以上抽函数』的规则。",
+      "evidence": "if (!ackText.ok) throw new Error('fulltext 回传被拒绝（会话侧错误）'); if (!ackPage.ok) ...; if (!ackAnno.ok) ...",
+      "suggestion": "抽一个 assertAck(ack, label) 小函数或 helper，统一错误消息并减少重复。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "corpusItemReqSchema figure 分支",
+      "issue": "figure:'page' 分支也允许可选 annotationId，实际语义上只有 anno 图需要 annotationId，当前 refine 只保证 anno 必带，不拒绝 page 携带，契约略宽松。",
+      "evidence": "figure 分支中 annotationId: z.string().min(1).optional()，refine 仅校验 v.figure !== 'anno' || v.annotationId !== undefined。",
+      "suggestion": "可改为不单独设可选 annotationId，而用两个 figure 子分支（page 严格拒绝、anno 必含），或保留现状并注明宽松是兼容设计。"
+    }
+  ],
+  "summary": "SR2-AI-02 的状态机、背压与 IPC 契约设计总体成立，但存在一个必须回修的 BLOCKING：生产 drawFrom 取不到 canvas 元素，anno 裁剪必然运行时报错；此外 pdfjs workerSrc 未配置、新增多页夹具死代码、真实 canvas 路径无测试覆盖等 WARN 也应在合入前处理。建议修复 drawFrom 并补真实 canvas 冒烟测试后重新 verify。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 20722,
+      "completion_tokens": 30871,
+      "total_tokens": 51593,
+      "prompt_tokens_details": {
+        "cached_tokens": 3200
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 29230
+      },
+      "prompt_cache_hit_tokens": 3200,
+      "prompt_cache_miss_tokens": 17522
+    },
+    "finish_reason": "stop"
+  }
+}

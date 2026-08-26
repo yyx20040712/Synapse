@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/renderer/app/App.tsx",
+      "line_hint": "useEffect(() => { void window.api.system.setQuitDirty({ dirty: quitDirty }) }, [quitDirty])",
+      "issue": "dirty 状态经异步 IPC 上报 main，存在竞态窗口：若 renderer 侧 dirty 刚变为 true，effect 尚未完成 IPC 发送（或消息尚未被 main 处理），用户此时触发 close，main 缓存仍为 false，拦截逻辑将放行关闭，导致未落库数据丢失。",
+      "evidence": "App.tsx 中 `void window.api.system.setQuitDirty(...)` 为异步 fire-and-forget；main-window.ts 中 `let quitDirtyCached = false` 为缓存初值；bootstrap.ts close 监听直接读取 `getQuitDirty()`。",
+      "suggestion": "评估保守策略：在 main 侧增加 `hasReceivedQuitDirtyReport` 标志，未收到首次上报前将 dirty 视为 true；或在渲染器 dirty 变化时改用 `ipcRenderer.invoke` 并等待确认，同时保证关闭事件晚于上报（例如在 IPC 完成后才允许触发 close，或增加轻量同步屏障）。若维持当前设计，至少应在头注与 invariants 中显式记录该竞态为已知限制并说明接受理由。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/app/App.tsx",
+      "line_hint": "void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "issue": "Promise 被 void 忽略，若 IPC 调用失败（如通道异常或 handler 抛错）会产生 unhandled rejection。",
+      "evidence": "diff 中该行直接 `void`，未添加 `.catch`。",
+      "suggestion": "追加 `.catch(() => { /* 静默失败，缓存保持旧值 */ })`，避免未处理的 Promise rejection。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/windows/main-window.ts",
+      "line_hint": "export function quitDirtyGuard(dirty: boolean): boolean { return dirty }",
+      "issue": "quitDirtyGuard 函数仅原样返回入参，功能上冗余；虽然注释要求接口层导出该函数，但实现看起来像占位逻辑。",
+      "evidence": "diff 中该函数体只有 `return dirty`。",
+      "suggestion": "若规约要求保留接口，可在函数内加入可扩展的注释说明未来可能追加策略；否则可将调用处直接使用 `dirty` 并保留导出为纯断言（如 `export const quitDirtyGuard = (dirty: boolean) => dirty` 并注明其为接口层稳定性占位）。"
+    }
+  ],
+  "summary": "实现整体符合 SR2-TABS-04 工单规约与项目宪法：状态登记完整（INV-22）、分层单向、类型单源、受锁文件流程齐备，测试覆盖七条核心行为且未发现放宽断言迹象。主要风险是 renderer 异步上报 dirty 与 close 事件之间的竞态，可能导致极端操作下丢失未保存数据，建议评估并补强；另有 Promise 忽略与冗余小函数两个非阻塞问题。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 10827,
+      "completion_tokens": 12632,
+      "total_tokens": 23459,
+      "prompt_tokens_details": {
+        "cached_tokens": 2304
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 11858
+      },
+      "prompt_cache_hit_tokens": 2304,
+      "prompt_cache_miss_tokens": 8523
+    },
+    "finish_reason": "stop"
+  }
+}

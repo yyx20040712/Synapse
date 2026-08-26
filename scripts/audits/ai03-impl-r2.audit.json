@@ -1,0 +1,63 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "startPaper / ActiveSession（无超时字段）",
+      "issue": "导出会话没有超时/失联兜底：startPaper 发出 extract-request 后，只有 renderer 回传 complete/error 或落盘异常才会推进会话；若 renderer 崩溃、关窗或回传丢失，session 对象永久驻留，EXPORT_BUSY 无法释放，后续重跑被拒，违反 INV-18『中断=重跑即修复』语义。",
+      "evidence": "ActiveSession 仅含 sessionId/dir/queue/current/papers/errors/done/total/resolve/reject，无 deadline/timer；startPaper 内 deps.sendEvent(req) 后无任何超时机制。",
+      "suggestion": "在 ActiveSession 增加篇级或会话级超时（如 startPaper 时启动 60s timer，超时调 failSession(s, 'extract 超时')），并在测试中注入可控时钟；timer 在 finishPaper/failSession 时清除。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "exportCorpusSession 中 const ids = input.paperIds ?? deps.repos.papers.listAllIds()",
+      "issue": "未对显式传入的 paperIds 去重。IPC schema 也只限制 min/max 不要求唯一；若调用方传入重复 id，preparing 会重复装配同一篇、queue 出现重复项，manifest.papers 出现重复 paperId、fileCount 虚高，破坏幂等结构与 AI 消费端按 paperId 索引的稳定性。",
+      "evidence": "corpusSessionReqSchema = z.object({ paperIds: z.array(z.string().min(1)).min(1).max(1000).optional() }).strict()，无 .unique()；service 直接使用 input.paperIds 而非 [...new Set(...)]。",
+      "suggestion": "在 service 侧改为 const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]，或在 schema 用 superRefine 校验数组内唯一，二选一。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "sendProgress(s, phase: 'preparing' | 'streaming' | 'finalizing')",
+      "issue": "协议与实现支持 phase='preparing'，但实际调用路径从未发送 preparing 事件——cleanRebuild 与逐篇装配阶段无任何 progress；消费方（AI-04 设置页）无法区分『目录已选、准备中』与『无响应』，可能误判卡死。",
+      "evidence": "sendProgress 参数含 'preparing'，但整条链路只见到 startPaper 发 'streaming'（sendProgress(s, 'streaming')）和 advance finalizing 前发 'finalizing'（sendProgress(s, 'finalizing')），exportCorpusSession 内无 preparing 事件。",
+      "suggestion": "在 exportCorpusSession 的 cleanRebuild 前发送一次 { type:'progress', phase:'preparing', done:0, total:ids.length }；若 AI-04 不需要，则从 shared 协议类型和 sendProgress 参数中删除 'preparing' 分支，避免未用协议面。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.assemble.ts",
+      "line_hint": "function questionOrder(q: string): number",
+      "issue": "questionOrder 对非 'divergence' 且非 Q<数字> 的字符串返回 NaN，Array.sort 对 NaN 比较行为未定义，排序结果不稳定。当前 AiNoteQuestion 类型约束下不可达，但函数签名接受 string，属于潜在脆点。",
+      "evidence": "return q === 'divergence' ? 99 : Number(q.replace('Q', ''))；Number('abc') = NaN，NaN - NaN = NaN。",
+      "suggestion": "改为显式映射：const Q_ORDER: Record<Exclude<AiNoteQuestion,'divergence'>, number> = {...}，或用 /^Q(\\d+)$/ 正则提取并做 NaN 兜底。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "preparing 中 active.errors.push(...) 后 active.done += 1",
+      "issue": "preparing 阶段的失败篇在首个 extract-request 前就把 done 递增，导致第一条 streaming progress 的 done 已包含失败数，进度条初始跳变且 total 含未真正流式处理的篇数，口径不完全直观。",
+      "evidence": "for (const id of ids) { ... active.errors.push({...}); active.done += 1; continue; } 之后才 await advance(active) → startPaper → sendProgress(s, 'streaming')。",
+      "suggestion": "可将 preparing 失败数单独统计，progress 的 done/total 仅反映 streaming 已处理篇数；或保持现状但确保 AI-04 UI 不依赖首条 progress 的数值含义。"
+    }
+  ],
+  "summary": "SR2-AI-03 实现与 INV-17/INV-18 锚定一致，r1 裁决 B1 证伪成立、B2/W1/W2/N1/N2 均已闭合，测试覆盖完整，未发现硬规则违反。主要风险在于导出会话缺少 renderer 失联超时（可能永久占锁 EXPORT_BUSY）、paperIds 未去重、preparing 进度事件缺失，建议修复后合入；其余为排序健壮性与进度口径的小问题。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 20975,
+      "completion_tokens": 26928,
+      "total_tokens": 47903,
+      "prompt_tokens_details": {
+        "cached_tokens": 3200
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 25552
+      },
+      "prompt_cache_hit_tokens": 3200,
+      "prompt_cache_miss_tokens": 17775
+    },
+    "finish_reason": "stop"
+  }
+}

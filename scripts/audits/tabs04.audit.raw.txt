@@ -1,0 +1,708 @@
+== reasoning ==
+我需要审计提供的diff。让我仔细分析。
+
+审计维度：
+1. 契约与纪律（AGENTS.md硬规则）
+2. 正确性
+3. 安全
+4. 生产质量
+5. 测试纪律
+
+先看AGENTS.md的硬规则，找出相关项：
+- 文件≤500行：main-window.ts 增加到 +50 行左右。原文件约120行，现在约170行，OK。测试文件84行，OK。App.tsx，可能没超。
+- 分层单向：`ipc → services → repos → db`；`renderer → window.api → ipc`。改动：bootstrap 引入 main-window 的 handleCloseWithQuitGuard, getQuitDirty, setQuitDirty。main-window 导出这些。ipc/system.ts 调用 deps.setQuitDirty（注入）。App.tsx 通过 window.api.system.setQuitDirty。这看起来符合分层。
+- 安全禁令：没有 nodeIntegration 等。没有字符串拼SQL。没有 openExternal 出新。setQuitDirty 通道是新的IPC，需要验证 schema（z.object({ dirty: z.boolean() }).strict()）— OK。
+- 死代码即删：没看到新增死代码。
+- 类型单一真相源：新类型 shared/ipc/schemas.ts 和 api-surface.ts 是锁文件，已改，manifest更新。OK。
+- 受锁文件变更必须带 [locked-change] 尾注：diff 中修改了 lock 文件（manifest.json）、src/shared/ipc/api-surface.ts、src/shared/ipc/schemas.ts、tests/unit/windows/quit-dirty-guard.test.ts（新建）、tests/utils/ipc-deps.ts。任务简报提到 [locked-change] 尾注。但是 diff 信息里没显式显示 commit message 尾注（diff不显示 commit message），所以不能据此直接断言违反。不过 manifest.json 的 generatedAt 更新，受锁文件 sha 更新，看起来执行了 locks:apply。
+- 测试纪律：禁止修改 tests/**——但注意 AGENTS.md 说 "禁止修改 tests/**" 是"测试是锁定的合约"。但在工单工作流里又允许必要的新测试文件。这里新建了测试文件 tests/unit/windows/quit-dirty-guard.test.ts，修改了 tests/utils/ipc-deps.ts（测试工具）。这些都是受锁文件，需要 [locked-change]。简报说带 [locked-change]。实际 diff 显示这些文件被修改。关键问题是：修改测试工具 makeIpcDeps 增加 setQuitDirty 默认 noop。这不是"放宽断言"——是扩展测试桩，合理。
+
+现在仔细分析正确性问题。
+
+核心关注点：main-window.ts 的 handleCloseWithQuitGuard 和 bootstrap 中的 close 监听器。
+
+```ts
+window.on('close', (event) => {
+    void handleCloseWithQuitGuard(getQuitDirty(), event, window, {
+      confirmQuit: (message) =>
+        dialog
+          .showMessageBox(window, {
+            type: 'warning',
+            message,
+            buttons: ['确认退出', '取消'],
+            defaultId: 0,
+            cancelId: 1,
+            noLink: true
+          })
+          .then((r) => r.response === 0)
+    })
+  })
+```
+
+潜在问题：
+
+1. **异步 close 处理与 Electron 的 close 事件**：Electron 的 close 事件中调用 preventDefault 是同步的。但这里 handleCloseWithQuitGuard 是 async，preventDefault 是在异步函数内部第一行同步执行（在 await 之前）。也就是说，在 close 事件处理器中调用 handleCloseWithQuitGuard 时，函数体从开始执行到第一个 await（`await deps.confirmQuit(...)`）之前是同步的。preventDefault 在 await 之前，所以 OK。但需要确认：`event.preventDefault()` 在 dirty 为 true 时同步调用，然后 await 对话框。这符合 Electron 模式。
+
+2. **竞态：close 事件可能在对话框显示期间再次触发**？在模态对话框打开时，窗口无法被交互关闭（除了系统关机？）。但有一个隐患：在 `await deps.confirmQuit` 期间，如果用户再次触发 close（比如通过 taskbar 或系统关机），可能再次进入 close 事件。模态对话框挡住了窗口交互，但系统关机/任务管理器可能。不过测试里没有覆盖。注释提到"确认框模态天然挡住弹出期间的重复 close"。可接受，但严格说，Electron 模态对话框并不一定完全阻止程序化 close 或系统级关闭。然而这是边界场景，且 preventDefault 了第一次，对话框等待，用户在对话框期间窗口仍存在，此时再点关闭按钮（如果还能点）——模态框会挡住。Taskbar 点击关闭可能再次触发 close？实际上如果窗口已 preventDefault，后续 close 事件仍会发出。这会弹第二个对话框？有风险。但 WARN 级别。
+
+3. **窗口销毁后异步完成问题**：if (confirmed) win.destroy()。如果窗口在确认前已经被销毁（比如通过其他路径），win.destroy() 可能抛异常或无害？Electron 的 BrowserWindow.destroy() 在已销毁窗口上调用可能抛错？实际上 destroy() 是安全的？不确定。但调用者是 `window` 对象（BrowserWindow），destroy 后 event 不再触发。在 async 间隙窗口被销毁的可能性很小。
+
+4. **多窗口**：项目 v1 负面清单明确"多窗口（OS 级多 BrowserWindow）不做"。单窗口，所以模块级 let quitDirtyCached 没问题。
+
+5. **初始 dirty 状态**：模块级缓存初始 false。如果 renderer 尚未上报（比如在加载早期用户快速关窗），那 clean 可能放行，即使实际已经有 dirty 数据。App.tsx 的 useEffect 在挂载时上报一次 false。也就是说初始挂载总是上报 false，即使有 dirty？仔细看：
+
+```tsx
+const quitDirty = useTabDirtyAggregate()
+useEffect(() => {
+    void window.api.system.setQuitDirty({ dirty: quitDirty })
+  }, [quitDirty])
+```
+
+useEffect 在挂载后执行一次，此时 quitDirty 是初始聚合值。如果 useTabDirtyAggregate 的初始值与实际 dirty 状态不一致，可能上报错误。但 initial false 符合 clean 初值。然后 dirty 变化沿会触发 effect。如果用户在应用启动后、effect 首次运行前关闭窗口——这个窗口极小，且 Electron 加载通常很快。不算严重。
+
+但更重要的竞态：**当 TabState 从 dirty 变 clean 时**，effect 会推 false。如果此时用户恰好点关闭，close 事件读取的是 main 侧缓存（可能还是 true 或已更新为 false）。这是 push 模式的固有竞态，但用户交互序列导致问题不大。
+
+6. **quitDirtyGuard 只是返回 dirty**——这是多余的封装，但符合"头注接口层要求导出"。NIT。
+
+7. **failed 写面的 dirty 信号**：tab-dirty.ts 提到"AnnotationLayer 失败分支 / notes.store 状态镜像读取"，退出拦截是 dirty 的聚合。但问题：如果一个 tab 处于 "保存失败" 状态（dirty 因失败而置位），用户确认退出会丢失这些写面。自动保存失败意味着数据未落库，退出会丢。确认框文案说"未保存的修改（灰点标记的标签页），退出后将丢失未落库部分。确认退出？"——OK，明确了丢失。
+
+8. **setQuitDirty 的返回**：trueAck，renderer 不等待结果即视为成功。如果 IPC 遗漏，main 缓存可能过期。但这是 push 模式设计。
+
+9. **安全：IPC 通道任意 renderer 代码可调**。setQuitDirty 接受 { dirty: boolean }，没有权限控制。本地单用户应用，风险低。但 XSS 场景下攻击者可以让 main 认为 dirty=true，导致拒绝用户退出（服务不可用）。不过 XSS 本身就是大事，此通道的攻击面有限。这是 WARN/NIT？
+
+10. **重要问题：close 事件中 `void handleCloseWithQuitGuard(...)`**——fire-and-forget async。preventDefault 在 async 函数同步段执行。但要注意：如果 handleCloseWithQuitGuard 中在 preventDefault 之前有 await，那就晚了。这里没有。OK。
+
+不过一个关键 Electron 细节：**destroy() 是否会触发 close？** 注释说"destroy 不再触发 close"。确实 Electron 文档：`win.destroy()` 强制关闭窗口，不触发 close 事件（不同于 close()）。OK。
+
+另一个关键点：**`window.on('close', ...)` 在 bootstrap 中注册，而 createMainWindow 返回 win**。bootstrap 中 `window.on('close', ...)`。而 createMainWindow 在 main-window.ts 里可能也注册了其他 close 处理？diff 只看到 main-window.ts 的 createMainWindow 之前存在，但没显示内部处理。saveBounds 监听在 bootstrap 中注册于 close 之前（注释说明）。
+
+关于顺序：bootstrap 中：
+- createMainWindow
+- window.on('close', saveBounds) ？看 diff 上下文：`window.on('close', ...)` 就是在 saveBounds 监听之后注册。而 handleCloseWithQuitGuard 中 confirm 后 destroy，destroy 不会触发 close，不会再次触发 saveBounds。确认退出时几何已保存。OK。
+
+wait：实际上看 diff 上下文，`window.on('close', ...)` 前有 `}` 和 `})`，看起来注册 close 的 saveBounds 在前面。注释明确"注册在 saveBounds 监听之后"。但 Electron 事件监听是 LIFO 还是 FIFO？重不重要？如果 saveBounds 在 close 中同步保存，而 guard 在 dirty 时 preventDefault，saveBounds 仍会执行（同一 close 事件的所有监听都会执行？实际上 preventDefault 阻止默认关闭，但所有监听器都运行了）。saveBounds 在关闭被取消时也会保存几何——无害。确认退出时 destroy 不触发 close，所以 saveBounds 不会再次执行——但前一次 close 事件中已经执行过了。OK。
+
+11. **内存状态与窗口重建**：如果窗口被关闭并重新创建（比如 file->new window？没有多窗口，但 window-all-closed 后 app 退出；如果 app 在 mac 上保持活动……但 Windows 环境）。quitDirtyCached 是模块级，如果窗口重建可能残留 true。项目不做多窗口，Windows 下窗口关闭应用退出。低风险。
+
+12. **测试方面**：
+- 测试 lock 文件 tests/unit/windows/quit-dirty-guard.test.ts 是新建，manifest 更新。OK。
+- 测试「dirty 确认 → destroy」断言 destroy 一次。但没断言 preventDefault 后 destroy 不会触发 close 重入（单元层面无法测试）。OK。
+- 有个小问题：测试"取消"中 setQuitDirty(true) 后又断言 getQuitDirty() 仍为 true——但这只是验证模块缓存没被 handleCloseWithQuitGuard 修改，而 handleCloseWithQuitGuard 根本不操作缓存（它接收 dirty 参数）。这个断言是低级验证，有点自我重复。NIT。
+
+- ipc/system.ts 通道测试使用 `createSystemIpc(makeIpcDeps({ setQuitDirty: ... }))`——需要确认 IpcDeps 接口有 setQuitDirty，而 makeIpcDeps 返回完整 IpcDeps。OK。
+
+13. **App.tsx**：添加了 useEffect 依赖 [quitDirty]。但注意：如果 quitDirty 是对象引用（聚合函数返回新对象），则每次渲染都触发 effect。看 useTabDirtyAggregate 的返回——需要看 tab-dirty.ts 的 hook 实现，但 diff 只改了注释。从名称看是聚合布尔值，所以 OK。
+
+14. **API surface 契约**：新通道 system/set-quit-dirty 加入 API_SURFACE，preload 自动暴露。schemas.ts 增加 setQuitDirtyReqSchema。两处都锁定变更。OK。
+
+15. **生产质量/潜在缺陷：`handleCloseWithQuitGuard` 中的 `win.destroy()` 在确认后调用。但窗口可能已经不可销毁？** 还有一个细节：如果用户在确认框弹出后、点击确认前，又通过某种方式关闭了窗口（比如任务管理器？），destroy 可能抛异常。Electron 的 destroy() 在已销毁的窗口对象上调用不会抛异常（它检查是否已销毁，是 no-op）。OK。
+
+16. **严重性考量：close 事件异步 guard 的窗口生命周期**：当 dirty 时，close 被 preventDefault。然后对话框。但**此时窗口还活着，用户可能继续操作？**模态对话框阻止交互。OK。
+
+17. **一个真正隐患：`void handleCloseWithQuitGuard(...)` 没有 catch。如果 `deps.confirmQuit` reject（例如 dialog.showMessageBox 出异常，窗口被销毁导致 promise reject），则未处理的 promise rejection。** Electron 中如果在窗口销毁后 showMessageBox 可能 reject？模态对话框的 promise 在窗口关闭时可能 resolve 或 reject？`dialog.showMessageBox` 返回 Promise<MessageBoxReturnValue>，几乎总是 resolve。但防御性编程建议 catch。这是 WARN。
+
+18. **契约规则：方案切换=删除旧方案？** 无。
+
+19. **文件头注更新**：main-window.ts 头注 [SR2-TABS-04] 从 open 改为 done。registry 从 open 改 done。符合工作流。
+
+20. **测试纪律：tests/utils/ipc-deps.ts 被修改**。受锁文件，[locked-change]。加 setQuitDirty 桩。没有放宽断言。OK。
+
+21. **locks/manifest.json 受锁，改动含 [locked-change]，generatedAt 更新。** OK。
+
+22. **App.tsx 中 useEffect 返回 undefined，无清理**。OK。
+
+23. **关键问题：dirty 的来源 useTabDirtyAggregate**。简报说"renderer 在聚合 dirty 变化沿 push 上报"。但 diff 看不到 useTabDirtyAggregate 的实现在哪里。tab-dirty.ts 文件的 diff 只改了注释，说明 useTabDirtyAggregate 已存在（TABS-03 的产物）。OK。
+
+24. **Electron 的 `window.on('close', ...)` 中 event 类型**。在 typeScript 中 event 是 Electron.Event，有 preventDefault()。handleCloseWithQuitGuard 的参数类型是 `{ preventDefault(): void }`——结构化兼容。OK。
+
+25. **隐藏 bug：如果 dirty 且用户在确认框出现时选择"取消"，然后再次关闭窗口，会再次弹框。这没问题。**
+
+26. **确认退出后调 win.destroy()，destroy 强制销毁，跳过 beforeunload？** destroy 不触发 close 也不触发 beforeunload（Electron：destroy() 强制关闭窗口，不会触发 beforeunload/close 事件）。OK。
+
+27. **但 destroy 会阻止正常退出流程中的 before-quit？** 这是设计。备注说了 before-quit 级联不做。OK。
+
+28. **check-tickets 规则**：简报提到 guardedDescribe 必须 import 登记文件 main-window.ts。测试文件 import 了 main-window 和 ipc/system。OK。
+
+29. **ipc/system.ts 的 setQuitDirty 验证请求**：createSystemIpc 中的 handler 是否验证 schema？看现有结构，`async setQuitDirty(req) { deps.setQuitDirty(req.dirty); return { ok: true as const } }`。在真正的 IPC 管线中，请求在进 handler 前应该已经过 zod 校验（ipc/register.ts 或类似）。但 handler 本身不校验。这是既有模式（openExternal 也是如此）。OK。
+
+不过：**req.dirty 如果从 IPC 来是 boolean，但 handler 类型接受**。如果请求没经过 schema 校验（测试直接调），malformed 请求可能把非 boolean 传给 setQuitDirty。但实际 IPC 层有校验。OK。
+
+30. **安全白名单**：没新增出网。OK。
+
+31. **可能违反「文件 ≤500 行」**：检查 main-window.ts。diff 显示从 118 行左右增加到 168 行左右。加进其他内容应该不超过 500。OK。
+
+32. **regression check：window-all-closed**：destroy 后 window-all-closed 会触发，bootstrap 返回的 context 中可能有 app.quit 逻辑（diff 未显示）。但 destroy 会触发 window-all-closed（如果最后一个窗口）。那个监听可能调 app.quit。app.quit 会触发 before-quit，before-quit 可能再次触发 close？工作区注释"幂等 shutdown"存在。OK。
+
+33. **一个正确性问题：模块级缓存 quitDirtyCached 与窗口实例不绑定。** 如果将来窗口重建（单窗口但 dev tools 之类的）？项目不做多窗口。但 Electron 下如果窗口崩溃销毁后重新 createMainWindow？当前没有。低风险。
+
+34. **深层问题：promise 竞态——连续两次 close 事件**。用户快速双击关闭按钮：第一次 close → dirty → preventDefault + 弹模态框。第二次 close 事件（双击）会在模态框打开前还是后触发？双击关闭按钮 Windows 不会触发两次 close。但如果通过 Alt+F4 和点击都触发？在模态框打开前，第二次 close 事件可能到达。第一个 preventDefault 已执行，第二个 close 事件再次进入并再次弹框？Electron 的 close 事件在 preventDefault 之后不会自动重新触发。但如果在极短时间窗口内（对话框尚未显示），第二次 close 事件可能已在事件队列中，会再次调用 handler，导致两个模态框排队显示？这在现实里风险很小。加上模态框打开后再来 close 会被模态挡住。可以视为 WARN，但可能太苛刻。
+
+35. **confirmQuit 对话框按钮顺序**：buttons: ['确认退出', '取消']，defaultId: 0，cancelId: 1。Windows 习惯通常默认取消（defaultId 1）。把默认选"确认退出"增加了误确认丢失数据的风险。虽然 defaultId 只是回车默认行为，但保守 UX 应该 defaultId 为取消（1）。这是一个 UX 正确性 WARN：用户按回车直接确认退出丢失数据。不过没有"保存"选项。这是设计选择。值得 WARN。
+
+36. **测试文件超行？** 84行 OK。
+
+37. **guard tests 中 setQuitDirty 后未重置的测试顺序**：beforeEach 重置 false。但"通道透传"测试用了自己的 ipc stub。OK。
+
+38. **测试「dirty 确认」没有 setQuitDirty(true)，但 handleCloseWithQuitGuard 接收 true 参数，与缓存无关**。OK。
+
+39. **App.tsx 中 setQuitDirty 调用没有 catch**。window.api.system.setQuitDirty 返回 Promise。如果 IPC 失败（比如 preload 未就绪），会产生 unhandled rejection。在挂载时 effect 运行，preload 应该已就绪（window.api 存在）。失败场景低。但健壮性建议 catch。NIT。
+
+40. **重要：App.tsx 的 useEffect 在没有传第二个参数数组？** diff：`useEffect(() => { void window.api.system.setQuitDirty({ dirty: quitDirty }) }, [quitDirty])`。OK。
+
+41. **考虑一个更严重的正确性 bug：close 事件注册在 bootstrap 中，但 `window` 变量可能在此代码块中未定义？** 看 diff 上下文：bootstrap 函数中 `const window = createMainWindow(...)`（或类似）。然后 `window.on('close', ...)`。OK，window 已定义。
+
+42. **`handleCloseWithQuitGuard` 导出函数签名接受 `win: { destroy(): void }`，destroy 返回 void。BrowserWindow.destroy() 返回 void。OK。
+
+43. **但注意：Electron BrowserWindow 的 destroy() 在已销毁后调用会有 Uncaught 吗？** 我查过记忆：BrowserWindow.destroy() 在已销毁窗口上是安全的 no-op。OK。
+
+44. **`dialog.showMessageBox(window, ...)` 返回 Promise<MessageBoxReturnValue>。如果窗口被销毁，dialog 可能 reject？** Electron 文档说 showMessageBox 在窗口已销毁时会 reject？不确定。如果 reject，unhandled rejection。建议 catch。WARN。
+
+45. **另一个点：`noLink: true` 在 Windows 上避免 CommandLink 样式。OK。**
+
+46. **测试纪律 - 变异/放宽**：没有删减。新增测试都是有效断言。能失败吗？比如"dirty 确认"测试，如果 handleClose 不 preventDefault 会失败。OK。
+
+47. **检查 ipc/system.ts 注释修改**：头注说"测试：tests/unit/ipc/system.test.ts（已锁定，shell 桩 + 攻击向量 + 通道透传）"。但实际通道测试在 quit-dirty-guard.test.ts，system.test.ts 已精确还原零 diff。简报解释了 check-tickets 规则 5。但 ipc/system.ts 头注仍写"tests/unit/ipc/system.test.ts ... + 通道透传"，这是误导——通道测试不在 system.test.ts 而在 quit-dirty-guard.test.ts。注释与实现不一致，违反"接缝归责/声明互斥"精神？这是一个 NIT/WARN：文档注释指向错误的测试文件。虽然规则 5 强制落位，但头注应该更新为准确引用。这是文档/接缝问题。WARN 或 NIT。我倾向 NIT，因为不是行为契约互斥，只是测试位置声明不准确。但 AGENTS 的"接缝归责"说发现声明互斥要停下报告裁决，不能顺手改。这里是一侧声明（头注）与实际落位（测试文件）不一致，且已经解释原因。既然 forced 落位，头注应同步，但没同步。NIT/WARN。我定 WARN：文档/契约声明与实际测试位置不一致，后续维护者会去错文件找测试。
+
+嗯，但简报说"system.test.ts 已精确还原（零 diff）"，而 ipc/system.ts 头注被修改为"已锁定，shell 桩 + 攻击向量 + 通道透传"。这其实是主动制造了不准确声明。虽然不是行为契约，但确实是文档错误。WARN。
+
+48. **检查 schemas.ts 的 strict()**：setQuitDirtyReqSchema = z.object({ dirty: z.boolean() }).strict()。renderer 发送 { dirty } 正好。OK。
+
+49. **检查 api-surface.ts：system 对象以逗号结尾**。代码格式 OK。
+
+50. **manifest.json 中新测试文件 sha 加入。tests/utils/ipc-deps.ts sha 更新。api-surface/schemas sha 更新。generatedAt 更新。OK。**
+
+但有个细节：manifest.json 的 diff 没有显示 `src/shared/ipc/api-surface.ts` 和 `schemas.ts` 之外还有哪些改变了？它只显示了这两个。但 `tests/unit/windows/quit-dirty-guard.test.ts` 新增。`tests/utils/ipc-deps.ts` 修改。`main-window.ts` 不在锁清单（受锁文件列表包含 src/shared/** 和 tests/** 和 CI 等，main-window.ts 不在受锁列表）。OK，manifest 看起来同步。
+
+51. **检查是否有违反"禁止新增依赖"**：没有 package.json 改动。OK。
+
+52. **出网白名单**：无新增。OK。
+
+53. **`void handleCloseWithQuitGuard(...)` 中 `window` 是 BrowserWindow 但 handleCloseWithQuitGuard 的 win 参数类型只有 destroy()。如果窗口在 await 期间被销毁，destroy 调用安全。OK。**
+
+54. **更深入：bootstrap close 监听器调用 handleCloseWithQuitGuard(getQuitDirty(), event, window, ...)**——getQuitDirty() 在 close 发生时同步读取。但如果 dirty 状态在 close 前刚刚从 false 变 true 而 IPC 消息还在路上（renderer→main 异步），close 可能读到旧的 false 放行。这是 push 模式固有短板。但是：用户操作导致 dirty 变 true 后立即关窗，IPC 消息几乎肯定先于用户关窗动作到达（消息通过 IPC 是微秒级，用户手动关窗至少百毫秒）。加上 useEffect 在渲染后推。风险非常低。可以提及为 NIT 已知边界。
+
+55. **另一个正确性：close 确认后 destroy 强制丢弃未保存数据**。用户选确认即明白。但**没有"保存并退出"选项**。简报说 autosave-first 下不做。OK 范围外。
+
+56. **测试中 confirmQuit 返回值是 `async () => true`**，handleCloseWithQuitGuard 是 async。OK。
+
+57. **NIT：quitDirtyGuard 只是 identity 函数，可以内联。但契约要求导出，保留合理。**
+
+58. **代码行数**：bootstrap.ts 增加了约 20 行：原本可能 140 行左右？diff 显示 import 增加，close 监听 20 行。bootstrap.ts 是否超过 500？从 diff 上下文看，patch 在文件前部。原文件多大？不知道。但估计没超。OK。
+
+59. **检查 `getQuitDirty` 导出但只在 bootstrap 使用**。OK。
+
+60. **可能违反 test 锁定：AGENTS.md 说 "禁止修改 tests/**" 是无条件？** 实际上受锁文件修改必须 [locked-change]。简报声明了 [locked-change]。测试新增是工单要求（"测试：tests/unit/windows/quit-dirty-guard.test.ts"）。这是允许的，通过 locked-change 流程。OK。
+
+61. **关键隐患：close 监听器没有移除，并且 bootstrap 每次 app 启动调用一次。OK。**
+
+62. **再想一下：`dialog.showMessageBox(window, ...)` 在 `window` 已经 isDestroyed() 时会怎样？** 如果窗口在 close 事件中被 preventDefault 后未被销毁（cancel 路径），窗口活着。只有 confirm 路径 destroy。在 await 期间窗口不可能被销毁（模态框打开）。OK。
+
+63. **一个真正需要考虑的：async handler + 同步 preventDefault。** Electron 中 close 事件处理器的执行：同步执行完所有监听器后，如果任何监听器调用了 preventDefault，关闭被取消。这里 handleCloseWithQuitGuard 在 await 前同步执行 preventDefault，OK。但如果 handleCloseWithQuitGuard 在 `if (!quitDirtyGuard(dirty)) return` 直接返回，则没有 preventDefault，窗口关闭。OK。
+
+64. **潜在缺陷：dirty 确认 destroy 后，`close` 不会再触发，但 `closed` 事件触发。Bootstrap 可能有 closed 监听（未见）。OK。**
+
+65. **App.tsx 的 import 顺序**：`import { useTabDirtyAggregate } from '../features/reader/tab-dirty'` 在 OPEN_PAPER_EVENT 之后。lint？项目用 eslint 排序可能宽松。verify 绿。OK。
+
+66. **useEffect 上报初始 false 的语义**：如果 main 进程在 renderer 挂载前已经 close（用户在应用窗口出现前按住 Alt+F4？），主缓存 false → clean 放行。但如果 renderer 有 dirty 数据加载了？没有 dirty 初值，因为 tab 未打开。OK。
+
+67. **测试覆盖缺口**：没有测试"bootstrap 装配层把 getQuitDirty() 传给 handleCloseWithQuitGuard"（即缓存到守卫的接线）。也没有测试"确认路径下 destroy 前 saveBounds 已保存"（集成面）。但单元层面覆盖了核心。可以 NIT。
+
+68. **关于 manifest：变更的受锁文件都在 manifest 中更新。没有看到 main-window.ts 需要锁？不需要。OK。**
+
+69. **检查一个细小但真实的 bug：handleCloseWithQuitGuard 中 `if (confirmed) win.destroy()`。但如果 `confirmQuit` 返回 undefined（dialog 被系统强制关闭时 reject？），不会 destroy。默认取消。安全。OK。**
+
+70. **关于 dirty 与 clean 的语义边界**：退出时如果 dirty=true 确认框出现。但用户可能想"保存再退出"？项目 autosave-first，dirty 意味着保存失败或 pending。文案已说明。OK。
+
+71. **安全 - renderer 到 main 的可信边界**：setQuitDirty 是 renderer 可伪造的。恶意 JS 可以让 quitDirtyCached=true，从而让用户无法退出（弹框但不让退出？其实选择确认仍可退出，因为 confirm=true 会 destroy；选择取消则留在应用的确认框——下次再关窗又弹）。这构成轻度的拒绝退出，但不影响数据安全。不视为严重。
+
+72. **最严重的问题可能是什么？** 重新审视 Electron close 事件的异步处理：**Electron 在 Windows 上，如果在 close 事件处理器中同步调用 preventDefault，然后异步 destroy，在模态框打开时窗口保持。用户确认后 destroy。看起来正确。**
+
+那真正值得 BLOCKING 的有吗？
+
+我认为没有 BLOCKING。所有安全禁令没违反。正确性缺陷？有一个值得 WARN：
+- 未处理 confirmQuit promise rejection（无 catch）→ unhandled rejection。
+- 默认按钮为"确认退出"，误回车即丢失数据。
+- ipc/system.ts 头注声明测试位置与实际不符。
+- 双击/重复 close 事件可能弹出多个确认框（理论竞态）。
+
+是否还有隐藏的 BLOCKING？让我再想一下竞态条件：
+
+**竞态：close → preventDefault → confirmQuit 对话框打开。在对话框期间，窗口无法关闭。但如果在 confirmQuit 的 promise 等待期间，窗口被 app.quit() 强制关闭（例如菜单退出？）**。应用菜单可能有退出项。File > Exit 或 Ctrl+Q 触发 app.quit()。app.quit() 会尝试关闭所有窗口，触发 close 事件。如果之前已有 close 被 preventDefault + 对话框，第二次 close 事件会再次触发 → 第二个对话框？实际上模态框一次只能有一个，Electron 会怎样？dialog.showMessageBox 是模态的，如果窗口已经有一个模态框，第二次调用 showMessageBox 会怎样？在 Electron 中，同一窗口上多次 showMessageBox 会排队或拒绝。这可能产生复杂行为。但现实中用户不会在模态框打开时触发菜单快捷键（模态框拦截键盘输入）。系统级 app.quit() 可能来自 before-quit 级联（简报说 before-quit 级联不做）。好，这是设计边界。
+
+另一个更实际的竞态：**close 被 preventDefault 后，`handleCloseWithQuitGuard` 继续等待用户。如果此时 renderer 推送 dirty=false（比如最后一次写操作保存成功，effect 触发），但确认框仍显示（基于旧的 dirty=true）。用户点确认后 destroy，尽管现在实际已 clean。** 这是小窗口竞态，但用户会丢失脏数据吗？不会，因为现在 clean 了，没有可丢。用户被不必要地询问并确认了退出，但退出时干净。这不会破坏数据。极低影响。
+
+另一种：**用户取消确认，但 dirty 状态其实已变 false。缓存不变 true。下次 close 又会弹框**。因为 renderer 的 effect 会推 false 并更新缓存，所以下次 close 不会弹。只有当 IPC 丢失才残留。OK。
+
+我认为没有 BLOCKING 级。
+
+但再想想"契约与纪律"。有一个可能的违规：
+
+**AGENTS.md 工单工作流第 3 条："只改这一个文件（+ 必要时新文件）。禁止顺手实现别的工单、禁止改契约、禁止改测试。"** 这个工单修改的文件很多：main-window.ts、bootstrap.ts、ipc/system.ts、ipc/index.ts、App.tsx、shared/ipc/api-surface.ts、shared/ipc/schemas.ts、tests/unit/windows/quit-dirty-guard.test.ts、tests/utils/ipc-deps.ts、manifest.json、tickets/registry.ts。但"只改这一个文件"针对弱模型领单专用。此工单 owner: strong，且简报说明主会话自研。所以不适用。且这些文件都是该工单必要部分。
+
+**关于 [locked-change] 尾注**：diff 不包含 commit message。简报声明已带。不能验证，但 manifest 同步更新说明流程执行了。不能编造违规。
+
+**受锁文件 tests/utils/ipc-deps.ts 修改了**。这是测试工具，扩展桩。新增字段不破坏既有测试。OK。
+
+**一个可能真正的契约问题：check-tickets 规则**——简报说"check-tickets 规则 5 机器裁定 guardedDescribe('SR2-TABS-04') 所在文件必须 import 登记文件 main-window.ts"。测试文件 import main-window 和 ipc/system。OK。没有在 system.test.ts 中改（零 diff），符合 rule 5。
+
+但 ipc/system.ts 的头注改了说"system.test.ts 已锁定... + 通道透传"，这是虚假声明。虽然可能是"规则 5 强迫落位"导致的，但头注应该如实描述测试在 quit-dirty-guard.test.ts。WARN。
+
+**再看一个正确性细节：`handleCloseWithQuitGuard` 中 receive `event: { preventDefault(): void }`。在 Electron 的 close 事件中，`event.preventDefault()` 在异步函数中调用是否可以？** 是的，因为调用发生在 await 之前，同步执行。但如果未来有人在 preventDefault 前加了 await，就失效。当前 OK。
+
+**测试守卫的"取消"用例断言 getQuitDirty() 为 true——但这只是确认 handleCloseWithQuitGuard 不改缓存**。handleCloseWithQuitGuard 接收的确认结果 false 时不 destroy。但也没有任何代码路径会改动缓存。断言 getQuitDirty() 仍然 true 验证的是 handleClose 不副作用缓存。有效但弱。NIT。
+
+**再看看 App.tsx 中 effect 依赖**：
+```tsx
+const quitDirty = useTabDirtyAggregate()
+useEffect(() => {
+  void window.api.system.setQuitDirty({ dirty: quitDirty })
+}, [quitDirty])
+```
+如果 useTabDirtyAggregate 返回布尔，则 effect 只在变化时触发。但如果返回新数组/对象（比如 Set 或 { tabId: boolean }），则每次渲染都推。从名字看聚合为 bool。假设 OK。
+
+**但有一个真正的问题：`useEffect` 在挂载后先推一次 initial quitDirty（false）。但如果这时有 dirty tab（比如从上次会话恢复？项目可能没做会话恢复）。OK。**
+
+**Electron `dialog.showMessageBox(window, {...})` 的 `noLink: true` 在 Windows 下防止按钮变成链接。OK。**
+
+**关键安全审查：新的 IPC 通道 `system/set-quit-dirty` 进入了 API_SURFACE，从而进入 window.api。preload 暴露该通道。这符合既有模式。** 没有引入危险能力。唯一影响是 main 进程内存布尔值。OK。
+
+**再检查一次 manifest：diff 显示 `locks/manifest.json` 的 diff 只有 api-surface、schemas、quit-dirty-guard.test、ipc-deps。但受锁文件还包括 tests/unit/windows/quit-dirty-guard.test.ts（新增）——manifest 里加了。** 但注意：**`src/shared/ipc/api-surface.ts` 和 `src/shared/ipc/schemas.ts` 的 sha 变化，`tests/utils/ipc-deps.ts` 的 sha 变化。但新建的测试文件也需要在 manifest 中——已加入。OK。**
+
+**有一个情况：`tickets/registry.ts` 不是受锁文件？它被修改了（status open → done），不需要锁。OK。**
+
+**现在，我需要决定 verdict。**
+
+没有 BLOCKING。有几个 WARN：
+1. confirmQuit Promise 无拒绝处理（unhandled rejection 风险）。
+2. 确认框默认按钮是"确认退出"，可能误按回车丢数据。
+3. ipc/system.ts 头注声明测试落位与实际不符（误导维护者）。
+
+还有几个 NIT：
+- quitDirtyGuard 是恒等函数，多余包装但契约要求。
+- 取消后的 getQuitDirty 断言较弱。
+- 重复 close 事件理论上可弹多模态框（模态框互斥，实际风险极低；Electron 可能不会真正双弹，但未防护）。
+- App.tsx IPC 调用无 catch。
+
+等等，我应该再仔细考虑一个潜在的 BLOCKING 级正确性问题。
+
+**重新考虑 close→confirm→destroy 流程中的 window-all-closed 行为**：destroy 后如果 app 没有其他窗口，触发 window-all-closed。bootstrap 的返回值里有 dbClosed 幂等 shutdown。但**如果现在有未保存的数据库写入（dirty=true 表示 pending/失败写面），确认退出 destroy 后，app.quit 过程中会不会尝试 flush？** dirty 的语义是"未落库部分会丢失"，所以确认即放弃。OK。
+
+**关于 dirty 状态的精确语义**：tab-dirty.ts 说 dirty = annotation 写失败 或 notes pending。如果 annotation 写失败意味着 DB 写入失败，数据在内存中还是已丢失？不管怎样，确认框说得清楚。
+
+**有一个细节：close 守卫只在 `window.on('close')` 注册。如果用户通过 `app.quit()`（菜单/Ctrl+Q）退出，app.quit 会触发窗口 close 事件（先 window close，然后 before-quit？实际上 app.quit() 会先触发 before-quit，然后尝试关闭所有窗口，触发每个窗口的 close 事件。如果 close 被 preventDefault，则 quit 中止。然后用户确认后 destroy，窗口关闭，此时 app.quit 流程是否继续？** 这是一个真实的复杂场景：
+
+1. 用户按 Ctrl+Q → app.quit()
+2. before-quit 事件触发（无 preventDefault?）
+3. app 尝试关闭窗口 → close 事件 → dirty → preventDefault → quit 被中止（因为窗口未关闭）
+4. 显示确认框 → 用户确认 → win.destroy() → 窗口关闭 → window-all-closed 触发 → **bootstrap 的 window-all-closed 监听里可能调用 app.quit()**（通常模式）。但 app.quit() 在 before-quit 已触发过的流程中会怎样？如果第一次 quit 被中止（窗口 preventDefault），before-quit 不会再触发。但 window-all-closed 里的 app.quit() 会重新开始退出流程吗？Electron 中 window-all-closed 监听里调用 app.quit() 是常见模式。但此时 app 已经处于"正在退出但被中止"的状态？实际上 preventDefault close 中止了 quit 流程，app 不退出。destroy 后 window-all-closed 触发，监听调 app.quit()，这会再次走 before-quit → 关闭所有窗口（已 destroy，无窗口）→ will-quit → quit。最后 app 退出。这个路径看起来能工作。但注意 before-quit 会再次触发，如果 before-quit 里有什么逻辑可能重复。项目不做 before-quit 级联。OK。
+
+但还有一种菜单退出路径：菜单项可能直接调用 `win.close()` 而不是 app.quit()。win.close() 触发 close → guard。OK。
+
+好，退出路径依赖 window-all-closed 里调 app.quit()（diff 未显示但 bootstrap 通常有）。这是既有架构。没有新问题。
+
+**另一个潜在 BLOCKING：如果用户从任务栏关闭窗口（Windows）**，触发 close → guard。OK。
+
+**还有一个点：`handleCloseWithQuitGuard` 在 `bootstrap.ts` 中被调用时传 `window`（BrowserWindow）作为 win。但 `dialog.showMessageBox(window, ...)` 需要 BrowserWindow。而 handleClose 的 deps.confirmQuit 也接收 message 参数并闭包 window。OK。**
+
+**检查 import：bootstrap.ts 新增 `dialog` import from 'electron'。同时新增 main-window exports import。OK。**
+
+**是否有可能在 createMainWindow 中已经有 close 监听（saveBounds？），而 bootstrap 中再注册导致重复？** diff 显示 saveBounds 监听在 bootstrap 中。createMainWindow 可能在 main-window.ts 内部有自己的 close 处理？diff 的 createMainWindow 部分未显示。但从上下文看 saveBounds 在 bootstrap 中注册于 close listener 之前。没有重复 saveBounds。OK。
+
+**现在总结 verdict：PASS_WITH_WARNINGS。**
+
+让我再权衡一下是否有 BLOCKING。
+
+考虑 AGENTS.md 硬规则："**接缝归责**：改动模块 A 时必须核对相邻模块 B 对同一行为的声明（注释/契约）；发现两处声明互斥即停下报告裁决，不得顺手改一侧"——ipc/system.ts 头注声称测试在 system.test.ts，但实际测试在 quit-dirty-guard.test.ts。这是一个声明与事实的互斥，但**是同一模块（ipc/system.ts）的头注与实际落位不一致，而且是本次改动自己造成的**。按宪法，应该停下报告，而不是顺手改了头注声称"system.test.ts + 通道透传"（明明没改 system.test.ts）。这算违反纪律吗？这更像文档不准确，不构成行为契约互斥。但生产质量上是不准确声明。WARN。
+
+关于 **"禁止改测试"**：新增测试文件 + 修改测试工具 ipc-deps.ts。锁文件变更必须 [locked-change]。简报说加了尾注。不能验证 commit message，但 diff 中这些文件被修改且 manifest 更新。测试工具扩展是必要的。没有放宽断言/删除检查。OK。
+
+**有一个微妙点：测试“通道透传”在 quit-dirty-guard.test.ts 中，而简报说“头注「tests/unit/ipc/system.test.ts 扩展通道断言」→ 实际落位 tests/unit/windows/quit-dirty-guard.test.ts”。** check-tickets 规则 5 机器裁定 guardedDescribe 文件必须 import 登记文件。这解释了为什么放弃 system.test.ts。但是：**为什么不能两个都做**？即 system.test.ts 加通道断言（它会 import ipc/system，不 import main-window 吗？system.test.ts 是 SR2-?? 的 guardedDescribe，它也应该 import main-window？不，check-tickets 要求 guardedDescribe('SR2-TABS-04') 的测试文件必须 import 登记文件 main-window.ts。system.test.ts 的 guardedDescribe 用于别的工单，import 的是 system.ts。所以不能在 system.test.ts 里写 SR2-TABS-04 的 guardedDescribe。这是机器规则。因此落位合理。但 ipc/system.ts 头注应该说明这一点，而不是误导。WARN。
+
+好，最终发现列表：
+
+1. WARN - src/main/windows/main-window.ts / bootstrap.ts：confirmQuit Promise 无 catch，若 dialog.showMessageBox 在窗口销毁等异常情况下 reject，会产生未处理 rejection，且 close 事件已被 preventDefault，窗口将无法关闭（卡死）。建议在 handleCloseWithQuitGuard 内 try/catch 或 .catch 并 fallback 为取消。
+
+2. WARN - src/main/bootstrap.ts（dialog buttons）：确认框 defaultId: 0 = “确认退出”。用户误按回车会直接确认退出丢弃未保存数据。建议 defaultId: 1（取消）作为安全默认。
+
+3. WARN - src/main/ipc/system.ts 头注：声明 “测试：tests/unit/ipc/system.test.ts（已锁定，shell 桩 + 攻击向量 + 通道透传）”，但实际通道透传测试在 tests/unit/windows/quit-dirty-guard.test.ts，system.test.ts 零 diff。头注与事实不符，后续维护者会去错文件。建议把头注改为准确指向 quit-dirty-guard.test.ts。
+
+4. NIT - src/main/windows/main-window.ts handleCloseWithQuitGuard：close 事件在 await 确认期间若再次触发（如系统退出/程序化 close），可能再次进入流程弹出第二个模态框。建议加 isConfirming 信号量或在 handleClose 开头检查窗口已销毁。不过模态框互斥降低了实际风险。
+
+5. NIT - src/renderer/app/App.tsx：setQuitDirty 调用未 catch，IPC 异常时 unhandled rejection。建议 .catch(() => {}) 或至少 void console.error。
+
+6. NIT - tests/unit/windows/quit-dirty-guard.test.ts：取消用例断言 getQuitDirty() 仍 true 只验证了 handleCloseWithQuitGuard 不碰缓存，未覆盖“渲染层上报 false 后缓存真正更新”的闭环（那是渠道测试）。可增加一个通过 bootstrap 注入 getQuitDirty 的装配测试。这个是建议，不是缺陷。
+
+7. NIT - quitDirtyGuard 恒等函数包装。但如果契约要求保留。
+
+关于 #4，我再斟酌一下是否值得 WARN。Electron 模态框调用期间，如果 app 再次尝试关闭窗口，Electron 的 close 事件确实会触发吗？在模态框打开时窗口不可点，但程序化 win.close() 仍会触发 close。比如用户点了确认框的确认（destroy 立刻），或者取消后立刻又有另一个 close？取消后模态框关闭，用户再点关闭，正常弹框。重复 close 在确认框显示期间来自程序化路径，理论上可能。但项目没有多路径触发 close（无菜单退出?有吗？不知道）。bootstrap 里 saveBounds 只是监听。所以程序化 close 在对话框期间不太可能。保持 NIT。
+
+我认为没有 BLOCKING。
+
+但等等，我需要再仔细看一遍 diff 有没有我遗漏的重大问题。
+
+**bootstrap.ts close 监听器**：
+```ts
+window.on('close', (event) => {
+    void handleCloseWithQuitGuard(getQuitDirty(), event, window, {
+      confirmQuit: (message) =>
+        dialog
+          .showMessageBox(window, {...})
+          .then((r) => r.response === 0)
+    })
+  })
+```
+
+这里 `window` 变量名。在 Electron main 中 `window` 不是全局（main 进程没有 window 全局）。bootstrap 函数里应该有 `const window = createMainWindow(...)` 局部变量。用 `window.on('close')` 调用 BrowserWindow.on。OK。但注意命名遮蔽了全局，但在 Node main 无全局 window。OK。
+
+**如果 `getQuitDirty()` 在 close 时是 true，preventDefault 执行，然后 confirmQuit。用户点确认，win.destroy()。destroy 后，`closed` 事件触发。bootstrap 的 window-all-closed 监听（diff 未显示但在附近）会 app.quit。OK。**
+
+**但还有一个重要细节：在 `await deps.confirmQuit(QUIT_CONFIRM_MESSAGE)` 期间，如果窗口被用户通过任务栏关闭？模态框打开时窗口被禁用，任务栏关闭按钮可能仍可点击？** Windows 任务栏右键关闭会 WM_CLOSE，模态框通常拦截。极端情况不深究。
+
+**现在的关键问题：`dialog.showMessageBox` 需要传入 BrowserWindow 作为 parent，否则模态框是 app-modal 而非 window-modal。这里传了 window。OK。**
+
+**另一个：`type: 'warning'` 在 Windows 上显示警告图标，声音？OK。**
+
+**安全清单过一遍：**
+- nodeIntegration 等无变化。
+- renderer 没有引入 Node API。App.tsx 仅 window.api。
+- openExternal 守卫未动。
+- SQL 无变化。
+- eval 无。
+- 出网无变化。
+- 新 IPC 通道是 renderer 写入 main 的布尔值。无敏感信息泄露。
+- CSP 无变化。
+
+**测试纪律：**
+- 测试文件被"修改"：tests/utils/ipc-deps.ts 增加 setQuitDirty stub 字段。这是扩展，不是放宽。
+- 新建测试文件已锁。
+- 有真实断言（preventDefault/confirm/destroy 次数）。
+- 测试能失败吗？试想若 handleClose 不在 dirty 时 preventDefault，测试会失败。若 destroy 不调用，失败。OK。
+- 没有发现为绿而放宽的迹象。
+
+**一个可能的 BLOCKING 候补：修改受锁文件没有 [locked-change] 尾注？** diff 不能显示 commit message。简报明确说"（api-surface.ts+schemas.ts 受锁 [locked-change]）"。CI 的 locks 关卡 verify 绿（简报说）。所以流程执行。不能据此 FAIL。
+
+**另一个候选 BLOCKING：`src/shared/ipc/schemas.ts` 的 z.object({ dirty: z.boolean() }).strict() 与 api-surface 的端点定义。但 window.api.system.setQuitDirty 是否存在？preload 是动态生成（preload-surface.test.ts 自动对账）。verify 绿。OK。**
+
+**再检查一下 App.tsx 的 useEffect 循环风险：如果 useTabDirtyAggregate 返回新对象引用（非原始值），设 dirty 后触发 setState→re-render→新引用→effect 又推…无限循环 + IPC 风暴。** 这个必须检查。看 tab-dirty.ts 的 diff 只改了注释，所以 useTabDirtyAggregate 的实现在 TABS-03 已存在。如果它返回一个 Set 或 Record，App.tsx 中 `[quitDirty]` 依赖会导致每次渲染推一次。如果它返回 boolean（useMemo + 依赖），则稳定。**从工单描述："聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报"** —— "变化沿"暗示布尔。且 TABS-03 的 "灰点信号聚合" 应该输出一个布尔聚合。虽然 diff 看不到，但我不应编造。作为审计者，这值得在发现中提一下吗？不，简报和代码上下文都暗示布尔。不要编造问题。
+
+但有一个相关知识：React Hook 的依赖数组是 Object.is 比较。如果 quitDirty 是 string/boolean，则只有当值变化时 effect 才运行。OK。
+
+**再看测试文件的行数**：84 行。`guard.test.ts` 中有两个 guardedDescribe 块，第二个的 description 很长。OK。
+
+**check-tickets 规则 5 到底是什么？** 简报说"guardedDescribe('SR2-TABS-04') 所在文件必须 import 登记文件 main-window.ts"。这个规则是为了确保测试 import 了工单登记的实现文件。新测试文件 import 了 main-window。OK。
+
+**但有一个纪律问题：为什么 SR2-TABS-04 的通道透传测试放在 windows/quit-dirty-guard.test.ts，而不是 ipc/system.test.ts？** 已经解释，机器裁定。但规则 5 真的强制吗？如果规则 5 说 guardedDescribe 的文件必须 import 登记文件，那在 system.test.ts 中（guardedDescribe SR2-TABS-04）也 import main-window.ts 不就可以了吗？system.test.ts 的既有 guardedDescribe 可能是其他工单的，不能随便加。但如果新开一个 describe？check-tickets 可能要求每个 guardedDescribe 对应一个文件？我不了解细节。简报已经裁决，verify 绿，所以规则满足。不质疑。
+
+**现在考虑是否给 FAIL。**
+
+宪法说"违反硬规则即返工"。有哪些硬规则被违反？
+
+- 文件行数？没超。
+- 分层？没跨。
+- 死代码？没。
+- 安全禁令？没。
+- 测试锁定？没放宽。
+- 受锁尾注？简报声称已带，无法在 diff 中证伪。
+- 状态机前置？退出拦截的四态状态机：clean/dirty/确认/取消。头注有四态，测试覆盖 clean 放行、dirty+确认、dirty+取消。确认/取消是模态框的二态。状态机单格全过？跨格序列呢？"合并落地→补存失败→再 load"类似的跨格在这里是什么？四态之间转换：clean→dirty（上报）、dirty→确认→destroy（退出）、dirty→取消→保持 dirty、dirty→clean（上报）。跨格序列如"dirty 确认 → 取消 → 再 close"？测试没有覆盖"确认后 cancel 又被 close"的序列。但状态机已明确定义。检查 "状态机前置" 要求 "行为层规约必须先给出状态/迁移表"。头注是否有迁移表？diff 未显示完整头注（只显示首行变更）。简报说"四态状态机：clean/dirty/确认/取消"。这就是迁移表。OK。
+- 不变量登记？新增跨模块不变量是否需要 docs/invariants.md？"退出拦截"是一个跨模块行为不变量吗？"退出拦截：dirty 时 close 必须弹确认框" —— 这算行为不变量吗？宪法要求"跨模块/跨时间的行为不变量一律登记 docs/invariants.md；未登记 = 未定义行为"。退出拦截确实是跨模块（renderer dirty 聚合 → IPC → main 缓存 → close guard）跨时间（dirty 状态跨越窗口生命周期）的行为。**如果它没有登记到 docs/invariants.md，属于"未登记 = 未定义行为"，违反硬规则。** 但简报没有提到 docs/invariants.md 更新。diff 中也没有 docs/invariants.md。这是一个潜在的硬规则违反！
+
+不过，我需要谨慎。宪法说"跨模块/跨时间的行为不变量"。退出拦截是需求/功能，不是不变量（invariant）。不变量例子："文档永不滚"、dirty 与 cache 一致性。退出拦截的"不变量"可能是 "main 侧 quitDirty 缓存与 renderer 聚合 dirty 一致（最终一致）"。这个是否登记？diff 没有 docs/invariants.md。但也许现有登记已覆盖？无法编造。**我不能确认是否存在登记，因为 diff 只显示了改动文件。如果它要求登记而未登记，是违反。** 但审计时应聚焦改动中可验证的。没有证据表明违反（没有看到相关不变量条目）。简报也没有提及。我可以提一个 WARN/NIT：若 "dirty 上报与缓存最终一致" 属跨模块不变量，应登记 docs/invariants.md；未登记则有宪法风险。但这可能过度推断。宪法说"未登记 = 未定义行为"，而这新行为确实跨模块。不过 INV-11 精神（测试锚定常量）被引用了。也许团队认为 TABS-04 已通过测试锁定。我把它作为 WARN 提出来，但要注明"若未登记"。
+
+而且，实际 diff 中没有 docs/invariants.md 的修改。既然任务要求"新增跨模块行为不登记本册视同未完成"，那么一个刚新增的跨模块行为（退出拦截 + dirty 上报）若未登记，就是未完成。但**主窗口退出拦截本身就是工单完成项**，而验证是 verify 全绿。这有冲突。也许 registry done 翻得过早。这是一个值得提出的问题。但具体到 invariants.md 的内容，我无法断言它应该包含什么。我可以建议检查并登记。
+
+同样地，**tickets/registry.ts 翻 done 的时机**：简报说已完成正式翻 done。verify 全绿。与 DoD 一致。
+
+**另一个宪法要求："每个测试必须能失败一次"**——新测试的"恒真断言 = 假阳性"风险。测试 `quitDirtyGuard(false)` 等显然能失败（如果实现错误）。"缓存往返"能失败。OK。
+
+**"e2e 必须断言渲染出真实文本"**——本次无 e2e 改动。
+
+**现在评估 invariants 警告是否合适。** 宪法：不变量指"跨模块/跨时间的行为不变量一律登记"。退出拦截的行为契约（dirty 缓存由 renderer push 维护）是一个跨模块的隐含状态契约。如果没登记，就是未定义行为。这听起来是个硬规则。但 diff 中没有看到登记。作为审计，我可以指出这个风险，但 severity 不应是 BLOCKING，因为：
+1. 我认为"退出拦截"是功能而非不变量；
+2. 简报没有声称登记；
+3. 如果团队把"quitDirty 缓存一致性"作为不变量，应该登记。但也许 docs/invariants.md 中已有 TABS 相关条目（不在 diff）。无法验证。因此我提一个 WARN，建议确认/登记。
+
+嗯，其实作为第一道审计，应该基于输入材料。diff 中没有 docs/invariants.md 的改动。如果该不变量应该登记，这就是缺失。但"未登记 = 未定义行为"的说辞弹性太大。我决定作为 NIT 或 WARN 提出——建议登记"renderer push 的 quitDirty 最终一致"不变量，否则按宪法该缓存一致性属未定义行为。
+
+但等一下，我再读一遍宪法的不变量条款：
+"**不变量登记**：跨模块/跨时间的行为不变量一律登记 `docs/invariants.md`（声明处 + 强制方式 + 锚定状态）；未登记 = 未定义行为。新增跨模块行为不登记本册视同未完成。"
+
+"新增跨模块行为不登记本册视同未完成"——这里说的是"跨模块行为"，不仅仅是"不变量"。退出拦截是跨模块行为（renderer tab-dirty → main main-window → bootstrap），确实是新增跨模块行为。按这条，应该登记。diff 没有 docs/invariants.md。所以这构成 WARN（或 BLOCKING？"视同未完成"）。
+
+Hmm，这可能是 BLOCKING："未登记 = 未定义行为"，违反硬规则。如果这个行为是"跨模块行为"，那按宪法应当登记。但我不确定 docs/invariants.md 是否已有相关内容（也许以前就登记了 TABS 系列？diff 没显示它被修改，但可能已经存在匹配条目）。由于不能确认，定为 WARN 更稳妥：提示确认登记或补登记。
+
+其实等等——宪法明确说"新增跨模块行为不登记本册视同未完成"。SR2-TABS-04 工单被标记 done。如果未登记，违反。但作为审计员，我不知道 docs/invariants.md 的现状。我可以检查 diff——它没改。因此要么①已登记过不需要改（如果该行为在之前 TABS-01/03 时已登记），要么②漏登记。**退出拦截的 dirty 上报通道是 TABS-04 新加的**，之前不可能登记（通道之前不存在）。但也许登记的是"dirty 一致性的定义"？TABS-03 可能已经登记过"dirty 聚合"不变量。TABS-04 的增量是 main 侧缓存和 close guard 流，这是新跨模块行为。**按宪法应该登记**。
+
+我给一个 WARN：SR2-TABS-04 新增的退出拦截跨模块行为（renderer push → main 缓存 → close guard）未见 docs/invariants.md 登记；若尚未登记，按宪法属未定义行为，应在 registry 翻 done 前补登记。这不是 BLOCKING 因为无法证实 invariants.md 中无相关条目，且功能测试已覆盖。
+
+好，另一个潜在问题：**`setQuitDirty` 的模块级缓存与 IpcDeps 注入**——ipc/index.ts 的 IpcDeps 增加了 `setQuitDirty`，但 createIpcHandlers(deps) 会把它传给 createSystemIpc。tests/utils/ipc-deps.ts 的 makeIpcDeps 默认 noop。OK。
+
+**有没有可能 createIpcHandlers 的其他调用点（非测试）没有传 setQuitDirty？** bootstrap 传了。其他地方？可能有别的调用（如 tests）。测试用 makeIpcDeps。OK。
+
+**有没有可能在 ipc/index.ts 中 createSystemIpc(deps) 调用时 deps.setQuitDirty 未传导致 undefined？** bootstrap 传。OK。
+
+**一个深水区问题：`handleCloseWithQuitGuard` 在 bootstrap 的 close 监听中 fire-and-forget，但如果在 confirmQuit 期间用户点击取消，窗口保持。此时 close 事件的 preventDefault 已调用。窗口继续运行。如果用户再次关窗，再次弹框。OK。**
+
+**但注意：如果 confirmQuit resolve false（取消），没有恢复任何状态，也没有重新标记 preventDefault 已消费。** Electron 的 close 事件是一次性的，取消后窗口保持是自然结果。下次 close 重新走流程。OK。
+
+**另一个：如果 confirmQuit 因为某种原因永不 resolve（比如 dialog API 挂起），窗口将永远无法关闭。** 模态框打开时用户还是有取消按钮。极端 API bug。不深究。
+
+**再看 "状态机前置" 的要求：行为层规约必须先给出状态/迁移表。头注的四态状态机 clean/dirty/确认/取消**——但"确认"和"取消"其实是模态框按钮动作而非窗口状态。窗口状态实际是 clean→dirty→（close 时）confirming→destroyed/保持。严格说状态机是：clean、dirty、confirming、destroyed。测试覆盖了 clean 放行、dirty→confirming→destroyed、dirty→confirming→dirty。跨格序列如 confirming→confirming（重复 close）未覆盖。宪法强调"态空间 + 跨格序列"。是否应要求补充"确认框显示期间再次 close 不重入"的测试？**注释声称"确认框模态天然挡住弹出期间的重复 close"**，但实际没有测试该序列。这违反宪法要求的"跨格序列交审计"。这可以是一个 WARN：模态防重入假设未测试。但实际测试的跨格序列（dirty→confirm→destroy、dirty→cancel→保持）覆盖了主要路径。重复 close 是边界。WARN 或 NIT？我认为 NIT，因为模态框确实有效。
+
+不过把"四态"作为状态机，重复 close 是一个真实序列。但风险低。NIT。
+
+**好，现在整理 findings。**
+
+严重级别分配：
+
+BLOCKING：无。仔细想过没有违反硬规则的明确证据。
+
+但等等——我再想一下 `locks/manifest.json`。diff 中 `generatedAt` 是 2026-08-25T04:33:47Z，更新了。受锁文件 api-surface、schemas、quit-dirty-guard.test、ipc-deps 的 sha 更新。**但 `tests/utils/ipc-deps.ts` 在受锁列表中，它的 sha 更新了，OK。** 然而看看 diff：manifest 中 tests/utils/ipc-deps.ts 的旧 sha 64634dec... → 新 a0a25af...。测试文件路径正确。OK。
+
+**但注意：diff 中没有看到 `src/main/windows/main-window.ts` 的 sha（它不在受锁列表）。OK。**
+
+**另一个纪律检查：`tickets/registry.ts` 中 SR2-TABS-04 状态 open→done。但按工单工作流第 4 条："npm run verify 绿 → 报告人类审查 git diff → 人类翻 registry 状态 → 提交"。简报说"registry 已翻回再实现，完成时正式翻 done"。该工单是 strong owner，主会话自研，所以人类审查后翻。diff 中已翻 done。OK。**
+
+**"新增受锁文件已 npm run locks:apply"**——manifest 包含新测试文件，OK。
+
+**还有一个细节：diff 中 `src/main/ipc/system.ts` 的 import 没有新增？它使用了 deps.setQuitDirty，deps 类型来自 IpcDeps（ipc/index.ts）。system.ts 已 import 类型？** diff 没显示 import 变化。createSystemIpc(deps: IpcDeps) 已经存在。OK。
+
+**再看 `src/main/windows/main-window.ts` 新增代码的放行路径：`if (!quitDirtyGuard(dirty)) return`——没有 preventDefault，默认关闭。OK。**
+
+**`QUIT_CONFIRM_MESSAGE` 使用单源常量。测试锚定。符合 INV-11。**
+
+**"clean 放行（不 preventDefault 不弹框不 destroy）"测试。OK。**
+
+**App.tsx 的 import：`useTabDirtyAggregate` 从 '../features/reader/tab-dirty'。App.tsx 位于 src/renderer/app/，reader 在 src/renderer/features/reader/。路径 '../features/reader/tab-dirty'。OK。**
+
+**bootstrap.ts 的 import 行很长：`import { createMainWindow, handleCloseWithQuitGuard, getQuitDirty, setQuitDirty } from './windows/main-window'`。可能 lint max-len？verify 绿，说明 lint 通过。OK。**
+
+**还有一个考虑：close 守卫的 `void handleCloseWithQuitGuard(...)` 若 confirmQuit reject，未捕获，但 preventDefault 已调用，窗口保持可再次关闭。Unhandled rejection 在 Electron main 会怎样？会打印警告，不一定崩溃。但窗口无法关闭因为每次 close 都 reject？如果 dialog.showMessageBox 反复 reject（为什么？），窗口永远无法关闭。这是 #1 WARN。**
+
+**现在写 summary：**
+
+总体判断：实现与头注四态规约一致，三面 IPC 闭环测试覆盖到位，锁文件与 registry 流程合规；存在若干健壮性与文档一致性问题（确认框无拒绝处理、默认按钮偏危险、头注测试落位声明不准），建议以 WARN 修复后合入。
+
+Findings 排序（按严重）：
+
+1. WARN - bootstrap.ts close listener：confirmQuit 的对话 promise 无 catch。dialog.showMessageBox 在窗口状态异常时 reject 会导致 unhandled rejection，且 close 已被 preventDefault，窗口可能无法关闭。建议在 handleCloseWithQuitGuard 内对 deps.confirmQuit 调用加 try/catch，reject 时视为取消（不 destroy）。
+
+2. WARN - bootstrap.ts：默认按钮 defaultId: 0（确认退出）在脏数据场景下，用户误按回车/空格会直接选择确认退出，丢失未保存数据。建议 defaultId/cancelId 调换，默认取消。
+
+3. WARN - src/main/ipc/system.ts 头注：声称通道透传测试在 tests/unit/ipc/system.test.ts，实际零 diff，透传测试在 tests/unit/windows/quit-dirty-guard.test.ts。文档声明与事实不符，指引维护者找错文件。建议更新头注指向实际测试文件并说明 check-tickets 规则 5 的落位原因。
+
+4. WARN - docs/invariants.md：新增跨模块行为（renderer dirty 聚合 push → main 缓存 → close 守卫）未见登记。按宪法"新增跨模块行为不登记本册视同未完成"，若尚未登记应在翻 done 前补登记。
+
+等等，第4条我有点犹豫——diff 没有 docs/invariants.md 不代表没有已有条目。而且可能是 TABS-03 已登记过"dirty 聚合"不变量，TABS-04 只是消费。但退出拦截是新的跨模块行为。我会写成"确认是否已登记；若未登记，按宪法……"。WARN 合适。
+
+5. NIT - handleCloseWithQuitGuard：重复 close 重入未防护（注释依赖模态框互斥，但无测试/无信号量）。建议增加 isConfirming 标志并在 confirm 后复位。
+
+6. NIT - App.tsx：setQuitDirty 的 promise 未 catch，建议加 catch 避免 unhandled rejection 噪音。
+
+7. NIT - quit-dirty-guard.test.ts 取消用例中 getQuitDirty 断言仅验证 handleClose 不改缓存，建议补一个"renderer 上报 false → main 缓存复位后 close 放行"的闭环测试。
+
+8. NIT - quitDirtyGuard 恒等函数。若契约需要保留，可接受。
+
+其实 #8 不值得列。作为 NIT 可以跳过或不列。输出 6-7 个也行。但不要太多。我会列 1-6 中最重要的，7 也可以。
+
+再想想有没有 #1 应该是 BLOCKING？如果 confirmQuit reject，窗口卡死。但这是异常路径。现实中 Electron 的 showMessageBox 在窗口销毁时 reject？查一下：如果窗口被关闭（但模态对话框阻止关窗），所以窗口在 await 期间存在。用户无法关闭窗口（模态）。所以 reject 几乎不可能。WARN 合适。
+
+**是否有一个被忽略的 BLOCKING？** 让我再阅读一遍宪法。
+
+"### 状态与不变量纪律（防屎山三盲区：时序/接缝/未声明假设）
+- **状态机前置**：凡「store + 异步 + 用户输入」的工单或修改，行为层规约必须**先**给出状态/迁移表（枚举态空间），并按「态空间 + 跨格序列」交审计"
+
+这个工单是「store（dirty 缓存）+ 异步（IPC/对话框）+ 用户输入」，确实属于这个范畴。头注给出了四态。测试覆盖了单格。**跨格序列：dirty→confirm→destroy、dirty→cancel→保持，这两个序列已测。** "clean→dirty→close→confirm→cancel→再 close→confirm→destroy"这种多段序列没测，但单元测试可组合。宪法说"按态空间+跨格序列交审计"。已交。OK。
+
+"**同类缺陷二次触发即重构**"——不适用。
+
+"**接缝归责**：改动模块 A 时必须核对相邻模块 B 对同一行为的声明"——ipc/system.ts 头注与实际落位不一致，属于 A 自声明不一致。已经在 #3 中。
+
+安全禁令逐条：
+- nodeIntegration/webSecurity/sandbox/contextIsolation：无改动。
+- renderer 无 Node API：App.tsx 只用 window.api。
+- openExternal：无改动。
+- SQL：无改动。
+- eval：无。
+- 出网：无。
+
+**但等一下，新 IPC 通道 `system/set-quit-dirty` 是否需要权限？renderer 现在可以调。如果 renderer 被 XSS（例如恶意 PDF 内容），攻击者可以将 dirty 设为 true，使用户退出时反复被确认框骚扰，但确认仍可退出。这只是轻微 annoy。不影响数据。NIT 不列。**
+
+**生产质量：**
+- `let quitDirtyCached = false` 模块级变量。测试在 beforeEach 重置。生产运行中只有一个窗口。OK。
+- `quitDirtyGuard(dirty) { return dirty }`——无意义包装。但契约要求。NIT 不列。
+- 头注提到 "INV-11 精神"——单源常量。OK。
+
+**测试纪律：**
+- 没有放宽断言。
+- 没有修改既有测试（system.test.ts 零 diff；ipc-deps 扩展是新增桩）。
+- 新增测试锁入 manifest。
+- 测试断言真实（preventDefault/confirm/destroy 次数）。
+- 但没有"先红后绿"证据在 diff 中（简报说已做）。
+- 没有 e2e 改动。
+
+**现在确认 verdict：PASS_WITH_WARNINGS。**
+
+因为有几个 WARN 但无 BLOCKING。summary 两三句。
+
+最终 JSON：
+
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "window.on('close', ...) 内 void handleCloseWithQuitGuard(...)",
+      "issue": "confirmQuit 弹框 Promise 无拒绝处理：若 dialog.showMessageBox 在窗口状态异常时 reject，close 已被 preventDefault，窗口将无法关闭且产生 unhandled rejection。",
+      "evidence": "diff: window.on('close', (event) => { void handleCloseWithQuitGuard(getQuitDirty(), event, window, {...}) })",
+      "suggestion": "在 handleCloseWithQuitGuard 中对 deps.confirmQuit 包 try/catch（或用 .catch 兜底），reject 时视为取消（不 destroy），并 console.error 记录。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "issue": "确认框默认焦点落在「确认退出」，用户误触回车/空格会直接确认退出并丢弃未落库数据，与退出拦截的防丢数据目标相悖。",
+      "evidence": "diff: buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "suggestion": "将 defaultId 改为 1（取消）、cancelId 改为 0，使默认动作是取消退出。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/ipc/system.ts",
+      "line_hint": "文件头注「- 测试：tests/unit/ipc/system.test.ts（已锁定，shell 桩 + 攻击向量 + 通道透传）」",
+      "issue": "头注声明通道透传测试在 system.test.ts，但实际 system.test.ts 零 diff，透传测试落在 tests/unit/windows/quit-dirty-guard.test.ts。声明与事实互斥，后续维护者会被指引到错误文件。",
+      "evidence": "diff: system.test.ts 未出现在 diff 中（简报：已精确还原零 diff）；实际测试在新建的 tests/unit/windows/quit-dirty-guard.test.ts 第二个 guardedDescribe。",
+      "suggestion": "把头注改为准确指向 tests/unit/windows/quit-dirty-guard.test.ts，并注明 check-tickets 规则 5 机器裁定落位。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md（未见改动）",
+      "line_hint": "新增跨模块链路：renderer useTabDirtyAggregate → window.api.system.setQuitDirty → main 模块缓存 → close 守卫",
+      "issue": "按宪法「新增跨模块行为不登记本册视同未完成」，本次新增的 dirty 上报→缓存→退出拦截跨模块行为未在 docs/invariants.md 中看到登记；若确未登记，则工单翻 done 不符合 DoD。",
+      "evidence": "AGENTS.md: 「跨模块/跨时间的行为不变量一律登记 docs/invariants.md……新增跨模块行为不登记本册视同未完成」；diff 中无 docs/invariants.md 变更。",
+      "suggestion": "在 docs/invariants.md 登记「quitDirty 缓存与 renderer 聚合 dirty 最终一致（push 沿上报）+ close 守卫流」，注明声明处与强制方式；若已有相关条目，请人工确认并在审计结论中说明。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/windows/main-window.ts",
+      "line_hint": "handleCloseWithQuitGuard 中 await deps.confirmQuit(...)",
+      "issue": "确认框弹出期间若再次收到 close（程序化 win.close/app.quit 二级路径），会再次进入守卫流程，依赖「模态天然挡住」但无信号量防护/测试。",
+      "evidence": "注释: 「确认框模态天然挡住弹出期间的重复 close」；无对应测试覆盖跨格序列（confirming→confirming）。",
+      "suggestion": "加 isConfirming 标志（或检查 win.isDestroyed）防重入，并补一条重复 close 的序列测试。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/app/App.tsx",
+      "line_hint": "void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "issue": "IPC 调用未处理失败（无 catch），通道异常时产生 unhandled rejection；且 dirty 状态可能未能同步到 main。",
+      "evidence": "diff: void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "suggestion": "建议 .catch(() => {}) 或 console.warn，并在失败时保持 main 缓存不变（无副作用），避免 unhandled rejection 噪音。"
+    }
+  ],
+  "summary": "..."
+}
+
+等等，我应不应该把 docs/invariants.md 的 WARN 放在这里？我有点担心它会显得像编造，因为 diff 中没有该文件。但它是基于 AGENTS.md 硬规则的合理审查意见，且明确说"未见改动"。这是基于输入的证据。可以保留，但 line_hint 应该写"diff 未含 docs/invariants.md 更新"。
+
+另一个考虑：也许 docs/invariants.md 已经有一个关于 dirty 的条目在 TABS-03 时登记了。退出拦截作为消费方可能不需要新条目？宪法说"新增跨模块行为"需要登记。我保持 WARN，措辞为"确认/补登记"。
+
+再想一下 severity 是否应该把 #4 设为 BLOCKING？宪法的措辞很强："未登记 = 未定义行为"、"视同未完成"。如果确实未登记，工单不应 done。但由于我无法确认 docs/invariants.md 内部状态，且这不是直接代码缺陷，WARN 是安全的审计等级（提醒人类确认）。
+
+关于 #1，我再最后确认一次：如果 `dialog.showMessageBox` 的 Promise reject，unhandled。这确实是问题。但注意：`void` 前缀明确丢弃 promise，V8 会捕获为 unhandled rejection。Node 默认不崩溃但警告。窗口关闭路径卡死（用户无法通过窗口退出）。这算正确性缺陷。WARN。
+
+#2 默认按钮——UX/正确性问题。用户以为回车是取消却导致退出丢数据。WARN 合理。
+
+#3 文档不一致——接缝纪律。WARN 合理。
+
+NIT #5 重入——合理。
+
+NIT #6 IPC 无 catch——合理。
+
+我还应该提 NIT 关于测试的弱断言吗？可选。我提一个：
+7. NIT - tests/unit/windows/quit-dirty-guard.test.ts：取消用例只验证了 handleClose 不改缓存，未验证「上报 false → 缓存复位 → close 放行」的完整闭环；建议补一条集成式断言。
+
+但测试已有"缓存往返"和"clean 放行"，组合起来覆盖了。不过缓存复位与 close 放行的联动只在 bootstrap 装配中。可以 NIT。我认为不必列太多，6 个 findings 足够。
+
+最终 summary：
+"实现与 SR2-TABS-04 头注四态规约一致，IPC 三面（判定/缓存/守卫流）测试闭环完整，锁文件与 registry 流程合规，未发现安全禁令违反或 BLOCKING 级缺陷。主要问题集中在健壮性（确认框 Promise 无兜底、默认按钮偏危险）与文档一致性（system.ts 头注与实际测试落位互斥、跨模块行为未见 invariants 登记），建议修复 WARN 后合入。"
+
+确保 JSON 无 markdown 围栏。输出纯 JSON。
+
+再确认 evidence 引用都来自输入材料：
+- #1: diff 中 `void handleCloseWithQuitGuard(...)` 真实存在。
+- #2: diff 中 defaultId 0、cancelId 1 真实存在。
+- #3: 头注文本真实存在，system.test.ts 不在 diff 中（简报说明零 diff）。OK。注意：diff 中 ipc/system.ts 的头注是修改后的文本，包含 "+ 通道透传"。真实。
+- #4: AGENTS.md 原文真实存在。diff 无 invariants.md。OK。
+- #5: main-window.ts 注释"确认框模态天然挡住..."真实存在。
+- #6: App.tsx diff 真实存在。
+
+好，所有证据都可追溯。
+
+还有一点：**NIT #5 的建议"检查 win.isDestroyed()"——handleCloseWithQuitGuard 的参数 win 类型只有 destroy()，没有 isDestroyed()。所以建议要调整：扩展类型或加标志。** 我建议用 isConfirming 标志，不依赖 isDestroyed。修改 suggestion。
+
+**关于 #2 的进一步斟酌**：AGENTS 中没有明确 UX 规则，但"退出拦截"的目的就是防止误丢数据，默认按钮选最危险动作确实不妥。WARN 成立。
+
+**再想想是否应该有 BLOCKING 关于"退出拦截只在 close 上，不在 before-quit 上"？** 简报明确"before-quit 级联（头注生命周期层：不做）"。范围外。不列。
+
+**多窗口负面清单**：不适用。模块级缓存是单窗口假设。如果未来多窗口，缓存需 per-window。但 v1 明确不做。不列。
+
+最后，JSON 格式要严格。我确保没有尾随逗号，字符串转义正确（中文没问题，但引号要转义）。文件路径和代码引用用引号。
+
+在 issue 中的证据字符串里包含中文引号「」没问题，但要避免使用英文双引号包围中包含未转义双引号。我会把证据中的引号改成单引号或转义。
+
+现在生成 JSON。
+
+== content ==
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "window.on('close', ...) 内 void handleCloseWithQuitGuard(...)",
+      "issue": "close 守卫中 confirmQuit 弹框 Promise 无拒绝兜底：若 dialog.showMessageBox 在窗口状态异常时 reject，close 已被 preventDefault，窗口将无法通过该路径关闭，且产生 unhandled rejection。",
+      "evidence": "diff: window.on('close', (event) => { void handleCloseWithQuitGuard(getQuitDirty(), event, window, {...}) })",
+      "suggestion": "在 handleCloseWithQuitGuard 中对 deps.confirmQuit 包 try/catch（或用 .catch 兜底），reject 时视为取消（不 destroy），并 console.error 记录。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/bootstrap.ts",
+      "line_hint": "buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "issue": "确认框默认焦点落在「确认退出」，用户误触回车/空格会直接确认退出并丢弃未落库数据，与退出拦截防丢数据的目标相悖。",
+      "evidence": "diff: buttons: ['确认退出', '取消'], defaultId: 0, cancelId: 1",
+      "suggestion": "将 defaultId 改为 1（取消）、cancelId 改为 0，使默认动作是取消退出。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/ipc/system.ts",
+      "line_hint": "文件头注「- 测试：tests/unit/ipc/system.test.ts（已锁定，shell 桩 + 攻击向量 + 通道透传）」",
+      "issue": "头注声明通道透传测试在 system.test.ts，但实际 system.test.ts 零 diff，透传测试落在 tests/unit/windows/quit-dirty-guard.test.ts 的第二个 guardedDescribe。声明与事实互斥，后续维护者会被指引到错误文件。",
+      "evidence": "diff: system.test.ts 未出现在 diff 中（简报：已精确还原零 diff）；实际测试在新建的 tests/unit/windows/quit-dirty-guard.test.ts",
+      "suggestion": "把头注改为准确指向 tests/unit/windows/quit-dirty-guard.test.ts，并注明 check-tickets 规则 5 机器裁定的落位原因。"
+    },
+    {
+      "severity": "WARN",
+      "file": "docs/invariants.md（diff 未见改动）",
+      "line_hint": "新增跨模块链路：renderer useTabDirtyAggregate → window.api.system.setQuitDirty → main 模块缓存 → close 守卫",
+      "issue": "按宪法「新增跨模块行为不登记本册视同未完成」，本次新增的 dirty 上报→缓存→退出拦截跨模块行为未在 docs/invariants.md 中看到登记；若确未登记，则工单翻 done 不符合 DoD。",
+      "evidence": "AGENTS.md: 「跨模块/跨时间的行为不变量一律登记 docs/invariants.md……新增跨模块行为不登记本册视同未完成」；diff 中无 docs/invariants.md 变更",
+      "suggestion": "在 docs/invariants.md 登记「quitDirty 缓存与 renderer 聚合 dirty 最终一致（push 沿上报）+ close 守卫流」，注明声明处与强制方式；若已有相关条目，请人工确认并在审计结论中说明。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/windows/main-window.ts",
+      "line_hint": "handleCloseWithQuitGuard 中 await deps.confirmQuit(...)",
+      "issue": "确认框弹出期间若再次收到 close（程序化 win.close/app.quit 等二级路径），会再次进入守卫流程；当前依赖「模态天然挡住」但无信号量防护，也无重复 close 序列测试。",
+      "evidence": "注释: 「确认框模态天然挡住弹出期间的重复 close」；测试未覆盖 confirming→confirming 跨格序列",
+      "suggestion": "增加 isConfirming 标志（或扩展 win 类型后检查 isDestroyed()）防重入，并补一条重复 close 的序列测试。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/app/App.tsx",
+      "line_hint": "void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "issue": "IPC 调用未处理失败（无 catch），通道异常时产生 unhandled rejection 且 dirty 状态可能未能同步到 main。",
+      "evidence": "diff: void window.api.system.setQuitDirty({ dirty: quitDirty })",
+      "suggestion": "建议 .catch(() => {}) 或 console.warn，失败时保持 main 缓存不变，避免 unhandled rejection 噪音。"
+    }
+  ],
+  "summary": "实现与 SR2-TABS-04 头注四态规约一致，IPC 三面（判定/缓存/守卫流）测试闭环完整，锁文件与 registry 流程合规，未发现安全禁令违反或 BLOCKING 级缺陷。主要问题集中在健壮性（确认框 Promise 无兜底、默认按钮偏危险）与文档一致性（system.ts 头注与实际测试落位互斥、跨模块行为未见 invariants 登记），建议修复 WARN 后合入。"
+}

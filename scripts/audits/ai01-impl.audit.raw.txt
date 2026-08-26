@@ -1,0 +1,410 @@
+== reasoning ==
+我需要进行代码审查。需要输出一个JSON对象，包含verdict、findings、summary。
+
+首先理解项目宪法（AGENTS.md）的硬规则：
+1. 会话开工纪律 - 技能清点已含在简报里
+2. 状态与不变量纪律 - 状态机、不变量登记、同类缺陷二次触发、接缝归责
+3. 代码组织 - 文件≤500行、分层单向、方案切换=删除旧方案、死代码即删、类型单一真相源、Rule of Three
+4. 安全禁令
+5. 完成定义 - verify全绿、无TODO/FIXME/placeholder、无乱码、无范围蔓延、占位实现删除、受锁文件locks:apply
+6. 测试纪律 - 禁止修改tests/**，但这里测试是新增和修改（migrate.test.ts修改、enrich/import.service.test夹具修改），需要检查是否有locked-change尾注。不过diff里没有提交信息，只有变更内容。简报里说"提交尾注将携带"。注意：测试纪律说"禁止修改 tests/**、**/*.test.ts、src/shared/**（CI sha256对账）。发现测试本身有错→报告人类，走 [locked-change]，不得自行修改让代码通过"。这里修改了migrate.test.ts（版本数扩展）、enrich.service.test.ts和import.service.test.ts（夹具补aiNotes桩）。这属于接口波及的必要修改，且简报声称locks manifest已重生成（105文件同步）。需要确认migrate.test.ts的修改是合理的——因为MIGRATIONS新增了version 3，测试中appliedVersions [1,2]→[1,2,3]是必要的。这算"修改测试让代码通过"吗？不是，这是新增功能带来的必要测试更新，且测试断言与实现一致，是正确的。但要注意宪法说"禁止修改 tests/**"，这是硬规则。但简报说明这些是"受锁文件"，修改需 [locked-change]。如果提交带locked-change尾注，且locks manifest已更新，则合规。不过测试纪律的根本意图是防止"为通过测试而放宽断言"，这里不是放宽而是扩展。所以我认为OK，但可能需要WARN提醒：修改测试文件本身需要 [locked-change] 尾注，简报声称会带。
+
+7. 工单工作流 - 该工单owner是strong（不是weak），所以是强模型领单，普通流程。
+
+8. 依赖与提交 - 禁止新增依赖。这里没有新增package.json依赖。zod是既有依赖。
+
+现在逐个文件审计：
+
+### 003_ai_notes.sql
+- CREATE TABLE ai_notes 带role CHECK (role IN ('first-read','second-read','adjudicate'))
+- question TEXT NOT NULL 无CHECK（设计裁决：枚举扩展走zod层）
+- 级联：paper_id REFERENCES papers(id) ON DELETE CASCADE；annotation_id REFERENCES annotations(id) ON DELETE SET NULL
+- 索引 idx_ai_notes_paper ON ai_notes(paper_id, role, created_at)
+- 各列：id TEXT PK, paper_id TEXT NOT NULL, annotation_id TEXT（可空）, role TEXT NOT NULL CHECK, question TEXT NOT NULL, model TEXT NOT NULL, quote_text/prefix_text/suffix_text TEXT NOT NULL DEFAULT '', anchor_page INTEGER 可空, content_md TEXT NOT NULL, created_at/updated_at TEXT NOT NULL
+
+看起来符合设计裁决。注意：SQLite外键默认关闭，需要PRAGMA foreign_keys=ON。测试里用了级联测试，说明createTestDb里应该开了foreign_keys。这是既有基建，OK。
+
+潜在问题：CHECK 约束在 SQLite 中如果已有数据迁移时会不会有问题？这是全新表，无数据问题。
+
+DDL 中没有 question 的 CHECK——设计裁决说 question 取 'Q1'..'Q7'|'divergence' 但 DDL 不加 CHECK。但注意：DDL 注释里写了 "'Q1'..'Q7'|'divergence'（divergence=裁决者分歧报告节；Q3/Q6/Q7 允许无锚篇级回答）"。zod层有 z.enum(AI_NOTE_QUESTIONS) 校验。但repo层不校验zod，直接直通。这意味着如果未来AI-07导入器通过IPC边界（register.ts）调用时会校验zod；但如果有人绕过IPC直接调repo（如测试、其他service），question可以写入任意值。这与设计裁决一致（repo无zod校验是惯例），且question的DDL无CHECK是有意设计。但有一个隐患：role在DDL有CHECK，question没有。如果错误数据进入DB（比如手写SQL或绕过zod），listByPaper返回的question会被toNote直接 as AiNote['question'] 强转。TypeScript类型断言掩盖了运行时数据可能不符合枚举的风险。不过这是设计裁决，先例是repo层直通。可以给NIT建议：在repo层对question做防御性校验或依赖调用方保证。
+
+### ai_notes.repo.ts
+- import randomUUID from node:crypto —— 这放在main侧repo，OK（renderer禁止Node API，但repo在main进程）
+- insertStmt 预编译参数绑定 @id等 —— 无SQL注入（安全规则满足）
+- listByPaperStmt: SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id —— 参数绑定OK
+- insert(): 构造 note = {...input, id, createdAt, updatedAt} 然后 run 绑定所有字段。注意：AiNoteInput 中 annotationId 是 nullable，anchorPage 是 nullable。insert 时若 annotationId 为 null，绑定 null 到 @annotationId OK。
+- updateContent(): 先 SELECT 再 UPDATE，返回合并对象。注意：SELECT 后 UPDATE 但 SQLite 是同步单线程，无竞态。但有个细节：如果 UPDATE 影响行数为0（比如id存在但被并发删除？better-sqlite3同步，无并发），不考虑。
+- deleteByPaper(): 返回 changes。
+- listByRole: 参数绑定 + role 直接作为参数，OK。
+- countByPaper: COUNT(*) AS n。
+
+类型安全审查：
+- `db.prepare(...).get(id) as AiNoteRow | undefined` —— 如果get返回undefined，OK。但如果get返回null（better-sqlite3 get 无行返回 undefined），OK。
+- `row.role as AiNote['role']` 强转 —— 运行时role可能非法（DDL CHECK挡住了，所以安全）。
+- `(countStmt.get(paperId) as { n: number }).n` —— 如果get返回undefined（不可能，COUNT(*)总是返回一行），OK。
+
+正确性细节：
+- updateContent 不更新其他字段，返回的合并对象中 contentMd 和 updatedAt 更新，其余用 SELECT 来的旧值。但注意：如果 SELECT 之后、UPDATE 之前有其他修改（如同进程内的另一个函数），因为 better-sqlite3 同步，没有交错，OK。但注意：如果 SELECT 到的行和 UPDATE 之间没有事务包裹，另一个线程？Node 单线程，no。
+- 但有个语义问题：updateContent 返回的对象是基于 SELECT 的旧行 + 新 contentMd/updatedAt。如果调用者期望返回完整的当前行，这没问题，因为只有这两个字段被改。但如果未来 UPDATE 不只是这两个字段，该函数会不同步。当前 OK。
+- insert 时没有校验 input 是否符合 zod schema（设计裁决：repo不校验）。如果调用者传入非法 role，DDL CHECK 抛错；非法 question，DDL 不拦（无CHECK），数据进入DB。这是设计取舍，但与"类型单一真相源"和"应用边界校验"结合，应该在IPC边界做。当前 v1 无消费者，可接受，但值得 NIT 或 WARN？我认为这是设计裁决明确声明的，且是既有惯例（notes/annotations repo 先例）。不阻塞。但 question 无 DDL CHECK 意味着 DB 层不保证不变量，违反"不变量登记"精神？设计裁决说 DDL 不加 CHECK 是扩展性优先，且 zod 层受锁。这符合 ADR-0015 的裁决。可以 NIT 提醒：repo层或迁移注释中明确该不变量已登记在案。
+
+- 文件行数：ai_notes.repo.ts 原来 STUB 有头注 + 现在实现。diff 显示总共约 167+ 行？diff 从 48 行开始 +119行，文件大约 167 行左右，<500 OK。测试 155 行 <250 OK（组件≤250？测试不算组件但 OK）。
+
+- 死代码：AI_NOTES_REPO_STUB 已删除，OK。
+
+### repos/index.ts
+- 新增 aiNotes 注册和类型导出，最小面。
+
+### ai-note.ts (shared)
+- zod schema：id, paperId, annotationId nullable, role enum, question enum, model, quoteText/prefixText/suffixText, anchorPage int min1 nullable, contentMd, createdAt, updatedAt, .strict()
+- aiNoteInputSchema = omit id/createdAt/updatedAt，.strict()
+- 注意：quoteText/prefixText/suffixText/contentMd 都是 z.string()（非空字符串）。DDL 中 quote_text 等有 DEFAULT ''，content_md NOT NULL。UI 可能传空字符串，OK。
+- anchorPage 约束 z.number().int().min(1)，但 DDL 没有 CHECK anchor_page 非负。如果未来有人直接写DB可以插入0，但 zod 边界挡住。同理 role。
+- 类型单一真相源：ai_notes 表没有对应的行形状类型共享，但 repo 里自己定义了 AiNoteRow 接口（蛇形），这是局部私有，OK。
+
+### migrate.ts
+- MIGRATIONS 追加 version 3。注意：Migration 接口 version 是 number，追加 [ { version: 3, name: 'ai_notes', sql: aiNotesSql } ]，OK。
+- 潜在问题：既有数据库 user_version 是 2，迁移到 3 会应用 003。如果用户有 old DB 且 003 里的表已存在（不太可能因为新表），OK。
+- 没有破坏性变更。
+
+### migrate.test.ts
+- [1,2]→[1,2,3] 必要修改，OK。
+
+### ai_notes.repo.test.ts
+- 8 个用例。注意：
+  - seedPaper 和 seedAnnotation 用字符串拼接 SQL（`INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('${id}','a.pdf','s-${id}','t','t')`）。这是**测试代码**中的字符串拼接 SQL！安全禁令说"禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定"。这条禁令是否适用于测试？宪法原文没有说仅生产代码。安全禁令是"一条都不许碰"，通常适用于所有代码。但测试里 seed 是固定 id 传参，且有测试纪律说"测试是锁定的合约，禁止修改 tests/**"——现有测试里可能也有类似先例（annotations.repo.test.ts 或其他测试是否也用拼接？需要看 diff 上下文，但 diff 只给了这个新文件）。从纯安全角度，测试代码拼接 SQL 没有用户输入风险，因为 id 是测试内的常量（'p-1', 'a-1', 'a-2', 'p-1'）。但安全禁令对项目宪法是绝对的。这是一个**潜在的 BLOCKING**：违反"禁止字符串拼接 SQL"。不过要注意：宪法说"禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定"，没有限定生产代码。作为审计，应该 flag。但也要考虑：tests 中的 fixture 直插 SQL 在既有测试中是否已有先例？简报设计裁决第4点说"测试夹具 seedAnnotation 直插 SQL"，说明这是有意的（需要真实外键关系）。但这与宪法的安全禁令冲突。宪法说"规则冲突时以本文为准"（本文档）。而且「禁止字符串拼接 SQL」是安全禁令（否定式，一条都不许碰）。所以测试代码拼接 SQL 违反硬规则。应该 BLOCKING 或 WARN？我认为这是真正的硬规则违反，应 BLOCKING。即使输入是常量，规则本身是绝对的。但等一下——需要仔细读：宪法安全禁令是安全范畴，测试中的固定字符串拼接没有安全风险，但规则说"禁止"，没有豁免。审计应该指出。另一个角度：是否已有测试文件使用同样的拼接模式？如果既有测试已如此，那可能该禁令的意图是生产代码路径。但宪法没有写"生产代码"，作为第一道审计，我会标记为 WARN 或 BLOCKING。考虑到这是测试夹具，且参数来自测试内常量，无实际安全风险，但**纪律上违反硬规则**。判级指南：BLOCKING=违反硬规则/正确性缺陷/安全问题。所以按字面，违反硬规则 = BLOCKING。但也要权衡：如果这是项目测试的既有惯例（其他测试也用拼接），那 flag 为 WARN 更合理，因为"同类缺陷二次触发"？我只有这个diff，不知道其他测试。但这个 diff 中新写的 seed 函数用了拼接，就是新引入了违反禁令的代码。建议改为 db.prepare(...).run(id, 'a.pdf', ...) 参数绑定。
+
+  - 第一个测试里 `expect(list).toHaveLength(1)` 出现了两次（重复断言）。这是质量问题（重复代码），NIT。
+  - `updated !== null && updated.updatedAt >= n.updatedAt` 这种写法不优雅，但正确。注意 ISO 字符串比较 '2026-08-27T...' 字典序即时间序，但如果同毫秒内创建和更新，updatedAt 可能等于 createdAt，`>=` 成立。不过 insert 和 update 之间的时间通常不同，但如果 mocking 了 Date，可能相等，测试会通过因为 >=。但断言本意是"推进"（严格大于）。用 >= 是**放宽断言**？测试纪律说"禁止为过测试而放宽断言"。这里用 `>=` 而非 `>` 是否在为时序竞争放宽？实际上，如果 Date.now() 返回相同值（比如系统时钟粗粒度），`>` 可能失败。但这个 repo 实现 `updateContent` 用 `new Date().toISOString()`，如果 insert 和 update 在同一毫秒，updatedAt 等于 createdAt，`>` 会失败。用 `>=` 是合理的容错，不算放宽断言（语义是"不倒退"）。但用例名说"updatedAt 推进"，严格讲 >= 只保证不倒退。NIT。
+  - CASCADE 测试：`db.prepare(`DELETE FROM papers WHERE id = 'p-1'`).run()` —— 也用了拼接？不，这里用了模板字符串但内容是常量。其实它用了字符串字面量 `'p-1'` 直接嵌入 SQL。同样是字符串拼接 SQL（即使没有变量）。应该 `db.prepare('DELETE FROM papers WHERE id = ?').run('p-1')`。同样违反安全禁令。
+  - SET NULL 测试：`DELETE FROM annotations WHERE id = 'a-2'` 同理。
+  - role CHECK 测试：`role: 'third-read' as never` —— 使用 `as never` 绕过 TS 类型检查以测试 DDL 拒绝。这是合理的测试手段（需要传入非法值以触发DB约束）。
+  - 测试的 question 都是 'Q1'/'Q2'/'divergence'，合法。
+  - 注意：seedAnnotation 插入的 rects_json='[]'，kind='highlight'，这些列在 annotations 表中应该存在（推测）。测试能过说明 schema 匹配。
+
+  另一个点：`guardedDescribe('SR2-AI-01', ...)` 是什么？可能是测试防护机制（只在特定工单状态运行）？既有基建。
+
+- beforeEach 里 seedPaper('p-1')，然后每个用例复用。CASCADE 测试删除 papers 后，没有清理？db 是每个 beforeEach 新建的，OK。
+
+### enrich.service.test.ts / import.service.test.ts
+- makeRepos 补 `aiNotes: {} as Repos['aiNotes']` 桩。这是必要的接缝波及。注意 import.service.test 中的 makeRepos 返回类型是 Repos，新增 aiNotes 属性必须提供桩。空对象 as 类型，如果被测代码实际调用 aiNotes 方法会运行时错误，但测试中不涉及，OK。这是最小面修正。
+- 有没有其他手搓 Repos 夹具被漏？简报说 typecheck 全绿佐证，可信。
+
+### registry.ts
+- SR2-AI-01 open→done。注意：工单工作流说"owner: 'weak'"才走弱模型流程，owner 是 strong。registry 状态翻 done 是完成定义的一部分。OK。
+- 但注意：宪法工单流程说"只改这一个文件（+ 必要时新文件）"是针对弱模型。这里改动面 11 文件，是强模型单（SR2 系列 owner strong），正常。
+
+### locks/manifest.json
+- 新增 003_ai_notes.sql、ai-note.ts、ai_notes.repo.test.ts 的 sha256；更新 migrate.test.ts、enrich.service.test.ts、import.service.test.ts 的 sha256。共 6 个受锁文件变更/新增。符合 [locked-change] 需求。generatedAt 更新。注意：manifest 中其他受锁文件（如 src/shared/ipc/schemas.ts）没有变化，OK。
+- 但是：**受锁文件修改前先 npm run locks:unlock，改完即时 locks:apply**。manifest 重生成说明已 apply。但简报摩擦实录②提到"受锁测试尚需迭代时 apply 过早→EPERM 二次 unlock（流程教训：受锁文件全部改完再统一 apply）"——说明确实经历了 unlock/apply 循环。最终 manifest 同步。OK。
+
+### 关于安全禁令的完整检查
+- nodeIntegration/webSecurity/sandbox/contextIsolation：无相关改动。
+- renderer 引入 Node API：无。
+- openExternal：无。
+- SQL 拼接：如上述，生产代码全部 prepare + 参数绑定；测试代码有拼接。这是唯一安全相关发现。
+- eval/new Function：无。
+- 出网 host：无。
+
+### 正确性深入检查
+
+1. updateContent 的返回语义：`return { ...toNote(row), contentMd, updatedAt: now }`。但 toNote(row) 返回的对象中 contentMd 是旧值，覆盖为新值，updatedAt 覆盖为 now。但如果 row 中还有其他字段在 UPDATE 期间被修改？同步无并发。OK。
+   - 但要注意：`updateContent` 不更新 `updated_at` 之外的其他列。如果未来有其他列更新，该函数会返回陈旧数据。当前 OK。
+   
+2. listByPaper 排序：ORDER BY created_at, id。created_at 是 ISO 字符串，字典序=时间序。同一毫秒内插入多条时 id 兜底（uuid 随机，但**uuid 不是单调的**，所以同毫秒内的顺序是随机的）。设计裁决说"同键 id 兜底全序"。uuid v4 随机，确实提供全序（总可以比较），但不是稳定的业务顺序（如插入顺序）。如果同一毫秒内插入多条同 created_at 的笔记，排序是随机的。注释说"同键 id 兜底全序，INV-24 同哲学"。这是设计裁决。NIT：created_at 粒度是毫秒，同毫秒可能有多条（AI 导入批量插入），用随机 uuid 作为 tiebreaker 导致顺序不稳定。建议用递增的排序键或插入序号。但设计裁决明确接受，且 INV-24 同哲学，不阻塞。
+
+3. 外键约束：master 表自持锚定三元组与 annotations 解耦，但 annotation_id 外键引用 annotations(id) ON DELETE SET NULL。测试用 createTestDb 且级联测试通过，说明 PRAGMA foreign_keys=ON 在测试 DB 中开启。生产 DB 呢？connection.ts 是否开启？不在 diff 内。如果生产连接未开启 foreign_keys，级联不会生效。但既有 annotations 表已有外键（推测），connection 应该已开启。不在本次审计范围，但值得确认：新增的级联依赖外键开关。如果 connection 没开，测试通过（createTestDb 可能开了）但生产不生效。简报 verify 全绿，说明测试通过。是否需要在迁移 003 中显式 PRAGMA？SQLite 的 PRAGMA foreign_keys 不能在迁移 SQL 里设置（per-connection）。migrate.ts 应该由 connection 层设置。这是既有迁移的假设。我可以 WARN：确认生产连接开启 foreign_keys（级联依赖），如果 connection 未开启，CASCADE/SET NULL 不会生效。但可能既有 migrations 001 已经有 annotations 外键且依赖该开关，所以是既有基建。先查 diff 中没有 connection.ts 变化。我可以 NIT 提醒审计确认。
+
+4. SQLite CHECK 约束在 ALTER TABLE 时不支持，但这是新建表，OK。
+
+5. `insertStmt.run({...})` 中命名参数：SQL 中 `@id, @paperId, @annotationId` 等，run 的对象键与之一致。注意 SQL 中 `VALUES (@id, @paperId, @annotationId, @role, @question, @model, @quoteText, @prefixText, @suffixText, @anchorPage, @contentMd, @now, @now)` —— 13列，最后两个 @now。对象提供了 id/paperId/annotationId/role/question/model/quoteText/prefixText/suffixText/anchorPage/contentMd/now。命名参数在 better-sqlite3 中区分大小写？better-sqlite3 的命名参数不区分大小写，但为保险仍一致。OK。
+
+6. AiNoteInput 没有 createdAt/updatedAt，insert 生成。id 用 randomUUID()。OK。
+
+7. 类型导出：`export type { ..., AiNotesRepo, ... }` 从 repos/index.ts —— ai-note.ts 模型由 shared 导出，repo 类型由 index 导出。分层：renderer → window.api → ipc，main 侧 repos 不应被 renderer 直接引用。OK。
+
+### 测试纪律
+- 新增测试文件 ai_notes.repo.test.ts 是受锁文件，被加入 manifest。测试断言具体、真实。没有放宽断言（除了 updatedAt >= 的 NIT）。
+- 修改 migrate.test.ts：`[1, 2] → [1, 2, 3]`，这**修改了受锁测试**。它是必要的（MIGRATIONS 变了），不是放宽断言，是扩展预期。符合 [locked-change] 流程。审计确认。
+- enrich/import.service.test 夹具修改：补桩，必要。
+- 测试是否有"每个测试必须能失败一次"？简报说红证实录 8/8 fail。OK。
+- e2e 未涉及。
+
+### 代码组织
+- 文件行数：ai_notes.repo.ts 估计 167 行 <500 OK；ai-note.ts 47 行；003 SQL 28 行；测试 155 行。migrate.ts 未超标。OK。
+- 分层：repo 在 src/main/db/repos，OK。shared/models 在 src/shared，OK。没有跨层。
+- 死代码：STUB 删除，AI_NOTES_REPO_STUB 常量移除，没有残留占位。但注意：repo 文件头注释中是否还有 STUB 相关注释？diff 显示文件头注释保留（前 48 行），其中有"工单骨架标记"的内容在 diff 中被删除了。OK。
+- 类型单一真相源：zod schema 在 shared/models/ai-note.ts，repo 的 AiNoteRow 是私有行形状，不跨进程。OK。
+- Rule of Three：toNote 映射单点，OK。
+- 方案切换：无两个方案并存。
+
+### 依赖
+- 无 package.json 变更，无新依赖。randomUUID 来自 node:crypto 内置。OK。
+
+### 不变量登记
+- 简报提到 INV-11/INV-24 等，但 docs/invariants.md 不在 diff 中。新表 ai_notes 的级联语义、question 枚举、排序等是否已登记？头注声明了接缝锚定。docs/invariants.md 没有变化？diff 中没有 docs/invariants.md 的改动。宪法说"新增跨模块行为不登记本册视同未完成"。ai_notes 表的新增行为（级联、排序、枚举镜像）是否需要在 docs/invariants.md 登记？简报说 INV-11（role 枚举真相）和 INV-24（排序哲学）已有登记？但 ai_notes 是**新表**，其特定不变量（如 annotation 删除 → SET NULL 降级）如果之前没有对应记录，可能需要新增登记。但 diff 里没有 docs/invariants.md 变更。简报没提登记了新不变量。这可能是一个 WARN：宪法要求"新增跨模块行为不登记 docs/invariants.md 视同未完成"。ai_notes 的级联行为是一个跨模块行为（annotations 删除影响 ai_notes），如果 INV 已经有通用规则（如"annotation 删除时相关表 SET NULL"？不太可能因为 ai_notes 是新的），那这里需要新登记。但 ai-note.ts 头注说"接缝锚定（INV-11）：role 枚举真相=迁移 003 DDL CHECK"——这说明 INV-11 已存在，且本次实现锚定到它。INV-24（排序哲学）也存在。所以设计者引用了既有 INV。但新表的级联规则（paper CASCADE、annotation SET NULL）是否已有 INV？我不确定。审计角度：这是一个 WARN，提醒确认 docs/invariants.md 已为新行为登记（如 ai_notes 级联）。但简报没提，不能编造。我要基于 diff 判断：AI_NOTE_ROLES 与 DDL 双向锚定已声明，但**SET NULL 级联跨模块行为**未见 invariant 登记。根据宪法，"跨模块/跨时间的行为不变量一律登记 docs/invariants.md"——annotations 删除 → ai_notes.annotation_id SET NULL 是跨模块行为。如果未登记，视同未完成。但 diff 中没有 docs/invariants.md 变更，所以**很可能未登记**。这是一个合理的 WARN（甚至 BLOCKING？宪法说"未登记 = 未定义行为"和"新增跨模块行为不登记本册视同未完成"）。不过要小心：docs/invariants.md 可能在之前已经预留了 ai-module 的不变量（比如 ADR-0015 或计划阶段）。简报提到 INV-11/INV-16/17/18/24 等，说明不变量编号已存在。AI-01 是 SR2 系列第一个，可能在计划文档中已经登记了 ai_notes 的设计不变量。但 diff 中没有证据。我应该谨慎：报告为 WARN，建议确认 docs/invariants.md 已登记（如果无登记则需补）。不编造"没有登记"，而是说"diff 中未见登记变更，请确认"。
+
+### 安全问题再审视
+- SQL 注入：生产代码全部参数绑定。测试代码有拼接（常量），违反禁令但无实际注入风险。按宪法硬规则，测试代码也属于"一切语句"，应 flag。判级：BLOCKING？考虑到宪法"安全禁令（否定式，一条都不许碰）"，且"一切语句 db.prepare 预编译 + 参数绑定"，测试中的 `VALUES ('${id}', ...)` 是字符串拼接 SQL。虽然 id 是测试常量，但规则无豁免。这是违反硬规则。但也要考虑：测试夹具中 seedPaper/seedAnnotation 的 SQL 拼接在既有 tests 中是否已大量存在（先例）？如果既有测试都用 `db.prepare` 参数绑定，那这个新文件违反惯例。我不知道。审计应给出 BLOCKING（硬规则违反）。但再想想，测试代码不影响生产安全，这类静态审计通常给 WARN。但判级指南明确说"BLOCKING=违反硬规则"。宪法硬规则是最高优先级。所以 BLOCKING。不过，也许我该仔细看拼接是否真的有变量插值：`VALUES ('${id}','a.pdf','s-${id}','t','t')` —— 有 `${id}` 插值。是的，字符串拼接 SQL。违反。
+
+- 另一个点：seedAnnotation 中 `'0:0'` 作为 sort_key，'0' 作为 page，'[]' 作为 rects_json。如果 annotations 表有 NOT NULL 约束或 CHECK，这些值应该满足。测试通过说明满足。
+
+### 潜在 correctness 问题：listByPaper 的排序与 updateContent 的 updatedAt
+- 无。
+
+### 其他
+- `import type { AiNote, AiNoteInput, AiNoteRole }` 从 shared 模型导入。类型单一真相源 OK。
+- `AiNoteRow.role: string` 然后 `toNote` 强转 `row.role as AiNote['role']`。如果有非法 role 在 DB 中（DDL CHECK 挡住），OK。但如果未来 role 枚举扩展而 DDL 未同步（[locked-change] 应保证同步），可能运行时不一致。设计有接缝锚定，OK。
+- `question: row.question as AiNote['question']` 同理，但 DB 无 CHECK，风险更高。如果未来有人向 DB 写入非法 question（绕过 IPC），listByPaper 返回的对象在 TS 层面是合法枚举，但运行时不是。这会导致下游（corpus.assemble 按 question 分组）出现意外分支。设计裁决说 question 枚举扩展走 zod 层，v1 无消费者。作为防御，repo 可以在 toNote 时校验 question？但 repo 不校验 zod 的惯例。这算设计风险，NIT 或 WARN？我倾向 NIT：建议在 ai-note.ts 头注或 repo 头注明确"question 的 DB 完整性依赖 IPC 边界 zod 校验，repo 不设防"，或未来导入器必须过 zod。目前已声明"zod 是 IPC 边界惯例"和"aiNoteInputSchema 供未来 AI-07 导入器 IPC 边界消费"。OK，NIT。
+
+### 关于行数超标
+- diff 372 行，11 文件，未超。
+
+### 关于 manifest 的 sha256
+- 注意 manifest 中新增的 `src/main/db/migrations/003_ai_notes.sql` sha256: 41ccc316... 与 diff 中的新文件内容应该对应。这是 locks 机制，不能人工验证（没有文件内容 hash 工具），但 manifest 重生成是流程的一部分。OK。
+
+### 关于 migrate.test.ts 修改
+- 注意：migrate.test.ts 是受锁文件，修改了 appliedVersions。这属于"修改测试来适应新功能"，但这是必要的预期更新，不是放宽断言。同时断言 currentVersion = Math.max(...MIGRATIONS.map(m => m.version))，会自动适应，但 appliedVersions 硬编码 [1,2,3]。每次新迁移都要改这个测试，这是正常的。OK。
+
+### 关于工单状态
+- registry 中 SR2-AI-01 从 open 翻 done。简报说 verify 全绿。但宪法完成定义要求"工单在 tickets/registry.ts 翻状态"——done。OK。
+- 注意：工单工作流说"owner: 'weak'"的流程，owner 是 strong，不需要弱模型流程。OK。
+
+### 结论汇总
+
+findings:
+1. BLOCKING: 测试代码字符串拼接 SQL（ai_notes.repo.test.ts seedPaper/seedAnnotation 及 DELETE 语句），违反安全禁令"禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定"。即使输入是常量，也无豁免。建议改为 prepare + 参数绑定。
+2. WARN: 跨模块不变量登记——ai_notes 级联语义（paper CASCADE/annotation SET NULL）及 question 枚举完整性是否已登记 docs/invariants.md？diff 中未见 docs/invariants.md 变更。宪法要求"新增跨模块行为不登记本册视同未完成"。需确认或补登记。
+3. WARN 或 NIT: updateContent 测试断言 `updatedAt >= n.updatedAt` 与用例名"推进"语义不太一致（>= 允许相等）。不过这是实现允许多种。NIT 吧。
+4. NIT: 测试中重复断言 `expect(list).toHaveLength(1)` 两次。
+5. NIT: `ORDER BY created_at, id` 中 uuid v4 作为 tiebreaker 不保证同毫秒批插入的业务顺序。设计裁决接受，但可考虑插入序号。NIT。
+6. WARN: 级联依赖 foreign_keys=ON，但 connection.ts 不在 diff 中，无法确认生产连接开启。级联测试通过说明测试连接开启；需确认生产路径（migrate 执行时）开启。如果既有 annotations 外键已依赖该设置，此条可降为 NIT。我可以作为 WARN 给出，让人类确认。
+   - 等等，整个应用的既有表可能有外键（annotations.paper_id REFERENCES papers ON DELETE CASCADE？），如果生产没开 foreign_keys，既有功能也会坏。所以大概率 connection 已开启。用 NIT。
+7. BLOCKING 还是 WARN 关于测试修改？migrate.test.ts 修改是必要的，不违反测试纪律（没有放宽断言）。不需要 finding。但可以 NIT 提醒受锁文件修改已同步 manifest（其实没有必要，manifest diff 可见）。
+8. 潜在 issue：`ai_note.ts` 头注中提到 `'Q3/Q6/Q7 允许无锚篇级回答'`——这是一个业务规则，但 zod schema 中 annotationId 是 nullable 对任何 question 都允许，DDL 也没有 question 特定约束。因此 Q1 也可以无锚。设计裁决说 Q3/Q6/Q7 允许无锚，暗示其他 question 应该要求锚？但 schema 没有 enforce。不过 repo 不校验 zod，且 v1 无消费者。这是设计裁决的一部分（"question 无 CHECK"）。NIT：未来导入器应在应用层 enforce Q3/Q6/Q7 允许无锚的规则；当前 schema 未限制，需在 AI-07 工单中落实。
+9. 测试的 `role: 'third-read' as never` 传入非枚举值，toThrow 测试 DDL 拒绝。注意：repo.insert 不校验 role，直接绑定参数，DDL CHECK 抛错。测试验证了 DDL 层面。OK。
+10. 是否 range 蔓延？diff 372 行/11 文件，对于一个数据基座工单（迁移+repo+测试+接缝修正+registry+manifest）是合理的。无蔓延。
+
+现在决定 verdict：
+- 有 BLOCKING（测试 SQL 拼接）→ FAIL。
+- 等等，我需要再想想 BLOCKING 的合理性。审计判级标准："BLOCKING=违反硬规则/正确性缺陷/安全问题，必须回修"。测试代码的 SQL 拼接违反硬规则"禁止字符串拼接 SQL"。虽然无实际风险，但规则是绝对的。作为第一道独立审计，应该严格。所以我给 FAIL，一项 BLOCKING。
+
+但等一下——是否可能拼接受限？让我再读一遍：宪法安全禁令："禁止字符串拼接 SQL；一切语句 `db.prepare` 预编译 + 参数绑定；FTS 输入必须经 `escapeFtsQuery`"。这里"一切语句"是明确的。测试中的 `db.prepare(`INSERT ... VALUES ('${id}',...)`)` 是字符串拼接 SQL。是的，违反。BLOCKING。
+
+具体建议：将 seedPaper 改为：
+```ts
+db.prepare(`INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(id, 'a.pdf', `s-${id}`, 't', 't')
+```
+但注意 `s-${id}` 是值拼接进参数，不是 SQL 拼接，OK。
+seedAnnotation 同理。DELETE 语句改为 `db.prepare('DELETE FROM papers WHERE id = ?').run('p-1')`。
+
+第二个 BLOCKING 候选：docs/invariants.md 未见登记。宪法说"新增跨模块行为不登记本册视同未完成"。但我不确定 INV-11/INV-24 是否已覆盖。ai-note.ts 头注引用 INV-11 说"role 枚举真相=迁移 003 DDL CHECK"，说明 INV-11 已经存在并涵盖 role 双向锚定。INV-24 排序哲学。但**级联行为**（paper 删除→ai_notes 级联清空；annotation 删除→ai_notes.annotation_id SET NULL）是新的跨模块行为，diff 中未见对应登记。如果 docs/invariants.md 没有 ai_notes 级联条目，这就是另一个违约。但简报没有声称登记了不变量。我不能 100% 确定没有登记（可能在之前的 AI 模块规划中已登记），所以给 WARN 而不是 BLOCKING，要求确认。
+
+另外还要考虑：AI_NOTE_QUESTIONS 枚举在 shared 里，但 DDL 没有 CHECK，role 相反。设计裁决"question 无 CHECK"、"role 真相=DDL"。这导致一个不对称：role 的枚举真相在 DB，question 在应用层。如果未来有第二个消费者绕过 zod（比如 SQL 工具、未来导入器没有正确调用 zod），question 可以非法。这是设计接受的风险，并在头注声明。NIT 级别。
+
+还有一个值得 check：`createAiNotesRepo(db)` 中 `db.prepare` 在函数调用时预编译。如果表不存在（迁移未运行），prepare 会抛错。createRepos 在连接初始化后调用，migrate 应先运行。这是既有模式（其他 repo 一样）。OK。
+
+关于 `AiNoteInput` 的 model 字段 `z.string().min(1)`：模型标识必须非空。但如果未来 AI-07 导入时模型未知？设计是自由文本，D2b 可配，非空合理。OK。
+
+关于 uuid 作为 id：randomUUID() 生成 v4，OK。
+
+关于 `countByPaper` 返回 `(countStmt.get(paperId) as { n: number }).n`：better-sqlite3 返回 { n: 3 }，类型断言 OK。但如果 countStmt.get 返回 undefined？COUNT(*) 聚合总是返回一行，OK。
+
+关于 updateContent 的返回合并对象：注意 `{ ...toNote(row), contentMd, updatedAt: now }` 中 `row` 是 SELECT 时的快照。因为 better-sqlite3 同步，UPDATE 前没有并发修改，但 UPDATE 本身可能因为外键/约束失败（contentMd 无约束，updated_at 无约束，不会失败）。OK。
+
+关于行数：ai_notes.repo.ts 从 diff 看，原文件可能是 STUB（48 行头注 + 实现），现在加上实现后大约 170 行左右。<500。OK。
+
+关于测试文件行数 155 <250？宪法说"repo ≤300 行、组件 ≤250 行"——测试文件不算 repo/组件，且 155 <250。OK。
+
+现在整理 findings（按优先级）：
+
+1. BLOCKING — tests/unit/db/repos/ai_notes.repo.test.ts — seedPaper/seedAnnotation/DELETE 语句字符串拼接 SQL。证据：`INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('${id}','a.pdf','s-${id}','t','t')`。宪法：「禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定」。建议全部改为 prepared statement 参数绑定。
+
+2. WARN — src/main/db/migrations/003_ai_notes.sql / src/shared/models/ai-note.ts — 跨模块不变量（ai_notes 级联语义、question 应用边界）在 diff 中未见 docs/invariants.md 登记。宪法：「不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md…新增跨模块行为不登记本册视同未完成」。头注引用了 INV-11/INV-24 但未见新增/扩展登记 diff。建议确认 docs/invariants.md 有对应条目，无则补登记。
+
+3. WARN — src/main/db/repos/ai_notes.repo.ts — 级联行为依赖外键 PRAGMA，但 connection.ts 不在 diff，无法确认生产连接 `PRAGMA foreign_keys = ON`。测试用 createTestDb 已开启（级联用例通过）。建议确认生产 DB 连接开启外键，否则 CASCADE/SET NULL 静默失效。（如果既有连接已开，可径行关闭此条。）
+
+4. NIT — tests/unit/db/repos/ai_notes.repo.test.ts — 断言 `updated.updatedAt >= n.updatedAt` 与用例名「推进」语义不符（`>=` 允许相等）；建议在实现中保证严格递增或改断言为 `>` 并使用可控时钟（若允许同毫秒则保留 >= 并改用例名）。
+
+5. NIT — tests/unit/db/repos/ai_notes.repo.test.ts — 重复断言 `expect(list).toHaveLength(1)` 出现两次。
+
+6. NIT — src/main/db/repos/ai_notes.repo.ts — `ORDER BY created_at, id` 的 id tiebreaker 是随机 uuid，同毫秒批量插入时顺序不稳定。设计裁决引用 INV-24，可接受；但若下游装配依赖稳定序，建议改用单调序号/插入时间精度。
+
+7. NIT — src/shared/models/ai-note.ts — annotationId 对任何 question 均可空，但头注声明「Q3/Q6/Q7 允许无锚篇级回答」，暗示其他 question 应有锚。当前 schema/DDL 未 enforce，需在 AI-07 导入器应用层落实，避免悬空假设。
+
+我还应该检查一下有没有其他 BLOCKING：
+
+- 安全：SQL 注入生产代码无。路径穿越无。XSS 无。openExternal 无。nodeIntegration 无。
+- 正确性：无严重逻辑错误。
+- 契约与纪律：
+  - 测试纪律：「禁止修改 tests/**」——migrate.test.ts、enrich/import.service.test.ts 被修改。但这些是受锁文件且必要修改（预期更新/夹具补桩），简报声称携带 [locked-change]。不过审计只看到 diff，没有 commit 消息。简报里说"提交尾注将携带"。可以 NIT 或 WARN 提醒：受锁文件修改必须带 [locked-change] 尾注，且 locks manifest 已同步（diff 可见）。但这不是代码问题。我在 summary 提一下即可，或作为 NIT。
+  - 「每个测试必须能失败一次」——简报红证实录已说明。
+  - 「受锁 e2e spec 改动后必须全量 verify」——未涉及 e2e。
+  - 占位实现已删除：STUB 删除，OK。
+  - TODO/FIXME/placeholder：diff 无。但在 ai_notes.repo.ts 头注中可能有"占位实现已删除"？需要看 diff：diff 中删除的行是 `/** 工单骨架标记（实现单元替换为真实实现） */ export const AI_NOTES_REPO_STUB = 'SR2-AI-01'`。没有 TODO。OK。
+  - locks manifest 同步：6 个文件变更/新增与 manifest 对应。但要注意：manifest 中 `tests/unit/db/migrate.test.ts` 和 `tests/unit/services/enrich.service.test.ts`、`import.service.test.ts` 的 sha256 已更新，对应 diff 中的修改。OK。
+  - 类型单一真相源：ai-note.ts 在 shared，被 repo 和测试 import，OK。
+  - 方案切换：无。
+  - 文件行数：OK。
+  - 分层单向：migrate.ts 在 main/db 导入 migrations SQL，OK。repo 在 main/db/repos，OK。shared/models 无跨层。
+  - 重复 3 次抽函数：toNote 单点，OK。
+
+- 工单工作流：status 翻 done。注意宪法「人类翻 registry 状态」——弱模型流程要求"报告人类审查 git diff → 人类翻 registry 状态 → 提交"。但这里 registry 已经改为 done。如果按照弱模型流程，registry 翻状态应该由人类在审查后操作。但 owner 是 'strong'，不是弱模型，且简报说"registry：SR2-AI-01 open→done"。这可能违反工作流？工单工作流标题是"弱模型领单专用"，owner strong 不走该流程。AI 改自己工单状态是否合规？完成定义说"工单在 tickets/registry.ts 翻状态"，不限定谁翻。但弱模型流程明确"人类翻 registry 状态"。既然 owner strong 且改状态本身在 diff 中，这可能是一个小的流程分歧。实际上很多项目允许 AI 翻状态后人类审查。但宪法对 weak 模型明确人类翻。这里 owner 是 strong，适用普通流程。我没有足够证据说这是违规。NIT 不列。
+
+- 还有一个点：migrate.ts 中 MIGRATIONS 是 `readonly Migration[]`，version 3 的 sql 是 `aiNotesSql`（?raw import）。Vite ?raw 在 main 进程使用？这是既有模式（initSql 等），OK。
+
+- 关于 `listByRole` 中 `role: AiNoteRole` 参数直接绑定，OK。
+
+- 关于测试文件导入路径 `../../../../src/main/db/repos/ai_notes.repo` —— 从 tests/unit/db/repos/ 到 src 需要 4 级 ../? tests/unit/db/repos/ai_notes.repo.test.ts → up: repos→db→unit→tests? 让我算：file is at tests/unit/db/repos/ai_notes.repo.test.ts。`../../../../src/main/...`：第一../ 到 tests/unit/db，第二../ 到 tests/unit，第三../ 到 tests，第四../ 到 repo root？不对。repos → db (..)，db → unit (../..)，unit → tests (../../..)，tests → root (../../../..)。然后 src/main/... 是 root/src/main/...。所以 4 级正确。OK。
+
+- 测试中 `import { createTestDb } from '../../../utils/fixtures'` —— 从 repos → db (..)，db → unit (../..)，unit → tests (../../..)？然后 utils/fixtures 是 tests/utils/fixtures。tests/unit/db/repos → ../../../utils → tests/utils？repos→db (..)→unit (../..)→tests (../../..)→ utils/fixtures？：从 repos 目录 ../../../ 是 tests/（1:db, 2:unit, 3:tests），然后 utils/fixtures → tests/utils/fixtures。对，3 级。OK。
+
+- 测试中的 `guardedDescribe` 是既有工具，OK。
+
+现在考虑 verdict。有 BLOCKING → FAIL。但让我再权衡 BLOCKING 的严格性。如果我将测试 SQL 拼接判为 BLOCKING，可能导致整个 PR 打回。这是正确的吗？宪法说"安全禁令（否定式，一条都不许碰）"，且"禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定"。测试代码中的 SQL 是「一切语句」的一部分。没有任何豁免条款说"仅生产代码"。所以严格的审计应该 BLOCKING。即使输入是测试常量，规则被违反。而且修复很简单。
+
+另一个考虑：是否有什么东西可以证明既有测试也是这样的，从而表明项目约定俗成？我没有其他测试文件的 diff。但新代码违反宪法就是违反。作为第一道审计，应该严格。
+
+我还会考虑 docs/invariants.md 未登记是否为 BLOCKING。宪法说"新增跨模块行为不登记本册视同未完成"。ai_notes 级联是新增跨模块行为。如果 diff 中没有 docs/invariants.md 改动，可能确实未登记。但这可能是计划文档（ai-module-plan v1.1 §2.1）中已经规划的，不变量册可能在规划时已登记（比如 INV-11 是 role 枚举，INV-24 是排序）。但级联 SET NULL 是否已有 INV？不确定。我判 WARN，避免编造。
+
+更新：也许我应该把「docs/invariants.md 未登记」提到 BLOCKING？宪法明确说"未登记 = 未定义行为""新增跨模块行为不登记本册视同未完成"。但我不确定没有登记（也许登记在之前的提交）。diff 中没有出现 docs/invariants.md 的改动，这是一个事实。但「diff 中没有」不等于「文件中没有」——可能在之前的 SR2-AI-00 或 ADR-0015 提交中已登记。简报提到 INV-11 在 ai-note.ts 头注中被引用为「接缝锚定」，说明 INV-11 已存在。级联行为如果也在 ai-module-plan 的 INV 清单中，可能也已登记。因此 WARN 要求确认是合适的。
+
+关于「生产连接外键开关」：我确认一下 SQLite 中 foreign_keys 默认 OFF。如果 connection.ts 没有 PRAGMA foreign_keys = ON，那么迁移 003 的级联永远不会触发，且 annotations 表既有外键也可能未生效（那既有级联测试应该早就失败？）。既有 annotations.repo.test.ts 可能有级联测试，说明测试 DB 开启了。生产 connection 大概率也开了。所以这条 WARN 有点牵强。我可以保留为 NIT 或省略。但审计中确认连接设置是合理的。我保留为 WARN 但措辞为"请确认"。
+
+还有一点：`db.prepare` 在 `createAiNotesRepo` 中预编译了 insert/listByPaper/count 三个语句，但 `updateContent`、`deleteByPaper`、`listByRole` 每次调用时 `db.prepare`。这是性能问题（每次 prepare），其他 repo 可能也这样？一致性 OK。NIT 不列或列？这属于性能优化，不值得。省略。
+
+关于 `updateContent` 返回新对象但 DB 中其他列值可能与 SELECT 快照一致（同步），OK。
+
+最后 summary：总体设计清晰、契约执行良好（zod/DDL 双向锚定、级联双向测试、locks manifest 同步、verify 全绿），主要问题是测试夹具 SQL 拼接违反宪法安全禁令，需回修；其余为登记/确认类警告和风格建议。
+
+现在构造 JSON。
+
+要注意输出要求：只输出 JSON 对象，不要 markdown 围栏，不要多余文字。
+
+findings 数组排序按严重性：
+1. BLOCKING 测试 SQL 拼接。
+2. WARN invariants 登记确认。
+3. WARN foreign_keys 确认（或者 NIT）。我会保留 WARN。
+4. NIT updatedAt >= 语义。
+5. NIT 重复断言。
+6. NIT ORDER BY uuid tiebreaker。
+7. NIT Q3/Q6/Q7 无锚约束未 enforce。
+
+关于 line_hint，尽量具体：
+1. "seedPaper/seedAnnotation 及级联用例中的 DELETE 语句（约第 24-46 行）"
+2. "003_ai_notes.sql 头注 + ai-note.ts 头注 INV-11 引用；docs/invariants.md 无对应 diff"
+3. "003_ai_notes.sql CREATE TABLE 级联子句（第 18-19 行）"
+4. "updateContent 用例断言（约第 127 行 'updatedAt >= n.updatedAt'）"
+5. "第一个用例中重复的 expect(list).toHaveLength(1)"
+6. "listByPaperStmt ORDER BY created_at, id"
+7. "ai-note.ts AI_NOTE_QUESTIONS 或 schema annotationId nullable"
+
+evidence 用引号带原文。
+
+写 summary：两三句总体判断。比如："整体实现稳健：迁移 DDL、zod 契约、repo 六方法与既有仓库惯例一致，级联双向路径有真实外键测试覆盖，locks manifest 与受锁面同步。唯一阻塞项是测试夹具中的字符串拼接 SQL 直接违反宪法安全禁令一票否决项；另需确认跨模块不变量登记与生产外键开关，另有若干小风格建议。改完测试 SQL 后可通过。"
+
+现在检查是否遗漏任何 diff 中的内容：
+- locks/manifest.json：无误。
+- migrate.ts：无误。
+- 003 SQL：无误。
+- ai_notes.repo.ts：无误。
+- repos/index.ts：无误。
+- ai-note.ts：无误。
+- migrate.test.ts：无误。
+- ai_notes.repo.test.ts：无误（发现 SQL 拼接、重复断言、>=）。
+- enrich.service.test.ts：无误。
+- import.service.test.ts：无误。
+- registry.ts：无误。
+
+还有一点：测试中第一个用例 `expect(list).toHaveLength(1)` 重复，属于轻微。
+
+另外注意：`updateContent` 用例断言 `updated !== null && updated.updatedAt >= n.updatedAt`。如果 updated 是 null，`updated && ...` 返回 null，toBe(true) 失败。OK。
+
+等一下，还有一个潜在正确性问题：`insert` 实现中：
+```ts
+const note: AiNote = { ...input, id: randomUUID(), createdAt: now, updatedAt: now }
+insertStmt.run({ id: note.id, paperId: note.paperId, ... })
+```
+`input` 是 AiNoteInput 类型（不含 id/createdAt/updatedAt），扩展后是 AiNote。但 `question` 类型是 AiNoteQuestion，role 是 AiNoteRole。参数绑定用 `note.role` 等。OK。
+
+还有一个点：`aiNoteInputSchema` 没有 `id/createdAt/updatedAt`，但 `.strict()` 意味着 input 对象不能有多余字段。未来导入器传入的 JSON 若带这些字段会被 zod 拒绝。合理。
+
+还有：`AI_NOTE_QUESTIONS` 是 `readonly ['Q1', ...] as const`，`z.enum(AI_NOTE_QUESTIONS)` 接受 readonly tuple？zod v3 z.enum 需要 [string, ...string[]]，as const 数组在 zod 最新版可用（如果项目 zod 版本较新）。typecheck 通过说明 OK。
+
+关于 `AiNoteRow.annotation_id: string | null`，SQLite 中 SET NULL 后是 NULL，OK。
+
+现在，关于 BLOCKING 的另一质疑：宪法安全禁令原文「禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定」。测试代码中的 SQL 拼接，如果检查其他既有测试（annotations.repo.test.ts 等），可能也有类似。让我看 diff 中是否有证据……没有。但 seedAnnotation 这个函数在 ai_notes.repo.test.ts 中是复制自其他测试？它包含固定的插入列，可能在 annotations.repo.test.ts 已有相同模式。如果项目既有测试已普遍使用拼接，那么新测试只是遵循惯例，虽然惯例违反宪法。作为审计，仍然要 flag，但可以考虑严重性降为 WARN？不行。宪法是"safety 禁令（否定式，一条都不许碰）"，绝对。BLOCKING。
+
+我认为这是正确的。
+
+另外，我重新想一下「测试夹具 seedAnnotation 直插 SQL」——简报中设计裁决第4点说："测试夹具 seedAnnotation 直插 SQL：SET NULL 级联用例需真实外键关系，repo 工厂无 annotation 写入口（职责分离）"。这解释了为什么用直插 SQL，但没有解释为什么用字符串拼接而不是参数绑定。用参数绑定同样可以直插。所以拼接不是必要的。BLOCKING 成立。
+
+好，现在构建最终 JSON。确保 "verdict": "FAIL"。
+
+关于 summary，要避免冗长，两三句。
+
+最后输出 JSON。
+
+== content ==
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "seedPaper/seedAnnotation 及级联用例中的 DELETE 语句（约第 24-46 行）",
+      "issue": "测试夹具与 DELETE 语句使用字符串拼接 SQL，违反宪法安全禁令「禁止字符串拼接 SQL；一切语句 db.prepare 预编译 + 参数绑定」。该禁令是硬规则一票否决项，无生产/测试豁免。",
+      "evidence": "diff 中原句：`INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('${id}','a.pdf','s-${id}','t','t')` 以及 `DELETE FROM papers WHERE id = 'p-1'`",
+      "suggestion": "全部改用 prepared statement 参数绑定：`db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run(id, 'a.pdf', 's-'+id, 't', 't')`；SET NULL 用例的 DELETE 改为 `db.prepare('DELETE FROM annotations WHERE id = ?').run('a-2')`。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/db/migrations/003_ai_notes.sql / src/shared/models/ai-note.ts",
+      "line_hint": "003 SQL 头注级联声明与 ai-note.ts 接缝锚定（INV-11）",
+      "issue": "ai_notes 新表引入跨模块行为不变量（paper 删除 → CASCADE 清空；annotation 删除 → SET NULL 降级篇级；question 应用边界枚举），但 diff 中未见 docs/invariants.md 的登记变更。宪法要求「跨模块/跨时间的行为不变量一律登记 docs/invariants.md；新增跨模块行为不登记本册视同未完成」。",
+      "evidence": "宪法原文：「不变量登记：跨模块/跨时间的行为不变量一律登记 docs/invariants.md」「新增跨模块行为不登记本册视同未完成」；本次 diff 未包含 docs/invariants.md 改动。",
+      "suggestion": "确认 docs/invariants.md 已登记 ai_notes 的级联语义与 question 应用边界；若无，补登记（声明处 + 强制方式 + 锚定状态）并随本提交携带 [locked-change] 尾注。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/db/migrations/003_ai_notes.sql",
+      "line_hint": "CREATE TABLE 中外键级联子句（约第 18-19 行）",
+      "issue": "CASCADE/SET NULL 级联依赖 SQLite 连接级 PRAGMA foreign_keys=ON，但本次 diff 未触及 src/main/db/connection.ts，无法确认生产连接已开启该开关。测试通过只能证明 createTestDb 开启了。",
+      "evidence": "diff 中 003 SQL：`paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE`、`annotation_id TEXT REFERENCES annotations(id) ON DELETE SET NULL`；SQLite 默认 foreign_keys=OFF。",
+      "suggestion": "确认生产连接初始化处执行了 `PRAGMA foreign_keys = ON`（若既有 annotations 外键已依赖该开关则本项可关闭）；建议在连接层加一行注释锚定该不变量。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "updateContent 用例断言（约第 127 行）",
+      "issue": "用例名宣称「updatedAt 推进」，但断言用 `updated.updatedAt >= n.updatedAt`，`>=` 允许相等（同一毫秒时钟粒度），与「推进」语义不符。",
+      "evidence": "diff 原句：`expect(updated !== null && updated.updatedAt >= n.updatedAt).toBe(true)`",
+      "suggestion": "要么改断言为 `>` 并使用可控时钟（vi.useFakeTimers + setSystemTime 保证严格递增），要么将用例名改为「updatedAt 不倒退」以匹配 `>=` 语义。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/ai_notes.repo.test.ts",
+      "line_hint": "第一个用例中两次 `expect(list).toHaveLength(1)`",
+      "issue": "同一断言重复出现两次，无额外验证价值。",
+      "evidence": "diff 原句：`expect(list).toHaveLength(1)` 连续出现两行。",
+      "suggestion": "删除其中一行重复断言。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/db/repos/ai_notes.repo.ts",
+      "line_hint": "listByPaperStmt / listByRole 的 `ORDER BY created_at, id`",
+      "issue": "created_at 为毫秒 ISO 字符串，id 为随机 uuid v4（非单调）；同毫秒批量插入多条时，稳定基础序实为随机序。若未来 AI-07 批量导入产生同毫秒多行，下游装配层可能拿到不稳定顺序。",
+      "evidence": "diff 原句：`SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id`；insert 中 `id: randomUUID()`。",
+      "suggestion": "若装配层需要严格插入序，建议增加自增序列列（如 INTEGER PRIMARY KEY AUTOINCREMENT 的 seq）作为 tiebreaker，或将 created_at 粒度提升到微秒；若维持现状，请在 docs/invariants.md 注明「同毫秒数组内顺序不确定」。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/models/ai-note.ts",
+      "line_hint": "aiNoteInputSchema.annotationId 可空 + 文件头注「Q3/Q6/Q7 允许无锚篇级回答」",
+      "issue": "头注暗示 Q1/Q2/Q4/Q5 等 question 应要求锚定（annotationId 非空），但 schema 与 DDL 对所有 question 都允许 annotationId 为空。当前 v1 无生产者可接受，但未来 AI-07 导入器若经 IPC 边界 zod 校验，该业务规则不会触发，可能产生语义意外的篇级数据。",
+      "evidence": "diff 原句：`annotationId: z.string().min(1).nullable()` 及头注「Q3/Q6/Q7 允许无锚篇级回答」。",
+      "suggestion": "在 ai-note.ts 头注或 future AI-07 工单契约中显式声明「Q1/Q2/Q4/Q5 若有锚要求，由导入器应用层强制校验，zod 不表达」；或在 AI-07 边界加条件 zod refine。当前不阻塞。"
+    }
+  ],
+  "summary": "整体设计稳健：迁移 003、zod 契约与 repo 六方法同既有仓库惯例一致，级联双向路径有真实外键测试覆盖，locks manifest 与受锁面同步，verify 全绿可复现。阻塞项是测试夹具中的字符串拼接 SQL 直接违反宪法安全禁令一票否决项（即使输入为常量也无豁免），必须回修为参数绑定；另需人类确认跨模块不变量登记与生产连接外键开关，以及若干小风格建议。"
+}

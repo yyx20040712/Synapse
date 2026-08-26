@@ -1,0 +1,71 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/main/services/export_/interface-template.ts",
+      "line_hint": "INTERFACE_MD 模板内 `corpus/<paperId>.md` / `anno-<annotationId>.png`",
+      "issue": "模板字符串中 `${paperId}`、`${annotationId}` 未转义，模块加载即触发 ReferenceError（typecheck 也会报 TS2304），五件套导出链路不可用。",
+      "evidence": "diff 中 `export const INTERFACE_MD = `# ...` 内部出现 `- \\`corpus/<paperId>.md\\`...`、`- \\`figures/<paperId>/anno-<annotationId>.png\\`...`，这些 `${...}` 会被当作模板插值。",
+      "suggestion": "改为 `\\${paperId}`、`\\${annotationId}`，或用普通字符串拼接/数组 join；并加断言确保 INTERFACE.md 输出包含字面量 `${paperId}`/`${annotationId}`。"
+    },
+    {
+      "severity": "BLOCKING",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "corpusItem figure 分支：`name = anno-${req.annotationId ?? 'unknown'}.png` + `join(figDir, name)` + `writeFile`",
+      "issue": "annotationId 来自 renderer IPC 载荷，未做字符集/路径段校验即拼入文件名；含 `../` 时可通过 path.join 越出 figures/<paperId> 甚至导出目录，构成路径穿越写文件。",
+      "evidence": "diff: `const name = req.figure === 'anno' ? \\`anno-${req.annotationId ?? 'unknown'}.png\\` : \\`page-${req.page}.png\\`; await writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))`",
+      "suggestion": "service 侧对 annotationId 做 allowlist 校验（如 `^[A-Za-z0-9_-]+$`），或与当前论文已知 annotation id 集合比对后再拼路径。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "preparing 文件存在性判定：`await readFile(managedPath).catch(...)`",
+      "issue": "用 readFile 整个文件来探测存在性，会把大 PDF 全量读入内存再丢弃，导出准备阶段性能/内存开销大。",
+      "evidence": "diff: `const managedPath = deps.fileStore.resolveManagedPath(detail.fileName); let fileExists = true; await readFile(managedPath).catch(() => { fileExists = false; })`",
+      "suggestion": "给 FileStore 增加 stat/open 判定，或直接用 `open(managedPath, 'r')` 后 close，避免读取文件内容。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "failSession：`session = null` 先于 `await rm(MANIFEST_TMP)`",
+      "issue": "失败清理期间已释放单飞锁且异步删除 manifest.tmp；若用户立刻重跑同一目录，新会话 finalizing 写入的 manifest.tmp 可能被旧会话未完成的 rm 删除，导致新会话误失败。",
+      "evidence": "diff: `async function failSession(s, message) { session = null; await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(...)`",
+      "suggestion": "先完成 tmp 清理再释放 session，或使用含 sessionId 的唯一 tmp 文件名并清理旧名，确保新旧会话无交叉删除。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/main/services/export_/corpus.export.service.ts",
+      "line_hint": "`const active = created as unknown as ActiveSession`",
+      "issue": "用 `as unknown as` 绕过类型系统，可读性差；实际可在 Promise executor 内给非空局部变量赋值。",
+      "evidence": "diff: `let created: ActiveSession | null = null; const promise = new Promise<CorpusSessionRes>((resolve, reject) => { created = {...} }); const active = created as unknown as ActiveSession`",
+      "suggestion": "改为 `let active: ActiveSession; new Promise<CorpusSessionRes>((resolve, reject) => { active = {...}; })`，减少双重断言。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "corpusSessionReqSchema 上方注释",
+      "issue": "注释称“目录…service 内选”，实际目录选择在 main/ipc 层，service 只接收已选目录，口径不一致。",
+      "evidence": "diff: `// 会话发起：paperIds 缺省=全库；目录经 main 侧系统对话框（INV-07）service 内选`；而 ipc/export_.ts 中 `const dir = await deps.dialogs.pickFolder()`",
+      "suggestion": "改为“对话框在 ipc 层，service 接收已选目录”。"
+    }
+  ],
+  "summary": "实现主体与状态机/测试设计基本对齐，但存在两处 BLOCKING：INTERFACE_MD 模板未转义 `${...}` 会导致模块加载/类型检查失败，以及 annotationId 未清洗拼路径的路径穿越风险；另有文件存在性探测性能与失败清理竞态隐患需加固。",
+  "_meta": {
+    "model": "deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 22193,
+      "completion_tokens": 28313,
+      "total_tokens": 50506,
+      "prompt_tokens_details": {
+        "cached_tokens": 3200
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 26994
+      },
+      "prompt_cache_hit_tokens": 3200,
+      "prompt_cache_miss_tokens": 18993
+    },
+    "finish_reason": "stop"
+  }
+}
