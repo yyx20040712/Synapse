@@ -2,6 +2,9 @@
  * queue.mjs 的 TS 消费面声明（AI-05——.mjs 本体零依赖纯 JS，类型契约在此；
  * 与应用侧 src/shared 无 import 关系，字段形状=manifest.json 产物契约的镜像
  * 消费，真相源=ADR-0011 v1.1 五件套契约）。
+ * companion.mjs（SR2-AI-06 会话壳）的类型面=邻接 companion.d.mts（TS 邻接
+ * 声明按模块名解析，本文件仅服务 queue.mjs 导入——票面「queue.d.mts 增
+ * companion 类型面」的技术修正，自裁申报记录）。
  */
 
 export const PROGRESS_SCHEMA_VERSION: number

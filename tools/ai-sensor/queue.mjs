@@ -17,7 +17,8 @@
  *   重跑）；导出会话中断=无 manifest=工具不激活，应用侧重跑=清空重建全量
  *   （INV-18——两层断点互不相干）
  * - progress.json schema：{ schemaVersion, items: [{ paperId, status:
- *   'pending'|'done', outputs: string[]（篇级产物相对路径）}] }
+ *   'pending'|'done', outputs: string[]（信息态记录，路径基不约定——companion
+ *   交付落协议根绝对路径；queue CLI 手工流历史相对路径同容）}] }
  *
  * ── 接口层 ──
  * - export function diffQueue(manifest, progress): QueuePlan
@@ -157,7 +158,8 @@ export async function planSession(dir) {
   return { active: true, manifest, progress, plan: diffQueue(manifest, progress) }
 }
 
-/** 标记一篇完成（先落盘产物再调用——outputs=篇级产物相对路径清单） */
+/** 标记一篇完成（先落盘产物再调用——outputs=信息态记录，路径基不约定：
+ *  companion 交付落协议根绝对路径；queue CLI 手工流历史相对路径同容） */
 export async function markDone(dir, paperId, outputs) {
   const manifest = await loadManifest(dir)
   if (manifest === undefined) throw new Error('manifest.json 不存在——无法标记完成')

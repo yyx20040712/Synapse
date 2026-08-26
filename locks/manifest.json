@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-26T00:50:44.3066365Z",
+    "generatedAt":  "2026-08-26T23:44:50.9829073Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "d8b853c4a7c854cc242b50204aee4b8ac80926bca23baad645e1e03e0824c07a"
+                      "sha256":  "16b43c23db1486fcf4207db2686bbbe2902bad0affd0128005f883141aa4c51c"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "0c75a734428f5199d0edd6841f1f7ab23cd6f54b0af36ed9bf67cd20c151cc85"
+                      "sha256":  "8040c24c6c6b10756475e12dd217fdb0c071c75a6dc3aa01a5671bebe2ae1001"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -330,6 +330,10 @@
                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
                   },
                   {
+                      "path":  "tests/unit/services/ai-sensor.service.test.ts",
+                      "sha256":  "8e37391174da77595ad0a93090d8de8a64b8d07a6b6259fea0d0cd144e323220"
+                  },
+                  {
                       "path":  "tests/unit/services/bibtex.serializer.test.ts",
                       "sha256":  "8a47804aed6632829ff40345a2974e3efe7e1fd7e16d7223f8960c74ae91aac1"
                   },
@@ -396,6 +400,10 @@
                   {
                       "path":  "tests/unit/shared/annotation-order.test.ts",
                       "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
+                  },
+                  {
+                      "path":  "tests/unit/tools/companion.test.ts",
+                      "sha256":  "e1692e6f4c22fa41b353213665b06f158daf7fa1d0f0afba067112191d15d0ab"
                   },
                   {
                       "path":  "tests/unit/tools/queue.test.ts",

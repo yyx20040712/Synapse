@@ -1,0 +1,354 @@
+================================================================================
+SR2-AI-06 伴随进程文件协议 —— 门一对抗式深审审计档（实现 diff 审查）
+================================================================================
+- 日期：2026-08-27
+- 审计者：门一对抗式深审子代理（最大恶意立场）
+- 对象：实现 diff（15 文件，BASE=1629069，净增 1489/删 18——git diff --stat 复核一致）
+- 输入：/tmp/ai06-diff.txt 全文逐行 + 票面五层规约终态（ai-sensor.service.ts:1-113）
+  + 实现者报告（ai06-impl.report.md 160 行）+ 三份证据日志 + ADR-0015 全文（79 行）
+  + queue.mjs 全文 + api-surface.test.ts 全文 + SKILL.md 终态 + locks/manifest.json
+- 铁律遵守：只读审查，本档为唯一写产物；未跑 npm/test/build（证据日志已在）
+
+── 开工记录：技能清点（宪法会话开工纪律）──────────────────────────────────
+- code-review-excellence：用（本任务核心=对抗式代码审查）
+- javascript-testing-patterns：用（C 项评估测试质量/红证形态/断言面）
+- verification-before-completion：用（完成前逐项核对工单 A~E 与证据链）
+- security-and-hardening：部分用（B 项安全禁令对照，以 AGENTS.md 否定式清单为准）
+- test-driven-development / systematic-debugging / subagent-driven-development：不用
+  （只读审查，禁改代码禁跑测试；红绿证据日志已在，无调试面）
+- 其余领域技能（airflow/dbt/前端/git-workflow 等）：不用（与 Electron+TS 本地
+  文件协议单元无任务相关面）
+配置自查：审计者=GLM-5.3；无再派发。
+
+── 主控预裁两项复核（不推翻，仅记录机器事实）────────────────────────────
+- 预裁#1（export_ 域归属）：复核 tests/contracts/api-surface.test.ts:37-47——
+  ApiHandlers 穷举字面量硬编码 9 域（library/reader/notes/tags/import_/enrich/
+  export_/settings/system），新增域键必使该受锁测试 typecheck 红；export_ 域内
+  加通道不触发（unimplementedObject 泛化每方法）。自裁#1 依据成立，维持。
+  AI-02 corpusItem 同型（api-surface.ts:55 附近 diff 上下文实证）。
+- 预裁#2（测试不经 guardedDescribe）：本单元内安全——证据链完整（red.log 12
+  用例+套件收集失败 exit=1；green.log 20/20；verify.log 452/452 exit=0）；
+  always-active 使 20 用例进入终局 verify 计数=回归面在场；断言面具体（精确
+  jobId 串/文件列表全等/键序数组/布尔判定/路径含 resolve()），恒真可能性低。
+  模式级偏离（K3 结构性缺位）归用户裁决，主控已列，本档不重复裁。
+
+================================================================================
+A. 票面符合度（五层规约逐条 vs diff）
+================================================================================
+[N] ai06-1：五层规约符合度总体成立——逐项核对清单（无缺陷，登记核对面）。
+  证据与结论：
+  - 接口五方法签名：AiSensorService 五方法（requestRead/readStatus/hasPendingJob/
+    productExists/archivedExists）与票面 55-62 行逐字对应（票面简写无 Promise 标注，
+    实现 async 返回 Promise——异步实现的必然形态，非偏离）。
+  - SensorStatus 形状：schemas.ts sensorStatusSchema 七字段（state/currentPaper/
+    role/updatedAt/heartbeatAt/running）+ .strict() + aiSensorStatusResSchema
+    .nullable()=票面 63-65 行+N06-4 null 语义一致（diff 554-568 行）。
+  - HEARTBEAT_FRESH_MS=10*60*1000 落 service 导出常量（diff 283 行），票面 19 行
+    「10min tunable 常量」一致；companion 不判新鲜度（自裁#9）与票面「判活单源在
+    应用侧」一致。
+  - 双目录 CLI：companion.mjs `<语料目录> <协议目录>`+USAGE 三命令形态（diff
+    1609-1614）=票面 78-82 行字面。
+  - SKILL.md 平台路径表：Windows %APPDATA%\synapse-remake\ai-sensor / macOS
+    ~/Library/Application Support/ / Linux ~/.config/ 三行（diff 1213-1217）=票面
+    74 行「平台惯例路径文档」落点。
+  - 状态机表+跨格序列①~④用例化：service.test 四条独立用例（跨格序列①~④）逐条
+    对应票面 44-47 行；**⑤（同篇重复写 job 幂等）也有用例**——「幂等⑤：同篇重复
+    写 job=返回既有 jobId 不写第二个文件」（diff 697-713），工单问「⑤呢」的答案=
+    ⑤已用例化（测试第 2 条），INV-26 登记文「幂等⑤/…/跨格序列①~④」分列与此一致。
+  - failed 消解不变量双面落地：companion 实现——deliver 顺序=①normalizeSegments
+    校验②writeAtomic 产物③移除 job④markDone⑤刷心跳（diff 1566-1604，头注
+    1566-1569 明文），移除严格在产物落盘之后；测试面——三条失败路径用例（question
+    非法/JSON 损坏+零段）断言 exit 1+job 保留+产物不落（diff 1075-1107）。
+  - 原子写 tmp+rename+首写 mkdir recursive：service 与 companion 两侧 writeAtomic
+    各自 mkdir（diff 340-345/1461-1467）=票面 51-53 行「两侧各自保证 N06-6」。
+  - 「queue.d.mts 增 companion 类型面」→companion.d.mts：技术修正成立（自裁#3
+    复核：TS 邻接声明按模块名解析，queue.d.mts 仅服务 queue.mjs 导入——机制属实；
+    queue.d.mts 头注指针已落 diff 1699-1701）。
+  - 交付面三文件「延展」走零改动自动覆盖路线：机制核实为真（见 ai06-10 条）。
+  建议修法：无（符合）。
+
+[N] ai06-2：应用侧「零常驻/无定时器」保持——service 无 setInterval/setTimeout，
+  状态读取=按需 IPC（aiStatus 通道）✓；应用永不 spawn（INV-21）——全部 diff 无
+  child_process 于 src/main（spawn 仅存在于测试探针 execFile，合法消费面）。
+  证据：grep 佐证+diff 全文。建议修法：无。
+
+================================================================================
+B. 宪法红线
+================================================================================
+[N] ai06-3：分层单向+零 db 触碰成立。ipc/export_.ts 两委托行（diff 258-259，纯
+  委托零逻辑）→ services/export_ 交并 AiSensorService（services/index.ts diff
+  508-519）→ fs/promises 直读协议目录；service import 面=node:crypto/node:fs/
+  node:path/shared 类型（diff 272-275），零 sqlite/repo/db 触碰——「写 DB 唯一归
+  07 导入器」票面架构层保持。renderer 零改动（类型经 PreloadApi 自动延展）。
+  建议修法：无。
+
+[N] ai06-4：文件行数/占位符/依赖/编码全绿。实数复核（wc -l）：service=318、
+  companion.mjs=348、companion.d.mts=77、queue.d.mts=73、service.test=327、
+  companion.test=276、SKILL.md=78——全部 ≤500，与报告 §2 数字一致（报告称测试
+  327 与 wc 一致；diff hunk 头 328=末行无换行计数差，见 ai06-9）。TODO/FIXME/
+  placeholder 六新文件 grep 零匹配。package.json/lockfile 不在 15 文件改动面
+  （git status 核对）=零新依赖 ✓（service 用 node:crypto randomUUID 零依赖）。
+  中文 UTF-8 全部可读 ✓。安全禁令：无 eval/newFunction/出网/openExternal；
+  safeId 双侧落点（service assertSafeId diff 319-323 + companion SAFE_ID diff
+  1407-1408，正则同串 [A-Za-z0-9_-]+，四处入口全覆盖含 productExists/
+  archivedExists/deliver）。建议修法：无。
+
+[N] ai06-5：原子写形态与先例一致。tmp 文件=`${path}.tmp` 与目标同目录（同卷
+  rename 语义无跨卷陷阱）；Windows 下 Node fs.rename 用 MoveFileExW
+  MOVEFILE_REPLACE_EXISTING=覆盖语义成立（重交付/心跳覆盖路径依赖此）；
+  corpus.export.service.ts 先例=manifest.tmp.json 同目录+rename（corpus.export.
+  service.ts:179/208-217 实读核对）——同型 ✓。建议修法：无。
+
+[W] ai06-6：接缝声明互斥未上报——queue.mjs 对 outputs 语义的声明（头注+CLI 用法
+  =「篇级产物**相对路径**」，queue.mjs:20「outputs: string[]（篇级产物相对路径）」
+  与 :182 用法串「[--done <paperId> <产物相对路径...>]」）vs companion deliver 传
+  **绝对路径** markDone（companion.mjs diff 1599-1600「outputs=产物绝对路径」）。
+  运行时无破坏（复核 queue.mjs:160-175：markDone 对 outputs 只经 applyDone 原样
+  存入 progress.json，零路径解析/拼接逻辑；queue.test.ts 断言只锁覆盖幂等不锁
+  绝对/相对——故 452 绿不证伪此冲突），自裁#5 的绝对路径理由（免歧义）本身
+  合理。但宪法「接缝归责」要求：发现 A/B 两处声明互斥即停下报告裁决——自裁#5
+  申报了自身决定却未申报与 B 侧（queue.mjs 文档契约）的互斥，protocol 文档面
+  现在两处口径漂移。
+  证据：queue.mjs:20/182 vs companion.mjs deliver（diff 1596-1602）+报告自裁#5。
+  建议修法：主控补一裁决（绝对路径为准）——随 AI-07 或工具侧任意后续单修订
+  queue.mjs 头注/用法串一行（queue.mjs 本体行为零改动，纯注释），或在交接书
+  登记「outputs 语义=绝对路径（AI-06 裁决）」防 07 实现者按旧注释误解。
+
+================================================================================
+C. 代码与测试质量
+================================================================================
+[N] ai06-7：三态分离真两路。readStatus：ENOENT→null（N06-4）/JSON.parse 失败→
+  上抛含路径/形态校验（parseStatus 五字段+heartbeatAt Date.parse 有限性）→
+  上抛；损坏≠missing 在测试双形态用例锁死（缺字段/非法日期串，diff 737-761）。
+  job 扫描：应用侧损坏上抛（requestRead/hasPendingJob 同报，diff 777-790 断言
+  两入口）vs 工具侧 stderr 报告不阻塞（listPendingJobs corrupt 数组）——两侧
+  策略差异在自裁#11 明文申报且理由成立（应用要可见失败/工具要循环可用性，
+  job 两策略下均保留）。幂等：requestRead 同篇⑤+companion 重交付覆盖（diff
+  1148-1165 用例）双面在案。建议修法：无。
+
+[N] ai06-8：deliver 时序 vs INV-26 红线——成立。顺序字面=校验→原子写→移除 job
+  →markDone→刷心跳（companion.mjs diff 1570-1604）；「移除 job 以产物落盘为
+  前提」满足（移除点 1589-1594 在 writeAtomic 1586 之后）；三条失败路径测试
+  断言「job 保留+产物不落」成对出现（INV-26 ①的探针级锚定真实）。§7.4 markDone
+  后置风险评述成立：markDone 失败时 exit 1 但产物已落+job 已移——app 观测=done
+  （非瞬态③排除形态：产物已落所以 INV-26 不破）；重试 deliver 幂等自愈（无
+  job 也可交付+覆盖），queue 全库流重读=幂等覆盖无害——评述与代码行为一致。
+  建议修法：无（见 ai06-12 补充第⑤步同类）。
+
+[W] ai06-9：红证形态弱——12 条 service 用例在红证时全部死于同一构造点
+  （makeHarness:34 `createAiSensorService is not a function`，red.log 逐条失败
+  信息均为该 TypeError），断言级红未单独证明：每条用例的断言体在红证时从未
+  执行，「每个测试必须能失败一次」以最弱形态满足（证明测试依赖被测物，未证
+  明每条断言可红）；companion 套件红=模块加载失败（套件级非用例级）。缓解：
+  报告 §3 如实申报该形态未谎报；该形态是「先写测试零实现（stub 缺导出）」
+  合规 TDD 起点的必然结果；green 后断言面具体（精确 jobId 串/文件列表全等/
+  键序/边界 -1ms）恒真风险低。仍记 W：宪法测试纪律的断言面证据在本单不完整。
+  证据：ai06-red.log（12×同一 TypeError+1 套件收集失败，exit=1）。
+  建议修法：主控抽查一条断言变异红证（如临时改 HEARTBEAT_FRESH_MS 边界断言
+  →红→还原，用文件备份法禁 git checkout），或接受现状并在下批单 TDD 分步
+  实现使断言级红可见。另：service.test 末尾缺换行符（xxd 实证 `})` 后无
+  0a，diff 906-907 `\ No newline at end of file`）——风格微瑕 lint 未拦，
+  下次触碰补上。
+
+[N] ai06-10：fs 夹具与真子进程核实——通过。两测试文件 makeHarness/makeFixture
+  均 mkdtemp+dispose rm recursive force（Windows 句柄：execFile await 完成=子
+  进程已退出句柄已释，再 readFile 无占用窗口）；companion 探针逐命令真子进程
+  （execFile(process.execPath, [COMPANION,...]) 三次独立 cli() 调用=拾取/beat/
+  deliver 各一进程，报告「逐命令真子进程」属实）；invokedAsScript 守卫
+  （fileURLToPath===resolve(argv[1])）使 vitest import 不触发 main、CLI 触发
+  ——与 queue.mjs 同型，设计正确；超时 30s/60s 双层合理。normalizeSegments
+  纯函数面 9 断言（未知字段/缺字段/role 枚举/anchor_page 1.5/0/非整/空 model/
+  空白 content_md/非数组）覆盖扎实。建议修法：无。
+
+================================================================================
+D. 报告诚实性（13 自裁+5 留审计逐条）
+================================================================================
+[N] ai06-11：13 项自裁逐条核对——12 真 1 处漏报（漏报单独记 ai06-13）。
+  #1 export_ 域：机器事实复核成立（见预裁#1 段）；副作用声明（AI-08 调用面=
+  window.api.export_.requestAiRead/aiStatus）与机制一致（client.ts:29
+  `export const api = window.api`+PreloadApi 推导 api-surface.ts:118）。
+  #2 直接激活：头注双测试文件声明在案，本单元内安全（见预裁#2 段）。
+  #3 companion.d.mts：TS 邻接声明机制属实（queue.d.mts 只服务 queue.mjs），
+  指针头注已落。
+  #4 子命令形态：实现与申报一致。
+  #5 markDone 绝对路径：queue.mjs 本体语义未被破坏（outputs 只存储不解析，
+  queue.test 不锁路径形态）；但接缝声明互斥漏报→记 ai06-6。
+  #6 deliver 不要求 pending job：实现（deliver 不查 job 只按 paperId 全清）+
+  用例（全库流，diff 1148）一致。
+  #7 零段/空白/空 model 拒绝：normalizeSegments+deliver 零段双层，用例锁死。
+  #8 AI_SENSOR_DIR_NAME 落 service 导出：constants.ts 受锁属实（manifest:77
+  在册）且不在授权面——自辩成立。
+  #9 HEARTBEAT_FRESH_MS 单源：companion 零新鲜度逻辑（grep 佐证）。
+  #10 safeId 双侧：双侧同正则四入口（见 ai06-4）。
+  #11 损坏策略两侧差异：声明与实现一致（见 ai06-7）。
+  #12 INV-26 入册：终态一行（invariants.md INV-26 grep=1），三联表述可锚定
+  （①移除前提+瞬态排除②判活单源+10min+不双写+不按 state 分支③原子写+mkdir
+  幂等+两侧各自保证），与票面 failed 消解声明逐句对应，锚定面（单测+探针级，
+  e2e 随 08/10）留口合理。
+  #13 见 ai06-13。
+  建议修法：无。
+
+[N] ai06-12：留审计 5 项评述——4 项成立 1 项补强。§7.1（两项结构性自裁）=
+  本档已专项复核；§7.2（AI-07 域归属预告）——复核属实（import_.ts:30 硬标注
+  `ApiHandlers['import_']` 实证）；§7.3（rename 原子性观测面）——正确（同目录
+  rename 不会读到半个文件，应用只读无共享写冲突）；§7.4（markDone 后置）=
+  成立（见 ai06-8）但**漏了同类第⑤步**：writeStatusProtocol 失败（如协议目录
+  被外部删）时同样 exit 1 且产物+job 已终局——影响小于 markDone（心跳仅观测
+  辅助、deliver 可重试幂等自愈），建议 AI-08 交接时把第⑤步并入 §7.4 同款
+  「INV-26 只约束 job/产物相对序」声明；§7.5（manifest CRLF）——diff 首行
+  warning 佐证属实，locks:check 按工作区字节对账+gitattributes 归一，与基线
+  同机制无新风险。
+  零改动申明（register/preload/client）：三机制逐一实读核实为真——register.ts
+  `for (const {domain,method,channel} of allChannels())` 动态注册（:46-48）；
+  preload/index.ts `Object.entries(API_SURFACE)` 动态 buildApi（:12-14）；
+  client.ts `export const api = window.api`+PreloadApi 自动延展（:29）。「延展
+  由既有机制自动覆盖」申明诚实，报告已标注「留审计确认」。
+  locks 流程：manifest 实数 112 条（grep -c 核对）=旧 110+两新测试路径（diff
+  43-46/54-57 两条目在册）+api-surface/schemas 两条 sha 更新——§5 流程自洽
+  （红证时测试未纳管→unlock→批内改→generate 112→apply），verify 含 locks:check
+  通过（exit=0）。[locked-change] 尾注责任移交主控已声明。
+  建议修法：无（§7.4 补强项见上）。
+
+[W] ai06-13：自裁#13 漏报——SKILL.md 不止删除「corpus-ai/<paperId>/ 分角色
+  md」工作流，还删除了 **synthesize（库级收尾）工作流步骤**（旧版三读第 4 子行
+  「synthesize（库级收尾）：四类核心贡献枚举+时间线——prompts/synthesize.md」
+  被删，新版 SKILL.md grep synthesize 零匹配；diff 1228 行删除线实证），而
+  tools/ai-sensor/prompts/synthesize.md 文件仍在（实存核对）——该文件现为无
+  文档入口的孤儿指引，库级 synthesize 工作流从工具文档面静默消失。依据面：
+  ADR-0015 全文无 synthesize 字样（79 行 grep 核对）、AI-06 票面亦未授权删除
+  该步骤（票面「SKILL.md 工作循环节整体改写」可强辩涵盖，但 synthesize 是库级
+  面非篇级产物收口面——与「分角色 md→行式 JSON」是两个正交的删减）；role
+  枚举（DDL/AI-01）无 synthesize 属实，篇级交付面排除 synthesize 正确，但
+  库级收尾步骤是否保留文档入口是独立裁决点（负面清单「核心 idea 时间树不在
+  不做列」暗示库级梳理是远期原料）。
+  证据：diff 1228（删除行）+tools/ai-sensor/prompts/ 目录实存 synthesize.md
+  +SKILL.md 终态 grep 零匹配+ADR-0015 grep 零匹配。
+  建议修法：主控裁决二选一——(a) 保留库级工作流=SKILL.md 补一行「库级收尾
+  （全库三读完成后）：prompts/synthesize.md 驱动，产物不入 companion 交付面
+  （另行人工整理）」；(b) 确认 v1 收口=篇级三读=删 prompts/synthesize.md
+  （死代码即删纪律）或头注注明保留理由。均随 [locked-change] 无涉（非受锁
+  文件），可并入 AI-07 开单前清理。
+
+================================================================================
+E. 接缝与后续单（只评估不开单）
+================================================================================
+[N] ai06-14：AI-08 消费面就绪——requestAiRead/aiStatus 经 export_ 域到达
+  window.api（预裁#1 机制链）；SensorStatus.running 单源输出+null 语义
+  （.nullable() 契约化）可直接驱动 08 六态状态行；副作用声明已在报告自裁#1
+  （AI-08 接线知悉点），交接书已有指针（主控任务书 §6 含 08 消费面）——无需
+  补动作。建议修法：无。
+
+[N] ai06-15：AI-07 域归属预告属实且建议采纳预裁决——import_.ts:30
+  `ApiHandlers['import_']` 硬标注实证（AI-07 加通道要么改该 done 文件字面量、
+  要么循本单 export_ 交并先例）；报告 §7.2 建议「AI-07 开单前预裁决域归属
+  口径，避免每单一议」——本审计复核同意：应在交接书预裁决（推荐口径=循
+  export_ 交并先例，ai-notes/* 通道挂 import_ 域，理由与本单同构：零受锁
+  契约测试改动+done 服务契约零涟漪）。同时建议把 ai06-6 的 outputs 语义
+  裁决一并写入交接书（AI-07 导入器要读 progress.json 吗？——07 只扫 corpus-ai/
+  archive/，不消费 progress.json，outputs 语义对 07 无直接影响，但文档面
+  漂移宜早裁）。建议修法：交接书两条预裁决（域归属口径+outputs 绝对路径）。
+
+[N] ai06-16：AI-10 readStatus null 语义已锚（sensorStatusSchema.nullable()+
+  N06-4 注释+测试用例），三档检测（未发现/已装未运行/运行中）的「运行中」=
+  running 单源无阈值双写风险（INV-26 ②已锁）；无本单遗留动作。另登记工作区
+  卫生：dist_new/（win-unpacked，2026-08-23 时间戳=早于本单元）为历史构建
+  残留非本单产物，不在 15 文件 diff 面——按既往 staging 显式列文件纪律处理
+  （2026-08-26 误扫教训），建议主控收口时 git status 核对未跟踪面后忽略/清理。
+  建议修法：交接书提一句+收口核对。
+
+================================================================================
+统计与总评
+================================================================================
+[B] 0 条  [W] 3 条  [N] 13 条
+
+W 清单：ai06-6（outputs 接缝声明互斥未上报）、ai06-9（红证形态弱+EOF 换行）、
+        ai06-13（synthesize 工作流删除漏报+孤儿 prompts 文件）
+
+总评：**PASS（无未处置 B）**
+- 票面五层规约符合度高：接口/SensorStatus/常量/CLI/SKILL.md/状态机跨格序列
+  ①~⑤（含⑤幂等用例）逐项落地，failed 消解不变量（INV-26 ①）在 companion
+  实现与探针测试双面锚定，时序红线（移除 job 在产物落盘后）代码字面成立。
+- 宪法红线全绿：零 db 触碰、分层单向、行数全数 ≤500、零占位符、零新依赖、
+  原子写同先例同型、safeId 双侧、UTF-8。
+- 证据链真实：red（12+套件级 exit=1）/green（20/20）/verify（73 文件 452 用例
+  exit=0）三档齐全，报告与 diff 无虚报——13 自裁 12 真 1 漏报（漏报项=W 级
+  文档面，非代码缺陷）；「零改动申明」三机制实读属实；locks 112+两新路径
+  纳管属实。
+- 三条 W 均为文档/流程面（接缝声明互斥、断言级红证缺失、synthesize 删减
+  漏报），不动摇本单元工程正确性；处置建议均已给出（预裁决/抽查变异/主控
+  二选一裁决），可随 AI-07 开单前批量收口，无需本单返工。
+- 主控预裁两项复核维持（机器事实与机制均成立）。
+
+审计完成时间：2026-08-27（只读审查，唯一写产物=本档）
+================================================================================
+
+================================================================================
+回炉 1 复核（scoped re-review，2026-08-27）
+================================================================================
+输入：/tmp/ai06-diff-r1.txt（回炉后全量 diff，1764 行）+ scripts/audits/
+ai06-mutation.log + 报告 §6#13 补正与 §8 回炉记录 + 工作树实读复核。
+差集核对：diff vs diff-r1 变化 78 行全部落在声明四文件（queue.mjs 注释/
+service.test EOF/SKILL.md synthesize 节/报告 §6#13+§8）；git status 改动面
+16 文件=原 15+queue.mjs，无第五文件偷改，与回执声明一致。
+
+[R1-1] W ai06-6（outputs 接缝声明互斥）→ **ADDRESSED**
+  证据：queue.mjs 两处注释已改——:19-20 头注（progress schema 行）与
+  :160-161 markDone JSDoc，新文本=裁决字面「outputs=信息态记录，路径基不
+  约定（companion 交付落协议根绝对路径；queue CLI 手工流历史相对路径
+  同容）」（diff-r1 @@ -17,7 与 @@ -157,7 两 hunk 均纯注释行，零代码行
+  变化=「运行时零变化」承诺字面成立）。
+  注记（不构成 NOT）：主控裁决原文「:20 头注+182 两处注释」——182 实为
+  CLI 运行时 console.error 用法串非注释；实现者改 :160 JSDoc 而保 :182，
+  属正确取舍：①改 182=CLI 输出文本变化，破坏「运行时零变化」；②182 用法
+  串描述 queue 手工流场景，手工流传相对路径与新注释「手工流历史相对路径
+  同容」自洽不互斥。实质裁决目标（互斥消除）已达成；裁决行号引用与实际
+  改动点（182 vs 160）出入在此记录，供主控知悉。
+  受锁核对：queue.mjs/SKILL.md 均不在 manifest（grep 实证）——报告 §8.1
+  「不受锁」声明属实，改动合规。
+
+[R1-2] W ai06-9（红证形态弱+EOF 换行）→ **ADDRESSED**
+  (a) EOF：xxd 实测末三字节 7d 29 0a＝`})\n`——换行已补；受锁流程合规
+      （unlock→改→apply）：manifest 中 service.test sha256 由 065950f4…
+      更新为 8e373911…，条数仍 112（grep -c 实证）——「重哈希仍 112」属实。
+  (b) 变异红证：ai06-mutation.log 真实且形态精确——单文件 run（vitest run
+      tests/unit/services/ai-sensor.service.test.ts）、`<=`→`<` 单 token
+      变异后**恰 1 用例红**（freshness 阈值边界，断言 service.test:189
+      `toBe(true)`，错误形态=AssertionError「expected false to be true」
+      ——**断言级红**而非构造级）、11 passed、exit=1——证明边界断言
+      （含边界语义）真实可失败非恒真，且单 token 变异面与断言一一对应；
+      还原核验：工作树 service.ts:298 实测仍为 `<= HEARTBEAT_FRESH_MS`
+      （变异已还原）；备份还原过程（cp→变异→测→cp 还原→diff 空→
+      PowerShell Remove-Item 清备份）符合宪法「变异红证禁 git checkout、
+      用文件备份法」纪律，bash rm 挂起系环境事实处置合理。
+
+[R1-3] W ai06-13（synthesize 漏报删减）→ **ADDRESSED**
+  证据：SKILL.md:70-72 恢复第 5 步「库级收尾（synthesize）：队列打空
+  （pending 无 job 且 queue 全 done）后触发——四类核心贡献枚举+时间线
+  （prompts/synthesize.md；库级产物非逐篇流，无 paperId 维度，不经
+  companion --deliver）」；prompts/synthesize.md 实存保留（孤儿解除）；
+  报告 §6#13 补正文本如实（「本条删除范围当时误含 synthesize 库级收尾
+  步骤——属漏报删减错误，已按主控裁决回滚」，报告 136-144 行）。
+  自洽性核查：触发语义双条件（协议 pending 无 job+queue 全 done）覆盖
+  按篇流与全库流两形态；「不经 --deliver」与 role 枚举（三角色无
+  synthesize）一致；位置第 5 步在 companion 四步序后——与工作循环整体
+  结构无冲突。
+  N 级注记（非回炉增量破坏）：库级 synthesize 产物去向（落盘位置/格式）
+  仍未文档化——与 AI-05 原版同为步骤级指引（原版亦未定义产物去向），
+  恢复至原语义水平即达标；消费面待未来「核心 idea 时间树」单，建议届时
+  随单收口，本单不追。
+
+[R1-4] 回炉增量新破坏检查 → **无新破坏**
+  - 差集四文件与声明一致（78 行变化全落 queue.mjs 注释×2/EOF×1/SKILL
+    节×3/报告 §6#13+§8），git status 无未声明改动面。
+  - queue.mjs 纯注释改动零代码行；service.test 功能面未变（452 全绿+
+    边界断言 :189 仍在）；无新占位符/无新依赖/无新受锁违规（受锁触碰面
+    仅 service.test，流程合规）。
+  - 终局证据：verify.log 追加段 rework1-two-files exit=0（log:849）+
+    全量 73 文件/452 用例 passed+exit=0（log 尾实测）——报告 §8.4 声明
+    与日志一致。
+
+回炉 1 终评：**三条 W 全 ADDRESSED，无新破坏，PASS 维持**。
+两条 N 级新注记（裁决行号 182/160 出入已记录；synthesize 产物去向留未来单）
+不阻塞。建议主控收口提交时：queue.mjs 注释改动随本单 [locked-change] 无涉
+（不受锁），service.test sha 变化已入 manifest 与提交同步即可。
+================================================================================

@@ -68,6 +68,11 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
   }
 
   return {
+    // AI-06 伴随进程文件协议两通道（通道名 ai-sensor/*，域归属本文件——委托行
+    // 形态=corpusItem 同型；协议 IO 错误原样上抛，register 折叠为 Result）
+    requestAiRead: (req) => deps.services.export_.requestRead(req.paperId),
+    aiStatus: async () => deps.services.export_.readStatus(),
+
     corpusItem: (req) => deps.services.export_.corpusItem(req),
 
     corpusSession: async (req) => {

@@ -111,6 +111,208 @@
  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
+import { randomUUID } from 'node:crypto'
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import type { SensorStatus } from '../../../shared/ipc/schemas'
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const AI_SENSOR_SERVICE_STUB = 'SR2-AI-06'
+/** 协议目录名（协议根=join(userData, AI_SENSOR_DIR_NAME)——bootstrap 装配层解析） */
+export const AI_SENSOR_DIR_NAME = 'ai-sensor'
+
+/** 心跳新鲜阈值：10min（容忍一次长模型调用间隔，tunable） */
+export const HEARTBEAT_FRESH_MS = 10 * 60 * 1000
+
+/** paperId 安全字符守卫（C-02 safeId 同型纵深防御——renderer 载荷不得走私路径片段） */
+const SAFE_ID = /^[A-Za-z0-9_-]+$/
+
+/** v1 唯一 job kind（ADR-0015 §1 字面；枚举扩展=生命周期层预留） */
+const JOB_KIND = 'three-read'
+
+export interface AiSensorService {
+  /** 写 job 请求（幂等：同篇 pending 在则返回既有 jobId——状态机⑤行） */
+  requestRead(paperId: string): Promise<{ jobId: string }>
+  /** 读 status.json：null=不存在（工具从未运行 N06-4）；损坏上抛（三态分离） */
+  readStatus(): Promise<SensorStatus | null>
+  /** 08 状态行门控：该篇是否存在 pending job */
+  hasPendingJob(paperId: string): Promise<boolean>
+  /** 08「待导入」判定：corpus-ai/<paperId>.json 活动区 */
+  productExists(paperId: string): Promise<boolean>
+  /** 08 imported 判定：archive/<paperId>.json 归档区（W06-2） */
+  archivedExists(paperId: string): Promise<boolean>
+}
+
+export interface AiSensorDeps {
+  /** 协议根（=userData/ai-sensor——bootstrap 解析注入，service 不触 app.getPath 保可测） */
+  rootDir: string
+  /** 时间源（ISO 串；测试注入驱动 requestedAt 与新鲜度判定） */
+  now?: () => string
+  /** jobId 源（默认 crypto.randomUUID——零依赖） */
+  uuid?: () => string
+}
+
+interface PendingJob {
+  jobId: string
+  paperId: string
+  file: string
+}
+
+function assertSafeId(paperId: string): void {
+  if (!SAFE_ID.test(paperId)) {
+    throw new Error(`paperId 含非法字符（仅允许字母数字、下划线、连字符）：${paperId}`)
+  }
+}
+
+/** Node fs ENOENT 判定（Error 类型无 code 声明——unknown 收窄，不吞其他错误） */
+function isENOENT(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && 'code' in e && (e as { code?: unknown }).code === 'ENOENT'
+  )
+}
+
+export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
+  const now = deps.now ?? (() => new Date().toISOString())
+  const uuid = deps.uuid ?? randomUUID
+  const pendingDir = join(deps.rootDir, 'pending')
+  const corpusAiDir = join(deps.rootDir, 'corpus-ai')
+  const archiveDir = join(deps.rootDir, 'archive')
+
+  /** 原子写（tmp+rename——R5/R8 manifest 终局单写同型；父目录首写 mkdir recursive 幂等 N06-6） */
+  async function writeAtomic(path: string, content: string): Promise<void> {
+    const tmp = `${path}.tmp`
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(tmp, content, 'utf8')
+    await rename(tmp, path)
+  }
+
+  /** 扫描 pending job（ENOENT=空；损坏文件上抛含路径——禁静默跳过，三态分离） */
+  async function scanPending(): Promise<PendingJob[]> {
+    let names: string[]
+    try {
+      names = await readdir(pendingDir)
+    } catch (e) {
+      if (isENOENT(e)) return []
+      throw e
+    }
+    const jobs: PendingJob[] = []
+    for (const name of names) {
+      if (!name.endsWith('.json')) continue // .tmp 残留等非 job 文件不参与
+      const file = join(pendingDir, name)
+      let raw: unknown
+      try {
+        raw = JSON.parse(await readFile(file, 'utf8'))
+      } catch (e) {
+        throw new Error(
+          `pending job 文件损坏（期望 { paperId, kind: '${JOB_KIND}', requestedAt }）：${file}` +
+            `（${e instanceof Error ? e.message : String(e)}）`
+        )
+      }
+      const jobId = name.slice(0, -5)
+      if (
+        jobId === '' ||
+        raw === null ||
+        typeof raw !== 'object' ||
+        Array.isArray(raw) ||
+        typeof (raw as { paperId?: unknown }).paperId !== 'string' ||
+        (raw as { paperId: string }).paperId === '' ||
+        (raw as { kind?: unknown }).kind !== JOB_KIND ||
+        typeof (raw as { requestedAt?: unknown }).requestedAt !== 'string'
+      ) {
+        throw new Error(`pending job 文件损坏（期望 { paperId, kind: '${JOB_KIND}', requestedAt }）：${file}`)
+      }
+      jobs.push({ jobId, paperId: (raw as { paperId: string }).paperId, file })
+    }
+    return jobs
+  }
+
+  /** status.json 形态校验（缺字段/非法 heartbeatAt=损坏上抛，与 JSON 语法错误同报含路径） */
+  function parseStatus(raw: unknown, path: string): Omit<SensorStatus, 'running'> {
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new Error(`status.json 形态损坏（非对象）：${path}`)
+    }
+    const r = raw as Record<string, unknown>
+    if (typeof r.state !== 'string') throw new Error(`status.json 形态损坏（state 非字符串）：${path}`)
+    if (!(r.currentPaper === null || typeof r.currentPaper === 'string')) {
+      throw new Error(`status.json 形态损坏（currentPaper 非字符串/null）：${path}`)
+    }
+    if (!(r.role === null || typeof r.role === 'string')) {
+      throw new Error(`status.json 形态损坏（role 非字符串/null）：${path}`)
+    }
+    if (typeof r.updatedAt !== 'string') throw new Error(`status.json 形态损坏（缺 updatedAt）：${path}`)
+    if (typeof r.heartbeatAt !== 'string') throw new Error(`status.json 形态损坏（缺 heartbeatAt 字段）：${path}`)
+    if (!Number.isFinite(Date.parse(r.heartbeatAt))) {
+      throw new Error(`status.json 形态损坏（heartbeatAt 不是合法 ISO 日期）：${path}`)
+    }
+    return {
+      state: r.state,
+      currentPaper: r.currentPaper,
+      role: r.role,
+      updatedAt: r.updatedAt,
+      heartbeatAt: r.heartbeatAt
+    }
+  }
+
+  /** 文件存在性（ENOENT=false；其他错误上抛不吞） */
+  async function exists(path: string): Promise<boolean> {
+    try {
+      await stat(path)
+      return true
+    } catch (e) {
+      if (isENOENT(e)) return false
+      throw e
+    }
+  }
+
+  return {
+    async requestRead(paperId) {
+      assertSafeId(paperId)
+      const jobs = await scanPending()
+      const existing = jobs.find((j) => j.paperId === paperId)
+      if (existing !== undefined) return { jobId: existing.jobId } // 幂等⑤：不写第二个文件
+      const jobId = uuid()
+      await writeAtomic(
+        join(pendingDir, `${jobId}.json`),
+        `${JSON.stringify({ paperId, kind: JOB_KIND, requestedAt: now() }, null, 2)}\n`
+      )
+      return { jobId }
+    },
+
+    async readStatus() {
+      const path = join(deps.rootDir, 'status.json')
+      let text: string
+      try {
+        text = await readFile(path, 'utf8')
+      } catch (e) {
+        if (isENOENT(e)) return null // 工具从未运行（N06-4）
+        throw e
+      }
+      let raw: unknown
+      try {
+        raw = JSON.parse(text)
+      } catch (e) {
+        throw new Error(
+          `status.json 读取/解析失败：${path}（${e instanceof Error ? e.message : String(e)}）——文件损坏？`
+        )
+      }
+      const base = parseStatus(raw, path)
+      // 唯一判活依据=heartbeatAt 新鲜度（running 单源在此——10 三档消费不双写阈值）
+      const running = Date.parse(now()) - Date.parse(base.heartbeatAt) <= HEARTBEAT_FRESH_MS
+      return { ...base, running }
+    },
+
+    async hasPendingJob(paperId) {
+      assertSafeId(paperId)
+      const jobs = await scanPending()
+      return jobs.some((j) => j.paperId === paperId)
+    },
+
+    async productExists(paperId) {
+      assertSafeId(paperId)
+      return exists(join(corpusAiDir, `${paperId}.json`))
+    },
+
+    async archivedExists(paperId) {
+      assertSafeId(paperId)
+      return exists(join(archiveDir, `${paperId}.json`))
+    }
+  }
+}

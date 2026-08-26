@@ -29,23 +29,52 @@ node tools/ai-sensor/queue.mjs <语料目录>
 | `fulltext/<paperId>.txt` | 全文纯文本，页界 `\f`（页码 1 基） |
 | `figures/<paperId>/*.png` | 页快照（2×分辨率）与标注包围盒裁剪图 |
 
-## 工作循环
+## 工作循环（companion 模式，SR2-AI-06）
 
-1. `node tools/ai-sensor/queue.mjs <dir>` → 队列计划（断点续跑：已 done 篇
-   不重跑——`progress.json` 是工具侧私有进度，与导出会话的断点互不相干）
-2. 逐篇三读（prompts/ 驱动，配置读 `config.json`——从
-   `config.template.json` 复制，模型三件可配）：
+双目录 CLI：`node tools/ai-sensor/companion.mjs <语料目录> <协议目录>`——
+语料目录=应用「设置 → AI 语料导出」五件套产物；协议目录=应用 userData 下
+`ai-sensor/`（四成员：`pending/` job 请求区、`status.json` 会话心跳、
+`corpus-ai/` 产物区（07 导入器扫描面）、`archive/` 导入后归档区）。
+
+协议目录平台惯例路径（应用 userData 按 package name `synapse-remake`——
+zcode 会话侧发现机制，AI-10 B10-1 联动）：
+
+| 平台 | 协议目录 |
+| --- | --- |
+| Windows | `%APPDATA%\synapse-remake\ai-sensor` |
+| macOS | `~/Library/Application Support/synapse-remake/ai-sensor` |
+| Linux | `~/.config/synapse-remake/ai-sensor` |
+
+1. **拾取**：`node tools/ai-sensor/companion.mjs <语料> <协议>`——打印下一个
+   pending job（jobId/paperId/篇名/语料消费指针）并写心跳；无 job=空转退出
+   （exit 0）。全库三读流（无按钮请求的整库阅读）先用
+   `node tools/ai-sensor/queue.mjs <语料>` 列队列，逐篇同样走 2~4 步。
+2. **三读**（prompts/ 驱动，配置读 `config.json`——从 `config.template.json`
+   复制，模型三件可配）：
    - first-read：七问（Q1 核心 idea 必答+锚定段）——见 `prompts/first-read.md`
    - second-read：同构**盲读**（不看一读产物，保独立性）——`prompts/second-read.md`
    - adjudicate：分歧聚焦裁决（只读两读分歧点与锚定段）——`prompts/adjudicate.md`
-   - synthesize（库级收尾）：四类核心贡献枚举+时间线——`prompts/synthesize.md`
-3. 篇级产物落盘 `corpus-ai/<paperId>/`（工具侧产物区，应用导入器不做——
-   v1 无回灌，AI-07 另立）**之后**才标记完成：
-   `node tools/ai-sensor/queue.mjs <dir> --done <paperId> corpus-ai/<paperId>/first-read.md ...`
-   （篇级产物落盘后才置 done——中断重跑不丢已读成果）
+   - 长调用间隙刷新心跳：`companion.mjs <语料> <协议> --beat <状态自述> [角色]`
+     （应用判活阈值 10 分钟=HEARTBEAT_FRESH_MS——state/role 是自由文本自述，
+     应用永不按值分支）
+3. **草稿**：三读产物整理为 JSON 行式锚定段数组（**行形状 8 字段**：
+   `role/question/model/quote_text/prefix_text/suffix_text/anchor_page/content_md`
+   ——与 ai_notes 同形 N2 粒度；role ∈ first-read|second-read|adjudicate，
+   question ∈ Q1..Q7|divergence，篇级回答 anchor_page=null。旧版
+   `corpus-ai/<paperId>/` 分角色 md 形态已由 ADR-0015 §1 行式 JSON 收口取代）。
+4. **交付**：`node tools/ai-sensor/companion.mjs <语料> <协议> --deliver
+   <paperId> <草稿.json...>`——companion 规范化校验草稿→原子写
+   `corpus-ai/<paperId>.json`（落**协议根**，非语料目录）→移除 pending job→
+   queue 进度置 done。**红线：移除 job 以产物落盘成功为前提**（任何失败路径
+   job 一律保留——INV-26；交付幂等：重交付=产物覆盖）。
+5. **库级收尾（synthesize）**：队列打空（pending 无 job 且 queue 全 done）后
+   触发——四类核心贡献枚举+时间线（`prompts/synthesize.md`；库级产物非逐篇
+   流，无 paperId 维度，不经 companion --deliver）。
 
 ## 红线
 
+- **移除 pending job 以产物落盘成功为前提**（INV-26）——任何失败路径 job
+  保留；协议文件一律 tmp+rename 原子写，首写 mkdir recursive 幂等
 - 禁写应用 DB 与导出目录内 manifest/corpus/fulltext/figures（真相源单向）
 - 应用侧零 LLM 出网维持：模型调用全部发生在 zcode 会话内建模能力，本工具
   零 npm 依赖、不直连任何 API

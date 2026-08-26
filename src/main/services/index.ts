@@ -20,6 +20,10 @@ import { createLibraryService } from './library.service'
 import { createReaderService } from './reader.service'
 import { createTagsService } from './tags.service'
 import { createNotesService } from './notes.service'
+import {
+  createAiSensorService,
+  type AiSensorService
+} from './ai_sensor/ai-sensor.service'
 import { createEnrichService } from './enrich/enrich.service'
 import {
   createCrossrefProvider,
@@ -42,6 +46,8 @@ export interface ServiceDeps {
   sendProgress?: (e: ImportProgressEvent) => void
   /** AI 语料导出会话事件出口（main→renderer 单向——extract-request/progress） */
   sendExportEvent?: (e: ExportCorpusEvent) => void
+  /** AI 伴随进程协议根（=userData/ai-sensor——bootstrap 解析注入，AI-06） */
+  aiSensorRootDir: string
 }
 
 export interface EnrichServiceShape {
@@ -55,7 +61,8 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  export_: ExportService & CorpusExportService
+  /** AI-06：ai-sensor 服务并域（ai-sensor/* 通道挂 export_ 域——AI-02 corpusItem 同型交并） */
+  export_: ExportService & CorpusExportService & AiSensorService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -81,7 +88,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
         repos: deps.repos,
         fileStore: deps.fileStore,
         sendEvent: deps.sendExportEvent ?? (() => undefined),
-      })
+      }),
+      ...createAiSensorService({ rootDir: deps.aiSensorRootDir })
     }
   }
 }

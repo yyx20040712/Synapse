@@ -32,6 +32,7 @@ import { migrate } from './db/migrate'
 import { createRepos } from './db/repos'
 import { createFileStore } from './services/import_/file-store'
 import { createServices } from './services'
+import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { createIpcHandlers } from './ipc'
 import { registerIpc } from './ipc/register'
 import { registerAppFileProtocol } from './protocol/app-file.protocol'
@@ -78,6 +79,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
         win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
       }
     },
+    // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费）
+    aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
     http: {
       fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
       fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })

@@ -177,6 +177,28 @@ export const corpusSessionResSchema = z
   .strict()
 export type CorpusSessionRes = z.infer<typeof corpusSessionResSchema>
 
+// ── ai-sensor（AI-06：伴随进程文件协议——通道名 ai-sensor/* 挂 export_ 域，
+//    域归属=AI-02 corpusItem 同型先例，见报告自裁申报）──────────────────
+/** request-read 响应：jobId（幂等：同篇 pending 在则返回既有 jobId） */
+export const aiReadJobResSchema = z.object({ jobId: z.string().min(1) }).strict()
+export type AiReadJobRes = z.infer<typeof aiReadJobResSchema>
+
+/** status.json 消费面（running=新鲜度判定输出，单源在 ai-sensor.service——消费方不双写阈值） */
+export const sensorStatusSchema = z
+  .object({
+    state: z.string(), // 工具侧自由文本自述，应用永不按值分支（ADR-0015 §1）
+    currentPaper: z.string().nullable(),
+    role: z.string().nullable(),
+    updatedAt: z.string(),
+    heartbeatAt: z.string(),
+    running: z.boolean()
+  })
+  .strict()
+export type SensorStatus = z.infer<typeof sensorStatusSchema>
+
+/** status 通道响应：null=status.json 不存在=工具从未运行（N06-4） */
+export const aiSensorStatusResSchema = sensorStatusSchema.nullable()
+
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
 export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
