@@ -18,5 +18,8 @@ Thumbs.db
 .mimosa/
 .zcode/
 
+# ai-sensor 用户配置（密钥不入库——SR2-AI-05）
+tools/ai-sensor/config.json
+
 # TypeScript 增量构建缓存
 *.tsbuildinfo

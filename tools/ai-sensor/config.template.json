@@ -1,0 +1,12 @@
+{
+  "_说明": "复制本文件为 config.json 后填写（config.json 已 gitignore 不入库）。models 三件=三读各自使用的模型名（zcode 会话内建模能力标识）；rate.requestsPerMinute=节奏护栏；batchSize=每批篇数（v1 建议 1——逐篇串行保锚定质量）。",
+  "models": {
+    "first": "",
+    "second": "",
+    "adjudicate": ""
+  },
+  "rate": {
+    "requestsPerMinute": 10
+  },
+  "batchSize": 1
+}
