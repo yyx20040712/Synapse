@@ -287,6 +287,15 @@
 > 06→07→08∥09；10 依赖 06。ai_notes DDL 增 question 列（一行一锚定段，N2）并入
 > AI-01。密钥留工具侧 config.json（E7）；D utilityProcess 自含方案记 P8+ 升级候选。
 
+> **SR2-AI-06 ✅**（2026-08-27 c2bfc4f——三屋模式试点首单：主控派发/实现者子代理 TDD/双门孙代理审计。
+> 应用侧 createAiSensorService 五方法（幂等 job 原子写/心跳新鲜度单源 10min/
+> 三态分离）+工具侧 companion.mjs 会话壳（拾取/--beat/--deliver 四步序，
+> **INV-26 入册：移除 job 以产物落盘为前提**）+IPC 两通道挂 export_ 域
+> （corpusItem 同型）+SKILL.md companion 模式改写+平台路径表。TDD 四档
+> （red→green→变异红证→verify 73 文件 452 用例 exit 0）；双门 0B/3W/13N
+> →回炉 1→门二 PASS；试点数据与模式评估=v7 交接书 §4。下一单 AI-07
+> （域归属口径预裁决随 v7 §3）。）
+
 > **第二批工单化完成（2026-08-27 闲时会话，双门 plan 门）**：SR2-AI-06~10 五张
 > 票面（门一对抗深审 B3/W9/N6 全处置→门二终审 6 点文本返工后复核 PASS——存档
 > scripts/audits/ai-batch2-ticketing.*）。plan 门要点：06 failed 态消解=「移除
