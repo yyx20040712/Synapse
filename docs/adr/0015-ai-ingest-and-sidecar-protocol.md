@@ -2,6 +2,10 @@
 
 - 日期：2026-08-25（蓝图 §4.3 第四轮裁决 E1/E2/E7 + 新需求 N2/N4）
 - 状态：已裁决——SR2-AI-06~10 工单组（ROADMAP P7-G 增容节）
+- 追认（2026-08-27 用户裁决，八条待裁决第 2/3 项）：companion 双目录 CLI
+  发现机制（`companion.mjs <语料目录> <协议目录>`——本 ADR 未规定的发现面，
+  工程发明获追认）与 HEARTBEAT_FRESH_MS=10min/STATUS_POLL_MS=5s 常量值；
+  指针 ADR-0017 后果节
 - 关联：蓝图 D2b（应用零 LLM 出网——本 ADR 保持其安全面）/D3（独立表+写入只经
   应用 IPC）/ADR-0011 v1.1（[ai:*] 段装配）/ai-rescope-verification §3 P1（四方案
   对比，B' 中选）

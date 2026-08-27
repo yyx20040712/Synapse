@@ -41,8 +41,9 @@
  *     listByPaper(paperId: string): AiNote[]          // 08 分节数据面（repo listByPaper 透传）
  *   }
  * - IPC 面：ai-notes/import + ai-notes/list 两通道（ADR §2 字面命名；
- *   实现时 [locked-change]——schemas+api-surface 受锁+ipc/register.ts+
- *   preload+renderer client 全链）
+ *   **域归属=新立 ai_sensor 域**——2026-08-27 用户裁决（ADR-0017）：随本单
+ *   [locked-change] 扩契约测试 9 域穷举，并把 06 两通道自 export_ 域迁入
+ *   新域（消费者未建=最后便宜窗口）；schemas+api-surface 受锁面不变
  * - 交付面：ipc/ai_notes.ts（handler 域文件，薄分发——SR-IPC-* 同型）+
  *   services/index.ts 装配+ai_notes.repo.ts 头注声明行修订
  *
