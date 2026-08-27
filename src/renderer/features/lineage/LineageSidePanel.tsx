@@ -1,6 +1,6 @@
 // b3: P7-H
 /**
- * [SR2-LG-04] LineageSidePanel —— 节点侧板详情+笔记双击跳阅读器（工单：open / strong）
+ * LineageSidePanel —— 节点侧板详情+笔记双击跳阅读器
  *
  * ── 行为层 ──
  * - **节点单击=侧板**（蓝图 N3 字面）：元信息（title/year/paperId
@@ -62,23 +62,107 @@
  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
  * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
  *   git diff → 翻 registry
+ *
+ * ── 实现注（LG-04 交付）──
+ * - 锚递达路径=**总线载荷扩（主控裁决路径 A）**：onJumpToPaper 载荷→
+ *   LineagePage 调 requestOpenPaperAnchored（open-paper-bus 可选 anchor/
+ *   aiNoteId 字段）→阅读器消费点 open-paper-anchor.ts→locateAnchor
+ *   （INV-20 单入口：打开+等就绪+三防线全归它）。接缝三方头注锚定：
+ *   本板+open-paper-bus+open-paper-anchor。
+ * - 载荷构造单点在本板 handleNoteDblClick：anchorPage **1 基→0 基**
+ *   （AiNotesSection:200 同型）；「无锚」判定=quoteText 不足 2 字符
+ *   且 anchorPage null（locateAnchor paper 层阈值同源——页码在即保留
+ *   anchor 走页级跳转，防回退第 0 页）。
+ * - AI 分节分色=ai-note-style 单源跨域只读消费（LineageSideAiNotes
+ *   白名单受控例外，check-quality COMPOSITION_ROOT_ALLOW 同型）；role
+ *   分组逻辑在本域重写（Rule of Three 第 2 次保持重复——AiNoteGroupList
+ *   属 reader 域不可引）。
+ * - 人工笔记=notes/get 总评层只读呈现（LineageSideManualNote），无双击
+ *   跳转（无锚语义下价值低——用户开篇路径已有阅读器入口，票面测试面
+ *   仅 AI 条目）。
+ * - node 数据源=LineagePage 经 lineage.store 查找分发（03 预留出口兑现
+ *   ——store 数据消费合法，非双取）。
  */
-// 骨架占位：node 类型=unknown（LineageNode 单源随数据基座单（LG-01）交付 shared/
-// models/lineage，届时替换 import——本文件属 LG-04 实现面）
-export function LineageSidePanel(_props: {
-  node: unknown
-  onJumpToPaper(
-    payload: {
-      paperId: string
-      anchor?: {
-        quoteText: string
-        prefixText: string
-        suffixText: string
-        anchorPage: number | null
-      }
-      aiNoteId?: string
-    } | null
-  ): void
+import type { AiNote } from '@shared/models/ai-note'
+import type { LineageNode } from '@shared/models/lineage'
+import { LineageSideAiNotes } from './LineageSideAiNotes'
+import { LineageSideManualNote } from './LineageSideManualNote'
+
+/** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
+function hasAnchor(n: AiNote): boolean {
+  return n.quoteText.length >= 2 || n.anchorPage !== null
+}
+
+export function LineageSidePanel(props: {
+  node: LineageNode | null
+  onJumpToPaper(payload: {
+    paperId: string
+    anchor?: {
+      quoteText: string
+      prefixText: string
+      suffixText: string
+      anchorPage: number | null
+    }
+    aiNoteId?: string
+  } | null): void
 }): JSX.Element {
-  return <div data-ticket="SR2-LG-04" />
+  const { node } = props
+  if (node === null) {
+    return (
+      <div
+
+        data-testid="lineage-side-panel"
+        className="flex h-full items-center justify-center p-4 text-center text-xs"
+        style={{ color: 'var(--text-dim)' }}
+      >
+        单击节点查看详情
+      </div>
+    )
+  }
+
+  /** AI 条目双击→跳转载荷（构造单点：三元组透传+1 基→0 基；无锚=anchor 缺省） */
+  const handleNoteDblClick = (n: AiNote): void => {
+    if (node.paperId === null) return
+    const anchor = hasAnchor(n)
+      ? {
+          quoteText: n.quoteText,
+          prefixText: n.prefixText,
+          suffixText: n.suffixText,
+          anchorPage: n.anchorPage === null ? null : n.anchorPage - 1
+        }
+      : undefined
+    props.onJumpToPaper({ paperId: node.paperId, anchor, aiNoteId: n.id })
+  }
+
+  return (
+    <div
+
+      data-testid="lineage-side-panel"
+      className="flex h-full flex-col gap-2 overflow-auto p-2 text-xs"
+    >
+      <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
+        <h3 className="m-0 text-sm font-medium" style={{ color: 'var(--text)' }}>
+          {node.title}
+        </h3>
+        <p className="m-0" style={{ color: 'var(--text-dim)' }}>
+          {node.year === null ? '未知年份' : `${node.year} 年`}
+          {node.paperId !== null && <span className="ml-1 rounded border px-1" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}>已绑定文献</span>}
+        </p>
+      </section>
+      <section data-testid="lineage-side-idea">
+        <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>核心 idea</h4>
+        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
+          {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
+        </p>
+      </section>
+      {node.paperId === null ? (
+        <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
+      ) : (
+        <>
+          <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />
+          <LineageSideManualNote paperId={node.paperId} />
+        </>
+      )}
+    </div>
+  )
 }

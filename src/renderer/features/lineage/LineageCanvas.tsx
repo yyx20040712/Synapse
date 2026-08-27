@@ -18,21 +18,17 @@
  *   onNodeClick 单击选中）/onNodeContextMenu（右键菜单锚）。拖拽期实时
  *   跟随（dragView 偏移渲染）；写路径（upsert-node）归 Board 编辑层——
  *   本画布不持写通道。
+ * - **04 选中视觉态（LG-04 扩，可选 prop 缺省行为不变）**：selectedNodeId
+ *   命中节点=accent 描边加粗+data-selected 标记（Board 透传，侧板联动）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
-const ZOOM_MIN = 0.25
-const ZOOM_MAX = 4
-const ZOOM_STEP = 0.0015
+const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
 /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
 const DRAG_THRESHOLD = 3
 
-interface Viewport {
-  tx: number
-  ty: number
-  k: number
-}
+type Viewport = { tx: number; ty: number; k: number }
 
 /** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
 export interface CanvasEditCallbacks {
@@ -47,6 +43,7 @@ export interface CanvasEditCallbacks {
 export function LineageCanvas(props: {
   nodes: LineageNode[]
   edges: LineageEdge[]
+  selectedNodeId?: string | null
 } & CanvasEditCallbacks): JSX.Element {
   const { nodes, edges } = props
   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
@@ -64,7 +61,7 @@ export function LineageCanvas(props: {
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
       setViewport((v) => {
-        const k2 = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.k * Math.exp(-e.deltaY * ZOOM_STEP)))
+        const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
         return {
           k: k2,
           tx: mx - ((mx - v.tx) / v.k) * k2,
@@ -207,6 +204,7 @@ export function LineageCanvas(props: {
           const p = layout.positions.get(n.id)
           if (p === undefined) return null
           const theme = n.paperId === null
+          const sel = props.selectedNodeId === n.id
           const off = dragView?.id === n.id ? dragView : null
           return (
             <g
@@ -229,9 +227,10 @@ export function LineageCanvas(props: {
                 height={NODE_H}
                 rx={6}
                 fill="var(--panel)"
-                stroke={theme ? 'var(--accent)' : 'var(--border)'}
-                strokeWidth={1}
+                stroke={sel || theme ? 'var(--accent)' : 'var(--border)'}
+                strokeWidth={sel ? 2.5 : 1}
                 strokeDasharray={theme ? '6 4' : undefined}
+                data-selected={sel}
               />
               <text x={0} y={-8} textAnchor="middle" fontSize={12} fill="var(--text)">
                 {n.title}

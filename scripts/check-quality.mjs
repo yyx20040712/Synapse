@@ -55,13 +55,18 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 //    useExportCorpusEvents 是提取管线的 App 层组合根（AI-02 票面明文：生产组装=
 //    该 hook 注入 loadPdfDocument+corpusItem——CorpusExtractor 留驻 reader 域因
 //    INV-16 pdfjs 白名单锚定其路径），聚合职责即消费提取器——受控例外，settings
-//    域其余文件引用 reader 仍是红线
+//    域其余文件引用 reader 仍是红线。SR2-LG-04（2026-08-27）：LineageSideAiNotes
+//    是脉络侧板的 AI 笔记分节（蓝图 N3 四区之一），分色/中文标签消费
+//    ai-note-style 单源（INV-11——跨域复用与域内复写二害取轻：白名单受控
+//    例外防映射双源；数据面走 window.api 直连不经 reader store，见该域
+//    W4 裁决），lineage 域其余文件引用 reader 仍是红线
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
   ['src/renderer/features/reader/tab-dirty.ts', ['notes/notes.store']],
   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
-  ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/CorpusExtractor']]
+  ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/CorpusExtractor']],
+  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/ai-note-style']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T07:10:28.8494174Z",
+    "generatedAt":  "2026-08-27T07:55:39.9050453Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -23,7 +23,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "3ee30e5c4397e4a0243bbeb00d6152c0b09c6a3e2c94206d02c096a7cfccdd27"
+                      "sha256":  "2244a00cd00d9bbbda3ee32ff246fb3cbf5150407f223f76d8db1c96cd8c7e41"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -312,6 +312,10 @@
                   {
                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
                       "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+                      "sha256":  "c71fde1217d372594040ccdd27fc3e3bf1b18e5f06175eb3a0d5f2a7c3b51d84"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",

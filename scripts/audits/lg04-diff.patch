@@ -1,0 +1,1158 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 73efb14..7af5f89 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T07:10:28.8494174Z",
++    "generatedAt":  "2026-08-27T07:45:36.9087244Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -23,7 +23,7 @@
+                   },
+                   {
+                       "path":  "scripts/check-quality.mjs",
+-                      "sha256":  "3ee30e5c4397e4a0243bbeb00d6152c0b09c6a3e2c94206d02c096a7cfccdd27"
++                      "sha256":  "2244a00cd00d9bbbda3ee32ff246fb3cbf5150407f223f76d8db1c96cd8c7e41"
+                   },
+                   {
+                       "path":  "scripts/check-tickets.mjs",
+@@ -313,6 +313,10 @@
+                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
+                       "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
++                      "sha256":  "c71fde1217d372594040ccdd27fc3e3bf1b18e5f06175eb3a0d5f2a7c3b51d84"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+                       "sha256":  "12653c762b99258ddf8b3050be9396af8d3fd0f4f081ae8e36de128090b3e57b"
+diff --git a/scripts/check-quality.mjs b/scripts/check-quality.mjs
+index 5688671..426f031 100644
+--- a/scripts/check-quality.mjs
++++ b/scripts/check-quality.mjs
+@@ -55,13 +55,18 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root,
+ //    useExportCorpusEvents 是提取管线的 App 层组合根（AI-02 票面明文：生产组装=
+ //    该 hook 注入 loadPdfDocument+corpusItem——CorpusExtractor 留驻 reader 域因
+ //    INV-16 pdfjs 白名单锚定其路径），聚合职责即消费提取器——受控例外，settings
+-//    域其余文件引用 reader 仍是红线
++//    域其余文件引用 reader 仍是红线。SR2-LG-04（2026-08-27）：LineageSideAiNotes
++//    是脉络侧板的 AI 笔记分节（蓝图 N3 四区之一），分色/中文标签消费
++//    ai-note-style 单源（INV-11——跨域复用与域内复写二害取轻：白名单受控
++//    例外防映射双源；数据面走 window.api 直连不经 reader store，见该域
++//    W4 裁决），lineage 域其余文件引用 reader 仍是红线
+ const COMPOSITION_ROOT_ALLOW = new Map([
+   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
+   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
+   ['src/renderer/features/reader/tab-dirty.ts', ['notes/notes.store']],
+   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
+-  ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/CorpusExtractor']]
++  ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/CorpusExtractor']],
++  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/ai-note-style']]
+ ])
+ 
+ const featuresRoot = join(root, 'src', 'renderer', 'features')
+diff --git a/src/renderer/features/lineage/LineageBoard.tsx b/src/renderer/features/lineage/LineageBoard.tsx
+index 8462be0..93af000 100644
+--- a/src/renderer/features/lineage/LineageBoard.tsx
++++ b/src/renderer/features/lineage/LineageBoard.tsx
+@@ -187,6 +187,7 @@ export function LineageBoard(props: {
+       <LineageCanvas
+         nodes={nodes}
+         edges={edges}
++        selectedNodeId={props.selectedNodeId ?? null}
+         onNodeDrag={(id, x, y) => store().moveNode(id, x, y)}
+         onNodeClick={handleNodeClick}
+         onNodeContextMenu={(id, anchor) => {
+diff --git a/src/renderer/features/lineage/LineageCanvas.tsx b/src/renderer/features/lineage/LineageCanvas.tsx
+index 40b7a23..639900c 100644
+--- a/src/renderer/features/lineage/LineageCanvas.tsx
++++ b/src/renderer/features/lineage/LineageCanvas.tsx
+@@ -18,21 +18,17 @@
+  *   onNodeClick 单击选中）/onNodeContextMenu（右键菜单锚）。拖拽期实时
+  *   跟随（dragView 偏移渲染）；写路径（upsert-node）归 Board 编辑层——
+  *   本画布不持写通道。
++ * - **04 选中视觉态（LG-04 扩，可选 prop 缺省行为不变）**：selectedNodeId
++ *   命中节点=accent 描边加粗+data-selected 标记（Board 透传，侧板联动）。
+  */
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+ import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
+-const ZOOM_MIN = 0.25
+-const ZOOM_MAX = 4
+-const ZOOM_STEP = 0.0015
++const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
+ /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
+ const DRAG_THRESHOLD = 3
+ 
+-interface Viewport {
+-  tx: number
+-  ty: number
+-  k: number
+-}
++type Viewport = { tx: number; ty: number; k: number }
+ 
+ /** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
+ export interface CanvasEditCallbacks {
+@@ -47,6 +43,7 @@ export interface CanvasEditCallbacks {
+ export function LineageCanvas(props: {
+   nodes: LineageNode[]
+   edges: LineageEdge[]
++  selectedNodeId?: string | null
+ } & CanvasEditCallbacks): JSX.Element {
+   const { nodes, edges } = props
+   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
+@@ -64,7 +61,7 @@ export function LineageCanvas(props: {
+       const mx = e.clientX - rect.left
+       const my = e.clientY - rect.top
+       setViewport((v) => {
+-        const k2 = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.k * Math.exp(-e.deltaY * ZOOM_STEP)))
++        const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
+         return {
+           k: k2,
+           tx: mx - ((mx - v.tx) / v.k) * k2,
+@@ -207,6 +204,7 @@ export function LineageCanvas(props: {
+           const p = layout.positions.get(n.id)
+           if (p === undefined) return null
+           const theme = n.paperId === null
++          const sel = props.selectedNodeId === n.id
+           const off = dragView?.id === n.id ? dragView : null
+           return (
+             <g
+@@ -229,9 +227,10 @@ export function LineageCanvas(props: {
+                 height={NODE_H}
+                 rx={6}
+                 fill="var(--panel)"
+-                stroke={theme ? 'var(--accent)' : 'var(--border)'}
+-                strokeWidth={1}
++                stroke={sel || theme ? 'var(--accent)' : 'var(--border)'}
++                strokeWidth={sel ? 2.5 : 1}
+                 strokeDasharray={theme ? '6 4' : undefined}
++                data-selected={sel}
+               />
+               <text x={0} y={-8} textAnchor="middle" fontSize={12} fill="var(--text)">
+                 {n.title}
+diff --git a/src/renderer/features/lineage/LineagePage.tsx b/src/renderer/features/lineage/LineagePage.tsx
+index 115f1b5..a992e9b 100644
+--- a/src/renderer/features/lineage/LineagePage.tsx
++++ b/src/renderer/features/lineage/LineagePage.tsx
+@@ -10,22 +10,51 @@
+  * 编排（LG-03 接入）：selectedNodeId 驻本页 state——Board 的 onSelectNode
+  * 上抛落此（04 侧板 LineageSidePanel 消费面预留——本单空消费，props
+  * 形态照票面）；无侧板布局（04 编排扩）。
++ *
++ * ── LG-04 编排扩（侧板+跳转链）──
++ * - 侧板布局：Board（flex-1）+右侧 LineageSidePanel 固定宽 aside；节点
++ *   数据源=本页经 lineage.store 查找分发（selectedNodeId→nodes.find——
++ *   store 数据消费合法非双取，03 预留出口兑现）。
++ * - 跳转编排：SidePanel.onJumpToPaper 上抛→**总线发送单点在本页**
++ *   （板不直发 bus——可测性+分层）：requestOpenPaperAnchored（open-paper-
++ *   bus 载荷扩，主控裁决路径 A）；anchor null→undefined 归一（票面
++ *   payload 面 number|null vs 总线 optional）。阅读器消费侧=open-paper-
++ *   anchor.ts（接缝三方头注锚定：本页+SidePanel+open-paper-bus）。
+  */
+ import { useEffect, useState } from 'react'
++import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+ import { useLineageStore } from './lineage.store'
+ import { LineageBoard } from './LineageBoard'
++import { LineageSidePanel } from './LineageSidePanel'
+ 
+ export function LineagePage(): JSX.Element {
+   const status = useLineageStore((s) => s.status)
+   const error = useLineageStore((s) => s.error)
+   const load = useLineageStore((s) => s.load)
+-  // 选中节点 id（04 侧板数据源预留——本单 Board 上抛落此，侧板消费归 LG-04）
++  // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
+   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
++  const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
+ 
+   useEffect(() => {
+     void load()
+   }, [load])
+ 
++  /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一） */
++  const handleJumpToPaper = (payload: {
++    paperId: string
++    anchor?: { quoteText: string; prefixText: string; suffixText: string; anchorPage: number | null }
++    aiNoteId?: string
++  }): void => {
++    requestOpenPaperAnchored({
++      paperId: payload.paperId,
++      anchor:
++        payload.anchor === undefined
++          ? undefined
++          : { ...payload.anchor, anchorPage: payload.anchor.anchorPage ?? undefined },
++      aiNoteId: payload.aiNoteId
++    })
++  }
++
+   if (status === 'loading') {
+     return (
+       <div className="flex h-full items-center justify-center p-8 text-sm" style={{ color: 'var(--text-dim)' }}>
+@@ -55,8 +84,13 @@ export function LineagePage(): JSX.Element {
+     )
+   }
+   return (
+-    <div className="h-full p-1">
+-      <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
++    <div className="flex h-full gap-1 p-1">
++      <div className="min-w-0 flex-1">
++        <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
++      </div>
++      <aside className="w-72 shrink-0 overflow-hidden rounded border" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
++        <LineageSidePanel node={selectedNode} onJumpToPaper={handleJumpToPaper} />
++      </aside>
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/lineage/LineageSidePanel.tsx b/src/renderer/features/lineage/LineageSidePanel.tsx
+index d276222..dc3b386 100644
+--- a/src/renderer/features/lineage/LineageSidePanel.tsx
++++ b/src/renderer/features/lineage/LineageSidePanel.tsx
+@@ -62,23 +62,107 @@
+  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+  * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
+  *   git diff → 翻 registry
++ *
++ * ── 实现注（LG-04 交付）──
++ * - 锚递达路径=**总线载荷扩（主控裁决路径 A）**：onJumpToPaper 载荷→
++ *   LineagePage 调 requestOpenPaperAnchored（open-paper-bus 可选 anchor/
++ *   aiNoteId 字段）→阅读器消费点 open-paper-anchor.ts→locateAnchor
++ *   （INV-20 单入口：打开+等就绪+三防线全归它）。接缝三方头注锚定：
++ *   本板+open-paper-bus+open-paper-anchor。
++ * - 载荷构造单点在本板 handleNoteDblClick：anchorPage **1 基→0 基**
++ *   （AiNotesSection:200 同型）；「无锚」判定=quoteText 不足 2 字符
++ *   且 anchorPage null（locateAnchor paper 层阈值同源——页码在即保留
++ *   anchor 走页级跳转，防回退第 0 页）。
++ * - AI 分节分色=ai-note-style 单源跨域只读消费（LineageSideAiNotes
++ *   白名单受控例外，check-quality COMPOSITION_ROOT_ALLOW 同型）；role
++ *   分组逻辑在本域重写（Rule of Three 第 2 次保持重复——AiNoteGroupList
++ *   属 reader 域不可引）。
++ * - 人工笔记=notes/get 总评层只读呈现（LineageSideManualNote），无双击
++ *   跳转（无锚语义下价值低——用户开篇路径已有阅读器入口，票面测试面
++ *   仅 AI 条目）。
++ * - node 数据源=LineagePage 经 lineage.store 查找分发（03 预留出口兑现
++ *   ——store 数据消费合法，非双取）。
+  */
+-// 骨架占位：node 类型=unknown（LineageNode 单源随数据基座单（LG-01）交付 shared/
+-// models/lineage，届时替换 import——本文件属 LG-04 实现面）
+-export function LineageSidePanel(_props: {
+-  node: unknown
+-  onJumpToPaper(
+-    payload: {
+-      paperId: string
+-      anchor?: {
+-        quoteText: string
+-        prefixText: string
+-        suffixText: string
+-        anchorPage: number | null
+-      }
+-      aiNoteId?: string
+-    } | null
+-  ): void
++import type { AiNote } from '@shared/models/ai-note'
++import type { LineageNode } from '@shared/models/lineage'
++import { LineageSideAiNotes } from './LineageSideAiNotes'
++import { LineageSideManualNote } from './LineageSideManualNote'
++
++/** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
++function hasAnchor(n: AiNote): boolean {
++  return n.quoteText.length >= 2 || n.anchorPage !== null
++}
++
++export function LineageSidePanel(props: {
++  node: LineageNode | null
++  onJumpToPaper(payload: {
++    paperId: string
++    anchor?: {
++      quoteText: string
++      prefixText: string
++      suffixText: string
++      anchorPage: number | null
++    }
++    aiNoteId?: string
++  } | null): void
+ }): JSX.Element {
+-  return <div data-ticket="SR2-LG-04" />
++  const { node } = props
++  if (node === null) {
++    return (
++      <div
++        data-ticket="SR2-LG-04"
++        data-testid="lineage-side-panel"
++        className="flex h-full items-center justify-center p-4 text-center text-xs"
++        style={{ color: 'var(--text-dim)' }}
++      >
++        单击节点查看详情
++      </div>
++    )
++  }
++
++  /** AI 条目双击→跳转载荷（构造单点：三元组透传+1 基→0 基；无锚=anchor 缺省） */
++  const handleNoteDblClick = (n: AiNote): void => {
++    if (node.paperId === null) return
++    const anchor = hasAnchor(n)
++      ? {
++          quoteText: n.quoteText,
++          prefixText: n.prefixText,
++          suffixText: n.suffixText,
++          anchorPage: n.anchorPage === null ? null : n.anchorPage - 1
++        }
++      : undefined
++    props.onJumpToPaper({ paperId: node.paperId, anchor, aiNoteId: n.id })
++  }
++
++  return (
++    <div
++      data-ticket="SR2-LG-04"
++      data-testid="lineage-side-panel"
++      className="flex h-full flex-col gap-2 overflow-auto p-2 text-xs"
++    >
++      <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
++        <h3 className="m-0 text-sm font-medium" style={{ color: 'var(--text)' }}>
++          {node.title}
++        </h3>
++        <p className="m-0" style={{ color: 'var(--text-dim)' }}>
++          {node.year === null ? '未知年份' : `${node.year} 年`}
++          {node.paperId !== null && <span className="ml-1 rounded border px-1" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}>已绑定文献</span>}
++        </p>
++      </section>
++      <section data-testid="lineage-side-idea">
++        <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>核心 idea</h4>
++        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
++          {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
++        </p>
++      </section>
++      {node.paperId === null ? (
++        <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
++      ) : (
++        <>
++          <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />
++          <LineageSideManualNote paperId={node.paperId} />
++        </>
++      )}
++    </div>
++  )
+ }
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 6ec5f6f..05203b4 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -7,6 +7,9 @@
+  * - 定时保存阅读进度（翻页后 2s 防抖 api.reader.saveProgress）——已内置于 reader.store.setPage
+  * - 接收 library 侧"打开文献"事件（window CustomEvent 'synapse:open-paper'，library.store 派发；
+  *   App 层切 tab）。事件派发时本页尚未挂载，故挂载时经 takePendingOpenPaper 补读闩锁
++ * - LG-04 锚递达消费接缝（双向锚定：本行+open-paper-anchor.ts+LineageSidePanel 头注）：
++ *   总线 detail 可携带 anchor 三元组+aiNoteId（脉络侧板双击 AI 笔记）——消费定路由
++ *   归 openFromBus（带锚→locateAnchor INV-20 单入口；无锚→openPaper 既有链路）
+  * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，划选保存经
+  *   onSaved → store.addAnnotation；AnnotationLayer 渲染 store.annotations 当前页标注（状态驱动重锚）
+  *
+@@ -24,7 +27,8 @@
+  */
+ import { useEffect, useMemo, useState } from 'react'
+ import { showToast } from '../../shared/ui/Toast'
+-import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
++import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
++import { openFromBus } from './open-paper-anchor'
+ import { AnnotationLayer } from './AnnotationLayer'
+ import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { OutlineAside } from './OutlineAside'
+@@ -55,7 +59,6 @@ export function ReaderPage(): JSX.Element {
+   const zoom = tab?.zoom ?? 1
+   const color = tab?.color ?? 'yellow'
+   const annotations = tab?.annotations ?? []
+-  const openPaper = useReaderStore((s) => s.openPaper)
+   const setPage = useReaderStore((s) => s.setPage)
+   const setZoom = useReaderStore((s) => s.setZoom)
+   const setColor = useReaderStore((s) => s.setColor)
+@@ -89,22 +92,21 @@ export function ReaderPage(): JSX.Element {
+   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
+   const [pageRoot, setPageRoot] = useState<HTMLDivElement | null>(null)
+ 
+-  // 打开请求两路：挂载时闩锁补读+实时监听；openPaper 失败上抛在此 catch → toast
++  // 打开请求两路：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
++  // （LG-04：带锚请求→locateAnchor；打开失败动作型 toast 在该模块 catch）
+   useEffect(() => {
+-    const open = (id: string): void => {
+-      openPaper(id).catch((e: unknown) => {
+-        showToast(e instanceof Error ? e.message : '打开文献失败', 'error')
+-      })
++    const open = (req: OpenPaperRequest): void => {
++      openFromBus(req)
+     }
+     const pending = takePendingOpenPaper()
+     if (pending !== null) open(pending)
+     const handler = (e: Event): void => {
+-      const id = (e as CustomEvent<{ paperId: string }>).detail?.paperId
+-      if (typeof id === 'string') open(id)
++      const detail = (e as CustomEvent<OpenPaperRequest>).detail
++      if (typeof detail?.paperId === 'string') open(detail)
+     }
+     window.addEventListener(OPEN_PAPER_EVENT, handler)
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+-  }, [openPaper])
++  }, [])
+ 
+   // 换文献：丢弃旧页文本与文档句柄（防陈旧文本层——TextLayer 以 page 对齐才渲染）
+   useEffect(() => { setPageText(null); setPdfDoc(null) }, [fileUrl])
+diff --git a/src/renderer/features/reader/ai-note-style.ts b/src/renderer/features/reader/ai-note-style.ts
+index 4163f96..304420c 100644
+--- a/src/renderer/features/reader/ai-note-style.ts
++++ b/src/renderer/features/reader/ai-note-style.ts
+@@ -4,8 +4,10 @@
+  * annotation-style 同族新模块）。
+  *
+  * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
+- * （同源消费，禁 09 另建映射）。取色只允许 theme.css 变量（本映射为 question
+- * →theme.css 变量的唯一出处），禁止散落硬编码色值。
++ * （同源消费，禁 09 另建映射）+LG-04 LineageSideAiNotes（脉络侧板跨域只读
++ * 消费——check-quality COMPOSITION_ROOT_ALLOW 受控例外，映射单源不因跨域
++ * 复写）。取色只允许 theme.css 变量（本映射为 question→theme.css 变量的
++ * 唯一出处），禁止散落硬编码色值。
+  */
+ import type { AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
+ import { AI_NOTE_ROLES } from '@shared/models/ai-note'
+diff --git a/src/renderer/features/reader/ai-notes.store.ts b/src/renderer/features/reader/ai-notes.store.ts
+index 492c688..6afc88b 100644
+--- a/src/renderer/features/reader/ai-notes.store.ts
++++ b/src/renderer/features/reader/ai-notes.store.ts
+@@ -11,6 +11,10 @@
+  * ai-notes/list 取数+导入后刷新=本 store 单点；AI-09 渲染层经宿主订阅本
+  * store 分发 props 消费——禁 09 双取（接缝双向锚定：本行+AiNotesSection 头注）。
+  * notes.store 零触碰（新数据新域，C-03「不新增任何 notes.store 字段」纪律）。
++ * LG-04 例外（门一 W4 裁）：脉络侧板（LineageSideAiNotes）per-paper 惰性直连
++ * window.api 取数**不经本 store**——lineage 域 import 本 store 即违 quality
++ * 跨域互引红线；生命周期不同（选中节点触发 vs 08 面板挂载期轮询）。单约
++ * 范围限 reader 域消费方（接缝双向锚定：本行+LineageSidePanel 头注）。
+  *
+  * 错误契约：loadNotes/loadObserve 失败上抛（unwrap 的 ApiClientError）——
+  * loadObserve 由组件按轮询失败计数消费（连续 3 次离线提示，列表型静默）；
+diff --git a/src/renderer/shared/open-paper-bus.ts b/src/renderer/shared/open-paper-bus.ts
+index 0947c9c..fee34b4 100644
+--- a/src/renderer/shared/open-paper-bus.ts
++++ b/src/renderer/shared/open-paper-bus.ts
+@@ -5,23 +5,48 @@
+  * + window 广播）→ App 监听切到阅读器 tab → ReaderPage 挂载时 takePendingOpenPaper
+  * 补读最近请求（事件派发时 ReaderPage 尚未挂载，收不到广播——闩锁补这一跳），
+  * 之后的重复打开由已挂载的 ReaderPage 直接监听事件。
+- *
+  * 用 window CustomEvent 而非 store 互引：library 与 reader 是两个 feature 域，
+  * 跨域只允许经本模块（check-quality 强制 features 不互引）。
++ *
++ * LG-04 载荷扩（主控裁决路径 A——锚递达=bus 载荷可选字段，非 reader.store 信号）：
++ * 脉络侧板双击 AI 笔记条目→requestOpenPaperAnchored（anchor 三元组+aiNoteId 携带
++ * ——anchorPage 已 0 基，侧板构造时转换）；消费侧定路由=open-paper-anchor.ts
++ * （接缝双向锚定：本行+该文件头注）。requestOpenPaper 保持单字段语义（既有调用方
++ * library/anchor-locate 零改动——locateAnchor 内部重发不带锚，防事件环）。
+  */
+ export const OPEN_PAPER_EVENT = 'synapse:open-paper'
+ 
++/** 锚载荷（quote 三元组+0 基页码——与 anchor-locate 的 LocateAnchor 形状一致，消费侧零转换） */
++export interface OpenPaperAnchor {
++  quoteText: string
++  prefixText: string
++  suffixText: string
++  anchorPage?: number
++}
++
++/** 打开请求（闩锁/事件 detail 单一形状；anchor/aiNoteId 缺省=仅开篇） */
++export interface OpenPaperRequest {
++  paperId: string
++  anchor?: OpenPaperAnchor
++  aiNoteId?: string
++}
++
+ /** 最近一次未消费的打开请求（闩锁）；挂载即取走，取走后置空 */
+-let lastRequest: string | null = null
++let lastRequest: OpenPaperRequest | null = null
+ 
+ export function requestOpenPaper(paperId: string): void {
+-  lastRequest = paperId
+-  window.dispatchEvent(new CustomEvent(OPEN_PAPER_EVENT, { detail: { paperId } }))
++  requestOpenPaperAnchored({ paperId })
++}
++
++/** 带锚打开（LG-04 侧板跳转链——阅读器侧消费定位经 INV-20 单入口） */
++export function requestOpenPaperAnchored(req: OpenPaperRequest): void {
++  lastRequest = req
++  window.dispatchEvent(new CustomEvent(OPEN_PAPER_EVENT, { detail: req }))
+ }
+ 
+ /** ReaderPage 挂载时取走最近一次请求；无请求或已消费返回 null */
+-export function takePendingOpenPaper(): string | null {
+-  const id = lastRequest
++export function takePendingOpenPaper(): OpenPaperRequest | null {
++  const req = lastRequest
+   lastRequest = null
+-  return id
++  return req
+ }
+diff --git a/src/renderer/features/lineage/LineageSideAiNotes.tsx b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+new file mode 100644
+index 0000000..633bb92
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+@@ -0,0 +1,110 @@
++// b3: P7-H
++/**
++ * LineageSideAiNotes —— 侧板 AI 笔记分节（LG-04 交付件，LineageSidePanel 区3）。
++ *
++ * 行为：选中节点 paperId 驱动惰性取数（ai_sensor.listByPaper——W4 直连
++ * window.api 预裁，接缝声明见 LineageSidePanel/ai-notes.store 头注）；
++ * loading/error+重试/空态/分节呈现。role 三组中文标签×七问分色=
++ * **ai-note-style 单源跨域只读消费**（check-quality COMPOSITION_ROOT_
++ * ALLOW 受控例外——分色映射禁本域复写，接缝双向锚定：本行+ai-note-style
++ * 头注）；分组逻辑本域重写（AiNoteGroupList 属 reader 域不可引——Rule
++ * of Three 第 2 次保持重复）。条目双击上抛（单击无操作——防误触）。
++ * stale 守卫：请求序号（选中节点切换后晚到旧响应丢弃——anchor-locate
++ * locateSeq 同族思想，票面 N7 校准字面）。
++ */
++import { useEffect, useState } from 'react'
++import { api, unwrap } from '../../api/client'
++import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
++import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
++
++type Phase = 'loading' | 'ready' | 'error'
++
++export function LineageSideAiNotes(props: {
++  paperId: string
++  onNoteDblClick(note: AiNote): void
++}): JSX.Element {
++  const { paperId, onNoteDblClick } = props
++  const [notes, setNotes] = useState<AiNote[] | null>(null)
++  const [phase, setPhase] = useState<Phase>('loading')
++  const [message, setMessage] = useState('')
++  /** 请求序号 stale 守卫 + 重试计数（retryTick 变化即重发） */
++  const [retryTick, setRetryTick] = useState(0)
++
++  useEffect(() => {
++    let seq = 0
++    setPhase('loading')
++    unwrap(api.ai_sensor.listByPaper({ paperId }))
++      .then((data) => {
++        if (seq !== 0) return
++        setNotes(data)
++        setPhase('ready')
++      })
++      .catch((e: unknown) => {
++        if (seq !== 0) return
++        setMessage(e instanceof Error ? e.message : String(e))
++        setPhase('error')
++      })
++    return () => {
++      seq = 1
++    }
++  }, [paperId, retryTick])
++
++  return (
++    <section data-testid="lineage-side-ai-notes" className="flex flex-col gap-1">
++      <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>AI 笔记</h4>
++      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>AI 笔记加载中…</p>}
++      {phase === 'error' && (
++        <div
++          role="alert"
++          data-testid="lineage-side-ai-error"
++          className="flex items-center gap-2 rounded border px-2 py-1"
++          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
++        >
++          <span>AI 笔记加载失败：{message}</span>
++          <button
++            type="button"
++            data-action="retry"
++            className="rounded px-1"
++            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
++            onClick={() => setRetryTick((t) => t + 1)}
++          >
++            重试
++          </button>
++        </div>
++      )}
++      {phase === 'ready' &&
++        (notes === null || notes.length === 0 ? (
++          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无 AI 笔记</p>
++        ) : (
++          ROLE_ORDER.filter((role) => notes.some((n) => n.role === role)).map((role: AiNoteRole) => (
++            <div key={role} data-role={role}>
++              <h5 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>{ROLE_LABEL[role]}</h5>
++              {notes
++                .filter((n) => n.role === role)
++                .map((n) => (
++                  <div
++                    key={n.id}
++                    data-ai-note-id={n.id}
++                    className="mt-0.5 rounded border px-2 py-1"
++                    style={{ borderColor: 'var(--border)' }}
++                    onDoubleClick={() => onNoteDblClick(n)}
++                  >
++                    <span className="flex items-center gap-1">
++                      <span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: QUESTION_COLOR[n.question] }} />
++                      <span style={{ color: 'var(--text-dim)' }}>
++                        {QUESTION_LABEL[n.question]}
++                        {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
++                      </span>
++                    </span>
++                    {n.quoteText !== '' && (
++                      <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>{n.quoteText}</span>
++                    )}
++                    <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{n.contentMd}</span>
++                  </div>
++                ))}
++            </div>
++          ))
++        ))}
++    </section>
++  )
++}
+\ No newline at end of file
+diff --git a/src/renderer/features/lineage/LineageSideManualNote.tsx b/src/renderer/features/lineage/LineageSideManualNote.tsx
+new file mode 100644
+index 0000000..aaec7fe
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageSideManualNote.tsx
+@@ -0,0 +1,75 @@
++// b3: P7-H
++/**
++ * LineageSideManualNote —— 侧板人工笔记总评层（LG-04 交付件，
++ * LineageSidePanel 区4；C-03 notes/get 数据面复用——只读呈现）。
++ *
++ * 行为：选中节点 paperId 驱动惰性取数（notes/get→Note|null）；loading/
++ * error+重试/空态（null=「暂无人工笔记」非错误——INV-02 列表型）/
++ * contentMd 纯文本呈现（负面清单红线——md 不渲染只展示）。stale 守卫
++ * 同 LineageSideAiNotes（请求序号）。无跳转交互（无锚语义，票面测试面
++ * 仅 AI 条目——见 LineageSidePanel 实现注）。
++ */
++import { useEffect, useState } from 'react'
++import { api, unwrap } from '../../api/client'
++import type { Note } from '@shared/models/note'
++
++type Phase = 'loading' | 'ready' | 'error'
++
++export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
++  const { paperId } = props
++  const [note, setNote] = useState<Note | null>(null)
++  const [phase, setPhase] = useState<Phase>('loading')
++  const [message, setMessage] = useState('')
++  const [retryTick, setRetryTick] = useState(0)
++
++  useEffect(() => {
++    let seq = 0
++    setPhase('loading')
++    unwrap(api.notes.get({ paperId }))
++      .then((data) => {
++        if (seq !== 0) return
++        setNote(data)
++        setPhase('ready')
++      })
++      .catch((e: unknown) => {
++        if (seq !== 0) return
++        setMessage(e instanceof Error ? e.message : String(e))
++        setPhase('error')
++      })
++    return () => {
++      seq = 1
++    }
++  }, [paperId, retryTick])
++
++  return (
++    <section data-testid="lineage-side-manual-note" className="flex flex-col gap-1">
++      <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>人工笔记</h4>
++      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>人工笔记加载中…</p>}
++      {phase === 'error' && (
++        <div
++          role="alert"
++          data-testid="lineage-side-note-error"
++          className="flex items-center gap-2 rounded border px-2 py-1"
++          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
++        >
++          <span>人工笔记加载失败：{message}</span>
++          <button
++            type="button"
++            data-action="retry"
++            className="rounded px-1"
++            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
++            onClick={() => setRetryTick((t) => t + 1)}
++          >
++            重试
++          </button>
++        </div>
++      )}
++      {phase === 'ready' &&
++        (note === null ? (
++          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无人工笔记</p>
++        ) : (
++          <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{note.contentMd}</p>
++        ))}
++    </section>
++  )
++}
+diff --git a/src/renderer/features/reader/open-paper-anchor.ts b/src/renderer/features/reader/open-paper-anchor.ts
+new file mode 100644
+index 0000000..bfb65c0
+--- /dev/null
++++ b/src/renderer/features/reader/open-paper-anchor.ts
+@@ -0,0 +1,29 @@
++/**
++ * open-paper-anchor —— 总线打开请求的消费侧定路由（LG-04 接缝落地）。
++ *
++ * 接缝双向锚定声明（跨视图锚递达，主控裁决路径 A）：本行+LineageSidePanel 头注
++ * +open-paper-bus 头注——OPEN_PAPER_EVENT detail 增可选 anchor/aiNoteId 字段
++ * （bus 载荷扩），本模块是阅读器侧唯一消费点。
++ * - 带 anchor → locateAnchor（INV-20 单入口：打开/等就绪/三防线/exact 层
++ *   data-ai-note-id 闪烁全归它——tab 未开时其内部自 requestOpenPaper 无锚
++ *   重发，不回环）；页级/篇级降级提示也归其内部，本消费点不重复 toast。
++ * - 无 anchor → reader.store openPaper 既有链路（失败动作型 toast 保持
++ *   ReaderPage 原文案，INV-02）。
++ */
++import { locateAnchor } from './anchor-locate'
++import { useReaderStore } from './reader.store'
++import { showToast } from '../../shared/ui/toast-store'
++import type { OpenPaperRequest } from '../../shared/open-paper-bus'
++
++export function openFromBus(req: OpenPaperRequest): void {
++  if (req.anchor !== undefined) {
++    void locateAnchor({ paperId: req.paperId, anchor: req.anchor, aiNoteId: req.aiNoteId })
++    return
++  }
++  useReaderStore
++    .getState()
++    .openPaper(req.paperId)
++    .catch((e: unknown) => {
++      showToast(e instanceof Error ? e.message : '打开文献失败', 'error')
++    })
++}
+diff --git a/tests/unit/renderer/lineage-side-panel.test.tsx b/tests/unit/renderer/lineage-side-panel.test.tsx
+new file mode 100644
+index 0000000..18312f3
+--- /dev/null
++++ b/tests/unit/renderer/lineage-side-panel.test.tsx
+@@ -0,0 +1,427 @@
++// @vitest-environment jsdom
++/**
++ * [LG-04] LineageSidePanel —— 节点侧板+笔记双击跳阅读器组件测试（锁定合约，
++ * always-active——不经 guardedDescribe）。
++ *
++ * 覆盖：文献节点四区渲染（元信息/核心 idea/AI 分节分色单源/人工笔记）/
++ * 主题节点空态（仅前两区+「主题节点无笔记」，笔记通道零调用）/AI 条目双击→
++ * onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）/无锚条目→
++ * anchor 缺省（篇级防线）/有页码无引文→anchor 保留页码（页级跳转）/
++ * 单击不触发跳转/取数失败 error+重试（AI 面与人工面独立，INV-02 列表型）/
++ * 空数据空态文案/换节点 stale 守卫（晚到旧响应不覆盖）/未选中空态/
++ * Page 编排全链（单击节点→侧板挂载→双击→requestOpenPaperAnchored 锚载荷）/
++ * Canvas 选中视觉态（Board selectedNodeId 兑现）/消费方级 INV-20（open-paper-
++ * anchor：带锚→locateAnchor 单入口+页级降级静默；无锚→openPaper 既有链路）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import type { AiNote } from '../../../src/shared/models/ai-note'
++import type { LineageNode } from '../../../src/shared/models/lineage'
++import type * as clientModule from '../../../src/renderer/api/client'
++import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
++
++const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub } = vi.hoisted(() => ({
++  stubApi: {
++    ai_sensor: { listByPaper: vi.fn() },
++    notes: { get: vi.fn() },
++    lineage: { graph: vi.fn() }
++  },
++  openPaperStub: vi.fn(),
++  locateAnchorStub: vi.fn(),
++  requestAnchoredStub: vi.fn()
++}))
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return {
++    ...real,
++    api: stubApi as unknown as typeof clientModule.api,
++    apiEvents: {
++      onExportCorpus: vi.fn(() => () => undefined),
++      onImportProgress: vi.fn(() => () => undefined)
++    }
++  }
++})
++
++vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
++  const real = await importOriginal<typeof toastStoreModule>()
++  return { ...real, showToast: vi.fn() }
++})
++
++// 消费方级用例：reader.store 仅需 getState().openPaper（open-paper-anchor 面）
++vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
++  useReaderStore: { getState: () => ({ openPaper: openPaperStub }) }
++}))
++vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({
++  locateAnchor: locateAnchorStub
++}))
++// Page 编排用例：总线发送面 mock（消费方级用例不经它）
++vi.mock('../../../src/renderer/shared/open-paper-bus', () => ({
++  OPEN_PAPER_EVENT: 'synapse:open-paper',
++  requestOpenPaper: vi.fn(),
++  requestOpenPaperAnchored: requestAnchoredStub,
++  takePendingOpenPaper: vi.fn(() => null)
++}))
++
++import { showToast } from '../../../src/renderer/shared/ui/toast-store'
++import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
++import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
++import { openFromBus } from '../../../src/renderer/features/reader/open-paper-anchor'
++import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++
++function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
++  return {
++    id,
++    paperId: `paper-${id}`,
++    title: `节点${id}`,
++    coreIdea: '',
++    year: 2020,
++    x: null,
++    y: null,
++    createdAt: 't',
++    updatedAt: 't',
++    ...patch
++  }
++}
++
++function aiNote(id: string, patch: Partial<AiNote> = {}): AiNote {
++  return {
++    id,
++    paperId: 'paper-A',
++    annotationId: null,
++    role: 'first-read',
++    question: 'Q1',
++    model: 'test-model',
++    quoteText: `quote-${id}`,
++    prefixText: '',
++    suffixText: '',
++    anchorPage: 3,
++    contentMd: `内容-${id}`,
++    createdAt: 't',
++    updatedAt: 't',
++    ...patch
++  }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(element: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(element)
++  })
++}
++
++const flush = async (turns = 6): Promise<void> => {
++  for (let i = 0; i < turns; i++) {
++    await act(async () => {
++      await Promise.resolve()
++    })
++  }
++}
++
++const q = (sel: string): Element | null => host?.querySelector(sel) ?? null
++
++/** 双击（jsdom dblclick 事件——React onDoubleClick 消费面） */
++function dblClick(el: Element): void {
++  act(() => {
++    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
++  })
++}
++
++function click(el: Element): void {
++  act(() => {
++    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
++  })
++}
++
++/** 单击画布节点（pointer 会话位移 0——board 测试 clickNode 同型） */
++function clickNode(el: Element): void {
++  act(() => {
++    el.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
++  })
++  act(() => {
++    window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100, clientY: 100 }))
++  })
++}
++
++const JUMP = vi.fn()
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  for (const fn of Object.values(stubApi.ai_sensor)) fn.mockReset()
++  stubApi.notes.get.mockReset()
++  stubApi.lineage.graph.mockReset()
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] })
++  stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
++  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
++  locateAnchorStub.mockResolvedValue('exact')
++  openPaperStub.mockResolvedValue(undefined)
++  useLineageStore.setState({
++    nodes: [],
++    edges: [],
++    status: 'loading',
++    error: null,
++    saveStatus: 'saved',
++    lastWriteError: null,
++    queue: [],
++    flushing: false
++  })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++})
++
++// ── 消费方级（open-paper-anchor，INV-20 单入口接缝） ──────────────────
++
++it('消费方级：带锚请求→locateAnchor 单入口（锚三元组+aiNoteId 透传；openPaper 不重复调）', async () => {
++  openFromBus({
++    paperId: 'p-1',
++    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
++    aiNoteId: 'a1'
++  })
++  await flush()
++  expect(locateAnchorStub).toHaveBeenCalledWith({
++    paperId: 'p-1',
++    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
++    aiNoteId: 'a1'
++  })
++  expect(openPaperStub).not.toHaveBeenCalled()
++})
++
++it('消费方级：无锚请求→openPaper 既有链路（locateAnchor 不介入）', async () => {
++  openFromBus({ paperId: 'p-1' })
++  await flush()
++  expect(openPaperStub).toHaveBeenCalledWith('p-1')
++  expect(locateAnchorStub).not.toHaveBeenCalled()
++})
++
++it('消费方级：页级降级（resolve page）静默——降级提示归 locateAnchor 内部，不重复 toast', async () => {
++  locateAnchorStub.mockResolvedValue('page')
++  openFromBus({ paperId: 'p-1', anchor: { quoteText: 'q', prefixText: '', suffixText: '' }, aiNoteId: 'a1' })
++  await flush()
++  expect(showToast).not.toHaveBeenCalled()
++})
++
++it('消费方级：无锚打开失败→动作型 toast（既有文案保持）', async () => {
++  openPaperStub.mockRejectedValue(new Error('文件不存在'))
++  openFromBus({ paperId: 'p-1' })
++  await flush()
++  expect(showToast).toHaveBeenCalledWith('文件不存在', 'error')
++})
++
++// ── SidePanel 组件级 ────────────────────────────────────────────────
++
++it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人工笔记', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({
++    ok: true,
++    data: [aiNote('a1', { question: 'Q1' }), aiNote('c1', { role: 'adjudicate', question: 'divergence' })]
++  })
++  stubApi.notes.get.mockResolvedValue({
++    ok: true,
++    data: { id: 'n1', paperId: 'paper-A', title: '', contentMd: '人工总评内容', createdAt: 't', updatedAt: 't' }
++  })
++  mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
++  await flush()
++  expect(stubApi.ai_sensor.listByPaper).toHaveBeenCalledWith({ paperId: 'paper-A' })
++  expect(stubApi.notes.get).toHaveBeenCalledWith({ paperId: 'paper-A' })
++  // 区1 元信息（title/年份/绑定徽标）
++  expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('节点A')
++  expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('2020')
++  expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
++  // 区2 核心 idea
++  expect(q('[data-testid="lineage-side-idea"]')?.textContent).toContain('核心思想甲')
++  // 区3 AI 分节：role 组中文标签+七问分色单源
++  const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-role]') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'adjudicate'])
++  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['一读', '裁决'])
++  const dot = q('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
++  expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
++  expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('quote-a1')
++  expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('内容-a1')
++  // 区4 人工笔记（总评层）
++  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('人工总评内容')
++})
++
++it('主题节点：仅前两区+空态文案；笔记通道零调用', async () => {
++  mount(<LineageSidePanel node={node('T', { paperId: null, year: null })} onJumpToPaper={JUMP} />)
++  await flush()
++  expect(q('[data-testid="lineage-side-idea"]')).not.toBeNull()
++  expect(host?.textContent).toContain('主题节点无笔记')
++  expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
++  expect(stubApi.notes.get).not.toHaveBeenCalled()
++})
++
++it('AI 条目双击→onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  dblClick(q('[data-ai-note-id="a1"]') as Element)
++  expect(JUMP).toHaveBeenCalledWith({
++    paperId: 'paper-A',
++    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
++    aiNoteId: 'a1'
++  })
++})
++
++it('无锚条目（无引文且无页码）→anchor 缺省（篇级防线）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({
++    ok: true,
++    data: [aiNote('a1', { quoteText: '', anchorPage: null })]
++  })
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  dblClick(q('[data-ai-note-id="a1"]') as Element)
++  expect(JUMP).toHaveBeenCalledWith({ paperId: 'paper-A', anchor: undefined, aiNoteId: 'a1' })
++})
++
++it('有页码无引文→anchor 保留页码（页级跳转不回退第 0 页）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({
++    ok: true,
++    data: [aiNote('a1', { quoteText: '', anchorPage: 3 })]
++  })
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  dblClick(q('[data-ai-note-id="a1"]') as Element)
++  expect(JUMP).toHaveBeenCalledWith({
++    paperId: 'paper-A',
++    anchor: { quoteText: '', prefixText: '', suffixText: '', anchorPage: 2 },
++    aiNoteId: 'a1'
++  })
++})
++
++it('条目单击不触发跳转（双击显式语义——防误触）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  click(q('[data-ai-note-id="a1"]') as Element)
++  expect(JUMP).not.toHaveBeenCalled()
++})
++
++it('AI 取数失败→error+重试按钮；重试成功恢复呈现（INV-02 列表型）', async () => {
++  stubApi.ai_sensor.listByPaper.mockRejectedValueOnce(new Error('数据库占用'))
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  const err = q('[data-testid="lineage-side-ai-error"]')
++  expect(err?.getAttribute('role')).toBe('alert')
++  expect(err?.textContent).toContain('AI 笔记加载失败：数据库占用')
++  stubApi.ai_sensor.listByPaper.mockResolvedValueOnce({ ok: true, data: [aiNote('a1')] })
++  const retry = err?.querySelector('button[data-action="retry"]') as HTMLButtonElement
++  act(() => {
++    retry.click()
++  })
++  await flush()
++  expect(stubApi.ai_sensor.listByPaper).toHaveBeenCalledTimes(2)
++  expect(q('[data-ai-note-id="a1"]')).not.toBeNull()
++  expect(q('[data-testid="lineage-side-ai-error"]')).toBeNull()
++})
++
++it('人工笔记取数失败→error+重试（与 AI 面独立）', async () => {
++  stubApi.notes.get.mockRejectedValueOnce(new Error('IO 失败'))
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  const err = q('[data-testid="lineage-side-note-error"]')
++  expect(err?.textContent).toContain('人工笔记加载失败：IO 失败')
++  expect(q('[data-testid="lineage-side-ai-error"]')).toBeNull()
++  stubApi.notes.get.mockResolvedValueOnce({
++    ok: true,
++    data: { id: 'n1', paperId: 'paper-A', title: '', contentMd: '补取内容', createdAt: 't', updatedAt: 't' }
++  })
++  const retry = err?.querySelector('button[data-action="retry"]') as HTMLButtonElement
++  act(() => {
++    retry.click()
++  })
++  await flush()
++  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('补取内容')
++})
++
++it('空数据：AI 空态+人工 null 空态（非错误）', async () => {
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('暂无 AI 笔记')
++  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('暂无人工笔记')
++})
++
++it('未选中节点→空态提示', async () => {
++  mount(<LineageSidePanel node={null} onJumpToPaper={JUMP} />)
++  await flush()
++  expect(host?.textContent).toContain('单击节点查看详情')
++  expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
++})
++
++it('换节点 stale 守卫：晚到的旧节点响应不覆盖新节点数据', async () => {
++  let resolveOld: (v: { ok: boolean; data: AiNote[] }) => void = () => undefined
++  stubApi.ai_sensor.listByPaper
++    .mockImplementationOnce(() => new Promise((r) => { resolveOld = r }))
++    .mockResolvedValueOnce({ ok: true, data: [aiNote('b1', { paperId: 'paper-B', quoteText: 'quote-b' })] })
++  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
++  await flush()
++  act(() => {
++    root?.render(<LineageSidePanel node={node('B')} onJumpToPaper={JUMP} />)
++  })
++  await flush()
++  expect(q('[data-ai-note-id="b1"]')).not.toBeNull()
++  act(() => {
++    resolveOld({ ok: true, data: [aiNote('a-old', { quoteText: 'late' })] })
++  })
++  await flush()
++  expect(q('[data-ai-note-id="a-old"]')).toBeNull()
++  expect(q('[data-ai-note-id="b1"]')).not.toBeNull()
++})
++
++// ── Page 编排级（全链：单击→侧板→双击→总线锚载荷） ────────────────────
++
++async function mountPage(): Promise<void> {
++  stubApi.lineage.graph.mockResolvedValue({
++    ok: true,
++    data: {
++      nodes: [node('A', { coreIdea: 'idea-A' }), node('T', { paperId: null })],
++      edges: []
++    }
++  })
++  mount(<LineagePage />)
++  await flush()
++  const el = q('[data-node-id="A"]')
++  if (el === null) throw new Error('节点 A 未渲染')
++  clickNode(el)
++  await flush()
++}
++
++it('Page 全链：单击节点→侧板挂载呈现节点+Canvas 选中视觉态兑现', async () => {
++  await mountPage()
++  expect(q('[data-testid="lineage-side-panel"]')?.textContent).toContain('节点A')
++  expect(q('[data-node-id="A"] rect')?.getAttribute('data-selected')).toBe('true')
++  expect(q('[data-node-id="T"] rect')?.getAttribute('data-selected')).toBe('false')
++})
++
++it('Page 全链：AI 条目双击→requestOpenPaperAnchored 锚载荷（0 基页）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
++  await mountPage()
++  dblClick(q('[data-ai-note-id="a1"]') as Element)
++  expect(requestAnchoredStub).toHaveBeenCalledWith({
++    paperId: 'paper-A',
++    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
++    aiNoteId: 'a1'
++  })
++})
++
++it('Page 全链：无锚条目双击→载荷 anchor 缺省（仅开篇）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({
++    ok: true,
++    data: [aiNote('a1', { quoteText: '', anchorPage: null })]
++  })
++  await mountPage()
++  dblClick(q('[data-ai-note-id="a1"]') as Element)
++  expect(requestAnchoredStub).toHaveBeenCalledWith({ paperId: 'paper-A', aiNoteId: 'a1' })
++})

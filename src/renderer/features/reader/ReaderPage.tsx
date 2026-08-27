@@ -7,6 +7,9 @@
  * - 定时保存阅读进度（翻页后 2s 防抖 api.reader.saveProgress）——已内置于 reader.store.setPage
  * - 接收 library 侧"打开文献"事件（window CustomEvent 'synapse:open-paper'，library.store 派发；
  *   App 层切 tab）。事件派发时本页尚未挂载，故挂载时经 takePendingOpenPaper 补读闩锁
+ * - LG-04 锚递达消费接缝（双向锚定：本行+open-paper-anchor.ts+LineageSidePanel 头注）：
+ *   总线 detail 可携带 anchor 三元组+aiNoteId（脉络侧板双击 AI 笔记）——消费定路由
+ *   归 openFromBus（带锚→locateAnchor INV-20 单入口；无锚→openPaper 既有链路）
  * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，划选保存经
  *   onSaved → store.addAnnotation；AnnotationLayer 渲染 store.annotations 当前页标注（状态驱动重锚）
  *
@@ -24,7 +27,8 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
-import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
+import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+import { openFromBus } from './open-paper-anchor'
 import { AnnotationLayer } from './AnnotationLayer'
 import { ReaderAiLayer } from './AiAnnotationLayer'
 import { OutlineAside } from './OutlineAside'
@@ -55,7 +59,6 @@ export function ReaderPage(): JSX.Element {
   const zoom = tab?.zoom ?? 1
   const color = tab?.color ?? 'yellow'
   const annotations = tab?.annotations ?? []
-  const openPaper = useReaderStore((s) => s.openPaper)
   const setPage = useReaderStore((s) => s.setPage)
   const setZoom = useReaderStore((s) => s.setZoom)
   const setColor = useReaderStore((s) => s.setColor)
@@ -89,22 +92,21 @@ export function ReaderPage(): JSX.Element {
   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
   const [pageRoot, setPageRoot] = useState<HTMLDivElement | null>(null)
 
-  // 打开请求两路：挂载时闩锁补读+实时监听；openPaper 失败上抛在此 catch → toast
+  // 打开请求两路：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
+  // （LG-04：带锚请求→locateAnchor；打开失败动作型 toast 在该模块 catch）
   useEffect(() => {
-    const open = (id: string): void => {
-      openPaper(id).catch((e: unknown) => {
-        showToast(e instanceof Error ? e.message : '打开文献失败', 'error')
-      })
+    const open = (req: OpenPaperRequest): void => {
+      openFromBus(req)
     }
     const pending = takePendingOpenPaper()
     if (pending !== null) open(pending)
     const handler = (e: Event): void => {
-      const id = (e as CustomEvent<{ paperId: string }>).detail?.paperId
-      if (typeof id === 'string') open(id)
+      const detail = (e as CustomEvent<OpenPaperRequest>).detail
+      if (typeof detail?.paperId === 'string') open(detail)
     }
     window.addEventListener(OPEN_PAPER_EVENT, handler)
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
-  }, [openPaper])
+  }, [])
 
   // 换文献：丢弃旧页文本与文档句柄（防陈旧文本层——TextLayer 以 page 对齐才渲染）
   useEffect(() => { setPageText(null); setPdfDoc(null) }, [fileUrl])

@@ -4,8 +4,10 @@
  * annotation-style 同族新模块）。
  *
  * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
- * （同源消费，禁 09 另建映射）。取色只允许 theme.css 变量（本映射为 question
- * →theme.css 变量的唯一出处），禁止散落硬编码色值。
+ * （同源消费，禁 09 另建映射）+LG-04 LineageSideAiNotes（脉络侧板跨域只读
+ * 消费——check-quality COMPOSITION_ROOT_ALLOW 受控例外，映射单源不因跨域
+ * 复写）。取色只允许 theme.css 变量（本映射为 question→theme.css 变量的
+ * 唯一出处），禁止散落硬编码色值。
  */
 import type { AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
 import { AI_NOTE_ROLES } from '@shared/models/ai-note'

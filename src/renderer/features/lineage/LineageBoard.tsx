@@ -187,6 +187,7 @@ export function LineageBoard(props: {
       <LineageCanvas
         nodes={nodes}
         edges={edges}
+        selectedNodeId={props.selectedNodeId ?? null}
         onNodeDrag={(id, x, y) => store().moveNode(id, x, y)}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={(id, anchor) => {

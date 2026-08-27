@@ -11,6 +11,10 @@
  * ai-notes/list 取数+导入后刷新=本 store 单点；AI-09 渲染层经宿主订阅本
  * store 分发 props 消费——禁 09 双取（接缝双向锚定：本行+AiNotesSection 头注）。
  * notes.store 零触碰（新数据新域，C-03「不新增任何 notes.store 字段」纪律）。
+ * LG-04 例外（门一 W4 裁）：脉络侧板（LineageSideAiNotes）per-paper 惰性直连
+ * window.api 取数**不经本 store**——lineage 域 import 本 store 即违 quality
+ * 跨域互引红线；生命周期不同（选中节点触发 vs 08 面板挂载期轮询）。单约
+ * 范围限 reader 域消费方（接缝双向锚定：本行+LineageSidePanel 头注）。
  *
  * 错误契约：loadNotes/loadObserve 失败上抛（unwrap 的 ApiClientError）——
  * loadObserve 由组件按轮询失败计数消费（连续 3 次离线提示，列表型静默）；
