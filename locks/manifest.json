@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T16:01:48.7576384Z",
+    "generatedAt":  "2026-08-27T16:10:20.4696934Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -120,6 +120,10 @@
                   {
                       "path":  "src/shared/models/tag.ts",
                       "sha256":  "7d5f9fd435a4c7bd815d646e94bbdef442e4b557a23bbfeeb952a12d5bf44572"
+                  },
+                  {
+                      "path":  "src/shared/venue-tier.ts",
+                      "sha256":  "e258e8e99fd22e6733e1e8fcbe7b0993a22e6d1306f1858f87ac1ad1ef2d9b85"
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",

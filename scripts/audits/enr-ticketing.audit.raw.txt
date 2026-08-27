@@ -1,0 +1,338 @@
+================================================================================
+门一对抗深审档案：SR2-ENR-01/02 工单化票面草案（plan 门）
+日期：2026-08-27 · 审对象：scripts/audits/enr-ticketing-draft.md
+审计人：门一对抗深审子代理（三屋模式 ADR-0017） · 性质：只读审计+本档唯一可写
+================================================================================
+
+## 技能清点（宪法开工纪律）
+- code-review-excellence：用——对抗审计方法论主体（逐条证据+攻击优先）。
+- verification-before-completion：用——每条结论自验 file:line，拒绝礼貌性通过。
+- systematic-debugging：不用——本单纯票面文档审计，无运行时缺陷定位面。
+- test-driven-development / subagent-driven-development：不用——本单零实现零派发。
+- 配置自查：门一子代理（本档），只读权限，无模型/思考等级签发面。
+
+## 证据基线（全部实读）
+草案 enr-ticketing-draft.md；ADR-0011 全文；P8 提案全文；enrich.service.ts /
+providers 三件 / corpus.assemble.ts / corpus.export.service.ts / paper.ts /
+papers.repo.ts / migrate.ts 全文；migrations 目录（001~004，实际路径
+src/main/db/migrations/）；tickets/registry.ts（TicketArea+条目格式）；
+scripts/check-tickets.mjs 全文；locks/manifest.json 全量 132 条；
+tests/unit/services/enrich.service.test.ts（头部 40 行+桩形状）；
+tests/unit/services/providers/{crossref,openalex}.test.ts（断言面）；
+tests/unit/db/migrate.test.ts、tests/unit/db/repos/papers.repo.test.ts、
+tests/unit/ipc/enrich.test.ts、tests/contracts/api-surface.test.ts（断言面）；
+tests/unit/services/corpus.assemble.test.ts golden 夹具；
+tests/e2e/corpus-export.spec.ts manifest 断言面；interface-template.ts；
+ROADMAP.md P7 标题行；AGENTS.md（宪法）。
+
+================================================================================
+## 逐条裁决
+================================================================================
+
+[B1] ENR-01 异常语义自相矛盾——「并入既有 try」与「metrics 失败≠enrich
+     failed」互斥，按票面字面实现必产「状态撒谎」缺陷（宪法状态机前置红线
+     直接违例）。
+证据：草案 41-42 行「provider 异常已被现有 try 捕获→不影响 enrich_status
+判定（元数据成功仍 done）」vs 草案 63-65 行「异常面并入既有 try 语义」；
+代码面 enrich.service.ts:87-122——整个三源瀑布在单一 try/catch 内，
+catch 分支唯一动作是 `work = null`（119-122 行），随后 124-128 行
+`enrichStatus: work !== null ? 'done' : 'failed'`。若 citedBy 抓取调用
+「并入既有 try」，provider 异常→work 被置 null→enrich_status='failed'、
+fillEmptyPatch 丢弃（patch={}）——元数据实际已成功的结果被 metrics 失败
+整体吞掉，恰是票面自己声明的「状态撒谎」。票面状态机表第 4 行（草案 50 行）
+「抓取异常/未命中（work=null）」一格也是把两种后果不同的态混写。
+必须改：明确异常隔离结构（cited-by 调用置于既有 try 之外独立 try，或
+cited-by.service 内部自捕获返回 null patch），并把状态机表「抓取异常」
+单列一行断言「work 不受影响、enrich_status 按元数据结果、缓存旧值保留」。
+
+[B2] ENR-01→ENR-02 数据通道断裂：PaperDetail 扩展漏声明。
+证据：ENR-01 接口层（草案 60-61 行）只写「PaperMetaPatch 增可选三字段」；
+而 ENR-02 装配面（草案 116-118 行）citedByCount 从 papers 行取值装配进
+front-matter，装配输入是 CorpusAssembleInput.paper: PaperDetail
+（corpus.assemble.ts:115-121、frontMatter() 131-148 行以 paper: PaperDetail
+为唯一元数据源）；paperDetailSchema 是 .strict()（paper.ts:33-45），不扩
+schema 则 detailById 即使查出新列也无法透出（papers.repo.ts:275-297
+detailById 返回形状受 PaperDetail 类型约束）。ENR-01 不扩 PaperDetail ⇒
+ENR-02 装配无数据源。必须改：ENR-01 接口层显式声明 paperDetailSchema
+同步增三个可选字段（受锁 [locked-change] 面），并声明扩展形态=optional
+（zod .optional()）——这同时决定受锁测试桩（enrich.service.test.ts:39
+detailRow/PaperRow、const detail: PaperDetail）与 import.service.ts:123
+`const row: PaperRow` 的类型涟漪范围（optional=零涟漪；必填=多文件红）。
+票面完全未写这个关键设计决策。
+
+[B3] 受锁面/文件清单系统性错位（多标+漏列+错名+错报并存）——LG-04 staging
+     教训直接命中，清单自称「显式全列」（草案 93 行）但不可照单执行。
+逐项证据（对照 locks/manifest.json 实际 132 条）：
+ (a) 多标受锁（实不在 manifest）：草案 151-152 行标「corpus.assemble.ts
+     （受锁改）/interface-template.ts（受锁改）」——两文件均不在
+     locks/manifest.json；草案 89 行/158 行将 tickets/registry.ts 列入
+     「受锁面 [locked-change]」——registry.ts 不在 manifest（翻状态是
+     常规流程非受锁变更）。多标会诱导实现者走无谓 unlock 流程。
+ (b) 漏列必改受锁测试：测试面①「providers 夹具两形解析单测」（草案 85 行）
+     的落点=tests/unit/services/providers/crossref.test.ts 与 openalex.test.ts
+     （均受锁、现断言逐字段不含新字段——crossref.test.ts:31、
+     openalex.test.ts:33），文件清单（草案 93-99 行）无此二文件；
+     ENR-02 的 manifest 结构断言（citedByFetchedAt 进 per-paper 条目，
+     草案 118-120 行）与五件套 golden 的宿主=tests/unit/services/
+     corpus.export.test.ts（受锁；golden 断言在 115 行起），ENR-02 文件
+     清单（草案 154-158 行）无此文件。
+ (c) 漏列必改非锁文件：src/main/db/migrate.ts——MIGRATIONS 数组硬编码
+     import ?raw（migrate.ts:11-27），加 005 必改（import+数组条目），
+     两单文件清单均未列；src/main/services/import_/import.service.ts:123
+     显式构造 PaperRow——PaperRow 新列若必填则此文件类型红，票面未定
+     可选性也未列该文件（与 B2 合并处置）。
+ (d) 错报：草案 74-75 行「migrate 版本清单测试涟漪（LG-01 同型先例，
+     受锁）」+文件清单「迁移版本清单测试（受锁扩）」——migrate.test.ts:11
+     断言是动态 `Math.max(...MIGRATIONS.map(m => m.version))`，加 005 零
+     涟漪；此条错报会误导 staging 与 locks 操作。
+ (e) 文件名写错：草案 157 行「tests/unit/services/corpus-assemble.test.ts」
+     ——实际文件名是 corpus.assemble.test.ts（圆点非连字符），照单
+     staging 扑空。
+
+[B4] W2/W3 派发模板改进义务未落实——母本（P8 提案）对票面的直接义务漏项。
+证据：提案 §4.3 已知遗留节原文「W2/W3 流程改进（日志真退出码行/变异还原
+入日志=收口机检项）已定『转下批模板强制化』——SR3-ENR 工单化时须落实进
+派发模板（本提案预裁申报提醒位）」（2026-08-27-p8-proposal.md §4.3）。
+本票面即该「下批工单化」产物，通篇无「日志真退出码行」「变异还原入日志」
+任何落实（草案 168-174 行机检自查节亦未提）。必须补：两单验收/文化层
+加入 W2/W3 两机检项，或票面头部声明「W2/W3 已在派发模板三件另行落实」
+并给出落点。
+
+[W1] PaperMetaPatch 扩三字段=update-meta 通道契约开洞，未声明。
+证据：paper.ts:48 头注原文「人工编辑元数据：仅这些字段允许 update-meta
+修改」；papers.repo.ts:90-97 PATCH_COLS 白名单 + patchFragments 为
+updateMeta 与 applyEnrichment 共用（157-167、239-250 行）。paperMetaPatchSchema
+增可选三字段后，update-meta IPC 载荷即可合法携带 citedByCount 等字段直写
+库（renderer 表单不含，但 API 面开洞——zod .strict() 只拒未知字段，不拒
+已声明字段），绕过 enrich 缓存语义与取数时间戳一致性。应改：metrics 走
+独立 patch 类型（citedByPatch 产物独立传参），或票面显式声明接受此开洞
+并登记理由（接缝归责：与 paper.ts:48 契约头注互斥，宪法要求停下报告而非
+顺手扩）。
+
+[W2] 状态机表缺 0 值格（cited_by_count=0 是高概率真实态——新论文零被引）。
+证据：草案 45-51 行表只分 NULL/有值；SQL INTEGER 可空下 0 与 NULL 语义
+不同，而实现惯性来自 fillEmptyPatch 的 `=== null` 判空风格
+（enrich.service.ts:60-68），`citedByCount ?? 旧值`/falsy 误判 0 的写法
+票面无断言拦截。跨格序列用例（草案 52-53 行）也无 0 值样本。应改：表
+加「NULL vs 0」边界行+断言点「0 是合法缓存值走强制刷新格」。
+
+[W3] ArxivWork 并非 EnrichedWork 子类型，「arxiv.ts 恒 null」口径含糊。
+证据：arxiv.ts:28-34 ArxivWork 是独立接口（不 extends）；enrich.service.ts:99-100
+组装点 `work = { ...ax, venue: '', doi: null }`——EnrichedWork 增必填
+citedByCount 后此处类型红，需补 citedByCount: null；补在 service 组装点
+（enrich.service.ts 已在清单）则 arxiv.ts 零改动，票面接口层「arxiv.ts
+恒 null」（草案 58-59 行）与文件清单不含 arxiv.ts 两说并存，实现者无从
+对齐。应改：明确「ArxivWork 不动，组装点补 null」或列 arxiv.ts 入清单。
+
+[W4] ENR-02 漏「新测试 always-active」声明（ENR-01 有，草案 87-88 行）；
+且 corpus.assemble.test.ts 宿主是 guardedDescribe('SR2-C-02')
+（corpus.assemble.test.ts:85）——ENR-02 新增用例（venueToTier 命中/未命中/
+空串、结构两形）若误挂既有 guarded 块=随状态 skip 风险（ADR-0017 裁决 3
+全称义务，K3 威胁）。golden 字面量改动在 C-02 块内随 done 激活合法，但
+新用例须裸 describe——票面应写明边界。
+
+[W5] venueTier「允许用户改」ADR 字面张力未声明。
+证据：ADR-0011 front-matter 节原文「venueTier（内置学科映射表的人工先验，
+允许用户改）」；D3-A 档实现=改 shared 受锁常量走 [locked-change]+重构建
+（草案 21-22、143-144 行）——非产品语义的用户可改，与已冻结契约字面
+冲突。提案 D3-B/P8+ 池有升档位，但票面应显式声明此偏差及依据（D3-A 用户
+拍板），否则收口时 ADR 符合度对不上账；或随单出 ADR-0011 补注（v1 阶段
+映射表修订走受锁常量）。
+
+[W6] INTERFACE 指标口径节内容缺 sha 幂等消费者提示。
+证据：ADR-0011 manifest 节原文「contentSha/fulltextSha 供增量导出对比」；
+citedByCount 进 front-matter（草案 116-117 行）后，手动增强刷新会使同篇
+contentSha 变化——AI 工具按「sha 变=内容变」做增量时会把指标刷新误读为
+标注/笔记变化。票面 INTERFACE 节只列「两字段可选性与消费口径（领域基线
+归一/自引处理）」（草案 121-123 行），应补「citedByCount=缓存快照随手动
+增强刷新；contentSha 幂等以同缓存状态为前提」的声明（预裁 6 口径的
+INTERFACE 侧落地）。
+
+[W7] 五层规约完整度缺口：VENUE_TIER_MAP 结构与 tier 值域未定（venueToTier
+返回 string|null——string 语义？'T1'..'Tn'？匹配规则=venue 精确等值/归一
+化大小写？种子表条目数量级？）；citedByPatch(work, row) 的 row 参数类型
+（PaperRow？含新列形状？）未给签名。实现者领单只读票面+先例池时须自裁
+这些契约面细节=超票面自裁申报高发区。应改：接口层补类型签名与表形状
+（哪怕最小示例三条）。
+
+[N1] b3 指针位置规则提醒：check-tickets.mjs:180-182 判定指针必须在「首个
+代码语句前」的头注区（/\n\s*(?:import|export|const|...)/ 截断）——新文件
+cited-by.service.ts 骨架的五层规约头注内不得出现顶格 export/import 词行
+（既有惯例以 "- " 前缀防御，corpus.assemble.ts 头注同型）。票面未提醒，
+实现者骨架若顶格写接口层描述即机检红。
+
+[N2] ENR-02 主文件 corpus.assemble.ts 头已是 `// b3: P7-C`（corpus.assemble.
+ts:1）——机检不红（P7-C ∈ decided set，check-tickets.mjs:190 只查属于
+已裁决集，不查与工单号对应），但一文件双裁决来源（C-02→P7-C / ENR-02→
+P7-G）语义混置；建议票面注明「文件头指针保持 P7-C 不动，ENR-02 裁决链
+在 registry summary 声明」，防实现者顺手改头指针引发 C-02 裁决链丢失。
+
+[N3] 新文件注册时序：check-tickets.mjs 规则 1（56-60 行）要求 open 工单
+file 指向的文件存在——cited-by.service.ts / venue-tier.ts 须先建骨架
+（含 b3 指针+工单号头注）再入 registry；骨架含工单号头注属自引用豁免
+（规则 2，100 行 t.file === rel）。另 e2e corpus-export.spec.ts 断言面
+（147-161 行：schemaVersion/papers 长度/sha 匹配）大概率零涟漪；若实际
+改动则宪法「受锁 e2e spec 改动后必须全量 verify」适用（playwright 不查
+类型，tsc 关卡才拦）。
+
+[N4] metrics 无独立重试面（捆绑元数据增强，metrics 失败只能整单重跑）——
+D3-A 档边界内可接受（重试预算留 ENR-03/P8+ 池），建议生命周期层补一句
+「不做：metrics 独立重试/单独触发」明确边界，防后续误读。
+
+[N5] 机检自查核实为真（维持预裁 1）：check-tickets.mjs:22/72 正则
+`SR2?-[A-Z]+-\d+` 确不匹配 SR3-*（草案 SR3→SR2 修正正确）；P7-G ∈
+ROADMAP.md:221 `### P7-G：`（全角冒号标题行）属实；TicketArea 含
+'service'（registry.ts:19-34）；两 registry 条目草案格式合规（对象字面量
+无嵌套花括号——objRe `\{[^{}]*?\bid:` 约束、file 正斜杠路径）。
+
+[N6] sha 幂等口径配套成立（维持预裁 6）：citedByFetchedAt 只进 manifest
+per-paper 条目，而幂等逐字节断言范围=产物文件、manifest 自身只做结构
+断言（corpus.export.service.ts:47-51 头注口径；ADR-0011 v1.1 第 2 条
+先例）——fetchedAt 不破坏既有幂等测试；front-matter 的 citedByCount
+变化致 contentSha 漂移属「同缓存状态下确定」口径内，W6 补 INTERFACE
+声明后闭环。
+
+[N7] api-surface 零涟漪断言核实为真：api-surface.test.ts 锁通道名唯一性/
+命名规范/Req strict（11-30 行），不锁 Res 字段面——零新 IPC 通道成立；
+schemas.ts 无 paperDetailSchema 内联引用（grep 零命中，Res 直接用 models
+侧 schema）——PaperDetail 扩展不涟漪 schemas.ts。ENR-01 架构层该两断言
+（草案 71-73 行）与代码面一致。
+
+================================================================================
+## 预裁项六条总裁决
+1 工单号/域归属：维持（N5）· 2 缓存宿主 papers 加列：维持（003/004 追加
+先例+migrate.ts 追加式合法；但 migrate.ts 必改须入清单，见 B3c）·
+3 触发面捆绑手动：维持（红线守住；N4 补边界声明）· 4 venueTier 种子表
+最小：维持但须声明 ADR 字面张力（W5）· 5 schemaVersion 不升：维持
+（演进规则「新增字段必须可选」内）· 6 sha 幂等口径：维持（N6 证实；
+W6 补 INTERFACE 声明面闭环）。
+
+================================================================================
+统计：4 B / 7 W / 7 N
+总评：
+1. 骨架方向与母本符合度高（字段名/可选语义/演进规则/三偏倚归 AI 侧均与
+   ADR-0011 对齐，机检自查大体属实），但 B1 异常语义自相矛盾是状态机
+   前置红线的直接违例——按票面字面实现必产「metrics 失败吞掉元数据
+   成功+状态撒谎」缺陷，票面不可以此形态派发。
+2. B2+B3 合并构成「数据通道断裂+清单不可照单执行」：ENR-01 必须补
+   PaperDetail 契约面声明与类型可选性决策，两单文件清单须按
+   locks/manifest.json 逐条重列（migrate.ts/providers 双测试/
+   corpus.export.test.ts 补入，corpus.assemble.ts 等多标受锁摘除，
+   corpus-assemble 文件名更正）。
+3. 处置建议：回炉一轮（主控按本档 B1-B4 修票面+W 级酌情吸收）后可入门二
+   终审；W 级中 W1（update-meta 开洞）建议随 B2 一并定夺，属契约面不能
+   留给实现者自裁。
+================================================================================
+
+
+── 回炉复核（r2）── 2026-08-27 · 对象=enr-ticketing-draft.md v2（处置台账版）
+================================================================================
+逐条判定（引 v2 行文；代码面定点复验）
+================================================================================
+
+[B1] ADDRESSED（设计结构性消除，非措辞修补）。
+  v2 行 8/38-43：citedByCount 由瀑布同一响应携带（crossref.ts workSchema
+  message 体 / openalex.ts resultSchema 均出自同一次 fetchJson——解析加
+  字段即得，零新增请求=零独立 metrics 网络异常面，复验为真）；citedByPatch
+  纯函数瀑布后求值（无 IO 无异常面）；applyEnrichment 独立参数落库。
+  「状态撒谎」被结构性消除：不存在「元数据成功+metrics 请求失败」的态——
+  异常必发生在瀑布本身，此时元数据同样未获得，failed=诚实（v2 行 41-42
+  明示）。zod 严格性边界（metrics 字段类型脏→整个 message parse 失败→
+  work=null→failed）语义同样诚实（同一响应不可信即整体不信），见 N-r2d。
+  跨格序列（行 56-57）含 0 值→刷新→异常→保留全链。
+
+[B2] ADDRESSED。v2 行 75-78：paperDetailSchema(.strict()) 增三 .optional()
+  ——ENR-02 装配通道闭合；PaperRow 三列 ?: 可选——复验 import.service.ts:123
+  字面量构造与 enrich.service.test.ts detailRow 夹具零类型涟漪；EnrichedWork
+  增必填字段的桩红已由「enrich.service.test.ts（桩形状扩）」（行 124）覆盖。
+
+[B3] ADDRESSED（主体全改，复验 locks/manifest.json 逐条对上）：多标摘除
+  （v2 行 190-191 corpus.assemble.ts/interface-template.ts 标非锁=与 manifest
+  一致；registry 行 125/199 标非锁）；漏列补齐（providers 双测试行 123、
+  corpus.export.test.ts 行 188/197、migrate.ts 行 121）；错报删除
+  （migrate.test.ts 零涟漪出清单，行 87）；文件名圆点更正（行 189/197）。
+  残留两小项转入新 W（见下：repo 测试锚定缺位、venue-tier 测试路径未给）。
+
+[B4] ADDRESSED。v2 行 102-103/187：两单文化层均入「收口机检项（缺=拒收）：
+  verify 真退出码行（echo exit=$? 落盘）+变异红证还原记录（cp 备份→变异
+  →红→还原→diff 空输出入日志）」——提案 §4.3 义务落实，措辞可执行。
+
+[W1] ADDRESSED（强方案）。v2 行 70-74：metrics 走 applyEnrichment 独立可选
+  参数 citedBy?: {count;fetchedAt;source}，PaperMetaPatch/
+  paperMetaPatchSchema/PATCH_COLS 零触碰——复验：update-meta IPC Req 仍由
+  paperMetaPatchSchema(strict) 校验，载荷携带 metrics 字段即被拒，开洞消除；
+  paper.ts:48 头注契约保持；applyEnrichment 仅 services 内部调用，签名加
+  可选参非破坏。
+
+[W2] ADDRESSED。表行 1/4 显式含 0（行 48/51）+判空铁律「=== null，禁 ??/
+  falsy」（行 54-55）+跨格序列 0 值样本（行 56）。
+
+[W3] ADDRESSED。v2 行 63-64/117：arxiv.ts 零改动口径唯一化，组装点
+  enrich.service.ts:99-100 补 citedByCount: null。
+
+[W4] ADDRESSED。ENR-01 行 97「always-active，裸 describe」；ENR-02 行 185
+  「新测试裸 describe 不挂 C-02 guardedDescribe 块；golden 字面量改动在
+  既有块内合法」。
+
+[W5] ADDRESSED。随单 ADR-0011 修订记录 v1.2 补注行（v2 行 172-174）+
+  docs/adr/0011 入文件清单标非锁（行 196；docs/** 不在 locks manifest——
+  复验为真）。
+
+[W6] ADDRESSED。INTERFACE 口径节补 sha 消费者提示原文落位（v2 行 150-153）。
+
+[W7] ADDRESSED（主体）+新缺口转 W-r2b。VenueTier='T1'|'T2'|'T3' 三档/
+  VENUE_TIER_MAP Readonly<Record<string,VenueTier>>/venueToTier(venue):
+  VenueTier|null（''→null，精确等值仅 trim）（v2 行 158-164）；citedByPatch
+  签名与 applyEnrichment 参数形状一致（行 66-71）。缺口：fetchedAt=ISO
+  现时 vs「纯函数」自洽性——见 W-r2b。
+
+[N1] ADDRESSED（行 111-113 骨架规则+"- "前缀防御）。
+[N2] ADDRESSED（行 138-140 头指针保持 P7-C+裁决链在 registry summary）。
+[N3] ADDRESSED（行 213-217 骨架先建时序+e2e 条件性全量 verify 提醒）。
+[N4] ADDRESSED（行 91-92/预裁 3 不做边界四件套）。
+
+================================================================================
+新破坏扫描（v2 新引入表述）
+================================================================================
+
+[W-r2a] papers.repo 的 citedBy 独立 SET 子句无自动化测试锚定面。复验：
+  enrich.service.test.ts 现状用 makeRepos 桩（非真 repo）、ipc/enrich.test.ts
+  亦桩——v2 测试面①~④（行 97-101）无一触达真 repo 的三列 SET 绑定；
+  papers.repo.test.ts 未列入受锁扩；「真库手动增强一篇」（行 108）是人工
+  验收。SQL 列序/绑定错只能手动兜。应在测试面补一条：papers.repo.test.ts
+  受锁扩 applyEnrichment(citedBy) 透传断言（或明确集成③改用真库）。
+[W-r2b] citedByPatch「纯函数」声明与「fetchedAt=ISO 现时」（行 66-69）自洽
+  裂缝：签名无 now 注入——内部 new Date() 则 cited-by.test.ts 对 fetchedAt
+  只能断格式不断值（弱断言），或实现者超票面自裁加参。先例=corpus.export.
+  service deps.now?: () => string 注入。建议签名加 now 参数（或注明取值
+  责任在 enrich.service 编排层注入）。
+[N-r2a] 状态机表行 5（行 52）合并「命中 null（断言=done）」与「未命中异常
+  （断言=failed）」两断言不同态——迁移同为旧值保留，语义在行为层行 41-43
+  已声明，表内建议拆两行防测试只取一态（v1 B1 曾点同类混写，此处程度轻）。
+[N-r2b] venueToTier 键归一约定未定死：精确等值+仅 trim=大小写敏感——种子表
+  键的 canonical 形式（如首字母大写）未声明；openalex/crossref venue
+  display_name 大小写不稳定，未命中省略=可选语义可接受，但一句话定死可防
+  实现者自创 toLowerCase 归一。
+[N-r2c] ENR-02「新 venue-tier 测试（新入锁）」（行 198）无落点路径——建议
+  tests/unit/shared/venue-tier.test.ts 显式入清单（LG-04 精神）。
+[N-r2d] zod 严格性边界记录：metrics 字段类型脏→整个 work parse 失败→failed
+  ——语义诚实（同响应不可信即整体不信）；勿用 .catch() 宽松化引入「部分
+  信任」分支。
+[N-r2e] 路径简写：文件清单行 121「migrations/005_cited_by.sql」缺 src/main/db/
+  前缀（同清单 migrate.ts 已写全路径，语境可解，建议补全）；ENR-02 行为层
+  manifest 条目 citedByFetchedAt 未声明与 citedByCount 配对省略（无 count
+  则无 fetchedAt）。
+
+复验 v2 registry 两条草案：summary 无嵌套花括号（objRe 约束过）、五必填
+字段齐、file 正斜杠——机检兼容维持（N5 复核属实）。
+
+================================================================================
+r2 统计：B 4/4 ADDRESSED · W 7/7 ADDRESSED（W7 附新缺口）· N 4/4 ADDRESSED
+新发现：0 B / 2 W（W-r2a repo 测试锚定、W-r2b 时钟注入）/ 5 N
+结论行：**PASS（可入门二）**
+总评：v2 对 r1 四阻断全部实质处置——B1 以「同响应携带+瀑布后纯函数求值+
+独立参数」三件套结构性消除异常面矛盾（复验代码面成立，非措辞修补）；
+B2/B3/B4/W1~W7 均可核销。两新 W 均为测试可测性/锚定面缺口、无行为矛盾，
+不构成阻断，随门二终稿收口（W-r2a 补 repo 透传断言或集成③改真库；W-r2b
+补 now 注入签名）；N 级五项供门二顺手吸收。
+================================================================================
