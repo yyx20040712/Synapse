@@ -86,6 +86,9 @@ export interface ReaderStore {
   activeId: string | null
   /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
   noteHighlight: { annotationId: string; seq: number } | null
+  /** AI 段单击反向同步信号（AI-09，C-05 同型）：OutlineAside 消费（切笔记
+   *  tab+highlightAiNoteId 分发 08 面板滚动高亮） */
+  aiNoteHighlight: { aiNoteId: string; seq: number } | null
   openPaper(id: string): Promise<void>
   activateTab(id: string): void
   closeTab(id: string): void
@@ -106,6 +109,8 @@ export interface ReaderStore {
   markTabError(paperId: string): void
   /** 标注单击→侧栏同步高亮信号（C-05）：OutlineAside 消费（切笔记 tab+滚动） */
   notifyNoteHighlight(annotationId: string): void
+  /** AI 段单击→侧栏同步高亮信号（AI-09，C-05 同型）：AiAnnotationLayer 点击上抛 */
+  notifyAiNoteHighlight(aiNoteId: string): void
   /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
   undo(): Promise<void>
 }
@@ -115,7 +120,8 @@ export function createReaderStoreInitialState() {
     tabs: {} as Record<string, TabState>,
     order: [] as string[],
     activeId: null as string | null,
-    noteHighlight: null as { annotationId: string; seq: number } | null
+    noteHighlight: null as { annotationId: string; seq: number } | null,
+    aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
   }
 }
 
@@ -369,6 +375,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     notifyNoteHighlight(annotationId) {
       const prev = get().noteHighlight
       set({ noteHighlight: { annotationId, seq: (prev?.seq ?? 0) + 1 } })
+    },
+
+    notifyAiNoteHighlight(aiNoteId) {
+      const prev = get().aiNoteHighlight
+      set({ aiNoteHighlight: { aiNoteId, seq: (prev?.seq ?? 0) + 1 } })
     },
 
     async undo() {

@@ -433,7 +433,9 @@ it('条目单击→locateAnchor（INV-20 单入口消费方；anchorPage 1 基�
   })
   expect(locateAnchor).toHaveBeenCalledWith({
     paperId: 'p-1',
-    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 }
+    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
+    // AI-09 延展：exact 层滚动锚（data-ai-note-id 目标）
+    aiNoteId: 'a1'
   })
 })
 

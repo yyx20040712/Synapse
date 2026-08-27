@@ -10,6 +10,7 @@
  * 交付 data-ai-note-id 渲染节点+anchor-locate 延展）。
  * highlightAiNoteId=AI-09 标注单击反向同步高亮消费面（C-05 同型）。
  */
+import { useEffect, useRef } from 'react'
 import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
 import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
 
@@ -27,9 +28,18 @@ export function AiNoteGroupList(props: {
 }): JSX.Element {
   const { notes, onLocate, highlightAiNoteId = null } = props
   const groups = groupNotes(notes)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // 高亮条目滚动进视野（AI-09 单击反向同步——FragmentNotesList 同型：
+  // 仅随信号变化触发，notes 更新不重滚）
+  useEffect(() => {
+    if (highlightAiNoteId == null || rootRef.current === null) return
+    const el = rootRef.current.querySelector(`[data-ai-note-id="${highlightAiNoteId}"]`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [highlightAiNoteId])
 
   return (
-    <div className="flex flex-col gap-1" data-testid="ai-note-groups">
+    <div className="flex flex-col gap-1" data-testid="ai-note-groups" ref={rootRef}>
       {groups.map((g) => (
         <div key={g.role} data-role={g.role}>
           <h4 className="m-0 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>

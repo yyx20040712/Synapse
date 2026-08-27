@@ -59,6 +59,8 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
   const activeTab = useActiveTab()
   const currentPage = activeTab?.page ?? 0
   const noteHighlight = useReaderStore((s) => s.noteHighlight)
+  // AI 段单击反向同步（AI-09，C-05 同型）：切笔记 tab+highlightAiNoteId 分发
+  const aiNoteHighlight = useReaderStore((s) => s.aiNoteHighlight)
 
   /** 目录/缩略图跳页：作用于 active tab（store 自取——props 链收敛） */
   const navigate = (page: number): void => {
@@ -89,6 +91,12 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
   useEffect(() => {
     if (noteHighlight !== null) setTab('notes')
   }, [noteHighlight])
+
+  // AI 段单击反向同步（AI-09）：切笔记 tab（高亮滚动由 AiNotesSection 消费
+  // highlightAiNoteId 信号完成——AiNoteGroupList data-highlight）
+  useEffect(() => {
+    if (aiNoteHighlight !== null) setTab('notes')
+  }, [aiNoteHighlight])
 
   return (
     <aside
@@ -137,6 +145,7 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
             annotations={activeTab?.annotations ?? []}
             onLocate={locateFragment}
             highlightAnnotationId={noteHighlight?.annotationId ?? null}
+            highlightAiNoteId={aiNoteHighlight?.aiNoteId ?? null}
           />
         )}
       </div>

@@ -25,7 +25,8 @@
  *
  * ── 接口层 ──
  * - export function ReaderNotesPanel(props: { annotations: Annotation[];
- *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null }): JSX.Element
+ *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null;
+ *     highlightAiNoteId?: string | null }): JSX.Element
  * - paperId 经 useActiveTab 自取（挂 active tab 视图内——props 不传 paperId 防双源）
  *
  * ── 架构层 ──
@@ -60,8 +61,10 @@ export function ReaderNotesPanel(props: {
   annotations: Annotation[]
   onLocate(annotationId: string): void
   highlightAnnotationId?: string | null
+  /** AI 段单击反向同步高亮（AI-09——OutlineAside 分发，AiNotesSection 消费） */
+  highlightAiNoteId?: string | null
 }): JSX.Element {
-  const { annotations, onLocate, highlightAnnotationId = null } = props
+  const { annotations, onLocate, highlightAnnotationId = null, highlightAiNoteId = null } = props
   const tab = useActiveTab()
   const paperId = tab?.paperId ?? null
 
@@ -194,7 +197,7 @@ export function ReaderNotesPanel(props: {
       </div>
       {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
           useActiveTab 自取 paperId——防双源同本面板） */}
-      <AiNotesSection />
+      <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
     </div>
   )
 }

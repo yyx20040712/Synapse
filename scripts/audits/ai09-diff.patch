@@ -1,0 +1,950 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index a535851..dff4b31 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T02:00:02.8380320Z",
++    "generatedAt":  "2026-08-27T02:27:29.3986353Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -123,7 +123,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/ai-notes-section.spec.ts",
+-                      "sha256":  "2469575429faa7752e18174626ec327f48d94440a9ca5397bffada86e7238b80"
++                      "sha256":  "d95ba2159c129f80c418f3c8a8c24982e671aa01af81f642ac7de6ffbde57ad1"
+                   },
+                   {
+                       "path":  "tests/e2e/corpus-export.spec.ts",
+@@ -241,9 +241,13 @@
+                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
+                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
++                      "sha256":  "ff37c18c0db75bdd252b2a05dda64ac5e73ff9597364ad65956e393ea226f5f2"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+-                      "sha256":  "d33d59b4235f5602d7ed97ff2690c16f9e60ee280b1a30f499c0408b9e05befe"
++                      "sha256":  "81ad71fa320ed0574a68f3c6a1f69af7abfb1cb90288787d7c50f175597d7e56"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
+diff --git a/src/renderer/features/reader/AiAnnotationLayer.tsx b/src/renderer/features/reader/AiAnnotationLayer.tsx
+index 97023ed..5835af6 100644
+--- a/src/renderer/features/reader/AiAnnotationLayer.tsx
++++ b/src/renderer/features/reader/AiAnnotationLayer.tsx
+@@ -5,46 +5,39 @@
+  *
+  * ── 行为层 ──
+  * - N2 渲染对等（ADR-0015 §3）：AI 锚定段经 verifyQuote 重锚（annotation-
+- *   anchor.ts:130——**唯一 DOM 遍历点纪律**，C-05 头注先例）取得 rects →
+- *   rectsFromRange+mergeLineRects 同几何管线渲染高亮块——**几何对等**=
+- *   与 AnnotationLayer 同一几何函数族（不另写几何）；分色=ai-note-style
+- *   单源（AI-08 交付，question→CSS 变量；接缝双向锚定声明两文件头注）
+- * - 数据源：ai-notes/list（AI-07 通道）按当前篇取 AI 笔记 → 有锚三元组行
+- *   参与重锚；重锚失败（verifyQuote 假）→**该段不渲染 rects**（段仍在 08
+- *   面板；跳转降级归 INV-20 locateAnchor 三防线，渲染面禁各写降级）；
+- *   篇级/无锚行（Q3/Q6/Q7 允许——蓝图 §4.3 N2/ADR-0015 §3）天然无 rects 不入层
+- * - **存储独立**（INV-19 本单锚定）：数据永不写 annotations 表（AI 笔记
+- *   仅源自 ai_notes 渲染派生——实现 diff 证明 annotations 写面零触碰）；
+- *   **v1 只读**：无编辑/删除/创建写路径；点击=高亮该段全部 rects+跳笔记
+- *   面板对应条目（highlightAiNoteId 上抛→08 分节滚动高亮——C-05 标注单击
+- *   反向同步同型；点击**不弹标注菜单**——AI 段无批注语义）
+- * - 渲染节点带 **data-ai-note-id** 属性（exact 层滚动目标——anchor-locate
+- *   延展见交付面，W08-3 处置对侧）
+- * - **硬依赖声明（门一 W09-1 处置）**：消费 AI-08 两交付物（ai-note-style
+- *   分色单源+ai-notes.store 数据单源）——**执行序=08 先于 09 串行**（v5
+- *   「08∥09」偏序因共享交付物细化为定序；registry 注释同步）
+- * - INV-20 三层防线（消费方级用例归 AI-08——门一 W09-2 处置：本层点击=
+- *   跳面板非 PDF 定位，三防线断言在 08 行为面才可执行；本层锚定失效渲染
+- *   降级=不渲染 rects，跳转降级单入口 locateAnchor 不在本层复制）
+- * - 渲染时机：与 AnnotationLayer 同渲染周期（文本层就绪后重锚——挂载/
+- *   翻页/缩放跟随既有层节奏；重锚结果组件本地缓存按 paperId+页键失效）
++ *   anchor.ts——**唯一 DOM 遍历点纪律**，C-05 头注先例）取得 rects →
++ *   findRangeAtOffset 同几何管线渲染高亮块——**几何对等**=与 AnnotationLayer
++ *   同一几何函数族（不另写几何）；分色=ai-note-style 单源（AI-08 交付，
++ *   question→QUESTION_COLOR；接缝双向锚定声明见 ai-note-style.ts 头注）
++ * - 数据源：aiNotes props（宿主 ReaderPage 订阅 ai-notes.store 分发——数据
++ *   单源，本层禁自取）→ 有锚三元组行参与重锚；重锚失败（verifyQuote 假）→
++ *   **该段不渲染 rects**（段仍在 08 面板；跳转降级归 INV-20 locateAnchor
++ *   三防线，渲染面禁各写降级）；篇级/无锚行（quoteText 空）天然无 rects 不入层；
++ *   页过滤=anchorPage（1 基）匹配当前页（缺省不过滤，verifyQuote 兜底）
++ * - **存储独立**（INV-19 本单锚定）：数据永不写 annotations 表（props 纯消费，
++ *   零 DB/零 IPC——annotations 写面零触碰）；**v1 只读**：无编辑/删除/创建
++ *   写路径；点击=高亮该段全部 rects+跳笔记面板对应条目（onJumpToNote 上抛
++ *   →宿主经 reader.store.notifyAiNoteHighlight 信号→OutlineAside 切笔记 tab
++ *   +highlightAiNoteId 分发 08 面板——C-05 notifyNoteHighlight 同型接线）；
++ *   点击**不弹标注菜单**——AI 段无批注语义
++ * - 渲染节点带 **data-ai-note-id** 属性（anchor-locate exact 层滚动目标——
++ *   本单延展，W08-3 处置对侧已兑现）
++ * - 渲染时机：与 AnnotationLayer 同渲染周期（文本层就绪后重锚——挂载/翻页/
++ *   缩放跟随既有层节奏；MutationObserver+rAF 合并重算；重锚结果组件本地
++ *   缓存按 paperId+页键失效——翻页/换篇即重算）
+  *
+  * ── 接口层 ──
+  * - export function AiAnnotationLayer(props: { aiNotes: AiNote[];
+- *     onJumpToNote(aiNoteId: string): void }): JSX.Element（data-ticket 骨架
+- *   标记，翻 done 前移除；aiNotes 由 ReaderPage/面板层供给——数据获取不
+- *   在本层，渲染纯消费）
+- * - 交付面：ReaderPage 挂载（与 AnnotationLayer 同宿主并置）+
+- *   ai-note-style 消费声明+**anchor-locate.ts 延展**（exact 层滚动目标
+- *   选择器扩 [data-ai-note-id]——C-05 文件延展**非另写降级**，INV-20 单
+- *   入口与三防线结构不动，仅扩 exact 层目标识别面；延展用例入本单测试面）
++ *     page: number; pageRoot: HTMLElement | null;
++ *     onJumpToNote(aiNoteId: string): void }): JSX.Element | null
++ *   （page/pageRoot 与 AnnotationLayer 同形——宿主并置分发）
+  *
+  * ── 架构层 ──
+  * - renderer/features/reader 域；依赖 annotation-anchor（verifyQuote/
+- *   rectsFromRange/mergeLineRects——纯函数族）+ai-note-style（08 交付）+
+- *   AiNote 类型（shared 单源）；**零 DB/零 IPC 直调**（数据经 props——
+- *   数据单源=ai-notes.store（AI-08 交付），宿主 ReaderPage 订阅分发，
+- *   本层禁自取，接缝双向锚定声明两文件头注）
++ *   findRangeAtOffset 纯函数族）+ai-note-style（08 交付）+AiNote 类型
++ *   （shared 单源）；**零 DB/零 IPC 直调**（数据经 props——数据单源=ai-notes
++ *   .store（AI-08 交付），宿主 ReaderPage 订阅分发，本层禁自取，接缝双向
++ *   锚定声明两文件头注）
+  *
+  * ── 生命周期层 ──
+  * - 预留：AI 段显隐开关（工具栏消费面）；rects 缓存失效粒度细化
+@@ -55,23 +48,160 @@
+  * - 错误：重锚失败=静默跳过该段渲染（数据本就只读——非错误态不 toast；
+  *   「锚定失效」提示归 INV-20 跳转面职责，禁双提示）；层级 IO 零（props
+  *   纯消费——无错误面新增）
+- * - 测试：tests/unit/renderer/ai-annotation-layer.test.tsx [受锁新增]——
+- *   verifyQuote 真→rects 渲染+分色类名（ai-note-style 映射）/重锚失败→
+- *   该段零 rects 且他段不受扰/篇级无锚行不入层/点击→高亮+onJumpToNote
+- *   上抛/只读断言（无菜单无编辑元素）；anchor-locate 延展用例（data-ai-
+- *   note-id 目标 exact 滚动+闪烁，data-annotation-id 既有行为不回归）；
+- *   重锚缓存失效（翻页后重算）用例
+- * - e2e：随 08 spec 同链（fixture 导入含锚行→阅读器 AI 高亮块可见+点击
+- *   跳面板——渲染真实文本断言，宪法 e2e 纪律）
+- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+- * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
+- *   git diff → 翻 registry
++ * - 测试：tests/unit/renderer/ai-annotation-layer.test.tsx [受锁新增]+
++ *   e2e ai-notes-section.spec.ts 扩用例（均 always-active）
+  */
++import { useEffect, useMemo, useState } from 'react'
+ import type { AiNote } from '@shared/models/ai-note'
++import type { AnnotationRect } from '@shared/models/annotation'
++import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
++import { QUESTION_COLOR } from './ai-note-style'
++import { useAiNotesStore } from './ai-notes.store'
++import { useReaderStore } from './reader.store'
+ 
+-export function AiAnnotationLayer(_props: {
++/** 重锚后的显示矩形（aiNoteId → rects；重锚失败不落项=该段零 rects） */
++type ResolvedRects = Record<string, AnnotationRect[]>
++
++/** 本地重锚缓存（paperId+页键——键变即整体作废重算） */
++interface AnchorCache {
++  key: string
++  rects: ResolvedRects
++}
++
++/** 参与重锚的行：有锚引文（篇级/无锚行天然不入层）+页匹配（anchorPage 1 基） */
++function anchorableNotes(notes: AiNote[], page: number): AiNote[] {
++  return notes.filter(
++    (n) => n.quoteText.length > 0 && (n.anchorPage === null || n.anchorPage - 1 === page)
++  )
++}
++
++export function AiAnnotationLayer(props: {
+   aiNotes: AiNote[]
++  page: number
++  pageRoot: HTMLElement | null
+   onJumpToNote(aiNoteId: string): void
+-}): JSX.Element {
+-  return <div data-ticket="SR2-AI-09" />
++}): JSX.Element | null {
++  const { aiNotes, page, pageRoot, onJumpToNote } = props
++  const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {} })
++  const [selectedId, setSelectedId] = useState<string | null>(null)
++
++  // 引用稳定（props 过滤结果 memo——effect 依赖防每渲染重锚循环）
++  const pageNotes = useMemo(() => anchorableNotes(aiNotes, page), [aiNotes, page])
++  // 缓存键：paperId（行内同篇——取首行）+页；换篇/翻页即失效
++  const cacheKey = `${pageNotes[0]?.paperId ?? aiNotes[0]?.paperId ?? ''}:${page}`
++
++  // 文本层就绪后重锚：verifyQuote → findRangeAtOffset（与 AnnotationLayer 同
++  // 管线同节奏——MutationObserver+rAF 合并重算；AI 行无存量 rects 可回退，
++  // 重锚失败=不渲染该段）
++  useEffect(() => {
++    if (pageRoot === null) {
++      return
++    }
++    const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement | null
++    if (textLayer === null) {
++      return
++    }
++    let scheduled = false
++    const resolve = (): void => {
++      scheduled = false
++      const next: ResolvedRects = {}
++      for (const n of pageNotes) {
++        const at = verifyQuote(textLayer, {
++          prefix: n.prefixText,
++          quote: n.quoteText,
++          suffix: n.suffixText,
++          start: 0
++        })
++        if (at === null) {
++          continue
++        }
++        const range = findRangeAtOffset(textLayer, at, at + n.quoteText.length)
++        if (range !== null && range.rects.length > 0) {
++          next[n.id] = range.rects
++        }
++      }
++      setCache({ key: cacheKey, rects: next })
++    }
++    const schedule = (): void => {
++      if (!scheduled) {
++        scheduled = true
++        requestAnimationFrame(resolve)
++      }
++    }
++    resolve()
++    const observer = new MutationObserver(schedule)
++    observer.observe(textLayer, { childList: true, subtree: true })
++    return () => observer.disconnect()
++  }, [pageNotes, pageRoot, cacheKey])
++
++  // 键变（翻页/换篇）即弃旧缓存（下轮重锚收敛前不渲染错页 rects）
++  const resolved = cache.key === cacheKey ? cache.rects : {}
++
++  return (
++    <div
++      data-testid="ai-annotation-layer"
++      // open 期占位标记（check-tickets 规约 4）——registry 翻 done 时随收口删除
++      data-ticket="SR2-AI-09"
++      className="absolute inset-0"
++      style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
++    >
++      {pageNotes.map((n) =>
++        (resolved[n.id] ?? []).map((r, i) => (
++          <div
++            key={`${n.id}:${i}`}
++            data-testid="ai-note-rect"
++            data-ai-note-id={n.id}
++            data-highlight={n.id === selectedId}
++            role="button"
++            aria-label={`AI 笔记：${n.quoteText}`}
++            title={n.contentMd}
++            className="absolute"
++            style={{
++              left: `${r.x * 100}%`,
++              top: `${r.y * 100}%`,
++              width: `${r.w * 100}%`,
++              height: `${r.h * 100}%`,
++              background: QUESTION_COLOR[n.question],
++              // AI 段半透明+选中描边：与用户标注（不透明）视觉区分，选中=高亮该段全部 rects
++              opacity: n.id === selectedId ? 0.8 : 0.45,
++              outline: n.id === selectedId ? '1px solid var(--accent)' : undefined,
++              pointerEvents: 'auto',
++              cursor: 'pointer'
++            }}
++            onClick={() => {
++              setSelectedId(n.id)
++              onJumpToNote(n.id)
++            }}
++          />
++        ))
++      )}
++    </div>
++  )
++}
++
++/** 空数组稳定引用（selector 快照引用稳定——防每渲染新引用触发重渲染循环） */
++const EMPTY_AI_NOTES: AiNote[] = []
++
++/**
++ * 宿主装配（AI-09）：ai-notes.store 数据单源订阅（渲染层 props 分发——层内
++ * 禁自取）+点击上抛经 reader.store 信号（notifyAiNoteHighlight→OutlineAside
++ * 切笔记 tab+highlightAiNoteId 消费——C-05 同型接线，接缝声明两文件头注）。
++ * pageRoot=null 时层内各 effect 短路（文本层未就绪不重锚）。
++ */
++export function ReaderAiLayer(props: { page: number; pageRoot: HTMLElement | null }): JSX.Element {
++  const { page, pageRoot } = props
++  const paperId = useReaderStore((s) => s.activeId)
++  const aiNotes = useAiNotesStore((s) =>
++    paperId === null ? EMPTY_AI_NOTES : s.notesByPaper[paperId] ?? EMPTY_AI_NOTES
++  )
++  return (
++    <AiAnnotationLayer
++      aiNotes={aiNotes}
++      page={page}
++      pageRoot={pageRoot}
++      onJumpToNote={(aiNoteId) => {
++        useReaderStore.getState().notifyAiNoteHighlight(aiNoteId)
++      }}
++    />
++  )
+ }
+diff --git a/src/renderer/features/reader/AiNoteGroupList.tsx b/src/renderer/features/reader/AiNoteGroupList.tsx
+index ed348dd..4fdfffe 100644
+--- a/src/renderer/features/reader/AiNoteGroupList.tsx
++++ b/src/renderer/features/reader/AiNoteGroupList.tsx
+@@ -10,6 +10,7 @@
+  * 交付 data-ai-note-id 渲染节点+anchor-locate 延展）。
+  * highlightAiNoteId=AI-09 标注单击反向同步高亮消费面（C-05 同型）。
+  */
++import { useEffect, useRef } from 'react'
+ import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
+ import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
+ 
+@@ -27,9 +28,18 @@ export function AiNoteGroupList(props: {
+ }): JSX.Element {
+   const { notes, onLocate, highlightAiNoteId = null } = props
+   const groups = groupNotes(notes)
++  const rootRef = useRef<HTMLDivElement>(null)
++
++  // 高亮条目滚动进视野（AI-09 单击反向同步——FragmentNotesList 同型：
++  // 仅随信号变化触发，notes 更新不重滚）
++  useEffect(() => {
++    if (highlightAiNoteId == null || rootRef.current === null) return
++    const el = rootRef.current.querySelector(`[data-ai-note-id="${highlightAiNoteId}"]`)
++    el?.scrollIntoView({ block: 'nearest' })
++  }, [highlightAiNoteId])
+ 
+   return (
+-    <div className="flex flex-col gap-1" data-testid="ai-note-groups">
++    <div className="flex flex-col gap-1" data-testid="ai-note-groups" ref={rootRef}>
+       {groups.map((g) => (
+         <div key={g.role} data-role={g.role}>
+           <h4 className="m-0 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>
+diff --git a/src/renderer/features/reader/AiNotesSection.tsx b/src/renderer/features/reader/AiNotesSection.tsx
+index 7f46a4f..5c3733c 100644
+--- a/src/renderer/features/reader/AiNotesSection.tsx
++++ b/src/renderer/features/reader/AiNotesSection.tsx
+@@ -36,10 +36,9 @@
+  *   级全量——幂等使无害）→三桶 toast（imported/skipped 计数+errors 篇名）
+  *   →list/observe 刷新（E1 手动激活形态——D2b 手动语义保持）
+  * - 条目单击→locateAnchor（INV-20 单入口消费方）。**exact 层接缝声明
+- *   （门一 W08-3 处置）**：exact 层滚动+闪烁现绑 [data-annotation-id]（AI
+- *   条目无 annotationId）——exact 完整化=AI-09 交付 data-ai-note-id 渲染
+- *   节点+anchor-locate 延展；09 落地前单击 exact 目标缺失→anchor-locate
+- *   既有行为页级停驻（分步兑现，不另写降级）
++ *   （门一 W08-3 处置——AI-09 已兑现）**：本节随锚传 aiNoteId→exact 层滚动
++ *   闪烁 [data-ai-note-id] 渲染节点（AiAnnotationLayer 交付）——anchor-locate
++ *   延展仅扩 exact 层目标识别面，三防线结构不动
+  * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（Rule of Three 第 2 次保持
+  *   重复；第 3 处出现时抽 shared）
+  *
+@@ -189,7 +188,8 @@ export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JS
+       })
+   }
+ 
+-  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页） */
++  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页；
++   *  aiNoteId=exact 层滚动锚（AI-09 交付 data-ai-note-id 渲染节点+延展兑现） */
+   const onLocateNote = (n: AiNote): void => {
+     void locateAnchor({
+       paperId: n.paperId,
+@@ -198,7 +198,8 @@ export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JS
+         prefixText: n.prefixText,
+         suffixText: n.suffixText,
+         anchorPage: n.anchorPage === null ? undefined : n.anchorPage - 1
+-      }
++      },
++      aiNoteId: n.id
+     })
+   }
+ 
+diff --git a/src/renderer/features/reader/OutlineAside.tsx b/src/renderer/features/reader/OutlineAside.tsx
+index d64c434..7becb85 100644
+--- a/src/renderer/features/reader/OutlineAside.tsx
++++ b/src/renderer/features/reader/OutlineAside.tsx
+@@ -59,6 +59,8 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
+   const activeTab = useActiveTab()
+   const currentPage = activeTab?.page ?? 0
+   const noteHighlight = useReaderStore((s) => s.noteHighlight)
++  // AI 段单击反向同步（AI-09，C-05 同型）：切笔记 tab+highlightAiNoteId 分发
++  const aiNoteHighlight = useReaderStore((s) => s.aiNoteHighlight)
+ 
+   /** 目录/缩略图跳页：作用于 active tab（store 自取——props 链收敛） */
+   const navigate = (page: number): void => {
+@@ -90,6 +92,12 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
+     if (noteHighlight !== null) setTab('notes')
+   }, [noteHighlight])
+ 
++  // AI 段单击反向同步（AI-09）：切笔记 tab（高亮滚动由 AiNotesSection 消费
++  // highlightAiNoteId 信号完成——AiNoteGroupList data-highlight）
++  useEffect(() => {
++    if (aiNoteHighlight !== null) setTab('notes')
++  }, [aiNoteHighlight])
++
+   return (
+     <aside
+       data-testid="reader-aside"
+@@ -137,6 +145,7 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
+             annotations={activeTab?.annotations ?? []}
+             onLocate={locateFragment}
+             highlightAnnotationId={noteHighlight?.annotationId ?? null}
++            highlightAiNoteId={aiNoteHighlight?.aiNoteId ?? null}
+           />
+         )}
+       </div>
+diff --git a/src/renderer/features/reader/ReaderNotesPanel.tsx b/src/renderer/features/reader/ReaderNotesPanel.tsx
+index 24866fb..2030b82 100644
+--- a/src/renderer/features/reader/ReaderNotesPanel.tsx
++++ b/src/renderer/features/reader/ReaderNotesPanel.tsx
+@@ -25,7 +25,8 @@
+  *
+  * ── 接口层 ──
+  * - export function ReaderNotesPanel(props: { annotations: Annotation[];
+- *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null }): JSX.Element
++ *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null;
++ *     highlightAiNoteId?: string | null }): JSX.Element
+  * - paperId 经 useActiveTab 自取（挂 active tab 视图内——props 不传 paperId 防双源）
+  *
+  * ── 架构层 ──
+@@ -60,8 +61,10 @@ export function ReaderNotesPanel(props: {
+   annotations: Annotation[]
+   onLocate(annotationId: string): void
+   highlightAnnotationId?: string | null
++  /** AI 段单击反向同步高亮（AI-09——OutlineAside 分发，AiNotesSection 消费） */
++  highlightAiNoteId?: string | null
+ }): JSX.Element {
+-  const { annotations, onLocate, highlightAnnotationId = null } = props
++  const { annotations, onLocate, highlightAnnotationId = null, highlightAiNoteId = null } = props
+   const tab = useActiveTab()
+   const paperId = tab?.paperId ?? null
+ 
+@@ -194,7 +197,7 @@ export function ReaderNotesPanel(props: {
+       </div>
+       {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
+           useActiveTab 自取 paperId——防双源同本面板） */}
+-      <AiNotesSection />
++      <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 05f7370..6ec5f6f 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from 'react'
+ import { showToast } from '../../shared/ui/Toast'
+ import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
+ import { AnnotationLayer } from './AnnotationLayer'
++import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { OutlineAside } from './OutlineAside'
+ import { SplitPane } from '../../shared/ui/SplitPane'
+ import { TabBar } from './TabBar'
+@@ -105,11 +106,8 @@ export function ReaderPage(): JSX.Element {
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+   }, [openPaper])
+ 
+-  // 换文献：丢弃旧页文本与文档句柄（TextLayer 以 pageText.page 对齐当前页才渲染，避免陈旧文本层）
+-  useEffect(() => {
+-    setPageText(null)
+-    setPdfDoc(null)
+-  }, [fileUrl])
++  // 换文献：丢弃旧页文本与文档句柄（防陈旧文本层——TextLayer 以 page 对齐才渲染）
++  useEffect(() => { setPageText(null); setPdfDoc(null) }, [fileUrl])
+ 
+   /** PdfCanvas 渲染完成回报：带回该页文本载荷，并量测 canvas CSS 盒（覆盖层定位基准） */
+   const handlePageRender = (renderedPage: number, text: PdfTextContent): void => {
+@@ -192,6 +190,8 @@ export function ReaderPage(): JSX.Element {
+             onChanged={() => undefined}
+           />
+         )}
++        {/* AI-09：与 AnnotationLayer 并置（store 订阅+点击上抛封装在 ReaderAiLayer） */}
++        <ReaderAiLayer page={page} pageRoot={pageText !== null && pageText.page === page + 1 ? pageRoot : null} />
+       </div>
+       <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
+     </div>
+diff --git a/src/renderer/features/reader/anchor-locate.ts b/src/renderer/features/reader/anchor-locate.ts
+index b8d146c..274e711 100644
+--- a/src/renderer/features/reader/anchor-locate.ts
++++ b/src/renderer/features/reader/anchor-locate.ts
+@@ -40,7 +40,8 @@
+  * ── 接口层 ──
+  * - export interface LocateTarget { paperId: string; anchor: {
+  *     quoteText: string; prefixText: string; suffixText: string;
+- *     anchorPage?: number; startOffset?: number } | null }
++ *     anchorPage?: number; startOffset?: number } | null;
++ *     annotationId?: string; aiNoteId?: string }
+  * - export type LocateResult = 'exact' | 'page' | 'paper'
+  * - export async function locateAnchor(target: LocateTarget): Promise<LocateResult>
+  * - export const LOCATE_OPEN_TIMEOUT_MS = 8000
+@@ -77,6 +78,9 @@ export interface LocateTarget {
+   /** exact 层滚动目标锚（AnnotationLayer rect 的 data-annotation-id）——
+    *  消费方持完整标注对象时随锚传递；缺省则 exact 只完成页级停驻 */
+   annotationId?: string
++  /** exact 层滚动目标锚（AI 09 扩展：AiAnnotationLayer rect 的 data-ai-note-id）
++   *  ——AI 笔记条目定位传递；与 annotationId 互斥（同时给优先 annotationId） */
++  aiNoteId?: string
+ }
+ 
+ export type LocateResult = 'exact' | 'page' | 'paper'
+@@ -169,10 +173,32 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
+ /** exact 副作用：滚动目标元素居中+闪烁（AnnotationLayer data-annotation-id 锚；
+  *  属性值转义防选择器注入——deepseek W1） */
+ function flashAnnotation(annotationId: string): void {
+-  const el = document.querySelector(
+-    `[data-annotation-id="${annotationId.replace(/(["\\])/g, '\\$1')}"]`
+-  )
++  flashTarget('data-annotation-id', annotationId)
++}
++
++/**
++ * exact 副作用（AI-09 扩展）：滚动 [data-ai-note-id] 目标居中+闪烁。
++ * 同属性值也会出现在 08 面板条目（AiNoteGroupList）上——优先取页面主区内的
++ * 渲染 rect（定位语义=在 PDF 里看见该段），面板命中兜底。
++ */
++function flashAiNote(aiNoteId: string): void {
++  const escaped = aiNoteId.replace(/(["\\])/g, '\\$1')
++  const candidates = document.querySelectorAll<HTMLElement>(`[data-ai-note-id="${escaped}"]`)
++  const el =
++    Array.from(candidates).find((c) => c.closest('[data-testid="reader-aside"]') === null) ??
++    candidates[0] ??
++    null
+   if (el === null) return
++  flashElement(el)
++}
++
++function flashTarget(attr: string, value: string): void {
++  const el = document.querySelector(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
++  if (el === null) return
++  flashElement(el)
++}
++
++function flashElement(el: Element): void {
+   ensureFlashStyle()
+   el.scrollIntoView({ block: 'center' })
+   el.classList.add('locate-flash')
+@@ -220,6 +246,7 @@ export async function locateAnchor(target: LocateTarget): Promise<LocateResult>
+     // S6：verifying 中 tab 被关——不追写已删 TabState/不滚动
+     if (useReaderStore.getState().tabs[target.paperId] === undefined) return 'paper'
+     if (target.annotationId !== undefined) flashAnnotation(target.annotationId)
++    else if (target.aiNoteId !== undefined) flashAiNote(target.aiNoteId)
+     return 'exact'
+   }
+   if (locateSeq === seq) showToast('锚定失效，已定位到所在页', 'info')
+diff --git a/src/renderer/features/reader/reader.store.ts b/src/renderer/features/reader/reader.store.ts
+index f6de33b..7412001 100644
+--- a/src/renderer/features/reader/reader.store.ts
++++ b/src/renderer/features/reader/reader.store.ts
+@@ -86,6 +86,9 @@ export interface ReaderStore {
+   activeId: string | null
+   /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
+   noteHighlight: { annotationId: string; seq: number } | null
++  /** AI 段单击反向同步信号（AI-09，C-05 同型）：OutlineAside 消费（切笔记
++   *  tab+highlightAiNoteId 分发 08 面板滚动高亮） */
++  aiNoteHighlight: { aiNoteId: string; seq: number } | null
+   openPaper(id: string): Promise<void>
+   activateTab(id: string): void
+   closeTab(id: string): void
+@@ -106,6 +109,8 @@ export interface ReaderStore {
+   markTabError(paperId: string): void
+   /** 标注单击→侧栏同步高亮信号（C-05）：OutlineAside 消费（切笔记 tab+滚动） */
+   notifyNoteHighlight(annotationId: string): void
++  /** AI 段单击→侧栏同步高亮信号（AI-09，C-05 同型）：AiAnnotationLayer 点击上抛 */
++  notifyAiNoteHighlight(aiNoteId: string): void
+   /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
+   undo(): Promise<void>
+ }
+@@ -115,7 +120,8 @@ export function createReaderStoreInitialState() {
+     tabs: {} as Record<string, TabState>,
+     order: [] as string[],
+     activeId: null as string | null,
+-    noteHighlight: null as { annotationId: string; seq: number } | null
++    noteHighlight: null as { annotationId: string; seq: number } | null,
++    aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
+   }
+ }
+ 
+@@ -371,6 +377,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+       set({ noteHighlight: { annotationId, seq: (prev?.seq ?? 0) + 1 } })
+     },
+ 
++    notifyAiNoteHighlight(aiNoteId) {
++      const prev = get().aiNoteHighlight
++      set({ aiNoteHighlight: { aiNoteId, seq: (prev?.seq ?? 0) + 1 } })
++    },
++
+     async undo() {
+       // paperId 在 await 前捕获——undo 期间切换 tab 不得把同步落到别的 tab（INV-03 同族）
+       const paperId = get().activeId
+diff --git a/tests/e2e/ai-notes-section.spec.ts b/tests/e2e/ai-notes-section.spec.ts
+index 392eb11..7c09129 100644
+--- a/tests/e2e/ai-notes-section.spec.ts
++++ b/tests/e2e/ai-notes-section.spec.ts
+@@ -20,6 +20,7 @@ import { launch, seedPaperRow } from './e2e-env'
+  */
+ const DEPS = ['SR2-AI-06', 'SR2-AI-07'] as const
+ const PAPER_ID = 'e2e-ai-sec'
++const PAPER_ID_09 = 'e2e-ai-layer'
+ 
+ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘→导入→分节渲染真实文本', async () => {
+   const pending = DEPS.filter((d) => !isTicketDone(d))
+@@ -138,3 +139,87 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘
+ 
+   await app.close()
+ })
++
++/**
++ * AI 标注渲染层 e2e（SR2-AI-09，随 08 链扩——受锁 [locked-change]）。
++ *
++ * fixture 导入含锚行（quote=PDF 已渲染真实文本）→ 阅读器 AI 高亮块可见
++ * （真实重锚：verifyQuote 对真 textLayer 命中——渲染真实文本断言）→点击
++ * AI 高亮块→侧栏自动切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）。
++ */
++test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点击跳面板高亮', async () => {
++  const pending09 = DEPS.filter((d) => !isTicketDone(d))
++  test.skip(pending09.length > 0, `延期：依赖工单未完成 [${pending09.join(', ')}]`)
++
++  const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))
++  const sensorRoot = join(userData, 'ai-sensor')
++
++  const seedApp = await launch(userData)
++  await (await seedApp.firstWindow()).waitForTimeout(500)
++  await seedApp.close()
++
++  const bytes = createTinyPdf(`AI 渲染层 e2e ${PDF_KNOWN_TEXT}`)
++  const sha = createHash('sha256').update(bytes).digest('hex')
++  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
++  const abs = join(userData, 'files', ...fileRef.split('/'))
++  mkdirSync(dirname(abs), { recursive: true })
++  writeFileSync(abs, bytes)
++  await seedPaperRow(userData, fileRef, sha, 'AI 渲染层 e2e 测试文献', PAPER_ID_09)
++
++  const app = await launch(userData)
++  const win = await app.firstWindow()
++  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
++
++  await win.getByText('AI 渲染层 e2e 测试文献').first().dblclick()
++  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
++
++  // fixture 落盘：job 移除+产物在（工具完成语义）→ 导入
++  const readBtn = win.getByRole('button', { name: 'AI 读文献' })
++  await win.locator('[data-testid="reader-aside"]').getByRole('tab', { name: '笔记' }).click()
++  await expect(readBtn).toBeVisible({ timeout: 10_000 })
++  await readBtn.click()
++  const pendingDir = join(sensorRoot, 'pending')
++  await expect
++    .poll(() => readdirSync(pendingDir).filter((f) => f.endsWith('.json')).length, { timeout: 10_000 })
++    .toBe(1)
++  mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
++  writeFileSync(
++    join(sensorRoot, 'corpus-ai', `${PAPER_ID_09}.json`),
++    JSON.stringify([
++      {
++        role: 'first-read',
++        question: 'Q1',
++        model: 'e2e-test-model',
++        // 含锚行：quote=当前页真实渲染文本（重锚命中的充要输入）
++        quote_text: PDF_KNOWN_TEXT,
++        prefix_text: '',
++        suffix_text: '',
++        anchor_page: 1,
++        content_md: 'AI 一读含锚笔记（渲染层 e2e）'
++      }
++    ])
++  )
++  writeFileSync(
++    join(sensorRoot, 'status.json'),
++    JSON.stringify({ state: '空闲', currentPaper: null, role: null, updatedAt: new Date().toISOString(), heartbeatAt: new Date().toISOString() })
++  )
++  for (const f of readdirSync(pendingDir)) rmSync(join(pendingDir, f))
++  const importBtn = win.getByRole('button', { name: '导入 AI 笔记' })
++  await expect(importBtn).toBeVisible({ timeout: 12_000 })
++  await importBtn.click()
++  await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
++
++  // 回阅读区（笔记 tab 在侧栏——主区 PDF 常驻）：AI 高亮块经真 textLayer 重锚可见
++  const aiRect = win.locator('[data-testid="ai-note-rect"]')
++  await expect(aiRect.first()).toBeVisible({ timeout: 10_000 })
++  await expect(aiRect.first()).toHaveAttribute('data-ai-note-id', /.+/)
++
++  // 点击→侧栏切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）
++  await aiRect.first().click()
++  const entry = win.locator('[data-testid="ai-note-groups"] [data-highlight="true"]')
++  await expect(entry).toBeVisible({ timeout: 10_000 })
++  await expect(entry).toHaveAttribute('data-ai-note-id', /.+/)
++  await expect(win.getByText('AI 一读含锚笔记（渲染层 e2e）')).toBeVisible()
++
++  await app.close()
++})
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 598561b..7f69528 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -433,7 +433,9 @@ it('条目单击→locateAnchor（INV-20 单入口消费方；anchorPage 1 基
+   })
+   expect(locateAnchor).toHaveBeenCalledWith({
+     paperId: 'p-1',
+-    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 }
++    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
++    // AI-09 延展：exact 层滚动锚（data-ai-note-id 目标）
++    aiNoteId: 'a1'
+   })
+ })
+ 
+diff --git a/tests/unit/renderer/ai-annotation-layer.test.tsx b/tests/unit/renderer/ai-annotation-layer.test.tsx
+new file mode 100644
+index 0000000..334bad1
+--- /dev/null
++++ b/tests/unit/renderer/ai-annotation-layer.test.tsx
+@@ -0,0 +1,254 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-AI-09] AiAnnotationLayer —— AI 标注渲染层组件测试（锁定合约）。
++ *
++ * 覆盖：verifyQuote 真→rects 渲染+七问分色（ai-note-style 单源）/重锚失败→
++ * 该段零 rects 且他段不受扰/篇级无锚行不入层/点击→该段全部 rects 高亮+
++ * onJumpToNote 上抛/只读断言（无菜单无编辑元素）/翻页重锚缓存失效（paperId+
++ * 页键）/anchor-locate exact 层延展（data-ai-note-id 目标滚动+闪烁；data-
++ * annotation-id 既有行为不回归）。
++ * always-active（ADR-0017 裁决 3）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { AiNote } from '../../../src/shared/models/ai-note'
++import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
++import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
++import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++
++/** rAF 同步化（jsdom 假帧——重锚 effect 即时收敛，测试确定性） */
++function syncRaf(): void {
++  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
++    cb(0)
++    return 0
++  })
++}
++
++function note(p: {
++  id: string
++  question: AiNote['question']
++  quote: string
++  anchorPage?: number | null
++  paperId?: string
++}): AiNote {
++  return {
++    id: p.id,
++    paperId: p.paperId ?? 'p-1',
++    annotationId: null,
++    role: 'first-read',
++    question: p.question,
++    model: 'test-model',
++    quoteText: p.quote,
++    prefixText: '',
++    suffixText: '',
++    anchorPage: p.anchorPage === undefined ? 1 : p.anchorPage,
++    contentMd: `内容-${p.id}`,
++    createdAt: 't',
++    updatedAt: 't'
++  }
++}
++
++/** 页根：.textLayer 内单 span 全文（重锚管线与生产同构） */
++function makePageRoot(text: string): HTMLDivElement {
++  const root = document.createElement('div')
++  const textLayer = document.createElement('div')
++  textLayer.className = 'textLayer'
++  const span = document.createElement('span')
++  span.textContent = text
++  textLayer.appendChild(span)
++  root.appendChild(textLayer)
++  return root
++}
++
++function makeTab(id: string, page = 0): TabState {
++  return {
++    paperId: id,
++    fileUrl: `app-file://${id}`,
++    fileName: `${id}.pdf`,
++    page,
++    totalPages: 10,
++    zoom: 1,
++    color: 'yellow',
++    annotations: [],
++    status: 'ready',
++    dirty: false
++  }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(node: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(node)
++  })
++}
++
++function remount(node: JSX.Element): void {
++  act(() => {
++    root?.render(node)
++  })
++}
++
++const rects = (): NodeListOf<HTMLElement> =>
++  host!.querySelectorAll<HTMLElement>('[data-testid="ai-note-rect"]')
++
++beforeEach(() => {
++  syncRaf()
++  useReaderStore.setState({
++    tabs: { 'p-1': makeTab('p-1') },
++    order: ['p-1'],
++    activeId: 'p-1',
++    noteHighlight: null,
++    aiNoteHighlight: null
++  })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  vi.unstubAllGlobals()
++})
++
++it('verifyQuote 真：rects 渲染+data-ai-note-id+七问分色（ai-note-style 单源）', () => {
++  const pageRoot = makePageRoot('SMART WATER TEST DOC')
++  mount(
++    <AiAnnotationLayer
++      aiNotes={[note({ id: 'n1', question: 'Q1', quote: 'WATER' })]}
++      page={0}
++      pageRoot={pageRoot}
++      onJumpToNote={() => undefined}
++    />
++  )
++  expect(rects().length).toBeGreaterThan(0)
++  const r = rects()[0]!
++  expect(r.getAttribute('data-ai-note-id')).toBe('n1')
++  expect(r.style.background).toBe(QUESTION_COLOR.Q1)
++})
++
++it('重锚失败（verifyQuote 假）：该段零 rects 且他段不受扰', () => {
++  const pageRoot = makePageRoot('SMART WATER TEST DOC')
++  mount(
++    <AiAnnotationLayer
++      aiNotes={[
++        note({ id: 'miss', question: 'Q2', quote: '不存在的引文' }),
++        note({ id: 'hit', question: 'Q1', quote: 'WATER' })
++      ]}
++      page={0}
++      pageRoot={pageRoot}
++      onJumpToNote={() => undefined}
++    />
++  )
++  const ids = Array.from(rects()).map((r) => r.getAttribute('data-ai-note-id'))
++  expect(ids).toEqual(['hit'])
++})
++
++it('篇级/无锚行（quoteText 空）不入层', () => {
++  const pageRoot = makePageRoot('SMART WATER TEST DOC')
++  mount(
++    <AiAnnotationLayer
++      aiNotes={[note({ id: 'paper-level', question: 'Q7', quote: '', anchorPage: null })]}
++      page={0}
++      pageRoot={pageRoot}
++      onJumpToNote={() => undefined}
++    />
++  )
++  expect(rects().length).toBe(0)
++})
++
++it('点击：该段全部 rects 高亮+onJumpToNote 上抛（不弹菜单）', () => {
++  const pageRoot = makePageRoot('SMART WATER TEST DOC')
++  const onJump = vi.fn()
++  mount(
++    <AiAnnotationLayer
++      aiNotes={[note({ id: 'n1', question: 'Q1', quote: 'WATER' })]}
++      page={0}
++      pageRoot={pageRoot}
++      onJumpToNote={onJump}
++    />
++  )
++  act(() => {
++    rects()[0]!.click()
++  })
++  expect(onJump).toHaveBeenCalledWith('n1')
++  for (const r of Array.from(rects())) {
++    expect(r.getAttribute('data-highlight')).toBe('true')
++  }
++  // 只读：无标注菜单/编辑器元素
++  expect(host!.querySelectorAll('[data-testid="annotation-menu"], textarea, input').length).toBe(0)
++})
++
++it('重锚缓存失效：翻页后按新页重算（anchorPage 不匹配页不渲染）', () => {
++  const pageRoot = makePageRoot('SMART WATER TEST DOC')
++  // anchorPage=2（1 基）→ 渲染页 index 1；page=0 时不渲染
++  const notes = [note({ id: 'n1', question: 'Q1', quote: 'SMART', anchorPage: 2 })]
++  mount(
++    <AiAnnotationLayer aiNotes={notes} page={0} pageRoot={pageRoot} onJumpToNote={() => undefined} />
++  )
++  expect(rects().length).toBe(0)
++  remount(
++    <AiAnnotationLayer aiNotes={notes} page={1} pageRoot={pageRoot} onJumpToNote={() => undefined} />
++  )
++  expect(rects().length).toBeGreaterThan(0)
++})
++
++describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
++  let textLayer: HTMLDivElement | null = null
++  let scrollIntoView: ReturnType<typeof vi.fn>
++  let target: HTMLElement | null = null
++
++  beforeEach(() => {
++    scrollIntoView = vi.fn()
++    // jsdom 无 scrollIntoView——模块级 polyfill（anchor-locate flash 副作用）
++    Element.prototype.scrollIntoView = scrollIntoView as unknown as Element['scrollIntoView']
++  })
++
++  afterEach(() => {
++    textLayer?.remove()
++    target?.remove()
++    textLayer = null
++    target = null
++    delete (Element.prototype as Partial<Element>).scrollIntoView
++  })
++
++  async function setupTarget(attr: 'data-ai-note-id' | 'data-annotation-id', value: string): Promise<void> {
++    textLayer = makePageRoot('SMART WATER TEST DOC')
++    document.body.appendChild(textLayer)
++    target = document.createElement('div')
++    target.setAttribute(attr, value)
++    document.body.appendChild(target)
++  }
++
++  it('aiNoteId：verifyQuote 成功→exact 滚动+闪烁 data-ai-note-id 元素', async () => {
++    await setupTarget('data-ai-note-id', 'n1')
++    const result = await locateAnchor({
++      paperId: 'p-1',
++      anchor: { quoteText: 'WATER', prefixText: '', suffixText: '', anchorPage: 0 },
++      aiNoteId: 'n1'
++    })
++    expect(result).toBe('exact')
++    expect(scrollIntoView).toHaveBeenCalled()
++    expect(target!.classList.contains('locate-flash')).toBe(true)
++  })
++
++  it('annotationId 既有行为不回归：data-annotation-id 目标仍滚动+闪烁', async () => {
++    await setupTarget('data-annotation-id', 'a1')
++    const result = await locateAnchor({
++      paperId: 'p-1',
++      anchor: { quoteText: 'WATER', prefixText: '', suffixText: '', anchorPage: 0 },
++      annotationId: 'a1'
++    })
++    expect(result).toBe('exact')
++    expect(scrollIntoView).toHaveBeenCalled()
++    expect(target!.classList.contains('locate-flash')).toBe(true)
++  })
++})

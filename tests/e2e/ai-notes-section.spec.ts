@@ -20,6 +20,7 @@ import { launch, seedPaperRow } from './e2e-env'
  */
 const DEPS = ['SR2-AI-06', 'SR2-AI-07'] as const
 const PAPER_ID = 'e2e-ai-sec'
+const PAPER_ID_09 = 'e2e-ai-layer'
 
 test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘→导入→分节渲染真实文本', async () => {
   const pending = DEPS.filter((d) => !isTicketDone(d))
@@ -135,6 +136,90 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘�
   // archive 账本：产物移入归档区（真 fs）
   expect(existsSync(join(sensorRoot, 'archive', `${PAPER_ID}.json`))).toBe(true)
   expect(readdirSync(join(sensorRoot, 'corpus-ai'))).toHaveLength(0)
+
+  await app.close()
+})
+
+/**
+ * AI 标注渲染层 e2e（SR2-AI-09，随 08 链扩——受锁 [locked-change]）。
+ *
+ * fixture 导入含锚行（quote=PDF 已渲染真实文本）→ 阅读器 AI 高亮块可见
+ * （真实重锚：verifyQuote 对真 textLayer 命中——渲染真实文本断言）→点击
+ * AI 高亮块→侧栏自动切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）。
+ */
+test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点击跳面板高亮', async () => {
+  const pending09 = DEPS.filter((d) => !isTicketDone(d))
+  test.skip(pending09.length > 0, `延期：依赖工单未完成 [${pending09.join(', ')}]`)
+
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))
+  const sensorRoot = join(userData, 'ai-sensor')
+
+  const seedApp = await launch(userData)
+  await (await seedApp.firstWindow()).waitForTimeout(500)
+  await seedApp.close()
+
+  const bytes = createTinyPdf(`AI 渲染层 e2e ${PDF_KNOWN_TEXT}`)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, 'AI 渲染层 e2e 测试文献', PAPER_ID_09)
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  await win.getByText('AI 渲染层 e2e 测试文献').first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // fixture 落盘：job 移除+产物在（工具完成语义）→ 导入
+  const readBtn = win.getByRole('button', { name: 'AI 读文献' })
+  await win.locator('[data-testid="reader-aside"]').getByRole('tab', { name: '笔记' }).click()
+  await expect(readBtn).toBeVisible({ timeout: 10_000 })
+  await readBtn.click()
+  const pendingDir = join(sensorRoot, 'pending')
+  await expect
+    .poll(() => readdirSync(pendingDir).filter((f) => f.endsWith('.json')).length, { timeout: 10_000 })
+    .toBe(1)
+  mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
+  writeFileSync(
+    join(sensorRoot, 'corpus-ai', `${PAPER_ID_09}.json`),
+    JSON.stringify([
+      {
+        role: 'first-read',
+        question: 'Q1',
+        model: 'e2e-test-model',
+        // 含锚行：quote=当前页真实渲染文本（重锚命中的充要输入）
+        quote_text: PDF_KNOWN_TEXT,
+        prefix_text: '',
+        suffix_text: '',
+        anchor_page: 1,
+        content_md: 'AI 一读含锚笔记（渲染层 e2e）'
+      }
+    ])
+  )
+  writeFileSync(
+    join(sensorRoot, 'status.json'),
+    JSON.stringify({ state: '空闲', currentPaper: null, role: null, updatedAt: new Date().toISOString(), heartbeatAt: new Date().toISOString() })
+  )
+  for (const f of readdirSync(pendingDir)) rmSync(join(pendingDir, f))
+  const importBtn = win.getByRole('button', { name: '导入 AI 笔记' })
+  await expect(importBtn).toBeVisible({ timeout: 12_000 })
+  await importBtn.click()
+  await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
+
+  // 回阅读区（笔记 tab 在侧栏——主区 PDF 常驻）：AI 高亮块经真 textLayer 重锚可见
+  const aiRect = win.locator('[data-testid="ai-note-rect"]')
+  await expect(aiRect.first()).toBeVisible({ timeout: 10_000 })
+  await expect(aiRect.first()).toHaveAttribute('data-ai-note-id', /.+/)
+
+  // 点击→侧栏切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）
+  await aiRect.first().click()
+  const entry = win.locator('[data-testid="ai-note-groups"] [data-highlight="true"]')
+  await expect(entry).toBeVisible({ timeout: 10_000 })
+  await expect(entry).toHaveAttribute('data-ai-note-id', /.+/)
+  await expect(win.getByText('AI 一读含锚笔记（渲染层 e2e）')).toBeVisible()
 
   await app.close()
 })

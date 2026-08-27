@@ -36,10 +36,9 @@
  *   级全量——幂等使无害）→三桶 toast（imported/skipped 计数+errors 篇名）
  *   →list/observe 刷新（E1 手动激活形态——D2b 手动语义保持）
  * - 条目单击→locateAnchor（INV-20 单入口消费方）。**exact 层接缝声明
- *   （门一 W08-3 处置）**：exact 层滚动+闪烁现绑 [data-annotation-id]（AI
- *   条目无 annotationId）——exact 完整化=AI-09 交付 data-ai-note-id 渲染
- *   节点+anchor-locate 延展；09 落地前单击 exact 目标缺失→anchor-locate
- *   既有行为页级停驻（分步兑现，不另写降级）
+ *   （门一 W08-3 处置——AI-09 已兑现）**：本节随锚传 aiNoteId→exact 层滚动
+ *   闪烁 [data-ai-note-id] 渲染节点（AiAnnotationLayer 交付）——anchor-locate
+ *   延展仅扩 exact 层目标识别面，三防线结构不动
  * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（Rule of Three 第 2 次保持
  *   重复；第 3 处出现时抽 shared）
  *
@@ -189,7 +188,8 @@ export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JS
       })
   }
 
-  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页） */
+  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页；
+   *  aiNoteId=exact 层滚动锚（AI-09 交付 data-ai-note-id 渲染节点+延展兑现） */
   const onLocateNote = (n: AiNote): void => {
     void locateAnchor({
       paperId: n.paperId,
@@ -198,7 +198,8 @@ export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JS
         prefixText: n.prefixText,
         suffixText: n.suffixText,
         anchorPage: n.anchorPage === null ? undefined : n.anchorPage - 1
-      }
+      },
+      aiNoteId: n.id
     })
   }
 

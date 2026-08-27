@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper } from '../../shared/open-paper-bus'
 import { AnnotationLayer } from './AnnotationLayer'
+import { ReaderAiLayer } from './AiAnnotationLayer'
 import { OutlineAside } from './OutlineAside'
 import { SplitPane } from '../../shared/ui/SplitPane'
 import { TabBar } from './TabBar'
@@ -105,11 +106,8 @@ export function ReaderPage(): JSX.Element {
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [openPaper])
 
-  // 换文献：丢弃旧页文本与文档句柄（TextLayer 以 pageText.page 对齐当前页才渲染，避免陈旧文本层）
-  useEffect(() => {
-    setPageText(null)
-    setPdfDoc(null)
-  }, [fileUrl])
+  // 换文献：丢弃旧页文本与文档句柄（防陈旧文本层——TextLayer 以 page 对齐才渲染）
+  useEffect(() => { setPageText(null); setPdfDoc(null) }, [fileUrl])
 
   /** PdfCanvas 渲染完成回报：带回该页文本载荷，并量测 canvas CSS 盒（覆盖层定位基准） */
   const handlePageRender = (renderedPage: number, text: PdfTextContent): void => {
@@ -192,6 +190,8 @@ export function ReaderPage(): JSX.Element {
             onChanged={() => undefined}
           />
         )}
+        {/* AI-09：与 AnnotationLayer 并置（store 订阅+点击上抛封装在 ReaderAiLayer） */}
+        <ReaderAiLayer page={page} pageRoot={pageText !== null && pageText.page === page + 1 ? pageRoot : null} />
       </div>
       <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
     </div>

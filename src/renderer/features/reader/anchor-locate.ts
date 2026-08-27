@@ -40,7 +40,8 @@
  * ── 接口层 ──
  * - export interface LocateTarget { paperId: string; anchor: {
  *     quoteText: string; prefixText: string; suffixText: string;
- *     anchorPage?: number; startOffset?: number } | null }
+ *     anchorPage?: number; startOffset?: number } | null;
+ *     annotationId?: string; aiNoteId?: string }
  * - export type LocateResult = 'exact' | 'page' | 'paper'
  * - export async function locateAnchor(target: LocateTarget): Promise<LocateResult>
  * - export const LOCATE_OPEN_TIMEOUT_MS = 8000
@@ -77,6 +78,9 @@ export interface LocateTarget {
   /** exact 层滚动目标锚（AnnotationLayer rect 的 data-annotation-id）——
    *  消费方持完整标注对象时随锚传递；缺省则 exact 只完成页级停驻 */
   annotationId?: string
+  /** exact 层滚动目标锚（AI 09 扩展：AiAnnotationLayer rect 的 data-ai-note-id）
+   *  ——AI 笔记条目定位传递；与 annotationId 互斥（同时给优先 annotationId） */
+  aiNoteId?: string
 }
 
 export type LocateResult = 'exact' | 'page' | 'paper'
@@ -169,10 +173,32 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
 /** exact 副作用：滚动目标元素居中+闪烁（AnnotationLayer data-annotation-id 锚；
  *  属性值转义防选择器注入——deepseek W1） */
 function flashAnnotation(annotationId: string): void {
-  const el = document.querySelector(
-    `[data-annotation-id="${annotationId.replace(/(["\\])/g, '\\$1')}"]`
-  )
+  flashTarget('data-annotation-id', annotationId)
+}
+
+/**
+ * exact 副作用（AI-09 扩展）：滚动 [data-ai-note-id] 目标居中+闪烁。
+ * 同属性值也会出现在 08 面板条目（AiNoteGroupList）上——优先取页面主区内的
+ * 渲染 rect（定位语义=在 PDF 里看见该段），面板命中兜底。
+ */
+function flashAiNote(aiNoteId: string): void {
+  const escaped = aiNoteId.replace(/(["\\])/g, '\\$1')
+  const candidates = document.querySelectorAll<HTMLElement>(`[data-ai-note-id="${escaped}"]`)
+  const el =
+    Array.from(candidates).find((c) => c.closest('[data-testid="reader-aside"]') === null) ??
+    candidates[0] ??
+    null
   if (el === null) return
+  flashElement(el)
+}
+
+function flashTarget(attr: string, value: string): void {
+  const el = document.querySelector(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
+  if (el === null) return
+  flashElement(el)
+}
+
+function flashElement(el: Element): void {
   ensureFlashStyle()
   el.scrollIntoView({ block: 'center' })
   el.classList.add('locate-flash')
@@ -220,6 +246,7 @@ export async function locateAnchor(target: LocateTarget): Promise<LocateResult> 
     // S6：verifying 中 tab 被关——不追写已删 TabState/不滚动
     if (useReaderStore.getState().tabs[target.paperId] === undefined) return 'paper'
     if (target.annotationId !== undefined) flashAnnotation(target.annotationId)
+    else if (target.aiNoteId !== undefined) flashAiNote(target.aiNoteId)
     return 'exact'
   }
   if (locateSeq === seq) showToast('锚定失效，已定位到所在页', 'info')

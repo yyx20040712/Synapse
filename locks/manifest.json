@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T02:00:02.8380320Z",
+    "generatedAt":  "2026-08-27T02:27:29.3986353Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -123,7 +123,7 @@
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
-                      "sha256":  "2469575429faa7752e18174626ec327f48d94440a9ca5397bffada86e7238b80"
+                      "sha256":  "d95ba2159c129f80c418f3c8a8c24982e671aa01af81f642ac7de6ffbde57ad1"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -242,8 +242,12 @@
                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
                   },
                   {
+                      "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
+                      "sha256":  "ff37c18c0db75bdd252b2a05dda64ac5e73ff9597364ad65956e393ea226f5f2"
+                  },
+                  {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
-                      "sha256":  "d33d59b4235f5602d7ed97ff2690c16f9e60ee280b1a30f499c0408b9e05befe"
+                      "sha256":  "81ad71fa320ed0574a68f3c6a1f69af7abfb1cb90288787d7c50f175597d7e56"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
