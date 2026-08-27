@@ -61,7 +61,202 @@
  *   listener 成对清理（INV-14）/zoom 钳制；**always-active**
  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+ *
+ * ── 实现注（票面规约原文之上叠加，形状自定面=主控裁决 1/2）──
+ * - 输出形状：LayoutResult { positions, layers }——positions 键=节点 id，
+ *   值=**卡片中心点**（组件按中心减半宽高绘制）；layers=层带序列
+ *   （year 升序+null 末位，y=层带中心=i×LAYER_GAP），覆盖节点仍计入
+ *   层带（归属按 year 不变），但位置用覆盖值（y 覆盖不吸附层带）。
+ * - 边方向=from 父（继承来源）→to 子（继承者），service 契约同向。
+ * - 防御剔除（INV-27 第二道，service 已守）：悬空边/自环/多父（首条
+ *   胜出）/成环（to 是 from 祖先链上的点）——剔除计数一次汇总
+ *   console.warn；**不丢节点**（环上节点断边后照常成根布局）。
+ * - x 覆盖节点与其父断链（其子树自成根照常布局）；y 覆盖仅替换 y。
+ * - RT 两趟：place() 后序合并子树轮廓，兄弟放置=max over 共享层（前树该层
+ *   右缘+间隙）；assign() 前序按 boxOrigin 累积绝对化。树序=边输入序
+ *   （稳定性锚点）。**轮廓帧按年份层序索引（非树深度——回炉 1 轮 W1）**：
+ *   y=年份层带打破经典 RT「深度=行」不变量后，深度索引只在同深度分离，
+ *   叔侄同年（异深同年带）无约束即重叠（门一实测 70px）——层索引保证
+ *   **同年层内任意两节点 x 区间分离**（全树性质）；父占位并入自身层，
+ *   与子孙同层（非单调数据）时右推防护。
  */
+import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const LINEAGE_LAYOUT_STUB = 'SR2-LG-02'
+// ── 几何常量（卡片等宽——票面「节点宽度统一常量」）──────────────────
+export const NODE_W = 180
+export const NODE_H = 64
+/** 层带中心间距（y 维） */
+export const LAYER_GAP = 140
+/** 兄弟子树最小间隙（x 维轮廓约束） */
+export const SIBLING_GAP = 40
+/** 森林相邻树间隙 */
+export const TREE_GAP = 80
+
+export interface LayoutResult {
+  /** 节点 id → 卡片中心点（覆盖节点=覆盖值原样） */
+  positions: Map<string, { x: number; y: number }>
+  /** 年份层带（升序+null 末位；含覆盖节点的 year） */
+  layers: Array<{ year: number | null; y: number }>
+}
+
+/** 子树轮廓（相对子树包围盒原点）：年份层序 → 该层占位 [lo, hi] */
+interface Frame {
+  spans: Map<number, { lo: number; hi: number }>
+  width: number
+}
+
+export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): LayoutResult {
+  // 1) 层带：全部节点（含覆盖）的 year 去重——升序、null 末位
+  const yearSet = new Set<number | null>()
+  for (const n of nodes) yearSet.add(n.year)
+  const years = [...yearSet].sort((a, b) => {
+    if (a === null) return b === null ? 0 : 1
+    if (b === null) return -1
+    return a - b
+  })
+  const layers = years.map((year, i) => ({ year, y: i * LAYER_GAP }))
+  const layerY = new Map<number | null, number>(years.map((y, i) => [y, i * LAYER_GAP]))
+  /** year → 年份层序（W1：轮廓帧索引=层序非树深度） */
+  const layerIdx = new Map<number | null, number>(years.map((y, i) => [y, i]))
+
+  // 2) 净化边（INV-27 防御第二道）：悬空/自环/多父（首条胜出）/成环
+  const nodeIds = new Set(nodes.map((n) => n.id))
+  const parentOf = new Map<string, string>()
+  const children = new Map<string, string[]>()
+  /** to 是否在 from 的祖先链上（加边即成环）——沿父链上溯 */
+  const isAncestorOf = (ancestor: string, from: string): boolean => {
+    let cur: string | undefined = from
+    while (cur !== undefined) {
+      if (cur === ancestor) return true
+      cur = parentOf.get(cur)
+    }
+    return false
+  }
+  let dropped = 0
+  for (const e of edges) {
+    const broken =
+      e.fromNode === e.toNode ||
+      !nodeIds.has(e.fromNode) ||
+      !nodeIds.has(e.toNode) ||
+      parentOf.has(e.toNode) ||
+      isAncestorOf(e.toNode, e.fromNode)
+    if (broken) {
+      dropped++
+      continue
+    }
+    parentOf.set(e.toNode, e.fromNode)
+    children.set(e.fromNode, [...(children.get(e.fromNode) ?? []), e.toNode])
+  }
+  if (dropped > 0) {
+    console.warn(
+      `[lineage-layout] 剔除 ${dropped} 条破坏树约束的边（多父/环/自环/悬空——` +
+        'INV-27 service 层已守，此为布局防御第二道，不丢节点）'
+    )
+  }
+
+  // 3) y 先行：层带或覆盖值
+  const positions = new Map<string, { x: number; y: number }>()
+  for (const n of nodes) {
+    positions.set(n.id, { x: 0, y: n.y !== null ? n.y : layerY.get(n.year)! })
+  }
+
+  // 4) 根集合（nodes 输入序）；x 覆盖节点=覆盖值+断链（父侧移除、其子
+  //    提升为顶层森林成员照常布局——断点不丢子树）
+  const roots: string[] = []
+  for (const n of nodes) {
+    if (n.x !== null) {
+      positions.get(n.id)!.x = n.x
+      const parent = parentOf.get(n.id)
+      if (parent !== undefined) {
+        children.set(
+          parent,
+          (children.get(parent) ?? []).filter((c) => c !== n.id)
+        )
+      }
+      for (const kid of children.get(n.id) ?? []) roots.push(kid)
+      continue
+    }
+    if (parentOf.get(n.id) === undefined) roots.push(n.id)
+  }
+
+  // 5) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const selfRel = new Map<string, number>() // 节点相对自身子树包围盒原点的中心 x
+  const boxOrigin = new Map<string, number>() // 子包围盒原点相对父包围盒原点
+
+  function place(id: string): Frame {
+    const kids = children.get(id) ?? []
+    const myLayer = layerIdx.get(byId.get(id)!.year)!
+    if (kids.length === 0) {
+      selfRel.set(id, NODE_W / 2)
+      return { spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]), width: NODE_W }
+    }
+    const merged = new Map<number, { lo: number; hi: number }>()
+    const offsets: number[] = []
+    for (const kid of kids) {
+      const f = place(kid)
+      // 兄弟约束=所有共享层上（前树该层右缘+间隙-本树该层左缘）的最大值——
+      // 不共享层的子树可交错（轮廓紧凑性）；共享层含异深同年（W1 核心）
+      let need = 0
+      for (const [layer, span] of f.spans) {
+        const prev = merged.get(layer)
+        if (prev !== undefined) {
+          need = Math.max(need, prev.hi + SIBLING_GAP - span.lo)
+        }
+      }
+      const offset = Math.max(0, need)
+      offsets.push(offset)
+      for (const [layer, span] of f.spans) {
+        const lo = offset + span.lo
+        const hi = offset + span.hi
+        const prev = merged.get(layer)
+        merged.set(layer, prev === undefined ? { lo, hi } : { lo: Math.min(prev.lo, lo), hi: Math.max(prev.hi, hi) })
+      }
+    }
+    // 归一化：包围盒左缘到 0
+    const minL = Math.min(...[...merged.values()].map((s) => s.lo))
+    const width = Math.max(...[...merged.values()].map((s) => s.hi)) - minL
+    for (let i = 0; i < kids.length; i++) {
+      boxOrigin.set(kids[i]!, offsets[i]! - minL)
+    }
+    for (const [layer, s] of merged) {
+      merged.set(layer, { lo: s.lo - minL, hi: s.hi - minL })
+    }
+    // 父居中于子块（RT 经典视觉）；父占位并入自身年份层——与子孙同层
+    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸）
+    let x = width / 2
+    const mine = merged.get(myLayer)
+    if (mine !== undefined && x - NODE_W / 2 <= mine.hi + SIBLING_GAP) {
+      x = mine.hi + SIBLING_GAP + NODE_W / 2
+    }
+    const plo = x - NODE_W / 2
+    const phi = x + NODE_W / 2
+    merged.set(
+      myLayer,
+      mine === undefined
+        ? { lo: plo, hi: phi }
+        : { lo: Math.min(mine.lo, plo), hi: Math.max(mine.hi, phi) }
+    )
+    const finalMin = Math.min(...[...merged.values()].map((s) => s.lo))
+    const finalWidth = Math.max(...[...merged.values()].map((s) => s.hi)) - finalMin
+    selfRel.set(id, x)
+    return { spans: merged, width: finalWidth }
+  }
+
+  function assign(id: string, originAbs: number): void {
+    const p = positions.get(id)!
+    p.x = originAbs + selfRel.get(id)!
+    for (const kid of children.get(id) ?? []) {
+      assign(kid, originAbs + boxOrigin.get(kid)!)
+    }
+  }
+
+  let forestX = 0
+  for (const r of roots) {
+    const f = place(r)
+    assign(r, forestX)
+    forestX += f.width + TREE_GAP
+  }
+
+  return { positions, layers }
+}

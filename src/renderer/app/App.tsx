@@ -1,22 +1,24 @@
 /**
- * 应用骨架（infra，无工单）：侧栏三入口 + 视图切换 + 错误边界。
+ * 应用骨架（infra，无工单）：侧栏四入口 + 视图切换 + 错误边界。
  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
  */
 import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 
-type ViewId = 'library' | 'reader' | 'settings'
+type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
 const NAV: Array<{ id: ViewId; label: string }> = [
   { id: 'library', label: '文献库' },
   { id: 'reader', label: '阅读器' },
-  { id: 'settings', label: '设置' }
+  { id: 'settings', label: '设置' },
+  { id: 'lineage', label: '脉络' }
 ]
 
 class ErrorBoundary extends Component<
@@ -99,6 +101,7 @@ export function App(): JSX.Element {
           {view === 'library' && <LibraryPage />}
           {view === 'reader' && <ReaderPage />}
           {view === 'settings' && <SettingsPage />}
+          {view === 'lineage' && <LineagePage />}
         </ErrorBoundary>
       </main>
       <ToastHost />

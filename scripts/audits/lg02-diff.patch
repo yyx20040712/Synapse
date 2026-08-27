@@ -1,0 +1,1114 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 810e421..24f399e 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T05:09:39.4839000Z",
++    "generatedAt":  "2026-08-27T05:38:28.1133279Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -301,6 +301,14 @@
+                       "path":  "tests/unit/renderer/library.store.test.ts",
+                       "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
++                      "sha256":  "14994589e3fa2099cfb3f3f1729ddeeb805bffcdcb63e4bcd411c6149928188e"
++                  },
++                  {
++                      "path":  "tests/unit/renderer/lineage-layout.test.ts",
++                      "sha256":  "853d3a4e8684a3df7f97d14ef52339f06c0612e97c0d0e9cfcb54d865b91d6f3"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/notes.store.test.ts",
+                       "sha256":  "be5bcdaaad2703323a7ed44723f6d6d31299aebf701c32dbcbff03187d67cadc"
+diff --git a/src/renderer/app/App.tsx b/src/renderer/app/App.tsx
+index 9a7c641..6c7567f 100644
+--- a/src/renderer/app/App.tsx
++++ b/src/renderer/app/App.tsx
+@@ -1,22 +1,24 @@
+ /**
+- * 应用骨架（infra，无工单）：侧栏三入口 + 视图切换 + 错误边界。
++ * 应用骨架（infra，无工单）：侧栏四入口 + 视图切换 + 错误边界。
+  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
+  */
+ import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
+ import { LibraryPage } from '../features/library/LibraryPage'
+ import { ReaderPage } from '../features/reader/ReaderPage'
+ import { SettingsPage } from '../features/settings/SettingsPage'
++import { LineagePage } from '../features/lineage/LineagePage'
+ import { ToastHost } from '../shared/ui/Toast'
+ import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
+ import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
+ import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
+ 
+-type ViewId = 'library' | 'reader' | 'settings'
++type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
+ 
+ const NAV: Array<{ id: ViewId; label: string }> = [
+   { id: 'library', label: '文献库' },
+   { id: 'reader', label: '阅读器' },
+-  { id: 'settings', label: '设置' }
++  { id: 'settings', label: '设置' },
++  { id: 'lineage', label: '脉络' }
+ ]
+ 
+ class ErrorBoundary extends Component<
+@@ -99,6 +101,7 @@ export function App(): JSX.Element {
+           {view === 'library' && <LibraryPage />}
+           {view === 'reader' && <ReaderPage />}
+           {view === 'settings' && <SettingsPage />}
++          {view === 'lineage' && <LineagePage />}
+         </ErrorBoundary>
+       </main>
+       <ToastHost />
+diff --git a/src/renderer/features/lineage/lineage-layout.ts b/src/renderer/features/lineage/lineage-layout.ts
+index 0cf4271..da5f840 100644
+--- a/src/renderer/features/lineage/lineage-layout.ts
++++ b/src/renderer/features/lineage/lineage-layout.ts
+@@ -61,7 +61,182 @@
+  *   listener 成对清理（INV-14）/zoom 钳制；**always-active**
+  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ *
++ * ── 实现注（票面规约原文之上叠加，形状自定面=主控裁决 1/2）──
++ * - 输出形状：LayoutResult { positions, layers }——positions 键=节点 id，
++ *   值=**卡片中心点**（组件按中心减半宽高绘制）；layers=层带序列
++ *   （year 升序+null 末位，y=层带中心=i×LAYER_GAP），覆盖节点仍计入
++ *   层带（归属按 year 不变），但位置用覆盖值（y 覆盖不吸附层带）。
++ * - 边方向=from 父（继承来源）→to 子（继承者），service 契约同向。
++ * - 防御剔除（INV-27 第二道，service 已守）：悬空边/自环/多父（首条
++ *   胜出）/成环（to 是 from 祖先链上的点）——剔除计数一次汇总
++ *   console.warn；**不丢节点**（环上节点断边后照常成根布局）。
++ * - x 覆盖节点与其父断链（其子树自成根照常布局）；y 覆盖仅替换 y。
++ * - RT 两趟：place() 后序合并子树逐深度轮廓（mergedL/mergedR，等宽
++ *   卡片按中心-半宽占位），兄弟放置=max over depth（前树右轮廓+间隙）；
++ *   assign() 前序按 boxOrigin 累积绝对化。树序=边输入序（稳定性锚点）。
+  */
++import type { LineageEdge, LineageNode } from '@shared/models/lineage'
++
++// ── 几何常量（卡片等宽——票面「节点宽度统一常量」）──────────────────
++export const NODE_W = 180
++export const NODE_H = 64
++/** 层带中心间距（y 维） */
++export const LAYER_GAP = 140
++/** 兄弟子树最小间隙（x 维轮廓约束） */
++export const SIBLING_GAP = 40
++/** 森林相邻树间隙 */
++export const TREE_GAP = 80
++
++export interface LayoutResult {
++  /** 节点 id → 卡片中心点（覆盖节点=覆盖值原样） */
++  positions: Map<string, { x: number; y: number }>
++  /** 年份层带（升序+null 末位；含覆盖节点的 year） */
++  layers: Array<{ year: number | null; y: number }>
++}
++
++/** 子树逐深度轮廓（相对子树包围盒原点；left[d]/right[d]=深度 d 占位左/右缘） */
++interface Frame {
++  left: number[]
++  right: number[]
++  width: number
++}
++
++export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): LayoutResult {
++  // 1) 层带：全部节点（含覆盖）的 year 去重——升序、null 末位
++  const yearSet = new Set<number | null>()
++  for (const n of nodes) yearSet.add(n.year)
++  const years = [...yearSet].sort((a, b) => {
++    if (a === null) return b === null ? 0 : 1
++    if (b === null) return -1
++    return a - b
++  })
++  const layers = years.map((year, i) => ({ year, y: i * LAYER_GAP }))
++  const layerY = new Map<number | null, number>(years.map((y, i) => [y, i * LAYER_GAP]))
++
++  // 2) 净化边（INV-27 防御第二道）：悬空/自环/多父（首条胜出）/成环
++  const nodeIds = new Set(nodes.map((n) => n.id))
++  const parentOf = new Map<string, string>()
++  const children = new Map<string, string[]>()
++  /** to 是否在 from 的祖先链上（加边即成环）——沿父链上溯 */
++  const isAncestorOf = (ancestor: string, from: string): boolean => {
++    let cur: string | undefined = from
++    while (cur !== undefined) {
++      if (cur === ancestor) return true
++      cur = parentOf.get(cur)
++    }
++    return false
++  }
++  let dropped = 0
++  for (const e of edges) {
++    const broken =
++      e.fromNode === e.toNode ||
++      !nodeIds.has(e.fromNode) ||
++      !nodeIds.has(e.toNode) ||
++      parentOf.has(e.toNode) ||
++      isAncestorOf(e.toNode, e.fromNode)
++    if (broken) {
++      dropped++
++      continue
++    }
++    parentOf.set(e.toNode, e.fromNode)
++    children.set(e.fromNode, [...(children.get(e.fromNode) ?? []), e.toNode])
++  }
++  if (dropped > 0) {
++    console.warn(
++      `[lineage-layout] 剔除 ${dropped} 条破坏树约束的边（多父/环/自环/悬空——` +
++        'INV-27 service 层已守，此为布局防御第二道，不丢节点）'
++    )
++  }
++
++  // 3) y 先行：层带或覆盖值
++  const positions = new Map<string, { x: number; y: number }>()
++  for (const n of nodes) {
++    positions.set(n.id, { x: 0, y: n.y !== null ? n.y : layerY.get(n.year)! })
++  }
++
++  // 4) 根集合（nodes 输入序）；x 覆盖节点=覆盖值+断链（父侧移除、其子
++  //    提升为顶层森林成员照常布局——断点不丢子树）
++  const roots: string[] = []
++  for (const n of nodes) {
++    if (n.x !== null) {
++      positions.get(n.id)!.x = n.x
++      const parent = parentOf.get(n.id)
++      if (parent !== undefined) {
++        children.set(
++          parent,
++          (children.get(parent) ?? []).filter((c) => c !== n.id)
++        )
++      }
++      for (const kid of children.get(n.id) ?? []) roots.push(kid)
++      continue
++    }
++    if (parentOf.get(n.id) === undefined) roots.push(n.id)
++  }
++
++  // 5) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
++  const selfRel = new Map<string, number>() // 节点相对自身子树包围盒原点的中心 x
++  const boxOrigin = new Map<string, number>() // 子包围盒原点相对父包围盒原点
++
++  function place(id: string): Frame {
++    const kids = children.get(id) ?? []
++    if (kids.length === 0) {
++      selfRel.set(id, NODE_W / 2)
++      return { left: [0], right: [NODE_W], width: NODE_W }
++    }
++    const mergedL: number[] = []
++    const mergedR: number[] = []
++    const offsets: number[] = []
++    let cursor = 0
++    for (const kid of kids) {
++      const f = place(kid) // 子帧深度 d 对应本帧 d+1
++      let need = 0
++      for (let d = 0; d < f.left.length; d++) {
++        const prevR = mergedR[d + 1]
++        if (prevR !== undefined) {
++          need = Math.max(need, prevR + SIBLING_GAP - f.left[d]!)
++        }
++      }
++      cursor = Math.max(cursor, need)
++      offsets.push(cursor)
++      for (let d = 0; d < f.left.length; d++) {
++        const lo = cursor + f.left[d]!
++        const hi = cursor + f.right[d]!
++        mergedL[d + 1] = mergedL[d + 1] === undefined ? lo : Math.min(mergedL[d + 1]!, lo)
++        mergedR[d + 1] = mergedR[d + 1] === undefined ? hi : Math.max(mergedR[d + 1]!, hi)
++      }
++      cursor = cursor + f.right[0]! // 弱下界保兄弟线性序（真约束在 need）
++    }
++    // 稀疏防洞：mergedL[0] 永不赋值（子帧深度 d≥0 → 本帧索引 d+1≥1）
++    const minL = Math.min(...mergedL.filter((v): v is number => v !== undefined))
++    const width = Math.max(...mergedR.filter((v): v is number => v !== undefined)) - minL
++    for (let i = 0; i < kids.length; i++) {
++      boxOrigin.set(kids[i]!, offsets[i]! - minL)
++    }
++    const x = width / 2 // 父居中于子块（RT 经典）
++    selfRel.set(id, x)
++    const frame: Frame = { left: [x - NODE_W / 2], right: [x + NODE_W / 2], width }
++    for (let d = 1; d < mergedL.length; d++) {
++      frame.left[d] = mergedL[d]! - minL
++      frame.right[d] = mergedR[d]! - minL
++    }
++    return frame
++  }
++
++  function assign(id: string, originAbs: number): void {
++    const p = positions.get(id)!
++    p.x = originAbs + selfRel.get(id)!
++    for (const kid of children.get(id) ?? []) {
++      assign(kid, originAbs + boxOrigin.get(kid)!)
++    }
++  }
++
++  let forestX = 0
++  for (const r of roots) {
++    const f = place(r)
++    assign(r, forestX)
++    forestX += f.width + TREE_GAP
++  }
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const LINEAGE_LAYOUT_STUB = 'SR2-LG-02'
++  return { positions, layers }
++}
+diff --git a/src/renderer/features/lineage/LineageCanvas.tsx b/src/renderer/features/lineage/LineageCanvas.tsx
+new file mode 100644
+index 0000000..b7ba410
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageCanvas.tsx
+@@ -0,0 +1,183 @@
++// b3: P7-H
++/**
++ * [LG-02] LineageCanvas —— 只读脉络画布（SVG+pan/zoom）。
++ *
++ * 行为（票面+主控裁决 4）：
++ * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
++ *   标签/节点卡片（rect+标题+年份，主题节点虚线框区分文献节点）/父子
++ *   连线贝塞尔（from 底边中心→to 顶边中心）；坐标=卡片中心。
++ * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
++ *   归 LG-03——本画布只读不留死按钮）。
++ * - pan=空白（背景 rect data-panbg）pointer 拖拽平移；节点上按下不 pan
++ *   （编辑拖拽面归 03）。zoom=滚轮（鼠标锚点缩放），钳制 [0.25, 4]。
++ * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
++ *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
++ * - 只读：无任何写交互元素。视口瞬态（tx/ty/k）驻组件 state 不入 store。
++ */
++import { useEffect, useMemo, useRef, useState } from 'react'
++import type { LineageEdge, LineageNode } from '@shared/models/lineage'
++import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
++
++const ZOOM_MIN = 0.25
++const ZOOM_MAX = 4
++const ZOOM_STEP = 0.0015
++
++interface Viewport {
++  tx: number
++  ty: number
++  k: number
++}
++
++export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[] }): JSX.Element {
++  const { nodes, edges } = props
++  const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
++  const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
++  const svgRef = useRef<SVGSVGElement | null>(null)
++
++  // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
++  // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。
++  useEffect(() => {
++    const el = svgRef.current
++    if (!el) return
++    const onWheel = (e: WheelEvent): void => {
++      e.preventDefault()
++      const rect = el.getBoundingClientRect()
++      const mx = e.clientX - rect.left
++      const my = e.clientY - rect.top
++      setViewport((v) => {
++        const k2 = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.k * Math.exp(-e.deltaY * ZOOM_STEP)))
++        return {
++          k: k2,
++          tx: mx - ((mx - v.tx) / v.k) * k2,
++          ty: my - ((my - v.ty) / v.k) * k2
++        }
++      })
++    }
++    el.addEventListener('wheel', onWheel, { passive: false })
++    return () => el.removeEventListener('wheel', onWheel)
++  }, [])
++
++  // pan：背景按下进入拖拽（节点上不触发）；move/up 挂 window（拖出画布
++  // 仍跟随）。增量位移（每 move 与上一位置差），卸载三 listener 成对移除。
++  useEffect(() => {
++    const el = svgRef.current
++    if (!el) return
++    let dragging = false
++    let lastX = 0
++    let lastY = 0
++    const onDown = (e: PointerEvent): void => {
++      if (!(e.target instanceof Element) || !e.target.hasAttribute('data-panbg')) return
++      dragging = true
++      lastX = e.clientX
++      lastY = e.clientY
++    }
++    const onMove = (e: PointerEvent): void => {
++      if (!dragging) return
++      const dx = e.clientX - lastX
++      const dy = e.clientY - lastY
++      lastX = e.clientX
++      lastY = e.clientY
++      setViewport((v) => ({ ...v, tx: v.tx + dx, ty: v.ty + dy }))
++    }
++    const onUp = (): void => {
++      dragging = false
++    }
++    el.addEventListener('pointerdown', onDown)
++    window.addEventListener('pointermove', onMove)
++    window.addEventListener('pointerup', onUp)
++    return () => {
++      el.removeEventListener('pointerdown', onDown)
++      window.removeEventListener('pointermove', onMove)
++      window.removeEventListener('pointerup', onUp)
++    }
++  }, [])
++
++  if (nodes.length === 0) {
++    return (
++      <div
++        data-testid="lineage-canvas"
++        className="flex h-full items-center justify-center p-8 text-sm"
++        style={{ color: 'var(--text-dim)' }}
++      >
++        暂无脉络图——导入草稿或添加节点
++      </div>
++    )
++  }
++
++  const { tx, ty, k } = viewport
++  return (
++    <svg
++      ref={svgRef}
++      data-testid="lineage-canvas"
++      className="h-full w-full touch-none select-none"
++      style={{ background: 'var(--bg)', cursor: 'grab' }}
++    >
++      <rect data-panbg x={0} y={0} width="100%" height="100%" fill="transparent" />
++      <g data-viewport transform={`translate(${tx}, ${ty}) scale(${k})`}>
++        {/* 层带横线+年份标签（含未知年份末带） */}
++        {layout.layers.map((l) => (
++          <g key={l.year === null ? 'null' : String(l.year)} data-layer-year={l.year === null ? 'null' : l.year}>
++            <line
++              x1={-200}
++              x2={99999}
++              y1={l.y}
++              y2={l.y}
++              stroke="var(--border)"
++              strokeDasharray="4 6"
++            />
++            <text x={-190} y={l.y + NODE_H / 2} fontSize={12} fill="var(--text-dim)">
++              {l.year === null ? '未知年份' : `${l.year} 年`}
++            </text>
++          </g>
++        ))}
++        {/* 父子连线（from 底边中心→to 顶边中心，垂直主导贝塞尔） */}
++        {edges.map((e) => {
++          const from = layout.positions.get(e.fromNode)
++          const to = layout.positions.get(e.toNode)
++          if (from === undefined || to === undefined) return null
++          const y1 = from.y + NODE_H / 2
++          const y2 = to.y - NODE_H / 2
++          const mid = (y1 + y2) / 2
++          return (
++            <path
++              key={e.id}
++              data-edge-id={e.id}
++              d={`M ${from.x} ${y1} C ${from.x} ${mid}, ${to.x} ${mid}, ${to.x} ${y2}`}
++              fill="none"
++              stroke="var(--accent)"
++              strokeWidth={1.5}
++              opacity={0.7}
++            />
++          )
++        })}
++        {/* 节点卡片（主题节点=虚线框区分文献节点） */}
++        {nodes.map((n) => {
++          const p = layout.positions.get(n.id)
++          if (p === undefined) return null
++          const theme = n.paperId === null
++          return (
++            <g key={n.id} data-node-id={n.id} data-kind={theme ? 'theme' : 'paper'} transform={`translate(${p.x}, ${p.y})`}>
++              <rect
++                x={-NODE_W / 2}
++                y={-NODE_H / 2}
++                width={NODE_W}
++                height={NODE_H}
++                rx={6}
++                fill="var(--panel)"
++                stroke={theme ? 'var(--accent)' : 'var(--border)'}
++                strokeWidth={1}
++                strokeDasharray={theme ? '6 4' : undefined}
++              />
++              <text x={0} y={-8} textAnchor="middle" fontSize={12} fill="var(--text)">
++                {n.title}
++              </text>
++              <text x={0} y={14} textAnchor="middle" fontSize={11} fill="var(--text-dim)">
++                {n.year === null ? '未知年份' : String(n.year)}
++              </text>
++            </g>
++          )
++        })}
++      </g>
++    </svg>
++  )
++}
+diff --git a/src/renderer/features/lineage/LineagePage.tsx b/src/renderer/features/lineage/LineagePage.tsx
+new file mode 100644
+index 0000000..e195969
+--- /dev/null
++++ b/src/renderer/features/lineage/LineagePage.tsx
+@@ -0,0 +1,59 @@
++// b3: P7-H
++/**
++ * [LG-02] LineagePage —— 「脉络」顶层视图宿主（E4）。
++ *
++ * 行为：挂载经 lineage.store.load() 取数（lineage/graph 单点——接缝
++ * 双向锚定：本行+lineage.store 头注；03 编辑层/04 侧板同经 store 消费
++ * **禁双取**）；三态呈现（门一 N6）：loading=加载文案/error=错误条+
++ * 重试按钮（列表型瞬态，INV-02）/ready=LineageCanvas（空图空态在画布内）。
++ * 页面自身无数据逻辑（LibraryPage 同型）；无写交互（编辑归 03）。
++ */
++import { useEffect } from 'react'
++import { useLineageStore } from './lineage.store'
++import { LineageCanvas } from './LineageCanvas'
++
++export function LineagePage(): JSX.Element {
++  const nodes = useLineageStore((s) => s.nodes)
++  const edges = useLineageStore((s) => s.edges)
++  const status = useLineageStore((s) => s.status)
++  const error = useLineageStore((s) => s.error)
++  const load = useLineageStore((s) => s.load)
++
++  useEffect(() => {
++    void load()
++  }, [load])
++
++  if (status === 'loading') {
++    return (
++      <div className="flex h-full items-center justify-center p-8 text-sm" style={{ color: 'var(--text-dim)' }}>
++        正在加载脉络图…
++      </div>
++    )
++  }
++  if (status === 'error') {
++    return (
++      <div className="flex h-full items-center justify-center p-8">
++        <div
++          className="flex items-center gap-3 rounded border px-4 py-3 text-xs"
++          role="alert"
++          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
++        >
++          <span>脉络图加载失败：{error}</span>
++          <button
++            type="button"
++            className="rounded px-2 py-1"
++            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
++            onClick={() => void load()}
++          >
++            重试
++          </button>
++        </div>
++      </div>
++    )
++  }
++  return (
++    <div className="h-full p-1">
++      <LineageCanvas nodes={nodes} edges={edges} />
++    </div>
++  )
++}
+diff --git a/src/renderer/features/lineage/lineage.store.ts b/src/renderer/features/lineage/lineage.store.ts
+new file mode 100644
+index 0000000..5316810
+--- /dev/null
++++ b/src/renderer/features/lineage/lineage.store.ts
+@@ -0,0 +1,57 @@
++// b3: P7-H
++/**
++ * lineage.store —— 脉络图数据+读面状态单源（store）。
++ *
++ * ── 数据单源接缝声明（双向锚定：本行+LineagePage 头注）──
++ * lineage/graph 取数=本 store 单点；LineagePage/LineageCanvas/03 编辑层
++ * （LineageBoard）/04 侧板（LineageSidePanel）一律经本 store 分发消费——
++ * **03/04 禁双取**（不得另行直连 window.api.lineage.graph 建第二取数点；
++ * 04 的 ai_notes/list、notes/get 属不同数据域不在本约）。数据缓存：nodes/
++ * edges 驻 store（视图切换卸载不丢，03/04 消费面免二次取数）。
++ *
++ * ── 读面状态枚举（门一 N6）──
++ * loading/ready/error 三态；无用户输入写面（状态机前置纪律不适用——票面
++ * N6 结论维持；pan/zoom=视口瞬态不入本 store）。stale-guard 请求序号
++ * （notes.store/ai-notes.store 同型）：晚到的旧响应（含旧失败）丢弃。
++ *
++ * 错误契约：load 失败不上抛——失败态驻 store.error（列表型瞬态，消费方
++ * 呈现+重试，INV-02 两型分清；动作型 toast 面=03 写通道）。
++ */
++import { create } from 'zustand'
++import { api, unwrap } from '../../api/client'
++import type { LineageEdge, LineageNode } from '@shared/models/lineage'
++
++export type LineageStatus = 'loading' | 'ready' | 'error'
++
++export interface LineageStore {
++  nodes: LineageNode[]
++  edges: LineageEdge[]
++  status: LineageStatus
++  error: string | null
++  load(): Promise<void>
++}
++
++export const useLineageStore = create<LineageStore>()((set) => {
++  // 请求序号 stale-guard：新 load 取代旧 load 后，旧响应（成功/失败）丢弃
++  let seq = 0
++
++  return {
++    nodes: [],
++    edges: [],
++    status: 'loading',
++    error: null,
++
++    async load() {
++      const s = ++seq
++      set({ status: 'loading', error: null })
++      try {
++        const graph = await unwrap(api.lineage.graph({}))
++        if (s !== seq) return
++        set({ nodes: graph.nodes, edges: graph.edges, status: 'ready', error: null })
++      } catch (e) {
++        if (s !== seq) return
++        set({ status: 'error', error: e instanceof Error ? e.message : String(e) })
++      }
++    }
++  }
++})
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+new file mode 100644
+index 0000000..e365547
+--- /dev/null
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -0,0 +1,297 @@
++// @vitest-environment jsdom
++/**
++ * [LG-02] LineageCanvas / LineagePage —— 只读画布+脉络视图组件测试（锁定合约）。
++ *
++ * 覆盖：节点文本真实渲染（「渲染出真实文本」红线）/主题节点样式区分/空图空态
++ * 文案/zoom 滚轮缩放+钳制 [0.25,4]/pan 空白拖拽平移（节点上不 pan）/INV-14
++ * listener 成对注册成对清理（同 type 同函数引用配对）/Page 三态（loading/
++ * ready/error+重试）/store 数据缓存（卸载后驻留）。
++ * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
++import type * as clientModule from '../../../src/renderer/api/client'
++
++const { stubApi } = vi.hoisted(() => ({
++  stubApi: { lineage: { graph: vi.fn() } }
++}))
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return { ...real, api: stubApi as unknown as typeof clientModule.api }
++})
++
++import { LineageCanvas } from '../../../src/renderer/features/lineage/LineageCanvas'
++import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
++import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
++
++function node(
++  id: string,
++  patch: Partial<Pick<LineageNode, 'year' | 'x' | 'y' | 'paperId' | 'title'>> = {}
++): LineageNode {
++  return {
++    id,
++    // 显式 null（主题节点）不可被默认值吞掉——?? 对 null 同样走右侧
++    paperId: patch.paperId !== undefined ? patch.paperId : `paper-${id}`,
++    title: patch.title ?? `节点${id}`,
++    coreIdea: '',
++    year: patch.year ?? null,
++    x: patch.x ?? null,
++    y: patch.y ?? null,
++    createdAt: 't',
++    updatedAt: 't'
++  }
++}
++
++function edge(from: string, to: string): LineageEdge {
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++}
++
++/** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */
++function chain(): { nodes: LineageNode[]; edges: LineageEdge[] } {
++  return {
++    nodes: [
++      node('A', { year: 2020, title: '扩散模型起点' }),
++      node('B', { year: 2021, paperId: null, title: '主题分组' }),
++      node('C', { year: 2022, title: '最新进展' })
++    ],
++    edges: [edge('A', 'B'), edge('B', 'C')]
++  }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(node: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(node)
++  })
++}
++
++const flush = async (): Promise<void> => {
++  await act(async () => {
++    await Promise.resolve()
++  })
++}
++
++const viewportTransform = (): string =>
++  host?.querySelector('[data-viewport]')?.getAttribute('transform') ?? ''
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
++  useLineageStore.setState({ nodes: [], edges: [], status: 'loading', error: null })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++})
++
++describe('LineageCanvas —— 只读渲染', () => {
++  it('节点文本真实渲染（标题与年份可见——「渲染出真实文本」红线）', () => {
++    const g = chain()
++    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
++    expect(host?.textContent).toContain('扩散模型起点')
++    expect(host?.textContent).toContain('主题分组')
++    expect(host?.textContent).toContain('最新进展')
++    expect(host?.textContent).toContain('2020')
++    // 边端点查找不崩溃：两条边都在图内
++    expect(host?.querySelectorAll('[data-edge-id]').length).toBe(2)
++  })
++
++  it('主题节点样式区分：paperId null 标记 data-kind=theme，文献节点 paper', () => {
++    const g = chain()
++    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
++    expect(host?.querySelector('[data-node-id="B"]')?.getAttribute('data-kind')).toBe('theme')
++    expect(host?.querySelector('[data-node-id="A"]')?.getAttribute('data-kind')).toBe('paper')
++  })
++
++  it('空图空态文案（导入/添加入口归 LG-03——本单仅文案不留死按钮）', () => {
++    mount(<LineageCanvas nodes={[]} edges={[]} />)
++    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
++    expect(host?.querySelectorAll('button').length).toBe(0)
++  })
++
++  it('覆盖节点用覆盖位置渲染（不参与自动布局）', () => {
++    const nodes = [node('O', { year: 2020, x: 777, y: 999, title: '覆盖位' })]
++    mount(<LineageCanvas nodes={nodes} edges={[]} />)
++    const g = host?.querySelector('[data-node-id="O"]')
++    expect(g?.getAttribute('transform')).toContain('777')
++    expect(g?.getAttribute('transform')).toContain('999')
++  })
++})
++
++describe('LineageCanvas —— pan/zoom（INV-14）', () => {
++  it('zoom：滚轮上滚放大（scale>1）', () => {
++    mount(<LineageCanvas nodes={chain().nodes} edges={chain().edges} />)
++    const svg = host?.querySelector('svg') as SVGSVGElement
++    expect(viewportTransform()).toContain('scale(1)')
++    act(() => {
++      svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, clientX: 300, clientY: 200, cancelable: true }))
++    })
++    expect(viewportTransform()).not.toContain('scale(1)')
++    expect(viewportTransform()).toMatch(/scale\([1-9]/)
++  })
++
++  it('zoom 钳制：连续放大不超 4，连续缩小不低 0.25', () => {
++    mount(<LineageCanvas nodes={chain().nodes} edges={chain().edges} />)
++    const svg = host?.querySelector('svg') as SVGSVGElement
++    for (let i = 0; i < 30; i++) {
++      act(() => {
++        svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -5000, clientX: 300, clientY: 200, cancelable: true }))
++      })
++    }
++    expect(viewportTransform()).toContain('scale(4)')
++    for (let i = 0; i < 60; i++) {
++      act(() => {
++        svg.dispatchEvent(new WheelEvent('wheel', { deltaY: 5000, clientX: 300, clientY: 200, cancelable: true }))
++      })
++    }
++    expect(viewportTransform()).toContain('scale(0.25)')
++  })
++
++  it('pan：空白处拖拽平移（translate 变化）；节点上按下不平移', () => {
++    mount(<LineageCanvas nodes={chain().nodes} edges={chain().edges} />)
++    const bg = host?.querySelector('[data-panbg]') as Element
++    const before = viewportTransform()
++    act(() => {
++      bg.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
++    })
++    act(() => {
++      window.dispatchEvent(new MouseEvent('pointermove', { clientX: 180, clientY: 140 }))
++    })
++    act(() => {
++      window.dispatchEvent(new MouseEvent('pointerup', { clientX: 180, clientY: 140 }))
++    })
++    const after = viewportTransform()
++    expect(after).not.toBe(before)
++    expect(after).toContain('translate(80, 40)')
++    // 节点上按下（非空白）不进入拖拽
++    const card = host?.querySelector('[data-node-id="A"]') as Element
++    const fixed = after
++    act(() => {
++      card.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50, bubbles: true }))
++    })
++    act(() => {
++      window.dispatchEvent(new MouseEvent('pointermove', { clientX: 150, clientY: 150 }))
++    })
++    act(() => {
++      window.dispatchEvent(new MouseEvent('pointerup', { clientX: 150, clientY: 150 }))
++    })
++    expect(viewportTransform()).toBe(fixed)
++  })
++
++  it('INV-14 成对清理：unmount 后 svg/window 上注册的 listener 同 type 同引用全移除', () => {
++    const added: Array<{ target: string; type: string; fn: EventListener }> = []
++    const removed: Array<{ target: string; type: string; fn: EventListener }> = []
++    const origWinAdd = window.addEventListener.bind(window)
++    const origWinRemove = window.removeEventListener.bind(window)
++    // 原函数不 bind（bind 会把 this 固定在 prototype 上，jsdom 拒绝非元素 this）
++    const origSvgAdd = SVGSVGElement.prototype.addEventListener
++    const origSvgRemove = SVGSVGElement.prototype.removeEventListener
++    const winAdd = vi.spyOn(window, 'addEventListener').mockImplementation(((type: string, fn: EventListener) => {
++      added.push({ target: 'window', type, fn })
++      return origWinAdd(type, fn)
++    }) as typeof window.addEventListener)
++    const winRemove = vi.spyOn(window, 'removeEventListener').mockImplementation(((type: string, fn: EventListener) => {
++      removed.push({ target: 'window', type, fn })
++      return origWinRemove(type, fn)
++    }) as typeof window.removeEventListener)
++    const svgAdd = vi
++      .spyOn(SVGSVGElement.prototype, 'addEventListener')
++      .mockImplementation((function (this: SVGSVGElement, type: string, fn: EventListener) {
++        added.push({ target: this.dataset.testid ?? 'svg', type, fn })
++        return origSvgAdd.call(this, type, fn)
++      }) as typeof SVGSVGElement.prototype.addEventListener)
++    const svgRemove = vi
++      .spyOn(SVGSVGElement.prototype, 'removeEventListener')
++      .mockImplementation((function (this: SVGSVGElement, type: string, fn: EventListener) {
++        removed.push({ target: this.dataset.testid ?? 'svg', type, fn })
++        return origSvgRemove.call(this, type, fn)
++      }) as typeof SVGSVGElement.prototype.removeEventListener)
++
++    try {
++      mount(<LineageCanvas nodes={chain().nodes} edges={chain().edges} />)
++      expect(added.filter((a) => a.type === 'wheel').length).toBeGreaterThanOrEqual(1)
++      act(() => {
++        root?.unmount()
++      })
++      root = null
++      // 每一笔注册（本组件挂载期）都有同 target+type+同函数引用 的移除与之配对
++      for (const a of added) {
++        const match = removed.find((r) => r.target === a.target && r.type === a.type && r.fn === a.fn)
++        expect(match, `未配对移除：${a.target} ${a.type}`).toBeDefined()
++      }
++    } finally {
++      winAdd.mockRestore()
++      winRemove.mockRestore()
++      svgAdd.mockRestore()
++      svgRemove.mockRestore()
++    }
++  })
++})
++
++describe('LineagePage —— 取数三态（lineage.store 数据单源）', () => {
++  it('loading：挂载期呈加载文案，graph 取数一次', async () => {
++    stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))
++    mount(<LineagePage />)
++    expect(host?.textContent).toContain('正在加载脉络图')
++    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
++    expect(stubApi.lineage.graph).toHaveBeenCalledWith({})
++  })
++
++  it('ready：取数成功渲染节点真实文本（经 store 分发，画布消费）', async () => {
++    const g = chain()
++    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: g })
++    mount(<LineagePage />)
++    await flush()
++    expect(host?.textContent).toContain('扩散模型起点')
++    expect(useLineageStore.getState().status).toBe('ready')
++  })
++
++  it('ready 空图：空态文案（列表型空非错误）', async () => {
++    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
++    mount(<LineagePage />)
++    await flush()
++    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
++  })
++
++  it('error：取数失败呈错误条+重试按钮；重试再取数成功恢复', async () => {
++    stubApi.lineage.graph.mockRejectedValueOnce(new Error('db locked'))
++    mount(<LineagePage />)
++    await flush()
++    expect(host?.querySelector('[role="alert"]')?.textContent).toContain('脉络图加载失败')
++    const retry = host?.querySelector('button') as HTMLButtonElement
++    expect(retry.textContent).toBe('重试')
++    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
++    await act(async () => {
++      retry.click()
++    })
++    await flush()
++    expect(host?.textContent).toContain('扩散模型起点')
++    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(2)
++  })
++
++  it('store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）', async () => {
++    const g = chain()
++    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: g })
++    mount(<LineagePage />)
++    await flush()
++    act(() => {
++      root?.unmount()
++    })
++    root = null
++    expect(useLineageStore.getState().nodes.length).toBe(3)
++    expect(useLineageStore.getState().status).toBe('ready')
++  })
++})
+diff --git a/tests/unit/renderer/lineage-layout.test.ts b/tests/unit/renderer/lineage-layout.test.ts
+new file mode 100644
+index 0000000..192dc8e
+--- /dev/null
++++ b/tests/unit/renderer/lineage-layout.test.ts
+@@ -0,0 +1,233 @@
++/**
++ * [LG-02] lineage-layout —— 布局纯函数测试（锁定合约）。
++ *
++ * 覆盖：单链 x 对齐/兄弟轮廓间距（不同深度子树不重叠）/年份分层 y 单调+未知层
++ * 末位/森林多根并排不重叠（含孤立节点）/覆盖优先（x/y 非 null 不移动+层带仍含
++ * 覆盖节点）/空图空结果/纯函数性质（两次调用深相等）/树序稳定性（边输入序非
++ * id 字典序）/INV-27 破坏输入防御性剔除非崩溃（多父/环/自环/悬空边+console.warn）。
++ * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
++ */
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
++import {
++  LAYER_GAP,
++  NODE_W,
++  SIBLING_GAP,
++  TREE_GAP,
++  layoutLineage
++} from '../../../src/renderer/features/lineage/lineage-layout'
++
++/** 节点工厂（默认文献节点、自动布局 x/y=null） */
++function node(
++  id: string,
++  patch: Partial<Pick<LineageNode, 'year' | 'x' | 'y' | 'paperId' | 'title'>> = {}
++): LineageNode {
++  return {
++    id,
++    paperId: patch.paperId ?? `paper-${id}`,
++    title: patch.title ?? `节点${id}`,
++    coreIdea: '',
++    year: patch.year ?? null,
++    x: patch.x ?? null,
++    y: patch.y ?? null,
++    createdAt: 't',
++    updatedAt: 't'
++  }
++}
++
++/** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向） */
++function edge(from: string, to: string): LineageEdge {
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++}
++
++afterEach(() => {
++  vi.restoreAllMocks()
++})
++
++describe('layoutLineage —— RT tidy tree x 布局', () => {
++  it('单链：全链 x 相同（居中对齐），y 按年份层', () => {
++    const nodes = [node('A', { year: 2020 }), node('B', { year: 2021 }), node('C', { year: 2022 })]
++    const { positions } = layoutLineage(nodes, [edge('A', 'B'), edge('B', 'C')])
++    expect(positions.size).toBe(3)
++    expect(positions.get('A')!.x).toBe(positions.get('B')!.x)
++    expect(positions.get('B')!.x).toBe(positions.get('C')!.x)
++    expect(positions.get('A')!.y).toBeLessThan(positions.get('B')!.y)
++    expect(positions.get('B')!.y).toBeLessThan(positions.get('C')!.y)
++  })
++
++  it('兄弟不重叠：同层兄弟中心距 ≥ 节点宽+兄弟间距', () => {
++    const nodes = [
++      node('P', { year: 2020 }),
++      node('C1', { year: 2021 }),
++      node('C2', { year: 2021 }),
++      node('C3', { year: 2021 })
++    ]
++    const { positions } = layoutLineage(nodes, [edge('P', 'C1'), edge('P', 'C2'), edge('P', 'C3')])
++    const xs = ['C1', 'C2', 'C3'].map((id) => positions.get(id)!.x)
++    expect(xs[1]! - xs[0]!).toBeGreaterThanOrEqual(NODE_W + SIBLING_GAP)
++    expect(xs[2]! - xs[1]!).toBeGreaterThanOrEqual(NODE_W + SIBLING_GAP)
++    // 父节点居中于子块中点（RT 经典：父 x=子块中点）
++    const mid = (xs[0]! + xs[2]!) / 2
++    expect(Math.abs(positions.get('P')!.x - mid)).toBeLessThan(0.5)
++  })
++
++  it('轮廓合并：兄弟放置受彼此孙层轮廓约束（跨子树同深度间距仍 ≥ 间隙）', () => {
++    // A 有宽孙层（A1/A2 深度 2 占 400），B 有单子 B1（深度 2）——B 子树放置被
++    // A 的深层轮廓推右：B1 左缘 ≥ A 孙层右缘+间隙（仅看根行的退化实现在此红）
++    const nodes = [
++      node('P', { year: 2019 }),
++      node('A', { year: 2020 }),
++      node('B', { year: 2020 }),
++      node('A1', { year: 2021 }),
++      node('A2', { year: 2021 }),
++      node('B1', { year: 2021 })
++    ]
++    const edges = [edge('P', 'A'), edge('P', 'B'), edge('A', 'A1'), edge('A', 'A2'), edge('B', 'B1')]
++    const { positions } = layoutLineage(nodes, edges)
++    const grandRight =
++      Math.max(positions.get('A1')!.x, positions.get('A2')!.x) + NODE_W / 2
++    expect(positions.get('B1')!.x - NODE_W / 2).toBeGreaterThanOrEqual(grandRight + SIBLING_GAP)
++    // 同深度兄弟根行（A 与 B）同层横向不打架
++    const aRight = positions.get('A')!.x + NODE_W / 2
++    expect(positions.get('B')!.x - NODE_W / 2).toBeGreaterThanOrEqual(aRight + SIBLING_GAP)
++  })
++
++  it('树序稳定性：兄弟 x 序=边输入序（非 id 字典序）', () => {
++    const nodes = [node('P', { year: 2020 }), node('Z', { year: 2021 }), node('A', { year: 2021 })]
++    // 输入序先 Z 后 A → Z 在左（x 更小）
++    const { positions } = layoutLineage(nodes, [edge('P', 'Z'), edge('P', 'A')])
++    expect(positions.get('Z')!.x).toBeLessThan(positions.get('A')!.x)
++  })
++})
++
++describe('layoutLineage —— 年份层带（y）', () => {
++  it('层带按 year 升序、null 末位；y 随层序递增（层距=常量）', () => {
++    const nodes = [
++      node('a', { year: 2021 }),
++      node('b', { year: null }),
++      node('c', { year: 2019 }),
++      node('d', { year: 2020 })
++    ]
++    const { layers, positions } = layoutLineage(nodes, [])
++    expect(layers.map((l) => l.year)).toEqual([2019, 2020, 2021, null])
++    expect(layers[1]!.y - layers[0]!.y).toBe(LAYER_GAP)
++    expect(layers[3]!.y - layers[2]!.y).toBe(LAYER_GAP)
++    // null 年份节点归末层
++    expect(positions.get('b')!.y).toBe(layers[3]!.y)
++    expect(positions.get('c')!.y).toBe(layers[0]!.y)
++  })
++
++  it('同年份节点共享同一层 y；空图=空层带空位置', () => {
++    const { layers, positions } = layoutLineage([], [])
++    expect(layers).toEqual([])
++    expect(positions.size).toBe(0)
++    const r2 = layoutLineage([node('x', { year: 2024 }), node('y2', { year: 2024 })], [])
++    expect(r2.layers.length).toBe(1)
++    expect(r2.positions.get('x')!.y).toBe(r2.positions.get('y2')!.y)
++  })
++})
++
++describe('layoutLineage —— 森林与覆盖', () => {
++  it('森林多根并排不重叠：两根树+孤立节点按输入序排开（树间隙常量）', () => {
++    const nodes = [
++      node('R1', { year: 2020 }),
++      node('R1c', { year: 2021 }),
++      node('I', { year: 2020 }),
++      node('R2', { year: 2021 }),
++      node('R2c', { year: 2022 })
++    ]
++    const edges = [edge('R1', 'R1c'), edge('R2', 'R2c')]
++    const { positions } = layoutLineage(nodes, edges)
++    // 输入序：R1 树、孤立 I、R2 树——x 区间两两不重叠
++    const box = (id: string): [number, number] => {
++      const x = positions.get(id)!.x
++      return [x - NODE_W / 2, x + NODE_W / 2]
++    }
++    const r1 = box('R1c') // R1 树最右成员（子更靠外）——树1 右缘取 max(R1, R1c)
++    const t1Right = Math.max(box('R1')[1], r1[1])
++    const iBox = box('I')
++    const t2Left = Math.min(box('R2')[0], box('R2c')[0])
++    expect(iBox[0]).toBeGreaterThanOrEqual(t1Right + TREE_GAP)
++    expect(t2Left).toBeGreaterThanOrEqual(iBox[1] + TREE_GAP)
++  })
++
++  it('覆盖优先：x/y 均 null 的节点不移动，精确用覆盖值', () => {
++    const nodes = [
++      node('A', { year: 2020 }),
++      node('O', { year: 2021, x: 777, y: 999 })
++    ]
++    const { positions } = layoutLineage(nodes, [])
++    expect(positions.get('O')).toEqual({ x: 777, y: 999 })
++  })
++
++  it('覆盖节点仍计入层带（层带归属按 year 不变）', () => {
++    // 唯一 2020 节点是 y 覆盖节点——2020 层仍出现
++    const nodes = [node('O', { year: 2020, x: 5, y: 5 }), node('B', { year: 2021 })]
++    const { layers, positions } = layoutLineage(nodes, [])
++    expect(layers.map((l) => l.year)).toEqual([2020, 2021])
++    expect(positions.get('O')!.y).toBe(5) // 覆盖值生效，层带 y 不强制
++  })
++
++  it('半覆盖：x 覆盖 y 自动（x 不进树布局，y 取层带）', () => {
++    const nodes = [node('O', { year: 2020, x: 123, y: null }), node('C', { year: 2021 })]
++    const edges = [edge('O', 'C')]
++    const { layers, positions } = layoutLineage(nodes, edges)
++    expect(positions.get('O')!.x).toBe(123)
++    expect(positions.get('O')!.y).toBe(layers[0]!.y) // 自动面取层带
++    // 覆盖根的子树自成根照常布局（断开不丢节点）
++    expect(positions.get('C')!.x).toBeGreaterThanOrEqual(NODE_W / 2)
++  })
++})
++
++describe('layoutLineage —— 纯函数性质与防御', () => {
++  it('同输入两次调用深相等（含 Map 与层带）', () => {
++    const nodes = [
++      node('A', { year: 2020 }),
++      node('B', { year: 2021 }),
++      node('C', { year: null }),
++      node('O', { year: 2020, x: 9, y: 9 })
++    ]
++    const edges = [edge('A', 'B')]
++    const r1 = layoutLineage(nodes, edges)
++    const r2 = layoutLineage(nodes, edges)
++    expect(r1.positions).toEqual(r2.positions)
++    expect(r1.layers).toEqual(r2.layers)
++  })
++
++  it('INV-27 破坏防御：多父保首条边（子归首父），剔除计数 warn 不崩溃', () => {
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    const nodes = [node('A', { year: 2020 }), node('X', { year: 2020 }), node('B', { year: 2021 })]
++    const edges = [edge('A', 'B'), edge('X', 'B')]
++    const { positions } = layoutLineage(nodes, edges)
++    expect(positions.size).toBe(3) // 不丢节点
++    // B 归首父 A（X→B 剔除）：B 的 x 居于 A 下（单链对齐）
++    expect(positions.get('B')!.x).toBe(positions.get('A')!.x)
++    expect(warn).toHaveBeenCalledTimes(1)
++    expect(String(warn.mock.calls[0]![0])).toContain('1')
++  })
++
++  it('INV-27 破坏防御：成环断边（全部节点仍有位置）', () => {
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    const nodes = [node('A', { year: 2020 }), node('B', { year: 2021 }), node('C', { year: 2022 })]
++    const edges = [edge('A', 'B'), edge('B', 'C'), edge('C', 'A')]
++    const { positions } = layoutLineage(nodes, edges)
++    expect(positions.size).toBe(3)
++    expect(warn).toHaveBeenCalledTimes(1)
++  })
++
++  it('INV-27 破坏防御：自环与悬空边剔除，其余布局不受影响', () => {
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    const nodes = [node('A', { year: 2020 }), node('B', { year: 2021 })]
++    const edges = [edge('A', 'A'), edge('GHOST', 'B'), edge('A', 'B'), edge('B', 'GHOST2')]
++    const { positions } = layoutLineage(nodes, edges)
++    expect(positions.get('B')!.x).toBe(positions.get('A')!.x) // A→B 保留：单链对齐
++    expect(String(warn.mock.calls[0]![0])).toContain('3') // 三条剔除一次汇总
++  })
++
++  it('合法输入零 warn（防御不误伤）', () => {
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    const nodes = [node('A', { year: 2020 }), node('B', { year: 2021 })]
++    layoutLineage(nodes, [edge('A', 'B')])
++    expect(warn).not.toHaveBeenCalled()
++  })
++})

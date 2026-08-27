@@ -194,7 +194,7 @@ export const TICKETS: readonly Ticket[] = [
   //    03 依赖 02 画布/store；04 依赖 03 选择上抛面；05 依赖全组），执行
   //    按号序串行领取逐单提交（禁同批多单）──
   { id: 'SR2-LG-01', file: 'src/main/db/repos/lineage.repo.ts', area: 'db', owner: 'strong', status: 'done', summary: '脉络数据基座（迁移 004 ADR-0014 DDL+repo+lineage JSON 草稿导入全有或全无替换式+lineage 域立 [locked-change] 十一域穷举；树单父 INV-27 登记）' },
-  { id: 'SR2-LG-02', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'open', summary: '布局纯函数（y 年份分层+x Reingold-Tilford 零依赖手写+手工覆盖优先）+只读 SVG 画布 pan/zoom INV-14+脉络第四视图 E4+lineage.store 数据单源' },
+  { id: 'SR2-LG-02', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '布局纯函数（y 年份分层+x Reingold-Tilford 零依赖手写+手工覆盖优先）+只读 SVG 画布 pan/zoom INV-14+脉络第四视图 E4+lineage.store 数据单源' },
   { id: 'SR2-LG-03', file: 'src/renderer/features/lineage/LineageBoard.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '交互编辑（拖拽 x/y 覆盖 JSON Canvas+加删节点边改父+树约束 UI 守卫 INV-27）+自动保存 INV-04 同型+写四通道接线 [locked-change]+退出聚合扩面（不动 TABS-04）' },
   { id: 'SR2-LG-04', file: 'src/renderer/features/lineage/LineageSidePanel.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '节点侧板（元信息+core idea+AI 笔记分节分色复用 ai-note-style+人工笔记）+笔记双击跳阅读器（OPEN_PAPER_EVENT+INV-20 单入口消费方级用例）' },
   { id: 'SR2-LG-05', file: 'tests/e2e/lineage.spec.ts', area: 'e2e', owner: 'strong', status: 'open', summary: 'e2e 全链（导入→渲染真实文本→拖拽持久→树拒绝→侧板→双击跳转→保存失败退出拦截→主题节点；guard 占位翻 done 激活）' }
