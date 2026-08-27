@@ -22,6 +22,7 @@
  * 测试：tests/unit/services/lineage-import.test.ts [受锁新增]（always-active）。
  */
 import { readFile } from 'node:fs/promises'
+import type { AppErrorCode } from '../../../shared/app-error'
 import { lineageDraftSchema } from '../../../shared/models/lineage'
 import type {
   LineageEdge,
@@ -61,6 +62,23 @@ export interface LineageServiceDeps {
   paperExists: (paperId: string) => boolean
   /** 事务边界（repos.withTransaction 注入——清面+重灌原子性） */
   withTransaction: <T>(fn: () => T) => T
+}
+
+/**
+ * 域错误（reader.service ReaderDomainError 同型，LG-03 接线需要）：code 经
+ * toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
+ * reason——「reason 透传 toast」不成立）。CONFLICT=业务规则拒绝（树守卫/
+ * 幽灵 paperId），消费方按码分支（丢弃动作+toast，区别于系统型失败保留重试）。
+ * message 中文原文不变（LG-01 受锁测试断言子串不受影响）。
+ */
+class LineageDomainError extends Error {
+  readonly code: AppErrorCode
+
+  constructor(code: AppErrorCode, message: string) {
+    super(message)
+    this.name = 'LineageDomainError'
+    this.code = code
+  }
 }
 
 /**
@@ -251,7 +269,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
 
     upsertNode(input: LineageNodeUpsert): LineageNode {
       if (input.paperId !== null && !deps.paperExists(input.paperId)) {
-        throw new Error(`文献不存在（幽灵 paperId）：${input.paperId}`)
+        throw new LineageDomainError('CONFLICT', `文献不存在（幽灵 paperId）：${input.paperId}`)
       }
       return deps.repo.upsertNode(input)
     },
@@ -263,33 +281,37 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
     upsertEdge(input: LineageEdgeUpsert): LineageEdge {
       // INV-27 运行时守卫（与导入校验同源树约束——导入外的增量编辑入口）
       if (input.fromNode === input.toNode) {
-        throw new Error('自环边不允许（from 与 to 为同一节点）')
+        throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
       }
       const graph = deps.repo.listGraph()
       const nodeIds = new Set(graph.nodes.map((n) => n.id))
       if (!nodeIds.has(input.fromNode)) {
-        throw new Error(`来源节点不存在：${input.fromNode}`)
+        throw new LineageDomainError('CONFLICT', `来源节点不存在：${input.fromNode}`)
       }
       if (!nodeIds.has(input.toNode)) {
-        throw new Error(`目标节点不存在：${input.toNode}`)
+        throw new LineageDomainError('CONFLICT', `目标节点不存在：${input.toNode}`)
       }
       const dup = graph.edges.find(
         (e) =>
           e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
       )
       if (dup !== undefined) {
-        throw new Error(`该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`)
+        throw new LineageDomainError(
+          'CONFLICT',
+          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`
+        )
       }
       // 更新场景（input.id 已存在）：改端点=改父，按新端点重估守卫
       const existingParent = graph.edges.find((e) => e.toNode === input.toNode && e.id !== input.id)
       if (existingParent !== undefined) {
-        throw new Error(
+        throw new LineageDomainError(
+          'CONFLICT',
           `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
         )
       }
       // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）
       if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
-        throw new Error('成环拒绝：该边将使脉络图出现环路（v1 为树）')
+        throw new LineageDomainError('CONFLICT', '成环拒绝：该边将使脉络图出现环路（v1 为树）')
       }
       return deps.repo.upsertEdge(input)
     },

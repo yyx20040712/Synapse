@@ -5,19 +5,22 @@
  * 行为：挂载经 lineage.store.load() 取数（lineage/graph 单点——接缝
  * 双向锚定：本行+lineage.store 头注；03 编辑层/04 侧板同经 store 消费
  * **禁双取**）；三态呈现（门一 N6）：loading=加载文案/error=错误条+
- * 重试按钮（列表型瞬态，INV-02）/ready=LineageCanvas（空图空态在画布内）。
- * 页面自身无数据逻辑（LibraryPage 同型）；无写交互（编辑归 03）。
+ * 重试按钮（列表型瞬态，INV-02）/ready=LineageBoard（03 编辑层包裹
+ * 02 画布——空图空态在画布内）。
+ * 编排（LG-03 接入）：selectedNodeId 驻本页 state——Board 的 onSelectNode
+ * 上抛落此（04 侧板 LineageSidePanel 消费面预留——本单空消费，props
+ * 形态照票面）；无侧板布局（04 编排扩）。
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLineageStore } from './lineage.store'
-import { LineageCanvas } from './LineageCanvas'
+import { LineageBoard } from './LineageBoard'
 
 export function LineagePage(): JSX.Element {
-  const nodes = useLineageStore((s) => s.nodes)
-  const edges = useLineageStore((s) => s.edges)
   const status = useLineageStore((s) => s.status)
   const error = useLineageStore((s) => s.error)
   const load = useLineageStore((s) => s.load)
+  // 选中节点 id（04 侧板数据源预留——本单 Board 上抛落此，侧板消费归 LG-04）
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
   useEffect(() => {
     void load()
@@ -53,7 +56,7 @@ export function LineagePage(): JSX.Element {
   }
   return (
     <div className="h-full p-1">
-      <LineageCanvas nodes={nodes} edges={edges} />
+      <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
     </div>
   )
 }

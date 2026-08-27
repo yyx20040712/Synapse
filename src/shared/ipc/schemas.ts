@@ -262,6 +262,38 @@ export const lineageGraphResSchema = z
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
 
+// ── lineage 写四通道（LG-03 交互编辑：autosave-first，每编辑动作即写）────
+/** lineage/upsert-node 请求：应用面 camelCase 输入（模型单源派生语义——id 缺省=新建；
+ *  paperId 省略/null=主题节点；x/y 省略/null=自动布局（JSON Canvas 覆盖语义的反向清空）；
+ *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段） */
+export const lineageUpsertNodeReqSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    paperId: z.string().min(1).nullable().optional(),
+    title: z.string().min(1),
+    coreIdea: z.string(),
+    year: z.number().int().nullable(),
+    x: z.number().nullable().optional(),
+    y: z.number().nullable().optional()
+  })
+  .strict()
+export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
+
+/** remove-node/remove-edge 共用形（tags attach/detach 复用同 schema 先例） */
+export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
+export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
+
+/** lineage/upsert-edge 请求：{from,to,label?}（树守卫宿主=LG-01 service upsertEdge——
+ *  IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer toast） */
+export const lineageUpsertEdgeReqSchema = z
+  .object({
+    from: z.string().min(1),
+    to: z.string().min(1),
+    label: z.string().optional()
+  })
+  .strict()
+export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
+
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
 export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()

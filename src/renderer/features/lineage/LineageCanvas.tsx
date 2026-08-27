@@ -1,6 +1,6 @@
 // b3: P7-H
 /**
- * [LG-02] LineageCanvas —— 只读脉络画布（SVG+pan/zoom）。
+ * [LG-02] LineageCanvas —— 脉络画布（SVG+pan/zoom）+节点交互原语。
  *
  * 行为（票面+主控裁决 4）：
  * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
@@ -12,15 +12,21 @@
  *   （编辑拖拽面归 03）。zoom=滚轮（鼠标锚点缩放），钳制 [0.25, 4]。
  * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
  *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
- * - 只读：无任何写交互元素。视口瞬态（tx/ty/k）驻组件 state 不入 store。
+ * - 视口瞬态（tx/ty/k）驻组件 state 不入 store。
+ * - **03 编辑接缝（LG-03 扩，可选回调零回调时行为不变）**：节点原语上抛——
+ *   onNodeDrag（拖拽落点，布局坐标=自动布局/覆盖位+位移/k，位移阈值内视为
+ *   onNodeClick 单击选中）/onNodeContextMenu（右键菜单锚）。拖拽期实时
+ *   跟随（dragView 偏移渲染）；写路径（upsert-node）归 Board 编辑层——
+ *   本画布不持写通道。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
-
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 4
 const ZOOM_STEP = 0.0015
+/** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
+const DRAG_THRESHOLD = 3
 
 interface Viewport {
   tx: number
@@ -28,7 +34,20 @@ interface Viewport {
   k: number
 }
 
-export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[] }): JSX.Element {
+/** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
+export interface CanvasEditCallbacks {
+  /** 拖拽落点（布局坐标，JSON Canvas 覆盖语义——消费方经 upsert-node 落库） */
+  onNodeDrag?: (nodeId: string, x: number, y: number) => void
+  /** 单击选中（04 侧板消费面上抛） */
+  onNodeClick?: (nodeId: string) => void
+  /** 右键节点开菜单（03 节点菜单锚点） */
+  onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
+}
+
+export function LineageCanvas(props: {
+  nodes: LineageNode[]
+  edges: LineageEdge[]
+} & CanvasEditCallbacks): JSX.Element {
   const { nodes, edges } = props
   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
   const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
@@ -93,6 +112,44 @@ export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[
   }, [])
 
   const { tx, ty, k } = viewport
+  // ── 03 编辑接缝：拖拽会话（start 驻 ref，渲染跟随驻 state；回调经 ref 取最新）──
+  const dragRef = useRef<{ id: string; sx: number; sy: number; ox: number; oy: number } | null>(null)
+  const [dragView, setDragView] = useState<{ id: string; dx: number; dy: number } | null>(null)
+  const viewportRef = useRef<Viewport>(viewport)
+  const cbRef = useRef<{ drag?: CanvasEditCallbacks['onNodeDrag']; click?: CanvasEditCallbacks['onNodeClick'] }>({})
+  useEffect(() => {
+    viewportRef.current = viewport
+  }, [viewport])
+  useEffect(() => {
+    cbRef.current = { drag: props.onNodeDrag, click: props.onNodeClick }
+  })
+  useEffect(() => {
+    const onMove = (e: PointerEvent): void => {
+      const d = dragRef.current
+      if (d === null) return
+      setDragView({ id: d.id, dx: e.clientX - d.sx, dy: e.clientY - d.sy })
+    }
+    const onUp = (e: PointerEvent): void => {
+      const d = dragRef.current
+      dragRef.current = null
+      setDragView(null)
+      if (d === null) return
+      const dx = e.clientX - d.sx
+      const dy = e.clientY - d.sy
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) {
+        cbRef.current.click?.(d.id)
+        return
+      }
+      // 屏幕位移→布局坐标（除以缩放 k；pan 平移在落点换算中相消——相对位移语义）
+      cbRef.current.drag?.(d.id, d.ox + dx / viewportRef.current.k, d.oy + dy / viewportRef.current.k)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [])
   return (
     <svg
       ref={svgRef}
@@ -145,13 +202,26 @@ export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[
             />
           )
         })}
-        {/* 节点卡片（主题节点=虚线框区分文献节点） */}
+        {/* 节点卡片（主题节点=虚线框区分文献节点；拖拽期叠加 dragView 偏移跟随） */}
         {nodes.map((n) => {
           const p = layout.positions.get(n.id)
           if (p === undefined) return null
           const theme = n.paperId === null
+          const off = dragView?.id === n.id ? dragView : null
           return (
-            <g key={n.id} data-node-id={n.id} data-kind={theme ? 'theme' : 'paper'} transform={`translate(${p.x}, ${p.y})`}>
+            <g
+              key={n.id}
+              data-node-id={n.id}
+              data-kind={theme ? 'theme' : 'paper'}
+              transform={`translate(${p.x + (off?.dx ?? 0)}, ${p.y + (off?.dy ?? 0)})`}
+              onPointerDown={(e) => {
+                dragRef.current = { id: n.id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                props.onNodeContextMenu?.(n.id, { x: e.clientX, y: e.clientY })
+              }}
+            >
               <rect
                 x={-NODE_W / 2}
                 y={-NODE_H / 2}

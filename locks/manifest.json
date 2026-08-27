@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T05:55:25.3712922Z",
+    "generatedAt":  "2026-08-27T07:10:28.8494174Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -83,11 +83,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "cd94b55ea6f917cb1bf926dcad75fe2e473ded568b3a73f6bb632fa0451b9132"
+                      "sha256":  "24b7294799f6007b96bc590d8e1672685bff19910726d83c253009c646653c4c"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "ecba24f1e75998b9ec3990f54488b0cf0166352ecd0efa73d9ae86a68b8a052c"
+                      "sha256":  "330a7e6b5bae44e4264ee29bd95c3e8e92b93445c6100fcfe4cce3a5f8da30c2"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -302,12 +302,20 @@
                       "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-board.test.tsx",
+                      "sha256":  "9ecbb920190433c2e074126ca6bf01d49e1280d7fc8f1b8e9d02649ddfdce624"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
                       "sha256":  "4797851250748197b5fc1c63108e9271fe211aba488d5ecdff44d7fcd0251cb8"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
                       "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+                      "sha256":  "12653c762b99258ddf8b3050be9396af8d3fd0f4f081ae8e36de128090b3e57b"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",

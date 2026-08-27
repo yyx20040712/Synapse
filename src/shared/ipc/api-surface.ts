@@ -15,6 +15,7 @@ import { annotationSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
 import { aiNoteSchema } from '../models/ai-note'
+import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
 import * as S from './schemas'
 
 export interface Endpoint {
@@ -70,11 +71,14 @@ export const API_SURFACE = {
     zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
   },
   // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
-  // 写四通道（upsert-node/remove-node/upsert-edge/remove-edge）接口预留面在 LG-03
-  // 票面（消费者未建窗口——本单 service 四写方法全建全测但不注册 IPC）
+  // 写四通道（LG-03 交互编辑接线——树守卫宿主=service upsertEdge，IPC 零守卫透传）
   lineage: {
     importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
-    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema }
+    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema },
+    upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
+    removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
+    upsertEdge: { channel: 'lineage/upsert-edge', Req: S.lineageUpsertEdgeReqSchema, Res: lineageEdgeSchema },
+    removeEdge: { channel: 'lineage/remove-edge', Req: S.lineageIdReqSchema, Res: S.trueAckSchema }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },

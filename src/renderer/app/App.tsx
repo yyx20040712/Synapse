@@ -10,6 +10,7 @@ import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
+import { useLineageDirty } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 
 type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
@@ -64,8 +65,10 @@ class ErrorBoundary extends Component<
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
   // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
-  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer
-  const quitDirty = useTabDirtyAggregate()
+  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
+  // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
+  // 组合根单点扩（tab dirty ∪ lineage dirty），TABS-04 行为面零触碰
+  const quitDirty = useTabDirtyAggregate() || useLineageDirty()
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()

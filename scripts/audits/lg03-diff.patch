@@ -1,0 +1,2031 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 88ce959..5b18487 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -33,7 +33,7 @@
+ | INV-19 | AI 锚定段渲染对等、存储独立：AI 笔记经 verifyQuote 重锚入标注层同一几何管线渲染（七问分色单源）；数据永不写 annotations 表；AI 标注 v1 只读（无编辑/删除写路径） | ADR-0015+AnnotationLayer 消费面（2026-08-25 N2 裁决——D3 独立表的渲染面延伸） | 单测+组件测试（SR2-AI-09） | 未锚定（规划期预登记；锚定随 SR2-AI-09） |
+ | INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+src/renderer/features/reader/anchor-locate.ts（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享；2026-08-26 C-05 落地） | 单测（anchor-locate.test 9 用例：三防线 S1~S5+超时 S6+作废两形态 S7/S9+并发序号守卫 S8）+消费方用例（N1 接线随 C-04/05；P7-G 消费方级用例随 SR2-AI-08+exact 层延展（data-ai-note-id）用例随 SR2-AI-09——2026-08-27 批二工单化定级；P7-H 脉络侧板随后续工单） | 已锚定（服务单测级 2026-08-26；跨视图消费方级随 SR2-AI-08/09 补） |
+ | INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 已锚定（2026-08-27 SR2-AI-10：detect/install 纯 fs 实现+e2e zcode-link.spec 纯 fs 落地断言（装技能全流程后 skills 目录文件存在且与模板逐字节一致，零进程行为依赖）） |
+-| INV-22 | 退出拦截 dirty 链路：renderer 聚合信号（useTabDirtyAggregate）沿变化沿 push 上报 system/set-quit-dirty（禁止 close 事件内反向拉取 renderer）；main 模块缓存值为 close 守卫唯一判定源；dirty close=preventDefault+模态二次确认（默认焦点=取消），确认=destroy（不再触发 close，无重入），对话框异常按取消处理（窗口保持可重试）。已知窄窗（deepseek r2 WARN 存档）：push 模式存在一跳上报延迟——工单头注裁决权衡过，pull 模式时序复杂度更差不采 | main-window.ts（SR2-TABS-04，2026-08-25 deepseek W1/W2 处置后定稿）+P7-B B3-问2 退出拦截裁决 | 单测（quit-dirty-guard.test 七用例）+装配级 e2e（P7-B 收官「退」序列：dirty→取消窗口保持/确认 destroy） | 已锚定（2026-08-25 收官 e2e 收口） |
++| INV-22 | 退出拦截 dirty 链路：renderer 聚合信号（**tab dirty ∪ lineage dirty**——`useTabDirtyAggregate() \|\| useLineageDirty()`（LG-03 扩面：lineage 保存态≠saved 即脏，ADR-0014 接缝条款——组合根单点扩 App.tsx，tab-dirty.ts 行为面零触碰））沿变化沿 push 上报 system/set-quit-dirty（禁止 close 事件内反向拉取 renderer）；main 模块缓存值为 close 守卫唯一判定源；dirty close=preventDefault+模态二次确认（默认焦点=取消），确认=destroy（不再触发 close，无重入），对话框异常按取消处理（窗口保持可重试）。已知窄窗（deepseek r2 WARN 存档）：push 模式存在一跳上报延迟——工单头注裁决权衡过，pull 模式时序复杂度更差不采 | main-window.ts（SR2-TABS-04，2026-08-25 deepseek W1/W2 处置后定稿）+P7-B B3-问2 退出拦截裁决 | 单测（quit-dirty-guard.test 七用例）+装配级 e2e（P7-B 收官「退」序列：dirty→取消窗口保持/确认 destroy）+组合根组件用例（lineage-board.test.tsx：lineage 保存失败→dirty=true 沿 set-quit-dirty 上报——LG-03，2026-08-27） | 已锚定（2026-08-25 收官 e2e 收口；∪lineage 扩面=组件级锚定 2026-08-27 LG-03——e2e 面随 LG-05） |
+ | INV-23 | 撤销栈语义：栈 per-tab 模块级自持（随 closeTab 清理，不跨 tab）；LIFO+深度 50 FIFO 截断；api 失败不弹栈可重试；同篇 in-flight 互斥（busy，他篇不阻塞——Set 互斥）；delete 逆重建新 id 后全栈 remap 旧 id 引用（按对象身份跳过被撤条目）；成功后按对象身份移除（indexOf——await 期间入栈/FIFO 截断致下标漂移不误删） | annotation-undo.ts（SR2-UNDO-01，2026-08-25 deepseek r2~r6 五轮收敛定稿） | 单测（annotation-undo.test 15 用例：三逆操作/remap 三跨格序列/互斥含并发篇/身份移除含截断挤出/截断/失败重试/空栈/隔离） | 已锚定（单测级，2026-08-25） |
+ | INV-24 | 片段序单源：一切片段序消费面（阅读器片段列表/corpus md 装配/未来 AI 装配与回灌消费）按同一比较器排序——页码（0 基存储；显示形态 1 基，与 corpus p.N 同口径）→页内文本偏移（startOffset）→创建序（createdAt）→id 兜底全序；**排序禁止字符串字典序比较**（页码跨位数字典序失真），"页码:序号" 字符串形态仅显示用 | 本册+src/shared/annotation-order.ts（SR2-C-01，2026-08-26 P7-C 开单入册） | 单测（annotation-order.test 6 用例：跨页/同页偏移/同偏移创建序/id 兜底/入参不可变/字符串字典序反例）+两消费方用例（C-03 组件测试序消费+corpus golden 结构断言——C-02） | 已锚定（单测级 C-01+消费方级 C-02 golden 结构断言/C-03 组件序消费+C-05 定位同源，2026-08-26） |
+ | INV-25 | ai_notes 级联语义：paper 删除→ai_notes 级联清空（CASCADE，语料随篇亡）；annotation 删除→该行 annotation_id 置 NULL 条目保留（SET NULL，锚定段降级篇级——数据不丢）；级联生效依赖连接级 PRAGMA foreign_keys=ON（connection.ts DB_PRAGMAS 常开） | 迁移 003 DDL 外键子句+src/main/db/repos/ai_notes.repo.ts（SR2-AI-01，2026-08-27 deepseek W1 采纳登记） | repo 单测（ai_notes.repo.test 级联两路径用例：CASCADE 清空/SET NULL 降级篇级——foreign_keys=ON 下真实外键行为） | 已锚定（单测级，2026-08-27） |
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 4e7b241..f3d6b04 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T05:55:25.3712922Z",
++    "generatedAt":  "2026-08-27T06:48:52.6124775Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -83,11 +83,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "cd94b55ea6f917cb1bf926dcad75fe2e473ded568b3a73f6bb632fa0451b9132"
++                      "sha256":  "24b7294799f6007b96bc590d8e1672685bff19910726d83c253009c646653c4c"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "ecba24f1e75998b9ec3990f54488b0cf0166352ecd0efa73d9ae86a68b8a052c"
++                      "sha256":  "330a7e6b5bae44e4264ee29bd95c3e8e92b93445c6100fcfe4cce3a5f8da30c2"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -301,6 +301,10 @@
+                       "path":  "tests/unit/renderer/library.store.test.ts",
+                       "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/lineage-board.test.tsx",
++                      "sha256":  "403beb601d0b6244693f4e761fae283cb4d53e9aaa6e6327cd7d27e84d3863b3"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
+                       "sha256":  "4797851250748197b5fc1c63108e9271fe211aba488d5ecdff44d7fcd0251cb8"
+@@ -309,6 +313,10 @@
+                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
+                       "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/lineage-store-write.test.ts",
++                      "sha256":  "12653c762b99258ddf8b3050be9396af8d3fd0f4f081ae8e36de128090b3e57b"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/notes.store.test.ts",
+                       "sha256":  "be5bcdaaad2703323a7ed44723f6d6d31299aebf701c32dbcbff03187d67cadc"
+diff --git a/src/main/ipc/lineage.ts b/src/main/ipc/lineage.ts
+index 2e9e510..9b2bb97 100644
+--- a/src/main/ipc/lineage.ts
++++ b/src/main/ipc/lineage.ts
+@@ -1,5 +1,5 @@
+ /**
+- * ipc/lineage —— 脉络图域装配（LG-01：草稿导入+全图读两通道）。
++ * ipc/lineage —— 脉络图域装配（LG-01：草稿导入+全图读两通道；LG-03：写四通道接线）。
+  *
+  * 薄分发（SR-IPC-* 同型）：业务在 services/lineage/lineage.service。
+  * INV-07：草稿文件路径只出自 main 侧系统对话框（dialogs.pickJsonFile——
+@@ -7,7 +7,11 @@
+  * C-02「ipc 层选、service 收已选路径」同序）。用户取消→CANCELLED 域错误
+  * （register 经 toAppError 折叠）；校验失败不是错误——ImportResult 判别
+  * 联合原样回传（消费方分支呈现 errors 清单，INV-13 折叠约定）。
+- * 写四通道接线归 LG-03（service 四写方法已建全测）。
++ * 写四通道（LG-03）：Req→service 入参的缺省归一（paperId/x/y 省略=null=
++ * 主题节点/自动布局；label 省略=''）；树守卫全部在 service（INV-27 守卫
++ * 宿主——IPC 零守卫），拒绝经 LineageDomainError（CONFLICT）由 toAppError
++ * 结构化透传中文 reason，renderer 按 code 分支（丢弃动作+toast vs 系统型
++ * 保留重试）。
+  */
+ import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+@@ -33,6 +37,26 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
+       }
+       return deps.services.lineage.importFromFile(file)
+     },
+-    graph: async () => deps.services.lineage.graph()
++    graph: async () => deps.services.lineage.graph(),
++    upsertNode: async (req) =>
++      deps.services.lineage.upsertNode({
++        id: req.id,
++        paperId: req.paperId ?? null,
++        title: req.title,
++        coreIdea: req.coreIdea,
++        year: req.year,
++        x: req.x ?? null,
++        y: req.y ?? null
++      }),
++    removeNode: async (req) => {
++      deps.services.lineage.removeNode(req.id)
++      return { ok: true }
++    },
++    upsertEdge: async (req) =>
++      deps.services.lineage.upsertEdge({ fromNode: req.from, toNode: req.to, label: req.label ?? '' }),
++    removeEdge: async (req) => {
++      deps.services.lineage.removeEdge(req.id)
++      return { ok: true }
++    }
+   }
+ }
+diff --git a/src/main/services/lineage/lineage.service.ts b/src/main/services/lineage/lineage.service.ts
+index 72836b1..23a1e5f 100644
+--- a/src/main/services/lineage/lineage.service.ts
++++ b/src/main/services/lineage/lineage.service.ts
+@@ -22,6 +22,7 @@
+  * 测试：tests/unit/services/lineage-import.test.ts [受锁新增]（always-active）。
+  */
+ import { readFile } from 'node:fs/promises'
++import type { AppErrorCode } from '../../../shared/app-error'
+ import { lineageDraftSchema } from '../../../shared/models/lineage'
+ import type {
+   LineageEdge,
+@@ -63,6 +64,23 @@ export interface LineageServiceDeps {
+   withTransaction: <T>(fn: () => T) => T
+ }
+ 
++/**
++ * 域错误（reader.service ReaderDomainError 同型，LG-03 接线需要）：code 经
++ * toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
++ * reason——「reason 透传 toast」不成立）。CONFLICT=业务规则拒绝（树守卫/
++ * 幽灵 paperId），消费方按码分支（丢弃动作+toast，区别于系统型失败保留重试）。
++ * message 中文原文不变（LG-01 受锁测试断言子串不受影响）。
++ */
++class LineageDomainError extends Error {
++  readonly code: AppErrorCode
++
++  constructor(code: AppErrorCode, message: string) {
++    super(message)
++    this.name = 'LineageDomainError'
++    this.code = code
++  }
++}
++
+ /**
+  * 草稿三段校验（纯函数：同输入同输出）。
+  * 段序：zod 形态 → 幽灵/重复节点 → 树结构（悬空/自环/重复边/多父/环）。
+@@ -251,7 +269,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+ 
+     upsertNode(input: LineageNodeUpsert): LineageNode {
+       if (input.paperId !== null && !deps.paperExists(input.paperId)) {
+-        throw new Error(`文献不存在（幽灵 paperId）：${input.paperId}`)
++        throw new LineageDomainError('CONFLICT', `文献不存在（幽灵 paperId）：${input.paperId}`)
+       }
+       return deps.repo.upsertNode(input)
+     },
+@@ -263,33 +281,37 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+     upsertEdge(input: LineageEdgeUpsert): LineageEdge {
+       // INV-27 运行时守卫（与导入校验同源树约束——导入外的增量编辑入口）
+       if (input.fromNode === input.toNode) {
+-        throw new Error('自环边不允许（from 与 to 为同一节点）')
++        throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
+       }
+       const graph = deps.repo.listGraph()
+       const nodeIds = new Set(graph.nodes.map((n) => n.id))
+       if (!nodeIds.has(input.fromNode)) {
+-        throw new Error(`来源节点不存在：${input.fromNode}`)
++        throw new LineageDomainError('CONFLICT', `来源节点不存在：${input.fromNode}`)
+       }
+       if (!nodeIds.has(input.toNode)) {
+-        throw new Error(`目标节点不存在：${input.toNode}`)
++        throw new LineageDomainError('CONFLICT', `目标节点不存在：${input.toNode}`)
+       }
+       const dup = graph.edges.find(
+         (e) =>
+           e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
+       )
+       if (dup !== undefined) {
+-        throw new Error(`该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`)
++        throw new LineageDomainError(
++          'CONFLICT',
++          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`
++        )
+       }
+       // 更新场景（input.id 已存在）：改端点=改父，按新端点重估守卫
+       const existingParent = graph.edges.find((e) => e.toNode === input.toNode && e.id !== input.id)
+       if (existingParent !== undefined) {
+-        throw new Error(
++        throw new LineageDomainError(
++          'CONFLICT',
+           `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
+         )
+       }
+       // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）
+       if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
+-        throw new Error('成环拒绝：该边将使脉络图出现环路（v1 为树）')
++        throw new LineageDomainError('CONFLICT', '成环拒绝：该边将使脉络图出现环路（v1 为树）')
+       }
+       return deps.repo.upsertEdge(input)
+     },
+diff --git a/src/renderer/app/App.tsx b/src/renderer/app/App.tsx
+index 6c7567f..c13a478 100644
+--- a/src/renderer/app/App.tsx
++++ b/src/renderer/app/App.tsx
+@@ -10,6 +10,7 @@ import { LineagePage } from '../features/lineage/LineagePage'
+ import { ToastHost } from '../shared/ui/Toast'
+ import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
+ import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
++import { useLineageDirty } from '../features/lineage/lineage.store'
+ import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
+ 
+ type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
+@@ -64,8 +65,10 @@ class ErrorBoundary extends Component<
+ export function App(): JSX.Element {
+   const [view, setView] = useState<ViewId>('library')
+   // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
+-  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer
+-  const quitDirty = useTabDirtyAggregate()
++  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
++  // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
++  // 组合根单点扩（tab dirty ∪ lineage dirty），TABS-04 行为面零触碰
++  const quitDirty = useTabDirtyAggregate() || useLineageDirty()
+   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
+   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
+   useExportCorpusEvents()
+diff --git a/src/renderer/features/lineage/LineageBoard.tsx b/src/renderer/features/lineage/LineageBoard.tsx
+index e630ca6..df8d109 100644
+--- a/src/renderer/features/lineage/LineageBoard.tsx
++++ b/src/renderer/features/lineage/LineageBoard.tsx
+@@ -40,43 +40,178 @@
+  *   edit→saving→error（失败：脏保持+toast+重试按钮——**禁本地乐观
+  *   覆盖 savedAt**）/error→retry→saving（恢复）；跨格序列：连续编辑
+  *   中保存失败→后续编辑不丢（动作排队=最后写胜出，stale-guard 请求
+- *   序号 INV-03 同族）
++ *   序号 INV-03 同族）——全量迁移表见 lineage.store.ts 头注（写面
++ *   单源在此）
+  *
+  * ── 接口层 ──
+  * - export function LineageBoard(props: { onSelectNode(id: string |
+  *     null): void; selectedNodeId?: string | null }): JSX.Element
+- *   （选择上抛=04 侧板消费面；data-ticket 骨架标记翻 done 前移除）
+- * - 交付面：LineageBoard.tsx（编辑层包裹 02 画布）+写四通道接线+
+- *   lineage.store 写态扩+App.tsx 聚合扩一行族
++ *   （选择上抛=04 侧板消费面；本实现为 LG-03 交付）
+  *
+  * ── 架构层 ──
+  * - renderer/features/lineage 域内聚（Board 编辑层与 Canvas 渲染层
+  *   分文件——组件 ≤250 行红线拆分预案：节点菜单/添加节点对话框子
+- *   组件化）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
++ *   组件化=LineageNodeMenu/LineageAddNodeDialog/LineageEditIdeaDialog
++ *   三件）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
+  *   禁直调 ipc/禁 Node API
+  *
+  * ── 生命周期层 ──
+  * - 预留：批量撤销（v1 无 undo——标注 undo 栈 UNDO-01 不同域不混）；
+- *   边 label 富化；多选批量操作
++ *   边 label 富化；多选批量操作；重置自动布局（清 x/y 按钮动作）
+  * - 不做：DAG 多父编辑（v2 升版条件）；协作/云同步（负面清单）；
+  *   md 渲染（textarea 级）
+  *
+  * ── 文化层 ──
+  * - 错误：写失败=动作型 toast+error 保存态+重试（INV-02）；树拒绝三
+  *   路径=动作型 toast；读面沿用 02 store.error；禁静默吞错
+- * - 测试：tests/unit/renderer/lineage-board.test.tsx [受锁新增]——
+- *   拖拽落点→upsert-node x/y 载荷/加节点两型（paperId 绑定 vs 主题）/
+- *   加边树拒绝三路径 toast/改父=删+加两调用/删节点级联（service 面）
+- *   /core_idea 编辑保存/保存失败不推进 savedAt+重试恢复/连续编辑最后
+- *   写胜出（stale-guard）/退出聚合（dirty 时 App 拦截——组合根用例）/
+- *   选择上抛 onSelectNode；**always-active**
+- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+- * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
+- *   git diff → 翻 registry
++ * - 实现注（LG-03 交付）：写路径/保存态/dirty 全收口 lineage.store
++ *   （Board 只编排交互与呈现）；树拒绝 toast 由 store flush 按
++ *   CONFLICT 折叠码分支（守卫宿主=service——reason 透传链=
++ *   LineageDomainError→toAppError→ApiClientError.code）
+  */
+-export function LineageBoard(_props: {
++import { useState } from 'react'
++import { useLineageStore } from './lineage.store'
++import { LineageCanvas } from './LineageCanvas'
++import { LineageNodeMenu } from './LineageNodeMenu'
++import { LineageAddNodeDialog } from './LineageAddNodeDialog'
++import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
++import type { LineageNode } from '@shared/models/lineage'
++
++/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」） */
++interface PendingLink {
++  source: string
++  mode: 'link' | 'reparent'
++}
++
++const MODE_HINT: Record<PendingLink['mode'], string> = {
++  link: '连线模式：点击目标节点（源 → 目标，目标成为子节点）',
++  reparent: '改父模式：点击新父节点'
++}
++
++export function LineageBoard(props: {
+   onSelectNode(id: string | null): void
+   selectedNodeId?: string | null
+ }): JSX.Element {
+-  return <div data-ticket="SR2-LG-03" />
++  const nodes = useLineageStore((s) => s.nodes)
++  const edges = useLineageStore((s) => s.edges)
++  const saveStatus = useLineageStore((s) => s.saveStatus)
++  const lastWriteError = useLineageStore((s) => s.lastWriteError)
++  const store = useLineageStore.getState
++
++  const [menu, setMenu] = useState<{ node: LineageNode; anchor: { x: number; y: number } } | null>(null)
++  const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
++  const [addOpen, setAddOpen] = useState(false)
++  const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
++
++  const menuParentEdge =
++    menu === null ? null : edges.find((e) => e.toNode === menu.node.id) ?? null
++  const ideaNode = ideaNodeId === null ? null : nodes.find((n) => n.id === ideaNodeId) ?? null
++
++  const handleNodeClick = (nodeId: string): void => {
++    if (pendingLink !== null) {
++      if (pendingLink.mode === 'link') store().linkNodes(pendingLink.source, nodeId)
++      else store().reparentNode(pendingLink.source, nodeId)
++      setPendingLink(null)
++      return
++    }
++    props.onSelectNode(nodeId)
++  }
++
++  return (
++    <div className="relative h-full" data-ticket="SR2-LG-03">
++      {/* 工具条：添加节点入口+保存态指示（autosave-first——无「保存」按钮） */}
++      <div className="absolute left-2 top-2 z-10 flex items-center gap-2">
++        <button
++          type="button"
++          data-testid="lineage-add-node"
++          className="rounded border px-2 py-1 text-xs"
++          style={{ borderColor: 'var(--border)', background: 'var(--panel)', color: 'var(--text)' }}
++          onClick={() => setAddOpen(true)}
++        >
++          添加节点
++        </button>
++        {saveStatus === 'saving' && (
++          <span className="rounded px-2 py-1 text-xs" style={{ background: 'var(--panel)', color: 'var(--text-dim)' }} data-testid="lineage-save-status">
++            保存中…
++          </span>
++        )}
++        {saveStatus === 'error' && (
++          <span
++            className="flex items-center gap-2 rounded border px-2 py-1 text-xs"
++            role="alert"
++            style={{ borderColor: 'var(--danger)', background: 'var(--panel)', color: 'var(--danger)' }}
++            data-testid="lineage-save-status"
++          >
++            保存失败：{lastWriteError}
++            <button
++              type="button"
++              data-testid="lineage-retry-save"
++              className="rounded px-1.5 py-0.5"
++              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
++              onClick={() => store().retrySave()}
++            >
++              重试
++            </button>
++          </span>
++        )}
++      </div>
++
++      {/* 目标选取模式提示条（连线到…/改父…激活期） */}
++      {pendingLink !== null && (
++        <div
++          className="absolute left-1/2 top-2 z-10 flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"
++          style={{ borderColor: 'var(--accent)', background: 'var(--panel)', color: 'var(--accent)' }}
++          data-testid="lineage-pending-link"
++        >
++          <span>{MODE_HINT[pendingLink.mode]}</span>
++          <button type="button" className="underline" onClick={() => setPendingLink(null)}>
++            取消
++          </button>
++        </div>
++      )}
++
++      <LineageCanvas
++        nodes={nodes}
++        edges={edges}
++        onNodeDrag={(id, x, y) => store().moveNode(id, x, y)}
++        onNodeClick={handleNodeClick}
++        onNodeContextMenu={(id, anchor) => {
++          const node = nodes.find((n) => n.id === id)
++          if (node !== undefined) setMenu({ node, anchor })
++        }}
++      />
++
++      {menu !== null && (
++        <LineageNodeMenu
++          node={menu.node}
++          parentEdge={menuParentEdge}
++          anchor={menu.anchor}
++          onClose={() => setMenu(null)}
++          onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
++          onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
++          onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
++          onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
++          onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}
++        />
++      )}
++
++      <LineageAddNodeDialog
++        open={addOpen}
++        existingPaperIds={nodes.map((n) => n.paperId).filter((p): p is string => p !== null)}
++        onClose={() => setAddOpen(false)}
++        onAddPaper={(p) => store().addPaperNode(p)}
++        onAddTheme={(t) => store().addThemeNode(t)}
++      />
++
++      {ideaNode !== null && (
++        <LineageEditIdeaDialog
++          key={ideaNode.id}
++          open
++          node={ideaNode}
++          onClose={() => setIdeaNodeId(null)}
++          onSave={(id, idea) => store().editCoreIdea(id, idea)}
++        />
++      )}
++    </div>
++  )
+ }
+diff --git a/src/renderer/features/lineage/LineageCanvas.tsx b/src/renderer/features/lineage/LineageCanvas.tsx
+index a569ab2..40b7a23 100644
+--- a/src/renderer/features/lineage/LineageCanvas.tsx
++++ b/src/renderer/features/lineage/LineageCanvas.tsx
+@@ -1,6 +1,6 @@
+ // b3: P7-H
+ /**
+- * [LG-02] LineageCanvas —— 只读脉络画布（SVG+pan/zoom）。
++ * [LG-02] LineageCanvas —— 脉络画布（SVG+pan/zoom）+节点交互原语。
+  *
+  * 行为（票面+主控裁决 4）：
+  * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
+@@ -12,15 +12,21 @@
+  *   （编辑拖拽面归 03）。zoom=滚轮（鼠标锚点缩放），钳制 [0.25, 4]。
+  * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
+  *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
+- * - 只读：无任何写交互元素。视口瞬态（tx/ty/k）驻组件 state 不入 store。
++ * - 视口瞬态（tx/ty/k）驻组件 state 不入 store。
++ * - **03 编辑接缝（LG-03 扩，可选回调零回调时行为不变）**：节点原语上抛——
++ *   onNodeDrag（拖拽落点，布局坐标=自动布局/覆盖位+位移/k，位移阈值内视为
++ *   onNodeClick 单击选中）/onNodeContextMenu（右键菜单锚）。拖拽期实时
++ *   跟随（dragView 偏移渲染）；写路径（upsert-node）归 Board 编辑层——
++ *   本画布不持写通道。
+  */
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+ import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
+-
+ const ZOOM_MIN = 0.25
+ const ZOOM_MAX = 4
+ const ZOOM_STEP = 0.0015
++/** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
++const DRAG_THRESHOLD = 3
+ 
+ interface Viewport {
+   tx: number
+@@ -28,7 +34,20 @@ interface Viewport {
+   k: number
+ }
+ 
+-export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[] }): JSX.Element {
++/** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
++export interface CanvasEditCallbacks {
++  /** 拖拽落点（布局坐标，JSON Canvas 覆盖语义——消费方经 upsert-node 落库） */
++  onNodeDrag?: (nodeId: string, x: number, y: number) => void
++  /** 单击选中（04 侧板消费面上抛） */
++  onNodeClick?: (nodeId: string) => void
++  /** 右键节点开菜单（03 节点菜单锚点） */
++  onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
++}
++
++export function LineageCanvas(props: {
++  nodes: LineageNode[]
++  edges: LineageEdge[]
++} & CanvasEditCallbacks): JSX.Element {
+   const { nodes, edges } = props
+   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
+   const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
+@@ -93,6 +112,44 @@ export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[
+   }, [])
+ 
+   const { tx, ty, k } = viewport
++  // ── 03 编辑接缝：拖拽会话（start 驻 ref，渲染跟随驻 state；回调经 ref 取最新）──
++  const dragRef = useRef<{ id: string; sx: number; sy: number; ox: number; oy: number } | null>(null)
++  const [dragView, setDragView] = useState<{ id: string; dx: number; dy: number } | null>(null)
++  const viewportRef = useRef<Viewport>(viewport)
++  const cbRef = useRef<{ drag?: CanvasEditCallbacks['onNodeDrag']; click?: CanvasEditCallbacks['onNodeClick'] }>({})
++  useEffect(() => {
++    viewportRef.current = viewport
++  }, [viewport])
++  useEffect(() => {
++    cbRef.current = { drag: props.onNodeDrag, click: props.onNodeClick }
++  })
++  useEffect(() => {
++    const onMove = (e: PointerEvent): void => {
++      const d = dragRef.current
++      if (d === null) return
++      setDragView({ id: d.id, dx: e.clientX - d.sx, dy: e.clientY - d.sy })
++    }
++    const onUp = (e: PointerEvent): void => {
++      const d = dragRef.current
++      dragRef.current = null
++      setDragView(null)
++      if (d === null) return
++      const dx = e.clientX - d.sx
++      const dy = e.clientY - d.sy
++      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) {
++        cbRef.current.click?.(d.id)
++        return
++      }
++      // 屏幕位移→布局坐标（除以缩放 k；pan 平移在落点换算中相消——相对位移语义）
++      cbRef.current.drag?.(d.id, d.ox + dx / viewportRef.current.k, d.oy + dy / viewportRef.current.k)
++    }
++    window.addEventListener('pointermove', onMove)
++    window.addEventListener('pointerup', onUp)
++    return () => {
++      window.removeEventListener('pointermove', onMove)
++      window.removeEventListener('pointerup', onUp)
++    }
++  }, [])
+   return (
+     <svg
+       ref={svgRef}
+@@ -145,13 +202,26 @@ export function LineageCanvas(props: { nodes: LineageNode[]; edges: LineageEdge[
+             />
+           )
+         })}
+-        {/* 节点卡片（主题节点=虚线框区分文献节点） */}
++        {/* 节点卡片（主题节点=虚线框区分文献节点；拖拽期叠加 dragView 偏移跟随） */}
+         {nodes.map((n) => {
+           const p = layout.positions.get(n.id)
+           if (p === undefined) return null
+           const theme = n.paperId === null
++          const off = dragView?.id === n.id ? dragView : null
+           return (
+-            <g key={n.id} data-node-id={n.id} data-kind={theme ? 'theme' : 'paper'} transform={`translate(${p.x}, ${p.y})`}>
++            <g
++              key={n.id}
++              data-node-id={n.id}
++              data-kind={theme ? 'theme' : 'paper'}
++              transform={`translate(${p.x + (off?.dx ?? 0)}, ${p.y + (off?.dy ?? 0)})`}
++              onPointerDown={(e) => {
++                dragRef.current = { id: n.id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y }
++              }}
++              onContextMenu={(e) => {
++                e.preventDefault()
++                props.onNodeContextMenu?.(n.id, { x: e.clientX, y: e.clientY })
++              }}
++            >
+               <rect
+                 x={-NODE_W / 2}
+                 y={-NODE_H / 2}
+diff --git a/src/renderer/features/lineage/LineagePage.tsx b/src/renderer/features/lineage/LineagePage.tsx
+index e195969..115f1b5 100644
+--- a/src/renderer/features/lineage/LineagePage.tsx
++++ b/src/renderer/features/lineage/LineagePage.tsx
+@@ -5,19 +5,22 @@
+  * 行为：挂载经 lineage.store.load() 取数（lineage/graph 单点——接缝
+  * 双向锚定：本行+lineage.store 头注；03 编辑层/04 侧板同经 store 消费
+  * **禁双取**）；三态呈现（门一 N6）：loading=加载文案/error=错误条+
+- * 重试按钮（列表型瞬态，INV-02）/ready=LineageCanvas（空图空态在画布内）。
+- * 页面自身无数据逻辑（LibraryPage 同型）；无写交互（编辑归 03）。
++ * 重试按钮（列表型瞬态，INV-02）/ready=LineageBoard（03 编辑层包裹
++ * 02 画布——空图空态在画布内）。
++ * 编排（LG-03 接入）：selectedNodeId 驻本页 state——Board 的 onSelectNode
++ * 上抛落此（04 侧板 LineageSidePanel 消费面预留——本单空消费，props
++ * 形态照票面）；无侧板布局（04 编排扩）。
+  */
+-import { useEffect } from 'react'
++import { useEffect, useState } from 'react'
+ import { useLineageStore } from './lineage.store'
+-import { LineageCanvas } from './LineageCanvas'
++import { LineageBoard } from './LineageBoard'
+ 
+ export function LineagePage(): JSX.Element {
+-  const nodes = useLineageStore((s) => s.nodes)
+-  const edges = useLineageStore((s) => s.edges)
+   const status = useLineageStore((s) => s.status)
+   const error = useLineageStore((s) => s.error)
+   const load = useLineageStore((s) => s.load)
++  // 选中节点 id（04 侧板数据源预留——本单 Board 上抛落此，侧板消费归 LG-04）
++  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+ 
+   useEffect(() => {
+     void load()
+@@ -53,7 +56,7 @@ export function LineagePage(): JSX.Element {
+   }
+   return (
+     <div className="h-full p-1">
+-      <LineageCanvas nodes={nodes} edges={edges} />
++      <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/lineage/lineage.store.ts b/src/renderer/features/lineage/lineage.store.ts
+index 5316810..bd8f4e0 100644
+--- a/src/renderer/features/lineage/lineage.store.ts
++++ b/src/renderer/features/lineage/lineage.store.ts
+@@ -1,57 +1,278 @@
+ // b3: P7-H
+ /**
+- * lineage.store —— 脉络图数据+读面状态单源（store）。
++ * lineage.store —— 脉络图数据+读面/写面状态单源（store）。
+  *
+  * ── 数据单源接缝声明（双向锚定：本行+LineagePage 头注）──
+  * lineage/graph 取数=本 store 单点；LineagePage/LineageCanvas/03 编辑层
+  * （LineageBoard）/04 侧板（LineageSidePanel）一律经本 store 分发消费——
+  * **03/04 禁双取**（不得另行直连 window.api.lineage.graph 建第二取数点；
+- * 04 的 ai_notes/list、notes/get 属不同数据域不在本约）。数据缓存：nodes/
+- * edges 驻 store（视图切换卸载不丢，03/04 消费面免二次取数）。
++ * 04 的 ai_notes/list、notes/get 属不同数据域不在本约；03 添加对话框的
++ * library.list 属文献库域取数同样不在本约）。数据缓存：nodes/edges 驻
++ * store（视图切换卸载不丢，03/04 消费面免二次取数）。
+  *
+  * ── 读面状态枚举（门一 N6）──
+- * loading/ready/error 三态；无用户输入写面（状态机前置纪律不适用——票面
+- * N6 结论维持；pan/zoom=视口瞬态不入本 store）。stale-guard 请求序号
+- * （notes.store/ai-notes.store 同型）：晚到的旧响应（含旧失败）丢弃。
++ * loading/ready/error 三态；stale-guard 请求序号（notes.store 同型）：晚到
++ * 的旧响应（含旧失败）丢弃；**写面互锁（LG-03）**：写队列未清空时 graph
++ * 落地同样丢弃（写回填面为准——写与读竞态的窄窗防御）。
++ *
++ * ── 写面状态机（LG-03，宪法前置；测试=tests/unit/renderer/lineage-store-write.test.ts）──
++ * - 态空间：saveStatus ∈ {saved, saving, error} × queue（写动作序列）
++ * - 迁移：saved+edit→saving（入队+flush 派发）/saving+edit→saving（同实体
++ *   排队合并=**最后写胜出**）/flush 逐动作成功且队列清空→saved（数据回填）
++ *   /系统型失败（非 CONFLICT）→error（**队首保留**+toast+重试——INV-04
++ *   同型：失败不推进保存态）/CONFLICT 拒绝型→**丢弃动作继续队列**（树守卫
++ *   reason 透传 toast——守卫宿主=LG-01 service INV-27；永不成功的动作
++ *   丢弃否则卡队头且脏态误报）/error+edit→saving（自动重试）/error+retry→
++ *   saving（重发保留队列）
++ * - 跨格序列：连续编辑中保存失败→后续编辑不丢（队列保留+合并收尾）；改父
++ *   删成功+加失败=合法中间态（节点暂无父，森林语义）+toast 指明+重试只重发加边
++ * - dirty 投影：saveStatus≠saved 即脏（useLineageDirty——App 退出拦截
++ *   聚合输入，INV-22 扩面）
+  *
+  * 错误契约：load 失败不上抛——失败态驻 store.error（列表型瞬态，消费方
+- * 呈现+重试，INV-02 两型分清；动作型 toast 面=03 写通道）。
++ * 呈现+重试，INV-02 两型分清；动作型 toast 面=本 store 写路径 flush 内
++ * showToast——toast-store 的 .ts 可导入先例 reader.store 同型）。
+  */
+ import { create } from 'zustand'
+-import { api, unwrap } from '../../api/client'
+-import type { LineageEdge, LineageNode } from '@shared/models/lineage'
++import { api, unwrap, ApiClientError } from '../../api/client'
++import { showToast } from '../../shared/ui/toast-store'
++import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '@shared/models/lineage'
+ 
+ export type LineageStatus = 'loading' | 'ready' | 'error'
+ 
++/** 保存态三态（ADR-0014 保存语义对齐标注/笔记——INV-04 同型不新立号） */
++export type LineageSaveStatus = 'saved' | 'saving' | 'error'
++
++/** 写动作（排队单元；reparent 的加边动作带标记——N5 部分失败 toast 前缀） */
++type WriteAction =
++  | { kind: 'upsert-node'; input: LineageNodeUpsert; reparent?: boolean }
++  | { kind: 'remove-node'; id: string }
++  | { kind: 'upsert-edge'; input: LineageEdgeUpsert; reparent?: boolean }
++  | { kind: 'remove-edge'; id: string }
++
+ export interface LineageStore {
+   nodes: LineageNode[]
+   edges: LineageEdge[]
+   status: LineageStatus
+   error: string | null
++  /** 写面保存态三态（≠saved 即脏——退出聚合输入） */
++  saveStatus: LineageSaveStatus
++  /** 最近一次系统型写失败消息（error 态指示条呈现；成功清空） */
++  lastWriteError: string | null
++  /** 待发/重发写动作队列（驻 state 供测试与脏态判定；flushing=串行派发中） */
++  queue: WriteAction[]
++  flushing: boolean
+   load(): Promise<void>
++  /** 加节点两型：文献型（paperId 绑定+元数据默认）/主题型（阶段分组） */
++  addPaperNode(paper: { id: string; title: string; year: number | null }): void
++  addThemeNode(title: string): void
++  /** 拖拽落点→x/y 覆盖（JSON Canvas 模式；全字段载荷收口在此防半更新清字段） */
++  moveNode(id: string, x: number, y: number): void
++  editCoreIdea(id: string, coreIdea: string): void
++  linkNodes(from: string, to: string, label?: string): void
++  /** 改父=删旧边+加新边两调用（N5 语义；无旧边=仅加边） */
++  reparentNode(nodeId: string, newParentId: string): void
++  removeNode(id: string): void
++  removeEdge(id: string): void
++  /** error 态重试：重发保留队列（动作在 error+新编辑时自动重试） */
++  retrySave(): void
++}
++
++/** 退出拦截聚合输入（INV-22 扩面：tab dirty ∪ lineage dirty——App.tsx 组合根单点） */
++export function useLineageDirty(): boolean {
++  return useLineageStore((s) => s.saveStatus !== 'saved')
+ }
+ 
+-export const useLineageStore = create<LineageStore>()((set) => {
++/** 同实体判定（排队合并=最后写胜出）：同 kind 且目标相同（新建节点无 id 不合并） */
++function sameTarget(a: WriteAction, b: WriteAction): boolean {
++  if (a.kind !== b.kind) return false
++  if (a.kind === 'upsert-node' && b.kind === 'upsert-node') {
++    return a.input.id !== undefined && a.input.id === b.input.id
++  }
++  if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
++    return a.input.fromNode === b.input.fromNode && a.input.toNode === b.input.toNode
++  }
++  return (a as { id: string }).id === (b as { id: string }).id
++}
++
++/** 改父失败 toast 前缀（N5：删成功+加失败=合法中间态，须指明不静默不假报成功） */
++function writeFailToast(action: WriteAction, message: string): void {
++  if ('reparent' in action && action.reparent === true) {
++    showToast(`旧连线已移除，新连线未建立：${message}`, 'error')
++  } else {
++    showToast(message, 'error')
++  }
++}
++
++export const useLineageStore = create<LineageStore>()((set, get) => {
+   // 请求序号 stale-guard：新 load 取代旧 load 后，旧响应（成功/失败）丢弃
+   let seq = 0
+ 
++  const enqueue = (action: WriteAction): void => {
++    set((s) => ({
++      queue: [...s.queue.filter((x) => !sameTarget(x, action)), action],
++      saveStatus: 'saving'
++    }))
++    void flush()
++  }
++
++  const applyAction = async (action: WriteAction): Promise<void> => {
++    if (action.kind === 'upsert-node') {
++      const saved = await unwrap(api.lineage.upsertNode(action.input))
++      set((s) => ({
++        nodes: s.nodes.some((n) => n.id === saved.id)
++          ? s.nodes.map((n) => (n.id === saved.id ? saved : n))
++          : [...s.nodes, saved]
++      }))
++      return
++    }
++    if (action.kind === 'remove-node') {
++      await unwrap(api.lineage.removeNode({ id: action.id }))
++      set((s) => ({
++        nodes: s.nodes.filter((n) => n.id !== action.id),
++        // 级联镜像：两端点任一为该节点的边全清（DDL CASCADE 的 store 面）
++        edges: s.edges.filter((e) => e.fromNode !== action.id && e.toNode !== action.id)
++      }))
++      return
++    }
++    if (action.kind === 'upsert-edge') {
++      const saved = await unwrap(
++        api.lineage.upsertEdge({
++          from: action.input.fromNode,
++          to: action.input.toNode,
++          label: action.input.label
++        })
++      )
++      set((s) => ({
++        edges: s.edges.some((e) => e.id === saved.id)
++          ? s.edges.map((e) => (e.id === saved.id ? saved : e))
++          : [...s.edges, saved]
++      }))
++      return
++    }
++    await unwrap(api.lineage.removeEdge({ id: action.id }))
++    set((s) => ({ edges: s.edges.filter((e) => e.id !== action.id) }))
++  }
++
++  async function flush(): Promise<void> {
++    if (get().flushing) return
++    // error→retry 恢复路径立即翻 saving（派发可见）；enqueue 路径已是 saving，重复无害
++    set({ flushing: true, saveStatus: 'saving' })
++    while (get().queue.length > 0) {
++      const action = get().queue[0]!
++      try {
++        await applyAction(action)
++        // 按动作身份出队（非 slice(1)：flight 期间同实体动作可能被合并替换，
++        // 盲切首位会误删未发送的后值——「最后写胜出」与出队的组合缺陷，测试拦出）
++        set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
++      } catch (e) {
++        if (e instanceof ApiClientError && e.code === 'CONFLICT') {
++          // 拒绝型（service 树守卫/幽灵 paperId 中文 reason）：永不成功——丢弃
++          // 继续（不卡队头不误报脏），reason 透传 toast（守卫宿主=LG-01 service）
++          writeFailToast(action, e.message)
++          set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
++          continue
++        }
++        // 系统型：动作保留（不丢），error 态+重试（INV-04：失败不推进保存态）
++        const message = e instanceof Error ? e.message : String(e)
++        set({ saveStatus: 'error', lastWriteError: message, flushing: false })
++        writeFailToast(action, message)
++        return
++      }
++    }
++    set({ saveStatus: 'saved', lastWriteError: null, flushing: false })
++  }
++
++  const nodeOf = (id: string): LineageNode => {
++    const n = get().nodes.find((x) => x.id === id)
++    if (n === undefined) throw new Error(`节点不在图中：${id}`)
++    return n
++  }
++
+   return {
+     nodes: [],
+     edges: [],
+     status: 'loading',
+     error: null,
++    saveStatus: 'saved',
++    lastWriteError: null,
++    queue: [],
++    flushing: false,
+ 
+     async load() {
+       const s = ++seq
+       set({ status: 'loading', error: null })
+       try {
+         const graph = await unwrap(api.lineage.graph({}))
+-        if (s !== seq) return
++        // 旧响应晚到丢弃；写队列未清空同样丢弃（写回填面为准——写读互锁）。
++        // 丢弃时回置 ready：写进行中说明有数据面（error 态无 Board 无写），
++        // 不回置会卡 loading 至下次挂载
++        if (s !== seq || get().flushing || get().queue.length > 0) {
++          if (s === seq) set({ status: 'ready' })
++          return
++        }
+         set({ nodes: graph.nodes, edges: graph.edges, status: 'ready', error: null })
+       } catch (e) {
+         if (s !== seq) return
+         set({ status: 'error', error: e instanceof Error ? e.message : String(e) })
+       }
++    },
++
++    addPaperNode(paper) {
++      enqueue({
++        kind: 'upsert-node',
++        input: { paperId: paper.id, title: paper.title, coreIdea: '', year: paper.year, x: null, y: null }
++      })
++    },
++
++    addThemeNode(title) {
++      enqueue({
++        kind: 'upsert-node',
++        input: { paperId: null, title, coreIdea: '', year: null, x: null, y: null }
++      })
++    },
++
++    moveNode(id, x, y) {
++      const n = nodeOf(id)
++      enqueue({
++        kind: 'upsert-node',
++        input: { id: n.id, paperId: n.paperId, title: n.title, coreIdea: n.coreIdea, year: n.year, x, y }
++      })
++    },
++
++    editCoreIdea(id, coreIdea) {
++      const n = nodeOf(id)
++      enqueue({
++        kind: 'upsert-node',
++        input: { id: n.id, paperId: n.paperId, title: n.title, coreIdea, year: n.year, x: n.x, y: n.y }
++      })
++    },
++
++    linkNodes(from, to, label = '') {
++      enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label } })
++    },
++
++    reparentNode(nodeId, newParentId) {
++      // N5：删旧边+加新边两调用（UI 单操作）；删成功+加失败=合法中间态+toast 指明
++      const old = get().edges.find((e) => e.toNode === nodeId)
++      if (old !== undefined) enqueue({ kind: 'remove-edge', id: old.id })
++      enqueue({
++        kind: 'upsert-edge',
++        input: { fromNode: newParentId, toNode: nodeId, label: '' },
++        reparent: true
++      })
++    },
++
++    removeNode(id) {
++      enqueue({ kind: 'remove-node', id })
++    },
++
++    removeEdge(id) {
++      enqueue({ kind: 'remove-edge', id })
++    },
++
++    retrySave() {
++      void flush()
+     }
+   }
+ })
+diff --git a/src/renderer/features/reader/tab-dirty.ts b/src/renderer/features/reader/tab-dirty.ts
+index f2da110..957cd9b 100644
+--- a/src/renderer/features/reader/tab-dirty.ts
++++ b/src/renderer/features/reader/tab-dirty.ts
+@@ -11,7 +11,9 @@
+  *   状态归 TabState.dirty（TABS-01 建位）——信号写入点在对应失败路径
+  *   （AnnotationLayer 失败分支 / notes.store 状态镜像读取），成功重试后清除
+  * - 消费：TabBar.tsx 灰点渲染 + 关闭脏 tab 二次确认（confirm 文案含文献名）+
+- *   退出拦截上报（TABS-04 的 dirty 输入=任一 tab dirty）
++ *   退出拦截上报（TABS-04 的 dirty 输入=tabs∪lineage：任一 tab dirty ∪
++ *   lineage 保存态脏——LG-03 经 useLineageDirty 在 App.tsx 组合根聚合，
++ *   本模块行为面零触碰）
+  *
+  * ── 接口层 ──
+  * - export function isTabDirty(...): boolean（纯函数核心）
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index 7626e89..7ad86c1 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -15,6 +15,7 @@ import { annotationSchema } from '../models/annotation'
+ import { noteSchema } from '../models/note'
+ import { tagSchema } from '../models/tag'
+ import { aiNoteSchema } from '../models/ai-note'
++import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
+ import * as S from './schemas'
+ 
+ export interface Endpoint {
+@@ -70,11 +71,14 @@ export const API_SURFACE = {
+     zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
+   },
+   // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
+-  // 写四通道（upsert-node/remove-node/upsert-edge/remove-edge）接口预留面在 LG-03
+-  // 票面（消费者未建窗口——本单 service 四写方法全建全测但不注册 IPC）
++  // 写四通道（LG-03 交互编辑接线——树守卫宿主=service upsertEdge，IPC 零守卫透传）
+   lineage: {
+     importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
+-    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema }
++    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema },
++    upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
++    removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
++    upsertEdge: { channel: 'lineage/upsert-edge', Req: S.lineageUpsertEdgeReqSchema, Res: lineageEdgeSchema },
++    removeEdge: { channel: 'lineage/remove-edge', Req: S.lineageIdReqSchema, Res: S.trueAckSchema }
+   },
+   tags: {
+     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 6c12e49..c2aa675 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -262,6 +262,38 @@ export const lineageGraphResSchema = z
+   .strict()
+ export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
+ 
++// ── lineage 写四通道（LG-03 交互编辑：autosave-first，每编辑动作即写）────
++/** lineage/upsert-node 请求：应用面 camelCase 输入（模型单源派生语义——id 缺省=新建；
++ *  paperId 省略/null=主题节点；x/y 省略/null=自动布局（JSON Canvas 覆盖语义的反向清空）；
++ *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段） */
++export const lineageUpsertNodeReqSchema = z
++  .object({
++    id: z.string().min(1).optional(),
++    paperId: z.string().min(1).nullable().optional(),
++    title: z.string().min(1),
++    coreIdea: z.string(),
++    year: z.number().int().nullable(),
++    x: z.number().nullable().optional(),
++    y: z.number().nullable().optional()
++  })
++  .strict()
++export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
++
++/** remove-node/remove-edge 共用形（tags attach/detach 复用同 schema 先例） */
++export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
++export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
++
++/** lineage/upsert-edge 请求：{from,to,label?}（树守卫宿主=LG-01 service upsertEdge——
++ *  IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer toast） */
++export const lineageUpsertEdgeReqSchema = z
++  .object({
++    from: z.string().min(1),
++    to: z.string().min(1),
++    label: z.string().optional()
++  })
++  .strict()
++export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
++
+ // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
+ /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
+ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+diff --git a/src/renderer/features/lineage/LineageAddNodeDialog.tsx b/src/renderer/features/lineage/LineageAddNodeDialog.tsx
+new file mode 100644
+index 0000000..c6f01ac
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageAddNodeDialog.tsx
+@@ -0,0 +1,162 @@
++// b3: P7-H
++/**
++ * [LG-03] LineageAddNodeDialog —— 添加节点对话框两型（Board 子组件）。
++ *
++ * 行为：①文献型=搜索选取 paper（library.list 既有通道直连——window.api 是
++ * renderer 合法取数路径，文献库域取数不经 lineage.store 单源约，LG-04 头注
++ * 同论证）→paperId 绑定+title/year 取元数据默认；②主题型=title 输入
++ * （「阶段分组」语义，paperId null）。已在图中的 paper 过滤（同 paperId
++ * 重复节点防呆——数据模型不禁止，消费方守卫）。搜索失败=列表型瞬态
++ * （错误条+重试，INV-02）；空结果=空态文案非错误。确认后动作上抛——写路径
++ * 收口 Board→store。
++ */
++import { useEffect, useState } from 'react'
++import { api, unwrap, ApiClientError } from '../../api/client'
++import { Dialog } from '../../shared/ui/Dialog'
++import type { PaperSummary } from '@shared/models/paper'
++
++export interface LineageAddNodeDialogProps {
++  open: boolean
++  /** 已在图中的 paperId 集（重复添加防呆过滤） */
++  existingPaperIds: string[]
++  onClose(): void
++  onAddPaper(paper: { id: string; title: string; year: number | null }): void
++  onAddTheme(title: string): void
++}
++
++type Mode = 'paper' | 'theme'
++
++export function LineageAddNodeDialog(props: LineageAddNodeDialogProps): JSX.Element | null {
++  const [mode, setMode] = useState<Mode>('paper')
++  const [search, setSearch] = useState('')
++  const [results, setResults] = useState<PaperSummary[]>([])
++  const [searching, setSearching] = useState(false)
++  const [searchError, setSearchError] = useState<string | null>(null)
++  const [selected, setSelected] = useState<PaperSummary | null>(null)
++  const [themeTitle, setThemeTitle] = useState('')
++  const [retryToken, setRetryToken] = useState(0)
++
++  // 搜索（文献型挂载即拉首批 20 条——空搜索=发现面；输入变化/重试重查）
++  useEffect(() => {
++    if (!props.open || mode !== 'paper') return
++    let live = true
++    setSearching(true)
++    setSearchError(null)
++    unwrap(api.library.list({ search: search === '' ? undefined : search, limit: 20 }))
++      .then((r) => {
++        if (!live) return
++        setResults(r.items.filter((p) => !props.existingPaperIds.includes(p.id)))
++        setSearching(false)
++      })
++      .catch((e: unknown) => {
++        if (!live) return
++        setSearchError(e instanceof ApiClientError ? e.message : '文献搜索失败')
++        setSearching(false)
++      })
++    return () => {
++      live = false
++    }
++  }, [props.open, mode, search, retryToken, props.existingPaperIds])
++
++  const confirm = (): void => {
++    if (mode === 'paper') {
++      if (selected === null) return
++      props.onAddPaper({ id: selected.id, title: selected.title, year: selected.year })
++    } else {
++      if (themeTitle.trim() === '') return
++      props.onAddTheme(themeTitle.trim())
++    }
++    props.onClose()
++  }
++
++  const canConfirm = mode === 'paper' ? selected !== null : themeTitle.trim() !== ''
++
++  return (
++    <Dialog open={props.open} title="添加节点" onClose={props.onClose}>
++      <div className="flex flex-col gap-3">
++        <div className="flex gap-2">
++          <button
++            type="button"
++            className="rounded border px-2 py-1 text-xs"
++            style={mode === 'paper' ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : { borderColor: 'var(--border)', color: 'var(--text-dim)' }}
++            onClick={() => { setMode('paper'); setSelected(null) }}
++          >
++            从文献库添加
++          </button>
++          <button
++            type="button"
++            data-testid="add-node-mode-theme"
++            className="rounded border px-2 py-1 text-xs"
++            style={mode === 'theme' ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : { borderColor: 'var(--border)', color: 'var(--text-dim)' }}
++            onClick={() => setMode('theme')}
++          >
++            添加主题节点
++          </button>
++        </div>
++
++        {mode === 'paper' ? (
++          <div className="flex flex-col gap-2">
++            <input
++              data-testid="add-node-search"
++              aria-label="搜索文献（标题/作者/摘要）"
++              className="rounded border px-2 py-1 text-xs"
++              style={{ borderColor: 'var(--border)' }}
++              value={search}
++              onChange={(e) => { setSearch(e.target.value); setSelected(null) }}
++            />
++            {searchError !== null ? (
++              <div role="alert" className="text-xs" style={{ color: 'var(--danger)' }}>
++                {searchError}
++                <button type="button" className="ml-2 underline" style={{ color: 'var(--accent)' }} onClick={() => setRetryToken((t) => t + 1)}>
++                  重试
++                </button>
++              </div>
++            ) : searching ? (
++              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>搜索中…</p>
++            ) : results.length === 0 ? (
++              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>无匹配文献（或已在脉络图中）</p>
++            ) : (
++              <ul className="flex max-h-56 flex-col gap-1 overflow-auto">
++                {results.map((p) => (
++                  <li key={p.id}>
++                    <button
++                      type="button"
++                      className="w-full rounded border px-2 py-1 text-left text-xs"
++                      style={selected?.id === p.id ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--border)' }}
++                      onClick={() => setSelected(p)}
++                    >
++                      {p.title}（{p.year === null ? '未知年份' : p.year}）
++                    </button>
++                  </li>
++                ))}
++              </ul>
++            )}
++          </div>
++        ) : (
++          <input
++            data-testid="add-node-title"
++            aria-label="主题名称（阶段分组）"
++            className="rounded border px-2 py-1 text-xs"
++            style={{ borderColor: 'var(--border)' }}
++            value={themeTitle}
++            onChange={(e) => setThemeTitle(e.target.value)}
++          />
++        )}
++      </div>
++      <div className="mt-3 flex justify-end gap-2">
++        <button type="button" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={props.onClose}>
++          取消
++        </button>
++        <button
++          type="button"
++          disabled={!canConfirm}
++          className="rounded px-3 py-1 text-xs text-white"
++          style={{ background: canConfirm ? 'var(--accent)' : 'var(--border)' }}
++          onClick={confirm}
++        >
++          添加
++        </button>
++      </div>
++    </Dialog>
++  )
++}
+diff --git a/src/renderer/features/lineage/LineageEditIdeaDialog.tsx b/src/renderer/features/lineage/LineageEditIdeaDialog.tsx
+new file mode 100644
+index 0000000..12d272a
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageEditIdeaDialog.tsx
+@@ -0,0 +1,46 @@
++// b3: P7-H
++/**
++ * [LG-03] LineageEditIdeaDialog —— core_idea 编辑对话框（Board 子组件）。
++ *
++ * 行为：textarea 受控（初值=node.coreIdea；空串合法——core_idea 可清）。
++ * 负面清单红线同族：纯 textarea 不做 md 渲染/富文本。保存动作上抛——
++ * 写路径（全字段 upsert 防清 x/y）收口 Board→store。
++ * 初值锚定：Board 以 key={nodeId} 挂载（换节点=重挂载重置初值）。
++ */
++import { useState } from 'react'
++import { Dialog } from '../../shared/ui/Dialog'
++import type { LineageNode } from '@shared/models/lineage'
++
++export function LineageEditIdeaDialog(props: {
++  open: boolean
++  node: LineageNode
++  onClose(): void
++  onSave(nodeId: string, coreIdea: string): void
++}): JSX.Element | null {
++  const [value, setValue] = useState(props.node.coreIdea)
++
++  const save = (): void => {
++    props.onSave(props.node.id, value)
++    props.onClose()
++  }
++
++  return (
++    <Dialog open={props.open} title={`编辑核心想法：${props.node.title}`} onClose={props.onClose}>
++      <textarea
++        data-testid="core-idea-input"
++        className="h-40 w-full resize-none rounded border p-2 text-xs"
++        style={{ borderColor: 'var(--border)' }}
++        value={value}
++        onChange={(e) => setValue(e.target.value)}
++      />
++      <div className="mt-3 flex justify-end gap-2">
++        <button type="button" className="rounded border px-3 py-1 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={props.onClose}>
++          取消
++        </button>
++        <button type="button" className="rounded px-3 py-1 text-xs text-white" style={{ background: 'var(--accent)' }} onClick={save}>
++          保存
++        </button>
++      </div>
++    </Dialog>
++  )
++}
+diff --git a/src/renderer/features/lineage/LineageNodeMenu.tsx b/src/renderer/features/lineage/LineageNodeMenu.tsx
+new file mode 100644
+index 0000000..c0a4b4a
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageNodeMenu.tsx
+@@ -0,0 +1,77 @@
++// b3: P7-H
++/**
++ * [LG-03] LineageNodeMenu —— 节点右键菜单（Board 子组件，组件≤250 拆分预案）。
++ *
++ * 行为：fixed 定位于右键锚点；菜单项=连线到…/改父…/编辑核心想法/删除父连线
++ * （仅有父边时呈现）/删除节点。透明遮罩点击关闭（ESC 关闭归 Dialog 域——
++ * 菜单轻量面不挂键盘）。所有动作只上抛回调——写路径收口在 Board→store。
++ */
++import type { LineageEdge, LineageNode } from '@shared/models/lineage'
++
++export interface LineageNodeMenuProps {
++  node: LineageNode
++  /** 该节点现有父边（toNode=节点）——无则「删除父连线」不呈现 */
++  parentEdge: LineageEdge | null
++  anchor: { x: number; y: number }
++  onClose(): void
++  onLinkTo(nodeId: string): void
++  onReparent(nodeId: string): void
++  onEditIdea(nodeId: string): void
++  onRemoveParentEdge(edgeId: string): void
++  onRemoveNode(nodeId: string): void
++}
++
++const ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5'
++
++export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
++  const { node, parentEdge, anchor } = props
++  return (
++    <>
++      {/* 透明遮罩：点击任意处关闭（菜单本体 stopPropagation） */}
++      <div className="fixed inset-0 z-40" onClick={props.onClose} />
++      <div
++        data-testid="lineage-node-menu"
++        role="menu"
++        aria-label={`节点菜单：${node.title}`}
++        className="fixed z-50 w-40 rounded border py-1 shadow-lg"
++        style={{
++          left: anchor.x,
++          top: anchor.y,
++          background: 'var(--panel)',
++          borderColor: 'var(--border)'
++        }}
++        onClick={(e) => e.stopPropagation()}
++      >
++        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkTo(node.id)}>
++          连线到…
++        </button>
++        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
++          改父…
++        </button>
++        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onEditIdea(node.id)}>
++          编辑核心想法
++        </button>
++        {parentEdge !== null && (
++          <button
++            type="button"
++            role="menuitem"
++            className={ITEM_STYLE}
++            style={{ color: 'var(--text)' }}
++            onClick={() => props.onRemoveParentEdge(parentEdge.id)}
++          >
++            删除父连线
++          </button>
++        )}
++        <button
++          type="button"
++          role="menuitem"
++          className={ITEM_STYLE}
++          style={{ color: 'var(--danger)' }}
++          onClick={() => props.onRemoveNode(node.id)}
++        >
++          删除节点
++        </button>
++      </div>
++    </>
++  )
++}
+diff --git a/tests/unit/renderer/lineage-board.test.tsx b/tests/unit/renderer/lineage-board.test.tsx
+new file mode 100644
+index 0000000..cccdc1a
+--- /dev/null
++++ b/tests/unit/renderer/lineage-board.test.tsx
+@@ -0,0 +1,441 @@
++// @vitest-environment jsdom
++/**
++ * [LG-03] LineageBoard —— 交互编辑面组件测试（锁定合约，always-active——
++ * 不经 guardedDescribe）。
++ *
++ * 覆盖：拖拽落点→upsert-node x/y 载荷/单击选中 onSelectNode 上抛（04 侧板
++ * 消费面预留）/加边全流程（源节点菜单「连线到…」+目标选取）/树拒绝三路径
++ * toast（service reason 透传——守卫宿主=LG-01 service）/改父=删+加两调用/
++ * 删节点/删除父连线/core_idea 编辑（x/y 保留防清覆盖）/保存失败指示+重试/
++ * 加节点对话框两型（library.list 搜索选取 vs 主题 title）/组合根退出聚合
++ * （lineage dirty→system/set-quit-dirty，INV-22 扩面）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
++import type * as clientModule from '../../../src/renderer/api/client'
++import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
++
++const { stubApi } = vi.hoisted(() => ({
++  stubApi: {
++    lineage: {
++      graph: vi.fn(),
++      upsertNode: vi.fn(),
++      removeNode: vi.fn(),
++      upsertEdge: vi.fn(),
++      removeEdge: vi.fn()
++    },
++    library: { list: vi.fn() },
++    system: { setQuitDirty: vi.fn() }
++  }
++}))
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return {
++    ...real,
++    api: stubApi as unknown as typeof clientModule.api,
++    apiEvents: {
++      onExportCorpus: vi.fn(() => () => undefined),
++      onImportProgress: vi.fn(() => () => undefined)
++    }
++  }
++})
++
++vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
++  const real = await importOriginal<typeof toastStoreModule>()
++  return { ...real, showToast: vi.fn(real.showToast) }
++})
++
++import { showToast } from '../../../src/renderer/shared/ui/toast-store'
++import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
++import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
++import { App } from '../../../src/renderer/app/App'
++
++function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
++  return {
++    id,
++    paperId: `paper-${id}`,
++    title: `节点${id}`,
++    coreIdea: '',
++    year: 2020,
++    x: null,
++    y: null,
++    createdAt: 't',
++    updatedAt: 't',
++    ...patch
++  }
++}
++
++function edge(id: string, from: string, to: string): LineageEdge {
++  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++}
++
++/** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */
++const OVL = { x: 500, y: 400 }
++
++function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
++  useLineageStore.setState({
++    nodes,
++    edges,
++    status: 'ready',
++    error: null,
++    saveStatus: 'saved',
++    lastWriteError: null,
++    queue: [],
++    flushing: false
++  })
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(element: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(element)
++  })
++}
++
++const flush = async (turns = 6): Promise<void> => {
++  for (let i = 0; i < turns; i++) {
++    await act(async () => {
++      await Promise.resolve()
++    })
++  }
++}
++
++const q = (sel: string): Element | null => host?.querySelector(sel) ?? null
++
++const nodeEl = (id: string): Element => {
++  const el = q(`[data-node-id="${id}"]`)
++  if (el === null) throw new Error(`节点未渲染：${id}`)
++  return el
++}
++
++/** 拖拽会话：pointerdown(clientX/Y)→pointermove(+dx,+dy)→pointerup */
++function drag(el: Element, dx: number, dy: number): void {
++  act(() => {
++    el.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
++  })
++  act(() => {
++    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 100 + dx, clientY: 100 + dy }))
++  })
++  act(() => {
++    window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100 + dx, clientY: 100 + dy }))
++  })
++}
++
++/** 单击会话（位移 0——与拖拽按阈值区分） */
++function clickNode(el: Element): void {
++  drag(el, 0, 0)
++}
++
++/** 右键节点开菜单 */
++function openMenu(id: string): void {
++  act(() => {
++    nodeEl(id).dispatchEvent(
++      new MouseEvent('contextmenu', { clientX: 200, clientY: 150, bubbles: true, cancelable: true })
++    )
++  })
++}
++
++/** 点菜单项（按可见文本） */
++function clickMenu(label: string): void {
++  const menu = q('[data-testid="lineage-node-menu"]')
++  if (menu === null) throw new Error('节点菜单未渲染')
++  const btn = [...menu.querySelectorAll('button')].find((b) => b.textContent === label)
++  if (btn === undefined) throw new Error(`菜单项不存在：${label}`)
++  act(() => {
++    btn.click()
++  })
++}
++
++/** React 受控输入的 jsdom 驱动法：原生 setter+input 事件（直接赋 value 不生效——
++ *  reader-notes-panel.test.tsx typeInto 同型） */
++function typeInto(el: HTMLInputElement | HTMLTextAreaElement, text: string): void {
++  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
++  Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, text)
++  el.dispatchEvent(new Event('input', { bubbles: true }))
++}
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  // once 队列跨用例残留防御（clearAllMocks 不清 once）：逐 fn reset 后重设默认
++  for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
++  stubApi.library.list.mockReset()
++  stubApi.system.setQuitDirty.mockReset()
++  // App.tsx 组合根直用 window.api.system（非 client 门面）——jsdom 下 stub
++  Object.defineProperty(window, 'api', {
++    configurable: true,
++    value: { system: { setQuitDirty: stubApi.system.setQuitDirty } }
++  })
++  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
++  stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
++  stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
++  stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
++  stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
++  stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
++  stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++})
++
++describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () => {
++  it('拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）', async () => {
++    seed([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    drag(nodeEl('A'), 60, 30)
++    await flush()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
++      id: 'A',
++      paperId: 'paper-A',
++      title: '拖拽锚点',
++      coreIdea: '想法',
++      year: 2020,
++      x: 560,
++      y: 430
++    })
++  })
++
++  it('单击=选中上抛（位移低于阈值不触发写）；onSelectNode 形态照票面（04 侧板消费面）', async () => {
++    const onSelect = vi.fn()
++    seed([node('A', OVL)])
++    mount(<LineageBoard onSelectNode={onSelect} />)
++    clickNode(nodeEl('A'))
++    await flush()
++    expect(onSelect).toHaveBeenCalledWith('A')
++    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
++  })
++})
++
++describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）', () => {
++  it('加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}', async () => {
++    seed([node('A'), node('B')])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    openMenu('A')
++    clickMenu('连线到…')
++    expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
++    clickNode(nodeEl('B'))
++    await flush()
++    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'A', to: 'B', label: '' })
++    expect(q('[data-testid="lineage-pending-link"]')).toBeNull() // 完成即退出选取模式
++  })
++
++  it('树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现', async () => {
++    const reasons = [
++      '多父边拒绝：节点 B 已有父节点 A（树至多一父）',
++      '成环拒绝：该边将使脉络图出现环路（v1 为树）',
++      '自环边不允许（from 与 to 为同一节点）'
++    ]
++    for (const reason of reasons) {
++      vi.mocked(showToast).mockClear()
++      stubApi.lineage.upsertEdge.mockResolvedValueOnce({
++        ok: false,
++        error: { code: 'CONFLICT', message: reason }
++      })
++      seed([node('A'), node('B')])
++      mount(<LineageBoard onSelectNode={() => undefined} />)
++      openMenu('A')
++      clickMenu('连线到…')
++      clickNode(nodeEl('B'))
++      await flush()
++      expect(showToast).toHaveBeenCalledWith(reason, 'error')
++      expect(useLineageStore.getState().saveStatus).toBe('saved') // 拒绝=动作丢弃非脏态
++      act(() => {
++        root?.unmount()
++      })
++    }
++  })
++
++  it('改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）', async () => {
++    seed([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    openMenu('B')
++    clickMenu('改父…')
++    clickNode(nodeEl('C'))
++    await flush()
++    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })
++    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })
++  })
++
++  it('删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷', async () => {
++    seed([node('A'), node('B')], [edge('e-1', 'A', 'B')])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    openMenu('B')
++    clickMenu('删除父连线')
++    await flush()
++    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-1' })
++
++    openMenu('A')
++    clickMenu('删除节点')
++    await flush()
++    expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
++  })
++
++  it('core_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）', async () => {
++    seed([node('A', { ...OVL, coreIdea: '旧想法' })])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    openMenu('A')
++    clickMenu('编辑核心想法')
++    const ta = q('[data-testid="core-idea-input"]') as HTMLTextAreaElement | null
++    if (ta === null) throw new Error('core_idea 输入未渲染')
++    act(() => {
++      typeInto(ta, '新的核心想法')
++    })
++    const save = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
++      (b) => b.textContent === '保存'
++    )
++    if (save === undefined) throw new Error('保存按钮未渲染')
++    act(() => {
++      save.click()
++    })
++    await flush()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
++      expect.objectContaining({ id: 'A', coreIdea: '新的核心想法', x: 500, y: 400 })
++    )
++  })
++})
++
++describe('LineageBoard —— 保存态指示（autosave-first：无保存按钮）', () => {
++  it('失败指示+重试：error 条可见，重试点击重发；成功后指示消退', async () => {
++    stubApi.lineage.upsertNode
++      .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
++      .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
++    seed([node('A', OVL)])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    drag(nodeEl('A'), 20, 10)
++    await flush()
++    const bar = q('[data-testid="lineage-save-status"]')
++    expect(bar?.textContent).toContain('保存失败')
++    const retry = q('[data-testid="lineage-retry-save"]') as HTMLButtonElement | null
++    if (retry === null) throw new Error('重试按钮未渲染')
++    act(() => {
++      retry.click()
++    })
++    await flush()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
++    expect(q('[data-testid="lineage-save-status"]')).toBeNull() // saved 不占指示
++  })
++})
++
++describe('LineageBoard —— 添加节点对话框（两型）', () => {
++  it('文献型：library.list 搜索选取→paperId 绑定+元数据默认', async () => {
++    stubApi.library.list.mockResolvedValue({
++      ok: true,
++      data: {
++        items: [
++          { id: 'paper-9', title: '扩散模型综述', year: 2021, authors: [] }
++        ],
++        total: 1
++      }
++    })
++    stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('N9', { paperId: 'paper-9' }) })
++    seed([])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    act(() => {
++      (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
++    })
++    const search = q('[data-testid="add-node-search"]') as HTMLInputElement | null
++    if (search === null) throw new Error('搜索框未渲染')
++    act(() => {
++      typeInto(search, '扩散')
++    })
++    await flush()
++    const item = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find((b) =>
++      b.textContent?.includes('扩散模型综述')
++    )
++    if (item === undefined) throw new Error('搜索结果条目未渲染')
++    act(() => {
++      item.click()
++    })
++    const confirm = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
++      (b) => b.textContent === '添加'
++    )
++    act(() => {
++      confirm?.click()
++    })
++    await flush()
++    expect(stubApi.library.list).toHaveBeenCalledWith(expect.objectContaining({ search: '扩散' }))
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
++      paperId: 'paper-9',
++      title: '扩散模型综述',
++      coreIdea: '',
++      year: 2021,
++      x: null,
++      y: null
++    })
++  })
++
++  it('主题型：title 输入→paperId null 节点', async () => {
++    stubApi.lineage.upsertNode.mockResolvedValue({
++      ok: true, data: node('T1', { paperId: null, title: '阶段二' })
++    })
++    seed([])
++    mount(<LineageBoard onSelectNode={() => undefined} />)
++    act(() => {
++      (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
++    })
++    act(() => {
++      (q('[data-testid="add-node-mode-theme"]') as HTMLButtonElement).click()
++    })
++    const title = q('[data-testid="add-node-title"]') as HTMLInputElement | null
++    if (title === null) throw new Error('主题 title 输入未渲染')
++    act(() => {
++      typeInto(title, '阶段二')
++    })
++    const confirm = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
++      (b) => b.textContent === '添加'
++    )
++    act(() => {
++      confirm?.click()
++    })
++    await flush()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
++      paperId: null,
++      title: '阶段二',
++      coreIdea: '',
++      year: null,
++      x: null,
++      y: null
++    })
++  })
++})
++
++describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）', () => {
++  it('lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）', async () => {
++    seed([])
++    stubApi.lineage.graph.mockResolvedValue({
++      ok: true,
++      data: { nodes: [node('A', OVL)], edges: [] }
++    })
++    stubApi.lineage.upsertNode.mockResolvedValue({
++      ok: false,
++      error: { code: 'DB_ERROR', message: '写入失败' }
++    })
++    mount(<App />)
++    const nav = [...(host?.querySelectorAll('nav button') ?? [])].find(
++      (b) => b.textContent === '脉络'
++    ) as HTMLButtonElement | undefined
++    if (nav === undefined) throw new Error('脉络导航未渲染')
++    act(() => {
++      nav.click()
++    })
++    await flush()
++    drag(nodeEl('A'), 10, 10)
++    await flush()
++    const calls = stubApi.system.setQuitDirty.mock.calls
++    expect(calls.length).toBeGreaterThanOrEqual(2) // false（初始）→true（失败）
++    expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true })
++  })
++})
+diff --git a/tests/unit/renderer/lineage-store-write.test.ts b/tests/unit/renderer/lineage-store-write.test.ts
+new file mode 100644
+index 0000000..cc5558b
+--- /dev/null
++++ b/tests/unit/renderer/lineage-store-write.test.ts
+@@ -0,0 +1,293 @@
++// @vitest-environment jsdom
++/**
++ * [LG-03] lineage.store 写面 —— 保存态三态/动作排队最后写胜出/dirty 投影/N5
++ * 改父部分失败（锁定合约，always-active——不经 guardedDescribe）。
++ * （环境=jsdom：client.ts 顶层读 window.api，importOriginal 期即需 DOM 全局。）
++ *
++ * 写面状态机（宪法前置，票面行为层）：
++ * - 态空间：saveStatus ∈ {saved, saving, error} × queue（写动作序列，驻 state）
++ * - 迁移：saved+edit→saving（入队+flush 派发）/saving+edit→saving（同实体排队
++ *   合并=最后写胜出）/flush 成功且队列空→saved（数据回填）/系统型失败→error
++ *   （队首保留+toast+重试按钮）/CONFLICT 拒绝型→丢弃动作继续队列（toast
++ *   reason，守卫宿主=LG-01 service INV-27）/error+retry→saving（重发保留队列）
++ * - 跨格序列：连续编辑中保存失败→后续编辑不丢（队列保留+合并）；改父删成功
++ *   +加失败=合法中间态（节点暂无父，森林语义）+toast 指明+重试只重发加边
++ */
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++import type * as clientModule from '../../../src/renderer/api/client'
++import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
++
++const { stubApi } = vi.hoisted(() => ({
++  stubApi: {
++    lineage: {
++      graph: vi.fn(),
++      upsertNode: vi.fn(),
++      removeNode: vi.fn(),
++      upsertEdge: vi.fn(),
++      removeEdge: vi.fn()
++    }
++  }
++}))
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return { ...real, api: stubApi as unknown as typeof clientModule.api }
++})
++
++vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
++  const real = await importOriginal<typeof toastStoreModule>()
++  return { ...real, showToast: vi.fn(real.showToast) }
++})
++
++import { showToast } from '../../../src/renderer/shared/ui/toast-store'
++import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
++import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
++
++function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
++  return {
++    id,
++    paperId: `paper-${id}`,
++    title: `节点${id}`,
++    coreIdea: '',
++    year: 2020,
++    x: null,
++    y: null,
++    createdAt: 't',
++    updatedAt: 't',
++    ...patch
++  }
++}
++
++function edge(id: string, from: string, to: string): LineageEdge {
++  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++}
++
++/** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */
++const serverNode = (n: LineageNode): LineageNode => ({ ...n, updatedAt: 'server' })
++
++/** 微任务排空：串行 flush 的逐动作推进（每动作两级 await：unwrap+回填 set） */
++const settle = async (turns = 6): Promise<void> => {
++  for (let i = 0; i < turns; i++) await Promise.resolve()
++}
++
++const state = () => useLineageStore.getState()
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  // once 队列跨用例残留防御（clearAllMocks 不清 once）：逐 fn reset 后重设默认
++  for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
++  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
++  stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
++  stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
++  stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
++  stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
++  useLineageStore.setState({
++    nodes: [],
++    edges: [],
++    status: 'ready',
++    error: null,
++    saveStatus: 'saved',
++    lastWriteError: null,
++    queue: [],
++    flushing: false
++  })
++})
++
++describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）', () => {
++  it('加节点两型载荷：文献型 paperId 绑定+元数据默认；主题型 paperId null', async () => {
++    stubApi.lineage.upsertNode.mockImplementation(async (req: { title: string }) =>
++      ({ ok: true, data: serverNode(node('N1', { title: req.title })) })
++    )
++    state().addPaperNode({ id: 'paper-X', title: '扩散模型', year: 2021 })
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
++      paperId: 'paper-X',
++      title: '扩散模型',
++      coreIdea: '',
++      year: 2021,
++      x: null,
++      y: null
++    })
++
++    stubApi.lineage.upsertNode.mockImplementation(async (req: { title: string }) =>
++      ({ ok: true, data: serverNode(node('N2', { title: req.title, paperId: null })) })
++    )
++    state().addThemeNode('阶段二')
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith({
++      paperId: null,
++      title: '阶段二',
++      coreIdea: '',
++      year: null,
++      x: null,
++      y: null
++    })
++    // 回填：upsert 成功回传行入 store（nodes 追加）
++    expect(state().nodes.map((n) => n.title)).toEqual(['扩散模型', '阶段二'])
++    expect(state().saveStatus).toBe('saved')
++  })
++
++  it('moveNode/editCoreIdea 全字段载荷：x/y 覆盖与 coreIdea 保留互不清空（防半更新丢字段）', async () => {
++    useLineageStore.setState({
++      nodes: [node('A', { x: 500, y: 400, coreIdea: '原想法', title: '锚点' })]
++    })
++    // 服务器忠实回显请求行（upsert 语义——回填值即载荷值，防 mock 半行污染后续断言）
++    stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
++      ({ ok: true, data: serverNode(node('A', req)) })
++    )
++    state().moveNode('A', 560, 430)
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
++      id: 'A',
++      paperId: 'paper-A',
++      title: '锚点',
++      coreIdea: '原想法',
++      year: 2020,
++      x: 560,
++      y: 430
++    })
++
++    state().editCoreIdea('A', '新想法')
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith(
++      expect.objectContaining({ id: 'A', coreIdea: '新想法', x: 560, y: 430, title: '锚点' })
++    )
++  })
++
++  it('连续编辑最后写胜出：flight 中同实体动作排队合并，仅最后值落发', async () => {
++    useLineageStore.setState({ nodes: [node('A')] })
++    let resolveFirst!: (v: { ok: true; data: LineageNode }) => void
++    stubApi.lineage.upsertNode.mockImplementationOnce(
++      () => new Promise((r) => { resolveFirst = r })
++    )
++    stubApi.lineage.upsertNode.mockImplementationOnce(async () =>
++      ({ ok: true, data: serverNode(node('A', { x: 300, y: 200 })) })
++    )
++    state().moveNode('A', 100, 100) // 首发进入 flight（pending）
++    state().moveNode('A', 200, 150) // 入队待发
++    state().moveNode('A', 300, 200) // 合并替换上一条（最后写胜出）
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
++    resolveFirst({ ok: true, data: serverNode(node('A', { x: 100, y: 100 })) })
++    await settle()
++    // 队列合并后总调用恰 2 次，第二次=最后值
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
++    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith(
++      expect.objectContaining({ id: 'A', x: 300, y: 200 })
++    )
++    expect(state().saveStatus).toBe('saved')
++  })
++
++  it('系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved', async () => {
++    useLineageStore.setState({ nodes: [node('A')] })
++    stubApi.lineage.upsertNode
++      .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: 'database is locked' } })
++      .mockResolvedValueOnce({ ok: true, data: serverNode(node('A', { x: 11, y: 22 })) })
++    state().moveNode('A', 11, 22)
++    await settle()
++    expect(state().saveStatus).toBe('error') // 失败≠saved——INV-04 同型不推进
++    expect(state().lastWriteError).toBe('database is locked')
++    expect(state().queue.length).toBe(1) // 动作保留不丢
++    expect(showToast).toHaveBeenCalledWith('database is locked', 'error')
++    // retry → 重发 → 成功恢复
++    state().retrySave()
++    await settle()
++    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
++    expect(state().saveStatus).toBe('saved')
++    expect(state().lastWriteError).toBeNull()
++  })
++
++  it('拒绝型（CONFLICT=service 树守卫中文 reason 透传）：动作丢弃+toast reason+保存态回落 saved', async () => {
++    useLineageStore.setState({ nodes: [node('A'), node('B'), node('C')] })
++    stubApi.lineage.upsertEdge.mockResolvedValue({
++      ok: false,
++      error: { code: 'CONFLICT', message: '多父边拒绝：节点 B 已有父节点 A（树至多一父）' }
++    })
++    state().linkNodes('C', 'B')
++    await settle()
++    expect(showToast).toHaveBeenCalledWith(
++      '多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error'
++    )
++    expect(state().queue.length).toBe(0) // 永不成功的动作丢弃（不卡队头）
++    expect(state().saveStatus).toBe('saved') // 无待保存内容——脏态不误报
++    expect(state().edges.length).toBe(0) // 边未落库未回填
++  })
++
++  it('removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）', async () => {
++    useLineageStore.setState({
++      nodes: [node('A'), node('B')],
++      edges: [edge('e1', 'A', 'B'), edge('e2', 'B', 'A')]
++    })
++    stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
++    state().removeNode('A')
++    await settle()
++    expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
++    expect(state().nodes.map((n) => n.id)).toEqual(['B'])
++    expect(state().edges).toEqual([]) // 两边都悬空（A 端点）全清
++  })
++
++  it('upsertEdge/removeEdge 成功回填：新边追加、删边清除', async () => {
++    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [edge('e1', 'A', 'B')] })
++    stubApi.lineage.upsertEdge.mockResolvedValue({
++      ok: true, data: edge('e2', 'B', 'A')
++    })
++    state().linkNodes('B', 'A')
++    await settle()
++    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'B', to: 'A', label: '' })
++    expect(state().edges.map((e) => e.id)).toEqual(['e1', 'e2'])
++
++    stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
++    state().removeEdge('e1')
++    await settle()
++    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e1' })
++    expect(state().edges.map((e) => e.id)).toEqual(['e2'])
++  })
++
++  it('N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边', async () => {
++    useLineageStore.setState({
++      nodes: [node('A'), node('B'), node('C')],
++      edges: [edge('e-old', 'A', 'B')]
++    })
++    stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
++    stubApi.lineage.upsertEdge.mockResolvedValueOnce({
++      ok: false, error: { code: 'DB_ERROR', message: '写入失败' }
++    })
++    state().reparentNode('B', 'C') // B 换父：A→C
++    await settle()
++    // 两调用：删旧+加新（票面 N5=service 两调用，UI 单操作）
++    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })
++    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })
++    expect(state().saveStatus).toBe('error')
++    expect(showToast).toHaveBeenCalledWith('旧连线已移除，新连线未建立：写入失败', 'error')
++    // 节点暂无父=合法中间态：旧边已出队清除，新边未入
++    expect(state().edges).toEqual([])
++    // retry：只重发加边（removeEdge 不重发——已成功）
++    stubApi.lineage.upsertEdge.mockResolvedValueOnce({ ok: true, data: edge('e-new', 'C', 'B') })
++    state().retrySave()
++    await settle()
++    expect(stubApi.lineage.removeEdge).toHaveBeenCalledTimes(1)
++    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(2)
++    expect(state().edges.map((e) => e.id)).toEqual(['e-new'])
++    expect(state().saveStatus).toBe('saved')
++  })
++
++  it('load 互锁（stale-guard 写面同族）：写队列未清空时 graph 落地丢弃，不覆盖写回填', async () => {
++    let resolveGraph!: (v: { ok: true; data: { nodes: LineageNode[]; edges: LineageEdge[] } }) => void
++    stubApi.lineage.graph.mockImplementationOnce(
++      () => new Promise((r) => { resolveGraph = r })
++    )
++    let resolveWrite!: (v: { ok: true; data: LineageNode }) => void
++    stubApi.lineage.upsertNode.mockImplementationOnce(
++      () => new Promise((r) => { resolveWrite = r })
++    )
++    useLineageStore.setState({ nodes: [node('A', { x: 9, y: 9 })] })
++    void state().load() // load 发起（pending）
++    state().editCoreIdea('A', '编辑中') // 写入队（首动作 flight）
++    resolveGraph({ ok: true, data: { nodes: [node('A')], edges: [] } }) // 旧读晚到
++    resolveWrite({ ok: true, data: serverNode(node('A', { coreIdea: '编辑中', x: 9, y: 9 })) })
++    await settle()
++    // graph 旧读被丢弃（写进行中）——nodes 保持写回填面
++    expect(state().nodes[0]?.coreIdea).toBe('编辑中')
++    expect(state().status).toBe('ready')
++  })
++})
