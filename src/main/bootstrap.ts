@@ -6,9 +6,12 @@
  *
  * 环境钩子：
  * - SYNAPSE_USER_DATA：e2e 用，覆盖 userData 到临时目录（隔离测试状态）
+ * - SYNAPSE_ZCODE_HOME：e2e 用，覆盖 zcode 基目录（隔离 ~/.zcode 检测/装技能面
+ *   ——AI-10；注入点=服务构造参数 zcodeBaseDir，本层只做 env→参数映射）
  * - SYNAPSE_DEV_SERVER：electron-vite dev 的 HMR 地址（存在即视为开发模式）
  */
 import { mkdir, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
   BrowserWindow,
@@ -33,6 +36,7 @@ import { createRepos } from './db/repos'
 import { createFileStore } from './services/import_/file-store'
 import { createServices } from './services'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
+import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createIpcHandlers } from './ipc'
 import { registerIpc } from './ipc/register'
 import { registerAppFileProtocol } from './protocol/app-file.protocol'
@@ -81,6 +85,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     },
     // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费）
     aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
+    // AI-10：zcode 基目录+技能模板源（prod=resourcesPath/ai-sensor，dev=仓库 tools/ai-sensor）
+    zcodeBaseDir: process.env.SYNAPSE_ZCODE_HOME ?? homedir(),
+    templateDir: resolveTemplateDir(__dirname, process.resourcesPath, app.isPackaged),
     http: {
       fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
       fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })

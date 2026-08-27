@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T02:27:29.3986353Z",
+    "generatedAt":  "2026-08-27T03:05:18.8978469Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "452695199c1dfb8885db2df5424d4a795a36a3af88a745d15f07b4e2a454ef13"
+                      "sha256":  "d1705b365feea9f364bfbf367b3f6ab3cd7a3680ade902e65a8be5b2b66891ef"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "e7ffdaab5d22a147ba8b838e0e1378c3686714d034b2d7c795ca667560704485"
+                      "sha256":  "ecd0369474611c8698a73d238a8503460d600eb66bcb4c077fda8dec37f26c8b"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -131,7 +131,7 @@
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
-                      "sha256":  "062123d804e2ce7421f636fabd8ae9a7489a66d1cbcb84680e00a06fa2032d40"
+                      "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
@@ -144,6 +144,10 @@
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
                       "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
+                  },
+                  {
+                      "path":  "tests/e2e/zcode-link.spec.ts",
+                      "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
@@ -350,6 +354,10 @@
                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
                   },
                   {
+                      "path":  "tests/unit/renderer/zcode-link-section.test.tsx",
+                      "sha256":  "d897a5af48f71e21b2a48168b70578a37e99c90e56823c0456e2c646e6eb5572"
+                  },
+                  {
                       "path":  "tests/unit/services/ai-notes-import.test.ts",
                       "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
                   },
@@ -420,6 +428,10 @@
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                  },
+                  {
+                      "path":  "tests/unit/services/zcode-link.service.test.ts",
+                      "sha256":  "212dbedcc2720051d49fbdab13e598dd24003a50d9c5c21fa5ddd6bc1cf5326f"
                   },
                   {
                       "path":  "tests/unit/shared/annotation-order.test.ts",

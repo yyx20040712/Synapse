@@ -49,6 +49,10 @@ files:
 asar: true
 asarUnpack:
   - '**/*.node'
+# AI-10：技能模板源打包面（prod=process.resourcesPath/ai-sensor——resolveTemplateDir 消费）
+extraResources:
+  - from: tools/ai-sensor
+    to: ai-sensor
 electronDist: node_modules/electron/dist
 npmRebuild: false
 buildDependenciesFromSource: false

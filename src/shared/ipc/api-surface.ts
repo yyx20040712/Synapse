@@ -64,7 +64,10 @@ export const API_SURFACE = {
     aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
     observe: { channel: 'ai-sensor/observe', Req: S.paperIdReqSchema, Res: S.observeResSchema },
     importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
-    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
+    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) },
+    // AI-10：设置页 zcode 联动（通道名 zcode-link/*——域归属 ai_sensor，ADR-0017）
+    zcodeDetect: { channel: 'zcode-link/detect', Req: S.voidReqSchema, Res: S.zcodeLinkDetectResSchema },
+    zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },

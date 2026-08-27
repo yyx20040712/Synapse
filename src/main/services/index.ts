@@ -28,6 +28,10 @@ import {
   createAiNotesImportService,
   type AiNotesImportService
 } from './ai_sensor/ai-notes-import.service'
+import {
+  createZcodeLinkService,
+  type ZcodeLinkService
+} from './ai_sensor/zcode-link.service'
 import { createEnrichService } from './enrich/enrich.service'
 import {
   createCrossrefProvider,
@@ -52,6 +56,10 @@ export interface ServiceDeps {
   sendExportEvent?: (e: ExportCorpusEvent) => void
   /** AI 伴随进程协议根（=userData/ai-sensor——bootstrap 解析注入，AI-06） */
   aiSensorRootDir: string
+  /** zcode 基目录（prod=os.homedir()——AI-10 detect/install 目标父；bootstrap 注入） */
+  zcodeBaseDir: string
+  /** AI-10 技能模板源（resolveTemplateDir 产物——bootstrap 注入） */
+  templateDir: string
 }
 
 export interface EnrichServiceShape {
@@ -67,7 +75,7 @@ export interface ServiceBundle {
   enrich: EnrichServiceShape
   /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
   export_: ExportService & CorpusExportService
-  ai_sensor: AiSensorService & AiNotesImportService
+  ai_sensor: AiSensorService & AiNotesImportService & ZcodeLinkService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -95,14 +103,22 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
         sendEvent: deps.sendExportEvent ?? (() => undefined),
       })
     },
-    ai_sensor: {
-      ...createAiSensorService({ rootDir: deps.aiSensorRootDir }),
-      ...createAiNotesImportService({
-        rootDir: deps.aiSensorRootDir,
-        repo: deps.repos.aiNotes,
-        paperExists: (id) => deps.repos.papers.findById(id) !== null
-      })
-    }
+    ai_sensor: (() => {
+      const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
+      return {
+        ...aiSensor,
+        ...createAiNotesImportService({
+          rootDir: deps.aiSensorRootDir,
+          repo: deps.repos.aiNotes,
+          paperExists: (id) => deps.repos.papers.findById(id) !== null
+        }),
+        ...createZcodeLinkService({
+          zcodeBaseDir: deps.zcodeBaseDir,
+          templateDir: deps.templateDir,
+          readStatus: () => aiSensor.readStatus() // 06 单源消费（running 不双写）
+        })
+      }
+    })()
   }
 }
 

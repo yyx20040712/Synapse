@@ -10,10 +10,10 @@ import { spawn } from 'node:child_process'
 import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-export function launch(userData: string): Promise<ElectronApplication> {
+export function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
   return electron.launch({
     args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+    env: { ...process.env, SYNAPSE_USER_DATA: userData, ...extraEnv } as Record<string, string>
   })
 }
 

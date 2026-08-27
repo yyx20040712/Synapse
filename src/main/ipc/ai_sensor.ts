@@ -15,6 +15,9 @@ export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
     aiStatus: async () => deps.services.ai_sensor.readStatus(),
     observe: (req) => deps.services.ai_sensor.observe(req.paperId),
     importAll: async () => deps.services.ai_sensor.importAll(),
-    listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId)
+    listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId),
+    // AI-10：zcode 联动两通道（检测/装技能——纯 fs，INV-21 零 spawn）
+    zcodeDetect: async () => deps.services.ai_sensor.zcodeDetect(),
+    zcodeInstall: async () => deps.services.ai_sensor.zcodeInstall()
   }
 }

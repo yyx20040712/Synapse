@@ -1,0 +1,1282 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index ea54858..00a4260 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -32,7 +32,7 @@
+ | INV-18 | 导出会话协议：manifest 终局单写（临时文件+rename 原子替换）；会话开始删旧 manifest+清空重建 corpus/fulltext/figures；单会话单飞（EXPORT_BUSY）；中断=无 manifest=工具侧不可激活，重跑即修复；**串行不死锁时序（2026-08-27 e2e 实证补条）：篇终局推进必须延后至 complete/error 的 invoke 回复之后（deferOutcome）——事件先于回复到达 renderer 时提取器防御分支丢请求，串行链挂死** | ADR-0011 v1.1+corpus.export.service（2026-08-25 计划审查 R5/R8/R9 定稿；状态机表=ai-plan-review §6） | 单测+e2e（SR2-AI-03 单测级：终局单写 tmp+rename/清空重建含 tmp 残留/EXPORT_BUSY 单飞拒绝/落盘失败=会话 failed 无 manifest+重跑修复——corpus.export.test 十用例；e2e 消费方级=SR2-AI-04 corpus-export.spec：全链多篇+残留清空重建+目录根用户文件不动） | 已锚定（单测级 2026-08-27 SR2-AI-03；e2e 面 2026-08-27 SR2-AI-04——时序补条即 e2e 多篇序列首跑红实证） |
+ | INV-19 | AI 锚定段渲染对等、存储独立：AI 笔记经 verifyQuote 重锚入标注层同一几何管线渲染（七问分色单源）；数据永不写 annotations 表；AI 标注 v1 只读（无编辑/删除写路径） | ADR-0015+AnnotationLayer 消费面（2026-08-25 N2 裁决——D3 独立表的渲染面延伸） | 单测+组件测试（SR2-AI-09） | 未锚定（规划期预登记；锚定随 SR2-AI-09） |
+ | INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+src/renderer/features/reader/anchor-locate.ts（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享；2026-08-26 C-05 落地） | 单测（anchor-locate.test 9 用例：三防线 S1~S5+超时 S6+作废两形态 S7/S9+并发序号守卫 S8）+消费方用例（N1 接线随 C-04/05；P7-G 消费方级用例随 SR2-AI-08+exact 层延展（data-ai-note-id）用例随 SR2-AI-09——2026-08-27 批二工单化定级；P7-H 脉络侧板随后续工单） | 已锚定（服务单测级 2026-08-26；跨视图消费方级随 SR2-AI-08/09 补） |
+-| INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 未锚定（规划期预登记；锚定随 SR2-AI-10） |
++| INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 已锚定（2026-08-27 SR2-AI-10：detect/install 纯 fs 实现+e2e zcode-link.spec 纯 fs 落地断言（装技能全流程后 skills 目录文件存在且与模板逐字节一致，零进程行为依赖）） |
+ | INV-22 | 退出拦截 dirty 链路：renderer 聚合信号（useTabDirtyAggregate）沿变化沿 push 上报 system/set-quit-dirty（禁止 close 事件内反向拉取 renderer）；main 模块缓存值为 close 守卫唯一判定源；dirty close=preventDefault+模态二次确认（默认焦点=取消），确认=destroy（不再触发 close，无重入），对话框异常按取消处理（窗口保持可重试）。已知窄窗（deepseek r2 WARN 存档）：push 模式存在一跳上报延迟——工单头注裁决权衡过，pull 模式时序复杂度更差不采 | main-window.ts（SR2-TABS-04，2026-08-25 deepseek W1/W2 处置后定稿）+P7-B B3-问2 退出拦截裁决 | 单测（quit-dirty-guard.test 七用例）+装配级 e2e（P7-B 收官「退」序列：dirty→取消窗口保持/确认 destroy） | 已锚定（2026-08-25 收官 e2e 收口） |
+ | INV-23 | 撤销栈语义：栈 per-tab 模块级自持（随 closeTab 清理，不跨 tab）；LIFO+深度 50 FIFO 截断；api 失败不弹栈可重试；同篇 in-flight 互斥（busy，他篇不阻塞——Set 互斥）；delete 逆重建新 id 后全栈 remap 旧 id 引用（按对象身份跳过被撤条目）；成功后按对象身份移除（indexOf——await 期间入栈/FIFO 截断致下标漂移不误删） | annotation-undo.ts（SR2-UNDO-01，2026-08-25 deepseek r2~r6 五轮收敛定稿） | 单测（annotation-undo.test 15 用例：三逆操作/remap 三跨格序列/互斥含并发篇/身份移除含截断挤出/截断/失败重试/空栈/隔离） | 已锚定（单测级，2026-08-25） |
+ | INV-24 | 片段序单源：一切片段序消费面（阅读器片段列表/corpus md 装配/未来 AI 装配与回灌消费）按同一比较器排序——页码（0 基存储；显示形态 1 基，与 corpus p.N 同口径）→页内文本偏移（startOffset）→创建序（createdAt）→id 兜底全序；**排序禁止字符串字典序比较**（页码跨位数字典序失真），"页码:序号" 字符串形态仅显示用 | 本册+src/shared/annotation-order.ts（SR2-C-01，2026-08-26 P7-C 开单入册） | 单测（annotation-order.test 6 用例：跨页/同页偏移/同偏移创建序/id 兜底/入参不可变/字符串字典序反例）+两消费方用例（C-03 组件测试序消费+corpus golden 结构断言——C-02） | 已锚定（单测级 C-01+消费方级 C-02 golden 结构断言/C-03 组件序消费+C-05 定位同源，2026-08-26） |
+diff --git a/electron-builder.yml b/electron-builder.yml
+index fb54b58..5148a75 100644
+--- a/electron-builder.yml
++++ b/electron-builder.yml
+@@ -49,6 +49,10 @@ files:
+ asar: true
+ asarUnpack:
+   - '**/*.node'
++# AI-10：技能模板源打包面（prod=process.resourcesPath/ai-sensor——resolveTemplateDir 消费）
++extraResources:
++  - from: tools/ai-sensor
++    to: ai-sensor
+ electronDist: node_modules/electron/dist
+ npmRebuild: false
+ buildDependenciesFromSource: false
+diff --git a/locks/manifest.json b/locks/manifest.json
+index dff4b31..840ced2 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T02:27:29.3986353Z",
++    "generatedAt":  "2026-08-27T03:05:18.8978469Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -79,11 +79,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "452695199c1dfb8885db2df5424d4a795a36a3af88a745d15f07b4e2a454ef13"
++                      "sha256":  "d1705b365feea9f364bfbf367b3f6ab3cd7a3680ade902e65a8be5b2b66891ef"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "e7ffdaab5d22a147ba8b838e0e1378c3686714d034b2d7c795ca667560704485"
++                      "sha256":  "ecd0369474611c8698a73d238a8503460d600eb66bcb4c077fda8dec37f26c8b"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -131,7 +131,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/e2e-env.ts",
+-                      "sha256":  "062123d804e2ce7421f636fabd8ae9a7489a66d1cbcb84680e00a06fa2032d40"
++                      "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+@@ -145,6 +145,10 @@
+                       "path":  "tests/e2e/smoke.spec.ts",
+                       "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
+                   },
++                  {
++                      "path":  "tests/e2e/zcode-link.spec.ts",
++                      "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
++                  },
+                   {
+                       "path":  "tests/security/csp-meta.test.ts",
+                       "sha256":  "aafdea71d42f76ea9dd1340884ebc3eb0b18a66ca461a458df5e158773f65ad3"
+@@ -349,6 +353,10 @@
+                       "path":  "tests/unit/renderer/useDebounce.test.tsx",
+                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/zcode-link-section.test.tsx",
++                      "sha256":  "d897a5af48f71e21b2a48168b70578a37e99c90e56823c0456e2c646e6eb5572"
++                  },
+                   {
+                       "path":  "tests/unit/services/ai-notes-import.test.ts",
+                       "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
+@@ -421,6 +429,10 @@
+                       "path":  "tests/unit/services/tags.service.test.ts",
+                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                   },
++                  {
++                      "path":  "tests/unit/services/zcode-link.service.test.ts",
++                      "sha256":  "212dbedcc2720051d49fbdab13e598dd24003a50d9c5c21fa5ddd6bc1cf5326f"
++                  },
+                   {
+                       "path":  "tests/unit/shared/annotation-order.test.ts",
+                       "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
+diff --git a/src/main/bootstrap.ts b/src/main/bootstrap.ts
+index 0371c11..2b0a88c 100644
+--- a/src/main/bootstrap.ts
++++ b/src/main/bootstrap.ts
+@@ -6,9 +6,12 @@
+  *
+  * 环境钩子：
+  * - SYNAPSE_USER_DATA：e2e 用，覆盖 userData 到临时目录（隔离测试状态）
++ * - SYNAPSE_ZCODE_HOME：e2e 用，覆盖 zcode 基目录（隔离 ~/.zcode 检测/装技能面
++ *   ——AI-10；注入点=服务构造参数 zcodeBaseDir，本层只做 env→参数映射）
+  * - SYNAPSE_DEV_SERVER：electron-vite dev 的 HMR 地址（存在即视为开发模式）
+  */
+ import { mkdir, readFile } from 'node:fs/promises'
++import { homedir } from 'node:os'
+ import { join } from 'node:path'
+ import {
+   BrowserWindow,
+@@ -33,6 +36,7 @@ import { createRepos } from './db/repos'
+ import { createFileStore } from './services/import_/file-store'
+ import { createServices } from './services'
+ import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
++import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
+ import { createIpcHandlers } from './ipc'
+ import { registerIpc } from './ipc/register'
+ import { registerAppFileProtocol } from './protocol/app-file.protocol'
+@@ -81,6 +85,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
+     },
+     // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费）
+     aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
++    // AI-10：zcode 基目录+技能模板源（prod=resourcesPath/ai-sensor，dev=仓库 tools/ai-sensor）
++    zcodeBaseDir: process.env.SYNAPSE_ZCODE_HOME ?? homedir(),
++    templateDir: resolveTemplateDir(__dirname, process.resourcesPath, app.isPackaged),
+     http: {
+       fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
+       fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })
+diff --git a/src/main/ipc/ai_sensor.ts b/src/main/ipc/ai_sensor.ts
+index 915c6ff..1aab250 100644
+--- a/src/main/ipc/ai_sensor.ts
++++ b/src/main/ipc/ai_sensor.ts
+@@ -15,6 +15,9 @@ export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
+     aiStatus: async () => deps.services.ai_sensor.readStatus(),
+     observe: (req) => deps.services.ai_sensor.observe(req.paperId),
+     importAll: async () => deps.services.ai_sensor.importAll(),
+-    listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId)
++    listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId),
++    // AI-10：zcode 联动两通道（检测/装技能——纯 fs，INV-21 零 spawn）
++    zcodeDetect: async () => deps.services.ai_sensor.zcodeDetect(),
++    zcodeInstall: async () => deps.services.ai_sensor.zcodeInstall()
+   }
+ }
+diff --git a/src/main/services/index.ts b/src/main/services/index.ts
+index 5da05cb..242ce6f 100644
+--- a/src/main/services/index.ts
++++ b/src/main/services/index.ts
+@@ -28,6 +28,10 @@ import {
+   createAiNotesImportService,
+   type AiNotesImportService
+ } from './ai_sensor/ai-notes-import.service'
++import {
++  createZcodeLinkService,
++  type ZcodeLinkService
++} from './ai_sensor/zcode-link.service'
+ import { createEnrichService } from './enrich/enrich.service'
+ import {
+   createCrossrefProvider,
+@@ -52,6 +56,10 @@ export interface ServiceDeps {
+   sendExportEvent?: (e: ExportCorpusEvent) => void
+   /** AI 伴随进程协议根（=userData/ai-sensor——bootstrap 解析注入，AI-06） */
+   aiSensorRootDir: string
++  /** zcode 基目录（prod=os.homedir()——AI-10 detect/install 目标父；bootstrap 注入） */
++  zcodeBaseDir: string
++  /** AI-10 技能模板源（resolveTemplateDir 产物——bootstrap 注入） */
++  templateDir: string
+ }
+ 
+ export interface EnrichServiceShape {
+@@ -67,7 +75,7 @@ export interface ServiceBundle {
+   enrich: EnrichServiceShape
+   /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
+   export_: ExportService & CorpusExportService
+-  ai_sensor: AiSensorService & AiNotesImportService
++  ai_sensor: AiSensorService & AiNotesImportService & ZcodeLinkService
+ }
+ 
+ export function createServices(deps: ServiceDeps): ServiceBundle {
+@@ -95,14 +103,22 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
+         sendEvent: deps.sendExportEvent ?? (() => undefined),
+       })
+     },
+-    ai_sensor: {
+-      ...createAiSensorService({ rootDir: deps.aiSensorRootDir }),
+-      ...createAiNotesImportService({
+-        rootDir: deps.aiSensorRootDir,
+-        repo: deps.repos.aiNotes,
+-        paperExists: (id) => deps.repos.papers.findById(id) !== null
+-      })
+-    }
++    ai_sensor: (() => {
++      const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
++      return {
++        ...aiSensor,
++        ...createAiNotesImportService({
++          rootDir: deps.aiSensorRootDir,
++          repo: deps.repos.aiNotes,
++          paperExists: (id) => deps.repos.papers.findById(id) !== null
++        }),
++        ...createZcodeLinkService({
++          zcodeBaseDir: deps.zcodeBaseDir,
++          templateDir: deps.templateDir,
++          readStatus: () => aiSensor.readStatus() // 06 单源消费（running 不双写）
++        })
++      }
++    })()
+   }
+ }
+ 
+diff --git a/src/renderer/features/settings/SettingsPage.tsx b/src/renderer/features/settings/SettingsPage.tsx
+index a235fbc..16650da 100644
+--- a/src/renderer/features/settings/SettingsPage.tsx
++++ b/src/renderer/features/settings/SettingsPage.tsx
+@@ -21,6 +21,7 @@ import { Button } from '../../shared/ui/Button'
+ import { showToast } from '../../shared/ui/Toast'
+ import { useSettingsStore } from './settings.store'
+ import { CorpusExportSection } from './CorpusExportSection'
++import { ZcodeLinkSection } from './ZcodeLinkSection'
+ import type { AppSettings } from '@shared/ipc/schemas'
+ 
+ /** 意外异常（非 ApiClientError）时的兜底中文消息 */
+@@ -171,6 +172,9 @@ export function SettingsPage(): JSX.Element {
+ 
+       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
+       <CorpusExportSection />
++
++      {/* AI-10：zcode 联动节（自持组件——检测/装技能纯 fs，INV-21 零 spawn） */}
++      <ZcodeLinkSection />
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/settings/ZcodeLinkSection.tsx b/src/renderer/features/settings/ZcodeLinkSection.tsx
+index a6e71eb..6d9964b 100644
+--- a/src/renderer/features/settings/ZcodeLinkSection.tsx
++++ b/src/renderer/features/settings/ZcodeLinkSection.tsx
+@@ -3,75 +3,146 @@
+  * [SR2-AI-10] ZcodeLinkSection —— 设置页 zcode 联动（发现+一键装技能+心跳
+  * 三档，不代启会话，工单：open / strong）
+  *
+- * ── 行为层 ──
+- * - N4 设置页联动节（ADR-0015 §4）：状态呈现+一键装技能+心跳显示；
+- *   **不代启会话=按钮永不 spawn 任何进程**（INV-21 本单锚定——e2e 断言+
+- *   架构评审双面，登记册字面）；AI 工作只由用户在 zcode 侧启动（D2b）
+- * - 检测态空间（宪法状态机前置；N4 三档的四态分解+error 态——「已装技能」与
+- *   「未装」之间必须存在装技能动作面，故三档呈现+一过渡态）：
+- *
+- *   | 态 | 检测事实（fs 纯检测，main 侧） | 呈现 |
+- *   | --- | --- | --- |
+- *   | zcode-not-found | ~/.zcode 目录不存在（技能目录父=CLI 痕迹，纯 fs——ADR「技能目录/CLI 痕迹检测」；**最弱信号语义（门一 N10-4）：装而未跑不命中=可接受误报**——指引文案兜底，首次运行后自愈） | 「未发现 zcode」+安装指引文案（无按钮动作） |
+- *   | found-skill-missing | ~/.zcode 在且 skills/ai-sensor 不存在 | 「已发现 zcode，技能未装」+「一键装技能」按钮 |
+- *   | installed-idle | skills/ai-sensor 在（SKILL.md 存在）且心跳不新鲜 | 「已装技能，未运行」 |
+- *   | running | 心跳新鲜（06 readStatus.running 单源——阈值不双写） | 「运行中」+state 自述+currentPaper |
+- *   | error | readStatus 损坏上抛（status.json 坏）或检测 fs 异常 | 「状态读取失败」+重试按钮（门一 W10-2） |
+- *
+- *   迁移（事件→态）：设置页打开→检测一次；「一键装技能」点击→确认对话框
+- *   （覆盖已有时二次确认）→fs 复制完成→re-detect→installed-idle；轮询=
+- *   节可见期间 STATUS_POLL_MS=5s（06 门控同族，卸载清理 INV-14 成对）。
+- *   跨格序列：①not-found→（用户装 zcode 后重开设置页）→skill-missing→
+- *   装→idle→（用户拉起工具）→running；②running→（工具退）→idle（心跳
+- *   过期）；③idle→running→idle（会话起止，无残留态）
+- * - 一键装技能（main 侧服务）：fs 递归复制应用资源内技能模板至
+- *   ~/.zcode/skills/ai-sensor/——模板源=tools/ai-sensor 打包产物
+- *   （process.resourcesPath 下 extraResources；dev=仓库 tools/ai-sensor
+- *   直读——双源解析单函数收敛）；**复制=纯 fs，零进程**
+- * - 依赖 AI-06：心跳协议消费（readStatus 通道——损坏上抛归 error 态，
+- *   readStatus null=工具从未运行→installed-idle 判定不受扰）
++ * ── 行为层 ──（完整状态机/迁移/跨格序列见工单面——本节为实现落地注释）
++ * - 五态消费 zcode-link/detect Res（main 侧纯 fs 检测；running 单源=06 readStatus）：
++ *   zcode-not-found（指引文案）/ found-skill-missing（+一键装技能按钮）/
++ *   installed-idle / running（state 自述+currentPaper）/ error（+重试按钮）
++ * - 轮询 STATUS_POLL_MS=5s（节可见期间——08 门控同族；卸载清 interval INV-14 成对）
++ * - 一键装技能：确认对话框两型（首装普通/overwrite=true 覆盖重申）→zcode-link/install
++ *   （纯 fs 复制，零进程——INV-21）→re-detect→installed-idle
++ * - 协议目录路径展示已撤（B10-1）——本节 UI 零路径面（错误 reason 文案非展示面）
+  *
+  * ── 接口层 ──
+- * - export function ZcodeLinkSection(): JSX.Element（data-ticket 骨架标记，
+- *   翻 done 前移除）
+- * - main 侧交付面：src/main/services/ai_sensor/zcode-link.service.ts
+- *   （detect(): 五态输出（四呈现态+error）/install(): 复制执行）；IPC 面
+- *   zcode-link/detect+install 两通道（实现时 [locked-change]——
+- *   schemas+api-surface 受锁）
+- * - **协议目录路径展示已撤（门一 B10-1 处置）**：renderer 绝对路径展示零
+- *   先例+AGENTS 安全禁令字面「路径只能来自 main 侧系统对话框」不放宽——
+- *   zcode 侧发现机制改由 AI-06 的 SKILL.md 文档化协议目录平台惯例路径
+- *   （%APPDATA%/<应用名>/ai-sensor 等）承担，本节 UI 零路径面
+- * - 打包面：electron-builder.yml extraResources 增 tools/ai-sensor 条目
+- *   （打包配置文件延展——实现时随单；该文件不受锁）
+- *
+- * ── 架构层 ──
+- * - renderer/features/settings 域（SettingsPage 挂载新节——AI-04 导出节
+- *   同宿主先例）；main 侧 ai_sensor 服务族（06/07 同目录归置）；
+- *   fs 检测/复制全在 main（renderer 只经 window.api）
+- *
+- * ── 生命周期层 ──
+- * - 预留：技能版本对账（应用内模板 vs 已装——v1 覆盖装即等价）；zcode
+- *   技能目录自定义路径（v1 固定 ~/.zcode/skills）
+- * - 不做：spawn zcode/CLI/会话（INV-21）；心跳阈值在渲染层复算（单源
+- *   06）；自动检测后台常驻（负面清单——仅节可见期轮询）
++ * - export function ZcodeLinkSection(): JSX.Element
+  *
+- * ── 文化层 ──
+- * - 错误：检测失败=error 态+重试按钮（动作型 toast INV-02）；装技能
+- *   失败=动作型 toast，reason 文案可含目标目录路径（INV-02 动作型反馈
+- *   惯例族——错误文案非展示面，与本节「零路径展示面」不冲突）；目标目录
+- *   只读失败（权限）中文 reason。轮询常量 STATUS_POLL_MS=5s 本组件域私有
+- *   （08 同名各持——Rule of Three 第 2 次保持重复；第 3 处出现时抽 shared）
+- * - 测试：tests/unit/renderer/zcode-link-section.test.tsx [受锁新增]——
+- *   四态渲染+迁移序列①②/确认对话框两型（首装/覆盖）/装技能 invoke 调用
+- *   与 busy 态/卸载清 interval；zcode-link.service 单测——检测三事实源
+- *   （fs 夹具目录）/复制执行与覆盖语义/resourcesPath 双源解析；
+- *   **e2e [受锁新增 spec]：INV-21 不代启断言**（装技能全流程后断言无
+- *   应用外进程副作用面=纯 fs 落地——skills 目录文件存在+行为不依赖进程）
+- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+- * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
+- *   git diff → 翻 registry
++ * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
++ * - renderer/features/settings 域（SettingsPage 挂载）；api+unwrap 统一错误面；
++ *   detect 失败=error 呈现（列表型不 toast）；install 失败=动作型 toast（INV-02）
++ * - 测试：tests/unit/renderer/zcode-link-section.test.tsx + e2e zcode-link.spec.ts（受锁）
+  */
++import { useCallback, useEffect, useRef, useState } from 'react'
++import { ApiClientError, api, unwrap } from '../../api/client'
++import { showToast } from '../../shared/ui/Toast'
++import type { ZcodeLinkDetectRes } from '@shared/ipc/schemas'
++
++/** 轮询周期（组件域私有——Rule of Three 第 2 次保持重复；第 3 处出现时抽 shared） */
++const STATUS_POLL_MS = 5000
++/** 意外异常（非 ApiClientError）时的兜底中文消息 */
++const ACTION_FAILED = '操作失败'
++
++const CONFIRM_FIRST = '将把 AI 传感器技能安装到 zcode 技能目录。确认安装？'
++const CONFIRM_OVERWRITE = '检测到已有技能目录，安装将覆盖其中文件。确认覆盖？'
++
+ export function ZcodeLinkSection(): JSX.Element {
+-  return <div data-ticket="SR2-AI-10" />
++  const [res, setRes] = useState<ZcodeLinkDetectRes | null>(null)
++  const [failed, setFailed] = useState(false)
++  const [busy, setBusy] = useState(false)
++  const busyRef = useRef(false) // 装技能在途时暂停轮询覆写呈现
++
++  const run = useCallback(async (): Promise<void> => {
++    try {
++      const r = await unwrap(api.ai_sensor.zcodeDetect({}))
++      setRes(r)
++      setFailed(false)
++    } catch {
++      setRes(null)
++      setFailed(true)
++    }
++  }, [])
++
++  // 门控轮询：挂载即拉一次+5s interval；卸载清（INV-14 成对）
++  useEffect(() => {
++    void run()
++    const timer = setInterval(() => {
++      if (!busyRef.current) void run()
++    }, STATUS_POLL_MS)
++    return () => {
++      clearInterval(timer)
++    }
++  }, [run])
++
++  const onInstall = (): void => {
++    if (busy) return
++    const msg = res?.overwrite === true ? CONFIRM_OVERWRITE : CONFIRM_FIRST
++    if (!window.confirm(msg)) return
++    setBusy(true)
++    busyRef.current = true
++    unwrap(api.ai_sensor.zcodeInstall({}))
++      .then((r) => {
++        showToast(`技能安装完成（${r.fileCount} 个文件）`, 'success')
++        return run() // re-detect→installed-idle（迁移收口）
++      })
++      .catch((e: unknown) => {
++        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
++      })
++      .finally(() => {
++        setBusy(false)
++        busyRef.current = false
++      })
++  }
++
++  let statusText = '检测中…'
++  if (failed || res?.state === 'error') statusText = '状态读取失败'
++  else if (res !== null) {
++    if (res.state === 'zcode-not-found') statusText = '未发现 zcode'
++    else if (res.state === 'found-skill-missing') statusText = '已发现 zcode，技能未装'
++    else if (res.state === 'installed-idle') statusText = '已装技能，未运行'
++    else if (res.state === 'running') {
++      const paper = res.status?.currentPaper
++      statusText = `运行中（${res.status?.state ?? ''}${paper !== null && paper !== undefined ? `，当前：${paper}` : ''}）`
++    }
++  }
++
++  return (
++    <section className="flex flex-col gap-2" data-ticket="SR2-AI-10" data-testid="zcode-link-section">
++      <h2 className="text-sm font-medium">AI 联动（zcode）</h2>
++      <p
++        className="m-0 text-xs"
++        data-testid="zcode-link-status"
++        role="status"
++        style={{ color: 'var(--text-dim)' }}
++      >
++        {statusText}
++      </p>
++      {res?.state === 'error' && res.reason !== undefined && (
++        <p className="m-0 text-xs" style={{ color: 'var(--danger)' }}>
++          {res.reason}
++        </p>
++      )}
++      {failed && (
++        <p className="m-0 text-xs" style={{ color: 'var(--danger)' }}>
++          检测通道暂不可用，将继续重试
++        </p>
++      )}
++      {res?.state === 'zcode-not-found' && (
++        <p className="m-0 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
++          请先安装 zcode 命令行工具；安装并首次运行后回本页即可自动识别（已装但从未
++          运行也可能显示未发现——首次运行后自愈）。
++        </p>
++      )}
++      {res?.state === 'found-skill-missing' && (
++        <button
++          type="button"
++          data-action="install"
++          disabled={busy}
++          className="self-start rounded border px-2 py-0.5 text-xs"
++          style={{ borderColor: 'var(--border)', color: busy ? 'var(--text-dim)' : 'var(--accent)' }}
++          onClick={onInstall}
++        >
++          一键装技能
++        </button>
++      )}
++      {(failed || res?.state === 'error') && (
++        <button
++          type="button"
++          data-action="retry"
++          className="self-start rounded border px-2 py-0.5 text-xs"
++          style={{ borderColor: 'var(--border)', color: 'var(--accent)' }}
++          onClick={() => void run()}
++        >
++          重试
++        </button>
++      )}
++    </section>
++  )
+ }
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index ee72839..7bfec35 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -64,7 +64,10 @@ export const API_SURFACE = {
+     aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
+     observe: { channel: 'ai-sensor/observe', Req: S.paperIdReqSchema, Res: S.observeResSchema },
+     importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
+-    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
++    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) },
++    // AI-10：设置页 zcode 联动（通道名 zcode-link/*——域归属 ai_sensor，ADR-0017）
++    zcodeDetect: { channel: 'zcode-link/detect', Req: S.voidReqSchema, Res: S.zcodeLinkDetectResSchema },
++    zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
+   },
+   tags: {
+     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index e5e8ba0..542ab97 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -222,6 +222,24 @@ export const aiNotesImportResSchema = z
+   .strict()
+ export type AiNotesImportRes = z.infer<typeof aiNotesImportResSchema>
+ 
++/** zcode-link/detect 响应（AI-10 设置页联动五态——四呈现态+error）。
++ *  status=null=not-found/skill-missing 态（未触协议）或工具从未运行；running
++ *  判定单源=06 readStatus；overwrite=技能目录在但 SKILL.md 缺（覆盖型确认事实源）；
++ *  reason 仅 error 态（readStatus 损坏上抛或 fs 异常的中文原文） */
++export const zcodeLinkDetectResSchema = z
++  .object({
++    state: z.enum(['zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error']),
++    status: sensorStatusSchema.nullable(),
++    overwrite: z.boolean(),
++    reason: z.string().optional()
++  })
++  .strict()
++export type ZcodeLinkDetectRes = z.infer<typeof zcodeLinkDetectResSchema>
++
++/** zcode-link/install 响应：fileCount=复制落地文件数（目录不计） */
++export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().min(1) }).strict()
++export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
++
+ // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
+ /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
+ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+diff --git a/tests/e2e/e2e-env.ts b/tests/e2e/e2e-env.ts
+index 877220a..c4d3a0e 100644
+--- a/tests/e2e/e2e-env.ts
++++ b/tests/e2e/e2e-env.ts
+@@ -10,10 +10,10 @@ import { spawn } from 'node:child_process'
+ import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises'
+ import { join } from 'node:path'
+ 
+-export function launch(userData: string): Promise<ElectronApplication> {
++export function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
+   return electron.launch({
+     args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
++    env: { ...process.env, SYNAPSE_USER_DATA: userData, ...extraEnv } as Record<string, string>
+   })
+ }
+ 
+diff --git a/src/main/services/ai_sensor/zcode-link.service.ts b/src/main/services/ai_sensor/zcode-link.service.ts
+new file mode 100644
+index 0000000..94b7247
+--- /dev/null
++++ b/src/main/services/ai_sensor/zcode-link.service.ts
+@@ -0,0 +1,132 @@
++/**
++ * [SR2-AI-10] zcode-link.service —— 设置页 zcode 联动 main 侧服务（工单：open / strong）
++ *
++ * ── 行为层 ──
++ * - detect()=五态纯 fs 检测（票面状态机；~/.zcode=CLI 痕迹最弱信号——装而未跑
++ *   可接受误报，指引文案兜底）；心跳判定单源=AI-06 readStatus 的 running 字段
++ *   （本服务不双写阈值——readStatus 经依赖注入消费）；readStatus 上抛
++ *   （status.json 损坏）或 fs 异常→error 态含中文 reason（损坏≠missing，
++ *   三态分离在 06 保持——本服务折叠为 error 呈现态，reason 原文透传）
++ * - install()=技能模板递归复制至 <zcodeBaseDir>/.zcode/skills/ai-sensor/——
++ *   **纯 fs，零进程（INV-21）**；覆盖装=删除重建（v1 版本对账等价——票面生命
++ *   周期层）；模板缺失（SKILL.md 不在）上抛含路径中文错误
++ *
++ * ── 接口层 ──
++ * - export interface ZcodeLinkService { zcodeDetect(): Promise<ZcodeLinkDetectRes>;
++ *   zcodeInstall(): Promise<ZcodeLinkInstallRes> }（Res 形状=schemas 单一真相源）
++ * - export function resolveTemplateDir(mainDir, resourcesPath, isPackaged):
++ *   dev/prod 双源解析单函数收敛（prod=process.resourcesPath/ai-sensor
++ *   ——extraResources 落点；dev=mainDir 上两级=仓库根的 tools/ai-sensor）
++ *
++ * ── 架构层 ──
++ * - ai_sensor 服务族（06/07 同目录）；依赖注入 zcodeBaseDir/templateDir/
++ *   readStatus（bootstrap 装配层解析注入——服务不触 app/os 保可测）
++ * - 零新依赖：node:fs/promises（cp/readdir/rm/stat）
++ *
++ * ── 生命周期层 ──
++ * - 预留：技能版本对账（应用内模板 vs 已装）；zcode 技能目录自定义路径
++ * - 不做：spawn 任何进程（INV-21）；renderer 侧路径展示（B10-1）
++ *
++ * ── 文化层 ──
++ * - 错误：install 失败上抛中文含路径（动作型，消费方 toast——INV-02）；
++ *   禁静默吞错；完成后 npm run verify 绿→人工审查 git diff→翻 registry
++ */
++import { cp, readdir, rm, stat } from 'node:fs/promises'
++import { join } from 'node:path'
++import type { SensorStatus, ZcodeLinkDetectRes, ZcodeLinkInstallRes } from '../../../shared/ipc/schemas'
++
++/** zcode 技能目录名（安装目标=join(zcodeBaseDir,'.zcode','skills',<name>)） */
++export const ZCODE_SKILL_NAME = 'ai-sensor'
++
++export interface ZcodeLinkService {
++  /** 五态检测（四呈现态+error——Res.state 枚举单一真相源在 schemas） */
++  zcodeDetect(): Promise<ZcodeLinkDetectRes>
++  /** 递归复制技能模板（覆盖装=删除重建）；Res=fileCount */
++  zcodeInstall(): Promise<ZcodeLinkInstallRes>
++}
++
++export interface ZcodeLinkDeps {
++  /** zcode 基目录（prod=os.homedir()——bootstrap 注入；e2e 隔离经装配层 env 覆盖） */
++  zcodeBaseDir: string
++  /** 技能模板源（resolveTemplateDir 产物——bootstrap 注入） */
++  templateDir: string
++  /** AI-06 readStatus 单源消费（running 判定不双写） */
++  readStatus: () => Promise<SensorStatus | null>
++}
++
++/** dev/prod 双源解析（单函数收敛——票面原文）：prod=resourcesPath/ai-sensor；dev=仓库 tools/ai-sensor */
++export function resolveTemplateDir(
++  mainDir: string,
++  resourcesPath: string | null,
++  isPackaged: boolean
++): string {
++  if (isPackaged && resourcesPath !== null) return join(resourcesPath, 'ai-sensor')
++  return join(mainDir, '..', '..', 'tools', 'ai-sensor')
++}
++
++/** 文件存在性（ENOENT=false；其他错误上抛不吞——06 同型） */
++async function exists(path: string): Promise<boolean> {
++  try {
++    await stat(path)
++    return true
++  } catch (e) {
++    if (typeof e === 'object' && e !== null && 'code' in e && (e as { code?: unknown }).code === 'ENOENT') {
++      return false
++    }
++    throw e
++  }
++}
++
++/** 递归计数（install Res 的 fileCount——目录不计） */
++async function countFiles(dir: string): Promise<number> {
++  const entries = await readdir(dir, { withFileTypes: true })
++  let n = 0
++  for (const e of entries) {
++    if (e.isDirectory()) n += await countFiles(join(dir, e.name))
++    else n += 1
++  }
++  return n
++}
++
++export function createZcodeLinkService(deps: ZcodeLinkDeps): ZcodeLinkService {
++  const zcodeDir = join(deps.zcodeBaseDir, '.zcode')
++  const skillDir = join(zcodeDir, 'skills', ZCODE_SKILL_NAME)
++
++  return {
++    async zcodeDetect() {
++      try {
++        if (!(await exists(zcodeDir))) {
++          return { state: 'zcode-not-found' as const, status: null, overwrite: false }
++        }
++        if (!(await exists(join(skillDir, 'SKILL.md')))) {
++          // overwrite=技能目录在但 SKILL.md 缺（部分安装）——覆盖型确认对话框事实源
++          return { state: 'found-skill-missing' as const, status: null, overwrite: await exists(skillDir) }
++        }
++        const status = await deps.readStatus() // 上抛（status.json 损坏）→error 态
++        return {
++          state: status !== null && status.running ? ('running' as const) : ('installed-idle' as const),
++          status,
++          overwrite: false
++        }
++      } catch (e) {
++        return {
++          state: 'error' as const,
++          status: null,
++          overwrite: false,
++          reason: e instanceof Error ? e.message : String(e)
++        }
++      }
++    },
++
++    async zcodeInstall() {
++      const src = deps.templateDir
++      if (!(await exists(join(src, 'SKILL.md')))) {
++        throw new Error(`技能模板缺失（SKILL.md 不存在）：${src}——应用安装不完整或 dev 仓库结构异常`)
++      }
++      // 覆盖装=删除重建（v1 版本对账等价；旧残留不存活）
++      await rm(skillDir, { recursive: true, force: true })
++      await cp(src, skillDir, { recursive: true })
++      return { fileCount: await countFiles(skillDir) }
++    }
++  }
++}
+diff --git a/tests/e2e/zcode-link.spec.ts b/tests/e2e/zcode-link.spec.ts
+new file mode 100644
+index 0000000..f8875bf
+--- /dev/null
++++ b/tests/e2e/zcode-link.spec.ts
+@@ -0,0 +1,65 @@
++import { test, expect } from '@playwright/test'
++import { mkdtemp } from 'node:fs/promises'
++import { existsSync, mkdirSync, readFileSync } from 'node:fs'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { isTicketDone } from '../../tickets/registry'
++import { launch } from './e2e-env'
++
++/**
++ * zcode 联动 e2e（SR2-AI-10，受锁 [locked-change]）。
++ *
++ * 五态检测跨格序列①：未发现 zcode→（用户装 zcode=.zcode 目录出现）→技能未装
++ * →一键装技能（confirm 自动接受）→已装未运行。INV-21 断言=**纯 fs 落地**：装
++ * 技能全流程后 skills 目录文件存在且与仓库模板逐字节一致（行为零进程副作用面
++ * ——不依赖任何进程行为）。~/.zcode 隔离=SYNAPSE_ZCODE_HOME（bootstrap env→
++ * 构造参数映射，注入点=zcodeBaseDir 服务构造参数）。
++ */
++const DEPS = ['SR2-AI-06'] as const
++
++test('zcode 联动：未发现→装 zcode→技能未装→一键装技能→fs 落地一致（INV-21 纯 fs 断言）', async () => {
++  const pending = DEPS.filter((d) => !isTicketDone(d))
++  test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
++
++  const userData = await mkdtemp(join(tmpdir(), 'synapse-ai10-'))
++  const fakeHome = await mkdtemp(join(tmpdir(), 'zcode-home-'))
++
++  const app = await launch(userData, { SYNAPSE_ZCODE_HOME: fakeHome })
++  const win = await app.firstWindow()
++  await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
++  await win.getByRole('button', { name: '设置' }).click()
++
++  // zcode-not-found：指引文案（渲染真实文本锚）
++  await expect(win.getByTestId('zcode-link-status')).toHaveText('未发现 zcode', { timeout: 10_000 })
++  await expect(win.getByText(/请先安装 zcode 命令行工具/)).toBeVisible()
++
++  // 用户装 zcode：.zcode 目录出现（fs 夹具）→5s 轮询驱动 skill-missing
++  mkdirSync(join(fakeHome, '.zcode'), { recursive: true })
++  await expect(win.getByTestId('zcode-link-status')).toHaveText('已发现 zcode，技能未装', {
++    timeout: 12_000
++  })
++  const installBtn = win.getByRole('button', { name: '一键装技能' })
++  await expect(installBtn).toBeVisible()
++
++  // confirm 自动接受（reader-text.spec 同型）；点击→纯 fs 复制→re-detect→idle
++  win.on('dialog', (d) => {
++    void d.accept()
++  })
++  await installBtn.click()
++  await expect(win.getByTestId('zcode-link-status')).toHaveText('已装技能，未运行', { timeout: 10_000 })
++
++  // INV-21 断言：装技能全流程后 skills 目录文件存在（纯 fs 落地，零进程行为依赖）
++  const dest = join(fakeHome, '.zcode', 'skills', 'ai-sensor')
++  expect(existsSync(join(dest, 'SKILL.md'))).toBe(true)
++  expect(existsSync(join(dest, 'companion.mjs'))).toBe(true)
++  expect(existsSync(join(dest, 'queue.mjs'))).toBe(true)
++  expect(existsSync(join(dest, 'prompts', 'first-read.md'))).toBe(true)
++  // 逐字节一致（模板复制不改内容）
++  expect(readFileSync(join(dest, 'SKILL.md'), 'utf8')).toBe(
++    readFileSync(join(process.cwd(), 'tools', 'ai-sensor', 'SKILL.md'), 'utf8')
++  )
++  // 成功 toast（真实文本）
++  await expect(win.getByText(/技能安装完成（\d+ 个文件）/)).toBeVisible({ timeout: 5_000 })
++
++  await app.close()
++})
+diff --git a/tests/unit/renderer/zcode-link-section.test.tsx b/tests/unit/renderer/zcode-link-section.test.tsx
+new file mode 100644
+index 0000000..35d32db
+--- /dev/null
++++ b/tests/unit/renderer/zcode-link-section.test.tsx
+@@ -0,0 +1,321 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-AI-10] ZcodeLinkSection —— 设置页 zcode 联动节组件测试（锁定合约）。
++ *
++ * 覆盖：五态渲染（mock zcodeDetect）/迁移序列①②/确认对话框两型（首装/覆盖
++ * 重申）/装技能 invoke 调用与 busy 态/装失败动作型 toast/error 态（detect 拒绝
++ * 与 state='error' 两路径）+重试按钮/卸载清 interval/轮询 5s 周期。
++ * always-active（ADR-0017 裁决 3）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import type * as clientModule from '../../../src/renderer/api/client'
++import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++
++const { stubApi, zcodeDetect, zcodeInstall } = vi.hoisted(() => {
++  const zcodeDetect = vi.fn()
++  const zcodeInstall = vi.fn()
++  return { stubApi: { ai_sensor: { zcodeDetect, zcodeInstall } }, zcodeDetect, zcodeInstall }
++})
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return { ...real, api: stubApi as unknown as typeof clientModule.api }
++})
++vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
++  const real = await importOriginal<typeof toastModule>()
++  return { ...real, showToast: vi.fn() }
++})
++
++import { showToast } from '../../../src/renderer/shared/ui/Toast'
++import { ZcodeLinkSection } from '../../../src/renderer/features/settings/ZcodeLinkSection'
++
++type DetectState = 'zcode-not-found' | 'found-skill-missing' | 'installed-idle' | 'running' | 'error'
++
++function detectRes(patch: {
++  state: DetectState
++  status?: { state: string; currentPaper: string | null; running: boolean } | null
++  overwrite?: boolean
++  reason?: string
++}) {
++  return {
++    state: patch.state,
++    status:
++      patch.status === null || patch.status === undefined
++        ? null
++        : {
++            state: patch.status.state,
++            currentPaper: patch.status.currentPaper,
++            role: null,
++            updatedAt: '2026-08-27T00:00:00Z',
++            heartbeatAt: '2026-08-27T00:00:00Z',
++            running: patch.status.running
++          },
++    overwrite: patch.overwrite ?? false,
++    ...(patch.reason !== undefined ? { reason: patch.reason } : {})
++  }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(<ZcodeLinkSection />)
++  })
++}
++
++const flush = async (ms = 0): Promise<void> => {
++  await act(async () => {
++    await vi.advanceTimersByTimeAsync(ms)
++  })
++}
++
++const text = (): string => host?.querySelector('[data-testid="zcode-link-status"]')?.textContent ?? ''
++const installBtn = (): HTMLButtonElement | null =>
++  host?.querySelector('button[data-action="install"]') as HTMLButtonElement | null
++const retryBtn = (): HTMLButtonElement | null =>
++  host?.querySelector('button[data-action="retry"]') as HTMLButtonElement | null
++
++beforeEach(() => {
++  vi.useFakeTimers()
++  vi.clearAllMocks()
++  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'zcode-not-found' }) })
++  zcodeInstall.mockResolvedValue({ ok: true, data: { fileCount: 12 } })
++  void confirmSpy
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  vi.useRealTimers()
++  vi.restoreAllMocks()
++})
++
++it('zcode-not-found：「未发现 zcode」+安装指引文案，无装技能按钮', async () => {
++  mount()
++  await flush()
++  expect(text()).toBe('未发现 zcode')
++  expect(host?.textContent).toContain('安装 zcode')
++  expect(installBtn()).toBeNull()
++})
++
++it('found-skill-missing：「已发现 zcode，技能未装」+「一键装技能」按钮', async () => {
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++  mount()
++  await flush()
++  expect(text()).toBe('已发现 zcode，技能未装')
++  expect(installBtn()).not.toBeNull()
++  expect(installBtn()?.textContent).toBe('一键装技能')
++  expect(installBtn()?.disabled).toBe(false)
++})
++
++it('installed-idle：「已装技能，未运行」', async () => {
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'installed-idle' }) })
++  mount()
++  await flush()
++  expect(text()).toBe('已装技能，未运行')
++  expect(installBtn()).toBeNull()
++})
++
++it('running：「运行中」+state 自述+currentPaper', async () => {
++  zcodeDetect.mockResolvedValue({
++    ok: true,
++    data: detectRes({ state: 'running', status: { state: '一读中', currentPaper: 'p-1', running: true } })
++  })
++  mount()
++  await flush()
++  expect(text()).toBe('运行中（一读中，当前：p-1）')
++})
++
++it('running：currentPaper=null——无当前篇后缀', async () => {
++  zcodeDetect.mockResolvedValue({
++    ok: true,
++    data: detectRes({ state: 'running', status: { state: '排队空闲', currentPaper: null, running: true } })
++  })
++  mount()
++  await flush()
++  expect(text()).toBe('运行中（排队空闲）')
++})
++
++it('error 态（detect Res state=error——status.json 损坏）：「状态读取失败」+reason+重试按钮', async () => {
++  zcodeDetect.mockResolvedValue({
++    ok: true,
++    data: detectRes({ state: 'error', reason: 'status.json 读取/解析失败：……——文件损坏？' })
++  })
++  mount()
++  await flush()
++  expect(text()).toBe('状态读取失败')
++  expect(host?.textContent).toContain('status.json')
++  expect(retryBtn()).not.toBeNull()
++})
++
++it('error 态重试：点击重试→再调 detect', async () => {
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'error', reason: 'x' }) })
++  mount()
++  await flush()
++  const calls = zcodeDetect.mock.calls.length
++  act(() => {
++    retryBtn()?.click()
++  })
++  await flush()
++  expect(zcodeDetect.mock.calls.length).toBe(calls + 1)
++})
++
++it('detect 通道拒绝（IPC 层失败）→error 呈现+重试（不 toast 轰炸）', async () => {
++  zcodeDetect.mockRejectedValueOnce(new Error('IPC 失败')).mockResolvedValue({
++    ok: true,
++    data: detectRes({ state: 'zcode-not-found' })
++  })
++  mount()
++  await flush()
++  expect(text()).toBe('状态读取失败')
++  expect(showToast).not.toHaveBeenCalled()
++  act(() => {
++    retryBtn()?.click()
++  })
++  await flush()
++  expect(text()).toBe('未发现 zcode')
++})
++
++it('确认对话框首装型：普通文案+确认后调 zcodeInstall+成功 toast+re-detect→idle', async () => {
++  const confirmSpy = vi.spyOn(window, 'confirm')
++  zcodeDetect
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'installed-idle' }) })
++  mount()
++  await flush()
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(confirmSpy).toHaveBeenCalledTimes(1)
++  expect(confirmSpy.mock.calls[0]?.[0]).not.toContain('覆盖')
++  expect(zcodeInstall).toHaveBeenCalledTimes(1)
++  expect(showToast).toHaveBeenCalledWith('技能安装完成（12 个文件）', 'success')
++  expect(text()).toBe('已装技能，未运行')
++})
++
++it('确认对话框覆盖型（overwrite=true）：重申覆盖文案', async () => {
++  const confirmSpy = vi.spyOn(window, 'confirm')
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'found-skill-missing', overwrite: true }) })
++  mount()
++  await flush()
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(confirmSpy.mock.calls[0]?.[0]).toContain('覆盖')
++  expect(zcodeInstall).toHaveBeenCalledTimes(1)
++})
++
++it('确认取消：不调 install，态保持 found-skill-missing（按钮仍可用）', async () => {
++  vi.spyOn(window, 'confirm').mockReturnValue(false)
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++  mount()
++  await flush()
++  expect(text()).toBe('已发现 zcode，技能未装') // 前置事实：真实呈现（占位恒绿防线）
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(zcodeInstall).not.toHaveBeenCalled()
++  expect(text()).toBe('已发现 zcode，技能未装') // 取消后无态迁移
++  expect(installBtn()?.disabled).toBe(false)
++})
++
++it('busy 态：install 在途→按钮禁用+无重复调用', async () => {
++  let resolveInstall: (v: { ok: true; data: { fileCount: number } }) => void = () => undefined
++  zcodeInstall.mockReturnValue(
++    new Promise((r) => {
++      resolveInstall = r
++    })
++  )
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++  mount()
++  await flush()
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(installBtn()?.disabled).toBe(true)
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(zcodeInstall).toHaveBeenCalledTimes(1)
++  await act(async () => {
++    resolveInstall({ ok: true, data: { fileCount: 12 } })
++  })
++  await flush()
++  expect(installBtn()?.disabled).toBe(false)
++})
++
++it('装技能失败（动作型）toast error，按钮复位可重试', async () => {
++  zcodeInstall.mockRejectedValueOnce(new Error('复制失败'))
++  zcodeDetect.mockResolvedValue({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++  mount()
++  await flush()
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(showToast).toHaveBeenCalledWith('操作失败', 'error')
++  expect(installBtn()?.disabled).toBe(false)
++})
++
++it('跨格序列①：not-found→（用户装 zcode）→skill-missing→装→idle', async () => {
++  zcodeDetect
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'zcode-not-found' }) })
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'found-skill-missing' }) })
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'installed-idle' }) })
++  mount()
++  await flush()
++  expect(text()).toBe('未发现 zcode')
++  await flush(5000) // 轮询驱动：用户装 zcode 后下次 detect 命中 skill-missing
++  expect(text()).toBe('已发现 zcode，技能未装')
++  act(() => {
++    installBtn()?.click()
++  })
++  await flush()
++  expect(text()).toBe('已装技能，未运行')
++})
++
++it('跨格序列②：idle→running→idle（轮询驱动会话起止，无残留态）', async () => {
++  zcodeDetect
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'installed-idle' }) })
++    .mockResolvedValueOnce({
++      ok: true,
++      data: detectRes({ state: 'running', status: { state: '一读中', currentPaper: 'p-1', running: true } })
++    })
++    .mockResolvedValueOnce({ ok: true, data: detectRes({ state: 'installed-idle' }) })
++  mount()
++  await flush()
++  expect(text()).toBe('已装技能，未运行')
++  await flush(5000)
++  expect(text()).toBe('运行中（一读中，当前：p-1）')
++  await flush(5000)
++  expect(text()).toBe('已装技能，未运行')
++})
++
++it('卸载清 interval（INV-14）：unmount 后 advance 超周期不再轮询（前置=已轮询）', async () => {
++  mount()
++  await flush()
++  const calls = zcodeDetect.mock.calls.length
++  expect(calls).toBeGreaterThanOrEqual(1) // 前置事实：挂载期确有轮询（占位恒绿防线）
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  await flush(15000)
++  expect(zcodeDetect.mock.calls.length).toBe(calls)
++})
+diff --git a/tests/unit/services/zcode-link.service.test.ts b/tests/unit/services/zcode-link.service.test.ts
+new file mode 100644
+index 0000000..b4f570a
+--- /dev/null
++++ b/tests/unit/services/zcode-link.service.test.ts
+@@ -0,0 +1,228 @@
++/**
++ * [SR2-AI-10] zcode-link.service —— 设置页 zcode 联动 main 侧服务（锁定合约）。
++ *
++ * 覆盖面：detect 五态（not-found/skill-missing/installed-idle/running/error——
++ * fs 夹具目录驱动+readStatus mock）/overwrite 事实（技能目录在但 SKILL.md 缺）/
++ * readStatus null=从未运行不打扰 idle 判定/readStatus 上抛（status.json 损坏）→
++ * error 态含中文 reason/install 递归复制（含 prompts 子目录）/覆盖装=删除重建
++ * （残留旧文件不存活）/模板缺失上抛含路径/resolveTemplateDir 双源解析
++ * （prod=resourcesPath/ai-sensor，dev=仓库 tools/ai-sensor）。
++ * always-active（ADR-0017 裁决 3）。
++ */
++import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { describe, expect, it, vi } from 'vitest'
++import {
++  createZcodeLinkService,
++  resolveTemplateDir
++} from '../../../src/main/services/ai_sensor/zcode-link.service'
++import type { SensorStatus } from '../../../src/shared/ipc/schemas'
++
++function status(running: boolean): SensorStatus {
++  return {
++    state: running ? '一读中' : '空闲',
++    currentPaper: running ? 'p-1' : null,
++    role: null,
++    updatedAt: '2026-08-27T00:00:00Z',
++    heartbeatAt: '2026-08-27T00:00:00Z',
++    running
++  }
++}
++
++interface Harness {
++  home: string
++  template: string
++  readStatus: ReturnType<typeof vi.fn>
++  svc: ReturnType<typeof createZcodeLinkService>
++  dispose: () => Promise<void>
++}
++
++async function makeHarness(readStatusImpl?: () => Promise<SensorStatus | null>): Promise<Harness> {
++  const base = await mkdtemp(join(tmpdir(), 'zcode-link-'))
++  const home = join(base, 'home')
++  const template = join(base, 'template')
++  await mkdir(home, { recursive: true })
++  // 模板夹具：SKILL.md+子目录 prompts/（递归复制面）
++  await mkdir(join(template, 'prompts'), { recursive: true })
++  await writeFile(join(template, 'SKILL.md'), '# 技能声明\n', 'utf8')
++  await writeFile(join(template, 'companion.mjs'), '// companion\n', 'utf8')
++  await writeFile(join(template, 'prompts', 'first-read.md'), '# 一读\n', 'utf8')
++  const readStatus = vi.fn(readStatusImpl ?? (async () => null))
++  const svc = createZcodeLinkService({ zcodeBaseDir: home, templateDir: template, readStatus })
++  return {
++    home,
++    template,
++    readStatus,
++    svc,
++    dispose: async () => {
++      await rm(base, { recursive: true, force: true })
++    }
++  }
++}
++
++/** 建立 skills/ai-sensor/SKILL.md（installed 判定事实） */
++async function installSkillFixture(h: Harness): Promise<void> {
++  await mkdir(join(h.home, '.zcode', 'skills', 'ai-sensor'), { recursive: true })
++  await writeFile(join(h.home, '.zcode', 'skills', 'ai-sensor', 'SKILL.md'), '# 已装\n', 'utf8')
++}
++
++describe('zcode-link.service detect 五态', () => {
++  it('zcode-not-found：~/.zcode 不存在（技能目录父=CLI 痕迹，纯 fs）', async () => {
++    const h = await makeHarness()
++    try {
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('zcode-not-found')
++      expect(r.status).toBeNull()
++      expect(r.overwrite).toBe(false)
++      expect(h.readStatus).not.toHaveBeenCalled() // 未发现即短路，不触协议
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('found-skill-missing：.zcode 在且 skills/ai-sensor 不存在——overwrite=false', async () => {
++    const h = await makeHarness()
++    try {
++      await mkdir(join(h.home, '.zcode'), { recursive: true })
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('found-skill-missing')
++      expect(r.overwrite).toBe(false)
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('found-skill-missing+overwrite：技能目录在但 SKILL.md 缺（部分安装）——overwrite=true', async () => {
++    const h = await makeHarness()
++    try {
++      await mkdir(join(h.home, '.zcode', 'skills', 'ai-sensor'), { recursive: true })
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('found-skill-missing')
++      expect(r.overwrite).toBe(true)
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('installed-idle：SKILL.md 在+readStatus null（工具从未运行）——不受扰', async () => {
++    const h = await makeHarness(async () => null)
++    try {
++      await installSkillFixture(h)
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('installed-idle')
++      expect(r.status).toBeNull()
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('installed-idle：心跳不新鲜（running=false）', async () => {
++    const h = await makeHarness(async () => status(false))
++    try {
++      await installSkillFixture(h)
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('installed-idle')
++      expect(r.status?.running).toBe(false)
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('running：心跳新鲜（running 单源=readStatus 输出，不双写阈值）', async () => {
++    const h = await makeHarness(async () => status(true))
++    try {
++      await installSkillFixture(h)
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('running')
++      expect(r.status?.currentPaper).toBe('p-1')
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('error：readStatus 上抛（status.json 损坏）→error 态含中文 reason（损坏≠missing）', async () => {
++    const h = await makeHarness(async () => {
++      throw new Error('status.json 读取/解析失败：…（Unexpected token）——文件损坏？')
++    })
++    try {
++      await installSkillFixture(h)
++      const r = await h.svc.zcodeDetect()
++      expect(r.state).toBe('error')
++      expect(r.reason).toContain('status.json')
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('跨格序列②：idle→running→idle（会话起止，无残留态）', async () => {
++    let running = false
++    const h = await makeHarness(async () => status(running))
++    try {
++      await installSkillFixture(h)
++      expect((await h.svc.zcodeDetect()).state).toBe('installed-idle')
++      running = true
++      expect((await h.svc.zcodeDetect()).state).toBe('running')
++      running = false
++      expect((await h.svc.zcodeDetect()).state).toBe('installed-idle')
++    } finally {
++      await h.dispose()
++    }
++  })
++})
++
++describe('zcode-link.service install（纯 fs 复制，零进程——INV-21）', () => {
++  it('递归复制模板至 skills/ai-sensor（含 prompts 子目录）+fileCount', async () => {
++    const h = await makeHarness()
++    try {
++      await mkdir(join(h.home, '.zcode'), { recursive: true })
++      const r = await h.svc.zcodeInstall()
++      expect(r.fileCount).toBe(3)
++      const dest = join(h.home, '.zcode', 'skills', 'ai-sensor')
++      expect(await readFile(join(dest, 'SKILL.md'), 'utf8')).toContain('技能声明')
++      expect(await readFile(join(dest, 'prompts', 'first-read.md'), 'utf8')).toContain('一读')
++      // 装后 re-detect → installed-idle（迁移：skill-missing→装→idle）
++      expect((await h.svc.zcodeDetect()).state).toBe('installed-idle')
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('覆盖装=删除重建：旧残留文件不存活', async () => {
++    const h = await makeHarness()
++    try {
++      const dest = join(h.home, '.zcode', 'skills', 'ai-sensor')
++      await mkdir(join(dest, 'stale-dir'), { recursive: true })
++      await writeFile(join(dest, 'stale-file.txt'), '旧残留', 'utf8')
++      await h.svc.zcodeInstall()
++      expect(await readdir(dest)).not.toContain('stale-file.txt')
++      expect(await readdir(dest)).not.toContain('stale-dir')
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('模板缺失（SKILL.md 不在）上抛中文错误含模板路径', async () => {
++    const h = await makeHarness()
++    try {
++      await rm(join(h.template, 'SKILL.md'))
++      await expect(h.svc.zcodeInstall()).rejects.toThrow(/技能模板缺失.*SKILL\.md/)
++    } finally {
++      await h.dispose()
++    }
++  })
++})
++
++describe('resolveTemplateDir 双源解析（单函数收敛）', () => {
++  it('prod（isPackaged）：resourcesPath/ai-sensor（extraResources 落点）', () => {
++    expect(resolveTemplateDir('C:\\app\\resources\\app.asar\\out\\main', 'C:\\app\\resources', true)).toBe(
++      join('C:\\app\\resources', 'ai-sensor')
++    )
++  })
++
++  it('dev：仓库 tools/ai-sensor（mainDir 上两级=仓库根）', () => {
++    expect(resolveTemplateDir('E:\\repo\\out\\main', null, false)).toBe(
++      join('E:\\repo', 'tools', 'ai-sensor')
++    )
++  })
++})

@@ -21,6 +21,7 @@ import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
 import { useSettingsStore } from './settings.store'
 import { CorpusExportSection } from './CorpusExportSection'
+import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
@@ -171,6 +172,9 @@ export function SettingsPage(): JSX.Element {
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
       <CorpusExportSection />
+
+      {/* AI-10：zcode 联动节（自持组件——检测/装技能纯 fs，INV-21 零 spawn） */}
+      <ZcodeLinkSection />
     </div>
   )
 }

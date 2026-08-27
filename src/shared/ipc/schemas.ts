@@ -222,6 +222,24 @@ export const aiNotesImportResSchema = z
   .strict()
 export type AiNotesImportRes = z.infer<typeof aiNotesImportResSchema>
 
+/** zcode-link/detect 响应（AI-10 设置页联动五态——四呈现态+error）。
+ *  status=null=not-found/skill-missing 态（未触协议）或工具从未运行；running
+ *  判定单源=06 readStatus；overwrite=技能目录在但 SKILL.md 缺（覆盖型确认事实源）；
+ *  reason 仅 error 态（readStatus 损坏上抛或 fs 异常的中文原文） */
+export const zcodeLinkDetectResSchema = z
+  .object({
+    state: z.enum(['zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error']),
+    status: sensorStatusSchema.nullable(),
+    overwrite: z.boolean(),
+    reason: z.string().optional()
+  })
+  .strict()
+export type ZcodeLinkDetectRes = z.infer<typeof zcodeLinkDetectResSchema>
+
+/** zcode-link/install 响应：fileCount=复制落地文件数（目录不计） */
+export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().min(1) }).strict()
+export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
+
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
 export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
