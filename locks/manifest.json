@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T07:55:39.9050453Z",
+    "generatedAt":  "2026-08-27T09:28:45.7531016Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -143,7 +143,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "2adbca36f50c49567359a8d54a24d533aec40fe1020d7cf383effe917aafa666"
+                      "sha256":  "e4554a04fc748e03051be22be7b1ac3a65022d80eb56c78142c9e358902b91e7"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
@@ -284,6 +284,10 @@
                   {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
                       "sha256":  "0c3fec0f4c0db142a602a72f899347459370cde4a9fe183b9ee8ec2f69287f5c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/app-quit-dirty.test.tsx",
+                      "sha256":  "6a7d5cd9f4e80e6fa2629734e749865acedb3012e9a6b977bba98c76e47a0384"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",

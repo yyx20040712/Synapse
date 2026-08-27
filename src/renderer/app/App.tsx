@@ -68,7 +68,14 @@ export function App(): JSX.Element {
   // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
   // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
   // 组合根单点扩（tab dirty ∪ lineage dirty），TABS-04 行为面零触碰
-  const quitDirty = useTabDirtyAggregate() || useLineageDirty()
+  // 两 hook 必须无条件调用（P7-C 崩溃修复 2026-08-27）：`||` 短路会使
+  // tab dirty=true 的渲染缺席 useLineageDirty 的 hooks——同一 fiber 两次
+  // 渲染 hooks 数量不同（Rules of Hooks 违规），生产 bundle 无 dev 警告，
+  // commit 阶段 effect 链错位崩 areHookInputsEqual（回归锁=
+  // tests/unit/renderer/app-quit-dirty.test.tsx）
+  const tabDirty = useTabDirtyAggregate()
+  const lineageDirty = useLineageDirty()
+  const quitDirty = tabDirty || lineageDirty
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
