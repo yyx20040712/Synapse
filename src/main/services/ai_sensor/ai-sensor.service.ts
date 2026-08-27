@@ -139,6 +139,14 @@ export interface AiSensorService {
   productExists(paperId: string): Promise<boolean>
   /** 08 imported 判定：archive/<paperId>.json 归档区（W06-2） */
   archivedExists(paperId: string): Promise<boolean>
+  /** 08 六态状态机判定事实单次聚合（主控裁决方向 B，2026-08-27——ai-sensor/observe
+   *  通道 Res 单源；损坏≠missing 三态分离上抛语义随 readStatus 保持） */
+  observe(paperId: string): Promise<{
+    status: SensorStatus | null
+    hasPendingJob: boolean
+    productExists: boolean
+    archivedExists: boolean
+  }>
 }
 
 export interface AiSensorDeps {
@@ -313,6 +321,17 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
     async archivedExists(paperId) {
       assertSafeId(paperId)
       return exists(join(archiveDir, `${paperId}.json`))
+    },
+
+    async observe(paperId) {
+      assertSafeId(paperId)
+      const [status, hasPendingJob, productExists, archivedExists] = await Promise.all([
+        this.readStatus(),
+        this.hasPendingJob(paperId),
+        this.productExists(paperId),
+        this.archivedExists(paperId)
+      ])
+      return { status, hasPendingJob, productExists, archivedExists }
     }
   }
 }

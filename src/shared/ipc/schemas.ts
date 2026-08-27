@@ -199,6 +199,19 @@ export type SensorStatus = z.infer<typeof sensorStatusSchema>
 /** status 通道响应：null=status.json 不存在=工具从未运行（N06-4） */
 export const aiSensorStatusResSchema = sensorStatusSchema.nullable()
 
+/** observe 通道响应：六态状态机判定事实单源（AI-08 票面消费面——主控裁决
+ *  方向 B，2026-08-27）。status=null=status.json 不存在（与 aiStatus 语义一致）；
+ *  hasPendingJob/productExists/archivedExists=06 服务侧 per-paper fs 事实聚合 */
+export const observeResSchema = z
+  .object({
+    status: sensorStatusSchema.nullable(),
+    hasPendingJob: z.boolean(),
+    productExists: z.boolean(),
+    archivedExists: z.boolean()
+  })
+  .strict()
+export type ObserveRes = z.infer<typeof observeResSchema>
+
 /** ai-notes/import 响应：部分成功三桶（AI-07——消费方 08 按钮 toast 汇总呈现） */
 export const aiNotesImportResSchema = z
   .object({

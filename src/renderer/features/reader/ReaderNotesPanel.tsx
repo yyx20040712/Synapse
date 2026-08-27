@@ -49,6 +49,7 @@ import { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
 import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../notes/notes.store'
+import { AiNotesSection } from './AiNotesSection'
 import { FragmentNotesList } from './FragmentNotesList'
 import { useActiveTab } from './useActiveTab'
 
@@ -191,6 +192,9 @@ export function ReaderNotesPanel(props: {
       <div className="min-h-0 flex-1 basis-1/2 overflow-auto">
         <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
       </div>
+      {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
+          useActiveTab 自取 paperId——防双源同本面板） */}
+      <AiNotesSection />
     </div>
   )
 }

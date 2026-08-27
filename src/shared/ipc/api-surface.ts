@@ -62,6 +62,7 @@ export const API_SURFACE = {
   ai_sensor: {
     requestAiRead: { channel: 'ai-sensor/request-read', Req: S.paperIdReqSchema, Res: S.aiReadJobResSchema },
     aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
+    observe: { channel: 'ai-sensor/observe', Req: S.paperIdReqSchema, Res: S.observeResSchema },
     importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
     listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
   },

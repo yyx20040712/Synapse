@@ -13,6 +13,7 @@ export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
   return {
     requestAiRead: (req) => deps.services.ai_sensor.requestRead(req.paperId),
     aiStatus: async () => deps.services.ai_sensor.readStatus(),
+    observe: (req) => deps.services.ai_sensor.observe(req.paperId),
     importAll: async () => deps.services.ai_sensor.importAll(),
     listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId)
   }

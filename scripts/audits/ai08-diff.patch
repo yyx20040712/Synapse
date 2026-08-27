@@ -1,0 +1,1411 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 47b4d90..a535851 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T01:12:06.8935141Z",
++    "generatedAt":  "2026-08-27T02:00:02.8380320Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -79,11 +79,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "1feb899c97a2a39e4e2b3d57771f4e8e2f0dcac496302cd976d558155020be35"
++                      "sha256":  "452695199c1dfb8885db2df5424d4a795a36a3af88a745d15f07b4e2a454ef13"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "08961e0911d273aa0720f55df380e8517d0debd853ecbfc8704412149aa37a0d"
++                      "sha256":  "e7ffdaab5d22a147ba8b838e0e1378c3686714d034b2d7c795ca667560704485"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -121,10 +121,18 @@
+                       "path":  "tests/contracts/preload-surface.test.ts",
+                       "sha256":  "ea448a13a0ff4b87ec0c082a093e64f4b404616419ba1f455ea55cc8e4071c76"
+                   },
++                  {
++                      "path":  "tests/e2e/ai-notes-section.spec.ts",
++                      "sha256":  "2469575429faa7752e18174626ec327f48d94440a9ca5397bffada86e7238b80"
++                  },
+                   {
+                       "path":  "tests/e2e/corpus-export.spec.ts",
+                       "sha256":  "973bf57ff6c1e68b233cae913202d3763246c714636ba8b6050e060a677adac5"
+                   },
++                  {
++                      "path":  "tests/e2e/e2e-env.ts",
++                      "sha256":  "062123d804e2ce7421f636fabd8ae9a7489a66d1cbcb84680e00a06fa2032d40"
++                  },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+                       "sha256":  "41ba4d687c5138ff63fc4fc65ba49460f6721a3627fcd88ef91d012cdf41a855"
+@@ -233,6 +241,14 @@
+                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
+                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
++                      "sha256":  "d33d59b4235f5602d7ed97ff2690c16f9e60ee280b1a30f499c0408b9e05befe"
++                  },
++                  {
++                      "path":  "tests/unit/renderer/ai-note-style.test.ts",
++                      "sha256":  "ce53430161744079ef8b467155cd01546530ae6152da9a505bd54a05b14c34e4"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+                       "sha256":  "1069c04a1858aa3163d559ea766a8dfc7e6d48ea5f5031e4c603690ceb7d9221"
+diff --git a/src/main/ipc/ai_sensor.ts b/src/main/ipc/ai_sensor.ts
+index e0bc692..915c6ff 100644
+--- a/src/main/ipc/ai_sensor.ts
++++ b/src/main/ipc/ai_sensor.ts
+@@ -13,6 +13,7 @@ export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
+   return {
+     requestAiRead: (req) => deps.services.ai_sensor.requestRead(req.paperId),
+     aiStatus: async () => deps.services.ai_sensor.readStatus(),
++    observe: (req) => deps.services.ai_sensor.observe(req.paperId),
+     importAll: async () => deps.services.ai_sensor.importAll(),
+     listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId)
+   }
+diff --git a/src/main/services/ai_sensor/ai-sensor.service.ts b/src/main/services/ai_sensor/ai-sensor.service.ts
+index 9acdcb6..bad6c29 100644
+--- a/src/main/services/ai_sensor/ai-sensor.service.ts
++++ b/src/main/services/ai_sensor/ai-sensor.service.ts
+@@ -139,6 +139,14 @@ export interface AiSensorService {
+   productExists(paperId: string): Promise<boolean>
+   /** 08 imported 判定：archive/<paperId>.json 归档区（W06-2） */
+   archivedExists(paperId: string): Promise<boolean>
++  /** 08 六态状态机判定事实单次聚合（主控裁决方向 B，2026-08-27——ai-sensor/observe
++   *  通道 Res 单源；损坏≠missing 三态分离上抛语义随 readStatus 保持） */
++  observe(paperId: string): Promise<{
++    status: SensorStatus | null
++    hasPendingJob: boolean
++    productExists: boolean
++    archivedExists: boolean
++  }>
+ }
+ 
+ export interface AiSensorDeps {
+@@ -313,6 +321,17 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
+     async archivedExists(paperId) {
+       assertSafeId(paperId)
+       return exists(join(archiveDir, `${paperId}.json`))
++    },
++
++    async observe(paperId) {
++      assertSafeId(paperId)
++      const [status, hasPendingJob, productExists, archivedExists] = await Promise.all([
++        this.readStatus(),
++        this.hasPendingJob(paperId),
++        this.productExists(paperId),
++        this.archivedExists(paperId)
++      ])
++      return { status, hasPendingJob, productExists, archivedExists }
+     }
+   }
+ }
+diff --git a/src/renderer/features/reader/AiNotesSection.tsx b/src/renderer/features/reader/AiNotesSection.tsx
+index 559db62..4818e37 100644
+--- a/src/renderer/features/reader/AiNotesSection.tsx
++++ b/src/renderer/features/reader/AiNotesSection.tsx
+@@ -4,27 +4,23 @@
+  * 工单：open / strong）
+  *
+  * ── 行为层 ──
+- * - 并入 ReaderNotesPanel 下部分节（C-03 头注预留位「AiNotesSection 并入
+- *   本面板下部分节」；面板 props 不动——本组件经 useActiveTab 自取 paperId
+- *   同 C-03 防双源）
+- * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决三组中文
+- *   标签）×组内 question 条目（Q1~Q7+divergence）；条目=锚定段引用块+
+- *   content_md 纯文本（textarea 级呈现——负面清单「Markdown 富文本编辑器」
+- *   红线，md 不渲染只展示）；**只读**——零写路径（INV-19 渲染面同锚，
+- *   v1 无编辑/删除）
+- * - 七问分色单源：ai-note-style.ts（本单交付——annotation-style 同族新模块
+- *   INV-11：question→CSS 变量映射+中文标签单源；AI-09 渲染层消费同源，
+- *   接缝双向锚定声明两文件头注；取色只允许 theme.css 变量，禁散落硬编码）
++ * - 并入 ReaderNotesPanel 下部分节（C-03 预留位）；面板 props 不动——本组件
++ *   经 useActiveTab 自取 paperId（同 C-03 防双源）
++ * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决——
++ *   AiNoteGroupList+ai-note-style 单源）×组内 question 条目；条目=锚定段
++ *   引用块+content_md 纯文本（textarea 级呈现——负面清单红线，md 不渲染只
++ *   展示）；**只读**——零写路径（INV-19，v1 无编辑/删除）
+  * - 「AI 正在读」状态行+「AI 读文献」按钮（用户点击=手动激活——D2b）：
+  *   按钮经 ai-sensor/request-read 写 job（AI-06 通道）；状态行按需轮询
+- *   ai-sensor/status（STATUS_POLL_MS=5s，仅组件挂载期间=笔记面板打开——
+- *   ADR §1 门控；卸载清 interval，INV-14 成对同族）
+- * - **状态行状态机**（宪法状态机前置；观测=AI-06 可观测态 per 当前篇 P；
+- *   门一 B08-1/W08-2/N08-4 处置后六态——**「AI 读文献」按钮行常驻本节
+- *   头部**（首次使用入口不悬空）；imported 非稳态移出（瞬时事件：导入
+- *   完成→toast+list 刷新→稳态回 idle））：
++ *   **ai-sensor/observe**（主控裁决方向 B，2026-08-27：status+per-paper
++ *   hasPendingJob/productExists/archivedExists 四事实单次聚合——六态判定
++ *   事实单源；STATUS_POLL_MS=5s 仅组件挂载期间=笔记面板打开，ADR §1 门控；
++ *   卸载清 interval，INV-14 成对同族）
++ * - **状态行状态机**（宪法状态机前置；观测=observe 四事实 per 当前篇 P；
++ *   「AI 读文献」按钮行常驻本节头部（首次使用入口不悬空）；imported 非稳态
++ *   移出（瞬时事件：导入完成→toast+list 刷新→稳态回 idle）：
+  *
+- *   | 态 | 触发事实（06 服务输出） | 呈现 |
++ *   | 态 | 触发事实（observe 输出） | 呈现 |
+  *   | --- | --- | --- |
+  *   | hidden | 无 job(P)+无未导入产物+无 DB 数据 | 仅按钮行（无状态行无分节） |
+  *   | idle | 同 hidden 触发面但有 DB 数据（含已导入稳态） | 按钮行+分节（无状态行） |
+@@ -35,68 +31,219 @@
+  *
+  *   按钮禁用枚举：disabled=pending/queued/reading 三态（06 服务幂等为兜底，
+  *   UI 禁用防误解双保险）；enabled=hidden/idle/done-unimported。
+- *   跨格序列（审计面）：
+- *   ① hidden→pending（按钮）→（queued：他篇在读）→reading→
+- *      done-unimported→idle（导入完成，正常全链——queued=job(P) 在而
+- *      currentPaper=他篇/null 的中途格）
+- *   ② pending 持续（心跳从未起——迟拾取/工具未拉起/工具失败不移 job，
+- *      三者同呈现不误报——06 failed 态消解声明）
+- *   ③ reading→（心跳过期+job 在=工具中断）→pending（AI-06 序列③渲染面）
+- *   ④ done-unimported→pending（重读覆盖）；idle→pending（重读请求：sha
+- *      变化重灌路径，07 幂等承接）
+- *   ⑤ 换 tab（paperId 变）→全态重评估（per-tab 语义——面板随 active tab，
+- *      P7-B 单视图渲染模型先例）
++ *   跨格序列①~⑤见头注工单面（单测①③⑤已用例化；queued 经①的他篇路径）。
+  * - 「导入 AI 笔记」按钮（done-unimported 态）：调 ai-notes/import（07 目录
+  *   级全量——幂等使无害）→三桶 toast（imported/skipped 计数+errors 篇名）
+- *   →list 刷新（E1「应用轮询状态+导入」的手动激活形态——D2b 手动语义保持）
+- * - 条目单击→locateAnchor（INV-20 单入口消费方——C-05 服务；篇级/无锚条目
+- *   天然走 paper 层防线；本单补 INV-20 跨视图消费方级用例）。**exact 层
+- *   接缝声明（门一 W08-3 处置）**：anchor-locate exact 层滚动+闪烁现绑
+- *   [data-annotation-id]（AI 条目无 annotationId）——AI 条目 exact 完整
+- *   化=AI-09 交付 data-ai-note-id 渲染节点+anchor-locate 延展（滚动目标
+- *   选择器扩 [data-ai-note-id]，随 09）；09 落地前本单单击 exact 目标缺失
+- *   →anchor-locate 既有行为页级停驻（分步兑现，不另写降级）
+- * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（10 同名常量各持——Rule of
+- *   Three 第 2 次保持重复，AGENTS 原文；第 3 处出现时抽 shared）
++ *   →list/observe 刷新（E1 手动激活形态——D2b 手动语义保持）
++ * - 条目单击→locateAnchor（INV-20 单入口消费方）。**exact 层接缝声明
++ *   （门一 W08-3 处置）**：exact 层滚动+闪烁现绑 [data-annotation-id]（AI
++ *   条目无 annotationId）——exact 完整化=AI-09 交付 data-ai-note-id 渲染
++ *   节点+anchor-locate 延展；09 落地前单击 exact 目标缺失→anchor-locate
++ *   既有行为页级停驻（分步兑现，不另写降级）
++ * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（Rule of Three 第 2 次保持
++ *   重复；第 3 处出现时抽 shared）
+  *
+  * ── 接口层 ──
+- * - export function AiNotesSection(props: { highlightAiNoteId?: string | null }):
+- *   JSX.Element（data-ticket 骨架标记，翻 done 前移除；highlightAiNoteId=
+- *   AI-09 标注单击反向同步滚动高亮消费面——C-05 highlightAnnotationId 同型）
+- * - 交付面：ai-note-style.ts（七问分色单源）+ai-notes.store.ts（AI 笔记
+- *   数据+状态行态单源——**本域新 store（新数据新域，非触 notes.store**，
+- *   C-03 纪律语义=不动既有 store 字段）+ReaderNotesPanel 挂载一行+
+- *   window.api 类型面（renderer 侧通道客户端）
+- * - 数据单源接缝声明：ai-notes/list 取数+导入后刷新=store 内单点；
+- *   AI-09 渲染层经宿主（ReaderPage 订阅同 store 分发 props）消费——
+- *   **禁 09 双取**（接缝双向锚定声明两文件头注）
++ * - export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element
++ * - 交付面：ai-note-style.ts+ai-notes.store.ts（AI 笔记数据+观测事实单源，
++ *   **writeStatusProtocol 失败面幂等自愈声明见该 store 头注**）+本组件
++ *   +AiNoteGroupList+ReaderNotesPanel 挂载一行
++ * - 数据单源接缝声明：ai-notes/list 取数+导入后刷新=store 单点；AI-09 渲染
++ *   层经宿主订阅同 store 消费——禁 09 双取（双向锚定：store 头注+本行）
+  *
+  * ── 架构层 ──
+- * - renderer/features/reader 域；依赖 window.api（ai-sensor/status+request-read
+- *   +ai-notes/list+ai-notes/import）+locateAnchor（C-05）+toast 惯例
+- *   （INV-02 动作型）；notes.store 零触碰（AI 数据面全归 ai-notes.store 本单
+- *   新建——C-03「不新增任何 notes.store 字段」纪律保持）
++ * - renderer/features/reader 域；依赖 window.api（observe/request-read/
++ *   import/list）+locateAnchor（C-05）+toast 惯例（INV-02 动作型）；
++ *   notes.store 零触碰（AI 数据面全归 ai-notes.store）
+  *
+  * ── 生命周期层 ──
+  * - 预留：分节折叠记忆（v1 不做）；divergence 独立组（v1 随裁决组呈现）
+- * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（轮询检测到
+- *   产物不自动写 DB——手动按钮保持 D2b 手动激活语义）
++ * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（手动按钮保持
++ *   D2b 手动激活语义）
+  *
+  * ── 文化层 ──
+- * - 错误：status 轮询失败=静默重试下一周期（列表型瞬态——不 toast 轰炸；
+- *   连续失败 3 次显示离线提示行）；按钮动作型失败 toast（INV-02 两型分清）
+- * - 测试：tests/unit/renderer/ai-notes-section.test.tsx [受锁新增]——状态机
+- *   六态渲染+跨格序列①③⑤用例（mock 06 服务输出驱动；queued 子格经①
+- *   的他篇在读路径覆盖）/分节分组与分色
+- *   类名/只读断言（无任何写交互元素）/导入按钮三桶 toast/卸载清 interval；
+- *   ai-note-style 单测（映射单源+标签）；e2e [受锁新增 spec]：写 job→
+- *   fixture status.json 模拟心跳（SYNAPSE_USER_DATA 隔离环境 fs 直写——
+- *   e2e 不拉起真工具，AI-04 app.evaluate 侧通道同型）→状态行变化→导入→
+- *   分节渲染真实文本
+- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+- * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
+- *   git diff → 翻 registry
++ * - 错误：observe 轮询失败=静默重试下一周期（列表型瞬态——不 toast 轰炸；
++ *   连续失败 3 次显示离线提示行；status.json 损坏上抛=同计数路径——损坏≠
++ *   missing 三态分离在 06 服务）；按钮动作型失败 toast（INV-02 两型分清）
++ * - 测试：tests/unit/renderer/ai-notes-section.test.tsx + ai-note-style.test.ts
++ *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
+  */
+-export function AiNotesSection(_props: { highlightAiNoteId?: string | null }): JSX.Element {
+-  return <div data-ticket="SR2-AI-08" />
++import { useEffect, useRef, useState } from 'react'
++import { ApiClientError } from '../../api/client'
++import { showToast } from '../../shared/ui/Toast'
++import { locateAnchor } from './anchor-locate'
++import { AiNoteGroupList } from './AiNoteGroupList'
++import { useAiNotesStore } from './ai-notes.store'
++import { useActiveTab } from './useActiveTab'
++import type { ObserveRes } from '@shared/ipc/schemas'
++import type { AiNote } from '@shared/models/ai-note'
++
++/** 轮询周期（组件域私有——头注行为层声明） */
++const STATUS_POLL_MS = 5000
++/** 连续轮询失败阈值（≥ 此值显示离线提示行） */
++const POLL_FAIL_THRESHOLD = 3
++/** 意外异常（非 ApiClientError）时的兜底中文消息 */
++const ACTION_FAILED = '操作失败'
++
++type Phase = 'hidden' | 'idle' | 'pending' | 'queued' | 'reading' | 'done-unimported'
++/** 空数组稳定引用（selector 快照引用稳定——防 useSyncExternalStore 无限重渲染） */
++const EMPTY_NOTES: AiNote[] = []
++/** 六态推导（判定事实=observe 四事实单源；跨格序列①~⑤由轮询/动作驱动态迁移） */
++function derivePhase(facts: ObserveRes | null | undefined, hasNotes: boolean, paperId: string): Phase {
++  if (facts === null || facts === undefined) return hasNotes ? 'idle' : 'hidden'
++  const st = facts.status
++  if (st !== null && st.running && st.currentPaper === paperId) return 'reading'
++  if (facts.hasPendingJob) return st !== null && st.running ? 'queued' : 'pending'
++  if (facts.productExists && !facts.archivedExists) return 'done-unimported'
++  return hasNotes ? 'idle' : 'hidden'
++}
++
++export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element {
++  const { highlightAiNoteId = null } = props
++  const tab = useActiveTab()
++  const paperId = tab?.paperId ?? null
++
++  const notes = useAiNotesStore((s) => (paperId === null ? EMPTY_NOTES : s.notesByPaper[paperId] ?? EMPTY_NOTES))
++  const facts = useAiNotesStore((s) => (paperId === null ? undefined : s.observeByPaper[paperId]))
++  const loadNotes = useAiNotesStore((s) => s.loadNotes)
++  const loadObserve = useAiNotesStore((s) => s.loadObserve)
++  const requestRead = useAiNotesStore((s) => s.requestRead)
++  const importAll = useAiNotesStore((s) => s.importAll)
++
++  /** 连续轮询失败计数（ref——不触发重渲染；阈值达标记离线行） */
++  const failCount = useRef(0)
++  const [offline, setOffline] = useState(false)
++
++  // 门控轮询：挂载/paperId 变化即拉一次+5s interval；卸载/换篇清（INV-14 成对）
++  useEffect(() => {
++    if (paperId === null) return
++    let cancelled = false
++    failCount.current = 0
++    setOffline(false)
++    const run = (): void => {
++      loadObserve(paperId)
++        .then(() => {
++          if (cancelled) return
++          failCount.current = 0
++          setOffline(false)
++        })
++        .catch(() => {
++          if (cancelled) return
++          failCount.current += 1
++          if (failCount.current >= POLL_FAIL_THRESHOLD) setOffline(true)
++        })
++    }
++    run()
++    const timer = setInterval(run, STATUS_POLL_MS)
++    return () => {
++      cancelled = true
++      clearInterval(timer)
++    }
++  }, [paperId, loadObserve])
++
++  // 分节数据（列表型失败静默——离线行不覆盖 DB 取数面）
++  useEffect(() => {
++    if (paperId !== null) void loadNotes(paperId).catch(() => undefined)
++  }, [paperId, loadNotes])
++
++  if (paperId === null) return <></>
++
++  const phase = derivePhase(facts, notes.length > 0, paperId)
++  const busy = phase === 'pending' || phase === 'queued' || phase === 'reading'
++  const st = facts?.status ?? null
++
++  let statusText: string | null = null
++  if (phase === 'pending') {
++    statusText = `已请求 AI 阅读，等待 zcode 拾取…${st !== null ? `（上次状态：${st.state}）` : ''}`
++  } else if (phase === 'queued') {
++    statusText = st?.currentPaper != null ? 'AI 正在处理队列（当前：他篇）…' : 'AI 正在处理队列…'
++  } else if (phase === 'reading') {
++    statusText = `AI 正在读本文（${st?.state ?? ''}）`
++  } else if (phase === 'done-unimported') {
++    statusText = 'AI 已读完，待导入'
++  }
++
++  /** 写 job（动作型失败 toast；失败无本地残留态——幂等自愈声明见 store 头注） */
++  const onRead = (): void => {
++    requestRead(paperId)
++      .then(() => loadObserve(paperId).catch(() => undefined))
++      .catch((e: unknown) => {
++        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
++      })
++  }
++
++  /** 导入（07 目录级全量幂等）→三桶 toast+刷新（imported 瞬时事件→稳态回 idle） */
++  const onImport = (): void => {
++    importAll()
++      .then((res) => {
++        const parts = [`导入 ${res.imported.length} 篇`, `跳过 ${res.skipped.length} 篇`]
++        if (res.errors.length > 0) {
++          parts.push(`失败 ${res.errors.length} 篇（${res.errors.map((e) => e.paperId).join('、')}）`)
++        }
++        showToast(`AI 笔记导入完成：${parts.join('，')}`, res.errors.length > 0 ? 'error' : 'success')
++        void loadNotes(paperId).catch(() => undefined)
++        void loadObserve(paperId).catch(() => undefined)
++      })
++      .catch((e: unknown) => {
++        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
++      })
++  }
++
++  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页） */
++  const onLocateNote = (n: AiNote): void => {
++    void locateAnchor({
++      paperId: n.paperId,
++      anchor: {
++        quoteText: n.quoteText,
++        prefixText: n.prefixText,
++        suffixText: n.suffixText,
++        anchorPage: n.anchorPage === null ? undefined : n.anchorPage - 1
++      }
++    })
++  }
++
++  return (
++    <section
++      data-ticket="SR2-AI-08"
++      data-testid="ai-notes-section"
++      className="mt-1 flex flex-col gap-1 border-t pt-1"
++      style={{ borderColor: 'var(--border)' }}
++    >
++      <div className="flex items-center gap-2">
++        <button
++          type="button"
++          disabled={busy}
++          className="shrink-0 rounded border px-2 py-0.5 text-xs"
++          style={{ borderColor: 'var(--border)', color: busy ? 'var(--text-dim)' : 'var(--accent)' }}
++          onClick={onRead}
++        >
++          AI 读文献
++        </button>
++        {offline && (
++          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
++            AI 状态暂不可用，将继续重试
++          </span>
++        )}
++      </div>
++      {statusText !== null && (
++        <p className="m-0 text-xs" data-testid="ai-status-line" role="status" style={{ color: 'var(--text-dim)' }}>
++          {statusText}
++        </p>
++      )}
++      {phase === 'done-unimported' && (
++        <button
++          type="button"
++          data-action="import"
++          className="self-start rounded border px-2 py-0.5 text-xs"
++          style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}
++          onClick={onImport}
++        >
++          导入 AI 笔记
++        </button>
++      )}
++      {notes.length > 0 && phase !== 'hidden' && (
++        <AiNoteGroupList notes={notes} onLocate={onLocateNote} highlightAiNoteId={highlightAiNoteId} />
++      )}
++    </section>
++  )
+ }
+diff --git a/src/renderer/features/reader/ReaderNotesPanel.tsx b/src/renderer/features/reader/ReaderNotesPanel.tsx
+index 187d8a5..24866fb 100644
+--- a/src/renderer/features/reader/ReaderNotesPanel.tsx
++++ b/src/renderer/features/reader/ReaderNotesPanel.tsx
+@@ -49,6 +49,7 @@ import { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
+ import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
+ import type { Annotation } from '@shared/models/annotation'
+ import { useNotesStore } from '../notes/notes.store'
++import { AiNotesSection } from './AiNotesSection'
+ import { FragmentNotesList } from './FragmentNotesList'
+ import { useActiveTab } from './useActiveTab'
+ 
+@@ -191,6 +192,9 @@ export function ReaderNotesPanel(props: {
+       <div className="min-h-0 flex-1 basis-1/2 overflow-auto">
+         <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
+       </div>
++      {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
++          useActiveTab 自取 paperId——防双源同本面板） */}
++      <AiNotesSection />
+     </div>
+   )
+ }
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index 941dded..ee72839 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -62,6 +62,7 @@ export const API_SURFACE = {
+   ai_sensor: {
+     requestAiRead: { channel: 'ai-sensor/request-read', Req: S.paperIdReqSchema, Res: S.aiReadJobResSchema },
+     aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
++    observe: { channel: 'ai-sensor/observe', Req: S.paperIdReqSchema, Res: S.observeResSchema },
+     importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
+     listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
+   },
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 5f1a5ba..e5e8ba0 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -199,6 +199,19 @@ export type SensorStatus = z.infer<typeof sensorStatusSchema>
+ /** status 通道响应：null=status.json 不存在=工具从未运行（N06-4） */
+ export const aiSensorStatusResSchema = sensorStatusSchema.nullable()
+ 
++/** observe 通道响应：六态状态机判定事实单源（AI-08 票面消费面——主控裁决
++ *  方向 B，2026-08-27）。status=null=status.json 不存在（与 aiStatus 语义一致）；
++ *  hasPendingJob/productExists/archivedExists=06 服务侧 per-paper fs 事实聚合 */
++export const observeResSchema = z
++  .object({
++    status: sensorStatusSchema.nullable(),
++    hasPendingJob: z.boolean(),
++    productExists: z.boolean(),
++    archivedExists: z.boolean()
++  })
++  .strict()
++export type ObserveRes = z.infer<typeof observeResSchema>
++
+ /** ai-notes/import 响应：部分成功三桶（AI-07——消费方 08 按钮 toast 汇总呈现） */
+ export const aiNotesImportResSchema = z
+   .object({
+diff --git a/src/renderer/features/reader/AiNoteGroupList.tsx b/src/renderer/features/reader/AiNoteGroupList.tsx
+new file mode 100644
+index 0000000..fbed8b0
+--- /dev/null
++++ b/src/renderer/features/reader/AiNoteGroupList.tsx
+@@ -0,0 +1,80 @@
++// b3: P7-G
++/**
++ * [SR2-AI-08] AiNoteGroupList —— AI 笔记分节列表（纯展示+单击定位上抛）。
++ *
++ * role 三组中文标签（ROLE_LABEL 单源）×组内 question 条目（七问分色
++ * QUESTION_COLOR 单源——ai-note-style INV-11）；条目=锚定段引用块+
++ * content_md 纯文本呈现（负面清单「Markdown 富文本编辑器」红线——md 不渲染
++ * 只展示）；只读零写路径（INV-19）。单击→onLocate(note)——locateAnchor
++ * 单入口消费方（INV-20）；exact 层接缝声明见 AiNotesSection 头注（AI-09
++ * 交付 data-ai-note-id 渲染节点+anchor-locate 延展）。
++ * highlightAiNoteId=AI-09 标注单击反向同步高亮消费面（C-05 同型）。
++ */
++import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
++import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
++
++/** role 分组（呈现序=ROLE_ORDER；空组剔除） */
++export function groupNotes(notes: AiNote[]): Array<{ role: AiNoteRole; items: AiNote[] }> {
++  return ROLE_ORDER.map((role) => ({ role, items: notes.filter((n) => n.role === role) })).filter(
++    (g) => g.items.length > 0
++  )
++}
++
++export function AiNoteGroupList(props: {
++  notes: AiNote[]
++  onLocate(note: AiNote): void
++  highlightAiNoteId?: string | null
++}): JSX.Element {
++  const { notes, onLocate, highlightAiNoteId = null } = props
++  const groups = groupNotes(notes)
++
++  return (
++    <div className="flex flex-col gap-1" data-testid="ai-note-groups">
++      {groups.map((g) => (
++        <div key={g.role} data-role={g.role}>
++          <h4 className="m-0 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>
++            {ROLE_LABEL[g.role]}
++          </h4>
++          {g.items.map((n) => {
++            const highlighted = n.id === highlightAiNoteId
++            return (
++              <button
++                type="button"
++                key={n.id}
++                data-ai-note-id={n.id}
++                data-highlight={highlighted}
++                className="mt-0.5 block w-full rounded border px-2 py-1 text-left text-xs"
++                style={{
++                  borderColor: highlighted ? 'var(--accent)' : 'var(--border)',
++                  background: highlighted ? 'var(--accent-soft)' : 'transparent'
++                }}
++                onClick={() => onLocate(n)}
++                title={n.quoteText !== '' ? n.quoteText : n.contentMd}
++              >
++                <span className="flex items-center gap-1">
++                  <span
++                    aria-hidden
++                    className="inline-block h-2 w-2 shrink-0 rounded-sm"
++                    style={{ background: QUESTION_COLOR[n.question] }}
++                  />
++                  <span style={{ color: 'var(--text-dim)' }}>
++                    {QUESTION_LABEL[n.question]}
++                    {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
++                  </span>
++                </span>
++                {n.quoteText !== '' && (
++                  <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>
++                    {n.quoteText}
++                  </span>
++                )}
++                <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
++                  {n.contentMd}
++                </span>
++              </button>
++            )
++          })}
++        </div>
++      ))}
++    </div>
++  )
++}
+diff --git a/src/renderer/features/reader/ai-note-style.ts b/src/renderer/features/reader/ai-note-style.ts
+new file mode 100644
+index 0000000..1c9c12f
+--- /dev/null
++++ b/src/renderer/features/reader/ai-note-style.ts
+@@ -0,0 +1,45 @@
++// b3: P7-G
++/**
++ * [SR2-AI-08] ai-note-style —— 七问分色+中文标签单源（INV-11 单源模式，
++ * annotation-style 同族新模块）。
++ *
++ * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
++ * （同源消费，禁 09 另建映射）。取色只允许 theme.css 变量（本映射为 question
++ * →theme.css 变量的唯一出处），禁止散落硬编码色值。
++ */
++import type { AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
++import { AI_NOTE_ROLES } from '@shared/models/ai-note'
++
++/** 七问+divergence 分色（theme.css 变量单源映射） */
++export const QUESTION_COLOR: Record<AiNoteQuestion, string> = {
++  Q1: 'var(--annotation-yellow)',
++  Q2: 'var(--annotation-green)',
++  Q3: 'var(--annotation-blue)',
++  Q4: 'var(--annotation-red)',
++  Q5: 'var(--annotation-purple)',
++  Q6: 'var(--accent)',
++  Q7: 'var(--ok)',
++  divergence: 'var(--danger)'
++}
++
++/** question 中文标签单源（Q1~Q7+divergence） */
++export const QUESTION_LABEL: Record<AiNoteQuestion, string> = {
++  Q1: '第一问',
++  Q2: '第二问',
++  Q3: '第三问',
++  Q4: '第四问',
++  Q5: '第五问',
++  Q6: '第六问',
++  Q7: '第七问',
++  divergence: '分歧报告'
++}
++
++/** role 三组中文标签（分节呈现） */
++export const ROLE_LABEL: Record<AiNoteRole, string> = {
++  'first-read': '一读',
++  'second-read': '二读',
++  adjudicate: '裁决'
++}
++
++/** role 呈现序（一读→二读→裁决；与 AI_NOTE_ROLES 枚举序一致） */
++export const ROLE_ORDER: readonly AiNoteRole[] = AI_NOTE_ROLES
+diff --git a/src/renderer/features/reader/ai-notes.store.ts b/src/renderer/features/reader/ai-notes.store.ts
+new file mode 100644
+index 0000000..3475915
+--- /dev/null
++++ b/src/renderer/features/reader/ai-notes.store.ts
+@@ -0,0 +1,68 @@
++// b3: P7-G
++/**
++ * [SR2-AI-08] ai-notes.store —— AI 笔记数据+状态行观测事实单源（store）。
++ *
++ * ── writeStatusProtocol 失败面幂等自愈声明（门二补充③） ──
++ * 请求写 job（requestAiRead）失败后不产生任何本地残留态（不置 busy 锁/不写
++ * 半态）——重试幂等由 06 服务保证（同篇 pending 在则返回既有 jobId），UI 无
++ * 自建 in-flight 锁，失败后用户可直接重点。
++ *
++ * ── 数据单源接缝声明 ──
++ * ai-notes/list 取数+导入后刷新=本 store 单点；AI-09 渲染层经宿主订阅本
++ * store 分发 props 消费——禁 09 双取（接缝双向锚定：本行+AiNotesSection 头注）。
++ * notes.store 零触碰（新数据新域，C-03「不新增任何 notes.store 字段」纪律）。
++ *
++ * 错误契约：loadNotes/loadObserve 失败上抛（unwrap 的 ApiClientError）——
++ * loadObserve 由组件按轮询失败计数消费（连续 3 次离线提示，列表型静默）；
++ * loadNotes 由组件静默吞（列表瞬态）；requestRead/importAll 失败由组件
++ * toast（动作型，INV-02 两型分清）。observe 通道=status+per-paper 三事实
++ * 聚合（主控裁决方向 B，2026-08-27——六态状态机判定事实单源）。
++ */
++import { create } from 'zustand'
++import { api, unwrap } from '../../api/client'
++import type { AiNote } from '@shared/models/ai-note'
++import type { AiNotesImportRes, ObserveRes } from '@shared/ipc/schemas'
++
++export interface AiNotesStore {
++  /** ai-notes/list 数据（按 paperId 键控——per-tab 语义驻 store） */
++  notesByPaper: Record<string, AiNote[]>
++  /** ai-sensor/observe 观测事实（六态判定输入；null=尚无成功观测） */
++  observeByPaper: Record<string, ObserveRes | null>
++  loadNotes(paperId: string): Promise<void>
++  loadObserve(paperId: string): Promise<void>
++  requestRead(paperId: string): Promise<void>
++  importAll(): Promise<AiNotesImportRes>
++}
++
++export const useAiNotesStore = create<AiNotesStore>()((set, get) => {
++  // 请求序号 stale-guard（notes.store 同型）：晚到的旧响应（含旧失败）丢弃
++  let notesSeq = 0
++  let observeSeq = 0
++
++  return {
++    notesByPaper: {},
++    observeByPaper: {},
++
++    async loadNotes(paperId) {
++      const seq = ++notesSeq
++      const notes = await unwrap(api.ai_sensor.listByPaper({ paperId }))
++      if (seq !== notesSeq) return
++      set({ notesByPaper: { ...get().notesByPaper, [paperId]: notes } })
++    },
++
++    async loadObserve(paperId) {
++      const seq = ++observeSeq
++      const res = await unwrap(api.ai_sensor.observe({ paperId }))
++      if (seq !== observeSeq) return
++      set({ observeByPaper: { ...get().observeByPaper, [paperId]: res } })
++    },
++
++    async requestRead(paperId) {
++      await unwrap(api.ai_sensor.requestAiRead({ paperId }))
++    },
++
++    async importAll() {
++      return unwrap(api.ai_sensor.importAll({}))
++    }
++  }
++})
+diff --git a/tests/e2e/ai-notes-section.spec.ts b/tests/e2e/ai-notes-section.spec.ts
+new file mode 100644
+index 0000000..392eb11
+--- /dev/null
++++ b/tests/e2e/ai-notes-section.spec.ts
+@@ -0,0 +1,140 @@
++import { test, expect } from '@playwright/test'
++import { createHash } from 'node:crypto'
++import { mkdtemp } from 'node:fs/promises'
++import { mkdirSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs'
++import { tmpdir } from 'node:os'
++import { dirname, join } from 'node:path'
++import { isTicketDone } from '../../tickets/registry'
++import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
++import { launch, seedPaperRow } from './e2e-env'
++
++/**
++ * AI 笔记面板 e2e（SR2-AI-08，受锁）。
++ *
++ * 全链（AI-04 侧通道同型——e2e 不拉起真工具）：阅读器笔记 tab→「AI 读文献」
++ * 写 job（真 IPC→真 fs 落盘）→fixture status.json 模拟心跳（SYNAPSE_USER_DATA
++ * 隔离环境 fs 直写——AI-06 协议目录）→状态行 reading→job 移除+corpus-ai
++ * 产物落盘→done-unimported→「导入 AI 笔记」（真 07 导入器→真 DB）→分节
++ * 渲染真实文本（e2e 断言锚——渲染出真实文本，非 testid 空壳）+archive 归档。
++ * 状态行迁移靠组件 5s 轮询消费 fixture 变化——断言超时留 12s 余量。
++ */
++const DEPS = ['SR2-AI-06', 'SR2-AI-07'] as const
++const PAPER_ID = 'e2e-ai-sec'
++
++test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘→导入→分节渲染真实文本', async () => {
++  const pending = DEPS.filter((d) => !isTicketDone(d))
++  test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
++
++  const userData = await mkdtemp(join(tmpdir(), 'synapse-ai08-'))
++  const sensorRoot = join(userData, 'ai-sensor')
++
++  // 第一跳：让应用自己完成建库迁移（reader-text 同型）
++  const seedApp = await launch(userData)
++  await (await seedApp.firstWindow()).waitForTimeout(500)
++  await seedApp.close()
++
++  // 种子：一篇真实 PDF
++  const bytes = createTinyPdf(`AI 面板 e2e ${PDF_KNOWN_TEXT}`)
++  const sha = createHash('sha256').update(bytes).digest('hex')
++  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
++  const abs = join(userData, 'files', ...fileRef.split('/'))
++  mkdirSync(dirname(abs), { recursive: true })
++  writeFileSync(abs, bytes)
++  await seedPaperRow(userData, fileRef, sha, 'AI 面板 e2e 测试文献', PAPER_ID)
++
++  const app = await launch(userData)
++  const win = await app.firstWindow()
++  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
++
++  // 打开阅读器+笔记 tab（AI 面分节挂 ReaderNotesPanel 下部）
++  await win.getByText('AI 面板 e2e 测试文献').first().dblclick()
++  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
++  await win.locator('[data-testid="reader-aside"]').getByRole('tab', { name: '笔记' }).click()
++  const readBtn = win.getByRole('button', { name: 'AI 读文献' })
++  await expect(readBtn).toBeVisible({ timeout: 10_000 })
++
++  // hidden：无 job 无产物——仅按钮行（无状态行）
++  await expect(win.getByTestId('ai-status-line')).toHaveCount(0)
++
++  // 写 job（真 IPC）：pending 态（click 后立即刷新 observe）
++  await readBtn.click()
++  await expect(win.getByTestId('ai-status-line')).toHaveText('已请求 AI 阅读，等待 zcode 拾取…', {
++    timeout: 10_000
++  })
++  await expect(readBtn).toBeDisabled()
++  // 真 fs 断言：pending job 落协议目录
++  const pendingDir = join(sensorRoot, 'pending')
++  const jobs = readdirSync(pendingDir).filter((f) => f.endsWith('.json'))
++  expect(jobs.length).toBe(1)
++
++  // 心跳 fixture（fs 直写——e2e 不拉起真工具）：reading 态（≤12s 轮询余量）
++  writeFileSync(
++    join(sensorRoot, 'status.json'),
++    JSON.stringify({
++      state: '一读中',
++      currentPaper: PAPER_ID,
++      role: 'first-read',
++      updatedAt: new Date().toISOString(),
++      heartbeatAt: new Date().toISOString()
++    })
++  )
++  await expect(win.getByTestId('ai-status-line')).toHaveText('AI 正在读本文（一读中）', {
++    timeout: 12_000
++  })
++
++  // 产物落盘+job 移除（工具完成语义）：done-unimported
++  const productRows = [
++    {
++      role: 'first-read',
++      question: 'Q1',
++      model: 'e2e-test-model',
++      quote_text: PDF_KNOWN_TEXT,
++      prefix_text: '',
++      suffix_text: '',
++      anchor_page: 1,
++      content_md: 'AI 一读笔记正文内容（e2e 真实文本锚）'
++    },
++    {
++      role: 'adjudicate',
++      question: 'divergence',
++      model: 'e2e-test-model',
++      quote_text: '',
++      prefix_text: '',
++      suffix_text: '',
++      anchor_page: null,
++      content_md: '两读者对样本量的分歧评估'
++    }
++  ]
++  mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
++  writeFileSync(join(sensorRoot, 'corpus-ai', `${PAPER_ID}.json`), JSON.stringify(productRows))
++  // 工具完成语义另一半：status 移出本篇（currentPaper=null——心跳仍新鲜但不
++  // 指 P，reading 判定退出，六态按 fs 事实落 done-unimported）
++  writeFileSync(
++    join(sensorRoot, 'status.json'),
++    JSON.stringify({
++      state: '空闲',
++      currentPaper: null,
++      role: null,
++      updatedAt: new Date().toISOString(),
++      heartbeatAt: new Date().toISOString()
++    })
++  )
++  for (const f of readdirSync(pendingDir)) rmSync(join(pendingDir, f))
++  await expect(win.getByTestId('ai-status-line')).toHaveText('AI 已读完，待导入', { timeout: 12_000 })
++  const importBtn = win.getByRole('button', { name: '导入 AI 笔记' })
++  await expect(importBtn).toBeVisible()
++
++  // 导入（真 07 导入器→真 DB）：三桶 toast+分节渲染真实文本（idle 稳态）
++  await importBtn.click()
++  await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
++  await expect(win.getByRole('heading', { name: '一读' })).toBeVisible()
++  await expect(win.getByRole('heading', { name: '裁决' })).toBeVisible()
++  await expect(win.getByText('AI 一读笔记正文内容（e2e 真实文本锚）')).toBeVisible({ timeout: 10_000 })
++  await expect(win.getByText('两读者对样本量的分歧评估')).toBeVisible()
++  await expect(win.getByTestId('ai-status-line')).toHaveCount(0) // idle：稳态无状态行
++  // archive 账本：产物移入归档区（真 fs）
++  expect(existsSync(join(sensorRoot, 'archive', `${PAPER_ID}.json`))).toBe(true)
++  expect(readdirSync(join(sensorRoot, 'corpus-ai'))).toHaveLength(0)
++
++  await app.close()
++})
+diff --git a/tests/e2e/e2e-env.ts b/tests/e2e/e2e-env.ts
+new file mode 100644
+index 0000000..877220a
+--- /dev/null
++++ b/tests/e2e/e2e-env.ts
+@@ -0,0 +1,71 @@
++/**
++ * [SR2-AI-08] e2e 环境基建共用（launch+seedPaperRow）。
++ *
++ * Rule of Three 抽取形态：reader-text.spec / corpus-export.spec 各持一份
++ * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；既有两 spec
++ * 的收敛改写属受锁面改动（超本票面），归主控裁量，不在本单顺手改。
++ */
++import { _electron as electron, type ElectronApplication } from '@playwright/test'
++import { spawn } from 'node:child_process'
++import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises'
++import { join } from 'node:path'
++
++export function launch(userData: string): Promise<ElectronApplication> {
++  return electron.launch({
++    args: ['out/main/index.js'],
++    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
++  })
++}
++
++/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝 */
++function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
++  return new Promise((resolve, reject) => {
++    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
++      env,
++      stdio: 'inherit'
++    })
++    child.on('exit', (code) => {
++      if (code === 0) {
++        resolve()
++      } else {
++        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
++      }
++    })
++    child.on('error', reject)
++  })
++}
++
++/**
++ * 种子落库（better-sqlite3 双 ABI 处理——reader-text.spec 头注存档同型）：
++ * 备份 electron 绑定→子进程用 node ABI 落库→finally 还原（Windows 文件锁
++ * 决定必须子进程）。
++ */
++export async function seedPaperRow(
++  userData: string,
++  fileRef: string,
++  sha: string,
++  title: string,
++  id = 'e2e-seed-paper'
++): Promise<void> {
++  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
++  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
++  const cacheDir = join(pkgDir, 'abi-cache')
++  const wanted = `node-v${process.versions.modules}`
++  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
++  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
++  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
++  const electronBinding = await readFile(releaseBinding)
++  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
++  try {
++    await runSeedScript({
++      ...process.env,
++      SEED_DB: join(userData, 'synapse.db'),
++      SEED_FILE_REF: fileRef,
++      SEED_SHA: sha,
++      SEED_TITLE: title,
++      SEED_ID: id
++    } as NodeJS.ProcessEnv)
++  } finally {
++    await writeFile(releaseBinding, electronBinding)
++  }
++}
+diff --git a/tests/unit/renderer/ai-note-style.test.ts b/tests/unit/renderer/ai-note-style.test.ts
+new file mode 100644
+index 0000000..21e1b82
+--- /dev/null
++++ b/tests/unit/renderer/ai-note-style.test.ts
+@@ -0,0 +1,31 @@
++/**
++ * [SR2-AI-08] ai-note-style —— 七问分色+中文标签单源测试（锁定合约）。
++ * INV-11 单源模式：全枚举覆盖+取色只允许 theme.css CSS 变量（禁散落硬编码色值）。
++ * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
++ */
++import { describe, expect, it } from 'vitest'
++import { AI_NOTE_QUESTIONS, AI_NOTE_ROLES } from '../../../src/shared/models/ai-note'
++import {
++  QUESTION_COLOR,
++  QUESTION_LABEL,
++  ROLE_LABEL,
++  ROLE_ORDER
++} from '../../../src/renderer/features/reader/ai-note-style'
++
++describe('ai-note-style 七问分色单源', () => {
++  it('八问全枚举覆盖：各持 CSS 变量取色+非空中文标签（无硬编码色值）', () => {
++    expect(AI_NOTE_QUESTIONS).toHaveLength(8)
++    for (const q of AI_NOTE_QUESTIONS) {
++      expect(QUESTION_COLOR[q]).toMatch(/^var\(--/)
++      expect(QUESTION_LABEL[q].length).toBeGreaterThan(0)
++    }
++    expect(QUESTION_LABEL.divergence).toBe('分歧报告')
++  })
++
++  it('role 三组中文标签+呈现序（一读/二读/裁决）', () => {
++    expect(ROLE_ORDER).toEqual(AI_NOTE_ROLES)
++    expect(ROLE_LABEL['first-read']).toBe('一读')
++    expect(ROLE_LABEL['second-read']).toBe('二读')
++    expect(ROLE_LABEL.adjudicate).toBe('裁决')
++  })
++})
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+new file mode 100644
+index 0000000..598561b
+--- /dev/null
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -0,0 +1,450 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-AI-08] AiNotesSection —— 笔记面板 AI 面组件测试（锁定合约）。
++ *
++ * 覆盖：六态渲染（mock observe 四事实驱动）/跨格序列①③⑤/轮询失败 error 态
++ * （连续 3 次离线提示行——含 status.json 损坏=上抛计入计数的 mock 驱动路径）/
++ * 导入按钮三桶 toast/卸载清 interval/分节分组与七问分色/只读断言（无写交互
++ * 元素）/条目单击 locateAnchor（INV-20 消费方级）。
++ * always-active（ADR-0017 裁决 3）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import type { AiNote } from '../../../src/shared/models/ai-note'
++import type * as clientModule from '../../../src/renderer/api/client'
++import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
++
++const observe = vi.fn()
++const listByPaper = vi.fn()
++const requestAiRead = vi.fn()
++const importAll = vi.fn()
++
++const { stubApi, locateAnchor } = vi.hoisted(() => ({
++  stubApi: {
++    ai_sensor: {
++      observe: vi.fn(),
++      listByPaper: vi.fn(),
++      requestAiRead: vi.fn(),
++      importAll: vi.fn()
++    }
++  },
++  locateAnchor: vi.fn()
++}))
++stubApi.ai_sensor.observe = observe
++stubApi.ai_sensor.listByPaper = listByPaper
++stubApi.ai_sensor.requestAiRead = requestAiRead
++stubApi.ai_sensor.importAll = importAll
++
++vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  return { ...real, api: stubApi as unknown as typeof clientModule.api }
++})
++vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
++  const real = await importOriginal<typeof toastModule>()
++  return { ...real, showToast: vi.fn() }
++})
++vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
++  const real = await importOriginal<typeof anchorLocateModule>()
++  return { ...real, locateAnchor }
++})
++
++import { showToast } from '../../../src/renderer/shared/ui/Toast'
++import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
++import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useAiNotesStore } from '../../../src/renderer/features/reader/ai-notes.store'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++
++/** observe 四事实（六态判定输入——ai-sensor/observe Res 形状） */
++function facts(patch: {
++  status?: { state: string; currentPaper: string | null; running: boolean } | null
++  hasPendingJob?: boolean
++  productExists?: boolean
++  archivedExists?: boolean
++}) {
++  return {
++    status:
++      patch.status === null || patch.status === undefined
++        ? null
++        : {
++            state: patch.status.state,
++            currentPaper: patch.status.currentPaper,
++            role: null,
++            updatedAt: '2026-08-27T00:00:00Z',
++            heartbeatAt: '2026-08-27T00:00:00Z',
++            running: patch.status.running
++          },
++    hasPendingJob: patch.hasPendingJob ?? false,
++    productExists: patch.productExists ?? false,
++    archivedExists: patch.archivedExists ?? false
++  }
++}
++
++function note(id: string, role: AiNote['role'], question: AiNote['question']): AiNote {
++  return {
++    id,
++    paperId: 'p-1',
++    annotationId: null,
++    role,
++    question,
++    model: 'test-model',
++    quoteText: `quote-${id}`,
++    prefixText: '',
++    suffixText: '',
++    anchorPage: 3,
++    contentMd: `内容-${id}`,
++    createdAt: 't',
++    updatedAt: 't'
++  }
++}
++
++function makeTab(id: string): TabState {
++  return {
++    paperId: id,
++    fileUrl: `app-file://${id}`,
++    fileName: `${id}.pdf`,
++    page: 0,
++    totalPages: 10,
++    zoom: 1,
++    color: 'yellow',
++    annotations: [],
++    status: 'ready',
++    dirty: false
++  }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(node: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(node)
++  })
++}
++
++const flush = async (ms = 0): Promise<void> => {
++  await act(async () => {
++    await vi.advanceTimersByTimeAsync(ms)
++  })
++}
++
++const text = (): string => host?.querySelector('[data-testid="ai-status-line"]')?.textContent ?? ''
++const hasStatus = (): boolean => host?.querySelector('[data-testid="ai-status-line"]') != null
++const readBtn = (): HTMLButtonElement => host?.querySelector('button') as HTMLButtonElement
++
++beforeEach(() => {
++  vi.useFakeTimers()
++  vi.clearAllMocks()
++  observe.mockResolvedValue({ ok: true, data: facts({}) })
++  listByPaper.mockResolvedValue({ ok: true, data: [] })
++  requestAiRead.mockResolvedValue({ ok: true, data: { jobId: 'j-1' } })
++  importAll.mockResolvedValue({ ok: true, data: { imported: [], skipped: [], errors: [] } })
++  locateAnchor.mockResolvedValue('paper')
++  useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') }, order: ['p-1', 'p-2'], activeId: 'p-1' })
++  useAiNotesStore.setState({ notesByPaper: {}, observeByPaper: {} })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  vi.useRealTimers()
++})
++
++it('hidden：无 job 无产物无 DB 数据——仅按钮行（无状态行无分节）', async () => {
++  mount(<AiNotesSection />)
++  await flush()
++  expect(observe).toHaveBeenCalledWith({ paperId: 'p-1' })
++  expect(hasStatus()).toBe(false)
++  expect(host?.querySelector('[data-testid="ai-note-groups"]')).toBeNull()
++  expect(readBtn().textContent).toBe('AI 读文献')
++  expect(readBtn().disabled).toBe(false)
++})
++
++it('idle：无 job 无未导入产物但有 DB 数据——按钮行+分节，无状态行', async () => {
++  listByPaper.mockResolvedValue({ ok: true, data: [note('a1', 'first-read', 'Q1')] })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(hasStatus()).toBe(false)
++  expect(host?.querySelector('[data-testid="ai-note-groups"]')).not.toBeNull()
++})
++
++it('pending：job 在且心跳不新鲜——等待拾取文案（含 state 自述）+按钮禁用', async () => {
++  observe.mockResolvedValue({
++    ok: true,
++    data: facts({ hasPendingJob: true, status: { state: '排队空闲', currentPaper: null, running: false } })
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('已请求 AI 阅读，等待 zcode 拾取…（上次状态：排队空闲）')
++  expect(readBtn().disabled).toBe(true)
++})
++
++it('pending：status.json 不存在（工具从未运行）——文案无自述括号', async () => {
++  observe.mockResolvedValue({ ok: true, data: facts({ hasPendingJob: true }) })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('已请求 AI 阅读，等待 zcode 拾取…')
++})
++
++it('queued：job 在+心跳新鲜+currentPaper=他篇——「当前：他篇」', async () => {
++  observe.mockResolvedValue({
++    ok: true,
++    data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-2', running: true } })
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('AI 正在处理队列（当前：他篇）…')
++})
++
++it('queued：currentPaper=null——无他篇名', async () => {
++  observe.mockResolvedValue({
++    ok: true,
++    data: facts({ hasPendingJob: true, status: { state: '启动中', currentPaper: null, running: true } })
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('AI 正在处理队列…')
++})
++
++it('reading：心跳新鲜+currentPaper=P——「AI 正在读本文（state）」', async () => {
++  observe.mockResolvedValue({
++    ok: true,
++    data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-1', running: true } })
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('AI 正在读本文（一读中）')
++})
++
++it('done-unimported：产物在+未归档+job 无——待导入+导入按钮', async () => {
++  observe.mockResolvedValue({ ok: true, data: facts({ productExists: true }) })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('AI 已读完，待导入')
++  const importBtn = host?.querySelector('button[data-action="import"]') as HTMLButtonElement
++  expect(importBtn).not.toBeNull()
++  expect(importBtn.textContent).toBe('导入 AI 笔记')
++  expect(readBtn().disabled).toBe(false)
++})
++
++it('跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）', async () => {
++  observe
++    .mockResolvedValueOnce({ ok: true, data: facts({}) }) // hidden（首拉）
++    .mockResolvedValueOnce({ ok: true, data: facts({ hasPendingJob: true }) }) // 按钮后刷新→pending
++    .mockResolvedValueOnce({
++      ok: true,
++      data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-2', running: true } }) // 轮询→queued
++    })
++    .mockResolvedValueOnce({
++      ok: true,
++      data: facts({ hasPendingJob: true, status: { state: '二读中', currentPaper: 'p-1', running: true } }) // 轮询→reading
++    })
++    .mockResolvedValueOnce({ ok: true, data: facts({ productExists: true }) }) // 轮询→done-unimported
++    .mockResolvedValueOnce({ ok: true, data: facts({ archivedExists: true }) }) // 导入后刷新→idle 稳态
++  listByPaper
++    .mockResolvedValueOnce({ ok: true, data: [] }) // 首拉空（hidden）
++    .mockResolvedValueOnce({ ok: true, data: [note('a1', 'adjudicate', 'divergence')] }) // 导入后刷新
++
++  mount(<AiNotesSection />)
++  await flush()
++  expect(hasStatus()).toBe(false) // hidden
++
++  act(() => {
++    readBtn().click()
++  })
++  await flush()
++  expect(requestAiRead).toHaveBeenCalledWith({ paperId: 'p-1' })
++  expect(text()).toBe('已请求 AI 阅读，等待 zcode 拾取…') // pending
++
++  await flush(5000)
++  expect(text()).toBe('AI 正在处理队列（当前：他篇）…') // queued
++
++  await flush(5000)
++  expect(text()).toBe('AI 正在读本文（二读中）') // reading
++
++  await flush(5000)
++  expect(text()).toBe('AI 已读完，待导入') // done-unimported
++  const importBtn = host?.querySelector('button[data-action="import"]') as HTMLButtonElement
++  importAll.mockResolvedValue({
++    ok: true,
++    data: { imported: ['p-1'], skipped: [], errors: [] }
++  })
++  act(() => {
++    importBtn.click()
++  })
++  await flush()
++  expect(importAll).toHaveBeenCalledTimes(1)
++  expect(showToast).toHaveBeenCalledWith('AI 笔记导入完成：导入 1 篇，跳过 0 篇', 'success')
++  expect(hasStatus()).toBe(false) // idle：稳态回 idle——无状态行
++  expect(host?.querySelector('[data-testid="ai-note-groups"]')).not.toBeNull() // 分节数据就绪
++})
++
++it('跨格序列③：reading→（心跳过期+job 在）→pending（工具中断统一「等待 zcode」呈现）', async () => {
++  observe
++    .mockResolvedValueOnce({
++      ok: true,
++      data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-1', running: true } })
++    })
++    .mockResolvedValueOnce({
++      ok: true,
++      data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-1', running: false } })
++    })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('AI 正在读本文（一读中）')
++  await flush(5000)
++  expect(text()).toBe('已请求 AI 阅读，等待 zcode 拾取…（上次状态：一读中）')
++})
++
++it('跨格序列⑤：换 tab（paperId 变）→全态重评估（per-tab 语义）', async () => {
++  observe
++    .mockResolvedValueOnce({ ok: true, data: facts({ hasPendingJob: true }) }) // p-1 pending
++    .mockResolvedValueOnce({
++      ok: true,
++      data: facts({ hasPendingJob: true, status: { state: '一读中', currentPaper: 'p-2', running: true } }) // p-2 reading
++    })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(text()).toBe('已请求 AI 阅读，等待 zcode 拾取…')
++  act(() => {
++    useReaderStore.setState({ activeId: 'p-2' })
++  })
++  await flush()
++  expect(observe).toHaveBeenLastCalledWith({ paperId: 'p-2' })
++  expect(text()).toBe('AI 正在读本文（一读中）')
++})
++
++it('轮询失败 error 态：连续失败 3 次显示离线提示行（静默不 toast），成功即复位', async () => {
++  observe
++    .mockRejectedValueOnce(new Error('x'))
++    .mockRejectedValueOnce(new Error('x'))
++    .mockRejectedValueOnce(new Error('x'))
++  mount(<AiNotesSection />)
++  await flush()
++  expect(host?.textContent).not.toContain('AI 状态暂不可用')
++  await flush(5000)
++  expect(host?.textContent).not.toContain('AI 状态暂不可用') // 连续 2 次仍不显示
++  await flush(5000)
++  expect(host?.textContent).toContain('AI 状态暂不可用') // 第 3 次
++  expect(showToast).not.toHaveBeenCalled() // 列表型瞬态：不 toast 轰炸
++  observe.mockResolvedValue({ ok: true, data: facts({}) })
++  await flush(5000)
++  expect(host?.textContent).not.toContain('AI 状态暂不可用') // 成功复位
++})
++
++it('status.json 损坏（readStatus 上抛→observe 拒绝）计入连续失败计数（损坏≠missing 三态分离）', async () => {
++  const corrupted = new Error('status.json 读取/解析失败：…（Unexpected token）——文件损坏？')
++  observe.mockRejectedValue(corrupted).mockRejectedValueOnce(corrupted).mockRejectedValueOnce(corrupted)
++  mount(<AiNotesSection />)
++  await flush()
++  await flush(5000)
++  await flush(5000)
++  expect(host?.textContent).toContain('AI 状态暂不可用')
++})
++
++it('导入按钮三桶 toast：imported/skipped 计数+errors 篇名（error 级）', async () => {
++  observe.mockResolvedValue({ ok: true, data: facts({ productExists: true }) })
++  importAll.mockResolvedValue({
++    ok: true,
++    data: {
++      imported: ['p-1', 'p-3'],
++      skipped: ['p-2'],
++      errors: [{ paperId: 'p-9', reason: '行校验失败' }]
++    }
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  act(() => {
++    ;(host?.querySelector('button[data-action="import"]') as HTMLButtonElement).click()
++  })
++  await flush()
++  expect(showToast).toHaveBeenCalledWith('AI 笔记导入完成：导入 2 篇，跳过 1 篇，失败 1 篇（p-9）', 'error')
++})
++
++it('导入失败（动作型）toast error', async () => {
++  observe.mockResolvedValue({ ok: true, data: facts({ productExists: true }) })
++  importAll.mockRejectedValue(new Error('IO 失败'))
++  mount(<AiNotesSection />)
++  await flush()
++  act(() => {
++    ;(host?.querySelector('button[data-action="import"]') as HTMLButtonElement).click()
++  })
++  await flush()
++  expect(showToast).toHaveBeenCalledWith('操作失败', 'error')
++})
++
++it('「AI 读文献」失败（动作型）toast error；无本地残留态（writeStatusProtocol 幂等自愈——重试可再点）', async () => {
++  requestAiRead.mockRejectedValueOnce(new Error('写 job 失败'))
++  observe.mockResolvedValue({ ok: true, data: facts({}) })
++  mount(<AiNotesSection />)
++  await flush()
++  act(() => {
++    readBtn().click()
++  })
++  await flush()
++  expect(showToast).toHaveBeenCalledWith('操作失败', 'error')
++  expect(readBtn().disabled).toBe(false) // 无自建 in-flight 锁：失败后可重试
++})
++
++it('分节分组：role 三组中文标签按序呈现，divergence 随裁决组；七问分色单源消费', async () => {
++  listByPaper.mockResolvedValue({
++    ok: true,
++    data: [
++      note('a2', 'first-read', 'Q2'),
++      note('a1', 'first-read', 'Q1'),
++      note('b1', 'second-read', 'Q1'),
++      note('c1', 'adjudicate', 'divergence')
++    ]
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'second-read', 'adjudicate'])
++  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['一读', '二读', '裁决'])
++  const dot = groups[0]?.querySelector('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
++  expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
++  const divItem = groups[2]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
++  expect(divItem).not.toBeNull() // divergence 在裁决组内
++  const divDot = divItem?.querySelector('span[aria-hidden]') as HTMLElement
++  expect(divDot.style.background).toBe(QUESTION_COLOR.divergence)
++})
++
++it('只读断言：分节内无任何写交互元素（无 input/textarea/select——INV-19）', async () => {
++  listByPaper.mockResolvedValue({ ok: true, data: [note('a1', 'first-read', 'Q1')] })
++  mount(<AiNotesSection />)
++  await flush()
++  expect(host?.querySelectorAll('input, textarea, select').length).toBe(0)
++})
++
++it('条目单击→locateAnchor（INV-20 单入口消费方；anchorPage 1 基→0 基页）', async () => {
++  listByPaper.mockResolvedValue({ ok: true, data: [note('a1', 'first-read', 'Q1')] })
++  mount(<AiNotesSection />)
++  await flush()
++  act(() => {
++    ;(host?.querySelector('[data-ai-note-id="a1"]') as HTMLElement).click()
++  })
++  expect(locateAnchor).toHaveBeenCalledWith({
++    paperId: 'p-1',
++    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 }
++  })
++})
++
++it('卸载清 interval（INV-14 成对同族）：unmount 后不再轮询', async () => {
++  mount(<AiNotesSection />)
++  await flush()
++  const calls = observe.mock.calls.length
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  await flush(15000)
++  expect(observe.mock.calls.length).toBe(calls)
++})

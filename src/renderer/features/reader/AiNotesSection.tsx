@@ -1,30 +1,26 @@
 // b3: P7-G
 /**
- * [SR2-AI-08] AiNotesSection —— 笔记面板 AI 面（分节+状态行+按钮，
+ * AiNotesSection —— 笔记面板 AI 面（分节+状态行+按钮，
  * 工单：open / strong）
  *
  * ── 行为层 ──
- * - 并入 ReaderNotesPanel 下部分节（C-03 头注预留位「AiNotesSection 并入
- *   本面板下部分节」；面板 props 不动——本组件经 useActiveTab 自取 paperId
- *   同 C-03 防双源）
- * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决三组中文
- *   标签）×组内 question 条目（Q1~Q7+divergence）；条目=锚定段引用块+
- *   content_md 纯文本（textarea 级呈现——负面清单「Markdown 富文本编辑器」
- *   红线，md 不渲染只展示）；**只读**——零写路径（INV-19 渲染面同锚，
- *   v1 无编辑/删除）
- * - 七问分色单源：ai-note-style.ts（本单交付——annotation-style 同族新模块
- *   INV-11：question→CSS 变量映射+中文标签单源；AI-09 渲染层消费同源，
- *   接缝双向锚定声明两文件头注；取色只允许 theme.css 变量，禁散落硬编码）
+ * - 并入 ReaderNotesPanel 下部分节（C-03 预留位）；面板 props 不动——本组件
+ *   经 useActiveTab 自取 paperId（同 C-03 防双源）
+ * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决——
+ *   AiNoteGroupList+ai-note-style 单源）×组内 question 条目；条目=锚定段
+ *   引用块+content_md 纯文本（textarea 级呈现——负面清单红线，md 不渲染只
+ *   展示）；**只读**——零写路径（INV-19，v1 无编辑/删除）
  * - 「AI 正在读」状态行+「AI 读文献」按钮（用户点击=手动激活——D2b）：
  *   按钮经 ai-sensor/request-read 写 job（AI-06 通道）；状态行按需轮询
- *   ai-sensor/status（STATUS_POLL_MS=5s，仅组件挂载期间=笔记面板打开——
- *   ADR §1 门控；卸载清 interval，INV-14 成对同族）
- * - **状态行状态机**（宪法状态机前置；观测=AI-06 可观测态 per 当前篇 P；
- *   门一 B08-1/W08-2/N08-4 处置后六态——**「AI 读文献」按钮行常驻本节
- *   头部**（首次使用入口不悬空）；imported 非稳态移出（瞬时事件：导入
- *   完成→toast+list 刷新→稳态回 idle））：
+ *   **ai-sensor/observe**（主控裁决方向 B，2026-08-27：status+per-paper
+ *   hasPendingJob/productExists/archivedExists 四事实单次聚合——六态判定
+ *   事实单源；STATUS_POLL_MS=5s 仅组件挂载期间=笔记面板打开，ADR §1 门控；
+ *   卸载清 interval，INV-14 成对同族）
+ * - **状态行状态机**（宪法状态机前置；观测=observe 四事实 per 当前篇 P；
+ *   「AI 读文献」按钮行常驻本节头部（首次使用入口不悬空）；imported 非稳态
+ *   移出（瞬时事件：导入完成→toast+list 刷新→稳态回 idle）：
  *
- *   | 态 | 触发事实（06 服务输出） | 呈现 |
+ *   | 态 | 触发事实（observe 输出） | 呈现 |
  *   | --- | --- | --- |
  *   | hidden | 无 job(P)+无未导入产物+无 DB 数据 | 仅按钮行（无状态行无分节） |
  *   | idle | 同 hidden 触发面但有 DB 数据（含已导入稳态） | 按钮行+分节（无状态行） |
@@ -35,68 +31,218 @@
  *
  *   按钮禁用枚举：disabled=pending/queued/reading 三态（06 服务幂等为兜底，
  *   UI 禁用防误解双保险）；enabled=hidden/idle/done-unimported。
- *   跨格序列（审计面）：
- *   ① hidden→pending（按钮）→（queued：他篇在读）→reading→
- *      done-unimported→idle（导入完成，正常全链——queued=job(P) 在而
- *      currentPaper=他篇/null 的中途格）
- *   ② pending 持续（心跳从未起——迟拾取/工具未拉起/工具失败不移 job，
- *      三者同呈现不误报——06 failed 态消解声明）
- *   ③ reading→（心跳过期+job 在=工具中断）→pending（AI-06 序列③渲染面）
- *   ④ done-unimported→pending（重读覆盖）；idle→pending（重读请求：sha
- *      变化重灌路径，07 幂等承接）
- *   ⑤ 换 tab（paperId 变）→全态重评估（per-tab 语义——面板随 active tab，
- *      P7-B 单视图渲染模型先例）
+ *   跨格序列①~⑤见头注工单面（单测①③⑤已用例化；queued 经①的他篇路径）。
  * - 「导入 AI 笔记」按钮（done-unimported 态）：调 ai-notes/import（07 目录
  *   级全量——幂等使无害）→三桶 toast（imported/skipped 计数+errors 篇名）
- *   →list 刷新（E1「应用轮询状态+导入」的手动激活形态——D2b 手动语义保持）
- * - 条目单击→locateAnchor（INV-20 单入口消费方——C-05 服务；篇级/无锚条目
- *   天然走 paper 层防线；本单补 INV-20 跨视图消费方级用例）。**exact 层
- *   接缝声明（门一 W08-3 处置）**：anchor-locate exact 层滚动+闪烁现绑
- *   [data-annotation-id]（AI 条目无 annotationId）——AI 条目 exact 完整
- *   化=AI-09 交付 data-ai-note-id 渲染节点+anchor-locate 延展（滚动目标
- *   选择器扩 [data-ai-note-id]，随 09）；09 落地前本单单击 exact 目标缺失
- *   →anchor-locate 既有行为页级停驻（分步兑现，不另写降级）
- * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（10 同名常量各持——Rule of
- *   Three 第 2 次保持重复，AGENTS 原文；第 3 处出现时抽 shared）
+ *   →list/observe 刷新（E1 手动激活形态——D2b 手动语义保持）
+ * - 条目单击→locateAnchor（INV-20 单入口消费方）。**exact 层接缝声明
+ *   （门一 W08-3 处置）**：exact 层滚动+闪烁现绑 [data-annotation-id]（AI
+ *   条目无 annotationId）——exact 完整化=AI-09 交付 data-ai-note-id 渲染
+ *   节点+anchor-locate 延展；09 落地前单击 exact 目标缺失→anchor-locate
+ *   既有行为页级停驻（分步兑现，不另写降级）
+ * - 轮询常量 STATUS_POLL_MS=5s 为本组件域私有（Rule of Three 第 2 次保持
+ *   重复；第 3 处出现时抽 shared）
  *
  * ── 接口层 ──
- * - export function AiNotesSection(props: { highlightAiNoteId?: string | null }):
- *   JSX.Element（data-ticket 骨架标记，翻 done 前移除；highlightAiNoteId=
- *   AI-09 标注单击反向同步滚动高亮消费面——C-05 highlightAnnotationId 同型）
- * - 交付面：ai-note-style.ts（七问分色单源）+ai-notes.store.ts（AI 笔记
- *   数据+状态行态单源——**本域新 store（新数据新域，非触 notes.store**，
- *   C-03 纪律语义=不动既有 store 字段）+ReaderNotesPanel 挂载一行+
- *   window.api 类型面（renderer 侧通道客户端）
- * - 数据单源接缝声明：ai-notes/list 取数+导入后刷新=store 内单点；
- *   AI-09 渲染层经宿主（ReaderPage 订阅同 store 分发 props）消费——
- *   **禁 09 双取**（接缝双向锚定声明两文件头注）
+ * - export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element
+ * - 交付面：ai-note-style.ts+ai-notes.store.ts（AI 笔记数据+观测事实单源，
+ *   **writeStatusProtocol 失败面幂等自愈声明见该 store 头注**）+本组件
+ *   +AiNoteGroupList+ReaderNotesPanel 挂载一行
+ * - 数据单源接缝声明：ai-notes/list 取数+导入后刷新=store 单点；AI-09 渲染
+ *   层经宿主订阅同 store 消费——禁 09 双取（双向锚定：store 头注+本行）
  *
  * ── 架构层 ──
- * - renderer/features/reader 域；依赖 window.api（ai-sensor/status+request-read
- *   +ai-notes/list+ai-notes/import）+locateAnchor（C-05）+toast 惯例
- *   （INV-02 动作型）；notes.store 零触碰（AI 数据面全归 ai-notes.store 本单
- *   新建——C-03「不新增任何 notes.store 字段」纪律保持）
+ * - renderer/features/reader 域；依赖 window.api（observe/request-read/
+ *   import/list）+locateAnchor（C-05）+toast 惯例（INV-02 动作型）；
+ *   notes.store 零触碰（AI 数据面全归 ai-notes.store）
  *
  * ── 生命周期层 ──
  * - 预留：分节折叠记忆（v1 不做）；divergence 独立组（v1 随裁决组呈现）
- * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（轮询检测到
- *   产物不自动写 DB——手动按钮保持 D2b 手动激活语义）
+ * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（手动按钮保持
+ *   D2b 手动激活语义）
  *
  * ── 文化层 ──
- * - 错误：status 轮询失败=静默重试下一周期（列表型瞬态——不 toast 轰炸；
- *   连续失败 3 次显示离线提示行）；按钮动作型失败 toast（INV-02 两型分清）
- * - 测试：tests/unit/renderer/ai-notes-section.test.tsx [受锁新增]——状态机
- *   六态渲染+跨格序列①③⑤用例（mock 06 服务输出驱动；queued 子格经①
- *   的他篇在读路径覆盖）/分节分组与分色
- *   类名/只读断言（无任何写交互元素）/导入按钮三桶 toast/卸载清 interval；
- *   ai-note-style 单测（映射单源+标签）；e2e [受锁新增 spec]：写 job→
- *   fixture status.json 模拟心跳（SYNAPSE_USER_DATA 隔离环境 fs 直写——
- *   e2e 不拉起真工具，AI-04 app.evaluate 侧通道同型）→状态行变化→导入→
- *   分节渲染真实文本
- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
- * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
- *   git diff → 翻 registry
+ * - 错误：observe 轮询失败=静默重试下一周期（列表型瞬态——不 toast 轰炸；
+ *   连续失败 3 次显示离线提示行；status.json 损坏上抛=同计数路径——损坏≠
+ *   missing 三态分离在 06 服务）；按钮动作型失败 toast（INV-02 两型分清）
+ * - 测试：tests/unit/renderer/ai-notes-section.test.tsx + ai-note-style.test.ts
+ *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
  */
-export function AiNotesSection(_props: { highlightAiNoteId?: string | null }): JSX.Element {
-  return <div data-ticket="SR2-AI-08" />
+import { useEffect, useRef, useState } from 'react'
+import { ApiClientError } from '../../api/client'
+import { showToast } from '../../shared/ui/Toast'
+import { locateAnchor } from './anchor-locate'
+import { AiNoteGroupList } from './AiNoteGroupList'
+import { useAiNotesStore } from './ai-notes.store'
+import { useActiveTab } from './useActiveTab'
+import type { ObserveRes } from '@shared/ipc/schemas'
+import type { AiNote } from '@shared/models/ai-note'
+
+/** 轮询周期（组件域私有——头注行为层声明） */
+const STATUS_POLL_MS = 5000
+/** 连续轮询失败阈值（≥ 此值显示离线提示行） */
+const POLL_FAIL_THRESHOLD = 3
+/** 意外异常（非 ApiClientError）时的兜底中文消息 */
+const ACTION_FAILED = '操作失败'
+
+type Phase = 'hidden' | 'idle' | 'pending' | 'queued' | 'reading' | 'done-unimported'
+/** 空数组稳定引用（selector 快照引用稳定——防 useSyncExternalStore 无限重渲染） */
+const EMPTY_NOTES: AiNote[] = []
+/** 六态推导（判定事实=observe 四事实单源；跨格序列①~⑤由轮询/动作驱动态迁移） */
+function derivePhase(facts: ObserveRes | null | undefined, hasNotes: boolean, paperId: string): Phase {
+  if (facts === null || facts === undefined) return hasNotes ? 'idle' : 'hidden'
+  const st = facts.status
+  if (st !== null && st.running && st.currentPaper === paperId) return 'reading'
+  if (facts.hasPendingJob) return st !== null && st.running ? 'queued' : 'pending'
+  if (facts.productExists && !facts.archivedExists) return 'done-unimported'
+  return hasNotes ? 'idle' : 'hidden'
+}
+
+export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element {
+  const { highlightAiNoteId = null } = props
+  const tab = useActiveTab()
+  const paperId = tab?.paperId ?? null
+
+  const notes = useAiNotesStore((s) => (paperId === null ? EMPTY_NOTES : s.notesByPaper[paperId] ?? EMPTY_NOTES))
+  const facts = useAiNotesStore((s) => (paperId === null ? undefined : s.observeByPaper[paperId]))
+  const loadNotes = useAiNotesStore((s) => s.loadNotes)
+  const loadObserve = useAiNotesStore((s) => s.loadObserve)
+  const requestRead = useAiNotesStore((s) => s.requestRead)
+  const importAll = useAiNotesStore((s) => s.importAll)
+
+  /** 连续轮询失败计数（ref——不触发重渲染；阈值达标记离线行） */
+  const failCount = useRef(0)
+  const [offline, setOffline] = useState(false)
+
+  // 门控轮询：挂载/paperId 变化即拉一次+5s interval；卸载/换篇清（INV-14 成对）
+  useEffect(() => {
+    if (paperId === null) return
+    let cancelled = false
+    failCount.current = 0
+    setOffline(false)
+    const run = (): void => {
+      loadObserve(paperId)
+        .then(() => {
+          if (cancelled) return
+          failCount.current = 0
+          setOffline(false)
+        })
+        .catch(() => {
+          if (cancelled) return
+          failCount.current += 1
+          if (failCount.current >= POLL_FAIL_THRESHOLD) setOffline(true)
+        })
+    }
+    run()
+    const timer = setInterval(run, STATUS_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [paperId, loadObserve])
+
+  // 分节数据（列表型失败静默——离线行不覆盖 DB 取数面）
+  useEffect(() => {
+    if (paperId !== null) void loadNotes(paperId).catch(() => undefined)
+  }, [paperId, loadNotes])
+
+  if (paperId === null) return <></>
+
+  const phase = derivePhase(facts, notes.length > 0, paperId)
+  const busy = phase === 'pending' || phase === 'queued' || phase === 'reading'
+  const st = facts?.status ?? null
+
+  let statusText: string | null = null
+  if (phase === 'pending') {
+    statusText = `已请求 AI 阅读，等待 zcode 拾取…${st !== null ? `（上次状态：${st.state}）` : ''}`
+  } else if (phase === 'queued') {
+    statusText = st?.currentPaper != null ? 'AI 正在处理队列（当前：他篇）…' : 'AI 正在处理队列…'
+  } else if (phase === 'reading') {
+    statusText = `AI 正在读本文（${st?.state ?? ''}）`
+  } else if (phase === 'done-unimported') {
+    statusText = 'AI 已读完，待导入'
+  }
+
+  /** 写 job（动作型失败 toast；失败无本地残留态——幂等自愈声明见 store 头注） */
+  const onRead = (): void => {
+    requestRead(paperId)
+      .then(() => loadObserve(paperId).catch(() => undefined))
+      .catch((e: unknown) => {
+        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+      })
+  }
+
+  /** 导入（07 目录级全量幂等）→三桶 toast+刷新（imported 瞬时事件→稳态回 idle） */
+  const onImport = (): void => {
+    importAll()
+      .then((res) => {
+        const parts = [`导入 ${res.imported.length} 篇`, `跳过 ${res.skipped.length} 篇`]
+        if (res.errors.length > 0) {
+          parts.push(`失败 ${res.errors.length} 篇（${res.errors.map((e) => e.paperId).join('、')}）`)
+        }
+        showToast(`AI 笔记导入完成：${parts.join('，')}`, res.errors.length > 0 ? 'error' : 'success')
+        void loadNotes(paperId).catch(() => undefined)
+        void loadObserve(paperId).catch(() => undefined)
+      })
+      .catch((e: unknown) => {
+        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+      })
+  }
+
+  /** 条目单击→locateAnchor（INV-20 单入口；anchorPage 1 基→0 基页） */
+  const onLocateNote = (n: AiNote): void => {
+    void locateAnchor({
+      paperId: n.paperId,
+      anchor: {
+        quoteText: n.quoteText,
+        prefixText: n.prefixText,
+        suffixText: n.suffixText,
+        anchorPage: n.anchorPage === null ? undefined : n.anchorPage - 1
+      }
+    })
+  }
+
+  return (
+    <section
+      data-testid="ai-notes-section"
+      className="mt-1 flex flex-col gap-1 border-t pt-1"
+      style={{ borderColor: 'var(--border)' }}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          className="shrink-0 rounded border px-2 py-0.5 text-xs"
+          style={{ borderColor: 'var(--border)', color: busy ? 'var(--text-dim)' : 'var(--accent)' }}
+          onClick={onRead}
+        >
+          AI 读文献
+        </button>
+        {offline && (
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
+            AI 状态暂不可用，将继续重试
+          </span>
+        )}
+      </div>
+      {statusText !== null && (
+        <p className="m-0 text-xs" data-testid="ai-status-line" role="status" style={{ color: 'var(--text-dim)' }}>
+          {statusText}
+        </p>
+      )}
+      {phase === 'done-unimported' && (
+        <button
+          type="button"
+          data-action="import"
+          className="self-start rounded border px-2 py-0.5 text-xs"
+          style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}
+          onClick={onImport}
+        >
+          导入 AI 笔记
+        </button>
+      )}
+      {notes.length > 0 && phase !== 'hidden' && (
+        <AiNoteGroupList notes={notes} onLocate={onLocateNote} highlightAiNoteId={highlightAiNoteId} />
+      )}
+    </section>
+  )
 }

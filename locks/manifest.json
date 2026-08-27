@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T01:12:06.8935141Z",
+    "generatedAt":  "2026-08-27T02:00:02.8380320Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "1feb899c97a2a39e4e2b3d57771f4e8e2f0dcac496302cd976d558155020be35"
+                      "sha256":  "452695199c1dfb8885db2df5424d4a795a36a3af88a745d15f07b4e2a454ef13"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "08961e0911d273aa0720f55df380e8517d0debd853ecbfc8704412149aa37a0d"
+                      "sha256":  "e7ffdaab5d22a147ba8b838e0e1378c3686714d034b2d7c795ca667560704485"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -122,8 +122,16 @@
                       "sha256":  "ea448a13a0ff4b87ec0c082a093e64f4b404616419ba1f455ea55cc8e4071c76"
                   },
                   {
+                      "path":  "tests/e2e/ai-notes-section.spec.ts",
+                      "sha256":  "2469575429faa7752e18174626ec327f48d94440a9ca5397bffada86e7238b80"
+                  },
+                  {
                       "path":  "tests/e2e/corpus-export.spec.ts",
                       "sha256":  "973bf57ff6c1e68b233cae913202d3763246c714636ba8b6050e060a677adac5"
+                  },
+                  {
+                      "path":  "tests/e2e/e2e-env.ts",
+                      "sha256":  "062123d804e2ce7421f636fabd8ae9a7489a66d1cbcb84680e00a06fa2032d40"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
@@ -232,6 +240,14 @@
                   {
                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+                      "sha256":  "d33d59b4235f5602d7ed97ff2690c16f9e60ee280b1a30f499c0408b9e05befe"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ai-note-style.test.ts",
+                      "sha256":  "ce53430161744079ef8b467155cd01546530ae6152da9a505bd54a05b14c34e4"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
