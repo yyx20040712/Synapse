@@ -98,9 +98,11 @@ worktrees（宪法 git 纪律完全约束）、brainstorming（设计已裁决�
 
 ## 2. 下一步（基于实际进度的任务指针）
 
-> **2026-08-27 人工线追记**：AI-06 已由正常模式三屋试点完成（c2bfc4f，
-> registry 已 done）——**idle 会话开工以 registry 现查为准，首单顺延
-> SR2-AI-07**；试点实况与 AI-07 预裁决=next-session-handoff-v7。
+> **2026-08-27 人工线追记**：AI-06 已由三屋试点完成（c2bfc4f，registry 已
+> done）——**idle 会话开工以 registry 现查为准，首单顺延 SR2-AI-07**；
+> 三屋模式已立为实现单默认（ADR-0017+AGENTS 工单工作流节+methodology §4
+> 模板）；八条待裁决全数收口（§3 已标记）；最新任务书=
+> next-session-handoff-v8。
 
 - **首单=SR2-AI-06 实现**（票面已就位：状态机表+跨格序列+failed 消解不变量+
   双目录 CLI+companion 整合形态全入头注；会话节奏=头注修订后规则——可连续
