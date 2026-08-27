@@ -55,14 +55,26 @@
   首导」`notes[0]` 期望 first-read 实得 adjudicate（两行都在，顺序对调）；
   实现者同工作树两次 619/619 绿——间歇性。
 - 根因：`ai_notes.repo` `ORDER BY created_at, id`——repo 生成 created_at
-  （导入器单事务批量写=同毫秒），平局决胜键 id=随机 uuid → 顺序=uuid 彩票
-  （~50% 翻转）。该测试自 AI-07 落地起即带概率翻转，本日首次踩中。
+  （导入器**同步循环逐条写入、无事务包裹**（门一 W2 核正——原记「单事务」
+  有误），快速循环内多行同毫秒），平局决胜键 id=随机 uuid → 顺序=uuid
+  彩票（~50% 翻转）。该测试自 AI-07 落地起即带概率翻转，本日首次踩中。
 - 判定依据：宪法「恒绿和随机绿一样危险」（Phase 4 教训同源）；与本日
   缺陷②单元零文件交集（复跑特征化见 git log 提交链）。
 - 处置：独立 mini 单元三屋修复——`ORDER BY created_at, rowid`（插入序
   确定化）+ 可红首证回归测试（构造同 created_at 且 id 序与插入序相反的
   两行，对现状必红）；受锁测试若动走 [locked-change]。
-- 状态：待修（排位=缺陷②收口后、ENR 物化前）。
+- **同型雷清单（门一 W1 扩充，5 处——排查自 ai_notes 修复单元，均另立
+  单元处置）**：①lineage.repo.ts:177/178（同病低频版）②papers.repo.ts
+  :101-103/:272（uuid 决胜低频+year_desc 无第三键）③notes.repo.ts:91
+  （无决胜键）④corpus.assemble.ts:104 orderAiNotes 末级 id 字典序决胜
+  （三键全平=uuid 彩票——**多锚段同键为导入常态，触发面高于前四处**）
+  ⑤corpus.assemble.ts:94 头注「repo 基础序同键兜底」与 repo 新序声明
+  漂移（随④修）。
+- 状态：**已修复收口**（`ORDER BY created_at, rowid` 两处+回归锁新测试
+  +红首证/双变异红证；verify 87 文件 621 用例 EXIT=0 亲验+locks 133；
+  提交见 git log [locked-change]，审计三件=scripts/audits/ainotes-order-*；
+  同型雷 5 处清单在上方——另立单元待排，其中 orderAiNotes 末级决胜
+  触发面最高）。
 
 ## 2. 10 分钟卡五项走查结果（**用户自填区**）
 

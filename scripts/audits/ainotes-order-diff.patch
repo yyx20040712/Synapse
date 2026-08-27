@@ -1,0 +1,86 @@
+diff --git a/docs/reports/2026-08-27_visual-check-findings.md b/docs/reports/2026-08-27_visual-check-findings.md
+index 094194d..abf0f9e 100644
+--- a/docs/reports/2026-08-27_visual-check-findings.md
++++ b/docs/reports/2026-08-27_visual-check-findings.md
+@@ -55,13 +55,21 @@
+   首导」`notes[0]` 期望 first-read 实得 adjudicate（两行都在，顺序对调）；
+   实现者同工作树两次 619/619 绿——间歇性。
+ - 根因：`ai_notes.repo` `ORDER BY created_at, id`——repo 生成 created_at
+-  （导入器单事务批量写=同毫秒），平局决胜键 id=随机 uuid → 顺序=uuid 彩票
+-  （~50% 翻转）。该测试自 AI-07 落地起即带概率翻转，本日首次踩中。
++  （导入器**同步循环逐条写入、无事务包裹**（门一 W2 核正——原记「单事务」
++  有误），快速循环内多行同毫秒），平局决胜键 id=随机 uuid → 顺序=uuid
++  彩票（~50% 翻转）。该测试自 AI-07 落地起即带概率翻转，本日首次踩中。
+ - 判定依据：宪法「恒绿和随机绿一样危险」（Phase 4 教训同源）；与本日
+   缺陷②单元零文件交集（复跑特征化见 git log 提交链）。
+ - 处置：独立 mini 单元三屋修复——`ORDER BY created_at, rowid`（插入序
+   确定化）+ 可红首证回归测试（构造同 created_at 且 id 序与插入序相反的
+   两行，对现状必红）；受锁测试若动走 [locked-change]。
++- **同型雷清单（门一 W1 扩充，5 处——排查自 ai_notes 修复单元，均另立
++  单元处置）**：①lineage.repo.ts:177/178（同病低频版）②papers.repo.ts
++  :101-103/:272（uuid 决胜低频+year_desc 无第三键）③notes.repo.ts:91
++  （无决胜键）④corpus.assemble.ts:104 orderAiNotes 末级 id 字典序决胜
++  （三键全平=uuid 彩票——**多锚段同键为导入常态，触发面高于前四处**）
++  ⑤corpus.assemble.ts:94 头注「repo 基础序同键兜底」与 repo 新序声明
++  漂移（随④修）。
+ - 状态：待修（排位=缺陷②收口后、ENR 物化前）。
+ 
+ ## 2. 10 分钟卡五项走查结果（**用户自填区**）
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 1cb2543..37acae1 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T15:38:42.4302587Z",
++    "generatedAt":  "2026-08-27T16:01:48.7576384Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -189,6 +189,10 @@
+                       "path":  "tests/unit/db/migrate.test.ts",
+                       "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
+                   },
++                  {
++                      "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
++                      "sha256":  "db2365228758bada92b403c98e958e56fc73b3eb071e50200c5a9f5beaf8e449"
++                  },
+                   {
+                       "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
+                       "sha256":  "53c2a8e40bce35481365d0007f3216b5300fdd465da2f294150890eaa3f39ea5"
+diff --git a/src/main/db/repos/ai_notes.repo.ts b/src/main/db/repos/ai_notes.repo.ts
+index ee56961..4d7c183 100644
+--- a/src/main/db/repos/ai_notes.repo.ts
++++ b/src/main/db/repos/ai_notes.repo.ts
+@@ -15,8 +15,11 @@
+  * - 级联语义：paper 删→CASCADE；annotation 删→SET NULL（锚定段降级篇级，
+  *   语料不丢）；FTS v1 不入（检索面先由 zcode 侧 grep 承担，接入应用搜索
+  *   属 P7-E 候选）
+- * - listByPaper 基础序=created_at,id：**确定性兜底非业务序**（同键 id 稳定
+- *   全序——同库同序；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
++ * - listByPaper/listByRole 基础序=created_at,rowid：**确定性兜底非业务序**
++ *   （rowid=SQLite 插入序，同毫秒平局按导入批内顺序决胜——id=随机 uuid 不
++ *   可作决胜键，缺陷③ 2026-08-27：导入器同步循环逐条写入（无事务包裹），
++ *   快速循环内多行可同毫秒打戳成常态平局，id 决胜=uuid 彩票 flaky；同库
++ *   同序维持；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
+  *   INV-24 同哲学分工）
+  * - **v1 无生产者声明解除（回灌导入工单，2026-08-27）**：生产者=回灌导入器
+  *   ai_sensor/ai-notes-import.service（经本 repo insert/deleteByPaper 幂等
+@@ -108,7 +111,7 @@ export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
+        @quoteText, @prefixText, @suffixText, @anchorPage, @contentMd, @now, @now)`
+   )
+   const listByPaperStmt = db.prepare(
+-    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id`
++    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, rowid`
+   )
+   const countStmt = db.prepare(`SELECT COUNT(*) AS n FROM ai_notes WHERE paper_id = ?`)
+   const byIdStmt = db.prepare(`SELECT * FROM ai_notes WHERE id = ?`)
+@@ -117,7 +120,7 @@ export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
+   )
+   const deleteByPaperStmt = db.prepare(`DELETE FROM ai_notes WHERE paper_id = ?`)
+   const listByRoleStmt = db.prepare(
+-    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, id`
++    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, rowid`
+   )
+ 
+   return {

@@ -15,8 +15,11 @@
  * - 级联语义：paper 删→CASCADE；annotation 删→SET NULL（锚定段降级篇级，
  *   语料不丢）；FTS v1 不入（检索面先由 zcode 侧 grep 承担，接入应用搜索
  *   属 P7-E 候选）
- * - listByPaper 基础序=created_at,id：**确定性兜底非业务序**（同键 id 稳定
- *   全序——同库同序；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
+ * - listByPaper/listByRole 基础序=created_at,rowid：**确定性兜底非业务序**
+ *   （rowid=SQLite 插入序，同毫秒平局按导入批内顺序决胜——id=随机 uuid 不
+ *   可作决胜键，缺陷③ 2026-08-27：导入器同步循环逐条写入（无事务包裹），
+ *   快速循环内多行可同毫秒打戳成常态平局，id 决胜=uuid 彩票 flaky；同库
+ *   同序维持；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
  *   INV-24 同哲学分工）
  * - **v1 无生产者声明解除（回灌导入工单，2026-08-27）**：生产者=回灌导入器
  *   ai_sensor/ai-notes-import.service（经本 repo insert/deleteByPaper 幂等
@@ -108,7 +111,7 @@ export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
        @quoteText, @prefixText, @suffixText, @anchorPage, @contentMd, @now, @now)`
   )
   const listByPaperStmt = db.prepare(
-    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, id`
+    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, rowid`
   )
   const countStmt = db.prepare(`SELECT COUNT(*) AS n FROM ai_notes WHERE paper_id = ?`)
   const byIdStmt = db.prepare(`SELECT * FROM ai_notes WHERE id = ?`)
@@ -117,7 +120,7 @@ export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
   )
   const deleteByPaperStmt = db.prepare(`DELETE FROM ai_notes WHERE paper_id = ?`)
   const listByRoleStmt = db.prepare(
-    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, id`
+    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, rowid`
   )
 
   return {

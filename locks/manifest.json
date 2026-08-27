@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T15:38:42.4302587Z",
+    "generatedAt":  "2026-08-27T16:01:48.7576384Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -188,6 +188,10 @@
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
                       "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
+                      "sha256":  "db2365228758bada92b403c98e958e56fc73b3eb071e50200c5a9f5beaf8e449"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
