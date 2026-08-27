@@ -29,6 +29,8 @@ export type TicketArea =
   | 'ui-kit'
   | 'hooks'
   | 'infra'
+  | 'lineage'
+  | 'e2e'
 
 export interface Ticket {
   id: string
@@ -180,7 +182,22 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR2-AI-07', file: 'src/main/services/ai_sensor/ai-notes-import.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '回灌导入器（ai-notes/import+list 通道 [locked-change]；幂等=archive 账本 sha 去重+清面重灌；「v1 无生产者」声明解除；工具永不写 DB）' },
   { id: 'SR2-AI-08', file: 'src/renderer/features/reader/AiNotesSection.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '笔记面板 AI 面（role×question 分节+ai-note-style 七问分色单源+只读+「AI 正在读」状态行六态机+「AI 读文献」按钮写 job+待导入按钮）' },
   { id: 'SR2-AI-09', file: 'src/renderer/features/reader/AiAnnotationLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 标注渲染对等（verifyQuote 重锚同几何管线/存储独立 INV-19/v1 只读/点击高亮跳面板/anchor-locate exact 层延展 data-ai-note-id）' },
-  { id: 'SR2-AI-10', file: 'src/renderer/features/settings/ZcodeLinkSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '设置页 zcode 联动（检测五态三档 fs 纯检测+一键装技能 fs 复制+心跳=06 单源；不代启会话 INV-21 e2e 断言）' }
+  { id: 'SR2-AI-10', file: 'src/renderer/features/settings/ZcodeLinkSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '设置页 zcode 联动（检测五态三档 fs 纯检测+一键装技能 fs 复制+心跳=06 单源；不代启会话 INV-21 e2e 断言）' },
+
+  // ── Phase 7-H 发展脉络图（strong，2026-08-27 开单；b3 指针=蓝图 §4.3
+  //    第四轮裁决 E3/E4/E5+ADR-0014（lineage 数据模型与图形态边界）；
+  //    契约=ADR-0014 §数据模型 DDL 字面+E3 形态（v1 时间树单父/v2 DAG
+  //    升版条件）；INV-27（树单父 service 层不变量）随 01 登记；依赖
+  //    =P7-G AI-06~10 已清（节点 core idea 数据面）+P7-C N1（INV-20 跳转）
+  //    +AI-09 exact 层延展（data-ai-note-id）+P7-F 几何（F-aware 接口
+  //    已冻结——anchor-locate 延展面就位，非阻塞）；偏序（02 依赖 01 通道+模型；
+  //    03 依赖 02 画布/store；04 依赖 03 选择上抛面；05 依赖全组），执行
+  //    按号序串行领取逐单提交（禁同批多单）──
+  { id: 'SR2-LG-01', file: 'src/main/db/repos/lineage.repo.ts', area: 'db', owner: 'strong', status: 'open', summary: '脉络数据基座（迁移 004 ADR-0014 DDL+repo+lineage JSON 草稿导入全有或全无替换式+lineage 域立 [locked-change] 十一域穷举；树单父 INV-27 登记）' },
+  { id: 'SR2-LG-02', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'open', summary: '布局纯函数（y 年份分层+x Reingold-Tilford 零依赖手写+手工覆盖优先）+只读 SVG 画布 pan/zoom INV-14+脉络第四视图 E4+lineage.store 数据单源' },
+  { id: 'SR2-LG-03', file: 'src/renderer/features/lineage/LineageBoard.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '交互编辑（拖拽 x/y 覆盖 JSON Canvas+加删节点边改父+树约束 UI 守卫 INV-27）+自动保存 INV-04 同型+写四通道接线 [locked-change]+退出聚合扩面（不动 TABS-04）' },
+  { id: 'SR2-LG-04', file: 'src/renderer/features/lineage/LineageSidePanel.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '节点侧板（元信息+core idea+AI 笔记分节分色复用 ai-note-style+人工笔记）+笔记双击跳阅读器（OPEN_PAPER_EVENT+INV-20 单入口消费方级用例）' },
+  { id: 'SR2-LG-05', file: 'tests/e2e/lineage.spec.ts', area: 'e2e', owner: 'strong', status: 'open', summary: 'e2e 全链（导入→渲染真实文本→拖拽持久→树拒绝→侧板→双击跳转→保存失败退出拦截→主题节点；guard 占位翻 done 激活）' }
 ] as const
 
 export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))

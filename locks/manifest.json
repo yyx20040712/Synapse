@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T03:05:18.8978469Z",
+    "generatedAt":  "2026-08-27T04:30:26.1655986Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -132,6 +132,10 @@
                   {
                       "path":  "tests/e2e/e2e-env.ts",
                       "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                  },
+                  {
+                      "path":  "tests/e2e/lineage.spec.ts",
+                      "sha256":  "2adbca36f50c49567359a8d54a24d533aec40fe1020d7cf383effe917aafa666"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",

@@ -1,0 +1,456 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 840ced2..816bd2a 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T03:05:18.8978469Z",
++    "generatedAt":  "2026-08-27T04:30:26.1655986Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -133,6 +133,10 @@
+                       "path":  "tests/e2e/e2e-env.ts",
+                       "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                   },
++                  {
++                      "path":  "tests/e2e/lineage.spec.ts",
++                      "sha256":  "2adbca36f50c49567359a8d54a24d533aec40fe1020d7cf383effe917aafa666"
++                  },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+                       "sha256":  "41ba4d687c5138ff63fc4fc65ba49460f6721a3627fcd88ef91d012cdf41a855"
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index 3f59b4f..8f9efae 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -29,6 +29,8 @@ export type TicketArea =
+   | 'ui-kit'
+   | 'hooks'
+   | 'infra'
++  | 'lineage'
++  | 'e2e'
+ 
+ export interface Ticket {
+   id: string
+@@ -180,7 +182,22 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-AI-07', file: 'src/main/services/ai_sensor/ai-notes-import.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '回灌导入器（ai-notes/import+list 通道 [locked-change]；幂等=archive 账本 sha 去重+清面重灌；「v1 无生产者」声明解除；工具永不写 DB）' },
+   { id: 'SR2-AI-08', file: 'src/renderer/features/reader/AiNotesSection.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '笔记面板 AI 面（role×question 分节+ai-note-style 七问分色单源+只读+「AI 正在读」状态行六态机+「AI 读文献」按钮写 job+待导入按钮）' },
+   { id: 'SR2-AI-09', file: 'src/renderer/features/reader/AiAnnotationLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 标注渲染对等（verifyQuote 重锚同几何管线/存储独立 INV-19/v1 只读/点击高亮跳面板/anchor-locate exact 层延展 data-ai-note-id）' },
+-  { id: 'SR2-AI-10', file: 'src/renderer/features/settings/ZcodeLinkSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '设置页 zcode 联动（检测五态三档 fs 纯检测+一键装技能 fs 复制+心跳=06 单源；不代启会话 INV-21 e2e 断言）' }
++  { id: 'SR2-AI-10', file: 'src/renderer/features/settings/ZcodeLinkSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '设置页 zcode 联动（检测五态三档 fs 纯检测+一键装技能 fs 复制+心跳=06 单源；不代启会话 INV-21 e2e 断言）' },
++
++  // ── Phase 7-H 发展脉络图（strong，2026-08-27 开单；b3 指针=蓝图 §4.3
++  //    第四轮裁决 E3/E4/E5+ADR-0014（lineage 数据模型与图形态边界）；
++  //    契约=ADR-0014 §数据模型 DDL 字面+E3 形态（v1 时间树单父/v2 DAG
++  //    升版条件）；INV-27（树单父 service 层不变量）随 01 登记；依赖
++  //    =P7-G AI-06~10 已清（节点 core idea 数据面）+P7-C N1（INV-20 跳转）
++  //    +AI-09 exact 层延展（data-ai-note-id）+P7-F 几何（F-aware 接口
++  //    已冻结——anchor-locate 延展面就位，非阻塞）；偏序（02 依赖 01 通道+模型；
++  //    03 依赖 02 画布/store；04 依赖 03 选择上抛面；05 依赖全组），执行
++  //    按号序串行领取逐单提交（禁同批多单）──
++  { id: 'SR2-LG-01', file: 'src/main/db/repos/lineage.repo.ts', area: 'db', owner: 'strong', status: 'open', summary: '脉络数据基座（迁移 004 ADR-0014 DDL+repo+lineage JSON 草稿导入全有或全无替换式+lineage 域立 [locked-change] 十一域穷举；树单父 INV-27 登记）' },
++  { id: 'SR2-LG-02', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'open', summary: '布局纯函数（y 年份分层+x Reingold-Tilford 零依赖手写+手工覆盖优先）+只读 SVG 画布 pan/zoom INV-14+脉络第四视图 E4+lineage.store 数据单源' },
++  { id: 'SR2-LG-03', file: 'src/renderer/features/lineage/LineageBoard.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '交互编辑（拖拽 x/y 覆盖 JSON Canvas+加删节点边改父+树约束 UI 守卫 INV-27）+自动保存 INV-04 同型+写四通道接线 [locked-change]+退出聚合扩面（不动 TABS-04）' },
++  { id: 'SR2-LG-04', file: 'src/renderer/features/lineage/LineageSidePanel.tsx', area: 'lineage', owner: 'strong', status: 'open', summary: '节点侧板（元信息+core idea+AI 笔记分节分色复用 ai-note-style+人工笔记）+笔记双击跳阅读器（OPEN_PAPER_EVENT+INV-20 单入口消费方级用例）' },
++  { id: 'SR2-LG-05', file: 'tests/e2e/lineage.spec.ts', area: 'e2e', owner: 'strong', status: 'open', summary: 'e2e 全链（导入→渲染真实文本→拖拽持久→树拒绝→侧板→双击跳转→保存失败退出拦截→主题节点；guard 占位翻 done 激活）' }
+ ] as const
+ 
+ export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))
+diff --git a/src/main/db/repos/lineage.repo.ts b/src/main/db/repos/lineage.repo.ts
+new file mode 100644
+index 0000000..5a65930
+--- /dev/null
++++ b/src/main/db/repos/lineage.repo.ts
+@@ -0,0 +1,87 @@
++// b3: P7-H
++/**
++ * [SR2-LG-01] lineage.repo —— 脉络图数据基座（模型+草稿导入，工单：open / strong）
++ *
++ * ── 行为层 ──
++ * - 迁移 004_lineage.sql（ADR-0014 §数据模型 DDL 字面）：lineage_nodes
++ *   （id/paper_id 可空 CASCADE/title/core_idea/year/x/y 手工位置覆盖
++ *   NULL=自动布局——JSON Canvas 模式/created_at/updated_at）+
++ *   lineage_edges（id/from_node/to_node CASCADE/label/UNIQUE(from_node,to_node)）
++ * - **存储=图 schema（v2 DAG 升级免迁移）；v1 行为=树**（单父+无环）——
++ *   树约束是 service 层不变量非 DDL 约束（ADR-0014「树约束=service 层
++ *   不变量+单测」），**INV-27 随本单登记**：**守卫宿主=本单 service 写面**
++ *   （门一 W1 处置——导入校验与 upsertEdge 运行时守卫同在
++ *   lineage.service，LG-03 只接线 IPC 通道不另写守卫）：两写入口同守
++ *   （to 已有父拒/成环拒/自环拒——中文 DomainError reason）；布局消费
++ *   假设（LG-02 森林）以本不变量为前提
++ * - **草稿导入（lineage JSON，ADR-0015 文件协议同精神）**：经 main 侧
++ *   系统对话框选取 JSON（INV-07——dialog 在 ipc 层，corpusSession C-02
++ *   同型）→zod 校验（shared/models/lineage.ts 新建单源：draft 节点=
++ *   paper_id/title/year/core_idea；边=from_paper_id/to_paper_id/label；
++ *   **v1 draft 仅文献节点**——纯主题节点=应用内手工创建（LG-03），不进
++ *   draft 协议）→幽灵 paperId 拦截（papers 表存在性——AI-07 导入器同型）
++ * →树约束校验（多父/环/自环→errors 清单）→**全有或全无**：校验任一
++ *   失败→库不动+行级 errors 返回；全过→替换式导入（清面重灌——草稿
++ *   迭代=整批替换语义，manifest 清空重建 AI-03 同族；人工修订保护=
++ *   renderer 确认对话框「导入将替换现有脉络图」）
++ * - repo 方法族（AI-01 六方法同型）：upsertNode/removeNode（级联边
++ *   DDL 承担）/upsertEdge/removeEdge/listGraph（nodes+edges 全图单读）
++ * - service 写面（本单交付，守卫同上）：upsertNode/upsertEdge（树守卫
++ *   运行时二道防线——导入校验外的增量编辑入口）/removeNode/
++ *   removeEdge——**IPC 四写通道的 schemas 注册归 LG-03**（消费者
++ *   未建窗口），service 方法本单全建全测
++ * - Result 形状：importDraft → { nodeCount, edgeCount } | errors:
++ *   { path: string; reason: string }[]（中文 reason 含字段路径）
++ *
++ * ── 接口层 ──
++ * - export interface LineageRepo { upsertNode(input): LineageNode;
++ *     removeNode(id): number; upsertEdge(input): LineageEdge;
++ *     removeEdge(id): number; listGraph(): { nodes: LineageNode[];
++ *     edges: LineageEdge[] } }
++ * - export function createLineageService(deps)（repo+papers 存在性查询
++ *   注入）：importDraft(raw: unknown) → ImportResult（校验纯函数
++ *   validateDraft 单独导出可测——zod+幽灵+树三段）+四写方法（含
++ *   upsertEdge 树守卫）+graph()
++ * - IPC 面：**新立 lineage 域**（契约测试 10→11 域穷举 [locked-change]——
++ *   契约扩展非放宽；ai_sensor 立域 AI-07 同型）：lineage/import（dialog
++ *   驱动，Res=ImportResult）+lineage/graph（voidReq→全图）两通道；写
++ *   四通道（upsert-node/remove-node/upsert-edge/remove-edge）**接口
++ *   预留面在 LG-03 票面**（本单只立读+导入——消费者未建窗口）
++ * - 交付面：migrations/004_lineage.sql+repos/lineage.repo.ts+services/
++ *   lineage/lineage.service.ts（importDraft+graph+树校验+四写方法含
++ *   upsertEdge 运行时守卫）+shared/models/lineage.ts（zod 单源）+
++ *   ipc/lineage.ts+schemas/api-surface 受锁扩；**受锁新增清单（门一
++ *   N4 处置）：migrations/004_lineage.sql（migrations/ 全目录受锁）+
++ *   shared/models/lineage.ts（shared/ 全目录受锁）+新测试——三者均
++ *   unlock→批内改→generate→apply+[locked-change] 尾注**
++ *
++ * ── 架构层 ──
++ * - 分层：ipc → services → repos → db 单向（dialog 在 ipc 层；禁 service
++ *   直写 SQL）；schemas 预编译+参数绑定（禁拼接——迁移 DDL 除 UNIQUE
++ *   外无应用侧约束补写）
++ * - 依赖：db（迁移执行器既有机制）、papers 只读存在性查询、shared/
++ *   models/lineage（zod 单源受锁 [locked-change]）
++ *
++ * ── 生命周期层 ──
++ * - 预留：v2 DAG 升级（存储免迁移——service 层放宽度=LG 组外新裁决）；
++ *   merge 式导入（v2 候选——v1 替换式+确认对话框已闭环）
++ * - 不做：lineage FTS（无检索诉求）；draft 含主题节点（v1 纯手工）；
++ *   自动引文边（ADR-0012 维持不做——策展边语义 DDL 已辨析）
++ *
++ * ── 文化层 ──
++ * - 错误：校验失败三段 errors 清单（zod 行级/幽灵篇级/树结构图级——
++ *   path 前缀区分）；导入 IO 失败动作型上抛（消费方 toast INV-02）；
++ *   禁静默吞错；库空=graph 空数组（合法态非错误）
++ * - 测试：tests/unit/services/lineage-import.test.ts [受锁新增]——
++ *   draft 合法全过替换重灌/幽灵 paperId 拦截/多父边拒绝/成环拒绝/
++ *   自环拒绝/zod 非法字段行级 reason/空 draft=空图合法/重复边
++ *   UNIQUE 收口中文 reason/树校验纯函数性质（同输入同输出）；
++ *   **service upsertEdge 运行时守卫三拒绝路径单测（W1 宿主用例）**；
++ *   repo 交互真库夹具（AI-01 测试同型）；**新测试 always-active**
++ *   （不经 guardedDescribe——ADR-0017 裁决 3）
++ * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
++ * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ */
++
++/** 工单骨架标记（实现单元替换为真实实现） */
++export const LINEAGE_REPO_STUB = 'SR2-LG-01'
+diff --git a/src/renderer/features/lineage/lineage-layout.ts b/src/renderer/features/lineage/lineage-layout.ts
+new file mode 100644
+index 0000000..0cf4271
+--- /dev/null
++++ b/src/renderer/features/lineage/lineage-layout.ts
+@@ -0,0 +1,67 @@
++// b3: P7-H
++/**
++ * [SR2-LG-02] lineage-layout —— 布局纯函数+只读画布+脉络视图（工单：open / strong）
++ *
++ * ── 行为层 ──
++ * - **布局纯函数**（ADR-0014 E3 字面）：y=年份分层（year 升序层带——
++ *   year null 节点归「未知年份」末层）；x=**Reingold-Tilford tidy tree
++ *   零依赖手写**（线性时间两趟扫描：后序遍历子树轮廓+兄弟间距+前序
++ *   定 x——rescope-verification §4 算法调研母本；**D3 禁引**零新依赖
++ *   红线）；**森林语义**（多根=多棵树并排——INV-27 单父无环前提下
++ *   边集构成森林；孤立节点=单节点树）
++ * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
++ *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
++ *   碰撞避让，票面声明）；null → 布局产出
++ * - **同输入同输出**（纯函数性质单测锚定——排序稳定性：同层节点按
++ *   树序非 id 字典序）
++ * - **只读画布 LineageCanvas.tsx**：SVG 渲染（节点=卡片 rect+标题+
++ *   年份；边=父子连线贝塞尔；主题节点样式区分文献节点）；pan/zoom
++ *   （滚轮缩放+空白拖拽平移——**INV-14 成对注册/成对清理**既有
++ *   不变量扩面，卸载清 listener 用例）
++ * - **新顶层视图「脉络」**（E4）：App 导航第四项（NAV+ViewId 扩
++ *   'lineage'——App.tsx infra 无工单挂载面）；LineagePage.tsx 视图
++ *   宿主（经 lineage/graph 通道取数→**lineage.store 新建数据单源**
++ *   （AI-08 ai-notes.store 同型新数据新域）——03/04 禁双取，接缝
++ *   双向锚定声明两文件头注）
++ *
++ * ── 接口层 ──
++ * - export function layoutLineage(nodes: LineageNode[], edges:
++ *   LineageEdge[]): LayoutResult（{ positions: Map<id,{x,y}>,
++ *   layerYears: number[]（含 NaN 哨兵=未知层? 以 year|null 序列化——
++ *   形状实现定，票面不锁） }——输出坐标系=布局原点系，画布 viewport
++ *   变换归组件）
++ * - 交付面：lineage-layout.ts+LineageCanvas.tsx+LineagePage.tsx+
++ *   lineage.store.ts+App.tsx 挂载（NAV/ViewId/路由三行族）+
++ *   window.api 类型面（lineage 域 01 已立——消费零改动）
++ *
++ * ── 架构层 ──
++ * - renderer/features/lineage 新域；依赖 window.api（lineage/graph）
++ *   +shared/models/lineage（01 交付）+SVG 零第三方（React 内建）；
++ *   **禁引 d3/任何布局库**（ESLint 无白名单新条目——零依赖红线）
++ * - 分层不破：布局纯函数禁 DOM/window（可测性=纯数据进出）
++ *
++ * ── 生命周期层 ──
++ * - 预留：节点显隐过滤（按年份带折叠——v2）；碰撞避让（覆盖节点
++ *   重叠提示）；缩放范围钳制参数化
++ * - 不做：交互编辑（03）；侧板/跳转（04）；DAG 布局（v2 升版条件=
++ *   真实多父编辑诉求——ADR-0014）
++ *
++ * ── 文化层 ──
++ * - 错误：graph 取数失败=列表型瞬态（store.error 消费方呈现+重试——
++ *   INV-02 两型分清）；读面状态枚举（门一 N6）：loading/ready/error
++ *   三态（无用户输入写面——状态机前置纪律不适用结论维持，pan/zoom
++ *   =视口瞬态不入 store）；布局输入含 INV-27 破坏（多父/环）=防御性剔除
++ *   非崩溃（理论不可达——service 层已守；剔除计数 console.warn 供
++ *   调试，不 toast 不静默吞）
++ * - 测试：tests/unit/renderer/lineage-layout.test.ts [受锁新增]——
++ *   单链 x 序单调/兄弟不重叠（轮廓间距断言）/年份分层 y 单调+未知层
++ *   末位/森林多根并排不重叠/覆盖优先（x/y 非 null 节点不移动）/空图
++ *   空结果/纯函数性质（两次调用深相等）；LineageCanvas 组件测试
++ *   [受锁新增]——节点文本真实渲染（「渲染出真实文本」红线）/pan
++ *   listener 成对清理（INV-14）/zoom 钳制；**always-active**
++ * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
++ * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ */
++
++/** 工单骨架标记（实现单元替换为真实实现） */
++export const LINEAGE_LAYOUT_STUB = 'SR2-LG-02'
+diff --git a/src/renderer/features/lineage/LineageBoard.tsx b/src/renderer/features/lineage/LineageBoard.tsx
+new file mode 100644
+index 0000000..e630ca6
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageBoard.tsx
+@@ -0,0 +1,82 @@
++// b3: P7-H
++/**
++ * [SR2-LG-03] LineageBoard —— 脉络图交互编辑+自动保存+退出聚合（工单：open / strong）
++ *
++ * ── 行为层 ──
++ * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父+改 core_idea）：
++ *   **节点拖拽**=写 x/y 覆盖（JSON Canvas 模式——拖拽落点存库，重置
++ *   自动布局=清空 x/y 的按钮动作）；**加节点**两型（从文献库添加=
++ *   搜索选取 paper 建节点（paperId 绑定+title/year 取元数据默认可改）/
++ *   添加主题节点=纯手工 title——「阶段分组」语义）；**加边**=源节点
++ *   菜单「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有
++ *   子边删除+新边添加两动作组合（UI 呈现单操作，service 两调用——
++ *   树约束下改父=换父）；core_idea 编辑=textarea（负面清单红线——
++ *   md 只展示不渲染同族）
++ * - **树约束 UI 守卫**（INV-27 消费面）：加边 to 已有父/成环/自环三
++ *   拒绝路径=动作型 toast 中文 reason（**树守卫宿主=LG-01 service
++ *   upsertEdge 运行时守卫**（门一 W1 闭合）——本单零守卫代码只接
++ *   toast 呈现=双保险同 08 按钮禁用语义）；拒绝用例消费方级断言
++ * - **自动保存**（ADR-0014「保存语义对齐标注/笔记」——**INV-04 同型
++ *   不新立号**）：autosave-first（编辑动作即经写通道落库，无「保存」
++ *   按钮）；失败不推进 savedAt+脏态投影（lineage.store 保存态三态：
++ *   saved/saving/error+重试——notes.store save-status 先例族）；写
++ *   面=**LG-01 已交付 service 四写方法（含守卫），本单接线 IPC 四
++ *   通道**（lineage/upsert-node 等——[locked-change] 扩 schemas/
++ *   api-surface：契约扩展非放宽，十一域穷举不变）
++ * - **退出拦截聚合面扩**（ADR-0014 接缝条款：图视图工单自带，**不动
++ *   TABS-04 已冻结行为面**）：lineage.store 导出 dirty 布尔（保存态≠
++ *   saved 即脏）；App.tsx 退出判定=useTabDirtyAggregate() ||
++ *   useLineageDirty()（组合根单点扩——tab-dirty.ts **行为面零触碰**，
++ *   仅其头注 :14「（TABS-04 的 dirty 输入）」stale 声明行随单更新为
++ *   「tabs∪lineage」——注释级非行为；**接缝双向锚定两文件=lineage.
++ *   store.ts+App.tsx（门一 N3 指名）+tab-dirty.ts stale 行三方**）；
++ *   **INV-22 行随本单扩面**（renderer 聚合信号构成=tab dirty ∪
++ *   lineage dirty——invariants.md 登记行扩写，门一 N2）
++ * - **改父部分失败语义（门一 N5）**：改父=删旧边+加新边两 service 调用
++ *   非原子——删成功+加失败=节点暂无父（**合法中间态**：森林语义兜底
++ *   无数据丢失）；呈现=error 保存态+toast 指明「旧连线已移除，新连线
++ *   未建立」+重试按钮重发加边（或用户手动重连）——不静默回滚不假报成功
++ * - 状态机（编辑动作×保存态，宪法前置）：edit→saving→saved（正常）/
++ *   edit→saving→error（失败：脏保持+toast+重试按钮——**禁本地乐观
++ *   覆盖 savedAt**）/error→retry→saving（恢复）；跨格序列：连续编辑
++ *   中保存失败→后续编辑不丢（动作排队=最后写胜出，stale-guard 请求
++ *   序号 INV-03 同族）
++ *
++ * ── 接口层 ──
++ * - export function LineageBoard(props: { onSelectNode(id: string |
++ *     null): void; selectedNodeId?: string | null }): JSX.Element
++ *   （选择上抛=04 侧板消费面；data-ticket 骨架标记翻 done 前移除）
++ * - 交付面：LineageBoard.tsx（编辑层包裹 02 画布）+写四通道接线+
++ *   lineage.store 写态扩+App.tsx 聚合扩一行族
++ *
++ * ── 架构层 ──
++ * - renderer/features/lineage 域内聚（Board 编辑层与 Canvas 渲染层
++ *   分文件——组件 ≤250 行红线拆分预案：节点菜单/添加节点对话框子
++ *   组件化）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
++ *   禁直调 ipc/禁 Node API
++ *
++ * ── 生命周期层 ──
++ * - 预留：批量撤销（v1 无 undo——标注 undo 栈 UNDO-01 不同域不混）；
++ *   边 label 富化；多选批量操作
++ * - 不做：DAG 多父编辑（v2 升版条件）；协作/云同步（负面清单）；
++ *   md 渲染（textarea 级）
++ *
++ * ── 文化层 ──
++ * - 错误：写失败=动作型 toast+error 保存态+重试（INV-02）；树拒绝三
++ *   路径=动作型 toast；读面沿用 02 store.error；禁静默吞错
++ * - 测试：tests/unit/renderer/lineage-board.test.tsx [受锁新增]——
++ *   拖拽落点→upsert-node x/y 载荷/加节点两型（paperId 绑定 vs 主题）/
++ *   加边树拒绝三路径 toast/改父=删+加两调用/删节点级联（service 面）
++ *   /core_idea 编辑保存/保存失败不推进 savedAt+重试恢复/连续编辑最后
++ *   写胜出（stale-guard）/退出聚合（dirty 时 App 拦截——组合根用例）/
++ *   选择上抛 onSelectNode；**always-active**
++ * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
++ * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
++ *   git diff → 翻 registry
++ */
++export function LineageBoard(_props: {
++  onSelectNode(id: string | null): void
++  selectedNodeId?: string | null
++}): JSX.Element {
++  return <div data-ticket="SR2-LG-03" />
++}
+diff --git a/src/renderer/features/lineage/LineageSidePanel.tsx b/src/renderer/features/lineage/LineageSidePanel.tsx
+new file mode 100644
+index 0000000..a4fdde1
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageSidePanel.tsx
+@@ -0,0 +1,84 @@
++// b3: P7-H
++/**
++ * [SR2-LG-04] LineageSidePanel —— 节点侧板详情+笔记双击跳阅读器（工单：open / strong）
++ *
++ * ── 行为层 ──
++ * - **节点单击=侧板**（蓝图 N3 字面）：元信息（title/year/paperId
++ *   绑定态）+core_idea（只读呈现——编辑归 03 节点面）+**AI 笔记分节**
++ *   （ai_notes/list per paper——role 三组中文标签×question 条目，
++ *   **ai-note-style 分色单源复用**（AI-08 交付——本域禁复写映射，
++ *   接缝双向锚定声明））+**人工笔记**（notes/get 总评层——C-03 数据
++ *   面复用）；主题节点（paperId null）=仅 title/core_idea（无笔记面，
++ *   空态文案「主题节点无笔记」）
++ * - **笔记双击=跳阅读器**（N3：与 N1 共享 INV-20 单入口）：条目双击→
++ *   ①paperId 经 OPEN_PAPER_EVENT 打开阅读器（C-06 总线先例——既有
++ *   载荷=paperId 单字段）；②锚定位=阅读器侧消费（ReaderPage/阅读器
++ *   既有定位面 locateAnchor——**AI 条目锚三元组传递链=全新接缝面**
++ *   （门一 N7 校准：bus 既有载荷无锚字段、跨视图锚递达无先例——
++ *   定位防 stale 守卫参照 anchor-locate.ts:122 locateSeq 同族思想）：
++ *   侧板将 quote/prefix/suffix/anchorPage 经总线载荷扩或 store 信号
++ *   递达（**实现形态票面不锁**——两路径均合法，接缝声明必须落两
++ *   文件头注（本板+阅读器消费侧）；
++ *   INV-20 三防线消费方级用例=页级/篇级降级路径覆盖）；**exact 层
++ *   沿用 AI-09 延展**（data-ai-note-id 目标已就位零改动）
++ * - 双击 vs 单击语义分界：节点单击=选中（03 onSelectNode 上抛→本板）；
++ *   笔记条目双击=跳转（单击无操作——防误触，A_DR 先例族 dblclick）
++ * - 数据单源（门一 W4 论证更正）：AI 笔记本板**直连 window.api
++ *   ai_notes/list**——真实依据=**quality 关卡 renderer features 跨域
++ *   互引红线**（ai-notes.store 属 reader 域，lineage 域 import 即违例；
++ *   window.api 是 renderer 合法取数路径非「双取」）；语义面辅证=
++ *   按需惰性取数（选中节点触发）与 08 面板挂载期轮询生命周期不同
++ *   ——接缝声明入两文件头注（本板+ai-notes.store），review 复核此预裁
++ *
++ * ── 接口层 ──
++ * - export function LineageSidePanel(props: { node: LineageNode | null;
++ *     onJumpToPaper(payload: { paperId: string; anchor?: { quoteText:
++ *     string; prefixText: string; suffixText: string; anchorPage: number |
++ *     null } aiNoteId?: string } | null }): void }): JSX.Element（onJump
++ *   上抛=LineagePage 编排总线发送——板不直发 bus（可测性+分层）；
++ *   data-ticket 骨架标记翻 done 前移除）
++ * - 交付面：LineageSidePanel.tsx+LineagePage 编排接线（bus 发送+阅读器
++ *   侧消费接缝落地）
++ *
++ * ── 架构层 ──
++ * - renderer/features/lineage 域；依赖 window.api（ai_notes/list+notes/
++ *   get）+ai-note-style（跨域只读消费——quality 关卡跨域互引白名单
++ *   组合根条款同型声明）+shared/open-paper-bus；禁 Node API/绝对路径
++ *
++ * ── 生命周期层 ──
++ * - 预留：侧板固定/浮动形态；AI 笔记条目展开锚定原文上下文
++ * - 不做：侧板内编辑（编辑归 03）；自动跳转（双击显式）；主题节点
++ *   人工笔记面（无 paper 绑定无笔记域）
++ *
++ * ── 文化层 ──
++ * - 错误：ai_notes/notes 取数失败=列表型瞬态（本板 error 呈现+重试
++ *   ——INV-02）；空数据=空态文案非错误；跳转=动作型（失败 toast）
++ * - 测试：tests/unit/renderer/lineage-side-panel.test.tsx [受锁新增]
++ *   ——文献节点四区渲染（元信息/core idea/AI 分节分色类名/人工笔记）
++ *   /主题节点空态/AI 条目双击→onJumpToPaper 载荷含锚三元组+aiNoteId/
++ *   无锚条目→载荷 anchor 缺省（篇级防线）/单击不触发跳转/取数失败
++ *   error+重试；**INV-20 消费方级用例**（跳转链路 mock 阅读器侧——
++ *   页级降级路径）；**always-active**
++ * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
++ * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
++ *   git diff → 翻 registry
++ */
++// 骨架占位：node 类型=unknown（LineageNode 单源随 SR2-LG-01 交付 shared/
++// models/lineage，届时替换 import——本文件属 LG-04 实现面）
++export function LineageSidePanel(_props: {
++  node: unknown
++  onJumpToPaper(
++    payload: {
++      paperId: string
++      anchor?: {
++        quoteText: string
++        prefixText: string
++        suffixText: string
++        anchorPage: number | null
++      }
++      aiNoteId?: string
++    } | null
++  ): void
++}): JSX.Element {
++  return <div data-ticket="SR2-LG-04" />
++}
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+new file mode 100644
+index 0000000..c60f727
+--- /dev/null
++++ b/tests/e2e/lineage.spec.ts
+@@ -0,0 +1,47 @@
++// b3: P7-H
++/**
++ * [SR2-LG-05] 脉络图 e2e 全链（工单：open / strong——实现时展开）
++ *
++ * ── 行为层（验收面，蓝图 N3+ROADMAP P7-H 验收行）──
++ * - 全链用例组（fixture lineage JSON 种子→脉络视图）：①导入草稿→
++ *   画布渲染**真实文本**（节点标题/年份可见——宪法 e2e 纪律）；②
++ *   pan/zoom 交互后节点仍可断言；③拖拽节点→重启（reload）→位置
++ *   持久（JSON Canvas 覆盖语义）；④加边树拒绝 toast（多父场景真实
++ *   文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目双击→阅读器
++ *   打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
++ *   自动保存失败路径→退出拦截弹窗（聚合面）——**mock 实现路径注
++ *   （门一 N8）：contextIsolation 下 renderer 不可 mock contextBridge；
++ *   须 electronApp.evaluate 在 main 侧 patch 写通道 handler（AI-04
++ *   桩 showOpenDialog 同族先例），禁静默降级删用例**；⑧主题节点
++ *   添加+编辑 core_idea→reload 持久
++ * - 环境：SYNAPSE_USER_DATA 隔离（e2e-env 既有机制——08/10 同型）；
++ *   导入 fixture=磁盘 JSON 落地+dialog mock（main 侧 evaluate 桩
++ *   showOpenDialog——⑦同族）
++ *
++ * ── 文化层 ──
++ * - **e2e 原生守卫（双条件，门一 W2 处置）**：skip=自身工单未 done
++ *   **或**依赖组（SR2-LG-01~04）任一未 done（corpus-export.spec.ts:90
++ *   依赖守卫先例+自身条件——guardedDescribe 是 vitest 机制无 e2e 面）。
++ *   翻 done 时占位 test 必须已被全链用例替换——**防作弊闭合=主控
++ *   收口亲验**（翻 registry 前核对占位恒真 test 已删、spec 为真实
++ *   用例；机器面不拦恒真占位，亲验是本单唯一防线，不以「K3 同效」
++ *   自居）
++ * - **受锁流程（门一 W3）**：本文件已入 locks manifest——实现替换
++ *   占位必经 locks:unlock→批内改→locks:apply+[locked-change] 尾注
++ *   提交（manifest 与提交同步）
++ * - 完成后：npm run verify 绿（e2e 16→17）→ 人工审查 git diff →
++ *   翻 registry
++ */
++import { test, expect } from '@playwright/test'
++import { isTicketDone } from '../../tickets/registry'
++
++const DEPS = ['SR2-LG-01', 'SR2-LG-02', 'SR2-LG-03', 'SR2-LG-04'] as const
++
++test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）', () => {
++  const pending = [...DEPS, 'SR2-LG-05'].filter((d) => !isTicketDone(d))
++  test.skip(pending.length > 0, `延期：依赖或自身工单未完成 [${pending.join(', ')}]`)
++
++  test('占位：工单实现时替换为全链用例组（主控收口亲验替换）', () => {
++    expect('SR2-LG-05').toBe('SR2-LG-05')
++  })
++})

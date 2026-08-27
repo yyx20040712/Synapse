@@ -1,0 +1,440 @@
+========================================================================
+LG 工单化票面 门一对抗深审（raw）
+========================================================================
+对象：SR2-LG-01~05 五张票面 + registry 块 + TicketArea 扩 + manifest 122
+输入 diff=scripts/audits/lg-ticketing-diff.patch
+审计代理：P7-H 门一对抗深审孙代理（只读；唯一可写=本文件）
+日期：2026-08-27
+
+技能清点（会话开工纪律）：code-review-excellence=用（对抗审查本体）；
+verification-before-completion=用（落盘前逐条核对证据行号）；systematic-debugging/
+TDD/subagent-driven-development 等=不用（纯只读票面文本审计，无实现/调试/派发面；
+禁 npm/test/git 改动性命令）。配置自查：单孙代理直审，无再派发。
+
+------------------------------------------------------------------------
+A. 母本符合度（五票 vs ADR-0014 / ROADMAP P7-H / 蓝图 §4.3 E3·E4·E5·N3 /
+   rescope-verification §4）
+------------------------------------------------------------------------
+A-1 通过。DDL 字面：LG-01 行为层 lineage_nodes（id/paper_id 可空 CASCADE/
+  title/core_idea/year/x/y NULL=自动布局——JSON Canvas 模式/created_at/
+  updated_at）+lineage_edges（id/from/to CASCADE/label/UNIQUE(from_node,
+  to_node)）与 ADR-0014 §数据模型逐列对位（含 UNIQUE 字面）。微瑕见 N9。
+A-2 通过。存储=图 schema、v1 行为=树、树约束=service 层不变量非 DDL——
+  与 ADR「树约束=service 层不变量+单测」字面一致；v2 升级条件（真实多父
+  编辑诉求）在 02/03 生命周期层双现。
+A-3 通过。autosave「INV-04 同型不新立号」=ADR「保存语义对齐标注/笔记
+  （INV-04 同型）」字面；失败不推进 savedAt+脏态投影齐。
+A-4 通过。退出聚合「不动 TABS-04 已冻结范围+组合根单点扩+tab-dirty.ts
+  零触碰」=ADR 接缝条款与 rescope P5「图视图工单自带聚合扩展」的对齐解。
+A-5 通过。E3：y 年份分层+x RT 零依赖手写（线性两趟扫描）+SVG+pan/zoom
+  INV-14+D3 禁引（ESLint 无白名单新条目声明）——rescope §4「~百行可零依赖
+  手写」母本对位。
+A-6 通过。E4：ViewId 扩 'lineage'+NAV 第四项+App.tsx「infra，无工单」
+  挂载面声明与 App.tsx:1-20 现状属实（ViewId 三值/NAV 三项/头注原文一致）。
+A-7 通过。E5：自动引文边不做（ADR-0012 维持）+主题节点=paper_id 可空
+  「阶段分组」语义；draft 仅文献节点为票面新预裁，方向与「人工策展」语义
+  自洽（草稿=梳理智能体的文献继承输出；主题节点=人工概念）。
+A-8 通过。N3：侧板四区（元信息/core idea/AI 分节 ai-note-style 复用/人工
+  笔记 notes/get）+双击=INV-20 单入口（locateAnchor 消费）+主题节点空态
+  ——蓝图 N3 行逐项覆盖。
+A-9 通过。ROADMAP P7-H 验收行五段逐单对位：01=模型+导入（迁移 004，ADR
+  DDL）／02=布局纯函数+SVG 画布／03=交互编辑+自动保存+退出聚合扩面／04=
+  侧板详情+双击跳转／05=e2e 全链（浏览/编辑保存/跳转：用例组①~⑧覆盖
+  浏览（①②⑤⑥）+编辑保存（③④⑦⑧）+跳转（⑥））。内容行全项（时间树
+  画布/两型节点/策展边/单击侧板/双击跳转/拖拽加删改父+自动保存+聚合）在
+  票面均有归属单。微瑕=N1（依赖行省 P7-F）。
+A-10 通过。迁移号 004 可用（现状 migrations/001_init/002_indexes/
+  003_ai_notes）。
+
+------------------------------------------------------------------------
+B. 契约与先例一致性
+------------------------------------------------------------------------
+B-1 通过。①立域流程：api-surface.ts 现状恰 10 域（library/reader/import_/
+  enrich/export_/ai_sensor/tags/notes/settings/system），tests/contracts/
+  api-surface.test.ts:38-47 硬编码 10 域穷举清单——LG-01「契约测试 10→11
+  域穷举 [locked-change]」与代码事实精确对位；ai_sensor 立域（AI-07，
+  api-surface.ts:60-61 注释）同型成立。03 扩四通道时域清单已含 lineage
+  无需再改、动态对账（preload-surface.test.ts:50-55）自动过——两单契约
+  面互不冲突。
+B-2 通过（偏离有据，记 N 说明）。②导入「全有或全无+替换式+确认对话框」
+  vs AI-07 部分成功三桶（aiNotesImportResSchema={imported,skipped,errors}，
+  schemas.ts:216-223）：偏离依据成立——AI-07 是行级笔记（行独立可部分
+  成功），LG 草稿是整图（替换式清面重灌语义下「部分成功」=丢现有图+只进
+  半份草稿=毁坏性），全有或全无+确认对话框是正确方向；AI-03 清空重建同族
+  类比恰当。
+B-3 通过。③INV-27 新立：编号 27=登记册下一可用（invariants.md 现最高
+  INV-26）；内容（树单父、导入与 upsertEdge 两写入口同守、三拒绝路径）+
+  声明处（SR2-LG-01）+强制方式（单测三拒绝用例）符合登记册三要素惯例
+  （INV-26「登记随单锚定」同型）。但守卫锚定面有断链，见 W1。
+B-4 通过。④TicketArea 扩 'lineage'/'e2e' 两枚举值：registry 联合类型
+  扩面；无脚本/lint 规则消费 area 值（check-tickets 仅读 id/file/owner/
+  status），编译面安全；'e2e' 为新 area 首用（先例 AI-05 area='infra' 覆
+  tools 面，无 e2e 先例——不违任何规则）。
+B-5 **W2（偏高）**。⑤e2e 原生守卫对抗结论：**K3 在 e2e 面被弱化**。
+  (a) 先例错引：corpus-export.spec.ts 的守卫是**依赖守卫**——:87
+  `DEPS=['SR2-AI-01'..'SR2-AI-03']`+:90-91 `test.skip(pending.length>0)`，
+  且 :85 头注明文「激活条件：main 侧链条三单 done（renderer 面随本工单
+  原子提交——**不依赖自身状态**）」；先例文件开单即含真实全链用例（受锁
+  验收面前置），open 期依赖满足即激活真实断言——未实现就翻 done→测试红
+  →机器面闭合。
+  (b) LG-05 形态：`test.skip(!isTicketDone('SR2-LG-05'))`=**自身守卫**+恒真
+  占位 `expect('SR2-LG-05').toBe('SR2-LG-05')`。open 期 skip（无风险）；
+  翻 done 未替换占位→占位激活恒真变**绿**——check-tickets 全规则不覆盖
+  （规则 2 tests 侧只限 unimplementedObject/NotImplementedError 占位调用；
+  规则 4b 只查 data-ticket/*_STUB）；「e2e 16→17」计数无法区分（占位 it
+  也计 1）。防线仅剩人工 git diff 审查，且票面把 K3 同效（「K3 防作弊
+  同效」）表述为已闭合——与先例的机器面闭合（开单即真实用例+依赖守卫）
+  相比是实质降级。
+  (c) 修正路径二选一：①按先例开单即写真实全链用例+守卫改 DEPS=
+  ['SR2-LG-01'~'SR2-LG-04']（LG-01~04 全 done 后、05 翻 done 前测试已激活
+  跑真实断言——未实现翻 done 即红）；②保留占位但票面删「K3 同效」措辞、
+  明示「翻 done 提交必须含占位→全链替换的整文件 diff，主控亲验该 diff 为
+  收口单强制项」。
+
+B-6 **W3**。LG-05 缺受锁流程声明：lineage.spec.ts 已入 locks/manifest
+  （本 diff +sha256，且经本次审计实测 manifest sha=工作区 raw sha 一致，
+  开单提交 locks 纪律合格）；但票面文化层无「实现时替换占位=修改受锁文件
+  →先 npm run locks:unlock→改→locks:apply+[locked-change] 尾注」声明
+  （01~04 均有 locks 句式，05 独缺；corpus-export 先例=开单即终稿不再改，
+  LG-05「实现时展开」路线必然触碰已锁文件）。AGENTS「受锁 e2e spec 改动
+  后必须全量 verify」教训条同源。
+
+B-7 **W4**。LG-04「双取禁令不适用」预裁的事实论证失实：票面称「与 08 的
+  store 全局态不同生命周期（08=当前篇轮询面）」——实际 ai-notes.store.ts
+  :26-50 的 notesByPaper 是**按 paperId 键控字典**（头注原文「per-tab 语义
+  驻 store」），loadNotes(paperId) 天然支持任意篇按需加载，「选中节点按需
+  取数」可经 store.loadNotes 复用而非直连 window.api。直连结论本身不违 08
+  字面（AiNotesSection.tsx:50-51 禁令限定「禁 **09** 双取」），但预裁引用
+  的 store 形态描述与代码事实不符——review 复核基准错位，且留下 ai_notes
+  第二取数点的单源张力（INV-11 精神面）。处置：修正论证（真实理由应为
+  「侧板消费生命周期/刷新策略独立、且跨域禁互引（check-quality features
+  不互引红线——lineage 域 import reader 域 store 即违禁）」——这才是直连
+  的正当依据，票面反而没写），或改经共享层下沉。注意：若实现者按现票面
+  文字「复用 store」的诱惑+跨域禁互引规则，会两头堵。
+
+------------------------------------------------------------------------
+C. 接缝与偏序
+------------------------------------------------------------------------
+C-1 通过。偏序链交付物对应完整：01 交付 shared/models/lineage.ts（zod+
+  类型单源）被 02（layoutLineage 参数）/03（store）/04（props.node，占位
+  unknown+替换声明显式）消费；01 的 lineage/graph 通道被 02 消费（「window
+  .api 类型面（lineage 域 01 已立——消费零改动）」）；02 的 store 被 03
+  （写态扩）/04（node 数据经 LineagePage 编排）消费；02 画布被 03 包裹；
+  03 onSelectNode 被 04 消费（04 行为层「03 onSelectNode 上抛→本板」+03
+  接口层 prop+测试「选择上抛」双向闭合）；写四通道 01 预留（「接口预留面
+  在 LG-03 票面——消费者未建窗口」）↔03 接线（「LG-01 预留四通道本单
+  接线」）双向声明闭合；05 依赖全组。
+C-2 **W1**。偏序链唯一断链：**INV-27 的 upsertEdge 写入口守卫无宿主**。
+  LG-01 行为层「导入与 **upsertEdge** 两写入口同守」，但 01 接口层只列
+  createLineageImportService（importDraft+graph），交付面 service=
+  「importDraft+graph+树校验」，测试清单九条全是 draft 整图用例——
+  **service.upsertEdge 单边守卫方法与单测均无归属**；而 01 交付的 repo
+  方法族含无守卫的 upsertEdge（「AI-01 六方法同型」=薄 CRUD）。03 侧「写
+  四通道接线」+「service 已守=双保险」——若 03 的 IPC handler 直调
+  repo.upsertEdge（01 唯一已交付的 upsertEdge 面）则**绕过 service 守卫**，
+  INV-27 半锚定（导入面锚、编辑面空）。修正：01 交付面补 service.
+  upsertEdge（单边树校验：现图+提议边→接受/中文 reason 拒绝）+对应单测，
+  或 03 交付面补 service 包装+单测归属声明——两票面任一侧字面闭合即可。
+C-3 通过。App.tsx（infra 无工单）挂载面互斥：02 动 ViewId/NAV/条件渲染
+  三行族，03 动 quitDirty 聚合行（useTabDirtyAggregate()||
+  useLineageDirty()）——不同区域不撞；按号序串行（02 done→03 开工）期间
+  lineage 视图存在但无写面，聚合未扩无行为差异（时序安全）。04 的
+  LineagePage 编排接线在 02 交付物上按号序后置改写，工单授权面（票面交付
+  面已列）。
+C-4 基本通过（N7/N8）。04 的 OPEN_PAPER_EVENT+锚载荷接缝：open-paper-bus
+  现状 detail 仅 { paperId }（open-paper-bus.ts:19-21）+闩锁 string——
+  跨视图锚递达是**全新面**（无既有先例）；票面给两实现路径（总线载荷/
+  store 信号）+接缝锚定义务（两文件头注）+INV-20 消费方级用例+页级降级
+  覆盖——自由度与验收面平衡成立。open-paper-bus 在 src/renderer/shared/
+  **不受锁**（manifest 锁集=src/shared/**，无 renderer 文件），扩 detail
+  无 locks 障碍，且经 bus 跨域合规（check-quality features 不互引）。
+  微瑕见 N7（「C-05 noteHighlight seq 信号同型」措辞失准）与 N8（e2e ⑦
+  mock 路径未提示）。
+C-5 通过。LG-04 头注「本板直连 ai_notes/list」预裁与 08 票面禁令字面不
+  冲突（08 禁令限定 09 渲染层）——但论证失实已记 W4（跨域禁互引才是真正
+  依据，票面未写）。
+
+------------------------------------------------------------------------
+D. 机器面（check-tickets 六规则逐条推演+交叉引用+行数/UTF-8/locks）
+------------------------------------------------------------------------
+D-1 通过。规则 1 文件存在：五文件实测存在（wc -l 实测 75/65/73/80/35）。
+D-2 通过。规则 2：src 四文件的 SR2 字面引用仅自身 open 号+LG-04 占位注释
+  引 SR2-LG-01（open，合法）；「AI-07/AI-08/AI-09/TABS-04/UNDO-01/C-05」
+  等无 SR2 前缀不触发正则；tests 侧 lineage.spec.ts 的 'SR2-LG-05' 非占位
+  调用（无 unimplementedObject/NotImplementedError）。
+D-3 通过。规则 4：LG-03/04=open+.tsx+含 JSX.Element→data-ticket 两占位齐
+  （Board.tsx:288 div data-ticket="SR2-LG-03"、SidePanel.tsx:374 同型）。
+D-4 通过。规则 4b/3：全组 open 不适用；无 STUB 工单号初值（LINEAGE_REPO_
+  STUB='SR2-LG-01' 是 TS 骨架标记——等等，**此处复核**：规则 4b 只查
+  done 工单文件，open 期合法；翻 done 时票面有「删除 STUB」条款+机器规则
+  4b 拦截——闭合 ✓）。
+D-5 通过。规则 5：无 guardedDescribe（LG 组新测试 always-active=ADR-0017
+  裁决 3 原文「三屋单元新测试不经 guardedDescribe」——引用准确）。
+D-6 通过。规则 6：五文件头首行均 `// b3: P7-H`（整行、位于首代码语句前的
+  头注释区），P7-H 在 ROADMAP 已裁决集（`### P7-H：发展脉络图`，:328）。
+D-7 通过。工单号交叉引用全存在：AI-01/03/06~10、TABS-04、C-02/03/05/06、
+  N1/N3、ADR-0014/0015/0017、INV-02/03/04/07/14/20 均在 registry/登记册/
+  docs 有实位。
+D-8 通过。行数全 <500（75/65/73/80/35）；UTF-8 实测（file 命令确认
+  Unicode UTF-8，中文通读无乱码）；组件 <250。
+D-9 通过。locks：manifest 新增 lineage.spec.ts 行 sha256 与工作区 raw
+  sha 实测一致（48c7ffea…caf）；registry.ts 不在锁集（其改动无需 locks
+  同步）；migrations/004 与 shared/models/lineage.ts 将来新增=受锁路径
+  新增（见 N4）。
+D-10 通过。e2e 计数「16→17」与现状精确吻合（既有 ai-notes-section 2+
+  reader-text 8+corpus-export 1+smoke 4+zcode-link 1=16；先例形态=单
+  test 全链，替换占位后 +1）。
+
+------------------------------------------------------------------------
+E. 状态机前置纪律
+------------------------------------------------------------------------
+E-1 通过。03 有状态机且达标：三态（saved/saving/error）×编辑动作，正常/
+  失败/重试恢复三迁移+跨格序列「连续编辑中保存失败→后续编辑不丢（动作
+  排队=最后写胜出，stale-guard INV-03 同族）」——覆盖 U2 型跨格序列要点
+  （error 态下继续编辑的序列）。符合宪法「态空间+跨格序列」双要求。
+  补充观察=N5（改父两动作组合的部分失败语义未声明，但中间态=无父节点
+  合法（森林语义），无数据丢失，toast 已提示）。
+E-2 通过。02 无状态机面成立：store+异步（graph 取数）但**无用户输入写面**
+  （pan/zoom 瞬态归组件——票面接口层「画布 viewport 变换归组件」明示），
+  宪法三要件（store+异步+用户输入）不齐→不适用。微瑕=N6（读面 loading/
+  ready 未显式枚举，仅 store.error+重试）。
+
+------------------------------------------------------------------------
+FINDINGS 汇总
+------------------------------------------------------------------------
+[B] 0 条
+
+[W] 4 条
+W1（C 接缝）INV-27 upsertEdge 写入口守卫断链：01 交付面/接口层/测试清单均
+    无 service.upsertEdge 单边守卫与单测（repo.upsertEdge=无守卫薄 CRUD），
+    03「service 已守=双保险」悬空——03 handler 若直调 repo 即绕过守卫，
+    INV-27 半锚定。修法：01 或 03 任一侧票面字面补齐归属。
+W2（B5）LG-05 guard 偏离先例+K3 e2e 面弱化：自身守卫+恒真占位 vs corpus-
+    export 依赖守卫（:85「不依赖自身状态」明文）+开单即真实用例；翻 done
+    未替换→恒真绿，check-tickets 全规则与「16→17」计数均不拦，票面
+    「K3 防作弊同效」表述不成立。修法：依赖守卫+开单即真实用例，或明示
+    主控亲验替换 diff 为收口强制项。
+W3（B6）LG-05 缺受锁修改流程声明：lineage.spec.ts 已入锁，「实现时整体
+    替换」必经 locks:unlock→改→apply+[locked-change]，票面无此句（01~04
+    均有 locks 句式）。
+W4（B7）LG-04 双取预裁论证失实：ai-notes.store 实为 notesByPaper 按
+    paperId 字典（ai-notes.store.ts:26-50「per-tab 语义驻 store」），非
+    「08=当前篇轮询面」全局态；直连的正当依据（跨域 features 不互引——
+    lineage 禁 import reader 域 store）票面反而未写。修法：改论证或改
+    经共享层复用；门二复核基准需更正。
+
+[N] 9 条
+N1 registry LG 注释省 P7-F 几何依赖（ROADMAP P7-H 依赖行明列「P7-F 几何
+   （F-aware 接口，先后皆可）」；anchor-locate 已按 F-aware 冻结故非阻塞，
+   语义等价——母本符合度不完整，防后续排期误读）。
+N2 INV-22 行扩面未声明：03 组合根扩改变 INV-22「renderer 聚合信号
+   （useTabDirtyAggregate）」构成；INV-14/INV-20 均有随单扩登记惯例，票面
+   应声明「INV-22 行随 03 扩面」。
+N3 tab-dirty.ts 头注 stale 声明无锚定：:14「（TABS-04 的 dirty 输入）」
+   扩面后输入=tabs∪lineage；票面「tab-dirty.ts 零触碰」与「接缝双向锚定
+   声明两文件头注」的「两文件」未指名——若不含 tab-dirty.ts 则漂移声明
+   无人认领。
+N4 01 受锁新增清单不全：migrations/004_lineage.sql（migrations/ 全目录
+   受锁）与 src/shared/models/lineage.ts（shared/ 全目录受锁）未入票面
+   locks 句式（现句只提「新增受锁测试」；locks:generate 机制可兜底）。
+N5 改父=删边+加边两动作非原子：删成功+加失败=节点无父（合法中间态，森林
+   语义兜底，无数据丢失）；票面未声明部分失败语义与恢复面（用户重连或
+   重试）。
+N6 02 读面状态未显式枚举（loading/ready/error 仅提 error+重试）——状态
+   机前置不适用结论正确（无用户输入写面），枚举可补全。
+N7 「C-05 noteHighlight seq 信号同型」措辞失准：代码无 noteHighlight 实体
+   （实为 anchor-locate.ts locateSeq 模块级防 stale 守卫 :122-252）；且
+   跨视图锚载荷递达无既有先例（bus detail 仅 { paperId }），接缝是全新
+   面——票面已给两路径+锚定义务+消费方级用例，自由度平衡成立，仅类比
+   措辞需校准。
+N8 e2e ⑦「mock 通道 reject」实现路径未提示：contextIsolation 下 renderer
+   不可 mock contextBridge 对象；可行路径=electronApp.evaluate 在 main 侧
+   patch handler（AI-04 桩 showOpenDialog 同族）——建议票面注一句防实现
+   者静默降级删用例。
+N9 LG-01 DDL 摘要省略 lineage_edges.created_at/updated_at（「DDL 字面」
+   锚 ADR-0014 全文，实现照抄无实质风险，摘要不完备仅记录）。
+
+------------------------------------------------------------------------
+统计：0B / 4W / 9N
+------------------------------------------------------------------------
+总评：**回炉**（W 级修票面文字后过门二；非结构性重开）。
+
+理由：母本符合度（A 全项）、契约先例（B1~B4）、偏序链（C-1/C-3）、机器面
+（D 全项）、状态机前置（E 全项）整体扎实，五张票与 ADR-0014/ROADMAP/
+蓝图 N3 的对位密度合格。但 W1（INV-27 编辑面守卫无宿主——不变量锚定的
+实质断链）与 W2/W3（e2e 防作弊面+受锁流程——K3 与 locks 两条宪法级防线
+在 05 单同时弱化）必须在开工前闭合，W4 需更正论证基准。四处均为票面
+文字级修补（补归属声明/改 guard 形态/补 locks 句/改预裁论证），不动五单
+结构与偏序。
+
+回炉清单（按单）：
+- SR2-LG-01：补 service.upsertEdge 单边树守卫+单测归属（或与 03 二择）；
+  受锁新增清单列全（004_lineage.sql/shared/models/lineage.ts）。
+- SR2-LG-03：与 01 闭合 upsertEdge 守卫归属；声明 INV-22 行随单扩面；
+  「接缝双向锚定两文件」指名（含或不含 tab-dirty.ts 的 stale 声明处置）；
+  可选补改父部分失败语义一句。
+- SR2-LG-04：双取预裁论证改为「跨域 features 不互引」真实依据（或改复用
+  路线）；「noteHighlight seq 同型」措辞校准。
+- SR2-LG-05：guard 改依赖守卫+开单即真实全链用例（先例形态），或删「K3
+  同效」措辞+明示主控亲验替换 diff；补 locks:unlock→apply+[locked-change]
+  句式；e2e ⑦ 注 mock 实现路径（main 侧 evaluate patch）。
+- registry 注释（可选 N1）：补「P7-F 几何=F-aware 接口已冻结非阻塞」。
+
+========================================================================
+（全文完——门一对抗深审 raw，供门二终审与主控裁决消费）
+========================================================================
+
+========================================================================
+LG 工单化票面 门一回炉复核（W1~W4 处置核验 + 新矛盾扫描）
+========================================================================
+复核代理：P7-H 门一回炉复核孙代理（独立复核身份；只读，唯一可写=本文件）
+日期：2026-08-27（门一 raw 追加节）
+输入：回炉后重生成 diff=scripts/audits/lg-ticketing-diff.patch（12:31）+
+五票工作区文件 + registry LG 块 + locks/manifest
+方法：W1~W4 逐条对照前审 file:line 语义核验处置；引用锚点实测（check-
+quality.mjs / anchor-locate.ts / tab-dirty.ts / corpus-export.spec.ts /
+ai-notes.store.ts / open-paper-bus.ts / sha256）。
+
+技能清点：code-review-excellence=用（复核本体）；verification-before-
+completion=用（逐条对照实测锚点后落裁决）；systematic-debugging/TDD 等
+=不用（纯只读票面复核，无实现/调试面；禁 npm/test/git 改动性命令）。
+
+------------------------------------------------------------------------
+一、W1~W4 逐条裁决
+------------------------------------------------------------------------
+W1（INV-27 upsertEdge 写入口守卫断链）——**ADDRESSED**。
+  - LG-01 行为层：「守卫宿主=本单 service 写面（门一 W1 处置——导入校验
+    与 upsertEdge 运行时守卫同在 lineage.service，LG-03 只接线 IPC 通道
+    不另写守卫）：两写入口同守（to 已有父拒/成环拒/自环拒——中文
+    DomainError reason）」。
+  - LG-01 交付面：services/lineage/lineage.service.ts（importDraft+graph+
+    树校验+**四写方法含 upsertEdge 运行时守卫**）；service 写面四方法
+    「本单全建全测」。
+  - LG-01 测试清单：新增「**service upsertEdge 运行时守卫三拒绝路径
+    单测（W1 宿主用例）**」——前审要求的单测归属落位。
+  - LG-03 侧：「树守卫宿主=LG-01 service upsertEdge 运行时守卫（门一
+    W1 闭合）——本单零守卫代码只接 toast 呈现」；写面=「LG-01 已交付
+    service 四写方法（含守卫），本单接线 IPC 四通道」。
+  - 语义自洽复核：四写方法中 upsertNode/removeNode/removeEdge 均不引入
+    多父/环/自环（删边只会更森林化），需守卫面恰=导入+upsertEdge 两处
+    ——INV-27「两写入口」字面与 service 面精确对合，无过度/不足。
+  - 前审断链点（01 交付/接口/测试三面均无 upsertEdge 守卫归属）三面
+    全部补齐。
+
+W2（LG-05 自身守卫+恒真占位+「K3 同效」失实）——**ADDRESSED**
+  （前审修正路径②全采，路径①之依赖条件并入）。
+  - 守卫改双条件：spec 实文 `pending=[...DEPS,'SR2-LG-05'].filter(!
+    isTicketDone)`+`test.skip(pending.length>0)`——corpus-export:90
+    依赖守卫形态（实测先例 :88 DEPS+:90-91 test.skip 仍在）∪自身条件；
+    偏离已声明（「依赖守卫先例+自身条件」）。净收益：依赖组全 done 而
+    自身未翻期间占位仍 skip（纯依赖守卫形态下占位将激活恒真假绿）——
+    双条件严格优于处置前，与先例相容且必要。
+  - 「K3 同效」措辞已删，原文改为「机器面不拦恒真占位，亲验是本单唯一
+    防线，**不以『K3 同效』自居**」+「翻 done 时占位 test 必须已被全链
+    用例替换——防作弊闭合=主控收口亲验（翻 registry 前核对占位恒真
+    test 已删、spec 为真实用例）」——前审路径②「明示主控亲验替换 diff
+    为收口强制项」字面落地。
+  - 占位 test 标题自带「主控收口亲验替换」标记，人工 diff 审查可锚。
+
+W3（LG-05 缺受锁修改流程声明）——**ADDRESSED**。
+  - 文化层新增「受锁流程（门一 W3）：本文件已入 locks manifest——实现
+    替换占位必经 locks:unlock→批内改→locks:apply+[locked-change] 尾注
+    提交（manifest 与提交同步）」。
+  - 实测核验：manifest（generatedAt 04:30:26Z=12:30 本地）lineage.
+    spec.ts sha256=2adbca36…a666 == 工作区 raw sha（sha256sum 实测一致）
+    ——回炉改票后锁同步无漂移。
+  - 句式与 01~04 正确分化：已锁修改（unlock→apply）vs 受锁新增
+    （generate+apply），两形态并行无冲突。
+
+W4（LG-04 双取预裁论证失实）——**ADDRESSED**。
+  - 票面更正为：「真实依据=**quality 关卡 renderer features 跨域互引
+    红线**（ai-notes.store 属 reader 域，lineage 域 import 即违例；
+    window.api 是 renderer 合法取数路径非『双取』）；语义面辅证=按需
+    惰性取数与 08 挂载期轮询生命周期不同」——主据/辅证结构与前审 B-7
+    修正建议一致。
+  - 实测坐实：check-quality.mjs:46「renderer features 跨域互引（依赖
+    只能下沉到 renderer/shared）」红线存在；COMPOSITION_ROOT_ALLOW
+    白名单五条（library/tags×2、reader/tab-dirty、reader/ReaderNotes
+    Panel、settings/useExportCorpusEvents）——lineage 不在白名单，
+    import reader/ai-notes.store 确将违例；ai-notes.store.ts 实测位于
+    features/reader/（属 reader 域）+notesByPaper 按 paperId 键控
+    （:25-28 头注「per-tab 语义驻 store」——前审失实点的事实基础未变，
+    新论证不再依赖旧描述）。
+  - 「复用 store」两头堵歧义消除（明确直连+依据）；ai-note-style 跨域
+    只读消费亦声明「白名单组合根条款同型」——与 check-quality 白名单
+    机制（五条受控例外先例）事实相容，合规路径有据。
+  - review 复核基准已更正（「review 复核此预裁」锚新依据）。
+
+------------------------------------------------------------------------
+二、N 项采纳核对（背景清单 vs 实文）
+------------------------------------------------------------------------
+N1 ✓ registry LG 注补「P7-F 几何（F-aware 接口已冻结——anchor-locate
+   延展面就位，非阻塞）」。
+N2 ✓ 03「INV-22 行随本单扩面（invariants.md 登记行扩写，门一 N2）」。
+N3 ✓ 03 指名「两文件=lineage.store.ts+App.tsx+tab-dirty.ts stale 行
+   三方」；tab-dirty.ts:14 头注「（TABS-04 的 dirty 输入=任一 tab
+   dirty）」实测存在，stale 行更新义务有宿主。
+N4 ✓ 01 受锁新增清单列全：004_lineage.sql（migrations/ 受锁）+
+   shared/models/lineage.ts（shared/ 受锁）+新测试，unlock→批内改→
+   generate→apply+[locked-change]。
+N5 ✓ 03 补改父部分失败语义：删成功+加失败=合法中间态（森林兜底）+
+   toast「旧连线已移除，新连线未建立」+重试，不静默回滚不假报成功。
+N6 ✓ 02 读面枚举 loading/ready/error 三态（状态机前置不适用结论维持）。
+N7 ✓ 04 措辞校准：「C-05 noteHighlight seq 信号同型」删除，改「anchor-
+   locate.ts:122 locateSeq 同族思想」+「跨视图锚递达无先例——全新
+   接缝面」——locateSeq 实体实测存在（anchor-locate.ts:97 声明、:134/
+   :151 stale 守卫、:209 自增）；open-paper-bus detail 实测仅
+   { paperId }，全新面声明属实。
+N8 ✓ 05 用例⑦注 mock 实现路径：contextIsolation 下 renderer 不可 mock
+   contextBridge，须 electronApp.evaluate 在 main 侧 patch 写通道
+   handler（AI-04 桩 showOpenDialog 同族），禁静默降级删用例；导入
+   fixture 的 dialog mock 同注。
+N9 不采（纯记录项）✓ 无痕——DDL 摘要仍省 edges 时间戳列，「DDL 字面」
+   锚 ADR-0014 全文维持。
+D 机器面纯记录项维持（占位/骨架标记/行数/UTF-8 回炉后不劣化：五文件
+   86/67/82/84/47 行全 <500；data-ticket 两占位与翻 done 移除条款在；
+   e2e 16→17 计数口径不变）。
+
+------------------------------------------------------------------------
+三、新引入矛盾扫描（回炉改文 vs 既有票面/先例/代码事实）
+------------------------------------------------------------------------
+1. 01「IPC 四写通道的 schemas 注册归 LG-03（消费者未建窗口）」↔03
+   「本单接线 IPC 四通道（[locked-change] 扩 schemas/api-surface：
+   契约扩展非放宽，十一域穷举不变）」——双向声明咬合闭环；「十一域
+   不变」与 01「10→11 域穷举」分工正确（01 立域、03 域内扩通道），
+   与前审 B-1 推演一致。无矛盾。
+2. 05 双条件守卫 vs corpus-export 先例：先例=纯依赖守卫+开单即真实
+   用例+「不依赖自身状态」头注（:86 实测在）；05=依赖∪自身+占位。
+   偏离已在票面声明且必要（有占位待替换的票面需自身条件防依赖满足
+   期占位假绿；先例无占位故无需）。形态相容，无伪同型宣称。无矛盾。
+3. 02「03/04 禁双取（lineage graph 数据单源=lineage.store）」↔04
+   「AI 笔记直连 window.api ai_notes/list」——不同数据域（graph vs
+   ai-notes），04 明文「window.api 是 renderer 合法取数路径非『双取』」；
+   04 的 node 数据仍经 props 由 LineagePage 从 store 编排。无矛盾。
+4. 04 直连 vs 08/09 双取禁令：08 禁令字面限「禁 09 双取」，04 非 09
+   场景；且跨域红线使其无法也不应走 store。无矛盾（前审 B-7 早已
+   认定直连结论不违字面，W4 修的是论证非结论）。
+5. INV-27「两写入口」vs service 四写方法：见 W1 语义自洽复核。无矛盾。
+6. 03「tab-dirty.ts 行为面零触碰，仅头注 stale 行更新」vs AGENTS 受锁/
+   接缝纪律：tab-dirty.ts 不在锁集（renderer 无锁），注释级更新无
+   障碍；与 N3 三方指名一致。无矛盾。
+7. 新记录微瑕两条（N 级，不阻门）：
+   a. 01 接口层 createLineageImportService 工厂签名仍仅列 importDraft，
+      而行为层/交付面已扩为全 service 面（含四写方法）——接口层签名
+      面滞后于行为层声明（实现期工厂返回值自然扩面闭合）。记录备查。
+   b. 04 引「anchor-locate.ts:122 locateSeq」：locateSeq 声明实测在
+      :97（消费 :134/:151/:209）；:122 为前审 N7 给出的守卫区间起点
+      （waitOpen seq 面），行号近似非失实。记录备查。
+
+------------------------------------------------------------------------
+四、结论
+------------------------------------------------------------------------
+W1/W2/W3/W4 全部 **ADDRESSED**（处置均落票面实文，非口头声明）；
+N1~N8 采纳到位、N9 无痕不采；新引入矛盾扫描零冲突（两条 N 级微瑕仅
+记录）；locks sha 回炉后同步实测一致；机器面不劣化。
+
+**裁决：过门二**（无再回炉项；两条微瑕随门二/实现期自然消化，不设
+前置条件）。
+========================================================================
+（回炉复核节完）
+========================================================================
