@@ -10,6 +10,7 @@ import { annotationSchema, annotationInputSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
 import { collectionSchema } from '../models/collection'
+import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
 
 /** 空请求（无参数通道） */
 export const voidReqSchema = z.object({}).strict()
@@ -239,6 +240,27 @@ export type ZcodeLinkDetectRes = z.infer<typeof zcodeLinkDetectResSchema>
 /** zcode-link/install 响应：fileCount=复制落地文件数（目录不计） */
 export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().min(1) }).strict()
 export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
+
+// ── lineage（LG-01 脉络图：草稿导入+全图读——dialog 在 ipc 层 INV-07）────
+/** lineage/import 响应：判别联合（全有或全无——校验任一失败库不动，errors 行级中文） */
+export const lineageImportResSchema = z.union([
+  z
+    .object({ ok: z.literal(true), nodeCount: z.number().int().min(0), edgeCount: z.number().int().min(0) })
+    .strict(),
+  z
+    .object({
+      ok: z.literal(false),
+      errors: z.array(z.object({ path: z.string(), reason: z.string() }).strict())
+    })
+    .strict()
+])
+export type LineageImportRes = z.infer<typeof lineageImportResSchema>
+
+/** lineage/graph 响应：全图单读（库空=空数组，合法态非错误；模型单源=shared/models/lineage） */
+export const lineageGraphResSchema = z
+  .object({ nodes: z.array(lineageNodeSchema), edges: z.array(lineageEdgeSchema) })
+  .strict()
+export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */

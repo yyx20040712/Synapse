@@ -1,0 +1,1432 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 00a4260..38e27e6 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -38,6 +38,7 @@
+ | INV-24 | 片段序单源：一切片段序消费面（阅读器片段列表/corpus md 装配/未来 AI 装配与回灌消费）按同一比较器排序——页码（0 基存储；显示形态 1 基，与 corpus p.N 同口径）→页内文本偏移（startOffset）→创建序（createdAt）→id 兜底全序；**排序禁止字符串字典序比较**（页码跨位数字典序失真），"页码:序号" 字符串形态仅显示用 | 本册+src/shared/annotation-order.ts（SR2-C-01，2026-08-26 P7-C 开单入册） | 单测（annotation-order.test 6 用例：跨页/同页偏移/同偏移创建序/id 兜底/入参不可变/字符串字典序反例）+两消费方用例（C-03 组件测试序消费+corpus golden 结构断言——C-02） | 已锚定（单测级 C-01+消费方级 C-02 golden 结构断言/C-03 组件序消费+C-05 定位同源，2026-08-26） |
+ | INV-25 | ai_notes 级联语义：paper 删除→ai_notes 级联清空（CASCADE，语料随篇亡）；annotation 删除→该行 annotation_id 置 NULL 条目保留（SET NULL，锚定段降级篇级——数据不丢）；级联生效依赖连接级 PRAGMA foreign_keys=ON（connection.ts DB_PRAGMAS 常开） | 迁移 003 DDL 外键子句+src/main/db/repos/ai_notes.repo.ts（SR2-AI-01，2026-08-27 deepseek W1 采纳登记） | repo 单测（ai_notes.repo.test 级联两路径用例：CASCADE 清空/SET NULL 降级篇级——foreign_keys=ON 下真实外键行为） | 已锚定（单测级，2026-08-27） |
+ | INV-26 | 伴随进程文件协议三联：①**移除 pending job 以 corpus-ai/<paperId>.json 产物落盘成功为前提**（任何失败路径 job 一律保留——应用观测坍缩回 pending「等待 zcode」，失败细节经 status.state 自由文本呈现不分支；瞬态「job 已移除+产物未落+心跳新鲜」被排除）②应用判活唯一依据=status.json heartbeatAt 新鲜度（HEARTBEAT_FRESH_MS=10min；running 单源在 ai-sensor.service 输出，消费方不双写阈值；应用永不按 state 值分支——工具自述自由文本不契约化）③协议文件一律 tmp+rename 原子写、首写 mkdir recursive 幂等（应用与工具两侧各自保证） | ADR-0015 §1+ai-sensor.service+companion.mjs（SR2-AI-06，2026-08-27 登记随单锚定） | 单测（ai-sensor.service.test：幂等⑤/readStatus 三态/新鲜度边界/跨格序列①~④ fs 夹具驱动）+CLI 探针（companion.test：四步序全链+failed 三路径 job 保留断言） | 已锚定（单测+探针级 2026-08-27 SR2-AI-06；e2e 消费方面随 AI-08/10） |
++| INV-27 | lineage 树单父不变量：存储=图 schema（v2 DAG 升级免迁移），v1 行为=树——每节点至多一条入边（无多父/无环/无自环）；树约束是 service 层运行时守卫非 DDL 约束；两写入口同守（草稿导入校验+增量编辑 upsertEdge——守卫宿主=service 写面，LG-03 只接线 IPC 不另写守卫）；listGraph 森林语义是 LG-02 布局（Reingold-Tilford 单根树假设）的前提 | ADR-0014+src/main/services/lineage/lineage.service.ts 两守卫口（validateDraft 导入校验三段+upsertEdge 运行时守卫，SR2-LG-01 门一 W1 处置） | 单测三拒绝路径双覆盖（lineage-import.test：导入面多父/环/自环用例+运行行面 upsertEdge 三拒绝用例，各断言中文 reason+库不变） | 已锚定（单测级 2026-08-27 SR2-LG-01） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 816bd2a..48b5d26 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T04:30:26.1655986Z",
++    "generatedAt":  "2026-08-27T05:01:26.0093980Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -65,6 +65,10 @@
+                       "path":  "src/main/db/migrations/003_ai_notes.sql",
+                       "sha256":  "41ccc316b8dc291562950257dc573f0f1ed00866dc7b9dc694636da18c949333"
+                   },
++                  {
++                      "path":  "src/main/db/migrations/004_lineage.sql",
++                      "sha256":  "a60fa92b2fcb327f66840ab5ac510252dffae6435d298dd3261ca2dd4fca15d2"
++                  },
+                   {
+                       "path":  "src/shared/annotation-order.ts",
+                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
+@@ -79,11 +83,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "d1705b365feea9f364bfbf367b3f6ab3cd7a3680ade902e65a8be5b2b66891ef"
++                      "sha256":  "cd94b55ea6f917cb1bf926dcad75fe2e473ded568b3a73f6bb632fa0451b9132"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "ecd0369474611c8698a73d238a8503460d600eb66bcb4c077fda8dec37f26c8b"
++                      "sha256":  "ecba24f1e75998b9ec3990f54488b0cf0166352ecd0efa73d9ae86a68b8a052c"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -97,6 +101,10 @@
+                       "path":  "src/shared/models/collection.ts",
+                       "sha256":  "9712c7defec62a558c8a0b1415dcf4cd5b761823cd171bad68409a4e65294bce"
+                   },
++                  {
++                      "path":  "src/shared/models/lineage.ts",
++                      "sha256":  "fb6cd8b3f61f3bc45f41725f1cb7919909226ab912f6ebdcbea335b0d0bfeded"
++                  },
+                   {
+                       "path":  "src/shared/models/note.ts",
+                       "sha256":  "b9dfc2d1eee448f44a4c72e2fbe32b3530445f0e8f7c51e7fae63027b85d4319"
+@@ -111,7 +119,7 @@
+                   },
+                   {
+                       "path":  "tests/contracts/api-surface.test.ts",
+-                      "sha256":  "f4fb3e3e0ce959dc1fdee910f604501cc4ed58309a112462aa5b955cd983964f"
++                      "sha256":  "3f41d0edd1283920fcc9ae4a93881034e7b4733da9b116a1739fa693f112a6b0"
+                   },
+                   {
+                       "path":  "tests/contracts/app-error.test.ts",
+@@ -175,7 +183,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/db/migrate.test.ts",
+-                      "sha256":  "19044736ad276f032e57dcebbd4bc7fda88a78294f7ced46199ca11dd4021d32"
++                      "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
+@@ -383,7 +391,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/enrich.service.test.ts",
+-                      "sha256":  "a366ecd140fcdb6c30de136c0f36c00146215fe7004e85ae36d30f767b839311"
++                      "sha256":  "bc8129ea06a9cd17631073619dc7ad196832213f66aa2f323944ad89fe369ccf"
+                   },
+                   {
+                       "path":  "tests/unit/services/export.service.test.ts",
+@@ -395,12 +403,16 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/import.service.test.ts",
+-                      "sha256":  "383df337a925ac9f6476b2da701289db3b75db19c795517a50af65e8fbddeb7f"
++                      "sha256":  "31466828c940fe7a4e47e6ccf845905ca85c51c8f90969a8391af5865f066a22"
+                   },
+                   {
+                       "path":  "tests/unit/services/library.service.test.ts",
+                       "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                   },
++                  {
++                      "path":  "tests/unit/services/lineage-import.test.ts",
++                      "sha256":  "8d2925c5b9279c0c77ab9b5dd6389efcd2236c92dd532c2bce54a5aa9956e541"
++                  },
+                   {
+                       "path":  "tests/unit/services/markdown.report.test.ts",
+                       "sha256":  "67bb1092b7dbb9d53a6f626d8b9c431cfea48ae266f5a4180ea27fc3802b4de1"
+@@ -467,7 +479,7 @@
+                   },
+                   {
+                       "path":  "tests/utils/ipc-deps.ts",
+-                      "sha256":  "7a949dbaf1235bfb9a580a74588a87d77d37e55e2c3b7a0443820755d6e53cc8"
++                      "sha256":  "d8ed98dbbabf82afd7debcd36978686562ba5816ec9ca9188eac24ba23fd46be"
+                   },
+                   {
+                       "path":  "tests/utils/pdf-factory.ts",
+diff --git a/src/main/db/migrate.ts b/src/main/db/migrate.ts
+index b121c6f..f384497 100644
+--- a/src/main/db/migrate.ts
++++ b/src/main/db/migrate.ts
+@@ -11,6 +11,7 @@ import type { SqliteDb } from './connection'
+ import initSql from './migrations/001_init.sql?raw'
+ import indexesSql from './migrations/002_indexes.sql?raw'
+ import aiNotesSql from './migrations/003_ai_notes.sql?raw'
++import lineageSql from './migrations/004_lineage.sql?raw'
+ 
+ export interface Migration {
+   version: number
+@@ -22,7 +23,8 @@ export interface Migration {
+ export const MIGRATIONS: readonly Migration[] = [
+   { version: 1, name: 'init', sql: initSql },
+   { version: 2, name: 'indexes', sql: indexesSql },
+-  { version: 3, name: 'ai_notes', sql: aiNotesSql }
++  { version: 3, name: 'ai_notes', sql: aiNotesSql },
++  { version: 4, name: 'lineage', sql: lineageSql }
+ ]
+ 
+ export interface MigrateResult {
+diff --git a/src/main/db/repos/index.ts b/src/main/db/repos/index.ts
+index 02f2c18..d4a0473 100644
+--- a/src/main/db/repos/index.ts
++++ b/src/main/db/repos/index.ts
+@@ -7,6 +7,7 @@ import { createPapersRepo, type PaperRow, type PapersRepo } from './papers.repo'
+ import { createAnnotationsRepo, type AnnotationsRepo } from './annotations.repo'
+ import { createNotesRepo, type NotesRepo } from './notes.repo'
+ import { createAiNotesRepo, type AiNotesRepo } from './ai_notes.repo'
++import { createLineageRepo, type LineageRepo } from './lineage.repo'
+ import { createTagsRepo, type TagsRepo } from './tags.repo'
+ import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
+ 
+@@ -15,6 +16,7 @@ export interface Repos {
+   annotations: AnnotationsRepo
+   notes: NotesRepo
+   aiNotes: AiNotesRepo
++  lineage: LineageRepo
+   tags: TagsRepo
+   collections: CollectionsRepo
+   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
+@@ -29,10 +31,11 @@ export function createRepos(db: SqliteDb): Repos {
+     annotations: createAnnotationsRepo(db),
+     notes: createNotesRepo(db),
+     aiNotes: createAiNotesRepo(db),
++    lineage: createLineageRepo(db),
+     tags: createTagsRepo(db),
+     collections: createCollectionsRepo(db),
+     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
+   }
+ }
+ 
+-export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, TagsRepo, CollectionsRepo }
++export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, LineageRepo, TagsRepo, CollectionsRepo }
+diff --git a/src/main/db/repos/lineage.repo.ts b/src/main/db/repos/lineage.repo.ts
+index 5a65930..a746e4c 100644
+--- a/src/main/db/repos/lineage.repo.ts
++++ b/src/main/db/repos/lineage.repo.ts
+@@ -26,6 +26,8 @@
+  *   renderer 确认对话框「导入将替换现有脉络图」）
+  * - repo 方法族（AI-01 六方法同型）：upsertNode/removeNode（级联边
+  *   DDL 承担）/upsertEdge/removeEdge/listGraph（nodes+edges 全图单读）
++ *   +clearGraph（替换式导入清面原语——AI-01 deleteByPaper 对应物，
++ *   自裁申报：票面接口清单五方法+清面原语=六方法族）
+  * - service 写面（本单交付，守卫同上）：upsertNode/upsertEdge（树守卫
+  *   运行时二道防线——导入校验外的增量编辑入口）/removeNode/
+  *   removeEdge——**IPC 四写通道的 schemas 注册归 LG-03**（消费者
+@@ -37,7 +39,7 @@
+  * - export interface LineageRepo { upsertNode(input): LineageNode;
+  *     removeNode(id): number; upsertEdge(input): LineageEdge;
+  *     removeEdge(id): number; listGraph(): { nodes: LineageNode[];
+- *     edges: LineageEdge[] } }
++ *     edges: LineageEdge[] }; clearGraph(): void }
+  * - export function createLineageService(deps)（repo+papers 存在性查询
+  *   注入）：importDraft(raw: unknown) → ImportResult（校验纯函数
+  *   validateDraft 单独导出可测——zod+幽灵+树三段）+四写方法（含
+@@ -72,6 +74,11 @@
+  * - 错误：校验失败三段 errors 清单（zod 行级/幽灵篇级/树结构图级——
+  *   path 前缀区分）；导入 IO 失败动作型上抛（消费方 toast INV-02）；
+  *   禁静默吞错；库空=graph 空数组（合法态非错误）
++ * - upsert 语义：ON CONFLICT(id) DO UPDATE（created_at 首插保留，
++ *   updated_at 刷新）；UNIQUE(from_node,to_node) 冲突 DDL 抛错——
++ *   应用层中文守卫在 service（repo 保持薄，异常原样上抛）
++ * - listGraph 基础序=created_at,id 确定性兜底（AI-01 同哲学；业务布局
++ *   序归 LG-02）
+  * - 测试：tests/unit/services/lineage-import.test.ts [受锁新增]——
+  *   draft 合法全过替换重灌/幽灵 paperId 拦截/多父边拒绝/成环拒绝/
+  *   自环拒绝/zod 非法字段行级 reason/空 draft=空图合法/重复边
+@@ -82,6 +89,144 @@
+  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+  */
++import { randomUUID } from 'node:crypto'
++import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '../../../shared/models/lineage'
++import type { SqliteDb } from '../connection'
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const LINEAGE_REPO_STUB = 'SR2-LG-01'
++export interface LineageRepo {
++  /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新） */
++  upsertNode(input: LineageNodeUpsert): LineageNode
++  /** 删节点；关联边由 DDL CASCADE 承担。返回删行数 */
++  removeNode(id: string): number
++  /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service） */
++  upsertEdge(input: LineageEdgeUpsert): LineageEdge
++  removeEdge(id: string): number
++  /** 全图单读（nodes+edges；created_at,id 确定性序——库空=空数组合法态） */
++  listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
++  /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
++  clearGraph(): void
++}
++
++/** lineage_nodes 表行形状（列名原样，蛇形） */
++interface LineageNodeRow {
++  id: string
++  paper_id: string | null
++  title: string
++  core_idea: string
++  year: number | null
++  x: number | null
++  y: number | null
++  created_at: string
++  updated_at: string
++}
++
++/** lineage_edges 表行形状（列名原样，蛇形） */
++interface LineageEdgeRow {
++  id: string
++  from_node: string
++  to_node: string
++  label: string
++  created_at: string
++  updated_at: string
++}
++
++function toNode(row: LineageNodeRow): LineageNode {
++  return {
++    id: row.id,
++    paperId: row.paper_id,
++    title: row.title,
++    coreIdea: row.core_idea,
++    year: row.year,
++    x: row.x,
++    y: row.y,
++    createdAt: row.created_at,
++    updatedAt: row.updated_at
++  }
++}
++
++function toEdge(row: LineageEdgeRow): LineageEdge {
++  return {
++    id: row.id,
++    fromNode: row.from_node,
++    toNode: row.to_node,
++    label: row.label,
++    createdAt: row.created_at,
++    updatedAt: row.updated_at
++  }
++}
++
++export function createLineageRepo(db: SqliteDb): LineageRepo {
++  const upsertNodeStmt = db.prepare(
++    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, created_at, updated_at)
++     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @now, @now)
++     ON CONFLICT(id) DO UPDATE SET
++       paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
++       year = excluded.year, x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`
++  )
++  const upsertEdgeStmt = db.prepare(
++    `INSERT INTO lineage_edges (id, from_node, to_node, label, created_at, updated_at)
++     VALUES (@id, @fromNode, @toNode, @label, @now, @now)
++     ON CONFLICT(id) DO UPDATE SET
++       from_node = excluded.from_node, to_node = excluded.to_node,
++       label = excluded.label, updated_at = excluded.updated_at`
++  )
++  const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
++  const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
++  const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
++  const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
++  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, id`)
++  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, id`)
++  const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
++  const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
++
++  return {
++    upsertNode(input: LineageNodeUpsert): LineageNode {
++      const id = input.id ?? randomUUID()
++      const now = new Date().toISOString()
++      upsertNodeStmt.run({
++        id,
++        paperId: input.paperId,
++        title: input.title,
++        coreIdea: input.coreIdea,
++        year: input.year,
++        x: input.x,
++        y: input.y,
++        now
++      })
++      return toNode(nodeByIdStmt.get(id) as LineageNodeRow)
++    },
++
++    removeNode(id: string): number {
++      return removeNodeStmt.run(id).changes
++    },
++
++    upsertEdge(input: LineageEdgeUpsert): LineageEdge {
++      const id = input.id ?? randomUUID()
++      const now = new Date().toISOString()
++      upsertEdgeStmt.run({
++        id,
++        fromNode: input.fromNode,
++        toNode: input.toNode,
++        label: input.label,
++        now
++      })
++      return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)
++    },
++
++    removeEdge(id: string): number {
++      return removeEdgeStmt.run(id).changes
++    },
++
++    listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] } {
++      return {
++        nodes: (listNodesStmt.all() as LineageNodeRow[]).map(toNode),
++        edges: (listEdgesStmt.all() as LineageEdgeRow[]).map(toEdge)
++      }
++    },
++
++    clearGraph(): void {
++      clearEdgesStmt.run() // 先清边（显式序；节点删除虽会级联，清面语义自持）
++      clearNodesStmt.run()
++    }
++  }
++}
+diff --git a/src/main/dialogs.ts b/src/main/dialogs.ts
+index f10e483..a85c892 100644
+--- a/src/main/dialogs.ts
++++ b/src/main/dialogs.ts
+@@ -15,6 +15,8 @@ export interface Dialogs {
+   pickPdfFiles(): Promise<string[] | null>
+   /** 选择目录（批量导入，取消返回 null） */
+   pickFolder(): Promise<string | null>
++  /** 选择单个 JSON 文件（LG-01 脉络图草稿导入，取消返回 null） */
++  pickJsonFile(): Promise<string | null>
+   /** 保存文件（导出用；extFilters 形如 [{ name: 'BibTeX', extensions: ['bib'] }]） */
+   saveFile(defaultName: string, extFilters: Array<{ name: string; extensions: string[] }>): Promise<string | null>
+ }
+@@ -45,6 +47,14 @@ export function createElectronDialogs(getParent: () => BrowserWindow | null): Di
+       })
+       return r.canceled ? null : (r.filePaths[0] ?? null)
+     },
++    pickJsonFile: async () => {
++      const r = await openWithParent({
++        title: '选择脉络图 JSON 草稿',
++        properties: ['openFile'],
++        filters: [{ name: 'JSON 文档', extensions: ['json'] }]
++      })
++      return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]!
++    },
+     saveFile: async (defaultName, extFilters) => {
+       const r = await saveWithParent({
+         title: '导出到',
+diff --git a/src/main/ipc/index.ts b/src/main/ipc/index.ts
+index 5b1a10c..1e8bf5e 100644
+--- a/src/main/ipc/index.ts
++++ b/src/main/ipc/index.ts
+@@ -14,6 +14,7 @@ import { createImportIpc } from './import_'
+ import { createEnrichIpc } from './enrich'
+ import { createExportIpc } from './export_'
+ import { createAiSensorIpc } from './ai_sensor'
++import { createLineageIpc } from './lineage'
+ import { createSettingsIpc } from './settings'
+ import { createSystemIpc } from './system'
+ 
+@@ -39,6 +40,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
+     enrich: createEnrichIpc(deps),
+     export_: createExportIpc(deps),
+     ai_sensor: createAiSensorIpc(deps),
++    lineage: createLineageIpc(deps),
+     settings: createSettingsIpc(deps),
+     system: createSystemIpc(deps)
+   }
+diff --git a/src/main/services/index.ts b/src/main/services/index.ts
+index 242ce6f..3ef5d3c 100644
+--- a/src/main/services/index.ts
++++ b/src/main/services/index.ts
+@@ -32,6 +32,10 @@ import {
+   createZcodeLinkService,
+   type ZcodeLinkService
+ } from './ai_sensor/zcode-link.service'
++import {
++  createLineageService,
++  type LineageService
++} from './lineage/lineage.service'
+ import { createEnrichService } from './enrich/enrich.service'
+ import {
+   createCrossrefProvider,
+@@ -76,6 +80,8 @@ export interface ServiceBundle {
+   /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
+   export_: ExportService & CorpusExportService
+   ai_sensor: AiSensorService & AiNotesImportService & ZcodeLinkService
++  /** LG-01 脉络图：service 四写方法全建（IPC 写通道注册归 LG-03） */
++  lineage: LineageService
+ }
+ 
+ export function createServices(deps: ServiceDeps): ServiceBundle {
+@@ -118,7 +124,12 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
+           readStatus: () => aiSensor.readStatus() // 06 单源消费（running 不双写）
+         })
+       }
+-    })()
++    })(),
++    lineage: createLineageService({
++      repo: deps.repos.lineage,
++      paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型
++      withTransaction: deps.repos.withTransaction // 清面+重灌原子边界
++    })
+   }
+ }
+ 
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index 7bfec35..7626e89 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -69,6 +69,13 @@ export const API_SURFACE = {
+     zcodeDetect: { channel: 'zcode-link/detect', Req: S.voidReqSchema, Res: S.zcodeLinkDetectResSchema },
+     zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
+   },
++  // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
++  // 写四通道（upsert-node/remove-node/upsert-edge/remove-edge）接口预留面在 LG-03
++  // 票面（消费者未建窗口——本单 service 四写方法全建全测但不注册 IPC）
++  lineage: {
++    importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
++    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema }
++  },
+   tags: {
+     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
+     upsert: { channel: 'tags/upsert', Req: S.tagNameReqSchema, Res: tagSchema },
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 542ab97..6c12e49 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -10,6 +10,7 @@ import { annotationSchema, annotationInputSchema } from '../models/annotation'
+ import { noteSchema } from '../models/note'
+ import { tagSchema } from '../models/tag'
+ import { collectionSchema } from '../models/collection'
++import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
+ 
+ /** 空请求（无参数通道） */
+ export const voidReqSchema = z.object({}).strict()
+@@ -240,6 +241,27 @@ export type ZcodeLinkDetectRes = z.infer<typeof zcodeLinkDetectResSchema>
+ export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().min(1) }).strict()
+ export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
+ 
++// ── lineage（LG-01 脉络图：草稿导入+全图读——dialog 在 ipc 层 INV-07）────
++/** lineage/import 响应：判别联合（全有或全无——校验任一失败库不动，errors 行级中文） */
++export const lineageImportResSchema = z.union([
++  z
++    .object({ ok: z.literal(true), nodeCount: z.number().int().min(0), edgeCount: z.number().int().min(0) })
++    .strict(),
++  z
++    .object({
++      ok: z.literal(false),
++      errors: z.array(z.object({ path: z.string(), reason: z.string() }).strict())
++    })
++    .strict()
++])
++export type LineageImportRes = z.infer<typeof lineageImportResSchema>
++
++/** lineage/graph 响应：全图单读（库空=空数组，合法态非错误；模型单源=shared/models/lineage） */
++export const lineageGraphResSchema = z
++  .object({ nodes: z.array(lineageNodeSchema), edges: z.array(lineageEdgeSchema) })
++  .strict()
++export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
++
+ // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
+ /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
+ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+diff --git a/tests/contracts/api-surface.test.ts b/tests/contracts/api-surface.test.ts
+index 9a50614..ed394be 100644
+--- a/tests/contracts/api-surface.test.ts
++++ b/tests/contracts/api-surface.test.ts
+@@ -43,6 +43,7 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
+       enrich: unimplementedObject('SAMPLE-IPC', 'x'),
+       export_: unimplementedObject('SAMPLE-IPC', 'x'),
+       ai_sensor: unimplementedObject('SAMPLE-IPC', 'x'),
++      lineage: unimplementedObject('SAMPLE-IPC', 'x'),
+       settings: unimplementedObject('SAMPLE-IPC', 'x'),
+       system: unimplementedObject('SAMPLE-IPC', 'x')
+     }
+diff --git a/tests/unit/db/migrate.test.ts b/tests/unit/db/migrate.test.ts
+index 840e5c3..156bed6 100644
+--- a/tests/unit/db/migrate.test.ts
++++ b/tests/unit/db/migrate.test.ts
+@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
+   it('新库：全量应用，user_version = 最新版本', () => {
+     const db = openDatabase(':memory:')
+     const result = migrate(db)
+-    expect(result.appliedVersions).toEqual([1, 2, 3])
++    expect(result.appliedVersions).toEqual([1, 2, 3, 4])
+     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
+     expect(readUserVersion(db)).toBe(result.currentVersion)
+     db.close()
+diff --git a/tests/unit/services/enrich.service.test.ts b/tests/unit/services/enrich.service.test.ts
+index d2a96a2..7aff21d 100644
+--- a/tests/unit/services/enrich.service.test.ts
++++ b/tests/unit/services/enrich.service.test.ts
+@@ -70,6 +70,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
+     } as Repos['papers'],
+     annotations: {} as Repos['annotations'],
+     aiNotes: {} as Repos['aiNotes'],
++    lineage: {} as Repos['lineage'],
+     notes: {} as Repos['notes'],
+     tags: {} as Repos['tags'],
+     collections: {} as Repos['collections'],
+diff --git a/tests/unit/services/import.service.test.ts b/tests/unit/services/import.service.test.ts
+index 47ba7e0..f362110 100644
+--- a/tests/unit/services/import.service.test.ts
++++ b/tests/unit/services/import.service.test.ts
+@@ -32,6 +32,7 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
+     collections: createCollectionsRepo(db),
+     annotations: {} as Repos['annotations'],
+     aiNotes: {} as Repos['aiNotes'],
++    lineage: {} as Repos['lineage'],
+     notes: {} as Repos['notes'],
+     tags: {} as Repos['tags'],
+     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
+diff --git a/tests/utils/ipc-deps.ts b/tests/utils/ipc-deps.ts
+index 90a956a..c4e7ec9 100644
+--- a/tests/utils/ipc-deps.ts
++++ b/tests/utils/ipc-deps.ts
+@@ -26,11 +26,13 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
+       enrich: null as never,
+       export_: null as never,
+       ai_sensor: null as never,
++      lineage: null as never,
+       ...over.services
+     },
+     dialogs: {
+       pickPdfFiles: async () => null,
+       pickFolder: async () => null,
++      pickJsonFile: async () => null,
+       saveFile: async () => null,
+       ...over.dialogs
+     },
+diff --git a/src/main/db/migrations/004_lineage.sql b/src/main/db/migrations/004_lineage.sql
+new file mode 100644
+index 0000000..d18e835
+--- /dev/null
++++ b/src/main/db/migrations/004_lineage.sql
+@@ -0,0 +1,31 @@
++-- 004_lineage：发展脉络图两表（LG-01，P7-H/ADR-0014 §数据模型 DDL 字面）
++-- 设计裁决（ADR-0014）：
++-- - 存储=图 schema（v2 DAG 升级免迁移）；v1 行为=树（单父+无环）——
++--   树约束是 service 层不变量非 DDL 约束（INV-27：守卫宿主=service 写面）
++-- - lineage_nodes.paper_id 可空=纯主题节点（阶段分组）；v1 draft 协议仅文献节点
++--   （纯主题节点=应用内手工创建，LG-03）
++-- - x/y 手工位置覆盖（JSON Canvas 模式，obsidian 先例）；NULL=自动布局（LG-02）
++-- - 级联：paper 删→节点 CASCADE→边随节点级联（DDL 链承担）；节点删→边 CASCADE
++-- - UNIQUE(from_node,to_node)：重复边 DDL 收口（应用层前置守卫中文 reason）
++-- - v1 生产者=草稿导入器（service importDraft 替换式重灌）；消费者=listGraph
++--   （LG-02 布局+LG-03 编辑）
++CREATE TABLE lineage_nodes (
++  id         TEXT PRIMARY KEY,            -- uuid
++  paper_id   TEXT REFERENCES papers(id) ON DELETE CASCADE,  -- 可空=纯主题节点（阶段分组）
++  title      TEXT NOT NULL,
++  core_idea  TEXT NOT NULL DEFAULT '',    -- 核心 idea（AI 草稿可填，人工可改）
++  year       INTEGER,
++  x          REAL,                        -- 手工位置覆盖；NULL=自动布局
++  y          REAL,
++  created_at TEXT NOT NULL,
++  updated_at TEXT NOT NULL
++);
++CREATE TABLE lineage_edges (
++  id         TEXT PRIMARY KEY,
++  from_node  TEXT NOT NULL REFERENCES lineage_nodes(id) ON DELETE CASCADE,
++  to_node    TEXT NOT NULL REFERENCES lineage_nodes(id) ON DELETE CASCADE,
++  label      TEXT NOT NULL DEFAULT '',    -- 逻辑线说明
++  created_at TEXT NOT NULL,
++  updated_at TEXT NOT NULL,
++  UNIQUE(from_node, to_node)
++);
+diff --git a/src/main/ipc/lineage.ts b/src/main/ipc/lineage.ts
+new file mode 100644
+index 0000000..2e9e510
+--- /dev/null
++++ b/src/main/ipc/lineage.ts
+@@ -0,0 +1,38 @@
++/**
++ * ipc/lineage —— 脉络图域装配（LG-01：草稿导入+全图读两通道）。
++ *
++ * 薄分发（SR-IPC-* 同型）：业务在 services/lineage/lineage.service。
++ * INV-07：草稿文件路径只出自 main 侧系统对话框（dialogs.pickJsonFile——
++ * 本单在 Dialogs 依赖对象上新增，pickPdfFiles 单选同型；corpusSession
++ * C-02「ipc 层选、service 收已选路径」同序）。用户取消→CANCELLED 域错误
++ * （register 经 toAppError 折叠）；校验失败不是错误——ImportResult 判别
++ * 联合原样回传（消费方分支呈现 errors 清单，INV-13 折叠约定）。
++ * 写四通道接线归 LG-03（service 四写方法已建全测）。
++ */
++import type { AppErrorCode } from '../../shared/app-error'
++import type { ApiHandlers } from '../../shared/ipc/api-surface'
++import type { IpcDeps } from './index'
++
++/** 域错误载体（export_.ts ExportIpcError 同型——.CancelledError 子类无必要） */
++class LineageIpcError extends Error {
++  readonly code: AppErrorCode
++
++  constructor(code: AppErrorCode, message: string) {
++    super(message)
++    this.name = 'LineageIpcError'
++    this.code = code
++  }
++}
++
++export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
++  return {
++    importDraft: async () => {
++      const file = await deps.dialogs.pickJsonFile()
++      if (file === null) {
++        throw new LineageIpcError('CANCELLED', '已取消选择草稿文件')
++      }
++      return deps.services.lineage.importFromFile(file)
++    },
++    graph: async () => deps.services.lineage.graph()
++  }
++}
+diff --git a/src/main/services/lineage/lineage.service.ts b/src/main/services/lineage/lineage.service.ts
+new file mode 100644
+index 0000000..72836b1
+--- /dev/null
++++ b/src/main/services/lineage/lineage.service.ts
+@@ -0,0 +1,305 @@
++/**
++ * lineage.service —— 脉络图写面与草稿导入器（LG-01 交付面）。
++ *
++ * 职责（票面行为层）：
++ * - validateDraft：导入校验纯函数（单独导出可测）——三段：①zod 行级
++ *   （中文 reason 含字段路径，schema 单源=shared/models/lineage.ts）
++ *   ②幽灵 paperId（papers 表存在性注入）③树约束（多父/环/自环+悬空边/
++ *   重复节点/重复边——图结构级）。zod 不过即返回（结构未知，后续段无意义）。
++ * - importDraft：全有或全无——errors 非空→库不动原样返回；全过→
++ *   withTransaction 包裹「clearGraph 清面+整套重灌」（整批替换语义；
++ *   事务=清面成功但重插失败时整体回滚，无半写残留）。
++ * - importFromFile：读文件+JSON.parse（损坏→动作型中文上抛，消费方
++ *   toast INV-02——非校验 errors 面）→importDraft。
++ * - 四写方法（本单全建全测，IPC 注册归 LG-03）：upsertNode（幽灵
++ *   paperId 拒）/upsertEdge（树守卫运行时二道防线——INV-27 守卫宿主：
++ *   自环拒/节点不存在拒/重复边中文收口（UNIQUE 前置）/多父拒/成环拒）/
++ *   removeNode/removeEdge（透传）。
++ * - graph：listGraph 全图单读透传（库空=空数组，合法态非错误）。
++ *
++ * 分层：service 持 repo+paperExists+withTransaction（注入保可测），
++ * 禁 service 直写 SQL；树守卫集中本文件（LG-03 接线不另写守卫——门一 W1 处置）。
++ * 测试：tests/unit/services/lineage-import.test.ts [受锁新增]（always-active）。
++ */
++import { readFile } from 'node:fs/promises'
++import { lineageDraftSchema } from '../../../shared/models/lineage'
++import type {
++  LineageEdge,
++  LineageEdgeUpsert,
++  LineageNode,
++  LineageNodeUpsert
++} from '../../../shared/models/lineage'
++import type { LineageRepo } from '../../db/repos/lineage.repo'
++
++/** 行级校验错误（path=字段路径如 nodes.0.title / edges.1.to_paper_id） */
++export interface DraftIssue {
++  path: string
++  reason: string
++}
++
++/** 导入 Result：判别联合（全有或全无——两态互斥） */
++export type LineageImportResult =
++  | { ok: true; nodeCount: number; edgeCount: number }
++  | { ok: false; errors: DraftIssue[] }
++
++export interface LineageService {
++  importDraft(raw: unknown): LineageImportResult
++  importFromFile(path: string): Promise<LineageImportResult>
++  upsertNode(input: LineageNodeUpsert): LineageNode
++  removeNode(id: string): number
++  upsertEdge(input: LineageEdgeUpsert): LineageEdge
++  removeEdge(id: string): number
++  graph(): { nodes: LineageNode[]; edges: LineageEdge[] }
++}
++
++export interface LineageServiceDeps {
++  repo: Pick<
++    LineageRepo,
++    'upsertNode' | 'removeNode' | 'upsertEdge' | 'removeEdge' | 'listGraph' | 'clearGraph'
++  >
++  /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
++  paperExists: (paperId: string) => boolean
++  /** 事务边界（repos.withTransaction 注入——清面+重灌原子性） */
++  withTransaction: <T>(fn: () => T) => T
++}
++
++/**
++ * 草稿三段校验（纯函数：同输入同输出）。
++ * 段序：zod 形态 → 幽灵/重复节点 → 树结构（悬空/自环/重复边/多父/环）。
++ * 全过返回 []；任一失败返回行级 errors 清单（不抛异常）。
++ */
++export function validateDraft(
++  raw: unknown,
++  paperExists: (paperId: string) => boolean
++): DraftIssue[] {
++  const errors: DraftIssue[] = []
++  const parsed = lineageDraftSchema.safeParse(raw)
++  if (!parsed.success) {
++    for (const iss of parsed.error.issues) {
++      errors.push({ path: iss.path.join('.'), reason: iss.message })
++    }
++    return errors // 结构未知，后续段无意义
++  }
++  const { nodes, edges } = parsed.data
++
++  // ②幽灵 paperId + 重复节点（同篇两次入草稿会使 paper→node 映射歧义）
++  const seenPapers = new Set<string>()
++  nodes.forEach((n, i) => {
++    if (seenPapers.has(n.paper_id)) {
++      errors.push({
++        path: `nodes.${i}.paper_id`,
++        reason: `重复节点：文献 ${n.paper_id} 在草稿中出现多次`
++      })
++      return
++    }
++    seenPapers.add(n.paper_id)
++    if (!paperExists(n.paper_id)) {
++      errors.push({
++        path: `nodes.${i}.paper_id`,
++        reason: `文献不存在（幽灵 paperId）：${n.paper_id}`
++      })
++    }
++  })
++
++  // ③树结构：悬空边/自环/重复边/多父（边方向=from 继承来源（父）→to 继承者（子））
++  const parentOf = new Map<string, string[]>() // to_paper_id -> from_paper_id[]
++  const adjacency = new Map<string, string[]>() // from_paper_id -> to_paper_id[]（环检测用）
++  const seenEdges = new Set<string>()
++  edges.forEach((e, i) => {
++    const p = `edges.${i}`
++    if (!seenPapers.has(e.from_paper_id)) {
++      errors.push({
++        path: `${p}.from_paper_id`,
++        reason: `边引用的文献不在节点清单中：${e.from_paper_id}`
++      })
++      return
++    }
++    if (!seenPapers.has(e.to_paper_id)) {
++      errors.push({
++        path: `${p}.to_paper_id`,
++        reason: `边引用的文献不在节点清单中：${e.to_paper_id}`
++      })
++      return
++    }
++    if (e.from_paper_id === e.to_paper_id) {
++      errors.push({ path: p, reason: '自环边不允许（from 与 to 为同一文献）' })
++      return
++    }
++    const key = `${e.from_paper_id}->${e.to_paper_id}`
++    if (seenEdges.has(key)) {
++      errors.push({ path: p, reason: `重复边：${key} 在草稿中出现多次` })
++      return
++    }
++    seenEdges.add(key)
++    const froms = [...(parentOf.get(e.to_paper_id) ?? []), e.from_paper_id]
++    parentOf.set(e.to_paper_id, froms)
++    adjacency.set(e.from_paper_id, [...(adjacency.get(e.from_paper_id) ?? []), e.to_paper_id])
++    if (froms.length > 1) {
++      errors.push({
++        path: `${p}.to_paper_id`,
++        reason: `多父边：文献 ${e.to_paper_id} 已有父节点 ${froms[0]}（树至多一父）`
++      })
++    }
++  })
++
++  // 环检测：DFS 沿 from→to 方向找回边（单链 A→B→C→A 不经多父面，须独立检出）
++  const WHITE = 0
++  const GRAY = 1
++  const BLACK = 2
++  const color = new Map<string, number>()
++  for (const n of nodes) color.set(n.paper_id, WHITE)
++  const dfs = (u: string): boolean => {
++    color.set(u, GRAY)
++    for (const v of adjacency.get(u) ?? []) {
++      const c = color.get(v)
++      if (c === GRAY) return true
++      if (c === WHITE && dfs(v)) return true
++    }
++    color.set(u, BLACK)
++    return false
++  }
++  for (const n of nodes) {
++    if (color.get(n.paper_id) === WHITE && dfs(n.paper_id)) {
++      errors.push({
++        path: 'edges',
++        reason: `草稿边构成环路（涉及文献 ${n.paper_id}）——脉络图 v1 为树，不允许环`
++      })
++      break
++    }
++  }
++  return errors
++}
++
++/** 图上沿 from→to 方向是否可从 start 到达 target（环守卫用） */
++function reachable(
++  edges: LineageEdge[],
++  start: string,
++  target: string,
++  excludeEdgeId?: string
++): boolean {
++  const adj = new Map<string, string[]>()
++  for (const e of edges) {
++    if (e.id === excludeEdgeId) continue
++    adj.set(e.fromNode, [...(adj.get(e.fromNode) ?? []), e.toNode])
++  }
++  const visited = new Set<string>()
++  const stack = [start]
++  while (stack.length > 0) {
++    const u = stack.pop()!
++    if (u === target) return true
++    if (visited.has(u)) continue
++    visited.add(u)
++    stack.push(...(adj.get(u) ?? []))
++  }
++  return false
++}
++
++export function createLineageService(deps: LineageServiceDeps): LineageService {
++  return {
++    importDraft(raw: unknown): LineageImportResult {
++      const errors = validateDraft(raw, deps.paperExists)
++      if (errors.length > 0) return { ok: false, errors }
++      const draft = lineageDraftSchema.parse(raw) // 已验过必成功；取窄类型
++      return deps.withTransaction(() => {
++        deps.repo.clearGraph() // 整批替换语义（清面重灌）
++        const paperToNode = new Map<string, string>()
++        let nodeCount = 0
++        for (const n of draft.nodes) {
++          const node = deps.repo.upsertNode({
++            paperId: n.paper_id,
++            title: n.title,
++            coreIdea: n.core_idea,
++            year: n.year,
++            x: null, // 导入面无手工位置——自动布局（LG-02 消费 null）
++            y: null
++          })
++          paperToNode.set(n.paper_id, node.id)
++          nodeCount++
++        }
++        let edgeCount = 0
++        for (const e of draft.edges) {
++          deps.repo.upsertEdge({
++            fromNode: paperToNode.get(e.from_paper_id)!,
++            toNode: paperToNode.get(e.to_paper_id)!,
++            label: e.label
++          })
++          edgeCount++
++        }
++        return { ok: true, nodeCount, edgeCount }
++      })
++    },
++
++    async importFromFile(path: string): Promise<LineageImportResult> {
++      let text: string
++      try {
++        text = await readFile(path, 'utf8')
++      } catch (e) {
++        throw new Error(
++          `读取草稿文件失败：${path}（${e instanceof Error ? e.message : String(e)}）`
++        )
++      }
++      let raw: unknown
++      try {
++        raw = JSON.parse(text)
++      } catch (e) {
++        throw new Error(
++          `草稿 JSON 损坏：${path}（${e instanceof Error ? e.message : String(e)}）`
++        )
++      }
++      return this.importDraft(raw)
++    },
++
++    upsertNode(input: LineageNodeUpsert): LineageNode {
++      if (input.paperId !== null && !deps.paperExists(input.paperId)) {
++        throw new Error(`文献不存在（幽灵 paperId）：${input.paperId}`)
++      }
++      return deps.repo.upsertNode(input)
++    },
++
++    removeNode(id: string): number {
++      return deps.repo.removeNode(id)
++    },
++
++    upsertEdge(input: LineageEdgeUpsert): LineageEdge {
++      // INV-27 运行时守卫（与导入校验同源树约束——导入外的增量编辑入口）
++      if (input.fromNode === input.toNode) {
++        throw new Error('自环边不允许（from 与 to 为同一节点）')
++      }
++      const graph = deps.repo.listGraph()
++      const nodeIds = new Set(graph.nodes.map((n) => n.id))
++      if (!nodeIds.has(input.fromNode)) {
++        throw new Error(`来源节点不存在：${input.fromNode}`)
++      }
++      if (!nodeIds.has(input.toNode)) {
++        throw new Error(`目标节点不存在：${input.toNode}`)
++      }
++      const dup = graph.edges.find(
++        (e) =>
++          e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
++      )
++      if (dup !== undefined) {
++        throw new Error(`该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`)
++      }
++      // 更新场景（input.id 已存在）：改端点=改父，按新端点重估守卫
++      const existingParent = graph.edges.find((e) => e.toNode === input.toNode && e.id !== input.id)
++      if (existingParent !== undefined) {
++        throw new Error(
++          `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
++        )
++      }
++      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）
++      if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
++        throw new Error('成环拒绝：该边将使脉络图出现环路（v1 为树）')
++      }
++      return deps.repo.upsertEdge(input)
++    },
++
++    removeEdge(id: string): number {
++      return deps.repo.removeEdge(id)
++    },
++
++    graph(): { nodes: LineageNode[]; edges: LineageEdge[] } {
++      return deps.repo.listGraph()
++    }
++  }
++}
+diff --git a/src/shared/models/lineage.ts b/src/shared/models/lineage.ts
+new file mode 100644
+index 0000000..5f23072
+--- /dev/null
++++ b/src/shared/models/lineage.ts
+@@ -0,0 +1,116 @@
++/**
++ * 脉络图（lineage）模型 —— lineage_nodes/lineage_edges 表与 draft 导入协议的
++ * 跨进程单源契约（LG-01 交付面，已锁定）。
++ *
++ * 两套 schema 分开命名（主控裁决 3）：
++ * - draft*（snake_case 文件面）：lineage JSON 草稿导入协议（ADR-0014 §裁决——
++ *   梳理智能体产物经文件协议导入，ADR-0015 同精神）。v1 draft 仅文献节点
++ *   （纯主题节点=应用内手工创建，LG-03，不进 draft 协议）。行级中文错误消息
++ *   （required_error/invalid_type_error）=zod 层校验面单源。
++ * - 应用面（camelCase）：DB 行 schema（lineageNode/lineageEdge）与 upsert 输入面
++ *   （id 缺省=新建 randomUUID；提供=更新，created_at 首插保留）。
++ * 接缝锚定（INV-11）：DDL 真相=迁移 004（UNIQUE(from_node,to_node) 收口）；
++ * 树单父约束（无多父/无环/无自环）不在 DDL——service 层不变量 INV-27，
++ * 守卫宿主=services/lineage/lineage.service（导入校验+upsertEdge 运行时双口）。
++ */
++import { z } from 'zod'
++
++// ── draft 导入协议（snake_case 文件面，ADR-0014 字面） ─────────────
++
++export const lineageDraftNodeSchema = z
++  .object({
++    paper_id: z
++      .string({ required_error: 'paper_id 缺失', invalid_type_error: 'paper_id 应为字符串' })
++      .min(1, 'paper_id 不能为空'),
++    title: z
++      .string({ required_error: 'title 缺失', invalid_type_error: 'title 应为字符串' })
++      .min(1, 'title 不能为空'),
++    year: z
++      .number({ required_error: 'year 缺失', invalid_type_error: 'year 应为数字' })
++      .int('year 应为整数')
++      .nullable(),
++    core_idea: z.string({
++      required_error: 'core_idea 缺失',
++      invalid_type_error: 'core_idea 应为字符串'
++    })
++  })
++  .strict()
++export type LineageDraftNode = z.infer<typeof lineageDraftNodeSchema>
++
++export const lineageDraftEdgeSchema = z
++  .object({
++    from_paper_id: z
++      .string({
++        required_error: 'from_paper_id 缺失',
++        invalid_type_error: 'from_paper_id 应为字符串'
++      })
++      .min(1, 'from_paper_id 不能为空'),
++    to_paper_id: z
++      .string({
++        required_error: 'to_paper_id 缺失',
++        invalid_type_error: 'to_paper_id 应为字符串'
++      })
++      .min(1, 'to_paper_id 不能为空'),
++    label: z.string({ required_error: 'label 缺失', invalid_type_error: 'label 应为字符串' })
++  })
++  .strict()
++export type LineageDraftEdge = z.infer<typeof lineageDraftEdgeSchema>
++
++export const lineageDraftSchema = z
++  .object({
++    nodes: z.array(lineageDraftNodeSchema, {
++      required_error: 'nodes 缺失',
++      invalid_type_error: 'nodes 应为数组'
++    }),
++    edges: z.array(lineageDraftEdgeSchema, {
++      required_error: 'edges 缺失',
++      invalid_type_error: 'edges 应为数组'
++    })
++  })
++  .strict()
++export type LineageDraft = z.infer<typeof lineageDraftSchema>
++
++// ── 应用面（camelCase——DB 行与写入口输入） ────────────────────────
++
++export const lineageNodeSchema = z
++  .object({
++    id: z.string().min(1),
++    /** 可空=纯主题节点（阶段分组，LG-03 手工创建） */
++    paperId: z.string().min(1).nullable(),
++    title: z.string().min(1),
++    coreIdea: z.string(),
++    year: z.number().int().nullable(),
++    /** 手工位置覆盖（JSON Canvas 模式）；null=自动布局（LG-02 消费） */
++    x: z.number().nullable(),
++    y: z.number().nullable(),
++    createdAt: z.string(),
++    updatedAt: z.string()
++  })
++  .strict()
++export type LineageNode = z.infer<typeof lineageNodeSchema>
++
++export const lineageEdgeSchema = z
++  .object({
++    id: z.string().min(1),
++    fromNode: z.string().min(1),
++    toNode: z.string().min(1),
++    /** 逻辑线说明 */
++    label: z.string(),
++    createdAt: z.string(),
++    updatedAt: z.string()
++  })
++  .strict()
++export type LineageEdge = z.infer<typeof lineageEdgeSchema>
++
++/** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留） */
++export const lineageNodeUpsertSchema = lineageNodeSchema
++  .omit({ createdAt: true, updatedAt: true })
++  .extend({ id: z.string().min(1).optional() })
++  .strict()
++export type LineageNodeUpsert = z.infer<typeof lineageNodeUpsertSchema>
++
++export const lineageEdgeUpsertSchema = lineageEdgeSchema
++  .omit({ createdAt: true, updatedAt: true })
++  .extend({ id: z.string().min(1).optional() })
++  .strict()
++export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>
+diff --git a/tests/unit/services/lineage-import.test.ts b/tests/unit/services/lineage-import.test.ts
+new file mode 100644
+index 0000000..f81a14b
+--- /dev/null
++++ b/tests/unit/services/lineage-import.test.ts
+@@ -0,0 +1,352 @@
++/**
++ * [LG-01] lineage 数据基座+草稿导入器（锁定合约）。
++ * 覆盖面：repo 六方法真库夹具（upsert 往返/级联链/UNIQUE 拒/清面/空图合法）/
++ * 导入三段校验（zod 行级中文 reason/幽灵 paperId/树三拒——多父/环/自环——
++ * 外加悬空边/重复节点/重复边拒绝）/全有或全无（失败库不动/成功替换重灌）/
++ * 空 draft=空图合法/validateDraft 纯函数性质/upsertEdge 运行时守卫三拒绝
++ * （W1 宿主用例）+重复边中文收口/importFromFile 损坏 JSON 上抛。
++ * repo 交互=真库夹具（AI-01 测试同型）；always-active（ADR-0017 裁决 3）。
++ */
++import { mkdtemp, rm, writeFile } from 'node:fs/promises'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { afterEach, beforeEach, expect, it } from 'vitest'
++import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
++import type { SqliteDb } from '../../../src/main/db/connection'
++import { createTestDb } from '../../utils/fixtures'
++import {
++  createLineageService,
++  validateDraft
++} from '../../../src/main/services/lineage/lineage.service'
++
++/** draft 合法形状（snake_case 文件面，ADR-0014 §裁决） */
++function draft(patches: {
++  nodes?: Array<Record<string, unknown>>
++  edges?: Array<Record<string, unknown>>
++}): unknown {
++  return {
++    nodes: patches.nodes ?? [
++      { paper_id: 'p-1', title: '起源文献', year: 2018, core_idea: '源头思想' },
++      { paper_id: 'p-2', title: '继承文献', year: 2021, core_idea: '延伸' }
++    ],
++    edges: patches.edges ?? [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '主要继承' }]
++  }
++}
++
++let db: SqliteDb
++let repo: ReturnType<typeof createLineageRepo>
++let svc: ReturnType<typeof createLineageService>
++let tmpRoot: string
++const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id === 'p-3'
++
++beforeEach(() => {
++  db = createTestDb()
++  for (const id of ['p-1', 'p-2', 'p-3']) {
++    db.prepare(
++      'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)'
++    ).run(id, 'a.pdf', `s-${id}`, 't', 't')
++  }
++  repo = createLineageRepo(db)
++  tmpRoot = '' // 按需在 importFromFile 用例中创建
++  svc = createLineageService({
++    repo,
++    paperExists,
++    withTransaction: (fn) => db.transaction(fn)()
++  })
++})
++
++afterEach(async () => {
++  if (tmpRoot !== '') await rm(tmpRoot, { recursive: true, force: true })
++})
++
++// ── repo 六方法（真库夹具）──────────────────────────────────────
++
++it('upsertNode：新建全字段往返（paperId/year 可空面）+同 id 二次 upsert 更新不换 created_at', () => {
++  const n1 = repo.upsertNode({
++    paperId: 'p-1',
++    title: '起源',
++    coreIdea: '核心',
++    year: 2018,
++    x: null,
++    y: null
++  })
++  expect(n1.id).toBeTruthy()
++  expect(n1).toMatchObject({ paperId: 'p-1', title: '起源', coreIdea: '核心', year: 2018, x: null, y: null })
++  const n2 = repo.upsertNode({
++    id: n1.id,
++    paperId: 'p-1',
++    title: '起源（改）',
++    coreIdea: '核心（改）',
++    year: null,
++    x: 12.5,
++    y: 3.25
++  })
++  expect(n2.id).toBe(n1.id)
++  expect(n2.createdAt).toBe(n1.createdAt)
++  expect(n2.title).toBe('起源（改）')
++  expect(n2.x).toBe(12.5)
++  expect(repo.listGraph().nodes).toHaveLength(1)
++})
++
++it('removeNode：DDL 级联清关联边；removeEdge 计数', () => {
++  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
++  const e = repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
++  expect(repo.removeEdge(e.id)).toBe(1)
++  expect(repo.removeEdge(e.id)).toBe(0)
++  const e2 = repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '再连' })
++  expect(repo.removeNode(a.id)).toBe(1)
++  const g = repo.listGraph()
++  expect(g.nodes.map((n) => n.id)).toEqual([b.id])
++  expect(g.edges).toEqual([]) // from 节点删除 → 边级联（DDL CASCADE）
++  void e2
++})
++
++it('upsertEdge：UNIQUE(from,to) 拒同端点第二条（DDL 收口）；listGraph 空库=空数组合法态', () => {
++  expect(repo.listGraph()).toEqual({ nodes: [], edges: [] })
++  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
++  repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '一' })
++  expect(() => repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '二' })).toThrow()
++})
++
++it('clearGraph：清面重灌原语（先清边后清节点，两表全空）', () => {
++  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
++  repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
++  repo.clearGraph()
++  expect(repo.listGraph()).toEqual({ nodes: [], edges: [] })
++})
++
++it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () => {
++  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
++  repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
++  db.prepare('DELETE FROM papers WHERE id = ?').run('p-1')
++  const g = repo.listGraph()
++  expect(g.nodes.map((n) => n.paperId)).toEqual(['p-2'])
++  expect(g.edges).toEqual([])
++})
++
++// ── service：导入三段校验+全有或全无 ───────────────────────────
++
++it('合法 draft 全过：{ok:true,nodeCount,edgeCount}，graph 反映内容（x/y=自动布局 null）', () => {
++  const r = svc.importDraft(draft({}))
++  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
++  const g = svc.graph()
++  expect(g.nodes.map((n) => n.paperId).sort()).toEqual(['p-1', 'p-2'])
++  expect(g.nodes.every((n) => n.x === null && n.y === null)).toBe(true)
++  expect(g.edges).toHaveLength(1)
++  expect(g.edges[0]).toMatchObject({ label: '主要继承' })
++})
++
++it('替换重灌：二导新 draft 后旧图清空（整批替换语义）', () => {
++  svc.importDraft(draft({}))
++  svc.importDraft(
++    draft({
++      nodes: [{ paper_id: 'p-3', title: '新起点', year: 2024, core_idea: '新' }],
++      edges: []
++    })
++  )
++  const g = svc.graph()
++  expect(g.nodes.map((n) => n.paperId)).toEqual(['p-3'])
++  expect(g.edges).toEqual([])
++})
++
++it('幽灵 paperId 拦截：行级 errors+库不动（全有或全无）', () => {
++  svc.importDraft(draft({})) // 先有旧图
++  const r = svc.importDraft(
++    draft({
++      nodes: [{ paper_id: 'ghost-9', title: '幽灵', year: 2020, core_idea: '' }],
++      edges: []
++    })
++  )
++  expect(r.ok).toBe(false)
++  if (!r.ok) {
++    expect(r.errors[0]!.path).toBe('nodes.0.paper_id')
++    expect(r.errors[0]!.reason).toContain('ghost-9')
++  }
++  expect(svc.graph().nodes).toHaveLength(2) // 旧图保持
++})
++
++it('多父边拒绝：同一 to 两条入边 → errors 含多父 reason', () => {
++  const r = svc.importDraft(
++    draft({
++      nodes: [
++        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
++        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' },
++        { paper_id: 'p-3', title: 'c', year: 2020, core_idea: '' }
++      ],
++      edges: [
++        { from_paper_id: 'p-1', to_paper_id: 'p-3', label: '' },
++        { from_paper_id: 'p-2', to_paper_id: 'p-3', label: '' }
++      ]
++    })
++  )
++  expect(r.ok).toBe(false)
++  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('多父'))).toBe(true)
++  expect(svc.graph().nodes).toEqual([])
++})
++
++it('成环拒绝：A→B→C→A 第三边触发环 errors；库不动', () => {
++  const r = svc.importDraft(
++    draft({
++      nodes: [
++        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
++        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' },
++        { paper_id: 'p-3', title: 'c', year: 2020, core_idea: '' }
++      ],
++      edges: [
++        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: '' },
++        { from_paper_id: 'p-2', to_paper_id: 'p-3', label: '' },
++        { from_paper_id: 'p-3', to_paper_id: 'p-1', label: '回边' }
++      ]
++    })
++  )
++  expect(r.ok).toBe(false)
++  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('环'))).toBe(true)
++  expect(svc.graph().edges).toEqual([])
++})
++
++it('自环拒绝：from==to 边 → errors 含自环 reason', () => {
++  const r = svc.importDraft(
++    draft({
++      nodes: [{ paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' }],
++      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-1', label: '' }]
++    })
++  )
++  expect(r.ok).toBe(false)
++  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('自环'))).toBe(true)
++})
++
++it('zod 行级中文 reason：title 缺失 → nodes.0.title 路径+中文；nodes 缺失 → 顶层路径', () => {
++  const r = svc.importDraft({
++    nodes: [{ paper_id: 'p-1', year: 2018, core_idea: '' }],
++    edges: []
++  })
++  expect(r.ok).toBe(false)
++  if (!r.ok) {
++    const hit = r.errors.find((e) => e.path === 'nodes.0.title')
++    expect(hit).toBeDefined()
++    expect(hit!.reason).toMatch(/title/)
++  }
++  const r2 = svc.importDraft({ edges: [] })
++  expect(r2.ok).toBe(false)
++  if (!r2.ok) expect(r2.errors.some((e) => e.path === 'nodes')).toBe(true)
++})
++
++it('空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语义）', () => {
++  svc.importDraft(draft({}))
++  const r = svc.importDraft({ nodes: [], edges: [] })
++  expect(r).toEqual({ ok: true, nodeCount: 0, edgeCount: 0 })
++  expect(svc.graph()).toEqual({ nodes: [], edges: [] })
++})
++
++it('悬空边拒绝：边引用不在节点清单的文献 → errors', () => {
++  const r = svc.importDraft(
++    draft({
++      nodes: [{ paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' }],
++      edges: [{ from_paper_id: 'p-2', to_paper_id: 'p-1', label: '' }]
++    })
++  )
++  expect(r.ok).toBe(false)
++  if (!r.ok) expect(r.errors.some((e) => e.path === 'edges.0.from_paper_id')).toBe(true)
++})
++
++it('重复节点拒绝：同 paper_id 出现两次 → errors；重复边拒绝：同 from→to 两次', () => {
++  const dupNode = svc.importDraft({
++    nodes: [
++      { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
++      { paper_id: 'p-1', title: 'a2', year: 2019, core_idea: '' }
++    ],
++    edges: []
++  })
++  expect(dupNode.ok).toBe(false)
++  if (!dupNode.ok) expect(dupNode.errors.some((e) => e.reason.includes('重复节点'))).toBe(true)
++  const dupEdge = svc.importDraft(
++    draft({
++      nodes: [
++        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
++        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' }
++      ],
++      edges: [
++        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: 'x' },
++        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: 'y' }
++      ]
++    })
++  )
++  expect(dupEdge.ok).toBe(false)
++  if (!dupEdge.ok) expect(dupEdge.errors.some((e) => e.reason.includes('重复边'))).toBe(true)
++})
++
++it('validateDraft 纯函数性质：同输入同输出（两次调用 deepEqual）', () => {
++  const input = draft({})
++  expect(validateDraft(input, paperExists)).toEqual([])
++  const bad = {
++    nodes: [{ paper_id: 'ghost-1', title: 'g', year: null, core_idea: '' }],
++    edges: [{ from_paper_id: 'ghost-1', to_paper_id: 'ghost-1', label: '' }]
++  }
++  expect(validateDraft(bad, paperExists)).toEqual(validateDraft(bad, paperExists))
++  expect(validateDraft(bad, paperExists).length).toBeGreaterThan(0)
++})
++
++// ── service：upsertEdge 运行时守卫（W1 宿主——三拒绝路径） ──────
++
++function seedChain(): { a: string; b: string; c: string } {
++  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: 2018, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: 2019, x: null, y: null })
++  const c = repo.upsertNode({ paperId: 'p-3', title: 'c', coreIdea: '', year: 2020, x: null, y: null })
++  return { a: a.id, b: b.id, c: c.id }
++}
++
++it('upsertEdge 运行时守卫①自环拒绝：中文 reason+库不变', () => {
++  const { a } = seedChain()
++  expect(() => svc.upsertEdge({ fromNode: a, toNode: a, label: '' })).toThrow('自环')
++  expect(svc.graph().edges).toEqual([])
++})
++
++it('upsertEdge 运行时守卫②多父拒绝：to 已有父再挂 → 中文 reason+库不变', () => {
++  const { a, b, c } = seedChain()
++  svc.upsertEdge({ fromNode: a, toNode: b, label: '' })
++  expect(() => svc.upsertEdge({ fromNode: c, toNode: b, label: '' })).toThrow('多父')
++  expect(svc.graph().edges).toHaveLength(1)
++})
++
++it('upsertEdge 运行时守卫③成环拒绝：C→A 回边 → 中文 reason+库不变', () => {
++  const { a, b, c } = seedChain()
++  svc.upsertEdge({ fromNode: a, toNode: b, label: '' })
++  svc.upsertEdge({ fromNode: b, toNode: c, label: '' })
++  expect(() => svc.upsertEdge({ fromNode: c, toNode: a, label: '回边' })).toThrow('环')
++  expect(svc.graph().edges).toHaveLength(2)
++})
++
++it('upsertEdge 重复边中文收口（UNIQUE 收口面）；节点不存在中文拒绝；合法路径放行', () => {
++  const { a, b, c } = seedChain()
++  svc.upsertEdge({ fromNode: a, toNode: b, label: '一' })
++  expect(() => svc.upsertEdge({ fromNode: a, toNode: b, label: '二' })).toThrow('已存在')
++  expect(() => svc.upsertEdge({ fromNode: a, toNode: 'node-404', label: '' })).toThrow('不存在')
++  const ok = svc.upsertEdge({ fromNode: a, toNode: c, label: '分叉' })
++  expect(ok.label).toBe('分叉')
++  expect(svc.graph().edges).toHaveLength(2)
++})
++
++it('upsertNode 幽灵 paperId 拒绝（中文）；removeNode/removeEdge 透传', () => {
++  expect(() =>
++    svc.upsertNode({ paperId: 'ghost-2', title: 'x', coreIdea: '', year: null, x: null, y: null })
++  ).toThrow('幽灵')
++  const n = svc.upsertNode({ paperId: 'p-1', title: 'x', coreIdea: '', year: null, x: null, y: null })
++  expect(svc.removeNode(n.id)).toBe(1)
++})
++
++// ── service：importFromFile（IO 面） ────────────────────────────
++
++it('importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法文件导入成功', async () => {
++  tmpRoot = await mkdtemp(join(tmpdir(), 'lineage-import-'))
++  const badPath = join(tmpRoot, 'bad.json')
++  await writeFile(badPath, '{not-json', 'utf8')
++  await expect(svc.importFromFile(badPath)).rejects.toThrow('损坏')
++  const goodPath = join(tmpRoot, 'good.json')
++  await writeFile(goodPath, JSON.stringify(draft({})), 'utf8')
++  const r = await svc.importFromFile(goodPath)
++  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
++})

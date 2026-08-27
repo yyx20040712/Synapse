@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T04:30:26.1655986Z",
+    "generatedAt":  "2026-08-27T05:09:39.4839000Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -66,6 +66,10 @@
                       "sha256":  "41ccc316b8dc291562950257dc573f0f1ed00866dc7b9dc694636da18c949333"
                   },
                   {
+                      "path":  "src/main/db/migrations/004_lineage.sql",
+                      "sha256":  "a60fa92b2fcb327f66840ab5ac510252dffae6435d298dd3261ca2dd4fca15d2"
+                  },
+                  {
                       "path":  "src/shared/annotation-order.ts",
                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
                   },
@@ -79,11 +83,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "d1705b365feea9f364bfbf367b3f6ab3cd7a3680ade902e65a8be5b2b66891ef"
+                      "sha256":  "cd94b55ea6f917cb1bf926dcad75fe2e473ded568b3a73f6bb632fa0451b9132"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "ecd0369474611c8698a73d238a8503460d600eb66bcb4c077fda8dec37f26c8b"
+                      "sha256":  "ecba24f1e75998b9ec3990f54488b0cf0166352ecd0efa73d9ae86a68b8a052c"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -96,6 +100,10 @@
                   {
                       "path":  "src/shared/models/collection.ts",
                       "sha256":  "9712c7defec62a558c8a0b1415dcf4cd5b761823cd171bad68409a4e65294bce"
+                  },
+                  {
+                      "path":  "src/shared/models/lineage.ts",
+                      "sha256":  "fb6cd8b3f61f3bc45f41725f1cb7919909226ab912f6ebdcbea335b0d0bfeded"
                   },
                   {
                       "path":  "src/shared/models/note.ts",
@@ -111,7 +119,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "f4fb3e3e0ce959dc1fdee910f604501cc4ed58309a112462aa5b955cd983964f"
+                      "sha256":  "3f41d0edd1283920fcc9ae4a93881034e7b4733da9b116a1739fa693f112a6b0"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -175,7 +183,7 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "19044736ad276f032e57dcebbd4bc7fda88a78294f7ced46199ca11dd4021d32"
+                      "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
@@ -383,7 +391,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "a366ecd140fcdb6c30de136c0f36c00146215fe7004e85ae36d30f767b839311"
+                      "sha256":  "bc8129ea06a9cd17631073619dc7ad196832213f66aa2f323944ad89fe369ccf"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -395,11 +403,15 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "383df337a925ac9f6476b2da701289db3b75db19c795517a50af65e8fbddeb7f"
+                      "sha256":  "31466828c940fe7a4e47e6ccf845905ca85c51c8f90969a8391af5865f066a22"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
                       "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                  },
+                  {
+                      "path":  "tests/unit/services/lineage-import.test.ts",
+                      "sha256":  "8d2925c5b9279c0c77ab9b5dd6389efcd2236c92dd532c2bce54a5aa9956e541"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
@@ -467,7 +479,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "7a949dbaf1235bfb9a580a74588a87d77d37e55e2c3b7a0443820755d6e53cc8"
+                      "sha256":  "d8ed98dbbabf82afd7debcd36978686562ba5816ec9ca9188eac24ba23fd46be"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

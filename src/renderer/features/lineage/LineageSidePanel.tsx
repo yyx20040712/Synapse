@@ -63,7 +63,7 @@
  * - 完成后：删除 data-ticket 与占位 → npm run verify 绿 → 人工审查
  *   git diff → 翻 registry
  */
-// 骨架占位：node 类型=unknown（LineageNode 单源随 SR2-LG-01 交付 shared/
+// 骨架占位：node 类型=unknown（LineageNode 单源随数据基座单（LG-01）交付 shared/
 // models/lineage，届时替换 import——本文件属 LG-04 实现面）
 export function LineageSidePanel(_props: {
   node: unknown

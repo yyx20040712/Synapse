@@ -15,6 +15,8 @@ export interface Dialogs {
   pickPdfFiles(): Promise<string[] | null>
   /** 选择目录（批量导入，取消返回 null） */
   pickFolder(): Promise<string | null>
+  /** 选择单个 JSON 文件（LG-01 脉络图草稿导入，取消返回 null） */
+  pickJsonFile(): Promise<string | null>
   /** 保存文件（导出用；extFilters 形如 [{ name: 'BibTeX', extensions: ['bib'] }]） */
   saveFile(defaultName: string, extFilters: Array<{ name: string; extensions: string[] }>): Promise<string | null>
 }
@@ -44,6 +46,14 @@ export function createElectronDialogs(getParent: () => BrowserWindow | null): Di
         properties: ['openDirectory']
       })
       return r.canceled ? null : (r.filePaths[0] ?? null)
+    },
+    pickJsonFile: async () => {
+      const r = await openWithParent({
+        title: '选择脉络图 JSON 草稿',
+        properties: ['openFile'],
+        filters: [{ name: 'JSON 文档', extensions: ['json'] }]
+      })
+      return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]!
     },
     saveFile: async (defaultName, extFilters) => {
       const r = await saveWithParent({

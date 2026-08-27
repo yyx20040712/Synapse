@@ -26,11 +26,13 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       enrich: null as never,
       export_: null as never,
       ai_sensor: null as never,
+      lineage: null as never,
       ...over.services
     },
     dialogs: {
       pickPdfFiles: async () => null,
       pickFolder: async () => null,
+      pickJsonFile: async () => null,
       saveFile: async () => null,
       ...over.dialogs
     },

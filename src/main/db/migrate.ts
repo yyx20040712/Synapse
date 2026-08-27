@@ -11,6 +11,7 @@ import type { SqliteDb } from './connection'
 import initSql from './migrations/001_init.sql?raw'
 import indexesSql from './migrations/002_indexes.sql?raw'
 import aiNotesSql from './migrations/003_ai_notes.sql?raw'
+import lineageSql from './migrations/004_lineage.sql?raw'
 
 export interface Migration {
   version: number
@@ -22,7 +23,8 @@ export interface Migration {
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'indexes', sql: indexesSql },
-  { version: 3, name: 'ai_notes', sql: aiNotesSql }
+  { version: 3, name: 'ai_notes', sql: aiNotesSql },
+  { version: 4, name: 'lineage', sql: lineageSql }
 ]
 
 export interface MigrateResult {

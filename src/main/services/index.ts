@@ -32,6 +32,10 @@ import {
   createZcodeLinkService,
   type ZcodeLinkService
 } from './ai_sensor/zcode-link.service'
+import {
+  createLineageService,
+  type LineageService
+} from './lineage/lineage.service'
 import { createEnrichService } from './enrich/enrich.service'
 import {
   createCrossrefProvider,
@@ -76,6 +80,8 @@ export interface ServiceBundle {
   /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
   export_: ExportService & CorpusExportService
   ai_sensor: AiSensorService & AiNotesImportService & ZcodeLinkService
+  /** LG-01 脉络图：service 四写方法全建（IPC 写通道注册归 LG-03） */
+  lineage: LineageService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -118,7 +124,12 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
           readStatus: () => aiSensor.readStatus() // 06 单源消费（running 不双写）
         })
       }
-    })()
+    })(),
+    lineage: createLineageService({
+      repo: deps.repos.lineage,
+      paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型
+      withTransaction: deps.repos.withTransaction // 清面+重灌原子边界
+    })
   }
 }
 

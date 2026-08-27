@@ -26,6 +26,8 @@
  *   renderer 确认对话框「导入将替换现有脉络图」）
  * - repo 方法族（AI-01 六方法同型）：upsertNode/removeNode（级联边
  *   DDL 承担）/upsertEdge/removeEdge/listGraph（nodes+edges 全图单读）
+ *   +clearGraph（替换式导入清面原语——AI-01 deleteByPaper 对应物，
+ *   自裁申报：票面接口清单五方法+清面原语=六方法族）
  * - service 写面（本单交付，守卫同上）：upsertNode/upsertEdge（树守卫
  *   运行时二道防线——导入校验外的增量编辑入口）/removeNode/
  *   removeEdge——**IPC 四写通道的 schemas 注册归 LG-03**（消费者
@@ -37,7 +39,7 @@
  * - export interface LineageRepo { upsertNode(input): LineageNode;
  *     removeNode(id): number; upsertEdge(input): LineageEdge;
  *     removeEdge(id): number; listGraph(): { nodes: LineageNode[];
- *     edges: LineageEdge[] } }
+ *     edges: LineageEdge[] }; clearGraph(): void }
  * - export function createLineageService(deps)（repo+papers 存在性查询
  *   注入）：importDraft(raw: unknown) → ImportResult（校验纯函数
  *   validateDraft 单独导出可测——zod+幽灵+树三段）+四写方法（含
@@ -72,6 +74,11 @@
  * - 错误：校验失败三段 errors 清单（zod 行级/幽灵篇级/树结构图级——
  *   path 前缀区分）；导入 IO 失败动作型上抛（消费方 toast INV-02）；
  *   禁静默吞错；库空=graph 空数组（合法态非错误）
+ * - upsert 语义：ON CONFLICT(id) DO UPDATE（created_at 首插保留，
+ *   updated_at 刷新）；UNIQUE(from_node,to_node) 冲突 DDL 抛错——
+ *   应用层中文守卫在 service（repo 保持薄，异常原样上抛）
+ * - listGraph 基础序=created_at,id 确定性兜底（AI-01 同哲学；业务布局
+ *   序归 LG-02）
  * - 测试：tests/unit/services/lineage-import.test.ts [受锁新增]——
  *   draft 合法全过替换重灌/幽灵 paperId 拦截/多父边拒绝/成环拒绝/
  *   自环拒绝/zod 非法字段行级 reason/空 draft=空图合法/重复边
@@ -82,6 +89,144 @@
  * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
+import { randomUUID } from 'node:crypto'
+import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '../../../shared/models/lineage'
+import type { SqliteDb } from '../connection'
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const LINEAGE_REPO_STUB = 'SR2-LG-01'
+export interface LineageRepo {
+  /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新） */
+  upsertNode(input: LineageNodeUpsert): LineageNode
+  /** 删节点；关联边由 DDL CASCADE 承担。返回删行数 */
+  removeNode(id: string): number
+  /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service） */
+  upsertEdge(input: LineageEdgeUpsert): LineageEdge
+  removeEdge(id: string): number
+  /** 全图单读（nodes+edges；created_at,id 确定性序——库空=空数组合法态） */
+  listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
+  /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
+  clearGraph(): void
+}
+
+/** lineage_nodes 表行形状（列名原样，蛇形） */
+interface LineageNodeRow {
+  id: string
+  paper_id: string | null
+  title: string
+  core_idea: string
+  year: number | null
+  x: number | null
+  y: number | null
+  created_at: string
+  updated_at: string
+}
+
+/** lineage_edges 表行形状（列名原样，蛇形） */
+interface LineageEdgeRow {
+  id: string
+  from_node: string
+  to_node: string
+  label: string
+  created_at: string
+  updated_at: string
+}
+
+function toNode(row: LineageNodeRow): LineageNode {
+  return {
+    id: row.id,
+    paperId: row.paper_id,
+    title: row.title,
+    coreIdea: row.core_idea,
+    year: row.year,
+    x: row.x,
+    y: row.y,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+function toEdge(row: LineageEdgeRow): LineageEdge {
+  return {
+    id: row.id,
+    fromNode: row.from_node,
+    toNode: row.to_node,
+    label: row.label,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+export function createLineageRepo(db: SqliteDb): LineageRepo {
+  const upsertNodeStmt = db.prepare(
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @now, @now)
+     ON CONFLICT(id) DO UPDATE SET
+       paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
+       year = excluded.year, x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`
+  )
+  const upsertEdgeStmt = db.prepare(
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @now, @now)
+     ON CONFLICT(id) DO UPDATE SET
+       from_node = excluded.from_node, to_node = excluded.to_node,
+       label = excluded.label, updated_at = excluded.updated_at`
+  )
+  const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
+  const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
+  const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
+  const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
+  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, id`)
+  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, id`)
+  const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
+  const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
+
+  return {
+    upsertNode(input: LineageNodeUpsert): LineageNode {
+      const id = input.id ?? randomUUID()
+      const now = new Date().toISOString()
+      upsertNodeStmt.run({
+        id,
+        paperId: input.paperId,
+        title: input.title,
+        coreIdea: input.coreIdea,
+        year: input.year,
+        x: input.x,
+        y: input.y,
+        now
+      })
+      return toNode(nodeByIdStmt.get(id) as LineageNodeRow)
+    },
+
+    removeNode(id: string): number {
+      return removeNodeStmt.run(id).changes
+    },
+
+    upsertEdge(input: LineageEdgeUpsert): LineageEdge {
+      const id = input.id ?? randomUUID()
+      const now = new Date().toISOString()
+      upsertEdgeStmt.run({
+        id,
+        fromNode: input.fromNode,
+        toNode: input.toNode,
+        label: input.label,
+        now
+      })
+      return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)
+    },
+
+    removeEdge(id: string): number {
+      return removeEdgeStmt.run(id).changes
+    },
+
+    listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] } {
+      return {
+        nodes: (listNodesStmt.all() as LineageNodeRow[]).map(toNode),
+        edges: (listEdgesStmt.all() as LineageEdgeRow[]).map(toEdge)
+      }
+    },
+
+    clearGraph(): void {
+      clearEdgesStmt.run() // 先清边（显式序；节点删除虽会级联，清面语义自持）
+      clearNodesStmt.run()
+    }
+  }
+}
