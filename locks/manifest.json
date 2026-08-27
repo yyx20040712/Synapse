@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T09:28:45.7531016Z",
+    "generatedAt":  "2026-08-27T11:14:39.7766487Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -36,6 +36,10 @@
                   {
                       "path":  "scripts/installer-smoke.mjs",
                       "sha256":  "d5c1bd4d41cfb8f4d9027c4b67fe017c954818f26ece6a9480570fd4c8c4c165"
+                  },
+                  {
+                      "path":  "scripts/local-state.mjs",
+                      "sha256":  "b862a844cd9ca916637c26ab1f2ee2f0f8d5ddd0d5ee577606ac01806f2c92f6"
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
