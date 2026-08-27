@@ -36,14 +36,16 @@ node tools/ai-sensor/queue.mjs <语料目录>
 `ai-sensor/`（四成员：`pending/` job 请求区、`status.json` 会话心跳、
 `corpus-ai/` 产物区（07 导入器扫描面）、`archive/` 导入后归档区）。
 
-协议目录平台惯例路径（应用 userData 按 package name `synapse-remake`——
-zcode 会话侧发现机制，AI-10 B10-1 联动）：
+协议目录平台惯例路径（应用 userData 按 productName `Synapse Remake`（带空格）
+——Electron 无 setName 覆盖、SYNAPSE_USER_DATA 仅 e2e 隔离用（bootstrap.ts）；
+zcode 会话侧发现机制，AI-10 B10-1 联动；2026-08-27 修正：旧表误写包名
+`synapse-remake`，照旧表传参会建幽灵协议目录=应用侧永不可见）：
 
 | 平台 | 协议目录 |
 | --- | --- |
-| Windows | `%APPDATA%\synapse-remake\ai-sensor` |
-| macOS | `~/Library/Application Support/synapse-remake/ai-sensor` |
-| Linux | `~/.config/synapse-remake/ai-sensor` |
+| Windows | `%APPDATA%\Synapse Remake\ai-sensor` |
+| macOS | `~/Library/Application Support/Synapse Remake/ai-sensor` |
+| Linux | `~/.config/Synapse Remake/ai-sensor` |
 
 1. **拾取**：`node tools/ai-sensor/companion.mjs <语料> <协议>`——打印下一个
    pending job（jobId/paperId/篇名/语料消费指针）并写心跳；无 job=空转退出

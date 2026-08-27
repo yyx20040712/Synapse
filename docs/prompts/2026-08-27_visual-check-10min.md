@@ -37,7 +37,8 @@
 - 【操作 b】阅读器打开一篇 → 侧栏笔记 tab → 点「AI 读文献」→ 状态行出现
   （pending 态——工具未拉起时同呈现，不误报）。
 - 【操作 c】另开一个 zcode/终端会话：
-  `node tools/ai-sensor/companion.mjs <①的语料目录> %APPDATA%\synapse-remake\ai-sensor`
+  `node tools/ai-sensor/companion.mjs <①的语料目录> "%APPDATA%\Synapse Remake\ai-sensor"`
+  （协议目录=userData/ai-sensor——userData 实名=productName「Synapse Remake」带空格）
   → 应打印拾取到的 job（篇名/paperId）；应用内状态行随之变 queued/reading。
 - 【看什么】状态行六态切换如实；心跳可用
   `companion.mjs <语料> <协议> --beat "视检中" reader` 维持。
