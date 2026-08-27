@@ -20,6 +20,7 @@ function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
     paperId: id,
     fileUrl: `app-file://${id}`,
     fileName: `${id}.pdf`,
+    title: '',
     page: 0,
     totalPages: 10,
     zoom: 1,
@@ -244,4 +245,27 @@ guardedDescribe('SR2-TABS-03', 'TabBar —— 灰点渲染与关闭脏 tab 确�
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(useReaderStore.getState().tabs['p-1']).toBeUndefined()
   })
+})
+
+// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
+// 关闭脏 tab 确认文案的标题与 TabBar 同型：title 优先（fileName 为内容寻址
+// 哈希基名不可读）；空 title 兜底 fileName 去扩展名
+it('confirmCloseDirty 文案标题=title 优先（哈希 fileName 不入文案）；空 title 兜底 fileName 去扩展名', () => {
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  useReaderStore.setState({
+    tabs: {
+      'p-1': makeTab('p-1', { title: '深度学习综述', fileName: 'a3f9c2e1b0d4f5.pdf' }),
+      'p-2': makeTab('p-2', { title: '', fileName: 'b8e7d6c5a4f3.pdf' })
+    },
+    order: ['p-1', 'p-2'],
+    activeId: 'p-1'
+  })
+  useReaderStore.getState().markTabDirty('p-1')
+  useReaderStore.getState().markTabDirty('p-2')
+  expect(confirmCloseDirty('p-1')).toBe(false)
+  expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('深度学习综述'))
+  expect(confirmSpy).toHaveBeenCalledWith(expect.not.stringContaining('a3f9c2e1b0d4f5'))
+  expect(confirmCloseDirty('p-2')).toBe(false)
+  expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('b8e7d6c5a4f3'))
+  confirmSpy.mockRestore()
 })

@@ -4,8 +4,10 @@
  *
  * ── 行为层 ──
  * - 状态形状：{ tabs: Record<paperId, TabState>; order: paperId[]; activeId: string | null }
- *   TabState = { paperId; fileUrl; fileName; page; totalPages; zoom; color;
- *   annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
+ *   TabState = { paperId; fileUrl; fileName; title; page; totalPages; zoom;
+ *   color; annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
+ *   （title=文献名（PaperDetail.title）——标签页可读名单源；fileName 是
+ *   file_ref 内容寻址哈希基名不可读，2026-08-27 用户视检缺陷②）
  *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
  *   文件）；undo 栈不进 TabState，归 UNDO-01 模块级自持，plan 门 W2 裁决）
  *   （顶层便捷字段全部下钻 TabState——单一真相源，禁投影双源；消费方经
@@ -70,6 +72,9 @@ export interface TabState {
   paperId: string
   fileUrl: string
   fileName: string
+  /** 文献名（PaperDetail.title）——标签页可读名单源（缺陷②）；空串=未知，
+   *  展示层兜底 fileName 去扩展名（防御位） */
+  title: string
   page: number
   totalPages: number
   zoom: number
@@ -137,6 +142,7 @@ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
     paperId,
     fileUrl: '',
     fileName: '',
+    title: '',
     page: 0,
     totalPages: 0,
     zoom: 1,
@@ -268,6 +274,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
                 ...(s.tabs[id] ?? makeLoadingTab(id, undefined)),
                 fileUrl: d.fileUrl,
                 fileName: d.fileName,
+                title: d.title,
                 page: d.lastReadPage,
                 annotations: anns,
                 status: 'ready'

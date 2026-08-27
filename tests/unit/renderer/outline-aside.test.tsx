@@ -61,6 +61,7 @@ function makeTab(id: string, annotations: Annotation[] = []): TabState {
     paperId: id,
     fileUrl: `app-file://${id}`,
     fileName: `${id}.pdf`,
+    title: '',
     page: 0,
     totalPages: 20,
     zoom: 1,

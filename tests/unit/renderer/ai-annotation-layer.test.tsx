@@ -67,6 +67,7 @@ function makeTab(id: string, page = 0): TabState {
     paperId: id,
     fileUrl: `app-file://${id}`,
     fileName: `${id}.pdf`,
+    title: '',
     page,
     totalPages: 10,
     zoom: 1,

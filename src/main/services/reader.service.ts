@@ -3,8 +3,9 @@
  *
  * ── 行为层 ──
  * - open：papers.detailById → { fileUrl: `app-file://${id}`, fileName（fileRef 的 basename，
- *   正斜杠取末段）, lastReadPage }；不存在抛 NOT_FOUND
- *   （fileUrl/fileName 的实际组装在 papers.repo.detailById 内完成，本层薄取三字段）
+ *   正斜杠取末段）, title（文献名——PaperDetail.title 透传，标签页可读名单源）,
+ *   lastReadPage }；不存在抛 NOT_FOUND
+ *   （fileUrl/fileName 的实际组装在 papers.repo.detailById 内完成，本层薄取四字段）
  * - 标注读写：转调 annotations repo（insert/update/delete/listByPaper）；
  *   update 返回 null（目标标注已不存在）→ 抛 NOT_FOUND，其余转调失败语义由 repo 层持有
  * - saveProgress：papers.updateReadPage（页码从 0 计）
@@ -50,7 +51,7 @@ export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader
       if (d === null) {
         throw new ReaderDomainError('NOT_FOUND', `文献不存在：${req.paperId}`)
       }
-      return { fileUrl: d.fileUrl, fileName: d.fileName, lastReadPage: d.lastReadPage }
+      return { fileUrl: d.fileUrl, fileName: d.fileName, title: d.title, lastReadPage: d.lastReadPage }
     },
 
     async saveAnnotation(req) {

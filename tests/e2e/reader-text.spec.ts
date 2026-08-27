@@ -249,7 +249,10 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   // tab 查询限定 TabBar 容器——侧栏目录/缩略图切换器也有 role=tab（域隔离）；
-  // 真实 tab 标题=fileRef 基名（sha.pdf），按 order 位置定位（打开序=甲0/乙1/丙2）
+  // tab 标题=title 优先（文献名）/fileName 兜底（2026-08-27 缺陷②随单改为文献名），
+  // tab 定位按 order 位置（打开序=甲0/乙1/丙2）；选区工具栏按钮定位已收紧到
+  // selection-toolbar 作用域——防 tab 关闭钮 aria-label 含标题字样的子串碰撞
+  // （Playwright name 默认子串匹配——2026-08-27 回炉 2）
   const tabBar = win.getByRole('tablist', { name: '打开的文献' })
   const tabAt = (i: number) => tabBar.getByRole('tab').nth(i)
 
@@ -346,7 +349,7 @@ test('划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言�
 
   await known.selectText()
   await expect(win.getByTestId('selection-toolbar')).toBeVisible()
-  await win.getByRole('button', { name: '下划线' }).click()
+  await win.getByTestId('selection-toolbar').getByRole('button', { name: '下划线' }).click()
 
   const rect = win.getByTestId('annotation-rect')
   await expect(rect.first()).toBeVisible()
@@ -378,7 +381,7 @@ test('划选备注后渲染为整行色块（note kind 渲染存在性，INV-06�
 
   await known.selectText()
   await expect(win.getByTestId('selection-toolbar')).toBeVisible()
-  await win.getByRole('button', { name: '备注' }).click()
+  await win.getByTestId('selection-toolbar').getByRole('button', { name: '备注' }).click()
 
   const rect = win.getByTestId('annotation-rect')
   await expect(rect.first()).toBeVisible()

@@ -34,6 +34,9 @@ export const readerOpenResSchema = z
   .object({
     fileUrl: z.string(), // app-file://<paperId>
     fileName: z.string(),
+    // 文献名（PaperDetail.title）——标签页可读名单源（缺陷② 2026-08-27：
+    // fileName 是 file_ref 内容寻址哈希基名，不可读）
+    title: z.string(),
     lastReadPage: z.number().int().min(0)
   })
   .strict()

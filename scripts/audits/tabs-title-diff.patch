@@ -1,0 +1,440 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 629178a..1cb2543 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T11:14:39.7766487Z",
++    "generatedAt":  "2026-08-27T15:38:42.4302587Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -91,7 +91,7 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "330a7e6b5bae44e4264ee29bd95c3e8e92b93445c6100fcfe4cce3a5f8da30c2"
++                      "sha256":  "d40a1590d6a1808b1cf56635a2ed8943cd244d8475b2ef96f63e3efeec342ede"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -151,7 +151,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "41ba4d687c5138ff63fc4fc65ba49460f6721a3627fcd88ef91d012cdf41a855"
++                      "sha256":  "d344b5ed556995262debc21115508130fa34db452bcd5d5c9c11748a0ade1c49"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -263,11 +263,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
+-                      "sha256":  "ff37c18c0db75bdd252b2a05dda64ac5e73ff9597364ad65956e393ea226f5f2"
++                      "sha256":  "7f2096b90e3e8e6021b042137dc658725c5e276f03cc8bb429084659e2dffd11"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+-                      "sha256":  "81ad71fa320ed0574a68f3c6a1f69af7abfb1cb90288787d7c50f175597d7e56"
++                      "sha256":  "1f96a8e674d26f2c569cc5ea7a83fae2fd0a9811501f19a12084e5842b0e72eb"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
+@@ -275,7 +275,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+-                      "sha256":  "1069c04a1858aa3163d559ea766a8dfc7e6d48ea5f5031e4c603690ceb7d9221"
++                      "sha256":  "93f43f6d2c68fe3dfca74b00b1610b1fdb1b337c5707239fa8934900cac05443"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+@@ -339,7 +339,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/outline-aside.test.tsx",
+-                      "sha256":  "c86036a067524a502c037a5a7dcd1ede3974276cc486853bbe8b28de69ae1f2c"
++                      "sha256":  "64298e40a1e95cf6ffa477c49a00ec60836e64eb6a8473d9d4dcfd241da46e0c"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
+@@ -351,11 +351,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader.store.test.ts",
+-                      "sha256":  "31f5ab08a2fa51a03e86e92b67a32987adff5963d5bc8397702db7ee67a4f6b6"
++                      "sha256":  "0a5d15c9374d62466b41f9717fd4c3f68f9824c961e2bfe8c5d1bddb5436f323"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
+-                      "sha256":  "0f9fc95fe13445b82eb643d450681914918641b04fce64987dfa30f3a6a296e7"
++                      "sha256":  "6a288972765541a996cf4ac66adc722479da3e20f941e47c869f236cdf83a09f"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
+@@ -371,11 +371,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/tab-bar.test.tsx",
+-                      "sha256":  "542fa10299d76aa80a455d14becf2c5d7ce0462f61a4b203bba5f0df2adb790f"
++                      "sha256":  "f7aeb6144324532317303aa7f57d091d4745947459852700c83b93daa3824f29"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/tab-dirty.test.tsx",
+-                      "sha256":  "120a877440a46abdf4eafd8c4c74ddc17768370a70ea377f194d686e26b6bbb8"
++                      "sha256":  "b02b16f8f4930e09197a77a2d2beadf8af069c2dc81051e03f5075be59cb009a"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/tags.store.test.ts",
+@@ -467,7 +467,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/reader.service.test.ts",
+-                      "sha256":  "243cfb57e20119c82606568d7db6d94e8857e84692c50f39388751c4ae3ea660"
++                      "sha256":  "5051cc12ca26cc6b87e4577bd1c24e169e2600c0a9c377597942575442d00b80"
+                   },
+                   {
+                       "path":  "tests/unit/services/tags.service.test.ts",
+diff --git a/src/main/services/reader.service.ts b/src/main/services/reader.service.ts
+index 675f5aa..4ba70b5 100644
+--- a/src/main/services/reader.service.ts
++++ b/src/main/services/reader.service.ts
+@@ -3,8 +3,9 @@
+  *
+  * ── 行为层 ──
+  * - open：papers.detailById → { fileUrl: `app-file://${id}`, fileName（fileRef 的 basename，
+- *   正斜杠取末段）, lastReadPage }；不存在抛 NOT_FOUND
+- *   （fileUrl/fileName 的实际组装在 papers.repo.detailById 内完成，本层薄取三字段）
++ *   正斜杠取末段）, title（文献名——PaperDetail.title 透传，标签页可读名单源）,
++ *   lastReadPage }；不存在抛 NOT_FOUND
++ *   （fileUrl/fileName 的实际组装在 papers.repo.detailById 内完成，本层薄取四字段）
+  * - 标注读写：转调 annotations repo（insert/update/delete/listByPaper）；
+  *   update 返回 null（目标标注已不存在）→ 抛 NOT_FOUND，其余转调失败语义由 repo 层持有
+  * - saveProgress：papers.updateReadPage（页码从 0 计）
+@@ -50,7 +51,7 @@ export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader
+       if (d === null) {
+         throw new ReaderDomainError('NOT_FOUND', `文献不存在：${req.paperId}`)
+       }
+-      return { fileUrl: d.fileUrl, fileName: d.fileName, lastReadPage: d.lastReadPage }
++      return { fileUrl: d.fileUrl, fileName: d.fileName, title: d.title, lastReadPage: d.lastReadPage }
+     },
+ 
+     async saveAnnotation(req) {
+diff --git a/src/renderer/features/reader/TabBar.tsx b/src/renderer/features/reader/TabBar.tsx
+index e30f7e0..d8119f1 100644
+--- a/src/renderer/features/reader/TabBar.tsx
++++ b/src/renderer/features/reader/TabBar.tsx
+@@ -4,8 +4,9 @@
+  *
+  * ── 行为层 ──
+  * - 消费 useReaderStore：order（排列序）/ activeId / tabs（每 tab 的
+- *   fileName/status）——纯展示+回调上交，不持有本地状态
+- * - 每个 tab 项：标题（fileName 去扩展名，超长截断省略）、激活态高亮、
++ *   fileName/title/status）——纯展示+回调上交，不持有本地状态
++ * - 每个 tab 项：标题（title 优先——file_ref 为内容寻址哈希名不可读，2026-08-27
++ *   用户视检缺陷②；fileName 去扩展名兜底，超长截断省略）、激活态高亮、
+  *   loading 态 spinner、error 态红字、关闭叉（closeTab）
+  * - 点击 tab 体 = activateTab(id)（换 tab 暂停非卸载——TABS-01 语义）
+  * - 空态：无 tab（order 空）时整栏不渲染
+@@ -39,11 +40,12 @@ import { useReaderStore } from './reader.store'
+ import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './tab-dirty'
+ import type { TabState } from './reader.store'
+ 
+-/** tab 项标题：fileName 去扩展名；loading/error 态的占位文案 */
++/** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
++ *  （防御位）；loading/error 态的占位文案 */
+ function tabTitle(tab: TabState): string {
+   if (tab.status === 'loading') return '加载中…'
+   if (tab.status === 'error') return '打开失败'
+-  return tab.fileName.replace(/\.pdf$/i, '')
++  return tab.title !== '' ? tab.title : tab.fileName.replace(/\.pdf$/i, '')
+ }
+ 
+ export function TabBar(): JSX.Element | null {
+diff --git a/src/renderer/features/reader/reader.store.ts b/src/renderer/features/reader/reader.store.ts
+index 7412001..6732b51 100644
+--- a/src/renderer/features/reader/reader.store.ts
++++ b/src/renderer/features/reader/reader.store.ts
+@@ -4,8 +4,10 @@
+  *
+  * ── 行为层 ──
+  * - 状态形状：{ tabs: Record<paperId, TabState>; order: paperId[]; activeId: string | null }
+- *   TabState = { paperId; fileUrl; fileName; page; totalPages; zoom; color;
+- *   annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
++ *   TabState = { paperId; fileUrl; fileName; title; page; totalPages; zoom;
++ *   color; annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
++ *   （title=文献名（PaperDetail.title）——标签页可读名单源；fileName 是
++ *   file_ref 内容寻址哈希基名不可读，2026-08-27 用户视检缺陷②）
+  *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
+  *   文件）；undo 栈不进 TabState，归 UNDO-01 模块级自持，plan 门 W2 裁决）
+  *   （顶层便捷字段全部下钻 TabState——单一真相源，禁投影双源；消费方经
+@@ -70,6 +72,9 @@ export interface TabState {
+   paperId: string
+   fileUrl: string
+   fileName: string
++  /** 文献名（PaperDetail.title）——标签页可读名单源（缺陷②）；空串=未知，
++   *  展示层兜底 fileName 去扩展名（防御位） */
++  title: string
+   page: number
+   totalPages: number
+   zoom: number
+@@ -137,6 +142,7 @@ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
+     paperId,
+     fileUrl: '',
+     fileName: '',
++    title: '',
+     page: 0,
+     totalPages: 0,
+     zoom: 1,
+@@ -268,6 +274,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+                 ...(s.tabs[id] ?? makeLoadingTab(id, undefined)),
+                 fileUrl: d.fileUrl,
+                 fileName: d.fileName,
++                title: d.title,
+                 page: d.lastReadPage,
+                 annotations: anns,
+                 status: 'ready'
+diff --git a/src/renderer/features/reader/tab-dirty.ts b/src/renderer/features/reader/tab-dirty.ts
+index 957cd9b..cda7631 100644
+--- a/src/renderer/features/reader/tab-dirty.ts
++++ b/src/renderer/features/reader/tab-dirty.ts
+@@ -96,7 +96,10 @@ export function useNotesDrafts(): Record<string, boolean> {
+  */
+ export function confirmCloseDirty(paperId: string): boolean {
+   const tab = useReaderStore.getState().tabs[paperId]
+-  const title = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
++  // 标题与 TabBar tabTitle 同型：title 优先（文献名——缺陷②），空 title 兜底
++  // fileName 去扩展名，fileName 亦空（tab 缺失/异常）兜底 paperId
++  const fileNameTitle = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
++  const title = tab !== undefined && tab.title !== '' ? tab.title : fileNameTitle
+   if (!isTabDirty(paperId, tabDirtySignals(paperId))) {
+     return true
+   }
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index c2aa675..f62ae32 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -34,6 +34,9 @@ export const readerOpenResSchema = z
+   .object({
+     fileUrl: z.string(), // app-file://<paperId>
+     fileName: z.string(),
++    // 文献名（PaperDetail.title）——标签页可读名单源（缺陷② 2026-08-27：
++    // fileName 是 file_ref 内容寻址哈希基名，不可读）
++    title: z.string(),
+     lastReadPage: z.number().int().min(0)
+   })
+   .strict()
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index abdb08f..60da30d 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -249,7 +249,10 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/
+   const win = await app.firstWindow()
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+   // tab 查询限定 TabBar 容器——侧栏目录/缩略图切换器也有 role=tab（域隔离）；
+-  // 真实 tab 标题=fileRef 基名（sha.pdf），按 order 位置定位（打开序=甲0/乙1/丙2）
++  // tab 标题=title 优先（文献名）/fileName 兜底（2026-08-27 缺陷②随单改为文献名），
++  // tab 定位按 order 位置（打开序=甲0/乙1/丙2）；选区工具栏按钮定位已收紧到
++  // selection-toolbar 作用域——防 tab 关闭钮 aria-label 含标题字样的子串碰撞
++  // （Playwright name 默认子串匹配——2026-08-27 回炉 2）
+   const tabBar = win.getByRole('tablist', { name: '打开的文献' })
+   const tabAt = (i: number) => tabBar.getByRole('tab').nth(i)
+ 
+@@ -346,7 +349,7 @@ test('划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言
+ 
+   await known.selectText()
+   await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+-  await win.getByRole('button', { name: '下划线' }).click()
++  await win.getByTestId('selection-toolbar').getByRole('button', { name: '下划线' }).click()
+ 
+   const rect = win.getByTestId('annotation-rect')
+   await expect(rect.first()).toBeVisible()
+@@ -378,7 +381,7 @@ test('划选备注后渲染为整行色块（note kind 渲染存在性，INV-06
+ 
+   await known.selectText()
+   await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+-  await win.getByRole('button', { name: '备注' }).click()
++  await win.getByTestId('selection-toolbar').getByRole('button', { name: '备注' }).click()
+ 
+   const rect = win.getByTestId('annotation-rect')
+   await expect(rect.first()).toBeVisible()
+diff --git a/tests/unit/renderer/ai-annotation-layer.test.tsx b/tests/unit/renderer/ai-annotation-layer.test.tsx
+index 334bad1..da7caef 100644
+--- a/tests/unit/renderer/ai-annotation-layer.test.tsx
++++ b/tests/unit/renderer/ai-annotation-layer.test.tsx
+@@ -67,6 +67,7 @@ function makeTab(id: string, page = 0): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page,
+     totalPages: 10,
+     zoom: 1,
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 7f69528..1503309 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -104,6 +104,7 @@ function makeTab(id: string): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page: 0,
+     totalPages: 10,
+     zoom: 1,
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 4c5c240..4ccc182 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -26,6 +26,7 @@ function makeTab(id: string, page = 0): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page,
+     totalPages: 10,
+     zoom: 1,
+diff --git a/tests/unit/renderer/outline-aside.test.tsx b/tests/unit/renderer/outline-aside.test.tsx
+index 0983797..fa760eb 100644
+--- a/tests/unit/renderer/outline-aside.test.tsx
++++ b/tests/unit/renderer/outline-aside.test.tsx
+@@ -61,6 +61,7 @@ function makeTab(id: string, annotations: Annotation[] = []): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page: 0,
+     totalPages: 20,
+     zoom: 1,
+diff --git a/tests/unit/renderer/reader-notes-panel.test.tsx b/tests/unit/renderer/reader-notes-panel.test.tsx
+index 72d146b..c02e20f 100644
+--- a/tests/unit/renderer/reader-notes-panel.test.tsx
++++ b/tests/unit/renderer/reader-notes-panel.test.tsx
+@@ -62,6 +62,7 @@ function makeTab(id: string): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page: 0,
+     totalPages: 10,
+     zoom: 1,
+diff --git a/tests/unit/renderer/reader.store.test.ts b/tests/unit/renderer/reader.store.test.ts
+index 97a76cc..943057d 100644
+--- a/tests/unit/renderer/reader.store.test.ts
++++ b/tests/unit/renderer/reader.store.test.ts
+@@ -351,3 +351,24 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
+     expect(useStore.getState().tabs['p-1']).toBeUndefined()
+   })
+ })
++
++// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
++// hydration 必须把 open 响应的 title（PaperDetail.title——文献名单源）落账到
++// TabState.title：标签页标题显示文献名而非 file_ref 内容寻址哈希基名
++it('缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变——托管文件基名）', async () => {
++  const open = vi.fn(async () => ({
++    ok: true as const,
++    data: {
++      fileUrl: 'app-file://p-1',
++      fileName: 'a3f9c2e1b0d4f5.pdf',
++      title: '深度学习综述',
++      lastReadPage: 0
++    }
++  }))
++  const useStore = await loadStore({ reader: { open, listAnnotations: listAnnotationsOk } })
++  await useStore.getState().openPaper('p-1')
++  const tab = useStore.getState().tabs['p-1']
++  expect(tab?.status).toBe('ready')
++  expect(tab?.title).toBe('深度学习综述')
++  expect(tab?.fileName).toBe('a3f9c2e1b0d4f5.pdf')
++})
+diff --git a/tests/unit/renderer/tab-bar.test.tsx b/tests/unit/renderer/tab-bar.test.tsx
+index 87a7fc3..18c8485 100644
+--- a/tests/unit/renderer/tab-bar.test.tsx
++++ b/tests/unit/renderer/tab-bar.test.tsx
+@@ -22,6 +22,7 @@ function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page: 0,
+     totalPages: 10,
+     zoom: 1,
+@@ -247,3 +248,21 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
+     expect(s.activeId).toBe('p-1')
+   })
+ })
++
++// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
++// file_ref 为内容寻址存储（xx/yy/<sha256>.pdf），fileName 是其哈希基名不可读；
++// tab 标题必须优先显示文献名（TabState.title=PaperDetail.title），
++// 空 title 兜底 fileName 去扩展名（防御位——旧会话/异常路径）
++it('标题=title 优先（fileName 为内容寻址哈希名时显示文献名）；title 空兜底 fileName 去扩展名', () => {
++  mountWith({
++    tabs: {
++      'p-1': makeTab('p-1', { title: '深度学习综述', fileName: 'a3f9c2e1b0d4f5.pdf' }),
++      'p-2': makeTab('p-2', { title: '', fileName: 'b8e7d6c5a4f3.pdf' })
++    },
++    order: ['p-1', 'p-2'],
++    activeId: 'p-1'
++  })
++  const labels = tabLabels(tabItems())
++  expect(labels[0]).toBe('深度学习综述')
++  expect(labels[1]).toBe('b8e7d6c5a4f3')
++})
+diff --git a/tests/unit/renderer/tab-dirty.test.tsx b/tests/unit/renderer/tab-dirty.test.tsx
+index 4eb6158..afad753 100644
+--- a/tests/unit/renderer/tab-dirty.test.tsx
++++ b/tests/unit/renderer/tab-dirty.test.tsx
+@@ -20,6 +20,7 @@ function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
+     paperId: id,
+     fileUrl: `app-file://${id}`,
+     fileName: `${id}.pdf`,
++    title: '',
+     page: 0,
+     totalPages: 10,
+     zoom: 1,
+@@ -245,3 +246,26 @@ guardedDescribe('SR2-TABS-03', 'TabBar —— 灰点渲染与关闭脏 tab 确
+     expect(useReaderStore.getState().tabs['p-1']).toBeUndefined()
+   })
+ })
++
++// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
++// 关闭脏 tab 确认文案的标题与 TabBar 同型：title 优先（fileName 为内容寻址
++// 哈希基名不可读）；空 title 兜底 fileName 去扩展名
++it('confirmCloseDirty 文案标题=title 优先（哈希 fileName 不入文案）；空 title 兜底 fileName 去扩展名', () => {
++  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
++  useReaderStore.setState({
++    tabs: {
++      'p-1': makeTab('p-1', { title: '深度学习综述', fileName: 'a3f9c2e1b0d4f5.pdf' }),
++      'p-2': makeTab('p-2', { title: '', fileName: 'b8e7d6c5a4f3.pdf' })
++    },
++    order: ['p-1', 'p-2'],
++    activeId: 'p-1'
++  })
++  useReaderStore.getState().markTabDirty('p-1')
++  useReaderStore.getState().markTabDirty('p-2')
++  expect(confirmCloseDirty('p-1')).toBe(false)
++  expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('深度学习综述'))
++  expect(confirmSpy).toHaveBeenCalledWith(expect.not.stringContaining('a3f9c2e1b0d4f5'))
++  expect(confirmCloseDirty('p-2')).toBe(false)
++  expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('b8e7d6c5a4f3'))
++  confirmSpy.mockRestore()
++})
+diff --git a/tests/unit/services/reader.service.test.ts b/tests/unit/services/reader.service.test.ts
+index 2fd1c85..286f8ca 100644
+--- a/tests/unit/services/reader.service.test.ts
++++ b/tests/unit/services/reader.service.test.ts
+@@ -95,3 +95,12 @@ guardedDescribe('SR-SVC-02', 'reader.service —— 打开与标注读写', () =
+     await expect(svc.saveProgress({ paperId: 'p-1', page: 5 })).resolves.toEqual({ ok: true })
+   })
+ })
++
++// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
++// open 响应必须透传 title（PaperDetail.title）：renderer 标签页标题的单次请求
++// 数据源（fileName 是 file_ref 内容寻址哈希基名不可读）
++it('缺陷②：open 透传 title（detailById 的文献名直达 renderer）', async () => {
++  const svc = createReaderService({ repos: stubRepos({ papers: { detailById: () => detail } }) })
++  const r = await svc.open({ paperId: 'p-1' })
++  expect(r.title).toBe('t')
++})

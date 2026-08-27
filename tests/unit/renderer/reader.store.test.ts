@@ -351,3 +351,24 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
     expect(useStore.getState().tabs['p-1']).toBeUndefined()
   })
 })
+
+// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
+// hydration 必须把 open 响应的 title（PaperDetail.title——文献名单源）落账到
+// TabState.title：标签页标题显示文献名而非 file_ref 内容寻址哈希基名
+it('缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变——托管文件基名）', async () => {
+  const open = vi.fn(async () => ({
+    ok: true as const,
+    data: {
+      fileUrl: 'app-file://p-1',
+      fileName: 'a3f9c2e1b0d4f5.pdf',
+      title: '深度学习综述',
+      lastReadPage: 0
+    }
+  }))
+  const useStore = await loadStore({ reader: { open, listAnnotations: listAnnotationsOk } })
+  await useStore.getState().openPaper('p-1')
+  const tab = useStore.getState().tabs['p-1']
+  expect(tab?.status).toBe('ready')
+  expect(tab?.title).toBe('深度学习综述')
+  expect(tab?.fileName).toBe('a3f9c2e1b0d4f5.pdf')
+})

@@ -32,10 +32,15 @@
   enrich 覆盖）——正确用户可读名单源。
 - 修法（主控裁决）：TabState 增 `title` 字段（hydration 取
   PaperDetail.title）；title 优先显示、fileName 去扩展名兜底；两处同修。
-- 处置：三屋修复 mini 单元**进行中**（实现者子代理后台，报告=
-  scripts/audits/tabs-title-impl.report.md）→ 门一/门二 → 主控收口
-  [locked-change] 提交（tab-bar.test.tsx 契约扩展——夹具补 title+新断言）。
-- 状态：修复中。
+- 处置：三屋修复 mini 单元**已完成双门+回炉 2 轮**——实现者 TDD 四档
+  （首红 4→绿 619/619→4 变异红证还原 diff 空）；门一 0B/4W/6N→回炉 1
+  （M4 红证+头注×2+受锁注释）→复核 PASS→门二 PASS（契约管道六环闭合，
+  实现者自裁 schemas.ts+reader.service 透传经复核符合裁决意图）；主控亲跑
+  e2e 抓出 2 红（tab 关闭钮 aria-label 含标题×getByRole 子串碰撞——修复的
+  真实回归面）→回炉 2 定位收紧 selection-toolbar 作用域+全 spec 排查零
+  命中→VERIFY_EXIT=0（619/619）+E2E_EXIT=0（**20/20**）。收口提交见
+  git log（[locked-change]，审计档案 scripts/audits/tabs-title-*）。
+- 状态：**已修复收口**（复验判据：标签页显示「Reynolds_1883」等文献名）。
 
 ### 发现 0（同场，主控先行排查，非用户报）：SKILL.md 平台路径表错误
 
@@ -43,6 +48,21 @@
   `synapse-remake`——zcode 侧照表发现必错（幽灵协议目录=应用侧永不可见）。
 - **已修复提交 `13cdbf9`**（三平台行+来历注记+视检卡③步命令同修）。
   根因链：bootstrap 无 setName 覆盖+%APPDATA% 实测目录佐证。
+
+### 发现 3：ai_notes 列表序非确定（测试 flaky）—— 分类=**存量契约缺口**（AI-01/07 面，主控收口亲验实锤）
+
+- 现象：主控亲跑 verify 一红（618/619）——ai-notes-import.test「无 archive
+  首导」`notes[0]` 期望 first-read 实得 adjudicate（两行都在，顺序对调）；
+  实现者同工作树两次 619/619 绿——间歇性。
+- 根因：`ai_notes.repo` `ORDER BY created_at, id`——repo 生成 created_at
+  （导入器单事务批量写=同毫秒），平局决胜键 id=随机 uuid → 顺序=uuid 彩票
+  （~50% 翻转）。该测试自 AI-07 落地起即带概率翻转，本日首次踩中。
+- 判定依据：宪法「恒绿和随机绿一样危险」（Phase 4 教训同源）；与本日
+  缺陷②单元零文件交集（复跑特征化见 git log 提交链）。
+- 处置：独立 mini 单元三屋修复——`ORDER BY created_at, rowid`（插入序
+  确定化）+ 可红首证回归测试（构造同 created_at 且 id 序与插入序相反的
+  两行，对现状必红）；受锁测试若动走 [locked-change]。
+- 状态：待修（排位=缺陷②收口后、ENR 物化前）。
 
 ## 2. 10 分钟卡五项走查结果（**用户自填区**）
 

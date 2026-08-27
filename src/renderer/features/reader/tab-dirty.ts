@@ -96,7 +96,10 @@ export function useNotesDrafts(): Record<string, boolean> {
  */
 export function confirmCloseDirty(paperId: string): boolean {
   const tab = useReaderStore.getState().tabs[paperId]
-  const title = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
+  // 标题与 TabBar tabTitle 同型：title 优先（文献名——缺陷②），空 title 兜底
+  // fileName 去扩展名，fileName 亦空（tab 缺失/异常）兜底 paperId
+  const fileNameTitle = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
+  const title = tab !== undefined && tab.title !== '' ? tab.title : fileNameTitle
   if (!isTabDirty(paperId, tabDirtySignals(paperId))) {
     return true
   }

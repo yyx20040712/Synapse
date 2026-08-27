@@ -95,3 +95,12 @@ guardedDescribe('SR-SVC-02', 'reader.service —— 打开与标注读写', () =
     await expect(svc.saveProgress({ paperId: 'p-1', page: 5 })).resolves.toEqual({ ok: true })
   })
 })
+
+// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
+// open 响应必须透传 title（PaperDetail.title）：renderer 标签页标题的单次请求
+// 数据源（fileName 是 file_ref 内容寻址哈希基名不可读）
+it('缺陷②：open 透传 title（detailById 的文献名直达 renderer）', async () => {
+  const svc = createReaderService({ repos: stubRepos({ papers: { detailById: () => detail } }) })
+  const r = await svc.open({ paperId: 'p-1' })
+  expect(r.title).toBe('t')
+})

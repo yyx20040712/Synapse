@@ -22,6 +22,7 @@ function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
     paperId: id,
     fileUrl: `app-file://${id}`,
     fileName: `${id}.pdf`,
+    title: '',
     page: 0,
     totalPages: 10,
     zoom: 1,
@@ -246,4 +247,22 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     expect(s.tabs['p-2']).toBeUndefined()
     expect(s.activeId).toBe('p-1')
   })
+})
+
+// ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
+// file_ref 为内容寻址存储（xx/yy/<sha256>.pdf），fileName 是其哈希基名不可读；
+// tab 标题必须优先显示文献名（TabState.title=PaperDetail.title），
+// 空 title 兜底 fileName 去扩展名（防御位——旧会话/异常路径）
+it('标题=title 优先（fileName 为内容寻址哈希名时显示文献名）；title 空兜底 fileName 去扩展名', () => {
+  mountWith({
+    tabs: {
+      'p-1': makeTab('p-1', { title: '深度学习综述', fileName: 'a3f9c2e1b0d4f5.pdf' }),
+      'p-2': makeTab('p-2', { title: '', fileName: 'b8e7d6c5a4f3.pdf' })
+    },
+    order: ['p-1', 'p-2'],
+    activeId: 'p-1'
+  })
+  const labels = tabLabels(tabItems())
+  expect(labels[0]).toBe('深度学习综述')
+  expect(labels[1]).toBe('b8e7d6c5a4f3')
 })

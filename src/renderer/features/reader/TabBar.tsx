@@ -4,8 +4,9 @@
  *
  * ── 行为层 ──
  * - 消费 useReaderStore：order（排列序）/ activeId / tabs（每 tab 的
- *   fileName/status）——纯展示+回调上交，不持有本地状态
- * - 每个 tab 项：标题（fileName 去扩展名，超长截断省略）、激活态高亮、
+ *   fileName/title/status）——纯展示+回调上交，不持有本地状态
+ * - 每个 tab 项：标题（title 优先——file_ref 为内容寻址哈希名不可读，2026-08-27
+ *   用户视检缺陷②；fileName 去扩展名兜底，超长截断省略）、激活态高亮、
  *   loading 态 spinner、error 态红字、关闭叉（closeTab）
  * - 点击 tab 体 = activateTab(id)（换 tab 暂停非卸载——TABS-01 语义）
  * - 空态：无 tab（order 空）时整栏不渲染
@@ -39,11 +40,12 @@ import { useReaderStore } from './reader.store'
 import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './tab-dirty'
 import type { TabState } from './reader.store'
 
-/** tab 项标题：fileName 去扩展名；loading/error 态的占位文案 */
+/** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
+ *  （防御位）；loading/error 态的占位文案 */
 function tabTitle(tab: TabState): string {
   if (tab.status === 'loading') return '加载中…'
   if (tab.status === 'error') return '打开失败'
-  return tab.fileName.replace(/\.pdf$/i, '')
+  return tab.title !== '' ? tab.title : tab.fileName.replace(/\.pdf$/i, '')
 }
 
 export function TabBar(): JSX.Element | null {
