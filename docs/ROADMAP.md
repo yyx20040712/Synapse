@@ -305,6 +305,26 @@
 > 路径零先例——发现机制归 06 SKILL.md 平台惯例路径文档）。执行序 06→07→08→
 > 09→10 串行领取逐单提交；首单 AI-06 实现待开工（状态机表+协议不变量已入票面）。
 
+> **批二收官 ✅（2026-08-27 8be7f91/fb53e63/78e4b5d/58986be——三屋模式四连单，
+> 全役报告=docs/reports/2026-08-27_ai-campaign-batch2.md）**：
+> **SR2-AI-07 ✅**（8be7f91——前置步=ai_sensor 域迁移：API_SURFACE 新立域，
+> 06 两通道自 export_ 迁入（通道名不变）+契约测试十域穷举；回灌导入器三路径
+> 幂等（archive 账本 sha256 首导/跳过/清面重灌）+部分成功三桶；「v1 无生产者」
+> 声明解除。门一 0B/2W→门二 PASS）。**SR2-AI-08 ✅**（fb53e63——实现者 BLOCKED
+> 上报→主控三分法预裁：新立 **ai-sensor/observe 第五通道**（per-paper 四事实
+> 聚合，六态判定单源；aiStatus 保持现状）；六态状态行+跨格序列①③⑤用例+七问
+> 分色单源 ai-note-style+ai-notes.store 新 store（notes.store 零触碰）；e2e
+> 受锁新 spec 14/14；门一 0B/0W/9N 首次零回炉）。**SR2-AI-09 ✅**（78e4b5d——
+> verifyQuote 重锚同几何管线（唯一 DOM 遍历点不另写几何）/anchor-locate exact
+> 层扩 [data-ai-note-id]（INV-20 三防线结构不动）/notifyAiNoteHighlight 反向
+> 同步（C-05 同型）/INV-19 annotations 写面 diff 级零触碰；e2e 15/15）。**
+> SR2-AI-10 ✅**（58986be——detect 五态+一键装技能纯 fs 零进程（INV-21 登记册
+> 锚定+e2e 纯 fs 断言）+zcode-link/detect+install 挂 ai_sensor 域+extraResources；
+> 门一 2W 触宪法「每测试须能失败一次」→**回炉 1 轮**（两用例补前置事实断言+
+> R1 占位还原自验红）→复核 ADDRESSED→门二 PASS）。终态基线：verify exit 0
+> （**79 文件 520 用例**）+e2e **16/16**+locks **121**+工单 99 open **0**
+> （批二五单全清）。P7-G 全域完成——下一阶段 P7-H（脉络图）。
+
 ### P7-H：发展脉络图（2026-08-25 E3/E4/E5 裁决立项——蓝图 §4.3、ADR-0014）
 
 | 项 | 内容 |
