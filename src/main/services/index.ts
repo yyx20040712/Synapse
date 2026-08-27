@@ -24,6 +24,10 @@ import {
   createAiSensorService,
   type AiSensorService
 } from './ai_sensor/ai-sensor.service'
+import {
+  createAiNotesImportService,
+  type AiNotesImportService
+} from './ai_sensor/ai-notes-import.service'
 import { createEnrichService } from './enrich/enrich.service'
 import {
   createCrossrefProvider,
@@ -61,8 +65,9 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  /** AI-06：ai-sensor 服务并域（ai-sensor/* 通道挂 export_ 域——AI-02 corpusItem 同型交并） */
-  export_: ExportService & CorpusExportService & AiSensorService
+  /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
+  export_: ExportService & CorpusExportService
+  ai_sensor: AiSensorService & AiNotesImportService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -88,8 +93,15 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
         repos: deps.repos,
         fileStore: deps.fileStore,
         sendEvent: deps.sendExportEvent ?? (() => undefined),
-      }),
-      ...createAiSensorService({ rootDir: deps.aiSensorRootDir })
+      })
+    },
+    ai_sensor: {
+      ...createAiSensorService({ rootDir: deps.aiSensorRootDir }),
+      ...createAiNotesImportService({
+        rootDir: deps.aiSensorRootDir,
+        repo: deps.repos.aiNotes,
+        paperExists: (id) => deps.repos.papers.findById(id) !== null
+      })
     }
   }
 }

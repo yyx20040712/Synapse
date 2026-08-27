@@ -177,8 +177,8 @@ export const corpusSessionResSchema = z
   .strict()
 export type CorpusSessionRes = z.infer<typeof corpusSessionResSchema>
 
-// ── ai-sensor（AI-06：伴随进程文件协议——通道名 ai-sensor/* 挂 export_ 域，
-//    域归属=AI-02 corpusItem 同型先例，见报告自裁申报）──────────────────
+// ── ai_sensor（AI-06 伴随进程文件协议 ai-sensor/* + AI-07 回灌导入器
+//    ai-notes/*——域归属=ai_sensor 域，2026-08-27 用户裁决 ADR-0017）────────
 /** request-read 响应：jobId（幂等：同篇 pending 在则返回既有 jobId） */
 export const aiReadJobResSchema = z.object({ jobId: z.string().min(1) }).strict()
 export type AiReadJobRes = z.infer<typeof aiReadJobResSchema>
@@ -198,6 +198,16 @@ export type SensorStatus = z.infer<typeof sensorStatusSchema>
 
 /** status 通道响应：null=status.json 不存在=工具从未运行（N06-4） */
 export const aiSensorStatusResSchema = sensorStatusSchema.nullable()
+
+/** ai-notes/import 响应：部分成功三桶（AI-07——消费方 08 按钮 toast 汇总呈现） */
+export const aiNotesImportResSchema = z
+  .object({
+    imported: z.array(z.string()),
+    skipped: z.array(z.string()),
+    errors: z.array(z.object({ paperId: z.string(), reason: z.string() }).strict())
+  })
+  .strict()
+export type AiNotesImportRes = z.infer<typeof aiNotesImportResSchema>
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */

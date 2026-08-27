@@ -25,6 +25,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       import_: null as never,
       enrich: null as never,
       export_: null as never,
+      ai_sensor: null as never,
       ...over.services
     },
     dialogs: {

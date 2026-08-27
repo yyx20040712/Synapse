@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-26T23:44:50.9829073Z",
+    "generatedAt":  "2026-08-27T01:12:06.8935141Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "16b43c23db1486fcf4207db2686bbbe2902bad0affd0128005f883141aa4c51c"
+                      "sha256":  "1feb899c97a2a39e4e2b3d57771f4e8e2f0dcac496302cd976d558155020be35"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "8040c24c6c6b10756475e12dd217fdb0c071c75a6dc3aa01a5671bebe2ae1001"
+                      "sha256":  "08961e0911d273aa0720f55df380e8517d0debd853ecbfc8704412149aa37a0d"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -111,7 +111,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "bc211e504bdee5eddace9756ab30aea47a26a32005634d1f04cead970260b321"
+                      "sha256":  "f4fb3e3e0ce959dc1fdee910f604501cc4ed58309a112462aa5b955cd983964f"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -330,6 +330,10 @@
                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
                   },
                   {
+                      "path":  "tests/unit/services/ai-notes-import.test.ts",
+                      "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
+                  },
+                  {
                       "path":  "tests/unit/services/ai-sensor.service.test.ts",
                       "sha256":  "8e37391174da77595ad0a93090d8de8a64b8d07a6b6259fea0d0cd144e323220"
                   },
@@ -427,7 +431,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "a0a25af30a05c261b3d1af715e5902b6dd6efd61ee0b249e5517146971924ad2"
+                      "sha256":  "7a949dbaf1235bfb9a580a74588a87d77d37e55e2c3b7a0443820755d6e53cc8"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

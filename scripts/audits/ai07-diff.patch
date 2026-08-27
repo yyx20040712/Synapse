@@ -1,0 +1,726 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 2fe70ae..47b4d90 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-26T23:44:50.9829073Z",
++    "generatedAt":  "2026-08-27T01:12:06.8935141Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -79,11 +79,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "16b43c23db1486fcf4207db2686bbbe2902bad0affd0128005f883141aa4c51c"
++                      "sha256":  "1feb899c97a2a39e4e2b3d57771f4e8e2f0dcac496302cd976d558155020be35"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "8040c24c6c6b10756475e12dd217fdb0c071c75a6dc3aa01a5671bebe2ae1001"
++                      "sha256":  "08961e0911d273aa0720f55df380e8517d0debd853ecbfc8704412149aa37a0d"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -111,7 +111,7 @@
+                   },
+                   {
+                       "path":  "tests/contracts/api-surface.test.ts",
+-                      "sha256":  "bc211e504bdee5eddace9756ab30aea47a26a32005634d1f04cead970260b321"
++                      "sha256":  "f4fb3e3e0ce959dc1fdee910f604501cc4ed58309a112462aa5b955cd983964f"
+                   },
+                   {
+                       "path":  "tests/contracts/app-error.test.ts",
+@@ -329,6 +329,10 @@
+                       "path":  "tests/unit/renderer/useDebounce.test.tsx",
+                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
+                   },
++                  {
++                      "path":  "tests/unit/services/ai-notes-import.test.ts",
++                      "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
++                  },
+                   {
+                       "path":  "tests/unit/services/ai-sensor.service.test.ts",
+                       "sha256":  "8e37391174da77595ad0a93090d8de8a64b8d07a6b6259fea0d0cd144e323220"
+@@ -427,7 +431,7 @@
+                   },
+                   {
+                       "path":  "tests/utils/ipc-deps.ts",
+-                      "sha256":  "a0a25af30a05c261b3d1af715e5902b6dd6efd61ee0b249e5517146971924ad2"
++                      "sha256":  "7a949dbaf1235bfb9a580a74588a87d77d37e55e2c3b7a0443820755d6e53cc8"
+                   },
+                   {
+                       "path":  "tests/utils/pdf-factory.ts",
+diff --git a/src/main/db/repos/ai_notes.repo.ts b/src/main/db/repos/ai_notes.repo.ts
+index e9f2056..f733eb4 100644
+--- a/src/main/db/repos/ai_notes.repo.ts
++++ b/src/main/db/repos/ai_notes.repo.ts
+@@ -18,9 +18,10 @@
+  * - listByPaper 基础序=created_at,id：**确定性兜底非业务序**（同键 id 稳定
+  *   全序——同库同序；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
+  *   INV-24 同哲学分工）
+- * - **v1 无生产者声明（计划审查 R4，死代码红线豁免依据）**：生产者=测试
+- *   夹具（本单）；真实生产者=回灌联动组导入器（AI-07，未开单）；消费者=
+- *   语料导出装配（corpus.assemble 的 aiNotes 入参面，AI-03 会话接线）
++ * - **v1 无生产者声明解除（SR2-AI-07，2026-08-27）**：生产者=回灌导入器
++ *   ai_sensor/ai-notes-import.service（经本 repo insert/deleteByPaper 幂等
++ *   重灌）；消费者=语料导出装配（corpus.assemble 的 aiNotes 入参面，AI-03）
++ *   + ai-notes/list 读通道（AI-07）
+  *
+  * ── 接口层 ──
+  * - export interface AiNotesRepo：
+diff --git a/src/main/ipc/export_.ts b/src/main/ipc/export_.ts
+index 1b9865a..d26d26c 100644
+--- a/src/main/ipc/export_.ts
++++ b/src/main/ipc/export_.ts
+@@ -68,11 +68,6 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
+   }
+ 
+   return {
+-    // AI-06 伴随进程文件协议两通道（通道名 ai-sensor/*，域归属本文件——委托行
+-    // 形态=corpusItem 同型；协议 IO 错误原样上抛，register 折叠为 Result）
+-    requestAiRead: (req) => deps.services.export_.requestRead(req.paperId),
+-    aiStatus: async () => deps.services.export_.readStatus(),
+-
+     corpusItem: (req) => deps.services.export_.corpusItem(req),
+ 
+     corpusSession: async (req) => {
+diff --git a/src/main/ipc/index.ts b/src/main/ipc/index.ts
+index 74ce7e8..5b1a10c 100644
+--- a/src/main/ipc/index.ts
++++ b/src/main/ipc/index.ts
+@@ -13,6 +13,7 @@ import { createTagsIpc } from './tags'
+ import { createImportIpc } from './import_'
+ import { createEnrichIpc } from './enrich'
+ import { createExportIpc } from './export_'
++import { createAiSensorIpc } from './ai_sensor'
+ import { createSettingsIpc } from './settings'
+ import { createSystemIpc } from './system'
+ 
+@@ -37,6 +38,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
+     import_: createImportIpc(deps),
+     enrich: createEnrichIpc(deps),
+     export_: createExportIpc(deps),
++    ai_sensor: createAiSensorIpc(deps),
+     settings: createSettingsIpc(deps),
+     system: createSystemIpc(deps)
+   }
+diff --git a/src/main/services/ai_sensor/ai-notes-import.service.ts b/src/main/services/ai_sensor/ai-notes-import.service.ts
+index 3214bf7..9c50e83 100644
+--- a/src/main/services/ai_sensor/ai-notes-import.service.ts
++++ b/src/main/services/ai_sensor/ai-notes-import.service.ts
+@@ -8,69 +8,219 @@
+  *   交付的产物区）→ 逐篇解析校验（zod）→ 经 ai_notes.repo 写 DB（**写入只经
+  *   应用 IPC+repo，工具永不写 DB**——D3 语义保持）；导入后产物移 archive/
+  *   （ADR §2 字面）
+- * - **幂等=archive 账本机制**（ADR §2「幂等：已导入篇按内容 sha 去重跳过」+
+- *   「导入后产物移 archive/」两条款的合力实现）：archive/<paperId>.json
+- *   存在且 sha256==源文件 → 跳过（skipped）；存在但 sha 不同 → 清面重灌
+- *   （deleteByPaper+整套重插——AI-01 幂等原语）；无 archive → 首次导入
++ * - **幂等=archive 账本机制**：archive/<paperId>.json 存在且 sha256==源文件 →
++ *   跳过（skipped）；存在但 sha 不同 → 清面重灌（deleteByPaper+整套重插
++ *   ——AI-01 幂等原语）；无 archive → 首次导入
+  * - **账本前提登记（门一 W07-1 处置，两条机器事实）**：①paperId 不复用
+  *   （导入服务以 randomUUID 生成不循环——import.service.ts 现实现）；②
+  *   paper 删→CASCADE 清 ai_notes（003 迁移）后 archive 残留无害（扫描只看
+  *   corpus-ai/ 活动区不读 archive）。前提破坏场景=未来引入 paperId 复用
+- *   或「保 archive 清 DB」操作面——出现时任一即须重估账本机制（登记防
+- *   后续改动踩断支撑链）
++ *   或「保 archive 清 DB」操作面——出现时任一即须重估账本机制
+  * - 产物行格式（ADR §1 字面契约）：corpus-ai/<paperId>.json=行式锚定段数组，
+  *   行={ role, question, model, quote_text, prefix_text, suffix_text,
+  *   anchor_page, content_md }（snake_case 文件面）→ 映射 AiNoteInput
+  *   （camelCase zod 面；annotationId=null——自持锚定三元组与 annotations
+  *   零耦合，D3；id/createdAt/updatedAt 由 repo 生成）
+- * - 校验面（接缝归责修正，门一 W07-2：与 ai-note.ts 头注契约原文对齐）：
+- *   **role 枚举真相=迁移 003 DDL CHECK（zod 为镜像消费）**；question=DDL
+- *   不加 CHECK（扩展性优先）、**zod=应用边界校验单源**；aiNoteInputSchema
+- *   逐行校验（七问 v1 冻结不扩枚举）；paperId 幽灵拦截（不在 papers
+- *   表→该篇失败，CLI 幽灵 ID 防御同型）；行级失败→该篇失败入 errors[]
+- *   （部分成功语义——AI-03 errors[] 先例，AI-05 门二 N-新1 输入防御同族）
+- * - **「v1 无生产者」声明解除时点=本单**（AI-01 头注 R4 预告）：实现时
+- *   ai_notes.repo.ts 头注声明行随本单修订（生产者=本导入器）
++ * - 校验面：role 枚举真相=迁移 003 DDL CHECK（zod 为镜像消费）；question=
++ *   **zod=应用边界校验单源**；aiNoteInputSchema 逐行校验；paperId 幽灵拦截
++ *   （不在 papers 表→该篇失败）；行级失败→该篇失败入 errors[]（部分成功语义）
++ * - 「v1 无生产者」声明解除时点=本单：ai_notes.repo.ts 头注声明行随本单修订
++ *   （生产者=本导入器）
+  * - Result 形状：{ imported: string[]; skipped: string[]; errors:
+  *   { paperId: string; reason: string }[] }（部分成功三桶——消费方 08 按钮
+  *   toast 汇总呈现）
+  *
+  * ── 接口层 ──
+- * - export interface AiNotesImportService {
+- *     importAll(): { imported: string[]; skipped: string[]; errors: { paperId: string; reason: string }[] }
+- *     listByPaper(paperId: string): AiNote[]          // 08 分节数据面（repo listByPaper 透传）
+- *   }
+- * - IPC 面：ai-notes/import + ai-notes/list 两通道（ADR §2 字面命名；
+- *   **域归属=新立 ai_sensor 域**——2026-08-27 用户裁决（ADR-0017）：随本单
+- *   [locked-change] 扩契约测试 9 域穷举，并把 06 两通道自 export_ 域迁入
+- *   新域（消费者未建=最后便宜窗口）；schemas+api-surface 受锁面不变
+- * - 交付面：ipc/ai_notes.ts（handler 域文件，薄分发——SR-IPC-* 同型）+
+- *   services/index.ts 装配+ai_notes.repo.ts 头注声明行修订
++ * - export interface AiNotesImportService { importAll(); listByPaper(paperId) }
++ * - IPC 面：ai-notes/import + ai-notes/list 两通道，域归属=新立 ai_sensor 域
++ *   （2026-08-27 用户裁决，ADR-0017）
++ * - 交付面：ipc/ai_sensor.ts（域装配，四通道委托）+services/index.ts 装配
++ *   +ai_notes.repo.ts 头注声明行修订
+  *
+  * ── 架构层 ──
+  * - 分层：ipc → services → repos → db（单向；service 持 repo+协议根路径，
+  *   禁 service 直写 SQL）；fs 面仅协议根（corpus-ai 读+archive 移动，
+- *   rename 保原子）
++ *   rename 保原子——Windows rename 不覆盖已存在目标，先 rm 再 rename）
+  * - 依赖：ai_notes.repo（insert/deleteByPaper/listByPaper）、
+  *   shared/models/ai-note（zod 单源）、node:crypto（sha256 零依赖）
+  *
+  * ── 生命周期层 ──
+- * - 预留：分篇选择性导入（v1 全量扫描——按钮面在 08 已含当前篇语义，目录
+- *   级幂等使全量重跑无害）；FTS 入 ai_notes（P7-E 候选，维持 AI-01 不做）
++ * - 预留：分篇选择性导入（v1 全量扫描——目录级幂等使全量重跑无害）；
++ *   FTS 入 ai_notes（P7-E 候选，维持 AI-01 不做）
+  * - 不做：工具侧任何 DB 直写；divergence/七问枚举扩展（冻结 v1）；
+  *   annotationId 回链（自持锚定=D3 彻底化，渲染重锚归 AI-09）
+  *
+  * ── 文化层 ──
+- * - 错误：篇级失败入 errors[] 不中断整批（部分成功）；目录不存在→空结果+
+- *   { imported:[], skipped:[], errors:[] }（首次无产物=合法态非错误）；
+- *   文件损坏→该篇 error（中文 reason 含路径）；禁静默吞错
++ * - 错误：篇级失败入 errors[] 不中断整批（部分成功）；目录不存在→空结果
++ *   （首次无产物=合法态非错误）；文件损坏→该篇 error（中文 reason 含路径）；
++ *   禁静默吞错。**失败篇产物留在 corpus-ai 不移 archive**（移走即永久掩盖
++ *   损坏面——下次导入可重试修复）；skipped 路径源文件一并归档（活动区清空）
+  * - 测试：tests/unit/services/ai-notes-import.test.ts [受锁新增]——幂等三
+- *   路径（无 archive 首导/同 sha 跳过/异 sha 清面重插不重复条目）/行级 zod
+- *   拒非法 role/question/幽灵 paperId 拦截/archive 移动后二跑全 skipped/
+- *   Result 三桶形状；repo 交互以真库夹具（AI-01 测试同型）
+- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+- * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ *   路径/行级 zod 拒非法 role/question/幽灵 paperId 拦截/损坏 JSON/目录不
++ *   存在空结果/二跑全 skipped/Result 三桶形状；repo 交互以真库夹具
++ *   （AI-01 测试同型）；always-active（ADR-0017 裁决 3）
+  */
++import { createHash } from 'node:crypto'
++import { mkdir, readdir, readFile, rename, rm } from 'node:fs/promises'
++import { join } from 'node:path'
++import { aiNoteInputSchema, type AiNote } from '../../../shared/models/ai-note'
++import type { AiNotesRepo } from '../../db/repos/ai_notes.repo'
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const AI_NOTES_IMPORT_STUB = 'SR2-AI-07'
++export interface AiNotesImportResult {
++  imported: string[]
++  skipped: string[]
++  errors: { paperId: string; reason: string }[]
++}
++
++export interface AiNotesImportService {
++  importAll(): Promise<AiNotesImportResult>
++  listByPaper(paperId: string): Promise<AiNote[]>
++}
++
++export interface AiNotesImportDeps {
++  /** 协议根（=userData/ai-sensor——bootstrap 解析注入，与 ai-sensor.service 同根） */
++  rootDir: string
++  repo: Pick<AiNotesRepo, 'insert' | 'deleteByPaper' | 'listByPaper'>
++  /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
++  paperExists: (paperId: string) => boolean
++}
++
++/** 产物文件行形状（ADR-0015 §1 字面，snake_case 文件面） */
++interface ProductRow {
++  role: unknown
++  question: unknown
++  model: unknown
++  quote_text: unknown
++  prefix_text: unknown
++  suffix_text: unknown
++  anchor_page: unknown
++  content_md: unknown
++}
++
++/** Node fs ENOENT 判定（unknown 收窄，不吞其他错误——AI-06 同型） */
++function isENOENT(e: unknown): boolean {
++  return (
++    typeof e === 'object' && e !== null && 'code' in e && (e as { code?: unknown }).code === 'ENOENT'
++  )
++}
++
++function sha256Of(text: string): string {
++  return createHash('sha256').update(text, 'utf8').digest('hex')
++}
++
++export function createAiNotesImportService(deps: AiNotesImportDeps): AiNotesImportService {
++  const corpusAiDir = join(deps.rootDir, 'corpus-ai')
++  const archiveDir = join(deps.rootDir, 'archive')
++
++  /** 逐行解析校验（snake→camel 映射+annotationId 固定 null——自持锚定，D3） */
++  function parseRows(rows: unknown[], paperId: string, path: string): ReturnType<typeof aiNoteInputSchema.parse>[] {
++    return rows.map((row, i) => {
++      if (row === null || typeof row !== 'object' || Array.isArray(row)) {
++        throw new Error(`第 ${i + 1} 行非对象：${path}`)
++      }
++      const r = row as ProductRow
++      const parsed = aiNoteInputSchema.safeParse({
++        paperId,
++        annotationId: null,
++        role: r.role,
++        question: r.question,
++        model: r.model,
++        quoteText: r.quote_text,
++        prefixText: r.prefix_text,
++        suffixText: r.suffix_text,
++        anchorPage: r.anchor_page,
++        contentMd: r.content_md
++      })
++      if (!parsed.success) {
++        const issues = parsed.error.issues
++          .slice(0, 3)
++          .map((iss) => `${iss.path.join('.')}: ${iss.message}`)
++          .join('；')
++        throw new Error(`第 ${i + 1} 行校验失败（${issues}）：${path}`)
++      }
++      return parsed.data
++    })
++  }
++
++  /** 单篇导入（成功/跳过→返回 true；失败→errors 落条目返回 false） */
++  async function importOne(
++    name: string,
++    errors: { paperId: string; reason: string }[]
++  ): Promise<'imported' | 'skipped' | 'failed'> {
++    const paperId = name.slice(0, -5)
++    const src = join(corpusAiDir, name)
++    const dest = join(archiveDir, name)
++    try {
++      const text = await readFile(src, 'utf8')
++      // archive 账本：同 sha→skipped（源一并归档，活动区清空）
++      let archivedText: string | null = null
++      try {
++        archivedText = await readFile(dest, 'utf8')
++      } catch (e) {
++        if (!isENOENT(e)) throw e
++      }
++      if (archivedText !== null && sha256Of(archivedText) === sha256Of(text)) {
++        await rm(dest, { force: true })
++        await mkdir(archiveDir, { recursive: true })
++        await rename(src, dest)
++        return 'skipped'
++      }
++      if (!deps.paperExists(paperId)) {
++        errors.push({ paperId, reason: `文献不存在（幽灵 paperId）：${src}` })
++        return 'failed'
++      }
++      let raw: unknown
++      try {
++        raw = JSON.parse(text)
++      } catch (e) {
++        errors.push({
++          paperId,
++          reason: `产物 JSON 损坏：${src}（${e instanceof Error ? e.message : String(e)}）`
++        })
++        return 'failed'
++      }
++      if (!Array.isArray(raw)) {
++        errors.push({ paperId, reason: `产物应为行式锚定段数组，实际非数组：${src}` })
++        return 'failed'
++      }
++      const inputs = parseRows(raw, paperId, src)
++      // 幂等重灌原语：异 sha 先清面再整套重插（AI-01）
++      deps.repo.deleteByPaper(paperId)
++      for (const input of inputs) deps.repo.insert(input)
++      await mkdir(archiveDir, { recursive: true })
++      await rm(dest, { force: true }) // Windows rename 不覆盖已存在目标
++      await rename(src, dest)
++      return 'imported'
++    } catch (e) {
++      errors.push({
++        paperId,
++        reason: `导入失败：${src}（${e instanceof Error ? e.message : String(e)}）`
++      })
++      return 'failed'
++    }
++  }
++
++  return {
++    async importAll() {
++      const result: AiNotesImportResult = { imported: [], skipped: [], errors: [] }
++      let names: string[]
++      try {
++        names = await readdir(corpusAiDir)
++      } catch (e) {
++        if (isENOENT(e)) return result // 首次无产物=合法态非错误
++        throw e
++      }
++      for (const name of names.sort()) {
++        if (!name.endsWith('.json') || name.endsWith('.tmp')) continue
++        const outcome = await importOne(name, result.errors)
++        if (outcome === 'imported') result.imported.push(name.slice(0, -5))
++        else if (outcome === 'skipped') result.skipped.push(name.slice(0, -5))
++      }
++      return result
++    },
++
++    async listByPaper(paperId) {
++      return deps.repo.listByPaper(paperId)
++    }
++  }
++}
+diff --git a/src/main/services/index.ts b/src/main/services/index.ts
+index 07c55d8..5da05cb 100644
+--- a/src/main/services/index.ts
++++ b/src/main/services/index.ts
+@@ -24,6 +24,10 @@ import {
+   createAiSensorService,
+   type AiSensorService
+ } from './ai_sensor/ai-sensor.service'
++import {
++  createAiNotesImportService,
++  type AiNotesImportService
++} from './ai_sensor/ai-notes-import.service'
+ import { createEnrichService } from './enrich/enrich.service'
+ import {
+   createCrossrefProvider,
+@@ -61,8 +65,9 @@ export interface ServiceBundle {
+   notes: ApiHandlers['notes']
+   import_: ImportService
+   enrich: EnrichServiceShape
+-  /** AI-06：ai-sensor 服务并域（ai-sensor/* 通道挂 export_ 域——AI-02 corpusItem 同型交并） */
+-  export_: ExportService & CorpusExportService & AiSensorService
++  /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
++  export_: ExportService & CorpusExportService
++  ai_sensor: AiSensorService & AiNotesImportService
+ }
+ 
+ export function createServices(deps: ServiceDeps): ServiceBundle {
+@@ -88,8 +93,15 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
+         repos: deps.repos,
+         fileStore: deps.fileStore,
+         sendEvent: deps.sendExportEvent ?? (() => undefined),
+-      }),
+-      ...createAiSensorService({ rootDir: deps.aiSensorRootDir })
++      })
++    },
++    ai_sensor: {
++      ...createAiSensorService({ rootDir: deps.aiSensorRootDir }),
++      ...createAiNotesImportService({
++        rootDir: deps.aiSensorRootDir,
++        repo: deps.repos.aiNotes,
++        paperExists: (id) => deps.repos.papers.findById(id) !== null
++      })
+     }
+   }
+ }
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index 1863376..941dded 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -14,6 +14,7 @@ import { libraryQuerySchema, paperDetailSchema } from '../models/paper'
+ import { annotationSchema } from '../models/annotation'
+ import { noteSchema } from '../models/note'
+ import { tagSchema } from '../models/tag'
++import { aiNoteSchema } from '../models/ai-note'
+ import * as S from './schemas'
+ 
+ export interface Endpoint {
+@@ -54,11 +55,15 @@ export const API_SURFACE = {
+     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
+     corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },
+     corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema },
+-    corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema },
+-    // AI-06 伴随进程文件协议：通道名=票面字面 ai-sensor/*；域归属 export_（AI-02
+-    // corpusItem 同型——AI 语料管线家族，ServiceBundle 交并延展不破既有契约）
++    corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema }
++  },
++  // ai_sensor 域（2026-08-27 用户裁决 ADR-0017）：AI-06 两通道自 export_ 域
++  // 迁入（通道名 ai-sensor/* 不变）+ AI-07 回灌导入器两通道（ai-notes/*）
++  ai_sensor: {
+     requestAiRead: { channel: 'ai-sensor/request-read', Req: S.paperIdReqSchema, Res: S.aiReadJobResSchema },
+-    aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema }
++    aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
++    importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
++    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
+   },
+   tags: {
+     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 3ed2e1a..5f1a5ba 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -177,8 +177,8 @@ export const corpusSessionResSchema = z
+   .strict()
+ export type CorpusSessionRes = z.infer<typeof corpusSessionResSchema>
+ 
+-// ── ai-sensor（AI-06：伴随进程文件协议——通道名 ai-sensor/* 挂 export_ 域，
+-//    域归属=AI-02 corpusItem 同型先例，见报告自裁申报）──────────────────
++// ── ai_sensor（AI-06 伴随进程文件协议 ai-sensor/* + AI-07 回灌导入器
++//    ai-notes/*——域归属=ai_sensor 域，2026-08-27 用户裁决 ADR-0017）────────
+ /** request-read 响应：jobId（幂等：同篇 pending 在则返回既有 jobId） */
+ export const aiReadJobResSchema = z.object({ jobId: z.string().min(1) }).strict()
+ export type AiReadJobRes = z.infer<typeof aiReadJobResSchema>
+@@ -199,6 +199,16 @@ export type SensorStatus = z.infer<typeof sensorStatusSchema>
+ /** status 通道响应：null=status.json 不存在=工具从未运行（N06-4） */
+ export const aiSensorStatusResSchema = sensorStatusSchema.nullable()
+ 
++/** ai-notes/import 响应：部分成功三桶（AI-07——消费方 08 按钮 toast 汇总呈现） */
++export const aiNotesImportResSchema = z
++  .object({
++    imported: z.array(z.string()),
++    skipped: z.array(z.string()),
++    errors: z.array(z.object({ paperId: z.string(), reason: z.string() }).strict())
++  })
++  .strict()
++export type AiNotesImportRes = z.infer<typeof aiNotesImportResSchema>
++
+ // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
+ /** 单篇语料导出（与 reportReq 同形：目标文献 id） */
+ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+diff --git a/tests/contracts/api-surface.test.ts b/tests/contracts/api-surface.test.ts
+index ef1d89b..9a50614 100644
+--- a/tests/contracts/api-surface.test.ts
++++ b/tests/contracts/api-surface.test.ts
+@@ -42,6 +42,7 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
+       import_: unimplementedObject('SAMPLE-IPC', 'x'),
+       enrich: unimplementedObject('SAMPLE-IPC', 'x'),
+       export_: unimplementedObject('SAMPLE-IPC', 'x'),
++      ai_sensor: unimplementedObject('SAMPLE-IPC', 'x'),
+       settings: unimplementedObject('SAMPLE-IPC', 'x'),
+       system: unimplementedObject('SAMPLE-IPC', 'x')
+     }
+diff --git a/tests/utils/ipc-deps.ts b/tests/utils/ipc-deps.ts
+index 36f6ebc..90a956a 100644
+--- a/tests/utils/ipc-deps.ts
++++ b/tests/utils/ipc-deps.ts
+@@ -25,6 +25,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
+       import_: null as never,
+       enrich: null as never,
+       export_: null as never,
++      ai_sensor: null as never,
+       ...over.services
+     },
+     dialogs: {
+diff --git a/src/main/ipc/ai_sensor.ts b/src/main/ipc/ai_sensor.ts
+new file mode 100644
+index 0000000..6859c7a
+--- /dev/null
++++ b/src/main/ipc/ai_sensor.ts
+@@ -0,0 +1,19 @@
++/**
++ * [SR2-AI-07] ipc/ai_sensor —— AI 伴随进程域装配（AI-06 协议两通道自
++ * export_ 域迁入 + AI-07 回灌导入器两通道；2026-08-27 用户裁决 ADR-0017
++ * 新立本域，通道名不变——register/preload/renderer 经动态机制零改动）。
++ *
++ * 薄分发（SR-IPC-* 同型）：业务在 services/ai_sensor/*；协议/导入 IO 错误
++ * 原样上抛，register 折叠为 Result。
++ */
++import type { ApiHandlers } from '../../shared/ipc/api-surface'
++import type { IpcDeps } from './index'
++
++export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
++  return {
++    requestAiRead: (req) => deps.services.ai_sensor.requestRead(req.paperId),
++    aiStatus: async () => deps.services.ai_sensor.readStatus(),
++    importAll: async () => deps.services.ai_sensor.importAll(),
++    listByPaper: (req) => deps.services.ai_sensor.listByPaper(req.paperId)
++  }
++}
+diff --git a/tests/unit/services/ai-notes-import.test.ts b/tests/unit/services/ai-notes-import.test.ts
+new file mode 100644
+index 0000000..645214a
+--- /dev/null
++++ b/tests/unit/services/ai-notes-import.test.ts
+@@ -0,0 +1,193 @@
++/**
++ * [SR2-AI-07] ai-notes-import.service —— 回灌导入器（锁定合约）。
++ * 覆盖面：幂等三路径（无 archive 首导/同 sha 跳过/异 sha 清面重灌不重复）/
++ * 行级 zod 拒非法 role/question/幽灵 paperId 拦截/损坏 JSON/目录不存在空结果/
++ * archive 移动后二跑全 skipped/Result 三桶形状/listByPaper 透传。
++ * repo 交互=真库夹具（AI-01 测试同型）；fs 夹具目录驱动（AI-06 同型）。
++ *
++ * 激活方式（ADR-0017 裁决 3，AI-06 同型自裁申报）：always-active 不经
++ * guardedDescribe——实现与测试同批交付，registry 翻状态归主控收口。
++ */
++import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { beforeEach, afterEach, expect, it } from 'vitest'
++import { createAiNotesRepo } from '../../../src/main/db/repos/ai_notes.repo'
++import type { SqliteDb } from '../../../src/main/db/connection'
++import { createTestDb } from '../../utils/fixtures'
++import {
++  createAiNotesImportService
++} from '../../../src/main/services/ai_sensor/ai-notes-import.service'
++
++/** ADR-0015 §1 字面行形状（snake_case 文件面） */
++interface FileRow {
++  role: string
++  question: string
++  model: string
++  quote_text: string
++  prefix_text: string
++  suffix_text: string
++  anchor_page: number | null
++  content_md: string
++}
++
++function fileRow(patch: Partial<FileRow> = {}): FileRow {
++  return {
++    role: 'first-read',
++    question: 'Q1',
++    model: 'glm-5.3',
++    quote_text: '引文',
++    prefix_text: '前',
++    suffix_text: '后',
++    anchor_page: 3,
++    content_md: '回答内容',
++    ...patch
++  }
++}
++
++let db: SqliteDb
++let root: string
++let repo: ReturnType<typeof createAiNotesRepo>
++let svc: ReturnType<typeof createAiNotesImportService>
++
++beforeEach(async () => {
++  db = createTestDb()
++  db.prepare(
++    'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)'
++  ).run('p-1', 'a.pdf', 's-1', 't', 't')
++  root = await mkdtemp(join(tmpdir(), 'ai-notes-import-'))
++  repo = createAiNotesRepo(db)
++  svc = createAiNotesImportService({
++    rootDir: root,
++    repo,
++    // bad-1 亦为已存在篇（该用例专测损坏 JSON 面，非幽灵面）
++    paperExists: (id) => id === 'p-1' || id === 'bad-1'
++  })
++})
++
++afterEach(async () => {
++  await rm(root, { recursive: true, force: true })
++})
++
++/** 写产物到 corpus-ai/ 活动区 */
++async function putProduct(paperId: string, rows: FileRow[] | string): Promise<void> {
++  await mkdir(join(root, 'corpus-ai'), { recursive: true })
++  const text = typeof rows === 'string' ? rows : JSON.stringify(rows, null, 2)
++  await writeFile(join(root, 'corpus-ai', `${paperId}.json`), text, 'utf8')
++}
++
++async function namesIn(dir: string): Promise<string[]> {
++  try {
++    return await readdir(join(root, dir))
++  } catch {
++    return []
++  }
++}
++
++it('目录不存在→空结果三桶（首次无产物=合法态非错误）', async () => {
++  const r = await svc.importAll()
++  expect(r).toEqual({ imported: [], skipped: [], errors: [] })
++})
++
++it('无 archive 首导：写入 DB+产物移 archive（corpus-ai 清空）', async () => {
++  await putProduct('p-1', [fileRow(), fileRow({ role: 'adjudicate', question: 'divergence', anchor_page: null })])
++  const r = await svc.importAll()
++  expect(r.imported).toEqual(['p-1'])
++  expect(r.skipped).toEqual([])
++  expect(r.errors).toEqual([])
++  const notes = await svc.listByPaper('p-1')
++  expect(notes).toHaveLength(2)
++  expect(notes[0]).toMatchObject({
++    paperId: 'p-1',
++    annotationId: null,
++    role: 'first-read',
++    question: 'Q1',
++    quoteText: '引文',
++    anchorPage: 3,
++    contentMd: '回答内容'
++  })
++  expect(await namesIn('corpus-ai')).toEqual([])
++  expect(await namesIn('archive')).toEqual(['p-1.json'])
++})
++
++it('archive 同 sha：二跑 skipped，不重复写（archive 移动后全 skipped 跨格序列）', async () => {
++  await putProduct('p-1', [fileRow()])
++  await svc.importAll()
++  // 同内容产物重现（重读同产物）：sha 相同 → skipped，条目不翻倍
++  await putProduct('p-1', [fileRow()])
++  const r = await svc.importAll()
++  expect(r.skipped).toEqual(['p-1'])
++  expect(r.imported).toEqual([])
++  expect(r.errors).toEqual([])
++  expect(repo.countByPaper('p-1')).toBe(1)
++  expect(await namesIn('corpus-ai')).toEqual([])
++})
++
++it('archive 异 sha：清面重灌不重复（deleteByPaper+整套重插）', async () => {
++  await putProduct('p-1', [fileRow(), fileRow({ question: 'Q2' })])
++  await svc.importAll()
++  // 新产物内容不同（少一行）：sha 异 → 清面重插
++  await putProduct('p-1', [fileRow({ content_md: '新回答' })])
++  const r = await svc.importAll()
++  expect(r.imported).toEqual(['p-1'])
++  expect(r.skipped).toEqual([])
++  const notes = await svc.listByPaper('p-1')
++  expect(notes).toHaveLength(1)
++  expect(notes[0]?.contentMd).toBe('新回答')
++})
++
++it('行级 zod 拒非法 role：该篇入 errors（中文 reason 含路径），产物不移不写 DB', async () => {
++  await putProduct('p-1', [fileRow({ role: 'third-read' })])
++  const r = await svc.importAll()
++  expect(r.imported).toEqual([])
++  expect(r.errors).toHaveLength(1)
++  expect(r.errors[0]!.paperId).toBe('p-1')
++  expect(r.errors[0]!.reason).toContain('corpus-ai')
++  expect(repo.countByPaper('p-1')).toBe(0)
++  expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])
++})
++
++it('行级 zod 拒非法 question（七问 v1 冻结）', async () => {
++  await putProduct('p-1', [fileRow({ question: 'Q9' })])
++  const r = await svc.importAll()
++  expect(r.errors).toHaveLength(1)
++  expect(repo.countByPaper('p-1')).toBe(0)
++})
++
++it('幽灵 paperId 拦截：不在 papers 表→该篇失败', async () => {
++  await putProduct('ghost-1', [fileRow()])
++  const r = await svc.importAll()
++  expect(r.imported).toEqual([])
++  expect(r.errors).toHaveLength(1)
++  expect(r.errors[0]!.paperId).toBe('ghost-1')
++  expect(r.errors[0]!.reason).toContain('ghost-1')
++})
++
++it('损坏 JSON/非数组形态：该篇失败入 errors 不中断整批（部分成功）', async () => {
++  await putProduct('bad-1', '{not-json')
++  // p-1 合法篇但产物非数组形态
++  await putProduct('p-1', '{"a":1}')
++  const r = await svc.importAll()
++  expect(r.imported).toEqual([])
++  expect(r.errors).toHaveLength(2)
++  const ids = r.errors.map((e) => e.paperId).sort()
++  expect(ids).toEqual(['bad-1', 'p-1'])
++})
++
++it('多篇混合：imported/skipped/errors 三桶并存（Result 三桶形状）', async () => {
++  await putProduct('p-1', [fileRow()])
++  await svc.importAll()
++  await putProduct('p-1', [fileRow()])
++  await putProduct('bad-1', 'x')
++  const r = await svc.importAll()
++  expect(r.imported).toEqual([])
++  expect(r.skipped).toEqual(['p-1'])
++  expect(r.errors.map((e) => e.paperId)).toEqual(['bad-1'])
++})
++
++it('listByPaper 透传 repo（确定性序+空篇空数组）', async () => {
++  expect(await svc.listByPaper('p-1')).toEqual([])
++  await putProduct('p-1', [fileRow()])
++  await svc.importAll()
++  expect((await svc.listByPaper('p-1')).length).toBe(1)
++})

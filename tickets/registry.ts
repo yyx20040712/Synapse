@@ -177,7 +177,7 @@ export const TICKETS: readonly Ticket[] = [
   //    依据=09 硬依赖 08 两交付物（ai-note-style 分色单源+ai-notes.store
   //    数据单源——v5「08∥09」偏序经 plan 门细化）──
   { id: 'SR2-AI-06', file: 'src/main/services/ai_sensor/ai-sensor.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '伴随进程文件协议（协议根 userData/ai-sensor 四成员：job 原子写幂等/status 心跳新鲜度判活单源/工具侧 companion 拾取+产物 corpus-ai 落盘；应用永不 spawn INV-21）' },
-  { id: 'SR2-AI-07', file: 'src/main/services/ai_sensor/ai-notes-import.service.ts', area: 'service', owner: 'strong', status: 'open', summary: '回灌导入器（ai-notes/import+list 通道 [locked-change]；幂等=archive 账本 sha 去重+清面重灌；「v1 无生产者」声明解除；工具永不写 DB）' },
+  { id: 'SR2-AI-07', file: 'src/main/services/ai_sensor/ai-notes-import.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '回灌导入器（ai-notes/import+list 通道 [locked-change]；幂等=archive 账本 sha 去重+清面重灌；「v1 无生产者」声明解除；工具永不写 DB）' },
   { id: 'SR2-AI-08', file: 'src/renderer/features/reader/AiNotesSection.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '笔记面板 AI 面（role×question 分节+ai-note-style 七问分色单源+只读+「AI 正在读」状态行六态机+「AI 读文献」按钮写 job+待导入按钮）' },
   { id: 'SR2-AI-09', file: 'src/renderer/features/reader/AiAnnotationLayer.tsx', area: 'reader', owner: 'strong', status: 'open', summary: 'AI 标注渲染对等（verifyQuote 重锚同几何管线/存储独立 INV-19/v1 只读/点击高亮跳面板/anchor-locate exact 层延展 data-ai-note-id）' },
   { id: 'SR2-AI-10', file: 'src/renderer/features/settings/ZcodeLinkSection.tsx', area: 'settings-ui', owner: 'strong', status: 'open', summary: '设置页 zcode 联动（检测五态三档 fs 纯检测+一键装技能 fs 复制+心跳=06 单源；不代启会话 INV-21 e2e 断言）' }

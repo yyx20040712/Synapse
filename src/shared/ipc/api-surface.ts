@@ -14,6 +14,7 @@ import { libraryQuerySchema, paperDetailSchema } from '../models/paper'
 import { annotationSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
+import { aiNoteSchema } from '../models/ai-note'
 import * as S from './schemas'
 
 export interface Endpoint {
@@ -54,11 +55,15 @@ export const API_SURFACE = {
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
     corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },
     corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema },
-    corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema },
-    // AI-06 伴随进程文件协议：通道名=票面字面 ai-sensor/*；域归属 export_（AI-02
-    // corpusItem 同型——AI 语料管线家族，ServiceBundle 交并延展不破既有契约）
+    corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema }
+  },
+  // ai_sensor 域（2026-08-27 用户裁决 ADR-0017）：AI-06 两通道自 export_ 域
+  // 迁入（通道名 ai-sensor/* 不变）+ AI-07 回灌导入器两通道（ai-notes/*）
+  ai_sensor: {
     requestAiRead: { channel: 'ai-sensor/request-read', Req: S.paperIdReqSchema, Res: S.aiReadJobResSchema },
-    aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema }
+    aiStatus: { channel: 'ai-sensor/status', Req: S.voidReqSchema, Res: S.aiSensorStatusResSchema },
+    importAll: { channel: 'ai-notes/import', Req: S.voidReqSchema, Res: S.aiNotesImportResSchema },
+    listByPaper: { channel: 'ai-notes/list', Req: S.paperIdReqSchema, Res: z.array(aiNoteSchema) }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },

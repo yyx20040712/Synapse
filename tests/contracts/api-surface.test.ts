@@ -42,6 +42,7 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       import_: unimplementedObject('SAMPLE-IPC', 'x'),
       enrich: unimplementedObject('SAMPLE-IPC', 'x'),
       export_: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_sensor: unimplementedObject('SAMPLE-IPC', 'x'),
       settings: unimplementedObject('SAMPLE-IPC', 'x'),
       system: unimplementedObject('SAMPLE-IPC', 'x')
     }

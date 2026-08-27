@@ -18,9 +18,10 @@
  * - listByPaper 基础序=created_at,id：**确定性兜底非业务序**（同键 id 稳定
  *   全序——同库同序；锚定段业务序归装配层 AI-03 按 role→question 分组重排，
  *   INV-24 同哲学分工）
- * - **v1 无生产者声明（计划审查 R4，死代码红线豁免依据）**：生产者=测试
- *   夹具（本单）；真实生产者=回灌联动组导入器（AI-07，未开单）；消费者=
- *   语料导出装配（corpus.assemble 的 aiNotes 入参面，AI-03 会话接线）
+ * - **v1 无生产者声明解除（回灌导入工单，2026-08-27）**：生产者=回灌导入器
+ *   ai_sensor/ai-notes-import.service（经本 repo insert/deleteByPaper 幂等
+ *   重灌）；消费者=语料导出装配（corpus.assemble 的 aiNotes 入参面，AI-03）
+ *   + ai-notes/list 读通道（AI-07）
  *
  * ── 接口层 ──
  * - export interface AiNotesRepo：

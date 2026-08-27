@@ -13,6 +13,7 @@ import { createTagsIpc } from './tags'
 import { createImportIpc } from './import_'
 import { createEnrichIpc } from './enrich'
 import { createExportIpc } from './export_'
+import { createAiSensorIpc } from './ai_sensor'
 import { createSettingsIpc } from './settings'
 import { createSystemIpc } from './system'
 
@@ -37,6 +38,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     import_: createImportIpc(deps),
     enrich: createEnrichIpc(deps),
     export_: createExportIpc(deps),
+    ai_sensor: createAiSensorIpc(deps),
     settings: createSettingsIpc(deps),
     system: createSystemIpc(deps)
   }
