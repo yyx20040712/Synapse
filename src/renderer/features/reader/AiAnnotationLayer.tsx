@@ -22,6 +22,11 @@
  *   点击**不弹标注菜单**——AI 段无批注语义
  * - 渲染节点带 **data-ai-note-id** 属性（anchor-locate exact 层滚动目标——
  *   本单延展，W08-3 处置对侧已兑现）
+ * - **[F-07 增补] 容器去 mixBlendMode:'multiply'**：AI-09 起容器级 multiply 与
+ *   backdrop（含先绘兄弟标注层）相乘——用户标注与 AI 段重叠处乘两次=加深
+ *   （层间叠乘两源头之一，本层摘除）。段级 opacity:0.45 保留（半透明自身
+ *   即可与用户标注视觉区分）；**AnnotationLayer 单层 multiply 不动**——单层
+ *   无层间叠乘，动了引入新视觉回归面（票面 P4 不做）。
  * - 渲染时机：与 AnnotationLayer 同渲染周期（文本层就绪后重锚——挂载/翻页/
  *   缩放跟随既有层节奏；MutationObserver+rAF 合并重算；重锚结果组件本地
  *   缓存按 paperId+页键失效——翻页/换篇即重算）
@@ -141,7 +146,7 @@ export function AiAnnotationLayer(props: {
     <div
       data-testid="ai-annotation-layer"
       className="absolute inset-0"
-      style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
+      style={{ zIndex: 5, pointerEvents: 'none' }}
     >
       {pageNotes.map((n) =>
         (resolved[n.id] ?? []).map((r, i) => (

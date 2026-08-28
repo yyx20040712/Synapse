@@ -12,6 +12,11 @@
  *   叠绘加重缺陷，验收 §2C）。真机实证 Chromium 对 ::selection 不解析
  *   color-mix 行，computed/生效值取级联 fallback 行——故 fallback 行同步改
  *   不透明（官方 rgba(0 0 255 / 0.25) 压白底的合成等效色）。
+ * - [SR2-F-07] ::selection 再改 transparent（F-06 不透明近似色只对纯白底成立，
+ *   页底有黑字即遮字——文本层 span color:transparent，字形由 canvas 渲染在
+ *   文本层之下，透字必须靠半透明背景；F-06 原始缺陷 C（重叠 span 逐层叠绘
+ *   加重）由划选视觉反馈整体移交 SelectionLayer 自绘选区块解决——单层单绘
+ *   天然不叠深，原生高亮不再承担视觉反馈故置透明）。
  */
 .textLayer{
   position:absolute;
@@ -54,14 +59,12 @@
   }
 
 .textLayer ::-moz-selection{
-    background:rgb(191 191 255);
-    background:color-mix(in srgb, AccentColor 25%, white);
-  }
+    background:transparent;
+}
 
 .textLayer ::selection{
-    background:rgb(191 191 255);
-    background:color-mix(in srgb, AccentColor 25%, white);
-  }
+    background:transparent;
+}
 
 .textLayer br::-moz-selection{
     background:transparent;

@@ -1,0 +1,516 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index a30a1e3..0785f99 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T12:58:02.5356412Z",
++    "generatedAt":  "2026-08-28T15:32:56.6384892Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -163,7 +163,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "293e308c4cc3f8b5da26f1a14bb9696944271b6273f5ad4dcf0d6b88e7888f13"
++                      "sha256":  "938de555f797fbd395b0a3b9ff9090f7928d54d63ad983d7d409c2a6c23cbd66"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -399,7 +399,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
+-                      "sha256":  "607a0c0441f89015d770aec77ad6db07b6274689c7571be71d83ddee37bae1c8"
++                      "sha256":  "026799b91819a15e57aac04c9e10f7b405b88e50243d27097128a4b6ebafc72d"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/settings.store.test.ts",
+diff --git a/src/renderer/features/reader/AiAnnotationLayer.tsx b/src/renderer/features/reader/AiAnnotationLayer.tsx
+index 55671c4..be12c16 100644
+--- a/src/renderer/features/reader/AiAnnotationLayer.tsx
++++ b/src/renderer/features/reader/AiAnnotationLayer.tsx
+@@ -22,6 +22,11 @@
+  *   点击**不弹标注菜单**——AI 段无批注语义
+  * - 渲染节点带 **data-ai-note-id** 属性（anchor-locate exact 层滚动目标——
+  *   本单延展，W08-3 处置对侧已兑现）
++ * - **[F-07 增补] 容器去 mixBlendMode:'multiply'**：AI-09 起容器级 multiply 与
++ *   backdrop（含先绘兄弟标注层）相乘——用户标注与 AI 段重叠处乘两次=加深
++ *   （层间叠乘两源头之一，本层摘除）。段级 opacity:0.45 保留（半透明自身
++ *   即可与用户标注视觉区分）；**AnnotationLayer 单层 multiply 不动**——单层
++ *   无层间叠乘，动了引入新视觉回归面（票面 P4 不做）。
+  * - 渲染时机：与 AnnotationLayer 同渲染周期（文本层就绪后重锚——挂载/翻页/
+  *   缩放跟随既有层节奏；MutationObserver+rAF 合并重算；重锚结果组件本地
+  *   缓存按 paperId+页键失效——翻页/换篇即重算）
+@@ -141,7 +146,7 @@ export function AiAnnotationLayer(props: {
+     <div
+       data-testid="ai-annotation-layer"
+       className="absolute inset-0"
+-      style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
++      style={{ zIndex: 5, pointerEvents: 'none' }}
+     >
+       {pageNotes.map((n) =>
+         (resolved[n.id] ?? []).map((r, i) => (
+diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+index cf5b097..cc5a785 100644
+--- a/src/renderer/features/reader/SelectionLayer.tsx
++++ b/src/renderer/features/reader/SelectionLayer.tsx
+@@ -4,6 +4,20 @@
+  * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
+  *   为主改面，短式引用口径）——动态锚定根**
+  *
++ * **F-07 划选自绘选区（工单 open / strong；text-layer.css ::selection 已置
++ *   transparent，划选视觉反馈移交本层）——渲染层叠次推演（门一强制审项）**：
++ * 自绘选区块容器挂挂载盒（N4 稳定盒，参照系同工具条定位数学 :131-135 一带），
++ * 几何=选区所在页 .textLayer 盒（anchor.rects 的归一化参照系）经两盒
++ * getBoundingClientRect 差值换算；rect 块用 AnnotationLayer 同型百分比数学。
++ * 层叠序（同一 stacking context 内比较——挂载盒/页盒/页框均无 z-index，各
++ * 绝对定位层直达公共根）：canvas 字形(非定位，最底) < .textLayer(z-index:0，
++ * 自成 stacking context，span 内 z-index:1) < **自绘选区块(z-index:2，
++ * pointer-events:none 防吞划选手势；禁 mixBlendMode——容器级 multiply 会与
++ * 标注层 backdrop 相乘)** < AnnotationLayer(z-index:5, multiply——与本层
++ * 相乘为单次合法荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去
++ * multiply，同值 DOM 后绘在上) < 工具条(z-10)。选区色=带 alpha 的 accent 系
++ * （30% 透——黑字透出可读；自裁申报见 impl.report）。
++ *
+  * ── 行为层 ──
+  * - 监听 selectionchange（200ms 防抖）与 mouseup（即时）：锚定根=选区
+  *   anchorNode/focusNode 向上最近页盒（纯函数页盒遍历）——挂载盒（F-01 锚定
+@@ -29,12 +43,12 @@
+  */
+ import { useEffect, useRef, useState } from 'react'
+ import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
+-import { ANNOTATION_COLORS } from '@shared/constants'
+ import { api, unwrap, ApiClientError } from '../../api/client'
+ import { showToast } from '../../shared/ui/Toast'
+ import { selectionToAnchor, type SelectionAnchor } from './annotation-anchor'
+ import { pushUndo } from './annotation-undo'
+-import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
++import { SelectionRects, type SelectionOverlayBox } from './SelectionRects'
++import { SelectionToolbar } from './SelectionToolbar'
+ import { useReaderStore } from './reader.store'
+ 
+ /** 意外异常（非 ApiClientError）时的兜底中文消息 */
+@@ -69,15 +83,14 @@ export function pageIndexOf(root: HTMLElement): number | null {
+   return Number.isInteger(no) && no >= 1 ? no - 1 : null
+ }
+ 
+-/** 工具条三种动作（kind→中文文案——按钮 map 单源） */
+-const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
+-
+-/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点） */
++/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点 +
++ *  F-07 自绘选区容器盒：选区所在页 textLayer 盒换算到挂载盒——rects 归一化参照系） */
+ interface PendingSelection {
+   anchor: SelectionAnchor
+   pageNo: number
+   x: number
+   y: number
++  overlay: SelectionOverlayBox
+ }
+ 
+ export function SelectionLayer(props: {
+@@ -119,7 +132,8 @@ export function SelectionLayer(props: {
+       const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
+       const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
+       const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
+-      if (anchor === null) {
++      // textLayer 非空由 anchor 非空蕴含——并列收窄供 F-07 容器几何取用（无行为分支）
++      if (anchor === null || textLayer === null) {
+         setPending(null)
+         return
+       }
+@@ -134,7 +148,21 @@ export function SelectionLayer(props: {
+       const mountBox = pageRoot.getBoundingClientRect()
+       const x = Math.min(Math.max(box.x - selBox.x, 0), Math.max(selBox.width - TOOLBAR_WIDTH, 0)) + (selBox.x - mountBox.x)
+       const y = Math.max(box.y - selBox.y - TOOLBAR_ABOVE, 0) + (selBox.y - mountBox.y)
+-      setPending({ anchor, pageNo: pageNo!, x, y })
++      // F-07 自绘选区容器：与选区所在页 textLayer 同盒（anchor.rects 归一化参照系），
++      // 同型盒间换算到挂载盒（滚动时两盒同动，相对偏移稳定）
++      const tlBox = textLayer.getBoundingClientRect()
++      setPending({
++        anchor,
++        pageNo: pageNo!,
++        x,
++        y,
++        overlay: {
++          left: tlBox.x - mountBox.x,
++          top: tlBox.y - mountBox.y,
++          width: tlBox.width,
++          height: tlBox.height
++        }
++      })
+     }
+ 
+     const onSelectionChange = (): void => {
+@@ -200,50 +228,20 @@ export function SelectionLayer(props: {
+   }
+ 
+   if (pending === null) return null
+-  const btn = 'rounded border px-2 py-0.5 disabled:opacity-50'
+ 
+   return (
+-    <div
+-      ref={toolbarRef}
+-      data-testid="selection-toolbar"
+-      className="absolute z-10 flex items-center gap-1 rounded border px-1.5 py-1 text-xs"
+-      style={{
+-        left: pending.x,
+-        top: pending.y,
+-        background: 'var(--panel)',
+-        borderColor: 'var(--border)',
+-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+-      }}
+-      // 阻止 mousedown 抢焦点/坍缩选区：按钮 click 才是动作语义
+-      onMouseDown={(e) => e.preventDefault()}
+-    >
+-      {ANNOTATION_COLORS.map((c) => (
+-        <button
+-          key={c}
+-          type="button"
+-          aria-label={`标注色：${COLOR_LABEL[c]}`}
+-          aria-pressed={color === c}
+-          className="h-4 w-4 rounded-full border"
+-          style={{
+-            background: COLOR_SWATCH[c],
+-            borderColor: color === c ? 'var(--text)' : 'var(--border)'
+-          }}
+-          onClick={() => setColor(c)}
+-        />
+-      ))}
+-      <span className="mx-0.5 inline-block h-3 w-px" style={{ background: 'var(--border)' }} />
+-      {(Object.keys(KIND_LABEL) as AnnotationKind[]).map((k) => (
+-        <button
+-          key={k}
+-          type="button"
+-          className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+-          disabled={busy}
+-          onClick={() => void save(k)}
+-        >
+-          {KIND_LABEL[k]}
+-        </button>
+-      ))}
+-    </div>
++    <>
++      {/* F-07 自绘选区块（z 序/pointer-events/禁 multiply 推演见头注；组件=SelectionRects） */}
++      <SelectionRects overlay={pending.overlay} rects={pending.anchor.rects} />
++      <SelectionToolbar
++        containerRef={toolbarRef}
++        x={pending.x}
++        y={pending.y}
++        busy={busy}
++        color={color}
++        onColor={setColor}
++        onSave={(kind) => void save(kind)}
++      />
++    </>
+   )
+ }
+diff --git a/src/renderer/features/reader/text-layer.css b/src/renderer/features/reader/text-layer.css
+index 2aa0b78..bfc421a 100644
+--- a/src/renderer/features/reader/text-layer.css
++++ b/src/renderer/features/reader/text-layer.css
+@@ -12,6 +12,11 @@
+  *   叠绘加重缺陷，验收 §2C）。真机实证 Chromium 对 ::selection 不解析
+  *   color-mix 行，computed/生效值取级联 fallback 行——故 fallback 行同步改
+  *   不透明（官方 rgba(0 0 255 / 0.25) 压白底的合成等效色）。
++ * - [SR2-F-07] ::selection 再改 transparent（F-06 不透明近似色只对纯白底成立，
++ *   页底有黑字即遮字——文本层 span color:transparent，字形由 canvas 渲染在
++ *   文本层之下，透字必须靠半透明背景；F-06 原始缺陷 C（重叠 span 逐层叠绘
++ *   加重）由划选视觉反馈整体移交 SelectionLayer 自绘选区块解决——单层单绘
++ *   天然不叠深，原生高亮不再承担视觉反馈故置透明）。
+  */
+ .textLayer{
+   position:absolute;
+@@ -54,14 +59,12 @@
+   }
+ 
+ .textLayer ::-moz-selection{
+-    background:rgb(191 191 255);
+-    background:color-mix(in srgb, AccentColor 25%, white);
+-  }
++    background:transparent;
++}
+ 
+ .textLayer ::selection{
+-    background:rgb(191 191 255);
+-    background:color-mix(in srgb, AccentColor 25%, white);
+-  }
++    background:transparent;
++}
+ 
+ .textLayer br::-moz-selection{
+     background:transparent;
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 3b442ba..576c847 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -614,7 +614,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
+ /** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
+ const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
+ 
+-test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选高亮不透明（重叠 span 不加深）', async () => {
++test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原生 selection 透明（重叠 span 不加深）', async () => {
+   skipIfPending(F06_DEPS)
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
+ 
+@@ -661,16 +661,47 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选高亮不
+   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(247, 248, 250)')
+   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
+ 
+-  // —— 缺陷 C：::selection 背景不透明（官方 25% 半透明在 pdfjs 重叠 span 上逐层
+-  //    叠绘加重；方案一=不透明近似色，不透明色叠加不变深）——
+-  // 真机解析形态实证（探查跑）：Chromium 对 ::selection 不解析 color-mix 行，
+-  // computed 取级联 fallback 行（官方版=rgba(0, 0, 255, 0.25)）。断言落在
+-  // 「无透明分量」上：rgb(…)/rgba(…, 1)/color(srgb …) 不透明家族皆绿；
+-  // 官方 rgba(…, 0.25) 或 color(srgb … / 0.x) 即红
++  // —— 缺陷 C（SR2-F-07 B 案重写守卫）：原生 ::selection 背景透明（F-06 不透明近似色
++  //    压白底只在纯白底成立，页底有黑字即遮字；pdfjs 文本层字形由 canvas 渲染在
++  //    文本层之下，透字必须靠半透明），划选视觉反馈移交 SelectionLayer 自绘
++  //    半透明选区块（带 alpha 背景，单层单绘——重叠 span 不逐元素叠加深）——
+   const sel = visual.selectionBg
+   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
+-  expect(sel, 'C: ::selection 背景非 transparent').not.toBe('transparent')
+-  expect(/^rgba\(/.test(sel) && !/,\s*1\)$/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
+-  expect(/\/\s*0(?:\.\d+)?\)/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
++  expect(
++    sel === 'transparent' || sel === 'rgba(0, 0, 0, 0)',
++    `C: ::selection 背景为透明家族：${sel}`
++  ).toBe(true)
++
++  // 真实选选（程序化 selectText——防抖路径同产 pending）→ 自绘层在场且带 alpha：
++  const known = win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()
++  await known.selectText()
++  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 5_000 })
++  await expect(win.getByTestId('selection-rects')).toBeVisible()
++  // 门一 W1 回炉机制锁：容器三机制断言——禁 multiply（容器级 multiply 与标注层
++  // backdrop 相乘=层间叠乘加深，AI-09 教训）、pointer-events:none（防吞划选手势）、
++  // z 序声明=2（.textLayer z0 之上、标注/AI 层 z5 之下——层叠次推演见
++  // SelectionLayer 头注 F-07；容器加回 multiply 或 zIndex 改高均须红）
++  const rectsStyle = await win.getByTestId('selection-rects').evaluate((el) => {
++    const s = getComputedStyle(el)
++    return { blend: s.mixBlendMode, pe: s.pointerEvents, z: s.zIndex }
++  })
++  expect(rectsStyle.blend, 'C: 自绘容器禁 multiply（层间叠乘）').toBe('normal')
++  expect(rectsStyle.pe, 'C: 自绘容器 pointer-events:none（防吞划选手势）').toBe('none')
++  expect(rectsStyle.z, 'C: 自绘容器 z-index=2（文本层之上、标注层之下）').toBe('2')
++  await expect(win.getByTestId('selection-rect').first()).toBeVisible()
++  const rectBg = await win
++    .getByTestId('selection-rect')
++    .first()
++    .evaluate((el) => getComputedStyle(el).backgroundColor)
++  // alpha 提取兼容两种 computed 序列化：rgba(37, 99, 235, 0.3) 与 color-mix 来源的
++  // color(srgb 0.145 0.388 0.922 / 0.3)（Chromium 对 color-mix 产物保持 color() 形态）
++  const alpha =
++    /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0?\.\d+)\s*\)$/.exec(rectBg) ??
++    /^color\(\s*srgb\s+[\d.]+\s+[\d.]+\s+[\d.]+\s*\/\s*(0?\.\d+)\s*\)$/.exec(rectBg)
++  expect(alpha, `C: 自绘选区块背景带 alpha 分量：${rectBg}`).not.toBeNull()
++  // alpha[1] 缺失时 parseFloat('')=NaN——两界断言同红（不伪造通过值）
++  const alphaNum = alpha === null ? Number.NaN : parseFloat(alpha[1] ?? '')
++  expect(alphaNum, `C: 自绘选区块 alpha>0：${rectBg}`).toBeGreaterThan(0)
++  expect(alphaNum, `C: 自绘选区块 alpha<1（黑字透出可读）：${rectBg}`).toBeLessThan(1)
+   await app.close()
+ })
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index 29c45d1..cef5f75 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -7,6 +7,8 @@
+  * 工具条落点以选区所在页盒为参照系（坐标换算经页盒 rect——N-C 防层叠污染）/
+  * 保存页=选区所在页（0 基，动态推导）/Escape 清/承载选区的页 DOM 卸载
+  * （页回收与 zoom 重建同机制）→选区清空防悬空锚/纯函数页盒遍历。
++ * [SR2-F-07] 追加自绘选区行为：pending 有 rects→覆盖层渲染+rect 块数+容器几何
++ * （textLayer 盒换算到挂载盒）；pending null→层不渲染（初始态/Escape 清）。
+  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
+  */
+ import { act } from 'react'
+@@ -84,6 +86,9 @@ async function mountLayer(pageRoot: HTMLElement): Promise<void> {
+ 
+ const toolbar = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-toolbar"]') ?? null
+ 
++/** F-07 自绘选区覆盖层（pending 态挂载；null=层不渲染） */
++const selRects = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-rects"]') ?? null
++
+ beforeEach(() => {
+   vi.useFakeTimers()
+   vi.clearAllMocks()
+@@ -264,4 +269,39 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
+     expect(toolbar()).toBeNull()
+     expect(toastSpy).not.toHaveBeenCalled()
+   })
++
++  it('F-07a 自绘选区：pending 有 rects→渲染覆盖层+rect 块数，容器几何=选区页文本层盒换算到挂载盒', async () => {
++    const { page1, page2, span2 } = mountColumnFixture()
++    // 文本层盒与页盒取不同值——证明参照系是 textLayer 盒（非页盒）
++    rects.set(page2.querySelector('.textLayer')!, { x: 6, y: 830, width: 588, height: 776 })
++    await mountLayer(page1)
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    const layer = selRects()
++    expect(layer).not.toBeNull()
++    // jsdom 无 Range.getClientRects → selectionToAnchor 走父盒兜底恰产 1 块 rect
++    expect(layer!.querySelectorAll('[data-testid="selection-rect"]')).toHaveLength(1)
++    // 容器与选区所在页文本层同盒（挂载盒参照系——toolbar :131-135 同型换算）
++    expect(layer!.style.left).toBe('6px')
++    expect(layer!.style.top).toBe('830px')
++    expect(layer!.style.width).toBe('588px')
++    expect(layer!.style.height).toBe('776px')
++  })
++
++  it('F-07b 自绘选区：pending null→层不渲染（初始态无层；Escape 清 pending 后层卸载）', async () => {
++    const { page1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    expect(selRects()).toBeNull()
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(selRects()).not.toBeNull()
++    act(() => {
++      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
++    })
++    expect(selRects()).toBeNull()
++  })
+ })
+=== NEW FILE: src/renderer/features/reader/SelectionRects.tsx ===
+/**
+ * [F-07 增补] SelectionRects —— 划选自绘选区块（::selection 透明化后的视觉反馈）
+ *
+ * 容器=选区所在页 .textLayer 盒（anchor.rects 归一化参照系）经两盒
+ * getBoundingClientRect 差值换算到挂载盒（SelectionLayer evaluate 产出，
+ * 数学同工具条定位）；rect 块用 AnnotationLayer 同型百分比数学（单层单绘
+ * ——重叠 span 不逐元素叠加深）。层叠序/pointer-events/禁 multiply 的完整
+ * 推演登记在 SelectionLayer.tsx 头注 F-07（挂载位所有者）——本层 z-index:2
+ * （.textLayer z0 之上、标注/AI 层 z5 之下），pointer-events:none 防吞
+ * 划选手势；rect 背景自带 alpha（30% accent——黑字透出可读），容器禁
+ * mixBlendMode（与标注层 backdrop 相乘=层间叠乘加深）。
+ * 组件测试：tests/unit/renderer/selection-layer.test.tsx（经 SelectionLayer
+ * 挂载面断言，无独立测试文件）。
+ */
+import type { AnnotationRect } from '@shared/models/annotation'
+
+/** 自绘选区容器盒（textLayer 盒换算到挂载盒的像素几何） */
+export interface SelectionOverlayBox {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export function SelectionRects(props: {
+  overlay: SelectionOverlayBox
+  rects: AnnotationRect[]
+}): JSX.Element {
+  const { overlay, rects } = props
+  return (
+    <div
+      data-testid="selection-rects"
+      className="absolute"
+      style={{
+        left: overlay.left,
+        top: overlay.top,
+        width: overlay.width,
+        height: overlay.height,
+        zIndex: 2,
+        pointerEvents: 'none'
+      }}
+    >
+      {rects.map((r, i) => (
+        <div
+          key={i}
+          data-testid="selection-rect"
+          className="absolute"
+          style={{
+            left: `${r.x * 100}%`,
+            top: `${r.y * 100}%`,
+            width: `${r.w * 100}%`,
+            height: `${r.h * 100}%`,
+            background: 'color-mix(in srgb, var(--accent) 30%, transparent)'
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+=== NEW FILE: src/renderer/features/reader/SelectionToolbar.tsx ===
+/**
+ * [F-07 增补] SelectionToolbar —— 划选确认工具条（自 SelectionLayer 拆出——
+ * renderer 组件 250 行上限强制；DOM 形状/testid/交互零变化）
+ *
+ * - 定位=SelectionLayer evaluate 产出的挂载盒相对落点（props.x/y 透传）；
+ *   z-10=层叠序最顶（完整推演见 SelectionLayer.tsx 头注 F-07）
+ * - 容器 mousedown 阻止默认（防抢焦点/坍缩选区）——按钮 click 才是动作语义；
+ *   containerRef 由 SelectionLayer 持有（mouseup 命中工具条时不评估选区）
+ * - 颜色按钮=per-tab 选择器状态（props.color/onColor——useReaderStore 订阅
+ *   留驻 SelectionLayer，本组件纯展示+上抛）；KIND_LABEL 按钮映射单源随迁
+ * - 组件测试：tests/unit/renderer/selection-layer.test.tsx（经 SelectionLayer
+ *   挂载面断言，无独立测试文件）
+ */
+import type { MutableRefObject } from 'react'
+import type { AnnotationColor, AnnotationKind } from '@shared/models/annotation'
+import { ANNOTATION_COLORS } from '@shared/constants'
+import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
+
+/** 工具条三种动作（kind→中文文案——按钮 map 单源） */
+const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
+
+export function SelectionToolbar(props: {
+  containerRef: MutableRefObject<HTMLDivElement | null>
+  x: number
+  y: number
+  busy: boolean
+  color: AnnotationColor
+  onColor: (c: AnnotationColor) => void
+  onSave: (kind: AnnotationKind) => void
+}): JSX.Element {
+  const { containerRef, x, y, busy, color, onColor, onSave } = props
+  const btn = 'rounded border px-2 py-0.5 disabled:opacity-50'
+  return (
+    <div
+      ref={containerRef}
+      data-testid="selection-toolbar"
+      className="absolute z-10 flex items-center gap-1 rounded border px-1.5 py-1 text-xs"
+      style={{
+        left: x,
+        top: y,
+        background: 'var(--panel)',
+        borderColor: 'var(--border)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+      }}
+      // 阻止 mousedown 抢焦点/坍缩选区：按钮 click 才是动作语义
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {ANNOTATION_COLORS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          aria-label={`标注色：${COLOR_LABEL[c]}`}
+          aria-pressed={color === c}
+          className="h-4 w-4 rounded-full border"
+          style={{
+            background: COLOR_SWATCH[c],
+            borderColor: color === c ? 'var(--text)' : 'var(--border)'
+          }}
+          onClick={() => onColor(c)}
+        />
+      ))}
+      <span className="mx-0.5 inline-block h-3 w-px" style={{ background: 'var(--border)' }} />
+      {(Object.keys(KIND_LABEL) as AnnotationKind[]).map((k) => (
+        <button
+          key={k}
+          type="button"
+          className={btn}
+          style={{ borderColor: 'var(--border)' }}
+          disabled={busy}
+          onClick={() => onSave(k)}
+        >
+          {KIND_LABEL[k]}
+        </button>
+      ))}
+    </div>
+  )
+}

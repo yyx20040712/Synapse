@@ -614,7 +614,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
 /** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
 const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
 
-test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选高亮不透明（重叠 span 不加深）', async () => {
+test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原生 selection 透明（重叠 span 不加深）', async () => {
   skipIfPending(F06_DEPS)
   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
 
@@ -661,16 +661,47 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选高亮不�
   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(247, 248, 250)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
-  // —— 缺陷 C：::selection 背景不透明（官方 25% 半透明在 pdfjs 重叠 span 上逐层
-  //    叠绘加重；方案一=不透明近似色，不透明色叠加不变深）——
-  // 真机解析形态实证（探查跑）：Chromium 对 ::selection 不解析 color-mix 行，
-  // computed 取级联 fallback 行（官方版=rgba(0, 0, 255, 0.25)）。断言落在
-  // 「无透明分量」上：rgb(…)/rgba(…, 1)/color(srgb …) 不透明家族皆绿；
-  // 官方 rgba(…, 0.25) 或 color(srgb … / 0.x) 即红
+  // —— 缺陷 C（SR2-F-07 B 案重写守卫）：原生 ::selection 背景透明（F-06 不透明近似色
+  //    压白底只在纯白底成立，页底有黑字即遮字；pdfjs 文本层字形由 canvas 渲染在
+  //    文本层之下，透字必须靠半透明），划选视觉反馈移交 SelectionLayer 自绘
+  //    半透明选区块（带 alpha 背景，单层单绘——重叠 span 不逐元素叠加深）——
   const sel = visual.selectionBg
   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
-  expect(sel, 'C: ::selection 背景非 transparent').not.toBe('transparent')
-  expect(/^rgba\(/.test(sel) && !/,\s*1\)$/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
-  expect(/\/\s*0(?:\.\d+)?\)/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
+  expect(
+    sel === 'transparent' || sel === 'rgba(0, 0, 0, 0)',
+    `C: ::selection 背景为透明家族：${sel}`
+  ).toBe(true)
+
+  // 真实选选（程序化 selectText——防抖路径同产 pending）→ 自绘层在场且带 alpha：
+  const known = win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 5_000 })
+  await expect(win.getByTestId('selection-rects')).toBeVisible()
+  // 门一 W1 回炉机制锁：容器三机制断言——禁 multiply（容器级 multiply 与标注层
+  // backdrop 相乘=层间叠乘加深，AI-09 教训）、pointer-events:none（防吞划选手势）、
+  // z 序声明=2（.textLayer z0 之上、标注/AI 层 z5 之下——层叠次推演见
+  // SelectionLayer 头注 F-07；容器加回 multiply 或 zIndex 改高均须红）
+  const rectsStyle = await win.getByTestId('selection-rects').evaluate((el) => {
+    const s = getComputedStyle(el)
+    return { blend: s.mixBlendMode, pe: s.pointerEvents, z: s.zIndex }
+  })
+  expect(rectsStyle.blend, 'C: 自绘容器禁 multiply（层间叠乘）').toBe('normal')
+  expect(rectsStyle.pe, 'C: 自绘容器 pointer-events:none（防吞划选手势）').toBe('none')
+  expect(rectsStyle.z, 'C: 自绘容器 z-index=2（文本层之上、标注层之下）').toBe('2')
+  await expect(win.getByTestId('selection-rect').first()).toBeVisible()
+  const rectBg = await win
+    .getByTestId('selection-rect')
+    .first()
+    .evaluate((el) => getComputedStyle(el).backgroundColor)
+  // alpha 提取兼容两种 computed 序列化：rgba(37, 99, 235, 0.3) 与 color-mix 来源的
+  // color(srgb 0.145 0.388 0.922 / 0.3)（Chromium 对 color-mix 产物保持 color() 形态）
+  const alpha =
+    /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0?\.\d+)\s*\)$/.exec(rectBg) ??
+    /^color\(\s*srgb\s+[\d.]+\s+[\d.]+\s+[\d.]+\s*\/\s*(0?\.\d+)\s*\)$/.exec(rectBg)
+  expect(alpha, `C: 自绘选区块背景带 alpha 分量：${rectBg}`).not.toBeNull()
+  // alpha[1] 缺失时 parseFloat('')=NaN——两界断言同红（不伪造通过值）
+  const alphaNum = alpha === null ? Number.NaN : parseFloat(alpha[1] ?? '')
+  expect(alphaNum, `C: 自绘选区块 alpha>0：${rectBg}`).toBeGreaterThan(0)
+  expect(alphaNum, `C: 自绘选区块 alpha<1（黑字透出可读）：${rectBg}`).toBeLessThan(1)
   await app.close()
 })

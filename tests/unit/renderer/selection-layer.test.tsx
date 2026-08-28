@@ -7,6 +7,8 @@
  * 工具条落点以选区所在页盒为参照系（坐标换算经页盒 rect——N-C 防层叠污染）/
  * 保存页=选区所在页（0 基，动态推导）/Escape 清/承载选区的页 DOM 卸载
  * （页回收与 zoom 重建同机制）→选区清空防悬空锚/纯函数页盒遍历。
+ * [SR2-F-07] 追加自绘选区行为：pending 有 rects→覆盖层渲染+rect 块数+容器几何
+ * （textLayer 盒换算到挂载盒）；pending null→层不渲染（初始态/Escape 清）。
  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -83,6 +85,9 @@ async function mountLayer(pageRoot: HTMLElement): Promise<void> {
 }
 
 const toolbar = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-toolbar"]') ?? null
+
+/** F-07 自绘选区覆盖层（pending 态挂载；null=层不渲染） */
+const selRects = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-rects"]') ?? null
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -263,5 +268,40 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
     })
     expect(toolbar()).toBeNull()
     expect(toastSpy).not.toHaveBeenCalled()
+  })
+
+  it('F-07a 自绘选区：pending 有 rects→渲染覆盖层+rect 块数，容器几何=选区页文本层盒换算到挂载盒', async () => {
+    const { page1, page2, span2 } = mountColumnFixture()
+    // 文本层盒与页盒取不同值——证明参照系是 textLayer 盒（非页盒）
+    rects.set(page2.querySelector('.textLayer')!, { x: 6, y: 830, width: 588, height: 776 })
+    await mountLayer(page1)
+    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    const layer = selRects()
+    expect(layer).not.toBeNull()
+    // jsdom 无 Range.getClientRects → selectionToAnchor 走父盒兜底恰产 1 块 rect
+    expect(layer!.querySelectorAll('[data-testid="selection-rect"]')).toHaveLength(1)
+    // 容器与选区所在页文本层同盒（挂载盒参照系——toolbar :131-135 同型换算）
+    expect(layer!.style.left).toBe('6px')
+    expect(layer!.style.top).toBe('830px')
+    expect(layer!.style.width).toBe('588px')
+    expect(layer!.style.height).toBe('776px')
+  })
+
+  it('F-07b 自绘选区：pending null→层不渲染（初始态无层；Escape 清 pending 后层卸载）', async () => {
+    const { page1, span2 } = mountColumnFixture()
+    await mountLayer(page1)
+    expect(selRects()).toBeNull()
+    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    expect(selRects()).not.toBeNull()
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+    expect(selRects()).toBeNull()
   })
 })
