@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T15:32:56.6384892Z",
+    "generatedAt":  "2026-08-28T15:53:11.9509479Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -143,7 +143,7 @@
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
-                      "sha256":  "ec07e99bfbfe5dde170e365876ee08f7c767b8cf8cb13e6d472938e0ddc66fb7"
+                      "sha256":  "d8151bdd4bdba8a05dcc46b0eb3de5469a66b190969f69a3b44d717cfc4d718a"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -155,7 +155,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "8fe8d155965b86e99ed6c3612f9ae37984e3b57c3cbbd865a0f7e71994a3dc8f"
+                      "sha256":  "fcaf1a7b9fc2b74722a796a347e05dfda890b6c449d4a4dad1c9e0bd31f45df3"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
@@ -287,11 +287,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
-                      "sha256":  "838f73d3475ec6d576badcbae3b06b10d089c84e4811cc3cb9b036c948f737c4"
+                      "sha256":  "a9753cbbf7e23802342b6c49f4d2d6cc7c5581eb4261ff7da20ab73a599b7cc9"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
-                      "sha256":  "06134560c96b380bc1c64bb09b434fe7c7f0d50517139c3a92f6d3119f15cec8"
+                      "sha256":  "fe0f12d47c3ac80c7b082997359faa4e5ceb836aa5473fa8950f74f5afc6a88c"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
@@ -343,7 +343,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "db78e39fcea412ed2caf675f236867ad0b00d024f1850a4756f9191d94051b56"
+                      "sha256":  "72954bdc224da9f5a23db40b976769f3901103022e4d1cb301cedd62ae6e1fd9"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",

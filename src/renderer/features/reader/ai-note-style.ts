@@ -1,6 +1,6 @@
 // b3: P7-G
 /**
- * ai-note-style —— 七问分色+中文标签单源（INV-11 单源模式，
+ * ai-note-style —— 七问分色+中文标签+原始命题单源（INV-11 单源模式，
  * annotation-style 同族新模块）。
  *
  * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
@@ -34,6 +34,19 @@ export const QUESTION_LABEL: Record<AiNoteQuestion, string> = {
   Q6: '第六问',
   Q7: '第七问',
   divergence: '分歧报告'
+}
+
+/** 七问原始命题单源（Q1~Q7 逐字誊自蓝图 §4.2 七问 schema 表「问题」列——
+ *  docs/reports/2026-08-25_ai-sensor-blueprint.md:147-153，2026-08-28 复测三
+ *  问题 P2 组头对号；divergence 无蓝图表原文故类型级不入（组头保持短标签）。 */
+export const QUESTION_TEXT: Record<Exclude<AiNoteQuestion, 'divergence'>, string> = {
+  Q1: '核心 idea 是什么',
+  Q2: '对同行的价值（改变了认知方式？开创范式大幅加快计算？解决工程问题？）',
+  Q3: '工程债务：失败数据未记录处、潜在试错点（ARA 叙事税的逆向重建）',
+  Q4: '学术谱系：为什么是这个单位、这个学生/作者？师承何方、祖传资源积累',
+  Q5: '全文哪个片段最符合自然科学品味（深刻≠复杂：可迁移/结构普遍/可交叉印证）',
+  Q6: '未声明的局限与适用边界',
+  Q7: '验证强度'
 }
 
 /** role 三组中文标签（组内条目分段标注——呈现轴转置 2026-08-28 缺陷 F：一审/二审/裁决） */

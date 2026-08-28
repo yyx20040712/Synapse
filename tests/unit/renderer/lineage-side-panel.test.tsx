@@ -288,7 +288,7 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人�
   // 区3 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
   const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-question]') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
-  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问', '分歧报告'])
+  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问：核心 idea 是什么', '分歧报告'])
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('一审')
   expect(q('[data-ai-note-id="c1"]')?.textContent).toContain('裁决')
   const dot = q('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement

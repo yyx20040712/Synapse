@@ -483,7 +483,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByText('已绑定文献')).toBeVisible()
     await expect(win.getByText('脉络甲的核心 idea（e2e）')).toBeVisible()
     const aiSection = win.getByTestId('lineage-side-ai-notes')
-    await expect(aiSection.getByRole('heading', { name: '第一问' })).toBeVisible({ timeout: 10_000 })
+    await expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })
     await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
     const q1Entry = aiSection.locator('div[data-question="Q1"] div[data-ai-note-id]').first()
     await expect(q1Entry).toHaveAttribute('data-ai-note-id', /.+/)

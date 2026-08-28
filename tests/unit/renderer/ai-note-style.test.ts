@@ -8,6 +8,7 @@ import { AI_NOTE_QUESTIONS, AI_NOTE_ROLES } from '../../../src/shared/models/ai-
 import {
   QUESTION_COLOR,
   QUESTION_LABEL,
+  QUESTION_TEXT,
   ROLE_LABEL,
   ROLE_ORDER
 } from '../../../src/renderer/features/reader/ai-note-style'
@@ -20,6 +21,15 @@ describe('ai-note-style 七问分色单源', () => {
       expect(QUESTION_LABEL[q].length).toBeGreaterThan(0)
     }
     expect(QUESTION_LABEL.divergence).toBe('分歧报告')
+  })
+
+  it('七问原始命题：TEXT 恰七键（Q1~Q7）全非空（divergence 不入——蓝图 §4.2 schema 表誊录单源，SR2-AI-12）', () => {
+    const seven = AI_NOTE_QUESTIONS.filter((q) => q !== 'divergence')
+    expect(seven).toHaveLength(7)
+    expect(Object.keys(QUESTION_TEXT).sort()).toEqual([...seven].sort())
+    for (const q of seven) {
+      expect(QUESTION_TEXT[q].length).toBeGreaterThan(0)
+    }
   })
 
   it('role 三组中文标签+呈现序（一审/二审/裁决——SR2-AI-11 转置口径）', () => {

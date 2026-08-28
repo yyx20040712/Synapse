@@ -410,7 +410,11 @@ it('分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标
   await flush()
   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q2', 'divergence'])
-  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第二问', '分歧报告'])
+  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual([
+    '第一问：核心 idea 是什么',
+    '第二问：对同行的价值（改变了认知方式？开创范式大幅加快计算？解决工程问题？）',
+    '分歧报告'
+  ])
   // 组头分色条（QUESTION_COLOR 单源——左缘竖条形态）
   const q1Head = groups[0]?.querySelector('h4') as HTMLElement
   expect(q1Head.style.borderLeft).toContain(QUESTION_COLOR.Q1)
@@ -454,7 +458,10 @@ it('空组剔除：无条目的 question 不渲染组（无 Q2 条目则无「�
   await flush()
   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q3'])
-  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第三问'])
+  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual([
+    '第一问：核心 idea 是什么',
+    '第三问：工程债务：失败数据未记录处、潜在试错点（ARA 叙事税的逆向重建）'
+  ])
 })
 
 it('组内 role 标签：同 question 组内三 role 条目头呈现一审/二审/裁决（role 可辨+role 序）', async () => {
@@ -486,6 +493,8 @@ it('divergence 组转置：独立「分歧报告」组头（非七问特殊组�
   await flush()
   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
+  // 七问组头带原始命题（SR2-AI-12）；divergence 无蓝图原文——短标签不加命题
+  expect(groups[0]?.querySelector('h4')?.textContent).toBe('第一问：核心 idea 是什么')
   expect(groups[1]?.querySelector('h4')?.textContent).toBe('分歧报告')
   const divItem = groups[1]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
   expect(divItem?.textContent).toContain('裁决') // 组内条目头 role 标签仍在

@@ -4,8 +4,9 @@
  *
  * 行为：选中节点 paperId 驱动惰性取数（ai_sensor.listByPaper——W4 直连
  * window.api 预裁，接缝声明见 LineageSidePanel/ai-notes.store 头注）；
- * loading/error+重试/空态/分节呈现。question 分组（组头=QUESTION_LABEL+
- * QUESTION_COLOR 左缘色条）×组内条目按 role 分段标注（一审/二审/裁决——
+ * loading/error+重试/空态/分节呈现。question 分组（组头=「第N问：原始命题」
+ * ——QUESTION_LABEL：QUESTION_TEXT 拼接，2026-08-28 复测三问题 P2 组头对号，
+ * divergence 无原文保持短标签+QUESTION_COLOR 左缘色条）×组内条目按 role 分段标注（一审/二审/裁决——
  * 呈现轴转置 2026-08-28 缺陷 F，与 AiNoteGroupList 视觉一致）=**ai-note-style 单源
  * 跨域只读消费**（check-quality COMPOSITION_ROOT_ALLOW 受控例外——标签/
  * 分色映射禁本域复写，接缝双向锚定：本行+ai-note-style 头注）；分组逻辑
@@ -18,7 +19,7 @@ import { useEffect, useState } from 'react'
 import { api, unwrap } from '../../api/client'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote } from '@shared/models/ai-note'
-import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
+import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
 
 type Phase = 'loading' | 'ready' | 'error'
 
@@ -86,7 +87,9 @@ export function LineageSideAiNotes(props: {
                   className="m-0 pl-1 font-medium"
                   style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim)' }}
                 >
-                  {QUESTION_LABEL[question]}
+                  {question === 'divergence'
+                    ? QUESTION_LABEL[question]
+                    : `${QUESTION_LABEL[question]}：${QUESTION_TEXT[question]}`}
                 </h5>
                 {notes
                   .filter((n) => n.question === question)

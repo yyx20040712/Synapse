@@ -3,7 +3,9 @@
  * AiNoteGroupList —— AI 笔记分节列表（纯展示+单击定位上抛）。
  *
  * question 分组（呈现轴=AI_NOTE_QUESTIONS 单源序——呈现轴转置 2026-08-28
- * 缺陷 F，用户口径「问题N 分组+组内一审/二审/裁决分段」）：组头=QUESTION_LABEL+QUESTION_
+ * 缺陷 F，用户口径「问题N 分组+组内一审/二审/裁决分段」）：组头=「第N问：
+ * 原始命题」（QUESTION_LABEL：QUESTION_TEXT 拼接——2026-08-28 复测三问题 P2
+ * 组头对号；divergence 无原文保持短标签）+QUESTION_
  * COLOR 左缘色条；组内条目按 role 分段标注（ROLE_LABEL 单源一审/二审/裁决
  * +ROLE_ORDER 组内序）+七问分色色点（QUESTION_COLOR 单源——ai-note-style
  * INV-11）；条目=锚定段引用块+content_md 纯文本呈现（负面清单「Markdown
@@ -16,7 +18,7 @@
 import { useEffect, useRef } from 'react'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote, AiNoteQuestion } from '@shared/models/ai-note'
-import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
+import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
 
 /** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
 export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {
@@ -53,7 +55,9 @@ export function AiNoteGroupList(props: {
             className="m-0 pl-1 text-xs font-medium"
             style={{ borderLeft: `3px solid ${QUESTION_COLOR[g.question]}`, color: 'var(--text-dim)' }}
           >
-            {QUESTION_LABEL[g.question]}
+            {g.question === 'divergence'
+              ? QUESTION_LABEL[g.question]
+              : `${QUESTION_LABEL[g.question]}：${QUESTION_TEXT[g.question]}`}
           </h4>
           {g.items.map((n) => {
             const highlighted = n.id === highlightAiNoteId
