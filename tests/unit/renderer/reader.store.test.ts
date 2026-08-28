@@ -350,6 +350,43 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
     expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
     expect(useStore.getState().tabs['p-1']).toBeUndefined()
   })
+
+  // ── F-01 双源机制：setPage 第三参 scroll opts（INV-29 回归锚——'none' 不触发程序滚动）──
+
+  it("F-01：setPage 默认 scroll:'to'——写页+bump scrollRequest 程序滚动信号（paperId+夹取页+递增 seq）", async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setTotalPages(10)
+    useStore.getState().setPage(4)
+    let s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(4)
+    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 4, seq: 1 })
+    // 越界夹取先于信号：信号携带的页=夹取后页
+    useStore.getState().setPage(99)
+    s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(9)
+    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 9, seq: 2 })
+  })
+
+  it("F-01：setPage {scroll:'none'}——写页但 scrollRequest 原样不动（滚动回写防回弹，B1）", async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setTotalPages(10)
+    useStore.getState().setPage(4)
+    const before = useStore.getState().scrollRequest
+    useStore.getState().setPage(6, { scroll: 'none' })
+    const s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(6)
+    // 'none' 不 bump 信号：引用与内容均不变（无程序滚动）
+    expect(s.scrollRequest).toBe(before)
+    // 'none' 的页码夹取照常（夹取与滚动意图正交）
+    useStore.getState().setPage(99, { scroll: 'none' })
+    expect(useStore.getState().tabs['p-1']?.page).toBe(9)
+    expect(useStore.getState().scrollRequest).toBe(before)
+    // 后续默认调用恢复 bump（seq 续增不重置）
+    useStore.getState().setPage(2)
+    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-1', page: 2, seq: 2 })
+  })
 })
 
 // ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──

@@ -60,11 +60,13 @@ export default tseslint.config(
               message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
             },
             {
-              // INV-16：pdfjs-dist 运行时 import 白名单三文件（PdfCanvas/TextLayer/
-              // CorpusExtractor）——本条对白名单外 renderer 文件生效；白名单 override
-              // 块在下方重申完整 patterns（flat config 同规则后块覆盖，无法只豁免一条）
+              // INV-16：pdfjs-dist 运行时 import 白名单四文件（PdfDocProvider/
+              // PdfPageCanvas/TextLayer/CorpusExtractor——2026-08-28 F-01 随
+              // PdfCanvas 拆分迁移，类型再导出单点随之迁移）——本条对白名单外
+              // renderer 文件生效；白名单 override 块在下方重申完整 patterns
+              // （flat config 同规则后块覆盖，无法只豁免一条）
               group: ['pdfjs-dist', 'pdfjs-dist/**'],
-              message: 'pdfjs-dist 只许白名单三文件 import（PdfCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
+              message: 'pdfjs-dist 只许白名单四文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
             }
           ]
         }
@@ -72,10 +74,12 @@ export default tseslint.config(
     }
   },
   {
-    // INV-16 白名单 override：三文件重申 renderer 全部禁令但不含 pdfjs 条目
-    // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口）
+    // INV-16 白名单 override：四文件重申 renderer 全部禁令但不含 pdfjs 条目
+    // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口；
+    // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx）
     files: [
-      'src/renderer/features/reader/PdfCanvas.tsx',
+      'src/renderer/features/reader/PdfDocProvider.tsx',
+      'src/renderer/features/reader/PdfPageCanvas.tsx',
       'src/renderer/features/reader/TextLayer.tsx',
       'src/renderer/features/reader/CorpusExtractor.ts'
     ],

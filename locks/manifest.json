@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T02:46:32.6889574Z",
+    "generatedAt":  "2026-08-28T04:19:12.4852735Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "089fe97c14ab832d5abcab088b4322995dde44ce6ff99ca900a37fd868495a9f"
+                      "sha256":  "813d1e521f71a6ca0fcc6a8cba4e83d579a81028476be5461cc95926262ecab5"
                   },
                   {
                       "path":  "playwright.config.ts",
@@ -163,7 +163,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "d344b5ed556995262debc21115508130fa34db452bcd5d5c9c11748a0ade1c49"
+                      "sha256":  "c6b0ca75e012c57a0450ab74c0370f4c9e4185931d11b71593a61ce7f829883d"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -362,6 +362,10 @@
                       "sha256":  "64298e40a1e95cf6ffa477c49a00ec60836e64eb6a8473d9d4dcfd241da46e0c"
                   },
                   {
+                      "path":  "tests/unit/renderer/page-column.test.tsx",
+                      "sha256":  "e3791c5eda3ec8b8eb8cf2a9c673a5fb47bb5e3117d0bc0ed0c5373aaf4260d4"
+                  },
+                  {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
                       "sha256":  "a6066aae93b557e2dc98c506362cc1b8d24c636977e50ad22d724474d7ab3ee7"
                   },
@@ -371,7 +375,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "0a5d15c9374d62466b41f9717fd4c3f68f9824c961e2bfe8c5d1bddb5436f323"
+                      "sha256":  "6ec87278b3c8e729cc1836b678d55a9a6320fdbf5cfb35291c81d88b4eb12974"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",

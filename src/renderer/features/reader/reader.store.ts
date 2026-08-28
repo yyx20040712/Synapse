@@ -39,6 +39,11 @@
  *   非关键数据，规约记录依据）
  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
  *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
+ * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
+ *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
+ *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
+ *   回写语义（页码本就从滚动位置算出），只落账不 bump 信号、不触发程序滚动
+ *   （防「程序跳页↔滚动回写」回弹死循环）；既有消费面不传第三参=默认值零改
  *
  * ── 接口层 ──
  * - export interface TabState / ReaderStore（形状如上）
@@ -89,6 +94,10 @@ export interface ReaderStore {
   tabs: Record<string, TabState>
   order: string[]
   activeId: string | null
+  /** 程序跳页滚动信号（F-01 双源机制/INV-29）：setPage 默认（scroll:'to'）时
+   *  bump——消费者（ReaderPage→PageColumn.scrollToPage 单口）据此程序滚动到
+   *  盒顶；{scroll:'none'}（滚动位置回写）不 bump，防回弹死循环 */
+  scrollRequest: { paperId: string; page: number; seq: number } | null
   /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
   noteHighlight: { annotationId: string; seq: number } | null
   /** AI 段单击反向同步信号（AI-09，C-05 同型）：OutlineAside 消费（切笔记
@@ -98,7 +107,7 @@ export interface ReaderStore {
   activateTab(id: string): void
   closeTab(id: string): void
   close(): void
-  setPage(page: number): void
+  setPage(page: number, opts?: { scroll?: 'to' | 'none' }): void
   setZoom(zoom: number): void
   setTotalPages(total: number): void
   setColor(color: AnnotationColor): void
@@ -125,6 +134,7 @@ export function createReaderStoreInitialState() {
     tabs: {} as Record<string, TabState>,
     order: [] as string[],
     activeId: null as string | null,
+    scrollRequest: null as { paperId: string; page: number; seq: number } | null,
     noteHighlight: null as { annotationId: string; seq: number } | null,
     aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
   }
@@ -315,19 +325,24 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       closeAll()
     },
 
-    setPage(page) {
-      // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由 PdfCanvas 侧兜底
+    setPage(page, opts) {
+      // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由渲染链侧兜底。
+      // F-01 双源机制（INV-29）：第三参缺省/'to'=程序跳页→bump scrollRequest
+      // （信号驱动 PageColumn.scrollToPage，页列就绪后滚到盒顶）；
+      // 'none'=页码来自滚动位置回写→只落账不 bump，不触发程序滚动（防回弹）
       const { activeId } = get()
       if (activeId === null) return
-      updateActiveTab((tab) => ({
-        ...tab,
-        page: Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
-      }))
       const tab = get().tabs[activeId]
-      if (tab !== undefined) {
-        pendingProgress[activeId] = tab.page
-        scheduleProgress()
-      }
+      if (tab === undefined) return
+      const clamped = Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
+      set((s) => ({
+        tabs: { ...s.tabs, [activeId]: { ...tab, page: clamped } },
+        ...(opts?.scroll !== 'none'
+          ? { scrollRequest: { paperId: activeId, page: clamped, seq: (s.scrollRequest?.seq ?? 0) + 1 } }
+          : {})
+      }))
+      pendingProgress[activeId] = clamped
+      scheduleProgress()
     },
 
     setZoom(zoom) {

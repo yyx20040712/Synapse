@@ -28,7 +28,7 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
-import type { PdfTextContent } from './PdfCanvas'
+import type { PdfTextContent } from './PdfPageCanvas'
 import './text-layer.css'
 
 export interface TextLayerProps {

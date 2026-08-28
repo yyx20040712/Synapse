@@ -19,7 +19,7 @@
  *   本组件在途请求失败一律静默降级（目录/缩略图缺席不影响主阅读）
  */
 import { useEffect, useState } from 'react'
-import type { PDFDocumentProxy } from './PdfCanvas'
+import type { PDFDocumentProxy } from './PdfDocProvider'
 import { Thumbnail } from './OutlineThumb'
 
 /** 目录树节点（pdfjs OutlineItem 结构子集） */

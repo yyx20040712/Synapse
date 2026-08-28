@@ -1,0 +1,1946 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 6dff2bc..957206b 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -27,7 +27,7 @@
+ | INV-13 | IPC Result 折叠约定：service 把业务失败折叠为正常返回时（如 enrichStatus:'failed'、幂等删除 ok:true），消费方必须分支处理、不得无条件按成功提示 | enrich 先例（U1 修复）；reader.service 删除幂等语义 | 人审 + 折叠面清点存档 | **部分**（2026-08-23 UBS 折叠面全量清点：7 service+settings ipc+register 共 8 点，全部消费方已分支或幂等语义正当，无 enrich 同型；清点表=docs/reports/2026-08-23_ubs-sweep.md §B1；新增折叠点须随消费方分支一并过审） |
+ | INV-14 | 输入接缝注册/注销成对：快捷键（keymap）、滚轮/指针监听、拖拽期 body 样式副作用必须与挂载源同源清理——消费方清理函数与注册同函数对，卸载/重挂不得残留监听或全局样式；**事件订阅同族（2026-08-27 SR2-AI-04 扩面）：apiEvents 事件订阅（onExportCorpus）与 store 订阅的注销同挂载源成对** | SR2-KEY-01/02、SR2-UIK-01 规约（2026-08-23 P7-A 开单引入，B4 防线后首批 SR2 工单）；SR2-AI-04 useExportCorpusEvents（App 层事件桥） | 单测（keymap.test 12 用例：模块级成对/配对面；reader-shortcuts.test 8 用例：快捷键/滚轮消费方级；split-pane.test 11 用例：指针监听+拖拽期 body 样式副作用的会话清理与中途卸载还原（含 pointercancel 同路径）+corpus-export.test.tsx 事件桥消费方级（挂载订阅一次/卸载成对注销））+ 人审（消费方清理同源） | 已锚定（四面全锚：模块级+快捷键/滚轮消费方级+指针/body 样式面=SR2-KEY-01/02/UIK-01，2026-08-24 P7-A 收口；事件订阅消费方级=SR2-AI-04，2026-08-27） |
+ | INV-15 | 阅读器空态（无 tab/loading/error）下 TabBar 保持渲染——error tab 必须可见、可关（叉/Delete）、可切（多 tab 失败场景可切回其他 tab），否则打开失败即 UI 死锁 | SR2-TABS-02（ReaderPage 空态分支含 TabBar 结构 + deepseek r1 BLOCKING 修复先例，2026-08-24） | 组件级：tab-bar.test（渲染序/激活/关闭三路径）；装配级：P7-B 收官 e2e 三序列（换/关/退）含 error 场景 | 已锚定（2026-08-25 收官 e2e 收口；**失败类补全**：pdf 加载失败原仅 toast——markTabError 落 TabState.error，缺失文件场景实测锚定） |
+-| INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件（类型消费循 PdfCanvas 再导出模式）；白名单变更=改 ESLint 规则+[locked-change]，禁第四处直连 | 本册+eslint.config.js no-restricted-imports（2026-08-25 计划审查 R1 定稿——原「PdfCanvas 单点」表述与 TextLayer.tsx:29 事实不符，白名单化收口） | ESLint 强制（no-restricted-imports——renderer 主块禁 pdfjs-dist+白名单三文件 override 块重申其余禁令；2026-08-27 随 SR2-AI-02 落地，lint 拦截 OutlinePanel/OutlineThumb 两处漏扫的类型直连实证防线生效并当场改走 PdfCanvas 再导出） | 已锚定（2026-08-27 SR2-AI-02；白名单外文件类型消费亦经 PdfCanvas 再导出单点。**已知边界**：ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦，该缺口由架构评审面覆盖，机器锚以 static import 为准。worker 资产单份：PdfCanvas 与 CorpusExtractor 消费同一 vite ?url 模块（pdfjs-dist/build/pdf.worker.min.mjs?url）——构建产物同 URL，无第二份 worker 资产；子路径+?url 变体的拦截经探针实测覆盖） |
++| INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfDocProvider.tsx/PdfPageCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 四文件（2026-08-28 SR2-F-01 随 PdfCanvas 拆分迁移——一拆二，类型再导出单点随之迁移：PDFDocumentProxy/RenderTask 走 PdfDocProvider、PdfTextContent 族走 PdfPageCanvas；白名单变更=改 ESLint 规则+[locked-change]，禁第五处直连） | 本册+eslint.config.js no-restricted-imports（2026-08-25 计划审查 R1 定稿；2026-08-28 F-01 白名单迁移同步） | ESLint 强制（no-restricted-imports——renderer 主块禁 pdfjs-dist+白名单文件 override 块重申其余禁令；2026-08-27 SR2-AI-02 实证防线：lint 拦截 OutlinePanel/OutlineThumb 漏扫的类型直连；2026-08-28 F-01 迁移后连通拆分两新文件） | 已锚定（2026-08-27 SR2-AI-02；2026-08-28 SR2-F-01 白名单迁移。**已知边界**：ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦，该缺口由架构评审面覆盖，机器锚以 static import 为准。worker 资产单份：PdfDocProvider 与 CorpusExtractor 消费同一 vite ?url 模块（pdfjs-dist/build/pdf.worker.min.mjs?url）——构建产物同 URL，无第二份 worker 资产；子路径+?url 变体的拦截经探针实测覆盖） |
+ | INV-17 | 语料导出幂等：corpus md front-matter 不含 exportedAt（时间戳只进 manifest）；contentSha/fulltextSha=文件字节 sha256；同库重导出逐字节稳定 | ADR-0011 v1.1+corpus.assemble.ts（2026-08-25 计划审查 R6 定稿——消除「sha 不含 exportedAt」与 front-matter 含时间戳的口径矛盾） | golden+结构断言（SR2-AI-03：corpus.export.test 幂等重导逐字节用例+manifest contentSha/fulltextSha=文件字节断言+corpus md golden=assembleCorpusMd 输出逐字节） | 已锚定（2026-08-27 SR2-AI-03——幂等范围=产物文件，manifest 含 exportedAt 不参与逐字节断言） |
+ | INV-18 | 导出会话协议：manifest 终局单写（临时文件+rename 原子替换）；会话开始删旧 manifest+清空重建 corpus/fulltext/figures；单会话单飞（EXPORT_BUSY）；中断=无 manifest=工具侧不可激活，重跑即修复；**串行不死锁时序（2026-08-27 e2e 实证补条）：篇终局推进必须延后至 complete/error 的 invoke 回复之后（deferOutcome）——事件先于回复到达 renderer 时提取器防御分支丢请求，串行链挂死** | ADR-0011 v1.1+corpus.export.service（2026-08-25 计划审查 R5/R8/R9 定稿；状态机表=ai-plan-review §6） | 单测+e2e（SR2-AI-03 单测级：终局单写 tmp+rename/清空重建含 tmp 残留/EXPORT_BUSY 单飞拒绝/落盘失败=会话 failed 无 manifest+重跑修复——corpus.export.test 十用例；e2e 消费方级=SR2-AI-04 corpus-export.spec：全链多篇+残留清空重建+目录根用户文件不动） | 已锚定（单测级 2026-08-27 SR2-AI-03；e2e 面 2026-08-27 SR2-AI-04——时序补条即 e2e 多篇序列首跑红实证） |
+ | INV-19 | AI 锚定段渲染对等、存储独立：AI 笔记经 verifyQuote 重锚入标注层同一几何管线渲染（七问分色单源）；数据永不写 annotations 表；AI 标注 v1 只读（无编辑/删除写路径） | ADR-0015+AnnotationLayer 消费面（2026-08-25 N2 裁决——D3 独立表的渲染面延伸） | 单测+组件测试（SR2-AI-09） | 未锚定（规划期预登记；锚定随 SR2-AI-09） |
+@@ -40,6 +40,8 @@
+ | INV-26 | 伴随进程文件协议三联：①**移除 pending job 以 corpus-ai/<paperId>.json 产物落盘成功为前提**（任何失败路径 job 一律保留——应用观测坍缩回 pending「等待 zcode」，失败细节经 status.state 自由文本呈现不分支；瞬态「job 已移除+产物未落+心跳新鲜」被排除）②应用判活唯一依据=status.json heartbeatAt 新鲜度（HEARTBEAT_FRESH_MS=10min；running 单源在 ai-sensor.service 输出，消费方不双写阈值；应用永不按 state 值分支——工具自述自由文本不契约化）③协议文件一律 tmp+rename 原子写、首写 mkdir recursive 幂等（应用与工具两侧各自保证） | ADR-0015 §1+ai-sensor.service+companion.mjs（SR2-AI-06，2026-08-27 登记随单锚定） | 单测（ai-sensor.service.test：幂等⑤/readStatus 三态/新鲜度边界/跨格序列①~④ fs 夹具驱动）+CLI 探针（companion.test：四步序全链+failed 三路径 job 保留断言） | 已锚定（单测+探针级 2026-08-27 SR2-AI-06；e2e 消费方面随 AI-08/10） |
+ | INV-27 | lineage 树单父不变量：存储=图 schema（v2 DAG 升级免迁移），v1 行为=树——每节点至多一条入边（无多父/无环/无自环）；树约束是 service 层运行时守卫非 DDL 约束；两写入口同守（草稿导入校验+增量编辑 upsertEdge——守卫宿主=service 写面，LG-03 只接线 IPC 不另写守卫）；listGraph 森林语义是 LG-02 布局（Reingold-Tilford 单根树假设）的前提 | ADR-0014+src/main/services/lineage/lineage.service.ts 两守卫口（validateDraft 导入校验三段+upsertEdge 运行时守卫，SR2-LG-01 门一 W1 处置） | 单测三拒绝路径双覆盖（lineage-import.test：导入面多父/环/自环用例+运行时面 upsertEdge 三拒绝用例，各断言中文 reason+库不变） | 已锚定（单测级 2026-08-27 SR2-LG-01） |
+ | INV-28 | 被引缓存刷新语义（与元数据 fill-empty 刻意不同——被引数单调增长）：瀑布命中且 citedByCount 非 null（含 **0**，0 是合法缓存值）→强制刷新（新值+新时间戳+source 三列同写）；命中但 citedByCount=null→不写缓存旧值保留；未命中/异常（work=null）→旧值保留（缓存不清，enrich_status='failed' 仅元数据面）；判别必须 `=== null`（禁 ??/falsy——0 与 NULL 语义不同）；detailById 透出配对规则=count 非 null 三字段齐出、null 全省略（undefined） | cited-by.service.ts 头注状态机（刷新决策单源 citedByPatch；SR2-ENR-01，2026-08-28 门一 W2 处置登记） | 单测（cited-by.test 9 用例：六格全格+0 值边界两样本+跨格序列）+真库断言（papers.repo.test：applyEnrichment 第三参 SET 落库+再不传则保留——SQL 面唯一锚定点，enrich 集成测试全用桩） | 已锚定（单测+真库级 2026-08-28 SR2-ENR-01） |
++| INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→页盒 scrollIntoView block:'start'；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |
++| INV-30 | canvas 生命周期=渲染窗口绑定：页 canvas（PdfPageCanvas）仅存在于 PageColumn 渲染窗口内（可见页±renderWindow），离屏距离>recycleWindow 必卸载（canvas 移除+pageText 条目同删——PageFrame 卸载哨）；rendering 中滚出窗口由渲染 effect 清理取消在途任务；zoom 重算走尺寸缓存乘法（就绪后无 loading 态——非重取） | PageColumn.tsx 段③（SR2-F-01，2026-08-28 登记；内存断言=canvas 实例数≤渲染窗口+缓冲常量；实现者原误编 INV-28 撞号，F-01 门一 W1 处置重编 INV-30） | 组件单测锚（page-column.test：IO 桩驱动窗口展开/快速滚动回收/渲染集上界 ≤ 可见数×(2·recycleWindow+1)+离屏距离断言）+e2e 收官计数断言（F-04 reader-scroll.spec） | 已锚定（组件单测级 2026-08-28 SR2-F-01；e2e 计数断言随 F-04 收官） |
+ 
+ ## 维护规则
+ 
+diff --git a/eslint.config.js b/eslint.config.js
+index fd8ac29..72ce11e 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -60,11 +60,13 @@ export default tseslint.config(
+               message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
+             },
+             {
+-              // INV-16：pdfjs-dist 运行时 import 白名单三文件（PdfCanvas/TextLayer/
+-              // CorpusExtractor）——本条对白名单外 renderer 文件生效；白名单 override
+-              // 块在下方重申完整 patterns（flat config 同规则后块覆盖，无法只豁免一条）
++              // INV-16：pdfjs-dist 运行时 import 白名单四文件（PdfDocProvider/
++              // PdfPageCanvas/TextLayer/CorpusExtractor——2026-08-28 F-01 随
++              // PdfCanvas 拆分迁移，类型再导出单点随之迁移）——本条对白名单外
++              // renderer 文件生效；白名单 override 块在下方重申完整 patterns
++              // （flat config 同规则后块覆盖，无法只豁免一条）
+               group: ['pdfjs-dist', 'pdfjs-dist/**'],
+-              message: 'pdfjs-dist 只许白名单三文件 import（PdfCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
++              message: 'pdfjs-dist 只许白名单四文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
+             }
+           ]
+         }
+@@ -72,10 +74,12 @@ export default tseslint.config(
+     }
+   },
+   {
+-    // INV-16 白名单 override：三文件重申 renderer 全部禁令但不含 pdfjs 条目
+-    // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口）
++    // INV-16 白名单 override：四文件重申 renderer 全部禁令但不含 pdfjs 条目
++    // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口；
++    // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx）
+     files: [
+-      'src/renderer/features/reader/PdfCanvas.tsx',
++      'src/renderer/features/reader/PdfDocProvider.tsx',
++      'src/renderer/features/reader/PdfPageCanvas.tsx',
+       'src/renderer/features/reader/TextLayer.tsx',
+       'src/renderer/features/reader/CorpusExtractor.ts'
+     ],
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 7c0f622..b8015fc 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T02:46:32.6889574Z",
++    "generatedAt":  "2026-08-28T04:19:12.4852735Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -11,7 +11,7 @@
+                   },
+                   {
+                       "path":  "eslint.config.js",
+-                      "sha256":  "089fe97c14ab832d5abcab088b4322995dde44ce6ff99ca900a37fd868495a9f"
++                      "sha256":  "813d1e521f71a6ca0fcc6a8cba4e83d579a81028476be5461cc95926262ecab5"
+                   },
+                   {
+                       "path":  "playwright.config.ts",
+@@ -163,7 +163,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "d344b5ed556995262debc21115508130fa34db452bcd5d5c9c11748a0ade1c49"
++                      "sha256":  "c6b0ca75e012c57a0450ab74c0370f4c9e4185931d11b71593a61ce7f829883d"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -361,6 +361,10 @@
+                       "path":  "tests/unit/renderer/outline-aside.test.tsx",
+                       "sha256":  "64298e40a1e95cf6ffa477c49a00ec60836e64eb6a8473d9d4dcfd241da46e0c"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/page-column.test.tsx",
++                      "sha256":  "e3791c5eda3ec8b8eb8cf2a9c673a5fb47bb5e3117d0bc0ed0c5373aaf4260d4"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
+                       "sha256":  "a6066aae93b557e2dc98c506362cc1b8d24c636977e50ad22d724474d7ab3ee7"
+@@ -371,7 +375,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader.store.test.ts",
+-                      "sha256":  "0a5d15c9374d62466b41f9717fd4c3f68f9824c961e2bfe8c5d1bddb5436f323"
++                      "sha256":  "6ec87278b3c8e729cc1836b678d55a9a6320fdbf5cfb35291c81d88b4eb12974"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
+diff --git a/src/renderer/features/reader/OutlinePanel.tsx b/src/renderer/features/reader/OutlinePanel.tsx
+index 2081b2f..9cb6cc9 100644
+--- a/src/renderer/features/reader/OutlinePanel.tsx
++++ b/src/renderer/features/reader/OutlinePanel.tsx
+@@ -19,7 +19,7 @@
+  *   本组件在途请求失败一律静默降级（目录/缩略图缺席不影响主阅读）
+  */
+ import { useEffect, useState } from 'react'
+-import type { PDFDocumentProxy } from './PdfCanvas'
++import type { PDFDocumentProxy } from './PdfDocProvider'
+ import { Thumbnail } from './OutlineThumb'
+ 
+ /** 目录树节点（pdfjs OutlineItem 结构子集） */
+diff --git a/src/renderer/features/reader/OutlineThumb.tsx b/src/renderer/features/reader/OutlineThumb.tsx
+index a60c6ef..cf87164 100644
+--- a/src/renderer/features/reader/OutlineThumb.tsx
++++ b/src/renderer/features/reader/OutlineThumb.tsx
+@@ -3,7 +3,7 @@
+  * 卸载取消在途任务。渲染调用全走句柄方法，不引入 pdfjs 运行时依赖。
+  */
+ import { useEffect, useRef } from 'react'
+-import type { PDFDocumentProxy, RenderTask } from './PdfCanvas'
++import type { PDFDocumentProxy, RenderTask } from './PdfDocProvider'
+ 
+ /** 缩略图渲染比例（规约：scale 0.2） */
+ export const THUMB_SCALE = 0.2
+diff --git a/src/renderer/features/reader/PageColumn.tsx b/src/renderer/features/reader/PageColumn.tsx
+index 1fd844e..ac4688a 100644
+--- a/src/renderer/features/reader/PageColumn.tsx
++++ b/src/renderer/features/reader/PageColumn.tsx
+@@ -3,61 +3,245 @@
+  * [SR2-F-01] PageColumn —— 页列几何与懒渲染回收（工单：open / strong）
+  *
+  * ── 行为层 ──（实现段预拆五段,每段独立可测可审）
+- * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→
+- *   占位盒全列（总高确定）→onReady→F-03 恢复 scrollTo；**越界夹取锚本段**
+- *   （onReady→scrollToPage 前——openPaper 时 totalPages≡0 不可行）。
+- * - 段②占位盒布局：高=pageSizes[no]×zoom；宽=列宽（最宽页×zoom 居中）；
+- *   未渲染盒空白。
+- * - 段③懒渲染窗口：视口±1 页真渲染（canvas+TextLayer+AnnotationLayer+
+- *   AiAnnotationLayer 实例）；离屏>2 页销毁（canvas 移除+pageText 条目删）；
+- *   IntersectionObserver 占位盒驱动。
+- * - 段④层实例化分工：TextLayer/AnnotationLayer/AiAnnotationLayer 每渲染页
+- *   一套（props 不变父层循环）；SelectionLayer 单实例挂 ReaderPage 级
+- *   （锚定根动态=选区所在页盒；工具条落点以所在页盒为参照系）。
+- * - 段⑤双源机制+单页假设处遇：setPage 增 opts?:{scroll?:'to'|'none'}
+- *   默认 'to'（既有五消费面零改）；store.page 变且 scroll:'to'→
+- *   scrollToPage(no)（盒顶）；'none'→不滚。ReaderPage.tsx:125 越界自愈
+- *   删除（夹取移段①就绪时）；:116 量测改每页自量（DPR 校准）。
+- * - 布局态状态机：loading（尺寸未齐）→ready；每页 empty→rendering
+- *   →rendered→recycling→empty；跨格：快速滚动（rendering 中滚出
+- *   窗口→cancel→recycling）；zoom 变化（尺寸×新 zoom 重算→窗口重评估，
+- *   就绪后无 loading——缓存乘法非重取）。
+- * - 内存断言：canvas 实例数 ≤ 渲染窗口+缓冲常量；快速滚动零泄漏。
++ * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
++ * - 段②占位盒布局：高=pageSizes[no]×zoom；宽=列宽（最宽页×zoom 居中）；未渲染盒空白。
++ * - 段③懒渲染窗口：视口±1 页真渲染（canvas+覆盖层经 renderPage）；离屏>2 页销毁；IntersectionObserver 占位盒驱动（INV-30：canvas 生命周期=渲染窗口绑定）。
++ * - 段④层实例化分工：覆盖层（TextLayer/AnnotationLayer/AiAnnotationLayer）经 renderPage(no) 每渲染页一套（props 不变父层循环）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02；挂载位=可见首报告）。
++ * - 段⑤双源机制：scrollRequest（reader.store setPage 默认 'to' 时 bump）变化→scrollToPage(no)（盒顶）；'none'（滚动回写）不 bump 不滚（INV-29）。
++ * - 布局态状态机：loading（尺寸未齐）→ready；每页 empty→rendering→rendered→recycling→empty；跨格：快速滚动（rendering 中滚出窗口→cancel→recycling）；zoom 变化（缓存×新 zoom 重算→窗口重评估，就绪后无 loading）。
++ * - 内存断言：canvas 实例数≤渲染窗口+缓冲常量；快速滚动零泄漏。
+  *
+  * ── 接口层 ──
+- * - props={doc,totalPages,zoom,renderWindow=1,recycleWindow=2,renderPage(no),
+- *   onPageRender(no,payload),onReady}；页盒布局+IO+回收调度+scrollToPage+
+- *   页尺寸缓存单源。
+- * - PdfCanvas.tsx 拆两文件：PdfDocProvider.tsx（doc 生命周期上提，每 tab
+- *   一份）+PdfPageCanvas.tsx（每页渲染单元：effect/取消/DPR 原样，props
+- *   增 pageNo 固定）；两文件各 ≤250；旧文件删除（方案切换红线）。
+- * - ReaderPage.tsx 布局段重构（页列+单实例 SelectionLayer）≤250；
+- *   pageText 单份→Record<pageNo,PageText>（渲染窗口内，回收同删）。
+- * - reader.store setPage 增第三参（默认 'to'）。
++ * - props={doc,totalPages,zoom,renderWindow=1,recycleWindow=2,renderPage(no),onPageRender,onError,onReady,scrollRequest,onVisibleChange}；页盒布局+IO+回收调度+scrollToPage+页尺寸缓存单源。拆分/重构/受锁全清单=scripts/audits/p7f-ticketing-draft.md SR2-F-01 节（票面完整任务书）。
+  *
+  * ── 架构层 ──
+- * - 分层不动；零新依赖；INV-01 零触碰；INV-16 白名单迁移：eslint.config.js
+- *   受锁改（no-restricted-imports 白名单 PdfCanvas.tsx→两新文件）+
+- *   invariants INV-16 文本同步；[locked-change] 随单。
+- * - 不变量预登记（收口）：程序跳页与滚动同步双源区分（scroll:'none' 不
+- *   触发程序滚动——防回弹；setPage 签注+scrollToPage 单口；单测跨格锚）；
+- *   canvas 生命周期=渲染窗口绑定（离屏必回收；组件单测锚）。
++ * - 分层不动；零新依赖；INV-01 零触碰；INV-16 白名单迁移（eslint.config.js 受锁+[locked-change]+invariants 文本同步）；INV-29/30 双源区分+canvas 渲染窗口绑定两不变量随单登记。
+  *
+  * ── 生命周期层 ──
+  * - 不做：页内偏移进度/虚拟滚动（全长真实占位）/旋转页/跨页选区。
+  *
+  * ── 文化层 ──
+- * - 测试（裸 describe）：布局纯函数（盒高/列宽/窗口/最近页）+渲染回收
+- *   调度（桩 IO）+双源机制（'none' 不触发 scrollToPage 回归锚）；
+- *   e2e 批 1=reader-text.spec（多页可见断言+INV-01 保持）。
+- * - 文件清单：本文件/PdfDocProvider+PdfPageCanvas（新，拆自 PdfCanvas
+- *   ——旧删）/ReaderPage.tsx/reader.store.ts/eslint.config.js（受锁）/
+- *   docs/invariants.md/page-column.test.tsx（新入锁）/reader-text.spec
+- *   （受锁批 1）/reader.store.test（受锁扩）。
+- * - 完成后：删除占位 → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ * - 测试（裸 describe，page-column.test.tsx）：布局纯函数+渲染回收调度（桩 IO）+程序滚动；e2e 批 1=reader-text.spec 多页可见+INV-01 保持。完成后：npm run verify 绿 → 人工审查 git diff → 翻 registry
+  */
++import { useEffect, useRef, useState } from 'react'
++import type { PDFDocumentProxy } from './PdfDocProvider'
++import { PdfPageCanvas } from './PdfPageCanvas'
++import type { PdfTextContent } from './PdfPageCanvas'
+ 
+-/** 工单骨架占位（实现单元替换为真实实现——规则 4 可见性标记） */
+-export function PageColumn(): JSX.Element {
+-  return <div data-ticket="SR2-F-01">P7-F F-01 骨架占位</div>
++/** 页原始尺寸（pdf 用户空间，scale=1 基准——zoom 乘法在盒几何层） */
++export interface PageBoxSize {
++  width: number
++  height: number
++}
++
++/** 段①越界夹取：1 基页码夹 [1, totalPages]（scrollToPage 前哨，W-A） */
++export function clampPageToColumn(pageNo: number, totalPages: number): number {
++  return Math.min(Math.max(1, Math.floor(pageNo)), Math.max(1, totalPages))
++}
++
++/** 段②列宽：最宽页×zoom（floor——与 canvas CSS 尺寸同口径） */
++export function columnWidth(sizes: readonly PageBoxSize[], zoom: number): number {
++  return Math.floor(sizes.reduce((m, s) => Math.max(m, s.width), 0) * zoom)
++}
++
++/** 段②盒高：页原始高×zoom（floor） */
++export function pageBoxHeight(size: PageBoxSize, zoom: number): number {
++  return Math.floor(size.height * zoom)
++}
++
++/** 段③渲染窗口：可见页±renderWindow（夹 [1,totalPages]）；空可见=顶部引导窗口（首屏） */
++export function windowPages(visible: ReadonlySet<number>, totalPages: number, renderWindow: number): number[] {
++  const want = new Set<number>()
++  for (const v of visible) {
++    for (let d = -renderWindow; d <= renderWindow; d += 1) {
++      const no = v + d
++      if (no >= 1 && no <= totalPages) want.add(no)
++    }
++  }
++  if (want.size === 0 && totalPages > 0) {
++    for (let no = 1; no <= Math.min(renderWindow + 1, totalPages); no += 1) want.add(no)
++  }
++  return [...want].sort((a, b) => a - b)
++}
++
++/** 段③回收调度：已渲染页距任一可见页≤recycleWindow 才保留（离屏必回收——
++ *  INV-30 canvas 生命周期=渲染窗口绑定） */
++export function recycledPages(rendered: ReadonlySet<number>, visible: ReadonlySet<number>, recycleWindow: number): Set<number> {
++  const keep = new Set<number>()
++  for (const p of rendered) {
++    for (const v of visible) {
++      if (Math.abs(p - v) <= recycleWindow) {
++        keep.add(p)
++        break
++      }
++    }
++  }
++  return keep
++}
++
++/** 视口中心最近页（1 基；F-03 滚动→页回写的几何前置——本单纯函数交付） */
++export function nearestPage(centerY: number, boxes: ReadonlyArray<{ top: number; height: number }>): number {
++  let best = 1
++  let bestDist = Infinity
++  boxes.forEach((b, i) => {
++    const inside = centerY >= b.top && centerY <= b.top + b.height
++    const d = inside ? -1 : Math.abs(centerY - (b.top + b.height / 2))
++    if (d < bestDist) {
++      bestDist = d
++      best = i + 1
++    }
++  })
++  return best
++}
++
++/** 程序滚动请求（reader.store scrollRequest 的形状——INV-29 单口消费面） */
++export interface PageScrollRequest {
++  paperId: string
++  page: number
++  seq: number
++}
++
++export function PageColumn(props: {
++  doc: PDFDocumentProxy | null
++  totalPages: number
++  zoom: number
++  renderWindow?: number
++  recycleWindow?: number
++  /** 段④：渲染窗口内每页的覆盖层装配（TextLayer/标注层/AI 层+SelectionLayer 挂载位） */
++  renderPage(no: number): JSX.Element
++  onPageRender(no: number, payload: PdfTextContent): void
++  onError(msg: string): void
++  /** 段①：页列就绪（F-03 恢复链入口）；段⑤：程序滚动信号（'none' 不 bump）；
++   *  可见页上抛（SelectionLayer 锚定页挂载位消费——升序） */
++  onReady?(): void
++  scrollRequest?: PageScrollRequest | null
++  onVisibleChange?(visiblePages: number[]): void
++}): JSX.Element {
++  const { doc, totalPages, zoom } = props
++  const renderWindow = props.renderWindow ?? 1
++  const recycleWindow = props.recycleWindow ?? 2
++  const rootRef = useRef<HTMLDivElement | null>(null)
++  // 回调 latest-ref：父层内联函数不触发管线重跑
++  const onReadyRef = useRef(props.onReady)
++  const onVisibleRef = useRef(props.onVisibleChange)
++  const onErrorRef = useRef(props.onError)
++  onReadyRef.current = props.onReady
++  onVisibleRef.current = props.onVisibleChange
++  onErrorRef.current = props.onError
++  const [pageSizes, setPageSizes] = useState<PageBoxSize[] | null>(null)
++  const [visible, setVisible] = useState<Set<number>>(() => new Set())
++  const [rendered, setRendered] = useState<Set<number>>(() => new Set())
++  // 段①error 终态（W2 门一回炉）：管线失败→onError 上抛（INV-02）+不再 loading
++  const [sizesError, setSizesError] = useState(false)
++
++  // 段①就绪管线：doc/totalPages 变化→逐页 getPage→view 尺寸数组（缓存单源）→占位全列
++  // →onReady；zoom 不入依赖（就绪后无 loading——缓存乘法非重取）
++  useEffect(() => {
++    if (doc === null || totalPages <= 0) { setPageSizes(null); setSizesError(false); return }
++    let cancelled = false
++    const load = async (): Promise<void> => {
++      const sizes: PageBoxSize[] = []
++      for (let no = 1; no <= totalPages; no += 1) {
++        const page = await doc.getPage(no)
++        if (cancelled) return
++        const view = page.view
++        // view=[x0,y0,x1,y1]（pdfjs 契约）；?? 0 兜底非法数组的防御位
++        sizes.push({ width: (view[2] ?? 0) - (view[0] ?? 0), height: (view[3] ?? 0) - (view[1] ?? 0) })
++      }
++      if (!cancelled) {
++        setPageSizes(sizes)
++        onReadyRef.current?.()
++      }
++    }
++    // W2：失败不静默（防 unhandled rejection+永久 loading）；tab 级 toast/error 归消费方
++    load().catch((err: unknown) => {
++      if (cancelled) return
++      setSizesError(true); onErrorRef.current(`页列尺寸获取失败：${err instanceof Error ? err.message : String(err)}`)
++    })
++    return () => {
++      cancelled = true
++    }
++  }, [doc, totalPages])
++
++  // 段③IO：占位盒驱动可见集（就绪后挂载；引用稳定防抖动）
++  useEffect(() => {
++    if (pageSizes === null) return
++    const io = new IntersectionObserver((entries) => {
++      setVisible((prev) => {
++        const next = new Set(prev)
++        for (const e of entries) {
++          const no = Number((e.target as HTMLElement).dataset.pageBox)
++          if (Number.isNaN(no)) continue
++          if (e.isIntersecting) next.add(no)
++          else next.delete(no)
++        }
++        const same = next.size === prev.size && [...next].every((n) => prev.has(n))
++        return same ? prev : next
++      })
++    })
++    for (const el of rootRef.current?.querySelectorAll<HTMLElement>('[data-page-box]') ?? []) {
++      io.observe(el)
++    }
++    return () => io.disconnect()
++  }, [pageSizes])
++
++  // 可见集上抛（升序；SelectionLayer 锚定页挂载位等消费）
++  useEffect(() => {
++    onVisibleRef.current?.([...visible].sort((a, b) => a - b))
++  }, [visible])
++
++  // 段③调度：渲染窗口并入+离屏回收（空可见=顶部引导窗口，不跑回收）
++  useEffect(() => {
++    setRendered((prev) => {
++      const want = windowPages(visible, totalPages, renderWindow)
++      if (visible.size === 0) return new Set(want)
++      return recycledPages(new Set([...prev, ...want]), visible, recycleWindow)
++    })
++  }, [visible, totalPages, renderWindow, recycleWindow])
++
++  // 段⑤程序滚动（INV-29 单口）：夹取→页盒顶对齐视口顶；未就绪挂起、就绪补滚
++  useEffect(() => {
++    if (pageSizes === null || props.scrollRequest === null || props.scrollRequest === undefined) return
++    const no = clampPageToColumn(props.scrollRequest.page + 1, totalPages)
++    rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`)?.scrollIntoView({ block: 'start' })
++  }, [props.scrollRequest, pageSizes, totalPages])
++
++  if (sizesError) {
++    return <div data-page-column="error" className="mx-auto w-full" aria-label="页列加载失败" />
++  }
++  if (pageSizes === null || pageSizes.length !== totalPages) {
++    // data-ticket（AI-08/09/10 先例）：open 工单机检标记——翻 done 时主控收口移除
++    return <div data-ticket="SR2-F-01" data-page-column="loading" className="mx-auto w-full" aria-label="页列加载中" />
++  }
++  const width = columnWidth(pageSizes, zoom)
++  return (
++    <div
++      ref={rootRef}
++      data-ticket="SR2-F-01"
++      data-page-column="ready"
++      className="mx-auto flex flex-col items-center gap-3"
++      style={{ width }}
++    >
++      {pageSizes.map((size, i) => {
++        const no = i + 1
++        return (
++          <div
++            key={no}
++            data-page-box={no}
++            className="relative shrink-0"
++            style={{ width, height: pageBoxHeight(size, zoom) }}
++          >
++            {rendered.has(no) ? (
++              <div data-page-root={no} className="absolute inset-0 flex justify-center">
++                <div className="relative h-fit">
++                  <PdfPageCanvas doc={doc!} pageNo={no} zoom={zoom} onPageRender={props.onPageRender} onError={props.onError} />
++                  {props.renderPage(no)}
++                </div>
++              </div>
++            ) : null}
++          </div>
++        )
++      })}
++    </div>
++  )
+ }
+diff --git a/src/renderer/features/reader/PdfCanvas.tsx b/src/renderer/features/reader/PdfCanvas.tsx
+deleted file mode 100644
+index 1d9c5f7..0000000
+--- a/src/renderer/features/reader/PdfCanvas.tsx
++++ /dev/null
+@@ -1,225 +0,0 @@
+-/**
+- * [SR-RDR-02] PdfCanvas —— pdf.js 渲染封装（工单：done / strong，Phase 3 决策门内实现）
+- *
+- * ── 行为层 ──
+- * - pdfjs-dist v4（精确钉版）加载 fileUrl（app-file://），渲染当前页到 canvas
+- * - DPR 适配（devicePixelRatio）；缩放 zoom（0.5~3）；页码跳转 props 受控
+- * - 渲染队列：快速翻页取消旧任务（renderTask.cancel()）
+- * - worker：import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'，
+- *   GlobalWorkerOptions.workerSrc = workerSrc（CSP 已放行 worker-src 'self'）
+- *
+- * ── 接口层 ──
+- * - export interface PdfCanvasProps { fileUrl: string; pageNumber: number; zoom: number;
+- *     onPageRender(page: number, textContent: PdfTextContent): void; onError(msg: string): void;
+- *     onDocInfo?(info: { numPages: number }): void }
+- * - export function PdfCanvas(props: PdfCanvasProps): JSX.Element
+- * - PdfTextItem/PdfTextStyle/PdfTextContent 是 pdfjs 对应类型的结构子集（主入口未导出）：
+- *   消费方（TextLayer/SelectionLayer/ReaderPage）只从本文件取类型与数据，不 import pdfjs-dist
+- * - onPageRender 回调 2026-08-22 二次演进：items 之外补 styles（字体名→样式）与 lang——
+- *   TextLayer 按字体名查 styles 无回退，缺省会崩（集成期实证）；旧签名只传 items 是设计缺口
+- * - onDocInfo（2026-08-22 契约演进，阅读器页面接线前置）：文档加载完成时回调页数，
+- *   供 reader.store.setTotalPages——此前 totalPages 无数据生产者；旧消费方不传不受影响
+- * - onDocReady（2026-08-22 契约演进，目录/缩略图侧栏接线前置）：上报 PDFDocumentProxy
+- *   本体（OutlinePanel 需要 getOutline/getPage/getPageIndex）；句柄生命周期归本组件
+- *   （换文档/卸载即销毁），消费方按 unknown 收窄、不得跨文档长期持有
+- *
+- * ── 架构层 ──
+- * - pdfjs-dist import 白名单三文件之一（INV-16：PdfCanvas/TextLayer/CorpusExtractor——
+- *   ESLint no-restricted-imports 机器锚）；TextLayer/SelectionLayer 依赖它回调的 textContent
+- * - 卸载时清理（pdf doc.destroy()）
+- *
+- * ── 生命周期层 ──
+- * - 决策门记录：若 canvas+TextLayer 路线在 Phase 3 spike 失败 → 切官方 viewer iframe
+- *   方案，本文件整体替换并记 ADR-002 修订（旧实现删除，教训 E5）
+- * - spike 已通过（ADR-0002，2026-08-22）：v4 page.render({canvasContext, viewport,
+- *   transform}) 参数形态、worker ?url 配方、DPR 背衬尺寸 = CSS × dpr 均在真实
+- *   Electron 42 上实证；渲染完成后回调 textContent 供 TextLayer 生成可选中文本
+- *
+- * ── 文化层 ──
+- * - 测试：tests/e2e/reader-text.spec.ts（渲染文本断言，随阅读器页面组装完成激活）+ anchor 单测配合
+- */
+-import { useEffect, useRef, useState } from 'react'
+-import {
+-  GlobalWorkerOptions,
+-  RenderingCancelledException,
+-  getDocument,
+-  type PDFDocumentProxy,
+-  type RenderTask
+-} from 'pdfjs-dist'
+-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+-
+-// worker 本地打包（ADR-0002 硬约束：禁 CDN）；?url 在 dev 是 dev-server 地址、
+-// 构建后是产物内文件 URL，两者都在 CSP worker-src 'self' 范围内（spike 实证）
+-GlobalWorkerOptions.workerSrc = workerUrl
+-
+-/** pdfjs 类型再导出（INV-16：白名单外文件的类型消费统一经本文件——OutlinePanel/
+- *  OutlineThumb 等消费方不 import pdfjs-dist，含 import type） */
+-export type { PDFDocumentProxy, RenderTask }
+-
+-/**
+- * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。
+- * 主入口未再导出 TextItem 类型，且边界上本文件应自持契约——消费方不 import pdfjs-dist
+- */
+-export interface PdfTextItem {
+-  str: string
+-  dir: string
+-  width: number
+-  height: number
+-  transform: number[]
+-  fontName: string
+-  hasEOL: boolean
+-}
+-
+-/**
+- * 字体样式（pdfjs TextStyle 结构子集）：TextLayer 排版（ascent/descent）与
+- * 文本朝向（vertical）计算必需，按 items 里的 fontName 索引
+- */
+-export interface PdfTextStyle {
+-  fontFamily: string
+-  ascent: number
+-  descent: number
+-  vertical: boolean
+-}
+-
+-/**
+- * 页文本内容：TextLayer 生成可选中文本层的完整输入。styles 缺省会令其按
+- * fontName 的样式查找拿到 undefined 而崩——集成期实证，不再是可省字段
+- */
+-export interface PdfTextContent {
+-  items: PdfTextItem[]
+-  styles: Record<string, PdfTextStyle>
+-  lang: string | null
+-}
+-
+-export interface PdfCanvasProps {
+-  fileUrl: string
+-  pageNumber: number
+-  zoom: number
+-  onPageRender(page: number, textContent: PdfTextContent): void
+-  onError(msg: string): void
+-  /** 文档加载完成时上报页数（totalPages 的数据生产者，见文件头接口层） */
+-  onDocInfo?(info: { numPages: number }): void
+-  /** 文档句柄上报（目录/缩略图侧栏的数据源，见文件头接口层） */
+-  onDocReady?(doc: PDFDocumentProxy): void
+-}
+-
+-function errorMessage(err: unknown): string {
+-  return err instanceof Error ? err.message : String(err)
+-}
+-
+-export function PdfCanvas(props: PdfCanvasProps): JSX.Element {
+-  const { fileUrl, pageNumber, zoom } = props
+-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+-  const renderTaskRef = useRef<RenderTask | null>(null)
+-  const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
+-  // 回调走 latest-ref：父组件传内联箭头函数不应触发本组件的重渲染队列
+-  const onPageRenderRef = useRef(props.onPageRender)
+-  const onErrorRef = useRef(props.onError)
+-  const onDocInfoRef = useRef(props.onDocInfo)
+-  const onDocReadyRef = useRef(props.onDocReady)
+-  onPageRenderRef.current = props.onPageRender
+-  onErrorRef.current = props.onError
+-  onDocInfoRef.current = props.onDocInfo
+-  onDocReadyRef.current = props.onDocReady
+-
+-  // 文档生命周期：fileUrl 变化 → 弃旧文档（销毁连带 worker 侧资源）→ 异步加载新文档
+-  useEffect(() => {
+-    let cancelled = false
+-    setDoc(null)
+-    // isEvalSupported: false——CSP 禁 unsafe-eval，显式关掉 pdfjs 的 eval 快路径
+-    const task = getDocument({ url: fileUrl, isEvalSupported: false })
+-    task.promise
+-      .then((loaded) => {
+-        if (!cancelled) {
+-          // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
+-          onDocInfoRef.current?.({ numPages: loaded.numPages })
+-          onDocReadyRef.current?.(loaded)
+-          setDoc(loaded)
+-        }
+-      })
+-      .catch((err: unknown) => {
+-        if (!cancelled) {
+-          onErrorRef.current(`PDF 加载失败：${errorMessage(err)}`)
+-        }
+-      })
+-    return () => {
+-      cancelled = true
+-      // loadingTask 拥有 document：destroy 对"加载中"是中止、对"已加载"是销毁
+-      void task.destroy().catch(() => undefined)
+-    }
+-  }, [fileUrl])
+-
+-  // 渲染队列：doc/pageNumber/zoom 任一变化即重渲；effect 清理取消在途任务，
+-  // 快速翻页时旧帧的 cancel() 让 await task.promise 以取消异常结束（静默丢弃）
+-  useEffect(() => {
+-    if (doc === null) {
+-      return
+-    }
+-    let cancelled = false
+-    const render = async (): Promise<void> => {
+-      renderTaskRef.current?.cancel()
+-      // 防御性收敛：进度记录的 lastReadPage 可能越界（页码 1 基；store 侧亦会夹紧）
+-      const pageNo = Math.min(Math.max(1, Math.floor(pageNumber)), doc.numPages)
+-      const scale = Math.min(3, Math.max(0.5, zoom))
+-      const page = await doc.getPage(pageNo)
+-      if (cancelled) {
+-        return
+-      }
+-      const canvas = canvasRef.current
+-      if (canvas === null) {
+-        return
+-      }
+-      const ctx = canvas.getContext('2d')
+-      if (ctx === null) {
+-        onErrorRef.current('PDF 渲染失败：无法获取 2D 绘图上下文')
+-        return
+-      }
+-      const dpr = window.devicePixelRatio || 1
+-      const viewport = page.getViewport({ scale })
+-      // 背衬尺寸 = CSS 尺寸 × DPR（spike 实证配方）；transform 把绘制坐标系缩放回 CSS 系
+-      canvas.width = Math.floor(viewport.width * dpr)
+-      canvas.height = Math.floor(viewport.height * dpr)
+-      canvas.style.width = `${Math.floor(viewport.width)}px`
+-      canvas.style.height = `${Math.floor(viewport.height)}px`
+-      const task = page.render({
+-        canvasContext: ctx,
+-        viewport,
+-        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined
+-      })
+-      renderTaskRef.current = task
+-      await task.promise
+-      if (cancelled) {
+-        return
+-      }
+-      const textContent = await page.getTextContent()
+-      if (cancelled) {
+-        return
+-      }
+-      onPageRenderRef.current(pageNo, {
+-        // includeMarkedContent 默认关闭，防御性过滤掉无 str 的结构项
+-        items: textContent.items.filter((item): item is PdfTextItem => 'str' in item),
+-        styles: textContent.styles,
+-        lang: textContent.lang
+-      })
+-    }
+-    render().catch((err: unknown) => {
+-      if (cancelled || err instanceof RenderingCancelledException) {
+-        return
+-      }
+-      onErrorRef.current(`PDF 渲染失败：${errorMessage(err)}`)
+-    })
+-    return () => {
+-      cancelled = true
+-      renderTaskRef.current?.cancel()
+-    }
+-  }, [doc, pageNumber, zoom])
+-
+-  return (
+-    <div className="flex justify-center">
+-      {/* data-pdf-canvas：ReaderPage 以此度量页面 CSS 尺寸（TextLayer 的
+-          pageWidth/pageHeight/viewportScale 输入）；外层不留内边距——覆盖层
+-          （TextLayer/标注层）按本容器绝对定位，加了 padding 会错位 */}
+-      <canvas ref={canvasRef} data-pdf-canvas="true" aria-label="PDF 页面渲染" />
+-    </div>
+-  )
+-}
+diff --git a/src/renderer/features/reader/PdfDocProvider.tsx b/src/renderer/features/reader/PdfDocProvider.tsx
+new file mode 100644
+index 0000000..ac83408
+--- /dev/null
++++ b/src/renderer/features/reader/PdfDocProvider.tsx
+@@ -0,0 +1,98 @@
++// b3: P7-F
++/**
++ * PdfDocProvider —— pdf.js 文档生命周期宿主（F-01：由 PdfCanvas.tsx 拆出，
++ * 旧文件已删——方案切换=删除旧方案红线）。
++ *
++ * ── 行为层 ──
++ * - worker 本地打包（ADR-0002：禁 CDN）+ getDocument({url,isEvalSupported:false})
++ *   加载 fileUrl（app-file://）；loadingTask.destroy() 对"加载中"是中止、对
++ *   "已加载"是销毁（换文档/卸载即销毁，句柄生命周期归本组件）
++ * - doc 就绪经 children render-prop 下发（每 tab 一份——挂 ReaderPage 主区）；
++ *   未就绪渲染空占位（tab 级 loading/error 态由 ReaderPage 空态分支承载）
++ *
++ * ── 接口层 ──
++ * - export function PdfDocProvider(props: { fileUrl: string;
++ *     onDocInfo?(info: { numPages: number }): void;
++ *     onDocReady?(doc: PDFDocumentProxy): void;
++ *     onError(msg: string): void;
++ *     children: (doc: PDFDocumentProxy) => JSX.Element }): JSX.Element
++ * - pdfjs 类型再导出单点（INV-16：白名单外消费方不 import pdfjs-dist，含
++ *   import type——OutlinePanel/OutlineThumb 自此取 PDFDocumentProxy/RenderTask）
++ *
++ * ── 架构层 ──
++ * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
++ *   CorpusExtractor——ESLint no-restricted-imports 机器锚，白名单变更=[locked-change]）
++ * - worker ?url 配方（dev=dev-server 地址、构建后=产物内文件 URL，均在 CSP
++ *   worker-src 'self' 内——spike 实证）；与 CorpusExtractor 的 worker 配置同值幂等
++ *
++ * ── 生命周期层 ── / ── 文化层 ──
++ * - e2e tests/e2e/reader-text.spec.ts（渲染文本断言——阅读器渲染链）
++ */
++import { useEffect, useRef, useState } from 'react'
++import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
++import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
++
++// worker 本地打包（ADR-0002 硬约束：禁 CDN）；?url 在 dev 是 dev-server 地址、
++// 构建后是产物内文件 URL，两者都在 CSP worker-src 'self' 范围内（spike 实证）
++GlobalWorkerOptions.workerSrc = workerUrl
++
++/** pdfjs 类型再导出（INV-16：白名单外文件的类型消费统一经本文件——消费方
++ *  不 import pdfjs-dist，含 import type；RenderTask 供 OutlineThumb 等取消渲染） */
++export type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
++
++function errorMessage(err: unknown): string {
++  return err instanceof Error ? err.message : String(err)
++}
++
++export function PdfDocProvider(props: {
++  fileUrl: string
++  /** 文档加载完成时上报页数（totalPages 的数据生产者，先于 children 下发） */
++  onDocInfo?(info: { numPages: number }): void
++  /** 文档句柄上报（目录/缩略图侧栏的数据源；换文档即弃，消费方按 unknown 收窄） */
++  onDocReady?(doc: PDFDocumentProxy): void
++  onError(msg: string): void
++  children: (doc: PDFDocumentProxy) => JSX.Element
++}): JSX.Element {
++  const { fileUrl } = props
++  const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
++  // 回调走 latest-ref：父组件传内联箭头函数不应触发文档重载
++  const onDocInfoRef = useRef(props.onDocInfo)
++  const onDocReadyRef = useRef(props.onDocReady)
++  const onErrorRef = useRef(props.onError)
++  onDocInfoRef.current = props.onDocInfo
++  onDocReadyRef.current = props.onDocReady
++  onErrorRef.current = props.onError
++
++  // 文档生命周期（原 PdfCanvas 配方原样）：fileUrl 变化 → 弃旧文档（销毁连带
++  // worker 侧资源）→ 异步加载新文档
++  useEffect(() => {
++    let cancelled = false
++    setDoc(null)
++    // isEvalSupported: false——CSP 禁 unsafe-eval，显式关掉 pdfjs 的 eval 快路径
++    const task = getDocument({ url: fileUrl, isEvalSupported: false })
++    task.promise
++      .then((loaded) => {
++        if (!cancelled) {
++          // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
++          onDocInfoRef.current?.({ numPages: loaded.numPages })
++          onDocReadyRef.current?.(loaded)
++          setDoc(loaded)
++        }
++      })
++      .catch((err: unknown) => {
++        if (!cancelled) {
++          onErrorRef.current(`PDF 加载失败：${errorMessage(err)}`)
++        }
++      })
++    return () => {
++      cancelled = true
++      // loadingTask 拥有 document：destroy 对"加载中"是中止、对"已加载"是销毁
++      void task.destroy().catch(() => undefined)
++    }
++  }, [fileUrl])
++
++  if (doc === null) {
++    return <div data-pdf-loading="true" />
++  }
++  return props.children(doc)
++}
+diff --git a/src/renderer/features/reader/PdfPageCanvas.tsx b/src/renderer/features/reader/PdfPageCanvas.tsx
+new file mode 100644
+index 0000000..b5c69e4
+--- /dev/null
++++ b/src/renderer/features/reader/PdfPageCanvas.tsx
+@@ -0,0 +1,153 @@
++// b3: P7-F
++/**
++ * PdfPageCanvas —— 每页渲染单元（F-01：由 PdfCanvas.tsx 拆出，旧文件已删——
++ * 方案切换=删除旧方案红线）。
++ *
++ * ── 行为层 ──
++ * - 单页渲染：doc.getPage(pageNo)→render({canvasContext,viewport,transform})；
++ *   渲染完成回调该页 textContent（items+styles+lang 完整载荷）
++ * - DPR 适配（背衬尺寸=CSS×dpr，spike 实证配方）；缩放=zoom 夹取 [0.5,3]
++ * - 渲染队列：props 变化/卸载取消在途任务（renderTask.cancel()——快速滚动中
++ *   滚出窗口的页由本配方回收其渲染任务）
++ *
++ * ── 接口层 ──
++ * - export function PdfPageCanvas(props: { doc: PDFDocumentProxy; pageNo: number;
++ *     zoom: number; onPageRender(page: number, textContent: PdfTextContent): void;
++ *     onError(msg: string): void }): JSX.Element
++ * - pageNo 固定（页列模型：页码由 PageColumn 分配，不再跳变）
++ * - PdfTextItem/PdfTextStyle/PdfTextContent 类型单源驻本文件（pdfjs TextItem
++ *  /TextStyle 的结构子集——消费方 TextLayer/ReaderPage 不 import pdfjs-dist）
++ *
++ * ── 架构层 ──
++ * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
++ *   CorpusExtractor）；doc 句柄经 props（生命周期归 PdfDocProvider，本组件不销毁）
++ *
++ * ── 生命周期层 ── / ── 文化层 ──
++ * - e2e tests/e2e/reader-text.spec.ts（渲染文本断言+canvas 计数上界归 F-04 收官）
++ */
++import { useEffect, useRef } from 'react'
++import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
++
++/**
++ * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。
++ * 主入口未再导出 TextItem 类型，且边界上本文件应自持契约——消费方不 import pdfjs-dist
++ */
++export interface PdfTextItem {
++  str: string
++  dir: string
++  width: number
++  height: number
++  transform: number[]
++  fontName: string
++  hasEOL: boolean
++}
++
++/**
++ * 字体样式（pdfjs TextStyle 结构子集）：TextLayer 排版（ascent/descent）与
++ * 文本朝向（vertical）计算必需，按 items 里的 fontName 索引
++ */
++export interface PdfTextStyle {
++  fontFamily: string
++  ascent: number
++  descent: number
++  vertical: boolean
++}
++
++/**
++ * 页文本内容：TextLayer 生成可选中文本层的完整输入。styles 缺省会令其按
++ * fontName 的样式查找拿到 undefined 而崩——集成期实证，不再是可省字段
++ */
++export interface PdfTextContent {
++  items: PdfTextItem[]
++  styles: Record<string, PdfTextStyle>
++  lang: string | null
++}
++
++function errorMessage(err: unknown): string {
++  return err instanceof Error ? err.message : String(err)
++}
++
++export function PdfPageCanvas(props: {
++  doc: PDFDocumentProxy
++  pageNo: number
++  zoom: number
++  onPageRender(page: number, textContent: PdfTextContent): void
++  onError(msg: string): void
++}): JSX.Element {
++  const { doc, pageNo, zoom } = props
++  const canvasRef = useRef<HTMLCanvasElement | null>(null)
++  const renderTaskRef = useRef<RenderTask | null>(null)
++  // 回调走 latest-ref：父组件传内联箭头函数不应触发本组件的重渲染队列
++  const onPageRenderRef = useRef(props.onPageRender)
++  const onErrorRef = useRef(props.onError)
++  onPageRenderRef.current = props.onPageRender
++  onErrorRef.current = props.onError
++
++  // 渲染队列（原 PdfCanvas 配方原样）：doc/pageNo/zoom 任一变化即重渲；effect
++  // 清理取消在途任务，快速滚动时旧帧的 cancel() 让 await task.promise 以取消
++  // 异常结束（静默丢弃）
++  useEffect(() => {
++    let cancelled = false
++    const render = async (): Promise<void> => {
++      renderTaskRef.current?.cancel()
++      // 防御性收敛（页码 1 基；页列分配的 pageNo 天然有效，此处兜底）
++      const page = Math.min(Math.max(1, Math.floor(pageNo)), doc.numPages)
++      const scale = Math.min(3, Math.max(0.5, zoom))
++      const pdfPage = await doc.getPage(page)
++      if (cancelled) {
++        return
++      }
++      const canvas = canvasRef.current
++      if (canvas === null) {
++        return
++      }
++      const ctx = canvas.getContext('2d')
++      if (ctx === null) {
++        onErrorRef.current('PDF 渲染失败：无法获取 2D 绘图上下文')
++        return
++      }
++      const dpr = window.devicePixelRatio || 1
++      const viewport = pdfPage.getViewport({ scale })
++      // 背衬尺寸 = CSS 尺寸 × DPR（spike 实证配方）；transform 把绘制坐标系缩放回 CSS 系
++      canvas.width = Math.floor(viewport.width * dpr)
++      canvas.height = Math.floor(viewport.height * dpr)
++      canvas.style.width = `${Math.floor(viewport.width)}px`
++      canvas.style.height = `${Math.floor(viewport.height)}px`
++      const task = pdfPage.render({
++        canvasContext: ctx,
++        viewport,
++        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined
++      })
++      renderTaskRef.current = task
++      await task.promise
++      if (cancelled) {
++        return
++      }
++      const textContent = await pdfPage.getTextContent()
++      if (cancelled) {
++        return
++      }
++      onPageRenderRef.current(page, {
++        // includeMarkedContent 默认关闭，防御性过滤掉无 str 的结构项
++        items: textContent.items.filter((item): item is PdfTextItem => 'str' in item),
++        styles: textContent.styles,
++        lang: textContent.lang
++      })
++    }
++    render().catch((err: unknown) => {
++      if (cancelled || err instanceof RenderingCancelledException) {
++        return
++      }
++      onErrorRef.current(`PDF 渲染失败：${errorMessage(err)}`)
++    })
++    return () => {
++      cancelled = true
++      renderTaskRef.current?.cancel()
++    }
++  }, [doc, pageNo, zoom])
++
++  // data-pdf-canvas：ReaderPage 以此度量该页 canvas CSS 尺寸（每页自量——
++  // TextLayer 的 pageWidth/pageHeight 输入）；本组件无 padding/边饰——覆盖层
++  // （TextLayer/标注层）按紧邻父容器绝对定位，加了会错位
++  return <canvas ref={canvasRef} data-pdf-canvas="true" aria-label={`PDF 第 ${pageNo} 页渲染`} />
++}
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 05203b4..25c9e6c 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -2,30 +2,32 @@
+  * [SR-RDR-04] ReaderPage —— 阅读器页面（工单：done / weak）
+  *
+  * ── 行为层 ──
+- * - 无打开文档：空态引导（"从文献库打开一篇文献"）
+- * - 打开：reader.store.openPaper(paperId) → PdfCanvas + TextLayer + SelectionLayer + AnnotationLayer + ReaderToolbar + OutlinePanel 布局（左右侧栏可折叠）
++ * - 无打开文档：空态引导（"从文献库打开一篇文献"）；打开：reader.store.openPaper
++ *   → PdfDocProvider+PageColumn 页列+SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+  * - 定时保存阅读进度（翻页后 2s 防抖 api.reader.saveProgress）——已内置于 reader.store.setPage
+- * - 接收 library 侧"打开文献"事件（window CustomEvent 'synapse:open-paper'，library.store 派发；
+- *   App 层切 tab）。事件派发时本页尚未挂载，故挂载时经 takePendingOpenPaper 补读闩锁
+- * - LG-04 锚递达消费接缝（双向锚定：本行+open-paper-anchor.ts+LineageSidePanel 头注）：
+- *   总线 detail 可携带 anchor 三元组+aiNoteId（脉络侧板双击 AI 笔记）——消费定路由
+- *   归 openFromBus（带锚→locateAnchor INV-20 单入口；无锚→openPaper 既有链路）
+- * - SelectionLayer/AnnotationLayer 属 Phase 4 标注链：页根内 .textLayer 之上叠放，划选保存经
+- *   onSaved → store.addAnnotation；AnnotationLayer 渲染 store.annotations 当前页标注（状态驱动重锚）
++ * - 接收 library 侧"打开文献"事件（'synapse:open-paper'；挂载时经 takePendingOpenPaper
++ *   补读闩锁）；LG-04 锚递达：消费定路由归 openFromBus（带锚→locateAnchor INV-20 单入口）
++ * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
++ *   pageText 单份→Record<页号,PageText>（渲染窗口内，页卸载同删——PageFrame
++ *   回收回调）；每页自量（onPageRender 按 data-page-root 查该页盒量 canvas——
++ *   旧「第一个 canvas」单页假设量测已删）；旧越界自愈删除（夹取移 PageColumn
++ *   就绪管线）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02——本单
++ *   挂载位=可见页首报告）；页列就绪→setPage(当前页)（'to'）→程序滚回该页
++ *   盒顶（恢复链 F-01 版）
+  *
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+  *
+  * ── 架构层 ──
+  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
+- * - 文本/几何的页内契约：PdfCanvas onPageRender 回报（页码,文本项）+ 本页量测 canvas CSS
+- *   盒（data-pdf-canvas）→ TextLayer 定位输入；回报页码与 store 页码不一致（lastReadPage
+- *   越界被 PdfCanvas 夹取）时回写自愈
++ * - 文本/几何的页内契约：PdfPageCanvas onPageRender 回报（页号,文本项）+该页
++ *   canvas CSS 盒量测（data-page-root 域内）→ TextLayer 定位输入
+  *
+  * ── 生命周期层 ── / ── 文化层 ──
+- * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本（本工单落地即激活——最终裁判）
++ * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本+多页可见（最终裁判）
+  */
+-import { useEffect, useMemo, useState } from 'react'
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
++import type { ReactNode } from 'react'
+ import { showToast } from '../../shared/ui/Toast'
+ import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+ import { openFromBus } from './open-paper-anchor'
+@@ -34,7 +36,9 @@ import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { OutlineAside } from './OutlineAside'
+ import { SplitPane } from '../../shared/ui/SplitPane'
+ import { TabBar } from './TabBar'
+-import { PdfCanvas, type PdfTextContent } from './PdfCanvas'
++import { PdfDocProvider } from './PdfDocProvider'
++import { PageColumn, type PageScrollRequest } from './PageColumn'
++import type { PdfTextContent } from './PdfPageCanvas'
+ import { useReaderShortcuts } from './ReaderShortcuts'
+ import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
+ import { SelectionLayer } from './SelectionLayer'
+@@ -42,13 +46,20 @@ import { TextLayer } from './TextLayer'
+ import { useReaderStore } from './reader.store'
+ import { readActiveTab, useActiveTab } from './useActiveTab'
+ 
+-/** 当前页文本与几何（成对更新：页码 + 文本载荷 + 页面 CSS 盒） */
++/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
+ interface PageText {
+   page: number
+   text: PdfTextContent
+   box: { w: number; h: number }
+ }
+ 
++/** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
++function PageFrame(props: { no: number; onRecycle(no: number): void; children: ReactNode }): JSX.Element {
++  const { no, onRecycle, children } = props
++  useEffect(() => () => onRecycle(no), [no, onRecycle])
++  return <>{children}</>
++}
++
+ export function ReaderPage(): JSX.Element {
+   // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）
+   const tab = useActiveTab()
+@@ -64,40 +75,42 @@ export function ReaderPage(): JSX.Element {
+   const setColor = useReaderStore((s) => s.setColor)
+   const setTotalPages = useReaderStore((s) => s.setTotalPages)
+   const addAnnotation = useReaderStore((s) => s.addAnnotation)
++  const scrollRequest = useReaderStore((s) => s.scrollRequest)
++  // 信号过滤：非本文档的迟发信号不滚（回写竞 tab 切换的防御面）
++  const columnScroll: PageScrollRequest | null =
++    scrollRequest !== null && scrollRequest.paperId === paperId ? scrollRequest : null
++  const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
++  const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
++  // 可见页集合（PageColumn 上抛；锚定页=首报告——SelectionLayer 挂载位）
++  const [anchorPages, setAnchorPages] = useState<number[]>([])
++  const anchorPage = anchorPages[0] ?? null
++  const [outlineOpen, setOutlineOpen] = useState(true)
++  // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfDocProvider onDocReady 上报，换文档即弃
++  const [pdfDoc, setPdfDoc] = useState<unknown>(null)
++  const scrollAreaRef = useRef<HTMLDivElement | null>(null)
+ 
+-  // 快捷键装配：动作经 getState 取最新 store 态——回调恒定身份，避免重挂监听（INV-14 友好）
++  // 快捷键装配：动作经 getState 取最新 store 态——回调恒定身份（INV-14 友好）
+   useReaderShortcuts(
+-    useMemo(
+-      () => ({
+-        prevPage: () => {
+-          const t = readActiveTab()
+-          if (t !== undefined) useReaderStore.getState().setPage(t.page - 1)
+-        },
+-        nextPage: () => {
+-          const t = readActiveTab()
+-          if (t !== undefined) useReaderStore.getState().setPage(t.page + 1)
+-        },
++    useMemo(() => {
++      const jump = (d: number): void => {
++        const t = readActiveTab()
++        if (t !== undefined) useReaderStore.getState().setPage(t.page + d)
++      }
++      return {
++        prevPage: () => jump(-1),
++        nextPage: () => jump(1),
+         zoomStep: (dir: 1 | -1) => {
+           const t = readActiveTab()
+           if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
+         },
+         undo: () => void useReaderStore.getState().undo()
+-      }),
+-      []
+-    )
++      }
++    }, [])
+   )
+-  const [pageText, setPageText] = useState<PageText | null>(null)
+-  const [outlineOpen, setOutlineOpen] = useState(true)
+-  // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfCanvas onDocReady 上报，换文档即弃
+-  const [pdfDoc, setPdfDoc] = useState<unknown>(null)
+-  const [pageRoot, setPageRoot] = useState<HTMLDivElement | null>(null)
+ 
+   // 打开请求两路：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
+-  // （LG-04：带锚请求→locateAnchor；打开失败动作型 toast 在该模块 catch）
+   useEffect(() => {
+-    const open = (req: OpenPaperRequest): void => {
+-      openFromBus(req)
+-    }
++    const open = (req: OpenPaperRequest): void => openFromBus(req)
+     const pending = takePendingOpenPaper()
+     if (pending !== null) open(pending)
+     const handler = (e: Event): void => {
+@@ -108,30 +121,53 @@ export function ReaderPage(): JSX.Element {
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+   }, [])
+ 
+-  // 换文献：丢弃旧页文本与文档句柄（防陈旧文本层——TextLayer 以 page 对齐才渲染）
+-  useEffect(() => { setPageText(null); setPdfDoc(null) }, [fileUrl])
++  // 换文献：丢弃旧页文本/页根/可见集（防陈旧文本层——TextLayer 以页对齐才渲染）
++  useEffect(() => {
++    setPageTexts({})
++    setPageRoots({})
++    setAnchorPages([])
++    setPdfDoc(null)
++  }, [fileUrl])
+ 
+-  /** PdfCanvas 渲染完成回报：带回该页文本载荷，并量测 canvas CSS 盒（覆盖层定位基准） */
+-  const handlePageRender = (renderedPage: number, text: PdfTextContent): void => {
++  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
++  const handlePageRender = (no: number, text: PdfTextContent): void => {
++    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
+     const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
+     if (canvas === null) return
+     const rect = canvas.getBoundingClientRect()
+-    setPageText({
+-      page: renderedPage,
+-      text,
+-      box: { w: Math.round(rect.width), h: Math.round(rect.height) }
+-    })
+-    // lastReadPage 越界被 PdfCanvas 夹到有效页时回写 store（回写后回报一致，收敛不动）
+-    if (renderedPage - 1 !== page) setPage(renderedPage - 1)
++    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
++    if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
+   }
+ 
+-  /** 适应宽度：滚动容器内宽 ÷ 页面原始宽（原始宽 = 当前盒宽 / 当前缩放）；夹取由 store 兜底 */
++  /** 渲染窗口内页的回收删条目（W3：pageTexts 与 pageRoots 同删——防 detached
++   *  DOM 残留与 stale 根被覆盖层消费；稳定身份防重挂） */
++  const dropPageState = useCallback((no: number): void => {
++    const del = <T,>(prev: Record<number, T>): Record<number, T> => {
++      if (prev[no] === undefined) return prev
++      const next = { ...prev }; delete next[no]; return next
++    }
++    setPageTexts(del); setPageRoots(del)
++  }, [])
++
++  /** 页列就绪（每 doc 一次）：恢复链 F-01 版——setPage(当前页)（'to' 默认）bump
++   *  滚动信号→PageColumn 程序滚回该页盒顶（重开文献回到记忆页） */
++  const handleColumnReady = (): void => {
++    const t = readActiveTab()
++    if (t !== undefined) useReaderStore.getState().setPage(t.page)
++  }
++
++  /** pdf 加载/渲染失败：toast+tab 置 error（INV-15 可见可关可重试） */
++  const handlePdfError = (msg: string): void => {
++    showToast(msg, 'error')
++    if (paperId !== null) useReaderStore.getState().markTabError(paperId)
++  }
++
++  /** 适应宽度：滚动容器内宽 ÷ 页面原始宽（锚定页盒；列宽基准重定义归 F-04） */
+   const fitWidth = (): void => {
+-    const scrollArea = pageRoot?.parentElement ?? null
+-    if (scrollArea === null || pageText === null) return
+-    const naturalWidth = pageText.box.w / zoom
++    const measured = pageTexts[anchorPage ?? 1]
++    if (scrollAreaRef.current === null || measured === undefined) return
+     // 24px ≈ 滚动区两侧 p-3 内边距（clientWidth 含 padding，需扣除）
+-    setZoom((scrollArea.clientWidth - 24) / naturalWidth)
++    setZoom((scrollAreaRef.current.clientWidth - 24) / (measured.box.w / zoom))
+   }
+ 
+   if (paperId === null || fileUrl === null) {
+@@ -149,52 +185,37 @@ export function ReaderPage(): JSX.Element {
+       </div>
+     )
+   }
+-  // 主区（开/收两分支共用，避免重复定义）：页根与覆盖层的宿主
++  /** 段④层实例化：每渲染页一套覆盖层（props 不变）；SelectionLayer 单实例挂
++   *  锚定页盒（动态锚定归 F-02；中间态保证锚定页内划选标注正确） */
++  const renderPageLayers = (no: number): JSX.Element => {
++    const pt = pageTexts[no]
++    const pr = pageRoots[no]
++    return (
++      <PageFrame no={no} onRecycle={dropPageState}>
++        {pt !== undefined ? (
++          <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} />
++        ) : null}
++        {pr !== undefined ? (
++          // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
++          <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} />
++        ) : null}
++        <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
++        {anchorPage === no && pr !== undefined ? (
++          <SelectionLayer pageRoot={pr} paperId={paperId} page={no - 1} onSaved={addAnnotation} />
++        ) : null}
++      </PageFrame>
++    )
++  }
++
++  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PageColumn（页列）
+   const mainContent = (
+-    <div className="min-w-0 flex-1 overflow-auto p-3">
+-      {/* 页根：canvas 与覆盖层共同定位盒（w-fit 收敛 canvas 尺寸；TextLayer
+-          absolute inset-0+显式宽高精确叠合——覆盖层定位基准，勿改布局方式） */}
+-      <div ref={setPageRoot} className="relative mx-auto w-fit">
+-        <PdfCanvas
+-          fileUrl={fileUrl}
+-          pageNumber={page + 1}
+-          zoom={zoom}
+-          onPageRender={handlePageRender}
+-          onError={(msg) => {
+-            showToast(msg, 'error')
+-            if (paperId !== null) useReaderStore.getState().markTabError(paperId)
+-          }}
+-          onDocInfo={(info) => setTotalPages(info.numPages)}
+-          onDocReady={setPdfDoc}
+-        />
+-        {pageText !== null && pageText.page === page + 1 && (
+-          <TextLayer
+-            textContent={pageText.text}
+-            viewportScale={zoom}
+-            pageWidth={pageText.box.w}
+-            pageHeight={pageText.box.h}
+-          />
++    <div ref={scrollAreaRef} className="min-w-0 flex-1 overflow-auto p-3">
++      <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
++        {(doc) => (
++          <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} onPageRender={handlePageRender} onError={handlePdfError}
++            renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} onVisibleChange={setAnchorPages} />
+         )}
+-        {pageText !== null && pageText.page === page + 1 && (
+-          <SelectionLayer
+-            pageRoot={pageRoot}
+-            paperId={paperId}
+-            page={page}
+-            onSaved={addAnnotation}
+-          />
+-        )}
+-        {pageText !== null && pageText.page === page + 1 && (
+-          <AnnotationLayer
+-            annotations={annotations}
+-            page={page}
+-            pageRoot={pageRoot}
+-            // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
+-            onChanged={() => undefined}
+-          />
+-        )}
+-        {/* AI-09：与 AnnotationLayer 并置（store 订阅+点击上抛封装在 ReaderAiLayer） */}
+-        <ReaderAiLayer page={page} pageRoot={pageText !== null && pageText.page === page + 1 ? pageRoot : null} />
+-      </div>
++      </PdfDocProvider>
+       <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
+     </div>
+   )
+@@ -202,43 +223,20 @@ export function ReaderPage(): JSX.Element {
+   return (
+     <div className="flex h-full flex-col">
+       <TabBar />
+-      <ReaderToolbar
+-        page={page}
+-        totalPages={totalPages}
+-        zoom={zoom}
+-        color={color}
+-        onNavigate={setPage}
+-        onZoom={setZoom}
+-        onColor={setColor}
+-        onFitWidth={fitWidth}
+-      />
++      <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
++        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />
+       <div className="flex min-h-0 flex-1">
+         {outlineOpen ? (
+           // 可拖拽侧栏（SplitPane）：宽度持久化 localStorage；main 槽传 null——
+-          // 主内容外置为下方稳定子节点，折叠/展开不重挂 PdfCanvas 等主子树
+-          <SplitPane
+-            paneId="reader-outline"
+-            side="left"
+-            defaultWidth={224}
+-            min={160}
+-            max={480}
++          // 主内容外置为下方稳定子节点，折叠/展开不重挂页列等主子树
++          <SplitPane paneId="reader-outline" side="left" defaultWidth={224} min={160} max={480}
+             children={{
+-              pane: (
+-                <OutlineAside
+-                  pdfDoc={pdfDoc}
+-                  onCollapse={() => setOutlineOpen(false)}
+-                />
+-              ),
++              pane: <OutlineAside pdfDoc={pdfDoc} onCollapse={() => setOutlineOpen(false)} />,
+               main: null
+-            }}
+-          />
++            }} />
+         ) : (
+-          <button
+-            type="button"
+-            className="shrink-0 self-start border-b border-r px-1 py-2 text-xs"
+-            style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
+-            onClick={() => setOutlineOpen(true)}
+-          >
++          <button type="button" className="shrink-0 self-start border-b border-r px-1 py-2 text-xs"
++            style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={() => setOutlineOpen(true)}>
+             目录
+           </button>
+         )}
+diff --git a/src/renderer/features/reader/TextLayer.tsx b/src/renderer/features/reader/TextLayer.tsx
+index b38b073..22827fd 100644
+--- a/src/renderer/features/reader/TextLayer.tsx
++++ b/src/renderer/features/reader/TextLayer.tsx
+@@ -28,7 +28,7 @@
+ import { useEffect, useRef } from 'react'
+ import type { CSSProperties } from 'react'
+ import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
+-import type { PdfTextContent } from './PdfCanvas'
++import type { PdfTextContent } from './PdfPageCanvas'
+ import './text-layer.css'
+ 
+ export interface TextLayerProps {
+diff --git a/src/renderer/features/reader/reader.store.ts b/src/renderer/features/reader/reader.store.ts
+index 6732b51..f2d5a9c 100644
+--- a/src/renderer/features/reader/reader.store.ts
++++ b/src/renderer/features/reader/reader.store.ts
+@@ -39,6 +39,11 @@
+  *   非关键数据，规约记录依据）
+  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
+  *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
++ * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
++ *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
++ *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
++ *   回写语义（页码本就从滚动位置算出），只落账不 bump 信号、不触发程序滚动
++ *   （防「程序跳页↔滚动回写」回弹死循环）；既有消费面不传第三参=默认值零改
+  *
+  * ── 接口层 ──
+  * - export interface TabState / ReaderStore（形状如上）
+@@ -89,6 +94,10 @@ export interface ReaderStore {
+   tabs: Record<string, TabState>
+   order: string[]
+   activeId: string | null
++  /** 程序跳页滚动信号（F-01 双源机制/INV-29）：setPage 默认（scroll:'to'）时
++   *  bump——消费者（ReaderPage→PageColumn.scrollToPage 单口）据此程序滚动到
++   *  盒顶；{scroll:'none'}（滚动位置回写）不 bump，防回弹死循环 */
++  scrollRequest: { paperId: string; page: number; seq: number } | null
+   /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
+   noteHighlight: { annotationId: string; seq: number } | null
+   /** AI 段单击反向同步信号（AI-09，C-05 同型）：OutlineAside 消费（切笔记
+@@ -98,7 +107,7 @@ export interface ReaderStore {
+   activateTab(id: string): void
+   closeTab(id: string): void
+   close(): void
+-  setPage(page: number): void
++  setPage(page: number, opts?: { scroll?: 'to' | 'none' }): void
+   setZoom(zoom: number): void
+   setTotalPages(total: number): void
+   setColor(color: AnnotationColor): void
+@@ -125,6 +134,7 @@ export function createReaderStoreInitialState() {
+     tabs: {} as Record<string, TabState>,
+     order: [] as string[],
+     activeId: null as string | null,
++    scrollRequest: null as { paperId: string; page: number; seq: number } | null,
+     noteHighlight: null as { annotationId: string; seq: number } | null,
+     aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
+   }
+@@ -315,19 +325,24 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+       closeAll()
+     },
+ 
+-    setPage(page) {
+-      // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由 PdfCanvas 侧兜底
++    setPage(page, opts) {
++      // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由渲染链侧兜底。
++      // F-01 双源机制（INV-29）：第三参缺省/'to'=程序跳页→bump scrollRequest
++      // （信号驱动 PageColumn.scrollToPage，页列就绪后滚到盒顶）；
++      // 'none'=页码来自滚动位置回写→只落账不 bump，不触发程序滚动（防回弹）
+       const { activeId } = get()
+       if (activeId === null) return
+-      updateActiveTab((tab) => ({
+-        ...tab,
+-        page: Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
+-      }))
+       const tab = get().tabs[activeId]
+-      if (tab !== undefined) {
+-        pendingProgress[activeId] = tab.page
+-        scheduleProgress()
+-      }
++      if (tab === undefined) return
++      const clamped = Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
++      set((s) => ({
++        tabs: { ...s.tabs, [activeId]: { ...tab, page: clamped } },
++        ...(opts?.scroll !== 'none'
++          ? { scrollRequest: { paperId: activeId, page: clamped, seq: (s.scrollRequest?.seq ?? 0) + 1 } }
++          : {})
++      }))
++      pendingProgress[activeId] = clamped
++      scheduleProgress()
+     },
+ 
+     setZoom(zoom) {
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 60da30d..46c6577 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+-import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
++import { createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+ 
+ /** 拉起子进程跑 seed-paper.cjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
+ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+@@ -90,31 +90,52 @@ async function seedPaperRow(
+   }
+ }
+ 
+-test('打开文献后页面渲染出已知文本', async () => {
+-  skipIfPending(DEPS)
+-  const userData = await mkdtemp(join(tmpdir(), 'synapse-reader-'))
++/** F-01 批 1 依赖：渲染链 + 页列几何/懒渲染（多页可见断言的承载者） */
++const COLUMN_DEPS = [...DEPS, 'SR2-F-01'] as const
++
++test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-01 保持）', async () => {
++  skipIfPending(COLUMN_DEPS)
++  const userData = await mkdtemp(join(tmpdir(), 'synapse-reader-mp-'))
+ 
+   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+   const seedApp = await launch(userData)
+   await (await seedApp.firstWindow()).waitForTimeout(500)
+   await seedApp.close()
+ 
+-  // 受管文件（绕过 UI 导入——导入流程由 smoke/单测覆盖）
+-  const bytes = createTinyPdf(`智慧水务 e2e 测试文献 ${PDF_KNOWN_TEXT}`)
++  // 受管文件（3 页——createMultiPagePdf 每页单行 "P<n> <KNOWN>"，ASCII 单 run
++  // 可被 getByText 单节点命中；P7B marker 先例同口径）
++  const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+   const sha = createHash('sha256').update(bytes).digest('hex')
+   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+   const abs = join(userData, 'files', ...fileRef.split('/'))
+   mkdirSync(dirname(abs), { recursive: true })
+   writeFileSync(abs, bytes)
+-  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e 测试文献')
++  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e 多页文献')
+ 
+   // 第二跳：真实断言
+   const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+ 
+-  await win.getByText('智慧水务 e2e 测试文献').first().dblclick()
+-  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
++  await win.getByText('智慧水务 e2e 多页文献').first().dblclick()
++  // 首屏：第 1 页渲染出已知文本（页列初始引导窗口）
++  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
++
++  // 连续滚动：滚到中部 → 第 2 页入视口（IntersectionObserver 驱动懒渲染窗口）
++  await win.evaluate(() => {
++    const col = document.querySelector('[data-page-column="ready"]')
++    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
++    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
++  })
++  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
++
++  // 滚到底 → 第 3 页可见（全长真实占位——总高确定，非虚拟滚动）
++  await win.evaluate(() => {
++    const col = document.querySelector('[data-page-column="ready"]')
++    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
++    if (scroller !== null) scroller.scrollTop = scroller.scrollHeight
++  })
++  await expect(win.getByText(`P3 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
+ 
+   // INV-01「文档永不滚」e2e 锚定（Q1 实锤→U4 上锁）。注：几何断言形状
+   // （scrollWidth<=clientWidth）实测不可用——overflow:hidden 只裁剪不收缩内容
+diff --git a/tests/unit/renderer/page-column.test.tsx b/tests/unit/renderer/page-column.test.tsx
+new file mode 100644
+index 0000000..03a36c9
+--- /dev/null
++++ b/tests/unit/renderer/page-column.test.tsx
+@@ -0,0 +1,434 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-F-01] PageColumn —— 页列几何与懒渲染回收组件/纯函数测试（锁定合约）。
++ *
++ * 覆盖：布局纯函数（盒高/列宽/窗口/最近页/夹取）+渲染回收调度（桩
++ * IntersectionObserver 驱动：窗口展开/离屏回收/渲染集上界）+页列就绪管线
++ * （getPage 尺寸→onReady→占位盒全列）+scrollRequest 程序滚动（盒顶，
++ * INV-29 单口消费）+zoom 重算（缓存乘法非重取）。
++ * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
++ */
++import { act, useEffect } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { PDFDocumentProxy } from 'pdfjs-dist'
++import {
++  PageColumn,
++  clampPageToColumn,
++  columnWidth,
++  nearestPage,
++  pageBoxHeight,
++  recycledPages,
++  windowPages
++} from '../../../src/renderer/features/reader/PageColumn'
++
++/** 桩 IntersectionObserver：jsdom 无实现；report() 手动驱动可见性回调 */
++class MockIO {
++  static instances: MockIO[] = []
++  cb: IntersectionObserverCallback
++  targets = new Set<Element>()
++  constructor(cb: IntersectionObserverCallback) {
++    this.cb = cb
++    MockIO.instances.push(this)
++  }
++  observe(t: Element): void {
++    this.targets.add(t)
++  }
++  unobserve(t: Element): void {
++    this.targets.delete(t)
++  }
++  disconnect(): void {
++    this.targets.clear()
++  }
++  /** 按 data-page-box 值报告可见页集合（其余一律不可见） */
++  report(visibles: number[]): void {
++    const entries = [...this.targets].map((t) => ({
++      target: t,
++      isIntersecting: visibles.includes(Number((t as HTMLElement).dataset.pageBox)),
++      intersectionRatio: 0
++    }))
++    this.cb(entries as unknown as IntersectionObserverEntry[], this as unknown as IntersectionObserver)
++  }
++}
++
++/** 六页文档桩（全部 612×792） */
++function makeDoc(pages: number): { doc: PDFDocumentProxy; getPage: ReturnType<typeof vi.fn> } {
++  const getPage = vi.fn(async (no: number): Promise<{ view: number[] }> => ({ view: [0, 0, 612, 792 * (no === 1 ? 1 : 1)] }))
++  const doc = { numPages: pages, getPage } as unknown as PDFDocumentProxy
++  return { doc, getPage }
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++/** mount 即 flush 就绪管线（async getPage→setPageSizes→占位盒入 DOM） */
++async function mount(node: JSX.Element): Promise<void> {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  await act(async () => {
++    root?.render(node)
++  })
++}
++
++function remount(node: JSX.Element): void {
++  act(() => {
++    root?.render(node)
++  })
++}
++
++const renderedPages = (): number[] =>
++  Array.from(host!.querySelectorAll<HTMLElement>('[data-rendered-page]'))
++    .map((el) => Number(el.dataset.renderedPage))
++    .sort((a, b) => a - b)
++
++const boxCount = (): number => host!.querySelectorAll('[data-page-box]').length
++
++/** 最近一次 IO 实例的 report 快捷入口 */
++function report(visibles: number[]): void {
++  const io = MockIO.instances.at(-1)
++  expect(io).toBeDefined()
++  act(() => {
++    io!.report(visibles)
++  })
++}
++
++
++
++beforeEach(() => {
++  MockIO.instances = []
++  // React 18 act 契约：异步 setState 后的 DOM 断言需要 act 环境标志
++  // （先例 ai-annotation-layer.test 为同步断言不依赖；本文件就绪管线是异步链）
++  ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
++  vi.stubGlobal('IntersectionObserver', MockIO)
++  // jsdom 无 canvas 实现：stub getContext 返回 null（渲染单元按防御分支短路，
++  // 消 stderr 噪音——真实渲染由 e2e 锚）
++  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
++  Element.prototype.scrollIntoView = vi.fn()
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  vi.unstubAllGlobals()
++  delete (Element.prototype as Partial<Element>).scrollIntoView
++})
++
++describe('PageColumn 纯函数（段①②：几何与窗口）', () => {
++  it('clampPageToColumn：1 基页码夹取 [1, totalPages]（W-A 越界夹取的 scrollToPage 前哨）', () => {
++    expect(clampPageToColumn(5, 10)).toBe(5)
++    expect(clampPageToColumn(0, 10)).toBe(1)
++    expect(clampPageToColumn(-3, 10)).toBe(1)
++    expect(clampPageToColumn(99, 10)).toBe(10)
++    expect(clampPageToColumn(4.7, 10)).toBe(4)
++    expect(clampPageToColumn(1, 0)).toBe(1)
++  })
++
++  it('columnWidth：最宽页×zoom（floor）；pageBoxHeight：页高×zoom（floor）', () => {
++    const sizes = [
++      { width: 612, height: 792 },
++      { width: 300, height: 400 }
++    ]
++    expect(columnWidth(sizes, 1)).toBe(612)
++    expect(columnWidth(sizes, 1.5)).toBe(918)
++    expect(columnWidth([], 1)).toBe(0)
++    expect(pageBoxHeight({ width: 612, height: 792 }, 1)).toBe(792)
++    expect(pageBoxHeight({ width: 612, height: 792 }, 1.5)).toBe(1188)
++    expect(pageBoxHeight({ width: 612, height: 792 }, 0.5)).toBe(396)
++  })
++
++  it('windowPages：可见页±renderWindow，边界夹 [1,totalPages]；空可见=顶部引导窗口', () => {
++    expect(windowPages(new Set([3]), 6, 1)).toEqual([2, 3, 4])
++    expect(windowPages(new Set([1]), 6, 1)).toEqual([1, 2])
++    expect(windowPages(new Set([6]), 6, 1)).toEqual([5, 6])
++    expect(windowPages(new Set([1, 6]), 6, 1)).toEqual([1, 2, 5, 6])
++    expect(windowPages(new Set([3]), 6, 2)).toEqual([1, 2, 3, 4, 5])
++    // 初始引导：IO 未报可见时从页列顶渲染（renderWindow 窗口）
++    expect(windowPages(new Set(), 6, 1)).toEqual([1, 2])
++    expect(windowPages(new Set(), 6, 0)).toEqual([1])
++    expect(windowPages(new Set(), 0, 1)).toEqual([])
++  })
++
++  it('recycledPages：已渲染页距任一可见页≤recycleWindow 才保留（离屏必回收——INV-30）', () => {
++    expect([...recycledPages(new Set([2, 3, 4]), new Set([3]), 2)].sort().map(Number)).toEqual([2, 3, 4])
++    expect([...recycledPages(new Set([2, 3, 4]), new Set([5]), 2)].sort().map(Number)).toEqual([3, 4])
++    expect([...recycledPages(new Set([2, 3, 4]), new Set([8]), 2)].sort().map(Number)).toEqual([])
++    expect([...recycledPages(new Set([2, 3, 4]), new Set(), 2)].sort().map(Number)).toEqual([])
++  })
++
++  it('nearestPage：视口中心落入盒即该页；盒外取盒中心最近者（F-03 回写的几何前置）', () => {
++    const boxes = [
++      { top: 0, height: 100 },
++      { top: 100, height: 100 },
++      { top: 200, height: 100 }
++    ]
++    expect(nearestPage(50, boxes)).toBe(1)
++    expect(nearestPage(150, boxes)).toBe(2)
++    expect(nearestPage(250, boxes)).toBe(3)
++    expect(nearestPage(-40, boxes)).toBe(1)
++    expect(nearestPage(400, boxes)).toBe(3)
++    expect(nearestPage(99, boxes)).toBe(1)
++    expect(nearestPage(101, boxes)).toBe(2)
++    expect(nearestPage(0, [])).toBe(1)
++  })
++})
++
++describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序滚动）', () => {
++  it('就绪管线：doc 就绪→逐页 getPage 尺寸→占位盒全列（总页数个）→onReady', async () => {
++    const { doc, getPage } = makeDoc(6)
++    const onReady = vi.fn()
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++        onReady={onReady}
++      />
++    )
++        const calledPages = new Set(getPage.mock.calls.map((c) => c[0] as number))
++    for (let n = 1; n <= 6; n += 1) expect(calledPages).toContain(n)
++    expect(onReady).toHaveBeenCalledTimes(1)
++    expect(boxCount()).toBe(6)
++    // 占位盒高=页原始高×zoom（未渲染盒空白但几何确定）
++    const first = host!.querySelector<HTMLElement>('[data-page-box="1"]')!
++    expect(first.style.height).toBe('792px')
++    expect(first.style.width).toBe('612px')
++  })
++
++  it('初始引导渲染：IO 未报可见时渲染顶部 renderWindow 窗口（第 1 页起步）', async () => {
++    const { doc } = makeDoc(6)
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++        expect(renderedPages()).toEqual([1, 2])
++  })
++
++  it('IO 报可见 {3}：渲染窗口 {2,3,4}（视口±renderWindow 真渲染）+onVisibleChange 上抛', async () => {
++    const { doc } = makeDoc(6)
++    const onVisibleChange = vi.fn()
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++        onVisibleChange={onVisibleChange}
++      />
++    )
++        report([3])
++    // 初始引导已渲染 {1,2}：页 1 距可见页 3 为 2≤recycleWindow——仍在缓冲内保留
++    expect(renderedPages()).toEqual([1, 2, 3, 4])
++    expect(onVisibleChange).toHaveBeenCalledWith([3])
++  })
++
++  it('快速滚动：可见移至 {8}→旧窗口 {2,3,4} 全回收、新窗口 {7,8,9} 渲染（离屏>recycleWindow 必卸载——INV-30）', async () => {
++    const { doc } = makeDoc(9)
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={9}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++        report([3])
++    expect(renderedPages()).toEqual([1, 2, 3, 4])
++    report([8])
++    expect(renderedPages()).toEqual([7, 8, 9])
++  })
++
++  it('渲染集上界：任意时刻渲染页数 ≤ 可见页数×(2·recycleWindow+1)（canvas 内存断言的组件级锚）', async () => {
++    const { doc } = makeDoc(9)
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={9}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++    for (const visibles of [[1], [2], [4], [8], [9], [1, 9], [5]]) {
++      report(visibles)
++      const rendered = renderedPages()
++      expect(rendered.length).toBeLessThanOrEqual(visibles.length * (2 * 2 + 1))
++      for (const p of rendered) {
++        expect(visibles.some((v) => Math.abs(p - v) <= 2)).toBe(true)
++      }
++    }
++  })
++
++  it('scrollRequest 程序滚动：就绪后到达→目标页盒 scrollIntoView（block:start=盒顶，0 基页→1 基盒）', async () => {
++    const { doc } = makeDoc(6)
++    const req = { paperId: 'p-1', page: 2, seq: 1 }
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++        scrollRequest={req}
++      />
++    )
++    const target = host!.querySelector<HTMLElement>('[data-page-box="3"]')!
++    expect(target.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
++  })
++
++  it('scrollRequest 早于就绪到达：页列就绪后补滚（onReady 恢复链的几何前置）', async () => {
++    const { doc } = makeDoc(6)
++    const req = { paperId: 'p-1', page: 5, seq: 7 }
++    const el = (
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++        scrollRequest={req}
++      />
++    )
++    // 同步渲染（不 flush 就绪管线）：loading 分支下不滚——信号挂起
++    host = document.createElement('div')
++    document.body.appendChild(host)
++    root = createRoot(host)
++    act(() => {
++      root?.render(el)
++    })
++    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
++    // 就绪落定（async act flush）：信号补滚到目标页盒顶
++    await act(async () => {
++      root?.render(el)
++    })
++    expect(host.querySelector<HTMLElement>('[data-page-box="6"]')!.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
++  })
++
++  it('zoom 变化：盒高按新 zoom 重算且尺寸缓存不重取（getPage 调用数不变——缓存乘法）', async () => {
++    const { doc, getPage } = makeDoc(6)
++    const el = (
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++    await mount(el)
++    const before = getPage.mock.calls.length
++    remount(
++      <PageColumn
++        doc={doc}
++        totalPages={6}
++        zoom={2}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++    // 尺寸缓存不重取：增量仅来自渲染窗口页的 canvas 重渲（≤2·renderWindow+1），非全列重取
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(getPage.mock.calls.length - before).toBeLessThanOrEqual(2 * 1 + 1)
++    expect(host!.querySelector<HTMLElement>('[data-page-box="1"]')!.style.height).toBe('1584px')
++    expect(host!.querySelector<HTMLElement>('[data-page-box="1"]')!.style.width).toBe('1224px')
++  })
++
++  it('doc 置空（换文献窗口）：回 loading——占位清空不渲染任何页', async () => {
++    const { doc } = makeDoc(6)
++    const el = (d: PDFDocumentProxy | null): JSX.Element => (
++      <PageColumn
++        doc={d}
++        totalPages={d === null ? 0 : 6}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++    await mount(el(doc))
++    expect(boxCount()).toBe(6)
++    remount(el(null))
++    expect(boxCount()).toBe(0)
++    expect(renderedPages()).toEqual([])
++  })
++
++  it('W2 门一回炉：就绪管线 getPage 失败→onError 被调+不 onReady（error 终态——INV-02 失败可见，无 unhandled rejection）', async () => {
++    const getPage = vi.fn(async (_no: number): Promise<{ view: number[] }> => {
++      throw new Error('页对象损坏')
++    })
++    const doc = { numPages: 3, getPage } as unknown as PDFDocumentProxy
++    const onError = vi.fn()
++    const onReady = vi.fn()
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={3}
++        zoom={1}
++        renderPage={(no) => <span data-rendered-page={no} />}
++        onPageRender={() => undefined}
++        onError={onError}
++        onReady={onReady}
++      />
++    )
++    expect(onError).toHaveBeenCalledTimes(1)
++    expect(onError).toHaveBeenCalledWith(expect.stringContaining('页列尺寸'))
++    expect(onReady).not.toHaveBeenCalled()
++    // error 终态：不渲染占位盒（不再 loading 转圈）
++    expect(boxCount()).toBe(0)
++  })
++
++  it('W3 门一回炉：页滚出回收窗→该页 renderPage 内容卸载哨触发（pageTexts/pageRoots 条目同删的机制锚——ReaderPage PageFrame 同型）', async () => {
++    const { doc } = makeDoc(9)
++    const recycled: number[] = []
++    /** 卸载哨探针（与 ReaderPage PageFrame 同型：useEffect cleanup=卸载通知） */
++    function Probe(props: { no: number; onRecycle: (no: number) => void }): JSX.Element {
++      const { no, onRecycle } = props
++      useEffect(() => () => onRecycle(no), [no, onRecycle])
++      return <span data-rendered-page={no} />
++    }
++    const stableRecycle = (n: number): void => {
++      recycled.push(n)
++    }
++    await mount(
++      <PageColumn
++        doc={doc}
++        totalPages={9}
++        zoom={1}
++        renderPage={(no) => <Probe no={no} onRecycle={stableRecycle} />}
++        onPageRender={() => undefined}
++        onError={() => undefined}
++      />
++    )
++    report([3])
++    expect(recycled).toEqual([])
++    // 可见移至 {8}：旧窗口 {1,2,3,4} 全部滚出回收窗→renderPage 内容卸载→哨触发
++    report([8])
++    expect([...recycled].sort((a, b) => a - b)).toEqual([1, 2, 3, 4])
++    // 新窗口渲染在位（哨非全局卸载）
++    expect(renderedPages()).toEqual([7, 8, 9])
++  })
++})
+diff --git a/tests/unit/renderer/reader.store.test.ts b/tests/unit/renderer/reader.store.test.ts
+index 943057d..9d15e67 100644
+--- a/tests/unit/renderer/reader.store.test.ts
++++ b/tests/unit/renderer/reader.store.test.ts
+@@ -350,6 +350,43 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
+     expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
+     expect(useStore.getState().tabs['p-1']).toBeUndefined()
+   })
++
++  // ── F-01 双源机制：setPage 第三参 scroll opts（INV-29 回归锚——'none' 不触发程序滚动）──
++
++  it("F-01：setPage 默认 scroll:'to'——写页+bump scrollRequest 程序滚动信号（paperId+夹取页+递增 seq）", async () => {
++    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
++    await openReady(useStore, 'p-1')
++    useStore.getState().setTotalPages(10)
++    useStore.getState().setPage(4)
++    let s = useStore.getState()
++    expect(s.tabs['p-1']?.page).toBe(4)
++    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 4, seq: 1 })
++    // 越界夹取先于信号：信号携带的页=夹取后页
++    useStore.getState().setPage(99)
++    s = useStore.getState()
++    expect(s.tabs['p-1']?.page).toBe(9)
++    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 9, seq: 2 })
++  })
++
++  it("F-01：setPage {scroll:'none'}——写页但 scrollRequest 原样不动（滚动回写防回弹，B1）", async () => {
++    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
++    await openReady(useStore, 'p-1')
++    useStore.getState().setTotalPages(10)
++    useStore.getState().setPage(4)
++    const before = useStore.getState().scrollRequest
++    useStore.getState().setPage(6, { scroll: 'none' })
++    const s = useStore.getState()
++    expect(s.tabs['p-1']?.page).toBe(6)
++    // 'none' 不 bump 信号：引用与内容均不变（无程序滚动）
++    expect(s.scrollRequest).toBe(before)
++    // 'none' 的页码夹取照常（夹取与滚动意图正交）
++    useStore.getState().setPage(99, { scroll: 'none' })
++    expect(useStore.getState().tabs['p-1']?.page).toBe(9)
++    expect(useStore.getState().scrollRequest).toBe(before)
++    // 后续默认调用恢复 bump（seq 续增不重置）
++    useStore.getState().setPage(2)
++    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-1', page: 2, seq: 2 })
++  })
+ })
+ 
+ // ── 缺陷②回归（2026-08-27 用户视检，always-active——不经 guardedDescribe）──
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index 7f3ab9f..33e1ed5 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -98,7 +98,7 @@ export const TICKETS: readonly Ticket[] = [
+ 
+   // ── reader 强模型模块（strong-open，Phase 3 决策门后实现）──────────
+   { id: 'SR-RDR-01', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '文本偏移↔DOM 定位纯函数（WADM 思路）' },
+-  { id: 'SR-RDR-02', file: 'src/renderer/features/reader/PdfCanvas.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'pdf.js canvas 渲染封装（v4 API）' },
++  { id: 'SR-RDR-02', file: 'src/renderer/features/reader/PdfPageCanvas.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'pdf.js canvas 渲染封装（v4 API；原 PdfCanvas.tsx 经 SR2-F-01 拆分为 PdfDocProvider+PdfPageCanvas——注册文件随直系继承者迁移，旧文件已删）' },
+   { id: 'SR-RDR-03', file: 'src/renderer/features/reader/TextLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '官方 TextLayer CSS 接线' },
+ 
+   // ── renderer UI（weak）─────────────────────────────────────────

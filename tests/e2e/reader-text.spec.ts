@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+import { createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 
 /** 拉起子进程跑 seed-paper.cjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
 function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
@@ -90,31 +90,52 @@ async function seedPaperRow(
   }
 }
 
-test('打开文献后页面渲染出已知文本', async () => {
-  skipIfPending(DEPS)
-  const userData = await mkdtemp(join(tmpdir(), 'synapse-reader-'))
+/** F-01 批 1 依赖：渲染链 + 页列几何/懒渲染（多页可见断言的承载者） */
+const COLUMN_DEPS = [...DEPS, 'SR2-F-01'] as const
+
+test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-01 保持）', async () => {
+  skipIfPending(COLUMN_DEPS)
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-reader-mp-'))
 
   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
   const seedApp = await launch(userData)
   await (await seedApp.firstWindow()).waitForTimeout(500)
   await seedApp.close()
 
-  // 受管文件（绕过 UI 导入——导入流程由 smoke/单测覆盖）
-  const bytes = createTinyPdf(`智慧水务 e2e 测试文献 ${PDF_KNOWN_TEXT}`)
+  // 受管文件（3 页——createMultiPagePdf 每页单行 "P<n> <KNOWN>"，ASCII 单 run
+  // 可被 getByText 单节点命中；P7B marker 先例同口径）
+  const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
   const sha = createHash('sha256').update(bytes).digest('hex')
   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
   const abs = join(userData, 'files', ...fileRef.split('/'))
   mkdirSync(dirname(abs), { recursive: true })
   writeFileSync(abs, bytes)
-  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e 测试文献')
+  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e 多页文献')
 
   // 第二跳：真实断言
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  await win.getByText('智慧水务 e2e 测试文献').first().dblclick()
-  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+  await win.getByText('智慧水务 e2e 多页文献').first().dblclick()
+  // 首屏：第 1 页渲染出已知文本（页列初始引导窗口）
+  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+
+  // 连续滚动：滚到中部 → 第 2 页入视口（IntersectionObserver 驱动懒渲染窗口）
+  await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
+  })
+  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
+
+  // 滚到底 → 第 3 页可见（全长真实占位——总高确定，非虚拟滚动）
+  await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (scroller !== null) scroller.scrollTop = scroller.scrollHeight
+  })
+  await expect(win.getByText(`P3 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
 
   // INV-01「文档永不滚」e2e 锚定（Q1 实锤→U4 上锁）。注：几何断言形状
   // （scrollWidth<=clientWidth）实测不可用——overflow:hidden 只裁剪不收缩内容
