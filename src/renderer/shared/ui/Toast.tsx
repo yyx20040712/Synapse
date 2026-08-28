@@ -24,10 +24,13 @@ const KIND_COLOR: Record<ToastKind, string> = {
   error: 'var(--danger)'
 }
 
+/** 卡面（R3-TH1：玻璃底+blur+shadow-2——票面 P3；kind 色条不变） */
 const CARD_STYLE: CSSProperties = {
-  background: 'var(--panel)',
+  background: 'var(--panel-glass)',
   borderColor: 'var(--border)',
-  color: 'var(--text)'
+  color: 'var(--text)',
+  backdropFilter: 'blur(8px)',
+  boxShadow: 'var(--shadow-2)'
 }
 
 /** 挂在 App 根部：订阅通知队列，右上角堆叠渲染（可手动 × 关闭） */

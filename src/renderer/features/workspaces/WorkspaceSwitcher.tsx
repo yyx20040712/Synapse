@@ -22,7 +22,8 @@
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/workspace-switcher.test.tsx（always-active）
- * - 视觉：现有 theme 变量常规样式（R3-TH1 未开工，勿预铺新 token）
+ * - 视觉：R3-TH1 已上墨青侧栏——本组件随侧栏底色做夜色适配（rgba 白+
+ *   金 hairline+夜面变量，主控预裁①；testid/文案/交互零改）
  */
 import { useState } from 'react'
 import { ApiClientError } from '../../api/client'
@@ -76,7 +77,11 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
     }
   }
 
-  const panelStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
+  // R3-TH1 夜色适配（主控预裁①）：常态钮=rgba 白微底+金 hairline（mockup .ws 同款）；
+  // 展开面板=夜面色块浮层；输入/取消=夜面字段——文字全部亮色系
+  const triggerStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'rgba(255,255,255,.05)', color: '#efe9da' }
+  const panelStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'var(--node-face)', color: 'var(--text-on-night)' }
+  const fieldStyle = { borderColor: 'rgba(151,160,187,.45)', background: 'rgba(23,30,51,.45)', color: '#e9e6db' }
 
   return (
     <div className="flex flex-col gap-1">
@@ -84,7 +89,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
         aria-label="切换课题"
         aria-expanded={open}
         className="rounded px-3 py-2 text-left text-sm"
-        style={panelStyle}
+        style={triggerStyle}
         onClick={() => {
           setOpen((v) => !v)
           setCreating(false)
@@ -114,7 +119,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
               className="rounded px-2 py-1.5 text-left text-xs"
               style={
                 w.id === currentId
-                  ? { background: 'var(--accent-soft)', color: 'var(--accent)' }
+                  ? { background: 'rgba(255,255,255,.08)', color: '#f3eddd' }
                   : undefined
               }
               onClick={() => void pick(w.id)}
@@ -125,10 +130,10 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
           ))}
           {creating ? (
             <div className="flex flex-col gap-1">
-              <input
+                <input
                 aria-label="新课题名称"
                 className="rounded border px-2 py-1 text-xs"
-                style={panelStyle}
+                style={fieldStyle}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -142,7 +147,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
                 </button>
                 <button
                   className="rounded px-2 py-1 text-xs"
-                  style={panelStyle}
+                  style={fieldStyle}
                   onClick={() => {
                     setCreating(false)
                     setName('')

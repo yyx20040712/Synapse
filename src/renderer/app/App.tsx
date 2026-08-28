@@ -25,6 +25,36 @@ const NAV: Array<{ id: ViewId; label: string }> = [
   { id: 'lineage', label: '脉络' }
 ]
 
+/**
+ * nav 入口内联 SVG 图标（R3-TH1——mockup shell-library.html path 逐字誊录，
+ * 禁新增依赖红线；aria-hidden 不污染 getByRole name=e2e 断言面）。
+ */
+const NAV_ICONS: Record<ViewId, JSX.Element> = {
+  library: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 4h5v16H4zM12 4h5v16h-5z" />
+      <path d="M19 5.5l2 .9v13.2l-2 .9" />
+    </svg>
+  ),
+  reader: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 5c-2 0-3 1-4.5 1S5 5.5 5 5.5v13S6.5 18 7.5 18s2.5 1 4.5 1 3-1 4.5-1 2.5.5 2.5.5v-13S19 6 17.5 6 14 5 12 5z" />
+      <path d="M12 5v14" />
+    </svg>
+  ),
+  settings: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
+    </svg>
+  ),
+  lineage: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 3l2.2 4.8L19 9l-3.5 3.4.9 5-4.4-2.5L7.6 17.4l.9-5L5 9l4.8-1.2z" />
+    </svg>
+  )
+}
+
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { message: string | null; retry: number }
@@ -102,20 +132,32 @@ export function App(): JSX.Element {
 
   return (
     <div className="flex h-full">
-      <nav className="flex w-40 shrink-0 flex-col gap-1 border-r p-2" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
-        <p className="px-2 py-3 text-sm font-semibold">Synapse Remake</p>
+      {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）：品牌行文案
+          「Synapse Remake」为 smoke.spec getByText 断言面——不可改 mockup 短名 */}
+      <nav className="app-nav">
+        <div className="app-nav-brand">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
+            <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
+          </svg>
+          <span className="app-nav-name">Synapse Remake</span>
+        </div>
         {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
         <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
         {NAV.map((item) => (
           <button
             key={item.id}
-            className={`rounded px-3 py-2 text-left text-sm ${view === item.id ? 'font-medium' : ''}`}
-            style={view === item.id ? { background: 'var(--accent-soft)', color: 'var(--accent)' } : undefined}
+            className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
             onClick={() => setView(item.id)}
           >
+            {NAV_ICONS[item.id]}
             {item.label}
           </button>
         ))}
+        <div className="app-nav-foot">
+          <span className="app-nav-ver">v0.1</span>
+          <span className="app-nav-txt">本地学术文献管理</span>
+        </div>
       </nav>
       <main className="min-w-0 flex-1 overflow-auto">
         <ErrorBoundary>

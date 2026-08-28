@@ -1,0 +1,707 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 8a505d2..0acbd14 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T18:04:45.3185593Z",
++    "generatedAt":  "2026-08-28T18:25:31.8787674Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -163,7 +163,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "938de555f797fbd395b0a3b9ff9090f7928d54d63ad983d7d409c2a6c23cbd66"
++                      "sha256":  "f34eaa9639622dddea4d60a8a5d2522ff74fc612f628e569bbc748ffbcdc4b0d"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -317,6 +317,10 @@
+                       "path":  "tests/unit/renderer/app-quit-dirty.test.tsx",
+                       "sha256":  "6a7d5cd9f4e80e6fa2629734e749865acedb3012e9a6b977bba98c76e47a0384"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/app-shell.test.tsx",
++                      "sha256":  "40b9752cb36bd25fffdd29cecc4de6ce11e8c2a2da54234503012176cb46e099"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
+                       "sha256":  "71557bb0ad91ece54198574f7d7409d1a6ede656563272d5f048ca215c59f77d"
+@@ -429,6 +433,10 @@
+                       "path":  "tests/unit/renderer/tags.store.test.ts",
+                       "sha256":  "9263b53845dcb2c0eec51a6501541f3671ff3757c666f27bd623f2631b9d4c00"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/theme.test.ts",
++                      "sha256":  "f31ad06c30b01dd5d9c73a1064e679dcc704535511e36b535fd672d73b12a9c7"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/toast.test.tsx",
+                       "sha256":  "29b9f24cca275dfa92a37e576592d25a0d5ad9f3e79eafb18b86c1464a5f242f"
+diff --git a/src/renderer/app/App.tsx b/src/renderer/app/App.tsx
+index 7f430b6..f044d38 100644
+--- a/src/renderer/app/App.tsx
++++ b/src/renderer/app/App.tsx
+@@ -25,6 +25,36 @@ const NAV: Array<{ id: ViewId; label: string }> = [
+   { id: 'lineage', label: '脉络' }
+ ]
+ 
++/**
++ * nav 入口内联 SVG 图标（R3-TH1——mockup shell-library.html path 逐字誊录，
++ * 禁新增依赖红线；aria-hidden 不污染 getByRole name=e2e 断言面）。
++ */
++const NAV_ICONS: Record<ViewId, JSX.Element> = {
++  library: (
++    <svg aria-hidden="true" viewBox="0 0 24 24">
++      <path d="M4 4h5v16H4zM12 4h5v16h-5z" />
++      <path d="M19 5.5l2 .9v13.2l-2 .9" />
++    </svg>
++  ),
++  reader: (
++    <svg aria-hidden="true" viewBox="0 0 24 24">
++      <path d="M12 5c-2 0-3 1-4.5 1S5 5.5 5 5.5v13S6.5 18 7.5 18s2.5 1 4.5 1 3-1 4.5-1 2.5.5 2.5.5v-13S19 6 17.5 6 14 5 12 5z" />
++      <path d="M12 5v14" />
++    </svg>
++  ),
++  settings: (
++    <svg aria-hidden="true" viewBox="0 0 24 24">
++      <circle cx="12" cy="12" r="3.2" />
++      <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
++    </svg>
++  ),
++  lineage: (
++    <svg aria-hidden="true" viewBox="0 0 24 24">
++      <path d="M12 3l2.2 4.8L19 9l-3.5 3.4.9 5-4.4-2.5L7.6 17.4l.9-5L5 9l4.8-1.2z" />
++    </svg>
++  )
++}
++
+ class ErrorBoundary extends Component<
+   { children: ReactNode },
+   { message: string | null; retry: number }
+@@ -102,20 +132,32 @@ export function App(): JSX.Element {
+ 
+   return (
+     <div className="flex h-full">
+-      <nav className="flex w-40 shrink-0 flex-col gap-1 border-r p-2" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+-        <p className="px-2 py-3 text-sm font-semibold">Synapse Remake</p>
++      {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）：品牌行文案
++          「Synapse Remake」为 smoke.spec getByText 断言面——不可改 mockup 短名 */}
++      <nav className="app-nav">
++        <div className="app-nav-brand">
++          <svg aria-hidden="true" viewBox="0 0 24 24">
++            <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
++            <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
++          </svg>
++          <span className="app-nav-name">Synapse Remake</span>
++        </div>
+         {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
+         <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
+         {NAV.map((item) => (
+           <button
+             key={item.id}
+-            className={`rounded px-3 py-2 text-left text-sm ${view === item.id ? 'font-medium' : ''}`}
+-            style={view === item.id ? { background: 'var(--accent-soft)', color: 'var(--accent)' } : undefined}
++            className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
+             onClick={() => setView(item.id)}
+           >
++            {NAV_ICONS[item.id]}
+             {item.label}
+           </button>
+         ))}
++        <div className="app-nav-foot">
++          <span className="app-nav-ver">v0.1</span>
++          <span className="app-nav-txt">本地学术文献管理</span>
++        </div>
+       </nav>
+       <main className="min-w-0 flex-1 overflow-auto">
+         <ErrorBoundary>
+diff --git a/src/renderer/features/workspaces/WorkspaceSwitcher.tsx b/src/renderer/features/workspaces/WorkspaceSwitcher.tsx
+index 5480214..c852ea0 100644
+--- a/src/renderer/features/workspaces/WorkspaceSwitcher.tsx
++++ b/src/renderer/features/workspaces/WorkspaceSwitcher.tsx
+@@ -22,7 +22,8 @@
+  *
+  * ── 文化层 ──
+  * - 测试：tests/unit/renderer/workspace-switcher.test.tsx（always-active）
+- * - 视觉：现有 theme 变量常规样式（R3-TH1 未开工，勿预铺新 token）
++ * - 视觉：R3-TH1 已上墨青侧栏——本组件随侧栏底色做夜色适配（rgba 白+
++ *   金 hairline+夜面变量，主控预裁①；testid/文案/交互零改）
+  */
+ import { useState } from 'react'
+ import { ApiClientError } from '../../api/client'
+@@ -76,7 +77,11 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void
+     }
+   }
+ 
+-  const panelStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
++  // R3-TH1 夜色适配（主控预裁①）：常态钮=rgba 白微底+金 hairline（mockup .ws 同款）；
++  // 展开面板=夜面色块浮层；输入/取消=夜面字段——文字全部亮色系
++  const triggerStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'rgba(255,255,255,.05)', color: '#efe9da' }
++  const panelStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'var(--node-face)', color: 'var(--text-on-night)' }
++  const fieldStyle = { borderColor: 'rgba(151,160,187,.45)', background: 'rgba(23,30,51,.45)', color: '#e9e6db' }
+ 
+   return (
+     <div className="flex flex-col gap-1">
+@@ -84,7 +89,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void
+         aria-label="切换课题"
+         aria-expanded={open}
+         className="rounded px-3 py-2 text-left text-sm"
+-        style={panelStyle}
++        style={triggerStyle}
+         onClick={() => {
+           setOpen((v) => !v)
+           setCreating(false)
+@@ -114,7 +119,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void
+               className="rounded px-2 py-1.5 text-left text-xs"
+               style={
+                 w.id === currentId
+-                  ? { background: 'var(--accent-soft)', color: 'var(--accent)' }
++                  ? { background: 'rgba(255,255,255,.08)', color: '#f3eddd' }
+                   : undefined
+               }
+               onClick={() => void pick(w.id)}
+@@ -125,10 +130,10 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void
+           ))}
+           {creating ? (
+             <div className="flex flex-col gap-1">
+-              <input
++                <input
+                 aria-label="新课题名称"
+                 className="rounded border px-2 py-1 text-xs"
+-                style={panelStyle}
++                style={fieldStyle}
+                 value={name}
+                 onChange={(e) => setName(e.target.value)}
+               />
+@@ -142,7 +147,7 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void
+                 </button>
+                 <button
+                   className="rounded px-2 py-1 text-xs"
+-                  style={panelStyle}
++                  style={fieldStyle}
+                   onClick={() => {
+                     setCreating(false)
+                     setName('')
+diff --git a/src/renderer/shared/theme.css b/src/renderer/shared/theme.css
+index 8679197..b2496cd 100644
+--- a/src/renderer/shared/theme.css
++++ b/src/renderer/shared/theme.css
+@@ -1,16 +1,50 @@
+ @import 'tailwindcss';
+ 
+-/* 主题变量：组件统一从这里取色，禁止散落硬编码色值 */
++/* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
++   token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
++   lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
++   防漂移锁 = tests/unit/renderer/theme.test.ts（值漂移即红）。
++   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面 #cfae72 别名 --gold-night）；
++   --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
++   rgb(253,224,71) 精确断言锁死（预知必红则不制造红，预裁②口径）。 */
+ :root {
+-  --bg: #f7f8fa;
++  /* ── 亮面：暖纸白 + 墨青 + 金铜（学术优雅系）── */
++  --bg: #f6f4ee;
+   --panel: #ffffff;
+-  --border: #e5e7eb;
+-  --text: #1f2328;
+-  --text-dim: #6b7280;
+-  --accent: #2563eb;
+-  --accent-soft: #dbeafe;
+-  --danger: #dc2626;
+-  --ok: #16a34a;
++  --panel-glass: rgba(255, 255, 255, 0.72);
++  --border: #e4ded1;
++  --border-gold: #c9a86a;
++  --text: #23262d;
++  --text-dim: #6f7482;
++  --accent: #2c5f8a;
++  --accent-soft: #dcebf5;
++  --gold: #b8935a;
++  --gold-soft: rgba(207, 174, 114, 0.16);
++  --gold-bright: #e3c98f;
++  --gold-line: rgba(207, 174, 114, 0.1);
++  --danger: #b3403a;
++  --ok: #3d7a50;
++  --shadow-1: 0 1px 2px rgba(35, 38, 45, 0.06);
++  --shadow-2: 0 4px 14px rgba(35, 38, 45, 0.09);
++  --shadow-3: 0 10px 34px rgba(35, 38, 45, 0.16);
++  --radius-s: 8px;
++  --radius-m: 12px;
++  --radius-l: 16px;
++  --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
++  --ink: #1b2333;
++  --ink-hi: #232d44;
++  /* ── 夜面：脉络·命之座星象板（R2 消费预留，本单只定义不消费）── */
++  --night-bg: #171e33;
++  --night-bg2: #111728;
++  --node-face: #222c4d;
++  --node-face-hi: #2b3760;
++  --gold-night: #cfae72;
++  --band-line: rgba(207, 174, 114, 0.12);
++  --star: rgba(222, 230, 255, 0.55);
++  --text-on-night: #e9e6db;
++  --text-mid: #c6cbdd;
++  --text-dim-on-night: #97a0bb;
++  --edge-glow: rgba(207, 174, 114, 0.4);
+   /* 标注调色板（与 ANNOTATION_COLORS 一一对应）：阅读器色板/标注层统一取色 */
+   --annotation-yellow: #fde047;
+   --annotation-green: #86efac;
+@@ -31,4 +65,123 @@ body,
+   font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+   color: var(--text);
+   background: var(--bg);
++  /* 纸面微纹理：极淡斜向丝纹（shell-library mockup 同款） */
++  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 6px);
++}
++
++/* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费）══ */
++.app-nav {
++  width: 184px;
++  flex: none;
++  display: flex;
++  flex-direction: column;
++  gap: 2px;
++  padding: 14px 10px;
++  position: relative;
++  color: #cfd5e4;
++  background: linear-gradient(180deg, var(--ink), #171e2f);
++}
++/* 右缘金渐隐线（mockup nav::after 语法逐值誊录） */
++.app-nav::after {
++  content: '';
++  position: absolute;
++  top: 0;
++  right: 0;
++  bottom: 0;
++  width: 1px;
++  background: linear-gradient(180deg, transparent, rgba(201, 168, 106, 0.5), transparent);
++}
++.app-nav-brand {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 6px 8px 14px;
++}
++.app-nav-brand svg {
++  width: 22px;
++  height: 22px;
++  flex: none;
++}
++.app-nav-name {
++  font-family: var(--font-display);
++  font-size: 16px;
++  letter-spacing: 0.5px;
++  color: #efe9da;
++}
++.app-nav-item {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 10px 12px;
++  margin: 2px 4px;
++  border: 0;
++  background: transparent;
++  border-radius: var(--radius-m);
++  font-family: inherit;
++  font-size: 13.5px;
++  color: #aeb6ca;
++  text-align: left;
++  cursor: pointer;
++  position: relative;
++  transition: all 0.18s ease;
++}
++.app-nav-item svg {
++  width: 17px;
++  height: 17px;
++  flex: none;
++  stroke: currentColor;
++  fill: none;
++  stroke-width: 1.6;
++}
++.app-nav-item:hover {
++  color: #e6eaf4;
++  background: rgba(255, 255, 255, 0.06);
++}
++/* active 态：金左缘条 + ink-hi 底 + inset 金 hairline（mockup .nav-item.active） */
++.app-nav-item-active {
++  color: #f3eddd;
++  background: var(--ink-hi);
++  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.28);
++}
++.app-nav-item-active::before {
++  content: '';
++  position: absolute;
++  left: -10px;
++  top: 9px;
++  bottom: 9px;
++  width: 3px;
++  border-radius: 2px;
++  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
++}
++.app-nav-foot {
++  margin-top: auto;
++  padding: 10px 8px 2px;
++  border-top: 1px solid rgba(255, 255, 255, 0.07);
++  display: flex;
++  align-items: center;
++  gap: 8px;
++}
++.app-nav-ver {
++  font-family: var(--font-display);
++  font-size: 9.5px;
++  letter-spacing: 1px;
++  color: #8d95ad;
++  border: 1px solid rgba(141, 149, 173, 0.4);
++  border-radius: 4px;
++  padding: 1px 6px;
++}
++.app-nav-txt {
++  font-size: 9.5px;
++  color: #6d7590;
++}
++
++/* ══ 共享 Button 皮肤钩子（附加类，类名契约/props/testid 零改）══
++   CTA 语法：实底=墨青+inset 金 hairline(.45 静态→hover .7 提亮，定稿注意
++   事项①)；ghost hover=金铜。静态样式在 Button.tsx 内联，此处只挂 hover 态。 */
++.syn-btn-primary:not(:disabled):hover {
++  box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.7), var(--shadow-2);
++}
++.syn-btn-ghost:not(:disabled):hover {
++  color: var(--gold);
++  background: var(--gold-soft);
+ }
+diff --git a/src/renderer/shared/ui/Button.tsx b/src/renderer/shared/ui/Button.tsx
+index 4acd6be..8f7ef3e 100644
+--- a/src/renderer/shared/ui/Button.tsx
++++ b/src/renderer/shared/ui/Button.tsx
+@@ -17,9 +17,18 @@ import type { CSSProperties, ReactNode } from 'react'
+ 
+ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
+ 
+-/** 变体底色/边框（全部走主题变量） */
++/** 变体底色/边框（全部走主题变量）。
++ *  R3-TH1 CTA 语法：primary=墨青实底+inset 金 hairline(.45)+6px 切角 clip-path
++ *  （定稿注意事项①：切角 6px 非 8px）；hover 提亮(.45→.7)与 ghost 金铜 hover
++ *  由 .syn-btn-* 附加类挂载（theme.css——内联 style 做不了 :hover） */
+ const VARIANT_STYLE: Record<Variant, CSSProperties> = {
+-  primary: { background: 'var(--accent)', color: '#ffffff', borderColor: 'var(--accent)' },
++  primary: {
++    background: 'var(--accent)',
++    color: '#ffffff',
++    borderColor: 'var(--accent)',
++    boxShadow: 'inset 0 0 0 1px rgba(201,168,106,.45), var(--shadow-1)',
++    clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)'
++  },
+   secondary: { background: 'var(--panel)', color: 'var(--text)', borderColor: 'var(--border)' },
+   danger: { background: 'var(--panel)', color: 'var(--danger)', borderColor: 'var(--danger)' },
+   ghost: { background: 'transparent', color: 'var(--text)' }
+@@ -44,7 +53,7 @@ export function Button(props: {
+     <button
+       type="button"
+       disabled={inactive}
+-      className={`inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
++      className={`syn-btn-${variant} inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
+       style={{ ...VARIANT_STYLE[variant], ...(variant === 'ghost' ? { border: 'none' } : {}) }}
+       onClick={() => {
+         if (!inactive) onClick()
+diff --git a/src/renderer/shared/ui/Dialog.tsx b/src/renderer/shared/ui/Dialog.tsx
+index ffab7ff..848e10a 100644
+--- a/src/renderer/shared/ui/Dialog.tsx
++++ b/src/renderer/shared/ui/Dialog.tsx
+@@ -50,12 +50,23 @@ export function Dialog(props: {
+         aria-modal="true"
+         aria-label={title}
+         className="flex max-h-[80vh] w-[32rem] max-w-full flex-col rounded-lg border shadow-xl"
+-        style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
++        // R3-TH1：卡面=radius-l+shadow-3（mockup 弹窗档）；头檐=玻璃底+blur+
++        // 金 hairline 底边——style 覆盖同名 tailwind 工具类（rounded-lg/shadow-xl）
++        style={{
++          background: 'var(--panel)',
++          borderColor: 'var(--border)',
++          borderRadius: 'var(--radius-l)',
++          boxShadow: 'var(--shadow-3)'
++        }}
+         onClick={(e) => e.stopPropagation()}
+       >
+         <div
+           className="flex items-center justify-between border-b px-4 py-2 text-sm font-medium"
+-          style={{ borderColor: 'var(--border)' }}
++          style={{
++            borderColor: 'var(--gold)',
++            background: 'var(--panel-glass)',
++            backdropFilter: 'blur(8px)'
++          }}
+         >
+           <span>{title}</span>
+           <button
+diff --git a/src/renderer/shared/ui/SplitPane.tsx b/src/renderer/shared/ui/SplitPane.tsx
+index 1e871ca..3e2735f 100644
+--- a/src/renderer/shared/ui/SplitPane.tsx
++++ b/src/renderer/shared/ui/SplitPane.tsx
+@@ -170,7 +170,9 @@ export function SplitPane(props: {
+       tabIndex={0}
+       title={collapsible ? '拖拽调宽；双击折叠/展开' : '拖拽调宽'}
+       className="h-full w-1 shrink-0 cursor-col-resize"
+-      style={{ background: 'var(--border)' }}
++      // R3-TH1：分隔线金化——侧栏右缘金渐隐线同款语法（端点保留 .15 可见度，
++      // 全透明端点会削弱拖拽目标发现性）
++      style={{ background: 'linear-gradient(180deg, rgba(201,168,106,.15), rgba(201,168,106,.5), rgba(201,168,106,.15))' }}
+       onPointerDown={onHandleDown}
+       onKeyDown={onHandleKey}
+       onDoubleClick={() => {
+diff --git a/src/renderer/shared/ui/Toast.tsx b/src/renderer/shared/ui/Toast.tsx
+index 595cac7..f6fd938 100644
+--- a/src/renderer/shared/ui/Toast.tsx
++++ b/src/renderer/shared/ui/Toast.tsx
+@@ -24,10 +24,13 @@ const KIND_COLOR: Record<ToastKind, string> = {
+   error: 'var(--danger)'
+ }
+ 
++/** 卡面（R3-TH1：玻璃底+blur+shadow-2——票面 P3；kind 色条不变） */
+ const CARD_STYLE: CSSProperties = {
+-  background: 'var(--panel)',
++  background: 'var(--panel-glass)',
+   borderColor: 'var(--border)',
+-  color: 'var(--text)'
++  color: 'var(--text)',
++  backdropFilter: 'blur(8px)',
++  boxShadow: 'var(--shadow-2)'
+ }
+ 
+ /** 挂在 App 根部：订阅通知队列，右上角堆叠渲染（可手动 × 关闭） */
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 576c847..2112081 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -658,7 +658,8 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原
+   expect(visual.pageShadow, 'B: 页盒阴影非 none').not.toBe('none')
+   // 阅读区视觉底：滚动容器自身透明、透出 body --bg（theme.css 单源声明面）
+   expect(visual.scrollBg, 'B: 滚动容器透明（视觉底=body --bg）').toBe('rgba(0, 0, 0, 0)')
+-  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(247, 248, 250)')
++  // body 背景=--bg（R3-TH1 token v2：暖纸白 #f6f4ee——[locked-change] 同步断言值）
++  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
+   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
+ 
+   // —— 缺陷 C（SR2-F-07 B 案重写守卫）：原生 ::selection 背景透明（F-06 不透明近似色
+=== NEW FILE: tests/unit/renderer/app-shell.test.tsx ===
+// @vitest-environment jsdom
+/**
+ * [R3-TH1] App 壳渲染锁——nav 四入口 + active 态类 + SVG 图标 + 品牌/footer。
+ *
+ * 设计定稿（docs/design/2026-08-28_visual-system.md §2 R3-U1）：App 壳=
+ * 墨青侧栏+金 active 左缘条+菱形品牌标+SVG 图标。本用例锁结构面（类名/
+ * 图标存在/文案），视觉值面由 e2e 冒烟承载——两层合起来「视觉基建」改坏
+ * 任何一层即红。mock 配方照 app-quit-dirty.test.tsx（App 组合根同型）。
+ *
+ * e2e 断言面兼容性锚：nav 四项文案（'文献库' 等=smoke.spec/reader-text.spec
+ * getByRole name 断言面）与品牌文本 'Synapse Remake'（smoke.spec:22
+ * getByText 断言面——mockup 的 'Synapse' 短名让位给测试面稳定，预裁③口径）。
+ */
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as clientModule from '../../../src/renderer/api/client'
+
+const { stubApi } = vi.hoisted(() => ({
+  stubApi: {
+    lineage: { graph: vi.fn() },
+    library: { list: vi.fn() },
+    system: { setQuitDirty: vi.fn() },
+    workspaces: { list: vi.fn() }
+  }
+}))
+
+vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+  const real = await importOriginal<typeof clientModule>()
+  return {
+    ...real,
+    api: stubApi as unknown as typeof clientModule.api,
+    apiEvents: {
+      onExportCorpus: vi.fn(() => () => undefined),
+      onImportProgress: vi.fn(() => () => undefined)
+    }
+  }
+})
+
+import { App } from '../../../src/renderer/app/App'
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+
+function mount(element: JSX.Element): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(element)
+  })
+}
+
+const flush = async (turns = 6): Promise<void> => {
+  for (let i = 0; i < turns; i++) {
+    await act(async () => {
+      await Promise.resolve()
+    })
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  stubApi.lineage.graph.mockReset()
+  stubApi.library.list.mockReset()
+  stubApi.system.setQuitDirty.mockReset()
+  stubApi.workspaces.list.mockReset()
+  Object.defineProperty(window, 'api', {
+    configurable: true,
+    value: { system: { setQuitDirty: stubApi.system.setQuitDirty } }
+  })
+  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+  stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
+  stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.workspaces.list.mockResolvedValue({
+    ok: true,
+    data: {
+      items: [{ id: 'w1', name: '默认课题', createdAt: '2026-08-28T00:00:00Z' }],
+      currentId: 'w1'
+    }
+  })
+})
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+})
+
+/** nav 内按精确可见文本取按钮（Switcher 按钮'默认课题 ▾'等与入口名无碰撞） */
+function navButton(label: string): HTMLButtonElement | undefined {
+  const nav = document.querySelector('nav')
+  return Array.from(nav?.querySelectorAll('button') ?? []).find(
+    (b) => b.textContent?.trim() === label
+  )
+}
+
+describe('R3-TH1 App 壳——墨青侧栏结构锁', () => {
+  it('nav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致', async () => {
+    mount(<App />)
+    await flush()
+    for (const label of ['文献库', '阅读器', '设置', '脉络']) {
+      const btn = navButton(label)
+      expect(btn, `nav 应含入口按钮「${label}」`).toBeDefined()
+      expect(
+        btn!.querySelector('svg[aria-hidden="true"]'),
+        `入口「${label}」应含内联 SVG 图标（aria-hidden 不污染 accessible name——getByRole name 断言面）`
+      ).not.toBeNull()
+    }
+  })
+
+  it('默认视图（文献库）带 active 态类，其余入口不带', async () => {
+    mount(<App />)
+    await flush()
+    expect(navButton('文献库')!.classList.contains('app-nav-item-active')).toBe(true)
+    expect(navButton('设置')!.classList.contains('app-nav-item-active')).toBe(false)
+    expect(navButton('脉络')!.classList.contains('app-nav-item-active')).toBe(false)
+  })
+
+  it('品牌行（Synapse Remake）与 footer（本地学术文献管理）在侧栏内', async () => {
+    mount(<App />)
+    await flush()
+    const nav = document.querySelector('nav')
+    expect(nav, 'nav 元素在场').not.toBeNull()
+    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse Remake') 断言面——不可改短").toContain(
+      'Synapse Remake'
+    )
+    expect(nav!.textContent, 'footer 文案（票面 P2）').toContain('本地学术文献管理')
+  })
+})
+=== NEW FILE: tests/unit/renderer/theme.test.ts ===
+/**
+ * [R3-TH1] theme token 冒烟——防漂移锁（值源=设计定稿摸鱼图）。
+ *
+ * token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）
+ * 与 lineage-constellation.html（夜面 :root）——设计定稿
+ * docs/design/2026-08-28_visual-system.md §0 裁决。本用例把两份 :root 的
+ * 关键值逐行誊录成断言：任何 token 漂移（手改/误删/回退）即红，把「视觉
+ * 基建」锚定到设计稿而非口头约定。
+ *
+ * 值冲突裁决（票面 P1）：--gold 两稿并存（亮面 #b8935a / 夜面 #cfae72）——
+ * 亮面值占用 --gold（全域消费），夜面值别名 --gold-night（R2 消费预留）；
+ * --gold-soft 取票面裁决值 rgba(207,174,114,.16)（lineage 稿）；annotation
+ * 五色保持原值（e2e reader-text.spec 三处精确色断言 rgb(253,224,71) 锁定，
+ * 预知必红则不制造红——预裁②口径）。
+ */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+
+const css = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme.css', import.meta.url)),
+  'utf8'
+)
+
+/** [token 声明, 期望值]——css 内应含 "<token>: <value>;"（含尾分号防 --gold 匹配到 --gold-soft 系前缀） */
+const TOKENS: Array<[string, string]> = [
+  // ── 亮面（shell-library.html :root）──
+  ['--bg', '#f6f4ee'],
+  ['--panel', '#ffffff'],
+  ['--panel-glass', 'rgba(255, 255, 255, 0.72)'],
+  ['--border', '#e4ded1'],
+  ['--border-gold', '#c9a86a'],
+  ['--text', '#23262d'],
+  ['--text-dim', '#6f7482'],
+  ['--accent', '#2c5f8a'],
+  ['--accent-soft', '#dcebf5'],
+  ['--gold', '#b8935a'],
+  ['--gold-soft', 'rgba(207, 174, 114, 0.16)'],
+  ['--gold-bright', '#e3c98f'],
+  ['--gold-line', 'rgba(207, 174, 114, 0.1)'],
+  ['--danger', '#b3403a'],
+  ['--ok', '#3d7a50'],
+  ['--shadow-1', '0 1px 2px rgba(35, 38, 45, 0.06)'],
+  ['--shadow-2', '0 4px 14px rgba(35, 38, 45, 0.09)'],
+  ['--shadow-3', '0 10px 34px rgba(35, 38, 45, 0.16)'],
+  ['--radius-s', '8px'],
+  ['--radius-m', '12px'],
+  ['--radius-l', '16px'],
+  ['--font-display', "Georgia, 'Times New Roman', 'Songti SC', SimSun, serif"],
+  ['--ink', '#1b2333'],
+  ['--ink-hi', '#232d44'],
+  // ── 夜面（lineage-constellation.html :root——R2 消费预留，本单只定义）──
+  ['--night-bg', '#171e33'],
+  ['--night-bg2', '#111728'],
+  ['--node-face', '#222c4d'],
+  ['--node-face-hi', '#2b3760'],
+  ['--gold-night', '#cfae72'],
+  ['--band-line', 'rgba(207, 174, 114, 0.12)'],
+  ['--star', 'rgba(222, 230, 255, 0.55)'],
+  ['--text-on-night', '#e9e6db'],
+  ['--text-mid', '#c6cbdd'],
+  ['--text-dim-on-night', '#97a0bb'],
+  ['--edge-glow', 'rgba(207, 174, 114, 0.4)'],
+  // ── annotation 五色：保持原值（e2e 精确色断言锁定——见文件头注）──
+  ['--annotation-yellow', '#fde047'],
+  ['--annotation-green', '#86efac'],
+  ['--annotation-blue', '#93c5fd'],
+  ['--annotation-red', '#fca5a5'],
+  ['--annotation-purple', '#d8b4fe']
+]
+
+describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
+  it.each(TOKENS)('%s 声明为设计定稿值 %s', (token, value) => {
+    expect(css, `theme.css 应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
+  })
+
+  it('body 视觉底换新 --bg 且保留 html/body/#root overflow 锁（Q1 不变量）', () => {
+    // INV-01 e2e 锚（reader-text.spec）断言三层 overflow:hidden——此处锁声明
+    // 面仍在（注释+声明成对）：body 背景单源 var(--bg)+纸面丝纹（mockup 同款）
+    expect(css).toContain('overflow: hidden')
+    expect(css).toContain('background: var(--bg)')
+    expect(css).toContain('repeating-linear-gradient(115deg')
+  })
+})

@@ -50,12 +50,23 @@ export function Dialog(props: {
         aria-modal="true"
         aria-label={title}
         className="flex max-h-[80vh] w-[32rem] max-w-full flex-col rounded-lg border shadow-xl"
-        style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
+        // R3-TH1：卡面=radius-l+shadow-3（mockup 弹窗档）；头檐=玻璃底+blur+
+        // 金 hairline 底边——style 覆盖同名 tailwind 工具类（rounded-lg/shadow-xl）
+        style={{
+          background: 'var(--panel)',
+          borderColor: 'var(--border)',
+          borderRadius: 'var(--radius-l)',
+          boxShadow: 'var(--shadow-3)'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className="flex items-center justify-between border-b px-4 py-2 text-sm font-medium"
-          style={{ borderColor: 'var(--border)' }}
+          style={{
+            borderColor: 'var(--gold)',
+            background: 'var(--panel-glass)',
+            backdropFilter: 'blur(8px)'
+          }}
         >
           <span>{title}</span>
           <button

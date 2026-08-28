@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T18:04:45.3185593Z",
+    "generatedAt":  "2026-08-28T18:39:57.6681695Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -163,7 +163,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "938de555f797fbd395b0a3b9ff9090f7928d54d63ad983d7d409c2a6c23cbd66"
+                      "sha256":  "f34eaa9639622dddea4d60a8a5d2522ff74fc612f628e569bbc748ffbcdc4b0d"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -318,6 +318,10 @@
                       "sha256":  "6a7d5cd9f4e80e6fa2629734e749865acedb3012e9a6b977bba98c76e47a0384"
                   },
                   {
+                      "path":  "tests/unit/renderer/app-shell.test.tsx",
+                      "sha256":  "40b9752cb36bd25fffdd29cecc4de6ce11e8c2a2da54234503012176cb46e099"
+                  },
+                  {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
                       "sha256":  "71557bb0ad91ece54198574f7d7409d1a6ede656563272d5f048ca215c59f77d"
                   },
@@ -428,6 +432,10 @@
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
                       "sha256":  "9263b53845dcb2c0eec51a6501541f3671ff3757c666f27bd623f2631b9d4c00"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/theme.test.ts",
+                      "sha256":  "a86b25cda74e53aa4b96781ce106bdf677d741b7d507a86c0735fb8ead1186a8"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

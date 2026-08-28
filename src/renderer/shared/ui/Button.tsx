@@ -13,17 +13,13 @@
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 颜色一律 var(--*)，禁止 Tailwind 调色板硬编码
  */
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
-/** 变体底色/边框（全部走主题变量） */
-const VARIANT_STYLE: Record<Variant, CSSProperties> = {
-  primary: { background: 'var(--accent)', color: '#ffffff', borderColor: 'var(--accent)' },
-  secondary: { background: 'var(--panel)', color: 'var(--text)', borderColor: 'var(--border)' },
-  danger: { background: 'var(--panel)', color: 'var(--danger)', borderColor: 'var(--danger)' },
-  ghost: { background: 'transparent', color: 'var(--text)' }
-}
+/** 变体皮肤=theme.css 的 .syn-btn-<variant> 类（回炉 B1：静态与 hover 必须
+ *  同层——内联 style 层叠上恒压类选择器，静态在内联+hover 挂类=hover 静默
+ *  失效。防线=tests/unit/renderer/theme.test.ts B1 describe） */
 
 const SIZE_CLASS: Record<'sm' | 'md', string> = {
   sm: 'px-2 py-0.5 text-xs',
@@ -44,8 +40,7 @@ export function Button(props: {
     <button
       type="button"
       disabled={inactive}
-      className={`inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
-      style={{ ...VARIANT_STYLE[variant], ...(variant === 'ghost' ? { border: 'none' } : {}) }}
+      className={`syn-btn-${variant} inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
       onClick={() => {
         if (!inactive) onClick()
       }}

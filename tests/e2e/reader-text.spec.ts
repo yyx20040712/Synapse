@@ -658,7 +658,8 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原
   expect(visual.pageShadow, 'B: 页盒阴影非 none').not.toBe('none')
   // 阅读区视觉底：滚动容器自身透明、透出 body --bg（theme.css 单源声明面）
   expect(visual.scrollBg, 'B: 滚动容器透明（视觉底=body --bg）').toBe('rgba(0, 0, 0, 0)')
-  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(247, 248, 250)')
+  // body 背景=--bg（R3-TH1 token v2：暖纸白 #f6f4ee——[locked-change] 同步断言值）
+  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
   // —— 缺陷 C（SR2-F-07 B 案重写守卫）：原生 ::selection 背景透明（F-06 不透明近似色
