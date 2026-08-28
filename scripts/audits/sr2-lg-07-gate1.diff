@@ -1,0 +1,571 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 0d0c53b..bd58062 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T12:03:18.2180157Z",
++    "generatedAt":  "2026-08-28T12:21:59.0655679Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -335,11 +335,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
+-                      "sha256":  "4797851250748197b5fc1c63108e9271fe211aba488d5ecdff44d7fcd0251cb8"
++                      "sha256":  "1992fc4034ceff081296d2b81dcc753b068e96759ad85365eed49ba505b81de3"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
+-                      "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
++                      "sha256":  "f1c3affb617471cf69d2b2885cf2a58c678e71101ba7cd396bd5ba53157ca6ee"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+diff --git a/scripts/audits/sr2-lg-07-brief.md b/scripts/audits/sr2-lg-07-brief.md
+new file mode 100644
+index 0000000..47271c6
+--- /dev/null
++++ b/scripts/audits/sr2-lg-07-brief.md
+@@ -0,0 +1,68 @@
++# SR2-LG-07 脉络布局非单调年份树修复+边 label 渲染（缺陷 E1）——票面 v1
++
++> 来源：2026-08-28 用户真机验收反馈缺陷 E1（图五：脉络图渲染成单列垂直线，
++> 分支不可见，边无标注），取证定性见
++> `docs/prompts/2026-08-28_loop-handoff.md` §2E1。**确定级**（代码推演闭合，
++> 主控已复核 lineage-layout.ts:196-207 推演：M1 草稿树 Brown(2002 根)→
++> Reynolds(1883 子)→Cross(1936)+水锤史(2007) 孙，四层互不共享——兄弟约束
++> 仅共享层触发→offset 恒 0→全树 x 相同退化单列）。验收修复役 U4。
++> 纪律：三屋模式；实现者禁 git/registry；取证禁触 tickets/。
++
++## 1. 主控预裁项
++
++- **P1 布局修=兄弟根占位参与 offset 下限**：`lineage-layout.ts` place()
++  的 Frame 增根节点占位 `rootLo/rootHi`（相对子树包围盒原点；叶子=
++  [0,NODE_W]，内部节点=归一化后的 [x−NODE_W/2, x+NODE_W/2]）；兄弟合并
++  （:196-215）增补约束：`need = max(need, mergedRootHi + SIBLING_GAP − f.rootLo)`
++  （mergedRootHi=已合并兄弟 rootHi 的 max 右缘）。**共享层约束原样保留**
++  （深层不共享层仍可交错——紧凑性不丢）。**主控已手推 M1 树修后形态**：
++  Reynolds x 居中、Cross 左/水锤史右错开 220px+，Brown 单子链同 x——
++  分叉树可见；实现者以同参数夹具复算核对（推演值入测试注释）。
++- **P2 边 label 渲染**：`LineageCanvas.tsx` 边渲染段（:183-201）每条边
++  贝塞尔中点近似 ((from.x+to.x)/2, mid) 加 `<text>`（fontSize 11~12、
++  fill var(--text-dim)、`paint-order: stroke` 白描边或等价可读性处理——
++  样式实现者自裁申报）；label 空串不渲染；`data-edge-label={e.id}` 测试钩。
++  **LineageEdge.label 字段已存在**（shared/models/lineage.ts z.string()）
++  ——渲染面零契约扩展，shared 零触碰。LineageBoard.tsx:60 头注「边 label
++  富化=预留」随本单摘除预留声明。
++- **P3 初始视口 auto-fit=观察项不做**（:50 硬编码 {0,0,1} 实测图五标签
++  可见；M1 树修后宽约 400px 常规视口内——用户验收若报出画再立小票）。
++  票面注记即可。
++- **P4 测试受锁两文件**（[locked-change]，unlock→改→apply）：
++  - `tests/unit/renderer/lineage-layout.test.ts` 新增 it：
++    ①**年份-拓扑错位夹具**（M1 同构：根 2002→子 1883→孙 1936+2007）断言
++    两孙 x 错开 ≥ NODE_W+SIBLING_GAP 且根链 x 保持（图五回归锁——it 名
++    含「非单调年份树」）；
++    ②紧凑性保持：深层不共享层兄弟子树仍可交错（构造叔孙异层无共享夹具
++    断言 offset=0 路径未死——防 P1 修法过度推开）；
++    ③既有 12 it 全绿不改（回归面）。
++  - `tests/unit/renderer/lineage-canvas.test.tsx` 新增 it：带 label 边渲染
++    `<text>` 真实文本断言（渲染出真实文本红线）；空 label 边无 text 节点。
++- **P5 不变量登记**：layoutLineage 性质增补「直接兄弟节点对不论年份层必
++  横向错开（根占位参与下限）」——写入 lineage-layout.ts 头注行为层（模块
++  级测试锚已有；不新增 docs/invariants.md 行（渲染布局纯函数性质归组件域
++  锚，非跨模块行为——若门一判跨模块再补册）。
++
++## 2. 五层规约
++
++**─ 行为层 ──**：非单调年份树（子年早于父年）不再退化为单列——直接兄弟
++子树根节点占位横向错开 ≥ NODE_W+SIBLING_GAP；共享层轮廓约束语义原样；
++边 label 沿边中点渲染可读。
++
++**─ 接口层 ──**：layoutLineage 签名/LayoutResult 形状零改（Frame 内部
++结构扩展不外泄）；LineageCanvas props 零改（edges 数据已含 label）；
++NODE_W/NODE_H/LAYER_GAP/SIBLING_GAP/TREE_GAP 常量零改。
++
++**─ 架构层 ──**：零依赖；纯函数禁 DOM 不变；shared/models 零触碰。
++
++**─ 生命周期层 ──**：不做：碰撞避让/显隐折叠/DAG/auto-fit（P3 观察项）。
++
++**─ 文化层 ──**：TDD——受锁新 it 先红（当前布局单列：①红）→实现→绿→
++变异红证 ≥2（①删 rootLo 约束恢复旧比较→①红；②边 label text 删→canvas
++it 红；cp 备份法还原）→全量 verify。报告落
++`scripts/audits/sr2-lg-07-impl.report.md`，回复五行内。
++
++## 3. 机检兼容自查
++
++无 TODO/FIXME/placeholder；UTF-8；node24 前缀；locks unlock→两测试文件
++改→apply；基线 verify 全绿（用例数 +3~4 自报）。
+diff --git a/scripts/audits/sr2-lg-07-impl.report.md b/scripts/audits/sr2-lg-07-impl.report.md
+new file mode 100644
+index 0000000..d0ef86f
+--- /dev/null
++++ b/scripts/audits/sr2-lg-07-impl.report.md
+@@ -0,0 +1,148 @@
++# SR2-LG-07 实现报告（脉络布局非单调年份树修复+边 label 渲染——缺陷 E1）
++
++> 实现者子代理交付报告。票面：`scripts/audits/sr2-lg-07-brief.md` v1。
++> 结论：**verify 真退出码 0（全量，对最终树态）**；单测 95 文件 737 用例
++> （基线 734+3）；e2e lineage 4/4 加跑全过；locks 144 重锁同步。
++
++## 1. 实现摘要
++
++- **P1 布局修**：`lineage-layout.ts` Frame 增根占位 `rootLo/rootHi`（叶子
++  =[0,NODE_W]，内部节点=归一化后 [x−NODE_W/2, x+NODE_W/2]，与 spans 同
++  坐标系）；place() 兄弟合并增补约束 2：`need = max(need, mergedRootHi +
++  SIBLING_GAP − f.rootLo)`（mergedRootHi=已合并兄弟根占位 offset 后 max
++  右缘；首兄弟 null 无下限）。**共享层约束 1 原样保留**——深层不共享层
++  子树交错不受影响（紧凑性保持，it ② 锁定）。
++- **P2 边 label 渲染**：贝塞尔中点近似 ((from.x+to.x)/2, mid) 渲染真实
++  文本；空串不渲染（无 text 节点）；`data-edge-label={e.id}` 测试钩。
++  样式自裁：fontSize 11、fill var(--text-dim)、paintOrder=stroke +
++  stroke var(--bg) 3px 底色描边（「白描边或等价可读性处理」之等价侧——
++  随主题底色的 halo，跨层带横线/连线可读）。
++- **P5 性质登记**：lineage-layout.ts 头注行为层新增「兄弟根占位分离」
++  条——直接兄弟节点对不论年份层必横向错开 ≥ NODE_W+SIBLING_GAP。
++- **LineageBoard.tsx** 头注「预留：…边 label 富化；…」摘除该项（渲染
++  已交付，其余预留项原样）。
++- P3 auto-fit 未做（票面注记即可）：初始视口 {0,0,1} 保持；M1 树修后
++  finalWidth=400px（实测），常规视口内。
++
++## 2. 文件清单
++
++| 文件 | 变更 | 说明 |
++|---|---|---|
++| `src/renderer/features/lineage/lineage-layout.ts` | 改（249→286 行） | P1 修+P5 头注（≤500 机检面远低于线） |
++| `src/renderer/features/lineage/LineageEdges.tsx` | **新增**（62 行） | Canvas 拆件：连线+边 label 渲染（组件 ≤250 红线，自裁①） |
++| `src/renderer/features/lineage/LineageCanvas.tsx` | 改（249→234 行） | 边渲染段替换为 `<LineageEdges>` 消费+头注补 label 语义 |
++| `src/renderer/features/lineage/LineageBoard.tsx` | 改（1 行） | 摘「边 label 富化」预留声明 |
++| `tests/unit/renderer/lineage-layout.test.ts` | 改（受锁，unlock→改→apply） | +2 it（P4 ①②）；既有 17 it 零改全绿 |
++| `tests/unit/renderer/lineage-canvas.test.tsx` | 改（受锁，unlock→改→apply） | +1 it（P4 ③）；既有 14 it 零改全绿 |
++| `locks/manifest.json` | 改（locks:apply 产出） | 两受锁测试 sha 更新，144 条同步 |
++
++新文件被引用核验：LineageEdges 由 LineageCanvas.tsx import（非死码）。
++
++## 3. 首红证据（TDD 档 1——当前实现下新 it 必红）
++
++```
++× SR2-LG-07 缺陷 E1：非单调年份树兄弟全不共享层不退化单列（M1 同构…）
++  → expected 0 to be greater than or equal to 220        ← 两孙 x 差 0=单列退化实锤
++× SR2-LG-07 紧凑性保持：深层不共享层兄弟子树仍可交错（…）
++  → expected -220 to be 220                              ← 旧实现 B 不被推开（offset=0）
++× SR2-LG-07 边 label：沿贝塞尔中点渲染真实文本；空 label 边不渲染 text
++  → expected undefined to be '方法继承链'                  ← label 未渲染
++Tests  3 failed | 31 passed (34)                          ← 既有 31 全绿（回归面完好）
++```
++
++## 4. 态空间表（兄弟放置约束 need 的构成）+ M1 跨格序列推演
++
++### 4.1 四格态空间（本树=当前被放置兄弟；前树=已合并左侧兄弟集）
++
++| 格 | 前树存在 | 与前树共享层 | 旧 need | 新 need | 行为变化 |
++|---|---|---|---|---|---|
++| 1 | 无（首兄弟） | — | 0 | 0 | 无（单链/首子） |
++| 2 | 有 | 无 | 0 | `mergedRootHi+SIBLING_GAP−rootLo` | **缺陷格：旧恒 0=E1 单列退化；新=根占位下限** |
++| 3 | 有 | 有（共享层项 ≥ 根占位项） | 共享层项 | max(共享层项, 根占位项)=共享层项 | 无（既有 it 不动的机制面） |
++| 4 | 有 | 有（根占位项 > 共享层项） | 共享层项 | 根占位项 | 仅在此格新约束生效（下限抬升） |
++
++不变量（跨全四格）：同年层内任意两节点 x 区间分离（W1 层索引性质原样）；
++直接兄弟根横向错开 ≥ NODE_W+SIBLING_GAP（新增性质，格 2/4 承载）。
++
++### 4.2 M1 树跨格序列（Brown 2002 → Reynolds 1883 → Cross 1936 + SH 2007）
++
++层序：1883→0、1936→1、2002→2、2007→3（y=0/140/280/420）。
++
++| 步 | place 调用 | 格 | 数值 |
++|---|---|---|---|
++| 1 | place(Cross) 叶 | — | spans={1:[0,180]}，root=[0,180]，selfRel=90 |
++| 2 | place(SH) 叶 | — | spans={3:[0,180]}，root=[0,180]，selfRel=90 |
++| 3 | place(Reynolds)·Cross | 1 | offset=0；merged={1:[0,180]}；mergedRootHi=180 |
++| 4 | place(Reynolds)·SH | **2（缺陷格）** | 旧 need=0／新 need=180+40−0=**220**；offset=220；merged={1:[0,180],3:[220,400]}；mergedRootHi=400 |
++| 5 | Reynolds 自身 | — | minL=0，width=400；myLayer 0 无冲突 x=**200**（居中 (90+310)/2）；root=[110,290] |
++| 6 | place(Brown)·Reynolds | 1 | offset=0；myLayer 2 无冲突 x=**200**（单子链同 x） |
++| 7 | assign | — | **Brown=Reynolds=200，Cross=90，SH=310**（错开恰 220=NODE_W+SIBLING_GAP） |
++
++实测复核（esbuild 转译 layout 模块直跑，type-only import 剥离无 alias）：
++`{"Brown":{"x":200,"y":280},"Reynolds":{"x":200,"y":0},"Cross":{"x":90,"y":140},"SH":{"x":310,"y":420}}`
++——与手推逐位一致，与主控简报「Reynolds 居中、Cross 左/水锤史右错开 220px+、
++Brown 单子链同 x、宽约 400px」吻合（finalWidth=400）。推演值已入测试注释。
++
++紧凑夹具实测：`P=310, A=310, A1=90, A2=310, A3=530, B=530, B1=530`——
++B−A=220（恰下限，A 的 2022 层宽轮廓 [0,620] 不推 B）；B1(2024 层)与
++A3(2022 层)同 x=530（异层交错未死）。
++
++## 5. 变异红证全日志（cp 备份法，禁 git checkout；变异→红→还原→diff 空）
++
++- **变异 ①**（删 `if (mergedRootHi !== null) { need=…rootLo }` 约束块，
++  恢复旧比较语义）→ layout 19 it 中 **2 红**：
++  `缺陷 E1 it → expected 0 to be greater than or equal to 220`（回退单列）；
++  `紧凑性 it → expected -220 to be 220`。`cp` 还原 diff 空确认。
++- **变异 ②**（删边 label text 块）→ canvas **1 红**：
++  `边 label it → expected undefined to be '方法继承链'`。还原 diff 空确认。
++  拆件（自裁①）后对**最终形态**补做同枚变异：改 LineageEdges.tsx 删
++  label 块 → 同一 it 同断言红 → cp 还原 diff 空确认。
++
++## 6. verify 真退出码与 locks 实录
++
++- `npm run verify` 全量（quality+tickets+locks+lint+typecheck+test+build）：
++  **EXIT_CODE=0**（两轮：拆件定稿轮与 b3 指针补行后终轮，均对各自树态；
++  终轮 log 留档 `scripts/audits/.sr2-lg-07-verify-tail.txt`）。
++  关键行：quality 通过（无占位/乱码/跨域）；tickets 114 一致；locks
++  144 一致；**Tests 737 passed (95 files)**；三段 build ✓。
++- e2e（票面外加跑兜底）：`lineage.spec.ts` **4 passed**（15.5s，0 skip）。
++- locks 流程：`locks:unlock`（144 解锁）→ 改两受锁测试 → `locks:apply`
++  （144 重锁，manifest 记 144 条同步）→ verify 内 locks:check 绿。
++- 无 TODO/FIXME/placeholder（diff 0 命中）；全部改动文件 UTF-8 字节级验证
++  过（node utf8 decode 无 U+FFFD）。
++
++## 7. 自裁申报（票面外决定）
++
++1. **组件行数红线拆件**：预读只核了 ESLint max-lines=500，漏
++   check-quality.mjs 的「组件 ≤250 行」关——加 label 后 Canvas 269 行，
++   verify 首跑红。按 Board 头注拆分预案拆出 `LineageEdges.tsx`（62 行，
++   渲染语义原样搬迁：data-edge-id/data-edge-label 钩子与贝塞尔路径不变），
++   Canvas 收敛 234 行。P2 落点由「Canvas 边渲染段」变为「Canvas 消费+
++   LineageEdges 承载」。
++2. **src 注释工单号改溯源标记**：SR2-LG-07 未入 tickets/registry.ts
++   （登记/翻状态归主控收口，本人禁触），而 tickets:check 对 src 引用
++   未注册工单号判红 → src 注释一律用「缺陷 E1（2026-08-28 验收）」
++   （不匹配 `SR2?-` 正则）；**tests 保留 SR2-LG-07 标记**（tests 扫描面
++   仅查占位桩调用，合法且保溯源）。主控登记工单后 src/tests 均不会引起
++   tickets:check 波动（已推演：src 零引用、tests 无占位桩调用）。
++3. 边 label 空串判定 `e.label !== ''`（票面字面，未扩 trim——空白串
++   渲染为不可见 text 属数据面问题不入渲染面猜测）。
++4. 新增 it 实数 **+3**（layout 2 + canvas 1），单测 734→737，落在 ⑤
++   预测 737~738 下沿。
++5. e2e 零改（票面）：预读核 lineage.spec 断言面=真实文本可见/path 计数/
++   拖拽 transform，无布局数值断言——无 BLOCKED 面；加跑 4/4 过（票面外
++   主动兜底，渲染面变更防御）。
++
++## 8. 疑虑
++
++1. 票面/派单称 lineage-layout.test.ts「既有 12 it」——**实数 17**（+2 后
++   19）；canvas 14（+1 后 15）。基线对账以实数为准（734 总数吻合无误）。
++2. 派单称「lineage.spec 既有 7 用例」——实数 4 个 test 句柄（八验收面
++   映射 4 场景，spec 实现注裁决 1），全过。
++3. `locks/manifest.json` 为 CRLF（PS 脚本产出常态；git 例行警告，locks:
++   check 全绿=磁盘态与 manifest 一致，提交时 gitattributes 归一不影响
++   manifest 内记录的文件 sha）。
++4. 主控收口需登记 SR2-LG-07 并翻状态；如需在 src 注释回填工单号属注释
++   级追加（登记后 tickets:check 对 open/done 引用均合法——done 自文件
++   例外=工单登记文件，src 其他文件引 done 号会红，故**不建议回填**，
++   维持「缺陷 E1」溯源即可）。
+diff --git a/src/renderer/features/lineage/LineageBoard.tsx b/src/renderer/features/lineage/LineageBoard.tsx
+index 93af000..8671fda 100644
+--- a/src/renderer/features/lineage/LineageBoard.tsx
++++ b/src/renderer/features/lineage/LineageBoard.tsx
+@@ -57,7 +57,7 @@
+  *
+  * ── 生命周期层 ──
+  * - 预留：批量撤销（v1 无 undo——标注 undo 栈 UNDO-01 不同域不混）；
+- *   边 label 富化；多选批量操作；重置自动布局（清 x/y 按钮动作）
++ *   多选批量操作；重置自动布局（清 x/y 按钮动作）
+  * - 不做：DAG 多父编辑（v2 升版条件）；协作/云同步（负面清单）；
+  *   md 渲染（textarea 级）
+  *
+diff --git a/src/renderer/features/lineage/LineageCanvas.tsx b/src/renderer/features/lineage/LineageCanvas.tsx
+index 639900c..d3fb88b 100644
+--- a/src/renderer/features/lineage/LineageCanvas.tsx
++++ b/src/renderer/features/lineage/LineageCanvas.tsx
+@@ -5,7 +5,8 @@
+  * 行为（票面+主控裁决 4）：
+  * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
+  *   标签/节点卡片（rect+标题+年份，主题节点虚线框区分文献节点）/父子
+- *   连线贝塞尔（from 底边中心→to 顶边中心）；坐标=卡片中心。
++ *   连线贝塞尔（from 底边中心→to 顶边中心）+边 label 沿贝塞尔中点渲染
++ *   （真实文本，空串不渲染——缺陷 E1 修）；坐标=卡片中心。
+  * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
+  *   归 LG-03——本画布只读不留死按钮）。
+  * - pan=空白（背景 rect data-panbg）pointer 拖拽平移；节点上按下不 pan
+@@ -24,6 +25,7 @@
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+ import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
++import { LineageEdges } from './LineageEdges'
+ const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
+ /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
+ const DRAG_THRESHOLD = 3
+@@ -179,26 +181,9 @@ export function LineageCanvas(props: {
+             </text>
+           </g>
+         ))}
+-        {/* 父子连线（from 底边中心→to 顶边中心，垂直主导贝塞尔） */}
+-        {edges.map((e) => {
+-          const from = layout.positions.get(e.fromNode)
+-          const to = layout.positions.get(e.toNode)
+-          if (from === undefined || to === undefined) return null
+-          const y1 = from.y + NODE_H / 2
+-          const y2 = to.y - NODE_H / 2
+-          const mid = (y1 + y2) / 2
+-          return (
+-            <path
+-              key={e.id}
+-              data-edge-id={e.id}
+-              d={`M ${from.x} ${y1} C ${from.x} ${mid}, ${to.x} ${mid}, ${to.x} ${y2}`}
+-              fill="none"
+-              stroke="var(--accent)"
+-              strokeWidth={1.5}
+-              opacity={0.7}
+-            />
+-          )
+-        })}
++        {/* 父子连线+边 label（拆件 LineageEdges——组件行数红线；边 label
++            沿贝塞尔中点真实文本渲染，空串不渲染——缺陷 E1 修） */}
++        <LineageEdges edges={edges} positions={layout.positions} />
+         {/* 节点卡片（主题节点=虚线框区分文献节点；拖拽期叠加 dragView 偏移跟随） */}
+         {nodes.map((n) => {
+           const p = layout.positions.get(n.id)
+diff --git a/src/renderer/features/lineage/LineageEdges.tsx b/src/renderer/features/lineage/LineageEdges.tsx
+new file mode 100644
+index 0000000..c40eccf
+--- /dev/null
++++ b/src/renderer/features/lineage/LineageEdges.tsx
+@@ -0,0 +1,61 @@
++// b3: P7-H
++/**
++ * LineageEdges —— 父子连线+边 label 渲染（LineageCanvas 拆件——组件
++ * ≤250 行红线拆分预案落点，缺陷 E1 修）。
++ *
++ * - 连线=from 底边中心→to 顶边中心垂直主导贝塞尔（data-edge-id 测试钩）。
++ * - 边 label=贝塞尔中点近似 ((from.x+to.x)/2, mid) 渲染真实文本，空串
++ *   不渲染（无 text 节点）；paintOrder=stroke + 底色描边（var(--bg)）保
++ *   证跨层带横线/连线可读（样式自裁——票面 P2）。
++ * - 坐标=卡片中心（layoutLineage 产出），positions 形状用结构类型不引
++ *   LayoutResult（防 layout 模块循环依赖）。
++ */
++import type { LineageEdge } from '@shared/models/lineage'
++import { NODE_H } from './lineage-layout'
++
++export function LineageEdges(props: {
++  edges: LineageEdge[]
++  positions: Map<string, { x: number; y: number }>
++}): JSX.Element {
++  return (
++    <>
++      {props.edges.map((e) => {
++        const from = props.positions.get(e.fromNode)
++        const to = props.positions.get(e.toNode)
++        if (from === undefined || to === undefined) return null
++        const y1 = from.y + NODE_H / 2
++        const y2 = to.y - NODE_H / 2
++        const mid = (y1 + y2) / 2
++        return (
++          <g key={e.id}>
++            <path
++              data-edge-id={e.id}
++              d={`M ${from.x} ${y1} C ${from.x} ${mid}, ${to.x} ${mid}, ${to.x} ${y2}`}
++              fill="none"
++              stroke="var(--accent)"
++              strokeWidth={1.5}
++              opacity={0.7}
++            />
++            {e.label !== '' && (
++              <text
++                data-edge-label={e.id}
++                x={(from.x + to.x) / 2}
++                y={mid}
++                textAnchor="middle"
++                dominantBaseline="middle"
++                fontSize={11}
++                fill="var(--text-dim)"
++                stroke="var(--bg)"
++                strokeWidth={3}
++                strokeLinejoin="round"
++                paintOrder="stroke"
++              >
++                {e.label}
++              </text>
++            )}
++          </g>
++        )
++      })}
++    </>
++  )
++}
+diff --git a/src/renderer/features/lineage/lineage-layout.ts b/src/renderer/features/lineage/lineage-layout.ts
+index 027e6bc..4e110d0 100644
+--- a/src/renderer/features/lineage/lineage-layout.ts
++++ b/src/renderer/features/lineage/lineage-layout.ts
+@@ -9,6 +9,10 @@
+  *   定 x——rescope-verification §4 算法调研母本；**D3 禁引**零新依赖
+  *   红线）；**森林语义**（多根=多棵树并排——INV-27 单父无环前提下
+  *   边集构成森林；孤立节点=单节点树）
++ * - **兄弟根占位分离（缺陷 E1 修，2026-08-28 验收）**：layoutLineage 性质——
++ *   直接兄弟节点对不论年份层必横向错开 ≥ NODE_W+SIBLING_GAP（根节点
++ *   占位 rootLo/rootHi 参与兄弟放置下限——非单调年份树兄弟全不共享层
++ *   时不退化单列）；共享层轮廓约束语义原样（深层不共享层子树仍可交错）
+  * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
+  *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
+  *   碰撞避让，票面声明）；null → 布局产出
+@@ -72,8 +76,9 @@
+  *   胜出）/成环（to 是 from 祖先链上的点）——剔除计数一次汇总
+  *   console.warn；**不丢节点**（环上节点断边后照常成根布局）。
+  * - x 覆盖节点与其父断链（其子树自成根照常布局）；y 覆盖仅替换 y。
+- * - RT 两趟：place() 后序合并子树轮廓，兄弟放置=max over 共享层（前树该层
+- *   右缘+间隙）；assign() 前序按 boxOrigin 累积绝对化。树序=边输入序
++ * - RT 两趟：place() 后序合并子树轮廓，兄弟放置=max over（共享层前树右
++ *   缘+间隙）∪（前树根占位右缘+间隙−本树根占位左缘——缺陷 E1 修）；
++ *   assign() 前序按 boxOrigin 累积绝对化。树序=边输入序
+  *   （稳定性锚点）。**轮廓帧按年份层序索引（非树深度——回炉 1 轮 W1）**：
+  *   y=年份层带打破经典 RT「深度=行」不变量后，深度索引只在同深度分离，
+  *   叔侄同年（异深同年带）无约束即重叠（门一实测 70px）——层索引保证
+@@ -103,6 +108,9 @@ export interface LayoutResult {
+ interface Frame {
+   spans: Map<number, { lo: number; hi: number }>
+   width: number
++  /** 根节点占位（相对同一原点）：叶子=[0,NODE_W]，内部节点=[x−NODE_W/2, x+NODE_W/2] */
++  rootLo: number
++  rootHi: number
+ }
+ 
+ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): LayoutResult {
+@@ -189,14 +197,21 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+     const myLayer = layerIdx.get(byId.get(id)!.year)!
+     if (kids.length === 0) {
+       selfRel.set(id, NODE_W / 2)
+-      return { spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]), width: NODE_W }
++      return {
++        spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]),
++        width: NODE_W,
++        rootLo: 0,
++        rootHi: NODE_W
++      }
+     }
+     const merged = new Map<number, { lo: number; hi: number }>()
+     const offsets: number[] = []
++    let mergedRootHi: number | null = null // 已合并兄弟根占位 max 右缘（null=首个兄弟无下限）
+     for (const kid of kids) {
+       const f = place(kid)
+-      // 兄弟约束=所有共享层上（前树该层右缘+间隙-本树该层左缘）的最大值——
+-      // 不共享层的子树可交错（轮廓紧凑性）；共享层含异深同年（W1 核心）
++      // 兄弟约束 1=共享层（原样保留）：所有共享层上（前树该层右缘+间隙-本
++      // 树该层左缘）的最大值——不共享层的子树可交错（轮廓紧凑性）；共享层
++      // 含异深同年（W1 核心）
+       let need = 0
+       for (const [layer, span] of f.spans) {
+         const prev = merged.get(layer)
+@@ -204,8 +219,16 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+           need = Math.max(need, prev.hi + SIBLING_GAP - span.lo)
+         }
+       }
++      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层
++      // 必错开 ≥ NODE_W+SIBLING_GAP——非单调树兄弟全不共享层时约束 1 恒 0
++      // → offset 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层
++      // 不共享层子树交错不受此约束推开（紧凑性保持）
++      if (mergedRootHi !== null) {
++        need = Math.max(need, mergedRootHi + SIBLING_GAP - f.rootLo)
++      }
+       const offset = Math.max(0, need)
+       offsets.push(offset)
++      mergedRootHi = Math.max(mergedRootHi ?? -Infinity, offset + f.rootHi)
+       for (const [layer, span] of f.spans) {
+         const lo = offset + span.lo
+         const hi = offset + span.hi
+@@ -240,7 +263,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+     const finalMin = Math.min(...[...merged.values()].map((s) => s.lo))
+     const finalWidth = Math.max(...[...merged.values()].map((s) => s.hi)) - finalMin
+     selfRel.set(id, x)
+-    return { spans: merged, width: finalWidth }
++    return { spans: merged, width: finalWidth, rootLo: plo, rootHi: phi }
+   }
+ 
+   function assign(id: string, originAbs: number): void {
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+index c44fdbc..c75816c 100644
+--- a/tests/unit/renderer/lineage-canvas.test.tsx
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -159,6 +159,23 @@ describe('LineageCanvas —— 只读渲染', () => {
+     expect(g?.getAttribute('transform')).toContain('777')
+     expect(g?.getAttribute('transform')).toContain('999')
+   })
++
++  it('SR2-LG-07 边 label：沿贝塞尔中点渲染真实文本；空 label 边不渲染 text', () => {
++    const nodes = [
++      node('A', { year: 2020, title: '源头' }),
++      node('B', { year: 2021, title: '承接' }),
++      node('C', { year: 2021, title: '旁支' })
++    ]
++    const labeled: LineageEdge = { ...edge('A', 'B'), label: '方法继承链' }
++    const edges = [labeled, edge('A', 'C')]
++    mount(<LineageCanvas nodes={nodes} edges={edges} />)
++    // 带 label 边：真实文本渲染（「渲染出真实文本」红线）+测试钩子
++    expect(host?.querySelector('[data-edge-label="e-A-B"]')?.textContent).toBe('方法继承链')
++    expect(host?.textContent).toContain('方法继承链')
++    // 空 label 边：不产生 text 节点（无钩子无空壳）；边 path 本身不受影响
++    expect(host?.querySelector('[data-edge-label="e-A-C"]')).toBeNull()
++    expect(host?.querySelectorAll('[data-edge-id]').length).toBe(2)
++  })
+ })
+ 
+ describe('LineageCanvas —— pan/zoom（INV-14）', () => {
+diff --git a/tests/unit/renderer/lineage-layout.test.ts b/tests/unit/renderer/lineage-layout.test.ts
+index acf8d15..1680f2b 100644
+--- a/tests/unit/renderer/lineage-layout.test.ts
++++ b/tests/unit/renderer/lineage-layout.test.ts
+@@ -125,6 +125,65 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
+       NODE_W + SIBLING_GAP
+     )
+   })
++
++  it('SR2-LG-07 缺陷 E1：非单调年份树兄弟全不共享层不退化单列（M1 同构：根 2002→子 1883→孙 1936+2007）', () => {
++    // 图五缺陷同构：Brown(2002)→Reynolds(1883)→Cross(1936)+SH(2007)——
++    // 四层互不共享，旧实现兄弟约束仅共享层触发 → offset 恒 0 → 全树
++    // x 相同退化单列（分支不可见）。
++    // 修后推演值（手算复算，与主控简报一致）：层序 1883/1936/2002/2007
++    // =0/1/2/3；Cross=90、SH=310（错开恰 220=NODE_W+SIBLING_GAP）、
++    // Reynolds=Brown=200（单子链同 x，Reynolds 居中于两孙中点 (90+310)/2=200）。
++    const nodes = [
++      node('Brown', { year: 2002 }),
++      node('Reynolds', { year: 1883 }),
++      node('Cross', { year: 1936 }),
++      node('SH', { year: 2007 })
++    ]
++    const edges = [edge('Brown', 'Reynolds'), edge('Reynolds', 'Cross'), edge('Reynolds', 'SH')]
++    const { positions } = layoutLineage(nodes, edges)
++    // 两孙 x 错开 ≥ NODE_W+SIBLING_GAP（非单调兄弟全不共享层也必错开）
++    expect(Math.abs(positions.get('SH')!.x - positions.get('Cross')!.x)).toBeGreaterThanOrEqual(
++      NODE_W + SIBLING_GAP
++    )
++    // 根链 x 保持：Brown 单子链与 Reynolds 同 x（单链对齐语义不回退）
++    expect(positions.get('Brown')!.x).toBe(positions.get('Reynolds')!.x)
++    // Reynolds 居中于两孙块（RT 经典视觉保持）
++    const mid = (positions.get('Cross')!.x + positions.get('SH')!.x) / 2
++    expect(Math.abs(positions.get('Reynolds')!.x - mid)).toBeLessThan(0.5)
++  })
++
++  it('SR2-LG-07 紧凑性保持：深层不共享层兄弟子树仍可交错（根占位下限不过度推开）', () => {
++    // A 子树占 2021/2022 层且深层 2022 层宽达 [0,620]；B 子树全在 2023/2024
++    // 层（与 A 子树零共享层）。修后推演值：A=310、B=530——中心差恰 220=
++    // NODE_W+SIBLING_GAP（只有根占位参与下限，A 的深层宽轮廓不推 B）；
++    // B1(2024 层)=530 与 A3(2022 层)=530 同 x（异层交错仍可发生）。
++    const nodes = [
++      node('P', { year: 2020 }),
++      node('A', { year: 2021 }),
++      node('A1', { year: 2022 }),
++      node('A2', { year: 2022 }),
++      node('A3', { year: 2022 }),
++      node('B', { year: 2023 }),
++      node('B1', { year: 2024 })
++    ]
++    const edges = [
++      edge('P', 'A'),
++      edge('A', 'A1'),
++      edge('A', 'A2'),
++      edge('A', 'A3'),
++      edge('P', 'B'),
++      edge('B', 'B1')
++    ]
++    const { positions } = layoutLineage(nodes, edges)
++    // 兄弟根横向错开恰为下限值（防过度推开：若把根占位约束错扩成全轮廓
++    // 右缘，B 被 A 的 2022 层宽轮廓 [0,620] 推到 750——中心差 440，此断言红）
++    expect(positions.get('B')!.x - positions.get('A')!.x).toBe(NODE_W + SIBLING_GAP)
++    // 深层交错未死：B1（2024 层）与 A3（2022 层）x 区间可重叠（不共享层
++    // 子树可交错——紧凑性保持）
++    expect(Math.abs(positions.get('B1')!.x - positions.get('A3')!.x)).toBeLessThan(
++      NODE_W + SIBLING_GAP
++    )
++  })
+ })
+ 
+ describe('layoutLineage —— 年份层带（y）', () => {

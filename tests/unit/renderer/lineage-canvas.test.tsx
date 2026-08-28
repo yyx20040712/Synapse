@@ -159,6 +159,23 @@ describe('LineageCanvas —— 只读渲染', () => {
     expect(g?.getAttribute('transform')).toContain('777')
     expect(g?.getAttribute('transform')).toContain('999')
   })
+
+  it('SR2-LG-07 边 label：沿贝塞尔中点渲染真实文本；空 label 边不渲染 text', () => {
+    const nodes = [
+      node('A', { year: 2020, title: '源头' }),
+      node('B', { year: 2021, title: '承接' }),
+      node('C', { year: 2021, title: '旁支' })
+    ]
+    const labeled: LineageEdge = { ...edge('A', 'B'), label: '方法继承链' }
+    const edges = [labeled, edge('A', 'C')]
+    mount(<LineageCanvas nodes={nodes} edges={edges} />)
+    // 带 label 边：真实文本渲染（「渲染出真实文本」红线）+测试钩子
+    expect(host?.querySelector('[data-edge-label="e-A-B"]')?.textContent).toBe('方法继承链')
+    expect(host?.textContent).toContain('方法继承链')
+    // 空 label 边：不产生 text 节点（无钩子无空壳）；边 path 本身不受影响
+    expect(host?.querySelector('[data-edge-label="e-A-C"]')).toBeNull()
+    expect(host?.querySelectorAll('[data-edge-id]').length).toBe(2)
+  })
 })
 
 describe('LineageCanvas —— pan/zoom（INV-14）', () => {

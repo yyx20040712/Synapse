@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T12:03:18.2180157Z",
+    "generatedAt":  "2026-08-28T12:21:59.0655679Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -335,11 +335,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
-                      "sha256":  "4797851250748197b5fc1c63108e9271fe211aba488d5ecdff44d7fcd0251cb8"
+                      "sha256":  "1992fc4034ceff081296d2b81dcc753b068e96759ad85365eed49ba505b81de3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
-                      "sha256":  "534af8a2a9b8c0d9306a9b319f3b2af5282460a5d4bdba19cceed011bd6eb0e7"
+                      "sha256":  "f1c3affb617471cf69d2b2885cf2a58c678e71101ba7cd396bd5ba53157ca6ee"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",

@@ -5,7 +5,8 @@
  * 行为（票面+主控裁决 4）：
  * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
  *   标签/节点卡片（rect+标题+年份，主题节点虚线框区分文献节点）/父子
- *   连线贝塞尔（from 底边中心→to 顶边中心）；坐标=卡片中心。
+ *   连线贝塞尔（from 底边中心→to 顶边中心）+边 label 沿贝塞尔中点渲染
+ *   （真实文本，空串不渲染——缺陷 E1 修）；坐标=卡片中心。
  * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
  *   归 LG-03——本画布只读不留死按钮）。
  * - pan=空白（背景 rect data-panbg）pointer 拖拽平移；节点上按下不 pan
@@ -24,6 +25,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
+import { LineageEdges } from './LineageEdges'
 const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
 /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
 const DRAG_THRESHOLD = 3
@@ -179,26 +181,9 @@ export function LineageCanvas(props: {
             </text>
           </g>
         ))}
-        {/* 父子连线（from 底边中心→to 顶边中心，垂直主导贝塞尔） */}
-        {edges.map((e) => {
-          const from = layout.positions.get(e.fromNode)
-          const to = layout.positions.get(e.toNode)
-          if (from === undefined || to === undefined) return null
-          const y1 = from.y + NODE_H / 2
-          const y2 = to.y - NODE_H / 2
-          const mid = (y1 + y2) / 2
-          return (
-            <path
-              key={e.id}
-              data-edge-id={e.id}
-              d={`M ${from.x} ${y1} C ${from.x} ${mid}, ${to.x} ${mid}, ${to.x} ${y2}`}
-              fill="none"
-              stroke="var(--accent)"
-              strokeWidth={1.5}
-              opacity={0.7}
-            />
-          )
-        })}
+        {/* 父子连线+边 label（拆件 LineageEdges——组件行数红线；边 label
+            沿贝塞尔中点真实文本渲染，空串不渲染——缺陷 E1 修） */}
+        <LineageEdges edges={edges} positions={layout.positions} />
         {/* 节点卡片（主题节点=虚线框区分文献节点；拖拽期叠加 dragView 偏移跟随） */}
         {nodes.map((n) => {
           const p = layout.positions.get(n.id)

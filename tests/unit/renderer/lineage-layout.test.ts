@@ -125,6 +125,65 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
       NODE_W + SIBLING_GAP
     )
   })
+
+  it('SR2-LG-07 缺陷 E1：非单调年份树兄弟全不共享层不退化单列（M1 同构：根 2002→子 1883→孙 1936+2007）', () => {
+    // 图五缺陷同构：Brown(2002)→Reynolds(1883)→Cross(1936)+SH(2007)——
+    // 四层互不共享，旧实现兄弟约束仅共享层触发 → offset 恒 0 → 全树
+    // x 相同退化单列（分支不可见）。
+    // 修后推演值（手算复算，与主控简报一致）：层序 1883/1936/2002/2007
+    // =0/1/2/3；Cross=90、SH=310（错开恰 220=NODE_W+SIBLING_GAP）、
+    // Reynolds=Brown=200（单子链同 x，Reynolds 居中于两孙中点 (90+310)/2=200）。
+    const nodes = [
+      node('Brown', { year: 2002 }),
+      node('Reynolds', { year: 1883 }),
+      node('Cross', { year: 1936 }),
+      node('SH', { year: 2007 })
+    ]
+    const edges = [edge('Brown', 'Reynolds'), edge('Reynolds', 'Cross'), edge('Reynolds', 'SH')]
+    const { positions } = layoutLineage(nodes, edges)
+    // 两孙 x 错开 ≥ NODE_W+SIBLING_GAP（非单调兄弟全不共享层也必错开）
+    expect(Math.abs(positions.get('SH')!.x - positions.get('Cross')!.x)).toBeGreaterThanOrEqual(
+      NODE_W + SIBLING_GAP
+    )
+    // 根链 x 保持：Brown 单子链与 Reynolds 同 x（单链对齐语义不回退）
+    expect(positions.get('Brown')!.x).toBe(positions.get('Reynolds')!.x)
+    // Reynolds 居中于两孙块（RT 经典视觉保持）
+    const mid = (positions.get('Cross')!.x + positions.get('SH')!.x) / 2
+    expect(Math.abs(positions.get('Reynolds')!.x - mid)).toBeLessThan(0.5)
+  })
+
+  it('SR2-LG-07 紧凑性保持：深层不共享层兄弟子树仍可交错（根占位下限不过度推开）', () => {
+    // A 子树占 2021/2022 层且深层 2022 层宽达 [0,620]；B 子树全在 2023/2024
+    // 层（与 A 子树零共享层）。修后推演值：A=310、B=530——中心差恰 220=
+    // NODE_W+SIBLING_GAP（只有根占位参与下限，A 的深层宽轮廓不推 B）；
+    // B1(2024 层)=530 与 A3(2022 层)=530 同 x（异层交错仍可发生）。
+    const nodes = [
+      node('P', { year: 2020 }),
+      node('A', { year: 2021 }),
+      node('A1', { year: 2022 }),
+      node('A2', { year: 2022 }),
+      node('A3', { year: 2022 }),
+      node('B', { year: 2023 }),
+      node('B1', { year: 2024 })
+    ]
+    const edges = [
+      edge('P', 'A'),
+      edge('A', 'A1'),
+      edge('A', 'A2'),
+      edge('A', 'A3'),
+      edge('P', 'B'),
+      edge('B', 'B1')
+    ]
+    const { positions } = layoutLineage(nodes, edges)
+    // 兄弟根横向错开恰为下限值（防过度推开：若把根占位约束错扩成全轮廓
+    // 右缘，B 被 A 的 2022 层宽轮廓 [0,620] 推到 750——中心差 440，此断言红）
+    expect(positions.get('B')!.x - positions.get('A')!.x).toBe(NODE_W + SIBLING_GAP)
+    // 深层交错未死：B1（2024 层）与 A3（2022 层）x 区间可重叠（不共享层
+    // 子树可交错——紧凑性保持）
+    expect(Math.abs(positions.get('B1')!.x - positions.get('A3')!.x)).toBeLessThan(
+      NODE_W + SIBLING_GAP
+    )
+  })
 })
 
 describe('layoutLineage —— 年份层带（y）', () => {

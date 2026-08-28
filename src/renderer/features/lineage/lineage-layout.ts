@@ -9,6 +9,10 @@
  *   定 x——rescope-verification §4 算法调研母本；**D3 禁引**零新依赖
  *   红线）；**森林语义**（多根=多棵树并排——INV-27 单父无环前提下
  *   边集构成森林；孤立节点=单节点树）
+ * - **兄弟根占位分离（缺陷 E1 修，2026-08-28 验收）**：layoutLineage 性质——
+ *   直接兄弟节点对不论年份层必横向错开 ≥ NODE_W+SIBLING_GAP（根节点
+ *   占位 rootLo/rootHi 参与兄弟放置下限——非单调年份树兄弟全不共享层
+ *   时不退化单列）；共享层轮廓约束语义原样（深层不共享层子树仍可交错）
  * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
  *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
  *   碰撞避让，票面声明）；null → 布局产出
@@ -72,8 +76,9 @@
  *   胜出）/成环（to 是 from 祖先链上的点）——剔除计数一次汇总
  *   console.warn；**不丢节点**（环上节点断边后照常成根布局）。
  * - x 覆盖节点与其父断链（其子树自成根照常布局）；y 覆盖仅替换 y。
- * - RT 两趟：place() 后序合并子树轮廓，兄弟放置=max over 共享层（前树该层
- *   右缘+间隙）；assign() 前序按 boxOrigin 累积绝对化。树序=边输入序
+ * - RT 两趟：place() 后序合并子树轮廓，兄弟放置=max over（共享层前树右
+ *   缘+间隙）∪（前树根占位右缘+间隙−本树根占位左缘——缺陷 E1 修）；
+ *   assign() 前序按 boxOrigin 累积绝对化。树序=边输入序
  *   （稳定性锚点）。**轮廓帧按年份层序索引（非树深度——回炉 1 轮 W1）**：
  *   y=年份层带打破经典 RT「深度=行」不变量后，深度索引只在同深度分离，
  *   叔侄同年（异深同年带）无约束即重叠（门一实测 70px）——层索引保证
@@ -103,6 +108,9 @@ export interface LayoutResult {
 interface Frame {
   spans: Map<number, { lo: number; hi: number }>
   width: number
+  /** 根节点占位（相对同一原点）：叶子=[0,NODE_W]，内部节点=[x−NODE_W/2, x+NODE_W/2] */
+  rootLo: number
+  rootHi: number
 }
 
 export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): LayoutResult {
@@ -189,14 +197,21 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
     const myLayer = layerIdx.get(byId.get(id)!.year)!
     if (kids.length === 0) {
       selfRel.set(id, NODE_W / 2)
-      return { spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]), width: NODE_W }
+      return {
+        spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]),
+        width: NODE_W,
+        rootLo: 0,
+        rootHi: NODE_W
+      }
     }
     const merged = new Map<number, { lo: number; hi: number }>()
     const offsets: number[] = []
+    let mergedRootHi: number | null = null // 已合并兄弟根占位 max 右缘（null=首个兄弟无下限）
     for (const kid of kids) {
       const f = place(kid)
-      // 兄弟约束=所有共享层上（前树该层右缘+间隙-本树该层左缘）的最大值——
-      // 不共享层的子树可交错（轮廓紧凑性）；共享层含异深同年（W1 核心）
+      // 兄弟约束 1=共享层（原样保留）：所有共享层上（前树该层右缘+间隙-本
+      // 树该层左缘）的最大值——不共享层的子树可交错（轮廓紧凑性）；共享层
+      // 含异深同年（W1 核心）
       let need = 0
       for (const [layer, span] of f.spans) {
         const prev = merged.get(layer)
@@ -204,8 +219,16 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
           need = Math.max(need, prev.hi + SIBLING_GAP - span.lo)
         }
       }
+      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层
+      // 必错开 ≥ NODE_W+SIBLING_GAP——非单调树兄弟全不共享层时约束 1 恒 0
+      // → offset 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层
+      // 不共享层子树交错不受此约束推开（紧凑性保持）
+      if (mergedRootHi !== null) {
+        need = Math.max(need, mergedRootHi + SIBLING_GAP - f.rootLo)
+      }
       const offset = Math.max(0, need)
       offsets.push(offset)
+      mergedRootHi = Math.max(mergedRootHi ?? -Infinity, offset + f.rootHi)
       for (const [layer, span] of f.spans) {
         const lo = offset + span.lo
         const hi = offset + span.hi
@@ -240,7 +263,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
     const finalMin = Math.min(...[...merged.values()].map((s) => s.lo))
     const finalWidth = Math.max(...[...merged.values()].map((s) => s.hi)) - finalMin
     selfRel.set(id, x)
-    return { spans: merged, width: finalWidth }
+    return { spans: merged, width: finalWidth, rootLo: plo, rootHi: phi }
   }
 
   function assign(id: string, originAbs: number): void {
