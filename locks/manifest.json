@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T11:48:06.0110307Z",
+    "generatedAt":  "2026-08-28T12:03:18.2180157Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -343,7 +343,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "c71fde1217d372594040ccdd27fc3e3bf1b18e5f06175eb3a0d5f2a7c3b51d84"
+                      "sha256":  "b5e5a1a97e2bc7a876dba13a3a18bb5f95059b34b9b44f6c6c08378f0f10e0f0"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",

@@ -11,7 +11,9 @@
  * 空数据空态文案/换节点 stale 守卫（晚到旧响应不覆盖）/未选中空态/
  * Page 编排全链（单击节点→侧板挂载→双击→requestOpenPaperAnchored 锚载荷）/
  * Canvas 选中视觉态（Board selectedNodeId 兑现）/消费方级 INV-20（open-paper-
- * anchor：带锚→locateAnchor 单入口+页级降级静默；无锚→openPaper 既有链路）。
+ * anchor：带锚→locateAnchor 单入口+页级降级静默；无锚→openPaper 既有链路）/
+ * 消费方级 LG-06（带 aiNoteId 锚→notifyAiNoteHighlight 先于 locateAnchor
+ * +定位照常；无 aiNoteId 锚→notify 不调）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -21,7 +23,7 @@ import type { LineageNode } from '../../../src/shared/models/lineage'
 import type * as clientModule from '../../../src/renderer/api/client'
 import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
 
-const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub } = vi.hoisted(() => ({
+const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
   stubApi: {
     ai_sensor: { listByPaper: vi.fn() },
     notes: { get: vi.fn() },
@@ -29,7 +31,8 @@ const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub } = vi.hoi
   },
   openPaperStub: vi.fn(),
   locateAnchorStub: vi.fn(),
-  requestAnchoredStub: vi.fn()
+  requestAnchoredStub: vi.fn(),
+  notifyAiNoteStub: vi.fn()
 }))
 
 vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
@@ -49,9 +52,10 @@ vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) =>
   return { ...real, showToast: vi.fn() }
 })
 
-// 消费方级用例：reader.store 仅需 getState().openPaper（open-paper-anchor 面）
+// 消费方级用例：reader.store 仅需 getState().openPaper + notifyAiNoteHighlight
+// （open-paper-anchor 面——LG-06 起 anchor 分支亦发面板信号）
 vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
-  useReaderStore: { getState: () => ({ openPaper: openPaperStub }) }
+  useReaderStore: { getState: () => ({ openPaper: openPaperStub, notifyAiNoteHighlight: notifyAiNoteStub }) }
 }))
 vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({
   locateAnchor: locateAnchorStub
@@ -198,6 +202,45 @@ it('消费方级：带锚请求→locateAnchor 单入口（锚三元组+aiNoteId
     aiNoteId: 'a1'
   })
   expect(openPaperStub).not.toHaveBeenCalled()
+})
+
+it('消费方级 LG-06：带 aiNoteId 锚请求→notifyAiNoteHighlight("a1") 先于 locateAnchor+定位照常', async () => {
+  openFromBus({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
+    aiNoteId: 'a1'
+  })
+  await flush()
+  expect(notifyAiNoteStub).toHaveBeenCalledTimes(1)
+  expect(notifyAiNoteStub).toHaveBeenCalledWith('a1')
+  // 顺序：notify 先于 locateAnchor——面板信号早发（持久 state 非瞬态事件，
+  // tab 未开/loading 期间不丢失，挂载后效应补切）
+  expect(notifyAiNoteStub.mock.invocationCallOrder[0]).toBeDefined()
+  expect(locateAnchorStub.mock.invocationCallOrder[0]).toBeDefined()
+  expect(notifyAiNoteStub.mock.invocationCallOrder[0]!).toBeLessThan(
+    locateAnchorStub.mock.invocationCallOrder[0]!
+  )
+  expect(locateAnchorStub).toHaveBeenCalledWith({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
+    aiNoteId: 'a1'
+  })
+})
+
+it('消费方级 LG-06：无 aiNoteId 锚请求（裸锚）→notifyAiNoteHighlight 不调（信号仅 AI 笔记跳转发）', async () => {
+  openFromBus({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: '', suffixText: '' }
+  })
+  await flush()
+  expect(notifyAiNoteStub).not.toHaveBeenCalled()
+  // 定位照常（既有透传形状：paperId/anchor/aiNoteId 三字段；OpenPaperRequest
+  // 载荷无 annotationId——标注跳转不经本总线消费点）
+  expect(locateAnchorStub).toHaveBeenCalledWith({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: '', suffixText: '' },
+    aiNoteId: undefined
+  })
 })
 
 it('消费方级：无锚请求→openPaper 既有链路（locateAnchor 不介入）', async () => {
