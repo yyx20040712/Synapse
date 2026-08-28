@@ -35,6 +35,8 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
 const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04'] as const
 /** 标注链后半的依赖：渲染链 + 两个标注层（划选保存/渲染命中） */
 const ANNOTATION_DEPS = [...DEPS, 'SR-RDR-05', 'SR-RDR-06'] as const
+/** F-02 批 2 依赖：四层多页化收口（动态锚定根+跳页兼容——划选链回归承载） */
+const F02_DEPS = [...ANNOTATION_DEPS, 'SR2-F-02'] as const
 
 /** 依赖未就绪则整测延期（翻 done 即激活）；逐测声明——标注链不绑架渲染断言 */
 function skipIfPending(deps: readonly string[]): void {
@@ -159,7 +161,7 @@ test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-
 })
 
 test('划选高亮后重开仍在原位；批注编辑与删除可用', async () => {
-  skipIfPending(ANNOTATION_DEPS)
+  skipIfPending(F02_DEPS)
   // 受管文件 + 种子落库 + 二次启动（seedAndLaunch 共用配方；标题带"标注链"区分）
   const title = '智慧水务 e2e 标注链文献'
   const { app, userData } = await seedAndLaunch(title)

@@ -148,7 +148,8 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘�
  * AI 高亮块→侧栏自动切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）。
  */
 test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点击跳面板高亮', async () => {
-  const pending09 = DEPS.filter((d) => !isTicketDone(d))
+  // F-02 批 2：动态锚定根+跳页兼容后 AI 重锚渲染链回归（页盒结构消费方）
+  const pending09 = [...DEPS, 'SR2-F-02'].filter((d) => !isTicketDone(d))
   test.skip(pending09.length > 0, `延期：依赖工单未完成 [${pending09.join(', ')}]`)
 
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))

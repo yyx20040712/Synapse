@@ -1,0 +1,793 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index b8015fc..0785278 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T04:19:12.4852735Z",
++    "generatedAt":  "2026-08-28T05:05:46.7733263Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -143,7 +143,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/ai-notes-section.spec.ts",
+-                      "sha256":  "d95ba2159c129f80c418f3c8a8c24982e671aa01af81f642ac7de6ffbde57ad1"
++                      "sha256":  "4db3e36636020ea5fe1c5bcf67a5214b6ec6ffc2bec08c5d6da93ee891d6ab68"
+                   },
+                   {
+                       "path":  "tests/e2e/corpus-export.spec.ts",
+@@ -155,7 +155,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/lineage.spec.ts",
+-                      "sha256":  "e4554a04fc748e03051be22be7b1ac3a65022d80eb56c78142c9e358902b91e7"
++                      "sha256":  "f75d345edd42a0f7edb6baffd05b7ded2467c5910e9b0db1053f5a85b6c63489"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+@@ -163,7 +163,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "c6b0ca75e012c57a0450ab74c0370f4c9e4185931d11b71593a61ce7f829883d"
++                      "sha256":  "c704804eebaa20bf39f38736bb098153b548af2d189dc85adfc340baf636d33c"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -295,7 +295,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+-                      "sha256":  "93f43f6d2c68fe3dfca74b00b1610b1fdb1b337c5707239fa8934900cac05443"
++                      "sha256":  "f4eb7b567e995250fd58c4c75299efaeb7d4a59af11844f86755f3b36feedb83"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+@@ -385,6 +385,10 @@
+                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
+                       "sha256":  "1f39613d523bfea1f6e39bf11cc60106114f2276b2fecf88904d63940eded59f"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/selection-layer.test.tsx",
++                      "sha256":  "607a0c0441f89015d770aec77ad6db07b6274689c7571be71d83ddee37bae1c8"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/settings.store.test.ts",
+                       "sha256":  "3aef2cc0abb2752a82e838074e84472ec8cd421a0519e62a34f5759e6570b208"
+diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+index 3b6c598..cf5b097 100644
+--- a/src/renderer/features/reader/SelectionLayer.tsx
++++ b/src/renderer/features/reader/SelectionLayer.tsx
+@@ -1,30 +1,31 @@
+ /**
+  * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：done / weak，依赖 annotation-anchor）
+  *
+- * ── 行为层 ──
+- * - 监听 selectionchange（200ms 防抖）与 mouseup：选区落在当前页文本层内且非空时，
+- *   在选区上方弹出标注工具条（5 色点 + 高亮/下划线/备注三种）
+- * - 确认后经 annotation-anchor.selectionToAnchor 生成 { start, end, quote/prefix/suffix,
+- *   rects }（rects.page 由本层改写为实际 0 基页码）→ api.reader.saveAnnotation →
+- *   onSaved(落库返回值) 由 ReaderPage 写入 reader.store.addAnnotation 刷新 AnnotationLayer
+- * - 选区跨出本页文本层（跨页/页外拖拽）时 mouseup 评估提示"仅支持单页内标注"；
+- *   与本页不相干的选区（侧栏等）静默收起
+- *
+- * ── 接口层 ──
+- * - export function SelectionLayer(props: { pageRoot: HTMLElement | null;
+- *     paperId: string; page: number; onSaved(a: Annotation): void }): JSX.Element | null
++ * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
++ *   为主改面，短式引用口径）——动态锚定根**
+  *
+- * ── 架构层 ──
+- * - 锚定根是页根内的 .textLayer 容器（官方文本层），不是页根本身——工具条自身的
+- *   按钮文字若混入页内全文会污染偏移语义；annotation-anchor 仍是唯一 DOM 遍历点
+- * - 当前色读写 reader.store（与 ReaderToolbar 色板同源）；保存后清空原生选区
++ * ── 行为层 ──
++ * - 监听 selectionchange（200ms 防抖）与 mouseup（即时）：锚定根=选区
++ *   anchorNode/focusNode 向上最近页盒（纯函数页盒遍历）——挂载盒（F-01 锚定
++ *   页盒落位）≠选区所在页仍正确（F-01 自裁 4 中间态解除）；选区态状态机：
++ *   无选区→页内选区→工具条操作→清；跨页/跨出页盒→不创建+toast（mouseup 时刻，
++ *   INV-02 禁静默；防抖路径静默防拖选中途刷屏）；选区所在页回收/文本层重建
++ *   （zoom 同机制）→选区清→工具条收（防悬空锚）；滚动中选区保持=evaluate
++ *   每次动态重找锚定根（跟随选区非固定页）；页外选区（侧栏等）静默收起
++ * - 确认后经 annotation-anchor.selectionToAnchor 生成锚定三元组 → 落库（保存页=
++ *   pending.pageNo 选区所在页 0 基动态推导，rects.page 同）→ onSaved 刷新层
+  *
+- * ── 生命周期层 ──
+- * - mouseup 即时评估、selectionchange 防抖兜底（Playwright selectText 等程序化
+- *   选选路径不触发 mouseup）；翻页/换文献/卸载时收起并退订
++ * ── 接口层 ── / ── 架构层 ──
++ * - props 形状不变=挂载位契约零改（page 不再作锚定/保存页——由动态锚定取代）；
++ *   export closestPageRoot(node)（向上最近页盒）/pageIndexOf(root)（1 基→0 基）。
++ *   锚定根=选区所在页盒内 .textLayer 动态获取；annotation-anchor 仍是唯一 DOM
++ *   遍历点；工具条落点以选区所在页盒为参照系（夹取经页盒 rect——N-C 防层叠
++ *   污染），再换算到挂载盒渲染（页列垂直排列页间偏移稳定）
+  *
+- * ── 文化层 ──
+- * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
++ * ── 生命周期层 ── / ── 文化层 ──
++ * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载收起
++ *   退订。组件测试：tests/unit/renderer/selection-layer.test.tsx；e2e：
++ *   reader-text.spec 后半（F-02 批 2 守卫）
+  */
+ import { useEffect, useRef, useState } from 'react'
+ import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
+@@ -39,8 +40,8 @@ import { useReaderStore } from './reader.store'
+ /** 意外异常（非 ApiClientError）时的兜底中文消息 */
+ const SAVE_FAILED = '标注保存失败'
+ 
+-/** 跨页/页外选区的 v1 约束提示 */
+-const CROSS_PAGE_HINT = '仅支持单页内标注'
++/** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
++const CROSS_PAGE_HINT = '选区跨页，不支持创建标注'
+ 
+ /** 工具条定位：估算宽度（水平夹取）与选区上方留白 */
+ const TOOLBAR_WIDTH = 180
+@@ -49,9 +50,32 @@ const TOOLBAR_ABOVE = 42
+ /** selectionchange 防抖窗口（毫秒） */
+ const SELECTION_DEBOUNCE_MS = 200
+ 
+-/** 待确认的划选（锚定结果 + 工具条在页根内的落点） */
++/** F-02：节点向上最近页盒（[data-page-root] 元素——页列渲染窗内页才有；
++ *  锚定根动态遍历的纯函数，测试直测） */
++export function closestPageRoot(node: Node | null): HTMLElement | null {
++  let cur: Node | null = node
++  while (cur !== null) {
++    if (cur instanceof HTMLElement && cur.hasAttribute('data-page-root')) {
++      return cur
++    }
++    cur = cur.parentNode
++  }
++  return null
++}
++
++/** F-02：页盒页号（data-page-root 值 1 基→0 基页码；缺失/非法值 null） */
++export function pageIndexOf(root: HTMLElement): number | null {
++  const no = Number(root.getAttribute('data-page-root'))
++  return Number.isInteger(no) && no >= 1 ? no - 1 : null
++}
++
++/** 工具条三种动作（kind→中文文案——按钮 map 单源） */
++const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
++
++/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点） */
+ interface PendingSelection {
+   anchor: SelectionAnchor
++  pageNo: number
+   x: number
+   y: number
+ }
+@@ -62,7 +86,7 @@ export function SelectionLayer(props: {
+   page: number
+   onSaved: (a: Annotation) => void
+ }): JSX.Element | null {
+-  const { pageRoot, paperId, page, onSaved } = props
++  const { pageRoot, paperId, onSaved } = props
+   const [pending, setPending] = useState<PendingSelection | null>(null)
+   const [busy, setBusy] = useState(false)
+   // per-tab 选择器（TABS-01）：颜色取 active tab（无 tab 时回退默认黄）
+@@ -71,49 +95,55 @@ export function SelectionLayer(props: {
+   const toolbarRef = useRef<HTMLDivElement | null>(null)
+ 
+   useEffect(() => {
+-    if (pageRoot === null) {
+-      return
+-    }
++    if (pageRoot === null) return
+     let timer: number | null = null
+ 
+-    /** 评估当前选区：可锚定→挂起待确认；不可→收起（fromMouseUp 时给跨页提示） */
++    /** 评估当前选区（F-02 动态锚定根）：选区所在页盒内锚定；跨页拒绝
++     *  （mouseup 提示）；页外/不可锚定/零宽选区静默收起 */
+     const evaluate = (fromMouseUp: boolean): void => {
+-      const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement | null
+       const sel = window.getSelection()
+-      if (textLayer === null || sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
++      if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
+         setPending(null)
+         return
+       }
+-      const anchor = selectionToAnchor(textLayer, sel)
++      const anchorRoot = closestPageRoot(sel.anchorNode)
++      const focusRoot = closestPageRoot(sel.focusNode)
++      if (anchorRoot !== focusRoot) {
++        // 跨页/跨出页盒：不创建+toast（主控裁决，INV-02 禁静默——仅挂用户完成
++        // 拖选的 mouseup 时刻，防抖路径静默防拖选中途刷屏）
++        if (fromMouseUp) showToast(CROSS_PAGE_HINT, 'info')
++        setPending(null)
++        return
++      }
++      // 两边界同盒（同为 null=页外选区——静默收起，与页列无关）
++      const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
++      const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
++      const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
+       if (anchor === null) {
+-        if (fromMouseUp && sel.getRangeAt(0).intersectsNode(textLayer)) {
+-          showToast(CROSS_PAGE_HINT, 'info')
+-        }
+         setPending(null)
+         return
+       }
+       const box = sel.getRangeAt(0).getBoundingClientRect()
+-      const rootBox = pageRoot.getBoundingClientRect()
+       if (box.width === 0 && box.height === 0) {
+         setPending(null)
+         return
+       }
+-      const x = Math.min(Math.max(box.x - rootBox.x, 0), Math.max(rootBox.width - TOOLBAR_WIDTH, 0))
+-      const y = Math.max(box.y - rootBox.y - TOOLBAR_ABOVE, 0)
+-      setPending({ anchor, x, y })
++      // 落点以选区所在页盒为参照系（N-C：夹取经页盒 rect 防层叠污染），再换算
++      // 到挂载盒（组件渲染容器——页列垂直排列页间偏移布局稳定）
++      const selBox = anchorRoot!.getBoundingClientRect()
++      const mountBox = pageRoot.getBoundingClientRect()
++      const x = Math.min(Math.max(box.x - selBox.x, 0), Math.max(selBox.width - TOOLBAR_WIDTH, 0)) + (selBox.x - mountBox.x)
++      const y = Math.max(box.y - selBox.y - TOOLBAR_ABOVE, 0) + (selBox.y - mountBox.y)
++      setPending({ anchor, pageNo: pageNo!, x, y })
+     }
+ 
+     const onSelectionChange = (): void => {
+-      if (timer !== null) {
+-        window.clearTimeout(timer)
+-      }
++      if (timer !== null) window.clearTimeout(timer)
+       timer = window.setTimeout(() => evaluate(false), SELECTION_DEBOUNCE_MS)
+     }
+     const onMouseUp = (e: MouseEvent): void => {
+       // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
+-      if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) {
+-        return
+-      }
++      if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
+       if (timer !== null) {
+         window.clearTimeout(timer)
+         timer = null
+@@ -121,9 +151,7 @@ export function SelectionLayer(props: {
+       evaluate(true)
+     }
+     const onKeyDown = (e: KeyboardEvent): void => {
+-      if (e.key === 'Escape') {
+-        setPending(null)
+-      }
++      if (e.key === 'Escape') setPending(null)
+     }
+ 
+     document.addEventListener('selectionchange', onSelectionChange)
+@@ -133,28 +161,23 @@ export function SelectionLayer(props: {
+       document.removeEventListener('selectionchange', onSelectionChange)
+       document.removeEventListener('mouseup', onMouseUp)
+       document.removeEventListener('keydown', onKeyDown)
+-      if (timer !== null) {
+-        window.clearTimeout(timer)
+-      }
++      if (timer !== null) window.clearTimeout(timer)
+       setPending(null)
+     }
+-  }, [pageRoot, page, paperId])
++    // 依赖=挂载盒+文献（F-02：page 不再参与——锚定根动态；挂载盒引用变化
++    // 已覆盖锚定页切换的重挂清理语义）
++  }, [pageRoot, paperId])
+ 
+-  /** 按当前色 + 指定 kind 落库；成功后清选区并经 onSaved 交由父级刷新 store */
++  /** 按当前色 + 指定 kind 落库（page=选区所在页 0 基动态推导——F-02）；
++   *  成功后清选区并经 onSaved 交由父级刷新 store */
+   async function save(kind: AnnotationKind): Promise<void> {
+-    if (pending === null || busy) {
+-      return
+-    }
++    if (pending === null || busy) return
+     const input: AnnotationInput = {
+-      page,
+-      kind,
+-      color,
+-      quoteText: pending.anchor.quote,
+-      prefixText: pending.anchor.prefix,
+-      suffixText: pending.anchor.suffix,
+-      startOffset: pending.anchor.start,
++      page: pending.pageNo, kind, color,
++      quoteText: pending.anchor.quote, prefixText: pending.anchor.prefix,
++      suffixText: pending.anchor.suffix, startOffset: pending.anchor.start,
+       endOffset: pending.anchor.end,
+-      rects: pending.anchor.rects.map((r) => ({ ...r, page })),
++      rects: pending.anchor.rects.map((r) => ({ ...r, page: pending.pageNo })),
+       comment: ''
+     }
+     setBusy(true)
+@@ -176,9 +199,7 @@ export function SelectionLayer(props: {
+     }
+   }
+ 
+-  if (pending === null) {
+-    return null
+-  }
++  if (pending === null) return null
+   const btn = 'rounded border px-2 py-0.5 disabled:opacity-50'
+ 
+   return (
+@@ -211,33 +232,18 @@ export function SelectionLayer(props: {
+         />
+       ))}
+       <span className="mx-0.5 inline-block h-3 w-px" style={{ background: 'var(--border)' }} />
+-      <button
+-        type="button"
+-        className={btn}
+-        style={{ borderColor: 'var(--border)' }}
+-        disabled={busy}
+-        onClick={() => void save('highlight')}
+-      >
+-        高亮
+-      </button>
+-      <button
+-        type="button"
+-        className={btn}
+-        style={{ borderColor: 'var(--border)' }}
+-        disabled={busy}
+-        onClick={() => void save('underline')}
+-      >
+-        下划线
+-      </button>
+-      <button
+-        type="button"
+-        className={btn}
+-        style={{ borderColor: 'var(--border)' }}
+-        disabled={busy}
+-        onClick={() => void save('note')}
+-      >
+-        备注
+-      </button>
++      {(Object.keys(KIND_LABEL) as AnnotationKind[]).map((k) => (
++        <button
++          key={k}
++          type="button"
++          className={btn}
++          style={{ borderColor: 'var(--border)' }}
++          disabled={busy}
++          onClick={() => void save(k)}
++        >
++          {KIND_LABEL[k]}
++        </button>
++      ))}
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/reader/anchor-locate.ts b/src/renderer/features/reader/anchor-locate.ts
+index ab7ad52..150ad0f 100644
+--- a/src/renderer/features/reader/anchor-locate.ts
++++ b/src/renderer/features/reader/anchor-locate.ts
+@@ -4,11 +4,13 @@
+  *
+  * **[SR2-F-02] 四层多页化收口（工单：open / strong；注册文件=本文件）**
+  * ——双裁决链：头指针 b3: P7-C 保持不动（C-05 链），F-02 裁决链=registry
+- * summary 声明（P7-F）。本单改造：verifyWhenReady :153 的
++ * summary 声明（P7-F）。本单改造：verifyWhenReady 的
+  * document.querySelector('.textLayer') 全局第一改为目标页（anchorPage
+- * 页盒）内查询；头注 :52-54 F-aware 接缝口径同步为滚动步。**签名零触碰**
+- * （LocateAnchor :69-73/LocateTarget :75-84/LocateResult :86——F-aware
+- * 冻结面）。票面=scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
++ * 页盒 data-page-root=anchorPage+1，PageColumn 1 基）内查询；页盒缺席（单页
++ * 宿主/无页列夹具）回退全局唯一 textLayer（既有单页行为兼容）；头注 :52-54
++ * F-aware 接缝口径同步为滚动步。**签名零触碰**（LocateAnchor :69-73/
++ * LocateTarget :75-84/LocateResult :86——F-aware 冻结面）。票面=
++ * scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
+  *
+  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
+  * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
+@@ -57,8 +59,10 @@
+  * ── 架构层 ──
+  * - reader 域模块（不 import 组件；消费 annotation-anchor.verifyQuote/
+  *   open-paper-bus/reader.store/toast-store——.ts 消费方走 toast-store 惯例）
+- * - F-aware 接缝：setPage/activateTab 组合=「滚动到页 P 的锚 R」的 v1 实现；
+- *   P7-F 连续滚动后仅换本文件滚动步实现，locateAnchor 签名与消费方不动
++ * - F-aware 接缝（F-02 口径同步）：滚动步=setPage 默认 'to'→INV-29
++ *   scrollRequest 信号→PageColumn.scrollToPage 目标页盒顶（F-01 已落）；文本
++ *   层验证=目标页盒内限定（F-02）。后续仅换本文件滚动步实现，locateAnchor
++ *   签名与消费方不动
+  *
+  * ── 生命周期层 ──
+  * - 不做：定位动画队列/跨 tab 批量定位；P7-H 脉络侧板（N3）经本入口复用
+@@ -152,13 +156,17 @@ async function waitOpen(paperId: string, seq: number): Promise<OpenOutcome> {
+ type VerifyOutcome = 'exact' | 'page' | 'stale'
+ 
+ /** verifying：等文本层可判后 verifyQuote（anchor-anchor 唯一 DOM 遍历点；
+- *  DOM 异常按验证失败继续轮询（deepseek N2）；目标 tab 消失即作废（S6） */
++ *  DOM 异常按验证失败继续轮询（deepseek N2）；目标 tab 消失即作废（S6）。
++ *  F-02 页限定：目标页盒（data-page-root=anchorPage+1，PageColumn 1 基）内查
++ *  .textLayer——多页列渲染窗内全局第一=邻页文本层（错误页验证/邻页引文误
++ *  命中）；页盒缺席（单页宿主/无页列夹具）回退全局唯一 textLayer */
+ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: number): Promise<VerifyOutcome> {
+   const deadline = Date.now() + LOCATE_TEXT_READY_TIMEOUT_MS
+   while (Date.now() < deadline) {
+     if (locateSeq !== seq) return 'stale'
+     if (useReaderStore.getState().tabs[paperId] === undefined) return 'stale'
+-    const textLayer = document.querySelector('.textLayer') as HTMLElement | null
++    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${(anchor.anchorPage ?? 0) + 1}"]`)
++    const textLayer = (pageRoot ?? document).querySelector('.textLayer') as HTMLElement | null
+     if (textLayer !== null) {
+       let at: number | null = null
+       try {
+diff --git a/tests/e2e/ai-notes-section.spec.ts b/tests/e2e/ai-notes-section.spec.ts
+index 7c09129..4e3735b 100644
+--- a/tests/e2e/ai-notes-section.spec.ts
++++ b/tests/e2e/ai-notes-section.spec.ts
+@@ -148,7 +148,8 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘
+  * AI 高亮块→侧栏自动切笔记 tab+对应条目高亮（highlightAiNoteId 反向同步）。
+  */
+ test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点击跳面板高亮', async () => {
+-  const pending09 = DEPS.filter((d) => !isTicketDone(d))
++  // F-02 批 2：动态锚定根+跳页兼容后 AI 重锚渲染链回归（页盒结构消费方）
++  const pending09 = [...DEPS, 'SR2-F-02'].filter((d) => !isTicketDone(d))
+   test.skip(pending09.length > 0, `延期：依赖工单未完成 [${pending09.join(', ')}]`)
+ 
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+index 79eb893..e6c2bce 100644
+--- a/tests/e2e/lineage.spec.ts
++++ b/tests/e2e/lineage.spec.ts
+@@ -414,6 +414,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
+    * exact 层 AI-09 延展消费）。
+    */
+   test('T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位', async () => {
++    // F-02 批 2：跳页兼容（exact 层经目标页盒文本层验证）——逐测守卫（describe
++    // 级 DEPS 之外单列，T1~T3 不被 F-02 绑架）
++    const pendingF02 = ['SR2-F-02'].filter((d) => !isTicketDone(d))
++    test.skip(pendingF02.length > 0, `延期：依赖工单未完成 [${pendingF02.join(', ')}]`)
+     test.slow() // AI 面板 5s 轮询消费 fixture+PDF 加载+跳转链
+     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t4-'))
+     const sensorRoot = join(userData, 'ai-sensor')
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 46c6577..a1d7c70 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -35,6 +35,8 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+ const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04'] as const
+ /** 标注链后半的依赖：渲染链 + 两个标注层（划选保存/渲染命中） */
+ const ANNOTATION_DEPS = [...DEPS, 'SR-RDR-05', 'SR-RDR-06'] as const
++/** F-02 批 2 依赖：四层多页化收口（动态锚定根+跳页兼容——划选链回归承载） */
++const F02_DEPS = [...ANNOTATION_DEPS, 'SR2-F-02'] as const
+ 
+ /** 依赖未就绪则整测延期（翻 done 即激活）；逐测声明——标注链不绑架渲染断言 */
+ function skipIfPending(deps: readonly string[]): void {
+@@ -159,7 +161,7 @@ test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-
+ })
+ 
+ test('划选高亮后重开仍在原位；批注编辑与删除可用', async () => {
+-  skipIfPending(ANNOTATION_DEPS)
++  skipIfPending(F02_DEPS)
+   // 受管文件 + 种子落库 + 二次启动（seedAndLaunch 共用配方；标题带"标注链"区分）
+   const title = '智慧水务 e2e 标注链文献'
+   const { app, userData } = await seedAndLaunch(title)
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 4ccc182..440e6f0 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -7,7 +7,7 @@
+  * S9 opening 中被关（seen→absent）作废无提示（票面 S6 行两形态）。
+  */
+ import { act } from 'react'
+-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
+ import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+@@ -221,3 +221,47 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+     expect(elB.classList.contains('locate-flash')).toBe(true)
+   })
+ })
++
++/**
++ * [SR2-F-02] 页限定回归（受锁扩批 2；always-active——ADR-0017 裁决 3 新测试
++ * 不经 guardedDescribe）。F-01 页列后渲染窗（可见±1）内 document 存在多个
++ * .textLayer——verifyWhenReady 的全局第一命中=邻页文本层（错误页验证）。
++ * 页限定=目标页盒（data-page-root，PageColumn 1 基）内查询。
++ */
++describe('anchor-locate F-02 页限定（多页列）', () => {
++  /** F-01 后阅读器结构：每页盒 data-page-root=N（1 基）内一个 .textLayer */
++  function mountPageColumn(pages: ReadonlyArray<[no: number, text: string]>): void {
++    for (const [no, text] of pages) {
++      const box = document.createElement('div')
++      box.setAttribute('data-page-root', String(no))
++      box.innerHTML = `<div class="textLayer"><span>${text}</span></div>`
++      document.body.appendChild(box)
++    }
++  }
++
++  it('S10 目标页盒内验证：邻页 textLayer 干扰被页限定挡住（全局第一实现在此红）', async () => {
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
++    // 页盒 1（邻页）=诱饵文本；页盒 2（目标，anchorPage=1 0 基）=真实引文
++    mountPageColumn([[1, 'decoy neighbor text only'], [2, 'target quote here']])
++    mountAnchorEl('a-10')
++    const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-10', anchor: anchorOf('target quote', 1) })
++    // 全局第一实现拿到页盒 1 的诱饵层→verifyQuote 失败→3s 超时降级 page；
++    // 页限定实现首轮同步命中页盒 2→exact
++    expect(r).toBe('exact')
++    expect(scrollIntoView).toHaveBeenCalled()
++  })
++
++  it('S11 邻页恰含引文也不误 exact：目标页盒内验证失败→page 降级+提示（半页错锚防护）', async () => {
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
++    // 邻页（页盒 1）恰含引文——全局第一实现会误命中错页 exact；页限定只在页盒 2 验证
++    mountPageColumn([[1, 'target quote here'], [2, 'unrelated body text']])
++    const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('target quote', 1) })
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(3200)
++    })
++    const r = await p
++    expect(r).toBe('page')
++    expect(useReaderStore.getState().tabs['p-1']?.page).toBe(1)
++    expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
++  })
++})
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+new file mode 100644
+index 0000000..29c45d1
+--- /dev/null
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -0,0 +1,267 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-F-02] SelectionLayer —— 动态锚定根组件测试（新文件入锁）。
++ *
++ * 覆盖（票面选区态状态机）：任意可见页划选（F-01 自裁 4 中间态解除——
++ * 挂载盒≠选区所在页仍正确）/跨页选区拒绝+toast（主控裁决 5，INV-02 可见）/
++ * 工具条落点以选区所在页盒为参照系（坐标换算经页盒 rect——N-C 防层叠污染）/
++ * 保存页=选区所在页（0 基，动态推导）/Escape 清/承载选区的页 DOM 卸载
++ * （页回收与 zoom 重建同机制）→选区清空防悬空锚/纯函数页盒遍历。
++ * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import {
++  SelectionLayer,
++  closestPageRoot,
++  pageIndexOf
++} from '../../../src/renderer/features/reader/SelectionLayer'
++import type { Annotation } from '@shared/models/annotation'
++
++const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
++vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
++vi.mock('../../../src/renderer/api/client', () => ({
++  api: { reader: { saveAnnotation: saveMock } },
++  // unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++    const r = await p
++    return r.data
++  },
++  ApiClientError: class extends Error {}
++}))
++
++/** jsdom 无布局：元素 rect 按预设表返回（页盒几何——坐标换算断言的输入） */
++const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
++/** jsdom Range 无布局方法：选区 rect 可变桩（视口坐标） */
++let rangeRect = { x: 10, y: 900, width: 200, height: 20 }
++let origRangeGBCR: (() => DOMRect) | undefined
++
++/** F-01 后结构：两页盒（data-page-root 1 基）各含 .textLayer（单 span 文本） */
++function mountColumnFixture(): { page1: HTMLElement; page2: HTMLElement; span1: HTMLElement; span2: HTMLElement } {
++  const page1 = document.createElement('div')
++  page1.setAttribute('data-page-root', '1')
++  page1.innerHTML = '<div class="textLayer"><span>page one alpha beta</span></div>'
++  const page2 = document.createElement('div')
++  page2.setAttribute('data-page-root', '2')
++  page2.innerHTML = '<div class="textLayer"><span>page two gamma delta</span></div>'
++  document.body.append(page1, page2)
++  rects.set(page1, { x: 0, y: 0, width: 600, height: 800 })
++  rects.set(page2, { x: 0, y: 812, width: 600, height: 800 })
++  return { page1, page2, span1: page1.querySelector('span')!, span2: page2.querySelector('span')! }
++}
++
++/** 程序化选选（jsdom 不自动派发 selectionchange——防抖路径需手动 dispatch） */
++function selectRange(startNode: Node, startOff: number, endNode: Node, endOff: number): void {
++  const sel = window.getSelection()
++  const range = document.createRange()
++  range.setStart(startNode, startOff)
++  range.setEnd(endNode, endOff)
++  sel?.removeAllRanges()
++  sel?.addRange(range)
++}
++
++const fireSelectionChange = (): void => {
++  document.dispatchEvent(new Event('selectionchange'))
++}
++const fireMouseUp = (): void => {
++  document.dispatchEvent(new MouseEvent('mouseup'))
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++let onSaved: ReturnType<typeof vi.fn>
++
++/** 挂载组件（挂载盒=props.pageRoot——F-01 挂载位：锚定页盒页根） */
++async function mountLayer(pageRoot: HTMLElement): Promise<void> {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  await act(async () => {
++    root?.render(<SelectionLayer pageRoot={pageRoot} paperId="p-1" page={0} onSaved={onSaved} />)
++  })
++}
++
++const toolbar = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-toolbar"]') ?? null
++
++beforeEach(() => {
++  vi.useFakeTimers()
++  vi.clearAllMocks()
++  rects.clear()
++  rangeRect = { x: 10, y: 900, width: 200, height: 20 }
++  onSaved = vi.fn()
++  ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
++  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
++    const r = rects.get(this)
++    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
++  })
++  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
++  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
++  window.getSelection()?.removeAllRanges()
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
++  document.body.innerHTML = ''
++  vi.restoreAllMocks()
++  vi.useRealTimers()
++})
++
++describe('SelectionLayer 纯函数（F-02 页盒遍历）', () => {
++  it('closestPageRoot：文本节点向上最近页盒（data-page-root）；页列外/空节点=null', () => {
++    const { page2, span2 } = mountColumnFixture()
++    expect(closestPageRoot(span2.firstChild)).toBe(page2)
++    expect(closestPageRoot(page2)).toBe(page2)
++    const aside = document.createElement('aside')
++    aside.textContent = '侧栏文本'
++    document.body.appendChild(aside)
++    expect(closestPageRoot(aside.firstChild)).toBeNull()
++    expect(closestPageRoot(null)).toBeNull()
++  })
++
++  it('pageIndexOf：data-page-root 值 1 基→0 基；缺失/非法值=null', () => {
++    const { page1 } = mountColumnFixture()
++    expect(pageIndexOf(page1)).toBe(0)
++    const page5 = document.createElement('div')
++    page5.setAttribute('data-page-root', '5')
++    document.body.appendChild(page5)
++    expect(pageIndexOf(page5)).toBe(4)
++    expect(pageIndexOf(document.createElement('div'))).toBeNull()
++    const bad = document.createElement('div')
++    bad.setAttribute('data-page-root', 'x')
++    document.body.appendChild(bad)
++    expect(pageIndexOf(bad)).toBeNull()
++  })
++})
++
++describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
++  it('P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算', async () => {
++    const { page1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    // 选区在页 2（挂载盒=页 1）——旧「固定锚定页」实现在此静默收起
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    fireSelectionChange()
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(200)
++    })
++    const bar = toolbar()
++    expect(bar).not.toBeNull()
++    // 落点以选区所在页盒为参照系（N-C）：页内偏移 (10, 900-812-42=46)+页间偏移 812
++    expect(bar!.style.left).toBe('10px')
++    expect(bar!.style.top).toBe('858px')
++    expect(toastSpy).not.toHaveBeenCalled()
++  })
++
++  it('P2 跨页选区（anchorNode 页盒≠focusNode 页盒）：mouseup 拒绝+toast，无工具条（INV-02 禁静默）', async () => {
++    const { page1, span1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span1.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(toolbar()).toBeNull()
++    expect(toastSpy).toHaveBeenCalledWith('选区跨页，不支持创建标注', 'info')
++  })
++
++  it('P2b 跨页选区的防抖路径不 toast（程序化/拖选中途——toast 只挂用户完成拖选的 mouseup 时刻）', async () => {
++    const { page1, span1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span1.firstChild!, 0, span2.firstChild!, 4)
++    fireSelectionChange()
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(200)
++    })
++    expect(toolbar()).toBeNull()
++    expect(toastSpy).not.toHaveBeenCalled()
++  })
++
++  it('P3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）', async () => {
++    const { page1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(toolbar()).not.toBeNull()
++  })
++
++  it('P4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流', async () => {
++    const { page1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    const saved: Annotation = {
++      id: 'a-1', paperId: 'p-1', page: 1, kind: 'highlight', color: 'yellow',
++      quoteText: 'page', prefixText: '', suffixText: '', startOffset: 0, endOffset: 4,
++      rects: [], comment: '', createdAt: '2026-08-28T00:00:00Z', updatedAt: '2026-08-28T00:00:00Z'
++    }
++    saveMock.mockResolvedValue({ ok: true, data: saved })
++    await act(async () => {
++      const highlight = Array.from(toolbar()!.querySelectorAll<HTMLButtonElement>('button')).find(
++        (b) => b.textContent === '高亮'
++      )!
++      highlight.click()
++      await vi.advanceTimersByTimeAsync(0)
++    })
++    expect(saveMock).toHaveBeenCalledTimes(1)
++    const arg = saveMock.mock.calls[0]![0] as { annotation: { page: number; rects: Array<{ page: number }> } }
++    expect(arg.annotation.page).toBe(1)
++    expect(onSaved).toHaveBeenCalledWith(saved)
++    // 保存成功即清选区（原生 removeAllRanges）
++    expect(toolbar()).toBeNull()
++  })
++
++  it('P5 Escape 清：工具条出现后按 Esc 收起', async () => {
++    const { page1, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(toolbar()).not.toBeNull()
++    act(() => {
++      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
++    })
++    expect(toolbar()).toBeNull()
++  })
++
++  it('P6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）', async () => {
++    const { page1, page2, span2 } = mountColumnFixture()
++    await mountLayer(page1)
++    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(toolbar()).not.toBeNull()
++    // 页回收：承载选区的页盒整体卸载+选区清空（浏览器原生行为——textLayer 卸载即坍缩）
++    page2.remove()
++    window.getSelection()?.removeAllRanges()
++    fireSelectionChange()
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(200)
++    })
++    expect(toolbar()).toBeNull()
++  })
++
++  it('P7 页外选区（侧栏等与页盒无关）静默收起：无工具条无 toast', async () => {
++    const { page1 } = mountColumnFixture()
++    await mountLayer(page1)
++    const aside = document.createElement('aside')
++    aside.textContent = 'side content'
++    document.body.appendChild(aside)
++    selectRange(aside.firstChild!, 0, aside.firstChild!, 4)
++    act(() => {
++      fireMouseUp()
++    })
++    expect(toolbar()).toBeNull()
++    expect(toastSpy).not.toHaveBeenCalled()
++  })
++})

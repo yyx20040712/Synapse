@@ -4,11 +4,13 @@
  *
  * **[SR2-F-02] 四层多页化收口（工单：open / strong；注册文件=本文件）**
  * ——双裁决链：头指针 b3: P7-C 保持不动（C-05 链），F-02 裁决链=registry
- * summary 声明（P7-F）。本单改造：verifyWhenReady :153 的
+ * summary 声明（P7-F）。本单改造：verifyWhenReady 的
  * document.querySelector('.textLayer') 全局第一改为目标页（anchorPage
- * 页盒）内查询；头注 :52-54 F-aware 接缝口径同步为滚动步。**签名零触碰**
- * （LocateAnchor :69-73/LocateTarget :75-84/LocateResult :86——F-aware
- * 冻结面）。票面=scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
+ * 页盒 data-page-root=anchorPage+1，PageColumn 1 基）内查询；页盒缺席（单页
+ * 宿主/无页列夹具）回退全局唯一 textLayer（既有单页行为兼容）；头注 :52-54
+ * F-aware 接缝口径同步为滚动步。**签名零触碰**（LocateAnchor :69-73/
+ * LocateTarget :75-84/LocateResult :86——F-aware 冻结面）。票面=
+ * scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
  *
  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
  * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
@@ -57,8 +59,10 @@
  * ── 架构层 ──
  * - reader 域模块（不 import 组件；消费 annotation-anchor.verifyQuote/
  *   open-paper-bus/reader.store/toast-store——.ts 消费方走 toast-store 惯例）
- * - F-aware 接缝：setPage/activateTab 组合=「滚动到页 P 的锚 R」的 v1 实现；
- *   P7-F 连续滚动后仅换本文件滚动步实现，locateAnchor 签名与消费方不动
+ * - F-aware 接缝（F-02 口径同步）：滚动步=setPage 默认 'to'→INV-29
+ *   scrollRequest 信号→PageColumn.scrollToPage 目标页盒顶（F-01 已落）；文本
+ *   层验证=目标页盒内限定（F-02）。后续仅换本文件滚动步实现，locateAnchor
+ *   签名与消费方不动
  *
  * ── 生命周期层 ──
  * - 不做：定位动画队列/跨 tab 批量定位；P7-H 脉络侧板（N3）经本入口复用
@@ -152,13 +156,17 @@ async function waitOpen(paperId: string, seq: number): Promise<OpenOutcome> {
 type VerifyOutcome = 'exact' | 'page' | 'stale'
 
 /** verifying：等文本层可判后 verifyQuote（anchor-anchor 唯一 DOM 遍历点；
- *  DOM 异常按验证失败继续轮询（deepseek N2）；目标 tab 消失即作废（S6） */
+ *  DOM 异常按验证失败继续轮询（deepseek N2）；目标 tab 消失即作废（S6）。
+ *  F-02 页限定：目标页盒（data-page-root=anchorPage+1，PageColumn 1 基）内查
+ *  .textLayer——多页列渲染窗内全局第一=邻页文本层（错误页验证/邻页引文误
+ *  命中）；页盒缺席（单页宿主/无页列夹具）回退全局唯一 textLayer */
 async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: number): Promise<VerifyOutcome> {
   const deadline = Date.now() + LOCATE_TEXT_READY_TIMEOUT_MS
   while (Date.now() < deadline) {
     if (locateSeq !== seq) return 'stale'
     if (useReaderStore.getState().tabs[paperId] === undefined) return 'stale'
-    const textLayer = document.querySelector('.textLayer') as HTMLElement | null
+    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${(anchor.anchorPage ?? 0) + 1}"]`)
+    const textLayer = (pageRoot ?? document).querySelector('.textLayer') as HTMLElement | null
     if (textLayer !== null) {
       let at: number | null = null
       try {

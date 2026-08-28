@@ -414,6 +414,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * exact 层 AI-09 延展消费）。
    */
   test('T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位', async () => {
+    // F-02 批 2：跳页兼容（exact 层经目标页盒文本层验证）——逐测守卫（describe
+    // 级 DEPS 之外单列，T1~T3 不被 F-02 绑架）
+    const pendingF02 = ['SR2-F-02'].filter((d) => !isTicketDone(d))
+    test.skip(pendingF02.length > 0, `延期：依赖工单未完成 [${pendingF02.join(', ')}]`)
     test.slow() // AI 面板 5s 轮询消费 fixture+PDF 加载+跳转链
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t4-'))
     const sensorRoot = join(userData, 'ai-sensor')

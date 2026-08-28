@@ -7,7 +7,7 @@
  * S9 opening 中被关（seen→absent）作废无提示（票面 S6 行两形态）。
  */
 import { act } from 'react'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
@@ -219,5 +219,49 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
     expect(rB).toBe('exact')
     expect(elA.classList.contains('locate-flash')).toBe(false)
     expect(elB.classList.contains('locate-flash')).toBe(true)
+  })
+})
+
+/**
+ * [SR2-F-02] 页限定回归（受锁扩批 2；always-active——ADR-0017 裁决 3 新测试
+ * 不经 guardedDescribe）。F-01 页列后渲染窗（可见±1）内 document 存在多个
+ * .textLayer——verifyWhenReady 的全局第一命中=邻页文本层（错误页验证）。
+ * 页限定=目标页盒（data-page-root，PageColumn 1 基）内查询。
+ */
+describe('anchor-locate F-02 页限定（多页列）', () => {
+  /** F-01 后阅读器结构：每页盒 data-page-root=N（1 基）内一个 .textLayer */
+  function mountPageColumn(pages: ReadonlyArray<[no: number, text: string]>): void {
+    for (const [no, text] of pages) {
+      const box = document.createElement('div')
+      box.setAttribute('data-page-root', String(no))
+      box.innerHTML = `<div class="textLayer"><span>${text}</span></div>`
+      document.body.appendChild(box)
+    }
+  }
+
+  it('S10 目标页盒内验证：邻页 textLayer 干扰被页限定挡住（全局第一实现在此红）', async () => {
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+    // 页盒 1（邻页）=诱饵文本；页盒 2（目标，anchorPage=1 0 基）=真实引文
+    mountPageColumn([[1, 'decoy neighbor text only'], [2, 'target quote here']])
+    mountAnchorEl('a-10')
+    const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-10', anchor: anchorOf('target quote', 1) })
+    // 全局第一实现拿到页盒 1 的诱饵层→verifyQuote 失败→3s 超时降级 page；
+    // 页限定实现首轮同步命中页盒 2→exact
+    expect(r).toBe('exact')
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('S11 邻页恰含引文也不误 exact：目标页盒内验证失败→page 降级+提示（半页错锚防护）', async () => {
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+    // 邻页（页盒 1）恰含引文——全局第一实现会误命中错页 exact；页限定只在页盒 2 验证
+    mountPageColumn([[1, 'target quote here'], [2, 'unrelated body text']])
+    const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('target quote', 1) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3200)
+    })
+    const r = await p
+    expect(r).toBe('page')
+    expect(useReaderStore.getState().tabs['p-1']?.page).toBe(1)
+    expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
   })
 })

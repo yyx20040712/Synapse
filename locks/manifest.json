@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T04:19:12.4852735Z",
+    "generatedAt":  "2026-08-28T05:05:46.7733263Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -143,7 +143,7 @@
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
-                      "sha256":  "d95ba2159c129f80c418f3c8a8c24982e671aa01af81f642ac7de6ffbde57ad1"
+                      "sha256":  "4db3e36636020ea5fe1c5bcf67a5214b6ec6ffc2bec08c5d6da93ee891d6ab68"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -155,7 +155,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "e4554a04fc748e03051be22be7b1ac3a65022d80eb56c78142c9e358902b91e7"
+                      "sha256":  "f75d345edd42a0f7edb6baffd05b7ded2467c5910e9b0db1053f5a85b6c63489"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
@@ -163,7 +163,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "c6b0ca75e012c57a0450ab74c0370f4c9e4185931d11b71593a61ce7f829883d"
+                      "sha256":  "c704804eebaa20bf39f38736bb098153b548af2d189dc85adfc340baf636d33c"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -295,7 +295,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
-                      "sha256":  "93f43f6d2c68fe3dfca74b00b1610b1fdb1b337c5707239fa8934900cac05443"
+                      "sha256":  "f4eb7b567e995250fd58c4c75299efaeb7d4a59af11844f86755f3b36feedb83"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
@@ -384,6 +384,10 @@
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
                       "sha256":  "1f39613d523bfea1f6e39bf11cc60106114f2276b2fecf88904d63940eded59f"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-layer.test.tsx",
+                      "sha256":  "607a0c0441f89015d770aec77ad6db07b6274689c7571be71d83ddee37bae1c8"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
