@@ -288,6 +288,71 @@ describe('LineageCanvas —— pan/zoom（INV-14）', () => {
   })
 })
 
+describe('R2-LG9 星象板视觉（夜幕宿主/渐变 defs/角饰/层带刻度/边辉）', () => {
+  it('夜幕宿主：画布 svg 被夜幕容器包裹+星空装饰层存在（aria-hidden 装饰纪律）', () => {
+    const g = chain()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    const svg = host?.querySelector('[data-testid="lineage-canvas"]')
+    expect(svg?.parentElement?.classList.contains('lineage-night')).toBe(true)
+    // 装饰层 ≥3（两层星空平铺+✦ 四芒星组）且全部 aria-hidden（不参与可访问树）
+    const decor = host?.querySelectorAll('.lineage-night [data-night-decor]')
+    expect(decor?.length ?? 0).toBeGreaterThanOrEqual(3)
+    for (const d of decor ?? []) {
+      expect(d.getAttribute('aria-hidden')).toBe('true')
+    }
+  })
+
+  it('节点渐变 defs：lg-node-face linearGradient 三档 stop+金辉 filter lg-edge-glow 存在', () => {
+    const g = chain()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    expect(host?.querySelector('svg defs #lg-node-face')).not.toBeNull()
+    expect(host?.querySelectorAll('svg defs #lg-node-face stop').length).toBe(3)
+    expect(host?.querySelector('svg defs #lg-edge-glow feGaussianBlur')).not.toBeNull()
+  })
+
+  it('节点金角饰：每个节点 g 内两枚 L 形角饰 path（data-corner 钩）', () => {
+    const g = chain()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    expect(host?.querySelectorAll('[data-node-id] path[data-corner]').length).toBe(6)
+  })
+
+  it('层带金微光+菱形刻度：每层带 rect[data-band-tick] rotate45；线为实线（无 dasharray）', () => {
+    const g = chain()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    // chain：2020/2021(null 无)/2020,2021,2022 → 3 层
+    const ticks = host?.querySelectorAll('[data-layer-year] rect[data-band-tick]')
+    expect(ticks?.length).toBe(3)
+    for (const t of ticks ?? []) {
+      expect(t.getAttribute('transform')).toContain('rotate(45)')
+    }
+    const lines = host?.querySelectorAll('[data-layer-year] line')
+    expect(lines?.length).toBe(3)
+    for (const l of lines ?? []) {
+      expect(l.getAttribute('stroke-dasharray')).toBeNull()
+    }
+    // 层带年份标「YYYY 年」文案逐字保留（e2e getByText 断言面）
+    expect(host?.textContent).toContain('2020 年')
+  })
+
+  it('边辉（合法边）：实链金描边+glow；推断边虚线银（无 glow）', () => {
+    const nodes = [
+      node('A', { year: 2020, title: '源头' }),
+      node('B', { year: 2021, title: '承接' }),
+      node('C', { year: 2022, title: '流变' })
+    ]
+    const inferred: LineageEdge = { ...edge('A', 'B'), label: '谱系推断' }
+    const solid: LineageEdge = { ...edge('B', 'C'), label: '实链·继承' }
+    mount(<LineageCanvas nodes={nodes} edges={[inferred, solid]} />)
+    const p1 = host?.querySelector('[data-edge-id="e-A-B"]')
+    expect(p1?.getAttribute('stroke-dasharray')).toBe('5 4')
+    expect(p1?.getAttribute('filter')).toBeNull()
+    const p2 = host?.querySelector('[data-edge-id="e-B-C"]')
+    expect(p2?.getAttribute('stroke')).toBe('var(--gold-night)')
+    expect(p2?.getAttribute('filter')).toBe('url(#lg-edge-glow)')
+    expect(p2?.getAttribute('stroke-dasharray')).toBeNull()
+  })
+})
+
 describe('LineagePage —— 取数三态（lineage.store 数据单源）', () => {
   it('loading：挂载期呈加载文案，graph 取数一次', async () => {
     stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))

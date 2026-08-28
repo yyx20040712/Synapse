@@ -1,11 +1,12 @@
 // b3: P7-H
 /**
  * [LG-02] LineageCanvas —— 脉络画布（SVG+pan/zoom）+节点交互原语。
+ * [R2-LG9] 星象板视觉：夜幕星空宿主+渐变节点卡+金微光层带+边辉 defs。
  *
  * 行为（票面+主控裁决 4）：
  * - 渲染：layoutLineage 纯函数产出（useMemo 同参缓存）→ 层带横线+年份
- *   标签/节点卡片（rect+标题+年份，主题节点虚线框区分文献节点）/父子
- *   连线贝塞尔（from 底边中心→to 顶边中心）+边 label 沿贝塞尔中点渲染
+ *   标签/节点卡片（渐变面+角饰+标题+年份，主题节点虚线框区分文献节点）/
+ *   父子连线贝塞尔（from 底边中心→to 顶边中心）+边 label 沿贝塞尔中点渲染
  *   （真实文本，空串不渲染——缺陷 E1 修）；坐标=卡片中心。
  * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
  *   归 LG-03——本画布只读不留死按钮）。
@@ -14,18 +15,16 @@
  * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
  *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
  * - 视口瞬态（tx/ty/k）驻组件 state 不入 store。
- * - **03 编辑接缝（LG-03 扩，可选回调零回调时行为不变）**：节点原语上抛——
- *   onNodeDrag（拖拽落点，布局坐标=自动布局/覆盖位+位移/k，位移阈值内视为
- *   onNodeClick 单击选中）/onNodeContextMenu（右键菜单锚）。拖拽期实时
- *   跟随（dragView 偏移渲染）；写路径（upsert-node）归 Board 编辑层——
- *   本画布不持写通道。
- * - **04 选中视觉态（LG-04 扩，可选 prop 缺省行为不变）**：selectedNodeId
- *   命中节点=accent 描边加粗+data-selected 标记（Board 透传，侧板联动）。
+ * - 03 编辑接缝/onNodeDrag/onNodeContextMenu/04 选中视觉态：见原票面
+ *   （行为零变——R2-LG9 只换视觉皮肤）。
+ * - **R2-LG9 视觉（规范=mockups/lineage-constellation.html）**：夜幕+星云+星空+✦+图例=宿主 div CSS 多层背景+装饰拆件 LineageNightDecor（.lineage-night 族；装饰层一律 data-night-decor+aria-hidden+pointer-events:none——注意事项 ⑥，pan 落点仍达 panbg）；svg 顶 defs=节点渐变（lg-node-face 族）+金辉滤器（lg-edge-glow——节点选中态与边辉共用）；层带=金微光实线+左端菱形刻度+衬线年份标（「YYYY 年」文案逐字保留——e2e getByText 断言面）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
-import { NODE_H, NODE_W, layoutLineage } from './lineage-layout'
+import { NODE_H, layoutLineage } from './lineage-layout'
 import { LineageEdges } from './LineageEdges'
+import { LineageNightDecor } from './LineageNightDecor'
+import { LineageNodeCard } from './LineageNodeCard'
 const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
 /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
 const DRAG_THRESHOLD = 3
@@ -150,84 +149,97 @@ export function LineageCanvas(props: {
     }
   }, [])
   return (
-    <svg
-      ref={svgRef}
-      data-testid="lineage-canvas"
-      className="h-full w-full touch-none select-none"
-      style={{ background: 'var(--bg)', cursor: 'grab' }}
-    >
-      <rect data-panbg x={0} y={0} width="100%" height="100%" fill="transparent" />
-      {nodes.length === 0 ? (
-        // 空态不短路挂载结构（回炉 W2）：svg 常驻 → pan/zoom listener 一次
-        // 绑定常活，空→非空转场（03 添加首节点路径）无需重绑
-        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize={13} fill="var(--text-dim)">
-          暂无脉络图——导入草稿或添加节点
-        </text>
-      ) : (
-      <g data-viewport transform={`translate(${tx}, ${ty}) scale(${k})`}>
-        {/* 层带横线+年份标签（含未知年份末带） */}
-        {layout.layers.map((l) => (
-          <g key={l.year === null ? 'null' : String(l.year)} data-layer-year={l.year === null ? 'null' : l.year}>
-            <line
-              x1={-200}
-              x2={99999}
-              y1={l.y}
-              y2={l.y}
-              stroke="var(--border)"
-              strokeDasharray="4 6"
-            />
-            <text x={-190} y={l.y + NODE_H / 2} fontSize={12} fill="var(--text-dim)">
-              {l.year === null ? '未知年份' : `${l.year} 年`}
-            </text>
-          </g>
-        ))}
-        {/* 父子连线+边 label（拆件 LineageEdges——组件行数红线；边 label
-            沿贝塞尔中点真实文本渲染，空串不渲染——缺陷 E1 修） */}
-        <LineageEdges edges={edges} positions={layout.positions} />
-        {/* 节点卡片（主题节点=虚线框区分文献节点；拖拽期叠加 dragView 偏移跟随） */}
-        {nodes.map((n) => {
-          const p = layout.positions.get(n.id)
-          if (p === undefined) return null
-          const theme = n.paperId === null
-          const sel = props.selectedNodeId === n.id
-          const off = dragView?.id === n.id ? dragView : null
-          return (
-            <g
-              key={n.id}
-              data-node-id={n.id}
-              data-kind={theme ? 'theme' : 'paper'}
-              transform={`translate(${p.x + (off?.dx ?? 0)}, ${p.y + (off?.dy ?? 0)})`}
-              onPointerDown={(e) => {
-                dragRef.current = { id: n.id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y }
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                props.onNodeContextMenu?.(n.id, { x: e.clientX, y: e.clientY })
-              }}
-            >
+    <div className="lineage-night relative h-full w-full">
+      {/* 星空三层+边型图例（拆件 LineageNightDecor——装饰层 pointer-events:
+          none 不参与命中，pan 落点仍达 panbg） */}
+      <LineageNightDecor />
+      <svg
+        ref={svgRef}
+        data-testid="lineage-canvas"
+        className="relative h-full w-full touch-none select-none"
+        style={{ cursor: 'grab' }}
+      >
+        <defs>
+          {/* 节点渐变面（165° 向量≈(0.26,1)；三档=node-face-hi→node-face→深端） */}
+          <linearGradient id="lg-node-face" x1="0" y1="0" x2="0.26" y2="1">
+            <stop offset="0%" stopColor="var(--node-face-hi)" />
+            <stop offset="58%" stopColor="var(--node-face)" />
+            <stop offset="100%" stopColor="#1e2745" />
+          </linearGradient>
+          {/* 主题节点半透明面（mockup .node.theme 逐值） */}
+          <linearGradient id="lg-node-face-theme" x1="0" y1="0" x2="0.26" y2="1">
+            <stop offset="0%" stopColor="rgba(43, 55, 96, 0.6)" />
+            <stop offset="100%" stopColor="rgba(30, 39, 69, 0.5)" />
+          </linearGradient>
+          {/* 金辉滤器（边辉+节点选中外光共用） */}
+          <filter id="lg-edge-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation={2.6} result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <rect data-panbg x={0} y={0} width="100%" height="100%" fill="transparent" />
+        {nodes.length === 0 ? (
+          // 空态不短路挂载结构（回炉 W2）：svg 常驻 → pan/zoom listener 一次
+          // 绑定常活，空→非空转场（03 添加首节点路径）无需重绑
+          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize={13} fill="var(--text-dim-on-night)">
+            暂无脉络图——导入草稿或添加节点
+          </text>
+        ) : (
+        <g data-viewport transform={`translate(${tx}, ${ty}) scale(${k})`}>
+          {/* 层带：金微光实线+左端菱形刻度+衬线年份标（含未知年份末带；y 与
+              节点对齐由 layout 既有精确计算保证——注意事项 ④） */}
+          {layout.layers.map((l) => (
+            <g key={l.year === null ? 'null' : String(l.year)} data-layer-year={l.year === null ? 'null' : l.year}>
               <rect
-                x={-NODE_W / 2}
-                y={-NODE_H / 2}
-                width={NODE_W}
-                height={NODE_H}
-                rx={6}
-                fill="var(--panel)"
-                stroke={sel || theme ? 'var(--accent)' : 'var(--border)'}
-                strokeWidth={sel ? 2.5 : 1}
-                strokeDasharray={theme ? '6 4' : undefined}
-                data-selected={sel}
+                data-band-tick
+                width={6}
+                height={6}
+                transform={`translate(-197, ${l.y - 3}) rotate(45)`}
+                fill="var(--gold-night)"
+                fillOpacity={0.5}
               />
-              <text x={0} y={-8} textAnchor="middle" fontSize={12} fill="var(--text)">
-                {n.title}
-              </text>
-              <text x={0} y={14} textAnchor="middle" fontSize={11} fill="var(--text-dim)">
-                {n.year === null ? '未知年份' : String(n.year)}
+              <line x1={-200} x2={99999} y1={l.y} y2={l.y} stroke="var(--band-line)" strokeWidth={1} />
+              <text
+                x={-190}
+                y={l.y + NODE_H / 2}
+                fontSize={14}
+                fill="var(--gold-bright)"
+                style={{ fontFamily: 'var(--font-display)', letterSpacing: '2px' }}
+              >
+                {l.year === null ? '未知年份' : `${l.year} 年`}
               </text>
             </g>
-          )
-        })}
-      </g>
-      )}
-    </svg>
+          ))}
+          {/* 父子连线+边 label（拆件 LineageEdges——组件行数红线；边 label
+              沿贝塞尔中点真实文本渲染，空串不渲染——缺陷 E1 修） */}
+          <LineageEdges edges={edges} positions={layout.positions} />
+          {/* 节点卡片（拆件 LineageNodeCard——R2-LG9 组件行数红线；拖拽期叠加 dragView 偏移跟随） */}
+          {nodes.map((n) => {
+            const p = layout.positions.get(n.id)
+            if (p === undefined) return null
+            return (
+              <LineageNodeCard
+                key={n.id}
+                node={n}
+                pos={p}
+                offset={dragView?.id === n.id ? dragView : null}
+                selected={props.selectedNodeId === n.id}
+                onPointerDown={(e) => {
+                  dragRef.current = { id: n.id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  props.onNodeContextMenu?.(n.id, { x: e.clientX, y: e.clientY })
+                }}
+              />
+            )
+          })}
+        </g>
+        )}
+      </svg>
+    </div>
   )
 }

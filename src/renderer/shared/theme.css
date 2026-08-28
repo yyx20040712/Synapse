@@ -209,3 +209,112 @@ body,
   color: var(--gold);
   background: var(--gold-soft);
 }
+
+/* ══ 脉络·命之座星象板（R2-LG9；视觉规范=docs/design/mockups/
+   lineage-constellation.html 逐值誊录——夜幕 token 系 R3-TH1 预铺消费）══ */
+.lineage-night {
+  position: relative;
+  overflow: hidden;
+  color: var(--text-on-night);
+  /* 夜幕渐变+星云 radial（mockup body 多层背景逐值——夜面专属，非全局） */
+  background:
+    radial-gradient(1150px 520px at 72% -8%, rgba(86, 108, 178, 0.3), transparent 62%),
+    radial-gradient(880px 460px at 8% 112%, rgba(64, 84, 148, 0.26), transparent 62%),
+    radial-gradient(600px 300px at 50% 55%, rgba(120, 96, 60, 0.07), transparent 70%),
+    linear-gradient(180deg, var(--night-bg), var(--night-bg2));
+}
+/* 星空两层平铺（细星/亮星）+✦ 四芒星——装饰层纪律（注意事项 ⑥）：
+   pointer-events:none 不参与布局与命中测试，pan 落点穿透直达 panbg */
+.lineage-stars,
+.lineage-stars2,
+.lineage-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lineage-stars {
+  background-image: radial-gradient(1.1px 1.1px at 40px 60px, var(--star) 50%, transparent 51%),
+    radial-gradient(0.9px 0.9px at 210px 140px, var(--star) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 330px 40px, var(--star) 50%, transparent 51%),
+    radial-gradient(0.8px 0.8px at 500px 200px, var(--star) 50%, transparent 51%),
+    radial-gradient(1.1px 1.1px at 640px 90px, var(--star) 50%, transparent 51%);
+  background-size: 720px 260px;
+  opacity: 0.55;
+}
+.lineage-stars2 {
+  background-image: radial-gradient(1.7px 1.7px at 120px 210px, rgba(227, 201, 143, 0.8) 50%, transparent 51%),
+    radial-gradient(1.9px 1.9px at 420px 130px, rgba(222, 230, 255, 0.9) 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 700px 250px, rgba(227, 201, 143, 0.75) 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 260px 30px, rgba(222, 230, 255, 0.85) 50%, transparent 51%);
+  background-size: 820px 300px;
+  opacity: 0.6;
+}
+.lineage-sparks span {
+  position: absolute;
+  color: var(--gold-bright);
+  opacity: 0.8;
+  font-size: 11px;
+}
+/* 边型图例（实链/推断——静态说明非交互件；mockup .legend 逐值） */
+.lineage-legend {
+  position: absolute;
+  left: 96px;
+  bottom: 16px;
+  display: flex;
+  gap: 14px;
+  font-size: 10.5px;
+  color: var(--text-dim-on-night);
+  background: rgba(34, 44, 77, 0.6);
+  border: 1px solid rgba(151, 160, 187, 0.22);
+  border-radius: 999px;
+  padding: 4px 12px;
+  backdrop-filter: blur(8px);
+  align-items: center;
+  pointer-events: none;
+}
+.lineage-legend-item {
+  display: inline-flex;
+  align-items: center;
+}
+.lineage-legend-item i {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  vertical-align: middle;
+  margin-right: 5px;
+  border-top: 1.6px solid var(--gold-night);
+}
+.lineage-legend-item i.dash {
+  border-top-style: dashed;
+  border-top-color: #9aa3c0;
+}
+/* 脉络工具条玻璃浮层（P1：blur+金 hairline；mockup .toolbar 逐值） */
+.lineage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(34, 44, 77, 0.78);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(207, 174, 114, 0.28);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+}
+.lineage-toolbar > button {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim-on-night);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.lineage-toolbar > button:hover {
+  color: var(--text-on-night);
+  background: var(--gold-soft);
+}
+.lineage-toolbar > span {
+  background: transparent;
+  color: var(--text-dim-on-night);
+}

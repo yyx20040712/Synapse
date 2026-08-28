@@ -124,13 +124,12 @@ export function LineageBoard(props: {
 
   return (
     <div className="relative h-full">
-      {/* 工具条：添加节点入口+保存态指示（autosave-first——无「保存」按钮） */}
-      <div className="absolute left-2 top-2 z-10 flex items-center gap-2">
+      {/* 工具条：添加节点入口+保存态指示（autosave-first——无「保存」按钮）。
+          R2-LG9 玻璃浮层化（.lineage-toolbar 夜色玻璃——视觉皮肤级，行为面零变） */}
+      <div className="lineage-toolbar absolute left-2 top-2 z-10">
         <button
           type="button"
           data-testid="lineage-add-node"
-          className="rounded border px-2 py-1 text-xs"
-          style={{ borderColor: 'var(--border)', background: 'var(--panel)', color: 'var(--text)' }}
           onClick={() => setAddOpen(true)}
         >
           添加节点
@@ -138,14 +137,12 @@ export function LineageBoard(props: {
         <button
           type="button"
           data-testid="lineage-import"
-          className="rounded border px-2 py-1 text-xs"
-          style={{ borderColor: 'var(--border)', background: 'var(--panel)', color: 'var(--text)' }}
           onClick={importLineageDraft}
         >
           导入草稿
         </button>
         {saveStatus === 'saving' && (
-          <span className="rounded px-2 py-1 text-xs" style={{ background: 'var(--panel)', color: 'var(--text-dim)' }} data-testid="lineage-save-status">
+          <span className="rounded px-2 py-1 text-xs" data-testid="lineage-save-status">
             保存中…
           </span>
         )}
@@ -153,7 +150,7 @@ export function LineageBoard(props: {
           <span
             className="flex items-center gap-2 rounded border px-2 py-1 text-xs"
             role="alert"
-            style={{ borderColor: 'var(--danger)', background: 'var(--panel)', color: 'var(--danger)' }}
+            style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
             data-testid="lineage-save-status"
           >
             保存失败：{lastWriteError}
@@ -161,7 +158,7 @@ export function LineageBoard(props: {
               type="button"
               data-testid="lineage-retry-save"
               className="rounded px-1.5 py-0.5"
-              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+              style={{ background: 'var(--gold-soft)', color: 'var(--gold-bright)' }}
               onClick={() => store().retrySave()}
             >
               重试
