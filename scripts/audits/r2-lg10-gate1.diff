@@ -1,0 +1,1047 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 130bddd..d5646e7 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -47,6 +47,7 @@
+ | INV-33 | 缩放中心保持：zoom 变化（ctrl+wheel/工具栏/适应宽度任一来源）后视口中心内容不动——(scrollTop+vh/2)/总高 比值经纯函数 anchoredScrollTop 保持（顶/底夹取；间隙不随 zoom 缩放的口径由 columnTotalHeight 承载）；实现链=PageColumn 段⑥布局效应程序修正 scrollTop（滚动位置镜像=容器 scroll 事件被动监听），程序性修正不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）；fit-width 分母=列宽基准（最宽页原始宽，页列就绪 onReady 载荷单源，一次性 zoom 语义保持） | page-column-geometry.ts anchoredScrollTop/columnTotalHeight+PageColumn 段⑥+ReaderPage fitWidth（SR2-F-04，2026-08-28 登记） | 单测锚（page-column.test：anchoredScrollTop 比值/顶底夹取/退化防御+columnTotalHeight 间隙口径+组件 scrollTop 修正精确断言）+e2e 收官链（reader-scroll.spec 中心最近页保持+fit 列宽贴合断言；M3 变异恰中实证） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-04；e2e 随收官链取证落盘，registry 翻 done 后常规跑激活） |
+ | INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 computed overflowY∈{auto,scroll}，hidden/visible 不入选），**禁用 Element.scrollIntoView 于滚动链**（CSSOM 语义=滚所有可滚祖先——2026-08-28 缺陷 A 实测泄漏面含 overflow:hidden 的 document viewport（scrollingElement 仍可被程序滚动）与 main，TabBar 被顶出视口无自愈）；防御纵深=ReaderPage 根两分支 overflow-hidden+ReaderToolbar 根 shrink-0（flex-wrap 折行只影响阅读器内部高度）；列表内滚动 block:'nearest'（FragmentNotesList/AiNoteGroupList/PaperList）与面板自身滚动语义不在本册约束面 | src/renderer/features/reader/scroll-converge.ts（SR2-F-05，2026-08-28 登记；消费方=PageColumn 段⑤ 'start'/anchor-locate flashElement 'center'——同一不变量同一实现，Rule of Three 从 1 收敛） | 单测锚（scroll-converge.test 六用例：最近祖先选取含嵌套取最近与 hidden 不入选/start 数学/center 数学/顶底夹取/无滚动祖先不动/aside 消费形）+受锁三文件消费形断言（page-column/anchor-locate/ai-annotation-layer 模块 mock）+e2e（reader-scroll.spec F-05：scrollingElement 与 main 双 scrollTop===0+TabBar bbox≥0+根 overflow-hidden 在位——窄视口页码跳转+PageDown 两链） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-05；e2e 随守卫态 22+1 skip，registry 翻 done 后 23+0 常规跑激活） |
+ | INV-35 | 课题库单活四联（ADR-0018 库级分目录）：①同一时刻至多一个课题库打开（switch=关旧→指针→装配→换引用，容器 current 单值；全新首启=legacy-fresh 态库在 userData 根，二次启动迁移入 workspaces/default——受锁 e2e 种子配方兼容的硬前提）②switch/create/rename 变更互斥单飞（busy 守卫，并发=CONFLICT 中文 DomainError）③指针 workspace.json 缺省/损坏/失指=降级「目录序第一」不崩溃；遗留迁移崩溃断点续迁（遗留 db 在且 default 库不在=条件仍真，db 文件最后移=提交点，无孤儿库）④**渲染层切换面（R1-WS2 登记）**：切换=dirty 确认→IPC switch→`location.reload()` 全新 stores（ADR-0018 裁决路径——零 stale 态类别）；reload 经 will-navigate 同 URL 唯一放行（shouldBlockNavigation 严格等值——外站/异 file/data: 变体全 deny，护栏意图不变）；弃改后悬置防抖写竞窗由 notes→papers FK+foreign_keys=ON 偶然兜底——**无 FK 新表接入课题切换面须显式防悬置写** | workspace.service.ts 头注状态机+workspace.fs.ts 搬移序（R1-WS1 登记）；渲染面=workspace.store.ts switch 流程+main-window.ts shouldBlockNavigation（R1-WS2 登记） | 单测（workspace.test.ts 14 it：迁移随迁+幂等+断点续迁+L0+指针双降级+busy CONFLICT+facade 热换+L0 双段链+失败重试）+e2e 24 迁移兼容；渲染面单测（workspace.store/workspace-switcher dirty 拦截+reload+内联错误重试/main-window-navigation 双面三 it）+e2e workspaces.spec（种子→新建 B→reload 库空+脉络空态→切回完整——加载终态锚防假绿窗） | 已锚定（单测+e2e 级 2026-08-28 R1-WS1+R1-WS2 全链） |
++| INV-36 | 脉络节点宽度单源：nodeWidth(title) 三档（≤12 字 180=NODE_W/≤28 字 220/>28 字 260）——布局占位（lineage-layout place 半宽）/卡面渲染（LineageNodeCard rect+角饰）/auto-fit 包围盒（LineageCanvas fitViewport）三消费点同一纯函数，禁任一处手写档值；**auto-fit 抢占门**：panbg pointerdown/滚轮 zoom 置 userInteracted 后 nodes 变化不重置视口，「适应视图」按钮（lineage-fit-view）=复位唯一入口；data-viewport transform 串格式 `translate(x, y) scale(k)` 为 e2e 解析契约（逐字符保持） | lineage-layout.ts nodeWidth+lineage-viewport.ts useViewportController 状态机头注（R2-LG10，2026-08-29 登记；LineageCanvas ≤250 行红线拆件——auto-fit/pan/zoom 视口域单文件） | 单测（lineage-layout.test 分档 3 it：三档边界/兄弟占位/单链对齐；lineage-canvas.test auto-fit 3 it：首载 fit 数值/不抢视口/按钮复位+分档 rect 宽 it——含 jsdom 量测桩）+e2e（lineage.spec T1/T2 scale-aware 断言） | 已锚定（单测级 R2-LG10 本单；e2e 面随本单 25 全绿） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index bb7aee0..c515e1a 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T18:54:50.2542561Z",
++    "generatedAt":  "2026-08-28T22:38:07.8074097Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -155,7 +155,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/lineage.spec.ts",
+-                      "sha256":  "fcaf1a7b9fc2b74722a796a347e05dfda890b6c449d4a4dad1c9e0bd31f45df3"
++                      "sha256":  "def42f9a197ecae1a36211917b18308f31ad42c48576adecb91ebcdc914132e4"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+@@ -343,15 +343,15 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
+-                      "sha256":  "57ee768fac9be7a2037ef190f16767e42904f4c8ee24fe6d874d316c36425143"
++                      "sha256":  "78f0af820d5a1510359f89349d98e79fdacb3c088907d91dfa7c897b37706ab3"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
+-                      "sha256":  "f1c3affb617471cf69d2b2885cf2a58c678e71101ba7cd396bd5ba53157ca6ee"
++                      "sha256":  "0a8f80294298d051c458393de62b24ebd06ea3532b4f081093ebc0034c1e7ed7"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+-                      "sha256":  "72954bdc224da9f5a23db40b976769f3901103022e4d1cb301cedd62ae6e1fd9"
++                      "sha256":  "8a788f1339ebdf7a18865ffda08b39bb805052481f390190fd45730df723536a"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+diff --git a/src/renderer/features/lineage/LineageCanvas.tsx b/src/renderer/features/lineage/LineageCanvas.tsx
+index a440efb..622f0fd 100644
+--- a/src/renderer/features/lineage/LineageCanvas.tsx
++++ b/src/renderer/features/lineage/LineageCanvas.tsx
+@@ -10,27 +10,29 @@
+  *   （真实文本，空串不渲染——缺陷 E1 修）；坐标=卡片中心。
+  * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
+  *   归 LG-03——本画布只读不留死按钮）。
+- * - pan=空白（背景 rect data-panbg）pointer 拖拽平移；节点上按下不 pan
+- *   （编辑拖拽面归 03）。zoom=滚轮（鼠标锚点缩放），钳制 [0.25, 4]。
+- * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
+- *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
+- * - 视口瞬态（tx/ty/k）驻组件 state 不入 store。
++ * - pan/zoom/视口瞬态（tx/ty/k）＝拆件 lineage-viewport.ts（R2-LG10 拆
++ *   出——组件 ≤250 红线，LG-02 原文搬迁行为零变；INV-14 成对注册/成对
++ *   清理原样）。钳制 [0.25, 4]。
+  * - 03 编辑接缝/onNodeDrag/onNodeContextMenu/04 选中视觉态：见原票面
+  *   （行为零变——R2-LG9 只换视觉皮肤）。
+  * - **R2-LG9 视觉（规范=mockups/lineage-constellation.html）**：夜幕+星云+星空+✦+图例=宿主 div CSS 多层背景+装饰拆件 LineageNightDecor（.lineage-night 族；装饰层一律 data-night-decor+aria-hidden+pointer-events:none——注意事项 ⑥，pan 落点仍达 panbg）；svg 顶 defs=节点渐变（lg-node-face 族）+金辉滤器（lg-edge-glow——节点选中态与边辉共用）；层带=金微光实线+左端菱形刻度+衬线年份标（「YYYY 年」文案逐字保留——e2e getByText 断言面）。
++ * - **R2-LG10 auto-fit 视口自适应（票面 P1）**：拆件 lineage-viewport.ts
++ *   （useViewportController+fitViewport）；状态机表/包围盒口径/边距/钳制
++ *   见该文件头注。本组件消费面：「适应视图」按钮（lineage-fit-view，
++ *   非空图才渲染——空态零按钮红线）=resetFit 唯一复位口；视口瞬态仍驻
++ *   组件树不入 store（LG-02 语义）。
+  */
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+ import { NODE_H, layoutLineage } from './lineage-layout'
++import { useViewportController } from './lineage-viewport'
++import type { Viewport } from './lineage-viewport'
+ import { LineageEdges } from './LineageEdges'
+ import { LineageNightDecor } from './LineageNightDecor'
+ import { LineageNodeCard } from './LineageNodeCard'
+-const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
+ /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
+ const DRAG_THRESHOLD = 3
+ 
+-type Viewport = { tx: number; ty: number; k: number }
+-
+ /** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
+ export interface CanvasEditCallbacks {
+   /** 拖拽落点（布局坐标，JSON Canvas 覆盖语义——消费方经 upsert-node 落库） */
+@@ -48,66 +50,10 @@ export function LineageCanvas(props: {
+ } & CanvasEditCallbacks): JSX.Element {
+   const { nodes, edges } = props
+   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
+-  const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
+   const svgRef = useRef<SVGSVGElement | null>(null)
+-
+-  // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
+-  // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。
+-  useEffect(() => {
+-    const el = svgRef.current
+-    if (!el) return
+-    const onWheel = (e: WheelEvent): void => {
+-      e.preventDefault()
+-      const rect = el.getBoundingClientRect()
+-      const mx = e.clientX - rect.left
+-      const my = e.clientY - rect.top
+-      setViewport((v) => {
+-        const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
+-        return {
+-          k: k2,
+-          tx: mx - ((mx - v.tx) / v.k) * k2,
+-          ty: my - ((my - v.ty) / v.k) * k2
+-        }
+-      })
+-    }
+-    el.addEventListener('wheel', onWheel, { passive: false })
+-    return () => el.removeEventListener('wheel', onWheel)
+-  }, [])
+-
+-  // pan：背景按下进入拖拽（节点上不触发）；move/up 挂 window（拖出画布
+-  // 仍跟随）。增量位移（每 move 与上一位置差），卸载三 listener 成对移除。
+-  useEffect(() => {
+-    const el = svgRef.current
+-    if (!el) return
+-    let dragging = false
+-    let lastX = 0
+-    let lastY = 0
+-    const onDown = (e: PointerEvent): void => {
+-      if (!(e.target instanceof Element) || !e.target.hasAttribute('data-panbg')) return
+-      dragging = true
+-      lastX = e.clientX
+-      lastY = e.clientY
+-    }
+-    const onMove = (e: PointerEvent): void => {
+-      if (!dragging) return
+-      const dx = e.clientX - lastX
+-      const dy = e.clientY - lastY
+-      lastX = e.clientX
+-      lastY = e.clientY
+-      setViewport((v) => ({ ...v, tx: v.tx + dx, ty: v.ty + dy }))
+-    }
+-    const onUp = (): void => {
+-      dragging = false
+-    }
+-    el.addEventListener('pointerdown', onDown)
+-    window.addEventListener('pointermove', onMove)
+-    window.addEventListener('pointerup', onUp)
+-    return () => {
+-      el.removeEventListener('pointerdown', onDown)
+-      window.removeEventListener('pointermove', onMove)
+-      window.removeEventListener('pointerup', onUp)
+-    }
+-  }, [])
++  // auto-fit/pan/zoom（R2-LG10）：视口域全在 lineage-viewport.ts（状态机
++  // 头注表）；本组件只消费 viewport 值+resetFit 按钮
++  const { viewport, resetFit } = useViewportController({ nodes, edges, layout, svgRef })
+ 
+   const { tx, ty, k } = viewport
+   // ── 03 编辑接缝：拖拽会话（start 驻 ref，渲染跟随驻 state；回调经 ref 取最新）──
+@@ -240,6 +186,18 @@ export function LineageCanvas(props: {
+         </g>
+         )}
+       </svg>
++      {/* 「适应视图」=userInteracted 显式复位（唯一入口——lineage-viewport.ts
++          状态机表；空图不渲染（空态零按钮红线——既有锁定 it 面） */}
++      {nodes.length > 0 && (
++        <button
++          type="button"
++          data-testid="lineage-fit-view"
++          className="lineage-fit-btn"
++          onClick={resetFit}
++        >
++          适应视图
++        </button>
++      )}
+     </div>
+   )
+ }
+diff --git a/src/renderer/features/lineage/LineageNodeCard.tsx b/src/renderer/features/lineage/LineageNodeCard.tsx
+index 70c1e53..c89dd17 100644
+--- a/src/renderer/features/lineage/LineageNodeCard.tsx
++++ b/src/renderer/features/lineage/LineageNodeCard.tsx
+@@ -10,6 +10,8 @@
+  * - 选中态=金描边加粗+外光（复用 svg 顶层 lg-edge-glow 滤器）+data-selected。
+  * - 文本：题名 #f5f3ea（提纯白与金年份拉开层级——票面 P2）；年份=
+  *   --font-display 15px 金 --gold-bright+letter-spacing（衬线年份仪式感）。
++ * - 卡宽=题名分档 nodeWidth(n.title)（R2-LG10 单源消费——INV-36；角饰
++ *   path 随档宽函数化，渲染语义/结构钩子零改）。
+  * - 结构红线（e2e lineage.spec）：g[data-node-id]/data-kind/transform 串
+  *   格式/内含标题与纯数字年份文本全保留；**不渲染「已绑定文献」文本
+  *   badge**——e2e T4 getByText('已绑定文献') strict 单源在侧板，画布加
+@@ -17,17 +19,23 @@
+  */
+ import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react'
+ import type { LineageNode } from '@shared/models/lineage'
+-import { NODE_H, NODE_W } from './lineage-layout'
++import { NODE_H, nodeWidth } from './lineage-layout'
+ 
+ /** L 形角饰臂长（mockup ::before 12px 逐值） */
+ const CORNER_ARM = 12
+-// 角饰骑在 rect 圆角外侧（mockup top:-1px left:-1px 同位语）——SVG path 描边实现
+-const CORNER_TL = `M ${-NODE_W / 2 - 0.5} ${-NODE_H / 2 + CORNER_ARM} L ${-NODE_W / 2 - 0.5} ${
+-  -NODE_H / 2 - 0.5
+-} L ${-NODE_W / 2 + CORNER_ARM} ${-NODE_H / 2 - 0.5}`
+-const CORNER_BR = `M ${NODE_W / 2 + 0.5} ${NODE_H / 2 - CORNER_ARM} L ${NODE_W / 2 + 0.5} ${
+-  NODE_H / 2 + 0.5
+-} L ${NODE_W / 2 - CORNER_ARM} ${NODE_H / 2 + 0.5}`
++
++/** L 形角饰 path（骑 rect 圆角外侧——mockup top:-1px left:-1px 同位语；
++ *  SVG path 描边实现，臂位随分档宽 w 计算） */
++function cornerPaths(w: number): { tl: string; br: string } {
++  return {
++    tl: `M ${-w / 2 - 0.5} ${-NODE_H / 2 + CORNER_ARM} L ${-w / 2 - 0.5} ${-NODE_H / 2 - 0.5} L ${
++      -w / 2 + CORNER_ARM
++    } ${-NODE_H / 2 - 0.5}`,
++    br: `M ${w / 2 + 0.5} ${NODE_H / 2 - CORNER_ARM} L ${w / 2 + 0.5} ${NODE_H / 2 + 0.5} L ${
++      w / 2 - CORNER_ARM
++    } ${NODE_H / 2 + 0.5}`
++  }
++}
+ 
+ export function LineageNodeCard(props: {
+   node: LineageNode
+@@ -40,6 +48,8 @@ export function LineageNodeCard(props: {
+ }): JSX.Element {
+   const { node: n, selected: sel } = props
+   const theme = n.paperId === null
++  const w = nodeWidth(n.title)
++  const corner = cornerPaths(w)
+   return (
+     <g
+       data-node-id={n.id}
+@@ -49,9 +59,9 @@ export function LineageNodeCard(props: {
+       onContextMenu={props.onContextMenu}
+     >
+       <rect
+-        x={-NODE_W / 2}
++        x={-w / 2}
+         y={-NODE_H / 2}
+-        width={NODE_W}
++        width={w}
+         height={NODE_H}
+         rx={14}
+         fill={theme ? 'url(#lg-node-face-theme)' : 'url(#lg-node-face)'}
+@@ -62,9 +72,9 @@ export function LineageNodeCard(props: {
+         filter={sel ? 'url(#lg-edge-glow)' : undefined}
+         data-selected={sel}
+       />
+-      {/* L 形金角饰（左上/右下各一） */}
+-      <path data-corner="tl" d={CORNER_TL} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
+-      <path data-corner="br" d={CORNER_BR} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
++      {/* L 形金角饰（左上/右下各一——随分档宽） */}
++      <path data-corner="tl" d={corner.tl} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
++      <path data-corner="br" d={corner.br} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
+       <text x={0} y={-8} textAnchor="middle" fontSize={12.5} fill="#f5f3ea">
+         {n.title}
+       </text>
+diff --git a/src/renderer/features/lineage/LineagePage.tsx b/src/renderer/features/lineage/LineagePage.tsx
+index a992e9b..7466901 100644
+--- a/src/renderer/features/lineage/LineagePage.tsx
++++ b/src/renderer/features/lineage/LineagePage.tsx
+@@ -88,7 +88,9 @@ export function LineagePage(): JSX.Element {
+       <div className="min-w-0 flex-1">
+         <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+       </div>
+-      <aside className="w-72 shrink-0 overflow-hidden rounded border" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
++      {/* R2-LG10：夜色玻璃底/描边/圆角归 LineageSidePanel 根（mockup .side
++          逐值）——aside 只留尺寸直通（接线零动，纯容器样式归并） */}
++      <aside className="w-72 shrink-0 overflow-hidden">
+         <LineageSidePanel node={selectedNode} onJumpToPaper={handleJumpToPaper} />
+       </aside>
+     </div>
+diff --git a/src/renderer/features/lineage/LineageSideAiNotes.tsx b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+index b565fa8..8a73416 100644
+--- a/src/renderer/features/lineage/LineageSideAiNotes.tsx
++++ b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+@@ -23,6 +23,18 @@ import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER }
+ 
+ type Phase = 'loading' | 'ready' | 'error'
+ 
++/**
++ * R2-LG10 夜化（票面 P3）：h4 金左缘条；条目卡=mockup .note 逐值
++ * （rgba(23,30,51,.45) 底+rgba(151,160,187,.28) 描边）；文本系
++ * --*-on-night。**QUESTION_COLOR 组头左缘条与色块零改**（AI-08 分色
++ * 单源——分色不因夜化回退）；testid/文案零改。
++ */
++/** 条目卡（mockup .note 逐值） */
++const NOTE_CARD = {
++  background: 'rgba(23, 30, 51, 0.45)',
++  borderColor: 'rgba(151, 160, 187, 0.28)'
++} as const
++
+ export function LineageSideAiNotes(props: {
+   paperId: string
+   onNoteDblClick(note: AiNote): void
+@@ -55,8 +67,13 @@ export function LineageSideAiNotes(props: {
+ 
+   return (
+     <section data-testid="lineage-side-ai-notes" className="flex flex-col gap-1">
+-      <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>AI 笔记</h4>
+-      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>AI 笔记加载中…</p>}
++      <h4
++        className="m-0 font-medium"
++        style={{ color: 'var(--text-dim-on-night)', borderLeft: '3px solid var(--gold-night)', paddingLeft: 6 }}
++      >
++        AI 笔记
++      </h4>
++      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>AI 笔记加载中…</p>}
+       {phase === 'error' && (
+         <div
+           role="alert"
+@@ -78,14 +95,14 @@ export function LineageSideAiNotes(props: {
+       )}
+       {phase === 'ready' &&
+         (notes === null || notes.length === 0 ? (
+-          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无 AI 笔记</p>
++          <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>暂无 AI 笔记</p>
+         ) : (
+           AI_NOTE_QUESTIONS.filter((question) => notes.some((n) => n.question === question)).map(
+             (question) => (
+               <div key={question} data-question={question}>
+                 <h5
+                   className="m-0 pl-1 font-medium"
+-                  style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim)' }}
++                  style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim-on-night)' }}
+                 >
+                   {question === 'divergence'
+                     ? QUESTION_LABEL[question]
+@@ -99,20 +116,20 @@ export function LineageSideAiNotes(props: {
+                       key={n.id}
+                       data-ai-note-id={n.id}
+                       className="mt-0.5 rounded border px-2 py-1"
+-                      style={{ borderColor: 'var(--border)' }}
++                      style={NOTE_CARD}
+                       onDoubleClick={() => onNoteDblClick(n)}
+                     >
+                       <span className="flex items-center gap-1">
+                         <span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: QUESTION_COLOR[n.question] }} />
+-                        <span style={{ color: 'var(--text-dim)' }}>
++                        <span style={{ color: 'var(--text-dim-on-night)' }}>
+                           {ROLE_LABEL[n.role]}
+                           {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
+                         </span>
+                       </span>
+                       {n.quoteText !== '' && (
+-                        <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>{n.quoteText}</span>
++                        <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim-on-night)' }}>{n.quoteText}</span>
+                       )}
+-                      <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{n.contentMd}</span>
++                      <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text-on-night)' }}>{n.contentMd}</span>
+                     </div>
+                   ))}
+               </div>
+diff --git a/src/renderer/features/lineage/LineageSideManualNote.tsx b/src/renderer/features/lineage/LineageSideManualNote.tsx
+index aaec7fe..25ab4f5 100644
+--- a/src/renderer/features/lineage/LineageSideManualNote.tsx
++++ b/src/renderer/features/lineage/LineageSideManualNote.tsx
+@@ -15,6 +15,16 @@ import type { Note } from '@shared/models/note'
+ 
+ type Phase = 'loading' | 'ready' | 'error'
+ 
++/**
++ * R2-LG10 夜化（票面 P3）：h4 金左缘条；总评内容=条目卡同款
++ * （mockup .note 逐值——与 AI 条目卡视觉同域）；文本系 --*-on-night；
++ * testid/文案零改。
++ */
++const NOTE_CARD = {
++  background: 'rgba(23, 30, 51, 0.45)',
++  borderColor: 'rgba(151, 160, 187, 0.28)'
++} as const
++
+ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
+   const { paperId } = props
+   const [note, setNote] = useState<Note | null>(null)
+@@ -43,8 +53,13 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
+ 
+   return (
+     <section data-testid="lineage-side-manual-note" className="flex flex-col gap-1">
+-      <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>人工笔记</h4>
+-      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>人工笔记加载中…</p>}
++      <h4
++        className="m-0 font-medium"
++        style={{ color: 'var(--text-dim-on-night)', borderLeft: '3px solid var(--gold-night)', paddingLeft: 6 }}
++      >
++        人工笔记
++      </h4>
++      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>人工笔记加载中…</p>}
+       {phase === 'error' && (
+         <div
+           role="alert"
+@@ -66,9 +81,9 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
+       )}
+       {phase === 'ready' &&
+         (note === null ? (
+-          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无人工笔记</p>
++          <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>暂无人工笔记</p>
+         ) : (
+-          <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{note.contentMd}</p>
++          <p className="m-0 whitespace-pre-wrap rounded border px-2 py-1" style={{ ...NOTE_CARD, color: 'var(--text-on-night)' }}>{note.contentMd}</p>
+         ))}
+     </section>
+   )
+diff --git a/src/renderer/features/lineage/LineageSidePanel.tsx b/src/renderer/features/lineage/LineageSidePanel.tsx
+index 2f881cc..3bfb6ac 100644
+--- a/src/renderer/features/lineage/LineageSidePanel.tsx
++++ b/src/renderer/features/lineage/LineageSidePanel.tsx
+@@ -83,11 +83,33 @@
+  * - node 数据源=LineagePage 经 lineage.store 查找分发（03 预留出口兑现
+  *   ——store 数据消费合法，非双取）。
+  */
++import type { CSSProperties } from 'react'
+ import type { AiNote } from '@shared/models/ai-note'
+ import type { LineageNode } from '@shared/models/lineage'
+ import { LineageSideAiNotes } from './LineageSideAiNotes'
+ import { LineageSideManualNote } from './LineageSideManualNote'
+ 
++/**
++ * R2-LG10 侧板夜化（票面 P3）：夜色玻璃卡（mockup .side 逐值——比画布亮
++ * 一档的 rgba(40,51,86,.72)+blur12+金 hairline）；文本系全换 --*-on-night；
++ * 分组 h4 金左缘条（var(--gold-night)——夜面别名）；条目卡见两子件。
++ * testid/文案/QUESTION_COLOR 左缘条零改（纯 style 层）。
++ */
++const NIGHT_GLASS: CSSProperties = {
++  background: 'rgba(40, 51, 86, 0.72)',
++  backdropFilter: 'blur(12px)',
++  border: '1px solid rgba(207, 174, 114, 0.25)',
++  borderRadius: 12,
++  boxShadow: '0 8px 28px rgba(6, 10, 24, 0.45)'
++}
++
++/** 分组 h4（核心 idea）金左缘条（mockup .side h4） */
++const H4_GOLD: CSSProperties = {
++  color: 'var(--text-dim-on-night)',
++  borderLeft: '3px solid var(--gold-night)',
++  paddingLeft: 6
++}
++
+ /** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
+ function hasAnchor(n: AiNote): boolean {
+   return n.quoteText.length >= 2 || n.anchorPage !== null
+@@ -113,7 +135,7 @@ export function LineageSidePanel(props: {
+ 
+         data-testid="lineage-side-panel"
+         className="flex h-full items-center justify-center p-4 text-center text-xs"
+-        style={{ color: 'var(--text-dim)' }}
++        style={{ ...NIGHT_GLASS, color: 'var(--text-dim-on-night)' }}
+       >
+         单击节点查看详情
+       </div>
+@@ -138,25 +160,32 @@ export function LineageSidePanel(props: {
+     <div
+ 
+       data-testid="lineage-side-panel"
+-      className="flex h-full flex-col gap-2 overflow-auto p-2 text-xs"
++      className="flex h-full flex-col gap-2 overflow-auto p-3.5 text-xs"
++      style={NIGHT_GLASS}
+     >
+       <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
+-        <h3 className="m-0 text-sm font-medium" style={{ color: 'var(--text)' }}>
++        <h3
++          className="m-0 text-sm font-medium"
++          style={{ color: 'var(--text-on-night)', fontFamily: 'var(--font-display)' }}
++        >
+           {node.title}
+         </h3>
+-        <p className="m-0" style={{ color: 'var(--text-dim)' }}>
++        <p
++          className="m-0"
++          style={{ color: 'var(--gold-bright)', fontFamily: 'var(--font-display)', letterSpacing: '1px' }}
++        >
+           {node.year === null ? '未知年份' : `${node.year} 年`}
+           {node.paperId !== null && <span className="ml-1 rounded border px-1" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}>已绑定文献</span>}
+         </p>
+       </section>
+       <section data-testid="lineage-side-idea">
+-        <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>核心 idea</h4>
+-        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
++        <h4 className="m-0 font-medium" style={H4_GOLD}>核心 idea</h4>
++        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text-on-night)' }}>
+           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
+         </p>
+       </section>
+       {node.paperId === null ? (
+-        <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
++        <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>主题节点无笔记</p>
+       ) : (
+         <>
+           <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />
+diff --git a/src/renderer/features/lineage/lineage-layout.ts b/src/renderer/features/lineage/lineage-layout.ts
+index 4e110d0..7069323 100644
+--- a/src/renderer/features/lineage/lineage-layout.ts
++++ b/src/renderer/features/lineage/lineage-layout.ts
+@@ -10,9 +10,14 @@
+  *   红线）；**森林语义**（多根=多棵树并排——INV-27 单父无环前提下
+  *   边集构成森林；孤立节点=单节点树）
+  * - **兄弟根占位分离（缺陷 E1 修，2026-08-28 验收）**：layoutLineage 性质——
+- *   直接兄弟节点对不论年份层必横向错开 ≥ NODE_W+SIBLING_GAP（根节点
+- *   占位 rootLo/rootHi 参与兄弟放置下限——非单调年份树兄弟全不共享层
+- *   时不退化单列）；共享层轮廓约束语义原样（深层不共享层子树仍可交错）
++ *   直接兄弟节点对不论年份层必横向错开 ≥ 前根半宽+间隙+本根半宽（同档=
++ *   NODE_W+SIBLING_GAP；根节点占位 rootLo/rootHi 参与兄弟放置下限——非单调
++ *   年份树兄弟全不共享层时不退化单列）；共享层轮廓约束语义原样（深层不
++ *   共享层子树仍可交错）
++ * - **题名分档宽（R2-LG10，票面 P2）**：节点占位宽=nodeWidth(title) 三档
++ *   （≤12 字 180/≤28 字 220/>28 字 260——单源三消费见 nodeWidth 注）；
++ *   卡片中心点输出语义不变（占位区间按各档半宽）；单链居中对齐/兄弟
++ *   错开/紧凑性不变量随档宽自然扩义
+  * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
+  *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
+  *   碰撞避让，票面声明）；null → 布局产出
+@@ -87,7 +92,7 @@
+  */
+ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+ 
+-// ── 几何常量（卡片等宽——票面「节点宽度统一常量」）──────────────────
++// ── 几何常量（R2-LG10 题名分档宽——票面 P2：NODE_W 单值→按 title 长度三档）──
+ export const NODE_W = 180
+ export const NODE_H = 64
+ /** 层带中心间距（y 维） */
+@@ -96,6 +101,21 @@ export const LAYER_GAP = 140
+ export const SIBLING_GAP = 40
+ /** 森林相邻树间隙 */
+ export const TREE_GAP = 80
++/** 中档宽（13~28 字题名）/长档宽（>28 字） */
++export const NODE_W_MID = 220
++export const NODE_W_LONG = 260
++
++/**
++ * 题名分档宽（R2-LG10，票面 P2 档值 180/220/260）：短 ≤12 字=NODE_W/
++ * 中 ≤28 字=220/长 >28 字=260；空题名=短档兜底。
++ * **单源三消费（INV-36）**：本文件 place() 占位/LineageNodeCard 卡面渲染/
++ * LineageCanvas auto-fit 包围盒——三处禁各写档值（档值变更=三消费面同改）。
++ */
++export function nodeWidth(title: string): number {
++  if (title.length <= 12) return NODE_W
++  if (title.length <= 28) return NODE_W_MID
++  return NODE_W_LONG
++}
+ 
+ export interface LayoutResult {
+   /** 节点 id → 卡片中心点（覆盖节点=覆盖值原样） */
+@@ -188,20 +208,23 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+   }
+ 
+   // 5) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
++  //    节点宽=题名分档（nodeWidth 单源——占位半宽随档，R2-LG10）
+   const byId = new Map(nodes.map((n) => [n.id, n]))
++  const wOf = new Map(nodes.map((n) => [n.id, nodeWidth(n.title)]))
+   const selfRel = new Map<string, number>() // 节点相对自身子树包围盒原点的中心 x
+   const boxOrigin = new Map<string, number>() // 子包围盒原点相对父包围盒原点
+ 
+   function place(id: string): Frame {
+     const kids = children.get(id) ?? []
+     const myLayer = layerIdx.get(byId.get(id)!.year)!
++    const w = wOf.get(id)!
+     if (kids.length === 0) {
+-      selfRel.set(id, NODE_W / 2)
++      selfRel.set(id, w / 2)
+       return {
+-        spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]),
+-        width: NODE_W,
++        spans: new Map([[myLayer, { lo: 0, hi: w }]]),
++        width: w,
+         rootLo: 0,
+-        rootHi: NODE_W
++        rootHi: w
+       }
+     }
+     const merged = new Map<number, { lo: number; hi: number }>()
+@@ -219,10 +242,11 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+           need = Math.max(need, prev.hi + SIBLING_GAP - span.lo)
+         }
+       }
+-      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层
+-      // 必错开 ≥ NODE_W+SIBLING_GAP——非单调树兄弟全不共享层时约束 1 恒 0
+-      // → offset 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层
+-      // 不共享层子树交错不受此约束推开（紧凑性保持）
++      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层必横向错开
++      // ≥ 前根半宽+间隙+本根半宽（同档=NODE_W+SIBLING_GAP；异档随各档宽——
++      // R2-LG10 分档语义）——非单调树兄弟全不共享层时约束 1 恒 0 → offset
++      // 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层不共享层
++      // 子树交错不受此约束推开（紧凑性保持）
+       if (mergedRootHi !== null) {
+         need = Math.max(need, mergedRootHi + SIBLING_GAP - f.rootLo)
+       }
+@@ -246,14 +270,14 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+       merged.set(layer, { lo: s.lo - minL, hi: s.hi - minL })
+     }
+     // 父居中于子块（RT 经典视觉）；父占位并入自身年份层——与子孙同层
+-    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸）
++    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸；占位半宽随档）
+     let x = width / 2
+     const mine = merged.get(myLayer)
+-    if (mine !== undefined && x - NODE_W / 2 <= mine.hi + SIBLING_GAP) {
+-      x = mine.hi + SIBLING_GAP + NODE_W / 2
++    if (mine !== undefined && x - w / 2 <= mine.hi + SIBLING_GAP) {
++      x = mine.hi + SIBLING_GAP + w / 2
+     }
+-    const plo = x - NODE_W / 2
+-    const phi = x + NODE_W / 2
++    const plo = x - w / 2
++    const phi = x + w / 2
+     merged.set(
+       myLayer,
+       mine === undefined
+diff --git a/src/renderer/shared/theme.css b/src/renderer/shared/theme.css
+index aa4cf08..59852e9 100644
+--- a/src/renderer/shared/theme.css
++++ b/src/renderer/shared/theme.css
+@@ -318,3 +318,23 @@ body,
+   background: transparent;
+   color: var(--text-dim-on-night);
+ }
++/* R2-LG10 「适应视图」按钮（画布右下浮层——工具条同族夜色玻璃；
++   auto-fit 显式复位唯一入口，见 LineageCanvas 头注状态机） */
++.lineage-fit-btn {
++  position: absolute;
++  right: 12px;
++  bottom: 12px;
++  z-index: 10;
++  padding: 4px 12px;
++  border-radius: 999px;
++  background: rgba(34, 44, 77, 0.78);
++  backdrop-filter: blur(10px);
++  border: 1px solid rgba(207, 174, 114, 0.28);
++  color: var(--text-dim-on-night);
++  font-size: 12px;
++  cursor: pointer;
++}
++.lineage-fit-btn:hover {
++  color: var(--text-on-night);
++  background: var(--gold-soft);
++}
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+index 76b2da5..f77807f 100644
+--- a/tests/e2e/lineage.spec.ts
++++ b/tests/e2e/lineage.spec.ts
+@@ -258,17 +258,22 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
+     await win.getByRole('button', { name: '脉络', exact: true }).click()
+     await importDraftViaUi(app, win, fixturePath)
+ 
+-    // ③拖拽根节点 +120/+80（k=1）→transform 到达落点=写回填证据
++    // ③拖拽根节点 +120/+80 屏幕 px→布局位移=屏幕/k（R2-LG10 auto-fit 载入
++    //   后 k≠1——落点断言 scale-aware，[locked-change] 申报：原 k=1 假设随
++    //   auto-fit 必然红）→transform 到达落点=写回填证据
+     const rootG = nodeG(win, '脉络根文献')
+     const before = parseTranslate(await rootG.getAttribute('transform'))
+     expect(before).not.toBeNull()
++    const fitK = Number(
++      (await win.locator('svg g[data-viewport]').getAttribute('transform'))?.match(/scale\(([\d.]+)\)$/)?.[1] ?? '1'
++    )
+     const box = await rootG.boundingBox()
+     expect(box).not.toBeNull()
+     await win.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+     await win.mouse.down()
+     await win.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 80, { steps: 5 })
+     await win.mouse.up()
+-    const target = { x: before!.x + 120, y: before!.y + 80 }
++    const target = { x: before!.x + 120 / fitK, y: before!.y + 80 / fitK }
+     await expect
+       .poll(async () => parseTranslate(await rootG.getAttribute('transform')))
+       .toEqual(expect.objectContaining({ x: expect.closeTo(target.x, 2), y: expect.closeTo(target.y, 2) }))
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+index 1431352..2f11e1e 100644
+--- a/tests/unit/renderer/lineage-canvas.test.tsx
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -82,6 +82,20 @@ const flush = async (): Promise<void> => {
+ const viewportTransform = (): string =>
+   host?.querySelector('[data-viewport]')?.getAttribute('transform') ?? ''
+ 
++/** 解析 data-viewport transform 串（translate(x, y) scale(k)——与 e2e 同式解析） */
++function parseViewport(s: string): { tx: number; ty: number; k: number } | null {
++  const m = s.match(/^translate\((-?[\d.]+), (-?[\d.]+)\) scale\(([\d.]+)\)$/)
++  return m ? { tx: Number(m[1]), ty: Number(m[2]), k: Number(m[3]) } : null
++}
++
++/** 桩量测（jsdom 无布局）：Element.prototype.getBoundingClientRect 固定返回
++ *  视口盒（selection-layer.test 同族——app 级 mock 配方先例） */
++function stubViewportRect(width: number, height: number) {
++  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
++    return { x: 0, y: 0, top: 0, left: 0, right: width, bottom: height, width, height, toJSON: () => ({}) } as DOMRect
++  })
++}
++
+ beforeEach(() => {
+   vi.clearAllMocks()
+   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+@@ -353,6 +367,105 @@ describe('R2-LG9 星象板视觉（夜幕宿主/渐变 defs/角饰/层带刻度/
+   })
+ })
+ 
++describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
++  it('首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）', () => {
++    const spy = stubViewportRect(800, 600)
++    try {
++      const g = chain()
++      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
++      const v = parseViewport(viewportTransform())
++      expect(v).not.toBeNull()
++      // 手算（chain 全短档题名 NODE_W=180）：链 3 层 y∈[-32,312]（H=344）、
++      // x∈[-200,180]（左缘含层带标签 BAND_LEFT=-200，W=380）；边距上下 80/
++      // 左右 120 → k=min(560/380, 440/344)=440/344≈1.2791
++      expect(v!.k).toBeCloseTo(440 / 344, 6)
++      expect(v!.tx).toBeCloseTo(120 + 200 * (440 / 344), 6)
++      expect(v!.ty).toBeCloseTo(80 + 32 * (440 / 344), 6)
++      // LG9 N5：层带年份标（布局 x=-190 初始视口外）fit 后必入视口（screen x>0）
++      expect(v!.tx - 190 * v!.k).toBeGreaterThan(0)
++    } finally {
++      spy.mockRestore()
++    }
++  })
++
++  it('不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口', () => {
++    const spy = stubViewportRect(800, 600)
++    try {
++      const g = chain()
++      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
++      const fitted = parseViewport(viewportTransform())
++      expect(fitted!.k).not.toBe(1) // fit 已生效前提锚
++      // 用户 pan（panbg pointerdown=交互置位）
++      const bg = host?.querySelector('[data-panbg]') as Element
++      act(() => {
++        bg.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
++      })
++      act(() => {
++        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 140, clientY: 110 }))
++      })
++      act(() => {
++        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 140, clientY: 110 }))
++      })
++      const panned = parseViewport(viewportTransform())
++      expect(panned!.tx).toBeCloseTo(fitted!.tx + 40, 6)
++      expect(panned!.ty).toBeCloseTo(fitted!.ty + 10, 6)
++      // nodes/edges 引用变化（导入替换/写回填同型）——视口不被 fit 重置
++      act(() => {
++        root?.render(
++          <LineageCanvas nodes={g.nodes.map((n) => ({ ...n }))} edges={g.edges.map((e) => ({ ...e }))} />
++        )
++      })
++      const after = parseViewport(viewportTransform())
++      expect(after!.tx).toBeCloseTo(panned!.tx, 6)
++      expect(after!.ty).toBeCloseTo(panned!.ty, 6)
++      expect(after!.k).toBe(panned!.k)
++    } finally {
++      spy.mockRestore()
++    }
++  })
++
++  it('「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）', () => {
++    const spy = stubViewportRect(800, 600)
++    try {
++      const g = chain()
++      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
++      const fitted = parseViewport(viewportTransform())
++      const bg = host?.querySelector('[data-panbg]') as Element
++      act(() => {
++        bg.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
++      })
++      act(() => {
++        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 150, clientY: 130 }))
++      })
++      act(() => {
++        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 150, clientY: 130 }))
++      })
++      expect(parseViewport(viewportTransform())!.tx).not.toBeCloseTo(fitted!.tx, 6)
++      const btn = host?.querySelector('[data-testid="lineage-fit-view"]') as HTMLButtonElement | null
++      expect(btn).not.toBeNull()
++      act(() => {
++        btn?.click()
++      })
++      const v = parseViewport(viewportTransform())
++      expect(v!.tx).toBeCloseTo(fitted!.tx, 6)
++      expect(v!.ty).toBeCloseTo(fitted!.ty, 6)
++      expect(v!.k).toBeCloseTo(fitted!.k, 6)
++    } finally {
++      spy.mockRestore()
++    }
++  })
++
++  it('R2-LG10 题名分档宽：长题名卡 rect 宽 260/短题名 180（nodeWidth 单源消费）', () => {
++    const nodes = [
++      node('S', { year: 2020, title: '短题名' }),
++      node('L', { year: 2021, title: '长'.repeat(29) })
++    ]
++    mount(<LineageCanvas nodes={nodes} edges={[]} />)
++    expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('width')).toBe('180')
++    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('width')).toBe('260')
++  })
++})
++
+ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () => {
+   it('loading：挂载期呈加载文案，graph 取数一次', async () => {
+     stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))
+diff --git a/tests/unit/renderer/lineage-layout.test.ts b/tests/unit/renderer/lineage-layout.test.ts
+index 1680f2b..40ad278 100644
+--- a/tests/unit/renderer/lineage-layout.test.ts
++++ b/tests/unit/renderer/lineage-layout.test.ts
+@@ -14,7 +14,8 @@ import {
+   NODE_W,
+   SIBLING_GAP,
+   TREE_GAP,
+-  layoutLineage
++  layoutLineage,
++  nodeWidth
+ } from '../../../src/renderer/features/lineage/lineage-layout'
+ 
+ /** 节点工厂（默认文献节点、自动布局 x/y=null） */
+@@ -317,3 +318,32 @@ describe('layoutLineage —— 纯函数性质与防御', () => {
+     expect(warn).not.toHaveBeenCalled()
+   })
+ })
++
++describe('R2-LG10 题名分档宽（nodeWidth 单源）', () => {
++  it('三档边界：≤12 字=NODE_W(180)；13~28 字=220；>28 字=260（空题名=短档兜底）', () => {
++    expect(nodeWidth('十'.repeat(12))).toBe(NODE_W)
++    expect(nodeWidth('十'.repeat(13))).toBe(220)
++    expect(nodeWidth('二'.repeat(28))).toBe(220)
++    expect(nodeWidth('长'.repeat(29))).toBe(260)
++    expect(nodeWidth('')).toBe(NODE_W)
++  })
++
++  it('分档参与兄弟占位：中档+长档兄弟中心距 ≥ 两半宽和+间隙（110+40+130=280）', () => {
++    const nodes = [
++      node('P', { year: 2020, title: '短' }),
++      node('M', { year: 2021, title: '中'.repeat(13) }),
++      node('L', { year: 2021, title: '长'.repeat(29) })
++    ]
++    const { positions } = layoutLineage(nodes, [edge('P', 'M'), edge('P', 'L')])
++    expect(Math.abs(positions.get('L')!.x - positions.get('M')!.x)).toBeGreaterThanOrEqual(280)
++  })
++
++  it('异档单链居中对齐保持（父子中心 x 等值——分档不改链对齐语义）', () => {
++    const nodes = [
++      node('S', { year: 2020, title: '短' }),
++      node('L', { year: 2021, title: '长'.repeat(29) })
++    ]
++    const { positions } = layoutLineage(nodes, [edge('S', 'L')])
++    expect(positions.get('S')!.x).toBe(positions.get('L')!.x)
++  })
++})
+diff --git a/tests/unit/renderer/lineage-side-panel.test.tsx b/tests/unit/renderer/lineage-side-panel.test.tsx
+index db7f035..e87337b 100644
+--- a/tests/unit/renderer/lineage-side-panel.test.tsx
++++ b/tests/unit/renderer/lineage-side-panel.test.tsx
+@@ -308,6 +308,31 @@ it('主题节点：仅前两区+空态文案；笔记通道零调用', async ()
+   expect(stubApi.notes.get).not.toHaveBeenCalled()
+ })
+ 
++it('R2-LG10 侧板夜化：玻璃底 rgba(40,51,86)+blur12+金 hairline；条目卡 rgba(23,30,51)+描边（防回退）', async () => {
++  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1', { question: 'Q1' })] })
++  stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
++  mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
++  await flush()
++  // 面板玻璃底（mockup .side 逐值）。backdrop-filter 在 jsdom 不入 style
++  // 属性序列化（实证：仅 DOM 属性可读）——经 style.backdropFilter 属性断言
++  const rootEl = q('[data-testid="lineage-side-panel"]') as HTMLElement
++  expect(rootEl.getAttribute('style')).toContain('rgba(40, 51, 86, 0.72)')
++  expect(rootEl.getAttribute('style')).toContain('rgba(207, 174, 114, 0.25)')
++  expect(rootEl.style.backdropFilter).toBe('blur(12px)')
++  // 分组 h4 金左缘条（核心 idea/AI 笔记/人工笔记三处齐改）
++  const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
++  expect(h4s.length).toBe(3)
++  for (const h of h4s) {
++    expect(h.getAttribute('style')).toContain('var(--gold-night)')
++  }
++  // AI 条目卡（mockup .note 逐值：底+描边）
++  const card = q('[data-ai-note-id="a1"]')?.getAttribute('style') ?? ''
++  expect(card).toContain('rgba(23, 30, 51, 0.45)')
++  expect(card).toContain('rgba(151, 160, 187, 0.28)')
++  // QUESTION_COLOR 左缘条零改锚（AI-08 分色单源不因夜化回退）
++  expect(q('[data-question="Q1"] h5')?.getAttribute('style')).toContain(QUESTION_COLOR.Q1)
++})
++
+ it('AI 条目双击→onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）', async () => {
+   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
+   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+=== NEW FILE: src/renderer/features/lineage/lineage-viewport.ts ===
+// b3: P7-H
+/**
+ * [R2-LG10] lineage-viewport —— 画布视口域模块（auto-fit+pan+zoom，LineageCanvas
+ * 拆件——组件 ≤250 行红线，LG9 LineageNodeCard/LineageEdges 拆件同型先例）。
+ *
+ * auto-fit 状态机（票面 P1；宪法前置）——态空间 idle→fitting→fitted +
+ * manual 抢占门（userInteracted 布尔，非第四态——fitted 后可再入）：
+ * | 态/标志 | 进入事件 | 行为 |
+ * | idle（nodes 空） | 挂载/图清空 | 不 fit，保持现视口 |
+ * | fitting | nodes/edges 引用变化 且 !userInteracted 且视口可量测（宽高>0） | 计算全节点+层带左缘包围盒→setViewport（瞬时，v1 无缓动） |
+ * | fitted | fitting 完成 | 等待下一触发 |
+ * | manual（userInteracted=true） | panbg pointerdown / 滚轮 wheel | 后续 nodes 变化**不抢视口**（fit 跳过） |
+ * | manual→fitting | 「适应视图」按钮（lineage-fit-view，resetFit 唯一复位口） | userInteracted 置 false→effect 重触发 fit |
+ *
+ * 包围盒=x∈[层带标签左缘 -200, 最右节点右缘]（LG9 N5：年份标初始视口
+ * 外，fit 后必可见）∪ y∈全节点上下缘；边距上下 80/左右 120；k=min(容纳
+ * 比) 钳制 [0.25,4]（ZOOM 界内）。视口宽高 0（jsdom 无布局/未挂载）=
+ * 不可量测→跳过（防御，不产生退化 fit——既有 pan/zoom it 面保持绿的兼容
+ * 前提）。fit 逻辑驻本拆件（依赖 DOM 视口尺寸——禁入 lineage-layout 纯
+ * 函数，票面架构层）；节点半宽=nodeWidth(title) 分档单源（INV-36）。
+ * pan/zoom 自 LG-02 起即本域行为（原驻 Canvas，拆件搬迁行为零变）：
+ * zoom=非被动 wheel+鼠标锚点缩放；pan=panbg pointer 拖拽（节点上不
+ * pan）；INV-14 window/svg 同 type 同函数引用成对注册成对清理。
+ * 视口瞬态（tx/ty/k）驻 hook state 不入 store（LG-02 既有语义）。
+ */
+import { useEffect, useState } from 'react'
+import type { RefObject } from 'react'
+import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import { NODE_H, nodeWidth } from './lineage-layout'
+import type { LayoutResult } from './lineage-layout'
+
+/** 缩放界+步长（wheel 锚点缩放与 auto-fit 钳制共用单源） */
+export const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
+/** auto-fit 边距（票面 P1：上下 80/左右 120——层带年份标在左需宽边距） */
+const FIT_PAD_X = 120
+const FIT_PAD_Y = 80
+/** 层带内容左缘（band line x1=-200/年份标 x=-190——取更左者为包围盒左界） */
+const BAND_LEFT = -200
+
+export type Viewport = { tx: number; ty: number; k: number }
+
+/** auto-fit 视口计算（纯几何——包围盒+边距+钳制；DOM 尺寸由调用方量测） */
+export function fitViewport(nodes: LineageNode[], layout: LayoutResult, vw: number, vh: number): Viewport {
+  let xMin = BAND_LEFT
+  let xMax = BAND_LEFT
+  let yMin = Infinity
+  let yMax = -Infinity
+  for (const n of nodes) {
+    const p = layout.positions.get(n.id)
+    if (p === undefined) continue
+    const hw = nodeWidth(n.title) / 2
+    xMin = Math.min(xMin, p.x - hw)
+    xMax = Math.max(xMax, p.x + hw)
+    yMin = Math.min(yMin, p.y - NODE_H / 2)
+    yMax = Math.max(yMax, p.y + NODE_H / 2)
+  }
+  if (yMin === Infinity) return { tx: 0, ty: 0, k: 1 } // 无可拟合内容（调用方已查 nodes.length——理论不可达防御）
+  const k = Math.min(
+    ZOOM.max,
+    Math.max(ZOOM.min, Math.min((vw - 2 * FIT_PAD_X) / (xMax - xMin), (vh - 2 * FIT_PAD_Y) / (yMax - yMin)))
+  )
+  return { k, tx: FIT_PAD_X - xMin * k, ty: FIT_PAD_Y - yMin * k }
+}
+
+export interface ViewportController {
+  viewport: Viewport
+  /** 抢占门置位（panbg pointerdown/滚轮 wheel 之外的用户视口操作——状态机 manual 态） */
+  markUserInteracted(): void
+  /** 「适应视图」复位（唯一 fit 重触发口） */
+  resetFit(): void
+}
+
+/**
+ * 视口控制器 hook（状态机宿主——头注表）：auto-fit 单一 fit 路径（按钮
+ * 复位=userInteracted 置 false 经同一 effect 重触发）；zoom/pan 监听随
+ * 挂载注册（依赖全稳定 identity——挂载一次常活，INV-14 成对清理）。
+ */
+export function useViewportController(args: {
+  nodes: LineageNode[]
+  edges: LineageEdge[]
+  layout: LayoutResult
+  svgRef: RefObject<SVGSVGElement | null>
+}): ViewportController {
+  const { nodes, edges, layout, svgRef } = args
+  const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
+  const [userInteracted, setUserInteracted] = useState(false)
+
+  // auto-fit effect：nodes/edges 引用变化（载入/导入替换/写回填）且用户
+  // 未交互时整图入视口；视口宽高 0=不可量测（jsdom）→跳过保持现视口。
+  useEffect(() => {
+    if (userInteracted || nodes.length === 0) return
+    const el = svgRef.current
+    if (el === null) return
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return
+    setViewport(fitViewport(nodes, layout, rect.width, rect.height))
+  }, [nodes, edges, layout, userInteracted, svgRef])
+
+  // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
+  // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。
+  // （LG-02 原文搬迁——行为零变）
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent): void => {
+      e.preventDefault()
+      setUserInteracted(true) // auto-fit 抢占门置位（滚轮 zoom=用户接管视口）
+      const rect = el.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      setViewport((v) => {
+        const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
+        return {
+          k: k2,
+          tx: mx - ((mx - v.tx) / v.k) * k2,
+          ty: my - ((my - v.ty) / v.k) * k2
+        }
+      })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [svgRef])
+
+  // pan：背景按下进入拖拽（节点上不触发）；move/up 挂 window（拖出画布
+  // 仍跟随）。增量位移（每 move 与上一位置差），卸载三 listener 成对移除。
+  // （LG-02 原文搬迁——行为零变）
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    let dragging = false
+    let lastX = 0
+    let lastY = 0
+    const onDown = (e: PointerEvent): void => {
+      if (!(e.target instanceof Element) || !e.target.hasAttribute('data-panbg')) return
+      setUserInteracted(true) // auto-fit 抢占门置位（panbg 拖拽=用户接管视口）
+      dragging = true
+      lastX = e.clientX
+      lastY = e.clientY
+    }
+    const onMove = (e: PointerEvent): void => {
+      if (!dragging) return
+      const dx = e.clientX - lastX
+      const dy = e.clientY - lastY
+      lastX = e.clientX
+      lastY = e.clientY
+      setViewport((v) => ({ ...v, tx: v.tx + dx, ty: v.ty + dy }))
+    }
+    const onUp = (): void => {
+      dragging = false
+    }
+    el.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      el.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [svgRef])
+
+  return {
+    viewport,
+    markUserInteracted: () => setUserInteracted(true),
+    resetFit: () => setUserInteracted(false)
+  }
+}

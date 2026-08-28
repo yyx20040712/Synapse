@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T18:54:50.2542561Z",
+    "generatedAt":  "2026-08-28T22:38:07.8074097Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -155,7 +155,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "fcaf1a7b9fc2b74722a796a347e05dfda890b6c449d4a4dad1c9e0bd31f45df3"
+                      "sha256":  "def42f9a197ecae1a36211917b18308f31ad42c48576adecb91ebcdc914132e4"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
@@ -343,15 +343,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
-                      "sha256":  "57ee768fac9be7a2037ef190f16767e42904f4c8ee24fe6d874d316c36425143"
+                      "sha256":  "78f0af820d5a1510359f89349d98e79fdacb3c088907d91dfa7c897b37706ab3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
-                      "sha256":  "f1c3affb617471cf69d2b2885cf2a58c678e71101ba7cd396bd5ba53157ca6ee"
+                      "sha256":  "0a8f80294298d051c458393de62b24ebd06ea3532b4f081093ebc0034c1e7ed7"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "72954bdc224da9f5a23db40b976769f3901103022e4d1cb301cedd62ae6e1fd9"
+                      "sha256":  "8a788f1339ebdf7a18865ffda08b39bb805052481f390190fd45730df723536a"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",

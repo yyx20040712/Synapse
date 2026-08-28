@@ -10,26 +10,28 @@
  *   （真实文本，空串不渲染——缺陷 E1 修）；坐标=卡片中心。
  * - 空图=空态文案「暂无脉络图——导入草稿或添加节点」（导入/添加入口
  *   归 LG-03——本画布只读不留死按钮）。
- * - pan=空白（背景 rect data-panbg）pointer 拖拽平移；节点上按下不 pan
- *   （编辑拖拽面归 03）。zoom=滚轮（鼠标锚点缩放），钳制 [0.25, 4]。
- * - INV-14：wheel/pointerdown 注册 svg、pointermove/up 注册 window，
- *   卸载时同 type 同函数引用成对移除（组件测试配对断言）。
- * - 视口瞬态（tx/ty/k）驻组件 state 不入 store。
+ * - pan/zoom/视口瞬态（tx/ty/k）＝拆件 lineage-viewport.ts（R2-LG10 拆
+ *   出——组件 ≤250 红线，LG-02 原文搬迁行为零变；INV-14 成对注册/成对
+ *   清理原样）。钳制 [0.25, 4]。
  * - 03 编辑接缝/onNodeDrag/onNodeContextMenu/04 选中视觉态：见原票面
  *   （行为零变——R2-LG9 只换视觉皮肤）。
  * - **R2-LG9 视觉（规范=mockups/lineage-constellation.html）**：夜幕+星云+星空+✦+图例=宿主 div CSS 多层背景+装饰拆件 LineageNightDecor（.lineage-night 族；装饰层一律 data-night-decor+aria-hidden+pointer-events:none——注意事项 ⑥，pan 落点仍达 panbg）；svg 顶 defs=节点渐变（lg-node-face 族）+金辉滤器（lg-edge-glow——节点选中态与边辉共用）；层带=金微光实线+左端菱形刻度+衬线年份标（「YYYY 年」文案逐字保留——e2e getByText 断言面）。
+ * - **R2-LG10 auto-fit 视口自适应（票面 P1）**：拆件 lineage-viewport.ts
+ *   （useViewportController+fitViewport）；状态机表/包围盒口径/边距/钳制
+ *   见该文件头注。本组件消费面：「适应视图」按钮（lineage-fit-view，
+ *   非空图才渲染——空态零按钮红线）=resetFit 唯一复位口；视口瞬态仍驻
+ *   组件树不入 store（LG-02 语义）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { NODE_H, layoutLineage } from './lineage-layout'
+import { useViewportController } from './lineage-viewport'
+import type { Viewport } from './lineage-viewport'
 import { LineageEdges } from './LineageEdges'
 import { LineageNightDecor } from './LineageNightDecor'
 import { LineageNodeCard } from './LineageNodeCard'
-const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
 /** 拖拽/单击分界位移（px）——低于阈值视为单击选中 */
 const DRAG_THRESHOLD = 3
-
-type Viewport = { tx: number; ty: number; k: number }
 
 /** 03 编辑层消费的节点交互回调（全可选——缺省即纯只读） */
 export interface CanvasEditCallbacks {
@@ -48,66 +50,10 @@ export function LineageCanvas(props: {
 } & CanvasEditCallbacks): JSX.Element {
   const { nodes, edges } = props
   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
-  const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
   const svgRef = useRef<SVGSVGElement | null>(null)
-
-  // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
-  // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。
-  useEffect(() => {
-    const el = svgRef.current
-    if (!el) return
-    const onWheel = (e: WheelEvent): void => {
-      e.preventDefault()
-      const rect = el.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      setViewport((v) => {
-        const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
-        return {
-          k: k2,
-          tx: mx - ((mx - v.tx) / v.k) * k2,
-          ty: my - ((my - v.ty) / v.k) * k2
-        }
-      })
-    }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [])
-
-  // pan：背景按下进入拖拽（节点上不触发）；move/up 挂 window（拖出画布
-  // 仍跟随）。增量位移（每 move 与上一位置差），卸载三 listener 成对移除。
-  useEffect(() => {
-    const el = svgRef.current
-    if (!el) return
-    let dragging = false
-    let lastX = 0
-    let lastY = 0
-    const onDown = (e: PointerEvent): void => {
-      if (!(e.target instanceof Element) || !e.target.hasAttribute('data-panbg')) return
-      dragging = true
-      lastX = e.clientX
-      lastY = e.clientY
-    }
-    const onMove = (e: PointerEvent): void => {
-      if (!dragging) return
-      const dx = e.clientX - lastX
-      const dy = e.clientY - lastY
-      lastX = e.clientX
-      lastY = e.clientY
-      setViewport((v) => ({ ...v, tx: v.tx + dx, ty: v.ty + dy }))
-    }
-    const onUp = (): void => {
-      dragging = false
-    }
-    el.addEventListener('pointerdown', onDown)
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    return () => {
-      el.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-    }
-  }, [])
+  // auto-fit/pan/zoom（R2-LG10）：视口域全在 lineage-viewport.ts（状态机
+  // 头注表）；本组件只消费 viewport 值+resetFit 按钮
+  const { viewport, resetFit } = useViewportController({ nodes, edges, layout, svgRef })
 
   const { tx, ty, k } = viewport
   // ── 03 编辑接缝：拖拽会话（start 驻 ref，渲染跟随驻 state；回调经 ref 取最新）──
@@ -240,6 +186,18 @@ export function LineageCanvas(props: {
         </g>
         )}
       </svg>
+      {/* 「适应视图」=userInteracted 显式复位（唯一入口——lineage-viewport.ts
+          状态机表；空图不渲染（空态零按钮红线——既有锁定 it 面） */}
+      {nodes.length > 0 && (
+        <button
+          type="button"
+          data-testid="lineage-fit-view"
+          className="lineage-fit-btn"
+          onClick={resetFit}
+        >
+          适应视图
+        </button>
+      )}
     </div>
   )
 }

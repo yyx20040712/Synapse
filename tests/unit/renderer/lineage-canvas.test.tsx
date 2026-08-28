@@ -82,6 +82,20 @@ const flush = async (): Promise<void> => {
 const viewportTransform = (): string =>
   host?.querySelector('[data-viewport]')?.getAttribute('transform') ?? ''
 
+/** 解析 data-viewport transform 串（translate(x, y) scale(k)——与 e2e 同式解析） */
+function parseViewport(s: string): { tx: number; ty: number; k: number } | null {
+  const m = s.match(/^translate\((-?[\d.]+), (-?[\d.]+)\) scale\(([\d.]+)\)$/)
+  return m ? { tx: Number(m[1]), ty: Number(m[2]), k: Number(m[3]) } : null
+}
+
+/** 桩量测（jsdom 无布局）：Element.prototype.getBoundingClientRect 固定返回
+ *  视口盒（selection-layer.test 同族——app 级 mock 配方先例） */
+function stubViewportRect(width: number, height: number) {
+  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    return { x: 0, y: 0, top: 0, left: 0, right: width, bottom: height, width, height, toJSON: () => ({}) } as DOMRect
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
@@ -350,6 +364,105 @@ describe('R2-LG9 星象板视觉（夜幕宿主/渐变 defs/角饰/层带刻度/
     expect(p2?.getAttribute('stroke')).toBe('var(--gold-night)')
     expect(p2?.getAttribute('filter')).toBe('url(#lg-edge-glow)')
     expect(p2?.getAttribute('stroke-dasharray')).toBeNull()
+  })
+})
+
+describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
+  it('首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）', () => {
+    const spy = stubViewportRect(800, 600)
+    try {
+      const g = chain()
+      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+      const v = parseViewport(viewportTransform())
+      expect(v).not.toBeNull()
+      // 手算（chain 全短档题名 NODE_W=180）：链 3 层 y∈[-32,312]（H=344）、
+      // x∈[-200,180]（左缘含层带标签 BAND_LEFT=-200，W=380）；边距上下 80/
+      // 左右 120 → k=min(560/380, 440/344)=440/344≈1.2791
+      expect(v!.k).toBeCloseTo(440 / 344, 6)
+      expect(v!.tx).toBeCloseTo(120 + 200 * (440 / 344), 6)
+      expect(v!.ty).toBeCloseTo(80 + 32 * (440 / 344), 6)
+      // LG9 N5：层带年份标（布局 x=-190 初始视口外）fit 后必入视口（screen x>0）
+      expect(v!.tx - 190 * v!.k).toBeGreaterThan(0)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口', () => {
+    const spy = stubViewportRect(800, 600)
+    try {
+      const g = chain()
+      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+      const fitted = parseViewport(viewportTransform())
+      expect(fitted!.k).not.toBe(1) // fit 已生效前提锚
+      // 用户 pan（panbg pointerdown=交互置位）
+      const bg = host?.querySelector('[data-panbg]') as Element
+      act(() => {
+        bg.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
+      })
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 140, clientY: 110 }))
+      })
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 140, clientY: 110 }))
+      })
+      const panned = parseViewport(viewportTransform())
+      expect(panned!.tx).toBeCloseTo(fitted!.tx + 40, 6)
+      expect(panned!.ty).toBeCloseTo(fitted!.ty + 10, 6)
+      // nodes/edges 引用变化（导入替换/写回填同型）——视口不被 fit 重置
+      act(() => {
+        root?.render(
+          <LineageCanvas nodes={g.nodes.map((n) => ({ ...n }))} edges={g.edges.map((e) => ({ ...e }))} />
+        )
+      })
+      const after = parseViewport(viewportTransform())
+      expect(after!.tx).toBeCloseTo(panned!.tx, 6)
+      expect(after!.ty).toBeCloseTo(panned!.ty, 6)
+      expect(after!.k).toBe(panned!.k)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）', () => {
+    const spy = stubViewportRect(800, 600)
+    try {
+      const g = chain()
+      mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+      const fitted = parseViewport(viewportTransform())
+      const bg = host?.querySelector('[data-panbg]') as Element
+      act(() => {
+        bg.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
+      })
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 150, clientY: 130 }))
+      })
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 150, clientY: 130 }))
+      })
+      expect(parseViewport(viewportTransform())!.tx).not.toBeCloseTo(fitted!.tx, 6)
+      const btn = host?.querySelector('[data-testid="lineage-fit-view"]') as HTMLButtonElement | null
+      expect(btn).not.toBeNull()
+      act(() => {
+        btn?.click()
+      })
+      const v = parseViewport(viewportTransform())
+      expect(v!.tx).toBeCloseTo(fitted!.tx, 6)
+      expect(v!.ty).toBeCloseTo(fitted!.ty, 6)
+      expect(v!.k).toBeCloseTo(fitted!.k, 6)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('R2-LG10 题名分档宽：长题名卡 rect 宽 260/短题名 180（nodeWidth 单源消费）', () => {
+    const nodes = [
+      node('S', { year: 2020, title: '短题名' }),
+      node('L', { year: 2021, title: '长'.repeat(29) })
+    ]
+    mount(<LineageCanvas nodes={nodes} edges={[]} />)
+    expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('width')).toBe('180')
+    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('width')).toBe('260')
   })
 })
 

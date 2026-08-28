@@ -308,6 +308,31 @@ it('主题节点：仅前两区+空态文案；笔记通道零调用', async () 
   expect(stubApi.notes.get).not.toHaveBeenCalled()
 })
 
+it('R2-LG10 侧板夜化：玻璃底 rgba(40,51,86)+blur12+金 hairline；条目卡 rgba(23,30,51)+描边（防回退）', async () => {
+  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1', { question: 'Q1' })] })
+  stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+  mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
+  await flush()
+  // 面板玻璃底（mockup .side 逐值）。backdrop-filter 在 jsdom 不入 style
+  // 属性序列化（实证：仅 DOM 属性可读）——经 style.backdropFilter 属性断言
+  const rootEl = q('[data-testid="lineage-side-panel"]') as HTMLElement
+  expect(rootEl.getAttribute('style')).toContain('rgba(40, 51, 86, 0.72)')
+  expect(rootEl.getAttribute('style')).toContain('rgba(207, 174, 114, 0.25)')
+  expect(rootEl.style.backdropFilter).toBe('blur(12px)')
+  // 分组 h4 金左缘条（核心 idea/AI 笔记/人工笔记三处齐改）
+  const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
+  expect(h4s.length).toBe(3)
+  for (const h of h4s) {
+    expect(h.getAttribute('style')).toContain('var(--gold-night)')
+  }
+  // AI 条目卡（mockup .note 逐值：底+描边）
+  const card = q('[data-ai-note-id="a1"]')?.getAttribute('style') ?? ''
+  expect(card).toContain('rgba(23, 30, 51, 0.45)')
+  expect(card).toContain('rgba(151, 160, 187, 0.28)')
+  // QUESTION_COLOR 左缘条零改锚（AI-08 分色单源不因夜化回退）
+  expect(q('[data-question="Q1"] h5')?.getAttribute('style')).toContain(QUESTION_COLOR.Q1)
+})
+
 it('AI 条目双击→onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)

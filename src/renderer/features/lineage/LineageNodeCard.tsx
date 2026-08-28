@@ -10,6 +10,8 @@
  * - 选中态=金描边加粗+外光（复用 svg 顶层 lg-edge-glow 滤器）+data-selected。
  * - 文本：题名 #f5f3ea（提纯白与金年份拉开层级——票面 P2）；年份=
  *   --font-display 15px 金 --gold-bright+letter-spacing（衬线年份仪式感）。
+ * - 卡宽=题名分档 nodeWidth(n.title)（R2-LG10 单源消费——INV-36；角饰
+ *   path 随档宽函数化，渲染语义/结构钩子零改）。
  * - 结构红线（e2e lineage.spec）：g[data-node-id]/data-kind/transform 串
  *   格式/内含标题与纯数字年份文本全保留；**不渲染「已绑定文献」文本
  *   badge**——e2e T4 getByText('已绑定文献') strict 单源在侧板，画布加
@@ -17,17 +19,23 @@
  */
 import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
-import { NODE_H, NODE_W } from './lineage-layout'
+import { NODE_H, nodeWidth } from './lineage-layout'
 
 /** L 形角饰臂长（mockup ::before 12px 逐值） */
 const CORNER_ARM = 12
-// 角饰骑在 rect 圆角外侧（mockup top:-1px left:-1px 同位语）——SVG path 描边实现
-const CORNER_TL = `M ${-NODE_W / 2 - 0.5} ${-NODE_H / 2 + CORNER_ARM} L ${-NODE_W / 2 - 0.5} ${
-  -NODE_H / 2 - 0.5
-} L ${-NODE_W / 2 + CORNER_ARM} ${-NODE_H / 2 - 0.5}`
-const CORNER_BR = `M ${NODE_W / 2 + 0.5} ${NODE_H / 2 - CORNER_ARM} L ${NODE_W / 2 + 0.5} ${
-  NODE_H / 2 + 0.5
-} L ${NODE_W / 2 - CORNER_ARM} ${NODE_H / 2 + 0.5}`
+
+/** L 形角饰 path（骑 rect 圆角外侧——mockup top:-1px left:-1px 同位语；
+ *  SVG path 描边实现，臂位随分档宽 w 计算） */
+function cornerPaths(w: number): { tl: string; br: string } {
+  return {
+    tl: `M ${-w / 2 - 0.5} ${-NODE_H / 2 + CORNER_ARM} L ${-w / 2 - 0.5} ${-NODE_H / 2 - 0.5} L ${
+      -w / 2 + CORNER_ARM
+    } ${-NODE_H / 2 - 0.5}`,
+    br: `M ${w / 2 + 0.5} ${NODE_H / 2 - CORNER_ARM} L ${w / 2 + 0.5} ${NODE_H / 2 + 0.5} L ${
+      w / 2 - CORNER_ARM
+    } ${NODE_H / 2 + 0.5}`
+  }
+}
 
 export function LineageNodeCard(props: {
   node: LineageNode
@@ -40,6 +48,8 @@ export function LineageNodeCard(props: {
 }): JSX.Element {
   const { node: n, selected: sel } = props
   const theme = n.paperId === null
+  const w = nodeWidth(n.title)
+  const corner = cornerPaths(w)
   return (
     <g
       data-node-id={n.id}
@@ -49,9 +59,9 @@ export function LineageNodeCard(props: {
       onContextMenu={props.onContextMenu}
     >
       <rect
-        x={-NODE_W / 2}
+        x={-w / 2}
         y={-NODE_H / 2}
-        width={NODE_W}
+        width={w}
         height={NODE_H}
         rx={14}
         fill={theme ? 'url(#lg-node-face-theme)' : 'url(#lg-node-face)'}
@@ -62,9 +72,9 @@ export function LineageNodeCard(props: {
         filter={sel ? 'url(#lg-edge-glow)' : undefined}
         data-selected={sel}
       />
-      {/* L 形金角饰（左上/右下各一） */}
-      <path data-corner="tl" d={CORNER_TL} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
-      <path data-corner="br" d={CORNER_BR} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
+      {/* L 形金角饰（左上/右下各一——随分档宽） */}
+      <path data-corner="tl" d={corner.tl} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
+      <path data-corner="br" d={corner.br} fill="none" stroke="var(--gold-night)" strokeOpacity={0.55} strokeWidth={1.5} />
       <text x={0} y={-8} textAnchor="middle" fontSize={12.5} fill="#f5f3ea">
         {n.title}
       </text>

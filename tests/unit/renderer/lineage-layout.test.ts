@@ -14,7 +14,8 @@ import {
   NODE_W,
   SIBLING_GAP,
   TREE_GAP,
-  layoutLineage
+  layoutLineage,
+  nodeWidth
 } from '../../../src/renderer/features/lineage/lineage-layout'
 
 /** 节点工厂（默认文献节点、自动布局 x/y=null） */
@@ -315,5 +316,34 @@ describe('layoutLineage —— 纯函数性质与防御', () => {
     const nodes = [node('A', { year: 2020 }), node('B', { year: 2021 })]
     layoutLineage(nodes, [edge('A', 'B')])
     expect(warn).not.toHaveBeenCalled()
+  })
+})
+
+describe('R2-LG10 题名分档宽（nodeWidth 单源）', () => {
+  it('三档边界：≤12 字=NODE_W(180)；13~28 字=220；>28 字=260（空题名=短档兜底）', () => {
+    expect(nodeWidth('十'.repeat(12))).toBe(NODE_W)
+    expect(nodeWidth('十'.repeat(13))).toBe(220)
+    expect(nodeWidth('二'.repeat(28))).toBe(220)
+    expect(nodeWidth('长'.repeat(29))).toBe(260)
+    expect(nodeWidth('')).toBe(NODE_W)
+  })
+
+  it('分档参与兄弟占位：中档+长档兄弟中心距 ≥ 两半宽和+间隙（110+40+130=280）', () => {
+    const nodes = [
+      node('P', { year: 2020, title: '短' }),
+      node('M', { year: 2021, title: '中'.repeat(13) }),
+      node('L', { year: 2021, title: '长'.repeat(29) })
+    ]
+    const { positions } = layoutLineage(nodes, [edge('P', 'M'), edge('P', 'L')])
+    expect(Math.abs(positions.get('L')!.x - positions.get('M')!.x)).toBeGreaterThanOrEqual(280)
+  })
+
+  it('异档单链居中对齐保持（父子中心 x 等值——分档不改链对齐语义）', () => {
+    const nodes = [
+      node('S', { year: 2020, title: '短' }),
+      node('L', { year: 2021, title: '长'.repeat(29) })
+    ]
+    const { positions } = layoutLineage(nodes, [edge('S', 'L')])
+    expect(positions.get('S')!.x).toBe(positions.get('L')!.x)
   })
 })

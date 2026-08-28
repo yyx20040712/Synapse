@@ -15,6 +15,16 @@ import type { Note } from '@shared/models/note'
 
 type Phase = 'loading' | 'ready' | 'error'
 
+/**
+ * R2-LG10 夜化（票面 P3）：h4 金左缘条；总评内容=条目卡同款
+ * （mockup .note 逐值——与 AI 条目卡视觉同域）；文本系 --*-on-night；
+ * testid/文案零改。
+ */
+const NOTE_CARD = {
+  background: 'rgba(23, 30, 51, 0.45)',
+  borderColor: 'rgba(151, 160, 187, 0.28)'
+} as const
+
 export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
   const { paperId } = props
   const [note, setNote] = useState<Note | null>(null)
@@ -43,8 +53,13 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
 
   return (
     <section data-testid="lineage-side-manual-note" className="flex flex-col gap-1">
-      <h4 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>人工笔记</h4>
-      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>人工笔记加载中…</p>}
+      <h4
+        className="m-0 font-medium"
+        style={{ color: 'var(--text-dim-on-night)', borderLeft: '3px solid var(--gold-night)', paddingLeft: 6 }}
+      >
+        人工笔记
+      </h4>
+      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>人工笔记加载中…</p>}
       {phase === 'error' && (
         <div
           role="alert"
@@ -66,9 +81,9 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
       )}
       {phase === 'ready' &&
         (note === null ? (
-          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无人工笔记</p>
+          <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>暂无人工笔记</p>
         ) : (
-          <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{note.contentMd}</p>
+          <p className="m-0 whitespace-pre-wrap rounded border px-2 py-1" style={{ ...NOTE_CARD, color: 'var(--text-on-night)' }}>{note.contentMd}</p>
         ))}
     </section>
   )

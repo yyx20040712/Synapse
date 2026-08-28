@@ -258,17 +258,22 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await importDraftViaUi(app, win, fixturePath)
 
-    // ③拖拽根节点 +120/+80（k=1）→transform 到达落点=写回填证据
+    // ③拖拽根节点 +120/+80 屏幕 px→布局位移=屏幕/k（R2-LG10 auto-fit 载入
+    //   后 k≠1——落点断言 scale-aware，[locked-change] 申报：原 k=1 假设随
+    //   auto-fit 必然红）→transform 到达落点=写回填证据
     const rootG = nodeG(win, '脉络根文献')
     const before = parseTranslate(await rootG.getAttribute('transform'))
     expect(before).not.toBeNull()
+    const fitK = Number(
+      (await win.locator('svg g[data-viewport]').getAttribute('transform'))?.match(/scale\(([\d.]+)\)$/)?.[1] ?? '1'
+    )
     const box = await rootG.boundingBox()
     expect(box).not.toBeNull()
     await win.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
     await win.mouse.down()
     await win.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 80, { steps: 5 })
     await win.mouse.up()
-    const target = { x: before!.x + 120, y: before!.y + 80 }
+    const target = { x: before!.x + 120 / fitK, y: before!.y + 80 / fitK }
     await expect
       .poll(async () => parseTranslate(await rootG.getAttribute('transform')))
       .toEqual(expect.objectContaining({ x: expect.closeTo(target.x, 2), y: expect.closeTo(target.y, 2) }))

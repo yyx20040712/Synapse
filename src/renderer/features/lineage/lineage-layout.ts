@@ -10,9 +10,14 @@
  *   红线）；**森林语义**（多根=多棵树并排——INV-27 单父无环前提下
  *   边集构成森林；孤立节点=单节点树）
  * - **兄弟根占位分离（缺陷 E1 修，2026-08-28 验收）**：layoutLineage 性质——
- *   直接兄弟节点对不论年份层必横向错开 ≥ NODE_W+SIBLING_GAP（根节点
- *   占位 rootLo/rootHi 参与兄弟放置下限——非单调年份树兄弟全不共享层
- *   时不退化单列）；共享层轮廓约束语义原样（深层不共享层子树仍可交错）
+ *   直接兄弟节点对不论年份层必横向错开 ≥ 前根半宽+间隙+本根半宽（同档=
+ *   NODE_W+SIBLING_GAP；根节点占位 rootLo/rootHi 参与兄弟放置下限——非单调
+ *   年份树兄弟全不共享层时不退化单列）；共享层轮廓约束语义原样（深层不
+ *   共享层子树仍可交错）
+ * - **题名分档宽（R2-LG10，票面 P2）**：节点占位宽=nodeWidth(title) 三档
+ *   （≤12 字 180/≤28 字 220/>28 字 260——单源三消费见 nodeWidth 注）；
+ *   卡片中心点输出语义不变（占位区间按各档半宽）；单链居中对齐/兄弟
+ *   错开/紧凑性不变量随档宽自然扩义
  * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
  *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
  *   碰撞避让，票面声明）；null → 布局产出
@@ -87,7 +92,7 @@
  */
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 
-// ── 几何常量（卡片等宽——票面「节点宽度统一常量」）──────────────────
+// ── 几何常量（R2-LG10 题名分档宽——票面 P2：NODE_W 单值→按 title 长度三档）──
 export const NODE_W = 180
 export const NODE_H = 64
 /** 层带中心间距（y 维） */
@@ -96,6 +101,21 @@ export const LAYER_GAP = 140
 export const SIBLING_GAP = 40
 /** 森林相邻树间隙 */
 export const TREE_GAP = 80
+/** 中档宽（13~28 字题名）/长档宽（>28 字） */
+export const NODE_W_MID = 220
+export const NODE_W_LONG = 260
+
+/**
+ * 题名分档宽（R2-LG10，票面 P2 档值 180/220/260）：短 ≤12 字=NODE_W/
+ * 中 ≤28 字=220/长 >28 字=260；空题名=短档兜底。
+ * **单源三消费（INV-36）**：本文件 place() 占位/LineageNodeCard 卡面渲染/
+ * LineageCanvas auto-fit 包围盒——三处禁各写档值（档值变更=三消费面同改）。
+ */
+export function nodeWidth(title: string): number {
+  if (title.length <= 12) return NODE_W
+  if (title.length <= 28) return NODE_W_MID
+  return NODE_W_LONG
+}
 
 export interface LayoutResult {
   /** 节点 id → 卡片中心点（覆盖节点=覆盖值原样） */
@@ -188,20 +208,23 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   }
 
   // 5) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
+  //    节点宽=题名分档（nodeWidth 单源——占位半宽随档，R2-LG10）
   const byId = new Map(nodes.map((n) => [n.id, n]))
+  const wOf = new Map(nodes.map((n) => [n.id, nodeWidth(n.title)]))
   const selfRel = new Map<string, number>() // 节点相对自身子树包围盒原点的中心 x
   const boxOrigin = new Map<string, number>() // 子包围盒原点相对父包围盒原点
 
   function place(id: string): Frame {
     const kids = children.get(id) ?? []
     const myLayer = layerIdx.get(byId.get(id)!.year)!
+    const w = wOf.get(id)!
     if (kids.length === 0) {
-      selfRel.set(id, NODE_W / 2)
+      selfRel.set(id, w / 2)
       return {
-        spans: new Map([[myLayer, { lo: 0, hi: NODE_W }]]),
-        width: NODE_W,
+        spans: new Map([[myLayer, { lo: 0, hi: w }]]),
+        width: w,
         rootLo: 0,
-        rootHi: NODE_W
+        rootHi: w
       }
     }
     const merged = new Map<number, { lo: number; hi: number }>()
@@ -219,10 +242,11 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
           need = Math.max(need, prev.hi + SIBLING_GAP - span.lo)
         }
       }
-      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层
-      // 必错开 ≥ NODE_W+SIBLING_GAP——非单调树兄弟全不共享层时约束 1 恒 0
-      // → offset 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层
-      // 不共享层子树交错不受此约束推开（紧凑性保持）
+      // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层必横向错开
+      // ≥ 前根半宽+间隙+本根半宽（同档=NODE_W+SIBLING_GAP；异档随各档宽——
+      // R2-LG10 分档语义）——非单调树兄弟全不共享层时约束 1 恒 0 → offset
+      // 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层不共享层
+      // 子树交错不受此约束推开（紧凑性保持）
       if (mergedRootHi !== null) {
         need = Math.max(need, mergedRootHi + SIBLING_GAP - f.rootLo)
       }
@@ -246,14 +270,14 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
       merged.set(layer, { lo: s.lo - minL, hi: s.hi - minL })
     }
     // 父居中于子块（RT 经典视觉）；父占位并入自身年份层——与子孙同层
-    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸）
+    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸；占位半宽随档）
     let x = width / 2
     const mine = merged.get(myLayer)
-    if (mine !== undefined && x - NODE_W / 2 <= mine.hi + SIBLING_GAP) {
-      x = mine.hi + SIBLING_GAP + NODE_W / 2
+    if (mine !== undefined && x - w / 2 <= mine.hi + SIBLING_GAP) {
+      x = mine.hi + SIBLING_GAP + w / 2
     }
-    const plo = x - NODE_W / 2
-    const phi = x + NODE_W / 2
+    const plo = x - w / 2
+    const phi = x + w / 2
     merged.set(
       myLayer,
       mine === undefined
