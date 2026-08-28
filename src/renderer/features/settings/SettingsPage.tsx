@@ -14,7 +14,7 @@
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 保存走 settings.store.save；store 动作型失败在此 catch 后 toast
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
@@ -34,7 +34,9 @@ const THEME_LABEL: Record<AppSettings['theme'], string> = {
   system: '跟随系统'
 }
 
-export function SettingsPage(): JSX.Element {
+/** workspaceSection：课题管理节由 App 组合根注入（跨域经 App 编排——feature
+ *  互引被 quality 门禁禁止，R1-WS2；dirty 聚合值随节由 App 一并注入） */
+export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const saving = useSettingsStore((s) => s.saving)
   const diag = useSettingsStore((s) => s.diag)
@@ -169,6 +171,9 @@ export function SettingsPage(): JSX.Element {
           </table>
         )}
       </section>
+
+      {/* R1-WS2：课题管理节（App 组合根注入——见 props 注释） */}
+      {props.workspaceSection}
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
       <CorpusExportSection />

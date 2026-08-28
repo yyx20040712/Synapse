@@ -69,6 +69,18 @@ export function windowOpenPolicy(): { action: 'deny' } {
 }
 
 /**
+ * 导航护栏判定（纯函数，安全件——allow+deny 双面单测锚定）：
+ * true=阻止（preventDefault）；false=放行（仅当前 URL 完全相同的重载——
+ * R1-WS2 课题切换的 location.reload 路径，ADR-0018「全新 stores 零 stale
+ * 态」；外站/异文件/data: 变体一律 deny——内容只来自本地构建产物/dev
+ * server，护栏意图不变）。严格字符串相等：任何变体 URL（query/hash/data:）
+ * 均不落入放行面。
+ */
+export function shouldBlockNavigation(currentUrl: string, targetUrl: string): boolean {
+  return targetUrl !== currentUrl
+}
+
+/**
  * 权限策略：最小放行清单——仅剪贴板写（'clipboard-sanitized-write'，复制引文/选区
  * 功能所需；内容全部本地自有，CSP 锁死无远程文档，无注入面），其余（通知/定位/
  * 摄像头/剪贴板读…）一律拒绝。剪贴板读保持拒绝：应用无读剪贴板需求。
@@ -103,8 +115,15 @@ export function createMainWindow(
 
   win.once('ready-to-show', () => win.show())
 
-  // 护栏：禁止任何导航与弹窗（内容只来自本地构建产物/dev server）
-  win.webContents.on('will-navigate', (event) => event.preventDefault())
+  // 护栏：禁止任何导航与弹窗（内容只来自本地构建产物/dev server）。
+  // 唯一例外：同 URL 重载（renderer 的 location.reload——R1-WS2 课题切换
+  // 机制，ADR-0018 裁决「全新 stores 零 stale 态」依赖本路径）；reload 也走
+  // will-navigate，无条件 preventDefault 会吞掉它。其余导航（外站/别的文件/
+  // data: 变体）仍禁——判定抽纯函数 shouldBlockNavigation（安全件 allow+
+  // deny 双面单测锚定，门一回炉 W4）
+  win.webContents.on('will-navigate', (event, url) => {
+    if (shouldBlockNavigation(win.webContents.getURL(), url)) event.preventDefault()
+  })
   win.webContents.setWindowOpenHandler((_details: HandlerDetails) => windowOpenPolicy())
   // 护栏：权限请求按最小放行清单处理（仅剪贴板写，见 permissionPolicy；
   // 未挂载时 Electron 默认全部授予；handler 挂在 session 上）

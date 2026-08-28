@@ -12,6 +12,9 @@ import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
 import { useLineageDirty } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
+import { WorkspaceSwitcher } from '../features/workspaces/WorkspaceSwitcher'
+import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
+import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 
 type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
@@ -79,6 +82,12 @@ export function App(): JSX.Element {
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
+  // R1-WS2：课题清单驻留（列表型失败在 store 内写 error，不抛——挂载安全）；
+  // dirty 聚合值经 props 注入切换器与设置面（禁跨域 store 互引，ADR-0018）
+  const wsLoad = useWorkspaceStore((s) => s.load)
+  useEffect(() => {
+    void wsLoad()
+  }, [wsLoad])
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
     window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)
@@ -95,6 +104,8 @@ export function App(): JSX.Element {
     <div className="flex h-full">
       <nav className="flex w-40 shrink-0 flex-col gap-1 border-r p-2" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
         <p className="px-2 py-3 text-sm font-semibold">Synapse Remake</p>
+        {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
+        <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
         {NAV.map((item) => (
           <button
             key={item.id}
@@ -110,7 +121,9 @@ export function App(): JSX.Element {
         <ErrorBoundary>
           {view === 'library' && <LibraryPage />}
           {view === 'reader' && <ReaderPage />}
-          {view === 'settings' && <SettingsPage />}
+          {view === 'settings' && (
+            <SettingsPage workspaceSection={<WorkspaceSection dirty={quitDirty} />} />
+          )}
           {view === 'lineage' && <LineagePage />}
         </ErrorBoundary>
       </main>

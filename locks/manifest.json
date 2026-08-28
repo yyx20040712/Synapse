@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T17:22:27.2088440Z",
+    "generatedAt":  "2026-08-28T18:04:45.3185593Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -172,6 +172,10 @@
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
                       "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
+                  },
+                  {
+                      "path":  "tests/e2e/workspaces.spec.ts",
+                      "sha256":  "b1004b5587b3a7443bfa64f7a1c8200685090f9a03a7d1ee68010f39af8e0d28"
                   },
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
@@ -438,6 +442,14 @@
                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
                   },
                   {
+                      "path":  "tests/unit/renderer/workspace.store.test.ts",
+                      "sha256":  "c6ff86f9dce21a6b07bb3a9803af576be31083b6deb59b8078f44ae180d345aa"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/workspace-switcher.test.tsx",
+                      "sha256":  "6be277085f9048897d585c66963f409cb0f78d9c3312b13b61026381e66f6686"
+                  },
+                  {
                       "path":  "tests/unit/renderer/zcode-link-section.test.tsx",
                       "sha256":  "d897a5af48f71e21b2a48168b70578a37e99c90e56823c0456e2c646e6eb5572"
                   },
@@ -544,6 +556,10 @@
                   {
                       "path":  "tests/unit/tools/queue.test.ts",
                       "sha256":  "56739175b8349324080e073de09465701a5e35b0aaefe729245c1daacba48a21"
+                  },
+                  {
+                      "path":  "tests/unit/windows/main-window-navigation.test.ts",
+                      "sha256":  "e893bb075ac992a6cffa8d83043e9176292ce4de87e3a6d1aedcebfa63ca7220"
                   },
                   {
                       "path":  "tests/unit/windows/quit-dirty-guard.test.ts",
