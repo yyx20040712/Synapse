@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Synapse 脉络·命之座星象板 设计稿 v2</title>
+<style>
+  :root {
+    --night-bg: #171e33;
+    --night-bg2: #111728;
+    --node-face: #222c4d;
+    --node-face-hi: #2b3760;
+    --gold: #cfae72;
+    --gold-bright: #e3c98f;
+    --gold-soft: rgba(207, 174, 114, 0.16);
+    --gold-line: rgba(207, 174, 114, 0.10);
+    --band-line: rgba(207, 174, 114, 0.12);
+    --star: rgba(222, 230, 255, 0.55);
+    --text-on-night: #e9e6db;
+    --text-mid: #c6cbdd;
+    --text-dim-on-night: #97a0bb;
+    --edge-glow: rgba(207, 174, 114, 0.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 800px; overflow: hidden; position: relative;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background:
+      radial-gradient(1150px 520px at 72% -8%, rgba(86, 108, 178, 0.30), transparent 62%),
+      radial-gradient(880px 460px at 8% 112%, rgba(64, 84, 148, 0.26), transparent 62%),
+      radial-gradient(600px 300px at 50% 55%, rgba(120, 96, 60, 0.07), transparent 70%),
+      linear-gradient(180deg, var(--night-bg), var(--night-bg2));
+    color: var(--text-on-night);
+  }
+  /* 星空三层：细星 / 亮星 / ✦ 四芒星 */
+  .stars, .stars2, .sparks { position: absolute; inset: 0; pointer-events: none; }
+  .stars  { background-image: radial-gradient(1.1px 1.1px at 40px 60px, var(--star) 50%, transparent 51%),
+                             radial-gradient(0.9px 0.9px at 210px 140px, var(--star) 50%, transparent 51%),
+                             radial-gradient(1.2px 1.2px at 330px 40px, var(--star) 50%, transparent 51%),
+                             radial-gradient(0.8px 0.8px at 500px 200px, var(--star) 50%, transparent 51%),
+                             radial-gradient(1.1px 1.1px at 640px 90px, var(--star) 50%, transparent 51%);
+             background-size: 720px 260px; opacity: .55; }
+  .stars2 { background-image: radial-gradient(1.7px 1.7px at 120px 210px, rgba(227,201,143,.8) 50%, transparent 51%),
+                             radial-gradient(1.9px 1.9px at 420px 130px, rgba(222,230,255,.9) 50%, transparent 51%),
+                             radial-gradient(1.6px 1.6px at 700px 250px, rgba(227,201,143,.75) 50%, transparent 51%),
+                             radial-gradient(1.8px 1.8px at 260px 30px, rgba(222,230,255,.85) 50%, transparent 51%);
+             background-size: 820px 300px; opacity: .6; }
+  .sparks span { position: absolute; color: var(--gold-bright); opacity: .8; font-size: 11px; }
+  .board { position: absolute; inset: 0; padding: 56px 48px 40px 64px; }
+  .toolbar {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; padding: 8px 14px; border-radius: 12px;
+    background: rgba(34, 44, 77, 0.78); backdrop-filter: blur(10px);
+    border: 1px solid rgba(207, 174, 114, 0.28); box-shadow: 0 6px 24px rgba(0,0,0,.4);
+    font-size: 13px; z-index: 5;
+  }
+  .toolbar button {
+    background: transparent; border: 0; color: var(--text-dim-on-night);
+    padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .toolbar button:hover { color: var(--text-on-night); background: var(--gold-soft); }
+  .toolbar button.primary { color: var(--gold-bright); }
+  /* 年份层带：可见金微光线+刻度星+衬线标 */
+  .band { position: absolute; left: 108px; right: 48px; height: 1px; background: var(--band-line); }
+  .band::before { content: ''; position: absolute; left: 0; top: -2.5px; width: 6px; height: 6px;
+    transform: rotate(45deg); background: rgba(207,174,114,.5); }
+  .band .yr {
+    position: absolute; left: -14px; top: -12px; transform: translateX(-100%);
+    font-family: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
+    font-size: 14px; letter-spacing: 2px; color: var(--gold-bright);
+  }
+  svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .node {
+    position: absolute; width: 196px; border-radius: 14px; padding: 11px 13px 10px;
+    background: linear-gradient(165deg, var(--node-face-hi) 0%, var(--node-face) 58%, #1e2745 100%);
+    border: 1px solid rgba(207, 174, 114, 0.42);
+    box-shadow: 0 6px 20px rgba(6, 10, 24, 0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    cursor: pointer; transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
+  }
+  /* 角饰：L 形金角（原神卡面语法） */
+  .node::before, .node::after { content: ''; position: absolute; width: 12px; height: 12px;
+    border-color: rgba(207,174,114,.55); border-style: solid; opacity: .85; }
+  .node::before { top: -1px; left: -1px; border-width: 1.5px 0 0 1.5px; border-radius: 14px 0 0 0; }
+  .node::after  { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; border-radius: 0 0 14px 0; }
+  .node:hover { border-color: var(--gold); transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(6,10,24,.7), 0 0 22px var(--edge-glow); }
+  .node.selected { border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold), 0 0 30px var(--edge-glow), 0 8px 28px rgba(6,10,24,.7); }
+  .node .t { font-size: 12.5px; line-height: 1.4; color: var(--text-on-night);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .node .meta { display: flex; align-items: baseline; gap: 8px; margin-top: 7px; }
+  .node .y { font-family: Georgia, 'Times New Roman', SimSun, serif; font-size: 15px;
+    color: var(--gold-bright); letter-spacing: 1.5px;
+  }
+  .node .badge { font-size: 10px; color: var(--text-dim-on-night);
+    border: 1px solid rgba(151, 160, 187, .45); border-radius: 4px; padding: 0 5px; }
+  .node.theme { border-style: dashed; background: linear-gradient(165deg, rgba(43,55,96,.6), rgba(30,39,69,.5)); }
+  /* 侧板：比画布亮一档 */
+  .side {
+    position: absolute; right: 16px; top: 68px; bottom: 16px; width: 264px;
+    border-radius: 12px; background: rgba(40, 51, 86, 0.72); backdrop-filter: blur(12px);
+    border: 1px solid rgba(207, 174, 114, 0.25); padding: 14px; overflow: auto; font-size: 12px;
+    box-shadow: 0 8px 28px rgba(6,10,24,.45);
+  }
+  .side h3 { font-size: 13.5px; margin: 0 0 4px; color: var(--text-on-night);
+    font-family: Georgia, 'Songti SC', SimSun, serif; }
+  .side .sub { color: var(--gold-bright); font-size: 11px; margin-bottom: 10px;
+    font-family: Georgia, SimSun, serif; letter-spacing: 1.5px; }
+  .side h4 { font-size: 11px; color: var(--text-dim-on-night); margin: 12px 0 6px;
+    border-left: 3px solid var(--gold); padding-left: 6px; }
+  .note { border: 1px solid rgba(151,160,187,.28); border-radius: 8px; padding: 6px 8px;
+    margin-bottom: 6px; color: var(--text-mid); line-height: 1.5; background: rgba(23, 30, 51, .45); }
+  .note b { color: var(--text-on-night); font-weight: 500; }
+  .note .q { color: var(--gold-bright); font-size: 10px; margin-right: 4px; }
+  .edge-label {
+    position: absolute; transform: translate(-50%, -50%); font-size: 10.5px;
+    color: var(--text-on-night); background: rgba(34, 44, 77, 0.88);
+    border: 1px solid rgba(207,174,114,.32); border-radius: 999px; padding: 2px 9px;
+    backdrop-filter: blur(6px); white-space: nowrap;
+  }
+  /* 图例：边型语义 */
+  .legend { position: absolute; left: 110px; bottom: 16px; display: flex; gap: 14px;
+    font-size: 10.5px; color: var(--text-dim-on-night);
+    background: rgba(34,44,77,.6); border: 1px solid rgba(151,160,187,.22);
+    border-radius: 999px; padding: 4px 12px; backdrop-filter: blur(8px); align-items: center; }
+  .legend i { display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 5px;
+    border-top: 1.6px solid var(--gold); }
+  .legend i.dash { border-top-style: dashed; border-top-color: #9aa3c0; }
+</style>
+</head>
+<body>
+  <div class="stars"></div><div class="stars2"></div>
+  <div class="sparks">
+    <span style="left:180px; top:120px">✦</span><span style="left:920px; top:90px; font-size:8px">✦</span>
+    <span style="left:1080px; top:420px; font-size:9px">✦</span><span style="left:260px; top:660px; font-size:8px">✦</span>
+  </div>
+  <div class="toolbar">
+    <button class="primary">✦ 转捩谱系</button>
+    <button>导入草稿</button><button>添加节点</button><button>适应视图</button>
+  </div>
+  <div class="board">
+    <div class="band" style="top:170px"><span class="yr">1883</span></div>
+    <div class="band" style="top:340px"><span class="yr">1936</span></div>
+    <div class="band" style="top:510px"><span class="yr">2002</span></div>
+    <div class="band" style="top:650px"><span class="yr">2007</span></div>
+
+    <svg class="edges">
+      <defs>
+        <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2.6" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="M 460 222 C 462 282, 342 282, 340 388" stroke="#cfae72" stroke-opacity=".8" stroke-width="1.7" fill="none" filter="url(#glow)"/>
+      <path d="M 340 472 C 340 536, 300 536, 300 558" stroke="#cfae72" stroke-opacity=".8" stroke-width="1.7" fill="none" filter="url(#glow)"/>
+      <path d="M 392 472 C 480 560, 580 580, 612 698" stroke="#cfae72" stroke-opacity=".8" stroke-width="1.7" fill="none" filter="url(#glow)"/>
+      <path d="M 700 250 C 660 330, 560 330, 505 392" stroke="#9aa3c0" stroke-opacity=".6" stroke-width="1.3" stroke-dasharray="5 4" fill="none"/>
+    </svg>
+
+    <div class="node selected" style="left:362px; top:128px">
+      <div class="t">Reynolds 1883：层流到湍流的转捩判据</div>
+      <div class="meta"><span class="y">1883</span><span class="badge">已绑定文献</span></div>
+    </div>
+    <div class="node" style="left:242px; top:388px">
+      <div class="t">Cross 1936：管网瞬变流 Hardy-Cross 法</div>
+      <div class="meta"><span class="y">1936</span><span class="badge">已绑定文献</span></div>
+    </div>
+    <div class="node" style="left:202px; top:558px">
+      <div class="t">Brown 2002：Henry Darcy and the making of a law</div>
+      <div class="meta"><span class="y">2002</span><span class="badge">已绑定文献</span></div>
+    </div>
+    <div class="node" style="left:522px; top:698px">
+      <div class="t">水锤史 2007：von Kries 与水锤的历史</div>
+      <div class="meta"><span class="y">2007</span><span class="badge">已绑定文献</span></div>
+    </div>
+    <div class="node theme" style="left:690px; top:158px">
+      <div class="t">主题节点·思想脉络</div>
+      <div class="meta"><span class="badge">主题</span></div>
+    </div>
+
+    <span class="edge-label" style="left:404px; top:300px">实链·继承</span>
+    <span class="edge-label" style="left:316px; top:515px">谱系推断</span>
+    <span class="edge-label" style="left:520px; top:600px">平行推断</span>
+    <span class="edge-label" style="left:618px; top:322px">谱系推断</span>
+
+    <aside class="side">
+      <h3>Reynolds 1883：层流到湍流的转捩判据</h3>
+      <div class="sub">1883 · 已绑定文献</div>
+      <h4>核心 idea</h4>
+      <div class="note">以无量纲数（后称雷诺数）统一刻画层流—湍流转捩，管流实验给出临界范围。</div>
+      <h4>第一问：核心 idea 是什么</h4>
+      <div class="note"><b>一审</b>：转捩由 Re=ρvd/μ 控制，几何相似则动力相似。</div>
+      <div class="note"><b>裁决</b>：两读一致——实验判据+量纲分析双证据。</div>
+      <h4>第五问：最合自然科学品味的片段</h4>
+      <div class="note"><b>一审</b>：染色线实验的示踪设计…… <span class="q">p.12</span></div>
+    </aside>
+
+    <div class="legend"><i></i>实链 <i class="dash"></i>推断（谱系/平行）</div>
+  </div>
+</body>
+</html>

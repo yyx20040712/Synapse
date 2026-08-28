@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Synapse 壳+文献库 设计稿（aquaresearch 骨 × 原神神）</title>
+<style>
+  :root {
+    --bg: #f6f4ee;            /* 暖纸白 oklch(0.97 0.008 85) */
+    --panel: #ffffff;
+    --panel-glass: rgba(255,255,255,0.72);
+    --border: #e4ded1;        /* 暖灰 hairline */
+    --border-gold: #c9a86a;
+    --text: #23262d;
+    --text-dim: #6f7482;
+    --accent: #2c5f8a;        /* 墨青（信息主色） */
+    --accent-soft: #dcebf5;
+    --gold: #b8935a;          /* 金铜（点缀/active） */
+    --gold-soft: rgba(201,168,106,0.14);
+    --danger: #b3403a; --ok: #3d7a50;
+    --shadow-1: 0 1px 2px rgba(35,38,45,.06);
+    --shadow-2: 0 4px 14px rgba(35,38,45,.09);
+    --shadow-3: 0 10px 34px rgba(35,38,45,.16);
+    --radius-s: 8px; --radius-m: 12px; --radius-l: 16px;
+    --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
+    --ink: #1b2333;           /* 侧栏墨青底 */
+    --ink-hi: #232d44;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1280px; height:800px; overflow:hidden; display:flex;
+    font-family:'Segoe UI','Microsoft YaHei',sans-serif; background:var(--bg); color:var(--text);
+    /* 纸面微纹理：极淡斜向丝纹 */
+    background-image: repeating-linear-gradient(115deg, rgba(255,255,255,.35) 0 2px, transparent 2px 6px); }
+  /* ── 侧栏（墨青+金） ── */
+  nav { width:184px; flex:none; background:linear-gradient(180deg, var(--ink), #171e2f);
+    color:#cfd5e4; display:flex; flex-direction:column; padding:14px 10px; position:relative; }
+  nav::after { content:''; position:absolute; top:0; right:0; bottom:0; width:1px;
+    background:linear-gradient(180deg, transparent, rgba(201,168,106,.5), transparent); }
+  .brand { display:flex; align-items:center; gap:8px; padding:6px 8px 14px; }
+  .brand .mark { width:26px; height:26px; border:1px solid var(--gold); transform:rotate(45deg);
+    display:grid; place-items:center; border-radius:4px; }
+  .brand .mark i { width:10px; height:10px; background:var(--gold); transform:rotate(0deg);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .brand .name { font-family:var(--font-display); font-size:16px; letter-spacing:.5px; color:#efe9da; }
+  .ws { margin:0 4px 14px; padding:9px 10px; border-radius:var(--radius-m);
+    background:rgba(255,255,255,.05); border:1px solid rgba(201,168,106,.25); cursor:pointer; }
+  .ws .cap { font-size:10px; color:#8d95ad; letter-spacing:2px; }
+  .ws .cur { display:flex; align-items:center; justify-content:space-between; margin-top:3px;
+    font-size:13px; color:#efe9da; }
+  .ws .cur::after { content:'▾'; color:var(--gold); }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:2px 4px;
+    border-radius:var(--radius-m); font-size:13.5px; color:#aeb6ca; cursor:pointer; position:relative;
+    transition:all .18s ease; }
+  .nav-item svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.6; }
+  .nav-item:hover { color:#e6eaf4; background:rgba(255,255,255,.06); }
+  .nav-item.active { color:#f3eddd; background:var(--ink-hi);
+    box-shadow:inset 0 0 0 1px rgba(201,168,106,.28); }
+  .nav-item.active::before { content:''; position:absolute; left:-10px; top:9px; bottom:9px; width:3px;
+    border-radius:2px; background:linear-gradient(180deg, #e3c98f, var(--gold)); }
+  .nav-foot { margin-top:auto; padding:10px 8px 2px; border-top:1px solid rgba(255,255,255,.07);
+    display:flex; align-items:center; gap:8px; }
+  .nav-foot .ver { font-family:var(--font-display); font-size:9.5px; letter-spacing:1px; color:#8d95ad;
+    border:1px solid rgba(141,149,173,.4); border-radius:4px; padding:1px 6px; }
+  .nav-foot .txt { font-size:9.5px; color:#6d7590; }
+  /* ── 主区 ── */
+  main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar { display:flex; align-items:center; gap:10px; padding:12px 18px; }
+  .topbar h1 { font-family:var(--font-display); font-size:20px; font-weight:500; letter-spacing:.5px; }
+  .topbar .diamond { width:7px; height:7px; background:var(--gold); transform:rotate(45deg); margin-right:2px; }
+  .topbar .count { color:var(--text-dim); font-size:12px; margin-left:2px; }
+  .search { margin-left:auto; width:280px; padding:8px 14px; border-radius:999px;
+    border:1px solid var(--border); background:var(--panel-glass); backdrop-filter:blur(8px);
+    font-size:13px; color:var(--text-dim); box-shadow:var(--shadow-1); }
+  .import-btn { padding:8px 18px; border-radius:10px; border:1px solid var(--accent);
+    color:#fff; background:var(--accent); font-size:13px; cursor:pointer; transition:all .18s;
+    box-shadow:inset 0 0 0 1px rgba(201,168,106,.45), var(--shadow-1);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+  .import-btn:hover { box-shadow:inset 0 0 0 1px rgba(227,201,143,.7), var(--shadow-2); }
+  .filterbar { display:flex; gap:8px; padding:0 18px 12px; }
+  .chip { font-size:12px; color:var(--text-dim); border:1px solid var(--border);
+    border-radius:999px; padding:4px 12px; background:var(--panel); cursor:pointer; }
+  .chip.on { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+  /* ── 文献卡列表 ── */
+  .list { flex:1; overflow:auto; padding:4px 18px 20px; display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px; align-content:start; }
+  .card { background:linear-gradient(168deg, #fffdf9 0%, var(--panel) 40%, #fdfaf3 100%);
+    border:1px solid var(--border); border-radius:var(--radius-l);
+    padding:14px 16px; box-shadow:var(--shadow-1), inset 0 1px 0 rgba(255,255,255,.9); cursor:pointer; position:relative;
+    transition:box-shadow .22s ease, border-color .22s ease, transform .22s ease; }
+  .card:hover { box-shadow:var(--shadow-2); border-color:var(--border-gold); transform:translateY(-1px); }
+  .card::before, .card::after { content:''; position:absolute; width:14px; height:14px;
+    border:1px solid transparent; opacity:0; transition:opacity .22s; }
+  .card::before { top:-1px; left:-1px; border-right:0; border-bottom:0; border-radius:var(--radius-l) 0 0 0; }
+  .card::after  { bottom:-1px; right:-1px; border-left:0; border-top:0; border-radius:0 0 var(--radius-l) 0; }
+  .card:hover::before, .card:hover::after { opacity:.9; border-color:var(--gold); }
+  .card .row1 { display:flex; gap:10px; align-items:baseline; }
+  .card .year { font-family:var(--font-display); font-size:17px; color:var(--gold); min-width:44px; }
+  .card .title { min-height:38px; font-size:13.5px; line-height:1.45; font-weight:500;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card .venue:empty { display:none; }
+  .card .venue { margin-top:6px; font-size:11.5px; color:var(--text-dim); font-style:italic; }
+  .card .tags { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .tag { font-size:10.5px; color:var(--accent); background:var(--accent-soft);
+    border-radius:999px; padding:1px 9px; }
+  .tag.gold { color:var(--gold); background:var(--gold-soft); }
+  .card .meta { display:flex; gap:10px; margin-top:9px; font-size:11px; color:var(--text-dim); font-variant-numeric: tabular-nums; }
+  .card .meta .cited { color:var(--accent); }
+  /* ── 右详情栏（纸面卡） ── */
+  aside { width:300px; flex:none; border-left:1px solid var(--border); background:var(--panel);
+    padding:16px 16px; overflow:auto; }
+  aside h2 { font-family:var(--font-display); font-size:15px; font-weight:500; line-height:1.5; }
+  .kv { margin-top:12px; font-size:12px; }
+  .kv .k { color:var(--text-dim); font-size:11px; letter-spacing:1px; margin-bottom:2px; }
+  .kv .v { line-height:1.5; }
+  .kv .v.serif { font-family:var(--font-display); font-size:15px; color:var(--gold); }
+  .abs { margin-top:14px; font-size:12px; color:var(--text-dim); line-height:1.7;
+    border-top:1px solid var(--border); padding-top:12px; }
+  .actions { display:flex; gap:8px; margin-top:14px; }
+  .btn { flex:1; text-align:center; padding:8px 0; border-radius:var(--radius-m); font-size:12.5px;
+    cursor:pointer; border:1px solid var(--border); color:var(--text-dim); background:transparent; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff;
+    box-shadow:var(--shadow-1); }
+  .btn.primary:hover { box-shadow:var(--shadow-2); }
+</style>
+</head>
+<body>
+  <nav>
+    <div class="brand"><span class="mark"><i></i></span><span class="name">Synapse</span></div>
+    <div class="ws">
+      <div class="cap">课题</div>
+      <div class="cur">智慧水务·水锤史</div>
+    </div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM12 4h5v16h-5z"/><path d="M19 5.5l2 .9v13.2l-2 .9"/></svg>
+      文献库
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 5c-2 0-3 1-4.5 1S5 5.5 5 5.5v13S6.5 18 7.5 18s2.5 1 4.5 1 3-1 4.5-1 2.5.5 2.5.5v-13S19 6 17.5 6 14 5 12 5z"/><path d="M12 5v14"/></svg>
+      阅读器
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.8L19 9l-3.5 3.4.9 5-4.4-2.5L7.6 17.4l.9-5L5 9l4.8-1.2z"/></svg>
+      脉络
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/></svg>
+      设置
+    </div>
+    <div class="nav-foot"><span class="ver">v1.0</span><span class="txt">本地学术文献管理</span></div>
+  </nav>
+  <main>
+    <div class="topbar">
+      <span class="diamond"></span><h1>文献库</h1><span class="count">8 篇</span>
+      <div class="search">搜索标题 / 作者 / 摘要…</div>
+      <button class="import-btn">导入文献</button>
+    </div>
+    <div class="filterbar">
+      <span class="chip on">全部</span><span class="chip">水锤史</span><span class="chip">GNN</span>
+      <span class="chip">2021</span><span class="chip">按年份 ↓</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:0 18px 12px">
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border-gold))"></span>
+      <span style="width:6px;height:6px;background:var(--gold);transform:rotate(45deg)"></span>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,var(--border-gold),transparent)"></span>
+    </div>
+    <div class="list">
+      <div class="card">
+        <div class="row1"><span class="year">1883</span><span class="title">An experimental investigation of the circumstances which determine whether the motion of water shall be direct or sinuous…</span></div>
+        <div class="venue">Phil. Trans. R. Soc.</div>
+        <div class="tags"><span class="tag gold">水锤史</span><span class="tag">雷诺数</span></div>
+        <div class="meta"><span>标注 6</span><span>笔记 22</span><span class="cited">被引 12,480</span></div>
+      </div>
+      <div class="card">
+        <div class="row1"><span class="year">1936</span><span class="title">Analysis of flow in networks of conduits or conductors</span></div>
+        <div class="venue">University of Illinois Bulletin</div>
+        <div class="tags"><span class="tag gold">水锤史</span><span class="tag">Hardy-Cross</span></div>
+        <div class="meta"><span>标注 3</span><span>笔记 22</span><span class="cited">被引 3,102</span></div>
+      </div>
+      <div class="card">
+        <div class="row1"><span class="year">2002</span><span class="title">Henry Darcy and the making of a law</span></div>
+        <div class="venue">Annual Review of Fluid Mechanics</div>
+        <div class="tags"><span class="tag gold">水锤史</span><span class="tag">达西定律</span></div>
+        <div class="meta"><span>标注 4</span><span>笔记 22</span><span class="cited">被引 288</span></div>
+      </div>
+      <div class="card">
+        <div class="row1"><span class="year">2007</span><span class="title">2007 Johannes von Kries and the history of water hammer</span></div>
+        <div class="venue">—</div>
+        <div class="tags"><span class="tag gold">水锤史</span></div>
+        <div class="meta"><span>标注 2</span><span>笔记 22</span></div>
+      </div>
+      <div class="card">
+        <div class="row1"><span class="year">2021</span><span class="title">Towards a smart water city: A comprehensive review of application domains</span></div>
+        <div class="venue">—</div>
+        <div class="tags"><span class="tag">智慧水务</span></div>
+        <div class="meta"><span>标注 1</span><span class="cited">被引 96</span></div>
+      </div>
+    </div>
+  </main>
+  <aside>
+    <h2>Reynolds 1883：层流到湍流的转捩判据</h2>
+    <div class="kv"><div class="k">年份</div><div class="v serif">1883</div></div>
+    <div class="kv"><div class="k">期刊</div><div class="v">Phil. Trans. R. Soc.</div></div>
+    <div class="kv"><div class="k">被引数</div><div class="v">12,480</div></div>
+    <div class="kv"><div class="k">集合</div><div class="v">水锤史</div></div>
+    <div class="abs">
+      以染色示踪观察圆管水流，确立流速、管径与黏度共同决定流态；提出无量纲比值判据，
+      后世称雷诺数。转捩谱系上游节点，直接启释 Cross 管网法与水锤分析……
+    </div>
+    <div class="actions"><button class="btn primary">在阅读器中打开</button><button class="btn">编辑元数据</button></div>
+  </aside>
+</body>
+</html>
