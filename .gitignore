@@ -24,3 +24,7 @@ tools/ai-sensor/config.json
 # TypeScript 增量构建缓存
 *.tsbuildinfo
 local-state-backup/
+
+# 本机环境残留（2026-08-28 遗留池处置：勿入库）
+dev-launch.cmd
+dist_new/
