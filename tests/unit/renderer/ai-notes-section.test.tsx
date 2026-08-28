@@ -12,6 +12,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AiNote } from '../../../src/shared/models/ai-note'
+import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
 import type * as clientModule from '../../../src/renderer/api/client'
 import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
 import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
@@ -395,7 +396,7 @@ it('「AI 读文献」失败（动作型）toast error；无本地残留态（wr
   expect(readBtn().disabled).toBe(false) // 无自建 in-flight 锁：失败后可重试
 })
 
-it('分节分组：role 三组中文标签按序呈现，divergence 随裁决组；七问分色单源消费', async () => {
+it('分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标签+分色条），组内条目按 role 分段标注', async () => {
   listByPaper.mockResolvedValue({
     ok: true,
     data: [
@@ -408,14 +409,86 @@ it('分节分组：role 三组中文标签按序呈现，divergence 随裁决组
   mount(<AiNotesSection />)
   await flush()
   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
-  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'second-read', 'adjudicate'])
-  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['一读', '二读', '裁决'])
+  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q2', 'divergence'])
+  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第二问', '分歧报告'])
+  // 组头分色条（QUESTION_COLOR 单源——左缘竖条形态）
+  const q1Head = groups[0]?.querySelector('h4') as HTMLElement
+  expect(q1Head.style.borderLeft).toContain(QUESTION_COLOR.Q1)
+  // 组内条目按 ROLE_ORDER 排序（一审在前二审在后）+条目头 role 标签可辨
+  const q1Items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
+  expect(q1Items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1'])
+  expect(q1Items[0]?.textContent).toContain('一审')
+  expect(q1Items[1]?.textContent).toContain('二审')
   const dot = groups[0]?.querySelector('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
   const divItem = groups[2]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
-  expect(divItem).not.toBeNull() // divergence 在裁决组内
+  expect(divItem).not.toBeNull() // divergence 独立成组（question 轴）
   const divDot = divItem?.querySelector('span[aria-hidden]') as HTMLElement
   expect(divDot.style.background).toBe(QUESTION_COLOR.divergence)
+})
+
+it('分组序单源：乱序输入仍按 AI_NOTE_QUESTIONS 序（非输入序——呈现轴=shared 单源）', async () => {
+  listByPaper.mockResolvedValue({
+    ok: true,
+    data: [
+      note('d1', 'adjudicate', 'divergence'),
+      note('e1', 'second-read', 'Q5'),
+      note('a1', 'first-read', 'Q1'),
+      note('b1', 'first-read', 'Q2')
+    ]
+  })
+  mount(<AiNotesSection />)
+  await flush()
+  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
+  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(
+    AI_NOTE_QUESTIONS.filter((q) => ['Q1', 'Q2', 'Q5', 'divergence'].includes(q))
+  )
+})
+
+it('空组剔除：无条目的 question 不渲染组（无 Q2 条目则无「第二问」组头）', async () => {
+  listByPaper.mockResolvedValue({
+    ok: true,
+    data: [note('a1', 'first-read', 'Q1'), note('c1', 'adjudicate', 'Q3')]
+  })
+  mount(<AiNotesSection />)
+  await flush()
+  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
+  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q3'])
+  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第三问'])
+})
+
+it('组内 role 标签：同 question 组内三 role 条目头呈现一审/二审/裁决（role 可辨+role 序）', async () => {
+  listByPaper.mockResolvedValue({
+    ok: true,
+    data: [
+      note('c1', 'adjudicate', 'Q4'),
+      note('b1', 'second-read', 'Q4'),
+      note('a1', 'first-read', 'Q4')
+    ]
+  })
+  mount(<AiNotesSection />)
+  await flush()
+  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
+  expect(groups).toHaveLength(1) // 同 question 单组
+  const items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
+  expect(items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1', 'c1'])
+  expect(items[0]?.textContent).toContain('一审')
+  expect(items[1]?.textContent).toContain('二审')
+  expect(items[2]?.textContent).toContain('裁决')
+})
+
+it('divergence 组转置：独立「分歧报告」组头（非七问特殊组，不随裁决 role 组）', async () => {
+  listByPaper.mockResolvedValue({
+    ok: true,
+    data: [note('a1', 'first-read', 'Q1'), note('c1', 'adjudicate', 'divergence')]
+  })
+  mount(<AiNotesSection />)
+  await flush()
+  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
+  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
+  expect(groups[1]?.querySelector('h4')?.textContent).toBe('分歧报告')
+  const divItem = groups[1]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
+  expect(divItem?.textContent).toContain('裁决') // 组内条目头 role 标签仍在
 })
 
 it('只读断言：分节内无任何写交互元素（无 input/textarea/select——INV-19）', async () => {

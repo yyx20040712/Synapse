@@ -2,23 +2,30 @@
 /**
  * AiNoteGroupList —— AI 笔记分节列表（纯展示+单击定位上抛）。
  *
- * role 三组中文标签（ROLE_LABEL 单源）×组内 question 条目（七问分色
- * QUESTION_COLOR 单源——ai-note-style INV-11）；条目=锚定段引用块+
- * content_md 纯文本呈现（负面清单「Markdown 富文本编辑器」红线——md 不渲染
- * 只展示）；只读零写路径（INV-19）。单击→onLocate(note)——locateAnchor
- * 单入口消费方（INV-20）；exact 层接缝声明见 AiNotesSection 头注（AI-09
- * 交付 data-ai-note-id 渲染节点+anchor-locate 延展）。
- * highlightAiNoteId=AI-09 标注单击反向同步高亮消费面（C-05 同型）。
+ * question 分组（呈现轴=AI_NOTE_QUESTIONS 单源序——呈现轴转置 2026-08-28
+ * 缺陷 F，用户口径「问题N 分组+组内一审/二审/裁决分段」）：组头=QUESTION_LABEL+QUESTION_
+ * COLOR 左缘色条；组内条目按 role 分段标注（ROLE_LABEL 单源一审/二审/裁决
+ * +ROLE_ORDER 组内序）+七问分色色点（QUESTION_COLOR 单源——ai-note-style
+ * INV-11）；条目=锚定段引用块+content_md 纯文本呈现（负面清单「Markdown
+ * 富文本编辑器」红线——md 不渲染只展示）；只读零写路径（INV-19）。
+ * 单击→onLocate(note)——locateAnchor 单入口消费方（INV-20）；exact 层接缝
+ * 声明见 AiNotesSection 头注（AI-09 交付 data-ai-note-id 渲染节点+
+ * anchor-locate 延展）。highlightAiNoteId=AI-09 标注单击反向同步高亮
+ * 消费面（C-05 同型）。
  */
 import { useEffect, useRef } from 'react'
-import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
+import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
+import type { AiNote, AiNoteQuestion } from '@shared/models/ai-note'
 import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
 
-/** role 分组（呈现序=ROLE_ORDER；空组剔除） */
-export function groupNotes(notes: AiNote[]): Array<{ role: AiNoteRole; items: AiNote[] }> {
-  return ROLE_ORDER.map((role) => ({ role, items: notes.filter((n) => n.role === role) })).filter(
-    (g) => g.items.length > 0
-  )
+/** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
+export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {
+  return AI_NOTE_QUESTIONS.map((question) => ({
+    question,
+    items: notes
+      .filter((n) => n.question === question)
+      .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
+  })).filter((g) => g.items.length > 0)
 }
 
 export function AiNoteGroupList(props: {
@@ -41,9 +48,12 @@ export function AiNoteGroupList(props: {
   return (
     <div className="flex flex-col gap-1" data-testid="ai-note-groups" ref={rootRef}>
       {groups.map((g) => (
-        <div key={g.role} data-role={g.role}>
-          <h4 className="m-0 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>
-            {ROLE_LABEL[g.role]}
+        <div key={g.question} data-question={g.question}>
+          <h4
+            className="m-0 pl-1 text-xs font-medium"
+            style={{ borderLeft: `3px solid ${QUESTION_COLOR[g.question]}`, color: 'var(--text-dim)' }}
+          >
+            {QUESTION_LABEL[g.question]}
           </h4>
           {g.items.map((n) => {
             const highlighted = n.id === highlightAiNoteId
@@ -68,7 +78,7 @@ export function AiNoteGroupList(props: {
                     style={{ background: QUESTION_COLOR[n.question] }}
                   />
                   <span style={{ color: 'var(--text-dim)' }}>
-                    {QUESTION_LABEL[n.question]}
+                    {ROLE_LABEL[n.role]}
                     {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
                   </span>
                 </span>

@@ -22,10 +22,10 @@ describe('ai-note-style 七问分色单源', () => {
     expect(QUESTION_LABEL.divergence).toBe('分歧报告')
   })
 
-  it('role 三组中文标签+呈现序（一读/二读/裁决）', () => {
+  it('role 三组中文标签+呈现序（一审/二审/裁决——SR2-AI-11 转置口径）', () => {
     expect(ROLE_ORDER).toEqual(AI_NOTE_ROLES)
-    expect(ROLE_LABEL['first-read']).toBe('一读')
-    expect(ROLE_LABEL['second-read']).toBe('二读')
+    expect(ROLE_LABEL['first-read']).toBe('一审')
+    expect(ROLE_LABEL['second-read']).toBe('二审')
     expect(ROLE_LABEL.adjudicate).toBe('裁决')
   })
 })

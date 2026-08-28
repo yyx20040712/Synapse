@@ -436,7 +436,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByRole('button', { name: 'AI 读文献' })).toBeVisible({ timeout: 10_000 })
 
     // 产物预置（工具完成语义：corpus-ai 落盘+status 空闲——真 07 导入器消费）
-    // quote=PDF 已渲染真实文本（exact 重锚充要输入）；两 role=两组分节
+    // quote=PDF 已渲染真实文本（exact 重锚充要输入）；两 question=两组分节
     mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
     writeFileSync(
       join(sensorRoot, 'corpus-ai', 'e2e-lg-a.json'),
@@ -478,21 +478,21 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await importDraftViaUi(app, win, fixturePath)
     await nodeG(win, '脉络甲文献').click()
 
-    // ⑤侧板分节分色+真实文本（role 中文标签分节×QUESTION_COLOR 分色单源）
+    // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
     await expect(win.getByText('已绑定文献')).toBeVisible()
     await expect(win.getByText('脉络甲的核心 idea（e2e）')).toBeVisible()
     const aiSection = win.getByTestId('lineage-side-ai-notes')
-    await expect(aiSection.getByRole('heading', { name: '一读' })).toBeVisible({ timeout: 10_000 })
-    await expect(aiSection.getByRole('heading', { name: '裁决' })).toBeVisible()
-    const q1Entry = aiSection.locator('div[data-role="first-read"] div[data-ai-note-id]').first()
+    await expect(aiSection.getByRole('heading', { name: '第一问' })).toBeVisible({ timeout: 10_000 })
+    await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
+    const q1Entry = aiSection.locator('div[data-question="Q1"] div[data-ai-note-id]').first()
     await expect(q1Entry).toHaveAttribute('data-ai-note-id', /.+/)
     // 分色：Q1 色块=annotation-yellow；divergence 色块=danger（两色相异即分色证据）
     await expect(q1Entry.locator('span[aria-hidden]')).toHaveAttribute(
       'style',
       /--annotation-yellow/
     )
-    const divEntry = aiSection.locator('div[data-role="adjudicate"] div[data-ai-note-id]').first()
+    const divEntry = aiSection.locator('div[data-question="divergence"] div[data-ai-note-id]').first()
     await expect(divEntry.locator('span[aria-hidden]')).toHaveAttribute('style', /--danger/)
     // 条目真实文本（渲染出真实文本红线）
     await expect(win.getByText('脉络侧板 AI 一读笔记（e2e 真实文本锚）')).toBeVisible()

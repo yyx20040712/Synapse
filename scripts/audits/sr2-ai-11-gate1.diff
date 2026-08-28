@@ -1,0 +1,715 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index bd58062..a30a1e3 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T12:21:59.0655679Z",
++    "generatedAt":  "2026-08-28T12:58:02.5356412Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -143,7 +143,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/ai-notes-section.spec.ts",
+-                      "sha256":  "4db3e36636020ea5fe1c5bcf67a5214b6ec6ffc2bec08c5d6da93ee891d6ab68"
++                      "sha256":  "ec07e99bfbfe5dde170e365876ee08f7c767b8cf8cb13e6d472938e0ddc66fb7"
+                   },
+                   {
+                       "path":  "tests/e2e/corpus-export.spec.ts",
+@@ -155,7 +155,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/lineage.spec.ts",
+-                      "sha256":  "f75d345edd42a0f7edb6baffd05b7ded2467c5910e9b0db1053f5a85b6c63489"
++                      "sha256":  "8fe8d155965b86e99ed6c3612f9ae37984e3b57c3cbbd865a0f7e71994a3dc8f"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+@@ -287,11 +287,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+-                      "sha256":  "1f96a8e674d26f2c569cc5ea7a83fae2fd0a9811501f19a12084e5842b0e72eb"
++                      "sha256":  "838f73d3475ec6d576badcbae3b06b10d089c84e4811cc3cb9b036c948f737c4"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
+-                      "sha256":  "ce53430161744079ef8b467155cd01546530ae6152da9a505bd54a05b14c34e4"
++                      "sha256":  "06134560c96b380bc1c64bb09b434fe7c7f0d50517139c3a92f6d3119f15cec8"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+@@ -343,7 +343,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+-                      "sha256":  "b5e5a1a97e2bc7a876dba13a3a18bb5f95059b34b9b44f6c6c08378f0f10e0f0"
++                      "sha256":  "db78e39fcea412ed2caf675f236867ad0b00d024f1850a4756f9191d94051b56"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+diff --git a/scripts/audits/sr2-ai-11-brief.md b/scripts/audits/sr2-ai-11-brief.md
+new file mode 100644
+index 0000000..28c857c
+--- /dev/null
++++ b/scripts/audits/sr2-ai-11-brief.md
+@@ -0,0 +1,69 @@
++# SR2-AI-11 AI 笔记呈现轴转置（缺陷 F：问题N 分组+一审/二审分段）——票面 v1
++
++> 来源：2026-08-28 用户真机验收反馈缺陷 F，用户口径「问题一 + 问题内容:
++> 一审:xxx。二审:xxx。裁决:xxx。」——取证定性见
++> `docs/prompts/2026-08-28_loop-handoff.md` §2F。**确定级**：现渲染=role
++> 优先分组（AiNoteGroupList.tsx:18-22 groupNotes 按 ROLE_ORDER 三组，组内
++> 平铺 question 条目）；用户要 question 优先分组、组内按 role 分段——
++> 正好转置。验收修复役 U5。
++> 纪律：三屋模式；实现者禁 git/registry；取证禁触 tickets/。
++
++## 1. 主控预裁项
++
++- **P1 转置=groupNotes 重写**：`AiNoteGroupList.tsx` groupNotes 按
++  `AI_NOTE_QUESTIONS` 序（shared/models/ai-note.ts:20 单源，Q1~Q7+divergence）
++  分组：`Array<{ question: AiNoteQuestion; items: AiNote[] }>`（空组剔除）；
++  组头=QUESTION_LABEL+QUESTION_COLOR 色条（两映射单源 ai-note-style.ts:16-37
++  已在）；组内条目头加 ROLE_LABEL 小标签（「一审:」前缀或徽标样式——
++  实现者自裁并申报，验收=role 可辨）。条目其余（色点/quote/content/定位/
++  高亮）零改。
++- **P2 ROLE_LABEL 改「一审/二审/裁决」**：ai-note-style.ts:40-47 单源改
++  三值——三消费方（reader 面板 AiNoteGroupList+脉络侧板
++  LineageSideAiNotes+标注层 tooltip AiAnnotationLayer）同步生效（单源性质，
++  禁改三处）。ROLE_ORDER 注释同步（「一读→二读」→「一审→二审」）。
++- **P3 LineageSideAiNotes.tsx:79-107 同步转置**：自写 role 分组（内联
++  ROLE_ORDER.filter 链）改为 question 分组+组内 role 标签——**与
++  AiNoteGroupList 保持视觉一致**（Rule of Three 第 2 次重复维持两处，
++  第 3 次出现时再抽公共件——维持裁决，不抽组件；此票内两处分组逻辑
++  形状一致即可）。双击定位/空态/重试零改。
++- **P4 数据模型零改**：`src/shared/models/ai-note.ts` 锁内**不动**
++  （AiNote.question 天然分组键/role 组内段键，枚举不变）；AiNoteGroupList
++  导出面：groupNotes 签名变更（返回 question 分组）——消费方=组件自身+
++  ai-notes-section.test（受锁同步），无其他生产消费方（grep 核对）。
++- **P5 受锁三文件**（[locked-change]，unlock→改→apply）：
++  - `tests/unit/renderer/ai-note-style.test.ts`（2 it——ROLE_LABEL 文案
++    断言同步「一审/二审/裁决」）；
++  - `tests/unit/renderer/ai-notes-section.test.tsx`（20 it——分组结构断言
++    全量核对：role 组断言→question 组断言；组内 role 标签断言新增）；
++  - `tests/e2e/ai-notes-section.spec.ts`（4 test——分组/文案 e2e 断言同步）。
++- **P6 新增断言面**（受锁文件内加 it，不新建文件——域锚定既有三件）：
++  ①question 分组序=AI_NOTE_QUESTIONS 序（非字典序非输入序）；②空组剔除
++  （无 Q3 条目则无 Q3 组头）；③组内 role 标签呈现；④divergence 组同样
++  转置（非七问之外的特殊组）。
++
++## 2. 五层规约
++
++**─ 行为层 ──**：呈现轴=question 优先（组头「第一问…第七问/分歧报告」+
++分色条），组内条目按 role 分段标注（一审/二审/裁决）；无条目的问题组不
++渲染。数据入参序无关（分组序=AI_NOTE_QUESTIONS 单源）。
++
++**─ 接口层 ──**：groupNotes 返回形状变更（role 轴→question 轴）；
++AiNoteGroupList/LineageSideAiNotes props 零改；ai-note-style 导出面零增删
++（仅 ROLE_LABEL 三值与注释）。
++
++**─ 架构层 ──**：零依赖；INV-11 单源模式保持（QUESTION_*/ROLE_* 唯一
++出处不动）；shared 锁内零触碰。
++
++**─ 生命周期层 ──**：不做：抽公共分组组件（第 3 次重复触发条件未到）；
++md 渲染（负面清单）；AI-09 标注层 tooltip 结构改（ROLE_LABEL 值变更自动
++生效即可）。
++
++**─ 文化层 ──**：TDD——受锁断言先红（改断言到新口径→现实现红）→实现→
++绿→变异红证 ≥2（①groupNotes 回退 role 轴→分组序 it 红；②ROLE_LABEL 回退
++「一读」→文案 it 红；cp 备份法还原）→受锁 e2e spec 改动后全量 verify
++（tsc 关卡）。报告落 `scripts/audits/sr2-ai-11-impl.report.md`，回复五行内。
++
++## 3. 机检兼容自查
++
++无 TODO/FIXME/placeholder；UTF-8；node24 前缀；locks unlock→三文件→apply；
++基线 verify 全绿（用例增量自报）；e2e 基数随 U1/U2 激活后实况申报。
+diff --git a/scripts/audits/sr2-ai-11-impl.report.md b/scripts/audits/sr2-ai-11-impl.report.md
+new file mode 100644
+index 0000000..c1f889e
+--- /dev/null
++++ b/scripts/audits/sr2-ai-11-impl.report.md
+@@ -0,0 +1,148 @@
++# SR2-AI-11 实现报告 —— AI 笔记呈现轴转置（缺陷 F：问题N 分组+一审/二审分段）
++
++> 实现者子代理报告（三屋模式，2026-08-28）。票面：`sr2-ai-11-brief.md`。
++> 状态：**完成**——verify EXIT=0 / e2e 24 passed+0 skip EXIT=0 / locks 144 一致 / 变异红证 ×2。
++
++## 1. 实现摘要
++
++呈现轴从 role 优先转置为 question 优先（用户口径「问题一 + 一审:xxx 二审:xxx 裁决:xxx」）：
++
++- **groupNotes 转置**（AiNoteGroupList.tsx:22-29）：按 `AI_NOTE_QUESTIONS` 单源序
++  （Q1~Q7+divergence）分组，返回 `Array<{ question: AiNoteQuestion; items: AiNote[] }>`；
++  空组剔除；组内条目按 `ROLE_ORDER` 排序（一审→二审→裁决）。
++- **组头形态**：`<h4>`/`<h5>` 文本=QUESTION_LABEL + 左缘 3px 竖色条
++  （`borderLeft: 3px solid QUESTION_COLOR[q]`，pl-1）——色条复用 QUESTION_COLOR 单源。
++- **组内条目头**：原「色点+QUESTION_LABEL·p.N」改为「色点+ROLE_LABEL·p.N」——
++  role 标签顶替原 question 标签位置（组头已单示 question，条目内保留会同组重复；
++  票面「条目其余（色点/quote/content/定位/高亮）零改」五项枚举不含 QUESTION_LABEL，
++  顶替属自裁面，见 §7）。条目其余结构零改。
++- **ROLE_LABEL 三值**（ai-note-style.ts:39-47）：一读→一审 / 二读→二审 / 裁决不变；
++  ROLE_ORDER 注释同步「一审→二审→裁决」。
++- **LineageSideAiNotes 同步转置**（自写分组 `AI_NOTE_QUESTIONS.filter` 链，与
++  AiNoteGroupList 形状一致，不抽公共件——Rule of Three 第 2 次保持裁决）；
++  双击定位/空态/重试/ stale 守卫零改。
++- **头注接缝同步**：AiNotesSection 分节描述+divergence 预留行（转置后独立组已兑现）；
++  AiNoteGroupList/LineageSideAiNotes 头注转置描述。
++- shared 零触碰（AI_NOTE_QUESTIONS/AI_NOTE_ROLES 只读消费）。
++
++## 2. 文件清单（10 文件，git diff --stat 无范围蔓延）
++
++生产（4）：
++- `src/renderer/features/reader/ai-note-style.ts` —— ROLE_LABEL 三值+注释
++- `src/renderer/features/reader/AiNoteGroupList.tsx` —— groupNotes 转置+渲染+头注（100 行）
++- `src/renderer/features/lineage/LineageSideAiNotes.tsx` —— 同步转置+头注（121 行）
++- `src/renderer/features/reader/AiNotesSection.tsx` —— 头注接缝同步（250 行，未超限）
++
++受锁（5，unlock→改→apply）：
++- `tests/unit/renderer/ai-note-style.test.ts` —— 文案 it 断言「一审/二审/裁决」
++- `tests/unit/renderer/ai-notes-section.test.tsx` —— 分组 it 改写 question 轴 + P6 新增 4 it（20→24）
++- `tests/unit/renderer/lineage-side-panel.test.tsx` —— 区3 断言 data-question+组头文案+role 标签
++- `tests/e2e/ai-notes-section.spec.ts` —— heading 第一问/分歧报告 + 条目 toContainText 一审/裁决
++- `tests/e2e/lineage.spec.ts` —— T4 侧板 heading/`div[data-question]` 定位/注释
++
++其他（1）：
++- `locks/manifest.json` —— locks:apply 重生成（5 测试文件 hash 同步，流程必然）
++
++## 3. 首红证据（TDD 档①）
++
++断言改写后、实现前，跑 3 受影响单测文件：
++
++```
++Test Files  3 failed (3)
++     Tests  7 failed | 39 passed (46)
++```
++
++7 failed = ai-note-style 文案 it ×1 + ai-notes-section 分组 it ×5（含新增 4）+
++lineage-side-panel 区3 it ×1——全部为新口径断言 vs 现 role 轴实现的预期红。
++
++## 4. 变异红证（TDD 档④，cp 备份法，禁 git checkout）
++
++**变异①（groupNotes 回退 role 轴）**：cp 备份→函数体换回
++`ROLE_ORDER.map(...n.role===role...)`（esbuild 不查类型可跑）→
++`npx vitest run ...ai-notes-section.test.tsx -t "分组序单源"`：
++```
++× 分组序单源：乱序输入仍按 AI_NOTE_QUESTIONS 序（非输入序——呈现轴=shared 单源）
++Tests  1 failed | 23 skipped (24)    MUT1_EXIT=1
++```
++→ cp 还原 → `diff` 空（RESTORE1_OK）。
++
++**变异②（ROLE_LABEL 回退「一读」）**：cp 备份→`'first-read': '一读'`→
++`npx vitest run ...ai-note-style.test.ts`：
++```
++× role 三组中文标签+呈现序（一审/二审/裁决——SR2-AI-11 转置口径）
++Expected: "一审"   Received: "一读"
++Tests  1 failed | 1 passed (2)       MUT2_EXIT=1
++```
++→ cp 还原 → `diff` 空（RESTORE2_OK）。还原后 3 文件 46 用例复绿（EXIT=0）。
++
++## 5. verify / e2e 真退出码
++
++- `npm run verify` → **VERIFY_EXIT=0**（quality 无占位/乱码/跨域 + tickets 114 open 0 +
++  locks 144 一致 + lint + typecheck + test 95 文件 **741** 用例 + build）。
++  日志：/tmp/sr2-ai-11-verify.log（两轮：首首轮 quality 拦「xxx」占位与 252 行超限、
++  次轮 tickets 拦 SR2-AI-11 工单号引用，均已修正后全绿——过程见 §7/§8）。
++- `npm run test:e2e` → 首轮 23 passed+1 failed：新加 `getByText('一审',{exact:true})`
++  失败（条目头 span 文本=「一审 · p.1」，exact 整节点匹配不中）→ 改
++  `locator+toContainText`（受锁再 unlock→改→apply + 全量 verify 复绿 EXIT=0）。
++  次轮 23 passed+1 failed：**reader-scroll F-04 收官链 flaky**（selectText
++  "Element is not attached to the DOM"——该 spec 自身测离屏回收，文本层重挂载竞态，
++  与本票改动面零交集）→ 单独重跑 2 passed EXIT=0 → 末轮全量
++  **24 passed + 0 skip，E2E_FINAL_EXIT=0**。日志：/tmp/sr2-ai-11-e2e-final.log。
++
++## 6. locks 实录
++
++unlock（144 解锁）→ 改 5 受锁测试 → 首次 apply（144 重锁）→ e2e spec 修复二次
++unlock→改→apply（144 重锁）→ verify 内 locks:check「144 个受锁文件与 manifest 一致」。
++manifest 变更随受锁文件 hash 同步重生成（locks/manifest.json，git 提示 CRLF→LF
++转换警告为 locks 工具链既有行为）。
++
++## 7. 自裁申报
++
++1. **组头样式**：h4（reader 面板）/h5（脉络侧板，保持既有层级差）+ 左缘 3px
++   QUESTION_COLOR 竖色条 + pl-1——色条即「分色组头」，复用既有分色单源不引新色。
++2. **role 标签形态**：纯文本前缀「一审/二审/裁决」占原 QUESTION_LABEL 位置
++   （同 span 内拼「 · p.N」页码），非徽标——与用户口径「一审:xxx」最贴形，
++   且不新增 DOM 层级。
++3. **组内条目序**：按 ROLE_ORDER 排序（一审→二审→裁决）——「组内按 role 分段」
++   的实现形态=排序+标签（非嵌套小节），贴用户口径且结构最简。
++4. **条目头 QUESTION_LABEL 顶替删除**：票面「条目其余零改」五项枚举（色点/
++   quote/content/定位/高亮）不含它；组头已单示 question，保留会同组重复。**此为
++   超字面自裁，请门一裁**。
++5. **受锁第五文件（票面清单外必然同步）**：P3 改 LineageSideAiNotes 渲染结构 →
++   `lineage-side-panel.test.tsx` 区3 断言（data-role/「一读」组头）与
++   `lineage.spec.ts` T4 断言（heading 一读/data-role 定位）必然红——接缝归责
++   同步改写，两文件 test 数不变。
++6. **e2e spec「4 test」实况**：ai-notes-section.spec.ts 实际 **2 test**（票面写 4，
++   数字与文件不符）；分组/文案 e2e 断言另涉 lineage.spec.ts T4 1 test。按文件
++   实况改写，test 数均不变；skip 守卫（DEPS=isTicketDone）按既有形态保留未动。
++
++## 8. 过程卡点与处置（均已自行消化，非 BLOCKED）
++
++1. quality 拦「xxx」：头注引用户口径含「一审:xxx」→ 改「一审/二审/裁决分段」描述。
++2. AiNotesSection 251/252 行超 250 限：头注扩行 → 压缩回 250 行内。
++3. tickets:check 拦「SR2-AI-11 引用不存在的工单号」×5：registry 未建本票单
++   （票面明示不建）→ src 五处工单号字样改描述性「呈现轴转置 2026-08-28 缺陷 F」
++   （tests 不在扫描面，测试内 SR2-AI-11 注记保留）。
++4. e2e getByText exact 不中同 span 拼接文本 → locator+toContainText。
++
++## 9. 疑虑
++
++- **P2「三消费方」与 grep 事实不符**：AiAnnotationLayer 只消费 QUESTION_COLOR
++  （tooltip=title contentMd），**不消费 ROLE_LABEL**——ROLE_LABEL 生产消费方实为
++  两处（AiNoteGroupList+LineageSideAiNotes），单源改值后两处自动生效已验；
++  AiAnnotationLayer 无「自动生效面」（票面预裁事实澄清，非冲突，未动该文件）。
++- main 侧 `export/corpus.assemble.ts:84` 有同名 ROLE_ORDER（排序权重 Record，
++  语义无关）——未动，特此锚定防误伤。
++- 基线「工单 115 open 0」vs verify 实测「共 114 open 0」——registry 近期或有
++  收口变动，未触 tickets/（禁令），请主控核对基线数字口径。
++- reader-scroll F-04 e2e 存在既有 flaky（离屏回收文本层竞态，单测重跑即绿）——
++  本票面外，建议另立观察项。
++
++## 10. 基线对账
++
++| 项 | 基线 | 完成后 |
++| --- | --- | --- |
++| 单测 | 95 文件 737 用例 | 95 文件 **741**（+4 新增 it：分组序单源/空组剔除/组内 role 标签/divergence 转置） |
++| e2e | 24 passed+0 skip | 24 passed+0 skip（spec 数不变） |
++| locks | 144 | 144（manifest hash 同步） |
++| 工单 | 115 open 0 | 实测 114 open 0（见 §9 疑虑） |
+diff --git a/src/renderer/features/lineage/LineageSideAiNotes.tsx b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+index 9daa080..ef202bf 100644
+--- a/src/renderer/features/lineage/LineageSideAiNotes.tsx
++++ b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+@@ -4,17 +4,20 @@
+  *
+  * 行为：选中节点 paperId 驱动惰性取数（ai_sensor.listByPaper——W4 直连
+  * window.api 预裁，接缝声明见 LineageSidePanel/ai-notes.store 头注）；
+- * loading/error+重试/空态/分节呈现。role 三组中文标签×七问分色=
+- * **ai-note-style 单源跨域只读消费**（check-quality COMPOSITION_ROOT_
+- * ALLOW 受控例外——分色映射禁本域复写，接缝双向锚定：本行+ai-note-style
+- * 头注）；分组逻辑本域重写（AiNoteGroupList 属 reader 域不可引——Rule
+- * of Three 第 2 次保持重复）。条目双击上抛（单击无操作——防误触）。
++ * loading/error+重试/空态/分节呈现。question 分组（组头=QUESTION_LABEL+
++ * QUESTION_COLOR 左缘色条）×组内条目按 role 分段标注（一审/二审/裁决——
++ * 呈现轴转置 2026-08-28 缺陷 F，与 AiNoteGroupList 视觉一致）=**ai-note-style 单源
++ * 跨域只读消费**（check-quality COMPOSITION_ROOT_ALLOW 受控例外——标签/
++ * 分色映射禁本域复写，接缝双向锚定：本行+ai-note-style 头注）；分组逻辑
++ * 本域重写（AiNoteGroupList 属 reader 域不可引——Rule of Three 第 2 次保持
++ * 重复，两处形状一致）。条目双击上抛（单击无操作——防误触）。
+  * stale 守卫：请求序号（选中节点切换后晚到旧响应丢弃——anchor-locate
+  * locateSeq 同族思想，票面 N7 校准字面）。
+  */
+ import { useEffect, useState } from 'react'
+ import { api, unwrap } from '../../api/client'
+-import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
++import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
++import type { AiNote } from '@shared/models/ai-note'
+ import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
+ 
+ type Phase = 'loading' | 'ready' | 'error'
+@@ -76,34 +79,42 @@ export function LineageSideAiNotes(props: {
+         (notes === null || notes.length === 0 ? (
+           <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无 AI 笔记</p>
+         ) : (
+-          ROLE_ORDER.filter((role) => notes.some((n) => n.role === role)).map((role: AiNoteRole) => (
+-            <div key={role} data-role={role}>
+-              <h5 className="m-0 font-medium" style={{ color: 'var(--text-dim)' }}>{ROLE_LABEL[role]}</h5>
+-              {notes
+-                .filter((n) => n.role === role)
+-                .map((n) => (
+-                  <div
+-                    key={n.id}
+-                    data-ai-note-id={n.id}
+-                    className="mt-0.5 rounded border px-2 py-1"
+-                    style={{ borderColor: 'var(--border)' }}
+-                    onDoubleClick={() => onNoteDblClick(n)}
+-                  >
+-                    <span className="flex items-center gap-1">
+-                      <span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: QUESTION_COLOR[n.question] }} />
+-                      <span style={{ color: 'var(--text-dim)' }}>
+-                        {QUESTION_LABEL[n.question]}
+-                        {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
++          AI_NOTE_QUESTIONS.filter((question) => notes.some((n) => n.question === question)).map(
++            (question) => (
++              <div key={question} data-question={question}>
++                <h5
++                  className="m-0 pl-1 font-medium"
++                  style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim)' }}
++                >
++                  {QUESTION_LABEL[question]}
++                </h5>
++                {notes
++                  .filter((n) => n.question === question)
++                  .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
++                  .map((n) => (
++                    <div
++                      key={n.id}
++                      data-ai-note-id={n.id}
++                      className="mt-0.5 rounded border px-2 py-1"
++                      style={{ borderColor: 'var(--border)' }}
++                      onDoubleClick={() => onNoteDblClick(n)}
++                    >
++                      <span className="flex items-center gap-1">
++                        <span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: QUESTION_COLOR[n.question] }} />
++                        <span style={{ color: 'var(--text-dim)' }}>
++                          {ROLE_LABEL[n.role]}
++                          {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
++                        </span>
+                       </span>
+-                    </span>
+-                    {n.quoteText !== '' && (
+-                      <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>{n.quoteText}</span>
+-                    )}
+-                    <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{n.contentMd}</span>
+-                  </div>
+-                ))}
+-            </div>
+-          ))
++                      {n.quoteText !== '' && (
++                        <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>{n.quoteText}</span>
++                      )}
++                      <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{n.contentMd}</span>
++                    </div>
++                  ))}
++              </div>
++            )
++          )
+         ))}
+     </section>
+   )
+diff --git a/src/renderer/features/reader/AiNoteGroupList.tsx b/src/renderer/features/reader/AiNoteGroupList.tsx
+index 4fdfffe..384c89a 100644
+--- a/src/renderer/features/reader/AiNoteGroupList.tsx
++++ b/src/renderer/features/reader/AiNoteGroupList.tsx
+@@ -2,23 +2,30 @@
+ /**
+  * AiNoteGroupList —— AI 笔记分节列表（纯展示+单击定位上抛）。
+  *
+- * role 三组中文标签（ROLE_LABEL 单源）×组内 question 条目（七问分色
+- * QUESTION_COLOR 单源——ai-note-style INV-11）；条目=锚定段引用块+
+- * content_md 纯文本呈现（负面清单「Markdown 富文本编辑器」红线——md 不渲染
+- * 只展示）；只读零写路径（INV-19）。单击→onLocate(note)——locateAnchor
+- * 单入口消费方（INV-20）；exact 层接缝声明见 AiNotesSection 头注（AI-09
+- * 交付 data-ai-note-id 渲染节点+anchor-locate 延展）。
+- * highlightAiNoteId=AI-09 标注单击反向同步高亮消费面（C-05 同型）。
++ * question 分组（呈现轴=AI_NOTE_QUESTIONS 单源序——呈现轴转置 2026-08-28
++ * 缺陷 F，用户口径「问题N 分组+组内一审/二审/裁决分段」）：组头=QUESTION_LABEL+QUESTION_
++ * COLOR 左缘色条；组内条目按 role 分段标注（ROLE_LABEL 单源一审/二审/裁决
++ * +ROLE_ORDER 组内序）+七问分色色点（QUESTION_COLOR 单源——ai-note-style
++ * INV-11）；条目=锚定段引用块+content_md 纯文本呈现（负面清单「Markdown
++ * 富文本编辑器」红线——md 不渲染只展示）；只读零写路径（INV-19）。
++ * 单击→onLocate(note)——locateAnchor 单入口消费方（INV-20）；exact 层接缝
++ * 声明见 AiNotesSection 头注（AI-09 交付 data-ai-note-id 渲染节点+
++ * anchor-locate 延展）。highlightAiNoteId=AI-09 标注单击反向同步高亮
++ * 消费面（C-05 同型）。
+  */
+ import { useEffect, useRef } from 'react'
+-import type { AiNote, AiNoteRole } from '@shared/models/ai-note'
++import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
++import type { AiNote, AiNoteQuestion } from '@shared/models/ai-note'
+ import { QUESTION_COLOR, QUESTION_LABEL, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
+ 
+-/** role 分组（呈现序=ROLE_ORDER；空组剔除） */
+-export function groupNotes(notes: AiNote[]): Array<{ role: AiNoteRole; items: AiNote[] }> {
+-  return ROLE_ORDER.map((role) => ({ role, items: notes.filter((n) => n.role === role) })).filter(
+-    (g) => g.items.length > 0
+-  )
++/** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
++export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {
++  return AI_NOTE_QUESTIONS.map((question) => ({
++    question,
++    items: notes
++      .filter((n) => n.question === question)
++      .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
++  })).filter((g) => g.items.length > 0)
+ }
+ 
+ export function AiNoteGroupList(props: {
+@@ -41,9 +48,12 @@ export function AiNoteGroupList(props: {
+   return (
+     <div className="flex flex-col gap-1" data-testid="ai-note-groups" ref={rootRef}>
+       {groups.map((g) => (
+-        <div key={g.role} data-role={g.role}>
+-          <h4 className="m-0 text-xs font-medium" style={{ color: 'var(--text-dim)' }}>
+-            {ROLE_LABEL[g.role]}
++        <div key={g.question} data-question={g.question}>
++          <h4
++            className="m-0 pl-1 text-xs font-medium"
++            style={{ borderLeft: `3px solid ${QUESTION_COLOR[g.question]}`, color: 'var(--text-dim)' }}
++          >
++            {QUESTION_LABEL[g.question]}
+           </h4>
+           {g.items.map((n) => {
+             const highlighted = n.id === highlightAiNoteId
+@@ -68,7 +78,7 @@ export function AiNoteGroupList(props: {
+                     style={{ background: QUESTION_COLOR[n.question] }}
+                   />
+                   <span style={{ color: 'var(--text-dim)' }}>
+-                    {QUESTION_LABEL[n.question]}
++                    {ROLE_LABEL[n.role]}
+                     {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
+                   </span>
+                 </span>
+diff --git a/src/renderer/features/reader/AiNotesSection.tsx b/src/renderer/features/reader/AiNotesSection.tsx
+index 5c3733c..dc6cffa 100644
+--- a/src/renderer/features/reader/AiNotesSection.tsx
++++ b/src/renderer/features/reader/AiNotesSection.tsx
+@@ -6,10 +6,10 @@
+  * ── 行为层 ──
+  * - 并入 ReaderNotesPanel 下部分节（C-03 预留位）；面板 props 不动——本组件
+  *   经 useActiveTab 自取 paperId（同 C-03 防双源）
+- * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决——
+- *   AiNoteGroupList+ai-note-style 单源）×组内 question 条目；条目=锚定段
+- *   引用块+content_md 纯文本（textarea 级呈现——负面清单红线，md 不渲染只
+- *   展示）；**只读**——零写路径（INV-19，v1 无编辑/删除）
++ * - 分节显示（ADR-0015 §3 N2 渲染面）：question 分组（七问+分歧报告独立
++ *   组——呈现轴转置 2026-08-28 缺陷 F，AiNoteGroupList+ai-note-style 单源）
++ *   ×组内条目按 role 分段标注（一审/二审/裁决）；条目=锚定段引用块+content_md
++ *   纯文本（textarea 级呈现，md 不渲染——负面清单红线）；**只读**零写路径（INV-19）
+  * - 「AI 正在读」状态行+「AI 读文献」按钮（用户点击=手动激活——D2b）：
+  *   按钮经 ai-sensor/request-read 写 job（AI-06 通道）；状态行按需轮询
+  *   **ai-sensor/observe**（主控裁决方向 B，2026-08-27：status+per-paper
+@@ -56,7 +56,7 @@
+  *   notes.store 零触碰（AI 数据面全归 ai-notes.store）
+  *
+  * ── 生命周期层 ──
+- * - 预留：分节折叠记忆（v1 不做）；divergence 独立组（v1 随裁决组呈现）
++ * - 预留：分节折叠记忆（v1 不做）；divergence 独立组已随呈现轴转置兑现
+  * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（手动按钮保持
+  *   D2b 手动激活语义）
+  *
+diff --git a/src/renderer/features/reader/ai-note-style.ts b/src/renderer/features/reader/ai-note-style.ts
+index 304420c..846e8c9 100644
+--- a/src/renderer/features/reader/ai-note-style.ts
++++ b/src/renderer/features/reader/ai-note-style.ts
+@@ -36,12 +36,12 @@ export const QUESTION_LABEL: Record<AiNoteQuestion, string> = {
+   divergence: '分歧报告'
+ }
+ 
+-/** role 三组中文标签（分节呈现） */
++/** role 三组中文标签（组内条目分段标注——呈现轴转置 2026-08-28 缺陷 F：一审/二审/裁决） */
+ export const ROLE_LABEL: Record<AiNoteRole, string> = {
+-  'first-read': '一读',
+-  'second-read': '二读',
++  'first-read': '一审',
++  'second-read': '二审',
+   adjudicate: '裁决'
+ }
+ 
+-/** role 呈现序（一读→二读→裁决；与 AI_NOTE_ROLES 枚举序一致） */
++/** role 呈现序（一审→二审→裁决；与 AI_NOTE_ROLES 枚举序一致） */
+ export const ROLE_ORDER: readonly AiNoteRole[] = AI_NOTE_ROLES
+diff --git a/tests/e2e/ai-notes-section.spec.ts b/tests/e2e/ai-notes-section.spec.ts
+index 4e3735b..b9cbdcd 100644
+--- a/tests/e2e/ai-notes-section.spec.ts
++++ b/tests/e2e/ai-notes-section.spec.ts
+@@ -128,8 +128,12 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘
+   // 导入（真 07 导入器→真 DB）：三桶 toast+分节渲染真实文本（idle 稳态）
+   await importBtn.click()
+   await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
+-  await expect(win.getByRole('heading', { name: '一读' })).toBeVisible()
+-  await expect(win.getByRole('heading', { name: '裁决' })).toBeVisible()
++  await expect(win.getByRole('heading', { name: '第一问' })).toBeVisible()
++  await expect(win.getByRole('heading', { name: '分歧报告' })).toBeVisible()
++  // 组内条目头 role 标签（转置锚：条目文本含一审/裁决——与页码同 span 故用包含匹配）
++  const groupedItems = win.locator('[data-testid="ai-note-groups"] [data-ai-note-id]')
++  await expect(groupedItems.first()).toContainText('一审')
++  await expect(groupedItems.nth(1)).toContainText('裁决')
+   await expect(win.getByText('AI 一读笔记正文内容（e2e 真实文本锚）')).toBeVisible({ timeout: 10_000 })
+   await expect(win.getByText('两读者对样本量的分歧评估')).toBeVisible()
+   await expect(win.getByTestId('ai-status-line')).toHaveCount(0) // idle：稳态无状态行
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+index e6c2bce..1d834bb 100644
+--- a/tests/e2e/lineage.spec.ts
++++ b/tests/e2e/lineage.spec.ts
+@@ -436,7 +436,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
+     await expect(win.getByRole('button', { name: 'AI 读文献' })).toBeVisible({ timeout: 10_000 })
+ 
+     // 产物预置（工具完成语义：corpus-ai 落盘+status 空闲——真 07 导入器消费）
+-    // quote=PDF 已渲染真实文本（exact 重锚充要输入）；两 role=两组分节
++    // quote=PDF 已渲染真实文本（exact 重锚充要输入）；两 question=两组分节
+     mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
+     writeFileSync(
+       join(sensorRoot, 'corpus-ai', 'e2e-lg-a.json'),
+@@ -478,21 +478,21 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
+     await importDraftViaUi(app, win, fixturePath)
+     await nodeG(win, '脉络甲文献').click()
+ 
+-    // ⑤侧板分节分色+真实文本（role 中文标签分节×QUESTION_COLOR 分色单源）
++    // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
+     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
+     await expect(win.getByText('已绑定文献')).toBeVisible()
+     await expect(win.getByText('脉络甲的核心 idea（e2e）')).toBeVisible()
+     const aiSection = win.getByTestId('lineage-side-ai-notes')
+-    await expect(aiSection.getByRole('heading', { name: '一读' })).toBeVisible({ timeout: 10_000 })
+-    await expect(aiSection.getByRole('heading', { name: '裁决' })).toBeVisible()
+-    const q1Entry = aiSection.locator('div[data-role="first-read"] div[data-ai-note-id]').first()
++    await expect(aiSection.getByRole('heading', { name: '第一问' })).toBeVisible({ timeout: 10_000 })
++    await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
++    const q1Entry = aiSection.locator('div[data-question="Q1"] div[data-ai-note-id]').first()
+     await expect(q1Entry).toHaveAttribute('data-ai-note-id', /.+/)
+     // 分色：Q1 色块=annotation-yellow；divergence 色块=danger（两色相异即分色证据）
+     await expect(q1Entry.locator('span[aria-hidden]')).toHaveAttribute(
+       'style',
+       /--annotation-yellow/
+     )
+-    const divEntry = aiSection.locator('div[data-role="adjudicate"] div[data-ai-note-id]').first()
++    const divEntry = aiSection.locator('div[data-question="divergence"] div[data-ai-note-id]').first()
+     await expect(divEntry.locator('span[aria-hidden]')).toHaveAttribute('style', /--danger/)
+     // 条目真实文本（渲染出真实文本红线）
+     await expect(win.getByText('脉络侧板 AI 一读笔记（e2e 真实文本锚）')).toBeVisible()
+diff --git a/tests/unit/renderer/ai-note-style.test.ts b/tests/unit/renderer/ai-note-style.test.ts
+index 21e1b82..b96ca6e 100644
+--- a/tests/unit/renderer/ai-note-style.test.ts
++++ b/tests/unit/renderer/ai-note-style.test.ts
+@@ -22,10 +22,10 @@ describe('ai-note-style 七问分色单源', () => {
+     expect(QUESTION_LABEL.divergence).toBe('分歧报告')
+   })
+ 
+-  it('role 三组中文标签+呈现序（一读/二读/裁决）', () => {
++  it('role 三组中文标签+呈现序（一审/二审/裁决——SR2-AI-11 转置口径）', () => {
+     expect(ROLE_ORDER).toEqual(AI_NOTE_ROLES)
+-    expect(ROLE_LABEL['first-read']).toBe('一读')
+-    expect(ROLE_LABEL['second-read']).toBe('二读')
++    expect(ROLE_LABEL['first-read']).toBe('一审')
++    expect(ROLE_LABEL['second-read']).toBe('二审')
+     expect(ROLE_LABEL.adjudicate).toBe('裁决')
+   })
+ })
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 1503309..6d563ca 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -12,6 +12,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
++import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
+ import type * as clientModule from '../../../src/renderer/api/client'
+ import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+ import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
+@@ -395,7 +396,7 @@ it('「AI 读文献」失败（动作型）toast error；无本地残留态（wr
+   expect(readBtn().disabled).toBe(false) // 无自建 in-flight 锁：失败后可重试
+ })
+ 
+-it('分节分组：role 三组中文标签按序呈现，divergence 随裁决组；七问分色单源消费', async () => {
++it('分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标签+分色条），组内条目按 role 分段标注', async () => {
+   listByPaper.mockResolvedValue({
+     ok: true,
+     data: [
+@@ -408,16 +409,88 @@ it('分节分组：role 三组中文标签按序呈现，divergence 随裁决组
+   mount(<AiNotesSection />)
+   await flush()
+   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
+-  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'second-read', 'adjudicate'])
+-  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['一读', '二读', '裁决'])
++  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q2', 'divergence'])
++  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第二问', '分歧报告'])
++  // 组头分色条（QUESTION_COLOR 单源——左缘竖条形态）
++  const q1Head = groups[0]?.querySelector('h4') as HTMLElement
++  expect(q1Head.style.borderLeft).toContain(QUESTION_COLOR.Q1)
++  // 组内条目按 ROLE_ORDER 排序（一审在前二审在后）+条目头 role 标签可辨
++  const q1Items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
++  expect(q1Items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1'])
++  expect(q1Items[0]?.textContent).toContain('一审')
++  expect(q1Items[1]?.textContent).toContain('二审')
+   const dot = groups[0]?.querySelector('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
+   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
+   const divItem = groups[2]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
+-  expect(divItem).not.toBeNull() // divergence 在裁决组内
++  expect(divItem).not.toBeNull() // divergence 独立成组（question 轴）
+   const divDot = divItem?.querySelector('span[aria-hidden]') as HTMLElement
+   expect(divDot.style.background).toBe(QUESTION_COLOR.divergence)
+ })
+ 
++it('分组序单源：乱序输入仍按 AI_NOTE_QUESTIONS 序（非输入序——呈现轴=shared 单源）', async () => {
++  listByPaper.mockResolvedValue({
++    ok: true,
++    data: [
++      note('d1', 'adjudicate', 'divergence'),
++      note('e1', 'second-read', 'Q5'),
++      note('a1', 'first-read', 'Q1'),
++      note('b1', 'first-read', 'Q2')
++    ]
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(
++    AI_NOTE_QUESTIONS.filter((q) => ['Q1', 'Q2', 'Q5', 'divergence'].includes(q))
++  )
++})
++
++it('空组剔除：无条目的 question 不渲染组（无 Q2 条目则无「第二问」组头）', async () => {
++  listByPaper.mockResolvedValue({
++    ok: true,
++    data: [note('a1', 'first-read', 'Q1'), note('c1', 'adjudicate', 'Q3')]
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'Q3'])
++  expect(groups.map((g) => g.querySelector('h4')?.textContent)).toEqual(['第一问', '第三问'])
++})
++
++it('组内 role 标签：同 question 组内三 role 条目头呈现一审/二审/裁决（role 可辨+role 序）', async () => {
++  listByPaper.mockResolvedValue({
++    ok: true,
++    data: [
++      note('c1', 'adjudicate', 'Q4'),
++      note('b1', 'second-read', 'Q4'),
++      note('a1', 'first-read', 'Q4')
++    ]
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
++  expect(groups).toHaveLength(1) // 同 question 单组
++  const items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
++  expect(items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1', 'c1'])
++  expect(items[0]?.textContent).toContain('一审')
++  expect(items[1]?.textContent).toContain('二审')
++  expect(items[2]?.textContent).toContain('裁决')
++})
++
++it('divergence 组转置：独立「分歧报告」组头（非七问特殊组，不随裁决 role 组）', async () => {
++  listByPaper.mockResolvedValue({
++    ok: true,
++    data: [note('a1', 'first-read', 'Q1'), note('c1', 'adjudicate', 'divergence')]
++  })
++  mount(<AiNotesSection />)
++  await flush()
++  const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
++  expect(groups[1]?.querySelector('h4')?.textContent).toBe('分歧报告')
++  const divItem = groups[1]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
++  expect(divItem?.textContent).toContain('裁决') // 组内条目头 role 标签仍在
++})
++
+ it('只读断言：分节内无任何写交互元素（无 input/textarea/select——INV-19）', async () => {
+   listByPaper.mockResolvedValue({ ok: true, data: [note('a1', 'first-read', 'Q1')] })
+   mount(<AiNotesSection />)
+diff --git a/tests/unit/renderer/lineage-side-panel.test.tsx b/tests/unit/renderer/lineage-side-panel.test.tsx
+index 55454b3..6cf5fee 100644
+--- a/tests/unit/renderer/lineage-side-panel.test.tsx
++++ b/tests/unit/renderer/lineage-side-panel.test.tsx
+@@ -285,10 +285,12 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人
+   expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
+   // 区2 核心 idea
+   expect(q('[data-testid="lineage-side-idea"]')?.textContent).toContain('核心思想甲')
+-  // 区3 AI 分节：role 组中文标签+七问分色单源
+-  const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-role]') ?? [])
+-  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'adjudicate'])
+-  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['一读', '裁决'])
++  // 区3 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
++  const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-question]') ?? [])
++  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
++  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问', '分歧报告'])
++  expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('一审')
++  expect(q('[data-ai-note-id="c1"]')?.textContent).toContain('裁决')
+   const dot = q('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
+   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
+   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('quote-a1')

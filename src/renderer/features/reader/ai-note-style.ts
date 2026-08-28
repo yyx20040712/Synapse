@@ -36,12 +36,12 @@ export const QUESTION_LABEL: Record<AiNoteQuestion, string> = {
   divergence: '分歧报告'
 }
 
-/** role 三组中文标签（分节呈现） */
+/** role 三组中文标签（组内条目分段标注——呈现轴转置 2026-08-28 缺陷 F：一审/二审/裁决） */
 export const ROLE_LABEL: Record<AiNoteRole, string> = {
-  'first-read': '一读',
-  'second-read': '二读',
+  'first-read': '一审',
+  'second-read': '二审',
   adjudicate: '裁决'
 }
 
-/** role 呈现序（一读→二读→裁决；与 AI_NOTE_ROLES 枚举序一致） */
+/** role 呈现序（一审→二审→裁决；与 AI_NOTE_ROLES 枚举序一致） */
 export const ROLE_ORDER: readonly AiNoteRole[] = AI_NOTE_ROLES

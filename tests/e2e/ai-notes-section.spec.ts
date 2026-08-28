@@ -128,8 +128,12 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘�
   // 导入（真 07 导入器→真 DB）：三桶 toast+分节渲染真实文本（idle 稳态）
   await importBtn.click()
   await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
-  await expect(win.getByRole('heading', { name: '一读' })).toBeVisible()
-  await expect(win.getByRole('heading', { name: '裁决' })).toBeVisible()
+  await expect(win.getByRole('heading', { name: '第一问' })).toBeVisible()
+  await expect(win.getByRole('heading', { name: '分歧报告' })).toBeVisible()
+  // 组内条目头 role 标签（转置锚：条目文本含一审/裁决——与页码同 span 故用包含匹配）
+  const groupedItems = win.locator('[data-testid="ai-note-groups"] [data-ai-note-id]')
+  await expect(groupedItems.first()).toContainText('一审')
+  await expect(groupedItems.nth(1)).toContainText('裁决')
   await expect(win.getByText('AI 一读笔记正文内容（e2e 真实文本锚）')).toBeVisible({ timeout: 10_000 })
   await expect(win.getByText('两读者对样本量的分歧评估')).toBeVisible()
   await expect(win.getByTestId('ai-status-line')).toHaveCount(0) // idle：稳态无状态行

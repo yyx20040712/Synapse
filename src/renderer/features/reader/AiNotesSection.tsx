@@ -6,10 +6,10 @@
  * ── 行为层 ──
  * - 并入 ReaderNotesPanel 下部分节（C-03 预留位）；面板 props 不动——本组件
  *   经 useActiveTab 自取 paperId（同 C-03 防双源）
- * - 分节显示（ADR-0015 §3 N2 渲染面）：role 分组（一读/二读/裁决——
- *   AiNoteGroupList+ai-note-style 单源）×组内 question 条目；条目=锚定段
- *   引用块+content_md 纯文本（textarea 级呈现——负面清单红线，md 不渲染只
- *   展示）；**只读**——零写路径（INV-19，v1 无编辑/删除）
+ * - 分节显示（ADR-0015 §3 N2 渲染面）：question 分组（七问+分歧报告独立
+ *   组——呈现轴转置 2026-08-28 缺陷 F，AiNoteGroupList+ai-note-style 单源）
+ *   ×组内条目按 role 分段标注（一审/二审/裁决）；条目=锚定段引用块+content_md
+ *   纯文本（textarea 级呈现，md 不渲染——负面清单红线）；**只读**零写路径（INV-19）
  * - 「AI 正在读」状态行+「AI 读文献」按钮（用户点击=手动激活——D2b）：
  *   按钮经 ai-sensor/request-read 写 job（AI-06 通道）；状态行按需轮询
  *   **ai-sensor/observe**（主控裁决方向 B，2026-08-27：status+per-paper
@@ -56,7 +56,7 @@
  *   notes.store 零触碰（AI 数据面全归 ai-notes.store）
  *
  * ── 生命周期层 ──
- * - 预留：分节折叠记忆（v1 不做）；divergence 独立组（v1 随裁决组呈现）
+ * - 预留：分节折叠记忆（v1 不做）；divergence 独立组已随呈现轴转置兑现
  * - 不做：AI 笔记编辑/删除（INV-19 只读）；md 渲染；自动导入（手动按钮保持
  *   D2b 手动激活语义）
  *

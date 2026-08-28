@@ -285,10 +285,12 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人�
   expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
   // 区2 核心 idea
   expect(q('[data-testid="lineage-side-idea"]')?.textContent).toContain('核心思想甲')
-  // 区3 AI 分节：role 组中文标签+七问分色单源
-  const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-role]') ?? [])
-  expect(groups.map((g) => g.getAttribute('data-role'))).toEqual(['first-read', 'adjudicate'])
-  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['一读', '裁决'])
+  // 区3 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
+  const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-question]') ?? [])
+  expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
+  expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问', '分歧报告'])
+  expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('一审')
+  expect(q('[data-ai-note-id="c1"]')?.textContent).toContain('裁决')
   const dot = q('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('quote-a1')
