@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T11:18:00.8472069Z",
+    "generatedAt":  "2026-08-28T11:48:06.0110307Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -364,6 +364,10 @@
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
                       "sha256":  "f3775f6ec2ee7ceb60c1a101c33b9d76061533e27ccd2b9746fdb006ec0d1fa7"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
+                      "sha256":  "e7364b3787649905cebbba06e4bb398599022512340648bca3c9d5c8807f8ed2"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",

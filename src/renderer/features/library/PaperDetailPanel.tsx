@@ -181,6 +181,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         <Row label="作者">{detail.authors.join('、')}</Row>
         <Row label="年份">{detail.year === null ? '' : String(detail.year)}</Row>
         <Row label="期刊">{detail.venue}</Row>
+        <Row label="被引">{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
         <Row label="来源">{SOURCE_LABEL[detail.source]}</Row>
         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
         <Row label="DOI">{detail.doi ?? ''}</Row>
