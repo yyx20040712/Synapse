@@ -14,11 +14,12 @@ import type {
   PaperSummary
 } from '../../../shared/models/paper'
 
-/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定） */
+/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定；决胜键=rowid 插入序
+ *  ——id=随机 uuid 不作决胜键，DESC 序后插在前/ASC 序先插在前） */
 export const ORDER_BY: Readonly<Record<LibrarySort, string>> = {
-  added_desc: 'p.added_at DESC, p.id DESC',
-  year_desc: 'p.year DESC, p.added_at DESC',
-  title_asc: 'p.title ASC, p.id ASC'
+  added_desc: 'p.added_at DESC, p.rowid DESC',
+  year_desc: 'p.year DESC, p.added_at DESC, p.rowid DESC',
+  title_asc: 'p.title ASC, p.rowid ASC'
 }
 
 /** 聚合列：标签/集合名用 char(31)（US 分隔符）串接，防名字本身含逗号 */

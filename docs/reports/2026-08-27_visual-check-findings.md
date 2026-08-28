@@ -70,6 +70,19 @@
   （三键全平=uuid 彩票——**多锚段同键为导入常态，触发面高于前四处**）
   ⑤corpus.assemble.ts:94 头注「repo 基础序同键兜底」与 repo 新序声明
   漂移（随④修）。
+- **六雷清扫收口（2026-08-28，主控追加第六雷=listAllIds）**：上列 ①~⑤
+  全修+⑥papers.repo.ts:217 listAllIds（`ORDER BY added_at DESC, id DESC`→
+  rowid——主控裁决追加：序直接进 manifest papers 数组（export.service:159/
+  corpus.export.service:316），同 added_at 平局抖序威胁 INV-17「同库重导
+  逐字节稳定」，批量导入同毫秒多篇=常态触发面）。修法统一=插入序决胜
+  rowid；orderAiNotes ④=删末级决胜三键全平 return 0（sort 稳定性+上游
+  repo 确定序）。TDD 首红 7/7+1、变异红证 R1~R9 各恰中专属 it；审计=
+  scripts/audits/sweep-order-*（门一 0B/2W/4N PASS）。
+- **第七雷候选（清扫单元门一 W2 复核产出，低频另立单元待排）**：⑦
+  annotations.repo `ORDER BY page, sort_key`（同页同 offset 平局——
+  buildSortKey 派生键无唯一约束）⑧collections.repo `ORDER BY position`
+  （导入 position 撞号）。触发面低、不进 INV-17 字节面——仿本发现先例
+  另立清扫单元处置。
 - 状态：**已修复收口**（`ORDER BY created_at, rowid` 两处+回归锁新测试
   +红首证/双变异红证；verify 87 文件 621 用例 EXIT=0 亲验+locks 133；
   提交见 git log [locked-change]，审计三件=scripts/audits/ainotes-order-*；
@@ -145,7 +158,9 @@
 ## 3. 挂账联动
 
 - 迁移开工书 §2 五项挂账：**已清账**（M0 达成）。
-- 待办排期索引：ENR-01/02 实施（registry open 2）→ M1 试点批（语料已
-  就位）→ P7-F 工单化（须用户在场）→ 脉络打磨小单元（发现 4+6，可并
-  发现 5 若分类来源裁决）→ P7-D 立项（需求 A，风格锚两处）→ 五雷清扫
-  （发现 3 清单）。
+- 待办排期索引（2026-08-28 更新）：~~ENR-01/02 实施~~ **已完成收口**（提交
+  6e5a3b2+17c6c78，106 工单 open 0）→~~五雷清扫~~ **已完成收口**（六雷
+  =发现 3 清单五处+主控追加 listAllIds；见发现 3 六雷收口注记；第七雷候选
+  两处低频另立）→ M1 试点批（语料已就位）→ P7-F 工单化（须用户在场）→
+  脉络打磨小单元（发现 4+6，可并发现 5 若分类来源裁决）→ P7-D 立项
+  （需求 A，风格锚两处）。

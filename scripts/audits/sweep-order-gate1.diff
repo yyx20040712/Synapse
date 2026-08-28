@@ -1,0 +1,420 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 1ea00a1..26222c3 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T00:32:21.9119764Z",
++    "generatedAt":  "2026-08-28T01:07:23.8039470Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -213,13 +213,17 @@
+                       "path":  "tests/unit/db/repos/collections.repo.test.ts",
+                       "sha256":  "e1c9c7126092054687ba2afa87a4c7c10174e9cf31866be4b4159112cdd56d42"
+                   },
++                  {
++                      "path":  "tests/unit/db/repos/lineage.repo.order.test.ts",
++                      "sha256":  "b8708db5e2148f07e4cfb224f4613028602bf566a9efde47dc3e72c52c720870"
++                  },
+                   {
+                       "path":  "tests/unit/db/repos/notes.repo.test.ts",
+-                      "sha256":  "63220b9ee70ec3e9eb288fc3725b2d105aa926b159f3c967c9804ba9226d925b"
++                      "sha256":  "6bcd70502d0fd0fd243c64a05de59fdd85a6fc6de0d59f79f6cfa0891d6f8210"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
+-                      "sha256":  "9a6f3e5101c30491c90165ccfb782092a4c287ef00f726ed65b216ab197108f6"
++                      "sha256":  "66a0a103c1c9927e04b79e016933814ca54f7c9a52b9fddf4c5c96ea2e3d8df8"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
+@@ -427,7 +431,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.assemble.test.ts",
+-                      "sha256":  "e5292124f692565127898ecf853cd430ab63d23c989f34d53e45ac22b5349dd1"
++                      "sha256":  "f835841ef90bdf78c3b56f906d7f90dbee75dadff0aa97ac28af66007d366aec"
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.export.test.ts",
+diff --git a/src/main/db/repos/lineage.repo.ts b/src/main/db/repos/lineage.repo.ts
+index a746e4c..83f9d61 100644
+--- a/src/main/db/repos/lineage.repo.ts
++++ b/src/main/db/repos/lineage.repo.ts
+@@ -77,8 +77,8 @@
+  * - upsert 语义：ON CONFLICT(id) DO UPDATE（created_at 首插保留，
+  *   updated_at 刷新）；UNIQUE(from_node,to_node) 冲突 DDL 抛错——
+  *   应用层中文守卫在 service（repo 保持薄，异常原样上抛）
+- * - listGraph 基础序=created_at,id 确定性兜底（AI-01 同哲学；业务布局
+- *   序归 LG-02）
++ * - listGraph 基础序=created_at,rowid 确定性兜底（插入序决胜——id=随机 uuid
++ *   不作平局决胜键，uuid 彩票防雷；AI-01 同哲学；业务布局序归 LG-02）
+  * - 测试：tests/unit/services/lineage-import.test.ts [受锁新增]——
+  *   draft 合法全过替换重灌/幽灵 paperId 拦截/多父边拒绝/成环拒绝/
+  *   自环拒绝/zod 非法字段行级 reason/空 draft=空图合法/重复边
+@@ -101,7 +101,7 @@ export interface LineageRepo {
+   /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service） */
+   upsertEdge(input: LineageEdgeUpsert): LineageEdge
+   removeEdge(id: string): number
+-  /** 全图单读（nodes+edges；created_at,id 确定性序——库空=空数组合法态） */
++  /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态） */
+   listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
+   /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
+   clearGraph(): void
+@@ -174,8 +174,8 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
+   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
+   const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
+   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
+-  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, id`)
+-  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, id`)
++  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
++  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
+   const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
+   const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
+ 
+diff --git a/src/main/db/repos/notes.repo.ts b/src/main/db/repos/notes.repo.ts
+index 91c93cc..8c39c19 100644
+--- a/src/main/db/repos/notes.repo.ts
++++ b/src/main/db/repos/notes.repo.ts
+@@ -85,10 +85,11 @@ export function createNotesRepo(db: SqliteDb): NotesRepo {
+      WHERE notes_fts MATCH ? ORDER BY notes_fts.rank`
+   )
+   // trigram 分词器查询串须 ≥3 字符；更短（如 2 字中文"漏损"）用 LIKE 兜底
++  // （平局决胜=rowid 插入序，DESC 序后插在前——id=随机 uuid 不作决胜键）
+   const selectByLike = db.prepare(
+     `SELECT id, paper_id, title, content_md, created_at, updated_at FROM notes
+      WHERE title LIKE ? ESCAPE '\\' OR content_md LIKE ? ESCAPE '\\'
+-     ORDER BY updated_at DESC`
++     ORDER BY updated_at DESC, rowid DESC`
+   )
+ 
+   /** 按 id 回读刚写入的行；事务内紧跟写入，读不到即数据损坏，直接抛错 */
+diff --git a/src/main/db/repos/papers.queries.ts b/src/main/db/repos/papers.queries.ts
+index a2a0087..699f203 100644
+--- a/src/main/db/repos/papers.queries.ts
++++ b/src/main/db/repos/papers.queries.ts
+@@ -14,11 +14,12 @@ import type {
+   PaperSummary
+ } from '../../../shared/models/paper'
+ 
+-/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定） */
++/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定；决胜键=rowid 插入序
++ *  ——id=随机 uuid 不作决胜键，DESC 序后插在前/ASC 序先插在前） */
+ export const ORDER_BY: Readonly<Record<LibrarySort, string>> = {
+-  added_desc: 'p.added_at DESC, p.id DESC',
+-  year_desc: 'p.year DESC, p.added_at DESC',
+-  title_asc: 'p.title ASC, p.id ASC'
++  added_desc: 'p.added_at DESC, p.rowid DESC',
++  year_desc: 'p.year DESC, p.added_at DESC, p.rowid DESC',
++  title_asc: 'p.title ASC, p.rowid ASC'
+ }
+ 
+ /** 聚合列：标签/集合名用 char(31)（US 分隔符）串接，防名字本身含逗号 */
+diff --git a/src/main/db/repos/papers.repo.ts b/src/main/db/repos/papers.repo.ts
+index eb8d3e7..6096af4 100644
+--- a/src/main/db/repos/papers.repo.ts
++++ b/src/main/db/repos/papers.repo.ts
+@@ -13,7 +13,7 @@
+  * - searchSummaries：FTS（≥3 字 escapeFtsQuery）/短串 LIKE 兜底（只搜
+  *   title/authors_json，锁定合约见 papers.repo.test）；过滤/排序/total 语义
+  *   同锁定测试；listSummariesByIds 保序跳缺；listAllIds=全库 id（added_at
+- *   DESC——corpusSet 全库取数，C-02）
++ *   DESC，rowid 决胜——corpusSet 全库取数序稳定=INV-17 同库重导出幂等，C-02）
+  *
+  * ── 架构层 ──
+  * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量；
+@@ -214,7 +214,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+       })
+     },
+     listAllIds() {
+-      const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, id DESC').all() as Array<{ id: string }>
++      const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, rowid DESC').all() as Array<{ id: string }>
+       return rows.map((r) => r.id)
+     },
+     detailById(id) {
+diff --git a/src/main/services/export_/corpus.assemble.ts b/src/main/services/export_/corpus.assemble.ts
+index ae33268..18231dd 100644
+--- a/src/main/services/export_/corpus.assemble.ts
++++ b/src/main/services/export_/corpus.assemble.ts
+@@ -93,8 +93,9 @@ function questionOrder(q: AiNoteQuestion): number {
+ 
+ /**
+  * ai_notes 行 → 装配条目（AI-03 延展，R12 单源内）：排序=role（一读→二读→
+- * 裁决）→question（Q1..Q7，divergence 殿后）→createdAt→id（repo 基础序同键
+- * 兜底）；content 组装=`question: 内容`（question 标记入段——INTERFACE.md 声明）。
++ * 裁决）→question（Q1..Q7，divergence 殿后）→createdAt→（三键全平=0，稳定
++ * 排序保持输入序=repo rowid 确定序；id 字典序决胜已删——uuid 彩票）；
++ * content 组装=`question: 内容`（question 标记入段——INTERFACE.md 声明）。
+  */
+ export function orderAiNotes(notes: readonly AiNote[]): OrderedAiNoteEntry[] {
+   return [...notes]
+@@ -103,7 +104,8 @@ export function orderAiNotes(notes: readonly AiNote[]): OrderedAiNoteEntry[] {
+       if (roleDelta !== 0) return roleDelta
+       const qDelta = questionOrder(a.question) - questionOrder(b.question)
+       if (qDelta !== 0) return qDelta
+-      return a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1
++      if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1
++      return 0
+     })
+     .map((n) => ({
+       source: n.model,
+diff --git a/tests/unit/db/repos/lineage.repo.order.test.ts b/tests/unit/db/repos/lineage.repo.order.test.ts
+new file mode 100644
+index 0000000..8acece4
+--- /dev/null
++++ b/tests/unit/db/repos/lineage.repo.order.test.ts
+@@ -0,0 +1,66 @@
++/**
++ * [排序雷清扫回归锁] lineage 列表序确定性 —— 同 created_at 平局按插入序（rowid）决胜。
++ * 背景（同型雷清单=docs/reports/2026-08-27_visual-check-findings.md 发现 3）：
++ * listNodes/listEdges 曾 `ORDER BY created_at, id`——id=随机 uuid 作平局决胜
++ * 键 → 顺序=uuid 彩票（同毫秒打戳平局在写入面为常态）。
++ * 合约：`ORDER BY created_at, rowid`——rowid=SQLite 插入序（表非 WITHOUT
++ * ROWID、TEXT 主键非 rowid 别名、零 VACUUM——先例单元三门已核），同库同序
++ * 确定化；「确定性兜底非业务序」语义维持（业务布局序归布局层不变）。
++ *
++ * 夹具法：db.prepare 直插（绕过 repo 的 id/时间戳生成——平局夹具单源），
++ * created_at 刻意同值、id 刻意与插入序字典序相反（先插 'z-*' 后插 'a-*'）
++ * ——对 id 决胜的旧实现必红（BINARY 字典序），对 rowid 决胜必绿。
++ *
++ * 激活方式（ADR-0017）：always-active 裸 describe，不经 guardedDescribe——
++ * 缺陷回归锁恒开（恒绿和随机绿一样危险）。
++ */
++import { beforeEach, describe, expect, it } from 'vitest'
++import { createLineageRepo } from '../../../../src/main/db/repos/lineage.repo'
++import type { SqliteDb } from '../../../../src/main/db/connection'
++import { createTestDb } from '../../../utils/fixtures'
++
++describe('lineage.repo 列表序确定性（排序雷清扫：同 created_at 平局=rowid 插入序决胜）', () => {
++  let db: SqliteDb
++  let repo: ReturnType<typeof createLineageRepo>
++
++  /** 直插一行 lineage_nodes（paper_id 可空=纯主题节点——无需 papers 夹具） */
++  const seedNode = (id: string, createdAt: string): void => {
++    db.prepare(
++      `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, created_at, updated_at)
++       VALUES (?, NULL, ?, '', NULL, NULL, NULL, ?, ?)`
++    ).run(id, `节点-${id}`, createdAt, createdAt)
++  }
++
++  /** 直插一行 lineage_edges（端点互异避 UNIQUE(from_node,to_node) 冲突） */
++  const seedEdge = (id: string, from: string, to: string, createdAt: string): void => {
++    db.prepare(
++      `INSERT INTO lineage_edges (id, from_node, to_node, label, created_at, updated_at)
++       VALUES (?, ?, ?, '', ?, ?)`
++    ).run(id, from, to, createdAt, createdAt)
++  }
++
++  beforeEach(() => {
++    db = createTestDb()
++    repo = createLineageRepo(db)
++    const t = '2026-08-27T00:00:00.000Z'
++    // 插入序：z-first → a-second → n-1 → n-2；全部同 created_at，id 字典序与
++    // 插入序刻意相反（探针对 z-first/a-second）
++    seedNode('z-first', t)
++    seedNode('a-second', t)
++    seedNode('n-1', t)
++    seedNode('n-2', t)
++    // 边探针对：z-edge 先插、a-edge 后插（同 created_at、id 反字典序）
++    seedEdge('z-edge', 'n-1', 'n-2', t)
++    seedEdge('a-edge', 'n-2', 'n-1', t)
++  })
++
++  it('listGraph().nodes：同 created_at 平局按插入序决胜（非 id 字典序）', () => {
++    const { nodes } = repo.listGraph()
++    expect(nodes.map((n) => n.id)).toEqual(['z-first', 'a-second', 'n-1', 'n-2'])
++  })
++
++  it('listGraph().edges：同 created_at 平局按插入序决胜（非 id 字典序）', () => {
++    const { edges } = repo.listGraph()
++    expect(edges.map((e) => e.id)).toEqual(['z-edge', 'a-edge'])
++  })
++})
+diff --git a/tests/unit/db/repos/notes.repo.test.ts b/tests/unit/db/repos/notes.repo.test.ts
+index 21bf9ab..895dd2b 100644
+--- a/tests/unit/db/repos/notes.repo.test.ts
++++ b/tests/unit/db/repos/notes.repo.test.ts
+@@ -1,4 +1,4 @@
+-import { beforeEach, expect, it } from 'vitest'
++import { beforeEach, describe, expect, it } from 'vitest'
+ import { createNotesRepo } from '../../../../src/main/db/repos/notes.repo'
+ import type { SqliteDb } from '../../../../src/main/db/connection'
+ import { createTestDb } from '../../../utils/fixtures'
+@@ -42,3 +42,37 @@ guardedDescribe('SR-DB-03', 'notes.repo —— 笔记 upsert 与 FTS', () => {
+     expect(repo.search('不存在词')).toHaveLength(0)
+   })
+ })
++
++/** 排序雷清扫回归锁：search 短串 LIKE 兜底路径（selectByLike）同 updated_at
++ *  平局=rowid 插入序决胜（DESC 序后插在前——「最新优先」列语义）。夹具=
++ *  db.prepare 直插两行（绕过 repo 的 id/时间戳生成）、同 updated_at、id 反
++ *  字典序于插入序——对无决胜键的现状（引擎扫描序=rowid ASC）必红。
++ *  FTS rank 序（≥3 字路径）不在本锁面。always-active 裸 describe（ADR-0017）。 */
++describe('notes.repo search LIKE 兜底排序确定性（排序雷清扫）', () => {
++  let db: SqliteDb
++  let repo: ReturnType<typeof createNotesRepo>
++
++  beforeEach(() => {
++    db = createTestDb()
++    repo = createNotesRepo(db)
++  })
++
++  it('selectByLike：同 updated_at 平局按插入序决胜（rowid DESC 后插在前）', () => {
++    db.prepare(
++      `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('p-1','a.pdf','s-1','t','t')`
++    ).run()
++    db.prepare(
++      `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('p-2','b.pdf','s-2','t','t')`
++    ).run()
++    const seed = (id: string, paperId: string): void => {
++      db.prepare(
++        `INSERT INTO notes (id, paper_id, title, content_md, created_at, updated_at)
++         VALUES (?, ?, '漏损笔记', '', '2026-08-27T00:00:00.000Z', '2026-08-27T00:00:00.000Z')`
++      ).run(id, paperId)
++    }
++    seed('z-first', 'p-1') // 先插
++    seed('a-second', 'p-2') // 后插；id 字典序与插入序刻意相反
++    const list = repo.search('漏损') // 2 字 → LIKE 兜底（trigram 要求 ≥3 字）
++    expect(list.map((n) => n.id)).toEqual(['a-second', 'z-first'])
++  })
++})
+diff --git a/tests/unit/db/repos/papers.repo.test.ts b/tests/unit/db/repos/papers.repo.test.ts
+index e531cc4..770b6b8 100644
+--- a/tests/unit/db/repos/papers.repo.test.ts
++++ b/tests/unit/db/repos/papers.repo.test.ts
+@@ -265,3 +265,49 @@ describe('SR2-ENR-01 applyEnrichment —— citedBy 独立参数真库落库', (
+     expect(bare?.citedByCountSource).toBeUndefined()
+   })
+ })
++
++/** 排序雷清扫回归锁：searchSummaries 同键平局决胜=rowid 插入序——added_desc/
++ *  year_desc 配 rowid DESC（后插在前，「最新优先」列语义）、title_asc 配
++ *  rowid ASC（先插在前）。夹具=两行全同业务键（title/year/added_at）、id 反
++ *  字典序于插入序（对 id 决胜/无决胜键的现状必红）。year_desc 用 year 过滤
++ *  形状触发索引搜索计划（无过滤形状现状平局序恰好同向——不可红）。
++ *  always-active 裸 describe（ADR-0017）。 */
++describe('papers.repo searchSummaries 排序决胜键确定性（排序雷清扫）', () => {
++  let db: SqliteDb
++  let repo: ReturnType<typeof createPapersRepo>
++
++  beforeEach(() => {
++    db = createTestDb()
++    repo = createPapersRepo(db)
++  })
++
++  /** 插入序 z-first → a-second；title/year/added_at 全同，id 反字典序 */
++  const seedTiePair = (): void => {
++    const tie = { title: '同键题', year: 2024, added_at: '2026-03-01T00:00:00Z' }
++    repo.insert(row({ id: 'z-first', sha256: 'sha-z', ...tie }))
++    repo.insert(row({ id: 'a-second', sha256: 'sha-a', ...tie }))
++  }
++
++  it('added_desc：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）', () => {
++    seedTiePair()
++    const r = repo.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50 })
++    expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])
++  })
++
++  it('year_desc：year+added_at 全平=插入序决胜（rowid DESC 第三键）', () => {
++    seedTiePair()
++    const r = repo.searchSummaries({ sort: 'year_desc', year: 2024, offset: 0, limit: 50 })
++    expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])
++  })
++
++  it('title_asc：同 title 平局=插入序决胜（rowid ASC 先插在前，非 id 字典序）', () => {
++    seedTiePair()
++    const r = repo.searchSummaries({ sort: 'title_asc', offset: 0, limit: 50 })
++    expect(r.items.map((i) => i.id)).toEqual(['z-first', 'a-second'])
++  })
++
++  it('listAllIds：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）——INV-17 同库重导出稳定', () => {
++    seedTiePair()
++    expect(repo.listAllIds()).toEqual(['a-second', 'z-first'])
++  })
++})
+diff --git a/tests/unit/services/corpus.assemble.test.ts b/tests/unit/services/corpus.assemble.test.ts
+index 96ad4e0..7e9acc3 100644
+--- a/tests/unit/services/corpus.assemble.test.ts
++++ b/tests/unit/services/corpus.assemble.test.ts
+@@ -6,7 +6,7 @@
+  * 落盘）/ipc corpus·corpusSet（取消=CANCELLED/全库写盘/空库 NOT_FOUND）。
+  * ADR-0011 v1.1 验收口径的机器锚（front-matter 无 exportedAt/幂等逐字节）。
+  */
+-import { expect, it } from 'vitest'
++import { describe, expect, it } from 'vitest'
+ import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+@@ -14,11 +14,13 @@ import {
+   assembleCorpusMd,
+   CORPUS_USER_PREFIX,
+   corpusAiPrefix,
++  orderAiNotes,
+   type CorpusAssembleInput
+ } from '../../../src/main/services/export_/corpus.assemble'
+ import { createExportService } from '../../../src/main/services/export_/export.service'
+ import { createExportIpc } from '../../../src/main/ipc/export_'
+ import type { Repos } from '../../../src/main/db/repos'
++import type { AiNote } from '../../../src/shared/models/ai-note'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+ import type { Annotation } from '../../../src/shared/models/annotation'
+ import type { Note } from '../../../src/shared/models/note'
+@@ -344,7 +346,7 @@ guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus·corpusSet 通道', () =>
+   it('corpusSet 取消（pickFolder null）→CANCELLED；空库（entries 0）→NOT_FOUND', async () => {
+     const cancelled = stubDeps({ folder: null })
+     await expect(
+-      createExportIpc(cancelled.deps as never).corpusSet({})
++      createExportIpc(cancelled.deps as never).corpusSet({ paperId: 'p-1' })
+     ).rejects.toThrow('已取消')
+     const empty = stubDeps()
+     ;(empty.deps.services.export_ as { buildCorpusSet: () => Promise<unknown> }).buildCorpusSet =
+@@ -352,3 +354,48 @@ guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus·corpusSet 通道', () =>
+     await expect(createExportIpc(empty.deps as never).corpusSet({})).rejects.toThrow('没有可导出的文献')
+   })
+ })
++
++/** 排序雷清扫回归锁：orderAiNotes 平局决胜——三键全平（role/question/
++ *  createdAt 同）return 0=稳定排序（ES2019+）保持输入序（输入=repo
++ *  listByPaper 的 rowid 确定序）；id 字典序决胜已删（id=随机 uuid=彩票）。
++ *  主键序（role→question→createdAt）一并上锁——比较器改动面全锁。
++ *  always-active 裸 describe（ADR-0017）。 */
++describe('orderAiNotes 排序确定性（排序雷清扫）', () => {
++  const note = (id: string, content: string): AiNote => ({
++    id,
++    paperId: 'p-1',
++    annotationId: null,
++    role: 'first-read',
++    question: 'Q1',
++    model: 'm',
++    quoteText: '',
++    prefixText: '',
++    suffixText: '',
++    anchorPage: null,
++    contentMd: content,
++    createdAt: '2026-08-27T00:00:00.000Z',
++    updatedAt: '2026-08-27T00:00:00.000Z'
++  })
++
++  it('三键全平：保持输入序（稳定排序），非 id 字典序', () => {
++    const out = orderAiNotes([note('z-first', '第一条'), note('a-second', '第二条')])
++    expect(out.map((e) => e.content)).toEqual(['Q1: 第一条', 'Q1: 第二条'])
++  })
++
++  it('主键序：role→question→createdAt 逐级决胜（乱序入参重排）', () => {
++    const out = orderAiNotes([
++      { ...note('x-1', '裁决'), role: 'adjudicate', question: 'divergence' },
++      { ...note('x-2', '二读'), role: 'second-read', question: 'Q3' },
++      { ...note('x-3', '晚戳'), role: 'first-read', question: 'Q1' },
++      { ...note('x-4', '一读Q2'), role: 'first-read', question: 'Q2' },
++      { ...note('x-5', '早戳'), role: 'first-read', question: 'Q1', createdAt: '2026-08-26T00:00:00.000Z' }
++    ])
++    expect(out.map((e) => e.content)).toEqual([
++      'Q1: 早戳',
++      'Q1: 晚戳',
++      'Q2: 一读Q2',
++      'Q3: 二读',
++      'divergence: 裁决'
++    ])
++  })
++})

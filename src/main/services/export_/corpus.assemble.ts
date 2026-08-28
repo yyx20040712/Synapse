@@ -93,8 +93,9 @@ function questionOrder(q: AiNoteQuestion): number {
 
 /**
  * ai_notes 行 → 装配条目（AI-03 延展，R12 单源内）：排序=role（一读→二读→
- * 裁决）→question（Q1..Q7，divergence 殿后）→createdAt→id（repo 基础序同键
- * 兜底）；content 组装=`question: 内容`（question 标记入段——INTERFACE.md 声明）。
+ * 裁决）→question（Q1..Q7，divergence 殿后）→createdAt→（三键全平=0，稳定
+ * 排序保持输入序=repo rowid 确定序；id 字典序决胜已删——uuid 彩票）；
+ * content 组装=`question: 内容`（question 标记入段——INTERFACE.md 声明）。
  */
 export function orderAiNotes(notes: readonly AiNote[]): OrderedAiNoteEntry[] {
   return [...notes]
@@ -103,7 +104,8 @@ export function orderAiNotes(notes: readonly AiNote[]): OrderedAiNoteEntry[] {
       if (roleDelta !== 0) return roleDelta
       const qDelta = questionOrder(a.question) - questionOrder(b.question)
       if (qDelta !== 0) return qDelta
-      return a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1
+      if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1
+      return 0
     })
     .map((n) => ({
       source: n.model,

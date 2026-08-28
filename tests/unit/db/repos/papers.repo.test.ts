@@ -265,3 +265,49 @@ describe('SR2-ENR-01 applyEnrichment —— citedBy 独立参数真库落库', (
     expect(bare?.citedByCountSource).toBeUndefined()
   })
 })
+
+/** 排序雷清扫回归锁：searchSummaries 同键平局决胜=rowid 插入序——added_desc/
+ *  year_desc 配 rowid DESC（后插在前，「最新优先」列语义）、title_asc 配
+ *  rowid ASC（先插在前）。夹具=两行全同业务键（title/year/added_at）、id 反
+ *  字典序于插入序（对 id 决胜/无决胜键的现状必红）。year_desc 用 year 过滤
+ *  形状触发索引搜索计划（无过滤形状现状平局序恰好同向——不可红）。
+ *  always-active 裸 describe（ADR-0017）。 */
+describe('papers.repo searchSummaries 排序决胜键确定性（排序雷清扫）', () => {
+  let db: SqliteDb
+  let repo: ReturnType<typeof createPapersRepo>
+
+  beforeEach(() => {
+    db = createTestDb()
+    repo = createPapersRepo(db)
+  })
+
+  /** 插入序 z-first → a-second；title/year/added_at 全同，id 反字典序 */
+  const seedTiePair = (): void => {
+    const tie = { title: '同键题', year: 2024, added_at: '2026-03-01T00:00:00Z' }
+    repo.insert(row({ id: 'z-first', sha256: 'sha-z', ...tie }))
+    repo.insert(row({ id: 'a-second', sha256: 'sha-a', ...tie }))
+  }
+
+  it('added_desc：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）', () => {
+    seedTiePair()
+    const r = repo.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50 })
+    expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])
+  })
+
+  it('year_desc：year+added_at 全平=插入序决胜（rowid DESC 第三键）', () => {
+    seedTiePair()
+    const r = repo.searchSummaries({ sort: 'year_desc', year: 2024, offset: 0, limit: 50 })
+    expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])
+  })
+
+  it('title_asc：同 title 平局=插入序决胜（rowid ASC 先插在前，非 id 字典序）', () => {
+    seedTiePair()
+    const r = repo.searchSummaries({ sort: 'title_asc', offset: 0, limit: 50 })
+    expect(r.items.map((i) => i.id)).toEqual(['z-first', 'a-second'])
+  })
+
+  it('listAllIds：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）——INV-17 同库重导出稳定', () => {
+    seedTiePair()
+    expect(repo.listAllIds()).toEqual(['a-second', 'z-first'])
+  })
+})

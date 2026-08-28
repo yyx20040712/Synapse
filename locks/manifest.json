@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T00:32:21.9119764Z",
+    "generatedAt":  "2026-08-28T01:16:50.6703541Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -214,12 +214,16 @@
                       "sha256":  "e1c9c7126092054687ba2afa87a4c7c10174e9cf31866be4b4159112cdd56d42"
                   },
                   {
+                      "path":  "tests/unit/db/repos/lineage.repo.order.test.ts",
+                      "sha256":  "b8708db5e2148f07e4cfb224f4613028602bf566a9efde47dc3e72c52c720870"
+                  },
+                  {
                       "path":  "tests/unit/db/repos/notes.repo.test.ts",
-                      "sha256":  "63220b9ee70ec3e9eb288fc3725b2d105aa926b159f3c967c9804ba9226d925b"
+                      "sha256":  "6bcd70502d0fd0fd243c64a05de59fdd85a6fc6de0d59f79f6cfa0891d6f8210"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "9a6f3e5101c30491c90165ccfb782092a4c287ef00f726ed65b216ab197108f6"
+                      "sha256":  "66a0a103c1c9927e04b79e016933814ca54f7c9a52b9fddf4c5c96ea2e3d8df8"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
@@ -427,7 +431,7 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
-                      "sha256":  "e5292124f692565127898ecf853cd430ab63d23c989f34d53e45ac22b5349dd1"
+                      "sha256":  "94c5c7b34f796064011ce8108160877cd14c80fc71f1555eaa500e122b843c51"
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",

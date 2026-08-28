@@ -85,10 +85,11 @@ export function createNotesRepo(db: SqliteDb): NotesRepo {
      WHERE notes_fts MATCH ? ORDER BY notes_fts.rank`
   )
   // trigram 分词器查询串须 ≥3 字符；更短（如 2 字中文"漏损"）用 LIKE 兜底
+  // （平局决胜=rowid 插入序，DESC 序后插在前——id=随机 uuid 不作决胜键）
   const selectByLike = db.prepare(
     `SELECT id, paper_id, title, content_md, created_at, updated_at FROM notes
      WHERE title LIKE ? ESCAPE '\\' OR content_md LIKE ? ESCAPE '\\'
-     ORDER BY updated_at DESC`
+     ORDER BY updated_at DESC, rowid DESC`
   )
 
   /** 按 id 回读刚写入的行；事务内紧跟写入，读不到即数据损坏，直接抛错 */

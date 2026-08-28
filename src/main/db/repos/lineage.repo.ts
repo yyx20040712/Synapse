@@ -77,8 +77,8 @@
  * - upsert 语义：ON CONFLICT(id) DO UPDATE（created_at 首插保留，
  *   updated_at 刷新）；UNIQUE(from_node,to_node) 冲突 DDL 抛错——
  *   应用层中文守卫在 service（repo 保持薄，异常原样上抛）
- * - listGraph 基础序=created_at,id 确定性兜底（AI-01 同哲学；业务布局
- *   序归 LG-02）
+ * - listGraph 基础序=created_at,rowid 确定性兜底（插入序决胜——id=随机 uuid
+ *   不作平局决胜键，uuid 彩票防雷；AI-01 同哲学；业务布局序归 LG-02）
  * - 测试：tests/unit/services/lineage-import.test.ts [受锁新增]——
  *   draft 合法全过替换重灌/幽灵 paperId 拦截/多父边拒绝/成环拒绝/
  *   自环拒绝/zod 非法字段行级 reason/空 draft=空图合法/重复边
@@ -101,7 +101,7 @@ export interface LineageRepo {
   /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service） */
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
   removeEdge(id: string): number
-  /** 全图单读（nodes+edges；created_at,id 确定性序——库空=空数组合法态） */
+  /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态） */
   listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
   /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
   clearGraph(): void
@@ -174,8 +174,8 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
   const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
-  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, id`)
-  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, id`)
+  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
+  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
   const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
   const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
 

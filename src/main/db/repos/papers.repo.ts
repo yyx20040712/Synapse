@@ -13,7 +13,7 @@
  * - searchSummaries：FTS（≥3 字 escapeFtsQuery）/短串 LIKE 兜底（只搜
  *   title/authors_json，锁定合约见 papers.repo.test）；过滤/排序/total 语义
  *   同锁定测试；listSummariesByIds 保序跳缺；listAllIds=全库 id（added_at
- *   DESC——corpusSet 全库取数，C-02）
+ *   DESC，rowid 决胜——corpusSet 全库取数序稳定=INV-17 同库重导出幂等，C-02）
  *
  * ── 架构层 ──
  * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量；
@@ -214,7 +214,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       })
     },
     listAllIds() {
-      const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, id DESC').all() as Array<{ id: string }>
+      const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, rowid DESC').all() as Array<{ id: string }>
       return rows.map((r) => r.id)
     },
     detailById(id) {

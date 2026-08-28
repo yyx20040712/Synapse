@@ -6,7 +6,7 @@
  * 落盘）/ipc corpus·corpusSet（取消=CANCELLED/全库写盘/空库 NOT_FOUND）。
  * ADR-0011 v1.1 验收口径的机器锚（front-matter 无 exportedAt/幂等逐字节）。
  */
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,11 +14,13 @@ import {
   assembleCorpusMd,
   CORPUS_USER_PREFIX,
   corpusAiPrefix,
+  orderAiNotes,
   type CorpusAssembleInput
 } from '../../../src/main/services/export_/corpus.assemble'
 import { createExportService } from '../../../src/main/services/export_/export.service'
 import { createExportIpc } from '../../../src/main/ipc/export_'
 import type { Repos } from '../../../src/main/db/repos'
+import type { AiNote } from '../../../src/shared/models/ai-note'
 import type { PaperDetail } from '../../../src/shared/models/paper'
 import type { Annotation } from '../../../src/shared/models/annotation'
 import type { Note } from '../../../src/shared/models/note'
@@ -350,5 +352,50 @@ guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus·corpusSet 通道', () =>
     ;(empty.deps.services.export_ as { buildCorpusSet: () => Promise<unknown> }).buildCorpusSet =
       async () => ({ entries: [], skipped: [] })
     await expect(createExportIpc(empty.deps as never).corpusSet({})).rejects.toThrow('没有可导出的文献')
+  })
+})
+
+/** 排序雷清扫回归锁：orderAiNotes 平局决胜——三键全平（role/question/
+ *  createdAt 同）return 0=稳定排序（ES2019+）保持输入序（输入=repo
+ *  listByPaper 的 rowid 确定序）；id 字典序决胜已删（id=随机 uuid=彩票）。
+ *  主键序（role→question→createdAt）一并上锁——比较器改动面全锁。
+ *  always-active 裸 describe（ADR-0017）。 */
+describe('orderAiNotes 排序确定性（排序雷清扫）', () => {
+  const note = (id: string, content: string): AiNote => ({
+    id,
+    paperId: 'p-1',
+    annotationId: null,
+    role: 'first-read',
+    question: 'Q1',
+    model: 'm',
+    quoteText: '',
+    prefixText: '',
+    suffixText: '',
+    anchorPage: null,
+    contentMd: content,
+    createdAt: '2026-08-27T00:00:00.000Z',
+    updatedAt: '2026-08-27T00:00:00.000Z'
+  })
+
+  it('三键全平：保持输入序（稳定排序），非 id 字典序', () => {
+    const out = orderAiNotes([note('z-first', '第一条'), note('a-second', '第二条')])
+    expect(out.map((e) => e.content)).toEqual(['Q1: 第一条', 'Q1: 第二条'])
+  })
+
+  it('主键序：role→question→createdAt 逐级决胜（乱序入参重排）', () => {
+    const out = orderAiNotes([
+      { ...note('x-1', '裁决'), role: 'adjudicate', question: 'divergence' },
+      { ...note('x-2', '二读'), role: 'second-read', question: 'Q3' },
+      { ...note('x-3', '晚戳'), role: 'first-read', question: 'Q1' },
+      { ...note('x-4', '一读Q2'), role: 'first-read', question: 'Q2' },
+      { ...note('x-5', '早戳'), role: 'first-read', question: 'Q1', createdAt: '2026-08-26T00:00:00.000Z' }
+    ])
+    expect(out.map((e) => e.content)).toEqual([
+      'Q1: 早戳',
+      'Q1: 晚戳',
+      'Q2: 一读Q2',
+      'Q3: 二读',
+      'divergence: 裁决'
+    ])
   })
 })
