@@ -1,98 +1,53 @@
 // b3: P7-F
 /**
- * [SR2-F-01] PageColumn —— 页列几何与懒渲染回收（工单：open / strong）
+ * [SR2-F-01] PageColumn —— 页列几何与懒渲染回收（工单：done / strong）
+ * [F-04 增补] 缩放中心锚（段⑥）：zoom 变化→盒重算→scrollTop 程序修正
+ * （(scrollTop+vh/2)/总高 比值保持，INV-33；程序性修正不发用户接管信号）；
+ * onReady 载荷=列宽基准（最宽页，fit-width 分母单源）；纯函数拆出
+ * page-column-geometry.ts（250 行预裁拆分预案——旧定义删除）。
  *
- * ── 行为层 ──（实现段预拆五段,每段独立可测可审）
- * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
+ * ── 行为层 ──（实现段预拆六段,每段独立可测可审）
+ * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady(列宽基准)→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
  * - 段②占位盒布局：高=pageSizes[no]×zoom；宽=列宽（最宽页×zoom 居中）；未渲染盒空白。
  * - 段③懒渲染窗口：视口±1 页真渲染（canvas+覆盖层经 renderPage）；离屏>2 页销毁；IntersectionObserver 占位盒驱动（INV-30：canvas 生命周期=渲染窗口绑定）。
  * - 段④层实例化分工：覆盖层（TextLayer/AnnotationLayer/AiAnnotationLayer）经 renderPage(no) 每渲染页一套（props 不变父层循环）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02；挂载位=可见首报告）。
  * - 段⑤双源机制：scrollRequest（reader.store setPage 默认 'to' 时 bump）变化→scrollToPage(no)（盒顶）；'none'（滚动回写）不 bump 不滚（INV-29）。
+ * - 段⑥缩放中心锚（F-04）：zoom prop 变化（就绪后）→盒高按缓存×新 zoom 重算→布局效应程序修正滚动容器 scrollTop（anchoredScrollTop 纯函数）；滚动位置镜像=容器 scroll 事件被动监听（程序/用户滚动皆覆盖）；修正属程序性 scrollTop 赋值，不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）。
  * - 布局态状态机：loading（尺寸未齐）→ready；每页 empty→rendering→rendered→recycling→empty；跨格：快速滚动（rendering 中滚出窗口→cancel→recycling）；zoom 变化（缓存×新 zoom 重算→窗口重评估，就绪后无 loading）。
  * - 内存断言：canvas 实例数≤渲染窗口+缓冲常量；快速滚动零泄漏。
  *
  * ── 接口层 ──
- * - props={doc,totalPages,zoom,renderWindow=1,recycleWindow=2,renderPage(no),onPageRender,onError,onReady,scrollRequest,onVisibleChange}；页盒布局+IO+回收调度+scrollToPage+页尺寸缓存单源。拆分/重构/受锁全清单=scripts/audits/p7f-ticketing-draft.md SR2-F-01 节（票面完整任务书）。
+ * - props={doc,totalPages,zoom,renderWindow=1,recycleWindow=2,scrollContainerRef?,renderPage(no),onPageRender,onError,onReady(列宽基准),scrollRequest,onVisibleChange}；页盒布局+IO+回收调度+scrollToPage+缩放锚+页尺寸缓存单源。拆分/重构/受锁全清单=scripts/audits/p7f-ticketing-draft.md SR2-F-01/04 节（票面完整任务书）。
  *
  * ── 架构层 ──
- * - 分层不动；零新依赖；INV-01 零触碰；INV-16 白名单迁移（eslint.config.js 受锁+[locked-change]+invariants 文本同步）；INV-29/30 双源区分+canvas 渲染窗口绑定两不变量随单登记。
+ * - 分层不动；零新依赖；INV-01 零触碰；INV-29/30 双源区分+canvas 渲染窗口绑定；INV-33 缩放中心保持（纯函数+布局效应，F-04 登记）。
  *
  * ── 生命周期层 ──
- * - 不做：页内偏移进度/虚拟滚动（全长真实占位）/旋转页/跨页选区。
+ * - 不做：页内偏移进度/虚拟滚动（全长真实占位）/旋转页/跨页选区/持续 fit 模式/手势 pinch。
  *
  * ── 文化层 ──
- * - 测试（裸 describe，page-column.test.tsx）：布局纯函数+渲染回收调度（桩 IO）+程序滚动；e2e 批 1=reader-text.spec 多页可见+INV-01 保持。完成后：npm run verify 绿 → 人工审查 git diff → 翻 registry
+ * - 测试（裸 describe，page-column.test.tsx）：几何纯函数（geometry 件直引）+渲染回收调度（桩 IO）+程序滚动+缩放锚修正；e2e 批 1=reader-text.spec 多页可见+INV-01 保持；收官链=reader-scroll.spec（F-04 注册文件）。完成后：npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import type { PDFDocumentProxy } from './PdfDocProvider'
 import { PdfPageCanvas } from './PdfPageCanvas'
 import type { PdfTextContent } from './PdfPageCanvas'
+import {
+  anchoredScrollTop,
+  clampPageToColumn,
+  columnTotalHeight,
+  columnWidth,
+  pageBoxHeight,
+  recycledPages,
+  windowPages,
+  type PageBoxSize
+} from './page-column-geometry'
 
-/** 页原始尺寸（pdf 用户空间，scale=1 基准——zoom 乘法在盒几何层） */
-export interface PageBoxSize {
-  width: number
-  height: number
-}
-
-/** 段①越界夹取：1 基页码夹 [1, totalPages]（scrollToPage 前哨，W-A） */
-export function clampPageToColumn(pageNo: number, totalPages: number): number {
-  return Math.min(Math.max(1, Math.floor(pageNo)), Math.max(1, totalPages))
-}
-
-/** 段②列宽：最宽页×zoom（floor——与 canvas CSS 尺寸同口径） */
-export function columnWidth(sizes: readonly PageBoxSize[], zoom: number): number {
-  return Math.floor(sizes.reduce((m, s) => Math.max(m, s.width), 0) * zoom)
-}
-
-/** 段②盒高：页原始高×zoom（floor） */
-export function pageBoxHeight(size: PageBoxSize, zoom: number): number {
-  return Math.floor(size.height * zoom)
-}
-
-/** 段③渲染窗口：可见页±renderWindow（夹 [1,totalPages]）；空可见=顶部引导窗口（首屏） */
-export function windowPages(visible: ReadonlySet<number>, totalPages: number, renderWindow: number): number[] {
-  const want = new Set<number>()
-  for (const v of visible) {
-    for (let d = -renderWindow; d <= renderWindow; d += 1) {
-      const no = v + d
-      if (no >= 1 && no <= totalPages) want.add(no)
-    }
-  }
-  if (want.size === 0 && totalPages > 0) {
-    for (let no = 1; no <= Math.min(renderWindow + 1, totalPages); no += 1) want.add(no)
-  }
-  return [...want].sort((a, b) => a - b)
-}
-
-/** 段③回收调度：已渲染页距任一可见页≤recycleWindow 才保留（离屏必回收——
- *  INV-30 canvas 生命周期=渲染窗口绑定） */
-export function recycledPages(rendered: ReadonlySet<number>, visible: ReadonlySet<number>, recycleWindow: number): Set<number> {
-  const keep = new Set<number>()
-  for (const p of rendered) {
-    for (const v of visible) {
-      if (Math.abs(p - v) <= recycleWindow) {
-        keep.add(p)
-        break
-      }
-    }
-  }
-  return keep
-}
-
-/** 视口中心最近页（1 基；F-03 滚动→页回写的几何前置——本单纯函数交付） */
-export function nearestPage(centerY: number, boxes: ReadonlyArray<{ top: number; height: number }>): number {
-  let best = 1
-  let bestDist = Infinity
-  boxes.forEach((b, i) => {
-    const inside = centerY >= b.top && centerY <= b.top + b.height
-    const d = inside ? -1 : Math.abs(centerY - (b.top + b.height / 2))
-    if (d < bestDist) {
-      bestDist = d
-      best = i + 1
-    }
-  })
-  return best
-}
+// 纯函数唯一实现已拆 page-column-geometry.ts（F-04 拆分预案）；此处再导出
+// nearestPage 维持 scroll-progress 既有 import 路径（单实现双出口，非复写）
+export { nearestPage } from './page-column-geometry'
+export type { PageBoxSize } from './page-column-geometry'
 
 /** 程序滚动请求（reader.store scrollRequest 的形状——INV-29 单口消费面） */
 export interface PageScrollRequest {
@@ -107,13 +62,16 @@ export function PageColumn(props: {
   zoom: number
   renderWindow?: number
   recycleWindow?: number
+  /** 段⑥：滚动容器 ref（缩放中心锚的 scrollTop 程序修正目标；缺省不修正） */
+  scrollContainerRef?: RefObject<HTMLDivElement | null>
   /** 段④：渲染窗口内每页的覆盖层装配（TextLayer/标注层/AI 层+SelectionLayer 挂载位） */
   renderPage(no: number): JSX.Element
   onPageRender(no: number, payload: PdfTextContent): void
   onError(msg: string): void
-  /** 段①：页列就绪（F-03 恢复链入口）；段⑤：程序滚动信号（'none' 不 bump）；
+  /** 段①：页列就绪（载荷=列宽基准：最宽页原始宽，fit-width 分母单源）；
+   *  段⑤：程序滚动信号（'none' 不 bump）；
    *  可见页上抛（SelectionLayer 锚定页挂载位消费——升序） */
-  onReady?(): void
+  onReady?(basisWidth: number): void
   scrollRequest?: PageScrollRequest | null
   onVisibleChange?(visiblePages: number[]): void
 }): JSX.Element {
@@ -133,9 +91,12 @@ export function PageColumn(props: {
   const [rendered, setRendered] = useState<Set<number>>(() => new Set())
   // 段①error 终态（W2 门一回炉）：管线失败→onError 上抛（INV-02）+不再 loading
   const [sizesError, setSizesError] = useState(false)
+  // 段⑥缩放中心锚：滚动位置镜像（容器 scroll 事件被动监听——程序/用户滚动皆覆盖）
+  const liveScrollTop = useRef(0)
+  const prevZoom = useRef(zoom)
 
   // 段①就绪管线：doc/totalPages 变化→逐页 getPage→view 尺寸数组（缓存单源）→占位全列
-  // →onReady；zoom 不入依赖（就绪后无 loading——缓存乘法非重取）
+  // →onReady(列宽基准)；zoom 不入依赖（就绪后无 loading——缓存乘法非重取）
   useEffect(() => {
     if (doc === null || totalPages <= 0) { setPageSizes(null); setSizesError(false); return }
     let cancelled = false
@@ -150,7 +111,7 @@ export function PageColumn(props: {
       }
       if (!cancelled) {
         setPageSizes(sizes)
-        onReadyRef.current?.()
+        onReadyRef.current?.(columnWidth(sizes, 1))
       }
     }
     // W2：失败不静默（防 unhandled rejection+永久 loading）；tab 级 toast/error 归消费方
@@ -205,6 +166,37 @@ export function PageColumn(props: {
     const no = clampPageToColumn(props.scrollRequest.page + 1, totalPages)
     rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`)?.scrollIntoView({ block: 'start' })
   }, [props.scrollRequest, pageSizes, totalPages])
+
+  // 段⑥滚动位置镜像：容器 scroll 事件被动监听（挂载即读初值——恢复链程序滚动亦派发事件）
+  useEffect(() => {
+    const el = props.scrollContainerRef?.current ?? null
+    if (el === null) return
+    const mirror = (): void => {
+      liveScrollTop.current = el.scrollTop
+    }
+    mirror()
+    el.addEventListener('scroll', mirror, { passive: true })
+    return () => el.removeEventListener('scroll', mirror)
+  }, [props.scrollContainerRef])
+
+  // 段⑥缩放中心锚（INV-33）：zoom 变化→盒重算（本提交已渲染新几何）→程序修正
+  // scrollTop（比值保持）；程序性赋值不经 wheel/keydown/pointerdown 接管链（INV-32）
+  useLayoutEffect(() => {
+    const el = props.scrollContainerRef?.current ?? null
+    if (pageSizes === null || el === null) {
+      prevZoom.current = zoom
+      return
+    }
+    if (prevZoom.current === zoom) return
+    const from = prevZoom.current
+    prevZoom.current = zoom
+    el.scrollTop = anchoredScrollTop(
+      liveScrollTop.current,
+      el.clientHeight,
+      columnTotalHeight(pageSizes, from),
+      columnTotalHeight(pageSizes, zoom)
+    )
+  }, [zoom, pageSizes, props.scrollContainerRef])
 
   if (sizesError) {
     return <div data-page-column="error" className="mx-auto w-full" aria-label="页列加载失败" />

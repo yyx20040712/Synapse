@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T06:22:13.6122557Z",
+    "generatedAt":  "2026-08-28T07:15:36.2618174Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -159,11 +159,11 @@
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
-                      "sha256":  "11315b2ea680a6ac98728d0c88b8ba5cad48ae439fa7d1591c03b7952e8e8e1e"
+                      "sha256":  "0af8fedb0962800cc838b8e889fcb80f9eda1b591bfc4bc676985183f997a2cc"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "3a3a846b8519fc291ae0759926aba671b7b5f8e5b262aa8bba1764454845c514"
+                      "sha256":  "1016906085aa21733e5d14a7c889d629af34bdbd913e0286df3f002bb9b36749"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -363,7 +363,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
-                      "sha256":  "e3791c5eda3ec8b8eb8cf2a9c673a5fb47bb5e3117d0bc0ed0c5373aaf4260d4"
+                      "sha256":  "f9d6a5d19cca72809a329caa88c5acad3260d8c97892f684082ac8aea8251066"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",

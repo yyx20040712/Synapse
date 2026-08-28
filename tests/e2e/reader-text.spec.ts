@@ -511,7 +511,7 @@ test('划选备注后渲染为整行色块（note kind 渲染存在性，INV-06�
 /** P7-A 交互基建依赖：快捷键两单 + 菜单 + 分隔条（v2 首批四单） */
 const P7A_DEPS = [...ANNOTATION_DEPS, 'SR2-KEY-01', 'SR2-KEY-02', 'SR2-UIK-01'] as const
 
-test('P7-A 交互：ctrl 滚轮缩放与侧栏分隔条拖拽（ReaderToolbar/ReaderShortcuts/SplitPane 集成）', async () => {
+test('P7-A 交互：侧栏分隔条拖拽（SplitPane 集成）', async () => {
   skipIfPending(P7A_DEPS)
   const title = '智慧水务 e2e 交互链文献'
   const { app } = await seedAndLaunch(title)
@@ -520,15 +520,8 @@ test('P7-A 交互：ctrl 滚轮缩放与侧栏分隔条拖拽（ReaderToolbar/Re
   await win.getByText(title).first().dblclick()
   await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
 
-  // ctrl+滚轮缩放：工具栏百分比读数 100% → 上滚一步 110%（ReaderShortcuts→store→
-  // ReaderToolbar 全链；data-testid 锚定——工具栏另有静态「100%」复位按钮，
-  // 文本类选择器会严格模式双命中）
-  const zoomLabel = win.getByTestId('zoom-label')
-  await expect(zoomLabel).toHaveText('100%')
-  await win.keyboard.down('Control')
-  await win.mouse.wheel(0, -120)
-  await win.keyboard.up('Control')
-  await expect(zoomLabel).toHaveText('110%')
+  // ctrl+滚轮缩放段已随 F-04 迁移 reader-scroll.spec 收官链（缩放中心锚组）——
+  // 方案切换=旧段删除；本测保留 SplitPane 拖拽面
 
   // 分隔条拖拽：pane 计算宽度随拖拽增大（SplitPane 指针会话 → 宽度状态 → 样式）
   const pane = win.getByTestId('split-pane-pane')

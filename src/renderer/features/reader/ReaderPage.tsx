@@ -11,6 +11,7 @@
  *   三口+keydown；页列就绪→恢复链滚回记忆页盒顶）；快捷键=容器滚动步（四键
  *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
  *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
+ * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
  *
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
@@ -79,9 +80,8 @@ export function ReaderPage(): JSX.Element {
     scrollRequest !== null && scrollRequest.paperId === paperId ? scrollRequest : null
   const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
   const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
-  // 可见页集合（PageColumn 上抛；锚定页=首报告——fitWidth 基准页）
-  const [anchorPages, setAnchorPages] = useState<number[]>([])
-  const anchorPage = anchorPages[0] ?? null
+  // F-04 列宽基准：页列就绪 onReady 上报的最宽页原始宽（fit-width 分母单源）
+  const columnBasis = useRef(0)
   const [outlineOpen, setOutlineOpen] = useState(true)
   // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfDocProvider onDocReady 上报，换文档即弃
   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
@@ -122,11 +122,10 @@ export function ReaderPage(): JSX.Element {
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [])
 
-  // 换文献：丢弃旧页文本/页根/可见集（防陈旧文本层——TextLayer 以页对齐才渲染）
+  // 换文献：丢弃旧页文本/页根（防陈旧文本层——TextLayer 以页对齐才渲染）
   useEffect(() => {
     setPageTexts({})
     setPageRoots({})
-    setAnchorPages([])
     setPdfDoc(null)
   }, [fileUrl])
 
@@ -149,9 +148,10 @@ export function ReaderPage(): JSX.Element {
     setPageTexts(del); setPageRoots(del)
   }, [])
 
-  /** 页列就绪（每 doc 一次）：F-03 恢复链 loading→restoring→scrollToPage
-   *  （setPage 'to'→INV-29 信号→PageColumn 滚回记忆页盒顶） */
-  const handleColumnReady = (): void => {
+  /** 页列就绪（每 doc 一次）：记列宽基准（F-04）+F-03 恢复链 loading→restoring
+   *  →scrollToPage（setPage 'to'→INV-29 信号→PageColumn 滚回记忆页盒顶） */
+  const handleColumnReady = (basisWidth: number): void => {
+    columnBasis.current = basisWidth
     const t = readActiveTab()
     if (t !== undefined) spProg.onColumnReady(t.page)
   }
@@ -162,12 +162,11 @@ export function ReaderPage(): JSX.Element {
     if (paperId !== null) useReaderStore.getState().markTabError(paperId)
   }
 
-  /** 适应宽度：滚动容器内宽 ÷ 页面原始宽（锚定页盒；列宽基准重定义归 F-04） */
+  /** 适应宽度（F-04 列宽基准重定义）：分母=最宽页原始宽（onReady 上报单源，
+   *  一次性 zoom 语义保持）；24px≈滚动区两侧 p-3 内边距（clientWidth 含需扣） */
   const fitWidth = (): void => {
-    const measured = pageTexts[anchorPage ?? 1]
-    if (scrollAreaRef.current === null || measured === undefined) return
-    // 24px ≈ 滚动区两侧 p-3 内边距（clientWidth 含 padding，需扣除）
-    setZoom((scrollAreaRef.current.clientWidth - 24) / (measured.box.w / zoom))
+    if (scrollAreaRef.current === null || columnBasis.current <= 0) return
+    setZoom((scrollAreaRef.current.clientWidth - 24) / columnBasis.current)
   }
 
   if (paperId === null || fileUrl === null) {
@@ -212,8 +211,9 @@ export function ReaderPage(): JSX.Element {
       <div ref={setSelectionMount} className="relative">
         <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
           {(doc) => (
-            <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} onPageRender={handlePageRender} onError={handlePdfError}
-              renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} onVisibleChange={setAnchorPages} />
+            <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} scrollContainerRef={scrollAreaRef}
+              onPageRender={handlePageRender} onError={handlePdfError}
+              renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} />
           )}
         </PdfDocProvider>
         {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4） */}

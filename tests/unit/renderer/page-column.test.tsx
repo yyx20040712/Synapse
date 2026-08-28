@@ -6,21 +6,27 @@
  * IntersectionObserver 驱动：窗口展开/离屏回收/渲染集上界）+页列就绪管线
  * （getPage 尺寸→onReady→占位盒全列）+scrollRequest 程序滚动（盒顶，
  * INV-29 单口消费）+zoom 重算（缓存乘法非重取）。
+ * F-04 增补：纯函数随拆分改自 page-column-geometry 直引（受锁扩）；缩放
+ * 中心锚（anchoredScrollTop/columnTotalHeight+组件 scrollTop 程序修正）+
+ * 列宽基准上抛（onReady 载荷——fit-width 分母单源）。
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
  */
 import { act, useEffect } from 'react'
+import type { RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
 import {
-  PageColumn,
+  anchoredScrollTop,
   clampPageToColumn,
+  columnTotalHeight,
   columnWidth,
   nearestPage,
   pageBoxHeight,
   recycledPages,
   windowPages
-} from '../../../src/renderer/features/reader/PageColumn'
+} from '../../../src/renderer/features/reader/page-column-geometry'
 
 /** 桩 IntersectionObserver：jsdom 无实现；report() 手动驱动可见性回调 */
 class MockIO {
@@ -430,5 +436,83 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
     expect([...recycled].sort((a, b) => a - b)).toEqual([1, 2, 3, 4])
     // 新窗口渲染在位（哨非全局卸载）
     expect(renderedPages()).toEqual([7, 8, 9])
+  })
+})
+
+describe('F-04 缩放中心锚与列宽基准（纯函数+组件装配）', () => {
+  it('anchoredScrollTop：总高变化前后保持 (scrollTop+vh/2)/总高 比值（视口中心内容不动）', () => {
+    // 中心比 (500+200)/2000=0.35 → 0.35×4000−200=1200（新总高翻倍中心仍在 35% 处）
+    expect(anchoredScrollTop(500, 400, 2000, 4000)).toBe(1200)
+    // 顶部起滚：(0+200)/2000=0.1 → 400−200=200
+    expect(anchoredScrollTop(0, 400, 2000, 4000)).toBe(200)
+    // 顶部夹取：换算值为负 → 0（缩小总高时上方内容不足）
+    expect(anchoredScrollTop(100, 800, 1000, 100)).toBe(0)
+    // 底部夹取：不超过 nextTotalH − vh（放大总高时下方内容不足）
+    expect(anchoredScrollTop(900, 800, 1000, 1000)).toBe(200)
+    // 退化防御：总高非正 → 原样返回（不产生 NaN）
+    expect(anchoredScrollTop(300, 400, 0, 1000)).toBe(300)
+  })
+
+  it('columnTotalHeight：盒高合计+盒间距（gap-3=12px 单源常量；zoom 乘法）', () => {
+    const one = [{ width: 612, height: 792 }]
+    expect(columnTotalHeight([], 1)).toBe(0)
+    expect(columnTotalHeight(one, 1)).toBe(792)
+    expect(columnTotalHeight(one, 2)).toBe(1584)
+    const three = [...one, ...one, ...one]
+    expect(columnTotalHeight(three, 1)).toBe(3 * 792 + 2 * 12)
+    expect(columnTotalHeight(three, 2)).toBe(3 * 1584 + 2 * 12)
+  })
+
+  it('组件装配：zoom 变化→滚动容器 scrollTop 程序修正（中心比保持；程序性修正不经用户接管信号链）', async () => {
+    const { doc } = makeDoc(3) // 3×792+2×12=2400（zoom=2 时 4800）
+    const scrollerEl = document.createElement('div')
+    document.body.appendChild(scrollerEl)
+    host = scrollerEl
+    root = createRoot(scrollerEl)
+    const containerRef = { current: scrollerEl } as RefObject<HTMLDivElement | null>
+    const el = (z: number): JSX.Element => (
+      <PageColumn
+        doc={doc}
+        totalPages={3}
+        zoom={z}
+        scrollContainerRef={containerRef}
+        renderPage={(no) => <span data-rendered-page={no} />}
+        onPageRender={() => undefined}
+        onError={() => undefined}
+      />
+    )
+    await act(async () => {
+      root?.render(el(1))
+    })
+    expect(boxCount()).toBe(3)
+    // 滚到中部：jsdom 无布局，直写 scrollTop+派发事件驱动镜像监听（真实浏览器=自然 scroll 事件）
+    scrollerEl.scrollTop = 600
+    act(() => {
+      scrollerEl.dispatchEvent(new Event('scroll'))
+    })
+    await act(async () => {
+      root?.render(el(2))
+    })
+    // 中心比 (600+0)/2400=0.25 → 0.25×4776−0=1194（新总高 3×1584+2×12=4776——
+    // 盒间距不随 zoom 缩放；jsdom clientHeight=0——公式退化线性恰可精确断言）
+    expect(scrollerEl.scrollTop).toBe(1194)
+  })
+
+  it('列宽基准上抛：onReady 携带最宽页宽（fit-width 分母单源——混合页宽取最大）', async () => {
+    const getPage = vi.fn(async (no: number): Promise<{ view: number[] }> => ({ view: [0, 0, no === 1 ? 300 : 612, 792] }))
+    const doc = { numPages: 2, getPage } as unknown as PDFDocumentProxy
+    const onReady = vi.fn()
+    await mount(
+      <PageColumn
+        doc={doc}
+        totalPages={2}
+        zoom={1}
+        renderPage={(no) => <span data-rendered-page={no} />}
+        onPageRender={() => undefined}
+        onError={() => undefined}
+        onReady={onReady}
+      />
+    )
+    expect(onReady).toHaveBeenCalledWith(612)
   })
 })
