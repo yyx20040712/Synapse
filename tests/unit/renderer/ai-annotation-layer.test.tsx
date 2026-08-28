@@ -6,7 +6,8 @@
  * 该段零 rects 且他段不受扰/篇级无锚行不入层/点击→该段全部 rects 高亮+
  * onJumpToNote 上抛/只读断言（无菜单无编辑元素）/翻页重锚缓存失效（paperId+
  * 页键）/anchor-locate exact 层延展（data-ai-note-id 目标滚动+闪烁；data-
- * annotation-id 既有行为不回归）。
+ * annotation-id 既有行为不回归）。F-05：滚动副作用经 scrollIntoNearestScroller
+ * （单容器收敛，INV-34）——桩=模块 mock，断言调用形（目标元素, 'center'）。
  * always-active（ADR-0017 裁决 3）。
  */
 import { act } from 'react'
@@ -17,6 +18,12 @@ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnot
 import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+
+// F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
+const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
+vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+  scrollIntoNearestScroller: scrollerMock
+}))
 
 /** rAF 同步化（jsdom 假帧——重锚 effect 即时收敛，测试确定性） */
 function syncRaf(): void {
@@ -204,13 +211,11 @@ it('重锚缓存失效：翻页后按新页重算（anchorPage 不匹配页不�
 
 describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
   let textLayer: HTMLDivElement | null = null
-  let scrollIntoView: ReturnType<typeof vi.fn>
   let target: HTMLElement | null = null
 
   beforeEach(() => {
-    scrollIntoView = vi.fn()
-    // jsdom 无 scrollIntoView——模块级 polyfill（anchor-locate flash 副作用）
-    Element.prototype.scrollIntoView = scrollIntoView as unknown as Element['scrollIntoView']
+    // F-05：滚动副作用消费形 spy 跨用例清账
+    scrollerMock.mockClear()
   })
 
   afterEach(() => {
@@ -218,7 +223,6 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
     target?.remove()
     textLayer = null
     target = null
-    delete (Element.prototype as Partial<Element>).scrollIntoView
   })
 
   async function setupTarget(attr: 'data-ai-note-id' | 'data-annotation-id', value: string): Promise<void> {
@@ -237,7 +241,7 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
       aiNoteId: 'n1'
     })
     expect(result).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(target, 'center')
     expect(target!.classList.contains('locate-flash')).toBe(true)
   })
 
@@ -249,7 +253,7 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
       annotationId: 'a1'
     })
     expect(result).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(target, 'center')
     expect(target!.classList.contains('locate-flash')).toBe(true)
   })
 })

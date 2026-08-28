@@ -5,6 +5,8 @@
  * S3 verifyQuote 失败→page 降级+提示/S4 篇级 paper/S5 未开 opening 全链/
  * S6 opening 超时降级/S7 打开失败（error）作废无提示/S8 并发后到胜（序号守卫）/
  * S9 opening 中被关（seen→absent）作废无提示（票面 S6 行两形态）。
+ * F-05 增补：exact 层滚动副作用改走 scrollIntoNearestScroller(el,'center')
+ * （单容器收敛，INV-34）——桩=模块 mock，断言调用形（目标元素, 'center'）。
  */
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +15,12 @@ import { useReaderStore, type TabState } from '../../../src/renderer/features/re
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
 import { guardedDescribe } from '../../utils/guard'
 
-const { toastSpy } = vi.hoisted(() => ({ toastSpy: vi.fn() }))
+const { toastSpy, scrollerMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), scrollerMock: vi.fn() }))
+vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
+// F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
+vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+  scrollIntoNearestScroller: scrollerMock
+}))
 vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
 vi.mock('../../../src/renderer/api/client', () => ({
   api: { reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } },
@@ -60,22 +67,15 @@ const anchorOf = (quote: string, page: number) => ({
   anchorPage: page
 })
 
-let scrollIntoView: ReturnType<typeof vi.fn>
-let originalScroll: Element["scrollIntoView"] | undefined
-
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
   useReaderStore.setState({ tabs: {}, order: [], activeId: null, noteHighlight: null })
   useReaderStore.getState().openPaper = vi.fn(async () => undefined)
-  scrollIntoView = vi.fn()
-  originalScroll = Element.prototype.scrollIntoView
-  Element.prototype.scrollIntoView = scrollIntoView
 })
 
 afterEach(() => {
   document.body.innerHTML = ''
-  if (originalScroll !== undefined) Element.prototype.scrollIntoView = originalScroll
   vi.useRealTimers()
 })
 
@@ -86,7 +86,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
     const el = mountAnchorEl('a-1')
     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-1', anchor: anchorOf('locate', 0) })
     expect(r).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(el, 'center')
     expect(el.classList.contains('locate-flash')).toBe(true)
     expect(toastSpy).not.toHaveBeenCalled()
   })
@@ -111,7 +111,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
     expect(r).toBe('page')
     expect(useReaderStore.getState().tabs['p-1']?.page).toBe(5)
     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
-    expect(scrollIntoView).not.toHaveBeenCalled()
+    expect(scrollerMock).not.toHaveBeenCalled()
   })
 
   it('S4 篇级（anchor=null）：paper（回开篇）', async () => {
@@ -124,7 +124,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
 
   it('S5 未开：requestOpenPaper（总线事件）→等 ready→activating→exact 全链', async () => {
     mountTextLayer('cross view quote')
-    mountAnchorEl('a-5')
+    const el5 = mountAnchorEl('a-5')
     const events: string[] = []
     window.addEventListener(OPEN_PAPER_EVENT, (e) => events.push((e as CustomEvent).detail?.paperId))
     const p = locateAnchor({ paperId: 'p-9', annotationId: 'a-5', anchor: anchorOf('cross view', 0) })
@@ -143,7 +143,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
     const r = await p
     expect(events).toEqual(['p-9'])
     expect(r).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(el5, 'center')
   })
 
   it('S6 opening 超时：降级 paper+超时提示（不抛错）', async () => {
@@ -243,12 +243,12 @@ describe('anchor-locate F-02 页限定（多页列）', () => {
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     // 页盒 1（邻页）=诱饵文本；页盒 2（目标，anchorPage=1 0 基）=真实引文
     mountPageColumn([[1, 'decoy neighbor text only'], [2, 'target quote here']])
-    mountAnchorEl('a-10')
+    const el10 = mountAnchorEl('a-10')
     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-10', anchor: anchorOf('target quote', 1) })
     // 全局第一实现拿到页盒 1 的诱饵层→verifyQuote 失败→3s 超时降级 page；
     // 页限定实现首轮同步命中页盒 2→exact
     expect(r).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(el10, 'center')
   })
 
   it('S11 邻页恰含引文也不误 exact：目标页盒内验证失败→page 降级+提示（半页错锚防护）', async () => {
@@ -282,10 +282,10 @@ describe('anchor-locate F-03 回退全局唯一（W3）', () => {
   it('S12a 页盒缺席+恰好一个 textLayer：回退可用（单页宿主兼容保持）', async () => {
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     mountBareLayers(['unique quote target'])
-    mountAnchorEl('a-12')
+    const el12 = mountAnchorEl('a-12')
     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-12', anchor: anchorOf('unique quote', 99) })
     expect(r).toBe('exact')
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollerMock).toHaveBeenCalledWith(el12, 'center')
   })
 
   it('S12b 页盒缺席+两个 textLayer：不取第一（全局唯一收紧）——首个含引文也按 page 降级+提示', async () => {
@@ -299,6 +299,6 @@ describe('anchor-locate F-03 回退全局唯一（W3）', () => {
     // 全局第一实现会命中第一层误 exact；全局唯一收紧后 3s 轮询超时→page 降级
     expect(r).toBe('page')
     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
-    expect(scrollIntoView).not.toHaveBeenCalled()
+    expect(scrollerMock).not.toHaveBeenCalled()
   })
 })

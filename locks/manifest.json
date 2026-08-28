@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T07:15:36.2618174Z",
+    "generatedAt":  "2026-08-28T11:18:00.8472069Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -159,11 +159,11 @@
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
-                      "sha256":  "0af8fedb0962800cc838b8e889fcb80f9eda1b591bfc4bc676985183f997a2cc"
+                      "sha256":  "b8e52a82bc44b33407d5d1bf248572deed5446386521af9ed9913b9917cd22cc"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "1016906085aa21733e5d14a7c889d629af34bdbd913e0286df3f002bb9b36749"
+                      "sha256":  "293e308c4cc3f8b5da26f1a14bb9696944271b6273f5ad4dcf0d6b88e7888f13"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -283,7 +283,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
-                      "sha256":  "7f2096b90e3e8e6021b042137dc658725c5e276f03cc8bb429084659e2dffd11"
+                      "sha256":  "a521111e7d3b1b2aadd9fd53515b348df4be80d7b7848aab087ab4bd597a48cb"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
@@ -295,7 +295,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
-                      "sha256":  "c66353655cd4d97344339299aaa510c21d4f86891a2b67c91f8a18c6aeecad0f"
+                      "sha256":  "ca53352aae1b96d0120a20f7fea46da60225401631da8992b20770f92611efcc"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
@@ -363,7 +363,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
-                      "sha256":  "f9d6a5d19cca72809a329caa88c5acad3260d8c97892f684082ac8aea8251066"
+                      "sha256":  "f3775f6ec2ee7ceb60c1a101c33b9d76061533e27ccd2b9746fdb006ec0d1fa7"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
@@ -384,6 +384,10 @@
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
                       "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/scroll-converge.test.ts",
+                      "sha256":  "1b1d0beba41352388bf85b399e8c5b5a00ab3db69388ed72122379ff01ca004c"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",

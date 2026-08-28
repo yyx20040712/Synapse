@@ -12,6 +12,15 @@
  * LocateTarget :75-84/LocateResult :86——F-aware 冻结面）。票面=
  * scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
  *
+ * **[F-05 增补] 程序滚动单容器收敛（缺陷 A：TabBar 被
+ * 顶出视口）**——flashElement 的 scrollIntoView（滚所有可滚祖先——泄漏面含
+ * document viewport/main）换 scrollIntoNearestScroller(el,'center')（只滚最近
+ * 滚动祖先，INV-34）：页内 rect→阅读器滚动容器居中；flashAiNote 兜底命中
+ * aside 面板条目→aside 自身滚动容器（保持 AI-09 列表滚动语义）；无滚动祖先
+ * →不滚。flashElement/flashTarget 目标注解窄化为 HTMLElement（目标实为
+ * HTMLElement）；LocateAnchor/LocateTarget/locateAnchor 签名零触碰（F-02
+ * 冻结面）。票面=scripts/audits/sr2-f-05-brief.md。
+ *
  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
  * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
  * locateAnchor，**禁各写降级**。
@@ -77,6 +86,7 @@
  */
 import { verifyQuote } from './annotation-anchor'
 import { useReaderStore } from './reader.store'
+import { scrollIntoNearestScroller } from './scroll-converge'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { showToast } from '../../shared/ui/toast-store'
 import type { Annotation } from '@shared/models/annotation'
@@ -221,14 +231,15 @@ function flashAiNote(aiNoteId: string): void {
 }
 
 function flashTarget(attr: string, value: string): void {
-  const el = document.querySelector(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
+  const el = document.querySelector<HTMLElement>(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
   if (el === null) return
   flashElement(el)
 }
 
-function flashElement(el: Element): void {
+function flashElement(el: HTMLElement): void {
   ensureFlashStyle()
-  el.scrollIntoView({ block: 'center' })
+  // F-05 单容器收敛（INV-34）：只滚最近滚动祖先（更外层滚动面零位移）
+  scrollIntoNearestScroller(el, 'center')
   el.classList.add('locate-flash')
   setTimeout(() => el.classList.remove('locate-flash'), FLASH_MS)
 }

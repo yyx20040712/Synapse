@@ -10,6 +10,10 @@
  *   滚动区内宽）/ 标注原位兼容抽验（划选高亮色块落所属页盒内）/ 离屏回收
  *   （canvas 计数上限，INV-30 e2e 锚）/ 进度恢复（关 tab flush→重开滚回记忆页）。
  * - 战役收官报告：docs/reports/2026-08-28_p7f-campaign.md（四票链+成本账本）。
+ * - [SR2-F-05] 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口——验收修复役 U1）：
+ *   新增独立 test+自守卫。断言锚定（取证修正）：泄漏面实测=document viewport
+ *   （scrollingElement——overflow:hidden 仍可被 scrollIntoView 程序滚动；main 恒
+ *   scrollTop=0），断言 scrollingElement/main 双零+TabBar bbox 在视口内。
  *
  * ── 接口层 ──
  * - 消费面：PageColumn 段⑥缩放锚（anchoredScrollTop/columnTotalHeight）+
@@ -267,6 +271,74 @@ test.describe('reader-scroll —— F-04 收官', () => {
     await expect(win.getByText(`P${lastPage} ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
     await expect(win.getByText(`当前第 ${lastPage} 页`)).toBeVisible()
     await expect.poll(scrollTop, { timeout: 3_000 }).toBeGreaterThan(100)
+    await app.close()
+  })
+})
+
+// ── SR2-F-05 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）──
+// 首红取证（2026-08-28 实现者探针）：scrollIntoView 会滚所有滚动祖先——包括
+// overflow:hidden 的 document viewport（scrollingElement，程序可滚）与 main
+// （溢出时）。窄视口+页码跳转后实测 winY 70→130、TabBar bbox 顶出视口顶。
+test.describe('reader-scroll —— F-05 程序滚动单容器收敛', () => {
+  test.skip(!isTicketDone('SR2-F-05'), '延期：工单 SR2-F-05 未完成')
+
+  test('缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-f05-'))
+    // 建库迁移（同配方：让应用自己完成，不 import src 内部模块）
+    const seedApp = await launch(userData)
+    await (await seedApp.firstWindow()).waitForTimeout(500)
+    await seedApp.close()
+
+    const bytes = createMultiPagePdf(6, PDF_KNOWN_TEXT)
+    const sha = createHash('sha256').update(bytes).digest('hex')
+    const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+    const abs = join(userData, 'files', ...fileRef.split('/'))
+    mkdirSync(dirname(abs), { recursive: true })
+    writeFileSync(abs, bytes)
+    await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e F05 收敛文献', 'e2e-seed-f05')
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByText('智慧水务 e2e F05 收敛文献').first().dblclick()
+    await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+
+    // 窄视口：Toolbar flex-wrap 折行增高（辅因）+列宽溢出，构造外层可滚态
+    await win.setViewportSize({ width: 480, height: 500 })
+
+    /** 外层滚动面体检（INV-34 断言锚）：viewport（scrollingElement——实测泄漏面，
+     *  overflow:hidden 仍可被 scrollIntoView 程序滚动）与 main 双 scrollTop 零位移
+     *  +TabBar bbox 顶在视口内+ReaderPage 根 overflow-hidden（防御纵深在位） */
+    const outerState = (): Promise<{ docTop: number; mainTop: number; barTop: number; rootOverflow: string }> =>
+      win.evaluate(() => {
+        const readerRoot = document.querySelector('main')?.firstElementChild ?? null
+        return {
+          docTop: document.scrollingElement?.scrollTop ?? -1,
+          mainTop: (document.querySelector('main') as HTMLElement | null)?.scrollTop ?? -1,
+          barTop: document.querySelector('[role="tablist"]')?.getBoundingClientRect().top ?? -9999,
+          rootOverflow: readerRoot === null ? 'missing' : getComputedStyle(readerRoot).overflowY
+        }
+      })
+    const expectOuterStill = async (): Promise<void> => {
+      const s = await outerState()
+      expect(s.docTop, 'INV-34: 程序滚动不得滚 document viewport（scrollingElement）').toBe(0)
+      expect(s.mainTop, 'INV-34: 程序滚动不得滚 main').toBe(0)
+      expect(s.barTop, 'TabBar 盒顶不得被顶出视口（缺陷 A 回归锚）').toBeGreaterThanOrEqual(0)
+      expect(s.rootOverflow, 'ReaderPage 根防御纵深 overflow-hidden 在位（两分支同形）').toBe('hidden')
+      await expect(win.getByRole('tablist', { name: '打开的文献' })).toBeVisible()
+    }
+
+    // 程序滚动链一：工具栏页码跳转第 4 页（INV-29 setPage 'to'→段⑤程序滚动）
+    await win.getByLabel('跳转到页').fill('4')
+    await win.keyboard.press('Enter')
+    await expect(win.getByText(`P4 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
+    await expect(win.getByText('当前第 4 页')).toBeVisible()
+    await expectOuterStill()
+
+    // 程序滚动链二：PageDown 键位滚动步（容器 scrollBy——接管链同不外溢）
+    await win.keyboard.press('PageDown')
+    await win.waitForTimeout(300)
+    await expectOuterStill()
     await app.close()
   })
 })

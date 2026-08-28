@@ -12,7 +12,7 @@
  *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
  *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
  * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
- *
+ * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  *
@@ -172,7 +172,7 @@ export function ReaderPage(): JSX.Element {
   if (paperId === null || fileUrl === null) {
     // 空态三形合一（无 tab/loading/error）；TabBar 保留——error tab 必须可见可关可切
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col overflow-hidden">
         <TabBar />
         <div
           className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm"
@@ -224,7 +224,7 @@ export function ReaderPage(): JSX.Element {
   )
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       <TabBar />
       <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
         onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />

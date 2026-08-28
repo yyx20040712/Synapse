@@ -5,6 +5,12 @@
  * （(scrollTop+vh/2)/总高 比值保持，INV-33；程序性修正不发用户接管信号）；
  * onReady 载荷=列宽基准（最宽页，fit-width 分母单源）；纯函数拆出
  * page-column-geometry.ts（250 行预裁拆分预案——旧定义删除）。
+ * [F-05 增补] 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）：段⑤
+ * scrollIntoView（滚所有可滚祖先——含 document viewport/main 的泄漏面）
+ * 换 scrollIntoNearestScroller(页盒,'start')（只滚最近滚动祖先，INV-34）；
+ * props 接口零改。
+ * [F-06 增补] 页盒视觉（缺陷 B：页间无分隔）：页盒 div 增 panel 底+柔和阴影
+ * （页缘在 --bg 上可辨；渲染/占位同底）；gap/PAGE_GAP_PX 不动（INV-33），props 零改。
  *
  * ── 行为层 ──（实现段预拆六段,每段独立可测可审）
  * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady(列宽基准)→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
@@ -43,6 +49,7 @@ import {
   windowPages,
   type PageBoxSize
 } from './page-column-geometry'
+import { scrollIntoNearestScroller } from './scroll-converge'
 
 // 纯函数唯一实现已拆 page-column-geometry.ts（F-04 拆分预案）；此处再导出
 // nearestPage 维持 scroll-progress 既有 import 路径（单实现双出口，非复写）
@@ -160,11 +167,14 @@ export function PageColumn(props: {
     })
   }, [visible, totalPages, renderWindow, recycleWindow])
 
-  // 段⑤程序滚动（INV-29 单口）：夹取→页盒顶对齐视口顶；未就绪挂起、就绪补滚
+  // 段⑤程序滚动（INV-29 单口）：夹取→页盒顶对齐视口顶（F-05：单容器收敛——
+  // 只滚最近滚动祖先 scrollIntoNearestScroller，更外层滚动面零位移，INV-34）；
+  // 未就绪挂起、就绪补滚
   useEffect(() => {
     if (pageSizes === null || props.scrollRequest === null || props.scrollRequest === undefined) return
     const no = clampPageToColumn(props.scrollRequest.page + 1, totalPages)
-    rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`)?.scrollIntoView({ block: 'start' })
+    const box = rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`) ?? null
+    if (box !== null) scrollIntoNearestScroller(box, 'start')
   }, [props.scrollRequest, pageSizes, totalPages])
 
   // 段⑥滚动位置镜像：容器 scroll 事件被动监听（挂载即读初值——恢复链程序滚动亦派发事件）
@@ -219,7 +229,8 @@ export function PageColumn(props: {
             key={no}
             data-page-box={no}
             className="relative shrink-0"
-            style={{ width, height: pageBoxHeight(size, zoom) }}
+            // [F-06] 页盒 panel 底+柔和阴影（缺陷 B）；渲染/占位同底消色差跳动
+            style={{ width, height: pageBoxHeight(size, zoom), background: 'var(--panel)', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
           >
             {rendered.has(no) ? (
               <div data-page-root={no} className="absolute inset-0 flex justify-center">

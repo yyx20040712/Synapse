@@ -10,6 +10,8 @@
  * 中心锚（anchoredScrollTop/columnTotalHeight+组件 scrollTop 程序修正）+
  * 列宽基准上抛（onReady 载荷——fit-width 分母单源）。
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
+ * F-05 增补：段⑤程序滚动改走 scrollIntoNearestScroller(页盒,'start')（单容器
+ * 收敛，INV-34——数学正确性锚在 scroll-converge.test；本文件断言调用形）。
  */
 import { act, useEffect } from 'react'
 import type { RefObject } from 'react'
@@ -27,6 +29,13 @@ import {
   recycledPages,
   windowPages
 } from '../../../src/renderer/features/reader/page-column-geometry'
+
+// F-05：段⑤程序滚动的消费形断言锚（单容器收敛函数替身——真数学在
+// scroll-converge.test 锚定，本文件不重复实现数学）
+const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
+vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+  scrollIntoNearestScroller: scrollerMock
+}))
 
 /** 桩 IntersectionObserver：jsdom 无实现；report() 手动驱动可见性回调 */
 class MockIO {
@@ -110,7 +119,8 @@ beforeEach(() => {
   // jsdom 无 canvas 实现：stub getContext 返回 null（渲染单元按防御分支短路，
   // 消 stderr 噪音——真实渲染由 e2e 锚）
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
-  Element.prototype.scrollIntoView = vi.fn()
+  // F-05：程序滚动消费形 spy 跨用例清账（调用历史不串测）
+  scrollerMock.mockClear()
 })
 
 afterEach(() => {
@@ -121,7 +131,6 @@ afterEach(() => {
   host?.remove()
   host = null
   vi.unstubAllGlobals()
-  delete (Element.prototype as Partial<Element>).scrollIntoView
 })
 
 describe('PageColumn 纯函数（段①②：几何与窗口）', () => {
@@ -283,7 +292,7 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
     }
   })
 
-  it('scrollRequest 程序滚动：就绪后到达→目标页盒 scrollIntoView（block:start=盒顶，0 基页→1 基盒）', async () => {
+  it('scrollRequest 程序滚动：就绪后到达→scrollIntoNearestScroller(目标页盒,start)（0 基页→1 基盒，单容器收敛）', async () => {
     const { doc } = makeDoc(6)
     const req = { paperId: 'p-1', page: 2, seq: 1 }
     await mount(
@@ -298,7 +307,7 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
       />
     )
     const target = host!.querySelector<HTMLElement>('[data-page-box="3"]')!
-    expect(target.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
+    expect(scrollerMock).toHaveBeenCalledWith(target, 'start')
   })
 
   it('scrollRequest 早于就绪到达：页列就绪后补滚（onReady 恢复链的几何前置）', async () => {
@@ -322,12 +331,12 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
     act(() => {
       root?.render(el)
     })
-    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+    expect(scrollerMock).not.toHaveBeenCalled()
     // 就绪落定（async act flush）：信号补滚到目标页盒顶
     await act(async () => {
       root?.render(el)
     })
-    expect(host.querySelector<HTMLElement>('[data-page-box="6"]')!.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
+    expect(scrollerMock).toHaveBeenCalledWith(host.querySelector<HTMLElement>('[data-page-box="6"]'), 'start')
   })
 
   it('zoom 变化：盒高按新 zoom 重算且尺寸缓存不重取（getPage 调用数不变——缓存乘法）', async () => {

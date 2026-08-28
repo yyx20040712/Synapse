@@ -1,0 +1,1080 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 4de0d47..3759210 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -40,11 +40,12 @@
+ | INV-26 | 伴随进程文件协议三联：①**移除 pending job 以 corpus-ai/<paperId>.json 产物落盘成功为前提**（任何失败路径 job 一律保留——应用观测坍缩回 pending「等待 zcode」，失败细节经 status.state 自由文本呈现不分支；瞬态「job 已移除+产物未落+心跳新鲜」被排除）②应用判活唯一依据=status.json heartbeatAt 新鲜度（HEARTBEAT_FRESH_MS=10min；running 单源在 ai-sensor.service 输出，消费方不双写阈值；应用永不按 state 值分支——工具自述自由文本不契约化）③协议文件一律 tmp+rename 原子写、首写 mkdir recursive 幂等（应用与工具两侧各自保证） | ADR-0015 §1+ai-sensor.service+companion.mjs（SR2-AI-06，2026-08-27 登记随单锚定） | 单测（ai-sensor.service.test：幂等⑤/readStatus 三态/新鲜度边界/跨格序列①~④ fs 夹具驱动）+CLI 探针（companion.test：四步序全链+failed 三路径 job 保留断言） | 已锚定（单测+探针级 2026-08-27 SR2-AI-06；e2e 消费方面随 AI-08/10） |
+ | INV-27 | lineage 树单父不变量：存储=图 schema（v2 DAG 升级免迁移），v1 行为=树——每节点至多一条入边（无多父/无环/无自环）；树约束是 service 层运行时守卫非 DDL 约束；两写入口同守（草稿导入校验+增量编辑 upsertEdge——守卫宿主=service 写面，LG-03 只接线 IPC 不另写守卫）；listGraph 森林语义是 LG-02 布局（Reingold-Tilford 单根树假设）的前提 | ADR-0014+src/main/services/lineage/lineage.service.ts 两守卫口（validateDraft 导入校验三段+upsertEdge 运行时守卫，SR2-LG-01 门一 W1 处置） | 单测三拒绝路径双覆盖（lineage-import.test：导入面多父/环/自环用例+运行时面 upsertEdge 三拒绝用例，各断言中文 reason+库不变） | 已锚定（单测级 2026-08-27 SR2-LG-01） |
+ | INV-28 | 被引缓存刷新语义（与元数据 fill-empty 刻意不同——被引数单调增长）：瀑布命中且 citedByCount 非 null（含 **0**，0 是合法缓存值）→强制刷新（新值+新时间戳+source 三列同写）；命中但 citedByCount=null→不写缓存旧值保留；未命中/异常（work=null）→旧值保留（缓存不清，enrich_status='failed' 仅元数据面）；判别必须 `=== null`（禁 ??/falsy——0 与 NULL 语义不同）；detailById 透出配对规则=count 非 null 三字段齐出、null 全省略（undefined） | cited-by.service.ts 头注状态机（刷新决策单源 citedByPatch；SR2-ENR-01，2026-08-28 门一 W2 处置登记） | 单测（cited-by.test 9 用例：六格全格+0 值边界两样本+跨格序列）+真库断言（papers.repo.test：applyEnrichment 第三参 SET 落库+再不传则保留——SQL 面唯一锚定点，enrich 集成测试全用桩） | 已锚定（单测+真库级 2026-08-28 SR2-ENR-01） |
+-| INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→页盒 scrollIntoView block:'start'；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |
++| INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→scrollIntoNearestScroller(页盒,'start')——F-05 单容器收敛后口径；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |
+ | INV-30 | canvas 生命周期=渲染窗口绑定：页 canvas（PdfPageCanvas）仅存在于 PageColumn 渲染窗口内（可见页±renderWindow），离屏距离>recycleWindow 必卸载（canvas 移除+pageText 条目同删——PageFrame 卸载哨）；rendering 中滚出窗口由渲染 effect 清理取消在途任务；zoom 重算走尺寸缓存乘法（就绪后无 loading 态——非重取） | PageColumn.tsx 段③（SR2-F-01，2026-08-28 登记；内存断言=canvas 实例数≤渲染窗口+缓冲常量；实现者原误编 INV-28 撞号，F-01 门一 W1 处置重编 INV-30） | 组件单测锚（page-column.test：IO 桩驱动窗口展开/快速滚动回收/渲染集上界 ≤ 可见数×(2·recycleWindow+1)+离屏距离断言）+e2e 收官计数断言（F-04 reader-scroll.spec） | 已锚定（组件单测级 2026-08-28 SR2-F-01；e2e 计数断言随 F-04 收官） |
+ | INV-31 | 滚动→页进度回写=视口中心最近页（纯函数，PageColumn.nearestPage 单源）：scroll-progress 状态机在防抖到期时按 (scrollTop+clientHeight/2) 所落页盒记账（整数页粒度，页内偏移不存）；回写经 setPage {scroll:'none'}（INV-29 'none' 支）只落账不触发程序滚动；回写竞 tab 切换时 writing 前校验 activeId——失配丢弃 setPage（防把 A 的页写进 B 的 tab），per-tab 账（saveProgress 按 paperId）照落 | scroll-progress.ts 状态机 fire()（SR2-F-03，2026-08-28 登记） | 单测跨格锚（scroll-progress.test：六态全格+五序列——失配丢弃/关 tab flush/中心页边界含中缝取前页）+e2e 批 3（滚动→关→重开=恢复页锚定） | 已锚定（单测级 2026-08-28 SR2-F-03；e2e 批 3 取证落盘，registry 翻 done 后常规跑激活） |
+ | INV-32 | 程序滚动用户接管（RESTORING 取消）：程序滚动（恢复/跳页/locate，均经 INV-29 scrollRequest 单口）进行中，用户以 wheel/keydown/pointerdown 三类**非 scroll** 输入信号介入即取消程序目标转 scrolling（程序 scrollToPage 自发的 scroll 事件不算用户滚动）；后续 scroll 事件恢复记账 | scroll-progress.ts onUserTakeover/装配面三口（ReaderPage onWheel/onPointerDown+wiring hook keydown；SR2-F-03，2026-08-28 登记） | 单测锚（scroll-progress.test：restoring→scrolling 接管格+程序自发 scroll 不记账格）+S4 竞态序列 | 已锚定（单测级 2026-08-28 SR2-F-03） |
+ | INV-33 | 缩放中心保持：zoom 变化（ctrl+wheel/工具栏/适应宽度任一来源）后视口中心内容不动——(scrollTop+vh/2)/总高 比值经纯函数 anchoredScrollTop 保持（顶/底夹取；间隙不随 zoom 缩放的口径由 columnTotalHeight 承载）；实现链=PageColumn 段⑥布局效应程序修正 scrollTop（滚动位置镜像=容器 scroll 事件被动监听），程序性修正不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）；fit-width 分母=列宽基准（最宽页原始宽，页列就绪 onReady 载荷单源，一次性 zoom 语义保持） | page-column-geometry.ts anchoredScrollTop/columnTotalHeight+PageColumn 段⑥+ReaderPage fitWidth（SR2-F-04，2026-08-28 登记） | 单测锚（page-column.test：anchoredScrollTop 比值/顶底夹取/退化防御+columnTotalHeight 间隙口径+组件 scrollTop 修正精确断言）+e2e 收官链（reader-scroll.spec 中心最近页保持+fit 列宽贴合断言；M3 变异恰中实证） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-04；e2e 随收官链取证落盘，registry 翻 done 后常规跑激活） |
++| INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 computed overflowY∈{auto,scroll}，hidden/visible 不入选），**禁用 Element.scrollIntoView 于滚动链**（CSSOM 语义=滚所有可滚祖先——2026-08-28 缺陷 A 实测泄漏面含 overflow:hidden 的 document viewport（scrollingElement 仍可被程序滚动）与 main，TabBar 被顶出视口无自愈）；防御纵深=ReaderPage 根两分支 overflow-hidden+ReaderToolbar 根 shrink-0（flex-wrap 折行只影响阅读器内部高度）；列表内滚动 block:'nearest'（FragmentNotesList/AiNoteGroupList/PaperList）与面板自身滚动语义不在本册约束面 | src/renderer/features/reader/scroll-converge.ts（SR2-F-05，2026-08-28 登记；消费方=PageColumn 段⑤ 'start'/anchor-locate flashElement 'center'——同一不变量同一实现，Rule of Three 从 1 收敛） | 单测锚（scroll-converge.test 六用例：最近祖先选取含嵌套取最近与 hidden 不入选/start 数学/center 数学/顶底夹取/无滚动祖先不动/aside 消费形）+受锁三文件消费形断言（page-column/anchor-locate/ai-annotation-layer 模块 mock）+e2e（reader-scroll.spec F-05：scrollingElement 与 main 双 scrollTop===0+TabBar bbox≥0+根 overflow-hidden 在位——窄视口页码跳转+PageDown 两链） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-05；e2e 随守卫态 22+1 skip，registry 翻 done 后 23+0 常规跑激活） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 5b6e361..04f2f0b 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T07:15:36.2618174Z",
++    "generatedAt":  "2026-08-28T10:46:59.2995090Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -159,7 +159,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+-                      "sha256":  "0af8fedb0962800cc838b8e889fcb80f9eda1b591bfc4bc676985183f997a2cc"
++                      "sha256":  "b8e52a82bc44b33407d5d1bf248572deed5446386521af9ed9913b9917cd22cc"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+@@ -283,7 +283,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
+-                      "sha256":  "7f2096b90e3e8e6021b042137dc658725c5e276f03cc8bb429084659e2dffd11"
++                      "sha256":  "a521111e7d3b1b2aadd9fd53515b348df4be80d7b7848aab087ab4bd597a48cb"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+@@ -295,7 +295,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+-                      "sha256":  "c66353655cd4d97344339299aaa510c21d4f86891a2b67c91f8a18c6aeecad0f"
++                      "sha256":  "ca53352aae1b96d0120a20f7fea46da60225401631da8992b20770f92611efcc"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+@@ -363,7 +363,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/page-column.test.tsx",
+-                      "sha256":  "f9d6a5d19cca72809a329caa88c5acad3260d8c97892f684082ac8aea8251066"
++                      "sha256":  "f3775f6ec2ee7ceb60c1a101c33b9d76061533e27ccd2b9746fdb006ec0d1fa7"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
+@@ -385,6 +385,10 @@
+                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
+                       "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/scroll-converge.test.ts",
++                      "sha256":  "1b1d0beba41352388bf85b399e8c5b5a00ab3db69388ed72122379ff01ca004c"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",
+                       "sha256":  "c3203c7790f859e5e022ff29d1e06de880d4c26bc8349b10675a483aba60e813"
+diff --git a/scripts/audits/sr2-f-05-brief.md b/scripts/audits/sr2-f-05-brief.md
+new file mode 100644
+index 0000000..e3e6fba
+--- /dev/null
++++ b/scripts/audits/sr2-f-05-brief.md
+@@ -0,0 +1,162 @@
++# SR2-F-05 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）——票面 v1
++
++> 来源：2026-08-28 用户真机验收反馈缺陷 A（图一：阅读器标签页被遮挡看不见），
++> 取证定性见 `docs/prompts/2026-08-28_loop-handoff.md` §2A。**P7-F 回归·机制级·
++> 阻断包1④⑤ 验收**。本票=验收修复役 U1（第一票）。
++> 纪律：三屋模式（TDD 四档+断言级变异红证+双门）；实现者禁 git/registry；
++> 取证禁触 tickets/。
++
++## 0. 根因（验收分析会取证高置信——实现者开工先自证复现，推翻/证实均落报告）
++
++1. `src/renderer/app/App.tsx:109` `<main className="min-w-0 flex-1 overflow-auto">`
++   ——ReaderPage 之上存在的**可滚祖先**。
++2. `src/renderer/features/reader/PageColumn.tsx:167`（段⑤程序滚动）与
++   `src/renderer/features/reader/anchor-locate.ts:231`（flashElement）使用
++   `Element.scrollIntoView()`——CSSOM 语义=滚**所有**可滚祖先。
++3. 一旦 main 存在溢出/已滚状态（激活路径：窄窗口 ReaderToolbar `flex-wrap`
++   折行增高 + `pageBoxHeight` floor 与 pdfjs 取整的 1px 级溢出），程序滚页
++   （翻页键/页码跳转/进度恢复）或脉络跳转闪烁就把整个 ReaderPage 连同
++   TabBar 顶出视口，**无自愈路径**（main 的 scrollTop 不归零）。
++4. e2e 未拦原因：既有 spec 视口宽裕，main 从不溢出。
++5. 自证复现载体=e2e（jsdom 无布局，scrollIntoView 无实现，单测层不可复现）：
++   新 e2e 用例先红（窄视口+程序滚动后 tablist 不可见/main.scrollTop>0）。
++
++## 1. 主控预裁项（实现者不再自裁这些点；双门可攻击，推翻需更强依据）
++
++- **P1 修法三件+断言**（防御纵深）：
++  - ①`ReaderPage.tsx` 根加 `overflow-hidden`——**两处返回分支都加**（:175
++    空态分支与 :227 主分支的 `flex h-full flex-col`，返回形状一致性）。
++  - ②新文件 `src/renderer/features/reader/scroll-converge.ts`：
++    `scrollIntoNearestScroller(el, align)`——只滚 el 的**最近滚动祖先**
++    （见接口层），替换两处 scrollIntoView（PageColumn 段⑤用 `'start'`；
++    anchor-locate flashElement 用 `'center'`）。两消费方统一走本函数
++    （同一不变量同一实现，Rule of Three 从 1 起即收敛）。
++  - ③`ReaderToolbar.tsx:66` 根 className 加 `shrink-0`（与 TabBar
++    `flex h-8 shrink-0` 同构——辅因加固；flex-wrap 保留，折行只影响
++    阅读器内部高度不再外溢）。
++- **P2 统一走「最近滚动祖先」而非 scrollContainerRef 直滚**：PageColumn
++  段⑤不依赖 props.scrollContainerRef（受锁测试挂载时未传 ref——原实现靠
++  scrollIntoView 无需容器；改 ref 直滚会迫使全部夹具改形状）。页盒→滚动
++  容器之间的祖先（页列 root / selectionMount 盒）均无 overflow——最近滚动
++  祖先=滚动容器，语义等价且两消费方同构。
++- **P3 flash 语义**：flashAiNote 兜底命中 aside 面板条目时，最近滚动祖先=
++  aside 自身滚动容器（若有）→滚 aside（保持 AI-09 列表滚动语义）；无滚动
++  祖先→不滚（原 scrollIntoView 对无滚动容器元素也是无操作）。**更外层
++  （main）永不被触碰**=本票不变量。
++- **P4 INV-34 登记**：程序滚动单容器收敛（声明处=scroll-converge.ts；
++  强制方式=单测+e2e main.scrollTop===0 断言；锚定状态=docs/invariants.md
++  表尾续号 33→34，禁撞号）。表行四列按册内既有格式。
++- **P5 e2e 新 test 放 reader-scroll.spec.ts**（272 行→预计 ~330 行，余量
++  足）：独立 test+自守卫 `test.skip(!isTicketDone('SR2-F-05'), ...)`（F-04
++  同构；DEPS 数组不动——F-01~04 已 done）。收口翻 done 后推演 **23 过+0
++  skip**。
++- **P6 受锁测试改写口径**：三个单测文件对 scrollIntoView 的桩+断言，统一
++  改为 `vi.mock('./scroll-converge')`（或 spy）断言 `scrollIntoNearestScroller`
++  以 (目标元素, 对齐) 被调用；数学正确性由 scroll-converge 自测锚
++  （新测试文件，always-active）。e2e 是行为终审。
++- **P7 实现者可跑 `npm run locks:unlock` / `locks:apply`**（受锁测试改写
++  必需流程），禁 git/registry/不动 tickets 一字不改。
++
++## 2. 五层规约
++
++**─ 行为层 ──**
++
++- `scrollIntoNearestScroller(el, 'start')`：el 最近滚动祖先内
++  `scrollTop += elRect.top − scrollerRect.top`（盒顶对齐视口顶=原
++  scrollIntoView block:'start' 单容器语义；浏览器对 scrollTop 赋值自动
++  夹取 [0, scrollHeight−clientHeight]）。
++- `scrollIntoNearestScroller(el, 'center')`：
++  `scrollTop += (elRect.top + elRect.height/2) − (scrollerRect.top + scroller.clientHeight/2)`
++  （居中=原 block:'center' 单容器语义）。
++- 「最近滚动祖先」判定：自 el.parentElement 向上首个
++  `getComputedStyle(p).overflowY ∈ {auto, scroll}` 的祖先；到根无→不滚。
++- 程序滚动链（PageColumn 段⑤）：scrollRequest 到达→（未就绪挂起）→
++  就绪→clampPageToColumn→scrollIntoNearestScroller(页盒,'start')→
++  **仅滚动容器 scrollTop 变化，main.scrollTop 不变**。
++- flash 链（anchor-locate）：locateAnchor exact→flashAnnotation/flashAiNote
++  →scrollIntoNearestScroller(el,'center')→el 最近滚动祖先滚动，更外层不动。
++- 滚动链行为迁移表（机制修复前后——非新增状态机，宪法口径声明）：
++
++| 态/场景 | 修复前 | 修复后 |
++| --- | --- | --- |
++| scrollRequest 到达（main 无溢出） | scrollIntoView 滚滚动容器（祖先无溢出=无副作用） | 差值法滚滚动容器（等价） |
++| scrollRequest 到达（main 已溢出/已滚） | scrollIntoView 连滚 main→TabBar 顶出 | 仅滚滚动容器；main.scrollTop 保持原值 |
++| flash exact（页内 rect） | scrollIntoView 居中+滚所有祖先 | 最近滚动祖先居中；main 不动 |
++| flashAiNote 兜底（aside 条目） | scrollIntoView（滚 aside+可能滚 main） | aside 自身滚动容器；main 不动 |
++| ReaderPage 根 | 无 overflow（高度链依赖 main 不滚） | overflow-hidden（切断向 main 泄漏的兜底纵深） |
++
++- 跨格序列（宪法跨格要求）：main 已滚态→程序滚动→main.scrollTop 不被
++  改写；程序滚动→用户接管（INV-32 三信号）→接管语义不变（差值法不经过
++  接管链，与 INV-29/32 协同保持——setPage 'to' 信号链零改）。
++
++**─ 接口层 ──**
++
++- 新 `src/renderer/features/reader/scroll-converge.ts`：
++  - `export type ScrollAlign = 'start' | 'center'`
++  - `export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign): void`
++  - （内部函数 `nearestScrollAncestor` 可导出供单测，实现者自裁并申报）
++- PageColumn.tsx 段⑤：删 `scrollIntoView({block:'start'})` 行，换
++  `scrollIntoNearestScroller(盒, 'start')`；**props 接口零改**。
++- anchor-locate.ts flashElement：删 `el.scrollIntoView({block:'center'})`，
++  换 `scrollIntoNearestScroller(el, 'center')`（el 需窄化为 HTMLElement——
++  现 flashElement(el: Element)，目标实为 HTMLElement，收窄签名自裁申报）。
++  **LocateAnchor/LocateTarget/locateAnchor 签名零触碰**（F-02 冻结面）。
++- ReaderPage.tsx：仅根 className 两处加 `overflow-hidden`，其余零改。
++- ReaderToolbar.tsx：仅根 className 加 `shrink-0`，其余零改。
++
++**─ 架构层 ──**
++
++- reader 域模块（scroll-converge.ts 不 import 组件/store；纯 DOM 工具，
++  与 geometry 纯函数同层级的「DOM 几何件」）。分层单向零触碰；零新依赖。
++- INV-29（scrollRequest 单口）/INV-31/32（回写与接管）/33（缩放锚）
++  全部零触碰——段⑥缩放锚本就是单容器 scrollTop 程序修正，与本修法同构。
++- INV-34 新登记（P4）。头注：PageColumn.tsx/anchor-locate.ts/ReaderPage.tsx
++  头注按 F 系列惯例增补本单链（工单号+一行变更说明）。
++
++**─ 生命周期层 ──**
++
++- 不做：main.overflow-auto 本身移除（其他视图 library/lineage 依赖其滚动
++  ——只切断阅读器泄漏面，不动 App 骨架）；FragmentNotesList/AiNoteGroupList/
++  PaperList 的 `block:'nearest'` 列表内滚动（面板内部滚动非传播源，零触碰）；
++  aside 面板滚动条改造。
++
++**─ 文化层 ──**
++
++- 单测：新 `tests/unit/renderer/scroll-converge.test.ts`（always-active；
++  jsdom+桩 getBoundingClientRect/scrollHeight/clientHeight：最近祖先选取/
++  start 数学/center 数学/顶底夹取/无滚动祖先不动/嵌套两滚动容器取最近）。
++- 受锁改写（[locked-change]，P6 口径）：
++  - `tests/unit/renderer/page-column.test.tsx`（:286/:304 两 it 断言+桩）；
++  - `tests/unit/renderer/anchor-locate.test.ts`（:63-78 桩+6 处断言）；
++  - `tests/unit/renderer/ai-annotation-layer.test.tsx`（:207-221 桩+2 处断言）；
++  - `tests/e2e/reader-scroll.spec.ts`（新增 test，P5 口径）。
++- e2e 新 test 骨架：打开 6 页文献→`win.setViewportSize({width:480,height:500})`
++  （窄视口触发 Toolbar 折行/main 潜在溢出）→工具栏页码跳转第 4 页
++  （input aria-label「跳转到页」fill+Enter，走 INV-29 程序滚动链）→断言
++  `getByRole('tablist', {name:'打开的文献'})` visible **且**
++  `main.scrollTop===0`（win.evaluate 读）→PageDown 键滚一屏→再断言两项。
++  首红载体=本 test（修复前 tablist 不可见/main.scrollTop>0 至少一项红）。
++- TDD 顺序：e2e 新 test 先红（build 后跑，守卫用备份法临时激活——
++  **spec 备份法**：cp 备份 spec→临时注释自守卫行→跑红→恢复，禁触
++  registry）→单测首红（scroll-converge.test）→实现→全绿→变异红证
++  （≥3 变异：start/center 数学、最近祖先选取、overflow-hidden 移除——
++  cp 备份法还原，禁 git checkout）→受锁 e2e spec 改动后**全量 verify**
++  （tsc 关卡不可跳）。
++
++## 3. 机检兼容自查
++
++- quality grep 禁 `TODO|FIXME|placeholder`；renderer 中文注释 UTF-8；
++  新文件 ≤500 行（scroll-converge.ts 预计 <80 行）；e2e spec 272→~330 行。
++- locks:unlock→改受锁 4 文件→locks:apply（manifest 142→同步）；新测试文件
++  scroll-converge.test.ts 入锁（locks:generate+apply 或按收口主控处理——
++  实现者 apply 后申报即可）。
++- 基线（自检参照）：verify 93 文件 723 用例 / locks 142 / 工单 110 open 0 /
++  e2e 22 passed + 0 skip。完成后推演：单测 93 文件+1=94 文件 723+用例数增量
++  （scroll-converge.test it 数自报）；e2e 23 passed + 0 skip（守卫态=22+1）。
++
++## 4. 报告契约
++
++全文落 `scripts/audits/sr2-f-05-impl.report.md`：实现摘要/文件清单/首红
++证据（e2e 红+单测红）/变异红证全日志（含目标 it 名）/verify 真退出码
++（echo exit=$? 落盘）/locks 实录/自裁申报（一切超票面决定，含 P2~P7 偏差）
++/疑虑。回复五行内。
+diff --git a/scripts/audits/sr2-f-05-impl.report.md b/scripts/audits/sr2-f-05-impl.report.md
+new file mode 100644
+index 0000000..89f12ab
+--- /dev/null
++++ b/scripts/audits/sr2-f-05-impl.report.md
+@@ -0,0 +1,142 @@
++# SR2-F-05 实现报告——程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）
++
++> 三屋模式实现者子代理产出。票面=scripts/audits/sr2-f-05-brief.md（v1）。
++> 开工技能清点：用 TDD/verification-before-completion/javascript-testing-patterns/
++> e2e-testing-patterns；不用 systematic-debugging（根因票面已裁）/subagent-driven-
++> development（无派发权）/git 系（禁 add/commit/push）。环境=node24 PATH 前缀全称。
++
++## 1. 实现摘要
++
++- 新建 `src/renderer/features/reader/scroll-converge.ts`（63 行，DOM 几何件）：
++  `scrollIntoNearestScroller(el, align)`——只滚 el 的最近滚动祖先（自
++  parentElement 向上首个 computed overflowY∈{auto,scroll}；hidden/visible 不入选），
++  start=盒顶对齐差值法、center=居中差值法，显式夹取 [0, scrollHeight−clientHeight]；
++  无滚动祖先→不滚。`nearestScrollAncestor` 一并导出供单测（票面预许可项）。
++- PageColumn.tsx 段⑤：`scrollIntoView({block:'start'})` →
++  `scrollIntoNearestScroller(页盒,'start')`（props 零改）。
++- anchor-locate.ts flashElement：`scrollIntoView({block:'center'})` →
++  `scrollIntoNearestScroller(el,'center')`；flashTarget 查询泛型窄化为 HTMLElement
++  （票面预裁项）；LocateAnchor/LocateTarget/locateAnchor 签名零触碰。
++- ReaderPage.tsx 根两分支加 `overflow-hidden`（防御纵深）；ReaderToolbar.tsx 根
++  加 `shrink-0`（flex-wrap 保留）。
++- INV-34 登记 docs/invariants.md 表尾（33→34 续号）；INV-29 行锚定方式列的旧
++  机制名（scrollIntoView block:'start'）同步为新口径（接缝归责）。
++- 受锁测试改写（P6 口径，模块 mock 消费形断言）：page-column.test.tsx（2 it+
++  桩）、anchor-locate.test.ts（桩+6 断言）、ai-annotation-layer.test.tsx（桩+
++  2 断言）；e2e reader-scroll.spec.ts 新增 F-05 test（自守卫，272→341 行）。
++- 新单测 tests/unit/renderer/scroll-converge.test.ts（always-active，6 用例）。
++
++## 2. 文件清单（diff 范围自查=git diff --stat 全量）
++
++改 10：docs/invariants.md / locks/manifest.json / PageColumn.tsx / ReaderPage.tsx /
++ReaderToolbar.tsx / anchor-locate.ts / tests/e2e/reader-scroll.spec.ts /
++tests/unit/renderer/{page-column.test.tsx, anchor-locate.test.ts,
++ai-annotation-layer.test.tsx}。
++新 2：src/renderer/features/reader/scroll-converge.ts /
++tests/unit/renderer/scroll-converge.test.ts。
++无范围蔓延；无未跟踪残留（探针 spec 已删，备份均在 /tmp 不入 repo）。
++
++## 3. 根因自证复现（票面 §0 要求——证实并细化）
++
++临时探针 spec（跑完即删）实测预修复态：
++
++- `winY 70.4→129.6`（document.scrollingElement.scrollTop）——程序滚动链把
++  **document viewport** 滚了；html overflow:hidden 仍可被 scrollIntoView 程序滚。
++- **main.scrollTop 恒 0 且 scrollHeight=clientHeight=500（无溢出）**——票面预写
++  的「main.scrollTop===0」断言在预修复态也不红（恒真断言=假阳性，宪法禁）。
++- TabBar bbox：barTop −129.6 / barBottom −97.6——被顶出视口顶（用户图一复现）。
++- 祖先链诊断：阅读器滚动容器正常裁剪（offH 370 / scrH 4836，内部滚动 ✓）；
++  Chromium 将已裁剪列内容计入 html.scrollHeight（4954≈列高+toolbar+tabbar），
++  为 viewport 程序滚动提供了溢出面。泄漏面=viewport（非 main），修法对症不变。
++
++## 4. 首红证据
++
++**e2e 红**（spec 备份法：cp 备份→临时注释守卫行→跑→恢复 diff 空；预修复 build）：
++
++```
++Error: INV-34: 程序滚动不得滚 document viewport（scrollingElement）
++expect(received).toBe(expected)
++> 321 |       expect(s.docTop, 'INV-34: 程序滚动不得滚 document viewport
++      （scrollingElement）').toBe(0)
++1 failed / 1 passed   ← F-04 收官 test 不受扰仍绿
++```
++
++**单测红**（scroll-converge.test.ts 先于实现写入）：
++
++```
++FAIL tests/unit/renderer/scroll-converge.test.ts
++Error: Failed to resolve import "../../../src/renderer/features/reader/
++scroll-converge" from "tests/unit/renderer/scroll-converge.test.ts"
++Test Files  1 failed | 93 passed (94)
++```
++
++实现后全绿：Test Files 94 passed (94) / Tests 729 passed (729)
++（基线 93/723 +6）。实现态 e2e（守卫禁用取证跑）2 passed，恢复守卫 diff 空。
++
++## 5. 变异红证全日志（cp 备份法还原，禁 git checkout，还原后 diff 全空）
++
++| # | 变异 | 目标 it | 红 |
++|---|---|---|---|
++| M1 | start 数学 `elRect.top`→`elRect.bottom` | 「start 数学：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）；嵌套取最近——outer 零位移」 | × 该 it 红（1 failed/5 passed） |
++| M2 | center 数学 去 `− scroller.clientHeight/2` | 「center 数学：…（居中）」+「闪烁链消费形：center 对 aside 自身滚动容器同构…」 | × 两 it 红（2 failed/4 passed） |
++| M3 | 最近祖先取**最外**命中（found 不提前返回） | 「最近滚动祖先选取：自 parentElement 向上首个 overflowY∈{auto,scroll}…」 | × 该 it 红+3 依赖 it 红（4 failed） |
++| M4 | ReaderPage 主分支根删 `overflow-hidden`（build+守卫禁用跑 e2e） | e2e 断言「ReaderPage 根防御纵深 overflow-hidden 在位（两分支同形）」 | × `expect(s.rootOverflow).toBe('hidden')` 红（1 failed） |
++
++每步还原：`cp /tmp/*.mutbak → diff` 输出空（M1/M2/M3-RESTORE-OK、
++M4-RESTORE-OK-both-diff-empty 逐条留痕于会话）。
++
++## 6. verify 真退出码 + e2e 全量
++
++- `npm run verify`：**exit=0**（/tmp/f05-verify.log 尾行 `exit=0`）——quality
++  （无占位/无乱码/无跨域）+tickets+locks(143)+lint+typecheck+test(94/729)+
++  build 全绿。中途两轮红已修：①ReaderPage 头注顶破组件 250 行上限（quality 关）
++  ②e2e spec `getComputedStyle(null)` 类型缺陷（**tsc 关卡**拦住——受锁 e2e
++  改动后必须全量 verify 的实证，改 'missing' 哨兵= F-04 同款）。
++- `npm run test:e2e`：**22 passed + 1 skipped，exit=0**（守卫态=SR2-F-05 未翻
++  done；收口翻 done 后推演 23+0）。
++
++## 7. locks 实录
++
++unlock（142 只读解除）→改 4 受锁文件+新增 scroll-converge.test.ts→
++`locks:generate`（manifest 142→143，新测试文件入锁）→`locks:apply`（143 锁定）
++→（verify 发现类型缺陷）再 unlock→修 spec→generate→apply→`check-locks`
++143 与 manifest 一致 exit=0。全程即时 apply，无跨提交延迟。
++
++## 8. 自裁申报（超票面决定全清单）
++
++1. **e2e 断言锚修正（最重要）**：票面 §2 文化层预写断言「tablist visible 且
++   main.scrollTop===0」——探针实证 main 恒 0（假阳性断言）且 Playwright
++   `toBeVisible` 对出视口 bbox 仍算 visible（也不红）。改锚为：scrollingElement
++   .scrollTop===0（真泄漏面）**+ main.scrollTop===0（保留票面字面，双锁）**+
++   barTop≥0（bbox 真几何）+ 根 overflow-hidden 在位（P1-①锁定）。修法 P1~P7
++   裁决零冲突零改动；INV-34 登记文本按实录措辞（P4 字面微调：main→含
++   scrollingElement 与 main 的外层滚动面）。判定为票面取证细节与代码事实的
++   符合化，非裁决推翻——但请门一/门二独立复核此判定。
++2. **显式夹取**：票面行为层写「浏览器对 scrollTop 赋值自动夹取」（隐含依赖
++   浏览器）；实现改为显式夹取（jsdom 不模拟浏览器夹取=单测可锚；浏览器内与
++   自动夹取幂等）。
++3. **src 头注工单号简写**：tickets 关卡校验 src 内 SR2-*-* 引用必须在 registry
++   存在——SR2-F-05 尚未注册（我禁触 tickets/）。src 头注用先例族内简写
++   「[F-05 增补]」（PageColumn「[F-04 增补]」同构）；tests/docs 不在扫描面保留
++   全称。**主控收口建单后无需回改**（若欲全称回写需连动过 tickets 关卡，留主控裁量）。
++4. **INV-29 行同步**（接缝归责）：invariants.md INV-29 锚定方式列旧机制名
++   scrollIntoView block:'start' → scrollIntoNearestScroller(页盒,'start') 新口径。
++5. **ReaderPage.tsx 头注压缩**：F-05 增补行顶破组件 250 行上限→精简为单行+
++   移除行为层→接口层间一条空注释线（结构微损，申报；终态 249 行）。
++6. **探针取证法**：临时 e2e 探针 spec 自证复现（票面 §0 要求），跑完即删。
++7. PageColumn 段⑤查询拆为显式 null 守卫两行（原可选链一行）——语义同构，
++   可读性+测试锚定。
++8. e2e test 断言用 `getByLabel('跳转到页')` 定位输入框（aria-label 既有）。
++
++## 9. 疑虑
++
++- Chromium 把滚动容器已裁剪的列内容计入 html.scrollHeight（viewport 可滚溢出
++  面仍存在）的底层机制未深究。本修法消除一切**程序触发面**（reader 域滚动链
++  已无 scrollIntoView），但未来新代码若再引入 scrollIntoView/focus 滚动，同型
++  缺陷可复现——INV-34 已立「滚动链禁 scrollIntoView」，建议门一评估是否需要
++  lint 级防线（no-restricted-properties）补强。
++- `toBeVisible` 对出视口元素不红的语义边界：本 test 已用 bbox 断言补强；既有
++  e2e 中依赖 toBeVisible 判「在视口内」的用例存在同型盲区（存量面，未动）。
++- SR2-F-05 工单号未注册：e2e 守卫 `isTicketDone('SR2-F-05')` 在主控建单翻
++  done 前恒 skip——收口时序=先建单（110→111）再翻 done，e2e 推演 23+0。
++- 成本账本：本子代理 token/时长由主控侧台账记录（会话无法自计精确值）。
+diff --git a/src/renderer/features/reader/PageColumn.tsx b/src/renderer/features/reader/PageColumn.tsx
+index 2702e81..1532b44 100644
+--- a/src/renderer/features/reader/PageColumn.tsx
++++ b/src/renderer/features/reader/PageColumn.tsx
+@@ -5,6 +5,10 @@
+  * （(scrollTop+vh/2)/总高 比值保持，INV-33；程序性修正不发用户接管信号）；
+  * onReady 载荷=列宽基准（最宽页，fit-width 分母单源）；纯函数拆出
+  * page-column-geometry.ts（250 行预裁拆分预案——旧定义删除）。
++ * [F-05 增补] 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）：段⑤
++ * scrollIntoView（滚所有可滚祖先——含 document viewport/main 的泄漏面）
++ * 换 scrollIntoNearestScroller(页盒,'start')（只滚最近滚动祖先，INV-34）；
++ * props 接口零改。
+  *
+  * ── 行为层 ──（实现段预拆六段,每段独立可测可审）
+  * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady(列宽基准)→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
+@@ -43,6 +47,7 @@ import {
+   windowPages,
+   type PageBoxSize
+ } from './page-column-geometry'
++import { scrollIntoNearestScroller } from './scroll-converge'
+ 
+ // 纯函数唯一实现已拆 page-column-geometry.ts（F-04 拆分预案）；此处再导出
+ // nearestPage 维持 scroll-progress 既有 import 路径（单实现双出口，非复写）
+@@ -160,11 +165,14 @@ export function PageColumn(props: {
+     })
+   }, [visible, totalPages, renderWindow, recycleWindow])
+ 
+-  // 段⑤程序滚动（INV-29 单口）：夹取→页盒顶对齐视口顶；未就绪挂起、就绪补滚
++  // 段⑤程序滚动（INV-29 单口）：夹取→页盒顶对齐视口顶（F-05：单容器收敛——
++  // 只滚最近滚动祖先 scrollIntoNearestScroller，更外层滚动面零位移，INV-34）；
++  // 未就绪挂起、就绪补滚
+   useEffect(() => {
+     if (pageSizes === null || props.scrollRequest === null || props.scrollRequest === undefined) return
+     const no = clampPageToColumn(props.scrollRequest.page + 1, totalPages)
+-    rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`)?.scrollIntoView({ block: 'start' })
++    const box = rootRef.current?.querySelector<HTMLElement>(`[data-page-box="${no}"]`) ?? null
++    if (box !== null) scrollIntoNearestScroller(box, 'start')
+   }, [props.scrollRequest, pageSizes, totalPages])
+ 
+   // 段⑥滚动位置镜像：容器 scroll 事件被动监听（挂载即读初值——恢复链程序滚动亦派发事件）
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 2d9ae2d..9b4c74c 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -12,7 +12,7 @@
+  *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
+  *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
+  * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
+- *
++ * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+  *
+@@ -172,7 +172,7 @@ export function ReaderPage(): JSX.Element {
+   if (paperId === null || fileUrl === null) {
+     // 空态三形合一（无 tab/loading/error）；TabBar 保留——error tab 必须可见可关可切
+     return (
+-      <div className="flex h-full flex-col">
++      <div className="flex h-full flex-col overflow-hidden">
+         <TabBar />
+         <div
+           className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm"
+@@ -224,7 +224,7 @@ export function ReaderPage(): JSX.Element {
+   )
+ 
+   return (
+-    <div className="flex h-full flex-col">
++    <div className="flex h-full flex-col overflow-hidden">
+       <TabBar />
+       <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
+         onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />
+diff --git a/src/renderer/features/reader/ReaderToolbar.tsx b/src/renderer/features/reader/ReaderToolbar.tsx
+index 2eec796..49d2e17 100644
+--- a/src/renderer/features/reader/ReaderToolbar.tsx
++++ b/src/renderer/features/reader/ReaderToolbar.tsx
+@@ -63,7 +63,7 @@ export function ReaderToolbar(props: {
+ 
+   return (
+     <div
+-      className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-xs"
++      className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 text-xs"
+       style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
+     >
+       <div className="flex items-center gap-1">
+diff --git a/src/renderer/features/reader/anchor-locate.ts b/src/renderer/features/reader/anchor-locate.ts
+index 8b4feba..bed8b50 100644
+--- a/src/renderer/features/reader/anchor-locate.ts
++++ b/src/renderer/features/reader/anchor-locate.ts
+@@ -12,6 +12,15 @@
+  * LocateTarget :75-84/LocateResult :86——F-aware 冻结面）。票面=
+  * scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
+  *
++ * **[F-05 增补] 程序滚动单容器收敛（缺陷 A：TabBar 被
++ * 顶出视口）**——flashElement 的 scrollIntoView（滚所有可滚祖先——泄漏面含
++ * document viewport/main）换 scrollIntoNearestScroller(el,'center')（只滚最近
++ * 滚动祖先，INV-34）：页内 rect→阅读器滚动容器居中；flashAiNote 兜底命中
++ * aside 面板条目→aside 自身滚动容器（保持 AI-09 列表滚动语义）；无滚动祖先
++ * →不滚。flashElement/flashTarget 目标注解窄化为 HTMLElement（目标实为
++ * HTMLElement）；LocateAnchor/LocateTarget/locateAnchor 签名零触碰（F-02
++ * 冻结面）。票面=scripts/audits/sr2-f-05-brief.md。
++ *
+  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
+  * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
+  * locateAnchor，**禁各写降级**。
+@@ -77,6 +86,7 @@
+  */
+ import { verifyQuote } from './annotation-anchor'
+ import { useReaderStore } from './reader.store'
++import { scrollIntoNearestScroller } from './scroll-converge'
+ import { requestOpenPaper } from '../../shared/open-paper-bus'
+ import { showToast } from '../../shared/ui/toast-store'
+ import type { Annotation } from '@shared/models/annotation'
+@@ -221,14 +231,15 @@ function flashAiNote(aiNoteId: string): void {
+ }
+ 
+ function flashTarget(attr: string, value: string): void {
+-  const el = document.querySelector(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
++  const el = document.querySelector<HTMLElement>(`[${attr}="${value.replace(/(["\\])/g, '\\$1')}"]`)
+   if (el === null) return
+   flashElement(el)
+ }
+ 
+-function flashElement(el: Element): void {
++function flashElement(el: HTMLElement): void {
+   ensureFlashStyle()
+-  el.scrollIntoView({ block: 'center' })
++  // F-05 单容器收敛（INV-34）：只滚最近滚动祖先（更外层滚动面零位移）
++  scrollIntoNearestScroller(el, 'center')
+   el.classList.add('locate-flash')
+   setTimeout(() => el.classList.remove('locate-flash'), FLASH_MS)
+ }
+diff --git a/src/renderer/features/reader/scroll-converge.ts b/src/renderer/features/reader/scroll-converge.ts
+new file mode 100644
+index 0000000..6a0084a
+--- /dev/null
++++ b/src/renderer/features/reader/scroll-converge.ts
+@@ -0,0 +1,51 @@
++// b3: P7-F
++/**
++ * [F-05] scroll-converge —— 程序滚动单容器收敛（DOM 几何件，缺陷 A 修复）
++ *
++ * 缺陷（2026-08-28 用户真机验收图一）：PageColumn 段⑤/anchor-locate
++ * flashElement 原用 Element.scrollIntoView()——CSSOM 语义=滚**所有**可滚祖先；
++ * 实测泄漏面=document viewport（scrollingElement，overflow:hidden 仍可被程序
++ * 滚动，e2e 探针 winY 70→130）与 main（溢出时）——TabBar 被顶出视口且无自愈。
++ *
++ * 本件=INV-34 声明处：程序滚动只滚目标的**最近滚动祖先**（差值法+显式夹取），
++ * 更外层滚动面永不被触碰。消费方：PageColumn 段⑤（页盒 'start'）与
++ * anchor-locate flashElement（闪烁目标 'center'）——同一不变量同一实现。
++ * 纯 DOM 工具（不 import 组件/store），与 page-column-geometry 同层级的
++ * 「DOM 几何件」；测试=tests/unit/renderer/scroll-converge.test.ts
++ * （always-active）；行为终审=tests/e2e/reader-scroll.spec.ts F-05 test。
++ */
++
++/** 对齐语义（原 scrollIntoView block 单容器语义的等价收敛） */
++export type ScrollAlign = 'start' | 'center'
++
++/** 最近滚动祖先：自 el.parentElement 向上首个 overflowY∈{auto,scroll} 的祖先
++ *  （hidden/visible 不入选——hidden 可被程序滚=泄漏面；到根无→null 不滚） */
++export function nearestScrollAncestor(el: HTMLElement): HTMLElement | null {
++  let p = el.parentElement
++  while (p !== null) {
++    const oy = getComputedStyle(p).overflowY
++    if (oy === 'auto' || oy === 'scroll') return p
++    p = p.parentElement
++  }
++  return null
++}
++
++/**
++ * 程序滚动收敛：只滚 el 的最近滚动祖先（更外层零位移）。
++ * - 'start'：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）
++ * - 'center'：scrollTop += (elRect.top+h/2) − (scrollerRect.top+clientH/2)
++ * 显式夹取 [0, scrollHeight−clientHeight]（浏览器对赋值自动夹取；jsdom 不
++ * 模拟——显式=单测可锚，浏览器内幂等）。无滚动祖先→不滚（原 scrollIntoView
++ * 对无滚动容器元素同为无操作）。
++ */
++export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign): void {
++  const scroller = nearestScrollAncestor(el)
++  if (scroller === null) return
++  const elRect = el.getBoundingClientRect()
++  const scRect = scroller.getBoundingClientRect()
++  const raw =
++    align === 'start'
++      ? scroller.scrollTop + (elRect.top - scRect.top)
++      : scroller.scrollTop + (elRect.top + elRect.height / 2) - (scRect.top + scroller.clientHeight / 2)
++  scroller.scrollTop = Math.min(Math.max(raw, 0), Math.max(0, scroller.scrollHeight - scroller.clientHeight))
++}
+diff --git a/tests/e2e/reader-scroll.spec.ts b/tests/e2e/reader-scroll.spec.ts
+index d2cc954..d0d9771 100644
+--- a/tests/e2e/reader-scroll.spec.ts
++++ b/tests/e2e/reader-scroll.spec.ts
+@@ -10,6 +10,10 @@
+  *   滚动区内宽）/ 标注原位兼容抽验（划选高亮色块落所属页盒内）/ 离屏回收
+  *   （canvas 计数上限，INV-30 e2e 锚）/ 进度恢复（关 tab flush→重开滚回记忆页）。
+  * - 战役收官报告：docs/reports/2026-08-28_p7f-campaign.md（四票链+成本账本）。
++ * - [SR2-F-05] 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口——验收修复役 U1）：
++ *   新增独立 test+自守卫。断言锚定（取证修正）：泄漏面实测=document viewport
++ *   （scrollingElement——overflow:hidden 仍可被 scrollIntoView 程序滚动；main 恒
++ *   scrollTop=0），断言 scrollingElement/main 双零+TabBar bbox 在视口内。
+  *
+  * ── 接口层 ──
+  * - 消费面：PageColumn 段⑥缩放锚（anchoredScrollTop/columnTotalHeight）+
+@@ -270,3 +274,71 @@ test.describe('reader-scroll —— F-04 收官', () => {
+     await app.close()
+   })
+ })
++
++// ── SR2-F-05 程序滚动单容器收敛（缺陷 A：TabBar 被顶出视口）──
++// 首红取证（2026-08-28 实现者探针）：scrollIntoView 会滚所有滚动祖先——包括
++// overflow:hidden 的 document viewport（scrollingElement，程序可滚）与 main
++// （溢出时）。窄视口+页码跳转后实测 winY 70→130、TabBar bbox 顶出视口顶。
++test.describe('reader-scroll —— F-05 程序滚动单容器收敛', () => {
++  test.skip(!isTicketDone('SR2-F-05'), '延期：工单 SR2-F-05 未完成')
++
++  test('缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移', async () => {
++    const userData = await mkdtemp(join(tmpdir(), 'synapse-f05-'))
++    // 建库迁移（同配方：让应用自己完成，不 import src 内部模块）
++    const seedApp = await launch(userData)
++    await (await seedApp.firstWindow()).waitForTimeout(500)
++    await seedApp.close()
++
++    const bytes = createMultiPagePdf(6, PDF_KNOWN_TEXT)
++    const sha = createHash('sha256').update(bytes).digest('hex')
++    const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
++    const abs = join(userData, 'files', ...fileRef.split('/'))
++    mkdirSync(dirname(abs), { recursive: true })
++    writeFileSync(abs, bytes)
++    await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e F05 收敛文献', 'e2e-seed-f05')
++
++    const app = await launch(userData)
++    const win = await app.firstWindow()
++    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
++    await win.getByText('智慧水务 e2e F05 收敛文献').first().dblclick()
++    await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
++
++    // 窄视口：Toolbar flex-wrap 折行增高（辅因）+列宽溢出，构造外层可滚态
++    await win.setViewportSize({ width: 480, height: 500 })
++
++    /** 外层滚动面体检（INV-34 断言锚）：viewport（scrollingElement——实测泄漏面，
++     *  overflow:hidden 仍可被 scrollIntoView 程序滚动）与 main 双 scrollTop 零位移
++     *  +TabBar bbox 顶在视口内+ReaderPage 根 overflow-hidden（防御纵深在位） */
++    const outerState = (): Promise<{ docTop: number; mainTop: number; barTop: number; rootOverflow: string }> =>
++      win.evaluate(() => {
++        const readerRoot = document.querySelector('main')?.firstElementChild ?? null
++        return {
++          docTop: document.scrollingElement?.scrollTop ?? -1,
++          mainTop: (document.querySelector('main') as HTMLElement | null)?.scrollTop ?? -1,
++          barTop: document.querySelector('[role="tablist"]')?.getBoundingClientRect().top ?? -9999,
++          rootOverflow: readerRoot === null ? 'missing' : getComputedStyle(readerRoot).overflowY
++        }
++      })
++    const expectOuterStill = async (): Promise<void> => {
++      const s = await outerState()
++      expect(s.docTop, 'INV-34: 程序滚动不得滚 document viewport（scrollingElement）').toBe(0)
++      expect(s.mainTop, 'INV-34: 程序滚动不得滚 main').toBe(0)
++      expect(s.barTop, 'TabBar 盒顶不得被顶出视口（缺陷 A 回归锚）').toBeGreaterThanOrEqual(0)
++      expect(s.rootOverflow, 'ReaderPage 根防御纵深 overflow-hidden 在位（两分支同形）').toBe('hidden')
++      await expect(win.getByRole('tablist', { name: '打开的文献' })).toBeVisible()
++    }
++
++    // 程序滚动链一：工具栏页码跳转第 4 页（INV-29 setPage 'to'→段⑤程序滚动）
++    await win.getByLabel('跳转到页').fill('4')
++    await win.keyboard.press('Enter')
++    await expect(win.getByText(`P4 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
++    await expect(win.getByText('当前第 4 页')).toBeVisible()
++    await expectOuterStill()
++
++    // 程序滚动链二：PageDown 键位滚动步（容器 scrollBy——接管链同不外溢）
++    await win.keyboard.press('PageDown')
++    await win.waitForTimeout(300)
++    await expectOuterStill()
++    await app.close()
++  })
++})
+diff --git a/tests/unit/renderer/ai-annotation-layer.test.tsx b/tests/unit/renderer/ai-annotation-layer.test.tsx
+index da7caef..57a63d7 100644
+--- a/tests/unit/renderer/ai-annotation-layer.test.tsx
++++ b/tests/unit/renderer/ai-annotation-layer.test.tsx
+@@ -6,7 +6,8 @@
+  * 该段零 rects 且他段不受扰/篇级无锚行不入层/点击→该段全部 rects 高亮+
+  * onJumpToNote 上抛/只读断言（无菜单无编辑元素）/翻页重锚缓存失效（paperId+
+  * 页键）/anchor-locate exact 层延展（data-ai-note-id 目标滚动+闪烁；data-
+- * annotation-id 既有行为不回归）。
++ * annotation-id 既有行为不回归）。F-05：滚动副作用经 scrollIntoNearestScroller
++ * （单容器收敛，INV-34）——桩=模块 mock，断言调用形（目标元素, 'center'）。
+  * always-active（ADR-0017 裁决 3）。
+  */
+ import { act } from 'react'
+@@ -18,6 +19,12 @@ import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locat
+ import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+ import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+ 
++// F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
++const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
++vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
++  scrollIntoNearestScroller: scrollerMock
++}))
++
+ /** rAF 同步化（jsdom 假帧——重锚 effect 即时收敛，测试确定性） */
+ function syncRaf(): void {
+   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+@@ -204,13 +211,11 @@ it('重锚缓存失效：翻页后按新页重算（anchorPage 不匹配页不
+ 
+ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
+   let textLayer: HTMLDivElement | null = null
+-  let scrollIntoView: ReturnType<typeof vi.fn>
+   let target: HTMLElement | null = null
+ 
+   beforeEach(() => {
+-    scrollIntoView = vi.fn()
+-    // jsdom 无 scrollIntoView——模块级 polyfill（anchor-locate flash 副作用）
+-    Element.prototype.scrollIntoView = scrollIntoView as unknown as Element['scrollIntoView']
++    // F-05：滚动副作用消费形 spy 跨用例清账
++    scrollerMock.mockClear()
+   })
+ 
+   afterEach(() => {
+@@ -218,7 +223,6 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
+     target?.remove()
+     textLayer = null
+     target = null
+-    delete (Element.prototype as Partial<Element>).scrollIntoView
+   })
+ 
+   async function setupTarget(attr: 'data-ai-note-id' | 'data-annotation-id', value: string): Promise<void> {
+@@ -237,7 +241,7 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
+       aiNoteId: 'n1'
+     })
+     expect(result).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(target, 'center')
+     expect(target!.classList.contains('locate-flash')).toBe(true)
+   })
+ 
+@@ -249,7 +253,7 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
+       annotationId: 'a1'
+     })
+     expect(result).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(target, 'center')
+     expect(target!.classList.contains('locate-flash')).toBe(true)
+   })
+ })
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index a8591f2..86c30d0 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -5,6 +5,8 @@
+  * S3 verifyQuote 失败→page 降级+提示/S4 篇级 paper/S5 未开 opening 全链/
+  * S6 opening 超时降级/S7 打开失败（error）作废无提示/S8 并发后到胜（序号守卫）/
+  * S9 opening 中被关（seen→absent）作废无提示（票面 S6 行两形态）。
++ * F-05 增补：exact 层滚动副作用改走 scrollIntoNearestScroller(el,'center')
++ * （单容器收敛，INV-34）——桩=模块 mock，断言调用形（目标元素, 'center'）。
+  */
+ import { act } from 'react'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+@@ -13,7 +15,12 @@ import { useReaderStore, type TabState } from '../../../src/renderer/features/re
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+-const { toastSpy } = vi.hoisted(() => ({ toastSpy: vi.fn() }))
++const { toastSpy, scrollerMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), scrollerMock: vi.fn() }))
++vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
++// F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
++vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
++  scrollIntoNearestScroller: scrollerMock
++}))
+ vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
+ vi.mock('../../../src/renderer/api/client', () => ({
+   api: { reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } },
+@@ -60,22 +67,15 @@ const anchorOf = (quote: string, page: number) => ({
+   anchorPage: page
+ })
+ 
+-let scrollIntoView: ReturnType<typeof vi.fn>
+-let originalScroll: Element["scrollIntoView"] | undefined
+-
+ beforeEach(() => {
+   vi.useFakeTimers()
+   vi.clearAllMocks()
+   useReaderStore.setState({ tabs: {}, order: [], activeId: null, noteHighlight: null })
+   useReaderStore.getState().openPaper = vi.fn(async () => undefined)
+-  scrollIntoView = vi.fn()
+-  originalScroll = Element.prototype.scrollIntoView
+-  Element.prototype.scrollIntoView = scrollIntoView
+ })
+ 
+ afterEach(() => {
+   document.body.innerHTML = ''
+-  if (originalScroll !== undefined) Element.prototype.scrollIntoView = originalScroll
+   vi.useRealTimers()
+ })
+ 
+@@ -86,7 +86,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+     const el = mountAnchorEl('a-1')
+     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-1', anchor: anchorOf('locate', 0) })
+     expect(r).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(el, 'center')
+     expect(el.classList.contains('locate-flash')).toBe(true)
+     expect(toastSpy).not.toHaveBeenCalled()
+   })
+@@ -111,7 +111,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+     expect(r).toBe('page')
+     expect(useReaderStore.getState().tabs['p-1']?.page).toBe(5)
+     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
+-    expect(scrollIntoView).not.toHaveBeenCalled()
++    expect(scrollerMock).not.toHaveBeenCalled()
+   })
+ 
+   it('S4 篇级（anchor=null）：paper（回开篇）', async () => {
+@@ -124,7 +124,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+ 
+   it('S5 未开：requestOpenPaper（总线事件）→等 ready→activating→exact 全链', async () => {
+     mountTextLayer('cross view quote')
+-    mountAnchorEl('a-5')
++    const el5 = mountAnchorEl('a-5')
+     const events: string[] = []
+     window.addEventListener(OPEN_PAPER_EVENT, (e) => events.push((e as CustomEvent).detail?.paperId))
+     const p = locateAnchor({ paperId: 'p-9', annotationId: 'a-5', anchor: anchorOf('cross view', 0) })
+@@ -143,7 +143,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+     const r = await p
+     expect(events).toEqual(['p-9'])
+     expect(r).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(el5, 'center')
+   })
+ 
+   it('S6 opening 超时：降级 paper+超时提示（不抛错）', async () => {
+@@ -243,12 +243,12 @@ describe('anchor-locate F-02 页限定（多页列）', () => {
+     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+     // 页盒 1（邻页）=诱饵文本；页盒 2（目标，anchorPage=1 0 基）=真实引文
+     mountPageColumn([[1, 'decoy neighbor text only'], [2, 'target quote here']])
+-    mountAnchorEl('a-10')
++    const el10 = mountAnchorEl('a-10')
+     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-10', anchor: anchorOf('target quote', 1) })
+     // 全局第一实现拿到页盒 1 的诱饵层→verifyQuote 失败→3s 超时降级 page；
+     // 页限定实现首轮同步命中页盒 2→exact
+     expect(r).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(el10, 'center')
+   })
+ 
+   it('S11 邻页恰含引文也不误 exact：目标页盒内验证失败→page 降级+提示（半页错锚防护）', async () => {
+@@ -282,10 +282,10 @@ describe('anchor-locate F-03 回退全局唯一（W3）', () => {
+   it('S12a 页盒缺席+恰好一个 textLayer：回退可用（单页宿主兼容保持）', async () => {
+     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+     mountBareLayers(['unique quote target'])
+-    mountAnchorEl('a-12')
++    const el12 = mountAnchorEl('a-12')
+     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-12', anchor: anchorOf('unique quote', 99) })
+     expect(r).toBe('exact')
+-    expect(scrollIntoView).toHaveBeenCalled()
++    expect(scrollerMock).toHaveBeenCalledWith(el12, 'center')
+   })
+ 
+   it('S12b 页盒缺席+两个 textLayer：不取第一（全局唯一收紧）——首个含引文也按 page 降级+提示', async () => {
+@@ -299,6 +299,6 @@ describe('anchor-locate F-03 回退全局唯一（W3）', () => {
+     // 全局第一实现会命中第一层误 exact；全局唯一收紧后 3s 轮询超时→page 降级
+     expect(r).toBe('page')
+     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
+-    expect(scrollIntoView).not.toHaveBeenCalled()
++    expect(scrollerMock).not.toHaveBeenCalled()
+   })
+ })
+diff --git a/tests/unit/renderer/page-column.test.tsx b/tests/unit/renderer/page-column.test.tsx
+index f858895..2dc01c1 100644
+--- a/tests/unit/renderer/page-column.test.tsx
++++ b/tests/unit/renderer/page-column.test.tsx
+@@ -10,6 +10,8 @@
+  * 中心锚（anchoredScrollTop/columnTotalHeight+组件 scrollTop 程序修正）+
+  * 列宽基准上抛（onReady 载荷——fit-width 分母单源）。
+  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
++ * F-05 增补：段⑤程序滚动改走 scrollIntoNearestScroller(页盒,'start')（单容器
++ * 收敛，INV-34——数学正确性锚在 scroll-converge.test；本文件断言调用形）。
+  */
+ import { act, useEffect } from 'react'
+ import type { RefObject } from 'react'
+@@ -28,6 +30,13 @@ import {
+   windowPages
+ } from '../../../src/renderer/features/reader/page-column-geometry'
+ 
++// F-05：段⑤程序滚动的消费形断言锚（单容器收敛函数替身——真数学在
++// scroll-converge.test 锚定，本文件不重复实现数学）
++const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
++vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
++  scrollIntoNearestScroller: scrollerMock
++}))
++
+ /** 桩 IntersectionObserver：jsdom 无实现；report() 手动驱动可见性回调 */
+ class MockIO {
+   static instances: MockIO[] = []
+@@ -110,7 +119,8 @@ beforeEach(() => {
+   // jsdom 无 canvas 实现：stub getContext 返回 null（渲染单元按防御分支短路，
+   // 消 stderr 噪音——真实渲染由 e2e 锚）
+   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+-  Element.prototype.scrollIntoView = vi.fn()
++  // F-05：程序滚动消费形 spy 跨用例清账（调用历史不串测）
++  scrollerMock.mockClear()
+ })
+ 
+ afterEach(() => {
+@@ -121,7 +131,6 @@ afterEach(() => {
+   host?.remove()
+   host = null
+   vi.unstubAllGlobals()
+-  delete (Element.prototype as Partial<Element>).scrollIntoView
+ })
+ 
+ describe('PageColumn 纯函数（段①②：几何与窗口）', () => {
+@@ -283,7 +292,7 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
+     }
+   })
+ 
+-  it('scrollRequest 程序滚动：就绪后到达→目标页盒 scrollIntoView（block:start=盒顶，0 基页→1 基盒）', async () => {
++  it('scrollRequest 程序滚动：就绪后到达→scrollIntoNearestScroller(目标页盒,start)（0 基页→1 基盒，单容器收敛）', async () => {
+     const { doc } = makeDoc(6)
+     const req = { paperId: 'p-1', page: 2, seq: 1 }
+     await mount(
+@@ -298,7 +307,7 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
+       />
+     )
+     const target = host!.querySelector<HTMLElement>('[data-page-box="3"]')!
+-    expect(target.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
++    expect(scrollerMock).toHaveBeenCalledWith(target, 'start')
+   })
+ 
+   it('scrollRequest 早于就绪到达：页列就绪后补滚（onReady 恢复链的几何前置）', async () => {
+@@ -322,12 +331,12 @@ describe('PageColumn 组件（段①③⑤：就绪管线+IO 窗口回收+程序
+     act(() => {
+       root?.render(el)
+     })
+-    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
++    expect(scrollerMock).not.toHaveBeenCalled()
+     // 就绪落定（async act flush）：信号补滚到目标页盒顶
+     await act(async () => {
+       root?.render(el)
+     })
+-    expect(host.querySelector<HTMLElement>('[data-page-box="6"]')!.scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
++    expect(scrollerMock).toHaveBeenCalledWith(host.querySelector<HTMLElement>('[data-page-box="6"]'), 'start')
+   })
+ 
+   it('zoom 变化：盒高按新 zoom 重算且尺寸缓存不重取（getPage 调用数不变——缓存乘法）', async () => {
+diff --git a/tests/unit/renderer/scroll-converge.test.ts b/tests/unit/renderer/scroll-converge.test.ts
+new file mode 100644
+index 0000000..c86671e
+--- /dev/null
++++ b/tests/unit/renderer/scroll-converge.test.ts
+@@ -0,0 +1,138 @@
++// @vitest-environment jsdom
++/**
++ * [SR2-F-05] scroll-converge —— 程序滚动单容器收敛测试（always-active，
++ * ADR-0017 裁决 3——不经 guardedDescribe）。
++ *
++ * 覆盖：最近滚动祖先选取（含嵌套两滚动容器取最近）/start 数学（盒顶对齐）/
++ * center 数学（居中对齐）/顶底夹取/无滚动祖先不动（INV-34 单测锚）。
++ * jsdom 无布局：getBoundingClientRect/scrollHeight/clientHeight 全部桩值；
++ * scrollTop 赋值 jsdom 不做浏览器级夹取——故实现显式夹取（本文件断言锚）。
++ * 数学正确性在此锚定；消费方（PageColumn 段⑤/anchor-locate flashElement）
++ * 只断言 (元素, 对齐) 调用形（受锁三文件，P6 口径）；行为终审=e2e。
++ */
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import {
++  nearestScrollAncestor,
++  scrollIntoNearestScroller
++} from '../../../src/renderer/features/reader/scroll-converge'
++
++/** 桩盒几何：el 的 getBoundingClientRect 固定返回给定矩形 */
++function stubRect(el: HTMLElement, top: number, height = 10): void {
++  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
++    top, right: top + 10, bottom: top + height, left: 0, width: 10, height, x: 0, y: top,
++    toJSON: () => ({})
++  } as DOMRect)
++}
++
++/** 桩滚动容器的量纲（scrollHeight/clientHeight jsdom 恒 0——显式覆盖） */
++function stubScrollDims(el: HTMLElement, scrollHeight: number, clientHeight: number): void {
++  Object.defineProperty(el, 'scrollHeight', { value: scrollHeight, configurable: true })
++  Object.defineProperty(el, 'clientHeight', { value: clientHeight, configurable: true })
++}
++
++interface Fixture {
++  outer: HTMLElement
++  mid: HTMLElement
++  inner: HTMLElement
++  target: HTMLElement
++}
++
++/** 嵌套两滚动容器夹具：outer(scroll) > mid > inner(auto) > target */
++function buildNested(): Fixture {
++  document.body.innerHTML = ''
++  const outer = document.createElement('div')
++  outer.style.overflowY = 'scroll'
++  const mid = document.createElement('div')
++  const inner = document.createElement('div')
++  inner.style.overflowY = 'auto'
++  const target = document.createElement('div')
++  inner.appendChild(target)
++  mid.appendChild(inner)
++  outer.appendChild(mid)
++  document.body.appendChild(outer)
++  return { outer, mid, inner, target }
++}
++
++afterEach(() => {
++  document.body.innerHTML = ''
++  vi.restoreAllMocks()
++})
++
++describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () => {
++  it('最近滚动祖先选取：自 parentElement 向上首个 overflowY∈{auto,scroll}（越过 visible 中间层）', () => {
++    const { outer, inner, target } = buildNested()
++    expect(nearestScrollAncestor(target)).toBe(inner)
++    // target 自身可滚也不算（从父级起寻）
++    target.style.overflowY = 'auto'
++    expect(nearestScrollAncestor(target)).toBe(inner)
++    // 换 hidden 中间层：hidden 不入选（程序滚它=泄漏面，本票不变量）
++    inner.style.overflowY = 'hidden'
++    expect(nearestScrollAncestor(target)).toBe(outer)
++  })
++
++  it('无滚动祖先：不滚不抛（原 scrollIntoView 对无滚动容器元素同为无操作）', () => {
++    document.body.innerHTML = ''
++    const target = document.createElement('div')
++    document.body.appendChild(target)
++    expect(() => scrollIntoNearestScroller(target, 'start')).not.toThrow()
++    expect(document.body.scrollTop).toBe(0)
++    expect(document.documentElement.scrollTop).toBe(0)
++  })
++
++  it('start 数学：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）；嵌套取最近——outer 零位移', () => {
++    const { outer, inner, target } = buildNested()
++    stubRect(inner, 100)
++    stubRect(target, 550)
++    stubScrollDims(inner, 2000, 400)
++    stubScrollDims(outer, 3000, 600)
++    inner.scrollTop = 30
++    outer.scrollTop = 70
++    scrollIntoNearestScroller(target, 'start')
++    // 550 − 100 = +450 → 30+450 = 480
++    expect(inner.scrollTop).toBe(480)
++    expect(outer.scrollTop, '最近滚动祖先语义：更外层滚动容器零位移（INV-34）').toBe(70)
++  })
++
++  it('center 数学：scrollTop += (elRect.top + h/2) − (scrollerRect.top + clientH/2)（居中）', () => {
++    const { inner, target } = buildNested()
++    stubRect(inner, 100)
++    stubRect(target, 900, 80)
++    stubScrollDims(inner, 2000, 400)
++    inner.scrollTop = 0
++    scrollIntoNearestScroller(target, 'center')
++    // (900+40) − (100+200) = 640
++    expect(inner.scrollTop).toBe(640)
++  })
++
++  it('顶底夹取：目标在上方越界→夹 0；在下方越界→夹 scrollHeight−clientHeight（显式夹取，jsdom 无浏览器夹取）', () => {
++    const f = buildNested()
++    stubRect(f.inner, 100)
++    stubScrollDims(f.inner, 2000, 400)
++    f.inner.scrollTop = 50
++    // 目标盒顶 60 < 容器顶 100 → raw 50+(60−100)=10？构造真越界：目标 30
++    stubRect(f.target, 30)
++    scrollIntoNearestScroller(f.target, 'start')
++    expect(f.inner.scrollTop, 'raw=50+(30−100)=−20 → 夹 0').toBe(0)
++    // 底夹取：目标盒顶 1900 → raw=0+(1900−100)=1800 > 2000−400=1600 → 夹 1600
++    f.inner.scrollTop = 0
++    stubRect(f.target, 1900)
++    scrollIntoNearestScroller(f.target, 'start')
++    expect(f.inner.scrollTop).toBe(1600)
++  })
++
++  it('闪烁链消费形：center 对 aside 自身滚动容器同构（el 的最近祖先=aside 列表容器——P3 语义单测锚）', () => {
++    document.body.innerHTML = ''
++    const aside = document.createElement('aside')
++    aside.style.overflowY = 'auto'
++    const item = document.createElement('div')
++    aside.appendChild(item)
++    document.body.appendChild(aside)
++    stubRect(aside, 40)
++    stubRect(item, 500, 20)
++    stubScrollDims(aside, 900, 300)
++    scrollIntoNearestScroller(item, 'center')
++    // (500+10) − (40+150) = 320
++    expect(aside.scrollTop).toBe(320)
++    expect(document.documentElement.scrollTop).toBe(0)
++  })
++})
