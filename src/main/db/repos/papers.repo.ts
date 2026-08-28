@@ -5,15 +5,19 @@
  * - 单表 CRUD + FTS 联查列表页查询（搜索/筛选/排序/分页/计数；聚合 JOIN 子查询一次往返）
  *
  * ── 接口层 ──
- * - export interface PaperRow：表行形状（authors_json 等原始列）
+ * - export interface PaperRow：表行形状（authors_json 等原始列；ENR-01
+ *   三 cited_by 列可选——import.service 显式构造零涟漪）
  * - export interface PapersRepo：方法签名见下方接口定义，此处只记行为约定
+ * - applyEnrichment 第三参 citedBy（ENR-01 独立可选参数）：三 cited_by
+ *   列独立 SET 子句落库（不进 PATCH_COLS 映射），undefined=三列保持不动
  * - searchSummaries：FTS（≥3 字 escapeFtsQuery）/短串 LIKE 兜底（只搜
  *   title/authors_json，锁定合约见 papers.repo.test）；过滤/排序/total 语义
  *   同锁定测试；listSummariesByIds 保序跳缺；listAllIds=全库 id（added_at
  *   DESC——corpusSet 全库取数，C-02）
  *
  * ── 架构层 ──
- * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量
+ * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量；
+ *   列表/详情查询 SQL 常量+行映射在同域 papers.queries（repo ≤300 行拆分）
  * - 禁止：业务判断（重复检测是 import.service 的事，这里只报 findBySha256）
  * - SQL 一律 db.prepare 预编译 + 参数绑定；FTS 输入必须经 escapeFtsQuery；
  *   动态拼接只出现在固定白名单的列名/排序键/占位符个数上，值一律参数绑定
@@ -26,14 +30,21 @@
  * - 测试：tests/unit/db/repos/papers.repo.test.ts（已锁定；先读测试再实现）
  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
  */
-import { escapeFtsQuery } from '../fts'
 import { APP_FILE_SCHEME } from '../../../shared/constants'
 import type Database from 'better-sqlite3'
 import type { SqliteDb } from '../connection'
+import {
+  buildFilters,
+  DETAIL_SQL,
+  LIST_SQL,
+  ORDER_BY,
+  toSummary,
+  type DetailRow,
+  type SummaryRow
+} from './papers.queries'
 import type {
   EnrichStatus,
   LibraryQuery,
-  LibrarySort,
   PaperDetail,
   PaperMetaPatch,
   PaperSource,
@@ -57,6 +68,19 @@ export interface PaperRow {
   added_at: string
   updated_at: string
   last_read_page: number
+  /** ENR-01 含金量缓存三列（迁移 005，全可空；?: =插入面不构造，
+   *  读面 SELECT 显式带回——运行时值 number|null / string|null） */
+  cited_by_count?: number | null
+  cited_by_fetched_at?: string | null
+  cited_by_count_source?: string | null
+}
+
+/** ENR-01 被引数缓存写入载荷（citedByPatch 返回形；单源声明在本层——
+ *  services→repos 单向依赖，cited-by.service 以 import type 消费） */
+export interface CitedByWrite {
+  count: number
+  fetchedAt: string
+  source: PaperSource
 }
 
 export interface PapersRepo {
@@ -67,7 +91,8 @@ export interface PapersRepo {
   updateMeta(id: string, patch: PaperMetaPatch): PaperRow | null
   applyEnrichment(
     id: string,
-    e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch }
+    e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch },
+    citedBy?: CitedByWrite
   ): PaperRow | null
   updateReadPage(id: string, page: number): void
   searchSummaries(q: LibraryQuery): Paged<PaperSummary>
@@ -86,6 +111,10 @@ const COLS =
 
 const INSERT_SQL = `INSERT INTO papers (${COLS}) VALUES (${COLS.split(', ').map(() => '?').join(', ')})`
 
+/** 读面列清单（COLS + ENR-01 三缓存列；insert 仍用 COLS——新列全可空，
+ *  导入面 PaperRow 不构造三列，DB 默认 NULL） */
+const SELECT_COLS = `${COLS}, cited_by_count, cited_by_fetched_at, cited_by_count_source`
+
 /** PaperMetaPatch 字段 → 表列名（authors 在仓储边界序列化为 authors_json） */
 const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
   title: 'title',
@@ -94,63 +123,6 @@ const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
   venue: 'venue',
   doi: 'doi',
   abstract: 'abstract'
-}
-
-/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定） */
-const ORDER_BY: Readonly<Record<LibrarySort, string>> = {
-  added_desc: 'p.added_at DESC, p.id DESC',
-  year_desc: 'p.year DESC, p.added_at DESC',
-  title_asc: 'p.title ASC, p.id ASC'
-}
-
-/** 聚合列：标签/集合名用 char(31)（US 分隔符）串接，防名字本身含逗号 */
-const AGG_COLS = `
-  (SELECT GROUP_CONCAT(t.name, char(31)) FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = p.id) AS tag_names,
-  (SELECT GROUP_CONCAT(c.name, char(31)) FROM paper_collections pc JOIN collections c ON c.id = pc.collection_id WHERE pc.paper_id = p.id) AS coll_names,
-  (SELECT COUNT(*) FROM annotations a WHERE a.paper_id = p.id) AS annotation_count,
-  (SELECT COUNT(*) FROM notes n WHERE n.paper_id = p.id) AS note_count`
-
-/** 列表页 SELECT：一次往返带回全部聚合字段 */
-const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
-  ${AGG_COLS.trim()}
-  FROM papers p`
-
-const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
-  p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
-  ${AGG_COLS.trim()}
-  FROM papers p WHERE p.id = ?`
-
-/** 聚合查询内部行形状（蛇形列 + 聚合别名） */
-interface SummaryRow {
-  id: string; title: string; authors_json: string
-  year: number | null; venue: string; doi: string | null
-  added_at: string; last_read_page: number
-  tag_names: string | null; coll_names: string | null
-  annotation_count: number; note_count: number
-}
-
-interface DetailRow extends SummaryRow {
-  file_ref: string; abstract: string
-  arxiv_id: string | null; source: PaperSource
-  enrich_status: EnrichStatus; updated_at: string
-}
-
-/** LIKE 兜底转义：% _ 与转义符 \ 本身 */
-function escapeLike(s: string): string {
-  return s.replace(/[\\%_]/g, (c) => `\\${c}`)
-}
-
-/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化） */
-function toSummary(r: SummaryRow): PaperSummary {
-  return {
-    id: r.id, title: r.title,
-    authors: JSON.parse(r.authors_json) as string[],
-    year: r.year, venue: r.venue, doi: r.doi,
-    tagNames: r.tag_names === null ? [] : r.tag_names.split('\u001f'),
-    collectionNames: r.coll_names === null ? [] : r.coll_names.split('\u001f'),
-    annotationCount: r.annotation_count, noteCount: r.note_count,
-    lastReadPage: r.last_read_page, addedAt: r.added_at
-  }
 }
 
 /** meta 补丁 → 列名/绑定值（authors 数组在此序列化；未提供的字段不进 SET） */
@@ -178,44 +150,13 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
   }
 
   const findById = (id: string): PaperRow | null =>
-    (stmt(`SELECT ${COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
+    (stmt(`SELECT ${SELECT_COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
 
   /** 按给定列更新（列名来自白名单）并同步 updated_at；未命中返回 null */
   const updateColumns = (id: string, columns: string[], values: unknown[]): PaperRow | null => {
     const sets = [...columns.map((c) => `${c} = ?`), 'updated_at = ?'].join(', ')
     const info = stmt(`UPDATE papers SET ${sets} WHERE id = ?`).run(...values, new Date().toISOString(), id)
     return info.changes === 0 ? null : findById(id)
-  }
-
-  /** 组装搜索/过滤条件：片段固定、值参数绑定；cond 供拼 SQL 文本（进语句缓存） */
-  const buildFilters = (q: LibraryQuery): { cond: string; params: unknown[] } => {
-    const where: string[] = []
-    const params: unknown[] = []
-    const s = q.search?.trim() ?? ''
-    if (s.length >= 3) {
-      // trigram 分词器要求查询串 ≥3 字符；整段经 escapeFtsQuery 包成字面短语
-      where.push('p.rowid IN (SELECT rowid FROM papers_fts WHERE papers_fts MATCH ?)')
-      params.push(escapeFtsQuery(s))
-    } else if (s.length > 0) {
-      const pat = `%${escapeLike(s)}%`
-      where.push("(p.title LIKE ? ESCAPE '\\' OR p.authors_json LIKE ? ESCAPE '\\')")
-      params.push(pat, pat)
-    }
-    if (q.tagId !== undefined) {
-      where.push('EXISTS (SELECT 1 FROM paper_tags pt WHERE pt.paper_id = p.id AND pt.tag_id = ?)')
-      params.push(q.tagId)
-    }
-    if (q.collectionId !== undefined) {
-      where.push(
-        'EXISTS (SELECT 1 FROM paper_collections pc WHERE pc.paper_id = p.id AND pc.collection_id = ?)'
-      )
-      params.push(q.collectionId)
-    }
-    if (q.year !== undefined) {
-      where.push('p.year = ?')
-      params.push(q.year)
-    }
-    return { cond: where.length === 0 ? '' : ` WHERE ${where.join(' AND ')}`, params }
   }
 
   return {
@@ -228,7 +169,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     },
     findById,
     findBySha256(sha256) {
-      const r = stmt(`SELECT ${COLS} FROM papers WHERE sha256 = ?`).get(sha256) as PaperRow | undefined
+      const r = stmt(`SELECT ${SELECT_COLS} FROM papers WHERE sha256 = ?`).get(sha256) as PaperRow | undefined
       return r === undefined ? null : r
     },
     fileRefById(id) {
@@ -240,13 +181,17 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       const f = patchFragments(patch)
       return updateColumns(id, f.columns, f.values)
     },
-    applyEnrichment(id, e) {
+    applyEnrichment(id, e, citedBy) {
       const f = patchFragments(e.patch)
-      return updateColumns(
-        id,
-        ['source', 'enrich_status', ...f.columns],
-        [e.source, e.enrichStatus, ...f.values]
-      )
+      // ENR-01：citedBy 三列独立 SET 子句（不进 PATCH_COLS——update-meta
+      // 契约面零触碰）；undefined=不进 SET（缓存保留）
+      const columns = ['source', 'enrich_status', ...f.columns]
+      const values: unknown[] = [e.source, e.enrichStatus, ...f.values]
+      if (citedBy !== undefined) {
+        columns.push('cited_by_count', 'cited_by_fetched_at', 'cited_by_count_source')
+        values.push(citedBy.count, citedBy.fetchedAt, citedBy.source)
+      }
+      return updateColumns(id, columns, values)
     },
     updateReadPage(id, page) {
       stmt('UPDATE papers SET last_read_page = ? WHERE id = ?').run(page, id)
@@ -291,6 +236,17 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
         fileUrl: `${APP_FILE_SCHEME}://${r.id}`,
         fileName: r.file_ref.slice(slashPos),
         updatedAt: r.updated_at,
+        // ENR-01：三缓存字段配对透出（写入面三列同写，count 非 null 蕴含
+        // 另两列非 null——应用层不变量；null→省略=ENR-02 装配按 undefined 省略）；
+        // source 列写入面只收 PaperSource 枚举，TEXT 读回在此单点收窄
+        ...(r.cited_by_count !== null
+          ? {
+              citedByCount: r.cited_by_count,
+              citedByFetchedAt:
+                r.cited_by_fetched_at === null ? undefined : r.cited_by_fetched_at,
+              citedByCountSource: r.cited_by_count_source as PaperDetail['citedByCountSource']
+            }
+          : {}),
         tags,
         collections
       }

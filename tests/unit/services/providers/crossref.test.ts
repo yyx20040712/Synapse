@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createCrossrefProvider } from '../../../../src/main/services/enrich/providers/crossref'
 import { HttpFetchError } from '../../../../src/main/http/http-client'
 import { guardedDescribe } from '../../../utils/guard'
@@ -18,7 +18,8 @@ const crossrefWork = {
     issued: { 'date-parts': [[2024, 3]] },
     'container-title': ['Water Research'],
     DOI: '10.1016/j.watres.2024.01.001',
-    abstract: '<jats:p>Forecasting matters.</jats:p>'
+    abstract: '<jats:p>Forecasting matters.</jats:p>',
+    'is-referenced-by-count': 7
   }
 }
 
@@ -33,6 +34,7 @@ guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
     expect(work?.venue).toBe('Water Research')
     expect(work?.doi).toBe('10.1016/j.watres.2024.01.001')
     expect(work?.abstract).toBe('Forecasting matters.')
+    expect(work?.citedByCount).toBe(7)
     expect(fetchJson).toHaveBeenCalledOnce()
     expect((fetchJson.mock.calls[0]?.[0] as string)).toContain(
       'https://api.crossref.org/works/10.1016%2Fj.watres.2024.01.001'
@@ -66,5 +68,25 @@ guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
     })
     const p = createCrossrefProvider({ fetchJson })
     await expect(p.byTitle('water demand forecasting')).resolves.toBeNull()
+  })
+})
+
+/** SR2-ENR-01：被引数两形解析（有值形见上块；缺省形在此）——裸 describe（W4） */
+describe('SR2-ENR-01 crossref provider —— is-referenced-by-count 缺省形', () => {
+  it('响应缺 is-referenced-by-count → citedByCount=null（命中仍成立，不写缓存通道）', async () => {
+    const noCitations = {
+      status: 'ok',
+      message: {
+        title: ['Deep learning for water demand forecasting'],
+        author: [],
+        issued: { 'date-parts': [[2024]] },
+        'container-title': ['Water Research'],
+        DOI: '10.1016/j.watres.2024.01.001'
+      }
+    }
+    const p = createCrossrefProvider({ fetchJson: fakeFetchJson(noCitations) })
+    const work = await p.byDoi('10.1016/j.watres.2024.01.001')
+    expect(work?.citedByCount).toBeNull()
+    expect(work?.title).toBe('Deep learning for water demand forecasting')
   })
 })

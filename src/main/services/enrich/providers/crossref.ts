@@ -8,7 +8,9 @@
  *
  * ── 接口层 ──
  * - export interface EnrichedWork { title; authors: string[]; year: number|null;
- *     venue: string; doi: string|null; abstract: string }
+ *     venue: string; doi: string|null; abstract: string;
+ *     citedByCount: number|null（ENR-01——is-referenced-by-count，
+ *     null=响应缺被引数：命中仍成立，不写缓存） }
  * - export function createCrossrefProvider(deps: { fetchJson }): CrossrefProvider
  *
  * ── 架构层 ──
@@ -33,6 +35,8 @@ export interface EnrichedWork {
   venue: string
   doi: string | null
   abstract: string
+  /** 被引数缓存快照（ENR-01）；null=响应缺被引数（arxiv 源同形） */
+  citedByCount: number | null
 }
 
 export interface CrossrefProvider {
@@ -52,7 +56,10 @@ const workSchema = z.object({
       'container-title': z.array(z.string()).default([]),
       type: z.string().optional(),
       DOI: z.string().optional(),
-      abstract: z.string().optional()
+      abstract: z.string().optional(),
+      // ENR-01：脏类型→整个 work parse 失败（'failed' 诚实语义，禁 .catch
+      // 宽松化）；缺省/显式 null→toWork 归一 null（不写缓存通道）
+      'is-referenced-by-count': z.number().int().nullable().optional()
     })
     .default({})
 })
@@ -91,7 +98,8 @@ function toWork(message: z.infer<typeof workSchema>['message']): EnrichedWork {
     year: message.issued?.['date-parts'][0]?.[0] ?? null,
     venue: message['container-title'][0] ?? (message.type ?? ''),
     doi: message.DOI ?? null,
-    abstract: message.abstract === undefined ? '' : stripJats(message.abstract)
+    abstract: message.abstract === undefined ? '' : stripJats(message.abstract),
+    citedByCount: message['is-referenced-by-count'] ?? null
   }
 }
 

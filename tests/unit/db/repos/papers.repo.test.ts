@@ -195,3 +195,73 @@ guardedDescribe(
     })
   }
 )
+
+/** SR2-ENR-01：applyEnrichment citedBy 独立参数的 SET 子句真库落库断言——
+ *  enrich 测试全用桩，SQL 面唯一锚定点（always-active 裸 describe，W4） */
+describe('SR2-ENR-01 applyEnrichment —— citedBy 独立参数真库落库', () => {
+  let db: SqliteDb
+  let repo: ReturnType<typeof createPapersRepo>
+
+  beforeEach(() => {
+    db = createTestDb()
+    repo = createPapersRepo(db)
+  })
+
+  it('citedBy 三列独立 SET 落库（与元数据列同 UPDATE，互不扰动）', () => {
+    repo.insert(row())
+    const r = repo.applyEnrichment(
+      'p-1',
+      { source: 'crossref', enrichStatus: 'done', patch: { venue: 'Water Research' } },
+      { count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' }
+    )
+    expect(r?.venue).toBe('Water Research')
+    expect(r?.source).toBe('crossref')
+    expect(r?.cited_by_count).toBe(5)
+    expect(r?.cited_by_fetched_at).toBe('2026-02-01T00:00:00Z')
+    expect(r?.cited_by_count_source).toBe('crossref')
+  })
+
+  it('不传 citedBy：三列保持 NULL；传 0 覆盖旧值（0 合法缓存值）；再不传则保留', () => {
+    repo.insert(row())
+    const noWrite = repo.applyEnrichment('p-1', {
+      source: 'crossref',
+      enrichStatus: 'done',
+      patch: {}
+    })
+    expect(noWrite?.cited_by_count).toBeNull()
+    expect(noWrite?.cited_by_fetched_at).toBeNull()
+    expect(noWrite?.cited_by_count_source).toBeNull()
+    const refreshed = repo.applyEnrichment(
+      'p-1',
+      { source: 'openalex', enrichStatus: 'done', patch: {} },
+      { count: 0, fetchedAt: '2026-02-02T00:00:00Z', source: 'openalex' }
+    )
+    expect(refreshed?.cited_by_count).toBe(0)
+    expect(refreshed?.cited_by_count_source).toBe('openalex')
+    const kept = repo.applyEnrichment('p-1', {
+      source: 'arxiv',
+      enrichStatus: 'failed',
+      patch: {}
+    })
+    expect(kept?.cited_by_count).toBe(0)
+    expect(kept?.cited_by_fetched_at).toBe('2026-02-02T00:00:00Z')
+  })
+
+  it('detailById：有缓存三字段配对透出；无缓存字段省略（undefined）', () => {
+    repo.insert(row())
+    repo.insert(row({ id: 'p-2', sha256: 'sha-bbb' }))
+    repo.applyEnrichment(
+      'p-1',
+      { source: 'crossref', enrichStatus: 'done', patch: {} },
+      { count: 7, fetchedAt: '2026-02-03T00:00:00Z', source: 'crossref' }
+    )
+    const d = repo.detailById('p-1')
+    expect(d?.citedByCount).toBe(7)
+    expect(d?.citedByFetchedAt).toBe('2026-02-03T00:00:00Z')
+    expect(d?.citedByCountSource).toBe('crossref')
+    const bare = repo.detailById('p-2')
+    expect(bare?.citedByCount).toBeUndefined()
+    expect(bare?.citedByFetchedAt).toBeUndefined()
+    expect(bare?.citedByCountSource).toBeUndefined()
+  })
+})

@@ -8,6 +8,8 @@
  *
  * ── 接口层 ──
  * - export interface OpenalexWork extends EnrichedWork { arxivId: string | null }
+ *   （EnrichedWork.citedByCount=number|null 由本源解析 cited_by_count——ENR-01；
+ *     缺省/显式 null 归一 null，行为口径单源在 crossref.ts 的 EnrichedWork 声明处）
  * - export function createOpenalexProvider(deps: { fetchJson }): OpenalexProvider
  *
  * ── 架构层 ──
@@ -44,6 +46,9 @@ const resultSchema = z.object({
     .nullable()
     .optional(),
   doi: z.string().nullable().optional(),
+  // ENR-01：被引数（脏类型→parse 失败走 'failed' 诚实语义；缺省/显式
+  // null→toWork 归一 null）
+  cited_by_count: z.number().int().nullable().optional(),
   abstract_inverted_index: z.record(z.string(), z.array(z.number().int())).nullable().optional()
 })
 
@@ -77,7 +82,8 @@ function toWork(r: z.infer<typeof resultSchema>): OpenalexWork {
       r.abstract_inverted_index === undefined || r.abstract_inverted_index === null
         ? ''
         : invertAbstract(r.abstract_inverted_index),
-    arxivId: r.primary_location?.arxiv_id ?? null
+    arxivId: r.primary_location?.arxiv_id ?? null,
+    citedByCount: r.cited_by_count ?? null
   }
 }
 

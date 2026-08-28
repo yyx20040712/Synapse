@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-27T16:10:20.4696934Z",
+    "generatedAt":  "2026-08-28T00:15:02.4497878Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -74,6 +74,10 @@
                       "sha256":  "a60fa92b2fcb327f66840ab5ac510252dffae6435d298dd3261ca2dd4fca15d2"
                   },
                   {
+                      "path":  "src/main/db/migrations/005_cited_by.sql",
+                      "sha256":  "020264ff845287491eba3644332a3ff95ef592bb2267e91d5cd33055a7086164"
+                  },
+                  {
                       "path":  "src/shared/annotation-order.ts",
                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
                   },
@@ -115,7 +119,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "706a7c1e5d78d88ada4fdaf36f3c323a649316a5f4e8d28eab2ac50d0a6ebe6c"
+                      "sha256":  "75d65533cd3230988cade3cac01d0d858f94c6ba8b85a32ce829e3b5da479fc3"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -191,7 +195,7 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
+                      "sha256":  "16e508c2e2121b5632a5b02299fd44311e9cd8e958e41814cb5c78176bbc5082"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -215,7 +219,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "7ab87a45c238a74f299ea3771fa28facbd2d3c8624b7cf4f7a05fee1e4d9727b"
+                      "sha256":  "9a6f3e5101c30491c90165ccfb782092a4c287ef00f726ed65b216ab197108f6"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
@@ -418,6 +422,10 @@
                       "sha256":  "8a47804aed6632829ff40345a2974e3efe7e1fd7e16d7223f8960c74ae91aac1"
                   },
                   {
+                      "path":  "tests/unit/services/cited-by.test.ts",
+                      "sha256":  "2604e8ad496f29745a17c30f01a4191e90a8643b29146ac2d3a5bda072ec6146"
+                  },
+                  {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
                       "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
                   },
@@ -427,7 +435,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "bc8129ea06a9cd17631073619dc7ad196832213f66aa2f323944ad89fe369ccf"
+                      "sha256":  "26f0ec475d61bd3a2e061eb12cef3568dd35eeb528b85fa0f4097bd7536c3353"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -467,11 +475,11 @@
                   },
                   {
                       "path":  "tests/unit/services/providers/crossref.test.ts",
-                      "sha256":  "583f58a07f63ec57b1412cfee844f0c40f3a8544a04a21d27748116a476fce6f"
+                      "sha256":  "02dcf245150dcc7abb74a7eabee93a9d22d556e4fe2fa54dfbd80605b1453b87"
                   },
                   {
                       "path":  "tests/unit/services/providers/openalex.test.ts",
-                      "sha256":  "ec503ed5cd10bb0025c000b5a8697abc60b0fc62d1dc9c8711b1f39ef8474abd"
+                      "sha256":  "2e149ee5cda48e5629da83794a487316c64f6077f92be8a76a0293d86dfd2b4f"
                   },
                   {
                       "path":  "tests/unit/services/reader.service.test.ts",

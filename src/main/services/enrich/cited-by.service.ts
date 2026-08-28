@@ -73,6 +73,28 @@
  *   enrich.service.test 与 papers.repo.test（受锁扩）。
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
+import type { PaperSource } from '../../../shared/models/paper'
+import type { CitedByWrite, PaperRow } from '../../db/repos/papers.repo'
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const CITED_BY_SERVICE_STUB = 'SR2-ENR-01'
+/**
+ * 刷新决策单源（头注状态机表的可执行形态）。
+ *
+ * 返回非 null=强制刷新载荷（调用方经 applyEnrichment 独立参数落库）；
+ * 返回 null=不写缓存（旧值保留——被引数单调增长，任何失败/缺省都不清缓存）。
+ * row 参数是状态机的「旧值」通道：决策本身与旧值无关（新旧两格同为覆盖写），
+ * 保留在签名上以锚定「保留谁的缓存」语义并供未来演进；**判别一律 === null，
+ * 禁 ??/falsy（0 与 NULL 语义不同）**。
+ */
+export function citedByPatch(
+  work: { citedByCount: number | null } | null,
+  source: PaperSource,
+  row: Pick<PaperRow, 'cited_by_count'>,
+  now: () => string
+): CitedByWrite | null {
+  // 未命中/异常（work=null→'failed'）与命中但字段缺省（citedByCount=null→
+  // 'done'，arxiv 源/响应缺被引数）两形均不写缓存——enrich_status 由元数据面判定
+  if (work === null || work.citedByCount === null) return null
+  // 强制刷新：0 是合法缓存值（含 0 样本走本格）；无论旧值 NULL/有值一律
+  // 新值+新时间戳+source
+  return { count: work.citedByCount, fetchedAt: now(), source }
+}

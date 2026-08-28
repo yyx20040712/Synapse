@@ -40,7 +40,12 @@ export const paperDetailSchema = paperSummarySchema
     fileName: z.string(),
     updatedAt: z.string(),
     tags: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
-    collections: z.array(z.object({ id: z.string(), name: z.string() }).strict())
+    collections: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
+    // ENR-01 含金量缓存快照（可选字段——ADR-0011 演进规则；三字段由
+    // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）
+    citedByCount: z.number().int().optional(),
+    citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
+    citedByCountSource: paperSourceSchema.optional() // 命中的瀑布源
   })
   .strict()
 export type PaperDetail = z.infer<typeof paperDetailSchema>

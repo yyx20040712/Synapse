@@ -9,13 +9,18 @@
  *      命中项带 arxivId 时也用 arxiv 补充空字段
  *   4) 全部未命中 → enrich_status='failed'（source 保持原值，不覆盖已有字段）
  *   5) 成功 → enrich_status='done'；返回最新 PaperDetail
+ * - [ENR-01] 瀑布之后经 citedByPatch（刷新决策单源=cited-by.service）
+ *   求被引数缓存写值，经 applyEnrichment 第三参独立落库——与元数据结果解耦：
+ *   work=null→failed 缓存保留；命中但 citedByCount=null（arxiv/字段缺省）
+ *   →done 不写缓存；非 null（含 0）→强制刷新
  * - 回写只填"当前为空的字段"（用户手填的值优先，source 除外）
  *
  * ── 接口层 ──
  * - export interface EnrichProviders { crossref: CrossrefProvider; openalex: OpenalexProvider;
  *     arxiv: ArxivProvider }（类型从各 provider 文件 import）
  * - export function createEnrichService(deps: {
- *     repos: Repos; providers: EnrichProviders; contactEmail: () => string
+ *     repos: Repos; providers: EnrichProviders; contactEmail: () => string;
+ *     now?: () => string（ENR-01 时间源注入——citedBy fetchedAt）
  *   }): { enrichPaper(paperId: string): Promise<PaperDetail> }
  *
  * ── 架构层 ──
@@ -35,6 +40,7 @@ import type { Repos } from '../../db/repos'
 import type { CrossrefProvider, EnrichedWork } from './providers/crossref'
 import type { OpenalexProvider } from './providers/openalex'
 import type { ArxivProvider } from './providers/arxiv'
+import { citedByPatch } from './cited-by.service'
 
 export interface EnrichProviders {
   crossref: CrossrefProvider
@@ -72,8 +78,11 @@ export function createEnrichService(deps: {
   repos: Repos
   providers: EnrichProviders
   contactEmail: () => string
+  /** 时间源（ENR-01——citedBy fetchedAt；corpus.export deps.now 同型先例） */
+  now?: () => string
 }): { enrichPaper(paperId: string): Promise<PaperDetail> } {
   const { repos, providers } = deps
+  const now = deps.now ?? (() => new Date().toISOString())
 
   return {
     async enrichPaper(paperId) {
@@ -96,8 +105,9 @@ export function createEnrichService(deps: {
         if (work === null && row.arxiv_id !== null) {
           const ax = await providers.arxiv.byId(row.arxiv_id)
           if (ax !== null) {
-            // arXiv 命中无 venue/doi，统一到 Candidate 形状（venue 留空待补）
-            work = { ...ax, venue: '', doi: null }
+            // arXiv 命中无 venue/doi，统一到 Candidate 形状（venue 留空待补）；
+            // arXiv 响应无被引数（ENR-01——citedByCount 恒 null，不写缓存）
+            work = { ...ax, venue: '', doi: null, citedByCount: null }
           }
           if (work !== null) source = 'arxiv'
         }
@@ -121,11 +131,23 @@ export function createEnrichService(deps: {
         work = null
       }
 
-      repos.papers.applyEnrichment(paperId, {
+      // ENR-01：瀑布响应自身携带被引数（零新增请求）；刷新决策单源在
+      // citedByPatch——null=不写（work=null→failed 保留 / 字段缺省→done 保留）
+      const citedBy = citedByPatch(
+        work === null ? null : { citedByCount: work.citedByCount },
         source,
-        enrichStatus: work !== null ? 'done' : 'failed',
-        patch: work === null ? {} : fillEmptyPatch(row, work)
-      })
+        { cited_by_count: row.cited_by_count },
+        now
+      )
+      repos.papers.applyEnrichment(
+        paperId,
+        {
+          source,
+          enrichStatus: work !== null ? 'done' : 'failed',
+          patch: work === null ? {} : fillEmptyPatch(row, work)
+        },
+        citedBy ?? undefined
+      )
       const detail = repos.papers.detailById(paperId)
       if (detail === null) {
         throw new EnrichDomainError('NOT_FOUND', `文献不存在：${paperId}`)

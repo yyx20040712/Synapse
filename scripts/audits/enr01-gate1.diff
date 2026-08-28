@@ -1,0 +1,1068 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 6b0ccaa..624d2fd 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-27T16:10:20.4696934Z",
++    "generatedAt":  "2026-08-28T00:01:32.2695253Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -73,6 +73,10 @@
+                       "path":  "src/main/db/migrations/004_lineage.sql",
+                       "sha256":  "a60fa92b2fcb327f66840ab5ac510252dffae6435d298dd3261ca2dd4fca15d2"
+                   },
++                  {
++                      "path":  "src/main/db/migrations/005_cited_by.sql",
++                      "sha256":  "457a662f85591d2d067dae086da9f1c2a81fdd9c6940e3e7c2a973260c093796"
++                  },
+                   {
+                       "path":  "src/shared/annotation-order.ts",
+                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
+@@ -115,7 +119,7 @@
+                   },
+                   {
+                       "path":  "src/shared/models/paper.ts",
+-                      "sha256":  "706a7c1e5d78d88ada4fdaf36f3c323a649316a5f4e8d28eab2ac50d0a6ebe6c"
++                      "sha256":  "cd070ca1b92988c9e9c8e03c075a099bd2aa9057d7fe1e7d62e6a3e42a272adf"
+                   },
+                   {
+                       "path":  "src/shared/models/tag.ts",
+@@ -191,7 +195,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/db/migrate.test.ts",
+-                      "sha256":  "9fd4656c8324c6da0082ee2e98d61fd57ca1ba5fb54c1bf3d3f6314efcbc6c00"
++                      "sha256":  "16e508c2e2121b5632a5b02299fd44311e9cd8e958e41814cb5c78176bbc5082"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
+@@ -215,7 +219,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
+-                      "sha256":  "7ab87a45c238a74f299ea3771fa28facbd2d3c8624b7cf4f7a05fee1e4d9727b"
++                      "sha256":  "9a6f3e5101c30491c90165ccfb782092a4c287ef00f726ed65b216ab197108f6"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
+@@ -417,6 +421,10 @@
+                       "path":  "tests/unit/services/bibtex.serializer.test.ts",
+                       "sha256":  "8a47804aed6632829ff40345a2974e3efe7e1fd7e16d7223f8960c74ae91aac1"
+                   },
++                  {
++                      "path":  "tests/unit/services/cited-by.test.ts",
++                      "sha256":  "2604e8ad496f29745a17c30f01a4191e90a8643b29146ac2d3a5bda072ec6146"
++                  },
+                   {
+                       "path":  "tests/unit/services/corpus.assemble.test.ts",
+                       "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
+@@ -427,7 +435,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/enrich.service.test.ts",
+-                      "sha256":  "bc8129ea06a9cd17631073619dc7ad196832213f66aa2f323944ad89fe369ccf"
++                      "sha256":  "26f0ec475d61bd3a2e061eb12cef3568dd35eeb528b85fa0f4097bd7536c3353"
+                   },
+                   {
+                       "path":  "tests/unit/services/export.service.test.ts",
+@@ -467,11 +475,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/providers/crossref.test.ts",
+-                      "sha256":  "583f58a07f63ec57b1412cfee844f0c40f3a8544a04a21d27748116a476fce6f"
++                      "sha256":  "02dcf245150dcc7abb74a7eabee93a9d22d556e4fe2fa54dfbd80605b1453b87"
+                   },
+                   {
+                       "path":  "tests/unit/services/providers/openalex.test.ts",
+-                      "sha256":  "ec503ed5cd10bb0025c000b5a8697abc60b0fc62d1dc9c8711b1f39ef8474abd"
++                      "sha256":  "2e149ee5cda48e5629da83794a487316c64f6077f92be8a76a0293d86dfd2b4f"
+                   },
+                   {
+                       "path":  "tests/unit/services/reader.service.test.ts",
+diff --git a/src/main/db/migrate.ts b/src/main/db/migrate.ts
+index f384497..a6cecc6 100644
+--- a/src/main/db/migrate.ts
++++ b/src/main/db/migrate.ts
+@@ -12,6 +12,7 @@ import initSql from './migrations/001_init.sql?raw'
+ import indexesSql from './migrations/002_indexes.sql?raw'
+ import aiNotesSql from './migrations/003_ai_notes.sql?raw'
+ import lineageSql from './migrations/004_lineage.sql?raw'
++import citedBySql from './migrations/005_cited_by.sql?raw'
+ 
+ export interface Migration {
+   version: number
+@@ -24,7 +25,8 @@ export const MIGRATIONS: readonly Migration[] = [
+   { version: 1, name: 'init', sql: initSql },
+   { version: 2, name: 'indexes', sql: indexesSql },
+   { version: 3, name: 'ai_notes', sql: aiNotesSql },
+-  { version: 4, name: 'lineage', sql: lineageSql }
++  { version: 4, name: 'lineage', sql: lineageSql },
++  { version: 5, name: 'cited_by', sql: citedBySql }
+ ]
+ 
+ export interface MigrateResult {
+diff --git a/src/main/db/migrations/005_cited_by.sql b/src/main/db/migrations/005_cited_by.sql
+new file mode 100644
+index 0000000..9df9309
+--- /dev/null
++++ b/src/main/db/migrations/005_cited_by.sql
+@@ -0,0 +1,9 @@
++-- 005_cited_by:含金量抓取缓存三列(SR2-ENR-01,P7-G/ADR-0011 含金量指标元信息)
++-- - 三列全可空:NULL=从未抓到被引数(与 0=已抓到且为 0 语义不同,判别 === null)
++-- - cited_by_count_source=命中瀑布源('crossref'/'openalex';arxiv 响应无被引数,
++--   命中也不写缓存)
++-- - 写入面=applyEnrichment 独立 citedBy 参数(三列独立 SET 子句);读取面=
++--   detailById 配对透出;装配消费=ENR-02(manifest/front-matter)
++ALTER TABLE papers ADD COLUMN cited_by_count INTEGER;
++ALTER TABLE papers ADD COLUMN cited_by_fetched_at TEXT;
++ALTER TABLE papers ADD COLUMN cited_by_count_source TEXT;
+diff --git a/src/main/db/repos/papers.queries.ts b/src/main/db/repos/papers.queries.ts
+new file mode 100644
+index 0000000..d26be7f
+--- /dev/null
++++ b/src/main/db/repos/papers.queries.ts
+@@ -0,0 +1,107 @@
++/**
++ * papers.queries —— papers 表列表/详情查询件。
++ * 从 papers.repo 拆出的查询 SQL 常量+行形状+行映射（repo ≤300 行关卡配套，
++ * 纯查询/映射无行为逻辑）；消费面=papers.repo 的 searchSummaries/
++ * listSummariesByIds/detailById。SR2-ENR-01：DETAIL_SQL 三缓存列与
++ * DetailRow 三字段在此维护。
++ */
++import { escapeFtsQuery } from '../fts'
++import type {
++  EnrichStatus,
++  LibraryQuery,
++  LibrarySort,
++  PaperSource,
++  PaperSummary
++} from '../../../shared/models/paper'
++
++/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定） */
++export const ORDER_BY: Readonly<Record<LibrarySort, string>> = {
++  added_desc: 'p.added_at DESC, p.id DESC',
++  year_desc: 'p.year DESC, p.added_at DESC',
++  title_asc: 'p.title ASC, p.id ASC'
++}
++
++/** 聚合列：标签/集合名用 char(31)（US 分隔符）串接，防名字本身含逗号 */
++const AGG_COLS = `
++  (SELECT GROUP_CONCAT(t.name, char(31)) FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = p.id) AS tag_names,
++  (SELECT GROUP_CONCAT(c.name, char(31)) FROM paper_collections pc JOIN collections c ON c.id = pc.collection_id WHERE pc.paper_id = p.id) AS coll_names,
++  (SELECT COUNT(*) FROM annotations a WHERE a.paper_id = p.id) AS annotation_count,
++  (SELECT COUNT(*) FROM notes n WHERE n.paper_id = p.id) AS note_count`
++
++/** 列表页 SELECT：一次往返带回全部聚合字段 */
++export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
++  ${AGG_COLS.trim()}
++  FROM papers p`
++
++export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
++  p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
++  p.cited_by_count, p.cited_by_fetched_at, p.cited_by_count_source,
++  ${AGG_COLS.trim()}
++  FROM papers p WHERE p.id = ?`
++
++/** 聚合查询内部行形状（蛇形列 + 聚合别名） */
++export interface SummaryRow {
++  id: string; title: string; authors_json: string
++  year: number | null; venue: string; doi: string | null
++  added_at: string; last_read_page: number
++  tag_names: string | null; coll_names: string | null
++  annotation_count: number; note_count: number
++}
++
++export interface DetailRow extends SummaryRow {
++  file_ref: string; abstract: string
++  arxiv_id: string | null; source: PaperSource
++  enrich_status: EnrichStatus; updated_at: string
++  cited_by_count: number | null
++  cited_by_fetched_at: string | null
++  cited_by_count_source: string | null
++}
++
++/** LIKE 兜底转义：% _ 与转义符 \ 本身 */
++function escapeLike(s: string): string {
++  return s.replace(/[\\%_]/g, (c) => `\\${c}`)
++}
++
++/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化） */
++export function toSummary(r: SummaryRow): PaperSummary {
++  return {
++    id: r.id, title: r.title,
++    authors: JSON.parse(r.authors_json) as string[],
++    year: r.year, venue: r.venue, doi: r.doi,
++    tagNames: r.tag_names === null ? [] : r.tag_names.split('\u001f'),
++    collectionNames: r.coll_names === null ? [] : r.coll_names.split('\u001f'),
++    annotationCount: r.annotation_count, noteCount: r.note_count,
++    lastReadPage: r.last_read_page, addedAt: r.added_at
++  }
++}
++
++/** 组装搜索/过滤条件：片段固定、值参数绑定；cond 供拼 SQL 文本（进语句缓存） */
++export function buildFilters(q: LibraryQuery): { cond: string; params: unknown[] } {
++  const where: string[] = []
++  const params: unknown[] = []
++  const s = q.search?.trim() ?? ''
++  if (s.length >= 3) {
++    // trigram 分词器要求查询串 ≥3 字符；整段经 escapeFtsQuery 包成字面短语
++    where.push('p.rowid IN (SELECT rowid FROM papers_fts WHERE papers_fts MATCH ?)')
++    params.push(escapeFtsQuery(s))
++  } else if (s.length > 0) {
++    const pat = `%${escapeLike(s)}%`
++    where.push("(p.title LIKE ? ESCAPE '\\' OR p.authors_json LIKE ? ESCAPE '\\')")
++    params.push(pat, pat)
++  }
++  if (q.tagId !== undefined) {
++    where.push('EXISTS (SELECT 1 FROM paper_tags pt WHERE pt.paper_id = p.id AND pt.tag_id = ?)')
++    params.push(q.tagId)
++  }
++  if (q.collectionId !== undefined) {
++    where.push(
++      'EXISTS (SELECT 1 FROM paper_collections pc WHERE pc.paper_id = p.id AND pc.collection_id = ?)'
++    )
++    params.push(q.collectionId)
++  }
++  if (q.year !== undefined) {
++    where.push('p.year = ?')
++    params.push(q.year)
++  }
++  return { cond: where.length === 0 ? '' : ` WHERE ${where.join(' AND ')}`, params }
++}
+diff --git a/src/main/db/repos/papers.repo.ts b/src/main/db/repos/papers.repo.ts
+index ee57c3c..57590fe 100644
+--- a/src/main/db/repos/papers.repo.ts
++++ b/src/main/db/repos/papers.repo.ts
+@@ -5,15 +5,19 @@
+  * - 单表 CRUD + FTS 联查列表页查询（搜索/筛选/排序/分页/计数；聚合 JOIN 子查询一次往返）
+  *
+  * ── 接口层 ──
+- * - export interface PaperRow：表行形状（authors_json 等原始列）
++ * - export interface PaperRow：表行形状（authors_json 等原始列；SR2-ENR-01
++ *   三 cited_by 列可选——import.service 显式构造零涟漪）
+  * - export interface PapersRepo：方法签名见下方接口定义，此处只记行为约定
++ * - applyEnrichment 第三参 citedBy（SR2-ENR-01 独立可选参数）：三 cited_by
++ *   列独立 SET 子句落库（不进 PATCH_COLS 映射），undefined=三列保持不动
+  * - searchSummaries：FTS（≥3 字 escapeFtsQuery）/短串 LIKE 兜底（只搜
+  *   title/authors_json，锁定合约见 papers.repo.test）；过滤/排序/total 语义
+  *   同锁定测试；listSummariesByIds 保序跳缺；listAllIds=全库 id（added_at
+  *   DESC——corpusSet 全库取数，C-02）
+  *
+  * ── 架构层 ──
+- * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量
++ * - 依赖：db/connection 的 SqliteDb、db/fts 的转义函数、shared 模型与常量；
++ *   列表/详情查询 SQL 常量+行映射在同域 papers.queries（repo ≤300 行拆分）
+  * - 禁止：业务判断（重复检测是 import.service 的事，这里只报 findBySha256）
+  * - SQL 一律 db.prepare 预编译 + 参数绑定；FTS 输入必须经 escapeFtsQuery；
+  *   动态拼接只出现在固定白名单的列名/排序键/占位符个数上，值一律参数绑定
+@@ -26,14 +30,21 @@
+  * - 测试：tests/unit/db/repos/papers.repo.test.ts（已锁定；先读测试再实现）
+  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
+  */
+-import { escapeFtsQuery } from '../fts'
+ import { APP_FILE_SCHEME } from '../../../shared/constants'
+ import type Database from 'better-sqlite3'
+ import type { SqliteDb } from '../connection'
++import {
++  buildFilters,
++  DETAIL_SQL,
++  LIST_SQL,
++  ORDER_BY,
++  toSummary,
++  type DetailRow,
++  type SummaryRow
++} from './papers.queries'
+ import type {
+   EnrichStatus,
+   LibraryQuery,
+-  LibrarySort,
+   PaperDetail,
+   PaperMetaPatch,
+   PaperSource,
+@@ -57,6 +68,19 @@ export interface PaperRow {
+   added_at: string
+   updated_at: string
+   last_read_page: number
++  /** SR2-ENR-01 含金量缓存三列（迁移 005，全可空；?: =插入面不构造，
++   *  读面 SELECT 显式带回——运行时值 number|null / string|null） */
++  cited_by_count?: number | null
++  cited_by_fetched_at?: string | null
++  cited_by_count_source?: string | null
++}
++
++/** SR2-ENR-01 被引数缓存写入载荷（citedByPatch 返回形；单源声明在本层——
++ *  services→repos 单向依赖，cited-by.service 以 import type 消费） */
++export interface CitedByWrite {
++  count: number
++  fetchedAt: string
++  source: PaperSource
+ }
+ 
+ export interface PapersRepo {
+@@ -67,7 +91,8 @@ export interface PapersRepo {
+   updateMeta(id: string, patch: PaperMetaPatch): PaperRow | null
+   applyEnrichment(
+     id: string,
+-    e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch }
++    e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch },
++    citedBy?: CitedByWrite
+   ): PaperRow | null
+   updateReadPage(id: string, page: number): void
+   searchSummaries(q: LibraryQuery): Paged<PaperSummary>
+@@ -86,6 +111,10 @@ const COLS =
+ 
+ const INSERT_SQL = `INSERT INTO papers (${COLS}) VALUES (${COLS.split(', ').map(() => '?').join(', ')})`
+ 
++/** 读面列清单（COLS + SR2-ENR-01 三缓存列；insert 仍用 COLS——新列全可空，
++ *  导入面 PaperRow 不构造三列，DB 默认 NULL） */
++const SELECT_COLS = `${COLS}, cited_by_count, cited_by_fetched_at, cited_by_count_source`
++
+ /** PaperMetaPatch 字段 → 表列名（authors 在仓储边界序列化为 authors_json） */
+ const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
+   title: 'title',
+@@ -96,63 +125,6 @@ const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
+   abstract: 'abstract'
+ }
+ 
+-/** 排序键 → ORDER BY（附决胜键保证同键时分页稳定） */
+-const ORDER_BY: Readonly<Record<LibrarySort, string>> = {
+-  added_desc: 'p.added_at DESC, p.id DESC',
+-  year_desc: 'p.year DESC, p.added_at DESC',
+-  title_asc: 'p.title ASC, p.id ASC'
+-}
+-
+-/** 聚合列：标签/集合名用 char(31)（US 分隔符）串接，防名字本身含逗号 */
+-const AGG_COLS = `
+-  (SELECT GROUP_CONCAT(t.name, char(31)) FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = p.id) AS tag_names,
+-  (SELECT GROUP_CONCAT(c.name, char(31)) FROM paper_collections pc JOIN collections c ON c.id = pc.collection_id WHERE pc.paper_id = p.id) AS coll_names,
+-  (SELECT COUNT(*) FROM annotations a WHERE a.paper_id = p.id) AS annotation_count,
+-  (SELECT COUNT(*) FROM notes n WHERE n.paper_id = p.id) AS note_count`
+-
+-/** 列表页 SELECT：一次往返带回全部聚合字段 */
+-const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
+-  ${AGG_COLS.trim()}
+-  FROM papers p`
+-
+-const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
+-  p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
+-  ${AGG_COLS.trim()}
+-  FROM papers p WHERE p.id = ?`
+-
+-/** 聚合查询内部行形状（蛇形列 + 聚合别名） */
+-interface SummaryRow {
+-  id: string; title: string; authors_json: string
+-  year: number | null; venue: string; doi: string | null
+-  added_at: string; last_read_page: number
+-  tag_names: string | null; coll_names: string | null
+-  annotation_count: number; note_count: number
+-}
+-
+-interface DetailRow extends SummaryRow {
+-  file_ref: string; abstract: string
+-  arxiv_id: string | null; source: PaperSource
+-  enrich_status: EnrichStatus; updated_at: string
+-}
+-
+-/** LIKE 兜底转义：% _ 与转义符 \ 本身 */
+-function escapeLike(s: string): string {
+-  return s.replace(/[\\%_]/g, (c) => `\\${c}`)
+-}
+-
+-/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化） */
+-function toSummary(r: SummaryRow): PaperSummary {
+-  return {
+-    id: r.id, title: r.title,
+-    authors: JSON.parse(r.authors_json) as string[],
+-    year: r.year, venue: r.venue, doi: r.doi,
+-    tagNames: r.tag_names === null ? [] : r.tag_names.split('\u001f'),
+-    collectionNames: r.coll_names === null ? [] : r.coll_names.split('\u001f'),
+-    annotationCount: r.annotation_count, noteCount: r.note_count,
+-    lastReadPage: r.last_read_page, addedAt: r.added_at
+-  }
+-}
+-
+ /** meta 补丁 → 列名/绑定值（authors 数组在此序列化；未提供的字段不进 SET） */
+ function patchFragments(patch: PaperMetaPatch): { columns: string[]; values: unknown[] } {
+   const columns: string[] = []
+@@ -178,7 +150,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+   }
+ 
+   const findById = (id: string): PaperRow | null =>
+-    (stmt(`SELECT ${COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
++    (stmt(`SELECT ${SELECT_COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
+ 
+   /** 按给定列更新（列名来自白名单）并同步 updated_at；未命中返回 null */
+   const updateColumns = (id: string, columns: string[], values: unknown[]): PaperRow | null => {
+@@ -187,37 +159,6 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+     return info.changes === 0 ? null : findById(id)
+   }
+ 
+-  /** 组装搜索/过滤条件：片段固定、值参数绑定；cond 供拼 SQL 文本（进语句缓存） */
+-  const buildFilters = (q: LibraryQuery): { cond: string; params: unknown[] } => {
+-    const where: string[] = []
+-    const params: unknown[] = []
+-    const s = q.search?.trim() ?? ''
+-    if (s.length >= 3) {
+-      // trigram 分词器要求查询串 ≥3 字符；整段经 escapeFtsQuery 包成字面短语
+-      where.push('p.rowid IN (SELECT rowid FROM papers_fts WHERE papers_fts MATCH ?)')
+-      params.push(escapeFtsQuery(s))
+-    } else if (s.length > 0) {
+-      const pat = `%${escapeLike(s)}%`
+-      where.push("(p.title LIKE ? ESCAPE '\\' OR p.authors_json LIKE ? ESCAPE '\\')")
+-      params.push(pat, pat)
+-    }
+-    if (q.tagId !== undefined) {
+-      where.push('EXISTS (SELECT 1 FROM paper_tags pt WHERE pt.paper_id = p.id AND pt.tag_id = ?)')
+-      params.push(q.tagId)
+-    }
+-    if (q.collectionId !== undefined) {
+-      where.push(
+-        'EXISTS (SELECT 1 FROM paper_collections pc WHERE pc.paper_id = p.id AND pc.collection_id = ?)'
+-      )
+-      params.push(q.collectionId)
+-    }
+-    if (q.year !== undefined) {
+-      where.push('p.year = ?')
+-      params.push(q.year)
+-    }
+-    return { cond: where.length === 0 ? '' : ` WHERE ${where.join(' AND ')}`, params }
+-  }
+-
+   return {
+     insert(row) {
+       stmt(INSERT_SQL).run(
+@@ -228,7 +169,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+     },
+     findById,
+     findBySha256(sha256) {
+-      const r = stmt(`SELECT ${COLS} FROM papers WHERE sha256 = ?`).get(sha256) as PaperRow | undefined
++      const r = stmt(`SELECT ${SELECT_COLS} FROM papers WHERE sha256 = ?`).get(sha256) as PaperRow | undefined
+       return r === undefined ? null : r
+     },
+     fileRefById(id) {
+@@ -240,13 +181,17 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+       const f = patchFragments(patch)
+       return updateColumns(id, f.columns, f.values)
+     },
+-    applyEnrichment(id, e) {
++    applyEnrichment(id, e, citedBy) {
+       const f = patchFragments(e.patch)
+-      return updateColumns(
+-        id,
+-        ['source', 'enrich_status', ...f.columns],
+-        [e.source, e.enrichStatus, ...f.values]
+-      )
++      // SR2-ENR-01：citedBy 三列独立 SET 子句（不进 PATCH_COLS——update-meta
++      // 契约面零触碰）；undefined=不进 SET（缓存保留）
++      const columns = ['source', 'enrich_status', ...f.columns]
++      const values: unknown[] = [e.source, e.enrichStatus, ...f.values]
++      if (citedBy !== undefined) {
++        columns.push('cited_by_count', 'cited_by_fetched_at', 'cited_by_count_source')
++        values.push(citedBy.count, citedBy.fetchedAt, citedBy.source)
++      }
++      return updateColumns(id, columns, values)
+     },
+     updateReadPage(id, page) {
+       stmt('UPDATE papers SET last_read_page = ? WHERE id = ?').run(page, id)
+@@ -291,6 +236,17 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+         fileUrl: `${APP_FILE_SCHEME}://${r.id}`,
+         fileName: r.file_ref.slice(slashPos),
+         updatedAt: r.updated_at,
++        // SR2-ENR-01：三缓存字段配对透出（写入面三列同写，count 非 null 蕴含
++        // 另两列非 null——应用层不变量；null→省略=ENR-02 装配按 undefined 省略）；
++        // source 列写入面只收 PaperSource 枚举，TEXT 读回在此单点收窄
++        ...(r.cited_by_count !== null
++          ? {
++              citedByCount: r.cited_by_count,
++              citedByFetchedAt:
++                r.cited_by_fetched_at === null ? undefined : r.cited_by_fetched_at,
++              citedByCountSource: r.cited_by_count_source as PaperDetail['citedByCountSource']
++            }
++          : {}),
+         tags,
+         collections
+       }
+diff --git a/src/main/services/enrich/cited-by.service.ts b/src/main/services/enrich/cited-by.service.ts
+index 1978950..12c05a8 100644
+--- a/src/main/services/enrich/cited-by.service.ts
++++ b/src/main/services/enrich/cited-by.service.ts
+@@ -73,6 +73,28 @@
+  *   enrich.service.test 与 papers.repo.test（受锁扩）。
+  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+  */
++import type { PaperSource } from '../../../shared/models/paper'
++import type { CitedByWrite, PaperRow } from '../../db/repos/papers.repo'
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const CITED_BY_SERVICE_STUB = 'SR2-ENR-01'
++/**
++ * 刷新决策单源（头注状态机表的可执行形态）。
++ *
++ * 返回非 null=强制刷新载荷（调用方经 applyEnrichment 独立参数落库）；
++ * 返回 null=不写缓存（旧值保留——被引数单调增长，任何失败/缺省都不清缓存）。
++ * row 参数是状态机的「旧值」通道：决策本身与旧值无关（新旧两格同为覆盖写），
++ * 保留在签名上以锚定「保留谁的缓存」语义并供未来演进；**判别一律 === null，
++ * 禁 ??/falsy（0 与 NULL 语义不同）**。
++ */
++export function citedByPatch(
++  work: { citedByCount: number | null } | null,
++  source: PaperSource,
++  row: Pick<PaperRow, 'cited_by_count'>,
++  now: () => string
++): CitedByWrite | null {
++  // 未命中/异常（work=null→'failed'）与命中但字段缺省（citedByCount=null→
++  // 'done'，arxiv 源/响应缺被引数）两形均不写缓存——enrich_status 由元数据面判定
++  if (work === null || work.citedByCount === null) return null
++  // 强制刷新：0 是合法缓存值（含 0 样本走本格）；无论旧值 NULL/有值一律
++  // 新值+新时间戳+source
++  return { count: work.citedByCount, fetchedAt: now(), source }
++}
+diff --git a/src/main/services/enrich/enrich.service.ts b/src/main/services/enrich/enrich.service.ts
+index 53ac13b..8c50005 100644
+--- a/src/main/services/enrich/enrich.service.ts
++++ b/src/main/services/enrich/enrich.service.ts
+@@ -9,13 +9,18 @@
+  *      命中项带 arxivId 时也用 arxiv 补充空字段
+  *   4) 全部未命中 → enrich_status='failed'（source 保持原值，不覆盖已有字段）
+  *   5) 成功 → enrich_status='done'；返回最新 PaperDetail
++ * - [SR2-ENR-01] 瀑布之后经 citedByPatch（刷新决策单源=cited-by.service）
++ *   求被引数缓存写值，经 applyEnrichment 第三参独立落库——与元数据结果解耦：
++ *   work=null→failed 缓存保留；命中但 citedByCount=null（arxiv/字段缺省）
++ *   →done 不写缓存；非 null（含 0）→强制刷新
+  * - 回写只填"当前为空的字段"（用户手填的值优先，source 除外）
+  *
+  * ── 接口层 ──
+  * - export interface EnrichProviders { crossref: CrossrefProvider; openalex: OpenalexProvider;
+  *     arxiv: ArxivProvider }（类型从各 provider 文件 import）
+  * - export function createEnrichService(deps: {
+- *     repos: Repos; providers: EnrichProviders; contactEmail: () => string
++ *     repos: Repos; providers: EnrichProviders; contactEmail: () => string;
++ *     now?: () => string（SR2-ENR-01 时间源注入——citedBy fetchedAt）
+  *   }): { enrichPaper(paperId: string): Promise<PaperDetail> }
+  *
+  * ── 架构层 ──
+@@ -35,6 +40,7 @@ import type { Repos } from '../../db/repos'
+ import type { CrossrefProvider, EnrichedWork } from './providers/crossref'
+ import type { OpenalexProvider } from './providers/openalex'
+ import type { ArxivProvider } from './providers/arxiv'
++import { citedByPatch } from './cited-by.service'
+ 
+ export interface EnrichProviders {
+   crossref: CrossrefProvider
+@@ -72,8 +78,11 @@ export function createEnrichService(deps: {
+   repos: Repos
+   providers: EnrichProviders
+   contactEmail: () => string
++  /** 时间源（SR2-ENR-01——citedBy fetchedAt；corpus.export deps.now 同型先例） */
++  now?: () => string
+ }): { enrichPaper(paperId: string): Promise<PaperDetail> } {
+   const { repos, providers } = deps
++  const now = deps.now ?? (() => new Date().toISOString())
+ 
+   return {
+     async enrichPaper(paperId) {
+@@ -96,8 +105,9 @@ export function createEnrichService(deps: {
+         if (work === null && row.arxiv_id !== null) {
+           const ax = await providers.arxiv.byId(row.arxiv_id)
+           if (ax !== null) {
+-            // arXiv 命中无 venue/doi，统一到 Candidate 形状（venue 留空待补）
+-            work = { ...ax, venue: '', doi: null }
++            // arXiv 命中无 venue/doi，统一到 Candidate 形状（venue 留空待补）；
++            // arXiv 响应无被引数（SR2-ENR-01——citedByCount 恒 null，不写缓存）
++            work = { ...ax, venue: '', doi: null, citedByCount: null }
+           }
+           if (work !== null) source = 'arxiv'
+         }
+@@ -121,11 +131,23 @@ export function createEnrichService(deps: {
+         work = null
+       }
+ 
+-      repos.papers.applyEnrichment(paperId, {
++      // SR2-ENR-01：瀑布响应自身携带被引数（零新增请求）；刷新决策单源在
++      // citedByPatch——null=不写（work=null→failed 保留 / 字段缺省→done 保留）
++      const citedBy = citedByPatch(
++        work === null ? null : { citedByCount: work.citedByCount },
+         source,
+-        enrichStatus: work !== null ? 'done' : 'failed',
+-        patch: work === null ? {} : fillEmptyPatch(row, work)
+-      })
++        { cited_by_count: row.cited_by_count },
++        now
++      )
++      repos.papers.applyEnrichment(
++        paperId,
++        {
++          source,
++          enrichStatus: work !== null ? 'done' : 'failed',
++          patch: work === null ? {} : fillEmptyPatch(row, work)
++        },
++        citedBy ?? undefined
++      )
+       const detail = repos.papers.detailById(paperId)
+       if (detail === null) {
+         throw new EnrichDomainError('NOT_FOUND', `文献不存在：${paperId}`)
+diff --git a/src/main/services/enrich/providers/crossref.ts b/src/main/services/enrich/providers/crossref.ts
+index decd186..d7de7b9 100644
+--- a/src/main/services/enrich/providers/crossref.ts
++++ b/src/main/services/enrich/providers/crossref.ts
+@@ -8,7 +8,9 @@
+  *
+  * ── 接口层 ──
+  * - export interface EnrichedWork { title; authors: string[]; year: number|null;
+- *     venue: string; doi: string|null; abstract: string }
++ *     venue: string; doi: string|null; abstract: string;
++ *     citedByCount: number|null（SR2-ENR-01——is-referenced-by-count，
++ *     null=响应缺被引数：命中仍成立，不写缓存） }
+  * - export function createCrossrefProvider(deps: { fetchJson }): CrossrefProvider
+  *
+  * ── 架构层 ──
+@@ -33,6 +35,8 @@ export interface EnrichedWork {
+   venue: string
+   doi: string | null
+   abstract: string
++  /** 被引数缓存快照（SR2-ENR-01）；null=响应缺被引数（arxiv 源同形） */
++  citedByCount: number | null
+ }
+ 
+ export interface CrossrefProvider {
+@@ -52,7 +56,10 @@ const workSchema = z.object({
+       'container-title': z.array(z.string()).default([]),
+       type: z.string().optional(),
+       DOI: z.string().optional(),
+-      abstract: z.string().optional()
++      abstract: z.string().optional(),
++      // SR2-ENR-01：脏类型→整个 work parse 失败（'failed' 诚实语义，禁 .catch
++      // 宽松化）；缺省/显式 null→toWork 归一 null（不写缓存通道）
++      'is-referenced-by-count': z.number().int().nullable().optional()
+     })
+     .default({})
+ })
+@@ -91,7 +98,8 @@ function toWork(message: z.infer<typeof workSchema>['message']): EnrichedWork {
+     year: message.issued?.['date-parts'][0]?.[0] ?? null,
+     venue: message['container-title'][0] ?? (message.type ?? ''),
+     doi: message.DOI ?? null,
+-    abstract: message.abstract === undefined ? '' : stripJats(message.abstract)
++    abstract: message.abstract === undefined ? '' : stripJats(message.abstract),
++    citedByCount: message['is-referenced-by-count'] ?? null
+   }
+ }
+ 
+diff --git a/src/main/services/enrich/providers/openalex.ts b/src/main/services/enrich/providers/openalex.ts
+index bf78938..ea1d6e1 100644
+--- a/src/main/services/enrich/providers/openalex.ts
++++ b/src/main/services/enrich/providers/openalex.ts
+@@ -44,6 +44,9 @@ const resultSchema = z.object({
+     .nullable()
+     .optional(),
+   doi: z.string().nullable().optional(),
++  // SR2-ENR-01：被引数（脏类型→parse 失败走 'failed' 诚实语义；缺省/显式
++  // null→toWork 归一 null）
++  cited_by_count: z.number().int().nullable().optional(),
+   abstract_inverted_index: z.record(z.string(), z.array(z.number().int())).nullable().optional()
+ })
+ 
+@@ -77,7 +80,8 @@ function toWork(r: z.infer<typeof resultSchema>): OpenalexWork {
+       r.abstract_inverted_index === undefined || r.abstract_inverted_index === null
+         ? ''
+         : invertAbstract(r.abstract_inverted_index),
+-    arxivId: r.primary_location?.arxiv_id ?? null
++    arxivId: r.primary_location?.arxiv_id ?? null,
++    citedByCount: r.cited_by_count ?? null
+   }
+ }
+ 
+diff --git a/src/shared/models/paper.ts b/src/shared/models/paper.ts
+index 101fab5..76b0b6e 100644
+--- a/src/shared/models/paper.ts
++++ b/src/shared/models/paper.ts
+@@ -40,7 +40,12 @@ export const paperDetailSchema = paperSummarySchema
+     fileName: z.string(),
+     updatedAt: z.string(),
+     tags: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
+-    collections: z.array(z.object({ id: z.string(), name: z.string() }).strict())
++    collections: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
++    // SR2-ENR-01 含金量缓存快照（可选字段——ADR-0011 演进规则；三字段由
++    // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）
++    citedByCount: z.number().int().optional(),
++    citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
++    citedByCountSource: paperSourceSchema.optional() // 命中的瀑布源
+   })
+   .strict()
+ export type PaperDetail = z.infer<typeof paperDetailSchema>
+diff --git a/tests/unit/db/migrate.test.ts b/tests/unit/db/migrate.test.ts
+index 156bed6..ceadeb3 100644
+--- a/tests/unit/db/migrate.test.ts
++++ b/tests/unit/db/migrate.test.ts
+@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
+   it('新库：全量应用，user_version = 最新版本', () => {
+     const db = openDatabase(':memory:')
+     const result = migrate(db)
+-    expect(result.appliedVersions).toEqual([1, 2, 3, 4])
++    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5])
+     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
+     expect(readUserVersion(db)).toBe(result.currentVersion)
+     db.close()
+diff --git a/tests/unit/db/repos/papers.repo.test.ts b/tests/unit/db/repos/papers.repo.test.ts
+index 37c27fe..e531cc4 100644
+--- a/tests/unit/db/repos/papers.repo.test.ts
++++ b/tests/unit/db/repos/papers.repo.test.ts
+@@ -195,3 +195,73 @@ guardedDescribe(
+     })
+   }
+ )
++
++/** SR2-ENR-01：applyEnrichment citedBy 独立参数的 SET 子句真库落库断言——
++ *  enrich 测试全用桩，SQL 面唯一锚定点（always-active 裸 describe，W4） */
++describe('SR2-ENR-01 applyEnrichment —— citedBy 独立参数真库落库', () => {
++  let db: SqliteDb
++  let repo: ReturnType<typeof createPapersRepo>
++
++  beforeEach(() => {
++    db = createTestDb()
++    repo = createPapersRepo(db)
++  })
++
++  it('citedBy 三列独立 SET 落库（与元数据列同 UPDATE，互不扰动）', () => {
++    repo.insert(row())
++    const r = repo.applyEnrichment(
++      'p-1',
++      { source: 'crossref', enrichStatus: 'done', patch: { venue: 'Water Research' } },
++      { count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' }
++    )
++    expect(r?.venue).toBe('Water Research')
++    expect(r?.source).toBe('crossref')
++    expect(r?.cited_by_count).toBe(5)
++    expect(r?.cited_by_fetched_at).toBe('2026-02-01T00:00:00Z')
++    expect(r?.cited_by_count_source).toBe('crossref')
++  })
++
++  it('不传 citedBy：三列保持 NULL；传 0 覆盖旧值（0 合法缓存值）；再不传则保留', () => {
++    repo.insert(row())
++    const noWrite = repo.applyEnrichment('p-1', {
++      source: 'crossref',
++      enrichStatus: 'done',
++      patch: {}
++    })
++    expect(noWrite?.cited_by_count).toBeNull()
++    expect(noWrite?.cited_by_fetched_at).toBeNull()
++    expect(noWrite?.cited_by_count_source).toBeNull()
++    const refreshed = repo.applyEnrichment(
++      'p-1',
++      { source: 'openalex', enrichStatus: 'done', patch: {} },
++      { count: 0, fetchedAt: '2026-02-02T00:00:00Z', source: 'openalex' }
++    )
++    expect(refreshed?.cited_by_count).toBe(0)
++    expect(refreshed?.cited_by_count_source).toBe('openalex')
++    const kept = repo.applyEnrichment('p-1', {
++      source: 'arxiv',
++      enrichStatus: 'failed',
++      patch: {}
++    })
++    expect(kept?.cited_by_count).toBe(0)
++    expect(kept?.cited_by_fetched_at).toBe('2026-02-02T00:00:00Z')
++  })
++
++  it('detailById：有缓存三字段配对透出；无缓存字段省略（undefined）', () => {
++    repo.insert(row())
++    repo.insert(row({ id: 'p-2', sha256: 'sha-bbb' }))
++    repo.applyEnrichment(
++      'p-1',
++      { source: 'crossref', enrichStatus: 'done', patch: {} },
++      { count: 7, fetchedAt: '2026-02-03T00:00:00Z', source: 'crossref' }
++    )
++    const d = repo.detailById('p-1')
++    expect(d?.citedByCount).toBe(7)
++    expect(d?.citedByFetchedAt).toBe('2026-02-03T00:00:00Z')
++    expect(d?.citedByCountSource).toBe('crossref')
++    const bare = repo.detailById('p-2')
++    expect(bare?.citedByCount).toBeUndefined()
++    expect(bare?.citedByFetchedAt).toBeUndefined()
++    expect(bare?.citedByCountSource).toBeUndefined()
++  })
++})
+diff --git a/tests/unit/services/cited-by.test.ts b/tests/unit/services/cited-by.test.ts
+new file mode 100644
+index 0000000..845fd4c
+--- /dev/null
++++ b/tests/unit/services/cited-by.test.ts
+@@ -0,0 +1,62 @@
++import { describe, expect, it } from 'vitest'
++import { citedByPatch } from '../../../src/main/services/enrich/cited-by.service'
++
++/** 刷新语义状态机（票面六格表+0 值边界+跨格序列）——always-active 裸 describe（W4） */
++
++const T1 = '2026-01-01T00:00:00Z'
++const T2 = '2026-01-02T00:00:00Z'
++const T3 = '2026-01-03T00:00:00Z'
++
++describe('SR2-ENR-01 citedByPatch —— 刷新语义状态机（六格全格+0 值边界）', () => {
++  it('格1：NULL＋命中且 citedByCount 非 null（含 0）→写入 count+fetchedAt+source；0 是合法缓存值', () => {
++    const p = citedByPatch({ citedByCount: 0 }, 'crossref', { cited_by_count: null }, () => T1)
++    expect(p).toEqual({ count: 0, fetchedAt: T1, source: 'crossref' })
++  })
++
++  it('格1b：NULL＋命中 5 →写入 5', () => {
++    const p = citedByPatch({ citedByCount: 5 }, 'openalex', { cited_by_count: null }, () => T1)
++    expect(p).toEqual({ count: 5, fetchedAt: T1, source: 'openalex' })
++  })
++
++  it('格2：NULL＋命中但 citedByCount=null →null（done 态；缓存保持 NULL）', () => {
++    const p = citedByPatch({ citedByCount: null }, 'arxiv', { cited_by_count: null }, () => T1)
++    expect(p).toBeNull()
++  })
++
++  it('格3：NULL＋未命中/异常（work=null）→null（enrich_status=failed；缓存保持 NULL）', () => {
++    const p = citedByPatch(null, 'crossref', { cited_by_count: null }, () => T1)
++    expect(p).toBeNull()
++  })
++
++  it('格4：有值＋命中且非 null →强制刷新=新值+新时间戳+source（旧值被覆盖）', () => {
++    const p = citedByPatch({ citedByCount: 5 }, 'openalex', { cited_by_count: 7 }, () => T2)
++    expect(p).toEqual({ count: 5, fetchedAt: T2, source: 'openalex' })
++  })
++
++  it('格4b：有值 0＋命中 0 →强制刷新 0（0 走刷新格，非保留格）', () => {
++    const p = citedByPatch({ citedByCount: 0 }, 'crossref', { cited_by_count: 0 }, () => T2)
++    expect(p).toEqual({ count: 0, fetchedAt: T2, source: 'crossref' })
++  })
++
++  it('格5：有值＋命中但 citedByCount=null →null（旧值保留；done 态）', () => {
++    const p = citedByPatch({ citedByCount: null }, 'arxiv', { cited_by_count: 7 }, () => T2)
++    expect(p).toBeNull()
++  })
++
++  it('格6：有值＋未命中/异常（work=null）→null（旧值保留；failed 态）', () => {
++    const p = citedByPatch(null, 'openalex', { cited_by_count: 7 }, () => T2)
++    expect(p).toBeNull()
++  })
++
++  it('跨格序列（票面）：NULL→命中0→写入0→再增强命中5→刷新5→瀑布异常→旧值5保留', () => {
++    // 格1：NULL＋命中 0 →写入 0（库态迁移为 0）
++    const p1 = citedByPatch({ citedByCount: 0 }, 'crossref', { cited_by_count: null }, () => T1)
++    expect(p1).toEqual({ count: 0, fetchedAt: T1, source: 'crossref' })
++    // 格4：有值 0（上格写入的库态）＋命中 5 →强制刷新 5
++    const p2 = citedByPatch({ citedByCount: 5 }, 'crossref', { cited_by_count: 0 }, () => T2)
++    expect(p2).toEqual({ count: 5, fetchedAt: T2, source: 'crossref' })
++    // 格6：有值 5（上格写入的库态）＋瀑布异常 →null=调用方不写，旧值 5 保留
++    const p3 = citedByPatch(null, 'crossref', { cited_by_count: 5 }, () => T3)
++    expect(p3).toBeNull()
++  })
++})
+diff --git a/tests/unit/services/enrich.service.test.ts b/tests/unit/services/enrich.service.test.ts
+index 7aff21d..f3cfc67 100644
+--- a/tests/unit/services/enrich.service.test.ts
++++ b/tests/unit/services/enrich.service.test.ts
+@@ -1,4 +1,4 @@
+-import { expect, it } from 'vitest'
++import { describe, expect, it } from 'vitest'
+ import { createEnrichService } from '../../../src/main/services/enrich/enrich.service'
+ import type { Repos, PaperRow } from '../../../src/main/db/repos'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+@@ -13,7 +13,8 @@ const work: EnrichedWork = {
+   year: 2024,
+   venue: 'Water Research',
+   doi: '10.1/x',
+-  abstract: 'Abstract text'
++  abstract: 'Abstract text',
++  citedByCount: 42
+ }
+ 
+ function detailRow(over: Partial<PaperRow> = {}): PaperRow {
+@@ -183,3 +184,91 @@ guardedDescribe('SR-SVC-05', 'enrich.service —— 增强编排', () => {
+     await expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })
+   })
+ })
++
++/** SR2-ENR-01：被引数缓存集成（citedByPatch 挂点/与元数据结果解耦）——裸 describe（W4） */
++describe('SR2-ENR-01 enrich.service —— 被引数缓存挂点', () => {
++  it('crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}', async () => {
++    let citedByArg: unknown = 'UNSET'
++    const svc = createEnrichService({
++      repos: makeRepos(detailRow({ doi: '10.1/x', cited_by_count: null }), {
++        applyEnrichment: (_id, _e, c) => {
++          citedByArg = c
++          return detailRow()
++        },
++        detailById: () => detail
++      }),
++      providers: makeProviders({
++        crossref: { byDoi: async () => ({ ...work, citedByCount: 5 }) }
++      }),
++      contactEmail: () => 'a@b.c',
++      now: () => '2026-02-01T00:00:00Z'
++    })
++    await svc.enrichPaper('p-1')
++    expect(citedByArg).toEqual({
++      count: 5,
++      fetchedAt: '2026-02-01T00:00:00Z',
++      source: 'crossref'
++    })
++  })
++
++  it('瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）', async () => {
++    let enrichStatus = ''
++    let citedByArg: unknown = 'UNSET'
++    const svc = createEnrichService({
++      repos: makeRepos(detailRow({ doi: '10.1/x', cited_by_count: 7 }), {
++        applyEnrichment: (_id, e, c) => {
++          enrichStatus = e.enrichStatus
++          citedByArg = c
++          return detailRow()
++        },
++        detailById: () => ({ ...detail, enrichStatus: 'failed' })
++      }),
++      providers: makeProviders({
++        crossref: {
++          byDoi: async () => {
++            throw new Error('network down')
++          }
++        }
++      }),
++      contactEmail: () => 'a@b.c',
++      now: () => '2026-02-01T00:00:00Z'
++    })
++    await expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })
++    expect(enrichStatus).toBe('failed')
++    expect(citedByArg).toBeUndefined()
++  })
++
++  it('arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）', async () => {
++    let source = ''
++    let enrichStatus = ''
++    let citedByArg: unknown = 'UNSET'
++    const svc = createEnrichService({
++      repos: makeRepos(detailRow({ doi: null, title: '', arxiv_id: '2401.12345' }), {
++        applyEnrichment: (_id, e, c) => {
++          source = e.source
++          enrichStatus = e.enrichStatus
++          citedByArg = c
++          return detailRow()
++        },
++        detailById: () => detail
++      }),
++      providers: makeProviders({
++        arxiv: {
++          byId: async () => ({
++            title: 'Ax Paper',
++            authors: ['X'],
++            year: 2024,
++            abstract: 'abs',
++            arxivId: '2401.12345'
++          })
++        }
++      }),
++      contactEmail: () => 'a@b.c',
++      now: () => '2026-02-01T00:00:00Z'
++    })
++    await expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })
++    expect(source).toBe('arxiv')
++    expect(enrichStatus).toBe('done')
++    expect(citedByArg).toBeUndefined()
++  })
++})
+diff --git a/tests/unit/services/providers/crossref.test.ts b/tests/unit/services/providers/crossref.test.ts
+index f5f0315..1d9dd24 100644
+--- a/tests/unit/services/providers/crossref.test.ts
++++ b/tests/unit/services/providers/crossref.test.ts
+@@ -1,4 +1,4 @@
+-import { expect, it, vi } from 'vitest'
++import { describe, expect, it, vi } from 'vitest'
+ import { createCrossrefProvider } from '../../../../src/main/services/enrich/providers/crossref'
+ import { HttpFetchError } from '../../../../src/main/http/http-client'
+ import { guardedDescribe } from '../../../utils/guard'
+@@ -18,7 +18,8 @@ const crossrefWork = {
+     issued: { 'date-parts': [[2024, 3]] },
+     'container-title': ['Water Research'],
+     DOI: '10.1016/j.watres.2024.01.001',
+-    abstract: '<jats:p>Forecasting matters.</jats:p>'
++    abstract: '<jats:p>Forecasting matters.</jats:p>',
++    'is-referenced-by-count': 7
+   }
+ }
+ 
+@@ -33,6 +34,7 @@ guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
+     expect(work?.venue).toBe('Water Research')
+     expect(work?.doi).toBe('10.1016/j.watres.2024.01.001')
+     expect(work?.abstract).toBe('Forecasting matters.')
++    expect(work?.citedByCount).toBe(7)
+     expect(fetchJson).toHaveBeenCalledOnce()
+     expect((fetchJson.mock.calls[0]?.[0] as string)).toContain(
+       'https://api.crossref.org/works/10.1016%2Fj.watres.2024.01.001'
+@@ -68,3 +70,23 @@ guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
+     await expect(p.byTitle('water demand forecasting')).resolves.toBeNull()
+   })
+ })
++
++/** SR2-ENR-01：被引数两形解析（有值形见上块；缺省形在此）——裸 describe（W4） */
++describe('SR2-ENR-01 crossref provider —— is-referenced-by-count 缺省形', () => {
++  it('响应缺 is-referenced-by-count → citedByCount=null（命中仍成立，不写缓存通道）', async () => {
++    const noCitations = {
++      status: 'ok',
++      message: {
++        title: ['Deep learning for water demand forecasting'],
++        author: [],
++        issued: { 'date-parts': [[2024]] },
++        'container-title': ['Water Research'],
++        DOI: '10.1016/j.watres.2024.01.001'
++      }
++    }
++    const p = createCrossrefProvider({ fetchJson: fakeFetchJson(noCitations) })
++    const work = await p.byDoi('10.1016/j.watres.2024.01.001')
++    expect(work?.citedByCount).toBeNull()
++    expect(work?.title).toBe('Deep learning for water demand forecasting')
++  })
++})
+diff --git a/tests/unit/services/providers/openalex.test.ts b/tests/unit/services/providers/openalex.test.ts
+index 2b9bf3d..a859057 100644
+--- a/tests/unit/services/providers/openalex.test.ts
++++ b/tests/unit/services/providers/openalex.test.ts
+@@ -1,4 +1,4 @@
+-import { expect, it, vi } from 'vitest'
++import { describe, expect, it, vi } from 'vitest'
+ import { createOpenalexProvider } from '../../../../src/main/services/enrich/providers/openalex'
+ import { guardedDescribe } from '../../../utils/guard'
+ 
+@@ -11,6 +11,7 @@ const openalexResponse = {
+       authorships: [{ author: { display_name: 'Chen Wei' } }, { author: { display_name: 'A. Kumar' } }],
+       primary_location: { source: { display_name: 'Journal of Hydrology' } },
+       doi: 'https://doi.org/10.1000/xyz',
++      cited_by_count: 12,
+       abstract_inverted_index: {
+         water: [0, 4],
+         management: [1],
+@@ -33,6 +34,7 @@ guardedDescribe('SR-NET-02', 'openalex provider —— byTitle 与倒排索引
+     expect(work?.authors).toEqual(['Chen Wei', 'A. Kumar'])
+     expect(work?.venue).toBe('Journal of Hydrology')
+     expect(work?.year).toBe(2023)
++    expect(work?.citedByCount).toBe(12)
+     expect(work?.arxivId).toBeNull()
+     expect(fetchJson.mock.calls[0]?.[0]).toContain('https://api.openalex.org/works?search=')
+   })
+@@ -47,3 +49,25 @@ guardedDescribe('SR-NET-02', 'openalex provider —— byTitle 与倒排索引
+     await expect(p.byTitle('完全无关的查询词')).resolves.toBeNull()
+   })
+ })
++
++/** SR2-ENR-01：cited_by_count 两形解析（有值形见上块；缺省/显式 null 形在此）——裸 describe（W4） */
++describe('SR2-ENR-01 openalex provider —— cited_by_count 缺省/显式 null 形', () => {
++  it('显式 null → citedByCount=null（命中仍成立）', async () => {
++    const explicitNull = {
++      results: [{ ...openalexResponse.results[0], cited_by_count: null }]
++    }
++    const p = createOpenalexProvider({ fetchJson: async () => explicitNull })
++    await expect(p.byTitle('Urban water management review')).resolves.toMatchObject({
++      citedByCount: null
++    })
++  })
++
++  it('字段缺省 → citedByCount=null（命中仍成立）', async () => {
++    const missing = { ...openalexResponse.results[0] } as Record<string, unknown>
++    delete missing.cited_by_count
++    const p = createOpenalexProvider({ fetchJson: async () => ({ results: [missing] }) })
++    await expect(p.byTitle('Urban water management review')).resolves.toMatchObject({
++      citedByCount: null
++    })
++  })
++})

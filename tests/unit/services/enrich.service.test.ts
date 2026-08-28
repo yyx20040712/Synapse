@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createEnrichService } from '../../../src/main/services/enrich/enrich.service'
 import type { Repos, PaperRow } from '../../../src/main/db/repos'
 import type { PaperDetail } from '../../../src/shared/models/paper'
@@ -13,7 +13,8 @@ const work: EnrichedWork = {
   year: 2024,
   venue: 'Water Research',
   doi: '10.1/x',
-  abstract: 'Abstract text'
+  abstract: 'Abstract text',
+  citedByCount: 42
 }
 
 function detailRow(over: Partial<PaperRow> = {}): PaperRow {
@@ -181,5 +182,93 @@ guardedDescribe('SR-SVC-05', 'enrich.service —— 增强编排', () => {
       contactEmail: () => 'a@b.c'
     })
     await expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+})
+
+/** SR2-ENR-01：被引数缓存集成（citedByPatch 挂点/与元数据结果解耦）——裸 describe（W4） */
+describe('SR2-ENR-01 enrich.service —— 被引数缓存挂点', () => {
+  it('crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}', async () => {
+    let citedByArg: unknown = 'UNSET'
+    const svc = createEnrichService({
+      repos: makeRepos(detailRow({ doi: '10.1/x', cited_by_count: null }), {
+        applyEnrichment: (_id, _e, c) => {
+          citedByArg = c
+          return detailRow()
+        },
+        detailById: () => detail
+      }),
+      providers: makeProviders({
+        crossref: { byDoi: async () => ({ ...work, citedByCount: 5 }) }
+      }),
+      contactEmail: () => 'a@b.c',
+      now: () => '2026-02-01T00:00:00Z'
+    })
+    await svc.enrichPaper('p-1')
+    expect(citedByArg).toEqual({
+      count: 5,
+      fetchedAt: '2026-02-01T00:00:00Z',
+      source: 'crossref'
+    })
+  })
+
+  it('瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）', async () => {
+    let enrichStatus = ''
+    let citedByArg: unknown = 'UNSET'
+    const svc = createEnrichService({
+      repos: makeRepos(detailRow({ doi: '10.1/x', cited_by_count: 7 }), {
+        applyEnrichment: (_id, e, c) => {
+          enrichStatus = e.enrichStatus
+          citedByArg = c
+          return detailRow()
+        },
+        detailById: () => ({ ...detail, enrichStatus: 'failed' })
+      }),
+      providers: makeProviders({
+        crossref: {
+          byDoi: async () => {
+            throw new Error('network down')
+          }
+        }
+      }),
+      contactEmail: () => 'a@b.c',
+      now: () => '2026-02-01T00:00:00Z'
+    })
+    await expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })
+    expect(enrichStatus).toBe('failed')
+    expect(citedByArg).toBeUndefined()
+  })
+
+  it('arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）', async () => {
+    let source = ''
+    let enrichStatus = ''
+    let citedByArg: unknown = 'UNSET'
+    const svc = createEnrichService({
+      repos: makeRepos(detailRow({ doi: null, title: '', arxiv_id: '2401.12345' }), {
+        applyEnrichment: (_id, e, c) => {
+          source = e.source
+          enrichStatus = e.enrichStatus
+          citedByArg = c
+          return detailRow()
+        },
+        detailById: () => detail
+      }),
+      providers: makeProviders({
+        arxiv: {
+          byId: async () => ({
+            title: 'Ax Paper',
+            authors: ['X'],
+            year: 2024,
+            abstract: 'abs',
+            arxivId: '2401.12345'
+          })
+        }
+      }),
+      contactEmail: () => 'a@b.c',
+      now: () => '2026-02-01T00:00:00Z'
+    })
+    await expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })
+    expect(source).toBe('arxiv')
+    expect(enrichStatus).toBe('done')
+    expect(citedByArg).toBeUndefined()
   })
 })

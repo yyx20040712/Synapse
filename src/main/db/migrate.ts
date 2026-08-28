@@ -12,6 +12,7 @@ import initSql from './migrations/001_init.sql?raw'
 import indexesSql from './migrations/002_indexes.sql?raw'
 import aiNotesSql from './migrations/003_ai_notes.sql?raw'
 import lineageSql from './migrations/004_lineage.sql?raw'
+import citedBySql from './migrations/005_cited_by.sql?raw'
 
 export interface Migration {
   version: number
@@ -24,7 +25,8 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'indexes', sql: indexesSql },
   { version: 3, name: 'ai_notes', sql: aiNotesSql },
-  { version: 4, name: 'lineage', sql: lineageSql }
+  { version: 4, name: 'lineage', sql: lineageSql },
+  { version: 5, name: 'cited_by', sql: citedBySql }
 ]
 
 export interface MigrateResult {
