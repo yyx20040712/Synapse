@@ -15,9 +15,10 @@
  *   · front-matter（YAML）：schemaVersion: 1 / paperId / title / authors / year /
  *     venue / doi / source / citationKey（复用 bibtex.serializer.makeCitationKey）/
  *     annotationCount / noteCount——**不含 exportedAt**（INV-17：时间戳只进
- *     manifest，per-paper md 字节幂等）；可选含金量字段 citedByCount/venueTier
- *     数据面未落地（PaperDetail 无 enrich 缓存指标列）——v1 整键省略（新增字段
- *     必须可选，ADR 演进规则）
+ *     manifest，per-paper md 字节幂等）；可选含金量字段（ENR-02 兑现，noteCount
+ *     后逐行）：citedByCount（PaperDetail 有值则装配——0 是合法值禁 falsy 判空，
+ *     undefined/null 省略）+venueTier（venueToTier 查表命中装配，未命中整键
+ *     省略——两形可选语义，新增字段必须可选，ADR 演进规则）
  *   · 正文三段序（ADR-0011 §正文结构）：①总评层一节（note 存在时：标题+
  *     contentMd；无 note 省略整节）→ ②片段层：sortByDocumentOrder(annotations)
  *     （C-01 单源序）逐条 `> 引文原文` + `（p.<1 基页码>）` 标注 + 缩进批注
@@ -58,6 +59,7 @@ import type { AiNote, AiNoteQuestion, AiNoteRole } from '../../../shared/models/
 import type { Annotation } from '../../../shared/models/annotation'
 import type { Note } from '../../../shared/models/note'
 import type { PaperDetail } from '../../../shared/models/paper'
+import { venueToTier } from '../../../shared/venue-tier'
 import { makeCitationKey } from './bibtex.serializer'
 
 export const CORPUS_USER_PREFIX = '[user]'
@@ -127,10 +129,12 @@ function yamlStr(s: string): string {
   return `'${s.replace(/\r?\n/g, ' ').replaceAll("'", "''")}'`
 }
 
-/** front-matter 行组（schemaVersion 恒裸数字；year/doi 可 null） */
+/** front-matter 行组（schemaVersion 恒裸数字；year/doi 可 null；ENR-02 两可选
+ *  含金量字段在 noteCount 后——有值形/缺省形两形，citedByFetchedAt 只进 manifest
+ *  per-paper 条目，不进 md（INV-17 字节幂等不破坏——DB 缓存快照同库确定） */
 function frontMatter(paper: PaperDetail, annotationCount: number): string[] {
   const key = makeCitationKey(paper.title, paper.year, paper.authors[0] ?? 'anon')
-  return [
+  const rows = [
     '---',
     'schemaVersion: 1',
     `paperId: ${yamlStr(paper.id)}`,
@@ -142,9 +146,18 @@ function frontMatter(paper: PaperDetail, annotationCount: number): string[] {
     `source: ${yamlStr(paper.source)}`,
     `citationKey: ${yamlStr(key)}`,
     `annotationCount: ${annotationCount}`,
-    `noteCount: ${paper.noteCount}`,
-    '---'
+    `noteCount: ${paper.noteCount}`
   ]
+  // 0 是合法缓存值（ENR-01 判空铁律）：undefined/null 才省略，禁 falsy
+  if (paper.citedByCount !== undefined && paper.citedByCount !== null) {
+    rows.push(`citedByCount: ${paper.citedByCount}`)
+  }
+  const tier = venueToTier(paper.venue)
+  if (tier !== null) {
+    rows.push(`venueTier: ${yamlStr(tier)}`)
+  }
+  rows.push('---')
+  return rows
 }
 
 /** 引文行组：多行引文逐行补 `> ` 前缀（块引用续行不靠 lazy continuation——

@@ -1,0 +1,413 @@
+diff --git a/docs/adr/0011-md-corpus-interface-contract.md b/docs/adr/0011-md-corpus-interface-contract.md
+index aaaf3c1..55dc162 100644
+--- a/docs/adr/0011-md-corpus-interface-contract.md
++++ b/docs/adr/0011-md-corpus-interface-contract.md
+@@ -112,3 +112,13 @@ schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
+    不失真」同哲学）；体积/时长预期由 INTERFACE.md 声明；未来收窄（如仅标注页）
+    属版本化修订（INTERFACE 版本号联动）。
+ 6. **导出并发语义**：单会话单飞——进行中拒绝第二会话（错误码 EXPORT_BUSY）。
++
++## 修订记录 v1.2（2026-08-28 SR2-ENR-02）
++
++7. **venueTier v1 实现档=受锁常量修订制**（D3-A 2026-08-27 用户拍板：最小
++   供给档——VENUE_TIER_MAP 种子表驻 src/shared/venue-tier.ts，全域入锁，内容
++   增量走受锁常量修订=[locked-change]）；「允许用户改」的 UI 面留 D3-B 档
++   （后续工单另行立项）。兑现口径：front-matter 可选字段 citedByCount/venueTier
++   +manifest per-paper 条目 citedByCount/citedByFetchedAt（成对出现成对省略）
++   装配落地（v1 契约「含金量指标元信息」预留位的 ENR-01/02 数据链闭合；
++   schemaVersion 恒 1——可选字段演进规则内）。
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 7433cc2..1ea00a1 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T00:15:02.4497878Z",
++    "generatedAt":  "2026-08-28T00:32:21.9119764Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -127,7 +127,7 @@
+                   },
+                   {
+                       "path":  "src/shared/venue-tier.ts",
+-                      "sha256":  "e258e8e99fd22e6733e1e8fcbe7b0993a22e6d1306f1858f87ac1ad1ef2d9b85"
++                      "sha256":  "f9869c75fce02ad6a92dd3b506ed50696454bf218d7c24968ad42e7ae5ff6734"
+                   },
+                   {
+                       "path":  "tests/contracts/api-surface.test.ts",
+@@ -427,11 +427,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.assemble.test.ts",
+-                      "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
++                      "sha256":  "e5292124f692565127898ecf853cd430ab63d23c989f34d53e45ac22b5349dd1"
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.export.test.ts",
+-                      "sha256":  "9ef18208afb1a825d33f2ae670c9dd6e8275695ccb00b705d01bfcc1fea78feb"
++                      "sha256":  "8cc5fc8d2ad8ba9198e3756dd8c8eb74a41076ee84e408bae3c741b6d0a90871"
+                   },
+                   {
+                       "path":  "tests/unit/services/enrich.service.test.ts",
+@@ -497,6 +497,10 @@
+                       "path":  "tests/unit/shared/annotation-order.test.ts",
+                       "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
+                   },
++                  {
++                      "path":  "tests/unit/shared/venue-tier.test.ts",
++                      "sha256":  "91e0029f97dfea447577a5787c9ab5aadd26d4cb88af398709111b72576ada47"
++                  },
+                   {
+                       "path":  "tests/unit/tools/companion.test.ts",
+                       "sha256":  "e1692e6f4c22fa41b353213665b06f158daf7fa1d0f0afba067112191d15d0ab"
+diff --git a/src/main/services/export_/corpus.assemble.ts b/src/main/services/export_/corpus.assemble.ts
+index 0732388..ae33268 100644
+--- a/src/main/services/export_/corpus.assemble.ts
++++ b/src/main/services/export_/corpus.assemble.ts
+@@ -15,9 +15,10 @@
+  *   · front-matter（YAML）：schemaVersion: 1 / paperId / title / authors / year /
+  *     venue / doi / source / citationKey（复用 bibtex.serializer.makeCitationKey）/
+  *     annotationCount / noteCount——**不含 exportedAt**（INV-17：时间戳只进
+- *     manifest，per-paper md 字节幂等）；可选含金量字段 citedByCount/venueTier
+- *     数据面未落地（PaperDetail 无 enrich 缓存指标列）——v1 整键省略（新增字段
+- *     必须可选，ADR 演进规则）
++ *     manifest，per-paper md 字节幂等）；可选含金量字段（ENR-02 兑现，noteCount
++ *     后逐行）：citedByCount（PaperDetail 有值则装配——0 是合法值禁 falsy 判空，
++ *     undefined/null 省略）+venueTier（venueToTier 查表命中装配，未命中整键
++ *     省略——两形可选语义，新增字段必须可选，ADR 演进规则）
+  *   · 正文三段序（ADR-0011 §正文结构）：①总评层一节（note 存在时：标题+
+  *     contentMd；无 note 省略整节）→ ②片段层：sortByDocumentOrder(annotations)
+  *     （C-01 单源序）逐条 `> 引文原文` + `（p.<1 基页码>）` 标注 + 缩进批注
+@@ -58,6 +59,7 @@ import type { AiNote, AiNoteQuestion, AiNoteRole } from '../../../shared/models/
+ import type { Annotation } from '../../../shared/models/annotation'
+ import type { Note } from '../../../shared/models/note'
+ import type { PaperDetail } from '../../../shared/models/paper'
++import { venueToTier } from '../../../shared/venue-tier'
+ import { makeCitationKey } from './bibtex.serializer'
+ 
+ export const CORPUS_USER_PREFIX = '[user]'
+@@ -127,10 +129,12 @@ function yamlStr(s: string): string {
+   return `'${s.replace(/\r?\n/g, ' ').replaceAll("'", "''")}'`
+ }
+ 
+-/** front-matter 行组（schemaVersion 恒裸数字；year/doi 可 null） */
++/** front-matter 行组（schemaVersion 恒裸数字；year/doi 可 null；ENR-02 两可选
++ *  含金量字段在 noteCount 后——有值形/缺省形两形，citedByFetchedAt 只进 manifest
++ *  per-paper 条目，不进 md（INV-17 字节幂等不破坏——DB 缓存快照同库确定） */
+ function frontMatter(paper: PaperDetail, annotationCount: number): string[] {
+   const key = makeCitationKey(paper.title, paper.year, paper.authors[0] ?? 'anon')
+-  return [
++  const rows = [
+     '---',
+     'schemaVersion: 1',
+     `paperId: ${yamlStr(paper.id)}`,
+@@ -142,9 +146,18 @@ function frontMatter(paper: PaperDetail, annotationCount: number): string[] {
+     `source: ${yamlStr(paper.source)}`,
+     `citationKey: ${yamlStr(key)}`,
+     `annotationCount: ${annotationCount}`,
+-    `noteCount: ${paper.noteCount}`,
+-    '---'
++    `noteCount: ${paper.noteCount}`
+   ]
++  // 0 是合法缓存值（ENR-01 判空铁律）：undefined/null 才省略，禁 falsy
++  if (paper.citedByCount !== undefined && paper.citedByCount !== null) {
++    rows.push(`citedByCount: ${paper.citedByCount}`)
++  }
++  const tier = venueToTier(paper.venue)
++  if (tier !== null) {
++    rows.push(`venueTier: ${yamlStr(tier)}`)
++  }
++  rows.push('---')
++  return rows
+ }
+ 
+ /** 引文行组：多行引文逐行补 `> ` 前缀（块引用续行不靠 lazy continuation——
+diff --git a/src/main/services/export_/corpus.export.service.ts b/src/main/services/export_/corpus.export.service.ts
+index cbf26b7..337fdb5 100644
+--- a/src/main/services/export_/corpus.export.service.ts
++++ b/src/main/services/export_/corpus.export.service.ts
+@@ -153,6 +153,10 @@ interface ManifestPaper {
+   fulltextSha: string
+   figures: string[]
+   exportedAt: string
++  /** ENR-02 缓存快照自声明（可选）：与 citedByCount 成对出现成对省略
++   *  （无 count 则无时间戳——N-r2e）；contentSha 幂等以同缓存状态为前提 */
++  citedByCount?: number
++  citedByFetchedAt?: string
+ }
+ 
+ /** 在途会话态（单飞——工厂闭包唯一实例；终局即销毁不驻留） */
+@@ -267,7 +271,14 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
+       contentSha,
+       fulltextSha,
+       figures: cur?.figures ?? [],
+-      exportedAt: now()
++      exportedAt: now(),
++      // ENR-02：有缓存值则两键齐带（detailById 配对透出，INV-28）；无则全省略
++      ...(outcome.detail.citedByCount !== undefined && outcome.detail.citedByCount !== null
++        ? {
++            citedByCount: outcome.detail.citedByCount,
++            citedByFetchedAt: outcome.detail.citedByFetchedAt
++          }
++        : {})
+     })
+     await advance(s)
+   }
+diff --git a/src/main/services/export_/interface-template.ts b/src/main/services/export_/interface-template.ts
+index 92ade88..6e4b68f 100644
+--- a/src/main/services/export_/interface-template.ts
++++ b/src/main/services/export_/interface-template.ts
+@@ -40,6 +40,20 @@ export const INTERFACE_MD = `# Synapse 语料导出接口说明书（INTERFACE
+   question 标记在内容首——Q1..Q7/divergence）。消费者按前缀区分来源，
+   未知前缀不破坏解析（忽略即可）
+ 
++## 含金量指标（可选字段）
++
++- front-matter 可选携带：\`citedByCount\`（OpenAlex/Crossref 被引数缓存快照）与
++  \`venueTier\`（\`'T1' | 'T2' | 'T3'\` 三档人工先验，T1=领域顶刊——内置学科映射表
++  查表，未命中映射的 venue 整键省略）。无缓存数据时两字段整键省略（可选语义，
++  schemaVersion 不变）。
++- manifest per-paper 条目可选携带 \`citedByCount\`+\`citedByFetchedAt\`（缓存抓取
++  时间戳，ISO 8601）——两字段成对出现成对省略。
++- 消费口径：领域基线归一与自引处理归 AI 侧工具——citedByCount 只做领域内相对
++  比较，不做跨领域原始值比较（偏倚处理不在本接口）。
++- **sha 消费者须知**：citedByCount=缓存快照随手动增强刷新；contentSha 幂等以
++  同缓存状态为前提——增量对比消费方须知（缓存刷新后 contentSha 变化属预期，
++  非导出不稳定）。
++
+ ## 版本承诺
+ 
+ - schemaVersion=1；新增字段必须可选；删除/改名=禁止（升版本保留旧字段）
+diff --git a/src/shared/venue-tier.ts b/src/shared/venue-tier.ts
+index 8c8f888..996136a 100644
+--- a/src/shared/venue-tier.ts
++++ b/src/shared/venue-tier.ts
+@@ -56,5 +56,25 @@
+  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+  */
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const VENUE_TIER_STUB = 'SR2-ENR-02'
++/** 三档人工先验：T1=领域顶刊；T2=领域主力刊；T3=一般刊（档位语义单源在此，
++ *  消费侧只做领域内相对比较——跨领域原始值比较无意义，ADR-0011 口径） */
++export type VenueTier = 'T1' | 'T2' | 'T3'
++
++/**
++ * 种子表（示例级 5 条，机制为主）：内容增量走受锁常量修订制（D3-A 2026-08-27
++ * 用户拍板——本文件 src/shared/** 全域入锁，修订=改本表+[locked-change]）。
++ * 键=provider display_name 原形：精确等值、仅 trim，不做 toLowerCase 归一（N-r2b）。
++ */
++export const VENUE_TIER_MAP: Readonly<Record<string, VenueTier>> = {
++  'Nature Water': 'T1',
++  'Environmental Science & Technology': 'T1',
++  Desalination: 'T2',
++  'Journal of Hydrology': 'T2',
++  Water: 'T3'
++}
++
++/** venue→档位：''/纯空白/未命中 → null（装配侧整键省略——可选语义） */
++export function venueToTier(venue: string): VenueTier | null {
++  const hit = VENUE_TIER_MAP[venue.trim()]
++  return hit === undefined ? null : hit
++}
+diff --git a/tests/unit/services/corpus.assemble.test.ts b/tests/unit/services/corpus.assemble.test.ts
+index eb5fbdd..96ad4e0 100644
+--- a/tests/unit/services/corpus.assemble.test.ts
++++ b/tests/unit/services/corpus.assemble.test.ts
+@@ -127,6 +127,48 @@ guardedDescribe('SR2-C-02', 'corpus.assemble —— corpus md 装配（ADR-0011
+     )
+   })
+ 
++  it('ENR-02 有值形：citedByCount+venueTier 进 front-matter（noteCount 后逐行序）', () => {
++    const md = assembleCorpusMd({
++      paper: {
++        ...detail,
++        venue: 'Nature Water',
++        citedByCount: 12,
++        citedByFetchedAt: '2026-08-28T00:00:00Z',
++        citedByCountSource: 'openalex'
++      },
++      note: null,
++      annotations: []
++    })
++    const fm = md.split('\n')
++    const i = fm.indexOf('noteCount: 1')
++    expect(i).toBeGreaterThan(-1)
++    expect(fm[i + 1]).toBe('citedByCount: 12')
++    expect(fm[i + 2]).toBe("venueTier: 'T1'")
++    expect(fm[i + 3]).toBe('---')
++  })
++
++  it('ENR-02 0 值边界：citedByCount=0 是合法缓存值照常装配（禁 falsy 判空）', () => {
++    const md = assembleCorpusMd({
++      paper: {
++        ...detail,
++        citedByCount: 0,
++        citedByFetchedAt: '2026-08-28T00:00:00Z',
++        citedByCountSource: 'crossref'
++      },
++      note: null,
++      annotations: []
++    })
++    expect(md).toContain('citedByCount: 0')
++    // venue='Water Research' 未命中种子表：venueTier 整键省略（两形独立可选）
++    expect(md).not.toContain('venueTier')
++  })
++
++  it('ENR-02 缺省形：无缓存指标夹具 → 两字段整键省略（两形成对口径）', () => {
++    const md = assembleCorpusMd(fixture())
++    expect(md).not.toContain('citedByCount')
++    expect(md).not.toContain('venueTier')
++  })
++
+   it('幂等：同输入两次装配逐字节全等（INV-17 基线——无时间戳无随机）', () => {
+     expect(assembleCorpusMd(fixture())).toBe(assembleCorpusMd(fixture()))
+   })
+diff --git a/tests/unit/services/corpus.export.test.ts b/tests/unit/services/corpus.export.test.ts
+index c5d81f2..c717334 100644
+--- a/tests/unit/services/corpus.export.test.ts
++++ b/tests/unit/services/corpus.export.test.ts
+@@ -8,6 +8,7 @@ import {
+   type CorpusExportDeps
+ } from '../../../src/main/services/export_/corpus.export.service'
+ import { createExportService } from '../../../src/main/services/export_/export.service'
++import { INTERFACE_MD } from '../../../src/main/services/export_/interface-template'
+ import { assembleCorpusMd, orderAiNotes } from '../../../src/main/services/export_/corpus.assemble'
+ import { createRepos, type Repos } from '../../../src/main/db/repos'
+ import type { ExportCorpusEvent, ExtractRequestEvent } from '../../../src/shared/ipc/schemas'
+@@ -67,6 +68,22 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
+       .run(id, `${id}.pdf`, `sha-${id}`, title, 't', 't')
+   }
+ 
++  /** ENR-02：种子缓存指标三列（三列同写=INV-28 写面语义）+可选 venue 覆写 */
++  function seedMetrics(
++    h: Harness,
++    paperId: string,
++    opts: { count: number; fetchedAt: string; source: string; venue?: string }
++  ): void {
++    h.db
++      .prepare(
++        'UPDATE papers SET cited_by_count = ?, cited_by_fetched_at = ?, cited_by_count_source = ? WHERE id = ?'
++      )
++      .run(opts.count, opts.fetchedAt, opts.source, paperId)
++    if (opts.venue !== undefined) {
++      h.db.prepare('UPDATE papers SET venue = ? WHERE id = ?').run(opts.venue, paperId)
++    }
++  }
++
+   function seedAnnotation(h: Harness, id: string, paperId: string, page: number, comment: string): void {
+     const rects: AnnotationRect[] = [{ page, x: 0.1, y: 0.1, w: 0.5, h: 0.1 }]
+     h.db
+@@ -180,6 +197,58 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
+     }
+   })
+ 
++  it('ENR-02 装配两形：含缓存值篇 md 带两字段+manifest 条目带 citedByCount/citedByFetchedAt 成对；无缓存篇两形缺省', async () => {
++    const h = await makeHarness()
++    try {
++      await seedPaper(h, 'p-cited', '含缓存值篇')
++      await seedPaper(h, 'p-plain', '无缓存篇')
++      seedMetrics(h, 'p-cited', {
++        count: 12,
++        fetchedAt: '2026-08-28T01:00:00.000Z',
++        source: 'openalex',
++        venue: 'Nature Water'
++      })
++
++      const session = h.svc.exportCorpusSession({ dir: h.dir })
++      const r1 = await nextExtract(h, 0)
++      await emulateExtractor(h, r1)
++      const r2 = await nextExtract(h, 1)
++      await emulateExtractor(h, r2)
++      await session
++
++      // corpus md 两形：有值篇 front-matter 带两字段；无缓存篇整键省略
++      const mdCited = await readFile(join(h.dir, 'corpus', 'p-cited.md'), 'utf8')
++      expect(mdCited).toContain('citedByCount: 12')
++      expect(mdCited).toContain("venueTier: 'T1'")
++      const mdPlain = await readFile(join(h.dir, 'corpus', 'p-plain.md'), 'utf8')
++      expect(mdPlain).not.toContain('citedByCount')
++      expect(mdPlain).not.toContain('venueTier')
++
++      // manifest per-paper 条目配对规则：有 citedByCount 则有 citedByFetchedAt，
++      // 无则两键皆无（成对出现成对省略——N-r2e）
++      const manifest = JSON.parse(await readFile(join(h.dir, 'manifest.json'), 'utf8')) as {
++        papers: Array<Record<string, unknown> & { paperId: string }>
++      }
++      const cited = manifest.papers.find((p) => p.paperId === 'p-cited')
++      const plain = manifest.papers.find((p) => p.paperId === 'p-plain')
++      expect(cited).toBeDefined()
++      expect(cited!.citedByCount).toBe(12)
++      expect(cited!.citedByFetchedAt).toBe('2026-08-28T01:00:00.000Z')
++      expect(plain).toBeDefined()
++      expect('citedByCount' in plain!).toBe(false)
++      expect('citedByFetchedAt' in plain!).toBe(false)
++    } finally {
++      await h.dispose()
++    }
++  })
++
++  it('ENR-02 INTERFACE 声明存在性：指标口径节两字段可选性+sha 消费者提示（W6）', () => {
++    expect(INTERFACE_MD).toContain('citedByCount')
++    expect(INTERFACE_MD).toContain('venueTier')
++    expect(INTERFACE_MD).toContain('citedByFetchedAt')
++    expect(INTERFACE_MD).toContain('同缓存状态')
++  })
++
+   it('幂等重导：同库重跑=产物文件逐字节稳定（manifest exportedAt 不参与断言）', async () => {
+     const h = await makeHarness()
+     try {
+diff --git a/tests/unit/shared/venue-tier.test.ts b/tests/unit/shared/venue-tier.test.ts
+new file mode 100644
+index 0000000..c4dbfd9
+--- /dev/null
++++ b/tests/unit/shared/venue-tier.test.ts
+@@ -0,0 +1,47 @@
++import { describe, expect, it } from 'vitest'
++import * as venueTierModule from '../../../src/shared/venue-tier'
++import { VENUE_TIER_MAP, venueToTier } from '../../../src/shared/venue-tier'
++
++/** ENR-02 venueToTier 映射语义（命中/未命中/空串/trim/精确等值不归一）
++ * —— always-active 裸 describe（W4：不挂 C-02 guardedDescribe 块） */
++
++describe('SR2-ENR-02 venueToTier —— venue→tier 映射（命中/未命中/空串/trim/精确等值）', () => {
++  it('命中：种子表全表往返（每个键 venueToTier(venue)=表值）', () => {
++    for (const [venue, tier] of Object.entries(VENUE_TIER_MAP)) {
++      expect(venueToTier(venue)).toBe(tier)
++    }
++  })
++
++  it('命中（字面锚）：Nature Water→T1（种子表内容=契约面，内容增量走受锁常量修订）', () => {
++    expect(venueToTier('Nature Water')).toBe('T1')
++  })
++
++  it('未命中：不在表内的 venue → null（装配侧整键省略）', () => {
++    expect(venueToTier('Unknown Journal of Nowhere')).toBeNull()
++  })
++
++  it('空串 → null；纯空白串 trim 后为空 → null', () => {
++    expect(venueToTier('')).toBeNull()
++    expect(venueToTier('   ')).toBeNull()
++  })
++
++  it('仅 trim 归一：首尾空白命中；内部空白参与精确等值', () => {
++    expect(venueToTier('  Nature Water  ')).toBe('T1')
++    expect(venueToTier('Nature  Water')).toBeNull()
++  })
++
++  it('不做 toLowerCase 归一（N-r2b 键=display_name 原形精确等值）', () => {
++    expect(venueToTier('nature water')).toBeNull()
++  })
++
++  it('三档齐备：种子表值覆盖 T1/T2/T3（三档人工先验结构）', () => {
++    const tiers = new Set(Object.values(VENUE_TIER_MAP))
++    expect(tiers.has('T1')).toBe(true)
++    expect(tiers.has('T2')).toBe(true)
++    expect(tiers.has('T3')).toBe(true)
++  })
++
++  it('STUB 已删除：VENUE_TIER_STUB 导出不存在（实现完成 grep 零残留伴生）', () => {
++    expect('VENUE_TIER_STUB' in venueTierModule).toBe(false)
++  })
++})

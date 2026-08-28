@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T00:15:02.4497878Z",
+    "generatedAt":  "2026-08-28T00:32:21.9119764Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -127,7 +127,7 @@
                   },
                   {
                       "path":  "src/shared/venue-tier.ts",
-                      "sha256":  "e258e8e99fd22e6733e1e8fcbe7b0993a22e6d1306f1858f87ac1ad1ef2d9b85"
+                      "sha256":  "f9869c75fce02ad6a92dd3b506ed50696454bf218d7c24968ad42e7ae5ff6734"
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
@@ -427,11 +427,11 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
-                      "sha256":  "e312425d45a33c150134e5bff93b38b9c262ee8fb848b6d4a13a482b0b4a0429"
+                      "sha256":  "e5292124f692565127898ecf853cd430ab63d23c989f34d53e45ac22b5349dd1"
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",
-                      "sha256":  "9ef18208afb1a825d33f2ae670c9dd6e8275695ccb00b705d01bfcc1fea78feb"
+                      "sha256":  "8cc5fc8d2ad8ba9198e3756dd8c8eb74a41076ee84e408bae3c741b6d0a90871"
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
@@ -496,6 +496,10 @@
                   {
                       "path":  "tests/unit/shared/annotation-order.test.ts",
                       "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
+                  },
+                  {
+                      "path":  "tests/unit/shared/venue-tier.test.ts",
+                      "sha256":  "91e0029f97dfea447577a5787c9ab5aadd26d4cb88af398709111b72576ada47"
                   },
                   {
                       "path":  "tests/unit/tools/companion.test.ts",

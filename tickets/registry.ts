@@ -199,7 +199,7 @@ export const TICKETS: readonly Ticket[] = [
   { id: 'SR2-LG-04', file: 'src/renderer/features/lineage/LineageSidePanel.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '节点侧板（元信息+core idea+AI 笔记分节分色复用 ai-note-style+人工笔记）+笔记双击跳阅读器（OPEN_PAPER_EVENT+INV-20 单入口消费方级用例）' },
   { id: 'SR2-LG-05', file: 'tests/e2e/lineage.spec.ts', area: 'e2e', owner: 'strong', status: 'done', summary: 'e2e 全链（导入→渲染真实文本→拖拽持久→树拒绝→侧板→双击跳转→保存失败退出拦截→主题节点；guard 占位翻 done 激活）' },
   { id: 'SR2-ENR-01', file: 'src/main/services/enrich/cited-by.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '含金量抓取缓存（迁移 005 papers 三可空列+瀑布响应携带零新增请求+citedByPatch 强制刷新纯函数（0 与 NULL 判别 === null）+applyEnrichment 独立 citedBy 参数——PaperMetaPatch/update-meta 契约零触碰+paperDetailSchema 三 optional 字段）——D3-A 档 ADR-0011 契约字段供给；票面双门档 scripts/audits/enr-ticketing-*' },
-  { id: 'SR2-ENR-02', file: 'src/shared/venue-tier.ts', area: 'service', owner: 'strong', status: 'open', summary: 'venueTier 映射与装配（b3: P7-G 裁决链在本头注声明——corpus.assemble.ts 头指针保持 P7-C 不动；三档种子表 venueToTier+front-matter/manifest 可选字段两形装配+citedByFetchedAt 配对省略+INTERFACE sha 消费者提示+ADR-0011 v1.2 补注）——依赖 ENR-01 数据面' }
+  { id: 'SR2-ENR-02', file: 'src/shared/venue-tier.ts', area: 'service', owner: 'strong', status: 'done', summary: 'venueTier 映射与装配（b3: P7-G 裁决链在本头注声明——corpus.assemble.ts 头指针保持 P7-C 不动；三档种子表 venueToTier+front-matter/manifest 可选字段两形装配+citedByFetchedAt 配对省略+INTERFACE sha 消费者提示+ADR-0011 v1.2 补注）——依赖 ENR-01 数据面' }
 ] as const
 
 export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))

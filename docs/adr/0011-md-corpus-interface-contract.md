@@ -112,3 +112,13 @@ schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
    不失真」同哲学）；体积/时长预期由 INTERFACE.md 声明；未来收窄（如仅标注页）
    属版本化修订（INTERFACE 版本号联动）。
 6. **导出并发语义**：单会话单飞——进行中拒绝第二会话（错误码 EXPORT_BUSY）。
+
+## 修订记录 v1.2（2026-08-28 SR2-ENR-02）
+
+7. **venueTier v1 实现档=受锁常量修订制**（D3-A 2026-08-27 用户拍板：最小
+   供给档——VENUE_TIER_MAP 种子表驻 src/shared/venue-tier.ts，全域入锁，内容
+   增量走受锁常量修订=[locked-change]）；「允许用户改」的 UI 面留 D3-B 档
+   （后续工单另行立项）。兑现口径：front-matter 可选字段 citedByCount/venueTier
+   +manifest per-paper 条目 citedByCount/citedByFetchedAt（成对出现成对省略）
+   装配落地（v1 契约「含金量指标元信息」预留位的 ENR-01/02 数据链闭合；
+   schemaVersion 恒 1——可选字段演进规则内）。

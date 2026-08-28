@@ -40,6 +40,20 @@ export const INTERFACE_MD = `# Synapse 语料导出接口说明书（INTERFACE�
   question 标记在内容首——Q1..Q7/divergence）。消费者按前缀区分来源，
   未知前缀不破坏解析（忽略即可）
 
+## 含金量指标（可选字段）
+
+- front-matter 可选携带：\`citedByCount\`（OpenAlex/Crossref 被引数缓存快照）与
+  \`venueTier\`（\`'T1' | 'T2' | 'T3'\` 三档人工先验，T1=领域顶刊——内置学科映射表
+  查表，未命中映射的 venue 整键省略）。无缓存数据时两字段整键省略（可选语义，
+  schemaVersion 不变）。
+- manifest per-paper 条目可选携带 \`citedByCount\`+\`citedByFetchedAt\`（缓存抓取
+  时间戳，ISO 8601）——两字段成对出现成对省略。
+- 消费口径：领域基线归一与自引处理归 AI 侧工具——citedByCount 只做领域内相对
+  比较，不做跨领域原始值比较（偏倚处理不在本接口）。
+- **sha 消费者须知**：citedByCount=缓存快照随手动增强刷新；contentSha 幂等以
+  同缓存状态为前提——增量对比消费方须知（缓存刷新后 contentSha 变化属预期，
+  非导出不稳定）。
+
 ## 版本承诺
 
 - schemaVersion=1；新增字段必须可选；删除/改名=禁止（升版本保留旧字段）

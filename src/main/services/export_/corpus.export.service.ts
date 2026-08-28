@@ -153,6 +153,10 @@ interface ManifestPaper {
   fulltextSha: string
   figures: string[]
   exportedAt: string
+  /** ENR-02 缓存快照自声明（可选）：与 citedByCount 成对出现成对省略
+   *  （无 count 则无时间戳——N-r2e）；contentSha 幂等以同缓存状态为前提 */
+  citedByCount?: number
+  citedByFetchedAt?: string
 }
 
 /** 在途会话态（单飞——工厂闭包唯一实例；终局即销毁不驻留） */
@@ -267,7 +271,14 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
       contentSha,
       fulltextSha,
       figures: cur?.figures ?? [],
-      exportedAt: now()
+      exportedAt: now(),
+      // ENR-02：有缓存值则两键齐带（detailById 配对透出，INV-28）；无则全省略
+      ...(outcome.detail.citedByCount !== undefined && outcome.detail.citedByCount !== null
+        ? {
+            citedByCount: outcome.detail.citedByCount,
+            citedByFetchedAt: outcome.detail.citedByFetchedAt
+          }
+        : {})
     })
     await advance(s)
   }

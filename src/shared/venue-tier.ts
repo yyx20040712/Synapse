@@ -56,5 +56,25 @@
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 
-/** 工单骨架标记（实现单元替换为真实实现） */
-export const VENUE_TIER_STUB = 'SR2-ENR-02'
+/** 三档人工先验：T1=领域顶刊；T2=领域主力刊；T3=一般刊（档位语义单源在此，
+ *  消费侧只做领域内相对比较——跨领域原始值比较无意义，ADR-0011 口径） */
+export type VenueTier = 'T1' | 'T2' | 'T3'
+
+/**
+ * 种子表（示例级 5 条，机制为主）：内容增量走受锁常量修订制（D3-A 2026-08-27
+ * 用户拍板——本文件 src/shared/** 全域入锁，修订=改本表+[locked-change]）。
+ * 键=provider display_name 原形：精确等值、仅 trim，不做 toLowerCase 归一（N-r2b）。
+ */
+export const VENUE_TIER_MAP: Readonly<Record<string, VenueTier>> = {
+  'Nature Water': 'T1',
+  'Environmental Science & Technology': 'T1',
+  Desalination: 'T2',
+  'Journal of Hydrology': 'T2',
+  Water: 'T3'
+}
+
+/** venue→档位：''/纯空白/未命中 → null（装配侧整键省略——可选语义） */
+export function venueToTier(venue: string): VenueTier | null {
+  const hit = VENUE_TIER_MAP[venue.trim()]
+  return hit === undefined ? null : hit
+}

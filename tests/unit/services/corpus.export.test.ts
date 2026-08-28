@@ -8,6 +8,7 @@ import {
   type CorpusExportDeps
 } from '../../../src/main/services/export_/corpus.export.service'
 import { createExportService } from '../../../src/main/services/export_/export.service'
+import { INTERFACE_MD } from '../../../src/main/services/export_/interface-template'
 import { assembleCorpusMd, orderAiNotes } from '../../../src/main/services/export_/corpus.assemble'
 import { createRepos, type Repos } from '../../../src/main/db/repos'
 import type { ExportCorpusEvent, ExtractRequestEvent } from '../../../src/shared/ipc/schemas'
@@ -65,6 +66,22 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
         'INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at) VALUES (?,?,?,?,?,?)'
       )
       .run(id, `${id}.pdf`, `sha-${id}`, title, 't', 't')
+  }
+
+  /** ENR-02：种子缓存指标三列（三列同写=INV-28 写面语义）+可选 venue 覆写 */
+  function seedMetrics(
+    h: Harness,
+    paperId: string,
+    opts: { count: number; fetchedAt: string; source: string; venue?: string }
+  ): void {
+    h.db
+      .prepare(
+        'UPDATE papers SET cited_by_count = ?, cited_by_fetched_at = ?, cited_by_count_source = ? WHERE id = ?'
+      )
+      .run(opts.count, opts.fetchedAt, opts.source, paperId)
+    if (opts.venue !== undefined) {
+      h.db.prepare('UPDATE papers SET venue = ? WHERE id = ?').run(opts.venue, paperId)
+    }
   }
 
   function seedAnnotation(h: Harness, id: string, paperId: string, page: number, comment: string): void {
@@ -178,6 +195,58 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
     } finally {
       await h.dispose()
     }
+  })
+
+  it('ENR-02 装配两形：含缓存值篇 md 带两字段+manifest 条目带 citedByCount/citedByFetchedAt 成对；无缓存篇两形缺省', async () => {
+    const h = await makeHarness()
+    try {
+      await seedPaper(h, 'p-cited', '含缓存值篇')
+      await seedPaper(h, 'p-plain', '无缓存篇')
+      seedMetrics(h, 'p-cited', {
+        count: 12,
+        fetchedAt: '2026-08-28T01:00:00.000Z',
+        source: 'openalex',
+        venue: 'Nature Water'
+      })
+
+      const session = h.svc.exportCorpusSession({ dir: h.dir })
+      const r1 = await nextExtract(h, 0)
+      await emulateExtractor(h, r1)
+      const r2 = await nextExtract(h, 1)
+      await emulateExtractor(h, r2)
+      await session
+
+      // corpus md 两形：有值篇 front-matter 带两字段；无缓存篇整键省略
+      const mdCited = await readFile(join(h.dir, 'corpus', 'p-cited.md'), 'utf8')
+      expect(mdCited).toContain('citedByCount: 12')
+      expect(mdCited).toContain("venueTier: 'T1'")
+      const mdPlain = await readFile(join(h.dir, 'corpus', 'p-plain.md'), 'utf8')
+      expect(mdPlain).not.toContain('citedByCount')
+      expect(mdPlain).not.toContain('venueTier')
+
+      // manifest per-paper 条目配对规则：有 citedByCount 则有 citedByFetchedAt，
+      // 无则两键皆无（成对出现成对省略——N-r2e）
+      const manifest = JSON.parse(await readFile(join(h.dir, 'manifest.json'), 'utf8')) as {
+        papers: Array<Record<string, unknown> & { paperId: string }>
+      }
+      const cited = manifest.papers.find((p) => p.paperId === 'p-cited')
+      const plain = manifest.papers.find((p) => p.paperId === 'p-plain')
+      expect(cited).toBeDefined()
+      expect(cited!.citedByCount).toBe(12)
+      expect(cited!.citedByFetchedAt).toBe('2026-08-28T01:00:00.000Z')
+      expect(plain).toBeDefined()
+      expect('citedByCount' in plain!).toBe(false)
+      expect('citedByFetchedAt' in plain!).toBe(false)
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('ENR-02 INTERFACE 声明存在性：指标口径节两字段可选性+sha 消费者提示（W6）', () => {
+    expect(INTERFACE_MD).toContain('citedByCount')
+    expect(INTERFACE_MD).toContain('venueTier')
+    expect(INTERFACE_MD).toContain('citedByFetchedAt')
+    expect(INTERFACE_MD).toContain('同缓存状态')
   })
 
   it('幂等重导：同库重跑=产物文件逐字节稳定（manifest exportedAt 不参与断言）', async () => {

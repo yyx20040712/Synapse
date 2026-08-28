@@ -127,6 +127,48 @@ guardedDescribe('SR2-C-02', 'corpus.assemble —— corpus md 装配（ADR-0011 
     )
   })
 
+  it('ENR-02 有值形：citedByCount+venueTier 进 front-matter（noteCount 后逐行序）', () => {
+    const md = assembleCorpusMd({
+      paper: {
+        ...detail,
+        venue: 'Nature Water',
+        citedByCount: 12,
+        citedByFetchedAt: '2026-08-28T00:00:00Z',
+        citedByCountSource: 'openalex'
+      },
+      note: null,
+      annotations: []
+    })
+    const fm = md.split('\n')
+    const i = fm.indexOf('noteCount: 1')
+    expect(i).toBeGreaterThan(-1)
+    expect(fm[i + 1]).toBe('citedByCount: 12')
+    expect(fm[i + 2]).toBe("venueTier: 'T1'")
+    expect(fm[i + 3]).toBe('---')
+  })
+
+  it('ENR-02 0 值边界：citedByCount=0 是合法缓存值照常装配（禁 falsy 判空）', () => {
+    const md = assembleCorpusMd({
+      paper: {
+        ...detail,
+        citedByCount: 0,
+        citedByFetchedAt: '2026-08-28T00:00:00Z',
+        citedByCountSource: 'crossref'
+      },
+      note: null,
+      annotations: []
+    })
+    expect(md).toContain('citedByCount: 0')
+    // venue='Water Research' 未命中种子表：venueTier 整键省略（两形独立可选）
+    expect(md).not.toContain('venueTier')
+  })
+
+  it('ENR-02 缺省形：无缓存指标夹具 → 两字段整键省略（两形成对口径）', () => {
+    const md = assembleCorpusMd(fixture())
+    expect(md).not.toContain('citedByCount')
+    expect(md).not.toContain('venueTier')
+  })
+
   it('幂等：同输入两次装配逐字节全等（INV-17 基线——无时间戳无随机）', () => {
     expect(assembleCorpusMd(fixture())).toBe(assembleCorpusMd(fixture()))
   })
