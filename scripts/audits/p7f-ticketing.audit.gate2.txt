@@ -1,0 +1,216 @@
+# P7-F 票面草案 v2.1 · 门二终审（gate2）
+# 审计对象=scripts/audits/p7f-ticketing-draft.md（v2.1=r2 两条件+顺手项修票版）
+# 对照链=r1（p7f-ticketing.audit.raw.txt，3B/7W/8N FAIL）+r2（p7f-ticketing.audit.r2.txt，PASS 有条件）
+# 门二孙代理 2026-08-28 · 只读 · 唯一可写=本档 · 禁 npm/test/git
+# 技能清点：code-review-excellence（用·终审四清单方法论）/ verification-before-completion
+# （用·全部 file:line 亲读实物核对）/ systematic-debugging+TDD（不用·纯文档审计无运行/实现面）/
+# 其余实现类技能（不用·只读铁律）。锚点亲验 30+ 处（reader.store/ReaderPage/PdfCanvas/
+# SelectionLayer/anchor-locate/ReaderShortcuts/AiAnnotationLayer/annotation-order/
+# locks manifest/registry/check-tickets.mjs/invariants.md/e2e 三 spec/ROADMAP/ADR-0017）。
+
+================================================================================
+## ① 处置核对（r2 两条件 + r1 全链处置终态）
+
+### r2 条件一 W-A（夹取锚「页列就绪时」）→ 真落且设计自洽 ✓
+- 落票三处一致：头注（draft:4-7）/F-01 段①（draft:62-63「onReady→scrollToPage 前，
+  页尺寸数组已知时夹取——openPaper 时 totalPages≡0 不可行」）/F-03 恢复行（draft:188-190
+  「openPaper→loading→就绪（就绪时夹取——W-A）→scrollToPage」）。
+- 实物证据链亲验成立：makeLoadingTab totalPages:0（reader.store.ts:147）；openPaper 落
+  page: d.lastReadPage（:278）时 setTotalPages（:337，经 PdfCanvas onDocInfo
+  ReaderPage.tsx:167 后置）尚未调；:319 注释自证「totalPages 未知（0）时由 PdfCanvas 侧
+  兜底」+PdfCanvas.tsx:161-162 pageNo 防御夹取。修正后的夹取时点（pageSizes 已知）信息
+  就绪，可行。
+- 残留微缝（注记 N-G1，不阻断）：就绪夹取后是否回写 store.page 未声明——:125 自愈
+  删除后 store.page 越界值的自愈路径=首次用户滚动回写（scroll:'none'）；期间 sr-only
+  页码播报（ReaderPage:198）可能短暂显示越界页号。建议 F-01 票面补一句（夹取结果可经
+  setPage(id,page,{scroll:'none'}) 回写或显式声明靠滚动回写自愈）。
+
+### r2 条件二 W-B（接管=非 scroll 的用户输入信号）→ 真落且设计自洽 ✓
+- 落票三处一致：头注（draft:8-10）/F-03 状态机 restoring 行（draft:180「wheel/keydown/
+  pointerdown 三类——程序 scrollToPage 自发的 scroll 事件不算，W-B 写死」）/跨格序列行
+  （draft:183-184）。
+- 自洽性：三类信号覆盖滚轮/键盘/滚动条拖动（pointerdown 统一触摸），与不变量「程序滚动
+  用户接管（RESTORING 取消）」的锚定机制闭合——r2 指出的「不变量依赖未定义机制」已消除。
+
+### r1 全链处置终态（按 r1 原编号对账）
+- B1 双源互斥 → ADDRESSED 终态 ✓：setPage 第三参 {scroll:'to'|'none'} 默认 'to'（F-01
+  段⑤ draft:74-77），五消费面零改；F-03 writing 行消费 'none'（draft:179）；不变量预登记
+  （draft:101-103，声明处=setPage 签注+scrollToPage 单口）；文化层回归锚（draft:111-112）。
+  落地票与消费票签名/语义/测试锚三点闭环（r2 判定维持）。
+- B2 :125/:116 单页假设 → ADDRESSED 终态 ✓：段⑤ 显式「:125 越界自愈删除（夹取移段①
+  就绪时）/:116 每页自量（DPR 校准，『第一个 canvas』查询删除）」（draft:77-79）。
+  ReaderPage :116/:125 亲验精确；夹取时点经 W-A 修正后自洽。
+- B3 受锁漏列+无 per-tab → ADDRESSED 终态 ✓：F-01 清单含 reader.store.test（draft:119）+
+  F-03 双处（draft:216-217/:221）；createScrollProgress deps 补 getPaperId、内部
+  Record<paperId,State>（draft:194-196）——与 reader.store.ts:163-197 实物 per-tab 语义
+  一致（:165 pendingProgress Record 亲验）。
+- W1 五重面过重 → 实质达标、声称略超（注记 N-G2）：五段落结构已落（段①~⑤ draft:60-79，
+  段序号+边界 ✓）；PdfCanvas 拆两文件=ENR 接口层密度（r2 判维持）。但「每段独立可测可审」
+  的文化层映射仍不全——文化层仍 3 组（布局纯函数/回收调度/双源，draft:110-113），段①就绪
+  管线、段④层实例化分工、段⑤ :125/:116 处遇与 pageText Record 化无独立测试锚。头注
+  「W1 完全化」与实物有差距。不阻断（r2 已降注记），建议文化层补「就绪管线（onReady
+  信号+夹取）」一组锚。
+- W2/W3 SelectionLayer 边角+状态机缺格 → ADDRESSED 终态 ✓：单实例方案（段④ draft:69-73）
+  +跨页拒绝（F-02 draft:131-132）+INV-14 消解（draft:150）+选区→页回收格（draft:148-149）
+  +writing-scroll 新格（draft:179）+loading 态（draft:181）。
+- W4 注册文件错位 → ADDRESSED ✓：F-04 注册=tests/e2e/reader-scroll.spec.ts 新建；
+  LG-05 先例亲验（tickets/registry.ts:200 file='tests/e2e/lineage.spec.ts'）。
+- W5 行数预算违宪 → ADDRESSED ✓：全票 ≤250（见③红线行数节亲验）。
+- W6 装配面+文件清单 → ADDRESSED ✓：四票文件清单齐（F-01:114-119/F-02:160-163/
+  F-03:218-222/F-04:254-256）；F-03 含 ReaderPage.tsx 装配（draft:202）。
+- W7 受锁面类别混淆 → ADDRESSED ✓：「新组件测试文件入锁」口径（draft:157-159）；
+  预裁 6 补全路径 src/shared/annotation-order.ts 受锁标注（draft:46-47）。
+- D/N1 锚点漂移 → 修正 ✓：zoom 夹取 [0.5,3]=reader.store.ts:334 亲验精确（N-E 落）；
+  annotation-order :44-50 亲验精确（compareAnnotations 函数体）。
+- E/N5 依赖序理由 → 修正 ✓：F-02→F-03 串行=ReaderPage 装配共享+受锁 e2e 排他
+  （draft:266-267），非文件依赖。
+- N8 证实项 → 维持 ✓（验收四项覆盖见②；冻结面见③）。
+- r1-N2/N3（部分）/N4/N7 → 未处置、台账无行（注记 N-G3）：N2 换 tab/fileUrl 变化→
+  整列重置跨格仍缺于 F-01 布局态状态机（draft:93-97 只有快速滚动/zoom 两跨格）；
+  N3 canvas 上限数字仍未落字（验收「canvas 计数 ≤ 渲染窗口+缓冲常量」draft:82——
+  「缓冲常量」未数字化，props renderWindow=1/recycleWindow=2 已定 draft:86）；N4 writing
+  失败分支未精确化（状态机已无重试态，造定时器空间小）；N7 :170/:178/:186 三条件行的
+  Record 形态未显式。均 N 级维持，可实现可推导；但处置台账只覆盖 B/W/D/N8，N2-N7 无
+  「不处置理由」行——台账完整性注记。
+
+================================================================================
+## ② 母本符合度（ROADMAP P7-F + 宪法）
+
+### ROADMAP P7-F（docs/ROADMAP.md:195-203）验收四项 × 票映射（N8 维持）
+1. 离屏回收断言（视口外 canvas 上限）→ F-01（内存断言 draft:82+验收 canvas 计数
+   draft:120）+F-04（收官 e2e canvas 计数上限断言 draft:237-238）✓
+2. 进度回写/恢复 e2e → F-03 验收（滚动→关→重开=恢复页 draft:223）+F-04 ✓
+3. 标注重开原位全量兼容 → F-02 验收（±2px 归一保持 draft:164）✓
+4. 翻页键位语义迁移纳入 keymap 锁定用例 → F-03 reader-shortcuts.test 受锁扩
+   （draft:216）+PAGE_KEYS 表驱动（ReaderShortcuts.ts:48-53/:84-90 亲验）✓
+- 内容行四要素：页列渲染+懒渲染回收（F-01）/进度回写恢复（F-03）/缩放与适应宽度重定义
+  （F-04：fit-width 公式分母改列宽基准 draft:242）/四层随滚动几何重锚（F-02）——全覆盖 ✓。
+- 风险行「宪法状态机前置+跨模块不变量预登记」→ 见下。
+
+### 宪法条款
+- 状态机前置（三状态机齐）：F-01 布局态（loading→ready+每页 placeholder→rendering→
+  rendered→recycling→placeholder+快速滚动/zoom 跨格，draft:93-97）✓；F-02 选区态
+  （无选区→页内→工具条→清+滚动保持/跨页拒绝/zoom 失效/页回收清空跨格，
+  draft:145-149）✓；F-03 滚动位置态 v2（六态含 loading+writing→scrolling 新格+跨格
+  五序列，draft:173-185）✓。缺格残留=N2（换 tab 整列重置，见 N-G3）。
+- 不变量登记清单：双源区分+canvas 生命周期（F-01 draft:101-104）/进度回写最近页+
+  程序滚动用户接管（F-03 draft:205-206）/缩放中心保持（F-04 draft:246）——与 ROADMAP
+  风险行「滚动位置/进度回写/锚定几何」三面对齐；锚定几何由 F-02 INV-14 消解+±2px 验收
+  覆盖 ✓。INV-01/INV-16 零触碰声明（draft:48/:100）——后者与 PdfCanvas 拆分互斥，见③ W-F。
+- 接缝归责：B1（F-01/F-03）、W-A（store/PageColumn 时序）、N-C（工具条参照系）接缝均
+  已显式调和 ✓；**W-F（INV-16 vs 拆分）为 v2.1 新暴露未调和接缝**（见③）。
+
+================================================================================
+## ③ 红线终审
+
+### 受锁面四票逐票对照 locks/manifest.json（真伪）
+在册亲验：reader-text.spec.ts（manifest:161）✓ / ai-notes-section.spec.ts（:145）✓ /
+lineage.spec.ts（:157）✓ / anchor-locate.test.ts（:293）✓ / reader.store.test.ts
+（:369）✓ / reader-shortcuts.test.tsx（:377）✓ / src/shared/annotation-order.ts（:81，
+冻结面全路径+受锁标注 draft:46-47）✓。
+新文件入锁声明四件（page-column.test.tsx / selection-layer.test.tsx /
+scroll-progress.test.ts / reader-scroll.spec.ts）均标「新入锁」✓——符合「先 locks:generate
+再 apply」流程预判。
+微瑕（注记 N-G4）：F-03 清单两处写「reader-shortcuts.test」缺 .tsx 后缀（实物=
+tests/unit/renderer/reader-shortcuts.test.tsx）；F-03 新模块 scroll-progress.ts 未附行数
+预算（repo≤300 口径）。
+
+### 新发现 W-F [W] F-01「INV-16 零触碰」与「PdfCanvas 拆分删除」互斥——受锁面漏
+eslint.config.js + INV-16 登记文本更新（接缝归责违例，v2.1 新引入面）
+- 证据：docs/invariants.md:30 INV-16=「pdfjs-dist 运行时 import 白名单单源：仅许
+  PdfCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 三文件…白名单变更=改 ESLint 规则+
+  [locked-change]」，强制方式=eslint.config.js no-restricted-imports；PdfCanvas.tsx
+  :126-150 doc 生命周期（含 getDocument）按票上提 PdfDocProvider.tsx（draft:88-89），
+  旧文件删除（draft:115）。
+- 论述：拆分后 pdfjs-dist import 落新文件名，白名单中的「PdfCanvas.tsx」指向已删文件，
+  PdfDocProvider（getDocument 运行时 import）与 PdfPageCanvas（render/类型消费循再导出
+  模式——再导出源同为旧文件）双双越界白名单→lint 红。票面架构层「INV-16 零触碰」
+  （draft:100）与「PdfCanvas.tsx 拆两文件+旧文件删除」互斥=宪法「接缝归责」正面情形
+  （改动 A 未核对相邻 B 对同一事实的声明）；受锁面漏列 eslint.config.js（lint 配置受锁，
+  变更须 [locked-change]+先 unlock 后 apply）与 docs/invariants.md（INV-16 登记文本随
+  白名单文件名同步）。实现者按「零触碰」字面执行→拆完 lint 红→卡点自裁风险（乱改白名单
+  不走 [locked-change]）。ESLint 会硬拦（非静默传爆）故 W 级非 B 级；修票量级=文件清单补
+  两行+架构层声明改一句+INV-16 迁移预登记，与 r2 两条件同量级（一行级修票不涉架构方向）。
+- 处置建议：F-01 架构层改「INV-01 零触碰；INV-16 白名单随拆分迁移（PdfCanvas.tsx→
+  PdfDocProvider.tsx[+PdfPageCanvas.tsx 若运行时 import]，改 eslint.config.js 受锁+
+  [locked-change]+INV-16 登记文本同步，F-01 收口步）」；文件清单补 eslint.config.js
+  （受锁）与 docs/invariants.md（非锁、登记纪律）。
+
+### 行数预算（宪法 250/300）
+PdfCanvas 225 行（亲验）拆两文件各 ≤250 ✓ 声明；SelectionLayer 243 行（亲验）→≤250 ✓；
+ReaderPage 249 行（亲验）重排后 ≤250 ✓（预算紧但拆出 PdfCanvas 布局后可行）；
+anchor-locate 254 行（亲验）→≤260 非组件 util（repo≤300 内）合规 ✓。
+
+### PdfCanvas 拆分=「方案切换=删除旧方案」红线
+合规：旧文件删除显式声明（draft:114-115），无两套方案并存 ✓（其接缝后果=W-F，已单列）。
+
+### F-aware 冻结面（零触碰维持）
+locateAnchor 签名 :69-84（LocateAnchor/LocateTarget 亲验）零触碰 ✓；annotation-order
+:44-50 compareAnnotations 零触碰 ✓（四票改动面无涉）；F-02 仅 :153 查询限定+头注
+:52-54 口径同步（「仅换滚动步实现」原文亲验）——与 ROADMAP :165-166 冻结裁决一致 ✓。
+
+================================================================================
+## ④ 机器面（check-tickets 六规则翻 done 推演 + 可实现性终评）
+
+六规则推演（scripts/check-tickets.mjs:55-196 亲读）：
+- 规则 1（文件存在）：骨架先建声明在案（draft:268）——F-01 PageColumn.tsx/F-03
+  scroll-progress.ts/F-04 reader-scroll.spec.ts 新建先建骨架 ✓。
+- 规则 2（引用一致性）：四票代码互不引用工单号（接缝靠接口非号）；头注 // b3: P7-F
+  不匹配 ticketRefRe（无数字尾）✓ 不冲突。
+- 规则 3/4b（done 无占位）：完成删 data-ticket/STUB ✓ 流程内含。
+- 规则 4（open+tsx 渲染占位）：F-01 PageColumn.tsx 骨架含 data-ticket ✓；F-02
+  SelectionLayer.tsx 含 JSX.Element（:15/:64 亲验）→翻 open 需临时 data-ticket 属性
+  （骨架先建对改造型文件=临时属性插入完成即删；票面未细化形态，规则 4 CI 硬拦兜底，
+  注记 N-G5）；F-03/F-04 .ts 不适用 ✓。
+- 规则 5（guardedDescribe 绑定）：新测试 always-active 裸 describe（draft:110/
+  ADR-0017 裁决 3）——不经 guard 不触发 ✓。
+- 规则 6（b3 指针）：四票头注 // b3: P7-F；P7-F 在 ROADMAP :195「### P7-F：」已裁决集
+  ✓（正则 ^### (P7-[A-Z])： 亲验同构）；头注置于首个代码语句前（LG-05 spec :1 先例
+  形态亲验）✓。
+- id/area/owner：SR2-F-01~04 合规；owner strong ✓；area——F-01~03 'reader' 合法，
+  F-04 按 LG-05 先例应填 'e2e'（票面自查笼统写 'reader'，check-tickets 不校验
+  area-文件对应不会红，收口时应按先例，注记 N-G6）。
+- 依赖序：F-01→（F-02→F-03 串行：ReaderPage 装配共享+受锁 e2e 排他）→F-04 ✓ 与
+  r1-N5 修正一致。
+
+票面可实现性终评：**实现者拿票可开工** ✓——四票文件清单（新/改/受锁扩/新入锁四分类）
+齐；接口签名具体（setPage opts/PageColumn props 六参/createScrollProgress deps 七参）；
+锚点密度高（本门抽验 30+ 处全中或微容：e2e 区间 :93/:140/:221/:399 亲验、
+SelectionLayer :81/:89/:95-103/:106-111/:129-131/:188、anchor-locate :153、
+ReaderShortcuts :47-53/:70-75/:83/:94-102、AiAnnotationLayer :91 缓存键、
+PdfCanvas :126-150/:154-215/:161-163）；验收标准可验（canvas 计数/e2e 恢复页/±2px/
+键位锚点断言）。前提=W-F 修票落位（否则 lint 卡点+自裁风险）。
+
+================================================================================
+## ⑤ 成本预估行（参照 LG 役实测账本 docs/reports/2026-08-27_lineage-campaign.md §2）
+
+- SR2-F-01（渲染架构整体翻转：PageColumn 新建+PdfCanvas 拆两+ReaderPage 重构+store 改
+  +三测试面；对照 LG-03 30.03M 含回炉 8.62M）：预估 15~30M
+- SR2-F-02（单实例改造+:153 限定+跨页拒绝+批 2 三 spec；对照 LG-04 6.13M~LG-02 12.23M）：
+  预估 8~15M
+- SR2-F-03（scroll-progress 新模块+六态状态机+键位迁移+拆链回归；对照 LG-02）：
+  预估 8~15M
+- SR2-F-04（zoom 锚点+收官 e2e 新 spec；对照 LG-05 17.12M）：预估 10~17M
+- 四票合计 40~75M（LG 全役 73.69M/258min 同量级）+工单化≈3M+每票双门 2~4M
+  → 全役预估 ≈50~90M tokens。
+
+================================================================================
+## 总评：PASS（有条件）→ 用户 plan 门
+
+- r2 两条件（W-A/W-B）真落且设计自洽（三处落票一致+实物证据链闭合）；r1 全链 3B/7W
+  处置终态=3B+6W ADDRESSED、W1 实质达标——回炉四焦点全部兑现。
+- 母本符合度：ROADMAP 验收四项×4 票映射全覆盖；三状态机齐+不变量预登记清单与风险行
+  对齐；冻结面真零触碰（亲验）。
+- 进 plan 门前唯一条件（一行级修票，同 r2 两条件处置模式）：**W-F**——F-01 票面落
+  INV-16 白名单随 PdfCanvas 拆分迁移的显式声明（架构层「INV-16 零触碰」改「白名单迁移
+  +[locked-change]+登记文本同步入 F-01 收口步」+文件清单补 eslint.config.js（受锁）与
+  docs/invariants.md）。
+- 随档注记（不阻断，入战役档）：N-G1 夹取后 store 回写路径一句声明 / N-G2 W1「完全化」
+  声称略超（段①④独立测试锚缺）/ N-G3 r1-N2/N3部分/N4/N7 未处置且台账无行（N2=布局态
+  缺换 tab 整列重置跨格）/ N-G4 .tsx 后缀+scroll-progress 行数预算微瑕 /
+  N-G5 F-02 骨架形态（临时 data-ticket）未细化 / N-G6 F-04 area 按 LG-05 先例应填
+  'e2e' / N-D 半符——头注称「台账编号 N-D 勘正」但实物仅勘正 W4 行内容说明，编号仍与
+  r1 错位（无 W3 行、r1-W4 标 W5、r1-W5/W6 合并标 W6），内容全覆盖可按内容对账，
+  措辞应改「内容勘正」或真对齐编号。
+- 票面骨架质量（四票垂直切分/五层规约/五段结构/状态机三套/机检自查）在 LG 役之上；
+  W-F 落位后即可工单化落 registry 进用户 plan 门逐张过。

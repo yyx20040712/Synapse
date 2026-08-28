@@ -1,0 +1,256 @@
+# P7-F 工单化票面草案 v1 · 门一对抗深审（raw）
+# 审计对象=scripts/audits/p7f-ticketing-draft.md（票面质量，非实现）
+# 门一孙代理 2026-08-28 · 只读审计 · 唯一可写=本档
+# 技能清点：code-review-excellence（用·对抗审查核心）/ verification-before-completion
+# （用·file:line 亲验）/ systematic-debugging（不用·无运行缺陷面）/ TDD（不用·
+# 只读审计无实现面）/ git 类（不用·禁 git 写操作）。全部 file:line 均亲读实物核对。
+
+================================================================================
+## B 级（阻断——票面缺陷会直接传爆到实施）
+
+### B1 [B] F-01/F-03 接缝：store.page 双源驱动未定义——「回写触发程序滚动」回弹死循环（宪法「接缝归责」违例）
+- 证据：
+  - 票面 F-01（draft:49-52）：「store.page 变化 = scrollTo 目标页盒顶（行为=跳页）」
+  - 票面 F-03（draft:151-153）：「滚动→页 回写：视口中心最近页……写 store.page（单源不动）」
+- 论述：两票对同一信号（store.page 变化）的声明互斥未调和。F-03 落地后序列：
+  用户滚到页 10 中部 → 2s 防抖 → 回写 store.page=10 → F-01 的 scroll effect
+  （监听 page 变化）触发 scrollTo(页 10 盒顶) → 视口被程序拉回页顶，阅读位置
+  丢失；用户再滚 → 再回写 → 再拉回。「回写源 setPage」与「意图源 setPage」
+  （快捷键/目录/locateAnchor/工具栏）必须可区分（来源参数 / suppress 标记 /
+  effect 只认特定入口），票面零机制声明 = 未定义行为。AGENTS.md「接缝归责」
+  条款点名场景（改动 A 必须核对相邻 B 对同一行为的声明，互斥即停下报告）；
+  这正是 U2 型跨格序列缺陷（2026-08-23 五轮回炉）的票面级预演——单票各自
+  合理，接缝合成行为没人能一句话说清。
+- 处置建议：票面显式定义「程序滚动抑制」机制（如 scroll-progress 持
+  suppress 窗口 / F-01 scroll effect 只消费跳页入口的 page 变化），并将
+  「回写不触发程序滚动」列为 INV 预登记项（与已登记的「用户接管」对偶）。
+
+### B2 [B] F-01 未处置 ReaderPage :125 回写自愈与 :116 量测的单页假设——F-01 中间态自身即回弹循环（LG-03 型边界未定义）
+- 证据：
+  - ReaderPage.tsx:115-126 handlePageRender——:125
+    `if (renderedPage - 1 !== page) setPage(renderedPage - 1)`（注释：lastReadPage
+    越界被 PdfCanvas 夹取时回写自愈）
+  - ReaderPage.tsx:116 `pageRoot?.querySelector('canvas[data-pdf-canvas]')`——
+    单页假设：量测取「第一个 canvas」
+  - 票面 F-01（draft:49-52）把五消费面（含「越界自愈」）笼统归为「本票仅保
+    接口」，未声明 :125/:116 的页列下处遇
+- 论述：票面五消费面清单本身与实物吻合（快捷键=ReaderPage :72-79 动作闭包、
+  工具栏=ReaderToolbar onNavigate :75/:96/:58 经 ReaderPage :210 接线、越界
+  自愈=ReaderPage :125、locateAnchor=anchor-locate.ts:218/:240、OutlineAside=
+  :67 + ReaderPage :210 转发——grep 全量核对无第六处直接调用面）。但 :125 的
+  语义在页列下反转：多页并存时每页渲染回报 renderedPage ≠ store.page 是
+  **常态而非异常**（F-01 中间态滚动不回写 store.page），保留原行 = 每次页渲染
+  回报都回写 setPage → 程序滚动 → 触发新页渲染回报 → 循环回弹。:116 同病：
+  页列下第一个 canvas = 页 1 的 canvas，量测基准错页，TextLayer/标注层定位全
+  崩。两处都是「层最小跟随/pageText Record 化」改造的隐含必改点，票面只写
+  了 pageText 结构变化没写这两个消费逻辑的处遇——实现者按票面保留即炸。
+- 处置建议：F-01 行为层显式列出：①:125 自愈语义随单页模型消亡（越界夹取
+  收敛到 openPaper 落 page 时一次，渲染回报不再回写 store.page）；②:116 量测
+  改为回报页自身盒（onPageRender(no, payload) 携带该页盒，PageColumn 单源）。
+
+### B3 [B] F-03 受锁面漏 reader.store.test.ts + scroll-progress 接口缺 per-tab 维度（受锁清单错位，ENR-B3 同型）
+- 证据：
+  - locks/manifest.json:369 —— tests/unit/renderer/reader.store.test.ts 受锁
+  - reader.store.test.ts:322-341 —— 「进度防抖 per-tab 化」锁定用例组
+    （两 tab 各自翻页各自落库 / closeTab flush，TABS-01 登记）
+  - 票面 F-03 接口层（draft:168-170）「reader.store: setPage 防抖链拆至
+    scroll-progress」+ 受锁面（draft:186）仅「新单测+reader-shortcuts.test+
+    reader-text.spec 批 3」——无 reader.store.test.ts
+  - reader.store.ts:163-197 —— pendingProgress 为 Record<paperId, page>
+    per-tab 记账（头注 :36-39「多 tab 各自翻页各自落账，换 tab 不误写不丢写」）
+  - 票面 F-03 接口（draft:165-167）createScrollProgress(deps:{getViewport,
+    getPageBoxes,onPage:setPage,saveProgress}) —— 无 paperId/activeTab 维度
+- 论述：两层问题。①流程面：拆走 flushProgress/scheduleProgress/pendingProgress
+  必然重构受锁用例的通过路径；即便行为兼容用例仍绿，「受锁文件变更必须
+  [locked-change]+先 unlock 后 apply」流程要求票面预判触碰面——ENR 门一 B3
+  （受锁/清单错位）同型回炉教训未吸收。②设计面：现状防抖链是 per-tab 记账
+  （多 tab 并存各自落库），票面 scroll-progress 接口为单例状态机（无
+  getActivePaperId / 无每 tab 实例声明）——若实现成单例，多 tab 语义回归
+  （换 tab 误写/丢写），正是 TABS-01 锁定用例要防的行为。
+- 处置建议：受锁面补 reader.store.test.ts（条件项：拆分后行为兼容则零改动
+  出清单，触碰则 unlock→改→apply）；createScrollProgress 接口补 paperId
+  维度声明（每 tab 一实例，或 deps 带 activePaperId 路由）。
+
+================================================================================
+## W 级（回炉修票面，不阻断战役方向）
+
+### W1 [W] F-01 重量=LG-03 型过重票：五重改动面一票，PdfCanvas 每页化细节最薄
+- 证据：票面 F-01（draft:34-87）同票做：①页列几何（占位盒/列宽/居中）
+  ②懒渲染回收（IntersectionObserver/±1 渲染/>2 回收）③层最小跟随（四层
+  多页实例化+pageText Record 化）④跳页兼容第一半（scrollTo effect）
+  ⑤PdfCanvas 每页化+文档生命周期上提（draft:60-62）。
+- 论述：ENR 先例单票=单一服务模块+一条迁移；F-01 是渲染架构整体翻转。
+  其中 PdfCanvas 改造票面最薄：现渲染 effect 依赖 [doc,pageNumber,zoom]
+  （PdfCanvas.tsx:215），页列下 pageNumber 固定、doc 由 PageColumn 下发、
+  渲染触发改为「进入窗口」驱动——effect 依赖形态完全重写，票面只说「渲染
+  effect/取消/DPR 配方 :154-215 原样保留」（配方保留≠依赖结构保留）。
+  可拆性存在：①+②+⑤（几何+canvas 面，层暂缺=可滚动阅读）与 ③+④（层跟随
+  +跳页）可分两票，各自终态可用性反而更真。非必须拆——若主控坚持单票，
+  需补 PdfCanvas effect 依赖新形态与 doc 传递路径的票面级规约，并给重量
+  论证（对照 LG 役）。
+- 处置建议：二选一——拆 F-01 为 01a（几何+懒渲染+PdfCanvas 每页化）/
+  01b（层最小跟随+跳页兼容）；或补 PdfCanvas 改造细节至 ENR 接口层密度。
+
+### W2 [W] F-01 中间态 SelectionLayer 多实例边角清单缺失（跨页 toast 重复 / 页盒定位前提 / INV-14 监听清理无测试锚）
+- 证据：
+  - SelectionLayer.tsx:129-131 —— document 级 selectionchange/mouseup/keydown
+    ×每渲染页实例（约 3-5 实例=9-15 个 document 监听）
+  - SelectionLayer.tsx:89 —— fromMouseUp 且 intersectsNode(textLayer) → toast
+  - SelectionLayer.tsx:188 —— 工具条 absolute 定位（依赖页盒 relative）
+  - 票面预裁 8（draft:29-30）「Selection 边角允许，归 F-02 收口」
+- 论述：逐实例推演中间态真实可用度（审计工单点名攻击项）：evaluate 以
+  各实例自己的页盒为锚定根（:81 pageRoot.querySelector 限定页内），选区
+  不在本页 → anchor=null → setPending(null) 静默收起——**单页内划选与保存
+  正确、无重复创建标注**，预裁 8 的「标注基本可用」大体成立。但边角
+  未清点：①跨页拖选同时 intersects 两页 textLayer → 两实例各 toast 一次
+  「仅支持单页内标注」（重复提示）；②工具条 absolute 需页盒 relative——
+  F-01 未声明页盒定位前提；③多实例 document 监听的成对注销（INV-14 消费方
+  级）在 F-01 文化层测试面无对应用例。「边角允许」不定义边角清单=实现者
+  自裁空间过大，门二无法对账。
+- 处置建议：F-01 补中间态边角清单（跨页 toast 重复=允许；监听清理=必须有
+  测试锚）；F-02 收口时合并单 toast（现 F-02 行为层已有跨页 toast 语义）。
+
+### W3 [W] F-03 状态机缺格：writing 中来 scroll 事件无迁移 + 「页列就绪」前置态/信号未定义
+- 证据：票面 F-03 状态机表（draft:141-150）：idle/scrolling/pending/writing/
+  restoring 五态；writing 迁移仅「成功→idle / 失败→idle」；restore 时机
+  「页列就绪时 scrollTo」（draft:154-155）。
+- 论述：①writing（saveProgress 在途）中用户开始滚动——表无 writing→
+  scrolling 格，按表只能先经 idle，语义模糊（fire-and-forget 下新进度跟踪
+  起点是否丢失）。②「页列就绪」是未定义信号：占位盒高度=page.view×zoom
+  （预裁 2，draft:13-14）需要逐页 view，而 pdfjs 无文档级页尺寸批量 API——
+  初始化管线（全量 getPage 拿 view / 首页外推同尺寸假设）票面零声明；该管线
+  同时是 F-01 的核心前置（F-01 也没写）且直接决定「restore 的 scrollTo」与
+  恢复语义可实现性。③openPaper 落 page → 页列就绪前用户先滚 = 用户接管应
+  取消 restore——跨格序列未列（只列了 restoring 态中的接管）。
+- 处置建议：表补「writing+scroll 事件→scrolling」格与 restore 取消竞态
+  跨格；F-01 或 F-03 补页盒几何初始化管线声明（逐页 getPage(view) 的时机、
+  批量与渐进策略、同尺寸外推是否允许）。
+
+### W4 [W] F-04 注册文件与主改面错位（ReaderToolbar≈零改，fitWidth/锚点纯函数落点未定）
+- 证据：票面 F-04（draft:193）注册文件=ReaderToolbar.tsx 改造；（draft:201）
+  fit-width 公式=ReaderPage.tsx:129-135（亲验准确）；（draft:209）「锚点纯函数
+  入 PageColumn」；（draft:208）ReaderToolbar「零 props 改」。
+- 论述：ReaderToolbar 在 F-04 实际改动≈零（zoom 数值语义不变），主改面=
+  ReaderPage.fitWidth（自然宽取值 pageText.box.w/zoom → 页列下取最宽页
+  view，路径未写）与 PageColumn 锚点纯函数。注册文件选 ReaderToolbar 使
+  registry 定位与骨架先建落点失焦。缩放锚点数学本身无恙（均匀缩放下
+  中心内容比保持，各页高不均匀亦成立——逐页比不变），问题只在归属与取值路径。
+- 处置建议：注册文件改 PageColumn.tsx 或 ReaderPage.tsx；fitWidth 自然宽
+  取值路径写明。
+
+### W5 [W] 组件行数预算违反宪法 250 上限
+- 证据：AGENTS.md「repo ≤300 行、组件 ≤250 行」；票面 F-01（draft:72）
+  「PdfCanvas 225→微增(≤280)」；F-02（draft:120）「SelectionLayer 243→≤280」。
+- 论述：两处声明直接超组件 250 行约束。票面行数预估是给实现者的预算，
+  预算超宪=诱导违宪（ESLint max-lines 只拦 500，250 靠审查——审查依据的
+  票面自己先破线，门二将无据可驳）。PdfCanvas 每页化后调度上提 PageColumn，
+  理应净减而非微增。
+- 处置建议：两处预算改 ≤250。
+
+### W6 [W] F-03 漏 ReaderPage.tsx 装配面文件清单；四票均无 ENR 式逐文件清单
+- 证据：ReaderShortcuts.ts:70-75（ReaderShortcutActions 接口）；ReaderPage.tsx:
+  69-88（useReaderShortcuts 装配——prevPage/nextPage 闭包内调 setPage）；
+  票面 F-03 接口层（draft:168-170）仅列 scroll-progress.ts / ReaderShortcuts.ts
+  / reader.store.ts。
+- 论述：PAGE_KEYS 动作改 scrollStep(±) = ReaderShortcutActions 接口形变 →
+  ReaderPage :72-79 装闭包必须同步改写。票面文件清单漏 ReaderPage.tsx——
+  实现者按票面清单干活漏装配面（tsc 拦类型，或更糟保留旧名内部转调）。
+  系统性缺口：ENR 先例「文件清单（新/改/受锁/非锁全列）」纪律（ENR-B4/W7
+  处置固化）在四票均未贯彻，只零散提及。
+- 处置建议：四票各补文件清单节（参照 ENR-01 形态）；F-03 至少列 ReaderPage.tsx。
+
+### W7 [W] F-02 受锁面类别混淆：不存在的「SelectionLayer 组件测试」列为受锁面；annotation-order 属 src/shared 受锁目录未标注
+- 证据：tests/unit/renderer/ 目录 ls 实证——无 selection-layer 组件测试
+  （annotation-menu.test.tsx 是 AnnotationMenu 的）；locks/manifest.json:81
+  ——src/shared/annotation-order.ts 受锁；票面 F-02 受锁面（draft:130）
+  「上述三 spec+SelectionLayer 组件测试+anchor-locate.test」。
+- 论述：三 spec（reader-text/ai-notes-section/lineage）与 anchor-locate.test
+  均在锁内（manifest :161/:145/:157/:293 亲验）——这部分准确；但「SelectionLayer
+  组件测试」现不存在，正确口径=「新建测试入锁（generate→apply）」（ENR-01
+  对 cited-by.test.ts 的处理形态），列为受锁面会让实现者找不到文件或误以为
+  已有。annotation-order.ts 在 src/shared（受锁目录），冻结零触碰下无冲突，
+  但票面引用未标全路径与受锁属性，防实现者误当 reader 域内部文件顺手改。
+- 处置建议：受锁面改写为「三 spec+anchor-locate.test（受锁扩）+新 SelectionLayer
+  组件测试（新入锁）」；冻结面声明补全路径 src/shared/annotation-order.ts
+  （受锁目录，零触碰）。
+
+================================================================================
+## N 级（注记/证实项）
+
+### N1 [N] 行号锚点两处偏差（实体存在，锚点漂移）
+- 票面 F-04「夹取 [0.5,3](:28/:31/:163)」——ReaderToolbar.tsx:163 实为搜索
+  占位 span；夹取实在 PdfCanvas.tsx:163 与 reader.store.ts:334。:28 ZOOM_STEP
+  /:31 round2 准确。
+- 票面预裁 4「annotation-order.ts 文档序比较器(:41-48)」——实为 src/shared/
+  annotation-order.ts:44-50（compareAnnotations），且文件在 shared 非 reader 目录。
+- 其余抽验 13 处全中：setPage :318-331 ✓ / 防抖链 :163-197 ✓ / flushPending
+  :209-215（closeOne 内）✓ / store 425 行 ✓ / ReaderPage :154/:157/:89 ✓ /
+  PdfCanvas :126-150/:154-215 ✓ / ReaderShortcuts :48-53/:83/:94-102/:47 ✓ /
+  anchor-locate :153/:69-84/:52-54 ✓ / AiAnnotationLayer 缓存键 :91 ✓ /
+  annotation-anchor 474 行 ✓ / e2e reader-text :93/:126-136/:140/:221±1/:399±3、
+  ai-notes-section :212-222 ✓、lineage :497-505 ✓。
+
+### N2 [N] F-01 布局态状态机缺「文档切换/整列卸载」跨格
+- 现跨格仅快速滚动穿页+zoom 变化（draft:65-66）。fileUrl 变化（换 tab）→
+  doc 销毁重建（PdfCanvas.tsx:126-150 生命周期上提后归 PageColumn）→ 全列
+  回收→新文档占位，未列。建议补「fileUrl 变化→整列重置」格。
+
+### N3 [N] 渲染/回收窗口常量最终数字未定死
+- draft:44「常量票面内定（渲染窗口=±1，回收窗口=>2）」——语义已定但 canvas
+  上限数（推导=5，视口±2）未落字；F-01 验收「canvas 计数 ≤ 窗口常量」引用了
+  未定义常量。建议票面直接写死 RENDER_WINDOW=±1 / canvas 上限=5。
+
+### N4 [N] F-03「writing 失败→idle（尽力而为，下次再试）」的「下次再试」无触发器
+- 失败后 pending 已清、无重试事件源；实际语义=下次滚动再试。表述精确化可防
+  实现者造重试定时器（后台任务红线擦边）。
+
+### N5 [N] 依赖序「F-03 依赖 F-02 收口」依据不足（保守串行可，理由不精确）
+- F-03 改动面（scroll-progress/Shortcuts/store/ReaderPage 装配）与 F-02
+  改动面（SelectionLayer/anchor-locate）文件级零交集；F-03 真依赖=F-01。
+  审计工单问「能否并行」：理论可（唯一潜在交集=两票都可能微触 ReaderPage
+  装配段）。若维持串行，理由改「ReaderPage 装配段潜在交集，保守串行」。
+
+### N6 [N] F-01 验收「44 页 Reynolds 滚动流畅」无量化判据
+- 「流畅」不可机检；F-01 验收可指向可验项（canvas 计数断言+多页文本可见
+  e2e 断言），人工视检单列给 F-04 用户走查。
+
+### N7 [N] TextLayer/层挂载三条件行的改造隐含未声明
+- ReaderPage :170/:178/:186 三处 `pageText.page === page + 1` 是层最小跟随的
+  实际挂载点，Record 化后的新形态（按页判断）票面隐含未写——可实现可推导，
+  建议一句显式（配合 B2 的 handlePageRender 处遇一并落）。
+
+### N8 [N] 证实项：ROADMAP 验收四项全覆盖 + F-aware 冻结面真零触碰（审计工单 A 项结论）
+- 离屏回收断言→F-01（单测+DevTools）+F-04（收官 e2e canvas 计数）✓；
+- 进度回写/恢复 e2e→F-03 验收（滚动→关 tab→重开=恢复页）+F-04 ✓；
+- 标注重开原位全量兼容→F-02 验收（±2px 归一比较保持）✓；
+- 键位语义迁移纳入 keymap 锁定用例→F-03 键位单测+reader-shortcuts.test
+  （受锁，manifest:377）✓——PAGE_KEYS 表驱动注册（ReaderShortcuts :84-90）
+  改表即改绑定，与 :47「唯二落点之一」头注口径一致。
+- 冻结面：locateAnchor 签名（:69-84 LocateAnchor/LocateTarget）与
+  annotation-order 文档序（compareAnnotations）在四票改动面中确无触碰；
+  唯一近似=F-02 改 anchor-locate :153 查询限定+头注 :52-54 口径同步——签名
+  未动，符合「只换滚动步实现」冻结口径（anchor-locate.ts:52-54 原文亲验）。
+
+================================================================================
+## 统计与总评
+
+- 统计：B=3 / W=7 / N=8。
+- 机检兼容（E 项）：id SR2-F-01~04 与 ENR 先例同构（推断过 check-tickets
+  正则）；b3 指针 P7-F=ROADMAP 已裁决候选；area 'reader' 合理；骨架先建时序
+  声明在案（draft:234-235）。
+- 现状引用质量（D 项）：抽验 15 处锚点，13 处全中、2 处漂移（N1）——地图
+  质量高；五消费面清单经 grep 全量核对与实物吻合（快捷键/工具栏为间接消费
+  经 ReaderPage 装配，链路成立；无第六处直接调用面；但 :125 的页列下处遇
+  缺失升级为 B2）。
+- 总评：**FAIL → 回炉**。
+  B1（接缝死循环未定义）与 B2（:125/:116 单页假设未处置，F-01 中间态自身
+  即炸）是票面级未定义行为——宪法「接缝归责」「状态机前置（跨格序列）」
+  的正面违例，属防 U2/LG-03 型缺陷传爆的本门职责范围；B3 受锁面漏列+接口
+  缺 per-tab 维度为流程与设计双重缺口（ENR-B3 同型教训未吸收）。
+  回炉焦点四件：①F-01/F-03 接缝的 store.page 双源区分机制+INV 登记；
+  ②handlePageRender 两处单页假设（:125 回写自愈/:116 第一 canvas 量测）的
+  页列下处遇；③受锁清单补 reader.store.test.ts+scroll-progress per-tab
+  接口；④行数预算改 ≤250+四票补文件清单。W1（F-01 重量）允许主控以更强
+  依据（PdfCanvas 改造细节补足或拆票方案）保留预裁，不接受裸保留。
+  票面整体骨架（四票垂直切分/五层规约/预裁八项/状态机表已具雏形）质量
+  在 LG 役之上，回炉一轮可过。

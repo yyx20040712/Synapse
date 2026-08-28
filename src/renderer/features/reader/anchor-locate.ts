@@ -2,6 +2,14 @@
 /**
  * [SR2-C-05] anchor-locate —— N1 锚点定位服务（工单：done / strong）
  *
+ * **[SR2-F-02] 四层多页化收口（工单：open / strong；注册文件=本文件）**
+ * ——双裁决链：头指针 b3: P7-C 保持不动（C-05 链），F-02 裁决链=registry
+ * summary 声明（P7-F）。本单改造：verifyWhenReady :153 的
+ * document.querySelector('.textLayer') 全局第一改为目标页（anchorPage
+ * 页盒）内查询；头注 :52-54 F-aware 接缝口径同步为滚动步。**签名零触碰**
+ * （LocateAnchor :69-73/LocateTarget :75-84/LocateResult :86——F-aware
+ * 冻结面）。票面=scripts/audits/p7f-ticketing-draft.md SR2-F-02 节。
+ *
  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
  * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
  * locateAnchor，**禁各写降级**。
