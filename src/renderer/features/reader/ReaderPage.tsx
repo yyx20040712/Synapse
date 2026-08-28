@@ -5,6 +5,7 @@
  * - 无打开文档：空态引导；打开：openPaper→PdfDocProvider+PageColumn 页列+
  *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
  * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
+ * - [sr2-lg-08] 时序竞态修复：挂载效应内监听器注册必须先于闩锁消费——消费链 openFromBus→locateAnchor→waitOpen（tab 缺席）会同步重发 OPEN_PAPER_EVENT（事件②），旧序自丢失→waitOpen 8s 超时停旧 tab=「脉络双击笔记总跳最后打开的文章」根因；先注册则事件②被自身 handler 接住→无锚分支 store.openPaper 正常打开（链声明独立于 F-07；全链取证见 scripts/audits/sr2-lg-08-brief.md）
  * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
  *   pageText→Record<页号,PageText>（渲染窗口内，页卸载同删）；每页自量 canvas 盒
  * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
@@ -15,7 +16,6 @@
  * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
- *
  * ── 架构层 ──
  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
  * - 文本/几何的页内契约：PdfPageCanvas onPageRender 回报（页号,文本项）+该页
@@ -112,13 +112,13 @@ export function ReaderPage(): JSX.Element {
     }, [])
   )
 
-  // 打开请求两路：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
+  // 打开请求两路（sr2-lg-08：注册必须先于闩锁消费——链见头注）：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
   useEffect(() => {
     const open = (req: OpenPaperRequest): void => openFromBus(req)
-    const pending = takePendingOpenPaper()
-    if (pending !== null) open(pending)
     const handler = (e: Event): void => { const d = (e as CustomEvent<OpenPaperRequest>).detail; if (typeof d?.paperId === 'string') open(d) }
     window.addEventListener(OPEN_PAPER_EVENT, handler)
+    const pending = takePendingOpenPaper()
+    if (pending !== null) open(pending)
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [])
 

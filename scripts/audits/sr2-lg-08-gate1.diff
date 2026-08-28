@@ -1,0 +1,195 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index caba0fc..af03e83 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T15:53:11.9509479Z",
++    "generatedAt":  "2026-08-28T16:18:42.1467926Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -385,6 +385,10 @@
+                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
+                       "sha256":  "6a288972765541a996cf4ac66adc722479da3e20f941e47c869f236cdf83a09f"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
++                      "sha256":  "ed8fa758f0b40cb784868cb73568cec134812682821c203e3c90b7c846d9b6ec"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
+                       "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
+diff --git a/src/renderer/features/lineage/LineageSidePanel.tsx b/src/renderer/features/lineage/LineageSidePanel.tsx
+index 80b2c4b..2f881cc 100644
+--- a/src/renderer/features/lineage/LineageSidePanel.tsx
++++ b/src/renderer/features/lineage/LineageSidePanel.tsx
+@@ -131,7 +131,7 @@ export function LineageSidePanel(props: {
+           anchorPage: n.anchorPage === null ? null : n.anchorPage - 1
+         }
+       : undefined
+-    props.onJumpToPaper({ paperId: node.paperId, anchor, aiNoteId: n.id })
++    props.onJumpToPaper({ paperId: n.paperId, anchor, aiNoteId: n.id })
+   }
+ 
+   return (
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 9b4c74c..672a44d 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -5,6 +5,7 @@
+  * - 无打开文档：空态引导；打开：openPaper→PdfDocProvider+PageColumn 页列+
+  *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+  * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
++ * - [sr2-lg-08] 时序竞态修复：挂载效应内监听器注册必须先于闩锁消费——消费链 openFromBus→locateAnchor→waitOpen（tab 缺席）会同步重发 OPEN_PAPER_EVENT（事件②），旧序自丢失→waitOpen 8s 超时停旧 tab=「脉络双击笔记总跳最后打开的文章」根因；先注册则事件②被自身 handler 接住→无锚分支 store.openPaper 正常打开（链声明独立于 F-07；全链取证见 scripts/audits/sr2-lg-08-brief.md）
+  * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
+  *   pageText→Record<页号,PageText>（渲染窗口内，页卸载同删）；每页自量 canvas 盒
+  * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
+@@ -15,7 +16,6 @@
+  * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+- *
+  * ── 架构层 ──
+  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
+  * - 文本/几何的页内契约：PdfPageCanvas onPageRender 回报（页号,文本项）+该页
+@@ -112,13 +112,13 @@ export function ReaderPage(): JSX.Element {
+     }, [])
+   )
+ 
+-  // 打开请求两路：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
++  // 打开请求两路（sr2-lg-08：注册必须先于闩锁消费——链见头注）：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
+   useEffect(() => {
+     const open = (req: OpenPaperRequest): void => openFromBus(req)
+-    const pending = takePendingOpenPaper()
+-    if (pending !== null) open(pending)
+     const handler = (e: Event): void => { const d = (e as CustomEvent<OpenPaperRequest>).detail; if (typeof d?.paperId === 'string') open(d) }
+     window.addEventListener(OPEN_PAPER_EVENT, handler)
++    const pending = takePendingOpenPaper()
++    if (pending !== null) open(pending)
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+   }, [])
+ 
+=== NEW FILE: tests/unit/renderer/reader-page-open-race.test.tsx ===
+// @vitest-environment jsdom
+/**
+ * [sr2-lg-08] ReaderPage 挂载时序竞态回归锁（锁定合约，always-active——
+ * 不经 guardedDescribe，ADR-0017 裁决 3）。
+ *
+ * 竞态链（缺陷 P3「双击笔记总跳最后打开的文章」根因，宪法三盲区之首=时序）：
+ * 脉络双击笔记 → requestOpenPaperAnchored(A+anchor) 事件① → App 切视图 →
+ * ReaderPage 挂载效应内 takePendingOpenPaper 消费闩锁 → openFromBus →
+ * locateAnchor → waitOpen（tab 缺席）→ requestOpenPaper(A) **同步派发事件②**
+ * ——旧序中 addEventListener 晚于消费两行，事件②自丢失 → 无角色调
+ * store.openPaper → waitOpen 8s 超时 → 停留原 active tab（=最后打开的文章）。
+ *
+ * - it① 竞态红证：真 open-paper-bus（禁 mock——竞态本体=总线时序）+真
+ *   reader.store（openPaper 动作 spy 替换=anchor-locate.test.ts:74 同型先例）
+ *   ——闩锁先设+tab 缺席 → render ReaderPage → 断言 openPaper 被调（事件②
+ *   被自身 handler 接住的唯一证据）。换序实现前必红（openPaper 0 次）。
+ * - it② 无锚请求回归锁：pending 无 anchor → openFromBus 无锚分支直接
+ *   openPaper（不依赖监听器注册顺序——既有行为）。
+ * - 定时器：fake timers（anchor-locate.test.ts 先例）——waitOpen 8s 轮询在
+ *   fake 队列冻结，不滞留测试进程（事件②的 spy 命中是同步链，无需推进）。
+ * - mock 面申报（app-quit-dirty.test.tsx 配方同族，最小化）：
+ *   ①api/client（`api = window.api` 顶层赋值，jsdom 下必须 stub）；
+ *   ②PdfDocProvider/PageColumn（pdfjs-dist 渲染管线重件——防御性隔离，
+ *   本测渲染路径=tab 缺席空态，断言不涉其渲染输出；PageColumn 附带
+ *   nearestPage 导出=scroll-progress 的 import 面）。
+ */
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as clientModule from '../../../src/renderer/api/client'
+
+const { stubApi } = vi.hoisted(() => ({
+  stubApi: { reader: { open: vi.fn(), listAnnotations: vi.fn(), saveProgress: vi.fn() } }
+}))
+
+vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+  const real = await importOriginal<typeof clientModule>()
+  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+})
+
+vi.mock('../../../src/renderer/features/reader/PdfDocProvider', () => ({
+  PdfDocProvider: () => null
+}))
+
+vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+  PageColumn: () => null,
+  nearestPage: () => 0
+}))
+
+import { ReaderPage } from '../../../src/renderer/features/reader/ReaderPage'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { requestOpenPaperAnchored, takePendingOpenPaper } from '../../../src/renderer/shared/open-paper-bus'
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+let openPaperSpy: ReturnType<typeof vi.fn>
+
+function mount(element: JSX.Element): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(element)
+  })
+}
+
+const flush = async (turns = 6): Promise<void> => {
+  for (let i = 0; i < turns; i++) {
+    await act(async () => {
+      await Promise.resolve()
+    })
+  }
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  // 模块级闩锁单例跨用例复位（消费式清空——open-paper-bus 无重置口）
+  takePendingOpenPaper()
+  useReaderStore.setState({
+    tabs: {},
+    order: [],
+    activeId: null,
+    noteHighlight: null,
+    aiNoteHighlight: null
+  })
+  openPaperSpy = vi.fn(async () => undefined)
+  useReaderStore.getState().openPaper = openPaperSpy
+})
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+  vi.useRealTimers()
+})
+
+describe('ReaderPage 挂载时序 —— 打开请求消费 vs 监听器注册（sr2-lg-08）', () => {
+  it('竞态红证：带锚闩锁+tab 缺席 → 挂载效应内 waitOpen 重发的事件②被自身 handler 接住（openPaper 被调）', async () => {
+    // 脉络双击场景：事件①派发时 ReaderPage 未挂载（App 尚未切视图）——闩锁承载
+    requestOpenPaperAnchored({
+      paperId: 'p1',
+      anchor: { quoteText: '竞态锚文', prefixText: '', suffixText: '', anchorPage: 0 },
+      aiNoteId: 'n1'
+    })
+    mount(<ReaderPage />)
+    await flush()
+    // 旧序：事件②早于 addEventListener 两行 → 自丢失 → openPaper 永不被调（红证点）
+    expect(openPaperSpy).toHaveBeenCalledTimes(1)
+    expect(openPaperSpy).toHaveBeenCalledWith('p1')
+  })
+
+  it('无锚请求回归锁：挂载闩锁补读 → openFromBus 无锚分支直接 openPaper（不依赖监听器顺序）', async () => {
+    requestOpenPaperAnchored({ paperId: 'p2' })
+    mount(<ReaderPage />)
+    await flush()
+    expect(openPaperSpy).toHaveBeenCalledTimes(1)
+    expect(openPaperSpy).toHaveBeenCalledWith('p2')
+  })
+})

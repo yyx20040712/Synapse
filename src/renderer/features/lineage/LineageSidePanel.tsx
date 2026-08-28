@@ -131,7 +131,7 @@ export function LineageSidePanel(props: {
           anchorPage: n.anchorPage === null ? null : n.anchorPage - 1
         }
       : undefined
-    props.onJumpToPaper({ paperId: node.paperId, anchor, aiNoteId: n.id })
+    props.onJumpToPaper({ paperId: n.paperId, anchor, aiNoteId: n.id })
   }
 
   return (
