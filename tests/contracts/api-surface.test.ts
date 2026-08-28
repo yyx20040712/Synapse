@@ -34,6 +34,8 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
 
   it('unimplementedObject 可完整满足 ApiHandlers 类型（骨架期类型自洽证明）', () => {
     // 样例号用非工单号字符串：真实工单号会随对应工单完成而被占位桩检查判红
+    // workspaces 域（R1-WS1）为 bootstrap 组合装配域（api-surface ComposedHandlerDomains
+    // ——ipc/index.ts 零改动裁决），此处显式枚举恢复该域的枚举覆盖
     const handlers: ApiHandlers = {
       library: unimplementedObject('SAMPLE-IPC', 'x'),
       reader: unimplementedObject('SAMPLE-IPC', 'x'),
@@ -45,12 +47,31 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       ai_sensor: unimplementedObject('SAMPLE-IPC', 'x'),
       lineage: unimplementedObject('SAMPLE-IPC', 'x'),
       settings: unimplementedObject('SAMPLE-IPC', 'x'),
-      system: unimplementedObject('SAMPLE-IPC', 'x')
+      system: unimplementedObject('SAMPLE-IPC', 'x'),
+      workspaces: unimplementedObject<NonNullable<ApiHandlers['workspaces']>>('SAMPLE-IPC', 'x')
     }
     expect(() => handlers.library.list).toThrow(NotImplementedError)
     expect(() => handlers.library.list).toThrow('SAMPLE-IPC')
+    expect(() => handlers.workspaces?.list).toThrow('SAMPLE-IPC')
     const _types: PreloadApi = handlers as never
     void _types
+  })
+
+  it('workspaces 域（R1-WS1 扩容）：四通道在表 + create 名长 1-40 边界 + Res 形状', () => {
+    expect(Object.keys(API_SURFACE.workspaces).sort()).toEqual(['create', 'list', 'rename', 'switch'])
+    const create = API_SURFACE.workspaces.create.Req.safeParse({ name: '课'.repeat(40) })
+    expect(create.success).toBe(true) // 40 字=上限含端
+    expect(API_SURFACE.workspaces.create.Req.safeParse({ name: '课'.repeat(41) }).success).toBe(false)
+    expect(API_SURFACE.workspaces.create.Req.safeParse({ name: '' }).success).toBe(false)
+    expect(
+      API_SURFACE.workspaces.list.Res.safeParse({
+        items: [{ id: 'default', name: '默认课题', createdAt: '2026-01-01T00:00:00.000Z' }],
+        currentId: 'default'
+      }).success
+    ).toBe(true)
+    expect(API_SURFACE.workspaces.list.Res.safeParse({ items: [], currentId: '' }).success).toBe(false)
+    expect(API_SURFACE.workspaces.switch.Res.safeParse({ ok: true }).success).toBe(true)
+    expect(API_SURFACE.workspaces.rename.Res.safeParse({ ok: true }).success).toBe(true)
   })
 
   it('所有模型 schema fixture 往返：合法通过/非法拒绝（抽样关键端点）', () => {

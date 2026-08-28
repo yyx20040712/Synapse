@@ -330,6 +330,38 @@ export const noteSaveReqSchema = z
   .strict()
 export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
 
+// ── workspaces（R1-WS1 课题域——ADR-0018 库级分目录；路径永不跨 IPC）────
+export const workspaceItemSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    createdAt: z.string().min(1)
+  })
+  .strict()
+export type WorkspaceItem = z.infer<typeof workspaceItemSchema>
+
+/** 课题名长度上限（单一真相源：schema 校验与 WS2 输入框 maxLength 同源消费——NOTE_TITLE_MAX 同型） */
+export const WORKSPACE_NAME_MAX = 40
+
+export const workspaceListResSchema = z
+  .object({
+    items: z.array(workspaceItemSchema),
+    currentId: z.string().min(1)
+  })
+  .strict()
+
+export const workspaceCreateReqSchema = z
+  .object({ name: z.string().min(1).max(WORKSPACE_NAME_MAX) })
+  .strict()
+
+export const workspaceCreateResSchema = z.object({ id: z.string().min(1) }).strict()
+
+export const workspaceRenameReqSchema = z
+  .object({ id: z.string().min(1), name: z.string().min(1).max(WORKSPACE_NAME_MAX) })
+  .strict()
+
+export const workspaceSwitchReqSchema = z.object({ id: z.string().min(1) }).strict()
+
 // ── settings ────────────────────────────────────────────────────
 export const appSettingsSchema = z
   .object({

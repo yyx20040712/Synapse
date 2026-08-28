@@ -1,0 +1,1359 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 3759210..8ef22a1 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -46,6 +46,7 @@
+ | INV-32 | 程序滚动用户接管（RESTORING 取消）：程序滚动（恢复/跳页/locate，均经 INV-29 scrollRequest 单口）进行中，用户以 wheel/keydown/pointerdown 三类**非 scroll** 输入信号介入即取消程序目标转 scrolling（程序 scrollToPage 自发的 scroll 事件不算用户滚动）；后续 scroll 事件恢复记账 | scroll-progress.ts onUserTakeover/装配面三口（ReaderPage onWheel/onPointerDown+wiring hook keydown；SR2-F-03，2026-08-28 登记） | 单测锚（scroll-progress.test：restoring→scrolling 接管格+程序自发 scroll 不记账格）+S4 竞态序列 | 已锚定（单测级 2026-08-28 SR2-F-03） |
+ | INV-33 | 缩放中心保持：zoom 变化（ctrl+wheel/工具栏/适应宽度任一来源）后视口中心内容不动——(scrollTop+vh/2)/总高 比值经纯函数 anchoredScrollTop 保持（顶/底夹取；间隙不随 zoom 缩放的口径由 columnTotalHeight 承载）；实现链=PageColumn 段⑥布局效应程序修正 scrollTop（滚动位置镜像=容器 scroll 事件被动监听），程序性修正不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）；fit-width 分母=列宽基准（最宽页原始宽，页列就绪 onReady 载荷单源，一次性 zoom 语义保持） | page-column-geometry.ts anchoredScrollTop/columnTotalHeight+PageColumn 段⑥+ReaderPage fitWidth（SR2-F-04，2026-08-28 登记） | 单测锚（page-column.test：anchoredScrollTop 比值/顶底夹取/退化防御+columnTotalHeight 间隙口径+组件 scrollTop 修正精确断言）+e2e 收官链（reader-scroll.spec 中心最近页保持+fit 列宽贴合断言；M3 变异恰中实证） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-04；e2e 随收官链取证落盘，registry 翻 done 后常规跑激活） |
+ | INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 computed overflowY∈{auto,scroll}，hidden/visible 不入选），**禁用 Element.scrollIntoView 于滚动链**（CSSOM 语义=滚所有可滚祖先——2026-08-28 缺陷 A 实测泄漏面含 overflow:hidden 的 document viewport（scrollingElement 仍可被程序滚动）与 main，TabBar 被顶出视口无自愈）；防御纵深=ReaderPage 根两分支 overflow-hidden+ReaderToolbar 根 shrink-0（flex-wrap 折行只影响阅读器内部高度）；列表内滚动 block:'nearest'（FragmentNotesList/AiNoteGroupList/PaperList）与面板自身滚动语义不在本册约束面 | src/renderer/features/reader/scroll-converge.ts（SR2-F-05，2026-08-28 登记；消费方=PageColumn 段⑤ 'start'/anchor-locate flashElement 'center'——同一不变量同一实现，Rule of Three 从 1 收敛） | 单测锚（scroll-converge.test 六用例：最近祖先选取含嵌套取最近与 hidden 不入选/start 数学/center 数学/顶底夹取/无滚动祖先不动/aside 消费形）+受锁三文件消费形断言（page-column/anchor-locate/ai-annotation-layer 模块 mock）+e2e（reader-scroll.spec F-05：scrollingElement 与 main 双 scrollTop===0+TabBar bbox≥0+根 overflow-hidden 在位——窄视口页码跳转+PageDown 两链） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-05；e2e 随守卫态 22+1 skip，registry 翻 done 后 23+0 常规跑激活） |
++| INV-35 | 课题库单活三联（ADR-0018 库级分目录）：①同一时刻至多一个课题库打开（switch=关旧→指针→装配→换引用，容器 current 单值；全新首启=legacy-fresh 态库在 userData 根，二次启动迁移入 workspaces/default——受锁 e2e 种子配方兼容的硬前提）②switch/create/rename 变更互斥单飞（busy 守卫，并发=CONFLICT 中文 DomainError）③指针 workspace.json 缺省/损坏/失指=降级「目录序第一」不崩溃；遗留迁移崩溃断点续迁（遗留 db 在且 default 库不在=条件仍真，db 文件最后移=提交点，无孤儿库） | workspace.service.ts 头注状态机（L0/M/W-pvalid/W-pbad/W-empty+busy+五跨格序列）+workspace.fs.ts 搬移序（R1-WS1，2026-08-28 登记） | 单测（workspace.test.ts：迁移含 wal/shm/files 随迁+数据不丢/幂等/崩溃断点续迁/L0 不建 workspaces/指针双降级/switch 真库旧句柄失效/busy 并发 CONFLICT/容器 facade 热换）+e2e 24 全过（迁移兼容=验收面）+变异红证（删 busy 守卫/删迁移分支各一） | 已锚定（单测级 2026-08-28 R1-WS1；renderer 切换面 reload 语义随 R1-WS2） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index af03e83..c28e6c7 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T16:18:42.1467926Z",
++    "generatedAt":  "2026-08-28T17:11:51.5532299Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -91,11 +91,11 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+-                      "sha256":  "24b7294799f6007b96bc590d8e1672685bff19910726d83c253009c646653c4c"
++                      "sha256":  "0ab5ae371e55d5456bc250a4f55a97f5305a994153b78e3e40908c7253cf15a2"
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "d40a1590d6a1808b1cf56635a2ed8943cd244d8475b2ef96f63e3efeec342ede"
++                      "sha256":  "8b82b471067fbfb1185f84921df208133b11d9e8fc61b8341d5c1a4f7d4c6557"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -131,7 +131,7 @@
+                   },
+                   {
+                       "path":  "tests/contracts/api-surface.test.ts",
+-                      "sha256":  "3f41d0edd1283920fcc9ae4a93881034e7b4733da9b116a1739fa693f112a6b0"
++                      "sha256":  "e12d322d1d3a5622427e212849b776b979903808903656b2aa5fde89ac70d687"
+                   },
+                   {
+                       "path":  "tests/contracts/app-error.test.ts",
+@@ -521,6 +521,10 @@
+                       "path":  "tests/unit/services/tags.service.test.ts",
+                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                   },
++                  {
++                      "path":  "tests/unit/services/workspace.test.ts",
++                      "sha256":  "c682a897cd29342f25535af8692848c320b8acd6132b2faee3d2f3f552b36ec1"
++                  },
+                   {
+                       "path":  "tests/unit/services/zcode-link.service.test.ts",
+                       "sha256":  "212dbedcc2720051d49fbdab13e598dd24003a50d9c5c21fa5ddd6bc1cf5326f"
+diff --git a/src/main/bootstrap.ts b/src/main/bootstrap.ts
+index 2b0a88c..559c185 100644
+--- a/src/main/bootstrap.ts
++++ b/src/main/bootstrap.ts
+@@ -1,8 +1,15 @@
+ /**
+- * 组装根（SR-INFRA-11，已完成）——应用启动顺序的唯一编排处。
++ * 组装根（SR-INFRA-11，已完成；R1-WS1 课题化重构——ADR-0018）——应用启动顺序的唯一编排处。
+  *
+- * 顺序（不可调换）：userData 定位 → 目录初始化 → DB 打开+迁移 → fileStore →
+- * repos → services → 协议注册 → CSP → IPC 注册 → 主窗口。
++ * 顺序（不可调换）：userData 定位 → 课题布局（遗留迁移/指针解析——最早段）→
++ * 数据层容器装配（课题目录内 db 迁移+fileStore+repos+services）→ 协议注册 →
++ * CSP → IPC 注册（workspaces 域在此组合注入）→ 主窗口。
++ *
++ * 课题化（R1-WS1）：数据层=db+repos+fileStore+services 整体可重建，经稳定
++ * facade 容器供 IPC/协议层引用（ipc/index.ts+register.ts 零改动）；switch=
++ * workspace.service 编排「关旧库→指针→装配→换引用」，busy 串行守卫。
++ * 全新安装首启=legacy-fresh（库在 userData 根，不建 workspaces/——受锁 e2e
++ * 种子配方兼容，见 workspace.service 头注序列②）；二次启动迁移入 default。
+  *
+  * 环境钩子：
+  * - SYNAPSE_USER_DATA：e2e 用，覆盖 userData 到临时目录（隔离测试状态）
+@@ -37,6 +44,9 @@ import { createFileStore } from './services/import_/file-store'
+ import { createServices } from './services'
+ import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
+ import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
++import { createDataLayerContainer } from './data-layer.container'
++import { ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
++import { createWorkspaceService } from './services/workspaces/workspace.service'
+ import { createIpcHandlers } from './ipc'
+ import { registerIpc } from './ipc/register'
+ import { registerAppFileProtocol } from './protocol/app-file.protocol'
+@@ -56,53 +66,74 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
+   const override = process.env.SYNAPSE_USER_DATA
+   if (override) app.setPath('userData', override)
+   const userDataDir = app.getPath('userData')
+-  const filesDir = join(userDataDir, MANAGED_FILES_DIR)
+-  await mkdir(filesDir, { recursive: true })
+ 
+-  // ── 数据层 ──
+-  const db = openDatabase(join(userDataDir, DB_FILE_NAME))
+-  migrate(db)
+-  const repos = createRepos(db)
+-  const fileStore = createFileStore(filesDir)
++  // ── 课题布局（最早段：遗留迁移→指针解析→当前课题数据目录——R1-WS1）──
++  const layout = await ensureWorkspaceLayout(userDataDir)
+ 
+   // ── 出网（Electron net.fetch 跟随系统代理；安全：host 白名单在 http-client 内强制）──
+   const fetchLike = net.fetch as unknown as typeof globalThis.fetch
+   const contactEmail = await readContactEmail(userDataDir)
+ 
+-  const services = createServices({
+-    repos,
+-    fileStore,
+-    contactEmail: () => contactEmail,
+-    sendProgress: (e) => {
+-      for (const win of BrowserWindow.getAllWindows()) {
+-        win.webContents.send(EVENT_CHANNELS.importProgress, e)
+-      }
+-    },
+-    sendExportEvent: (e) => {
+-      for (const win of BrowserWindow.getAllWindows()) {
+-        win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
+-      }
+-    },
+-    // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费）
+-    aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
+-    // AI-10：zcode 基目录+技能模板源（prod=resourcesPath/ai-sensor，dev=仓库 tools/ai-sensor）
+-    zcodeBaseDir: process.env.SYNAPSE_ZCODE_HOME ?? homedir(),
+-    templateDir: resolveTemplateDir(__dirname, process.resourcesPath, app.isPackaged),
+-    http: {
+-      fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
+-      fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })
++  // ── 数据层容器（课题级可重建；与库无关项=闭包外参——票面 P1）──
++  const container = createDataLayerContainer({
++    assemble: async (dataDir) => {
++      const filesDir = join(dataDir, MANAGED_FILES_DIR)
++      await mkdir(filesDir, { recursive: true })
++      const db = openDatabase(join(dataDir, DB_FILE_NAME))
++      migrate(db)
++      const repos = createRepos(db)
++      const fileStore = createFileStore(filesDir)
++      const services = createServices({
++        repos,
++        fileStore,
++        contactEmail: () => contactEmail,
++        sendProgress: (e) => {
++          for (const win of BrowserWindow.getAllWindows()) {
++            win.webContents.send(EVENT_CHANNELS.importProgress, e)
++          }
++        },
++        sendExportEvent: (e) => {
++          for (const win of BrowserWindow.getAllWindows()) {
++            win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
++          }
++        },
++        // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费；
++        // ADR-0018：协议根保持全局，corpus 导出自当前库天然按课题）
++        aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
++        // AI-10：zcode 基目录+技能模板源（prod=resourcesPath/ai-sensor，dev=仓库 tools/ai-sensor）
++        zcodeBaseDir: process.env.SYNAPSE_ZCODE_HOME ?? homedir(),
++        templateDir: resolveTemplateDir(__dirname, process.resourcesPath, app.isPackaged),
++        http: {
++          fetchJson: (url, schema) => fetchJson(url, { schema, fetchImpl: fetchLike, contactEmail }),
++          fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })
++        }
++      })
++      return { db, repos, fileStore, services }
+     }
+   })
++  await container.assembleInto(layout.dataDir)
++
++  // 课题域服务（workspace 管理面在容器外——管理的是容器本身；空库迁移经
++  // initWorkspaceDb 注入——services 层禁直连 db，装配面在 main 根）
++  const workspaceService = createWorkspaceService({
++    userDataDir,
++    initWorkspaceDb,
++    closeCurrent: () => container.closeCurrent(),
++    assembleInto: (dataDir) => container.assembleInto(dataDir)
++  })
+ 
+   // ── 协议 / CSP / IPC ──
+   registerAppFileProtocol(
+     protocol,
+-    async (paperId) => repos.papers.fileRefById(paperId),
+-    fileStore
++    // 经容器间接取（switch 后活指向当前课题库——bootstrap 内一处接线）
++    (paperId) => container.papersFileRef(paperId),
++    container.fileStore // 稳定 facade：switch 热换后协议读当前课题 files/
+   )
+-  registerIpc(
+-    createIpcHandlers({
+-      services,
++  registerIpc({
++    // workspaces 域由 bootstrap 组合注入（ComposedHandlerDomains——
++    // ipc/index.ts+register.ts 零改动主控裁决；registerIpc 仍按接线表全量注册）
++    ...createIpcHandlers({
++      services: container.services, // 稳定 facade：deps.services 消费形态零改动
+       // 对话框绑主窗口（模态）：装配在窗口创建之前，惰性 getter 在实际弹出时取
+       // 窗口（取首个存活窗口；销毁/未就绪时对话框无父退化，可用性优先）
+       dialogs: createElectronDialogs(
+@@ -112,8 +143,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
+       userDataDir,
+       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
+       setQuitDirty
+-    })
+-  )
++    }),
++    workspaces: workspaceService
++  })
+   applyCsp(session.defaultSession)
+ 
+   // ── 主窗口 ──
+@@ -173,7 +205,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
+     shutdown: () => {
+       if (dbClosed) return
+       dbClosed = true
+-      db.close()
++      container.closeCurrent()
+     }
+   }
+ }
+diff --git a/src/shared/ipc/api-surface.ts b/src/shared/ipc/api-surface.ts
+index 7ad86c1..d021d18 100644
+--- a/src/shared/ipc/api-surface.ts
++++ b/src/shared/ipc/api-surface.ts
+@@ -99,6 +99,14 @@ export const API_SURFACE = {
+   system: {
+     openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema },
+     setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema }
++  },
++  // workspaces 域（R1-WS1，ADR-0018 课题隔离）：四通道。switch 返回后 renderer
++  // reload 归 R1-WS2——本域 handlers 由 bootstrap 组合注入（见 ComposedHandlerDomains）
++  workspaces: {
++    list: { channel: 'workspaces/list', Req: S.voidReqSchema, Res: S.workspaceListResSchema },
++    create: { channel: 'workspaces/create', Req: S.workspaceCreateReqSchema, Res: S.workspaceCreateResSchema },
++    rename: { channel: 'workspaces/rename', Req: S.workspaceRenameReqSchema, Res: S.trueAckSchema },
++    switch: { channel: 'workspaces/switch', Req: S.workspaceSwitchReqSchema, Res: S.trueAckSchema }
+   }
+ } satisfies Record<string, Record<string, Endpoint>>
+ 
+@@ -127,9 +135,22 @@ type Ep<D extends keyof Surface, M extends keyof Surface[D]> =
+     ? { Req: R; Res: S }
+     : never
+ 
++/**
++ * bootstrap 组合装配域（R1-WS1 主控裁决：ipc/index.ts+ipc/register.ts 零改动）。
++ * 这些域的 handlers 不出自 createIpcHandlers，而由 bootstrap 在 registerIpc 前
++ * 组合补齐（表驱动注册不变——registerIpc 仍按本表全量注册+校验）。
++ * 代价申报：ApiHandlers 对该域可选=漏组合不再编译期拦截（运行时接线缺失由
++ * contracts 枚举+单测/e2e 锚定补偿）；PreloadApi 不受影响（全量映射）。
++ */
++type ComposedHandlerDomains = 'workspaces'
++
+ /** main 侧 service 契约：收已校验请求，返回纯数据（异常上抛由 register 统一折叠） */
+ export type ApiHandlers = {
+-  [D in keyof Surface]: {
++  [D in Exclude<keyof Surface, ComposedHandlerDomains>]: {
++    [M in keyof Surface[D]]: (req: z.output<Ep<D, M>['Req']>) => Promise<z.output<Ep<D, M>['Res']>>
++  }
++} & {
++  [D in ComposedHandlerDomains]?: {
+     [M in keyof Surface[D]]: (req: z.output<Ep<D, M>['Req']>) => Promise<z.output<Ep<D, M>['Res']>>
+   }
+ }
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index f62ae32..3315d7c 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -330,6 +330,38 @@ export const noteSaveReqSchema = z
+   .strict()
+ export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
+ 
++// ── workspaces（R1-WS1 课题域——ADR-0018 库级分目录；路径永不跨 IPC）────
++export const workspaceItemSchema = z
++  .object({
++    id: z.string().min(1),
++    name: z.string().min(1),
++    createdAt: z.string().min(1)
++  })
++  .strict()
++export type WorkspaceItem = z.infer<typeof workspaceItemSchema>
++
++/** 课题名长度上限（单一真相源：schema 校验与 WS2 输入框 maxLength 同源消费——NOTE_TITLE_MAX 同型） */
++export const WORKSPACE_NAME_MAX = 40
++
++export const workspaceListResSchema = z
++  .object({
++    items: z.array(workspaceItemSchema),
++    currentId: z.string().min(1)
++  })
++  .strict()
++
++export const workspaceCreateReqSchema = z
++  .object({ name: z.string().min(1).max(WORKSPACE_NAME_MAX) })
++  .strict()
++
++export const workspaceCreateResSchema = z.object({ id: z.string().min(1) }).strict()
++
++export const workspaceRenameReqSchema = z
++  .object({ id: z.string().min(1), name: z.string().min(1).max(WORKSPACE_NAME_MAX) })
++  .strict()
++
++export const workspaceSwitchReqSchema = z.object({ id: z.string().min(1) }).strict()
++
+ // ── settings ────────────────────────────────────────────────────
+ export const appSettingsSchema = z
+   .object({
+diff --git a/tests/contracts/api-surface.test.ts b/tests/contracts/api-surface.test.ts
+index ed394be..183c0ed 100644
+--- a/tests/contracts/api-surface.test.ts
++++ b/tests/contracts/api-surface.test.ts
+@@ -34,6 +34,8 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
+ 
+   it('unimplementedObject 可完整满足 ApiHandlers 类型（骨架期类型自洽证明）', () => {
+     // 样例号用非工单号字符串：真实工单号会随对应工单完成而被占位桩检查判红
++    // workspaces 域（R1-WS1）为 bootstrap 组合装配域（api-surface ComposedHandlerDomains
++    // ——ipc/index.ts 零改动裁决），此处显式枚举恢复该域的枚举覆盖
+     const handlers: ApiHandlers = {
+       library: unimplementedObject('SAMPLE-IPC', 'x'),
+       reader: unimplementedObject('SAMPLE-IPC', 'x'),
+@@ -45,14 +47,33 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
+       ai_sensor: unimplementedObject('SAMPLE-IPC', 'x'),
+       lineage: unimplementedObject('SAMPLE-IPC', 'x'),
+       settings: unimplementedObject('SAMPLE-IPC', 'x'),
+-      system: unimplementedObject('SAMPLE-IPC', 'x')
++      system: unimplementedObject('SAMPLE-IPC', 'x'),
++      workspaces: unimplementedObject<NonNullable<ApiHandlers['workspaces']>>('SAMPLE-IPC', 'x')
+     }
+     expect(() => handlers.library.list).toThrow(NotImplementedError)
+     expect(() => handlers.library.list).toThrow('SAMPLE-IPC')
++    expect(() => handlers.workspaces?.list).toThrow('SAMPLE-IPC')
+     const _types: PreloadApi = handlers as never
+     void _types
+   })
+ 
++  it('workspaces 域（R1-WS1 扩容）：四通道在表 + create 名长 1-40 边界 + Res 形状', () => {
++    expect(Object.keys(API_SURFACE.workspaces).sort()).toEqual(['create', 'list', 'rename', 'switch'])
++    const create = API_SURFACE.workspaces.create.Req.safeParse({ name: '课'.repeat(40) })
++    expect(create.success).toBe(true) // 40 字=上限含端
++    expect(API_SURFACE.workspaces.create.Req.safeParse({ name: '课'.repeat(41) }).success).toBe(false)
++    expect(API_SURFACE.workspaces.create.Req.safeParse({ name: '' }).success).toBe(false)
++    expect(
++      API_SURFACE.workspaces.list.Res.safeParse({
++        items: [{ id: 'default', name: '默认课题', createdAt: '2026-01-01T00:00:00.000Z' }],
++        currentId: 'default'
++      }).success
++    ).toBe(true)
++    expect(API_SURFACE.workspaces.list.Res.safeParse({ items: [], currentId: '' }).success).toBe(false)
++    expect(API_SURFACE.workspaces.switch.Res.safeParse({ ok: true }).success).toBe(true)
++    expect(API_SURFACE.workspaces.rename.Res.safeParse({ ok: true }).success).toBe(true)
++  })
++
+   it('所有模型 schema fixture 往返：合法通过/非法拒绝（抽样关键端点）', () => {
+     // library.list 请求：分页默认值填充
+     const list = API_SURFACE.library.list.Req.safeParse({})
+=== NEW FILE: src/main/data-layer.container.ts ===
+/**
+ * [R1-WS1] data-layer.container —— 课题级数据层的稳定 facade 容器（ADR-0018）。
+ *
+ * 为什么在 main 根：容器聚合 db/repos/services 三层（分层单向 ipc→services→
+ * repos→db 的「装配面」在 bootstrap 同级——services 禁直连 db，本文件是例外
+ * 落点，与 bootstrap.ts 同权）。
+ *
+ * ── 行为层 ──
+ * - 容器=模块内可变 current + 稳定 facade（Proxy get 陷阱逐访问转发现当前层——
+ *  「访问即取当前」，switch 换引用后 IPC/协议层零感知热换）。
+ * - 形态自裁（Proxy vs 显式委托）：选 Proxy——ServiceBundle 10 域×N 方法显式
+ *  委托需逐方法重声明且新增服务双处维护；Proxy 动态转发与 unimplementedObject
+ *  先例同型（app-error）。函数值绑回真实 owner（防 this 丢失）。
+ * - 时序：workspace.service.switch 编排 closeCurrent → 指针 → assembleInto
+ *  （票面 P1 字面序）；容器不持业务态（busy 守卫在 workspace.service）。
+ *
+ * ── 接口层 ──
+ * - services/fileStore：稳定 facade（ipc/index deps.services 消费形态零改动的
+ *  机制面；app-file 协议的 fileStore 同理）；papersFileRef：协议回调经容器间接
+ *  取（bootstrap 一处接线，switch 后活指向新课题库）。
+ *
+ * ── 架构层 ──
+ * - 不 import electron（装配函数由 bootstrap 注入外参闭包——单测纯 node 可测）；
+ * - 装配前访问 facade=显式中文错误（不静默 undefined——INV-02 族）。
+ *
+ * ── 文化层 ──
+ * - 测试：tests/unit/services/workspace.test.ts（容器 describe——真库热换+旧句柄失效断言）
+ */
+import type { SqliteDb } from './db/connection'
+import type { Repos } from './db/repos'
+import type { ServiceBundle } from './services'
+import type { FileStore } from './services/import_/file-store'
+
+export interface DataLayer {
+  db: SqliteDb
+  repos: Repos
+  fileStore: FileStore
+  services: ServiceBundle
+}
+
+export interface DataLayerContainer {
+  /** 稳定 services facade（createIpcHandlers 的 deps.services——访问即取当前课题层） */
+  services: ServiceBundle
+  /** 稳定 fileStore facade（app-file 协议读受管 PDF 的活指向） */
+  fileStore: FileStore
+  /** 协议回调：paperId → file_ref（经容器间接取，switch 后指向新课题库） */
+  papersFileRef: (paperId: string) => Promise<string | null>
+  /** 在目标目录装配新数据层并换 current 引用（不关旧库——关库归 closeCurrent） */
+  assembleInto: (dataDir: string) => Promise<void>
+  /** 关当前课题库句柄（幂等性由调用方保证——bootstrap shutdown 的 dbClosed 先例） */
+  closeCurrent: () => void
+}
+
+export interface DataLayerContainerDeps {
+  /** 装配一课题数据层（bootstrap 注入：与库无关项保持闭包外参——票面 P1） */
+  assemble: (dataDir: string) => Promise<DataLayer> | DataLayer
+}
+
+/** 访问即取当前的转发 Proxy：函数值绑回真实 owner（防 this 丢失） */
+function liveProxy<T extends object>(pick: () => T): T {
+  return new Proxy({} as T, {
+    get(_target, prop) {
+      const owner = pick()
+      const value = (owner as Record<string | symbol, unknown>)[prop]
+      if (typeof value === 'function') {
+        return (value as (...args: unknown[]) => unknown).bind(owner)
+      }
+      return value
+    }
+  })
+}
+
+export function createDataLayerContainer(deps: DataLayerContainerDeps): DataLayerContainer {
+  let current: DataLayer | null = null
+
+  function requireCurrent(): DataLayer {
+    if (current === null) {
+      throw new Error('课题数据层未装配：容器 facade 在首次装配前被访问')
+    }
+    return current
+  }
+
+  return {
+    services: liveProxy(() => requireCurrent().services),
+    fileStore: liveProxy(() => requireCurrent().fileStore),
+    papersFileRef: async (paperId) => requireCurrent().repos.papers.fileRefById(paperId),
+    assembleInto: async (dataDir) => {
+      current = await deps.assemble(dataDir)
+    },
+    closeCurrent: () => {
+      current?.db.close()
+      current = null
+    }
+  }
+}
+=== NEW FILE: src/main/workspace-layout.ts ===
+/**
+ * [R1-WS1] workspace-layout —— 启动期课题布局解析（main 根装配面，ADR-0018）。
+ *
+ * 为什么在 main 根而非 services/：本文件直接开库跑迁移（db 装配是 bootstrap
+ * 同级的职责——ESLint 分层：services 禁直连 db/connection|migrate）；服务层的
+ * 空库迁移经 initWorkspaceDb 回调注入（依赖倒置，单测注入同型真实现）。
+ *
+ * 行为（状态机详见 services/workspaces/workspace.service.ts 头注——本函数产出
+ * 其初始态）：迁移检查（needsLegacyMigration）→ 指针解析（降级目录序第一）→
+ * 返回本会话数据目录。全新安装返回 legacy-fresh（不建 workspaces/——受锁 e2e
+ * 种子配方兼容）。
+ */
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { DB_FILE_NAME } from '../shared/constants'
+import { openDatabase } from './db/connection'
+import { migrate } from './db/migrate'
+import {
+  DEFAULT_WS_ID,
+  DEFAULT_WS_NAME,
+  createWorkspaceSkeleton,
+  listWorkspaceIds,
+  migrateLegacyIntoDefault,
+  needsLegacyMigration,
+  readPointerId,
+  workspacesRoot,
+  writePointer
+} from './services/workspaces/workspace.fs'
+
+export interface WorkspaceLayout {
+  /** 本会话数据层根目录（legacy-fresh=userData；workspace=workspaces/<当前课题 id>） */
+  dataDir: string
+  mode: 'legacy-fresh' | 'workspace'
+  currentId: string
+  rootDir: string
+}
+
+/** 课题空库落位：开库→跑迁移→关（create 与 W-empty 建目录共用；幂等） */
+export function initWorkspaceDb(wsDir: string): void {
+  const db = openDatabase(join(wsDir, DB_FILE_NAME))
+  try {
+    migrate(db)
+  } finally {
+    db.close()
+  }
+}
+
+/** 建课题目录+meta+空库（骨架纯 fs+库装配——本文件在 main 根故可直连 db） */
+export async function createWorkspaceOnDisk(
+  rootDir: string,
+  id: string,
+  name: string
+): Promise<void> {
+  await createWorkspaceSkeleton(rootDir, id, name)
+  initWorkspaceDb(join(rootDir, id))
+}
+
+/** 启动最早段：迁移检查 → 指针解析 → 当前课题数据目录 */
+export async function ensureWorkspaceLayout(userDataDir: string): Promise<WorkspaceLayout> {
+  const rootDir = workspacesRoot(userDataDir)
+  if (needsLegacyMigration(userDataDir)) {
+    await migrateLegacyIntoDefault(userDataDir)
+  }
+  if (!existsSync(rootDir)) {
+    return { dataDir: userDataDir, mode: 'legacy-fresh', currentId: DEFAULT_WS_ID, rootDir }
+  }
+  let ids = await listWorkspaceIds(rootDir)
+  const pointerId = await readPointerId(userDataDir)
+  let currentId = pointerId !== null && ids.includes(pointerId) ? pointerId : ids[0]
+  if (currentId === undefined) {
+    await createWorkspaceOnDisk(rootDir, DEFAULT_WS_ID, DEFAULT_WS_NAME)
+    await writePointer(userDataDir, DEFAULT_WS_ID)
+    currentId = DEFAULT_WS_ID
+    ids = [DEFAULT_WS_ID]
+  }
+  return { dataDir: join(rootDir, currentId), mode: 'workspace', currentId, rootDir }
+}
+=== NEW FILE: src/main/services/workspaces/workspace.fs.ts ===
+/**
+ * [R1-WS1] workspace.fs —— 课题目录约定的纯 fs 层（ADR-0018 库级分目录）。
+ *
+ * ── 行为层 ──
+ * - 目录约定：`userData/workspaces/<id>/`（id=生成的短随机 [a-z0-9-]{1,64}，
+ *   用户名永不直入路径——Win 路径字符雷）；`<id>/meta.json`={name,createdAt}；
+ *   `<id>/synapse.db` + `<id>/files/`。指针=`userData/workspace.json` {currentId}。
+ * - 指针三态：有效（id ∈ 目录集）/ 缺省 / 损坏——后两者一律降级「目录序第一」，
+ *   不上抛不崩溃（INV-35）。
+ * - 遗留迁移搬移序（崩溃断点续迁语义）：mkdir workspaces/default → 移 files/ →
+ *   移 -wal → 移 -shm → 移 synapse.db（db 最后=提交点）→ meta.json+指针；
+ *   断点后重启时「遗留 db 在且 default 库不在」条件仍真 → 续迁完成，不产生孤儿库。
+ *
+ * ── 接口层 ──
+ * - 常量（WORKSPACES_DIR_NAME/POINTER_FILE_NAME/DEFAULT_WS_ID/DEFAULT_WS_NAME）
+ *   只住本域文件——禁入 shared/constants.ts（renderer 不见路径，避免无谓受锁扩容）。
+ *
+ * ── 架构层 ──
+ * - 只 import node:fs/node:path/node:crypto；不触 db、不触 electron（单测纯 fs 可测）。
+ * - 协议文件一律 tmp+rename 原子写（settings ipc / INV-26 同型）。
+ *
+ * ── 生命周期层 ──
+ * - 不做：workspace 目录手工编辑的 watch 兼容；meta 版本字段（v1 无 schema 演进面）。
+ *
+ * ── 文化层 ──
+ * - 测试：tests/unit/services/workspace.test.ts（真临时目录+真库，always-active）。
+ */
+import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { DB_FILE_NAME, MANAGED_FILES_DIR } from '../../../shared/constants'
+
+/** 课题目录集根目录名（userData 下） */
+export const WORKSPACES_DIR_NAME = 'workspaces'
+/** 当前课题指针文件名（userData 下，库外——ADR-0018 字面） */
+export const POINTER_FILE_NAME = 'workspace.json'
+/** 迁移目标/全新安装的缺省课题 id */
+export const DEFAULT_WS_ID = 'default'
+/** 缺省课题显示名（meta.json 缺失/L0 合成时） */
+export const DEFAULT_WS_NAME = '默认课题'
+
+export interface WorkspaceMeta {
+  name: string
+  createdAt: string
+}
+
+/** 课题 id 合法字符集（与生成器同源；目录扫描时过滤异物目录） */
+export function isWorkspaceId(id: string): boolean {
+  return /^[A-Za-z0-9-]{1,64}$/.test(id)
+}
+
+/** 生成新课题 id（短随机，碰撞=存在即重掷；禁用户输入直入路径） */
+export async function generateWorkspaceId(rootDir: string): Promise<string> {
+  for (let i = 0; i < 8; i++) {
+    const id = `ws-${randomUUID().replaceAll('-', '').slice(0, 8)}`
+    if (!existsSync(join(rootDir, id))) return id
+  }
+  throw new Error('课题 id 生成失败：随机碰撞超过重试上限')
+}
+
+/** 原子写（tmp+rename——半截文件永不入目） */
+async function atomicWrite(path: string, content: string): Promise<void> {
+  const tmp = `${path}.tmp`
+  await writeFile(tmp, content, 'utf-8')
+  await rename(tmp, path)
+}
+
+export function pointerPath(userDataDir: string): string {
+  return join(userDataDir, POINTER_FILE_NAME)
+}
+
+export function workspacesRoot(userDataDir: string): string {
+  return join(userDataDir, WORKSPACES_DIR_NAME)
+}
+
+/** 课题目录骨架（纯 fs：目录+meta；空库迁移归调用方注入的 initWorkspaceDb） */
+export async function createWorkspaceSkeleton(
+  rootDir: string,
+  id: string,
+  name: string
+): Promise<void> {
+  await mkdir(join(rootDir, id), { recursive: true })
+  await writeMeta(rootDir, id, { name, createdAt: new Date().toISOString() })
+}
+
+/** 读指针 id；缺省/损坏一律 null（降级归调用方，INV-35——不上抛不崩溃） */
+export async function readPointerId(userDataDir: string): Promise<string | null> {
+  try {
+    const raw = await readFile(pointerPath(userDataDir), 'utf-8')
+    const parsed = JSON.parse(raw) as { currentId?: unknown }
+    return typeof parsed.currentId === 'string' && isWorkspaceId(parsed.currentId)
+      ? parsed.currentId
+      : null
+  } catch {
+    return null
+  }
+}
+
+export async function writePointer(userDataDir: string, id: string): Promise<void> {
+  await atomicWrite(pointerPath(userDataDir), `${JSON.stringify({ currentId: id }, null, 2)}\n`)
+}
+
+/** 目录扫描：workspaces/ 下持 meta.json 的合法 id 目录，字典序（=「目录序」单源） */
+export async function listWorkspaceIds(rootDir: string): Promise<string[]> {
+  if (!existsSync(rootDir)) return []
+  const entries = await readdir(rootDir, { withFileTypes: true })
+  const ids: string[] = []
+  for (const e of entries) {
+    if (!e.isDirectory() || !isWorkspaceId(e.name)) continue
+    if (!existsSync(join(rootDir, e.name, 'meta.json'))) continue
+    ids.push(e.name)
+  }
+  return ids.sort()
+}
+
+/** meta.json 读取：损坏/缺省=降级（name=缺省名，createdAt=目录 mtime），不抛 */
+export async function readMeta(rootDir: string, id: string): Promise<WorkspaceMeta> {
+  try {
+    const raw = await readFile(join(rootDir, id, 'meta.json'), 'utf-8')
+    const parsed = JSON.parse(raw) as { name?: unknown; createdAt?: unknown }
+    if (typeof parsed.name === 'string' && parsed.name.length > 0) {
+      return {
+        name: parsed.name,
+        createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : ''
+      }
+    }
+  } catch {
+    // 缺省/损坏：降级
+  }
+  const mtime = (await stat(join(rootDir, id)).catch(() => null))?.mtime
+  return { name: DEFAULT_WS_NAME, createdAt: mtime ? mtime.toISOString() : '' }
+}
+
+/** meta.json 写（create/rename 落点；createdAt 不变语义由调用方保持） */
+export async function writeMeta(rootDir: string, id: string, meta: WorkspaceMeta): Promise<void> {
+  await atomicWrite(join(rootDir, id, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`)
+}
+
+async function moveIfExists(src: string, dest: string): Promise<void> {
+  if (!existsSync(src)) return
+  await rename(src, dest)
+}
+
+/** 迁移条件（幂等+崩溃断点续迁）：遗留库在 && default 库不在（root 是否已建不参与判定） */
+export function needsLegacyMigration(userDataDir: string): boolean {
+  return (
+    existsSync(join(userDataDir, DB_FILE_NAME)) &&
+    !existsSync(join(workspacesRoot(userDataDir), DEFAULT_WS_ID, DB_FILE_NAME))
+  )
+}
+
+/**
+ * 遗留布局整体搬入 workspaces/default（调用前提：needsLegacyMigration 为真，
+ * 且 userData/synapse.db 无打开句柄——启动最早段或 closeCurrent 之后）。
+ */
+export async function migrateLegacyIntoDefault(userDataDir: string): Promise<void> {
+  const rootDir = workspacesRoot(userDataDir)
+  const defDir = join(rootDir, DEFAULT_WS_ID)
+  await mkdir(defDir, { recursive: true })
+  // files/ → -wal → -shm → db（db 最后=提交点；半程崩溃由 needsLegacyMigration 续迁）
+  await moveIfExists(join(userDataDir, MANAGED_FILES_DIR), join(defDir, MANAGED_FILES_DIR))
+  await moveIfExists(
+    join(userDataDir, `${DB_FILE_NAME}-wal`),
+    join(defDir, `${DB_FILE_NAME}-wal`)
+  )
+  await moveIfExists(
+    join(userDataDir, `${DB_FILE_NAME}-shm`),
+    join(defDir, `${DB_FILE_NAME}-shm`)
+  )
+  await moveIfExists(join(userDataDir, DB_FILE_NAME), join(defDir, DB_FILE_NAME))
+  // meta.json 落位（default 入目录集——无 meta 的目录不入 listWorkspaceIds）；
+  // createdAt=迁移后库文件 mtime（遗留库的真实诞生时刻代理）
+  const mtime = (await stat(join(defDir, DB_FILE_NAME)).catch(() => null))?.mtime
+  await writeMeta(rootDir, DEFAULT_WS_ID, {
+    name: DEFAULT_WS_NAME,
+    createdAt: mtime ? mtime.toISOString() : new Date().toISOString()
+  })
+  await writePointer(userDataDir, DEFAULT_WS_ID)
+}
+=== NEW FILE: src/main/services/workspaces/workspace.service.ts ===
+/**
+ * [R1-WS1] workspace.service —— 课题域服务（ADR-0018 库级分目录：一课题一目录
+ * 一库一文件仓；切课题=切库）。
+ *
+ * ── 行为层（状态机前置——态空间+跨格序列，U2 教训单格枚举盖不住跨格）──
+ * 会话态（fs 事实推导；初始态由 main 根 workspace-layout.ensureWorkspaceLayout
+ * 产出）：
+ *
+ * | 态 | fs 事实 | 事件 → 迁移 |
+ * | --- | --- | --- |
+ * | L0 legacy-fresh | workspaces/ 无（本会话库=userData 根 synapse.db+files/，与旧版布局同位） | list=零副作用合成 default；create/rename/switch → 物化（closeCurrent→迁移→重建 default）→ W |
+ * | M 迁移进行 | mkdir default → files/ → -wal → -shm → db（提交点）→ meta+指针 | 完成 → W-pvalid(default)；半程崩溃 → 重启 ensure 条件（遗留 db 在 && default 库不在）仍真 → 续迁，无孤儿库 |
+ * | W-pvalid | workspaces/ 在 + 指针 id ∈ 目录集 | switch(X)：busy → 关旧库 → 指针=X → 装配 X → W-pvalid(X) |
+ * | W-pbad | 指针缺省/损坏/失指 | ensure/list 降级「目录序第一」（不崩——INV-35）；下次写指针自愈 |
+ * | W-empty | workspaces/ 在 + 零有效目录 | ensure 建 default 空课题+指针 → W-pvalid |
+ * | busy（变更互斥单飞） | service 实例内标志 | 并发 create/rename/switch → CONFLICT 中文；finally 释放 |
+ *
+ * 跨格序列（审计面）：
+ * ① 全新安装：L0(会话1) → 退出 → M(会话2 启动) → W-pvalid(default)
+ * ② e2e 种子配方（受锁兼容）：L0(首跳建库于根) → 种子 INSERT/PDF 落旧路径 →
+ *    M(二跳启动) → W(default 含种子)——**L0 不建 workspaces/ 是受锁 e2e helper
+ *    零改动的硬前提**（种子直写 userData/synapse.db，库无表即崩）
+ * ③ L0 内 create：物化(M) → W(default) → 建新课题目录（指针不动仍=default）
+ * ④ W 内 switch(X)：busy → 关旧 → 指针 X → 装配 X；并发第二 switch → CONFLICT；
+ *    装配失败=当前层已关（后续库调用报错，busy 已释——switch 后 reload 前的
+ *    竞窗由 R1-WS2 确认 dirty 流程收口，本单不补）
+ * ⑤ M 断点：db 未移即崩 → 重启 ensure 续迁 → W（测试「崩溃断点续迁」锚定）
+ *
+ * ── 接口层 ──
+ * - list/create/rename/switch/currentName——IPC 面形状由 ApiHandlers['workspaces']
+ *   接线表推导（bootstrap 组合注入，R1-WS1）；name 长度 1-40 由 schema 锁定
+ *
+ * ── 架构层 ──
+ * - 分层：ipc → services → fs（本文件只编排 workspace.fs 纯 fs 层；空库迁移经
+ *   initWorkspaceDb 回调注入——db 直连归 main 根，ESLint 分层禁 services 触
+ *   db/connection|migrate）；重建回调（closeCurrent/assembleInto）由 bootstrap
+ *   注入=data-layer.container，本文件不 import 容器（可测性：单测注入真库回调）
+ * - INV 登记：INV-35（同一时刻至多一课题库+switch 串行+指针降级不崩）
+ *
+ * ── 生命周期层 ──
+ * - 不做：课题删除（破坏性，遗留池）；跨课题检索；切换通知 renderer（WS2 reload）
+ *
+ * ── 文化层 ──
+ * - 测试：tests/unit/services/workspace.test.ts（真临时目录+真 SQLite，always-active）
+ */
+import { existsSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import { join } from 'node:path'
+import { DB_FILE_NAME } from '../../../shared/constants'
+import type { AppErrorCode } from '../../../shared/app-error'
+import {
+  DEFAULT_WS_ID,
+  DEFAULT_WS_NAME,
+  createWorkspaceSkeleton,
+  generateWorkspaceId,
+  listWorkspaceIds,
+  migrateLegacyIntoDefault,
+  readMeta,
+  readPointerId,
+  workspacesRoot,
+  writeMeta,
+  writePointer
+} from './workspace.fs'
+
+export interface WorkspaceServiceDeps {
+  userDataDir: string
+  /** 课题空库落位（开库跑迁移即关——main 根注入，services 禁直连 db） */
+  initWorkspaceDb: (wsDir: string) => void
+  /** 关当前课题库句柄（Win 下 rename 打开句柄的库文件会失败——物化前必关） */
+  closeCurrent: () => void
+  /** 在目标目录重建数据层并换容器引用（bootstrap 注入=data-layer.container） */
+  assembleInto: (dataDir: string) => Promise<void>
+}
+
+class WorkspaceDomainError extends Error {
+  readonly code: AppErrorCode
+
+  constructor(code: AppErrorCode, message: string) {
+    super(message)
+    this.name = 'WorkspaceDomainError'
+    this.code = code
+  }
+}
+
+function wsNotFound(id: string): WorkspaceDomainError {
+  return new WorkspaceDomainError('NOT_FOUND', `课题不存在：${id}`)
+}
+
+function wsBusy(): WorkspaceDomainError {
+  return new WorkspaceDomainError('CONFLICT', '课题切换进行中，请稍后再试')
+}
+
+export function createWorkspaceService(deps: WorkspaceServiceDeps) {
+  const { userDataDir } = deps
+  const rootDir = workspacesRoot(userDataDir)
+  // 变更互斥单飞标志（per 服务实例——工厂闭包内，禁模块级共享）
+  let busy = false
+
+  /** L0 物化：关活句柄 → 迁移 → 重建 default（幂等：非 L0 直接 false） */
+  async function materializeLegacy(): Promise<boolean> {
+    if (existsSync(rootDir)) return false
+    if (!existsSync(join(userDataDir, DB_FILE_NAME))) return false
+    deps.closeCurrent()
+    await migrateLegacyIntoDefault(userDataDir)
+    await deps.assembleInto(join(rootDir, DEFAULT_WS_ID))
+    return true
+  }
+
+  /** 读侧零副作用的当前课题 id 解析（W 态；与 list 同一降级规则） */
+  async function resolveCurrentId(ids: readonly string[]): Promise<string> {
+    const pointer = await readPointerId(userDataDir)
+    if (pointer !== null && ids.includes(pointer)) return pointer
+    return ids[0] ?? DEFAULT_WS_ID
+  }
+
+  return {
+    async list(_req: unknown) {
+      if (!existsSync(rootDir)) {
+        // L0：合成 default（不物化——读侧零副作用）
+        const mtime = (await stat(join(userDataDir, DB_FILE_NAME)).catch(() => null))?.mtime
+        return {
+          items: [
+            {
+              id: DEFAULT_WS_ID,
+              name: DEFAULT_WS_NAME,
+              createdAt: mtime?.toISOString() ?? '1970-01-01T00:00:00.000Z'
+            }
+          ],
+          currentId: DEFAULT_WS_ID
+        }
+      }
+      const ids = await listWorkspaceIds(rootDir)
+      const items = await Promise.all(
+        ids.map(async (id) => ({ id, ...(await readMeta(rootDir, id)) }))
+      )
+      items.sort((a, b) =>
+        a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)
+      )
+      return { items, currentId: await resolveCurrentId(ids) }
+    },
+
+    async currentName(): Promise<string> {
+      if (!existsSync(rootDir)) return DEFAULT_WS_NAME
+      const ids = await listWorkspaceIds(rootDir)
+      const currentId = await resolveCurrentId(ids)
+      if (!ids.includes(currentId)) return DEFAULT_WS_NAME
+      return (await readMeta(rootDir, currentId)).name
+    },
+
+    async create(req: { name: string }) {
+      if (busy) throw wsBusy()
+      busy = true
+      try {
+        await materializeLegacy()
+        const id = await generateWorkspaceId(rootDir)
+        await createWorkspaceSkeleton(rootDir, id, req.name)
+        deps.initWorkspaceDb(join(rootDir, id))
+        return { id } // 不切指针：create 后由 renderer 显式 switch（WS2 流程）
+      } finally {
+        busy = false
+      }
+    },
+
+    async rename(req: { id: string; name: string }) {
+      if (busy) throw wsBusy()
+      busy = true
+      try {
+        await materializeLegacy()
+        if (!(await listWorkspaceIds(rootDir)).includes(req.id)) throw wsNotFound(req.id)
+        const meta = await readMeta(rootDir, req.id)
+        await writeMeta(rootDir, req.id, {
+          name: req.name,
+          createdAt: meta.createdAt || new Date().toISOString()
+        })
+        return { ok: true as const }
+      } finally {
+        busy = false
+      }
+    },
+
+    async switch(req: { id: string }) {
+      if (busy) throw wsBusy()
+      busy = true
+      try {
+        const materialized = await materializeLegacy()
+        if (!(await listWorkspaceIds(rootDir)).includes(req.id)) throw wsNotFound(req.id)
+        if (materialized && req.id === DEFAULT_WS_ID) {
+          return { ok: true as const } // 物化即已完成 default 重建与指针落位
+        }
+        // 时序（票面 P1 字面）：关旧库 → 指针写入 → 装配新课题 → 换容器引用
+        deps.closeCurrent()
+        await writePointer(userDataDir, req.id)
+        await deps.assembleInto(join(rootDir, req.id))
+        return { ok: true as const }
+      } finally {
+        busy = false
+      }
+    }
+  }
+}
+=== NEW FILE: tests/unit/services/workspace.test.ts ===
+import { describe, expect, it, afterAll } from 'vitest'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { openDatabase, type SqliteDb } from '../../../src/main/db/connection'
+import { migrate, readUserVersion } from '../../../src/main/db/migrate'
+import { createRepos, type PaperRow } from '../../../src/main/db/repos'
+import { createFileStore } from '../../../src/main/services/import_/file-store'
+import type { ServiceBundle } from '../../../src/main/services/index'
+import {
+  DEFAULT_WS_ID,
+  DEFAULT_WS_NAME,
+  POINTER_FILE_NAME,
+  WORKSPACES_DIR_NAME
+} from '../../../src/main/services/workspaces/workspace.fs'
+import { createWorkspaceService } from '../../../src/main/services/workspaces/workspace.service'
+import { ensureWorkspaceLayout, initWorkspaceDb } from '../../../src/main/workspace-layout'
+import { createDataLayerContainer } from '../../../src/main/data-layer.container'
+
+/**
+ * [R1-WS1] workspaces 域单测（ADR-0018 库级分目录）——真临时目录+真 SQLite。
+ * always-active（三屋纪律：新测试不经 guardedDescribe）。
+ * 覆盖：遗留迁移+幂等+崩溃断点续迁 / 全新首启 L0（e2e 种子配方兼容）/
+ * 指针缺省与损坏降级 / list/create/rename/switch/currentName / busy 串行守卫 /
+ * 数据层容器 facade 热换（ipc/index 零改动的机制面）。
+ */
+const tmpDirs: string[] = []
+
+async function mkUserData(prefix: string): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), prefix))
+  tmpDirs.push(dir)
+  return dir
+}
+
+afterAll(async () => {
+  for (const dir of tmpDirs) await rm(dir, { recursive: true, force: true })
+})
+
+function legacyRow(id: string): PaperRow {
+  return {
+    id,
+    file_ref: 'ab/cd/legacy.pdf',
+    sha256: `sha-${id}`,
+    title: '遗留布局种子文献',
+    authors_json: '[]',
+    year: 2025,
+    venue: '',
+    doi: null,
+    arxiv_id: null,
+    abstract: '',
+    source: 'local',
+    enrich_status: 'pending',
+    added_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    last_read_page: 0
+  }
+}
+
+/** 造一份「旧版应用」遗留布局：userData 根下 synapse.db（含真实行）+files/+wal/shm */
+async function seedLegacyLayout(u: string): Promise<void> {
+  const db = openDatabase(join(u, 'synapse.db'))
+  migrate(db)
+  createRepos(db).papers.insert(legacyRow('p-legacy'))
+  db.close()
+  await mkdir(join(u, 'files', 'ab', 'cd'), { recursive: true })
+  await writeFile(join(u, 'files', 'ab', 'cd', 'legacy.pdf'), '%PDF-1.4 遗留受管文件')
+  await writeFile(join(u, 'synapse.db-wal'), '')
+  await writeFile(join(u, 'synapse.db-shm'), '')
+}
+
+async function readPointer(u: string): Promise<{ currentId?: unknown }> {
+  return JSON.parse(await readFile(join(u, POINTER_FILE_NAME), 'utf-8')) as { currentId?: unknown }
+}
+
+function openMigrated(dbPath: string): SqliteDb {
+  const db = openDatabase(dbPath)
+  migrate(db)
+  return db
+}
+
+/**
+ * L0 会话夹具（门一 W1/W2 回炉）：真库在 userData 根（含行 p0）+ service 注入
+ * 记录器（close 计数/装配目录序列/下一次装配注入失败开关）。
+ */
+async function l0Session(prefix: string): Promise<{
+  u: string
+  svc: ReturnType<typeof createWorkspaceService>
+  cur: { db: SqliteDb | null }
+  closeCalls: () => number
+  assembledDirs: () => string[]
+  failNextAssemble: () => void
+}> {
+  const u = await mkUserData(prefix)
+  await ensureWorkspaceLayout(u)
+  const db = openMigrated(join(u, 'synapse.db'))
+  createRepos(db).papers.insert(legacyRow('p0'))
+  const ref = { db: db as SqliteDb | null }
+  let closes = 0
+  let failNext = false
+  const dirs: string[] = []
+  const svc = createWorkspaceService({
+    userDataDir: u,
+    initWorkspaceDb,
+    closeCurrent: () => {
+      ref.db?.close()
+      ref.db = null
+      closes++
+    },
+    assembleInto: async (dir) => {
+      if (failNext) {
+        failNext = false
+        throw new Error('装配失败：模拟课题库被占用')
+      }
+      dirs.push(dir)
+      ref.db = openMigrated(join(dir, 'synapse.db'))
+    }
+  })
+  return {
+    u,
+    svc,
+    cur: ref,
+    closeCalls: () => closes,
+    assembledDirs: () => [...dirs],
+    failNextAssemble: () => {
+      failNext = true
+    }
+  }
+}
+
+describe('ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启', () => {
+  it('遗留布局整体迁入 default：库数据不丢+wal/shm/files 随迁+指针=default', async () => {
+    const u = await mkUserData('synapse-ws-mig-')
+    await seedLegacyLayout(u)
+    const layout = await ensureWorkspaceLayout(u)
+    const defDir = join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID)
+    expect(layout.mode).toBe('workspace')
+    expect(layout.currentId).toBe(DEFAULT_WS_ID)
+    expect(layout.dataDir).toBe(defDir)
+    expect(existsSync(join(defDir, 'synapse.db'))).toBe(true)
+    expect(existsSync(join(defDir, 'synapse.db-wal'))).toBe(true)
+    expect(existsSync(join(defDir, 'synapse.db-shm'))).toBe(true)
+    expect(existsSync(join(defDir, 'files', 'ab', 'cd', 'legacy.pdf'))).toBe(true)
+    expect(existsSync(join(u, 'synapse.db'))).toBe(false)
+    expect(existsSync(join(u, 'files'))).toBe(false)
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID })
+    const db = openMigrated(join(defDir, 'synapse.db'))
+    expect(createRepos(db).papers.findById('p-legacy')?.title).toBe('遗留布局种子文献')
+    db.close()
+  })
+
+  it('迁移幂等：已迁移后二次调用不动（default 库已在=跳过，行仍在）', async () => {
+    const u = await mkUserData('synapse-ws-idem-')
+    await seedLegacyLayout(u)
+    const first = await ensureWorkspaceLayout(u)
+    const second = await ensureWorkspaceLayout(u)
+    expect(second.dataDir).toBe(first.dataDir)
+    expect(second.currentId).toBe(DEFAULT_WS_ID)
+    const db = openMigrated(join(first.dataDir, 'synapse.db'))
+    expect(createRepos(db).papers.findById('p-legacy')).not.toBeNull()
+    db.close()
+  })
+
+  it('崩溃断点续迁：workspaces/default 已建但库未移入 → 仍完成迁移（防孤儿库）', async () => {
+    const u = await mkUserData('synapse-ws-resume-')
+    await seedLegacyLayout(u)
+    // 模拟迁移中途崩溃：root/default 已 mkdir、files/ 已移、db 未移
+    const defDir = join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID)
+    await mkdir(defDir, { recursive: true })
+    await mkdir(join(u, WORKSPACES_DIR_NAME), { recursive: true })
+    const { rename } = await import('node:fs/promises')
+    await rename(join(u, 'files'), join(defDir, 'files'))
+    const layout = await ensureWorkspaceLayout(u)
+    expect(layout.mode).toBe('workspace')
+    expect(layout.currentId).toBe(DEFAULT_WS_ID)
+    const db = openMigrated(join(defDir, 'synapse.db'))
+    expect(createRepos(db).papers.findById('p-legacy')).not.toBeNull()
+    db.close()
+    expect(existsSync(join(u, 'synapse.db'))).toBe(false)
+  })
+
+  it('全新首启=legacy-fresh：不建 workspaces/（受锁 e2e 种子配方兼容）', async () => {
+    const u = await mkUserData('synapse-ws-fresh-')
+    const layout = await ensureWorkspaceLayout(u)
+    expect(layout.mode).toBe('legacy-fresh')
+    expect(layout.currentId).toBe(DEFAULT_WS_ID)
+    expect(layout.dataDir).toBe(u)
+    expect(existsSync(join(u, WORKSPACES_DIR_NAME))).toBe(false)
+  })
+
+  it('指针缺省/损坏=降级目录序第一，不崩溃', async () => {
+    const u = await mkUserData('synapse-ws-ptr-')
+    await seedLegacyLayout(u)
+    await ensureWorkspaceLayout(u)
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      initWorkspaceDb,
+      closeCurrent: () => undefined,
+      assembleInto: async () => undefined
+    })
+    const created = await svc.create({ name: '课题乙' })
+    await rm(join(u, POINTER_FILE_NAME))
+    const noPointer = await ensureWorkspaceLayout(u)
+    expect(noPointer.currentId).toBe(DEFAULT_WS_ID) // 'default' 字典序先于 'ws-*'
+    await writeFile(join(u, POINTER_FILE_NAME), '不是 JSON', 'utf-8')
+    const corrupt = await ensureWorkspaceLayout(u)
+    expect(corrupt.currentId).toBe(DEFAULT_WS_ID)
+    const listed = await svc.list({})
+    expect(listed.currentId).toBe(DEFAULT_WS_ID)
+    expect(listed.items.map((i) => i.id).sort()).toEqual([DEFAULT_WS_ID, created.id].sort())
+  })
+
+  it('workspaces/ 在但零有效目录 → 建 default 空课题（库已迁移可开）', async () => {
+    const u = await mkUserData('synapse-ws-empty-')
+    await mkdir(join(u, WORKSPACES_DIR_NAME), { recursive: true })
+    const layout = await ensureWorkspaceLayout(u)
+    expect(layout.mode).toBe('workspace')
+    expect(layout.currentId).toBe(DEFAULT_WS_ID)
+    const db = openMigrated(join(layout.dataDir, 'synapse.db'))
+    expect(readUserVersion(db)).toBeGreaterThan(0)
+    db.close()
+  })
+})
+
+describe('workspace.service —— list/create/rename/switch/currentName', () => {
+  it('L0 会话：list 合成 default；create 物化遗留（旧数据入 default）+新课题空库已迁移', async () => {
+    const u = await mkUserData('synapse-ws-l0-')
+    await ensureWorkspaceLayout(u)
+    const db = openMigrated(join(u, 'synapse.db'))
+    createRepos(db).papers.insert(legacyRow('p0'))
+    let cur: SqliteDb = db
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      initWorkspaceDb,
+      closeCurrent: () => cur.close(),
+      assembleInto: async (dir) => {
+        cur = openMigrated(join(dir, 'synapse.db'))
+      }
+    })
+    const listed = await svc.list({})
+    expect(listed.currentId).toBe(DEFAULT_WS_ID)
+    expect(listed.items).toHaveLength(1)
+    const first = listed.items[0]
+    if (first === undefined) throw new Error('L0 list 应合成 default 条目')
+    expect(first).toMatchObject({ id: DEFAULT_WS_ID, name: DEFAULT_WS_NAME })
+    expect(typeof first.createdAt).toBe('string')
+    expect(first.createdAt.length).toBeGreaterThan(0)
+    expect(await svc.currentName()).toBe(DEFAULT_WS_NAME)
+
+    const created = await svc.create({ name: '课题乙' })
+    expect(created.id).toMatch(/^[a-z0-9-]{1,64}$/)
+    expect(created.id).not.toBe(DEFAULT_WS_ID)
+    // 物化：遗留库（含会话内数据）整体入 default
+    const defDb = openMigrated(join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID, 'synapse.db'))
+    expect(createRepos(defDb).papers.findById('p0')).not.toBeNull()
+    defDb.close()
+    // 新课题空库已迁移
+    const newDb = openMigrated(join(u, WORKSPACES_DIR_NAME, created.id, 'synapse.db'))
+    expect(readUserVersion(newDb)).toBeGreaterThan(0)
+    newDb.close()
+    // create 不切指针：当前仍是 default
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID })
+    const after = await svc.list({})
+    expect(after.items.map((i) => i.id)).toContain(created.id)
+    expect(after.currentId).toBe(DEFAULT_WS_ID)
+    cur.close() // Windows 文件锁：句柄不关则 afterAll 清理 EBUSY
+  })
+
+  it('rename 生效且 list 反映；ghost id 抛中文 NOT_FOUND', async () => {
+    const u = await mkUserData('synapse-ws-ren-')
+    await seedLegacyLayout(u)
+    await ensureWorkspaceLayout(u)
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      initWorkspaceDb,
+      closeCurrent: () => undefined,
+      assembleInto: async () => undefined
+    })
+    await expect(svc.rename({ id: 'ghost', name: '不存在' })).rejects.toMatchObject({
+      code: 'NOT_FOUND'
+    })
+    await expect(svc.rename({ id: 'ghost', name: '不存在' })).rejects.toThrow(/课题不存在/)
+    const ack = await svc.rename({ id: DEFAULT_WS_ID, name: '课题甲改名' })
+    expect(ack).toEqual({ ok: true })
+    const listed = await svc.list({})
+    expect(listed.items.find((i) => i.id === DEFAULT_WS_ID)?.name).toBe('课题甲改名')
+    expect(await svc.currentName()).toBe('课题甲改名')
+  })
+
+  it('switch：ghost NOT_FOUND；真切换=关旧库→指针→装配新库（真 SQLite 句柄失效断言）', async () => {
+    const u = await mkUserData('synapse-ws-sw-')
+    await seedLegacyLayout(u)
+    const layout = await ensureWorkspaceLayout(u)
+    let cur: SqliteDb = openMigrated(join(layout.dataDir, 'synapse.db'))
+    const assembled: string[] = []
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      initWorkspaceDb,
+      closeCurrent: () => cur.close(),
+      assembleInto: async (dir) => {
+        assembled.push(dir)
+        cur = openMigrated(join(dir, 'synapse.db'))
+      }
+    })
+    const created = await svc.create({ name: '课题乙' })
+    await expect(svc.switch({ id: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID }) // 失败切换不动指针
+
+    const ack = await svc.switch({ id: created.id })
+    expect(ack).toEqual({ ok: true })
+    expect(() => cur.prepare('SELECT 1')).not.toThrow() // 新句柄可用
+    const listed = await svc.list({})
+    expect(listed.currentId).toBe(created.id)
+    expect(await readPointer(u)).toEqual({ currentId: created.id })
+    expect(assembled.at(-1)).toBe(join(u, WORKSPACES_DIR_NAME, created.id))
+    const before = cur
+    await svc.switch({ id: DEFAULT_WS_ID })
+    expect(() => before.prepare('SELECT 1')).toThrow() // 旧句柄已关
+    cur.close() // Windows 文件锁：收尾关当前句柄
+  })
+
+  it('busy 串行守卫：切换进行中并发 switch 抛中文 CONFLICT', async () => {
+    const u = await mkUserData('synapse-ws-busy-')
+    await seedLegacyLayout(u)
+    await ensureWorkspaceLayout(u)
+    let cur: SqliteDb | null = openMigrated(join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID, 'synapse.db'))
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      initWorkspaceDb,
+      closeCurrent: () => {
+        cur?.close()
+        cur = null
+      },
+      assembleInto: async (dir) => {
+        await gate
+        cur = openMigrated(join(dir, 'synapse.db'))
+      }
+    })
+    const created = await svc.create({ name: '课题乙' })
+    const first = svc.switch({ id: created.id })
+    await expect(svc.switch({ id: created.id })).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(svc.switch({ id: created.id })).rejects.toThrow(/切换/)
+    release()
+    await expect(first).resolves.toEqual({ ok: true })
+    // 守卫释放后可再切
+    await expect(svc.switch({ id: DEFAULT_WS_ID })).resolves.toEqual({ ok: true })
+    cur?.close() // Windows 文件锁：收尾关当前句柄
+  })
+
+  it('W1-a L0 链：list 只见 default → switch 回 default=物化+提前返回（不二段重建）', async () => {
+    const { u, svc, closeCalls, assembledDirs, cur } = await l0Session('synapse-ws-w1a-')
+    const listed = await svc.list({})
+    expect(listed.items.map((i) => i.id)).toEqual([DEFAULT_WS_ID]) // L0 只见 default
+    await expect(svc.switch({ id: DEFAULT_WS_ID })).resolves.toEqual({ ok: true })
+    // 物化落位：根库整体入 default（行不丢），指针=default，根库清空
+    const defDb = openMigrated(join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID, 'synapse.db'))
+    expect(createRepos(defDb).papers.findById('p0')).not.toBeNull()
+    defDb.close()
+    expect(existsSync(join(u, 'synapse.db'))).toBe(false)
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID })
+    // 提前返回分支：恰一次 close+恰一次装配（均在物化内），无第二段重建
+    expect(closeCalls()).toBe(1)
+    expect(assembledDirs()).toEqual([join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID)])
+    expect(() => cur.db?.prepare('SELECT 1')).not.toThrow() // 会话句柄=物化重建产物，活
+    cur.db?.close()
+  })
+
+  it('W1-b L0 链：create(B)+switch(B)=物化(default)+切换二合一（default 行完整+根库清空）', async () => {
+    const { u, svc, closeCalls, assembledDirs, cur } = await l0Session('synapse-ws-w1b-')
+    const b = await svc.create({ name: '课题B' })
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID }) // create 段不切指针
+    const defaultHandle = cur.db
+    await expect(svc.switch({ id: b.id })).resolves.toEqual({ ok: true })
+    // default 库行完整（rename 入位后数据不动）+ 根库不存在
+    const defDb = openMigrated(join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID, 'synapse.db'))
+    expect(createRepos(defDb).papers.findById('p0')).not.toBeNull()
+    defDb.close()
+    expect(existsSync(join(u, 'synapse.db'))).toBe(false)
+    // 切换段：default 旧句柄失效 → 指针=B → 装配恰二段 [default(物化), B(切换)]
+    expect(() => defaultHandle?.prepare('SELECT 1')).toThrow()
+    expect(await readPointer(u)).toEqual({ currentId: b.id })
+    expect(assembledDirs()).toEqual([
+      join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID),
+      join(u, WORKSPACES_DIR_NAME, b.id)
+    ])
+    expect(closeCalls()).toBe(2)
+    expect(() => cur.db?.prepare('SELECT 1')).not.toThrow() // B 库句柄活
+    cur.db?.close()
+  })
+
+  it('W2 switch 装配失败：中文错误上抛 → busy 已释 → 重试成功且指针终态一致', async () => {
+    const { u, svc, assembledDirs, cur, failNextAssemble } = await l0Session('synapse-ws-w2-')
+    const b = await svc.create({ name: '课题B' }) // 物化完成=W 态
+    const handleBefore = cur.db
+    failNextAssemble()
+    await expect(svc.switch({ id: b.id })).rejects.toThrow(/装配失败/)
+    // busy 已释：重试不被 CONFLICT 拒，走完整流程成功（指针终态一致+装配恢复后可用）
+    await expect(svc.switch({ id: b.id })).resolves.toEqual({ ok: true })
+    expect(await readPointer(u)).toEqual({ currentId: b.id })
+    expect(() => handleBefore?.prepare('SELECT 1')).toThrow() // 首败前的旧句柄已关
+    expect(assembledDirs().at(-1)).toBe(join(u, WORKSPACES_DIR_NAME, b.id))
+    expect(() => cur.db?.prepare('SELECT 1')).not.toThrow() // 容器等价句柄可用
+    cur.db?.close()
+  })
+})
+
+describe('data-layer.container —— 稳定 facade 热换（ipc/协议层零改动的机制面）', () => {
+  it('services/fileStore 经 facade 活指向当前课题；重建关旧库；papersFileRef 间接取', async () => {
+    const root = await mkUserData('synapse-ws-ctr-')
+    const dirA = join(root, 'ws-a')
+    const dirB = join(root, 'ws-b')
+    const opened: SqliteDb[] = []
+    const container = createDataLayerContainer({
+      assemble: async (dir) => {
+        await mkdir(join(dir, 'files'), { recursive: true })
+        const db = openMigrated(join(dir, 'synapse.db'))
+        opened.push(db)
+        return {
+          db,
+          repos: createRepos(db),
+          fileStore: createFileStore(join(dir, 'files')),
+          services: { marker: dir } as unknown as ServiceBundle
+        }
+      }
+    })
+    await container.assembleInto(dirA)
+    expect((container.services as unknown as { marker: string }).marker).toBe(dirA)
+    expect(container.fileStore.resolveManagedPath('ab/cd/x.pdf')).toContain(join(dirA, 'files'))
+    expect(await container.papersFileRef('p1')).toBeNull()
+
+    // 热换=service.switch 的容器侧等价序：关旧库 → 装配新课题（指针归 service）
+    container.closeCurrent()
+    await container.assembleInto(dirB)
+    const layerA = opened[0]!
+    expect(() => layerA.prepare('SELECT 1')).toThrow() // 旧库已关    expect((container.services as unknown as { marker: string }).marker).toBe(dirB)
+    expect(container.fileStore.resolveManagedPath('ab/cd/x.pdf')).toContain(join(dirB, 'files'))
+    // 新课题插入行后经容器间接取到（协议回调活指向）
+    createRepos(opened.at(-1)!).papers.insert({ ...legacyRow('p1'), file_ref: 'ab/cd/new.pdf' })
+    expect(await container.papersFileRef('p1')).toBe('ab/cd/new.pdf')
+
+    container.closeCurrent()
+    expect(() => opened.at(-1)!.prepare('SELECT 1')).toThrow()
+  })
+})

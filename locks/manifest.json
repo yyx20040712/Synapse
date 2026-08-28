@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T16:18:42.1467926Z",
+    "generatedAt":  "2026-08-28T17:22:27.2088440Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -91,11 +91,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "24b7294799f6007b96bc590d8e1672685bff19910726d83c253009c646653c4c"
+                      "sha256":  "0ab5ae371e55d5456bc250a4f55a97f5305a994153b78e3e40908c7253cf15a2"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "d40a1590d6a1808b1cf56635a2ed8943cd244d8475b2ef96f63e3efeec342ede"
+                      "sha256":  "8b82b471067fbfb1185f84921df208133b11d9e8fc61b8341d5c1a4f7d4c6557"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -131,7 +131,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "3f41d0edd1283920fcc9ae4a93881034e7b4733da9b116a1739fa693f112a6b0"
+                      "sha256":  "e12d322d1d3a5622427e212849b776b979903808903656b2aa5fde89ac70d687"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -520,6 +520,10 @@
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                  },
+                  {
+                      "path":  "tests/unit/services/workspace.test.ts",
+                      "sha256":  "51b776de47a8c2b59bb39c5a716b59a87e1089bf85668a53ac9143546b8ad274"
                   },
                   {
                       "path":  "tests/unit/services/zcode-link.service.test.ts",

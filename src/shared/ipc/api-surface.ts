@@ -99,6 +99,14 @@ export const API_SURFACE = {
   system: {
     openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema },
     setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema }
+  },
+  // workspaces 域（R1-WS1，ADR-0018 课题隔离）：四通道。switch 返回后 renderer
+  // reload 归 R1-WS2——本域 handlers 由 bootstrap 组合注入（见 ComposedHandlerDomains）
+  workspaces: {
+    list: { channel: 'workspaces/list', Req: S.voidReqSchema, Res: S.workspaceListResSchema },
+    create: { channel: 'workspaces/create', Req: S.workspaceCreateReqSchema, Res: S.workspaceCreateResSchema },
+    rename: { channel: 'workspaces/rename', Req: S.workspaceRenameReqSchema, Res: S.trueAckSchema },
+    switch: { channel: 'workspaces/switch', Req: S.workspaceSwitchReqSchema, Res: S.trueAckSchema }
   }
 } satisfies Record<string, Record<string, Endpoint>>
 
@@ -127,9 +135,22 @@ type Ep<D extends keyof Surface, M extends keyof Surface[D]> =
     ? { Req: R; Res: S }
     : never
 
+/**
+ * bootstrap 组合装配域（R1-WS1 主控裁决：ipc/index.ts+ipc/register.ts 零改动）。
+ * 这些域的 handlers 不出自 createIpcHandlers，而由 bootstrap 在 registerIpc 前
+ * 组合补齐（表驱动注册不变——registerIpc 仍按本表全量注册+校验）。
+ * 代价申报：ApiHandlers 对该域可选=漏组合不再编译期拦截（运行时接线缺失由
+ * contracts 枚举+单测/e2e 锚定补偿）；PreloadApi 不受影响（全量映射）。
+ */
+type ComposedHandlerDomains = 'workspaces'
+
 /** main 侧 service 契约：收已校验请求，返回纯数据（异常上抛由 register 统一折叠） */
 export type ApiHandlers = {
-  [D in keyof Surface]: {
+  [D in Exclude<keyof Surface, ComposedHandlerDomains>]: {
+    [M in keyof Surface[D]]: (req: z.output<Ep<D, M>['Req']>) => Promise<z.output<Ep<D, M>['Res']>>
+  }
+} & {
+  [D in ComposedHandlerDomains]?: {
     [M in keyof Surface[D]]: (req: z.output<Ep<D, M>['Req']>) => Promise<z.output<Ep<D, M>['Res']>>
   }
 }
