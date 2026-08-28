@@ -610,3 +610,67 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await expect(panel2.getByLabel('笔记正文')).toHaveValue('e2e 总评内容')
   await app2.close()
 })
+
+/** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
+const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
+
+test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选高亮不透明（重叠 span 不加深）', async () => {
+  skipIfPending(F06_DEPS)
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
+
+  // 第一跳：让应用自己完成建库迁移（批 1 配方）
+  const seedApp = await launch(userData)
+  await (await seedApp.firstWindow()).waitForTimeout(500)
+  await seedApp.close()
+
+  // 3 页受管文件（批 1 配方——每页单行 P<n> KNOWN，页间分隔断言需要多页）
+  const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e F06 视觉文献', 'e2e-seed-f06')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText('智慧水务 e2e F06 视觉文献').first().dblclick()
+  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+
+  // 计算样式快照：页盒/滚动容器/文本 span 的 ::selection（缺陷 B+C 两面一次取）
+  const visual = await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const box = col?.querySelector<HTMLElement>('[data-page-box]') ?? null
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    const span = document.querySelector<HTMLElement>('.textLayer span')
+    return {
+      pageBg: box === null ? 'missing' : getComputedStyle(box).backgroundColor,
+      pageShadow: box === null ? 'missing' : getComputedStyle(box).boxShadow,
+      scrollBg: scroller === null ? 'missing' : getComputedStyle(scroller).backgroundColor,
+      bodyBg: getComputedStyle(document.body).backgroundColor,
+      selectionBg: span === null ? 'missing' : getComputedStyle(span, '::selection').backgroundColor
+    }
+  })
+  // —— 缺陷 B：页盒=--panel 不透明白 + 柔和阴影（页缘在阅读区上视觉可辨的两要素；
+  //    渲染/占位同底消色差跳动——背景在页盒 div 上与渲染态无关）——
+  expect(visual.pageBg, 'B: 页盒背景=var(--panel) 不透明白').toBe('rgb(255, 255, 255)')
+  expect(visual.pageShadow, 'B: 页盒阴影非 none').not.toBe('none')
+  // 阅读区视觉底：滚动容器自身透明、透出 body --bg（theme.css 单源声明面）
+  expect(visual.scrollBg, 'B: 滚动容器透明（视觉底=body --bg）').toBe('rgba(0, 0, 0, 0)')
+  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(247, 248, 250)')
+  expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
+
+  // —— 缺陷 C：::selection 背景不透明（官方 25% 半透明在 pdfjs 重叠 span 上逐层
+  //    叠绘加重；方案一=不透明近似色，不透明色叠加不变深）——
+  // 真机解析形态实证（探查跑）：Chromium 对 ::selection 不解析 color-mix 行，
+  // computed 取级联 fallback 行（官方版=rgba(0, 0, 255, 0.25)）。断言落在
+  // 「无透明分量」上：rgb(…)/rgba(…, 1)/color(srgb …) 不透明家族皆绿；
+  // 官方 rgba(…, 0.25) 或 color(srgb … / 0.x) 即红
+  const sel = visual.selectionBg
+  expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
+  expect(sel, 'C: ::selection 背景非 transparent').not.toBe('transparent')
+  expect(/^rgba\(/.test(sel) && !/,\s*1\)$/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
+  expect(/\/\s*0(?:\.\d+)?\)/.test(sel), `C: ::selection 带透明分量：${sel}`).toBe(false)
+  await app.close()
+})
