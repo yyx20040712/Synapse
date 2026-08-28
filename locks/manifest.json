@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T05:05:46.7733263Z",
+    "generatedAt":  "2026-08-28T06:22:13.6122557Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -163,7 +163,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "c704804eebaa20bf39f38736bb098153b548af2d189dc85adfc340baf636d33c"
+                      "sha256":  "3a3a846b8519fc291ae0759926aba671b7b5f8e5b262aa8bba1764454845c514"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -295,7 +295,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
-                      "sha256":  "f4eb7b567e995250fd58c4c75299efaeb7d4a59af11844f86755f3b36feedb83"
+                      "sha256":  "c66353655cd4d97344339299aaa510c21d4f86891a2b67c91f8a18c6aeecad0f"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
@@ -375,7 +375,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "6ec87278b3c8e729cc1836b678d55a9a6320fdbf5cfb35291c81d88b4eb12974"
+                      "sha256":  "077d4f0248790ede95742ad5d3d55db57f48f0ac1b1ca4fa2eadba2a752cf6e3"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
@@ -383,7 +383,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
-                      "sha256":  "1f39613d523bfea1f6e39bf11cc60106114f2276b2fecf88904d63940eded59f"
+                      "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/scroll-progress.test.tsx",
+                      "sha256":  "c3203c7790f859e5e022ff29d1e06de880d4c26bc8349b10675a483aba60e813"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",

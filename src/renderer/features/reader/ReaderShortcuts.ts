@@ -8,8 +8,12 @@
  * - ctrl+c：当前有非 editable 目标的文本选区（window.selection）→
  *   navigator.clipboard.writeText（本地 API 不出网）并接管默认行为；无选区不写入；
  *   editable 目标由 keymap 避让（原生复制/粘贴透传）
- * - 翻页键位映射表：PageUp/PageDown、ArrowLeft/ArrowRight → prevPage/nextPage
- *   （表驱动注册——P7-F 连续滚动时键位语义迁移只改本表）
+ * - 滚动步键位映射表（F-03 迁移）：PageUp/PageDown、ArrowLeft/ArrowRight →
+ *   prevPage/nextPage（语义=容器滚动一步：一屏−一行重叠≈视口高 90%——动作实现
+ *   在消费方 ReaderPage 注入 scrollBy）；表驱动注册，键位语义迁移只改本表+动作注入
+ * - 空格=下滚一屏（F-03 新增，满屏步长 spaceScroll；editable 避让=既有 keymap 层
+ *   保障——textarea 内原生输入透传）；preventDefault 保留（语义=统一滚动步长，
+ *   阻断原生滚动/翻页默认行为防双移动）
  * - ctrl+z：撤销标注操作栈（actions.undo——reader.store.undo 动作面）；editable
  *   焦点由 keymap 避让走 textarea 原生 undo（UNDO-01：本栈不接管编辑场景）
  * - ctrl+滚轮缩放：document wheel 监听（本模块统一持有，成对注销，passive:false
@@ -44,7 +48,10 @@ import type { KeyBinding } from '../../shared/keymap'
 /** 本 hook 在 keymap 的注册 id（唯一来源，卸载成对注销） */
 const KEYMAP_ID = 'reader-shortcuts'
 
-/** 翻页键位映射表（P7-F 连续滚动时语义迁移的唯二落点之一） */
+/** 滚动步长比例（一屏−一行重叠≈视口高 90%，票面定值——F-03 键位迁移） */
+export const SCROLL_STEP_RATIO = 0.9
+
+/** 滚动步键位映射表（四键；语义=容器滚动一步，动作注入见 ReaderPage） */
 const PAGE_KEYS: ReadonlyArray<{ key: string; dir: 'prev' | 'next' }> = [
   { key: 'PageDown', dir: 'next' },
   { key: 'ArrowRight', dir: 'next' },
@@ -68,26 +75,31 @@ function copySelection(): void {
 }
 
 export interface ReaderShortcutActions {
+  /** 滚动一步·上/下（一屏−一行重叠——F-03 迁移后语义，名保留接缝稳定） */
   prevPage(): void
   nextPage(): void
+  /** 空格：下滚一屏（满屏步长——F-03 新增） */
+  spaceScroll(): void
   zoomStep(dir: 1 | -1): void
   undo(): void
 }
 
 export function useReaderShortcuts(actions: ReaderShortcutActions): void {
-  const { prevPage, nextPage, zoomStep, undo } = actions
+  const { prevPage, nextPage, spaceScroll, zoomStep, undo } = actions
   useEffect(() => {
     const bindings: readonly KeyBinding[] = [
       { key: 'c', ctrl: true, preventDefault: true, handler: copySelection },
       { key: 'z', ctrl: true, preventDefault: true, handler: undo },
-      // 翻页键 preventDefault：阻断可滚动视口的原生滚动，防「滚动+翻页」双移动
+      // 滚动步键 preventDefault：阻断原生滚动/空格翻页默认行为——统一滚动步长
+      // 由动作面执行（F-03 语义迁移：步长常量 SCROLL_STEP_RATIO 单源）
       ...PAGE_KEYS.map(
         (p): KeyBinding => ({
           key: p.key,
           preventDefault: true,
           handler: () => (p.dir === 'prev' ? prevPage() : nextPage())
         })
-      )
+      ),
+      { key: ' ', preventDefault: true, handler: spaceScroll }
     ]
     registerKeymap(KEYMAP_ID, bindings)
 
@@ -105,5 +117,5 @@ export function useReaderShortcuts(actions: ReaderShortcutActions): void {
       unregisterKeymap(KEYMAP_ID)
       document.removeEventListener('wheel', onWheel)
     }
-  }, [prevPage, nextPage, zoomStep, undo])
+  }, [prevPage, nextPage, spaceScroll, zoomStep, undo])
 }

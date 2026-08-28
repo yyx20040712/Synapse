@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   useReaderShortcuts,
+  SCROLL_STEP_RATIO,
   type ReaderShortcutActions
 } from '../../../src/renderer/features/reader/ReaderShortcuts'
 import { guardedDescribe } from '../../utils/guard'
@@ -67,6 +68,7 @@ function makeActions() {
   return {
     prevPage: vi.fn(),
     nextPage: vi.fn(),
+    spaceScroll: vi.fn(),
     zoomStep: vi.fn(),
     undo: vi.fn()
   }
@@ -207,5 +209,33 @@ guardedDescribe('SR2-KEY-02', 'ReaderShortcuts —— 阅读器快捷键与滚�
       addSpy.mockRestore()
       rmSpy.mockRestore()
     }
+  })
+})
+
+// ── F-03 键位迁移（滚动步+空格；always-active——ADR-0017 裁决 3）──
+
+describe('ReaderShortcuts F-03 键位迁移（滚动步+空格下滚一屏）', () => {
+  it('空格：触发下滚一屏动作+preventDefault（统一滚动步长，阻断原生空格滚动）', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const ev = key(document, { key: ' ' })
+    expect(a.spaceScroll).toHaveBeenCalledTimes(1)
+    expect(ev.defaultPrevented).toBe(true)
+    unmount()
+  })
+
+  it('空格 editable 避让（既有 keymap 层保障）：textarea 内不接管，原生输入透传', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const ta = document.createElement('textarea')
+    document.body.appendChild(ta)
+    const ev = key(ta, { key: ' ' })
+    expect(a.spaceScroll).not.toHaveBeenCalled()
+    expect(ev.defaultPrevented).toBe(false)
+    unmount()
+  })
+
+  it('滚动步常量：SCROLL_STEP_RATIO=0.9（一屏−一行重叠，票面定值）', () => {
+    expect(SCROLL_STEP_RATIO).toBe(0.9)
   })
 })

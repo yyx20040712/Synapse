@@ -1,0 +1,1164 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 957206b..3bfd04a 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -42,6 +42,8 @@
+ | INV-28 | 被引缓存刷新语义（与元数据 fill-empty 刻意不同——被引数单调增长）：瀑布命中且 citedByCount 非 null（含 **0**，0 是合法缓存值）→强制刷新（新值+新时间戳+source 三列同写）；命中但 citedByCount=null→不写缓存旧值保留；未命中/异常（work=null）→旧值保留（缓存不清，enrich_status='failed' 仅元数据面）；判别必须 `=== null`（禁 ??/falsy——0 与 NULL 语义不同）；detailById 透出配对规则=count 非 null 三字段齐出、null 全省略（undefined） | cited-by.service.ts 头注状态机（刷新决策单源 citedByPatch；SR2-ENR-01，2026-08-28 门一 W2 处置登记） | 单测（cited-by.test 9 用例：六格全格+0 值边界两样本+跨格序列）+真库断言（papers.repo.test：applyEnrichment 第三参 SET 落库+再不传则保留——SQL 面唯一锚定点，enrich 集成测试全用桩） | 已锚定（单测+真库级 2026-08-28 SR2-ENR-01） |
+ | INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→页盒 scrollIntoView block:'start'；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |
+ | INV-30 | canvas 生命周期=渲染窗口绑定：页 canvas（PdfPageCanvas）仅存在于 PageColumn 渲染窗口内（可见页±renderWindow），离屏距离>recycleWindow 必卸载（canvas 移除+pageText 条目同删——PageFrame 卸载哨）；rendering 中滚出窗口由渲染 effect 清理取消在途任务；zoom 重算走尺寸缓存乘法（就绪后无 loading 态——非重取） | PageColumn.tsx 段③（SR2-F-01，2026-08-28 登记；内存断言=canvas 实例数≤渲染窗口+缓冲常量；实现者原误编 INV-28 撞号，F-01 门一 W1 处置重编 INV-30） | 组件单测锚（page-column.test：IO 桩驱动窗口展开/快速滚动回收/渲染集上界 ≤ 可见数×(2·recycleWindow+1)+离屏距离断言）+e2e 收官计数断言（F-04 reader-scroll.spec） | 已锚定（组件单测级 2026-08-28 SR2-F-01；e2e 计数断言随 F-04 收官） |
++| INV-31 | 滚动→页进度回写=视口中心最近页（纯函数，PageColumn.nearestPage 单源）：scroll-progress 状态机在防抖到期时按 (scrollTop+clientHeight/2) 所落页盒记账（整数页粒度，页内偏移不存）；回写经 setPage {scroll:'none'}（INV-29 'none' 支）只落账不触发程序滚动；回写竞 tab 切换时 writing 前校验 activeId——失配丢弃 setPage（防把 A 的页写进 B 的 tab），per-tab 账（saveProgress 按 paperId）照落 | scroll-progress.ts 状态机 fire()（SR2-F-03，2026-08-28 登记） | 单测跨格锚（scroll-progress.test：六态全格+五序列——失配丢弃/关 tab flush/中心页边界含中缝取前页）+e2e 批 3（滚动→关→重开=恢复页锚定） | 已锚定（单测级 2026-08-28 SR2-F-03；e2e 批 3 取证落盘，registry 翻 done 后常规跑激活） |
++| INV-32 | 程序滚动用户接管（RESTORING 取消）：程序滚动（恢复/跳页/locate，均经 INV-29 scrollRequest 单口）进行中，用户以 wheel/keydown/pointerdown 三类**非 scroll** 输入信号介入即取消程序目标转 scrolling（程序 scrollToPage 自发的 scroll 事件不算用户滚动）；后续 scroll 事件恢复记账 | scroll-progress.ts onUserTakeover/装配面三口（ReaderPage onWheel/onPointerDown+wiring hook keydown；SR2-F-03，2026-08-28 登记） | 单测锚（scroll-progress.test：restoring→scrolling 接管格+程序自发 scroll 不记账格）+S4 竞态序列 | 已锚定（单测级 2026-08-28 SR2-F-03） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 0785278..1b6367f 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T05:05:46.7733263Z",
++    "generatedAt":  "2026-08-28T06:22:13.6122557Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -163,7 +163,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "c704804eebaa20bf39f38736bb098153b548af2d189dc85adfc340baf636d33c"
++                      "sha256":  "3a3a846b8519fc291ae0759926aba671b7b5f8e5b262aa8bba1764454845c514"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -295,7 +295,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+-                      "sha256":  "f4eb7b567e995250fd58c4c75299efaeb7d4a59af11844f86755f3b36feedb83"
++                      "sha256":  "c66353655cd4d97344339299aaa510c21d4f86891a2b67c91f8a18c6aeecad0f"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+@@ -375,7 +375,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader.store.test.ts",
+-                      "sha256":  "6ec87278b3c8e729cc1836b678d55a9a6320fdbf5cfb35291c81d88b4eb12974"
++                      "sha256":  "077d4f0248790ede95742ad5d3d55db57f48f0ac1b1ca4fa2eadba2a752cf6e3"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
+@@ -383,7 +383,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
+-                      "sha256":  "1f39613d523bfea1f6e39bf11cc60106114f2276b2fecf88904d63940eded59f"
++                      "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
++                  },
++                  {
++                      "path":  "tests/unit/renderer/scroll-progress.test.tsx",
++                      "sha256":  "c3203c7790f859e5e022ff29d1e06de880d4c26bc8349b10675a483aba60e813"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 25c9e6c..14e699e 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -2,18 +2,15 @@
+  * [SR-RDR-04] ReaderPage —— 阅读器页面（工单：done / weak）
+  *
+  * ── 行为层 ──
+- * - 无打开文档：空态引导（"从文献库打开一篇文献"）；打开：reader.store.openPaper
+- *   → PdfDocProvider+PageColumn 页列+SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+- * - 定时保存阅读进度（翻页后 2s 防抖 api.reader.saveProgress）——已内置于 reader.store.setPage
+- * - 接收 library 侧"打开文献"事件（'synapse:open-paper'；挂载时经 takePendingOpenPaper
+- *   补读闩锁）；LG-04 锚递达：消费定路由归 openFromBus（带锚→locateAnchor INV-20 单入口）
++ * - 无打开文档：空态引导；打开：openPaper→PdfDocProvider+PageColumn 页列+
++ *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
++ * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
+  * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
+- *   pageText 单份→Record<页号,PageText>（渲染窗口内，页卸载同删——PageFrame
+- *   回收回调）；每页自量（onPageRender 按 data-page-root 查该页盒量 canvas——
+- *   旧「第一个 canvas」单页假设量测已删）；旧越界自愈删除（夹取移 PageColumn
+- *   就绪管线）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02——本单
+- *   挂载位=可见页首报告）；页列就绪→setPage(当前页)（'to'）→程序滚回该页
+- *   盒顶（恢复链 F-01 版）
++ *   pageText→Record<页号,PageText>（渲染窗口内，页卸载同删）；每页自量 canvas 盒
++ * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
++ *   三口+keydown；页列就绪→恢复链滚回记忆页盒顶）；快捷键=容器滚动步（四键
++ *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
++ *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
+  *
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+@@ -28,7 +25,6 @@
+  */
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import type { ReactNode } from 'react'
+-import { showToast } from '../../shared/ui/Toast'
+ import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+ import { openFromBus } from './open-paper-anchor'
+ import { AnnotationLayer } from './AnnotationLayer'
+@@ -39,12 +35,14 @@ import { TabBar } from './TabBar'
+ import { PdfDocProvider } from './PdfDocProvider'
+ import { PageColumn, type PageScrollRequest } from './PageColumn'
+ import type { PdfTextContent } from './PdfPageCanvas'
+-import { useReaderShortcuts } from './ReaderShortcuts'
++import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
+ import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
+ import { SelectionLayer } from './SelectionLayer'
+ import { TextLayer } from './TextLayer'
+ import { useReaderStore } from './reader.store'
+ import { readActiveTab, useActiveTab } from './useActiveTab'
++import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
++import { showToast } from '../../shared/ui/Toast'
+ 
+ /** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
+ interface PageText {
+@@ -81,24 +79,30 @@ export function ReaderPage(): JSX.Element {
+     scrollRequest !== null && scrollRequest.paperId === paperId ? scrollRequest : null
+   const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
+   const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
+-  // 可见页集合（PageColumn 上抛；锚定页=首报告——SelectionLayer 挂载位）
++  // 可见页集合（PageColumn 上抛；锚定页=首报告——fitWidth 基准页）
+   const [anchorPages, setAnchorPages] = useState<number[]>([])
+   const anchorPage = anchorPages[0] ?? null
+   const [outlineOpen, setOutlineOpen] = useState(true)
+   // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfDocProvider onDocReady 上报，换文档即弃
+   const [pdfDoc, setPdfDoc] = useState<unknown>(null)
+   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
++  // F-03 滚动进度状态机（装配工厂闭包 scrollAreaRef；接线见 useScrollProgressWiring）
++  const spProg = useMemo(() => createReaderScrollProgress(scrollAreaRef), [])
++  useScrollProgressWiring(spProg, fileUrl, paperId, columnScroll)
++  // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
++  const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)
+ 
+-  // 快捷键装配：动作经 getState 取最新 store 态——回调恒定身份（INV-14 友好）
++  // 快捷键装配（F-03 迁移：翻页键=容器滚动步；经 ref/getState 取最新——恒定身份）
+   useReaderShortcuts(
+     useMemo(() => {
+-      const jump = (d: number): void => {
+-        const t = readActiveTab()
+-        if (t !== undefined) useReaderStore.getState().setPage(t.page + d)
++      const scrollByRatio = (ratio: number): void => {
++        const el = scrollAreaRef.current
++        if (el !== null) el.scrollBy({ top: Math.round(el.clientHeight * ratio) })
+       }
+       return {
+-        prevPage: () => jump(-1),
+-        nextPage: () => jump(1),
++        prevPage: () => scrollByRatio(-SCROLL_STEP_RATIO),
++        nextPage: () => scrollByRatio(SCROLL_STEP_RATIO),
++        spaceScroll: () => scrollByRatio(1),
+         zoomStep: (dir: 1 | -1) => {
+           const t = readActiveTab()
+           if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
+@@ -113,10 +117,7 @@ export function ReaderPage(): JSX.Element {
+     const open = (req: OpenPaperRequest): void => openFromBus(req)
+     const pending = takePendingOpenPaper()
+     if (pending !== null) open(pending)
+-    const handler = (e: Event): void => {
+-      const detail = (e as CustomEvent<OpenPaperRequest>).detail
+-      if (typeof detail?.paperId === 'string') open(detail)
+-    }
++    const handler = (e: Event): void => { const d = (e as CustomEvent<OpenPaperRequest>).detail; if (typeof d?.paperId === 'string') open(d) }
+     window.addEventListener(OPEN_PAPER_EVENT, handler)
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+   }, [])
+@@ -139,8 +140,7 @@ export function ReaderPage(): JSX.Element {
+     if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
+   }
+ 
+-  /** 渲染窗口内页的回收删条目（W3：pageTexts 与 pageRoots 同删——防 detached
+-   *  DOM 残留与 stale 根被覆盖层消费；稳定身份防重挂） */
++  /** 渲染窗口内页的回收删条目（W3：pageTexts/pageRoots 同删——防 stale 根残留） */
+   const dropPageState = useCallback((no: number): void => {
+     const del = <T,>(prev: Record<number, T>): Record<number, T> => {
+       if (prev[no] === undefined) return prev
+@@ -149,11 +149,11 @@ export function ReaderPage(): JSX.Element {
+     setPageTexts(del); setPageRoots(del)
+   }, [])
+ 
+-  /** 页列就绪（每 doc 一次）：恢复链 F-01 版——setPage(当前页)（'to' 默认）bump
+-   *  滚动信号→PageColumn 程序滚回该页盒顶（重开文献回到记忆页） */
++  /** 页列就绪（每 doc 一次）：F-03 恢复链 loading→restoring→scrollToPage
++   *  （setPage 'to'→INV-29 信号→PageColumn 滚回记忆页盒顶） */
+   const handleColumnReady = (): void => {
+     const t = readActiveTab()
+-    if (t !== undefined) useReaderStore.getState().setPage(t.page)
++    if (t !== undefined) spProg.onColumnReady(t.page)
+   }
+ 
+   /** pdf 加载/渲染失败：toast+tab 置 error（INV-15 可见可关可重试） */
+@@ -185,37 +185,40 @@ export function ReaderPage(): JSX.Element {
+       </div>
+     )
+   }
+-  /** 段④层实例化：每渲染页一套覆盖层（props 不变）；SelectionLayer 单实例挂
+-   *  锚定页盒（动态锚定归 F-02；中间态保证锚定页内划选标注正确） */
++  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）；
++   *  SelectionLayer 挂稳定盒（N4） */
+   const renderPageLayers = (no: number): JSX.Element => {
+     const pt = pageTexts[no]
+     const pr = pageRoots[no]
+     return (
+       <PageFrame no={no} onRecycle={dropPageState}>
+-        {pt !== undefined ? (
+-          <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} />
+-        ) : null}
+-        {pr !== undefined ? (
+-          // 标注增删改已由组件内同步 reader.store（store 规约），父级无额外动作
+-          <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} />
+-        ) : null}
++        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
++        {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
+         <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
+-        {anchorPage === no && pr !== undefined ? (
+-          <SelectionLayer pageRoot={pr} paperId={paperId} page={no - 1} onSaved={addAnnotation} />
+-        ) : null}
+       </PageFrame>
+     )
+   }
+ 
+   // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PageColumn（页列）
+   const mainContent = (
+-    <div ref={scrollAreaRef} className="min-w-0 flex-1 overflow-auto p-3">
+-      <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
+-        {(doc) => (
+-          <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} onPageRender={handlePageRender} onError={handlePdfError}
+-            renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} onVisibleChange={setAnchorPages} />
+-        )}
+-      </PdfDocProvider>
++    <div
++      ref={scrollAreaRef}
++      className="min-w-0 flex-1 overflow-auto p-3"
++      onScroll={() => spProg.onScrollEvent()}
++      // 用户接管三类信号之二（keydown 见 wiring hook 的 document 监听；W-B）
++      onWheel={() => spProg.onUserTakeover()}
++      onPointerDown={() => spProg.onUserTakeover()}
++    >
++      <div ref={setSelectionMount} className="relative">
++        <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
++          {(doc) => (
++            <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} onPageRender={handlePageRender} onError={handlePdfError}
++              renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} onVisibleChange={setAnchorPages} />
++          )}
++        </PdfDocProvider>
++        {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4） */}
++        <SelectionLayer pageRoot={selectionMount} paperId={paperId} page={0} onSaved={addAnnotation} />
++      </div>
+       <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
+     </div>
+   )
+@@ -227,8 +230,7 @@ export function ReaderPage(): JSX.Element {
+         onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />
+       <div className="flex min-h-0 flex-1">
+         {outlineOpen ? (
+-          // 可拖拽侧栏（SplitPane）：宽度持久化 localStorage；main 槽传 null——
+-          // 主内容外置为下方稳定子节点，折叠/展开不重挂页列等主子树
++          // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点
+           <SplitPane paneId="reader-outline" side="left" defaultWidth={224} min={160} max={480}
+             children={{
+               pane: <OutlineAside pdfDoc={pdfDoc} onCollapse={() => setOutlineOpen(false)} />,
+diff --git a/src/renderer/features/reader/ReaderShortcuts.ts b/src/renderer/features/reader/ReaderShortcuts.ts
+index 9541395..1cf7805 100644
+--- a/src/renderer/features/reader/ReaderShortcuts.ts
++++ b/src/renderer/features/reader/ReaderShortcuts.ts
+@@ -8,8 +8,12 @@
+  * - ctrl+c：当前有非 editable 目标的文本选区（window.selection）→
+  *   navigator.clipboard.writeText（本地 API 不出网）并接管默认行为；无选区不写入；
+  *   editable 目标由 keymap 避让（原生复制/粘贴透传）
+- * - 翻页键位映射表：PageUp/PageDown、ArrowLeft/ArrowRight → prevPage/nextPage
+- *   （表驱动注册——P7-F 连续滚动时键位语义迁移只改本表）
++ * - 滚动步键位映射表（F-03 迁移）：PageUp/PageDown、ArrowLeft/ArrowRight →
++ *   prevPage/nextPage（语义=容器滚动一步：一屏−一行重叠≈视口高 90%——动作实现
++ *   在消费方 ReaderPage 注入 scrollBy）；表驱动注册，键位语义迁移只改本表+动作注入
++ * - 空格=下滚一屏（F-03 新增，满屏步长 spaceScroll；editable 避让=既有 keymap 层
++ *   保障——textarea 内原生输入透传）；preventDefault 保留（语义=统一滚动步长，
++ *   阻断原生滚动/翻页默认行为防双移动）
+  * - ctrl+z：撤销标注操作栈（actions.undo——reader.store.undo 动作面）；editable
+  *   焦点由 keymap 避让走 textarea 原生 undo（UNDO-01：本栈不接管编辑场景）
+  * - ctrl+滚轮缩放：document wheel 监听（本模块统一持有，成对注销，passive:false
+@@ -44,7 +48,10 @@ import type { KeyBinding } from '../../shared/keymap'
+ /** 本 hook 在 keymap 的注册 id（唯一来源，卸载成对注销） */
+ const KEYMAP_ID = 'reader-shortcuts'
+ 
+-/** 翻页键位映射表（P7-F 连续滚动时语义迁移的唯二落点之一） */
++/** 滚动步长比例（一屏−一行重叠≈视口高 90%，票面定值——F-03 键位迁移） */
++export const SCROLL_STEP_RATIO = 0.9
++
++/** 滚动步键位映射表（四键；语义=容器滚动一步，动作注入见 ReaderPage） */
+ const PAGE_KEYS: ReadonlyArray<{ key: string; dir: 'prev' | 'next' }> = [
+   { key: 'PageDown', dir: 'next' },
+   { key: 'ArrowRight', dir: 'next' },
+@@ -68,26 +75,31 @@ function copySelection(): void {
+ }
+ 
+ export interface ReaderShortcutActions {
++  /** 滚动一步·上/下（一屏−一行重叠——F-03 迁移后语义，名保留接缝稳定） */
+   prevPage(): void
+   nextPage(): void
++  /** 空格：下滚一屏（满屏步长——F-03 新增） */
++  spaceScroll(): void
+   zoomStep(dir: 1 | -1): void
+   undo(): void
+ }
+ 
+ export function useReaderShortcuts(actions: ReaderShortcutActions): void {
+-  const { prevPage, nextPage, zoomStep, undo } = actions
++  const { prevPage, nextPage, spaceScroll, zoomStep, undo } = actions
+   useEffect(() => {
+     const bindings: readonly KeyBinding[] = [
+       { key: 'c', ctrl: true, preventDefault: true, handler: copySelection },
+       { key: 'z', ctrl: true, preventDefault: true, handler: undo },
+-      // 翻页键 preventDefault：阻断可滚动视口的原生滚动，防「滚动+翻页」双移动
++      // 滚动步键 preventDefault：阻断原生滚动/空格翻页默认行为——统一滚动步长
++      // 由动作面执行（F-03 语义迁移：步长常量 SCROLL_STEP_RATIO 单源）
+       ...PAGE_KEYS.map(
+         (p): KeyBinding => ({
+           key: p.key,
+           preventDefault: true,
+           handler: () => (p.dir === 'prev' ? prevPage() : nextPage())
+         })
+-      )
++      ),
++      { key: ' ', preventDefault: true, handler: spaceScroll }
+     ]
+     registerKeymap(KEYMAP_ID, bindings)
+ 
+@@ -105,5 +117,5 @@ export function useReaderShortcuts(actions: ReaderShortcutActions): void {
+       unregisterKeymap(KEYMAP_ID)
+       document.removeEventListener('wheel', onWheel)
+     }
+-  }, [prevPage, nextPage, zoomStep, undo])
++  }, [prevPage, nextPage, spaceScroll, zoomStep, undo])
+ }
+diff --git a/src/renderer/features/reader/anchor-locate.ts b/src/renderer/features/reader/anchor-locate.ts
+index 150ad0f..8b4feba 100644
+--- a/src/renderer/features/reader/anchor-locate.ts
++++ b/src/renderer/features/reader/anchor-locate.ts
+@@ -63,6 +63,9 @@
+  *   scrollRequest 信号→PageColumn.scrollToPage 目标页盒顶（F-01 已落）；文本
+  *   层验证=目标页盒内限定（F-02）。后续仅换本文件滚动步实现，locateAnchor
+  *   签名与消费方不动
++ * - W3（F-02 门一裁决，F-03 并入落实）：verifyWhenReady 回退分支「全局第一」
++ *   收紧「全局唯一」（querySelectorAll===1 才用；>1 不取第一——防 anchorPage
++ *   超界/数据损坏时邻页误 exact，继续轮询→超时按 page 层降级 toast）
+  *
+  * ── 生命周期层 ──
+  * - 不做：定位动画队列/跨 tab 批量定位；P7-H 脉络侧板（N3）经本入口复用
+@@ -166,7 +169,16 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
+     if (locateSeq !== seq) return 'stale'
+     if (useReaderStore.getState().tabs[paperId] === undefined) return 'stale'
+     const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${(anchor.anchorPage ?? 0) + 1}"]`)
+-    const textLayer = (pageRoot ?? document).querySelector('.textLayer') as HTMLElement | null
++    // W3（F-02 门一裁决，F-03 并入落实施）：页盒缺席的回退分支收紧「全局唯一」
++    // ——querySelectorAll 断言唯一，>1 不取第一（anchorPage 超界/数据损坏时无法
++    // 确定目标页，取第一=邻页误 exact），继续轮询直至超时按 page 层降级 toast
++    let textLayer: HTMLElement | null = null
++    if (pageRoot !== null) {
++      textLayer = pageRoot.querySelector('.textLayer') as HTMLElement | null
++    } else {
++      const all = document.querySelectorAll('.textLayer')
++      textLayer = all.length === 1 ? (all[0] as HTMLElement) : null
++    }
+     if (textLayer !== null) {
+       let at: number | null = null
+       try {
+diff --git a/src/renderer/features/reader/reader.store.ts b/src/renderer/features/reader/reader.store.ts
+index f2d5a9c..8f44289 100644
+--- a/src/renderer/features/reader/reader.store.ts
++++ b/src/renderer/features/reader/reader.store.ts
+@@ -33,10 +33,10 @@
+  *        activeId=null（空态）；order 收缩序正确
+  *     S3 加载中切换：open(A) loading → open(B) ready → A 响应迟到 → 只写入
+  *        A 的 tab（B 展示不受干扰）；loading 中 close(A) → A 迟到响应丢弃（规则①）
+- * - 进度防抖：PROGRESS_DEBOUNCE_MS=2000 单定时器 + pendingProgress 集合
+- *   （Record<paperId, page>——多 tab 各自翻页各自落账，换 tab 不误写不丢写）；
+- *   closeTab 时该 tab 的 pending 进度立即 flush（尽力而为，catch 吞——进度
+- *   非关键数据，规约记录依据）
++ * - 进度防抖（F-03 拆链）：防抖定时器+pendingProgress 账本已整体迁
++ *   scroll-progress.ts（语义保持）；本 store 只留接线——progressFlusher
++ *   注册口（装配面 ReaderPage 注册/注销成对），closeTab 时 flush(paperId)、
++ *   close() 时 flushAll()（立即收账，尽力而为 catch 吞由消费方承载）
+  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
+  *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
+  * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
+@@ -90,10 +90,18 @@ export interface TabState {
+   dirty: boolean
+ }
+ 
++/** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
++export interface ProgressFlusher {
++  flush(paperId: string): void
++  flushAll(): void
++}
++
+ export interface ReaderStore {
+   tabs: Record<string, TabState>
+   order: string[]
+   activeId: string | null
++  progressFlusher: ProgressFlusher | null
++  registerProgressFlusher(f: ProgressFlusher | null): void
+   /** 程序跳页滚动信号（F-01 双源机制/INV-29）：setPage 默认（scroll:'to'）时
+    *  bump——消费者（ReaderPage→PageColumn.scrollToPage 单口）据此程序滚动到
+    *  盒顶；{scroll:'none'}（滚动位置回写）不 bump，防回弹死循环 */
+@@ -134,15 +142,13 @@ export function createReaderStoreInitialState() {
+     tabs: {} as Record<string, TabState>,
+     order: [] as string[],
+     activeId: null as string | null,
++    progressFlusher: null as ProgressFlusher | null,
+     scrollRequest: null as { paperId: string; page: number; seq: number } | null,
+     noteHighlight: null as { annotationId: string; seq: number } | null,
+     aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
+   }
+ }
+ 
+-/** 进度防抖窗口：翻页后静置 2s 才落库（与 ReaderPage 规约一致） */
+-const PROGRESS_DEBOUNCE_MS = 2000
+-
+ /** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading） */
+ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
+   if (prev !== undefined) {
+@@ -170,42 +176,12 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+   let loadSeq = 0
+   const tabLoadSeq = new Map<string, number>()
+   const inflightOpen = new Map<string, Promise<void>>()
+-  let progressTimer: ReturnType<typeof setTimeout> | null = null
+-  /** 待落库进度集合：paperId → 最近翻到的页（多 tab 各自记账，到点批量落库） */
+-  let pendingProgress: Record<string, number> = {}
+ 
+   /** 本次响应是否仍是该 tab 的最新加载（规则①②判定：tab 已关或已被新一轮顶替即过期） */
+   const isCurrentLoad = (paperId: string, seq: number): boolean => {
+     return get().tabs[paperId] !== undefined && tabLoadSeq.get(paperId) === seq
+   }
+ 
+-  const flushProgress = (paperId: string, page: number): void => {
+-    // 防抖落库失败不上抛：进度属尽力而为，不打断阅读（下次翻页会再试）
+-    void api.reader.saveProgress({ paperId, page }).catch(() => undefined)
+-  }
+-
+-  const flushAllPending = (): void => {
+-    for (const [pid, page] of Object.entries(pendingProgress)) {
+-      flushProgress(pid, page)
+-    }
+-    pendingProgress = {}
+-  }
+-
+-  const clearProgressTimer = (): void => {
+-    if (progressTimer !== null) {
+-      clearTimeout(progressTimer)
+-      progressTimer = null
+-    }
+-  }
+-
+-  const scheduleProgress = (): void => {
+-    clearProgressTimer()
+-    progressTimer = setTimeout(() => {
+-      progressTimer = null
+-      flushAllPending()
+-    }, PROGRESS_DEBOUNCE_MS)
+-  }
+-
+   /** 作用于 active tab 的统一入口（activeId=null 时 no-op——空态规约） */
+   const updateActiveTab = (fn: (tab: TabState) => TabState): void => {
+     const { activeId, tabs } = get()
+@@ -215,14 +191,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+     set({ tabs: { ...tabs, [activeId]: fn(tab) } })
+   }
+ 
+-  /** 关单个 tab：pending 进度立即 flush；关 active 时收缩到右邻（无右邻左邻，全空 null） */
++  /** 关单个 tab：进度账立即 flush（F-03 接线）；关 active 时收缩到右邻（无右邻左邻，全空 null） */
+   const closeOne = (id: string): void => {
+     // 该 tab 的 pending 进度立即落库（关 tab 后无人再等防抖窗口）
+-    const pending = pendingProgress[id]
+-    if (pending !== undefined) {
+-      flushProgress(id, pending)
+-      delete pendingProgress[id]
+-    }
++    get().progressFlusher?.flush(id)
+     tabLoadSeq.delete(id)
+     inflightOpen.delete(id)
+     // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
+@@ -239,12 +211,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+     set({ tabs: nextTabs, order: nextOrder, activeId: nextActive })
+   }
+ 
+-  /** 关闭全部（App 切视图/全关语义）：全部 pending 进度落账后整体复位 */
++  /** 关闭全部（App 切视图/全关语义）：全部进度账落账后整体复位 */
+   const closeAll = (): void => {
+-    flushAllPending()
++    get().progressFlusher?.flushAll()
+     tabLoadSeq.clear()
+     inflightOpen.clear()
+-    clearProgressTimer()
+     set(createReaderStoreInitialState())
+   }
+ 
+@@ -317,6 +288,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+       set({ activeId: id })
+     },
+ 
++    registerProgressFlusher(f) {
++      set({ progressFlusher: f })
++    },
++
+     closeTab(id) {
+       closeOne(id)
+     },
+@@ -341,8 +316,8 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+           ? { scrollRequest: { paperId: activeId, page: clamped, seq: (s.scrollRequest?.seq ?? 0) + 1 } }
+           : {})
+       }))
+-      pendingProgress[activeId] = clamped
+-      scheduleProgress()
++      // 进度记账/防抖已拆至 scroll-progress（F-03）：程序跳页的入账由装配面
++      // beginProgramScroll（scrollRequest 消费）承载，滚动回写由状态机承载
+     },
+ 
+     setZoom(zoom) {
+diff --git a/src/renderer/features/reader/scroll-progress.ts b/src/renderer/features/reader/scroll-progress.ts
+index b8004f8..7e80207 100644
+--- a/src/renderer/features/reader/scroll-progress.ts
++++ b/src/renderer/features/reader/scroll-progress.ts
+@@ -3,46 +3,337 @@
+  * [SR2-F-03] scroll-progress —— 滚动进度回写恢复与键位迁移（工单：open / strong）
+  *
+  * ── 行为层 ──
+- * - 滚动位置状态机（六态）：idle→scrolling（用户滚动）→pending（静置
+- *   >2000ms 沿用防抖）→writing（setPage(id,page,{scroll:'none'})——回写
+- *   不触发程序滚动防回弹；writing 中用户又滚→直接回 scrolling）→idle；
+- *   restoring（程序滚动中；**用户接管判定=非 scroll 的用户输入信号
+- *   （wheel/keydown/pointerdown 三类——程序 scrollToPage 自发的 scroll
+- *   事件不算）→取消程序目标转 scrolling**）；loading（页列未就绪，onReady
+- *   →restoring 执行恢复）。
+- * - 跨格序列：滚动→切 tab→回（恢复记忆页）/滚动中关 tab（flushPending
+- *   沿用）/pending 中关 tab（立即 flush）/程序跳页与用户滚动竞态（用户
+- *   接管=三类输入信号）/回写竞 tab 切换（writing 前校验 activeId 失配
+- *   丢弃——per-tab 记账）。
+- * - 滚动→页回写：视口中心最近页纯函数；粒度=整数页（v1 零迁移——页内
+- *   偏移留实锤）；pendingProgress Record<paperId,page> 语义保持。
+- * - 恢复：openPaper→loading→就绪（就绪时夹取）→scrollToPage(lastReadPage)。
+- * - 键位迁移：PAGE_KEYS 四键=滚动一步（一屏−一行重叠常量）；preventDefault
+- *   保留（语义=统一滚动步长）；空格=下滚一屏（新增，editable 避让既有）；
+- *   ctrl+wheel 缩放零触碰。
++ * - 滚动位置状态机（六态，per-tab 内部 Record<paperId,State>——B3）：
++ *   | 态 | 迁移 | 断言 |
++ *   | --- | --- | --- |
++ *   | idle | 用户滚动→scrolling | — |
++ *   | scrolling | 静置>2000ms（沿用）→pending | 防抖窗内不回写 |
++ *   | pending | 定时到→writing（决定档：tab 校验+setPage 在本档执行） | 失配丢弃 |
++ *   | writing | 回写 setPage(page,{scroll:'none'})→idle；writing 中用户又滚→直接回 scrolling（W2 新格） | 'none' 不触发程序滚动（B1/INV-29） |
++ *   | restoring | 程序滚动（恢复/跳页/locate）中；用户接管=非 scroll 的用户输入信号（wheel/keydown/pointerdown 三类——程序自发 scroll 不算，W-B）→取消程序目标转 scrolling；到位（scroll 中心页=目标）→idle | 用户接管 |
++ *   | loading | 页列未就绪（F-01 onReady 前）；onColumnReady→restoring（执行恢复 scrollToPage） | 就绪信号驱动 |
++ * - 跨格序列：滚动→切 tab→回（恢复记忆页）/滚动中关 tab（flushPending）/pending
++ *   中关 tab（立即 flush）/程序跳页与用户滚动竞态（用户接管=三类信号）/回写竞
++ *   tab 切换（writing 前校验 getPaperId 失配丢弃 setPage——per-tab 记账照落）。
++ * - 滚动→页回写：视口中心最近页（PageColumn.nearestPage 单源）纯函数；粒度=
++ *   整数页（v1 零迁移——页内偏移留实锤）；pendingProgress Record<paperId,page>
++ *   语义保持（B3，账本随防抖链自 reader.store 拆入本模块）。
++ * - 恢复：openPaper→loading→就绪（就绪时夹取=W-A，由 scrollToPage 消费面
++ *   PageColumn 段⑤ clamp 承载）→scrollToPage(lastReadPage)。
++ * - 程序跳页（工具栏/目录/locate/恢复）记账：beginProgramScroll 入账+arm——
++ *   拆链对齐（旧 store 一切 setPage 来源均入 pendingProgress）。
+  *
+  * ── 接口层 ──
+- * - createScrollProgress(deps:{getPaperId,getViewport,getPageBoxes,
+- *   scrollToPage,setPage,saveProgress,now,timers})——**per-tab：内部
+- *   Record<paperId,State>**；时间全注入（禁真 timer）。
+- * - reader.store 防抖链拆至本模块（425 行净减）；ReaderPage 装配 onScroll
+- *   接线+恢复；ReaderShortcuts PAGE_KEYS 滚动步+空格（头注 :47 兑现）。
++ * - createScrollProgress(deps:{getPaperId,getViewport,getPageBoxes,scrollToPage,
++ *   setPage,saveProgress,now,timers})——时间全注入（禁真 timer）；
++ * - createReaderScrollProgress(scrollArea)——装配工厂（store/api 直连，闭包
++ *   scrollAreaRef 量测页盒几何）；useScrollProgressWiring——装配效应集
++ *   （flusher 注册成对/keydown 接管/换文献 loading/程序滚动信号→restoring）。
+  *
+  * ── 架构层 ──
+- * - IPC/repo 零改动（saveProgress 沿用）；不变量登记：进度回写=视口中心
+- *   最近页（纯函数+跨格单测）；程序滚动用户接管（RESTORING 取消）。
++ * - IPC/repo 零改动（saveProgress 沿用）；reader.store 不 import 本模块（依赖
++ *   单向：本模块→store/api；装配面 ReaderPage 注册 flusher 回调入 store）。
++ * - 不变量登记（docs/invariants.md）：INV-31 进度回写=视口中心最近页；
++ *   INV-32 程序滚动用户接管（RESTORING 取消）。
+  *
+  * ── 生命周期层 ──
+  * - 不做：页内偏移存储/云端/进度历史。
+  *
+  * ── 文化层 ──
+- * - 测试：状态机全格含 writing-scroll 新格+跨格五序列（时间注入）；
+- *   最近页纯函数边界；reader-shortcuts.test+reader.store.test 受锁扩；
+- *   e2e 批 3=reader-text.spec tab 序列段。
+- * - 文件清单：本文件（新）/reader.store.ts/ReaderPage.tsx/ReaderShortcuts.ts/
+- *   scroll-progress.test.ts（新入锁）/两受锁测试扩/reader-text.spec 批 3。
+- * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
++ * - 测试：scroll-progress.test（六态全格+跨格五序列+几何边界，时间注入）；
++ *   reader-shortcuts/reader.store 受锁扩；e2e 批 3=reader-text.spec tab 序列段。
+  */
++import { useEffect } from 'react'
++import type { RefObject } from 'react'
++import { nearestPage } from './PageColumn'
++import { api } from '../../api/client'
++import { useReaderStore } from './reader.store'
+ 
+-/** 工单骨架标记（实现单元替换为真实实现） */
+-export const SCROLL_PROGRESS_STUB = 'SR2-F-03'
++/** 滚动位置状态机六态（票面字面） */
++export type ScrollStateName = 'idle' | 'scrolling' | 'pending' | 'writing' | 'restoring' | 'loading'
++
++/** 注入定时器（禁真 timer——测试经 fake timers 驱动） */
++export interface ScrollProgressTimers {
++  setTimeout(fn: () => void, ms: number): unknown
++  clearTimeout(handle: unknown): void
++}
++
++export interface ScrollProgressDeps {
++  getPaperId(): string | null
++  getViewport(): { scrollTop: number; clientHeight: number } | null
++  getPageBoxes(): ReadonlyArray<{ top: number; height: number }>
++  /** 程序滚动单口（装配注入 setPage 默认 'to'→INV-29 信号→PageColumn 段⑤） */
++  scrollToPage(page: number): void
++  /** 回写单口（{scroll:'none'} 只落账不 bump——防回弹） */
++  setPage(page: number, opts: { scroll: 'none' }): void
++  saveProgress(paperId: string, page: number): void | Promise<void>
++  now(): number
++  timers: ScrollProgressTimers
++}
++
++export interface ScrollProgress {
++  /** 滚动容器 onScroll 接线（restoring 中=程序自发 scroll，仅做到达判定） */
++  onScrollEvent(): void
++  /** 用户接管信号（wheel/keydown/pointerdown 三类非 scroll 信号，W-B） */
++  onUserTakeover(): void
++  /** openPaper/换文献：页列未就绪 → loading */
++  beginLoading(paperId: string): void
++  /** 页列就绪（F-01 onReady）：loading→restoring，执行恢复 scrollToPage(page) */
++  onColumnReady(restorePage: number): void
++  /** 程序跳页（scrollRequest 消费面：工具栏/目录/locate/恢复链）→restoring+记账 */
++  beginProgramScroll(page: number): void
++  /** 关 tab：该 tab 的 pending 立即落库（store.closeTab 经 flusher 接线调用） */
++  flushPending(paperId: string): void
++  /** 全关/卸载：整账本一次收 */
++  flushAll(): void
++  stateOf(paperId: string): ScrollStateName
++  pendingOf(paperId: string): number | undefined
++  /** 清定时器+尾账 flush（卸载/切视图收尾；实例此后仍可用） */
++  dispose(): void
++}
++
++/** 进度防抖窗口：静置 2s 才落库（拆链自 reader.store，语义沿用） */
++export const PROGRESS_DEBOUNCE_MS = 2000
++
++interface PaperScrollState {
++  state: ScrollStateName
++  /** restoring 的程序目标页（0 基；非 restoring 态无意义） */
++  target: number | null
++}
++
++export function createScrollProgress(deps: ScrollProgressDeps): ScrollProgress {
++  /** per-tab 状态机（B3）：paperId → 态 */
++  const papers = new Map<string, PaperScrollState>()
++  /** 待落库进度账本：paperId → 最近页（0 基）——旧 pendingProgress 语义保持 */
++  let pending: Record<string, number> = {}
++  let timer: unknown = null
++  /** writing 在途完成序号（W2：用户接管后的迟到完成不得回落 idle） */
++  let writeSeq = 0
++
++  const paper = (pid: string): PaperScrollState => {
++    let s = papers.get(pid)
++    if (s === undefined) {
++      s = { state: 'idle', target: null }
++      papers.set(pid, s)
++    }
++    return s
++  }
++
++  /** 视口中心最近页（0 基；INV-31 纯函数消费——PageColumn.nearestPage 单源） */
++  const centerPage = (): number | null => {
++    const vp = deps.getViewport()
++    if (vp === null) return null
++    const boxes = deps.getPageBoxes()
++    if (boxes.length === 0) return null
++    return nearestPage(vp.scrollTop + vp.clientHeight / 2, boxes) - 1
++  }
++
++  /** 落库（尽力而为：进度非关键数据，同步抛错/拒绝均吞——沿用 store 规约） */
++  const saveOne = (pid: string, page: number): Promise<void> => {
++    try {
++      return Promise.resolve(deps.saveProgress(pid, page)).then(
++        () => undefined,
++        () => undefined
++      )
++    } catch {
++      return Promise.resolve()
++    }
++  }
++
++  /** 整账本批量落库（沿用 flushAllPending 语义——多 tab 各自记账） */
++  const flushLedger = (): Array<Promise<void>> => {
++    const waits: Array<Promise<void>> = []
++    for (const [pid, page] of Object.entries(pending)) waits.push(saveOne(pid, page))
++    pending = {}
++    return waits
++  }
++
++  const arm = (): void => {
++    if (timer !== null) deps.timers.clearTimeout(timer)
++    timer = deps.timers.setTimeout(fire, PROGRESS_DEBOUNCE_MS)
++  }
++
++  /** 定时到：账本批量落库 + active tab 回写（pending 决定档→writing） */
++  const fire = (): void => {
++    timer = null
++    const pid = deps.getPaperId()
++    const activePage = pid !== null ? pending[pid] : undefined
++    const waits = flushLedger()
++    if (pid === null || activePage === undefined) return // 失配丢弃：只丢 setPage，per-tab 账已在上面照落
++    const ps = paper(pid)
++    if (ps.state !== 'scrolling' && ps.state !== 'idle') return // restoring/loading 中不回写页码
++    ps.state = 'pending'
++    deps.setPage(activePage, { scroll: 'none' })
++    ps.state = 'writing'
++    const seq = ++writeSeq
++    void Promise.all(waits).then(() => {
++      if (seq === writeSeq && ps.state === 'writing') ps.state = 'idle'
++    })
++  }
++
++  return {
++    onScrollEvent() {
++      const pid = deps.getPaperId()
++      if (pid === null) return
++      const ps = paper(pid)
++      if (ps.state === 'loading') return // 页列未就绪：不记账
++      if (ps.state === 'restoring') {
++        // W-B：restoring 中的 scroll 事件=程序滚动自发，非用户——只做到达判定
++        const cur = centerPage()
++        if (cur !== null && cur === ps.target) {
++          ps.target = null
++          ps.state = 'idle'
++        }
++        return
++      }
++      // idle/scrolling/writing（W2 新格：writing 中用户又滚→直接回 scrolling）
++      const cur = centerPage()
++      if (cur === null) return
++      ps.state = 'scrolling'
++      pending[pid] = cur
++      arm()
++    },
++
++    onUserTakeover() {
++      const pid = deps.getPaperId()
++      if (pid === null) return
++      const ps = paper(pid)
++      if (ps.state !== 'restoring') return
++      ps.target = null // 取消程序目标（INV-32）
++      ps.state = 'scrolling' // 后续 scroll 事件=用户的，正常记账
++    },
++
++    beginLoading(pid) {
++      const ps = paper(pid)
++      ps.state = 'loading'
++      ps.target = null
++    },
++
++    onColumnReady(restorePage) {
++      const pid = deps.getPaperId()
++      if (pid === null) return
++      const ps = paper(pid)
++      const cur = centerPage()
++      if (cur === restorePage) {
++        // 已在记忆页（首读开篇/重开归位）：免程序滚直达 idle
++        ps.state = 'idle'
++        ps.target = null
++        return
++      }
++      ps.state = 'restoring'
++      ps.target = restorePage
++      deps.scrollToPage(restorePage)
++    },
++
++    beginProgramScroll(page) {
++      const pid = deps.getPaperId()
++      if (pid === null) return
++      const ps = paper(pid)
++      const cur = centerPage()
++      if (cur === page) {
++        ps.state = 'idle' // 就位快径：已在目标页（夹取后同页）免程序滚
++        ps.target = null
++      } else {
++        ps.state = 'restoring'
++        ps.target = page
++      }
++      pending[pid] = page // 拆链对齐：程序跳页同旧 setPage 一切来源入账
++      arm()
++    },
++
++    flushPending(pid) {
++      const page = pending[pid]
++      if (page === undefined) return
++      delete pending[pid]
++      void saveOne(pid, page)
++    },
++
++    flushAll() {
++      flushLedger()
++    },
++
++    stateOf(pid) {
++      return paper(pid).state
++    },
++
++    pendingOf(pid) {
++      return pending[pid]
++    },
++
++    dispose() {
++      if (timer !== null) {
++        deps.timers.clearTimeout(timer)
++        timer = null
++      }
++      flushLedger() // 尾账收口（卸载/切视图——进度尽力而为不丢）
++    }
++  }
++}
++
++/** 装配工厂：真实 deps（store/api 直连 + scrollAreaRef 量测页盒几何） */
++export function createReaderScrollProgress(
++  scrollArea: RefObject<HTMLDivElement | null>
++): ScrollProgress {
++  return createScrollProgress({
++    getPaperId: () => useReaderStore.getState().activeId,
++    getViewport: () => {
++      const el = scrollArea.current
++      return el === null ? null : { scrollTop: el.scrollTop, clientHeight: el.clientHeight }
++    },
++    getPageBoxes: () => {
++      const el = scrollArea.current
++      if (el === null) return []
++      const base = el.getBoundingClientRect()
++      return Array.from(el.querySelectorAll<HTMLElement>('[data-page-box]')).map((box) => {
++        const r = box.getBoundingClientRect()
++        return { top: r.top - base.top + el.scrollTop, height: r.height }
++      })
++    },
++    // 程序滚动单口=store setPage 默认 'to'（INV-29 信号→PageColumn 段⑤执行）
++    scrollToPage: (page) => useReaderStore.getState().setPage(page),
++    setPage: (page, opts) => useReaderStore.getState().setPage(page, opts),
++    saveProgress: (paperId, page) => api.reader.saveProgress({ paperId, page }).then(() => undefined),
++    now: () => Date.now(),
++    timers: {
++      setTimeout: (fn, ms) => setTimeout(fn, ms),
++      clearTimeout: (h) => clearTimeout(h as ReturnType<typeof setTimeout>)
++    }
++  })
++}
++
++/**
++ * 装配效应集（ReaderPage 组合根消费；wheel/pointerdown 接管经 JSX 内联 prop，
++ * keydown 因 keymap 全局而挂 document）：
++ * - flusher 注册/注销成对（store.closeTab/close 经回调立即收账——拆链接线）；
++ * - 换文献 beginLoading；scrollRequest（程序跳页/恢复）→beginProgramScroll。
++ */
++export function useScrollProgressWiring(
++  sp: ScrollProgress,
++  fileUrl: string | null,
++  paperId: string | null,
++  columnScroll: { page: number } | null
++): void {
++  const register = useReaderStore((s) => s.registerProgressFlusher)
++  useEffect(() => {
++    register({ flush: (pid) => sp.flushPending(pid), flushAll: () => sp.flushAll() })
++    return () => {
++      register(null)
++      sp.dispose()
++    }
++  }, [register, sp])
++  useEffect(() => {
++    // 换文献/首开：丢弃旧页文本后进入 loading（页列就绪前 scroll 不记账）
++    if (paperId !== null) sp.beginLoading(paperId)
++  }, [fileUrl, paperId, sp])
++  useEffect(() => {
++    // 程序滚动信号（INV-29 'to' bump）：restoring 跟踪+程序跳页记账
++    if (columnScroll !== null) sp.beginProgramScroll(columnScroll.page)
++  }, [columnScroll, sp])
++  useEffect(() => {
++    // 用户接管三类信号之 keydown（wheel/pointerdown 在滚动容器 JSX prop 上）；
++    // passive 观察，不拦截默认行为
++    const onKey = (): void => sp.onUserTakeover()
++    document.addEventListener('keydown', onKey)
++    return () => document.removeEventListener('keydown', onKey)
++  }, [sp])
++}
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index a1d7c70..b607fb1 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -343,6 +343,98 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/
+   await app.close().catch(() => undefined)
+ })
+ 
++/** F-03 批 3 依赖：渲染链 + 页列（F-01）+ tab 骨架（关 tab flush）+ 本单 */
++const F03_DEPS = [...DEPS, 'SR2-F-01', 'SR2-TABS-01', 'SR2-F-03'] as const
++
++test('F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚动不闪收', async () => {
++  skipIfPending(F03_DEPS)
++  const userData = await mkdtemp(join(tmpdir(), 'synapse-f03-'))
++  // 第一跳：建库迁移
++  const seedApp = await launch(userData)
++  await (await seedApp.firstWindow()).waitForTimeout(500)
++  await seedApp.close()
++
++  // 3 页受管文件（批 1 配方——每页单行 P<n> KNOWN，ASCII 单 run 可 getByText 命中）
++  const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
++  const sha = createHash('sha256').update(bytes).digest('hex')
++  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
++  const abs = join(userData, 'files', ...fileRef.split('/'))
++  mkdirSync(dirname(abs), { recursive: true })
++  writeFileSync(abs, bytes)
++  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e F03 进度文献', 'e2e-seed-f03')
++
++  const app = await launch(userData)
++  const win = await app.firstWindow()
++  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
++  await win.getByText('智慧水务 e2e F03 进度文献').first().dblclick()
++  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
++
++  // 滚动容器读数（页列就绪后向上找 overflow-auto 容器——批 1 同口径）
++  const scrollTop = (): Promise<number> =>
++    win.evaluate(() => {
++      const col = document.querySelector('[data-page-column="ready"]')
++      return (col?.closest('.overflow-auto') as HTMLElement | null)?.scrollTop ?? -1
++    })
++  const clientH = (): Promise<number> =>
++    win.evaluate(() => {
++      const col = document.querySelector('[data-page-column="ready"]')
++      return (col?.closest('.overflow-auto') as HTMLElement | null)?.clientHeight ?? -1
++    })
++
++  // —— 键位滚动步：PageDown → scrollTop 前进 ≈ 视口高 90%（一屏−一行重叠）；
++  // 旧 setPage 翻页语义在此红（页码立即翻+盒顶对齐）——迁移后 tab 页码不动，
++  // 滚动量=0.9 视口 ——
++  const top0 = await scrollTop()
++  // 恢复链可能已把页 1 盒顶对齐视口顶（p-3 内边距 12px 计入 scrollTop——合法）
++  expect(top0).toBeLessThan(50)
++  const vh = await clientH()
++  expect(vh).toBeGreaterThan(200)
++  await win.keyboard.press('PageDown')
++  await expect.poll(scrollTop, { timeout: 3_000 }).toBeGreaterThan(top0 + vh * 0.8)
++  const stepped = await scrollTop()
++  expect(stepped, '滚动步不越一屏（步长=0.9 屏，非整页跳）').toBeLessThan(top0 + vh)
++  // 页码回写是防抖的：窗内 sr-only 页指示不翻（旧语义此刻已翻第 2 页）
++  await expect(win.getByText('当前第 1 页')).toBeVisible()
++
++  // —— 滚到第 2 页（IntersectionObserver 懒渲染入视口）——
++  await win.evaluate(() => {
++    const col = document.querySelector('[data-page-column="ready"]')
++    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
++    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
++  })
++  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
++
++  // —— N4（F-02 门一并入）：划选第 2 页 → 工具条出现 → 上滚使锚定页（首可见页）
++  // 翻回第 1 页 —— 挂载盒稳定化后工具条不闪收（旧挂载位重挂=工具条消失）——
++  const known2 = win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()
++  await known2.selectText()
++  const toolbar = win.getByTestId('selection-toolbar')
++  await expect(toolbar).toBeVisible()
++  await win.evaluate(() => {
++    const col = document.querySelector('[data-page-column="ready"]')
++    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
++    if (scroller !== null) scroller.scrollTop = Math.max(0, scroller.scrollTop - 400)
++  })
++  await expect(toolbar).toBeVisible({ timeout: 3_000 })
++
++  // —— 滚动→关→重开=恢复页（pending 经关 tab flush 落库；重开走恢复链滚回记忆页）——
++  await win.evaluate(() => {
++    const col = document.querySelector('[data-page-column="ready"]')
++    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
++    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
++  })
++  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
++  const tabBar = win.getByRole('tablist', { name: '打开的文献' })
++  await tabBar.getByRole('tab').first().getByRole('button').click()
++  await expect(tabBar.getByRole('tab')).toHaveCount(0) // 空态回收（TabBar 保留）
++  await win.getByRole('button', { name: '文献库' }).click()
++  await win.getByText('智慧水务 e2e F03 进度文献').first().dblclick()
++  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
++  await expect(win.getByText('当前第 2 页')).toBeVisible()
++  await expect.poll(scrollTop, { timeout: 3_000 }).toBeGreaterThan(100) // 真实滚回非仅标签
++  await app.close()
++})
++
+ /** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */
+ async function seedAndLaunch(title: string): Promise<{ app: ElectronApplication; userData: string }> {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 440e6f0..a8591f2 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -265,3 +265,40 @@ describe('anchor-locate F-02 页限定（多页列）', () => {
+     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
+   })
+ })
++
++// ── F-03 W3 并入裁决（F-02 门一）：回退分支「全局第一」收紧「全局唯一」──
++// always-active（ADR-0017 裁决 3）。页盒缺席（anchorPage 超界/数据损坏）时，
++// >1 个 textLayer 无法确定目标页——不取第一（防邻页误 exact），按 page 层降级。
++describe('anchor-locate F-03 回退全局唯一（W3）', () => {
++  /** 无页盒的两层文本层（anchorPage+1 页盒不存在——超界形态） */
++  function mountBareLayers(texts: ReadonlyArray<string>): void {
++    for (const t of texts) {
++      const root = document.createElement('div')
++      root.innerHTML = `<div class="textLayer"><span>${t}</span></div>`
++      document.body.appendChild(root)
++    }
++  }
++
++  it('S12a 页盒缺席+恰好一个 textLayer：回退可用（单页宿主兼容保持）', async () => {
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
++    mountBareLayers(['unique quote target'])
++    mountAnchorEl('a-12')
++    const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-12', anchor: anchorOf('unique quote', 99) })
++    expect(r).toBe('exact')
++    expect(scrollIntoView).toHaveBeenCalled()
++  })
++
++  it('S12b 页盒缺席+两个 textLayer：不取第一（全局唯一收紧）——首个含引文也按 page 降级+提示', async () => {
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
++    mountBareLayers(['target quote here', 'other page body'])
++    const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('target quote', 99) })
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(3200)
++    })
++    const r = await p
++    // 全局第一实现会命中第一层误 exact；全局唯一收紧后 3s 轮询超时→page 降级
++    expect(r).toBe('page')
++    expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
++    expect(scrollIntoView).not.toHaveBeenCalled()
++  })
++})
+diff --git a/tests/unit/renderer/reader-shortcuts.test.tsx b/tests/unit/renderer/reader-shortcuts.test.tsx
+index ad528cb..696592f 100644
+--- a/tests/unit/renderer/reader-shortcuts.test.tsx
++++ b/tests/unit/renderer/reader-shortcuts.test.tsx
+@@ -1,9 +1,10 @@
+ // @vitest-environment jsdom
+-import { afterEach, expect, it, vi } from 'vitest'
++import { afterEach, describe, expect, it, vi } from 'vitest'
+ import { act } from 'react'
+ import { createRoot } from 'react-dom/client'
+ import {
+   useReaderShortcuts,
++  SCROLL_STEP_RATIO,
+   type ReaderShortcutActions
+ } from '../../../src/renderer/features/reader/ReaderShortcuts'
+ import { guardedDescribe } from '../../utils/guard'
+@@ -67,6 +68,7 @@ function makeActions() {
+   return {
+     prevPage: vi.fn(),
+     nextPage: vi.fn(),
++    spaceScroll: vi.fn(),
+     zoomStep: vi.fn(),
+     undo: vi.fn()
+   }
+@@ -209,3 +211,31 @@ guardedDescribe('SR2-KEY-02', 'ReaderShortcuts —— 阅读器快捷键与滚
+     }
+   })
+ })
++
++// ── F-03 键位迁移（滚动步+空格；always-active——ADR-0017 裁决 3）──
++
++describe('ReaderShortcuts F-03 键位迁移（滚动步+空格下滚一屏）', () => {
++  it('空格：触发下滚一屏动作+preventDefault（统一滚动步长，阻断原生空格滚动）', () => {
++    const a = makeActions()
++    const unmount = mountShortcuts(a)
++    const ev = key(document, { key: ' ' })
++    expect(a.spaceScroll).toHaveBeenCalledTimes(1)
++    expect(ev.defaultPrevented).toBe(true)
++    unmount()
++  })
++
++  it('空格 editable 避让（既有 keymap 层保障）：textarea 内不接管，原生输入透传', () => {
++    const a = makeActions()
++    const unmount = mountShortcuts(a)
++    const ta = document.createElement('textarea')
++    document.body.appendChild(ta)
++    const ev = key(ta, { key: ' ' })
++    expect(a.spaceScroll).not.toHaveBeenCalled()
++    expect(ev.defaultPrevented).toBe(false)
++    unmount()
++  })
++
++  it('滚动步常量：SCROLL_STEP_RATIO=0.9（一屏−一行重叠，票面定值）', () => {
++    expect(SCROLL_STEP_RATIO).toBe(0.9)
++  })
++})
+diff --git a/tests/unit/renderer/reader.store.test.ts b/tests/unit/renderer/reader.store.test.ts
+index 9d15e67..b724cd6 100644
+--- a/tests/unit/renderer/reader.store.test.ts
++++ b/tests/unit/renderer/reader.store.test.ts
+@@ -319,38 +319,43 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
+     expect(useStore.getState().order).toEqual([])
+   })
+ 
+-  // ── 进度防抖 per-tab 化：pending 集合 + closeTab flush ──
++  // ── 进度链拆离（F-03）：防抖/记账迁 scroll-progress，store 只留接线回归 ──
+ 
+-  it('进度 pending 集合：两 tab 各自翻页，防抖到点各自落库（换 tab 不误写不丢写）', async () => {
++  it('拆链（F-03）：setPage 不再自带防抖落库——翻页后 5s saveProgress 零调用', async () => {
+     vi.useFakeTimers()
+     const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk, saveProgress } })
+     await openReady(useStore, 'p-1')
+-    await openReady(useStore, 'p-2')
+-    // 回到 p-1 翻页，再切 p-2 翻页：两笔 pending（totalPages 先设，防 0 夹取锁页）
+-    useStore.getState().activateTab('p-1')
+     useStore.getState().setTotalPages(10)
+     useStore.getState().setPage(2)
+-    useStore.getState().activateTab('p-2')
+-    useStore.getState().setTotalPages(10)
+     useStore.getState().setPage(5)
+-    vi.advanceTimersByTime(2000)
+-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
+-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-2', page: 5 })
++    vi.advanceTimersByTime(5000)
++    expect(saveProgress).not.toHaveBeenCalled()
+   })
+ 
+-  it('closeTab flush：被关 tab 的 pending 进度立即落库（不等防抖窗口）', async () => {
+-    vi.useFakeTimers()
+-    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk, saveProgress } })
++  it('closeTab 接线（F-03）：被关 tab 经注册的进度 flusher 立即 flush（装配面注册）', async () => {
++    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+     await openReady(useStore, 'p-1')
+     await openReady(useStore, 'p-2')
+-    useStore.getState().activateTab('p-1')
+-    useStore.getState().setTotalPages(10)
+-    useStore.getState().setPage(2)
++    const flush = vi.fn()
++    useStore.getState().registerProgressFlusher({ flush, flushAll: vi.fn() })
+     useStore.getState().closeTab('p-1')
+-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
++    expect(flush).toHaveBeenCalledWith('p-1')
+     expect(useStore.getState().tabs['p-1']).toBeUndefined()
+   })
+ 
++  it('close() 接线（F-03）：全关时 flushAll 一次收账；未注册时 no-op 不炸', async () => {
++    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
++    useStore.getState().close() // 未注册：不炸
++    await openReady(useStore, 'p-1')
++    const flushAll = vi.fn()
++    useStore.getState().registerProgressFlusher({ flush: vi.fn(), flushAll })
++    useStore.getState().close()
++    expect(flushAll).toHaveBeenCalledTimes(1)
++    useStore.getState().registerProgressFlusher(null) // 注销成对
++    useStore.getState().close()
++    expect(flushAll).toHaveBeenCalledTimes(1)
++  })
++
+   // ── F-01 双源机制：setPage 第三参 scroll opts（INV-29 回归锚——'none' 不触发程序滚动）──
+ 
+   it("F-01：setPage 默认 scroll:'to'——写页+bump scrollRequest 程序滚动信号（paperId+夹取页+递增 seq）", async () => {

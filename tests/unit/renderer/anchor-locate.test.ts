@@ -265,3 +265,40 @@ describe('anchor-locate F-02 页限定（多页列）', () => {
     expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
   })
 })
+
+// ── F-03 W3 并入裁决（F-02 门一）：回退分支「全局第一」收紧「全局唯一」──
+// always-active（ADR-0017 裁决 3）。页盒缺席（anchorPage 超界/数据损坏）时，
+// >1 个 textLayer 无法确定目标页——不取第一（防邻页误 exact），按 page 层降级。
+describe('anchor-locate F-03 回退全局唯一（W3）', () => {
+  /** 无页盒的两层文本层（anchorPage+1 页盒不存在——超界形态） */
+  function mountBareLayers(texts: ReadonlyArray<string>): void {
+    for (const t of texts) {
+      const root = document.createElement('div')
+      root.innerHTML = `<div class="textLayer"><span>${t}</span></div>`
+      document.body.appendChild(root)
+    }
+  }
+
+  it('S12a 页盒缺席+恰好一个 textLayer：回退可用（单页宿主兼容保持）', async () => {
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+    mountBareLayers(['unique quote target'])
+    mountAnchorEl('a-12')
+    const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-12', anchor: anchorOf('unique quote', 99) })
+    expect(r).toBe('exact')
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('S12b 页盒缺席+两个 textLayer：不取第一（全局唯一收紧）——首个含引文也按 page 降级+提示', async () => {
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+    mountBareLayers(['target quote here', 'other page body'])
+    const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('target quote', 99) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3200)
+    })
+    const r = await p
+    // 全局第一实现会命中第一层误 exact；全局唯一收紧后 3s 轮询超时→page 降级
+    expect(r).toBe('page')
+    expect(toastSpy).toHaveBeenCalledWith('锚定失效，已定位到所在页', 'info')
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+})

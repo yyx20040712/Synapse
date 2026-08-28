@@ -343,6 +343,98 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 
   await app.close().catch(() => undefined)
 })
 
+/** F-03 批 3 依赖：渲染链 + 页列（F-01）+ tab 骨架（关 tab flush）+ 本单 */
+const F03_DEPS = [...DEPS, 'SR2-F-01', 'SR2-TABS-01', 'SR2-F-03'] as const
+
+test('F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚动不闪收', async () => {
+  skipIfPending(F03_DEPS)
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-f03-'))
+  // 第一跳：建库迁移
+  const seedApp = await launch(userData)
+  await (await seedApp.firstWindow()).waitForTimeout(500)
+  await seedApp.close()
+
+  // 3 页受管文件（批 1 配方——每页单行 P<n> KNOWN，ASCII 单 run 可 getByText 命中）
+  const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, '智慧水务 e2e F03 进度文献', 'e2e-seed-f03')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText('智慧水务 e2e F03 进度文献').first().dblclick()
+  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+
+  // 滚动容器读数（页列就绪后向上找 overflow-auto 容器——批 1 同口径）
+  const scrollTop = (): Promise<number> =>
+    win.evaluate(() => {
+      const col = document.querySelector('[data-page-column="ready"]')
+      return (col?.closest('.overflow-auto') as HTMLElement | null)?.scrollTop ?? -1
+    })
+  const clientH = (): Promise<number> =>
+    win.evaluate(() => {
+      const col = document.querySelector('[data-page-column="ready"]')
+      return (col?.closest('.overflow-auto') as HTMLElement | null)?.clientHeight ?? -1
+    })
+
+  // —— 键位滚动步：PageDown → scrollTop 前进 ≈ 视口高 90%（一屏−一行重叠）；
+  // 旧 setPage 翻页语义在此红（页码立即翻+盒顶对齐）——迁移后 tab 页码不动，
+  // 滚动量=0.9 视口 ——
+  const top0 = await scrollTop()
+  // 恢复链可能已把页 1 盒顶对齐视口顶（p-3 内边距 12px 计入 scrollTop——合法）
+  expect(top0).toBeLessThan(50)
+  const vh = await clientH()
+  expect(vh).toBeGreaterThan(200)
+  await win.keyboard.press('PageDown')
+  await expect.poll(scrollTop, { timeout: 3_000 }).toBeGreaterThan(top0 + vh * 0.8)
+  const stepped = await scrollTop()
+  expect(stepped, '滚动步不越一屏（步长=0.9 屏，非整页跳）').toBeLessThan(top0 + vh)
+  // 页码回写是防抖的：窗内 sr-only 页指示不翻（旧语义此刻已翻第 2 页）
+  await expect(win.getByText('当前第 1 页')).toBeVisible()
+
+  // —— 滚到第 2 页（IntersectionObserver 懒渲染入视口）——
+  await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
+  })
+  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
+
+  // —— N4（F-02 门一并入）：划选第 2 页 → 工具条出现 → 上滚使锚定页（首可见页）
+  // 翻回第 1 页 —— 挂载盒稳定化后工具条不闪收（旧挂载位重挂=工具条消失）——
+  const known2 = win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()
+  await known2.selectText()
+  const toolbar = win.getByTestId('selection-toolbar')
+  await expect(toolbar).toBeVisible()
+  await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (scroller !== null) scroller.scrollTop = Math.max(0, scroller.scrollTop - 400)
+  })
+  await expect(toolbar).toBeVisible({ timeout: 3_000 })
+
+  // —— 滚动→关→重开=恢复页（pending 经关 tab flush 落库；重开走恢复链滚回记忆页）——
+  await win.evaluate(() => {
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (scroller !== null) scroller.scrollTop = Math.round(scroller.scrollHeight / 3)
+  })
+  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
+  const tabBar = win.getByRole('tablist', { name: '打开的文献' })
+  await tabBar.getByRole('tab').first().getByRole('button').click()
+  await expect(tabBar.getByRole('tab')).toHaveCount(0) // 空态回收（TabBar 保留）
+  await win.getByRole('button', { name: '文献库' }).click()
+  await win.getByText('智慧水务 e2e F03 进度文献').first().dblclick()
+  await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+  await expect(win.getByText('当前第 2 页')).toBeVisible()
+  await expect.poll(scrollTop, { timeout: 3_000 }).toBeGreaterThan(100) // 真实滚回非仅标签
+  await app.close()
+})
+
 /** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */
 async function seedAndLaunch(title: string): Promise<{ app: ElectronApplication; userData: string }> {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))

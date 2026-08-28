@@ -33,10 +33,10 @@
  *        activeId=null（空态）；order 收缩序正确
  *     S3 加载中切换：open(A) loading → open(B) ready → A 响应迟到 → 只写入
  *        A 的 tab（B 展示不受干扰）；loading 中 close(A) → A 迟到响应丢弃（规则①）
- * - 进度防抖：PROGRESS_DEBOUNCE_MS=2000 单定时器 + pendingProgress 集合
- *   （Record<paperId, page>——多 tab 各自翻页各自落账，换 tab 不误写不丢写）；
- *   closeTab 时该 tab 的 pending 进度立即 flush（尽力而为，catch 吞——进度
- *   非关键数据，规约记录依据）
+ * - 进度防抖（F-03 拆链）：防抖定时器+pendingProgress 账本已整体迁
+ *   scroll-progress.ts（语义保持）；本 store 只留接线——progressFlusher
+ *   注册口（装配面 ReaderPage 注册/注销成对），closeTab 时 flush(paperId)、
+ *   close() 时 flushAll()（立即收账，尽力而为 catch 吞由消费方承载）
  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
  *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
  * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
@@ -90,10 +90,18 @@ export interface TabState {
   dirty: boolean
 }
 
+/** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
+export interface ProgressFlusher {
+  flush(paperId: string): void
+  flushAll(): void
+}
+
 export interface ReaderStore {
   tabs: Record<string, TabState>
   order: string[]
   activeId: string | null
+  progressFlusher: ProgressFlusher | null
+  registerProgressFlusher(f: ProgressFlusher | null): void
   /** 程序跳页滚动信号（F-01 双源机制/INV-29）：setPage 默认（scroll:'to'）时
    *  bump——消费者（ReaderPage→PageColumn.scrollToPage 单口）据此程序滚动到
    *  盒顶；{scroll:'none'}（滚动位置回写）不 bump，防回弹死循环 */
@@ -134,14 +142,12 @@ export function createReaderStoreInitialState() {
     tabs: {} as Record<string, TabState>,
     order: [] as string[],
     activeId: null as string | null,
+    progressFlusher: null as ProgressFlusher | null,
     scrollRequest: null as { paperId: string; page: number; seq: number } | null,
     noteHighlight: null as { annotationId: string; seq: number } | null,
     aiNoteHighlight: null as { aiNoteId: string; seq: number } | null
   }
 }
-
-/** 进度防抖窗口：翻页后静置 2s 才落库（与 ReaderPage 规约一致） */
-const PROGRESS_DEBOUNCE_MS = 2000
 
 /** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading） */
 function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
@@ -170,40 +176,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
   let loadSeq = 0
   const tabLoadSeq = new Map<string, number>()
   const inflightOpen = new Map<string, Promise<void>>()
-  let progressTimer: ReturnType<typeof setTimeout> | null = null
-  /** 待落库进度集合：paperId → 最近翻到的页（多 tab 各自记账，到点批量落库） */
-  let pendingProgress: Record<string, number> = {}
 
   /** 本次响应是否仍是该 tab 的最新加载（规则①②判定：tab 已关或已被新一轮顶替即过期） */
   const isCurrentLoad = (paperId: string, seq: number): boolean => {
     return get().tabs[paperId] !== undefined && tabLoadSeq.get(paperId) === seq
-  }
-
-  const flushProgress = (paperId: string, page: number): void => {
-    // 防抖落库失败不上抛：进度属尽力而为，不打断阅读（下次翻页会再试）
-    void api.reader.saveProgress({ paperId, page }).catch(() => undefined)
-  }
-
-  const flushAllPending = (): void => {
-    for (const [pid, page] of Object.entries(pendingProgress)) {
-      flushProgress(pid, page)
-    }
-    pendingProgress = {}
-  }
-
-  const clearProgressTimer = (): void => {
-    if (progressTimer !== null) {
-      clearTimeout(progressTimer)
-      progressTimer = null
-    }
-  }
-
-  const scheduleProgress = (): void => {
-    clearProgressTimer()
-    progressTimer = setTimeout(() => {
-      progressTimer = null
-      flushAllPending()
-    }, PROGRESS_DEBOUNCE_MS)
   }
 
   /** 作用于 active tab 的统一入口（activeId=null 时 no-op——空态规约） */
@@ -215,14 +191,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     set({ tabs: { ...tabs, [activeId]: fn(tab) } })
   }
 
-  /** 关单个 tab：pending 进度立即 flush；关 active 时收缩到右邻（无右邻左邻，全空 null） */
+  /** 关单个 tab：进度账立即 flush（F-03 接线）；关 active 时收缩到右邻（无右邻左邻，全空 null） */
   const closeOne = (id: string): void => {
     // 该 tab 的 pending 进度立即落库（关 tab 后无人再等防抖窗口）
-    const pending = pendingProgress[id]
-    if (pending !== undefined) {
-      flushProgress(id, pending)
-      delete pendingProgress[id]
-    }
+    get().progressFlusher?.flush(id)
     tabLoadSeq.delete(id)
     inflightOpen.delete(id)
     // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
@@ -239,12 +211,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     set({ tabs: nextTabs, order: nextOrder, activeId: nextActive })
   }
 
-  /** 关闭全部（App 切视图/全关语义）：全部 pending 进度落账后整体复位 */
+  /** 关闭全部（App 切视图/全关语义）：全部进度账落账后整体复位 */
   const closeAll = (): void => {
-    flushAllPending()
+    get().progressFlusher?.flushAll()
     tabLoadSeq.clear()
     inflightOpen.clear()
-    clearProgressTimer()
     set(createReaderStoreInitialState())
   }
 
@@ -317,6 +288,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       set({ activeId: id })
     },
 
+    registerProgressFlusher(f) {
+      set({ progressFlusher: f })
+    },
+
     closeTab(id) {
       closeOne(id)
     },
@@ -341,8 +316,8 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
           ? { scrollRequest: { paperId: activeId, page: clamped, seq: (s.scrollRequest?.seq ?? 0) + 1 } }
           : {})
       }))
-      pendingProgress[activeId] = clamped
-      scheduleProgress()
+      // 进度记账/防抖已拆至 scroll-progress（F-03）：程序跳页的入账由装配面
+      // beginProgramScroll（scrollRequest 消费）承载，滚动回写由状态机承载
     },
 
     setZoom(zoom) {

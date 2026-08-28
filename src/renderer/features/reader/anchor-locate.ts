@@ -63,6 +63,9 @@
  *   scrollRequest 信号→PageColumn.scrollToPage 目标页盒顶（F-01 已落）；文本
  *   层验证=目标页盒内限定（F-02）。后续仅换本文件滚动步实现，locateAnchor
  *   签名与消费方不动
+ * - W3（F-02 门一裁决，F-03 并入落实）：verifyWhenReady 回退分支「全局第一」
+ *   收紧「全局唯一」（querySelectorAll===1 才用；>1 不取第一——防 anchorPage
+ *   超界/数据损坏时邻页误 exact，继续轮询→超时按 page 层降级 toast）
  *
  * ── 生命周期层 ──
  * - 不做：定位动画队列/跨 tab 批量定位；P7-H 脉络侧板（N3）经本入口复用
@@ -166,7 +169,16 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
     if (locateSeq !== seq) return 'stale'
     if (useReaderStore.getState().tabs[paperId] === undefined) return 'stale'
     const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${(anchor.anchorPage ?? 0) + 1}"]`)
-    const textLayer = (pageRoot ?? document).querySelector('.textLayer') as HTMLElement | null
+    // W3（F-02 门一裁决，F-03 并入落实施）：页盒缺席的回退分支收紧「全局唯一」
+    // ——querySelectorAll 断言唯一，>1 不取第一（anchorPage 超界/数据损坏时无法
+    // 确定目标页，取第一=邻页误 exact），继续轮询直至超时按 page 层降级 toast
+    let textLayer: HTMLElement | null = null
+    if (pageRoot !== null) {
+      textLayer = pageRoot.querySelector('.textLayer') as HTMLElement | null
+    } else {
+      const all = document.querySelectorAll('.textLayer')
+      textLayer = all.length === 1 ? (all[0] as HTMLElement) : null
+    }
     if (textLayer !== null) {
       let at: number | null = null
       try {

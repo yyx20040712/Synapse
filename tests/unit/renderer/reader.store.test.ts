@@ -319,36 +319,41 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
     expect(useStore.getState().order).toEqual([])
   })
 
-  // ── 进度防抖 per-tab 化：pending 集合 + closeTab flush ──
+  // ── 进度链拆离（F-03）：防抖/记账迁 scroll-progress，store 只留接线回归 ──
 
-  it('进度 pending 集合：两 tab 各自翻页，防抖到点各自落库（换 tab 不误写不丢写）', async () => {
+  it('拆链（F-03）：setPage 不再自带防抖落库——翻页后 5s saveProgress 零调用', async () => {
     vi.useFakeTimers()
     const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk, saveProgress } })
     await openReady(useStore, 'p-1')
-    await openReady(useStore, 'p-2')
-    // 回到 p-1 翻页，再切 p-2 翻页：两笔 pending（totalPages 先设，防 0 夹取锁页）
-    useStore.getState().activateTab('p-1')
     useStore.getState().setTotalPages(10)
     useStore.getState().setPage(2)
-    useStore.getState().activateTab('p-2')
-    useStore.getState().setTotalPages(10)
     useStore.getState().setPage(5)
-    vi.advanceTimersByTime(2000)
-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-2', page: 5 })
+    vi.advanceTimersByTime(5000)
+    expect(saveProgress).not.toHaveBeenCalled()
   })
 
-  it('closeTab flush：被关 tab 的 pending 进度立即落库（不等防抖窗口）', async () => {
-    vi.useFakeTimers()
-    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk, saveProgress } })
+  it('closeTab 接线（F-03）：被关 tab 经注册的进度 flusher 立即 flush（装配面注册）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
     await openReady(useStore, 'p-1')
     await openReady(useStore, 'p-2')
-    useStore.getState().activateTab('p-1')
-    useStore.getState().setTotalPages(10)
-    useStore.getState().setPage(2)
+    const flush = vi.fn()
+    useStore.getState().registerProgressFlusher({ flush, flushAll: vi.fn() })
     useStore.getState().closeTab('p-1')
-    expect(saveProgress).toHaveBeenCalledWith({ paperId: 'p-1', page: 2 })
+    expect(flush).toHaveBeenCalledWith('p-1')
     expect(useStore.getState().tabs['p-1']).toBeUndefined()
+  })
+
+  it('close() 接线（F-03）：全关时 flushAll 一次收账；未注册时 no-op 不炸', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    useStore.getState().close() // 未注册：不炸
+    await openReady(useStore, 'p-1')
+    const flushAll = vi.fn()
+    useStore.getState().registerProgressFlusher({ flush: vi.fn(), flushAll })
+    useStore.getState().close()
+    expect(flushAll).toHaveBeenCalledTimes(1)
+    useStore.getState().registerProgressFlusher(null) // 注销成对
+    useStore.getState().close()
+    expect(flushAll).toHaveBeenCalledTimes(1)
   })
 
   // ── F-01 双源机制：setPage 第三参 scroll opts（INV-29 回归锚——'none' 不触发程序滚动）──
