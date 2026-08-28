@@ -210,6 +210,33 @@ body,
   background: var(--gold-soft);
 }
 
+/* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
+   筛选区|列表与详情空态、R3-U4 设置分节复用同一语法；线段 min-width 24px+
+   flex:1 窄窗防碰撞——设计定稿注意事项③）══ */
+.lib-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lib-rule-line {
+  flex: 1;
+  min-width: 24px;
+  height: 1px;
+}
+.lib-rule-line-l {
+  background: linear-gradient(90deg, transparent, var(--border-gold));
+}
+.lib-rule-line-r {
+  background: linear-gradient(90deg, var(--border-gold), transparent);
+}
+.lib-rule-gem {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
 /* ══ 脉络·命之座星象板（R2-LG9；视觉规范=docs/design/mockups/
    lineage-constellation.html 逐值誊录——夜幕 token 系 R3-TH1 预铺消费）══ */
 .lineage-night {

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T22:38:07.8074097Z",
+    "generatedAt":  "2026-08-28T23:27:56.9264457Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -336,6 +336,10 @@
                   {
                       "path":  "tests/unit/renderer/library.store.test.ts",
                       "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/library-cards.test.tsx",
+                      "sha256":  "124d240f0b7a78c9d0c1b766b47e0250ab9fde9128cf29d7d039ffae7cd9b540"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",

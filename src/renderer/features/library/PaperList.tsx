@@ -84,7 +84,7 @@ export function PaperList(props: {
       role="listbox"
       aria-label="文献列表"
       tabIndex={0}
-      className="h-full overflow-y-auto"
+      className="lib-grid h-full overflow-y-auto"
       onKeyDown={handleKeyDown}
     >
       {papers.map((paper) => {

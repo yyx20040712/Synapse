@@ -17,9 +17,10 @@
  * - 进度订阅在卸载时退订；busy 期间按钮禁点防重复发起
  */
 import { useEffect, useState } from 'react'
-import type { CSSProperties, DragEvent } from 'react'
+import type { DragEvent } from 'react'
 import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
 import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
+import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
 import type { ToastKind } from '../../shared/ui/Toast'
 
@@ -38,21 +39,6 @@ const PHASE_LABEL: Record<ImportProgressEvent['phase'], string> = {
 }
 
 type ImportMode = 'dialog' | 'folder'
-
-/** 主按钮（accent 底白字）；禁用态降不透明度 */
-const BTN_PRIMARY: CSSProperties = {
-  background: 'var(--accent)',
-  color: '#ffffff',
-  cursor: 'pointer'
-}
-
-/** 次按钮（panel 底 + 边框） */
-const BTN_SECONDARY: CSSProperties = {
-  background: 'var(--panel)',
-  color: 'var(--text)',
-  borderColor: 'var(--border)',
-  cursor: 'pointer'
-}
 
 /** 组装进度文案：阶段 + （current/total）+ 文件名 */
 function progressText(e: ImportProgressEvent): string {
@@ -123,41 +109,31 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
     showToast(DROP_HINT, 'info')
   }
 
-  const disabledStyle = busy ? { opacity: 0.6, cursor: 'not-allowed' } : {}
-
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-6"
-      style={{
-        borderColor: dragging ? 'var(--accent)' : 'var(--border)',
-        background: dragging ? 'var(--accent-soft)' : 'var(--panel)'
-      }}
+      className={`lib-dropzone flex flex-col items-center gap-3 p-6${dragging ? ' lib-dropzone-dragging' : ''}`}
     >
       <p className="text-sm" style={{ color: dragging ? 'var(--accent)' : 'var(--text-dim)' }}>
         {dragging ? DROP_HINT : '将 PDF 拖到此处，或使用按钮导入'}
       </p>
       <div className="flex gap-2">
-        <button
-          type="button"
+        <Button
+          variant="primary"
           disabled={busy}
           onClick={() => void runImport('dialog')}
-          className="rounded px-3 py-1.5 text-sm"
-          style={{ ...BTN_PRIMARY, ...disabledStyle }}
         >
           导入 PDF 文件
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
           disabled={busy}
           onClick={() => void runImport('folder')}
-          className="rounded border px-3 py-1.5 text-sm"
-          style={{ ...BTN_SECONDARY, ...disabledStyle }}
         >
           导入文件夹
-        </button>
+        </Button>
       </div>
       {busy && (
         <p role="status" className="text-xs" style={{ color: 'var(--text-dim)' }}>

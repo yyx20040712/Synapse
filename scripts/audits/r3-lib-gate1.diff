@@ -1,0 +1,841 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index c515e1a..cf9f6ea 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T22:38:07.8074097Z",
++    "generatedAt":  "2026-08-28T23:08:59.2376305Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -337,6 +337,10 @@
+                       "path":  "tests/unit/renderer/library.store.test.ts",
+                       "sha256":  "7595617418173bede13534fb4ac0509217fdd7639a325135d75cfa04bfe53f19"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/library-cards.test.tsx",
++                      "sha256":  "6ce38c19ba8b31e5c53de05dc5da85bcd657dfbb1215ba427b465912f2c2fa92"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
+                       "sha256":  "9ecbb920190433c2e074126ca6bf01d49e1280d7fc8f1b8e9d02649ddfdce624"
+diff --git a/src/renderer/features/library/FilterBar.tsx b/src/renderer/features/library/FilterBar.tsx
+index 8916253..76f1782 100644
+--- a/src/renderer/features/library/FilterBar.tsx
++++ b/src/renderer/features/library/FilterBar.tsx
+@@ -57,22 +57,19 @@ export function FilterBar(props: {
+   const years = Array.from(new Set(papers.map((p) => p.year).filter((y): y is number => y !== null))).sort(
+     (a, b) => b - a
+   )
+-  const selectStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
+ 
+   return (
+-    <div className="flex flex-col gap-2 rounded-lg border p-2" style={{ borderColor: 'var(--border)' }}>
++    <div className="flex flex-col gap-2">
+       <div className="flex flex-wrap items-center gap-2 text-xs">
+         <input
+           aria-label="搜索文献"
+-          className="w-56 rounded border px-2 py-1"
+-          style={selectStyle}
++          className="lib-chip w-56"
+           value={text}
+           onChange={(e) => setText(e.target.value)}
+         />
+         <select
+           aria-label="按集合筛选"
+-          className="rounded border px-1 py-1"
+-          style={selectStyle}
++          className="lib-chip"
+           value={query.collectionId ?? ''}
+           onChange={(e) => onChange({ collectionId: e.target.value === '' ? undefined : e.target.value })}
+         >
+@@ -85,8 +82,7 @@ export function FilterBar(props: {
+         </select>
+         <select
+           aria-label="按年份筛选"
+-          className="rounded border px-1 py-1"
+-          style={selectStyle}
++          className="lib-chip"
+           value={query.year ?? ''}
+           onChange={(e) => onChange({ year: e.target.value === '' ? undefined : Number(e.target.value) })}
+         >
+@@ -99,8 +95,7 @@ export function FilterBar(props: {
+         </select>
+         <select
+           aria-label="排序方式"
+-          className="rounded border px-1 py-1"
+-          style={selectStyle}
++          className="lib-chip"
+           value={query.sort}
+           onChange={(e) => onChange({ sort: e.target.value as LibrarySort })}
+         >
+diff --git a/src/renderer/features/library/ImportDropZone.tsx b/src/renderer/features/library/ImportDropZone.tsx
+index 35c014d..741742d 100644
+--- a/src/renderer/features/library/ImportDropZone.tsx
++++ b/src/renderer/features/library/ImportDropZone.tsx
+@@ -17,9 +17,10 @@
+  * - 进度订阅在卸载时退订；busy 期间按钮禁点防重复发起
+  */
+ import { useEffect, useState } from 'react'
+-import type { CSSProperties, DragEvent } from 'react'
++import type { DragEvent } from 'react'
+ import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
+ import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
++import { Button } from '../../shared/ui/Button'
+ import { showToast } from '../../shared/ui/Toast'
+ import type { ToastKind } from '../../shared/ui/Toast'
+ 
+@@ -39,21 +40,6 @@ const PHASE_LABEL: Record<ImportProgressEvent['phase'], string> = {
+ 
+ type ImportMode = 'dialog' | 'folder'
+ 
+-/** 主按钮（accent 底白字）；禁用态降不透明度 */
+-const BTN_PRIMARY: CSSProperties = {
+-  background: 'var(--accent)',
+-  color: '#ffffff',
+-  cursor: 'pointer'
+-}
+-
+-/** 次按钮（panel 底 + 边框） */
+-const BTN_SECONDARY: CSSProperties = {
+-  background: 'var(--panel)',
+-  color: 'var(--text)',
+-  borderColor: 'var(--border)',
+-  cursor: 'pointer'
+-}
+-
+ /** 组装进度文案：阶段 + （current/total）+ 文件名 */
+ function progressText(e: ImportProgressEvent): string {
+   const pos = e.total > 0 ? `（${e.current}/${e.total}）` : ''
+@@ -123,41 +109,31 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
+     showToast(DROP_HINT, 'info')
+   }
+ 
+-  const disabledStyle = busy ? { opacity: 0.6, cursor: 'not-allowed' } : {}
+-
+   return (
+     <div
+       onDragOver={handleDragOver}
+       onDragLeave={() => setDragging(false)}
+       onDrop={handleDrop}
+-      className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-6"
+-      style={{
+-        borderColor: dragging ? 'var(--accent)' : 'var(--border)',
+-        background: dragging ? 'var(--accent-soft)' : 'var(--panel)'
+-      }}
++      className={`lib-dropzone flex flex-col items-center gap-3 p-6${dragging ? ' lib-dropzone-dragging' : ''}`}
+     >
+       <p className="text-sm" style={{ color: dragging ? 'var(--accent)' : 'var(--text-dim)' }}>
+         {dragging ? DROP_HINT : '将 PDF 拖到此处，或使用按钮导入'}
+       </p>
+       <div className="flex gap-2">
+-        <button
+-          type="button"
++        <Button
++          variant="primary"
+           disabled={busy}
+           onClick={() => void runImport('dialog')}
+-          className="rounded px-3 py-1.5 text-sm"
+-          style={{ ...BTN_PRIMARY, ...disabledStyle }}
+         >
+           导入 PDF 文件
+-        </button>
+-        <button
+-          type="button"
++        </Button>
++        <Button
++          variant="secondary"
+           disabled={busy}
+           onClick={() => void runImport('folder')}
+-          className="rounded border px-3 py-1.5 text-sm"
+-          style={{ ...BTN_SECONDARY, ...disabledStyle }}
+         >
+           导入文件夹
+-        </button>
++        </Button>
+       </div>
+       {busy && (
+         <p role="status" className="text-xs" style={{ color: 'var(--text-dim)' }}>
+diff --git a/src/renderer/features/library/LibraryPage.tsx b/src/renderer/features/library/LibraryPage.tsx
+index 27c59d0..9958a7f 100644
+--- a/src/renderer/features/library/LibraryPage.tsx
++++ b/src/renderer/features/library/LibraryPage.tsx
+@@ -22,12 +22,15 @@
+ import { useEffect, useState } from 'react'
+ import { api, unwrap, ApiClientError } from '../../api/client'
+ import { useAsync } from '../../shared/hooks/useAsync'
++import { DiamondRule } from '../../shared/ui/DiamondRule'
+ import { showToast } from '../../shared/ui/Toast'
+ import { FilterBar } from './FilterBar'
+ import { ImportDropZone } from './ImportDropZone'
+ import { PaperDetailPanel } from './PaperDetailPanel'
+ import { PaperList } from './PaperList'
+ import { useLibraryStore } from './library.store'
++// R3-U2 文献库皮肤（lib-* 类唯一挂载点——feature 树全件共享）
++import './library.css'
+ 
+ export function LibraryPage(): JSX.Element {
+   const papers = useLibraryStore((s) => s.papers)
+@@ -94,6 +97,8 @@ export function LibraryPage(): JSX.Element {
+           </button>
+         </div>
+       )}
++      {/* R3-U2 菱形分隔：筛选区与列表之间（渐隐线+◆+渐隐线——装饰层） */}
++      <DiamondRule />
+       <div className="flex min-h-0 flex-1 gap-2">
+         <div className="flex min-w-0 flex-1 flex-col">
+           {loading && (
+@@ -103,7 +108,7 @@ export function LibraryPage(): JSX.Element {
+           )}
+           <PaperList papers={papers} selectedId={selectedId} onSelect={selectPaper} onOpen={openPaper} />
+         </div>
+-        <aside className="w-80 shrink-0 overflow-auto">
++        <aside className="lib-detail-aside w-80 shrink-0 overflow-auto">
+           <PaperDetailPanel paperId={selectedId} />
+         </aside>
+       </div>
+diff --git a/src/renderer/features/library/PaperDetailPanel.tsx b/src/renderer/features/library/PaperDetailPanel.tsx
+index 383e4e5..67382cd 100644
+--- a/src/renderer/features/library/PaperDetailPanel.tsx
++++ b/src/renderer/features/library/PaperDetailPanel.tsx
+@@ -54,14 +54,14 @@ const ENRICH_LABEL: Record<EnrichStatus, string> = {
+   manual: '手动维护'
+ }
+ 
+-/** 一行键值（label 固定宽，值可换行） */
+-function Row(props: { label: string; children: string }): JSX.Element {
++/** 一行键值（label 固定宽，值可换行；serif=衬线大字值——年份/被引数行） */
++function Row(props: { label: string; serif?: boolean; children: string }): JSX.Element {
+   return (
+     <p className="flex gap-2 text-xs leading-5">
+-      <span className="w-14 shrink-0" style={{ color: 'var(--text-dim)' }}>
+-        {props.label}
++      <span className="lib-detail-k w-14 shrink-0">{props.label}</span>
++      <span className={`min-w-0 break-words${props.serif === true ? ' lib-detail-v-serif' : ''}`}>
++        {props.children || '—'}
+       </span>
+-      <span className="min-w-0 break-words">{props.children || '—'}</span>
+     </p>
+   )
+ }
+@@ -176,19 +176,19 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
+           </button>
+         </div>
+       )}
+-      <h2 className="text-sm font-medium leading-5">{detail.title}</h2>
++      <h2 className="lib-detail-title">{detail.title}</h2>
+       <div className="flex flex-col gap-1">
+         <Row label="作者">{detail.authors.join('、')}</Row>
+-        <Row label="年份">{detail.year === null ? '' : String(detail.year)}</Row>
++        <Row label="年份" serif>{detail.year === null ? '' : String(detail.year)}</Row>
+         <Row label="期刊">{detail.venue}</Row>
+-        <Row label="被引">{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
++        <Row label="被引" serif>{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
+         <Row label="来源">{SOURCE_LABEL[detail.source]}</Row>
+         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
+         <Row label="DOI">{detail.doi ?? ''}</Row>
+         <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
+       </div>
+       {detail.abstract !== '' && (
+-        <p className="line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
++        <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
+           {detail.abstract}
+         </p>
+       )}
+diff --git a/src/renderer/features/library/PaperList.tsx b/src/renderer/features/library/PaperList.tsx
+index 2def443..ba48530 100644
+--- a/src/renderer/features/library/PaperList.tsx
++++ b/src/renderer/features/library/PaperList.tsx
+@@ -84,7 +84,7 @@ export function PaperList(props: {
+       role="listbox"
+       aria-label="文献列表"
+       tabIndex={0}
+-      className="h-full overflow-y-auto"
++      className="lib-grid h-full overflow-y-auto"
+       onKeyDown={handleKeyDown}
+     >
+       {papers.map((paper) => {
+diff --git a/src/renderer/features/library/PaperRow.tsx b/src/renderer/features/library/PaperRow.tsx
+index 2e862ae..eaa41a2 100644
+--- a/src/renderer/features/library/PaperRow.tsx
++++ b/src/renderer/features/library/PaperRow.tsx
+@@ -1,42 +1,24 @@
+ /**
+- * [SR-LIB-03] PaperRow —— 文献行（已实现）
++ * [SR-LIB-03] PaperRow —— 文献卡（R3-LIB 行→卡重制；交互/文案契约不变）
+  *
+  * ── 行为层 ──
+- * - 一行显示：标题（截断）/ 首作者 et al. / 年份 / 期刊 / 标签徽标（前 3 个）
++ * - 一卡显示：衬线年份 + 题名（两行截断 min-height）/ 期刊斜体（空隐藏）/
++ *   标签胶囊（前 3 个）/ meta 行（作者 · 标注 · 笔记，tabular-nums）
+  * - 选中态样式；双击进入阅读器（onOpen 回调）
++ * - L 角饰为纯装饰（aria-hidden，hover 金显形——样式在 library.css）
+  *
+  * ── 接口层 ──
+  * - export function PaperRow(props: { paper: PaperSummary; selected: boolean;
+  *     onClick(): void; onOpen(): void }): JSX.Element
+  *
+  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
+- * - 纯展示；无网络无 store
++ * - 纯展示；无网络无 store；皮肤=library.css .lib-card 系类（token 单源）
+  */
+-import type { CSSProperties } from 'react'
+ import type { PaperSummary } from '@shared/models/paper'
+ 
+ /** 标签徽标最多展示个数，超出折叠为 +N */
+ const MAX_TAG_BADGES = 3
+ 
+-/** 普通行：面板底 + 常规描边（取色于 theme.css 主题变量） */
+-const ROW_STYLE: CSSProperties = {
+-  background: 'var(--panel)',
+-  borderColor: 'var(--border)'
+-}
+-
+-/** 选中行：强调浅底 + 强调描边 */
+-const ROW_SELECTED_STYLE: CSSProperties = {
+-  background: 'var(--accent-soft)',
+-  borderColor: 'var(--accent)'
+-}
+-
+-/** 标签徽标：弱化展示，在选中行的浅底上仍可分辨 */
+-const TAG_BADGE_STYLE: CSSProperties = {
+-  background: 'var(--panel)',
+-  borderColor: 'var(--border)',
+-  color: 'var(--text-dim)'
+-}
+-
+ /** 作者摘要：首个作者 + et al.；无作者回退为「佚名」 */
+ function formatAuthors(authors: readonly string[]): string {
+   const first = authors[0]?.trim() ?? ''
+@@ -44,15 +26,6 @@ function formatAuthors(authors: readonly string[]): string {
+   return authors.length > 1 ? `${first} et al.` : first
+ }
+ 
+-/** 元信息行：作者 · 年份 · 期刊；空值项直接跳过（年份可空、期刊可空串） */
+-function formatMetaLine(paper: PaperSummary): string {
+-  const parts = [formatAuthors(paper.authors)]
+-  if (paper.year !== null) parts.push(String(paper.year))
+-  const venue = paper.venue.trim()
+-  if (venue !== '') parts.push(venue)
+-  return parts.join(' · ')
+-}
+-
+ export function PaperRow(props: {
+   paper: PaperSummary
+   selected: boolean
+@@ -61,6 +34,7 @@ export function PaperRow(props: {
+ }): JSX.Element {
+   const { paper, selected } = props
+   const title = paper.title.trim() === '' ? '（无标题）' : paper.title
++  const venue = paper.venue.trim()
+   // 过滤空白标签名后截前 N 个；剩余数量折叠为 +N 徽标
+   const tagNames = paper.tagNames.filter((name) => name.trim() !== '')
+   const shownTags = tagNames.slice(0, MAX_TAG_BADGES)
+@@ -73,33 +47,32 @@ export function PaperRow(props: {
+       title={title}
+       onClick={props.onClick}
+       onDoubleClick={props.onOpen}
+-      className="block w-full select-none rounded border px-3 py-2 text-left transition-colors"
+-      style={selected ? ROW_SELECTED_STYLE : ROW_STYLE}
++      className={`lib-card block w-full select-none text-left${selected ? ' lib-card-selected' : ''}`}
+     >
+-      <span className="block truncate text-sm font-medium" style={{ color: 'var(--text)' }}>
+-        {title}
+-      </span>
+-      <span className="mt-0.5 block truncate text-xs" style={{ color: 'var(--text-dim)' }}>
+-        {formatMetaLine(paper)}
++      <span className="lib-corner lib-corner-tl" aria-hidden="true" />
++      <span className="lib-corner lib-corner-br" aria-hidden="true" />
++      <span className="lib-card-row1">
++        <span className="lib-card-year">{paper.year === null ? '—' : paper.year}</span>
++        <span className="lib-card-title" style={{ color: 'var(--text)' }}>
++          {title}
++        </span>
+       </span>
++      {venue !== '' && <span className="lib-card-venue">{venue}</span>}
+       {shownTags.length > 0 && (
+-        <span className="mt-1.5 flex flex-wrap gap-1">
++        <span className="lib-card-tags">
+           {shownTags.map((name) => (
+-            <span
+-              key={name}
+-              className="rounded border px-1.5 py-0.5 text-xs leading-none"
+-              style={TAG_BADGE_STYLE}
+-            >
++            <span key={name} className="lib-tag">
+               {name}
+             </span>
+           ))}
+-          {hiddenTagCount > 0 && (
+-            <span className="self-center text-xs leading-none" style={{ color: 'var(--text-dim)' }}>
+-              +{hiddenTagCount}
+-            </span>
+-          )}
++          {hiddenTagCount > 0 && <span className="lib-card-tagmore">+{hiddenTagCount}</span>}
+         </span>
+       )}
++      <span className="lib-card-meta">
++        <span>{formatAuthors(paper.authors)}</span>
++        <span>{`标注 ${paper.annotationCount}`}</span>
++        <span>{`笔记 ${paper.noteCount}`}</span>
++      </span>
+     </button>
+   )
+ }
+=== NEW FILE: src/renderer/features/library/library.css ===
+/* ══ R3-U2 文献库皮肤（shell-library.html .list/.card/.filterbar/.chip 段誊录）══
+   卡片网格+渐变材质+L 角饰+菱形分隔+筛选 chips；token 全走 theme.css :root 单源
+   （禁散落硬编码色值）。由 LibraryPage.tsx import（feature 树唯一挂载点）。 */
+
+/* 文献卡网格：auto-fill 自适应列（窄窗单列、宽窗多列） */
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.lib-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  /* 渐变+inset 顶高光（mockup .card 材质三件套之二）；背景裁到 padding-box——
+     渐变端点与 border 交界处亚像素缝隙锁（设计定稿注意事项②） */
+  background: linear-gradient(168deg, #fffdf9 0%, var(--panel) 40%, #fdfaf3 100%);
+  background-clip: padding-box;
+  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
+}
+.lib-card:hover {
+  box-shadow: var(--shadow-2);
+  border-color: var(--border-gold);
+  transform: translateY(-1px);
+}
+.lib-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* 选中卡：accent 浅底+描边（渐变材质让位，保持选中态唯一性） */
+.lib-card-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+/* L 形金角饰（hover 显形——mockup 伪元素改实 span：jsdom 可断言） */
+.lib-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.lib-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: var(--radius-l) 0 0 0;
+}
+.lib-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 var(--radius-l) 0;
+}
+.lib-card:hover .lib-corner {
+  opacity: 0.9;
+  border-color: var(--gold);
+}
+/* 卡内排版：衬线年份+两行截断题名+斜体 venue+6px 胶囊标签+tabular-nums meta */
+.lib-card-row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.lib-card-year {
+  flex: none;
+  min-width: 44px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--gold);
+}
+.lib-card-title {
+  min-height: 38px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lib-card-venue {
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.lib-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.lib-tag {
+  font-size: 10.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 1px 9px;
+}
+.lib-card-tagmore {
+  align-self: center;
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+.lib-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+/* 筛选 chips：搜索框/下拉统一胶囊语法（mockup .chip/.search） */
+.lib-chip {
+  font-size: 12px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--panel-glass);
+  box-shadow: var(--shadow-1);
+}
+.lib-chip:focus-visible {
+  outline: 1px solid var(--accent);
+}
+/* 菱形分隔线（渐隐线+◆+渐隐线）；线段 min-width 24px+flex:1——窄窗防碰撞
+   （设计定稿注意事项③：窗口收窄时线先收、◆永不与内容挤压） */
+.lib-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lib-rule-line {
+  flex: 1;
+  min-width: 24px;
+  height: 1px;
+}
+.lib-rule-line-l {
+  background: linear-gradient(90deg, transparent, var(--border-gold));
+}
+.lib-rule-line-r {
+  background: linear-gradient(90deg, var(--border-gold), transparent);
+}
+.lib-rule-gem {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+/* ImportDropZone：虚线金框+拖入金辉 */
+.lib-dropzone {
+  border: 1px dashed var(--border-gold);
+  border-radius: var(--radius-l);
+  background: var(--panel);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.lib-dropzone-dragging {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft), var(--shadow-2);
+}
+/* 详情栏：纸面卡+衬线标题/年份值+分节 hairline（mockup aside 段） */
+.lib-detail-aside {
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+}
+.lib-detail-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.lib-detail-k {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.lib-detail-v-serif {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gold);
+}
+.lib-detail-abs {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+=== NEW FILE: src/renderer/shared/ui/DiamondRule.tsx ===
+/**
+ * DiamondRule —— 菱形分隔线（R3 菱形语法：渐隐线+◆+渐隐线）。
+ *
+ * ── 行为层 ──
+ * - 纯装饰分隔：左渐隐线+金◆+右渐隐线；aria-hidden 不参与可达性
+ * - 窄窗防碰撞：线段 min-width 24px+flex:1（设计定稿注意事项③）
+ *
+ * ── 接口层 ──
+ * - export function DiamondRule(): JSX.Element
+ *
+ * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
+ * - 样式全在 theme.css .lib-rule*（token 单源）；R3-LIB（筛选区|列表）与
+ *   R3-U4（设置分节）复用同一语法
+ */
+export function DiamondRule(): JSX.Element {
+  return (
+    <div className="lib-rule" aria-hidden="true">
+      <span className="lib-rule-line lib-rule-line-l" />
+      <span className="lib-rule-gem" />
+      <span className="lib-rule-line lib-rule-line-r" />
+    </div>
+  )
+}
+=== NEW FILE: tests/unit/renderer/library-cards.test.tsx ===
+// @vitest-environment jsdom
+/**
+ * [R3-LIB] 文献库视觉重制 —— 卡片网格+菱形分隔+空 venue 隐藏（渲染级断言）
+ * + theme.css 材质文本锁（theme.test.ts 同口径：CSS 字面断言防漂移）。
+ *
+ * 渲染面：PaperList→.lib-grid 卡片网格；卡根 .lib-card（渐变材质类钩）+
+ * L 角饰 span×2；空 venue 条件渲染省略（mockup .venue:empty 的 DOM 等价）；
+ * 单击选中/双击打开交互零变（按钮根元素契约）。页面组装面：LibraryPage 在
+ * 筛选区与列表之间挂 DiamondRule（菱形语法：渐隐线×2+◆，装饰 aria-hidden）。
+ * always-active 裸 describe（K3：不经 guardedDescribe 守卫）。
+ */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PaperSummary } from '../../../src/shared/models/paper'
+import type * as clientModule from '../../../src/renderer/api/client'
+import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+
+const { stubApi, onImportProgressSpy, toastSpy } = vi.hoisted(() => ({
+  stubApi: {
+    library: { list: vi.fn(), collections: vi.fn() },
+    tags: { list: vi.fn() }
+  },
+  onImportProgressSpy: vi.fn(() => () => undefined),
+  toastSpy: vi.fn()
+}))
+vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+  const real = await importOriginal<typeof clientModule>()
+  return {
+    ...real,
+    api: stubApi as unknown as typeof clientModule.api,
+    apiEvents: { onImportProgress: onImportProgressSpy } as unknown as typeof clientModule.apiEvents
+  }
+})
+vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+  const real = await importOriginal<typeof toastModule>()
+  return { ...real, showToast: toastSpy }
+})
+
+import { PaperList } from '../../../src/renderer/features/library/PaperList'
+import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
+import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
+
+// act() 环境声明（selection-layer/page-column 同口径——免 React 警告刷屏）
+;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+
+// jsdom 环境 import.meta.url 是 http: 协议——CSS 文本读取走 cwd 相对路径
+// （theme.test.ts 的 URL 法仅 node 环境可用）。lib-* 规则住 feature 本地
+// library.css（theme.css 500 行上限拆分，由 LibraryPage 挂载导入）
+const css = readFileSync(join(process.cwd(), 'src/renderer/features/library/library.css'), 'utf8')
+
+/** 列表卡夹具：默认带年份/期刊/两标签（venue 空与 year 空由用例覆写） */
+function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummary {
+  return {
+    id,
+    title: `论文 ${id}`,
+    authors: ['张三', '李四'],
+    year: 2021,
+    venue: 'Journal of Testing',
+    doi: null,
+    tagNames: ['水锤史', '雷诺数'],
+    collectionNames: [],
+    annotationCount: 6,
+    noteCount: 22,
+    lastReadPage: 0,
+    addedAt: '2026-01-01T00:00:00Z',
+    ...patch
+  }
+}
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+
+async function render(node: JSX.Element): Promise<void> {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  await act(async () => {
+    root?.render(node)
+  })
+}
+
+function firstCard(): HTMLElement {
+  const card = host?.querySelector('.lib-card')
+  if (!(card instanceof HTMLElement)) throw new Error('未找到 .lib-card 卡根')
+  return card
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  // jsdom 未实现 scrollIntoView（PaperList 选中滚入 effect 的宿主 API 缺位）
+  Element.prototype.scrollIntoView = () => undefined
+  stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [makeSummary('p1')], total: 1 } })
+  stubApi.library.collections.mockResolvedValue({ ok: true, data: [] })
+  stubApi.tags.list.mockResolvedValue({ ok: true, data: [] })
+})
+
+afterEach(async () => {
+  await act(async () => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+})
+
+describe('R3-LIB 文献卡渲染（PaperList 卡片网格）', () => {
+  it('卡根挂渐变材质类 lib-card，L 角饰元素×2（tl+br）在场', async () => {
+    const onSelect = vi.fn()
+    await render(
+      <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={onSelect} />
+    )
+    const card = firstCard()
+    expect(card.classList.contains('lib-card')).toBe(true)
+    const corners = card.querySelectorAll('.lib-corner')
+    expect(corners.length).toBe(2)
+    expect(card.querySelector('.lib-corner-tl')).not.toBeNull()
+    expect(card.querySelector('.lib-corner-br')).not.toBeNull()
+    // 装饰性角饰不参与可达性
+    for (const c of Array.from(corners)) {
+      expect(c.getAttribute('aria-hidden')).toBe('true')
+    }
+  })
+
+  it('空 venue：期刊元素不渲染；有值：venue 类在场（空隐藏契约）', async () => {
+    await render(
+      <PaperList
+        papers={[makeSummary('p1'), makeSummary('p2', { venue: '   ' })]}
+        selectedId={null}
+        onSelect={() => undefined}
+      />
+    )
+    const cards = Array.from(host?.querySelectorAll('.lib-card') ?? [])
+    expect(cards.length).toBe(2)
+    const withVenue = cards[0]?.querySelector('.lib-card-venue')
+    expect(withVenue?.textContent).toBe('Journal of Testing')
+    expect(cards[1]?.querySelector('.lib-card-venue')).toBeNull()
+  })
+
+  it('年份衬线类+题名两行截断类+标签胶囊类+meta tabular-nums 类在场', async () => {
+    await render(
+      <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />
+    )
+    const card = firstCard()
+    expect(card.querySelector('.lib-card-year')?.textContent).toBe('2021')
+    expect(card.querySelector('.lib-card-title')?.textContent).toBe('论文 p1')
+    expect(card.querySelectorAll('.lib-tag').length).toBe(2)
+    expect(card.querySelector('.lib-card-meta')).not.toBeNull()
+  })
+
+  it('交互零变：单击→onSelect(id)；双击→onOpen(id)；选中卡挂 lib-card-selected', async () => {
+    const onSelect = vi.fn()
+    const onOpen = vi.fn()
+    await render(
+      <PaperList
+        papers={[makeSummary('p1'), makeSummary('p2')]}
+        selectedId="p2"
+        onSelect={onSelect}
+        onOpen={onOpen}
+      />
+    )
+    const cards = Array.from(host?.querySelectorAll('.lib-card') ?? [])
+    expect(cards[1]?.classList.contains('lib-card-selected')).toBe(true)
+    const target = cards[0]
+    if (!(target instanceof HTMLElement)) throw new Error('卡根缺失')
+    act(() => {
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onSelect).toHaveBeenCalledWith('p1')
+    act(() => {
+      target.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    })
+    expect(onOpen).toHaveBeenCalledWith('p1')
+  })
+})
+
+describe('R3-LIB 菱形分隔线（筛选区与列表之间）', () => {
+  it('DiamondRule 渲染：渐隐线×2+◆菱形+装饰 aria-hidden（渲染级存在性）', async () => {
+    await render(<DiamondRule />)
+    const rule = host?.querySelector('.lib-rule')
+    expect(rule).not.toBeNull()
+    expect(rule?.getAttribute('aria-hidden')).toBe('true')
+    expect(rule?.querySelectorAll('.lib-rule-line').length).toBe(2)
+    expect(rule?.querySelector('.lib-rule-gem')).not.toBeNull()
+  })
+
+  it('LibraryPage 组装：菱形分隔挂在筛选区之后、列表网格之前（页面级存在性）', async () => {
+    await render(<LibraryPage />)
+    const rule = host?.querySelector('.lib-rule') ?? null
+    const grid = host?.querySelector('.lib-grid') ?? null
+    expect(rule).not.toBeNull()
+    expect(grid).not.toBeNull()
+    if (rule === null || grid === null) throw new Error('unreachable')
+    // DOM 位置：rule 先于 grid（分隔语义=筛选区|列表）
+    expect(rule.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）', () => {
+  it('卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）', () => {
+    expect(css, '.lib-card 渐变（mockup .card 逐值）').toMatch(/\.lib-card\s*\{[^}]*linear-gradient\(168deg/)
+    expect(css, 'inset 顶高光').toMatch(/\.lib-card\s*\{[^}]*inset 0 1px 0 rgba\(255, 255, 255, 0\.9\)/)
+    expect(css, '背景裁到 padding-box（定稿注意事项②）').toMatch(
+      /\.lib-card\s*\{[^}]*background-clip: padding-box/
+    )
+  })
+
+  it('网格容器：repeat(auto-fill, minmax(340px, 1fr))', () => {
+    expect(css).toMatch(/\.lib-grid\s*\{[^}]*repeat\(auto-fill, minmax\(340px, 1fr\)\)/)
+  })
+
+  it('hover 升档：金 hairline 描边+translateY(-1px)+shadow-2+角饰显形', () => {
+    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*var\(--shadow-2\)/)
+    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*translateY\(-1px\)/)
+    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*var\(--border-gold\)/)
+    expect(css, 'hover 角饰显形（金描边）').toMatch(/\.lib-card:hover \.lib-corner\s*\{[^}]*var\(--gold\)/)
+  })
+
+  it('菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）', () => {
+    expect(css).toMatch(/\.lib-rule-line\s*\{[^}]*min-width: 24px/)
+    expect(css).toMatch(/\.lib-rule-line\s*\{[^}]*flex: 1/)
+    expect(css).toMatch(/\.lib-rule-gem\s*\{[^}]*rotate\(45deg\)/)
+  })
+})

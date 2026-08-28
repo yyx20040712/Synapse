@@ -57,22 +57,19 @@ export function FilterBar(props: {
   const years = Array.from(new Set(papers.map((p) => p.year).filter((y): y is number => y !== null))).sort(
     (a, b) => b - a
   )
-  const selectStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border p-2" style={{ borderColor: 'var(--border)' }}>
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <input
           aria-label="搜索文献"
-          className="w-56 rounded border px-2 py-1"
-          style={selectStyle}
+          className={`lib-chip w-56${text !== '' ? ' lib-chip-on' : ''}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
         <select
           aria-label="按集合筛选"
-          className="rounded border px-1 py-1"
-          style={selectStyle}
+          className={`lib-chip${query.collectionId !== undefined ? ' lib-chip-on' : ''}`}
           value={query.collectionId ?? ''}
           onChange={(e) => onChange({ collectionId: e.target.value === '' ? undefined : e.target.value })}
         >
@@ -85,8 +82,7 @@ export function FilterBar(props: {
         </select>
         <select
           aria-label="按年份筛选"
-          className="rounded border px-1 py-1"
-          style={selectStyle}
+          className={`lib-chip${query.year !== undefined ? ' lib-chip-on' : ''}`}
           value={query.year ?? ''}
           onChange={(e) => onChange({ year: e.target.value === '' ? undefined : Number(e.target.value) })}
         >
@@ -99,8 +95,7 @@ export function FilterBar(props: {
         </select>
         <select
           aria-label="排序方式"
-          className="rounded border px-1 py-1"
-          style={selectStyle}
+          className="lib-chip"
           value={query.sort}
           onChange={(e) => onChange({ sort: e.target.value as LibrarySort })}
         >

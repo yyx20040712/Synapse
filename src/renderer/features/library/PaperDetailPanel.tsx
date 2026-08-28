@@ -31,6 +31,7 @@ import type { PaperSource, EnrichStatus } from '@shared/models/paper'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { Button } from '../../shared/ui/Button'
+import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { TagEditor } from '../tags/TagEditor'
@@ -54,14 +55,14 @@ const ENRICH_LABEL: Record<EnrichStatus, string> = {
   manual: '手动维护'
 }
 
-/** 一行键值（label 固定宽，值可换行） */
-function Row(props: { label: string; children: string }): JSX.Element {
+/** 一行键值（label 固定宽，值可换行；serif=衬线大字值——年份/被引数行） */
+function Row(props: { label: string; serif?: boolean; children: string }): JSX.Element {
   return (
     <p className="flex gap-2 text-xs leading-5">
-      <span className="w-14 shrink-0" style={{ color: 'var(--text-dim)' }}>
-        {props.label}
+      <span className="lib-detail-k w-14 shrink-0">{props.label}</span>
+      <span className={`min-w-0 break-words${props.serif === true ? ' lib-detail-v-serif' : ''}`}>
+        {props.children || '—'}
       </span>
-      <span className="min-w-0 break-words">{props.children || '—'}</span>
     </p>
   )
 }
@@ -124,9 +125,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   if (paperId === null) {
+    // 回炉 R4：空态居中+菱形分隔夹持（文案逐字保留——e2e/断言面）
     return (
-      <div className="p-6 text-xs" style={{ color: 'var(--text-dim)' }}>
-        选中列表中的文献后显示详情
+      <div className="lib-detail-empty p-6 text-xs" style={{ color: 'var(--text-dim)' }}>
+        <DiamondRule />
+        <p>选中列表中的文献后显示详情</p>
+        <DiamondRule />
       </div>
     )
   }
@@ -176,19 +180,19 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           </button>
         </div>
       )}
-      <h2 className="text-sm font-medium leading-5">{detail.title}</h2>
+      <h2 className="lib-detail-title">{detail.title}</h2>
       <div className="flex flex-col gap-1">
         <Row label="作者">{detail.authors.join('、')}</Row>
-        <Row label="年份">{detail.year === null ? '' : String(detail.year)}</Row>
+        <Row label="年份" serif>{detail.year === null ? '' : String(detail.year)}</Row>
         <Row label="期刊">{detail.venue}</Row>
-        <Row label="被引">{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
+        <Row label="被引" serif>{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
         <Row label="来源">{SOURCE_LABEL[detail.source]}</Row>
         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
         <Row label="DOI">{detail.doi ?? ''}</Row>
         <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
       </div>
       {detail.abstract !== '' && (
-        <p className="line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
+        <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
           {detail.abstract}
         </p>
       )}

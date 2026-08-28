@@ -22,12 +22,15 @@
 import { useEffect, useState } from 'react'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
+import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
 import { FilterBar } from './FilterBar'
 import { ImportDropZone } from './ImportDropZone'
 import { PaperDetailPanel } from './PaperDetailPanel'
 import { PaperList } from './PaperList'
 import { useLibraryStore } from './library.store'
+// R3-U2 文献库皮肤（lib-* 类唯一挂载点——feature 树全件共享）
+import './library.css'
 
 export function LibraryPage(): JSX.Element {
   const papers = useLibraryStore((s) => s.papers)
@@ -94,6 +97,8 @@ export function LibraryPage(): JSX.Element {
           </button>
         </div>
       )}
+      {/* R3-U2 菱形分隔：筛选区与列表之间（渐隐线+◆+渐隐线——装饰层） */}
+      <DiamondRule />
       <div className="flex min-h-0 flex-1 gap-2">
         <div className="flex min-w-0 flex-1 flex-col">
           {loading && (
@@ -103,7 +108,7 @@ export function LibraryPage(): JSX.Element {
           )}
           <PaperList papers={papers} selectedId={selectedId} onSelect={selectPaper} onOpen={openPaper} />
         </div>
-        <aside className="w-80 shrink-0 overflow-auto">
+        <aside className="lib-detail-aside w-80 shrink-0 overflow-auto">
           <PaperDetailPanel paperId={selectedId} />
         </aside>
       </div>

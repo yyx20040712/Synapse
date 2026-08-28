@@ -1,0 +1,209 @@
+/* ══ R3-U2 文献库皮肤（shell-library.html .list/.card/.filterbar/.chip 段誊录）══
+   卡片网格+渐变材质+L 角饰+菱形分隔+筛选 chips；token 全走 theme.css :root 单源
+   （禁散落硬编码色值）。由 LibraryPage.tsx import（feature 树唯一挂载点）。 */
+
+/* 文献卡网格：auto-fill 自适应列（窄窗单列、宽窗多列） */
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.lib-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  /* 渐变+inset 顶高光（mockup .card 材质三件套之二）；背景裁到 padding-box——
+     渐变端点与 border 交界处亚像素缝隙锁（设计定稿注意事项②） */
+  background: linear-gradient(168deg, #fffdf9 0%, var(--panel) 40%, #fdfaf3 100%);
+  background-clip: padding-box;
+  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
+}
+.lib-card:hover {
+  box-shadow: var(--shadow-2);
+  border-color: var(--border-gold);
+  transform: translateY(-1px);
+}
+.lib-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* 选中卡（回炉 R5，门一独立裁）：渐变不覆盖（继承 .lib-card 材质）+金描边+
+   inset 金 ring .45+shadow-2+角饰常显——与 hover 拉开两档；复合选择器
+   .lib-card.lib-card-selected 特异性压过 :hover 伪类（门二 W1：选中卡悬停
+   期金 ring 不被 hover 值覆盖——单一类选择器 (0,1,0) 压不过 (0,2,0)） */
+.lib-card.lib-card-selected {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-2), inset 0 0 0 1px rgba(201, 168, 106, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.lib-card.lib-card-selected .lib-corner {
+  opacity: 0.9;
+  border-color: var(--gold);
+}
+/* L 形金角饰（hover 显形——mockup 伪元素改实 span：jsdom 可断言） */
+.lib-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.lib-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: var(--radius-l) 0 0 0;
+}
+.lib-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 var(--radius-l) 0;
+}
+.lib-card:hover .lib-corner {
+  opacity: 0.9;
+  border-color: var(--gold);
+}
+/* 卡内排版：衬线年份+两行截断题名+斜体 venue+6px 胶囊标签+tabular-nums meta */
+.lib-card-row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.lib-card-year {
+  flex: none;
+  min-width: 44px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--gold);
+}
+/* 空年份 ◆（回炉 R3）：9px 淡金菱形占位，year 槽 min-width 44px 保对齐 */
+.lib-card-year-gem {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: var(--gold);
+  opacity: 0.55;
+  transform: rotate(45deg);
+}
+.lib-card-title {
+  min-height: 38px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lib-card-venue {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.lib-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.lib-tag {
+  font-size: 10.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 1px 9px;
+}
+.lib-card-tagmore {
+  align-self: center;
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+.lib-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+/* 筛选 chips：搜索框/下拉统一胶囊语法（mockup .chip/.search） */
+.lib-chip {
+  font-size: 12px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--panel-glass);
+  box-shadow: var(--shadow-1);
+}
+/* active chip（回炉 W2）：镜像 mockup .chip.on——accent-soft 底+accent 描边 */
+.lib-chip-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.lib-chip:focus-visible {
+  outline: 1px solid var(--accent);
+}
+/* ImportDropZone：虚线金框+拖入金辉（回炉 R1：透明底——虚线金框落纸面材质归一） */
+.lib-dropzone {
+  border: 1px dashed var(--border-gold);
+  border-radius: var(--radius-l);
+  background: transparent;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.lib-dropzone-dragging {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft), var(--shadow-2);
+}
+/* 详情栏：纸面卡+衬线标题/年份值+分节 hairline（mockup aside 段） */
+.lib-detail-aside {
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+}
+/* 详情空态（回炉 R4）：菱形分隔夹持原文案的居中引导态 */
+.lib-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 160px;
+}
+.lib-detail-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.lib-detail-k {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.lib-detail-v-serif {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gold);
+}
+.lib-detail-abs {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
