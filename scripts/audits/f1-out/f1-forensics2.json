@@ -1,0 +1,86 @@
+{
+  "phases": {
+    "largeInPage": {
+      "appeared": true,
+      "ms": 9
+    }
+  },
+  "dumps": {
+    "env": {
+      "x1": 1007,
+      "y1": 589,
+      "x2": 1114,
+      "y2": 709,
+      "hitA": "SPAN.",
+      "dpr": 1.25,
+      "zoom": "1",
+      "spansP19": 420
+    },
+    "aHold": {
+      "selLen": 1103,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "aUp": {
+      "selLen": 1103,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "bDbl": {
+      "selLen": 7,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "cHold": {
+      "selLen": 1103,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "cUp": {
+      "selLen": 1103,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "prog": {
+      "selLen": 1077,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "large": {
+      "selLen": 9926,
+      "rangeCount": 1,
+      "collapsed": false,
+      "anchorTag": "text:",
+      "rectsEl": true,
+      "toolbarEl": true,
+      "textLayerCount": 3
+    },
+    "errors": []
+  },
+  "consoleErrors": [],
+  "pageErrors": []
+}

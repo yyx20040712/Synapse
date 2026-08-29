@@ -1,0 +1,39 @@
+{
+  "geometry": {
+    "contBox": {
+      "x": 966.9000244140625,
+      "y": 69.98750305175781,
+      "w": 595,
+      "h": 793
+    },
+    "rectBox": {
+      "x": 1232.3250732421875,
+      "y": 775.9000244140625,
+      "w": 10.175000190734863,
+      "h": 8.787500381469727
+    },
+    "rectStyle": {
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "bg": "color(srgb 0.172549 0.372549 0.541176 / 0.3)",
+      "pos": "absolute",
+      "z": "auto",
+      "blend": "normal"
+    },
+    "rectCount": 3,
+    "center": {
+      "x": 1237,
+      "y": 780
+    },
+    "topAtCenter": "SPAN.",
+    "chain": [
+      "SPAN.|z:1",
+      "DIV.textLayer|z:0",
+      "DIV.relative h-fit|z:auto",
+      "DIV.absolute inset-0 flex justify-|z:auto",
+      "DIV.relative shrink-0|z:auto",
+      "DIV.mx-auto flex flex-col items-ce|z:auto"
+    ]
+  }
+}

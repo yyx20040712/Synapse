@@ -1,0 +1,51 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse-remake@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/selection-layer.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/selection-layer.test.tsx [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 57[2mms[22m[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mF-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）[90m 8[2mms[22m[31m[39m
+[31m     → expected <div …(3)><div …(3)></div></div> to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mF-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）
+[31m[1mAssertionError[22m: expected <div …(3)><div …(3)></div></div> to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+<div
+  class="absolute"
+  data-testid="selection-rects"
+  style="left: 0px; top: 0px; width: 0px; height: 0px; z-index: 2; pointer-events: none;"
+>
+  <div
+    class="absolute"
+    data-testid="selection-rect"
+    style="left: 0%; top: 0%; width: 100%; height: 100%; background: color-mix(in srgb, var(--accent) 30%, transparent);"
+  />
+</div>
+
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m284:24[22m[39m
+    [90m282| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m283| [39m    [90m// 划选视觉=原生 ::selection（ADR-0019）——自绘层一旦回归此守卫即红[39m
+    [90m284| [39m    [34mexpect[39m([34mselRects[39m())[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                       [31m^[39m
+    [90m285| [39m  })
+    [90m286| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 13:59:55
+[2m   Duration [22m 1.34s[2m (transform 67ms, setup 0ms, collect 186ms, tests 57ms, environment 605ms, prepare 167ms)[22m
+
+exit=1

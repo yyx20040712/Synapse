@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-28T23:50:22.1789154Z",
+    "generatedAt":  "2026-08-29T07:10:48.4393136Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -16,6 +16,26 @@
                   {
                       "path":  "playwright.config.ts",
                       "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics.mjs",
+                      "sha256":  "d49dfe244844e6944ea5b409a2287b8c6e1464f551b688d9d9a1faa3b0697c59"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics2.mjs",
+                      "sha256":  "3152ac555825de1575f2b67f731439a9c8ad43c3b860ee94c1a0dcff867d1881"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics3.mjs",
+                      "sha256":  "0f87185365818732dc5e132cebb53c67df2359855fa63fdae6ebfd77dd5a18f8"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics3b.mjs",
+                      "sha256":  "a76f0f899749fd863a55a89aaa42b5b3731729055ecf945361aab2d7f12db9c5"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics4.mjs",
+                      "sha256":  "0a6099bc43d7e022c9f16c9ed108259f521840aa1a3d31f296ab9cfb3408584b"
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
@@ -163,7 +183,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "f34eaa9639622dddea4d60a8a5d2522ff74fc612f628e569bbc748ffbcdc4b0d"
+                      "sha256":  "42f51abc31d899b47a5023c5ff505f91695db2895918ce7b814174f08a93c5c5"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -419,7 +439,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "026799b91819a15e57aac04c9e10f7b405b88e50243d27097128a4b6ebafc72d"
+                      "sha256":  "2430a596f6400b63c2bded33f2b429b15d95edc4a3ca1d3b9d75459079abaa0e"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

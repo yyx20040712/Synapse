@@ -17,6 +17,12 @@
  *   文本层之下，透字必须靠半透明背景；F-06 原始缺陷 C（重叠 span 逐层叠绘
  *   加重）由划选视觉反馈整体移交 SelectionLayer 自绘选区块解决——单层单绘
  *   天然不叠深，原生高亮不再承担视觉反馈故置透明）。
+ * - [SR2-F-08] 反转 F-06/F-07 处置，回退官方半透明（ADR-0019 划选视觉反馈
+ *   原生路线）：根因=自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+
+ *   拖选期零反馈（视觉通道机制病，非性能/几何）；::selection 恢复官方
+ *   rgba(0 0 255 / 0.25) 逐字值（pdfjs-dist web/pdf_viewer.css 678-685 行；
+ *   Chromium 不解析 ::selection 的 color-mix——官方第二行不抄）。自绘层
+ *   SelectionRects 整体删除（P10 方案切换=删旧方案）。
  */
 .textLayer{
   position:absolute;
@@ -59,11 +65,11 @@
   }
 
 .textLayer ::-moz-selection{
-    background:transparent;
+    background:rgba(0 0 255 / 0.25);
 }
 
 .textLayer ::selection{
-    background:transparent;
+    background:rgba(0 0 255 / 0.25);
 }
 
 .textLayer br::-moz-selection{

@@ -1,0 +1,66 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse-remake@0.1.0 verify
+> npm run quality:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build
+
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse-remake@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse-remake@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 118 个；open 1（weak 可领 0，strong 1）
+tickets 检查未通过：
+  - SR2-F-08（open UI 工单）缺少 data-ticket="SR2-F-08" 占位标记
+exit=1
+
+=== [SR2-F-08 补充取证] verify 链在 tickets:check 因占位时序红（open 工单占位已按票面删除——主控翻 done 前的结构性红），以下手动补跑 verify 剩余各环 ===
+--- npm run lint ---
+  12:17  error  'rm' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+
+lint-exit=0
+--- npm run typecheck ---
+
+> synapse-remake@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+typecheck-exit=0
+--- npm run test（全量）---
+
+[2m Test Files [22m [1m[32m104 passed[39m[22m[90m (104)[39m
+[2m      Tests [22m [1m[32m858 passed[39m[22m[90m (858)[39m
+[2m   Start at [22m 14:04:22
+[2m   Duration [22m 23.55s[2m (transform 10.95s, setup 0ms, collect 40.89s, tests 13.23s, environment 266.11s, prepare 59.92s)[22m
+
+test-exit=0
+--- npm run build ---
+rendering chunks...
+[2m../../out/renderer/[22m[32mindex.html                          [39m[1m[2m    0.89 kB[22m[1m[22m
+[2m../../out/renderer/[22m[32massets/pdf.worker.min-yatZIOMy.mjs  [39m[1m[2m1,375.84 kB[22m[1m[22m
+[2m../../out/renderer/[22m[35massets/index-DKbrAJ8Y.css           [39m[1m[2m   37.04 kB[22m[1m[22m
+[2m../../out/renderer/[22m[36massets/index-m8AKuJwN.js            [39m[1m[33m1,250.99 kB[39m[22m
+[32m✓ built in 1.66s[39m
+build-exit=0
+
+=== [SR2-F-08 verify 各环真退出码总览（前文 lint-exit=0 为管道假码，勘误如下）] ===
+quality:check-exit=0
+tickets:check-exit=1（结构性时序红：open UI 工单占位已按票面删除，主控翻 done 前必红——票面预判 check-tickets 会拦）
+locks:check-exit=0（158 受锁文件与 manifest 一致）
+lint-exit=1（红源=scripts/audits/f1-forensics2.mjs 主控未跟踪取证脚本，非本单改动面；本单四文件 eslint 0 error）
+typecheck-exit=0
+test-exit=0（104 文件 858 用例——基线 859-1=F-07b 删除）
+build-exit=0

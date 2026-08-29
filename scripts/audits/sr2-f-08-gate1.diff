@@ -1,0 +1,413 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 5bc1e70..922b550 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T23:50:22.1789154Z",
++    "generatedAt":  "2026-08-29T06:02:27.6570052Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -17,6 +17,22 @@
+                       "path":  "playwright.config.ts",
+                       "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
+                   },
++                  {
++                      "path":  "scripts/audits/f1-forensics.mjs",
++                      "sha256":  "d49dfe244844e6944ea5b409a2287b8c6e1464f551b688d9d9a1faa3b0697c59"
++                  },
++                  {
++                      "path":  "scripts/audits/f1-forensics2.mjs",
++                      "sha256":  "361d7ff32edc077a4d54663baa8861d8a706a5d7f887c477c4666c013c2f7c0c"
++                  },
++                  {
++                      "path":  "scripts/audits/f1-forensics3.mjs",
++                      "sha256":  "0f87185365818732dc5e132cebb53c67df2359855fa63fdae6ebfd77dd5a18f8"
++                  },
++                  {
++                      "path":  "scripts/audits/f1-forensics3b.mjs",
++                      "sha256":  "a76f0f899749fd863a55a89aaa42b5b3731729055ecf945361aab2d7f12db9c5"
++                  },
+                   {
+                       "path":  "scripts/check-locks.mjs",
+                       "sha256":  "0a71490009eef4ae0038cfe800c36ecc5184b437ef289844133878776b073558"
+@@ -163,7 +179,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "f34eaa9639622dddea4d60a8a5d2522ff74fc612f628e569bbc748ffbcdc4b0d"
++                      "sha256":  "42f51abc31d899b47a5023c5ff505f91695db2895918ce7b814174f08a93c5c5"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -419,7 +435,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
+-                      "sha256":  "026799b91819a15e57aac04c9e10f7b405b88e50243d27097128a4b6ebafc72d"
++                      "sha256":  "2430a596f6400b63c2bded33f2b429b15d95edc4a3ca1d3b9d75459079abaa0e"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/settings.store.test.ts",
+diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+index 9f44fa7..eca3e66 100644
+--- a/src/renderer/features/reader/SelectionLayer.tsx
++++ b/src/renderer/features/reader/SelectionLayer.tsx
+@@ -5,19 +5,17 @@
+  * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
+  *   为主改面，短式引用口径）——动态锚定根**
+  *
+- * **F-07 划选自绘选区（工单 open / strong；text-layer.css ::selection 已置
+- *   transparent，划选视觉反馈移交本层）——渲染层叠次推演（门一强制审项）**：
+- * 自绘选区块容器挂挂载盒（N4 稳定盒，参照系同工具条定位数学 :131-135 一带），
+- * 几何=选区所在页 .textLayer 盒（anchor.rects 的归一化参照系）经两盒
+- * getBoundingClientRect 差值换算；rect 块用 AnnotationLayer 同型百分比数学。
++ * **F-08 划选视觉=原生 ::selection（工单 open / strong；ADR-0019——R1 路线
++ *   落地，取代 SR2-F-07 自绘层）**：拖选全程由浏览器原生 ::selection 提供即时
++ *   视觉反馈（text-layer.css 已回官方 rgba(0 0 255 / 0.25) 半透明——canvas
++ *   字形透出可读）；mouseup/防抖 evaluate 链仅驱动工具条（≤1.5s 预算，L7）。
++ *   自绘选区块（SelectionRects）整体删除——复测站 3 证伪自绘路线（30% accent
++ *   合成 rgb(191,207,220) 近乎不可见+拖选期零反馈）。
+  * 层叠序（同一 stacking context 内比较——挂载盒/页盒/页框均无 z-index，各
+  * 绝对定位层直达公共根）：canvas 字形(非定位，最底) < .textLayer(z-index:0，
+- * 自成 stacking context，span 内 z-index:1) < **自绘选区块(z-index:2，
+- * pointer-events:none 防吞划选手势；禁 mixBlendMode——容器级 multiply 会与
+- * 标注层 backdrop 相乘)** < AnnotationLayer(z-index:5, multiply——与本层
+- * 相乘为单次合法荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去
+- * multiply，同值 DOM 后绘在上) < 工具条(z-10)。选区色=带 alpha 的 accent 系
+- * （30% 透——黑字透出可读；自裁申报见 impl.report）。
++ * 自成 stacking context，span 内 z-index:1) < AnnotationLayer(z-index:5,
++ * multiply——荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去 multiply，
++ * 同值 DOM 后绘在上) < 工具条(z-10)。
+  *
+  * ── 行为层 ──
+  * - 监听 selectionchange（200ms 防抖）与 mouseup（即时）：锚定根=选区
+@@ -48,7 +46,6 @@ import { api, unwrap, ApiClientError } from '../../api/client'
+ import { showToast } from '../../shared/ui/Toast'
+ import { selectionToAnchor, type SelectionAnchor } from './annotation-anchor'
+ import { pushUndo } from './annotation-undo'
+-import { SelectionRects, type SelectionOverlayBox } from './SelectionRects'
+ import { SelectionToolbar } from './SelectionToolbar'
+ import { useReaderStore } from './reader.store'
+ 
+@@ -84,14 +81,12 @@ export function pageIndexOf(root: HTMLElement): number | null {
+   return Number.isInteger(no) && no >= 1 ? no - 1 : null
+ }
+ 
+-/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点 +
+- *  F-07 自绘选区容器盒：选区所在页 textLayer 盒换算到挂载盒——rects 归一化参照系） */
++/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点） */
+ interface PendingSelection {
+   anchor: SelectionAnchor
+   pageNo: number
+   x: number
+   y: number
+-  overlay: SelectionOverlayBox
+ }
+ 
+ export function SelectionLayer(props: {
+@@ -133,7 +128,7 @@ export function SelectionLayer(props: {
+       const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
+       const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
+       const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
+-      // textLayer 非空由 anchor 非空蕴含——并列收窄供 F-07 容器几何取用（无行为分支）
++      // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义（F-08 起无几何消费方）
+       if (anchor === null || textLayer === null) {
+         setPending(null)
+         return
+@@ -149,21 +144,7 @@ export function SelectionLayer(props: {
+       const mountBox = pageRoot.getBoundingClientRect()
+       const x = Math.min(Math.max(box.x - selBox.x, 0), Math.max(selBox.width - TOOLBAR_WIDTH, 0)) + (selBox.x - mountBox.x)
+       const y = Math.max(box.y - selBox.y - TOOLBAR_ABOVE, 0) + (selBox.y - mountBox.y)
+-      // F-07 自绘选区容器：与选区所在页 textLayer 同盒（anchor.rects 归一化参照系），
+-      // 同型盒间换算到挂载盒（滚动时两盒同动，相对偏移稳定）
+-      const tlBox = textLayer.getBoundingClientRect()
+-      setPending({
+-        anchor,
+-        pageNo: pageNo!,
+-        x,
+-        y,
+-        overlay: {
+-          left: tlBox.x - mountBox.x,
+-          top: tlBox.y - mountBox.y,
+-          width: tlBox.width,
+-          height: tlBox.height
+-        }
+-      })
++      setPending({ anchor, pageNo: pageNo!, x, y })
+     }
+ 
+     const onSelectionChange = (): void => {
+@@ -231,18 +212,15 @@ export function SelectionLayer(props: {
+   if (pending === null) return null
+ 
+   return (
+-    <>
+-      {/* F-07 自绘选区块（z 序/pointer-events/禁 multiply 推演见头注；组件=SelectionRects） */}
+-      <SelectionRects overlay={pending.overlay} rects={pending.anchor.rects} />
+-      <SelectionToolbar
+-        containerRef={toolbarRef}
+-        x={pending.x}
+-        y={pending.y}
+-        busy={busy}
+-        color={color}
+-        onColor={setColor}
+-        onSave={(kind) => void save(kind)}
+-      />
+-    </>
++    // 划选视觉=原生 ::selection（头注 F-08/ADR-0019）——本组件只渲染工具条
++    <SelectionToolbar
++      containerRef={toolbarRef}
++      x={pending.x}
++      y={pending.y}
++      busy={busy}
++      color={color}
++      onColor={setColor}
++      onSave={(kind) => void save(kind)}
++    />
+   )
+ }
+diff --git a/src/renderer/features/reader/SelectionRects.tsx b/src/renderer/features/reader/SelectionRects.tsx
+deleted file mode 100644
+index e791b89..0000000
+--- a/src/renderer/features/reader/SelectionRects.tsx
++++ /dev/null
+@@ -1,59 +0,0 @@
+-/**
+- * [F-07 增补] SelectionRects —— 划选自绘选区块（::selection 透明化后的视觉反馈）
+- *
+- * 容器=选区所在页 .textLayer 盒（anchor.rects 归一化参照系）经两盒
+- * getBoundingClientRect 差值换算到挂载盒（SelectionLayer evaluate 产出，
+- * 数学同工具条定位）；rect 块用 AnnotationLayer 同型百分比数学（单层单绘
+- * ——重叠 span 不逐元素叠加深）。层叠序/pointer-events/禁 multiply 的完整
+- * 推演登记在 SelectionLayer.tsx 头注 F-07（挂载位所有者）——本层 z-index:2
+- * （.textLayer z0 之上、标注/AI 层 z5 之下），pointer-events:none 防吞
+- * 划选手势；rect 背景自带 alpha（30% accent——黑字透出可读），容器禁
+- * mixBlendMode（与标注层 backdrop 相乘=层间叠乘加深）。
+- * 组件测试：tests/unit/renderer/selection-layer.test.tsx（经 SelectionLayer
+- * 挂载面断言，无独立测试文件）。
+- */
+-import type { AnnotationRect } from '@shared/models/annotation'
+-
+-/** 自绘选区容器盒（textLayer 盒换算到挂载盒的像素几何） */
+-export interface SelectionOverlayBox {
+-  left: number
+-  top: number
+-  width: number
+-  height: number
+-}
+-
+-export function SelectionRects(props: {
+-  overlay: SelectionOverlayBox
+-  rects: AnnotationRect[]
+-}): JSX.Element {
+-  const { overlay, rects } = props
+-  return (
+-    <div
+-      data-testid="selection-rects"
+-      className="absolute"
+-      style={{
+-        left: overlay.left,
+-        top: overlay.top,
+-        width: overlay.width,
+-        height: overlay.height,
+-        zIndex: 2,
+-        pointerEvents: 'none'
+-      }}
+-    >
+-      {rects.map((r, i) => (
+-        <div
+-          key={i}
+-          data-testid="selection-rect"
+-          className="absolute"
+-          style={{
+-            left: `${r.x * 100}%`,
+-            top: `${r.y * 100}%`,
+-            width: `${r.w * 100}%`,
+-            height: `${r.h * 100}%`,
+-            background: 'color-mix(in srgb, var(--accent) 30%, transparent)'
+-          }}
+-        />
+-      ))}
+-    </div>
+-  )
+-}
+diff --git a/src/renderer/features/reader/text-layer.css b/src/renderer/features/reader/text-layer.css
+index bfc421a..018cc1e 100644
+--- a/src/renderer/features/reader/text-layer.css
++++ b/src/renderer/features/reader/text-layer.css
+@@ -17,6 +17,12 @@
+  *   文本层之下，透字必须靠半透明背景；F-06 原始缺陷 C（重叠 span 逐层叠绘
+  *   加重）由划选视觉反馈整体移交 SelectionLayer 自绘选区块解决——单层单绘
+  *   天然不叠深，原生高亮不再承担视觉反馈故置透明）。
++ * - [SR2-F-08] 反转 F-06/F-07 处置，回退官方半透明（ADR-0019 划选视觉反馈
++ *   原生路线）：根因=自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+
++ *   拖选期零反馈（视觉通道机制病，非性能/几何）；::selection 恢复官方
++ *   rgba(0 0 255 / 0.25) 逐字值（pdfjs-dist web/pdf_viewer.css 678-685 行；
++ *   Chromium 不解析 ::selection 的 color-mix——官方第二行不抄）。自绘层
++ *   SelectionRects 整体删除（P10 方案切换=删旧方案）。
+  */
+ .textLayer{
+   position:absolute;
+@@ -59,11 +65,11 @@
+   }
+ 
+ .textLayer ::-moz-selection{
+-    background:transparent;
++    background:rgba(0 0 255 / 0.25);
+ }
+ 
+ .textLayer ::selection{
+-    background:transparent;
++    background:rgba(0 0 255 / 0.25);
+ }
+ 
+ .textLayer br::-moz-selection{
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 2112081..93e00fd 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -614,7 +614,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
+ /** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
+ const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
+ 
+-test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原生 selection 透明（重叠 span 不加深）', async () => {
++test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 官方半透明（划选即时可见）', async () => {
+   skipIfPending(F06_DEPS)
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
+ 
+@@ -662,47 +662,30 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；自绘选区+原
+   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
+   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
+ 
+-  // —— 缺陷 C（SR2-F-07 B 案重写守卫）：原生 ::selection 背景透明（F-06 不透明近似色
+-  //    压白底只在纯白底成立，页底有黑字即遮字；pdfjs 文本层字形由 canvas 渲染在
+-  //    文本层之下，透字必须靠半透明），划选视觉反馈移交 SelectionLayer 自绘
+-  //    半透明选区块（带 alpha 背景，单层单绘——重叠 span 不逐元素叠加深）——
++  // —— 缺陷 C（SR2-F-08 回退官方路线，ADR-0019）：::selection 背景官方半透明
++  //    rgba(0 0 255 / 0.25)（逐字=pdfjs-dist web/pdf_viewer.css 678-685 行原值；
++  //    Chromium getComputedStyle 序列化=rgba(0, 0, 255, 0.25)）——划选视觉反馈
++  //    由浏览器原生渲染，拖选第一帧即反馈；canvas 字形透出可读
+   const sel = visual.selectionBg
+   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
++  // 官方半透明值精确断言（四分量全锁；正则仅容忍序列化空格差异——不放宽为
++  // 弱家族匹配，参照被删 alpha 正则先例的双形态口径）
++  const selOfficial =
++    /^rgba\(\s*0\s*,\s*0\s*,\s*255\s*,\s*0\.25\s*\)$/.exec(sel) !== null
+   expect(
+-    sel === 'transparent' || sel === 'rgba(0, 0, 0, 0)',
+-    `C: ::selection 背景为透明家族：${sel}`
++    selOfficial,
++    `C: ::selection 背景=官方半透明 rgba(0, 0, 255, 0.25)：${sel}`
+   ).toBe(true)
+ 
+-  // 真实选选（程序化 selectText——防抖路径同产 pending）→ 自绘层在场且带 alpha：
++  // 真实选选（程序化 selectText——防抖路径同产 pending）→ 工具条 ≤1.5s 可见
++  // （L7：交互反馈预算入验收——程序化选选含 200ms 防抖+evaluate，预算 1.5s）
+   const known = win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()
+   await known.selectText()
+-  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 5_000 })
+-  await expect(win.getByTestId('selection-rects')).toBeVisible()
+-  // 门一 W1 回炉机制锁：容器三机制断言——禁 multiply（容器级 multiply 与标注层
+-  // backdrop 相乘=层间叠乘加深，AI-09 教训）、pointer-events:none（防吞划选手势）、
+-  // z 序声明=2（.textLayer z0 之上、标注/AI 层 z5 之下——层叠次推演见
+-  // SelectionLayer 头注 F-07；容器加回 multiply 或 zIndex 改高均须红）
+-  const rectsStyle = await win.getByTestId('selection-rects').evaluate((el) => {
+-    const s = getComputedStyle(el)
+-    return { blend: s.mixBlendMode, pe: s.pointerEvents, z: s.zIndex }
+-  })
+-  expect(rectsStyle.blend, 'C: 自绘容器禁 multiply（层间叠乘）').toBe('normal')
+-  expect(rectsStyle.pe, 'C: 自绘容器 pointer-events:none（防吞划选手势）').toBe('none')
+-  expect(rectsStyle.z, 'C: 自绘容器 z-index=2（文本层之上、标注层之下）').toBe('2')
+-  await expect(win.getByTestId('selection-rect').first()).toBeVisible()
+-  const rectBg = await win
+-    .getByTestId('selection-rect')
+-    .first()
+-    .evaluate((el) => getComputedStyle(el).backgroundColor)
+-  // alpha 提取兼容两种 computed 序列化：rgba(37, 99, 235, 0.3) 与 color-mix 来源的
+-  // color(srgb 0.145 0.388 0.922 / 0.3)（Chromium 对 color-mix 产物保持 color() 形态）
+-  const alpha =
+-    /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0?\.\d+)\s*\)$/.exec(rectBg) ??
+-    /^color\(\s*srgb\s+[\d.]+\s+[\d.]+\s+[\d.]+\s*\/\s*(0?\.\d+)\s*\)$/.exec(rectBg)
+-  expect(alpha, `C: 自绘选区块背景带 alpha 分量：${rectBg}`).not.toBeNull()
+-  // alpha[1] 缺失时 parseFloat('')=NaN——两界断言同红（不伪造通过值）
+-  const alphaNum = alpha === null ? Number.NaN : parseFloat(alpha[1] ?? '')
+-  expect(alphaNum, `C: 自绘选区块 alpha>0：${rectBg}`).toBeGreaterThan(0)
+-  expect(alphaNum, `C: 自绘选区块 alpha<1（黑字透出可读）：${rectBg}`).toBeLessThan(1)
++  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 1_500 })
++  // 自绘层不在场（ADR-0019 防回归守卫——视觉通道已回原生 ::selection）
++  await expect(
++    win.getByTestId('selection-rects'),
++    'C: 自绘选区块不在场（ADR-0019 原生路线）'
++  ).toHaveCount(0)
+   await app.close()
+ })
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index cef5f75..cc48219 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -7,8 +7,10 @@
+  * 工具条落点以选区所在页盒为参照系（坐标换算经页盒 rect——N-C 防层叠污染）/
+  * 保存页=选区所在页（0 基，动态推导）/Escape 清/承载选区的页 DOM 卸载
+  * （页回收与 zoom 重建同机制）→选区清空防悬空锚/纯函数页盒遍历。
+- * [SR2-F-07] 追加自绘选区行为：pending 有 rects→覆盖层渲染+rect 块数+容器几何
+- * （textLayer 盒换算到挂载盒）；pending null→层不渲染（初始态/Escape 清）。
++ * [SR2-F-08] 自绘层防回归守卫（ADR-0019 划选视觉回退原生 ::selection）：
++ * pending 态（mouseup 后工具条在场）selRects() 恒 null——视觉通道=浏览器
++ * 原生 ::selection，禁回归自绘路线；原 F-07b（pending null→层不渲染）测点
++ * 随 SelectionRects 组件消亡删除。
+  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
+  */
+ import { act } from 'react'
+@@ -86,7 +88,7 @@ async function mountLayer(pageRoot: HTMLElement): Promise<void> {
+ 
+ const toolbar = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-toolbar"]') ?? null
+ 
+-/** F-07 自绘选区覆盖层（pending 态挂载；null=层不渲染） */
++/** 自绘选区覆盖层查询（F-08 起恒 null——防回归自绘路线的守卫探针） */
+ const selRects = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-rects"]') ?? null
+ 
+ beforeEach(() => {
+@@ -270,38 +272,15 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
+     expect(toastSpy).not.toHaveBeenCalled()
+   })
+ 
+-  it('F-07a 自绘选区：pending 有 rects→渲染覆盖层+rect 块数，容器几何=选区页文本层盒换算到挂载盒', async () => {
+-    const { page1, page2, span2 } = mountColumnFixture()
+-    // 文本层盒与页盒取不同值——证明参照系是 textLayer 盒（非页盒）
+-    rects.set(page2.querySelector('.textLayer')!, { x: 6, y: 830, width: 588, height: 776 })
+-    await mountLayer(page1)
+-    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+-    act(() => {
+-      fireMouseUp()
+-    })
+-    const layer = selRects()
+-    expect(layer).not.toBeNull()
+-    // jsdom 无 Range.getClientRects → selectionToAnchor 走父盒兜底恰产 1 块 rect
+-    expect(layer!.querySelectorAll('[data-testid="selection-rect"]')).toHaveLength(1)
+-    // 容器与选区所在页文本层同盒（挂载盒参照系——toolbar :131-135 同型换算）
+-    expect(layer!.style.left).toBe('6px')
+-    expect(layer!.style.top).toBe('830px')
+-    expect(layer!.style.width).toBe('588px')
+-    expect(layer!.style.height).toBe('776px')
+-  })
+-
+-  it('F-07b 自绘选区：pending null→层不渲染（初始态无层；Escape 清 pending 后层卸载）', async () => {
++  it('F-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）', async () => {
+     const { page1, span2 } = mountColumnFixture()
+     await mountLayer(page1)
+-    expect(selRects()).toBeNull()
+     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+     act(() => {
+       fireMouseUp()
+     })
+-    expect(selRects()).not.toBeNull()
+-    act(() => {
+-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+-    })
++    expect(toolbar()).not.toBeNull()
++    // 划选视觉=原生 ::selection（ADR-0019）——自绘层一旦回归此守卫即红
+     expect(selRects()).toBeNull()
+   })
+ })

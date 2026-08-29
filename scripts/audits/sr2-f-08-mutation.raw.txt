@@ -1,0 +1,106 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse-remake@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/selection-layer.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/selection-layer.test.tsx [2m([22m[2m11 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[90m 42[2mms[22m[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mP1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算[90m 15[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mP3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）[90m 2[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mP4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流[90m 3[2mms[22m[31m[39m
+[31m     → Cannot read properties of null (reading 'querySelectorAll')[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mP5 Escape 清：工具条出现后按 Esc 收起[90m 2[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mP6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）[90m 2[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+[31m   [31m×[31m SelectionLayer 动态锚定根（选区态状态机）[2m > [22mF-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）[90m 2[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 6 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mP1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m161:21[22m[39m
+    [90m159| [39m    })
+    [90m160| [39m    [35mconst[39m bar [33m=[39m [34mtoolbar[39m()
+    [90m161| [39m    [34mexpect[39m(bar)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                    [31m^[39m
+    [90m162| [39m    [90m// 落点以选区所在页盒为参照系（N-C）：页内偏移 (10, 900-812-42=46)[39m…
+    [90m163| [39m    [34mexpect[39m(bar[33m![39m[33m.[39mstyle[33m.[39mleft)[33m.[39m[34mtoBe[39m([32m'10px'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mP3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m198:27[22m[39m
+    [90m196| [39m      [34mfireMouseUp[39m()
+    [90m197| [39m    })
+    [90m198| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                          [31m^[39m
+    [90m199| [39m  })
+    [90m200| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mP4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'querySelectorAll')[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m215:44[22m[39m
+    [90m213| [39m    saveMock[33m.[39m[34mmockResolvedValue[39m({ ok[33m:[39m [35mtrue[39m[33m,[39m data[33m:[39m saved })
+    [90m214| [39m    [35mawait[39m [34mact[39m([35masync[39m () [33m=>[39m {
+    [90m215| [39m      [35mconst[39m highlight [33m=[39m [33mArray[39m[33m.[39m[35mfrom[39m([34mtoolbar[39m()[33m![39m[33m.[39mquerySelectorAll[33m<[39m[33mHTMLBut[39m…
+    [90m   | [39m                                           [31m^[39m
+    [90m216| [39m        (b) [33m=>[39m b[33m.[39mtextContent [33m===[39m [32m'高亮'[39m
+    [90m217| [39m      )[33m![39m
+[90m [2m❯[22m Proxy.act node_modules/react/cjs/react.development.js:[2m2512:16[22m[39m
+[90m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m214:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mP5 Escape 清：工具条出现后按 Esc 收起
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m236:27[22m[39m
+    [90m234| [39m      [34mfireMouseUp[39m()
+    [90m235| [39m    })
+    [90m236| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                          [31m^[39m
+    [90m237| [39m    [34mact[39m(() [33m=>[39m {
+    [90m238| [39m      document[33m.[39m[34mdispatchEvent[39m([35mnew[39m [33mKeyboardEvent[39m([32m'keydown'[39m[33m,[39m { key[33m:[39m [32m'Esca[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mP6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m250:27[22m[39m
+    [90m248| [39m      [34mfireMouseUp[39m()
+    [90m249| [39m    })
+    [90m250| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                          [31m^[39m
+    [90m251| [39m    [90m// 页回收：承载选区的页盒整体卸载+选区清空（浏览器原生行为——textLa[39m…
+    [90m252| [39m    page2[33m.[39m[34mremove[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m > [22mSelectionLayer 动态锚定根（选区态状态机）[2m > [22mF-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-layer.test.tsx:[2m282:27[22m[39m
+    [90m280| [39m      [34mfireMouseUp[39m()
+    [90m281| [39m    })
+    [90m282| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                          [31m^[39m
+    [90m283| [39m    [90m// 划选视觉=原生 ::selection（ADR-0019）——自绘层一旦回归此守卫即红[39m
+    [90m284| [39m    [34mexpect[39m([34mselRects[39m())[33m.[39m[34mtoBeNull[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 14:01:15
+[2m   Duration [22m 1.31s[2m (transform 67ms, setup 0ms, collect 168ms, tests 42ms, environment 599ms, prepare 169ms)[22m
+
+exit=1

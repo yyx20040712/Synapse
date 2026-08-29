@@ -1,0 +1,75 @@
+{
+  "env": {
+    "window": {}
+  },
+  "pageStats": {
+    "pages": [
+      {
+        "no": "18",
+        "spans": 396,
+        "chars": 11946
+      },
+      {
+        "no": "19",
+        "spans": 420,
+        "chars": 11921
+      },
+      {
+        "no": "20",
+        "spans": 277,
+        "chars": 8915
+      }
+    ],
+    "totalSpans": 1093
+  },
+  "factors": {
+    "walkMs": 0,
+    "probeMs": 0,
+    "clientRectsMs": 0.6,
+    "probeSample": [
+      2,
+      0,
+      1061
+    ]
+  },
+  "progLatency": {
+    "word": {
+      "rounds": [
+        205.4,
+        202.3,
+        203.3,
+        216.7,
+        202.4
+      ],
+      "min": 202.3,
+      "med": 203.3,
+      "max": 216.7
+    },
+    "crossLine": {
+      "rounds": [
+        218.6,
+        203.8,
+        217.8,
+        204.3,
+        217.7
+      ],
+      "min": 203.8,
+      "med": 217.7,
+      "max": 218.6
+    },
+    "large": {
+      "rounds": [
+        {
+          "timeout": true
+        }
+      ],
+      "fail": true
+    }
+  },
+  "mouse": {
+    "duringHoldRects": false,
+    "upToDomMs": null,
+    "longtasksDuringDrag": []
+  },
+  "notes": []
+}

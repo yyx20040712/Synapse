@@ -5,19 +5,17 @@
  * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
  *   为主改面，短式引用口径）——动态锚定根**
  *
- * **F-07 划选自绘选区（工单 open / strong；text-layer.css ::selection 已置
- *   transparent，划选视觉反馈移交本层）——渲染层叠次推演（门一强制审项）**：
- * 自绘选区块容器挂挂载盒（N4 稳定盒，参照系同工具条定位数学 :131-135 一带），
- * 几何=选区所在页 .textLayer 盒（anchor.rects 的归一化参照系）经两盒
- * getBoundingClientRect 差值换算；rect 块用 AnnotationLayer 同型百分比数学。
+ * **F-08 划选视觉=原生 ::selection（工单 open / strong；ADR-0019——R1 路线
+ *   落地，取代 SR2-F-07 自绘层）**：拖选全程由浏览器原生 ::selection 提供即时
+ *   视觉反馈（text-layer.css 已回官方 rgba(0 0 255 / 0.25) 半透明——canvas
+ *   字形透出可读）；mouseup/防抖 evaluate 链仅驱动工具条（≤1.5s 预算，L7）。
+ *   自绘选区块（SelectionRects）整体删除——复测站 3 证伪自绘路线（30% accent
+ *   合成 rgb(191,207,220) 近乎不可见+拖选期零反馈）。
  * 层叠序（同一 stacking context 内比较——挂载盒/页盒/页框均无 z-index，各
  * 绝对定位层直达公共根）：canvas 字形(非定位，最底) < .textLayer(z-index:0，
- * 自成 stacking context，span 内 z-index:1) < **自绘选区块(z-index:2，
- * pointer-events:none 防吞划选手势；禁 mixBlendMode——容器级 multiply 会与
- * 标注层 backdrop 相乘)** < AnnotationLayer(z-index:5, multiply——与本层
- * 相乘为单次合法荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去
- * multiply，同值 DOM 后绘在上) < 工具条(z-10)。选区色=带 alpha 的 accent 系
- * （30% 透——黑字透出可读；自裁申报见 impl.report）。
+ * 自成 stacking context，span 内 z-index:1) < AnnotationLayer(z-index:5,
+ * multiply——荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去 multiply，
+ * 同值 DOM 后绘在上) < 工具条(z-10)。
  *
  * ── 行为层 ──
  * - 监听 selectionchange（200ms 防抖）与 mouseup（即时）：锚定根=选区
@@ -48,7 +46,6 @@ import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './annotation-anchor'
 import { pushUndo } from './annotation-undo'
-import { SelectionRects, type SelectionOverlayBox } from './SelectionRects'
 import { SelectionToolbar } from './SelectionToolbar'
 import { useReaderStore } from './reader.store'
 
@@ -84,14 +81,12 @@ export function pageIndexOf(root: HTMLElement): number | null {
   return Number.isInteger(no) && no >= 1 ? no - 1 : null
 }
 
-/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点 +
- *  F-07 自绘选区容器盒：选区所在页 textLayer 盒换算到挂载盒——rects 归一化参照系） */
+/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点） */
 interface PendingSelection {
   anchor: SelectionAnchor
   pageNo: number
   x: number
   y: number
-  overlay: SelectionOverlayBox
 }
 
 export function SelectionLayer(props: {
@@ -133,7 +128,7 @@ export function SelectionLayer(props: {
       const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
       const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
       const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
-      // textLayer 非空由 anchor 非空蕴含——并列收窄供 F-07 容器几何取用（无行为分支）
+      // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义（F-08 起无几何消费方）
       if (anchor === null || textLayer === null) {
         setPending(null)
         return
@@ -149,21 +144,7 @@ export function SelectionLayer(props: {
       const mountBox = pageRoot.getBoundingClientRect()
       const x = Math.min(Math.max(box.x - selBox.x, 0), Math.max(selBox.width - TOOLBAR_WIDTH, 0)) + (selBox.x - mountBox.x)
       const y = Math.max(box.y - selBox.y - TOOLBAR_ABOVE, 0) + (selBox.y - mountBox.y)
-      // F-07 自绘选区容器：与选区所在页 textLayer 同盒（anchor.rects 归一化参照系），
-      // 同型盒间换算到挂载盒（滚动时两盒同动，相对偏移稳定）
-      const tlBox = textLayer.getBoundingClientRect()
-      setPending({
-        anchor,
-        pageNo: pageNo!,
-        x,
-        y,
-        overlay: {
-          left: tlBox.x - mountBox.x,
-          top: tlBox.y - mountBox.y,
-          width: tlBox.width,
-          height: tlBox.height
-        }
-      })
+      setPending({ anchor, pageNo: pageNo!, x, y })
     }
 
     const onSelectionChange = (): void => {
@@ -231,18 +212,15 @@ export function SelectionLayer(props: {
   if (pending === null) return null
 
   return (
-    <>
-      {/* F-07 自绘选区块（z 序/pointer-events/禁 multiply 推演见头注；组件=SelectionRects） */}
-      <SelectionRects overlay={pending.overlay} rects={pending.anchor.rects} />
-      <SelectionToolbar
-        containerRef={toolbarRef}
-        x={pending.x}
-        y={pending.y}
-        busy={busy}
-        color={color}
-        onColor={setColor}
-        onSave={(kind) => void save(kind)}
-      />
-    </>
+    // 划选视觉=原生 ::selection（头注 F-08/ADR-0019）——本组件只渲染工具条
+    <SelectionToolbar
+      containerRef={toolbarRef}
+      x={pending.x}
+      y={pending.y}
+      busy={busy}
+      color={color}
+      onColor={setColor}
+      onSave={(kind) => void save(kind)}
+    />
   )
 }
