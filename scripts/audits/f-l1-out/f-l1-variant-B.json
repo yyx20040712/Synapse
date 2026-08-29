@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "script": "f-l1-forensics.mjs",
+    "date": "2026-08-29T18:20:21.039Z"
+  },
+  "variants": {
+    "B": [
+      {
+        "text": "实链：Darcy 1857 ",
+        "foW": 210,
+        "foH": 54.099999999999994,
+        "clamp": "3",
+        "fs": "10.5px",
+        "visual": {
+          "w": 364.2,
+          "h": 96
+        }
+      },
+      {
+        "text": "谱系推断：管流阻力经验律传统",
+        "foW": 210,
+        "foH": 54.099999999999994,
+        "clamp": "3",
+        "fs": "10.5px",
+        "visual": {
+          "w": 364.2,
+          "h": 96
+        }
+      },
+      {
+        "text": "平行推断：1883 同年两支",
+        "foW": 210,
+        "foH": 54.099999999999994,
+        "clamp": "3",
+        "fs": "10.5px",
+        "visual": {
+          "w": 364.2,
+          "h": 96
+        }
+      },
+      {
+        "text": "该方法以水锤特征线法为基础引",
+        "foW": 210,
+        "foH": 54.099999999999994,
+        "clamp": "3",
+        "fs": "10.5px",
+        "visual": {
+          "w": 364.2,
+          "h": 96
+        }
+      }
+    ]
+  },
+  "inject": {
+    "dbPath": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\synapse-f-l1\\workspaces\\default\\synapse.db",
+    "inserted": 1
+  }
+}

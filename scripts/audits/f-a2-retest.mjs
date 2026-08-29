@@ -98,18 +98,23 @@ async function main() {
   }
   await win.waitForTimeout(900)
 
-  // 场景 2:既有标注紧邻区(起点在标注块旁 5px 内)真鼠标拖选——候选根因①直测
+  // 场景 2:先把标注块滚进视口,再取「起点直接压在标注块上」的真鼠标拖选
+  // ——候选根因①直测(mousedown 落在 pointerEvents:auto 的标注矩形上,能否成选+出条)
+  await win.evaluate(`(() => {
+    const el = [...document.querySelectorAll('[data-testid="annotation-rect"]')].find(e => e.getBoundingClientRect().width > 5)
+    el?.scrollIntoView({ block: 'center' })
+  })()`)
+  await win.waitForTimeout(500)
   const q2 = await win.evaluate(`(() => {
-    const rects = [...document.querySelectorAll('[data-testid="annotation-rect"]')].map(e => e.getBoundingClientRect()).filter(r => r.width > 5).sort((x, y) => x.y - y.y)
-    const target = rects[0]; if (!target) return null
+    const els = [...document.querySelectorAll('[data-testid="annotation-rect"]')].filter(e => e.getBoundingClientRect().width > 5)
+    // 取一个整体在视口内(y 120~700)的标注块作压点
+    const target = els.map(e => e.getBoundingClientRect()).find(r => r.y > 140 && r.bottom < 680 && r.width > 20 && r.width < 400)
+    if (!target) return null
+    // 终点:同页下一行 span 中心(视口内)
     const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')].filter(sp => sp.firstChild && sp.firstChild.nodeType === 3)
-    // 起点取标注块右缘外扩 8px 的文本点,终点再跨 5 个 span
-    const mid = spans.find(s => { const r = s.getBoundingClientRect(); return r.y > target.bottom + 4 && r.width > 5 })
-    if (!mid) return null
-    const idx = spans.indexOf(mid)
-    const end = spans[Math.min(idx + 5, spans.length - 1)]
-    const r1 = mid.getBoundingClientRect(), r2 = end.getBoundingClientRect()
-    return { x1: r1.x + 4, y1: r1.y + r1.height / 2, x2: r2.x + r2.width * 0.5, y2: r2.y + r2.height / 2 }
+    const end = spans.map(s => s.getBoundingClientRect()).find(r => r.y > target.bottom + 2 && r.y > 120 && r.bottom < 700 && r.width > 5)
+    if (!end) return null
+    return { x1: target.x + Math.min(30, target.width / 2), y1: target.y + target.height / 2, x2: end.x + end.width * 0.5, y2: end.y + end.height / 2, onRect: true }
   })()`)
   if (q2 !== null) {
     await win.mouse.move(q2.x1, q2.y1)

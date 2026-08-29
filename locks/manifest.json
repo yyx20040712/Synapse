@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T18:09:20.1050031Z",
+    "generatedAt":  "2026-08-29T18:21:58.0511956Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -59,7 +59,11 @@
                   },
                   {
                       "path":  "scripts/audits/f-a2-retest.mjs",
-                      "sha256":  "53c9298e72bbdc0b4d765971328d19a2f65deb8a008bcdb9e7225e8bdc59b658"
+                      "sha256":  "f60aa5d376739f8051c1319b591eb27ce2296420cf274a43947cfa8aaa2d54ef"
+                  },
+                  {
+                      "path":  "scripts/audits/f-l1-forensics.mjs",
+                      "sha256":  "448a895bd4e7f3e49ad8bc53fa7edb4f1f6e4ba472f756b6a047d2c362f207f6"
                   },
                   {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",

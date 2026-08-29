@@ -1,0 +1,38 @@
+{
+ "library": [
+  "list"
+ ],
+ "reader": [
+  "open"
+ ],
+ "import_": [
+  "fromDialog"
+ ],
+ "enrich": [
+  "fetch"
+ ],
+ "export_": [
+  "bibtex"
+ ],
+ "ai_sensor": [
+  "requestAiRead"
+ ],
+ "lineage": [
+  "importDraft"
+ ],
+ "tags": [
+  "list"
+ ],
+ "notes": [
+  "get"
+ ],
+ "settings": [
+  "get"
+ ],
+ "system": [
+  "openExternal"
+ ],
+ "workspaces": [
+  "list"
+ ]
+}
