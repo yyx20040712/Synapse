@@ -2,10 +2,13 @@
    卡片网格+渐变材质+L 角饰+菱形分隔+筛选 chips；token 全走 theme.css :root 单源
    （禁散落硬编码色值）。由 LibraryPage.tsx import（feature 树唯一挂载点）。 */
 
-/* 文献卡网格：auto-fill 自适应列（窄窗单列、宽窗多列） */
+/* 文献卡网格：auto-fill 自适应列（窄窗单列、宽窗多列）；
+   auto-rows 1fr=行内等高兜底（U4 微票——卡高随标签数伸缩致同行参差，
+   行内拉伸对齐；行间仍随内容自适应，零裁切） */
 .lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 12px;
   align-content: start;
 }
