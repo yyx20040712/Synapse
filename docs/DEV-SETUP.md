@@ -8,7 +8,7 @@
 
 | 项 | 要求 | 说明 |
 | --- | --- | --- |
-| Node | **24.x**（engines >=20 但 better-sqlite3 v12.11.1 需 node-v115 预编译，CI 用 20 会源码编译失败——勿改回） | `node -v` 核对 |
+| Node | **24.x**（engines >=20 但 better-sqlite3 v12.11.1 需 node-v115 预编译，CI 用 20 会源码编译失败——勿改回） | `node -v` 核对；**本机便携版在 `D:\nodejs24`（v24.20.0）**，PATH 默认 node 是 D:\nodejs v25（ABI 不符必假红）——一切 node/npm 命令前缀 `export PATH="/d/nodejs24:$PATH" && ...`（2026-08-29 实录；Node25 下 verify 11 红=webstorage 污染，环境不兼容非代码回归） |
 | git | 任意（系统 git / MinGit 均可） | 新机若用 MinGit 须按 §3 配 openssl |
 | 网络代理 | `127.0.0.1:7890`（若新机代理不同，替换下文所有出现处） | GitHub 直连不稳是既有事实 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
@@ -65,8 +65,8 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（全绿才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：86 文件 615 用例 / locks 132 / 工单 104 open 0
-npm run build && npm run test:e2e   # 预期 20/20（e2e 不含在 verify 里，须单独跑）
+npm run verify        # 预期 exit 0：104 文件 858 用例 / locks 161 / 工单 open 0
+npm run build && npm run test:e2e   # 预期 25/25（e2e 不含在 verify 里，须单独跑）
 ```
 
 - 数字对不上：先看是否 Node 版本≠24 / sqlite-abi 未切换（`npm run test` 内含
