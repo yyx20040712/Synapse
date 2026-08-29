@@ -36,6 +36,13 @@
   border-color: var(--border-gold);
   transform: translateY(-1px);
 }
+/* 按压反馈（R2-UI1 游戏钮语义）：悬浮回落+冷蓝描边闪现——与 hover 金描边
+   分属两通道，按下即「落定」读感；transition 三件套已在 .lib-card 声明 */
+.lib-card:active {
+  box-shadow: var(--shadow-1);
+  border-color: var(--accent);
+  transform: translateY(0);
+}
 .lib-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -155,12 +162,22 @@
   padding: 4px 12px;
   background: var(--panel-glass);
   box-shadow: var(--shadow-1);
+  transition:
+    color 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.08s ease;
 }
 /* active chip（回炉 W2）：镜像 mockup .chip.on——accent-soft 底+accent 描边 */
 .lib-chip-on {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+/* 按压反馈（R2-UI1 游戏钮语义）：微缩+冷蓝描边（transition 经全族共享声明） */
+.lib-chip:not(.lib-chip-on):active {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: scale(0.96);
 }
 .lib-chip:focus-visible {
   outline: 1px solid var(--accent);

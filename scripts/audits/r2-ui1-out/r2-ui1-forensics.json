@@ -1,0 +1,67 @@
+{
+  "trigger": {
+    "borderColor": "rgba(44, 95, 138, 0.55)",
+    "borderWidth": "0.8px",
+    "backgroundImage": "linear-gradient(120deg, rgb(255, 255, 255) 0%, rgb(220, 235, 245) 45%, rgb(255, 255, 255) 100%)",
+    "backgroundSize": "220% 100%",
+    "animationName": "syn-pan-x",
+    "color": "rgb(35, 38, 45)",
+    "rect": {
+      "x": 109,
+      "y": 7.050000190734863,
+      "width": 88.4000015258789,
+      "height": 29.100000381469727,
+      "top": 7.050000190734863,
+      "right": 197.4000015258789,
+      "bottom": 36.15000057220459,
+      "left": 109
+    }
+  },
+  "navActiveBar": {
+    "animationName": "syn-pan-y",
+    "backgroundSize": "100% 300%"
+  },
+  "navEdgeLine": {
+    "animationName": "syn-pan-y",
+    "backgroundSize": "100% 220%"
+  },
+  "panel": {
+    "borderColor": "rgba(44, 95, 138, 0.45)",
+    "animationName": "ws-pop",
+    "bg": "rgb(255, 255, 255)",
+    "items": 4
+  },
+  "primaryActive": {
+    "transform": "matrix(0.98, 0, 0, 0.98, 0, 1)",
+    "filter": "brightness(0.88)",
+    "bgImage": "linear-gradient(150deg, rgb(58, 118, 171) 0%, rgb(44, 95, 138) 48%, rgb(35, 74, 109) 100%)",
+    "bgPos": "98.972% 50%",
+    "shadow": "rgba(227, 201, 143, 0.7) 0px 0px 0px 1px inset, rgba(11, 26, 40, 0.45) 0px 2px 6px 0px inset"
+  },
+  "triggerActive": {
+    "transform": "matrix(0.98, 0, 0, 0.98, 0, 1)",
+    "filter": "brightness(0.96)",
+    "shadow": "rgba(27, 35, 51, 0.18) 0px 2px 4px 0px inset"
+  },
+  "grid": {
+    "gridAutoRows": "minmax(190px, auto)",
+    "rowCount": 4,
+    "cardCount": 8,
+    "rowHeights": [
+      190,
+      190,
+      190,
+      190
+    ],
+    "interRowGaps": [
+      12,
+      12,
+      12
+    ]
+  },
+  "cardActive": {
+    "transform": "matrix(1, 0, 0, 1, 0, 0)",
+    "borderColor": "rgb(44, 95, 138)"
+  },
+  "dpr": 1.0000000149011612
+}

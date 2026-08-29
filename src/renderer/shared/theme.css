@@ -119,7 +119,8 @@ body,
   color: #cfd5e4;
   background: linear-gradient(180deg, var(--ink), #171e2f);
 }
-/* 右缘金渐隐线（mockup nav::after 语法逐值誊录） */
+/* 右缘金渐隐线（mockup nav::after 语法逐值誊录；R2-UI1 加 220% 纵向渐变
+   缓移——金线沿侧栏缘缓慢流淌，UI「活」感的常驻层（reduced-motion 关） */
 .app-nav::after {
   content: '';
   position: absolute;
@@ -128,6 +129,8 @@ body,
   bottom: 0;
   width: 1px;
   background: linear-gradient(180deg, transparent, rgba(201, 168, 106, 0.5), transparent);
+  background-size: 100% 220%;
+  animation: syn-pan-y 5s linear infinite;
 }
 .app-nav-item {
   display: flex;
@@ -158,6 +161,12 @@ body,
   color: #e6eaf4;
   background: rgba(255, 255, 255, 0.06);
 }
+/* 按压反馈（R2-UI1 游戏钮语义）：冷蓝闪现+微缩——瞬态色变+形变双通道 */
+.app-nav-item:active {
+  color: #eaf1fa;
+  background: rgba(44, 95, 138, 0.35);
+  transform: scale(0.97);
+}
 /* active 态：金左缘条 + ink-hi 底 + inset 金 hairline（mockup .nav-item.active） */
 .app-nav-item-active {
   color: #f3eddd;
@@ -173,6 +182,9 @@ body,
   width: 3px;
   border-radius: 2px;
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  /* R2-UI1：金条 300% 纵向缓移——选中态常驻微光（reduced-motion 关） */
+  background-size: 100% 300%;
+  animation: syn-pan-y 2.8s ease-in-out infinite;
 }
 .app-nav-foot {
   margin-top: auto;
@@ -200,35 +212,82 @@ body,
    :hover 挂类=永不生效——静态与 hover 必须同层（本节均为非 @layer 规则，
    层叠上压过 tailwind utilities 层：unlayered > layered）。
    CTA 语法：primary=墨青+inset 金 hairline(.45 静态→hover .7 提亮，定稿
-   注意事项①)+6px 切角；ghost hover=金铜。 */
+   注意事项①)+6px 切角；ghost hover=金铜。
+   R2-UI1 增量：primary 渐变底+hover 渐变流动（background-position 平移）；
+   全族 :active=游戏钮按压反馈（色变+微缩+下沉，瞬态 80~120ms）。 */
 .syn-btn-primary {
-  background: var(--accent);
+  background: linear-gradient(150deg, #3a76ab 0%, var(--accent) 48%, #234a6d 100%);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
   color: #ffffff;
-  border-color: var(--accent);
+  border-color: #234a6d;
   box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.45), var(--shadow-1);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition:
+    background-position 0.3s ease,
+    box-shadow 0.18s ease,
+    transform 0.08s ease,
+    filter 0.12s ease;
 }
 .syn-btn-primary:not(:disabled):hover {
   box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.7), var(--shadow-2);
+  /* 渐变流动：hover 期渐变端点平移到亮端（R2-UI1） */
+  background-position: 100% 50%;
+}
+.syn-btn-primary:not(:disabled):active {
+  background-position: 100% 50%;
+  filter: brightness(0.88);
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 201, 143, 0.7),
+    inset 0 2px 6px rgba(11, 26, 40, 0.45);
 }
 .syn-btn-secondary {
   background: var(--panel);
   color: var(--text);
   border-color: var(--border);
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.08s ease;
+}
+.syn-btn-secondary:not(:disabled):active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(1px) scale(0.98);
 }
 .syn-btn-danger {
   background: var(--panel);
   color: var(--danger);
   border-color: var(--danger);
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.08s ease;
+}
+.syn-btn-danger:not(:disabled):active {
+  background: rgba(179, 64, 58, 0.12);
+  filter: brightness(0.96);
+  transform: translateY(1px) scale(0.98);
 }
 .syn-btn-ghost {
   background: transparent;
   color: var(--text);
   border: none;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    transform 0.08s ease;
 }
 .syn-btn-ghost:not(:disabled):hover {
   color: var(--gold);
   background: var(--gold-soft);
+}
+.syn-btn-ghost:not(:disabled):active {
+  color: var(--gold);
+  background: rgba(207, 174, 114, 0.3);
+  transform: scale(0.96);
 }
 
 /* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
@@ -411,4 +470,41 @@ body,
 .lineage-fit-btn:hover {
   color: var(--text);
   background: var(--accent-soft);
+}
+.lineage-toolbar > button:active,
+.lineage-fit-btn:active {
+  transform: scale(0.95);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ══ R2-UI1 共享动画词汇（渐变流动 keyframes——消费方见各规则行内注）══
+   syn-pan-x/y：background-position 往返平移（配 background-size>100% 的
+   渐变底产生「流动」观感）；往返型非无限单向漂移，视觉均值恒回原位。 */
+@keyframes syn-pan-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes syn-pan-y {
+  0%,
+  100% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+}
+
+/* ══ R2-UI1 无障碍守卫：系统「减少动态效果」时常驻渐变动画全关
+   （交互瞬态 transition 保留——按压反馈属操作确认非装饰动效）══ */
+@media (prefers-reduced-motion: reduce) {
+  .app-nav::after,
+  .app-nav-item-active::before {
+    animation: none;
+  }
 }

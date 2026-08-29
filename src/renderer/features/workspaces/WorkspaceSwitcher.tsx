@@ -22,13 +22,15 @@
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/workspace-switcher.test.tsx（always-active）
- * - 视觉：R3-TH1 已上墨青侧栏——本组件随侧栏底色做夜色适配（rgba 白+
- *   金 hairline+夜面变量，主控预裁①；testid/文案/交互零改）
+ * - 视觉：R2-UI1 皮肤迁 workspace.css 类（B1 语义：内联恒压类=hover/active
+ *   静默失效）；触发钮=冷蓝实边框+冷调流光（R2-SH2 迁白顶栏后旧夜面色
+ *   「米白字贴白底」不可见病灶的根除）；testid/文案/交互零改
  */
 import { useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { useWorkspaceStore, selectCurrentName } from './workspace.store'
+import './workspace.css'
 
 const OP_FAILED = '操作失败'
 
@@ -77,25 +79,24 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
     }
   }
 
-  // R3-TH1 夜色适配（主控预裁①）：常态钮=rgba 白微底+金 hairline（mockup .ws 同款）；
-  // 展开面板=夜面色块浮层；输入/取消=夜面字段——文字全部亮色系
-  const triggerStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'rgba(255,255,255,.05)', color: '#efe9da' }
-  const panelStyle = { borderColor: 'rgba(201,168,106,.25)', background: 'var(--node-face)', color: 'var(--text-on-night)' }
-  const fieldStyle = { borderColor: 'rgba(151,160,187,.45)', background: 'rgba(23,30,51,.45)', color: '#e9e6db' }
-
+  // R2-UI1：皮肤全迁 workspace.css 类（B1 语义——内联恒压类选择器，:hover/
+  // :active/动画挂类才生效）；触发钮旧夜面色（米白字+5% 白底）在白顶栏上
+  // 不可见的病灶随迁移一并根除（冷蓝实边框+冷调流光+按压反馈）
   return (
     <div className="flex flex-col gap-1">
       <button
         aria-label="切换课题"
         aria-expanded={open}
-        className="rounded px-3 py-2 text-left text-sm"
-        style={triggerStyle}
+        className="ws-trigger"
         onClick={() => {
           setOpen((v) => !v)
           setCreating(false)
         }}
       >
-        {selectCurrentName({ items, currentId }) || '课题'} ▾
+        {selectCurrentName({ items, currentId }) || '课题'}
+        <span className="ws-caret" aria-hidden="true">
+          ▾
+        </span>
       </button>
       {/* 列表失败内联呈现（store 头注契约：错误写 error 供内联展示——回炉 W1
           兑现；持续展示型不 toast，重试语义复用 load（下次成功即清除）） */}
@@ -112,16 +113,11 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
         </div>
       )}
       {open && (
-        <div className="flex flex-col gap-1 rounded p-1" style={panelStyle}>
+        <div className="ws-panel">
           {items.map((w) => (
             <button
               key={w.id}
-              className="rounded px-2 py-1.5 text-left text-xs"
-              style={
-                w.id === currentId
-                  ? { background: 'rgba(255,255,255,.08)', color: '#f3eddd' }
-                  : undefined
-              }
+              className={`ws-item${w.id === currentId ? ' ws-item-current' : ''}`}
               onClick={() => void pick(w.id)}
             >
               {w.name}
@@ -130,24 +126,21 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
           ))}
           {creating ? (
             <div className="flex flex-col gap-1">
-                <input
+              <input
                 aria-label="新课题名称"
-                className="rounded border px-2 py-1 text-xs"
-                style={fieldStyle}
+                className="ws-field"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
               <div className="flex gap-1">
                 <button
-                  className="rounded px-2 py-1 text-xs text-white"
-                  style={{ background: 'var(--accent)' }}
+                  className="syn-btn-primary rounded border px-2 py-1 text-xs text-white"
                   onClick={() => void submitCreate()}
                 >
                   创建
                 </button>
                 <button
-                  className="rounded px-2 py-1 text-xs"
-                  style={fieldStyle}
+                  className="ws-item"
                   onClick={() => {
                     setCreating(false)
                     setName('')
@@ -158,15 +151,12 @@ export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void 
               </div>
             </div>
           ) : (
-            <button
-              className="rounded px-2 py-1.5 text-left text-xs"
-              onClick={() => setCreating(true)}
-            >
+            <button className="ws-item" onClick={() => setCreating(true)}>
               新建课题…
             </button>
           )}
           <button
-            className="rounded px-2 py-1.5 text-left text-xs"
+            className="ws-item"
             onClick={() => {
               setOpen(false)
               setCreating(false)
