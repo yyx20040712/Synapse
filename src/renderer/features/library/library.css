@@ -3,12 +3,14 @@
    （禁散落硬编码色值）。由 LibraryPage.tsx import（feature 树唯一挂载点）。 */
 
 /* 文献卡网格：auto-fill 自适应列（窄窗单列、宽窗多列）；
-   auto-rows 1fr=行内等高兜底（U4 微票——卡高随标签数伸缩致同行参差，
-   行内拉伸对齐；行间仍随内容自适应，零裁切） */
+   auto-rows minmax(190px, auto)=行内等高兜底（U4 微票同行参差修复语义保持）
+   ——R2-LIB1 修值：U4 的 1fr 在定高滚动容器内把视口高平分给各行，
+   行间出现横贯空白带（用户图一实锤）；minmax 下限保行内 stretch 等高、
+   上限随内容自适应，不足视口高不拉伸 */
 .lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  grid-auto-rows: 1fr;
+  grid-auto-rows: minmax(190px, auto);
   gap: 12px;
   align-content: start;
 }
