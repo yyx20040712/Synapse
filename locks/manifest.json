@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T10:54:02.3087208Z",
+    "generatedAt":  "2026-08-29T11:48:07.1209061Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -71,7 +71,7 @@
                   },
                   {
                       "path":  "scripts/local-state.mjs",
-                      "sha256":  "b862a844cd9ca916637c26ab1f2ee2f0f8d5ddd0d5ee577606ac01806f2c92f6"
+                      "sha256":  "0f5249fee9c13c381c5d97f13594edaa23c891c2c25a2c0936be980b4221908f"
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
@@ -123,7 +123,7 @@
                   },
                   {
                       "path":  "src/shared/constants.ts",
-                      "sha256":  "6a2574c005af11db12e663e56a022f34edeab684fa6f1dd55d2a4f5ee7dcfed8"
+                      "sha256":  "751e6749f5ef3d09742d9c05cc6a08edb948e2069eed3f9df07b35a73c89b881"
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
@@ -207,7 +207,7 @@
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
+                      "sha256":  "f63f1290bf5bd28f35525584b7ce5cd89732b0a21ebf0fd0681d8d58bad1a24e"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
@@ -318,6 +318,10 @@
                       "sha256":  "7855dbf78c9f66015e16ca0546b28cef9a72f3b669b8282f98e303ff3ebf200b"
                   },
                   {
+                      "path":  "tests/unit/main/migrate-user-data.test.ts",
+                      "sha256":  "9999655afb5b241daa9c0ad2402c951c7d5ee13f73f2156143281aa34b534df4"
+                  },
+                  {
                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
                   },
@@ -355,7 +359,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "40b9752cb36bd25fffdd29cecc4de6ce11e8c2a2da54234503012176cb46e099"
+                      "sha256":  "3b62b88b955c352998d2b7b088da773e242a34c1df1505904bc0d26fd37d6aed"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",

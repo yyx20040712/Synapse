@@ -8,8 +8,8 @@
  * 任何一层即红。mock 配方照 app-quit-dirty.test.tsx（App 组合根同型）。
  *
  * e2e 断言面兼容性锚：nav 四项文案（'文献库' 等=smoke.spec/reader-text.spec
- * getByRole name 断言面）与品牌文本 'Synapse Remake'（smoke.spec:22
- * getByText 断言面——mockup 的 'Synapse' 短名让位给测试面稳定，预裁③口径）。
+ * getByRole name 断言面）与品牌文本 'Synapse'（smoke.spec:22 getByText 断言面——
+ * R2-SH1 改名同步：旧全名缩为单名）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -120,13 +120,13 @@ describe('R3-TH1 App 壳——墨青侧栏结构锁', () => {
     expect(navButton('脉络')!.classList.contains('app-nav-item-active')).toBe(false)
   })
 
-  it('品牌行（Synapse Remake）与 footer（本地学术文献管理）在侧栏内', async () => {
+  it('品牌行（Synapse）与 footer（本地学术文献管理）在侧栏内', async () => {
     mount(<App />)
     await flush()
     const nav = document.querySelector('nav')
     expect(nav, 'nav 元素在场').not.toBeNull()
-    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse Remake') 断言面——不可改短").toContain(
-      'Synapse Remake'
+    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse') 断言面——R2-SH1 改名同步").toContain(
+      'Synapse'
     )
     expect(nav!.textContent, 'footer 文案（票面 P2）').toContain('本地学术文献管理')
   })

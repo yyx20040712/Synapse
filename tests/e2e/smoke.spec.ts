@@ -19,7 +19,7 @@ test('应用启动：侧栏三入口可见且可切换', async () => {
     } as Record<string, string>
   })
   const win = await app.firstWindow()
-  await expect(win.getByText('Synapse Remake')).toBeVisible({ timeout: 20_000 })
+  await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible()
   await expect(win.getByRole('button', { name: '阅读器' })).toBeVisible()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible()

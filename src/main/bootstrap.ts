@@ -1,7 +1,8 @@
 /**
  * 组装根（SR-INFRA-11，已完成；R1-WS1 课题化重构——ADR-0018）——应用启动顺序的唯一编排处。
  *
- * 顺序（不可调换）：userData 定位 → 课题布局（遗留迁移/指针解析——最早段）→
+ * 顺序（不可调换）：userData 定位（R2-SH1 改名迁移：旧派生目录→新目录
+ * 「Synapse」——override 时跳过）→ 课题布局（遗留迁移/指针解析——最早段）→
  * 数据层容器装配（课题目录内 db 迁移+fileStore+repos+services）→ 协议注册 →
  * CSP → IPC 注册（workspaces 域在此组合注入）→ 主窗口。
  *
@@ -45,6 +46,7 @@ import { createServices } from './services'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createDataLayerContainer } from './data-layer.container'
+import { migrateLegacyUserData } from './migrate-user-data'
 import { ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
 import { createWorkspaceService } from './services/workspaces/workspace.service'
 import { createIpcHandlers } from './ipc'
@@ -65,6 +67,9 @@ export interface BootstrapContext {
 export async function bootstrap(app: App): Promise<BootstrapContext> {
   const override = process.env.SYNAPSE_USER_DATA
   if (override) app.setPath('userData', override)
+  // R2-SH1：改名迁移（旧派生目录 → 新目录 Synapse；override 时跳过——e2e/取证
+  // 零影响），必须在课题布局消费 userData 根之前
+  else migrateLegacyUserData(app)
   const userDataDir = app.getPath('userData')
 
   // ── 课题布局（最早段：遗留迁移→指针解析→当前课题数据目录——R1-WS1）──

@@ -105,7 +105,7 @@ export function createMainWindow(
     ...bounds,
     show: false,
     autoHideMenuBar: true,
-    title: 'Synapse Remake',
+    title: 'Synapse',
     webPreferences: {
       ...WINDOW_SECURITY_FLAGS,
       preload: load.preloadScript,

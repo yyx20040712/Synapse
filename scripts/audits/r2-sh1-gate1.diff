@@ -1,0 +1,469 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index af56878..0128cc0 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-29T10:54:02.3087208Z",
++    "generatedAt":  "2026-08-29T11:29:00.3926735Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -123,7 +123,7 @@
+                   },
+                   {
+                       "path":  "src/shared/constants.ts",
+-                      "sha256":  "6a2574c005af11db12e663e56a022f34edeab684fa6f1dd55d2a4f5ee7dcfed8"
++                      "sha256":  "751e6749f5ef3d09742d9c05cc6a08edb948e2069eed3f9df07b35a73c89b881"
+                   },
+                   {
+                       "path":  "src/shared/ipc/api-surface.ts",
+@@ -207,7 +207,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/smoke.spec.ts",
+-                      "sha256":  "32ba0715e5d0a5dcfd9d2dd15b4377afc44393a6aa4bdf14e5c3fcff502f1a36"
++                      "sha256":  "f63f1290bf5bd28f35525584b7ce5cd89732b0a21ebf0fd0681d8d58bad1a24e"
+                   },
+                   {
+                       "path":  "tests/e2e/workspaces.spec.ts",
+@@ -317,6 +317,10 @@
+                       "path":  "tests/unit/ipc/tags.test.ts",
+                       "sha256":  "7855dbf78c9f66015e16ca0546b28cef9a72f3b669b8282f98e303ff3ebf200b"
+                   },
++                  {
++                      "path":  "tests/unit/main/migrate-user-data.test.ts",
++                      "sha256":  "9999655afb5b241daa9c0ad2402c951c7d5ee13f73f2156143281aa34b534df4"
++                  },
+                   {
+                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
+                       "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+@@ -355,7 +359,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/app-shell.test.tsx",
+-                      "sha256":  "40b9752cb36bd25fffdd29cecc4de6ce11e8c2a2da54234503012176cb46e099"
++                      "sha256":  "3b62b88b955c352998d2b7b088da773e242a34c1df1505904bc0d26fd37d6aed"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
+diff --git a/package.json b/package.json
+index a6221a4..91c6394 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+-  "name": "synapse-remake",
+-  "productName": "Synapse Remake",
++  "name": "synapse",
++  "productName": "Synapse",
+   "version": "0.1.0",
+   "description": "本地学术文献管理 + PDF 阅读标注（智慧水务课程科研工具）",
+   "private": true,
+diff --git a/src/main/bootstrap.ts b/src/main/bootstrap.ts
+index 559c185..c81201f 100644
+--- a/src/main/bootstrap.ts
++++ b/src/main/bootstrap.ts
+@@ -1,7 +1,8 @@
+ /**
+  * 组装根（SR-INFRA-11，已完成；R1-WS1 课题化重构——ADR-0018）——应用启动顺序的唯一编排处。
+  *
+- * 顺序（不可调换）：userData 定位 → 课题布局（遗留迁移/指针解析——最早段）→
++ * 顺序（不可调换）：userData 定位（R2-SH1 改名迁移：旧派生目录→新目录
++ * 「Synapse」——override 时跳过）→ 课题布局（遗留迁移/指针解析——最早段）→
+  * 数据层容器装配（课题目录内 db 迁移+fileStore+repos+services）→ 协议注册 →
+  * CSP → IPC 注册（workspaces 域在此组合注入）→ 主窗口。
+  *
+@@ -45,6 +46,7 @@ import { createServices } from './services'
+ import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
+ import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
+ import { createDataLayerContainer } from './data-layer.container'
++import { migrateLegacyUserData } from './migrate-user-data'
+ import { ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
+ import { createWorkspaceService } from './services/workspaces/workspace.service'
+ import { createIpcHandlers } from './ipc'
+@@ -65,6 +67,9 @@ export interface BootstrapContext {
+ export async function bootstrap(app: App): Promise<BootstrapContext> {
+   const override = process.env.SYNAPSE_USER_DATA
+   if (override) app.setPath('userData', override)
++  // R2-SH1：改名迁移（旧派生目录 → 新目录 Synapse；override 时跳过——e2e/取证
++  // 零影响），必须在课题布局消费 userData 根之前
++  else migrateLegacyUserData(app)
+   const userDataDir = app.getPath('userData')
+ 
+   // ── 课题布局（最早段：遗留迁移→指针解析→当前课题数据目录——R1-WS1）──
+diff --git a/src/main/migrate-user-data.ts b/src/main/migrate-user-data.ts
+new file mode 100644
+index 0000000..647bdd6
+--- /dev/null
++++ b/src/main/migrate-user-data.ts
+@@ -0,0 +1,82 @@
++/**
++ * [R2-SH1] userData 目录迁移（改名前 productName 派生的旧目录 → 新目录
++ * 「Synapse」）——应用改名后的用户真实数据目录搬迁（第二轮数据迁移；
++ * 幂等形态先例=R1-WS1 workspace.fs）。
++ *
++ * ── 行为层（分支矩阵=票面 §1.2）──
++ * | 条件 | 动作 |
++ * | 新路径在（含首迁中断残留） | 跳过：零改动旧目录、零 setPath+info 一行（幂等；旧目录原位保留=天然备份，人工可处置） |
++ * | 旧在新无 | renameSync 整体迁移（同卷原子，无半迁移态）+ setPath 新路径+info 中文一行 |
++ * | 皆无 | 全新安装语义：零动作（目录由 Electron 按需建——现行为保持） |
++ * | rename 抛错（占用/权限） | 不 fallback 复制、不动旧目录：setPath 回落旧路径继续运行
++ * |   | （数据安全优先于重命名完成）+warn 中文留痕 |
++ *
++ * ── 接口层 ──
++ * - migrateLegacyUserData(app)：app=Electron App 的路径子集（结构注入，测试
++ *   fake 同型——不 import electron 类型，node 环境可测）
++ * - deps 可注入 exists/rename（默认真 node:fs）——失败分支的确定性注入测试
++ *   先例=quitDirtyGuard deps（Windows 管理员态下只读目录法不可靠）
++ *
++ * ── 架构层 ──
++ * - 独立文件（非 bootstrap 内联——票面 §2 实现者裁量）：bootstrap.ts 运行时
++ *   import electron 全家桶，node 环境 vitest 无法加载；本文件与 workspace-layout
++ *   同级同性质（main 根启动最早段纯 fs 件），只 import node:fs/node:path，
++ *   不触 db、不触 electron
++ * - 调用点=bootstrap 的 SYNAPSE_USER_DATA override 分支之后（override 时跳过
++ *   迁移——e2e/取证零影响）、ensureWorkspaceLayout 之前（课题布局消费 userData 根）
++ *
++ * ── 生命周期层 ──
++ * - 旧/新路径自 app.getPath('appData') 派生（不硬编码 %APPDATA%——跨用户目录
++ *   形态；目录名派生自 productName 机制在案=票面预裁①）；判定以路径存在性为
++ *   准，不比对内容（预裁②）
++ * - 迁移仅 bootstrap 首启触发一次；二启命中跳过分支（幂等）
++ *
++ * ── 文化层 ──
++ * - 测试：tests/unit/main/migrate-user-data.test.ts（always-active；回落分支
++ *   必须有测试——「迁移失败不丢数据」红线）
++ */
++import { existsSync as fsExistsSync, renameSync as fsRenameSync } from 'node:fs'
++import { join } from 'node:path'
++
++/** Electron App 的路径子集（结构注入——App 天然满足；测试 fake 同型） */
++export interface UserDataPaths {
++  getPath(name: 'appData' | 'userData'): string
++  setPath(name: 'userData', path: string): void
++}
++
++/** 注入面（默认真 node:fs；失败分支确定性测试用） */
++export interface MigrateDeps {
++  existsSync(path: string): boolean
++  renameSync(from: string, to: string): void
++}
++
++/** 旧目录名=改名前 productName 派生的 userData 目录（f1 取证器实证） */
++const LEGACY_DIR_NAME = 'Synapse Remake'
++/** 新目录名=现 productName「Synapse」派生（package.json 单源语义） */
++const NEW_DIR_NAME = 'Synapse'
++
++export function migrateLegacyUserData(
++  app: UserDataPaths,
++  deps: MigrateDeps = { existsSync: fsExistsSync, renameSync: fsRenameSync }
++): void {
++  const appData = app.getPath('appData')
++  const newPath = join(appData, NEW_DIR_NAME)
++  const legacyPath = join(appData, LEGACY_DIR_NAME)
++  if (deps.existsSync(newPath)) {
++    console.info(`[bootstrap] 用户数据目录已就位，跳过迁移：${newPath}`)
++    return
++  }
++  if (!deps.existsSync(legacyPath)) return // 全新安装语义（现行为保持）
++  try {
++    deps.renameSync(legacyPath, newPath)
++    // Electron 启动期已缓存旧 userData 值——rename 后必须显式改指新路径
++    app.setPath('userData', newPath)
++    console.info(`[bootstrap] 已迁移用户数据目录：${legacyPath} → ${newPath}`)
++  } catch (err) {
++    // 数据安全优先于重命名完成：不动旧目录、不 fallback 复制，以旧路径继续
++    // 运行（数据零风险，仅目录名未变）——回落必须显式 setPath（默认值已指向
++    // 不存在的新路径，不回落=空库丢数据观感）
++    app.setPath('userData', legacyPath)
++    console.warn(`[bootstrap] 用户数据目录迁移失败，沿用旧路径继续运行：${legacyPath}`, err)
++  }
++}
+diff --git a/src/main/windows/main-window.ts b/src/main/windows/main-window.ts
+index 16d62e3..56bc3d1 100644
+--- a/src/main/windows/main-window.ts
++++ b/src/main/windows/main-window.ts
+@@ -105,7 +105,7 @@ export function createMainWindow(
+     ...bounds,
+     show: false,
+     autoHideMenuBar: true,
+-    title: 'Synapse Remake',
++    title: 'Synapse',
+     webPreferences: {
+       ...WINDOW_SECURITY_FLAGS,
+       preload: load.preloadScript,
+diff --git a/src/renderer/app/App.tsx b/src/renderer/app/App.tsx
+index f044d38..9d1af94 100644
+--- a/src/renderer/app/App.tsx
++++ b/src/renderer/app/App.tsx
+@@ -133,14 +133,14 @@ export function App(): JSX.Element {
+   return (
+     <div className="flex h-full">
+       {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）：品牌行文案
+-          「Synapse Remake」为 smoke.spec getByText 断言面——不可改 mockup 短名 */}
++          「Synapse」为 smoke.spec getByText 断言面（R2-SH1 改名同步） */}
+       <nav className="app-nav">
+         <div className="app-nav-brand">
+           <svg aria-hidden="true" viewBox="0 0 24 24">
+             <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
+             <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
+           </svg>
+-          <span className="app-nav-name">Synapse Remake</span>
++          <span className="app-nav-name">Synapse</span>
+         </div>
+         {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
+         <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
+diff --git a/src/renderer/index.html b/src/renderer/index.html
+index 3bb979d..9f4b831 100644
+--- a/src/renderer/index.html
++++ b/src/renderer/index.html
+@@ -5,7 +5,7 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <!-- CSP 由构建期注入（electron.vite.config.ts 的 cspMetaPlugin，来源 src/main/security/csp.ts）。
+          此处禁止手写 meta——双份维护必然漂移（tests/security/csp-meta.test.ts 强制）。 -->
+-    <title>Synapse Remake</title>
++    <title>Synapse</title>
+   </head>
+   <body>
+     <div id="root"></div>
+diff --git a/src/shared/constants.ts b/src/shared/constants.ts
+index 0ce05a7..9907e93 100644
+--- a/src/shared/constants.ts
++++ b/src/shared/constants.ts
+@@ -22,8 +22,8 @@ export const ALLOWED_REMOTE_HOSTS: readonly string[] = [
+   'export.arxiv.org'
+ ]
+ 
+-/** 礼貌池标识：CrossRef/OpenAlex 建议带 mailto（占位，Settings 可改） */
+-export const DEFAULT_CONTACT_EMAIL = 'synapse-remake-user@example.com'
++/** 礼貌池标识：CrossRef/OpenAlex 建议带 mailto（占位，Settings 可改；R2-SH1 改名同步） */
++export const DEFAULT_CONTACT_EMAIL = 'synapse-user@example.com'
+ 
+ /** HTTP 超时（毫秒）与重试 */
+ export const HTTP_TIMEOUT_MS = 15_000
+diff --git a/tests/e2e/smoke.spec.ts b/tests/e2e/smoke.spec.ts
+index 650c861..8761b1e 100644
+--- a/tests/e2e/smoke.spec.ts
++++ b/tests/e2e/smoke.spec.ts
+@@ -19,7 +19,7 @@ test('应用启动：侧栏三入口可见且可切换', async () => {
+     } as Record<string, string>
+   })
+   const win = await app.firstWindow()
+-  await expect(win.getByText('Synapse Remake')).toBeVisible({ timeout: 20_000 })
++  await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible()
+   await expect(win.getByRole('button', { name: '阅读器' })).toBeVisible()
+   await expect(win.getByRole('button', { name: '设置' })).toBeVisible()
+diff --git a/tests/unit/main/migrate-user-data.test.ts b/tests/unit/main/migrate-user-data.test.ts
+new file mode 100644
+index 0000000..6ab5b3c
+--- /dev/null
++++ b/tests/unit/main/migrate-user-data.test.ts
+@@ -0,0 +1,160 @@
++import { describe, expect, it, afterAll, vi } from 'vitest'
++import { existsSync } from 'node:fs'
++import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { migrateLegacyUserData } from '../../../src/main/migrate-user-data'
++import { ensureWorkspaceLayout } from '../../../src/main/workspace-layout'
++import { DB_FILE_NAME } from '../../../src/shared/constants'
++
++/**
++ * [R2-SH1] userData 目录迁移单测（改名前 productName 派生的旧目录 → 「Synapse」
++ * ——改名即用户真实数据目录搬迁，第二轮数据迁移；幂等语义先例=R1-WS1
++ * workspace.fs）。旧目录名字面量在本测试中逐处硬写=契约钉死（防常量被改后
++ * 迁移静默失效）。
++ * 真临时目录+真 rename（node 环境零 electron 依赖——fake app 结构注入）；
++ * always-active（三屋纪律：新测试不经 guardedDescribe）。
++ *
++ * 分支矩阵=票面 §1.2 五面：
++ * ① 旧在新无 → 整体 rename+setPath 新路径 ② 新已存在 → 跳过（幂等）
++ * ③ 皆无 → 全新安装零动作 ④ rename 失败 → 回落旧路径运行（数据安全红线）
++ * ⑤ 集成锚：迁移后 ensureWorkspaceLayout 以新路径为 userData 消费
++ */
++const tmpRoots: string[] = []
++
++async function mkAppData(prefix: string): Promise<string> {
++  const dir = await mkdtemp(join(tmpdir(), prefix))
++  tmpRoots.push(dir)
++  return dir
++}
++
++afterAll(async () => {
++  for (const dir of tmpRoots) await rm(dir, { recursive: true, force: true })
++})
++
++/** fake app（Electron App 路径子集同型）：userData 初值=appData/Synapse（productName 派生） */
++function makeFakeApp(appDataDir: string): {
++  app: Parameters<typeof migrateLegacyUserData>[0]
++  setPathCalls: Array<[string, string]>
++} {
++  const paths = new Map<string, string>([
++    ['appData', appDataDir],
++    ['userData', join(appDataDir, 'Synapse')]
++  ])
++  const setPathCalls: Array<[string, string]> = []
++  return {
++    app: {
++      getPath: (name) => paths.get(name) ?? '',
++      setPath: (name, path) => {
++        setPathCalls.push([name, path])
++        paths.set(name, path)
++      }
++    },
++    setPathCalls
++  }
++}
++
++describe('R2-SH1 userData 目录迁移——分支矩阵', () => {
++  it('① 旧在新无：目录整体 rename 迁移 + setPath 显式指向新路径 + info 中文留痕', async () => {
++    const appData = await mkAppData('r2sh1-migrate-')
++    const legacy = join(appData, 'Synapse Remake')
++    const next = join(appData, 'Synapse')
++    await mkdir(legacy)
++    await writeFile(join(legacy, 'sentinel.txt'), '真实数据', 'utf-8')
++    const { app, setPathCalls } = makeFakeApp(appData)
++    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
++    migrateLegacyUserData(app)
++    expect(
++      existsSync(join(next, 'sentinel.txt')),
++      '数据文件应随目录整体迁到新路径（rename 语义=旧位消失即备份反转）'
++    ).toBe(true)
++    expect(existsSync(join(legacy, 'sentinel.txt')), '旧路径数据不得残留副本').toBe(false)
++    expect(
++      setPathCalls.some(([n, v]) => n === 'userData' && v === next),
++      'rename 成功后必须显式 setPath 新路径（Electron 启动期已缓存旧值）'
++    ).toBe(true)
++    expect(app.getPath('userData')).toBe(next)
++    expect(
++      info.mock.calls.some((args) => typeof args[0] === 'string' && args[0].includes('已迁移用户数据目录')),
++      '迁移成功应有 console.info 中文一行留痕'
++    ).toBe(true)
++    info.mockRestore()
++  })
++
++  it('② 新路径已存在（含首迁中断残留）：跳过迁移零改动——旧目录原位不动、不 setPath', async () => {
++    const appData = await mkAppData('r2sh1-skip-')
++    const legacy = join(appData, 'Synapse Remake')
++    const next = join(appData, 'Synapse')
++    await mkdir(legacy)
++    await writeFile(join(legacy, 'old.txt'), '旧数据', 'utf-8')
++    await mkdir(next)
++    const { app, setPathCalls } = makeFakeApp(appData)
++    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    migrateLegacyUserData(app)
++    expect(existsSync(join(legacy, 'old.txt')), '跳过分支不得动旧目录（不合并不覆盖，人工可处置）').toBe(true)
++    expect(existsSync(join(next, 'old.txt')), '跳过分支不得把旧目录合入新路径').toBe(false)
++    expect(setPathCalls.length, '跳过分支零 setPath（默认 userData 已是新路径）').toBe(0)
++    expect(warn.mock.calls.length, '跳过分支不是故障，不得 warn').toBe(0)
++    info.mockRestore()
++    warn.mockRestore()
++  })
++
++  it('③ 两路径皆无：全新安装语义——零动作（不建目录、不 setPath）', async () => {
++    const appData = await mkAppData('r2sh1-fresh-')
++    const { app, setPathCalls } = makeFakeApp(appData)
++    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
++    migrateLegacyUserData(app)
++    expect(existsSync(join(appData, 'Synapse Remake')), '全新安装不得凭空建旧目录').toBe(false)
++    expect(existsSync(join(appData, 'Synapse')), '全新安装语义由 Electron 按需建目录——本函数零 mkdir').toBe(false)
++    expect(setPathCalls.length).toBe(0)
++    info.mockRestore()
++  })
++
++  it('④ rename 失败（占用/权限）：setPath 回落旧路径继续运行 + warn 中文留痕，旧数据零损伤', async () => {
++    const appData = await mkAppData('r2sh1-fallback-')
++    const legacy = join(appData, 'Synapse Remake')
++    await mkdir(legacy)
++    await writeFile(join(legacy, 'sentinel.txt'), '真实数据', 'utf-8')
++    const { app, setPathCalls } = makeFakeApp(appData)
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    migrateLegacyUserData(app, {
++      existsSync: (p) => existsSync(p),
++      renameSync: () => {
++        throw new Error('EPERM: 目录被占用（模拟占用/权限失败）')
++      }
++    })
++    expect(app.getPath('userData'), '改名失败即以旧路径继续运行（数据安全优先于重命名完成）').toBe(legacy)
++    expect(
++      setPathCalls.some(([n, v]) => n === 'userData' && v === legacy),
++      '回落必须显式 setPath 旧路径（默认值已指向不存在的新路径——不回落=空库丢数据观感）'
++    ).toBe(true)
++    expect(existsSync(join(legacy, 'sentinel.txt')), '回落分支不得动旧目录数据（红线：迁移失败不丢数据）').toBe(true)
++    expect(
++      warn.mock.calls.some((args) => typeof args[0] === 'string' && args[0].includes('迁移失败')),
++      '回落应有 console.warn 中文留痕'
++    ).toBe(true)
++    warn.mockRestore()
++  })
++
++  it('⑤ 集成锚：迁移后 ensureWorkspaceLayout 以新路径为 userData 消费（遗留库随迁可用）', async () => {
++    const appData = await mkAppData('r2sh1-integration-')
++    const legacy = join(appData, 'Synapse Remake')
++    const next = join(appData, 'Synapse')
++    await mkdir(legacy)
++    // 遗留布局种子：userData 根 synapse.db（ensureWorkspaceLayout 内 rename 搬入
++    // workspaces/default——纯 fs 搬移不打开库，哨兵文件即真实布局形态）
++    await writeFile(join(legacy, DB_FILE_NAME), '', 'utf-8')
++    const { app } = makeFakeApp(appData)
++    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
++    migrateLegacyUserData(app)
++    const layout = await ensureWorkspaceLayout(app.getPath('userData'))
++    info.mockRestore()
++    expect(layout.rootDir, '课题布局根必须落在新 userData 路径下').toBe(join(next, 'workspaces'))
++    expect(layout.mode).toBe('workspace')
++    expect(
++      existsSync(join(layout.dataDir, DB_FILE_NAME)),
++      '遗留库应随目录迁移后抵达 default 课题（数据链路完整）'
++    ).toBe(true)
++  })
++})
+diff --git a/tests/unit/renderer/app-shell.test.tsx b/tests/unit/renderer/app-shell.test.tsx
+index 7e16c05..845d625 100644
+--- a/tests/unit/renderer/app-shell.test.tsx
++++ b/tests/unit/renderer/app-shell.test.tsx
+@@ -8,8 +8,8 @@
+  * 任何一层即红。mock 配方照 app-quit-dirty.test.tsx（App 组合根同型）。
+  *
+  * e2e 断言面兼容性锚：nav 四项文案（'文献库' 等=smoke.spec/reader-text.spec
+- * getByRole name 断言面）与品牌文本 'Synapse Remake'（smoke.spec:22
+- * getByText 断言面——mockup 的 'Synapse' 短名让位给测试面稳定，预裁③口径）。
++ * getByRole name 断言面）与品牌文本 'Synapse'（smoke.spec:22 getByText 断言面——
++ * R2-SH1 改名同步：旧全名缩为单名）。
+  */
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+@@ -120,13 +120,13 @@ describe('R3-TH1 App 壳——墨青侧栏结构锁', () => {
+     expect(navButton('脉络')!.classList.contains('app-nav-item-active')).toBe(false)
+   })
+ 
+-  it('品牌行（Synapse Remake）与 footer（本地学术文献管理）在侧栏内', async () => {
++  it('品牌行（Synapse）与 footer（本地学术文献管理）在侧栏内', async () => {
+     mount(<App />)
+     await flush()
+     const nav = document.querySelector('nav')
+     expect(nav, 'nav 元素在场').not.toBeNull()
+-    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse Remake') 断言面——不可改短").toContain(
+-      'Synapse Remake'
++    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse') 断言面——R2-SH1 改名同步").toContain(
++      'Synapse'
+     )
+     expect(nav!.textContent, 'footer 文案（票面 P2）').toContain('本地学术文献管理')
+   })
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index a879730..fc6d0f1 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -224,7 +224,8 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选视觉反馈回退官方原生半透明（F1 修正役 R1 路线——ADR-0019；复测站 3「全面失败+0.5~5s 延迟」根修）：①text-layer.css ::selection/::-moz-selection 回官方 rgba(0 0 255 / 0.25)（逐字对照 pdfjs-dist pdf_viewer.css:678-685；br 两规则保持 transparent）；②删 SelectionRects.tsx 整件+SelectionLayer 摘 overlay 计算/渲染（P10 方案切换=删旧）；③视觉通道=原生 ::selection（拖选第一帧即反馈，零 JS 链路——取证：自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+拖选期死寂=根因双实锤，O(n) 遍历 0~0.6ms 假说证伪）；④工具条/保存/undo/Escape 零变；AnnotationLayer 单层 multiply+AI 层去 multiply（F-07 层间修复）保留；⑤受锁两文件第三次改写：e2e F-06 小票 C 节（官方半透明精确值+selection-rects 防回归 0 计数+L7 延迟预算 toolbar≤1.5s）+unit F-07a 改防回归守卫/F-07b 删——票面 scripts/audits/sr2-f-08-brief.md；取证 scripts/audits/f1-forensics.report.md；三屋：实现 1.95M tok/858 用例绿+门一 PASS 0B/4W/7N+门二 PASS 零回炉（W3=INV-37 登记）；依赖 ADR-0019 裁决' },
+   { id: 'SR2-F-09', file: 'src/renderer/features/reader/text-layer.css', area: 'reader', owner: 'strong', status: 'done', summary: '划选选中色改灰（用户令 2026-08-29：仿 WPS——灰色选中/标注纯色；v5 核查=标注纯色+重合不加重已成立零改）：text-layer.css ::selection/::-moz-selection rgba(0 0 255 / 0.25)→rgba(0 0 0 / 0.30)（≈白纸 #B3B3B3）；受锁 e2e reader-text.spec F-06 小票 C 节精确值断言+测试名同步；INV-37/ADR-0019 补记（用户指令偏离官方值的显式登记）；压缩路径票（单值变更+守卫同步，主控直做——变异红证 sr2-f-09-mutation.raw.txt：css 改回蓝→F-06 小票红点精确锁值；verify 858+locks+e2e 25 passed 全绿；v5b 真机像素证=差分区 93.3% 中性灰/均值 rgb(151,154,155)）；核查档 scripts/audits/f1-out/f1-forensics5.json+v5 截图+执行记录 sr2-f-09-record.md' },
+   { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' },
+-  { id: 'R2-LG12', file: 'src/main/services/lineage/lineage.service.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '综述多参考边数据面（U2b——用户裁决 2026-08-29「A. 完整多参考边」AskUserQuestion 在案）：lineageEdge 增 kind:tree|ref（出口必填/upsert 可选缺省 tree/service+importDraft 双写路径显式填；draft 协议零改）+迁移 006（ADD COLUMN kind TEXT NOT NULL DEFAULT tree——旧行幂等+migrate.test [1..5,6]）+service upsertEdge 受控豁免分支（ref 豁免多父且 tree 侧收窄 ref 入边不算 tree 父=对偶自洽/仍拒环=混合图 reachable/同端点对 tree+ref 互斥拒/from 双条件 paperId≠null+isSurveyTitle——判定上移 shared/models 单源+renderer re-export 消费面零改）+layout 净化段剔 ref 边（不计 dropped——有意分流）+渲染 ref=var(--survey-edge) 1.4 虚 2-3（直读 e.kind，优先级 ref>综述关联>推断>普通）+综述右键「添加参考连接」入口（pending-link mode 扩展 ref）+INV-27 修订登记（tree 单父原样/ref 受控豁免条款）；受锁面=shared models+ipc schemas+006 迁移+lineage-import/layout/visual 三测+6 测试工厂 kind 波及+e2e lineage.spec T5（综述幽灵行第四篇独立 fixture→右键→点已有 tree 父的甲=豁免面→ref path 精确断言→reload 持久+负锚非综述无菜单项）；三屋：实现者 10.0M tok（883 用例精确命中 875+service6+layout1+visual1+变异红证 4 档含 M2 混合环盲区拦截/M4 自环 reason 红点）+门一 B0/W2/N6（W1=check-tickets R2 系正则盲区建单时已知设计、W2=主控 diff 包 git add 失误门一补全）+门二 PASS 零回炉（W3 剪贴板复验落盘补跑 2.0s 过/N7 首红未落盘教训回流）；收口：verify exit=0（locks 165=164+006）+e2e 26/26 终态（T5 首跑即过+corpus 超时 2.5s 单跑复验=负载 flake+剪贴板 2.0s 复验）；票面 r2-lg12-brief.md+三报告+收口单在档' }
++  { id: 'R2-LG12', file: 'src/main/services/lineage/lineage.service.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '综述多参考边数据面（U2b——用户裁决 2026-08-29「A. 完整多参考边」AskUserQuestion 在案）：lineageEdge 增 kind:tree|ref（出口必填/upsert 可选缺省 tree/service+importDraft 双写路径显式填；draft 协议零改）+迁移 006（ADD COLUMN kind TEXT NOT NULL DEFAULT tree——旧行幂等+migrate.test [1..5,6]）+service upsertEdge 受控豁免分支（ref 豁免多父且 tree 侧收窄 ref 入边不算 tree 父=对偶自洽/仍拒环=混合图 reachable/同端点对 tree+ref 互斥拒/from 双条件 paperId≠null+isSurveyTitle——判定上移 shared/models 单源+renderer re-export 消费面零改）+layout 净化段剔 ref 边（不计 dropped——有意分流）+渲染 ref=var(--survey-edge) 1.4 虚 2-3（直读 e.kind，优先级 ref>综述关联>推断>普通）+综述右键「添加参考连接」入口（pending-link mode 扩展 ref）+INV-27 修订登记（tree 单父原样/ref 受控豁免条款）；受锁面=shared models+ipc schemas+006 迁移+lineage-import/layout/visual 三测+6 测试工厂 kind 波及+e2e lineage.spec T5（综述幽灵行第四篇独立 fixture→右键→点已有 tree 父的甲=豁免面→ref path 精确断言→reload 持久+负锚非综述无菜单项）；三屋：实现者 10.0M tok（883 用例精确命中 875+service6+layout1+visual1+变异红证 4 档含 M2 混合环盲区拦截/M4 自环 reason 红点）+门一 B0/W2/N6（W1=check-tickets R2 系正则盲区建单时已知设计、W2=主控 diff 包 git add 失误门一补全）+门二 PASS 零回炉（W3 剪贴板复验落盘补跑 2.0s 过/N7 首红未落盘教训回流）；收口：verify exit=0（locks 165=164+006）+e2e 26/26 终态（T5 首跑即过+corpus 超时 2.5s 单跑复验=负载 flake+剪贴板 2.0s 复验）；票面 r2-lg12-brief.md+三报告+收口单在档' },
++  { id: 'R2-SH1', file: 'src/main/bootstrap.ts', area: 'infra', owner: 'strong', status: 'open', summary: '应用重命名 Synapse Remake→Synapse+userData 数据迁移（U3a——独立成票单独审计·handoff §8；⚠landmine=userData 目录名派生自 productName=用户真实数据目录搬迁，复用 WS1 幂等模式）：package.json name/productName 同步+文本 4 位（main-window 标题/App 品牌位+受锁 smoke.spec/app-shell.test 断言）+全仓 grep 清零；迁移=bootstrap 最早段（ensureWorkspaceLayout 前）——SYNAPSE_USER_DATA 未覆盖且新 appData/Synapse 无且旧 Synapse Remake 有→整体 rename（同卷原子零半迁移态）；rename 失败回落旧路径运行（数据安全优先于重命名完成）+warn；新已存在跳过（旧目录保留=天然备份）；纯函数态新测试 5 it（tmp 实建目录注入 fake app）；真机迁移验证归主控收口（真实库副本取证器）——票面 scripts/audits/r2-sh1-brief.md；依赖 R1-WS1 幂等模式先例' }
+ ] as const
+ 
+ export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))

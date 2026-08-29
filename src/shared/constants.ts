@@ -22,8 +22,8 @@ export const ALLOWED_REMOTE_HOSTS: readonly string[] = [
   'export.arxiv.org'
 ]
 
-/** 礼貌池标识：CrossRef/OpenAlex 建议带 mailto（占位，Settings 可改） */
-export const DEFAULT_CONTACT_EMAIL = 'synapse-remake-user@example.com'
+/** 礼貌池标识：CrossRef/OpenAlex 建议带 mailto（占位，Settings 可改；R2-SH1 改名同步） */
+export const DEFAULT_CONTACT_EMAIL = 'synapse-user@example.com'
 
 /** HTTP 超时（毫秒）与重试 */
 export const HTTP_TIMEOUT_MS = 15_000

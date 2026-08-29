@@ -34,7 +34,7 @@
 # - 完成记录（2026-08-22）：占位已删、工单已翻 done；dist 首跑 winCodeSign symlink 问题经一次性缓存预置解决（机器本地）。
 
 appId: io.github.yyx20040712.synapse
-productName: Synapse Remake
+productName: Synapse
 directories:
   output: dist
   buildResources: build
@@ -65,4 +65,4 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false
-  artifactName: Synapse-Remake-${version}-setup.${ext}
+  artifactName: Synapse-${version}-setup.${ext}

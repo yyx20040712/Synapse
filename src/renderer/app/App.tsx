@@ -133,14 +133,14 @@ export function App(): JSX.Element {
   return (
     <div className="flex h-full">
       {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）：品牌行文案
-          「Synapse Remake」为 smoke.spec getByText 断言面——不可改 mockup 短名 */}
+          「Synapse」为 smoke.spec getByText 断言面（R2-SH1 改名同步） */}
       <nav className="app-nav">
         <div className="app-nav-brand">
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
             <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
           </svg>
-          <span className="app-nav-name">Synapse Remake</span>
+          <span className="app-nav-name">Synapse</span>
         </div>
         {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
         <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />

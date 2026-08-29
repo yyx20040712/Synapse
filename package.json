@@ -1,6 +1,6 @@
 {
-  "name": "synapse-remake",
-  "productName": "Synapse Remake",
+  "name": "synapse",
+  "productName": "Synapse",
   "version": "0.1.0",
   "description": "本地学术文献管理 + PDF 阅读标注（智慧水务课程科研工具）",
   "private": true,

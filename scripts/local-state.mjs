@@ -35,7 +35,9 @@ function fail(msg) {
 function defaultUserData() {
   const appData = env.APPDATA ?? env.XDG_CONFIG_HOME ?? ''
   if (!appData) fail('无法定位 userData：缺 APPDATA/XDG_CONFIG_HOME——手动传目录参数')
-  return join(appData, 'Synapse Remake')
+  // R2-SH1 重命名迁移后目录=Synapse（旧 Synapse Remake 已被 bootstrap rename 走）；
+  // 旧名兜底=迁移前环境/手动指定场景（[locked-change] 随 R2-SH1）
+  return existsSync(join(appData, 'Synapse')) ? join(appData, 'Synapse') : join(appData, 'Synapse Remake')
 }
 
 function mustExist(p, what) {
