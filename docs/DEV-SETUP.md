@@ -65,14 +65,21 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（全绿才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：104 文件 858 用例 / locks 161 / 工单 open 0
-npm run build && npm run test:e2e   # 预期 25/25（e2e 不含在 verify 里，须单独跑）
+npm run verify        # 预期 exit 0：107 文件 890 用例 / locks 166 / 工单 open 0
+npm run build && npm run test:e2e   # 预期 26/26（e2e 不含在 verify 里，须单独跑）
 ```
 
 - 数字对不上：先看是否 Node 版本≠24 / sqlite-abi 未切换（`npm run test` 内含
   切换，裸跑 npx vitest 会假红——宪法既有纪律）。
 - locks 报受锁文件被改：新机**禁动** `tests/**`、`src/shared/**`、migrations、
   CI/lint/构建/测试配置（sha256 对账，改须走 [locked-change] 流程）。
+- 真实库位置：`%APPDATA%\Synapse`（R2-SH1 重命名迁移后；旧 `Synapse Remake`
+  已原子改名走——`src/main/migrate-user-data.ts` 兜底回落）。
+- 只读取证查库：**node:sqlite 内置模块**读 DB **副本**（copyFileSync 后
+  `DatabaseSync(tmp,{readOnly:true})`）——零 ABI 换绑零 EBUSY；写面仍走
+  better-sqlite3。
+- 用户应用开着时：单实例锁+绑定文件 EBUSY——取证器启动前确认 electron
+  进程不在（tasklist | findstr electron）。
 
 ## 6. 首会话开工
 

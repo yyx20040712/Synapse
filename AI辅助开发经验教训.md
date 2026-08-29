@@ -334,3 +334,24 @@ Phase 7 三役（交互基建/多标签/笔记结构化）以「工单化 plan �
 主题：**「修得越勤、坏得越怪」的循环里，先问通道/路线是否选错，再问参数——
 而裁定通道对错的最快手段是像素级真机取证，不是再读一遍代码。**
 
+
+## 十二、增补（2026-08-29，LOOP R2 修正役四单——公式可达性/证据入库/环境锁竞态期教训）
+
+R2 修正役（R2-LG11 脉络浅色重制/LG12 综述参考边/SH1 重命名迁移/SH2 顶栏
+字体+U4 微票）全档=scripts/audits/r2-*/（票面+实现/门一/门二报告+收口单+
+*.raw.txt）；复测反馈台账=docs/prompts/2026-08-29_loop-handoff-v5.md：
+
+| 教训 | 事故证据 | 沉淀位置 |
+| ---- | ---- | ---- |
+| **公式类转译先推演合法数据形态可达性** | 「被引≥2 判核心」译成入度≥2——INV-27 树单父下合法图入度恒≤1，isCore 数学恒假永不触发；单测全绿（夹具直喂多父非法图绕过 service 守卫=假绿机制），真机取证器 fixture 走合法链路被多父守卫拒才暴露；同型=用户语言「被引用」≠设计语言「入度」的公式级转译错位 | methodology §4.1⑤e；测试夹具禁绕 service 守卫直喂非法态；票面涉约束公式必附可达性推演 |
+| **单测全绿≠真机可见的第三形态：同名双元素** | SVG `<title>` tooltip 与题名文本构成同名双 DOM 元素——组件测试全绿（各自断言面独立），e2e getByText strict violation 才红（T1 实录）；本战役两次「组件测试不可见面」（前次=isCore 恒假） | 修法先例=HTML title 属性（属性值不入 textContent）；NodeCard 头注「优先调整实现保断言」 |
+| **`*.log` 被 .gitignore 静默拦+add 2>/dev/null 吞警告** | R2 四单 git add 列了 18 个 .log 证据文件全部未入库（git ls-files 零 .log 才发现）；f1 战例 sr2-f-09-mutation.raw.txt 后缀是正确先例但未固化成纪律 | methodology §4.1④（.raw.txt 统一后缀+add 后 ls-files 核对）；四单证据已补档 *.raw.txt |
+| **diff 包生成先 add 跟踪件=staged 缺件** | 门一 diff 包生成前 `git add`（非 -N）三件跟踪修改件→git diff（工作区 vs index）静默缺件，「22 文件全量」失真——门一直读工作区补全 | methodology §4.2（新文件仅 -N/跟踪件零 add/--stat 与 status 核对） |
+| **sed 连续行号删除漂移破坏块结构** | 删 library.css 三处 font-display 用三次 `sed -i 'Nd'`——第二次起行号已上移，误删 .lib-detail-v-serif 选择器行（块变孤立属性）；Edit 工具读后修复 | 多删行用单次表达式（`sed -i '/pattern/d'`）或 Edit 工具；行号操作后必 grep 结构完整性 |
+| **「纯 CSS 级」判断漏掉布局语义副作用** | U4 用 grid-auto-rows:1fr 修卡高参差，自判「纯 CSS 级受锁面零」跳过视觉复评；真实库当前课题空态无像素背书——1fr 在 h-full 滚动容器把视口高平分给行=用户复测见行间巨大空白带（U4 回归） | methodology §4.1⑤f（⑤b 适用面扩至一切改样式值的票+真机验证须有真实数据量实景）；复测定级 R2-LIB1 应急票 |
+| **ABI 换绑的 Windows 文件锁竞态三防线** | 取证器 seed 链换绑 better-sqlite3 绑定：electron 退出延迟持锁→copyFile 间歇损坏→子进程 DLOPEN 失败（时灵时不灵）；且 lock-protected.ps1 通配 scripts/**.mjs=取证器自动入锁（改它须 unlock） | r2-lg11-forensics.mjs 配方：退出缓冲 1.5s+拷贝后 hash 校验重拷+sqlite-abi use electron 终态兜底；node:sqlite 只读查库副本=更轻替代（DEV-SETUP §5） |
+| **导入整批替换语义=用户心智危险面** | 用户「没测脉络是怕数据清零浪费 AI 额度」——importDraft 的 clearGraph 清面重灌语义无确认直触；数据本身零丢失（迁移前后对账 8 篇一致）但危险感真实阻止了功能验证 | U2' 案册（v5 §4：导入确认弹窗/增量合并候选）；UX 语义与用户心智同设计 |
+| **工单号前缀即检查域选择（R2 系正则盲区）** | check-tickets 正则 `SR2?-`（S 必选）对 R2 前缀零解析——R2-LG9~12/SH1/2 不入统计与规则 4/6 检查；改造役组件对 data-ticket 占位要求不适用=主动选择该路径，但 open 计数不含 R2 系=门二「open 0」是盲区假象 | v5 遗留池（修复代价=拉 R2 系入规则 4/6 需逐件核 b3 头注）；门一 W1/门二 N9 三单累计实锤 |
+
+主题：**「绿」有三重——断言绿、全量绿、真实数据形态绿；只有第三重是用户
+看得见的。而证据若只落在工作区不入版本库，连第一重的追溯都会丢。**
