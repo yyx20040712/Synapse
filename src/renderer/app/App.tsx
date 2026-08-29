@@ -1,5 +1,5 @@
 /**
- * 应用骨架（infra，无工单）：侧栏四入口 + 视图切换 + 错误边界。
+ * 应用骨架（infra，无工单）：顶栏身份区（R2-SH2 决4）+ 侧栏四入口 + 视图切换 + 错误边界。
  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
  */
 import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
@@ -131,44 +131,52 @@ export function App(): JSX.Element {
   }, [])
 
   return (
-    <div className="flex h-full">
-      {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）：品牌行文案
-          「Synapse」为 smoke.spec getByText 断言面（R2-SH1 改名同步） */}
-      <nav className="app-nav">
-        <div className="app-nav-brand">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
-            <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
-          </svg>
-          <span className="app-nav-name">Synapse</span>
+    <div className="flex h-full flex-col">
+      {/* R2-SH2 决4 顶栏身份区（ZCode 式）：logo+应用名「Synapse」（smoke.spec:22
+          getByText 断言面——迁顶栏后文本仍唯一在场）+课题切换器迁挂+版本号右区 */}
+      <header className="app-header">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
+          <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
+        </svg>
+        <span className="app-header-name">Synapse</span>
+        {/* R1-WS2：课题切换器（R2-SH2 迁挂顶栏——纯容器迁挂，组件本体零改）：
+            dirty 聚合 props 注入，「管理」跳设置；wrapper 防展开面板撑高顶栏 */}
+        <div className="app-header-switcher">
+          <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
         </div>
-        {/* R1-WS2：课题切换器（nav 顶部）——dirty 聚合 props 注入，「管理」跳设置 */}
-        <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
-        {NAV.map((item) => (
-          <button
-            key={item.id}
-            className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
-            onClick={() => setView(item.id)}
-          >
-            {NAV_ICONS[item.id]}
-            {item.label}
-          </button>
-        ))}
-        <div className="app-nav-foot">
-          <span className="app-nav-ver">v0.1</span>
-          <span className="app-nav-txt">本地学术文献管理</span>
-        </div>
-      </nav>
-      <main className="min-w-0 flex-1 overflow-auto">
-        <ErrorBoundary>
-          {view === 'library' && <LibraryPage />}
-          {view === 'reader' && <ReaderPage />}
-          {view === 'settings' && (
-            <SettingsPage workspaceSection={<WorkspaceSection dirty={quitDirty} />} />
-          )}
-          {view === 'lineage' && <LineagePage />}
-        </ErrorBoundary>
-      </main>
+        <span className="app-nav-ver">v0.1</span>
+      </header>
+      {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器） */}
+      <div className="flex min-h-0 flex-1">
+        {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）——R2-SH2
+            品牌行退役迁顶栏后，nav 首行直接起导航项 */}
+        <nav className="app-nav">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
+              onClick={() => setView(item.id)}
+            >
+              {NAV_ICONS[item.id]}
+              {item.label}
+            </button>
+          ))}
+          <div className="app-nav-foot">
+            <span className="app-nav-txt">本地学术文献管理</span>
+          </div>
+        </nav>
+        <main className="min-w-0 flex-1 overflow-auto">
+          <ErrorBoundary>
+            {view === 'library' && <LibraryPage />}
+            {view === 'reader' && <ReaderPage />}
+            {view === 'settings' && (
+              <SettingsPage workspaceSection={<WorkspaceSection dirty={quitDirty} />} />
+            )}
+            {view === 'lineage' && <LineagePage />}
+          </ErrorBoundary>
+        </main>
+      </div>
       <ToastHost />
     </div>
   )

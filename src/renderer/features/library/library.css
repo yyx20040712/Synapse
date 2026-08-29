@@ -85,7 +85,6 @@
 .lib-card-year {
   flex: none;
   min-width: 44px;
-  font-family: var(--font-display);
   font-size: 17px;
   color: var(--gold);
 }
@@ -187,7 +186,6 @@
   min-height: 160px;
 }
 .lib-detail-title {
-  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 500;
   line-height: 1.5;
@@ -198,7 +196,6 @@
   letter-spacing: 1px;
 }
 .lib-detail-v-serif {
-  font-family: var(--font-display);
   font-size: 15px;
   color: var(--gold);
 }

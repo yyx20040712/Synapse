@@ -4,7 +4,8 @@
    token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
    lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
    防漂移锁 = tests/unit/renderer/theme.test.ts（值漂移即红）。
-   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面 #cfae72 别名 --gold-night）；
+   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面 #cfae72 别名 --gold-night
+   已随 R2-SH2 决5 别名退役删除——LG10 结案：全仓消费=0，死代码即删）；
    --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
    rgb(253,224,71) 精确断言锁死（预知必红则不制造红，预裁②口径）。 */
 :root {
@@ -38,7 +39,6 @@
   --night-bg2: #111728;
   --node-face: #222c4d;
   --node-face-hi: #2b3760;
-  --gold-night: #cfae72;
   --band-line: rgba(207, 174, 114, 0.12);
   --star: rgba(222, 230, 255, 0.55);
   --text-on-night: #e9e6db;
@@ -72,7 +72,43 @@ body,
   background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 6px);
 }
 
-/* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费）══ */
+/* ══ App 壳顶栏身份区（R2-SH2 决4——ZCode 式）：白底横条（--panel+下边 1px
+   --border+高 44px）=logo+应用名+课题切换器+版本号右区；relative+z-index 防
+   切换器展开面板被 main 区盖板（面板在组件 flex-col 流内向下溢出绘制）══ */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 44px;
+  padding: 0 12px;
+  position: relative;
+  z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.app-header svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.app-header-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+/* 切换器容器高度锚：max-height 防展开面板撑高顶栏（组件本体零改——F-05
+   高度链不扰动；面板向下溢出可见） */
+.app-header-switcher {
+  max-height: 44px;
+}
+.app-header .app-nav-ver {
+  margin-left: auto;
+}
+
+/* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费；
+   R2-SH2 品牌行迁顶栏后 nav 首行直接起导航项，foot 留侧栏）══ */
 .app-nav {
   width: 184px;
   flex: none;
@@ -92,23 +128,6 @@ body,
   bottom: 0;
   width: 1px;
   background: linear-gradient(180deg, transparent, rgba(201, 168, 106, 0.5), transparent);
-}
-.app-nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px 14px;
-}
-.app-nav-brand svg {
-  width: 22px;
-  height: 22px;
-  flex: none;
-}
-.app-nav-name {
-  font-family: var(--font-display);
-  font-size: 16px;
-  letter-spacing: 0.5px;
-  color: #efe9da;
 }
 .app-nav-item {
   display: flex;
@@ -164,7 +183,6 @@ body,
   gap: 8px;
 }
 .app-nav-ver {
-  font-family: var(--font-display);
   font-size: 9.5px;
   letter-spacing: 1px;
   color: #8d95ad;
@@ -255,15 +273,14 @@ body,
   background: var(--panel);
   box-shadow: inset 0 -2px 0 0 var(--border-gold);
 }
-/* 阅读器数字（页码/缩放）衬线+tabular-nums（token 表展示字组消费） */
+/* 阅读器数字（页码/缩放）tabular-nums 等宽数字（R2-SH2 决5：衬线消费清零，
+   回继承 UI 字体——同规则 font-variant-numeric 不动） */
 .rdr-num {
-  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
 }
-/* 阅读器侧板节标：h4 金左缘条+衬线（夜色只属脉络域——侧板保持亮面） */
+/* 阅读器侧板节标：h4 金左缘条（R2-SH2 决5：衬线消费清零；夜色只属脉络域——侧板保持亮面） */
 .rdr-aside-h4 {
   margin: 0;
-  font-family: var(--font-display);
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -284,7 +301,6 @@ body,
 }
 .syn-settings h2 {
   margin: 0 0 2px;
-  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;

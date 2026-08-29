@@ -9,7 +9,8 @@
  *
  * e2e 断言面兼容性锚：nav 四项文案（'文献库' 等=smoke.spec/reader-text.spec
  * getByRole name 断言面）与品牌文本 'Synapse'（smoke.spec:22 getByText 断言面——
- * R2-SH1 改名同步：旧全名缩为单名）。
+ * R2-SH1 改名同步：旧全名缩为单名；R2-SH2 决4 品牌行迁顶栏 header，文本
+ * 仍唯一在场——getByText 断言面零改）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -98,7 +99,7 @@ function navButton(label: string): HTMLButtonElement | undefined {
   )
 }
 
-describe('R3-TH1 App 壳——墨青侧栏结构锁', () => {
+describe('R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）', () => {
   it('nav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致', async () => {
     mount(<App />)
     await flush()
@@ -120,14 +121,36 @@ describe('R3-TH1 App 壳——墨青侧栏结构锁', () => {
     expect(navButton('脉络')!.classList.contains('app-nav-item-active')).toBe(false)
   })
 
-  it('品牌行（Synapse）与 footer（本地学术文献管理）在侧栏内', async () => {
+  it('品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏', async () => {
     mount(<App />)
     await flush()
+    const header = document.querySelector('header.app-header')
+    expect(header, '顶栏 header 在场（R2-SH2 决4——App 根最前）').not.toBeNull()
+    expect(
+      header!.textContent,
+      "品牌文本=smoke.spec:22 getByText('Synapse') 断言面——R2-SH2 品牌行迁顶栏"
+    ).toContain('Synapse')
+    expect(header!.textContent, '版本号随品牌行迁顶栏（预裁2：信息保留）').toContain('v0.1')
     const nav = document.querySelector('nav')
     expect(nav, 'nav 元素在场').not.toBeNull()
-    expect(nav!.textContent, "品牌文本=smoke.spec:22 getByText('Synapse') 断言面——R2-SH1 改名同步").toContain(
-      'Synapse'
-    )
-    expect(nav!.textContent, 'footer 文案（票面 P2）').toContain('本地学术文献管理')
+    expect(nav!.textContent, 'footer 文案（票面 P2——foot 原样留侧栏）').toContain('本地学术文献管理')
+  })
+
+  it('顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）', async () => {
+    mount(<App />)
+    await flush()
+    const header = document.querySelector('header.app-header')
+    expect(header, 'header 在场').not.toBeNull()
+    expect(header!.querySelector('svg'), 'logo svg 迁自 .app-nav-brand（资源不删）').not.toBeNull()
+    expect(header!.textContent, '应用名在 header 内').toContain('Synapse')
+    const switcher = header!.querySelector('button[aria-label="切换课题"]')
+    expect(switcher, 'WorkspaceSwitcher 迁挂 header（组件本体零改，props 原样）').not.toBeNull()
+  })
+
+  it('侧栏品牌行退役（负锚）：app-nav-brand/app-nav-name 零残留', async () => {
+    mount(<App />)
+    await flush()
+    expect(document.querySelectorAll('.app-nav-brand'), '品牌行整体迁顶栏——侧栏残留即红').toHaveLength(0)
+    expect(document.querySelectorAll('.app-nav-name'), 'app-nav-name 类并入顶栏新类不再引用').toHaveLength(0)
   })
 })

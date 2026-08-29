@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T11:48:07.1209061Z",
+    "generatedAt":  "2026-08-29T12:11:47.2070614Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -359,7 +359,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "3b62b88b955c352998d2b7b088da773e242a34c1df1505904bc0d26fd37d6aed"
+                      "sha256":  "fc5b477c17712d9f7ba21b96e8eeb7f80d77ffc50d12747834eaaf6ad53b16b0"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
@@ -439,7 +439,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
-                      "sha256":  "45c20c6b115de7a63d9a5850d547879fbb9f7b3b9a123a67f5d215b535b559b2"
+                      "sha256":  "1521c2fe07159ccb58eb81038658faa19f590e057d49e51383edd2945391e411"
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
@@ -491,7 +491,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "a86b25cda74e53aa4b96781ce106bdf677d741b7d507a86c0735fb8ead1186a8"
+                      "sha256":  "cd85895304afd140cebb967b4935096eea27b1d21fe8a43838e171537e5eb60a"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

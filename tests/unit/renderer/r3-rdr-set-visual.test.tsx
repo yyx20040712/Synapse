@@ -148,7 +148,11 @@ describe('R3-U4 SettingsPage —— 分节卡+金节标+节间菱形分隔', () 
     expect(cssTheme, '分节卡底=panel').toMatch(/\.syn-settings > section\s*\{[^}]*background:\s*var\(--panel\)/)
     expect(cssTheme, '分节卡圆角=radius-l').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--radius-l\)/)
     expect(cssTheme, '分节卡阴影=shadow-1').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--shadow-1\)/)
-    expect(cssTheme, '金节标=衬线+金左缘条').toMatch(/\.syn-settings h2\s*\{[^}]*var\(--font-display\)/)
+    // R2-SH2 决5：衬线消费清零（.syn-settings h2 font-family 删，回继承 UI 字体）
+    // ——旧「衬线+金左缘条」形态锁随裁决改写为负锚（与 theme.test 负锚同向）
+    expect(cssTheme, '金节标衬线消费已清零（决5）').not.toMatch(
+      /\.syn-settings h2\s*\{[^}]*var\(--font-display\)/
+    )
     expect(cssTheme, '金节标左缘条用 --gold').toMatch(/\.syn-settings h2\s*\{[^}]*3px solid var\(--gold\)/)
   })
 })
