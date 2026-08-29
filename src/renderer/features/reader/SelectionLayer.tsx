@@ -62,6 +62,11 @@ const TOOLBAR_ABOVE = 42
 /** selectionchange 防抖窗口（毫秒） */
 const SELECTION_DEBOUNCE_MS = 200
 
+/** F-12 工具条误触发阈值（px）：mousedown→mouseup 位移小于此值=单击/双击
+ *  （含选词）不出条（用户令「一点就出选项条」；LineageCanvas 同型）。
+ *  无 mousedown 记录（程序化/键盘选区）不设限——防抖路径唯一通道保持。 */
+const DRAG_SELECT_THRESHOLD_PX = 3
+
 /** F-02：节点向上最近页盒（[data-page-root] 元素——页列渲染窗内页才有；
  *  锚定根动态遍历的纯函数，测试直测） */
 export function closestPageRoot(node: Node | null): HTMLElement | null {
@@ -151,12 +156,28 @@ export function SelectionLayer(props: {
       if (timer !== null) window.clearTimeout(timer)
       timer = window.setTimeout(() => evaluate(false), SELECTION_DEBOUNCE_MS)
     }
+    // F-12：记录最近一次 mousedown 落点（NaN=无记录——程序化事件/未捕获）
+    let downX = Number.NaN
+    let downY = Number.NaN
+    const onMouseDown = (e: MouseEvent): void => {
+      ;[downX, downY] = [e.clientX, e.clientY]
+    }
     const onMouseUp = (e: MouseEvent): void => {
       // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
       if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
       if (timer !== null) {
         window.clearTimeout(timer)
         timer = null
+      }
+      // F-12：有点击落点且位移过小=单击/双击误触——不出条（pending 清空与
+      // 坍缩评估同效——点击他处清选区行为不变）
+      if (Number.isFinite(downX)) {
+        const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
+        downX = downY = Number.NaN
+        if (moved < DRAG_SELECT_THRESHOLD_PX) {
+          setPending(null)
+          return
+        }
       }
       evaluate(true)
     }
@@ -165,10 +186,12 @@ export function SelectionLayer(props: {
     }
 
     document.addEventListener('selectionchange', onSelectionChange)
+    document.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mouseup', onMouseUp)
     document.addEventListener('keydown', onKeyDown)
     return () => {
       document.removeEventListener('selectionchange', onSelectionChange)
+      document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('mouseup', onMouseUp)
       document.removeEventListener('keydown', onKeyDown)
       if (timer !== null) window.clearTimeout(timer)

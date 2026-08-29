@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T12:11:47.2070614Z",
+    "generatedAt":  "2026-08-29T14:16:48.7761887Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -46,8 +46,20 @@
                       "sha256":  "83a8b9061370ec0e6ca738fcabdf87da9a0bf285cbf73efa70a6ba9d5b00c2df"
                   },
                   {
+                      "path":  "scripts/audits/r2-f11-forensics.mjs",
+                      "sha256":  "ec75b92a1d153c2716bab0360adaaa64cfd793a5c4683ea93d7049b34d4bc560"
+                  },
+                  {
+                      "path":  "scripts/audits/r2-f-after-forensics.mjs",
+                      "sha256":  "cfe0801447491490cc8f90d20327f4a6fbe2471a9528abfeed1e8557ae57012f"
+                  },
+                  {
                       "path":  "scripts/audits/r2-lg11-forensics.mjs",
                       "sha256":  "5588ab42b12d5e38905b84297d7827f2cbaa1d675185bae34f180b49e789c39e"
+                  },
+                  {
+                      "path":  "scripts/audits/r2-ui1-forensics.mjs",
+                      "sha256":  "0a460739927790dae00c6f35800c2b0f816d9bf6c33c5326a6a8a012834701c9"
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
@@ -199,7 +211,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "66ac6cb6d995afa90c70ccdd7206c5698681ab159dab3889e0d9a13b1cae973d"
+                      "sha256":  "1c16e57bb8189fb0253dbbc5bab9a6673d03211ff654c9014f9f5ce61e6df231"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -467,7 +479,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "2430a596f6400b63c2bded33f2b429b15d95edc4a3ca1d3b9d75459079abaa0e"
+                      "sha256":  "732f606270662bfa735aa6cd3041e88dd2e0bd610caf103c56e80d4ff54a8510"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

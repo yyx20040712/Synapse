@@ -71,6 +71,12 @@ const fireSelectionChange = (): void => {
 const fireMouseUp = (): void => {
   document.dispatchEvent(new MouseEvent('mouseup'))
 }
+const fireMouseDownAt = (x: number, y: number): void => {
+  document.dispatchEvent(new MouseEvent('mousedown', { clientX: x, clientY: y }))
+}
+const fireMouseUpAt = (x: number, y: number): void => {
+  document.dispatchEvent(new MouseEvent('mouseup', { clientX: x, clientY: y }))
+}
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -189,6 +195,38 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
   })
 
   it('P3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）', async () => {
+    const { page1, span2 } = mountColumnFixture()
+    await mountLayer(page1)
+    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    expect(toolbar()).not.toBeNull()
+  })
+
+  it('F-12a 单击/双击误触不出条：mousedown→mouseup 位移 ~1.4px（<3px 阈值）——选区在场也收起（用户令「一点就出选项条」=误触发）', async () => {
+    const { page1, span2 } = mountColumnFixture()
+    await mountLayer(page1)
+    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+    act(() => {
+      fireMouseDownAt(100, 100)
+      fireMouseUpAt(101, 101)
+    })
+    expect(toolbar()).toBeNull()
+  })
+
+  it('F-12b 真拖选出条：mousedown→mouseup 位移 ~5.8px（≥3px 阈值）——mouseup 即时评估路径保持', async () => {
+    const { page1, span2 } = mountColumnFixture()
+    await mountLayer(page1)
+    selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
+    act(() => {
+      fireMouseDownAt(100, 100)
+      fireMouseUpAt(105, 103)
+    })
+    expect(toolbar()).not.toBeNull()
+  })
+
+  it('F-12c 无 mousedown 记录的 mouseup 放行（程序化 dispatch/键盘选区无鼠标轨迹——P3 兼容面显式化）', async () => {
     const { page1, span2 } = mountColumnFixture()
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)

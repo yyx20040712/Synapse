@@ -4,7 +4,8 @@
  * ── 行为层 ──
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
  *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
- *   下划线为合并后行矩形下沿 2px 实条，每行一条、底边平齐——rects 行级合并见
+ *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
+ *   （F-11 顶/底收边修标注下偏），rects 行级合并见
  *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径）
  * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
  *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
@@ -30,15 +31,14 @@
  * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
  */
 import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
-import type { Annotation, AnnotationColor, AnnotationKind, AnnotationRect } from '@shared/models/annotation'
+import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
-import { COLOR_SWATCH } from './annotation-style'
+import { rectStyle } from './annotation-style'
 import { useReaderStore } from './reader.store'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
@@ -48,21 +48,6 @@ const DELETE_CONFIRM = '删除这条标注？'
 
 /** 重锚后的显示矩形（id → rects；缺项回退存量 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>
-
-/** kind+color+归一化矩形 → 色块样式（荧光笔语义：multiply 混合下色块不透明；下划线为合并矩形下沿 2px 实条底边平齐） */
-function rectStyle(kind: AnnotationKind, color: AnnotationColor, r: AnnotationRect): CSSProperties {
-  const base: CSSProperties = {
-    left: `${r.x * 100}%`,
-    width: `${r.w * 100}%`,
-    background: COLOR_SWATCH[color],
-    pointerEvents: 'auto',
-    cursor: 'pointer'
-  }
-  if (kind === 'underline') {
-    return { ...base, top: `calc(${(r.y + r.h) * 100}% - 2px)`, height: '2px', opacity: 1 }
-  }
-  return { ...base, top: `${r.y * 100}%`, height: `${r.h * 100}%`, opacity: 1 }
-}
 
 /** 弹层目标（连同命中矩形，供菜单/编辑器定位）——菜单与编辑器互斥使用同形 */
 interface PopupTarget {

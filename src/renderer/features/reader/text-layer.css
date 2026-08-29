@@ -31,6 +31,11 @@
  *   （AnnotationLayer 纯色板+容器级单次 multiply 已达标——v5 核查像素实证
  *   行界带无叠乘，scripts/audits f1-forensics5 在档）。原生渲染语义不变
  *   （拖选第一帧即反馈，零 JS 链路——SR2-F-08 机制保持）。
+ * - [R2-F-10] 选中叠标注加深减档：alpha 0.30→0.20（用户令 2026-08-29 图二
+ *   「灰选中与黄标注重叠处加深难看」）。机制=灰选中(textLayer z:0)在标注
+ *   multiply 层(z:5)之下——黄×灰逐通道相乘成暗橄榄；alpha 降至 0.20 后白底
+ *   合成 #CCCCCC（仍清晰可辨，F-08「选中不可见」红线不回退），叠黄合成
+ *   rgb(202,179,57) 较 0.30 的 rgb(177,157,50) 提亮一档。ADR-0019 补记同步。
  */
 .textLayer{
   position:absolute;
@@ -73,11 +78,11 @@
   }
 
 .textLayer ::-moz-selection{
-    background:rgba(0 0 0 / 0.30);
+    background:rgba(0 0 0 / 0.20);
 }
 
 .textLayer ::selection{
-    background:rgba(0 0 0 / 0.30);
+    background:rgba(0 0 0 / 0.20);
 }
 
 .textLayer br::-moz-selection{

@@ -662,19 +662,21 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半�
   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
-  // —— 缺陷 C（SR2-F-08 回退官方路线 ADR-0019 + SR2-F-09 用户令改灰：仿 WPS
-  //    灰色选中）：::selection 背景=rgba(0 0 0 / 0.30)（白纸合成≈#B3B3B3，
-  //    黑字可读；偏离官方值 rgba(0 0 255 / 0.25) 的显式登记=ADR-0019 补记）——
+  // —— 缺陷 C（SR2-F-08 回退官方路线 ADR-0019 + SR2-F-09 用户令改灰仿 WPS
+  //    + R2-F-10 用户令降 alpha：灰选中与黄标注 multiply 叠处加深难看）：
+  //    ::selection 背景=rgba(0 0 0 / 0.20)（白纸合成≈#CCCCCC 仍清晰可辨，
+  //    F-08「选中不可见」红线不回退；叠黄合成提亮一档；偏离官方值
+  //    rgba(0 0 255 / 0.25) 的显式登记=ADR-0019 补记）——
   //    划选视觉反馈由浏览器原生渲染，拖选第一帧即反馈；canvas 字形透出可读
   const sel = visual.selectionBg
   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
   // 半透明灰精确断言（四分量全锁；正则仅容忍序列化空格差异——不放宽为
   // 弱家族匹配，参照被删 alpha 正则先例的双形态口径）
   const selOfficial =
-    /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.3\s*\)$/.exec(sel) !== null
+    /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.2\s*\)$/.exec(sel) !== null
   expect(
     selOfficial,
-    `C: ::selection 背景=半透明灰 rgba(0, 0, 0, 0.3)：${sel}`
+    `C: ::selection 背景=半透明灰 rgba(0, 0, 0, 0.2)：${sel}`
   ).toBe(true)
 
   // 真实选选（程序化 selectText——防抖路径同产 pending）→ 工具条 ≤1.5s 可见
