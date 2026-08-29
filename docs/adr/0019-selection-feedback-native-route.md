@@ -16,6 +16,11 @@
    ::selection`/`::-moz-selection` 恢复 `rgba(0 0 255 / 0.25)`（逐字对照
    `node_modules/pdfjs-dist/web/pdf_viewer.css:678-685`）；`br` 两规则保持
    transparent（官方原样）。
+   **修订（2026-08-29 SR2-F-09，用户后续指令）**：选中色蓝→灰
+   `rgba(0 0 0 / 0.30)`（白纸合成≈#B3B3B3，仿 WPS「灰色选中/标注纯色」）。
+   机制不变（原生直读/零 JS 链路/INV-37 全保持），仅色值偏离官方——本 ADR
+   即该偏离的显式登记；e2e F-06 小票守卫同步锁新值。标注纯色面经 v5 真机
+   核查（像素级行界带无叠乘）确认**已达标零改**——纯色板+容器级单次 multiply。
 2. **自绘层整体删除**（P10 方案切换=删旧方案）：删 `SelectionRects.tsx`；
    `SelectionLayer` 摘 overlay 计算/渲染与 `PendingSelection.overlay`。
    划选**视觉**=原生 ::selection（浏览器内建，拖选第一帧即反馈，零 JS 链路）；

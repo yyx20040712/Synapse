@@ -614,7 +614,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
 /** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
 const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
 
-test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 官方半透明（划选即时可见）', async () => {
+test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半透明灰（划选即时可见）', async () => {
   skipIfPending(F06_DEPS)
   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
 
@@ -662,19 +662,19 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 官�
   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
-  // —— 缺陷 C（SR2-F-08 回退官方路线，ADR-0019）：::selection 背景官方半透明
-  //    rgba(0 0 255 / 0.25)（逐字=pdfjs-dist web/pdf_viewer.css 678-685 行原值；
-  //    Chromium getComputedStyle 序列化=rgba(0, 0, 255, 0.25)）——划选视觉反馈
-  //    由浏览器原生渲染，拖选第一帧即反馈；canvas 字形透出可读
+  // —— 缺陷 C（SR2-F-08 回退官方路线 ADR-0019 + SR2-F-09 用户令改灰：仿 WPS
+  //    灰色选中）：::selection 背景=rgba(0 0 0 / 0.30)（白纸合成≈#B3B3B3，
+  //    黑字可读；偏离官方值 rgba(0 0 255 / 0.25) 的显式登记=ADR-0019 补记）——
+  //    划选视觉反馈由浏览器原生渲染，拖选第一帧即反馈；canvas 字形透出可读
   const sel = visual.selectionBg
   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
-  // 官方半透明值精确断言（四分量全锁；正则仅容忍序列化空格差异——不放宽为
+  // 半透明灰精确断言（四分量全锁；正则仅容忍序列化空格差异——不放宽为
   // 弱家族匹配，参照被删 alpha 正则先例的双形态口径）
   const selOfficial =
-    /^rgba\(\s*0\s*,\s*0\s*,\s*255\s*,\s*0\.25\s*\)$/.exec(sel) !== null
+    /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.3\s*\)$/.exec(sel) !== null
   expect(
     selOfficial,
-    `C: ::selection 背景=官方半透明 rgba(0, 0, 255, 0.25)：${sel}`
+    `C: ::selection 背景=半透明灰 rgba(0, 0, 0, 0.3)：${sel}`
   ).toBe(true)
 
   // 真实选选（程序化 selectText——防抖路径同产 pending）→ 工具条 ≤1.5s 可见

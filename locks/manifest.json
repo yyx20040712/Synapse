@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T07:10:48.4393136Z",
+    "generatedAt":  "2026-08-29T07:31:08.0175039Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -36,6 +36,14 @@
                   {
                       "path":  "scripts/audits/f1-forensics4.mjs",
                       "sha256":  "0a6099bc43d7e022c9f16c9ed108259f521840aa1a3d31f296ab9cfb3408584b"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics5.mjs",
+                      "sha256":  "ea0dbb16b7737a476ec4233688e0dfe3e872c9a2cceb50b2c04f4cac5b665032"
+                  },
+                  {
+                      "path":  "scripts/audits/f1-forensics5b.mjs",
+                      "sha256":  "83a8b9061370ec0e6ca738fcabdf87da9a0bf285cbf73efa70a6ba9d5b00c2df"
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
@@ -183,7 +191,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "42f51abc31d899b47a5023c5ff505f91695db2895918ce7b814174f08a93c5c5"
+                      "sha256":  "66ac6cb6d995afa90c70ccdd7206c5698681ab159dab3889e0d9a13b1cae973d"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",

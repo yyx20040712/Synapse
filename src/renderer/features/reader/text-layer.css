@@ -1,4 +1,6 @@
 /**
+// b3: P7-F
+ *
  * [SR-RDR-03] 文本层样式 —— 提取自 pdfjs-dist 4.10.38 官方 web/pdf_viewer.css 的
  * .textLayer 规则（逐字保留；官方 .highlight 系列、.highlighting、编辑器规则与
  * 6 个 :root 变量块未提取——后者会把全局自定义属性泄漏进应用主题 theme.css）。
@@ -23,6 +25,12 @@
  *   rgba(0 0 255 / 0.25) 逐字值（pdfjs-dist web/pdf_viewer.css 678-685 行；
  *   Chromium 不解析 ::selection 的 color-mix——官方第二行不抄）。自绘层
  *   SelectionRects 整体删除（P10 方案切换=删旧方案）。
+ * - [SR2-F-09] 选中色蓝→灰（用户令 2026-08-29：仿 WPS——灰色选中/标注纯色）：
+ *   rgba(0 0 255 / 0.25)→rgba(0 0 0 / 0.30)（白纸合成≈#B3B3B3，黑字可读）。
+ *   偏离官方值的显式登记=ADR-0019 补记+INV-37 同步；标注纯色面零改
+ *   （AnnotationLayer 纯色板+容器级单次 multiply 已达标——v5 核查像素实证
+ *   行界带无叠乘，scripts/audits f1-forensics5 在档）。原生渲染语义不变
+ *   （拖选第一帧即反馈，零 JS 链路——SR2-F-08 机制保持）。
  */
 .textLayer{
   position:absolute;
@@ -65,11 +73,11 @@
   }
 
 .textLayer ::-moz-selection{
-    background:rgba(0 0 255 / 0.25);
+    background:rgba(0 0 0 / 0.30);
 }
 
 .textLayer ::selection{
-    background:rgba(0 0 255 / 0.25);
+    background:rgba(0 0 0 / 0.30);
 }
 
 .textLayer br::-moz-selection{
