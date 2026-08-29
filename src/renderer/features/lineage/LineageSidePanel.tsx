@@ -90,23 +90,24 @@ import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideManualNote } from './LineageSideManualNote'
 
 /**
- * R2-LG10 侧板夜化（票面 P3）：夜色玻璃卡（mockup .side 逐值——比画布亮
- * 一档的 rgba(40,51,86,.72)+blur12+金 hairline）；文本系全换 --*-on-night；
- * 分组 h4 金左缘条（var(--gold-night)——夜面别名）；条目卡见两子件。
- * testid/文案/QUESTION_COLOR 左缘条零改（纯 style 层）。
+ * R2-LG11 侧板浅色化（浅色严谨板）：白玻璃卡（rgba(255,255,255,0.92)+
+ * blur12+边 #e4ded1）；文本系全换亮面 token（--text/--text-dim）；
+ * 分组 h4 accent 左缘条（原 var(--gold-night) 夜面色退役）；h3/p 衬线
+ * fontFamily 随决5 脉络域衬线清零摘除（token 定义留 theme.css）；条目
+ * 卡见两子件。testid/文案/QUESTION_COLOR 左缘条零改（纯 style 层）。
  */
-const NIGHT_GLASS: CSSProperties = {
-  background: 'rgba(40, 51, 86, 0.72)',
+const SIDE_GLASS: CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.92)',
   backdropFilter: 'blur(12px)',
-  border: '1px solid rgba(207, 174, 114, 0.25)',
+  border: '1px solid #e4ded1',
   borderRadius: 12,
-  boxShadow: '0 8px 28px rgba(6, 10, 24, 0.45)'
+  boxShadow: 'var(--shadow-2)'
 }
 
-/** 分组 h4（核心 idea）金左缘条（mockup .side h4） */
-const H4_GOLD: CSSProperties = {
-  color: 'var(--text-dim-on-night)',
-  borderLeft: '3px solid var(--gold-night)',
+/** 分组 h4（核心 idea）accent 左缘条（R2-LG11 浅色板） */
+const H4_ACCENT: CSSProperties = {
+  color: 'var(--text-dim)',
+  borderLeft: '3px solid var(--accent)',
   paddingLeft: 6
 }
 
@@ -135,7 +136,7 @@ export function LineageSidePanel(props: {
 
         data-testid="lineage-side-panel"
         className="flex h-full items-center justify-center p-4 text-center text-xs"
-        style={{ ...NIGHT_GLASS, color: 'var(--text-dim-on-night)' }}
+        style={{ ...SIDE_GLASS, color: 'var(--text-dim)' }}
       >
         单击节点查看详情
       </div>
@@ -161,31 +162,25 @@ export function LineageSidePanel(props: {
 
       data-testid="lineage-side-panel"
       className="flex h-full flex-col gap-2 overflow-auto p-3.5 text-xs"
-      style={NIGHT_GLASS}
+      style={SIDE_GLASS}
     >
       <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
-        <h3
-          className="m-0 text-sm font-medium"
-          style={{ color: 'var(--text-on-night)', fontFamily: 'var(--font-display)' }}
-        >
+        <h3 className="m-0 text-sm font-medium" style={{ color: 'var(--text)' }}>
           {node.title}
         </h3>
-        <p
-          className="m-0"
-          style={{ color: 'var(--gold-bright)', fontFamily: 'var(--font-display)', letterSpacing: '1px' }}
-        >
+        <p className="m-0" style={{ color: 'var(--text-dim)' }}>
           {node.year === null ? '未知年份' : `${node.year} 年`}
           {node.paperId !== null && <span className="ml-1 rounded border px-1" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}>已绑定文献</span>}
         </p>
       </section>
       <section data-testid="lineage-side-idea">
-        <h4 className="m-0 font-medium" style={H4_GOLD}>核心 idea</h4>
-        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text-on-night)' }}>
+        <h4 className="m-0 font-medium" style={H4_ACCENT}>核心 idea</h4>
+        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
         </p>
       </section>
       {node.paperId === null ? (
-        <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>主题节点无笔记</p>
+        <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
       ) : (
         <>
           <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />

@@ -26,7 +26,7 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
-import { NODE_H, nodeWidth } from './lineage-layout'
+import { BAND_LEFT, nodeHeight, nodeWidth } from './lineage-layout'
 import type { LayoutResult } from './lineage-layout'
 
 /** 缩放界+步长（wheel 锚点缩放与 auto-fit 钳制共用单源） */
@@ -34,8 +34,9 @@ export const ZOOM = { min: 0.25, max: 4, step: 0.0015 } as const
 /** auto-fit 边距（票面 P1：上下 80/左右 120——层带年份标在左需宽边距） */
 const FIT_PAD_X = 120
 const FIT_PAD_Y = 80
-/** 层带内容左缘（band line x1=-200/年份标 x=-190——取更左者为包围盒左界） */
-const BAND_LEFT = -200
+// BAND_LEFT 已迁 lineage-layout.ts 导出（R2-LG11 B1 单源化：本模块+
+// Canvas 层带线/年份标三消费同源）；包围盒 y 半高=nodeHeight(title)/2
+// （INV-38——chain 夹具题名全 1 行恒等旧 NODE_H=64，fit 数值不变）
 
 export type Viewport = { tx: number; ty: number; k: number }
 
@@ -51,8 +52,9 @@ export function fitViewport(nodes: LineageNode[], layout: LayoutResult, vw: numb
     const hw = nodeWidth(n.title) / 2
     xMin = Math.min(xMin, p.x - hw)
     xMax = Math.max(xMax, p.x + hw)
-    yMin = Math.min(yMin, p.y - NODE_H / 2)
-    yMax = Math.max(yMax, p.y + NODE_H / 2)
+    const hh = nodeHeight(n.title) / 2
+    yMin = Math.min(yMin, p.y - hh)
+    yMax = Math.max(yMax, p.y + hh)
   }
   if (yMin === Infinity) return { tx: 0, ty: 0, k: 1 } // 无可拟合内容（调用方已查 nodes.length——理论不可达防御）
   const k = Math.min(

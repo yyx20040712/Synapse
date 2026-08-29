@@ -125,7 +125,7 @@ export function LineageBoard(props: {
   return (
     <div className="relative h-full">
       {/* 工具条：添加节点入口+保存态指示（autosave-first——无「保存」按钮）。
-          R2-LG9 玻璃浮层化（.lineage-toolbar 夜色玻璃——视觉皮肤级，行为面零变） */}
+          R2-LG11 浅色白玻璃浮层（.lineage-toolbar——视觉皮肤级，行为面零变） */}
       <div className="lineage-toolbar absolute left-2 top-2 z-10">
         <button
           type="button"
@@ -158,7 +158,7 @@ export function LineageBoard(props: {
               type="button"
               data-testid="lineage-retry-save"
               className="rounded px-1.5 py-0.5"
-              style={{ background: 'var(--gold-soft)', color: 'var(--gold-bright)' }}
+              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
               onClick={() => store().retrySave()}
             >
               重试
@@ -167,7 +167,8 @@ export function LineageBoard(props: {
         )}
       </div>
 
-      {/* 目标选取模式提示条（连线到…/改父…激活期） */}
+      {/* 目标选取模式提示条（连线到…/改父…激活期——R2-LG11 浅色板态：
+          白底 accent 描边，行为零变） */}
       {pendingLink !== null && (
         <div
           className="absolute left-1/2 top-2 z-10 flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"

@@ -24,14 +24,14 @@ import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER }
 type Phase = 'loading' | 'ready' | 'error'
 
 /**
- * R2-LG10 夜化（票面 P3）：h4 金左缘条；条目卡=mockup .note 逐值
- * （rgba(23,30,51,.45) 底+rgba(151,160,187,.28) 描边）；文本系
- * --*-on-night。**QUESTION_COLOR 组头左缘条与色块零改**（AI-08 分色
- * 单源——分色不因夜化回退）；testid/文案零改。
+ * R2-LG11 浅色化（浅色严谨板）：h4 accent 左缘条；条目卡=白底
+ * （#ffffff+沿用淡描边 rgba(151,160,187,.28)）；文本系亮面 token
+ * （--text/--text-dim）。**QUESTION_COLOR 组头左缘条与色块零改**
+ * （AI-08 分色单源——分色不因换肤回退）；testid/文案零改。
  */
-/** 条目卡（mockup .note 逐值） */
+/** 条目卡（白底淡描边） */
 const NOTE_CARD = {
-  background: 'rgba(23, 30, 51, 0.45)',
+  background: '#ffffff',
   borderColor: 'rgba(151, 160, 187, 0.28)'
 } as const
 
@@ -69,11 +69,11 @@ export function LineageSideAiNotes(props: {
     <section data-testid="lineage-side-ai-notes" className="flex flex-col gap-1">
       <h4
         className="m-0 font-medium"
-        style={{ color: 'var(--text-dim-on-night)', borderLeft: '3px solid var(--gold-night)', paddingLeft: 6 }}
+        style={{ color: 'var(--text-dim)', borderLeft: '3px solid var(--accent)', paddingLeft: 6 }}
       >
         AI 笔记
       </h4>
-      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>AI 笔记加载中…</p>}
+      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>AI 笔记加载中…</p>}
       {phase === 'error' && (
         <div
           role="alert"
@@ -95,14 +95,14 @@ export function LineageSideAiNotes(props: {
       )}
       {phase === 'ready' &&
         (notes === null || notes.length === 0 ? (
-          <p className="m-0" style={{ color: 'var(--text-dim-on-night)' }}>暂无 AI 笔记</p>
+          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无 AI 笔记</p>
         ) : (
           AI_NOTE_QUESTIONS.filter((question) => notes.some((n) => n.question === question)).map(
             (question) => (
               <div key={question} data-question={question}>
                 <h5
                   className="m-0 pl-1 font-medium"
-                  style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim-on-night)' }}
+                  style={{ borderLeft: `3px solid ${QUESTION_COLOR[question]}`, color: 'var(--text-dim)' }}
                 >
                   {question === 'divergence'
                     ? QUESTION_LABEL[question]
@@ -121,15 +121,15 @@ export function LineageSideAiNotes(props: {
                     >
                       <span className="flex items-center gap-1">
                         <span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: QUESTION_COLOR[n.question] }} />
-                        <span style={{ color: 'var(--text-dim-on-night)' }}>
+                        <span style={{ color: 'var(--text-dim)' }}>
                           {ROLE_LABEL[n.role]}
                           {n.anchorPage !== null ? ` · p.${n.anchorPage}` : ''}
                         </span>
                       </span>
                       {n.quoteText !== '' && (
-                        <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim-on-night)' }}>{n.quoteText}</span>
+                        <span className="mt-0.5 block truncate" style={{ color: 'var(--text-dim)' }}>{n.quoteText}</span>
                       )}
-                      <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text-on-night)' }}>{n.contentMd}</span>
+                      <span className="mt-0.5 block whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{n.contentMd}</span>
                     </div>
                   ))}
               </div>

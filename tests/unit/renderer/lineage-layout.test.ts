@@ -13,8 +13,10 @@ import {
   LAYER_GAP,
   NODE_W,
   SIBLING_GAP,
+  SURVEY_COL_GAP,
   TREE_GAP,
   layoutLineage,
+  nodeHeight,
   nodeWidth
 } from '../../../src/renderer/features/lineage/lineage-layout'
 
@@ -345,5 +347,92 @@ describe('R2-LG10 题名分档宽（nodeWidth 单源）', () => {
     ]
     const { positions } = layoutLineage(nodes, [edge('S', 'L')])
     expect(positions.get('S')!.x).toBe(positions.get('L')!.x)
+  })
+})
+
+describe('R2-LG11 综述右列（isSurvey 节点不进树——决3 布局落点）', () => {
+  it('综述不进树：其子提升为根照常布局；综述本尊位于非综述右缘之外（列左缘公式）', () => {
+    const nodes = [
+      node('A', { year: 2020, title: '基础研究' }),
+      node('S', { year: 2021, title: '领域综述' }),
+      node('C', { year: 2022, title: '后续工作' })
+    ]
+    const edges = [edge('A', 'S'), edge('S', 'C')]
+    const { positions } = layoutLineage(nodes, edges)
+    // S 的子 C 提升为根（自动布局产出非 0 未定义值）
+    expect(positions.get('C')!.x).toBeGreaterThanOrEqual(NODE_W / 2)
+    expect(positions.get('A')!.x).toBeGreaterThanOrEqual(NODE_W / 2)
+    // 列左缘=max(非综述右缘)+SURVEY_COL_GAP；综述中心=列左缘+半宽
+    const rightEdge = Math.max(positions.get('A')!.x, positions.get('C')!.x) + NODE_W / 2
+    expect(positions.get('S')!.x - NODE_W / 2).toBeGreaterThanOrEqual(rightEdge + SURVEY_COL_GAP)
+    // 综述作为子的占位不进父树（变异红证锚：综述若进树会作为兄弟推开
+    // 非综述子、破坏单链对齐——P 单子 C1 时 P.x 必等于 C1.x；夹具题名
+    // 禁含综述关键词子串——isSurvey 子串启发不辨否定语境）
+    const nodes2 = [
+      node('P', { year: 2020, title: '父级研究' }),
+      node('C1', { year: 2021, title: '正常子节点' }),
+      node('S2', { year: 2021, title: '综述兄弟' })
+    ]
+    const r2 = layoutLineage(nodes2, [edge('P', 'C1'), edge('P', 'S2')])
+    expect(r2.positions.get('P')!.x).toBe(r2.positions.get('C1')!.x)
+  })
+
+  it('右列位置公式精确值：综述中心=列左缘+半宽、y=year 层带（覆盖语义不受影响）', () => {
+    // 手算：两根 A(树)/B(孤立) 各 180 宽+TREE_GAP=80 → B 右缘=440；
+    // 综述列左缘=440+80=520 → S(短档 180) 中心=610；层带 2020/2021 → S y=140
+    const nodes = [
+      node('A', { year: 2020, title: '基础研究' }),
+      node('B', { year: 2020, title: '平行研究' }),
+      node('S', { year: 2021, title: '领域综述' })
+    ]
+    const edges = [edge('A', 'S')]
+    const { positions, layers } = layoutLineage(nodes, edges)
+    expect(positions.get('S')!.x).toBe(610)
+    expect(positions.get('S')!.y).toBe(layers[1]!.y)
+    expect(positions.get('S')!.y).toBe(LAYER_GAP)
+  })
+
+  it('同层多综述：按 nodes 输入序右移错开（相邻中心距 ≥ 半宽和+SIBLING_GAP）', () => {
+    const nodes = [
+      node('A', { year: 2020, title: '基础研究' }),
+      node('S1', { year: 2021, title: '综述甲' }),
+      node('S2', { year: 2021, title: '综述乙：全景回顾' })
+    ]
+    const edges = [edge('A', 'S1')]
+    const { positions } = layoutLineage(nodes, edges)
+    const d = positions.get('S2')!.x - positions.get('S1')!.x
+    expect(d).toBeGreaterThanOrEqual(NODE_W + SIBLING_GAP)
+    // 输入序=左右序（S1 输入先 → x 更小）
+    expect(positions.get('S1')!.x).toBeLessThan(positions.get('S2')!.x)
+  })
+
+  it('覆盖综述不进列：x/y 均非 null 的综述用覆盖值（覆盖优先语义不变）', () => {
+    const nodes = [
+      node('A', { year: 2020, title: '基础研究' }),
+      node('S', { year: 2021, title: '领域综述', x: 50, y: 60 })
+    ]
+    const edges = [edge('A', 'S')]
+    const { positions } = layoutLineage(nodes, edges)
+    expect(positions.get('S')).toEqual({ x: 50, y: 60 })
+  })
+})
+
+describe('R2-LG11 nodeHeight 卡高单源（INV-38：46+18×clamp(ceil(len×12.5/(nodeWidth−24)),1,3)）', () => {
+  it('1 行档=64：短档 12 字/中档 13 字/空题名兜底', () => {
+    expect(nodeHeight('十'.repeat(12))).toBe(64)
+    expect(nodeHeight('中'.repeat(13))).toBe(64)
+    expect(nodeHeight('')).toBe(64)
+  })
+
+  it('2 行档=82：中档 16~28 字/长档 29~37 字', () => {
+    expect(nodeHeight('二'.repeat(16))).toBe(82)
+    expect(nodeHeight('二'.repeat(28))).toBe(82)
+    expect(nodeHeight('长'.repeat(29))).toBe(82)
+    expect(nodeHeight('长'.repeat(37))).toBe(82)
+  })
+
+  it('3 行档=100（钳制上限）：长档 38 字起=100，更长题名不增卡高', () => {
+    expect(nodeHeight('长'.repeat(38))).toBe(100)
+    expect(nodeHeight('长'.repeat(120))).toBe(100)
   })
 })

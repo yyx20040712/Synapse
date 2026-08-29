@@ -89,12 +89,25 @@
  *   叔侄同年（异深同年带）无约束即重叠（门一实测 70px）——层索引保证
  *   **同年层内任意两节点 x 区间分离**（全树性质）；父占位并入自身层，
  *   与子孙同层（非单调数据）时右推防护。
+ *
+ * ── R2-LG11（浅色严谨板·零 schema 单元）──
+ * - **nodeHeight(title) 高度单源（INV-38）**：46+18×clamp(ceil(len×12.5/
+ *   (nodeWidth−24)),1,3)——1/2/3 行=64/82/100；NODE_H 常量删除，三消费
+ *   （NodeCard rect/Edges 端点经 geom/viewport fitViewport）全改引本函数。
+ * - **综述右列（决3）**：isSurvey 节点（x/y 均非 null 的覆盖综述除外）
+ *   不进 children/parentOf 树——其触及边在净化段有意分流（不计 dropped
+ *   不 warn），子提升为根、父边断开不剔除（渲染层照常画）；树布局后单列
+ *   于最右（列左缘=max(非右列右缘)+SURVEY_COL_GAP；同层输入序错开≥
+ *   半宽和+SIBLING_GAP；y=year 层带）；综述仍计入层带。
+ * - **BAND_LEFT/BAND_RIGHT/LAYER_LABEL_DY 单源（B1 清账）**：自
+ *   lineage-viewport.ts 迁入导出——fitViewport 左界/Canvas 层带线 x1/x2/
+ *   年份标偏移四消费禁各写。
  */
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import { isSurvey } from './lineage-classify'
 
 // ── 几何常量（R2-LG10 题名分档宽——票面 P2：NODE_W 单值→按 title 长度三档）──
 export const NODE_W = 180
-export const NODE_H = 64
 /** 层带中心间距（y 维） */
 export const LAYER_GAP = 140
 /** 兄弟子树最小间隙（x 维轮廓约束） */
@@ -104,6 +117,14 @@ export const TREE_GAP = 80
 /** 中档宽（13~28 字题名）/长档宽（>28 字） */
 export const NODE_W_MID = 220
 export const NODE_W_LONG = 260
+/** 综述右列与树布局区右缘的间隙（R2-LG11 决3——综述列于脉络最右侧） */
+export const SURVEY_COL_GAP = 80
+/** 层带横线左缘（B1 单源化：viewport fitViewport 包围盒左界/Canvas 层带线 x1） */
+export const BAND_LEFT = -200
+/** 层带横线右缘（贯穿全线——Canvas 层带线 x2 单源） */
+export const BAND_RIGHT = 99999
+/** 层带年份标 y 偏移（层带级元素不随卡高——R2-LG11 卡高可变后固定常量） */
+export const LAYER_LABEL_DY = 32
 
 /**
  * 题名分档宽（R2-LG10，票面 P2 档值 180/220/260）：短 ≤12 字=NODE_W/
@@ -115,6 +136,23 @@ export function nodeWidth(title: string): number {
   if (title.length <= 12) return NODE_W
   if (title.length <= 28) return NODE_W_MID
   return NODE_W_LONG
+}
+
+/**
+ * 题名行数分档卡高（R2-LG11，INV-38——高度单源，INV-36 宽度的姊妹条）：
+ * lines = clamp(ceil(title.length × 12.5 / (nodeWidth(title) − 24)), 1, 3)；
+ * nodeHeight = 46 + 18 × lines → 1 行 64 / 2 行 82 / 3 行 100。
+ * 全角 12.5px 计宽：短档(180) 12 字/行、中档(220) 15 字/行、长档(260)
+ * 18 字/行——与 nodeWidth 档界自然咬合；拉丁字符按全角计=行数高估方向
+ * 安全（卡略偏高，不溢出）。已知局限票面声明，不修。
+ * **单源三消费（INV-38）**：LineageNodeCard rect 高/LineageEdges 端点
+ * ±h/2（经 geom 预构建）/lineage-viewport fitViewport 包围盒——三处
+ * 禁各写档值（档值变更=三消费面同改）。
+ */
+export function nodeHeight(title: string): number {
+  const usable = nodeWidth(title) - 24
+  const lines = Math.min(3, Math.max(1, Math.ceil((title.length * 12.5) / usable)))
+  return 46 + 18 * lines
 }
 
 export interface LayoutResult {
@@ -147,7 +185,16 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   /** year → 年份层序（W1：轮廓帧索引=层序非树深度） */
   const layerIdx = new Map<number | null, number>(years.map((y, i) => [y, i]))
 
-  // 2) 净化边（INV-27 防御第二道）：悬空/自环/多父（首条胜出）/成环
+  // 2) 综述右列成员（决3）：isSurvey 且非双覆盖（x/y 均非 null 的覆盖
+  //    综述用覆盖值——覆盖优先语义不变，不进列）
+  const surveyCol = new Set<string>()
+  for (const n of nodes) {
+    if (isSurvey(n.title) && !(n.x !== null && n.y !== null)) surveyCol.add(n.id)
+  }
+
+  // 3) 净化边（INV-27 防御第二道）：悬空/自环/多父（首条胜出）/成环；
+  //    综述触及边（任一端是右列综述）不进树——其子提升为根、父边断开
+  //    不剔除（渲染层照常画），不计 dropped（有意分流非破坏）
   const nodeIds = new Set(nodes.map((n) => n.id))
   const parentOf = new Map<string, string>()
   const children = new Map<string, string[]>()
@@ -162,6 +209,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   }
   let dropped = 0
   for (const e of edges) {
+    if (surveyCol.has(e.fromNode) || surveyCol.has(e.toNode)) continue
     const broken =
       e.fromNode === e.toNode ||
       !nodeIds.has(e.fromNode) ||
@@ -182,16 +230,18 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
     )
   }
 
-  // 3) y 先行：层带或覆盖值
+  // 4) y 先行：层带或覆盖值（右列综述 y 强制层带——决3「y=其 year 层带 y」）
   const positions = new Map<string, { x: number; y: number }>()
   for (const n of nodes) {
-    positions.set(n.id, { x: 0, y: n.y !== null ? n.y : layerY.get(n.year)! })
+    const y = n.y !== null && !surveyCol.has(n.id) ? n.y : layerY.get(n.year)!
+    positions.set(n.id, { x: 0, y })
   }
 
-  // 4) 根集合（nodes 输入序）；x 覆盖节点=覆盖值+断链（父侧移除、其子
-  //    提升为顶层森林成员照常布局——断点不丢子树）
+  // 5) 根集合（nodes 输入序；综述不进树）；x 覆盖节点=覆盖值+断链（父侧
+  //    移除、其子提升为顶层森林成员照常布局——断点不丢子树）
   const roots: string[] = []
   for (const n of nodes) {
+    if (surveyCol.has(n.id)) continue
     if (n.x !== null) {
       positions.get(n.id)!.x = n.x
       const parent = parentOf.get(n.id)
@@ -207,7 +257,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
     if (parentOf.get(n.id) === undefined) roots.push(n.id)
   }
 
-  // 5) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
+  // 6) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
   //    节点宽=题名分档（nodeWidth 单源——占位半宽随档，R2-LG10）
   const byId = new Map(nodes.map((n) => [n.id, n]))
   const wOf = new Map(nodes.map((n) => [n.id, nodeWidth(n.title)]))
@@ -303,6 +353,29 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
     const f = place(r)
     assign(r, forestX)
     forestX += f.width + TREE_GAP
+  }
+
+  // 7) 综述右列（决3）：列左缘=max(非右列成员右缘)+SURVEY_COL_GAP
+  //    （右缘面=树布局自动节点+x 覆盖节点含双覆盖综述）；综述中心 x=
+  //    列左缘+自身半宽、y=其 year 层带（步骤 4 已就位）；同层多综述按
+  //    nodes 输入序右移错开（相邻中心距 ≥ 半宽和+SIBLING_GAP）
+  if (surveyCol.size > 0) {
+    let treeRight = -Infinity
+    for (const n of nodes) {
+      if (surveyCol.has(n.id)) continue
+      const p = positions.get(n.id)!
+      treeRight = Math.max(treeRight, p.x + nodeWidth(n.title) / 2)
+    }
+    const colLeft = (treeRight === -Infinity ? 0 : treeRight) + SURVEY_COL_GAP
+    const layerCursor = new Map<number, number>()
+    for (const n of nodes) {
+      if (!surveyCol.has(n.id)) continue
+      const half = nodeWidth(n.title) / 2
+      const y = layerY.get(n.year)!
+      const x = (layerCursor.get(y) ?? colLeft) + half
+      positions.set(n.id, { x, y })
+      layerCursor.set(y, x + half + SIBLING_GAP)
+    }
   }
 
   return { positions, layers }

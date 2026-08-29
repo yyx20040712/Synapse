@@ -88,8 +88,8 @@ export function LineagePage(): JSX.Element {
       <div className="min-w-0 flex-1">
         <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
       </div>
-      {/* R2-LG10：夜色玻璃底/描边/圆角归 LineageSidePanel 根（mockup .side
-          逐值）——aside 只留尺寸直通（接线零动，纯容器样式归并） */}
+      {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
+          尺寸直通（接线零动，纯容器样式归并） */}
       <aside className="w-72 shrink-0 overflow-hidden">
         <LineageSidePanel node={selectedNode} onJumpToPaper={handleJumpToPaper} />
       </aside>
