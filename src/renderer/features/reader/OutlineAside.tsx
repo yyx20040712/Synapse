@@ -113,9 +113,11 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
               role="tab"
               aria-selected={tab === id}
               className="flex-1 px-2 py-1 text-xs"
+              // active=accent 文字+金 hairline 底缘（R3-RDR 皮肤票：亮面金铜
+              // 替代满铺 accent 底——装饰浓度最低；aria/结构零变）
               style={
                 tab === id
-                  ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--accent)' }
+                  ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--border-gold)' }
                   : { color: 'var(--text-dim)' }
               }
               onClick={() => setTab(id)}

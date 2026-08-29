@@ -237,6 +237,65 @@ body,
   transform: rotate(45deg);
 }
 
+/* ══ R3-U3 阅读器周边皮肤（装饰浓度最低——PDF 区中性不变；玻璃浮层+纸面
+   tab+侧板节标。ReaderToolbar/TabBar/ReaderNotesPanel 消费；标注/AI/选区
+   层零触碰——F-07 层叠链红线）══ */
+.rdr-toolbar {
+  background: var(--panel-glass);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-1);
+}
+/* active tab=纸面底+inset 金 hairline 底缘（box-shadow inset 零占位——h-8
+   布局不变，F-05 滚动收敛面不扰动；旧 accent-soft 满铺退役） */
+.rdr-tab-active {
+  background: var(--panel);
+  box-shadow: inset 0 -2px 0 0 var(--border-gold);
+}
+/* 阅读器数字（页码/缩放）衬线+tabular-nums（token 表展示字组消费） */
+.rdr-num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+/* 阅读器侧板节标：h4 金左缘条+衬线（夜色只属脉络域——侧板保持亮面） */
+.rdr-aside-h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+
+/* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
+   等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
+   .lib-rule*）══ */
+.syn-settings > section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+  padding: 14px 16px;
+}
+.syn-settings h2 {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+/* 表单控件 focus：accent 描边+gold-soft 底（票面 P2） */
+.syn-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--gold-soft);
+}
+
 /* ══ 脉络·命之座星象板（R2-LG9；视觉规范=docs/design/mockups/
    lineage-constellation.html 逐值誊录——夜幕 token 系 R3-TH1 预铺消费）══ */
 .lineage-night {

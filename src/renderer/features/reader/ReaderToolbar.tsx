@@ -17,6 +17,9 @@
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 纯受控组件；页码显示为 1 基（store 内部 0 基，边界夹取由 store.setPage 兜底）
+ * - [R3-RDR 皮肤票] 玻璃浮层（.rdr-toolbar：panel-glass+blur10+金 hairline 底缘）
+ *   +控件 ghost 变体+页码/缩放衬线数字（.rdr-num）；文档流位置/aria/testid
+ *   零变（PDF 区装饰浓度最低原则）
  */
 import { useEffect, useState } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
@@ -59,25 +62,26 @@ export function ReaderToolbar(props: {
     setPageInput(String(page + 1))
   }
 
-  const btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50'
+  // R3-U3 皮肤票：控件走 ghost 变体语言（theme.css .syn-btn-ghost——Button
+  // 组件同款皮肤类；不经 Button 组件因其不带 title prop，「适应宽度」禁用态
+  // title 提示属交互面零变项，保留原生 button）
+  const btn = 'syn-btn-ghost rounded border px-2 py-0.5 text-xs disabled:opacity-50'
 
   return (
-    <div
-      className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 text-xs"
-      style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
-    >
+    // 玻璃浮层皮肤（--panel-glass+blur10+金 hairline 底缘——theme.css 单源；
+    // 文档流位置零变：纯皮肤票，F-05 滚动收敛面不扰动）
+    <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-2 px-3 py-2 text-xs">
       <div className="flex items-center gap-1">
         <button
           type="button"
           className={btn}
-          style={{ borderColor: 'var(--border)' }}
           disabled={page <= 0}
           onClick={() => onNavigate(page - 1)}
         >
           上一页
         </button>
         <input
-          className="w-12 rounded border px-1 py-0.5 text-center text-xs"
+          className="rdr-num w-12 rounded border px-1 py-0.5 text-center text-xs"
           style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
           value={pageInput}
           aria-label="跳转到页"
@@ -87,7 +91,9 @@ export function ReaderToolbar(props: {
             if (e.key === 'Enter') commitPage()
           }}
         />
-        <span style={{ color: 'var(--text-dim)' }}>/ {totalPages > 0 ? totalPages : '…'}</span>
+        <span className="rdr-num" style={{ color: 'var(--text-dim)' }}>
+          / {totalPages > 0 ? totalPages : '…'}
+        </span>
         <button
           type="button"
           className={btn}
@@ -103,18 +109,16 @@ export function ReaderToolbar(props: {
         <button
           type="button"
           className={btn}
-          style={{ borderColor: 'var(--border)' }}
           onClick={() => onZoom(round2(zoom - ZOOM_STEP))}
         >
           −
         </button>
-        <span data-testid="zoom-label" className="w-10 text-center" style={{ color: 'var(--text-dim)' }}>
+        <span data-testid="zoom-label" className="rdr-num w-10 text-center" style={{ color: 'var(--text-dim)' }}>
           {Math.round(zoom * 100)}%
         </span>
         <button
           type="button"
           className={btn}
-          style={{ borderColor: 'var(--border)' }}
           onClick={() => onZoom(round2(zoom + ZOOM_STEP))}
         >
           ＋
@@ -122,7 +126,6 @@ export function ReaderToolbar(props: {
         <button
           type="button"
           className={btn}
-          style={{ borderColor: 'var(--border)' }}
           onClick={() => onZoom(1)}
         >
           100%
@@ -130,7 +133,6 @@ export function ReaderToolbar(props: {
         <button
           type="button"
           className={btn}
-          style={{ borderColor: 'var(--border)' }}
           disabled={onFitWidth === undefined}
           title={onFitWidth === undefined ? '适应宽度待页面接线' : '按窗口宽度适配当前页'}
           onClick={() => onFitWidth?.()}

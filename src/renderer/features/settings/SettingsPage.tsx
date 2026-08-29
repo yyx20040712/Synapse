@@ -13,14 +13,19 @@
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 保存走 settings.store.save；store 动作型失败在此 catch 后 toast
+ * - [R3-SET 皮肤票] 分节卡+金节标衬线+节间 DiamondRule（.syn-settings 作用域
+ *   皮肤住 theme.css——自持节 section 根同吃）；表单控件 focus=accent 描边+
+ *   gold-soft 底（.syn-input）；内联节壳拆 SettingsSection（180 行消化上限）
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
+import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
 import { useSettingsStore } from './settings.store'
 import { CorpusExportSection } from './CorpusExportSection'
+import { SettingsSection } from './SettingsSection'
 import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
 
@@ -93,16 +98,18 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">通用</h2>
+    // syn-settings 作用域（R3-U4 皮肤票）：> section 分节卡（panel+radius-l+
+    // shadow-1）+h2 金节标衬线——自持节（语料导出/zcode/注入课题节）渲染
+    // section 根同吃皮肤；节间菱形分隔复用 DiamondRule（.lib-rule* 语法）
+    <div className="syn-settings mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
+      <SettingsSection title="通用">
         <label className="flex flex-col gap-1">
           <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
             联系邮箱（仅用作 CrossRef/OpenAlex 礼貌池标识，附在请求 User-Agent 中）
           </span>
           <input
             aria-label="联系邮箱"
-            className="rounded border px-2 py-1 text-sm"
+            className="syn-input rounded border px-2 py-1 text-sm"
             style={inputStyle}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +121,7 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
           </span>
           <select
             aria-label="主题"
-            className="rounded border px-1 py-1 text-sm"
+            className="syn-input rounded border px-1 py-1 text-sm"
             style={inputStyle}
             value={theme}
             onChange={(e) => setTheme(e.target.value as AppSettings['theme'])}
@@ -134,10 +141,11 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
             保存设置
           </Button>
         </div>
-      </section>
+      </SettingsSection>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">网络</h2>
+      <DiamondRule />
+
+      <SettingsSection title="网络">
         <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
           本应用出网仅限元数据增强与连通诊断，全部由你手动触发，无任何后台网络任务。
           白名单 host（在受锁常量中维护）：{ALLOWED_REMOTE_HOSTS.join('、')}。
@@ -170,15 +178,18 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
             </tbody>
           </table>
         )}
-      </section>
+      </SettingsSection>
 
       {/* R1-WS2：课题管理节（App 组合根注入——见 props 注释） */}
+      <DiamondRule />
       {props.workspaceSection}
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
+      <DiamondRule />
       <CorpusExportSection />
 
       {/* AI-10：zcode 联动节（自持组件——检测/装技能纯 fs，INV-21 零 spawn） */}
+      <DiamondRule />
       <ZcodeLinkSection />
     </div>
   )

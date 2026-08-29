@@ -138,7 +138,7 @@ export function ReaderNotesPanel(props: {
       <div className="flex items-center gap-2">
         <input
           aria-label="笔记标题"
-          className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+          className="syn-input min-w-0 flex-1 rounded border px-2 py-1 text-sm"
           style={inputStyle}
           value={entry?.title ?? ''}
           disabled={loadFailed}
@@ -167,7 +167,7 @@ export function ReaderNotesPanel(props: {
       <div className="relative min-h-0 flex-1 basis-24">
         <textarea
           aria-label="笔记正文"
-          className="h-full w-full resize-none rounded border p-2 font-mono text-sm"
+          className="syn-input h-full w-full resize-none rounded border p-2 font-mono text-sm"
           style={inputStyle}
           value={entry?.contentMd ?? ''}
           disabled={loadFailed}
@@ -192,11 +192,15 @@ export function ReaderNotesPanel(props: {
           </button>
         </div>
       )}
-      <div className="min-h-0 flex-1 basis-1/2 overflow-auto">
+      <div className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1 overflow-auto">
+        {/* 节标（R3-RDR 皮肤票：h4 金左缘条+衬线——.rdr-aside-h4；分节结构
+            新增不影响既有 testid/aria 断言面） */}
+        <h4 className="rdr-aside-h4">片段笔记</h4>
         <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
       </div>
       {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
           useActiveTab 自取 paperId——防双源同本面板） */}
+      <h4 className="rdr-aside-h4">AI 笔记</h4>
       <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
     </div>
   )

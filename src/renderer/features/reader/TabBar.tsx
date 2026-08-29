@@ -33,6 +33,8 @@
  * - 测试：tests/unit/renderer/tab-bar.test.tsx（受锁）：渲染序=order、
  *   激活高亮、点击 activate、关闭叉 closeTab、loading/error 态呈现、空态隐藏、
  *   role="tablist"/"tab" 语义、roving 键盘（左右+循环）
+ * - [R3-RDR 皮肤票] active tab=纸面底+金 hairline 底缘（.rdr-tab-active）；
+ *   role/aria/tabIndex/.truncate 结构零变（tab-bar.test 断言面）
  */
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
@@ -106,10 +108,11 @@ export function TabBar(): JSX.Element | null {
             aria-selected={active}
             tabIndex={id === rovingId ? 0 : -1}
             data-tab-id={id}
-            className="flex min-w-0 max-w-48 shrink-0 cursor-pointer items-center gap-1 border-r px-2 text-xs"
+            // active=纸面底+金 hairline 底缘（.rdr-tab-active——inset 零占位，
+            // h-8 布局零变；旧 accent-soft 满铺退役。R3-RDR 皮肤票）
+            className={`flex min-w-0 max-w-48 shrink-0 cursor-pointer items-center gap-1 border-r px-2 text-xs${active ? ' rdr-tab-active' : ''}`}
             style={{
               borderColor: 'var(--border)',
-              background: active ? 'var(--accent-soft)' : 'transparent',
               color: tab.status === 'error' ? 'var(--danger)' : 'var(--text)'
             }}
             onClick={() => activateTab(id)}

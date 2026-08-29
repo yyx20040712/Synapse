@@ -1,0 +1,542 @@
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 652708f..5bc1e70 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-28T23:27:56.9264457Z",
++    "generatedAt":  "2026-08-28T23:50:22.1789154Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -389,6 +389,10 @@
+                       "path":  "tests/unit/renderer/paper-detail-notes-off.test.tsx",
+                       "sha256":  "afd0f1092c10ddaa1ea67e5dbc34a00af7227a982c7fdea5255d9d75dc3667d3"
+                   },
++                  {
++                      "path":  "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
++                      "sha256":  "45c20c6b115de7a63d9a5850d547879fbb9f7b3b9a123a67f5d215b535b559b2"
++                  },
+                   {
+                       "path":  "tests/unit/renderer/reader.store.test.ts",
+                       "sha256":  "077d4f0248790ede95742ad5d3d55db57f48f0ac1b1ca4fa2eadba2a752cf6e3"
+diff --git a/src/renderer/features/reader/OutlineAside.tsx b/src/renderer/features/reader/OutlineAside.tsx
+index 7becb85..ef5b2bb 100644
+--- a/src/renderer/features/reader/OutlineAside.tsx
++++ b/src/renderer/features/reader/OutlineAside.tsx
+@@ -113,9 +113,11 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
+               role="tab"
+               aria-selected={tab === id}
+               className="flex-1 px-2 py-1 text-xs"
++              // active=accent 文字+金 hairline 底缘（R3-RDR 皮肤票：亮面金铜
++              // 替代满铺 accent 底——装饰浓度最低；aria/结构零变）
+               style={
+                 tab === id
+-                  ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--accent)' }
++                  ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--border-gold)' }
+                   : { color: 'var(--text-dim)' }
+               }
+               onClick={() => setTab(id)}
+diff --git a/src/renderer/features/reader/ReaderNotesPanel.tsx b/src/renderer/features/reader/ReaderNotesPanel.tsx
+index 2030b82..fa6ddd9 100644
+--- a/src/renderer/features/reader/ReaderNotesPanel.tsx
++++ b/src/renderer/features/reader/ReaderNotesPanel.tsx
+@@ -138,7 +138,7 @@ export function ReaderNotesPanel(props: {
+       <div className="flex items-center gap-2">
+         <input
+           aria-label="笔记标题"
+-          className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
++          className="syn-input min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+           style={inputStyle}
+           value={entry?.title ?? ''}
+           disabled={loadFailed}
+@@ -167,7 +167,7 @@ export function ReaderNotesPanel(props: {
+       <div className="relative min-h-0 flex-1 basis-24">
+         <textarea
+           aria-label="笔记正文"
+-          className="h-full w-full resize-none rounded border p-2 font-mono text-sm"
++          className="syn-input h-full w-full resize-none rounded border p-2 font-mono text-sm"
+           style={inputStyle}
+           value={entry?.contentMd ?? ''}
+           disabled={loadFailed}
+@@ -192,11 +192,15 @@ export function ReaderNotesPanel(props: {
+           </button>
+         </div>
+       )}
+-      <div className="min-h-0 flex-1 basis-1/2 overflow-auto">
++      <div className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1 overflow-auto">
++        {/* 节标（R3-RDR 皮肤票：h4 金左缘条+衬线——.rdr-aside-h4；分节结构
++            新增不影响既有 testid/aria 断言面） */}
++        <h4 className="rdr-aside-h4">片段笔记</h4>
+         <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
+       </div>
+       {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
+           useActiveTab 自取 paperId——防双源同本面板） */}
++      <h4 className="rdr-aside-h4">AI 笔记</h4>
+       <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
+     </div>
+   )
+diff --git a/src/renderer/features/reader/ReaderToolbar.tsx b/src/renderer/features/reader/ReaderToolbar.tsx
+index 49d2e17..d4ff5bb 100644
+--- a/src/renderer/features/reader/ReaderToolbar.tsx
++++ b/src/renderer/features/reader/ReaderToolbar.tsx
+@@ -17,6 +17,9 @@
+  *
+  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
+  * - 纯受控组件；页码显示为 1 基（store 内部 0 基，边界夹取由 store.setPage 兜底）
++ * - [R3-RDR 皮肤票] 玻璃浮层（.rdr-toolbar：panel-glass+blur10+金 hairline 底缘）
++ *   +控件 ghost 变体+页码/缩放衬线数字（.rdr-num）；文档流位置/aria/testid
++ *   零变（PDF 区装饰浓度最低原则）
+  */
+ import { useEffect, useState } from 'react'
+ import type { AnnotationColor } from '@shared/models/annotation'
+@@ -59,25 +62,26 @@ export function ReaderToolbar(props: {
+     setPageInput(String(page + 1))
+   }
+ 
+-  const btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50'
++  // R3-U3 皮肤票：控件走 ghost 变体语言（theme.css .syn-btn-ghost——Button
++  // 组件同款皮肤类；不经 Button 组件因其不带 title prop，「适应宽度」禁用态
++  // title 提示属交互面零变项，保留原生 button）
++  const btn = 'syn-btn-ghost rounded border px-2 py-0.5 text-xs disabled:opacity-50'
+ 
+   return (
+-    <div
+-      className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 text-xs"
+-      style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
+-    >
++    // 玻璃浮层皮肤（--panel-glass+blur10+金 hairline 底缘——theme.css 单源；
++    // 文档流位置零变：纯皮肤票，F-05 滚动收敛面不扰动）
++    <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-2 px-3 py-2 text-xs">
+       <div className="flex items-center gap-1">
+         <button
+           type="button"
+           className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+           disabled={page <= 0}
+           onClick={() => onNavigate(page - 1)}
+         >
+           上一页
+         </button>
+         <input
+-          className="w-12 rounded border px-1 py-0.5 text-center text-xs"
++          className="rdr-num w-12 rounded border px-1 py-0.5 text-center text-xs"
+           style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
+           value={pageInput}
+           aria-label="跳转到页"
+@@ -87,7 +91,9 @@ export function ReaderToolbar(props: {
+             if (e.key === 'Enter') commitPage()
+           }}
+         />
+-        <span style={{ color: 'var(--text-dim)' }}>/ {totalPages > 0 ? totalPages : '…'}</span>
++        <span className="rdr-num" style={{ color: 'var(--text-dim)' }}>
++          / {totalPages > 0 ? totalPages : '…'}
++        </span>
+         <button
+           type="button"
+           className={btn}
+@@ -103,18 +109,16 @@ export function ReaderToolbar(props: {
+         <button
+           type="button"
+           className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+           onClick={() => onZoom(round2(zoom - ZOOM_STEP))}
+         >
+           −
+         </button>
+-        <span data-testid="zoom-label" className="w-10 text-center" style={{ color: 'var(--text-dim)' }}>
++        <span data-testid="zoom-label" className="rdr-num w-10 text-center" style={{ color: 'var(--text-dim)' }}>
+           {Math.round(zoom * 100)}%
+         </span>
+         <button
+           type="button"
+           className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+           onClick={() => onZoom(round2(zoom + ZOOM_STEP))}
+         >
+           ＋
+@@ -122,7 +126,6 @@ export function ReaderToolbar(props: {
+         <button
+           type="button"
+           className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+           onClick={() => onZoom(1)}
+         >
+           100%
+@@ -130,7 +133,6 @@ export function ReaderToolbar(props: {
+         <button
+           type="button"
+           className={btn}
+-          style={{ borderColor: 'var(--border)' }}
+           disabled={onFitWidth === undefined}
+           title={onFitWidth === undefined ? '适应宽度待页面接线' : '按窗口宽度适配当前页'}
+           onClick={() => onFitWidth?.()}
+diff --git a/src/renderer/features/reader/TabBar.tsx b/src/renderer/features/reader/TabBar.tsx
+index d8119f1..ebfd93f 100644
+--- a/src/renderer/features/reader/TabBar.tsx
++++ b/src/renderer/features/reader/TabBar.tsx
+@@ -33,6 +33,8 @@
+  * - 测试：tests/unit/renderer/tab-bar.test.tsx（受锁）：渲染序=order、
+  *   激活高亮、点击 activate、关闭叉 closeTab、loading/error 态呈现、空态隐藏、
+  *   role="tablist"/"tab" 语义、roving 键盘（左右+循环）
++ * - [R3-RDR 皮肤票] active tab=纸面底+金 hairline 底缘（.rdr-tab-active）；
++ *   role/aria/tabIndex/.truncate 结构零变（tab-bar.test 断言面）
+  */
+ import { useState } from 'react'
+ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+@@ -106,10 +108,11 @@ export function TabBar(): JSX.Element | null {
+             aria-selected={active}
+             tabIndex={id === rovingId ? 0 : -1}
+             data-tab-id={id}
+-            className="flex min-w-0 max-w-48 shrink-0 cursor-pointer items-center gap-1 border-r px-2 text-xs"
++            // active=纸面底+金 hairline 底缘（.rdr-tab-active——inset 零占位，
++            // h-8 布局零变；旧 accent-soft 满铺退役。R3-RDR 皮肤票）
++            className={`flex min-w-0 max-w-48 shrink-0 cursor-pointer items-center gap-1 border-r px-2 text-xs${active ? ' rdr-tab-active' : ''}`}
+             style={{
+               borderColor: 'var(--border)',
+-              background: active ? 'var(--accent-soft)' : 'transparent',
+               color: tab.status === 'error' ? 'var(--danger)' : 'var(--text)'
+             }}
+             onClick={() => activateTab(id)}
+diff --git a/src/renderer/features/settings/SettingsPage.tsx b/src/renderer/features/settings/SettingsPage.tsx
+index a4b7500..15b2e9a 100644
+--- a/src/renderer/features/settings/SettingsPage.tsx
++++ b/src/renderer/features/settings/SettingsPage.tsx
+@@ -13,14 +13,19 @@
+  *
+  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
+  * - 保存走 settings.store.save；store 动作型失败在此 catch 后 toast
++ * - [R3-SET 皮肤票] 分节卡+金节标衬线+节间 DiamondRule（.syn-settings 作用域
++ *   皮肤住 theme.css——自持节 section 根同吃）；表单控件 focus=accent 描边+
++ *   gold-soft 底（.syn-input）；内联节壳拆 SettingsSection（180 行消化上限）
+  */
+ import { useEffect, useState, type ReactNode } from 'react'
+ import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
+ import { ApiClientError } from '../../api/client'
+ import { Button } from '../../shared/ui/Button'
++import { DiamondRule } from '../../shared/ui/DiamondRule'
+ import { showToast } from '../../shared/ui/Toast'
+ import { useSettingsStore } from './settings.store'
+ import { CorpusExportSection } from './CorpusExportSection'
++import { SettingsSection } from './SettingsSection'
+ import { ZcodeLinkSection } from './ZcodeLinkSection'
+ import type { AppSettings } from '@shared/ipc/schemas'
+ 
+@@ -93,16 +98,18 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
+   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
+ 
+   return (
+-    <div className="mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
+-      <section className="flex flex-col gap-2">
+-        <h2 className="text-sm font-medium">通用</h2>
++    // syn-settings 作用域（R3-U4 皮肤票）：> section 分节卡（panel+radius-l+
++    // shadow-1）+h2 金节标衬线——自持节（语料导出/zcode/注入课题节）渲染
++    // section 根同吃皮肤；节间菱形分隔复用 DiamondRule（.lib-rule* 语法）
++    <div className="syn-settings mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
++      <SettingsSection title="通用">
+         <label className="flex flex-col gap-1">
+           <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
+             联系邮箱（仅用作 CrossRef/OpenAlex 礼貌池标识，附在请求 User-Agent 中）
+           </span>
+           <input
+             aria-label="联系邮箱"
+-            className="rounded border px-2 py-1 text-sm"
++            className="syn-input rounded border px-2 py-1 text-sm"
+             style={inputStyle}
+             value={email}
+             onChange={(e) => setEmail(e.target.value)}
+@@ -114,7 +121,7 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
+           </span>
+           <select
+             aria-label="主题"
+-            className="rounded border px-1 py-1 text-sm"
++            className="syn-input rounded border px-1 py-1 text-sm"
+             style={inputStyle}
+             value={theme}
+             onChange={(e) => setTheme(e.target.value as AppSettings['theme'])}
+@@ -134,10 +141,11 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
+             保存设置
+           </Button>
+         </div>
+-      </section>
++      </SettingsSection>
+ 
+-      <section className="flex flex-col gap-2">
+-        <h2 className="text-sm font-medium">网络</h2>
++      <DiamondRule />
++
++      <SettingsSection title="网络">
+         <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
+           本应用出网仅限元数据增强与连通诊断，全部由你手动触发，无任何后台网络任务。
+           白名单 host（在受锁常量中维护）：{ALLOWED_REMOTE_HOSTS.join('、')}。
+@@ -170,15 +178,18 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
+             </tbody>
+           </table>
+         )}
+-      </section>
++      </SettingsSection>
+ 
+       {/* R1-WS2：课题管理节（App 组合根注入——见 props 注释） */}
++      <DiamondRule />
+       {props.workspaceSection}
+ 
+       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
++      <DiamondRule />
+       <CorpusExportSection />
+ 
+       {/* AI-10：zcode 联动节（自持组件——检测/装技能纯 fs，INV-21 零 spawn） */}
++      <DiamondRule />
+       <ZcodeLinkSection />
+     </div>
+   )
+diff --git a/src/renderer/shared/theme.css b/src/renderer/shared/theme.css
+index 88a3aa7..67c98be 100644
+--- a/src/renderer/shared/theme.css
++++ b/src/renderer/shared/theme.css
+@@ -237,6 +237,65 @@ body,
+   transform: rotate(45deg);
+ }
+ 
++/* ══ R3-U3 阅读器周边皮肤（装饰浓度最低——PDF 区中性不变；玻璃浮层+纸面
++   tab+侧板节标。ReaderToolbar/TabBar/ReaderNotesPanel 消费；标注/AI/选区
++   层零触碰——F-07 层叠链红线）══ */
++.rdr-toolbar {
++  background: var(--panel-glass);
++  backdrop-filter: blur(10px);
++  border-bottom: 1px solid var(--border-gold);
++  box-shadow: var(--shadow-1);
++}
++/* active tab=纸面底+inset 金 hairline 底缘（box-shadow inset 零占位——h-8
++   布局不变，F-05 滚动收敛面不扰动；旧 accent-soft 满铺退役） */
++.rdr-tab-active {
++  background: var(--panel);
++  box-shadow: inset 0 -2px 0 0 var(--border-gold);
++}
++/* 阅读器数字（页码/缩放）衬线+tabular-nums（token 表展示字组消费） */
++.rdr-num {
++  font-family: var(--font-display);
++  font-variant-numeric: tabular-nums;
++}
++/* 阅读器侧板节标：h4 金左缘条+衬线（夜色只属脉络域——侧板保持亮面） */
++.rdr-aside-h4 {
++  margin: 0;
++  font-family: var(--font-display);
++  font-size: 11.5px;
++  font-weight: 600;
++  letter-spacing: 0.5px;
++  color: var(--text);
++  border-left: 3px solid var(--gold);
++  padding-left: 8px;
++}
++
++/* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
++   等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
++   .lib-rule*）══ */
++.syn-settings > section {
++  background: var(--panel);
++  border: 1px solid var(--border);
++  border-radius: var(--radius-l);
++  box-shadow: var(--shadow-1);
++  padding: 14px 16px;
++}
++.syn-settings h2 {
++  margin: 0 0 2px;
++  font-family: var(--font-display);
++  font-size: 13px;
++  font-weight: 600;
++  letter-spacing: 0.5px;
++  color: var(--text);
++  border-left: 3px solid var(--gold);
++  padding-left: 8px;
++}
++/* 表单控件 focus：accent 描边+gold-soft 底（票面 P2） */
++.syn-input:focus {
++  outline: none;
++  border-color: var(--accent);
++  background: var(--gold-soft);
++}
++
+ /* ══ 脉络·命之座星象板（R2-LG9；视觉规范=docs/design/mockups/
+    lineage-constellation.html 逐值誊录——夜幕 token 系 R3-TH1 预铺消费）══ */
+ .lineage-night {
+=== NEW FILE: src/renderer/features/settings/SettingsSection.tsx ===
+/**
+ * SettingsSection —— 设置页分节卡壳（R3-U4 视觉票）。
+ *
+ * ── 行为层 ──
+ * - 纯展示壳：section+h2 节标+children；无状态无回调
+ *
+ * ── 接口层 ──
+ * - export function SettingsSection(props: { title: string; children: ReactNode }): JSX.Element
+ *
+ * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
+ * - 皮肤单源=theme.css .syn-settings 作用域（> section 分节卡 / h2 金节标衬线）
+ *   ——自持节（CorpusExportSection/ZcodeLinkSection/注入的课题节）渲染 section
+ *   根，经同一作用域吃同皮肤：票面外文件零触碰的同视觉收敛
+ * - 结构与原 section+h2 完全同形（拆分动机=SettingsPage 180 行消化上限）
+ */
+import type { ReactNode } from 'react'
+
+export function SettingsSection(props: { title: string; children: ReactNode }): JSX.Element {
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-sm font-medium">{props.title}</h2>
+      {props.children}
+    </section>
+  )
+}
+=== NEW FILE: tests/unit/renderer/r3-rdr-set-visual.test.tsx ===
+// @vitest-environment jsdom
+/**
+ * [R3-RDR+R3-SET] 阅读器周边+设置页视觉重制 —— 渲染级断言+theme.css 材质
+ * 文本锁（library-cards.test 同口径：CSS 字面断言防漂移）。always-active 裸
+ * describe（K3——不经 guardedDescribe 守卫）。
+ *
+ * 覆盖三面：①ReaderToolbar 玻璃浮层（--panel-glass+blur10+金 hairline 底缘）
+ * ②TabBar 纸面 tab+active 金 hairline 底缘 ③SettingsPage 分节卡
+ * （panel+radius-l+shadow-1）+金节标（h2 金左缘条）+节间菱形分隔（DiamondRule）。
+ * 行为/aria/testid 零变面由既有锁定测试护栏（tab-bar/reader-notes-panel/
+ * corpus-export 等）——本文件只锁新视觉语法。
+ */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as clientModule from '../../../src/renderer/api/client'
+import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+
+/** SettingsPage 渲染链隔离：api/Toast 桩+两个自持节组件桩（行为面各有己测锁定） */
+const { stubApi, toastSpy } = vi.hoisted(() => ({
+  stubApi: { settings: { get: vi.fn(async () => ({ ok: true, data: null })) } },
+  toastSpy: vi.fn()
+}))
+vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+  const real = await importOriginal<typeof clientModule>()
+  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+})
+vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+  const real = await importOriginal<typeof toastModule>()
+  return { ...real, showToast: toastSpy }
+})
+vi.mock('../../../src/renderer/features/settings/CorpusExportSection', () => ({
+  CorpusExportSection: () => null
+}))
+vi.mock('../../../src/renderer/features/settings/ZcodeLinkSection', () => ({
+  ZcodeLinkSection: () => null
+}))
+
+import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
+import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+
+// act() 环境声明（library-cards 同口径——免 React 警告刷屏）
+;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+
+// jsdom 环境 CSS 文本读取走 cwd 相对路径（theme.test 的 URL 法仅 node 环境可用）
+const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+
+function mount(node: JSX.Element): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(node)
+  })
+}
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+})
+
+/** ready 态完整 tab 形状（tab-bar.test 同配方） */
+function makeTab(id: string): TabState {
+  return {
+    paperId: id,
+    fileUrl: `app-file://${id}`,
+    fileName: `${id}.pdf`,
+    title: '',
+    page: 0,
+    totalPages: 10,
+    zoom: 1,
+    color: 'yellow',
+    annotations: [],
+    status: 'ready',
+    dirty: false
+  }
+}
+
+describe('R3-U3 ReaderToolbar —— 玻璃浮层皮肤（装饰浓度最低：仅皮肤零布局变）', () => {
+  it('工具条根挂 rdr-toolbar 玻璃浮层类；theme.css 值面=--panel-glass+blur10+金 hairline 底缘', () => {
+    mount(
+      <ReaderToolbar
+        page={0}
+        totalPages={10}
+        zoom={1}
+        color="yellow"
+        onNavigate={() => undefined}
+        onZoom={() => undefined}
+        onColor={() => undefined}
+      />
+    )
+    const bar = host?.firstElementChild as HTMLElement
+    expect(bar, '工具条根元素应在场').toBeDefined()
+    expect(bar.className, '玻璃浮层类钩 rdr-toolbar 应挂在根').toContain('rdr-toolbar')
+    // 材质文本锁（theme.test 同口径）：值漂移/误删即红
+    expect(cssTheme, '玻璃底=--panel-glass').toMatch(/\.rdr-toolbar\s*\{[^}]*background:\s*var\(--panel-glass\)/)
+    expect(cssTheme, 'blur 10px').toMatch(/\.rdr-toolbar\s*\{[^}]*backdrop-filter:\s*blur\(10px\)/)
+    expect(cssTheme, '金 hairline 底缘').toMatch(/\.rdr-toolbar\s*\{[^}]*var\(--border-gold\)/)
+  })
+})
+
+describe('R3-U3 TabBar —— 纸面 tab+active 金 hairline 底缘', () => {
+  beforeEach(() => {
+    useReaderStore.setState({ tabs: {}, order: [], activeId: null })
+    useNotesStore.setState({ noteByPaper: {} })
+  })
+
+  it('active tab 挂 rdr-tab-active 类（非 active 不挂）；theme.css 值面=纸面底+inset 金底缘', () => {
+    useReaderStore.setState({
+      tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') },
+      order: ['p-1', 'p-2'],
+      activeId: 'p-2'
+    })
+    mount(<TabBar />)
+    const tabs = [...(host?.querySelectorAll('[role="tab"]') ?? [])] as HTMLElement[]
+    expect(tabs).toHaveLength(2)
+    expect(tabs[1]?.className, 'active tab 应挂金缘类').toContain('rdr-tab-active')
+    expect(tabs[0]?.className, '非 active 不挂').not.toContain('rdr-tab-active')
+    // 材质文本锁：纸面底（--panel 非旧 accent-soft 满铺）+金 hairline 底缘（inset
+    // 零占位——h-8 布局零变，F-05 滚动收敛面不扰动）
+    expect(cssTheme, 'active 底=纸面 panel').toMatch(/\.rdr-tab-active\s*\{[^}]*background:\s*var\(--panel\)/)
+    expect(cssTheme, '金 hairline 底缘').toMatch(/\.rdr-tab-active\s*\{[^}]*inset 0 -2px 0 0 var\(--border-gold\)/)
+  })
+})
+
+describe('R3-U4 SettingsPage —— 分节卡+金节标+节间菱形分隔', () => {
+  it('根挂 syn-settings；分节卡值面=panel+radius-l+shadow-1；h2 金左缘条节标；节间 DiamondRule 在场', () => {
+    mount(<SettingsPage />)
+    const page = host?.firstElementChild as HTMLElement
+    expect(page, '设置页根元素应在场').toBeDefined()
+    expect(page.className, '设置页根应挂 syn-settings 作用域类').toContain('syn-settings')
+    expect(page.querySelectorAll('section').length, '分节（section）≥2').toBeGreaterThanOrEqual(2)
+    expect(page.querySelector('.lib-rule'), '节间菱形分隔（DiamondRule）应在场').not.toBeNull()
+    // 材质文本锁：作用域皮肤（> section 直达自持节——CorpusExportSection 等
+    // 票面外文件零触碰的同视觉收敛法）
+    expect(cssTheme, '分节卡底=panel').toMatch(/\.syn-settings > section\s*\{[^}]*background:\s*var\(--panel\)/)
+    expect(cssTheme, '分节卡圆角=radius-l').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--radius-l\)/)
+    expect(cssTheme, '分节卡阴影=shadow-1').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--shadow-1\)/)
+    expect(cssTheme, '金节标=衬线+金左缘条').toMatch(/\.syn-settings h2\s*\{[^}]*var\(--font-display\)/)
+    expect(cssTheme, '金节标左缘条用 --gold').toMatch(/\.syn-settings h2\s*\{[^}]*3px solid var\(--gold\)/)
+  })
+})
