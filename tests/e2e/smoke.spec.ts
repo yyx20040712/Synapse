@@ -114,3 +114,45 @@ test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ 
 
   await app.close()
 })
+
+test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke5-'))
+  const app = await electron.launch({
+    args: ['out/main/index.js'],
+    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+  })
+  const win = await app.firstWindow()
+  await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
+
+  // 三键可见（role=button accessible name）
+  await expect(win.getByRole('button', { name: '最小化' })).toBeVisible()
+  await expect(win.getByRole('button', { name: '最大化' })).toBeVisible()
+  await expect(win.getByRole('button', { name: '关闭' })).toBeVisible()
+
+  // drag/no-drag：整条 header=drag；切换器容器与三键容器=no-drag
+  const regions = await win.evaluate(() => {
+    const get = (sel: string): string =>
+      getComputedStyle(document.querySelector(sel) as Element).getPropertyValue('-webkit-app-region')
+    return {
+      header: get('.app-header'),
+      controls: get('.titlebar-controls'),
+      switcher: get('.app-header-switcher')
+    }
+  })
+  expect(regions.header, '.app-header 应为 drag').toBe('drag')
+  expect(regions.controls, '三键容器应为 no-drag').toBe('no-drag')
+  expect(regions.switcher, '切换器容器应为 no-drag').toBe('no-drag')
+
+  // maximize-toggle 真行为：点「最大化」→ isMaximized true；按钮切「向下还原」→ 点回 false
+  await win.getByRole('button', { name: '最大化' }).click()
+  await expect
+    .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isMaximized() ?? false))
+    .toBe(true)
+  await expect(win.getByRole('button', { name: '向下还原' })).toBeVisible()
+  await win.getByRole('button', { name: '向下还原' }).click()
+  await expect
+    .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isMaximized() ?? false))
+    .toBe(false)
+
+  await app.close()
+})

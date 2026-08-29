@@ -1,0 +1,57 @@
+{
+  "normalButtons": [
+    "最小化",
+    "最大化",
+    "关闭"
+  ],
+  "appRegions": {
+    "header": "drag",
+    "switcher": "no-drag",
+    "controls": "no-drag",
+    "btnMin": "none"
+  },
+  "maximizeState": {
+    "isMaximized": true
+  },
+  "restoreState": {
+    "isMaximized": false
+  },
+  "closeHover": {
+    "present": true,
+    "hovered": true,
+    "bg": "rgb(232, 17, 35)",
+    "rect": {
+      "x": 1236,
+      "y": 0,
+      "width": 44,
+      "height": 43.20000076293945,
+      "top": 0,
+      "right": 1280,
+      "bottom": 43.20000076293945,
+      "left": 1236
+    }
+  },
+  "closeHoverBg": "rgb(232, 17, 35)",
+  "rightOrder": [
+    {
+      "cls": {},
+      "text": ""
+    },
+    {
+      "cls": "app-header-name",
+      "text": "Synapse"
+    },
+    {
+      "cls": "app-header-switcher",
+      "text": "智慧水务▾"
+    },
+    {
+      "cls": "app-nav-ver",
+      "text": "v0.1"
+    },
+    {
+      "cls": "titlebar-controls",
+      "text": ""
+    }
+  ]
+}

@@ -28,7 +28,7 @@ const { stubApi } = vi.hoisted(() => ({
       importDraft: vi.fn()
     },
     library: { list: vi.fn() },
-    system: { setQuitDirty: vi.fn() }
+    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
   }
 }))
 
@@ -169,10 +169,18 @@ beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.library.list.mockReset()
   stubApi.system.setQuitDirty.mockReset()
+  stubApi.system.windowControl.mockReset()
   // App.tsx 组合根直用 window.api.system（非 client 门面）——jsdom 下 stub
+  // （R2-SH3：+windowControl/onWindowState——TitleBarControls 直用 window 桥）
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { system: { setQuitDirty: stubApi.system.setQuitDirty } }
+    value: {
+      system: { setQuitDirty: stubApi.system.setQuitDirty, windowControl: stubApi.system.windowControl }
+    }
+  })
+  Object.defineProperty(window, 'apiEvents', {
+    configurable: true,
+    value: { onWindowState: vi.fn(() => () => undefined) }
   })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
@@ -185,6 +193,7 @@ beforeEach(() => {
   })
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
 })
 
 afterEach(() => {

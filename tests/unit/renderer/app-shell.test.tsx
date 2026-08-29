@@ -21,7 +21,7 @@ const { stubApi } = vi.hoisted(() => ({
   stubApi: {
     lineage: { graph: vi.fn() },
     library: { list: vi.fn() },
-    system: { setQuitDirty: vi.fn() },
+    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
     workspaces: { list: vi.fn() }
   }
 }))
@@ -65,14 +65,24 @@ beforeEach(() => {
   stubApi.lineage.graph.mockReset()
   stubApi.library.list.mockReset()
   stubApi.system.setQuitDirty.mockReset()
+  stubApi.system.windowControl.mockReset()
   stubApi.workspaces.list.mockReset()
+  // App 组合根与 TitleBarControls 直用 window.api/window.apiEvents（非
+  // client 门面）——jsdom 下 stub（R2-SH3：windowControl+onWindowState）
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { system: { setQuitDirty: stubApi.system.setQuitDirty } }
+    value: {
+      system: { setQuitDirty: stubApi.system.setQuitDirty, windowControl: stubApi.system.windowControl }
+    }
+  })
+  Object.defineProperty(window, 'apiEvents', {
+    configurable: true,
+    value: { onWindowState: vi.fn(() => () => undefined) }
   })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
   stubApi.workspaces.list.mockResolvedValue({
     ok: true,
     data: {

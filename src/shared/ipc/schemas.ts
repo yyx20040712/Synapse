@@ -387,3 +387,18 @@ export const openExternalReqSchema = z.object({ url: z.string().min(1).max(2048)
 
 /** 退出拦截 dirty 上报（TABS-04：renderer 聚合信号变化沿 push 到 main 缓存） */
 export const setQuitDirtyReqSchema = z.object({ dirty: z.boolean() }).strict()
+
+// ── system window-control（R2-SH3 frameless 标题栏：action 枚举只住此处——
+//    renderer 经 api-surface 类型推导复用，禁手写第二份）────────────────
+export const windowControlActionSchema = z.enum(['minimize', 'maximize-toggle', 'close', 'get-state'])
+export type WindowControlAction = z.infer<typeof windowControlActionSchema>
+
+export const windowControlReqSchema = z.object({ action: windowControlActionSchema }).strict()
+export type WindowControlReq = z.infer<typeof windowControlReqSchema>
+
+/** maximize 状态推送（main→renderer 单向：win.on('maximize'/'unmaximize') 沿） */
+export const windowStateEventSchema = z.object({ maximized: z.boolean() }).strict()
+export type WindowStateEvent = z.infer<typeof windowStateEventSchema>
+
+export const windowControlResSchema = z.object({ ok: z.literal(true), maximized: z.boolean() }).strict()
+export type WindowControlRes = z.infer<typeof windowControlResSchema>

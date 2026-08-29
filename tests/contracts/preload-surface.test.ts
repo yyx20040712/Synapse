@@ -94,4 +94,27 @@ describe('contracts/preload-surface —— 运行时暴露面与接线表一致'
       expect.any(Function)
     )
   })
+
+  it('事件桥 onWindowState：订阅 windowState 通道透传 payload，退订移除同一监听（R2-SH3 增量）', () => {
+    const events = exposed.get('apiEvents') as {
+      onWindowState(cb: (e: unknown) => void): () => void
+    }
+    let fire: ((payload: unknown) => void) | undefined
+    mocks.on.mockImplementation((_channel, listener) => {
+      fire = (payload: unknown) => listener(undefined, payload)
+    })
+    const received: unknown[] = []
+    const off = events.onWindowState((e) => received.push(e))
+
+    expect(mocks.on).toHaveBeenCalledTimes(1)
+    expect(mocks.on).toHaveBeenCalledWith(EVENT_CHANNELS.windowState, expect.any(Function))
+    fire?.({ maximized: true })
+    expect(received).toEqual([{ maximized: true }])
+
+    off()
+    expect(mocks.removeListener).toHaveBeenCalledWith(
+      EVENT_CHANNELS.windowState,
+      expect.any(Function)
+    )
+  })
 })

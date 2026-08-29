@@ -1,0 +1,47 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/windows/window-control.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/windows/window-control.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 9[2mms[22m[39m
+[31m   [31m×[31m windows/window-control —— controlWindow 四 action 语义[2m > [22mmaximize-toggle 常态：调 maximize 不调 unmaximize，回读 true[90m 4[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m windows/window-control —— controlWindow 四 action 语义[2m > [22mmaximize-toggle 最大化态：调 unmaximize 不调 maximize，回读 false[90m 0[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/windows/window-control.test.ts[2m > [22mwindows/window-control —— controlWindow 四 action 语义[2m > [22mmaximize-toggle 常态：调 maximize 不调 unmaximize，回读 true
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/windows/window-control.test.ts:[2m85:26[22m[39m
+    [90m 83| [39m    [35mconst[39m win [33m=[39m [34mmakeWin[39m([35mfalse[39m)
+    [90m 84| [39m    [35mconst[39m res [33m=[39m [34mcontrolWindow[39m(win[33m,[39m [32m'maximize-toggle'[39m)
+    [90m 85| [39m    [34mexpect[39m(win[33m.[39mmaximize)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                         [31m^[39m
+    [90m 86| [39m    [34mexpect[39m(win[33m.[39munmaximize)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m 87| [39m    [34mexpect[39m(res)[33m.[39m[34mtoEqual[39m({ maximized[33m:[39m [35mtrue[39m })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/windows/window-control.test.ts[2m > [22mwindows/window-control —— controlWindow 四 action 语义[2m > [22mmaximize-toggle 最大化态：调 unmaximize 不调 maximize，回读 false
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/windows/window-control.test.ts:[2m93:28[22m[39m
+    [90m 91| [39m    [35mconst[39m win [33m=[39m [34mmakeWin[39m([35mtrue[39m)
+    [90m 92| [39m    [35mconst[39m res [33m=[39m [34mcontrolWindow[39m(win[33m,[39m [32m'maximize-toggle'[39m)
+    [90m 93| [39m    [34mexpect[39m(win[33m.[39munmaximize)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m 94| [39m    [34mexpect[39m(win[33m.[39mmaximize)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m 95| [39m    [34mexpect[39m(res)[33m.[39m[34mtoEqual[39m({ maximized[33m:[39m [35mfalse[39m })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 22:50:44
+[2m   Duration [22m 899ms[2m (transform 43ms, setup 0ms, collect 74ms, tests 9ms, environment 0ms, prepare 278ms)[22m
+

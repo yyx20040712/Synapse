@@ -13,6 +13,7 @@ export interface IpcDepsOverrides {
   ping?: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   userDataDir?: string
   setQuitDirty?: (dirty: boolean) => void
+  controlWindow?: IpcDeps['controlWindow']
 }
 
 export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
@@ -42,6 +43,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       },
     userDataDir: over.userDataDir ?? 'C:/synapse-test-user-data',
     ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 })),
-    setQuitDirty: over.setQuitDirty ?? (() => {})
+    setQuitDirty: over.setQuitDirty ?? (() => {}),
+    controlWindow: over.controlWindow ?? ((_action) => ({ maximized: false }))
   }
 }

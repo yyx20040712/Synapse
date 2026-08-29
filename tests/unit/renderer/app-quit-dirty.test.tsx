@@ -35,7 +35,7 @@ const { stubApi } = vi.hoisted(() => ({
       importDraft: vi.fn()
     },
     library: { list: vi.fn() },
-    system: { setQuitDirty: vi.fn() }
+    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
   }
 }))
 
@@ -80,15 +80,23 @@ beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.library.list.mockReset()
   stubApi.system.setQuitDirty.mockReset()
+  stubApi.system.windowControl.mockReset()
   // App.tsx 组合根直用 window.api.system（非 client 门面）——jsdom 下 stub
-  // （lineage-board.test.tsx 同型）
+  // （lineage-board.test.tsx 同型；R2-SH3：+windowControl/onWindowState）
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { system: { setQuitDirty: stubApi.system.setQuitDirty } }
+    value: {
+      system: { setQuitDirty: stubApi.system.setQuitDirty, windowControl: stubApi.system.windowControl }
+    }
+  })
+  Object.defineProperty(window, 'apiEvents', {
+    configurable: true,
+    value: { onWindowState: vi.fn(() => () => undefined) }
   })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
   // 模块级 store 常驻：跨用例状态复位
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
   useNotesStore.setState({ noteByPaper: {} })

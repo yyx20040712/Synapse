@@ -3,12 +3,17 @@
  * [SR2-TABS-04] 主窗口 —— 退出拦截（工单：done / strong）
  * （承接 SR-INFRA-09 安全 webPreferences 职责——历史规约见 git；本头注为
  * P7-B 增量工单规约，安全件现状=配置即测试全部保留）
+ * [R2-SH3 增量] frameless 标题栏合并（bilibili 式）：options 加
+ * titleBarStyle:'hidden'（自绘 caption 三键入 renderer 顶栏右区——皮肤在
+ * theme.css；安全 flags 原样零触碰，titleBarStyle 非 webPreferences）+
+ * controlWindow 四 action 纯逻辑 + bindWindowStateEvents 事件绑定（最小
+ * 接口结构化类型，测试免依赖 electron 真体——文件内既有风格）。
  *
  * ── 行为层 ──
  * - 退出拦截状态机：
  *   | 态 | 含义 | 事件→迁移 |
  *   | clean | renderer 上报 dirty=false（或启动初值） | close 请求 → 直接放行（默认行为） |
- *   | dirty | 任一 tab 有未落库/保存失败（TABS-03 聚合上报） | close 请求 → preventDefault +
+ *   | dirty | 任一 tab 有未落库/未保存失败（TABS-03 聚合上报） | close 请求 → preventDefault +
  *     main 侧 showMessageBox 二次确认（「有未保存修改，确认退出？」确认/取消） |
  *   | dirty + 确认 | 用户确认退出 | win.destroy() 强制关闭（绕过 close 再拦截） |
  *   | dirty + 取消 | 用户取消 | 回 dirty 态（窗口保持） |
@@ -17,32 +22,42 @@
  *   变化沿（false→true / true→false）上报；main 侧模块级缓存最近值（push 模式，
  *   避免 close 时反向询问 renderer 的时序复杂度）
  * - 防重入：确认对话框弹出期间再点 close → 忽略（对话框模态天然挡住，记录依据）
+ * - 窗控四 action（R2-SH3）：minimize/maximize-toggle/close/get-state——close 走
+ *   win.close() **绝不 destroy**（保上方 TABS-04 拦截链）；get-state 只读零副作用
  *
  * ── 接口层 ──
  * - export function createMainWindow(...) 不变（装配内加 close 监听）
  * - export function quitDirtyGuard deps 注入（dialogs.showMessageBox）——纯逻辑
  *   可测（决定 preventDefault 与否的判定函数导出）
+ * - export function controlWindow(win: WindowLike, action: WindowControlAction)：
+ *   执行后 isMaximized() 回读返回
+ * - export function bindWindowStateEvents(win: MaximizeEventsLike, send)：maximize
+ *   沿 → send({maximized:true}) / unmaximize 沿 → send({maximized:false})
  *
  * ── 架构层 ──
  * - main/windows 层；新通道走 shared/ipc/api-surface.ts 接线表（zod strict，
  *   preload 自动生成桥——架构 §3 契约机制）；不引入 renderer 反向 invoke
- * - 接缝（本工单改动面，file:line）：shared/ipc/api-surface.ts（set-quit-dirty
- *   通道记录，受锁 [locked-change]）/ ipc/system.ts:1-（通道 handler 注册）/
- *   renderer 上报点=App.tsx 或 reader 组合根 effect watch useTabDirtyAggregate
- *   （TABS-03 产出）→ api.system.setQuitDirty
+ * - 接缝（本工单改动面，file:line）：shared/ipc/api-surface.ts（set-quit-dirty +
+ *   window-control 通道与 windowState 事件记录，受锁 [locked-change]）/
+ *   ipc/system.ts:1-（通道 handler 注册）/ renderer 上报点=App.tsx 或 reader
+ *   组合根 effect watch useTabDirtyAggregate（TABS-03 产出）→ api.system.setQuitDirty
  *
  * ── 生命周期层 ──
  * - 预留：before-quit 级联（多窗口未来不适用——单窗口负面清单）；不做：
  *   保存并退出一键动作（autosave-first 下确认即放弃未落库增量）
+ * - window-state.ts bounds 记忆不受影响（仅记忆 x/y/w/h，已存行为）
  *
  * ── 文化层 ──
- * - 测试：tests/unit/windows/quit-dirty-guard.test.ts（新建，受锁）：clean
- *   放行/dirty 拦截+确认 destroy/dirty 拦截+取消保持 + tests/unit/ipc/system.test.ts
- *   扩展（新通道注册断言）+ tests/contracts/preload-surface.test.ts 自动对账
+ * - 测试：tests/unit/windows/quit-dirty-guard.test.ts（clean 放行/dirty 拦截+
+ *   确认 destroy/dirty 拦截+取消保持）+ tests/unit/ipc/system.test.ts 扩展
+ *   （新通道注册断言）+ tests/contracts/preload-surface.test.ts 自动对账
  *   （新通道桥暴露）——IPC 闭环三面锚，plan 门 NIT2 处置；
- *   web-preferences.test.ts 安全面全量保留不回归
+ *   web-preferences.test.ts 安全面全量保留不回归；
+ *   tests/unit/windows/window-control.test.ts（R2-SH3：四 action/事件绑定/
+ *   titleBarStyle/drag-no-drag 皮肤锁）
  */
 import type { BrowserWindow, HandlerDetails, WebPreferences } from 'electron'
+import type { WindowControlAction } from '../../shared/ipc/schemas'
 
 export const WINDOW_SECURITY_FLAGS = {
   sandbox: true,
@@ -105,6 +120,9 @@ export function createMainWindow(
     ...bounds,
     show: false,
     autoHideMenuBar: true,
+    // R2-SH3：frameless（bilibili 式）——隐藏系统标题栏，caption 三键由 renderer
+    // 顶栏自绘（TitleBarControls）；非 webPreferences，安全 flags 面零触碰
+    titleBarStyle: 'hidden',
     title: 'Synapse',
     webPreferences: {
       ...WINDOW_SECURITY_FLAGS,
@@ -189,4 +207,62 @@ export async function handleCloseWithQuitGuard(
     confirmed = false
   }
   if (confirmed) win.destroy()
+}
+
+// ── 窗控（R2-SH3 frameless caption 三键——main 侧单一真源）──────────
+
+/** 可窗控窗口最小形状（结构化类型：测试免依赖 electron 真体） */
+export interface WindowLike {
+  minimize(): void
+  maximize(): void
+  unmaximize(): void
+  /** 走 close 事件链（触发 TABS-04 拦截判定），destroy 由守卫流独占 */
+  close(): void
+  destroy(): void
+  isMaximized(): boolean
+}
+
+/** maximize 事件源最小形状（win.on('maximize'/'unmaximize')） */
+export interface MaximizeEventsLike {
+  on(event: 'maximize', listener: () => void): void
+  on(event: 'unmaximize', listener: () => void): void
+}
+
+/**
+ * 四 action 窗控（票面行为层表）：close 调 win.close() **绝不 destroy**——
+ * 保 TABS-04 dirty 拦截链（确认退出的 destroy 只属于 handleCloseWithQuitGuard）。
+ * 统一返回执行后 isMaximized() 回读（get-state 只读零副作用）。
+ */
+export function controlWindow(win: WindowLike, action: WindowControlAction): { maximized: boolean } {
+  switch (action) {
+    case 'minimize':
+      win.minimize()
+      break
+    case 'maximize-toggle':
+      if (win.isMaximized()) {
+        win.unmaximize()
+      } else {
+        win.maximize()
+      }
+      break
+    case 'close':
+      win.close()
+      break
+    case 'get-state':
+      break
+  }
+  return { maximized: win.isMaximized() }
+}
+
+/**
+ * maximize 状态推送绑定：事件沿（含双击 drag 区最大化等 Windows 系统行为触
+ * 发的沿）→ send 回传 renderer 图标态；初值不在本函数——renderer 挂载时
+ * get-state 拉取（主控预裁②：时序自包含，不依赖 effect 与 load 事件先后）。
+ */
+export function bindWindowStateEvents(
+  win: MaximizeEventsLike,
+  send: (payload: { maximized: boolean }) => void
+): void {
+  win.on('maximize', () => send({ maximized: true }))
+  win.on('unmaximize', () => send({ maximized: false }))
 }

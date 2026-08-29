@@ -6,6 +6,9 @@
  *   → 未通过校验抛 DomainError(code='INVALID_REQUEST')；通过 → { ok: true }
  * - setQuitDirty（TABS-04 增量）：({ dirty }) → deps.setQuitDirty 注入（bootstrap
  *   接 main-window 模块缓存）→ { ok: true }——renderer 聚合 dirty 变化沿 push 上报
+ * - windowControl（R2-SH3 增量）：({ action }) → deps.controlWindow 透传（bootstrap
+ *   闭包包主窗口）→ 回读 { ok: true, maximized }——四 action 语义单源在
+ *   main-window.controlWindow
  *
  * ── 接口层 ──
  * - export function createSystemIpc(deps: IpcDeps): ApiHandlers['system']
@@ -46,6 +49,10 @@ export function createSystemIpc(deps: IpcDeps): ApiHandlers['system'] {
     async setQuitDirty(req) {
       deps.setQuitDirty(req.dirty)
       return { ok: true as const }
+    },
+    async windowControl(req) {
+      const { maximized } = deps.controlWindow(req.action)
+      return { ok: true as const, maximized }
     }
   }
 }

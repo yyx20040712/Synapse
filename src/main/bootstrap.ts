@@ -54,7 +54,14 @@ import { registerIpc } from './ipc/register'
 import { registerAppFileProtocol } from './protocol/app-file.protocol'
 import { applyCsp } from './security/csp'
 import { createElectronDialogs } from './dialogs'
-import { createMainWindow, handleCloseWithQuitGuard, getQuitDirty, setQuitDirty } from './windows/main-window'
+import {
+  bindWindowStateEvents,
+  controlWindow,
+  createMainWindow,
+  handleCloseWithQuitGuard,
+  getQuitDirty,
+  setQuitDirty
+} from './windows/main-window'
 import { loadBounds, saveBounds, type WindowBounds } from './windows/window-state'
 import { fetchJson, fetchText, pingHost } from './http/http-client'
 import { EVENT_CHANNELS } from '../shared/ipc/api-surface'
@@ -147,7 +154,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       shell,
       userDataDir,
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
-      setQuitDirty
+      setQuitDirty,
+      // R2-SH3：闭包直引下方 const window（TDZ 不可能触发——IPC 调用来自
+      // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
+      controlWindow: (action) => controlWindow(window, action)
     }),
     workspaces: workspaceService
   })
@@ -202,6 +212,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
           .then((r) => r.response === 0)
     })
   })
+
+  // R2-SH3：maximize 状态推送（含双击 drag 区最大化等系统行为沿）→ renderer
+  // 图标态；初值由 renderer 挂载时 get-state 拉取（主控预裁②：时序自包含）
+  bindWindowStateEvents(window, (p) => window.webContents.send(EVENT_CHANNELS.windowState, p))
 
   // 幂等 shutdown：window-all-closed 与 before-quit 都会触发，二次 close 未定义
   let dbClosed = false

@@ -3,6 +3,7 @@
  * 各域装配在 ipc/<域>.ts（各自工单）；本文件只做接线与依赖形状定义。
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
+import type { WindowControlAction } from '../../shared/ipc/schemas'
 import type { ServiceBundle } from '../services'
 import type { Dialogs } from '../dialogs'
 import type { ShellLike } from '../security/shell-guard'
@@ -28,6 +29,8 @@ export interface IpcDeps {
   ping: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   /** TABS-04 退出拦截：renderer dirty 上报落点（main-window 模块缓存） */
   setQuitDirty: (dirty: boolean) => void
+  /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
+  controlWindow: (action: WindowControlAction) => { maximized: boolean }
 }
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {

@@ -15,6 +15,7 @@ import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvent
 import { WorkspaceSwitcher } from '../features/workspaces/WorkspaceSwitcher'
 import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
+import { TitleBarControls } from './TitleBarControls'
 
 type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
@@ -146,6 +147,9 @@ export function App(): JSX.Element {
           <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
         </div>
         <span className="app-nav-ver">v0.1</span>
+        {/* R2-SH3：frameless 自绘 caption 三键（版本号 margin-left:auto 吸收
+            空隙，三键组排最右——bilibili 式；皮肤住 theme.css） */}
+        <TitleBarControls />
       </header>
       {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器） */}
       <div className="flex min-h-0 flex-1">

@@ -23,4 +23,21 @@ guardedDescribe('SR-IPC-09', 'ipc/system —— 外链经守卫打开', () => {
     }
     expect(opened).toEqual([])
   })
+
+  it('windowControl：四 action 透传注入的 controlWindow，回带 { ok: true, maximized }（R2-SH3 增量）', async () => {
+    const seen: string[] = []
+    const ipc = createSystemIpc(
+      makeIpcDeps({
+        controlWindow: (action) => {
+          seen.push(action)
+          return { maximized: action === 'maximize-toggle' }
+        }
+      })
+    )
+    await expect(ipc.windowControl({ action: 'minimize' })).resolves.toEqual({ ok: true, maximized: false })
+    await expect(ipc.windowControl({ action: 'maximize-toggle' })).resolves.toEqual({ ok: true, maximized: true })
+    await expect(ipc.windowControl({ action: 'close' })).resolves.toEqual({ ok: true, maximized: false })
+    await expect(ipc.windowControl({ action: 'get-state' })).resolves.toEqual({ ok: true, maximized: false })
+    expect(seen).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])
+  })
 })

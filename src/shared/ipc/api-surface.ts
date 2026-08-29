@@ -98,7 +98,9 @@ export const API_SURFACE = {
   },
   system: {
     openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema },
-    setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema }
+    setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema },
+    // R2-SH3 frameless 窗控：单通道四 action（主控预裁①——接线表/契约面最小）
+    windowControl: { channel: 'system/window-control', Req: S.windowControlReqSchema, Res: S.windowControlResSchema }
   },
   // workspaces 域（R1-WS1，ADR-0018 课题隔离）：四通道。switch 返回后 renderer
   // reload 归 R1-WS2——本域 handlers 由 bootstrap 组合注入（见 ComposedHandlerDomains）
@@ -113,13 +115,16 @@ export const API_SURFACE = {
 /** main→renderer 单向事件通道 */
 export const EVENT_CHANNELS = {
   importProgress: 'import/progress/event',
-  exportCorpus: 'export/corpus/event'
+  exportCorpus: 'export/corpus/event',
+  // R2-SH3：maximize 状态推送（图标态单源=main 侧事件沿）
+  windowState: 'system/window-state/event'
 } as const
 
 /** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
 export type PreloadEvents = {
   onImportProgress(cb: (e: S.ImportProgressEvent) => void): () => void
   onExportCorpus(cb: (e: S.ExportCorpusEvent) => void): () => void
+  onWindowState(cb: (e: S.WindowStateEvent) => void): () => void
 }
 
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────
