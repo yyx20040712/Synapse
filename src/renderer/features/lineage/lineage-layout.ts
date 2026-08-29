@@ -209,6 +209,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   }
   let dropped = 0
   for (const e of edges) {
+    if (e.kind === 'ref') continue // 参考边不进树/右列计算（R2-LG12——仅渲染消费，不计 dropped）
     if (surveyCol.has(e.fromNode) || surveyCol.has(e.toNode)) continue
     const broken =
       e.fromNode === e.toNode ||

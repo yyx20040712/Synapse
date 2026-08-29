@@ -41,7 +41,11 @@ export function LineageEdges(props: {
         const y1 = from.y + from.halfH
         const y2 = to.y - to.halfH
         const mid = (y1 + y2) / 2
-        const survey = props.surveyIds.has(e.fromNode) || props.surveyIds.has(e.toNode)
+        // 边三型优先级（R2-LG12 扩）：ref>综述关联>推断>普通——ref 与综述
+        // 关联同视觉（决3「很淡的灰色虚线」单语义——var(--survey-edge) 1.4 虚
+        // 线 2 3）；ref 直读 e.kind（LineageEdge 出口已带 kind——主控预裁 7）
+        const survey =
+          e.kind === 'ref' || props.surveyIds.has(e.fromNode) || props.surveyIds.has(e.toNode)
         const inferred = e.label.includes(INFERRED_MARK)
         const stroke = survey ? 'var(--survey-edge)' : inferred ? INFERRED_STROKE : 'var(--node-branch)'
         return (

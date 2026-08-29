@@ -70,7 +70,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
 }
 
 /** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */

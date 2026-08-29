@@ -86,6 +86,9 @@ const PAPERS = [
 const THEME_TITLE = '研究阶段一主题（e2e）'
 const THEME_IDEA = '主题节点的核心想法（e2e 持久锚）'
 
+/** R2-LG12 T5 第四篇：综述题名（isSurveyTitle 命中「综述」关键词；幽灵行） */
+const SURVEY_PAPER = { id: 'e2e-lg-survey', title: '领域综述：扩散模型全景（e2e）', year: 2021 } as const
+
 /** 草稿 fixture（树形：根→甲/乙——④的多父场景=对乙再加边被拒） */
 function draftJson(): string {
   return JSON.stringify({
@@ -95,6 +98,20 @@ function draftJson(): string {
       year: p.year,
       core_idea: p.id === 'e2e-lg-a' ? '脉络甲的核心 idea（e2e）' : ''
     })),
+    edges: [
+      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-a', label: '继承甲' },
+      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-b', label: '' }
+    ]
+  })
+}
+
+/** T5 草稿 fixture：同树+孤立综述节点（4 节点 2 树边——综述右列由 isSurvey 判定） */
+function draftJsonWithSurvey(): string {
+  return JSON.stringify({
+    nodes: [
+      ...PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: p.year, core_idea: '' })),
+      { paper_id: SURVEY_PAPER.id, title: SURVEY_PAPER.title, year: SURVEY_PAPER.year, core_idea: '' }
+    ],
     edges: [
       { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-a', label: '继承甲' },
       { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-b', label: '' }
@@ -139,16 +156,21 @@ async function seedLineagePapers(userData: string): Promise<void> {
   }
 }
 
-/** 落 fixture JSON 到磁盘 tmp（dialog 桩返回该路径） */
-async function writeFixture(): Promise<string> {
+/** 落 fixture JSON 到磁盘 tmp（dialog 桩返回该路径；T5 传综述版内容） */
+async function writeFixture(content: string = draftJson()): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'synapse-lg05-draft-'))
   const file = join(dir, 'lineage-draft.json')
-  await writeFile(file, draftJson(), 'utf8')
+  await writeFile(file, content, 'utf8')
   return file
 }
 
-/** 导入链（N8 dialog 桩+confirm 自动接受+真实 toast/画布断言） */
-async function importDraftViaUi(app: ElectronApplication, win: Page, fixturePath: string): Promise<void> {
+/** 导入链（N8 dialog 桩+confirm 自动接受+真实 toast/画布断言；T5 传 4 节点摘要） */
+async function importDraftViaUi(
+  app: ElectronApplication,
+  win: Page,
+  fixturePath: string,
+  expectSummary: string = '已导入脉络图：3 个节点，2 条连线'
+): Promise<void> {
   await app.evaluate((electronMod, dir) => {
     ;(
       electronMod.dialog as unknown as {
@@ -160,7 +182,7 @@ async function importDraftViaUi(app: ElectronApplication, win: Page, fixturePath
     void d.accept()
   })
   await win.getByTestId('lineage-import').click()
-  await expect(win.getByText('已导入脉络图：3 个节点，2 条连线')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByText(expectSummary)).toBeVisible({ timeout: 10_000 })
   for (const p of PAPERS) {
     await expect(nodeG(win, p.title)).toBeVisible({ timeout: 10_000 })
   }
@@ -512,6 +534,60 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(
       win.locator(`[data-testid="ai-note-rect"][data-ai-note-id="${noteId}"]`)
     ).toBeVisible({ timeout: 10_000 })
+
+    await app.close()
+  })
+
+  /**
+   * T5=R2-LG12 参考边全链（用户裁决 A）：综述节点右键「添加参考连接」（仅
+   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→ref 边淡灰虚线
+   * 渲染（stroke=var(--survey-edge) 1.4 虚线 2 3）→reload 持久+节点计数
+   * 不变+树形不变（2 条 tree 边保持原色原数）。
+   */
+  test('T5 综述参考连接：右键添加 ref 边→淡灰虚线渲染→reload 持久+树形不变', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg12-t5-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 第四篇=综述（幽灵行同 seedLineagePapers 分支——脉络不打开其文件）
+    const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
+    const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
+    await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id)
+    const fixturePath = await writeFixture(draftJsonWithSurvey())
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：4 个节点，2 条连线')
+    await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
+
+    // 菜单项级限定负锚：非综述节点（甲）菜单不呈现「添加参考连接」
+    await nodeG(win, '脉络甲文献').click({ button: 'right' })
+    await expect(
+      win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' })
+    ).toHaveCount(0)
+    await win.mouse.click(10, 10) // 点遮罩关菜单
+
+    // 综述右键→「添加参考连接」→连线模式提示→点目标甲（已有 tree 父=豁免）
+    await nodeG(win, SURVEY_PAPER.title).click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' }).click()
+    await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
+    await nodeG(win, '脉络甲文献').click()
+
+    // ref 边渲染：淡灰虚线（决3 单语义——与综述关联 tree 边同视觉）
+    const refPath = win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')
+    await expect(refPath).toHaveCount(1, { timeout: 10_000 })
+    await expect(refPath).toHaveAttribute('stroke-dasharray', '2 3')
+    await expect(refPath).toHaveAttribute('stroke-width', '1.4')
+    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(3)
+
+    // reload→ref 边持久+节点计数不变（data-viewport 卡片 4）+树形不变（2 tree 边）
+    await reloadToLineage(win)
+    await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
+    await expect(win.locator('svg g[data-node-id]')).toHaveCount(4)
+    await expect(win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')).toHaveCount(1)
+    await expect(win.locator('svg path[data-edge-id][stroke="var(--node-branch)"]')).toHaveCount(2)
 
     await app.close()
   })

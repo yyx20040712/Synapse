@@ -53,7 +53,12 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
       return { ok: true }
     },
     upsertEdge: async (req) =>
-      deps.services.lineage.upsertEdge({ fromNode: req.from, toNode: req.to, label: req.label ?? '' }),
+      deps.services.lineage.upsertEdge({
+        fromNode: req.from,
+        toNode: req.to,
+        label: req.label ?? '',
+        kind: req.kind
+      }),
     removeEdge: async (req) => {
       deps.services.lineage.removeEdge(req.id)
       return { ok: true }

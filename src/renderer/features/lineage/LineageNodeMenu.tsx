@@ -2,11 +2,14 @@
 /**
  * [LG-03] LineageNodeMenu —— 节点右键菜单（Board 子组件，组件≤250 拆分预案）。
  *
- * 行为：fixed 定位于右键锚点；菜单项=连线到…/改父…/编辑核心想法/删除父连线
- * （仅有父边时呈现）/删除节点。透明遮罩点击关闭（ESC 关闭归 Dialog 域——
- * 菜单轻量面不挂键盘）。所有动作只上抛回调——写路径收口在 Board→store。
+ * 行为：fixed 定位于右键锚点；菜单项=连线到…/改父…/添加参考连接（R2-LG12：
+ * 仅 paperId≠null 且 isSurvey 的综述文献节点呈现——菜单项级限定，service 双
+ * 守「参考边只能由综述节点发出」）/编辑核心想法/删除父连线（仅有父边时呈现）/
+ * 删除节点。透明遮罩点击关闭（ESC 关闭归 Dialog 域——菜单轻量面不挂键盘）。
+ * 所有动作只上抛回调——写路径收口在 Board→store。
  */
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import { isSurvey } from './lineage-classify'
 
 export interface LineageNodeMenuProps {
   node: LineageNode
@@ -16,6 +19,8 @@ export interface LineageNodeMenuProps {
   onClose(): void
   onLinkTo(nodeId: string): void
   onReparent(nodeId: string): void
+  /** 进入参考连接模式（R2-LG12——仅综述文献节点菜单项呈现） */
+  onAddRefLink(nodeId: string): void
   onEditIdea(nodeId: string): void
   onRemoveParentEdge(edgeId: string): void
   onRemoveNode(nodeId: string): void
@@ -48,6 +53,17 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
         <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
           改父…
         </button>
+        {node.paperId !== null && isSurvey(node.title) && (
+          <button
+            type="button"
+            role="menuitem"
+            className={ITEM_STYLE}
+            style={{ color: 'var(--text)' }}
+            onClick={() => props.onAddRefLink(node.id)}
+          >
+            添加参考连接
+          </button>
+        )}
         <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onEditIdea(node.id)}>
           编辑核心想法
         </button>

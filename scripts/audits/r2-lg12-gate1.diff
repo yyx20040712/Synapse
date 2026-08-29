@@ -1,0 +1,887 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index c560ac3..5cb58a5 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -38,7 +38,7 @@
+ | INV-24 | 片段序单源：一切片段序消费面（阅读器片段列表/corpus md 装配/未来 AI 装配与回灌消费）按同一比较器排序——页码（0 基存储；显示形态 1 基，与 corpus p.N 同口径）→页内文本偏移（startOffset）→创建序（createdAt）→id 兜底全序；**排序禁止字符串字典序比较**（页码跨位数字典序失真），"页码:序号" 字符串形态仅显示用 | 本册+src/shared/annotation-order.ts（SR2-C-01，2026-08-26 P7-C 开单入册） | 单测（annotation-order.test 6 用例：跨页/同页偏移/同偏移创建序/id 兜底/入参不可变/字符串字典序反例）+两消费方用例（C-03 组件测试序消费+corpus golden 结构断言——C-02） | 已锚定（单测级 C-01+消费方级 C-02 golden 结构断言/C-03 组件序消费+C-05 定位同源，2026-08-26） |
+ | INV-25 | ai_notes 级联语义：paper 删除→ai_notes 级联清空（CASCADE，语料随篇亡）；annotation 删除→该行 annotation_id 置 NULL 条目保留（SET NULL，锚定段降级篇级——数据不丢）；级联生效依赖连接级 PRAGMA foreign_keys=ON（connection.ts DB_PRAGMAS 常开） | 迁移 003 DDL 外键子句+src/main/db/repos/ai_notes.repo.ts（SR2-AI-01，2026-08-27 deepseek W1 采纳登记） | repo 单测（ai_notes.repo.test 级联两路径用例：CASCADE 清空/SET NULL 降级篇级——foreign_keys=ON 下真实外键行为） | 已锚定（单测级，2026-08-27） |
+ | INV-26 | 伴随进程文件协议三联：①**移除 pending job 以 corpus-ai/<paperId>.json 产物落盘成功为前提**（任何失败路径 job 一律保留——应用观测坍缩回 pending「等待 zcode」，失败细节经 status.state 自由文本呈现不分支；瞬态「job 已移除+产物未落+心跳新鲜」被排除）②应用判活唯一依据=status.json heartbeatAt 新鲜度（HEARTBEAT_FRESH_MS=10min；running 单源在 ai-sensor.service 输出，消费方不双写阈值；应用永不按 state 值分支——工具自述自由文本不契约化）③协议文件一律 tmp+rename 原子写、首写 mkdir recursive 幂等（应用与工具两侧各自保证） | ADR-0015 §1+ai-sensor.service+companion.mjs（SR2-AI-06，2026-08-27 登记随单锚定） | 单测（ai-sensor.service.test：幂等⑤/readStatus 三态/新鲜度边界/跨格序列①~④ fs 夹具驱动）+CLI 探针（companion.test：四步序全链+failed 三路径 job 保留断言） | 已锚定（单测+探针级 2026-08-27 SR2-AI-06；e2e 消费方面随 AI-08/10） |
+-| INV-27 | lineage 树单父不变量：存储=图 schema（v2 DAG 升级免迁移），v1 行为=树——每节点至多一条入边（无多父/无环/无自环）；树约束是 service 层运行时守卫非 DDL 约束；两写入口同守（草稿导入校验+增量编辑 upsertEdge——守卫宿主=service 写面，LG-03 只接线 IPC 不另写守卫）；listGraph 森林语义是 LG-02 布局（Reingold-Tilford 单根树假设）的前提 | ADR-0014+src/main/services/lineage/lineage.service.ts 两守卫口（validateDraft 导入校验三段+upsertEdge 运行时守卫，SR2-LG-01 门一 W1 处置） | 单测三拒绝路径双覆盖（lineage-import.test：导入面多父/环/自环用例+运行时面 upsertEdge 三拒绝用例，各断言中文 reason+库不变） | 已锚定（单测级 2026-08-27 SR2-LG-01） |
++| INV-27 | lineage 树单父不变量（R2-LG12 修订版，用户裁决 A「完整多参考边」2026-08-29）：存储=图 schema（v2 DAG 升级免迁移）；**tree 边**=树语义原样——每节点至多一条 tree 入边（无多父/无环/无自环，ref 入边不算 tree 父）；**ref 边**（kind='ref'，仅 from=综述文献节点——isSurveyTitle 单源 shared/models/lineage 且 paperId≠null）豁免单父（to 可已有 tree 父/多条 ref 入边合法）、**仍拒环**（环检测图=tree+ref 全部边——综述自己也可能在某树内，混合环真实可达）、**同端点对与 tree 互斥**（同 from+to 仅一种 kind——UNIQUE(from,to) DDL 天然收口，service 按 kind 差异给中文互斥 reason）；自环/悬空 kind 无关同拒；树约束仍是 service 层运行时守卫非 DDL 约束；两写入口同守（草稿导入校验+增量编辑 upsertEdge——守卫宿主=service 写面，LG-03 只接线 IPC 不另写守卫）；listGraph 森林语义仍是 LG-02 布局（Reingold-Tilford 单根树假设——ref 边在布局净化段剔除仅渲染消费）的前提 | ADR-0014+src/main/services/lineage/lineage.service.ts 两守卫口（validateDraft 导入校验三段+upsertEdge 运行时守卫，SR2-LG-01 门一 W1 处置；ref 分支+混合环图=R2-LG12，票面 scripts/audits/r2-lg12-brief.md §1） | 单测三拒绝路径双覆盖（lineage-import.test：导入面多父/环/自环用例+运行时面 upsertEdge 三拒绝用例，各断言中文 reason+库不变）+ref 面六用例（R2-LG12 describe：落库 kind/from 综述限定双守/豁免多父/混合环拒/同端点对互斥双向/ref 自环）+layout ref 剔除恒等用例 | 已锚定（单测级 2026-08-27 SR2-LG-01；ref 豁免扩面单测级 R2-LG12——e2e T5 随主控收口） |
+ | INV-28 | 被引缓存刷新语义（与元数据 fill-empty 刻意不同——被引数单调增长）：瀑布命中且 citedByCount 非 null（含 **0**，0 是合法缓存值）→强制刷新（新值+新时间戳+source 三列同写）；命中但 citedByCount=null→不写缓存旧值保留；未命中/异常（work=null）→旧值保留（缓存不清，enrich_status='failed' 仅元数据面）；判别必须 `=== null`（禁 ??/falsy——0 与 NULL 语义不同）；detailById 透出配对规则=count 非 null 三字段齐出、null 全省略（undefined） | cited-by.service.ts 头注状态机（刷新决策单源 citedByPatch；SR2-ENR-01，2026-08-28 门一 W2 处置登记） | 单测（cited-by.test 9 用例：六格全格+0 值边界两样本+跨格序列）+真库断言（papers.repo.test：applyEnrichment 第三参 SET 落库+再不传则保留——SQL 面唯一锚定点，enrich 集成测试全用桩） | 已锚定（单测+真库级 2026-08-28 SR2-ENR-01） |
+ | INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→scrollIntoNearestScroller(页盒,'start')——F-05 单容器收敛后口径；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |
+ | INV-30 | canvas 生命周期=渲染窗口绑定：页 canvas（PdfPageCanvas）仅存在于 PageColumn 渲染窗口内（可见页±renderWindow），离屏距离>recycleWindow 必卸载（canvas 移除+pageText 条目同删——PageFrame 卸载哨）；rendering 中滚出窗口由渲染 effect 清理取消在途任务；zoom 重算走尺寸缓存乘法（就绪后无 loading 态——非重取） | PageColumn.tsx 段③（SR2-F-01，2026-08-28 登记；内存断言=canvas 实例数≤渲染窗口+缓冲常量；实现者原误编 INV-28 撞号，F-01 门一 W1 处置重编 INV-30） | 组件单测锚（page-column.test：IO 桩驱动窗口展开/快速滚动回收/渲染集上界 ≤ 可见数×(2·recycleWindow+1)+离屏距离断言）+e2e 收官计数断言（F-04 reader-scroll.spec） | 已锚定（组件单测级 2026-08-28 SR2-F-01；e2e 计数断言随 F-04 收官） |
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 4b79b92..af56878 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-08-29T10:30:07.7988160Z",
++    "generatedAt":  "2026-08-29T10:54:02.3087208Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -109,6 +109,10 @@
+                       "path":  "src/main/db/migrations/005_cited_by.sql",
+                       "sha256":  "020264ff845287491eba3644332a3ff95ef592bb2267e91d5cd33055a7086164"
+                   },
++                  {
++                      "path":  "src/main/db/migrations/006_lineage_ref_edges.sql",
++                      "sha256":  "282fc012e844b9c589bf5685388e1dca9dfba3655c9685d69d05efd006aa1d22"
++                  },
+                   {
+                       "path":  "src/shared/annotation-order.ts",
+                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
+@@ -127,7 +131,7 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "8b82b471067fbfb1185f84921df208133b11d9e8fc61b8341d5c1a4f7d4c6557"
++                      "sha256":  "fbab8f96811dd3fffeac2eb632c3f3866cc9fa648eb0a013a823c2743165109e"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -143,7 +147,7 @@
+                   },
+                   {
+                       "path":  "src/shared/models/lineage.ts",
+-                      "sha256":  "fb6cd8b3f61f3bc45f41725f1cb7919909226ab912f6ebdcbea335b0d0bfeded"
++                      "sha256":  "e463707ac45870efdb540347d59939ae43111182012ae0863fa93c08094d9bbf"
+                   },
+                   {
+                       "path":  "src/shared/models/note.ts",
+@@ -187,7 +191,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/lineage.spec.ts",
+-                      "sha256":  "def42f9a197ecae1a36211917b18308f31ad42c48576adecb91ebcdc914132e4"
++                      "sha256":  "88976e5ad8a1d17365a788b86d5658207646d77e0c2f0b05cb08cd683917af98"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+@@ -235,7 +239,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/db/migrate.test.ts",
+-                      "sha256":  "16e508c2e2121b5632a5b02299fd44311e9cd8e958e41814cb5c78176bbc5082"
++                      "sha256":  "1f055eeb9353afbd0068177c7451cd841aff5fd1abb27856525bb37971466b1d"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
+@@ -375,23 +379,23 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
+-                      "sha256":  "9ecbb920190433c2e074126ca6bf01d49e1280d7fc8f1b8e9d02649ddfdce624"
++                      "sha256":  "716fe05d8328d55496367bc4745c0a9e54a4d31b429df6aaa810813c736b1c91"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
+-                      "sha256":  "cd912f6457f39b47eb76c6f6ebece36017b7cd0a03b482225b4f5a6bdfae3e6f"
++                      "sha256":  "c632f45d19e309223216ba9aa16ffcd18930e6c490e71f2e394b2c10428835bf"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-canvas-visual.test.tsx",
+-                      "sha256":  "7f2c7e798f3b4019747c8ba2a81079977f5e889bbce3161c9bf6962cc2c10145"
++                      "sha256":  "81e10d4f0a42c3b4276937e35269aa8b48266bd1bc70c9fcc9b26740c0afb712"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-classify.test.ts",
+-                      "sha256":  "a871978c9ebb793d4d693bb48dbd3584dfc2daf0e0ceab0d59e86553e222d47c"
++                      "sha256":  "4a7c877f36fb32f1743931e3e28b696115cb441aaf91db2969d658f85354ff84"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-layout.test.ts",
+-                      "sha256":  "383746ed029c1163cda2cd7dd95be1ed6ef6286bef75fe4ecf35aaaa70547e3e"
++                      "sha256":  "6db9801f68e968233e28b61f54b515e91b0cea1b9e309b697d29a5cfd287cdc6"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+@@ -399,7 +403,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+-                      "sha256":  "12653c762b99258ddf8b3050be9396af8d3fd0f4f081ae8e36de128090b3e57b"
++                      "sha256":  "e0230b3588b34978239af2dffec08616bf9c2e9c790348de9e55d150e196440e"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/notes.store.test.ts",
+@@ -555,7 +559,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/lineage-import.test.ts",
+-                      "sha256":  "8d2925c5b9279c0c77ab9b5dd6389efcd2236c92dd532c2bce54a5aa9956e541"
++                      "sha256":  "65f2c497e57b13b866129f8af55243f1fb3a698af16304951377f58a34a1bfc1"
+                   },
+                   {
+                       "path":  "tests/unit/services/markdown.report.test.ts",
+diff --git a/src/main/db/migrate.ts b/src/main/db/migrate.ts
+index a6cecc6..c962bf6 100644
+--- a/src/main/db/migrate.ts
++++ b/src/main/db/migrate.ts
+@@ -13,6 +13,7 @@ import indexesSql from './migrations/002_indexes.sql?raw'
+ import aiNotesSql from './migrations/003_ai_notes.sql?raw'
+ import lineageSql from './migrations/004_lineage.sql?raw'
+ import citedBySql from './migrations/005_cited_by.sql?raw'
++import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
+ 
+ export interface Migration {
+   version: number
+@@ -26,7 +27,8 @@ export const MIGRATIONS: readonly Migration[] = [
+   { version: 2, name: 'indexes', sql: indexesSql },
+   { version: 3, name: 'ai_notes', sql: aiNotesSql },
+   { version: 4, name: 'lineage', sql: lineageSql },
+-  { version: 5, name: 'cited_by', sql: citedBySql }
++  { version: 5, name: 'cited_by', sql: citedBySql },
++  { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql }
+ ]
+ 
+ export interface MigrateResult {
+diff --git a/src/main/db/migrations/006_lineage_ref_edges.sql b/src/main/db/migrations/006_lineage_ref_edges.sql
+new file mode 100644
+index 0000000..cafc046
+--- /dev/null
++++ b/src/main/db/migrations/006_lineage_ref_edges.sql
+@@ -0,0 +1,11 @@
++-- 006_lineage_ref_edges：参考边类型列（R2-LG12，用户裁决 A「完整多参考边」2026-08-29）
++-- 设计裁决（票面 r2-lg12-brief §1/§2）：
++-- - kind='tree'=树边（单父不变量 INV-27 原语义，service 层守卫不变）；
++--   kind='ref'=参考边（综述节点→文献，一条综述可向多篇文献发边）——service
++--   层豁免单父、仍拒环（环检测图=tree+ref 全部边）、同端点对与 tree 互斥
++--   （INV-27 修订版，守卫宿主仍=service 写面，DDL 不承担行为约束）
++-- - NOT NULL DEFAULT 'tree'：旧行迁移后总有值（幂等零数据搬迁）；DB DEFAULT
++--   仅承担旧行回填，写路径显式填 kind 不赖默认（主控预裁 5）
++-- - UNIQUE(from_node,to_node)（004 既有）不动：同端点对单边 DDL 收口
++--   天然支撑「同端点对仅一种 kind」（互斥=service 层按 kind 差异给中文 reason）
++ALTER TABLE lineage_edges ADD COLUMN kind TEXT NOT NULL DEFAULT 'tree';
+diff --git a/src/main/db/repos/lineage.repo.ts b/src/main/db/repos/lineage.repo.ts
+index 83f9d61..5851ee0 100644
+--- a/src/main/db/repos/lineage.repo.ts
++++ b/src/main/db/repos/lineage.repo.ts
+@@ -120,12 +120,13 @@ interface LineageNodeRow {
+   updated_at: string
+ }
+ 
+-/** lineage_edges 表行形状（列名原样，蛇形） */
++/** lineage_edges 表行形状（列名原样，蛇形；kind=006 迁移列，旧行回填 'tree'） */
+ interface LineageEdgeRow {
+   id: string
+   from_node: string
+   to_node: string
+   label: string
++  kind: string
+   created_at: string
+   updated_at: string
+ }
+@@ -150,6 +151,7 @@ function toEdge(row: LineageEdgeRow): LineageEdge {
+     fromNode: row.from_node,
+     toNode: row.to_node,
+     label: row.label,
++    kind: row.kind === 'ref' ? 'ref' : 'tree',
+     createdAt: row.created_at,
+     updatedAt: row.updated_at
+   }
+@@ -164,11 +166,11 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
+        year = excluded.year, x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`
+   )
+   const upsertEdgeStmt = db.prepare(
+-    `INSERT INTO lineage_edges (id, from_node, to_node, label, created_at, updated_at)
+-     VALUES (@id, @fromNode, @toNode, @label, @now, @now)
++    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
++     VALUES (@id, @fromNode, @toNode, @label, @kind, @now, @now)
+      ON CONFLICT(id) DO UPDATE SET
+        from_node = excluded.from_node, to_node = excluded.to_node,
+-       label = excluded.label, updated_at = excluded.updated_at`
++       label = excluded.label, kind = excluded.kind, updated_at = excluded.updated_at`
+   )
+   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
+   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
+@@ -208,6 +210,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
+         fromNode: input.fromNode,
+         toNode: input.toNode,
+         label: input.label,
++        kind: input.kind ?? 'tree',
+         now
+       })
+       return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)
+diff --git a/src/main/ipc/lineage.ts b/src/main/ipc/lineage.ts
+index 9b2bb97..7407711 100644
+--- a/src/main/ipc/lineage.ts
++++ b/src/main/ipc/lineage.ts
+@@ -53,7 +53,12 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
+       return { ok: true }
+     },
+     upsertEdge: async (req) =>
+-      deps.services.lineage.upsertEdge({ fromNode: req.from, toNode: req.to, label: req.label ?? '' }),
++      deps.services.lineage.upsertEdge({
++        fromNode: req.from,
++        toNode: req.to,
++        label: req.label ?? '',
++        kind: req.kind
++      }),
+     removeEdge: async (req) => {
+       deps.services.lineage.removeEdge(req.id)
+       return { ok: true }
+diff --git a/src/main/services/lineage/lineage.service.ts b/src/main/services/lineage/lineage.service.ts
+index 23a1e5f..a1b3578 100644
+--- a/src/main/services/lineage/lineage.service.ts
++++ b/src/main/services/lineage/lineage.service.ts
+@@ -23,7 +23,7 @@
+  */
+ import { readFile } from 'node:fs/promises'
+ import type { AppErrorCode } from '../../../shared/app-error'
+-import { lineageDraftSchema } from '../../../shared/models/lineage'
++import { isSurveyTitle, lineageDraftSchema } from '../../../shared/models/lineage'
+ import type {
+   LineageEdge,
+   LineageEdgeUpsert,
+@@ -239,7 +239,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+           deps.repo.upsertEdge({
+             fromNode: paperToNode.get(e.from_paper_id)!,
+             toNode: paperToNode.get(e.to_paper_id)!,
+-            label: e.label
++            label: e.label,
++            kind: 'tree' // draft 协议=树语义（R2-LG12：ref 边仅应用内手工创建）——写路径显式填
+           })
+           edgeCount++
+         }
+@@ -279,7 +280,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+     },
+ 
+     upsertEdge(input: LineageEdgeUpsert): LineageEdge {
+-      // INV-27 运行时守卫（与导入校验同源树约束——导入外的增量编辑入口）
++      // INV-27 运行时守卫（修订版——R2-LG12：tree 原语义；ref 豁免单父仍拒环）
++      const kind = input.kind ?? 'tree' // 写路径显式缺省（预裁 5——不赖 DB DEFAULT）
+       if (input.fromNode === input.toNode) {
+         throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
+       }
+@@ -291,6 +293,16 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+       if (!nodeIds.has(input.toNode)) {
+         throw new LineageDomainError('CONFLICT', `目标节点不存在：${input.toNode}`)
+       }
++      // ref 限定（R2-LG12 §1）：from 必须是综述文献节点（菜单项级限定+service
++      // 双守——isSurveyTitle 单源 shared/models；paperId null 主题节点同拒）
++      if (kind === 'ref') {
++        const from = graph.nodes.find((n) => n.id === input.fromNode)!
++        if (from.paperId === null || !isSurveyTitle(from.title)) {
++          throw new LineageDomainError('CONFLICT', '参考边只能由综述节点发出')
++        }
++      }
++      // 重复边收口（同端点对不区分 kind——tree/ref 互斥，预裁 2：同端点对只
++      // 允许一种 kind，语义清晰防重线；kind 相异时 reason 附互斥说明）
+       const dup = graph.edges.find(
+         (e) =>
+           e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
+@@ -298,22 +310,33 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
+       if (dup !== undefined) {
+         throw new LineageDomainError(
+           'CONFLICT',
+-          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`
++          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝` +
++            (dup.kind !== kind ? '（参考边与树边同端点对互斥）' : '')
+         )
+       }
+-      // 更新场景（input.id 已存在）：改端点=改父，按新端点重估守卫
+-      const existingParent = graph.edges.find((e) => e.toNode === input.toNode && e.id !== input.id)
+-      if (existingParent !== undefined) {
+-        throw new LineageDomainError(
+-          'CONFLICT',
+-          `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
++      // 多父守卫（仅 tree 边——ref 豁免：to 可已有 tree 父/多条 ref 入边；
++      // ref 入边不算 tree 父）；更新场景（input.id 已存在）：改端点=改父，
++      // 按新端点重估守卫
++      if (kind === 'tree') {
++        const existingParent = graph.edges.find(
++          (e) => e.toNode === input.toNode && e.id !== input.id && e.kind === 'tree'
+         )
++        if (existingParent !== undefined) {
++          throw new LineageDomainError(
++            'CONFLICT',
++            `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
++          )
++        }
+       }
+-      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）
++      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）；环检测
++      // 图=全部边含 ref（综述自己也可能在某树内——tree+ref 混合环真实可达）
+       if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
+-        throw new LineageDomainError('CONFLICT', '成环拒绝：该边将使脉络图出现环路（v1 为树）')
++        throw new LineageDomainError(
++          'CONFLICT',
++          '成环拒绝：该边将使脉络图出现环路（树边与参考边均不得成环）'
++        )
+       }
+-      return deps.repo.upsertEdge(input)
++      return deps.repo.upsertEdge({ ...input, kind })
+     },
+ 
+     removeEdge(id: string): number {
+diff --git a/src/renderer/features/lineage/LineageBoard.tsx b/src/renderer/features/lineage/LineageBoard.tsx
+index a2cdf5b..f71d118 100644
+--- a/src/renderer/features/lineage/LineageBoard.tsx
++++ b/src/renderer/features/lineage/LineageBoard.tsx
+@@ -82,15 +82,16 @@ import { LineageAddNodeDialog } from './LineageAddNodeDialog'
+ import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
+ import type { LineageNode } from '@shared/models/lineage'
+ 
+-/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」） */
++/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」R2-LG12） */
+ interface PendingLink {
+   source: string
+-  mode: 'link' | 'reparent'
++  mode: 'link' | 'reparent' | 'ref'
+ }
+ 
+ const MODE_HINT: Record<PendingLink['mode'], string> = {
+   link: '连线模式：点击目标节点（源 → 目标，目标成为子节点）',
+-  reparent: '改父模式：点击新父节点'
++  reparent: '改父模式：点击新父节点',
++  ref: '参考连接模式：点击目标文献（综述 → 目标，淡灰虚线）'
+ }
+ 
+ export function LineageBoard(props: {
+@@ -115,6 +116,7 @@ export function LineageBoard(props: {
+   const handleNodeClick = (nodeId: string): void => {
+     if (pendingLink !== null) {
+       if (pendingLink.mode === 'link') store().linkNodes(pendingLink.source, nodeId)
++      else if (pendingLink.mode === 'ref') store().linkRefNodes(pendingLink.source, nodeId)
+       else store().reparentNode(pendingLink.source, nodeId)
+       setPendingLink(null)
+       return
+@@ -202,6 +204,7 @@ export function LineageBoard(props: {
+           onClose={() => setMenu(null)}
+           onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
+           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
++          onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
+           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
+           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
+           onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}
+diff --git a/src/renderer/features/lineage/lineage-layout.ts b/src/renderer/features/lineage/lineage-layout.ts
+index f3f6864..86a11e0 100644
+--- a/src/renderer/features/lineage/lineage-layout.ts
++++ b/src/renderer/features/lineage/lineage-layout.ts
+@@ -209,6 +209,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
+   }
+   let dropped = 0
+   for (const e of edges) {
++    if (e.kind === 'ref') continue // 参考边不进树/右列计算（R2-LG12——仅渲染消费，不计 dropped）
+     if (surveyCol.has(e.fromNode) || surveyCol.has(e.toNode)) continue
+     const broken =
+       e.fromNode === e.toNode ||
+diff --git a/src/renderer/features/lineage/lineage.store.ts b/src/renderer/features/lineage/lineage.store.ts
+index bd8f4e0..bc072a6 100644
+--- a/src/renderer/features/lineage/lineage.store.ts
++++ b/src/renderer/features/lineage/lineage.store.ts
+@@ -70,6 +70,9 @@ export interface LineageStore {
+   moveNode(id: string, x: number, y: number): void
+   editCoreIdea(id: string, coreIdea: string): void
+   linkNodes(from: string, to: string, label?: string): void
++  /** 参考边（R2-LG12 用户裁决 A）：综述→文献 kind='ref'——service 双守
++   *  （from 综述限定/拒环/同端点对互斥），CONFLICT 拒绝型丢弃不卡队列 */
++  linkRefNodes(from: string, to: string): void
+   /** 改父=删旧边+加新边两调用（N5 语义；无旧边=仅加边） */
+   reparentNode(nodeId: string, newParentId: string): void
+   removeNode(id: string): void
+@@ -140,7 +143,8 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
+         api.lineage.upsertEdge({
+           from: action.input.fromNode,
+           to: action.input.toNode,
+-          label: action.input.label
++          label: action.input.label,
++          kind: action.input.kind
+         })
+       )
+       set((s) => ({
+@@ -252,6 +256,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
+       enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label } })
+     },
+ 
++    linkRefNodes(from, to) {
++      enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label: '', kind: 'ref' } })
++    },
++
+     reparentNode(nodeId, newParentId) {
+       // N5：删旧边+加新边两调用（UI 单操作）；删成功+加失败=合法中间态+toast 指明
+       const old = get().edges.find((e) => e.toNode === nodeId)
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 3315d7c..1608bf2 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -10,7 +10,7 @@ import { annotationSchema, annotationInputSchema } from '../models/annotation'
+ import { noteSchema } from '../models/note'
+ import { tagSchema } from '../models/tag'
+ import { collectionSchema } from '../models/collection'
+-import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
++import { lineageNodeSchema, lineageEdgeSchema, lineageEdgeKindSchema } from '../models/lineage'
+ 
+ /** 空请求（无参数通道） */
+ export const voidReqSchema = z.object({}).strict()
+@@ -286,13 +286,15 @@ export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
+ export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
+ export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
+ 
+-/** lineage/upsert-edge 请求：{from,to,label?}（树守卫宿主=LG-01 service upsertEdge——
+- *  IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer toast） */
++/** lineage/upsert-edge 请求：{from,to,label?,kind?}（树守卫宿主=LG-01 service
++ *  upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
++ *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边，service 双守） */
+ export const lineageUpsertEdgeReqSchema = z
+   .object({
+     from: z.string().min(1),
+     to: z.string().min(1),
+-    label: z.string().optional()
++    label: z.string().optional(),
++    kind: lineageEdgeKindSchema.optional()
+   })
+   .strict()
+ export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
+diff --git a/src/shared/models/lineage.ts b/src/shared/models/lineage.ts
+index 5f23072..41ceccd 100644
+--- a/src/shared/models/lineage.ts
++++ b/src/shared/models/lineage.ts
+@@ -15,6 +15,22 @@
+  */
+ import { z } from 'zod'
+ 
++// ── 综述题名判定（单一真相源，R2-LG12 §2 上移）────────────────────
++
++/** 综述关键词（小写比对——大小写不敏感；决3 v1 关键词启发） */
++export const SURVEY_KEYWORDS = ['综述', 'survey', 'review', '概述', '评述'] as const
++
++/**
++ * isSurveyTitle(title)：综述题名关键词启发（子串命中任一关键词即综述）。
++ * 单源消费=service ref 边守卫（R2-LG12「from 必须是综述节点」）+renderer
++ * lineage-classify re-export（classify/布局/渲染面零改动）——R2-LG11 出度
++ * 修正教训=约束公式单源；误判人工修正通道=后续 D2 式字段增强票（不在 v1）。
++ */
++export function isSurveyTitle(title: string): boolean {
++  const lower = title.toLowerCase()
++  return SURVEY_KEYWORDS.some((kw) => lower.includes(kw))
++}
++
+ // ── draft 导入协议（snake_case 文件面，ADR-0014 字面） ─────────────
+ 
+ export const lineageDraftNodeSchema = z
+@@ -89,6 +105,12 @@ export const lineageNodeSchema = z
+   .strict()
+ export type LineageNode = z.infer<typeof lineageNodeSchema>
+ 
++/** 边类型（R2-LG12，用户裁决 A）：tree=树边（单父不变量 INV-27 原语义）/
++ *  ref=参考边（综述节点→文献——service 层豁免单父、仍拒环、同端点对与
++ *  tree 互斥；INV-27 修订版守卫宿主仍=service 写面） */
++export const lineageEdgeKindSchema = z.enum(['tree', 'ref'])
++export type LineageEdgeKind = z.infer<typeof lineageEdgeKindSchema>
++
+ export const lineageEdgeSchema = z
+   .object({
+     id: z.string().min(1),
+@@ -96,13 +118,15 @@ export const lineageEdgeSchema = z
+     toNode: z.string().min(1),
+     /** 逻辑线说明 */
+     label: z.string(),
++    kind: lineageEdgeKindSchema,
+     createdAt: z.string(),
+     updatedAt: z.string()
+   })
+   .strict()
+ export type LineageEdge = z.infer<typeof lineageEdgeSchema>
+ 
+-/** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留） */
++/** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留）。
++ *  边 kind 可选缺省 'tree'（R2-LG12——service 写路径显式填默认，不赖 DB DEFAULT） */
+ export const lineageNodeUpsertSchema = lineageNodeSchema
+   .omit({ createdAt: true, updatedAt: true })
+   .extend({ id: z.string().min(1).optional() })
+@@ -111,6 +135,6 @@ export type LineageNodeUpsert = z.infer<typeof lineageNodeUpsertSchema>
+ 
+ export const lineageEdgeUpsertSchema = lineageEdgeSchema
+   .omit({ createdAt: true, updatedAt: true })
+-  .extend({ id: z.string().min(1).optional() })
++  .extend({ id: z.string().min(1).optional(), kind: lineageEdgeKindSchema.optional() })
+   .strict()
+ export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+index f77807f..0a6de49 100644
+--- a/tests/e2e/lineage.spec.ts
++++ b/tests/e2e/lineage.spec.ts
+@@ -86,6 +86,9 @@ const PAPERS = [
+ const THEME_TITLE = '研究阶段一主题（e2e）'
+ const THEME_IDEA = '主题节点的核心想法（e2e 持久锚）'
+ 
++/** R2-LG12 T5 第四篇：综述题名（isSurveyTitle 命中「综述」关键词；幽灵行） */
++const SURVEY_PAPER = { id: 'e2e-lg-survey', title: '领域综述：扩散模型全景（e2e）', year: 2021 } as const
++
+ /** 草稿 fixture（树形：根→甲/乙——④的多父场景=对乙再加边被拒） */
+ function draftJson(): string {
+   return JSON.stringify({
+@@ -102,6 +105,20 @@ function draftJson(): string {
+   })
+ }
+ 
++/** T5 草稿 fixture：同树+孤立综述节点（4 节点 2 树边——综述右列由 isSurvey 判定） */
++function draftJsonWithSurvey(): string {
++  return JSON.stringify({
++    nodes: [
++      ...PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: p.year, core_idea: '' })),
++      { paper_id: SURVEY_PAPER.id, title: SURVEY_PAPER.title, year: SURVEY_PAPER.year, core_idea: '' }
++    ],
++    edges: [
++      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-a', label: '继承甲' },
++      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-b', label: '' }
++    ]
++  })
++}
++
+ /** 画布节点卡片 g（SVG）——按内含标题文本过滤 */
+ function nodeG(win: Page, title: string) {
+   return win.locator('svg g[data-node-id]').filter({ hasText: title })
+@@ -139,16 +156,21 @@ async function seedLineagePapers(userData: string): Promise<void> {
+   }
+ }
+ 
+-/** 落 fixture JSON 到磁盘 tmp（dialog 桩返回该路径） */
+-async function writeFixture(): Promise<string> {
++/** 落 fixture JSON 到磁盘 tmp（dialog 桩返回该路径；T5 传综述版内容） */
++async function writeFixture(content: string = draftJson()): Promise<string> {
+   const dir = await mkdtemp(join(tmpdir(), 'synapse-lg05-draft-'))
+   const file = join(dir, 'lineage-draft.json')
+-  await writeFile(file, draftJson(), 'utf8')
++  await writeFile(file, content, 'utf8')
+   return file
+ }
+ 
+-/** 导入链（N8 dialog 桩+confirm 自动接受+真实 toast/画布断言） */
+-async function importDraftViaUi(app: ElectronApplication, win: Page, fixturePath: string): Promise<void> {
++/** 导入链（N8 dialog 桩+confirm 自动接受+真实 toast/画布断言；T5 传 4 节点摘要） */
++async function importDraftViaUi(
++  app: ElectronApplication,
++  win: Page,
++  fixturePath: string,
++  expectSummary: string = '已导入脉络图：3 个节点，2 条连线'
++): Promise<void> {
+   await app.evaluate((electronMod, dir) => {
+     ;(
+       electronMod.dialog as unknown as {
+@@ -160,7 +182,7 @@ async function importDraftViaUi(app: ElectronApplication, win: Page, fixturePath
+     void d.accept()
+   })
+   await win.getByTestId('lineage-import').click()
+-  await expect(win.getByText('已导入脉络图：3 个节点，2 条连线')).toBeVisible({ timeout: 10_000 })
++  await expect(win.getByText(expectSummary)).toBeVisible({ timeout: 10_000 })
+   for (const p of PAPERS) {
+     await expect(nodeG(win, p.title)).toBeVisible({ timeout: 10_000 })
+   }
+@@ -515,4 +537,58 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
+ 
+     await app.close()
+   })
++
++  /**
++   * T5=R2-LG12 参考边全链（用户裁决 A）：综述节点右键「添加参考连接」（仅
++   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→ref 边淡灰虚线
++   * 渲染（stroke=var(--survey-edge) 1.4 虚线 2 3）→reload 持久+节点计数
++   * 不变+树形不变（2 条 tree 边保持原色原数）。
++   */
++  test('T5 综述参考连接：右键添加 ref 边→淡灰虚线渲染→reload 持久+树形不变', async () => {
++    test.slow()
++    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg12-t5-'))
++    await firstHop(userData)
++    await seedLineagePapers(userData)
++    // 第四篇=综述（幽灵行同 seedLineagePapers 分支——脉络不打开其文件）
++    const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
++    const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
++    await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id)
++    const fixturePath = await writeFixture(draftJsonWithSurvey())
++
++    const app = await launch(userData)
++    const win = await app.firstWindow()
++    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
++    await win.getByRole('button', { name: '脉络', exact: true }).click()
++    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：4 个节点，2 条连线')
++    await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
++
++    // 菜单项级限定负锚：非综述节点（甲）菜单不呈现「添加参考连接」
++    await nodeG(win, '脉络甲文献').click({ button: 'right' })
++    await expect(
++      win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' })
++    ).toHaveCount(0)
++    await win.mouse.click(10, 10) // 点遮罩关菜单
++
++    // 综述右键→「添加参考连接」→连线模式提示→点目标甲（已有 tree 父=豁免）
++    await nodeG(win, SURVEY_PAPER.title).click({ button: 'right' })
++    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' }).click()
++    await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
++    await nodeG(win, '脉络甲文献').click()
++
++    // ref 边渲染：淡灰虚线（决3 单语义——与综述关联 tree 边同视觉）
++    const refPath = win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')
++    await expect(refPath).toHaveCount(1, { timeout: 10_000 })
++    await expect(refPath).toHaveAttribute('stroke-dasharray', '2 3')
++    await expect(refPath).toHaveAttribute('stroke-width', '1.4')
++    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(3)
++
++    // reload→ref 边持久+节点计数不变（data-viewport 卡片 4）+树形不变（2 tree 边）
++    await reloadToLineage(win)
++    await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
++    await expect(win.locator('svg g[data-node-id]')).toHaveCount(4)
++    await expect(win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')).toHaveCount(1)
++    await expect(win.locator('svg path[data-edge-id][stroke="var(--node-branch)"]')).toHaveCount(2)
++
++    await app.close()
++  })
+ })
+diff --git a/tests/unit/db/migrate.test.ts b/tests/unit/db/migrate.test.ts
+index ceadeb3..3c27ff6 100644
+--- a/tests/unit/db/migrate.test.ts
++++ b/tests/unit/db/migrate.test.ts
+@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
+   it('新库：全量应用，user_version = 最新版本', () => {
+     const db = openDatabase(':memory:')
+     const result = migrate(db)
+-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5])
++    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6])
+     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
+     expect(readUserVersion(db)).toBe(result.currentVersion)
+     db.close()
+diff --git a/tests/unit/renderer/lineage-board.test.tsx b/tests/unit/renderer/lineage-board.test.tsx
+index 798e5df..1c0c501 100644
+--- a/tests/unit/renderer/lineage-board.test.tsx
++++ b/tests/unit/renderer/lineage-board.test.tsx
+@@ -70,7 +70,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
+ }
+ 
+ function edge(id: string, from: string, to: string): LineageEdge {
+-  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
+ }
+ 
+ /** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */
+diff --git a/tests/unit/renderer/lineage-canvas-visual.test.tsx b/tests/unit/renderer/lineage-canvas-visual.test.tsx
+index 7446328..197a00e 100644
+--- a/tests/unit/renderer/lineage-canvas-visual.test.tsx
++++ b/tests/unit/renderer/lineage-canvas-visual.test.tsx
+@@ -34,8 +34,8 @@ function node(
+   }
+ }
+ 
+-function edge(from: string, to: string): LineageEdge {
+-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+ }
+ 
+ /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */
+@@ -220,6 +220,22 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
+     expect(p3?.getAttribute('stroke-dasharray')).toBe('2 3')
+   })
+ 
++  it('R2-LG12 参考边：kind=ref 直读——survey-edge 1.4 虚线 2 3；优先级 ref>推断（label 含「推断」仍 survey-edge 色）', () => {
++    // 两端均非综述题名：隔离 kind 直读判定（不与 surveyIds 管道混源）
++    const nodes = [
++      node('P', { year: 2020, title: '基础研究' }),
++      node('C', { year: 2021, title: '后续工作' })
++    ]
++    const ref: LineageEdge = { ...edge('P', 'C'), label: '参考（推断）', kind: 'ref' }
++    mount(<LineageCanvas nodes={nodes} edges={[ref]} />)
++    const p = host?.querySelector('[data-edge-id="e-P-C"]')
++    expect(p?.getAttribute('stroke')).toBe('var(--survey-edge)')
++    expect(p?.getAttribute('stroke-width')).toBe('1.4')
++    expect(p?.getAttribute('stroke-dasharray')).toBe('2 3')
++    // 变异红证锚：优先级翻转（推断先判）会把该边染成 #8a94a6 虚线 5 4
++    expect(p?.getAttribute('stroke')).not.toBe('#8a94a6')
++  })
++
+   it('图例四项真实文本（浅色白卡圆角非交互——data-legend+aria-hidden）', () => {
+     const g = chain()
+     mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+index 50bbf68..0832249 100644
+--- a/tests/unit/renderer/lineage-canvas.test.tsx
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -46,7 +46,7 @@ function node(
+ }
+ 
+ function edge(from: string, to: string): LineageEdge {
+-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
+ }
+ 
+ /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */
+diff --git a/tests/unit/renderer/lineage-classify.test.ts b/tests/unit/renderer/lineage-classify.test.ts
+index 08f48e5..8b46b4c 100644
+--- a/tests/unit/renderer/lineage-classify.test.ts
++++ b/tests/unit/renderer/lineage-classify.test.ts
+@@ -31,7 +31,7 @@ function node(
+ 
+ /** 边工厂（from=父→to=子——入度计数面=toNode） */
+ function edge(from: string, to: string): LineageEdge {
+-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
+ }
+ 
+ describe('isSurvey —— 综述题名关键词启发（决3 v1）', () => {
+diff --git a/tests/unit/renderer/lineage-layout.test.ts b/tests/unit/renderer/lineage-layout.test.ts
+index 22df4e9..e2fd0f2 100644
+--- a/tests/unit/renderer/lineage-layout.test.ts
++++ b/tests/unit/renderer/lineage-layout.test.ts
+@@ -38,9 +38,9 @@ function node(
+   }
+ }
+ 
+-/** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向） */
+-function edge(from: string, to: string): LineageEdge {
+-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++/** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向；默认 tree） */
++function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
++  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+ }
+ 
+ afterEach(() => {
+@@ -417,6 +417,27 @@ describe('R2-LG11 综述右列（isSurvey 节点不进树——决3 布局落点
+   })
+ })
+ 
++describe('R2-LG12 参考边不进树占位（ref 边仅渲染消费——票面 §1 布局剔除）', () => {
++  it('ref 边不进树计算：含 ref 输入与剔除该 ref 的输入布局恒等+零 warn（双覆盖综述作 from——剔除分支删除时该边会抢占 C 的 tree 父）', () => {
++    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++    const nodes = [
++      node('A', { year: 2020, title: '基础研究' }),
++      node('C', { year: 2021, title: '后续工作' }),
++      // 双覆盖综述不进右列（覆盖优先）——若无 ref 剔除分支，S→C 会作为普通
++      // 边进树计算抢占 C 的父位（ref 在前时 tree A→C 反被剔成破坏边→warn）
++      node('S', { year: 2022, title: '领域综述', x: 500, y: 400 })
++    ]
++    const treeOnly = layoutLineage(nodes, [edge('A', 'C')])
++    const withRef = layoutLineage(nodes, [edge('S', 'C', 'ref'), edge('A', 'C')])
++    expect(withRef.positions).toEqual(treeOnly.positions)
++    expect(withRef.layers).toEqual(treeOnly.layers)
++    // 直接锚：C 仍挂 tree 父 A（单链对齐）；S 保持覆盖值
++    expect(withRef.positions.get('C')!.x).toBe(withRef.positions.get('A')!.x)
++    expect(withRef.positions.get('S')).toEqual({ x: 500, y: 400 })
++    expect(warn).not.toHaveBeenCalled() // ref 分流不计 dropped（有意分流非破坏）
++  })
++})
++
+ describe('R2-LG11 nodeHeight 卡高单源（INV-38：46+18×clamp(ceil(len×12.5/(nodeWidth−24)),1,3)）', () => {
+   it('1 行档=64：短档 12 字/中档 13 字/空题名兜底', () => {
+     expect(nodeHeight('十'.repeat(12))).toBe(64)
+diff --git a/tests/unit/renderer/lineage-store-write.test.ts b/tests/unit/renderer/lineage-store-write.test.ts
+index cc5558b..45dc438 100644
+--- a/tests/unit/renderer/lineage-store-write.test.ts
++++ b/tests/unit/renderer/lineage-store-write.test.ts
+@@ -59,7 +59,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
+ }
+ 
+ function edge(id: string, from: string, to: string): LineageEdge {
+-  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
++  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
+ }
+ 
+ /** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */
+diff --git a/tests/unit/services/lineage-import.test.ts b/tests/unit/services/lineage-import.test.ts
+index f81a14b..6b2c8ee 100644
+--- a/tests/unit/services/lineage-import.test.ts
++++ b/tests/unit/services/lineage-import.test.ts
+@@ -10,7 +10,7 @@
+ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+-import { afterEach, beforeEach, expect, it } from 'vitest'
++import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+ import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
+ import type { SqliteDb } from '../../../src/main/db/connection'
+ import { createTestDb } from '../../utils/fixtures'
+@@ -338,6 +338,78 @@ it('upsertNode 幽灵 paperId 拒绝（中文）；removeNode/removeEdge 透传'
+   expect(svc.removeNode(n.id)).toBe(1)
+ })
+ 
++// ── service：R2-LG12 参考边（kind=ref）写守卫 ────────────────────
++
++/** 综述/研究节点种子（title 含综述关键词=isSurveyTitle 判定面；R2-LG12 §1） */
++function seedRefNodes(): { s: string; a: string; b: string } {
++  const s = repo.upsertNode({ paperId: 'p-1', title: '领域综述', coreIdea: '', year: 2020, x: null, y: null })
++  const a = repo.upsertNode({ paperId: 'p-2', title: '研究甲', coreIdea: '', year: 2021, x: null, y: null })
++  const b = repo.upsertNode({ paperId: 'p-3', title: '研究乙', coreIdea: '', year: 2022, x: null, y: null })
++  return { s: s.id, a: a.id, b: b.id }
++}
++
++describe('R2-LG12 参考边（kind=ref）upsertEdge 写守卫', () => {
++  it('ref 落库：from=综述 → 落库 kind=ref；同综述多条 ref 出边合法（多参考面）', () => {
++    const { s, a, b } = seedRefNodes()
++    const e1 = svc.upsertEdge({ fromNode: s, toNode: a, label: '', kind: 'ref' })
++    expect(e1.kind).toBe('ref')
++    const e2 = svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'ref' })
++    expect(e2.kind).toBe('ref')
++    expect(svc.graph().edges.filter((e) => e.kind === 'ref')).toHaveLength(2)
++  })
++
++  it('ref from 非综述拒（中文 reason）；题名含综述关键词的主题节点（paperId null）同拒（service 双守）', () => {
++    const { a, b } = seedRefNodes()
++    expect(() => svc.upsertEdge({ fromNode: a, toNode: b, label: '', kind: 'ref' })).toThrow(
++      '参考边只能由综述节点发出'
++    )
++    const t = repo.upsertNode({ paperId: null, title: '阶段综述', coreIdea: '', year: 2020, x: null, y: null })
++    expect(() => svc.upsertEdge({ fromNode: t.id, toNode: a, label: '', kind: 'ref' })).toThrow(
++      '参考边只能由综述节点发出'
++    )
++    expect(svc.graph().edges).toEqual([])
++  })
++
++  it('ref 豁免多父：to 已有 tree 父仍可挂 ref（tree 父保留不顶替）', () => {
++    const { s, a, b } = seedRefNodes()
++    svc.upsertEdge({ fromNode: a, toNode: b, label: '' })
++    const e = svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'ref' })
++    expect(e.kind).toBe('ref')
++    const g = svc.graph().edges
++    expect(g).toHaveLength(2)
++    expect(g.filter((x) => x.kind === 'tree')).toHaveLength(1)
++  })
++
++  it('ref 仍拒环：tree+ref 混合环夹具（路径穿既有 ref 边）→ 中文 reason+库不变', () => {
++    const { s, a } = seedRefNodes()
++    const s2 = repo.upsertNode({ paperId: 'p-3', title: '另一篇综述', coreIdea: '', year: 2019, x: null, y: null }).id
++    const x = repo.upsertNode({ paperId: null, title: '阶段X', coreIdea: '', year: 2019, x: null, y: null }).id
++    svc.upsertEdge({ fromNode: a, toNode: s2, label: '' })
++    svc.upsertEdge({ fromNode: x, toNode: s, label: '' })
++    svc.upsertEdge({ fromNode: s2, toNode: x, label: '', kind: 'ref' })
++    expect(() => svc.upsertEdge({ fromNode: s, toNode: a, label: '', kind: 'ref' })).toThrow('环')
++    expect(svc.graph().edges).toHaveLength(3)
++  })
++
++  it('同端点对 tree+ref 互斥：tree 在先 ref 后拒、ref 在先 tree 后拒（互斥 reason）', () => {
++    const { s, b } = seedRefNodes()
++    svc.upsertEdge({ fromNode: s, toNode: b, label: '' })
++    expect(svc.graph().edges[0]!.kind).toBe('tree')
++    expect(() => svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'ref' })).toThrow('互斥')
++    repo.clearGraph()
++    const n2 = seedRefNodes()
++    svc.upsertEdge({ fromNode: n2.s, toNode: n2.b, label: '', kind: 'ref' })
++    expect(() => svc.upsertEdge({ fromNode: n2.s, toNode: n2.b, label: '' })).toThrow('互斥')
++    expect(svc.graph().edges).toHaveLength(1)
++  })
++
++  it('ref 自环拒：from==to → 中文 reason+库不变', () => {
++    const { s } = seedRefNodes()
++    expect(() => svc.upsertEdge({ fromNode: s, toNode: s, label: '', kind: 'ref' })).toThrow('自环')
++    expect(svc.graph().edges).toEqual([])
++  })
++})
++
+ // ── service：importFromFile（IO 面） ────────────────────────────
+ 
+ it('importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法文件导入成功', async () => {
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index 0158140..7834e00 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -223,7 +223,8 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-AI-12', file: 'src/renderer/features/reader/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记组头补原始命题（b3: P7-G；复测缺陷 P2 修复——组头仅「第N问」短标签读者对不上号，七问原始命题仓内零存在唯一源=蓝图 §4.2 表：QUESTION_TEXT 映射新增（七值机器抽取 diff 证逐字誊自蓝图；类型 Record<Exclude<AiNoteQuestion,divergence>,string>——divergence 为角色节非七问成员保持短标签，Exclude=编译器强制两消费位分歧唯一形态）+两消费位组头拼「第N问：原始命题」（AiNoteGroupList h4+LineageSideAiNotes h5——跨域单源自动同达合 INV-11）；纯 renderer 呈现面零 IPC 零 shared；受锁必然红 5 处先行留证（ai-notes-section×3+lineage-side-panel:291+e2e 两 spec）+ai-note-style.test TEXT 键集非空新 it；联审 0B/3W/5N PASS——誊录逐字性联审独立机器重演 diff 空，W3 Q4~Q7 文案持续锁定缺口记遗留池（键集断言拦键漂移不拦值漂移））[locked-change]——票面 scripts/audits/sr2-ai-12-brief.md；依赖 AI-11 转置组头位' },
+   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选视觉反馈回退官方原生半透明（F1 修正役 R1 路线——ADR-0019；复测站 3「全面失败+0.5~5s 延迟」根修）：①text-layer.css ::selection/::-moz-selection 回官方 rgba(0 0 255 / 0.25)（逐字对照 pdfjs-dist pdf_viewer.css:678-685；br 两规则保持 transparent）；②删 SelectionRects.tsx 整件+SelectionLayer 摘 overlay 计算/渲染（P10 方案切换=删旧）；③视觉通道=原生 ::selection（拖选第一帧即反馈，零 JS 链路——取证：自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+拖选期死寂=根因双实锤，O(n) 遍历 0~0.6ms 假说证伪）；④工具条/保存/undo/Escape 零变；AnnotationLayer 单层 multiply+AI 层去 multiply（F-07 层间修复）保留；⑤受锁两文件第三次改写：e2e F-06 小票 C 节（官方半透明精确值+selection-rects 防回归 0 计数+L7 延迟预算 toolbar≤1.5s）+unit F-07a 改防回归守卫/F-07b 删——票面 scripts/audits/sr2-f-08-brief.md；取证 scripts/audits/f1-forensics.report.md；三屋：实现 1.95M tok/858 用例绿+门一 PASS 0B/4W/7N+门二 PASS 零回炉（W3=INV-37 登记）；依赖 ADR-0019 裁决' },
+   { id: 'SR2-F-09', file: 'src/renderer/features/reader/text-layer.css', area: 'reader', owner: 'strong', status: 'done', summary: '划选选中色改灰（用户令 2026-08-29：仿 WPS——灰色选中/标注纯色；v5 核查=标注纯色+重合不加重已成立零改）：text-layer.css ::selection/::-moz-selection rgba(0 0 255 / 0.25)→rgba(0 0 0 / 0.30)（≈白纸 #B3B3B3）；受锁 e2e reader-text.spec F-06 小票 C 节精确值断言+测试名同步；INV-37/ADR-0019 补记（用户指令偏离官方值的显式登记）；压缩路径票（单值变更+守卫同步，主控直做——变异红证 sr2-f-09-mutation.raw.txt：css 改回蓝→F-06 小票红点精确锁值；verify 858+locks+e2e 25 passed 全绿；v5b 真机像素证=差分区 93.3% 中性灰/均值 rgb(151,154,155)）；核查档 scripts/audits/f1-out/f1-forensics5.json+v5 截图+执行记录 sr2-f-09-record.md' },
+-  { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' }
++  { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' },
++  { id: 'R2-LG12', file: 'src/main/services/lineage/lineage.service.ts', area: 'lineage', owner: 'strong', status: 'open', summary: '综述多参考边数据面（U2b——用户裁决 2026-08-29「A. 完整多参考边」AskUserQuestion 在案）：lineageEdge 增 kind:tree|ref（出口必填/upsert 可选缺省 tree/service 显式填；draft 协议零改）+迁移 006（ADD COLUMN kind TEXT NOT NULL DEFAULT tree——旧行幂等）+service upsertEdge 受控豁免分支（ref 豁免多父/仍拒环=混合图 reachable/同端点对 tree+ref 互斥拒/from 必须 isSurveyTitle 综述——判定上移 shared/models 单源+renderer re-export 零散改）+layout 净化段剔 ref 边（不进树占位）+渲染 ref=var(--survey-edge) 1.4 虚 2-3（优先级 ref>综述关联>推断>普通）+综述右键「添加参考连接」入口（pending-link kind 扩展）+INV-27 修订登记（tree 单父原样/ref 受控豁免）；受锁面=shared models+migrations 新增+lineage-import/layout/visual 三测+e2e lineage.spec T5 新场景——票面 scripts/audits/r2-lg12-brief.md；依赖 R2-LG11 地基（geom/右列/淡灰虚线管道）' }
+ ] as const
+ 
+ export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))

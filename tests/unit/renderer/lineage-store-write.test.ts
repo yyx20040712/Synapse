@@ -59,7 +59,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
 }
 
 /** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */

@@ -31,7 +31,7 @@ function node(
 
 /** 边工厂（from=父→to=子——入度计数面=toNode） */
 function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind: 'tree', createdAt: 't', updatedAt: 't' }
 }
 
 describe('isSurvey —— 综述题名关键词启发（决3 v1）', () => {

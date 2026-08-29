@@ -23,7 +23,7 @@
  */
 import { readFile } from 'node:fs/promises'
 import type { AppErrorCode } from '../../../shared/app-error'
-import { lineageDraftSchema } from '../../../shared/models/lineage'
+import { isSurveyTitle, lineageDraftSchema } from '../../../shared/models/lineage'
 import type {
   LineageEdge,
   LineageEdgeUpsert,
@@ -239,7 +239,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           deps.repo.upsertEdge({
             fromNode: paperToNode.get(e.from_paper_id)!,
             toNode: paperToNode.get(e.to_paper_id)!,
-            label: e.label
+            label: e.label,
+            kind: 'tree' // draft 协议=树语义（R2-LG12：ref 边仅应用内手工创建）——写路径显式填
           })
           edgeCount++
         }
@@ -279,7 +280,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
     },
 
     upsertEdge(input: LineageEdgeUpsert): LineageEdge {
-      // INV-27 运行时守卫（与导入校验同源树约束——导入外的增量编辑入口）
+      // INV-27 运行时守卫（修订版——R2-LG12：tree 原语义；ref 豁免单父仍拒环）
+      const kind = input.kind ?? 'tree' // 写路径显式缺省（预裁 5——不赖 DB DEFAULT）
       if (input.fromNode === input.toNode) {
         throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
       }
@@ -291,6 +293,16 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (!nodeIds.has(input.toNode)) {
         throw new LineageDomainError('CONFLICT', `目标节点不存在：${input.toNode}`)
       }
+      // ref 限定（R2-LG12 §1）：from 必须是综述文献节点（菜单项级限定+service
+      // 双守——isSurveyTitle 单源 shared/models；paperId null 主题节点同拒）
+      if (kind === 'ref') {
+        const from = graph.nodes.find((n) => n.id === input.fromNode)!
+        if (from.paperId === null || !isSurveyTitle(from.title)) {
+          throw new LineageDomainError('CONFLICT', '参考边只能由综述节点发出')
+        }
+      }
+      // 重复边收口（同端点对不区分 kind——tree/ref 互斥，预裁 2：同端点对只
+      // 允许一种 kind，语义清晰防重线；kind 相异时 reason 附互斥说明）
       const dup = graph.edges.find(
         (e) =>
           e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
@@ -298,22 +310,33 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (dup !== undefined) {
         throw new LineageDomainError(
           'CONFLICT',
-          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`
+          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝` +
+            (dup.kind !== kind ? '（参考边与树边同端点对互斥）' : '')
         )
       }
-      // 更新场景（input.id 已存在）：改端点=改父，按新端点重估守卫
-      const existingParent = graph.edges.find((e) => e.toNode === input.toNode && e.id !== input.id)
-      if (existingParent !== undefined) {
+      // 多父守卫（仅 tree 边——ref 豁免：to 可已有 tree 父/多条 ref 入边；
+      // ref 入边不算 tree 父）；更新场景（input.id 已存在）：改端点=改父，
+      // 按新端点重估守卫
+      if (kind === 'tree') {
+        const existingParent = graph.edges.find(
+          (e) => e.toNode === input.toNode && e.id !== input.id && e.kind === 'tree'
+        )
+        if (existingParent !== undefined) {
+          throw new LineageDomainError(
+            'CONFLICT',
+            `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
+          )
+        }
+      }
+      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）；环检测
+      // 图=全部边含 ref（综述自己也可能在某树内——tree+ref 混合环真实可达）
+      if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
         throw new LineageDomainError(
           'CONFLICT',
-          `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
+          '成环拒绝：该边将使脉络图出现环路（树边与参考边均不得成环）'
         )
       }
-      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）
-      if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
-        throw new LineageDomainError('CONFLICT', '成环拒绝：该边将使脉络图出现环路（v1 为树）')
-      }
-      return deps.repo.upsertEdge(input)
+      return deps.repo.upsertEdge({ ...input, kind })
     },
 
     removeEdge(id: string): number {

@@ -38,9 +38,9 @@ function node(
   }
 }
 
-/** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向） */
-function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
+/** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向；默认 tree） */
+function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
 }
 
 afterEach(() => {
@@ -414,6 +414,27 @@ describe('R2-LG11 综述右列（isSurvey 节点不进树——决3 布局落点
     const edges = [edge('A', 'S')]
     const { positions } = layoutLineage(nodes, edges)
     expect(positions.get('S')).toEqual({ x: 50, y: 60 })
+  })
+})
+
+describe('R2-LG12 参考边不进树占位（ref 边仅渲染消费——票面 §1 布局剔除）', () => {
+  it('ref 边不进树计算：含 ref 输入与剔除该 ref 的输入布局恒等+零 warn（双覆盖综述作 from——剔除分支删除时该边会抢占 C 的 tree 父）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const nodes = [
+      node('A', { year: 2020, title: '基础研究' }),
+      node('C', { year: 2021, title: '后续工作' }),
+      // 双覆盖综述不进右列（覆盖优先）——若无 ref 剔除分支，S→C 会作为普通
+      // 边进树计算抢占 C 的父位（ref 在前时 tree A→C 反被剔成破坏边→warn）
+      node('S', { year: 2022, title: '领域综述', x: 500, y: 400 })
+    ]
+    const treeOnly = layoutLineage(nodes, [edge('A', 'C')])
+    const withRef = layoutLineage(nodes, [edge('S', 'C', 'ref'), edge('A', 'C')])
+    expect(withRef.positions).toEqual(treeOnly.positions)
+    expect(withRef.layers).toEqual(treeOnly.layers)
+    // 直接锚：C 仍挂 tree 父 A（单链对齐）；S 保持覆盖值
+    expect(withRef.positions.get('C')!.x).toBe(withRef.positions.get('A')!.x)
+    expect(withRef.positions.get('S')).toEqual({ x: 500, y: 400 })
+    expect(warn).not.toHaveBeenCalled() // ref 分流不计 dropped（有意分流非破坏）
   })
 })
 

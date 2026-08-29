@@ -34,8 +34,8 @@ function node(
   }
 }
 
-function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', createdAt: 't', updatedAt: 't' }
+function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
 }
 
 /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */
@@ -218,6 +218,22 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(p3?.getAttribute('stroke')).toBe('var(--survey-edge)')
     expect(p3?.getAttribute('stroke-width')).toBe('1.4')
     expect(p3?.getAttribute('stroke-dasharray')).toBe('2 3')
+  })
+
+  it('R2-LG12 参考边：kind=ref 直读——survey-edge 1.4 虚线 2 3；优先级 ref>推断（label 含「推断」仍 survey-edge 色）', () => {
+    // 两端均非综述题名：隔离 kind 直读判定（不与 surveyIds 管道混源）
+    const nodes = [
+      node('P', { year: 2020, title: '基础研究' }),
+      node('C', { year: 2021, title: '后续工作' })
+    ]
+    const ref: LineageEdge = { ...edge('P', 'C'), label: '参考（推断）', kind: 'ref' }
+    mount(<LineageCanvas nodes={nodes} edges={[ref]} />)
+    const p = host?.querySelector('[data-edge-id="e-P-C"]')
+    expect(p?.getAttribute('stroke')).toBe('var(--survey-edge)')
+    expect(p?.getAttribute('stroke-width')).toBe('1.4')
+    expect(p?.getAttribute('stroke-dasharray')).toBe('2 3')
+    // 变异红证锚：优先级翻转（推断先判）会把该边染成 #8a94a6 虚线 5 4
+    expect(p?.getAttribute('stroke')).not.toBe('#8a94a6')
   })
 
   it('图例四项真实文本（浅色白卡圆角非交互——data-legend+aria-hidden）', () => {

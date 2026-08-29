@@ -1,0 +1,11 @@
+-- 006_lineage_ref_edges：参考边类型列（R2-LG12，用户裁决 A「完整多参考边」2026-08-29）
+-- 设计裁决（票面 r2-lg12-brief §1/§2）：
+-- - kind='tree'=树边（单父不变量 INV-27 原语义，service 层守卫不变）；
+--   kind='ref'=参考边（综述节点→文献，一条综述可向多篇文献发边）——service
+--   层豁免单父、仍拒环（环检测图=tree+ref 全部边）、同端点对与 tree 互斥
+--   （INV-27 修订版，守卫宿主仍=service 写面，DDL 不承担行为约束）
+-- - NOT NULL DEFAULT 'tree'：旧行迁移后总有值（幂等零数据搬迁）；DB DEFAULT
+--   仅承担旧行回填，写路径显式填 kind 不赖默认（主控预裁 5）
+-- - UNIQUE(from_node,to_node)（004 既有）不动：同端点对单边 DDL 收口
+--   天然支撑「同端点对仅一种 kind」（互斥=service 层按 kind 差异给中文 reason）
+ALTER TABLE lineage_edges ADD COLUMN kind TEXT NOT NULL DEFAULT 'tree';

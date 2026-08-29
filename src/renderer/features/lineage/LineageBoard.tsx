@@ -82,15 +82,16 @@ import { LineageAddNodeDialog } from './LineageAddNodeDialog'
 import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
 import type { LineageNode } from '@shared/models/lineage'
 
-/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」） */
+/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」R2-LG12） */
 interface PendingLink {
   source: string
-  mode: 'link' | 'reparent'
+  mode: 'link' | 'reparent' | 'ref'
 }
 
 const MODE_HINT: Record<PendingLink['mode'], string> = {
   link: '连线模式：点击目标节点（源 → 目标，目标成为子节点）',
-  reparent: '改父模式：点击新父节点'
+  reparent: '改父模式：点击新父节点',
+  ref: '参考连接模式：点击目标文献（综述 → 目标，淡灰虚线）'
 }
 
 export function LineageBoard(props: {
@@ -115,6 +116,7 @@ export function LineageBoard(props: {
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
       if (pendingLink.mode === 'link') store().linkNodes(pendingLink.source, nodeId)
+      else if (pendingLink.mode === 'ref') store().linkRefNodes(pendingLink.source, nodeId)
       else store().reparentNode(pendingLink.source, nodeId)
       setPendingLink(null)
       return
@@ -202,6 +204,7 @@ export function LineageBoard(props: {
           onClose={() => setMenu(null)}
           onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
+          onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
           onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}

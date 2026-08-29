@@ -120,12 +120,13 @@ interface LineageNodeRow {
   updated_at: string
 }
 
-/** lineage_edges 表行形状（列名原样，蛇形） */
+/** lineage_edges 表行形状（列名原样，蛇形；kind=006 迁移列，旧行回填 'tree'） */
 interface LineageEdgeRow {
   id: string
   from_node: string
   to_node: string
   label: string
+  kind: string
   created_at: string
   updated_at: string
 }
@@ -150,6 +151,7 @@ function toEdge(row: LineageEdgeRow): LineageEdge {
     fromNode: row.from_node,
     toNode: row.to_node,
     label: row.label,
+    kind: row.kind === 'ref' ? 'ref' : 'tree',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -164,11 +166,11 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        year = excluded.year, x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
-    `INSERT INTO lineage_edges (id, from_node, to_node, label, created_at, updated_at)
-     VALUES (@id, @fromNode, @toNode, @label, @now, @now)
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @kind, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        from_node = excluded.from_node, to_node = excluded.to_node,
-       label = excluded.label, updated_at = excluded.updated_at`
+       label = excluded.label, kind = excluded.kind, updated_at = excluded.updated_at`
   )
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
@@ -208,6 +210,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         fromNode: input.fromNode,
         toNode: input.toNode,
         label: input.label,
+        kind: input.kind ?? 'tree',
         now
       })
       return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)

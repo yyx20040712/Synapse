@@ -70,6 +70,9 @@ export interface LineageStore {
   moveNode(id: string, x: number, y: number): void
   editCoreIdea(id: string, coreIdea: string): void
   linkNodes(from: string, to: string, label?: string): void
+  /** 参考边（R2-LG12 用户裁决 A）：综述→文献 kind='ref'——service 双守
+   *  （from 综述限定/拒环/同端点对互斥），CONFLICT 拒绝型丢弃不卡队列 */
+  linkRefNodes(from: string, to: string): void
   /** 改父=删旧边+加新边两调用（N5 语义；无旧边=仅加边） */
   reparentNode(nodeId: string, newParentId: string): void
   removeNode(id: string): void
@@ -140,7 +143,8 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         api.lineage.upsertEdge({
           from: action.input.fromNode,
           to: action.input.toNode,
-          label: action.input.label
+          label: action.input.label,
+          kind: action.input.kind
         })
       )
       set((s) => ({
@@ -250,6 +254,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     linkNodes(from, to, label = '') {
       enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label } })
+    },
+
+    linkRefNodes(from, to) {
+      enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label: '', kind: 'ref' } })
     },
 
     reparentNode(nodeId, newParentId) {
