@@ -1,0 +1,9 @@
+== M2 变异：环检测图漏 ref（reachable 构图剔除 ref 边——混合环漏检盲区）==
+-- 期望红：'ref 仍拒环：tree+ref 混合环夹具' 用例（路径穿既有 ref 边——tree-only 图不可达→拒不到环）
+[31m   [31m×[31m R2-LG12 参考边（kind=ref）upsertEdge 写守卫[2m > [22mref 仍拒环：tree+ref 混合环夹具（路径穿既有 ref 边）→ 中文 reason+库不变[90m 6[2mms[22m[31m[39m
+[31m     → expected [Function] to throw an error[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/lineage-import.test.ts[2m > [22mR2-LG12 参考边（kind=ref）upsertEdge 写守卫[2m > [22mref 仍拒环：tree+ref 混合环夹具（路径穿既有 ref 边）→ 中文 reason+库不变
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m27 passed[39m[22m[90m (28)[39m
+M2-restore-diff-empty
+[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m

@@ -1,0 +1,571 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/app-shell.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstdout[2m | tests/unit/renderer/app-shell.test.tsx
+[22m[39mWarning: Please use the `legacy` build in Node.js environments.
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2mnav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2mnav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2m默认视图（文献库）带 active 态类，其余入口不带
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2m品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2m品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2m顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/app-shell.test.tsx [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 70[2mms[22m[39m
+[31m   [31m×[31m R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏[90m 11[2mms[22m[31m[39m
+[31m     → 顶栏 header 在场（R2-SH2 决4——App 根最前）: expected null not to be null[39m
+[31m   [31m×[31m R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）[90m 6[2mms[22m[31m[39m
+[31m     → header 在场: expected null not to be null[39m
+[90mstderr[2m | tests/unit/renderer/app-shell.test.tsx[2m > [22m[2mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m[2m侧栏品牌行退役（负锚）：app-nav-brand/app-nav-name 零残留
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:93:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:149:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/app-shell.test.tsx[2m > [22mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏
+[31m[1mAssertionError[22m: 顶栏 header 在场（R2-SH2 决4——App 根最前）: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/app-shell.test.tsx:[2m128:60[22m[39m
+    [90m126| [39m    [35mawait[39m [34mflush[39m()
+    [90m127| [39m    [35mconst[39m header [33m=[39m document[33m.[39m[34mquerySelector[39m([32m'header.app-header'[39m)
+    [90m128| [39m    [34mexpect[39m(header[33m,[39m [32m'顶栏 header 在场（R2-SH2 决4——App 根最前）'[39m)[33m.[39mnot[33m.[39m[34mt[39m…
+    [90m   | [39m                                                           [31m^[39m
+    [90m129| [39m    [34mexpect[39m(
+    [90m130| [39m      header[33m![39m[33m.[39mtextContent[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/app-shell.test.tsx[2m > [22mR3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）[2m > [22m顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）
+[31m[1mAssertionError[22m: header 在场: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/app-shell.test.tsx:[2m143:37[22m[39m
+    [90m141| [39m    [35mawait[39m [34mflush[39m()
+    [90m142| [39m    [35mconst[39m header [33m=[39m document[33m.[39m[34mquerySelector[39m([32m'header.app-header'[39m)
+    [90m143| [39m    [34mexpect[39m(header[33m,[39m [32m'header 在场'[39m)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                                    [31m^[39m
+    [90m144| [39m    [34mexpect[39m(header[33m![39m[33m.[39m[34mquerySelector[39m([32m'svg'[39m)[33m,[39m [32m'logo svg 迁自 .app-nav-brand[39m…
+    [90m145| [39m    [34mexpect[39m(header[33m![39m[33m.[39mtextContent[33m,[39m [32m'应用名在 header 内'[39m)[33m.[39m[34mtoContain[39m([32m'Synap[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 20:01:50
+[2m   Duration [22m 2.82s[2m (transform 427ms, setup 0ms, collect 1.40s, tests 70ms, environment 756ms, prepare 206ms)[22m
+
+MUTATION1_EXITCODE=1

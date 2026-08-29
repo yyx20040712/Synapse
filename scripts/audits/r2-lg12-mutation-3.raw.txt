@@ -1,0 +1,8 @@
+== M3 变异：渲染优先级翻转（LineageEdges 删 e.kind==='ref' 直读——ref 边回落推断/普通判定）==
+-- 期望红：'R2-LG12 参考边：kind=ref 直读' 用例（两端非综述+label 含推断→#8a94a6 染色错）
+[31m   [31m×[31m R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObject 换行/层带浅色/边三型/图例）[2m > [22mR2-LG12 参考边：kind=ref 直读——survey-edge 1.4 虚线 2 3；优先级 ref>推断（label 含「推断」仍 survey-edge 色）[90m 6[2mms[22m[31m[39m
+[31m     → expected '#8a94a6' to be 'var(--survey-edge)' // Object.is equality[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+M3-restore-diff-empty
+[2m      Tests [22m [1m[32m8 passed[39m[22m[90m (8)[39m
