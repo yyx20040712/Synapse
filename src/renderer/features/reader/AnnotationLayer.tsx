@@ -6,7 +6,10 @@
  *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
  *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
  *   （F-11 顶/底收边修标注下偏），rects 行级合并见
- *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径）
+ *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径；
+ *   渲染读时另过 annotation-merge.mergeRects 归并（F-A1 挂 B，INV-E——
+ *   存量缺陷态 rects 库数据零迁移，读时归并存量渐净；resolved 产物已过
+ *   挂 A，幂等无害）
  * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
  *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
  *   requestAnimationFrame 合并重算
@@ -35,6 +38,7 @@ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
+import { mergeRects } from './annotation-merge'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
@@ -184,7 +188,7 @@ export function AnnotationLayer(props: {
       >
         {/* multiply 上容器级（stacking context 隔离，rect 级混合无效且叠乘） */}
         {pageAnnotations.map((a) =>
-          (resolved[a.id] ?? a.rects).map((r, i) => (
+          mergeRects(resolved[a.id] ?? a.rects).map((r, i) => (
             <div
               key={`${a.id}:${i}`}
               data-testid="annotation-rect"

@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+import { createMultiLinePdf, createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT } from '../utils/pdf-factory'
 
 /** 拉起子进程跑 seed-paper.cjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
 function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
@@ -435,14 +435,17 @@ test('F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚�
   await app.close()
 })
 
-/** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献） */
-async function seedAndLaunch(title: string): Promise<{ app: ElectronApplication; userData: string }> {
+/** 种子+首跳建库+受管文件落盘+二次启动（标注链各测共用配方；标题区分文献；
+ *  bytes 可换多行 fixture——F-A1 多行划选） */
+async function seedAndLaunch(
+  title: string,
+  bytes: Uint8Array = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
+): Promise<{ app: ElectronApplication; userData: string }> {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
   const seedApp = await launch(userData)
   await (await seedApp.firstWindow()).waitForTimeout(500)
   await seedApp.close()
-  const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
   const sha = createHash('sha256').update(bytes).digest('hex')
   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
   const abs = join(userData, 'files', ...fileRef.split('/'))
@@ -689,5 +692,98 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半�
     win.getByTestId('selection-rects'),
     'C: 自绘选区块不在场（ADR-0019 原生路线）'
   ).toHaveCount(0)
+  await app.close()
+})
+
+/**
+ * F-A1 标注矩形归并（多行装配级）：程序化跨 3 行选区 → 高亮 → 断言——
+ * 渲染面（挂 B）：零宽块 0（全宽 ≥1px）+行块两两垂直不相交（相邻块
+ * bottom ≤ top+0.5px 容差吞字度量测噪声）；
+ * 保存面（挂 A）：listAnnotations 读库 rects——归一化域块数=行数、
+ * 全宽 ≥ W_MIN(1/612)、按 y 序两两分离（bottom ≤ top+1e-9）。
+ * 块数=行数断言经首跑取证锁（fixture 3 行单 span；取证输出落
+ * scripts/audits/f-a1-e2e-forensic.raw.txt——禁拍脑杂数）。
+ */
+test('F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（INV-A/B/C 装配级）', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 e2e 多行归并文献'
+  const { app } = await seedAndLaunch(title, createMultiLinePdf())
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_MULTILINE_TEXT[0]).first()).toBeVisible({ timeout: 20_000 })
+
+  // 程序化跨 3 行选区（行1首字符→行3末字符——selectionchange 防抖路径；
+  // 起止在节点边界：真实划选在行边界产零宽幽灵块的同一机制）
+  await win.evaluate(() => {
+    const spans = Array.from(document.querySelectorAll('.textLayer span'))
+    const rows = spans.filter((s) => (s.textContent ?? '').startsWith('MULTILINE'))
+    if (rows.length < 2) {
+      throw new Error(`多行 span 不足: ${rows.length}`)
+    }
+    const first = rows[0]!.firstChild!
+    const last = rows[rows.length - 1]!.firstChild!
+    const range = document.createRange()
+    range.setStart(first, 0)
+    range.setEnd(last, (last.textContent ?? '').length)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    document.dispatchEvent(new Event('selectionchange'))
+  })
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '高亮' }).click()
+
+  const rects = win.getByTestId('annotation-rect')
+  await expect(rects.first()).toBeVisible()
+
+  // —— 渲染面块几何（像素域）——
+  const boxes = await rects.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    })
+  )
+
+  // —— 保存面（挂 A：listAnnotations 读库 rects——归一化域）——
+  const saved = await win.evaluate(async () => {
+    // IPC 响应是 Result<T>（与渲染侧 api client 同款解包）
+    const res = await window.api.reader.listAnnotations({ paperId: 'e2e-seed-paper' })
+    if (!res.ok) {
+      throw new Error(`listAnnotations 失败: ${res.error.message}`)
+    }
+    return res.data.map((a) => ({ quote: a.quoteText, rects: a.rects }))
+  })
+
+  // 划选真实性锚：quote 同时含首末行文本（防只选中单行的假绿）
+  expect(saved.length).toBe(1)
+  expect(saved[0]!.quote).toContain(PDF_MULTILINE_TEXT[0])
+  expect(saved[0]!.quote).toContain(PDF_MULTILINE_TEXT[2])
+
+  // —— INV-C 渲染面：零宽块 0（全宽 ≥1px）——
+  for (const b of boxes) {
+    expect(b.w).toBeGreaterThanOrEqual(1)
+  }
+  // —— INV-A 渲染面：行块两两垂直不相交（像素域按 top 排序，0.5px 容差）——
+  const byTop = [...boxes].sort((a, b) => a.y - b.y)
+  for (let i = 1; i < byTop.length; i += 1) {
+    expect(byTop[i - 1]!.y + byTop[i - 1]!.h).toBeLessThanOrEqual(byTop[i]!.y + 0.5)
+  }
+  // —— INV-B 渲染面：块数=行数（取证实证 2026-08-30：raw clientRects 6 块缺陷
+  //    族（2 幽灵+同位重复）经归并后恰 3 块=fixture 行数——scripts/audits/
+  //    f-a1-e2e-forensic.raw.txt 在档）——
+  expect(boxes.length).toBe(PDF_MULTILINE_TEXT.length)
+
+  // —— 挂 A 保存面：库内 rects 同口径（块数=行数+全宽≥W_MIN+归一化两两分离）——
+  const savedRects = saved[0]!.rects
+  expect(savedRects.length).toBe(PDF_MULTILINE_TEXT.length)
+  const wMin = 1 / 612
+  for (const r of savedRects) {
+    expect(r.w).toBeGreaterThanOrEqual(wMin)
+  }
+  const byY = [...savedRects].sort((a, b) => a.y - b.y)
+  for (let i = 1; i < byY.length; i += 1) {
+    expect(byY[i - 1]!.y + byY[i - 1]!.h).toBeLessThanOrEqual(byY[i]!.y + 1e-9)
+  }
   await app.close()
 })

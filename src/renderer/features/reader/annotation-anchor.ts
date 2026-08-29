@@ -21,6 +21,9 @@
  * 合并——同形去重/y 重叠聚行簇（高度可比带防旋转文本互并）/x 大间隙断段（防
  * 多栏桥接）/段内 x 并集+y/h 取主导矩形；rectsBetweenPoints 归一化前调用，
  * 划选保存与重开重锚两路径同口径。
+ * 归一化后另过 mergeRects 收口（F-A1 挂 A，2026-08-30）：归一化域滤零宽/
+ *   全簇比较聚类/行内 x 并集/行间钳制——mergeLineRects 漏掉的零宽幽灵、同行
+ *   碎片、同位重复、行间负间隙在此终裁（INV-A~D，见 annotation-merge.ts）。
  *
  * ── 接口层 ──
  * - export interface DOMRange { rects: AnnotationRect[]; textNodes: Array<{ node: Text; offset: number }> }
@@ -37,6 +40,7 @@
  *   基本命中/跨节点/前后缀漂移/重定位失败 返回 null）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
+import { mergeRects } from './annotation-merge'
 
 export interface DOMRange {
   rects: AnnotationRect[]
@@ -321,17 +325,18 @@ function pixelBoxOf(el: Element): PixelBox {
 function rectsBetweenPoints(a: DomPoint, b: DomPoint, base: PixelBox): AnnotationRect[] {
   // 行级合并先于归一化（像素域判间隙/高度可比）：划选保存与重开重锚两路径在此同口径收口
   const pixels = mergeLineRects(clientRectsBetween(a, b), base.w)
-  if (pixels.length === 0) {
-    return [zeroRect()]
-  }
   const clamp01 = (v: number): number => Math.min(1, Math.max(0, v))
-  return pixels.map((r) => ({
-    page: 0,
-    x: clamp01((r.x - base.x) / base.w),
-    y: clamp01((r.y - base.y) / base.h),
-    w: clamp01(r.w / base.w),
-    h: clamp01(r.h / base.h)
-  }))
+  // F-A1 挂 A：归一化后过归并器（滤零宽/聚行/并集/钳制，INV-A~D）——零宽兜底
+  // 块（w:0）随之被滤：pixels 为空时返回空数组，调用方 rects.length>0 判空语义兜住
+  return mergeRects(
+    pixels.map((r) => ({
+      page: 0,
+      x: clamp01((r.x - base.x) / base.w),
+      y: clamp01((r.y - base.y) / base.h),
+      w: clamp01(r.w / base.w),
+      h: clamp01(r.h / base.h)
+    }))
+  )
 }
 
 // ── clientRects 行级合并（pdf.js 文本层逐 span 绝对定位、各字号/基线不同，同一
@@ -467,8 +472,4 @@ function clientRectsBetween(a: DomPoint, b: DomPoint): PixelBox[] {
     rects.push(parentBox)
   }
   return rects
-}
-
-function zeroRect(): AnnotationRect {
-  return { page: 0, x: 0, y: 0, w: 0, h: 0 }
 }

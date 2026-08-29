@@ -87,3 +87,39 @@ endstream`)
   objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
   return assemblePdf(objects)
 }
+
+/** 多行已知文本（F-A1 e2e 多行划选——每行 ASCII 单 run 可 getByText 单节点命中） */
+export const PDF_MULTILINE_TEXT = [
+  'MULTILINE ALPHA ROW',
+  'MULTILINE BETA ROW',
+  'MULTILINE GAMMA ROW'
+] as const
+
+/**
+ * 多行变体（F-A1：标注矩形归并 e2e——单页 3 行，跨行划选的承载 fixture）。
+ * 行距 24pt（取证 2026-08-30：Chromium 跨 absolute span 的 Range 实测产
+ * 「每行盒+边界零宽幽灵+行内 h 双计量同位块」——与真实 PDF 缺陷族同构；
+ * 行盒高 25.6px>行距 24 → 相邻行盒 -1.6px 级负间隙（T4 态——归并器行间
+ * 钳制的装配级锚。再紧（leading≲0.75×行盒高，如 18pt）会触发 mergeLineRects
+ * 像素域跨行并簇——推演：overlap=25.6−leading≥0.25×25.6=6.4 即并，18pt
+ * 时 overlap 7.6 满足；开发期实测过一次未留档，故此处记推演不记取证，
+ * 门一 W1 裁定表述与档对齐）。
+ * 对象布局同 createTinyPdf（1=Catalog 2=Pages 3=Page 4=Contents 5=Font）。
+ */
+export function createMultiLinePdf(lines: readonly string[] = PDF_MULTILINE_TEXT): Uint8Array {
+  const parts = lines.map(
+    (line, i) => `BT /F1 18 Tf 72 ${720 - i * 24} Td (${esc(line)}) Tj ET`
+  )
+  const stream = parts.join('\n')
+  // /Length 是字节数（与 buildPdfObjects 同口径按 UTF-8 字节计）
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (${esc(lines[0] ?? '')}) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}

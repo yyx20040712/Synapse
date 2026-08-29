@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T17:09:26.3980768Z",
+    "generatedAt":  "2026-08-29T18:09:20.1050031Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -52,6 +52,14 @@
                   {
                       "path":  "scripts/audits/f1-forensics5b.mjs",
                       "sha256":  "83a8b9061370ec0e6ca738fcabdf87da9a0bf285cbf73efa70a6ba9d5b00c2df"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a1-forensics.mjs",
+                      "sha256":  "bf82adf4f12b97a8766a74b6bb712f2541eb9b294b77b6106d86d6d3fb4b41f4"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a2-retest.mjs",
+                      "sha256":  "53c9298e72bbdc0b4d765971328d19a2f65deb8a008bcdb9e7225e8bdc59b658"
                   },
                   {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",
@@ -231,7 +239,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "1c16e57bb8189fb0253dbbc5bab9a6673d03211ff654c9014f9f5ce61e6df231"
+                      "sha256":  "dd976f86c1ba91e69a61551df802a24dd82bb67bcab7724c4e481bc547134dfd"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -378,8 +386,16 @@
                       "sha256":  "c31a4f5052f2c2be34499d74519f6fd7dbc759d9cc3e4e784c1b32f798c3a74a"
                   },
                   {
+                      "path":  "tests/unit/renderer/annotation-layer.test.tsx",
+                      "sha256":  "c80144e6362f317a4a862cb0694f09f995c741a3d274bbe4f842ec72c273d8b0"
+                  },
+                  {
                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",
                       "sha256":  "006fec34e5a9f0ef6d54507ae86cb6ce04526e9b8f43a468af331addc0525e67"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/annotation-merge.test.ts",
+                      "sha256":  "40e93dac71f141a3d740a2d86c8e2cb6f1898060e99133fbde9223e16c8608d9"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
@@ -683,7 +699,7 @@
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",
-                      "sha256":  "dd43990527832007d5f84c9f0ac12111080df212a076fb2f14214785855a089f"
+                      "sha256":  "5871108a8ef714042c118fb1371017b525ff013c851d39dfe6935089d61d17dc"
                   },
                   {
                       "path":  "tsconfig.json",

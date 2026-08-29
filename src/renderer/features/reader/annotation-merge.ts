@@ -1,0 +1,132 @@
+/**
+ * [F-A1] annotation-merge —— 标注矩形归并器（归一化域纯函数，单源双挂）
+ *
+ * ── 行为层（不变量，设计母本 docs/design/2026-08-30_annotation-rect-redesign.md）──
+ * - INV-A 同一标注渲染色块两两不相交（multiply 单乘语义——"只给背景上颜色"）：
+ *   行内恰一块（自明）+ 行间钳制（top_{i+1} >= bottom_i）构造性保证；
+ * - INV-B 每行文字至多一块（行内 x 并集，交叠/重复自然并入）；
+ * - INV-C 零宽/近零宽块（w <= W_MIN）不入集合；
+ * - INV-D 相邻行块垂直边界钳制（下行顶不低于上行底；正间隙不动，负间隙
+ *   推至恰好接触）；
+ * - INV-E 持久化兼容：旧 rects（含缺陷态）渲染读时过本归并器（库零迁移，
+ *   存量渐净）——挂 B（AnnotationLayer 渲染处）；
+ * - 挂 A（annotation-anchor.rectsBetweenPoints 归一化后）：划选保存+重开
+ *   重锚+手工路径同口径。
+ *
+ * 算法（确定性，六步，输入乱序不影响输出）：
+ * 滤零宽 → (中心y,x,y) 全序排序 → 聚类成行（与全部既有簇比中心距，取最近
+ * 且 |cNew−cRow| <= min(hNew, hRowMedian)/2 者；高瘦矩形 h 超行高 2 倍+
+ * 自动免疫——容差被 min 钳在行高一半内，ADR-0002 先例语义保持；比较扩到
+ * 全部簇=修 mergeLineRects「只与末簇比较」在档失联限制）→ 行内归并
+ * （x 并集 / h 与中心 y 取行内下中位数 / page 取最小）→ 行间钳制 →
+ * 输出按 (y,x) 稳定排序。中位数=排序后下中位（索引 floor((n-1)/2)）。
+ *
+ * ── 接口层 ──
+ * - export function mergeRects(rects: AnnotationRect[]): AnnotationRect[]
+ * - export const W_MIN（滤零宽阈值，归一化域近似 1px@612pt 标准页宽；
+ *   页宽 595~612pt 差异 ±3% 内忽略）
+ * - 纯函数：零 DOM/React 依赖；单块输入原样返回（deep equal）；已满足
+ *   INV-A~D 的输入（如 mergeLineRects 单行产物/自身输出）幂等值不变
+ *
+ * ── 架构层 ──
+ * - annotation-anchor 仍是唯一 DOM 遍历点（本模块零 DOM）；
+ *   mergeLineRects（像素域，保存路径前置）与其受锁单测原样保留——两层
+ *   口径并存，本归并器（INV-B 每行至多一块）为最终裁决
+ *
+ * ── 生命周期层 ──
+ * - O(n log n)（排序+单层聚类），n≤~30 实测（单页标注数×块数个位数级），
+ *   渲染帧内无感
+ *
+ * ── 文化层 ──
+ * - tests/unit/renderer/annotation-merge.test.ts（①~⑩）+
+ *   tests/unit/renderer/annotation-layer.test.tsx（挂 B）+
+ *   tests/e2e/reader-text.spec.ts 多行划选用例（保存路径/装配级）
+ */
+import type { AnnotationRect } from '@shared/models/annotation'
+
+/** 滤零宽阈值（INV-C）：归一化域近似 1px@612pt 标准页宽 */
+export const W_MIN = 1 / 612
+
+/** 下中位数：排序后取索引 floor((n-1)/2)（偶数个取下侧——确定性） */
+function lowerMedian(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor((sorted.length - 1) / 2)]!
+}
+
+/** 行簇：成员矩形 + 随入簇维护的 h 中位数与中心 y 中位数（聚类基准） */
+interface RowCluster {
+  members: AnnotationRect[]
+  heights: number[]
+  centerYs: number[]
+  medianH: number
+  medianC: number
+}
+
+/** 块中心 y（聚类/归并的统一基准） */
+function centerY(r: AnnotationRect): number {
+  return r.y + r.h / 2
+}
+
+export function mergeRects(rects: AnnotationRect[]): AnnotationRect[] {
+  // ① 滤零宽（INV-C）：w <= W_MIN 的块不入集合
+  const kept = rects.filter((r) => r.w > W_MIN)
+  if (kept.length === 0) {
+    return []
+  }
+  // ② 全序排序：(中心y, x, y)——输入乱序不影响输出
+  const ordered = [...kept].sort(
+    (a, b) => centerY(a) - centerY(b) || a.x - b.x || a.y - b.y
+  )
+  // ③ 聚类成行（INV-B 前置）：与全部既有簇比中心距，取最近且满足容差者
+  const rows: RowCluster[] = []
+  for (const r of ordered) {
+    const c = centerY(r)
+    let nearest: RowCluster | null = null
+    let nearestDist = Number.POSITIVE_INFINITY
+    for (const row of rows) {
+      const dist = Math.abs(c - row.medianC)
+      if (dist <= nearestDist && dist <= Math.min(r.h, row.medianH) / 2) {
+        nearest = row
+        nearestDist = dist
+      }
+    }
+    if (nearest === null) {
+      rows.push({ members: [r], heights: [r.h], centerYs: [c], medianH: r.h, medianC: c })
+    } else {
+      nearest.members.push(r)
+      nearest.heights.push(r.h)
+      nearest.centerYs.push(c)
+      nearest.medianH = lowerMedian(nearest.heights)
+      nearest.medianC = lowerMedian(nearest.centerYs)
+    }
+  }
+  // ④ 行内归并（INV-B）：x 并集；h/中心y 取行内下中位数；page 取最小（防御）
+  const merged = rows.map((row): AnnotationRect => {
+    const only = row.members[0]!
+    if (row.members.length === 1) {
+      // 单成员恒等（deep equal——不经中心 y 浮点往返，幂等精度的根基）
+      return { page: only.page, x: only.x, y: only.y, w: only.w, h: only.h }
+    }
+    const left = Math.min(...row.members.map((r) => r.x))
+    const right = Math.max(...row.members.map((r) => r.x + r.w))
+    const h = lowerMedian(row.heights)
+    const c = lowerMedian(row.centerYs)
+    return {
+      page: Math.min(...row.members.map((r) => r.page)),
+      x: left,
+      w: right - left,
+      h,
+      y: c - h / 2
+    }
+  })
+  // ⑤ 行间钳制（INV-D/INV-A）：按 y 升序；下行顶不低于上行底
+  merged.sort((a, b) => a.y - b.y || a.x - b.x)
+  for (let i = 1; i < merged.length; i += 1) {
+    const prevBottom = merged[i - 1]!.y + merged[i - 1]!.h
+    if (merged[i]!.y < prevBottom) {
+      merged[i] = { ...merged[i]!, y: prevBottom }
+    }
+  }
+  // ⑥ 输出按 (y, x) 稳定排序（钳制只下推不乱序，此步为形状兜底）
+  return merged.sort((a, b) => a.y - b.y || a.x - b.x)
+}
