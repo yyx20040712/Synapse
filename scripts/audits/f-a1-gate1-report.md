@@ -100,3 +100,16 @@
 1. W1：修正 pdf-factory.ts 头注取证指向（或补落 18pt 并簇取证后再锁）——受锁文件再动需 [locked-change]；
 2. W2：报告勘误（不影响裁决）；
 3. 收口单既定流程：locks:generate+apply（含 2 主控脚本登记）+INV-40 登记+全量 e2e（28 基线）。
+
+## 追记(2026-08-30 主控处置后失误——如实入档)
+
+本报告 N3 引用的三档证据之首 `f-a1-verify.raw.txt`(实现者中间态
+verify:quality+tickets 绿+locks:check 6 红预期)在两笔收口提交之后被
+主控误判为无引用残留**删除**——删前 grep 核对命令的输出被误读(3 处
+引用即本报告)。未跟踪文件不可再生。证据链闭合性不受损的佐证:同档
+结论由 `f-a1-verify-rest.raw.txt`(lint/typecheck/test 924 绿)+
+`f-a1-verify-build.raw.txt`(build exit=0)+主控收口三轮 verify
+(f-a1-closeout-verify/audit0-batch2-verify,locks:check 180 绿终态)
+覆盖;locks:check 6 红项清单另由 manifest 179→180 变更史独立佐证。
+教训:删除任何 scripts/audits/ 产物前 grep 引用面须含全部报告档并逐条
+目视确认输出,不得凭记忆跳读。
