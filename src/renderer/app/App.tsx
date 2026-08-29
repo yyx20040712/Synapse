@@ -12,6 +12,8 @@ import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/tab-dirty'
 import { useLineageDirty } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
+import { useSettingsStore } from '../features/settings/settings.store'
+import { UI_SCALE } from '@shared/ipc/schemas'
 import { WorkspaceSwitcher } from '../features/workspaces/WorkspaceSwitcher'
 import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
@@ -119,6 +121,19 @@ export function App(): JSX.Element {
   useEffect(() => {
     void wsLoad()
   }, [wsLoad])
+  // R2-SET1 界面缩放：设置驻留加载（挂载点在组合根——设置页外也要有档位）。
+  // 失败容忍：load 抛错静默用默认档 small（`?? 'small'` 兜底；设置页自身 load
+  // 失败会 toast，用户可见面不缺——INV-02 的「用户触发」面在设置页）
+  const uiScale = useSettingsStore((s) => s.settings?.uiScale ?? 'small')
+  const settingsLoad = useSettingsStore((s) => s.load)
+  useEffect(() => {
+    settingsLoad().catch(() => undefined)
+  }, [settingsLoad])
+  // 数据通道单点：档位→CSS 变量（theme.css .app-content-row/[data-page-column]
+  // 消费——皮肤住类 B1；变量属数据通道非内联皮肤）
+  useEffect(() => {
+    document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
+  }, [uiScale])
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
     window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)
@@ -151,8 +166,11 @@ export function App(): JSX.Element {
             空隙，三键组排最右——bilibili 式；皮肤住 theme.css） */}
         <TitleBarControls />
       </header>
-      {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器） */}
-      <div className="flex min-h-0 flex-1">
+      {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
+          R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——header
+          在行外结构性豁免（E5：caption 三键/顶栏保持系统观感）；PDF 页列在
+          theme.css [data-page-column] 反向补偿恒视觉 1.0 */}
+      <div className="app-content-row flex min-h-0 flex-1">
         {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）——R2-SH2
             品牌行退役迁顶栏后，nav 首行直接起导航项 */}
         <nav className="app-nav">

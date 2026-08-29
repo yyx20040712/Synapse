@@ -1,4 +1,27 @@
-@import 'tailwindcss';
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/theme.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/theme.test.ts [2m([22m[2m47 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 9[2mms[22m[39m
+[31m   [31m×[31m R2-SET1 界面缩放——CSS 文本锁（内容行缩放+PDF 页列补偿）[2m > [22m[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）[90m 4[2mms[22m[31m[39m
+[31m     → 补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明: expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' to match /\[data-page…/ var\(--ui-scale,\s*1\)\);[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/theme.test.ts[2m > [22mR2-SET1 界面缩放——CSS 文本锁（内容行缩放+PDF 页列补偿）[2m > [22m[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）
+[31m[1mAssertionError[22m: 补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明: expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' to match /\[data-page…/ var\(--ui-scale,\s*1\)\);[39m
+
+[32m- Expected:[39m 
+/\[data-page-column\]\s*\{[^}]*zoom:\s*calc\(1 \/ var\(--ui-scale,\s*1\)\);/
+
+[31m+ Received:[39m 
+"@import 'tailwindcss';
 
 /* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
    token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
@@ -125,7 +148,6 @@ body,
   zoom: var(--ui-scale, 1);
 }
 [data-page-column] {
-  zoom: calc(1 / var(--ui-scale, 1));
 }
 
 /* ══ R2-SH3 frameless caption 三键（bilibili 式）：贯通顶栏高的方形热区，
@@ -589,3 +611,21 @@ body,
     animation: none;
   }
 }
+"
+
+[36m [2m❯[22m tests/unit/renderer/theme.test.ts:[2m146:7[22m[39m
+    [90m144| [39m      css[33m,[39m
+    [90m145| [39m      [32m'补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚[39m…
+    [90m146| [39m    )[33m.[39m[34mtoMatch[39m([36m/\[data-page-column\]\s*\{[^}]*zoom:\s*calc\(1 \/ var\(-[39m…
+    [90m   | [39m      [31m^[39m
+    [90m147| [39m  })
+    [90m148| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m46 passed[39m[22m[90m (47)[39m
+[2m   Start at [22m 23:56:23
+[2m   Duration [22m 881ms[2m (transform 28ms, setup 0ms, collect 46ms, tests 9ms, environment 0ms, prepare 298ms)[22m
+
+exit=1

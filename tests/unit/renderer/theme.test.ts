@@ -123,6 +123,30 @@ describe('R3-TH1 回炉 B1——Button 皮肤类防线（内联恒压类选择�
   })
 })
 
+describe('R2-SET1 界面缩放——CSS 文本锁（内容行缩放+PDF 页列补偿）', () => {
+  /**
+   * INV-39 声明面锁：`.app-content-row` 整行 zoom 挂 --ui-scale 变量（App effect
+   * 单点写 documentElement）；`[data-page-column]` 三态通配反向补偿恒视觉 1.0
+   * （探针 r2-set1-out-probe.json 实测：calc(1/var) Chromium 接受且 canvas 精确
+   * 恢复 612×792+textLayer 对位不破坏；单独 zoom:1 无效——相乘语义）。
+   */
+  it('.app-content-row 缩放声明在场（--ui-scale 变量单源）', () => {
+    expect(css, '.app-content-row 类应在场（App 内容行）').toContain('.app-content-row')
+    expect(
+      css,
+      'zoom 值必须经 --ui-scale 变量（非内联）——正则锚定声明形态防注释字样救活'
+    ).toMatch(/\.app-content-row\s*\{[^}]*zoom:\s*var\(--ui-scale,\s*1\);/)
+  })
+
+  it('[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）', () => {
+    expect(css, '页列属性选择器三态通配应在场').toContain('[data-page-column]')
+    expect(
+      css,
+      '补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明'
+    ).toMatch(/\[data-page-column\]\s*\{[^}]*zoom:\s*calc\(1 \/ var\(--ui-scale,\s*1\)\);/)
+  })
+})
+
 describe('R2-SH2 决5——衬线消费清零+gold-night 别名退役（源码形态负锚）', () => {
   /**
    * 决5（handoff-v3 §4）：--font-display 五消费位全清（.app-nav-name（随品牌行

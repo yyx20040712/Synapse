@@ -1,0 +1,36 @@
+{
+  "base": {
+    "headerH": 44,
+    "navFont": "13.5px",
+    "canvasRectW": 612,
+    "canvasRectH": 792,
+    "canvasBackingW": 765,
+    "dpr": 1.25
+  },
+  "zoom1.1": {
+    "headerH": 44,
+    "navFont": "13.5px",
+    "canvasRectW": 673.2000122070312,
+    "canvasBackingW": 765
+  },
+  "Q1_childZoom1_canvasW": 673.2000122070312,
+  "Q2_calc": {
+    "computed": "0.909091",
+    "canvasW": 612
+  },
+  "Q4_numericComp": {
+    "canvasRectW": 612,
+    "canvasRectH": 792,
+    "canvasBackingW": 765,
+    "computedZoom": "0.909091"
+  },
+  "Q5_rerenderWatch": {
+    "backingW": 765,
+    "rectW": 612
+  },
+  "Q6_textLayerOffset": {
+    "spanInCanvasX": 262.112548828125,
+    "spanInCanvasY": 57.649993896484375,
+    "spanH": 18
+  }
+}

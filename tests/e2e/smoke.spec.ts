@@ -156,3 +156,45 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
 
   await app.close()
 })
+
+test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 44（豁免锁——rect 断言非 computed）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
+  const app = await electron.launch({
+    args: ['out/main/index.js'],
+    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+  })
+  const win = await app.firstWindow()
+  await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
+
+  // 基线（默认 small=100%）：nav 首项高+header 高——getBoundingClientRect
+  // （computed fontSize 对 CSS zoom 无感，探针 r2-set1-out-probe.json 实测）
+  const base = await win.evaluate(() => ({
+    navH: document.querySelector('.app-nav-item')!.getBoundingClientRect().height,
+    headerH: document.querySelector('header.app-header')!.getBoundingClientRect().height
+  }))
+  expect(base.headerH, '基线 header 高=44（R2-SH2 锚）').toBe(44)
+
+  // 进设置→点「大 125%」→save 落地→store 替换→App 订阅→--ui-scale→内容行 zoom
+  await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '大 125%' }).click()
+  await expect(win.getByText('界面缩放已保存')).toBeVisible()
+
+  // nav 首项 ×1.25±2px（内容行缩放生效）；header 恒 44（结构性豁免）
+  await expect
+    .poll(
+      async () => {
+        const navH = await win.evaluate(
+          () => document.querySelector('.app-nav-item')!.getBoundingClientRect().height
+        )
+        return Math.abs(navH - base.navH * 1.25)
+      },
+      { timeout: 5000 }
+    )
+    .toBeLessThanOrEqual(2)
+  const headerAfter = await win.evaluate(
+    () => document.querySelector('header.app-header')!.getBoundingClientRect().height
+  )
+  expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(44)
+
+  await app.close()
+})

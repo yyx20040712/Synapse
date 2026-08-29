@@ -1,0 +1,5 @@
+[set1 15:59:12] small {"headerH":44,"navRectW":156,"navRectH":40.25,"canvasRectW":595,"canvasRectH":793,"canvasBackingW":595,"colComputedZoom":"1","uiScaleVar":"1","spanInCanvasX":425.54,"spanInCanvasY":35.52}
+[set1 15:59:13] medium {"headerH":44,"navRectW":171.60000610351562,"navRectH":44.275001525878906,"canvasRectW":595,"canvasRectH":793,"canvasBackingW":595,"colComputedZoom":"0.909091","uiScaleVar":"1.1","spanInCanvasX":425.54,"spanInCanvasY":35.52}
+[set1 15:59:15] large {"headerH":44,"navRectW":195,"navRectH":50.3125,"canvasRectW":595,"canvasRectH":793,"canvasBackingW":595,"colComputedZoom":"0.8","uiScaleVar":"1.25","spanInCanvasX":425.54,"spanInCanvasY":35.53}
+[set1 15:59:15] 完成 {"headerHs":[44,44,44],"navHs":[40.25,44.275001525878906,50.3125],"navRatios":[1.100000037910035,1.25],"canvasRectW":[595,595,595],"canvasMaxDrift":0,"spanOffsets":[425.54,425.54,425.54]}
+exit=0

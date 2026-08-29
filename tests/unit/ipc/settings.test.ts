@@ -29,10 +29,10 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
   it('set→get 往返一致；损坏文件回退默认', async () => {
     const deps = await freshDeps()
     const ipc = createSettingsIpc(deps)
-    const saved = await ipc.set({ contactEmail: 'me@example.com', theme: 'dark' })
+    const saved = await ipc.set({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })
     expect(saved.contactEmail).toBe('me@example.com')
     const reread = await ipc.get({})
-    expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark' })
+    expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })
 
     await import('node:fs/promises').then((fs) =>
       fs.writeFile(join(deps.userDataDir, 'settings.json'), '{broken', 'utf-8')
@@ -44,10 +44,34 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
   it('写入文件为 UTF-8（中文主题值无乱码——原子写 tmp+rename）', async () => {
     const deps = await freshDeps()
     const ipc = createSettingsIpc(deps)
-    await ipc.set({ contactEmail: 'a@b.c', theme: 'light' })
+    await ipc.set({ contactEmail: 'a@b.c', theme: 'light', uiScale: 'medium' })
     const raw = await readFile(join(deps.userDataDir, 'settings.json'), 'utf-8')
     expect(JSON.parse(raw)).toMatchObject({ contactEmail: 'a@b.c' })
     expect(raw).not.toMatch(/[\uFFFD]/)
+  })
+
+  it('R2-SET1 旧 settings.json 无 uiScale：get 走 zod default 填充 small（非 fallback）且既有字段保留', async () => {
+    const deps = await freshDeps()
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(
+      join(deps.userDataDir, 'settings.json'),
+      JSON.stringify({ contactEmail: 'me@example.com', theme: 'dark' }),
+      'utf-8'
+    )
+    const ipc = createSettingsIpc(deps)
+    const s = await ipc.get({})
+    expect(s.uiScale).toBe('small')
+    expect(s.theme).toBe('dark')
+    expect(s.contactEmail).toBe('me@example.com')
+  })
+
+  it('R2-SET1 set 带 uiScale=large：持久化回读一致', async () => {
+    const deps = await freshDeps()
+    const ipc = createSettingsIpc(deps)
+    await ipc.set({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'large' })
+    const reread = await ipc.get({})
+    expect(reread.uiScale).toBe('large')
+    expect(reread.theme).toBe('dark')
   })
 
   it('diagNetwork：对全部白名单 host 并发 ping', async () => {

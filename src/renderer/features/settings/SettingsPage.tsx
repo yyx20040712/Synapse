@@ -17,7 +17,7 @@
  *   皮肤住 theme.css——自持节 section 根同吃）；表单控件 focus=accent 描边+
  *   gold-soft 底（.syn-input）；内联节壳拆 SettingsSection（180 行消化上限）
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
@@ -27,7 +27,7 @@ import { useSettingsStore } from './settings.store'
 import { CorpusExportSection } from './CorpusExportSection'
 import { SettingsSection } from './SettingsSection'
 import { ZcodeLinkSection } from './ZcodeLinkSection'
-import type { AppSettings } from '@shared/ipc/schemas'
+import { UI_SCALE, type AppSettings, type UiScale } from '@shared/ipc/schemas'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const OP_FAILED = '操作失败'
@@ -38,6 +38,9 @@ const THEME_LABEL: Record<AppSettings['theme'], string> = {
   dark: '深色',
   system: '跟随系统'
 }
+
+/** R2-SET1 界面缩放三档档名（百分比经 UI_SCALE 数值单源推导，不手写第二份） */
+const UI_SCALE_LABEL: Record<UiScale, string> = { small: '小', medium: '中', large: '大' }
 
 /** workspaceSection：课题管理节由 App 组合根注入（跨域经 App 编排——feature
  *  互引被 quality 门禁禁止，R1-WS2；dirty 聚合值随节由 App 一并注入） */
@@ -52,6 +55,9 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
   const [email, setEmail] = useState('')
   const [theme, setTheme] = useState<AppSettings['theme']>('system')
   const [diagnosing, setDiagnosing] = useState(false)
+  // R2-SET1：档位真值取 store（设置页 load 与 App 挂载 load 同源幂等）；未载入
+  // 前默认 small——与 App 兜底同口径
+  const uiScale = settings?.uiScale ?? 'small'
 
   // 载入后同步进表单（settings 到达晚于首帧）
   useEffect(() => {
@@ -59,8 +65,13 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
       showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
     })
   }, [load])
+  // 水合一次：settings 首次到达同步进表单；此后 store 更新（如 R2-SET1 点档
+  // 保存成功）不再回填——防抹掉未保存草稿（门一 W1：改邮箱未保存时点缩放档，
+  // store 替换触发回填即丢草稿）
+  const hydratedRef = useRef(false)
   useEffect(() => {
-    if (settings !== null) {
+    if (!hydratedRef.current && settings !== null) {
+      hydratedRef.current = true
       setEmail(settings.contactEmail)
       setTheme(settings.theme)
     }
@@ -74,8 +85,22 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
       showToast('邮箱格式不正确', 'info')
       return
     }
-    save({ contactEmail: email, theme })
+    // uiScale 随行全量携带：set 通道 Req=完整 appSettingsSchema（register strict
+    // 校验+整体落盘），漏带会被 zod default 静默填 'small' 抹掉用户已选档位
+    save({ contactEmail: email, theme, uiScale })
       .then(() => showToast(SAVE_OK, 'success'))
+      .catch((e: unknown) => {
+        showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
+      })
+  }
+
+  // R2-SET1 点档：同因必须组装全量（缺省字段会被 default 覆盖现值，见 runSave 注）
+  function pickScale(next: UiScale): void {
+    if (saving || settings === null || settings.uiScale === next) {
+      return
+    }
+    save({ contactEmail: settings.contactEmail, theme: settings.theme, uiScale: next })
+      .then(() => showToast('界面缩放已保存', 'success'))
       .catch((e: unknown) => {
         showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
       })
@@ -141,6 +166,29 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
             保存设置
           </Button>
         </div>
+      </SettingsSection>
+
+      <DiamondRule />
+
+      {/* R2-SET1 界面缩放：三档 segmented（当前档 primary 高亮；即时保存——
+          与下方通用节的「保存设置」按钮独立，点档即生效） */}
+      <SettingsSection title="界面缩放">
+        <div className="flex items-center gap-2" role="group" aria-label="界面缩放档位">
+          {(Object.keys(UI_SCALE_LABEL) as UiScale[]).map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={uiScale === s ? 'primary' : 'ghost'}
+              disabled={saving || settings === null}
+              onClick={() => pickScale(s)}
+            >
+              {`${UI_SCALE_LABEL[s]} ${Math.round(UI_SCALE[s] * 100)}%`}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
+          缩放侧栏与内容区文字；顶栏保持系统观感，PDF 页面恒原始大小（阅读区豁免）。
+        </p>
       </SettingsSection>
 
       <DiamondRule />

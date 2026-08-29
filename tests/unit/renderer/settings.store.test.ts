@@ -39,6 +39,17 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     expect(useStore.getState().saving).toBe(false)
   })
 
+  it('R2-SET1 save({uiScale}) 透传：set 收到的参数恰为补丁（Partial 通道不滤字段）', async () => {
+    const set = vi.fn(async () => ({
+      ok: true as const,
+      data: { contactEmail: 'a@b.c', theme: 'system' as const, uiScale: 'medium' as const }
+    }))
+    const useStore = await loadStore({ settings: { set } })
+    await useStore.getState().save({ uiScale: 'medium' })
+    expect(set).toHaveBeenCalledWith({ uiScale: 'medium' })
+    expect(useStore.getState().settings?.uiScale).toBe('medium')
+  })
+
   // ── stale-guard 锁定用例（INV-03 收口：settings 是跨通道乱序可达面——
   // ipc/settings 的 get/set 是异步处理器，ipcMain.handle 不保证跨通道回复有序，
   // 战役 §5 的 FIFO 假设只对同步处理器成立） ──
@@ -53,7 +64,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pLoad = useStore.getState().load() // 慢读悬挂（快照版本 n）
     await useStore.getState().save({ contactEmail: 'new@x.y' }) // 快速保存落地 S1（成功抬版本）
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark' } }) // 旧快照后到
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small' } }) // 旧快照后到
     await pLoad
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
   })
@@ -66,9 +77,9 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pSave = useStore.getState().save({ contactEmail: 'new@x.y' }) // 保存悬挂
     const pLoad = useStore.getState().load() // 在途保存期间派发的读
-    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system' } })
+    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system', uiScale: 'small' } })
     await pSave // 保存落地 S1（成功抬版本）
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark' } }) // 读旧态的后到响应
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small' } }) // 读旧态的后到响应
     await pLoad
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
   })
@@ -81,11 +92,11 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pSave = useStore.getState().save({ contactEmail: 'new@x.y' })
     const pLoad = useStore.getState().load()
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark' } })
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small' } })
     await pLoad
     // 瞬态：save 尚未落地，load 的旧读应用（版本未被无谓抬升作废）
     expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')
-    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system' } })
+    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system', uiScale: 'small' } })
     await pSave
     // 终态：save 落地无条件覆盖（新者恒为用户最新意图）
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
@@ -100,7 +111,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pLoad = useStore.getState().load()
     await expect(useStore.getState().save({ contactEmail: 'new@x.y' })).rejects.toThrow('写盘失败')
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark' } })
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small' } })
     await pLoad
     // save 失败：持久层（settings.json）真值就是 old@a.b，在途 load 应用是真话不得丢弃
     expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')

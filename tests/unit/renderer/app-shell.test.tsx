@@ -21,6 +21,7 @@ const { stubApi } = vi.hoisted(() => ({
   stubApi: {
     lineage: { graph: vi.fn() },
     library: { list: vi.fn() },
+    settings: { get: vi.fn(), set: vi.fn() },
     system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
     workspaces: { list: vi.fn() }
   }
@@ -64,6 +65,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   stubApi.lineage.graph.mockReset()
   stubApi.library.list.mockReset()
+  stubApi.settings.get.mockReset()
+  stubApi.settings.set.mockReset()
   stubApi.system.setQuitDirty.mockReset()
   stubApi.system.windowControl.mockReset()
   stubApi.workspaces.list.mockReset()
@@ -81,6 +84,10 @@ beforeEach(() => {
   })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
+  stubApi.settings.get.mockResolvedValue({
+    ok: true,
+    data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'small' }
+  })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
   stubApi.workspaces.list.mockResolvedValue({
@@ -162,5 +169,42 @@ describe('R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩
     await flush()
     expect(document.querySelectorAll('.app-nav-brand'), '品牌行整体迁顶栏——侧栏残留即红').toHaveLength(0)
     expect(document.querySelectorAll('.app-nav-name'), 'app-nav-name 类并入顶栏新类不再引用').toHaveLength(0)
+  })
+})
+
+describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据通道单点）', () => {
+  it('settings.uiScale=medium：挂载后 documentElement --ui-scale=1.1', async () => {
+    stubApi.settings.get.mockResolvedValue({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'medium' }
+    })
+    mount(<App />)
+    await flush()
+    expect(
+      document.documentElement.style.getPropertyValue('--ui-scale'),
+      'UI_SCALE.medium=1.1 经 App effect 写 documentElement'
+    ).toBe('1.1')
+  })
+
+  it('默认 small=1；save({uiScale:large}) 落地后变量更新 1.25（变化沿）', async () => {
+    mount(<App />)
+    await flush()
+    expect(
+      document.documentElement.style.getPropertyValue('--ui-scale'),
+      '默认档 small → 1'
+    ).toBe('1')
+    stubApi.settings.set.mockResolvedValueOnce({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'large' }
+    })
+    const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
+    await act(async () => {
+      await useSettingsStore.getState().save({ uiScale: 'large' })
+    })
+    await flush()
+    expect(
+      document.documentElement.style.getPropertyValue('--ui-scale'),
+      'save 落地→store settings 替换→App 订阅重渲→变量更新 1.25'
+    ).toBe('1.25')
   })
 })

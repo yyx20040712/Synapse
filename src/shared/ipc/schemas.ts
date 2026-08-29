@@ -365,10 +365,16 @@ export const workspaceRenameReqSchema = z
 export const workspaceSwitchReqSchema = z.object({ id: z.string().min(1) }).strict()
 
 // ── settings ────────────────────────────────────────────────────
+/** 界面缩放三档（R2-SET1）：small=100% 现状零迁移；数值映射单源=UI_SCALE（CSS 变量 --ui-scale 消费） */
+export const uiScaleSchema = z.enum(['small', 'medium', 'large'])
+export type UiScale = z.infer<typeof uiScaleSchema>
+export const UI_SCALE: Record<UiScale, number> = { small: 1, medium: 1.1, large: 1.25 }
+
 export const appSettingsSchema = z
   .object({
     contactEmail: z.string().email(), // 开放 API 礼貌池标识
-    theme: z.enum(['light', 'dark', 'system']).default('system')
+    theme: z.enum(['light', 'dark', 'system']).default('system'),
+    uiScale: uiScaleSchema.default('small')
   })
   .strict()
 export type AppSettings = z.infer<typeof appSettingsSchema>

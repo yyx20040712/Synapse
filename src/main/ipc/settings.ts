@@ -29,7 +29,7 @@ import { ALLOWED_REMOTE_HOSTS, DEFAULT_CONTACT_EMAIL, SETTINGS_FILE_NAME } from 
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './index'
 
-const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system' }
+const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
 
 /** 原子写：.tmp 落盘后 rename，避免半截文件被读到 */
 async function atomicWrite(path: string, content: string): Promise<void> {
