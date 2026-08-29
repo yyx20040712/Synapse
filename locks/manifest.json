@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T16:24:23.0406880Z",
+    "generatedAt":  "2026-08-29T17:09:26.3980768Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -16,6 +16,14 @@
                   {
                       "path":  "playwright.config.ts",
                       "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
+                  },
+                  {
+                      "path":  "scripts/audits/audit0-forensics.mjs",
+                      "sha256":  "95bf2318f86aa628c6f2cb7f0789797f977e578809260179bb572cdbb7b1464d"
+                  },
+                  {
+                      "path":  "scripts/audits/audit0-p1b-multi.mjs",
+                      "sha256":  "6726313e89226eaf51a23db82488a214351287b9491163ebdef0d043fc9acaef"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
