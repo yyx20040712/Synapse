@@ -1,5 +1,5 @@
 /**
- * [SR-RDR-06] AnnotationLayer —— 标注渲染与命中（工单：done / weak，依赖 annotation-anchor）
+ * [SR-RDR-06] AnnotationLayer —— 标注渲染与命中（工单：done / weak，依赖 annotation-anchor+anchor-serialize）
  *
  * ── 行为层 ──
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
@@ -37,7 +37,8 @@ import { useEffect, useState } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
+import { verifyQuote } from './anchor-serialize'
+import { findRangeAtOffset } from './annotation-anchor'
 import { mergeRects } from './annotation-merge'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'

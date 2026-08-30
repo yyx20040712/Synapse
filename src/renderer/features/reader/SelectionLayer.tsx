@@ -1,6 +1,6 @@
 // b3: P7-F
 /**
- * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：done / weak，依赖 annotation-anchor）
+ * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：done / weak，依赖 anchor-serialize——F-ARCH4 拆件后经其间接消费 annotation-anchor）
  *
  * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
  *   为主改面，短式引用口径）——动态锚定根**
@@ -25,7 +25,7 @@
  *   INV-02 禁静默；防抖路径静默防拖选中途刷屏）；选区所在页回收/文本层重建
  *   （zoom 同机制）→选区清→工具条收（防悬空锚）；滚动中选区保持=evaluate
  *   每次动态重找锚定根（跟随选区非固定页）；页外选区（侧栏等）静默收起
- * - 确认后经 annotation-anchor.selectionToAnchor 生成锚定三元组 → 落库（保存页=
+ * - 确认后经 anchor-serialize.selectionToAnchor 生成锚定三元组 → 落库（保存页=
  *   pending.pageNo 选区所在页 0 基动态推导，rects.page 同）→ onSaved 刷新层
  *
  * ── 接口层 ── / ── 架构层 ──
@@ -44,7 +44,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { selectionToAnchor, type SelectionAnchor } from './annotation-anchor'
+import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
 import { pushUndo } from './annotation-undo'
 import { SelectionToolbar } from './SelectionToolbar'
 import { useReaderStore } from './reader.store'

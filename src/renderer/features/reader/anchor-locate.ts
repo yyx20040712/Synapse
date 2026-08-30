@@ -66,7 +66,7 @@
  * - export const LOCATE_OPEN_TIMEOUT_MS = 8000
  *
  * ── 架构层 ──
- * - reader 域模块（不 import 组件；消费 annotation-anchor.verifyQuote/
+ * - reader 域模块（不 import 组件；消费 anchor-serialize.verifyQuote/
  *   open-paper-bus/reader.store/toast-store——.ts 消费方走 toast-store 惯例）
  * - F-aware 接缝（F-02 口径同步）：滚动步=setPage 默认 'to'→INV-29
  *   scrollRequest 信号→PageColumn.scrollToPage 目标页盒顶（F-01 已落）；文本
@@ -84,7 +84,7 @@
  *   序号守卫（真 DOM verifyQuote+真 store+fake timers）
  * - INV-20 随本单翻已锚定（服务单测级；消费方级随后续工单补）
  */
-import { verifyQuote } from './annotation-anchor'
+import { verifyQuote } from './anchor-serialize'
 import { useReaderStore } from './reader.store'
 import { scrollIntoNearestScroller } from './scroll-converge'
 import { requestOpenPaper } from '../../shared/open-paper-bus'

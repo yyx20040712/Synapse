@@ -4,8 +4,9 @@
  * v1 只读，工单：open / strong）
  *
  * ── 行为层 ──
- * - N2 渲染对等（ADR-0015 §3）：AI 锚定段经 verifyQuote 重锚（annotation-
- *   anchor.ts——**唯一 DOM 遍历点纪律**，C-05 头注先例）取得 rects →
+ * - N2 渲染对等（ADR-0015 §3）：AI 锚定段经 verifyQuote 重锚（anchor-
+ *   serialize.ts——底层 annotation-anchor 唯一 DOM 遍历点纪律，C-05 头注
+ *   先例）取得 rects →
  *   findRangeAtOffset 同几何管线渲染高亮块——**几何对等**=与 AnnotationLayer
  *   同一几何函数族（不另写几何）；分色=ai-note-style 单源（AI-08 交付，
  *   question→QUESTION_COLOR；接缝双向锚定声明见 ai-note-style.ts 头注）
@@ -38,8 +39,9 @@
  *   （page/pageRoot 与 AnnotationLayer 同形——宿主并置分发）
  *
  * ── 架构层 ──
- * - renderer/features/reader 域；依赖 annotation-anchor（verifyQuote/
- *   findRangeAtOffset 纯函数族）+ai-note-style（08 交付）+AiNote 类型
+ * - renderer/features/reader 域；依赖 anchor-serialize（verifyQuote）+
+ *   annotation-anchor（findRangeAtOffset 纯函数族）+ai-note-style（08 交付）+
+ *   AiNote 类型
  *   （shared 单源）；**零 DB/零 IPC 直调**（数据经 props——数据单源=ai-notes
  *   .store（AI-08 交付），宿主 ReaderPage 订阅分发，本层禁自取，接缝双向
  *   锚定声明两文件头注）
@@ -59,7 +61,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AnnotationRect } from '@shared/models/annotation'
-import { findRangeAtOffset, verifyQuote } from './annotation-anchor'
+import { verifyQuote } from './anchor-serialize'
+import { findRangeAtOffset } from './annotation-anchor'
 import { QUESTION_COLOR } from './ai-note-style'
 import { useAiNotesStore } from './ai-notes.store'
 import { useReaderStore } from './reader.store'

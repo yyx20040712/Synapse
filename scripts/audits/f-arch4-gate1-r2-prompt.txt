@@ -1,0 +1,8 @@
+【任务】F-ARCH4 门一定点复核(回炉 1+主控拆述)。你上一轮裁决 0B/1W/4N。主控处置:W(M1 诊断可信度)+N4(用例名不副实)=存量覆盖缺口登记台账备案,M1' 采信(红 2 用例实证咬合;诊断原文主控已亲验:jsdom 实测边界均在 root 内+end<=start);N1/N2/N3 下发回炉后,实现者申报 N1/N3 张力(AnnotationLayer 双源消费:findRangeAtOffset 直调 anchor+verifyQuote 经 serialize,「只经 serialize 调用」以偏概全),主控裁决拆述直改。请判定:N1(拆述版)/N2/N3 是否 ADDRESSED,措辞与实际消费形是否一致,有无新问题。输出:逐项 ADDRESSED/NOT ADDRESSED+证据;总评一行。中文。
+
+【三处终态】
+①annotation-anchor.ts:31-33:「全项目唯一操作 DOM 文本遍历的地方;消费形(F-ARCH4 拆件后):SelectionLayer 只经 anchor-serialize 间接调用;AnnotationLayer/AiAnnotationLayer 直调 findRangeAtOffset(几何)+经 anchor-serialize 调 verifyQuote(校验)。」
+②anchor-serialize.ts:30-31:「文本枚举唯一发生在 annotation-anchor;本模块仅借 Range 做长度探测(probeTextLength 的 Range.toString 非遍历)」
+③AnnotationLayer.tsx:2:「依赖 annotation-anchor+anchor-serialize」
+
+【回炉验证】全量 test 948 passed exit=0+lint exit=0(scripts/audits/f-arch4-rework1-test.raw.txt);行 9「annotation-anchor.mergeLineRects」(归属正确)与行 28 唯一遍历点纪律句未动;实现零代码语义改动(三处纯注释)。

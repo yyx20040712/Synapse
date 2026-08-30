@@ -162,10 +162,32 @@
   已同步(锚定面补 pages-overlay.test③)。票面/三报告/取证=
   scripts/audits/f-arch3-*。
 
-### F-ARCH4 [W] annotation-anchor.ts 476 行逼近红线 ——状态:**预警(AUDIT-A 观察+deepseek W8 升格)**
+### F-ARCH4 [W] annotation-anchor.ts 476 行逼近红线 ——状态:**已闭环(2026-08-30 v13 场三屋+deepseek 门一)**
 
 - INV-40 归并器收口宿主+锚定三元组序列化同文件;任何锚定格式扩展即越
   红线。处置:主动拆 anchor-serialize.ts(趁早,别在红线边缘做)。
+- **处置(2026-08-30 已落地)**:三屋票收口——**anchor-serialize.ts**(187 行)
+  收锚定格式与校验域六件(SelectionAnchor/CONTEXT_CHARS/selectionToAnchor/
+  probeTextLength/verifyQuote/matchAt)逐行原样迁入(138 行 diff 空实证);
+  annotation-anchor 476→339 行回归锚定计算域(DOM 遍历/偏移互转/几何管线),
+  原语导出扩面五函数+三类型(collectSpans/fullTextOf/offsetToPoint/
+  rectsBetweenPoints/pixelBoxOf+NodeSpan/DomPoint/PixelBox=serialize 合法
+  消费面);消费方四文件+受锁测试改向真源 import 不留转发层;INV-40 表述
+  不动(挂 A 宿主 rectsBetweenPoints 留 anchor)。TDD=改向先行红(模块不
+  存在,全量口径)→绿 948 保持→变异 M1'+M2 红(2/8 用例)+M3 静态咬合
+  (六符号零残留+集合等价 28=22+6)。门一 deepseek 0B/1W/4N→W(M1 原案
+  摘 root.contains 在 jsdom 结构性不可达——**诊断实证:Selection.addRange
+  把反向 range 规范化为 collapsed,防线由 isCollapsed 先兜**)/N4 合并
+  处置=存量覆盖缺口登记(见下);N1/N2/N3 三处头注回炉+主控拆述(实现者
+  申报 N1/N3 张力:AnnotationLayer 双源消费——主控裁决精确拆述)。
+  票面/三报告/取证=scripts/audits/f-arch4-*。
+- **新登记存量缺口(F-ARCH4-M1 副产物)**:selectionToAnchor 的
+  root.contains 防线(选区跨出 root 拒绝)在 jsdom 单测层不可达——受锁
+  用例「选区跨出 root→null」实际由 isCollapsed 防线兜住(反向 range 被
+  jsdom 规范化),真浏览器按规范 swap 双边界才可达;e2e 无反向选区用例
+  ——**该防线真浏览器可达性未锚**,后续可开 e2e 反向选区覆盖票(低优先,
+  迁移前即如此非本票引入)。附 N2 口径注记:serialize 的 Range.toString
+  按「源码显式遍历」口径不违反 anchor 唯一遍历点纪律(长度探测非遍历)。
 
 ### F-ARCH5 [W] ipc 类型回边环 11 处 ——状态:**已闭环(2026-08-30 消环落地)**
 

@@ -1,0 +1,11 @@
+=== M1 原案变异不可达诊断（jsdom Selection 行为复现，脚本=临时目录 m1-diagnosis.cjs）===
+--- 场景：受锁用例「选区跨出 root→null」的反向 range 经 addRange 后 ---
+[selection normalized?] startContainer in root: true | endContainer in root: true
+[startContainer text]: "中段正文内容"
+[endContainer text]: "中段正文内容"
+[probe] leadLen: 7 | tailLen: 9 | start: 7 | end: 7
+[verdict] end <= start ? true => M1 mutant returns null via which guard?
+
+--- 结论：jsdom Selection.addRange 将反向 range 规范化为 collapsed（两边界均落入 root 内），
+    M1 变异体（摘 root.contains）在 isCollapsed 首道防线即返回 null——contains 检查在该用例不可达。
+    真浏览器按规范 swap 双边界（endContainer=root 外），contains 检查可达——jsdom 单测层局限，非本票引入。

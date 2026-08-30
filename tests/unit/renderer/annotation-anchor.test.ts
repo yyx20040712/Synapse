@@ -3,10 +3,12 @@ import { afterEach, expect, it } from 'vitest'
 import {
   findRangeAtOffset,
   mergeLineRects,
-  rectsFromRange,
+  rectsFromRange
+} from '../../../src/renderer/features/reader/annotation-anchor'
+import {
   selectionToAnchor,
   verifyQuote
-} from '../../../src/renderer/features/reader/annotation-anchor'
+} from '../../../src/renderer/features/reader/anchor-serialize'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 构造多文本节点的页根：<p>前文</p><p>中段正文</p><p>后文</p> */

@@ -1,0 +1,37 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 29 tests using 1 worker
+
+  ok  1 tests\e2e\ai-notes-section.spec.ts:25:1 › AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘→导入→分节渲染真实文本 (12.2s)
+  ok  2 tests\e2e\ai-notes-section.spec.ts:154:1 › AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点击跳面板高亮 (7.2s)
+  ok  3 tests\e2e\corpus-export.spec.ts:89:1 › AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建 (2.1s)
+  ok  4 tests\e2e\lineage.spec.ts:207:3 › 脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转） › T1 导入草稿→画布渲染真实文本→pan/zoom 后节点仍可断言 (1.9s)
+  ok  5 tests\e2e\lineage.spec.ts:270:3 › 脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转） › T2 拖拽位置 reload 持久+主题节点添加编辑 core_idea reload 持久 (2.3s)
+  ok  6 tests\e2e\lineage.spec.ts:347:3 › 脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转） › T3 多父加边树拒绝 toast+保存失败→脏态退出拦截两态 (3.1s)
+  ok  7 tests\e2e\lineage.spec.ts:443:3 › 脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转） › T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位 (7.6s)
+  ok  8 tests\e2e\lineage.spec.ts:547:3 › 脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转） › T5 综述参考连接：右键添加 ref 边→淡灰虚线渲染→reload 持久+树形不变 (2.2s)
+  ok  9 tests\e2e\reader-scroll.spec.ts:108:3 › reader-scroll —— F-04 收官 › 收官全链：INV-01 三层/键位滚动步/缩放中心锚（ctrl+wheel 段迁移）/fit-width 列宽基准/标注原位抽验/离屏回收/进度恢复 (2.3s)
+  ok 10 tests\e2e\reader-scroll.spec.ts:285:3 › reader-scroll —— F-05 程序滚动单容器收敛 › 缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移 (2.0s)
+  ok 11 tests\e2e\reader-text.spec.ts:98:1 › 打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-01 保持） (1.6s)
+  ok 12 tests\e2e\reader-text.spec.ts:163:1 › 划选高亮后重开仍在原位；批注编辑与删除可用 (2.7s)
+  ok 13 tests\e2e\reader-text.spec.ts:244:1 › P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截 (2.6s)
+  ok 14 tests\e2e\reader-text.spec.ts:349:1 › F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚动不闪收 (2.1s)
+  ok 15 tests\e2e\reader-text.spec.ts:458:1 › 划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言） (2.0s)
+  ok 16 tests\e2e\reader-text.spec.ts:490:1 › 划选备注后渲染为整行色块（note kind 渲染存在性，INV-06） (1.8s)
+  ok 17 tests\e2e\reader-text.spec.ts:517:1 › P7-A 交互：侧栏分隔条拖拽（SplitPane 集成） (1.7s)
+  ok 18 tests\e2e\reader-text.spec.ts:545:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） (1.7s)
+  ok 19 tests\e2e\reader-text.spec.ts:567:1 › P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久 (4.6s)
+  ok 20 tests\e2e\reader-text.spec.ts:620:1 › F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半透明灰（划选即时可见） (2.0s)
+  ok 21 tests\e2e\reader-text.spec.ts:707:1 › F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（INV-A/B/C 装配级） (2.0s)
+  ok 22 tests\e2e\smoke.spec.ts:12:1 › 应用启动：侧栏三入口可见且可切换 (635ms)
+  ok 23 tests\e2e\smoke.spec.ts:33:1 › 应用启动：主区域渲染了内容（空态或占位均可，白屏即红） (345ms)
+  ok 24 tests\e2e\smoke.spec.ts:46:1 › preload 桥已注入：window.api 暴露全部域 + apiEvents 在位 + CSP meta 与策略常量一致 (428ms)
+  ok 25 tests\e2e\smoke.spec.ts:73:1 › 真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ app-file:// fetch 不被 CSP 拦截 (384ms)
+  ok 26 tests\e2e\smoke.spec.ts:118:1 › frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3） (649ms)
+  ok 27 tests\e2e\smoke.spec.ts:160:1 › R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 44（豁免锁——rect 断言非 computed） (721ms)
+  ok 28 tests\e2e\workspaces.spec.ts:18:1 › 课题切换：新建课题 B 后库/脉络整体切换，切回后文献在场 (2.2s)
+  ok 29 tests\e2e\zcode-link.spec.ts:20:1 › zcode 联动：未发现→装 zcode→技能未装→一键装技能→fs 落地一致（INV-21 纯 fs 断言） (6.0s)
+
+  29 passed (1.3m)
+E2E_EXIT=0
