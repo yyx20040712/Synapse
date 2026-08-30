@@ -224,7 +224,7 @@ SelectionLayer 跨页划选语义未登记(不确定,需核查 selectionToAnchor
 N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
 「不变量册描述行为契约,但契约的边界条件(何时失效/清空)往往缺失」。
 
-### F-L2 [B] 适应视图后节点出视口 ——状态:**已定位待开票(2026-08-30 v13 场探针实证,根因≠初判)**
+### F-L2 [B] 适应视图后节点出视口 ——状态:**已闭环(2026-08-30 v14 场三屋+回炉 1,门二 PASS 放行)**
 
 - **现象**:点击「适应视图」后 4 节点仅 3 入 SVG 视口——节点 0bd9a528
   (rect right=1894)超视口(right=1682)约 212px;标签 6/6 全可见不受
@@ -246,6 +246,31 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   rect;对偶面:SET1 三档×fit 互检(100% 基准恒等+两非默认档 fit 后
   全节点入视口);involved:lineage-viewport.ts fitViewport+useViewport
   Controller 量测行。
+- **处置(2026-08-30 已落地)**:三屋票+回炉 1——**前置实测三问**
+  (f-l2-precheck.mjs):clientWidth=本地口径(medium 1381×1.1=gBCR
+  1519.6 实证)/computed zoom 可读/事件 clientX=根框 px(CDP 实测不除
+  zoom)。修法=三消费点本地口径归一:fit=clientWidth/clientHeight 直取
+  (含 jsdom 桩面回退);wheel/pan=根框差×`rootToLocalScale(el,rect?)`
+  (比值=clientWidth/gBCR.width,嵌套自动复合零 CSS 耦合)——**修复面
+  扩至 wheel 锚点与 pan 增量**(前置实测 Q3 发现同源污染:大档锚点偏
+  25%/拖拽快 25%,主控裁同票修)。新测 lineage-viewport-scale.test
+  ①~⑤+变异红证 M1/M2+mutn3/mutw2;真机探针 14/14(三档×fit 全节点
+  入视口:large 1532.5≤1683 修前溢出 211.75px 场景闭环;pan dtx=80.03
+  ≈100×0.8 本地口径);门一 deepseek 两轮 B1/W6/N4(W-2 同帧双读+N-3
+  守卫组合回炉落地;B-1 e2e 归收口主控);门二 PASS。INV-43 登记。
+  档案:scripts/audits/f-l2-{ticket,impl.report,gate1-ds,gate1-r2-ds,
+  gate2-report}+f-l2-fix-verify.mjs+f-l2-out/。
+- **备案(门一 W/N 级)**:W-1 fit 回退分支真机不可达性未证(「不劣于
+  修前」接受);W-3 pan 每 move 双量测读(瞬态频率可受);W-4 档位切换
+  中拖拽单帧比值错配(设置面板异视图不可达);W-5 探针 B 传递链靠纯函数
+  锁(A 三档兜底);W-6 嵌套 zoom 复合无真机场景(④数学锁);N-4 挂载
+  早期时序与修前等同。
+- **新发现备案(修票过程)**:①**SET1 档位切换不自动 refit**(fit effect
+  deps 无 uiScale——切换档位后需手动点「适应视图」;修前修后同此行为
+  非本票引入;候选小票:uiScale 变化→resetFit);②reader 侧同型量测面
+  未排查(PDF 列反向补偿在档自洽,如后续 SET1 档位下发现阅读器几何异常
+  另开票);③precheck 伪复测教训:resetFit 在 userInteracted 已 false
+  时 setState 同值→React bail——探针测 refit 须先 wheel 置位。
 
 ### F-L3 [?] 保存高亮链后阅读区滚动位漂移 ——状态:**已登记(2026-08-30 F-A3 取证副产,待排查)**
 

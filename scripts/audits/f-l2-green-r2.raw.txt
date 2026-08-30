@@ -1,0 +1,32 @@
+# F-L2 回炉1 全量绿：npm run test（W-2 签名 rect 参数化+N-3 ③c+自裁 ⑤；961→963）
+
+ [32m✓[39m tests/unit/renderer/ai-note-style.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ipc/library.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/services/providers/arxiv.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m tests/security/csp-meta.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/services/tags.service.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/protocol/app-file.protocol.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/windows/main-window-navigation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/db/repos/collections.repo.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/db/fts.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/db/connection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+ [32m✓[39m tests/unit/renderer/corpus-extractor.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 4048[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m全链：逐页 fulltext+页图回传（页序与文本序）→complete 终局 [33m583[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m背压：任一时刻在途 invoke ≤1（await ack 后才发下一项） [33m450[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22manno 裁剪：标注随所在页回传（存储 0 基页→提取 1 基页）+annotationId 载荷 [33m482[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22minvoke 折叠错误：failed 路径——error 上报+destroy 释放+后续请求可接续 [33m980[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m文档加载失败：error 上报（无页数据） [33m371[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22mdestroy 失败不阻断：complete 已上报（尽力而为面） [33m341[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m在途收第二请求：忽略（防御分支——main 编排保证串行） [33m376[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e） [33m463[2mms[22m[39m
+ [32m✓[39m tests/unit/ipc/reader.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ipc/tags.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ipc/notes.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/ipc/enrich.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m115 passed[39m[22m[90m (115)[39m
+[2m      Tests [22m [1m[32m963 passed[39m[22m[90m (963)[39m
+[2m   Start at [22m 00:03:04
+[2m   Duration [22m 23.63s[2m (transform 11.64s, setup 0ms, collect 45.02s, tests 13.70s, environment 270.55s, prepare 63.02s)[22m
+
+FULLTEST-EXIT=0

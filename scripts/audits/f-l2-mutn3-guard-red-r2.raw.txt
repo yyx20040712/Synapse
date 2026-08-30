@@ -1,0 +1,48 @@
+# F-L2 回炉1 自裁变异A（证 N-3 新用例 ③c 非恒真——宪法「每个测试必须能失败一次」）
+# 变异：守卫 rw>0&&cw>0 退化为 cw>0（③c 输入 cw=800/rw=0 → 800/0=Infinity）
+# 纪律：cp 备份→变异→定向红→cp 还原→diff 空（禁 git checkout）
+BACKUP-OK
+MUTATED-A: guard cw>0 only
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run lineage-viewport-scale
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/lineage-viewport-scale.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 6[2mms[22m[39m
+[31m   [31m×[31m F-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m③c 守卫组合补全：gBCR.width=0 而 clientWidth>0 → 1（真机不可达——gBCR 零宽则布局框不存在；桩面边界四组合补全——门一 N-3）[90m 3[2mms[22m[31m[39m
+[31m     → expected Infinity to be 1 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-scale.test.ts[2m > [22mF-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m③c 守卫组合补全：gBCR.width=0 而 clientWidth>0 → 1（真机不可达——gBCR 零宽则布局框不存在；桩面边界四组合补全——门一 N-3）
+[31m[1mAssertionError[22m: expected Infinity to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ Infinity[39m
+
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-scale.test.ts:[2m67:34[22m[39m
+    [90m 65| [39m  [34mit[39m([32m'③c 守卫组合补全：gBCR.width=0 而 clientWidth>0 → 1（真机不可达——[39m…
+    [90m 66| [39m    [35mconst[39m el [33m=[39m [34mstubMeasured[39m([34m800[39m[33m,[39m [34m0[39m)
+    [90m 67| [39m    [34mexpect[39m([34mrootToLocalScale[39m(el))[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m 68| [39m  })
+    [90m 69| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 00:02:36
+[2m   Duration [22m 1.19s[2m (transform 38ms, setup 0ms, collect 98ms, tests 6ms, environment 590ms, prepare 175ms)[22m
+
+TARGETED-EXIT=1
+RESTORED
+RESTORE-DIFF-EMPTY

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-30T15:25:54.3237144Z",
+    "generatedAt":  "2026-08-30T16:14:12.1100706Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -80,6 +80,14 @@
                   {
                       "path":  "scripts/audits/f-l1-forensics.mjs",
                       "sha256":  "448a895bd4e7f3e49ad8bc53fa7edb4f1f6e4ba472f756b6a047d2c362f207f6"
+                  },
+                  {
+                      "path":  "scripts/audits/f-l2-fix-verify.mjs",
+                      "sha256":  "a1399338091f40bb746f55d0a69ac93cf25ad82efe7b19a17e14d1d4b048f4aa"
+                  },
+                  {
+                      "path":  "scripts/audits/f-l2-precheck.mjs",
+                      "sha256":  "13615f9f5b5d86b2beeeaf9140d77fc00c2feaf1378e760d90a2bed4a9caa9fe"
                   },
                   {
                       "path":  "scripts/audits/f-l2-probe.mjs",
@@ -488,6 +496,10 @@
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
                       "sha256":  "e0230b3588b34978239af2dffec08616bf9c2e9c790348de9e55d150e196440e"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-viewport-scale.test.ts",
+                      "sha256":  "df8ccf91bacb55045dfff31c2f574a8839d6892e1de2a6000408f51f067cc218"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",

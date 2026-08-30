@@ -1,0 +1,47 @@
+# F-L2 回炉1 M1 变异红证重验（签名 rect 参数化后）——helper 恒返 1
+# 纪律：cp 备份→变异→定向红→cp 还原→diff 空（禁 git checkout）
+BACKUP-OK
+MUTATED-M1: return 1
+[31m[1mAssertionError[22m: expected 1 to be close to 0.8, received difference is 0.19999999999999996, but expected 0.0005[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-scale.test.ts:[2m47:34[22m[39m
+    [90m 45| [39m  [34mit[39m([32m'① zoom 子树模拟（large 档真机数字）：clientWidth 1158 / gBCR.wid[39m…
+    [90m 46| [39m    [35mconst[39m el [33m=[39m [34mstubMeasured[39m([34m1158[39m[33m,[39m [34m1447.5[39m)
+    [90m 47| [39m    [34mexpect[39m([34mrootToLocalScale[39m(el))[33m.[39m[34mtoBeCloseTo[39m([34m0.8[39m[33m,[39m [34m3[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m 48| [39m  })
+    [90m 49| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-scale.test.ts[2m > [22mF-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m④ 嵌套复合语义：比值本身即复合（0.8×0.8=0.64）——元素零 CSS 参与即可得
+[31m[1mAssertionError[22m: expected 1 to be close to 0.64, received difference is 0.36, but expected 0.0005[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-scale.test.ts:[2m76:34[22m[39m
+    [90m 74| [39m    [90m// 点/加档不破，票面 §0）[39m
+    [90m 75| [39m    [35mconst[39m el [33m=[39m [34mstubMeasured[39m([34m1000[39m[33m,[39m [34m1562.5[39m)
+    [90m 76| [39m    [34mexpect[39m([34mrootToLocalScale[39m(el))[33m.[39m[34mtoBeCloseTo[39m([34m0.64[39m[33m,[39m [34m3[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m 77| [39m  })
+    [90m 78| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-scale.test.ts[2m > [22mF-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m⑤ rect 可选参路径（回炉 1·W-2）：传入已读 rect → 用 rect.width 作根框宽，不自读 gBCR（同帧单读）
+[31m[1mAssertionError[22m: expected 1 to be close to 0.5, received difference is 0.5, but expected 0.0005[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-scale.test.ts:[2m85:40[22m[39m
+    [90m 83| [39m    [35mconst[39m el [33m=[39m [34mstubMeasured[39m([34m800[39m[33m,[39m [34m1447.5[39m)
+    [90m 84| [39m    [35mconst[39m rect [33m=[39m { width[33m:[39m [34m1600[39m } [35mas[39m [33mDOMRect[39m
+    [90m 85| [39m    [34mexpect[39m([34mrootToLocalScale[39m(el[33m,[39m rect))[33m.[39m[34mtoBeCloseTo[39m([34m0.5[39m[33m,[39m [34m3[39m)
+    [90m   | [39m                                       [31m^[39m
+    [90m 86| [39m  })
+    [90m 87| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 00:01:16
+[2m   Duration [22m 1.16s[2m (transform 37ms, setup 0ms, collect 95ms, tests 6ms, environment 572ms, prepare 163ms)[22m
+
+TARGETED-EXIT=1
+RESTORED
+RESTORE-DIFF-EMPTY

@@ -1,0 +1,41 @@
+# F-L2 回炉1 自裁变异B（证 W-2 新用例 ⑤ 非恒真——宪法「每个测试必须能失败一次」）
+# 变异：helper 忽略 rect 参数恒自读 gBCR（⑤ 桩 gBCR=1447.5≠传入 rect=1600 → 0.5526≠0.5）
+# 纪律：cp 备份→变异→定向红→cp 还原→diff 空（禁 git checkout）
+BACKUP-OK
+MUTATED-B: ignore rect, always self-read gBCR
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run lineage-viewport-scale
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/lineage-viewport-scale.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 5[2mms[22m[39m
+[31m   [31m×[31m F-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m⑤ rect 可选参路径（回炉 1·W-2）：传入已读 rect → 用 rect.width 作根框宽，不自读 gBCR（同帧单读）[90m 2[2mms[22m[31m[39m
+[31m     → expected 0.5526770293609672 to be close to 0.5, received difference is 0.05267702936096719, but expected 0.0005[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-scale.test.ts[2m > [22mF-L2 rootToLocalScale —— 根框→svg 本地坐标比值归一[2m > [22m⑤ rect 可选参路径（回炉 1·W-2）：传入已读 rect → 用 rect.width 作根框宽，不自读 gBCR（同帧单读）
+[31m[1mAssertionError[22m: expected 0.5526770293609672 to be close to 0.5, received difference is 0.05267702936096719, but expected 0.0005[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-scale.test.ts:[2m85:40[22m[39m
+    [90m 83| [39m    [35mconst[39m el [33m=[39m [34mstubMeasured[39m([34m800[39m[33m,[39m [34m1447.5[39m)
+    [90m 84| [39m    [35mconst[39m rect [33m=[39m { width[33m:[39m [34m1600[39m } [35mas[39m [33mDOMRect[39m
+    [90m 85| [39m    [34mexpect[39m([34mrootToLocalScale[39m(el[33m,[39m rect))[33m.[39m[34mtoBeCloseTo[39m([34m0.5[39m[33m,[39m [34m3[39m)
+    [90m   | [39m                                       [31m^[39m
+    [90m 86| [39m  })
+    [90m 87| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 00:02:48
+[2m   Duration [22m 1.18s[2m (transform 40ms, setup 0ms, collect 91ms, tests 5ms, environment 587ms, prepare 156ms)[22m
+
+TARGETED-EXIT=1
+RESTORED
+RESTORE-DIFF-EMPTY

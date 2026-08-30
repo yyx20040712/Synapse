@@ -22,6 +22,16 @@
  * zoom=非被动 wheel+鼠标锚点缩放；pan=panbg pointer 拖拽（节点上不
  * pan）；INV-14 window/svg 同 type 同函数引用成对注册成对清理。
  * 视口瞬态（tx/ty/k）驻 hook state 不入 store（LG-02 既有语义）。
+ *
+ * [F-L2] 两坐标系口径（INV-43；SET1 接缝：theme.css `.app-content-row {
+ * zoom: var(--ui-scale) }`——lineage svg 在该缩放子树内，改挂载点/加档
+ * 两侧互指）：**根框 px**（getBoundingClientRect/事件 clientX——含祖先
+ * zoom，根坐标系视觉值）vs **svg 本地 px**（SVG 用户坐标系/transform 数学
+ * ——不含 zoom）。视口数学（fit 量测/wheel 锚点/pan 增量）恒以 svg 本地
+ * 口径计量：fit=clientWidth/clientHeight 直取（本地布局 px，Q1 实测不含
+ * 祖先 zoom）；wheel/pan=根框差值×rootToLocalScale 归一（比值=1/有效
+ * zoom，嵌套自动复合）。祖先 zoom 下的根框量测不得直接入 transform 数学
+ * （k 虚大→内容溢出视口——修前 large 档溢出 211.75px）。
  */
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
@@ -40,11 +50,33 @@ const FIT_PAD_Y = 80
 
 export type Viewport = { tx: number; ty: number; k: number }
 
+/**
+ * 根框→svg 本地坐标比值（[F-L2] 归一单源；INV-43；消费域单一驻本文件
+ * ——ADR-0017 主控裁决不拆文件）。
+ * 原理：clientWidth（CSS 本地布局 px，不含祖先 zoom）/gBCR.width（根框
+ * 视觉 px，含全部祖先 zoom 复合）=1/有效 zoom——任意嵌套 zoom 自动复合
+ * （逐祖乘积的解析等价），零 CSS 类耦合（不查 .app-content-row——SET1
+ * 改挂载点/加档不破）。任一量测 ≤0（未挂载/不可量测/CSS 布局退化——
+ * jsdom 桩面 clientWidth 恒 0）→1（防御：退化直通，不产生除零/NaN）。
+ * 可选 rect：调用方已读 gBCR 时传入，复用其 width 作根框宽（不自读
+ * gBCR）——锚点差值 rect.left 与比值分母同源同帧（同帧两次 gBCR 的
+ * 自洽假设消除——门一 W-2）；缺省自读（既有调用/测试零变）。
+ * 已知噪声：clientWidth 整数舍入（规范）→比值误差 ≈0.03%（实测 0.05%）
+ * ——锚点/增量/fit 语义不可感，声明接受（票面 §0）。
+ */
+export function rootToLocalScale(el: Element, rect?: DOMRect): number {
+  const rw = (rect ?? el.getBoundingClientRect()).width
+  const cw = el.clientWidth
+  return rw > 0 && cw > 0 ? cw / rw : 1
+}
+
 /** labelBoxes 缺省常量（引用稳定——防 effect 依赖每渲染新 [] 引发的
  *  setState 无限循环；Canvas 侧传 useMemo 产物同语义） */
 const EMPTY_LABEL_BOXES: Array<{ x: number; y: number; hw: number; hh: number }> = []
 
 /** auto-fit 视口计算（纯几何——包围盒+边距+钳制；DOM 尺寸由调用方量测）。
+ *  vw/vh 语义=svg 本地口径 px（[F-L2] INV-43：effect 调用方传
+ *  clientWidth/clientHeight——根框 gBCR 量测含祖先 zoom 会使 k 虚大）。
  *  第 5 参 labelBoxes（F-L1-C，缺省 []——既有调用零破）：边标签槽位盒
  *  参与包围盒——被防重叠放置器推出的标签不可消失在 fit 视野外。 */
 export function fitViewport(
@@ -108,13 +140,19 @@ export function useViewportController(args: {
 
   // auto-fit effect：nodes/edges 引用变化（载入/导入替换/写回填）且用户
   // 未交互时整图入视口；视口宽高 0=不可量测（jsdom）→跳过保持现视口。
+  // [F-L2] 量测=clientWidth/clientHeight 直取（svg 本地口径，INV-43——不
+  // 含祖先 zoom；gBCR 根框口径会 k 虚大→溢出视口）。clientWidth=0 且
+  // gBCR>0 = CSS 布局不可量测的退化态（jsdom 桩面）→回退 gBCR（不劣于
+  // 修前；真机恒有布局走直取主路径=修复生效）。
   useEffect(() => {
     if (userInteracted || nodes.length === 0) return
     const el = svgRef.current
     if (el === null) return
     const rect = el.getBoundingClientRect()
-    if (rect.width <= 0 || rect.height <= 0) return
-    setViewport(fitViewport(nodes, layout, rect.width, rect.height, labelBoxes))
+    const vw = el.clientWidth || rect.width
+    const vh = el.clientHeight || rect.height
+    if (vw <= 0 || vh <= 0) return
+    setViewport(fitViewport(nodes, layout, vw, vh, labelBoxes))
   }, [nodes, edges, layout, userInteracted, svgRef, labelBoxes])
 
   // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
@@ -126,9 +164,14 @@ export function useViewportController(args: {
     const onWheel = (e: WheelEvent): void => {
       e.preventDefault()
       setUserInteracted(true) // auto-fit 抢占门置位（滚轮 zoom=用户接管视口）
+      // [F-L2] clientX/rect.left 同根框（含祖先 zoom）自洽，差值×比值归一
+      // 到 svg 本地口径（INV-43）——锚点偏 zoom 倍 = 缩放中心漂移。
+      // rect 传 helper 复用同一次 gBCR（单帧单读，比值的分母与锚点差值
+      // 同源——同帧两次 gBCR 的自洽假设消除——门一 W-2）
       const rect = el.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
+      const s = rootToLocalScale(el, rect)
+      const mx = (e.clientX - rect.left) * s
+      const my = (e.clientY - rect.top) * s
       setViewport((v) => {
         const k2 = Math.min(ZOOM.max, Math.max(ZOOM.min, v.k * Math.exp(-e.deltaY * ZOOM.step)))
         return {
@@ -164,7 +207,10 @@ export function useViewportController(args: {
       const dy = e.clientY - lastY
       lastX = e.clientX
       lastY = e.clientY
-      setViewport((v) => ({ ...v, tx: v.tx + dx, ty: v.ty + dy }))
+      // [F-L2] 拖拽增量=根框差×比值归一到 svg 本地口径（INV-43）——直用
+      // 根框差会使拖拽手感快 zoom 倍
+      const s = rootToLocalScale(el)
+      setViewport((v) => ({ ...v, tx: v.tx + dx * s, ty: v.ty + dy * s }))
     }
     const onUp = (): void => {
       dragging = false

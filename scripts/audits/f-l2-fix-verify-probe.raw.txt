@@ -1,0 +1,19 @@
+[f-l2fix 15:47:28] small {"zoomRow":"1","clientW":1568,"gBCRw":1568,"k":"1.5264","maxNodeRight":"1636.0","svgRight":1756,"maxNodeBottom":"955.3","svgBottom":1104,"nodeCount":4}
+[f-l2fix 15:47:28] PASS A/small/right — maxNodeRight=1636.00 ≤ svgRight+1=1757.00
+[f-l2fix 15:47:28] PASS A/small/bottom — maxNodeBottom=955.32 ≤ svgBottom+1=1105.00
+[f-l2fix 15:47:29] medium {"zoomRow":"1.1","clientW":1381,"gBCRw":1519.5999755859375,"k":"1.3115","maxNodeRight":"1593.9","svgRight":1726.3999786376953,"maxNodeBottom":"918.3","svgBottom":1103.6000747680664,"nodeCount":4}
+[f-l2fix 15:47:29] PASS A/medium/right — maxNodeRight=1593.90 ≤ svgRight+1=1727.40
+[f-l2fix 15:47:29] PASS A/medium/bottom — maxNodeBottom=918.30 ≤ svgBottom+1=1104.60
+[f-l2fix 15:47:31] large {"zoomRow":"1.25","clientW":1158,"gBCRw":1447,"k":"1.0552","maxNodeRight":"1532.5","svgRight":1682,"maxNodeBottom":"863.9","svgBottom":1103,"nodeCount":4}
+[f-l2fix 15:47:31] PASS A/large/right — maxNodeRight=1532.50 ≤ svgRight+1=1683.00
+[f-l2fix 15:47:31] PASS A/large/bottom — maxNodeBottom=863.87 ≤ svgBottom+1=1104.00
+[f-l2fix 15:47:31] PASS B/small/client-eq-gBCR-w — clientW=1568 gBCRw=1568 relDiff=0.0000%（阈 <0.1%）
+[f-l2fix 15:47:31] PASS B/small/client-eq-gBCR-h — clientH=1056 gBCRh=1056 relDiff=0.0000%（阈 <0.1%）
+[f-l2fix 15:47:31] PASS B/small/no-overflow — maxNodeRight=1636.00/1756，maxNodeBottom=955.32/1104
+[f-l2fix 15:47:32] PASS C/wheel/k-increases — k: 1.055158 → 1.263253
+[f-l2fix 15:47:32] PASS C/wheel/k-in-bounds — k=1.263253 ∈ [0.25, 4]
+[f-l2fix 15:47:32] PASS D/panbg-point-found — 拖拽起点={"x":1609.6499999999999,"y":112.24}
+[f-l2fix 15:47:33] PASS D/pan/tx-delta-local — dtx=80.03，期望≈80.03（=100×0.8003）±5
+[f-l2fix 15:47:33] PASS C-D/no-pageerror — 页面错误 0 条
+F-L2 FIX-VERIFY: PASS（14/14 项断言全过）→ f-l2-out/f-l2-fix-verify.json
+EXIT=0
