@@ -205,14 +205,28 @@ SelectionLayer 跨页划选语义未登记(不确定,需核查 selectionToAnchor
 N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
 「不变量册描述行为契约,但契约的边界条件(何时失效/清空)往往缺失」。
 
-### F-L2 [N?] 适应视图后节点出视口 ——状态:**待排查(2026-08-30 v11 验收场新增)**
+### F-L2 [B] 适应视图后节点出视口 ——状态:**已定位待开票(2026-08-30 v13 场探针实证,根因≠初判)**
 
 - **现象**:点击「适应视图」后 4 节点仅 3 入 SVG 视口——节点 0bd9a528
   (rect right=1894)超视口(right=1682)约 212px;标签 6/6 全可见不受
   影响。验收口径(§2 第 8 项=标签全可见)不覆盖此面,单独登记。
-- **初判**:auto-fit 包围盒疑似未含该节点(R2-LG10 面)——待查:孤立
-  节点/非连通子图是否被包围盒排除。证据:v11-accept.json observations
-  +v11-B8-fitview.png。
+- **初判(已推翻)**:auto-fit 包围盒疑似未含该节点——**不成立**。
+- **根因(2026-08-30 f-l2-probe.mjs 探针实证,真实库副本复刻 B8 场景
+  稳定复现)**:**fitViewport 视口量测被 CSS zoom 污染**——SET1 大档
+  UI 缩放(html zoom:125%,用户实况,freshUserData 带真实 settings)下
+  `svg.getBoundingClientRect()` 返回 zoom 放大后的视觉像素(vw 虚大
+  25%),而 SVG 用户坐标系(节点/标签几何)不随 zoom——k=(vw-2·pad)/
+  盒宽 的分子虚大→k 虚大(应用 1.3873 vs 按真坐标系重算 1.22)→内容按
+  虚大 k 渲染溢出视口右缘。证据:f-l2-out/probe.json——反推节点原始宽
+  325/275=档值 260/220×1.25(zoom 实锤)/kMath(反推盒)≠k 应用值/
+  tx 反推盒左=BAND_LEFT(-200 参与下限,真坐标 -331<-200 即内容左界,
+  非漏节点)。**全部节点均在盒内,数学自洽性被 zoom 破坏**。
+- **修复方向(票面素材,排查票不修)**:fitViewport 量测改不随 zoom 的
+  口径——候选①svg.clientWidth/clientHeight(zoom 下行为须修票时实测
+  确认)②按 getComputedStyle(document.documentElement).zoom 归一
+  rect;对偶面:SET1 三档×fit 互检(100% 基准恒等+两非默认档 fit 后
+  全节点入视口);involved:lineage-viewport.ts fitViewport+useViewport
+  Controller 量测行。
 
 ## 二、复测回收状态(18 项指引,2026-08-30 发出)
 
