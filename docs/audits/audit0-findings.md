@@ -137,6 +137,10 @@ theme.css 591 在档;annotation-anchor 475 贴线——F-A1 新函数已正确�
 unknown as` 断言吞类型——结构性风险在档,建议 tests/utils 按 API_SURFACE
 全量生成 stubApi 工具,N 级备案);⑥CSS 断言形态=window-control.test:157
 drag 面 toContain 未计数(F-G8 原样在档);theme.test SET1 后已正则/声明
-形态锚定。AUDIT-C 竞态/B 对偶/D 数据/E 性能:未启动。用户反馈取证已完成
-第一批(=AUDIT-B 实例,F-A1/A2/L1)。本场执行序:**F-A1 归并重构
-(✅已收口 2026-08-30)→F-L1 案册+取证截图→F-A2 复测**,体检批随后。
+形态锚定。AUDIT-C 竞态/B 对偶/D 数据/E 性能:未启动。
+
+**2026-08-30 晚收口**:执行序三项全落地(F-A1 已修待复测/F-L1-C 已修
+待复测含用户两保证/F-A2 定性闭环)。**下一场=验收复测专场**,交接书=
+docs/prompts/2026-08-30_loop-handoff-v11-acceptance.md(复测九项清单+
+执行序+**异基座 deepseek 一审制度化**——用户令:门一默认异基座承担,
+执行形态按环境降级三档,回溯面=F-A1/F-L1-C 补审待用户裁定)。
