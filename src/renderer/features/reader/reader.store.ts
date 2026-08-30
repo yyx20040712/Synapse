@@ -199,7 +199,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     inflightOpen.delete(id)
     // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
     clearStack(id)
-    const { tabs, order, activeId } = get()
+    const { tabs, order, activeId, scrollRequest, noteHighlight, aiNoteHighlight } = get()
     const nextTabs = { ...tabs }
     delete nextTabs[id]
     const nextOrder = order.filter((x) => x !== id)
@@ -208,7 +208,20 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       const idx = order.indexOf(id)
       nextActive = nextOrder[idx] ?? nextOrder[idx - 1] ?? null
     }
-    set({ tabs: nextTabs, order: nextOrder, activeId: nextActive })
+    set({
+      tabs: nextTabs,
+      order: nextOrder,
+      activeId: nextActive,
+      // F-ARCH1（2026-08-30 架构排查批）：瞬态信号随 tab 关闭失效——scrollRequest 有
+      // paperId 维度仅清属被关 tab 的（他 tab 在途信号不误伤）；noteHighlight/
+      // aiNoteHighlight 无归属维度且为瞬态通知，仅关激活 tab 时清（门一 W-1：
+      // 关后台 tab 不得干扰激活 tab 的瞬态通知），残留会被新 tab 生命周期消费
+      // （重开同 id 回跳旧页 / OutlineAside 挂载即闪切 notes）。
+      ...(scrollRequest?.paperId === id ? { scrollRequest: null } : {}),
+      ...(activeId === id && (noteHighlight !== null || aiNoteHighlight !== null)
+        ? { noteHighlight: null, aiNoteHighlight: null }
+        : {})
+    })
   }
 
   /** 关闭全部（App 切视图/全关语义）：全部进度账落账后整体复位 */

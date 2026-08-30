@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation } from '../../../src/shared/models/annotation'
 import { guardedDescribe } from '../../utils/guard'
 
@@ -413,4 +413,58 @@ it('缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变
   expect(tab?.status).toBe('ready')
   expect(tab?.title).toBe('深度学习综述')
   expect(tab?.fileName).toBe('a3f9c2e1b0d4f5.pdf')
+})
+
+// ── F-ARCH1（2026-08-30 架构排查批）：瞬态信号随 tab 关闭失效 —— always-active
+//    （不经 guardedDescribe——三屋新测纪律）。攻击序列=deepseek 架构审 B1：
+//    程序跳页→手动滚→关 tab→重开同 id，陈旧 scrollRequest 被新 tab 生命周期
+//    消费→回跳旧页；noteHighlight 残留→OutlineAside 挂载即闪切 notes。 ──
+describe('F-ARCH1 closeTab 瞬态信号清理', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('被关 tab 的 scrollRequest 清空（重开同 id 不吃旧信号回跳旧页）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setTotalPages(10)
+    useStore.getState().setPage(3)
+    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-1', page: 3, seq: 1 })
+    useStore.getState().closeTab('p-1')
+    expect(useStore.getState().scrollRequest).toBeNull()
+  })
+
+  it('他 tab 的 scrollRequest 不误伤（在途信号只清属被关 tab 的）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2')
+    useStore.getState().setTotalPages(10)
+    useStore.getState().setPage(5)
+    expect(useStore.getState().scrollRequest?.paperId).toBe('p-2')
+    useStore.getState().closeTab('p-1')
+    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-2', page: 5, seq: 1 })
+  })
+
+  it('noteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().notifyNoteHighlight('a-1')
+    useStore.getState().notifyAiNoteHighlight('ai-1')
+    // 门一 W-3：前置断言防恒真（notify 未生效时本用例必须红）
+    expect(useStore.getState().noteHighlight).toMatchObject({ annotationId: 'a-1' })
+    expect(useStore.getState().aiNoteHighlight).toMatchObject({ aiNoteId: 'ai-1' })
+    useStore.getState().closeTab('p-1')
+    expect(useStore.getState().noteHighlight).toBeNull()
+    expect(useStore.getState().aiNoteHighlight).toBeNull()
+  })
+
+  it('关后台 tab 不清激活 tab 的瞬态通知（门一 W-1：关 B 不干扰 A 的 noteHighlight）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2') // p-2 为激活 tab
+    useStore.getState().notifyNoteHighlight('a-9')
+    useStore.getState().closeTab('p-1') // 关的是后台 tab
+    expect(useStore.getState().noteHighlight).toMatchObject({ annotationId: 'a-9' })
+  })
 })

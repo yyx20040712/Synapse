@@ -40,11 +40,14 @@
   docs/audits/2026-08-30_v11-acceptance-report.md。用户肉眼终裁权保留
   (可抽截图推翻)。
 - **deepseek 补审追记(2026-08-30 下午,用户裁定补审)**:f-a1-gate1-ds.md
-  ——B 零/W8;主控核验:**W1 实锤**(fixture 头注把 PDF 用户空间单位 24
-  当 px(实际 32px)>行盒 25.6px=正间隙,「T4 负间隙装配级锚」为虚假声明,
-  行间钳制 e2e 锚缺席——开票修 fixture 行距 ≤19.2pt+头注);W3 消解
-  (消费方判空在档);W2 NaN/W4 混页/W5 W_MIN 严格大于/W6W7 测试面
-  =备案。
+  ——B 零/W8;主控核验(一轮):当 px(实际 32px)>行盒 25.6px=正间隙,「T4 负间隙装配级锚」为虚假声明,
+  行间钳制 e2e 锚缺席——开票修 fixture)→**二轮翻案(2026-08-30 T4 探针
+  实测)**:头注数值口径错(Range 行盒实测 H≈34.1px 非 25.6px)→Td 24 原始
+  负重叠 -2.1px=**T4 锚本成立**;deepseek 沿用错误口径得出相反结论(方法
+  论教训:异基座审查的数值断言也会被在档错误数据带偏,结论须对照一手
+  实测)。终局处置=fixture 头注勘误(Td 保持 24 原值;H/负重叠/并簇阈
+  0.25×H≈8.5px/禁区 Td≤19.2 全实测口径)。W3 消解(消费方判空在档);
+  W2 NaN/W4 混页/W5 W_MIN/W6W7 测试面=备案。
 
 ### F-A2 [B?] 划选后工具条不弹出 ——状态:**已定位(2026-08-30 复测:非回归,降级 N→联动 F-A3)**
 
@@ -111,24 +114,32 @@
   (W3 fit 盒估宽<FO 宽/W1 best-effort 回退无运行时告警);N 五条
   (1px 魔数/dx 差 2px/估宽启发式/斜体度量/test cwd 依赖)。
 
-### F-ARCH1 [B] reader.store closeOne 残留 scrollRequest ——状态:**已定位待开票(2026-08-30 架构排查批,deepseek 实锤+主控核验)**
+### F-ARCH1 [B] reader.store closeOne 残留 scrollRequest ——状态:**已修待复测(2026-08-30 修复批落地,门一 deepseek 0B/3W 处置毕)**
 
 - **机制**:closeOne(195-212)清理 tabLoadSeq/inflightOpen/撤销栈/tabs/
   order/activeId,**不清 scrollRequest**(closeAll 走全量复位无此问题——
   单路径残留);消费方(ReaderPage columnScroll)过滤只有 paperId 维度。
   「程序跳页→手动滚→关 tab→重开同 id」四步自然操作→新 tab 吃陈旧信号
   回跳旧页。INV-29 缺 tab 生命周期维度。
-- **处置**:开修复票(closeOne 补清三信号+跨格序列单测;或 scrollRequest
-  加 tab 版本维度)。deepseek 估「一行代码+一条单测」。
+- **处置(2026-08-30 已落地)**:closeOne 补信号清理——scrollRequest 条件清
+  (paperId 归属,他 tab 在途不误伤)+noteHighlight/aiNoteHighlight 仅关激活
+  tab 时清(门一 W-1:关后台 tab 不干扰激活面);新测 4 用例 always-active
+  (被关 tab 清/他 tab 保/瞬态清带前置断言/关后台不清激活通知)+变异红证
+  2 红;INV-29 增补 tab 生命周期维度。
 
-### F-ARCH2 [B] undo apply 覆盖并发编辑 ——状态:**已定位待开票(同上)**
+### F-ARCH2 [?] undo apply 覆盖并发编辑 ——状态:**复核翻案+回归锁落地(2026-08-30)**
 
 - **机制**:undo() 尾部(412)整体列表替换——await runUndo 窗口内用户
   新保存的标注在 store 视图消失(DB 保留,重开回来)。INV-23 busy 互斥
   只覆盖 undo vs undo,未登记 undo vs 普通编辑并发(三盲区之「时序」
   范式案例)。
-- **处置**:开票(apply 前基线对比或改 merge 语义+跨格序列单测+INV-23
-  增补)。
+- **复核翻案(主控勘误)**:undo() 在 await runUndo 后**重新 get()**(401 行),
+  apply=基于最新现态的增量应用(filter/map/append 只动涉及 id),同步块内
+  无插入窗口——deepseek B2「基于发起时快照」指控**不成立**(教训:核验必须
+  读全文,不能只 grep 行号)。**回归锁落地**:reader-store-undo-race.test.ts
+  (runUndo 挂起窗口 addAnnotation→undo 落地后保留;门一 W-2 修正 a-1 先入
+  列表防恒真)+真快照变异红证 1 红(附变异打偏教训:两行锚点首撞
+  markTabError,须用 undo 专属锚点)。INV-23 无需增补(语义未破)。
 
 ### F-ARCH3 [B→重构票] ReaderPage 声明漂移+职责膨胀 ——状态:**已定位待开票(同上)**
 
@@ -144,12 +155,14 @@
 - INV-40 归并器收口宿主+锚定三元组序列化同文件;任何锚定格式扩展即越
   红线。处置:主动拆 anchor-serialize.ts(趁早,别在红线边缘做)。
 
-### F-ARCH5 [W] ipc 类型回边环 11 处 ——状态:**备案(专项 refactor,约 1 人时)**
+### F-ARCH5 [W] ipc 类型回边环 11 处 ——状态:**已闭环(2026-08-30 消环落地)**
 
-- 各 ipc 子模块 import type { IpcDeps } from './index' 回边=桶文件类型环
-  (运行时无环);风险=视觉污染掩盖真违规+类型环→运行时环滑坡。处置:
-  冻结窗口专项(IpcDeps 移独立文件/index re-export 改 type-only),消环
-  检测进 check-quality 目标 0。
+- 各 ipc 子模块反向引用装配桶取类型=桶文件类型环(运行时无环);风险=
+  视觉污染掩盖真违规+类型环→值环滑坡。**处置(2026-08-30 已落地)**:
+  IpcDeps 移 src/main/ipc/ipc-deps.ts 单源,11 子模块改向,index.ts 显式
+  re-export 保持引用面;arch-scan cycles 11→**0**(tsc 过)。取证坑:头注
+  文档里的 import 字样会被依赖扫描当真边(假环)——文档措辞避免写完整
+  import 语句。
 
 **架构批其余备案(2026-08-30)**:W6=INV-19(AI 只读)/INV-07(路径唯一
 出口)未锚定无机器防线;W7=PageColumn(INV-29/30/33 三机制宿主)/
@@ -248,3 +261,5 @@ docs/audits/2026-08-30_ds-supplement-arch-review.md。**执行序**:
 F-ARCH1(一行+一测)→F-ARCH2→F-A1 fixture 票→F-ARCH5 消环(冻结窗口)
 →F-ARCH3 PagesOverlay→F-ARCH4 anchor 拆件→F-A3(门一 deepseek 首发)
 →AUDIT-C(ARCH1/2 已消化两项)。
+
+**2026-08-30 修复批收口(用户令「基于这些反馈,继续解决问题」)**:四票落地——F-ARCH1 已修待复测(信号清理+4 测+双变异红证+INV-29 增补)/**F-ARCH2 复核翻案**(指控不成立,回归锁+真快照变异红证+变异打偏教训)/**F-A1-W1 二轮翻案**(T4 探针实测 H=34.1px,T4 锚本成立,fixture 头注勘误 Td 保持 24)/F-ARCH5 已闭环(cycles 11→0)。门一 deepseek 合批审 0B/3W/3N 全处置(W-1 关后台 tab 保护+边界测/W-2 a-1 先入列表防恒真/W-3 前置断言/N1N2 头注精化)=**异基座门一新规首跑成功**。剩余执行序:F-ARCH3 PagesOverlay 拆分(测试护航)/F-ARCH4 anchor 拆件/F-A3 选择模式票/F-L2 待排查。
