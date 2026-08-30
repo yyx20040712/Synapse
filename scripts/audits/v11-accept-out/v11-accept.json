@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "script": "v11-accept.mjs",
+    "date": "2026-08-30T10:00:00.703Z"
+  },
+  "items": {
+    "B7": {
+      "pass": true,
+      "labels": 6,
+      "foOK": true,
+      "foSizes": [
+        [
+          130,
+          37.05
+        ],
+        [
+          130,
+          37.05
+        ],
+        [
+          130,
+          37.05
+        ],
+        [
+          130,
+          37.05
+        ],
+        [
+          130,
+          37.05
+        ],
+        [
+          130,
+          37.05
+        ]
+      ],
+      "visualWH": [
+        [
+          225.4,
+          64.3
+        ],
+        [
+          225.4,
+          64.3
+        ],
+        [
+          225.4,
+          64.3
+        ],
+        [
+          225.4,
+          64.3
+        ],
+        [
+          225.4,
+          64.3
+        ],
+        [
+          225.4,
+          64.3
+        ]
+      ],
+      "viewportK": 1.387,
+      "visualK": 1.734,
+      "longClampedN": 5,
+      "shortFull": true,
+      "styleOK": true
+    },
+    "B8": {
+      "pass": true,
+      "labelOverlaps": [],
+      "nodeOverlaps": [],
+      "labelsIn": 6,
+      "labelsTotal": 6,
+      "nodesIn": "3/4"
+    },
+    "B9a": {
+      "pass": true,
+      "target": "谱系推断：管流阻力经验律",
+      "clamped": true,
+      "scrollTop": 28.8,
+      "transformUnchanged": true
+    },
+    "B9b": {
+      "pass": true,
+      "short": "同源",
+      "zoomed": true,
+      "shortScrollTop": 0
+    },
+    "A3-open": {
+      "pass": true,
+      "found": true,
+      "id": "v11-old-legacy",
+      "blocks": 3,
+      "realBlocks": 3,
+      "zeroW": 0,
+      "rowGroups": 3,
+      "perLineOneBlock": true,
+      "gapsMin": 11,
+      "interFail": [],
+      "dupPairs": [],
+      "styleUniform": true,
+      "hMax": 11.1,
+      "bottomSpread": 0
+    },
+    "A5": {
+      "pass": true,
+      "coveredStart": false,
+      "dragLines": 5,
+      "popMs": 400,
+      "present": true,
+      "visible": true,
+      "selLen": 3105,
+      "selText": "gineers, including \u00011\u0002 the pro"
+    },
+    "A1": {
+      "pass": true,
+      "id": "8aa350e2-19b5-454d-b09a-367bbf10d2fc",
+      "blocks": 3,
+      "realBlocks": 3,
+      "zeroW": 0,
+      "rowGroups": 3,
+      "perLineOneBlock": true,
+      "gapsMin": 3,
+      "interFail": [],
+      "dupPairs": [],
+      "styleUniform": true,
+      "hMax": 10.6,
+      "bottomSpread": 0
+    },
+    "A2": {
+      "pass": true,
+      "id": "1e559d25-da14-4118-947e-42a4365a03c9",
+      "blocks": 3,
+      "realBlocks": 3,
+      "zeroW": 0,
+      "rowGroups": 3,
+      "perLineOneBlock": true,
+      "gapsMin": 11.6,
+      "interFail": [],
+      "dupPairs": [],
+      "styleUniform": true,
+      "hMax": 2,
+      "bottomSpread": 0,
+      "lineBody": "hMax<6=细线非色带",
+      "dragLines": 5
+    },
+    "A3-reopen": {
+      "pass": true,
+      "before": 9,
+      "kept": 9,
+      "n": 3,
+      "bad": [],
+      "ok": true
+    },
+    "A4+A6": {
+      "pass": true,
+      "styleUniformAll": true,
+      "gapsMinAll": 3,
+      "perLineOneBlockAll": true,
+      "dupPairsAll": 0
+    }
+  },
+  "observations": [
+    {
+      "note": "适应视图后节点出视口(§2 口径外——口径只要求标签全可见;auto-fit 包围盒疑似未含全部节点,登记待查)",
+      "detail": {
+        "outNodes": [
+          {
+            "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+            "rect": {
+              "x": 1443,
+              "y": 401,
+              "w": 451,
+              "h": 142
+            }
+          }
+        ],
+        "svg": {
+          "x": 235,
+          "y": 49,
+          "w": 1447,
+          "h": 1054
+        },
+        "k": 1.387
+      }
+    }
+  ],
+  "verdict": "ALL-PASS"
+}
