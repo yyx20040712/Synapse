@@ -32,8 +32,21 @@
  * 祖先 zoom）；wheel/pan=根框差值×rootToLocalScale 归一（比值=1/有效
  * zoom，嵌套自动复合）。祖先 zoom 下的根框量测不得直接入 transform 数学
  * （k 虚大→内容溢出视口——修前 large 档溢出 211.75px）。
+ *
+ * [F-L4] fit 触发源扩面「视口尺寸变化」：ResizeObserver 观察 svg 布局盒
+ * （uiScale 换档/窗口 resize 均为其二阶来源，布局盒变化=一阶原因——RO
+ * 回调天然发生在布局更新之后，读到新值零时序陷阱，票面 §0 候选 B）。RO
+ * 回调与既有 fit effect 共用同一 doFit（早退链顺序零变：userInteracted
+ * 不抢/nodes=0 不 fit/svgRef null 跳过/量测 0 跳过）；门语义零变
+ * （userInteracted=true 时换档/resize 都不抢视口——与 nodes 变化同门）。
+ * S5 无自激励不变量：setViewport 只改 <g data-viewport> transform，svg
+ * 布局盒由父布局决定（h-full w-full）→不再触发 RO。RO effect deps
+ * [svgRef] 挂载一次常活（svg 常驻 W2——空→非空转场无重绑），数据经
+ * doFitRef 镜像取最新（cbRef 先例）；卸载 disconnect 成对清理（INV-14
+ * 同型）。typeof ResizeObserver === 'undefined' 极端环境守卫→不注册
+ * 不报错（既有 fit 路径不受影响）。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { BAND_LEFT, nodeHeight, nodeWidth } from './lineage-layout'
@@ -138,22 +151,57 @@ export function useViewportController(args: {
   const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
   const [userInteracted, setUserInteracted] = useState(false)
 
-  // auto-fit effect：nodes/edges 引用变化（载入/导入替换/写回填）且用户
-  // 未交互时整图入视口；视口宽高 0=不可量测（jsdom）→跳过保持现视口。
-  // [F-L2] 量测=clientWidth/clientHeight 直取（svg 本地口径，INV-43——不
-  // 含祖先 zoom；gBCR 根框口径会 k 虚大→溢出视口）。clientWidth=0 且
-  // gBCR>0 = CSS 布局不可量测的退化态（jsdom 桩面）→回退 gBCR（不劣于
-  // 修前；真机恒有布局走直取主路径=修复生效）。
+  // [F-L4] doFit ref 镜像：fit 逻辑单一定义点（早退链+量测+fitViewport，
+  // 顺序零变），两消费点（既有 fit effect+RO 回调）经 ref 共用同一套；每
+  // 渲染提交后更新（crib LineageCanvas.tsx cbRef 先例——effect 期更新，
+  // RO 回调无闭包过期）。声明序=先于两消费 effect（同提交内 ref 先就位）。
+  // [回炉 1 W1] 赋值用 useLayoutEffect 非 passive useEffect：passive 在
+  // paint 后异步跑，存在「渲染提交→赋值前」窗口，期间 RO 回调可能读到上
+  // 一渲染闭包（如 wheel 刚置 userInteracted=true 而 RO 仍用 false 旧闭包
+  // 抢视口）；layout effect 在 DOM commit 后同步执行，先于浏览器渲染步骤
+  // 的 RO 回调帧——竞态窗口消除（门一 W1 裁决）。
+  const doFitRef = useRef<() => void>(() => undefined)
+  useLayoutEffect(() => {
+    doFitRef.current = () => {
+      // auto-fit 早退链（[F-L4] 前内联于 fit effect——抽取零变）：用户已
+      // 交互（pan/zoom 接管）不抢；空图不 fit；svg 未挂载/量测 0（jsdom
+      // 无布局）跳过保持现视口。[F-L2] 量测=clientWidth/clientHeight 直取
+      // （svg 本地口径，INV-43——不含祖先 zoom；gBCR 根框口径会 k 虚大→
+      // 溢出视口）。clientWidth=0 且 gBCR>0 = CSS 布局不可量测的退化态
+      // （jsdom 桩面）→回退 gBCR（不劣于修前；真机恒有布局走直取主路径）。
+      if (userInteracted || nodes.length === 0) return
+      const el = svgRef.current
+      if (el === null) return
+      const rect = el.getBoundingClientRect()
+      const vw = el.clientWidth || rect.width
+      const vh = el.clientHeight || rect.height
+      if (vw <= 0 || vh <= 0) return
+      setViewport(fitViewport(nodes, layout, vw, vh, labelBoxes))
+    }
+  })
+
+  // auto-fit effect：nodes/edges 引用变化（载入/导入替换/写回填）触发——
+  // 体改调 doFitRef（[F-L4] §3：deps 语义零变原样保留，fit 逻辑上移共用）。
   useEffect(() => {
-    if (userInteracted || nodes.length === 0) return
+    doFitRef.current()
+  }, [nodes, edges, layout, userInteracted, svgRef, labelBoxes])
+
+  // [F-L4] RO effect：视口尺寸变化（svg 布局盒——换档/窗口 resize 一阶
+  // 源）重触发 fit。deps [svgRef] 挂载一次常活（svg 常驻，不随 nodes 重
+  // 注册——消 observe/disconnect 抖动），回调经 doFitRef 取最新数据。
+  // 卸载 disconnect 成对清理（S6，INV-14 同型）；无 RO 环境守卫不注册。
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return
     const el = svgRef.current
     if (el === null) return
-    const rect = el.getBoundingClientRect()
-    const vw = el.clientWidth || rect.width
-    const vh = el.clientHeight || rect.height
-    if (vw <= 0 || vh <= 0) return
-    setViewport(fitViewport(nodes, layout, vw, vh, labelBoxes))
-  }, [nodes, edges, layout, userInteracted, svgRef, labelBoxes])
+    const ro = new ResizeObserver(() => {
+      doFitRef.current()
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+    }
+  }, [svgRef])
 
   // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
   // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。

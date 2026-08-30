@@ -1,0 +1,55 @@
+统计行：B:0 条 / W:4 条 / N:2 条 + 总评：实现主体符合票面、变异/探针证据链完整，无行为级硬伤；但存在取证精确性不足与测试锁定力弱化之处，建议放行同时记录改进项。
+
+---
+
+## W 级发现
+
+### W1：doFitRef 存在「渲染提交后→effect 运行前」陈旧引用竞态窗口（理论风险，存疑）
+
+- 位置：`lineage-viewport.ts` RO 回调 `() => doFitRef.current()` 与 doFitRef 赋值 effect（无 deps，每次渲染后更新）。
+- 时序：React commit 同步更新 DOM/state，但 `useEffect` 在 paint 后异步运行。若窗口 resize 引起的 RO 回调恰在一个渲染提交后、doFitRef 赋值 effect 前触发（浏览器 RO 回调在布局阶段，React passive effect 在 paint 后，两者同帧顺序不确定），RO 读到的 `doFitRef.current` 仍是上一次渲染的闭包，其中 `userInteracted=false`——此时用户刚 wheel 置门（true），门语义被瞬时击穿，视口被抢。
+- 证据引用：doFitRef 赋值 `useEffect(() => { doFitRef.current = () => { ... userInteracted ... } })`（无 deps）；RO effect 回调 `() => { doFitRef.current() }`。二者均在本 diff 的 `lineage-viewport.ts` 中。
+- 约束：此窗口远小于一帧，需「wheel 后同帧 resize」才能触发。**存疑**——需要浏览器插件在真实 Chromium 中强制同帧时序实证，或改为 `useLayoutEffect` 同步更新 ref 可消除此窗口。
+
+### W2：探针 A-main 未锁死「transform=fitViewport 精确期望值」，弱于票面 §5.3 字面要求
+
+- 位置：`f-l4-verify.mjs` 中 `A/transform-updated` 断言仅用 `viewportChanged(v2, v1)`（分量差>0.5），且 `A/all-in-viewport` 只验证入视口。票面 §5.3 要求「断言 transform 更新且=fitViewport 按 medium 档 clientWidth 期望值」。
+- 后果：若 fitViewport 量测口径在真机退化（如 gBCR 根框口径导致 k 虚大但节点仍侥幸入视口），探针不会红；该锁缺失恰由单测②的数值断言补上（`expect(v!.k).toBeCloseTo(expected.k, 6)`），但那是 jsdom 回退路径，非真机直取路径。取证分工声称「A-main 锁真实路径」，实际锁值弱化。
+- 修复建议（非阻塞）：探针在拿到 t1/t2 后，用同一份 nodes/layout 在页面内调用 `fitViewport`（或外部预计算），断言 `v2` 与其各分量差<0.5。
+
+### W3：单测未模拟 RO observe 后的「初始回调派发」（规范要求 observe 后异步至少派发一次）
+
+- 位置：`lineage-viewport-refit.test.tsx` ①只断言 `observeTargets`，未让桩派发初始 callback；②~⑦均在尺寸变化后才手动派发。
+- 后果：挂载路径中「fit effect + RO 初始回调」双 fit 的竞态/幂等性没有被单测锁。真实浏览器中挂载后 RO 必派发一次初始回调，此回调与 fit effect 共用 doFitRef，若两处量测结果一致则幂等；但若 jsdom 桩面下量测为 0（fit effect 早退）而初始回调量测为 0 也早退，行为一致。此缺口仅理论风险，真机 A-main 间接覆盖（重挂载后 observe 初始通知），但无显式断言「初始回调后 transform 与 fit effect 结果一致」。
+- 修复建议：新增测试用例，挂载非空图后主动派发一次初始 callback（entries 带初始尺寸），断言视口与挂载 fit 相等。
+
+### W4：测试⑦「无自激励」实际锁的是「相同值 bail」的平凡路径，未覆盖「量测变化→setViewport 新值→重渲染→不重注册」
+
+- 位置：`lineage-viewport-refit.test.tsx` ⑦，`fireRO(lastRO())` 时量测仍为 800×600（gBCR 桩未变），`fitViewport` 结果与挂载时相同 → `setViewport` 相同值 → React bail，不产生重渲染 → `ROStub.instances.length` 不变是平凡的。
+- 后果：若实现把 RO effect deps 错误地改为 `[svgRef, someState]`（在 setViewport 后重注册），⑦ 不会红；而 ② 虽然产生新值重渲染，但没有断言 instances 不变。该变异（S5 不变量）实际未被单测锁住。
+- 修复建议（非阻塞）：⑦ 改为先设 `stubClientSize(svg, 699, 600)`（与挂载量测差 1px），fireRO 触发 setViewport 新值→重渲染，再断言 `ROStub.instances.length` 不变且 `observeTargets.length` 不变。
+
+---
+
+## N 级备注
+
+### N1：探针固定等待脆弱性
+
+- `f-l4-verify.mjs` 中多处 `waitForTimeout(900)` 等待 RO 回调/设置落地；在慢机上可能因回调晚到而误报 FAIL，且无法区分「功能失效」与「等待不足」。本次在目标环境中通过，但后续在 CI/不同负载下复跑有脆弱性。建议改为轮询等待（如每 100ms 查一次 transform 是否变化，超时 3s 失败）。
+
+### N2：测试②挂载路径未覆盖「clientWidth 直取」的初始 fit
+
+- `lineage-viewport-refit.test.tsx` ②挂载时未 stub clientWidth，doFit 走 `clientWidth||rect.width` 回退（gBCR 700×600）；stubClientSize 仅在 fireRO 前设置，因此初始 fit 断言（`fitted!.k`≈1.21）锁的是 gBCR 回退口径，而非真机直取口径。真机直取口径由 fireRO 后的期望值断言覆盖，但「挂载初始 fit 直取路径」本身未被单测锁。若未来把量测顺序改为 `rect.width||clientWidth`，②的初始端不会红，只有 fireRO 端会红——部分覆盖。
+
+---
+
+## 票面-实现偏差核对补充
+
+- 接口零变：`lineage-viewport.ts` 仅新增 `useRef` 导入，args/导出未变；`LineageCanvas/Board` 零改——符合 §2。
+- RO effect deps `[svgRef]`、doFit 共用早退链、守卫 `typeof ResizeObserver` ——符合 §3/§4。
+- 探针自裁①「挂载中换档不可达」基于 App.tsx:193-198 互斥渲染，事实成立；组合取证（A-main+A-resize+diagnostic）在机制链上完整覆盖 S1 的判决意图，予以认可。
+- 变异红证 M5 收紧（700→500）经复核：W1=700 时 x 比 1.52 < y 比 1.58（x 紧）；W2=500 时 x 比 1.09 < 1.58（x 紧），输出确实变化，M5 可判——自裁①/③ 均正当。
+
+## 放行判定
+
+**放行**（无需回炉）。理由：无 B 级行为缺陷；W1/W3 为理论时序风险或规范路径的未显式覆盖，W2/W4 为锁力弱化但已被单测②或探针 A-resize 部分补偿；票面 §5.2 变异要求全部满足且 M5 逃逸处置为加强。建议在台账记录 W2/W4 作为后续小票改进候选（补齐 A-main 精确 fitViewport 断言 + ⑦的新值重渲染不重注册断言）。

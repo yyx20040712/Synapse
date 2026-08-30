@@ -267,7 +267,9 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   早期时序与修前等同。
 - **新发现备案(修票过程)**:①**SET1 档位切换不自动 refit**(fit effect
   deps 无 uiScale——切换档位后需手动点「适应视图」;修前修后同此行为
-  非本票引入;候选小票:uiScale 变化→resetFit);②reader 侧同型量测面
+  非本票引入;候选小票:uiScale 变化→resetFit)——**→F-L4 已闭环
+  (2026-08-31,见下;主控裁决如实降级:App 页面互斥使「挂载中换档」
+  用户路径不可达,F-L4 真值面=resize/侧板+未来结构保险)**;②reader 侧同型量测面
   未排查(PDF 列反向补偿在档自洽,如后续 SET1 档位下发现阅读器几何异常
   另开票);③precheck 伪复测教训:resetFit 在 userInteracted 已 false
   时 setState 同值→React bail——探针测 refit 须先 wheel 置位。
@@ -284,6 +286,38 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   复现同样漂移则非工具面。
 - **处置**:排查票待开(取证范式 crib f-l2-probe.mjs:真实库副本+
   分段 scrollTop 采样定位漂移发生在保存链哪一环)。
+
+### F-L4 档位切换(视口尺寸变化)不自动 refit ——状态:**已闭环(2026-08-31 三屋+回炉 1)**
+
+- **现象**:F-L2 修票过程发现——svg 布局盒尺寸变化(uiScale 换档/
+  窗口 resize)后 fit 不重触发,需手动点「适应视图」。
+- **修法(主控定向,票面 §0 裁决记录)**:ResizeObserver 观察 svg
+  布局盒(一阶原因,换档/resize 同源覆盖),回调与既有 fit effect 共用
+  同一 doFit(早退链顺序零变);否决候选「uiScale 进 deps」三重缺陷
+  (React 子先父后 effect 序量测必读旧档 CSS/resetFit 同值 bail/4 层
+  props 穿透)。行为扩面如实声明:窗口 resize 在未交互态也从「不 refit」
+  变「refit」(受锁面 grep 无冲突)。
+- **闭环**:新测 lineage-viewport-refit.test ①~⑧(963→971=+8,含回炉
+  ⑧初始回调幂等/⑦非平凡化)+变异 M1~M5(M5 曾逃逸→夹具收紧 700→500
+  x 维紧→红,检出 ②⑦⑧);真机探针 13/13(A-main 换档+重挂载 transform
+  逐位=fitViewport 期望(node 直载源码复算)/A-resize RO 端到端/B 门语义
+  逐位相等/C 清理/diagnostic cssZoomTriggersRO=true——fallback 判据
+  直证不成立,无需候选 A 回炉)。门一 deepseek 两轮(r1 B:0/W:4 放行
+  →回炉 W1 useLayoutEffect 竞态消除/W2 探针精确断言/W3 ⑧/W4 ⑦→r2
+  四条全 ADDRESSED 终判放行);门二四清单+一全 PASS(含 INV-44 建议,
+  已采纳登记)。
+- **可达性降级(主控裁决,备案源动机如实修正)**:实现者自裁①发现
+  App.tsx:193-198 页面互斥使「挂载中经 settings 通道换档」用户路径
+  不可达(票面场景 A 序列缺陷,票面主控担责)——备案动机场景在当前 UI
+  结构下用户遇不到;F-L4 兑现面=窗口 resize/挂载中布局变化+未来结构
+  变化保险,A-main 顺带锁住「换档后重挂载 mount fit」真实路径(此前无锁)。
+- **备案组(后续小票候选)**:①N-r1 测试⑦二次 fireRO 断言弱于注释
+  (只对比挂载初始值,受锁面改动走 [locked-change]);②探针固定
+  waitForTimeout(900/1200)脆性(慢机误报风险,建议轮询);③挂载初始
+  fit 的 clientWidth 直取路径仅由 RO 端断言覆盖(r1-N2)。
+- 档案:scripts/audits/f-l4-{ticket,impl.report,gate1-ds,gate1-r2-ds}.
+  md+f-l4-gate1{,-r2}-brief.md+f-l4-verify.mjs+raw ×13+f-l4-out/
+  f-l4-verify.json。INV-44 登记 docs/invariants.md。
 
 ## 二、复测回收状态(18 项指引,2026-08-30 发出)
 

@@ -1,0 +1,68 @@
+## 统计行
+
+- W1：**ADDRESSED**
+- W2：**ADDRESSED**
+- W3：**ADDRESSED**
+- W4：**ADDRESSED**（含一条新 N 级测试断言弱点）
+- 新发现：**0 B / 0 W / 1 N**
+- 终判：**放行**
+
+---
+
+## 逐条复核
+
+### W1 —— ADDRESSED
+
+- 证据：`lineage-viewport.ts` diff 中：
+  - `import { useEffect, useLayoutEffect, useRef, useState } from 'react'`
+  - `useLayoutEffect(() => { doFitRef.current = () => { ... } })`（无 deps）
+  - 头注补充「passive 在 paint 后异步跑存在…窗口；layout effect 在 DOM commit 后同步执行，先于浏览器渲染步骤的 RO 回调帧」
+- 机制成立：React layout effect 在 commit 阶段同步执行，先于浏览器渲染步骤中的 RO 回调派发；`doFitRef` 在 RO 回调读取前已更新为本次提交的闭包。W1 的陈旧引用窗口被消除。
+- 测试可测面：测试⑧在挂载后手动派发 RO 回调，此时 doFitRef 已就位，断言与挂载 fit 幂等。虽无法在 jsdom 精确模拟同帧序，但作为可测面已补充。
+
+### W2 —— ADDRESSED
+
+- 证据：`f-l4-verify.mjs`：
+  - 顶部 `registerHooks` + 直载源码 `fitViewport`（非 crib 重实现）
+  - `rebuildFitInput()` 从 DOM 重建 nodes/layout/labelBoxes，与组件同源
+  - 新断言 `A/transform-equals-fitviewport`：`Math.abs(v2.tx - expectedV.tx) < 0.5 && ...` 
+- 探针终态该条 **PASS**：`v2(691.19,121.97,1.3115)≈fitViewport 按 medium 1381×959 期望(691.19,121.97,1.3115)（nodes=4/labels=3 重建）`——数值逐位对齐。
+- 票面 §5.3 的「断言 transform=fitViewport 按 medium 档 clientWidth 期望值」已由真机直取路径锁住。
+
+### W3 —— ADDRESSED
+
+- 证据：`lineage-viewport-refit.test.tsx` 新增 `⑧ 初始回调幂等`：
+  - 挂载非空图，前提锚 `expect(fitted).not.toBe('translate(0, 0) scale(1)')`
+  - 手动派发一次桩 callback（模拟 RO 规范 observe 后初始通知）
+  - 断言 `v.tx/ty/k` 对 `fitViewport(nodes, layout, 700, 600)` `toBeCloseTo(…, 6)`
+- 挂载路径「fit effect + RO 初始回调」双 fit 的幂等性现已显式锁定，满足规范要求。
+
+### W4 —— ADDRESSED
+
+- 证据：`lineage-viewport-refit.test.tsx` ⑦重写：
+  - 挂载量测 gBCR 700×600
+  - `stubClientSize(svg, 699, 600)` → `fireRO` → 断言 `viewportTransform() !== before`（setViewport 新值 + 重渲染真发生）
+  - 再 `set(698, 600)` 二次 fireRO → 再次断言与 `before` 不同
+  - 断言 `ROStub.instances.length === instancesBefore`、`ro.disconnected === false`、`observeTargets.length === observesBefore`
+- 相比 r1 的平凡 bail 路径，现已用真实新值重渲染场景锁住 S5「setViewport 新值≠RO 重注册」。
+
+---
+
+## 新发现（N 级）
+
+### N-r1：测试⑦第二次 fireRO 的断言弱于注释宣称
+
+- 位置：`lineage-viewport-refit.test.tsx` ⑦：
+  - 注释宣称「连续两档新值均重渲染」
+  - 实际代码第二次 `expect(viewportTransform()).not.toBe(before)` 只对比挂载初始值，未保存第一次 fireRO 后的 transform 再断言第二次与第一次不同
+- 后果：若第二次 fireRO 因某种原因未产生新值，断言仍为真，与注释「连续两档」不严谨。但首次 fireRO 已构成非平凡重渲染场景，核心 S5 不变式仍被锁住，故为 N 级（建议：保存第一次 fireRO 后的值，第二次断言与其不同）。
+
+### N2（r1 遗留）探针固定等待脆弱性未处理
+
+- `f-l4-verify.mjs` 仍使用多处 `waitForTimeout(900/1200)` 固定等待。本次通过，但 CI 慢机复跑有误报风险。非阻塞，建议后续改轮询。
+
+---
+
+## 终判
+
+**放行**。四条 W 级已全部 ADDRESSED 且证据链完整；无新增 B/W 级问题；N 级项不构成回炉条件。

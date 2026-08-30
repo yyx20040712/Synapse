@@ -1,0 +1,490 @@
+{
+  "meta": {
+    "script": "f-l4-verify.mjs",
+    "date": "2026-08-30T23:34:52.472Z"
+  },
+  "scenes": {
+    "A_small_mount": {
+      "gBCR": {
+        "w": 1568,
+        "h": 1056,
+        "x": 188,
+        "y": 48,
+        "right": 1756,
+        "bottom": 1104
+      },
+      "client": {
+        "w": 1568,
+        "h": 1056
+      },
+      "zoomRow": "1",
+      "transform": "translate(784.8013638229414, 128.84530313475483) scale(1.5264157229610888)",
+      "nodeCount": 4,
+      "maxNodeRight": 1636.0000305175781,
+      "maxNodeBottom": 955.3172760009766,
+      "nodeDump": [
+        {
+          "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+          "x": 304.48100422506246,
+          "y": 154.36397664986902,
+          "w": 260,
+          "h": 82,
+          "title": "Henry Darcy and the making of a law"
+        },
+        {
+          "id": "5c832ea6-a68a-426a-a2b4-a45f2f1cec3a",
+          "x": 110,
+          "y": 0,
+          "w": 220,
+          "h": 64,
+          "title": "Reynolds_1883"
+        },
+        {
+          "id": "95a18437-0613-4d10-8bc7-91513bf5f8dd",
+          "x": -305.53099841850127,
+          "y": 146.09008059260913,
+          "w": 260,
+          "h": 100,
+          "title": "Analysis of flow in networks of conduits or conductors"
+        },
+        {
+          "id": "3d3eeeb1-32eb-4e4b-9103-fc8932aea78b",
+          "x": 63.5999755859375,
+          "y": 459.99993896484375,
+          "w": 260,
+          "h": 100,
+          "title": "2007-johannes-von-kries-and-the-history-of-water-hammer"
+        }
+      ],
+      "labelDump": [
+        {
+          "label": "实链：Darcy 1857 二十二管数据成为 Reynolds 1883 的外部验证面（对比偏差≤10%、多数 2-3%）",
+          "x": 142.24050211253123,
+          "y": 63.15698832493451,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "谱系推断：管流阻力经验律传统（h=rQⁿ，Darcy-Weisbach 谱系）延展为管网松弛迭代——Cross 原文未点名 Darcy，谱系注记",
+          "x": -162.76549920925063,
+          "y": 45.520040296304565,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "平行推断：1883 同年两支（管流阻力判据/水锤波动理论）互不引用——「同族同年不同社区」由后世史学（本文）接续观察",
+          "x": 21.79998779296875,
+          "y": 202.47496948242187,
+          "w": 130,
+          "h": 37.05
+        }
+      ]
+    },
+    "A_medium_switched": {
+      "gBCR": {
+        "w": 1519.5999755859375,
+        "h": 1055.2000732421875,
+        "x": 206.8000030517578,
+        "y": 48.400001525878906,
+        "right": 1726.3999786376953,
+        "bottom": 1103.6000747680664
+      },
+      "client": {
+        "w": 1381,
+        "h": 959
+      },
+      "zoomRow": "1.1",
+      "transform": "translate(691.1885211761868, 121.96723710599042) scale(1.3114761595622004)",
+      "nodeCount": 4,
+      "maxNodeRight": 1593.8999938964844,
+      "maxNodeBottom": 918.3020782470703,
+      "nodeDump": [
+        {
+          "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+          "x": 304.48100422506246,
+          "y": 154.36397664986902,
+          "w": 260,
+          "h": 82,
+          "title": "Henry Darcy and the making of a law"
+        },
+        {
+          "id": "5c832ea6-a68a-426a-a2b4-a45f2f1cec3a",
+          "x": 110,
+          "y": 0,
+          "w": 220,
+          "h": 64,
+          "title": "Reynolds_1883"
+        },
+        {
+          "id": "95a18437-0613-4d10-8bc7-91513bf5f8dd",
+          "x": -305.53099841850127,
+          "y": 146.09008059260913,
+          "w": 260,
+          "h": 100,
+          "title": "Analysis of flow in networks of conduits or conductors"
+        },
+        {
+          "id": "3d3eeeb1-32eb-4e4b-9103-fc8932aea78b",
+          "x": 63.5999755859375,
+          "y": 459.99993896484375,
+          "w": 260,
+          "h": 100,
+          "title": "2007-johannes-von-kries-and-the-history-of-water-hammer"
+        }
+      ],
+      "labelDump": [
+        {
+          "label": "实链：Darcy 1857 二十二管数据成为 Reynolds 1883 的外部验证面（对比偏差≤10%、多数 2-3%）",
+          "x": 142.24050211253123,
+          "y": 63.15698832493451,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "谱系推断：管流阻力经验律传统（h=rQⁿ，Darcy-Weisbach 谱系）延展为管网松弛迭代——Cross 原文未点名 Darcy，谱系注记",
+          "x": -162.76549920925063,
+          "y": 45.520040296304565,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "平行推断：1883 同年两支（管流阻力判据/水锤波动理论）互不引用——「同族同年不同社区」由后世史学（本文）接续观察",
+          "x": 21.79998779296875,
+          "y": 202.47496948242187,
+          "w": 130,
+          "h": 37.05
+        }
+      ]
+    },
+    "A_resize": {
+      "gBCR": {
+        "w": 1282,
+        "h": 897.6000366210938,
+        "x": 206.8000030517578,
+        "y": 48.400001525878906,
+        "right": 1488.8000030517578,
+        "bottom": 946.0000381469727
+      },
+      "client": {
+        "w": 1165,
+        "h": 816
+      },
+      "zoomRow": "1.1",
+      "transform": "translate(583.0581788676361, 114.02251912624114) scale(1.0632037226950355)",
+      "nodeCount": 4,
+      "maxNodeRight": 1356.3000183105469,
+      "maxNodeBottom": 770.2820434570312,
+      "nodeDump": [
+        {
+          "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+          "x": 304.48100422506246,
+          "y": 154.36397664986902,
+          "w": 260,
+          "h": 82,
+          "title": "Henry Darcy and the making of a law"
+        },
+        {
+          "id": "5c832ea6-a68a-426a-a2b4-a45f2f1cec3a",
+          "x": 110,
+          "y": 0,
+          "w": 220,
+          "h": 64,
+          "title": "Reynolds_1883"
+        },
+        {
+          "id": "95a18437-0613-4d10-8bc7-91513bf5f8dd",
+          "x": -305.53099841850127,
+          "y": 146.09008059260913,
+          "w": 260,
+          "h": 100,
+          "title": "Analysis of flow in networks of conduits or conductors"
+        },
+        {
+          "id": "3d3eeeb1-32eb-4e4b-9103-fc8932aea78b",
+          "x": 63.5999755859375,
+          "y": 459.99993896484375,
+          "w": 260,
+          "h": 100,
+          "title": "2007-johannes-von-kries-and-the-history-of-water-hammer"
+        }
+      ],
+      "labelDump": [
+        {
+          "label": "实链：Darcy 1857 二十二管数据成为 Reynolds 1883 的外部验证面（对比偏差≤10%、多数 2-3%）",
+          "x": 142.24050211253123,
+          "y": 63.15698832493451,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "谱系推断：管流阻力经验律传统（h=rQⁿ，Darcy-Weisbach 谱系）延展为管网松弛迭代——Cross 原文未点名 Darcy，谱系注记",
+          "x": -162.76549920925063,
+          "y": 45.520040296304565,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "平行推断：1883 同年两支（管流阻力判据/水锤波动理论）互不引用——「同族同年不同社区」由后世史学（本文）接续观察",
+          "x": 21.79998779296875,
+          "y": 202.47496948242187,
+          "w": 130,
+          "h": 37.05
+        }
+      ]
+    },
+    "B_wheel_before": {
+      "gBCR": {
+        "w": 1282,
+        "h": 897.6000366210938,
+        "x": 206.8000030517578,
+        "y": 48.400001525878906,
+        "right": 1488.8000030517578,
+        "bottom": 946.0000381469727
+      },
+      "client": {
+        "w": 1165,
+        "h": 816
+      },
+      "zoomRow": "1.1",
+      "transform": "translate(583.6150811435356, -13.218859381174525) scale(1.5239211694088497)",
+      "nodeCount": 4,
+      "maxNodeRight": 1577.1028747558594,
+      "maxNodeBottom": 888.7790985107422,
+      "nodeDump": [
+        {
+          "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+          "x": 304.48100422506246,
+          "y": 154.36397664986902,
+          "w": 260,
+          "h": 82,
+          "title": "Henry Darcy and the making of a law"
+        },
+        {
+          "id": "5c832ea6-a68a-426a-a2b4-a45f2f1cec3a",
+          "x": 110,
+          "y": 0,
+          "w": 220,
+          "h": 64,
+          "title": "Reynolds_1883"
+        },
+        {
+          "id": "95a18437-0613-4d10-8bc7-91513bf5f8dd",
+          "x": -305.53099841850127,
+          "y": 146.09008059260913,
+          "w": 260,
+          "h": 100,
+          "title": "Analysis of flow in networks of conduits or conductors"
+        },
+        {
+          "id": "3d3eeeb1-32eb-4e4b-9103-fc8932aea78b",
+          "x": 63.5999755859375,
+          "y": 459.99993896484375,
+          "w": 260,
+          "h": 100,
+          "title": "2007-johannes-von-kries-and-the-history-of-water-hammer"
+        }
+      ],
+      "labelDump": [
+        {
+          "label": "实链：Darcy 1857 二十二管数据成为 Reynolds 1883 的外部验证面（对比偏差≤10%、多数 2-3%）",
+          "x": 142.24050211253123,
+          "y": 63.15698832493451,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "谱系推断：管流阻力经验律传统（h=rQⁿ，Darcy-Weisbach 谱系）延展为管网松弛迭代——Cross 原文未点名 Darcy，谱系注记",
+          "x": -162.76549920925063,
+          "y": 45.520040296304565,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "平行推断：1883 同年两支（管流阻力判据/水锤波动理论）互不引用——「同族同年不同社区」由后世史学（本文）接续观察",
+          "x": 21.79998779296875,
+          "y": 202.47496948242187,
+          "w": 130,
+          "h": 37.05
+        }
+      ]
+    },
+    "B_resize_after": {
+      "gBCR": {
+        "w": 1083.5999755859375,
+        "h": 899.2000122070312,
+        "x": 206.8000030517578,
+        "y": 48.400001525878906,
+        "right": 1290.3999786376953,
+        "bottom": 947.6000137329102
+      },
+      "client": {
+        "w": 985,
+        "h": 817
+      },
+      "zoomRow": "1.1",
+      "transform": "translate(583.6150811435356, -13.218859381174525) scale(1.5239211694088497)",
+      "nodeCount": 4,
+      "maxNodeRight": 1577.1028747558594,
+      "maxNodeBottom": 888.7790985107422,
+      "nodeDump": [
+        {
+          "id": "0bd9a528-2533-4db9-9f60-6efe6ac68312",
+          "x": 304.48100422506246,
+          "y": 154.36397664986902,
+          "w": 260,
+          "h": 82,
+          "title": "Henry Darcy and the making of a law"
+        },
+        {
+          "id": "5c832ea6-a68a-426a-a2b4-a45f2f1cec3a",
+          "x": 110,
+          "y": 0,
+          "w": 220,
+          "h": 64,
+          "title": "Reynolds_1883"
+        },
+        {
+          "id": "95a18437-0613-4d10-8bc7-91513bf5f8dd",
+          "x": -305.53099841850127,
+          "y": 146.09008059260913,
+          "w": 260,
+          "h": 100,
+          "title": "Analysis of flow in networks of conduits or conductors"
+        },
+        {
+          "id": "3d3eeeb1-32eb-4e4b-9103-fc8932aea78b",
+          "x": 63.5999755859375,
+          "y": 459.99993896484375,
+          "w": 260,
+          "h": 100,
+          "title": "2007-johannes-von-kries-and-the-history-of-water-hammer"
+        }
+      ],
+      "labelDump": [
+        {
+          "label": "实链：Darcy 1857 二十二管数据成为 Reynolds 1883 的外部验证面（对比偏差≤10%、多数 2-3%）",
+          "x": 142.24050211253123,
+          "y": 63.15698832493451,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "谱系推断：管流阻力经验律传统（h=rQⁿ，Darcy-Weisbach 谱系）延展为管网松弛迭代——Cross 原文未点名 Darcy，谱系注记",
+          "x": -162.76549920925063,
+          "y": 45.520040296304565,
+          "w": 130,
+          "h": 37.05
+        },
+        {
+          "label": "平行推断：1883 同年两支（管流阻力判据/水锤波动理论）互不引用——「同族同年不同社区」由后世史学（本文）接续观察",
+          "x": 21.79998779296875,
+          "y": 202.47496948242187,
+          "w": 130,
+          "h": 37.05
+        }
+      ]
+    }
+  },
+  "expectedViewportMedium": {
+    "computed": {
+      "k": 1.3114761595622004,
+      "tx": 691.1885211761868,
+      "ty": 121.96723710599042
+    },
+    "input": {
+      "clientW": 1381,
+      "clientH": 959,
+      "nodeCount": 4,
+      "labelCount": 3
+    }
+  },
+  "wrapper": {
+    "instanceCount": 2,
+    "callbackCount": 1,
+    "observeTargets": [
+      "lineage-canvas",
+      "lineage-canvas"
+    ]
+  },
+  "diagnostic": {
+    "method": "挂载中直写 --ui-scale（非 settings 通道——真实 App 换档经设置页+重挂载，此路径 UI 不可达，仅供 fallback 裁决取证）",
+    "cssFlipped": "1",
+    "clientWidth": {
+      "before": 985,
+      "after": 1132
+    },
+    "clientWidthChanged": true,
+    "roCallbackCount": {
+      "before": 1,
+      "after": 2
+    },
+    "cssZoomTriggersRO": true
+  },
+  "results": [
+    {
+      "id": "A/pre/node-count",
+      "pass": true,
+      "detail": "真库脉络图节点数=4（>0 前提锚）"
+    },
+    {
+      "id": "A/client-width-changed",
+      "pass": true,
+      "detail": "small→medium clientWidth：1568→1381（F-L2 precheck 同实证口径）"
+    },
+    {
+      "id": "A/transform-updated",
+      "pass": true,
+      "detail": "transform small({\"tx\":784.8013638229414,\"ty\":128.84530313475483,\"k\":1.5264157229610888})→medium({\"tx\":691.1885211761868,\"ty\":121.96723710599042,\"k\":1.3114761595622004}) 按新档量测 refit"
+    },
+    {
+      "id": "A/transform-equals-fitviewport",
+      "pass": true,
+      "detail": "v2(691.19,121.97,1.3115)≈fitViewport 按 medium 1381×959 期望(691.19,121.97,1.3115)（nodes=4/labels=3 重建）"
+    },
+    {
+      "id": "A/all-in-viewport",
+      "pass": true,
+      "detail": "maxNodeRight=1593.90≤svgRight+1=1727.40，maxNodeBottom=918.30≤svgBottom+1=1104.60（F-L2 同判据）"
+    },
+    {
+      "id": "A-resize/transform-updated",
+      "pass": true,
+      "detail": "resize(2053x1109→1813x949) transform 更新（RO 路径——deps 未变，无 RO 即不变→红）"
+    },
+    {
+      "id": "A-resize/all-in-viewport",
+      "pass": true,
+      "detail": "maxNodeRight=1356.30/1489.80，maxNodeBottom=770.28/947.00"
+    },
+    {
+      "id": "B/pre/wheel-changed",
+      "pass": true,
+      "detail": "wheel 后视口已变（{\"tx\":583.6150811435356,\"ty\":-13.218859381174525,\"k\":1.5239211694088497}≠fit 值——前提锚）"
+    },
+    {
+      "id": "B/viewport-frozen",
+      "pass": true,
+      "detail": "resize 后视口保持 wheel 值（{\"tx\":583.6150811435356,\"ty\":-13.218859381174525,\"k\":1.5239211694088497}=={\"tx\":583.6150811435356,\"ty\":-13.218859381174525,\"k\":1.5239211694088497}——门语义不抢）"
+    },
+    {
+      "id": "C/resize-callback-fired",
+      "pass": true,
+      "detail": "resize 后 RO 派发计数 3→4（浏览器真派发——sanity 前提锚）"
+    },
+    {
+      "id": "C/disconnect-on-unmount",
+      "pass": true,
+      "detail": "unmount 后全部 2 个 wrapper 实例 disconnect 被调（成对清理）"
+    },
+    {
+      "id": "C/no-callback-after-disconnect",
+      "pass": true,
+      "detail": "disconnect 后再 resize 派发计数不增（4→4——回调不再生效，无泄漏）"
+    },
+    {
+      "id": "X/no-pageerror",
+      "pass": true,
+      "detail": "页面错误 0 条"
+    }
+  ]
+}
