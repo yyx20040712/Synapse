@@ -97,13 +97,18 @@ export const PDF_MULTILINE_TEXT = [
 
 /**
  * 多行变体（F-A1：标注矩形归并 e2e——单页 3 行，跨行划选的承载 fixture）。
- * 行距 24pt（取证 2026-08-30：Chromium 跨 absolute span 的 Range 实测产
- * 「每行盒+边界零宽幽灵+行内 h 双计量同位块」——与真实 PDF 缺陷族同构；
- * 行盒高 25.6px>行距 24 → 相邻行盒 -1.6px 级负间隙（T4 态——归并器行间
- * 钳制的装配级锚。再紧（leading≲0.75×行盒高，如 18pt）会触发 mergeLineRects
- * 像素域跨行并簇——推演：overlap=25.6−leading≥0.25×25.6=6.4 即并，18pt
- * 时 overlap 7.6 满足；开发期实测过一次未留档，故此处记推演不记取证，
- * 门一 W1 裁定表述与档对齐）。
+ * 几何口径（2026-08-30 双轮实测勘误，t4 探针在档：Td 18 并簇 1 块/Td 20
+ * 与 Td 24 并簇行为相同——均不跨行并簇，钳制后行间距同=H 相切）：跨行
+ * Range 行盒高 H≈34.1px（归一化 0.0323，1056px
+ * 页高）；Td 24=32px 行间距<H → 原始 -2.1px 负重叠（T4 态——归并器行间钳制
+ * 真实触发：归并后行间距恰=H 相切，savedRects y 间隔 0.0324≈h+0.0001）；
+ * mergeLineRects 并簇阈 0.25×H≈8.5px，2.1px 余量充足。历史勘误：原头注
+ * 「行盒高 25.6px/-1.6px 负间隙」数值口径错——25.6 是另一计量（span/选区
+ * 框），Range 行盒实为 34.1；deepseek 补审 W1 沿用 25.6 推出「正间隙/T4
+ * 虚假」结论随之翻案（T4 锚成立）。禁区：Td≤19.2（行距 ≤25.6px，重叠
+ * ≥8.5 阈；Td 18 实测并簇 1 块）触发跨行并簇——INV-40 同族。Chromium 跨 absolute span 的
+ * Range 实测产「每行盒+边界零宽幽灵+行内 h 双计量同位块」——与真实 PDF
+ * 缺陷族同构。
  * 对象布局同 createTinyPdf（1=Catalog 2=Pages 3=Page 4=Contents 5=Font）。
  */
 export function createMultiLinePdf(lines: readonly string[] = PDF_MULTILINE_TEXT): Uint8Array {
