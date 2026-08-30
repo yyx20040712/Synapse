@@ -23,6 +23,11 @@
  *   点击**不弹标注菜单**——AI 段无批注语义
  * - 渲染节点带 **data-ai-note-id** 属性（anchor-locate exact 层滚动目标——
  *   本单延展，W08-3 处置对侧已兑现）
+ * - **[F-A3 增补] 选择模式（INV-42）**：store 自订阅 per-tab selectionMode
+ *   （AnnotationLayer 同型）——选择模式下 rect pointerEvents:none（点击穿透
+ *   零副作用+onClick 守卫兜程序化派发）+进入即清选中描边（S4：selectedId
+ *   置 null，data-highlight 全 false，paint 前收起）；切回常规恢复 auto 不
+ *   自动重选。SelectionLayer 不消费模式（正交零改动）。
  * - **[F-07 增补] 容器去 mixBlendMode:'multiply'**：AI-09 起容器级 multiply 与
  *   backdrop（含先绘兄弟标注层）相乘——用户标注与 AI 段重叠处乘两次=加深
  *   （层间叠乘两源头之一，本层摘除）。段级 opacity:0.45 保留（半透明自身
@@ -58,7 +63,7 @@
  * - 测试：tests/unit/renderer/ai-annotation-layer.test.tsx [受锁新增]+
  *   e2e ai-notes-section.spec.ts 扩用例（均 always-active）
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AnnotationRect } from '@shared/models/annotation'
 import { verifyQuote } from './anchor-serialize'
@@ -92,6 +97,15 @@ export function AiAnnotationLayer(props: {
   const { aiNotes, page, pageRoot, onJumpToNote } = props
   const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {} })
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // F-A3（INV-42）：选择模式自订阅（AnnotationLayer 同型；props 接口零变）
+  const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
+
+  // 进入选择模式：清选中描边（S4——rects 惰性化，data-highlight 全 false）；
+  // 切回常规恢复 auto 不自动重选（用户重新点击）。useLayoutEffect=paint 前
+  // 收起（与 AnnotationLayer 关弹层同措辞——无中间帧，票面 §4）
+  useLayoutEffect(() => {
+    if (selectionMode) setSelectedId(null)
+  }, [selectionMode])
 
   // 引用稳定（props 过滤结果 memo——effect 依赖防每渲染重锚循环）
   const pageNotes = useMemo(() => anchorableNotes(aiNotes, page), [aiNotes, page])
@@ -171,10 +185,14 @@ export function AiAnnotationLayer(props: {
               // AI 段半透明+选中描边：与用户标注（不透明）视觉区分，选中=高亮该段全部 rects
               opacity: n.id === selectedId ? 0.8 : 0.45,
               outline: n.id === selectedId ? '1px solid var(--accent)' : undefined,
-              pointerEvents: 'auto',
+              // F-A3（INV-42）：选择模式 rect 穿透（拖选可在 AI 段上发起）
+              pointerEvents: selectionMode ? 'none' : 'auto',
               cursor: 'pointer'
             }}
             onClick={() => {
+              // 选择模式点击=穿透零副作用（浏览器层由 pointerEvents:none 达成；
+              // 此守卫兜程序化 click 派发——jsdom/自动化路径同语义）
+              if (selectionMode) return
               setSelectedId(n.id)
               onJumpToNote(n.id)
             }}

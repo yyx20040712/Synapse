@@ -27,13 +27,15 @@
  * ── 架构层 ──
  * - 重锚根是页根内 .textLayer 容器（与 SelectionLayer 同口径）；annotation-anchor
  *   是唯一 DOM 遍历点；api 调用 + store 三方法同步在本层，AnnotationEditor 纯展示
- * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单，代价是矩形上方
- *   无法发起文本重选（v1 约束：从矩形外起选）
+ * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单；矩形上方能否
+ *   发起文本重选由选择模式条件化（F-A3/INV-42，F-A2 根治）：常规=v1 约束
+ *   保持（从矩形外起选）；选择模式=rect 穿透（拖选可在标注块上发起；rectStyle
+ *   零改——覆盖在消费方）+进入即关已开弹层（S1/S5，paint 前收起；切回不恢复）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
@@ -74,6 +76,12 @@ export function AnnotationLayer(props: {
   const [menu, setMenu] = useState<PopupTarget | null>(null)
   const [editing, setEditing] = useState<PopupTarget | null>(null)
   const [busy, setBusy] = useState(false)
+  // F-A3（INV-42）：选择模式自订阅（per-tab，SelectionLayer color 先例；props 零变）
+  const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
+  // 进入选择模式：关已开菜单/编辑器（S1/S5；草稿丢弃=Escape 同语义；切回不自动恢复）；useLayoutEffect=paint 前收起，无中间帧可点击已死弹层（票面 §4）
+  useLayoutEffect(() => {
+    if (selectionMode) { setMenu(null); setEditing(null) }
+  }, [selectionMode])
 
   const pageAnnotations = annotations.filter((a) => a.page === page)
 
@@ -198,8 +206,10 @@ export function AnnotationLayer(props: {
               aria-label={`标注：${a.quoteText}`}
               title={a.comment !== '' ? a.comment : a.quoteText}
               className="absolute"
-              style={rectStyle(a.kind, a.color, r)}
+              style={selectionMode ? { ...rectStyle(a.kind, a.color, r), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r)}
               onClick={() => {
+                // 选择模式=穿透零副作用（pointerEvents:none 达成，守卫兜程序化派发）
+                if (selectionMode) return
                 // 点击他条=切目标（菜单接管收起编辑器）；反向同步侧栏高亮（C-05）
                 useReaderStore.getState().notifyNoteHighlight(a.id)
                 setMenu({ annotation: a, rect: r })

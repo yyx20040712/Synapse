@@ -37,8 +37,18 @@
  *   scroll-progress.ts（语义保持）；本 store 只留接线——progressFlusher
  *   注册口（装配面 ReaderPage 注册/注销成对），closeTab 时 flush(paperId)、
  *   close() 时 flushAll()（立即收账，尽力而为 catch 吞由消费方承载）
+ * - 标注「选择模式」态（F-A3/INV-42，per-tab 与 zoom/color 同型）：载体=
+ *   TabState.selectionMode（false=常规=默认；true=选择）。生命周期迁移表
+ *   （票面 §0 面③原文）：
+ *   | 事件 | selectionMode 迁移 |
+ *   | openPaper（absent 新建） | false（makeLoadingTab 默认） |
+ *   | openPaper（error 重试） | 沿用 prev（{...prev, status:'loading'}） |
+ *   | setSelectionMode(m) | active tab 写入 m；activeId=null no-op |
+ *   | closeOne(id) | 随 tab 删除；重开同 id=全新 tab=false |
+ *   | close()（closeAll） | 整体复位（初始态工厂） |
  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
- *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
+ *   updateAnnotation/removeAnnotation/setSelectionMode）作用于 active tab；
+ *   activeId=null 时 no-op
  * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
  *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
  *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
@@ -88,6 +98,12 @@ export interface TabState {
   status: 'loading' | 'ready' | 'error'
   /** 灰点信号位（TABS-03 写入；本单恒 false） */
   dirty: boolean
+  /** 标注「选择模式」（F-A3/INV-42，per-tab 视图交互态）：true=两层标注渲染
+   *  rect pointer-events 全关（点击穿透零副作用，拖选可在标注块上发起——
+   *  F-A2 根治）；会话内存态不持久化。可选字段=存量测试夹具（受锁 sha256
+   *  面，8 文件完整对象直植）零破坏的必要形式；缺席即常规态，消费方一律
+   *  ?? false 兜底；makeLoadingTab 新建分支显式 false */
+  selectionMode?: boolean
 }
 
 /** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
@@ -119,6 +135,9 @@ export interface ReaderStore {
   setZoom(zoom: number): void
   setTotalPages(total: number): void
   setColor(color: AnnotationColor): void
+  /** 标注「选择模式」写 active tab（F-A3/INV-42）：toggle 语义在装配面
+   *  ReaderPage（工具栏纯受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
+  setSelectionMode(mode: boolean): void
   addAnnotation(a: Annotation): void
   updateAnnotation(a: Annotation): void
   removeAnnotation(id: string): void
@@ -165,7 +184,8 @@ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
     color: 'yellow',
     annotations: [],
     status: 'loading',
-    dirty: false
+    dirty: false,
+    selectionMode: false
   }
 }
 
@@ -343,6 +363,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
 
     setColor(color) {
       updateActiveTab((tab) => ({ ...tab, color }))
+    },
+
+    setSelectionMode(mode) {
+      updateActiveTab((tab) => ({ ...tab, selectionMode: mode }))
     },
 
     addAnnotation(a) {

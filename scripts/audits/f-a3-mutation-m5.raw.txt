@@ -1,0 +1,34 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/selection-mode.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/selection-mode.test.tsx [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 42[2mms[22m[39m
+[31m   [31m×[31m F-A3 选择模式 —— ReaderToolbar 面[2m > [22m⑦ aria-pressed 反映 selectionMode；选中态强调边框；点击恰调一次 onToggleSelectionMode[90m 7[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-mode.test.tsx[2m > [22mF-A3 选择模式 —— ReaderToolbar 面[2m > [22m⑦ aria-pressed 反映 selectionMode；选中态强调边框；点击恰调一次 onToggleSelectionMode
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/selection-mode.test.tsx:[2m320:22[22m[39m
+    [90m318| [39m      [33m;[39m(btn [35mas[39m [33mHTMLElement[39m)[33m.[39m[34mclick[39m()
+    [90m319| [39m    })
+    [90m320| [39m    [34mexpect[39m(onToggle)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                     [31m^[39m
+    [90m321| [39m  })
+    [90m322| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 22:35:11
+[2m   Duration [22m 1.37s[2m (transform 95ms, setup 0ms, collect 268ms, tests 42ms, environment 580ms, prepare 164ms)[22m
+
+exit=1

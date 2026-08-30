@@ -15,6 +15,9 @@
  *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
  * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
  * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
+ * - F-A3 选择模式装配：selectionMode 取 active tab（?? false）；toggle 语义在
+ *   本装配面（工具栏纯受控只上抛 onToggleSelectionMode→store.setSelectionMode
+ *   写 active tab，INV-42）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
@@ -51,6 +54,7 @@ export function ReaderPage(): JSX.Element {
   const totalPages = tab?.totalPages ?? 0
   const zoom = tab?.zoom ?? 1
   const color = tab?.color ?? 'yellow'
+  const selectionMode = tab?.selectionMode ?? false
   const annotations = tab?.annotations ?? []
   const setPage = useReaderStore((s) => s.setPage)
   const setZoom = useReaderStore((s) => s.setZoom)
@@ -175,7 +179,11 @@ export function ReaderPage(): JSX.Element {
     <div className="flex h-full flex-col overflow-hidden">
       <TabBar />
       <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
-        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />
+        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth}
+        selectionMode={selectionMode}
+        onToggleSelectionMode={() => {
+          useReaderStore.getState().setSelectionMode(!selectionMode)
+        }} />
       <div className="flex min-h-0 flex-1">
         {outlineOpen ? (
           // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点

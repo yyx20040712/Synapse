@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "script": "f-a3-verify.mjs",
+    "date": "2026-08-30T14:44:55.702Z"
+  },
+  "scenarios": {
+    "A_normalOnRect": {
+      "drag": {
+        "x1": 1140.6999969482422,
+        "y1": 554.6687684059143,
+        "x2": 1067.6685791015625,
+        "y2": 602.6000366210938,
+        "onRect": true
+      },
+      "present": false,
+      "visible": false,
+      "selLen": 0
+    },
+    "B_selectionMode": {
+      "ariaPressed": "true",
+      "rectPointerEvents": {
+        "total": 58,
+        "computed": [
+          "none"
+        ]
+      },
+      "hitTest": {
+        "tag": "SPAN",
+        "cls": "",
+        "inTextLayer": true,
+        "selectable": "auto",
+        "txt": 90
+      },
+      "cleanAreaProbe": {
+        "drag": {
+          "x1": 1276.1332519054413,
+          "y1": 416.26251220703125,
+          "x2": 1249.9722069740296,
+          "y2": 160.28750610351562
+        },
+        "present": true,
+        "visible": true,
+        "selLen": 599
+      },
+      "drag": {
+        "x1": 1140.6999969482422,
+        "y1": 554.6687684059143,
+        "x2": 1067.6685791015625,
+        "y2": 602.6000366210938,
+        "onRect": true
+      },
+      "present": true,
+      "visible": true,
+      "selLen": 81,
+      "scrollTop": {
+        "beforeSave": 9971,
+        "afterSave": 12113
+      },
+      "rectCount": {
+        "before": 1,
+        "after": 2
+      },
+      "saved": true
+    },
+    "C_backToNormal": {
+      "ariaPressed": "false",
+      "rectPointerEvents": {
+        "total": 60,
+        "computed": [
+          "auto"
+        ]
+      },
+      "menuShown": true
+    }
+  },
+  "prep": {
+    "drag": {
+      "x1": 1276.1332519054413,
+      "y1": 416.26251220703125,
+      "x2": 1249.9722069740296,
+      "y2": 160.28750610351562
+    },
+    "present": true,
+    "visible": true,
+    "selLen": 3924
+  }
+}

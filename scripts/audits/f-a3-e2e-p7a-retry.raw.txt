@@ -1,0 +1,29 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  x  1 tests\e2e\reader-text.spec.ts:545:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） (1.6s)
+
+
+  1) tests\e2e\reader-text.spec.ts:545:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） ─────
+
+    Error: expect(received).toContain(expected) // indexOf
+
+    Expected substring: "SMART WATER TEST DOC"
+    Received string:    "从什么角度"
+
+      558 |   await win.keyboard.press('Control+c')
+      559 |   const clipped = await app.evaluate(({ clipboard }) => clipboard.readText())
+    > 560 |   expect(clipped).toContain(PDF_KNOWN_TEXT)
+          |                   ^
+      561 |   await app.close()
+      562 | })
+      563 |
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\reader-text.spec.ts:560:19
+
+    Error Context: test-results\reader-text-P7-A-复制：ctrl-c-564dc-统剪贴板（ReaderShortcuts-剪贴板集成）\error-context.md
+
+  1 failed
+    tests\e2e\reader-text.spec.ts:545:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） ──────
+exit=1

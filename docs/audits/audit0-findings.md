@@ -65,18 +65,37 @@
 - **处置**:与 F-A3 选择模式联动票——选择模式下标注层 pointer-events
   全关(选已有标注 vs 新建划选的模式二义由此解);单独微修(如块上
   拖选透传)不采——与 F-A3 语义冲突。
+  →**已兑现(2026-08-30 F-A3 落地)**:真机场景 A/B 同点位对照实证——
+  常规压块拖选 selLen=0(现状保持)vs 选择模式同点位 selLen=81+工具条
+  弹出+保存成功(F-A2 机制面根治)。残留 interim:选择模式下标注不可
+  点击(语义如此);空 span 压点需挪起点=边缘体验(见 F-A3 备案)。
 
-### F-A3 [需求] 标注「选择模式」按钮 ——状态:**已登记,联动 F-A1+F-A2(修法已定向)**
+### F-A3 [需求] 标注「选择模式」按钮 ——状态:**已闭环(2026-08-30 v14 场三屋+回炉 1,门二 PASS 放行)**
 
 - **用户原话**:「建议新增一个选择模式按钮,选已经建好的标注,其余
   时候标注被选中一部分文字时走正常选中的逻辑,你懂的吧」
 - **我的判断**:划选与已有标注重叠的文字时交互意图二义(选标注编辑
   vs 新建标注),显式模式切换是干净解。命中语义建立在 F-A1 归并后的
-  「块=行」之上(✅已落地);F-A2 复测进一步定向修法:**选择模式下
-  标注层 pointer-events 全关**=块上发起划选的阻断解除(F-A2 的
-  selLen=0 机制面),常规模式保持现状(点击=菜单)。
-- **处置**:阅读器 UX 批次设计票(F-A1 已就绪+F-A2 机制已定向,
-  可开票)。
+  「块=行」之上(✅已落地);F-A2 复测进一步定向修法:**选择模式下标注层
+  pointer-events 全关**=块上发起划选的阻断解除(F-A2 的 selLen=0
+  机制面),常规模式保持现状(点击=菜单)。
+- **处置(2026-08-30 已落地)**:三屋票+回炉 1——`TabState.selectionMode`
+  (per-tab,可选字段=受锁夹具兼容,消费方 `?? false` 兜底)+
+  `setSelectionMode`(updateActiveTab);两层自订阅(AnnotationLayer/
+  AiAnnotationLayer rect 条件 `pointerEvents:none`+onClick 守卫兜程序化
+  派发+useLayoutEffect paint 前关弹层/清描边);ReaderToolbar「选择模式」
+  按钮(aria-pressed+选中态 accent 边框);toggle 语义在 ReaderPage 装配面。
+  票面前置态空间表(模式×层交互×工具条三面矩阵+S1~S6 跨格序列);
+  新测 selection-mode.test ①~⑧(956=948+8)+变异红证 M1~M5/M2';真机
+  三场景全 PASS(f-a3-out/f-a3-verify.json:A 常规压块 selLen=0 负向对照/
+  B 选择模式 58 rect 全 none+同点位拖选 selLen=81+工具条+保存/C 切回
+  auto+菜单弹出);门一 deepseek 两轮 B0/W1(N2/N4 回炉全 ADDRESSED);
+  INV-42 登记。档案:scripts/audits/f-a3-*;待用户复测观感。
+- **备案(门一 N 级,不回炉)**:N3 toggle 闭包同帧连点理论 no-op(程序化
+  极速场景,真实用户不可达);N5 S5 busy 在途切模式无回归用例(幂等
+  依赖既有语义);N6 真机层选择模式点击 rect 零副作用未直测(pointer-
+  events+hitTest+jsdom 守卫三层推断成立);标注块中心压空 span 需挪起点
+  的边缘体验(浏览器无法在无文本处锚定选区,非功能断)。
 
 ### F-L1 [B] 脉络边标签不换行 ——状态:**已闭环(2026-08-30 v11 验收场 B 面机器代跑全过)**
 
@@ -227,6 +246,19 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   rect;对偶面:SET1 三档×fit 互检(100% 基准恒等+两非默认档 fit 后
   全节点入视口);involved:lineage-viewport.ts fitViewport+useViewport
   Controller 量测行。
+
+### F-L3 [?] 保存高亮链后阅读区滚动位漂移 ——状态:**已登记(2026-08-30 F-A3 取证副产,待排查)**
+
+- **现象**:F-A3 真机探针场景 B——点「高亮」保存前后滚动容器
+  (阅读区 .overflow-auto)scrollTop 9971→12113,漂移 +2142px
+  (f-a3-out/f-a3-verify.json B_selectionMode.scrollTop)。对断言无影响
+  (探针已用滚块进视口手法兜住),但用户语义=保存标注后视口跳走两屏。
+- **候选源(未定位)**:Playwright click 的 scrollIntoView(工具条按钮
+  定位)或保存链内程序滚动(标注保存后 rects 重锚/页列重排触发)。
+  排查时先区分:真鼠标点击无 Playwright scrollIntoView——若真机手工
+  复现同样漂移则非工具面。
+- **处置**:排查票待开(取证范式 crib f-l2-probe.mjs:真实库副本+
+  分段 scrollTop 采样定位漂移发生在保存链哪一环)。
 
 ## 二、复测回收状态(18 项指引,2026-08-30 发出)
 

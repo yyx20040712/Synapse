@@ -5,12 +5,19 @@
  * - 页码显示/跳转、上/下页、缩放 -/100%/+（0.5~3 步进 0.1）、适应宽度
  * - 标注颜色选择（当前色）；内文搜索框（v1：全文检索走文献库 FTS，
  *   页内高亮搜索 v2——工具栏只放占位禁用态并 title 提示）
+ * - 选择模式开关（F-A3/INV-42，颜色组之后）：aria-pressed 反映当前态+选中
+ *   态边框强调（颜色点选中态同语言）；toggle 语义在装配面 ReaderPage——
+ *   工具栏纯受控只上抛 onToggleSelectionMode
  *
  * ── 接口层 ──
  * - export function ReaderToolbar(props: { page: number; totalPages: number; zoom: number;
  *     color: AnnotationColor; onNavigate(page: number): void;
  *     onZoom(z: number): void; onColor(c: AnnotationColor): void;
+ *     selectionMode?: boolean; onToggleSelectionMode?(): void;
  *     onFitWidth?(): void }): JSX.Element
+ * - selectionMode/onToggleSelectionMode 可选：受锁测试夹具（sha256 面）直植
+ *   既有 props 形状零破坏；生产装配面 ReaderPage 恒传（缺席=常规态渲染+按钮
+ *   点击无操作，仅存在于测试路径）
  * - onFitWidth（可选，Phase 3 接线时加入）：适应宽度需要滚动容器内宽与页面原始宽，
  *   二者都在 ReaderPage 手里——工具栏是纯受控组件不自测 DOM，故以回调上交；
  *   未传时按钮禁用并 title 说明
@@ -41,9 +48,12 @@ export function ReaderToolbar(props: {
   onNavigate: (page: number) => void
   onZoom: (z: number) => void
   onColor: (c: AnnotationColor) => void
+  selectionMode?: boolean
+  onToggleSelectionMode?: () => void
   onFitWidth?: () => void
 }): JSX.Element {
   const { page, totalPages, zoom, color, onNavigate, onZoom, onColor, onFitWidth } = props
+  const selectionMode = props.selectionMode ?? false
   const [pageInput, setPageInput] = useState(String(page + 1))
 
   // 外部翻页（键盘/目录跳转/越界自愈）同步回输入框
@@ -158,6 +168,19 @@ export function ReaderToolbar(props: {
           />
         ))}
       </div>
+
+      {/* 选择模式开关（F-A3/INV-42）：颜色组之后、搜索占位之前；选中态边框
+          强调（颜色点选中态同语言）；toggle 语义在装配面——本组件只上抛 */}
+      <button
+        type="button"
+        className={btn}
+        aria-pressed={selectionMode}
+        title="开启后可在标注块上直接划选文字，标注暂不可点击"
+        style={{ borderColor: selectionMode ? 'var(--accent)' : undefined }}
+        onClick={() => props.onToggleSelectionMode?.()}
+      >
+        选择模式
+      </button>
 
       {/* 搜索占位（禁用态）：真实输入框的提示属性名会撞 quality 关卡的英文字面量禁令，
           且 v1 本就不可输入——用非表单元素呈现提示文案，语义在 title */}

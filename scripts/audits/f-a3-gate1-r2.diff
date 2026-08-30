@@ -1,0 +1,894 @@
+diff --git a/scripts/audits/f-a3-verify.mjs b/scripts/audits/f-a3-verify.mjs
+new file mode 100644
+index 000000000..48abfa95e
+--- /dev/null
++++ b/scripts/audits/f-a3-verify.mjs
+@@ -0,0 +1,267 @@
++/**
++ * F-A3 真机取证——选择模式三场景（crib f-a2-retest.mjs：真实库副本
++ * freshUserData+Electron launch+真鼠标 CDP）。
++ * 场景 A（负向对照）：常规模式，起点压在既有标注 rect 上的真鼠标拖选→
++ *   selLen=0+无工具条（现状保持，不回归）。
++ * 场景 B（F-A2 根治）：点「选择模式」→aria-pressed=true+全 annotation-rect
++ *   计算样式 pointer-events:none→同点位真鼠标拖选→selLen>0+selection-toolbar
++ *   出现→点「高亮」→rect 计数+1。
++ * 场景 C（现状不破）：切回常规→pointer-events 恢复 auto→点击标注→
++ *   annotation-menu 出现。
++ * 在档坑（f-a2 实证）：视口内落点+y>120 避 chrome 遮蔽；滚块进视口。
++ * 产物：scripts/audits/f-a3-out/f-a3-verify.json（raw log 另落
++ * f-a3-verify-probe.raw.txt——由调用侧 tee）。
++ */
++import { _electron as electron } from '@playwright/test'
++import { cp, mkdir, rm } from 'node:fs/promises'
++import { existsSync, writeFileSync } from 'node:fs'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++
++const ROOT = process.cwd()
++const OUT = join(ROOT, 'scripts', 'audits', 'f-a3-out')
++const R = { meta: { script: 'f-a3-verify.mjs', date: new Date().toISOString() }, scenarios: {} }
++const log = (...a) => console.log(`[f-a3 ${new Date().toISOString().slice(11, 19)}]`, ...a)
++
++/** 真鼠标拖选（12 步插值—— crib f-a2 场景手法） */
++async function dragSelect(win, x1, y1, x2, y2) {
++  await win.mouse.move(x1, y1)
++  await win.mouse.down()
++  for (let i = 1; i <= 12; i++) {
++    await win.waitForTimeout(16)
++    await win.mouse.move(x1 + ((x2 - x1) * i) / 12, y1 + ((y2 - y1) * i) / 12)
++  }
++  await win.mouse.up()
++  await win.waitForTimeout(1600)
++}
++
++/** 选区+工具条状态采样 */
++async function selectionState(win) {
++  return win.evaluate(`(() => {
++    const t = document.querySelector('[data-testid="selection-toolbar"]')
++    const sel = getSelection()
++    return { present: !!t, visible: !!t && t.getBoundingClientRect().height > 0, selLen: sel && !sel.isCollapsed ? sel.toString().length : 0 }
++  })()`)
++}
++
++async function main() {
++  if (!existsSync(join(ROOT, 'out', 'main', 'index.js'))) throw new Error('先 build')
++  await mkdir(OUT, { recursive: true })
++  const src = join(process.env.APPDATA, 'Synapse')
++  const userData = join(tmpdir(), 'synapse-f-a3-verify')
++  await rm(userData, { recursive: true, force: true })
++  for (const p of ['workspaces', 'ai-sensor']) await cp(join(src, p), join(userData, p), { recursive: true })
++  for (const f of ['settings.json', 'workspace.json', 'window-state.json']) {
++    if (existsSync(join(src, f))) await cp(join(src, f), join(userData, f))
++  }
++  const app = await electron.launch({ args: ['out/main/index.js'], env: { ...process.env, SYNAPSE_USER_DATA: userData } })
++  const win = await app.firstWindow()
++  await win.getByRole('button', { name: '阅读器' }).waitFor({ timeout: 20_000 })
++  await win.waitForTimeout(600)
++  if (!(await win.evaluate(() => !!document.querySelector('[data-page-root]')))) {
++    await win.getByRole('button', { name: '文献库' }).click()
++    await win.waitForTimeout(400)
++    await win.locator('.lib-card').first().dblclick()
++  }
++  await win.waitForSelector('[data-page-root] .textLayer span', { timeout: 20_000 })
++  await win.waitForTimeout(800)
++
++  // 前置：制造一条既有标注（干净面真鼠标拖选→高亮；不出条则程序化兜底）
++  await win.evaluate(`(() => {
++    const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')]
++      .filter(sp => sp.firstChild && sp.firstChild.nodeType === 3 && sp.textContent.length > 0)
++    spans[8]?.scrollIntoView({ block: 'center' })
++  })()`)
++  await win.waitForTimeout(400)
++  const inView = await win.evaluate(`(() => {
++    const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')]
++      .filter(sp => sp.firstChild && sp.firstChild.nodeType === 3 && sp.textContent.length > 0)
++    const vis = spans.map((s, i) => ({ i, r: s.getBoundingClientRect() })).filter(o => o.r.y > 120 && o.r.y < 700 && o.r.width > 5)
++    return { n: vis.length, first: vis[0]?.i, last: vis[Math.min(vis.length - 1, 9)]?.i }
++  })()`)
++  log('可见 span 采样', JSON.stringify(inView))
++  const a = Math.max(0, inView.first ?? 4)
++  const b = inView.last ?? Math.min(a + 8, Math.max(inView.n - 1, a))
++  const cleanPts = await win.evaluate(`(() => {
++    const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')].filter(sp => sp.firstChild && sp.firstChild.nodeType === 3)
++    const r1 = spans[${a}].getBoundingClientRect(), r2 = spans[${b}].getBoundingClientRect()
++    return { x1: r1.x + r1.width / 2, y1: r1.y + r1.height / 2, x2: r2.x + r2.width * 0.3, y2: r2.y + r2.height / 2 }
++  })()`)
++  await dragSelect(win, cleanPts.x1, cleanPts.y1, cleanPts.x2, cleanPts.y2)
++  const preState = await selectionState(win)
++  R.prep = { drag: cleanPts, ...preState }
++  log('前置干净面拖选', JSON.stringify(R.prep))
++  if (preState.present) {
++    await win.getByRole('button', { name: '高亮' }).click().catch(() => {})
++  } else {
++    await win.evaluate(`(() => {
++      const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')].filter(sp => sp.firstChild && sp.firstChild.nodeType === 3)
++      const r = document.createRange()
++      r.setStart(spans[${a}].firstChild, 2); r.setEnd(spans[${b}].firstChild, 4)
++      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r)
++    })()`)
++    await win.waitForSelector('[data-testid="selection-toolbar"]', { timeout: 8000 })
++    await win.getByRole('button', { name: '高亮' }).click()
++  }
++  await win.waitForTimeout(900)
++
++  // 既有标注块滚进视口,取「整体在视口内的标注块」作压点(场景 A/B 同点位)
++  await win.evaluate(`(() => {
++    const el = [...document.querySelectorAll('[data-testid="annotation-rect"]')].find(e => e.getBoundingClientRect().width > 5)
++    el?.scrollIntoView({ block: 'center' })
++  })()`)
++  await win.waitForTimeout(500)
++  const qA = await win.evaluate(`(() => {
++    const els = [...document.querySelectorAll('[data-testid="annotation-rect"]')].filter(e => e.getBoundingClientRect().width > 5)
++    const boxes = els.map(e => e.getBoundingClientRect()).filter(r => r.y > 140 && r.bottom < 680 && r.width > 20 && r.width < 400)
++    const spans = [...document.querySelectorAll('[data-page-root] .textLayer span')]
++      .filter(sp => sp.firstChild && sp.firstChild.nodeType === 3 && (sp.textContent || '').length > 0)
++      .map(sp => sp.getBoundingClientRect())
++    // 压点=标注块×非空文本 span 交叠区中心:该点既压块(负向对照语义)又必落
++    // 实文本上(空 span 上浏览器无法锚定选区,拖选不成——且常规模式下
++    // elementFromPoint 返回 rect 本身不可扫描,故用几何求交,切模式前可算)
++    let down = null
++    let target = null
++    for (const r of boxes) {
++      const s = spans.find(sr => sr.width > 5 && sr.y < r.bottom && sr.bottom > r.y && sr.x < r.right && sr.right > r.x)
++      if (s !== undefined) {
++        target = r
++        down = {
++          x: (Math.max(r.x, s.x) + Math.min(r.right, s.right)) / 2,
++          y: (Math.max(r.y, s.y) + Math.min(r.bottom, s.bottom)) / 2
++        }
++        break
++      }
++    }
++    if (down === null) return null
++    // 终点距压点纵向 ≥40px(下方 2~3 行):拖选位移不足则选区不成——A/B 同点位
++    // 同距离,唯一变量=模式(f-a2 场景2 的紧邻行终点距离 ~17px 不足以成选,实证)
++    const end = spans.find(r => r.y > target.bottom + 40 && r.y > 120 && r.bottom < 700 && r.width > 5)
++    if (end === undefined) return null
++    return { x1: down.x, y1: down.y, x2: end.x + end.width * 0.5, y2: end.y + end.height / 2, onRect: true }
++  })()`)
++  if (qA === null) throw new Error('无可测标注块(场景前提不成立)')
++
++  // 场景 A:常规模式,压点拖选(负向对照:selLen=0+无工具条)
++  await dragSelect(win, qA.x1, qA.y1, qA.x2, qA.y2)
++  R.scenarios.A_normalOnRect = { drag: qA, ...(await selectionState(win)) }
++  log('场景A 常规压点拖选', JSON.stringify(R.scenarios.A_normalOnRect))
++
++  // 场景 B:切选择模式→断言按钮态+全 rect 穿透→同点位拖选→工具条→高亮→计数+1
++  // 标注计数按唯一 annotationId(一条标注跨多行渲染多块,rect 数≠条数)
++  const beforeCount = await win.evaluate(`new Set([...document.querySelectorAll('[data-testid="annotation-rect"]')].map(e => e.getAttribute('data-annotation-id'))).size`)
++  const modeBtn = win.locator('button:has-text("选择模式")')
++  await modeBtn.click()
++  await win.waitForTimeout(300)
++  R.scenarios.B_selectionMode = {}
++  R.scenarios.B_selectionMode.ariaPressed = await modeBtn.getAttribute('aria-pressed')
++  R.scenarios.B_selectionMode.rectPointerEvents = await win.evaluate(`(() => {
++    const els = [...document.querySelectorAll('[data-testid="annotation-rect"]')]
++    const vals = [...new Set(els.map(e => getComputedStyle(e).pointerEvents))]
++    return { total: els.length, computed: vals }
++  })()`)
++  // 诊断:压点命中元素(穿透验证——annotation rect 不在场,应落 textLayer;
++  // txt=命中 span 文本长度——空 span 上浏览器无法锚定选区,拖选不成)
++  R.scenarios.B_selectionMode.hitTest = await win.evaluate(`(() => {
++    const el = document.elementFromPoint(${qA.x1}, ${qA.y1})
++    if (el === null) return null
++    const cls = typeof el.className === 'string' ? el.className : ''
++    return { tag: el.tagName, cls, inTextLayer: !!el.closest('.textLayer'), selectable: getComputedStyle(el).userSelect, txt: (el.textContent || '').length }
++  })()`)
++  log('场景B 切模式后按钮+rect 态', JSON.stringify(R.scenarios.B_selectionMode))
++  // B0 分解实验:选择模式下干净区(非压点)拖选——区分系统性/压点区特性
++  await dragSelect(win, cleanPts.x1, cleanPts.y1, cleanPts.x2, cleanPts.y2)
++  R.scenarios.B_selectionMode.cleanAreaProbe = { drag: cleanPts, ...(await selectionState(win)) }
++  log('场景B0 选择模式干净区拖选', JSON.stringify(R.scenarios.B_selectionMode.cleanAreaProbe))
++  await dragSelect(win, qA.x1, qA.y1, qA.x2, qA.y2)
++  R.scenarios.B_selectionMode.drag = qA
++  Object.assign(R.scenarios.B_selectionMode, await selectionState(win))
++  log('场景B 压点拖选', JSON.stringify(R.scenarios.B_selectionMode))
++  if (!R.scenarios.B_selectionMode.present) throw new Error('场景B 工具条未弹出')
++  const scrollTopOf = async () => {
++    const v = await win.evaluate(`(() => { const el = document.querySelector('.min-w-0.flex-1.overflow-auto.p-3'); return el ? Math.round(el.scrollTop) : -1 })()`)
++    return v
++  }
++  R.scenarios.B_selectionMode.scrollTop = { beforeSave: await scrollTopOf() }
++  await win.getByRole('button', { name: '高亮' }).click()
++  await win.waitForTimeout(900)
++  R.scenarios.B_selectionMode.scrollTop.afterSave = await scrollTopOf()
++  log('场景B 保存前后滚动', JSON.stringify(R.scenarios.B_selectionMode.scrollTop))
++  const afterCount = await win.evaluate(`new Set([...document.querySelectorAll('[data-testid="annotation-rect"]')].map(e => e.getAttribute('data-annotation-id'))).size`)
++  R.scenarios.B_selectionMode.rectCount = { before: beforeCount, after: afterCount }
++  R.scenarios.B_selectionMode.saved = afterCount === beforeCount + 1
++  log('场景B 高亮保存计数', JSON.stringify(R.scenarios.B_selectionMode.rectCount))
++
++  // 场景 C:切回常规→pointer-events 恢复+点击标注→菜单出现
++  const scrollProbe = async (label) => {
++    const v = await win.evaluate(`(() => {
++      const els = [...document.querySelectorAll('div')].filter(e => e.className && String(e.className).includes('overflow-auto'))
++      return els.map(e => ({ cls: String(e.className).slice(0, 40), top: Math.round(e.scrollTop), h: e.clientHeight }))
++    })()`)
++    log(`scroll@${label}`, JSON.stringify(v))
++  }
++  await scrollProbe('C-before-toggle')
++  await modeBtn.click()
++  await scrollProbe('C-after-toggle')
++  await win.waitForTimeout(300)
++  R.scenarios.C_backToNormal = {}
++  R.scenarios.C_backToNormal.ariaPressed = await modeBtn.getAttribute('aria-pressed')
++  R.scenarios.C_backToNormal.rectPointerEvents = await win.evaluate(`(() => {
++    const els = [...document.querySelectorAll('[data-testid="annotation-rect"]')]
++    const vals = [...new Set(els.map(e => getComputedStyle(e).pointerEvents))]
++    return { total: els.length, computed: vals }
++  })()`)
++  // 视口保障:保存链后滚动位可能漂移(采样在档),先把标注块滚回视口再点击
++  await win.evaluate(`(() => {
++    const el = [...document.querySelectorAll('[data-testid="annotation-rect"]')].find(e => e.getBoundingClientRect().width > 5)
++    el?.scrollIntoView({ block: 'center' })
++  })()`)
++  await win.waitForTimeout(500)
++  const clickTarget = await win.evaluate(`(() => {
++    const boxes = [...document.querySelectorAll('[data-testid="annotation-rect"]')].map(e => e.getBoundingClientRect())
++    const r = boxes.find(b => b.y > 140 && b.bottom < 680 && b.width > 20)
++    // 诊断:视口内块几何样本(失败定位用)
++    const sample = boxes.slice(0, 6).map(b => ({ y: Math.round(b.y), bottom: Math.round(b.bottom), w: Math.round(b.width) }))
++    return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2, sample } : { none: true, sample }
++  })()`)
++  if (clickTarget.none === true || clickTarget.x === undefined) {
++    R.scenarios.C_backToNormal.clickTargetDebug = clickTarget
++  }
++  if (clickTarget.x !== undefined) {
++    await win.mouse.move(clickTarget.x, clickTarget.y)
++    await win.mouse.down()
++    await win.waitForTimeout(60)
++    await win.mouse.up()
++    await win.waitForTimeout(500)
++    R.scenarios.C_backToNormal.menuShown = await win.evaluate(`!!document.querySelector('[data-testid="annotation-menu"]')`)
++  } else {
++    R.scenarios.C_backToNormal.menuShown = 'skipped:无可点击块'
++  }
++  log('场景C 切回常规+点击', JSON.stringify(R.scenarios.C_backToNormal))
++
++  await win.screenshot({ path: join(OUT, 'f-a3-final-state.png') })
++  await app.close()
++  writeFileSync(join(OUT, 'f-a3-verify.json'), JSON.stringify(R, null, 2))
++
++  const A = R.scenarios.A_normalOnRect
++  const B = R.scenarios.B_selectionMode
++  const C = R.scenarios.C_backToNormal
++  const pass =
++    A.selLen === 0 && A.present === false &&
++    B.ariaPressed === 'true' && B.rectPointerEvents.computed.join() === 'none' &&
++    B.selLen > 0 && B.present === true && B.saved === true &&
++    C.ariaPressed === 'false' && C.rectPointerEvents.computed.every(v => v === 'auto') && C.menuShown === true
++  console.log(`F-A3 VERIFY: A(neg)=${A.selLen === 0 && !A.present ? 'PASS' : 'FAIL'} B(root)=${B.ariaPressed === 'true' && B.selLen > 0 && B.present && B.saved ? 'PASS' : 'FAIL'} C(regress)=${C.ariaPressed === 'false' && C.menuShown === true ? 'PASS' : 'FAIL'} overall=${pass ? 'PASS' : 'FAIL'}`)
++  if (!pass) process.exit(2)
++}
++
++await main().catch((e) => {
++  R.error = String(e)
++  try {
++    writeFileSync(join(OUT, 'f-a3-verify.json'), JSON.stringify(R, null, 2))
++  } catch {
++    // 产物目录缺失等——原始错误优先报告
++  }
++  console.error(e)
++  process.exit(1)
++})
+diff --git a/src/renderer/features/reader/AiAnnotationLayer.tsx b/src/renderer/features/reader/AiAnnotationLayer.tsx
+index 6d20145bf..c62270058 100644
+--- a/src/renderer/features/reader/AiAnnotationLayer.tsx
++++ b/src/renderer/features/reader/AiAnnotationLayer.tsx
+@@ -23,6 +23,11 @@
+  *   点击**不弹标注菜单**——AI 段无批注语义
+  * - 渲染节点带 **data-ai-note-id** 属性（anchor-locate exact 层滚动目标——
+  *   本单延展，W08-3 处置对侧已兑现）
++ * - **[F-A3 增补] 选择模式（INV-42）**：store 自订阅 per-tab selectionMode
++ *   （AnnotationLayer 同型）——选择模式下 rect pointerEvents:none（点击穿透
++ *   零副作用+onClick 守卫兜程序化派发）+进入即清选中描边（S4：selectedId
++ *   置 null，data-highlight 全 false，paint 前收起）；切回常规恢复 auto 不
++ *   自动重选。SelectionLayer 不消费模式（正交零改动）。
+  * - **[F-07 增补] 容器去 mixBlendMode:'multiply'**：AI-09 起容器级 multiply 与
+  *   backdrop（含先绘兄弟标注层）相乘——用户标注与 AI 段重叠处乘两次=加深
+  *   （层间叠乘两源头之一，本层摘除）。段级 opacity:0.45 保留（半透明自身
+@@ -58,7 +63,7 @@
+  * - 测试：tests/unit/renderer/ai-annotation-layer.test.tsx [受锁新增]+
+  *   e2e ai-notes-section.spec.ts 扩用例（均 always-active）
+  */
+-import { useEffect, useMemo, useState } from 'react'
++import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+ import type { AiNote } from '@shared/models/ai-note'
+ import type { AnnotationRect } from '@shared/models/annotation'
+ import { verifyQuote } from './anchor-serialize'
+@@ -92,6 +97,15 @@ export function AiAnnotationLayer(props: {
+   const { aiNotes, page, pageRoot, onJumpToNote } = props
+   const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {} })
+   const [selectedId, setSelectedId] = useState<string | null>(null)
++  // F-A3（INV-42）：选择模式自订阅（AnnotationLayer 同型；props 接口零变）
++  const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
++
++  // 进入选择模式：清选中描边（S4——rects 惰性化，data-highlight 全 false）；
++  // 切回常规恢复 auto 不自动重选（用户重新点击）。useLayoutEffect=paint 前
++  // 收起（与 AnnotationLayer 关弹层同措辞——无中间帧，票面 §4）
++  useLayoutEffect(() => {
++    if (selectionMode) setSelectedId(null)
++  }, [selectionMode])
+ 
+   // 引用稳定（props 过滤结果 memo——effect 依赖防每渲染重锚循环）
+   const pageNotes = useMemo(() => anchorableNotes(aiNotes, page), [aiNotes, page])
+@@ -171,10 +185,14 @@ export function AiAnnotationLayer(props: {
+               // AI 段半透明+选中描边：与用户标注（不透明）视觉区分，选中=高亮该段全部 rects
+               opacity: n.id === selectedId ? 0.8 : 0.45,
+               outline: n.id === selectedId ? '1px solid var(--accent)' : undefined,
+-              pointerEvents: 'auto',
++              // F-A3（INV-42）：选择模式 rect 穿透（拖选可在 AI 段上发起）
++              pointerEvents: selectionMode ? 'none' : 'auto',
+               cursor: 'pointer'
+             }}
+             onClick={() => {
++              // 选择模式点击=穿透零副作用（浏览器层由 pointerEvents:none 达成；
++              // 此守卫兜程序化 click 派发——jsdom/自动化路径同语义）
++              if (selectionMode) return
+               setSelectedId(n.id)
+               onJumpToNote(n.id)
+             }}
+diff --git a/src/renderer/features/reader/AnnotationLayer.tsx b/src/renderer/features/reader/AnnotationLayer.tsx
+index 213b43963..8badfad9e 100644
+--- a/src/renderer/features/reader/AnnotationLayer.tsx
++++ b/src/renderer/features/reader/AnnotationLayer.tsx
+@@ -27,13 +27,15 @@
+  * ── 架构层 ──
+  * - 重锚根是页根内 .textLayer 容器（与 SelectionLayer 同口径）；annotation-anchor
+  *   是唯一 DOM 遍历点；api 调用 + store 三方法同步在本层，AnnotationEditor 纯展示
+- * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单，代价是矩形上方
+- *   无法发起文本重选（v1 约束：从矩形外起选）
++ * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单；矩形上方能否
++ *   发起文本重选由选择模式条件化（F-A3/INV-42，F-A2 根治）：常规=v1 约束
++ *   保持（从矩形外起选）；选择模式=rect 穿透（拖选可在标注块上发起；rectStyle
++ *   零改——覆盖在消费方）+进入即关已开弹层（S1/S5，paint 前收起；切回不恢复）
+  *
+  * ── 生命周期层 ── / ── 文化层 ──
+  * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
+  */
+-import { useEffect, useState } from 'react'
++import { useEffect, useLayoutEffect, useState } from 'react'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import { api, unwrap, ApiClientError } from '../../api/client'
+ import { showToast } from '../../shared/ui/Toast'
+@@ -74,6 +76,12 @@ export function AnnotationLayer(props: {
+   const [menu, setMenu] = useState<PopupTarget | null>(null)
+   const [editing, setEditing] = useState<PopupTarget | null>(null)
+   const [busy, setBusy] = useState(false)
++  // F-A3（INV-42）：选择模式自订阅（per-tab，SelectionLayer color 先例；props 零变）
++  const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
++  // 进入选择模式：关已开菜单/编辑器（S1/S5；草稿丢弃=Escape 同语义；切回不自动恢复）；useLayoutEffect=paint 前收起，无中间帧可点击已死弹层（票面 §4）
++  useLayoutEffect(() => {
++    if (selectionMode) { setMenu(null); setEditing(null) }
++  }, [selectionMode])
+ 
+   const pageAnnotations = annotations.filter((a) => a.page === page)
+ 
+@@ -198,8 +206,10 @@ export function AnnotationLayer(props: {
+               aria-label={`标注：${a.quoteText}`}
+               title={a.comment !== '' ? a.comment : a.quoteText}
+               className="absolute"
+-              style={rectStyle(a.kind, a.color, r)}
++              style={selectionMode ? { ...rectStyle(a.kind, a.color, r), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r)}
+               onClick={() => {
++                // 选择模式=穿透零副作用（pointerEvents:none 达成，守卫兜程序化派发）
++                if (selectionMode) return
+                 // 点击他条=切目标（菜单接管收起编辑器）；反向同步侧栏高亮（C-05）
+                 useReaderStore.getState().notifyNoteHighlight(a.id)
+                 setMenu({ annotation: a, rect: r })
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 3385a994c..45be038ed 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -15,6 +15,9 @@
+  *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
+  * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
+  * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
++ * - F-A3 选择模式装配：selectionMode 取 active tab（?? false）；toggle 语义在
++ *   本装配面（工具栏纯受控只上抛 onToggleSelectionMode→store.setSelectionMode
++ *   写 active tab，INV-42）
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+  * ── 架构层 ──
+@@ -51,6 +54,7 @@ export function ReaderPage(): JSX.Element {
+   const totalPages = tab?.totalPages ?? 0
+   const zoom = tab?.zoom ?? 1
+   const color = tab?.color ?? 'yellow'
++  const selectionMode = tab?.selectionMode ?? false
+   const annotations = tab?.annotations ?? []
+   const setPage = useReaderStore((s) => s.setPage)
+   const setZoom = useReaderStore((s) => s.setZoom)
+@@ -175,7 +179,11 @@ export function ReaderPage(): JSX.Element {
+     <div className="flex h-full flex-col overflow-hidden">
+       <TabBar />
+       <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
+-        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth} />
++        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth}
++        selectionMode={selectionMode}
++        onToggleSelectionMode={() => {
++          useReaderStore.getState().setSelectionMode(!selectionMode)
++        }} />
+       <div className="flex min-h-0 flex-1">
+         {outlineOpen ? (
+           // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点
+diff --git a/src/renderer/features/reader/ReaderToolbar.tsx b/src/renderer/features/reader/ReaderToolbar.tsx
+index d4ff5bb6f..9c6ff58a8 100644
+--- a/src/renderer/features/reader/ReaderToolbar.tsx
++++ b/src/renderer/features/reader/ReaderToolbar.tsx
+@@ -5,12 +5,19 @@
+  * - 页码显示/跳转、上/下页、缩放 -/100%/+（0.5~3 步进 0.1）、适应宽度
+  * - 标注颜色选择（当前色）；内文搜索框（v1：全文检索走文献库 FTS，
+  *   页内高亮搜索 v2——工具栏只放占位禁用态并 title 提示）
++ * - 选择模式开关（F-A3/INV-42，颜色组之后）：aria-pressed 反映当前态+选中
++ *   态边框强调（颜色点选中态同语言）；toggle 语义在装配面 ReaderPage——
++ *   工具栏纯受控只上抛 onToggleSelectionMode
+  *
+  * ── 接口层 ──
+  * - export function ReaderToolbar(props: { page: number; totalPages: number; zoom: number;
+  *     color: AnnotationColor; onNavigate(page: number): void;
+  *     onZoom(z: number): void; onColor(c: AnnotationColor): void;
++ *     selectionMode?: boolean; onToggleSelectionMode?(): void;
+  *     onFitWidth?(): void }): JSX.Element
++ * - selectionMode/onToggleSelectionMode 可选：受锁测试夹具（sha256 面）直植
++ *   既有 props 形状零破坏；生产装配面 ReaderPage 恒传（缺席=常规态渲染+按钮
++ *   点击无操作，仅存在于测试路径）
+  * - onFitWidth（可选，Phase 3 接线时加入）：适应宽度需要滚动容器内宽与页面原始宽，
+  *   二者都在 ReaderPage 手里——工具栏是纯受控组件不自测 DOM，故以回调上交；
+  *   未传时按钮禁用并 title 说明
+@@ -41,9 +48,12 @@ export function ReaderToolbar(props: {
+   onNavigate: (page: number) => void
+   onZoom: (z: number) => void
+   onColor: (c: AnnotationColor) => void
++  selectionMode?: boolean
++  onToggleSelectionMode?: () => void
+   onFitWidth?: () => void
+ }): JSX.Element {
+   const { page, totalPages, zoom, color, onNavigate, onZoom, onColor, onFitWidth } = props
++  const selectionMode = props.selectionMode ?? false
+   const [pageInput, setPageInput] = useState(String(page + 1))
+ 
+   // 外部翻页（键盘/目录跳转/越界自愈）同步回输入框
+@@ -159,6 +169,19 @@ export function ReaderToolbar(props: {
+         ))}
+       </div>
+ 
++      {/* 选择模式开关（F-A3/INV-42）：颜色组之后、搜索占位之前；选中态边框
++          强调（颜色点选中态同语言）；toggle 语义在装配面——本组件只上抛 */}
++      <button
++        type="button"
++        className={btn}
++        aria-pressed={selectionMode}
++        title="开启后可在标注块上直接划选文字，标注暂不可点击"
++        style={{ borderColor: selectionMode ? 'var(--accent)' : undefined }}
++        onClick={() => props.onToggleSelectionMode?.()}
++      >
++        选择模式
++      </button>
++
+       {/* 搜索占位（禁用态）：真实输入框的提示属性名会撞 quality 关卡的英文字面量禁令，
+           且 v1 本就不可输入——用非表单元素呈现提示文案，语义在 title */}
+       <span
+diff --git a/src/renderer/features/reader/reader.store.ts b/src/renderer/features/reader/reader.store.ts
+index d4540d4f6..4fa027553 100644
+--- a/src/renderer/features/reader/reader.store.ts
++++ b/src/renderer/features/reader/reader.store.ts
+@@ -37,8 +37,18 @@
+  *   scroll-progress.ts（语义保持）；本 store 只留接线——progressFlusher
+  *   注册口（装配面 ReaderPage 注册/注销成对），closeTab 时 flush(paperId)、
+  *   close() 时 flushAll()（立即收账，尽力而为 catch 吞由消费方承载）
++ * - 标注「选择模式」态（F-A3/INV-42，per-tab 与 zoom/color 同型）：载体=
++ *   TabState.selectionMode（false=常规=默认；true=选择）。生命周期迁移表
++ *   （票面 §0 面③原文）：
++ *   | 事件 | selectionMode 迁移 |
++ *   | openPaper（absent 新建） | false（makeLoadingTab 默认） |
++ *   | openPaper（error 重试） | 沿用 prev（{...prev, status:'loading'}） |
++ *   | setSelectionMode(m) | active tab 写入 m；activeId=null no-op |
++ *   | closeOne(id) | 随 tab 删除；重开同 id=全新 tab=false |
++ *   | close()（closeAll） | 整体复位（初始态工厂） |
+  * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
+- *   updateAnnotation/removeAnnotation）作用于 active tab；activeId=null 时 no-op
++ *   updateAnnotation/removeAnnotation/setSelectionMode）作用于 active tab；
++ *   activeId=null 时 no-op
+  * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
+  *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
+  *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
+@@ -88,6 +98,12 @@ export interface TabState {
+   status: 'loading' | 'ready' | 'error'
+   /** 灰点信号位（TABS-03 写入；本单恒 false） */
+   dirty: boolean
++  /** 标注「选择模式」（F-A3/INV-42，per-tab 视图交互态）：true=两层标注渲染
++   *  rect pointer-events 全关（点击穿透零副作用，拖选可在标注块上发起——
++   *  F-A2 根治）；会话内存态不持久化。可选字段=存量测试夹具（受锁 sha256
++   *  面，8 文件完整对象直植）零破坏的必要形式；缺席即常规态，消费方一律
++   *  ?? false 兜底；makeLoadingTab 新建分支显式 false */
++  selectionMode?: boolean
+ }
+ 
+ /** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
+@@ -119,6 +135,9 @@ export interface ReaderStore {
+   setZoom(zoom: number): void
+   setTotalPages(total: number): void
+   setColor(color: AnnotationColor): void
++  /** 标注「选择模式」写 active tab（F-A3/INV-42）：toggle 语义在装配面
++   *  ReaderPage（工具栏纯受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
++  setSelectionMode(mode: boolean): void
+   addAnnotation(a: Annotation): void
+   updateAnnotation(a: Annotation): void
+   removeAnnotation(id: string): void
+@@ -165,7 +184,8 @@ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
+     color: 'yellow',
+     annotations: [],
+     status: 'loading',
+-    dirty: false
++    dirty: false,
++    selectionMode: false
+   }
+ }
+ 
+@@ -345,6 +365,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
+       updateActiveTab((tab) => ({ ...tab, color }))
+     },
+ 
++    setSelectionMode(mode) {
++      updateActiveTab((tab) => ({ ...tab, selectionMode: mode }))
++    },
++
+     addAnnotation(a) {
+       updateActiveTab((tab) => ({ ...tab, annotations: [...tab.annotations, a] }))
+     },
+diff --git a/tests/unit/renderer/selection-mode.test.tsx b/tests/unit/renderer/selection-mode.test.tsx
+new file mode 100644
+index 000000000..4a3c1328c
+--- /dev/null
++++ b/tests/unit/renderer/selection-mode.test.tsx
+@@ -0,0 +1,350 @@
++// @vitest-environment jsdom
++/**
++ * [F-A3] 标注「选择模式」——票面 5.1 用例 ①~⑧（锁定合约，always-active，
++ * 不经 guardedDescribe——ADR-0017 裁决 3；⑧=回炉 1 W1 编辑器臂补锁）。
++ *
++ * 覆盖：store 面（setSelectionMode 写 active/per-tab 记忆 S3/activeId=null
++ * no-op）、AnnotationLayer 面（rect pointerEvents 常规全 auto/选择全 none+
++ * 点击零副作用+进入选择关菜单/编辑器 S1 不自动恢复）、AiAnnotationLayer 面
++ * （rect none+选中描边清除 S4+点击守卫）、ReaderToolbar 面（aria-pressed/
++ * 选中态强调边框/onToggle 恰调一次）。SelectionToolbar 不消费模式（正交零改动）。
++ * 形态 crib annotation-layer.test.tsx（jsdom 指令/api mock/act 环境/存量
++ * rects 夹具）+ai-annotation-layer.test.tsx（pageRoot+.textLayer 真锚+syncRaf）。
++ * 布态=useReaderStore.setState 直植完整 TabState+activeId（免 openPaper 异步
++ * 链）；afterEach setState(createReaderStoreInitialState()) 复位（zustand
++ * 浅合并保 actions）。
++ */
++import { act } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { Annotation, AnnotationRect } from '@shared/models/annotation'
++import type { AiNote } from '../../../src/shared/models/ai-note'
++import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
++import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
++import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
++import {
++  createReaderStoreInitialState,
++  useReaderStore,
++  type TabState
++} from '../../../src/renderer/features/reader/reader.store'
++
++vi.mock('../../../src/renderer/api/client', () => ({
++  api: { reader: {} },
++  unwrap: vi.fn(),
++  ApiClientError: class extends Error {}
++}))
++vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
++
++/** 归一化域矩形夹具 */
++function rect(x: number, y: number, w: number, h: number): AnnotationRect {
++  return { page: 0, x, y, w, h }
++}
++
++/** 单标注（非零宽两行块——本票锁模式交互，归并面归 F-A1 既有测试） */
++function ann(): Annotation {
++  return {
++    id: 'a-1',
++    paperId: 'p-1',
++    page: 0,
++    kind: 'highlight',
++    color: 'yellow',
++    quoteText: '选择模式测试引文',
++    prefixText: '',
++    suffixText: '',
++    startOffset: 0,
++    endOffset: 8,
++    rects: [rect(0.1, 0.3, 0.3, 0.02), rect(0.1, 0.318, 0.4, 0.02)],
++    comment: '',
++    createdAt: '2026-08-30T00:00:00Z',
++    updatedAt: '2026-08-30T00:00:00Z'
++  }
++}
++
++/** ready 态完整 tab（tab-bar.test 同配方+selectionMode 维度） */
++function makeTab(id: string, selectionMode = false): TabState {
++  return {
++    paperId: id,
++    fileUrl: `app-file://${id}`,
++    fileName: `${id}.pdf`,
++    title: '',
++    page: 0,
++    totalPages: 10,
++    zoom: 1,
++    color: 'yellow',
++    annotations: [],
++    status: 'ready',
++    dirty: false,
++    selectionMode
++  }
++}
++
++/** AI 段夹具（ai-annotation-layer.test 同配方） */
++function aiNoteFixture(): AiNote {
++  return {
++    id: 'n1',
++    paperId: 'p-1',
++    annotationId: null,
++    role: 'first-read',
++    question: 'Q1',
++    model: 'test-model',
++    quoteText: 'WATER',
++    prefixText: '',
++    suffixText: '',
++    anchorPage: 1,
++    contentMd: '内容-n1',
++    createdAt: 't',
++    updatedAt: 't'
++  }
++}
++
++/** 页根：.textLayer 内单 span 全文（AI 层重锚管线真锚） */
++function makePageRoot(text: string): HTMLDivElement {
++  const root = document.createElement('div')
++  const textLayer = document.createElement('div')
++  textLayer.className = 'textLayer'
++  const span = document.createElement('span')
++  span.textContent = text
++  textLayer.appendChild(span)
++  root.appendChild(textLayer)
++  return root
++}
++
++/** rAF 同步化（jsdom 假帧——重锚 effect 即时收敛，测试确定性） */
++function syncRaf(): void {
++  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
++    cb(0)
++    return 0
++  })
++}
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++
++function mount(node: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(node)
++  })
++}
++
++const annRects = (): NodeListOf<HTMLElement> =>
++  host!.querySelectorAll<HTMLElement>('[data-testid="annotation-rect"]')
++
++const aiRects = (): NodeListOf<HTMLElement> =>
++  host!.querySelectorAll<HTMLElement>('[data-testid="ai-note-rect"]')
++
++beforeEach(() => {
++  ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
++  syncRaf()
++  useReaderStore.setState({
++    tabs: { 'p-1': makeTab('p-1') },
++    order: ['p-1'],
++    activeId: 'p-1',
++    noteHighlight: null,
++    aiNoteHighlight: null
++  })
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  vi.unstubAllGlobals()
++  useReaderStore.setState(createReaderStoreInitialState())
++})
++
++describe('F-A3 选择模式 —— store 面（TabState.selectionMode 生命周期）', () => {
++  it('① setSelectionMode：true 写入 active tab，再 false 回；activeId=null 时 no-op', () => {
++    useReaderStore.getState().setSelectionMode(true)
++    expect(useReaderStore.getState().tabs['p-1']?.selectionMode).toBe(true)
++    useReaderStore.getState().setSelectionMode(false)
++    expect(useReaderStore.getState().tabs['p-1']?.selectionMode).toBe(false)
++    useReaderStore.setState({ activeId: null })
++    const before = useReaderStore.getState().tabs
++    useReaderStore.getState().setSelectionMode(true)
++    expect(useReaderStore.getState().tabs).toBe(before)
++    expect(useReaderStore.getState().tabs['p-1']?.selectionMode).toBe(false)
++  })
++
++  it('② S3 per-tab：A(true)/B(false) 切换各自记忆；setSelectionMode 只动 active', () => {
++    useReaderStore.setState({
++      tabs: { 'p-a': makeTab('p-a', true), 'p-b': makeTab('p-b') },
++      order: ['p-a', 'p-b'],
++      activeId: 'p-a'
++    })
++    useReaderStore.getState().activateTab('p-b')
++    expect(useReaderStore.getState().tabs['p-b']?.selectionMode).toBe(false)
++    useReaderStore.getState().activateTab('p-a')
++    expect(useReaderStore.getState().tabs['p-a']?.selectionMode).toBe(true)
++    useReaderStore.getState().activateTab('p-b')
++    useReaderStore.getState().setSelectionMode(true)
++    expect(useReaderStore.getState().tabs['p-b']?.selectionMode).toBe(true)
++    useReaderStore.getState().activateTab('p-a')
++    useReaderStore.getState().setSelectionMode(false)
++    expect(useReaderStore.getState().tabs['p-a']?.selectionMode).toBe(false)
++    expect(useReaderStore.getState().tabs['p-b']?.selectionMode).toBe(true)
++  })
++})
++
++describe('F-A3 选择模式 —— AnnotationLayer 面', () => {
++  function mountLayer(): void {
++    mount(
++      <AnnotationLayer annotations={[ann()]} page={0} pageRoot={null} onChanged={vi.fn()} />
++    )
++  }
++
++  it('③ rect pointerEvents：常规全部 auto；进入选择模式 → 全部 none', () => {
++    mountLayer()
++    for (const r of Array.from(annRects())) {
++      expect(r.style.pointerEvents).toBe('auto')
++    }
++    act(() => {
++      useReaderStore.getState().setSelectionMode(true)
++    })
++    for (const r of Array.from(annRects())) {
++      expect(r.style.pointerEvents).toBe('none')
++    }
++  })
++
++  it('④ 常规点击 rect：菜单出现+noteHighlight 信号 seq 变；选择模式点击同一 rect：菜单不出现+信号不变', () => {
++    mountLayer()
++    act(() => {
++      annRects()[0]!.click()
++    })
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).not.toBeNull()
++    expect(useReaderStore.getState().noteHighlight).toEqual({ annotationId: 'a-1', seq: 1 })
++    act(() => {
++      useReaderStore.getState().setSelectionMode(true)
++    })
++    act(() => {
++      annRects()[0]!.click()
++    })
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).toBeNull()
++    expect(useReaderStore.getState().noteHighlight).toEqual({ annotationId: 'a-1', seq: 1 })
++  })
++
++  it('⑤ S1：菜单开 → 切选择 → 菜单关；切回常规不自动恢复', () => {
++    mountLayer()
++    act(() => {
++      annRects()[0]!.click()
++    })
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).not.toBeNull()
++    act(() => {
++      useReaderStore.getState().setSelectionMode(true)
++    })
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).toBeNull()
++    act(() => {
++      useReaderStore.getState().setSelectionMode(false)
++    })
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).toBeNull()
++  })
++
++  it('⑧ S1 编辑器臂：菜单→添加笔记→editor 开 → 切选择 → editor 关；切回不自动恢复', () => {
++    mountLayer()
++    act(() => {
++      annRects()[0]!.click()
++    })
++    const addNote = [...host!.querySelectorAll('button')].find(
++      (b) => b.textContent === '添加笔记'
++    )
++    expect(addNote).toBeDefined()
++    act(() => {
++      addNote!.click()
++    })
++    expect(host!.querySelector('[data-testid="annotation-editor"]')).not.toBeNull()
++    expect(host!.querySelector('[data-testid="annotation-menu"]')).toBeNull()
++    act(() => {
++      useReaderStore.getState().setSelectionMode(true)
++    })
++    expect(host!.querySelector('[data-testid="annotation-editor"]')).toBeNull()
++    act(() => {
++      useReaderStore.getState().setSelectionMode(false)
++    })
++    expect(host!.querySelector('[data-testid="annotation-editor"]')).toBeNull()
++  })
++})
++
++describe('F-A3 选择模式 —— AiAnnotationLayer 面', () => {
++  it('⑥ 常规点击置 selectedId（有 true）→ 切选择：rect none+data-highlight 全 false（S4）+点击守卫', () => {
++    const onJump = vi.fn()
++    mount(
++      <AiAnnotationLayer
++        aiNotes={[aiNoteFixture()]}
++        page={0}
++        pageRoot={makePageRoot('SMART WATER TEST DOC')}
++        onJumpToNote={onJump}
++      />
++    )
++    expect(aiRects().length).toBeGreaterThan(0)
++    expect(aiRects()[0]!.style.pointerEvents).toBe('auto')
++    act(() => {
++      aiRects()[0]!.click()
++    })
++    const hasTrue = Array.from(aiRects()).some(
++      (r) => r.getAttribute('data-highlight') === 'true'
++    )
++    expect(hasTrue).toBe(true)
++    expect(onJump).toHaveBeenCalledTimes(1)
++    act(() => {
++      useReaderStore.getState().setSelectionMode(true)
++    })
++    expect(aiRects()[0]!.style.pointerEvents).toBe('none')
++    for (const r of Array.from(aiRects())) {
++      expect(r.getAttribute('data-highlight')).toBe('false')
++    }
++    act(() => {
++      aiRects()[0]!.click()
++    })
++    expect(onJump).toHaveBeenCalledTimes(1)
++  })
++})
++
++describe('F-A3 选择模式 —— ReaderToolbar 面', () => {
++  it('⑦ aria-pressed 反映 selectionMode；选中态强调边框；点击恰调一次 onToggleSelectionMode', () => {
++    const onToggle = vi.fn()
++    mount(
++      <ReaderToolbar
++        page={0}
++        totalPages={10}
++        zoom={1}
++        color="yellow"
++        onNavigate={() => undefined}
++        onZoom={() => undefined}
++        onColor={() => undefined}
++        selectionMode={false}
++        onToggleSelectionMode={onToggle}
++      />
++    )
++    const btn = [...host!.querySelectorAll('button')].find(
++      (b) => b.textContent === '选择模式'
++    )
++    expect(btn).toBeDefined()
++    expect(btn!.getAttribute('aria-pressed')).toBe('false')
++    act(() => {
++      root?.render(
++        <ReaderToolbar
++          page={0}
++          totalPages={10}
++          zoom={1}
++          color="yellow"
++          onNavigate={() => undefined}
++          onZoom={() => undefined}
++          onColor={() => undefined}
++          selectionMode={true}
++          onToggleSelectionMode={onToggle}
++        />
++      )
++    })
++    expect(btn!.getAttribute('aria-pressed')).toBe('true')
++    expect((btn as HTMLElement).style.borderColor).toBe('var(--accent)')
++    act(() => {
++      ;(btn as HTMLElement).click()
++    })
++    expect(onToggle).toHaveBeenCalledTimes(1)
++  })
++})

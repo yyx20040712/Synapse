@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-30T14:04:45.3831057Z",
+    "generatedAt":  "2026-08-30T15:25:54.3237144Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -68,6 +68,10 @@
                   {
                       "path":  "scripts/audits/f-a2-retest.mjs",
                       "sha256":  "f60aa5d376739f8051c1319b591eb27ce2296420cf274a43947cfa8aaa2d54ef"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a3-verify.mjs",
+                      "sha256":  "fad78853b04dce3bf4b4bfc7dfa5d45830af0550856ac0191324ef34323d0c02"
                   },
                   {
                       "path":  "scripts/audits/f-l1c-forensics.mjs",
@@ -552,6 +556,10 @@
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
                       "sha256":  "732f606270662bfa735aa6cd3041e88dd2e0bd610caf103c56e80d4ff54a8510"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-mode.test.tsx",
+                      "sha256":  "de4ffde1aca449ad0c77558b32cb69b843f04bbdd31a69075df18de234e92d76"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
