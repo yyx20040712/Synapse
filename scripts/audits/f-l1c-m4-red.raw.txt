@@ -1,0 +1,41 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/edge-label-layout.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/edge-label-layout.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 6[2mms[22m[39m
+[31m   [31m×[31m F-L1-C edge-label-layout —— 防重叠放置器[2m > [22m①估算宽度：CJK 9.5/字、其余 4.75/字、+左右 padding 4、钳 130、空串 0[90m 4[2mms[22m[31m[39m
+[31m     → expected 289 to be 130 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/edge-label-layout.test.ts[2m > [22mF-L1-C edge-label-layout —— 防重叠放置器[2m > [22m①估算宽度：CJK 9.5/字、其余 4.75/字、+左右 padding 4、钳 130、空串 0
+[31m[1mAssertionError[22m: expected 289 to be 130 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 130[39m
+[31m+ 289[39m
+
+[36m [2m❯[22m tests/unit/renderer/edge-label-layout.test.ts:[2m44:48[22m[39m
+    [90m 42| [39m    [34mexpect[39m([34mestimateLabelWidth[39m([32m'中a'[39m))[33m.[39m[34mtoBe[39m([34m18.25[39m) [90m// 4 + 9.5 + 4.75[39m
+    [90m 43| [39m    [90m// 60 拉丁=4+285=289 → 钳 130[39m
+    [90m 44| [39m    [34mexpect[39m([34mestimateLabelWidth[39m([32m'a'[39m[33m.[39m[34mrepeat[39m([34m60[39m)))[33m.[39m[34mtoBe[39m([33mEDGE_LABEL_MAX_W[39m)
+    [90m   | [39m                                               [31m^[39m
+    [90m 45| [39m    [90m// 空 label 不渲染（既有语义）——碰撞盒零宽[39m
+    [90m 46| [39m    [34mexpect[39m([34mestimateLabelWidth[39m([32m''[39m))[33m.[39m[34mtoBe[39m([34m0[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 07:58:10
+[2m   Duration [22m 640ms[2m (transform 51ms, setup 0ms, collect 123ms, tests 6ms, environment 0ms, prepare 180ms)[22m
+
+EXIT=1

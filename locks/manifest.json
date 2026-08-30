@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-29T18:21:58.0511956Z",
+    "generatedAt":  "2026-08-30T00:32:27.8191154Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -60,6 +60,10 @@
                   {
                       "path":  "scripts/audits/f-a2-retest.mjs",
                       "sha256":  "f60aa5d376739f8051c1319b591eb27ce2296420cf274a43947cfa8aaa2d54ef"
+                  },
+                  {
+                      "path":  "scripts/audits/f-l1c-forensics.mjs",
+                      "sha256":  "9e9dbb3fa77ece674eb358156b2279234ebf7457fc073439648accd9016b6146"
                   },
                   {
                       "path":  "scripts/audits/f-l1-forensics.mjs",
@@ -422,6 +426,10 @@
                       "sha256":  "c13eb90c1b6ac8c547cae47af53b64fe770f085f960920177a9c839ca92f74b8"
                   },
                   {
+                      "path":  "tests/unit/renderer/edge-label-layout.test.ts",
+                      "sha256":  "1ac51f41f308767b56c491dc2d0f6f3e913df07022425f18058ae1f900022011"
+                  },
+                  {
                       "path":  "tests/unit/renderer/keymap.test.ts",
                       "sha256":  "e9cf9ddb57956e898a3610ff8f6a36da32d32e4f0cd65856af1bc12fd0b7d307"
                   },
@@ -439,7 +447,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
-                      "sha256":  "c632f45d19e309223216ba9aa16ffcd18930e6c490e71f2e394b2c10428835bf"
+                      "sha256":  "0e1fd24603509d226ee531ace473cd633e62ea41d39bc5061b9454f55fe44bfc"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas-visual.test.tsx",

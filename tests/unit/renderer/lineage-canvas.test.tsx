@@ -10,6 +10,8 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import type * as clientModule from '../../../src/renderer/api/client'
@@ -398,6 +400,89 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
     mount(<LineageCanvas nodes={nodes} edges={[]} />)
     expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('width')).toBe('180')
     expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('width')).toBe('260')
+  })
+})
+
+describe('F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）', () => {
+  /** ⑦⑧⑨ 共用夹具：A(y=0)→B(y=400 覆盖) 树边 + B→A 反向 ref 边——两锚同点
+   *  (90,200)（中点公式对称），节点盒外扩后不遮候选区（放置器可自由错开） */
+  function widePair(): { nodes: LineageNode[]; edges: LineageEdge[] } {
+    const long = '谱'.repeat(40)
+    const nodes = [node('A', { year: 2020, y: 0, title: '源头' }), node('B', { year: 2021, y: 400, title: '承接' })]
+    const e1: LineageEdge = { ...edge('A', 'B'), label: long }
+    const e2: LineageEdge = { ...edge('B', 'A'), label: long, kind: 'ref' }
+    return { nodes, edges: [e1, e2] }
+  }
+
+  it('⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip', () => {
+    const g = widePair()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    const label = host?.querySelector('[data-edge-label]')
+    expect(label?.tagName).toBe('DIV')
+    expect(label?.classList.contains('lineage-edge-label')).toBe(true)
+    // FO 恒上限尺寸（主控预裁 1：短标签透明空区免 est 偏差裁字）
+    const fo = label?.closest('foreignObject')
+    expect(fo?.getAttribute('width')).toBe('130')
+    expect(fo?.getAttribute('height')).toBe('37.05')
+    expect(label?.getAttribute('title')).toBe('谱'.repeat(40))
+  })
+
+  it('⑧slots 传递：同锚两条长标签经放置器错开（两 FO 位置不等——回炉 1 R1 后首自由位=dx 第二档 166）', () => {
+    const g = widePair()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    const fos = [...(host?.querySelectorAll('[data-edge-label]') ?? [])].map((el) => {
+      const fo = el.closest('foreignObject')
+      return { x: Number(fo?.getAttribute('x')), y: Number(fo?.getAttribute('y')) }
+    })
+    expect(fos.length).toBe(2)
+    // e1 落锚；e2 首自由位：dy=0 档 dx 第二档 −166（dxs 序负档先于正档；
+    // 回炉 1 R1 扩容——原单档 ±83 恒相交必竖移升档，扩容后横移档先分离）
+    expect(fos[1]!.x - fos[0]!.x).toBeCloseTo(-166, 6)
+    expect(fos[1]!.y).toBe(fos[0]!.y)
+  })
+
+  it('⑨wheel 主动滚动（回炉 1 R2）：截断标签上滚轮→scrollTop 恰增 deltaY+zoom 不触发；未截断→zoom 正常', () => {
+    const g = widePair()
+    mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+    const labels = host?.querySelectorAll('[data-edge-label]')
+    // jsdom 无布局（scrollHeight/clientHeight 恒 0）——defineProperty 定截断态
+    Object.defineProperty(labels?.[0], 'scrollHeight', { get: () => 999, configurable: true })
+    Object.defineProperty(labels?.[0], 'clientHeight', { get: () => 30, configurable: true })
+    const before = viewportTransform()
+    act(() => {
+      labels?.[0]?.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 240, clientX: 300, clientY: 200, bubbles: true, cancelable: true })
+      )
+    })
+    // 主动滚动：scrollTop 恰增 deltaY（钳 [0, scrollHeight-clientHeight]=969）
+    expect(labels?.[0]?.scrollTop).toBe(240)
+    // 阻断画布 zoom（stopPropagation 在标签层先行——transform 不变）
+    expect(viewportTransform()).toBe(before)
+    act(() => {
+      labels?.[0]?.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 100, clientX: 300, clientY: 200, bubbles: true, cancelable: true })
+      )
+    })
+    // 累计滚动（程序化可测，不依赖布局）
+    expect(labels?.[0]?.scrollTop).toBe(340)
+    act(() => {
+      labels?.[1]?.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: -240, clientX: 300, clientY: 200, bubbles: true, cancelable: true })
+      )
+    })
+    // 反向锚：未截断不吞 zoom（主控预裁 4）+不主动滚动
+    expect(viewportTransform()).not.toBe(before)
+    expect(labels?.[1]?.scrollTop).toBe(0)
+  })
+
+  it('⑩CSS 文本锁：theme.css 含 .lineage-edge-label 声明形态（break-word/max-height/overflow hidden）+:hover 段 overflow-y auto', () => {
+    const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
+    // 正则锚定声明形态（[^}]* 不跨段——防注释字样救活，SET1 变异③先例）
+    expect(css).toMatch(/\.lineage-edge-label\s*\{[^}]*overflow-wrap:\s*break-word[^}]*\}/)
+    expect(css).toMatch(/\.lineage-edge-label\s*\{[^}]*max-height[^}]*\}/)
+    expect(css).toMatch(/\.lineage-edge-label\s*\{[^}]*overflow:\s*hidden[^}]*\}/)
+    // 悬停滚动（用户保证②）——:hover 段承载交互态（B1 教训禁内联）
+    expect(css).toMatch(/\.lineage-edge-label:hover\s*\{[^}]*overflow-y:\s*auto[^}]*\}/)
   })
 })
 

@@ -40,8 +40,20 @@ const FIT_PAD_Y = 80
 
 export type Viewport = { tx: number; ty: number; k: number }
 
-/** auto-fit 视口计算（纯几何——包围盒+边距+钳制；DOM 尺寸由调用方量测） */
-export function fitViewport(nodes: LineageNode[], layout: LayoutResult, vw: number, vh: number): Viewport {
+/** labelBoxes 缺省常量（引用稳定——防 effect 依赖每渲染新 [] 引发的
+ *  setState 无限循环；Canvas 侧传 useMemo 产物同语义） */
+const EMPTY_LABEL_BOXES: Array<{ x: number; y: number; hw: number; hh: number }> = []
+
+/** auto-fit 视口计算（纯几何——包围盒+边距+钳制；DOM 尺寸由调用方量测）。
+ *  第 5 参 labelBoxes（F-L1-C，缺省 []——既有调用零破）：边标签槽位盒
+ *  参与包围盒——被防重叠放置器推出的标签不可消失在 fit 视野外。 */
+export function fitViewport(
+  nodes: LineageNode[],
+  layout: LayoutResult,
+  vw: number,
+  vh: number,
+  labelBoxes: Array<{ x: number; y: number; hw: number; hh: number }> = []
+): Viewport {
   let xMin = BAND_LEFT
   let xMax = BAND_LEFT
   let yMin = Infinity
@@ -55,6 +67,12 @@ export function fitViewport(nodes: LineageNode[], layout: LayoutResult, vw: numb
     const hh = nodeHeight(n.title) / 2
     yMin = Math.min(yMin, p.y - hh)
     yMax = Math.max(yMax, p.y + hh)
+  }
+  for (const b of labelBoxes) {
+    xMin = Math.min(xMin, b.x - b.hw)
+    xMax = Math.max(xMax, b.x + b.hw)
+    yMin = Math.min(yMin, b.y - b.hh)
+    yMax = Math.max(yMax, b.y + b.hh)
   }
   if (yMin === Infinity) return { tx: 0, ty: 0, k: 1 } // 无可拟合内容（调用方已查 nodes.length——理论不可达防御）
   const k = Math.min(
@@ -80,8 +98,11 @@ export function useViewportController(args: {
   edges: LineageEdge[]
   layout: LayoutResult
   svgRef: RefObject<SVGSVGElement | null>
+  /** 边标签槽位盒（F-L1-C，缺省 []——LineageCanvas 从放置器 slots 构建） */
+  labelBoxes?: Array<{ x: number; y: number; hw: number; hh: number }>
 }): ViewportController {
   const { nodes, edges, layout, svgRef } = args
+  const labelBoxes = args.labelBoxes ?? EMPTY_LABEL_BOXES
   const [viewport, setViewport] = useState<Viewport>({ tx: 0, ty: 0, k: 1 })
   const [userInteracted, setUserInteracted] = useState(false)
 
@@ -93,8 +114,8 @@ export function useViewportController(args: {
     if (el === null) return
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) return
-    setViewport(fitViewport(nodes, layout, rect.width, rect.height))
-  }, [nodes, edges, layout, userInteracted, svgRef])
+    setViewport(fitViewport(nodes, layout, rect.width, rect.height, labelBoxes))
+  }, [nodes, edges, layout, userInteracted, svgRef, labelBoxes])
 
   // zoom：非被动 wheel（preventDefault 阻页面滚动）；鼠标锚点缩放（缩放
   // 前后鼠标下的内容点不动）。函数式 set 取最新视口，无闭包过期。

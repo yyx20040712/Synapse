@@ -1,0 +1,996 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/lineage-canvas.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m节点文本真实渲染（标题与年份可见——「渲染出真实文本」红线）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m主题节点样式区分：paperId null 标记 data-kind=theme，文献节点 paper
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m空图空态文案（导入/添加入口归 LG-03——本单仅文案不留死按钮）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2mW2 回归：空→非空转场后 pan/zoom 可用（listener 不因空态首挂载失绑）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m覆盖节点用覆盖位置渲染（不参与自动布局）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2mSR2-LG-07 边 label：沿贝塞尔中点渲染真实文本；空 label 边不渲染 text
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mzoom：滚轮上滚放大（scale>1）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mzoom 钳制：连续放大不超 4，连续缩小不低 0.25
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mpan：空白处拖拽平移（translate 变化）；节点上按下不平移
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mINV-14 成对清理：unmount 后 svg/window 上注册的 listener 同 type 同引用全移除
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:19:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:19:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:19:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:19:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2mR2-LG10 题名分档宽：长题名卡 rect 宽 260/短题名 180（nodeWidth 单源消费）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑧slots 传递：同锚两条长标签经放置器竖向错开（两 FO y 不等，档距=4lh）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑨wheel 阻断：截断标签上滚轮→zoom 不触发（transform 不变）；未截断标签→zoom 正常
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mloading：挂载期呈加载文案，graph 取数一次
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready：取数成功渲染节点真实文本（经 store 分发，画布消费）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready 空图：空态文案（列表型空非错误）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready 空图：空态文案（列表型空非错误）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2merror：取数失败呈错误条+重试按钮；重试再取数成功恢复
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2merror：取数失败呈错误条+重试按钮；重试再取数成功恢复
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2merror：取数失败呈错误条+重试按钮；重试再取数成功恢复
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mstore 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mstore 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/lineage-canvas.test.tsx [2m([22m[2m23 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[90m 147[2mms[22m[39m
+[31m   [31m×[31m F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip[90m 6[2mms[22m[31m[39m
+[31m     → expected 'text' to be 'DIV' // Object.is equality[39m
+[31m   [31m×[31m F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑧slots 传递：同锚两条长标签经放置器竖向错开（两 FO y 不等，档距=4lh）[90m 3[2mms[22m[31m[39m
+[31m     → expected NaN to be greater than NaN[39m
+[31m   [31m×[31m F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑨wheel 阻断：截断标签上滚轮→zoom 不触发（transform 不变）；未截断标签→zoom 正常[90m 3[2mms[22m[31m[39m
+[31m     → expected 'translate(-129.99882436810208, -86.66…' to be 'translate(0, 0) scale(1)' // Object.is equality[39m
+[31m   [31m×[31m F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑩CSS 文本锁：theme.css 含 .lineage-edge-label 声明形态（break-word/max-height/overflow hidden）+:hover 段 overflow-y auto[90m 1[2mms[22m[31m[39m
+[31m     → expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' to match /\.lineage-edge-label\s*\{[^}]*overflo…/[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-canvas.test.tsx[2m > [22mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip
+[31m[1mAssertionError[22m: expected 'text' to be 'DIV' // Object.is equality[39m
+
+Expected: [32m"DIV"[39m
+Received: [31m"text"[39m
+
+[36m [2m❯[22m tests/unit/renderer/lineage-canvas.test.tsx:[2m421:28[22m[39m
+    [90m419| [39m    [34mmount[39m([33m<[39m[33mLineageCanvas[39m [33mnodes[39m[33m=[39m[33m{[39mg[33m.[39mnodes[33m}[39m [33medges[39m[33m=[39m[33m{[39mg[33m.[39medges[33m}[39m [33m/[39m[33m>[39m)
+    [90m420| [39m    [35mconst[39m label [33m=[39m host[33m?.[39m[34mquerySelector[39m([32m'[data-edge-label]'[39m)
+    [90m421| [39m    [34mexpect[39m(label[33m?.[39mtagName)[33m.[39m[34mtoBe[39m([32m'DIV'[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m422| [39m    [34mexpect[39m(label[33m?.[39mclassList[33m.[39m[34mcontains[39m([32m'lineage-edge-label'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m423| [39m    [90m// FO 恒上限尺寸（主控预裁 1：短标签透明空区免 est 偏差裁字）[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-canvas.test.tsx[2m > [22mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑧slots 传递：同锚两条长标签经放置器竖向错开（两 FO y 不等，档距=4lh）
+[31m[1mAssertionError[22m: expected NaN to be greater than NaN[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-canvas.test.tsx:[2m438:20[22m[39m
+    [90m436| [39m    [34mexpect[39m(fos[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)
+    [90m437| [39m    [90m// e2 逐 dy 档搜位：与 e1 盒(y 半和 41.05)分离的首档=+4lh=49.4[39m
+    [90m438| [39m    [34mexpect[39m(fos[[34m1[39m])[33m.[39m[34mtoBeGreaterThan[39m(fos[[34m0[39m])
+    [90m   | [39m                   [31m^[39m
+    [90m439| [39m    [34mexpect[39m(fos[[34m1[39m][33m![39m [33m-[39m fos[[34m0[39m][33m![39m)[33m.[39m[34mtoBeCloseTo[39m([34m4[39m [33m*[39m [34m12.35[39m[33m,[39m [34m6[39m)
+    [90m440| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-canvas.test.tsx[2m > [22mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑨wheel 阻断：截断标签上滚轮→zoom 不触发（transform 不变）；未截断标签→zoom 正常
+[31m[1mAssertionError[22m: expected 'translate(-129.99882436810208, -86.66…' to be 'translate(0, 0) scale(1)' // Object.is equality[39m
+
+Expected: [32m"translate([7m0, 0) scale(1[27m)"[39m
+Received: [31m"translate([7m-129.99882436810208, -86.66588291206807) scale(1.4333294145603404[27m)"[39m
+
+[36m [2m❯[22m tests/unit/renderer/lineage-canvas.test.tsx:[2m455:33[22m[39m
+    [90m453| [39m    })
+    [90m454| [39m    [90m// 截断悬停滚动：阻断画布 zoom（stopPropagation 在标签层先行）[39m
+    [90m455| [39m    [34mexpect[39m([34mviewportTransform[39m())[33m.[39m[34mtoBe[39m(before)
+    [90m   | [39m                                [31m^[39m
+    [90m456| [39m    [34mact[39m(() [33m=>[39m {
+    [90m457| [39m      labels[33m?.[39m[[34m1[39m][33m?.[39m[34mdispatchEvent[39m(
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-canvas.test.tsx[2m > [22mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m⑩CSS 文本锁：theme.css 含 .lineage-edge-label 声明形态（break-word/max-height/overflow hidden）+:hover 段 overflow-y auto
+[31m[1mAssertionError[22m: expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' to match /\.lineage-edge-label\s*\{[^}]*overflo…/[39m
+
+[32m- Expected:[39m 
+/\.lineage-edge-label\s*\{[^}]*overflow-wrap:\s*break-word[^}]*\}/
+
+[31m+ Received:[39m 
+"@import 'tailwindcss';
+
+/* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
+   token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
+   lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
+   防漂移锁 = tests/unit/renderer/theme.test.ts（值漂移即红）。
+   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面 #cfae72 别名 --gold-night
+   已随 R2-SH2 决5 别名退役删除——LG10 结案：全仓消费=0，死代码即删）；
+   --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
+   rgb(253,224,71) 精确断言锁死（预知必红则不制造红，预裁②口径）。 */
+:root {
+  /* ── 亮面：暖纸白 + 墨青 + 金铜（学术优雅系）── */
+  --bg: #f6f4ee;
+  --panel: #ffffff;
+  --panel-glass: rgba(255, 255, 255, 0.72);
+  --border: #e4ded1;
+  --border-gold: #c9a86a;
+  --text: #23262d;
+  --text-dim: #6f7482;
+  --accent: #2c5f8a;
+  --accent-soft: #dcebf5;
+  --gold: #b8935a;
+  --gold-soft: rgba(207, 174, 114, 0.16);
+  --gold-bright: #e3c98f;
+  --gold-line: rgba(207, 174, 114, 0.1);
+  --danger: #b3403a;
+  --ok: #3d7a50;
+  --shadow-1: 0 1px 2px rgba(35, 38, 45, 0.06);
+  --shadow-2: 0 4px 14px rgba(35, 38, 45, 0.09);
+  --shadow-3: 0 10px 34px rgba(35, 38, 45, 0.16);
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
+  --ink: #1b2333;
+  --ink-hi: #232d44;
+  /* ── 夜面：脉络·命之座星象板（R2 消费预留，本单只定义不消费）── */
+  --night-bg: #171e33;
+  --night-bg2: #111728;
+  --node-face: #222c4d;
+  --node-face-hi: #2b3760;
+  --band-line: rgba(207, 174, 114, 0.12);
+  --star: rgba(222, 230, 255, 0.55);
+  --text-on-night: #e9e6db;
+  --text-mid: #c6cbdd;
+  --text-dim-on-night: #97a0bb;
+  --edge-glow: rgba(207, 174, 114, 0.4);
+  /* ── R2-LG11 浅色严谨板新增（脉络边框编码/综述关联边——决1/决3 逐值）── */
+  --node-branch: #b8c4d4;
+  --survey-edge: #c8cdd6;
+  /* 标注调色板（与 ANNOTATION_COLORS 一一对应）：阅读器色板/标注层统一取色 */
+  --annotation-yellow: #fde047;
+  --annotation-green: #86efac;
+  --annotation-blue: #93c5fd;
+  --annotation-red: #fca5a5;
+  --annotation-purple: #d8b4fe;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* 桌面应用不变量：文档永不滚——所有滚动只发生在应用内 overflow 容器
+     （main / 阅读器滚动区）。缺这把锁时任何瞬态溢出都会泄漏成 viewport
+     整页滚动条，且下方露出的是 body 背景纯空白（Q1 用户实锤） */
+  overflow: hidden;
+  font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  /* 纸面微纹理：极淡斜向丝纹（shell-library mockup 同款） */
+  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 6px);
+}
+
+/* ══ App 壳顶栏身份区（R2-SH2 决4——ZCode 式）：白底横条（--panel+下边 1px
+   --border+高 44px）=logo+应用名+课题切换器+版本号右区；relative+z-index 防
+   切换器展开面板被 main 区盖板（面板在组件 flex-col 流内向下溢出绘制）══ */
+/* R2-SH3：整条=拖拽区（drag）——双击空白即 Windows 系统最大化/还原（drag 区
+   原生行为零代码）；交互件容器单独 no-drag（见 switcher/titlebar 两处） */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 44px;
+  padding: 0 12px;
+  position: relative;
+  z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+.app-header svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.app-header-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+/* 切换器容器高度锚：max-height 防展开面板撑高顶栏（组件本体零改——F-05
+   高度链不扰动；面板向下溢出可见）；no-drag=触发钮与展开面板（溢出 header
+   盒侵入 main 区部分同为面板自身盒——不被 drag 吞点击） */
+.app-header-switcher {
+  max-height: 44px;
+  -webkit-app-region: no-drag;
+}
+.app-header .app-nav-ver {
+  margin-left: auto;
+}
+
+/* ══ R2-SET1 界面缩放三档：--ui-scale 挂 documentElement（App effect 单点写，
+   数值映射单源=shared/ipc/schemas UI_SCALE 1/1.1/1.25）。
+   内容行整行缩放（nav+main 文本面）；header 在行外结构性豁免（E5 裁决——
+   caption 三键/顶栏身份区保持系统观感，实测 44px 恒定）；
+   PDF 页列反向补偿恒视觉 1.0——探针实测（r2-set1-out-probe.json）：canvas
+   跟随 ×1.1 位图拉伸模糊，zoom: calc(1 / var(--ui-scale, 1)) Chromium 接受且
+   canvas 精确恢复 612×792 原始视觉+背衬匹配+textLayer 对位不受破坏（对位
+   安全=两容器同缩放系内锚定）；补偿必须与缩放同变——单独 zoom:1 无效（相乘
+   语义）；三态属性选择器通配（ready/loading/error）══ */
+.app-content-row {
+  zoom: var(--ui-scale, 1);
+}
+[data-page-column] {
+  zoom: calc(1 / var(--ui-scale, 1));
+}
+
+/* ══ R2-SH3 frameless caption 三键（bilibili 式）：贯通顶栏高的方形热区，
+   hover 浸染；close hover=系统红 #e81123。皮肤住类（B1 教训：禁内联 style
+   承载交互态）；.titlebar-btn svg 覆写上方 .app-header svg 的 22px 默认
+   （同特异性源顺序在后胜）══ */
+.titlebar-controls {
+  display: flex;
+  align-items: stretch;
+  /* header 的 center 对齐下容器自身贯通 44px（按钮 stretch 满高热区——
+     否则容器按内容(SVG 10px)收缩，真机取证 rect 实测高仅 10px 病灶） */
+  align-self: stretch;
+  flex: none;
+  /* -12 对冲上方 .app-header 的 padding: 0 12px（:86）——热区贴窗口右缘
+     贯通（bilibili 式）；两值数值联动，改 header padding 须同步改此值
+     （门一 C5） */
+  margin-right: -12px;
+  -webkit-app-region: no-drag;
+}
+.titlebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.titlebar-btn svg {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1;
+}
+.titlebar-btn:hover {
+  background: rgba(44, 95, 138, 0.1);
+  color: var(--text);
+}
+.titlebar-btn:active {
+  background: rgba(44, 95, 138, 0.2);
+  color: var(--accent);
+}
+/* close 红依赖与 .titlebar-btn:hover/:active 同特异性 (0,2,0) 下源顺序在
+   后胜——勿在本块之后追加 .titlebar-btn:hover 变体，否则压掉 close 红
+   （门一 C6） */
+.titlebar-btn-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+.titlebar-btn-close:active {
+  background: #f1707a;
+  color: #ffffff;
+}
+
+/* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费；
+   R2-SH2 品牌行迁顶栏后 nav 首行直接起导航项，foot 留侧栏）══ */
+.app-nav {
+  width: 184px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 10px;
+  position: relative;
+  color: #cfd5e4;
+  background: linear-gradient(180deg, var(--ink), #171e2f);
+}
+/* 右缘金渐隐线（mockup nav::after 语法逐值誊录；R2-UI1 加 220% 纵向渐变
+   缓移——金线沿侧栏缘缓慢流淌，UI「活」感的常驻层（reduced-motion 关） */
+.app-nav::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(201, 168, 106, 0.5), transparent);
+  background-size: 100% 220%;
+  animation: syn-pan-y 5s linear infinite;
+}
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 2px 4px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #aeb6ca;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s ease;
+}
+.app-nav-item svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
+.app-nav-item:hover {
+  color: #e6eaf4;
+  background: rgba(255, 255, 255, 0.06);
+}
+/* 按压反馈（R2-UI1 游戏钮语义）：冷蓝闪现+微缩——瞬态色变+形变双通道 */
+.app-nav-item:active {
+  color: #eaf1fa;
+  background: rgba(44, 95, 138, 0.35);
+  transform: scale(0.97);
+}
+/* active 态：金左缘条 + ink-hi 底 + inset 金 hairline（mockup .nav-item.active） */
+.app-nav-item-active {
+  color: #f3eddd;
+  background: var(--ink-hi);
+  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.28);
+}
+.app-nav-item-active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  /* R2-UI1：金条 300% 纵向缓移——选中态常驻微光（reduced-motion 关） */
+  background-size: 100% 300%;
+  animation: syn-pan-y 2.8s ease-in-out infinite;
+}
+.app-nav-foot {
+  margin-top: auto;
+  padding: 10px 8px 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-nav-ver {
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  color: #8d95ad;
+  border: 1px solid rgba(141, 149, 173, 0.4);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.app-nav-txt {
+  font-size: 9.5px;
+  color: #6d7590;
+}
+
+/* ══ 共享 Button 变体皮肤（R3-TH1；回炉 B1：静态+hover 全迁类）══
+   B1 教训：静态皮肤住内联 style 时，内联声明层叠上恒压任何类选择器，
+   :hover 挂类=永不生效——静态与 hover 必须同层（本节均为非 @layer 规则，
+   层叠上压过 tailwind utilities 层：unlayered > layered）。
+   CTA 语法：primary=墨青+inset 金 hairline(.45 静态→hover .7 提亮，定稿
+   注意事项①)+6px 切角；ghost hover=金铜。
+   R2-UI1 增量：primary 渐变底+hover 渐变流动（background-position 平移）；
+   全族 :active=游戏钮按压反馈（色变+微缩+下沉，瞬态 80~120ms）。 */
+.syn-btn-primary {
+  background: linear-gradient(150deg, #3a76ab 0%, var(--accent) 48%, #234a6d 100%);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
+  color: #ffffff;
+  border-color: #234a6d;
+  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.45), var(--shadow-1);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition:
+    background-position 0.3s ease,
+    box-shadow 0.18s ease,
+    transform 0.08s ease,
+    filter 0.12s ease;
+}
+.syn-btn-primary:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.7), var(--shadow-2);
+  /* 渐变流动：hover 期渐变端点平移到亮端（R2-UI1） */
+  background-position: 100% 50%;
+}
+.syn-btn-primary:not(:disabled):active {
+  background-position: 100% 50%;
+  filter: brightness(0.88);
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 201, 143, 0.7),
+    inset 0 2px 6px rgba(11, 26, 40, 0.45);
+}
+.syn-btn-secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.08s ease;
+}
+.syn-btn-secondary:not(:disabled):active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(1px) scale(0.98);
+}
+.syn-btn-danger {
+  background: var(--panel);
+  color: var(--danger);
+  border-color: var(--danger);
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.08s ease;
+}
+.syn-btn-danger:not(:disabled):active {
+  background: rgba(179, 64, 58, 0.12);
+  filter: brightness(0.96);
+  transform: translateY(1px) scale(0.98);
+}
+.syn-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    transform 0.08s ease;
+}
+.syn-btn-ghost:not(:disabled):hover {
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+.syn-btn-ghost:not(:disabled):active {
+  color: var(--gold);
+  background: rgba(207, 174, 114, 0.3);
+  transform: scale(0.96);
+}
+
+/* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
+   筛选区|列表与详情空态、R3-U4 设置分节复用同一语法；线段 min-width 24px+
+   flex:1 窄窗防碰撞——设计定稿注意事项③）══ */
+.lib-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lib-rule-line {
+  flex: 1;
+  min-width: 24px;
+  height: 1px;
+}
+.lib-rule-line-l {
+  background: linear-gradient(90deg, transparent, var(--border-gold));
+}
+.lib-rule-line-r {
+  background: linear-gradient(90deg, var(--border-gold), transparent);
+}
+.lib-rule-gem {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+/* ══ R3-U3 阅读器周边皮肤（装饰浓度最低——PDF 区中性不变；玻璃浮层+纸面
+   tab+侧板节标。ReaderToolbar/TabBar/ReaderNotesPanel 消费；标注/AI/选区
+   层零触碰——F-07 层叠链红线）══ */
+.rdr-toolbar {
+  background: var(--panel-glass);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-1);
+}
+/* active tab=纸面底+inset 金 hairline 底缘（box-shadow inset 零占位——h-8
+   布局不变，F-05 滚动收敛面不扰动；旧 accent-soft 满铺退役） */
+.rdr-tab-active {
+  background: var(--panel);
+  box-shadow: inset 0 -2px 0 0 var(--border-gold);
+}
+/* 阅读器数字（页码/缩放）tabular-nums 等宽数字（R2-SH2 决5：衬线消费清零，
+   回继承 UI 字体——同规则 font-variant-numeric 不动） */
+.rdr-num {
+  font-variant-numeric: tabular-nums;
+}
+/* 阅读器侧板节标：h4 金左缘条（R2-SH2 决5：衬线消费清零；夜色只属脉络域——侧板保持亮面） */
+.rdr-aside-h4 {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+
+/* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
+   等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
+   .lib-rule*）══ */
+.syn-settings > section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+  padding: 14px 16px;
+}
+.syn-settings h2 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+/* 表单控件 focus：accent 描边+gold-soft 底（票面 P2） */
+.syn-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--gold-soft);
+}
+
+/* ══ 脉络·浅色严谨板（R2-LG11——白卡+细边框编码+浅色层带/工具条/图例；
+   夜幕 token 定义保留 :root 备暗色主题，脉络域样式消费清零——决5 同
+   精神；夜幕/星空/角饰/渐变样式块随 LineageNightDecor 删除而删）══ */
+.lineage-host {
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--bg);
+}
+/* 边型图例（四型——静态说明非交互件；浅色白卡圆角） */
+.lineage-legend {
+  position: absolute;
+  left: 96px;
+  bottom: 16px;
+  display: flex;
+  gap: 14px;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 4px 12px;
+  backdrop-filter: blur(8px);
+  align-items: center;
+  pointer-events: none;
+}
+.lineage-legend-item {
+  display: inline-flex;
+  align-items: center;
+}
+.lineage-legend-item i {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  vertical-align: middle;
+  margin-right: 5px;
+  border-top: 1.5px solid var(--accent);
+}
+.lineage-legend-item i.lg-normal {
+  border-top: 1px solid var(--node-branch);
+}
+.lineage-legend-item i.lg-theme {
+  border-top: 1px dashed var(--node-branch);
+}
+.lineage-legend-item i.lg-survey {
+  border-top: 1.4px dashed var(--survey-edge);
+}
+/* 脉络工具条白玻璃浮层（R2-LG11：blur+border+shadow-2） */
+.lineage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  font-size: 13px;
+}
+.lineage-toolbar > button {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.lineage-toolbar > button:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.lineage-toolbar > span {
+  background: transparent;
+  color: var(--text-dim);
+}
+/* R2-LG11 「适应视图」按钮（画布右下浮层——白玻璃同族；
+   auto-fit 显式复位唯一入口，见 LineageCanvas 头注状态机） */
+.lineage-fit-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+.lineage-fit-btn:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.lineage-toolbar > button:active,
+.lineage-fit-btn:active {
+  transform: scale(0.95);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ══ R2-UI1 共享动画词汇（渐变流动 keyframes——消费方见各规则行内注）══
+   syn-pan-x/y：background-position 往返平移（配 background-size>100% 的
+   渐变底产生「流动」观感）；往返型非无限单向漂移，视觉均值恒回原位。 */
+@keyframes syn-pan-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes syn-pan-y {
+  0%,
+  100% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+}
+
+/* ══ R2-UI1 无障碍守卫：系统「减少动态效果」时常驻渐变动画全关
+   （交互瞬态 transition 保留——按压反馈属操作确认非装饰动效）══ */
+@media (prefers-reduced-motion: reduce) {
+  .app-nav::after,
+  .app-nav-item-active::before {
+    animation: none;
+  }
+}
+"
+
+[36m [2m❯[22m tests/unit/renderer/lineage-canvas.test.tsx:[2m468:17[22m[39m
+    [90m466| [39m    [35mconst[39m css [33m=[39m [34mreadFileSync[39m([34mjoin[39m(process[33m.[39m[34mcwd[39m()[33m,[39m [32m'src/renderer/shared/[39m…
+    [90m467| [39m    [90m// 正则锚定声明形态（[^}]* 不跨段——防注释字样救活，SET1 变异③先例）[39m
+    [90m468| [39m    [34mexpect[39m(css)[33m.[39m[34mtoMatch[39m([36m/\.lineage-edge-label\s*\{[^}]*overflow-wrap:\[39m…
+    [90m   | [39m                [31m^[39m
+    [90m469| [39m    [34mexpect[39m(css)[33m.[39m[34mtoMatch[39m([36m/\.lineage-edge-label\s*\{[^}]*max-height[^}]*[39m…
+    [90m470| [39m    [34mexpect[39m(css)[33m.[39m[34mtoMatch[39m([36m/\.lineage-edge-label\s*\{[^}]*overflow:\s*hid[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m19 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 07:55:07
+[2m   Duration [22m 1.57s[2m (transform 131ms, setup 0ms, collect 334ms, tests 147ms, environment 591ms, prepare 175ms)[22m
+

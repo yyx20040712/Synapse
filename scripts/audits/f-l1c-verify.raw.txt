@@ -1,0 +1,38 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 verify
+> npm run quality:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build
+
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 119 个；open 0（weak 可领 0，strong 0）
+tickets 检查通过：注册表与代码一致
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:check
+> node scripts/check-locks.mjs
+
+locks 检查未通过：
+  - 新增受锁文件未登记：scripts/audits/f-l1c-forensics.mjs（运行 npm run locks:apply 并带 [locked-change] 提交）
+  - 新增受锁文件未登记：tests/unit/renderer/edge-label-layout.test.ts（运行 npm run locks:apply 并带 [locked-change] 提交）
+  - 受锁文件被修改：tests/unit/renderer/lineage-canvas.test.tsx（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+EXIT=1

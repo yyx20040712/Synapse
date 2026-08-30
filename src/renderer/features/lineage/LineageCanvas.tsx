@@ -25,8 +25,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
-import { BAND_LEFT, BAND_RIGHT, LAYER_LABEL_DY, layoutLineage, nodeHeight } from './lineage-layout'
+import { BAND_LEFT, BAND_RIGHT, LAYER_LABEL_DY, layoutLineage, nodeHeight, nodeWidth } from './lineage-layout'
 import { isCore, isSurvey } from './lineage-classify'
+import { estimateLabelWidth, placeEdgeLabels } from './edge-label-layout'
 import { useViewportController } from './lineage-viewport'
 import type { Viewport } from './lineage-viewport'
 import { LineageEdges } from './LineageEdges'
@@ -54,8 +55,7 @@ export function LineageCanvas(props: {
   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
   const svgRef = useRef<SVGSVGElement | null>(null)
   // auto-fit/pan/zoom（R2-LG10）：视口域全在 lineage-viewport.ts；本组件只
-  // 消费 viewport 值+resetFit 按钮
-  const { viewport, resetFit } = useViewportController({ nodes, edges, layout, svgRef })
+  // 消费 viewport 值+resetFit 按钮（调用驻 labelBoxes 之后——TDZ 声明序）
 
   // 边几何预构建（INV-38 半高单源消费——positions+nodeHeight 一次成表）
   const geom = useMemo(() => {
@@ -72,6 +72,39 @@ export function LineageCanvas(props: {
     () => new Set(nodes.filter((n) => isSurvey(n.title)).map((n) => n.id)),
     [nodes]
   )
+  // F-L1-C 边标签防重叠放置（用户保证①）：items 锚=贝塞尔中点——公式
+  // （y1=from.y+halfH/y2=to.y-halfH/mid/x 均(和)/2）与 LineageEdges 渲染
+  // 回退锚点同式，重复第 2 次保持（Rule of Three），两处头注互指
+  const slots = useMemo(() => {
+    const items: Array<{ id: string; label: string; anchor: { x: number; y: number } }> = []
+    for (const e of edges) {
+      if (e.label === '') continue
+      const from = geom.get(e.fromNode)
+      const to = geom.get(e.toNode)
+      if (from === undefined || to === undefined) continue
+      const y1 = from.y + from.halfH
+      const y2 = to.y - to.halfH
+      items.push({ id: e.id, label: e.label, anchor: { x: (from.x + to.x) / 2, y: (y1 + y2) / 2 } })
+    }
+    const nodeBoxes = nodes.flatMap((n) => {
+      const p = layout.positions.get(n.id)
+      // nodeWidth/nodeHeight 单源只读消费（INV-36/38——放置器禁各写档值）
+      return p === undefined ? [] : [{ x: p.x, y: p.y, hw: nodeWidth(n.title) / 2, hh: nodeHeight(n.title) / 2 }]
+    })
+    return placeEdgeLabels(items, nodeBoxes)
+  }, [edges, geom, nodes, layout])
+  // 标签槽位盒参与 auto-fit 包围盒（用户保证①另一半——被推出的标签不可
+  // 消失在 fit 视野外）；useMemo 依赖稳定=引用稳定（fit effect 不抖）
+  const labelBoxes = useMemo(
+    () =>
+      edges.flatMap((e) => {
+        if (e.label === '') return []
+        const s = slots.get(e.id)
+        return s === undefined ? [] : [{ x: s.x, y: s.y, hw: estimateLabelWidth(e.label) / 2, hh: 18.5 }]
+      }),
+    [edges, slots]
+  )
+  const { viewport, resetFit } = useViewportController({ nodes, edges, layout, svgRef, labelBoxes })
   // 核心档预计算（决2 D1'——classify 单源；NodeCard不自算）
   const coreIds = useMemo(
     () => new Map(nodes.map((n) => [n.id, isCore(n, edges)])),
@@ -154,8 +187,9 @@ export function LineageCanvas(props: {
               </text>
             </g>
           ))}
-          {/* 父子连线+边 label（三型色——geom/surveyIds 预构建传入） */}
-          <LineageEdges edges={edges} geom={geom} surveyIds={surveyIds} />
+          {/* 父子连线+边 label（三型色——geom/surveyIds 预构建传入；slots=
+              防重叠放置器槽位 F-L1-C） */}
+          <LineageEdges edges={edges} geom={geom} surveyIds={surveyIds} slots={slots} />
           {/* 节点卡片（白卡边框编码——core 预计算；拖拽期叠加 dragView 偏移跟随） */}
           {nodes.map((n) => {
             const p = layout.positions.get(n.id)
