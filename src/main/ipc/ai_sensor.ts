@@ -7,7 +7,7 @@
  * 原样上抛，register 折叠为 Result。
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 export function createAiSensorIpc(deps: IpcDeps): ApiHandlers['ai_sensor'] {
   return {

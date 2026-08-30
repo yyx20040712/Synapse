@@ -15,7 +15,7 @@
  */
 import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 /** 域错误载体（export_.ts ExportIpcError 同型——.CancelledError 子类无必要） */
 class LineageIpcError extends Error {

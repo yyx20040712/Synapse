@@ -15,7 +15,7 @@
  * - service 抛错（ReaderDomainError NOT_FOUND 等）在本层原样上抛，由 register 折叠为 Result
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 export function createReaderIpc(deps: IpcDeps): ApiHandlers['reader'] {
   return {

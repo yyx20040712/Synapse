@@ -1,8 +1,8 @@
 {
   "meta": {
     "script": "arch-scan.mjs",
-    "date": "2026-08-30T11:04:13.629Z",
-    "filesScanned": 167
+    "date": "2026-08-30T11:45:54.940Z",
+    "filesScanned": 168
   },
   "findings": {
     "lineLimits": {
@@ -19,12 +19,12 @@
           "n": 476
         },
         {
-          "f": "src/main/services/export_/corpus.export.service.ts",
-          "n": 423
+          "f": "src/renderer/features/reader/reader.store.ts",
+          "n": 429
         },
         {
-          "f": "src/renderer/features/reader/reader.store.ts",
-          "n": 416
+          "f": "src/main/services/export_/corpus.export.service.ts",
+          "n": 423
         },
         {
           "f": "src/main/services/import_/pdf-meta.extract.ts",
@@ -57,63 +57,7 @@
       ]
     },
     "dependency": {
-      "cycles": [
-        [
-          "src/main/ipc/library.ts",
-          "src/main/ipc/index.ts",
-          "src/main/ipc/index.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/reader.ts",
-          "src/main/ipc/reader.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/notes.ts",
-          "src/main/ipc/notes.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/tags.ts",
-          "src/main/ipc/tags.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/import_.ts",
-          "src/main/ipc/import_.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/enrich.ts",
-          "src/main/ipc/enrich.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/export_.ts",
-          "src/main/ipc/export_.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/ai_sensor.ts",
-          "src/main/ipc/ai_sensor.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/lineage.ts",
-          "src/main/ipc/lineage.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/settings.ts",
-          "src/main/ipc/settings.ts"
-        ],
-        [
-          "src/main/ipc/index.ts",
-          "src/main/ipc/system.ts",
-          "src/main/ipc/system.ts"
-        ]
-      ],
+      "cycles": [],
       "layerViolation": [],
       "orphans": [],
       "externalDeps": [

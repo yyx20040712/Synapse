@@ -27,7 +27,7 @@ import { join } from 'node:path'
 import { appSettingsSchema, type AppSettings } from '../../shared/ipc/schemas'
 import { ALLOWED_REMOTE_HOSTS, DEFAULT_CONTACT_EMAIL, SETTINGS_FILE_NAME } from '../../shared/constants'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
 

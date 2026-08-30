@@ -24,7 +24,7 @@
 import type { AppErrorCode } from '../../shared/app-error'
 import { openExternalGuarded } from '../security/shell-guard'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 /** 域错误：外链未过守卫（拒绝即错，不静默） */
 class SystemDomainError extends Error {

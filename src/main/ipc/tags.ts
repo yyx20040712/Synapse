@@ -17,7 +17,7 @@
  * - 测试：tests/unit/ipc/tags.test.ts（已锁定，services 桩）
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 export function createTagsIpc(deps: IpcDeps): ApiHandlers['tags'] {
   return {

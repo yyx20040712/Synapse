@@ -25,7 +25,7 @@
 import { join } from 'node:path'
 import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 /** 域错误：用户取消保存（CANCELLED）载体 */
 class ExportIpcError extends Error {

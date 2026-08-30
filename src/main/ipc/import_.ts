@@ -22,7 +22,7 @@
  */
 import type { ImportResult } from '../../shared/ipc/schemas'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 /** 空结果字面量每次新建，避免跨调用共享同一可变对象 */
 const emptyImportResult = (): ImportResult => ({ imported: [], duplicates: [], failed: [] })

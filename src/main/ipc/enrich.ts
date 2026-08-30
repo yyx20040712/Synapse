@@ -15,7 +15,7 @@
  * - 测试：tests/unit/ipc/enrich.test.ts（已锁定，services 桩）
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import type { IpcDeps } from './index'
+import type { IpcDeps } from './ipc-deps'
 
 export function createEnrichIpc(deps: IpcDeps): ApiHandlers['enrich'] {
   return {
