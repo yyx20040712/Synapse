@@ -1,0 +1,295 @@
+{
+  "meta": {
+    "script": "arch-scan.mjs",
+    "date": "2026-08-30T11:04:13.629Z",
+    "filesScanned": 167
+  },
+  "findings": {
+    "lineLimits": {
+      "over500": [],
+      "over450": [
+        {
+          "f": "src/renderer/features/reader/annotation-anchor.ts",
+          "n": 476
+        }
+      ],
+      "top10": [
+        {
+          "f": "src/renderer/features/reader/annotation-anchor.ts",
+          "n": 476
+        },
+        {
+          "f": "src/main/services/export_/corpus.export.service.ts",
+          "n": 423
+        },
+        {
+          "f": "src/renderer/features/reader/reader.store.ts",
+          "n": 416
+        },
+        {
+          "f": "src/main/services/import_/pdf-meta.extract.ts",
+          "n": 415
+        },
+        {
+          "f": "src/shared/ipc/schemas.ts",
+          "n": 411
+        },
+        {
+          "f": "src/renderer/features/lineage/lineage-layout.ts",
+          "n": 384
+        },
+        {
+          "f": "src/main/services/lineage/lineage.service.ts",
+          "n": 351
+        },
+        {
+          "f": "src/renderer/features/reader/scroll-progress.ts",
+          "n": 340
+        },
+        {
+          "f": "src/main/services/ai_sensor/ai-sensor.service.ts",
+          "n": 338
+        },
+        {
+          "f": "src/renderer/features/reader/anchor-locate.ts",
+          "n": 294
+        }
+      ]
+    },
+    "dependency": {
+      "cycles": [
+        [
+          "src/main/ipc/library.ts",
+          "src/main/ipc/index.ts",
+          "src/main/ipc/index.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/reader.ts",
+          "src/main/ipc/reader.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/notes.ts",
+          "src/main/ipc/notes.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/tags.ts",
+          "src/main/ipc/tags.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/import_.ts",
+          "src/main/ipc/import_.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/enrich.ts",
+          "src/main/ipc/enrich.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/export_.ts",
+          "src/main/ipc/export_.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/ai_sensor.ts",
+          "src/main/ipc/ai_sensor.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/lineage.ts",
+          "src/main/ipc/lineage.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/settings.ts",
+          "src/main/ipc/settings.ts"
+        ],
+        [
+          "src/main/ipc/index.ts",
+          "src/main/ipc/system.ts",
+          "src/main/ipc/system.ts"
+        ]
+      ],
+      "layerViolation": [],
+      "orphans": [],
+      "externalDeps": [
+        "@shared/annotation-order",
+        "@shared/app-error",
+        "@shared/constants",
+        "@shared/ipc/schemas",
+        "@shared/models/ai-note",
+        "@shared/models/annotation",
+        "@shared/models/lineage",
+        "@shared/models/note",
+        "@shared/models/paper",
+        "@shared/models/tag",
+        "better-sqlite3",
+        "electron",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:zlib",
+        "pdfjs-dist",
+        "pdfjs-dist/build/pdf.worker.min.mjs?url",
+        "react",
+        "react-dom/client",
+        "zod",
+        "zustand",
+        "zustand/react/shallow"
+      ]
+    },
+    "statefulModules": [
+      "src/shared/ipc/schemas.ts",
+      "src/renderer/features/library/MetaEditDialog.tsx",
+      "src/renderer/features/library/LibraryPage.tsx",
+      "src/renderer/features/library/PaperDetailPanel.tsx",
+      "src/renderer/features/reader/annotation-undo.ts",
+      "src/renderer/features/reader/scroll-progress.ts",
+      "src/renderer/features/reader/PageColumn.tsx",
+      "src/renderer/features/reader/SelectionLayer.tsx",
+      "src/renderer/features/reader/AnnotationLayer.tsx",
+      "src/renderer/features/tags/TagEditor.tsx",
+      "src/renderer/features/settings/SettingsPage.tsx",
+      "src/renderer/features/lineage/LineageAddNodeDialog.tsx",
+      "src/renderer/features/workspaces/WorkspaceSection.tsx",
+      "src/renderer/features/workspaces/WorkspaceSwitcher.tsx"
+    ],
+    "crossModuleBehaviors": {
+      "localStorage": [
+        "src/renderer/shared/ui/SplitPane.tsx:54",
+        "src/renderer/shared/ui/SplitPane.tsx:64"
+      ],
+      "intervals": 14,
+      "windowEvents": [
+        "src/renderer/app/App.tsx:145",
+        "src/renderer/features/reader/ReaderPage.tsx:119",
+        "src/renderer/features/lineage/lineage-viewport.ts:173",
+        "src/renderer/features/lineage/lineage-viewport.ts:174",
+        "src/renderer/features/lineage/LineageCanvas.tsx:146",
+        "src/renderer/features/lineage/LineageCanvas.tsx:147"
+      ],
+      "invariantIdsInDocs": [
+        "INV-01",
+        "INV-02",
+        "INV-03",
+        "INV-04",
+        "INV-05",
+        "INV-06",
+        "INV-07",
+        "INV-08",
+        "INV-09",
+        "INV-10",
+        "INV-11",
+        "INV-12",
+        "INV-13",
+        "INV-14",
+        "INV-15",
+        "INV-16",
+        "INV-17",
+        "INV-18",
+        "INV-19",
+        "INV-20",
+        "INV-21",
+        "INV-22",
+        "INV-23",
+        "INV-24",
+        "INV-25",
+        "INV-26",
+        "INV-27",
+        "INV-28",
+        "INV-29",
+        "INV-30",
+        "INV-31",
+        "INV-32",
+        "INV-33",
+        "INV-34",
+        "INV-35",
+        "INV-36",
+        "INV-37",
+        "INV-38",
+        "INV-39",
+        "INV-40",
+        "INV-A",
+        "INV-B",
+        "INV-C",
+        "INV-D",
+        "INV-E",
+        "INV-41"
+      ]
+    },
+    "duplication": {
+      "threshold3files": [],
+      "count": 0
+    },
+    "churn45d": [
+      {
+        "f": "src/renderer/features/reader/ReaderPage.tsx",
+        "n": 20
+      },
+      {
+        "f": "src/shared/ipc/schemas.ts",
+        "n": 17
+      },
+      {
+        "f": "src/renderer/app/App.tsx",
+        "n": 15
+      },
+      {
+        "f": "src/renderer/shared/theme.css",
+        "n": 14
+      },
+      {
+        "f": "src/shared/ipc/api-surface.ts",
+        "n": 14
+      },
+      {
+        "f": "src/renderer/features/reader/reader.store.ts",
+        "n": 13
+      },
+      {
+        "f": "src/renderer/features/library/PaperDetailPanel.tsx",
+        "n": 11
+      },
+      {
+        "f": "src/renderer/features/reader/AnnotationLayer.tsx",
+        "n": 10
+      },
+      {
+        "f": "src/main/bootstrap.ts",
+        "n": 10
+      },
+      {
+        "f": "src/renderer/features/reader/SelectionLayer.tsx",
+        "n": 10
+      },
+      {
+        "f": "src/main/windows/main-window.ts",
+        "n": 9
+      },
+      {
+        "f": "src/renderer/features/lineage/LineageCanvas.tsx",
+        "n": 8
+      }
+    ],
+    "typeSourcing": {
+      "crossSide": [
+        {
+          "type": "PaperRow",
+          "defIn": "src/main/db/repos/papers.repo.ts",
+          "usedIn": "src/renderer/features/library/PaperList.tsx"
+        },
+        {
+          "type": "PaperRow",
+          "defIn": "src/main/db/repos/papers.repo.ts",
+          "usedIn": "src/renderer/features/library/PaperRow.tsx"
+        }
+      ]
+    }
+  }
+}

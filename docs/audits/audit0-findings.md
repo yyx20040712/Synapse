@@ -39,6 +39,12 @@
   v11-accept.json+九截图(v11-accept-out/)+验收报告
   docs/audits/2026-08-30_v11-acceptance-report.md。用户肉眼终裁权保留
   (可抽截图推翻)。
+- **deepseek 补审追记(2026-08-30 下午,用户裁定补审)**:f-a1-gate1-ds.md
+  ——B 零/W8;主控核验:**W1 实锤**(fixture 头注把 PDF 用户空间单位 24
+  当 px(实际 32px)>行盒 25.6px=正间隙,「T4 负间隙装配级锚」为虚假声明,
+  行间钳制 e2e 锚缺席——开票修 fixture 行距 ≤19.2pt+头注);W3 消解
+  (消费方判空在档);W2 NaN/W4 混页/W5 W_MIN 严格大于/W6W7 测试面
+  =备案。
 
 ### F-A2 [B?] 划选后工具条不弹出 ——状态:**已定位(2026-08-30 复测:非回归,降级 N→联动 F-A3)**
 
@@ -94,6 +100,63 @@
   后标签 6/6 全可见;②截断标签 hover 滚轮 scrollTop=28.8 且画布不缩放,
   短标签滚轮=画布缩放(分流正确);③foreignObject 恒 130×37.05+斜体灰
   字+长标签 3 行截断/短标签完整。证据同 F-A1(v11-accept-out/)。
+- **deepseek 补审追记(2026-08-30 下午,两轮)**:f-l1c-gate1-ds.md+
+  -ds-round2.md+gate1-final.diff——一轮 B1「diff 与回炉态不一致」经主控
+  核验=**取证归档缺陷**(gate1.diff 为回炉前快照,代码已含回炉——HEAD
+  实证 dx 五档/主动 scrollTop;归档缺陷:门一 diff 须在回炉落地后重生成
+  最终版,本场已补);二轮 B1 消解。**成立备案三条**:W2(碰撞盒按估宽
+  而 FO 交互盒恒 130——短标签密集处 wheel closest 可能命中错标签)、
+  W4(padding 2px→内容区 33.05px<37.05,3 行实为 2.7 行,CSS 实证)、
+  3.3(截断标签滚到边界后继续滚仍吞 zoom 无余量放行);弱 W 两条
+  (W3 fit 盒估宽<FO 宽/W1 best-effort 回退无运行时告警);N 五条
+  (1px 魔数/dx 差 2px/估宽启发式/斜体度量/test cwd 依赖)。
+
+### F-ARCH1 [B] reader.store closeOne 残留 scrollRequest ——状态:**已定位待开票(2026-08-30 架构排查批,deepseek 实锤+主控核验)**
+
+- **机制**:closeOne(195-212)清理 tabLoadSeq/inflightOpen/撤销栈/tabs/
+  order/activeId,**不清 scrollRequest**(closeAll 走全量复位无此问题——
+  单路径残留);消费方(ReaderPage columnScroll)过滤只有 paperId 维度。
+  「程序跳页→手动滚→关 tab→重开同 id」四步自然操作→新 tab 吃陈旧信号
+  回跳旧页。INV-29 缺 tab 生命周期维度。
+- **处置**:开修复票(closeOne 补清三信号+跨格序列单测;或 scrollRequest
+  加 tab 版本维度)。deepseek 估「一行代码+一条单测」。
+
+### F-ARCH2 [B] undo apply 覆盖并发编辑 ——状态:**已定位待开票(同上)**
+
+- **机制**:undo() 尾部(412)整体列表替换——await runUndo 窗口内用户
+  新保存的标注在 store 视图消失(DB 保留,重开回来)。INV-23 busy 互斥
+  只覆盖 undo vs undo,未登记 undo vs 普通编辑并发(三盲区之「时序」
+  范式案例)。
+- **处置**:开票(apply 前基线对比或改 merge 语义+跨格序列单测+INV-23
+  增补)。
+
+### F-ARCH3 [B→重构票] ReaderPage 声明漂移+职责膨胀 ——状态:**已定位待开票(同上)**
+
+- **机制**:F-01 头注声称「只装配」但 pageTexts/pageRoots/
+  handlePageRender/dropPageState/PageFrame 缓存编排五件套仍在(81-197);
+  8 职责叠放;churn 45 天 20 次全项目第一=每个新阅读器行为都在此打补丁。
+  声明与实现漂移会让后来者基于「已拆分」假设继续叠加。
+- **处置**:重构票=PagesOverlay 下沉(持页面缓存注册表+装配三层覆盖,
+  ReaderPage 收敛到路由/布局/scroll 装配/fitWidth/快捷键);测试护航。
+
+### F-ARCH4 [W] annotation-anchor.ts 476 行逼近红线 ——状态:**预警(AUDIT-A 观察+deepseek W8 升格)**
+
+- INV-40 归并器收口宿主+锚定三元组序列化同文件;任何锚定格式扩展即越
+  红线。处置:主动拆 anchor-serialize.ts(趁早,别在红线边缘做)。
+
+### F-ARCH5 [W] ipc 类型回边环 11 处 ——状态:**备案(专项 refactor,约 1 人时)**
+
+- 各 ipc 子模块 import type { IpcDeps } from './index' 回边=桶文件类型环
+  (运行时无环);风险=视觉污染掩盖真违规+类型环→运行时环滑坡。处置:
+  冻结窗口专项(IpcDeps 移独立文件/index re-export 改 type-only),消环
+  检测进 check-quality 目标 0。
+
+**架构批其余备案(2026-08-30)**:W6=INV-19(AI 只读)/INV-07(路径唯一
+出口)未锚定无机器防线;W7=PageColumn(INV-29/30/33 三机制宿主)/
+SelectionLayer(pending/工具条/选区分离)缺组件级态空间表;N8=
+SelectionLayer 跨页划选语义未登记(不确定,需核查 selectionToAnchor);
+N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
+「不变量册描述行为契约,但契约的边界条件(何时失效/清空)往往缺失」。
 
 ### F-L2 [N?] 适应视图后节点出视口 ——状态:**待排查(2026-08-30 v11 验收场新增)**
 
@@ -170,4 +233,18 @@ drag 面 toContain 未计数(F-G8 原样在档);theme.test SET1 后已正则/声
 登记待排查;验收器 scripts/audits/v11-accept.mjs+产物 v11-accept-out/
 +验收报告 docs/audits/2026-08-30_v11-acceptance-report.md。取证坑三枚
 入档(注入 rects 须含 page/foreignObject 视觉坐标假象/双栏行采样)。
-**待用户裁定**:F-A1/F-L1-C 补 deepseek 一审(v11 §3 回溯面)。
+
+**2026-08-30 下午场收口(deepseek 补审+架构排查,用户令「继续+系统性
+排查避免屎山+一定要调用 deepseek」)**:①F-A1/F-L1-C 补 deepseek 一审
+落地(通道=zcode 自定义 provider deepseek-v4-flash 行内调用器
+ds-call.mjs;两票 B 级合计零——F-A1 W1 fixture 单位错误实锤开票,
+F-L1-C 一轮 B1=取证归档缺陷(diff 回炉前快照)已补最终版二轮消解,
+W4 padding 三行实 2.7 行 CSS 实锤);②架构系统性排查=机器面
+arch-scan.mjs(167 文件:红线全过/零孤儿/零重复/分层零违例)+异基座面
+arch-review-ds.md——**三条 B 级实锤主控全部核验确认**(F-ARCH1
+closeOne 残留 scrollRequest/F-ARCH2 undo 并发覆盖/F-ARCH3 ReaderPage
+声明漂移)+F-ARCH4/5 预警,登记待开票;总报告=
+docs/audits/2026-08-30_ds-supplement-arch-review.md。**执行序**:
+F-ARCH1(一行+一测)→F-ARCH2→F-A1 fixture 票→F-ARCH5 消环(冻结窗口)
+→F-ARCH3 PagesOverlay→F-ARCH4 anchor 拆件→F-A3(门一 deepseek 首发)
+→AUDIT-C(ARCH1/2 已消化两项)。
