@@ -141,14 +141,26 @@
   列表防恒真)+真快照变异红证 1 红(附变异打偏教训:两行锚点首撞
   markTabError,须用 undo 专属锚点)。INV-23 无需增补(语义未破)。
 
-### F-ARCH3 [B→重构票] ReaderPage 声明漂移+职责膨胀 ——状态:**已定位待开票(同上)**
+### F-ARCH3 [B→重构票] ReaderPage 声明漂移+职责膨胀 ——状态:**已闭环(2026-08-30 v13 场三屋+deepseek 门一)**
 
 - **机制**:F-01 头注声称「只装配」但 pageTexts/pageRoots/
   handlePageRender/dropPageState/PageFrame 缓存编排五件套仍在(81-197);
   8 职责叠放;churn 45 天 20 次全项目第一=每个新阅读器行为都在此打补丁。
   声明与实现漂移会让后来者基于「已拆分」假设继续叠加。
-- **处置**:重构票=PagesOverlay 下沉(持页面缓存注册表+装配三层覆盖,
-  ReaderPage 收敛到路由/布局/scroll 装配/fitWidth/快捷键);测试护航。
+- **处置(2026-08-30 已落地)**:三屋票收口——**PagesOverlay.tsx**(122 行)
+  持页面缓存注册表七件(PageText/PageFrame/双 useState/换文献清缓存
+  effect/handlePageRender/dropPageState/renderPageLayers)逐行原样迁入+内装
+  PageColumn 九 props 透传(onPageRender 写/renderPage 读读写同源同居);
+  ReaderPage 249→197 行收敛到路由/布局/scroll 装配/fitWidth/快捷键,头注
+  「只装配」声明与实现对齐;INV-16 零 pdfjs-dist 直连(类型全走再导出)。
+  新测 pages-overlay.test 六用例(挂载条件/量测写入/卸载哨同删 W3/换文献
+  清空/身份传导/九 props 透传锚)+变异红证 M1~M4+回炉变异(摘 onReady
+  透传→⑥红);门一 deepseek 0B/4W→W1(⑤对短路锁定力不足=对抗推演实证
+  摘短路仍全绿→宣称如实降级)/W2(透传盲区→⑥透传锚)回炉双 ADDRESSED,
+  W3(票面 reader-scroll 数字笔误 18→2 主控亲验勘误)/W4(raw 证据主控
+  亲验)自处置;门二 PASS(七件逐行等价双路径证实)。INV-30 宿主随迁
+  已同步(锚定面补 pages-overlay.test③)。票面/三报告/取证=
+  scripts/audits/f-arch3-*。
 
 ### F-ARCH4 [W] annotation-anchor.ts 476 行逼近红线 ——状态:**预警(AUDIT-A 观察+deepseek W8 升格)**
 

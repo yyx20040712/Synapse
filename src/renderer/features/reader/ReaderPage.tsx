@@ -6,8 +6,9 @@
  *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
  * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
  * - [sr2-lg-08] 时序竞态修复：挂载效应内监听器注册必须先于闩锁消费——消费链 openFromBus→locateAnchor→waitOpen（tab 缺席）会同步重发 OPEN_PAPER_EVENT（事件②），旧序自丢失→waitOpen 8s 超时停旧 tab=「脉络双击笔记总跳最后打开的文章」根因；先注册则事件②被自身 handler 接住→无锚分支 store.openPaper 正常打开（链声明独立于 F-07；全链取证见 scripts/audits/sr2-lg-08-brief.md）
- * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
- *   pageText→Record<页号,PageText>（渲染窗口内，页卸载同删）；每页自量 canvas 盒
+ * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn；页面缓存注册表
+ *   （pageTexts/pageRoots+覆盖层装配）归 PagesOverlay（F-ARCH3 七件下沉，
+ *   本组件只装配——声明与实现对齐）
  * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
  *   三口+keydown；页列就绪→恢复链滚回记忆页盒顶）；快捷键=容器滚动步（四键
  *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
@@ -18,46 +19,28 @@
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
- * - 文本/几何的页内契约：PdfPageCanvas onPageRender 回报（页号,文本项）+该页
- *   canvas CSS 盒量测（data-page-root 域内）→ TextLayer 定位输入
+ * - 文本/几何的页内契约归 PagesOverlay（F-ARCH3 下沉）：PdfPageCanvas
+ *   onPageRender 回报+canvas CSS 盒量测→TextLayer 定位输入
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本+多页可见（最终裁判）
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
 import { openFromBus } from './open-paper-anchor'
-import { AnnotationLayer } from './AnnotationLayer'
-import { ReaderAiLayer } from './AiAnnotationLayer'
 import { OutlineAside } from './OutlineAside'
 import { SplitPane } from '../../shared/ui/SplitPane'
 import { TabBar } from './TabBar'
 import { PdfDocProvider } from './PdfDocProvider'
-import { PageColumn, type PageScrollRequest } from './PageColumn'
-import type { PdfTextContent } from './PdfPageCanvas'
+import { PagesOverlay } from './PagesOverlay'
+import type { PageScrollRequest } from './PageColumn'
 import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
 import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
 import { SelectionLayer } from './SelectionLayer'
-import { TextLayer } from './TextLayer'
 import { useReaderStore } from './reader.store'
 import { readActiveTab, useActiveTab } from './useActiveTab'
 import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
 import { showToast } from '../../shared/ui/Toast'
-
-/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
-interface PageText {
-  page: number
-  text: PdfTextContent
-  box: { w: number; h: number }
-}
-
-/** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
-function PageFrame(props: { no: number; onRecycle(no: number): void; children: ReactNode }): JSX.Element {
-  const { no, onRecycle, children } = props
-  useEffect(() => () => onRecycle(no), [no, onRecycle])
-  return <>{children}</>
-}
 
 export function ReaderPage(): JSX.Element {
   // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）
@@ -78,8 +61,6 @@ export function ReaderPage(): JSX.Element {
   // 信号过滤：非本文档的迟发信号不滚（回写竞 tab 切换的防御面）
   const columnScroll: PageScrollRequest | null =
     scrollRequest !== null && scrollRequest.paperId === paperId ? scrollRequest : null
-  const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
-  const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
   // F-04 列宽基准：页列就绪 onReady 上报的最宽页原始宽（fit-width 分母单源）
   const columnBasis = useRef(0)
   const [outlineOpen, setOutlineOpen] = useState(true)
@@ -122,31 +103,11 @@ export function ReaderPage(): JSX.Element {
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [])
 
-  // 换文献：丢弃旧页文本/页根（防陈旧文本层——TextLayer 以页对齐才渲染）
+  // 换文献：弃旧文档句柄（pageTexts/pageRoots 清空归 PagesOverlay 同键效应——F-ARCH3；
+  // 子效应先于父效应跑，两表清空仍先于 setPdfDoc，与拆分前同序）
   useEffect(() => {
-    setPageTexts({})
-    setPageRoots({})
     setPdfDoc(null)
   }, [fileUrl])
-
-  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
-  const handlePageRender = (no: number, text: PdfTextContent): void => {
-    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
-    const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
-    if (canvas === null) return
-    const rect = canvas.getBoundingClientRect()
-    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
-    if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
-  }
-
-  /** 渲染窗口内页的回收删条目（W3：pageTexts/pageRoots 同删——防 stale 根残留） */
-  const dropPageState = useCallback((no: number): void => {
-    const del = <T,>(prev: Record<number, T>): Record<number, T> => {
-      if (prev[no] === undefined) return prev
-      const next = { ...prev }; delete next[no]; return next
-    }
-    setPageTexts(del); setPageRoots(del)
-  }, [])
 
   /** 页列就绪（每 doc 一次）：记列宽基准（F-04）+F-03 恢复链 loading→restoring
    *  →scrollToPage（setPage 'to'→INV-29 信号→PageColumn 滚回记忆页盒顶） */
@@ -184,21 +145,8 @@ export function ReaderPage(): JSX.Element {
       </div>
     )
   }
-  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）；
-   *  SelectionLayer 挂稳定盒（N4） */
-  const renderPageLayers = (no: number): JSX.Element => {
-    const pt = pageTexts[no]
-    const pr = pageRoots[no]
-    return (
-      <PageFrame no={no} onRecycle={dropPageState}>
-        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
-        {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
-        <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
-      </PageFrame>
-    )
-  }
-
-  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PageColumn（页列）
+  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PagesOverlay
+  // （页面缓存注册表+覆盖层装配——F-ARCH3 拆分件）；SelectionLayer 挂稳定盒（N4）
   const mainContent = (
     <div
       ref={scrollAreaRef}
@@ -211,9 +159,9 @@ export function ReaderPage(): JSX.Element {
       <div ref={setSelectionMount} className="relative">
         <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
           {(doc) => (
-            <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} scrollContainerRef={scrollAreaRef}
-              onPageRender={handlePageRender} onError={handlePdfError}
-              renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} />
+            <PagesOverlay doc={doc} fileUrl={fileUrl} totalPages={totalPages} zoom={zoom} annotations={annotations}
+              scrollContainerRef={scrollAreaRef} scrollRequest={columnScroll}
+              onReady={handleColumnReady} onError={handlePdfError} />
           )}
         </PdfDocProvider>
         {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4） */}

@@ -1,0 +1,285 @@
+// @vitest-environment jsdom
+/**
+ * [F-ARCH3] PagesOverlay —— 页面缓存注册表+覆盖层装配测试（锁定合约）。
+ *
+ * 七件自 ReaderPage 下沉（PageText/PageFrame/pageTexts+pageRoots/换文献清缓存
+ * effect/handlePageRender/dropPageState/renderPageLayers 工厂）——本文件锁
+ * 注册表行为：回报写入（量测 Math.round）/卸载哨同删（W3/INV-30）/
+ * 换文献清空（键 [fileUrl]）/挂载条件（pt!==undefined、pr!==undefined）/
+ * pageRoot 身份传导（回炉 1-W1：内部短路优化无黑盒可观测面，不宣称）/
+ * 九 props 透传锚（回炉 1-W2）。
+ * mock 面申报（reader-page-open-race.test.tsx 配方同族，最小化）：
+ * - PageColumn：桩渲染 props.renderPage(no)（页集 probe.rendered 测试可变——
+ *   驱动覆盖层挂/卸=PageFrame 卸载哨的触发面）+最新 props（九件全形）暴露给
+ *   测试（onPageRender 回报入口+⑥ 透传锚断言面）；PageColumn 自身行为已由
+ *   page-column.test 锁定，本票不重复锁（主控预裁 3）。
+ * - TextLayer/AnnotationLayer/ReaderAiLayer：prop 快照桩——断言点是
+ *   viewportScale/pageWidth/Height/page/pageRoot 等 prop 值，层自身行为各有
+ *   测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api 赋值
+ *   +双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
+ * jsdom 手工造 [data-page-root]+canvas[data-pdf-canvas] DOM 片段供
+ * handlePageRender 量测（getBoundingClientRect 实例级覆写——jsdom 无布局）。
+ * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
+ */
+import { act } from 'react'
+import type { RefObject } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+
+/** 桩共享位（vi.hoisted——vi.mock 工厂与用例两侧同引用） */
+const probe = vi.hoisted(() => ({
+  /** PagesOverlay→PageColumn 桩最新 props（九件全形——onPageRender 回报入口+⑥ 透传锚断言面） */
+  columnProps: null as null | {
+    doc: PDFDocumentProxy
+    totalPages: number
+    zoom: number
+    scrollContainerRef: RefObject<HTMLDivElement | null>
+    scrollRequest: { paperId: string; page: number; seq: number } | null
+    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
+    renderPage: (no: number) => JSX.Element
+    onReady: (basisWidth: number) => void
+    onError: (msg: string) => void
+  },
+  /** 桩当前渲染页集（测试改写+rerender 驱动 renderPage 内容挂/卸） */
+  rendered: [] as number[],
+  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询） */
+  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number },
+  annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null },
+  aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
+}))
+
+vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+  PageColumn: (props: {
+    doc: PDFDocumentProxy
+    totalPages: number
+    zoom: number
+    scrollContainerRef: RefObject<HTMLDivElement | null>
+    scrollRequest: { paperId: string; page: number; seq: number } | null
+    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
+    renderPage: (no: number) => JSX.Element
+    onReady: (basisWidth: number) => void
+    onError: (msg: string) => void
+  }) => {
+    probe.columnProps = props
+    return (
+      <>
+        {probe.rendered.map((no) => (
+          <div key={no} data-stub-page={no}>
+            {props.renderPage(no)}
+          </div>
+        ))}
+      </>
+    )
+  }
+}))
+
+vi.mock('../../../src/renderer/features/reader/TextLayer', () => ({
+  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number }) => {
+    probe.textLayer = props
+    return <div data-stub="text-layer" data-viewport-scale={props.viewportScale} data-page-width={props.pageWidth} data-page-height={props.pageHeight} />
+  }
+}))
+
+vi.mock('../../../src/renderer/features/reader/AnnotationLayer', () => ({
+  AnnotationLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
+    probe.annotationLayer = props
+    return <div data-stub="annotation-layer" data-page={props.page} />
+  }
+}))
+
+vi.mock('../../../src/renderer/features/reader/AiAnnotationLayer', () => ({
+  ReaderAiLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
+    probe.aiLayer = props
+    return <div data-stub="ai-layer" data-page={props.page} />
+  }
+}))
+
+import { PagesOverlay } from '../../../src/renderer/features/reader/PagesOverlay'
+
+/** 文档桩（PageColumn 已 mock——doc 仅透传，无 getPage 调用面） */
+const DOC = { numPages: 6 } as unknown as PDFDocumentProxy
+const scrollerRef = { current: null } as RefObject<HTMLDivElement | null>
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+/** 手工页 DOM 片段容器（makePageRoot 产物挂此，用例后统一清） */
+let manualHost: HTMLDivElement | null = null
+
+/** 造页根+量测 canvas（handlePageRender 的量测输入——querySelector 命中域） */
+function makePageRoot(no: number, w: number, h: number): HTMLElement {
+  const pageRoot = document.createElement('div')
+  pageRoot.setAttribute('data-page-root', String(no))
+  const canvas = document.createElement('canvas')
+  canvas.setAttribute('data-pdf-canvas', 'true')
+  canvas.getBoundingClientRect = (): DOMRect =>
+    ({ x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) }) as DOMRect
+  pageRoot.appendChild(canvas)
+  manualHost!.appendChild(pageRoot)
+  return pageRoot
+}
+
+/** 文本载荷（PdfTextContent 全形——styles 按 fontName 索引的契约面） */
+function makeText(str: string): PdfTextContent {
+  const item: PdfTextItem = { str, dir: 'ltr', width: 100, height: 10, transform: [1, 0, 0, 1, 0, 0], fontName: 'g1', hasEOL: true }
+  return { items: [item], styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: 'zh' }
+}
+
+function makeOverlay(over: { fileUrl?: string; zoom?: number } = {}): JSX.Element {
+  return (
+    <PagesOverlay
+      doc={DOC}
+      fileUrl={over.fileUrl ?? 'app-file://doc-a.pdf'}
+      totalPages={6}
+      zoom={over.zoom ?? 1.25}
+      annotations={[]}
+      scrollContainerRef={scrollerRef}
+      scrollRequest={null}
+      onReady={() => undefined}
+      onError={() => undefined}
+    />
+  )
+}
+
+function mount(node: JSX.Element): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(node)
+  })
+}
+
+function remount(node: JSX.Element): void {
+  act(() => {
+    root?.render(node)
+  })
+}
+
+/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链） */
+function report(no: number, text: PdfTextContent): void {
+  act(() => {
+    probe.columnProps!.onPageRender(no, text)
+  })
+}
+
+beforeEach(() => {
+  // React 18 act 契约（page-column.test 同款）
+  ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+  probe.columnProps = null
+  probe.rendered = [1]
+  probe.textLayer = null
+  probe.annotationLayer = null
+  probe.aiLayer = null
+  manualHost = document.createElement('div')
+  document.body.appendChild(manualHost)
+})
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+  manualHost?.remove()
+  manualHost = null
+})
+
+describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
+  it('① 回报前：renderPage(no) 不挂 TextLayer/AnnotationLayer（挂载条件 pt/pr 缺席）；ReaderAiLayer 恒挂且 pageRoot=null', () => {
+    mount(makeOverlay())
+    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
+    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
+    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
+    expect(ai).not.toBeNull()
+    expect(ai!.dataset.page).toBe('0')
+    expect(probe.aiLayer?.pageRoot).toBeNull()
+  })
+
+  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
+    const pageRoot = makePageRoot(1, 612.4, 792.6)
+    mount(makeOverlay())
+    report(1, makeText('首页文本'))
+    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
+    expect(probe.textLayer?.viewportScale).toBe(1.25)
+    expect(probe.textLayer?.pageWidth).toBe(612)
+    expect(probe.textLayer?.pageHeight).toBe(793)
+    expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
+    expect(probe.annotationLayer?.page).toBe(0)
+    expect(probe.annotationLayer?.pageRoot).toBe(pageRoot)
+    expect(probe.aiLayer?.page).toBe(0)
+    expect(probe.aiLayer?.pageRoot).toBe(pageRoot)
+  })
+
+  it('③ PageFrame 卸载（renderPage 内容随桩页集摘除）→两表条目同删（W3/INV-30）——重挂后层不复活', () => {
+    makePageRoot(1, 612, 792)
+    mount(makeOverlay())
+    report(1, makeText('页一文本'))
+    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
+    expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
+    // 摘页→rerender：PageFrame 卸载哨触发（onRecycle→dropPageState 两表同删）
+    probe.rendered = []
+    remount(makeOverlay())
+    // 复挂同页：条目已删——层不再挂（ReaderAiLayer 恒挂但 pageRoot 归 null）
+    probe.rendered = [1]
+    remount(makeOverlay())
+    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
+    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
+    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
+    expect(ai).not.toBeNull()
+    expect(probe.aiLayer?.pageRoot).toBeNull()
+  })
+
+  it('④ fileUrl 变化（换文献）→两表清空——层消失（效应键 [fileUrl]；setPdfDoc 留宿主 ReaderPage 不在本组件）', () => {
+    makePageRoot(1, 612, 792)
+    mount(makeOverlay())
+    report(1, makeText('文献 A 页一'))
+    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
+    remount(makeOverlay({ fileUrl: 'app-file://doc-b.pdf' }))
+    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
+    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
+  })
+
+  it('⑤ pageRoot 元素身份传导：同 DOM 元素二次回报→层收到的 pageRoot 仍是同一元素；换元素回报→引用更新（真实变化传导）', () => {
+    const first = makePageRoot(1, 612, 792)
+    mount(makeOverlay())
+    report(1, makeText('第一次回报'))
+    expect(probe.annotationLayer?.pageRoot).toBe(first)
+    // 短路优化无黑盒可观测面（React 18 批处理），本用例不宣称锁定短路——只锁身份传导（回炉 1-W1）
+    report(1, makeText('第二次回报'))
+    expect(probe.annotationLayer?.pageRoot).toBe(first)
+    // 对照组：页根换新元素→引用更新（真实变化仍传导）
+    first.remove()
+    const second = makePageRoot(1, 612, 792)
+    report(1, makeText('第三次回报'))
+    expect(probe.annotationLayer?.pageRoot).toBe(second)
+  })
+
+  it('⑥ 九 props 透传锚：PagesOverlay→PageColumn 逐件传递（doc/totalPages/zoom/scrollContainerRef/scrollRequest 值传递；onReady/onError 函数身份直传）', () => {
+    const onReady = (): void => undefined
+    const onError = (msg: string): void => { void msg }
+    const scrollRequest = { paperId: 'p1', page: 2, seq: 7 }
+    mount(
+      <PagesOverlay
+        doc={DOC}
+        fileUrl="app-file://doc-a.pdf"
+        totalPages={9}
+        zoom={1.5}
+        annotations={[]}
+        scrollContainerRef={scrollerRef}
+        scrollRequest={scrollRequest}
+        onReady={onReady}
+        onError={onError}
+      />
+    )
+    expect(probe.columnProps?.doc).toBe(DOC)
+    expect(probe.columnProps?.totalPages).toBe(9)
+    expect(probe.columnProps?.zoom).toBe(1.5)
+    expect(probe.columnProps?.scrollContainerRef).toBe(scrollerRef)
+    expect(probe.columnProps?.scrollRequest).toBe(scrollRequest)
+    expect(probe.columnProps?.onReady).toBe(onReady)
+    expect(probe.columnProps?.onError).toBe(onError)
+  })
+})

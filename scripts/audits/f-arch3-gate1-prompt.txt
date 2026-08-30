@@ -1,0 +1,1066 @@
+【任务】F-ARCH3 门一(异基座对抗深审)——ReaderPage 职责膨胀拆分:PagesOverlay 页面缓存注册表下沉,纯重构行为零变。请审查:①重构等价性逐面推演(七件迁入是否逐行等价/换文献时序:子效应先于父效应+React 18 批处理下清空序是否与拆分前同/挂载条件与 props 传导链 zoom·annotations→覆盖层/INV-16 类型再导出零 pdfjs-dist 直连)②测试质量(pages-overlay.test 五用例是否有恒真断言/mock 面是否恰当/变异红证 M1~M4 是否真咬行为)③头注与声明(ReaderPage「只装配」新声明是否成立/头注是否写完整 import 语句原文=arch-scan 假边坑)④接缝(SelectionLayer 挂载盒/scroll-progress 三口/PdfDocProvider render-prop 割点是否被动)。**按票面类型附加强制审项——挂载/事件消费类:事件时间线逐帧推演**(PageFrame 卸载哨触发序/换文献双效应执行序/fileUrl null→非 null 切换的组件树换挂)。分级 [B|W|N],每条给 diff 内证据(file:line 或引用原文),不确定明说,结尾「已查安全面」≤5 条。中文。
+
+【主控预裁项声明(可攻击,推翻需更强依据)】①PagesOverlay 包 PageColumn(onPageRender 写/renderPage 读读写同源同居一组件,工厂 hook 形态不成立=状态仍悬 ReaderPage);②PdfDocProvider 留 ReaderPage(pdfDoc 句柄消费方=OutlineAside 布局槽);③mock PageColumn+三层桩测缓存注册表(PageColumn 行为已由 page-column.test 15+ 用例锁定,不重复锁);④函数形态原样迁不加 useCallback/useMemo(纯重构零行为变);⑤换文献清缓存 effect 键 [fileUrl](组件随主区常驻,fileUrl 挂载期不变 null)。
+
+【证据日志路径(cripts/audits/,原始输出已落盘,报告内有转述)】首红=f-arch3-impl-first-red.raw.txt(全量口径,组件不存在 exit=1)/绿=f-arch3-impl-green.raw.txt(113 文件 947=942+5 全绿 exit=0)/变异 M1~M4=f-arch3-impl-mutation-m1~m4.raw.txt(M1 红③/M2 红④/M3 红②③④/M4 红①③④)/verify=f-arch3-impl-verify.raw.txt(locks:check 红=新增受锁测试文件待主控登记 manifest,lint/typecheck/test/build 各关口 exit=0)/e2e=f-arch3-impl-e2e.raw.txt(首跑 corpus-export 1 例 60s 超时=无关面 flake 申报,复跑 29/29 exit=0)。
+
+════════ 票面(五层规约)════════
+# F-ARCH3 票面:ReaderPage 职责膨胀拆分——PagesOverlay 页面缓存注册表下沉(纯重构)——五层规约
+
+> 来源:AUDIT0 台账 F-ARCH3 [B→重构票](deepseek 架构审 B3 实锤,报告=
+> scripts/audits/arch-review-ds.md;总报告=docs/audits/
+> 2026-08-30_ds-supplement-arch-review.md)。F-01 头注声称「本组件只装配」
+> 但页面缓存编排五件套(pageTexts/pageRoots/handlePageRender/dropPageState/
+> PageFrame)仍在 ReaderPage——**声明与实现漂移**,churn 45 天 20 次全项目
+> 第一=每个新阅读器行为都在此打补丁。本票=纯重构,**行为零变**。
+> 中票三屋(ADR-0017)。LOOP 会话票——**不在 tickets/registry,禁触碰
+> registry**。
+
+## 行为层
+
+### 拆分线(七件下沉,ReaderPage 收敛)
+
+新组件 `PagesOverlay.tsx` 持「页面缓存注册表+覆盖层装配」,以下七件从
+ReaderPage **原样迁入**(代码逐行保持,只换宿主):
+
+1. `PageText` interface(页号+文本载荷+canvas CSS 盒,成对更新契约);
+2. `PageFrame` 组件(渲染窗口内页的卸载哨,onRecycle 回收);
+3. `pageTexts`/`pageRoots` 两个 useState(缓存注册表);
+4. 换文献清缓存 effect(键 `fileUrl`,**只清 pageTexts/pageRoots**——
+   `setPdfDoc(null)` 留 ReaderPage,pdfDoc 是 OutlinePanel 数据源=布局职责);
+5. `handlePageRender`(PdfPageCanvas 渲染回报→querySelector
+   `[data-page-root="${no}"]`→canvas[data-pdf-canvas]→getBoundingClientRect
+   →Math.round 写 pageTexts 条目;pageRoots 引用相等不重写);
+6. `dropPageState`(W3:两表同删);
+7. `renderPageLayers` 覆盖层工厂(TextLayer 挂载条件 pt!==undefined/
+   AnnotationLayer 挂载条件 pr!==undefined/ReaderAiLayer 恒挂
+   pageRoot=pr??null;page 传 no−1;viewportScale=zoom;pageWidth/Height=
+   pt.box)。
+
+**PagesOverlay 内装 PageColumn**:渲染 `<PageColumn doc totalPages zoom
+scrollContainerRef onPageRender={handlePageRender} onError renderPage=
+{renderPageLayers} onReady scrollRequest />`(九 props 全透传)。读写同源
+(onPageRender 写注册表/renderPage 读注册表)必须在同一组件内——这是
+PagesOverlay 包 PageColumn 而非只提供工厂的原因。
+
+**ReaderPage 收敛后保留**:打开路由(OPEN_PAPER_EVENT 两路)/空态分支/
+TabBar/ReaderToolbar/SplitPane+OutlineAside 布局/SelectionLayer 挂载
+(N4 稳定盒)/scroll-progress 装配(createReaderScrollProgress+
+useScrollProgressWiring+三口接管)/快捷键/fitWidth(columnBasis 分母
++handleColumnReady)/handlePdfError/换文献 setPdfDoc(null)/sr-only 页态
+播报/信号过滤 columnScroll(scrollRequest.paperId===paperId)。
+
+### 行为等价面(禁破——每条都有既有测试或 e2e 锚)
+
+- 换文献(fileUrl 变化)→pageTexts/pageRoots 清空(效应宿主迁移,键不变
+  ——现 ReaderPage effect 与新 PagesOverlay effect 同键同序);
+- PageFrame 卸载→两表条目同删(W3/INV-30);
+- `fileUrl` 为 null 的空态期组件树不挂 PagesOverlay(null→非 null 切换=
+  全新挂载,状态天然空——与现状「effect 清空」等价);
+- zoom/annotations 变化→覆盖层重渲染链经 props 传导(现 ReaderPage 闭包
+  直读→新 PagesOverlay props 传导,PageColumn 接到的 renderPage/onPageRender
+  函数身份仍每渲染新建——**不新加 useCallback/useMemo**,保持函数形态
+  原样,防行为漂移);
+- e2e reader-text 11 用例+reader-scroll 18 用例全绿(最终裁判);
+- 既有单测全绿:page-column/reader-page-open-race/scroll-converge/
+  anchor-locate/selection-layer/annotation-layer/reader.store 族。
+
+## 接口层
+
+- 新文件 `src/renderer/features/reader/PagesOverlay.tsx`:
+  `export function PagesOverlay(props: { doc: PDFDocumentProxy;
+  fileUrl: string; totalPages: number; zoom: number;
+  annotations: Annotation[]; scrollContainerRef: RefObject<HTMLDivElement |
+  null>; scrollRequest: PageScrollRequest | null;
+  onReady(basisWidth: number): void; onError(msg: string): void }):
+  JSX.Element`
+- **类型来源纪律(INV-16——ESLint 机器锚会拦,违者红)**:
+  `PDFDocumentProxy` 经 `./PdfDocProvider` 再导出;`PdfTextContent` 经
+  `./PdfPageCanvas`;`PageScrollRequest` 经 `./PageColumn`;
+  `Annotation` 经 `@shared/models/annotation`(对齐 AnnotationLayer 现行
+  import 形态)。**禁直连 pdfjs-dist(含 import type)**——白名单四文件
+  不扩。
+- ReaderPage 修改:删七件+相关 import(TextLayer/AnnotationLayer/
+  ReaderAiLayer/PageColumn/PdfTextContent/PageFrame);PdfDocProvider
+  render-prop 内改挂 `<PagesOverlay …/>`(割点不变——PdfDocProvider 留
+  ReaderPage,onDocReady 喂 OutlinePanel 的布局链不动);
+- 头注纪律:两文件头注按项目五段惯例重写(ReaderPage 头注删「F-01 页列
+  几何/懒渲染回收归 PageColumn(本组件只装配)」段的缓存编排描述,改述
+  为装配 PagesOverlay;PagesOverlay 头注写明本票编号+INV-30/W3 锚+七件
+  契约)。**头注禁写完整 import 语句原文**(arch-scan 假边坑在档)。
+- 零新依赖;零 shared/ipc 触碰;零 CSS 触碰;零 store 触碰。
+
+## 架构层
+
+- 分层单向不动(纯 renderer 特性内重组);
+- 行数:ReaderPage 249→约 170/PagesOverlay 约 130(实现后自查,双远离
+  500/250 红线);
+- INV-16 白名单不扩(PagesOverlay 走再导出);
+- 死代码即删:ReaderPage 迁走后不再被引用的 import/interface 全清
+  (提交前 grep 核对)。
+
+## 生命周期层
+
+- 渲染链多一层组件(zoom/annotations 变化时 PagesOverlay 重渲染)——
+  每 tab 渲染窗口内页数个位数,React reconcile 代价无感;无新 effect 语义
+  (迁移的两个 effect 键与体不变);
+- INV-30 头注表述的「PageFrame 卸载哨」宿主随迁——invariants.md 的
+  INV-30 实现位置字段由**主控收口时**同步(实现者不碰 invariants.md,
+  报告「疑虑」段确认即可)。
+
+## 文化层(测试=TDD 红→绿→变异红证;新测试 always-active 不经 guardedDescribe)
+
+- 新 `tests/unit/renderer/pages-overlay.test.tsx`(受锁文件,新文件可直接
+  写;locks:generate+apply 归主控收口):**mock PageColumn**(vi.mock——
+  桩组件渲染 props.renderPage(no) 并把 props.onPageRender 暴露给测试;PageColumn
+  自身行为已由 page-column.test 锁定,本票不重复锁)。jsdom 手工造
+  `[data-page-root]`+`canvas[data-pdf-canvas]` DOM 片段供 handlePageRender
+  量测。用例:
+  ①回报前 renderPage(no) 返回无 TextLayer/AnnotationLayer(pageTexts 空,
+    挂载条件锁);
+  ②onPageRender(no, text) 回报后(canvas DOM 在位)→条目写→
+    renderPage(no) 挂 TextLayer(page 传 no、viewportScale=zoom、
+    pageWidth/Height=box)+AnnotationLayer(page=no−1、pageRoot=
+    data-page-root 元素)+ReaderAiLayer(page=no−1);
+  ③PageFrame 卸载(把 renderPage 返回元素卸载)→两表条目同删
+    (再 renderPage(no) 层消失);
+  ④fileUrl 变化(rerender 新 fileUrl)→两表清空(换文献);
+  ⑤pageRoots 引用相等不重写(同 DOM 二次回报不换引用——防无谓重渲染)。
+- **e2e 全量**(收口裁判,须先 build):`npm run test:e2e` 29 用例全绿,
+  落盘 .raw.txt;
+- 全量 vitest 绿(禁裸 npx vitest,用 npm run test);
+- 变异红证(各落盘 .raw.txt,文件备份法 cp 还原,禁 git checkout;锚点
+  须带足够上下文——「注释行+代码」组合锚,防首撞别处):
+  M1 摘 dropPageState 回收(del 不再删条目)→③红;
+  M2 摘换文献清缓存 effect 体→④红;
+  M3 handlePageRender 摘 setPageTexts 写入→②红;
+  M4 AnnotationLayer 挂载条件改无条件(pr 缺席也挂)→①红。
+- 受锁面:仅新增测试文件(收口 locks 归主控);**实现者禁跑 locks 命令**。
+
+## 基线数字(自检参照)
+
+verify=112 文件 942 用例全绿 / locks 186 / e2e 29。**本机 node 默认 v25
+必红(webstorage 污染在档)——一切 node/npm 命令前缀
+`export PATH="/d/nodejs24:$PATH"`**。
+
+## 主控已预裁项(门一可攻击,推翻需更强依据)
+
+1. **PagesOverlay 包 PageColumn**(render-prop 割点在 PdfDocProvider 内侧
+   不变):onPageRender(写)与 renderPage(读)读写同源必须同居一组件——
+   deepseek B3 建议形态的落地方式;只提供「工厂 hook」不成立(状态仍悬于
+   ReaderPage=没拆);
+2. PdfDocProvider 留 ReaderPage:pdfDoc 句柄消费方=OutlineAside(布局槽),
+   拆进 PagesOverlay 反而要 onDocReady 穿两层回调;
+3. mock PageColumn 测缓存注册表:PageColumn 行为已锁(page-column.test
+   15+ 用例),组件测试重复真挂 PageColumn=重复锁+jsdom IO 桩成本,无增益;
+4. 函数形态原样迁(不新加 useCallback/useMemo):纯重构零行为变纪律,
+   重渲染开销由生命周期层论证无感;
+5. 换文献清缓存 effect 在 PagesOverlay 挂 [fileUrl](组件实例随主区常驻,
+   fileUrl 不会在组件挂载期间变 null——主区只在 fileUrl 非 null 时渲染)。
+
+════════ 实现者报告 ════════
+# F-ARCH3 实现者报告——PagesOverlay 页面缓存注册表下沉（纯重构，行为零变）
+
+> 工单来源：scripts/audits/f-arch3-ticket.md（LOOP 会话票，不在 tickets/registry）。
+> 实现者子代理（ADR-0017 三屋）；本报告=⑥ 报告契约全文。
+
+## 开工记录（技能清点——宪法会话开工纪律）
+
+- test-driven-development：**用**——票面强制 TDD 红→绿→变异红证，本票全程照此执行。
+- verification-before-completion：**用**——verify/各关口真退出码落盘（见下）。
+- systematic-debugging：**备用未启用**——全程无卡点（唯一非绿项 locks:check 为票面预裁的主控收口面，非缺陷）。
+- javascript-testing-patterns：**不用**——先例池 page-column.test.tsx 已给完整组件测试形态（createRoot+act+jsdom+vi.hoisted mock），直接沿用，无新形态需求。
+- subagent-driven-development：**不用**——本人即实现者子代理，门一/门二归独立子代理。
+- 其余前端/后端/运维/文档类技能：**不用**——纯 renderer 特性内单组件拆分，无对应工作面。
+
+## 实现摘要
+
+- 新建 `src/renderer/features/reader/PagesOverlay.tsx`（122 行）：七件自 ReaderPage **逐行原样迁入**
+  （PageText 接口/PageFrame 卸载哨/pageTexts+pageRoots useState/换文献清缓存 effect（键
+  [fileUrl]，只清两表）/handlePageRender/dropPageState（useCallback 原样保留）/
+  renderPageLayers 覆盖层工厂）；组件内装 PageColumn，九 props 全透传（doc/fileUrl/
+  totalPages/zoom/scrollContainerRef/onPageRender=handlePageRender/onError/renderPage=
+  renderPageLayers/onReady 直传/scrollRequest）。函数形态原样（未新增 useCallback/useMemo
+  ——主控预裁 4）。类型再导出纪律（INV-16）：PDFDocumentProxy 经 ./PdfDocProvider、
+  PdfTextContent 经 ./PdfPageCanvas、PageScrollRequest 经 ./PageColumn、Annotation 经
+  @shared/models/annotation——零直连 pdfjs-dist。
+- 改 `src/renderer/features/reader/ReaderPage.tsx`（249→197 行，+15/−67）：删七件+死 import
+  （TextLayer/AnnotationLayer/ReaderAiLayer/PageColumn 值导入/PdfTextContent/useCallback/
+  ReactNode）；PdfDocProvider render-prop 内改挂 `<PagesOverlay …/>`（割点不变，PdfDocProvider
+  留 ReaderPage——主控预裁 2）；换文献 effect 收敛为仅 `setPdfDoc(null)`（两表清空归
+  PagesOverlay 同键子效应——子效应先于父效应执行，两表清空仍先于 setPdfDoc，与拆分前同序）；
+  头注按五段惯例重写（F-01 段改述为「缓存注册表归 PagesOverlay，本组件只装配」，页内契约
+  架构层段指向 PagesOverlay；无完整 import 语句原文——arch-scan 假边坑）。
+- 新建测试 `tests/unit/renderer/pages-overlay.test.tsx`（243 行，受锁新文件，locks 登记归主控）。
+
+## 文件清单
+
+- 新增：`src/renderer/features/reader/PagesOverlay.tsx`（122 行，≤250 ✓）
+- 新增：`tests/unit/renderer/pages-overlay.test.tsx`（243 行，≤500 ✓，always-active 不经 guardedDescribe）
+- 修改：`src/renderer/features/reader/ReaderPage.tsx`（197 行，≤250 ✓；git diff --stat 仅此一追踪文件，无范围蔓延）
+- 证据（新增未跟踪 .raw.txt ×8）：见下各节路径
+
+## TDD 证据
+
+- **首红（全量口径）**：`scripts/audits/f-arch3-impl-first-red.raw.txt`——PagesOverlay 不存在
+  →import 解析失败（Failed Suites 1，exit=1）；既有 112 文件 942 用例全绿。
+- **绿（全量口径）**：`scripts/audits/f-arch3-impl-green.raw.txt`——113 文件 **947** 用例
+  （=942+5，锁测试计数不变）全绿，exit=0。
+
+## 变异红证（文件备份法：cp 备份→变异→测→cp 还原→diff 确认空；全程未用 git checkout）
+
+| 变异 | 内容 | 落盘路径 | 红的用例 |
+|---|---|---|---|
+| M1 | dropPageState 的 del 摘 `delete next[no]`（回收不删条目） | `scripts/audits/f-arch3-impl-mutation-m1.raw.txt` | **③**（PageFrame 卸载→两表同删）1 failed |
+| M2 | 换文献清缓存 effect 体摘空 | `scripts/audits/f-arch3-impl-mutation-m2.raw.txt` | **④**（fileUrl 变化→两表清空）1 failed |
+| M3 | handlePageRender 摘 setPageTexts 写入 | `scripts/audits/f-arch3-impl-mutation-m3.raw.txt` | **②**（回报→条目写入）为主，连带 ③④（均依赖写入）3 failed |
+| M4 | AnnotationLayer 挂载条件改无条件（pr 缺席也挂） | `scripts/audits/f-arch3-impl-mutation-m4.raw.txt` | **①**（回报前不挂层）为主，连带 ③④（缺席断言）3 failed |
+
+- 四次变异均为全量 `npm run test` 口径（非定向子集，无降档）；每次还原后 diff 备份=空
+  （终端回显 M1~M4-restore-diff-empty）；备份文件已删除。
+
+## verify 与 e2e
+
+- **verify**：`scripts/audits/f-arch3-impl-verify.raw.txt`——quality/tickets 过后 `locks:check`
+  红：**新增受锁文件 tests/unit/renderer/pages-overlay.test.tsx 未登记 manifest**（票面预裁：
+  locks:generate/apply 归主控收口，实现者禁跑 locks 命令——此红=预期主控面，非缺陷）。
+  locks 之后各关口补跑同文件追加：lint-exit=0 / typecheck-exit=0 / test-exit=0 / build-exit=0。
+- **e2e**：`scripts/audits/f-arch3-impl-e2e.raw.txt`——首跑 28 passed +1 failed
+  （`corpus-export.spec.ts:89 AI 语料导出全链` 60s 超时——语料导出链，与本票阅读器渲染面
+  零交集；reader-text 11/11、reader-scroll 2/2 全过）。按票面 flake 条款**复跑一次全量：
+  29 passed (1.3m)，exit=0**。
+
+## 自裁申报（一切偏离票面的决定）
+
+1. **测试对 TextLayer/AnnotationLayer/ReaderAiLayer 追加 vi.mock 桩**（票面 mock 面只点名
+   PageColumn）：断言点是 prop 值（viewportScale/pageWidth/Height/page/pageRoot 元素身份），
+   真组件无对应 DOM 可观测面；且真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api
+   赋值+双 store（reader-page-open-race.test.tsx 申报的 jsdom 桩面同源）。三层自身行为各有
+   测试锁（page-column/ai-annotation-layer/annotation 族），本票不重复锁——与主控预裁 3 同理
+   扩展，mock 面最小化申报在测试头注。
+2. **用例⑤的可观测面**：「引用相等不重写」的内部短路（`prev[no]===pageRoot ? prev`）因
+   setPageTexts 同批写入（React 18 自动批处理合并为单次重渲染）在外部无渲染计数差可观测；
+   ⑤落为「同 DOM 元素二次回报→层收到的 pageRoot 仍是同一元素（toBe 身份断言）+换元素
+   回报→引用更新（对照组，短路不吞真实变化）」。锁的是行为相关契约（身份稳定+变化传导），
+   纯内部对象身份不可黑盒观测——如实申报此局限。
+3. **e2e 复跑命令形态**：复跑用 `npm run build` + `npx playwright test`（=npm run test:e2e
+   内部两步原样），未整串重跑 test:e2e（避免二次 build）；口径等价，已申报。
+4. **ReaderPage 换文献 effect 注释**新增一句同序说明（子效应先于父效应、与拆分前同序）——
+   纯注释，无行为面。
+5. **删减面 diff 自查**：ReaderPage 删除面=七件+死 import（grep 核对：PageFrame/pageTexts/
+   pageRoots/PageText/handlePageRender/dropPageState/renderPageLayers/TextLayer/
+   AnnotationLayer/ReaderAiLayer/PdfTextContent/useCallback/ReactNode 代码级引用零残留，
+   仅头注/效应注释保留迁移去向描述）；保留面=票面「ReaderPage 收敛后保留」清单逐项在场
+   （打开路由/空态/TabBar/Toolbar/SplitPane+OutlineAside/SelectionLayer/scroll-progress 装配/
+   快捷键/fitWidth+handleColumnReady/handlePdfError/setPdfDoc(null)/sr-only 播报/columnScroll
+   信号过滤）。
+
+## 疑虑
+
+- **INV-30 表述迁移确认**（票面生命周期层要求报告确认）：INV-30「PageFrame 卸载哨」宿主已
+  随七件迁至 PagesOverlay（`src/renderer/features/reader/PagesOverlay.tsx` PageFrame+
+  dropPageState）；invariants.md 的 INV-30 实现位置字段由**主控收口时**同步，实现者未触碰
+  invariants.md。W3（两表同删）行为由用例③+M1 红证锚定。
+- locks:check 红为主控收口面（新增受锁测试文件待 locks:generate/apply 登记 manifest）——
+  收口时 `npm run locks:generate && npm run locks:apply` 后 verify 应全绿。
+- e2e 首跑 corpus-export 超时判定为 flake（复跑绿+与本票面零交集）；若主控复跑再现，
+  建议单独排查该 spec（与本票无关）。
+
+════════ 完整 diff(未提交工作区)════════
+diff --git a/scripts/audits/f-arch3-impl.report.md b/scripts/audits/f-arch3-impl.report.md
+new file mode 100644
+index 000000000..dd6023c92
+--- /dev/null
++++ b/scripts/audits/f-arch3-impl.report.md
+@@ -0,0 +1,106 @@
++# F-ARCH3 实现者报告——PagesOverlay 页面缓存注册表下沉（纯重构，行为零变）
++
++> 工单来源：scripts/audits/f-arch3-ticket.md（LOOP 会话票，不在 tickets/registry）。
++> 实现者子代理（ADR-0017 三屋）；本报告=⑥ 报告契约全文。
++
++## 开工记录（技能清点——宪法会话开工纪律）
++
++- test-driven-development：**用**——票面强制 TDD 红→绿→变异红证，本票全程照此执行。
++- verification-before-completion：**用**——verify/各关口真退出码落盘（见下）。
++- systematic-debugging：**备用未启用**——全程无卡点（唯一非绿项 locks:check 为票面预裁的主控收口面，非缺陷）。
++- javascript-testing-patterns：**不用**——先例池 page-column.test.tsx 已给完整组件测试形态（createRoot+act+jsdom+vi.hoisted mock），直接沿用，无新形态需求。
++- subagent-driven-development：**不用**——本人即实现者子代理，门一/门二归独立子代理。
++- 其余前端/后端/运维/文档类技能：**不用**——纯 renderer 特性内单组件拆分，无对应工作面。
++
++## 实现摘要
++
++- 新建 `src/renderer/features/reader/PagesOverlay.tsx`（122 行）：七件自 ReaderPage **逐行原样迁入**
++  （PageText 接口/PageFrame 卸载哨/pageTexts+pageRoots useState/换文献清缓存 effect（键
++  [fileUrl]，只清两表）/handlePageRender/dropPageState（useCallback 原样保留）/
++  renderPageLayers 覆盖层工厂）；组件内装 PageColumn，九 props 全透传（doc/fileUrl/
++  totalPages/zoom/scrollContainerRef/onPageRender=handlePageRender/onError/renderPage=
++  renderPageLayers/onReady 直传/scrollRequest）。函数形态原样（未新增 useCallback/useMemo
++  ——主控预裁 4）。类型再导出纪律（INV-16）：PDFDocumentProxy 经 ./PdfDocProvider、
++  PdfTextContent 经 ./PdfPageCanvas、PageScrollRequest 经 ./PageColumn、Annotation 经
++  @shared/models/annotation——零直连 pdfjs-dist。
++- 改 `src/renderer/features/reader/ReaderPage.tsx`（249→197 行，+15/−67）：删七件+死 import
++  （TextLayer/AnnotationLayer/ReaderAiLayer/PageColumn 值导入/PdfTextContent/useCallback/
++  ReactNode）；PdfDocProvider render-prop 内改挂 `<PagesOverlay …/>`（割点不变，PdfDocProvider
++  留 ReaderPage——主控预裁 2）；换文献 effect 收敛为仅 `setPdfDoc(null)`（两表清空归
++  PagesOverlay 同键子效应——子效应先于父效应执行，两表清空仍先于 setPdfDoc，与拆分前同序）；
++  头注按五段惯例重写（F-01 段改述为「缓存注册表归 PagesOverlay，本组件只装配」，页内契约
++  架构层段指向 PagesOverlay；无完整 import 语句原文——arch-scan 假边坑）。
++- 新建测试 `tests/unit/renderer/pages-overlay.test.tsx`（243 行，受锁新文件，locks 登记归主控）。
++
++## 文件清单
++
++- 新增：`src/renderer/features/reader/PagesOverlay.tsx`（122 行，≤250 ✓）
++- 新增：`tests/unit/renderer/pages-overlay.test.tsx`（243 行，≤500 ✓，always-active 不经 guardedDescribe）
++- 修改：`src/renderer/features/reader/ReaderPage.tsx`（197 行，≤250 ✓；git diff --stat 仅此一追踪文件，无范围蔓延）
++- 证据（新增未跟踪 .raw.txt ×8）：见下各节路径
++
++## TDD 证据
++
++- **首红（全量口径）**：`scripts/audits/f-arch3-impl-first-red.raw.txt`——PagesOverlay 不存在
++  →import 解析失败（Failed Suites 1，exit=1）；既有 112 文件 942 用例全绿。
++- **绿（全量口径）**：`scripts/audits/f-arch3-impl-green.raw.txt`——113 文件 **947** 用例
++  （=942+5，锁测试计数不变）全绿，exit=0。
++
++## 变异红证（文件备份法：cp 备份→变异→测→cp 还原→diff 确认空；全程未用 git checkout）
++
++| 变异 | 内容 | 落盘路径 | 红的用例 |
++|---|---|---|---|
++| M1 | dropPageState 的 del 摘 `delete next[no]`（回收不删条目） | `scripts/audits/f-arch3-impl-mutation-m1.raw.txt` | **③**（PageFrame 卸载→两表同删）1 failed |
++| M2 | 换文献清缓存 effect 体摘空 | `scripts/audits/f-arch3-impl-mutation-m2.raw.txt` | **④**（fileUrl 变化→两表清空）1 failed |
++| M3 | handlePageRender 摘 setPageTexts 写入 | `scripts/audits/f-arch3-impl-mutation-m3.raw.txt` | **②**（回报→条目写入）为主，连带 ③④（均依赖写入）3 failed |
++| M4 | AnnotationLayer 挂载条件改无条件（pr 缺席也挂） | `scripts/audits/f-arch3-impl-mutation-m4.raw.txt` | **①**（回报前不挂层）为主，连带 ③④（缺席断言）3 failed |
++
++- 四次变异均为全量 `npm run test` 口径（非定向子集，无降档）；每次还原后 diff 备份=空
++  （终端回显 M1~M4-restore-diff-empty）；备份文件已删除。
++
++## verify 与 e2e
++
++- **verify**：`scripts/audits/f-arch3-impl-verify.raw.txt`——quality/tickets 过后 `locks:check`
++  红：**新增受锁文件 tests/unit/renderer/pages-overlay.test.tsx 未登记 manifest**（票面预裁：
++  locks:generate/apply 归主控收口，实现者禁跑 locks 命令——此红=预期主控面，非缺陷）。
++  locks 之后各关口补跑同文件追加：lint-exit=0 / typecheck-exit=0 / test-exit=0 / build-exit=0。
++- **e2e**：`scripts/audits/f-arch3-impl-e2e.raw.txt`——首跑 28 passed +1 failed
++  （`corpus-export.spec.ts:89 AI 语料导出全链` 60s 超时——语料导出链，与本票阅读器渲染面
++  零交集；reader-text 11/11、reader-scroll 2/2 全过）。按票面 flake 条款**复跑一次全量：
++  29 passed (1.3m)，exit=0**。
++
++## 自裁申报（一切偏离票面的决定）
++
++1. **测试对 TextLayer/AnnotationLayer/ReaderAiLayer 追加 vi.mock 桩**（票面 mock 面只点名
++   PageColumn）：断言点是 prop 值（viewportScale/pageWidth/Height/page/pageRoot 元素身份），
++   真组件无对应 DOM 可观测面；且真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api
++   赋值+双 store（reader-page-open-race.test.tsx 申报的 jsdom 桩面同源）。三层自身行为各有
++   测试锁（page-column/ai-annotation-layer/annotation 族），本票不重复锁——与主控预裁 3 同理
++   扩展，mock 面最小化申报在测试头注。
++2. **用例⑤的可观测面**：「引用相等不重写」的内部短路（`prev[no]===pageRoot ? prev`）因
++   setPageTexts 同批写入（React 18 自动批处理合并为单次重渲染）在外部无渲染计数差可观测；
++   ⑤落为「同 DOM 元素二次回报→层收到的 pageRoot 仍是同一元素（toBe 身份断言）+换元素
++   回报→引用更新（对照组，短路不吞真实变化）」。锁的是行为相关契约（身份稳定+变化传导），
++   纯内部对象身份不可黑盒观测——如实申报此局限。
++3. **e2e 复跑命令形态**：复跑用 `npm run build` + `npx playwright test`（=npm run test:e2e
++   内部两步原样），未整串重跑 test:e2e（避免二次 build）；口径等价，已申报。
++4. **ReaderPage 换文献 effect 注释**新增一句同序说明（子效应先于父效应、与拆分前同序）——
++   纯注释，无行为面。
++5. **删减面 diff 自查**：ReaderPage 删除面=七件+死 import（grep 核对：PageFrame/pageTexts/
++   pageRoots/PageText/handlePageRender/dropPageState/renderPageLayers/TextLayer/
++   AnnotationLayer/ReaderAiLayer/PdfTextContent/useCallback/ReactNode 代码级引用零残留，
++   仅头注/效应注释保留迁移去向描述）；保留面=票面「ReaderPage 收敛后保留」清单逐项在场
++   （打开路由/空态/TabBar/Toolbar/SplitPane+OutlineAside/SelectionLayer/scroll-progress 装配/
++   快捷键/fitWidth+handleColumnReady/handlePdfError/setPdfDoc(null)/sr-only 播报/columnScroll
++   信号过滤）。
++
++## 疑虑
++
++- **INV-30 表述迁移确认**（票面生命周期层要求报告确认）：INV-30「PageFrame 卸载哨」宿主已
++  随七件迁至 PagesOverlay（`src/renderer/features/reader/PagesOverlay.tsx` PageFrame+
++  dropPageState）；invariants.md 的 INV-30 实现位置字段由**主控收口时**同步，实现者未触碰
++  invariants.md。W3（两表同删）行为由用例③+M1 红证锚定。
++- locks:check 红为主控收口面（新增受锁测试文件待 locks:generate/apply 登记 manifest）——
++  收口时 `npm run locks:generate && npm run locks:apply` 后 verify 应全绿。
++- e2e 首跑 corpus-export 超时判定为 flake（复跑绿+与本票面零交集）；若主控复跑再现，
++  建议单独排查该 spec（与本票无关）。
+diff --git a/scripts/audits/f-arch3-ticket.md b/scripts/audits/f-arch3-ticket.md
+new file mode 100644
+index 000000000..f58a587f3
+--- /dev/null
++++ b/scripts/audits/f-arch3-ticket.md
+@@ -0,0 +1,152 @@
++# F-ARCH3 票面:ReaderPage 职责膨胀拆分——PagesOverlay 页面缓存注册表下沉(纯重构)——五层规约
++
++> 来源:AUDIT0 台账 F-ARCH3 [B→重构票](deepseek 架构审 B3 实锤,报告=
++> scripts/audits/arch-review-ds.md;总报告=docs/audits/
++> 2026-08-30_ds-supplement-arch-review.md)。F-01 头注声称「本组件只装配」
++> 但页面缓存编排五件套(pageTexts/pageRoots/handlePageRender/dropPageState/
++> PageFrame)仍在 ReaderPage——**声明与实现漂移**,churn 45 天 20 次全项目
++> 第一=每个新阅读器行为都在此打补丁。本票=纯重构,**行为零变**。
++> 中票三屋(ADR-0017)。LOOP 会话票——**不在 tickets/registry,禁触碰
++> registry**。
++
++## 行为层
++
++### 拆分线(七件下沉,ReaderPage 收敛)
++
++新组件 `PagesOverlay.tsx` 持「页面缓存注册表+覆盖层装配」,以下七件从
++ReaderPage **原样迁入**(代码逐行保持,只换宿主):
++
++1. `PageText` interface(页号+文本载荷+canvas CSS 盒,成对更新契约);
++2. `PageFrame` 组件(渲染窗口内页的卸载哨,onRecycle 回收);
++3. `pageTexts`/`pageRoots` 两个 useState(缓存注册表);
++4. 换文献清缓存 effect(键 `fileUrl`,**只清 pageTexts/pageRoots**——
++   `setPdfDoc(null)` 留 ReaderPage,pdfDoc 是 OutlinePanel 数据源=布局职责);
++5. `handlePageRender`(PdfPageCanvas 渲染回报→querySelector
++   `[data-page-root="${no}"]`→canvas[data-pdf-canvas]→getBoundingClientRect
++   →Math.round 写 pageTexts 条目;pageRoots 引用相等不重写);
++6. `dropPageState`(W3:两表同删);
++7. `renderPageLayers` 覆盖层工厂(TextLayer 挂载条件 pt!==undefined/
++   AnnotationLayer 挂载条件 pr!==undefined/ReaderAiLayer 恒挂
++   pageRoot=pr??null;page 传 no−1;viewportScale=zoom;pageWidth/Height=
++   pt.box)。
++
++**PagesOverlay 内装 PageColumn**:渲染 `<PageColumn doc totalPages zoom
++scrollContainerRef onPageRender={handlePageRender} onError renderPage=
++{renderPageLayers} onReady scrollRequest />`(九 props 全透传)。读写同源
++(onPageRender 写注册表/renderPage 读注册表)必须在同一组件内——这是
++PagesOverlay 包 PageColumn 而非只提供工厂的原因。
++
++**ReaderPage 收敛后保留**:打开路由(OPEN_PAPER_EVENT 两路)/空态分支/
++TabBar/ReaderToolbar/SplitPane+OutlineAside 布局/SelectionLayer 挂载
++(N4 稳定盒)/scroll-progress 装配(createReaderScrollProgress+
++useScrollProgressWiring+三口接管)/快捷键/fitWidth(columnBasis 分母
+++handleColumnReady)/handlePdfError/换文献 setPdfDoc(null)/sr-only 页态
++播报/信号过滤 columnScroll(scrollRequest.paperId===paperId)。
++
++### 行为等价面(禁破——每条都有既有测试或 e2e 锚)
++
++- 换文献(fileUrl 变化)→pageTexts/pageRoots 清空(效应宿主迁移,键不变
++  ——现 ReaderPage effect 与新 PagesOverlay effect 同键同序);
++- PageFrame 卸载→两表条目同删(W3/INV-30);
++- `fileUrl` 为 null 的空态期组件树不挂 PagesOverlay(null→非 null 切换=
++  全新挂载,状态天然空——与现状「effect 清空」等价);
++- zoom/annotations 变化→覆盖层重渲染链经 props 传导(现 ReaderPage 闭包
++  直读→新 PagesOverlay props 传导,PageColumn 接到的 renderPage/onPageRender
++  函数身份仍每渲染新建——**不新加 useCallback/useMemo**,保持函数形态
++  原样,防行为漂移);
++- e2e reader-text 11 用例+reader-scroll 18 用例全绿(最终裁判);
++- 既有单测全绿:page-column/reader-page-open-race/scroll-converge/
++  anchor-locate/selection-layer/annotation-layer/reader.store 族。
++
++## 接口层
++
++- 新文件 `src/renderer/features/reader/PagesOverlay.tsx`:
++  `export function PagesOverlay(props: { doc: PDFDocumentProxy;
++  fileUrl: string; totalPages: number; zoom: number;
++  annotations: Annotation[]; scrollContainerRef: RefObject<HTMLDivElement |
++  null>; scrollRequest: PageScrollRequest | null;
++  onReady(basisWidth: number): void; onError(msg: string): void }):
++  JSX.Element`
++- **类型来源纪律(INV-16——ESLint 机器锚会拦,违者红)**:
++  `PDFDocumentProxy` 经 `./PdfDocProvider` 再导出;`PdfTextContent` 经
++  `./PdfPageCanvas`;`PageScrollRequest` 经 `./PageColumn`;
++  `Annotation` 经 `@shared/models/annotation`(对齐 AnnotationLayer 现行
++  import 形态)。**禁直连 pdfjs-dist(含 import type)**——白名单四文件
++  不扩。
++- ReaderPage 修改:删七件+相关 import(TextLayer/AnnotationLayer/
++  ReaderAiLayer/PageColumn/PdfTextContent/PageFrame);PdfDocProvider
++  render-prop 内改挂 `<PagesOverlay …/>`(割点不变——PdfDocProvider 留
++  ReaderPage,onDocReady 喂 OutlinePanel 的布局链不动);
++- 头注纪律:两文件头注按项目五段惯例重写(ReaderPage 头注删「F-01 页列
++  几何/懒渲染回收归 PageColumn(本组件只装配)」段的缓存编排描述,改述
++  为装配 PagesOverlay;PagesOverlay 头注写明本票编号+INV-30/W3 锚+七件
++  契约)。**头注禁写完整 import 语句原文**(arch-scan 假边坑在档)。
++- 零新依赖;零 shared/ipc 触碰;零 CSS 触碰;零 store 触碰。
++
++## 架构层
++
++- 分层单向不动(纯 renderer 特性内重组);
++- 行数:ReaderPage 249→约 170/PagesOverlay 约 130(实现后自查,双远离
++  500/250 红线);
++- INV-16 白名单不扩(PagesOverlay 走再导出);
++- 死代码即删:ReaderPage 迁走后不再被引用的 import/interface 全清
++  (提交前 grep 核对)。
++
++## 生命周期层
++
++- 渲染链多一层组件(zoom/annotations 变化时 PagesOverlay 重渲染)——
++  每 tab 渲染窗口内页数个位数,React reconcile 代价无感;无新 effect 语义
++  (迁移的两个 effect 键与体不变);
++- INV-30 头注表述的「PageFrame 卸载哨」宿主随迁——invariants.md 的
++  INV-30 实现位置字段由**主控收口时**同步(实现者不碰 invariants.md,
++  报告「疑虑」段确认即可)。
++
++## 文化层(测试=TDD 红→绿→变异红证;新测试 always-active 不经 guardedDescribe)
++
++- 新 `tests/unit/renderer/pages-overlay.test.tsx`(受锁文件,新文件可直接
++  写;locks:generate+apply 归主控收口):**mock PageColumn**(vi.mock——
++  桩组件渲染 props.renderPage(no) 并把 props.onPageRender 暴露给测试;PageColumn
++  自身行为已由 page-column.test 锁定,本票不重复锁)。jsdom 手工造
++  `[data-page-root]`+`canvas[data-pdf-canvas]` DOM 片段供 handlePageRender
++  量测。用例:
++  ①回报前 renderPage(no) 返回无 TextLayer/AnnotationLayer(pageTexts 空,
++    挂载条件锁);
++  ②onPageRender(no, text) 回报后(canvas DOM 在位)→条目写→
++    renderPage(no) 挂 TextLayer(page 传 no、viewportScale=zoom、
++    pageWidth/Height=box)+AnnotationLayer(page=no−1、pageRoot=
++    data-page-root 元素)+ReaderAiLayer(page=no−1);
++  ③PageFrame 卸载(把 renderPage 返回元素卸载)→两表条目同删
++    (再 renderPage(no) 层消失);
++  ④fileUrl 变化(rerender 新 fileUrl)→两表清空(换文献);
++  ⑤pageRoots 引用相等不重写(同 DOM 二次回报不换引用——防无谓重渲染)。
++- **e2e 全量**(收口裁判,须先 build):`npm run test:e2e` 29 用例全绿,
++  落盘 .raw.txt;
++- 全量 vitest 绿(禁裸 npx vitest,用 npm run test);
++- 变异红证(各落盘 .raw.txt,文件备份法 cp 还原,禁 git checkout;锚点
++  须带足够上下文——「注释行+代码」组合锚,防首撞别处):
++  M1 摘 dropPageState 回收(del 不再删条目)→③红;
++  M2 摘换文献清缓存 effect 体→④红;
++  M3 handlePageRender 摘 setPageTexts 写入→②红;
++  M4 AnnotationLayer 挂载条件改无条件(pr 缺席也挂)→①红。
++- 受锁面:仅新增测试文件(收口 locks 归主控);**实现者禁跑 locks 命令**。
++
++## 基线数字(自检参照)
++
++verify=112 文件 942 用例全绿 / locks 186 / e2e 29。**本机 node 默认 v25
++必红(webstorage 污染在档)——一切 node/npm 命令前缀
++`export PATH="/d/nodejs24:$PATH"`**。
++
++## 主控已预裁项(门一可攻击,推翻需更强依据)
++
++1. **PagesOverlay 包 PageColumn**(render-prop 割点在 PdfDocProvider 内侧
++   不变):onPageRender(写)与 renderPage(读)读写同源必须同居一组件——
++   deepseek B3 建议形态的落地方式;只提供「工厂 hook」不成立(状态仍悬于
++   ReaderPage=没拆);
++2. PdfDocProvider 留 ReaderPage:pdfDoc 句柄消费方=OutlineAside(布局槽),
++   拆进 PagesOverlay 反而要 onDocReady 穿两层回调;
++3. mock PageColumn 测缓存注册表:PageColumn 行为已锁(page-column.test
++   15+ 用例),组件测试重复真挂 PageColumn=重复锁+jsdom IO 桩成本,无增益;
++4. 函数形态原样迁(不新加 useCallback/useMemo):纯重构零行为变纪律,
++   重渲染开销由生命周期层论证无感;
++5. 换文献清缓存 effect 在 PagesOverlay 挂 [fileUrl](组件实例随主区常驻,
++   fileUrl 不会在组件挂载期间变 null——主区只在 fileUrl 非 null 时渲染)。
+diff --git a/src/renderer/features/reader/PagesOverlay.tsx b/src/renderer/features/reader/PagesOverlay.tsx
+new file mode 100644
+index 000000000..d2209519e
+--- /dev/null
++++ b/src/renderer/features/reader/PagesOverlay.tsx
+@@ -0,0 +1,122 @@
++/**
++ * [F-ARCH3] PagesOverlay —— 页面缓存注册表+覆盖层装配（工单：LOOP F-ARCH3 / strong）
++ *
++ * ── 行为层 ──
++ * - 七件自 ReaderPage 原样迁入（本组件为页面缓存注册表宿主——F-01 头注声明
++ *   「ReaderPage 只装配」的漂移收口，纯重构行为零变）：
++ *   ① PageText（页号+文本载荷+canvas CSS 盒，成对更新契约）；
++ *   ② PageFrame（渲染窗口内页的卸载哨，onRecycle 回收）；
++ *   ③ pageTexts/pageRoots 两个 useState（缓存注册表）；
++ *   ④ 换文献清缓存 effect（键 fileUrl，只清两表——setPdfDoc(null) 留 ReaderPage，
++ *     pdfDoc 是 OutlinePanel 数据源=布局职责）；
++ *   ⑤ handlePageRender（PdfPageCanvas 渲染回报→页根域内量测 canvas CSS 盒→
++ *     Math.round 写 pageTexts；pageRoots 引用相等不重写）；
++ *   ⑥ dropPageState（W3：两表同删）；
++ *   ⑦ renderPageLayers 覆盖层工厂（TextLayer 挂载条件 pt!==undefined /
++ *     AnnotationLayer 挂载条件 pr!==undefined / ReaderAiLayer 恒挂
++ *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom）。
++ * - 内装 PageColumn（九 props 全透传）：onPageRender（写注册表）与
++ *   renderPage（读注册表）读写同源必须同居一组件——这是本组件包 PageColumn
++ *   而非只提供工厂的原因（F-ARCH3 票面行为层）。
++ * ── 接口层 ──
++ * - export function PagesOverlay(props: { doc: PDFDocumentProxy; fileUrl: string;
++ *     totalPages: number; zoom: number; annotations: Annotation[];
++ *     scrollContainerRef: RefObject<HTMLDivElement | null>;
++ *     scrollRequest: PageScrollRequest | null;
++ *     onReady(basisWidth: number): void; onError(msg: string): void }): JSX.Element
++ * - 类型再导出纪律（INV-16）：PDFDocumentProxy 经 PdfDocProvider、PdfTextContent
++ *   经 PdfPageCanvas、PageScrollRequest 经 PageColumn、Annotation 经 shared 模型。
++ * ── 架构层 ──
++ * - 分层不动（renderer 特性内重组）；零新依赖；函数形态原样迁（不加
++ *   useCallback/useMemo——纯重构零行为变纪律）
++ * ── 生命周期层 ──
++ * - PageFrame 卸载哨宿主随迁（INV-30/W3——canvas 生命周期=渲染窗口绑定的
++ *   注册表侧对口）；渲染链多一层组件，reconcile 代价无感（票面生命周期层）
++ *
++ * ── 文化层 ──
++ * - tests/unit/renderer/pages-overlay.test.tsx（注册表行为锁，always-active）；
++ *   e2e reader-text/reader-scroll 为最终裁判
++ */
++import { useCallback, useEffect, useState } from 'react'
++import type { ReactNode, RefObject } from 'react'
++import type { Annotation } from '@shared/models/annotation'
++import { AnnotationLayer } from './AnnotationLayer'
++import { ReaderAiLayer } from './AiAnnotationLayer'
++import { PageColumn, type PageScrollRequest } from './PageColumn'
++import type { PDFDocumentProxy } from './PdfDocProvider'
++import type { PdfTextContent } from './PdfPageCanvas'
++import { TextLayer } from './TextLayer'
++
++/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
++interface PageText {
++  page: number
++  text: PdfTextContent
++  box: { w: number; h: number }
++}
++
++/** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
++function PageFrame(props: { no: number; onRecycle(no: number): void; children: ReactNode }): JSX.Element {
++  const { no, onRecycle, children } = props
++  useEffect(() => () => onRecycle(no), [no, onRecycle])
++  return <>{children}</>
++}
++
++export function PagesOverlay(props: {
++  doc: PDFDocumentProxy
++  fileUrl: string
++  totalPages: number
++  zoom: number
++  annotations: Annotation[]
++  scrollContainerRef: RefObject<HTMLDivElement | null>
++  scrollRequest: PageScrollRequest | null
++  onReady(basisWidth: number): void
++  onError(msg: string): void
++}): JSX.Element {
++  const { doc, fileUrl, totalPages, zoom, annotations, scrollContainerRef, scrollRequest, onReady, onError } = props
++  const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
++  const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
++
++  // 换文献：丢弃旧页文本/页根（防陈旧文本层——TextLayer 以页对齐才渲染）
++  useEffect(() => {
++    setPageTexts({})
++    setPageRoots({})
++  }, [fileUrl])
++
++  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
++  const handlePageRender = (no: number, text: PdfTextContent): void => {
++    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
++    const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
++    if (canvas === null) return
++    const rect = canvas.getBoundingClientRect()
++    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
++    if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
++  }
++
++  /** 渲染窗口内页的回收删条目（W3：pageTexts/pageRoots 同删——防 stale 根残留） */
++  const dropPageState = useCallback((no: number): void => {
++    const del = <T,>(prev: Record<number, T>): Record<number, T> => {
++      if (prev[no] === undefined) return prev
++      const next = { ...prev }; delete next[no]; return next
++    }
++    setPageTexts(del); setPageRoots(del)
++  }, [])
++
++  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作） */
++  const renderPageLayers = (no: number): JSX.Element => {
++    const pt = pageTexts[no]
++    const pr = pageRoots[no]
++    return (
++      <PageFrame no={no} onRecycle={dropPageState}>
++        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
++        {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
++        <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
++      </PageFrame>
++    )
++  }
++
++  return (
++    <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} scrollContainerRef={scrollContainerRef}
++      onPageRender={handlePageRender} onError={onError}
++      renderPage={renderPageLayers} onReady={onReady} scrollRequest={scrollRequest} />
++  )
++}
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 672a44dea..3385a994c 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -6,8 +6,9 @@
+  *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+  * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
+  * - [sr2-lg-08] 时序竞态修复：挂载效应内监听器注册必须先于闩锁消费——消费链 openFromBus→locateAnchor→waitOpen（tab 缺席）会同步重发 OPEN_PAPER_EVENT（事件②），旧序自丢失→waitOpen 8s 超时停旧 tab=「脉络双击笔记总跳最后打开的文章」根因；先注册则事件②被自身 handler 接住→无锚分支 store.openPaper 正常打开（链声明独立于 F-07；全链取证见 scripts/audits/sr2-lg-08-brief.md）
+- * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn（本组件只装配）；
+- *   pageText→Record<页号,PageText>（渲染窗口内，页卸载同删）；每页自量 canvas 盒
++ * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn；页面缓存注册表
++ *   （pageTexts/pageRoots+覆盖层装配）归 PagesOverlay（F-ARCH3 七件下沉，
++ *   本组件只装配——声明与实现对齐）
+  * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
+  *   三口+keydown；页列就绪→恢复链滚回记忆页盒顶）；快捷键=容器滚动步（四键
+  *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
+@@ -18,47 +19,29 @@
+  * - export function ReaderPage(): JSX.Element
+  * ── 架构层 ──
+  * - 组合根：阅读器各层在此组装；层间经 reader.store 交互
+- * - 文本/几何的页内契约：PdfPageCanvas onPageRender 回报（页号,文本项）+该页
+- *   canvas CSS 盒量测（data-page-root 域内）→ TextLayer 定位输入
++ * - 文本/几何的页内契约归 PagesOverlay（F-ARCH3 下沉）：PdfPageCanvas
++ *   onPageRender 回报+canvas CSS 盒量测→TextLayer 定位输入
+  *
+  * ── 生命周期层 ── / ── 文化层 ──
+  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本+多页可见（最终裁判）
+  */
+-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+-import type { ReactNode } from 'react'
++import { useEffect, useMemo, useRef, useState } from 'react'
+ import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+ import { openFromBus } from './open-paper-anchor'
+-import { AnnotationLayer } from './AnnotationLayer'
+-import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { OutlineAside } from './OutlineAside'
+ import { SplitPane } from '../../shared/ui/SplitPane'
+ import { TabBar } from './TabBar'
+ import { PdfDocProvider } from './PdfDocProvider'
+-import { PageColumn, type PageScrollRequest } from './PageColumn'
+-import type { PdfTextContent } from './PdfPageCanvas'
++import { PagesOverlay } from './PagesOverlay'
++import type { PageScrollRequest } from './PageColumn'
+ import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
+ import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
+ import { SelectionLayer } from './SelectionLayer'
+-import { TextLayer } from './TextLayer'
+ import { useReaderStore } from './reader.store'
+ import { readActiveTab, useActiveTab } from './useActiveTab'
+ import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
+ import { showToast } from '../../shared/ui/Toast'
+ 
+-/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
+-interface PageText {
+-  page: number
+-  text: PdfTextContent
+-  box: { w: number; h: number }
+-}
+-
+-/** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
+-function PageFrame(props: { no: number; onRecycle(no: number): void; children: ReactNode }): JSX.Element {
+-  const { no, onRecycle, children } = props
+-  useEffect(() => () => onRecycle(no), [no, onRecycle])
+-  return <>{children}</>
+-}
+-
+ export function ReaderPage(): JSX.Element {
+   // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）
+   const tab = useActiveTab()
+@@ -78,8 +61,6 @@ export function ReaderPage(): JSX.Element {
+   // 信号过滤：非本文档的迟发信号不滚（回写竞 tab 切换的防御面）
+   const columnScroll: PageScrollRequest | null =
+     scrollRequest !== null && scrollRequest.paperId === paperId ? scrollRequest : null
+-  const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
+-  const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
+   // F-04 列宽基准：页列就绪 onReady 上报的最宽页原始宽（fit-width 分母单源）
+   const columnBasis = useRef(0)
+   const [outlineOpen, setOutlineOpen] = useState(true)
+@@ -122,32 +103,12 @@ export function ReaderPage(): JSX.Element {
+     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+   }, [])
+ 
+-  // 换文献：丢弃旧页文本/页根（防陈旧文本层——TextLayer 以页对齐才渲染）
++  // 换文献：弃旧文档句柄（pageTexts/pageRoots 清空归 PagesOverlay 同键效应——F-ARCH3；
++  // 子效应先于父效应跑，两表清空仍先于 setPdfDoc，与拆分前同序）
+   useEffect(() => {
+-    setPageTexts({})
+-    setPageRoots({})
+     setPdfDoc(null)
+   }, [fileUrl])
+ 
+-  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
+-  const handlePageRender = (no: number, text: PdfTextContent): void => {
+-    const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
+-    const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
+-    if (canvas === null) return
+-    const rect = canvas.getBoundingClientRect()
+-    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
+-    if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
+-  }
+-
+-  /** 渲染窗口内页的回收删条目（W3：pageTexts/pageRoots 同删——防 stale 根残留） */
+-  const dropPageState = useCallback((no: number): void => {
+-    const del = <T,>(prev: Record<number, T>): Record<number, T> => {
+-      if (prev[no] === undefined) return prev
+-      const next = { ...prev }; delete next[no]; return next
+-    }
+-    setPageTexts(del); setPageRoots(del)
+-  }, [])
+-
+   /** 页列就绪（每 doc 一次）：记列宽基准（F-04）+F-03 恢复链 loading→restoring
+    *  →scrollToPage（setPage 'to'→INV-29 信号→PageColumn 滚回记忆页盒顶） */
+   const handleColumnReady = (basisWidth: number): void => {
+@@ -184,21 +145,8 @@ export function ReaderPage(): JSX.Element {
+       </div>
+     )
+   }
+-  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）；
+-   *  SelectionLayer 挂稳定盒（N4） */
+-  const renderPageLayers = (no: number): JSX.Element => {
+-    const pt = pageTexts[no]
+-    const pr = pageRoots[no]
+-    return (
+-      <PageFrame no={no} onRecycle={dropPageState}>
+-        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
+-        {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
+-        <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
+-      </PageFrame>
+-    )
+-  }
+-
+-  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PageColumn（页列）
++  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PagesOverlay
++  // （页面缓存注册表+覆盖层装配——F-ARCH3 拆分件）；SelectionLayer 挂稳定盒（N4）
+   const mainContent = (
+     <div
+       ref={scrollAreaRef}
+@@ -211,9 +159,9 @@ export function ReaderPage(): JSX.Element {
+       <div ref={setSelectionMount} className="relative">
+         <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
+           {(doc) => (
+-            <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} scrollContainerRef={scrollAreaRef}
+-              onPageRender={handlePageRender} onError={handlePdfError}
+-              renderPage={renderPageLayers} onReady={handleColumnReady} scrollRequest={columnScroll} />
++            <PagesOverlay doc={doc} fileUrl={fileUrl} totalPages={totalPages} zoom={zoom} annotations={annotations}
++              scrollContainerRef={scrollAreaRef} scrollRequest={columnScroll}
++              onReady={handleColumnReady} onError={handlePdfError} />
+           )}
+         </PdfDocProvider>
+         {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4） */}
+diff --git a/tests/unit/renderer/pages-overlay.test.tsx b/tests/unit/renderer/pages-overlay.test.tsx
+new file mode 100644
+index 000000000..c20d64a89
+--- /dev/null
++++ b/tests/unit/renderer/pages-overlay.test.tsx
+@@ -0,0 +1,243 @@
++// @vitest-environment jsdom
++/**
++ * [F-ARCH3] PagesOverlay —— 页面缓存注册表+覆盖层装配测试（锁定合约）。
++ *
++ * 七件自 ReaderPage 下沉（PageText/PageFrame/pageTexts+pageRoots/换文献清缓存
++ * effect/handlePageRender/dropPageState/renderPageLayers 工厂）——本文件锁
++ * 注册表行为：回报写入（量测 Math.round+引用不重写）/卸载哨同删（W3/INV-30）/
++ * 换文献清空（键 [fileUrl]）/挂载条件（pt!==undefined、pr!==undefined）。
++ * mock 面申报（reader-page-open-race.test.tsx 配方同族，最小化）：
++ * - PageColumn：桩渲染 props.renderPage(no)（页集 probe.rendered 测试可变——
++ *   驱动覆盖层挂/卸=PageFrame 卸载哨的触发面）+最新 props 暴露给测试
++ *   （onPageRender 由此回报）；PageColumn 自身行为已由 page-column.test
++ *   锁定，本票不重复锁（主控预裁 3）。
++ * - TextLayer/AnnotationLayer/ReaderAiLayer：prop 快照桩——断言点是
++ *   viewportScale/pageWidth/Height/page/pageRoot 等 prop 值，层自身行为各有
++ *   测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api 赋值
++ *   +双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
++ * jsdom 手工造 [data-page-root]+canvas[data-pdf-canvas] DOM 片段供
++ * handlePageRender 量测（getBoundingClientRect 实例级覆写——jsdom 无布局）。
++ * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
++ */
++import { act } from 'react'
++import type { RefObject } from 'react'
++import { createRoot, type Root } from 'react-dom/client'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
++import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
++
++/** 桩共享位（vi.hoisted——vi.mock 工厂与用例两侧同引用） */
++const probe = vi.hoisted(() => ({
++  /** PagesOverlay→PageColumn 桩最新 props（onPageRender=测试侧回报入口） */
++  columnProps: null as null | {
++    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
++    renderPage: (no: number) => JSX.Element
++  },
++  /** 桩当前渲染页集（测试改写+rerender 驱动 renderPage 内容挂/卸） */
++  rendered: [] as number[],
++  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询） */
++  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number },
++  annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null },
++  aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
++}))
++
++vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
++  PageColumn: (props: {
++    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
++    renderPage: (no: number) => JSX.Element
++  }) => {
++    probe.columnProps = props
++    return (
++      <>
++        {probe.rendered.map((no) => (
++          <div key={no} data-stub-page={no}>
++            {props.renderPage(no)}
++          </div>
++        ))}
++      </>
++    )
++  }
++}))
++
++vi.mock('../../../src/renderer/features/reader/TextLayer', () => ({
++  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number }) => {
++    probe.textLayer = props
++    return <div data-stub="text-layer" data-viewport-scale={props.viewportScale} data-page-width={props.pageWidth} data-page-height={props.pageHeight} />
++  }
++}))
++
++vi.mock('../../../src/renderer/features/reader/AnnotationLayer', () => ({
++  AnnotationLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
++    probe.annotationLayer = props
++    return <div data-stub="annotation-layer" data-page={props.page} />
++  }
++}))
++
++vi.mock('../../../src/renderer/features/reader/AiAnnotationLayer', () => ({
++  ReaderAiLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
++    probe.aiLayer = props
++    return <div data-stub="ai-layer" data-page={props.page} />
++  }
++}))
++
++import { PagesOverlay } from '../../../src/renderer/features/reader/PagesOverlay'
++
++/** 文档桩（PageColumn 已 mock——doc 仅透传，无 getPage 调用面） */
++const DOC = { numPages: 6 } as unknown as PDFDocumentProxy
++const scrollerRef = { current: null } as RefObject<HTMLDivElement | null>
++
++let root: Root | null = null
++let host: HTMLDivElement | null = null
++/** 手工页 DOM 片段容器（makePageRoot 产物挂此，用例后统一清） */
++let manualHost: HTMLDivElement | null = null
++
++/** 造页根+量测 canvas（handlePageRender 的量测输入——querySelector 命中域） */
++function makePageRoot(no: number, w: number, h: number): HTMLElement {
++  const pageRoot = document.createElement('div')
++  pageRoot.setAttribute('data-page-root', String(no))
++  const canvas = document.createElement('canvas')
++  canvas.setAttribute('data-pdf-canvas', 'true')
++  canvas.getBoundingClientRect = (): DOMRect =>
++    ({ x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) }) as DOMRect
++  pageRoot.appendChild(canvas)
++  manualHost!.appendChild(pageRoot)
++  return pageRoot
++}
++
++/** 文本载荷（PdfTextContent 全形——styles 按 fontName 索引的契约面） */
++function makeText(str: string): PdfTextContent {
++  const item: PdfTextItem = { str, dir: 'ltr', width: 100, height: 10, transform: [1, 0, 0, 1, 0, 0], fontName: 'g1', hasEOL: true }
++  return { items: [item], styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: 'zh' }
++}
++
++function makeOverlay(over: { fileUrl?: string; zoom?: number } = {}): JSX.Element {
++  return (
++    <PagesOverlay
++      doc={DOC}
++      fileUrl={over.fileUrl ?? 'app-file://doc-a.pdf'}
++      totalPages={6}
++      zoom={over.zoom ?? 1.25}
++      annotations={[]}
++      scrollContainerRef={scrollerRef}
++      scrollRequest={null}
++      onReady={() => undefined}
++      onError={() => undefined}
++    />
++  )
++}
++
++function mount(node: JSX.Element): void {
++  host = document.createElement('div')
++  document.body.appendChild(host)
++  root = createRoot(host)
++  act(() => {
++    root?.render(node)
++  })
++}
++
++function remount(node: JSX.Element): void {
++  act(() => {
++    root?.render(node)
++  })
++}
++
++/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链） */
++function report(no: number, text: PdfTextContent): void {
++  act(() => {
++    probe.columnProps!.onPageRender(no, text)
++  })
++}
++
++beforeEach(() => {
++  // React 18 act 契约（page-column.test 同款）
++  ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
++  probe.columnProps = null
++  probe.rendered = [1]
++  probe.textLayer = null
++  probe.annotationLayer = null
++  probe.aiLayer = null
++  manualHost = document.createElement('div')
++  document.body.appendChild(manualHost)
++})
++
++afterEach(() => {
++  act(() => {
++    root?.unmount()
++  })
++  root = null
++  host?.remove()
++  host = null
++  manualHost?.remove()
++  manualHost = null
++})
++
++describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
++  it('① 回报前：renderPage(no) 不挂 TextLayer/AnnotationLayer（挂载条件 pt/pr 缺席）；ReaderAiLayer 恒挂且 pageRoot=null', () => {
++    mount(makeOverlay())
++    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
++    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
++    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
++    expect(ai).not.toBeNull()
++    expect(ai!.dataset.page).toBe('0')
++    expect(probe.aiLayer?.pageRoot).toBeNull()
++  })
++
++  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
++    const pageRoot = makePageRoot(1, 612.4, 792.6)
++    mount(makeOverlay())
++    report(1, makeText('首页文本'))
++    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
++    expect(probe.textLayer?.viewportScale).toBe(1.25)
++    expect(probe.textLayer?.pageWidth).toBe(612)
++    expect(probe.textLayer?.pageHeight).toBe(793)
++    expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
++    expect(probe.annotationLayer?.page).toBe(0)
++    expect(probe.annotationLayer?.pageRoot).toBe(pageRoot)
++    expect(probe.aiLayer?.page).toBe(0)
++    expect(probe.aiLayer?.pageRoot).toBe(pageRoot)
++  })
++
++  it('③ PageFrame 卸载（renderPage 内容随桩页集摘除）→两表条目同删（W3/INV-30）——重挂后层不复活', () => {
++    makePageRoot(1, 612, 792)
++    mount(makeOverlay())
++    report(1, makeText('页一文本'))
++    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
++    expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
++    // 摘页→rerender：PageFrame 卸载哨触发（onRecycle→dropPageState 两表同删）
++    probe.rendered = []
++    remount(makeOverlay())
++    // 复挂同页：条目已删——层不再挂（ReaderAiLayer 恒挂但 pageRoot 归 null）
++    probe.rendered = [1]
++    remount(makeOverlay())
++    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
++    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
++    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
++    expect(ai).not.toBeNull()
++    expect(probe.aiLayer?.pageRoot).toBeNull()
++  })
++
++  it('④ fileUrl 变化（换文献）→两表清空——层消失（效应键 [fileUrl]；setPdfDoc 留宿主 ReaderPage 不在本组件）', () => {
++    makePageRoot(1, 612, 792)
++    mount(makeOverlay())
++    report(1, makeText('文献 A 页一'))
++    expect(host!.querySelector('[data-stub="text-layer"]')).not.toBeNull()
++    remount(makeOverlay({ fileUrl: 'app-file://doc-b.pdf' }))
++    expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
++    expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
++  })
++
++  it('⑤ pageRoots 引用相等不重写：同 DOM 元素二次回报→层收到的 pageRoot 仍是同一元素；换元素回报→引用更新（真实变化仍传导）', () => {
++    const first = makePageRoot(1, 612, 792)
++    mount(makeOverlay())
++    report(1, makeText('第一次回报'))
++    expect(probe.annotationLayer?.pageRoot).toBe(first)
++    // 同元素二次回报：引用保持（prev[no]===pageRoot 短路——防无谓重渲染面）
++    report(1, makeText('第二次回报'))
++    expect(probe.annotationLayer?.pageRoot).toBe(first)
++    // 对照组：页根换新元素→引用更新（短路不吞真实变化）
++    first.remove()
++    const second = makePageRoot(1, 612, 792)
++    report(1, makeText('第三次回报'))
++    expect(probe.annotationLayer?.pageRoot).toBe(second)
++  })
++})
