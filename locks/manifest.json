@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-30T11:04:21.5048487Z",
+    "generatedAt":  "2026-08-30T11:46:04.5083984Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -515,7 +515,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "077d4f0248790ede95742ad5d3d55db57f48f0ac1b1ca4fa2eadba2a752cf6e3"
+                      "sha256":  "9185aaf3d2ef8d6b63f378035e4607af65f29abd624643e42da0d06675de4e6f"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
@@ -528,6 +528,10 @@
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
                       "sha256":  "7b4981d367de584b36ffa9088c57b2c8a9fd1ad758e972d3ba2be218b0723798"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-store-undo-race.test.ts",
+                      "sha256":  "2c61f3049a383ac6b901fd660aabcd979e33fdf19ed83f79e656262500479e1e"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
@@ -723,7 +727,7 @@
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",
-                      "sha256":  "5871108a8ef714042c118fb1371017b525ff013c851d39dfe6935089d61d17dc"
+                      "sha256":  "771eaa5b064fc360404a52ab35eb647c52efe4c0d8613e42c4f6c8cf336f758f"
                   },
                   {
                       "path":  "tsconfig.json",
