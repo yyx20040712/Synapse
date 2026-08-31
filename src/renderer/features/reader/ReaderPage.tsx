@@ -135,10 +135,19 @@ export function ReaderPage(): JSX.Element {
   }
 
   /** 适应宽度（F-04 列宽基准重定义）：分母=最宽页原始宽（onReady 上报单源，
-   *  一次性 zoom 语义保持）；24px≈滚动区两侧 p-3 内边距（clientWidth 含需扣） */
+   *  一次性 zoom 语义保持）。分子=视觉可用宽（F-V2）：ui-scale≠1 时滚动区
+   *  视觉宽=布局宽×uiScale（app-content-row zoom），而页列被 R2-SET1 反向
+   *  补偿（[data-page-column] zoom=calc(1/uiScale)——PDF 视觉恒 1）——按
+   *  布局宽算会让适应后两侧各留 可用宽×(uiScale−1)/uiScale 视觉空白
+   *  （large 1.25 实测 ~148px/侧）。故分子=uiScale×(clientWidth−24)；
+   *  uiScale 取滚动容器自身 gBCR.width/offsetWidth 比值（两者同含滚动条，
+   *  比值不被页列补偿层污染——在页列上取会因补偿相消恒 1）。ui-scale=1 时
+   *  比值=1 退化为原 (clientWidth−24)——单页 e2e 断言口径不变。 */
   const fitWidth = (): void => {
-    if (scrollAreaRef.current === null || columnBasis.current <= 0) return
-    setZoom((scrollAreaRef.current.clientWidth - 24) / columnBasis.current)
+    const el = scrollAreaRef.current
+    if (el === null || columnBasis.current <= 0) return
+    const uiScale = el.offsetWidth > 0 ? el.getBoundingClientRect().width / el.offsetWidth : 1
+    setZoom((uiScale * (el.clientWidth - 24)) / columnBasis.current)
   }
 
   if (paperId === null || fileUrl === null) {

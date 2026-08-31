@@ -1,0 +1,120 @@
+{
+  "before": {
+    "scrollArea": {
+      "clientWidth": 1217,
+      "visualWidth": 1537,
+      "blankLeft": 315.9,
+      "blankRight": 331.1
+    },
+    "row": {
+      "pagesInRow": 2,
+      "width": 890
+    },
+    "pageBox": {
+      "x": 830.9000244140625,
+      "y": -279.20001220703125,
+      "w": 439,
+      "h": 666
+    },
+    "uiScaleZoom": "1.25",
+    "rowOverClient": 0.731
+  },
+  "after": {
+    "scrollArea": {
+      "clientWidth": 1217,
+      "visualWidth": 1537,
+      "blankLeft": 19.9,
+      "blankRight": 35.1
+    },
+    "row": {
+      "pagesInRow": 2,
+      "width": 1482
+    },
+    "pageBox": {
+      "x": 534.9000244140625,
+      "y": -889.6000366210938,
+      "w": 735,
+      "h": 1115
+    },
+    "uiScaleZoom": "1.25",
+    "rowOverClient": 1.218
+  },
+  "changed": true,
+  "chain": [
+    {
+      "tag": "DIV",
+      "cls": "mx-auto flex flex-col items-center gap-3",
+      "clientW": 1482,
+      "offsetW": 1482,
+      "gBCRW": 1482,
+      "zoom": "0.8",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "relative",
+      "clientW": 1193,
+      "offsetW": 1193,
+      "gBCRW": 1491.8,
+      "zoom": "1",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "min-w-0 flex-1 overflow-auto p-3",
+      "clientW": 1217,
+      "offsetW": 1230,
+      "gBCRW": 1537,
+      "zoom": "1",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "flex min-h-0 flex-1",
+      "clientW": 1458,
+      "offsetW": 1458,
+      "gBCRW": 1822,
+      "zoom": "1",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "flex h-full flex-col overflow-hidden",
+      "clientW": 1458,
+      "offsetW": 1458,
+      "gBCRW": 1822,
+      "zoom": "1",
+      "transform": "none"
+    },
+    {
+      "tag": "MAIN",
+      "cls": "min-w-0 flex-1 overflow-auto",
+      "clientW": 1458,
+      "offsetW": 1458,
+      "gBCRW": 1822,
+      "zoom": "1",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "app-content-row flex min-h-0 flex-1",
+      "clientW": 1642,
+      "offsetW": 1642,
+      "gBCRW": 2052,
+      "zoom": "1.25",
+      "transform": "none"
+    },
+    {
+      "tag": "DIV",
+      "cls": "flex h-full flex-col",
+      "clientW": 2052,
+      "offsetW": 2052,
+      "gBCRW": 2052,
+      "zoom": "1",
+      "transform": "none"
+    }
+  ]
+}
+[main-err] Debugger ending on ws://127.0.0.1:52206/2d751f04-45da-4511-aa41-9fcf794f477e
+For help, see: https://nodejs.org/learn/getting-started/debugging
+

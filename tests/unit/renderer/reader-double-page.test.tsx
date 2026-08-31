@@ -515,7 +515,9 @@ describe('F-R1 双页 —— fitWidth 分母注入面', () => {
     // 分母随口径变：双页 basis=最宽完整行宽（>单页最宽页——S2 双页并排恰入视口的几何前提）
     expect(basis).toBe(columnWidthFor(fiveSizes, 1, 'double'))
     expect(basis).toBeGreaterThan(columnWidthFor(fiveSizes, 1, 'single'))
-    // 装配面 fitWidth 公式（ReaderPage 零改）：zoom=(clientWidth−24)/basis
+    // 装配面 fitWidth 公式（F-V2 分子=uiScale×(clientWidth−24)——uiScale 取
+    // 滚动容器 gBCR/offsetWidth 比值，页列 R2-SET1 反向补偿使页视觉恒 1 故
+    // 按 uiScale 放大分子；本桩 ui-scale=1 → 比值 1 退化同值）：zoom=(clientWidth−24)/basis
     // → 行宽（含行内 gap）恰入内容区（真布局归真机探针场景 B）
     const clientWidth = 1200
     const zoom = (clientWidth - 24) / basis
