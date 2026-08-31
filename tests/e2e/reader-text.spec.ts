@@ -180,9 +180,12 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   const rect = win.getByTestId('annotation-rect')
   await expect(rect.first()).toBeVisible()
   // 计算样式防线（Q3b：opacity 0.35×浅黄在白纸对比度 ~1.1:1 低于感知阈——几何
-  // 可见 ≠ 视觉可见，Playwright toBeVisible 不看 opacity/计算色）；mix-blend 上
-  // 容器级（z-5 容器是 stacking context，rect 级混合被隔离无效）
-  await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+  // 可见 ≠ 视觉可见，Playwright toBeVisible 不看 opacity/计算色）
+  // [F-A5/ADR-0019 R2] 色块垫底背景板序（用户「背景板」令）：multiply 摘除
+  // （normal——canvas 透明底，墨带恒在色块之上文字纯黑）+层序=显式 z 常量
+  // 单源（colorBlocks=1，canvas=2 之下——原 multiply/5 守卫随 R2 修订改向）
+  await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+  await expect(win.getByTestId('annotation-layer')).toHaveCSS('z-index', '1')
   await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
   await expect(rect.first()).toHaveCSS('opacity', '1')
   // 单行单 span 划选：行级合并后恰 1 矩形（逐 clientRect 透传回归即 >1）
@@ -206,7 +209,9 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await expect(rect2.first()).toBeVisible({ timeout: 10_000 })
   // 重锚路径（verifyQuote→findRangeAtOffset）同口径：合并后仍 1 矩形、样式仍到位
   await expect(rect2).toHaveCount(1)
-  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+  // [F-A5/ADR-0019 R2] 背景板序第二程同锁（multiply 摘除+z=1）
+  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('z-index', '1')
   const box2 = await rect2.first().boundingBox()
   const page2 = await win2.locator('canvas[data-pdf-canvas]').boundingBox()
   expect(box2).not.toBeNull()

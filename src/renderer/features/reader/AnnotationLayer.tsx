@@ -41,12 +41,13 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { resolveAnnotationRects, normalizedLineHeight, matchBand, type ResolvedAnnotation } from './annotation-resolve'
+import { resolveAnnotationRects, normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './annotation-resolve'
 import { mergeRects } from './annotation-merge'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
 import { rectStyle } from './annotation-style'
+import { PAGE_LAYER_Z } from './page-layer-z'
 import { useReaderStore } from './reader.store'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
@@ -77,6 +78,9 @@ export function AnnotationLayer(props: {
   // [F-A4 b①] 挂 B 行高感知 lineH（textLayer span 字号中位数/textLayer 盒高；
   // 量测退化 undefined=旧行为——存量缺陷态 rects 读时归并同口径受益）
   const [lineH, setLineH] = useState<number | undefined>(undefined)
+  // [F-A5 b] 存量回退 band：重锚失败（verifyQuote 假）的 rects 经同一
+  // bandsNearRects 单源（修前=F-11 分数回退行盒口径，票面 §0b③）
+  const [fallbackBands, setFallbackBands] = useState<RowBand[]>([])
   const [menu, setMenu] = useState<PopupTarget | null>(null)
   const [editing, setEditing] = useState<PopupTarget | null>(null)
   const [busy, setBusy] = useState(false)
@@ -103,8 +107,12 @@ export function AnnotationLayer(props: {
     let scheduled = false
     const resolve = (): void => {
       scheduled = false
-      setResolved(resolveAnnotationRects({ textLayer, annotations, page }))
+      const next = resolveAnnotationRects({ textLayer, annotations, page })
+      setResolved(next)
       setLineH(normalizedLineHeight(textLayer))
+      // 重锚失败者存量 rects 过 band 单源（成功者 bands 已在 next——两路同数学）
+      const failed = annotations.filter((a) => a.page === page && next[a.id] === undefined && a.rects.length > 0)
+      setFallbackBands(failed.length > 0 ? bandsNearRects(textLayer, failed.flatMap((a) => a.rects)) : [])
     }
     // 文本层 span 逐个入 DOM（pdf.js render() 异步）：rAF 合并成每帧一次
     const schedule = (): void => {
@@ -182,11 +190,12 @@ export function AnnotationLayer(props: {
       <div
         data-testid="annotation-layer"
         className="absolute inset-0"
-        style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
+        style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none' }}
       >
-        {/* multiply 上容器级（stacking context 隔离，rect 级混合无效且叠乘）；
-            [F-A4 b] 行高感知归并（lineH）+rectStyle 行盒自适应 band（重锚带
-            在场时顶贴字形顶缘底贴底缘——matchBand 最近中心带匹配） */}
+        {/* [F-A5/ADR-0019 R2] 色块=背景板：multiply 摘除+z 常量单源（canvas
+            透明底墨带恒在色块上——文字纯黑不被染，用户背景板令）；[F-A4 b]
+            lineH 归并+band 自适应（重锚带优先；[F-A5 b] 重锚失败回退存量
+            rects 亦经同一 band 单源 fallbackBands） */}
         {pageAnnotations.map((a) =>
           mergeRects(resolved[a.id]?.rects ?? a.rects, lineH).map((r, i) => (
             <div
@@ -197,7 +206,7 @@ export function AnnotationLayer(props: {
               aria-label={`标注：${a.quoteText}`}
               title={a.comment !== '' ? a.comment : a.quoteText}
               className="absolute"
-              style={selectionMode ? { ...rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands, r)), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands, r))}
+              style={selectionMode ? { ...rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands ?? fallbackBands, r)), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands ?? fallbackBands, r))}
               onClick={() => {
                 // 选择模式=穿透零副作用（pointerEvents:none 达成，守卫兜程序化派发）
                 if (selectionMode) return

@@ -1,0 +1,87 @@
+**审查统计：B:1 / W:7 / N:2 ＋ 总评：两票核心修法基本扎实，F-A5 自裁偏离有主控裁决背书但存在取证与边界盲区，F-N1 存在一处已申报但未处置的交互断链。**
+
+---
+
+## F-A5 审查（放行判定：有条件放行，盲区需收口补证）
+
+### W1｜存量回退路径（bandsNearRects）真机复测缺失  
+证据：`AnnotationLayer.tsx` 新增 `fallbackBands` 仅由 `failed.flatMap((a) => a.rects)` 聚合产生，渲染时 `matchBand(resolved[a.id]?.bands ?? fallbackBands, r)` 对重锚失败者生效。  
+- 修前 diag 的 bFace 5 块（Reynolds 存量标注）实测带路径良好（0.2~0.7px），走的是**重锚成功路径**。  
+- 修后 verify 的 `annMs` 全部来自 newly-saved 高亮（`dSaved.ann`），同样走重锚成功路径。  
+- 存量回退（bandsNearRects）的真机 post-fix 数据**不存在**，只有单测 `annotation-layer.test.tsx`「存量 rects 经行簇 band」覆盖单行场景。  
+- 多标注/多行聚合共享同一 `fallbackBands` 时，`matchBand` 的中心距阈值 `|Δcenter| ≤ r.h` 在紧行距下可能错绑相邻行带，无任何测试或真机证据排除。  
+**建议收口补一次真机存量回退场景复测，或明确申报为降级接受。**
+
+### W2｜真机探针引文候选项均为单文本项，未覆盖跨行多 span AI 段  
+证据：`f-a5-verify.mjs` 中 `const quotes = items.sort(...).slice(0, 3)`——只取最长且**连续**的 pdf.js TextItem；报告自裁也承认「1 段引文跨项不连续 verifyQuote 拒渲染=既有语义」。  
+- 票面图2 的三色块（AI 七问）在用户文档上**已渲染**，说明真实 AI 段引文多为连续项；跨行多 span 引文在 AI 层被拒渲染的既有语义未变。  
+- 但有代码路径证据：`AiAnnotationLayer.tsx` 中 `bands[n.id] = bandsForTextNodes(range.textNodes.map(...))`，若真实引文为多 span 跨行，节点口径 band 的 mergeNear 行为与单 span 带高差异无真机验证。**单测 mock 仅单 span，真机只测了单文本项引文。**
+
+### W3｜pdf-page-canvas.test.tsx 断言内容不在送审材料包  
+证据：diff 全文未包含该新文件（105 行 3 测），实现报告声称「透明底参数/canvas 样式/白纸+isolate」三测，但门一无法核对其断言强度（是否锁 `background: 'rgba(255,255,255,0)'` 字符串、`pointerEvents` 是否断言 computed 等）。  
+**取证盲区，需补件或由主控确认断言内容。**
+
+### W4｜透明底渲染在「PDF 自身绘制背景矩形」文档上色块可能不可见  
+证据：`PdfPageCanvas.tsx` 传 `background: 'rgba(255,255,255,0)'`，`PageBox.tsx` 由 DOM 白纸垫底。  
+- 若 PDF 页面操作符自身绘制不透明白色背景矩形（常见于部分导出器/排版工具），canvas 像素仍为不透明白，会**整页遮死下层色块**。  
+- 真机只验证了用户库中 1 篇（smart water city）目标页，未覆盖其他有背景绘制习惯的 PDF。  
+- 票面原方案（canvas 不透明底 + 色块在 canvas 上 + multiply 摘除）不存在此风险；实现自裁将风险转移到透明底路径。**属可接受偏离，但需在 ADR 已知边界中补充该场景声明。**
+
+### W5｜S5 zoom 判据放宽至 15%，弱化缩放稳定性保证  
+证据：`f-a5-verify-after.json` 中 `s5: { paint: 17 }` vs `dSaved.ann.length = 19`，判据 `|Δ|≤max(1,15%)`。  
+- F-A4 的 `|Δ|≤1` 被替换为 15% 容差，理由是「重选带边界行包含差」。  
+- 实际 19→17 意味着 zoom 后重选带少了 2 行（约 10%），用户在 150% 档位下看到的选区 block 数比 100% 少 2——缩放稳定性断言的强度下降。  
+- 属自裁申报 4.③，但未解释为何缩放会影响边界行包含数（预期几何一致性下应相同或仅差 1）。
+
+### N1｜F-A5 全量 test 1017 与 F-N1 全量 test 1007 的时间线冲突  
+证据：F-A5 报告「120 文件/1017 = 基线 1002+新增 15」，F-N1 追加段「119 文件/1007 = 基线 1002+新 5」。  
+- 若 F-A5 收尾时工作树已含 F-N1 新测试（§7 证实含 AiNoteGroupList +139/+33/+12），则 F-A5 的 1017 应=1002+10(F-A5)+5(F-N1)，与 F-N1 的 1007 差 10 个 F-A5 测试未在 F-N1 运行时在场。  
+- 时间线唯一自洽解释为：F-N1 追加段全量 test 执行早于 F-A5 测试合入，而 F-N1 的 e2e 改向文件（spec +12）在 F-A5 e2e 运行时已在场（F-A5 29/29 实际覆盖了 F-N1 改向后的 e2e）。**需主控确认记录，避免收口时重复跑或误判。**
+
+### N2｜f-sw1-probe.mjs / f-sw1-probe2.mjs 未登记 locks  
+证据：F-N1 报告 locks:check 失败清单含 `f-sw1-probe.mjs、f-sw1-probe2.mjs` 未登记。主控预审声明 f-sw1 为主控直做非工单，但 manifest 登记属收口单职权，**需主控在重锁时一并处理**。
+
+---
+
+## F-N1 审查（放行判定：有条件放行，B1 需主控明确处置裁决）
+
+### B1｜高亮滚动/定位 effect 对折叠段条目静默 no-op，用户点击 AI 高亮块无反馈  
+证据：`AiNoteGroupList.tsx`：
+```tsx
+useEffect(() => {
+  if (highlightAiNoteId == null || rootRef.current === null) return
+  const el = rootRef.current.querySelector(`[data-ai-note-id="${highlightAiNoteId}"]`)
+  ...
+}, [...]
+```
+- 折叠段条目不在 DOM → `querySelector` 返回 null → effect 直接 return，**不滚动也不展开段**。  
+- 交互链完整路径：`AiAnnotationLayer` rect onClick → `onJumpToNote(id)` → `highlightAiNoteId` 置位 → 面板（如已打开）无滚动、无高亮反馈，用户看到的是裁决段内容而目标条目被隐藏。  
+- 实现报告「已知边缘」栏明确披露此现象，但主控预审未对此项作出裁决（只裁决了受锁改向 4 例）。  
+- 这与票面「业务意图：需要核对时展开」直接冲突——用户**主动点击 AI 标注**即是最强「需要核对」信号，系统应自动展开对应段而非静默失败。  
+**建议：主控裁决是否接受「用户手动展开段」作为临时交互，或补一个「高亮命中折叠段→自动展开该段」的最小修复。**
+
+### W6｜e2e 改向执行状态记录不精确  
+证据：F-N1 追加段写「e2e 未执行…留收口单/门二执行」，但 F-A5 报告 §3 声明全量 e2e 29/29 在含 F-N1 文件的树上跑过；且 F-A5 §7 显示工作树中 `ai-notes-section.spec.ts` 已有 +12（改向最小改）。  
+- 合理解读：F-A5 的 e2e 实际覆盖了 F-N1 改向后的 spec（3 行段头展开插入点若未在树中，旧版 spec 会在折叠实现下失败，29/29 无法通过）。  
+- 但报告措辞「e2e 未执行」与「29/29 含改向」的隐含矛盾未在材料包中显式澄清，**门一按现有材料判定以 F-A5 的 e2e 记录为准，但收口时须再确认一次。**
+
+### W7｜无「折叠段内条目增删后段头条数实时更新」的修改型测试  
+证据：`ai-note-collapse.test.tsx` ④ 只测了静态条数标注，未测 notes 数组更新（如 AI 重跑导致某段从 2 条变 5 条）后段头 `(N)` 是否同步。  
+- 代码路径上 `items.length` 是每次 render 时从 props 计算的，React 会同步更新，风险低。  
+- 但作为「漏斗只藏视觉不删数据」的不变量，缺少一个修改型断言（M3 变异只摘了初始条数，未摘更新后的条数）。**低优先级盲区。**
+
+---
+
+## F-A5 层序不变量登记结论
+
+- `INV-46` 新增、`INV-37` 修订（自绘 z=3 与 ADR-0019 R2 引用）已在 `docs/invariants.md` 登记，锚定方式含单测 c2 序守卫 + e2e normal/z=1 + 真机 computed 三层，**登记充分**。  
+- 透明底渲染对性能的影响：canvas 从 opaque 变 transparent 会增加合成层 alpha 混合开销（PDF 满幅文字页无背景绘制时最明显），但无量化数据；`pointer-events:none` 与既有交互面（INV-42/43）兼容性由 e2e + 真机佐证，未见回归证据。
+
+---
+
+## 最终判定
+
+- **F-A5**：有条件放行。修复逻辑与真机 13/13 证据链自洽；W1/W2/W3 为取证盲区需收口补证，W4 需 ADR 补声明，W5 为判据强度退让（已申报）。
+- **F-N1**：有条件放行。B1 为真实交互断链，必须由主控裁决处置路径（接受手动展开 vs 自动展开补修）；W6/W7 低优先级。
+
+两票并行期间的 ABI EBUSY 争用已在双方报告在档，diff 无交叉文件串联证据，未发现互污染面。

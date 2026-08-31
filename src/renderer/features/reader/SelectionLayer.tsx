@@ -37,6 +37,8 @@ import type { Annotation, AnnotationInput, AnnotationKind, AnnotationRect } from
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
+import { findRangeAtOffset, pixelBoxOf } from './annotation-anchor'
+import { bandsForTextNodes, type RowBand } from './annotation-resolve'
 import { pushUndo } from './annotation-undo'
 import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
@@ -67,10 +69,11 @@ interface PendingSelection {
   y: number
 }
 
-/** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects；清除=层卸载） */
+/** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects+F-A5 行簇字形带；清除=层卸载） */
 interface PaintSelection {
   root: HTMLElement
   rects: AnnotationRect[]
+  bands: RowBand[]
 }
 
 export function SelectionLayer(props: {
@@ -127,8 +130,11 @@ export function SelectionLayer(props: {
         setPaint(null)
         return
       }
-      // [F-A4 a 面] 自绘并集层：与保存 rects 同源（evaluate 管线归一化产物）
-      setPaint({ root: anchorRoot!, rects: anchor.rects })
+      // [F-A4 a] 自绘并集层=保存 rects 同源；[F-A5 a/b] bands=行簇字形带
+      // **节点口径**（选区自身 textNodes——免疫 CSS 行盒整体偏移错绑上一行，
+      // 真机实锤小字号紧排文档行盒偏上 ~9px）；退化空数组=行盒原样回退
+      const range = findRangeAtOffset(textLayer, anchor.start, anchor.end)
+      setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })
       if (visualOnly) {
         return
       }
@@ -225,8 +231,8 @@ export function SelectionLayer(props: {
 
   return (
     <>
-      {/* 划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订——头注）；生命周期=选区 */}
-      {paint !== null ? <SelectionPaint root={paint.root} rects={paint.rects} /> : null}
+      {/* 划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订+F-A5 band 对齐——头注）；生命周期=选区 */}
+      {paint !== null ? <SelectionPaint root={paint.root} rects={paint.rects} bands={paint.bands} /> : null}
       {pending !== null ? (
         <SelectionToolbar
           containerRef={toolbarRef}

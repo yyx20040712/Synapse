@@ -27,6 +27,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
+import { PAGE_LAYER_Z } from './page-layer-z'
 
 /**
  * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。
@@ -113,10 +114,14 @@ export function PdfPageCanvas(props: {
       canvas.height = Math.floor(viewport.height * dpr)
       canvas.style.width = `${Math.floor(viewport.width)}px`
       canvas.style.height = `${Math.floor(viewport.height)}px`
+      // [F-A5 c/ADR-0019 R2] 透明底渲染：pdfjs 缺省 #ffffff 填充会把垫底的
+      // 标注/AI 色块整页遮死——透明底令墨带外透出下层色块（背景板语义），
+      // 墨带（含文字）恒在色块之上=文字纯黑不被染（用户令 2026-08-31）
       const task = pdfPage.render({
         canvasContext: ctx,
         viewport,
-        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined
+        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
+        background: 'rgba(255,255,255,0)'
       })
       renderTaskRef.current = task
       await task.promise
@@ -149,5 +154,14 @@ export function PdfPageCanvas(props: {
   // data-pdf-canvas：ReaderPage 以此度量该页 canvas CSS 尺寸（每页自量——
   // TextLayer 的 pageWidth/pageHeight 输入）；本组件无 padding/边饰——覆盖层
   // （TextLayer/标注层）按紧邻父容器绝对定位，加了会错位
-  return <canvas ref={canvasRef} data-pdf-canvas="true" aria-label={`PDF 第 ${pageNo} 页渲染`} />
+  // [F-A5 c] z=层序常量（墨带在色块上/自绘层下）+pointer-events:none（明纸
+  //  穿透——标注 rect 点击/文本层划选手势零回归；canvas 本身无交互面）
+  return (
+    <canvas
+      ref={canvasRef}
+      data-pdf-canvas="true"
+      aria-label={`PDF 第 ${pageNo} 页渲染`}
+      style={{ position: 'relative', zIndex: PAGE_LAYER_Z.canvas, pointerEvents: 'none' }}
+    />
+  )
 }

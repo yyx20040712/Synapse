@@ -23,6 +23,7 @@ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionL
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
 import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 
 const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
@@ -423,5 +424,74 @@ describe('F-A4 c 面 —— 工具条定位归一（÷有效 zoom+视口夹取+�
     const bar = toolbar()
     expect(bar).not.toBeNull()
     expect(parseFloat(bar!.style.left)).toBeCloseTo(1020, 6)
+  })
+})
+
+describe('F-A5 —— band 单源自绘（a 面）+水平夹取+层序常量（c 面）', () => {
+  /** 公共夹具：span 实测盒 (100,200,300,16)+canvas 字体度量桩
+   *  （半前导=(16−18)/2=−1 基线=213 band=[201,217]→归一 [0.125%,2.125%]；
+   *  行盒路径（修前）=clientRect 原样 top 0%/height 2.5%——可区分） */
+  async function mountBandPage(): Promise<{ span: HTMLElement }> {
+    const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
+    document.body.appendChild(page)
+    // span 簇 [200,500]（归一 x0=16.667%/x1=66.667%——a2 夹取差的构造前提）
+    rects.set(span, { x: 200, y: 200, width: 300, height: 16 })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: () => ({
+        actualBoundingBoxAscent: 12,
+        actualBoundingBoxDescent: 4,
+        fontBoundingBoxAscent: 14,
+        fontBoundingBoxDescent: 4
+      })
+    } as unknown as CanvasRenderingContext2D)
+    await mountLayer(page)
+    return { span }
+  }
+
+  it('a1 自绘块垂直=行簇字形带（band 单源——非 CSS 回退行盒）：top/height=band 值', async () => {
+    const { span } = await mountBandPage()
+    // 行盒（CSS 回退度量）高 20——修前自绘块=top 0%/height 2.5%
+    clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
+    selectRange(span.firstChild!, 0, span.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    const blocks = paintBlocks()
+    expect(blocks.length).toBe(1)
+    // band=[201,217]/800：top=0.125%/height=2%（与标注层同基准——三消费点同源）
+    expect(pct(blocks[0]!, 'top')).toBeCloseTo(0.125, 4)
+    expect(pct(blocks[0]!, 'height')).toBeCloseTo(2, 4)
+  })
+
+  it('a2 自绘块水平界=行簇 span 实际端点：行盒越出 span 簇→左右夹入 [x0,x1]', async () => {
+    const { span } = await mountBandPage()
+    // 行盒 x∈[40,440] 左越 span 簇 [200,500]——修前 left=0%/width=56.67% 原样
+    clientRects = [{ x: 40, y: 200, width: 400, height: 20 }]
+    selectRange(span.firstChild!, 0, span.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    const blocks = paintBlocks()
+    expect(blocks.length).toBe(1)
+    // 夹入 span 簇实际端点：left=(100−100)/600=16.667%/right=(400−100)/600→width=50%
+    expect(pct(blocks[0]!, 'left')).toBeCloseTo(100 / 6, 4)
+    expect(pct(blocks[0]!, 'width')).toBeCloseTo(50, 4)
+  })
+
+  it('c1 自绘层 z=层级常量最上（选区交互视觉保持最上——票面 §0c）', async () => {
+    const { span } = await mountBandPage()
+    clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
+    selectRange(span.firstChild!, 0, span.firstChild!, 4)
+    act(() => {
+      fireMouseUp()
+    })
+    expect(paintLayer()!.style.zIndex).toBe(String(PAGE_LAYER_Z.selectionPaint))
+  })
+
+  it('c2 层序常量单源（防回归序）：色块垫底 < canvas < 自绘最上；textLayer 官方 z0 在色块下（视觉透明无碍）', () => {
+    expect(PAGE_LAYER_Z.canvas).toBeGreaterThan(PAGE_LAYER_Z.colorBlocks)
+    expect(PAGE_LAYER_Z.selectionPaint).toBeGreaterThan(PAGE_LAYER_Z.canvas)
+    expect(PAGE_LAYER_Z.text).toBe(0)
   })
 })

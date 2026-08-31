@@ -12,6 +12,15 @@
  *   [字形顶, 基线+descender 尾]（归一化域）——rectStyle band 消费（顶贴
  *   字形顶缘底贴底缘）。无 canvas 2d/度量缺字段（jsdom）→ 空 bands，
  *   渲染回退 F-11 分数路径（缺省兼容）。
+ * - [F-A5 a/b] band 单源三消费点：①自绘选区（SelectionLayer evaluate→
+ *   SelectionPaint）②标注存量回退（AnnotationLayer 重锚失败路径）③AI 段
+ *   （AiAnnotationLayer）经 **bandsNearRects**（rect 集→重叠 span 行簇带）
+ *   消费同一 span→带核心（bandFromMetrics+同行近并）——与重锚路径同基准
+ *   （票面 §1「行簇字形带推导单源」）。其中自绘选区/AI 段走**节点口径**
+ *   bandsForTextNodes（选区/引文自身的 textNodes——免疫 CSS 行盒整体偏移，
+ *   真机实锤：小字号紧排文档行盒偏上 ~9px 使几何匹配错绑上一行）；存量
+ *   rects 回退（重锚失败无节点可依）走几何口径 bandsNearRects 尽力而为。
+ *   RowBand 增 x0/x1（行簇 span 实际端点——a 面自绘块水平界夹取源）。
  * - normalizedLineHeight：textLayer span 的 computed font-size 中位数/
  *   textLayer 盒高（挂 B mergeRects 行高感知 lineH——存量 rects 读时归并
  *   同口径；量测退化→undefined 旧行为）。
@@ -23,22 +32,26 @@
  *   只读（gBCR/getComputedStyle/canvas 量测），文本遍历仍唯经
  *   annotation-anchor（F-ARCH4 契约保持）；纯几何 bandFromMetrics/
  *   matchBand 单测直测。
- * - 性能：每标注一次 canvas 量测（span 去重后），MutationObserver+rAF
- *   合并节奏随宿主（F-A1 起不变）。
+ * - 性能：量测只发生在与输入 rects 重叠的 span 上（gBCR 预筛——拖选节流
+ *   200ms 周期内 ~页级行簇量级）；MutationObserver+rAF 合并节奏随宿主
+ *   （F-A1 起不变）。
  *
  * ── 文化层 ──
  * - tests/unit/renderer/selection-paint.test.tsx（bandFromMetrics 纯几何+
- *   AnnotationLayer 挂 B 接线）。
+ *   AnnotationLayer 挂 B 接线）+ F-A5 段（bandsNearRects 三消费点）。
  */
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { verifyQuote } from './anchor-serialize'
 import { findRangeAtOffset, pixelBoxOf, type PixelBox } from './annotation-anchor'
 
-/** 行簇字形带（归一化域；center=带中心——渲染块匹配键） */
+/** 行簇字形带（归一化域；center=带中心——渲染块匹配键；x0/x1=行簇 span
+ *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测） */
 export interface RowBand {
   top: number
   bottom: number
   center: number
+  x0?: number
+  x1?: number
 }
 
 /** 重锚结果（id → { rects, bands }；缺项回退存量 rects 由消费方兜底） */
@@ -84,8 +97,9 @@ export function bandFromMetrics(
   }
 }
 
-/** 渲染块 → 最近中心带（|Δcenter| ≤ rect.h 才匹配；bands 空→undefined） */
-export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { top: number; bottom: number } | undefined {
+/** 渲染块 → 最近中心带（|Δcenter| ≤ rect.h 才匹配；bands 空→undefined；
+ *  返回含 x0/x1（在场时）——F-A5 a 面自绘块水平界夹取源） */
+export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { top: number; bottom: number; x0?: number; x1?: number } | undefined {
   if (bands === undefined || bands.length === 0) {
     return undefined
   }
@@ -97,22 +111,26 @@ export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { to
     }
   }
   return best !== null && Math.abs(best.center - c) <= r.h
-    ? { top: best.top, bottom: best.bottom }
+    ? { top: best.top, bottom: best.bottom, x0: best.x0, x1: best.x1 }
     : undefined
 }
 
-/** canvas 2d 量测上下文（模块级缓存；无 canvas 环境→null） */
+/** canvas 2d 量测上下文（模块级缓存——只缓存成功获取：jsdom 未 mock 面
+ *  返回 null 不入缓存，量测环境就绪（测试 mock 挂上）后下次调用重试） */
 let ctxCache: CanvasRenderingContext2D | null | undefined
 
 function measureContext(): CanvasRenderingContext2D | null {
   if (ctxCache === undefined) {
     try {
-      ctxCache = document.createElement('canvas').getContext('2d')
+      const c = document.createElement('canvas').getContext('2d')
+      if (c !== null) {
+        ctxCache = c
+      }
     } catch {
-      ctxCache = null
+      // 无 canvas 环境——不缓存失败（重试廉价：纯查询）
     }
   }
-  return ctxCache
+  return ctxCache ?? null
 }
 
 /** span 元素的字体度量（computed font 简写 → canvas measureText）；度量
@@ -146,8 +164,38 @@ function fontSizeOf(el: Element, box: PixelBox): number {
   return Number.isFinite(px) && px > 0 ? px : box.h
 }
 
-/** 重锚 textNodes → 行簇字形带（span 去重+同带合并；无 canvas/量测退化→[]） */
-function bandsForNodes(nodes: Text[], base: PixelBox): RowBand[] {
+/** span → 行簇带（F-A5 单源核心：实测盒+canvas 字体度量→字形带+span 端点；
+ *  无量测（jsdom 桩面盒高兜 1）/退化 → null） */
+function spanBandOf(ctx: CanvasRenderingContext2D, el: Element, text: string, base: PixelBox): RowBand | null {
+  const box = pixelBoxOf(el)
+  if (box.h <= 1) {
+    return null // 无布局量测（jsdom 桩面 h 兜 1）——渲染回退分数路径
+  }
+  const band = bandFromMetrics(box, fontSizeOf(el, box), metricsOf(ctx, el, text), base)
+  if (band === null) {
+    return null
+  }
+  return { ...band, x0: (box.x - base.x) / base.w, x1: (box.x + box.w - base.x) / base.w }
+}
+
+/** 同行近并：中心距在带高内并为一带（行簇单带；x0/x1 取并集端点——F-A5） */
+function mergeNear(bands: RowBand[], band: RowBand): void {
+  const near = bands.find((b) => Math.abs(b.center - band.center) <= band.bottom - band.top)
+  if (near === undefined) {
+    bands.push(band)
+  } else {
+    near.x0 = Math.min(near.x0 ?? band.x0 ?? Number.POSITIVE_INFINITY, band.x0 ?? Number.POSITIVE_INFINITY)
+    near.x1 = Math.max(near.x1 ?? band.x1 ?? Number.NEGATIVE_INFINITY, band.x1 ?? Number.NEGATIVE_INFINITY)
+  }
+}
+
+/** [F-A5 b 定向修] textNodes → 行簇字形带（**节点口径**——带绑定不经几何
+ *  匹配，免疫 CSS 行盒整体偏移：真机实锤小字号紧排文档上 Range 行盒比
+ *  pdf.js span 盒整体高 ~9px，几何最近中心会把带绑到上一行=图2 下偏根因。
+ *  消费方：标注重锚（resolveAnnotationRects）+自绘选区（SelectionLayer
+ *  evaluate）+AI 段（AiAnnotationLayer resolve）；span 去重+同带合并；
+ *  无 canvas/量测退化（jsdom）→ []） */
+export function bandsForTextNodes(nodes: Text[], base: PixelBox): RowBand[] {
   const ctx = measureContext()
   if (ctx === null) {
     return []
@@ -160,19 +208,54 @@ function bandsForNodes(nodes: Text[], base: PixelBox): RowBand[] {
       continue
     }
     seen.add(el)
-    const box = pixelBoxOf(el)
-    if (box.h <= 1) {
-      continue // 无布局量测（jsdom 桩面 h 兜 1）——渲染回退分数路径
-    }
-    const band = bandFromMetrics(box, fontSizeOf(el, box), metricsOf(ctx, el, n.data), base)
+    const band = spanBandOf(ctx, el, n.data, base)
     if (band === null) {
       continue
     }
-    // 同行多 span：中心距在带高内并为一带（行簇单带）
-    const near = bands.find((b) => Math.abs(b.center - band.center) <= band.bottom - band.top)
-    if (near === undefined) {
-      bands.push(band)
+    mergeNear(bands, band)
+  }
+  return bands
+}
+
+/** [F-A5] rect 集 → 行簇字形带（三消费点公共面：自绘选区/标注存量回退/AI 段）。
+ *  只量测与任一 rect（归一化域→px 域）双向重叠的 span（gBCR 预筛——拖选节流
+ *  周期内成本=选区行簇量级）；基准=textLayer 盒（rects 归一化同源）。
+ *  无 canvas/无量测 span（jsdom）→ []（消费方回退原样/F-11 分数）。 */
+export function bandsNearRects(textLayer: HTMLElement, rects: AnnotationRect[]): RowBand[] {
+  if (rects.length === 0) {
+    return []
+  }
+  const ctx = measureContext()
+  if (ctx === null) {
+    return []
+  }
+  const base = pixelBoxOf(textLayer)
+  if (base.h <= 1) {
+    return []
+  }
+  const pxRects = rects.map((r) => ({
+    x: r.x * base.w + base.x,
+    y: r.y * base.h + base.y,
+    w: r.w * base.w,
+    h: r.h * base.h
+  }))
+  const bands: RowBand[] = []
+  for (const span of Array.from(textLayer.querySelectorAll('span'))) {
+    const g = span.getBoundingClientRect()
+    if (g.height <= 1 || g.width <= 1) {
+      continue
     }
+    const overlaps = pxRects.some(
+      (p) => g.y + g.height > p.y && g.y < p.y + p.h && g.x + g.width > p.x && g.x < p.x + p.w
+    )
+    if (!overlaps) {
+      continue
+    }
+    const band = spanBandOf(ctx, span, span.textContent ?? '', base)
+    if (band === null) {
+      continue
+    }
+    mergeNear(bands, band)
   }
   return bands
 }
@@ -203,7 +286,7 @@ export function resolveAnnotationRects(args: {
     if (range !== null && range.rects.length > 0) {
       next[a.id] = {
         rects: range.rects,
-        bands: bandsForNodes(range.textNodes.map((t) => t.node), base)
+        bands: bandsForTextNodes(range.textNodes.map((t) => t.node), base)
       }
     }
   }

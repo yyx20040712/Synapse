@@ -49,10 +49,35 @@ function pct(v: number): string {
   return `${Number((v * 100).toFixed(4))}%`
 }
 
+/** [F-A5] band → 垂直几何（top/height 百分比——三消费点同源映射：
+ *  rectStyle 标注块/SelectionPaint 自绘块/AiAnnotationLayer AI 段） */
+export function bandVertical(band: { top: number; bottom: number }): { top: string; height: string } {
+  return { top: pct(band.top), height: pct(band.bottom - band.top) }
+}
+
+/** [F-A5 a 面] 自绘块水平界=行簇 span 实际端点：rect 越出簇 [x0,x1] → 左右
+ *  夹入（票面 §0a「水平左右越出文字区」根治）；端点缺省/退化 → 原样透传 */
+export function clampedHorizontal(
+  r: AnnotationRect,
+  band?: { x0?: number; x1?: number }
+): { left: string; width: string } {
+  if (band?.x0 === undefined || band.x1 === undefined || band.x1 <= band.x0) {
+    return { left: `${r.x * 100}%`, width: `${r.w * 100}%` }
+  }
+  const left = Math.max(r.x, band.x0)
+  const right = Math.min(r.x + r.w, band.x1)
+  if (right <= left) {
+    return { left: `${r.x * 100}%`, width: `${r.w * 100}%` }
+  }
+  return { left: `${left * 100}%`, width: `${(right - left) * 100}%` }
+}
+
 /** kind+color+归一化矩形 → 色块样式（自 AnnotationLayer 迁入——组件行数
- *  防线；荧光笔语义：multiply 混合下色块不透明；下划线为收边后底缘 2px 实条）。
+ *  防线；[F-A5/ADR-0019 R2] 色块=背景板语义：canvas 透明底墨带恒在色块上
+ *  （文字纯黑），色块 normal 混合不透明；下划线为收边后底缘 2px 实条）。
  *  band 在场=行盒自适应（F-A4 b②：highlight 顶=band.top/高=band.bottom−
- *  band.top；underline 实条贴 band.bottom 上方 2px）；缺省=F-11 分数路径。 */
+ *  band.top——F-A5 起经 bandVertical 单源；underline 实条贴 band.bottom
+ *  上方 2px）；缺省=F-11 分数路径。 */
 export function rectStyle(
   kind: AnnotationKind,
   color: AnnotationColor,
@@ -77,8 +102,7 @@ export function rectStyle(
   if (band !== undefined) {
     return {
       ...base,
-      top: pct(band.top),
-      height: pct(band.bottom - band.top),
+      ...bandVertical(band),
       opacity: 1
     }
   }

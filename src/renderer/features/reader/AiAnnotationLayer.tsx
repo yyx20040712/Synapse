@@ -67,7 +67,10 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AnnotationRect } from '@shared/models/annotation'
 import { verifyQuote } from './anchor-serialize'
-import { findRangeAtOffset } from './annotation-anchor'
+import { findRangeAtOffset, pixelBoxOf } from './annotation-anchor'
+import { bandsForTextNodes, matchBand, type RowBand } from './annotation-resolve'
+import { bandVertical } from './annotation-style'
+import { PAGE_LAYER_Z } from './page-layer-z'
 import { QUESTION_COLOR } from './ai-note-style'
 import { useAiNotesStore } from './ai-notes.store'
 import { useReaderStore } from './reader.store'
@@ -75,10 +78,12 @@ import { useReaderStore } from './reader.store'
 /** 重锚后的显示矩形（aiNoteId → rects；重锚失败不落项=该段零 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>
 
-/** 本地重锚缓存（paperId+页键——键变即整体作废重算） */
+/** 本地重锚缓存（paperId+页键——键变即整体作废重算；bands=节点口径行簇
+ *  字形带按 noteId 键控——绑定不经几何匹配，免疫行盒整体偏移） */
 interface AnchorCache {
   key: string
   rects: ResolvedRects
+  bands: Record<string, RowBand[]>
 }
 
 /** 参与重锚的行：有锚引文（篇级/无锚行天然不入层）+页匹配（anchorPage 1 基） */
@@ -95,7 +100,7 @@ export function AiAnnotationLayer(props: {
   onJumpToNote(aiNoteId: string): void
 }): JSX.Element | null {
   const { aiNotes, page, pageRoot, onJumpToNote } = props
-  const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {} })
+  const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {}, bands: {} })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // F-A3（INV-42）：选择模式自订阅（AnnotationLayer 同型；props 接口零变）
   const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
@@ -127,6 +132,8 @@ export function AiAnnotationLayer(props: {
     const resolve = (): void => {
       scheduled = false
       const next: ResolvedRects = {}
+      const bands: Record<string, RowBand[]> = {}
+      const base = pixelBoxOf(textLayer)
       for (const n of pageNotes) {
         const at = verifyQuote(textLayer, {
           prefix: n.prefixText,
@@ -140,9 +147,13 @@ export function AiAnnotationLayer(props: {
         const range = findRangeAtOffset(textLayer, at, at + n.quoteText.length)
         if (range !== null && range.rects.length > 0) {
           next[n.id] = range.rects
+          // [F-A5 b] 节点口径带：引文自身 textNodes→bandsForTextNodes（绑定
+          // 不经几何匹配——免疫 CSS 行盒整体偏移错绑上一行；修前裸行盒
+          // 在小字号紧排文档上下偏+侵入相邻行=图2 根因）
+          bands[n.id] = bandsForTextNodes(range.textNodes.map((t) => t.node), base)
         }
       }
-      setCache({ key: cacheKey, rects: next })
+      setCache({ key: cacheKey, rects: next, bands })
     }
     const schedule = (): void => {
       if (!scheduled) {
@@ -163,10 +174,14 @@ export function AiAnnotationLayer(props: {
     <div
       data-testid="ai-annotation-layer"
       className="absolute inset-0"
-      style={{ zIndex: 5, pointerEvents: 'none' }}
+      style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none' }}
     >
       {pageNotes.map((n) =>
-        (resolved[n.id] ?? []).map((r, i) => (
+        (resolved[n.id] ?? []).map((r, i) => {
+        // [F-A5 b] band 单源（节点口径——本段引文自身的带池）；缺省=行盒原样回退
+        const pool = cache.bands[n.id]
+        const band = pool !== undefined && pool.length > 0 ? matchBand(pool, r) : undefined
+        return (
           <div
             key={`${n.id}:${i}`}
             data-testid="ai-note-rect"
@@ -178,9 +193,8 @@ export function AiAnnotationLayer(props: {
             className="absolute"
             style={{
               left: `${r.x * 100}%`,
-              top: `${r.y * 100}%`,
+              ...(band !== undefined ? bandVertical(band) : { top: `${r.y * 100}%`, height: `${r.h * 100}%` }),
               width: `${r.w * 100}%`,
-              height: `${r.h * 100}%`,
               background: QUESTION_COLOR[n.question],
               // AI 段半透明+选中描边：与用户标注（不透明）视觉区分，选中=高亮该段全部 rects
               opacity: n.id === selectedId ? 0.8 : 0.45,
@@ -197,7 +211,8 @@ export function AiAnnotationLayer(props: {
               onJumpToNote(n.id)
             }}
           />
-        ))
+        )
+        })
       )}
     </div>
   )

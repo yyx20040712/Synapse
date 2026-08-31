@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-31T03:31:31.3052230Z",
+    "generatedAt":  "2026-08-31T05:40:33.9722973Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -83,11 +83,27 @@
                   },
                   {
                       "path":  "scripts/audits/f-a4-gen-gate1-r2-brief.mjs",
-                      "sha256":  "c29b92b1b7f57e93caf9ceca07f1971a34ae5c9c6cb00d63562693c13b848c21"
+                      "sha256":  "8d7bc4db3772f4b7cf9a6643452d03d503a84a70ff504fc87f755b01a16c19ff"
                   },
                   {
                       "path":  "scripts/audits/f-a4-verify.mjs",
                       "sha256":  "4936b869b31bdf076c7343c87b00722142d0a4379dde0a6312f5b2e8ef420a9c"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a5-diag.mjs",
+                      "sha256":  "17ac65d0c8e8478571fb12942c6d1941cb1d5e622261dc47383efa1f48292fca"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a5-gen-gate1-brief.mjs",
+                      "sha256":  "d76439491effdd3a82c0731c524224787ce7aa420a363a52cd46c5d07bbbaad4"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a5-inject.mjs",
+                      "sha256":  "cfa578b0067577f9e987df7a01b05b74f1405ed3af1ef325e6f33b255a08d639"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a5-verify.mjs",
+                      "sha256":  "5d3cdf49c9ce5ffacd906665ec9adc8410f8ce9d2590fd60e7e99f719f664804"
                   },
                   {
                       "path":  "scripts/audits/f-l1c-forensics.mjs",
@@ -124,6 +140,14 @@
                   {
                       "path":  "scripts/audits/f-r1-verify.mjs",
                       "sha256":  "87d0f4d76278ae2ab63dc8c42d38cf50aeb0516193884760b44808f3d53332d4"
+                  },
+                  {
+                      "path":  "scripts/audits/f-sw1-probe.mjs",
+                      "sha256":  "308b90b2eb7113bc4f0f6459ab5cd0d5158d4aafb1e1d69101764fb78ceebe05"
+                  },
+                  {
+                      "path":  "scripts/audits/f-sw1-probe2.mjs",
+                      "sha256":  "67a08bb558f616a90fc4ce0763ed1b035e767061504f51792313abef9b6f4826"
                   },
                   {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",
@@ -287,7 +311,7 @@
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
-                      "sha256":  "d8151bdd4bdba8a05dcc46b0eb3de5469a66b190969f69a3b44d717cfc4d718a"
+                      "sha256":  "f3c8d76fb0dbabf000ee83a627e4ee84a5d3b501305ab677e0bc0761dff0898d"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -307,7 +331,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "485201dda56e51958b5fcdff5690ae1a62144d00bba2cc1f7697bbab22237da4"
+                      "sha256":  "e8d10dbb55477399c863035e21376c9c580c008d121e5a89eb9a8bf3eab532a1"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -435,11 +459,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
-                      "sha256":  "a521111e7d3b1b2aadd9fd53515b348df4be80d7b7848aab087ab4bd597a48cb"
+                      "sha256":  "9ca3ad512628cf3c394dfff99ded57ca9e8fbd5460a1431ca493db35215915d9"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
+                      "sha256":  "a004f88e205809ead76e750ea1f5324d2d3981638b2c5d027b072bf7b8dc5a20"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
-                      "sha256":  "a9753cbbf7e23802342b6c49f4d2d6cc7c5581eb4261ff7da20ab73a599b7cc9"
+                      "sha256":  "a75485ce14ff458df52ce8bd32fc326383238ca64c9e90cab5f1a209d329e023"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
@@ -455,7 +483,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
-                      "sha256":  "c80144e6362f317a4a862cb0694f09f995c741a3d274bbe4f842ec72c273d8b0"
+                      "sha256":  "a0694c04bc225108200954de2d87134fc513f04b647f3d1094fa3b0679fb3c04"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",
@@ -570,6 +598,10 @@
                       "sha256":  "afd0f1092c10ddaa1ea67e5dbc34a00af7227a982c7fdea5255d9d75dc3667d3"
                   },
                   {
+                      "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
+                      "sha256":  "388670ec30aafb03d9a204b8fb02c433800c4881111ac4dee25291ab29bf9a2e"
+                  },
+                  {
                       "path":  "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
                       "sha256":  "1521c2fe07159ccb58eb81038658faa19f590e057d49e51383edd2945391e411"
                   },
@@ -615,7 +647,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "0a94651e70d1e8493c3f292f41da04304ef208a7eed710562fa3c349be876661"
+                      "sha256":  "22073d4fa2e012b516ca1ddddbd1e032ea69ae762b4103c717f23976bdde2cd7"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

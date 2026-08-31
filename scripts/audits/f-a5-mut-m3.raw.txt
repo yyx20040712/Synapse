@@ -1,0 +1,68 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2mverifyQuote 真：rects 渲染+data-ai-note-id+七问分色（ai-note-style 单源）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2m重锚失败（verifyQuote 假）：该段零 rects 且他段不受扰
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2m篇级/无锚行（quoteText 空）不入层
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2m点击：该段全部 rects 高亮+onJumpToNote 上抛（不弹菜单）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2m重锚缓存失效：翻页后按新页重算（anchorPage 不匹配页不渲染）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22m[2mF-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面）[2m > [22m[2mAI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiAnnotationLayer (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\AiAnnotationLayer.tsx:27:11)
+Warning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/ai-annotation-layer.test.tsx [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 38[2mms[22m[39m
+[31m   [31m×[31m F-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面）[2m > [22mAI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks[90m 5[2mms[22m[31m[39m
+[31m     → expected 25 to be close to 25.375, received difference is 0.375, but expected 0.00005[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/ai-annotation-layer.test.tsx[2m > [22mF-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面）[2m > [22mAI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks
+[31m[1mAssertionError[22m: expected 25 to be close to 25.375, received difference is 0.375, but expected 0.00005[39m
+[36m [2m❯[22m tests/unit/renderer/ai-annotation-layer.test.tsx:[2m299:37[22m[39m
+    [90m297| [39m    [35mconst[39m r [33m=[39m [34mrects[39m()[[34m0[39m][33m![39m
+    [90m298| [39m    [90m// 修前=裸行盒（jsdom 回退 span 盒 top 25%/height 2%）；band=25.37[39m…
+    [90m299| [39m    [34mexpect[39m([34mparseFloat[39m(r[33m.[39mstyle[33m.[39mtop))[33m.[39m[34mtoBeCloseTo[39m([34m25.375[39m[33m,[39m [34m4[39m)
+    [90m   | [39m                                    [31m^[39m
+    [90m300| [39m    [34mexpect[39m([34mparseFloat[39m(r[33m.[39mstyle[33m.[39mheight))[33m.[39m[34mtoBeCloseTo[39m([34m1.625[39m[33m,[39m [34m4[39m)
+    [90m301| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 13:04:23
+[2m   Duration [22m 1.40s[2m (transform 94ms, setup 0ms, collect 274ms, tests 38ms, environment 596ms, prepare 171ms)[22m
+

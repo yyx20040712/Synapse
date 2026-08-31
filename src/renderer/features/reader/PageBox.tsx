@@ -49,7 +49,10 @@ export function PageBox(props: {
     >
       {rendered ? (
         <div data-page-root={no} className="absolute inset-0 flex justify-center">
-          <div className="relative h-fit">
+          {/* [F-A5 c/ADR-0019 R2] 白纸承底层（canvas 透明底的承白面——暗色主题
+              下页纸仍白，PDF 纸面语义）+isolation（层序比较域封闭单页内，跨页
+              互扰不可能——页内层序见 page-layer-z 单源） */}
+          <div className="relative h-fit" style={{ background: '#ffffff', isolation: 'isolate' }}>
             <PdfPageCanvas doc={doc!} pageNo={no} zoom={zoom} onPageRender={props.onPageRender} onError={props.onError} />
             {props.renderPage(no)}
           </div>

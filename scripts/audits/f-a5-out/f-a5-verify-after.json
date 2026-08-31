@@ -1,0 +1,257 @@
+{
+  "meta": {
+    "script": "f-a5-verify.mjs",
+    "phase": "after",
+    "date": "2026-08-31T05:16:03.504Z",
+    "note": "修后判据；修前基线=f-a5-diag.json（2026-08-31 探针先行）"
+  },
+  "z": {
+    "ann": {
+      "z": "1",
+      "blend": "normal"
+    },
+    "ai": {
+      "z": "1",
+      "blend": "normal"
+    },
+    "canvas": {
+      "z": "2",
+      "pe": "none"
+    },
+    "paint": {
+      "z": "3",
+      "blend": "normal"
+    },
+    "text": {
+      "z": "0",
+      "blend": "normal"
+    }
+  },
+  "paintMs": [
+    {
+      "ink": {
+        "inkTop": 252.42237903225808,
+        "inkBot": 264.4133064516129,
+        "inkLeft": 968.3984237178679,
+        "inkRight": 1225.1121333952874,
+        "darkest": 0
+      },
+      "hRatio": 1.1269592850420158,
+      "topDev": 0.4749908447265625,
+      "botDev": 1.4874911308288574,
+      "leftOver": -0.01251220703125,
+      "rightOver": 2.7478485107421875,
+      "darkest": 0,
+      "fs": 7.97,
+      "diag": {
+        "blk": {
+          "y": 255.5,
+          "h": 9
+        },
+        "spanY0": 255,
+        "spanY1": 263,
+        "inkTop": 252.42237903225808,
+        "inkBot": 264.4133064516129
+      }
+    },
+    {
+      "ink": {
+        "inkTop": 262.81451612903226,
+        "inkBot": 274.8054435483871,
+        "inkLeft": 968.3984237178679,
+        "inkRight": 1227.5113269436742,
+        "darkest": 0
+      },
+      "hRatio": 1.1269592850420158,
+      "topDev": 0.475006103515625,
+      "botDev": 1.48750638961792,
+      "leftOver": -0.01251220703125,
+      "rightOver": -0.01397705078125,
+      "darkest": 0,
+      "fs": 7.97,
+      "diag": {
+        "blk": {
+          "y": 266,
+          "h": 9
+        },
+        "spanY0": 265.5,
+        "spanY1": 273.5,
+        "inkTop": 262.81451612903226,
+        "inkBot": 274.8054435483871
+      }
+    },
+    {
+      "ink": {
+        "inkTop": 284.398185483871,
+        "inkBot": 296.3891129032258,
+        "inkLeft": 980.3943914598035,
+        "inkRight": 1227.5113269436742,
+        "darkest": 0
+      },
+      "hRatio": 1.1269592850420158,
+      "topDev": 0.475006103515625,
+      "botDev": 1.48750638961792,
+      "leftOver": 0,
+      "rightOver": -0.0056610107421875,
+      "darkest": 0,
+      "fs": 7.97,
+      "diag": {
+        "blk": {
+          "y": 286.9,
+          "h": 9
+        },
+        "spanY0": 286.4,
+        "spanY1": 294.4,
+        "inkTop": 284.398185483871,
+        "inkBot": 296.3891129032258
+      }
+    }
+  ],
+  "annMs": [
+    {
+      "hRatio": 1.127,
+      "topDev": 0.47,
+      "botDev": 1.49,
+      "darkest": 0,
+      "diag": {
+        "blk": {
+          "y": 255.5,
+          "h": 9
+        },
+        "spanY0": 255,
+        "spanY1": 263,
+        "inkTop": 252.42237903225808,
+        "inkBot": 264.4133064516129
+      }
+    },
+    {
+      "hRatio": 1.127,
+      "topDev": 0.48,
+      "botDev": 1.49,
+      "darkest": 0,
+      "diag": {
+        "blk": {
+          "y": 266,
+          "h": 9
+        },
+        "spanY0": 265.5,
+        "spanY1": 273.5,
+        "inkTop": 262.81451612903226,
+        "inkBot": 274.8054435483871
+      }
+    },
+    {
+      "hRatio": 1.127,
+      "topDev": 0.48,
+      "botDev": 1.49,
+      "darkest": 0,
+      "diag": {
+        "blk": {
+          "y": 286.9,
+          "h": 9
+        },
+        "spanY0": 286.4,
+        "spanY1": 294.4,
+        "inkTop": 284.398185483871,
+        "inkBot": 296.3891129032258
+      }
+    }
+  ],
+  "aiMs": [
+    {
+      "hRatio": 1.127,
+      "topDev": 0.48,
+      "botDev": 1.49,
+      "darkest": 0,
+      "diag": {
+        "blk": {
+          "y": 318.3,
+          "h": 9
+        },
+        "spanY0": 317.8,
+        "spanY1": 325.8,
+        "inkTop": 315.57459677419354,
+        "inkBot": 327.5655241935484
+      }
+    }
+  ],
+  "scenes": {
+    "s4": {
+      "paint": 24,
+      "ann": 19
+    },
+    "s5": {
+      "paint": 17
+    },
+    "s6": {
+      "ann": 19
+    }
+  },
+  "results": [
+    {
+      "id": "a/paint-band-height",
+      "pass": true,
+      "detail": "自绘块高/行盒高比 max=1.13（≤1.3；修前 1.38=1.5~2 倍墨高口径之源）"
+    },
+    {
+      "id": "a/paint-band-top",
+      "pass": true,
+      "detail": "块顶 vs 行簇 span 顶 max=0.48px（≤2；修前上错整行 topDev −7.3~−8.9px）"
+    },
+    {
+      "id": "a/paint-band-bottom",
+      "pass": true,
+      "detail": "块底 vs 行簇 span 底 [1.5,1.5,1.5]∈[−1,+3]（desc 尾界；修前 −4.9~−6.5=侵入下邻行）"
+    },
+    {
+      "id": "a/paint-horizontal-span-bounds",
+      "pass": true,
+      "detail": "水平界越 span 簇端点 max=2.75px（≤3=亚字符级口径差容差@6.38px 参考区；修前 11.5~281px；实现夹取由单测 a2 断言级锁定）"
+    },
+    {
+      "id": "b/ann-band-align",
+      "pass": true,
+      "detail": "标注块 vs 行簇 span：顶差 max=0.48px（≤2）+底界 [1.5,1.5,1.5]∈[−1,+3]+高比 max=1.13（≤1.3）"
+    },
+    {
+      "id": "b/ai-band-align",
+      "pass": true,
+      "detail": "AI 块 vs 行簇 span：顶差 max=0.48px（≤2）+高比 max=1.13（≤1.3；修前=裸 CSS 行盒——图2 下偏+侵入邻行根因）"
+    },
+    {
+      "id": "c/z-order-colors-under-canvas",
+      "pass": true,
+      "detail": "层序 computed：ann z=1/normal ai z=1 canvas z=2（pe=none）——色块垫底 normal"
+    },
+    {
+      "id": "c/z-order-paint-top",
+      "pass": true,
+      "detail": "自绘层 z=3（=3 最上，拖选帧采样；text z=0 官方 0）"
+    },
+    {
+      "id": "c/text-pure-black-in-blocks",
+      "pass": true,
+      "detail": "色块内文字最暗核 max=0（≤8=纯黑域吞 AA；修前 AI 面 normal0.45 罩墨必染——图2）"
+    },
+    {
+      "id": "s4/paint-over-ann",
+      "pass": true,
+      "detail": "S4 灰块 24 块叠在 19 色块上（选择模式 INV-42 穿透重选）"
+    },
+    {
+      "id": "s6/escape-clears-paint-keeps-ann",
+      "pass": true,
+      "detail": "S6 Escape：自绘块 0（清）+色块 19（不变，前=19）"
+    },
+    {
+      "id": "s5/zoom-block-count",
+      "pass": true,
+      "detail": "150% 自绘块 17 vs 100% 标注块 19（|Δ|≤max(1,15%)——重选带边界行包含差，F-A4 |Δ|≤1 口径的行数带扩展）"
+    },
+    {
+      "id": "f/no-pageerror",
+      "pass": true,
+      "detail": "页面错误 0 条"
+    }
+  ]
+}

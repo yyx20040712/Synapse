@@ -30,6 +30,7 @@ import type { CSSProperties } from 'react'
 import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
 import type { PdfTextContent } from './PdfPageCanvas'
 import './text-layer.css'
+import { PAGE_LAYER_Z } from './page-layer-z'
 
 export interface TextLayerProps {
   textContent: PdfTextContent
@@ -92,9 +93,11 @@ export function TextLayer(props: TextLayerProps): JSX.Element {
 
   // --scale-factor 供官方 CSS 的 span 字号 calc 使用；宽高与 PdfCanvas 的 canvas
   // CSS 尺寸一致（inset:0 之上再显式给定，确保与页面盒对齐）
+  // zIndex=层序常量单源显式化（与官方 css z0 同值——序防漂移，F-A5 c）
   const style = {
     width: `${pageWidth}px`,
     height: `${pageHeight}px`,
+    zIndex: PAGE_LAYER_Z.text,
     '--scale-factor': String(viewportScale)
   } as CSSProperties
 
