@@ -185,10 +185,17 @@ export function pixelBoxOf(el: Element): PixelBox {
   return { x, y, w: Math.max(w, 1), h: Math.max(h, 1) }
 }
 
-/** 两边界点之间的客户端矩形 → 相对 base 的归一化矩形（0..1，越界截断） */
+/** 两边界点之间的客户端矩形 → 相对 base 的归一化矩形（0..1，越界截断）。
+ *  [F-A4] 行高感知接线：选区 span 的 computed font-size 中位数=PDF 行高
+ *  量测源（px，本地口径），注入 mergeLineRects（像素域判据）与 mergeRects
+ *  （归一化域容差）——紧行距不再跨行并簇（INV-40 边界修复）。
+ *  量测口径声明：fontSize 为本地 CSS px 而 base/pixels 为视口 px（含祖先
+ *  zoom 复合）——PDF zoom≠1 时阈值等效收紧 1/zoom，方向安全（跨行更不易
+ *  误并；同行片段中心距 ≲0.25×字号远低于阈值，不受影响）。 */
 export function rectsBetweenPoints(a: DomPoint, b: DomPoint, base: PixelBox): AnnotationRect[] {
+  const lineHpx = medianFontSizeBetween(a, b)
   // 行级合并先于归一化（像素域判间隙/高度可比）：划选保存与重开重锚两路径在此同口径收口
-  const pixels = mergeLineRects(clientRectsBetween(a, b), base.w)
+  const pixels = mergeLineRects(clientRectsBetween(a, b), base.w, lineHpx)
   const clamp01 = (v: number): number => Math.min(1, Math.max(0, v))
   // F-A1 挂 A：归一化后过归并器（滤零宽/聚行/并集/钳制，INV-A~D）——零宽兜底
   // 块（w:0）随之被滤：pixels 为空时返回空数组，调用方 rects.length>0 判空语义兜住
@@ -199,8 +206,47 @@ export function rectsBetweenPoints(a: DomPoint, b: DomPoint, base: PixelBox): An
       y: clamp01((r.y - base.y) / base.h),
       w: clamp01(r.w / base.w),
       h: clamp01(r.h / base.h)
-    }))
+    })),
+    lineHpx !== undefined ? lineHpx / base.h : undefined
   )
+}
+
+/** [F-A4] 两边界点间文本的 computed font-size 中位数（下中位；PDF 行高
+ *  量测源）。无相交文本/量测不可解析（jsdom 未实现/空样式）→undefined
+ *  （调用方按旧行为走）。getComputedStyle 只读非遍历；本模块仍是唯一
+ *  DOM 文本遍历点（TreeWalker 按 Range 相交过滤）。 */
+function medianFontSizeBetween(a: DomPoint, b: DomPoint): number | undefined {
+  try {
+    const range = document.createRange()
+    range.setStart(a.node, Math.min(a.offset, a.node.data.length))
+    range.setEnd(b.node, Math.min(b.offset, b.node.data.length))
+    if (typeof range.intersectsNode !== 'function') {
+      return undefined
+    }
+    const sizes: number[] = []
+    const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode() as Text | null; n !== null; n = walker.nextNode() as Text | null) {
+      if (!range.intersectsNode(n)) {
+        continue
+      }
+      const el = n.parentElement
+      if (el === null) {
+        continue
+      }
+      const px = parseFloat(getComputedStyle(el).fontSize)
+      if (Number.isFinite(px) && px > 0) {
+        sizes.push(px)
+      }
+    }
+    if (sizes.length === 0) {
+      return undefined
+    }
+    sizes.sort((x, y) => x - y)
+    return sizes[Math.floor((sizes.length - 1) / 2)]
+  } catch {
+    // 节点脱离文档等异常：行高不可量测，交调用方按旧行为走
+    return undefined
+  }
 }
 
 // ── clientRects 行级合并（pdf.js 文本层逐 span 绝对定位、各字号/基线不同，同一
@@ -238,8 +284,14 @@ function dominantOf(group: PixelBox[]): PixelBox {
  * clientRects 行级合并（纯函数）：同形去重 → y 区间重叠且高度可比者聚行簇 →
  * 簇内 x 大间隙断段 → 段合并（x 取并集、y/h 取段内主导矩形）→ 按 (y,x) 文档序输出。
  * 每视觉行一个（或栏断后的数个）矩形：高亮不再叠深、下划线每行一条且底边平齐。
+ * [F-A4 行高感知]：可选 lineH（px——PDF 行高，调用方量测注入）在场时聚行
+ * 判据改「中心距 ≤ lineH/2」（替代 y 区间重叠率判据）：紧行距（leading ≲
+ * 0.75×行盒高——INV-40 登记边界）下 CSS 回退行盒垂直重叠率可达 25% 门槛
+ * 而跨行并簇成单高块；以真行高为基准的中心距判据在保持同行动效（上标/
+ * 基线偏移中心距 ≲0.25×字号）的同时把紧行距相邻行（中心距=leading ≥
+ * ~1.07×字号）判为不同行。缺省=旧行为（受锁单测兼容面）。
  */
-export function mergeLineRects(pixels: PixelBox[], pageWidth: number): PixelBox[] {
+export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: number): PixelBox[] {
   if (pixels.length <= 1) {
     return pixels
   }
@@ -260,7 +312,9 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number): PixelBox[
   if (unique.length <= 1) {
     return unique
   }
-  // ② y 区间重叠聚类（组内 y 区间为成员并集；排序保证同簇连续）
+  // ② y 区间重叠聚类（组内 y 区间为成员并集；排序保证同簇连续）——
+  //    [F-A4] lineH 在场改中心距判据（头注行高感知；高度可比带两种判据通用）
+  const lh = lineH !== undefined && Number.isFinite(lineH) && lineH > 0 ? lineH : null
   const sorted = [...unique].sort((a, b) => a.y - b.y || a.x - b.x)
   const rowGroups: PixelBox[][] = []
   const groupTop: number[] = []
@@ -272,8 +326,10 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number): PixelBox[
       const overlapPx = Math.min(groupBottom[gi]!, r.y + r.h) - Math.max(groupTop[gi]!, r.y)
       const yOverlap =
         overlapPx >= Y_OVERLAP_RATIO_MIN * Math.min(r.h, dom.h)
+      const centerOk =
+        Math.abs(r.y + r.h / 2 - (dom.y + dom.h / 2)) <= (lh ?? 0) / 2
       const hComparable = r.h >= dom.h * HEIGHT_RATIO_MIN && r.h <= dom.h * HEIGHT_RATIO_MAX
-      if (yOverlap && hComparable) {
+      if ((lh !== null ? centerOk : yOverlap) && hComparable) {
         rowGroups[gi]!.push(r)
         groupTop[gi] = Math.min(groupTop[gi]!, r.y)
         groupBottom[gi] = Math.max(groupBottom[gi]!, r.y + r.h)

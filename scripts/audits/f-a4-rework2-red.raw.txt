@@ -1,0 +1,49 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/selection-paint.test.tsx [2m([22m[2m13 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 75[2mms[22m[39m
+[31m   [31m×[31m F-A4 a 面 —— 自绘并集层（单层单绘不叠深）[2m > [22mS1b 拖选期零视觉反馈回归守卫（B1/门一回炉）：连续 selectionchange 不 mouseup——首个事件 leading 节流立即渲染自绘层，工具条防抖语义保持（未到期不出条）[90m 5[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+[31m   [31m×[31m F-A4 a 面 —— 自绘并集层（单层单绘不叠深）[2m > [22mS1c trailing 随动（B1/W6·门一 r2）：拖选中窗口内末事件变更选区→停顿推进越过窗口缘→自绘块几何随动到新位置（非首帧）——纯防抖/只留 leading 均在此红[90m 3[2mms[22m[31m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-paint.test.tsx[2m > [22mF-A4 a 面 —— 自绘并集层（单层单绘不叠深）[2m > [22mS1b 拖选期零视觉反馈回归守卫（B1/门一回炉）：连续 selectionchange 不 mouseup——首个事件 leading 节流立即渲染自绘层，工具条防抖语义保持（未到期不出条）
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m tests/unit/renderer/selection-paint.test.tsx:[2m179:30[22m[39m
+    [90m177| [39m    }
+    [90m178| [39m    [90m// 不再推进任何时间：自绘层已在场（leading+trailing 节流）[39m
+    [90m179| [39m    [34mexpect[39m([34mpaintLayer[39m())[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                             [31m^[39m
+    [90m180| [39m    [34mexpect[39m([34mpaintBlocks[39m()[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m1[39m)
+    [90m181| [39m    [90m// 工具条=防抖路径（既有弹出语义零变——末事件后 200ms 内不出条）[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-paint.test.tsx[2m > [22mF-A4 a 面 —— 自绘并集层（单层单绘不叠深）[2m > [22mS1c trailing 随动（B1/W6·门一 r2）：拖选中窗口内末事件变更选区→停顿推进越过窗口缘→自绘块几何随动到新位置（非首帧）——纯防抖/只留 leading 均在此红
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/selection-paint.test.tsx:[2m199:34[22m[39m
+    [90m197| [39m      [34mfireSelectionChange[39m()
+    [90m198| [39m    })
+    [90m199| [39m    [34mexpect[39m([34mpaintBlocks[39m()[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m200| [39m    [34mexpect[39m([34mpct[39m([34mpaintBlocks[39m()[[34m0[39m][33m![39m[33m,[39m [32m'top'[39m))[33m.[39m[34mtoBeCloseTo[39m([34m0[39m[33m,[39m [34m6[39m)
+    [90m201| [39m    [90m// 拖选中：窗口内连发（40ms 间隔×3，未过 200ms 窗口）——纯防抖下 ti[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 11:14:39
+[2m   Duration [22m 1.43s[2m (transform 99ms, setup 0ms, collect 269ms, tests 75ms, environment 602ms, prepare 200ms)[22m
+

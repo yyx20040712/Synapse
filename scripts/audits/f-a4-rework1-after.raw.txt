@@ -1,0 +1,18 @@
+[f-a4/after 03:05:49] PASS a/paint-present — 自绘块 3 个（跨 3 行拖选；::selection=rgba(0, 0, 0, 0)）
+[f-a4/after 03:05:49] PASS a/paint-no-overlap — 自绘块两两相交面积 max=0.00px²（≤0.5 吞亚像素）
+[f-a4/after 03:05:49] PASS a/native-selection-transparent — ::selection computed=rgba(0, 0, 0, 0)（transparent——视觉单通道=自绘层）
+[f-a4/after 03:05:49] PASS c/toolbar-in-viewport — 工具条 (1110,230,333×38) 在滚动容器 (515,143,1537×965) 可视区内
+[f-a4/after 03:05:49] PASS c/toolbar-near-selection — 工具条距选区顶 9.4px（<60）
+[f-a4/after 03:05:50] PASS b/ann-align-text — 标注贴行：块顶 vs 行簇顶偏差 max=1.48px（≤2）+块底落行簇底 desc 尾界 [−1,+3]px（越界 0 块；3 块分行——修前并簇 1 块）
+[f-a4/after 03:05:50] PASS b/ann-no-overlap — 标注块两两相交面积 max=0.00px²
+[f-a4/after 03:05:50] PASS b/ann-vs-paint-bounded — 黄块 vs 灰块（墨带 vs 行盒并集两有意基准）差：top max=3.88px/height max=3.40px（≤4 上界——票面 §5② W2 修订双基准）
+[f-a4/after 03:05:54] zoom 滚轮后= 150%
+[f-a4/after 03:05:56] PASS s6/z150-paint-present — 150% 下自绘块 4 个（选择模式重选同源行带）
+[f-a4/after 03:05:56] PASS s6/z150-toolbar-near — 150% 下工具条距选区带顶 10.7px（<60；toolbar=1027,708）
+[f-a4/after 03:05:56] PASS s6/z150-ann-align — 150% 下存量标注贴行：块顶 vs 行簇顶偏差 max=1.96px（≤2——S6 三面几何稳定）
+[f-a4/after 03:06:00] PASS s6/medium-ann-present — medium 档重开存量标注 3 块在场（存量 rects 零迁移）
+[f-a4/after 03:06:00] PASS s6/medium-toolbar-in-viewport — medium 档工具条 (1080,220) 在可视区内
+[f-a4/after 03:06:00] PASS s6/zoom-block-count — 自绘块数 100%=3 vs 150%=4（|Δ|≤1 接受域——重选带与原拖选带的行边界包含差；超出即行合并随 zoom 漂移回归）
+[f-a4/after 03:06:00] PASS s6/zoom-stable — zoom 100%↔150% 同源行自绘块归一化几何漂移 max=0.67%（≤2——缩放量化噪声容差，按 min(n) 前块对齐）
+[f-a4/after 03:06:00] PASS f/no-pageerror — 页面错误 0 条
+F-A4 VERIFY: PASS（16/16 项断言全过）

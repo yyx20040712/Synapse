@@ -36,6 +36,13 @@
  *   multiply 层(z:5)之下——黄×灰逐通道相乘成暗橄榄；alpha 降至 0.20 后白底
  *   合成 #CCCCCC（仍清晰可辨，F-08「选中不可见」红线不回退），叠黄合成
  *   rgb(202,179,57) 较 0.30 的 rgb(177,157,50) 提亮一档。ADR-0019 补记同步。
+ * - [F-A4] ::selection 再改 transparent（ADR-0019 R1 修订——票面 §0a 用户
+ *   根治令）：官方 pdf.js 已知缺陷（issue #17561 同族）——文本层逐 span 绘制，
+ *   pdf.js span 行盒=CSS 回退字体度量，相邻行垂直重叠处 0.20×2≈0.36 逐层
+ *   叠深；CSS 层无解，唯一根治=自绘并集层（SelectionLayer→selection-paint，
+ *   归并产物单层单绘，用色即本灰 0.20——R2-F-10 观感随迁）。SR2-F-08 当年
+ *   删自绘的两病根已解：拖选零反馈→selectionchange 200ms 防抖路径在场驱动
+ *   自绘层；30% accent 近不可见→观感灰在案。
  */
 .textLayer{
   position:absolute;
@@ -78,11 +85,11 @@
   }
 
 .textLayer ::-moz-selection{
-    background:rgba(0 0 0 / 0.20);
+  background:transparent;
 }
 
 .textLayer ::selection{
-    background:rgba(0 0 0 / 0.20);
+  background:transparent;
 }
 
 .textLayer br::-moz-selection{

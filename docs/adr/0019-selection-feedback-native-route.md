@@ -71,3 +71,25 @@
   即时评估路径加拖选位移阈值 3px（LineageCanvas.DRAG_THRESHOLD 同型）；
   单击/双击（含选词）不出条，真拖选与程序化/键盘选区（防抖路径）不受影响。
   INV-37 不受扰动（阈值只影响工具条出现，不影响选区本身）。
+
+## R1 修订：划选视觉回自绘并集层（F-A4，2026-08-31）
+
+- **修订依据=用户根治令**（F-A4 票面 §0a，用户复测附两图）：连续段落选中时
+  多行灰块行交界横向深带（重叠部分渲染加深）——根因=官方 pdf.js 已知缺陷
+  （同 issue #17561 族）：文本层逐 span 绘制，pdf.js span 行盒=CSS 回退字体
+  度量，相邻行垂直重叠处 0.20×2≈0.36 逐层叠深。**CSS 层无解，唯一根治=
+  自绘并集层**。
+- **原裁决两病根复核（均解，故可修订）**：①拖选期零反馈（当年自绘层挂
+  mouseup/防抖后）→今 selectionchange 200ms 防抖路径在场（F-02 起），
+  拖选期自绘层实时跟随；②30% accent 合成 rgb(191,207,220) 近乎不可见
+  →今观感灰 rgba(0,0,0,0.20) 在案（R2-F-09/F-10 用户令两轮定值），白纸
+  合成≈#CCCCCC 清晰可辨。
+- **R1 落地形态**：SelectionLayer 渲染 SelectionPaint（selection-paint.tsx，
+  portal 进选区所在页盒——z2 在标注 multiply 层 z5 之下，R2-F-10 灰在黄下
+  观感保持），数据=evaluate 管线 mergeLineRects+mergeRects 归并产物（与
+  保存 rects 同源——所见即所存）；::selection 背景改 transparent
+  （text-layer.css）。INV-37 语义修订登记（Escape 只清工具条，自绘层随
+  选区真清除）；受锁两测试守卫反转（e2e 0 计数→在场；unit F-08 恒 null
+  →在场）。
+- **不随修订变化**：锚定三元组/保存链/INV-05 两路径同口径/F-12 触发阈值/
+  选择模式（INV-42）零触碰。

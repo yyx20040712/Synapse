@@ -617,7 +617,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
 /** F-06 视觉小票依赖：渲染链 + 页列（F-01 页盒载体）+ 本单（验收缺陷 B+C） */
 const F06_DEPS = [...COLUMN_DEPS, 'SR2-F-06'] as const
 
-test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半透明灰（划选即时可见）', async () => {
+test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订）', async () => {
   skipIfPending(F06_DEPS)
   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
 
@@ -665,33 +665,35 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；::selection 半�
   expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
-  // —— 缺陷 C（SR2-F-08 回退官方路线 ADR-0019 + SR2-F-09 用户令改灰仿 WPS
-  //    + R2-F-10 用户令降 alpha：灰选中与黄标注 multiply 叠处加深难看）：
-  //    ::selection 背景=rgba(0 0 0 / 0.20)（白纸合成≈#CCCCCC 仍清晰可辨，
-  //    F-08「选中不可见」红线不回退；叠黄合成提亮一档；偏离官方值
-  //    rgba(0 0 255 / 0.25) 的显式登记=ADR-0019 补记）——
-  //    划选视觉反馈由浏览器原生渲染，拖选第一帧即反馈；canvas 字形透出可读
+  // —— 缺陷 C（[F-A4] ADR-0019 R1 修订：SR2-F-08 原生路线的两病根已解——
+  //    拖选零反馈→selectionchange 200ms 防抖路径在场驱动自绘层；30% accent
+  //    近不可见→观感灰 rgba(0,0,0,0.20) 在案。::selection 背景=transparent
+  //    （视觉单通道=SelectionLayer 自绘并集层——native 逐 span 绘制在重叠
+  //    行盒处 0.20×2≈0.36 叠深，CSS 层无解；修订依据=F-A4 票面 §0a 用户
+  //    根治令）——
   const sel = visual.selectionBg
   expect(sel, 'C: ::selection 背景可查询（文本层 span 在场）').not.toBe('missing')
-  // 半透明灰精确断言（四分量全锁；正则仅容忍序列化空格差异——不放宽为
-  // 弱家族匹配，参照被删 alpha 正则先例的双形态口径）
-  const selOfficial =
-    /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.2\s*\)$/.exec(sel) !== null
   expect(
-    selOfficial,
-    `C: ::selection 背景=半透明灰 rgba(0, 0, 0, 0.2)：${sel}`
-  ).toBe(true)
+    sel,
+    `C: ::selection 背景透明（视觉通道=自绘并集层）：${sel}`
+  ).toBe('rgba(0, 0, 0, 0)')
 
   // 真实选选（程序化 selectText——防抖路径同产 pending）→ 工具条 ≤1.5s 可见
   // （L7：交互反馈预算入验收——程序化选选含 200ms 防抖+evaluate，预算 1.5s）
   const known = win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()
   await known.selectText()
   await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 1_500 })
-  // 自绘层不在场（ADR-0019 防回归守卫——视觉通道已回原生 ::selection）
+  // [F-A4] 守卫反转：自绘并集层在场（原 ADR-0019「selection-rects 0 计数」
+  // 防自绘回归守卫随 R1 修订反转——层经 portal 渲染进选区所在页盒，单层
+  // 单绘不叠深；块为归并产物可见实块）
   await expect(
     win.getByTestId('selection-rects'),
-    'C: 自绘选区块不在场（ADR-0019 原生路线）'
-  ).toHaveCount(0)
+    'C: 自绘选区并集层在场（ADR-0019 R1 修订/F-A4）'
+  ).toBeVisible()
+  const selBlock = win.getByTestId('selection-rect').first()
+  await expect(selBlock).toBeVisible()
+  // 自绘灰 0.20（R2-F-10 观感在案——计算样式直读，白纸合成≈#CCCCCC 由 alpha 蕴含）
+  await expect(selBlock).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.2)')
   await app.close()
 })
 

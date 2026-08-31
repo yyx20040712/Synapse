@@ -1,0 +1,35 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/annotation-merge.test.ts [2m([22m[2m13 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 7[2mms[22m[39m
+[31m   [31m×[31m F-A1 mergeRects —— 归一化域归并器[2m > [22m⑪ INV-40 边界修复（F-A4 行高感知）：紧行距中心距 ≤ 输入块高/2（旧路径误并）但 > PDF 行高/2 → lineH 传入不并簇；缺省旧行为存档[90m 4[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-merge.test.ts[2m > [22mF-A1 mergeRects —— 归一化域归并器[2m > [22m⑪ INV-40 边界修复（F-A4 行高感知）：紧行距中心距 ≤ 输入块高/2（旧路径误并）但 > PDF 行高/2 → lineH 传入不并簇；缺省旧行为存档
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/unit/renderer/annotation-merge.test.ts:[2m184:24[22m[39m
+    [90m182| [39m    [90m// lineH=PDF 行高 0.016（< 输入 h 0.02——回退度量膨胀差）：不并簇[39m
+    [90m183| [39m    [35mconst[39m out [33m=[39m [34mmergeRects[39m([upper[33m,[39m lower][33m,[39m [34m0.016[39m)
+    [90m184| [39m    [34mexpect[39m(out[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)
+    [90m   | [39m                       [31m^[39m
+    [90m185| [39m    [90m// INV-D 钳制仍生效：负间隙（0.229 底 > 0.209 顶）推至恰好接触[39m
+    [90m186| [39m    [34mexpect[39m(out[[34m1[39m][33m![39m[33m.[39my)[33m.[39m[34mtoBeCloseTo[39m(out[[34m0[39m][33m![39m[33m.[39my [33m+[39m out[[34m0[39m][33m![39m[33m.[39mh[33m,[39m [34m10[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 10:22:36
+[2m   Duration [22m 523ms[2m (transform 31ms, setup 0ms, collect 52ms, tests 7ms, environment 0ms, prepare 151ms)[22m
+

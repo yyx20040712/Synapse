@@ -5,11 +5,13 @@
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
  *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
  *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
- *   （F-11 顶/底收边修标注下偏），rects 行级合并见
+ *   （F-11 顶/底收边修标注下偏；F-A4 b② 行盒自适应 band——重锚字形带在场
+ *   时顶贴字形顶缘底贴底缘），rects 行级合并见
  *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径；
  *   渲染读时另过 annotation-merge.mergeRects 归并（F-A1 挂 B，INV-E——
- *   存量缺陷态 rects 库数据零迁移，读时归并存量渐净；resolved 产物已过
- *   挂 A，幂等无害）
+ *   F-A4 b① 行高感知 lineH 注入；存量缺陷态 rects 库数据零迁移，读时归并
+ *   存量渐净；resolved 产物已过挂 A，幂等无害）；重锚+字形带计算=
+ *   annotation-resolve 域（F-A4 拆件——组件 ≤250 红线）
  * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
  *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
  *   requestAnimationFrame 合并重算
@@ -39,8 +41,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { verifyQuote } from './anchor-serialize'
-import { findRangeAtOffset } from './annotation-anchor'
+import { resolveAnnotationRects, normalizedLineHeight, matchBand, type ResolvedAnnotation } from './annotation-resolve'
 import { mergeRects } from './annotation-merge'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
@@ -53,8 +54,8 @@ const UPDATE_FAILED = '标注保存失败'
 const DELETE_FAILED = '标注删除失败'
 const DELETE_CONFIRM = '删除这条标注？'
 
-/** 重锚后的显示矩形（id → rects；缺项回退存量 rects） */
-type ResolvedRects = Record<string, AnnotationRect[]>
+/** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */
+type ResolvedRects = Record<string, ResolvedAnnotation>
 
 /** 弹层目标（连同命中矩形，供菜单/编辑器定位）——菜单与编辑器互斥使用同形 */
 interface PopupTarget {
@@ -73,6 +74,9 @@ export function AnnotationLayer(props: {
 }): JSX.Element | null {
   const { annotations, page, pageRoot, onChanged } = props
   const [resolved, setResolved] = useState<ResolvedRects>({})
+  // [F-A4 b①] 挂 B 行高感知 lineH（textLayer span 字号中位数/textLayer 盒高；
+  // 量测退化 undefined=旧行为——存量缺陷态 rects 读时归并同口径受益）
+  const [lineH, setLineH] = useState<number | undefined>(undefined)
   const [menu, setMenu] = useState<PopupTarget | null>(null)
   const [editing, setEditing] = useState<PopupTarget | null>(null)
   const [busy, setBusy] = useState(false)
@@ -85,7 +89,9 @@ export function AnnotationLayer(props: {
 
   const pageAnnotations = annotations.filter((a) => a.page === page)
 
-  // 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算 rects；失败回退存量，仅显示层不回写库
+  // 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算 rects
+  // +行盒自适应字形带（F-A4 b②——annotation-resolve 域，组件 ≤250 红线拆出）；
+  // 失败回退存量，仅显示层不回写库
   useEffect(() => {
     if (pageRoot === null) {
       return
@@ -97,25 +103,8 @@ export function AnnotationLayer(props: {
     let scheduled = false
     const resolve = (): void => {
       scheduled = false
-      const next: ResolvedRects = {}
-      for (const a of annotations) {
-        if (a.page !== page || a.quoteText.length === 0) {
-          continue
-        }
-        const at = verifyQuote(textLayer, {
-          prefix: a.prefixText,
-          quote: a.quoteText,
-          suffix: a.suffixText,
-          start: a.startOffset
-        })
-        if (at !== null) {
-          const range = findRangeAtOffset(textLayer, at, at + a.quoteText.length)
-          if (range !== null && range.rects.length > 0) {
-            next[a.id] = range.rects
-          }
-        }
-      }
-      setResolved(next)
+      setResolved(resolveAnnotationRects({ textLayer, annotations, page }))
+      setLineH(normalizedLineHeight(textLayer))
     }
     // 文本层 span 逐个入 DOM（pdf.js render() 异步）：rAF 合并成每帧一次
     const schedule = (): void => {
@@ -195,9 +184,11 @@ export function AnnotationLayer(props: {
         className="absolute inset-0"
         style={{ zIndex: 5, pointerEvents: 'none', mixBlendMode: 'multiply' }}
       >
-        {/* multiply 上容器级（stacking context 隔离，rect 级混合无效且叠乘） */}
+        {/* multiply 上容器级（stacking context 隔离，rect 级混合无效且叠乘）；
+            [F-A4 b] 行高感知归并（lineH）+rectStyle 行盒自适应 band（重锚带
+            在场时顶贴字形顶缘底贴底缘——matchBand 最近中心带匹配） */}
         {pageAnnotations.map((a) =>
-          mergeRects(resolved[a.id] ?? a.rects).map((r, i) => (
+          mergeRects(resolved[a.id]?.rects ?? a.rects, lineH).map((r, i) => (
             <div
               key={`${a.id}:${i}`}
               data-testid="annotation-rect"
@@ -206,7 +197,7 @@ export function AnnotationLayer(props: {
               aria-label={`标注：${a.quoteText}`}
               title={a.comment !== '' ? a.comment : a.quoteText}
               className="absolute"
-              style={selectionMode ? { ...rectStyle(a.kind, a.color, r), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r)}
+              style={selectionMode ? { ...rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands, r)), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands, r))}
               onClick={() => {
                 // 选择模式=穿透零副作用（pointerEvents:none 达成，守卫兜程序化派发）
                 if (selectionMode) return

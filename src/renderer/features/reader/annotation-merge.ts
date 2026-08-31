@@ -15,14 +15,19 @@
  *
  * 算法（确定性，六步，输入乱序不影响输出）：
  * 滤零宽 → (中心y,x,y) 全序排序 → 聚类成行（与全部既有簇比中心距，取最近
- * 且 |cNew−cRow| <= min(hNew, hRowMedian)/2 者；高瘦矩形 h 超行高 2 倍+
- * 自动免疫——容差被 min 钳在行高一半内，ADR-0002 先例语义保持；比较扩到
- * 全部簇=修 mergeLineRects「只与末簇比较」在档失联限制）→ 行内归并
- * （x 并集 / h 与中心 y 取行内下中位数 / page 取最小）→ 行间钳制 →
- * 输出按 (y,x) 稳定排序。中位数=排序后下中位（索引 floor((n-1)/2)）。
+ * 且 |cNew−cRow| <= 容差者；容差=min(hNew, hRowMedian[, lineH])/2——
+ * **F-A4 行高感知**：可选 lineH（PDF 行高归一化值）参与钳制，紧行距下
+ * 输入 rect 高被 CSS 回退度量膨胀（可达 PDF 行高 ~1.25 倍）导致中心距
+ * ≤膨胀高/2 的相邻行误并成单高块（INV-40 登记边界）；lineH 缺省=旧行为
+ * 存档兼容。高瘦矩形 h 超行高 2 倍+自动免疫——容差被 min 钳在行高一半内，
+ * ADR-0002 先例语义保持；比较扩到全部簇=修 mergeLineRects「只与末簇比较」
+ * 在档失联限制）→ 行内归并（x 并集 / h 与中心 y 取行内下中位数 / page 取
+ * 最小）→ 行间钳制 → 输出按 (y,x) 稳定排序。中位数=排序后下中位（索引
+ * floor((n-1)/2)）。
  *
  * ── 接口层 ──
- * - export function mergeRects(rects: AnnotationRect[]): AnnotationRect[]
+ * - export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationRect[]
+ *   （lineH=归一化域 PDF 行高；可选缺省兼容——票面 §2 导出签名扩展）
  * - export const W_MIN（滤零宽阈值，归一化域近似 1px@612pt 标准页宽；
  *   页宽 595~612pt 差异 ±3% 内忽略）
  * - 纯函数：零 DOM/React 依赖；单块输入原样返回（deep equal）；已满足
@@ -67,7 +72,9 @@ function centerY(r: AnnotationRect): number {
   return r.y + r.h / 2
 }
 
-export function mergeRects(rects: AnnotationRect[]): AnnotationRect[] {
+export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationRect[] {
+  // F-A4 行高感知容差的 lineH 钳制值（非有限正数防御→不收紧=旧行为）
+  const lh = lineH !== undefined && Number.isFinite(lineH) && lineH > 0 ? lineH : Number.POSITIVE_INFINITY
   // ① 滤零宽（INV-C）：w <= W_MIN 的块不入集合
   const kept = rects.filter((r) => r.w > W_MIN)
   if (kept.length === 0) {
@@ -78,6 +85,7 @@ export function mergeRects(rects: AnnotationRect[]): AnnotationRect[] {
     (a, b) => centerY(a) - centerY(b) || a.x - b.x || a.y - b.y
   )
   // ③ 聚类成行（INV-B 前置）：与全部既有簇比中心距，取最近且满足容差者
+  //    （容差 min(hNew, hRowMedian, lineH)/2——F-A4 行高感知钳制）
   const rows: RowCluster[] = []
   for (const r of ordered) {
     const c = centerY(r)
@@ -85,7 +93,7 @@ export function mergeRects(rects: AnnotationRect[]): AnnotationRect[] {
     let nearestDist = Number.POSITIVE_INFINITY
     for (const row of rows) {
       const dist = Math.abs(c - row.medianC)
-      if (dist <= nearestDist && dist <= Math.min(r.h, row.medianH) / 2) {
+      if (dist <= nearestDist && dist <= Math.min(r.h, row.medianH, lh) / 2) {
         nearest = row
         nearestDist = dist
       }

@@ -2,52 +2,49 @@
 /**
  * [SR-RDR-05] SelectionLayer —— 文本选择→定位器（工单：done / weak，依赖 anchor-serialize——F-ARCH4 拆件后经其间接消费 annotation-anchor）
  *
- * **F-02 四层多页化收口（工单 open / strong；注册文件=anchor-locate.ts，本文件
- *   为主改面，短式引用口径）——动态锚定根**
+ * **F-02 四层多页化收口（动态锚定根；注册文件=anchor-locate.ts）**：锚定根=
+ * 选区 anchorNode/focusNode 向上最近页盒（纯函数页盒遍历，selection-geometry），
+ * 挂载盒≠选区所在页仍正确；选区态状态机：无选区→页内选区→工具条操作→清；
+ * 跨页/跨出页盒→不创建+toast（mouseup 时刻，INV-02 禁静默；防抖路径静默防
+ * 拖选中途刷屏）；选区所在页回收/文本层重建（zoom 同机制）→选区清→层与
+ * 工具条收（防悬空锚）；页外选区静默收起。确认后经
+ * anchor-serialize.selectionToAnchor 生成锚定三元组→落库（保存页=选区所在页
+ * 0 基动态推导）→onSaved 刷新层；保存成功 removeAllRanges+层随清。
  *
- * **F-08 划选视觉=原生 ::selection（工单 open / strong；ADR-0019——R1 路线
- *   落地，取代 SR2-F-07 自绘层）**：拖选全程由浏览器原生 ::selection 提供即时
- *   视觉反馈（text-layer.css 已回官方 rgba(0 0 255 / 0.25) 半透明——canvas
- *   字形透出可读）；mouseup/防抖 evaluate 链仅驱动工具条（≤1.5s 预算，L7）。
- *   自绘选区块（SelectionRects）整体删除——复测站 3 证伪自绘路线（30% accent
- *   合成 rgb(191,207,220) 近乎不可见+拖选期零反馈）。
- * 层叠序（同一 stacking context 内比较——挂载盒/页盒/页框均无 z-index，各
- * 绝对定位层直达公共根）：canvas 字形(非定位，最底) < .textLayer(z-index:0，
- * 自成 stacking context，span 内 z-index:1) < AnnotationLayer(z-index:5,
- * multiply——荧光笔语义) < AiAnnotationLayer(z-index:5，F-07 已去 multiply，
- * 同值 DOM 后绘在上) < 工具条(z-10)。
- *
- * ── 行为层 ──
- * - 监听 selectionchange（200ms 防抖）与 mouseup（即时）：锚定根=选区
- *   anchorNode/focusNode 向上最近页盒（纯函数页盒遍历）——挂载盒（F-01 锚定
- *   页盒落位）≠选区所在页仍正确（F-01 自裁 4 中间态解除）；选区态状态机：
- *   无选区→页内选区→工具条操作→清；跨页/跨出页盒→不创建+toast（mouseup 时刻，
- *   INV-02 禁静默；防抖路径静默防拖选中途刷屏）；选区所在页回收/文本层重建
- *   （zoom 同机制）→选区清→工具条收（防悬空锚）；滚动中选区保持=evaluate
- *   每次动态重找锚定根（跟随选区非固定页）；页外选区（侧栏等）静默收起
- * - 确认后经 anchor-serialize.selectionToAnchor 生成锚定三元组 → 落库（保存页=
- *   pending.pageNo 选区所在页 0 基动态推导，rects.page 同）→ onSaved 刷新层
+ * **F-A4 划选视觉=自绘并集层（ADR-0019 R1 修订——取代 SR2-F-08 原生路线，
+ * 修订依据=票面 §0a 用户根治令）**：SelectionPaint（selection-paint.tsx，
+ * portal 进选区所在页盒，z2 灰 0.20 在标注 multiply 层之下——R2-F-10 观感
+ * 保持）渲染 evaluate 管线归并产物（与保存 rects 同源，所见即所存）；::
+ * selection 转 transparent（text-layer.css）。当年删自绘两病根已解（拖选
+ * 零反馈→selectionchange 200ms 防抖路径在场；accent 近不可见→观感灰在案）。
+ * 层随**选区**真清除而消失（INV-37 修订：Escape 只清 pending/工具条）。
+ * 工具条定位 [c 面]：视口差值÷有效 zoom（localScale）归一到挂载盒本地+
+ * 滚动容器可视区夹取+选区近顶下翻转（selection-geometry 纯函数——修
+ * ui-scale≠1 双重放大+偏远缺陷）。层叠序完整推演见 selection-paint.tsx 头注。
  *
  * ── 接口层 ── / ── 架构层 ──
- * - props 形状不变=挂载位契约零改（page 不再作锚定/保存页——由动态锚定取代）；
- *   export closestPageRoot(node)（向上最近页盒）/pageIndexOf(root)（1 基→0 基）。
- *   锚定根=选区所在页盒内 .textLayer 动态获取；annotation-anchor 仍是唯一 DOM
- *   遍历点；工具条落点以选区所在页盒为参照系（夹取经页盒 rect——N-C 防层叠
- *   污染），再换算到挂载盒渲染（页列垂直排列页间偏移稳定）
+ * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再
+ *   导出（实现在 selection-geometry——F-A4 拆件，导出面零变）。锚定根=
+ *   选区所在页盒内 .textLayer 动态获取；annotation-anchor 仍是唯一 DOM
+ *   遍历点；工具条/自绘层落点以选区所在页盒为参照系（N-C 防层叠污染）
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载收起
- *   退订。组件测试：tests/unit/renderer/selection-layer.test.tsx；e2e：
- *   reader-text.spec 后半（F-02 批 2 守卫）
+ * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载
+ *   收起退订。测试：selection-layer/selection-paint.test（F-A4 三面）
  */
 import { useEffect, useRef, useState } from 'react'
-import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
+import type { Annotation, AnnotationInput, AnnotationKind, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
 import { pushUndo } from './annotation-undo'
 import { SelectionToolbar } from './SelectionToolbar'
+import { SelectionPaint } from './selection-paint'
+import { closestPageRoot, pageIndexOf, toolbarMountPos, createVisualScheduler } from './selection-geometry'
 import { useReaderStore } from './reader.store'
+
+// 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
+export { closestPageRoot, pageIndexOf } from './selection-geometry'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const SAVE_FAILED = '标注保存失败'
@@ -55,43 +52,25 @@ const SAVE_FAILED = '标注保存失败'
 /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
 const CROSS_PAGE_HINT = '选区跨页，不支持创建标注'
 
-/** 工具条定位：估算宽度（水平夹取）与选区上方留白 */
-const TOOLBAR_WIDTH = 180
-const TOOLBAR_ABOVE = 42
-
-/** selectionchange 防抖窗口（毫秒） */
+/** selectionchange 窗口（毫秒）：自绘层节流与工具条防抖同值两路（B1） */
 const SELECTION_DEBOUNCE_MS = 200
 
-/** F-12 工具条误触发阈值（px）：mousedown→mouseup 位移小于此值=单击/双击
- *  （含选词）不出条（用户令「一点就出选项条」；LineageCanvas 同型）。
- *  无 mousedown 记录（程序化/键盘选区）不设限——防抖路径唯一通道保持。 */
+/** F-12 工具条误触发阈值（px）：位移小于此值=单击/双击（含选词）不出条
+ *  （用户令「一点就出选项条」；无 mousedown 记录的程序化/键盘选区不设限） */
 const DRAG_SELECT_THRESHOLD_PX = 3
 
-/** F-02：节点向上最近页盒（[data-page-root] 元素——页列渲染窗内页才有；
- *  锚定根动态遍历的纯函数，测试直测） */
-export function closestPageRoot(node: Node | null): HTMLElement | null {
-  let cur: Node | null = node
-  while (cur !== null) {
-    if (cur instanceof HTMLElement && cur.hasAttribute('data-page-root')) {
-      return cur
-    }
-    cur = cur.parentNode
-  }
-  return null
-}
-
-/** F-02：页盒页号（data-page-root 值 1 基→0 基页码；缺失/非法值 null） */
-export function pageIndexOf(root: HTMLElement): number | null {
-  const no = Number(root.getAttribute('data-page-root'))
-  return Number.isInteger(no) && no >= 1 ? no - 1 : null
-}
-
-/** 待确认的划选（锚定结果 + 选区所在页 0 基 + 工具条相对挂载盒的落点） */
+/** 待确认的划选（锚定结果+选区所在页 0 基+工具条挂载盒本地落点） */
 interface PendingSelection {
   anchor: SelectionAnchor
   pageNo: number
   x: number
   y: number
+}
+
+/** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects；清除=层卸载） */
+interface PaintSelection {
+  root: HTMLElement
+  rects: AnnotationRect[]
 }
 
 export function SelectionLayer(props: {
@@ -102,75 +81,82 @@ export function SelectionLayer(props: {
 }): JSX.Element | null {
   const { pageRoot, paperId, onSaved } = props
   const [pending, setPending] = useState<PendingSelection | null>(null)
+  const [paint, setPaint] = useState<PaintSelection | null>(null)
   const [busy, setBusy] = useState(false)
-  // per-tab 选择器（TABS-01）：颜色取 active tab（无 tab 时回退默认黄）
+  // per-tab 选择器（TABS-01）：active tab 颜色（无 tab 回退默认黄）
   const color = useReaderStore((s) => s.tabs[s.activeId ?? '']?.color ?? 'yellow')
   const setColor = useReaderStore((s) => s.setColor)
   const toolbarRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (pageRoot === null) return
-    let timer: number | null = null
 
-    /** 评估当前选区（F-02 动态锚定根）：选区所在页盒内锚定；跨页拒绝
-     *  （mouseup 提示）；页外/不可锚定/零宽选区静默收起 */
-    const evaluate = (fromMouseUp: boolean): void => {
+    /** 评估选区（动态锚定根）：页内锚定；跨页拒绝（mouseup 提示）；页外/不可锚定/零宽静默收（层随清）。
+     *  visualOnly=[B1 回炉] 拖选期节流路径——只更新自绘层（视觉反馈），不动
+     *  pending（工具条弹出语义独属防抖/mouseup 全量评估，零变） */
+    const evaluate = (fromMouseUp: boolean, visualOnly: boolean): void => {
       const sel = window.getSelection()
       if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
-        setPending(null)
+        if (!visualOnly) setPending(null)
+        setPaint(null)
         return
       }
       const anchorRoot = closestPageRoot(sel.anchorNode)
       const focusRoot = closestPageRoot(sel.focusNode)
       if (anchorRoot !== focusRoot) {
-        // 跨页/跨出页盒：不创建+toast（主控裁决，INV-02 禁静默——仅挂用户完成
-        // 拖选的 mouseup 时刻，防抖路径静默防拖选中途刷屏）
+        // 跨页/跨出页盒：不创建+toast（INV-02 禁静默——仅挂 mouseup 时刻，
+        // 防抖路径静默防拖选中途刷屏）
         if (fromMouseUp) showToast(CROSS_PAGE_HINT, 'info')
-        setPending(null)
+        if (!visualOnly) setPending(null)
+        setPaint(null)
         return
       }
       // 两边界同盒（同为 null=页外选区——静默收起，与页列无关）
       const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
       const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
       const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
-      // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义（F-08 起无几何消费方）
+      // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义
       if (anchor === null || textLayer === null) {
-        setPending(null)
+        if (!visualOnly) setPending(null)
+        setPaint(null)
         return
       }
       const box = sel.getRangeAt(0).getBoundingClientRect()
       if (box.width === 0 && box.height === 0) {
-        setPending(null)
+        if (!visualOnly) setPending(null)
+        setPaint(null)
         return
       }
-      // 落点以选区所在页盒为参照系（N-C：夹取经页盒 rect 防层叠污染），再换算
-      // 到挂载盒（组件渲染容器——页列垂直排列页间偏移布局稳定）
-      const selBox = anchorRoot!.getBoundingClientRect()
-      const mountBox = pageRoot.getBoundingClientRect()
-      const x = Math.min(Math.max(box.x - selBox.x, 0), Math.max(selBox.width - TOOLBAR_WIDTH, 0)) + (selBox.x - mountBox.x)
-      const y = Math.max(box.y - selBox.y - TOOLBAR_ABOVE, 0) + (selBox.y - mountBox.y)
+      // [F-A4 a 面] 自绘并集层：与保存 rects 同源（evaluate 管线归一化产物）
+      setPaint({ root: anchorRoot!, rects: anchor.rects })
+      if (visualOnly) {
+        return
+      }
+      // [F-A4 c 面] 工具条挂载盒本地落点（翻转+夹取+÷有效 zoom——geometry 域）
+      const { x, y } = toolbarMountPos(pageRoot, { x: box.x, y: box.y, width: box.width, height: box.height })
       setPending({ anchor, pageNo: pageNo!, x, y })
     }
 
-    const onSelectionChange = (): void => {
-      if (timer !== null) window.clearTimeout(timer)
-      timer = window.setTimeout(() => evaluate(false), SELECTION_DEBOUNCE_MS)
-    }
+    // [B1 回炉] selectionchange 双路调度（selection-geometry 域工厂）：自绘层
+    // =leading+trailing 节流（拖选期持续触发下纯防抖永不落地=SR2-F-08 删自绘
+    // 的零反馈病根复活）；工具条评估=防抖（既有弹出语义零变）
+    const scheduler = createVisualScheduler({
+      onVisual: () => evaluate(false, true),
+      onSettled: () => evaluate(false, false),
+      windowMs: SELECTION_DEBOUNCE_MS
+    })
     // F-12：记录最近一次 mousedown 落点（NaN=无记录——程序化事件/未捕获）
     let downX = Number.NaN
     let downY = Number.NaN
     const onMouseDown = (e: MouseEvent): void => {
       ;[downX, downY] = [e.clientX, e.clientY]
     }
+
     const onMouseUp = (e: MouseEvent): void => {
       // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
       if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
-      if (timer !== null) {
-        window.clearTimeout(timer)
-        timer = null
-      }
-      // F-12：有点击落点且位移过小=单击/双击误触——不出条（pending 清空与
-      // 坍缩评估同效——点击他处清选区行为不变）
+      scheduler.cancel()
+      // F-12：位移过小=单击/双击误触不出条（自绘层留待防抖路径随选区坍缩清除）
       if (Number.isFinite(downX)) {
         const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
         downX = downY = Number.NaN
@@ -179,30 +165,31 @@ export function SelectionLayer(props: {
           return
         }
       }
-      evaluate(true)
+      evaluate(true, false)
     }
     const onKeyDown = (e: KeyboardEvent): void => {
+      // INV-37（F-A4 修订）：Escape 只清组件态；自绘层随**选区**真清除而消失
       if (e.key === 'Escape') setPending(null)
     }
 
-    document.addEventListener('selectionchange', onSelectionChange)
+    document.addEventListener('selectionchange', scheduler.handler)
     document.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mouseup', onMouseUp)
     document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('selectionchange', onSelectionChange)
+      document.removeEventListener('selectionchange', scheduler.handler)
       document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('mouseup', onMouseUp)
       document.removeEventListener('keydown', onKeyDown)
-      if (timer !== null) window.clearTimeout(timer)
+      scheduler.cancel()
       setPending(null)
+      setPaint(null)
     }
     // 依赖=挂载盒+文献（F-02：page 不再参与——锚定根动态；挂载盒引用变化
     // 已覆盖锚定页切换的重挂清理语义）
   }, [pageRoot, paperId])
 
-  /** 按当前色 + 指定 kind 落库（page=选区所在页 0 基动态推导——F-02）；
-   *  成功后清选区并经 onSaved 交由父级刷新 store */
+  /** 按当前色+kind 落库（page=选区所在页 0 基——F-02）；成功后清选区刷新 store */
   async function save(kind: AnnotationKind): Promise<void> {
     if (pending === null || busy) return
     const input: AnnotationInput = {
@@ -222,6 +209,8 @@ export function SelectionLayer(props: {
       // 保存落地即清除该面灰点（TABS-03 乐观清除语义）
       useReaderStore.getState().clearTabDirty(paperId)
       setPending(null)
+      // 自绘层随本次 removeAllRanges 同步清除（不等防抖）
+      setPaint(null)
       window.getSelection()?.removeAllRanges()
     } catch (e) {
       // 保存失败：tab 灰点置位（失败残留可见——TABS-03 两写面之一）
@@ -232,18 +221,23 @@ export function SelectionLayer(props: {
     }
   }
 
-  if (pending === null) return null
+  if (pending === null && paint === null) return null
 
   return (
-    // 划选视觉=原生 ::selection（头注 F-08/ADR-0019）——本组件只渲染工具条
-    <SelectionToolbar
-      containerRef={toolbarRef}
-      x={pending.x}
-      y={pending.y}
-      busy={busy}
-      color={color}
-      onColor={setColor}
-      onSave={(kind) => void save(kind)}
-    />
+    <>
+      {/* 划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订——头注）；生命周期=选区 */}
+      {paint !== null ? <SelectionPaint root={paint.root} rects={paint.rects} /> : null}
+      {pending !== null ? (
+        <SelectionToolbar
+          containerRef={toolbarRef}
+          x={pending.x}
+          y={pending.y}
+          busy={busy}
+          color={color}
+          onColor={setColor}
+          onSave={(kind) => void save(kind)}
+        />
+      ) : null}
+    </>
   )
 }

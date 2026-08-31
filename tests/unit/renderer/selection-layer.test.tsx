@@ -7,10 +7,11 @@
  * 工具条落点以选区所在页盒为参照系（坐标换算经页盒 rect——N-C 防层叠污染）/
  * 保存页=选区所在页（0 基，动态推导）/Escape 清/承载选区的页 DOM 卸载
  * （页回收与 zoom 重建同机制）→选区清空防悬空锚/纯函数页盒遍历。
- * [SR2-F-08] 自绘层防回归守卫（ADR-0019 划选视觉回退原生 ::selection）：
- * pending 态（mouseup 后工具条在场）selRects() 恒 null——视觉通道=浏览器
- * 原生 ::selection，禁回归自绘路线；原 F-07b（pending null→层不渲染）测点
- * 随 SelectionRects 组件消亡删除。
+ * [F-A4 改向] P1 定位断言改归一坐标（工具条 left/top=视口差×
+ * clientWidth/gBCR.width 比值——c 面坐标系双重放大缺陷的红证锚）；
+ * F-08 守卫反转（ADR-0019 R1 修订：划选视觉=自绘并集层，::selection
+ * transparent——原「pending 态 selRects 恒 null」防自绘回归守卫反转为
+ * 自绘层在场断言；修订依据=F-A4 票面 §0a 用户根治令）。
  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -94,8 +95,9 @@ async function mountLayer(pageRoot: HTMLElement): Promise<void> {
 
 const toolbar = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-toolbar"]') ?? null
 
-/** 自绘选区覆盖层查询（F-08 起恒 null——防回归自绘路线的守卫探针） */
-const selRects = (): HTMLElement | null => host?.querySelector<HTMLElement>('[data-testid="selection-rects"]') ?? null
+/** 自绘选区并集层查询（F-A4 起 portal 渲染进选区所在页盒——document 级查询；
+ *  R1 修订后=pending 态应在场，S5 语义断言归 selection-paint.test） */
+const selRects = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-testid="selection-rects"]') ?? null
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -154,8 +156,11 @@ describe('SelectionLayer 纯函数（F-02 页盒遍历）', () => {
 })
 
 describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
-  it('P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算', async () => {
+  it('P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算并÷有效 zoom（F-A4 c 面归一）', async () => {
     const { page1, span2 } = mountColumnFixture()
+    // [F-A4] mount 有效 zoom 桩：clientWidth 480/gBCR 600=0.8（ui-scale/CSS
+    // zoom 子树内的挂载盒——修前 gBCR 视口差直写 left/top 被再放大 1.25 倍）
+    Object.defineProperty(page1, 'clientWidth', { value: 480, configurable: true })
     await mountLayer(page1)
     // 选区在页 2（挂载盒=页 1）——旧「固定锚定页」实现在此静默收起
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
@@ -165,9 +170,10 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
     })
     const bar = toolbar()
     expect(bar).not.toBeNull()
-    // 落点以选区所在页盒为参照系（N-C）：页内偏移 (10, 900-812-42=46)+页间偏移 812
-    expect(bar!.style.left).toBe('10px')
-    expect(bar!.style.top).toBe('858px')
+    // 落点以选区所在页盒为参照系（N-C）：视口域 x=10/y=858（900−812−42+812）
+    // →÷zoom 归一到挂载盒本地（×0.8）——8/686.4
+    expect(parseFloat(bar!.style.left)).toBeCloseTo(8, 2)
+    expect(parseFloat(bar!.style.top)).toBeCloseTo(686.4, 1)
     expect(toastSpy).not.toHaveBeenCalled()
   })
 
@@ -310,7 +316,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
     expect(toastSpy).not.toHaveBeenCalled()
   })
 
-  it('F-08 守卫：pending 态（mouseup 后工具条在场）不渲染自绘层——selRects() 恒 null（防回归自绘路线）', async () => {
+  it('F-A4 守卫（反转）：pending 态（mouseup 后工具条在场）自绘并集层在场——ADR-0019 R1 修订', async () => {
     const { page1, span2 } = mountColumnFixture()
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
@@ -318,7 +324,9 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
       fireMouseUp()
     })
     expect(toolbar()).not.toBeNull()
-    // 划选视觉=原生 ::selection（ADR-0019）——自绘层一旦回归此守卫即红
-    expect(selRects()).toBeNull()
+    // 划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订：::selection transparent，
+    // 单层单绘不叠深；原 0.20 双通道叠深缺陷的根治）——层缺位即红
+    expect(selRects()).not.toBeNull()
+    expect(document.querySelectorAll('[data-testid="selection-rect"]').length).toBeGreaterThanOrEqual(1)
   })
 })

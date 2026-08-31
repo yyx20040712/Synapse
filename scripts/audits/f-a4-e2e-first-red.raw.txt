@@ -1,0 +1,30 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  x  1 tests\e2e\reader-text.spec.ts:620:1 › F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订） (1.6s)
+
+
+  1) tests\e2e\reader-text.spec.ts:620:1 › F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订） 
+
+    Error: C: ::selection 背景透明（视觉通道=自绘并集层）：rgba(0, 0, 0, 0.2)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "rgba(0, 0, 0, 0)"
+    Received: "rgba(0, 0, 0, 0.2)"
+
+      677 |     sel,
+      678 |     `C: ::selection 背景透明（视觉通道=自绘并集层）：${sel}`
+    > 679 |   ).toBe('rgba(0, 0, 0, 0)')
+          |     ^
+      680 |
+      681 |   // 真实选选（程序化 selectText——防抖路径同产 pending）→ 工具条 ≤1.5s 可见
+      682 |   // （L7：交互反馈预算入验收——程序化选选含 200ms 防抖+evaluate，预算 1.5s）
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\reader-text.spec.ts:679:5
+
+    Error Context: test-results\reader-text-F-06-视觉小票：页盒-p-3faa3--自绘并集层（F-A4-ADR-0019-R1-修订）\error-context.md
+
+  1 failed
+    tests\e2e\reader-text.spec.ts:620:1 › F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订） 

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-31T01:08:29.1938052Z",
+    "generatedAt":  "2026-08-31T03:31:31.3052230Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -72,6 +72,22 @@
                   {
                       "path":  "scripts/audits/f-a3-verify.mjs",
                       "sha256":  "fad78853b04dce3bf4b4bfc7dfa5d45830af0550856ac0191324ef34323d0c02"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a4-diag.mjs",
+                      "sha256":  "bfda3e62a4ce32016139b4ac215f801809f08007476632de6b2d78a643be7ca6"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a4-gen-gate1-brief.mjs",
+                      "sha256":  "e702959d89e858cebbac18966180becadaa898efd35be9872b2c213de1cab691"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a4-gen-gate1-r2-brief.mjs",
+                      "sha256":  "c29b92b1b7f57e93caf9ceca07f1971a34ae5c9c6cb00d63562693c13b848c21"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a4-verify.mjs",
+                      "sha256":  "4936b869b31bdf076c7343c87b00722142d0a4379dde0a6312f5b2e8ef420a9c"
                   },
                   {
                       "path":  "scripts/audits/f-l1c-forensics.mjs",
@@ -291,7 +307,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "dd976f86c1ba91e69a61551df802a24dd82bb67bcab7724c4e481bc547134dfd"
+                      "sha256":  "485201dda56e51958b5fcdff5690ae1a62144d00bba2cc1f7697bbab22237da4"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -299,7 +315,7 @@
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "812ad715d6486077d8f4a29c851103a394cd3ba40734c074eabb12b10a5d4b69"
+                      "sha256":  "f36755f6230cec7a2db00d80e8054ea6b60104f46ed4d7f6f28f81be54b54e83"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
@@ -447,7 +463,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-merge.test.ts",
-                      "sha256":  "40e93dac71f141a3d740a2d86c8e2cb6f1898060e99133fbde9223e16c8608d9"
+                      "sha256":  "b993f5fe390f7059ea09cb9a1a2080adc4f407160ba7f8f1a2e37d7acd6dfd01"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
@@ -591,11 +607,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "732f606270662bfa735aa6cd3041e88dd2e0bd610caf103c56e80d4ff54a8510"
+                      "sha256":  "b3cfc864796a64a0adfeb5075f3179d020bc80d3c6f0ae6cc46759276b385a22"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-mode.test.tsx",
                       "sha256":  "de4ffde1aca449ad0c77558b32cb69b843f04bbdd31a69075df18de234e92d76"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-paint.test.tsx",
+                      "sha256":  "0a94651e70d1e8493c3f292f41da04304ef208a7eed710562fa3c349be876661"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

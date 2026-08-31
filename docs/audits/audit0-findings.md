@@ -365,6 +365,50 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
 - **处置**:低优先(用户路径=单开为主);排查点=PdfDocProvider loadingTask
   销毁与 stream 泵竞态。
 
+### F-A4 选区视觉并集自绘+标注贴行+工具条定位(用户需求 2026-08-31)——状态:**已闭环(2026-08-31 三屋+回炉 2)**
+
+- **需求源**:用户复测附两图三问(灰块重叠加深是矩形重叠还是管线未适配
+  /标注保存后偏移/弹窗离选区太远)+理想状态(矩形高度位置匹配文字/重叠
+  不加深)+令调研 WPS/Zotero。**调研结论**:业界两路=mix-blend-mode
+  multiply(pdf.js #13353/Apryse/PDF-XChange)与矩形并集(Zotero 自身
+  也存在重叠加深,Zotero 论坛在档);native ::selection 无法并集
+  (pdf.js #17561 官方缺陷同型)→采**自绘并集**(根治)+黄块墨带基准
+  (multiply 已在标注层 INV 在档)。
+- **根因三连**(Explore 全链报告):a 灰块=native ::selection 逐 span
+  叠绘(行盒=CSS 回退字体度量垂直重叠;钳制只挂保存链 live 零覆盖);
+  b 标注偏移=INV-40 紧行距并簇边界+TRIM 定值残余(F-11);c 工具条=
+  gBCR 差值被 CSS zoom 双重放大+无视口夹取(挂载盒在补偿子树外)。
+- **修法**:a 自绘并集层(selection-paint.tsx portal 进页盒,与保存
+  rects 同源=所见即所存)+::selection transparent+**ADR-0019 R1 修订**
+  (当年删除病根=拖选零反馈/近不可见,今回炉 1 修复 B1 双路调度:
+  自绘 leading+trailing 节流/工具条防抖语义零变——S1b/S1c 双断言+
+  MB/MC 变异隔离);b mergeRects/mergeLineRects lineH 行高感知(可选参
+  缺省旧行为存档)+rectStyle band 字形带自适应(INV-40 修订在册);
+  c 定位差值÷有效 zoom+视口夹取+近顶下翻转。
+- **真机对照**(large 档真鼠标,修前/修后):自绘 0→3 块(跨 3 行)相交
+  0/并簇 1→3 块分行顶偏 1.48px/工具条距选区 334.1→9.4px/zoom 稳定
+  0.67%/黄灰双基准差 3.88px≤4 上界(门一 W2 双基准正式化)。探针 16/16。
+- **门审**:门一 r1 B:1/W:5/N:3 回炉(B1 拖选零反馈回归=当年病根复活,
+  防抖≠节流)→r2 五点 ADDRESSED+W5/W6 再回炉→回炉 2(W5 如实订正——
+  「+4~5px」实为修后初版缺陷态数值且同名覆盖无溯;W6 S1c trailing
+  断言,MC 变异仅 S1c 红隔离精确)。门二四清单+一全 PASS(受锁四件
+  =语义随令非让过;118 文件 1002 用例+e2e 29/29 亲跑)。
+- **同场 T1(需求 1,主控直做+披露)**:theme.css header 44→56px(用户
+  增高令,标志/按钮下移+caption 三键 stretch 自动贯通)+ws-pop 动画
+  origin top center→center(用户「向右上放大」观察→居中放大)。
+  **主控直做漏查受锁断言面**(smoke.spec 三处「header 恒 44」+INV-39
+  两处)——实现者隔离实验归因后主控补改 44→56([locked-change]);
+  教训:**直做改动同样要 grep 受锁面(测试断言+登记册)**。
+- **备案组**:W-G1 e2e 组合顺序时序脆弱性(smoke+reader-text 连跑
+  「重开在原位」差 3.45px>2 容差 2/2 红,单文件/CI 全量顺序绿——band
+  双态渲染 resolve 落地竞态,终态无回归,遗留池);W-G2 探针 baseline
+  初版被 after 版同名覆盖无版本化;W-G3 medianFontSizeBetween 退化
+  catch→undefined(方向安全);门一 N2 同。
+- 档案:scripts/audits/f-a4-{ticket,impl.report,gate1-ds,gate1-r2-ds}.
+  md+gate1{,-r2}-brief.md+gen 脚本×2+f-a4-verify.mjs+f-a4-diag.mjs+
+  raw/mut ×14+out/(修前修后 11 png+2 json)。mutation-backup 目录
+  =过程产物不提交(还原已验)。ADR-0019 修订+INV-37/40/39 同步。
+
 ## 二、复测回收状态(18 项指引,2026-08-30 发出)
 
 | 项 | 面 | 反馈 |

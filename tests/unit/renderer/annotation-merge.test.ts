@@ -4,6 +4,9 @@
  * 覆盖票面文化层 ①~⑩：T3 零宽滤除 / T2 同行交叠 x 并集 / T5 同位重复并入 /
  * T4 负间隙钳制 / INV-A 混合族两两分离 / 单块恒等+空数组透传 / 幂等 /
  * 高瘦免疫+紧行距不误并 / 排序确定性 / 混排字号中位数。
+ * [F-A4 改向] ⑪⑫：INV-40 紧行距边界修复（聚类容差行高感知——可选 lineH
+ * 参与容差 min(hNew,hRowMedian,lineH)/2 钳制，缺省旧行为存档）+lineH
+ * 恒等/幂等（过大 lineH 不收紧）。修订依据=F-A4 票面 §0b①。
  * 夹具数值参照取证基线 scripts/audits/audit0-out/audit0-p1b.json（像素域实锤
  * 折算归一化域）。中位数=排序后下中位（索引 floor((n-1)/2)，票面主控预裁）。
  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
@@ -166,5 +169,38 @@ describe('F-A1 mergeRects —— 归一化域归并器', () => {
     expect(out[0]!.h).toBeCloseTo(0.008, 10)
     // 中心 y 下中位 0.206 → y = 0.206 - 0.004
     expect(out[0]!.y).toBeCloseTo(0.202, 10)
+  })
+
+  it('⑪ INV-40 边界修复（F-A4 行高感知）：紧行距中心距 ≤ 输入块高/2（旧路径误并）但 > PDF 行高/2 → lineH 传入不并簇；缺省旧行为存档', () => {
+    // 紧行距形态：输入 rect 高=CSS 回退行盒（可膨胀至 PDF 行高 ~1.25 倍），
+    // 相邻行中心距 0.009——旧行为 min(h)/2=0.01 容差下跨行并簇成单高块
+    //（INV-40 登记册边界）；行高感知容差 min(h,h,lineH)/2=0.008 < 0.009 → 分行
+    const upper = rect(0.1, 0.2, 0.4, 0.02)
+    const lower = rect(0.1, 0.209, 0.4, 0.02)
+    // 缺省（无行高数据——旧库/不可量测环境）：边界行为原样存档（1 块）
+    expect(mergeRects([upper, lower]).length).toBe(1)
+    // lineH=PDF 行高 0.016（< 输入 h 0.02——回退度量膨胀差）：不并簇
+    const out = mergeRects([upper, lower], 0.016)
+    expect(out.length).toBe(2)
+    // INV-D 钳制仍生效：负间隙（0.229 底 > 0.209 顶）推至恰好接触
+    expect(out[1]!.y).toBeCloseTo(out[0]!.y + out[0]!.h, 10)
+    expectPairwiseDisjoint(out)
+  })
+
+  it('⑫ lineH 恒等钳制（过大不收紧）+行高感知幂等：已归并输入值不变', () => {
+    const mixed = [
+      rect(0.5, 0.302, 0.2, 0.02),
+      rect(0, 0.2, 0, 0.021),
+      rect(0.35, 0.2, 0.2, 0.02),
+      rect(0.05, 0.249, 0.3, 0.02),
+      rect(0.1, 0.2, 0.3, 0.02),
+      rect(0.12, 0.2006, 0.28, 0.02)
+    ]
+    // lineH 远超块高（min 钳制恒等——不可量测环境的防御方向）
+    expect(mergeRects(mixed, 10)).toEqual(mergeRects(mixed))
+    // 行高感知幂等（F-A4：合法 lineH<h 下已归并产物再入不动）
+    const once = mergeRects(mixed, 0.016)
+    const twice = mergeRects(once, 0.016)
+    expect(twice).toEqual(once)
   })
 })
