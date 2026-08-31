@@ -600,3 +600,27 @@ v25(localStorage 污染 split-pane 11 红)——本机 node 24 在
 Electron 必崩→探针前 use electron;verify/test 前 use node)。
 **待办**:F-LG14(元信息区,依赖 LG13 底行锚已就绪)/F-LG15(人工
 父边)两票票面已写待派发(串行——两票都动 LineageNodeMenu)。
+
+**2026-09-01 凌晨场收口(新反馈批五票全闭环)**:F-LG14/F-LG15 两票
+续接闭环——④**F-LG14**(提交 ec1e7e959):迁移 007 tags 列+含金量
+join 单源(批量 in-query 禁 N+1 spy 双维锚)+底行三段渲染(「引 N·T档」
+并列口径)+标签增删 UI 全链;门一过(optional 超集深核/attrib-R 只读
+位无额外污染——主控担责:派单未 unlock);W2 INV-48 位置主控修;
+locks 217→227;e2e 29(P7-A flake 第六现复跑绿)。⑤**F-LG15**(提交
+465c4403c):manual 边全链——三守卫零新增天然承载(结构性发现:
+reachable 全边图双向拒环亲验)+repo.toEdge 往返断裂修复+渲染三边
+对比表(manual 琥珀长虚线 7 5)+双对话框 UI;门一过+W1 主控直做
+(manual 优先 surveyIds 启发+补用例——综述作人工父不被吞色);
+LG14+LG15 合并门二两票放行(LG14 裁剪门二补验);locks 227→231;
+收口 verify exit=0(126 文件 1074)。**五票终态:V1(09c0218e2)/
+V2(58a55ca22)/LG13(c91d4a2fd)/LG14(ec1e7e959)/LG15(465c4403c)
++台账登记笔(3afbc3d19)=六笔**;INV-27 修订/INV-36/38 修订/
+INV-47/48 新增;verify 基线 126 文件 1074/locks 231/e2e 29。
+**用户复测邀请面**:图1/图2(同文献整段拖选+旧标注重开)/图3(双页
+适应宽度 large 档)/图4-5(脉络图紧凑统一卡)/图6-7(节点底行含金量
++标签+人工父虚线)。**观察项**:P7-A flake 六场六现专项升级候选;
+D:\nodejs 已漂移 v25(localStorage 污染+ABI 面)——本机恒用
+/d/nodejs24 PATH 前导,DEV-SETUP 备案待用户裁决是否回装 24。
+**遗留池新增**:LG14 门一 N1(对话框同名标签 UX 面单点缺测)/
+N2(应用面 tags 元素无 min(1)——renderer 双守+preload 单客户端
+风险域窄)/LG15 编辑期外部删边竞态 throw 面(概率极低票外)。
