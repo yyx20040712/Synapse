@@ -157,7 +157,7 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
   await app.close()
 })
 
-test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 44（豁免锁——rect 断言非 computed）', async () => {
+test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 56（豁免锁——rect 断言非 computed）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
   const app = await electron.launch({
     args: ['out/main/index.js'],
@@ -172,14 +172,14 @@ test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px�
     navH: document.querySelector('.app-nav-item')!.getBoundingClientRect().height,
     headerH: document.querySelector('header.app-header')!.getBoundingClientRect().height
   }))
-  expect(base.headerH, '基线 header 高=44（R2-SH2 锚）').toBe(44)
+  expect(base.headerH, '基线 header 高=56（R2-SH2 锚；44→56 用户裁决 2026-08-31 增高令——断言随令）').toBe(56)
 
   // 进设置→点「大 125%」→save 落地→store 替换→App 订阅→--ui-scale→内容行 zoom
   await win.getByRole('button', { name: '设置' }).click()
   await win.getByRole('button', { name: '大 125%' }).click()
   await expect(win.getByText('界面缩放已保存')).toBeVisible()
 
-  // nav 首项 ×1.25±2px（内容行缩放生效）；header 恒 44（结构性豁免）
+  // nav 首项 ×1.25±2px（内容行缩放生效）；header 恒 56（结构性豁免）
   await expect
     .poll(
       async () => {
@@ -194,7 +194,7 @@ test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px�
   const headerAfter = await win.evaluate(
     () => document.querySelector('header.app-header')!.getBoundingClientRect().height
   )
-  expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(44)
+  expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(56)
 
   await app.close()
 })
