@@ -11,7 +11,7 @@
  * anchor-serialize.selectionToAnchor 生成锚定三元组→落库（保存页=选区所在页
  * 0 基动态推导）→onSaved 刷新层；保存成功 removeAllRanges+层随清。
  *
- * **F-A4 划选视觉=自绘并集层（ADR-0019 R1 修订——取代 SR2-F-08 原生路线，
+ * **F-A4 划选视觉=自绘并集层（ADR-0019 R1 修订——取代历史原生路线，
  * 修订依据=票面 §0a 用户根治令）**：SelectionPaint（selection-paint.tsx，
  * portal 进选区所在页盒，z2 灰 0.20 在标注 multiply 层之下——R2-F-10 观感
  * 保持）渲染 evaluate 管线归并产物（与保存 rects 同源，所见即所存）；::
@@ -138,8 +138,8 @@ export function SelectionLayer(props: {
     }
 
     // [B1 回炉] selectionchange 双路调度（selection-geometry 域工厂）：自绘层
-    // =leading+trailing 节流（拖选期持续触发下纯防抖永不落地=SR2-F-08 删自绘
-    // 的零反馈病根复活）；工具条评估=防抖（既有弹出语义零变）
+    // =leading+trailing 节流（拖选期持续触发下纯防抖永不落地=历史删自绘轮
+    // 的零反馈病根复活，ADR-0019 R1 修订档）；工具条评估=防抖（弹出语义零变）
     const scheduler = createVisualScheduler({
       onVisual: () => evaluate(false, true),
       onSettled: () => evaluate(false, false),

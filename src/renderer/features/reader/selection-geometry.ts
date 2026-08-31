@@ -99,9 +99,9 @@ export function toolbarMountPos(pageRoot: HTMLElement, sel: ViewportBox): { x: n
 
 /** [B1 回炉] selectionchange 双路调度器：自绘层视觉=leading+trailing 节流
  *  （拖选全程持续触发时纯防抖的 timer 永远重置——::selection 已 transparent
- *  则拖选期零视觉反馈=SR2-F-08 删自绘病根之一复活）；工具条评估=防抖
- *  （既有弹出语义零变）。工厂返回 handler（addEventListener 直用）+cancel
- *  （mouseup/卸载成对清理——INV-14 同型）。 */
+ *  则拖选期零视觉反馈=历史删自绘轮的同型病根复活，ADR-0019 R1 修订档）；
+ *  工具条评估=防抖（既有弹出语义零变）。工厂返回 handler（addEventListener
+ *  直用）+cancel（mouseup/卸载成对清理——INV-14 同型）。 */
 export function createVisualScheduler(ops: {
   onVisual(): void
   onSettled(): void
