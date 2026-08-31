@@ -1,0 +1,79 @@
+B:0/W:6/N:3 总评：实现与票面主干吻合，但在报告一致性、S3 奇数页真机锁力、makeLoadingTab 继承面证据、事故重写可比性上存在盲区，建议有条件放行并门二专项核验。
+
+## W 类（弱点）
+
+### W1 新测试行数报告失实
+- 报告 §3 写“新测试 500 内 ✓”，但 diff 中 `tests/unit/renderer/reader-double-page.test.tsx` 头注为 `@@ -0,0 +1,518 @@`，实际 518 行。
+- 票面无测试行数硬约束，但这说明报告自查数字与证据不一致，后续自查项需门二复核。
+
+### W2 workspace.css 无关改动混入 F-R1 diff
+- diff 含 `src/renderer/features/workspaces/workspace.css` 真实改动：`ws-pop` 从 `translateY(-4px)` 改为 `scale(0.92)`，并新增 `transform-origin: top center`。
+- 报告 §7 git status 将其标为“进场即有的他人未提交改动，非本工单面（未触碰）”，但本材料包的“diff 全文”把它当作 F-R1 差异呈现。
+- 无法从现有材料证明“未触碰”。若确为进场残留，应提供进场时 hash 或从 F-R1 证据面隔离。
+
+### W3 S3 奇数末页的“真机+单测”锁力不足
+- 真机 E 实际走双盒分支：`f-r1-verify.mjs` 中 `expectLastBoxes = total % 2 === 0 ? 2 : 1`，JSON `E_last` 的 `totalPages=20`，所以断言的是“末行双盒无塌陷”，不是票据 S3 的“奇数页末行单页”。
+- 报告称“末行单盒由单测③锁定”，但单测③只断言：
+  - `boxesIn(rows[2])` 为 `[5]`
+  - 全列 `data-page-box` 顺序
+  - 第 1/2 盒宽为自身页宽
+- 未断言 PageColumn 渲染面“末行 DOM 行宽=左盒宽/无塌陷/无外泄漏”。单测②b 只锁纯函数 `rowWidth`，不锁渲染面。
+- 因此 S3 的“布局稳定、无跳变”实际没有 DOM 层直接锁定。
+
+### W4 fitWidth 探针 B 场景期望值只用首两页尺寸，泛化性不足
+- `f-r1-verify.mjs` B 场景：
+  ```js
+  const sizes = tb0.boxes.slice(0, 2).map(...)
+  const expectedZoom = (cw - 24) / columnWidthFor(sizes.concat([]), 1, 'double')
+  ```
+- 若真实 PDF 存在更宽完整行，`columnWidthFor` 应取全列最宽完整行，但这里只取首行两页，期望值会错。
+- 本次文献等宽所以通过，不构成当前行为缺陷，但探针作为通用取证脚本不够稳健。
+
+### W5 D 场景只锁页码，不锁 scrollTop/渲染窗口
+- `D/position-kept` 与 `D/page-still-kept` 只断言 `|Δ|≤1` / `|Δ|≤2` 的页码差，未断言滚动容器 `scrollTop` 或可见 `roots` 不跳变。
+- JSON `D_back_double` 的 `roots` 为 `[1,2,3,4,5,6,7]`，比单页 `roots=[1,2,3,4]` 明显扩大，不能排除布局切换瞬间渲染窗口膨胀/顶部过渲染。
+- 这恰好与审查清单中的“IO 重挂窗口期可见集空窗”风险相关，但探针没有针对性断言。
+
+### W6 makeLoadingTab 继承面证据矛盾，需门二核 openPaper 分支
+- 报告称“error 重试沿 prev 继承”，但 diff 中 `makeLoadingTab` 新增行是：
+  ```ts
+  pageLayout: 'single'
+  ```
+  位于对象字面量内，若 error 重试确实调用 `makeLoadingTab`，则无条件覆盖 prev 的 `double`。
+- 单测①c 却期望 error 重试后 `pageLayout` 为 `'double'` 且绿，说明 openPaper 对 error 态可能走了另一分支（如 `{...prev,status:'loading'}`）。
+- 该分支未在材料包展示，无法核对实现与票面生命周期表“openPaper(existing 重建)沿 prev 继承”是否一致。
+
+## N 类（备注/存疑）
+
+### N1 IO 重挂可见集空窗→顶部引导窗口风险无法排除
+- `PageColumn` IO effect deps 增 `layout`：
+  ```ts
+  }, [pageSizes, layout])
+  ```
+- 重挂瞬间 `visible` 状态不重置，旧可见集可能继续驱动渲染窗口至少一帧；若新 IO 初始回调全为非相交，`visible` 可能为空，`windowPages` 对空集的行为未在本材料中展示。
+- 真机 D `roots` 扩大支持“短暂过渲染”，未见“清空后跳顶”实证，但也没有测试锁死。存疑。
+
+### N2 变异红证/红证证据文件未随材料包提供
+- 报告给出 M1~M5 红面汇总（9/4/1/1/2），但材料包未见 `f-r1-red*.txt`、`f-r1-mut-M*.txt` 原文。
+- 无法独立核对 M3/M4“单红恰中”是否确实由 ④/⑤b 变红，以及还原后 diff 是否真空。门二需用产物文件核。
+
+### N3 事故⑦重写后无“重写前实现”可比对
+- 报告 §2.7 自述 6 文件回退 HEAD 后“按上下文完整重写恢复”，随后 987/987 绿+探针 15/15。
+- 但事故前实现未留存，无法做“重写后 vs 事故前实现 diff 为空”的对照；全量绿只能证明票面可测行为一致，未测细节可能有残余偏差。风险低但不可完全排除。
+
+## 对主控 8 项处置的异议小结
+
+- ①/③/⑥/⑧：无实质异议；gap 口径选择与 DOM `gap-3`、`PAGE_GAP_PX` 一致。
+- ②：头注重组从 diff 看语义基本保留，但“契约语义无损”无法逐字核。
+- ④：红证时点声明逻辑自洽，但文件缺失（N2）。
+- ⑤：真机 E 奇数页不可达的自裁可接受，但单测③锁力不充分（W3）。
+- ⑦：重写最终态一致性只有绿证，无原始 diff 对照（N3）。
+
+## 放行判定
+
+**有条件放行**。门二必须专项核验：
+1. `openPaper` 的 error 分支是否真的沿 prev 继承 `pageLayout`（W6）；
+2. `f-r1-red*.txt` / `f-r1-mut-M*.txt` 是否真实存在且与报告红面一致（N2）；
+3. `workspace.css` 是否确为进场残留，并提供隔离证据（W2）。
+
+若上述三项任一无法提供，应回炉补证据或修正报告。

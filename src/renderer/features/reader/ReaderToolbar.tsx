@@ -8,16 +8,22 @@
  * - 选择模式开关（F-A3/INV-42，颜色组之后）：aria-pressed 反映当前态+选中
  *   态边框强调（颜色点选中态同语言）；toggle 语义在装配面 ReaderPage——
  *   工具栏纯受控只上抛 onToggleSelectionMode
+ * - 双页开关（F-R1，适应宽度之后——版面控制同组）：aria-pressed+选中态
+ *   边框强调（crib 选择模式按钮先例）；toggle 语义在装配面 ReaderPage——
+ *   只上抛 onTogglePageLayout；±翻页按钮步进=props.pageStep（缺省 1=既有
+ *   零变；装配面双页传 2=翻面语义）
  *
  * ── 接口层 ──
  * - export function ReaderToolbar(props: { page: number; totalPages: number; zoom: number;
  *     color: AnnotationColor; onNavigate(page: number): void;
  *     onZoom(z: number): void; onColor(c: AnnotationColor): void;
  *     selectionMode?: boolean; onToggleSelectionMode?(): void;
- *     onFitWidth?(): void }): JSX.Element
- * - selectionMode/onToggleSelectionMode 可选：受锁测试夹具（sha256 面）直植
- *   既有 props 形状零破坏；生产装配面 ReaderPage 恒传（缺席=常规态渲染+按钮
- *   点击无操作，仅存在于测试路径）
+ *     onFitWidth?(): void; pageLayout?: 'single' | 'double';
+ *     onTogglePageLayout?(): void; pageStep?: number }): JSX.Element
+ * - selectionMode/onToggleSelectionMode/onFitWidth/pageLayout/
+ *   onTogglePageLayout/pageStep 可选：受锁测试夹具（sha256 面）直植既有
+ *   props 形状零破坏；生产装配面 ReaderPage 恒传（缺席=常规态渲染+按钮
+ *   点击无操作/步进 1，仅存在于测试路径）
  * - onFitWidth（可选，Phase 3 接线时加入）：适应宽度需要滚动容器内宽与页面原始宽，
  *   二者都在 ReaderPage 手里——工具栏是纯受控组件不自测 DOM，故以回调上交；
  *   未传时按钮禁用并 title 说明
@@ -51,9 +57,17 @@ export function ReaderToolbar(props: {
   selectionMode?: boolean
   onToggleSelectionMode?: () => void
   onFitWidth?: () => void
+  /** F-R1 页布局（缺省 single）：双页按钮 aria-pressed 消费 */
+  pageLayout?: 'single' | 'double'
+  /** F-R1 双页 toggle 上抛（缺席=可点无操作——既有可选回调先例） */
+  onTogglePageLayout?: () => void
+  /** F-R1 翻页步进（缺省 1=既有零变；双页装配面传 2=翻面语义） */
+  pageStep?: number
 }): JSX.Element {
   const { page, totalPages, zoom, color, onNavigate, onZoom, onColor, onFitWidth } = props
   const selectionMode = props.selectionMode ?? false
+  const pageLayout = props.pageLayout ?? 'single'
+  const pageStep = props.pageStep ?? 1
   const [pageInput, setPageInput] = useState(String(page + 1))
 
   // 外部翻页（键盘/目录跳转/越界自愈）同步回输入框
@@ -86,7 +100,7 @@ export function ReaderToolbar(props: {
           type="button"
           className={btn}
           disabled={page <= 0}
-          onClick={() => onNavigate(page - 1)}
+          onClick={() => onNavigate(page - pageStep)}
         >
           上一页
         </button>
@@ -109,7 +123,7 @@ export function ReaderToolbar(props: {
           className={btn}
           style={{ borderColor: 'var(--border)' }}
           disabled={totalPages > 0 && page >= totalPages - 1}
-          onClick={() => onNavigate(page + 1)}
+          onClick={() => onNavigate(page + pageStep)}
         >
           下一页
         </button>
@@ -148,6 +162,19 @@ export function ReaderToolbar(props: {
           onClick={() => onFitWidth?.()}
         >
           适应宽度
+        </button>
+
+        {/* 双页开关（F-R1）：适应宽度之后（版面控制同组）；crib 选择模式按钮
+            先例（aria-pressed+选中态边框强调）；toggle 语义在装配面——只上抛 */}
+        <button
+          type="button"
+          className={btn}
+          aria-pressed={pageLayout === 'double'}
+          title="两页并排阅读（翻页按对步进）"
+          style={{ borderColor: pageLayout === 'double' ? 'var(--accent)' : undefined }}
+          onClick={() => props.onTogglePageLayout?.()}
+        >
+          双页
         </button>
       </div>
 

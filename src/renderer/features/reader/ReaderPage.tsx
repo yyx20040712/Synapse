@@ -18,6 +18,12 @@
  * - F-A3 选择模式装配：selectionMode 取 active tab（?? false）；toggle 语义在
  *   本装配面（工具栏纯受控只上抛 onToggleSelectionMode→store.setSelectionMode
  *   写 active tab，INV-42）
+ * - F-R1 双页装配：pageLayout 取 active tab（?? 'single'）；toggle 语义在本
+ *   装配面（工具栏只上抛 onTogglePageLayout→store.setPageLayout 写 active
+ *   tab）；翻页步进=双页 2/单页 1（工具栏 pageStep）；fitWidth 零改（分母
+ *   columnBasis 已随 onReady 布局口径重报——切布局 basis 重报时序先于用户
+ *   点击）；onReady 重触发走 spProg.onColumnReady 恢复链滚回当前页（S1 声明
+ *   期望：切布局不丢位置）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
@@ -55,6 +61,7 @@ export function ReaderPage(): JSX.Element {
   const zoom = tab?.zoom ?? 1
   const color = tab?.color ?? 'yellow'
   const selectionMode = tab?.selectionMode ?? false
+  const pageLayout = tab?.pageLayout ?? 'single'
   const annotations = tab?.annotations ?? []
   const setPage = useReaderStore((s) => s.setPage)
   const setZoom = useReaderStore((s) => s.setZoom)
@@ -164,7 +171,7 @@ export function ReaderPage(): JSX.Element {
         <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
           {(doc) => (
             <PagesOverlay doc={doc} fileUrl={fileUrl} totalPages={totalPages} zoom={zoom} annotations={annotations}
-              scrollContainerRef={scrollAreaRef} scrollRequest={columnScroll}
+              scrollContainerRef={scrollAreaRef} scrollRequest={columnScroll} layout={pageLayout}
               onReady={handleColumnReady} onError={handlePdfError} />
           )}
         </PdfDocProvider>
@@ -183,6 +190,11 @@ export function ReaderPage(): JSX.Element {
         selectionMode={selectionMode}
         onToggleSelectionMode={() => {
           useReaderStore.getState().setSelectionMode(!selectionMode)
+        }}
+        pageLayout={pageLayout}
+        pageStep={pageLayout === 'double' ? 2 : 1}
+        onTogglePageLayout={() => {
+          useReaderStore.getState().setPageLayout(pageLayout === 'double' ? 'single' : 'double')
         }} />
       <div className="flex min-h-0 flex-1">
         {outlineOpen ? (

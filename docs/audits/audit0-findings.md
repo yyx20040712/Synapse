@@ -319,6 +319,52 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   md+f-l4-gate1{,-r2}-brief.md+f-l4-verify.mjs+raw ×13+f-l4-out/
   f-l4-verify.json。INV-44 登记 docs/invariants.md。
 
+### F-R1 阅读器双页阅读模式(用户需求 2026-08-31)——状态:**已闭环(2026-08-31 三屋+回炉 2)**
+
+- **需求源**:用户直接下令「阅读器增加双页阅读的选项,双页模式下适应
+  页面宽度也要适配」。同场需求 1(课题下拉动画上飘改放大)=主控直做
+  3 行 CSS 微改(workspace.css ws-pop:translateY(-4px)→scale(0.92)+
+  origin top center;无测试面,三屋成本倒挂——主控披露)。
+- **修法**:TabState.pageLayout(per-tab 可选+?? 'single',selectionMode
+  同型)/geometry 四新函数(既有导出零变)/PageBox.tsx 拆件(PageColumn
+  248 行逼满 250 红线)/布局切换轻 effect 重报 basis 不重跑 getPage/
+  IO deps 增 layout(自裁⑧:重挂观察非改回收)/pageStep=2。fitWidth
+  分母=onReady 布局口径(双页行宽)。
+- **闭环**:新测 reader-double-page 16 用例(971→987)+M1~M5+W3 六变异;
+  真机探针 17/17 两轮稳定(行宽公式/fitWidth 全列口径 133%/翻面+2 行顶
+  Δtop=0/往返位置保持+basis 重报/末行/roots 上界)。门一 r1 B:0/W:6
+  /N:3 有条件放行→回炉 1(W1 报告失实/W3 末行 DOM 锁/W4 探针全列口径/
+  W5 滚动位+roots)→r2 W3/W4/W5 ADDRESSED+W1 复发+W7 证据面→回炉 2
+  (报告数字 529 统一+快照重拍,零功能码)——回炉 2 次用满,证据面终态
+  主控亲验。门二四清单+一全 PASS(含 ABI 环境警示:真机探针后
+  better-sqlite3 停 Electron ABI 态,裸 npx vitest 假红——**验收一律
+  npm run test**,勿信裸 npx)。INV-45 登记。
+- **事故与教训**:实现者备份目录复用被二次运行覆盖→6 文件回退→重写
+  恢复全量复验(无净损失);教训=一次性时间戳备份目录+还原 diff+回绿
+  双验。报告数字两轮失实(500 内→518→529;9/19→8/20)——**行数/计数
+  类自查数字必须 wc/实测后落笔**,门二订正披露。
+- 档案:scripts/audits/f-r1-{ticket,impl.report,gate1-ds,gate1-r2-ds}.
+  md+gate1{,-r2}-brief.md+f-r1-verify.mjs+f-r1-dbg.mjs(一次性诊断)+
+  raw/red/mut ×10+f-r1-out/(json+4 png)。提交(收口时补)。
+
+### F-R2 [?] ui-scale≠1 时阅读器程序滚动落点漂移 ——状态:**新登记(2026-08-31 F-R1 回炉副产,待排查)**
+
+- **现象**:F-R1 探针诊断(f-r1-dbg.mjs+dbg-geom.png)——ui-scale≠1
+  (用户 large=1.25)时阅读区反向 zoom 豁免与程序滚动差值法交互致落点
+  漂移 160-450px;**单页模式同样复现**(非 F-R1 引入,存量缺陷)。与
+  v15 备案「reader 侧同型量测面未排查」呼应——F-L2 同型污染的 reader
+  侧实证落地。
+- **处置**:排查票候选(crib f-l2-precheck 前置实测范式:三档×程序滚动
+  落点差值采样定位污染消费点);用户常用 large 档=高优先。
+
+### F-R3 [?] pdfjs stream pump 竞态 pageerror ——状态:**新登记(2026-08-31 F-R1 回炉副产,待排查)**
+
+- **现象**:扫描式连开文献(快速连续 openPaper)触发 pdfjs
+  `_reader.read` of null pageerror——PdfDocProvider 既有面(流取消
+  竞态);常规单开零复现。
+- **处置**:低优先(用户路径=单开为主);排查点=PdfDocProvider loadingTask
+  销毁与 stream 泵竞态。
+
 ## 二、复测回收状态(18 项指引,2026-08-30 发出)
 
 | 项 | 面 | 反馈 |

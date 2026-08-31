@@ -15,15 +15,16 @@
  *   ⑦ renderPageLayers 覆盖层工厂（TextLayer 挂载条件 pt!==undefined /
  *     AnnotationLayer 挂载条件 pr!==undefined / ReaderAiLayer 恒挂
  *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom）。
- * - 内装 PageColumn（九 props 全透传）：onPageRender（写注册表）与
- *   renderPage（读注册表）读写同源必须同居一组件——这是本组件包 PageColumn
- *   而非只提供工厂的原因（F-ARCH3 票面行为层）。
+ * - 内装 PageColumn（十 props 全透传——F-R1 增 layout）：onPageRender（写
+ *   注册表）与 renderPage（读注册表）读写同源必须同居一组件——这是本组件
+ *   包 PageColumn 而非只提供工厂的原因（F-ARCH3 票面行为层）。
  * ── 接口层 ──
  * - export function PagesOverlay(props: { doc: PDFDocumentProxy; fileUrl: string;
  *     totalPages: number; zoom: number; annotations: Annotation[];
  *     scrollContainerRef: RefObject<HTMLDivElement | null>;
  *     scrollRequest: PageScrollRequest | null;
- *     onReady(basisWidth: number): void; onError(msg: string): void }): JSX.Element
+ *     onReady(basisWidth: number): void; onError(msg: string): void;
+ *     layout?: PageLayout }): JSX.Element
  * - 类型再导出纪律（INV-16）：PDFDocumentProxy 经 PdfDocProvider、PdfTextContent
  *   经 PdfPageCanvas、PageScrollRequest 经 PageColumn、Annotation 经 shared 模型。
  * ── 架构层 ──
@@ -45,6 +46,7 @@ import { ReaderAiLayer } from './AiAnnotationLayer'
 import { PageColumn, type PageScrollRequest } from './PageColumn'
 import type { PDFDocumentProxy } from './PdfDocProvider'
 import type { PdfTextContent } from './PdfPageCanvas'
+import type { PageLayout } from './page-column-geometry'
 import { TextLayer } from './TextLayer'
 
 /** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
@@ -71,6 +73,8 @@ export function PagesOverlay(props: {
   scrollRequest: PageScrollRequest | null
   onReady(basisWidth: number): void
   onError(msg: string): void
+  /** F-R1 页布局（缺省 single——PageColumn 同语义透传） */
+  layout?: PageLayout
 }): JSX.Element {
   const { doc, fileUrl, totalPages, zoom, annotations, scrollContainerRef, scrollRequest, onReady, onError } = props
   const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
@@ -115,7 +119,7 @@ export function PagesOverlay(props: {
   }
 
   return (
-    <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} scrollContainerRef={scrollContainerRef}
+    <PageColumn doc={doc} totalPages={totalPages} zoom={zoom} layout={props.layout} scrollContainerRef={scrollContainerRef}
       onPageRender={handlePageRender} onError={onError}
       renderPage={renderPageLayers} onReady={onReady} scrollRequest={scrollRequest} />
   )

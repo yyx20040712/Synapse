@@ -1,0 +1,60 @@
+## 统计行
+
+- W1:NOT(W1 数字失实复现——回炉后仍错,529≠518)
+- W3:ADDRESSED(③新断言确凿落地;⑦红因可合理归因,存疑但非主面)
+- W4:ADDRESSED(全列 sizes 采集确凿)
+- W5:ADDRESSED(同源锚|Δ|=0 直锁;roots 改有界锁并给出过渡态解释,自裁可接受)
+- W2 澄清:接受(主控声明+CSS 注释“用户裁决 2026-08-31”)
+- W6 澄清:接受(主控给源码原文+①c 绿佐证;函数体在材料包内不可全见,依赖主控声明)
+- 新发现:W7 一件(f-r1-mut-W3.txt 与 f-r1-dbg.mjs 声称存在但 git status §7 与材料包 diff 均未含);N 类两件(⑦红因仅可推测、N1 窗口风险仍存疑)
+- 终判:**再回炉**(证据面:W1 数字再次失实+回炉新增证据文件缺失)
+
+---
+
+## 逐条判定
+
+### W1 — NOT(未完全 ADDRESSED)
+
+- 报告 §3 写“**新测试 518 行**”,但工作区终态 diff 中 `tests/unit/renderer/reader-double-page.test.tsx` 头注为 `@@ -0,0 +1,529 @@`(529 行)。
+- 报告 §9 同时声明③“追加末行专项断言”(4 行注释+7 行代码=11 行),518+11=529——多出的 11 行正是 W3 追加块。回炉者已知追加断言,行数却未重数。
+- 结论:r1 W1 的核心“报告自查数字与证据不一致”以同型复发(仅从“500 内”改为错误的“518”),回炉目标未达成。
+
+### W3 — ADDRESSED
+
+- 测试 ③ 新增段落(`reader-double-page.test.tsx` W3 注释块后):`lastRow` 非空、行内 `[data-page-box]` 恰 1 且盒号 5、`lastRow.children` 长度 1(无占位盒/无外泄漏)、唯一盒宽 700px=末页原始宽。这直接锁住 r1 指出的“DOM 行宽=左盒宽/无塌陷/无外泄漏”面。
+- 报告 §9 称变异“末行右盒改渲染占位空盒”→③+⑦ 二红。⑦ 红可合理归因:⑦ 测试首句有 `querySelectorAll('[data-page-box]')` toHaveLength(3),变异空盒若带 data-page-box 会使计数变 4——但变异源码未附,归因属推测,存疑。
+- f-r1-mut-W3.txt 未见材料包,证据面问题另立 W7。
+
+### W4 — ADDRESSED
+
+- `f-r1-verify.mjs` B 场景改为:`const sizes = tb0.boxes.map(...)`(100% zoom 下全列 20 盒采集),再 `columnWidthFor(sizes, 1, 'double')`。`f-r1-verify.json` 中 `rowW1: 1202` 与 20 页等宽(595+595+12)吻合。已不局限首两页。
+
+### W5 — ADDRESSED(附自裁说明)
+
+- 滚动位:`D/scroll-position-kept` 在双页态/100%/当前页行顶取同源锚,JSON `D_anchor` 与 `D_realign` scrollTop 均 816.8,|Δ|=0≤2。直锁 scrollTop。
+- roots:不再逐项断言,改锁 `roots.length ≤ 2*(2*2+1)=10`(D/roots-bounded,7≤10),并解释过渡态波次叠加。上界锁防泄漏,未逐项防“短时膨胀”,但 r1 W5 关切已获回应。
+
+### W2 澄清 — 接受
+
+- 主控声明该改动为用户 2026-08-31 直下命令、主控直做;diff 中 `workspace.css` 注释含“**用户裁决 2026-08-31**”字样,与声明吻合。进场 hash 仍无,但主控澄清已覆盖 r1 条件 3。
+
+### W6 澄清 — 接受
+
+- 主控给出 `makeLoadingTab(paperId, prev): if (prev !== undefined) return { ...prev, status: 'loading' }; return { ...pageLayout: 'single' }`,与测试 ①c(error 重试后 pageLayout 为 'double' 且绿)自洽。注意:diff 上下文只展示字面量分支全貌,`if (prev...)` 分支仅在主控文字中出现,材料包内不可独立核——存疑残留,主控澄清可算补足。
+
+### 新发现 W7 — 回炉证据文件面不一致
+
+- 报告 §9 称“变异红证→ `scripts/audits/f-r1-mut-W3.txt`”,又称诊断脚本存 `scripts/audits/f-r1-dbg.mjs`;但 §7 `git status` 全贴只列 `f-r1-mut-M1.txt ~ M5.txt` 与 `f-r1-out/`,**未列 mut-W3 与 dbg.mjs**;材料包 diff 亦未含这两个文件内容(与 r1 N2 红证文件缺失延续,cumulative)。
+- 可能解释:§7 git status 快照早于回炉未更新——若如此,构成报告新旧段落不同步;若快照为终态,则文件不存在。两解均说明报告证据面不可全信,需回炉补文件或标注快照时间。
+- 该 W 不涉功能,但 r1 放行条件 2(核验红证文件)在 r2 材料包内仍无法满足。
+
+### N 类存疑
+
+- N-A:⑦ 在 W3 变异中变红的确切机理仅能依“空盒带 data-page-box→⑦ 首句计数断言变 4”推导,变异 diff 未附,非确证。
+- N-B:r1 N1(IO 重挂空窗→跳顶)未获根本解决,仅被 roots 上界断言约束;D_roots_recheck 稳态 roots=[1..7] 比单页曾见 roots=[2..7] 大,瞬时过渡态仍在,不排除但无实证。
+
+---
+
+## 终判
+
+**再回炉**——W3/W4/W5 功能面修复到位,W1 数字失实复现(518≠529)且回炉新增的两件证据文件(f-r1-mut-W3.txt、f-r1-dbg.mjs)未出现在 git status 与材料包 diff 中,证据面不一致未消除;回炉范围应限报告与证据文件,不涉功能代码。

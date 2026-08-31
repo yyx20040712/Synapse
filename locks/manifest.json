@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-30T23:43:58.7500627Z",
+    "generatedAt":  "2026-08-31T01:08:29.1938052Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -96,6 +96,18 @@
                   {
                       "path":  "scripts/audits/f-l4-verify.mjs",
                       "sha256":  "6ecba6f1d97035efceca8fca1c251f72749bb3c43da96dc47c6165e095be263b"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r1-dbg.mjs",
+                      "sha256":  "5d854aecd7dce115bda548b2d250b12eece359b51daac9b7aaec3e6f8e6eb2ac"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r1-gen-r2-brief.mjs",
+                      "sha256":  "e70874dc195a94c083097252faec260bfda8b7bab7939196ef9e950c5e301d06"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r1-verify.mjs",
+                      "sha256":  "87d0f4d76278ae2ab63dc8c42d38cf50aeb0516193884760b44808f3d53332d4"
                   },
                   {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",
@@ -548,6 +560,10 @@
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
                       "sha256":  "9185aaf3d2ef8d6b63f378035e4607af65f29abd624643e42da0d06675de4e6f"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-double-page.test.tsx",
+                      "sha256":  "e6ad6ca3b7a51298ad9a82c32598d2df7d3a0ded49eec3048a15bff9a8c4a3ef"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",

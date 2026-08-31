@@ -104,6 +104,16 @@ export interface TabState {
    *  面，8 文件完整对象直植）零破坏的必要形式；缺席即常规态，消费方一律
    *  ?? false 兜底；makeLoadingTab 新建分支显式 false */
   selectionMode?: boolean
+  /** 页布局（F-R1 双页阅读，per-tab 视图态——与 zoom/color/selectionMode
+   *  同型）：'single'=单列（默认）；'double'=两页一行。生命周期迁移表：
+   *  | openPaper（absent 新建） | 'single'（makeLoadingTab 显式置值） |
+   *  | openPaper（error 重试） | 沿 prev（{...prev,status:'loading'}） |
+   *  | setPageLayout(m) | active tab 写入 m；activeId=null no-op |
+   *  | closeOne(id) | 随 tab 删除；重开同 id=全新 tab='single' |
+   *  | close() | 整体复位 |
+   *  可选字段=存量测试夹具零破坏（消费方 ?? 'single' 兜底）；v1 不落库
+   *  （重开回 single——zoom 同型，票面备案） */
+  pageLayout?: 'single' | 'double'
 }
 
 /** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
@@ -138,6 +148,9 @@ export interface ReaderStore {
   /** 标注「选择模式」写 active tab（F-A3/INV-42）：toggle 语义在装配面
    *  ReaderPage（工具栏纯受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
   setSelectionMode(mode: boolean): void
+  /** 页布局写 active tab（F-R1）：toggle 语义在装配面 ReaderPage（工具栏纯
+   *  受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
+  setPageLayout(layout: 'single' | 'double'): void
   addAnnotation(a: Annotation): void
   updateAnnotation(a: Annotation): void
   removeAnnotation(id: string): void
@@ -185,7 +198,8 @@ function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
     annotations: [],
     status: 'loading',
     dirty: false,
-    selectionMode: false
+    selectionMode: false,
+    pageLayout: 'single'
   }
 }
 
@@ -367,6 +381,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
 
     setSelectionMode(mode) {
       updateActiveTab((tab) => ({ ...tab, selectionMode: mode }))
+    },
+
+    setPageLayout(layout) {
+      updateActiveTab((tab) => ({ ...tab, pageLayout: layout }))
     },
 
     addAnnotation(a) {

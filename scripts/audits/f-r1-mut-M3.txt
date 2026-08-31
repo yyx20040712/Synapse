@@ -1,0 +1,2 @@
+[M3 red] ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+[M3 red]       Tests  1 failed | 15 passed (16)
