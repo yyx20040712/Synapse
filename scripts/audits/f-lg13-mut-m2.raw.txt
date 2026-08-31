@@ -1,0 +1,4 @@
+ ❯ tests/unit/renderer/lineage-layout.test.ts (28 tests | 1 failed) 11ms
+ FAIL  tests/unit/renderer/lineage-layout.test.ts > F-LG13 统一尺寸与紧凑间隙（nodeWidth/nodeHeight 恒定单源——用户令「方框都一样大小」） > 统一高：1/2/3 行与超长题名同高 110（NODE_H 恒定——题名溢出走卡内滚动非增高）
+ Test Files  1 failed (1)
+      Tests  1 failed | 27 passed (28)

@@ -312,12 +312,12 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
       const v = parseViewport(viewportTransform())
       expect(v).not.toBeNull()
-      // 手算（chain 全短档题名 NODE_W=180）：链 3 层 y∈[-32,312]（H=344）、
-      // x∈[-200,180]（左缘含层带标签 BAND_LEFT=-200，W=380）；边距上下 80/
-      // 左右 120 → k=min(560/380, 440/344)=440/344≈1.2791
-      expect(v!.k).toBeCloseTo(440 / 344, 6)
-      expect(v!.tx).toBeCloseTo(120 + 200 * (440 / 344), 6)
-      expect(v!.ty).toBeCloseTo(80 + 32 * (440 / 344), 6)
+      // 手算（F-LG13 统一卡 240×110）：链 3 层 y∈[-55,335]（H=390）、
+      // x∈[-200,240]（左缘含层带标签 BAND_LEFT=-200，W=440）；边距上下 80/
+      // 左右 120 → k=min(560/440, 440/390)=440/390≈1.1282
+      expect(v!.k).toBeCloseTo(440 / 390, 6)
+      expect(v!.tx).toBeCloseTo(120 + 200 * (440 / 390), 6)
+      expect(v!.ty).toBeCloseTo(80 + 55 * (440 / 390), 6)
       // LG9 N5：层带年份标（布局 x=-190 初始视口外）fit 后必入视口（screen x>0）
       expect(v!.tx - 190 * v!.k).toBeGreaterThan(0)
     } finally {
@@ -392,14 +392,50 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
     }
   })
 
-  it('R2-LG10 题名分档宽：长题名卡 rect 宽 260/短题名 180（nodeWidth 单源消费）', () => {
+  it('F-LG13 统一卡尺寸：短/长题名卡 rect 同 240×110（nodeWidth/nodeHeight 恒定单源消费）', () => {
     const nodes = [
       node('S', { year: 2020, title: '短题名' }),
       node('L', { year: 2021, title: '长'.repeat(29) })
     ]
     mount(<LineageCanvas nodes={nodes} edges={[]} />)
-    expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('width')).toBe('180')
-    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('width')).toBe('260')
+    expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('width')).toBe('240')
+    expect(host?.querySelector('[data-node-id="S"] rect')?.getAttribute('height')).toBe('110')
+    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('width')).toBe('240')
+    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('height')).toBe('110')
+  })
+})
+
+describe('F-LG13 题名滚轮归属（卡面 g 根原生 wheel 委托——题名溢出归滚动/未溢出归 zoom）', () => {
+  it('题名溢出节点上滚轮→题名 scrollTop 恰增 deltaY+画布 zoom 被阻断；未溢出→zoom 正常', () => {
+    const nodes = [
+      node('L', { year: 2020, title: '长'.repeat(80) }),
+      node('S', { year: 2021, title: '短' })
+    ]
+    mount(<LineageCanvas nodes={nodes} edges={[]} />)
+    // jsdom 无布局（scrollHeight/clientHeight 恒 0）——defineProperty 定溢出态
+    // （⑨边标签 wheel 同族配方）
+    const titleDiv = host?.querySelector('[data-node-id="L"] foreignObject div div') as Element
+    expect(titleDiv).toBeTruthy()
+    Object.defineProperty(titleDiv, 'scrollHeight', { get: () => 300, configurable: true })
+    Object.defineProperty(titleDiv, 'clientHeight', { get: () => 80, configurable: true })
+    const before = viewportTransform()
+    act(() => {
+      titleDiv.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 240, clientX: 300, clientY: 200, bubbles: true, cancelable: true })
+      )
+    })
+    // 滚轮归题名：scrollTop 恰增 deltaY（钳 [0, 300-80]=220）+zoom 不触发
+    expect(titleDiv.scrollTop).toBe(220)
+    expect(viewportTransform()).toBe(before)
+    // 未溢出节点（短题名 scrollHeight=clientHeight=0）→滚轮归画布 zoom
+    const shortTitle = host?.querySelector('[data-node-id="S"] foreignObject div div') as Element
+    act(() => {
+      shortTitle.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: -240, clientX: 300, clientY: 200, bubbles: true, cancelable: true })
+      )
+    })
+    expect(viewportTransform()).not.toBe(before)
+    expect(shortTitle.scrollTop).toBe(0)
   })
 })
 

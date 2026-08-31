@@ -126,13 +126,14 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
       { id: 'A', paperId: 'p', title: '测名', coreIdea: '', year: 2020, x: null, y: null, createdAt: 't', updatedAt: 't' }
     ]
     const layout: LayoutResult = { positions: new Map([['A', { x: 0, y: 0 }]]), layers: [] }
-    // 手算（NODE_W=180 半宽 90/高 64 半高 32/BAND_LEFT=-200；vw 800/vh 600、
-    // 边距 X 120/Y 80）：不含盒 W=290/H=64 → k=min(560/290, 6.875)=560/290；
-    // 含盒（标签 y∈[181.5,218.5]）H=250.5 → k=min(560/290, 440/250.5)=440/250.5
+    // 手算（F-LG13 统一卡 NODE_W=240 半宽 120/高 110 半高 55/BAND_LEFT=-200；
+    // vw 800/vh 600、边距 X 120/Y 80）：不含盒 W=320/H=110 → k=min(560/320,
+    // 440/110=4)=560/320；含盒（标签 y∈[181.5,218.5]）H=273.5 →
+    // k=min(560/320, 440/273.5)=440/273.5
     const plain = fitViewport(nodes, layout, 800, 600)
     const withBox = fitViewport(nodes, layout, 800, 600, [{ x: 0, y: 200, hw: 65, hh: 18.5 }])
-    expect(plain.k).toBeCloseTo(560 / 290, 6)
-    expect(withBox.k).toBeCloseTo(440 / 250.5, 6)
+    expect(plain.k).toBeCloseTo(560 / 320, 6)
+    expect(withBox.k).toBeCloseTo(440 / 273.5, 6)
     // 标签盒入围后容纳比取小——视口拉远（含被推出标签）
     expect(withBox.k).toBeLessThan(plain.k)
   })

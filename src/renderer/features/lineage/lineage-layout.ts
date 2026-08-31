@@ -14,10 +14,12 @@
  *   NODE_W+SIBLING_GAP；根节点占位 rootLo/rootHi 参与兄弟放置下限——非单调
  *   年份树兄弟全不共享层时不退化单列）；共享层轮廓约束语义原样（深层不
  *   共享层子树仍可交错）
- * - **题名分档宽（R2-LG10，票面 P2）**：节点占位宽=nodeWidth(title) 三档
- *   （≤12 字 180/≤28 字 220/>28 字 260——单源三消费见 nodeWidth 注）；
- *   卡片中心点输出语义不变（占位区间按各档半宽）；单链居中对齐/兄弟
- *   错开/紧凑性不变量随档宽自然扩义
+ * - **统一卡尺寸（F-LG13，用户令 2026-08-31「方框都一样大小」）**：节点
+ *   占位宽/高=nodeWidth/nodeHeight 恒定 NODE_W×NODE_H（240×110——签名
+ *   兼容保留，R2-LG10 三档宽/R2-LG11 行数分档高语义删除）；卡片中心点输出
+ *   语义不变；单链居中对齐/兄弟错开/紧凑性不变量随统一尺寸自然收窄
+ * - **紧凑布局（F-LG13，用户令「中间没有空地」）**：SIBLING_GAP 40→16/
+ *   TREE_GAP 80→24/SURVEY_COL_GAP 80→24；LAYER_GAP 140=年份时间轴语义不动
  * - **手工位置覆盖优先**（JSON Canvas 模式）：节点 x/y 非 null → 用
  *   覆盖值不参与自动布局（覆盖节点与其余自动节点可重叠——v1 不做
  *   碰撞避让，票面声明）；null → 布局产出
@@ -91,9 +93,10 @@
  *   与子孙同层（非单调数据）时右推防护。
  *
  * ── R2-LG11（浅色严谨板·零 schema 单元）──
- * - **nodeHeight(title) 高度单源（INV-38）**：46+18×clamp(ceil(len×12.5/
- *   (nodeWidth−24)),1,3)——1/2/3 行=64/82/100；NODE_H 常量删除，三消费
- *   （NodeCard rect/Edges 端点经 geom/viewport fitViewport）全改引本函数。
+ * - **nodeHeight 高度单源（INV-38——F-LG13 修订为恒定 110）**：卡高不再随
+ *   题名行数分档（64/82/100 删除）——题名溢出由 LineageNodeCard 题名区
+ *   overflow-y 滚动承载；三消费（NodeCard rect/Edges 端点经 geom/viewport
+ *   fitViewport）全引本函数（签名不变，历史消费面零改）。
  * - **综述右列（决3）**：isSurvey 节点（x/y 均非 null 的覆盖综述除外）
  *   不进 children/parentOf 树——其触及边在净化段有意分流（不计 dropped
  *   不 warn），子提升为根、父边断开不剔除（渲染层照常画）；树布局后单列
@@ -106,53 +109,52 @@
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { isSurvey } from './lineage-classify'
 
-// ── 几何常量（R2-LG10 题名分档宽——票面 P2：NODE_W 单值→按 title 长度三档）──
-export const NODE_W = 180
+// ── 几何常量（F-LG13 统一尺寸+紧凑布局——用户令「方框都一样大小且中间
+//    没有空地」，2026-08-31；R2-LG10 三档宽 180/220/260 与 R2-LG11 行数
+//    分档高 64/82/100 语义随令删除——方案切换=删旧）──
+/** 统一卡宽（全节点恒定——三消费见 nodeWidth 注） */
+export const NODE_W = 240
+/** 统一卡高（题名区 ~3 行+底行 24px F-LG14 预留——三消费见 nodeHeight 注） */
+export const NODE_H = 110
 /** 层带中心间距（y 维） */
 export const LAYER_GAP = 140
-/** 兄弟子树最小间隙（x 维轮廓约束） */
-export const SIBLING_GAP = 40
-/** 森林相邻树间隙 */
-export const TREE_GAP = 80
-/** 中档宽（13~28 字题名）/长档宽（>28 字） */
-export const NODE_W_MID = 220
-export const NODE_W_LONG = 260
-/** 综述右列与树布局区右缘的间隙（R2-LG11 决3——综述列于脉络最右侧） */
-export const SURVEY_COL_GAP = 80
+/** 兄弟子树最小间隙（x 维轮廓约束——F-LG13 紧凑化 40→16） */
+export const SIBLING_GAP = 16
+/** 森林相邻树间隙（F-LG13 紧凑化 80→24） */
+export const TREE_GAP = 24
+/** 综述右列与树布局区右缘的间隙（R2-LG11 决3——综述列于脉络最右侧；
+ *  F-LG13 紧凑化 80→24） */
+export const SURVEY_COL_GAP = 24
 /** 层带横线左缘（B1 单源化：viewport fitViewport 包围盒左界/Canvas 层带线 x1） */
 export const BAND_LEFT = -200
 /** 层带横线右缘（贯穿全线——Canvas 层带线 x2 单源） */
 export const BAND_RIGHT = 99999
-/** 层带年份标 y 偏移（层带级元素不随卡高——R2-LG11 卡高可变后固定常量） */
+/** 层带年份标 y 偏移（层带级元素不随卡高——固定常量） */
 export const LAYER_LABEL_DY = 32
 
 /**
- * 题名分档宽（R2-LG10，票面 P2 档值 180/220/260）：短 ≤12 字=NODE_W/
- * 中 ≤28 字=220/长 >28 字=260；空题名=短档兜底。
- * **单源三消费（INV-36）**：本文件 place() 占位/LineageNodeCard 卡面渲染/
- * LineageCanvas auto-fit 包围盒——三处禁各写档值（档值变更=三消费面同改）。
+ * 统一卡宽（F-LG13，票面 §1「恒定值」路线）：签名兼容保留（三消费面
+ * INV-36 结构不动=最小改面），返回恒 NODE_W——题名长短不再影响占位宽
+ * （R2-LG10 三档分档语义删除）；题名过长由 LineageNodeCard 题名区
+ * overflow-y 滚动承载。
+ * **单源三消费（INV-36 修订）**：本文件 place() 占位/LineageNodeCard 卡面
+ * 渲染/fitViewport 包围盒（含 edge-label-layout 节点盒只读）——三处禁各写
+ * 卡宽（卡宽变更=三消费面同改）。
  */
-export function nodeWidth(title: string): number {
-  if (title.length <= 12) return NODE_W
-  if (title.length <= 28) return NODE_W_MID
-  return NODE_W_LONG
+export function nodeWidth(_title: string): number {
+  return NODE_W
 }
 
 /**
- * 题名行数分档卡高（R2-LG11，INV-38——高度单源，INV-36 宽度的姊妹条）：
- * lines = clamp(ceil(title.length × 12.5 / (nodeWidth(title) − 24)), 1, 3)；
- * nodeHeight = 46 + 18 × lines → 1 行 64 / 2 行 82 / 3 行 100。
- * 全角 12.5px 计宽：短档(180) 12 字/行、中档(220) 15 字/行、长档(260)
- * 18 字/行——与 nodeWidth 档界自然咬合；拉丁字符按全角计=行数高估方向
- * 安全（卡略偏高，不溢出）。已知局限票面声明，不修。
- * **单源三消费（INV-38）**：LineageNodeCard rect 高/LineageEdges 端点
- * ±h/2（经 geom 预构建）/lineage-viewport fitViewport 包围盒——三处
- * 禁各写档值（档值变更=三消费面同改）。
+ * 统一卡高（F-LG13，票面 §1：题名溢出走卡内滚动非增高）：签名兼容保留，
+ * 返回恒 NODE_H——卡高=题名区（flex:1 滚动）+底行信息区 24px（F-LG14 填充
+ * 锚：含金量/年份/标签，高度含在统一高内——主控裁决 6 避免二次改卡结构）。
+ * **单源三消费（INV-38 修订）**：LineageNodeCard rect 高/LineageEdges 端点
+ * ±h/2（经 geom 预构建）/lineage-viewport fitViewport 包围盒——三处禁各写
+ * 卡高（卡高变更=三消费面同改）。
  */
-export function nodeHeight(title: string): number {
-  const usable = nodeWidth(title) - 24
-  const lines = Math.min(3, Math.max(1, Math.ceil((title.length * 12.5) / usable)))
-  return 46 + 18 * lines
+export function nodeHeight(_title: string): number {
+  return NODE_H
 }
 
 export interface LayoutResult {
@@ -259,7 +261,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   }
 
   // 6) RT tidy tree：后序 place（轮廓合并+兄弟间距）→ 前序 assign（绝对 x）
-  //    节点宽=题名分档（nodeWidth 单源——占位半宽随档，R2-LG10）
+  //    节点宽=nodeWidth 恒定单源（F-LG13 统一尺寸——占位半宽恒 NODE_W/2）
   const byId = new Map(nodes.map((n) => [n.id, n]))
   const wOf = new Map(nodes.map((n) => [n.id, nodeWidth(n.title)]))
   const selfRel = new Map<string, number>() // 节点相对自身子树包围盒原点的中心 x
@@ -294,8 +296,8 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
         }
       }
       // 兄弟约束 2=根占位（缺陷 E1）：直接兄弟根节点不论年份层必横向错开
-      // ≥ 前根半宽+间隙+本根半宽（同档=NODE_W+SIBLING_GAP；异档随各档宽——
-      // R2-LG10 分档语义）——非单调树兄弟全不共享层时约束 1 恒 0 → offset
+      // ≥ 前根半宽+间隙+本根半宽（统一卡=NODE_W+SIBLING_GAP——F-LG13 统一
+      // 尺寸）——非单调树兄弟全不共享层时约束 1 恒 0 → offset
       // 恒 0 → 单列退化（图五）；仅根占位参与（非全轮廓），深层不共享层
       // 子树交错不受此约束推开（紧凑性保持）
       if (mergedRootHi !== null) {
@@ -321,7 +323,7 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
       merged.set(layer, { lo: s.lo - minL, hi: s.hi - minL })
     }
     // 父居中于子块（RT 经典视觉）；父占位并入自身年份层——与子孙同层
-    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸；占位半宽随档）
+    // （非单调数据，如父子同年）重叠时右推防护（W1 延伸；占位半宽恒定）
     let x = width / 2
     const mine = merged.get(myLayer)
     if (mine !== undefined && x - w / 2 <= mine.hi + SIBLING_GAP) {

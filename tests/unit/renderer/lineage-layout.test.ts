@@ -4,7 +4,9 @@
  * 覆盖：单链 x 对齐/兄弟轮廓间距（不同深度子树不重叠）/年份分层 y 单调+未知层
  * 末位/森林多根并排不重叠（含孤立节点）/覆盖优先（x/y 非 null 不移动+层带仍含
  * 覆盖节点）/空图空结果/纯函数性质（两次调用深相等）/树序稳定性（边输入序非
- * id 字典序）/INV-27 破坏输入防御性剔除非崩溃（多父/环/自环/悬空边+console.warn）。
+ * id 字典序）/INV-27 破坏输入防御性剔除非崩溃（多父/环/自环/悬空边+console.warn）/
+ * F-LG13 统一尺寸（nodeWidth/nodeHeight 恒定 240×110——字面锚）+紧凑间隙
+ * （SIBLING_GAP 16/TREE_GAP 24/SURVEY_COL_GAP 24——行为级字面锚 256/648）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -75,7 +77,7 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
   })
 
   it('轮廓合并：兄弟放置受彼此孙层轮廓约束（跨子树同深度间距仍 ≥ 间隙）', () => {
-    // A 有宽孙层（A1/A2 深度 2 占 400），B 有单子 B1（深度 2）——B 子树放置被
+    // A 有宽孙层（A1/A2 深度 2 占 480），B 有单子 B1（深度 2）——B 子树放置被
     // A 的深层轮廓推右：B1 左缘 ≥ A 孙层右缘+间隙（仅看根行的退化实现在此红）
     const nodes = [
       node('P', { year: 2019 }),
@@ -133,9 +135,9 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
     // 图五缺陷同构：Brown(2002)→Reynolds(1883)→Cross(1936)+SH(2007)——
     // 四层互不共享，旧实现兄弟约束仅共享层触发 → offset 恒 0 → 全树
     // x 相同退化单列（分支不可见）。
-    // 修后推演值（手算复算，与主控简报一致）：层序 1883/1936/2002/2007
-    // =0/1/2/3；Cross=90、SH=310（错开恰 220=NODE_W+SIBLING_GAP）、
-    // Reynolds=Brown=200（单子链同 x，Reynolds 居中于两孙中点 (90+310)/2=200）。
+    // 修后推演值（F-LG13 统一 240+间隙 16，手算复算）：层序 1883/1936/2002/2007
+    // =0/1/2/3；Cross=120、SH=376（错开恰 256=NODE_W+SIBLING_GAP）、
+    // Reynolds=Brown=248（单子链同 x，Reynolds 居中于两孙中点 (120+376)/2=248）。
     const nodes = [
       node('Brown', { year: 2002 }),
       node('Reynolds', { year: 1883 }),
@@ -156,10 +158,11 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
   })
 
   it('SR2-LG-07 紧凑性保持：深层不共享层兄弟子树仍可交错（根占位下限不过度推开）', () => {
-    // A 子树占 2021/2022 层且深层 2022 层宽达 [0,620]；B 子树全在 2023/2024
-    // 层（与 A 子树零共享层）。修后推演值：A=310、B=530——中心差恰 220=
-    // NODE_W+SIBLING_GAP（只有根占位参与下限，A 的深层宽轮廓不推 B）；
-    // B1(2024 层)=530 与 A3(2022 层)=530 同 x（异层交错仍可发生）。
+    // A 子树占 2021/2022 层且深层 2022 层宽达 [0,736]；B 子树全在 2023/2024
+    // 层（与 A 子树零共享层）。修后推演值（F-LG13 统一 240+间隙 16）：A=368、
+    // B=624——中心差恰 256=NODE_W+SIBLING_GAP（只有根占位参与下限，A 的
+    // 深层宽轮廓不推 B）；B1(2024 层)=624 与 A3(2022 层)=632 近邻交错
+    // （异层交错仍可发生）。
     const nodes = [
       node('P', { year: 2020 }),
       node('A', { year: 2021 }),
@@ -179,7 +182,8 @@ describe('layoutLineage —— RT tidy tree x 布局', () => {
     ]
     const { positions } = layoutLineage(nodes, edges)
     // 兄弟根横向错开恰为下限值（防过度推开：若把根占位约束错扩成全轮廓
-    // 右缘，B 被 A 的 2022 层宽轮廓 [0,620] 推到 750——中心差 440，此断言红）
+    // 右缘，B 被 A 的 2022 层宽轮廓 [0,736] 推到 736+16+120=872——中心差
+    // 504，此断言红）
     expect(positions.get('B')!.x - positions.get('A')!.x).toBe(NODE_W + SIBLING_GAP)
     // 深层交错未死：B1（2024 层）与 A3（2022 层）x 区间可重叠（不共享层
     // 子树可交错——紧凑性保持）
@@ -321,26 +325,38 @@ describe('layoutLineage —— 纯函数性质与防御', () => {
   })
 })
 
-describe('R2-LG10 题名分档宽（nodeWidth 单源）', () => {
-  it('三档边界：≤12 字=NODE_W(180)；13~28 字=220；>28 字=260（空题名=短档兜底）', () => {
-    expect(nodeWidth('十'.repeat(12))).toBe(NODE_W)
-    expect(nodeWidth('十'.repeat(13))).toBe(220)
-    expect(nodeWidth('二'.repeat(28))).toBe(220)
-    expect(nodeWidth('长'.repeat(29))).toBe(260)
-    expect(nodeWidth('')).toBe(NODE_W)
+describe('F-LG13 统一尺寸与紧凑间隙（nodeWidth/nodeHeight 恒定单源——用户令「方框都一样大小」）', () => {
+  it('统一宽：短/中/长/超长/空题名同宽 240（NODE_W 恒定字面锚——分档回归必红）', () => {
+    expect(nodeWidth('十'.repeat(12))).toBe(240)
+    expect(nodeWidth('中'.repeat(13))).toBe(240)
+    expect(nodeWidth('二'.repeat(28))).toBe(240)
+    expect(nodeWidth('长'.repeat(29))).toBe(240)
+    expect(nodeWidth('长'.repeat(120))).toBe(240)
+    expect(nodeWidth('')).toBe(240)
   })
 
-  it('分档参与兄弟占位：中档+长档兄弟中心距 ≥ 两半宽和+间隙（110+40+130=280）', () => {
+  it('统一高：1/2/3 行与超长题名同高 110（NODE_H 恒定——题名溢出走卡内滚动非增高）', () => {
+    expect(nodeHeight('十'.repeat(12))).toBe(110)
+    expect(nodeHeight('二'.repeat(16))).toBe(110)
+    expect(nodeHeight('二'.repeat(28))).toBe(110)
+    expect(nodeHeight('长'.repeat(38))).toBe(110)
+    expect(nodeHeight('长'.repeat(120))).toBe(110)
+    expect(nodeHeight('')).toBe(110)
+  })
+
+  it('统一尺寸兄弟占位：中/长题名兄弟中心距恰 256=240+16（SIBLING_GAP 紧凑字面锚）', () => {
     const nodes = [
       node('P', { year: 2020, title: '短' }),
       node('M', { year: 2021, title: '中'.repeat(13) }),
       node('L', { year: 2021, title: '长'.repeat(29) })
     ]
     const { positions } = layoutLineage(nodes, [edge('P', 'M'), edge('P', 'L')])
-    expect(Math.abs(positions.get('L')!.x - positions.get('M')!.x)).toBeGreaterThanOrEqual(280)
+    // 统一宽+紧凑间隙下直接兄弟中心距=NODE_W+SIBLING_GAP 精确值（旧分档
+    // 280=110+40+130 与旧间隙 40 下此断言红——尺寸/间隙双改向锚）
+    expect(Math.abs(positions.get('L')!.x - positions.get('M')!.x)).toBe(256)
   })
 
-  it('异档单链居中对齐保持（父子中心 x 等值——分档不改链对齐语义）', () => {
+  it('异题名长度单链居中对齐保持（父子中心 x 等值——统一尺寸不改链对齐语义）', () => {
     const nodes = [
       node('S', { year: 2020, title: '短' }),
       node('L', { year: 2021, title: '长'.repeat(29) })
@@ -378,8 +394,9 @@ describe('R2-LG11 综述右列（isSurvey 节点不进树——决3 布局落点
   })
 
   it('右列位置公式精确值：综述中心=列左缘+半宽、y=year 层带（覆盖语义不受影响）', () => {
-    // 手算：两根 A(树)/B(孤立) 各 180 宽+TREE_GAP=80 → B 右缘=440；
-    // 综述列左缘=440+80=520 → S(短档 180) 中心=610；层带 2020/2021 → S y=140
+    // 手算（F-LG13 统一卡 240+紧凑间隙）：两根 A(树)/B(孤立) 各 240 宽+
+    // TREE_GAP=24 → B 右缘=504；综述列左缘=504+24=528 → S 中心=528+120=648；
+    // 层带 2020/2021 → S y=140
     const nodes = [
       node('A', { year: 2020, title: '基础研究' }),
       node('B', { year: 2020, title: '平行研究' }),
@@ -387,7 +404,7 @@ describe('R2-LG11 综述右列（isSurvey 节点不进树——决3 布局落点
     ]
     const edges = [edge('A', 'S')]
     const { positions, layers } = layoutLineage(nodes, edges)
-    expect(positions.get('S')!.x).toBe(610)
+    expect(positions.get('S')!.x).toBe(648)
     expect(positions.get('S')!.y).toBe(layers[1]!.y)
     expect(positions.get('S')!.y).toBe(LAYER_GAP)
   })
@@ -435,25 +452,5 @@ describe('R2-LG12 参考边不进树占位（ref 边仅渲染消费——票面 
     expect(withRef.positions.get('C')!.x).toBe(withRef.positions.get('A')!.x)
     expect(withRef.positions.get('S')).toEqual({ x: 500, y: 400 })
     expect(warn).not.toHaveBeenCalled() // ref 分流不计 dropped（有意分流非破坏）
-  })
-})
-
-describe('R2-LG11 nodeHeight 卡高单源（INV-38：46+18×clamp(ceil(len×12.5/(nodeWidth−24)),1,3)）', () => {
-  it('1 行档=64：短档 12 字/中档 13 字/空题名兜底', () => {
-    expect(nodeHeight('十'.repeat(12))).toBe(64)
-    expect(nodeHeight('中'.repeat(13))).toBe(64)
-    expect(nodeHeight('')).toBe(64)
-  })
-
-  it('2 行档=82：中档 16~28 字/长档 29~37 字', () => {
-    expect(nodeHeight('二'.repeat(16))).toBe(82)
-    expect(nodeHeight('二'.repeat(28))).toBe(82)
-    expect(nodeHeight('长'.repeat(29))).toBe(82)
-    expect(nodeHeight('长'.repeat(37))).toBe(82)
-  })
-
-  it('3 行档=100（钳制上限）：长档 38 字起=100，更长题名不增卡高', () => {
-    expect(nodeHeight('长'.repeat(38))).toBe(100)
-    expect(nodeHeight('长'.repeat(120))).toBe(100)
   })
 })

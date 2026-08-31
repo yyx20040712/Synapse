@@ -228,6 +228,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByText('2020 年')).toBeVisible() // 层带标签
     // 边渲染（2 条父子连线 path）
     await expect(win.locator('svg path[data-edge-id]')).toHaveCount(2)
+    // F-LG13 统一卡尺寸（受锁改向：旧分档宽 180/260 断言面随用户令改统一）：
+    // 全节点 rect 宽高恒 240×110（属性级断言——k 无关；短/长题名同卡）
+    const rectSizes = await win.evaluate(() =>
+      Array.from(document.querySelectorAll('svg g[data-node-id] > rect')).map(
+        (r) => `${r.getAttribute('width')}x${r.getAttribute('height')}`
+      )
+    )
+    expect(rectSizes.length).toBe(3)
+    expect(new Set(rectSizes).size).toBe(1)
+    expect(rectSizes[0]).toBe('240x110')
 
     // ②pan：空白（panbg）拖拽→视口 tx 偏移（起点取左下空白——右上角有
     // 导入成功 toast 卡片盖在 svg 外层，pointerdown 落它会绕过 panbg；层带

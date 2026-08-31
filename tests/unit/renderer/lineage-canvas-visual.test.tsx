@@ -10,8 +10,6 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { LineageCanvas } from '../../../src/renderer/features/lineage/LineageCanvas'
@@ -128,7 +126,7 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(host?.querySelectorAll('svg [filter]').length).toBe(0)
   })
 
-  it('foreignObject 换行（U2a）：长题名 HTML div 在场+line-clamp 三行样式字面+卡高自适应 100+title 全文 tooltip', () => {
+  it('F-LG13 题名滚动区（U2a 改向）：长题名 HTML div 完整在 DOM（无 line-clamp）+overflowY auto+细滚动条+统一卡高 110+底行占位+title 全文 tooltip', () => {
     const long = '长'.repeat(40)
     const nodes = [node('L', { year: 2020, title: long })]
     mount(<LineageCanvas nodes={nodes} edges={[]} />)
@@ -141,20 +139,20 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(div).not.toBeNull()
     expect(div?.textContent).toBe(long)
     const st = div?.getAttribute('style') ?? ''
-    expect(st).toContain('-webkit-line-clamp: 3')
-    expect(st).toContain('display: -webkit-box')
-    expect(st).toContain('overflow: hidden')
-    // -webkit-box-orient: vertical 在 jsdom cssstyle 序列化中被静默丢弃
-    // （实证：setProperty 后 attr/属性读取均无；真实 Chromium 保留）——
-    // 运行时不可断言，以源码形态锁补防线（theme.test B1 同型先例；
-    // jsdom 环境 import.meta.url 非 file: scheme——cwd 拼路径）
-    const cardSrc = readFileSync(
-      join(process.cwd(), 'src/renderer/features/lineage/LineageNodeCard.tsx'),
-      'utf8'
-    )
-    expect(cardSrc).toContain('WebkitBoxOrient')
-    // 卡高自适应（INV-38）：40 字长档 3 行=100
-    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('height')).toBe('100')
+    // 题名区滚动（F-LG13 用户令「信息显示不下给题目加滚动条」）：完整文本
+    // 在 DOM+overflow-y auto+细滚动条；line-clamp 三行截断已删（方案切换=
+    // 删旧——style 字面不得再现 clamp/box 形态）
+    expect(st).toContain('overflow-y: auto')
+    expect(st).toContain('scrollbar-width: thin')
+    expect(st).not.toContain('-webkit-line-clamp')
+    expect(st).not.toContain('-webkit-box')
+    // 统一卡高（INV-38 修订）：恒 110（题名溢出走滚动非增高——旧分档 100 红）
+    expect(host?.querySelector('[data-node-id="L"] rect')?.getAttribute('height')).toBe('110')
+    // 底行信息区（F-LG14 填充锚——含金量/年份/标签）：恒 24px 在场承载年份
+    const footer = host?.querySelector('[data-node-id="L"] [data-card-footer]')
+    expect(footer).not.toBeNull()
+    expect(footer?.getAttribute('style')).toContain('height: 24px')
+    expect(footer?.textContent).toBe('2020')
     // 全文 tooltip=题名 div title 属性（HTML 原生零依赖；SVG <title> 元素
     // 与题名文本同名双元素撞 e2e getByText strict——T1 实录改道，属性值
     // 不入 textContent 单源保持）
