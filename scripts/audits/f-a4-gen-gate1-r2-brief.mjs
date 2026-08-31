@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import { execSync } from 'node:child_process'
 const rd = (p) => fs.readFileSync(p, 'utf8')
 execSync('git add -N scripts/audits/f-a4-verify.mjs scripts/audits/f-a4-ticket.md scripts/audits/f-a4-impl.report.md src/renderer/features/reader tests/unit/renderer/selection-paint.test.tsx', { encoding: 'utf8' })
-const raws = fs.readdirSync('scripts/audits').filter((f) => f.startsWith('f-a4') && f.endsWith('.json') || f === 'f-a4-rework1-after.raw.txt')
 const probe = rd('scripts/audits/f-a4-rework1-after.raw.txt')
 const brief = [
   '# F-A4 门一 r2 复核材料包',
