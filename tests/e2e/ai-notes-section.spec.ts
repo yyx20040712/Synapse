@@ -17,6 +17,8 @@ import { launch, seedPaperRow } from './e2e-env'
  * 产物落盘→done-unimported→「导入 AI 笔记」（真 07 导入器→真 DB）→分节
  * 渲染真实文本（e2e 断言锚——渲染出真实文本，非 testid 空壳）+archive 归档。
  * 状态行迁移靠组件 5s 轮询消费 fixture 变化——断言超时留 12s 余量。
+ * F-N1 用户令改向（[locked-change]，2026-08-31）：一审段默认折叠——两测在
+ * 条目断言前先点段头展开（最小改，断言锚不变）。
  */
 const DEPS = ['SR2-AI-06', 'SR2-AI-07'] as const
 const PAPER_ID = 'e2e-ai-sec'
@@ -130,6 +132,11 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘�
   await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
   await expect(win.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible()
   await expect(win.getByRole('heading', { name: '分歧报告' })).toBeVisible()
+  // F-N1 改向：一审段默认折叠——先点段头展开再断言条目（展开后 groupedItems
+  // 序=Q1 一审在前、divergence 裁决在后，与原断言序一致）
+  const firstReadHead = win.locator('[data-testid="ai-note-groups"] button[data-role-section="first-read"]')
+  await expect(firstReadHead).toBeVisible()
+  await firstReadHead.click()
   // 组内条目头 role 标签（转置锚：条目文本含一审/裁决——与页码同 span 故用包含匹配）
   const groupedItems = win.locator('[data-testid="ai-note-groups"] [data-ai-note-id]')
   await expect(groupedItems.first()).toContainText('一审')
@@ -213,6 +220,11 @@ test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点�
   await expect(importBtn).toBeVisible({ timeout: 12_000 })
   await importBtn.click()
   await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
+  // F-N1 改向：一审段默认折叠——先展开面板一审段（后续断言折叠段内条目
+  // data-highlight 高亮与正文可见）
+  const firstReadHead = win.locator('[data-testid="ai-note-groups"] button[data-role-section="first-read"]')
+  await expect(firstReadHead).toBeVisible()
+  await firstReadHead.click()
 
   // 回阅读区（笔记 tab 在侧栏——主区 PDF 常驻）：AI 高亮块经真 textLayer 重锚可见
   const aiRect = win.locator('[data-testid="ai-note-rect"]')

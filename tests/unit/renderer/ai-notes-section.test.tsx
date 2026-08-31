@@ -6,6 +6,9 @@
  * （连续 3 次离线提示行——含 status.json 损坏=上抛计入计数的 mock 驱动路径）/
  * 导入按钮三桶 toast/卸载清 interval/分节分组与七问分色/只读断言（无写交互
  * 元素）/条目单击 locateAnchor（INV-20 消费方级）。
+ * F-N1 用户令改向（[locked-change]，2026-08-31）：一审/二审默认折叠——
+ * 「分节分组/组内 role 标签/条目单击」3 例改向为「默认不在 DOM+段头在+
+ * 点段头展开后条目可见」（锁默认态与展开行为，意图不变非删断言）。
  * always-active（ADR-0017 裁决 3）。
  */
 import { act } from 'react'
@@ -418,12 +421,22 @@ it('分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标
   // 组头分色条（QUESTION_COLOR 单源——左缘竖条形态）
   const q1Head = groups[0]?.querySelector('h4') as HTMLElement
   expect(q1Head.style.borderLeft).toContain(QUESTION_COLOR.Q1)
+  // F-N1 改向：一审/二审默认折叠（条目不在 DOM）+段头在——点段头展开后条目可见
+  const q1 = groups[0] as HTMLElement
+  expect(q1.querySelector('[data-ai-note-id="a1"]')).toBeNull()
+  expect(q1.querySelector('[data-ai-note-id="b1"]')).toBeNull()
+  expect(q1.querySelector('button[data-role-section="first-read"]')).not.toBeNull()
+  expect(q1.querySelector('button[data-role-section="second-read"]')).not.toBeNull()
+  act(() => {
+    ;(q1.querySelector('button[data-role-section="first-read"]') as HTMLButtonElement | null)?.click()
+    ;(q1.querySelector('button[data-role-section="second-read"]') as HTMLButtonElement | null)?.click()
+  })
   // 组内条目按 ROLE_ORDER 排序（一审在前二审在后）+条目头 role 标签可辨
-  const q1Items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
+  const q1Items = Array.from(q1.querySelectorAll('[data-ai-note-id]') ?? [])
   expect(q1Items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1'])
   expect(q1Items[0]?.textContent).toContain('一审')
   expect(q1Items[1]?.textContent).toContain('二审')
-  const dot = groups[0]?.querySelector('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
+  const dot = q1.querySelector('[data-ai-note-id="a1"] span[aria-hidden]') as HTMLElement
   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
   const divItem = groups[2]?.querySelector('[data-ai-note-id="c1"]') as HTMLElement | null
   expect(divItem).not.toBeNull() // divergence 独立成组（question 轴）
@@ -477,7 +490,16 @@ it('组内 role 标签：同 question 组内三 role 条目头呈现一审/二�
   await flush()
   const groups = Array.from(host?.querySelectorAll('[data-testid="ai-note-groups"] > div') ?? [])
   expect(groups).toHaveLength(1) // 同 question 单组
-  const items = Array.from(groups[0]?.querySelectorAll('[data-ai-note-id]') ?? [])
+  // F-N1 改向：一审/二审默认折叠（条目不在 DOM、裁决 expanded 在）——展开后断言三 role
+  const g0 = groups[0] as HTMLElement
+  expect(g0.querySelector('[data-ai-note-id="a1"]')).toBeNull()
+  expect(g0.querySelector('[data-ai-note-id="b1"]')).toBeNull()
+  expect(g0.querySelector('[data-ai-note-id="c1"]')).not.toBeNull()
+  act(() => {
+    ;(g0.querySelector('button[data-role-section="first-read"]') as HTMLButtonElement | null)?.click()
+    ;(g0.querySelector('button[data-role-section="second-read"]') as HTMLButtonElement | null)?.click()
+  })
+  const items = Array.from(g0.querySelectorAll('[data-ai-note-id]') ?? [])
   expect(items.map((el) => el.getAttribute('data-ai-note-id'))).toEqual(['a1', 'b1', 'c1'])
   expect(items[0]?.textContent).toContain('一审')
   expect(items[1]?.textContent).toContain('二审')
@@ -511,6 +533,11 @@ it('条目单击→locateAnchor（INV-20 单入口消费方；anchorPage 1 基�
   listByPaper.mockResolvedValue({ ok: true, data: [note('a1', 'first-read', 'Q1')] })
   mount(<AiNotesSection />)
   await flush()
+  // F-N1 改向：一审默认折叠（条目不在 DOM）——先点段头展开再单击条目
+  expect(host?.querySelector('[data-ai-note-id="a1"]')).toBeNull()
+  act(() => {
+    ;(host?.querySelector('button[data-role-section="first-read"]') as HTMLButtonElement | null)?.click()
+  })
   act(() => {
     ;(host?.querySelector('[data-ai-note-id="a1"]') as HTMLElement).click()
   })
