@@ -18,6 +18,7 @@ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnot
 import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
@@ -255,5 +256,47 @@ describe('anchor-locate exact 层延展（data-ai-note-id）', () => {
     expect(result).toBe('exact')
     expect(scrollerMock).toHaveBeenCalledWith(target, 'center')
     expect(target!.classList.contains('locate-flash')).toBe(true)
+  })
+})
+
+describe('F-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面）', () => {
+  it('AI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks', () => {
+    // gBCR 桩：textLayer (0,0,600,800)/span (30,200,300,16)；canvas 度量桩
+    // asc10/desc3/fAsc14/fDesc4 → 半前导 −1 基线 213 → band=[203,216]/800
+    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
+    const pageRoot = makePageRoot('SMART WATER TEST DOC')
+    const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement
+    const span = textLayer.querySelector('span') as HTMLElement
+    boxes.set(pageRoot, { x: 0, y: 0, width: 600, height: 800 })
+    boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
+    boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const r = boxes.get(this)
+      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: () => ({
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 3,
+        fontBoundingBoxAscent: 14,
+        fontBoundingBoxDescent: 4
+      })
+    } as unknown as CanvasRenderingContext2D)
+    mount(
+      <AiAnnotationLayer
+        aiNotes={[note({ id: 'n1', question: 'Q1', quote: 'WATER' })]}
+        page={0}
+        pageRoot={pageRoot}
+        onJumpToNote={() => undefined}
+      />
+    )
+    const layer = host!.querySelector<HTMLElement>('[data-testid="ai-annotation-layer"]')
+    expect(layer).not.toBeNull()
+    expect(layer!.style.zIndex).toBe(String(PAGE_LAYER_Z.colorBlocks))
+    const r = rects()[0]!
+    // 修前=裸行盒（jsdom 回退 span 盒 top 25%/height 2%）；band=25.375%/1.625%
+    expect(parseFloat(r.style.top)).toBeCloseTo(25.375, 4)
+    expect(parseFloat(r.style.height)).toBeCloseTo(1.625, 4)
   })
 })

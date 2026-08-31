@@ -14,6 +14,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 
 vi.mock('../../../src/renderer/api/client', () => ({
   api: { reader: {} },
@@ -116,5 +117,74 @@ describe('F-A1 AnnotationLayer 挂 B —— 渲染读时归并（INV-E）', () =
       )
     })
     expect(host!.querySelectorAll('[data-testid="annotation-rect"]').length).toBe(0)
+  })
+})
+
+describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面）', () => {
+  /** 页根夹具：textLayer+单 span（gBCR 桩）+canvas 度量桩——bandsNearRects 量测面 */
+  function makeBandPage(): { page: HTMLElement; textLayer: HTMLElement; span: HTMLElement } {
+    const page = document.createElement('div')
+    page.setAttribute('data-page-root', '1')
+    const textLayer = document.createElement('div')
+    textLayer.className = 'textLayer'
+    const span = document.createElement('span')
+    span.textContent = 'SMART WATER TEST DOC'
+    textLayer.appendChild(span)
+    page.appendChild(textLayer)
+    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
+    boxes.set(page, { x: 0, y: 0, width: 600, height: 800 })
+    boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
+    boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const r = boxes.get(this)
+      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      font: '',
+      measureText: () => ({
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 3,
+        fontBoundingBoxAscent: 14,
+        fontBoundingBoxDescent: 4
+      })
+    } as unknown as CanvasRenderingContext2D)
+    return { page, textLayer, span }
+  }
+
+  it('存量 rects（重锚失败回退）经行簇 band：块 top/height=band 值（非 F-11 分数）', async () => {
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+      cb(0)
+      return 0
+    })
+    const { page } = makeBandPage()
+    document.body.appendChild(page)
+    // quoteText 与页内全文不符→verifyQuote 失败→回退存量 rects（b 面回退路径核对）
+    const ann: Annotation = {
+      id: 'a-legacy', paperId: 'p-1', page: 0, kind: 'highlight', color: 'yellow',
+      quoteText: '不存在的引文', prefixText: '', suffixText: '', startOffset: 0, endOffset: 6,
+      rects: [{ page: 0, x: 0.05, y: 0.25, w: 0.5, h: 0.02 }], comment: '',
+      createdAt: '2026-08-31T00:00:00Z', updatedAt: '2026-08-31T00:00:00Z'
+    }
+    await act(async () => {
+      root!.render(<AnnotationLayer annotations={[ann]} page={0} pageRoot={page} onChanged={() => undefined} />)
+    })
+    const block = host!.querySelector<HTMLElement>('[data-testid="annotation-rect"]')
+    expect(block).not.toBeNull()
+    // span 盒 (30,200,300,16)+度量 asc10/desc3/fAsc14/fDesc4：半前导 −1 基线 213
+    // →band=[203,216]/800：top=25.375%/height=13/800=1.625%（F-11 分数=25.2%/1.56%——可区分）
+    expect(inlinePct(block!, 'top')).toBeCloseTo(25.375, 4)
+    expect(inlinePct(block!, 'height')).toBeCloseTo(1.625, 4)
+  })
+
+  it('c 色块层=背景板序：z=层级常量 colorBlocks 且 multiply 摘除（normal）', async () => {
+    await act(async () => {
+      root!.render(
+        <AnnotationLayer annotations={[defectAnnotation()]} page={0} pageRoot={null} onChanged={vi.fn()} />
+      )
+    })
+    const layer = host!.querySelector<HTMLElement>('[data-testid="annotation-layer"]')
+    expect(layer).not.toBeNull()
+    expect(layer!.style.zIndex).toBe(String(PAGE_LAYER_Z.colorBlocks))
+    expect(layer!.style.mixBlendMode).toBe('')
   })
 })
