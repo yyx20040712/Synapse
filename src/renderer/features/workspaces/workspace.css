@@ -55,6 +55,9 @@
    （origin=center 居中放大，用户裁决 2026-08-31 第二轮：top center 观察
    为向右上展开，改 center） */
 .ws-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;

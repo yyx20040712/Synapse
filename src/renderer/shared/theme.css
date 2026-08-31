@@ -103,11 +103,14 @@ body,
   letter-spacing: 0.5px;
   color: var(--text);
 }
-/* 切换器容器高度锚：max-height 防展开面板撑高顶栏（组件本体零改——F-05
-   高度链不扰动；面板向下溢出可见）；no-drag=触发钮与展开面板（溢出 header
-   盒侵入 main 区部分同为面板自身盒——不被 drag 吞点击） */
+/* 切换器容器=面板绝对定位锚：relative 面板 top:100% 悬浮于按钮正下
+   （脱离文档流——容器高度恒=按钮高，按钮在顶栏的垂直居中位恒定，
+   **展开/收起不再上移跳动**——用户实锤 2026-08-31：流内 max-height 方案
+   下面板展开把容器从按钮高撑到 56px，居中锚点随之上移，56px 顶栏时代
+   按钮跳 ~13.5px 贴无边框窗口顶；no-drag=触发钮与展开面板（溢出
+   header 盒侵入 main 区部分同为面板自身盒——不被 drag 吞点击） */
 .app-header-switcher {
-  max-height: 56px;
+  position: relative;
   -webkit-app-region: no-drag;
 }
 .app-header .app-nav-ver {
