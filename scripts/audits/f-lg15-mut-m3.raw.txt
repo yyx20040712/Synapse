@@ -1,0 +1,4 @@
+[31m   [31m×[31m F-LG15 manual 边不进树占位（仅渲染消费——票面 §1 布局条款）[2m > [22mmanual 边不进树计算：含 manual 输入与剔除该 manual 的输入布局恒等+零 warn（manual 在前时会抢占 C 的 tree 父）[90m 6[2mms[22m[31m[39m
+[31m   [31m×[31m F-LG15 manual 边不进树占位（仅渲染消费——票面 §1 布局条款）[2m > [22m多条 manual 同子零树占位：C 的 tree 父位不被任一 manual 抢占（不限条数=布局面森林结构零变）[90m 1[2mms[22m[31m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[90m (2)[39m

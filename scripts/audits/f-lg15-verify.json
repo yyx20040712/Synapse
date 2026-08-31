@@ -1,0 +1,31 @@
+{
+  "when": "2026-08-31T17:09:48.635Z",
+  "c1_connectSecondParent": {
+    "manualEdgeId": "72d0639a-f691-450e-89db-f78faba56d16",
+    "stroke": "var(--manual-edge)",
+    "dash": "7 5",
+    "width": "1.4",
+    "label": "研究者补判的方法源头",
+    "pass": true
+  },
+  "c2_labelEditPersist": {
+    "labelAfterEdit": "再判：修正的逻辑线",
+    "labelReopen": "再判：修正的逻辑线",
+    "pass": true
+  },
+  "c3_thirdParentUnlimited": {
+    "manualCount": 2,
+    "pass": true
+  },
+  "c4_loopRejected": {
+    "toastText": "成环拒绝：该边将使脉络图出现环路（树边、参考边与人工边均不得成环）×",
+    "manualCountAfterLoop": 2,
+    "pass": true
+  },
+  "c5_pageErrors": {
+    "count": 0,
+    "pass": true,
+    "detail": []
+  },
+  "pass": true
+}

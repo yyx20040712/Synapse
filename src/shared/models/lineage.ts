@@ -126,10 +126,13 @@ export function dedupeLineageTags(tags: readonly string[]): string[] {
   return [...new Set(tags)]
 }
 
-/** 边类型（R2-LG12，用户裁决 A）：tree=树边（单父不变量 INV-27 原语义）/
- *  ref=参考边（综述节点→文献——service 层豁免单父、仍拒环、同端点对与
- *  tree 互斥；INV-27 修订版守卫宿主仍=service 写面） */
-export const lineageEdgeKindSchema = z.enum(['tree', 'ref'])
+/** 边类型（R2-LG12 用户裁决 A+F-LG15 用户小需求）：tree=树边（单父不变量
+ *  INV-27 原语义）/ref=参考边（综述节点→文献——service 层豁免单父、仍拒环、
+ *  同端点对与 tree 互斥；INV-27 修订版守卫宿主仍=service 写面）/manual=人工
+ *  补父边（F-LG15 用户裁决**不限条数**——service 豁免单父、仍拒环（环检测
+ *  图=tree+ref+manual 全部边）、同端点对与 tree/ref 互斥；draft 导入协议
+ *  不收——edge schema 无 kind 字段=tree 语义，manual 仅应用内手工创建） */
+export const lineageEdgeKindSchema = z.enum(['tree', 'ref', 'manual'])
 export type LineageEdgeKind = z.infer<typeof lineageEdgeKindSchema>
 
 export const lineageEdgeSchema = z

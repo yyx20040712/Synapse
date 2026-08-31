@@ -1,0 +1,4 @@
+[31m   [31m×[31m F-LG15 manual 边 upsertEdge 写守卫[2m > [22m拒环②经 manual 父链（双向）：A→B manual 在，挂 B→A tree → 环检测图含 manual 边才可拦截[90m 6[2mms[22m[31m[39m
+[31m   [31m×[31m F-LG15 manual 边 upsertEdge 写守卫[2m > [22m拒环③manual 纯链造环：A→B manual+B→C manual 后挂 C→A manual → 拒[90m 3[2mms[22m[31m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (10)[39m

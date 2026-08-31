@@ -305,11 +305,14 @@ export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
 export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
 export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
 
-/** lineage/upsert-edge 请求：{from,to,label?,kind?}（树守卫宿主=LG-01 service
- *  upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
- *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边，service 双守） */
+/** lineage/upsert-edge 请求：{from,to,label?,kind?,id?}（树守卫宿主=LG-01 service
+ * upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
+ * toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
+ * F-LG15 不限条数，service 三 kind 守卫）；id 可选=F-LG15 label 后编辑更新
+ * 语义（缺省=新建——既有新建载荷形状不变） */
 export const lineageUpsertEdgeReqSchema = z
   .object({
+    id: z.string().min(1).optional(),
     from: z.string().min(1),
     to: z.string().min(1),
     label: z.string().optional(),

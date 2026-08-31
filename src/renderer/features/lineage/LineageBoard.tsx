@@ -81,6 +81,7 @@ import { LineageNodeMenu } from './LineageNodeMenu'
 import { LineageAddNodeDialog } from './LineageAddNodeDialog'
 import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
 import { LineageTagDialog } from './LineageTagDialog'
+import { LineageManualDialogs } from './LineageManualDialogs'
 import { LineageToolbar } from './LineageToolbar'
 import type { LineageNode } from '@shared/models/lineage'
 
@@ -112,9 +113,18 @@ export function LineageBoard(props: {
   const [addOpen, setAddOpen] = useState(false)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
   const [tagNodeId, setTagNodeId] = useState<string | null>(null)
+  // F-LG15 人工父双对话框宿主 state（连接目标选择/管理 label+删除）
+  const [manualParentId, setManualParentId] = useState<string | null>(null)
+  const [manualManageId, setManualManageId] = useState<string | null>(null)
 
+  // tree 父边（kind=tree——manual 入边不算 tree 父，F-LG15：菜单「删除父连线」
+  // 仅针对 tree 边，manual 边删除走管理对话框）
   const menuParentEdge =
-    menu === null ? null : edges.find((e) => e.toNode === menu.node.id) ?? null
+    menu === null
+      ? null
+      : edges.find((e) => e.toNode === menu.node.id && e.kind === 'tree') ?? null
+  const menuManualEdges =
+    menu === null ? [] : edges.filter((e) => e.toNode === menu.node.id && e.kind === 'manual')
   const ideaNode = ideaNodeId === null ? null : nodes.find((n) => n.id === ideaNodeId) ?? null
   const tagNode = tagNodeId === null ? null : nodes.find((n) => n.id === tagNodeId) ?? null
 
@@ -172,11 +182,14 @@ export function LineageBoard(props: {
         <LineageNodeMenu
           node={menu.node}
           parentEdge={menuParentEdge}
+          manualParentEdges={menuManualEdges}
           anchor={menu.anchor}
           onClose={() => setMenu(null)}
           onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
           onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
+          onLinkManualParent={(id) => { setManualParentId(id); setMenu(null) }}
+          onManageManualParents={(id) => { setManualManageId(id); setMenu(null) }}
           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
           onAddTag={(id) => { setTagNodeId(id); setMenu(null) }}
           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
@@ -217,6 +230,20 @@ export function LineageBoard(props: {
           }}
         />
       )}
+      {/* F-LG15 人工父双对话框宿主（连接目标选择/管理 label+删除——拆件
+          LineageManualDialogs；写路径收口 store.linkManualParent·
+          editManualEdgeLabel·removeEdge） */}
+      <LineageManualDialogs
+        nodes={nodes}
+        edges={edges}
+        manualParentId={manualParentId}
+        manualManageId={manualManageId}
+        onCloseParent={() => setManualParentId(null)}
+        onCloseManage={() => setManualManageId(null)}
+        onLinkManualParent={(childId, parentId, label) => store().linkManualParent(childId, parentId, label)}
+        onEditEdgeLabel={(edgeId, label) => store().editManualEdgeLabel(edgeId, label)}
+        onRemoveEdge={(edgeId) => store().removeEdge(edgeId)}
+      />
     </div>
   )
 }

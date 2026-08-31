@@ -162,7 +162,10 @@ function toEdge(row: LineageEdgeRow): LineageEdge {
     fromNode: row.from_node,
     toNode: row.to_node,
     label: row.label,
-    kind: row.kind === 'ref' ? 'ref' : 'tree',
+    // F-LG15 三 kind 归一（enum 外库值归 tree——DB 无 CHECK，防线=zod 单源
+    // 写入口；此处仅读面归一）：ref/manual 原样，其余（含 006 迁移前语义）
+    // 归 tree
+    kind: row.kind === 'ref' ? 'ref' : row.kind === 'manual' ? 'manual' : 'tree',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

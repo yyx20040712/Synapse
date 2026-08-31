@@ -48,6 +48,8 @@
   /* ── R2-LG11 浅色严谨板新增（脉络边框编码/综述关联边——决1/决3 逐值）── */
   --node-branch: #b8c4d4;
   --survey-edge: #c8cdd6;
+  /* F-LG15 人工补父边（琥珀——与 tree 灰蓝实线/ref 淡灰点线三方色型双区分） */
+  --manual-edge: #c07a2a;
   /* 标注调色板（与 ANNOTATION_COLORS 一一对应）：阅读器色板/标注层统一取色 */
   --annotation-yellow: #fde047;
   --annotation-green: #86efac;
@@ -506,6 +508,10 @@ body,
 }
 .lineage-legend-item i.lg-survey {
   border-top: 1.4px dashed var(--survey-edge);
+}
+/* F-LG15 人工补父边图例（琥珀长虚线——与渲染 stroke-dasharray 7 5 同型） */
+.lineage-legend-item i.lg-manual {
+  border-top: 1.4px dashed var(--manual-edge);
 }
 /* 脉络工具条白玻璃浮层（R2-LG11：blur+border+shadow-2） */
 .lineage-toolbar {

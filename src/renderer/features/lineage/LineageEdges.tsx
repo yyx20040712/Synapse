@@ -3,11 +3,12 @@
  * LineageEdges —— 父子连线+边 label 渲染（R2-LG11 浅色严谨板改版；
  * LineageCanvas 拆件——组件 ≤250 行红线，缺陷 E1 修先例）。
  *
- * - **边三型（§1.1.3 矩阵，优先级=综述关联>推断>普通）**：
+ * - **边四型（§1.1.3 矩阵扩 F-LG15，优先级=综述关联>人工>推断>普通）**：
  *   普通 tree 边=var(--node-branch) 1.2 实线；推断边（label 含「推断」）=
  *   #8a94a6 1.2 虚线 5 4；综述关联边（from/to 任一 ∈ surveyIds 或 kind=ref）=
- *   var(--survey-edge) 1.4 虚线 2 3（决3「很淡的灰色虚线」）。glow
- *   filter 全撤（浅色板）。
+ *   var(--survey-edge) 1.4 虚线 2 3（决3「很淡的灰色虚线」）；人工补父边
+ *   （kind=manual，F-LG15）=var(--manual-edge) 1.4 虚线 7 5（琥珀长虚线——
+ *   与 tree 实线/ref 点线三方色型双区分）。glow filter 全撤（浅色板）。
  * - **边 label=F-L1-C 变体 C 窄幅注释**（案册定稿 2026-08-30 用户裁决）：
  *   foreignObject 恒 130×37.05（EDGE_LABEL_MAX_W/H 单源——渲染盒恒上限，
  *   短标签透明空区无视觉影响，FO pointerEvents none）内 HTML div
@@ -85,13 +86,25 @@ export function LineageEdges(props: {
         const y1 = from.y + from.halfH
         const y2 = to.y - to.halfH
         const mid = (y1 + y2) / 2
-        // 边三型优先级（R2-LG12 扩）：ref>综述关联>推断>普通——ref 与综述
-        // 关联同视觉（决3「很淡的灰色虚线」单语义——var(--survey-edge) 1.4 虚
-        // 线 2 3）；ref 直读 e.kind（LineageEdge 出口已带 kind——主控预裁 7）
+        // 边四型优先级（R2-LG12 扩+F-LG15 门一 W1 修正）：manual>ref≈综述关联>
+        // 推断>普通——manual（F-LG15 人工补父）=琥珀 var(--manual-edge) 1.4 虚线
+        // 7 5（与 tree 实线/ref 点线 2 3 三方色型双区分——用户「线的颜色和样式
+        // 要有区分度」）**优先于 surveyIds 标题启发**（综述作人工父是合理场景，
+        // 启发吞色=区分度丢失——门一 W1 处置）；ref 与综述关联保持同视觉（决3
+        // 「很淡的灰色虚线」单语义——var(--survey-edge) 1.4 虚线 2 3）；manual/
+        // ref 直读 e.kind（LineageEdge 出口已带 kind——主控预裁 7）
+        const manual = e.kind === 'manual'
         const survey =
-          e.kind === 'ref' || props.surveyIds.has(e.fromNode) || props.surveyIds.has(e.toNode)
+          !manual &&
+          (e.kind === 'ref' || props.surveyIds.has(e.fromNode) || props.surveyIds.has(e.toNode))
         const inferred = e.label.includes(INFERRED_MARK)
-        const stroke = survey ? 'var(--survey-edge)' : inferred ? INFERRED_STROKE : 'var(--node-branch)'
+        const stroke = survey
+          ? 'var(--survey-edge)'
+          : manual
+            ? 'var(--manual-edge)'
+            : inferred
+              ? INFERRED_STROKE
+              : 'var(--node-branch)'
         const slot = props.slots?.get(e.id)
         const cx = slot?.x ?? (from.x + to.x) / 2
         const cy = slot?.y ?? mid
@@ -102,8 +115,8 @@ export function LineageEdges(props: {
               d={`M ${from.x} ${y1} C ${from.x} ${mid}, ${to.x} ${mid}, ${to.x} ${y2}`}
               fill="none"
               stroke={stroke}
-              strokeWidth={survey ? 1.4 : 1.2}
-              strokeDasharray={survey ? '2 3' : inferred ? '5 4' : undefined}
+              strokeWidth={survey || manual ? 1.4 : 1.2}
+              strokeDasharray={survey ? '2 3' : manual ? '7 5' : inferred ? '5 4' : undefined}
             />
             {e.label !== '' && (
               <foreignObject

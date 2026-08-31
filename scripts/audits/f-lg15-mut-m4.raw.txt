@@ -1,0 +1,4 @@
+[31m   [31m×[31m F-LG15 manual 边渲染（LineageEdges 三方可区分）[2m > [22mmanual 边：var(--manual-edge) 1.4 虚线 7 5（tree 实线/ref 点线 2 3/manual 长虚线 7 5 三方色型双区分）[90m 27[2mms[22m[31m[39m
+[31m   [31m×[31m F-LG15 manual 边渲染（LineageEdges 三方可区分）[2m > [22mmanual 优先于推断标记：label 含「推断」的 manual 边仍 manual 色（人工标注语义>文本启发）[90m 5[2mms[22m[31m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (12)[39m

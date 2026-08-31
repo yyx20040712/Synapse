@@ -55,6 +55,7 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
     },
     upsertEdge: async (req) =>
       deps.services.lineage.upsertEdge({
+        id: req.id, // F-LG15 label 后编辑（更新语义——缺省 undefined=新建）
         fromNode: req.from,
         toNode: req.to,
         label: req.label ?? '',

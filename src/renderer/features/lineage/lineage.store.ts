@@ -79,6 +79,11 @@ export interface LineageStore {
   /** 参考边（R2-LG12 用户裁决 A）：综述→文献 kind='ref'——service 双守
    *  （from 综述限定/拒环/同端点对互斥），CONFLICT 拒绝型丢弃不卡队列 */
   linkRefNodes(from: string, to: string): void
+  /** 人工补父边（F-LG15 用户裁决**不限条数**）：父→子 kind='manual'——
+   *  service 豁免单父/拒环（全边可达图）/同端点对与 tree·ref 互斥 */
+  linkManualParent(childId: string, parentId: string, label?: string): void
+  /** manual 边 label 后编辑（更新语义：id+端点+kind 保持——F-LG15） */
+  editManualEdgeLabel(edgeId: string, label: string): void
   /** 改父=删旧边+加新边两调用（N5 语义；无旧边=仅加边） */
   reparentNode(nodeId: string, newParentId: string): void
   removeNode(id: string): void
@@ -150,7 +155,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           from: action.input.fromNode,
           to: action.input.toNode,
           label: action.input.label,
-          kind: action.input.kind
+          kind: action.input.kind,
+          // F-LG15 label 后编辑：id 提供经 IPC 更新（缺省键不进载荷——既有
+          // 新建断言载荷形状逐字节保持）
+          ...(action.input.id !== undefined ? { id: action.input.id } : {})
         })
       )
       set((s) => ({
@@ -284,6 +292,23 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     linkRefNodes(from, to) {
       enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label: '', kind: 'ref' } })
+    },
+
+    linkManualParent(childId, parentId, label = '') {
+      enqueue({
+        kind: 'upsert-edge',
+        input: { fromNode: parentId, toNode: childId, label, kind: 'manual' }
+      })
+    },
+
+    editManualEdgeLabel(edgeId, label) {
+      const e = get().edges.find((x) => x.id === edgeId)
+      if (e === undefined) throw new Error(`边不在图中：${edgeId}`)
+      // 更新语义：id 提供端点保持（label 后编辑不换父——F-LG15）
+      enqueue({
+        kind: 'upsert-edge',
+        input: { id: e.id, fromNode: e.fromNode, toNode: e.toNode, label, kind: e.kind }
+      })
     },
 
     reparentNode(nodeId, newParentId) {

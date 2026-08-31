@@ -1,0 +1,3 @@
+[31m   [31m×[31m F-LG15 manual 边 upsertEdge 写守卫[2m > [22mmanual 豁免单父+不限条数：to 已有 tree 父仍可挂 manual；两 manual 同子通过（tree 父保留不顶替）[90m 5[2mms[22m[31m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (10)[39m

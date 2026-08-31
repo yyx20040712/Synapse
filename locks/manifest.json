@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-08-31T16:45:41.7658901Z",
+    "generatedAt":  "2026-08-31T17:27:55.1655163Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -136,6 +136,10 @@
                   {
                       "path":  "scripts/audits/f-lg14-verify.mjs",
                       "sha256":  "06630d97d694b7d5be0671256162b7cf9406ea0c08a0a26326db3165fddc007d"
+                  },
+                  {
+                      "path":  "scripts/audits/f-lg15-verify.mjs",
+                      "sha256":  "ce7bda1ecfab40e5b1c62ef8132204d7eb1998157c542546a2e740e5b7a024e8"
                   },
                   {
                       "path":  "scripts/audits/f-r1-dbg.mjs",
@@ -291,7 +295,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "06da91f4818c04caf67fe0820c6de63bb8152d7cd23244e8a5b858f3867434cd"
+                      "sha256":  "f6f3dec5104b685baf8f72774490991e22d4c0ef91a40bd38e03532e90d99c52"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -307,7 +311,7 @@
                   },
                   {
                       "path":  "src/shared/models/lineage.ts",
-                      "sha256":  "5a792b9bac81314785938e5f9bd7176ab0d4689ffe2a0c90201041c8c505e521"
+                      "sha256":  "1221535f44078720df330d04b29c784ee77a2dd8440b25d816125ef78867dd62"
                   },
                   {
                       "path":  "src/shared/models/note.ts",
@@ -578,6 +582,14 @@
                       "sha256":  "15c086ff7b17af0c0ee85810def75a4778ff1bc28fee17686971ee36597c0dca"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-manual-edit.test.tsx",
+                      "sha256":  "80485902cb9f74be26b8beba512e160cab991096bd7b76e1c989f9548aab8097"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-manual-layout.test.ts",
+                      "sha256":  "99176a3acc8a7c226573ad58accdac19818fecc2865ee6fc79ad8574f04d268c"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-node-meta.test.tsx",
                       "sha256":  "c74772bc0e545252c2107aa287fc5bd3841d43736c87b012b00cfe6d5ab88e54"
                   },
@@ -780,6 +792,10 @@
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
                       "sha256":  "fc35317fe19e3234a20149ea6263b97ca6aabca92cde37bb85c7162da361eb99"
+                  },
+                  {
+                      "path":  "tests/unit/services/lineage-manual-edges.test.ts",
+                      "sha256":  "64eb9f6ecab1dad66bb787636d27926937fd3afb9e2ef4e060ad41631313c5ac"
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",

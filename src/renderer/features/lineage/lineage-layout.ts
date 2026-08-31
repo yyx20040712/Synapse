@@ -211,7 +211,9 @@ export function layoutLineage(nodes: LineageNode[], edges: LineageEdge[]): Layou
   }
   let dropped = 0
   for (const e of edges) {
-    if (e.kind === 'ref') continue // 参考边不进树/右列计算（R2-LG12——仅渲染消费，不计 dropped）
+    // 非 tree 边不进树/右列计算（ref=R2-LG12；manual=F-LG15 人工补父纯叠加
+    // 连线——父子几何语义由 tree 边独占，仅渲染消费，不计 dropped）
+    if (e.kind !== 'tree') continue
     if (surveyCol.has(e.fromNode) || surveyCol.has(e.toNode)) continue
     const broken =
       e.fromNode === e.toNode ||
