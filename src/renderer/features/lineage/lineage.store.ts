@@ -36,6 +36,7 @@
 import { create } from 'zustand'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
+import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '@shared/models/lineage'
 
 export type LineageStatus = 'loading' | 'ready' | 'error'
@@ -53,6 +54,8 @@ type WriteAction =
 export interface LineageStore {
   nodes: LineageNode[]
   edges: LineageEdge[]
+  /** F-LG14 含金量摘要（键=paperId，graph 单读随行；主题节点无键） */
+  paperMetrics: Record<string, LineagePaperMetrics>
   status: LineageStatus
   error: string | null
   /** 写面保存态三态（≠saved 即脏——退出聚合输入） */
@@ -69,6 +72,9 @@ export interface LineageStore {
   /** 拖拽落点→x/y 覆盖（JSON Canvas 模式；全字段载荷收口在此防半更新清字段） */
   moveNode(id: string, x: number, y: number): void
   editCoreIdea(id: string, coreIdea: string): void
+  /** F-LG14 标签整组写入（增删 UI 语义化收口——全字段载荷含 tags，经既有
+   *  upsert 通道即时持久化；去重单源在 main repo 写边界） */
+  setNodeTags(id: string, tags: string[]): void
   linkNodes(from: string, to: string, label?: string): void
   /** 参考边（R2-LG12 用户裁决 A）：综述→文献 kind='ref'——service 双守
    *  （from 综述限定/拒环/同端点对互斥），CONFLICT 拒绝型丢弃不卡队列 */
@@ -193,9 +199,23 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     return n
   }
 
+  /** 既有节点→整行 upsert 载荷（全字段防半更新清字段；F-LG14 tags 条件展开：
+   *  null/缺省不进键——载荷形状与既有调用点逐字节保持，tags 在场才随行） */
+  const fullRowInput = (n: LineageNode): LineageNodeUpsert => ({
+    id: n.id,
+    paperId: n.paperId,
+    title: n.title,
+    coreIdea: n.coreIdea,
+    year: n.year,
+    x: n.x,
+    y: n.y,
+    ...(n.tags != null ? { tags: n.tags } : {})
+  })
+
   return {
     nodes: [],
     edges: [],
+    paperMetrics: {},
     status: 'loading',
     error: null,
     saveStatus: 'saved',
@@ -215,7 +235,13 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           if (s === seq) set({ status: 'ready' })
           return
         }
-        set({ nodes: graph.nodes, edges: graph.edges, status: 'ready', error: null })
+        set({
+          nodes: graph.nodes,
+          edges: graph.edges,
+          paperMetrics: graph.paperMetrics ?? {},
+          status: 'ready',
+          error: null
+        })
       } catch (e) {
         if (s !== seq) return
         set({ status: 'error', error: e instanceof Error ? e.message : String(e) })
@@ -238,18 +264,18 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     moveNode(id, x, y) {
       const n = nodeOf(id)
-      enqueue({
-        kind: 'upsert-node',
-        input: { id: n.id, paperId: n.paperId, title: n.title, coreIdea: n.coreIdea, year: n.year, x, y }
-      })
+      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), x, y } })
     },
 
     editCoreIdea(id, coreIdea) {
       const n = nodeOf(id)
-      enqueue({
-        kind: 'upsert-node',
-        input: { id: n.id, paperId: n.paperId, title: n.title, coreIdea, year: n.year, x: n.x, y: n.y }
-      })
+      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), coreIdea } })
+    },
+
+    setNodeTags(id, tags) {
+      const n = nodeOf(id)
+      // 空组归一缺省键（null 语义）——载荷形状与「清空标签」一致
+      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), ...(tags.length > 0 ? { tags } : {}) } })
     },
 
     linkNodes(from, to, label = '') {

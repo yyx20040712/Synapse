@@ -80,6 +80,8 @@ import { LineageCanvas } from './LineageCanvas'
 import { LineageNodeMenu } from './LineageNodeMenu'
 import { LineageAddNodeDialog } from './LineageAddNodeDialog'
 import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
+import { LineageTagDialog } from './LineageTagDialog'
+import { LineageToolbar } from './LineageToolbar'
 import type { LineageNode } from '@shared/models/lineage'
 
 /** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」R2-LG12） */
@@ -100,6 +102,7 @@ export function LineageBoard(props: {
 }): JSX.Element {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
+  const paperMetrics = useLineageStore((s) => s.paperMetrics)
   const saveStatus = useLineageStore((s) => s.saveStatus)
   const lastWriteError = useLineageStore((s) => s.lastWriteError)
   const store = useLineageStore.getState
@@ -108,10 +111,12 @@ export function LineageBoard(props: {
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
+  const [tagNodeId, setTagNodeId] = useState<string | null>(null)
 
   const menuParentEdge =
     menu === null ? null : edges.find((e) => e.toNode === menu.node.id) ?? null
   const ideaNode = ideaNodeId === null ? null : nodes.find((n) => n.id === ideaNodeId) ?? null
+  const tagNode = tagNodeId === null ? null : nodes.find((n) => n.id === tagNodeId) ?? null
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
@@ -126,48 +131,14 @@ export function LineageBoard(props: {
 
   return (
     <div className="relative h-full">
-      {/* 工具条：添加节点入口+保存态指示（autosave-first——无「保存」按钮）。
-          R2-LG11 浅色白玻璃浮层（.lineage-toolbar——视觉皮肤级，行为面零变） */}
-      <div className="lineage-toolbar absolute left-2 top-2 z-10">
-        <button
-          type="button"
-          data-testid="lineage-add-node"
-          onClick={() => setAddOpen(true)}
-        >
-          添加节点
-        </button>
-        <button
-          type="button"
-          data-testid="lineage-import"
-          onClick={importLineageDraft}
-        >
-          导入草稿
-        </button>
-        {saveStatus === 'saving' && (
-          <span className="rounded px-2 py-1 text-xs" data-testid="lineage-save-status">
-            保存中…
-          </span>
-        )}
-        {saveStatus === 'error' && (
-          <span
-            className="flex items-center gap-2 rounded border px-2 py-1 text-xs"
-            role="alert"
-            style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
-            data-testid="lineage-save-status"
-          >
-            保存失败：{lastWriteError}
-            <button
-              type="button"
-              data-testid="lineage-retry-save"
-              className="rounded px-1.5 py-0.5"
-              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-              onClick={() => store().retrySave()}
-            >
-              重试
-            </button>
-          </span>
-        )}
-      </div>
+      {/* 工具条（F-LG14 拆件 LineageToolbar——行为面零变：添加/导入+保存态指示） */}
+      <LineageToolbar
+        saveStatus={saveStatus}
+        lastWriteError={lastWriteError}
+        onAddNode={() => setAddOpen(true)}
+        onImportDraft={importLineageDraft}
+        onRetrySave={() => store().retrySave()}
+      />
 
       {/* 目标选取模式提示条（连线到…/改父…激活期——R2-LG11 浅色板态：
           白底 accent 描边，行为零变） */}
@@ -187,6 +158,7 @@ export function LineageBoard(props: {
       <LineageCanvas
         nodes={nodes}
         edges={edges}
+        paperMetrics={paperMetrics}
         selectedNodeId={props.selectedNodeId ?? null}
         onNodeDrag={(id, x, y) => store().moveNode(id, x, y)}
         onNodeClick={handleNodeClick}
@@ -206,6 +178,7 @@ export function LineageBoard(props: {
           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
           onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
+          onAddTag={(id) => { setTagNodeId(id); setMenu(null) }}
           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
           onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}
         />
@@ -226,6 +199,22 @@ export function LineageBoard(props: {
           node={ideaNode}
           onClose={() => setIdeaNodeId(null)}
           onSave={(id, idea) => store().editCoreIdea(id, idea)}
+        />
+      )}
+
+      {/* F-LG14 添加标签对话框（key 重挂载重置输入——EditIdeaDialog 同型）；
+          保存=既有 tags 合并新标签整组写（去重双保险：面板侧 includes 短路+
+          main repo 写边界单源） */}
+      {tagNode !== null && (
+        <LineageTagDialog
+          key={tagNode.id}
+          open
+          node={tagNode}
+          onClose={() => setTagNodeId(null)}
+          onSave={(id, tag) => {
+            const current = tagNode.tags ?? []
+            if (!current.includes(tag)) store().setNodeTags(id, [...current, tag])
+          }}
         />
       )}
     </div>

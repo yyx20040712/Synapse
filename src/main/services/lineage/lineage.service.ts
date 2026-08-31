@@ -30,6 +30,7 @@ import type {
   LineageNode,
   LineageNodeUpsert
 } from '../../../shared/models/lineage'
+import { venueToTier, type VenueTier } from '../../../shared/venue-tier'
 import type { LineageRepo } from '../../db/repos/lineage.repo'
 
 /** 行级校验错误（path=字段路径如 nodes.0.title / edges.1.to_paper_id） */
@@ -43,6 +44,14 @@ export type LineageImportResult =
   | { ok: true; nodeCount: number; edgeCount: number }
   | { ok: false; errors: DraftIssue[] }
 
+/** F-LG14 含金量摘要（graph 通道逐文献节点载荷；venueTier 映射单源=
+ *  shared/venue-tier.ts venueToTier——受锁常量零改，未映射=null=「未定」；
+ *  citedByCount null=从未抓到=「引 —」，0=已抓到且为 0（值非缺）） */
+export interface LineagePaperMetrics {
+  citedByCount: number | null
+  venueTier: VenueTier | null
+}
+
 export interface LineageService {
   importDraft(raw: unknown): LineageImportResult
   importFromFile(path: string): Promise<LineageImportResult>
@@ -50,7 +59,9 @@ export interface LineageService {
   removeNode(id: string): number
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
   removeEdge(id: string): number
-  graph(): { nodes: LineageNode[]; edges: LineageEdge[] }
+  /** 全图单读+含金量 join（F-LG14：paperMetrics 键=paperId，主题节点不入表；
+   *  批量单语句禁 N+1——主控裁决） */
+  graph(): { nodes: LineageNode[]; edges: LineageEdge[]; paperMetrics: Record<string, LineagePaperMetrics> }
 }
 
 export interface LineageServiceDeps {
@@ -62,6 +73,13 @@ export interface LineageServiceDeps {
   paperExists: (paperId: string) => boolean
   /** 事务边界（repos.withTransaction 注入——清面+重灌原子性） */
   withTransaction: <T>(fn: () => T) => T
+  /** papers 含金量摘要批量查证（F-LG14——装配层接 repos.papers.listMetricsByIds；
+   *  可选缺省=空面（既有单测装配兼容），生产装配恒传真实现） */
+  paperMetrics?: (paperIds: string[]) => Array<{
+    paperId: string
+    venue: string
+    citedByCount: number | null
+  }>
 }
 
 /**
@@ -229,7 +247,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
             coreIdea: n.core_idea,
             year: n.year,
             x: null, // 导入面无手工位置——自动布局（LG-02 消费 null）
-            y: null
+            y: null,
+            tags: n.tags ?? null // F-LG14：草稿带为主（可选缺省=无标签）
           })
           paperToNode.set(n.paper_id, node.id)
           nodeCount++
@@ -343,8 +362,21 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       return deps.repo.removeEdge(id)
     },
 
-    graph(): { nodes: LineageNode[]; edges: LineageEdge[] } {
-      return deps.repo.listGraph()
+    graph(): { nodes: LineageNode[]; edges: LineageEdge[]; paperMetrics: Record<string, LineagePaperMetrics> } {
+      const g = deps.repo.listGraph()
+      // F-LG14 含金量 join：文献节点 paperId 一次收集→批量单语句查证（禁 N+1
+      // 逐节点调用——主控裁决）→venueTier 映射（venueToTier 单源）收口在此。
+      // 主题节点（paperId null）无含金量面不入表。
+      const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
+      const rows = deps.paperMetrics?.(paperIds) ?? []
+      const paperMetrics: Record<string, LineagePaperMetrics> = {}
+      for (const r of rows) {
+        paperMetrics[r.paperId] = {
+          citedByCount: r.citedByCount,
+          venueTier: venueToTier(r.venue)
+        }
+      }
+      return { nodes: g.nodes, edges: g.edges, paperMetrics }
     }
   }
 }

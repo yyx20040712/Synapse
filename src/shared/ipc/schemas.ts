@@ -259,16 +259,34 @@ export const lineageImportResSchema = z.union([
 ])
 export type LineageImportRes = z.infer<typeof lineageImportResSchema>
 
-/** lineage/graph 响应：全图单读（库空=空数组，合法态非错误；模型单源=shared/models/lineage） */
+/** F-LG14 含金量摘要（lineage/graph 逐文献节点）：citedByCount null=从未抓到
+ *  （渲染「引 —」）；venueTier null=未映射（渲染「未定」）；0=值非缺（判别 === null）。
+ *  venueTier 值域=VenueTier 三档（映射单源 shared/venue-tier.ts，受锁常量零改） */
+export const lineagePaperMetricsSchema = z
+  .object({
+    citedByCount: z.number().int().nullable(),
+    venueTier: z.enum(['T1', 'T2', 'T3']).nullable()
+  })
+  .strict()
+export type LineagePaperMetrics = z.infer<typeof lineagePaperMetricsSchema>
+
+/** lineage/graph 响应：全图单读+含金量 join（库空=空数组/空表，合法态非错误；
+ *  模型单源=shared/models/lineage——paperMetrics 键=paperId，主题节点不入表
+ *  [F-LG14 载荷扩展：加字段向后兼容]） */
 export const lineageGraphResSchema = z
-  .object({ nodes: z.array(lineageNodeSchema), edges: z.array(lineageEdgeSchema) })
+  .object({
+    nodes: z.array(lineageNodeSchema),
+    edges: z.array(lineageEdgeSchema),
+    paperMetrics: z.record(z.string(), lineagePaperMetricsSchema)
+  })
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
 
 // ── lineage 写四通道（LG-03 交互编辑：autosave-first，每编辑动作即写）────
 /** lineage/upsert-node 请求：应用面 camelCase 输入（模型单源派生语义——id 缺省=新建；
  *  paperId 省略/null=主题节点；x/y 省略/null=自动布局（JSON Canvas 覆盖语义的反向清空）；
- *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段） */
+ *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段）；
+ *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空） */
 export const lineageUpsertNodeReqSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -277,7 +295,8 @@ export const lineageUpsertNodeReqSchema = z
     coreIdea: z.string(),
     year: z.number().int().nullable(),
     x: z.number().nullable().optional(),
-    y: z.number().nullable().optional()
+    y: z.number().nullable().optional(),
+    tags: z.array(z.string()).nullable().optional()
   })
   .strict()
 export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>

@@ -99,6 +99,9 @@ export interface PapersRepo {
   listSummariesByIds(ids: string[]): PaperSummary[]
   listAllIds(): string[]
   detailById(id: string): PaperDetail | null
+  /** F-LG14 含金量摘要批量查证（venue+cited_by_count；graph 通道 join 单源——
+   *  批量 in-query 单语句禁 N+1，listSummariesByIds 同型；空 ids=空数组） */
+  listMetricsByIds(ids: string[]): Array<{ paperId: string; venue: string; citedByCount: number | null }>
 }
 
 /** 预编译语句类型（显式给 unknown[]：ReturnType 推导会被条件类型解析成单参语句） */
@@ -216,6 +219,14 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     listAllIds() {
       const rows = stmt('SELECT id FROM papers ORDER BY added_at DESC, rowid DESC').all() as Array<{ id: string }>
       return rows.map((r) => r.id)
+    },
+    listMetricsByIds(ids) {
+      if (ids.length === 0) return []
+      const marks = ids.map(() => '?').join(', ')
+      const rows = stmt(
+        `SELECT id, venue, cited_by_count FROM papers WHERE id IN (${marks})`
+      ).all(...ids) as Array<{ id: string; venue: string; cited_by_count: number | null }>
+      return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count }))
     },
     detailById(id) {
       const r = stmt(DETAIL_SQL).get(id) as DetailRow | undefined

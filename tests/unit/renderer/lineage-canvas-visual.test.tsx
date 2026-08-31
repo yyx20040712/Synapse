@@ -152,7 +152,9 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     const footer = host?.querySelector('[data-node-id="L"] [data-card-footer]')
     expect(footer).not.toBeNull()
     expect(footer?.getAttribute('style')).toContain('height: 24px')
-    expect(footer?.textContent).toBe('2020')
+    // F-LG14 填充后底行=含金量占位「引 — · 未定」+年份（无 metrics 态）——锚
+    // 改向 toContain：年份承载保持（F-LG13 占位期 toBe 字面随填充语义随令失效）
+    expect(footer?.textContent).toContain('2020')
     // 全文 tooltip=题名 div title 属性（HTML 原生零依赖；SVG <title> 元素
     // 与题名文本同名双元素撞 e2e getByText strict——T1 实录改道，属性值
     // 不入 textContent 单源保持）

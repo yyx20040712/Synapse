@@ -73,3 +73,20 @@ CREATE TABLE lineage_edges (
 - 前置依赖：P7-G AI-06~10（节点核心 idea 来自 AI 语料）、P7-C N1 锚点定位服务
   （双击跳转）、P7-F 几何（F-aware 接口）。
 - AGENTS 负面清单「知识图谱」措辞修订（指针本 ADR）。
+
+## 修订记录 v1.1（2026-08-31 F-LG14：draft 节点加可选 tags 字段）
+
+> 需求源=用户反馈批图6/图7（脉络卡底行「含金量+标签组+年份」）；台账
+> 2026-08-31 四项口径裁决在档。非破坏性修订——v1 加可选字段=向后兼容
+> （ADR-0011「新增字段必须可选」规则同精神）。
+
+1. **draft 协议扩展**：lineageDraftNodeSchema 节点加可选 `tags`（字符串数组，
+   元素非空；缺省省略）。口径=草稿带为主（梳理智能体产物可带标签，导入即有），
+   旧版本草稿（无 tags）导入零破坏。
+2. **存储面**：迁移 007 lineage_nodes 加 `tags TEXT`（JSON 数组序列化；
+   NULL=无标签——存量库零迁移兼容，无数据搬迁）。同节点同名标签去重=
+   写边界单源（dedupeLineageTags，repo upsertNode 单点收口），DDL 不承担
+   行为约束（本 ADR「树约束在 service 不在 DDL」同精神）。
+3. **含金量摘要非 draft 面**：citedByCount/venueTier 来自 papers 增强缓存+
+   venue-tier 受锁映射（ENR-01/02 交付），graph 通道 join 透出（渲染层零
+   额外取数）——不进 draft 协议（草稿只承载人工策展语义字段）。

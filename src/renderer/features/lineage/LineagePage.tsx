@@ -91,7 +91,11 @@ export function LineagePage(): JSX.Element {
       {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
           尺寸直通（接线零动，纯容器样式归并） */}
       <aside className="w-72 shrink-0 overflow-hidden">
-        <LineageSidePanel node={selectedNode} onJumpToPaper={handleJumpToPaper} />
+        <LineageSidePanel
+          node={selectedNode}
+          onJumpToPaper={handleJumpToPaper}
+          onSetTags={(id, tags) => useLineageStore.getState().setNodeTags(id, tags)}
+        />
       </aside>
     </div>
   )

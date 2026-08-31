@@ -1,0 +1,60 @@
+    [90m123| [39m  [35mif[39m (btn [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m`菜单项不存在：[39m[36m${[39mlabel[36m}[39m[32m`[39m)
+    [90m   | [39m                               [31m^[39m
+    [90m124| [39m  [34mact[39m(() [33m=>[39m {
+    [90m125| [39m    btn[33m.[39m[34mclick[39m()
+[90m [2m❯[22m tests/unit/renderer/lineage-tag-edit.test.tsx:[2m193:3[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/24]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-tag-edit.test.tsx[2m > [22m空标签名不派发（按钮禁用或提交短路——空串标签不入库）
+[31m[1mError[22m: 菜单项不存在：添加标签…[39m
+[36m [2m❯[22m clickMenu tests/unit/renderer/lineage-tag-edit.test.tsx:[2m123:32[22m[39m
+    [90m121| [39m  [35mif[39m (menu [33m===[39m [35mnull[39m) [35mthrow[39m [35mnew[39m [33mError[39m([32m'节点菜单未渲染'[39m)
+    [90m122| [39m  [35mconst[39m btn [33m=[39m [[33m...[39mmenu[33m.[39m[34mquerySelectorAll[39m([32m'button'[39m)][33m.[39m[34mfind[39m((b) [33m=>[39m b[33m.[39mtextC…
+    [90m123| [39m  [35mif[39m (btn [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m`菜单项不存在：[39m[36m${[39mlabel[36m}[39m[32m`[39m)
+    [90m   | [39m                               [31m^[39m
+    [90m124| [39m  [34mact[39m(() [33m=>[39m {
+    [90m125| [39m    btn[33m.[39m[34mclick[39m()
+[90m [2m❯[22m tests/unit/renderer/lineage-tag-edit.test.tsx:[2m209:3[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/24]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-tag-edit.test.tsx[2m > [22m侧板标签区：chips 渲染+移除上抛（剩余数组）；输入添加上抛（合并数组）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-tag-edit.test.tsx[2m > [22m侧板同名标签短路：已存在标签再添加不派发（同节点同名去重面板面）
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'listByPaper')[39m
+[36m [2m❯[22m src/renderer/features/lineage/LineageSideAiNotes.tsx:[2m52:26[22m[39m
+    [90m 50| [39m    [35mlet[39m seq [33m=[39m [34m0[39m
+    [90m 51| [39m    [34msetPhase[39m([32m'loading'[39m)
+    [90m 52| [39m    [34munwrap[39m(api[33m.[39mai_sensor[33m.[39m[34mlistByPaper[39m({ paperId }))
+    [90m   | [39m                         [31m^[39m
+    [90m 53| [39m      [33m.[39m[34mthen[39m((data) [33m=>[39m {
+    [90m 54| [39m        [35mif[39m (seq [33m!==[39m [34m0[39m) [35mreturn[39m
+[90m [2m❯[22m commitHookEffectListMount node_modules/react-dom/cjs/react-dom.development.js:[2m23189:26[22m[39m
+[90m [2m❯[22m commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom.development.js:[2m24970:11[22m[39m
+[90m [2m❯[22m commitPassiveMountEffects_complete node_modules/react-dom/cjs/react-dom.development.js:[2m24930:9[22m[39m
+[90m [2m❯[22m commitPassiveMountEffects_begin node_modules/react-dom/cjs/react-dom.development.js:[2m24917:7[22m[39m
+[90m [2m❯[22m commitPassiveMountEffects node_modules/react-dom/cjs/react-dom.development.js:[2m24905:3[22m[39m
+[90m [2m❯[22m flushPassiveEffectsImpl node_modules/react-dom/cjs/react-dom.development.js:[2m27078:3[22m[39m
+[90m [2m❯[22m flushPassiveEffects node_modules/react-dom/cjs/react-dom.development.js:[2m27023:14[22m[39m
+[90m [2m❯[22m commitRootImpl node_modules/react-dom/cjs/react-dom.development.js:[2m26974:5[22m[39m
+[90m [2m❯[22m commitRoot node_modules/react-dom/cjs/react-dom.development.js:[2m26721:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/24]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-tag-edit.test.tsx[2m > [22mstore.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）
+[31m[1mTypeError[22m: useLineageStore.getState(...).setNodeTags is not a function[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-tag-edit.test.tsx:[2m275:30[22m[39m
+    [90m273| [39m    ({ ok[33m:[39m [35mtrue[39m[33m,[39m data[33m:[39m [34mserverNode[39m([34mnode[39m([32m'A'[39m[33m,[39m req)) })
+    [90m274| [39m  )
+    [90m275| [39m  useLineageStore[33m.[39m[34mgetState[39m()[33m.[39m[34msetNodeTags[39m([32m'A'[39m[33m,[39m [[32m'综述'[39m[33m,[39m [32m'早期'[39m])
+    [90m   | [39m                             [31m^[39m
+    [90m276| [39m  [35mawait[39m [34msettle[39m()
+    [90m277| [39m  [34mexpect[39m(stubApi[33m.[39mlineage[33m.[39mupsertNode)[33m.[39m[34mtoHaveBeenCalledWith[39m({
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/24]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m24 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (25)[39m
+[2m   Start at [22m 00:15:40
+[2m   Duration [22m 1.71s[2m (transform 182ms, setup 0ms, collect 633ms, tests 139ms, environment 1.74s, prepare 667ms)[22m
+

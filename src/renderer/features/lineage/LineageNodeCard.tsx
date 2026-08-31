@@ -19,9 +19,9 @@
  *   （Chromium foreignObject 滚轮路由不确定——INV-41 回炉 1 R2 同款）；
  *   未溢出不吞 zoom（滚轮归画布缩放）。滚动条拖动=原生行为恒归题名
  *   （不产生 wheel 事件，无抢占面）。
- * - **底行信息区（主控裁决 6——F-LG14 填充锚）**：卡底恒 24px 行
- *   （data-card-footer）承载年份；F-LG14 接着填含金量/年份/标签——高度
- *   含在统一高 110 内，14 不再改卡结构常量。
+ * - **底行信息区（F-LG13 锚+F-LG14 填充）**：卡底恒 24px 行（data-card-footer）
+ *   承载 LineageNodeMeta 三段（含金量/标签组/年份——拆件行数红线落点）；
+ *   高度含在统一高 110 内，卡几何常量零改。
  * - **边框编码矩阵（决1 A 线型×色阶，测试逐格断言）**：
  *   文献·核心（props.core——Canvas 经 classify.isCore 预计算）=
  *   var(--accent) 1.5 实线；文献·普通=var(--node-branch) 1 实线；
@@ -37,8 +37,10 @@
 import { useEffect, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
+import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { nodeHeight, nodeWidth } from './lineage-layout'
 import { isSurvey } from './lineage-classify'
+import { LineageNodeMeta } from './LineageNodeMeta'
 
 /**
  * 题名区样式（F-LG13 滚动区：完整文本+overflow-y auto+细滚动条；
@@ -65,6 +67,9 @@ export function LineageNodeCard(props: {
   selected: boolean
   /** 核心档（决2 D1'——Canvas 预计算传入，卡内不自算） */
   core: boolean
+  /** F-LG14 含金量摘要（Canvas 按 paperId 查 store paperMetrics 表传入；
+   *  null/缺席=「引 — · 未定」占位；主题节点不消费） */
+  metrics?: LineagePaperMetrics | null
   onPointerDown: (e: ReactPointerEvent<SVGGElement>) => void
   onContextMenu: (e: ReactMouseEvent<SVGGElement>) => void
 }): JSX.Element {
@@ -129,8 +134,8 @@ export function LineageNodeCard(props: {
           <div ref={titleRef} style={TITLE_STYLE} title={n.title}>
             {n.title}
           </div>
-          {/* 底行信息区（F-LG14 填充锚）：恒 24px——本票承载年份居中，
-              F-LG14 接着填含金量/年份/标签（主控裁决 6：高度含在统一高内） */}
+          {/* 底行信息区（F-LG13 锚：恒 24px；F-LG14 填充=LineageNodeMeta——
+              含金量+标签组+年份三段，高度含在统一高 110 内（主控裁决 6）） */}
           <div
             data-card-footer
             style={{
@@ -139,11 +144,12 @@ export function LineageNodeCard(props: {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 4,
               fontSize: '12px',
               color: 'var(--text-dim)'
             }}
           >
-            {n.year === null ? '未知年份' : String(n.year)}
+            <LineageNodeMeta node={n} metrics={props.metrics} />
           </div>
         </div>
       </foreignObject>

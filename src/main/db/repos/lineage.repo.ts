@@ -90,7 +90,13 @@
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import { randomUUID } from 'node:crypto'
-import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '../../../shared/models/lineage'
+import {
+  dedupeLineageTags,
+  type LineageEdge,
+  type LineageEdgeUpsert,
+  type LineageNode,
+  type LineageNodeUpsert
+} from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
 
 export interface LineageRepo {
@@ -107,7 +113,8 @@ export interface LineageRepo {
   clearGraph(): void
 }
 
-/** lineage_nodes 表行形状（列名原样，蛇形） */
+/** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列 JSON 数组 TEXT，
+ *  NULL=无标签（存量行零迁移兼容）） */
 interface LineageNodeRow {
   id: string
   paper_id: string | null
@@ -116,6 +123,7 @@ interface LineageNodeRow {
   year: number | null
   x: number | null
   y: number | null
+  tags: string | null
   created_at: string
   updated_at: string
 }
@@ -140,6 +148,9 @@ function toNode(row: LineageNodeRow): LineageNode {
     year: row.year,
     x: row.x,
     y: row.y,
+    // 007 列：NULL=无标签；JSON 数组直解（写入面单源 JSON.stringify——库内
+    // 非法 JSON 只能来自库外手改，读面原样上抛（禁静默吞错——graph error 态可见）
+    tags: row.tags === null ? null : (JSON.parse(row.tags) as string[]),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -159,11 +170,12 @@ function toEdge(row: LineageEdgeRow): LineageEdge {
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
   const upsertNodeStmt = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, created_at, updated_at)
-     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @now, @now)
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
-       year = excluded.year, x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`
+       year = excluded.year, x = excluded.x, y = excluded.y, tags = excluded.tags,
+       updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
     `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
@@ -193,6 +205,9 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         year: input.year,
         x: input.x,
         y: input.y,
+        // F-LG14 写边界单点：null/缺省=NULL（清空语义）；数组=去重后 JSON 落库
+        // （dedupe 单源 shared/models——service upsert/导入/应用内增删全经此口）
+        tags: input.tags == null ? null : JSON.stringify(dedupeLineageTags(input.tags)),
         now
       })
       return toNode(nodeByIdStmt.get(id) as LineageNodeRow)

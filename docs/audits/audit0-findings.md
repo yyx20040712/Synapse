@@ -584,3 +584,19 @@ F-ARCH1(一行+一测)→F-ARCH2→F-A1 fixture 票→F-ARCH5 消环(冻结窗�
 执行序:F-V1→F-V2→F-LG13→F-LG14→F-LG15(前二排查先行,后三
 按票走三屋;F-V1/F-V2 reader 域与 F-LG* lineage 域文件面不交叉,
 可并行派发但 ABI 争用统一 verify 兜底——v16 §3 规程)。
+
+**2026-08-31 深夜场收口(新反馈批首轮五票中三票闭环)**:执行序完成
+F-V1→F-V2→F-LG13 三票全闭环——①**F-V2** 主控直做(探针单轮定位
+ui-scale 复合口径,真机空白 -88%,e2e/单测/typecheck 三验,提交
+58a55ca22);②**F-V1** 三屋(主控排查真机实证根因=紧凑行距行簇错联
++INV-D 级联,实现者 a+c 选型,门一对抗深审过+合并门二可收口,M2/M3
+收口补档红证,真机五判据,提交 09c0218e2,INV-47 登记);③**F-LG13**
+三屋(实现者并行同工作区,240×110 统一+紧凑+题名滚动,门一过+合并
+门二可收口,真机 4/4,提交 c91d4a2fd,INV-36/38 修订,locks 214→217)。
+收口亲验 verify exit=0(120 文件 1024)+e2e 29(P7-A flike 复跑绿
+——**第五现**,专项候选升级)。环境备案:门二发现 D:\nodejs 已漂移
+v25(localStorage 污染 split-pane 11 红)——本机 node 24 在
+/d/nodejs24,一切命令须 PATH 前导;探针 ABI 双坑入档(node 态起
+Electron 必崩→探针前 use electron;verify/test 前 use node)。
+**待办**:F-LG14(元信息区,依赖 LG13 底行锚已就绪)/F-LG15(人工
+父边)两票票面已写待派发(串行——两票都动 LineageNodeMenu)。

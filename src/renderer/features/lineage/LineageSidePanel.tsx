@@ -88,6 +88,7 @@ import type { AiNote } from '@shared/models/ai-note'
 import type { LineageNode } from '@shared/models/lineage'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideManualNote } from './LineageSideManualNote'
+import { LineageSideTags } from './LineageSideTags'
 
 /**
  * R2-LG11 侧板浅色化（浅色严谨板）：白玻璃卡（rgba(255,255,255,0.92)+
@@ -128,6 +129,9 @@ export function LineageSidePanel(props: {
     }
     aiNoteId?: string
   } | null): void
+  /** F-LG14 标签整组写入上抛（Page 编排→lineage.store.setNodeTags——既有
+   *  upsert 通道；缺省不呈现标签编辑区=纯只读消费面兼容） */
+  onSetTags?: (nodeId: string, tags: string[]) => void
 }): JSX.Element {
   const { node } = props
   if (node === null) {
@@ -179,6 +183,7 @@ export function LineageSidePanel(props: {
           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
         </p>
       </section>
+      {props.onSetTags !== undefined && <LineageSideTags node={node} onSetTags={props.onSetTags} />}
       {node.paperId === null ? (
         <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
       ) : (

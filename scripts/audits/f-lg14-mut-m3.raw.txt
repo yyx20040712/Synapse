@@ -1,0 +1,5 @@
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-node-meta.test.tsx[2m > [22m文献节点底行：引 42 · T1档（并列原始值）+年份+标签组三段齐备
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-node-meta.test.tsx[2m > [22mcitedByCount null=「引 —」（venueTier 有值仍并列）；venueTier null=「未定」
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-node-meta.test.tsx[2m > [22mcitedByCount 0=值非缺：引 0（判别 === null——与「从未抓到」语义分立）
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (7)[39m

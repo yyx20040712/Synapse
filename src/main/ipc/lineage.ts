@@ -46,7 +46,8 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         coreIdea: req.coreIdea,
         year: req.year,
         x: req.x ?? null,
-        y: req.y ?? null
+        y: req.y ?? null,
+        tags: req.tags ?? null // F-LG14：缺省归一 null=清空（paperId/x/y 同款）
       }),
     removeNode: async (req) => {
       deps.services.lineage.removeNode(req.id)

@@ -128,7 +128,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     lineage: createLineageService({
       repo: deps.repos.lineage,
       paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型
-      withTransaction: deps.repos.withTransaction // 清面+重灌原子边界
+      withTransaction: deps.repos.withTransaction, // 清面+重灌原子边界
+      paperMetrics: (ids) => deps.repos.papers.listMetricsByIds(ids) // F-LG14 含金量 join 单源
     })
   }
 }

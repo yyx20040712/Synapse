@@ -239,7 +239,8 @@ it('空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语
   svc.importDraft(draft({}))
   const r = svc.importDraft({ nodes: [], edges: [] })
   expect(r).toEqual({ ok: true, nodeCount: 0, edgeCount: 0 })
-  expect(svc.graph()).toEqual({ nodes: [], edges: [] })
+  // F-LG14 graph 载荷扩展（paperMetrics——契约扩展非放宽）：空图=空表合法态
+  expect(svc.graph()).toEqual({ nodes: [], edges: [], paperMetrics: {} })
 })
 
 it('悬空边拒绝：边引用不在节点清单的文献 → errors', () => {

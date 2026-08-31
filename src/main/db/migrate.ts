@@ -14,6 +14,7 @@ import aiNotesSql from './migrations/003_ai_notes.sql?raw'
 import lineageSql from './migrations/004_lineage.sql?raw'
 import citedBySql from './migrations/005_cited_by.sql?raw'
 import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
+import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
 
 export interface Migration {
   version: number
@@ -28,7 +29,8 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 3, name: 'ai_notes', sql: aiNotesSql },
   { version: 4, name: 'lineage', sql: lineageSql },
   { version: 5, name: 'cited_by', sql: citedBySql },
-  { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql }
+  { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql },
+  { version: 7, name: 'lineage_node_tags', sql: nodeTagsSql }
 ]
 
 export interface MigrateResult {

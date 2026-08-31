@@ -48,7 +48,17 @@ export const lineageDraftNodeSchema = z
     core_idea: z.string({
       required_error: 'core_idea 缺失',
       invalid_type_error: 'core_idea 应为字符串'
-    })
+    }),
+    /** F-LG14 可选标签（口径=草稿带为主，导入即有；缺省省略=旧版草稿零破坏
+     *  ——ADR-0014 修订记录 v1.1：v1 加可选字段=向后兼容）。元素=非空字符串
+     *  （空串标签无语义拒收）；同节点同名标签去重=repo 写边界单源
+     *  dedupeLineageTags（本文件导出）。 */
+    tags: z
+      .array(
+        z.string({ invalid_type_error: '标签应为字符串' }).min(1, '标签不能为空字符串'),
+        { invalid_type_error: 'tags 应为数组' }
+      )
+      .optional()
   })
   .strict()
 export type LineageDraftNode = z.infer<typeof lineageDraftNodeSchema>
@@ -99,11 +109,22 @@ export const lineageNodeSchema = z
     /** 手工位置覆盖（JSON Canvas 模式）；null=自动布局（LG-02 消费） */
     x: z.number().nullable(),
     y: z.number().nullable(),
+    /** F-LG14 节点标签（迁移 007 JSON 数组 TEXT 列；null=无标签不渲染）。
+     *  optional 语义=输入面缺省同 null（整行 upsert 全量语义下「省略 tags」=
+     *  清空标签——paperId/x/y 反向清空同款；类型面兼容存量夹具/旧调用点） */
+    tags: z.array(z.string()).nullable().optional(),
     createdAt: z.string(),
     updatedAt: z.string()
   })
   .strict()
 export type LineageNode = z.infer<typeof lineageNodeSchema>
+
+/** 同节点同名标签去重（F-LG14 主控裁决 7）：首见序保留（Set 插入序）。
+ *  单源消费=lineage.repo.upsertNode 写边界（service upsert/导入/detach 全
+ *  走 repo 单点——DB 恒无重复标签；渲染/面板面按到达序展示） */
+export function dedupeLineageTags(tags: readonly string[]): string[] {
+  return [...new Set(tags)]
+}
 
 /** 边类型（R2-LG12，用户裁决 A）：tree=树边（单父不变量 INV-27 原语义）/
  *  ref=参考边（综述节点→文献——service 层豁免单父、仍拒环、同端点对与

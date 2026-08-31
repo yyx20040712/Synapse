@@ -25,6 +25,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { BAND_LEFT, BAND_RIGHT, LAYER_LABEL_DY, layoutLineage, nodeHeight, nodeWidth } from './lineage-layout'
 import { isCore, isSurvey } from './lineage-classify'
 import { estimateLabelWidth, placeEdgeLabels } from './edge-label-layout'
@@ -50,8 +51,11 @@ export function LineageCanvas(props: {
   nodes: LineageNode[]
   edges: LineageEdge[]
   selectedNodeId?: string | null
+  /** F-LG14 含金量摘要表（键=paperId；Board 自 store 分发传入；缺省=占位段） */
+  paperMetrics?: Record<string, LineagePaperMetrics>
 } & CanvasEditCallbacks): JSX.Element {
   const { nodes, edges } = props
+  const paperMetrics = props.paperMetrics ?? {}
   const layout = useMemo(() => layoutLineage(nodes, edges), [nodes, edges])
   const svgRef = useRef<SVGSVGElement | null>(null)
   // auto-fit/pan/zoom（R2-LG10）：视口域全在 lineage-viewport.ts；本组件只
@@ -190,7 +194,8 @@ export function LineageCanvas(props: {
           {/* 父子连线+边 label（三型色——geom/surveyIds 预构建传入；slots=
               防重叠放置器槽位 F-L1-C） */}
           <LineageEdges edges={edges} geom={geom} surveyIds={surveyIds} slots={slots} />
-          {/* 节点卡片（白卡边框编码——core 预计算；拖拽期叠加 dragView 偏移跟随） */}
+          {/* 节点卡片（白卡边框编码——core 预计算；拖拽期叠加 dragView 偏移跟随；
+              metrics 查表传入（主题节点卡内不消费——Meta 件判定）） */}
           {nodes.map((n) => {
             const p = layout.positions.get(n.id)
             if (p === undefined) return null
@@ -202,6 +207,7 @@ export function LineageCanvas(props: {
                 offset={dragView?.id === n.id ? dragView : null}
                 selected={props.selectedNodeId === n.id}
                 core={coreIds.get(n.id) === true}
+                metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
                 onPointerDown={(e) => {
                   dragRef.current = { id: n.id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y }
                 }}
