@@ -1,0 +1,449 @@
+{
+  "summary": {
+    "allPass": true,
+    "checks": [
+      {
+        "label": "①② 紧凑行距·蓝链 selection-rect",
+        "pass": true,
+        "rectCount": 7,
+        "rowsCovered": 7,
+        "onePerRow": true,
+        "noOrphan": true,
+        "inBounds": true,
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "label": "③ 紧凑行距·黄链 annotation-rect",
+        "pass": true,
+        "rectCount": 7,
+        "rowsCovered": 7,
+        "onePerRow": true,
+        "noOrphan": true,
+        "inBounds": true,
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "label": "④ 第二篇文献·蓝链回归",
+        "pass": true,
+        "rectCount": 7,
+        "rowsCovered": 7,
+        "onePerRow": true,
+        "noOrphan": true,
+        "inBounds": true,
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "label": "⑤ pageerror",
+        "pass": true,
+        "count": 0
+      }
+    ]
+  },
+  "results": [
+    {
+      "label": "①② 紧凑行距·蓝链 selection-rect",
+      "rectCount": 7,
+      "rowsCovered": 7,
+      "onePerRow": true,
+      "noOrphan": true,
+      "inBounds": true,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "badX": [],
+      "pass": true,
+      "anchors": {
+        "x1": 1209.7474639892578,
+        "y1": 607.3187747001648,
+        "x2": 1342.4188079833984,
+        "y2": 679.0437502861023,
+        "rowsTotal": 56
+      }
+    },
+    {
+      "label": "③ 紧凑行距·黄链 annotation-rect",
+      "rectCount": 7,
+      "rowsCovered": 7,
+      "onePerRow": true,
+      "noOrphan": true,
+      "inBounds": true,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "badX": [],
+      "pass": true
+    },
+    {
+      "label": "④ 第二篇文献·蓝链回归",
+      "rectCount": 7,
+      "rowsCovered": 7,
+      "onePerRow": true,
+      "noOrphan": true,
+      "inBounds": true,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "badX": [],
+      "pass": true,
+      "anchors": {
+        "x1": 1330.9800197601319,
+        "y1": 589.1749999523163,
+        "x2": 1301.2380859375,
+        "y2": 651.974987745285,
+        "rowsTotal": 54
+      },
+      "debug": {
+        "spans": 713,
+        "inkSpans": 526,
+        "selTextLen": 172,
+        "selRangeRects": 34,
+        "selRectEls": 7,
+        "toolbar": 1
+      },
+      "rowsYX": [
+        {
+          "cy": 179.2,
+          "left": 1198.1,
+          "right": 1353.1
+        },
+        {
+          "cy": 205.7,
+          "left": 1206.8,
+          "right": 1347.5
+        },
+        {
+          "cy": 231.9,
+          "left": 1184,
+          "right": 1370.3
+        },
+        {
+          "cy": 261.5,
+          "left": 1185.6,
+          "right": 1368.8
+        },
+        {
+          "cy": 312.4,
+          "left": 1016,
+          "right": 1462.3
+        },
+        {
+          "cy": 329.6,
+          "left": 1016,
+          "right": 1462.4
+        },
+        {
+          "cy": 355.5,
+          "left": 1016,
+          "right": 1278.5
+        },
+        {
+          "cy": 373.1,
+          "left": 1016,
+          "right": 1412.7
+        },
+        {
+          "cy": 405.9,
+          "left": 1016,
+          "right": 1237.1
+        },
+        {
+          "cy": 424.6,
+          "left": 1016,
+          "right": 1536
+        },
+        {
+          "cy": 433.2,
+          "left": 1016,
+          "right": 1536
+        },
+        {
+          "cy": 441.8,
+          "left": 1016,
+          "right": 1536
+        },
+        {
+          "cy": 450.4,
+          "left": 1016,
+          "right": 1536.1
+        },
+        {
+          "cy": 458.9,
+          "left": 1016,
+          "right": 1063.5
+        },
+        {
+          "cy": 467.4,
+          "left": 1016,
+          "right": 1536.3
+        },
+        {
+          "cy": 473.2,
+          "left": 1180.4,
+          "right": 1536
+        },
+        {
+          "cy": 482.8,
+          "left": 1180.4,
+          "right": 1536.1
+        },
+        {
+          "cy": 492.3,
+          "left": 1180.4,
+          "right": 1536.1
+        },
+        {
+          "cy": 501.9,
+          "left": 1180.4,
+          "right": 1536.1
+        },
+        {
+          "cy": 511.5,
+          "left": 1180.4,
+          "right": 1536.1
+        },
+        {
+          "cy": 521.1,
+          "left": 1180.4,
+          "right": 1536
+        },
+        {
+          "cy": 530.7,
+          "left": 1180.4,
+          "right": 1536
+        },
+        {
+          "cy": 540.2,
+          "left": 1180.4,
+          "right": 1536.1
+        },
+        {
+          "cy": 549.8,
+          "left": 1180.4,
+          "right": 1225.2
+        },
+        {
+          "cy": 589.2,
+          "left": 1285,
+          "right": 1354.6
+        },
+        {
+          "cy": 599.6,
+          "left": 1285,
+          "right": 1433.4
+        },
+        {
+          "cy": 609.8,
+          "left": 1016,
+          "right": 1429.9
+        },
+        {
+          "cy": 620.5,
+          "left": 1016,
+          "right": 1390.9
+        },
+        {
+          "cy": 630.9,
+          "left": 1016,
+          "right": 1484
+        },
+        {
+          "cy": 641.4,
+          "left": 1016,
+          "right": 1375.7
+        },
+        {
+          "cy": 651.8,
+          "left": 1016,
+          "right": 1438.9
+        },
+        {
+          "cy": 662.3,
+          "left": 1016,
+          "right": 1356.2
+        },
+        {
+          "cy": 672.8,
+          "left": 1016,
+          "right": 1392.9
+        },
+        {
+          "cy": 683.2,
+          "left": 1016,
+          "right": 1419.7
+        },
+        {
+          "cy": 693.7,
+          "left": 1016,
+          "right": 1423.6
+        },
+        {
+          "cy": 704.2,
+          "left": 1016,
+          "right": 1431.9
+        },
+        {
+          "cy": 714.5,
+          "left": 1016,
+          "right": 1458.6
+        },
+        {
+          "cy": 725.1,
+          "left": 1016,
+          "right": 1397.1
+        },
+        {
+          "cy": 735.5,
+          "left": 1016,
+          "right": 1412
+        },
+        {
+          "cy": 746,
+          "left": 1016,
+          "right": 1399.8
+        },
+        {
+          "cy": 756.4,
+          "left": 1016,
+          "right": 1413.3
+        },
+        {
+          "cy": 766.9,
+          "left": 1016,
+          "right": 1407.3
+        },
+        {
+          "cy": 777.3,
+          "left": 1016,
+          "right": 1389.8
+        },
+        {
+          "cy": 787.8,
+          "left": 1016,
+          "right": 1117.7
+        },
+        {
+          "cy": 814.9,
+          "left": 1021,
+          "right": 1191.6
+        },
+        {
+          "cy": 824.4,
+          "left": 1028,
+          "right": 1504.3
+        },
+        {
+          "cy": 841.4,
+          "left": 1016,
+          "right": 1154.3
+        },
+        {
+          "cy": 850.9,
+          "left": 1016,
+          "right": 1329.3
+        },
+        {
+          "cy": 860.4,
+          "left": 1015.9,
+          "right": 1122.7
+        },
+        {
+          "cy": 868.5,
+          "left": 1015.9,
+          "right": 1535.4
+        }
+      ],
+      "rectsDump": [
+        {
+          "x": 1332.4,
+          "y": 585.7,
+          "w": 22.1,
+          "h": 9
+        },
+        {
+          "x": 1285,
+          "y": 597.1,
+          "w": 148.4,
+          "h": 7
+        },
+        {
+          "x": 1285,
+          "y": 607.6,
+          "w": 144.9,
+          "h": 6
+        },
+        {
+          "x": 1285,
+          "y": 618,
+          "w": 105.9,
+          "h": 6
+        },
+        {
+          "x": 1285,
+          "y": 628.5,
+          "w": 199,
+          "h": 7
+        },
+        {
+          "x": 1320.9,
+          "y": 637.9,
+          "w": 54.8,
+          "h": 8
+        },
+        {
+          "x": 1285,
+          "y": 649.5,
+          "w": 16.4,
+          "h": 6
+        }
+      ]
+    },
+    {
+      "label": "⑤ pageerror",
+      "count": 0,
+      "pass": true,
+      "pageErrors": []
+    }
+  ]
+}

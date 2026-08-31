@@ -10,7 +10,9 @@
  * - mergeLineRects(pixels, pageWidth)（2026-08-23 Q3 修复演进）：clientRects 行级
  *   合并——同形去重/y 重叠聚行簇（高度可比带防旋转文本互并）/x 大间隙断段（防
  *   多栏桥接）/段内 x 并集+y/h 取主导矩形；rectsBetweenPoints 归一化前调用，
- *   划选保存与重开重锚两路径同口径。
+ *   划选保存与重开重锚两路径同口径。[F-V1] 紧凑行距（盒高>行距）稳健化：簇判据
+ *   追加实测行距钳制（estimateLinePitch——y 中心差下中位），段输出高度钳到行距
+ *   （防盒高溢出行距逐行重叠→下游 INV-D 级联下推行带错绑=丢行/杂交/同行双块）。
  * - 归一化后另过 mergeRects 收口（F-A1 挂 A，2026-08-30）：归一化域滤零宽/
  *   全簇比较聚类/行内 x 并集/行间钳制——mergeLineRects 漏掉的零宽幽灵、同行
  *   碎片、同位重复、行间负间隙在此终裁（INV-A~D，见 annotation-merge.ts）。
@@ -23,8 +25,8 @@
  * ── 接口层 ──
  * - export interface DOMRange { rects: AnnotationRect[]; textNodes: Array<{ node: Text; offset: number }> }
  * - export interface NodeSpan/DomPoint/PixelBox（几何域类型——单一真相源）
- * - export function findRangeAtOffset/rectsFromRange/mergeLineRects，及几何原语
- *   公共面 collectSpans/fullTextOf/offsetToPoint/rectsBetweenPoints/pixelBoxOf
+ * - export function findRangeAtOffset/rectsFromRange/mergeLineRects/estimateLinePitch，
+ *   及几何原语公共面 collectSpans/fullTextOf/offsetToPoint/rectsBetweenPoints/pixelBoxOf
  *   （F-ARCH4 扩面——anchor-serialize 的合法消费面；全部纯/幂等，无 React 依赖）
  *
  * ── 架构层 ──
@@ -270,6 +272,35 @@ const Y_OVERLAP_RATIO_MIN = 0.25
 /** 簇内 x 大间隙断段阈值：max(1.5×主导矩形高, 页宽 2%)——防多栏/大缩进桥接成一个矩形 */
 const COLUMN_GAP_H_FACTOR = 1.5
 const COLUMN_GAP_PAGE_RATIO = 0.02
+/** [F-V1] 行距估计：同片段对/tall-short 变体的中心差（实测 ~0.2-2.4px）不参与估计 */
+const INTRA_ROW_GAP_PX = 2
+
+/** [F-V1] 行距估计（像素域纯函数）：输入矩形 y 中心分布 → 视觉行距估计。
+ *  口径：中心升序 → 相邻差 → 滤 <2px 的行内噪声差 → 下中位。下中位对少数
+ *  离群差天然稳健（远距行界/零宽盒实测可制造 232px 离群差——若按最大差相对
+ *  下限过滤，单个离群会把下限抬到真行距之上致全部真差被滤、估计坍缩到离群
+ *  值使高度钳制失效——f-v1-verify doc2 实证）。可用差不足（单行选区/全同行
+ *  片段——两行以下退化）或估计值非正 → undefined（调用方走缺省判据）。
+ *  紧凑行距排版（盒高>行距）下行盒高/y 重叠率均不可靠（相邻行盒 y 区间
+ *  重叠可达 44%），以实测行距为行簇与段高度的基准。 */
+export function estimateLinePitch(pixels: PixelBox[]): number | undefined {
+  if (pixels.length < 2) {
+    return undefined
+  }
+  const centers = pixels.map((r) => r.y + r.h / 2).sort((a, b) => a - b)
+  const gaps: number[] = []
+  for (let i = 1; i < centers.length; i += 1) {
+    const g = centers[i]! - centers[i - 1]!
+    if (g >= INTRA_ROW_GAP_PX) {
+      gaps.push(g)
+    }
+  }
+  if (gaps.length === 0) {
+    return undefined
+  }
+  const pitch = [...gaps].sort((a, b) => a - b)[Math.floor((gaps.length - 1) / 2)]!
+  return Number.isFinite(pitch) && pitch > 0 ? pitch : undefined
+}
 
 function areaOf(r: PixelBox): number {
   return r.w * r.h
@@ -313,8 +344,12 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
     return unique
   }
   // ② y 区间重叠聚类（组内 y 区间为成员并集；排序保证同簇连续）——
-  //    [F-A4] lineH 在场改中心距判据（头注行高感知；高度可比带两种判据通用）
+  //    [F-A4] lineH 在场改中心距判据（头注行高感知；高度可比带两种判据通用）；
+  //    [F-V1] pitch（≥2 视觉行可估）在场时中心距阈值取 min(lineH, 行距, 主导高)/2
+  //    ——紧凑行距（盒高>行距）下盒高/y 重叠率/膨胀 lineH 均会把相邻视觉行聚进
+  //    同簇（跨行杂交并集+丢行，真机 f-v1-diag 实证），实测行距为纲。
   const lh = lineH !== undefined && Number.isFinite(lineH) && lineH > 0 ? lineH : null
+  const pitch = estimateLinePitch(unique)
   const sorted = [...unique].sort((a, b) => a.y - b.y || a.x - b.x)
   const rowGroups: PixelBox[][] = []
   const groupTop: number[] = []
@@ -326,10 +361,14 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
       const overlapPx = Math.min(groupBottom[gi]!, r.y + r.h) - Math.max(groupTop[gi]!, r.y)
       const yOverlap =
         overlapPx >= Y_OVERLAP_RATIO_MIN * Math.min(r.h, dom.h)
+      // [F-V1] 行距自适应上限：lineH 单独在场=F-A4 原口径（lh/2）零变；
+      // pitch 在场（含与 lineH 同场）= min(行距, 主导高[, lineH])/2
+      const centerLimit =
+        pitch !== undefined ? Math.min(pitch, dom.h, ...(lh !== null ? [lh] : [])) : lh
       const centerOk =
-        Math.abs(r.y + r.h / 2 - (dom.y + dom.h / 2)) <= (lh ?? 0) / 2
+        Math.abs(r.y + r.h / 2 - (dom.y + dom.h / 2)) <= (centerLimit ?? 0) / 2
       const hComparable = r.h >= dom.h * HEIGHT_RATIO_MIN && r.h <= dom.h * HEIGHT_RATIO_MAX
-      if ((lh !== null ? centerOk : yOverlap) && hComparable) {
+      if ((centerLimit !== null ? centerOk : yOverlap) && hComparable) {
         rowGroups[gi]!.push(r)
         groupTop[gi] = Math.min(groupTop[gi]!, r.y)
         groupBottom[gi] = Math.max(groupBottom[gi]!, r.y + r.h)
@@ -350,26 +389,32 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
     let segRight = Number.NEGATIVE_INFINITY
     for (const r of byX) {
       if (segment.length > 0 && r.x - segRight > gapThreshold) {
-        out.push(mergeSegment(segment))
+        out.push(mergeSegment(segment, pitch))
         segment = []
       }
       segment.push(r)
       segRight = Math.max(segRight, r.x + r.w)
     }
     if (segment.length > 0) {
-      out.push(mergeSegment(segment))
+      out.push(mergeSegment(segment, pitch))
     }
   }
   // ⑤ 文档序
   return out.sort((a, b) => a.y - b.y || a.x - b.x)
 }
 
-/** 段合并：x 取并集，y/h 取段内主导矩形（行盒统一基线，下划线底边随之平齐） */
-function mergeSegment(segment: PixelBox[]): PixelBox {
+/** 段合并：x 取并集，y/h 取段内主导矩形（行盒统一基线，下划线底边随之平齐）。
+ *  [F-V1] 紧凑行距高度钳制：盒高>实测行距且在高度可比带内（≤2×行距——超出为
+ *  旋转/竖排/标题形态，不钳）时输出高钳到行距；y 保持主导矩形不动（受锁断言锚：
+ *  y 取主导）。防 14.4px 盒在 11.9px 行距上逐行 2.4px 重叠→下游 INV-D 累积钳制
+ *  级联下推 1-12px→matchBand 最近中心带错绑（丢行/杂交/同行双块）。 */
+function mergeSegment(segment: PixelBox[], pitch?: number): PixelBox {
   const dom = dominantOf(segment)
   const left = Math.min(...segment.map((r) => r.x))
   const right = Math.max(...segment.map((r) => r.x + r.w))
-  return { x: left, w: right - left, y: dom.y, h: dom.h }
+  const h =
+    pitch !== undefined && pitch < dom.h && dom.h <= HEIGHT_RATIO_MAX * pitch ? pitch : dom.h
+  return { x: left, w: right - left, y: dom.y, h }
 }
 
 /** DOM Range 的客户端矩形；无布局量测（jsdom 未实现/返回空）时退化为命中节点父元素盒 */

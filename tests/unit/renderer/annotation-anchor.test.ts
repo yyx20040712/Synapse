@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
+  estimateLinePitch,
   findRangeAtOffset,
   mergeLineRects,
   rectsFromRange
@@ -225,5 +226,86 @@ guardedDescribe('SR-RDR-01', 'mergeLineRects —— clientRects 行级合并', (
     expect(mergeLineRects([], 600)).toEqual([])
     const one = px(5, 5, 5, 5)
     expect(mergeLineRects([one], 600)).toEqual([one])
+  })
+})
+
+/** [F-V1] 紧凑行距夹具（scripts/audits/f-v1-out/f-v1-diag.json 真机实测数字）：
+ *  视觉行距 ~11.9px，textLayer span 短盒 h=10 / Range 高盒 h=14.4（y 高 2.4px
+ *  ——盒高>行距，相邻行盒 y 区间重叠 2.4px）+ 行界零宽盒 h=21.6@页左缘；
+ *  第 5 视觉行为段落末短行（w=138.9，右缘 1249.2）。共 7 个视觉行。 */
+function tightRowsFixture(): Array<{ x: number; y: number; w: number; h: number }> {
+  return [
+    px(1218.5, 564.1, 223.3, 14.4), // 行1 拖选起点段（高盒）
+    px(1056.4, 507.6, 0, 21.6), // 行界零宽盒 ×6（页左缘，w=0 下游滤除）
+    px(1122.2, 578.4, 319.6, 10), // 行2 短盒
+    px(1122.2, 576.0, 319.6, 14.4), // 行2 高盒
+    px(1056.4, 523.6, 0, 21.6),
+    px(1110.3, 590.4, 331.6, 10), // 行3 短盒
+    px(1110.3, 588.0, 331.6, 14.4), // 行3 高盒
+    px(1056.4, 539.6, 0, 21.6),
+    px(1110.3, 602.3, 331.6, 10), // 行4 短盒
+    px(1110.3, 599.9, 331.6, 14.4), // 行4 高盒
+    px(1056.4, 555.6, 0, 21.6),
+    px(1110.3, 614.3, 138.9, 10), // 行5 短盒（段落末短行）
+    px(1110.3, 611.9, 138.9, 14.4), // 行5 高盒
+    px(1056.4, 571.6, 0, 21.6),
+    px(1122.2, 626.3, 319.6, 10), // 行6 短盒
+    px(1122.2, 623.9, 319.6, 14.4), // 行6 高盒
+    px(1056.4, 587.6, 0, 21.6),
+    px(1110.3, 635.8, 232.1, 14.4) // 行7 拖选终点段（高盒）
+  ]
+}
+
+/** 修后期望：7 视觉行 → 7 块（y 升序），每块 x=该行片段并集（不跨行取值） */
+function expectTightRowsOnePerLine(out: Array<{ x: number; y: number; w: number; h: number }>): void {
+  expect(out.length).toBe(7)
+  const lefts = [1218.5, 1122.2, 1110.3, 1110.3, 1110.3, 1122.2, 1110.3]
+  const rights = [1441.8, 1441.8, 1441.9, 1441.9, 1249.2, 1441.8, 1342.4]
+  out.forEach((r, i) => {
+    expect(r.x).toBeCloseTo(lefts[i]!, 5)
+    expect(r.x + r.w).toBeCloseTo(rights[i]!, 5)
+  })
+}
+
+// always-active（ADR-0017 裁决 3：新测试不经 guardedDescribe）
+describe('F-V1 mergeLineRects —— 紧凑行距（盒高>行距）行簇错联修复', () => {
+  it('a: 缺省路径（无行高注入）——y 重叠率判据链并把行 1-4 并成一块（丢行）→ 行距自适应判据后每视觉行恰一块', () => {
+    const out = mergeLineRects(tightRowsFixture(), 600).filter((r) => r.w > 0)
+    expectTightRowsOnePerLine(out)
+    // 短行（行5）右缘不跨行取值：恰为自身行尾 1249.2（修前杂交可到 1441.9/被吞丢行）
+    expect(out[4]!.x + out[4]!.w).toBeCloseTo(1249.2, 5)
+  })
+
+  it('b: 行高注入（PDF 行高 12.66）——盒高 14.4>行距逐行重叠 2.4px（INV-D 级联下推/带错绑根因）→ 块高钳到行距估计且相邻行块不重叠', () => {
+    const out = mergeLineRects(tightRowsFixture(), 600, 12.66).filter((r) => r.w > 0)
+    expect(out.length).toBe(7)
+    for (const r of out) {
+      // 高度钳制：块高 ≤ 行距估计 11.8 + 0.5 容差（修前 14.4）
+      expect(r.h).toBeLessThanOrEqual(12.3)
+    }
+    for (let i = 1; i < out.length; i += 1) {
+      // 相邻行块不重叠——下游 INV-D 零驱动，无级联下推（修前逐行重叠 2.4px）
+      expect(out[i - 1]!.y + out[i - 1]!.h).toBeLessThanOrEqual(out[i]!.y + 1e-6)
+    }
+  })
+
+  it('c: 行高量测膨胀（24px）——中心距阈值 12px 把行 1-2/3-5/6-7 并簇（跨行杂交并集+丢行）→ 行距钳制阈值后 7 块', () => {
+    const out = mergeLineRects(tightRowsFixture(), 600, 24).filter((r) => r.w > 0)
+    expectTightRowsOnePerLine(out)
+  })
+
+  it('d: estimateLinePitch——真机流 y 中心差下中位 ≈11.8；单行/同行片段（中心差<2px）→ undefined；常规两行 → 30', () => {
+    expect(estimateLinePitch(tightRowsFixture())).toBeCloseTo(11.8, 5)
+    expect(estimateLinePitch([px(10, 100, 50, 12)])).toBeUndefined()
+    // 同行两片段（y 差 1px）——行内噪声不入行距估计
+    expect(estimateLinePitch([px(10, 100, 50, 12), px(60, 101, 40, 10)])).toBeUndefined()
+    expect(estimateLinePitch([px(10, 100, 90, 12), px(10, 130, 80, 12)])).toBeCloseTo(30, 5)
+  })
+
+  it('e: 常规行距（盒高 12 < 行距 30）行为零变：同簇 y/h 严格取主导，高度钳制不触发', () => {
+    const out = mergeLineRects([px(10, 100, 90, 12), px(100, 101, 40, 12)], 600)
+    expect(out.length).toBe(1)
+    expect(out[0]!.h).toBe(12)
+    expect(out[0]!.y).toBe(100)
   })
 })

@@ -204,3 +204,28 @@ describe('F-A1 mergeRects —— 归一化域归并器', () => {
     expect(twice).toEqual(once)
   })
 })
+
+// [F-V1] 紧凑行距终裁补门（c 门）：CSS 回退行盒膨胀（可达行距 ~2 倍——F-A5
+// 真机在档 1.57~1.83×）时 min(h, hMed, lineH)/2 容差把相邻行并成单高块
+// （跨行 x 并集杂交）；lineH 在场（挂 A/B 实测量测路径）时聚类容差追加
+// 「输入行距估计」钳制。夹具数值=像素域实测折算（h 0.038 / 行距 0.019 /
+// lineH 量测同膨胀 0.04）。always-active（ADR-0017 裁决 3）。
+describe('F-V1 mergeRects —— 紧凑行距终裁补门', () => {
+  const inflatedUpper = rect(0.1, 0.2, 0.4, 0.038)
+  const inflatedLower = rect(0.1, 0.2185, 0.35, 0.038) // 中心距 0.0185 ≤ 旧容差 0.019
+
+  it('f: lineH 在场时容差追加行距估计——修前相邻行并入单高块（跨行并集）；修后两行各自成块且钳制后不相交', () => {
+    const out = mergeRects([inflatedUpper, inflatedLower], 0.04)
+    expect(out.length).toBe(2)
+    // INV-D 钳制语义保持：负间隙推至恰好接触，两两相交面积 0
+    expect(out[0]!.y + out[0]!.h).toBeLessThanOrEqual(out[1]!.y + 1e-9)
+    expectPairwiseDisjoint(out)
+  })
+
+  it('g: lineH 缺省=旧行为存档（⑪ 缺省分支同型语义在紧凑域的声明）；补门下幂等', () => {
+    // 无行高数据（旧库/不可量测）：h/2 容差并入一块——缺省兼容面存档
+    expect(mergeRects([inflatedUpper, inflatedLower]).length).toBe(1)
+    const once = mergeRects([inflatedUpper, inflatedLower], 0.04)
+    expect(mergeRects(once, 0.04)).toEqual(once)
+  })
+})

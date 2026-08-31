@@ -15,11 +15,15 @@
  *
  * 算法（确定性，六步，输入乱序不影响输出）：
  * 滤零宽 → (中心y,x,y) 全序排序 → 聚类成行（与全部既有簇比中心距，取最近
- * 且 |cNew−cRow| <= 容差者；容差=min(hNew, hRowMedian[, lineH])/2——
+ * 且 |cNew−cRow| <= 容差者；容差=min(hNew, hRowMedian[, lineH, pitch])/2——
  * **F-A4 行高感知**：可选 lineH（PDF 行高归一化值）参与钳制，紧行距下
  * 输入 rect 高被 CSS 回退度量膨胀（可达 PDF 行高 ~1.25 倍）导致中心距
  * ≤膨胀高/2 的相邻行误并成单高块（INV-40 登记边界）；lineH 缺省=旧行为
- * 存档兼容。高瘦矩形 h 超行高 2 倍+自动免疫——容差被 min 钳在行高一半内，
+ * 存档兼容。**F-V1 终裁补门（c 门）**：lineH 在场（挂 A/B 实测量测路径）时
+ * 容差追加「输入行距估计 pitch」钳制——CSS 回退行盒膨胀可达行距 ~2 倍
+ * （F-A5 真机在档 1.57~1.83×）时 h/lineH 容差仍把相邻行并成单高块（跨行
+ * x 并集杂交），实测行距为纲拒绝；lineH 缺省=旧行为存档（受锁 ⑪ 缺省分支）。
+ * 高瘦矩形 h 超行高 2 倍+自动免疫——容差被 min 钳在行高一半内，
  * ADR-0002 先例语义保持；比较扩到全部簇=修 mergeLineRects「只与末簇比较」
  * 在档失联限制）→ 行内归并（x 并集 / h 与中心 y 取行内下中位数 / page 取
  * 最小）→ 行间钳制 → 输出按 (y,x) 稳定排序。中位数=排序后下中位（索引
@@ -72,6 +76,29 @@ function centerY(r: AnnotationRect): number {
   return r.y + r.h / 2
 }
 
+/** [F-V1] 归一化域行距估计（与 annotation-anchor.estimateLinePitch 同形——
+ *  依赖单向 merge←anchor 禁反向复用，且噪声下限域相关（此处无 2px 绝对下限，
+ *  改用「≥2×W_MIN 否则拒绝」防全同行输入的噪声塌缩；Rule of Three 第 2 次保持
+ *  重复）。下中位对离群差稳健（同像素域口径）。lineH 缺省时调用方不启用
+ *  （旧行为存档）。 */
+function estimateNormPitch(ordered: AnnotationRect[]): number | undefined {
+  if (ordered.length < 2) {
+    return undefined
+  }
+  const gaps: number[] = []
+  for (let i = 1; i < ordered.length; i += 1) {
+    const g = centerY(ordered[i]!) - centerY(ordered[i - 1]!)
+    if (g > 0) {
+      gaps.push(g)
+    }
+  }
+  if (gaps.length === 0) {
+    return undefined
+  }
+  const pitch = [...gaps].sort((a, b) => a - b)[Math.floor((gaps.length - 1) / 2)]!
+  return Number.isFinite(pitch) && pitch >= 2 * W_MIN ? pitch : undefined
+}
+
 export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationRect[] {
   // F-A4 行高感知容差的 lineH 钳制值（非有限正数防御→不收紧=旧行为）
   const lh = lineH !== undefined && Number.isFinite(lineH) && lineH > 0 ? lineH : Number.POSITIVE_INFINITY
@@ -84,8 +111,10 @@ export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationR
   const ordered = [...kept].sort(
     (a, b) => centerY(a) - centerY(b) || a.x - b.x || a.y - b.y
   )
+  // [F-V1 c 门] lineH 在场时行距估计参与容差钳制（缺省=不启用，旧行为存档）
+  const pitchN = lh !== Number.POSITIVE_INFINITY ? estimateNormPitch(ordered) : undefined
   // ③ 聚类成行（INV-B 前置）：与全部既有簇比中心距，取最近且满足容差者
-  //    （容差 min(hNew, hRowMedian, lineH)/2——F-A4 行高感知钳制）
+  //    （容差 min(hNew, hRowMedian, lineH[, pitch])/2——F-A4/F-V1 钳制）
   const rows: RowCluster[] = []
   for (const r of ordered) {
     const c = centerY(r)
@@ -93,7 +122,10 @@ export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationR
     let nearestDist = Number.POSITIVE_INFINITY
     for (const row of rows) {
       const dist = Math.abs(c - row.medianC)
-      if (dist <= nearestDist && dist <= Math.min(r.h, row.medianH, lh) / 2) {
+      if (
+        dist <= nearestDist &&
+        dist <= Math.min(r.h, row.medianH, lh, pitchN ?? Number.POSITIVE_INFINITY) / 2
+      ) {
         nearest = row
         nearestDist = dist
       }
