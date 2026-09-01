@@ -85,11 +85,14 @@
 收口单写（亲验 verify 真退出码+locks+diff 范围→翻 registry→[locked-change]
 提交）。实现者自裁申报一切超票面决定（含删减面 diff 自查）；新测试
 always-active（不经 guardedDescribe——K3 威胁在三屋结构性缺位）；每单元
-子代理 token/时长/模型档位入成本账本（交接书/战役报告）。**派发必显式定档**
-（机型+思考等级一体写进派发指令，缺省=继承主控档，常为最强最贵档静默浪费；
-档随角色×票面复杂度走 docs/methodology.md §4.5 档位表，回炉第 2 轮实现者
-升一档；2026-09-02 用户裁决，蓝本=subagent-driven-development 技能
-Model Selection）。派发模板三件=docs/methodology.md §4。
+子代理 token/时长入成本账本，成本按**模型×供应商×套餐**分列（交接书/
+战役报告）。**派发必显式定档**（机型+供应商+思考等级一体写进派发指令；
+单一调用者，缺省=继承主控档=最贵档静默浪费，禁静默继承默认）。模型分工
+走 docs/methodology.md §4.5 终态：实现者=GLM5.3flash（deepseek 实现面
+禁用）/门一=Kimi 链外部派发（零仓库接触）/门二=异构二审/体验额度优先
+消费（2026-09-02 用户裁决+同日终态对齐，蓝本=subagent-driven-
+development Model Selection+loop-engineering references/06）。派发模板
+三件=docs/methodology.md §4。
 
 **弱模型领单（既有流程不变）**：
 
