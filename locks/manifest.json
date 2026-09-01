@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-01T17:35:56.3820234Z",
+    "generatedAt":  "2026-09-01T19:01:42.0152379Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -152,6 +152,18 @@
                   {
                       "path":  "scripts/audits/f-r1-verify.mjs",
                       "sha256":  "87d0f4d76278ae2ab63dc8c42d38cf50aeb0516193884760b44808f3d53332d4"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r2-diag2.mjs",
+                      "sha256":  "1d7d294635216efc01716a28d8b33ccaf393750e536ef51de050e7e2f6c7a5c9"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r2-probe.mjs",
+                      "sha256":  "f4d9f1619007a32e45d3068fddb1068d1bdac634901b1a87b7dbfb5f08de3f30"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r2-probe2.mjs",
+                      "sha256":  "6e585b9a79ab49521568e1d618e6d06bb6c54e8bd9d9ec3801e70b11de9a4328"
                   },
                   {
                       "path":  "scripts/audits/f-sw1-fix-verify.mjs",
@@ -679,11 +691,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
-                      "sha256":  "1b1d0beba41352388bf85b399e8c5b5a00ab3db69388ed72122379ff01ca004c"
+                      "sha256":  "0046759b1c0bc8c6c5d53a7e90199f1b1e47473c303e4959257ad2368c7b7f8d"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",
-                      "sha256":  "c3203c7790f859e5e022ff29d1e06de880d4c26bc8349b10675a483aba60e813"
+                      "sha256":  "dcf845f5f6f84b3f57fbbdf361c68870c117fd96c3edc5aa748ce1237abfb3c3"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",

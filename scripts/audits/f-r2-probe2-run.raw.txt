@@ -1,0 +1,9 @@
+[f-r2probe 18:23:54] P1 语义: {"before":{"st":11.52,"vis":822},"after":{"st":111.36,"vis":697.2},"dSt":99.84,"dVis":124.8,"zRow":"1.25","zSelf":"1"}
+[f-r2probe 18:23:56] P2 small_1: [["fill1",-99.2,-99.2,0],["fill4",2035.2,2034,-1.2],["next",676.8,676.8,0]]
+[f-r2probe 18:23:59] P2 medium_1.1: [["fill1",-2712,-2983.6,-0.4],["fill4",1848,2033.6,0.8],["next",616.73,678.8,0.4]]
+[f-r2probe 18:24:02] P2 large_1.25: [["fill1",-2465.92,-3081,1.4],["fill4",1628.8,2035.4,-0.6],["next",542.08,677.4,-0.2]]
+[f-r2probe 18:24:05] P2 anchorNone: [["fill1",-2170.88,1.4],["fill4",1628.8,-0.6],["next",542.08,-0.2]]
+[f-r2probe 18:24:24] P3 误判带: [{"from":160,"to":15480,"n":384,"input":1,"true":null}]
+[f-r2probe 18:24:29] P4 small_1: [0,0,0]
+[f-r2probe 18:24:34] P4 large_1.25: [0,0,0]
+[f-r2probe 18:24:36] 落盘: E:\class\智慧水务\Synapse_remake\scripts\audits\f-r2-out\f-r2-probe.json  pageErrors= 0

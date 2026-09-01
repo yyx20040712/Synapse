@@ -4,17 +4,21 @@
  *
  * 覆盖：六态全格（idle/scrolling/pending/writing/restoring/loading——含 W2
  * writing-scroll 新格）+跨格五序列（切 tab 恢复/滚动中关 tab/pending 中关 tab/
- * 程序跳页用户接管/回写竞 tab 切换）+最近页回写边界+落库容错+dispose。
+ * 程序跳页用户接管/回写竞 tab 切换）+最近页回写边界+落库容错+dispose
+ * +页盒量测视觉/本地折算（F-R2 B-2：装配侧 measurePageBoxes）。
  * 时间全注入（fake timers 经 deps.timers——禁真 timer）；always-active
  * （ADR-0017 裁决 3——新测试不经 guardedDescribe）。
+ * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createScrollProgress,
+  measurePageBoxes,
   PROGRESS_DEBOUNCE_MS,
   type ScrollProgress,
   type ScrollProgressDeps
 } from '../../../src/renderer/features/reader/scroll-progress'
+import { nearestPage } from '../../../src/renderer/features/reader/page-column-geometry'
 
 /** 三页列几何（内容坐标）：页高 800、间隙 12——1 基页盒 [0,800]/[812,1612]/[1624,2424] */
 const BOXES = [
@@ -326,5 +330,83 @@ describe('scroll-progress 回写几何与容错', () => {
 
   it('防抖常量沿用 2000ms（票面：静置>2000ms 沿用）', () => {
     expect(PROGRESS_DEBOUNCE_MS).toBe(2000)
+  })
+})
+
+describe('scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  /** 双空间 DOM 桩：scroller 与页盒 gBCR=视觉空间（本地×z），
+   *  scrollTop/clientHeight=本地空间。本地几何：页盒顶 0/200/400 高 100、
+   *  scrollTop=110、clientHeight=100、scroller gBCR top=0。z 来自 computed
+   *  zoom 桩（F-R2 回炉 1：jsdom 不识别 zoom——getComputedStyle mock 注入，
+   *  其余属性透传真实值；gBCR 视觉桩仍为被测量测面）。 */
+  function buildScaledColumn(z: number): HTMLDivElement {
+    document.body.innerHTML = ''
+    const el = document.createElement('div')
+    const realGCS = window.getComputedStyle
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((target, pseudo) => {
+      const cs = realGCS.call(window, target as Element, pseudo)
+      return target === el ? Object.assign(cs, { zoom: String(z) }) : cs
+    })
+    Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
+    el.scrollTop = 110
+    const rect = (top: number, height: number): DOMRect =>
+      ({
+        top,
+        right: 0,
+        bottom: top + height,
+        left: 0,
+        width: 0,
+        height,
+        x: 0,
+        y: top,
+        toJSON: () => ({})
+      }) as DOMRect
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(0, 100 * z))
+    for (const c of [0, 200, 400]) {
+      const box = document.createElement('div')
+      box.setAttribute('data-page-box', String(c))
+      vi.spyOn(box, 'getBoundingClientRect').mockReturnValue(rect((c - 110) * z, 100 * z))
+      el.appendChild(box)
+    }
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('measurePageBoxes：视觉盒位/盒高除 z 折算回本地空间（+本地 scrollTop）', () => {
+    const el = buildScaledColumn(1.25)
+    expect(measurePageBoxes(el)).toEqual([
+      { top: 0, height: 100 },
+      { top: 200, height: 100 },
+      { top: 400, height: 100 }
+    ])
+  })
+
+  it('z=1 恒等护栏：视觉=本地桩下量测原几何（既有行为零变）', () => {
+    const el = buildScaledColumn(1)
+    expect(measurePageBoxes(el)).toEqual([
+      { top: 0, height: 100 },
+      { top: 200, height: 100 },
+      { top: 400, height: 100 }
+    ])
+  })
+
+  it('nearestPage 按折算空间判页：视口中心 160 → 第 2 页（1 基；不折算误判第 1 页）', () => {
+    const el = buildScaledColumn(1.25)
+    const center = 110 + 100 / 2
+    expect(nearestPage(center, measurePageBoxes(el))).toBe(2)
+  })
+
+  it('滚动记账按折算空间判页：视口中心 160 记第 2 页（0 基 1）', () => {
+    const el = buildScaledColumn(1.25)
+    const h = makeHarness()
+    h.deps.getViewport = () => ({ scrollTop: 110, clientHeight: 100 })
+    h.deps.getPageBoxes = () => measurePageBoxes(el)
+    h.sp.onScrollEvent()
+    expect(h.pending()).toBe(1)
   })
 })

@@ -1,0 +1,1262 @@
+# F-R2 门一审材料包（自包含——你只有本文件，零仓库接触、零命令执行）
+
+## 审计对象
+工单 F-R2：ui-scale≠1 程序滚动落点漂移 160-450px 修复（方案 B 算术折算）。
+实现者=子代理（GLM 统一档）；门一=你（对抗深审）。基线 verify=126 文件 1074 用例/locks 226。
+
+## 铁律
+只读本包；禁跑任何命令；禁臆测包外事实（包外不确定的明确说不确定）；只报告有代码证据支撑的问题，每条给 file:line 或 diff 行摘录。
+
+## ① 票面五层规约（完整任务书）
+```markdown
+# F-R2 工单票面——ui-scale≠1 程序滚动落点漂移（修票·五层规约=完整任务书）
+
+> registry: `F-R2` / file `src/renderer/features/reader/scroll-converge.ts` / area reader / strong
+> 依据链：台账 F-R2 段（audit0-findings 350-358）+ 排查报告 f-r2-explore-report.md + 真机探针 f-r2-out/{f-r2-probe,f-r2-probe2}.json（2026-09-02 本场）
+> 主控已裁决项见③——实现者不再自裁这些点。
+
+## ① 现象与根因证据（探针实测，实现者不必重跑）
+
+**现象**：ui-scale≠1（用户 large=1.25）时程序滚动（页码跳转/翻页）落点漂移 160-450px；单页同现；ui-scale=1 完美收敛。
+
+**根因（H1，探针三场景三档数值级闭合）**：`scroll-converge.ts:48-49` 把 gBCR 视觉差值 δv 1:1 加进本地 px 的 scrollTop——「1 gBCR px=1 scrollTop px」仅 Z=1 成立。祖先 `.app-content-row` zoom=Z（theme.css 反向豁免挂内容侧），gBCR=本地×Z，scrollTop 读写皆本地（P1 实证：scrollTop+=100 → Δst=99.84 / 内容视觉位移 Δvis=124.8；zRow=1.25/zSelf=1）。落点视觉过冲=(Z−1)×δv。
+
+**判据数据（fill(4) 场景）**：
+
+| 档 | δv（视觉） | dSt 实测 | 预测(H1: dSt≈δv) | 落点偏移实测 | 预测 −(Z−1)δv |
+| --- | --- | --- | --- | --- | --- |
+| 1.0 | 2034 | 2034.4 | ✓ | −0.4 | ≈0 ✓ |
+| 1.1 | 2047.2 | 2047.27 | ✓ | −204.8 | −204.7 ✓ |
+| 1.25 | 2049 | 2049.28 | ✓ | −512.6 | −512.25 ✓ |
+
+fill(1) 向上跳经 clamp 推演同吻合（1.25 档 δv=(12−s_before)×1.25=−3161，实加 Δ=δv 冲负被 clamp 0=页1顶）。overflowAnchor=none 对照组逐位一致（H4 排除）；P1 语义排除 H5；zoom±往返三 cycle 两档 Δst=0（**H3 证伪——anchoredScrollTop 分母错配本批不修，备案 v19**）。
+
+**H2（同根族，P3b 实证可感面）**：`scroll-progress.ts:283-291` getPageBoxes 把视觉盒位（r.top−base.top）与本地 scrollTop 混算——1.25 档实测 fill(2) 真中心页=1、fill(3) 真中心页=4（「页码说 2、画面看页 1」）；1/1.1 档全对。静态机制见排查报告②段。
+
+**已知旁支（本批不修，申报不扩面）**：「下一页」按钮路径 dSt≠δv（1.25 档 293.76 vs 165.4）——独立形态，修复 H1 后真机复验时一并观测记录，不解析不扩面（门审裁归后续）。
+
+## ② 修复方案（主控裁决=方案 B 算术折算，非方案 A 结构归一）
+
+否决 A（豁免上提滚动容器一行 CSS）：连带面大（fitWidth 分母回退+selection-geometry 参照系+自 zoom 容器滚动条语义三处既有修复交互），真机核验面反而更大；B 与既有先例（`ReaderPage.tsx:146-151` fitWidth 同式推导 z）模式一致，单测可锚。
+
+**B-1 主修（H1）**：`scroll-converge.ts` scrollIntoNearestScroller 的 start 分支：`raw = scroller.scrollTop + (elRect.top − scRect.top) / z`；center 分支的 `clientHeight` 项本就本地空间**不动**，其 elRect 侧同样除 z（保持分子同空间）。z 来源=**新单源导出**（见③-1）。:50 clamp 保持本地口径不动。
+**B-2 同批（H2）**：`scroll-progress.ts` getPageBoxes：`top = (r.top − base.top) / z + el.scrollTop`，height 同除（保 nearestPage 距离比较同空间）。z 传参或经单源函数取。
+**B-3 备案不修**：`PageColumn.tsx:209-214` anchoredScrollTop 分母空间错配——H3 实测证伪（零漂移），无用户可感缺陷，代码债在档 v19。
+
+## ③ 主控裁决（实现者照办，不再自裁）
+
+1. **折算因子单源**：新导出 `effectiveZoom(scroller): number`（或等名）放 scroll-converge.ts 并导出——`z = scroller.getBoundingClientRect().height / scroller.clientHeight`；**guard 除零**（clientHeight=0 的 jsdom/未挂载态返回 1）；Z=1 时恒等 1=零行为变。B-2 从 scroll-progress 引用同一函数（禁两处各写）。语义=「该滚动容器的 gBCR 视觉高 / 本地 client 高」=祖先复合 zoom 总因子。
+2. **函数签名/导出面零破坏**：scrollIntoNearestScroller 既有导出签名不动（内部折算）；scroll-converge.test 既有桩接口兼容。
+3. **INV 语义不变**：INV-34（最近祖先+夹取唯一收敛）语义原样——本票仅量纲修正；INV-33/45 不触碰。修复落地后在 docs/invariants.md INV-34 条目补一行「视觉/本地空间折算（F-R2）」附注（登记动作归主控收口，实现者不改 invariants.md——受锁）。
+4. **「下一页」旁支**：真机复验时记录修复后 next 场景数值（dSt/δv/落点偏移三档）入实现报告，不扩面修。
+
+## ④ 测试规约（TDD 红→绿→断言级变异红证）
+
+- **先红（核心）**：`scroll-converge.test.ts` 增「视觉/本地=1.25 桩」用例——gBCR 桩值按视觉空间（本地×1.25）、clientHeight 桩按本地，断言落点=本地折算期望（现有实现必红：它不除 z）。同型 1.1 档或 z 由桩推出者至少 2 例。
+- **先红（B-2）**：`scroll-progress.test.ts` getPageBoxes/centerPage 增混合空间桩用例（视觉盒位+本地 scrollTop），断言 nearestPage 按折算空间判出（现有实现必红）。
+- **受锁改写纪律**：两测试文件均为受锁——头注 `[locked-change]` 一行（F-A4/F-N1 先例）+断言锚保持（既有用例语义不放宽）；改后全量 verify 铁律。
+- **变异红证清单**（每条先红后还原，备份法禁 git checkout）：M1=去掉 /z（回退 H1 原形态）→新用例红；M2=z guard 恒返 1（折算失效同型）→新用例红；M3=B-2 的 height 不除→nearestPage 距离用例红；M4=clamp 口径误除 z→若可锚则红（不可锚则申报理由）。
+- **e2e**：reader-scroll.spec 默认 profile uiScale=1——两案下行为不变=回归护栏，跑全量确认零必然红；若改 e2e 面须另行申报（预期零触碰）。
+- **基线数字**：verify=126 文件 1074 用例全绿 / locks=226。
+
+⑤e 合法数据形态可达性推演（公式类票面强制）：z 表达式在既有不变量约束下可达——INV-34 保证 scroller=最近滚动祖先（getBoundingClientRect/.clientHeight 恒可读）；合法 uiScale∈{1,1.1,1.25}×zoom∈[0.5,3] 全组合 z>0；clientHeight=0 仅 jsdom 未挂载/卸载瞬态（guard 返 1=退化旧行为，可测）；jsdom 桩同空间时 z=1 恒等（现有全部既有用例零破坏的数学保证）。单测夹具不得绕过——桩值显式区分视觉/本地两空间即本票红测核心。
+
+## ⑤ 验收与申报
+
+- 收口判据：新用例先红后绿+变异红证+全量 verify exit=0（126 文件，用例数随新增上浮如实报）+报告全文落 `scripts/audits/f-r2-impl.report.md`（实现摘要/文件清单/红证/测试证据/locks 实录/**自裁申报**（含删减面 diff 自查）/疑虑）。
+- 真机探针复验与视觉复评归主控（⑤f 同型——几何修复以探针数据复验：修复后 f-r2-probe.mjs 重跑，1.25 档 fill(4) 落点偏移 −512.6 → 与 1 档基线同量级（|偏移|≤5px），三档 dSt≈δv/z）。
+- 纪律：npm run test 禁裸 npx vitest；证据 `.raw.txt` 落盘；首红与每次变异原始输出各自落盘；多断言禁与行尾注释同置；禁新依赖；≤500 行；UTF-8；卡点=BLOCKED 停手不自裁。
+```
+
+## ② 实现者报告
+```markdown
+# F-R2 实现报告 —— ui-scale≠1 程序滚动落点漂移（方案 B 算术折算）
+
+> 实现者子代理（2026-09-02）。票面=`scripts/audits/f-r2-ticket.md`（五层规约）。
+> 开工技能清点：test-driven-development=用（红→绿→变异红证全流程）；
+> verification-before-completion=用（各关原始输出落盘）；systematic-debugging=不用
+> （根因已由探针+排查报告定位，任务书自带）；subagent-driven-development=不用
+> （本代理即被派发实现者，不再派发）；receiving-code-review=不用（门审归门一/门二）；
+> 其余技能与本票技术面无关=不用。配置欠账：工具面无 model 参数，运行于会话统一档
+> （GLM5.3 同源），目标档 GLM5.3flash 无法显式指定——派发方已披露，照单记录。
+
+## 1. 实现摘要
+
+- **B-1（H1 主修）**：`scroll-converge.ts` 新导出 `effectiveZoom(scroller)`（③-1 裁定式
+  `gBCR.height / clientHeight`，clientHeight=0 guard 返 1）；
+  `scrollIntoNearestScroller` 的 start/center 两分支 elRect 侧（gBCR 视觉差值）除 z 折算
+  回本地空间，clientHeight 项与 `:62` clamp 保持本地口径不动。INV-34 语义原样（最近祖先
+  +显式夹取，仅量纲修正）。函数签名/导出面零破坏（③-2）。
+- **B-2（H2 同批修）**：`scroll-progress.ts` 新导出 `measurePageBoxes(el)`——
+  `top = (r.top − base.top)/z + el.scrollTop`，height 同除（保 nearestPage 距离比较同
+  空间）；z 经单源 `effectiveZoom` 引用（禁两处各写）。装配工厂 `createReaderScrollProgress`
+  的 getPageBoxes 改用之（原内联量测式删除——方案切换=删旧方案）。既有 ScrollProgressDeps
+  契约零改动。
+- **B-3 备案不修**（票面②）：`PageColumn.tsx` anchoredScrollTop 未触碰。
+- **「下一页」旁支**（票面③-4）：未解析未扩面。修复前探针值在档（1.25 档 dSt=293.76 vs
+  δv=165.4、landOffset=−201.8；探针 `f-r2-probe.json` tiers.large_1.25.hops[next]）——
+  修复后三档真机复验（dSt≈δv/z）归主控⑤f。
+
+## 2. 文件清单（本代理改动面）
+
+| 文件 | 改动 | 行数 |
+| --- | --- | --- |
+| `src/renderer/features/reader/scroll-converge.ts` | +effectiveZoom；start/center 折算；头注公式同步 | 63 |
+| `src/renderer/features/reader/scroll-progress.ts` | +import effectiveZoom；+measurePageBoxes；装配 getPageBoxes 改用 | 348 |
+| `tests/unit/renderer/scroll-converge.test.ts` | 受锁改写：头注 [locked-change] 行；既有 4 用例补桩（见自裁 1）；新 describe 3 用例 | 174 |
+| `tests/unit/renderer/scroll-progress.test.tsx` | 受锁改写：头注 [locked-change] 行；新 describe 4 用例 | 405 |
+
+均 ≤500 行。`git diff --stat` 另有 `tickets/registry.ts` 1 行=主控派发前登记（非本代理所写，
+且该行携语法缺，见 §7）。
+
+## 3. 红证（全部 .raw.txt 落盘）
+
+| 证据 | 路径 | 结果 |
+| --- | --- | --- |
+| 首红（终版测试面+HEAD 旧实现重现） | `scripts/audits/f-r2-red1.raw.txt` | 6 failed/29 passed/exit=1：converge start 530≠430、center 1300≠800（断言级=H1「dSt=δv」数学复现）；progress 4 用例 TypeError（measurePageBoxes 未存在）；既有用例 29 全绿（补桩零破坏当场验证） |
+| 定向绿 | `scripts/audits/f-r2-green.raw.txt` | 35/35 passed/exit=0 |
+| M1 变异（去 /z 回退 H1 原形态） | `scripts/audits/f-r2-m1.raw.txt` | 2 failed（530≠430、1300≠800）/exit=1 |
+| M2 变异（effectiveZoom 恒返 1） | `scripts/audits/f-r2-m2.raw.txt` | 5 failed（两文件：converge 2+progress 数值锚 toEqual [top:−27.5,height:125]+判页 1≠2+记账 0≠1）/exit=1 |
+| M3 变异（measurePageBoxes height 不除） | `scripts/audits/f-r2-m3.raw.txt` | 3 failed（数值锚 height 125≠100 且 top=+0 已折算=变异面精确；nearestPage 距离判页 1≠2；记账 0≠1）/exit=1 |
+| M4 变异（clamp 上限误除 z） | `scripts/audits/f-r2-m4.raw.txt` | 1 failed（1280≠1600=上限被 /1.25 精确锚）/exit=1 |
+| 全量 test | `scripts/audits/f-r2-test-full.raw.txt` | 677 用例全过 0 断言失败；57 文件死于 registry transform（§7），exit=1 |
+| typecheck | `scripts/audits/f-r2-typecheck.raw.txt` | exit=2，唯一错误 registry.ts(230,3) |
+| lint | `scripts/audits/f-r2-lint.raw.txt` | exit=1，唯一错误 registry.ts:230 解析——本代理 4 文件 lint 零错 |
+| verify | `scripts/audits/f-r2-verify.raw.txt` | exit=1：quality+tickets 关过，断在 locks:check（§6 中间态） |
+| build | `scripts/audits/f-r2-build.raw.txt` | exit=0 绿（registry 不进 app bundle） |
+
+- 定向跑口径申报：`npm run test -- <两文件>`（ABI 前导随 npm script 自带，非裸 npx vitest）。
+- 变异还原安全：全部 cp 备份法（备份→变异→测→cp 还原→diff 确认空，原始输出含
+  M1-RESTORE-OK/M2-RESTORE-OK/M3-RESTORE-OK/M4-RESTORE-OK 回显），全程未 git checkout。
+- 首红取证方式（自裁 5）：测试设计在首跑后修正两处（§4），为保证落盘首红与终版测试面
+  一致，用 `git show HEAD:` 取旧实现写入+终版测试重现首红（工作区恢复靠 cp，diff 确认空）。
+
+## 4. 新用例设计要点（7 个新 it）
+
+converge 3：start z=1.25（500/400，期望 430 vs 现状 530）；center z=1.5 由桩推出（1460/300
+桩，期望 800 vs 现状 1300）；z≠1 底夹取（raw=1920 夹 1600 本地口径=M4 专用锚，现状碰巧绿）。
+progress 4：measurePageBoxes 数值锚（三盒折算回本地 [{0,100},{200,100},{400,100}]）；z=1
+恒等护栏（修复前后皆绿）；nearestPage 判页（center=160→第 2 页；不折算误判第 1 页）；滚动
+记账（onScrollEvent→pending=1，不折算记 0）。桩空间口径：scroller/页盒 gBCR=视觉（本地×z）、
+scrollTop/clientHeight=本地；视口 scrollTop=110 避开 150 等距平手歧义（自裁 4）。
+
+## 5. 测试证据（用例数）
+
+- 两受锁文件合计 35 用例（converge 9：既有 6+新 3；progress 26：既有 22+新 4），定向全绿
+  exit=0。
+- 全量 test（基线 126 文件 1074 用例）：当前工作区 677 用例全过、69 文件绿；57 文件因
+  registry.ts transform 失败未能收集（677+57 文件内约 397 用例=1074 吻合）——修 §7 逗号后
+  预期 126 文件全量绿，最终数以主控收口 verify 为准（新用例 7 个计入后基线 1074→1081）。
+- e2e：零触碰（票面④预期）；未单独跑（verify 链被 locks 中间态截断，e2e 本就不在 verify
+  内、需先 build——build 已单独取证绿）。
+
+## 6. locks 实录
+
+- 两受锁测试=主控已 unlock 授权面（派发指令明示），本代理未跑 locks:apply（主控收口统一做）。
+- locks:check 当前报 4 项：两测试「被修改」（=unlock 改写中间态，apply 后消）+两探针脚本
+  `f-r2-probe.mjs`/`f-r2-probe2.mjs`「未登记」（主控探针面，locks:generate+apply 归主控）。
+  verify 断在此关（quality/tickets 两关已过）。
+
+## 7. BLOCKED 项（主控面，一字符修复）——挡 typecheck/test/build 外全量证据
+
+**`tickets/registry.ts:229` 行尾缺逗号**：主控派发前插入 F-R2 工单行时，漏给上一行 R2-SH2
+（原数组末元素）补尾逗号——HEAD 版 R2-SH2 无逗号合法（其后即 `] as const`），插入后成
+`{R2-SH2…} {F-R2…}` 两元素无分隔 → `ERROR: Expected "]" but found "{"`（registry.ts:230:2）。
+- 证据：esbuild 转译工作区版报错/HEAD 版该处结构合法；git diff 显示 registry 唯一改动=
+  F-R2 行插入（本代理全程未写 tickets/**，取证只读）。
+- 影响：typecheck exit=2（唯一错误）、vitest 57 文件 transform 失败（677/1074 用例收集到，
+  已收集用例 0 失败）、lint 唯一错误。build 不受影响（exit=0）。
+- 修复（主控执行）：registry.ts:229 行尾 `' }` → `' },`。修复+locks:apply 后重跑 verify
+  即为收口径径——本代理 4 文件面证据（定向 35/35、变异红证×4、lint 干净、build 绿）已齐。
+- 本代理按「禁翻 tickets/registry + 卡点=BLOCKED 停手不自裁」纪律未代修。
+
+## 8. 自裁申报（超票面决定全列）
+
+1. **既有 4 个 converge 用例补 scroller gBCR.height 桩**（`stubRect(inner,100)` →
+   `stubRect(inner,100,400)` 型）：既有桩 gBCR.height=10 vs clientHeight=400 非同空间
+   （z=0.025≠1），会使折算实现崩既有断言；依票面⑤e「jsdom 桩同空间时 z=1 恒等=既有用例
+   零破坏的数学保证」的前提补全桩的空间一致性。**断言值一字未动**（480/640/0/1600/320
+   原样）——非语义放宽。
+2. **B-2 落地为导出函数 `measurePageBoxes`**：票面 B-2 给了「z 传参或经单源函数取」两径，
+   选单源函数——scroll-progress.test 为全注入桩，可锚的实现面只在装配侧，抽导出函数是
+   测试可锚的最小形态；不动 ScrollProgressDeps 契约。
+3. **center 用例 z=1.5 替代票面点名的 1.1 档**：IEEE754 下 1.1 不可精确表示
+   （1100/1.1=799.99…）导致期望值非确定整数；1.5 二进制精确（600/400 桩推出），保 toBe
+   严格断言（变异红证更敏感）。满足票面「z 由桩推出者至少 2 例」分支（1.25+1.5）。
+4. **判页用例视口 scrollTop=110**（非 100）：center=150 恰落页 1/页 2 中心等距平手点
+   （nearestPage 取先者=歧义），110 使 center=160 判定无歧义；折算后盒 top 恒=本地内容
+   坐标（与 s 无关），数值锚期望不受影响。
+5. **首红取证方式**（§3 已述）：终版测试面+HEAD 旧实现重现——保证落盘首红与最终测试面
+   一致（首跑版本含两处设计缺陷已修正）。
+6. **删减面 diff 自查**：git diff 仅 4 授权文件+主控 registry 1 行；无未授权文件写入；
+   落盘证据文件均在 scripts/audits/f-r2-*.raw.txt（仓库既有惯例位）。
+
+## 9. 疑虑（供门审/主控）
+
+- `effectiveZoom` 的 `gBCR.height/clientHeight` 口径：容器带 border 时 gBCR 含 border 而
+  clientHeight 不含，比值≠Z 精确值（fitWidth 先例 width 侧用 offsetWidth 同含滚动条）。
+  ③-1 裁定即此式、真机阅读区容器无 border（探针结构链实测口径），⑤f 真机复验
+  （1.25 档 fill(4) 落点偏移 −512.6 → |偏移|≤5px、三档 dSt≈δv/z）归主控。
+- 既有用例补桩（自裁 1）改变了受锁测试的夹具面——虽断言锚未动，请门一独立复核
+  「补桩≠放宽」定性。
+- registry.ts:229 逗号（§7）修复后，57 文件恢复收集——其中是否有对 scroll-converge/
+  scroll-progress 桩几何敏感的传播用例（如 page-column/reader-double-page 经
+  createReaderScrollProgress 间接消费），补齐的全量跑见分晓；本代理预判零影响
+  （measurePageBoxes 对 z=1 恒等，jsdom 桩均同空间）。
+```
+
+## ③ 完整 diff（11 件——实现 4+测试 2 受锁+主控面：探针 2/票面/排查报告/registry/locks manifest）
+```diff
+diff --git a/locks/manifest.json b/locks/manifest.json
+index e4e29e263..199365494 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-01T17:35:56.3820234Z",
++    "generatedAt":  "2026-09-01T18:25:06.6566090Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -153,6 +153,14 @@
+                       "path":  "scripts/audits/f-r1-verify.mjs",
+                       "sha256":  "87d0f4d76278ae2ab63dc8c42d38cf50aeb0516193884760b44808f3d53332d4"
+                   },
++                  {
++                      "path":  "scripts/audits/f-r2-probe.mjs",
++                      "sha256":  "f4d9f1619007a32e45d3068fddb1068d1bdac634901b1a87b7dbfb5f08de3f30"
++                  },
++                  {
++                      "path":  "scripts/audits/f-r2-probe2.mjs",
++                      "sha256":  "6e585b9a79ab49521568e1d618e6d06bb6c54e8bd9d9ec3801e70b11de9a4328"
++                  },
+                   {
+                       "path":  "scripts/audits/f-sw1-fix-verify.mjs",
+                       "sha256":  "582e6a79339893ab58fef7685f2728cf3265709f309ca98a251606221910ed13"
+@@ -679,11 +687,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
+-                      "sha256":  "1b1d0beba41352388bf85b399e8c5b5a00ab3db69388ed72122379ff01ca004c"
++                      "sha256":  "5cb78603629b4d9dd1cd83b43f1531c2c5c1a6729f88155bd04aecd2275699a1"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",
+-                      "sha256":  "c3203c7790f859e5e022ff29d1e06de880d4c26bc8349b10675a483aba60e813"
++                      "sha256":  "f6f9b0b00a5f80b17f472ef706fb59362dca71634c88625d71f6a509e7e45f67"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
+diff --git a/scripts/audits/f-r2-explore-report.md b/scripts/audits/f-r2-explore-report.md
+new file mode 100644
+index 000000000..082cd04d9
+--- /dev/null
++++ b/scripts/audits/f-r2-explore-report.md
+@@ -0,0 +1,193 @@
++# F-R2 排查报告 —— ui-scale≠1 时阅读器程序滚动落点漂移（160-450px）根因排查（只读）
++
++> 排查人：U1 只读排查子代理（2026-09-02）。方法=systematic-debugging 四阶段（Phase1 组件边界取证→Phase2 模式对比→Phase3 假设排序；Phase4 留实现者）。
++> 铁律遵守：本报告为唯一仓库写产物；未跑任何 npm/test/electron；未动 git。
++>
++> 开工技能清点：systematic-debugging=用（四阶段方法纪律）；test-driven-development / verification-before-completion=不用（只读排查，红测与验证归实现者 Phase4）；browser-use/webapp-testing 类=不用（禁启动浏览器/Electron，真机探针归主控）；其余领域技能与本票技术面无关。
++
++---
++
++## ① 现象与证据档索引
++
++**现象（台账 F-R2 原文口径）**：ui-scale≠1（用户 large 档=1.25）时，阅读器「反向 zoom 豁免」与「程序滚动差值法」交互导致程序滚动落点漂移 **160-450px**；**单页模式同样复现**（非 F-R1 引入，存量缺陷）；ui-scale=1 不漂移（天然 A/B 对照面）。
++
++| 证据档 | 内容 | 关键数值 |
++| --- | --- | --- |
++| `scripts/audits/f-r1-dbg.mjs` | ui-scale=1.25 实况探针（用户 settings.json 原样复制）：fill(1)/fill(4)/下一页 三跳场景 + GEOM 全景（`contentTop = g.top − gs.top + sc.scrollTop` 混合口径，:39-51） | 期望值按 ui-scale=1 语义预写：fill(4)→页4顶 12+3×805=2427；下一页(4→5)→3232（:85-88）。**漂移数值出自该运行控制台输出（未落盘）**；`dbg-geom.png` 为落点截图 |
++| `scripts/audits/f-r1-verify.json` | **ui-scale=1 对照组**（`f-r1-verify.mjs:50-70` 预写**删除 uiScale 字段**——头注明言「ui-scale≠1 下程序滚动落点存在既有漂移…F-R1 全链零改——非本票缺陷，报主控备案」） | 20 页 PDF、盒 595×793、视觉间距恒 805（=793+12 gap）。D_single 场景：跳页4 后 st=2427.2、box4 g.top=114.1875；由 pre 场景反推 scRect.top=114.387、contentTop(box1)=12.0 → **落点收敛误差 −0.2px（delta 法在 Z=1 精确收敛）** |
++| `scripts/audits/f-v2-out/diag-raw.txt` | ui-scale=1.25 结构链实测（`f-v2-diag.mjs:96-116` 目标元素上溯 body 逐层 clientW/offsetW/gBCRW/computed zoom） | `[data-page-column]` zoom=**0.8**（clientW=offsetW=gBCRW=1482）；「relative」包装 zoom=1（clientW **1193** vs gBCRW **1491.8**=×1.25）；scroller `.overflow-auto.p-3` zoom=1（clientW 1217 vs gBCRW 1537）；`.app-content-row` zoom=**1.25**（clientW 1642 vs gBCRW 2052）；根容器 zoom=1 |
++| `scripts/audits/f-l2-precheck.mjs` | lineage 侧同型污染前置实测范式：三档（1/1.1/1.25）×「clientWidth 本地 vs gBCR 视觉」量测口径 | 本票真机探针直接复用（见⑦） |
++| `scripts/audits/f-r1-verify.mjs:50-54` | F-R1 作者对漂移的原始备案（猜测「与 CSS zoom 豁免区/浏览器 scroll-anchoring 交互相关」——本报告证据将其收窄为坐标空间单位混用，scroll-anchoring 降为低置信假设 H4） | — |
++
++**dbg-geom.png**：单页模式、ui-scale=1.25 下 fill(4) 落点截图（页4 顶被推出/未对齐的几何形态；png 为辅证，数值链以 json+机制推演为准）。
++
++---
++
++## ② 程序滚动全链调用图（入口→差值计算→落点，file:line）
++
++```
++【跳页主链】（单双页同链——单页复现的结构原因）
++页码输入 fill+Enter / 工具栏「下一页/上一页」/ OutlinePanel 目录 / 恢复链 scrollToPage
++  → reader.store.ts:350 setPage(page)          （:359 0基夹取；:362-364 默认 scroll:'to'
++                                                 → bump scrollRequest={paperId,page,seq}，INV-29 双源信号）
++  → PageColumn.tsx:179-184 段⑤ effect          （:181 clampPageToColumn；:182 querySelector
++                                                 `[data-page-box="${no}"]`——占位盒恒在，测量面就绪）
++  → scroll-converge.ts:41-51 scrollIntoNearestScroller(box,'start')
++      :44  elRect = el.getBoundingClientRect()        ← 【视觉 px（根坐标，含祖先 zoom×1.25）】
++      :45  scRect = scroller.getBoundingClientRect()  ← 【视觉 px】
++      :48  raw = scroller.scrollTop + (elRect.top − scRect.top)   ← 【scrollTop=本地 px + 视觉差值 —— 单位混用点★】
++      :50  scroller.scrollTop = clamp(raw, 0, scrollHeight − clientHeight)  ← 【clamp 分母=本地 px，与写入口径一致】
++
++【锚点定位链】（N1 片段跳转 exact 层）
++anchor-locate.ts:247 locateAnchor → :279 setPage(anchorPage)（走上面主链到页盒顶）
++  → :287/:288 flashAnnotation/flashAiNote → :239-245 flashElement
++  → scroll-converge.ts:242 scrollIntoNearestScroller(el,'center')   ← 同一 ★ 点（:49 center 算式同样混单位）
++
++【缩放锚链】（zoom 变化：工具栏±10%/适应宽度/100% 按钮）
++PageColumn.tsx:186-196 段⑥镜像（scroll 事件被动写 liveScrollTop=el.scrollTop ← 本地 px）
++  → :200-215 useLayoutEffect（zoom prop 变化）
++  → :209-214 el.scrollTop = anchoredScrollTop(liveScrollTop, el.clientHeight,       ← 本地 px
++        columnTotalHeightFor(sizes, from, layout), columnTotalHeightFor(sizes, zoom, layout))  ← 列内 px（未折算）
++  → page-column-geometry.ts:53-58 anchoredScrollTop（(st+vh/2)/总高 比值法，:57 顶底夹取）
++
++【进度回写/恢复/到达判定链】（不直接写 scrollTop，但决定「目标页」与「到达」判断）
++scroll-progress.ts:123-129 centerPage = nearestPage(vp.scrollTop + vp.clientHeight/2, boxes)
++    :281   vp = { scrollTop: el.scrollTop（本地）, clientHeight: el.clientHeight（本地） }——两值同空间 ✓
++    :283-291 getPageBoxes: top = r.top − base.top + el.scrollTop   ← 【gBCR 视觉差值 + 本地 scrollTop —— 混合空间★2】
++  消费：:183-186 restoring 到达判定（cur===target）；:193 回写账本；:225/:293 恢复 scrollToPage
++
++【键盘滚动链】（对照：单位自洽，无漂移）
++ReaderShortcuts → ReaderPage.tsx:90-93 scrollByRatio: el.scrollBy({top: clientHeight×ratio})（本地×本地 ✓）
++```
++
++**同一 scroller 的三个坐标空间**（f-v2 链实测）：
++- **视觉 px**（gBCR）：内容间距 805/页（与 ui-scale=1 完全相同——反向豁免 E×Z=0.8×1.25=1 使 PDF 视觉恒 1）；
++- **滚动/布局本地 px**（scrollTop/scrollHeight/clientHeight/offsetWidth）：内容间距 805×0.8=**644**/页；clientHeight=889 本地（视觉 1111）；
++- **列内布局 px**（columnTotalHeightFor 语义）：间距 805——与视觉数值相同但属另一空间（scrollHeight 空间=列内×0.8）。
++
++---
++
++## ③ uiScale 链路（设置→DOM 注入→阅读区反向豁免的确切实现行）
++
++```
++src/shared/ipc/schemas.ts:390-393   UI_SCALE = { small: 1, medium: 1.1, large: 1.25 }（数值单源）
++src/renderer/app/App.tsx:127        uiScale = useSettingsStore(s => s.settings?.uiScale ?? 'small')
++src/renderer/app/App.tsx:135        document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
++src/renderer/shared/theme.css:131-136
++   .app-content-row   { zoom: var(--ui-scale, 1); }          ← 界面缩放挂载行（nav+main 整行，header 行外豁免）
++   [data-page-column] { zoom: calc(1 / var(--ui-scale, 1)); } ← ★反向 zoom 豁免（PDF 视觉恒 1；R2-SET1）
++```
++
++DOM 层级（f-v2 链 + ReaderPage.tsx:170-192）：
++
++```
++app-content-row(zoom 1.25) > main(zoom 1) > … > .overflow-auto.p-3【滚动容器，zoom 1】
++  > div.relative【稳定包装盒，zoom 1】 > PdfDocProvider > PageColumn[data-page-column](zoom 0.8)
++      > PageBox[data-page-box](595×793 布局) / data-page-row(双页行)
++```
++
++关键推论：**zoom 挂载点在滚动容器之上、豁免点在滚动容器之内容**。因此滚动容器的 scrollTop/scrollHeight/clientHeight 处于「本地空间」（列内×0.8），而 gBCR 处于「视觉空间」（本地×1.25）——两空间比值恒 Z=1.25（等价 1/E）。`ReaderPage.tsx:146-151` fitWidth 已实证认知该比值并显式推导（`gBCR.width/offsetWidth`），但滚动链三处消费点（②中标 ★/★2）未做同样折算。
++
++---
++
++## ④ 漂移机制推演（数值级）
++
++**Chromium（Electron 42）legacy zoom 语义**（f-v2 链+reader-scroll e2e+F-L2 前置共同实证）：祖先 zoom=Z 的子树内——gBCR=视觉 px=本地 px×Z；scrollTop/scrollHeight/clientHeight/offsetWidth=本地 px（读 写同空间；F-L2 Q1 同结论的 lineage 侧先例）。
++
++**H1 机制（scrollIntoNearestScroller 差值法单位混用）**：
++
++设跳页前滚动位 s（本地），目标盒顶内容坐标 C（本地）。目标盒的视觉差值：
++`δv = elRect.top − scRect.top = (C − s)×Z`。
++
++- **正确修正量（本地）**：`Δ* = C − s = δv/Z = δv×0.8`；
++- **代码实加（scroll-converge.ts:48）**：`Δ = δv`（把视觉差值当本地 px 直接加）；
++- **落点误差**：`(Δ − Δ*)×Z = δv×(1 − 1/Z)×Z = δv×(Z−1) = **0.25×δv 视觉 px**（过冲，方向=向下跳时目标被顶出滚动容器顶之上）。
++
++**量级对账（1.25 档，视觉页距 805px）**：
++
++| 跳前视觉距离 δv | 落点漂移 0.25×δv | 对应场景 |
++| --- | --- | --- |
++| ≈644（0.8 页） | ≈161px | 短距跳/恢复链微调 |
++| ≈805（1 页） | ≈201px | 「下一页」单页步进 |
++| ≈1610（2 页） | ≈402px | 双页翻面/隔页跳 |
++| ≈1800（2.2 页） | ≈450px | 票面上界 |
++
++**与票面 160-450px 完全同量级**（δv∈[640,1800] 即典型 0.8~2.2 页跳距；fill(4)-from-页1 的 δv≈2415 会给 ~604px，是否到达取决于起始位与 clamp 夹取）。**单页复现**：段⑤/flashElement 对单双页同一实现，无布局特判 ✓。**ui-scale=1 不漂移**：Z=1 时 δv 即本地差值，公式退化为精确——verify JSON 实测收敛误差 0.2px ✓（天然 A/B 闭合）。
++
++**「反向豁免」在交互中的确切角色**：E=0.8 保证视觉几何与 ui-scale=1 **逐像素相同**（间距仍 805、canvas 612×792 原生清晰），于是 (a) dbg 期望式「12+3×805」在视觉/数值上「看似成立」，漂移被掩蔽为「scrollTop 读数接近期望但画面错位」；(b) 滚动坐标空间间距缩为 644——**豁免没有引入漂移本身，它把「视觉=本地」的隐含假设破坏掉**（单位比 Z），并让漂移以「数值对、画面错」的隐蔽形态呈现。
++
++**H2 机制（getPageBoxes 混合空间 → 页码回写/恢复目标/到达判定偏页）**：`top = r.top − base.top（视觉） + scrollTop（本地）`：盒顶被按 1.25 倍膨胀后与 `scrollTop + clientHeight/2`（全本地）比较；视口上部内容（off 小）近似正确、越靠下膨胀越多（0.25×off），外加 clientHeight 本地 889 vs 真实视觉中心 1111（中心估计整体偏高 ~111px）。真中心落在页边界 ±(0.25×off+111)px 带内时 nearestPage 报错 ±1 页 → 回写页码错、恢复链 scrollToPage(错页) 再经 H1 落点 → **整页级（805px）漂移事件**，构成 450px 上界外的长尾。
++
++**H3 机制（anchoredScrollTop 总高分母空间错配）**：段⑥ 传参 `columnTotalHeightFor`=列内 px（16048），但分子 `liveScrollTop+clientHeight/2` 在本地滚动空间（真总高=16048×0.8+24=12862）。比值比分母膨胀 ×1.25 → 每次 zoom 变化（±10%/适应宽度/归一）后新 scrollTop 系统性过冲 ~25%（中部滚动位时数百 px）。佐证：f-v2 diag「适应宽度后」pageBox.y 从 −279.2 跳到 −889.6（大位移）；verify 的 D/scroll-position-kept |Δ|≤2 断言仅在 ui-scale=1 成立（空间重合）。
++
++---
++
++## ⑤ 根因假设排序
++
++| 序 | 假设 | 机制 | 探针可证伪判据 | 置信度 |
++| --- | --- | --- | --- | --- |
++| **H1** | **scroll-converge.ts:48-49 把 gBCR 视觉差值 1:1 加进本地 px scrollTop（「1 gBCR px=1 scrollTop px」隐含假设仅 Z=1 成立）——程序滚动漂移 160-450px 的主产生器** | ④节推演：过冲=0.25×δv | 真机 1.25 档：跳页前后取 {s_before, δv, s_after}，若 `s_after−s_before ≈ δv`（而非 δv/1.25）且落点偏移 ≈ −0.25δv → 成立；若 `s_after−s_before ≈ δv/1.25` 且落点仍漂 → 证伪（转 H2/H3/H5） | **~85%** |
++| H2 | scroll-progress.ts:283-291 getPageBoxes 视觉+本地混合空间 → nearestPage ±1 页误判（回写/恢复/到达判定污染，整页级漂移长尾） | ④节推演 | 1.25 档把真视口中心置于页边界 ±50px，比较 pageInput 显示页 vs gBCR 真中心页；错 ≥1 例 → 成立 | ~70% |
++| H3 | PageColumn.tsx:209-214 段⑥ anchoredScrollTop 总高用列内 px（未 ×0.8 折算到滚动本地空间）→ zoom 变化锚定过冲 ~25% | ④节推演 | 1.25 档 st 置中部，100%→110%→100% 往返，|st_drift| 对比 1 档基线（应 ~0）显著非零 → 成立 | ~60% |
++| H4 | 浏览器 scroll-anchoring 干扰（F-R1 作者原猜测） | 占位盒↔canvas 等高替换，锚定调整理论≈0 | 探针置 `scroller.style.overflowAnchor='none'` 后复测 H1 判据，漂移不变 → 排除 | ~15% |
++| H5 | scrollTop 读写不对称（读视觉/写本地） | 会产生随绝对滚动位增长的千 px 级漂移，与 160-450 量级不符 | 语义探针（⑦-1）直接判定 | ~10% |
++
++注：H1/H2/H3 同根（三处消费点共享「视觉=本地」过期假设），非互斥——主票面数值（160-450px 连续谱）由 H1 主导，H2/H3 提供整页级/zoom 链长尾。
++
++---
++
++## ⑥ 修复方向建议（排在根因证据之后；最终方案归主控/实现者裁决）
++
++**方案 B（算术折算，最小改动面）**——在三处消费点把视觉量折算到本地空间，折算因子复用 fitWidth 已有推导式（`ReaderPage.tsx:149` 先例：`z = scroller.getBoundingClientRect().height / scroller.clientHeight`，guard 除零，Z=1 时恒 1=零行为变）：
++
++1. `scroll-converge.ts:48-49`：`raw = scrollTop + (elRect.top − scRect.top)/z`（center 分支的 clientHeight 项本就本地，不动）；:50 clamp 保持本地口径 ✓；
++2. `scroll-progress.ts:289`：`top = (r.top − base.top)/z + el.scrollTop`（height 同除，保 nearestPage 距离同空间）；或改 offsetTop 链量测；
++3. `PageColumn.tsx:209-214`：总高分母改滚动本地空间（`scroller.scrollHeight` 或 `columnTotalHeightFor×E`）。
++   - 风险：三点分散、每点一个折算因子来源；受锁测试面见下。
++
++**方案 A（结构归一：豁免上提一行）**——把反向豁免从 `[data-page-column]` 上提到**滚动容器**（`.overflow-auto` 挂 `zoom:calc(1/var(--ui-scale))`，theme.css 一处改类目标）：此时滚动容器内容（列+盒）的「视觉=本地×(0.8×1.25)=本地×1」——**三个坐标空间在阅读区内部重新合一**，H1/H2/H3 同根消除，滚动链零代码改动。
++- 连带必改：`ReaderPage.tsx:146-151` fitWidth 的 uiScale 推导在 scroller 上取比值将变 1 → 需回退为朴素 `(clientWidth−24)/basis`（F-V2 修复的对称回退，否则两侧空白 ~148px 回归）；`selection-geometry` 的 localScale 口径需复核（SelectionLayer 挂载盒在豁免层内/外的参照系变化）；滚动条渲染/宽度在自 zoom 容器上的表现需真机核验。
++- 风险：影响面比 B 大（F-V2/F-A4 两既有修复交互），但消除的是假设本身而非三处症状。
++
++**涉受锁测试清单（[locked-change] 流程预警）**：
++- `tests/unit/renderer/scroll-converge.test.ts`（start/center 数学——需增 z≠1 桩例；现行绿=逃逸面：jsdom 桩值全同一单位空间，见⑦-5）；
++- `tests/unit/renderer/scroll-progress.test.ts`（centerPage/getPageBoxes 注入桩——单位混入需新例）；
++- `tests/unit/renderer/page-column.test.ts`（段⑥ anchoredScrollTop 精确断言——INV-33 口径）；
++- `tests/unit/renderer/reader-double-page.test.ts`（锚总高口径用例）；
++- `tests/e2e/reader-scroll.spec.ts`（F-05 收敛链——默认 profile uiScale=small=1，两方案下行为均应不变=回归护栏）。
++- 不变量册：INV-34 实现语义不变（仍=最近祖先+夹取，仅量纲修正）；INV-33「间隙口径由 columnTotalHeight 承载」若走 B-3 或 A 需补空间口径附注；INV-45 fitWidth 分母面与方案 A 有交互（F-V2 附注）。
++
++**建议**：先真机探针（⑦）锁 H1 判据与 scrollTop 读写语义，再定 A/B；若 H1 判据坐实且 H2/H3 同现，优先评估方案 A（一处 CSS 消三缺陷，代价是复核两个连带面）。
++
++---
++
++## ⑦ 探针建议（主控下一步真机取证）
++
++复用 `f-l2-precheck.mjs` 三档范式 + `f-v2-diag.mjs` 结构链口径，新建 `scripts/audits/f-r2-probe.mjs`（真实库副本、保留 uiScale 实况，对照档用 `documentElement.style.setProperty('--ui-scale','1')` 切换，禁改用户 settings.json）：
++
++1. **语义探针（H5/H1 前置）**：1.25 档下 `st0=scrollTop` → `scrollTop += 100` → 读回 Δst 与固定内容节点 gBCR 位移 Δvis。Δst=100 且 Δvis=125 → 写读皆本地、视觉×1.25（H1 模型成立）；Δst=100 且 Δvis=100 → 读写皆视觉（H1 证伪，重启假设）。
++2. **落点探针（H1 主判据）**：三档 × {fill(1), fill(4), 下一页, locate exact}，每跳记录 `{s_before, δv=目标盒 elRect.top−scRect.top, s_after, 落点视觉偏移}`。判据：`s_after−s_before ≈ δv`（实加视觉量）且偏移 ≈ −(Z−1)×δv；1 档对照应 ≈0（复现 verify 的 0.2px）。
++3. **页码判定探针（H2）**：1.25 档以 1px 步进扫页边界 ±150px 的 scrollTop，记录 pageInput 显示页 vs gBCR 真中心页，统计误判带宽度。
++4. **zoom 锚探针（H3）**：1.25 档 st 置文档中部，100%→110%→100% 往返三_cycle，|st_drift| 对 1 档基线；另测适应宽度单击前后目标行顶视觉偏移。
++5. **逃逸面闭环（为何现有测试全绿）**：`scroll-converge.test.ts` 头注自认「jsdom 无布局：gBCR/scrollHeight/clientHeight 全部桩值」——桩值同一单位空间，z 因子永不可红；`scroll-progress.test.ts` deps 全注入；e2e/`f-r1-verify` 跑在 uiScale 缺省=1。**红测落点建议**：scroll-converge 增「视觉/本地=1.25 桩」用例（先红后修，Phase4 实现者执）。
++
++---
++
++### 附：本报告证据链文件清单（绝对路径）
++
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-r1-dbg.mjs（:39-51 GEOM 口径、:78-88 场景与期望值）
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-r1-out\f-r1-verify.json（ui-scale=1 对照组全场景 dump）
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-r1-out\dbg-geom.png（1.25 档落点截图）
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-r1-verify.mjs（:50-70 uiScale 删除=对照组设计+存量漂移备案原文）
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-v2-diag.mjs + f-v2-out\diag-raw.txt（结构链 zoom 1.25/0.8 实测）
++- E:\class\智慧水务\Synapse_remake\scripts\audits\f-l2-precheck.mjs（三档×量测口径范式）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\scroll-converge.ts（:44-50 ★主嫌疑算式）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\PageColumn.tsx（:179-184 段⑤、:186-196 镜像、:200-215 段⑥）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\scroll-progress.ts（:123-129 centerPage、:277-302 装配）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\anchor-locate.ts（:239-245 flashElement）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\page-column-geometry.ts（:53-58 anchoredScrollTop）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\reader.store.ts（:350-368 setPage）
++- E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\ReaderPage.tsx（:90-93、:146-151、:170-192）
++- E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx（:127、:135）+ src\renderer\shared\theme.css（:131-136）
++- E:\class\智慧水务\Synapse_remake\src\shared\ipc\schemas.ts（:390-393）
++- E:\class\智慧水务\Synapse_remake\docs\invariants.md（INV-33/34/45 行）
+diff --git a/scripts/audits/f-r2-impl.report.md b/scripts/audits/f-r2-impl.report.md
+new file mode 100644
+index 000000000..985e6a104
+--- /dev/null
++++ b/scripts/audits/f-r2-impl.report.md
+@@ -0,0 +1,133 @@
++# F-R2 实现报告 —— ui-scale≠1 程序滚动落点漂移（方案 B 算术折算）
++
++> 实现者子代理（2026-09-02）。票面=`scripts/audits/f-r2-ticket.md`（五层规约）。
++> 开工技能清点：test-driven-development=用（红→绿→变异红证全流程）；
++> verification-before-completion=用（各关原始输出落盘）；systematic-debugging=不用
++> （根因已由探针+排查报告定位，任务书自带）；subagent-driven-development=不用
++> （本代理即被派发实现者，不再派发）；receiving-code-review=不用（门审归门一/门二）；
++> 其余技能与本票技术面无关=不用。配置欠账：工具面无 model 参数，运行于会话统一档
++> （GLM5.3 同源），目标档 GLM5.3flash 无法显式指定——派发方已披露，照单记录。
++
++## 1. 实现摘要
++
++- **B-1（H1 主修）**：`scroll-converge.ts` 新导出 `effectiveZoom(scroller)`（③-1 裁定式
++  `gBCR.height / clientHeight`，clientHeight=0 guard 返 1）；
++  `scrollIntoNearestScroller` 的 start/center 两分支 elRect 侧（gBCR 视觉差值）除 z 折算
++  回本地空间，clientHeight 项与 `:62` clamp 保持本地口径不动。INV-34 语义原样（最近祖先
++  +显式夹取，仅量纲修正）。函数签名/导出面零破坏（③-2）。
++- **B-2（H2 同批修）**：`scroll-progress.ts` 新导出 `measurePageBoxes(el)`——
++  `top = (r.top − base.top)/z + el.scrollTop`，height 同除（保 nearestPage 距离比较同
++  空间）；z 经单源 `effectiveZoom` 引用（禁两处各写）。装配工厂 `createReaderScrollProgress`
++  的 getPageBoxes 改用之（原内联量测式删除——方案切换=删旧方案）。既有 ScrollProgressDeps
++  契约零改动。
++- **B-3 备案不修**（票面②）：`PageColumn.tsx` anchoredScrollTop 未触碰。
++- **「下一页」旁支**（票面③-4）：未解析未扩面。修复前探针值在档（1.25 档 dSt=293.76 vs
++  δv=165.4、landOffset=−201.8；探针 `f-r2-probe.json` tiers.large_1.25.hops[next]）——
++  修复后三档真机复验（dSt≈δv/z）归主控⑤f。
++
++## 2. 文件清单（本代理改动面）
++
++| 文件 | 改动 | 行数 |
++| --- | --- | --- |
++| `src/renderer/features/reader/scroll-converge.ts` | +effectiveZoom；start/center 折算；头注公式同步 | 63 |
++| `src/renderer/features/reader/scroll-progress.ts` | +import effectiveZoom；+measurePageBoxes；装配 getPageBoxes 改用 | 348 |
++| `tests/unit/renderer/scroll-converge.test.ts` | 受锁改写：头注 [locked-change] 行；既有 4 用例补桩（见自裁 1）；新 describe 3 用例 | 174 |
++| `tests/unit/renderer/scroll-progress.test.tsx` | 受锁改写：头注 [locked-change] 行；新 describe 4 用例 | 405 |
++
++均 ≤500 行。`git diff --stat` 另有 `tickets/registry.ts` 1 行=主控派发前登记（非本代理所写，
++且该行携语法缺，见 §7）。
++
++## 3. 红证（全部 .raw.txt 落盘）
++
++| 证据 | 路径 | 结果 |
++| --- | --- | --- |
++| 首红（终版测试面+HEAD 旧实现重现） | `scripts/audits/f-r2-red1.raw.txt` | 6 failed/29 passed/exit=1：converge start 530≠430、center 1300≠800（断言级=H1「dSt=δv」数学复现）；progress 4 用例 TypeError（measurePageBoxes 未存在）；既有用例 29 全绿（补桩零破坏当场验证） |
++| 定向绿 | `scripts/audits/f-r2-green.raw.txt` | 35/35 passed/exit=0 |
++| M1 变异（去 /z 回退 H1 原形态） | `scripts/audits/f-r2-m1.raw.txt` | 2 failed（530≠430、1300≠800）/exit=1 |
++| M2 变异（effectiveZoom 恒返 1） | `scripts/audits/f-r2-m2.raw.txt` | 5 failed（两文件：converge 2+progress 数值锚 toEqual [top:−27.5,height:125]+判页 1≠2+记账 0≠1）/exit=1 |
++| M3 变异（measurePageBoxes height 不除） | `scripts/audits/f-r2-m3.raw.txt` | 3 failed（数值锚 height 125≠100 且 top=+0 已折算=变异面精确；nearestPage 距离判页 1≠2；记账 0≠1）/exit=1 |
++| M4 变异（clamp 上限误除 z） | `scripts/audits/f-r2-m4.raw.txt` | 1 failed（1280≠1600=上限被 /1.25 精确锚）/exit=1 |
++| 全量 test | `scripts/audits/f-r2-test-full.raw.txt` | 677 用例全过 0 断言失败；57 文件死于 registry transform（§7），exit=1 |
++| typecheck | `scripts/audits/f-r2-typecheck.raw.txt` | exit=2，唯一错误 registry.ts(230,3) |
++| lint | `scripts/audits/f-r2-lint.raw.txt` | exit=1，唯一错误 registry.ts:230 解析——本代理 4 文件 lint 零错 |
++| verify | `scripts/audits/f-r2-verify.raw.txt` | exit=1：quality+tickets 关过，断在 locks:check（§6 中间态） |
++| build | `scripts/audits/f-r2-build.raw.txt` | exit=0 绿（registry 不进 app bundle） |
++
++- 定向跑口径申报：`npm run test -- <两文件>`（ABI 前导随 npm script 自带，非裸 npx vitest）。
++- 变异还原安全：全部 cp 备份法（备份→变异→测→cp 还原→diff 确认空，原始输出含
++  M1-RESTORE-OK/M2-RESTORE-OK/M3-RESTORE-OK/M4-RESTORE-OK 回显），全程未 git checkout。
++- 首红取证方式（自裁 5）：测试设计在首跑后修正两处（§4），为保证落盘首红与终版测试面
++  一致，用 `git show HEAD:` 取旧实现写入+终版测试重现首红（工作区恢复靠 cp，diff 确认空）。
++
++## 4. 新用例设计要点（7 个新 it）
++
++converge 3：start z=1.25（500/400，期望 430 vs 现状 530）；center z=1.5 由桩推出（1460/300
++桩，期望 800 vs 现状 1300）；z≠1 底夹取（raw=1920 夹 1600 本地口径=M4 专用锚，现状碰巧绿）。
++progress 4：measurePageBoxes 数值锚（三盒折算回本地 [{0,100},{200,100},{400,100}]）；z=1
++恒等护栏（修复前后皆绿）；nearestPage 判页（center=160→第 2 页；不折算误判第 1 页）；滚动
++记账（onScrollEvent→pending=1，不折算记 0）。桩空间口径：scroller/页盒 gBCR=视觉（本地×z）、
++scrollTop/clientHeight=本地；视口 scrollTop=110 避开 150 等距平手歧义（自裁 4）。
++
++## 5. 测试证据（用例数）
++
++- 两受锁文件合计 35 用例（converge 9：既有 6+新 3；progress 26：既有 22+新 4），定向全绿
++  exit=0。
++- 全量 test（基线 126 文件 1074 用例）：当前工作区 677 用例全过、69 文件绿；57 文件因
++  registry.ts transform 失败未能收集（677+57 文件内约 397 用例=1074 吻合）——修 §7 逗号后
++  预期 126 文件全量绿，最终数以主控收口 verify 为准（新用例 7 个计入后基线 1074→1081）。
++- e2e：零触碰（票面④预期）；未单独跑（verify 链被 locks 中间态截断，e2e 本就不在 verify
++  内、需先 build——build 已单独取证绿）。
++
++## 6. locks 实录
++
++- 两受锁测试=主控已 unlock 授权面（派发指令明示），本代理未跑 locks:apply（主控收口统一做）。
++- locks:check 当前报 4 项：两测试「被修改」（=unlock 改写中间态，apply 后消）+两探针脚本
++  `f-r2-probe.mjs`/`f-r2-probe2.mjs`「未登记」（主控探针面，locks:generate+apply 归主控）。
++  verify 断在此关（quality/tickets 两关已过）。
++
++## 7. BLOCKED 项（主控面，一字符修复）——挡 typecheck/test/build 外全量证据
++
++**`tickets/registry.ts:229` 行尾缺逗号**：主控派发前插入 F-R2 工单行时，漏给上一行 R2-SH2
++（原数组末元素）补尾逗号——HEAD 版 R2-SH2 无逗号合法（其后即 `] as const`），插入后成
++`{R2-SH2…} {F-R2…}` 两元素无分隔 → `ERROR: Expected "]" but found "{"`（registry.ts:230:2）。
++- 证据：esbuild 转译工作区版报错/HEAD 版该处结构合法；git diff 显示 registry 唯一改动=
++  F-R2 行插入（本代理全程未写 tickets/**，取证只读）。
++- 影响：typecheck exit=2（唯一错误）、vitest 57 文件 transform 失败（677/1074 用例收集到，
++  已收集用例 0 失败）、lint 唯一错误。build 不受影响（exit=0）。
++- 修复（主控执行）：registry.ts:229 行尾 `' }` → `' },`。修复+locks:apply 后重跑 verify
++  即为收口径径——本代理 4 文件面证据（定向 35/35、变异红证×4、lint 干净、build 绿）已齐。
++- 本代理按「禁翻 tickets/registry + 卡点=BLOCKED 停手不自裁」纪律未代修。
++
++## 8. 自裁申报（超票面决定全列）
++
++1. **既有 4 个 converge 用例补 scroller gBCR.height 桩**（`stubRect(inner,100)` →
++   `stubRect(inner,100,400)` 型）：既有桩 gBCR.height=10 vs clientHeight=400 非同空间
++   （z=0.025≠1），会使折算实现崩既有断言；依票面⑤e「jsdom 桩同空间时 z=1 恒等=既有用例
++   零破坏的数学保证」的前提补全桩的空间一致性。**断言值一字未动**（480/640/0/1600/320
++   原样）——非语义放宽。
++2. **B-2 落地为导出函数 `measurePageBoxes`**：票面 B-2 给了「z 传参或经单源函数取」两径，
++   选单源函数——scroll-progress.test 为全注入桩，可锚的实现面只在装配侧，抽导出函数是
++   测试可锚的最小形态；不动 ScrollProgressDeps 契约。
++3. **center 用例 z=1.5 替代票面点名的 1.1 档**：IEEE754 下 1.1 不可精确表示
++   （1100/1.1=799.99…）导致期望值非确定整数；1.5 二进制精确（600/400 桩推出），保 toBe
++   严格断言（变异红证更敏感）。满足票面「z 由桩推出者至少 2 例」分支（1.25+1.5）。
++4. **判页用例视口 scrollTop=110**（非 100）：center=150 恰落页 1/页 2 中心等距平手点
++   （nearestPage 取先者=歧义），110 使 center=160 判定无歧义；折算后盒 top 恒=本地内容
++   坐标（与 s 无关），数值锚期望不受影响。
++5. **首红取证方式**（§3 已述）：终版测试面+HEAD 旧实现重现——保证落盘首红与最终测试面
++   一致（首跑版本含两处设计缺陷已修正）。
++6. **删减面 diff 自查**：git diff 仅 4 授权文件+主控 registry 1 行；无未授权文件写入；
++   落盘证据文件均在 scripts/audits/f-r2-*.raw.txt（仓库既有惯例位）。
++
++## 9. 疑虑（供门审/主控）
++
++- `effectiveZoom` 的 `gBCR.height/clientHeight` 口径：容器带 border 时 gBCR 含 border 而
++  clientHeight 不含，比值≠Z 精确值（fitWidth 先例 width 侧用 offsetWidth 同含滚动条）。
++  ③-1 裁定即此式、真机阅读区容器无 border（探针结构链实测口径），⑤f 真机复验
++  （1.25 档 fill(4) 落点偏移 −512.6 → |偏移|≤5px、三档 dSt≈δv/z）归主控。
++- 既有用例补桩（自裁 1）改变了受锁测试的夹具面——虽断言锚未动，请门一独立复核
++  「补桩≠放宽」定性。
++- registry.ts:229 逗号（§7）修复后，57 文件恢复收集——其中是否有对 scroll-converge/
++  scroll-progress 桩几何敏感的传播用例（如 page-column/reader-double-page 经
++  createReaderScrollProgress 间接消费），补齐的全量跑见分晓；本代理预判零影响
++  （measurePageBoxes 对 z=1 恒等，jsdom 桩均同空间）。
+diff --git a/scripts/audits/f-r2-probe.mjs b/scripts/audits/f-r2-probe.mjs
+new file mode 100644
+index 000000000..2d76fde91
+--- /dev/null
++++ b/scripts/audits/f-r2-probe.mjs
+@@ -0,0 +1,193 @@
++/**
++ * F-R2 修票前置真机探针（v18 U1——H1/H2/H3/H4/H5 判据实证）。
++ * 复用：f-l2-precheck 库副本+--ui-scale DOM 覆写范式 / f-r1-dbg 开文献链。
++ * P1 语义探针（H5/H1 前置）：scrollTop+=100 的 Δst 与内容节点视觉位移 Δvis。
++ * P2 落点探针（H1 主判据）：三档 × {fill(1),fill(4),下一页→页5}，记 {s_before,δv,s_after,落点偏移}
++ *     判据：Z≠1 档 dSt≈δv（实加视觉量而非 δv/Z）且落点偏移随 δv 放大；Z=1 档基线偏移≈0。
++ *     附 overflowAnchor='none' 对照组（H4 排除：漂移不变→锚定无关）。
++ * P3 页码误判带（H2）：1.25 档全文档 40px 步进扫 {s, inputPage, trueCenterPage}，聚连续误判段带宽
++ *     （每步 sleep 40ms 让 React 受控 input 回显——scroll→store→render 链）。
++ * P4 zoom 往返锚（H3）：置中 → ＋→− 各一次 ×3 cycle，|Δst| 两档对照。
++ * 产物：scripts/audits/f-r2-out/{f-r2-probe.json, P2-landfill4-large.png}
++ * 禁改用户 settings.json（档位全 DOM 覆写）；真实库副本运行。
++ */
++import { _electron as electron } from '@playwright/test'
++import { cp, mkdir, rm } from 'node:fs/promises'
++import { existsSync, writeFileSync } from 'node:fs'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++
++const ROOT = process.cwd()
++const OUT = join(ROOT, 'scripts', 'audits', 'f-r2-out')
++await mkdir(OUT, { recursive: true })
++const log = (...a) => console.log(`[f-r2probe ${new Date().toISOString().slice(11, 19)}]`, ...a)
++const r2 = (x) => Math.round(x * 100) / 100
++
++async function freshUserData() {
++  const src = join(process.env.APPDATA, 'Synapse')
++  const userData = join(tmpdir(), 'synapse-f-r2-probe')
++  await rm(userData, { recursive: true, force: true })
++  for (const p of ['workspaces', 'ai-sensor']) await cp(join(src, p), join(userData, p), { recursive: true })
++  for (const f of ['settings.json', 'workspace.json', 'window-state.json']) {
++    if (existsSync(join(src, f))) await cp(join(src, f), join(userData, f))
++  }
++  return userData
++}
++
++const app = await electron.launch({ args: ['out/main/index.js'], env: { ...process.env, SYNAPSE_USER_DATA: await freshUserData() } })
++const win = await app.firstWindow()
++await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
++await win.getByRole('button', { name: '文献库' }).click()
++await win.waitForTimeout(1000)
++await win.locator('button.lib-card').first().dblclick()
++await win.waitForSelector('[data-page-column="ready"]', { timeout: 20_000 })
++await win.waitForTimeout(1500)
++
++const pageErrors = []
++win.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 200)))
++
++const INPUT = 'input[aria-label="跳转到页"]'
++const R_FN = 'const r=(x)=>Math.round(x*100)/100;'
++const evalJS = (expr) => win.evaluate(`(async () => { ${R_FN} ${expr} })()`)
++
++const setScale = async (z) => {
++  await win.evaluate(`document.documentElement.style.setProperty('--ui-scale', '${z}')`)
++  await win.waitForTimeout(600)
++}
++const jump = async (kind, arg) => {
++  if (kind === 'fill') {
++    await win.locator(INPUT).fill(String(arg))
++    await win.locator(INPUT).press('Enter')
++  } else if (kind === 'next') {
++    await win.getByRole('button', { name: '下一页' }).click()
++  }
++  await win.waitForTimeout(700)
++}
++// 目标页盒：视觉差（相对滚动容器顶）+当时 scrollTop
++const measureAround = (targetBox) => evalJS(`
++  const sc = document.querySelector('[data-page-column]')?.closest('.overflow-auto')
++  const sr = sc.getBoundingClientRect()
++  const b = document.querySelector('[data-page-box="${targetBox}"]')
++  if (!b) return { missing: true }
++  const br = b.getBoundingClientRect()
++  return { deltaV: r(br.top - sr.top), boxH: r(br.height), st: r(sc.scrollTop) }
++`)
++
++const R = { meta: { script: 'f-r2-probe.mjs', date: new Date().toISOString() }, p1: null, tiers: {}, p3: null, p4: {} }
++
++// ── P1 语义探针（1.25 档）：scrollTop+=100 → Δst / Δvis ──
++await setScale('1.25')
++await jump('fill', 1)
++R.p1 = await evalJS(`
++  const sc = document.querySelector('[data-page-column]')?.closest('.overflow-auto')
++  const mark = document.querySelector('[data-page-box="2"]') || document.querySelector('[data-page-box="1"]')
++  const before = { st: r(sc.scrollTop), vis: r(mark.getBoundingClientRect().top) }
++  sc.scrollTop += 100
++  const after = { st: r(sc.scrollTop), vis: r(mark.getBoundingClientRect().top) }
++  return { before, after, dSt: r(after.st - before.st), dVis: r(before.vis - after.vis),
++    zRow: getComputedStyle(sc.closest('.app-content-row') ?? sc).zoom, zSelf: getComputedStyle(sc).zoom }
++`)
++log('P1 语义:', JSON.stringify(R.p1))
++
++// ── P2 落点探针：三档 × 三跳 ──
++const SEQUENCE = [
++  { kind: 'fill', arg: 1, box: 1 },
++  { kind: 'fill', arg: 4, box: 4 },
++  { kind: 'next', arg: null, box: 5 },
++]
++const runSeq = async () => {
++  const hops = []
++  for (const step of SEQUENCE) {
++    const pre = await measureAround(step.box)
++    const sBefore = pre.missing ? null : pre.st
++    const deltaV = pre.missing ? null : pre.deltaV
++    await jump(step.kind, step.arg)
++    const post = await measureAround(step.box)
++    hops.push({
++      hop: `${step.kind}${step.arg ?? ''}`, box: step.box,
++      sBefore, deltaV, sAfter: post.missing ? null : post.st,
++      dSt: sBefore != null && post.st != null ? r2(post.st - sBefore) : null,
++      landOffset: post.missing ? null : post.deltaV,
++      missingPre: !!pre.missing, boxH: post.boxH,
++    })
++  }
++  return hops
++}
++for (const [tier, z] of [['small_1', '1'], ['medium_1.1', '1.1'], ['large_1.25', '1.25']]) {
++  await setScale(z)
++  const hops = await runSeq()
++  R.tiers[tier] = { z, hops }
++  log(`P2 ${tier}:`, JSON.stringify(hops.map((h) => [h.hop, h.dSt, h.deltaV, h.landOffset])))
++}
++// H4 对照组：1.25 档 overflowAnchor=none 重跑
++await setScale('1.25')
++await evalJS(`const sc=document.querySelector('[data-page-column]')?.closest('.overflow-auto'); sc.style.overflowAnchor='none'; return sc.style.overflowAnchor`)
++R.tiers['large_1.25_anchorNone'] = { z: '1.25', overflowAnchorNone: true, hops: await runSeq() }
++log('P2 anchorNone:', JSON.stringify(R.tiers['large_1.25_anchorNone'].hops.map((h) => [h.hop, h.dSt, h.landOffset])))
++await evalJS(`document.querySelector('[data-page-column]')?.closest('.overflow-auto')?.style.removeProperty('overflow-anchor'); return 1`)
++
++// ── P3 页码误判带（H2，1.25 档）：40px 步进全景扫描 ──
++await setScale('1.25')
++await jump('fill', 1)
++R.p3 = await evalJS(`
++  const sc = document.querySelector('[data-page-column]')?.closest('.overflow-auto')
++  const input = document.querySelector('input[aria-label="跳转到页"]')
++  const sr = sc.getBoundingClientRect()
++  const sleep = (ms) => new Promise((rf) => setTimeout(rf, ms))
++  const samples = []
++  const step = 40
++  for (let s = 0; s <= sc.scrollHeight - sc.clientHeight; s += step) {
++    sc.scrollTop = s
++    await sleep(40)
++    const cy = sr.top + sr.height / 2
++    let tp = null
++    for (const bb of document.querySelectorAll('[data-page-box]')) {
++      const g = bb.getBoundingClientRect()
++      if (cy >= g.top && cy < g.bottom) { tp = Number(bb.dataset.pageBox); break }
++    }
++    samples.push({ s: r(s), input: input ? Number(input.value) : null, true: tp })
++  }
++  const mismatch = []
++  let run = null
++  for (const smp of samples) {
++    if (smp.input !== smp.true) { if (!run) run = { from: smp.s, to: smp.s, n: 0, input: smp.input, true: smp.true }; run.to = smp.s; run.n++ }
++    else if (run) { mismatch.push(run); run = null }
++  }
++  if (run) mismatch.push(run)
++  return { step, total: samples.length, mismatchBands: mismatch, sampleHead: samples.slice(0, 3) }
++`)
++log('P3 误判带:', JSON.stringify(R.p3.mismatchBands))
++
++// ── P4 zoom 往返锚（H3）：置中 → ＋→− ×3 cycle，两档对照 ──
++for (const [tier, z] of [['small_1', '1'], ['large_1.25', '1.25']]) {
++  await setScale(z)
++  R.p4[tier] = await evalJS(`
++    const sc = document.querySelector('[data-page-column]')?.closest('.overflow-auto')
++    const zl = document.querySelector('[data-testid="zoom-label"]')
++    const minus = zl ? zl.previousElementSibling : null
++    const plus = zl ? zl.nextElementSibling : null
++    if (!plus || !minus) return { error: 'zoom 按钮未找到' }
++    const sleep = (ms) => new Promise((rf) => setTimeout(rf, ms))
++    sc.scrollTop = Math.floor((sc.scrollHeight - sc.clientHeight) / 2)
++    await sleep(400)
++    const cycles = []
++    for (let i = 0; i < 3; i++) {
++      const st0 = sc.scrollTop
++      plus.click(); await sleep(700)
++      minus.click(); await sleep(700)
++      cycles.push({ st0: r(st0), st1: r(sc.scrollTop), d: r(sc.scrollTop - st0), zoom: zl.textContent })
++    }
++    return { cycles, scrollH: sc.scrollHeight, clientH: sc.clientHeight }
++  `)
++  log(`P4 ${tier}:`, JSON.stringify(R.p4[tier].cycles?.map((c) => c.d)))
++}
++
++// 落点错位视觉证据（1.25 档 fill(4) 落点实况）
++await setScale('1.25')
++await jump('fill', 4)
++await win.screenshot({ path: join(OUT, 'P2-landfill4-large.png'), fullPage: false })
++
++R.meta.pageErrors = pageErrors
++writeFileSync(join(OUT, 'f-r2-probe.json'), JSON.stringify(R, null, 1), 'utf8')
++log('落盘:', join(OUT, 'f-r2-probe.json'), ' pageErrors=', pageErrors.length)
++await app.close()
+diff --git a/scripts/audits/f-r2-probe2.mjs b/scripts/audits/f-r2-probe2.mjs
+new file mode 100644
+index 000000000..c5e92f301
+--- /dev/null
++++ b/scripts/audits/f-r2-probe2.mjs
+@@ -0,0 +1,73 @@
++/**
++ * F-R2 P3b 补测（H2 页码误判——P3 直设 scrollTop 与懒渲染回收交互失效后的
++ * 真实链补测）：三档 × fill(2..6)，走真实页码跳转链，读 {inputPage, 真视口中心页}。
++ * 真中心页=视口中心 elementFromPoint 上溯 [data-page-box]（中心落间隙时 gBCR 盒比较兜底）。
++ * 产物：scripts/audits/f-r2-out/f-r2-probe2.json（并入 U1 证据链）
++ */
++import { _electron as electron } from '@playwright/test'
++import { cp, mkdir, rm } from 'node:fs/promises'
++import { existsSync, writeFileSync } from 'node:fs'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++
++const ROOT = process.cwd()
++const OUT = join(ROOT, 'scripts', 'audits', 'f-r2-out')
++await mkdir(OUT, { recursive: true })
++const log = (...a) => console.log(`[f-r2p3b ${new Date().toISOString().slice(11, 19)}]`, ...a)
++
++async function freshUserData() {
++  const src = join(process.env.APPDATA, 'Synapse')
++  const userData = join(tmpdir(), 'synapse-f-r2-p3b')
++  await rm(userData, { recursive: true, force: true })
++  for (const p of ['workspaces', 'ai-sensor']) await cp(join(src, p), join(userData, p), { recursive: true })
++  for (const f of ['settings.json', 'workspace.json', 'window-state.json']) {
++    if (existsSync(join(src, f))) await cp(join(src, f), join(userData, f))
++  }
++  return userData
++}
++
++const app = await electron.launch({ args: ['out/main/index.js'], env: { ...process.env, SYNAPSE_USER_DATA: await freshUserData() } })
++const win = await app.firstWindow()
++await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
++await win.getByRole('button', { name: '文献库' }).click()
++await win.waitForTimeout(1000)
++await win.locator('button.lib-card').first().dblclick()
++await win.waitForSelector('[data-page-column="ready"]', { timeout: 20_000 })
++await win.waitForTimeout(1500)
++
++const INPUT = 'input[aria-label="跳转到页"]'
++const evalJS = (expr) => win.evaluate(`(async () => { const r=(x)=>Math.round(x*100)/100; ${expr} })()`)
++const R = { meta: { script: 'f-r2-probe2.mjs', date: new Date().toISOString() }, tiers: {} }
++
++for (const [tier, z] of [['small_1', '1'], ['medium_1.1', '1.1'], ['large_1.25', '1.25']]) {
++  await win.evaluate(`document.documentElement.style.setProperty('--ui-scale', '${z}')`)
++  await win.waitForTimeout(600)
++  const rows = []
++  for (const p of [2, 3, 4, 5, 6]) {
++    await win.locator(INPUT).fill(String(p))
++    await win.locator(INPUT).press('Enter')
++    await win.waitForTimeout(700)
++    const m = await evalJS(`
++      const input = document.querySelector('input[aria-label="跳转到页"]')
++      const sc = document.querySelector('[data-page-column]')?.closest('.overflow-auto')
++      const sr = sc.getBoundingClientRect()
++      const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2
++      const hit = document.elementFromPoint(cx, cy)?.closest('[data-page-box]')
++      let truePage = hit ? Number(hit.dataset.pageBox) : null
++      if (truePage === null) {
++        for (const bb of document.querySelectorAll('[data-page-box]')) {
++          const g = bb.getBoundingClientRect()
++          if (cy >= g.top && cy < g.bottom) { truePage = Number(bb.dataset.pageBox); break }
++        }
++      }
++      return { input: input ? Number(input.value) : null, true: truePage, st: r(sc.scrollTop) }
++    `)
++    rows.push({ target: p, ...m, mismatch: m.input !== m.true })
++  }
++  R.tiers[tier] = rows
++  log(tier, JSON.stringify(rows.map((x) => [x.target, x.input, x.true, x.mismatch])))
++}
++
++writeFileSync(join(OUT, 'f-r2-probe2.json'), JSON.stringify(R, null, 1), 'utf8')
++log('落盘:', join(OUT, 'f-r2-probe2.json'))
++await app.close()
+diff --git a/scripts/audits/f-r2-ticket.md b/scripts/audits/f-r2-ticket.md
+new file mode 100644
+index 000000000..1eeb67780
+--- /dev/null
++++ b/scripts/audits/f-r2-ticket.md
+@@ -0,0 +1,57 @@
++# F-R2 工单票面——ui-scale≠1 程序滚动落点漂移（修票·五层规约=完整任务书）
++
++> registry: `F-R2` / file `src/renderer/features/reader/scroll-converge.ts` / area reader / strong
++> 依据链：台账 F-R2 段（audit0-findings 350-358）+ 排查报告 f-r2-explore-report.md + 真机探针 f-r2-out/{f-r2-probe,f-r2-probe2}.json（2026-09-02 本场）
++> 主控已裁决项见③——实现者不再自裁这些点。
++
++## ① 现象与根因证据（探针实测，实现者不必重跑）
++
++**现象**：ui-scale≠1（用户 large=1.25）时程序滚动（页码跳转/翻页）落点漂移 160-450px；单页同现；ui-scale=1 完美收敛。
++
++**根因（H1，探针三场景三档数值级闭合）**：`scroll-converge.ts:48-49` 把 gBCR 视觉差值 δv 1:1 加进本地 px 的 scrollTop——「1 gBCR px=1 scrollTop px」仅 Z=1 成立。祖先 `.app-content-row` zoom=Z（theme.css 反向豁免挂内容侧），gBCR=本地×Z，scrollTop 读写皆本地（P1 实证：scrollTop+=100 → Δst=99.84 / 内容视觉位移 Δvis=124.8；zRow=1.25/zSelf=1）。落点视觉过冲=(Z−1)×δv。
++
++**判据数据（fill(4) 场景）**：
++
++| 档 | δv（视觉） | dSt 实测 | 预测(H1: dSt≈δv) | 落点偏移实测 | 预测 −(Z−1)δv |
++| --- | --- | --- | --- | --- | --- |
++| 1.0 | 2034 | 2034.4 | ✓ | −0.4 | ≈0 ✓ |
++| 1.1 | 2047.2 | 2047.27 | ✓ | −204.8 | −204.7 ✓ |
++| 1.25 | 2049 | 2049.28 | ✓ | −512.6 | −512.25 ✓ |
++
++fill(1) 向上跳经 clamp 推演同吻合（1.25 档 δv=(12−s_before)×1.25=−3161，实加 Δ=δv 冲负被 clamp 0=页1顶）。overflowAnchor=none 对照组逐位一致（H4 排除）；P1 语义排除 H5；zoom±往返三 cycle 两档 Δst=0（**H3 证伪——anchoredScrollTop 分母错配本批不修，备案 v19**）。
++
++**H2（同根族，P3b 实证可感面）**：`scroll-progress.ts:283-291` getPageBoxes 把视觉盒位（r.top−base.top）与本地 scrollTop 混算——1.25 档实测 fill(2) 真中心页=1、fill(3) 真中心页=4（「页码说 2、画面看页 1」）；1/1.1 档全对。静态机制见排查报告②段。
++
++**已知旁支（本批不修，申报不扩面）**：「下一页」按钮路径 dSt≠δv（1.25 档 293.76 vs 165.4）——独立形态，修复 H1 后真机复验时一并观测记录，不解析不扩面（门审裁归后续）。
++
++## ② 修复方案（主控裁决=方案 B 算术折算，非方案 A 结构归一）
++
++否决 A（豁免上提滚动容器一行 CSS）：连带面大（fitWidth 分母回退+selection-geometry 参照系+自 zoom 容器滚动条语义三处既有修复交互），真机核验面反而更大；B 与既有先例（`ReaderPage.tsx:146-151` fitWidth 同式推导 z）模式一致，单测可锚。
++
++**B-1 主修（H1）**：`scroll-converge.ts` scrollIntoNearestScroller 的 start 分支：`raw = scroller.scrollTop + (elRect.top − scRect.top) / z`；center 分支的 `clientHeight` 项本就本地空间**不动**，其 elRect 侧同样除 z（保持分子同空间）。z 来源=**新单源导出**（见③-1）。:50 clamp 保持本地口径不动。
++**B-2 同批（H2）**：`scroll-progress.ts` getPageBoxes：`top = (r.top − base.top) / z + el.scrollTop`，height 同除（保 nearestPage 距离比较同空间）。z 传参或经单源函数取。
++**B-3 备案不修**：`PageColumn.tsx:209-214` anchoredScrollTop 分母空间错配——H3 实测证伪（零漂移），无用户可感缺陷，代码债在档 v19。
++
++## ③ 主控裁决（实现者照办，不再自裁）
++
++1. **折算因子单源**：新导出 `effectiveZoom(scroller): number`（或等名）放 scroll-converge.ts 并导出——`z = scroller.getBoundingClientRect().height / scroller.clientHeight`；**guard 除零**（clientHeight=0 的 jsdom/未挂载态返回 1）；Z=1 时恒等 1=零行为变。B-2 从 scroll-progress 引用同一函数（禁两处各写）。语义=「该滚动容器的 gBCR 视觉高 / 本地 client 高」=祖先复合 zoom 总因子。
++2. **函数签名/导出面零破坏**：scrollIntoNearestScroller 既有导出签名不动（内部折算）；scroll-converge.test 既有桩接口兼容。
++3. **INV 语义不变**：INV-34（最近祖先+夹取唯一收敛）语义原样——本票仅量纲修正；INV-33/45 不触碰。修复落地后在 docs/invariants.md INV-34 条目补一行「视觉/本地空间折算（F-R2）」附注（登记动作归主控收口，实现者不改 invariants.md——受锁）。
++4. **「下一页」旁支**：真机复验时记录修复后 next 场景数值（dSt/δv/落点偏移三档）入实现报告，不扩面修。
++
++## ④ 测试规约（TDD 红→绿→断言级变异红证）
++
++- **先红（核心）**：`scroll-converge.test.ts` 增「视觉/本地=1.25 桩」用例——gBCR 桩值按视觉空间（本地×1.25）、clientHeight 桩按本地，断言落点=本地折算期望（现有实现必红：它不除 z）。同型 1.1 档或 z 由桩推出者至少 2 例。
++- **先红（B-2）**：`scroll-progress.test.ts` getPageBoxes/centerPage 增混合空间桩用例（视觉盒位+本地 scrollTop），断言 nearestPage 按折算空间判出（现有实现必红）。
++- **受锁改写纪律**：两测试文件均为受锁——头注 `[locked-change]` 一行（F-A4/F-N1 先例）+断言锚保持（既有用例语义不放宽）；改后全量 verify 铁律。
++- **变异红证清单**（每条先红后还原，备份法禁 git checkout）：M1=去掉 /z（回退 H1 原形态）→新用例红；M2=z guard 恒返 1（折算失效同型）→新用例红；M3=B-2 的 height 不除→nearestPage 距离用例红；M4=clamp 口径误除 z→若可锚则红（不可锚则申报理由）。
++- **e2e**：reader-scroll.spec 默认 profile uiScale=1——两案下行为不变=回归护栏，跑全量确认零必然红；若改 e2e 面须另行申报（预期零触碰）。
++- **基线数字**：verify=126 文件 1074 用例全绿 / locks=226。
++
++⑤e 合法数据形态可达性推演（公式类票面强制）：z 表达式在既有不变量约束下可达——INV-34 保证 scroller=最近滚动祖先（getBoundingClientRect/.clientHeight 恒可读）；合法 uiScale∈{1,1.1,1.25}×zoom∈[0.5,3] 全组合 z>0；clientHeight=0 仅 jsdom 未挂载/卸载瞬态（guard 返 1=退化旧行为，可测）；jsdom 桩同空间时 z=1 恒等（现有全部既有用例零破坏的数学保证）。单测夹具不得绕过——桩值显式区分视觉/本地两空间即本票红测核心。
++
++## ⑤ 验收与申报
++
++- 收口判据：新用例先红后绿+变异红证+全量 verify exit=0（126 文件，用例数随新增上浮如实报）+报告全文落 `scripts/audits/f-r2-impl.report.md`（实现摘要/文件清单/红证/测试证据/locks 实录/**自裁申报**（含删减面 diff 自查）/疑虑）。
++- 真机探针复验与视觉复评归主控（⑤f 同型——几何修复以探针数据复验：修复后 f-r2-probe.mjs 重跑，1.25 档 fill(4) 落点偏移 −512.6 → 与 1 档基线同量级（|偏移|≤5px），三档 dSt≈δv/z）。
++- 纪律：npm run test 禁裸 npx vitest；证据 `.raw.txt` 落盘；首红与每次变异原始输出各自落盘；多断言禁与行尾注释同置；禁新依赖；≤500 行；UTF-8；卡点=BLOCKED 停手不自裁。
+diff --git a/src/renderer/features/reader/scroll-converge.ts b/src/renderer/features/reader/scroll-converge.ts
+index 6a0084a4a..6e954db75 100644
+--- a/src/renderer/features/reader/scroll-converge.ts
++++ b/src/renderer/features/reader/scroll-converge.ts
+@@ -30,12 +30,23 @@ export function nearestScrollAncestor(el: HTMLElement): HTMLElement | null {
+   return null
+ }
+ 
++/** 折算因子单源（F-R2）：该滚动容器 gBCR 视觉高 / 本地 client 高 = 祖先复合
++ *  zoom 总因子（「1 gBCR px=1 scrollTop px」仅 z=1 成立——探针 P1 实证）。
++ *  guard：clientHeight=0（jsdom 未挂载/卸载瞬态）返回 1=退化旧行为；
++ *  z=1 恒等 1=零行为变。消费方：本件 scrollIntoNearestScroller +
++ *  scroll-progress measurePageBoxes（禁两处各写推导）。 */
++export function effectiveZoom(scroller: HTMLElement): number {
++  return scroller.clientHeight > 0 ? scroller.getBoundingClientRect().height / scroller.clientHeight : 1
++}
++
+ /**
+  * 程序滚动收敛：只滚 el 的最近滚动祖先（更外层零位移）。
+- * - 'start'：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）
+- * - 'center'：scrollTop += (elRect.top+h/2) − (scrollerRect.top+clientH/2)
+- * 显式夹取 [0, scrollHeight−clientHeight]（浏览器对赋值自动夹取；jsdom 不
+- * 模拟——显式=单测可锚，浏览器内幂等）。无滚动祖先→不滚（原 scrollIntoView
++ * - 'start'：scrollTop += (elRect.top − scrollerRect.top) / z（盒顶对齐视口顶）
++ * - 'center'：scrollTop += (elRect.top+h/2 − scrollerRect.top) / z − clientH/2
++ * elRect 侧=gBCR 视觉空间，除 z 折算回本地；clientHeight/scrollTop/clamp
++ * 均=本地空间不动（F-R2 量纲修正，INV-34 语义原样）。显式夹取
++ * [0, scrollHeight−clientHeight]（浏览器对赋值自动夹取；jsdom 不模拟——
++ * 显式=单测可锚，浏览器内幂等）。无滚动祖先→不滚（原 scrollIntoView
+  * 对无滚动容器元素同为无操作）。
+  */
+ export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign): void {
+@@ -43,9 +54,10 @@ export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign):
+   if (scroller === null) return
+   const elRect = el.getBoundingClientRect()
+   const scRect = scroller.getBoundingClientRect()
++  const z = effectiveZoom(scroller)
+   const raw =
+     align === 'start'
+-      ? scroller.scrollTop + (elRect.top - scRect.top)
+-      : scroller.scrollTop + (elRect.top + elRect.height / 2) - (scRect.top + scroller.clientHeight / 2)
++      ? scroller.scrollTop + (elRect.top - scRect.top) / z
++      : scroller.scrollTop + (elRect.top + elRect.height / 2 - scRect.top) / z - scroller.clientHeight / 2
+   scroller.scrollTop = Math.min(Math.max(raw, 0), Math.max(0, scroller.scrollHeight - scroller.clientHeight))
+ }
+diff --git a/src/renderer/features/reader/scroll-progress.ts b/src/renderer/features/reader/scroll-progress.ts
+index 7e80207d0..f1c6dd288 100644
+--- a/src/renderer/features/reader/scroll-progress.ts
++++ b/src/renderer/features/reader/scroll-progress.ts
+@@ -46,6 +46,7 @@
+ import { useEffect } from 'react'
+ import type { RefObject } from 'react'
+ import { nearestPage } from './PageColumn'
++import { effectiveZoom } from './scroll-converge'
+ import { api } from '../../api/client'
+ import { useReaderStore } from './reader.store'
+ 
+@@ -270,6 +271,19 @@ export function createScrollProgress(deps: ScrollProgressDeps): ScrollProgress {
+   }
+ }
+ 
++/** 页盒几何量测（本地空间，F-R2 B-2）：gBCR 盒位/盒高经 effectiveZoom 折算
++ *  回本地空间后加 scrollTop——保 nearestPage 距离比较同空间（z 单源自
++ *  scroll-converge，禁两处各写）。z=1（jsdom 同空间桩/ui-scale=1）恒等
++ *  旧式。装配工厂与测试共用本单源。 */
++export function measurePageBoxes(el: HTMLElement): Array<{ top: number; height: number }> {
++  const base = el.getBoundingClientRect()
++  const z = effectiveZoom(el)
++  return Array.from(el.querySelectorAll<HTMLElement>('[data-page-box]')).map((box) => {
++    const r = box.getBoundingClientRect()
++    return { top: (r.top - base.top) / z + el.scrollTop, height: r.height / z }
++  })
++}
++
+ /** 装配工厂：真实 deps（store/api 直连 + scrollAreaRef 量测页盒几何） */
+ export function createReaderScrollProgress(
+   scrollArea: RefObject<HTMLDivElement | null>
+@@ -282,12 +296,7 @@ export function createReaderScrollProgress(
+     },
+     getPageBoxes: () => {
+       const el = scrollArea.current
+-      if (el === null) return []
+-      const base = el.getBoundingClientRect()
+-      return Array.from(el.querySelectorAll<HTMLElement>('[data-page-box]')).map((box) => {
+-        const r = box.getBoundingClientRect()
+-        return { top: r.top - base.top + el.scrollTop, height: r.height }
+-      })
++      return el === null ? [] : measurePageBoxes(el)
+     },
+     // 程序滚动单口=store setPage 默认 'to'（INV-29 信号→PageColumn 段⑤执行）
+     scrollToPage: (page) => useReaderStore.getState().setPage(page),
+diff --git a/tests/unit/renderer/scroll-converge.test.ts b/tests/unit/renderer/scroll-converge.test.ts
+index c86671e65..cdb85fc6a 100644
+--- a/tests/unit/renderer/scroll-converge.test.ts
++++ b/tests/unit/renderer/scroll-converge.test.ts
+@@ -4,11 +4,13 @@
+  * ADR-0017 裁决 3——不经 guardedDescribe）。
+  *
+  * 覆盖：最近滚动祖先选取（含嵌套两滚动容器取最近）/start 数学（盒顶对齐）/
+- * center 数学（居中对齐）/顶底夹取/无滚动祖先不动（INV-34 单测锚）。
++ * center 数学（居中对齐）/顶底夹取/无滚动祖先不动（INV-34 单测锚）/
++ * 视觉-本地双空间折算（F-R2：gBCR 视觉差值除 z 后进本地 scrollTop）。
+  * jsdom 无布局：getBoundingClientRect/scrollHeight/clientHeight 全部桩值；
+  * scrollTop 赋值 jsdom 不做浏览器级夹取——故实现显式夹取（本文件断言锚）。
+  * 数学正确性在此锚定；消费方（PageColumn 段⑤/anchor-locate flashElement）
+  * 只断言 (元素, 对齐) 调用形（受锁三文件，P6 口径）；行为终审=e2e。
++ * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
+  */
+ import { afterEach, describe, expect, it, vi } from 'vitest'
+ import {
+@@ -16,7 +18,8 @@ import {
+   scrollIntoNearestScroller
+ } from '../../../src/renderer/features/reader/scroll-converge'
+ 
+-/** 桩盒几何：el 的 getBoundingClientRect 固定返回给定矩形 */
++/** 桩盒几何：el 的 getBoundingClientRect 固定返回给定矩形。
++ *  F-R2 起 scroller 桩须显式给同空间高度（height=clientHeight → z=1 恒等）。 */
+ function stubRect(el: HTMLElement, top: number, height = 10): void {
+   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+     top, right: top + 10, bottom: top + height, left: 0, width: 10, height, x: 0, y: top,
+@@ -81,7 +84,7 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('start 数学：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）；嵌套取最近——outer 零位移', () => {
+     const { outer, inner, target } = buildNested()
+-    stubRect(inner, 100)
++    stubRect(inner, 100, 400)
+     stubRect(target, 550)
+     stubScrollDims(inner, 2000, 400)
+     stubScrollDims(outer, 3000, 600)
+@@ -95,7 +98,7 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('center 数学：scrollTop += (elRect.top + h/2) − (scrollerRect.top + clientH/2)（居中）', () => {
+     const { inner, target } = buildNested()
+-    stubRect(inner, 100)
++    stubRect(inner, 100, 400)
+     stubRect(target, 900, 80)
+     stubScrollDims(inner, 2000, 400)
+     inner.scrollTop = 0
+@@ -106,7 +109,7 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('顶底夹取：目标在上方越界→夹 0；在下方越界→夹 scrollHeight−clientHeight（显式夹取，jsdom 无浏览器夹取）', () => {
+     const f = buildNested()
+-    stubRect(f.inner, 100)
++    stubRect(f.inner, 100, 400)
+     stubScrollDims(f.inner, 2000, 400)
+     f.inner.scrollTop = 50
+     // 目标盒顶 60 < 容器顶 100 → raw 50+(60−100)=10？构造真越界：目标 30
+@@ -127,7 +130,7 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+     const item = document.createElement('div')
+     aside.appendChild(item)
+     document.body.appendChild(aside)
+-    stubRect(aside, 40)
++    stubRect(aside, 40, 300)
+     stubRect(item, 500, 20)
+     stubScrollDims(aside, 900, 300)
+     scrollIntoNearestScroller(item, 'center')
+@@ -135,4 +138,37 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+     expect(aside.scrollTop).toBe(320)
+     expect(document.documentElement.scrollTop).toBe(0)
+   })
++
++  it('start 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）', () => {
++    const { inner, target } = buildNested()
++    stubRect(inner, 100, 500)
++    stubRect(target, 600, 250)
++    stubScrollDims(inner, 2000, 400)
++    inner.scrollTop = 30
++    scrollIntoNearestScroller(target, 'start')
++    // z=500/400=1.25；本地修正=(600−100)/1.25=400 → 30+400=430
++    expect(inner.scrollTop).toBe(430)
++  })
++
++  it('center 双空间折算（z=1.5 由桩推出）：elRect 侧除 z，clientHeight 项保持本地空间', () => {
++    const { inner, target } = buildNested()
++    stubRect(inner, 110, 600)
++    stubRect(target, 1460, 300)
++    stubScrollDims(inner, 2000, 400)
++    inner.scrollTop = 0
++    scrollIntoNearestScroller(target, 'center')
++    // z=600/400=1.5；(1460+150−110)/1.5 − 400/2 = 1000−200 = 800
++    expect(inner.scrollTop).toBe(800)
++  })
++
++  it('z≠1 底夹取：clamp 上限保持本地口径 scrollHeight−clientHeight（不随 z 缩放）', () => {
++    const { inner, target } = buildNested()
++    stubRect(inner, 100, 500)
++    stubRect(target, 2500, 250)
++    stubScrollDims(inner, 2000, 400)
++    inner.scrollTop = 0
++    scrollIntoNearestScroller(target, 'start')
++    // z=1.25；raw=(2500−100)/1.25=1920 > 上限 2000−400=1600 → 夹 1600
++    expect(inner.scrollTop).toBe(1600)
++  })
+ })
+diff --git a/tests/unit/renderer/scroll-progress.test.tsx b/tests/unit/renderer/scroll-progress.test.tsx
+index ab2787252..929579e6e 100644
+--- a/tests/unit/renderer/scroll-progress.test.tsx
++++ b/tests/unit/renderer/scroll-progress.test.tsx
+@@ -4,17 +4,21 @@
+  *
+  * 覆盖：六态全格（idle/scrolling/pending/writing/restoring/loading——含 W2
+  * writing-scroll 新格）+跨格五序列（切 tab 恢复/滚动中关 tab/pending 中关 tab/
+- * 程序跳页用户接管/回写竞 tab 切换）+最近页回写边界+落库容错+dispose。
++ * 程序跳页用户接管/回写竞 tab 切换）+最近页回写边界+落库容错+dispose
++ * +页盒量测视觉/本地折算（F-R2 B-2：装配侧 measurePageBoxes）。
+  * 时间全注入（fake timers 经 deps.timers——禁真 timer）；always-active
+  * （ADR-0017 裁决 3——新测试不经 guardedDescribe）。
++ * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
+  */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import {
+   createScrollProgress,
++  measurePageBoxes,
+   PROGRESS_DEBOUNCE_MS,
+   type ScrollProgress,
+   type ScrollProgressDeps
+ } from '../../../src/renderer/features/reader/scroll-progress'
++import { nearestPage } from '../../../src/renderer/features/reader/page-column-geometry'
+ 
+ /** 三页列几何（内容坐标）：页高 800、间隙 12——1 基页盒 [0,800]/[812,1612]/[1624,2424] */
+ const BOXES = [
+@@ -328,3 +332,74 @@ describe('scroll-progress 回写几何与容错', () => {
+     expect(PROGRESS_DEBOUNCE_MS).toBe(2000)
+   })
+ })
++
++describe('scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）', () => {
++  afterEach(() => {
++    document.body.innerHTML = ''
++    vi.restoreAllMocks()
++  })
++
++  /** 双空间 DOM 桩：scroller 与页盒 gBCR=视觉空间（本地×z），
++   *  scrollTop/clientHeight=本地空间。本地几何：页盒顶 0/200/400 高 100、
++   *  scrollTop=110、clientHeight=100、scroller gBCR top=0。 */
++  function buildScaledColumn(z: number): HTMLDivElement {
++    document.body.innerHTML = ''
++    const el = document.createElement('div')
++    Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
++    el.scrollTop = 110
++    const rect = (top: number, height: number): DOMRect =>
++      ({
++        top,
++        right: 0,
++        bottom: top + height,
++        left: 0,
++        width: 0,
++        height,
++        x: 0,
++        y: top,
++        toJSON: () => ({})
++      }) as DOMRect
++    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(0, 100 * z))
++    for (const c of [0, 200, 400]) {
++      const box = document.createElement('div')
++      box.setAttribute('data-page-box', String(c))
++      vi.spyOn(box, 'getBoundingClientRect').mockReturnValue(rect((c - 110) * z, 100 * z))
++      el.appendChild(box)
++    }
++    document.body.appendChild(el)
++    return el
++  }
++
++  it('measurePageBoxes：视觉盒位/盒高除 z 折算回本地空间（+本地 scrollTop）', () => {
++    const el = buildScaledColumn(1.25)
++    expect(measurePageBoxes(el)).toEqual([
++      { top: 0, height: 100 },
++      { top: 200, height: 100 },
++      { top: 400, height: 100 }
++    ])
++  })
++
++  it('z=1 恒等护栏：视觉=本地桩下量测原几何（既有行为零变）', () => {
++    const el = buildScaledColumn(1)
++    expect(measurePageBoxes(el)).toEqual([
++      { top: 0, height: 100 },
++      { top: 200, height: 100 },
++      { top: 400, height: 100 }
++    ])
++  })
++
++  it('nearestPage 按折算空间判页：视口中心 160 → 第 2 页（1 基；不折算误判第 1 页）', () => {
++    const el = buildScaledColumn(1.25)
++    const center = 110 + 100 / 2
++    expect(nearestPage(center, measurePageBoxes(el))).toBe(2)
++  })
++
++  it('滚动记账按折算空间判页：视口中心 160 记第 2 页（0 基 1）', () => {
++    const el = buildScaledColumn(1.25)
++    const h = makeHarness()
++    h.deps.getViewport = () => ({ scrollTop: 110, clientHeight: 100 })
++    h.deps.getPageBoxes = () => measurePageBoxes(el)
++    h.sp.onScrollEvent()
++    expect(h.pending()).toBe(1)
++  })
++})
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index ccab2c421..bb5044ea3 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -226,7 +226,8 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' },
+   { id: 'R2-LG12', file: 'src/main/services/lineage/lineage.service.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '综述多参考边数据面（U2b——用户裁决 2026-08-29「A. 完整多参考边」AskUserQuestion 在案）：lineageEdge 增 kind:tree|ref（出口必填/upsert 可选缺省 tree/service+importDraft 双写路径显式填；draft 协议零改）+迁移 006（ADD COLUMN kind TEXT NOT NULL DEFAULT tree——旧行幂等+migrate.test [1..5,6]）+service upsertEdge 受控豁免分支（ref 豁免多父且 tree 侧收窄 ref 入边不算 tree 父=对偶自洽/仍拒环=混合图 reachable/同端点对 tree+ref 互斥拒/from 双条件 paperId≠null+isSurveyTitle——判定上移 shared/models 单源+renderer re-export 消费面零改）+layout 净化段剔 ref 边（不计 dropped——有意分流）+渲染 ref=var(--survey-edge) 1.4 虚 2-3（直读 e.kind，优先级 ref>综述关联>推断>普通）+综述右键「添加参考连接」入口（pending-link mode 扩展 ref）+INV-27 修订登记（tree 单父原样/ref 受控豁免条款）；受锁面=shared models+ipc schemas+006 迁移+lineage-import/layout/visual 三测+6 测试工厂 kind 波及+e2e lineage.spec T5（综述幽灵行第四篇独立 fixture→右键→点已有 tree 父的甲=豁免面→ref path 精确断言→reload 持久+负锚非综述无菜单项）；三屋：实现者 10.0M tok（883 用例精确命中 875+service6+layout1+visual1+变异红证 4 档含 M2 混合环盲区拦截/M4 自环 reason 红点）+门一 B0/W2/N6（W1=check-tickets R2 系正则盲区建单时已知设计、W2=主控 diff 包 git add 失误门一补全）+门二 PASS 零回炉（W3 剪贴板复验落盘补跑 2.0s 过/N7 首红未落盘教训回流）；收口：verify exit=0（locks 165=164+006）+e2e 26/26 终态（T5 首跑即过+corpus 超时 2.5s 单跑复验=负载 flake+剪贴板 2.0s 复验）；票面 r2-lg12-brief.md+三报告+收口单在档' },
+   { id: 'R2-SH1', file: 'src/main/bootstrap.ts', area: 'infra', owner: 'strong', status: 'done', summary: '应用重命名 Synapse Remake→Synapse+userData 数据迁移（U3a——独立成票单独审计·handoff §8；⚠landmine=userData 目录名派生自 productName=用户真实数据目录搬迁，复用 WS1 幂等模式）：package.json name/productName 同步+文本消费位（main-window 标题/App 品牌位/index.html title 超票面发现+受锁 smoke.spec/app-shell.test 断言）+grep 口径修正（消费/注释面清零；迁移模块+测试功能面字面量 6 处=契约钉死豁免——门一 W1 结构性调和裁决）；迁移=独立模块 migrate-user-data.ts（纯 node:fs 零 electron 可测性）bootstrap 最早段——分支矩阵：旧在新无→renameSync 原子迁移+显式 setPath（Electron 启动期缓存派生值=实现者超票面发现，userDataDir 取值在迁移后=时序无竞态主控独立核实+门一交叉验证）；新已存在→跳过（天然备份）；皆无→全新；rename 失败→回落旧路径运行（数据安全优先）+warn；受锁=constants 邮箱域/smoke/app-shell 三件+新测试 5 it（分支矩阵全测+setPathCalls 显式断言）+locks 166；门一 B0/W3/N10（W-G1 electron-builder.yml 钉旧名=票面「无安装器面」前提失实→主控直改 productName/artifactName；W-G2 ci 强制 [dep-change]→收口双尾注；W-G3 lockfile root name→主控直改）+门二 PASS 零回炉（grep 亲测 6 命中分类正确+sha256 独立复算逐位命中）；W4 local-state.mjs 取证器路径随收口改（新目录优先+旧名兜底）；**真机迁移验证（备份-换装舞步）**：39M 真实库 tmp 全备份→首启=窗口标题 Synapse+双课题结构完整迁入新位+旧位 rename 走→二启幂等（跳过分支+旧位零重建）；verify exit=0（888 用例=883+5 精确命中）+e2e 全量 26；提交双尾注 [locked-change]+[dep-change]——票面/三报告/收口单在档' },
+-  { id: 'R2-SH2', file: 'src/renderer/app/App.tsx', area: 'infra', owner: 'strong', status: 'done', summary: '顶栏身份区+字体衬线消费清零（U3b——决4/决5 纯执行）：App 壳 header 条 h-11=44px（logo+Synapse 应用名+WorkspaceSwitcher 迁位零触碰+ver 随迁）+侧栏品牌行删+B1 wrapper+max-height 防展开错位+B2 header z-index 防盖板+--font-display 消费五类+lib 三类（W2 主控压缩票补——票面清单漏 library.css，决5「lib 衬线年份」明文）清零（token 定义保留）+--gold-night 别名退役（定义删+theme.test 同步）+三负锚（theme.css/library.css/font-display+gold-night 定义）；受锁=app-shell（品牌断言侧栏→顶栏+新 it 三件）/theme（负锚+TOKENS 删行）/r3-rdr-set-visual（:151 旧衬线锁→决5 负锚改写=同向双保险非放宽——实现者自裁）；三屋：实现者 2.9M tok（890=888+3−1 精确命中+双变异）+门一 PASS 无回炉（B1/B2 防御必要性核实/switcher 零锚定复核/N1 verify 时序硬条件/W4 对比度升格）+门二 PASS 零回炉+主控 W2 压缩票（library 三处+负锚扩+mutation-3 红点+sed 行号错位结构修复实录）；真机复评（r2-sh2-out/header.png）：顶栏 44px computed 实测三件在场+侧栏品牌行 0 计数+全 DOM Georgia 消费 0+**W4 解除**（trigger 实际色深色 rgb(35,38,45) on 白底——门一米白推演错位）+F-05/INV-34=定高+flex 链推演+e2e 全量阅读器链证据组合——票面/三报告/收口单在档' }
++  { id: 'R2-SH2', file: 'src/renderer/app/App.tsx', area: 'infra', owner: 'strong', status: 'done', summary: '顶栏身份区+字体衬线消费清零（U3b——决4/决5 纯执行）：App 壳 header 条 h-11=44px（logo+Synapse 应用名+WorkspaceSwitcher 迁位零触碰+ver 随迁）+侧栏品牌行删+B1 wrapper+max-height 防展开错位+B2 header z-index 防盖板+--font-display 消费五类+lib 三类（W2 主控压缩票补——票面清单漏 library.css，决5「lib 衬线年份」明文）清零（token 定义保留）+--gold-night 别名退役（定义删+theme.test 同步）+三负锚（theme.css/library.css/font-display+gold-night 定义）；受锁=app-shell（品牌断言侧栏→顶栏+新 it 三件）/theme（负锚+TOKENS 删行）/r3-rdr-set-visual（:151 旧衬线锁→决5 负锚改写=同向双保险非放宽——实现者自裁）；三屋：实现者 2.9M tok（890=888+3−1 精确命中+双变异）+门一 PASS 无回炉（B1/B2 防御必要性核实/switcher 零锚定复核/N1 verify 时序硬条件/W4 对比度升格）+门二 PASS 零回炉+主控 W2 压缩票（library 三处+负锚扩+mutation-3 红点+sed 行号错位结构修复实录）；真机复评（r2-sh2-out/header.png）：顶栏 44px computed 实测三件在场+侧栏品牌行 0 计数+全 DOM Georgia 消费 0+**W4 解除**（trigger 实际色深色 rgb(35,38,45) on 白底——门一米白推演错位）+F-05/INV-34=定高+flex 链推演+e2e 全量阅读器链证据组合——票面/三报告/收口单在档' },
++  { id: 'F-R2', file: 'src/renderer/features/reader/scroll-converge.ts', area: 'reader', owner: 'strong', status: 'open', summary: 'ui-scale≠1 程序滚动落点漂移修复（v18 U1——H1 根因=gBCR 视觉差值 1:1 加本地 scrollTop，探针三场景三档数值闭合 160-450px；方案 B 算术折算：scroll-converge start/center 折算+scroll-progress getPageBoxes 同批修+effectiveZoom 单源；B-3 anchoredScrollTop H3 实测证伪备案；票面 scripts/audits/f-r2-ticket.md）' },
+ ] as const
+ 
+ export const TICKET_MAP: ReadonlyMap<string, Ticket> = new Map(TICKETS.map((t) => [t.id, t]))
+```
+
+## ④ 证据段（关键数值摘录）
+- 先红（f-r2-red1.raw.txt）：6 failed——scroll-converge 新用例断言级 530≠430/1300≠800（H1 数学复现）+progress TypeError×4；
+- 变异红证：M1=2 红/M2=5 红/M3=3 红/M4=1 红，cp 备份法还原 diff 空（f-r2-mut-*.raw.txt）；
+- verify 终验（f-r2-verify3.raw.txt）：quality/tickets/locks(228) 过+126 文件 1081 用例+exit=0；
+- 真机探针复验（f-r2-out/f-r2-probe.json 修复后重跑）：1.25 档 fill4 落点偏移 −512.6→−0.6（1 档基线 −0.4 同量级）；dSt 2049.28→1628.8=δv/1.25 精确折算；next 旁支 293.76→542.08≈δv/1.25 同根归位（偏移 −0.2）；fill1/1.1 档/anchorNone 组全基线级；pageErrors=0。
+
+## ⑤ 主控预裁项（可攻击，推翻需更强依据）
+1. 方案 B 算术折算而非方案 A 结构归一（连带面对比理由在票面②）。
+2. B-3 anchoredScrollTop 不修：H3 探针实测证伪（zoom±往返三 cycle 两档 Δst=0），备案 v19。
+3. 「下一页」旁支：票面只要求观测记录——实际修复后同根归位（证据段），无需独立处理。
+4. registry F-R2 建单行+主控补逗号失误（实现期 typecheck exit=2 由主控修复，非实现者产物）。
+5. 实现者五项自裁（报告 §8：既有 4 用例补同空间桩/B-2 抽 measurePageBoxes/center z=1.5/判页 scrollTop=110/首红 HEAD 重现）——逐条核其正当性。
+
+## 审计工单 A~E
+A 母本符合度：diff vs 票面②③逐条（B-1/B-2 修法/effectiveZoom 单源+guard/签名零破坏/旁支不扩面）。
+B 宪法红线：受锁改向纪律（两测试头注+断言锚不放宽）/分层单向/≤500 行/无新依赖/UTF-8。
+C 代码与测试质量：折算数学正确性独立复算（start/center 分支/height 同除/guard 语义）；测试是否真锁（桩值是否显式区分视觉/本地空间——逃逸面是否真闭合）；变异红证与先红证据链是否支撑断言。
+D 报告诚实性：自裁五项 vs diff 逐条核对；报告数字与证据段一致性。
+E 接缝与后续单：消费点遗漏面（grep diff 外的可能折算消费点：anchor-locate flashElement 是否同病？fitWidth 先例一致性）；INV-34 附注收口动作归属是否正确；B-3 备案合理性。
+
+## 输出契约
+[B|W|N] 分级逐条+每条 file:line 或 diff 行证据+统计行（B: n / W: n / N: n）+总评（可收口/需回炉+理由）。中文。

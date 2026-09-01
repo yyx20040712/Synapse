@@ -347,15 +347,35 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   md+gate1{,-r2}-brief.md+f-r1-verify.mjs+f-r1-dbg.mjs(一次性诊断)+
   raw/red/mut ×10+f-r1-out/(json+4 png)。提交(收口时补)。
 
-### F-R2 [?] ui-scale≠1 时阅读器程序滚动落点漂移 ——状态:**新登记(2026-08-31 F-R1 回炉副产,待排查)**
+### F-R2 [已闭环] ui-scale≠1 时阅读器程序滚动落点漂移 ——状态:**已修(2026-09-02 v18 U1,verify 126 文件 1081/真机复验落点归位)**
 
 - **现象**:F-R1 探针诊断(f-r1-dbg.mjs+dbg-geom.png)——ui-scale≠1
   (用户 large=1.25)时阅读区反向 zoom 豁免与程序滚动差值法交互致落点
   漂移 160-450px;**单页模式同样复现**(非 F-R1 引入,存量缺陷)。与
   v15 备案「reader 侧同型量测面未排查」呼应——F-L2 同型污染的 reader
   侧实证落地。
-- **处置**:排查票候选(crib f-l2-precheck 前置实测范式:三档×程序滚动
-  落点差值采样定位污染消费点);用户常用 large 档=高优先。
+- **根因(v18 U1 排查+四探针实证)**:H1=scroll-converge.ts:48 把 gBCR
+  视觉差值 1:1 加本地 scrollTop(「1 gBCR px=1 scrollTop px」仅 Z=1
+  成立;P1 语义探针:scrollTop+=100→Δst=99.84/Δvis=124.8);落点过冲
+  =(Z−1)×δv——fill(4) 双档数值闭合(1.1 档 −204.8 vs 预测 −204.7/
+  1.25 档 −512.6 vs −512.25);H4/H5 排除(anchorNone 对照/量级不符);
+  H3 证伪(zoom± 往返三 cycle 两档 Δst=0——anchoredScrollTop 分母错配
+  无可感缺陷,备案)。H2 同根(scroll-progress getPageBoxes 视觉+本地
+  混算——P3b 实证 1.25 档 fill(2) 真中心页=1「页码说 2 画面看页 1」)。
+  排查报告=f-r2-explore-report.md;探针=f-r2-out/{f-r2-probe,f-r2-probe2}.json。
+- **修复(方案 B 算术折算,否决 A 结构归一)**:effectiveZoom 单源
+  (gBCR.height/clientHeight+guard 除零)+scroll-converge start/center
+  elRect 侧除 z+scroll-progress getPageBoxes 同折算(height 同除保
+  nearestPage 同空间);clamp 口径不动;签名零破坏。真机复验:1.25 档
+  fill(4) 落点偏移 −512.6→−0.6(1 档基线级)/dSt=δv/1.25 精确折算/
+  「下一页」旁支(修前 dSt≠δv 特异形态)同根归位 −0.2/pageErrors 0。
+  测试:先红 6(断言级 H1 数学复现)→126 文件 1081(1074+7)+变异
+  M1~M4 全红证 cp 备份法还原 diff 空。门一=Kimi 链首战(kimi-main 504
+  两退避→unreachable 换源 kimi-backup 接手——references/06 §5 状态机
+  首实战;B:0/W:1/N:6 可收口,W1=e2e 护栏收口侧补跑销项,N3 同源
+  亲核销项,INV-34 量纲附注含 N5 口径前提)。B-3 anchoredScrollTop
+  备案 v19;N1 guard 分支零覆盖/N2 桩面 z=0 路径=后续单候选。
+  票面/实现报告/门一审档:scripts/audits/f-r2-*.md 全套。
 
 ### F-R3 [?] pdfjs stream pump 竞态 pageerror ——状态:**新登记(2026-08-31 F-R1 回炉副产,待排查)**
 

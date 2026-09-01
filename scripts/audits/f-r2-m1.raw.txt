@@ -1,0 +1,62 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/scroll-converge.test.ts
+
+sqlite-abi 当前绑定：node（v141）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/scroll-converge.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 38[2mms[22m[39m
+[31m   [31m×[31m scroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mstart 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）[90m 5[2mms[22m[31m[39m
+[31m     → expected 530 to be 430 // Object.is equality[39m
+[31m   [31m×[31m scroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mcenter 双空间折算（z=1.5 由桩推出）：elRect 侧除 z，clientHeight 项保持本地空间[90m 1[2mms[22m[31m[39m
+[31m     → expected 1300 to be 800 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-converge.test.ts[2m > [22mscroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mstart 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）
+[31m[1mAssertionError[22m: expected 530 to be 430 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 430[39m
+[31m+ 530[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-converge.test.ts:[2m150:29[22m[39m
+    [90m148| [39m    [34mscrollIntoNearestScroller[39m(target[33m,[39m [32m'start'[39m)
+    [90m149| [39m    [90m// z=500/400=1.25；本地修正=(600−100)/1.25=400 → 30+400=430[39m
+    [90m150| [39m    [34mexpect[39m(inner[33m.[39mscrollTop)[33m.[39m[34mtoBe[39m([34m430[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m151| [39m  })
+    [90m152| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-converge.test.ts[2m > [22mscroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mcenter 双空间折算（z=1.5 由桩推出）：elRect 侧除 z，clientHeight 项保持本地空间
+[31m[1mAssertionError[22m: expected 1300 to be 800 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 800[39m
+[31m+ 1300[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-converge.test.ts:[2m161:29[22m[39m
+    [90m159| [39m    [34mscrollIntoNearestScroller[39m(target[33m,[39m [32m'center'[39m)
+    [90m160| [39m    [90m// z=600/400=1.5；(1460+150−110)/1.5 − 400/2 = 1000−200 = 800[39m
+    [90m161| [39m    [34mexpect[39m(inner[33m.[39mscrollTop)[33m.[39m[34mtoBe[39m([34m800[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m162| [39m  })
+    [90m163| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 02:11:39
+[2m   Duration [22m 1.72s[2m (transform 26ms, setup 0ms, collect 50ms, tests 38ms, environment 1.02s, prepare 182ms)[22m
+
+exit=1

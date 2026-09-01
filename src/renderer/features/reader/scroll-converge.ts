@@ -30,12 +30,33 @@ export function nearestScrollAncestor(el: HTMLElement): HTMLElement | null {
   return null
 }
 
+/** 折算因子单源（F-R2）：自 scroller 至 documentElement 逐层 computed zoom
+ *  链乘积（「1 gBCR px=1 scrollTop px」仅 z=1 成立——探针 P1 实证）。
+ *  量测口径（回炉 1 定案）：**禁用 gBCR/clientHeight 比值法**——gBCR 含横滚
+ *  动条+亚像素小数，真机实测 1.25 档即偏 ε≈0.0005（964.6/772=1.24948），
+ *  uiScale=1 档 ε 同型——恢复链落点偏移顶破「重开原位 ±2px」容差（e2e
+ *  3.45px 稳定红实证）；computed zoom=CSS 声明值直读，零几何污染。
+ *  'normal'/空/undefined（jsdom 不识别 zoom）→NaN→1 跳过；z=1 恒等=
+ *  零行为变。消费方：本件 scrollIntoNearestScroller + scroll-progress
+ *  measurePageBoxes（禁两处各写推导）。 */
+export function effectiveZoom(scroller: HTMLElement): number {
+  let z = 1
+  let el: HTMLElement | null = scroller
+  while (el !== null) {
+    z *= Number(getComputedStyle(el).zoom) || 1
+    el = el.parentElement
+  }
+  return z
+}
+
 /**
  * 程序滚动收敛：只滚 el 的最近滚动祖先（更外层零位移）。
- * - 'start'：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）
- * - 'center'：scrollTop += (elRect.top+h/2) − (scrollerRect.top+clientH/2)
- * 显式夹取 [0, scrollHeight−clientHeight]（浏览器对赋值自动夹取；jsdom 不
- * 模拟——显式=单测可锚，浏览器内幂等）。无滚动祖先→不滚（原 scrollIntoView
+ * - 'start'：scrollTop += (elRect.top − scrollerRect.top) / z（盒顶对齐视口顶）
+ * - 'center'：scrollTop += (elRect.top+h/2 − scrollerRect.top) / z − clientH/2
+ * elRect 侧=gBCR 视觉空间，除 z 折算回本地；clientHeight/scrollTop/clamp
+ * 均=本地空间不动（F-R2 量纲修正，INV-34 语义原样）。显式夹取
+ * [0, scrollHeight−clientHeight]（浏览器对赋值自动夹取；jsdom 不模拟——
+ * 显式=单测可锚，浏览器内幂等）。无滚动祖先→不滚（原 scrollIntoView
  * 对无滚动容器元素同为无操作）。
  */
 export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign): void {
@@ -43,9 +64,10 @@ export function scrollIntoNearestScroller(el: HTMLElement, align: ScrollAlign): 
   if (scroller === null) return
   const elRect = el.getBoundingClientRect()
   const scRect = scroller.getBoundingClientRect()
+  const z = effectiveZoom(scroller)
   const raw =
     align === 'start'
-      ? scroller.scrollTop + (elRect.top - scRect.top)
-      : scroller.scrollTop + (elRect.top + elRect.height / 2) - (scRect.top + scroller.clientHeight / 2)
+      ? scroller.scrollTop + (elRect.top - scRect.top) / z
+      : scroller.scrollTop + (elRect.top + elRect.height / 2 - scRect.top) / z - scroller.clientHeight / 2
   scroller.scrollTop = Math.min(Math.max(raw, 0), Math.max(0, scroller.scrollHeight - scroller.clientHeight))
 }

@@ -46,6 +46,7 @@
 import { useEffect } from 'react'
 import type { RefObject } from 'react'
 import { nearestPage } from './PageColumn'
+import { effectiveZoom } from './scroll-converge'
 import { api } from '../../api/client'
 import { useReaderStore } from './reader.store'
 
@@ -270,6 +271,19 @@ export function createScrollProgress(deps: ScrollProgressDeps): ScrollProgress {
   }
 }
 
+/** 页盒几何量测（本地空间，F-R2 B-2）：gBCR 盒位/盒高经 effectiveZoom 折算
+ *  回本地空间后加 scrollTop——保 nearestPage 距离比较同空间（z 单源自
+ *  scroll-converge，禁两处各写）。z=1（jsdom 同空间桩/ui-scale=1）恒等
+ *  旧式。装配工厂与测试共用本单源。 */
+export function measurePageBoxes(el: HTMLElement): Array<{ top: number; height: number }> {
+  const base = el.getBoundingClientRect()
+  const z = effectiveZoom(el)
+  return Array.from(el.querySelectorAll<HTMLElement>('[data-page-box]')).map((box) => {
+    const r = box.getBoundingClientRect()
+    return { top: (r.top - base.top) / z + el.scrollTop, height: r.height / z }
+  })
+}
+
 /** 装配工厂：真实 deps（store/api 直连 + scrollAreaRef 量测页盒几何） */
 export function createReaderScrollProgress(
   scrollArea: RefObject<HTMLDivElement | null>
@@ -282,12 +296,7 @@ export function createReaderScrollProgress(
     },
     getPageBoxes: () => {
       const el = scrollArea.current
-      if (el === null) return []
-      const base = el.getBoundingClientRect()
-      return Array.from(el.querySelectorAll<HTMLElement>('[data-page-box]')).map((box) => {
-        const r = box.getBoundingClientRect()
-        return { top: r.top - base.top + el.scrollTop, height: r.height }
-      })
+      return el === null ? [] : measurePageBoxes(el)
     },
     // 程序滚动单口=store setPage 默认 'to'（INV-29 信号→PageColumn 段⑤执行）
     scrollToPage: (page) => useReaderStore.getState().setPage(page),

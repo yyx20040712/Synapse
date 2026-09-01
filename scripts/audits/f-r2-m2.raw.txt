@@ -1,0 +1,147 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/scroll-converge.test.ts tests/unit/renderer/scroll-progress.test.tsx
+
+sqlite-abi 当前绑定：node（v141）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/scroll-converge.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 39[2mms[22m[39m
+[31m   [31m×[31m scroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mstart 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）[90m 5[2mms[22m[31m[39m
+[31m     → expected 530 to be 430 // Object.is equality[39m
+[31m   [31m×[31m scroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mcenter 双空间折算（z=1.5 由桩推出）：elRect 侧除 z，clientHeight 项保持本地空间[90m 1[2mms[22m[31m[39m
+[31m     → expected 1300 to be 800 // Object.is equality[39m
+[90mstdout[2m | tests/unit/renderer/scroll-progress.test.tsx
+[22m[39mWarning: Please use the `legacy` build in Node.js environments.
+
+ [31m❯[39m tests/unit/renderer/scroll-progress.test.tsx [2m([22m[2m26 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 24[2mms[22m[39m
+[31m   [31m×[31m scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22mmeasurePageBoxes：视觉盒位/盒高除 z 折算回本地空间（+本地 scrollTop）[90m 11[2mms[22m[31m[39m
+[31m     → expected [ { top: -27.5, height: 125 }, …(2) ] to deeply equal [ { top: +0, height: 100 }, …(2) ][39m
+[31m   [31m×[31m scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22mnearestPage 按折算空间判页：视口中心 160 → 第 2 页（1 基；不折算误判第 1 页）[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22m滚动记账按折算空间判页：视口中心 160 记第 2 页（0 基 1）[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 5 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-converge.test.ts[2m > [22mscroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mstart 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）
+[31m[1mAssertionError[22m: expected 530 to be 430 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 430[39m
+[31m+ 530[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-converge.test.ts:[2m150:29[22m[39m
+    [90m148| [39m    [34mscrollIntoNearestScroller[39m(target[33m,[39m [32m'start'[39m)
+    [90m149| [39m    [90m// z=500/400=1.25；本地修正=(600−100)/1.25=400 → 30+400=430[39m
+    [90m150| [39m    [34mexpect[39m(inner[33m.[39mscrollTop)[33m.[39m[34mtoBe[39m([34m430[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m151| [39m  })
+    [90m152| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-converge.test.ts[2m > [22mscroll-converge —— 程序滚动单容器收敛（INV-34）[2m > [22mcenter 双空间折算（z=1.5 由桩推出）：elRect 侧除 z，clientHeight 项保持本地空间
+[31m[1mAssertionError[22m: expected 1300 to be 800 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 800[39m
+[31m+ 1300[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-converge.test.ts:[2m161:29[22m[39m
+    [90m159| [39m    [34mscrollIntoNearestScroller[39m(target[33m,[39m [32m'center'[39m)
+    [90m160| [39m    [90m// z=600/400=1.5；(1460+150−110)/1.5 − 400/2 = 1000−200 = 800[39m
+    [90m161| [39m    [34mexpect[39m(inner[33m.[39mscrollTop)[33m.[39m[34mtoBe[39m([34m800[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m162| [39m  })
+    [90m163| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-progress.test.tsx[2m > [22mscroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22mmeasurePageBoxes：视觉盒位/盒高除 z 折算回本地空间（+本地 scrollTop）
+[31m[1mAssertionError[22m: expected [ { top: -27.5, height: 125 }, …(2) ] to deeply equal [ { top: +0, height: 100 }, …(2) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[32m-     "height": 100,[39m
+[32m-     "top": 0,[39m
+[31m+     "height": 125,[39m
+[31m+     "top": -27.5,[39m
+[2m    },[22m
+[2m    Object {[22m
+[32m-     "height": 100,[39m
+[32m-     "top": 200,[39m
+[31m+     "height": 125,[39m
+[31m+     "top": 222.5,[39m
+[2m    },[22m
+[2m    Object {[22m
+[32m-     "height": 100,[39m
+[32m-     "top": 400,[39m
+[31m+     "height": 125,[39m
+[31m+     "top": 472.5,[39m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-progress.test.tsx:[2m375:34[22m[39m
+    [90m373| [39m  [34mit[39m([32m'measurePageBoxes：视觉盒位/盒高除 z 折算回本地空间（+本地 scroll[39m…
+    [90m374| [39m    [35mconst[39m el [33m=[39m [34mbuildScaledColumn[39m([34m1.25[39m)
+    [90m375| [39m    [34mexpect[39m([34mmeasurePageBoxes[39m(el))[33m.[39m[34mtoEqual[39m([
+    [90m   | [39m                                 [31m^[39m
+    [90m376| [39m      { top[33m:[39m [34m0[39m[33m,[39m height[33m:[39m [34m100[39m }[33m,[39m
+    [90m377| [39m      { top[33m:[39m [34m200[39m[33m,[39m height[33m:[39m [34m100[39m }[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-progress.test.tsx[2m > [22mscroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22mnearestPage 按折算空间判页：视口中心 160 → 第 2 页（1 基；不折算误判第 1 页）
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-progress.test.tsx:[2m394:55[22m[39m
+    [90m392| [39m    [35mconst[39m el [33m=[39m [34mbuildScaledColumn[39m([34m1.25[39m)
+    [90m393| [39m    [35mconst[39m center [33m=[39m [34m110[39m [33m+[39m [34m100[39m [33m/[39m [34m2[39m
+    [90m394| [39m    [34mexpect[39m([34mnearestPage[39m(center[33m,[39m [34mmeasurePageBoxes[39m(el)))[33m.[39m[34mtoBe[39m([34m2[39m)
+    [90m   | [39m                                                      [31m^[39m
+    [90m395| [39m  })
+    [90m396| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/scroll-progress.test.tsx[2m > [22mscroll-progress 页盒量测视觉/本地折算（F-R2 B-2）[2m > [22m滚动记账按折算空间判页：视口中心 160 记第 2 页（0 基 1）
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/scroll-progress.test.tsx:[2m403:25[22m[39m
+    [90m401| [39m    h[33m.[39mdeps[33m.[39mgetPageBoxes [33m=[39m () [33m=>[39m [34mmeasurePageBoxes[39m(el)
+    [90m402| [39m    h[33m.[39msp[33m.[39m[34monScrollEvent[39m()
+    [90m403| [39m    [34mexpect[39m(h[33m.[39m[34mpending[39m())[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m404| [39m  })
+    [90m405| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m30 passed[39m[22m[90m (35)[39m
+[2m   Start at [22m 02:12:05
+[2m   Duration [22m 2.53s[2m (transform 86ms, setup 0ms, collect 256ms, tests 63ms, environment 3.35s, prepare 417ms)[22m
+
+exit=1

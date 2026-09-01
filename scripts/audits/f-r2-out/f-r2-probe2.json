@@ -1,0 +1,119 @@
+{
+ "meta": {
+  "script": "f-r2-probe2.mjs",
+  "date": "2026-09-01T17:59:26.067Z"
+ },
+ "tiers": {
+  "small_1": [
+   {
+    "target": 2,
+    "input": 2,
+    "true": 2,
+    "st": 689.6,
+    "mismatch": false
+   },
+   {
+    "target": 3,
+    "input": 3,
+    "true": 3,
+    "st": 1368,
+    "mismatch": false
+   },
+   {
+    "target": 4,
+    "input": 4,
+    "true": 4,
+    "st": 2046.4,
+    "mismatch": false
+   },
+   {
+    "target": 5,
+    "input": 5,
+    "true": 5,
+    "st": 2724,
+    "mismatch": false
+   },
+   {
+    "target": 6,
+    "input": 6,
+    "true": 6,
+    "st": 3402.4,
+    "mismatch": false
+   }
+  ],
+  "medium_1.1": [
+   {
+    "target": 2,
+    "input": 2,
+    "true": 2,
+    "st": 351.27,
+    "mismatch": false
+   },
+   {
+    "target": 3,
+    "input": 3,
+    "true": 3,
+    "st": 1333.82,
+    "mismatch": false
+   },
+   {
+    "target": 4,
+    "input": 4,
+    "true": 4,
+    "st": 1914.18,
+    "mismatch": false
+   },
+   {
+    "target": 5,
+    "input": 5,
+    "true": 5,
+    "st": 2533.82,
+    "mismatch": false
+   },
+   {
+    "target": 6,
+    "input": 6,
+    "true": 6,
+    "st": 3149.82,
+    "mismatch": false
+   }
+  ],
+  "large_1.25": [
+   {
+    "target": 2,
+    "input": 2,
+    "true": 1,
+    "st": 0,
+    "mismatch": true
+   },
+   {
+    "target": 3,
+    "input": 3,
+    "true": 4,
+    "st": 1370.88,
+    "mismatch": true
+   },
+   {
+    "target": 4,
+    "input": 4,
+    "true": 4,
+    "st": 1706.24,
+    "mismatch": false
+   },
+   {
+    "target": 5,
+    "input": 5,
+    "true": 5,
+    "st": 2300.16,
+    "mismatch": false
+   },
+   {
+    "target": 6,
+    "input": 6,
+    "true": 6,
+    "st": 2830.08,
+    "mismatch": false
+   }
+  ]
+ }
+}
