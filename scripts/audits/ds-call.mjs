@@ -55,11 +55,16 @@ function loadSources() {
   })
 }
 
-// ── 双形态请求构造（Kimi 条目 kind=anthropic → /messages；deepseek kind=openai → /chat/completions） ──
+// ── 双形态请求构造（Kimi 条目 kind=anthropic → /v1/messages；deepseek kind=openai → /chat/completions） ──
+// anthropic 路径规范化（2026-09-02 用户修复后适配）：config baseURL 两种形态
+// （…/coding 或 …/coding/v1）都先剥尾 /v1 再统一拼 /v1/messages——与 zcode
+// 客户端对 kind=anthropic 的拼装语义对齐（旧形态 coding/v1 实调过、新形态
+// coding+/v1/messages 等价同路径）。
 function buildRequest(src, prompt) {
   if (src.kind === 'anthropic') {
+    const base = src.baseURL.replace(/\/v1$/, '')
     return {
-      url: `${src.baseURL}/messages`,
+      url: `${base}/v1/messages`,
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -135,6 +140,9 @@ async function callSource(src, prompt, { record = true } = {}) {
         signal: AbortSignal.timeout(600_000),
       })
       if (RETRYABLE(res.status)) {
+        // 末次守卫（复审 B3 修）：耗尽即抛真实状态码——外层 catch 落 switch 事件
+        //（原形态 continue 出循环落到 try 外 'unreachable'，换源漏记+状态码被抹）
+        if (attempt === 3) throw new Error(`HTTP ${res.status} 退避 3 次耗尽`)
         const wait = 5000 * 2 ** attempt
         console.error(`[${src.alias}] HTTP ${res.status},退避 ${wait}ms(第 ${attempt + 1} 次)`)
         await new Promise((r) => setTimeout(r, wait))
@@ -172,7 +180,13 @@ const argv = process.argv.slice(2)
 const listOnly = argv.includes('--list-sources')
 const dryRun = argv.includes('--dry-run')
 let onlyAlias = null
-if (argv.includes('--source')) onlyAlias = argv[argv.indexOf('--source') + 1]
+if (argv.includes('--source')) {
+  onlyAlias = argv[argv.indexOf('--source') + 1]
+  // 缺参显式报错（复审 N2 修）：原形态 undefined 静默退化全链
+  if (!onlyAlias || onlyAlias.startsWith('--')) {
+    throw new Error('--source 需要别名参数：kimi-main | kimi-backup | deepseek')
+  }
+}
 const positional = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--source')
 
 const sources = loadSources()

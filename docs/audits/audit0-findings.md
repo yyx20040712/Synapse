@@ -363,12 +363,14 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   无可感缺陷,备案)。H2 同根(scroll-progress getPageBoxes 视觉+本地
   混算——P3b 实证 1.25 档 fill(2) 真中心页=1「页码说 2 画面看页 1」)。
   排查报告=f-r2-explore-report.md;探针=f-r2-out/{f-r2-probe,f-r2-probe2}.json。
-- **修复(方案 B 算术折算,否决 A 结构归一)**:effectiveZoom 单源
-  (gBCR.height/clientHeight+guard 除零)+scroll-converge start/center
-  elRect 侧除 z+scroll-progress getPageBoxes 同折算(height 同除保
+- **修复(方案 B 算术折算,否决 A 结构归一)**:effectiveZoom 单源(**回炉 1
+  定案=computed zoom 链乘积——初版 gBCR.height/clientHeight 比值法因 ε≈
+  0.0005 亚像素/滚动条污染被弃**,复审 B1 统一口径)+scroll-converge start/
+  center elRect 侧除 z+scroll-progress getPageBoxes 同折算(height 同除保
   nearestPage 同空间);clamp 口径不动;签名零破坏。真机复验:1.25 档
-  fill(4) 落点偏移 −512.6→−0.6(1 档基线级)/dSt=δv/1.25 精确折算/
-  「下一页」旁支(修前 dSt≠δv 特异形态)同根归位 −0.2/pageErrors 0。
+  fill(4) 落点偏移 −512.6→−0.6(比值法版)→**±0.2(zoom 链终态,1 档基线
+  级)**/dSt=δv/1.25 精确折算/「下一页」旁支(修前 dSt≠δv 特异形态)同根
+  归位 −0.2/pageErrors 0。
   测试:先红 6(断言级 H1 数学复现)→126 文件 1081(1074+7)+变异
   M1~M4 全红证 cp 备份法还原 diff 空。门一=Kimi 链首战(kimi-main 504
   两退避→unreachable 换源 kimi-backup 接手——references/06 §5 状态机

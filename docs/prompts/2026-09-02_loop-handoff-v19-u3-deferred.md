@@ -81,6 +81,34 @@ offset 窄读）；排查报告只回传五行摘要纪律对子代理同样要�
 - e2e 三连跑判据实操：`for i in 1 2 3; do npx playwright test; done`（注意
   全量序列本身的脆弱面=F-R2e 教训）。
 
+## 8. 双源全批复审（2026-09-02 深夜追加——用户令+Kimi 调用修复后）
+
+用户修复 Kimi config（baseURL 去 /v1）→派发器适配 anthropic 路径规范化
+（剥尾 /v1 统一拼 /v1/messages，kimi-main 直命中复验 6.3s）→同包同工单
+双源复审（batch-review-brief.md）：**Kimi kimi-k3 主源**（30.2k in/18.8k
+out/276s）=**B:3/W:4/N:6**；**deepseek**（11.7k out）=B:0/W:2/N:4 通过附
+处置。B/W 合并处置全落地（提交见本节尾）：
+
+- **B1/W1 三处文档停留已否决比值法口径**（INV-34 附注/台账 F-R2 段/票面
+  ③-1）——INV-34+台账改 zoom 链终形态口径；票面加「回炉 1 修订注」保留
+  历史裁决（票面=历史档案不回写改史）。
+- **B2 3.45px 双归因互斥**——scroll-converge 头注统一为「两次复红实证；
+  ε 为实证确定性偏差但量级不足以单独解释 3.45px（δv≈8300px 才够——Kimi
+  独立复算）；完整归因未结案=台账 F-R2e」。
+- **B3/N1 派发器 RETRYABLE 缺末次守卫**——429/5xx 四连后退避白等 40s 且
+  落 try 外 'unreachable'：换源事件漏记+状态码被抹（log 实证 18:26
+  kimi-main 四 attempt 无 switch）。修=attempt===3 抛真实状态码（经外层
+  catch 落 switch 事件）。
+- **W2 日志污染**——model-routing-log.jsonl 曾被 git 追踪但 append 型流水
+  账必致工作区脏；处置=git rm --cached+.gitignore（本地保留，可指认性由
+  报告 [routing] 头承载）。
+- **N2** --source 缺参显式报错（原静默退化全链）；**N3** effectiveZoom 注释
+  补口径边界（只覆盖 scroller 祖先链，内部 zoom 层不在量测——当前布局豁免
+  在祖先侧，引入内部 zoom 层需扩）；**N4/F-R2e** 维持观察项不立案。
+- **Kimi W4（门审链单门欠账）如实记录**：U1 回炉与 U2 为 deepseek 单源审
+  （本次双源复审为事后补偿，票级门一 Kimi 未过——下场 U3 派发时若同批
+  触及 F-R2/P7A 面可顺带补 Kimi 票级审；本批以此披露收口）。
+
 ## 7. 环境事实滚动
 
 PATH 前导 /d/nodejs24 不变；git geometric-repack「File exists」警告本场两现

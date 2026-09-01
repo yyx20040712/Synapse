@@ -34,11 +34,14 @@ export function nearestScrollAncestor(el: HTMLElement): HTMLElement | null {
  *  链乘积（「1 gBCR px=1 scrollTop px」仅 z=1 成立——探针 P1 实证）。
  *  量测口径（回炉 1 定案）：**禁用 gBCR/clientHeight 比值法**——gBCR 含横滚
  *  动条+亚像素小数，真机实测 1.25 档即偏 ε≈0.0005（964.6/772=1.24948），
- *  uiScale=1 档 ε 同型——恢复链落点偏移顶破「重开原位 ±2px」容差（e2e
- *  3.45px 稳定红实证）；computed zoom=CSS 声明值直读，零几何污染。
- *  'normal'/空/undefined（jsdom 不识别 zoom）→NaN→1 跳过；z=1 恒等=
- *  零行为变。消费方：本件 scrollIntoNearestScroller + scroll-progress
- *  measurePageBoxes（禁两处各写推导）。 */
+ *  uiScale=1 档 ε 同型——e2e「划选高亮重开原位」两次复红 3.45px 中 ε 为
+ *  实证确定性偏差（量级不足以单独解释 3.45px——完整归因未结案，台账
+ *  F-R2e 序列敏感备案）；computed zoom=CSS 声明值直读，零几何污染。
+ *  口径边界：只覆盖 scroller **祖先链**的 zoom 层——scroller 与目标之间的
+ *  内部 zoom 层不在此量测（当前布局豁免层在祖先侧 .app-content-row，阅读
+ *  器内部无 zoom；若未来引入内部 zoom 层需扩本链）。'normal'/空/undefined
+ *  （jsdom 不识别 zoom）→NaN→1 跳过；z=1 恒等=零行为变。消费方：本件
+ *  scrollIntoNearestScroller + scroll-progress measurePageBoxes（禁两处各写推导）。 */
 export function effectiveZoom(scroller: HTMLElement): number {
   let z = 1
   let el: HTMLElement | null = scroller

@@ -35,6 +35,7 @@ fill(1) 向上跳经 clamp 推演同吻合（1.25 档 δv=(12−s_before)×1.25=
 ## ③ 主控裁决（实现者照办，不再自裁）
 
 1. **折算因子单源**：新导出 `effectiveZoom(scroller): number`（或等名）放 scroll-converge.ts 并导出——`z = scroller.getBoundingClientRect().height / scroller.clientHeight`；**guard 除零**（clientHeight=0 的 jsdom/未挂载态返回 1）；Z=1 时恒等 1=零行为变。B-2 从 scroll-progress 引用同一函数（禁两处各写）。语义=「该滚动容器的 gBCR 视觉高 / 本地 client 高」=祖先复合 zoom 总因子。
+   > **[回炉 1 修订注 2026-09-02]** 本条比值法口径已被回炉否决：终形态=`computed zoom 链乘积`（自 scroller 至 documentElement 逐层；'normal'/undefined→NaN→1）——比值法 ε≈0.0005 亚像素/滚动条污染实证（diag2 探针），且 guard 除零分支随之消解。原文保留仅作历史裁决记录。
 2. **函数签名/导出面零破坏**：scrollIntoNearestScroller 既有导出签名不动（内部折算）；scroll-converge.test 既有桩接口兼容。
 3. **INV 语义不变**：INV-34（最近祖先+夹取唯一收敛）语义原样——本票仅量纲修正；INV-33/45 不触碰。修复落地后在 docs/invariants.md INV-34 条目补一行「视觉/本地空间折算（F-R2）」附注（登记动作归主控收口，实现者不改 invariants.md——受锁）。
 4. **「下一页」旁支**：真机复验时记录修复后 next 场景数值（dSt/δv/落点偏移三档）入实现报告，不扩面修。
