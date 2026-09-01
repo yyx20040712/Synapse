@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-01T19:01:42.0152379Z",
+    "generatedAt":  "2026-09-01T19:10:39.9635212Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -375,7 +375,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "e8d10dbb55477399c863035e21376c9c580c008d121e5a89eb9a8bf3eab532a1"
+                      "sha256":  "09c85870add8130aacdf772e26669a4f78d49afe322f91b7c3abb4f7aa886306"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",

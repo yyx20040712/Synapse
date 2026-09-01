@@ -6,3 +6,5 @@
 {"ts":"2026-09-01T18:42:18.270Z","runId":"20260901182642-mlkn","event":"attempt","source":"kimi-main","model":"kimi-k3","attempt":4,"promptBytes":101377}
 {"ts":"2026-09-01T18:47:58.657Z","runId":"20260901182642-mlkn","event":"attempt","source":"kimi-backup","model":"kimi-k3","attempt":1,"promptBytes":101377}
 {"ts":"2026-09-01T18:51:50.214Z","runId":"20260901182642-mlkn","event":"ok","source":"kimi-backup","model":"kimi-k3","usage":{"in":0,"out":11206},"latencyMs":231557,"finish":"end_turn"}
+{"ts":"2026-09-01T19:10:49.944Z","runId":"20260901191049-whmu","event":"attempt","source":"deepseek","model":"deepseek-v4-flash","attempt":1,"promptBytes":13997}
+{"ts":"2026-09-01T19:12:36.843Z","runId":"20260901191049-whmu","event":"ok","source":"deepseek","model":"deepseek-v4-flash","usage":{"in":4693,"out":11200},"latencyMs":106899,"finish":"stop"}
