@@ -91,7 +91,10 @@ always-active（不经 guardedDescribe——K3 威胁在三屋结构性缺位）
 走 docs/methodology.md §4.5 终态：实现者=GLM5.3flash（deepseek 实现面
 禁用）/门一=Kimi 链外部派发（零仓库接触）/门二=异构二审/体验额度优先
 消费（2026-09-02 用户裁决+同日终态对齐，蓝本=subagent-driven-
-development Model Selection+loop-engineering references/06）。派发模板
+development Model Selection+loop-engineering references/06）；**架构与
+技术路线层面的设计与优化=Kimi 拟定→deepseek 审核→GLM5.3 主控终裁+指挥
+实现；交接场首动作=Kimi 全面体检反馈主控后再定后续开发**（2026-09-02
+第四次 Ruling——双源复审实战验证对抗有效性）。派发模板
 三件=docs/methodology.md §4。
 
 **弱模型领单（既有流程不变）**：
