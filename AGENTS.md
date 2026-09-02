@@ -142,7 +142,12 @@ development Model Selection+loop-engineering references/06）；**架构与
   Volta 项目锁定**——package.json `volta` 字段 pin 24.20.0 随仓库走，clone 后新 shell
   自动生效；CI ci.yml node-version=24 同口径。2026-09-02 起 D:\nodejs 被他应用自动升到
   25.2.1——volta default=25.2.1 镜像系统现状，shim 在 PATH 首位拦截故其他应用零影响、
-  本项目拿 24。**Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
+  本项目拿 24。**2026-09-02 晚 volta shim 失效**（AppData\Local\Volta\bin 被网络错误
+  10060 清空、cache 同毁，错误日志在 Volta\log；Git Bash 内 `volta` 不在 PATH）——
+  临时绕行=PATH 前缀 `%LOCALAPPDATA%\Volta\tools\image\node\24.20.0` 直用镜像本体
+  （node24+npm 11.19.0 可用，verify/e2e 全链亲验过）；**根治需用户网络恢复后
+  `volta install node@24.20.0` 重建 shim**（代理 127.0.0.1:7890 在线时可成）。
+  **Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
   用例结构性假红，node24 对照 11/11 绿实证）——check-quality 版本守卫已拦（非 24 即
   红；CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用）。
   engines 仍 >=20，但 CI 用 20 会因 better-sqlite3 v12.11.1 缺 node-v115

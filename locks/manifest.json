@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T13:40:28.4210041Z",
+    "generatedAt":  "2026-09-02T14:17:02.2942670Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -428,6 +428,10 @@
                   {
                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
                       "sha256":  "5224b8210b903d291349cb1d85fd7b90e936561e9eda1f6fbe25b5ea313164fa"
+                  },
+                  {
+                      "path":  "tests/e2e/z-wg1-probe.spec.ts",
+                      "sha256":  "6027c162f30b3729ca1c43fb54023023566b1ea505b1152b9f9f8460b6f66911"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
