@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T05:07:26.1129365Z",
+    "generatedAt":  "2026-09-02T11:25:28.2459575Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c964a626de371030cbc273e04944f8360341d2b39e237ce4e2bb0fe8bf9f3eb5"
+                      "sha256":  "4a82a6facdd2adea530f132b936c76a422a07358bec6f7aa1ec2165328759590"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -168,6 +168,10 @@
                   {
                       "path":  "scripts/audits/f-r2-diag2.mjs",
                       "sha256":  "1d7d294635216efc01716a28d8b33ccaf393750e536ef51de050e7e2f6c7a5c9"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r2e-gen-gate2-brief.mjs",
+                      "sha256":  "03028da05f7aeaf1aa739ac404e39e7fa8be7d2f345ffee0d2fcfee8d4d93cc3"
                   },
                   {
                       "path":  "scripts/audits/f-r2-probe.mjs",
@@ -391,7 +395,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "e8925045e23f91dbe79e9909ddc82d5d5091f155d4610bfc3f0a37dc593715c2"
+                      "sha256":  "831050cc86ab849bd3485053a60fab366dde147656902c08edb740ea821e0312"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -408,6 +412,10 @@
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
+                  },
+                  {
+                      "path":  "tests/e2e/z-r2e-probe.spec.ts",
+                      "sha256":  "5224b8210b903d291349cb1d85fd7b90e936561e9eda1f6fbe25b5ea313164fa"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
