@@ -1,9 +1,13 @@
 {
-    "generatedAt":  "2026-09-01T23:28:44.1847190Z",
+    "generatedAt":  "2026-09-02T00:49:35.6295179Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
                       "sha256":  "9814bc555958951242b4d8b4de7b3adade6959758f0ead26f3bbbbb0a669793a"
+                  },
+                  {
+                      "path":  "docs/invariants.md",
+                      "sha256":  "e7a0476071001806dd2088ec51fd231f4ab40ba37a8a0e3d95bc2cc1b3101f64"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -126,6 +130,10 @@
                       "sha256":  "ae56734ed8e7f6a6c5d7d2338c56c6b23ada04c490b5bfae17c7c856004ddbbc"
                   },
                   {
+                      "path":  "scripts/audits/f-l3-probe.mjs",
+                      "sha256":  "f4fa5e0e4146f582dfcdc63f27b2116cb66b8aaa92457fe2caee8fd14b877b8c"
+                  },
+                  {
                       "path":  "scripts/audits/f-l4-verify.mjs",
                       "sha256":  "6ecba6f1d97035efceca8fca1c251f72749bb3c43da96dc47c6165e095be263b"
                   },
@@ -223,7 +231,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "0a71490009eef4ae0038cfe800c36ecc5184b437ef289844133878776b073558"
+                      "sha256":  "1e9c25e24be7dee79a9d8f426f471590ab6428f1ba8c1e4bc23d816b7d6f2588"
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
@@ -247,7 +255,7 @@
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
-                      "sha256":  "056918661ceb45952424ede4d26a5b21f5d9982a5e65293aad74dc67116833e2"
+                      "sha256":  "1b7243a82f1f2b8c8a22a96c270068c0caf2e4b47119fc41f8274b927b1c372c"
                   },
                   {
                       "path":  "scripts/new-ticket.ps1",

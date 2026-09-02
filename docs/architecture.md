@@ -206,7 +206,7 @@ flowchart TB
 ```mermaid
 flowchart TB
   subgraph LOOP["单人 + AI 弱模型领单循环"]
-    RG2["tickets/registry.ts ✅<br/>72 工单 = 49 done + 23 open<br/>（Phase 1~4 完成：infra 17 + DB 5 + 服务 5 + IPC 4 + 库 UI 5 + reader 9 + notes 2 + 基建 2）"]
+    RG2["tickets/registry.ts ✅<br/>工单状态控制面（图纸不记数字防漂移——<br/>实时状态见 registry 本体与交接书基线表）"]
     SPEC["源文件头五层规约<br/>= 自包含任务书"]
     IMPL["弱模型只改工单文件"]
     GD["guardedDescribe(ticketId)<br/>open → skip · done → 激活<br/>未知工单号当场炸"]
@@ -216,7 +216,7 @@ flowchart TB
   subgraph GATES["关卡（verify = CI 同口径，本轮并轨）"]
     Q["quality:占位/乱码/跨域/行数/分层方向"]
     T["tickets:工单号一致性 + done 残留占位即红"]
-    LK["locks:83 文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置）"]
+    LK["locks:受锁文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置<br/>——条目数见 locks/manifest.json，图纸不记数字）"]
     V["lint → typecheck → test → build"]
   end
   GD --> GATES

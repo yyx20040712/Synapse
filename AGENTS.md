@@ -155,3 +155,6 @@ development Model Selection+loop-engineering references/06）；**架构与
   须配 repo-local `http.sslBackend=openssl` + 自带 CA bundle（配置命令见
   DEV-SETUP §3；.git/config 不随 clone 走，新机必配）
 - 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）
+- git geometric-repack「File exists」rename 竞态为 Windows 文件锁族噪声（2026-09-02
+  三现+`git gc --prune=now` 同报——gc 不自愈）；提交与仓库完整性无碍（fsck 亲验
+  exit=0），忽略即可，勿因此重装或重建仓库

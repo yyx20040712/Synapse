@@ -29,6 +29,7 @@ function protectedFiles() {
     ...walk(join(root, 'src', 'shared'), () => true),
     ...walk(join(root, 'src', 'main', 'db', 'migrations'), () => true),
     ...walk(root, (p) => /\.test\.tsx?$/.test(p)),
+    join(root, 'docs', 'invariants.md'),
     join(root, 'vitest.config.ts'),
     join(root, 'eslint.config.js'),
     join(root, '.github', 'workflows', 'ci.yml'),

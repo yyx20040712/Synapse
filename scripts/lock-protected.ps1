@@ -15,7 +15,7 @@ function Get-ProtectedFiles {
   $files += Get-ChildItem -Path (Join-Path $root 'src/main/db/migrations') -Recurse -File
   $files += Get-ChildItem -Path $root -Recurse -File -Include *.test.ts, *.test.tsx |
     Where-Object { $_.FullName -notmatch '\\node_modules\\|\\out\\|\\dist\\|\\coverage\\' }
-  foreach ($cfg in @('vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
+  foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
       'playwright.config.ts', 'electron.vite.config.ts',
       'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json')) {
     $p = Join-Path $root $cfg
