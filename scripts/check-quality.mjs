@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * check-quality.mjs —— 质量扫描关卡（受锁文件）。
- * 检查：占位标记 / 乱码特征 / renderer features 跨域互引。
+ * 检查：Node 版本守卫 / 占位标记 / 乱码特征 / renderer features 跨域互引。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -9,6 +9,23 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 
 const root = process.cwd()
 const violations = []
+
+// 0) Node 版本守卫（2026-09-02 三波场入锁）：本项目锁定 Node 24（CI
+//    ci.yml node-version=24；本地经 Volta 项目 pin——package.json "volta"
+//    字段）。他应用曾把 D:\nodejs 静默升到 25.2.1，vitest 2.1.9 在 25 下
+//    jsdom localStorage 装载破损（split-pane 11 用例结构性假红——node24
+//    对照 11/11 绿实证）。本守卫在 verify 第一步拦截，防假红浪费排查。
+//    豁免口：CI 环境自身 node-version=24 恒过；刻意用它版本跑时设
+//    SYNAPSE_SKIP_NODE_GUARD=1（自负其责，如 vitest 升级票验证场）。
+const NODE_MAJOR_REQUIRED = 24
+const nodeMajor = Number(process.versions.node.split('.')[0])
+if (process.env.CI !== 'true' && process.env.SYNAPSE_SKIP_NODE_GUARD !== '1' && nodeMajor !== NODE_MAJOR_REQUIRED) {
+  violations.push(
+    `Node 主版本 ${nodeMajor}≠${NODE_MAJOR_REQUIRED}（CI 口径）——vitest jsdom 将假红（split-pane 11 用例在档）。` +
+    `本项目经 Volta pin node@24（新 shell 应自动生效；未生效检查 PATH 前 "C:\\Program Files\\Volta"）；` +
+    `确需跳过：SYNAPSE_SKIP_NODE_GUARD=1`
+  )
+}
 
 function walk(dir, filter, acc = []) {
   for (const name of readdirSync(dir)) {

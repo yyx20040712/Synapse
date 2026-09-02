@@ -8,7 +8,7 @@
 
 | 项 | 要求 | 说明 |
 | --- | --- | --- |
-| Node | **24.x**（engines >=20 但 better-sqlite3 v12.11.1 需 node-v115 预编译，CI 用 20 会源码编译失败——勿改回） | `node -v` 核对；**本机便携版在 `D:\nodejs24`（v24.20.0）**，PATH 默认 node 是 D:\nodejs v25（ABI 不符必假红）——一切 node/npm 命令前缀 `export PATH="/d/nodejs24:$PATH" && ...`（2026-08-29 实录；Node25 下 verify 11 红=webstorage 污染，环境不兼容非代码回归） |
+| Node | **24.x**（engines >=20 但 better-sqlite3 v12.11.1 需 node-v115 预编译，CI 用 20 会源码编译失败——勿改回） | **2026-09-02 起经 Volta 项目锁定**（根治「他应用自动升 D:\nodejs」两现实录 8-29/9-02，Node25 下 verify 11 红=webstorage 污染同指纹两现）：装 volta（`winget install Volta.Volta`）→ `volta install node@24.20.0` → `volta install node@25.2.1`（default=镜像系统现状，shim 拦 PATH 首位故其他应用零影响）→ 项目 pin 已随仓库（package.json `volta` 字段，clone 即生效）。核对：项目内 `node -v`=24.x、项目外=25.2.1；check-quality 版本守卫非 24 即红（CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1）。旧便携目录 `D:\nodejs24`（8-29 方案）退役保留备用 |
 | git | 任意（系统 git / MinGit 均可） | 新机若用 MinGit 须按 §3 配 openssl |
 | 网络代理 | `127.0.0.1:7890`（若新机代理不同，替换下文所有出现处） | GitHub 直连不稳是既有事实 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
