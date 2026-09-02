@@ -895,3 +895,36 @@ kimi-main→kimi-backup 双失败 switches=2 落 deepseek 兜底——**门一�
 - **验证口径**：verify 全链 exit=0 亲验（127 文件 **1103** 用例=基线 1093+F-D4 8+
   F-SL 2；locks **238**）+e2e 亲验（F-SL 改 ReaderPage 接线触渲染链——reader-text
   划选保存链必跑）。成本账本见交接书。
+
+
+## 2026-09-02 五波场：C-3 第三票 F-SV settings.save 链式全序闭环（单票全链）
+
+- **F-SV settings.save 并发互斥**（票面 f-sv-brief.md，AUDIT-C §1.1+§五-4）：
+  病根=save 间无互斥（saving 仅驱动 UI；UI 守卫两不足=帧快照毫秒窗+runSave/
+  pickScale 双入口互不感知）×ipcMain.handle async handler 不序列化×INV-39 全量
+  写互相整体覆盖——save₁ 旧全量迟到落盘覆盖 save₂→档位回跳（毫秒级连点可达，W）。
+  修法=store 层**链式全序**（INV-03 写方向同族第三变体「同通道写全序」）：null
+  哨兵空闲直发（单 save invoke 同步即发=行为零变验收线——票面字面「初始 resolved
+  链」击红锁定用例格 2，实现者自裁改哨兵，门一复核成立）/忙时排队（前一 settle
+  后才发下一 invoke——落盘序=发出序，终态恒=最后一次意图）/链永不断（run.then
+  双 noop 续链，错误 await run 原样上抛各自调用方——动作型契约零变）/inflight
+  归零才复位 saving（排队者不闪断）。INV-03 三列同步扩写（声明/先例/锚定）。
+  测试 +3（并发全序时序/链不断/saving 订阅帧连续）；变异 M1（删链直发→①②红）/
+  M2（去归零门控→③红）红证在档。
+- **门双**：门一 Kimi（in=13307/out=8662/268s）B:0/W:2/N:3+存疑 2 **放行零回炉**
+  ——竞窗推演四边界（清链条件与排队存在性严格互斥/微任务交错窗/同步连发/flush
+  充分性）无代码级缺陷；W1=RED「Errors 1 error」未申报→实现者书面定性闭环
+  （RED 期用例② pSave1 未处理拒绝：断言失败早于 rejects handler 挂接；四件证据
+  零 Errors 佐证）+门二五帧对账复核成立；W2=中间 verify 失败留档不一致（流程
+  教训：中间失败一律留档，与 green-r1-fail 先例对齐——不补做）；N1=INV-03 先例列
+  不同步→主控收口补齐；N2/N3 知晓项。门二 deepseek 位 **PASS**（verify 亲跑
+  exit=0/1106+locks 239/diff 恰 4 文件/行数 119+215/TODO 零命中/变异备份字节级
+  IDENTICAL；e2e 免跑论证在档=无并发连点 e2e 面，smoke:177 单 save 走直发分支
+  逐 tick 等价）。
+- **摩擦根治纪律首次执行生效**：本场 gen 脚本（f-sv-gen-gate1-brief.mjs）诞生即
+  locks:generate+apply（238→239）——四波场 AGENTS 新纪律的第一次闭环实践，
+  零摩擦零红。
+- **验证口径**：verify 全链 exit=0 主控亲验（127 文件 **1106**=四波场基线 1103+3；
+  locks **239**）；e2e 免跑（门二论证在档，非跳过）。C-3 三票（A3 二波/D4+SL 四波/
+  SV 五波）至此**全数闭环**——AUDIT-C 修票场 W 级清单清空，余项=N 级知晓项
+  （并发双 import 计数中间态/时序表第 3 格/链深≥3/用例②载荷对称性，均申报在案）。

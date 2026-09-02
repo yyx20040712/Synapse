@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T13:01:12.9375627Z",
+    "generatedAt":  "2026-09-02T13:40:28.4210041Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "9bcaeddb00c842fff3db1e972f5ca465188dbfac8e09ff1b93e9f2b4242a2c5a"
+                      "sha256":  "337e02cf76f4970cb4213454f65affd72b4370ae60d0d0b8579c7d7e9d1ad6ce"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -192,6 +192,10 @@
                   {
                       "path":  "scripts/audits/f-sl-gen-gate1-brief.mjs",
                       "sha256":  "52e70b8cec46f3b854c355d69cb8d0635b304dd91b27e06c6e70408fc11111be"
+                  },
+                  {
+                      "path":  "scripts/audits/f-sv-gen-gate1-brief.mjs",
+                      "sha256":  "b521125f45b408f68bf7cda85faa6fee44cc909cf10d5ac2abcbf9db81d3c334"
                   },
                   {
                       "path":  "scripts/audits/f-sw1-fix-verify.mjs",
@@ -747,7 +751,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
-                      "sha256":  "d557938d94b69d9c07ca8e556acdaf986431db85196e9208c1848b25c2b2eb5d"
+                      "sha256":  "b750b8cf8020e3369e81ecc15332a9c0ab8632094cfc67d0326364f6e9bd0fbc"
                   },
                   {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
