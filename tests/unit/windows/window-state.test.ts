@@ -2,7 +2,13 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { clampBounds, DEFAULT_BOUNDS, loadBounds, saveBounds } from '../../../src/main/windows/window-state'
+import {
+  boundsToPersist,
+  clampBounds,
+  DEFAULT_BOUNDS,
+  loadBounds,
+  saveBounds
+} from '../../../src/main/windows/window-state'
 
 const dirs: string[] = []
 async function tmpDir(): Promise<string> {
@@ -46,5 +52,21 @@ describe('windows/window-state —— 窗口位置记忆', () => {
     expect(await loadBounds(dir)).toEqual({ x: 10, y: 20, width: 800, height: 600 })
     await writeFile(join(dir, 'window-state.json'), JSON.stringify({ x: 1 }), 'utf-8')
     expect(await loadBounds(dir)).toEqual(DEFAULT_BOUNDS)
+  })
+})
+
+describe('F-G3 boundsToPersist —— maximized 态关窗持久化取 normal bounds', () => {
+  it('maximized：getBounds 是最大化尺寸，持久化取 getNormalBounds（下次启动恢复还原态而非大窗非最大化）', () => {
+    const win = {
+      getBounds: () => ({ x: 0, y: 0, width: 1920, height: 1040 }),
+      getNormalBounds: () => ({ x: 120, y: 60, width: 1280, height: 800 })
+    }
+    expect(boundsToPersist(win)).toEqual({ x: 120, y: 60, width: 1280, height: 800 })
+  })
+
+  it('常态：getNormalBounds 与 getBounds 等值——非最大化路径行为零变旁证', () => {
+    const b = { x: 10, y: 20, width: 800, height: 600 }
+    const win = { getBounds: () => ({ ...b }), getNormalBounds: () => ({ ...b }) }
+    expect(boundsToPersist(win)).toEqual({ x: 10, y: 20, width: 800, height: 600 })
   })
 })

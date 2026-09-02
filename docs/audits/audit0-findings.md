@@ -542,13 +542,13 @@ F-L1 用户已裁决变体 C+「防重叠遮挡+悬停滚动」两保证(F-L1-C 
 | --- | --- | --- | --- | --- |
 | F-G1 | multiply 叠色物理上限(灰选中×黄标注=橄榄;F-A1 归并不覆盖此面——那是标注×标注,此是选中×标注) | N | 备案;用户不满意则 backdrop 隔离实验(重开 ADR-0019 风险) | v7 §4 |
 | F-G2 | F-11 收边定值 10%/12% 极端字体偏松/偏紧 | N | 备案;F-A1 归并后一并复评 | v7 §4 |
-| F-G3 | maximized 态关窗 saveBounds 存大 bounds(恢复大窗非最大化) | N | 备案;候选修法在档 | v8 E4 |
+| F-G3 | maximized 态关窗 saveBounds 存大 bounds(恢复大窗非最大化) | **已修** | 2026-09-03 夜场闭环：window-state 增 boundsToPersist(取 getNormalBounds)——maximized 落还原态几何,常态等值零变;bootstrap close 接线+两用例锚+变异红证 | v8 E4 |
 | F-G4 | invariants.md 不在受锁集 | N | 备案 | v9 W2 |
 | F-G5 | 变异还原 diff 未落档(间接实证) | N | 流程项:此后变异还原也落 .raw.txt | v9 W4 |
 | F-G6 | SettingsPage 表单水合前窄窗(固有) | N | 备案 | v9 门二 |
-| F-G7 | SettingsPage 244 行(余量 6)——下个设置节必拆 UiScaleSection | N | 预警 | v9 |
-| F-G8 | SH3 drag 面断言 toContain 未计数 | N | 同类风险随 F-A1 票一并扫 | v8 SH3 门一 C9 |
-| F-G9 | fullscreen 不反映 maximize 图标 | N | 备案 | v8 SH3 门一 C12 |
+| F-G7 | SettingsPage 244 行(余量 6)——下个设置节必拆 UiScaleSection | **已拆** | 2026-09-03 夜场闭环:UiScaleSection.tsx 自持(73 行,store 直订,先例=CorpusExport 节),SettingsPage 244→209 | v9 |
+| F-G8 | SH3 drag 面断言 toContain 未计数 | **已修** | 2026-09-03 夜场闭环:drag 计数锁=恰 1 处(与 no-drag 计数断言对偶;错数 2 红证) | v8 SH3 门一 C9 |
+| F-G9 | fullscreen 不反映 maximize 图标 | **已修** | 2026-09-03 夜场闭环:bindWindowStateEvents 补 enter/leave-full-screen 沿(enter→true/leave→回读 isMaximized);TitleBarControls 状态机声明同步(接缝归责);三 payload 用例+变异红证;门一 N1 备案=fullscreen 中三键 toggle 错位(图标反映 Only 票面边界);存疑2 备注=leave 回读时序无真机验证(mock 锚回读语义非事件时序),真机 F11 双击验证留给在场场次 | v8 SH3 门一 C12 |
 | F-G10 | P7-A 系统剪贴板竞态 flake | **已修** | v18 U2 闭环（2026-09-02）：清场标记+条件重读防线入 spec（[locked-change]），连跑 3 次 P7-A 全绿 | v8 §2→v18 U2 |
 | F-G11 | P7-A 分隔条拖拽（reader-text:568 SplitPane 集成）序列态非确定红：对跑内 1 红（widthAfter−widthBefore=−64/期望 ≥70，拖拽反向/落点错位形态）+单跑×5 全绿——序列依赖签名与 F-R2e 同族；另全量 run3「1 failed」身份未捕获（矩阵循环未 tee 输出，过程失误在档）不计入 | N | 备案观察：确认计数=1，未触同用例 2 次立案线；环境注记=本机前台占用态对真鼠标拖拽面敏感；再现按立案线通则升格 | 六波场 §6 |
 | F-R2e | e2e「划选高亮重开原位」序列敏感脆弱面：全量序列第三跑 3.45px 超 2px 容差（同值复现）但单跑绿+U1 收口全量亦绿——窗态持久化/顺序依赖噪声（测试注释自认已知噪声源；R3-RDRSET「间歇红环境波动」前科同族） | N | 备案 v19 观察项：再现 ≥2 次立案（容差/窗态种子隔离两案裁决）。**2026-09-02 注入证伪**：窗态差假说被实测推翻——四档注入（height 799/width 1272/1200×700×2 跑）全绿，rel 归一坐标对窗态差不敏感（归一化设计有效性反获确认，注释无需勘误）；全量 3 连跑 29/29×3 未复现；剩余嫌疑=顺序依赖/负载态（无复现不可定位）；收口后失败计数仍=1，不触发 ≥2 立案线，维持观察 | v18 U2 三连跑+2026-09-02 A-1 探针 |
@@ -951,3 +951,29 @@ kimi-main→kimi-backup 双失败 switches=2 落 deepseek 兜底——**门一�
 - **预算停点触发**：N 级/遗留池集中清扫（v26 §2-2）顺延下场首项。
 - **验证**：verify exit=0 亲验（127 文件 1106=基线精确一致/locks 240）；
   e2e 33 用例 8 全量上下文 7 绿 1 未捕获红（非 3.45 面，§6）。
+
+## 2026-09-03 夜场（七波场·闲时段第一段）：N 级清扫合批五票全闭环
+
+- **五票全落地**（主控亲做快票形态，蓝本=F-ARCH 修复批；v27 §2 第 1 项）：
+  F-G3 boundsToPersist（getNormalBounds，maximized 落还原态/常态等值零变）/
+  F-G7 UiScaleSection 自持拆件（SettingsPage 244→209）/F-G8 drag 计数锁（恰 1，
+  与 no-drag 断言对偶）/F-G9 fullscreen 沿补反映（enter→true/leave→回读
+  isMaximized+TitleBarControls 状态机接缝同步）/C-3 四知晓项转正
+  （①import-gate 拆模块+2→1→0 计数锚②时序表第③格跨格序列显式化③链深≥3
+  ④用例②载荷对称断言）。
+- **门双**：门一 Kimi 两轮（in=8292+3490/out=6370+3624）——一轮 W1=材料缺口
+  （git diff 不含未跟踪三新文件，派生 inFlight 裸引用绑定形态不可核）；二轮补充
+  包终裁 W1+三存疑全 ADDRESSED，新发现 N-1/N-2/N-3 皆 N 级处置在档
+  （N-1 非配对 exit 转负=接线 bug 信号，注释声明不加守卫=行为零变承诺内，改守卫
+  需独立票；N-2 同源不测（测即锁定存疑行为）；N-3 INV-39 载荷组件层无单测——
+  核实 smoke:160 rect×1.25 经 store→--ui-scale 链传递性锚定（漏带字段必红），
+  UiScaleSection 头注引证在档）。
+- **变异红证六组**（全备份法还原 diff 空）：fg3 getBounds 化/fg9 摘沿/fg8 错数/
+  c3-gate >1 判定/c3-ws 摘 create 检查（2 红）/c3-sv 链删（3 红）。
+- **过程失误如实申报**：①首次 ws 变异 node -e 字符串替换静默未命中（16 全绿暴露）
+  →改 sed 行号+命中守卫重做——「变异必须先证命中」教训入册；②verify 首跑 typecheck
+  拦两处（接口扩后 mock 缺方法/拆件后 runSave 残留局部量）——vitest 不查类型、
+  tsc 才拦的已知形态再现，均在锁面外源文件即时修。
+- **验证**：verify exit=0 亲验（**128 文件 1113**=基线 1106+7；locks **241**=
+  240+import-gate.test.ts 即时 generate+apply）；e2e **33/33 全绿**（含本批触碰
+  的 smoke:118 三键/smoke:160 缩放两面）。

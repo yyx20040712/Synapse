@@ -46,6 +46,7 @@ import { createServices } from './services'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createDataLayerContainer } from './data-layer.container'
+import { createImportGate } from './import-gate'
 import { migrateLegacyUserData } from './migrate-user-data'
 import { ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
 import { createWorkspaceService } from './services/workspaces/workspace.service'
@@ -62,7 +63,7 @@ import {
   getQuitDirty,
   setQuitDirty
 } from './windows/main-window'
-import { loadBounds, saveBounds, type WindowBounds } from './windows/window-state'
+import { loadBounds, saveBounds, boundsToPersist, type WindowBounds } from './windows/window-state'
 import { fetchJson, fetchText, pingHost } from './http/http-client'
 import { EVENT_CHANNELS } from '../shared/ipc/api-surface'
 
@@ -89,16 +90,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   // ── import 会话 gate（F-D4 A 面，INV-52）：顶层一次创建——在容器 assemble 闭包
   //    之外（每层 service 重建但 gate 同一对象）；计数>0=import in-flight，
   //    workspace 变更三入口互斥判定源。in-flight 判定=main 侧计数单源，renderer
-  //    busy 不参与（两进程面各自独立）──
-  let importInFlightCount = 0
-  const importGate = {
-    enter: () => {
-      importInFlightCount++
-    },
-    exit: () => {
-      importInFlightCount--
-    }
-  }
+  //    busy 不参与（两进程面各自独立）。C-3 N1 转正：闭包计数拆 createImportGate
+  //    模块（并发中间态 2→1→0 语义入测试锚），行为逐位一致 ──
+  const importGate = createImportGate()
 
   // ── 数据层容器（课题级可重建；与库无关项=闭包外参——票面 P1）──
   const container = createDataLayerContainer({
@@ -146,7 +140,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   // switch 抛 CONFLICT 中文，拒时零库副作用）
   const workspaceService = createWorkspaceService({
     userDataDir,
-    importInFlight: () => importInFlightCount > 0,
+    importInFlight: importGate.inFlight,
     initWorkspaceDb,
     closeCurrent: () => container.closeCurrent(),
     assembleInto: (dataDir) => container.assembleInto(dataDir)
@@ -206,8 +200,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   )
   window.on('close', () => {
     if (!window.isDestroyed() && window.isVisible()) {
-      const b = window.getBounds()
-      void saveBounds(userDataDir, { x: b.x, y: b.y, width: b.width, height: b.height })
+      // F-G3：取 normal 态 bounds——maximized 态关窗不落最大化尺寸
+      void saveBounds(userDataDir, boundsToPersist(window))
     }
   })
 

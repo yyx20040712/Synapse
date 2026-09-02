@@ -7,8 +7,8 @@
  * - maximize 态状态机：
  *   | 态 | 含义 | 迁移 |
  *   | unknown(null) | 挂载初值未拉到 | get-state 应答 → true/false |
- *   | true | 窗口最大化 | unmaximize 沿 / toggle 应答 → false |
- *   | false | 常态 | maximize 沿（含双击 drag 区等系统行为）→ true |
+ *   | true | 窗口最大化（F-G9：fullscreen 进入亦发 true——图标反映占满屏） | unmaximize 沿 / toggle 应答 / leave-full-screen 沿且非常最大化 → false |
+ *   | false | 常态 | maximize 沿（含双击 drag 区等系统行为）/ enter-full-screen 沿 → true |
  * - 点击 → api.system.windowControl({action})；应答回读 maximized 同步图标态
  *   （事件沿与应答双通道收敛到同一 setState；点击应答与事件沿必然同值，
  *   后到者胜=终态一致——get-state 初值应答例外：仅 unknown 态生效，防

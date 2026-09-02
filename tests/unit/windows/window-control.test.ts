@@ -123,7 +123,8 @@ describe('windows/window-control —— maximize 状态推送绑定', () => {
     const win = {
       on: (event: string, listener: () => void) => {
         listeners.set(event, listener)
-      }
+      },
+      isMaximized: () => false
     }
     const sent: Array<{ maximized: boolean }> = []
     bindWindowStateEvents(win, (payload) => {
@@ -132,6 +133,33 @@ describe('windows/window-control —— maximize 状态推送绑定', () => {
     listeners.get('maximize')?.()
     listeners.get('unmaximize')?.()
     expect(sent).toEqual([{ maximized: true }, { maximized: false }])
+  })
+
+  it('F-G9 bindWindowStateEvents：fullscreen 沿补反映——enter 发 true；leave 回读 isMaximized（离开后回最大化态图标不撒谎）', () => {
+    const listeners = new Map<string, () => void>()
+    let maximized = false
+    const win = {
+      on: (event: string, listener: () => void) => {
+        listeners.set(event, listener)
+      },
+      isMaximized: () => maximized
+    }
+    const sent: Array<{ maximized: boolean }> = []
+    bindWindowStateEvents(win, (payload) => {
+      sent.push(payload)
+    })
+    // F11 等 fullscreen 走 enter-full-screen 而非 maximize 沿（v8 SH3 门一 C12）
+    listeners.get('enter-full-screen')?.()
+    expect(sent).toEqual([{ maximized: true }])
+    // 离开 fullscreen 回到最大化态：回读真值 true 而非恒 false
+    maximized = true
+    listeners.get('leave-full-screen')?.()
+    expect(sent).toEqual([{ maximized: true }, { maximized: true }])
+    // 离开 fullscreen 回到常态：false
+    maximized = false
+    sent.length = 0
+    listeners.get('leave-full-screen')?.()
+    expect(sent).toEqual([{ maximized: false }])
   })
 })
 
@@ -153,8 +181,9 @@ describe('windows/window-control —— drag/no-drag 皮肤锁（CSS 文本断�
     'utf8'
   )
 
-  it('.app-header 整条为拖拽区（-webkit-app-region: drag）', () => {
-    expect(css).toContain('-webkit-app-region: drag')
+  it('.app-header 整条为拖拽区——恰一处 drag 声明（F-G8 计数锁：与下方 no-drag 计数断言对偶，他处新增第二处 drag 即红）', () => {
+    const dragCount = css.split('-webkit-app-region: drag').length - 1
+    expect(dragCount).toBe(1)
   })
 
   it('切换器容器与三键容器为 no-drag（两处，点击不被 drag 吞）', () => {

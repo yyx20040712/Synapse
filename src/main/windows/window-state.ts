@@ -57,3 +57,19 @@ export async function saveBounds(userDataDir: string, bounds: WindowBounds): Pro
     // 持久化失败不阻断退出
   }
 }
+
+/** 关窗持久化的 bounds 来源最小形状（结构化类型：测试免依赖 electron 真体） */
+export interface BoundsProvider {
+  getBounds(): { x: number; y: number; width: number; height: number }
+  getNormalBounds(): { x: number; y: number; width: number; height: number }
+}
+
+/**
+ * F-G3：关窗持久化取 normal 态 bounds。maximized 态下 getBounds() 是最大化
+ * 尺寸，落盘会让下次启动恢复成「大窗非最大化」；getNormalBounds() 在
+ * maximized 下返回还原态几何，常态下与 getBounds() 等值（行为零变）。
+ */
+export function boundsToPersist(win: BoundsProvider): WindowBounds {
+  const b = win.getNormalBounds()
+  return { x: b.x, y: b.y, width: b.width, height: b.height }
+}

@@ -17,6 +17,7 @@ import {
 import { createWorkspaceService } from '../../../src/main/services/workspaces/workspace.service'
 import { ensureWorkspaceLayout, initWorkspaceDb } from '../../../src/main/workspace-layout'
 import { createDataLayerContainer } from '../../../src/main/data-layer.container'
+import { createImportGate } from '../../../src/main/import-gate'
 
 /**
  * [R1-WS1] workspaces 域单测（ADR-0018 库级分目录）——真临时目录+真 SQLite。
@@ -423,6 +424,32 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     await expect(svc.rename({ id: DEFAULT_WS_ID, name: '改名X' })).rejects.toThrow(/导入进行中/)
     expect(closeCalls()).toBe(0)
     expect(assembledDirs()).toEqual([])
+    cur.db?.close()
+  })
+
+  it('C-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行', async () => {
+    const gate = createImportGate()
+    const { svc, closeCalls, assembledDirs, cur, u } = await l0Session('synapse-ws-c3-', {
+      importInFlight: gate.inFlight
+    })
+    gate.enter()
+    gate.enter()
+    // 时序表第①格（in-flight × create）：拒且零库副作用
+    await expect(svc.create({ name: '课题C3' })).rejects.toThrow(/导入进行中/)
+    expect(closeCalls()).toBe(0)
+    // 并发中间态 2→1：首个 import 完成，仍 in-flight——拒面不变（计数中间态消费面锚）
+    gate.exit()
+    await expect(svc.create({ name: '课题C3' })).rejects.toThrow(/导入进行中/)
+    expect(closeCalls()).toBe(0)
+    // 时序表第③格（exit 后 × 变更入口）：放行，原行为零变（此前由 ()=>false 桩隐式覆盖）
+    gate.exit()
+    const created = await svc.create({ name: '课题C3' })
+    expect(created.id).toMatch(/^[a-z0-9-]{1,64}$/)
+    expect(created.id).not.toBe(DEFAULT_WS_ID)
+    // 放行后走 L0 物化全序：关旧句柄→迁移→重建 default（assembleInto 记录）→指针落位
+    expect(closeCalls()).toBe(1)
+    expect(assembledDirs()).toEqual([join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID)])
+    expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID })
     cur.db?.close()
   })
 })

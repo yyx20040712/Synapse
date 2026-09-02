@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T14:17:02.2942670Z",
+    "generatedAt":  "2026-09-02T17:39:30.4817778Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -534,6 +534,10 @@
                       "sha256":  "7855dbf78c9f66015e16ca0546b28cef9a72f3b669b8282f98e303ff3ebf200b"
                   },
                   {
+                      "path":  "tests/unit/main/import-gate.test.ts",
+                      "sha256":  "bfd85ac6773f5378c828da7a8e5df9d918c1d2bed0609c59c9116dd86e1b90fd"
+                  },
+                  {
                       "path":  "tests/unit/main/migrate-user-data.test.ts",
                       "sha256":  "9999655afb5b241daa9c0ad2402c951c7d5ee13f73f2156143281aa34b534df4"
                   },
@@ -755,7 +759,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
-                      "sha256":  "b750b8cf8020e3369e81ecc15332a9c0ab8632094cfc67d0326364f6e9bd0fbc"
+                      "sha256":  "71c1df9db34227ecc70da1bb4e950185657a2b2469c4516e2d5e15979631b72d"
                   },
                   {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
@@ -891,7 +895,7 @@
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",
-                      "sha256":  "1eb186613be8d522183e3d98558b97b9a9548bd5ad5609cee3079a8f3ec16a58"
+                      "sha256":  "7a58c2ec477dfed89b744b0cdf78e88897723f43436acf153f33b11a96d92950"
                   },
                   {
                       "path":  "tests/unit/services/zcode-link.service.test.ts",
@@ -923,11 +927,11 @@
                   },
                   {
                       "path":  "tests/unit/windows/window-control.test.ts",
-                      "sha256":  "3abe2d28c6abb28323a3dfc05a507bd9421851b0ab4945aa94b5ee017670df46"
+                      "sha256":  "3ef4c28c0c08ff36bcc3955a143ba226c1dcf1e498c7cac3fa587024ea3deb10"
                   },
                   {
                       "path":  "tests/unit/windows/window-state.test.ts",
-                      "sha256":  "7e13732d7252a56a5c8a1956adff6f565cd6ca9aa4432b5cb2ee1efb31595497"
+                      "sha256":  "b51bff4c5570f37d8d592578dfcfefc539dc4951556e564df31c5398c3833aa1"
                   },
                   {
                       "path":  "tests/utils/fixtures.ts",

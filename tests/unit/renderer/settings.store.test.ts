@@ -181,11 +181,44 @@ describe('F-SV settings.save 链式全序（并发写互斥）', () => {
     // save₁ 的失败上抛 save₁ 的调用方（动作型契约零变，不吞不串）
     await expect(pSave1).rejects.toThrow('写盘失败')
     await flush()
-    // 链未被失败折断：save₂ 照常发出
+    // 链未被失败折断：save₂ 照常发出——载荷为 save₂ 自身补丁（C-3 N3：与用例①
+    // 的 toHaveBeenNthCalledWith 断言对偶，不靠终态隐含覆盖）
     expect(set).toHaveBeenCalledTimes(2)
+    expect(set).toHaveBeenNthCalledWith(2, { contactEmail: 'two@x.y' })
     resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
     await pSave2
     expect(useStore.getState().settings?.contactEmail).toBe('two@x.y')
+    expect(useStore.getState().saving).toBe(false)
+  })
+
+  it('C-3 N2 链深≥3：save₃ 排在 save₂ 后——尾尾相接不折断，逐个补发，终态=save₃ 值', async () => {
+    let resolveSet1!: (v: SettingsOk) => void
+    let resolveSet2!: (v: SettingsOk) => void
+    let resolveSet3!: (v: SettingsOk) => void
+    const set = vi.fn()
+      .mockImplementationOnce(() => new Promise<SettingsOk>((r) => { resolveSet1 = r }))
+      .mockImplementationOnce(() => new Promise<SettingsOk>((r) => { resolveSet2 = r }))
+      .mockImplementationOnce(() => new Promise<SettingsOk>((r) => { resolveSet3 = r }))
+    const useStore = await loadStore({ settings: { set } })
+    const pSave1 = useStore.getState().save({ contactEmail: 'one@x.y' })
+    const pSave2 = useStore.getState().save({ contactEmail: 'two@x.y' })
+    const pSave3 = useStore.getState().save({ contactEmail: 'three@x.y' })
+    await flush()
+    // 深度 3 排队：在途仍只 save₁ 一个 invoke
+    expect(set).toHaveBeenCalledTimes(1)
+    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'system' as const, uiScale: 'small' } })
+    await flush()
+    // save₂ 补发；save₃ 仍排队（尾尾相接的中间格）
+    expect(set).toHaveBeenCalledTimes(2)
+    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
+    await flush()
+    // save₃ 补发——第二跳排队后续接（深度 2 用例未覆盖的路径）
+    expect(set).toHaveBeenCalledTimes(3)
+    expect(set).toHaveBeenNthCalledWith(3, { contactEmail: 'three@x.y' })
+    resolveSet3({ ok: true, data: { contactEmail: 'three@x.y', theme: 'system' as const, uiScale: 'small' } })
+    await Promise.all([pSave1, pSave2, pSave3])
+    // 落盘序=发出序：终态恒=最后一次意图（save₃ 的值）
+    expect(useStore.getState().settings?.contactEmail).toBe('three@x.y')
     expect(useStore.getState().saving).toBe(false)
   })
 

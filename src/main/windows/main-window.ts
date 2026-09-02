@@ -32,7 +32,8 @@
  * - export function controlWindow(win: WindowLike, action: WindowControlAction)：
  *   执行后 isMaximized() 回读返回
  * - export function bindWindowStateEvents(win: MaximizeEventsLike, send)：maximize
- *   沿 → send({maximized:true}) / unmaximize 沿 → send({maximized:false})
+ *   沿 → send({maximized:true}) / unmaximize 沿 → send({maximized:false})；
+ *   F-G9 fullscreen 沿同入反映面（enter→true / leave→回读 isMaximized()）
  *
  * ── 架构层 ──
  * - main/windows 层；新通道走 shared/ipc/api-surface.ts 接线表（zod strict，
@@ -222,10 +223,15 @@ export interface WindowLike {
   isMaximized(): boolean
 }
 
-/** maximize 事件源最小形状（win.on('maximize'/'unmaximize')） */
+/** maximize 事件源最小形状（win.on('maximize'/'unmaximize'/'enter-full-screen'/
+ *  'leave-full-screen') + leave 后状态回读；结构化类型：测试免依赖 electron 真体） */
 export interface MaximizeEventsLike {
   on(event: 'maximize', listener: () => void): void
   on(event: 'unmaximize', listener: () => void): void
+  on(event: 'enter-full-screen', listener: () => void): void
+  on(event: 'leave-full-screen', listener: () => void): void
+  /** F-G9：leave-full-screen 后窗口可能回最大化态——回读真值而非恒 false */
+  isMaximized(): boolean
 }
 
 /**
@@ -258,6 +264,10 @@ export function controlWindow(win: WindowLike, action: WindowControlAction): { m
  * maximize 状态推送绑定：事件沿（含双击 drag 区最大化等 Windows 系统行为触
  * 发的沿）→ send 回传 renderer 图标态；初值不在本函数——renderer 挂载时
  * get-state 拉取（主控预裁②：时序自包含，不依赖 effect 与 load 事件先后）。
+ * F-G9：fullscreen 沿（F11 等走 enter/leave-full-screen 而非 maximize 沿，
+ * v8 SH3 门一 C12）补入反映面——enter 视占满屏发 true；leave 回读
+ * isMaximized()（离开后回最大化态图标不撒谎）。fullscreen 中点三键的
+ * toggle 行为不在本票面（图标反映 Only），备案。
  */
 export function bindWindowStateEvents(
   win: MaximizeEventsLike,
@@ -265,4 +275,6 @@ export function bindWindowStateEvents(
 ): void {
   win.on('maximize', () => send({ maximized: true }))
   win.on('unmaximize', () => send({ maximized: false }))
+  win.on('enter-full-screen', () => send({ maximized: true }))
+  win.on('leave-full-screen', () => send({ maximized: win.isMaximized() }))
 }
