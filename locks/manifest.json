@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T03:31:56.2786971Z",
+    "generatedAt":  "2026-09-02T05:07:26.1129365Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "2aa7563f7e2660975cad8242d48ae325f948084f2b5fe9bc83910a7ee50a9bb1"
+                      "sha256":  "c964a626de371030cbc273e04944f8360341d2b39e237ce4e2bb0fe8bf9f3eb5"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -243,7 +243,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "2244a00cd00d9bbbda3ee32ff246fb3cbf5150407f223f76d8db1c96cd8c7e41"
+                      "sha256":  "10f73611de55ad88e826e9811a902b7f6dc6ae0383680aae87ab20a776e437be"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -391,7 +391,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "fd7956ce856401b0b05867e23f85b3cf6c0917ba375b14a0403fd1a78b57bb67"
+                      "sha256":  "e8925045e23f91dbe79e9909ddc82d5d5091f155d4610bfc3f0a37dc593715c2"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -571,7 +571,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-extractor.test.ts",
-                      "sha256":  "c13eb90c1b6ac8c547cae47af53b64fe770f085f960920177a9c839ca92f74b8"
+                      "sha256":  "ddaee9fd76377449529bf5fc9c873900b0d3899c0425395c54a5fa5f5a23a372"
                   },
                   {
                       "path":  "tests/unit/renderer/edge-label-layout.test.ts",
@@ -643,7 +643,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
-                      "sha256":  "be5bcdaaad2703323a7ed44723f6d6d31299aebf701c32dbcbff03187d67cadc"
+                      "sha256":  "7d30575366dbd57f21d1eaac5c1b52f853fb050713b5f040664354a2ce9b9652"
                   },
                   {
                       "path":  "tests/unit/renderer/notes-panel-status.test.tsx",
@@ -739,7 +739,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tab-dirty.test.tsx",
-                      "sha256":  "b02b16f8f4930e09197a77a2d2beadf8af069c2dc81051e03f5075be59cb009a"
+                      "sha256":  "70cc02af0eaae8af638c1bb4ba06d9c7ac777a8acb970edbe6c7fb947abd1e8a"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
@@ -763,7 +763,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/workspace.store.test.ts",
-                      "sha256":  "c6ff86f9dce21a6b07bb3a9803af576be31083b6deb59b8078f44ae180d345aa"
+                      "sha256":  "bce5ca9b72bbdf5eb167dfc031d0a4fbd2c1a5d85c6e779f194b715b29cc01b0"
                   },
                   {
                       "path":  "tests/unit/renderer/workspace-switcher.test.tsx",

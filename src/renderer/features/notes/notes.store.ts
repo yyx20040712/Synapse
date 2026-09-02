@@ -17,6 +17,16 @@
  *   最新内容；首载落地前挂起——从未成功载入且草稿含用户编辑时不排程，重开
  *   面板不受影响：既有草稿是完整基线非半成品，正常防抖；save 成功仅在派发
  *   后无新编辑（编辑序号守卫）时清未保存标记与触碰记录）
+ * - discardPendingEdit(paperId)（单篇弃改收口——关脏 tab 确认丢弃后调）：清
+ *   防抖句柄+全部模块级编辑元数据（pendingEdit/touchedFields/lastEditedAt/
+ *   editSeq）+noteByPaper 条目（幂等——不存在亦无害），discardGen 自增使在途
+ *   save 回调按代际守卫全 no-op；discardAllPendingEdits()（全量弃改收口——
+ *   切课题确认后调）：遍历 pendingEdit 快照逐篇同收口。代际守卫一句话：弃改
+ *   后到达的保存回调不得复活任何本地状态（条目/pending 镜像/未保存标记——
+ *   in-flight 残余仅剩 DB 落地毫秒窗，票面已接受；跨格序列语义见锁定测试
+ *   「discard 族（A3 悬置写修票）」：①discard→重开=整版落地②discard→回调
+ *   到达=零状态变更③discardAll=零 timer 零草稿④App 切视图不 discard——
+ *   autosave-first 草稿存活）
  * - 错误契约（全 store 统一）：load 属动作型——失败上抛（unwrap 的 ApiClientError），
  *   由 NotesPanel catch 后 toast；saveSoon 失败时 saving 必须复位且 savedAt 不推进
  *   （= 仍有未保存内容，不静默丢稿），下一次 edit 再次触发 saveSoon 即自然重试
@@ -54,6 +64,10 @@ export interface NotesStore {
   load(paperId: string): Promise<void>
   edit(paperId: string, patch: { title?: string; contentMd?: string }): void
   saveSoon(paperId: string): void
+  /** 单篇弃改收口（关脏 tab 确认丢弃后调）——幂等，条目/元数据不存在亦无害 */
+  discardPendingEdit(paperId: string): void
+  /** 全量弃改收口（切课题确认后调）——遍历 pendingEdit 快照逐篇同收口 */
+  discardAllPendingEdits(): void
 }
 
 /** 自动保存防抖窗口（毫秒） */
@@ -79,6 +93,11 @@ const pendingEdit = new Set<string>()
  *  新编辑（序号前进）则不清未保存标记，新编辑由重排的防抖保存收尾 */
 const editSeq = new Map<string, number>()
 
+/** 每篇文献的弃改代际（discard 自增）——save 回调比对"派发快照"：弃改后到达的
+ *  保存回调不得复活任何本地状态（代际已变即全 no-op；gen 在每次派发时重取，
+ *  discard 后的新编辑链不受误伤）。in-flight 残余=仅 DB 落地毫秒窗（票面已接受） */
+const discardGen = new Map<string, number>()
+
 export const useNotesStore = create<NotesStore>()((set, get) => {
   // 每篇文献一个防抖句柄；换文献互不干扰
   const timers: Record<string, ReturnType<typeof setTimeout>> = {}
@@ -103,6 +122,24 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         [paperId]: { ...draftOf(paperId), ...patch }
       }
     })
+  }
+
+  // 弃改收口私有实现（单篇，discardPendingEdit 与 discardAllPendingEdits 共用）：
+  // 清防抖句柄+全部模块级编辑元数据+条目；discardGen 自增使在途 save 回调按
+  // 代际守卫全 no-op（防回调重建条目/pending 镜像）。全操作幂等——条目/元数据
+  // 不存在亦无害。跨格序列：①此后 load 走整版落地（pendingEdit 已清，不合并
+  // 回填）②在途 save 回调到达=零状态变更③discardAll 逐篇调用=零 timer 零草稿
+  // ④App 切视图（无确认）不经此处——autosave-first 草稿存活（既有语义保持）
+  const discardOne = (paperId: string): void => {
+    clearTimer(paperId)
+    pendingEdit.delete(paperId)
+    touchedFields.delete(paperId)
+    lastEditedAt.delete(paperId)
+    editSeq.delete(paperId)
+    discardGen.set(paperId, (discardGen.get(paperId) ?? 0) + 1)
+    const rest = { ...get().noteByPaper }
+    delete rest[paperId]
+    set({ noteByPaper: rest })
   }
 
   return {
@@ -186,13 +223,19 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         if (draft === undefined) {
           return
         }
-        // 派发快照：本次保存对应的编辑序号（派发后若又有 edit，序号前进）
+        // 派发快照：本次保存对应的编辑序号（派发后若又有 edit，序号前进）与
+        // 弃改代际（弃改后到达的回调按代际守卫全 no-op）
         const seqAtDispatch = editSeq.get(paperId) ?? 0
+        const genAtDispatch = discardGen.get(paperId) ?? 0
         setDraft(paperId, { saving: true })
         void unwrap(
           api.notes.save({ paperId, title: draft.title, contentMd: draft.contentMd })
         )
           .then((saved: Note) => {
+            // 代际守卫（首行）：discard 已发生——全 no-op，不 setDraft、不动
+            // pendingEdit/touchedFields（setDraft 会经 draftOf 重建已删条目+置
+            // pending 镜像，即"回调复活"；既有 editSeq 守卫在其后保持原位）
+            if ((discardGen.get(paperId) ?? 0) !== genAtDispatch) return
             // 编辑已落库：清"未保存编辑"标记与触碰记录（草稿自此等于服务器基线）
             // ——仅当派发后无新编辑（编辑序号未前进）；有新编辑则不清（新编辑仍
             // 受合并保护，由重排的防抖保存收尾）。失败路径不清——仍是未保存，
@@ -209,11 +252,26 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
             }
           })
           .catch(() => {
+            // 代际守卫（首行）：discard 已发生——全 no-op（条目已删，setDraft 会
+            // 重建它）；失败复位语义只对"未弃改"的保存链生效
+            if ((discardGen.get(paperId) ?? 0) !== genAtDispatch) return
             // 失败不推进 savedAt（未保存态延续）；saving 复位后下次 edit→saveSoon 重试；
             // pendingEdit 与镜像 pending 均保留——内容未落库，面板继续显示未保存
             setDraft(paperId, { saving: false })
           })
       }, SAVE_DEBOUNCE_MS)
+    },
+
+    discardPendingEdit(paperId) {
+      discardOne(paperId)
+    },
+
+    discardAllPendingEdits() {
+      // 遍历 pendingEdit 快照逐篇调同一私有实现（防遍历中变异——discardOne
+      // 会 delete pendingEdit 键）
+      for (const paperId of [...pendingEdit]) {
+        discardOne(paperId)
+      }
     }
   }
 })

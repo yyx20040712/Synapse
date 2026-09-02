@@ -29,6 +29,7 @@ vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
 })
 
 import { useWorkspaceStore, selectCurrentName } from '../../../src/renderer/features/workspaces/workspace.store'
+import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 const WS_A = { id: 'a', name: '课题甲', createdAt: '2026-01-01T00:00:00.000Z' }
 const WS_B = { id: 'b', name: '课题乙', createdAt: '2026-01-02T00:00:00.000Z' }
@@ -122,5 +123,37 @@ describe('workspace.store', () => {
     await useWorkspaceStore.getState().rename('b', '课题乙新名')
     expect(stubApi.workspaces.rename).toHaveBeenCalledWith({ id: 'b', name: '课题乙新名' })
     expect(useWorkspaceStore.getState().items[1]?.name).toBe('课题乙新名')
+  })
+})
+
+// ── A3 悬置写修票（2026-09-02，always-active——文末追加）──
+// switchTo 兼任切课题弃改收口点（INV-35④ 显式防悬置写）：确认通过/clean 直达
+// 即 discardAll notes 悬置编辑（reload 前零 timer 零内存草稿）；取消不弃改。
+// 经真实 notes.store 状态断言（edit 同步打点，不经 api——本文件 api 桩无 notes 域）。
+describe('workspace.store switchTo 弃改收口（A3/INV-35④）', () => {
+  beforeEach(() => {
+    useNotesStore.setState({ noteByPaper: {} })
+  })
+
+  it('确认接受→discardAll 生效（两篇 pending→零条目）；取消不弃改；clean 直达幂等', async () => {
+    useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
+    useNotesStore.getState().edit('p-1', { contentMd: '甲草稿' })
+    useNotesStore.getState().edit('p-2', { contentMd: '乙草稿' })
+    // 取消：零 IPC 零弃改（弃改语义只在确认后）
+    vi.spyOn(window, 'confirm').mockImplementation(() => false)
+    await useWorkspaceStore.getState().switchTo('b', { dirty: true })
+    expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+    expect(stubApi.workspaces.switch).not.toHaveBeenCalled()
+    // 确认接受：discardAll 收口（M4 锚：接线缺席即红）——reload 桩维持既有形态
+    vi.spyOn(window, 'confirm').mockImplementation(() => true)
+    await useWorkspaceStore.getState().switchTo('b', { dirty: true })
+    expect(useNotesStore.getState().noteByPaper['p-1']).toBeUndefined()
+    expect(useNotesStore.getState().noteByPaper['p-2']).toBeUndefined()
+    expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'b' })
+    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    // clean 直达：收口调用幂等（无 pending 时 no-op 不抛）
+    useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
+    await useWorkspaceStore.getState().switchTo('b', { dirty: false })
+    expect(reloadSpy).toHaveBeenCalledTimes(2)
   })
 })

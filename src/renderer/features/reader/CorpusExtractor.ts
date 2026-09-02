@@ -28,19 +28,23 @@
  *   | extracting | fulltext 页数据就绪 | extracting | sendItem fulltext，await ack 后再取下页（背压） |
  *   | extracting | figure 就绪（页快照/anno 裁剪） | extracting | sendItem figure 同上背压 |
  *   | extracting | 篇毕（末页 ack 完成） | →done | sendItem complete；destroy；→idle |
- *   | extracting | 文档加载失败/invoke 折叠错误/提取异常 | →failed | sendItem error+reason；destroy（失败也释放）；→idle |
+ *   | extracting | 文档加载失败 | →failed | sendItem error+reason；loadingTask.destroy 在加载器内终接清理——worker 线程不泄漏（F-R3）；→idle |
+ *   | extracting | invoke 折叠错误/提取异常 | →failed | sendItem error+reason；doc.destroy 归 finally——失败也释放；→idle |
  *   | extracting | 第二 extract-request 到达 | extracting（忽略） | 防御分支——main 编排保证串行（上一篇 complete/error 后才发下一篇），该分支仅防事件重发；sessionId 不同=日志+忽略 |
  *   | done/failed | （瞬时态） | →idle | 上报后立即回 idle（无驻留终态——终态语义在 main 侧会话） |
  *   跨格序列（审计面）：①篇失败→error 上报→idle→main 下一篇请求正常接续
- *   ②destroy 失败不阻断（尽力而为+console 日志，无 UI 面——文档对象已 detach
- *   即可）③全链多篇=extracting↔idle 交替，无跨篇状态残留
+ *   ②destroy 两面不阻断：加载失败面=loadingTask.destroy 自身拒绝被终接吞并
+ *   （原错误优先重抛——F-R3）；提取面=doc.destroy 尽力而为+console 日志（无
+ *   UI 面——文档对象已 detach 即可）③全链多篇=extracting↔idle 交替，无跨篇状态残留
  *
  * ── 接口层 ──
  * - export function createCorpusExtractor(deps): CorpusExtractor（deps 注入
  *   loadDocument/sendItem/createCanvas——测试桩面，模块零 window/pdfjs 静态
  *   依赖；生产组装=useExportCorpusEvents（AI-04），pdfjs 经 lazy dynamic
  *   import）；export const EXPORT_SNAPSHOT_SCALE；export function
- *   cropBoxPixels(rects, width, height)（裁剪包围盒纯数学——单测锚）
+ *   cropBoxPixels(rects, width, height)（裁剪包围盒纯数学——单测锚）；
+ *   export function settleLoadTask(task)（loadingTask 失败终接纯函数——单测锚，
+ *   F-R3：加载失败即 destroy 后重抛，worker 线程不泄漏）
  * - corpusItemReq 载荷契约=schemas.ts corpusItemReqSchema（四 kind 判别联合，
  *   单源——本模块不重复声明形状）
  * - pdfjs-dist 运行时 import 白名单第三成员（INV-16——白名单=PdfCanvas/
@@ -64,7 +68,7 @@
  *   本模块无独立 UI 面
  * - 测试：tests/unit/renderer/corpus-extractor.test.ts：多页页序/背压 max
  *   in-flight/anno 分页匹配与裁剪数学/failed 跨格接续/加载失败/destroy 尽力
- *   而为/防御分支/事件契约三面
+ *   而为/防御分支/事件契约三面/settleLoadTask 失败终接三径（F-R3）
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import type { Result } from '../../../shared/app-error'
@@ -171,11 +175,33 @@ function createDomCanvas(width: number, height: number): RenderCanvas {
 /** worker 只配一次（与 PdfCanvas 模块级设置同值幂等——两消费点独立初始化均安全） */
 let workerConfigured = false
 
+/** pdfjs loadingTask 形状契约（终接清理面——生产=PDFDocumentLoadingTask） */
+export interface PdfjsLoadTaskLike<T> {
+  readonly promise: Promise<T>
+  destroy(): Promise<void>
+}
+
+/**
+ * 取 settle 后文档；加载失败即销毁 loadingTask（终止其专属 worker 线程）后
+ * 原样重抛——失败路径 task 句柄不可达则 worker 泄漏（F-R3 排查 P6 实锤）。
+ * 成功路径不调 destroy（doc.destroy 归 runExtraction finally——与
+ * PdfDocProvider 句柄生命周期语义一致）；destroy 自身拒绝被吞并（原错误优先）。
+ */
+export async function settleLoadTask<T>(task: PdfjsLoadTaskLike<T>): Promise<T> {
+  try {
+    return await task.promise
+  } catch (err) {
+    await task.destroy().catch(() => undefined)
+    throw err
+  }
+}
+
 /**
  * 生产文档加载器（pdfjs lazy 动态 import——调用时才加载，测试注入桩不触发；
  * pdfjs-dist 白名单第三成员的运行时消费点 INV-16）。worker 必须先配置：
  * 未打开过 PDF 时 PdfCanvas 未加载，pdfjs 会回退默认 worker 路径（出网
  * 风险——CSP 拦截后提取失败）；worker 本地打包与 PdfCanvas 同源（ADR-0002）。
+ * 加载失败经 settleLoadTask 终接 loadingTask（F-R3——失败也终止 worker）。
  */
 export async function loadPdfDocument(url: string): Promise<PdfjsDocumentLike> {
   const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([
@@ -186,7 +212,8 @@ export async function loadPdfDocument(url: string): Promise<PdfjsDocumentLike> {
     GlobalWorkerOptions.workerSrc = (workerModule as { default: string }).default
     workerConfigured = true
   }
-  return getDocument(url).promise as unknown as PdfjsDocumentLike
+  const task = getDocument(url)
+  return settleLoadTask(task) as unknown as Promise<PdfjsDocumentLike>
 }
 
 export function createCorpusExtractor(deps: {

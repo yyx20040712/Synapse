@@ -93,6 +93,13 @@ export function useNotesDrafts(): Record<string, boolean> {
 /**
  * 关闭脏 tab 守门：clean 直接放行；dirty 弹 confirm（文案含文献名）——
  * 取消不放行/确认放行。TabBar 关闭叉的唯一入口。
+ * 兼任弃改收口点（A3 悬置写修票/INV-35④）：守门通过（confirm 返回 true 或
+ * clean 直通——两路汇合处）即 discardPendingEdit 弃置该篇 notes 悬置编辑
+ * （clean 直通=no-op 幂等），确认丢弃后 ≤1.5s 防抖不得再落笔 DB。
+ * **一切 tab 关闭路径必经本守门**（TabBar 双点两位在案——关闭叉与 Delete 键；
+ * 未来新增关闭路径同此约束——接缝归责）。reader.store.closeOne 不直接接：
+ * reader.store 无法直引 notes.store（白名单外）且反向接会成 import 环，
+ * 守门内收口=单点覆盖全部关闭路径。
  */
 export function confirmCloseDirty(paperId: string): boolean {
   const tab = useReaderStore.getState().tabs[paperId]
@@ -100,8 +107,11 @@ export function confirmCloseDirty(paperId: string): boolean {
   // fileName 去扩展名，fileName 亦空（tab 缺失/异常）兜底 paperId
   const fileNameTitle = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
   const title = tab !== undefined && tab.title !== '' ? tab.title : fileNameTitle
-  if (!isTabDirty(paperId, tabDirtySignals(paperId))) {
-    return true
+  // clean 直通短路（不弹窗）；dirty 走 confirm——两路在 allow 汇合
+  const allow = !isTabDirty(paperId, tabDirtySignals(paperId)) || window.confirm(`「${title}」有未保存的修改（灰点标记），关闭后将丢失未落库部分。确认关闭？`)
+  if (allow) {
+    // 弃改收口：守门通过即弃置该篇悬置编辑（含在途 save 的代际守卫打点）
+    useNotesStore.getState().discardPendingEdit(paperId)
   }
-  return window.confirm(`「${title}」有未保存的修改（灰点标记），关闭后将丢失未落库部分。确认关闭？`)
+  return allow
 }

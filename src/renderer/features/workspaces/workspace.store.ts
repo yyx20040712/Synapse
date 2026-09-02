@@ -10,10 +10,14 @@
  *   若被 dirty 取消，新课题仍须出现在侧栏/设置面列表）
  * - rename(id, name)：成功后 items 内即时改名（侧栏与设置面同源生效）
  * - switchTo(id, { dirty })：dirty 聚合值由 App 经 props/回调注入（禁跨域 store
- *   互引——本文件不 import reader/lineage 域）。流程：
+ *   互引——本文件不 import reader/lineage 域；唯一受控例外=notes.store：本
+ *   函数兼任切课题弃改收口点，A3/INV-35④ 显式防悬置写——check-quality
+ *   COMPOSITION_ROOT_ALLOW 白名单在案，workspaces 域其余文件引 notes 仍是
+ *   红线）。流程：
  *   幂等（id===currentId 直返）→ dirty 且未确认 → 取消（false，零 IPC）；
- *   确认或无 dirty → api.switch → window.location.reload()（ADR-0018 裁决：
- *   全新 stores 零 stale 态）→ true
+ *   确认或无 dirty → discardAllPendingEdits（弃置全部 notes 悬置编辑——
+ *   reload 前零 timer 零内存草稿，clean 直达=no-op 幂等）→ api.switch →
+ *   window.location.reload()（ADR-0018 裁决：全新 stores 零 stale 态）→ true
  *
  * ── 接口层 ──
  * - export const useWorkspaceStore / selectCurrentName（当前课题名推导 helper）
@@ -32,6 +36,7 @@
 import { create } from 'zustand'
 import { api, ApiClientError, unwrap } from '../../api/client'
 import type { WorkspaceItem } from '@shared/ipc/schemas'
+import { useNotesStore } from '../notes/notes.store'
 
 /** dirty 确认文案（沿用 main-window 退出守卫「说明+确认？」风格） */
 export const SWITCH_DIRTY_TEXT = '切换课题将丢弃未保存的标注/脉络修改。确认切换？'
@@ -99,6 +104,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {
     switchTo: async (id, { dirty }) => {
       if (id === get().currentId) return false
       if (dirty && !window.confirm(SWITCH_DIRTY_TEXT)) return false
+      // 弃改收口（A3/INV-35④ 显式防悬置写）：确认通过即弃置全部 notes 悬置
+      // 编辑（含清防抖句柄+在途 save 代际守卫打点）——reload 前零 timer 零内存
+      // 草稿，切课题悬置写 renderer 面闭（clean 直达=no-op 幂等）
+      useNotesStore.getState().discardAllPendingEdits()
       await unwrap(api.workspaces.switch({ id }))
       // ADR-0018：reload 出全新 stores，跨课题零 stale 态
       window.location.reload()

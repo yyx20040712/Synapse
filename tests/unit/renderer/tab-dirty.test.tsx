@@ -269,3 +269,30 @@ it('confirmCloseDirty 文案标题=title 优先（哈希 fileName 不入文案�
   expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('b8e7d6c5a4f3'))
   confirmSpy.mockRestore()
 })
+
+// ── A3 悬置写修票（2026-09-02，always-active——不经 guardedDescribe）──
+// confirmCloseDirty 兼任弃改收口点：守门通过（dirty 确认接受/clean 直通）即
+// discard 该篇 notes 悬置编辑（≤1.5s 防抖不得再落笔）；取消不放行不弃改。
+// 经真实 notes.store 状态断言（edit 同步打点，不经 api）。
+it('A3 弃改收口：dirty 确认接受→notes 条目被 discard；取消不弃改；clean 直通幂等', () => {
+  const confirmSpy = vi.spyOn(window, 'confirm')
+  useReaderStore.setState({
+    tabs: { 'p-1': makeTab('p-1', { fileName: '甲.pdf' }), 'p-clean': makeTab('p-clean') },
+    order: ['p-1', 'p-clean'],
+    activeId: 'p-1'
+  })
+  useNotesStore.getState().edit('p-1', { contentMd: '悬置草稿' })
+  expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+  // 取消：不放行且不弃改
+  confirmSpy.mockReturnValue(false)
+  expect(confirmCloseDirty('p-1')).toBe(false)
+  expect(useNotesStore.getState().noteByPaper['p-1']?.contentMd).toBe('悬置草稿')
+  // 确认接受：该篇条目被 discard（M3 锚：接线缺席即红）
+  confirmSpy.mockReturnValue(true)
+  expect(confirmCloseDirty('p-1')).toBe(true)
+  expect(useNotesStore.getState().noteByPaper['p-1']).toBeUndefined()
+  // clean 直通：不弹窗、收口幂等 no-op（无条目不抛错）
+  expect(confirmCloseDirty('p-clean')).toBe(true)
+  expect(confirmSpy).toHaveBeenCalledTimes(2) // 仅 dirty 两拍弹窗
+  confirmSpy.mockRestore()
+})

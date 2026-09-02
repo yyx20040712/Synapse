@@ -1,11 +1,13 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createCorpusExtractor,
   cropBoxPixels,
   EXPORT_SNAPSHOT_SCALE,
   type PdfjsDocumentLike,
+  type PdfjsLoadTaskLike,
   type PdfjsPageLike,
-  type RenderCanvas
+  type RenderCanvas,
+  settleLoadTask
 } from '../../../src/renderer/features/reader/CorpusExtractor'
 import {
   extractRequestEventSchema,
@@ -250,5 +252,78 @@ guardedDescribe('SR2-AI-02', 'CorpusExtractor —— 全文/图提取器（四�
     expect((fulltexts[0] as { payload: string }).payload).toContain('INTEGRATION')
     expect((fulltexts[1] as { payload: string }).payload).toContain('P2')
     expect(ctx.sent.at(-1)?.kind).toBe('complete')
+  })
+})
+
+// F-R3（AUDIT-C C-1 轨二 c）：loadingTask 失败终接纯函数三径——always-active
+// （不进 guardedDescribe——新用例恒跑；桩=接口结构桩无 mock 库，循既有件风格）
+describe('F-R3 settleLoadTask —— loadingTask 加载失败终接（worker 线程不泄漏）', () => {
+  interface TaskStub<T> extends PdfjsLoadTaskLike<T> {
+    destroyCalls: number
+  }
+
+  function taskStub<T>(
+    promise: Promise<T>,
+    destroyBehavior: () => Promise<void> = () => Promise.resolve()
+  ): TaskStub<T> {
+    const stub: TaskStub<T> = {
+      promise,
+      destroyCalls: 0,
+      destroy() {
+        stub.destroyCalls += 1
+        return destroyBehavior()
+      }
+    }
+    return stub
+  }
+
+  it('成功路径：透传 resolve 原值+destroy 未被调用', async () => {
+    const doc = { numPages: 1 }
+    const task = taskStub(Promise.resolve(doc))
+    const settled = await settleLoadTask(task)
+    expect(settled).toBe(doc)
+    expect(task.destroyCalls).toBe(0)
+  })
+
+  it('失败路径：重抛原错误（同引用）+destroy 恰一次', async () => {
+    const boom = new Error('bad url')
+    const task = taskStub(Promise.reject(boom))
+    await expect(settleLoadTask(task)).rejects.toBe(boom)
+    expect(task.destroyCalls).toBe(1)
+  })
+
+  it('顺序语义：重抛发生在 destroy settle 之后（await 销毁完才进错误上报——门二 W 补锚）', async () => {
+    let resolveDestroy: () => void = () => {}
+    const destroySettled = new Promise<void>((r) => { resolveDestroy = r })
+    const boom = new Error('加载失败')
+    let destroyReturned = false
+    const task: PdfjsLoadTaskLike<number> = {
+      promise: Promise.reject(boom),
+      destroy() {
+        destroyReturned = true
+        return destroySettled
+      }
+    }
+    const outcome = settleLoadTask(task)
+    // destroy 已同步返回但未 settle：此时重抛不得已发生（pending 证明——宏任务排空后仍无 rejection 落定）
+    await new Promise((r) => setTimeout(r, 0))
+    let rejected = false
+    void outcome.catch(() => { rejected = true })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(destroyReturned).toBe(true)
+    expect(rejected).toBe(false)
+    resolveDestroy()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(rejected).toBe(true)
+  })
+
+  it('失败且 destroy 自身 reject：仍重抛原错误（destroy 错误被吞并不覆盖）', async () => {
+    const boom = new Error('加载失败（原始错误）')
+    const task = taskStub(
+      Promise.reject(boom),
+      () => Promise.reject(new Error('destroy 自身失败'))
+    )
+    await expect(settleLoadTask(task)).rejects.toBe(boom)
+    expect(task.destroyCalls).toBe(1)
   })
 })

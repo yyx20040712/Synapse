@@ -784,3 +784,43 @@ kimi-main→kimi-backup 双失败 switches=2 落 deepseek 兜底——**门一�
   但 F3≠W-G1——W-G1 计数仍 1)。二波序(终裁 W-5+F-R2e 插位):
   F-R3 修票(轨一查证先行)>A3 悬置写>F-R2e 排查票(立案新入)>C-3 候选
   (W 级五条)>W-G1 定位。
+
+## AUDIT-C 二波修票场执行记录（2026-09-02，主控 GLM5.3）
+
+- **F-R3 修票闭环**（轨二 c 实现+轨一查证裁决+轨二 b 终裁不采）：轨一 e 上游
+  查证实锤=v5.5.207 落地 onFailure 终接守卫（`if (terminated) return;` 替换
+  `ensureNotTerminated()`——本仓 8/8 实测指纹的逃逸汇聚点；区间 v5.4.624→
+  v5.5.207 worker.js 单处 diff）+6.3.289 另获 destroy() 族硬化（claim
+  `_capability.promise.catch(()=>{})`+`_setupCapability`）+**master pdfManagerReady
+  悬尾仍未终接**——终裁=**不升级**（任一档位不承诺零同族噪声；devtools-only
+  噪声不换跨 major 回归面；升级再评估触发条件=上游悬尾族全消时连同 destroy()
+  族硬化一并重评；档案 f-r3-upstream-check.md 逐 tag 可复现）。轨二 c 实现=
+  settleLoadTask 纯函数（失败 destroy 恰一次+自身拒绝吞并+await settle 后重抛）
+  +接线+状态机表如实化——P6 泄漏面闭。门一 Kimi 3B/2W/0N PASS+门二 deepseek
+  2B/1W/2N PASS：W1 变异红证缺口主控补销（变异 A 同引用重抛/B 恰一次/C 去待
+  await——顺序测试新增 1 it）；W2=upstream 档补包入审。**tee 管道尾 $? 坑
+  亲踩**（v22 §5 在档教训重演：supp-a/b 尾行 exit=0 失真——vitest 摘要行为
+  红证本体，补正注入档）。INV-49 登记。
+- **C-A3 修票闭环**（notes 防抖弃改三件套）：discard API+in-flight 代际守卫
+  （.then/.catch 回调首行）+接线两点（confirmCloseDirty 守门内=一切 tab 关闭
+  必经；switchTo 确认后 discardAll——白名单受控例外机器锚）。main 归属校验
+  已在职（notes.service findById→NOT_FOUND 显式先行——扫描报告「FK 偶然
+  兜底」口径修正入 INV-35④）。门一 Kimi 0B/3W/8N 条件 PASS+门二 deepseek
+  B=0/W=2/N=4 条件 PASS，四条件收口内全销：W1=reject 版序列②主控压缩票
+  补锚（变异恰红——首版锚误落 guardedDescribe 块 ReferenceError 自纠+移
+  always-active 块）；W3=App.tsx:112 useTabDirtyAggregate 含 notes pending+
+  :162/:196 同一 quitDirty 注入 switcher/section（N-A 同销）；W2=接受残余
+  裁定+代码锚补证（notes.store.ts:161 `pendingEdit.has` 在 await 后=回调时点
+  读——discard 已清则必走整版落地分支 :176-191 无 saveSoon 补存，重建条目=
+  服务器基线，复活不可能；与实现者 §8「合并路径重建」不冲突=合并分支不可达
+  post-discard）；W-1=收口全量 verify 补跑（见下）。N-B（dirty=false+隐藏
+  pending+switch 失败三合窗）备案接受。INV-50 登记+INV-35④ 兑现修订。
+- **F-R2e 排查票**：票面已备（f-r2e-brief.md——断言面=y 轴在档+头号假说=
+  band 双态渲染 resolve 竞态（台账 :554 原名）+主控新增排除项「纯滚动撕裂族
+  不成立（boundingBox 对滚动平移不变）」+候选修法测量原子化）——**预算停点
+  触发本场未执行**，三波首项。C-3 W 级候选（D4/SelectionLayer 幽灵标注/
+  settings.save/ImportProgress）与 W-G1 同移交三波。
+- 门审路由流水：F-R3 门一 kimi-main in=7422/out=3386/65s 一次命中；F-R3 门二
+  deepseek in=11990/out=32766/300s；A3 门一 kimi-main out=12807/563s（routing
+  头 in=0=端点用量上报形态，实际输入=包体 ~36KB——成本口径注记）；A3 门二
+  deepseek in=11206/out=31053/310s。全链零换源。

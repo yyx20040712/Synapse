@@ -994,3 +994,50 @@ function createCrossPagePdf(): Uint8Array {
   }
   return out
 }
+
+/** A3 悬置写修票依赖：P7-C 面板链 + tab 骨架 + 灰点关闭确认（弃改收口点） */
+const A3_DEPS = [...C_DEPS, 'SR2-TABS-01', 'SR2-TABS-02', 'SR2-TABS-03'] as const
+
+test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线', async () => {
+  skipIfPending(A3_DEPS)
+  const title = '智慧水务 e2e A3 悬置写文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // 笔记面板输入（防抖窗内——fill 后立即关 tab，全程须 <1.5s）
+  const aside = win.getByTestId('reader-aside')
+  await aside.getByRole('tab', { name: '笔记' }).click()
+  const panel = win.getByTestId('reader-notes-panel')
+  await expect(panel).toBeVisible()
+  await panel.getByLabel('笔记正文').fill('A3 悬置写输入')
+  // pending 镜像在位（灰点信号即 dirty——关闭必经 confirm 弃改收口）
+  await expect(panel.getByText('未保存')).toBeVisible()
+
+  // confirm 自动接受先例（:227 注释删除弹层同款）
+  win.on('dialog', (d) => {
+    void d.accept()
+  })
+  // 防抖窗内关脏 tab（reader 视图——TabBar 挂 ReaderPage）：确认接受=弃改收口
+  // （清 timer+内存草稿+在途 save 代际守卫）
+  await win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab').first().getByRole('button').click()
+  await expect(win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab')).toHaveCount(0)
+
+  // 跨过整个防抖窗口：若 timer 未被弃改收口清掉，悬置写必已落 DB
+  await win.waitForTimeout(2200)
+
+  // 重开同文献：笔记=基线空串（非输入值——DB 复活面+内存合并回填面双闭）
+  await win.getByRole('button', { name: '文献库' }).click()
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+  await win.getByTestId('reader-aside').getByRole('tab', { name: '笔记' }).click()
+  const panel2 = win.getByTestId('reader-notes-panel')
+  // 载入完成锚（entry 未落地时 textarea 恒空串——先证 load 已整版落地再断值）
+  await expect(panel2.getByText('已保存')).toBeVisible({ timeout: 10_000 })
+  const body2 = panel2.getByLabel('笔记正文')
+  await expect(body2).toHaveValue('')
+  expect(await body2.inputValue()).not.toBe('A3 悬置写输入')
+  await app.close()
+})
