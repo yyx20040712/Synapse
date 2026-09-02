@@ -395,13 +395,35 @@ N10=INV-02 豁免清单(3 处合法 catch)无防线。deepseek 总评在档:
   备案 v19;N1 guard 分支零覆盖/N2 桩面 z=0 路径=后续单候选。
   票面/实现报告/门一审档:scripts/audits/f-r2-*.md 全套。
 
-### F-R3 [?] pdfjs stream pump 竞态 pageerror ——状态:**新登记(2026-08-31 F-R1 回炉副产,待排查)**
+### F-R3 [已闭环-排查] pdfjs stream pump 竞态 pageerror ——状态:**排查闭环(2026-09-02 AUDIT-C C-1——实锤+定性噪声型,修复转二波)**
 
 - **现象**:扫描式连开文献(快速连续 openPaper)触发 pdfjs
   `_reader.read` of null pageerror——PdfDocProvider 既有面(流取消
   竞态);常规单开零复现。
-- **处置**:低优先(用户路径=单开为主);排查点=PdfDocProvider loadingTask
-  销毁与 stream 泵竞态。
+- **排查闭环(2026-09-02 C-1 三屋:主控探针 r1~r7+只读子代理 M1 4.11M tok
+  +Kimi 门一「修订后采纳」1B/4W/4N+deepseek 门二「条件 PASS」1B/4W/6N
+  四放行条件票内全销)**:报告=scripts/audits/f-r3-investigation.md
+  (v3);探针=f-r3-probe.mjs(七轮 raw+json 落盘)。
+  **实锤**=pdfjs 4.10.38 worker 侧加载泵在 Terminate 置位后的 continuation
+  链无终接 catch——destroy 落在流加载/在途请求窗口时,`Error("Worker was
+  terminated")`(WorkerMessageHandler 级 ensureNotTerminated 抛)成 worker
+  世界 unhandled rejection,仅 CDP 仪表通道可见(renderer/主进程均无接收点
+  ——三路否定实证 r6/r7);**定性=噪声型非破坏型**(6/6 轮健康面完好,用户
+  路径零 UI 影响;单开 6/6+单次切换净测 3/3 零触发,连开 14%/次+开关循环
+  3%/次=相位依赖)。原始 `_reader.read of null` 指纹=同族 P1 TextLayer 泵
+  候选(prod 静态闭合+动态零命中;dev StrictMode 面备案)。
+  **副产实锤 P6**=CorpusExtractor 加载失败路径丢弃 task 句柄→不 destroy
+  →每次失败泄漏一个 worker 线程(头注状态机表「失败也释放」被证伪——文档
+  面修正随二波修票)。
+  **修法终排**:轨一(治噪声)=e 上游查证/升级唯一消除路径(d 指纹吞并死刑
+  ——无接收点;降格产物=主进程 level1 getTextContent 终止警告代理计数
+  r7 实证可收);轨二=b destroy 序列化+c CorpusExtractor 失败补 destroy
+  (a 共享 workerPort 死刑——4.10.38 Terminate 后 handler 销毁+单
+  pdfManager 槽源码实锤)。INV 增补草案随二波修票落定(候选宿主=新 INV
+  「pdfjs 文档生命周期销毁序」或 INV-30 增补)。INV-30/INV-16/CorpusExtractor
+  R2 裁决均不动摇。
+- **处置**:二波修票启动条件已满足(C-1 实锤);修票素材三件(根因/修法/
+  INV 草案)见报告 §5,可移交二波执行。
 
 ### F-A4 选区视觉并集自绘+标注贴行+工具条定位(用户需求 2026-08-31)——状态:**已闭环(2026-08-31 三屋+回炉 2)**
 
@@ -529,6 +551,7 @@ F-L1 用户已裁决变体 C+「防重叠遮挡+悬停滚动」两保证(F-L1-C 
 | F-G9 | fullscreen 不反映 maximize 图标 | N | 备案 | v8 SH3 门一 C12 |
 | F-G10 | P7-A 系统剪贴板竞态 flake | **已修** | v18 U2 闭环（2026-09-02）：清场标记+条件重读防线入 spec（[locked-change]），连跑 3 次 P7-A 全绿 | v8 §2→v18 U2 |
 | F-R2e | e2e「划选高亮重开原位」序列敏感脆弱面：全量序列第三跑 3.45px 超 2px 容差（同值复现）但单跑绿+U1 收口全量亦绿——窗态持久化/顺序依赖噪声（测试注释自认已知噪声源；R3-RDRSET「间歇红环境波动」前科同族） | N | 备案 v19 观察项：再现 ≥2 次立案（容差/窗态种子隔离两案裁决）。**2026-09-02 注入证伪**：窗态差假说被实测推翻——四档注入（height 799/width 1272/1200×700×2 跑）全绿，rel 归一坐标对窗态差不敏感（归一化设计有效性反获确认，注释无需勘误）；全量 3 连跑 29/29×3 未复现；剩余嫌疑=顺序依赖/负载态（无复现不可定位）；收口后失败计数仍=1，不触发 ≥2 立案线，维持观察 | v18 U2 三连跑+2026-09-02 A-1 探针 |
+| ~~F-R2e 续~~ | **2026-09-02 AUDIT-C 首波场第 2 现→立案线触发**：C-2 实现者全量 e2e 首跑，同用例（reader-text.spec :163 y 轴重锚容差）**同值指纹 3.45px>2 再现**（与本票 diff 无因果；单用例复跑绿）——**失败计数=2（同值），触 AGENTS「同用例 2 次=立案」通则，F-R2e 从观察备案升立案**。两现形态一致=全量序列内首现+复跑绿（顺序依赖/负载态嫌疑不变；窗态假说已证伪在案）。**立案处置：排查票排入二波后序列**（优先级低于 C-1 修复/A3——W-5 序插位），首步=全量序列内定位（非单跑形态——单跑绿在案两轮）+指纹矩阵（同值 3.45px 三现即高度锚定 band 双态渲染 resolve 竞态假说） | N→立案 | 2026-09-02 C-2 实现者 e2e 首跑+AGENTS 立案线通则 |
 
 ## 四、功能对偶矩阵状态(v10 §3.3 续)
 
@@ -708,3 +731,56 @@ D:\nodejs 已漂移 v25(localStorage 污染+ABI 面)——本机恒用
 **遗留池新增**:LG14 门一 N1(对话框同名标签 UX 面单点缺测)/
 N2(应用面 tags 元素无 min(1)——renderer 双守+preload 单客户端
 风险域窄)/LG15 编辑期外部删边竞态 throw 面(概率极低票外)。
+
+**2026-09-02 AUDIT-C 首波执行场收口(v21 交接执行序——三票全闭环,未触停点)**:
+三屋执行=主控 GLM5.3(bigmodel-coding-plan)+只读子代理×2(M1 静态 4.11M tok/
+79 工具;C-3 扫描 2.40M tok/52 工具——Agent 工具无 model 参数「环境限制
+统一档」欠账照记)+实现者子代理×1(C-2,10.5M tok/106 工具/~70min)+外部链
+×5(ds-call:kimi-main 一次命中 F-R3 门一 in≈25k/out 9.1k;C-2 门一
+kimi-main→kimi-backup 双失败 switches=2 落 deepseek 兜底——**门一门二同源
+异质性损失如实入账**(链状态机合法降级,F-R2 换源先例族);deepseek 单源
+×3=C-3 产出审/F-R3 门二/C-2 门二)。
+- **C-1 F-R3 排查闭环**(详 F-R3 条目):实锤=pdfjs 4.10.38 worker 泵无终接
+  catch(destroy×在途竞窗→worker 世界 unhandled rejection,仅 CDP 仪表通道
+  可见——三路否定实证);定性=噪声型非破坏型(6/6 健康完好);单开 6/6+单次
+  切换 3/3 零触发/连开 14%/开关循环 3%=相位依赖。门一 1B/4W/4N 全采纳
+  (B1 修法两轨重排)+门二 1B/4W/6N 条件 PASS 四放行条件**票内全销**
+  (r5~r7:S1b 净测 3/3/主进程捕获实验(d 死刑+level1 代理流发现)/S2①形态
+  源码核验/共享 workerPort 源码死刑)。**副产实锤 P6**=CorpusExtractor
+  失败路径泄漏 worker 线程(状态机表一格证伪)。修票素材三件可移交二波
+  (轨一=e 上游查证唯一消除路径;轨二=b 序列化+c 失败补 destroy)。
+  档案=f-r3-investigation.md(v3)+f-r3-probe.mjs(七轮)+gate1-kimi/
+  gate2-ds+brief×2。
+- **C-2 弱锚补强搭车票闭环**(三子项):①N6 真机直测落地(f-a3-n6-verify.mjs
+  零副作用四断言+穿透+对照+变异红证——**票面预判「菜单将出现」被证伪**:
+  onClick 守卫对真鼠标同拦=INV-42 口径修正(两层防线),门一裁处置有效);
+  ②F-ARCH4-M1 e2e 三向对照+变异矩阵(**root.contains=同页跨 textLayer
+  决定性防线**——变异 B 摘除即工具条出现;跨页拒绝=SelectionLayer 边界
+  检查独担;真浏览器不塌缩锚 E1 collapsed=false)——受锁 e2e 全量 30/30;
+  ③f-l4-verify 轮询化 15 处(终裁书「6 处」计数作废——grep 实测 15,
+  计数类数字脚本实测条款再验证)+grep=0+13/13 保持+「条件成立≠状态
+  稳定」反向实证(identity 初值中间帧竞态首跑两红——固定等待侥幸绿
+  病根在案)。门一有条件放行(0B/6W/3N,deepseek 兜底承接)+门二条件
+  PASS(0B/新增 W7=实现报告 ariaPressedOk 字段摘录笔误——探针无缺陷,
+  轮询成功标志 vs 目标值混淆,台账勘误不改档)。附条件全处置:INV-42
+  册面修正+AnnotationLayer/AiAnnotationLayer 注释同步(主控直做披露,
+  纯注释零行为变)+W1 脆弱点备案(弱锚清单)+W7 核验。弱锚清单 W-3/W-6/
+  W-9 销项(首三笔入已核销段);INV-44 备案③销项。
+- **C-3 时序面静态全枚举闭环**:audit-c-scan.md(9/9 store 全读+38 通道
+  +3 事件桥+PageColumn/SelectionLayer 态空间表——架构批 W7 欠账清偿)。
+  **结论=无 ≥B 级新增候选**(deepseek 对抗审 1B/5W/3N「需返工」→主控
+  终裁 B-1 不成立:paperId=UUID 单源生成器(001_init.sql:3 政策+
+  import.service.ts:124 randomUUID)跨库同 id=加密级不可能,FK 拒绝用户
+  路径成立;W/N 全采纳 v2 修订)。W 级清单五条(A3 悬置写主候选/D4
+  import×switch 无互斥/SelectionLayer 幽灵标注/settings.save 并发/
+  ImportProgress 无会话身份并入 D4)——二波修票立项依据。INV-22 窄窗
+  接受判据复核维持(窗口面无扩大)。
+- **F-R2e 第 2 现立案线触发**(C-2 实现者全量 e2e 首跑同用例同值 3.45px
+  指纹——AGENTS 通则 2 次=立案,详 F-R2e 条目续行)。
+- **工具缺口发现并修复**:unlock-protected.ps1 漏 docs/invariants.md 条目
+  (lock/check 两脚本有、unlock 没有——v21「双脚本同步扩」实漏第三脚本;
+  invariants.md 锁得进解不开)。已补条目([locked-change] 范围)。
+- 二波启动条件复核:C-1 实锤(✓)∨C-3 ≥1 B 级(✗)∨F3 立案(F-R2e 新入,
+  但 F3≠W-G1——W-G1 计数仍 1)。二波序(终裁 W-5+F-R2e 插位):
+  F-R3 修票(轨一查证先行)>A3 悬置写>F-R2e 排查票(立案新入)>C-3 候选
+  (W 级五条)>W-G1 定位。

@@ -110,10 +110,58 @@ async function freshUserData() {
 const userData = await freshUserData()
 const app = await electron.launch({ args: ['out/main/index.js'], env: { ...process.env, SYNAPSE_USER_DATA: userData } })
 const win = await app.firstWindow()
+
+// [C-2③ INV-44 备案③] 固定等待（waitFor Timeout 族）→条件轮询（CI 慢机误报防线）：
+// - pollUntil：waitForFunction 条件轮询（120ms 采样）；超时不抛错返回 false——
+//   红由后续 check 断言承担（保持探针 FAIL 语义而非脚本崩溃）；
+// - twoFrames：双 rAF——布局变化经 paint 两帧，RO（帧前派发）与 React 重渲染
+//   均已获执行机会，负向断言（「无变化」类）自此采样才有效（等待语义的条件化
+//   等价物，非固定 sleep——由帧事件驱动）。
+async function pollUntil(pageFn, arg, timeout) {
+  try {
+    await win.waitForFunction(pageFn, arg, { timeout, polling: 120 })
+    return true
+  } catch {
+    return false
+  }
+}
+const twoFrames = () =>
+  win.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))))
+/** 脉络图挂载 fit 完成且已稳定：节点>0+transform 非空+连续两次采样同值
+ *  （120ms 间隔——初始态 transform=identity（useState 初值）与 nodes 提交
+ *  →fit effect→二次提交之间存在中间帧窗口，「非空」条件会在 fit 落地前
+ *  放行（2026-09-02 本票实测翻车：t1/t2 采到 identity——A/transform 两红）；
+ *  稳定性判据消除该竞态：fit 值一旦提交即不再变（除非用户交互/resize） */
+const lineageReady = async () => {
+  await win.evaluate(() => {
+    delete window.__fitProbe
+  })
+  return pollUntil(
+    () => {
+      const vp = document.querySelector('[data-viewport]')
+      const t = vp === null ? '' : vp.getAttribute('transform') || ''
+      const s = window.__fitProbe === undefined ? (window.__fitProbe = {}) : window.__fitProbe
+      if (t === '' || document.querySelectorAll('[data-node-id]').length === 0) {
+        s.last = null
+        return false
+      }
+      if (s.last === t) {
+        return true
+      }
+      s.last = t
+      return false
+    },
+    undefined,
+    15_000
+  )
+}
+
 await win.getByRole('button', { name: '脉络' }).waitFor({ timeout: 20_000 })
-await win.waitForTimeout(800)
+// [C-2③] 启动 settle 条件化：页面 load 完成（React 渲染已由按钮 waitFor 保证）
+await pollUntil(() => document.readyState === 'complete', undefined, 5_000)
 await win.getByRole('button', { name: '脉络' }).click()
-await win.waitForTimeout(1500)
+// [C-2③] 固定 1500→轮询脉络挂载 fit 完成
+await lineageReady()
 
 const pageErrors = []
 win.on('pageerror', (e) => pageErrors.push(String(e)))
@@ -192,11 +240,15 @@ const brief = (m) =>
 const t1 = await win.evaluate(DUMP) // small 档挂载 fit
 log('A/small 挂载 fit：', brief(t1))
 await win.getByRole('button', { name: '设置' }).click()
-await win.waitForTimeout(600)
+// [C-2③] 固定 600→locator waitFor 条件轮询：档位钮可见=设置页已渲染
+await win.getByRole('button', { name: '中 110%' }).waitFor({ timeout: 8_000 })
 await win.getByRole('button', { name: '中 110%' }).click()
-await win.waitForTimeout(900) // save 落地→store→--ui-scale（真实通道全程）
+// [C-2③] 固定 900→轮询 settings 真实通道终点（save→settings.json→store→
+// --ui-scale：small=1→medium=1.1——属性值即通道落地观测点）
+await pollUntil(() => document.documentElement.style.getPropertyValue('--ui-scale') === '1.1', undefined, 8_000)
 await win.getByRole('button', { name: '脉络' }).click()
-await win.waitForTimeout(1200) // 重挂载：取数+fit effect+RO observe 初始通知
+// [C-2③] 固定 1200→轮询重挂载（取数+fit effect+RO observe 初始通知）
+await lineageReady()
 const t2 = await win.evaluate(DUMP)
 log('A/medium 换档后：', brief(t2))
 
@@ -227,7 +279,9 @@ check(
 // ── A-resize（RO 端到端裁决点）：挂载中窗口 resize——fit effect deps 未变，refit 只能来自 RO ──
 const bounds0 = await winBounds()
 await resizeBy(-240, -160)
-await win.waitForTimeout(900)
+// [C-2③] 固定 900→轮询 RO refit 生效（transform 离开 t2 值——摘 RO 即超时，
+// 由 A-resize 断言红，不在此崩）
+await pollUntil((prev) => (document.querySelector('[data-viewport]')?.getAttribute('transform') || '') !== prev, t2.transform, 8_000)
 const t3 = await win.evaluate(DUMP)
 log('A-resize/缩窗后：', brief(t3))
 const v3 = parseTransform(t3.transform)
@@ -243,12 +297,17 @@ const bx = t3.gBCR.x + t3.gBCR.w / 2
 const by = t3.gBCR.y + t3.gBCR.h / 2
 await win.mouse.move(bx, by)
 await win.mouse.wheel(0, -240) // 用户接管视口（userInteracted=true）
-await win.waitForTimeout(400)
+// [C-2③] 固定 400→轮询 wheel 视口更新（transform 离开 t3 值）
+await pollUntil((prev) => (document.querySelector('[data-viewport]')?.getAttribute('transform') || '') !== prev, t3.transform, 8_000)
 const wb = await win.evaluate(DUMP)
 const wv = parseTransform(wb.transform)
 check('B/pre/wheel-changed', wv !== null && viewportChanged(wv, v3), `wheel 后视口已变（${JSON.stringify(wv)}≠fit 值——前提锚）`)
 await resizeBy(-200, 0)
-await win.waitForTimeout(900)
+// [C-2③] 负向等待条件化：先正向轮询布局变化落地（svg clientWidth 离开
+// wheel 后值），再双 rAF 给 RO（帧前派发）+React 重渲染执行机会——此刻
+// 采样 transform 不变才构成有效负向断言
+await pollUntil((w) => (document.querySelector('[data-viewport]')?.closest('svg')?.clientWidth ?? -1) !== w, wb.client.w, 8_000)
+await twoFrames()
 const wa = await win.evaluate(DUMP)
 const wv2 = parseTransform(wa.transform)
 check('B/viewport-frozen', wv2 !== null && !viewportChanged(wv2, wv), `resize 后视口保持 wheel 值（${JSON.stringify(wv2)}==${JSON.stringify(wv)}——门语义不抢）`)
@@ -281,9 +340,13 @@ await win.evaluate(() => {
 })
 // 重挂载使新实例经 wrapper（patch 时挂载中的旧实例仍原生——不可观察，无妨）
 await win.getByRole('button', { name: '设置' }).click()
-await win.waitForTimeout(500)
+// [C-2③] 固定 500→轮询脉络卸载（viewport 不在场=页面互斥切换完成）
+await pollUntil(() => document.querySelector('[data-viewport]') === null, undefined, 8_000)
 await win.getByRole('button', { name: '脉络' }).click()
-await win.waitForTimeout(1200)
+// [C-2③] 固定 1200→两段条件轮询：wrapper 实例就位（mount 即注册）→
+// 脉络 fit 稳定（lineageReady 稳定性判据——同 t1 竞态防护）
+await pollUntil(() => window.__roRec !== undefined && window.__roRec.instances.length > 0, undefined, 8_000)
+await lineageReady()
 const ro0 = await win.evaluate(() => ({
   instanceCount: window.__roRec.instances.length,
   callbackCount: window.__roRec.callbackCount,
@@ -298,11 +361,16 @@ const countBefore = await win.evaluate(() => window.__roRec.callbackCount)
 const cssOriginal = await win.evaluate(() => document.documentElement.style.getPropertyValue('--ui-scale') || '1')
 const cssFlipped = cssOriginal === '1' ? '1.1' : '1'
 await win.evaluate(`document.documentElement.style.setProperty('--ui-scale', '${cssFlipped}')`)
-await win.waitForTimeout(900)
+// [C-2③] 诊断观察窗条件化（900ms 上限保持）：轮询布局盒变化落地
+// （clientWidth 离开前值）即提前采样；不变则窗口耗尽后采样
+// （cssZoomTriggersRO=false 语义保持——信息项不断言）
+await pollUntil((w) => (document.querySelector('[data-viewport]')?.closest('svg')?.clientWidth ?? -1) !== w, diagBefore.client.w, 900)
+await twoFrames()
 const diagAfter = await win.evaluate(DUMP)
 const countAfter = await win.evaluate(() => window.__roRec.callbackCount)
 await win.evaluate(`document.documentElement.style.setProperty('--ui-scale', '${cssOriginal}')`) // 恢复
-await win.waitForTimeout(600)
+// [C-2③] 固定 600→轮询 --ui-scale 恢复回值
+await pollUntil((orig) => (document.documentElement.style.getPropertyValue('--ui-scale') || '1') === orig, cssOriginal, 8_000)
 const diagnostic = {
   method: '挂载中直写 --ui-scale（非 settings 通道——真实 App 换档经设置页+重挂载，此路径 UI 不可达，仅供 fallback 裁决取证）',
   cssFlipped,
@@ -317,18 +385,26 @@ log('diagnostic（信息项）：', JSON.stringify(diagnostic))
 //    再 resize→计数不增（回调不再生效）──
 const c0 = await win.evaluate(() => window.__roRec.callbackCount)
 await resizeBy(0, -140)
-await win.waitForTimeout(900)
+// [C-2③] 固定 900→轮询 RO 派发计数增加（resize 生效的正向条件）
+await pollUntil((c0v) => window.__roRec.callbackCount > c0v, c0, 8_000)
 const c1 = await win.evaluate(() => window.__roRec.callbackCount)
 check('C/resize-callback-fired', c1 > c0, `resize 后 RO 派发计数 ${c0}→${c1}（浏览器真派发——sanity 前提锚）`)
 await win.getByRole('button', { name: '设置' }).click()
-await win.waitForTimeout(700)
+// [C-2③] 固定 700→locator waitFor 条件轮询：设置页渲染=脉络 unmount
+// （页面互斥）——disconnect 采样前提
+await win.getByRole('button', { name: '中 110%' }).waitFor({ timeout: 8_000 })
 const roUnmounted = await win.evaluate(() => ({
   disconnected: window.__roRec.instances.every((i) => i.disconnected),
   instanceCount: window.__roRec.instances.length
 }))
 check('C/disconnect-on-unmount', roUnmounted.disconnected, `unmount 后全部 ${roUnmounted.instanceCount} 个 wrapper 实例 disconnect 被调（成对清理）`)
+// [C-2③] 负向等待条件化：resize 前取渲染视口高（脉络已 unmount、svg 不在
+// 场——用 documentElement.clientHeight 作布局观测点），正向轮询视口变化
+// 落地（离开前值）+双 rAF——此后采样计数不增才构成有效负向断言
+const vhPre = await win.evaluate(() => document.documentElement.clientHeight)
 await resizeBy(0, 100)
-await win.waitForTimeout(900)
+await pollUntil((h) => document.documentElement.clientHeight !== h, vhPre, 8_000)
+await twoFrames()
 const c2 = await win.evaluate(() => window.__roRec.callbackCount)
 check('C/no-callback-after-disconnect', c2 === c1, `disconnect 后再 resize 派发计数不增（${c1}→${c2}——回调不再生效，无泄漏）`)
 

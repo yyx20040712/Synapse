@@ -806,3 +806,191 @@ test('F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（
   }
   await app.close()
 })
+
+/**
+ * [C-2②/F-ARCH4-M1] 跨根选区防线真浏览器定性（三向对照）：
+ * - E3 真鼠标跨页拖选（真用户路径+INV-02 锁）→ toast `选区跨页，不支持创建
+ *   标注` 可见 + 无 selection-toolbar；
+ * - E1 程序化同页跨 textLayer 边界（anchor=页 canvas offset0 / focus=textLayer
+ *   文本节点 offset>0——closestPageRoot 同页根、过 SelectionLayer 边界检查；
+ *   真 Chromium 语义实验，jsdom 做不到的形态）→ 静默不建锚（无 toast 且无
+ *   工具条——selectionToAnchor 内 root.contains 防线拒）；
+ * - E0 对照页内有效选区（同 textLayer 两文本节点）→ selection-toolbar 出现
+ *   ——证明 E1 的静默是防线拒绝而非夹具失灵。
+ * 定性结论（实证落 scripts/audits/c2-impl.report.md E2 变异矩阵）：
+ * - 真浏览器不塌缩跨界选区（E1/E3 断言 isCollapsed=false——jsdom 才塌缩，
+ *   isCollapsed 先兜在真机不可达）；
+ * - 跨页拒绝由 SelectionLayer 的 closestPageRoot 边界检查承担（变异 A 单点
+ *   摘除→E3 红：无 toast）；同页跨 textLayer 拒绝归属见变异 B 实测。
+ */
+test('F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 e2e 跨根防线文献'
+  const { app } = await seedAndLaunch(title, createCrossPagePdf())
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText('P1A SMART WATER TEST DOC').first()).toBeVisible({ timeout: 20_000 })
+
+  // 滚到两页交界：按页盒几何（全长真实占位——P2 文本层未渲染也可算）把
+  // 页1 盒底×页2 盒顶的中点对到视口中心
+  await win.evaluate(() => {
+    const boxes = Array.from(document.querySelectorAll('[data-page-box]'))
+    const col = document.querySelector('[data-page-column="ready"]')
+    const scroller = col?.closest('.overflow-auto') as HTMLElement | null
+    if (boxes.length < 2 || scroller === null) {
+      throw new Error(`交界前提不成立: pageBoxes=${boxes.length} scroller=${scroller !== null}`)
+    }
+    const r1 = boxes[0]!.getBoundingClientRect()
+    const r2 = boxes[1]!.getBoundingClientRect()
+    const mid = (Math.min(r1.bottom, r2.bottom) + Math.max(r1.top, r2.top)) / 2
+    scroller.scrollTop += mid - scroller.clientHeight / 2
+  })
+  // 条件轮询：两交界行同视口（P2 页懒渲染入窗即就绪——占位盒驱动）
+  await win.waitForFunction(
+    () => {
+      const vis = (prefix: string): boolean => {
+        const s = Array.from(document.querySelectorAll('.textLayer span')).find((el) =>
+          (el.textContent ?? '').startsWith(prefix)
+        )
+        if (s === undefined) return false
+        const r = s.getBoundingClientRect()
+        return r.top > 0 && r.bottom < window.innerHeight - 4 && r.width > 5
+      }
+      return vis('P1B ') && vis('P2 ')
+    },
+    undefined,
+    { timeout: 10_000, polling: 200 }
+  )
+
+  // —— E3：真鼠标跨页拖选（P1B 行→P2 行；crib f-a3-verify dragSelect 的
+  //    12 步插值+16ms 步进=手势时序）→ toast 拒绝可见+无工具条 ——
+  const e3 = await win.evaluate(() => {
+    const spans = Array.from(document.querySelectorAll('.textLayer span'))
+    const p1b = spans.find((s) => (s.textContent ?? '').startsWith('P1B '))
+    const p2 = spans.find((s) => (s.textContent ?? '').startsWith('P2 '))
+    if (p1b === undefined || p2 === undefined) throw new Error('E3 前提不成立（交界 span 缺失）')
+    const r1 = p1b.getBoundingClientRect()
+    const r2 = p2.getBoundingClientRect()
+    return { x1: r1.x + r1.width * 0.3, y1: r1.y + r1.height / 2, x2: r2.x + r2.width * 0.7, y2: r2.y + r2.height / 2 }
+  })
+  await win.mouse.move(e3.x1, e3.y1)
+  await win.mouse.down()
+  for (let i = 1; i <= 12; i += 1) {
+    await win.evaluate(() => new Promise<void>((resolve) => setTimeout(resolve, 16)))
+    await win.mouse.move(e3.x1 + ((e3.x2 - e3.x1) * i) / 12, e3.y1 + ((e3.y2 - e3.y1) * i) / 12)
+  }
+  await win.mouse.up()
+  // toast 可见=mouseup 评估已完成的正向锚（同次 evaluate 内 pending 已清——
+  // 工具条缺席断言自此即刻有效，无需观察窗）
+  await expect(win.getByText('选区跨页，不支持创建标注')).toBeVisible({ timeout: 3_000 })
+  await expect(win.getByTestId('selection-toolbar')).toHaveCount(0)
+  // 定性锚：真浏览器不塌缩跨界选区（jsdom 才塌缩——isCollapsed 先兜不可达）
+  const e3sel = await win.evaluate(() => {
+    const s = window.getSelection()
+    return { collapsed: s?.isCollapsed ?? true, len: s !== null && !s.isCollapsed ? s.toString().length : 0 }
+  })
+  expect(e3sel.collapsed, 'E3 跨页选区在真浏览器不塌缩').toBe(false)
+  expect(e3sel.len).toBeGreaterThan(0)
+  await win.evaluate(() => window.getSelection()?.removeAllRanges())
+  // toast 退场（info 档 3500ms 自动消失——条件轮询等隐；防 E1 的无 toast
+  // 断言被 E3 残留卡片误红）
+  await expect(win.getByText('选区跨页，不支持创建标注')).toBeHidden({ timeout: 8_000 })
+
+  // —— E1：程序化同页跨 textLayer 边界（canvas anchor×textLayer focus）→
+  //    静默不建锚：无 toast 且无工具条 ——
+  const e1collapsed = await win.evaluate(() => {
+    const root = document.querySelector('[data-page-root]')
+    const canvas = root?.querySelector('canvas') ?? null
+    const span = Array.from(root?.querySelectorAll('.textLayer span') ?? []).find((s) =>
+      (s.textContent ?? '').startsWith('P1A ')
+    )
+    if (root === null || canvas === null || span === undefined || span.firstChild === null) {
+      throw new Error('E1 前提不成立（页根/canvas/P1A span 缺失）')
+    }
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.setBaseAndExtent(canvas, 0, span.firstChild, 3)
+    document.dispatchEvent(new Event('selectionchange'))
+    return sel?.isCollapsed ?? true
+  })
+  expect(e1collapsed, 'E1 跨 textLayer 选区在真浏览器不塌缩（jsdom 才塌缩）').toBe(false)
+  // 防抖 settled 观察窗（票面处方：≥600ms 条件轮询——SELECTION_DEBOUNCE_MS
+  // =200 的 trailing 评估余量；时间下限经 poll 表达，非固定 sleep）
+  const t0 = await win.evaluate(() => performance.now())
+  await expect
+    .poll(() => win.evaluate(() => performance.now()), { timeout: 5_000 })
+    .toBeGreaterThanOrEqual(t0 + 600)
+  await expect(win.getByTestId('selection-toolbar')).toHaveCount(0)
+  await expect(win.getByText('选区跨页，不支持创建标注')).toHaveCount(0)
+  await win.evaluate(() => window.getSelection()?.removeAllRanges())
+
+  // —— E0 对照：同 textLayer 两文本节点（P1A 行首×P1B 行内）→ 工具条出现 ——
+  await win.evaluate(() => {
+    const spans = Array.from(document.querySelectorAll('[data-page-root] .textLayer span'))
+    const a = spans.find((s) => (s.textContent ?? '').startsWith('P1A '))
+    const b = spans.find((s) => (s.textContent ?? '').startsWith('P1B '))
+    if (a === undefined || b === undefined || a.firstChild === null || b.firstChild === null) {
+      throw new Error('E0 前提不成立（P1A/P1B span 缺失）')
+    }
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.setBaseAndExtent(a.firstChild, 0, b.firstChild, 4)
+    document.dispatchEvent(new Event('selectionchange'))
+  })
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 3_000 })
+  await win.evaluate(() => window.getSelection()?.removeAllRanges())
+  await app.close()
+})
+
+/**
+ * [C-2②] 跨页交界 fixture：页1 双行（y=100 上行 P1A=E1/E0 素材/y=72 底行
+ * P1B=E3 起点）+页2 顶行（y=720=E3 终点）——两交界行几何距离 ~220px < 视口
+ * 高，滚到交界即可同视口（pdf-factory 全高页相邻行距 ~1056px 做不到）。
+ * 组装器 crib tests/utils/pdf-factory.ts assemblePdf（受锁不可改——本文件
+ * 内联同款，UTF-8 字节口径一致；正文纯 ASCII 无需 esc）。对象布局：
+ * 1=Catalog 2=Pages 3/4=Page 5/6=Contents 7=Font。
+ */
+function createCrossPagePdf(): Uint8Array {
+  const stream1 = [
+    'BT /F1 18 Tf 72 100 Td (P1A SMART WATER TEST DOC) Tj ET',
+    'BT /F1 18 Tf 72 72 Td (P1B SMART WATER TEST DOC) Tj ET'
+  ].join('\n')
+  const stream2 = 'BT /F1 18 Tf 72 720 Td (P2 SMART WATER TEST DOC) Tj ET'
+  const enc = new TextEncoder()
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>',
+    `<< /Length ${enc.encode(stream1).length} >>\nstream\n${stream1}\nendstream`,
+    `<< /Length ${enc.encode(stream2).length} >>\nstream\n${stream2}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ]
+  const parts: Uint8Array[] = []
+  let byteLen = 0
+  const push = (s: string): void => {
+    const b = enc.encode(s)
+    parts.push(b)
+    byteLen += b.length
+  }
+  push('%PDF-1.4\n')
+  const offsets: number[] = []
+  objects.forEach((body, i) => {
+    offsets.push(byteLen)
+    push(`${i + 1} 0 obj\n${body}\nendobj\n`)
+  })
+  const xrefStart = byteLen
+  push(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`)
+  for (const off of offsets) {
+    push(`${String(off).padStart(10, '0')} 00000 n \n`)
+  }
+  push(`trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+  const out = new Uint8Array(byteLen)
+  let cursor = 0
+  for (const part of parts) {
+    out.set(part, cursor)
+    cursor += part.length
+  }
+  return out
+}

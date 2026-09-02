@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "script": "f-r3-probe.mjs",
+    "date": "2026-09-02T02:28:51.138Z",
+    "params": {
+      "n": 9,
+      "delayMs": 0,
+      "rounds": 2,
+      "closeMs": 120
+    },
+    "pdfjs": "4.10.38 (package.json invariants-checked)"
+  },
+  "capture": {
+    "pageErrors": [
+      {
+        "phase": "S1-rapid-open",
+        "openSeq": 1,
+        "msg": "Error: Worker was terminated",
+        "firstLine": "    at ensureNotTerminated (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/out/renderer/assets/pdf.worker.min-yatZIOMy.mjs:21:1365306)"
+      }
+    ],
+    "consoleErrors": [],
+    "unhandled": [],
+    "mainConsole": []
+  },
+  "phases": {
+    "S0": {
+      "rendered": true,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    },
+    "S1": {
+      "n": 9,
+      "elapsedMs": 1264,
+      "pageErrors": 1,
+      "consoleErrors": 0,
+      "msgSamples": [
+        "Error: Worker was terminated"
+      ]
+    },
+    "S1b": {
+      "pageErrors": 0,
+      "errors": []
+    },
+    "S2": {
+      "mode": "open→120ms→closeTab",
+      "rounds": 2,
+      "cycles": 18,
+      "closeFail": 0,
+      "elapsedMs": 4230,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    },
+    "S3": {
+      "rendered": true,
+      "spanCount": 260,
+      "pageErrors": 0
+    }
+  },
+  "library": {
+    "cardCount": 9
+  },
+  "fingerprint": {
+    "pageErrorMessages": [
+      {
+        "msg": "Error: Worker was terminated",
+        "count": 1
+      }
+    ],
+    "consoleErrorSamples": [],
+    "unhandledCount": 0
+  }
+}

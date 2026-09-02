@@ -208,7 +208,7 @@ export function AnnotationLayer(props: {
               className="absolute"
               style={selectionMode ? { ...rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands ?? fallbackBands, r)), pointerEvents: 'none' } : rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands ?? fallbackBands, r))}
               onClick={() => {
-                // 选择模式=穿透零副作用（pointerEvents:none 达成，守卫兜程序化派发）
+                // 选择模式=穿透零副作用（pointerEvents:none+守卫兜一切点击——真鼠标同拦，C-2① 证）
                 if (selectionMode) return
                 // 点击他条=切目标（菜单接管收起编辑器）；反向同步侧栏高亮（C-05）
                 useReaderStore.getState().notifyNoteHighlight(a.id)

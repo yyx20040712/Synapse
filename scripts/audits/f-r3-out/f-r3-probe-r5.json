@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "script": "f-r3-probe.mjs",
+    "date": "2026-09-02T02:27:44.221Z",
+    "params": {
+      "n": 1,
+      "delayMs": 0,
+      "rounds": 0,
+      "closeMs": 120
+    },
+    "pdfjs": "4.10.38 (package.json invariants-checked)"
+  },
+  "capture": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "unhandled": [],
+    "mainConsole": []
+  },
+  "phases": {
+    "S0": {
+      "rendered": true,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    },
+    "S1": {
+      "n": 1,
+      "elapsedMs": 157,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "msgSamples": []
+    },
+    "S1b": {
+      "pageErrors": 0,
+      "errors": []
+    },
+    "S2": {
+      "mode": "open→120ms→closeTab",
+      "rounds": 0,
+      "cycles": 0,
+      "closeFail": 0,
+      "elapsedMs": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    },
+    "S3": {
+      "rendered": true,
+      "spanCount": 260,
+      "pageErrors": 0
+    }
+  },
+  "library": {
+    "cardCount": 9
+  },
+  "fingerprint": {
+    "pageErrorMessages": [],
+    "consoleErrorSamples": [],
+    "unhandledCount": 0
+  }
+}

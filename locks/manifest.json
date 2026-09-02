@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T00:49:35.6295179Z",
+    "generatedAt":  "2026-09-02T03:31:56.2786971Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "e7a0476071001806dd2088ec51fd231f4ab40ba37a8a0e3d95bc2cc1b3101f64"
+                      "sha256":  "2aa7563f7e2660975cad8242d48ae325f948084f2b5fe9bc83910a7ee50a9bb1"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -74,6 +74,10 @@
                       "sha256":  "f60aa5d376739f8051c1319b591eb27ce2296420cf274a43947cfa8aaa2d54ef"
                   },
                   {
+                      "path":  "scripts/audits/f-a3-n6-verify.mjs",
+                      "sha256":  "488fa953ee7ce3bf349f5b26569e6a175b2c76557709b96db4320dece0a7ab09"
+                  },
+                  {
                       "path":  "scripts/audits/f-a3-verify.mjs",
                       "sha256":  "fad78853b04dce3bf4b4bfc7dfa5d45830af0550856ac0191324ef34323d0c02"
                   },
@@ -135,7 +139,7 @@
                   },
                   {
                       "path":  "scripts/audits/f-l4-verify.mjs",
-                      "sha256":  "6ecba6f1d97035efceca8fca1c251f72749bb3c43da96dc47c6165e095be263b"
+                      "sha256":  "0905f679fad6bf91462403f439a590001b7dc8887724f22bb093643b0eec5195"
                   },
                   {
                       "path":  "scripts/audits/f-lg13-verify.mjs",
@@ -172,6 +176,10 @@
                   {
                       "path":  "scripts/audits/f-r2-probe2.mjs",
                       "sha256":  "6e585b9a79ab49521568e1d618e6d06bb6c54e8bd9d9ec3801e70b11de9a4328"
+                  },
+                  {
+                      "path":  "scripts/audits/f-r3-probe.mjs",
+                      "sha256":  "14860d0f4eaf391ebf05f95bbd531355d93f7c9a0fac6f4e8f5f55910d4e7c77"
                   },
                   {
                       "path":  "scripts/audits/f-sw1-fix-verify.mjs",
@@ -267,7 +275,7 @@
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
-                      "sha256":  "ad26aca64f57ac0fae2eedcad8dd2fda87e8a47e92b1bd86b2b21de41f4b0fab"
+                      "sha256":  "63eb9cc27d2989193ea9bd3a78d13173acdc27934034c7c4c5f6c89142774a5f"
                   },
                   {
                       "path":  "src/main/db/migrations/001_init.sql",
@@ -383,7 +391,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "09c85870add8130aacdf772e26669a4f78d49afe322f91b7c3abb4f7aa886306"
+                      "sha256":  "fd7956ce856401b0b05867e23f85b3cf6c0917ba375b14a0403fd1a78b57bb67"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",

@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "script": "f-a3-n6-verify.mjs",
+    "date": "2026-09-02T03:18:16.948Z"
+  },
+  "scenarios": {
+    "B_n6": {
+      "ariaPressedOk": true,
+      "click": {
+        "x": 1314.5625228881836,
+        "y": 554.0124878883362,
+        "w": 138,
+        "h": 12
+      },
+      "rectPointerEvents": {
+        "total": 9,
+        "computed": [
+          "none"
+        ]
+      },
+      "hitTest": {
+        "tag": "SPAN",
+        "testid": null,
+        "cls": "",
+        "inTextLayer": true,
+        "isRect": false
+      },
+      "menuAppeared": false,
+      "editorAppeared": false,
+      "selectionCollapsed": true,
+      "selLen": 0,
+      "idCount": {
+        "before": 1,
+        "after": 1
+      },
+      "checks": {
+        "a_noMenu": true,
+        "b_noEditor": true,
+        "c_collapsed": true,
+        "d_idCountUnchanged": true,
+        "e_penetrated": true
+      },
+      "styleNone": true
+    },
+    "AI_n6": {
+      "aiRectsPresent": false
+    },
+    "C_contrast": {
+      "ariaPressedOk": true,
+      "rectPointerEvents": {
+        "total": 9,
+        "computed": [
+          "auto"
+        ]
+      },
+      "menuShown": true
+    }
+  },
+  "prep": {
+    "drag": {
+      "x1": 1246.9043731689453,
+      "y1": 349.7687683105469,
+      "x2": 1209.7448638916017,
+      "y2": 578.218738079071
+    },
+    "toolbarByRealMouse": true
+  }
+}

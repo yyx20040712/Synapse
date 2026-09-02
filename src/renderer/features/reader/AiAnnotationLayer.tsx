@@ -25,7 +25,8 @@
  *   本单延展，W08-3 处置对侧已兑现）
  * - **[F-A3 增补] 选择模式（INV-42）**：store 自订阅 per-tab selectionMode
  *   （AnnotationLayer 同型）——选择模式下 rect pointerEvents:none（点击穿透
- *   零副作用+onClick 守卫兜程序化派发）+进入即清选中描边（S4：selectedId
+ *   零副作用+onClick 守卫兜一切到达 rect 的点击——真鼠标与程序化派发同拦，
+ *   C-2① 修正）+进入即清选中描边（S4：selectedId
  *   置 null，data-highlight 全 false，paint 前收起）；切回常规恢复 auto 不
  *   自动重选。SelectionLayer 不消费模式（正交零改动）。
  * - **[F-07 增补] 容器去 mixBlendMode:'multiply'**：AI-09 起容器级 multiply 与
