@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T11:59:05.7941554Z",
+    "generatedAt":  "2026-09-02T13:01:12.9375627Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "4a82a6facdd2adea530f132b936c76a422a07358bec6f7aa1ec2165328759590"
+                      "sha256":  "9bcaeddb00c842fff3db1e972f5ca465188dbfac8e09ff1b93e9f2b4242a2c5a"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -114,6 +114,10 @@
                       "sha256":  "5d3cdf49c9ce5ffacd906665ec9adc8410f8ce9d2590fd60e7e99f719f664804"
                   },
                   {
+                      "path":  "scripts/audits/f-d4-gen-gate1-brief.mjs",
+                      "sha256":  "ce55586cd19531935a6d9fe08cc8a549515f89a9e89ed70d1b0b99b1830cdde0"
+                  },
+                  {
                       "path":  "scripts/audits/f-l1c-forensics.mjs",
                       "sha256":  "9e9dbb3fa77ece674eb358156b2279234ebf7457fc073439648accd9016b6146"
                   },
@@ -184,6 +188,10 @@
                   {
                       "path":  "scripts/audits/f-r3-probe.mjs",
                       "sha256":  "14860d0f4eaf391ebf05f95bbd531355d93f7c9a0fac6f4e8f5f55910d4e7c77"
+                  },
+                  {
+                      "path":  "scripts/audits/f-sl-gen-gate1-brief.mjs",
+                      "sha256":  "52e70b8cec46f3b854c355d69cb8d0635b304dd91b27e06c6e70408fc11111be"
                   },
                   {
                       "path":  "scripts/audits/f-sw1-fix-verify.mjs",
@@ -327,7 +335,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "f6f3dec5104b685baf8f72774490991e22d4c0ef91a40bd38e03532e90d99c52"
+                      "sha256":  "76508df3d5ebe7877feb47e858f9488dbbcc907357543fac4045cf668d95dce9"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -586,6 +594,10 @@
                       "sha256":  "95444216a7b010f5a486efa5cb4bf1d67ecca6c91c4f18d29e645a2f713b3da8"
                   },
                   {
+                      "path":  "tests/unit/renderer/import-dropzone.test.tsx",
+                      "sha256":  "350f8b66d39f44491ad44fa48edd24b01c6b049d36e1c002afa3aa3f7749f52a"
+                  },
+                  {
                       "path":  "tests/unit/renderer/keymap.test.ts",
                       "sha256":  "e9cf9ddb57956e898a3610ff8f6a36da32d32e4f0cd65856af1bc12fd0b7d307"
                   },
@@ -691,7 +703,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "9185aaf3d2ef8d6b63f378035e4607af65f29abd624643e42da0d06675de4e6f"
+                      "sha256":  "c2b636c8d5afa72ca6cba4012fa1650d995d663d2c0e5bff93c9841948ed7691"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-double-page.test.tsx",
@@ -711,7 +723,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-store-undo-race.test.ts",
-                      "sha256":  "2c61f3049a383ac6b901fd660aabcd979e33fdf19ed83f79e656262500479e1e"
+                      "sha256":  "49516a94b61d5f716f6b50480ae653433fbcd026e0dbc12e000f67c72c95cb9b"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
@@ -819,7 +831,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "31466828c940fe7a4e47e6ccf845905ca85c51c8f90969a8391af5865f066a22"
+                      "sha256":  "fab93765fe4232456d738e4ca5682e3b5ede6ad1e11d7c9a30f11bc2e64b47da"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -871,7 +883,7 @@
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",
-                      "sha256":  "51b776de47a8c2b59bb39c5a716b59a87e1089bf85668a53ac9143546b8ad274"
+                      "sha256":  "1eb186613be8d522183e3d98558b97b9a9548bd5ad5609cee3079a8f3ec16a58"
                   },
                   {
                       "path":  "tests/unit/services/zcode-link.service.test.ts",

@@ -6,6 +6,13 @@
  *   「导入文件夹」→ api.import_.fromFolder({})
  * - 拖拽：v1 仅高亮提示"请使用按钮"（webUtils.getPathForFile 需 preload 暴露，v2）
  * - 进行中：订阅 apiEvents.onImportProgress 显示进度（文件名 current/total）
+ * - 进度事件会话身份过滤（F-D4 B 面，INV-52——范式=corpus-export.store INV-18
+ *   同族）：busy=false 时忽略（终局后跨通道迟到事件不写 state——渲染门之外的
+ *   第二道门）；sessionRef 首事件锚定会话身份，异身份忽略（reload 后旧会话残留
+ *   事件不得污染新会话进度显示）；runImport 入口重置 sessionRef=null。busy 的
+ *   订阅回调读旧闭包问题用 busyRef 镜像解决（state 与 ref 双写）。
+ *   残余窗（照 corpus-export.store 注释同口径）：新会话 start 后首事件前——
+ *   旧事件须跨越终局+用户点击两层，理论窗
  * - 完成后 toast 汇总（成功 n/重复 m/失败 k）并经 onImported 通知父级刷新 library.store
  * - 取消（空结果）静默
  *
@@ -16,7 +23,7 @@
  * - 路径全部由 main 侧对话框产生，renderer 无路径（安全 §6.3）
  * - 进度订阅在卸载时退订；busy 期间按钮禁点防重复发起
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DragEvent } from 'react'
 import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
 import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
@@ -71,15 +78,28 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<ImportProgressEvent | null>(null)
   const [dragging, setDragging] = useState(false)
+  // busy 镜像（订阅回调读旧闭包问题——state 与 ref 双写，F-D4）
+  const busyRef = useRef(false)
+  // 会话身份锚点：本会话首个进度事件建立；runImport 入口重置（F-D4）
+  const sessionRef = useRef<string | null>(null)
 
-  // 订阅 main 侧导入进度推送；卸载时退订，避免泄漏回调
+  // 订阅 main 侧导入进度推送；卸载时退订，避免泄漏回调。
+  // 三滤（F-D4 B 面，INV-52）：busy=false 忽略 + 异身份忽略 + 首事件锚定
   useEffect(() => {
-    const unsubscribe = apiEvents.onImportProgress(setProgress)
+    const unsubscribe = apiEvents.onImportProgress((e) => {
+      // 终局后迟到事件不改在途相（busy 门挡渲染之外，state 写也挡住）
+      if (!busyRef.current) return
+      if (sessionRef.current === null) sessionRef.current = e.sessionId
+      else if (sessionRef.current !== e.sessionId) return
+      setProgress(e)
+    })
     return unsubscribe
   }, [])
 
   async function runImport(mode: ImportMode): Promise<void> {
     if (busy) return
+    sessionRef.current = null
+    busyRef.current = true
     setBusy(true)
     setProgress(null)
     try {
@@ -92,6 +112,7 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
       // unwrap 已把 IPC 错误折叠为带中文 message 的 ApiClientError
       showToast(e instanceof ApiClientError ? e.message : IMPORT_FAILED, 'error')
     } finally {
+      busyRef.current = false
       setBusy(false)
       setProgress(null)
     }

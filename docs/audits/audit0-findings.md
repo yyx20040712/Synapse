@@ -855,3 +855,43 @@ kimi-main→kimi-backup 双失败 switches=2 落 deepseek 兜底——**门一�
   11/11 绿(npx -p node@24)——**环境问题非代码缺陷**。本场验证走 node24
   同口径(npx -p node@24 npm run verify)。处置待用户裁决:回 24 或立
   vitest 升级票(降级不可由代理擅自执行)。
+
+
+## 2026-09-02 四波场：AUDIT-C C-3 W 级修票两票闭环（F-D4+F-SL）
+
+- **F-D4 import 会话身份两合一**（票面 f-d4-brief.md，AUDIT-C §1.2-b+§五-2/5）：
+  ①互斥 gate——import.service 每次调用 gate.enter()/finally exit（域错误上抛路径
+  必经 finally），gate=bootstrap 顶层闭包计数器（容器 assemble 闭包之外——每层
+  service 重建但 gate 同一对象，switch 后 in-flight 计数跨层有效）；workspace.service
+  create/rename/switch 三入口在 busy 旁查 importInFlight()→CONFLICT「导入进行中，
+  请稍后再试」，**先于 closeCurrent/materializeLegacy（拒时零库副作用，closeCalls/
+  assembledDirs 桩零计数锚定）**；create/rename 一并拦=主控裁（materializeLegacy 同样
+  closeCurrent，同机制竞窗）。②ImportProgressEvent 增 sessionId（min(1)，先例=
+  exportProgressEventSchema）；每次调用 randomUUID 一次全程同 id；ImportDropZone
+  订阅回调三滤（busyRef=false 忽略+sessionRef 首事件锚定+异身份忽略+runImport 入口
+  重置）。INV-52 登记。测试 +8（import.service 3+workspace 1+dropzone 4 组件测试
+  新文件）；变异 M1（exit 挪出 finally）/M2（删异身份滤）红证在档。
+- **F-SL SelectionLayer 幽灵标注**（票面 f-sl-brief.md，AUDIT-C §1.2-c+§五-3）：
+  addAnnotation 签名改 (paperId, a) 按发起身份寻址（照同文件 undo 范式 :438/:456——
+  tab 缺席 no-op，DB 已落重开自 DB 读对齐）；ReaderPage 接线闭包捕获渲染帧 paperId
+  （与 SelectionLayer props.paperId 同源同帧）；SelectionLayer props 契约零改。INV-03
+  扩写「写方向同族」条款（双先例=undo 与 addAnnotation）。测试 +2（activeId 切走仍写
+  发起 tab/tab 已关 no-op，防恒真前置断言）；变异 M1（恢复 activeId 寻址）恰 2 红证在档。
+- **门双形态**：F-D4 门一 Kimi（in=22968/out=8579/257s）B:0/W:3/N:2——三条 W 全报告
+  申报层（filter① 组件级不可证伪虚报/首红 [1/6] EBUSY 条目未申报/--stat 旧口径），
+  轻量回炉 1（纯报告面零代码）三点全处置，处置核验归门二；F-SL 门一 Kimi（in=12770/
+  out=6352/198s）B:0/W:2/N:3 **放行零回炉**——W-1 帧同步/W-2 孤儿栈由主控源码销项
+  （SelectionLayer.tsx:85 props 每渲染解构+:199 save 普通闭包无 latest-ref→onSaved
+  闭包=发起帧；closeOne:242 clearStack+annotation-undo.ts:31 栈随 tab 丢弃→迟到
+  pushUndo 孤儿永不被 undo 消费，无害残余）。门二 deepseek 位合并终审（子代理亲跑）：
+  **条件 PASS→条件销**——处置核对全落地/母本逐格/红线八项全过/改动面 15 files
+  +488/-57 两票分账精确对平零蔓延；唯一条件=locks 残留（见下摩擦条）收口即销。
+- **摩擦三现+根治纪律（触「二次触发即重构」条款的流程面落地）**：受锁集合经
+  check-locks walk **自动覆盖 scripts 下全部 .mjs/.ps1**——主控审计场自产 gen 脚本
+  一诞生即属受锁面，manifest 落后=下次 verify 必红。本场三现：F-D4 gen（20:34 晚于
+  其 verify 20:30）→F-SL 实现者开工 check 红机械登记；F-SL gen（20:47 晚于其 apply
+  20:43）→门二 verify 亲跑红。根治=AGENTS「依赖与提交」节新增纪律条「自产 scripts
+  工具件写完即时 locks:generate+apply，禁延至收口」+本场起执行（收口登记至 238）。
+- **验证口径**：verify 全链 exit=0 亲验（127 文件 **1103** 用例=基线 1093+F-D4 8+
+  F-SL 2；locks **238**）+e2e 亲验（F-SL 改 ReaderPage 接线触渲染链——reader-text
+  划选保存链必跑）。成本账本见交接书。

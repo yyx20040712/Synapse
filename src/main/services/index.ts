@@ -54,6 +54,10 @@ export interface ServiceDeps {
   fileStore: FileStore
   contactEmail: () => string
   http: HttpFns
+  /** 导入互斥 gate（F-D4 A 面，INV-52）：bootstrap 顶层一次创建注入——容器每层
+   *  service 重建但 gate 同一对象；import.service enter/finally exit 配对，
+   *  workspace.service 三入口据计数>0 拒绝（拒时零库副作用） */
+  importGate: { enter(): void; exit(): void }
   /** 导入进度事件出口（main→renderer 推送），bootstrap 注入 */
   sendProgress?: (e: ImportProgressEvent) => void
   /** AI 语料导出会话事件出口（main→renderer 单向——extract-request/progress） */
@@ -94,6 +98,7 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       repos: deps.repos,
       fileStore: deps.fileStore,
       extractMeta: extractPdfMeta,
+      gate: deps.importGate,
       onProgress: deps.sendProgress
     }),
     enrich: createEnrichService({

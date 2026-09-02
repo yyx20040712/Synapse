@@ -46,9 +46,12 @@
  *   | setSelectionMode(m) | active tab 写入 m；activeId=null no-op |
  *   | closeOne(id) | 随 tab 删除；重开同 id=全新 tab=false |
  *   | close()（closeAll） | 整体复位（初始态工厂） |
- * - 旧 setter（setPage/setZoom/setTotalPages/setColor/addAnnotation/
- *   updateAnnotation/removeAnnotation/setSelectionMode）作用于 active tab；
- *   activeId=null 时 no-op
+ * - 旧 setter（setPage/setZoom/setTotalPages/setColor/updateAnnotation/
+ *   removeAnnotation/setSelectionMode）作用于 active tab；activeId=null 时
+ *   no-op。例外 addAnnotation=per-paperId 寻址（F-SL/INV-03 写方向同族）：
+ *   签名 (paperId, a) 不读 activeId——SelectionLayer 保存 await 窗内切 tab
+ *   不得把 A 的标注写进 B 的 tab（幽灵标注，AUDIT-C §1.2-c）；tab 缺席（已
+ *   关）no-op（DB 已落，重开自 DB 读对齐——undo 同语义）
  * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
  *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
  *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
@@ -151,7 +154,11 @@ export interface ReaderStore {
   /** 页布局写 active tab（F-R1）：toggle 语义在装配面 ReaderPage（工具栏纯
    *  受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
   setPageLayout(layout: 'single' | 'double'): void
-  addAnnotation(a: Annotation): void
+  /** 标注追加（F-SL，INV-03 写方向同族）：per-paperId 寻址不读 activeId——
+   *  发起身份由调用方捕获（ReaderPage 接线闭包传渲染帧 paperId，与
+   *  SelectionLayer props.paperId 同源同帧）；tab 已关 → no-op（DB 已落，
+   *  重开自 DB 读对齐——undo 关 tab 路径同语义） */
+  addAnnotation(paperId: string, a: Annotation): void
   updateAnnotation(a: Annotation): void
   removeAnnotation(id: string): void
   /** annotations 面灰点信号（TABS-03）：保存失败置位/重试成功清除（参数化
@@ -387,8 +394,14 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       updateActiveTab((tab) => ({ ...tab, pageLayout: layout }))
     },
 
-    addAnnotation(a) {
-      updateActiveTab((tab) => ({ ...tab, annotations: [...tab.annotations, a] }))
+    addAnnotation(paperId, a) {
+      // F-SL（INV-03 写方向同族）：per-paperId 寻址不读 activeId——SelectionLayer
+      // 保存 await 窗内切 tab 时按发起身份落账（幽灵标注守卫）；tab 已关 →
+      // no-op（DB 已落，重开自 DB 读对齐——与 undo 关 tab 路径同语义）
+      const { tabs } = get()
+      const tab = tabs[paperId]
+      if (tab === undefined) return
+      set({ tabs: { ...tabs, [paperId]: { ...tab, annotations: [...tab.annotations, a] } } })
     },
 
     updateAnnotation(a) {

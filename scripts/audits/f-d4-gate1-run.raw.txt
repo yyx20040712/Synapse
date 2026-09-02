@@ -1,0 +1,62 @@
+[routing] run=20260902123422-gvd7 尝试源 1/3: kimi-main(kimi-k3)
+[routing]: run=20260902123422-gvd7 source=kimi-main model=kimi-k3 switches=0 usage=in=22968,out=8579 latency=256600ms (by ds-call.mjs 链)
+
+# F-D4 门一对抗深审报告
+
+**统计：B:0 / W:3 / N:2 —— 总评：行为面实现与票面逐格符合、gate 配对与零库副作用实证成立，但测试锚有一处「假深断言」方法论虚报，且两处报告数据与证据不一致，需补正对质。**
+
+---
+
+## 审查清单逐项结论（先给无问题项的实证）
+
+**Q1 母本符合度**：时序表六格——①②CONFLICT 有 workspace 新用例锚（workspace.test.ts diff 末尾：`rejects.toThrow(/导入进行中/)` ×3 + `closeCalls()===0` + `assembledDirs()===[]`）；③放行由既有六处 `importInFlight: () => false` 用例兜底；⑤异身份滤有用例②+M2 红证；⑥本会话写有用例①。④busy=false 忽略**名义有用例③但锚不实**（见 W1）。schemas `sessionId: z.string().min(1)` 与 exportProgressEventSchema 先例对齐 ✓。
+
+**Q2 gate 语义**：enter/exit 配对在全部路径成立——importFiles/importFolder 均为 `gate.enter()` 后紧跟 try/finally，scanFolder 域错误在 try 内（import.service.ts diff：`const planned = await scanFolder(folder)` 位于 try 块内，finally exit 必经）；M1 红证（exit 挪出 finally → 域错误用例红）反向锁定。并发两次 importFiles 计数 2→exit→1 仍 >0，workspace 侧 `() => importInFlightCount > 0` 判定语义正确。拒时零库副作用实证：三入口均为 `if (busy) throw; if (deps.importInFlight()) throw; busy = true;`——CONFLICT 抛在 busy 置位与 materializeLegacy/closeCurrent 之前（workspace.service.ts create:165-166/rename:180-181/switch:198-199  diff 顺序）。
+
+**Q3 renderer 三滤**：闭包态正确——busyRef/sessionRef 为 ref，useEffect 空依赖订阅一次，回调读 ref 不受旧闭包影响；退订成对有用例④锚（`offSpy` 计数）；runImport 重置时序正确（`sessionRef.current = null; busyRef.current = true` 在首个 await 前同步执行，diff ImportDropZone.tsx:102-105）；残余窗声明与 corpus 同口径 ✓。
+
+**Q5 宪法红线**：受锁流程实录完整（unlock 235→generate 新路径→apply 236，manifest diff 含 import-dropzone.test.tsx 新条目+三个 sha256 更新）；分层单向（gate 在 bootstrap 顶层、两服务 duck-typing 互不 import、schemas 之外无 shared 渗透）✓；行数全 ≤500（workspace.test 472 行 tests/** override 已申报）；禁新依赖 ✓（diff 无 package.json）；中文注释 UTF-8 ✓；verify 真退出码 exit=0 ✓。
+
+**Q6 接缝**：INV-52 登记格式与 INV-50/51 同构（五列行）✓；ipcMain handler 零感知声明——sendProgress 透传广播，sessionId 随载荷走，无反证，成立；sessionId 消费面清点（api-surface 类型/services.index/import.service 产出/ImportDropZone 消费/测试桩）与 diff 所见一致，未见第五处。
+
+---
+
+## 问题条目
+
+### W1 — 用例③「深断言」不能失败：filter①（busy=false 忽略）实际无红证锚定，报告 §七-5 方法论申报不成立
+
+证据链：
+- ImportDropZone.tsx diff（runImport 入口）：`sessionRef.current = null` / `busyRef.current = true` / `setBusy(true)` / `setProgress(null)` —— **每次新会话入口无条件重置 sessionRef**。
+- import-dropzone.test.tsx 用例③注释自述：「idle 事件若写了 state 或锚定了会话身份，后续本会话首事件会被异身份过滤误吞——此处必须照常更新」。
+
+推演：设想变异「删 busy 门但保留锚定」（idle 事件写 state+锚定 `sessionRef='stale'`）。用例③随后 `click('导入 PDF 文件')` → runImport 同步段先把 `sessionRef.current = null` 抹掉 → `live2` 事件到达时 sessionRef 为 null → 重新锚定 `live2` → 照常 setProgress → 断言 `复制文件（1/1） 新会话.pdf` **通过**。即该「深断言」对它声称要锁的变异恒绿；setProgress 写入又因既有渲染门（busy 门 :138）不可观测。结论：票面 §一B 的 filter①（busy=false 时 state 不写）在本设计中**组件级不可证伪**，M2 只锁 filter②。正确处置是报告如实改报「filter①=渲染门之外的内部质量门，无机器锚」（类似 INV-49 噪声面的「部分锚定」口径），而非申报一个推演不成立的代理断言。代码本体行为正确，故不定 B。
+
+### W2 — 首红 raw 失败计数器 [6/6] 与汇总「5 failed」及报告五条清单不一致（存疑，需全量 raw 对质）
+
+f-d4-red.raw.txt 尾部：失败详情计数器出现 `⎯[5/6]⎯`（dropzone 异身份用例）与 `⎯[6/6]⎯` 两条标记，但汇总行 `Tests 5 failed | 1096 passed (1101)`（5+1096=1101 自洽），报告 §三亦只申报 5 条红。[6/6] 的存在暗示存在第 6 条失败条目（可能=某文件 collect 期失败/unhandled error 计入失败列表但不计入 tests 计数——vitest 有此形态；也可能是摘录截断伪影）。无论哪种，报告「5 条核心行为用例全数红」的表述与该计数器未对齐，未申报第 6 条目的性质。本代理只见摘录无法定死，**存疑待对质**。
+
+### W3 — 报告 §七-6 引用 `--stat` 与材料包实际 --stat 数字不符
+
+报告自裁 6：「`git diff --stat`：9 文件 +243/-37」。材料包 --stat 实为：`11 files changed, 413 insertions(+), 42 deletions(-)`。即便剔除新测试文件（untracked 不入普通 diff）与 manifest，243 与 413-161=252 仍对不齐。差异最可能解释=自裁时跑的口径（未 add -N、或早于 invariants/manifest 落定）与最终态不同，但报告把旧数字当最终证据写入，删减面自查结论（「零断言删减」本身与 diff 相符 ✓）所依托的统计口径失真。需按 add -N 后最终态重报。
+
+### N1 — 并发双 import 的计数中间态（2→1→0）无测试锚
+
+票面六问 Q2 自问「并发两次 importFiles 计数 2→exit 后 1→仍 in-flight，语义对吗」——语义经代码审查成立（计数器+`>0` 判定），但无并发用例。票面 §四未要求，登记为知晓项。
+
+### N2 — 时序表第 3 格（exit 后 switch 放行）无新用例
+
+由既有六处 `() => false` 桩用例隐式覆盖（原行为零变=既有全绿），可接受；若追求显式锚可补一条「importInFlight 先 true 后 false」用例，非本票义务。
+
+---
+
+## 报告诚实性总核
+
+locks 实录（236/manifest 新条目）与 diff 一致 ✓；用例数账（1093+8=1101，红 5+1096=1101）自洽 ✓；M1/M2 红证与报告描述一致 ✓；自裁 1/2/3/4/7 项申报与 diff 实物相符 ✓。**失真集中在自裁 5（W1 代理断言虚报）与自裁 6（W3 stat 口径）+首红计数未申报项（W2）**——均为报告层，非代码层。
+
+## 放行判定
+
+**回炉（轻量，纯报告/申报面，代码行为面零 B 零改动要求）**：
+1. 修正 §七-5：如实改报 filter① 为「渲染门之外不可证伪的内部质量门，无机器锚」，或给出真能失败的锚（如探针式断言直接观测 sessionRef/state 写——若选择后者需走受锁测试改动流程）；
+2. 对质 f-d4-red.raw.txt 全量，申报 [6/6] 第 6 条失败条目的性质；
+3. §七-6 --stat 按 add -N 后最终态（11 文件 +413/-42）重报并复核删减面结论仍成立。
+exit=0

@@ -88,7 +88,7 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
     expect(useStore.getState().tabs['p-1']?.page).toBe(9)
     useStore.getState().setPage(-3)
     expect(useStore.getState().tabs['p-1']?.page).toBe(0)
-    useStore.getState().addAnnotation(ann)
+    useStore.getState().addAnnotation('p-1', ann)
     expect(useStore.getState().tabs['p-1']?.annotations).toHaveLength(1)
     useStore.getState().removeAnnotation('a-1')
     expect(useStore.getState().tabs['p-1']?.annotations).toHaveLength(0)
@@ -111,7 +111,7 @@ guardedDescribe('SR2-TABS-01', 'reader.store —— per-tab 多文献状态（ta
     useStore.getState().setZoom(2)
     useStore.getState().setTotalPages(9)
     useStore.getState().setColor('green')
-    useStore.getState().addAnnotation(ann)
+    useStore.getState().addAnnotation('p-1', ann)
     expect(useStore.getState().tabs).toEqual({})
     expect(useStore.getState().activeId).toBeNull()
   })
@@ -466,5 +466,46 @@ describe('F-ARCH1 closeTab 瞬态信号清理', () => {
     useStore.getState().notifyNoteHighlight('a-9')
     useStore.getState().closeTab('p-1') // 关的是后台 tab
     expect(useStore.getState().noteHighlight).toMatchObject({ annotationId: 'a-9' })
+  })
+})
+
+// ── F-SL（2026-09-02 幽灵标注修票，always-active——不经 guardedDescribe）──
+//    病根（AUDIT-C §1.2-c）：SelectionLayer.save 的 await 窗口内切 tab，
+//    onSaved→addAnnotation 若按当下 activeId 寻址，A 文献的标注会被追加进
+//    B 的 tab.annotations（幽灵标注，内存态；DB 落 A 行正确）。修复=
+//    addAnnotation(paperId, a) 按发起身份寻址（照 undo 范式：ReaderPage 接线
+//    闭包捕获渲染帧的 paperId；tab 缺席（已关）→ no-op，重开自 DB 读对齐）。 ──
+describe('F-SL addAnnotation per-paper 寻址（幽灵标注守卫）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('用例①：activeId=B 时 addAnnotation("p-1", ann) 写 A 的 tab，B 的 annotations 不变', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2')
+    useStore.getState().activateTab('p-2')
+    // 前置防恒真：确认当前激活确为 B（模拟保存 await 窗内 activeId 切走）
+    expect(useStore.getState().activeId).toBe('p-2')
+    useStore.getState().addAnnotation('p-1', ann)
+    const s = useStore.getState()
+    expect(s.activeId).toBe('p-2')
+    expect(s.tabs['p-1']?.annotations).toEqual([ann])
+    expect(s.tabs['p-2']?.annotations).toEqual([])
+  })
+
+  it('用例②：paperId 的 tab 已关 → no-op 不炸，其余 tab 不受影响', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2')
+    useStore.getState().closeTab('p-1')
+    // 前置防恒真：p-1 tab 确已缺席（迟到追加的目标态）
+    expect(useStore.getState().tabs['p-1']).toBeUndefined()
+    useStore.getState().addAnnotation('p-1', ann)
+    const s = useStore.getState()
+    expect(s.tabs['p-1']).toBeUndefined()
+    expect(s.activeId).toBe('p-2')
+    expect(s.tabs['p-2']?.annotations).toEqual([])
   })
 })

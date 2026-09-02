@@ -184,8 +184,10 @@ export function ReaderPage(): JSX.Element {
               onReady={handleColumnReady} onError={handlePdfError} />
           )}
         </PdfDocProvider>
-        {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4） */}
-        <SelectionLayer pageRoot={selectionMount} paperId={paperId} page={0} onSaved={addAnnotation} />
+        {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4）；F-SL：onSaved
+            闭包捕获渲染帧 paperId（与 SelectionLayer props.paperId 同源同帧），
+            store 按其寻址——保存 await 窗内切 tab 不生幽灵标注 */}
+        <SelectionLayer pageRoot={selectionMount} paperId={paperId} page={0} onSaved={(a) => addAnnotation(paperId, a)} />
       </div>
       <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
     </div>

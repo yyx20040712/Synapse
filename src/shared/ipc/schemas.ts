@@ -70,13 +70,16 @@ export const importResultSchema = z
   .strict()
 export type ImportResult = z.infer<typeof importResultSchema>
 
-/** 导入进度事件（main→renderer 单向推送） */
+/** 导入进度事件（main→renderer 单向推送）。sessionId=会话身份（F-D4，INV-52）：
+ *  每次 importFiles/importFolder 调用入口生成一次，该次调用内全部事件同 id——
+ *  renderer 订阅回调跨会话迟到过滤锚点（先例=exportProgressEventSchema） */
 export const importProgressEventSchema = z
   .object({
     phase: z.enum(['scanning', 'copying', 'extracting', 'done']),
     current: z.number().int().min(0),
     total: z.number().int().min(0),
-    fileName: z.string()
+    fileName: z.string(),
+    sessionId: z.string().min(1)
   })
   .strict()
 export type ImportProgressEvent = z.infer<typeof importProgressEventSchema>

@@ -7,6 +7,15 @@
  * - importFolder(folder)：递归找 *.pdf（不区分大小写）；每个一级子目录名 upsert 成
  *   collection 并挂接；根目录文件不挂集合；进度事件持续上报
  * - 单文件失败不中断整批（尽力而为），失败原因进 failed
+ * - 会话身份两合一（F-D4，INV-52）：
+ *   ①gate 互斥——importFiles/importFolder 每次调用入口 gate.enter()，**finally**
+ *     gate.exit()（尽力而为路径/域错误抛出路径都必经 finally）。gate 由 bootstrap
+ *     顶层一次创建（容器 assemble 闭包之外——每层 service 重建但 gate 同一对象），
+ *     workspace.service 的 create/rename/switch 三入口据计数>0 拒绝（CONFLICT 中文，
+ *     拒时零库副作用）。拒绝=用户稍后重试（低频窗=大文件夹导入分钟级）；in-flight
+ *     判定=main 侧计数，renderer busy 不参与（两进程面各自独立）
+ *   ②sessionId——每次调用入口 randomUUID() 生成一次会话 id，该次调用内全部进度
+ *     事件（含 scanning/done）同 id；renderer（ImportDropZone）据它做跨会话迟到过滤
  *
  * ── 接口层 ──
  * - export interface ImportService {
@@ -15,6 +24,7 @@
  *   }
  * - export function createImportService(deps: {
  *     repos: Repos; fileStore: FileStore;
+ *     gate: { enter(): void; exit(): void };
  *     onProgress?: (e: ImportProgressEvent) => void
  *   }): ImportService
  *
@@ -74,18 +84,24 @@ interface PlannedFile {
   position: number
 }
 
+/** 进度事件四字段 core（会话 id 由调用层组装——同次调用全程同 id） */
+type ProgressCore = Omit<ImportProgressEvent, 'sessionId'>
+
 export function createImportService(deps: {
   repos: Repos
   fileStore: FileStore
   /** PDF 元数据抽取（注入便于测试；生产传 extractPdfMeta） */
   extractMeta: (bytes: Uint8Array) => Promise<PdfMetaExtraction>
+  /** 导入互斥 gate（F-D4 A 面：bootstrap 顶层一次创建并注入；enter/exit 必经
+   *  finally 配对——workspace 变更三入口的互斥判定源） */
+  gate: { enter(): void; exit(): void }
   onProgress?: (e: ImportProgressEvent) => void
 }): ImportService {
-  const { repos, fileStore, extractMeta, onProgress } = deps
+  const { repos, fileStore, extractMeta, gate, onProgress } = deps
 
   /** 进度上报（onProgress 未注入时静默，便于无 UI 场景复用） */
-  const report = (e: ImportProgressEvent): void => {
-    onProgress?.(e)
+  const report = (sessionId: string, core: ProgressCore): void => {
+    onProgress?.({ ...core, sessionId })
   }
 
   /** 逐文件流水线结果三态 */
@@ -105,18 +121,19 @@ export function createImportService(deps: {
   async function importOne(
     entry: BatchEntry,
     current: number,
-    total: number
+    total: number,
+    sessionId: string
   ): Promise<OneOutcome> {
     const fileName = fileNameOf(entry.path)
     try {
-      report({ phase: 'copying', current, total, fileName })
+      report(sessionId, { phase: 'copying', current, total, fileName })
       const stored = await fileStore.storePdfFromPath(entry.path)
       // 去重语义（DUPLICATE_FILE）：同 sha 已入库（含本批次先行文件）→ 记文件名跳过，
       // 不抛错不重复入库；受管存储按内容寻址，重复拷贝只是复用既有分桶文件
       if (repos.papers.findBySha256(stored.sha256) !== null) {
         return { kind: 'duplicate', fileName }
       }
-      report({ phase: 'extracting', current, total, fileName })
+      report(sessionId, { phase: 'extracting', current, total, fileName })
       // 从受管副本读字节抽取（内容寻址后即规范副本，无需再碰源文件）
       const meta = await extractMeta(await fileStore.readFileBytes(stored.fileRef))
       const now = new Date().toISOString()
@@ -152,15 +169,15 @@ export function createImportService(deps: {
   }
 
   /** 批驱动：逐个跑流水线并汇成 ImportResult；current 从 1 计数 */
-  async function runBatch(entries: BatchEntry[]): Promise<ImportResult> {
+  async function runBatch(sessionId: string, entries: BatchEntry[]): Promise<ImportResult> {
     const result: ImportResult = { imported: [], duplicates: [], failed: [] }
     for (const [idx, entry] of entries.entries()) {
-      const outcome = await importOne(entry, idx + 1, entries.length)
+      const outcome = await importOne(entry, idx + 1, entries.length, sessionId)
       if (outcome.kind === 'imported') result.imported.push(outcome.summary)
       else if (outcome.kind === 'duplicate') result.duplicates.push(outcome.fileName)
       else result.failed.push({ fileName: outcome.fileName, reason: outcome.reason })
     }
-    report({ phase: 'done', current: entries.length, total: entries.length, fileName: '' })
+    report(sessionId, { phase: 'done', current: entries.length, total: entries.length, fileName: '' })
     return result
   }
 
@@ -218,32 +235,46 @@ export function createImportService(deps: {
   }
 
   return {
-    // 路径列表已给定，无扫描阶段；进度直接从 copying 开始
+    // 路径列表已给定，无扫描阶段；进度直接从 copying 开始。
+    // gate.enter/exit 必经 finally（F-D4 A 面——域错误上抛路径也释放互斥计数）
     async importFiles(paths: string[]): Promise<ImportResult> {
-      return runBatch(paths.map((path): BatchEntry => ({ path, collection: null })))
+      gate.enter()
+      try {
+        const sessionId = randomUUID()
+        return await runBatch(sessionId, paths.map((path): BatchEntry => ({ path, collection: null })))
+      } finally {
+        gate.exit()
+      }
     },
 
     async importFolder(folder: string): Promise<ImportResult> {
-      // 扫描阶段 total 未知（current=0 表示尚未处理任何文件）
-      report({ phase: 'scanning', current: 0, total: 0, fileName: fileNameOf(folder) })
-      const planned = await scanFolder(folder)
-      // 惰性 upsert：只给实际含 PDF 的一级子目录建集合（空目录不产生空集合），幂等可重跑
-      const collectionByName = new Map<string, Collection>()
-      for (const p of planned) {
-        if (p.collectionName !== null && !collectionByName.has(p.collectionName)) {
-          collectionByName.set(
-            p.collectionName,
-            repos.collections.upsertByName(p.collectionName, p.position)
-          )
+      gate.enter()
+      try {
+        const sessionId = randomUUID()
+        // 扫描阶段 total 未知（current=0 表示尚未处理任何文件）
+        report(sessionId, { phase: 'scanning', current: 0, total: 0, fileName: fileNameOf(folder) })
+        const planned = await scanFolder(folder)
+        // 惰性 upsert：只给实际含 PDF 的一级子目录建集合（空目录不产生空集合），幂等可重跑
+        const collectionByName = new Map<string, Collection>()
+        for (const p of planned) {
+          if (p.collectionName !== null && !collectionByName.has(p.collectionName)) {
+            collectionByName.set(
+              p.collectionName,
+              repos.collections.upsertByName(p.collectionName, p.position)
+            )
+          }
         }
+        return await runBatch(
+          sessionId,
+          planned.map((p): BatchEntry => {
+            const collection =
+              p.collectionName === null ? null : collectionByName.get(p.collectionName) ?? null
+            return { path: p.path, collection }
+          })
+        )
+      } finally {
+        gate.exit()
       }
-      return runBatch(
-        planned.map((p): BatchEntry => {
-          const collection =
-            p.collectionName === null ? null : collectionByName.get(p.collectionName) ?? null
-          return { path: p.path, collection }
-        })
-      )
     }
   }
 }

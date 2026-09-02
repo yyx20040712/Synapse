@@ -122,6 +122,10 @@ development Model Selection+loop-engineering references/06）；**架构与
   更新 manifest（新增受锁路径需先 `npm run locks:generate` 再 apply）。
 - 触碰锁定文件的提交**即时** `locks:apply`（manifest 与该提交同步），禁止跨提交
   延迟重生成——CI 只查 push head，中间提交锁不同步会造成按提交回溯时的假绿。
+- **自产 scripts/*.mjs/*.ps1 工具件写完即时 `locks:generate`+`apply`**：受锁集合
+  经 check-locks 的 walk **自动覆盖 scripts 下全部 .mjs/.ps1**——文件一诞生即属
+  受锁面，manifest 落后=下次 locks:check/verify 必红；禁延至收口补登
+  （2026-09-02 四波场三现实录：两 gen 脚本连续落后于并行锁操作+门二 verify 拦截）。
 - 每次 AI 改动一个逻辑单元一个 commit；提交前 `git diff --stat` 自查。
 - staging 一律显式列文件（或先 `git status` 核对未跟踪面）——`git add -A <目录>`
   会扫入未跟踪残留（2026-08-26 scripts/audits 误扫实录）；提交后勿复打 log

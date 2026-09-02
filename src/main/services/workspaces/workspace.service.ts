@@ -14,6 +14,7 @@
  * | W-pbad | 指针缺省/损坏/失指 | ensure/list 降级「目录序第一」（不崩——INV-35）；下次写指针自愈 |
  * | W-empty | workspaces/ 在 + 零有效目录 | ensure 建 default 空课题+指针 → W-pvalid |
  * | busy（变更互斥单飞） | service 实例内标志 | 并发 create/rename/switch → CONFLICT 中文；finally 释放 |
+ * | import in-flight（F-D4 A 面） | bootstrap 顶层 gate 计数>0 | create/rename/switch → CONFLICT「导入进行中」中文；**先于** closeCurrent/materializeLegacy（拒时零库副作用） |
  *
  * 跨格序列（审计面）：
  * ① 全新安装：L0(会话1) → 退出 → M(会话2 启动) → W-pvalid(default)
@@ -25,6 +26,11 @@
  *    装配失败=当前层已关（后续库调用报错，busy 已释——switch 后 reload 前的
  *    竞窗由 R1-WS2 确认 dirty 流程收口，本单不补）
  * ⑤ M 断点：db 未移即崩 → 重启 ensure 续迁 → W（测试「崩溃断点续迁」锚定）
+ * ⑥ import in-flight × create/rename/switch（F-D4，INV-52）：三入口在 busy 检查旁
+ *    查 importInFlight() → 抛 CONFLICT（零库副作用，用户稍后重试）。语义边界：
+ *    in-flight 判定=main 侧 gate 计数单源（import.service enter/finally exit），
+ *    renderer busy 不参与（两进程面各自独立）；import 完成（exit 后）三入口放行
+ *    =原行为零变。拒绝窗=大文件夹导入分钟级（低频）
  *
  * ── 接口层 ──
  * - list/create/rename/switch/currentName——IPC 面形状由 ApiHandlers['workspaces']
@@ -70,6 +76,9 @@ export interface WorkspaceServiceDeps {
   closeCurrent: () => void
   /** 在目标目录重建数据层并换容器引用（bootstrap 注入=data-layer.container） */
   assembleInto: (dataDir: string) => Promise<void>
+  /** import in-flight 判定（F-D4 A 面：bootstrap 注入 gate 计数>0——main 侧单源，
+   *  renderer busy 不参与；true 时 create/rename/switch 拒绝，拒时零库副作用） */
+  importInFlight: () => boolean
 }
 
 class WorkspaceDomainError extends Error {
@@ -88,6 +97,11 @@ function wsNotFound(id: string): WorkspaceDomainError {
 
 function wsBusy(): WorkspaceDomainError {
   return new WorkspaceDomainError('CONFLICT', '课题切换进行中，请稍后再试')
+}
+
+/** import in-flight 拒绝（F-D4，INV-52）——用户稍后重试（低频窗=大文件夹导入分钟级） */
+function wsImportInFlight(): WorkspaceDomainError {
+  return new WorkspaceDomainError('CONFLICT', '导入进行中，请稍后再试')
 }
 
 export function createWorkspaceService(deps: WorkspaceServiceDeps) {
@@ -149,6 +163,7 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps) {
 
     async create(req: { name: string }) {
       if (busy) throw wsBusy()
+      if (deps.importInFlight()) throw wsImportInFlight()
       busy = true
       try {
         await materializeLegacy()
@@ -163,6 +178,7 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps) {
 
     async rename(req: { id: string; name: string }) {
       if (busy) throw wsBusy()
+      if (deps.importInFlight()) throw wsImportInFlight()
       busy = true
       try {
         await materializeLegacy()
@@ -180,6 +196,7 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps) {
 
     async switch(req: { id: string }) {
       if (busy) throw wsBusy()
+      if (deps.importInFlight()) throw wsImportInFlight()
       busy = true
       try {
         const materialized = await materializeLegacy()

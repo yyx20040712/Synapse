@@ -83,7 +83,7 @@ function openMigrated(dbPath: string): SqliteDb {
  * L0 会话夹具（门一 W1/W2 回炉）：真库在 userData 根（含行 p0）+ service 注入
  * 记录器（close 计数/装配目录序列/下一次装配注入失败开关）。
  */
-async function l0Session(prefix: string): Promise<{
+async function l0Session(prefix: string, opts?: { importInFlight?: () => boolean }): Promise<{
   u: string
   svc: ReturnType<typeof createWorkspaceService>
   cur: { db: SqliteDb | null }
@@ -101,6 +101,7 @@ async function l0Session(prefix: string): Promise<{
   const dirs: string[] = []
   const svc = createWorkspaceService({
     userDataDir: u,
+    importInFlight: opts?.importInFlight ?? (() => false),
     initWorkspaceDb,
     closeCurrent: () => {
       ref.db?.close()
@@ -194,6 +195,7 @@ describe('ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新�
     await ensureWorkspaceLayout(u)
     const svc = createWorkspaceService({
       userDataDir: u,
+      importInFlight: () => false,
       initWorkspaceDb,
       closeCurrent: () => undefined,
       assembleInto: async () => undefined
@@ -231,6 +233,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     let cur: SqliteDb = db
     const svc = createWorkspaceService({
       userDataDir: u,
+      importInFlight: () => false,
       initWorkspaceDb,
       closeCurrent: () => cur.close(),
       assembleInto: async (dir) => {
@@ -272,6 +275,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     await ensureWorkspaceLayout(u)
     const svc = createWorkspaceService({
       userDataDir: u,
+      importInFlight: () => false,
       initWorkspaceDb,
       closeCurrent: () => undefined,
       assembleInto: async () => undefined
@@ -295,6 +299,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     const assembled: string[] = []
     const svc = createWorkspaceService({
       userDataDir: u,
+      importInFlight: () => false,
       initWorkspaceDb,
       closeCurrent: () => cur.close(),
       assembleInto: async (dir) => {
@@ -330,6 +335,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     })
     const svc = createWorkspaceService({
       userDataDir: u,
+      importInFlight: () => false,
       initWorkspaceDb,
       closeCurrent: () => {
         cur?.close()
@@ -404,6 +410,19 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     expect(() => handleBefore?.prepare('SELECT 1')).toThrow() // 首败前的旧句柄已关
     expect(assembledDirs().at(-1)).toBe(join(u, WORKSPACES_DIR_NAME, b.id))
     expect(() => cur.db?.prepare('SELECT 1')).not.toThrow() // 容器等价句柄可用
+    cur.db?.close()
+  })
+
+  it('F-D4 import in-flight 时 switch/create/rename 抛中文 CONFLICT 且零库副作用（拒在 closeCurrent 之前）', async () => {
+    const { svc, closeCalls, assembledDirs, cur } = await l0Session('synapse-ws-d4-', {
+      importInFlight: () => true
+    })
+    await expect(svc.switch({ id: DEFAULT_WS_ID })).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(svc.switch({ id: DEFAULT_WS_ID })).rejects.toThrow(/导入进行中/)
+    await expect(svc.create({ name: '课题X' })).rejects.toThrow(/导入进行中/)
+    await expect(svc.rename({ id: DEFAULT_WS_ID, name: '改名X' })).rejects.toThrow(/导入进行中/)
+    expect(closeCalls()).toBe(0)
+    expect(assembledDirs()).toEqual([])
     cur.db?.close()
   })
 })

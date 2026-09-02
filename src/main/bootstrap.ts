@@ -86,6 +86,20 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   const fetchLike = net.fetch as unknown as typeof globalThis.fetch
   const contactEmail = await readContactEmail(userDataDir)
 
+  // ── import 会话 gate（F-D4 A 面，INV-52）：顶层一次创建——在容器 assemble 闭包
+  //    之外（每层 service 重建但 gate 同一对象）；计数>0=import in-flight，
+  //    workspace 变更三入口互斥判定源。in-flight 判定=main 侧计数单源，renderer
+  //    busy 不参与（两进程面各自独立）──
+  let importInFlightCount = 0
+  const importGate = {
+    enter: () => {
+      importInFlightCount++
+    },
+    exit: () => {
+      importInFlightCount--
+    }
+  }
+
   // ── 数据层容器（课题级可重建；与库无关项=闭包外参——票面 P1）──
   const container = createDataLayerContainer({
     assemble: async (dataDir) => {
@@ -98,6 +112,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       const services = createServices({
         repos,
         fileStore,
+        importGate,
         contactEmail: () => contactEmail,
         sendProgress: (e) => {
           for (const win of BrowserWindow.getAllWindows()) {
@@ -126,9 +141,12 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   await container.assembleInto(layout.dataDir)
 
   // 课题域服务（workspace 管理面在容器外——管理的是容器本身；空库迁移经
-  // initWorkspaceDb 注入——services 层禁直连 db，装配面在 main 根）
+  // initWorkspaceDb 注入——services 层禁直连 db，装配面在 main 根）。
+  // importInFlight=上方 gate 计数（F-D4：import in-flight 时 create/rename/
+  // switch 抛 CONFLICT 中文，拒时零库副作用）
   const workspaceService = createWorkspaceService({
     userDataDir,
+    importInFlight: () => importInFlightCount > 0,
     initWorkspaceDb,
     closeCurrent: () => container.closeCurrent(),
     assembleInto: (dataDir) => container.assembleInto(dataDir)

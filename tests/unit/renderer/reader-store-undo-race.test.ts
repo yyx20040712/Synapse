@@ -62,12 +62,12 @@ describe('F-ARCH2 undo 并发编辑不覆盖（回归锁）', () => {
     await useStore.getState().openPaper('p-1')
     // 造真实撤销对象：a-1 先入列表（门一 W-2——否则移除断言恒真），再压 create 型
     // 撤销条目（撤销动作=删除该标注）
-    useStore.getState().addAnnotation(annBase)
+    useStore.getState().addAnnotation('p-1', annBase)
     undoMod.pushUndo('p-1', { kind: 'create', annotation: annBase })
     const pUndo = useStore.getState().undo()
     // undo 挂起中：用户并发保存了一条新标注（SelectionLayer→addAnnotation 路径）
     const concurrent: Annotation = { ...annBase, id: 'a-2', quoteText: 'concurrent' }
-    useStore.getState().addAnnotation(concurrent)
+    useStore.getState().addAnnotation('p-1', concurrent)
     resolveDelete({ ok: true, data: undefined })
     await pUndo
     const list = useStore.getState().tabs['p-1']?.annotations ?? []

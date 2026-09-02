@@ -1,0 +1,17 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:apply
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
+
+ÒÑËø¶¨ 237 ¸öÎÄ¼ş£¨Ö»¶Á£©¡£manifest ¼ÇÂ¼ 237 Ìõ¡£
+Ìá½» manifest ±ä¸üÊ±£¬Ìá½»ĞÅÏ¢±ØĞë´ø [locked-change] Î²×¢¡£
+exit=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:check
+> node scripts/check-locks.mjs
+
+locks æ£€æŸ¥é€šè¿‡ï¼š237 ä¸ªå—é”æ–‡ä»¶ä¸ manifest ä¸€è‡´
+locks-check-exit=0

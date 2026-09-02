@@ -1,0 +1,9 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:apply
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
+
+已锁定 236 个文件（只读）。manifest 记录 236 条。
+提交 manifest 变更时，提交信息必须带 [locked-change] 尾注。
+exit=0

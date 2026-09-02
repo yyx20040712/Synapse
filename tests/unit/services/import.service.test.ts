@@ -1,10 +1,11 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { createImportService } from '../../../src/main/services/import_/import.service'
 import { createFileStore } from '../../../src/main/services/import_/file-store'
 import type { Repos, PaperRow } from '../../../src/main/db/repos'
+import type { ImportProgressEvent } from '../../../src/shared/ipc/schemas'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../../utils/pdf-factory'
 import { guardedDescribe } from '../../utils/guard'
 import { createTestDb } from '../../utils/fixtures'
@@ -14,6 +15,9 @@ const dirs: string[] = []
 afterAll(async () => {
   for (const d of dirs) await rm(d, { recursive: true, force: true })
 })
+
+/** 无操作 gate 桩（互斥计数面由 F-D4 新用例单独验证——gate 为必选 deps） */
+const noopGate = { enter: () => undefined, exit: () => undefined }
 
 function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
   // 用真实 repos（SR-DB-05 完成前 guarded 跳过；这是集成性质验收）
@@ -52,6 +56,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const svc = createImportService({
       repos: makeRepos(db),
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => ({
         title: '',
         authors: ['张三'],
@@ -82,6 +87,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const svc = createImportService({
       repos: makeRepos(db),
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
     const first = await svc.importFiles([a])
@@ -104,6 +110,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const svc = createImportService({
       repos: makeRepos(db),
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
     const result = await svc.importFiles([bad, good])
@@ -125,6 +132,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const svc = createImportService({
       repos: makeRepos(db),
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
     const result = await svc.importFolder(storeDir)
@@ -153,6 +161,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const failed = createImportService({
       repos: brokenRepos,
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => defaults
     })
     const r1 = await failed.importFolder(storeDir)
@@ -165,9 +174,91 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     const retry = createImportService({
       repos: makeRepos(db),
       fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
       extractMeta: async () => defaults
     })
     const r2 = await retry.importFolder(storeDir)
     expect(r2.imported).toHaveLength(1)
+  })
+})
+
+/**
+ * [F-D4] import 会话身份两合一（INV-52，always-active——三屋纪律不经 guardedDescribe）：
+ * ①进度事件全程同 sessionId 且两次调用不同；②gate enter/exit 各恰一次
+ * （failed 折叠路径）；③域错误抛出路径也必经 finally exit。
+ */
+describe('F-D4 import.service —— 会话身份（gate 互斥 + sessionId）', () => {
+  it('进度事件全程同 sessionId，两次调用不同（非空字符串）', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'sid-'))
+    dirs.push(storeDir)
+    const { writeFile } = await import('node:fs/promises')
+    const a = join(storeDir, 'a.pdf')
+    const b = join(storeDir, 'b.pdf')
+    await writeFile(a, createTinyPdf())
+    await writeFile(b, createTinyPdf(PDF_KNOWN_TEXT + '2'))
+
+    const events: ImportProgressEvent[] = []
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
+      extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null }),
+      onProgress: (e) => events.push(e)
+    })
+    await svc.importFiles([a])
+    const first = events.map((e) => e.sessionId)
+    expect(first.length).toBeGreaterThan(0)
+    expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)
+    expect(new Set(first).size).toBe(1)
+
+    const beforeSecond = events.length
+    await svc.importFiles([b])
+    const second = events.slice(beforeSecond).map((e) => e.sessionId)
+    expect(new Set(second).size).toBe(1)
+    expect(second[0]).not.toBe(first[0])
+  })
+
+  it('gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'gate-'))
+    dirs.push(storeDir)
+    const { writeFile } = await import('node:fs/promises')
+    const bad = join(storeDir, 'bad.pdf')
+    const good = join(storeDir, 'good.pdf')
+    await writeFile(bad, '这不是 PDF')
+    await writeFile(good, createTinyPdf())
+
+    let enters = 0
+    let exits = 0
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: { enter: () => { enters++ }, exit: () => { exits++ } },
+      extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
+    })
+    const result = await svc.importFiles([bad, good])
+    expect(result.failed).toHaveLength(1)
+    expect(enters).toBe(1)
+    expect(exits).toBe(1)
+  })
+
+  it('域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'gderr-'))
+    dirs.push(storeDir)
+    let enters = 0
+    let exits = 0
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: { enter: () => { enters++ }, exit: () => { exits++ } },
+      extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
+    })
+    await expect(svc.importFolder(join(storeDir, '不存在'))).rejects.toMatchObject({
+      code: 'IO_ERROR'
+    })
+    expect(enters).toBe(1)
+    expect(exits).toBe(1)
   })
 })
