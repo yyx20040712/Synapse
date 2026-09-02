@@ -65,12 +65,15 @@
 
 ## 5. 环境事实滚动
 
-- **volta shim 失效(2026-09-02 晚,用户侧待修)**:AppData\Local\Volta\bin
-  被网络错误(10060,代理连接失败)清空、cache 同毁——Git Bash 内
-  `node`=25.2.1(D:\nodejs),volta 不在 PATH。**本场绕行=PATH 前缀
-  `%LOCALAPPDATA%\Volta\tools\image\node\24.20.0` 直用镜像本体**(node24+
-  npm 11.19.0,verify 127/1106+e2e 全链亲验过)。根治=网络恢复后
-  `volta install node@24.20.0` 重建 shim——AGENTS 环境事实条目已增补。
+- **volta 勘误(同日稍后复核,初判作废——系统从未损坏)**:volta=全机安装
+  `C:\Program Files\Volta\`(volta.exe+全套 shim v2.0.2,System PATH 第 1 位,
+  D:\nodejs 第 15 位);VOLTA_HOME 的 bin 为空=本布局常态;shim 链路亲验
+  双点通过(项目内 v24.20.0/项目外 v25.2.1,platform.json default 在位)。
+  初判「shim 失效」系误诊=zcode 宿主 bash 环境缺 Volta PATH 条目(会话态,
+  非系统缺陷)——会话绕行=绝对路径 `/c/Program Files/Volta/npm.exe` 或
+  PATH 前缀该目录;诊断纪律入 AGENTS(判损坏前先查注册表+绝对路径探针)。
+  VOLTA_HOME\log 的 10060 错误日志=一次冗余 `volta install node@25.2.1`
+  网络失败,其目标态本已在位。
 - **playwright CLI 多文件序=强制字母序**:显式 `smoke.spec reader-text.spec`
   仍按字母序执行(reader-text 先)——「smoke→reader-text 显式序」不可
   经 CLI 构造;「smoke 后测重开原位」形态由全量序列 z- 探针殿后等效覆盖。

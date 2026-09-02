@@ -142,11 +142,17 @@ development Model Selection+loop-engineering references/06）；**架构与
   Volta 项目锁定**——package.json `volta` 字段 pin 24.20.0 随仓库走，clone 后新 shell
   自动生效；CI ci.yml node-version=24 同口径。2026-09-02 起 D:\nodejs 被他应用自动升到
   25.2.1——volta default=25.2.1 镜像系统现状，shim 在 PATH 首位拦截故其他应用零影响、
-  本项目拿 24。**2026-09-02 晚 volta shim 失效**（AppData\Local\Volta\bin 被网络错误
-  10060 清空、cache 同毁，错误日志在 Volta\log；Git Bash 内 `volta` 不在 PATH）——
-  临时绕行=PATH 前缀 `%LOCALAPPDATA%\Volta\tools\image\node\24.20.0` 直用镜像本体
-  （node24+npm 11.19.0 可用，verify/e2e 全链亲验过）；**根治需用户网络恢复后
-  `volta install node@24.20.0` 重建 shim**（代理 127.0.0.1:7890 在线时可成）。
+  本项目拿 24。**volta 布局勘误（2026-09-02 六波场后同日复核，前「shim 失效」
+  判断作废）**：volta=全机安装（`C:\Program Files\Volta\` 存 volta.exe+全套
+  shim v2.0.2，System PATH 第 1 位即该目录、D:\nodejs 第 15 位——新 shell 恒
+  shim 优先）；VOLTA_HOME=`%LOCALAPPDATA%\Volta` 只存镜像/状态，**其 bin 为空
+  是本布局常态非损坏**；shim 链路亲验双点通过（项目内 v24.20.0/项目外
+  v25.2.1，platform.json default=25.2.1 在位）。此前「shim 失效」系误诊=
+  zcode 宿主 bash 环境缺 Volta PATH 条目（宿主会话态，非系统缺陷）——宿主内
+  `node` 落 D:\nodejs=25.2.1。**会话绕行**=绝对路径 `/c/Program Files/Volta/
+  npm.exe` 或 PATH 前缀该目录；**诊断纪律=判「环境损坏」前先查注册表 PATH+
+  绝对路径探针，勿凭本会话 PATH 断系统态**（VOLTA_HOME\log 的 10060 错误日志
+  =一次冗余 `volta install node@25.2.1` 网络失败，其目标态本已在位）。
   **Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
   用例结构性假红，node24 对照 11/11 绿实证）——check-quality 版本守卫已拦（非 24 即
   红；CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用）。
