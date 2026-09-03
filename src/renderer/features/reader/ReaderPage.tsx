@@ -26,6 +26,9 @@
  *   期望：切布局不丢位置）
  * - P7E-03 页内搜索装配：useReaderSearch（fileUrl 键效应清面板/ctrl+f/
  *   翻页联动注入/受控面板节点）→ ReaderToolbar searchBox slot
+ * - P7E-05 阅读时长装配：useReaderReadingTime（时长账本+复合 flusher——
+ *   进度页+时长账单通道合并）+useReadingTimeWiring（ready×active 计时门/
+ *   visibilitychange/卸载 dispose）；装配块驻 reading-time.ts（组件行数关卡）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
@@ -52,6 +55,8 @@ import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from './reader.store'
 import { readActiveTab, useActiveTab } from './useActiveTab'
 import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
+import { useReaderReadingTime } from './reading-time-setup'
+import { useReadingTimeWiring } from './reading-time'
 import { showToast } from '../../shared/ui/Toast'
 
 export function ReaderPage(): JSX.Element {
@@ -83,7 +88,11 @@ export function ReaderPage(): JSX.Element {
   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
   // F-03 滚动进度状态机（装配工厂闭包 scrollAreaRef；接线见 useScrollProgressWiring）
   const spProg = useMemo(() => createReaderScrollProgress(scrollAreaRef), [])
-  useScrollProgressWiring(spProg, fileUrl, paperId, columnScroll)
+  // P7E-05 时长账本+复合 flusher（装配块驻 reading-time.ts——组件行数关卡配套；
+  // 计时门接线 R3/R4/R7/R10+进度时长单通道合并 Design 裁决）
+  const { rt: rtTime, flusher: compositeFlusher } = useReaderReadingTime(spProg)
+  useScrollProgressWiring(spProg, fileUrl, paperId, columnScroll, compositeFlusher)
+  useReadingTimeWiring(rtTime, paperId, fileUrl !== null)
   // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
   const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)
 

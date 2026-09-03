@@ -1,0 +1,47 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reading-time.test.ts [2m([22m[2m15 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m reading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR2 分片（门一 BLOCKING）：账 4000s→flush→两次 invoke（3600+400）+账清零[90m 6[2mms[22m[31m[39m
+[31m     → expected [ { paperId: 'p-1', page: 3, …(1) } ] to deeply equal [ …(2) ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time.test.ts[2m > [22mreading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR2 分片（门一 BLOCKING）：账 4000s→flush→两次 invoke（3600+400）+账清零
+[31m[1mAssertionError[22m: expected [ { paperId: 'p-1', page: 3, …(1) } ] to deeply equal [ …(2) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[2m      "page": 3,[22m
+[2m      "paperId": "p-1",[22m
+[32m-     "secondsDelta": 3600,[39m
+[32m-   },[39m
+[32m-   Object {[39m
+[32m-     "page": 3,[39m
+[32m-     "paperId": "p-1",[39m
+[32m-     "secondsDelta": 400,[39m
+[31m+     "secondsDelta": 4000,[39m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time.test.ts:[2m212:21[22m[39m
+    [90m210| [39m    h[33m.[39m[34madvance[39m([34m4_000_000[39m)
+    [90m211| [39m    f[33m.[39m[34mflush[39m([32m'p-1'[39m)
+    [90m212| [39m    [34mexpect[39m(f[33m.[39msaved)[33m.[39m[34mtoEqual[39m([
+    [90m   | [39m                    [31m^[39m
+    [90m213| [39m      { paperId[33m:[39m [32m'p-1'[39m[33m,[39m page[33m:[39m [34m3[39m[33m,[39m secondsDelta[33m:[39m [34m3_600[39m }[33m,[39m
+    [90m214| [39m      { paperId[33m:[39m [32m'p-1'[39m[33m,[39m page[33m:[39m [34m3[39m[33m,[39m secondsDelta[33m:[39m [34m400[39m }
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 19:32:45
+[2m   Duration [22m 769ms[2m (transform 46ms, setup 0ms, collect 91ms, tests 13ms, environment 0ms, prepare 270ms)[22m
+
+exit=1

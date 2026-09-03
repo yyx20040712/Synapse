@@ -1,0 +1,22 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/renderer/features/reader/reading-time-setup.ts",
+      "line_hint": "onFlush callback（createReaderReadingTime 第一个参数）",
+      "issue": "R7 dispose 尾账回吐未接入 PROGRESS_SECONDS_CHUNK 分片：ReadingTime.dispose 直接 deps.onFlush(pid, sec)，而 setup 侧把秒数原样放入 secondsDelta。连续阅读超过 1h 后卸载 ReaderPage（切视图/R7）时累计账可 >3600，触发 schemas.ts secondsDelta.max(3600) 的 zod 拒收，Promise rejection 被 .then(() => undefined, () => undefined) 吞掉，整段时长静默丢失。门一发现的“1h 击穿”只修复了 R5/R6 的 composite flush 路径，R7 收尾口仍是同型漏点。",
+      "evidence": "reading-time-setup.ts: `createReaderReadingTime((paperId, seconds) => { void api.reader.saveProgress({ paperId, page: useReaderStore.getState().tabs[paperId]?.page ?? 0, secondsDelta: seconds }) ... })`；reading-time.ts dispose: `if (sec > 0) deps.onFlush(paperId, sec)`",
+      "suggestion": "把 dispose 尾账也路由到按 PROGRESS_SECONDS_CHUNK=3600 分片的 invokeOne（或在 reading-time-setup 的 onFlush 内自行拆 3600 整数片+尾片逐次 saveProgress），并补充 >3600s 的 dispose 单测锚（例如账 4000s → R7 dispose → 两次 saveProgress 3600+400）。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/reading-time.ts",
+      "line_hint": "settle() 方法（liveMs 结转门控）",
+      "issue": "settle 把“吸收 now-lastMark 增量”和“把 liveMs 转入 ledger”一起锁在 currentPid!==null && isVisible() 内。hidden 状态下的 force 结算（stop/dispose/collectAllAndZero 等在后台被调）不仅不记 hidden 时长，连 hidden 前已经留在 liveMs 中的可见零头也不结转；若随后 start(他篇) 重置 liveMs=0 或 dispose 结束，这段最多 <15s 的可见零头被丢弃。这与票面“不足 tick 的零头随 flush 按实结转 / 实转不丢”的表述存在出入，注释虽声明为宁少勿多，但属于可避免的可见段损失。",
+      "evidence": "settle 内 `if (currentPid !== null && deps.isVisible()) { liveMs += ...; if (force || liveMs >= READING_TICK_MS) { ledger[currentPid] = ...; liveMs = 0 } }`；文件注释 `hidden 期 force 结算：零头留存 liveMs 不入账`、`stop() 后 start(他篇) 的 liveMs=0 重置`",
+      "suggestion": "把“吸收增量”与“结转已计量 liveMs”解耦：hidden 且 force 时，只禁止 now-lastMark 吸收（防 hidden 虚计），但仍将 liveMs 中已有的可见毫秒按 floor 转入当前 pid 的 ledger 后再清零；或至少在 stop/dispose 前把 liveMs 归入当前 pid 的 ledger。补充 hidden 前存在 5s 零头、hidden 中 collectAndZero/dispose 的断言。"
+    }
+  ],
+  "summary": "实现主体符合分层单向、SQL 参数绑定、票面最小增量和测试纪律，迁移与 secondsDelta 旧载荷兼容设计基本可信；但 R7 dispose 尾账未走 3600 分片仍是与门一 BLOCKING 同型的静默丢账路径，不能 PASS。另 settle 在 hidden force 路径下会丢弃已计量的可见零头，建议一并收口后复审。"
+}

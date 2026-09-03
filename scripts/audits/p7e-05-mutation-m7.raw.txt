@@ -1,0 +1,45 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reading-time.test.ts [2m([22m[2m17 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m reading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）[90m 6[2mms[22m[31m[39m
+[31m     → expected [ { paperId: 'p-1', seconds: 4000 } ] to deeply equal [ …(2) ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time.test.ts[2m > [22mreading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）
+[31m[1mAssertionError[22m: expected [ { paperId: 'p-1', seconds: 4000 } ] to deeply equal [ …(2) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[2m      "paperId": "p-1",[22m
+[32m-     "seconds": 3600,[39m
+[32m-   },[39m
+[32m-   Object {[39m
+[32m-     "paperId": "p-1",[39m
+[32m-     "seconds": 400,[39m
+[31m+     "seconds": 4000,[39m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time.test.ts:[2m224:23[22m[39m
+    [90m222| [39m    h[33m.[39m[34madvance[39m([34m4_000_000[39m)
+    [90m223| [39m    h[33m.[39mrt[33m.[39m[34mdispose[39m()
+    [90m224| [39m    [34mexpect[39m(h[33m.[39mflushed)[33m.[39m[34mtoEqual[39m([
+    [90m   | [39m                      [31m^[39m
+    [90m225| [39m      { paperId[33m:[39m [32m'p-1'[39m[33m,[39m seconds[33m:[39m [34m3_600[39m }[33m,[39m
+    [90m226| [39m      { paperId[33m:[39m [32m'p-1'[39m[33m,[39m seconds[33m:[39m [34m400[39m }
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m16 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 19:48:44
+[2m   Duration [22m 738ms[2m (transform 43ms, setup 0ms, collect 94ms, tests 13ms, environment 0ms, prepare 308ms)[22m
+
+exit=1

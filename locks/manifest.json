@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T07:00:38.3890145Z",
+    "generatedAt":  "2026-09-03T12:02:38.0325230Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "d7fde330fb67b2af45b6bff9a61037cc56005c926a2f2c23bd671980c17ccc6a"
+                      "sha256":  "ff01e26662c6d13e65aa51220de760aff6a7e939960e0524424977ec5863b452"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -322,6 +322,10 @@
                       "sha256":  "8c8d331addeec993c802ca2c82fbf0c3f3828b1c14873eecad2c8439dd697bd9"
                   },
                   {
+                      "path":  "src/main/db/migrations/008_reading_time.sql",
+                      "sha256":  "0b096f12238996ee0b6a3b29426dbc423576f5588e7ccd9d937200daa73b0fd9"
+                  },
+                  {
                       "path":  "src/shared/annotation-order.ts",
                       "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
                   },
@@ -339,7 +343,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "72a8463dd38049318c263b8927d741d2500ba2fbe333eba5f0f1148200d880d3"
+                      "sha256":  "8df9e6fbda30ccd5bb3db8cf79ddba1934c6b13f362245945d057b61734b3071"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -363,7 +367,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "75d65533cd3230988cade3cac01d0d858f94c6ba8b85a32ce829e3b5da479fc3"
+                      "sha256":  "d23abc6e6ebdc04ffa849c1c6fd865d9987574aeafe36cb037b6cb29eb426570"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -408,6 +412,10 @@
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
                       "sha256":  "ddcf62550b0809b8bd0215c5d869369da789e46690c36e19e0bea63fd0a5e1bf"
+                  },
+                  {
+                      "path":  "tests/e2e/reader-reading-time.spec.ts",
+                      "sha256":  "ab91d6ce027ffbff488400b863ca28b23023029d5fc2c91c15c69055ee1cad11"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
@@ -471,7 +479,15 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "af9466964dc797d846d7b3783267d25538752e8af6d4065ddaf38edf89fd0d14"
+                      "sha256":  "a87e3d0db473edbad1da758d145974d0377e80a92534181962865818ebc8b782"
+                  },
+                  {
+                      "path":  "tests/unit/db/migrate-reading-time.test.ts",
+                      "sha256":  "083b9d69e8b47cfc02b842c1d9845ee703b3f7e52b03e62c209da83b643bbc66"
+                  },
+                  {
+                      "path":  "tests/unit/db/papers-reading-time.test.ts",
+                      "sha256":  "ef145100b7f62c89759103e6768252219eb6a915ae4d4c9960de48a753bc7cd8"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -731,19 +747,19 @@
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
-                      "sha256":  "e7364b3787649905cebbba06e4bb398599022512340648bca3c9d5c8807f8ed2"
+                      "sha256":  "065bea4e31af31f6e383f648352e2231f52c982c101547618bdcd5cf6ee90054"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-clip.test.tsx",
-                      "sha256":  "be4f8bc5912956b891a5edd68d812e2a087bee9a260a78c3d08c368ed64f5aca"
+                      "sha256":  "a2e4f1ac3335a7f0e85634913727cb13e402e39fae7063cfbf1aa27a238102d5"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
-                      "sha256":  "a6066aae93b557e2dc98c506362cc1b8d24c636977e50ad22d724474d7ab3ee7"
+                      "sha256":  "b7dd637523fa5c327507fc39f3ad6e76bb83adaecb02339da94e484f6760d730"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-notes-off.test.tsx",
-                      "sha256":  "afd0f1092c10ddaa1ea67e5dbc34a00af7227a982c7fdea5255d9d75dc3667d3"
+                      "sha256":  "1a9750a6d03a014da9a82311c4797ee688e74a803470afe995e5feacc62c0c35"
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
@@ -792,6 +808,10 @@
                   {
                       "path":  "tests/unit/renderer/reader-store-undo-race.test.ts",
                       "sha256":  "49516a94b61d5f716f6b50480ae653433fbcd026e0dbc12e000f67c72c95cb9b"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reading-time.test.ts",
+                      "sha256":  "69df484f7c4caf34161f2e401ccb5cbe1683392c53e372155db31602d61c2c42"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
@@ -887,7 +907,7 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
-                      "sha256":  "94c5c7b34f796064011ce8108160877cd14c80fc71f1555eaa500e122b843c51"
+                      "sha256":  "993a5c6f084b2ed63de63001afafd95988f5652f999d748e465123d8ebabab38"
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",
@@ -895,11 +915,11 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "26f0ec475d61bd3a2e061eb12cef3568dd35eeb528b85fa0f4097bd7536c3353"
+                      "sha256":  "a3956b3754da3804a66a87c4a57c85aebb26131bcb143708507f7be1146436af"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
-                      "sha256":  "057861c47b0e8dbf70a262dd7548b8cf1b56654b38c34edffe7055ddba79fe78"
+                      "sha256":  "7bffa25a66492ead0692ea80195cd54473eaeaad07106c8e4545344da8482d48"
                   },
                   {
                       "path":  "tests/unit/services/file-store.test.ts",
@@ -911,7 +931,7 @@
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
-                      "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                      "sha256":  "a52120eed09010e3f21eaf498f20887717fbb0261f6f959a1c6f9ea02c76423b"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
@@ -923,11 +943,11 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "830149a00ec11743411a7ebc608841acca2a9b1e8485183495ccd8df0881ab47"
+                      "sha256":  "04a4366e324b138d356c08e3f258abf58a3c76c637bbf8e3d7d644812768952b"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
-                      "sha256":  "67bb1092b7dbb9d53a6f626d8b9c431cfea48ae266f5a4180ea27fc3802b4de1"
+                      "sha256":  "dca43a6c13bda54a0fd9f7c795f4b5b2e8950634b2039784895b8eabbe281e26"
                   },
                   {
                       "path":  "tests/unit/services/notes.service.test.ts",
@@ -951,7 +971,11 @@
                   },
                   {
                       "path":  "tests/unit/services/reader.service.test.ts",
-                      "sha256":  "5051cc12ca26cc6b87e4577bd1c24e169e2600c0a9c377597942575442d00b80"
+                      "sha256":  "cfb3247305167520c35b9b786304d1811f1ad19727896f80f5cd9512a83be47d"
+                  },
+                  {
+                      "path":  "tests/unit/services/reader-time.test.ts",
+                      "sha256":  "00b6d6d37806d15f86c666fec405ebfe25a9a067a7e1444f422312023a4a656d"
                   },
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",

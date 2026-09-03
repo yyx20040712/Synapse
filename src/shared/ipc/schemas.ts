@@ -56,7 +56,13 @@ export const annotationIdReqSchema = z
 export const annotationListResSchema = z.array(annotationSchema)
 
 export const saveProgressReqSchema = z
-  .object({ paperId: z.string().min(1), page: z.number().int().min(0) })
+  .object({
+    paperId: z.string().min(1),
+    page: z.number().int().min(0),
+    // P7E-05 阅读时长搭车（可选=旧载荷零兼容破坏；上限 3600=单次 flush
+    // 上界防异常大值；缺省 0=reading_seconds 不动）
+    secondsDelta: z.number().int().min(0).max(3600).optional()
+  })
   .strict()
 export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
 

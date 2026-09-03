@@ -36,6 +36,7 @@ import { useAsync } from '../../shared/hooks/useAsync'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
+import { formatReadingTime } from '../../shared/reading-time-format'
 import { TagEditor } from '../tags/TagEditor'
 import { MetaEditDialog } from './MetaEditDialog'
 import { usePaperDetailActions } from './usePaperDetailActions'
@@ -73,10 +74,15 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   const [reloadKey, setReloadKey] = useState(0)
   const [editing, setEditing] = useState(false)
 
-  const { data: detail, error, run } = useAsync(
+  const { data: fetched, error, run } = useAsync(
     () => (paperId === null ? Promise.resolve(null) : unwrap(api.library.detail({ paperId }))),
     [paperId, reloadKey]
   )
+  // P7E-05 收口守卫：重读期不显示旧文献（stale detail 竞态根治——tag-lifecycle
+  // e2e 两现实录：切文献后 useAsync 返回前 detail 延续旧值，TagEditor 挂接点
+  // key=旧 id 不重挂，Enter 落进窗口即挂错文献；id 不匹配置 null 走既有
+  // loading 态，消费面（动作 hook/编辑框/TagEditor）一律拿不到 stale 数据）
+  const detail = fetched !== null && fetched.id === paperId ? fetched : null
   // run 是恒稳定引用，paperId/reloadKey 变化必须在这里触发重取
   // （useAsync 的 deps 只做快照不自动执行，漏列即详情永不更新）
   useEffect(() => {
@@ -154,6 +160,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
         <Row label="DOI">{detail.doi ?? ''}</Row>
         <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
+        <Row label="阅读">{formatReadingTime(detail.readingSeconds)}</Row>
       </div>
       {detail.abstract !== '' && (
         <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
@@ -191,7 +198,11 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           </Button>
         )}
       </div>
+      {/* key=会话身份：切文献强制重挂——TagEditor 有状态（input/busy），换文献
+          延续旧实例会让 Enter 落进旧 detail 上下文窗口（tag-lifecycle e2e 实证：
+          P7E-05 加行放大的既有竞态——挂错文献的正确性缺陷非仅测试面） */}
       <TagEditor
+        key={detail.id}
         paperId={detail.id}
         tags={detail.tags}
         onChanged={() => setReloadKey((k) => k + 1)}

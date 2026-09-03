@@ -18,7 +18,10 @@
  * - 只依赖 repos 桶
  *
  * ── 生命周期层 ──
- * - 预留：阅读时长统计（002 迁移加列）
+ * - P7E-05 已兑现：阅读时长统计——saveProgress 搭车 secondsDelta（可选，缺省
+ *   0）透传 updateReadPage 第三参原子累加（单通道单事务面，Design 裁决）。
+ *   勘误：原预留注记写「002 迁移加列」时 002 已被 indexes 占用，实际落位
+ *   =008_reading_time（已合入迁移不可修改=CI 锁硬规则，只能新增）
  * - 不做：多设备同步进度
  *
  * ── 文化层 ──
@@ -76,9 +79,10 @@ export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader
       return annotations.listByPaper(req.paperId)
     },
 
-    // 页码从 0 计，范围合法性已由上游 zod（int min 0）保证，此处薄转调
+    // 页码从 0 计，范围合法性已由上游 zod（int min 0）保证，此处薄转调；
+    // secondsDelta 缺省 0（P7E-05 时长搭车——旧调用方零破坏）
     async saveProgress(req) {
-      papers.updateReadPage(req.paperId, req.page)
+      papers.updateReadPage(req.paperId, req.page, req.secondsDelta ?? 0)
       return { ok: true as const }
     }
   }

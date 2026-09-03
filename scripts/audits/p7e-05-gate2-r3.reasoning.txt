@@ -1,0 +1,864 @@
+We need answer JSON audit. Need analyze carefully. Need not include markdown. Need findings. Need only final. We need use evidence. Let's inspect material.
+
+We are auditor. We have R3 review material delta. Need assess verdict.
+
+We need infer project constitution hard rules likely from AGENTS.md key entries: layered unidirectional / no string concat SQL / test lock / line limits repo≤300 components≤250 files≤500 / cross-feature import red line / no new dependency. Need identify violations in delta.
+
+Need examine code changes.
+
+Summary of changes:
+- BLOCKING dispose tail not chunked: created chunkSeconds pure function; invokeOne + dispose onFlush + setup onFlush use. Tests.
+- WARN settle coupling: absorb only visible; carry-over (force/≥tick) not visible. Changed semantics anchor + new.
+- M2 carrier invalid; carrier transfer to M5.
+- verify R3 green 146 files/1255 tests; locks 265 unchanged.
+
+Need assess code for correctness/security/production/test.
+
+Potential issues:
+
+1. `chunkSeconds(sec)` with negative sec? It handles rest = sec. If sec negative, while false; if rest >0 false or chunks length 0? chunks length 0, so chunks.push(rest) => pushes negative. Then onFlush(paperId, negative) or saveProgress with negative delta. Is that possible? Internal ledger counts can maybe never negative? liveMs += Math.max(0,...), ledger plus floor(liveMs /1000). sec ledger positive? `sec = ledger[paperId] ?? 0`, delete. Could be? If ledger maybe negative due to weird? Probably not. But public function exported maybe input negative edge not considered. Need not? Could add assert? But pure function could no. Let's examine settle code.
+
+Settle:
+```
+if (currentPid !== null && deps.isVisible()) liveMs += Math.max(0, now - lastMark)
+if (currentPid !== null && (force || liveMs >= TICK)) {
+ ledger[currentPid] = (ledger[currentPid] ?? 0) + Math.floor(liveMs / 1000)
+ liveMs = 0
+}
+lastMark = now
+```
+Potential collision: If currentPid non-null and force true and visible false, liveMs prior < tick? it can carry `Math.floor(liveMs/1000)`? Wait in R3 decoupling hidden zero residue: "visible 5s zero head → hidden → collectAndZero=20" Wait test: start p-1, advance 15_000 likely 15 sec becomes ledger? Let's parse advanced.
+
+Need know existing tick behavior. Test:
+```
+h.rt.start('p-1')
+h.advance(15_000)
+h.advance(5_000)
+h.setVisible(false)
+h.rt.onVisibilityChange()
+expect h.rt.collectAndZero('p-1') 20
+```
+Probably advance triggers tick(s): start at t=0. after 15 sec visible, liveMs=15000, interval/tick at? Reading tick maybe 15_000? Let's infer. At advance 15_000 maybe settle => ledger 15s, liveMs=0. Then advance 5_000, liveMs=5000 (visible). setVisible(false); onVisibilityChange maybe force settle? They expect collectAndZero returns 20. collectAndZero maybe includes current live residue? Need semantics. They set hidden and onVisibilityChange. If onVisibilityChange with hidden? For absorb not visible, but carry-over force? "结转（force/≥tick 入账）不依赖当前可见性"; hidden before has visible 5s "零头" (<15s) with force settles into A account? Let's reason. visible 5s -> hidden? onVisibilityChange probably clears timer and calls settle(true) to carry? If visible false, first absorb condition false, force true so ledger += floor(5000/1000)=5 (since currentPid nonnull), liveMs zero. ledger maybe previous 15? plus 5 =>20. Test expects 20. Good. collectAndZero = ledger? not residue.
+
+Previously hidden didn't absorb. But carry with force uses floor(5000/1000). Good.
+
+Potential issue: "visible 5s zero head→hidden→collectAndZero=20", but if hidden 5s after onVisibilityChange? If the "5s zero head" is `Math.floor(liveMs / 1000)`, with 5_000 gives 5. Good.
+
+Potential issue: If note `Math.floor(liveMs / 1000)` after liveMs from visible 4.5sec (4500) when 5s? They call Math.max(0, now - lastMark). If lastMark at previous tick. Fine.
+
+Potential issue: `settle(force)` sets `lastMark = now` even if currentPid === null. This means if no active, lastMark updated. On start then lastMark = now. Fine. But in hidden non-active? no issue.
+
+Potential bug: In tick, hidden gap doesn't absorb elapsed. But if invisible duration includes future time? onVisibilityChange sets lastMark? Need know tick doesn't advance when hidden. If hidden, tick guard returns, so lastMark remains old? Wait if hidden, no settle called except onVisibilityChange maybe force settle at hidden entry. At start of hidden, lastMark = now. Then no ticks. When visible returns, onVisibilityChange perhaps settle(true)? If force true while visible? absorb visible? Actually currentPid non-null visible true, adds since lastMark. If hidden callback at visibility change should set? Need understand tests. "hidden 段隔离 由 onVisibilityChange 承担，此处防御冗余" implies onVisibilityChange is called on hidden/visible transitions and calls tick? The code omitted maybe. "onVisibilityChange" probably when visible? Let's assume.
+
+Could there be issue in settle when force on hidden after already settled zero? At onVisibilityChange(false), it force settles floor(liveMs/1000) if currentPid non-null. Then ledger increments; liveMs zero. No further absorption while hidden. `lastMark = now`. When visible returns, onVisibilityChange(true) should call settle(false?) or tick? If returns visible, there may be elapse since lastMark hidden? Actually onVisibilityChange hides at then. If user hidden for 10s then visible, when visible comes, lastMark=hidden begin. At visible callback, should not absorb hidden interval. Then it must set lastMark to now before visible ticks resume. Does onVisibilityChange do that? In code "tick：门关（无 active/不可见）零累积直接返回（刻度不动——hidden 段隔离由 onVisibilityChange 承担，此处防御冗余）". So onVisibilityChange likely calls tick? The diff only settle+tick. Existing code maybe hidden transition calls state sync? Need not speculate, but "hidden 段隔离由 onVisibilityChange承担" so visible changed? Maybe onVisibilityChange calls settle/force? test uses setVisible(false); h.rt.onVisibilityChange(); collectAndZero returns 20. If onVisibilityChange handles visibility changes both ways? It likely does `if (deps.isVisible()) { start/refresh timer } else { stop timer; settle(true) }`? At hidden sets? Then when visible, maybe lastMark initialized? Hmm.
+
+Potential correctness issue: `settle` with `force` and currentPid nonnull, if liveMs >= TICK? Wait `tick` calls settle(false). In settle false, if visible true, first absorb liveMs += now-lastMark, then if force false and liveMs >= TICK, ledger += floor(liveMs /1000), liveMs=0. This means at `liveMs >= TICK` with exactly >=15_000, but if tick interval is 15_000, when before adding and after elapsed 15_000, currentPid visible: first statement liveMs += now-lastMark. lastMark initially? create maybe lastMark = now on start; first tick after 15 sec visible adds 15000; second condition >=15k, ledger +=15, liveMs=0; lastMark=now. Good. But the visible segment between lastMark and tick can cross visibility changes? yes.
+
+But if currentPid visible and `now - lastMark` large (e.g., tab hidden but isVisible stale? no). If interval stalled because computer asleep and timers delayed; deps.isVisible true? Maybe elapsed includes hidden or suspended? Hard.
+
+Need inspect `chunkSeconds`. It can handle 4000 returns [3600,400], 0 returns [0]. A "single source" across invokeOne etc. Potential issue: 0 returns [0], but onFlush consumer in dispose has `if (sec>0) for chunks` so no zero. setup onFlush in `useReaderReadingTime` calls chunkSeconds(seconds) for any seconds. The comment says "onFlush 兜底=dispose 尾账单通道 ... 单笔≤3600 经 chunkSeconds 单片透传=防御深度; 每片恒>0=恒带 secondsDelta 字段 (0 省略语义由 invokeOne 装配层维持)" Wait if `seconds >0` from reading time internal only calls onFlush with positive? Yes internal adds times. onFlush likely positive. `chunkSeconds` of positive gives positive all. for sec=0 returns [0]; if ever dispose? no.
+
+But setup onFlush callback in `useReaderReadingTime`: 
+```
+(paperId, seconds) => {
+ for (const chunk of chunkSeconds(seconds)) {
+  void api.reader.saveProgress({... secondsDelta: chunk}).then(...)
+ }
+}
+```
+If seconds=0 from some path, chunkSeconds returns [0], then saveProgress with secondsDelta: 0 (whereas comment says 0 omitted semantics by invokeOne, but this callback directly calls api.reader.saveProgress, not invokeOne? Need parse. It says setup onFlush "防御深度——上游已分片则单片透传". It's useReaderReadingTime's rt create with callback. Composite flusher? Let's reconstruct. They have `createReaderReadingTime` reading-time module with deps.onFlush. `useReaderReadingTime` creates rt with deps.onFlush = (paperId, seconds) => for chunk in chunkSeconds(seconds) api.reader.saveProgress({paperId, page, secondsDelta: chunk}). `createCompositeProgressFlusher` takes sp, rt, and api. In composite flusher flush maybe uses `rt.collectAndZero` and invokes saveProgress? Need material: "复合 flusher（装配面注册进 store.registerProgressFlusher——closeTab/close 消费）：进度页+时长账一次 invoke（sec>0||page 在场才发；两账皆空零 invoke）。分片... sec>3600 拆 3600 整数片+尾片依次 invoke（页码同一 pending page 重复写=" ... Maybe code unchanged from R2? Need assess if seconds=0 situation in composite flusher can pass rt.collectAndZero result. If collectAndZero returns 0 and page present? It may invoke with secondsDelta maybe no? Let's see. `createCompositeProgressFlusher` likely calls `saved` with object. There may be logic sec>0||page present. If sec >0, it uses chunkSeconds to call API? It might use `rt`'s onFlush etc.
+
+Need identify issues enough. We need not inspect codebase. Need use given delta but can infer. We must not invent.
+
+Let's inspect settle semantics in detail, as correctness.
+
+Existing code after R3:
+```
+const settle = (force: boolean): void => {
+  const now = deps.now()
+  if (currentPid !== null && deps.isVisible()) {
+    liveMs += Math.max(0, now - lastMark)
+  }
+  if (currentPid !== null && (force || liveMs >= READING_TICK_MS)) {
+    ledger[currentPid] = (ledger[currentPid] ?? 0) + Math.floor(liveMs / 1000)
+    liveMs = 0
+  }
+  lastMark = now
+}
+```
+Potential issue: if currentPid === null, lastMark = now. Suppose no paper active. start sets currentPid and lastMark now. Fine.
+
+But a subtle bug: If a hidden segment occurs between two visible periods (visibility false), no settle with ledger carry? At hidden transition, onVisibilityChange probably calls force settle? We don't see. But if force settle at hidden begins, liveMs zero. If no current pid? null.
+
+Another subtle: In `settle(false)` after visible, if `liveMs` after settlement still < TICK but if force false and `currentPid` visible? It doesn't reset `lastMark`? Actually lastMark = now after if. Good.
+
+Potential issue with fractional ms floor: Suppose liveMs is e.g. 14_999 ms (just below 15s), tick at 15s delayed? Actually if TICK=15_000, next tick after 15_000 elapsed should hit >=, because it only triggers each 15_000 based timer, but due event loop at 15_000 or later. If after last settlement, liveMs reset 0. It could execute after 15_100; then ledger += floor(15100/1000)=15, not 15.1 sec, losing 100 ms. Ah! Wait check: `settle(false)` only called at tick. The timer interval presumably 15s, scheduled after each tick. But event loop / setInterval delay means elapsed since last tick may exceed 15s by arbitrary ms. `liveMs` accumulates actual duration in ms. It uses `Math.floor(liveMs / 1000)` to convert to seconds. For liveMs 15100, should ledger add 15 sec (if truncating) maybe okay; the extra `100ms` is in same 15 sec second (15 sec + 100ms => floor 15) should add 15, not 16, because 100ms belongs to the 16th second? Actually "liveMs" is cumulative milliseconds since start. If exactly 15,100, number of full seconds is 15, with 100ms partial. Thus ledger increment 15. But then after subtracting? Implementation sets liveMs=0, discarding the remaining 100ms partial. That is a bug across repeated ticks: each tick resets liveMs to zero after adding floor(liveMs/1000), losing the sub-second fractional remainder (`liveMs % 1000`) even though it belongs to ongoing reading time. These remainders should accumulate and eventually count as whole seconds. Wait, maybe design intentionally floors at each tick and discards fraction? The comment "liveMs" should accumulate; ledger seconds = floor of total live ms /1000. If after first tick liveMs=15000 exactly because timer exactly? But due async, if liveMs=15001, floor =15, waste 1 ms. Not significant but correctness at scale at most 999ms lost per tick? Actually if timers early? setInterval can be delayed not early. Each interval elapsed can be 15000 + e (0.. maybe larger if throttled). If it only settles after delay, floor of 15010/1000=15, not 16 if 10 ms into next second. Usually if scheduled every 15s, after 15s plus 10ms, reading should maybe be 15 sec full = 15000ms, 10ms partial = not a second. But if you add only 15 sec and set liveMs=0, you've discarded 10ms that should be carried toward next second. Accumulating over ticks would add to 1000ms and count as extra seconds. Since sec resolution, likely should carry remainder to avoid losing up to 999ms per interval. Is this existing behavior? We need evaluate if introduced. In code shown all diff includes settle terminal state; maybe for R3. However the code before maybe similar? In material, `liveMs += Math.max(0, now - lastMark)`; then `ledger += Math.floor(liveMs / 1000)`; `liveMs=0`; This is common quantized loss by setting to zero. But if `settle` only when liveMs >= TICK, maybe always at least a multiple? Actually liveMs accumulates `now-lastMark`; lastMark=now at settle; so liveMs is amount since previous settle, not total from start. Since `setInterval` callbacks often fire on time. If event loop delayed by 10ms, then timer for 15s fires at 15010; actual elapsed is 15010. Should you count 15 seconds for 15010ms? Total seconds should floor(15010/1000)=15 and carry 10ms. But after reset to zero, the 10ms doesn't count. If next tick at 30020, and each liveMs 15010, first 15, second after total 30020 floor=30 (second interval 15 sec + 10ms? Wait if each interval measured 15010, if reset to zero each time, first add 15, second also floor(15010/1000)=15 => total ledger 30, while true floor(30020/1000)=30. no loss? Let's calculate: If at t=15010, elapsed since last mark 15010; floor =15, leaves 10ms discarded. But 10ms is partial of second 16-? During 0-15010, full seconds: seconds 0-14999? Let's define floor(total_ms/1000). For 15010 = 15 full seconds? Actually 15000 ms = 15 seconds. 15010 = 15 seconds (0-based 15 complete intervals of 1000?) Wait 1000 ms = 1 sec. 15000 ms = 15 sec exactly. 15010ms contains 15,010 complete milliseconds. Divide by 1000: 15.010 seconds, full seconds=15. Yes floor 15. The 10ms extra is part of the 16th second, not full. It must be carried to count if `total` reaches 16000ms. Suppose interval callbacks each delay by 1ms after 15,010ms? But setInterval not catches up; next at t=30010? Actually first callback at 15010; setInterval starts at t=0 to fire every 15000 but if first event delayed? Next scheduled relative to previous? Browser timers generally next interval at previous scheduled + interval, not after event loop; if first delayed to 15010, next scheduled at 30000, not 30020. Let's examine elapsed from lastMark (15010) to next timer at 30000 = 14990, not 15000! Wait if callback later, `lastMark=now=15010`; next expected at 30000, which is before 15000ms later; elapsed=14990 < 15000, so settle false, then next at 45000? Hmm setInterval behavior in Node: timer is scheduled after 15000 from previous execution? Often Node timers with setInterval recursively schedule interval after callback? Since callback at 15010, next due at 30000? In browsers, "interval is relative to the time the previous interval was scheduled", so if delayed, next could fire at 30000. If next callback is 30000, only 14990 ms after lastMark, so setInterval tick condition? The code's timer maybe uses `setInterval` but instead of blindly settle each tick? Actually `tick` at 30000 calls settle, now-lastMark = 14990, liveMs < 15000, doesn't add to ledger (unless force false). Wait but at time 15010 to 30000, actual elapsed 14990, so no full 15 sec has passed since previous settlement; the previous settlement at 15010 did not include the 10ms (but count 15 sec for 15000). Actual total at 30000 is 30,000ms = 30 seconds, ledger currently 15. At settle, liveMs = 14990 < 15000, not enough to add 15. But should total ledger now be 30? Wait 30,000ms full seconds =30. The first add 15 at 15010? Is that correct? At 15010ms, 15 full seconds: 15. But plus 10ms. At 30000ms, 30 full seconds, total should add 15 more (from 15010 to 30000 duration 14990ms, but full seconds in interval? Let's count all seconds: 0-1000=1, ..., 14000-15000=15? Actually 15000 ms = 15 seconds separates 15th second? Let's map milliseconds: Interval [0,1000) = 1 second? Wait standard duration in ms: 1000 ms = 1 second; 15000 ms = 15 seconds. If read from t=0 to t=15000, you count 15 seconds. At t=15010, still full 15. For target total 30000, you should count 30 full seconds. If first count at 15010 =15, the remaining 14990 ms has 14 full seconds because of 10ms shifted? Wait 30000-15010=14990 <15000, so at t=30000 total full seconds not 30? Let's calculate exact durations: Count intervals [0,15000): 15 seconds, includes seconds labeled 0-14 (15 seconds). At t=15010, exactly 15.01 sec, total seconds 15? But if t=30000, 30 seconds? Wait 0-30000 = 30 sec, yes but if t=15010 is 15.01, then t=30000 is 15000 later = 30.01 sec from start? Let's compute: if first interval from 0 to 15010 is 15.010 sec, then second interval from 15010 to 30000 is 14.990 sec. Total to 30000 = 30.000 sec. That matches because first interval included 10ms extra beyond 15 sec, second shorter by 10ms. If at first callback you count floor=15 sec, reset to 0. Then second callback with 14.990 sec is <15, no add. Total ledger =15, not 30. This is indeed broken due to `setInterval` can fire at times not multiples if delayed. In reality if first setInterval callback *delayed* to 15010, the scheduled next fires at 30010? Need Node setInterval implementation: Each timer has start/duration; after firing, if repeat, start time is start+interval? Let’s recall Node `TimerWrap`: timeout duration fixed; start after each callback? Actually when callback runs, `repeat` true, TimerWrap.start(after, after) from current? Need if using setInterval, after callback, it calls `start(after, after)`, so delay measured from callback completion? I believe setInterval in Node schedules each call after interval plus callback execution delay (not catch-up). Browser spec says wait interval after previous timer's scheduled time? Let's recall. setInterval: "If the timer's delay is 100, the callback will execute after 100ms after the previous call begins." Example not exact. MDN: "This interval is the time between the start of the callbacks, not the time between the end of one callback and the start of another." So interval measured from start of previous callback? If callback delays, next can fire sooner? Let's not rely. The code likely has `setInterval(tick, READING_TICK_MS)`, so callback approximately every 15s. At each callback, `lastMark` updated to now after settling. If due event loop, the time since lastMark could be because callback ended after previous call. Not enough detail.
+
+Actually more relevant bug with fractional second loss: If timer ticks at exactly 15,000, liveMs=15000; floor=15, liveMs=0 no loss. If timer delayed 10ms to 15010 and next tick event delayed? If next callback at 30000 before 15000ms after previous `lastMark`? As above, maybe no settle. That would be undercounting. Usually `setInterval` with fixed interval after previous callback would fire at 30020 (if callback at 15010 and next in 15000 ms), liveMs=15010 second, add 15 again -> total 30 after 30020 actual? Actually start to 30020 floor 30, ledger 30; no loss, 10ms dropped but 20? floor second =15 count includes 15000ms of 15010; true total 30020=30 full? If ledger 15+15=30. Loss one? The 10ms remains not counted, but at t=30020 total full seconds 30; enough count. If third at 45030 add 15; ledger45, true floor(45030/1000)=45. No overall loss until total reaches next exact? Because after each 15000+ d ms count 15, for m ticks only m*15 seconds; total elapsed = m*15000 + residual less than m*? If each interval delay d_i <1? Wait if each interval measured from callback start to next callback start equal tick interval? If it's exactly 15000 between callbacks, not delayed. If previous callback started late only affects first? Let's not go too deep.
+
+Need identify actual defects from material.
+
+Another possible bug: The `settle` force carry-over "not dependent on current visibility": condition `if (currentPid !== null && (force || liveMs >= TICK))` adds `Math.floor(liveMs / 1000)` but if visible false and force true at hidden transition, liveMs was accumulated from previous ticks. Good. If there was never an update since lastMark while visible? Yes.
+
+Potential WARN: In `settle`, if force true and hidden, and `currentPid` non-null, it will add `Math.floor(liveMs /1000)` even if liveMs is tiny (e.g. 5ms), ledger += 0, liveMs = 0; no loss. On force dispose, any subsecond loses; but ledger seconds count floor. If active for 14.5 sec then dispose force, adds 14 sec, losing 0.5 sec. Is that acceptable? They intentionally ledger whole seconds only? Need check app might send secondsDelta integer seconds; reading time displayed? If final 14.9s should perhaps round? Existing behavior "零头随 flush 按实结转" likely expects floor? They comment "零头" and floor ms? Hmm "R2 NIT1 锚语义随裁决变更（hidden 中 stop 结转可见零头入 A 账 A=20/B=15）" Could be they changed semantics to allow floor? Let's parse anchor: Hidden with visible 5 sec zero head? At hidden force, ledger += floor(5000/1000)=5. If visible time 5.0 exactly. "可见零头（<15s）随 force 结转入账不丢" It adds 5s to ledger. But if visible time 5.9s, floor would add 5 and lose 0.9s. But current mechanism records ms exactly and at dispose flush to API seconds delta. `settle` transforms ms to seconds by floor and clears residue. A 5.9s visible zero head before hidden would carry only 5s. The language "零头随 flush 按实结转/实转不丢" and "可见零头（<15s）随 force 结转入账不丢" seems problematic because using integer seconds discards subsecond. However maybe liveMs measured in seconds ticks? `h.advance(5_000)` means 5000 ms; expect 5. For 5900, floor=5. "不丢" only meaning whole seconds no more hidden dropped? Not sure. Existing API `secondsDelta` integer, likely precision seconds.
+
+Could this be considered BLOCKING? We need evidence. No code line for rounding.
+
+Potential issue: `chunkSeconds` algorithm has max chunk 3600 and remainder. If input sec is >? Good. It never chunks negative, no finite. If `sec=3600`, [3600], no 0 tail. If sec=0, [0]. Fine. Complexity O(n/3600) but max maybe huge; chunk count could be memory large if ledger huge (hours maybe thousands). But if reading time years could big array. Not relevant.
+
+Potential issue tests: Mutation killing? M7+M5 red evidence shows 1 failed/16 passed two times. "M7 变异红证（删 dispose 分片→单笔 4000 红，还原 diff 空）。" Need evidence has two runs exit=1. That is okay? Maybe not identifying mutation. Need no.
+
+Potential issue: "verify R3 全绿 146文件/1255用例 exit=0; locks 265不变." Lock count okay. But line limits? No full files.
+
+Potential issue: `useReaderReadingTime` deps.onFlush callback catches rejection? `.then(() => undefined, () => undefined)` yes swallow and original "setup吞错=静默丢账" maybe now? They catch no-op. But original bug was zod reject from >3600, now avoids. If network/API actual failure still swallowed silently. Existing design maybe fire-and-forget; could be WARN? In earlier R2 already likely no. Material says "deps.onFlush"... `onFlush` might be callback; in composite flusher uses `.then(() => undefined)` regardless. Need not.
+
+Potential issue: `settle` or tick with currentPid not null but `isVisible` undefined? tests.
+
+Need inspect for "契约与纪律": They likely have repo line limits no full files given cannot check. No new deps. Cross-feature red line? There are "ProgressAccountView interface no import" OK. Use layer: reading-time.ts pure factory with `deps.now`, `deps.isVisible`, `deps.timers`, `deps.onFlush` injected, no directly import store or api? In reading-time code? setup `useReaderReadingTime` imports `api.reader` and `useReaderStore` but it's in a different layer? Need not.
+
+But maybe there is a new violation: reading-time.ts `createReaderReadingTime` uses deps.onFlush and unit tests make harness. Hmm.
+
+Need see "M2 载体失效申报：settle 解耦后「删 tick 门」变异不红（tick 无门直调 settle→吸收门兜底）——防线冗余实证，载体转移 M5". They claim lines redundant. Test discipline issue? A mutation not red because redundancy. They transfer mutation carrier to M5? We don't have M5 red. M5 is existing? Need verify R3 maybe.
+
+Need maybe there is a "mutation carrier invalid" fail? If mutation no longer red because "tick no guard direct calls settle→absorb guard bottom"? Let's think if removing `if (currentPid === null || !deps.isVisible()) return` from tick means tick always calls settle(false). If currentPid null: settle would first condition skip? second currentPid not null false, lastMark now. With invisible: settle false no absorb but if ledger >=TICK? second condition true if force false and liveMs>=TICK, carries? Wait `settle(false)` doesn't check isVisible for carry; if hidden and liveMs>=TICK, then calling settle(false) would add floor(liveMs/1000) despite hidden! The guard in tick prevents hidden intervals from triggering carry? Let's examine:
+```
+if (currentPid===null || !deps.isVisible()) return
+settle(false)
+```
+If hidden, tick returns so no carry. But onVisibilityChange handles. Removing guard: hidden timer? Actually when hidden, timer stopped in onVisibilityChange, likely no tick calls. In disabled/hidden with no timer, no. If still tick (if setInterval active?) no. "tick 无门直调 settle→吸收门兜底)" Wait if not guard, hidden tick calls settle(false). Since settle second condition doesn't check visible, and force=false || liveMs >= TICK, if liveMs from before hidden maybe? At hidden transition, liveMs zero and timer stopped. But if tick kept firing due to not stop? It may have `liveMs` 0 < TICK, so no carry. If no guard, hidden time between ticks? But if timer stopped no tick. "吸收门" is first if: currentPid !== null && deps.isVisible. So hidden no absorb, but if it retained liveMs >TICK from visible? At hidden entry if no force? But onVisibilityChange force carries. If hidden ticks continue and liveMs below? no.
+
+For currentPid===null removing guard would call `settle`; currentPid null skip both, update lastMark. If later start p sets lastMark? start likely sets lastMark = now, so no issue.
+
+Wait mutation "删 tick 门" not red because no guard equivalent? Test "hidden 中 stop 结转残?" Hmm.
+
+Need examine test anchors to see correctness.
+
+Test line 205 "R2 分片 (门一 BLOCKING): 账 4000s→flush→两次 invoke (3600+400)+账清零"
+flusher: h.rt.start, advance 4_000_000 = 4000s. Need if tick at 15s, ledger accumulates 4000 by auto? Since liveMs after tick maybe exactly? Let's simulate. If `advance(4_000_000)` in harness runs timer ticks in increments? It calls advance in milliseconds and triggers interval callbacks at 15000 increments; liveMs accumulates and settle when >=15000. Ledger should record floor total. At end maybe live residue of last tick? If advance 4,000,000 with setInterval callback exactly, last settle at t=4,000,000? 4,000,000 / 15,000 =266.666. There are 266 full ticks if scheduled at t=3999900? Wait 15 sec =15000; 4,000,000 /15000=266.666 => 266 intervals exactly up to 3,990,000, then no tick at 4,000,000 because 10 sec <15. But collectAndZero in flush should force carry maybe of liveMs 10,000 ms? They expect saved secondsDelta [3600,400] total 4000. Need how ledger 4000? At each tick at times 15000..3990000: It settles at tick: visible absorb now-lastMark. But if each interval exactly 15000, liveMs=15000, adds 15 (floor) each. 266 ticks adds 3990. Then flush forces residual 10 sec to ledger add 10 => 4000. Good. So no missing partial? If times exact.
+
+Need note: if settle logic resets leftover 10 sec residual on force. Works.
+
+Test line 230: visible 15s then 5s hidden collectAndZero=20. How if after 15s, as above visible auto tick settles at exactly 15s? advance(15_000) should trigger one tick at end? If yes ledger +=15. Then advance(5_000) no tick in visible (5s <15). setVisible(false), onVisibilityChange force settle with first absorb condition skip but carry liveMs=5000 add 5. ledger 20. collectAndZero returns ledger 20? Does collectAndZero include force? Hmm if collectAndZero returns ledger after zeroing maybe 20. Fine.
+
+Now issue: `settle` design hidden transition when force true but currentPid visible? onVisibilityChange false likely `settle(true)` is called after `deps.isVisible()` false. It adds current visible residue only if currentPid non-null and visible (false? Wait in code order, when onVisibilityChange false, isVisible already false, so first condition false, liveMs from before remains. Carry from ledger? The current visible residue is in `liveMs` from last tick. Visible first condition needed to add elapsed since lastMark: Suppose liveMs was 5s from last tick to hidden transition at 5s later, and `lastMark` is at some time. In hidden transition callback, `settle(true)` now: first condition requires currentPid && deps.isVisible; but at hidden transition `isVisible()` likely false, so it does NOT absorb `now - lastMark` between last tick and hide. That means a visible interval since last tick of up to 15s is NOT added to your liveMs before force carry! Let's inspect carefully.
+
+Important! Sequence: active visible. Last tick occurred at some time, lastMark = t1, liveMs reset 0 or residual? Actually after a tick, liveMs=0. It starts accumulating visible time only when next settle occurs. At a tick 15s later, first statement adds elapsed to liveMs then maybe carry. But between ticks, there is no automatic liveMs increment; liveMs is not continuously updated. At hidden transition, if no tick occurred since lastMark and hidden callback fires before next scheduled tick, settle(true) is called with isVisible false. Wait if onVisibilityChange false sets isVisible false before settle, then first `if (currentPid !== null && deps.isVisible())` false => it will not add the time since lastMark. Since `lastMark` remains from last tick (not advanced at hidden), the elapsed visible time since last tick is not counted at all! Unless onVisibilityChange updates `lastMark` before? Material says "onVisibilityChange" at hidden transition maybe? Let's model expected test: advance(15_000) at t=15s triggers tick at 15s; liveMs zero after ledger 15s; lastMark=15s. advance(5_000) at t=20s (visible) no tick. setVisible(false) t=20. onVisibilityChange false. Since isVisible false, settle(true) does not absorb the 5s from 15 to 20; then carries existing liveMs=0 => ledger remains 15, not 20. But test expects 20. How would it pass? Maybe `advance(5_000)` itself with visible accounted? Wait advance in tests probably manipulates clock and triggers interval callbacks at every 1000? Let's infer from legacy? Maybe `advance(ms)` advances in increments of tick? If `advance(5_000)` could call `tick` multiple? No, if advance(5000) less than 15s, no. Could there be a separate internal setInterval at 1s? Hmm.
+
+Wait `liveMs` not updated continuously, but `settle` at each tick first adds elapsed, then if >= TICK. However at hidden transition, if time since lastMark is 5s and TICK=15s, settlement needs to happen force at transition. But code's settle only adds elapsed if visible true. If `deps.isVisible()` in settle when called at hidden transition might still be true? Maybe `onVisibilityChange` is not called after visibility state is false? In test they call `setVisible(false); h.rt.onVisibilityChange()`. The deps.isVisible returns false by then. Unless `onVisibilityChange` is the function that checks old visibility? Unknown.
+
+Let's reconstruct from reading-time implementations typical. There is a `deps.isVisible` and an `onVisibilityChange` function to handle both transitions. `setVisible(false)` updates state, then calls h.rt.onVisibilityChange(). It probably in real component is registered `document.visibilitychange` handler; when hidden, should finalize. If settle force's first if checks `deps.isVisible()` before updating? Usually event handler calls after document.hidden true. Need.
+
+Maybe implementation of `onVisibilityChange` is omitted but might call `if (deps.isVisible()) ... else settle(true)`? It would return false. Test expects 5s counted, so how can code pass? Let's look at comment in settle:
+```
+/** 段结算：**吸收**（liveMs += now-lastMark）仅 visible（R1 回炉——hidden
+ *  段时长不得吸收，票面「挂后台标签页不算」全路径）；**结转**（liveMs 入
+ *  ledger+清零，force 或 ≥tick 时）不依赖当前可见性（R3 回炉/门二 WARN
+ *  解耦——hidden 前已计量的可见零头（<15s）随 force 结转入账不丢，票面
+ *  「零头随 flush 按实结转/实转不丢」）；lastMark 无条件推进刻度。
+```
+They say "结转（liveMs 入 ledger+清零，force 或 ≥tick 时）不依赖当前可见性". "hidden 前已计量的可见零头（<15s）随 force 结转入账不丢". Wait "已计量" implies the visible zero head was already in liveMs due to some accounting. How does it get into liveMs if only settled? Maybe `liveMs` is updated continuously via something? No shown.
+
+Need inspect settle code with `if (currentPid !== null && deps.isVisible()) { liveMs += now - lastMark }` This is the only place adding. It is called on visibility changes perhaps when hidden? Let's consider `onVisibilityChange` runs on both transitions. When transitioning hidden, if `deps.isVisible` false, not add. But maybe callback implementation detects previous visible:
+```
+const onVisibilityChange = () => {
+  if (deps.isVisible()) { // document visible true, came from hidden
+      lastMark = deps.now() // don't count hidden
+      startTimer
+  } else {
+      settle(true)
+  }
+}
+```
+If false, not add. Still zero.
+
+But perhaps when transitioning hidden, before changing `deps.isVisible`, the callback is executed? The deps could be a mutable getter; unit test setVisible false before call. It expects 20, so settle must see visible true at moment of onVisibilityChange; maybe onVisibilityChange accesses `document.visibilityState` while hidden true. No.
+
+Wait maybe `advance(15_000)` does not trigger tick because interval at 15_000 may tick at 15_000; then after ledger 15, liveMs 0. If `advance(5_000)` after that is still visible but not enough for interval, no. But maybe each `advance(1000)` calls tick by default? It could call a `timer` that triggers every `READING_TICK_MS`, but `advance` might call at 1000ms intervals and invoke callbacks at chunks? No.
+
+Let's search memory of Chinese code from previous P7E-05? Might involve "reading-time.ts" with tests. Need not.
+
+Let's infer from comments and test:
+- `advance(15_000)` after start likely auto settles ledger to 15, liveMs=0? Test expects collectAndZero after hidden returns 20, meaning ledger after 15s plus 5s zero head before hidden. To count 5s in liveMs, it must be added when hidden callback settles force. If settle force cannot add due hidden, perhaps tick at 15_000 didn't settle exactly? Let's simulate differently. Suppose at t=15_000, no timer callback because timer interval maybe not exactly 15? They call `h.advance(15_000)` then `h.advance(5_000)` perhaps advance doesn't invoke interval at the end? It may just set time and maybe timer manager calls interval callback every 15s: at t=15000, tick with visible true. Then liveMs=15000, ledger 15, liveMs0. If instead timers run every second due to fake? no.
+
+Suppose legacy `settle` before R1 first only added if visible? In R1 "hidden segment not absorb" perhaps before this final it used a different schedule to call `tick` every 1000ms? The `liveMs` may be added inside `tick` along with timer each 1000? But TICK=reading tick 15s, not timer? Wait function `tick` no parameter; likely `setInterval(tick, READING_TICK_MS)` = 15_000. In `settle` first statement adds elapsed from lastMark; if tick only every 15 sec, zero head 5 sec cannot be known until next tick/force. Force at hidden with hidden false issue.
+
+Maybe `Math.max` and `lastMark` update can make it okay if settle force at hidden is preceded by `deps.onVisibilityChange`? Let's locate text: comments mention "onVisibilityChange" from reading-time.ts. Diff of dispose does not show onVisibilityChange. New anchors:
+```
+it('零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s', () => {
+ const h=makeHarness()
+ h.rt.start('p-1')
+ h.advance(15_000)
+ h.advance(5_000)
+ h.setVisible(false)
+ h.rt.onVisibilityChange()
+ expect(h.rt.collectAndZero('p-1')).toBe(20)
+ expect(h.ledger('p-1')).toBe(0)
+})
+```
+Thus if advance 15s causes ledger 15; then hidden transition force settles liveMs? liveMs after advance 15s? Could be not auto carry exact? Wait `advance` maybe calls tick at end of each 15_000 and the first statement adds 15,000 to liveMs. If liveMs starts 0, it becomes 15,000. Second condition liveMs>=TICK true, and if `currentPid != null && isVisible true` (visible), because condition does not require visible but true, ledger adds floor(liveMs/1000)=15; liveMs=0. Yes.
+Then advance 5s triggers maybe every 1000? Wait if it advances 5,000 by calling timer intervals at `READING_TICK_MS`? No. Could there be a 1-second heartbeat? Perhaps `tick` scheduled every `READING_TICK_MS` and also called on advance? No.
+
+Maybe `advance(5_000)` from t=15000 to t=20000 includes a tick at t=30000? no. If `liveMs` wasn't reset after 15s due to rounding? Actually at t=15000, second condition after adding `liveMs >= READING_TICK_MS` adds floor exactly 15, liveMs=0. Then advance 5000 leaves 0. So hidden force can't add.
+
+Alternative: `h.advance(15_000)` is only one advance from start to 15s but maybe the timer manager rounds and doesn't call tick at 15,000 because maybe first tick scheduled at "epoch 15000 + epsilon" and with time exactly not executed? In fake timers, advance(15000) usually triggers interval at boundary. If not, liveMs not settled; ledger=0? Test then hidden would force carry floor? If ledger not 15, then onVisibilityChange if settle visible true (if timer not call) can add 20,000 ms floor20 =20. Test would pass, but semantics? Hmm.
+
+Let's not rely.
+
+Maybe test 230 is the anchor introduced for "visible 5s zero head→hidden→collectAndZero=20"; if `settle` not count hidden? It should be designed to pass. Since final code shown is actual, it must pass if tests all green (1255). So our abstract reasoning must be wrong about liveMs not updated. Maybe there is a per-second `setInterval` that calls `settle(false)` each second, not 15s. Wait settle second if liveMs>=TICK, so if it's every second and tick calls settle, ledger accum when TICK elapsed. That makes liveMs continuous every second. Then visible 5s after 15s: after advance 15_000, at last second (14-15) liveMs maybe? Let's simulate if tick called every 1000ms but only carry if liveMs >=15000. Each second: liveMs +=1000. At t=15s, liveMs=15000, carry 15, reset 0. Then advance 5s: t=20s, tick at 16..19 no carry; liveMs=5000 at hidden. Force carry 5 works because hidden callback sees isVisible false, but first condition doesn't add elapsed? Wait if `settle` called by hidden at t=20 (after last tick at 19 maybe), the last tick at t=19 set lastMark=19? Actually if tick every second invokes settle(false), at t=19 liveMs=4000<15000, lastMark=19. Between t=19 and 20, liveMs not yet added (no tick). Hidden force settle with visible false cannot add the last 1 second! If `advance(5_000)` triggers heartbeat at t=20? If advance includes boundary t=20, then last tick at t=20 before hidden sees visible true, liveMs=5000, no carry, lastMark=20. Then hidden force adds no elapsed; liveMs remains 5000, so carry 5. Good. If granularity exact, tick at hidden moment may happen before hidden. Not a bug maybe.
+
+Need know actual heartbeat. Material comments "节流长间隔一段清（≥TICK 全入）". Hmm.
+
+Potential bug with settle: In force branch, it only flips lastMark after the branch; good. But it uses `floor(liveMs /1000)`. If liveMs is 0 because did not absorb last hidden-to-visible gap on hidden? If onVisibilityChange at hidden always called at same time as last tick, okay.
+
+Let's analyze a correctness issue with force and currentPid null? not.
+
+Another issue: It carries ledger even if force and currentPid not null but `ledger[currentPid]+=floor(liveMs/1000)`. If `force` is true because `collectAndZero` returns ledger? Yes.
+
+CollectAndZero in test returns "20". What exactly collectAndZero? They likely have:
+```
+collectAndZero(pid): number {
+ if (currentPid === pid) settle(true);
+ const sec = ledger[pid] ?? 0; delete ledger[pid]; return sec;
+}
+```
+If they call collectAndZero after hidden, settle force uses hidden no absorb, but ledger includes 20. Fine if liveMs was 5000. If force callback after hidden with liveMs 5000, second no visible needed. Good.
+
+Need maybe issue in `chunkSeconds`: Test for R2 uses f.flush('p-1') after current ledger 4000. `f.saved` includes only secondsDelta seconds; The `currentPage` from pending p-1 =3. For second chunk page 3. Good. No issue.
+
+Potential issue: If ledger has `sec=0`, chunkSeconds 0 returns [0], but test/composite "两账皆空 zero invoke"? Let's review "复合 flusher" comment:
+```
+复合 flusher ... 进度页+时长账一次 invoke（sec>0||page 在场才发；两账皆空零 invoke）。
+分片... 故 sec>3600 拆 3600整数片+尾片依次 invoke（页码同一 pending page 重复写=）
+```
+No exact code. Maybe in flusher code from R2 they use:
+```
+for (const chunk of chunkSeconds(sec)) {
+ await saveProgress({
+   paperId,
+   page: page ?? 0,
+   ...(chunk > 0 ? {secondsDelta: chunk} : {})
+ })
+}
+```
+Would require zero chunk not add secondsDelta. Does chunkSeconds zero consumes produce `[0]`, but composite might skip zero? Material says "sec=0→[0]=单笔零片=旧载荷省略语义由装配层处理" So assembly handles zeros by omitting secondsDelta. Good.
+
+Potential issue in `useReaderReadingTime` deps.onFlush:
+It loops `for (const chunk of chunkSeconds(seconds)) { api.reader.saveProgress(...secondsDelta: chunk) ... }`. If seconds is 0, chunkSeconds returns [0], then sends `secondsDelta: 0` (not omitted). But comment says "0 省略语义由 invokeOne 装配层维持". Wait this onFlush is the setup callback in `useReaderReadingTime` and it does *not* use invokeOne; it uses `api.reader.saveProgress` direct. That means zero chunk delta would not be omitted; it would send `secondsDelta: 0`. Is this an issue? Let's examine context: This is `useReaderReadingTime` where `createReaderReadingTime` has onFlush for dispose tail. `dispose` only invokes if sec >0, and time records produce positive seconds. But could `seconds=0` be passed to onFlush? `dispose` if sec>0 only. `setup onFlush` is "上游已分片则单片透传"; if upstream dispose only sec>0, no zero. The composite flusher maybe doesn't call rt's internal onFlush. `createCompositeProgressFlusher` uses rt.collectAndZero; saveProgress direct with condition `secondsDelta > 0 ? ...`. The comment "0省略语义由invokeOne装配层维持" perhaps refers to chunkSeconds return [0] where assembly layer (the caller in composite flusher?) handles omit. But `useReaderReadingTime` direct saveProgress doesn't check >0, but only used for positive dispose chunks. Could be okay but chunkSeconds returns 0 for any input 0, and direct onFlush comment says "每片恒>0=恒带 secondsDelta 字段", no check. They purposefully keep 0 semantics? "0 省略语义由 invokeOne 装配层维持" maybe not a bug.
+
+Potential issue: In dispose:
+```
+for (const chunk of chunkSeconds(sec)) deps.onFlush(paperId, chunk)
+```
+If `chunkSeconds(sec)` for sec=0 returns [0], but they have `if (sec >0)` so no call. Good.
+
+Potential issue: `chunkSeconds` "三消费点共用" but material shows two in R2 and `dispose`. Comment in useReaderReadingTime maybe a third. Good.
+
+Potential test issue:
+The test at line 230 "R2 anchor semantics changed? hidden stop carry visible residue into A account A=20/B=15" not included? Material says in R3 overview but not section 3 except visible test. Need no.
+
+Need consider if reading-time `settle` with force increments ledger by floor(liveMs/1000) then zero. If `ledger` might be decimal? no.
+
+Verdict likely PASS or PASS_WITH_WARNINGS. Need decide. Given task "复审材料" likely expect review of modifications. We need be adversarial. Can flag WARN(s) not blocking.
+
+Need use exact evidence from material. Findings can be speculative? Need no invent. We can mention issues that are genuine.
+
+Find possible BLOCKING: The direct condition in settle and visibility.
+
+Let's inspect comment:
+`/** 段结算：吸收（liveMs += now-lastMark）仅 visible（R1 回炉——hidden 段时长不得吸收，票面「挂后台标签页不算」全路径）；结转（liveMs 入 ledger+清零，force 或 ≥tick 时）不依赖当前可见性 ... */
+
+Wait in code:
+```
+const settle = (force: boolean): void => {
+ const now = deps.now()
+ if (currentPid !== null && deps.isVisible()) {
+   liveMs += Math.max(0, now - lastMark)
+ }
+ if (currentPid !== null && (force || liveMs >= READING_TICK_MS)) {
+   ledger[currentPid] = ...
+   liveMs = 0
+ }
+ lastMark = now
+}
+```
+If force branch hidden after visible interval, it does not add `now-lastMark` because not visible. But the carry branch "force" refers only to currently accumulated `liveMs`, not to pending elapsed time since lastMark. What if hidden transition happens exactly when no interval tick just occurred? LastMark might be old. Wait when is `lastMark` updated? At every settle. Settle is called on tick and force (dispose/start/collect/visibility maybe). If no ticks for 5 sec because hidden event occurs before tick, lastMark points to last tick at previous 15s boundary; since current time 5s later, those 5s visible are not yet in liveMs. On hidden, force branch doesn't absorb them. So hidden transition can lose last <15s of visible time. This seems a real BLOCKING bug! Let's re-evaluate with test: test uses `advance(15_000)` and then `advance(5_000)`. If `advance(15_000)` triggers tick at boundary but if the tick's settle occurs, ledger count maybe 15 and liveMs zero. If not, alternative. Are there any ticks between start and 20s? A tick at 15s yes. The visible interval 15-20 is exactly 5s. LastMark = 15s. At t=20 hidden. If no settle at 20 before hidden, liveMs is 0 because previous settle reset. On hidden settle force can't absorb 5s due hidden. So test would fail. Since all tests pass, maybe `advance(5000)` triggers tick at 20? Wait false: Interval was every 15s and next tick scheduled at 30s, not 20. But if `advance` function manually invokes tick after each advance? Maybe h.advance(5000) also calls `rt.advance(now)` not tick. No.
+
+What data in test confirms ledger has 15 before hidden? They don't assert until collectAndZero returns 20. For test to pass, hidden force must add either 20s from start or 5s after 15. Since settle only if not visible, no add. But perhaps `onVisibilityChange` implementation calls `settle` while `deps.isVisible()` returns **true** before internally toggling: In real event, when document becomes hidden, `visibilitychange` handler might be called after state changed; but tests with h.setVisible(false) before handler not.
+
+Maybe `onVisibilityChange` only invoked when becoming visible? Let's infer naming: "hidden 段隔离由 onVisibilityChange 承担" Could include an `active` state? Hmm.
+
+Look at `makeHarness` likely abstracts with a timer and visibility:
+```
+setVisible(v) { visible=v; }
+onVisibilityChange() { rt.onVisibilityChange(); }
+```
+No.
+
+Maybe `onVisibilityChange` is the function returned and it itself calls `settle(false)`? It does:
+```
+const onVisibilityChange = () => {
+  if (deps.isVisible()) {
+     lastMark = now()
+     // reset tick
+  } else {
+     settle(true)
+  }
+}
+```
+No.
+
+Wait settle's first condition only visible. This might be deliberate: at hidden transition the current `liveMs` already has absorbed up to the last tick/second. If lastMark is from last tick 1s ago, but not absorbed. Unless there is a separate "lastMark" is updated at `start` and all settle including **during** visibility. The previous tick at t=15 was itself a settle, so lastMark=15. The 5s from 15 to 20 not in liveMs. There must be some callback on every 5s? Maybe no.
+
+Let's inspect previous R2/R1 comments: "吸收仅 visible（防 hidden 虚计不变）"; "结转不依赖当前可见性"; "lastMark 无条件推进刻度". It seems `liveMs += now-lastMark` occurs whenever settle called (including every `setInterval`). So at hidden if deps.isVisible false no absorption. But if callback invoked every READ_TICK and hidden event occurs at arbitrary time, unabsorbed visible segment since last call lost. However perhaps actual `READING_TICK_MS` is small like 1000? They use `READING_TICK_MS` for ledger threshold? Let's see `tick` name and `liveMs >= READING_TICK_MS`. Maybe `READING_TICK_MS` could be 1000? But chunk comment "≥tick" no value. The code variable likely constant 15_000 from tests: test 1 advance(15_000); advance(5_000); if tick interval 1000, liveMs updates every second. If TICK=15_000, lastMark last second (20s), not issue if advance triggers every 1000; `settle` every 1000. Test "h.advance(4_000_000)" with a 1000ms interval? If interval 1000ms, settle is called 4000 times and when liveMs >=15k carry. That yields floor. `setInterval(tick, READING_TICK_MS)` likely not 1000 but maybe 1000 to update liveMs and settle. Wait `tick` comment "门关（无 active/不可见）零累积直接返回（刻度不动——hidden 段隔离由 onVisibilityChange 承担，此处防御冗余）"; if tick is interval, "不可见零累积直接返回" implies timer keeps running even hidden (backend hidden maybe yes), but no tick accumulation. For hidden segment isolation, onVisibilityChange stops/restarts? It says hidden segment isolation by onVisibilityChange; tick is defense redundant. If hidden 10s, even if tick fires, guard returns. If visibility returns, lastMark? Hmm.
+
+Maybe there are two intervals? no.
+
+The code's comment "节流长间隔一段清（≥TICK 全入）" suggests tick interval may be frequent while TICK threshold 15 sec; yes likely every second. In a timer heartbeat, if `liveMs >= READING_TICK_MS`, commit; if not, keep accumulating. But `settle` code after seeing not enough resets? No, it only sets liveMs=0 when committing; otherwise after first if it updates liveMs. Wait if tick every 1000ms, first if adds 1000, lastMark=now. second condition if liveMs<15000 no commit. liveMs retains cum. Tick at next 1000ms adds 1000 -> liveMs=2000. Good. On hidden force after 5000ms, liveMs has been updated at t=20? If hidden event occurs at t=20 after tick at t=20? Depends.
+
+If tick every 1000ms and `setVisible(false)` occurs between ticks, the guard "tick：门关（... 不可见）零累积直接返回" when hidden is called? Wait if hidden state is set to false at t=20.1, last tick at 20.0 added last 100ms? Actually last tick at t=20, liveMs=5000. Then 0.1 sec before hidden not counted, but floor seconds still 5 if >100ms. If first tick after hidden event at t=21, guard returns no accumulation. Therefore unabsorbed gap is <1s (or if intervals 1s) causing potential floor loss. Test semantically "seconds precision; expect 20", likely acceptable. If tick interval not 1s but 15s, big loss. We need know "READING_TICK_MS" likely 15000 based on tests. Let's examine test "advance(15_000)" maybe they set tick to? They start, advance 15s after start. If tick is every second, at 15s liveMs=15000, ledger +=15. Good. If every 15 sec, same if boundary.
+
+Maybe setInterval interval is `READING_TICK_MS`; comment says `liveMs >= READING_TICK_MS`; probably `READING_TICK_MS = 15_000`, so interval yes. Then no 1s heartbeat. How does force know elapsed within interval since lastMark? It doesn't unless isVisible remains true at moment of force. If user closes tab while visible: settle force is called, visible true, it first adds `now-lastMark`, then commit full elapsed. If user hides tab first then closes: hidden transition settle needs "pre-counted" visible segment. At hide, visibility false so loses since last tick. Unless hide handler runs while still visible due `visibilitychange` event state? Actually by the time event fires, document.visibilityState is already 'hidden'. So no.
+
+This may be a real correctness bug in R3: comment says hidden force carry should not lose "hidden 前已计量的 visible zero head (<15s)". But code only carries liveMs, and because absorption is gated on visible at time of force, if the force is caused by a transition to hidden, the currently elapsing visible tail since last tick is never absorbed into liveMs. To be correct, the hidden transition point should first be captured as a visible ending instant; the settle force could add until transition time (before setting visibility to hidden) or visibility handler could be `settle(true)` before isVisible flips, or take a `now` and add visible segment if last visibility was visible. Let's understand test 230 appears designed to catch:
+```
+visible 5s zero head→hidden→collectAndZero=20
+```
+Visible 5s zero head after `advance(15_000)`. If hidden transition happens immediately after a tick at t=20 (if `advance(5_000)` includes 5 callbacks at 16..20 and last at 20 maybe before setVisible false), then liveMs already has 5s. Test passes despite not handling arbitrary hidden event. Anchor may not catch because advance exact seconds includes tick boundary. So potential missing edge.
+
+Can we use evidence? The test only checks visible 5s then hidden, but if implementation of advance triggers tick at endpoints or intervals, it may be anchored. Without implementation cannot say.
+
+Maybe not BLOCKING; could WARN "uncovered boundary". But should avoid speculative no evidence. Yet as auditor, we can infer from code. Need perhaps flag issue that in settle, first branch visible can be false in forced hidden transition, but no line to add pending. But maybe "lastMark 无条件推进刻度" in shown code? Wait if no settlement on hidden? Hmm.
+
+Another potential bug: `tick` guard `if (currentPid === null || !deps.isVisible()) return`, but `onVisibilityChange` responsible for hidden, maybe when visibility changes to hidden it calls `tick`? Actually if hidden, tick returns no `lastMark` update. On becoming visible, if no onVisibilityChange start resets? Let's infer reading-time possibly uses onVisibilityChange in implementation:
+```
+const onVisibilityChange = () => {
+  if (document.hidden) {
+    tick() // no update?
+    stopInterval?
+  } else {
+    lastMark = deps.now();
+    startInterval?
+  }
+}
+```
+No.
+
+Let's inspect dispose code in section 2:
+```
+if (handle !== null) {
+ deps.timers.clearInterval(handle)
+ handle = null
+}
+for (const paperId of Object.keys(ledger)) { ... }
+```
+During dispose, they don't call settle? Maybe createReaderReadingTime.dispose function, after clearing interval, likely calls `settle(true)` before iterating ledger? They need move liveMs to ledger. The shown dispose tail:
+```
+if (handle !== null) { clear interval }
+for paperId of ledger ...
+```
+No settle shown before? Maybe omitted above "R3 回炉/门二 BLOCKING". There is probably:
+```
+dispose(): void {
+ if (currentPid !== null) this.settle(true)
+ ...
+}
+```
+Actually settle is within closure, not method? The clear interval and ledger iteration maybe inside `dispose()`. There must be a settle before delete. We don't see full. Fine.
+
+Now potential production issue: The `settle` function isn't exported and not test directly.
+
+Try identify a concrete BLOCKING from hard rules: In verify R3, locks 265 unchanged but added tests to existing test files; lock count no change? It says "locks 265 不变." Maybe test lock from constitution requires snapshots? Not relevant.
+
+M2 carrier invalid? The codebase policy "every mutation should have an anchor"? Not if redundancy. They transferred carrier to M5. But M5 mutation "删 settle 吸收门→90≠30 红复验在档" If removing first visible absorb in settle would make hidden intervals count? Let's test: Remove `if (currentPid !== null && deps.isVisible())` block. Then on hidden ticks? If hidden callbacks still happen, they would add hidden elapsed to liveMs and later carry when >=TICK. But if hidden timers stopped, no. Existing M5 red 90≠30? Hmm remove absorb condition means settle always adds `now-lastMark` even if hidden. In hidden, if `onVisibilityChange` stops interval, not called; but when visibility true after hidden, calling settle? Wait if on visible callback, isVisible true, because line was visible anyway. If remove only visible condition in first if, then settle when hidden state true (e.g., at hidden transition before second branch) would add hidden-to-start elapsed, causing hidden time counted. The red 90≠30 likely with sequence hidden interval 60s and visible A? But if onVisibilityChange force at hidden calls after visible false, yes. Anyway.
+
+Is settle code sound for full hidden intervals? If tab goes hidden after 5s visible and returns after 60s, onVisibilityChange hidden force carries floor(5), liveMs=0, lastMark=hiddenNow. At return visible, onVisibilityChange maybe if visible call `settle(false)`? If it calls tick, first branch visible adds now - lastMark = 60s hidden to liveMs and then commits 60s -> would wrongly count hidden! They need not set `lastMark = now` when returning visible. The comment "hidden 段隔离由 onVisibilityChange 承担" probably means on visibility change handler resets lastMark. But if not, R1 "hidden segment hidden" could be invalid. Need no.
+
+Let's search in test legacy in overview: "R2 的 NIT1 锚语义随裁决变更（hidden 中 stop 结转可见零头入 A 账 A=20/B=15）+新锚（可见 5s 零头→hidden→collectAndZero=20）." Hmm "hidden 中 stop" process maybe tests process stops while tab hidden. Existing comments:
+- "hidden 中 stop 结转可见零头入 A 账 A=20/B=15": Suppose A had 15 visible, B hidden with 5 visible? At stop while hidden, should hide hidden time no count, but carry B's visible residue 5 into B ledger. Good.
+
+No enough.
+
+Maybe no major findings; PASS_WITH_WARNINGS with NIT/WARN. Need decide.
+
+Let's inspect code for hard rule "repo≤300 components≤250 files≤500" irrelevant. "分层单向" maybe store import:
+- `useReaderReadingTime` is a hook; it imports `useReaderStore`, `api.reader`, `createCompositeProgressFlusher` perhaps all from same feature. Cross feature if progress account view? "互不 import 红线" applied to imports of progress types vs store? The interface comment "ProgressAccountView（结构类型——ScrollProgress 满足；互不 import 红线，票面§3）" This is a compliance.
+
+No new deps.
+
+Maybe hidden bug in `chunkSeconds`: For sec exactly 3600 returns [3600]. For sec 7200 returns [3600,3600]. For sec 7201 returns [3600,3600,1]. Good.
+
+Could simplify with `while` but okay.
+
+Potential test anchor issue:
+Line 219 R7: account 4000s→dispose→onFlush twice (3600+400). But if `dispose` calls `settle(true)` to flush live residue and then iterates ledger. It also onFlush through rt? Wait in test:
+```
+const h = makeHarness()
+h.rt.start('p-1')
+h.advance(4_000_000)
+h.rt.dispose()
+expect(h.flushed).toEqual([
+ {paperId:'p-1', seconds:3600},
+ {paperId:'p-1', seconds:400}
+])
+```
+If createReaderReadingTime calls `onFlush` for each ledger chunk. Good.
+
+Test's expected saved first R2 has page 3; if second chunk page 3. No check other account.
+
+Potential issue: "R2 分片 ... +账清零" Using `f.flush('p-1')` -> `f.saved` includes secondsDelta 3600,400; ledger('p-1') 0. If composite flusher first calls `rt.collectAndZero` to get ledger, then ledger zero. Good.
+
+Potential "verify R3 all green 146 files/1255 tests; locks 265 unchanged." No issue.
+
+Maybe R3 "全绿 146 文件/1255 用例 exit=0; locks 265 不变." "locks" likely "lock file count" maybe hidden test test-lock? No.
+
+Need understand final review prompt expects finding array severity. We can include no findings? Need be accurate.
+
+Let's consider if R3 itself is not code but delta. They may ask "P7E-05 门二 R3 复审材料（delta）" We need issue verdict. R3 fixes previous final BLOCKING/WARN. Likely expected PASS. But "deep audit" should be critical. We can choose PASS_WITH_WARNINGS if only NITs. Need avoid false positives.
+
+Let's scrutinize code comment "R2 的 NIT1 锚语义随裁决变更（hidden 中 stop 结转可见零头入 A 账 A=20/B=15）" Wait test line 230 expects A=20 for visible 15 + visible 5 before hidden, but comment says "R2 的 NIT1 锚语义随裁决变更 ... A=20/B=15" Maybe old anchor expected hidden? Need no.
+
+Potential semantic issue: For a paper that is hidden with `currentPid` not null and `liveMs` from visible zero head below TICK, but not enough to carry if hidden (only force), if user closes tab while hidden? dispose calls `settle(true)` before iterating. If hidden, carry `liveMs` even if not absorbed. Good.
+
+Potential semantic issue: If user switches papers while hidden? Suppose p1 visible 5s (liveMs=5000) -> hidden before tick; while hidden, start p2? `currentPid` maybe changes. settle(true?) Could carry p1. Good.
+
+Potential semantic issue: If force true and ledger includes subsecond floor; if `liveMs < 1000`, it adds 0 to ledger and liveMs=0. This loses <1s. But existing maybe. Not introduced? It may be hidden field.
+
+Potential integer overflow? no.
+
+Need maybe "settle at lastMark unconditionally when currentPid null" causing tick with no active to update lastMark. Suppose `stop` currentPid null, but timer remains active? `tick` returns before settle if currentPid null, so lastMark not updated. no.
+
+Potential issue with dispose tail:
+```
+for (const paperId of Object.keys(ledger)) {
+  const sec = ledger[paperId] ?? 0
+  delete ledger[paperId]
+  if (sec >0) for chunks deps.onFlush(paperId, chunk)
+}
+```
+No `settle` before? If `liveMs` for current pid needed moved to ledger. Not shown, maybe existing code before handle clear. Need not.
+
+If not, dispose would not flush current pid's liveMs? But tests dispose after 4000s; ledger already includes 4000 due ticks; no live residue? If there was 5s liveMs and dispose, missing. Existing likely settles. no.
+
+Wait in dispose shown first clear interval then ledger iteration. What about last liveMs? There must be a `settle(true)` before clearing? If clear interval before settling, no tick, but settle manually. Could be omitted. If `settle(true)` isn't there, `liveMs` is lost. But tests 219 with 4000_000 exactly? Advance 4,000,000, interval at 15s; after last timestamp maybe ledger 3990, liveMs 10s. They expect dispose flush 4000. If dispose doesn't settle, ledger would be 3990 not 4000, test fails. Since R3 green, dispose must settle. But shown dispose code begins "if handle !== null clear interval..." then for ledger. Maybe `settle(true)` is earlier:
+```
+const dispose = () => {
+ settle(true)
+ if (handle !== null) clearInterval...
+...
+}
+```
+Would be okay. The chunk comment inserted in ledger iteration but no issue.
+
+Potential "settle" if called on hidden due `dispose` after an invisible period with no visible timer? If user hidden for an hour, `lastMark` from hidden start and liveMs maybe visible residue 5. settle(true) at dispose cannot absorb hidden but second adds 5; good.
+
+Let's find hidden transition code in old comments? The key phrase in `tick`: "hidden 段隔离由 onVisibilityChange 承担" Maybe `onVisibilityChange` likely:
+```
+const handleVisibility = () => {
+  if (deps.isVisible()) {
+    // We became visible. Ignore hidden time:
+    // call settle(true) before? But now visible true, would absorb since lastMark (hidden interval) - wrong!
+  }
+}
+```
+Wait if visible transition occurs, deps.isVisible true; if calls `settle(true)`, first branch absorbs `now-lastMark`, where lastMark is from hide time, thereby counting entire hidden interval. To isolate hidden, you would set `lastMark = now` when visible, not call settle. If hidden transition occurs, deps.isVisible false; if calls settle(true), first branch doesn't absorb pending visible tail, but comment "hidden before counted visible zero head" maybe lost. Hmm.
+
+Maybe there is an event bus with `deps.onVisibilityChange` and inside is a callback:
+```
+const onVisibilityChange = () => {
+  if (deps.isVisible()) {
+    settle(true)
+  } else {
+    settle(true)
+  }
+}
+```
+If visible transition, settle true counts hidden interval! Unless currentPid null when hidden? But if paper active, wrong. Maybe they don't count hidden because first branch visible true on return, adds now-lastMark including hidden. They need lastMark reset.
+
+What exactly "tick guard hidden segments by onVisibilityChange" likely implemented by having active only when visible? no.
+
+Let's use available code snippet: settle code has no separate visibility change functions. There is only one returned function `onVisibilityChange` maybe in returned API? The snippet "最后 R3 回炉"? Need search material: in settle/tick comments only. New test calls `h.rt.onVisibilityChange()`. The function exists. It likely listens to both transitions and calls a `sync`:
+```
+const onVisibilityChange = () => {
+  if (deps.isVisible()) {
+    resumeTimer()
+  } else {
+    pauseTimer()
+    settle(true)
+  }
+}
+```
+Could call settle after pause: hidden false, no absorb. Hmm.
+
+Potential route: The `settle` function's first branch is visible so when `onVisibilityChange` is invoked on visibility becoming true, it should not call settle; it should call `lastMark = now`? There perhaps is a separate `resync`.
+
+No code.
+
+Maybe final answer can include one robust WARN about arbitrary-time visibility transition not covered by anchor if settle doesn't absorb into liveMs on hidden. But if wrong material no. Let's see if we can phrase as "需要确认/请补锚" not as false. Severity WARN.
+
+Need also consider output format "不编造材料里不存在的内容"; if we flag hidden edge, we must cite code lines. We can say evidence: `settle` code only adds into liveMs when `deps.isVisible()`; if the forced flush is caused by becoming hidden, `deps.isVisible()` is false, so the visible tail since previous tick is not absorbed before carry, although comment claims "hidden 前已计量的可见零头随 force 结转入账不丢". This is a logical observation. Is "deps.isVisible false by time hidden force" inference? Test does `setVisible(false)` then `onVisibilityChange`. This is from evidence! In section 3:
+```
+h.setVisible(false)
+h.rt.onVisibilityChange()
+expect(...).toBe(20)
+```
+Material shows deps.isVisible false after setVisible false. But then settle called? The first branch would not add. Yet test passes anyway if `liveMs` contains 5000. The 5s since last tick? Does `advance(5_000)` update liveMs independent of settle? Maybe no. But if `advance` drives interval every 1000ms, yes liveMs could contain 5000. The test doesn't demonstrate pending interval tail. So evidence supports "not enough to ensure hidden before previous tick at arbitrary instant". However we cannot know timer cadence from material; we can reference that `now-lastMark` not added if visibility false. If at the forced hidden transition, the pending interval since lastMark has not been absorbed (possible when transition occurs between timer ticks), it is lost. This is a theoretical logical possibility. Severity WARN maybe.
+
+Will verdict be PASS_WITH_WARNINGS? If no blocking. Could list WARN. But if this is actually bug, should FAIL? Let's determine whether this correctness issue violates spec such that require fix. If hidden transition can happen at arbitrary mid-interval between scheduled settle (if interval e.g. 1 sec loss less; but if interval is 15s, maybe big). Need know interval frequency. `settle` contributes to ledger only whenever `liveMs >= READING_TICK_MS`; if called every second, absorption granularity 1s, and floor of pending seconds maybe loses at most <1s (not severe). If `settle` called only every 15s by setInterval, hidden mid-interval can lose up to 15s. But `tick` function is setInterval likely every `READING_TICK_MS`. However if tick interval equals TICK 15_000, then if hidden transition at t=20 after lastMark=t15 (tick at 15), force with isVisible false misses 5s -> test would fail? Unless test's `advance(5_000)` automatically triggers `tick` at end? Wait if interval 15s, no tick at 20. So test would fail. Since tests green, either tick granularity is every 1s, so loss <1s. Good. We don't know but can infer tests green. So not a major BLOCKING.
+
+Let's search for READ_TICK value by test: Test advances by 15_000; comments say "liveMs >= READING_TICK_MS"; maybe `READING_TICK_MS = 15_000` (defined "≥tick"). If h.advance internally executes timer callbacks not only interval? Many test harnesses advance by ms and triggers timer at due times. If interval 15s, no 20. But could advance from 15_000 to 20_000 where no due, so no liveMs. So settle code would fail test. Unless test's `advance` executes `collectAndZero`? no.
+
+Maybe `READING_TICK_MS` not timer interval, but there is a separate 1s heartbeat. The code "if (currentPid === null || !deps.isVisible()) return" called by timer at every second? It says "tick" not "settle"; likely `setInterval(tick, 1000)`? Hmm.
+
+Similarly test for 4000s if timer/commit every 15s but advance in chunks of 1s maybe okay.
+
+Thus potential hidden loss <1 sec; perhaps acceptable integer seconds contract? If all accounting milliseconds and tick every 1000, bounded <1s per visibility transition. Not blocking.
+
+Potential issue at commit: If tick every 1000 and liveMs accumulates, condition `liveMs >= 15000` triggers when elapsed 15s; ledger adds floor(total /1000) =15? Wait if after 15 ticks every 1000, liveMs=15000, add 15. Great. If setInterval can drift, liveMs can be 15010 at tick, add 15, reset. Loss 10ms if no timer tick? But next at 16000 actual maybe liveMs=100? Wait if timer scheduled every 1000 and callback delayed 10ms, next due at 2000? Need not. But in fake timer exact.
+
+Now, another possible correctness issue: `settle` adds time to ledger for `currentPid` whenever `force` true, even if `liveMs` has not reached 1s. It adds 0 then resets. So if using `settle(true)` on every visibility change, any sub-second residues are discarded (because ledger int seconds). If after 500ms visible then hidden, ledger +=0 and liveMs=0. This is maybe intended because secondsDelta integer no sub-second reports. But "按实结转/实转不丢" in hidden zero head only whole secs. Could maybe be WARN.
+
+Potential issue with `tick`: It checks `!deps.isVisible()`, so if visibility false for hidden and timer remains active, it doesn't call `settle`, preserving `liveMs` accumulated visible time but leaving `lastMark` old. If while hidden user switches to another paper, `stop`/`start` maybe settle(true) not called? If currentPid changes, handling might force? no.
+
+Let's inspect "force/≥tick" not dependent on visibility. In hidden, `tick` guard returns immediately, so if hidden remains for >15s, no ledger carry. But no need because no hidden time counts. However if user stays hidden after a visible zero head of 5s, carry at hidden transition only.
+
+No clear.
+
+Let's think of requirements "分层单向" and code arrangement. `reading-time.ts dispose` in section 2 uses `chunkSeconds`, `deps.onFlush`. `createReaderReadingTime` pure factory probably in domain layer? It now has deps.onFlush with no async. The hook `useReaderReadingTime` loops over chunks with `api.reader.saveProgress`, causing N async requests for tail. If dispose occurs and paper has 4000 sec, it will invoke 2 requests. 10_000s -> 3. Good.
+Potential issue: `void api.reader.saveProgress(...).then(() => undefined, () => undefined)` fire-and-forget with no awaited? Dispose could be synchronous; async calls sent, but if app process closes immediately, not guaranteed? Existing architecture perhaps no.
+
+Potential issue: In `dispose`, deps.onFlush(paperId, chunk) may throw? If first chunk fails synchronously, loop aborts? But onFlush in hook catches promise but sync if `chunkSeconds` no. no.
+
+Potential hidden item: If `sec` is > Number.MAX_SAFE? no.
+
+Potential test line "账 4000s→dispose→onFlush 两次 (3600+400)" If total 4000 exactly, chunk seconds 3600+400. Good.
+
+Potential mutation evidence: "还原 diff 空"—mutation survives? Hmm.
+
+Need perhaps output no actual issues? Let's see if all R3 fixes good. Then verdict PASS. But as independent auditor, if no BLOCKING maybe "PASS_WITH_WARNINGS" with NIT on tests? The output can have NIT not blocking. Is it better to not invent? If no strong, verdict PASS. Need decide.
+
+Let's scrutinize `settle` comment vs "结转入账不丢" and test.
+
+If liveMs=5000 at hidden (after visible 5s zero head) then force settle while hidden does:
+- first condition: false, so liveMs remains 5000.
+- second condition: currentPid not null and force: ledger += floor(5000/1000) = 5, liveMs=0.
+So passes. Good.
+
+But how did liveMs become 5000? There must be tick every second; if `h.advance(15_000)` triggers first tick at 1s etc? Actually if timer interval = 1_000, first settle at 1s: liveMs=1000; condition `liveMs >= READING_TICK_MS` where READING_TICK_MS=15000 false; lastMark advances. At 15s, liveMs=15000; settle commit: ledger +=15; liveMs=0. Next 5s: settle each second: liveMs=5000; no commit; hidden force -> add 5. So yes.
+
+This test ensures floor(visible start-to-visible end) with 1s heartbeat. Good.
+
+Could bug: Because it resets liveMs at commit, any leftover? Example timer drift 15.2 sec for one interval, at exactly commit, time since last commit is 15.2 but ledger +=15 and liveMs reset; loses 0.2 again. But heartbeat in browser can drift. No.
+
+Maybe function `liveMs` type should be fractional seconds? It stores ms; no.
+
+Let's inspect for "dispose 逐笔分片 onFlush" integration:
+```
+for (const paperId of Object.keys(ledger)) {
+ const sec = ledger[paperId] ?? 0
+ delete ledger[paperId]
+ if (sec > 0) {
+   for (const chunk of chunkSeconds(sec)) deps.onFlush(paperId, chunk)
+ }
+}
+```
+If sec is huge, chunkSeconds returns dozens of chunks and repeatedly calls onFlush. But if one account had 4000 sec from long continuous reading, two calls. Fine.
+However `chunkSeconds` chunks by seconds, but API doc "max(3600)" maybe if sec=7200 -> [3600,3600], yes.
+Potential duplicate request with paperId same page? In dispose onFlush uses current tab page? In `useReaderReadingTime` onFlush calls `useReaderStore.getState().tabs[paperId]?.page ?? 0` for each chunk. If tab closed and removed from store, page=0. The composite flusher during closeTab might call before removal, so okay? But dispose maybe later page lost. Existing.
+
+Potential issue: In each chunk, `useReaderStore.getState().tabs[paperId]?.page` could change between chunks? Sync loop synchronous, no await, so same page. Good.
+
+Potential issue: For composite flusher, "页码同一 pending page 重复写=" The comment indicates after chunking, each invoke may duplicate page updates. It might be accepted.
+
+Potential test lock "full suite 1255 exit=0"; no mutation run on new anchor except M7/M5? M7 red evidence two failures not names, but no new mutation for zero chunk? Maybe not.
+
+Let's consider mutation M5 if "删 settle 吸收门→90≠30 红复验在档" but no evidence in section 4? M7+M5 evidence tail only 1 failed tests; no names. fine.
+
+Need see if R3 line count violating 250/500? Not enough.
+
+Would adding comments exceed line limit? no.
+
+Potential contract no tests lock? verify includes 146 files? Locks unchanged. Fine.
+
+Let's think of "dispose tail 不定 " when currentPid==null and ledger null. If no active pid, but ledger has previous accounts from multiple pids; dispose loops all. good.
+
+Potential bug in multiple accounts handling:
+When active paper changes, `settle` for previous maybe ledger. Suppose p1 active with liveMs accum. `stop('p1')` maybe settle(true) for p1 then currentPid null. If `start('p2')` calls. no.
+
+Potential issue: settle uses ledger[currentPid] with `??0`. If ledger contains a paperId with value 0 after previous stop? It sets. no.
+
+Could `deleted` paper accounts remain in ledger if no dispose? ledger accumulates seconds per paper until flush; flush collet zero. For forced "≥tick" auto write every 15s, it stores in local ledger, not flush until close/closeTab? The ledger remains. good.
+
+Potential concurrency race in API chunking:
+`useReaderReadingTime` onFlush:
+```
+for (const chunk of chunkSeconds(seconds)) {
+ void api.reader.saveProgress({...}).then(() => undefined, () => undefined)
+}
+```
+This sends multiple saveProgress concurrently. They are not chained; if order matters for secondsDelta? If same paper, two requests with secondsDelta chunks can arrive out of order. Since `secondsDelta` is additive? It may add to existing seconds; order doesn't matter for delta? If API accumulates, out-of-order okay. If API expects no duplicates? no.
+
+Potential issue: If one request succeeds and one fails silently, partial data. any.
+
+Potential test "h.ledger('p-1') toBe(0)" after flush. If flush chunks sent no async await, ledger cleared. Good.
+
+Should we report any WARN about explicitly fire-and-forget swallowing errors in R3 "setup onFlush" still silent? This existed previously. R3 "静默丢失" issue was >3600 rejection due zod; they fix by chunk. Still all promises swallow errors no logging. In desktop app maybe acceptable? But `api.reader.saveProgress` failure causing data loss is silent. Could be production WARN. Evidence from code `.then(() => undefined, () => undefined)` material. Since issue says onFlush setup "吞错=静默丢账" in R2 comment; they still swallow. If `saveProgress` fails for any non-zod reason, still silently loses. But not part of fix perhaps. Hard to judge.
+
+Potential BLOCKING from contract "测试锁定" maybe mutated? no.
+
+Let's consider "M7变异红证" uses "M7 mutation (deleting dispose sharding)" but if revert diff empty? "还原 diff 空" means they reverted mutation? no.
+Mutant kill evidence appears two exit=1 runs, not showing any mutation name. Could be both mutation dirs? no.
+
+No finding? Perhaps final PASS. But Deep audit likely wants specifics. Maybe include NIT for settle floor loss as not blocking? Need not.
+
+Given we don't know codebase, safest to mark PASS with no findings if changes address prior blockers. But prompt wants all audit, likely expect PASS_WITH_WARNINGS with subtle issues? Hmm.
+
+Let's examine "contract grammar" "repo≤300 组件≤250 文件≤500" Wrong? Actually "repo≤300 components≤250 files≤500" maybe contradictory. Not use.
+
+Let's parse AGENTS.md "分层单向/禁字符串拼接 SQL/测试锁定/行数上限 repo≤300 组件≤250 文件≤500/跨 feature 互引红线/禁新增依赖". No SQL/deps/line changes.
+
+Maybe "line limits" files ≤500. Material includes huge comments; but no full file counts. Existing file reading-time might be over? No evidence.
+
+Maybe "repo≤300" (files?) no.
+
+Maybe "lock no new dependencies" not.
+
+Potential issue: "reading-time.ts" test uses `makeHarness` with `h.advance(4_000_000)` in tests; test not committed? no.
+
+Let's see in section 0, "M2 载体失效申报" not a code finding. no.
+
+Let's formulate potential WARNs:
+1. `settle` floor discards sub-second read time: all "按实结转" whole-second conversions use `Math.floor(liveMs / 1000)` and `liveMs = 0`, so fractional remainder is lost. This may have existed; but with new "不丢" semantics maybe WARN. Is it true "fraction remainder is lost" if `liveMs` includes residual from previous settles? Since `lastMark=now` at each settle for no commit too, `liveMs` accumulates all ms over seconds; when commit at `liveMs>=15000`, you do floor total seconds and reset all ms, losing residual. Example reading exactly 15.7s when tick at 15.7? Wait if tick every second, liveMs increments from 0? Let's simulate: heartbeat every 1000, no commit until liveMs>=15000. At t=15.7 sec after last commit? Actually commits reset at 15s. Then after 0.7 sec, liveMs=700<1000, it will tick at 16s (if time 16.0), adds 300? Wait because lastMark maybe every callback. If hidden at t=15.7? If no callback at exact, next callback at 16s adds 1000? But hidden may stop. The sub-second remainder of visible 15.7? Suppose user leaves visible for 15.7 then hides/force. Since heartbeat every 1000, liveMs=15000 at 15th tick, ledger=15, liveMs=0. 0.7 sec after 15s not counted. Because no heartbeat at 15.7. If visible tail 0.7 sec <1 sec, floor 0, no issue with integer seconds? Total 15.7 -> 15 full seconds, so ledger 15 correct. If 15.9 -> same. No loss because only full seconds count. If at 16.3, next tick at 16.0? Wait visible from 0 to 16.3. Heartbeats: t=1...15: liveMs=15000, ledger=15, liveMs0. heartbeat at 16 adds 1000 -> liveMs=1000 (not enough); force at 16.3 hidden: no absorb since hidden, liveMs=1000 -> ledger+1 =16. Total full seconds 16.3 ->16; good. If force at 16.7 after heartbeat at 16: liveMs=1000, ledger 16. If tick granularity catches one extra second only when full second elapsed. With force after hidden false at exact transition, no loss beyond under heartbeat granularity. If heartbeat continues to 17? hidden doesn't tick. But force not at t16.7. If visible tail from last heartbeat is 0.7s, liveMs didn't include it; but floor total remains unchanged (0 extra). If from last heartbeat at t16 to t16.9 -> no full extra second. So no incorrect integer. If last full sec was at t16, need add 1 sec; heartbeat at t16 did. Good. So no significant loss for subsecond if heartbeat granularity 1s. If commit only at 15s ticks, no exact? But likely every second.
+
+What about flush after a period of visible time but due timer granularity 1s, `liveMs` has number of whole sec increments. fine.
+
+No need.
+
+Potential issue: `settle` first absorb uses `Math.max(0, now - lastMark)` but with timer heartbeat if system clock moves backwards? Math.max; if clock jumps forward >? counts. no.
+
+Potential issue if `deps.now()` returns Date.now ms; if monotonic? no.
+
+Need perhaps read prompt "P7E-05 门二 R3 复审材料" from codebase without actual AGENTS? It says "R3 回炉内容 (对终审 BLOCKING+WARN 的修复)". The target likely fixes known issues. They ask to audit "票面+diff+新文件全文". We have only delta. We should judge if fixes acceptable. likely PASS.
+
+Let's decide between PASS and PASS_WITH_WARNINGS. We can provide findings only if real. I'd like include one NIT: zero chunk `[0]` still returned by public pure function; if any future caller forgets to guard, 0 delta can be sent. But comments already. Not issue.
+
+Maybe include WARN about composite flusher and onFlush callbacks swallow all saveProgress errors (`then(() => undefined, () => undefined)`), so network/zod failure still silent. But R3 fix is specifically about corrupt big payloads. If API rejects chunk less than 3600 due other validation, all still lost silently. Does that violate existing "INV-57"? Material comment "zod 拒收且吞错=整段静默丢失"; they fixed by sharding but swallowing remains. Should they at least log? In app, perhaps error swallowing intentional. The code says `.then(() => undefined, () => undefined)`) for all onFlush; "0 省略语义". We can mention WARN not blocking:
+- File: reading-time.ts/useReaderReadingTime or quote.
+- issue: "透传仍将所有 saveProgress rejection 吞掉；分片只绕过大载荷 zod 拒收，其他原因失败仍会静默丢账，且无重试."
+- suggestion: "在 swallow 前 console/error channel/retry or queue；至少记录."
+But if this was pre-existing and out of scope, R3 comment says "吞错=静默丢账"; They didn't address because bug was zod rejects >3600 and swallow. However production quality says error handling missing. "setup onFlush (防御深度...)" has no diagnostics. Should this be WARN? It is evidence and real.
+
+Would that cause PASS_WITH_WARNINGS rather than PASS. The task is to audit delta, not full. If we flag WARN for existing error swallow, not blocker. Fine.
+
+Need maybe not overstate "no retry" because no requirement; desktop local? Still.
+
+Under "正确性: 错误处理缺失", it's a WARN. But if final expectation no findings? We can include.
+
+Let's think if `api.reader.saveProgress` failures are fire-and-forget intentionally (not await) throughout. In `createCompositeProgressFlusher`, saveProgress `.then(() => undefined)` no catch? It has promise then no reject? `.then(() => undefined)` without rejection handler causing unhandled rejection? Wait code:
+```
+saveProgress: (paperId, page, secondsDelta) =>
+ api.reader.saveProgress({...}).then(() => undefined)
+```
+No rejection handler, but consumer maybe awaits? The flusher `API reader` returns Promise. If flusher's saveProgress rejects, caller must catch. In `useReaderReadingTime` onFlush error swallow. The composite flusher maybe in tick? It calls `.then` no catch. In code shown:
+```
+deps.onFlush(paperId, chunk)
+```
+Actually `deps.onFlush` is provided in hook. R2 composite `saveProgress` in API object:
+```
+saveProgress: (...) => api.reader.saveProgress({...}).then(() => undefined),
+```
+Since no `, () => undefined`, returned promise may reject; but if caller doesn't await, unhandled rejection. Maybe existing. Not enough.
+
+Could add WARN "swallow errors without observability still can lose time; after sharding fix, error handling should be reworked." Suggest no blocker.
+
+Need maybe identify an exact BLOCKING? No.
+
+Let's evaluate "settle(...)" implementation relative to comment "结转不再依赖可见性" It is true. "吸收仅 visible" okay.
+
+Could output verdict PASS_WITH_WARNINGS with WARN error swallowing and NIT test semantics maybe. But final "two three sentence" summary: changes fix blockers, no hard rule violations, but production error swallowing remains.
+
+Let's see if WARN severity "should fix but not block". It might be accepted.
+
+Another WARN: In `settle`, force carry's `lastMark = now` when currentPid null can update `lastMark` even if no active paper, but start sets? no.
+
+Possible "M2 carrier invalid" test generation issue: If a dead guard/tick is removed and mutation not red, mutation test can't protect. They transferred to M5 because no need. But M5 likely tests different mutation. Test suite may have no anchor for tick guard's "return on currentPid null/ invisible", making redundant defense unguarded. But "防线冗余实证" they intentionally leave redundant? Wait in code:
+```
+const tick = (): void => {
+ if (currentPid === null || !deps.isVisible()) return
+ settle(false)
+}
+```
+This is a defensive guard. Mutation deleting guard no longer red because settle's absorption visible condition/ledger conditions also handles? Let's test delete guard->tick always settle. If hidden and currentPid null? If no active, currentPid null skip; if hidden with active and ledger maybe? tick uses settle(false), but if hidden and liveMs <TICK (0), no carry; if currentPid active hidden but liveMs >=TICK from before? On hidden transition liveMs is likely 0 or if no force? Suppose visibility becomes false without force settle, liveMs may be >= TICK (if last tick didn't commit because? Actually tick would commit when visible; liveMs 0). So no effect. Thus guard redundant. Their mutation testing allows not catching redundancy due next layer. Fine.
+
+But M5 "remove settle absorb condition -> 90≠30 red" Evidence not included. no.
+
+Need decide if code "setup onFlush defense depth—upstream already sharded then one chunk pass" if upstream not sharded? If a caller sends seconds 7200 through deps.onFlush, hook chunks. Good.
+
+Line in `createReaderReadingTime` test, dispose: If account 4000 sec and sec chunks; because ledger stores seconds and onFlush adds seconds. Good.
+
+Potential issue: `chunkSeconds` used by setup onFlush to chunk again. Since max chunk is 3600. If a caller passes negative? no.
+
+Potential issue in createCompositeProgressFlusher comment "两个账皆空 zero invoke" but chunkSeconds(0)=[0]; if flusher invokes chunk? It won't if both empty? Need no.
+
+Let's maybe mention NIT: `chunkSeconds` returns `[0]` for zero; API says "0 省略语义 by assembly", but zero's while loop if rest=0 and chunks length=0 push rest, okay. Could be simpler `if (sec===0) return [0]`; no.
+
+Potential issue: `chunkSeconds` no input validation for negative/NaN/Infinity; if ledger corrupted? Not.
+
+Let's craft final JSON with one WARN? Need exact file/line_hint.
+
+Need cite files:
+- "reading-time.ts" for settle? The snippet from material not file path; line_hint "settle()/tick() + dispose 分片段".
+- "useReaderReadingTime" hook: `deps.onFlush` callback in `useReaderReadingTime`: `.then(() => undefined, () => undefined)`; "setup onFlush (防御深度)" section 2.
+If warning error swallow is expected, severity WARN. Evidence can quote:
+"`void api.reader.saveProgress({ ... }).then(() => undefined, () => undefined)`" from material section 2.
+Issue: `saveProgress` failure silently swallowed; no logging/retry/outbox; if invoke fails (network/IPC/zod for unanticipated reason), progress/time lost; the fix only prevents >3600 payload reject.
+Suggestion: centralize error handling: log via app logging, queue retry, or at least maintain last-error visible; do not swallow all.
+
+Is this outside "票面外"? It is touched by new code; new code repeated and perhaps should improve. WARN not blocking.
+
+Could there be a more direct WARN in "settle floor lose hidden tail" perhaps include if confident? Let's decide not include to avoid false positive, because test indicates maybe heartbeat. But maybe include as NIT? no.
+
+What about "mutations red evidence not reproducible names" not.
+
+Potential finding: The new test "零头结转到账 20" calls `h.setVisible(false); h.rt.onVisibilityChange();` then `collectAndZero`, where liveMs is only flushed by force at hidden. It doesn't assert hidden time is *not* counted if hidden started in the middle of an interval since last tick. Maybe not.
+
+Could mention WARN "need add anchor for hidden transition mid-interval vs liveMs not being absorbed" but not confident. Let's see if this is worth WARN:
+Evidence: `settle` starts by `if (currentPid !== null && deps.isVisible()) { liveMs += now - lastMark }`; at the exact transition from visible to hidden, if `deps.isVisible()` has already flipped, this line does not add the visible interval since the last heartbeat. The new anchor only has `setVisible(false)` after `advance` boundaries, so may not catch arbitrary mid-heartbeat hide. Is this "material evidence" enough? Yes code. But maybe hidden timer callback (onVisibilityChange) occurs before visibility flips? Test shows setVisible false before callback. Good. In real visibilitychange event, `deps.isVisible` false. This could lead to undercount by up to one heartbeat (maybe 1s), likely acceptable? If heartbeat is 1s, only subsecond but floor semantics. If flow: h.advance(19_800) should ledger 19? Let's derive if full seconds? start, tick every 1000, ledger commits at 15s (15), then liveMs=4800 at t=19.8. setVisible false; settle hidden false: ledger remains15? But total full seconds to t=19.8 =19. Hidden carry liveMs not add 4.8? Wait liveMs=4800 if a tick at t=19? Actually heartbeat every 1s from 0 through 19: at t=16-19 adds 4000; liveMs=4800 if odd due 0.8 since t=19? But if force at 19.8 before heartbeat at 20, liveMs may be 4000? Let's compute with exact callbacks:
+If each heartbeat every 1000:
+t=1..15 liveMs accum 15000; at t=15 commit? TICK=15000 but condition `liveMs >= TICK`; yes add 15, liveMs=0.
+t=16: +1000 =>1000; 17=>2000; 18=>3000;19=>4000 (because t=15.0 lastMark, then t=16.0 1000? Actually 15 to16 1000, so over 16-19 4000? at t=19:4000). If hide at 19.8, settle hidden rejects add; liveMs 4000. Total full seconds to 19.8=19; ledger15 plus hidden carry4=19. Wait if carry liveMs4 =>19. correct. Great. If hide at 19.2, liveMs from heartbeat at 19 =4000, full seconds to 19.2=19; ledger15 + 4 =19. correct. If hide at 19.0 exactly after heartbeat t=19? total 19, ledger15+4=19. correct if heartbeat at 19 before event. If hide at 19.0 exactly but event before heartbeat? If event at 19.0 before scheduled heartbeat, liveMs maybe 3000 from t=18? Then ledger15+3=18, but total full seconds to 19=19. Wait sequence: heartbeat times at 1,2,...; At t=18, lastMark=18, liveMs=3000? Let's compute if t=15 commit, liveMs=0. At t=16 liveMs=1000; t=17=2000; t=18=3000; t=19 not yet if hide exactly at 19.0 before heartbeat due event order. If hide and stop timer before t=19, missing the 1000ms interval from 18 to19? But if fake timer stops before t=19, actual real tab hidden at t=19.0 after 19 full seconds; timer would normally fire at 19 before/at? If visibilitychange event at 19 and timeouts at19 order matters. But if hidden event happens before timer due at same timestamp, setVisible(false) before timestamp, no heartbeat at 19; undercount by 1 sec. Fake tests maybe use `setVisible(false)` and no advance, so only if hidden before 1s heartbeat? Not issue.
+
+If heartbeat interval 1s, undercount max possible depending ordering at exact second. If hidden occurs at arbitrary time, last heartbeat is less/equal 1s before, and if full second begins at exact event but heartbeat not fired, undercount <1s? The `Math.floor` semantics allow up to almost 1s? Wait if hide at 19.9, last heartbeat at19 => liveMs 4? times: At t=19, if heartbeat fires exactly t=19, total elapsed 19. If hide at 19.9, full seconds=19. No need extra. If hide at 20.1? LiveMs0? Actually t=20 heartbeat should fire at 20 while visible (if before hide), total full seconds=20, ledger16? Let's compute ledger after t=15 =15, heartbeat at 16-19 adds 4000 -> liveMs4000? Wait t=15 commit reset; t=16..20? From 15 to20 5 sec. At t=16 = 1, 17=2,18=3,19=4,20=5. Since TICK 15? no commit. At t=20 if heartbeat before hide at20.1, liveMs=5000, carry at hidden 5, ledger20. Full seconds 20. correct. If hide at20.05 after heartbeat at20, good. If heartbeat at20 and hide at20.1, correct. Thus only order edge no material.
+
+Thus no.
+
+Maybe include WARN error swallow only. But perhaps final expected no warnings for unrelated existing; let's still include as "WARN" because prompt asks production quality. It is within material. It "should fix but not blocking". It may be pre-existing but new code still. Need summary.
+
+But there might be no WARN because the fix deliberately uses `.then(() => undefined, () => undefined)` to avoid unhandled; prior code had same pattern. The review should focus on delta. Error swallowing not introduced? `useReaderReadingTime` onFlush code appears old except chunkSeconds loop? Actually onFlush code in section 2:
+```
+createReaderReadingTime((paperId, seconds) => {
+ for (const chunk of chunkSeconds(seconds)) {
+   void api.reader.saveProgress({...}).then(() => undefined, () => undefined)
+ }
+})
+```
+This whole callback maybe changed to chunk; before it was one saveProgress with same swallow. If we flag, maybe out of scope. But still WARN.
+
+Are there any "trade-blocks" intentionally loose? Maybe their architecture doesn't want notifications. Use local academic PDF app; saving progress failures should not crash reading. But silently lose is bad.
+
+Let's see if "setup onFlush (防御深度——上游已分片则单片透传)" This onFlush is a dependency passed to `createReaderReadingTime`; comment "0省略语义由invokeOne装配层维持" Wait if error is swallowed, no "zod拒收且吞错=静默丢账" in original because they swallow. They could log error to console but no unhandled. no.
+
+Should we mark "PASS" if only WARN? "PASS_WITH_WARNINGS" is allowed with WARN findings. Use no BLOCKING.
+
+Need craft summary: "R3 修复从单源 chunkSeconds 贯穿三处消费点并新增分片/结转变更锚，原终审 BLOCKING 已闭环，verify 全绿。剩余为生产质量级建议：进度落盘仍吞掉全部 saveProgress rejection，无日志/重试；建议后续铺统一错误通道。"
+
+Need be careful "M7+M5复验" no issue.
+
+Let's maybe add second NIT:
+- `chunkSeconds` doesn't handle negative or non-finite; if future caller uses 0? no.
+Could omit.
+
+Maybe WARN "settle carries force with `Math.floor(liveMs/1000)` then zeroes even when `liveMs` has not ticked in current visible segment before hide, because absorption only when visible. If hidden transition races next heartbeat, entire last sub-second/second may not be counted." Suggestion: "在 visibility hidden 处理中先取到隐藏时刻（仍处于 visible 窗口）执行一次 settle(true)，或在 force 分支区分因隐藏而 force 时先从 lastMark 推进可见时长再结转." Hmm. Given material indicates explicit WARN fix, but maybe overreaching. Should we include? Let's assess severity if actual bug. The code and test not enough; if we include and it's wrong, false positive. Since final verdict with one WARN on error swallow okay.
+
+Let's not include semantic bug.
+
+Need ensure output valid JSON no markdown. Could include Chinese. JSON object.
+
+Let's write findings:
+```
+{
+ "verdict":"PASS_WITH_WARNINGS",
+ "findings":[
+  {
+   "severity":"WARN",
+   "file":"reading-time.ts / useReaderReadingTime",
+   "line_hint":"setup onFlush 回调（deps.onFlush 消费点）",
+   "issue":"saveProgress rejection 仍以空函数无日志吞掉：分片避免了大载荷 zod 拒收，但其它落盘失败（IPC/网络/未知校验）仍会静默丢账，且 dispose 的 onFlush 同步循环后无重试/outbox。",
+   "evidence":"`void api.reader.saveProgress({ paperId, page: ..., secondsDelta: chunk }).then(() => undefined, () => undefined)`",
+   "suggestion":"统一注入错误上报/日志通道并保留重试或本地排队；至少不要无条件静默 swallow。"
+  }
+ ],
+ "summary":"... "
+}
+```
+Need file maybe "reading-time.ts"? Actually snippet code likely in reading-time.ts or progress-flusher.ts? `api.reader.saveProgress` in a separate file, not sure. Could use "装配（useReaderReadingTime）". In material code section 2 from `useReaderReadingTime` indeed:
+```
+export function useReaderReadingTime(...) {
+ const rt = useMemo(() => createReaderReadingTime((paperId, seconds) => { ... api.reader.saveProgress ...}), [])
+```
+This code likely in "reading-time.ts" or "reading-time-hook.ts"? Evidence name. But output file can "reading-time.ts（setup onFlush 装配点）" if not precise. To avoid wrong, file "reading-time.ts / hook装配层".
+
+Line_hint: "useReaderReadingTime → createReaderReadingTime deps.onFlush 回调".
+
+Should we maybe not include "no retry" if no requirement? New suggestion "retry or queue" out of scope. WARN okay.
+
+Could issue "BLOCKING"? no.
+
+Use "PASS_WITH_WARNINGS" means should fix but not block. Summary no hard violations.
+
+Potential issue: The final output can include Unicode. Good.
+
+Need avoid markdown fences. final only JSON.
+
+Let's consider if warning is enough to choose PASS_WITH_WARNINGS. There is no "findings" empty. good.
+
+Would a reviewer expect WARN with "must fix" not blocking? yes.
+
+Let's make sure "all saveProgress rejection swallowed" exact quote from code:
+`api.reader.saveProgress({...}).then(() => undefined, () => undefined)` appears in section 2 with `void` prefix:
+```
+for (const chunk of chunkSeconds(seconds)) {
+  void api.reader
+    .saveProgress({...})
+    .then(() => undefined, () => undefined)
+}
+```
+Yes.
+
+Do we mention "composite flusher" also no catch? The `saveProgress` in composite flusher:
+```
+saveProgress: (...) => api.reader.saveProgress({...}).then(() => undefined),
+```
+No rejection handler; if caller handles, not. Maybe:
+```
+createCompositeProgressFlusher(... `saveProgress` also no explicit rejection handling)
+```
+But if API reject, returned promise rejects to caller; maybe caller ignore? Could mention only onFlush.
+
+Should findings have line_hint no exact line numbers available. Use "位于 dispose 分片后的消费链 setup onFlush 回调" and quote. Good.
+
+Could also include NIT "0 semantics remains distributed: chunkSeconds(0) returns [0] with consumers trusting callers; useReaderReadingTime's hook always constructs secondsDelta: chunk without >0 pre-check. If any future zero second call, it will send 0 delta despite contract comment." Wait the code:
+```
+for (const chunk of chunkSeconds(seconds)) {
+ void api.reader.saveProgress({..., secondsDelta: chunk})
+}
+```
+If seconds=0, chunk=0, sends delta 0. But caller dispose sec>0, internal records positive. But `createReaderReadingTime` might expose onFlush to tests, external could call zero. The public factory? no. But comment says "sec=0→[0]=单笔零片=旧载荷省略语义由装配层处理" Yet in setup onFlush assembly sends `secondsDelta: chunk` no omission. Wait contradiction! Let's parse comment after chunkSeconds:
+`（sec=0→[0]=单笔零片=旧载荷省略语义由装配层处理）`
+Which assembly layer handles omission? The hook's onFlush callback does not omit; it always includes secondsDelta. The composite flusher assembly API object has `...(secondsDelta > 0 ? { secondsDelta } : {})`, but onFlush doesn't. Is this a bug maybe? Let's inspect:
+- `createReaderReadingTime` accepts onFlush callback and maybe `dispose` only call onFlush for sec>0. The "0=单笔零片" is for other consumers like `createCompositeProgressFlusher` maybe calls `saveProgress` with chunk. In code R2 flusher likely:
+```
+for (const chunk of chunkSeconds(sec)) {
+  if (chunk>0) saveProgress(...)
+  else if (page) saveProgress({paperId,page})
+}
+```
+Cannot know.
+But comment in `useReaderReadingTime` after onFlush:
+```
+/** ... 每片恒>0=恒带 secondsDelta 字段（0 省略语义由 invokeOne 装配层维持） */
+```
+Wait if this comment applies to the hook function? It says "每片恒>0" if input seconds >0; dispose only positive. So okay.
+
+Could mention NIT: "chunkSeconds has no contract enforcement for 0; zero delta if called with zero. But current callers guard." No.
+
+Potential issue with production error swallowing is sufficient for WARN. Need perhaps not overdo.
+
+Let's revisit "M7+M5复验 evidence tail" shows two mutations both have 1 failed/16 passed. But only one failed each; if mutation kill all? Good. Doesn't identify because ANSI stripped. no.
+
+No blocking hard rule. Good.
+
+Let's final.
+
+Wait: The prompt says "对 P7E-05 门二 R3 复审材料（delta）" maybe "门二" gate expects no WARN? If PASS_WITH_WARNINGS could be allowed. Output verdict pass warnings.
+
+Let's ensure final object no whitespace issues but okay. Need not mention "I" etc. Keep concise.

@@ -1,0 +1,38 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "severity": "BLOCKING",
+      "file": "src/shared/ipc/schemas.ts + src/renderer/features/reader/reading-time.ts",
+      "line_hint": "schemas.ts secondsDelta: z.number().int().min(0).max(3600).optional()；reading-time.ts createCompositeProgressFlusher/collectAndZero",
+      "issue": "secondsDelta 上限 3600 与时账累积口径结构性冲突：时长账只在关 tab/closeAll/dispose 三收尾口经复合 flusher 落账（R2/R5/R6/R7 全部走 collectAndZero/collectAllAndZero 一次性回吐），中途无任何周期 flush 搭车（进度防抖落库链路不带时长）。可见连续阅读超过 1 小时（3600s）是正常学术阅读场景——关 tab 时 secondsDelta>3600 被 zod 拒收，invoke  reject 又被 invokeOne 的 `.then(()=>undefined, ()=>undefined)`+try/catch 全吞，且账已被 collectAndZero 清零——整段时长静默丢失，无任何告警。这恰好击穿了本票自立的 INV-57『漏一即丢账的结构性防线』。现有测试（R1~R7 最长 60s）全部落在 3600 内，无锚覆盖。",
+      "evidence": "schemas.ts `secondsDelta: z.number().int().min(0).max(3600).optional()`（注释自述『上限 3600=单次 flush 上界防异常大值』）；reading-time.ts invokeOne `try { void Promise.resolve(deps.saveProgress(...)).then(() => undefined, () => undefined) } catch { /* 吞错 */ }`；复合 flusher 注释『进度页+时长账一次 invoke（sec>0||page 在场才发）』——flush 仅由 closeTab/closeAll/dispose 触发（ReaderPage 装配 `register(flusher)`+useReadingTimeWiring dispose）",
+      "suggestion": "二选一或组合：①给时长账加周期回吐——复合 flush 挂进进度防抖落库链（或 tick 每 N 次攒账随 saveProgress 搭车），保证单次 delta 有界（如 ≤15min 窗口），3600 上限才成立；②放宽 schema 上限至日级（如 86400）并在 repo 层保留 int min 0 校验。修后须补跨格锚：可见连续 >3600s 后 flush 落账不丢（如 3660s→saved secondsDelta=3660 或分批回吐断言），并加变异红证（删周期回吐→长会话丢账红）。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reading-time.ts",
+      "line_hint": "stop()/collectAndZero() 与 hidden 期 liveMs 留存路径",
+      "issue": "hidden 中 stop()/closeTab 当前 tab 时：settle(true) 被 isVisible 门控跳过（R1 回炉修复的代价面），已攒的可见零头（<15s）留存于模块级 liveMs；随后 start(下一 tab) 时 `liveMs = 0` 直接重置——该零头既未入旧账也未入新账，静默丢弃。数值上界 <tick 秒级，落在票面§4 已知边界③口径内，属可接受损耗，但注释把这个丢弃路径写成『恢复后续算或终局丢弃』，实际 closeTab 场景连恢复机会都没有，建议注释口径补实或测试锚一句（hidden+stop 后零头不入任何账）。",
+      "evidence": "settle 修复注释『hidden 期 force 结算：零头留存 liveMs 不入账（恢复后续算或终局丢弃——<tick 秒级，票面§4 已知边界③口径）』；start() 体 `currentPid = paperId; liveMs = 0; lastMark = deps.now()`",
+      "suggestion": "不改行为：补一行注释明确 closeTab-while-hidden 路径的零头终局丢弃语义；或在 stop() 对 currentPid 做 `ledger[currentPid] = (ledger[currentPid] ?? 0) + Math.floor(liveMs/1000); liveMs = 0`（仅吸收进入 hidden 前已由 onVisibilityChange 结存的可见零头——该部分本来就是合法可见时长），消除丢弃。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reading-time-setup.ts + src/renderer/features/reader/scroll-progress.ts",
+      "line_hint": "useReaderReadingTime onFlush 兜底 vs useScrollProgressWiring cleanup sp.dispose()",
+      "issue": "R7 卸载收尾实际是双 invoke：时长尾账经 onFlush→saveProgress（page 取 store tab.page），进度尾账经 sp.dispose 既有自落库——同一 paper 两条 UPDATE（last_read_page 被写两次、两条 SQL 各原子但非单事务面）。无数据丢失（累加原子），但与票面 Design 裁决『单通道单事务面一次 invoke』的字面口径有偏差，且两处 page 取值来源不同（pending vs store tab.page）存在理论上的页码回退窗口。",
+      "evidence": "reading-time-setup.ts onFlush `void api.reader.saveProgress({ paperId, page: useReaderStore.getState().tabs[paperId]?.page ?? 0, secondsDelta: seconds })`；scroll-progress.ts wiring cleanup `register(null); sp.dispose()`",
+      "suggestion": "可接受现状则补注释说明 R7 为双 invoke 例外及原子累加下无害的论证；或卸载路径改为先 register 保持→dispose 前手动 compositeFlusher.flushAll() 再 register(null)，使 R7 也走合并单 invoke。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reading-time.ts",
+      "line_hint": "文件全文 280 行",
+      "issue": "票面①估算『reading-time.ts（~130 行）』，实际 280 行（复合 flusher+wiring+装配工厂同驻）。未违反文件 ≤500/组件 ≤250 硬关卡，且拆分（reading-time-setup.ts/reading-time-format.ts）有自裁申报支撑，仅作体量偏差记录。",
+      "evidence": "diff 头 `@@ -0,0 +1,280 @@`；票面『reading-time.ts（~130 行）：createReadingTime(deps)——start/stop/ledger/tick 循环+visibilitychange 门/collectAndZero/dispose』",
+      "suggestion": "无需回修；收口时在 INV-57 登记或票尾注一体量偏差原因（复合 flusher+wiring 并入）。"
+    }
+  ],
+  "summary": "迁移/schema/repo 原子累加/R1 门控修复/12 件受锁配套的纯净性论证均成立：逐格推演 R1~R10 锚与变异 M1~M5 设计自洽，受锁改动全是字面投影无断言弱化，TagEditor key 修复合理且属正确性回修。唯一阻塞项：secondsDelta max(3600) 与『仅收尾口回吐、无周期 flush』的结构冲突——超 1 小时连续阅读关 tab 即被 zod 拒收且错误被吞，时长静默整段丢失，击穿本票自立的丢账防线，必须回修并补长会话跨格锚。判 FAIL。"
+}

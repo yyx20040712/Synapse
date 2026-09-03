@@ -49,6 +49,7 @@ function makeDetail(): PaperDetail {
     annotationCount: 2,
     noteCount: 1,
     lastReadPage: 0,
+    readingSeconds: 0,
     addedAt: '2026-08-24T00:00:00Z',
     abstract: '摘要内容',
     arxivId: null,

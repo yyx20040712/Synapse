@@ -49,6 +49,7 @@ import { nearestPage } from './PageColumn'
 import { effectiveZoom } from './scroll-converge'
 import { api } from '../../api/client'
 import { useReaderStore } from './reader.store'
+import type { ProgressFlusher } from './reader.store'
 
 /** 滚动位置状态机六态（票面字面） */
 export type ScrollStateName = 'idle' | 'scrolling' | 'pending' | 'writing' | 'restoring' | 'loading'
@@ -85,6 +86,11 @@ export interface ScrollProgress {
   beginProgramScroll(page: number): void
   /** 关 tab：该 tab 的 pending 立即落库（store.closeTab 经 flusher 接线调用） */
   flushPending(paperId: string): void
+  /** P7E-05 复合 flusher 消费口：取走该 tab 的待落页码（不落库——落库归
+   *  复合 flusher 单通道合并时长账一次 invoke；无账返回 undefined） */
+  takePending(paperId: string): number | undefined
+  /** P7E-05 复合 flusher 消费口：待落账 pid 清单（flushAll 并集遍历） */
+  pendingIds(): string[]
   /** 全关/卸载：整账本一次收 */
   flushAll(): void
   stateOf(paperId: string): ScrollStateName
@@ -249,6 +255,16 @@ export function createScrollProgress(deps: ScrollProgressDeps): ScrollProgress {
       void saveOne(pid, page)
     },
 
+    takePending(pid) {
+      const page = pending[pid]
+      delete pending[pid]
+      return page
+    },
+
+    pendingIds() {
+      return Object.keys(pending)
+    },
+
     flushAll() {
       flushLedger()
     },
@@ -313,23 +329,26 @@ export function createReaderScrollProgress(
 /**
  * 装配效应集（ReaderPage 组合根消费；wheel/pointerdown 接管经 JSX 内联 prop，
  * keydown 因 keymap 全局而挂 document）：
- * - flusher 注册/注销成对（store.closeTab/close 经回调立即收账——拆链接线）；
+ * - flusher 注册/注销成对（store.closeTab/close 经回调立即收账——拆链接线；
+ *   P7E-05 起注册体=装配面注入的复合 flusher：进度页+时长账单通道合并，
+ *   裸 sp 落库形态退役）；
  * - 换文献 beginLoading；scrollRequest（程序跳页/恢复）→beginProgramScroll。
  */
 export function useScrollProgressWiring(
   sp: ScrollProgress,
   fileUrl: string | null,
   paperId: string | null,
-  columnScroll: { page: number } | null
+  columnScroll: { page: number } | null,
+  flusher: ProgressFlusher
 ): void {
   const register = useReaderStore((s) => s.registerProgressFlusher)
   useEffect(() => {
-    register({ flush: (pid) => sp.flushPending(pid), flushAll: () => sp.flushAll() })
+    register(flusher)
     return () => {
       register(null)
       sp.dispose()
     }
-  }, [register, sp])
+  }, [register, sp, flusher])
   useEffect(() => {
     // 换文献/首开：丢弃旧页文本后进入 loading（页列就绪前 scroll 不记账）
     if (paperId !== null) sp.beginLoading(paperId)

@@ -16,6 +16,7 @@ const detail: PaperDetail = {
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
+  readingSeconds: 0,
   addedAt: 't',
   abstract: 'abs',
   arxivId: null,

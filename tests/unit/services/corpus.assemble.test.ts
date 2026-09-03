@@ -38,6 +38,7 @@ const detail: PaperDetail = {
   annotationCount: 2,
   noteCount: 1,
   lastReadPage: 0,
+  readingSeconds: 0,
   addedAt: '2026-01-01T00:00:00Z',
   abstract: 'abs',
   arxivId: null,

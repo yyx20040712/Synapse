@@ -58,9 +58,9 @@ beforeEach(() => {
 // ── 迁移 007：tags 列+存量兼容 ─────────────────────────────────
 
 describe('F-LG14 迁移 007（lineage_nodes.tags）', () => {
-  it('版本接续：MIGRATIONS 含 version 7 且 user_version=7（新库全量）', () => {
+  it('版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）', () => {
     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
-    expect(readUserVersion(db)).toBe(7)
+    expect(readUserVersion(db)).toBe(8)
   })
 
   it('tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）', () => {

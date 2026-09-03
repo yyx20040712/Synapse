@@ -1,0 +1,100 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reading-time.test.ts [2m([22m[2m12 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 11[2mms[22m[39m
+[31m   [31m×[31m reading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR2：R1 后复合 flush(pid)→单次 saveProgress(pendingPage, 45)；ledger 清零[90m 5[2mms[22m[31m[39m
+[31m     → expected [ { paperId: 'p-1', page: 3, …(1) } ] to deeply equal [ { paperId: 'p-1', page: 3, …(1) } ][39m
+[31m   [31m×[31m reading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次 invoke（不双写）[90m 1[2mms[22m[31m[39m
+[31m     → expected [ …(2) ] to deeply equal [ { paperId: 'p-1', page: 2, …(1) } ][39m
+[31m   [31m×[31m reading-time 态空间跨格序列（R1~R7+R10）[2m > [22m零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）[90m 1[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { paperId: 'p-1', page: 9, …(1) } ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time.test.ts[2m > [22mreading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR2：R1 后复合 flush(pid)→单次 saveProgress(pendingPage, 45)；ledger 清零
+[31m[1mAssertionError[22m: expected [ { paperId: 'p-1', page: 3, …(1) } ] to deeply equal [ { paperId: 'p-1', page: 3, …(1) } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[2m      "page": 3,[22m
+[2m      "paperId": "p-1",[22m
+[32m-     "secondsDelta": 45,[39m
+[31m+     "secondsDelta": 0,[39m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time.test.ts:[2m111:21[22m[39m
+    [90m109| [39m    h[33m.[39m[34madvance[39m([34m45_000[39m)
+    [90m110| [39m    f[33m.[39m[34mflush[39m([32m'p-1'[39m)
+    [90m111| [39m    [34mexpect[39m(f[33m.[39msaved)[33m.[39m[34mtoEqual[39m([{ paperId[33m:[39m [32m'p-1'[39m[33m,[39m page[33m:[39m [34m3[39m[33m,[39m secondsDelta[33m:[39m …
+    [90m   | [39m                    [31m^[39m
+    [90m112| [39m    [34mexpect[39m(h[33m.[39m[34mledger[39m([32m'p-1'[39m))[33m.[39m[34mtoBe[39m([34m0[39m)
+    [90m113| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time.test.ts[2m > [22mreading-time 态空间跨格序列（R1~R7+R10）[2m > [22mR5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次 invoke（不双写）
+[31m[1mAssertionError[22m: expected [ …(2) ] to deeply equal [ { paperId: 'p-1', page: 2, …(1) } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[2m      "page": 2,[22m
+[2m      "paperId": "p-1",[22m
+[31m+     "secondsDelta": 0,[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "page": 9,[39m
+[31m+     "paperId": "p-1",[39m
+[2m      "secondsDelta": 15,[22m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time.test.ts:[2m151:21[22m[39m
+    [90m149| [39m    f[33m.[39m[34mflush[39m([32m'p-1'[39m)
+    [90m150| [39m    f[33m.[39m[34mflushAll[39m()
+    [90m151| [39m    [34mexpect[39m(f[33m.[39msaved)[33m.[39m[34mtoEqual[39m([{ paperId[33m:[39m [32m'p-1'[39m[33m,[39m page[33m:[39m [34m2[39m[33m,[39m secondsDelta[33m:[39m …
+    [90m   | [39m                    [31m^[39m
+    [90m152| [39m  })
+    [90m153| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time.test.ts[2m > [22mreading-time 态空间跨格序列（R1~R7+R10）[2m > [22m零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { paperId: 'p-1', page: 9, …(1) } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "page": 9,[39m
+[32m-     "paperId": "p-1",[39m
+[32m-     "secondsDelta": 22,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time.test.ts:[2m195:21[22m[39m
+    [90m193| [39m    h[33m.[39m[34madvance[39m([34m7_000[39m)
+    [90m194| [39m    f[33m.[39m[34mflush[39m([32m'p-1'[39m)
+    [90m195| [39m    [34mexpect[39m(f[33m.[39msaved)[33m.[39m[34mtoEqual[39m([{ paperId[33m:[39m [32m'p-1'[39m[33m,[39m page[33m:[39m [34m9[39m[33m,[39m secondsDelta[33m:[39m …
+    [90m   | [39m                    [31m^[39m
+    [90m196| [39m  })
+    [90m197| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 18:53:13
+[2m   Duration [22m 549ms[2m (transform 29ms, setup 0ms, collect 59ms, tests 11ms, environment 0ms, prepare 154ms)[22m
+
+exit=1
