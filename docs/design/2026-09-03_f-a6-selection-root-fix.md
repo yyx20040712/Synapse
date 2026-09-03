@@ -1,6 +1,6 @@
 # F-A6 设计文档：划选渲染错乱（D1）+ 拖选卡顿（D2）根治
 
-路径：`docs/design/2026-09-03_f-a6-selection-root-fix.md` · 日期 2026-09-03 · 状态：**定稿——全链审查闭合+用户四点裁决在档（2026-09-03 在场轮：旋转页纳入/INV-37 拖选期弱化允许/停顿出条+C 备案默认确认）**：GLM 同源预审[欠账轮]→Kimi 一轮拟定裁决[三前置+六改写落入]→deepseek 一轮[5W4N 落入]→用户几何源迁移提案并入→Kimi 二轮增量[采纳+C1~C7 落入+T9 新立案+T1 机理证实]→deepseek 终位[3W2N 落入：C1 票面宿主/T9 修复权属/双路线贯通 settle 权威+INV-58 同族禁令]→GLM5.3 终裁 · **下一步=F-A6-a 取证票（§5.4）** · 上游：tickets/registry.ts:242 · 涉修订：ADR-0019 R3、INV-37 条款（拖选期弱化=显式代价）、新 INV-58 · 审查档：scripts/audits/f-a6-design-review.md+f-a6-design-r3.raw.txt+f-a6-design-ds.raw.txt+f-a6-geom-kimi.raw.txt+f-a6-geom-ds.raw.txt（五份全链在档）
+路径：`docs/design/2026-09-03_f-a6-selection-root-fix.md` · 日期 2026-09-03 · 状态：**取证毕（2026-09-04 F-A6-a）——路线裁定 R-迁移为主修（阶段化决策门：阶段1 T1/T9 duckViewport 前置修复→阶段2 复跑 A/B 对照确认 S1/S2 消除→阶段3 主链迁移）+G2 偏离率≥5%（右溢支占位）+tick 基线 5Hz 实测在档；裁决表=scripts/audits/f-a6-forensic-verdict.md（门一 Kimi PWW+门二 deepseek PWW 双档处置在 §9-7/8）；真实库 46 页 T1/T9 零触发（合成 S1/S2 量化闭合）、真实样本甲乙同净、用户实报重形态未复现（证据降级+验收条件随票流转）——下一步=F-A6-b（阶段1 起步）** · 全链审查闭合+用户四点裁决在档（2026-09-03 在场轮：旋转页纳入/INV-37 拖选期弱化允许/停顿出条+C 备案默认确认）：GLM 同源预审[欠账轮]→Kimi 一轮拟定裁决[三前置+六改写落入]→deepseek 一轮[5W4N 落入]→用户几何源迁移提案并入→Kimi 二轮增量[采纳+C1~C7 落入+T9 新立案+T1 机理证实]→deepseek 终位[3W2N 落入：C1 票面宿主/T9 修复权属/双路线贯通 settle 权威+INV-58 同族禁令]→GLM5.3 终裁 · 上游：tickets/registry.ts:242 · 涉修订：ADR-0019 R3、INV-37 条款（拖选期弱化=显式代价）、新 INV-58 · 审查档：scripts/audits/f-a6-design-review.md+f-a6-design-r3.raw.txt+f-a6-design-ds.raw.txt+f-a6-geom-kimi.raw.txt+f-a6-geom-ds.raw.txt（设计链五份）+f-a6-forensic-g1.raw.txt+f-a6-forensic-g2.raw.txt（取证门审两份）
 
 ## §0 一页纸决策摘要
 
@@ -189,7 +189,7 @@ setPaint 恒新对象（SelectionLayer.tsx:137）→SelectionPaint 每 tick 全�
 
 ### 5.4 工单切分（三屋，串行）
 
-1. **F-A6-a 取证票**：diag 脚本+用户同族 PDF 复现+裁决表（定 D1 修复集与 G2 阈值）+**A/B 对照（DOM 量测 rects vs 项声明 rects——双路线裁定+T1 行级复核[TextLayer/PdfPageCanvas 源码入包]+tick 时长前测基线**）。产出=修复集裁定+路线裁定（R-加固/R-迁移），无实现面。
+1. **F-A6-a 取证票（✅ 2026-09-04 完成）**：diag 脚本+用户同族 PDF 复现+裁决表（定 D1 修复集与 G2 阈值）+**A/B 对照（DOM 量测 rects vs 项声明 rects——双路线裁定+T1 行级复核[TextLayer/PdfPageCanvas 源码入包]+tick 时长前测基线**）。产出=修复集裁定+路线裁定（**R-迁移为主修，阶段化决策门**——裁决表 §4/§5：阶段1 T1/T9 前置→阶段2 复跑对照→阶段3 主链迁移），无实现面。产物=scripts/audits/f-a6-diag{,-lib,-page}.mjs+ f-a6-diag-out/ 44 件+裁决表 f-a6-forensic-verdict.md。
 2. **F-A6-b D1 管线加固票**（依赖 a）：**按 a 的路线裁定分叉**——R-加固：annotation-anchor 判据修+TextLayer rotation+G2 门；R-迁移：pdf-item-geometry 拆件为主链+**PdfPageCanvas/装配链 viewport 等价信息（rotate+scale+viewBox/page.view）与 styles 下钻通道（C1 承重断点——本票宿主，deepseek 终位 WARN-1）**+TextLayer rotation+DOM 量测降级为回退路径+G2 门。**路线无关项（deepseek 终位 WARN-2）：T9 修复=TextLayer duckViewport 改收真实 page.view/pageX/pageY（与 T1 相互独立，rotation=0 也致病）——取证确认 T9 触发后由本票承接**。TDD：先红（交错/pitch/项几何夹具）→绿→变异红证。
 3. **F-A6-c D2 调度与快路径票**（依赖 a+b——**R-迁移路线下必须待 b 交付 pdf-item-geometry+下钻通道后再实施**，deepseek 终位 WARN-1）：selection-evaluate 拆件+rAF 调度+S1b/S1c 改写；票面必须含「settle 产物落地**同帧覆盖**快路径产物」断言（松手瞬间快→settle 几何跳变面：元素容器边界差额+textNodes 两套枚举口径可差一 span 的 band 差——INV-58 等价 it 用文本边界夹具锚不住此族，须显式锚）。**路线分叉贯通全量权威（deepseek 终位 WARN-3）：R-加固=evaluateVisual 快路径与 evaluateFull/settle 均走 clientRects 链；R-迁移=两者均走 pdf-item-geometry 项几何链（快路径全部布局读出链=getClientRects/gBCR 均消——D2 收益结构性加固）——禁止快路径走新几何族而 settle 留在旧几何族（松手同帧会把 D1 错几何带回来）**。
 4. **F-A6-d 收口票**：e2e 补断言+INV-37/58+ADR R3+locks 收账+verify 全绿。

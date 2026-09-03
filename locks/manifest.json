@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T15:42:24.9125132Z",
+    "generatedAt":  "2026-09-03T19:35:44.3319705Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -112,6 +112,18 @@
                   {
                       "path":  "scripts/audits/f-a5-verify.mjs",
                       "sha256":  "5d3cdf49c9ce5ffacd906665ec9adc8410f8ce9d2590fd60e7e99f719f664804"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a6-diag.mjs",
+                      "sha256":  "7ba6996b74b18e58802ec40b869b2d7511c736055f80b3ef766ec240dd3a7ea5"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a6-diag-lib.mjs",
+                      "sha256":  "59c10a15b59b09581d804f320bbc368958abba8b8162b8b02a88c1c2f1b559ad"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a6-diag-page.mjs",
+                      "sha256":  "9a48334a674898fd157296f44c390dbe5fbbb3282016e5a14e3a1435d4a09d51"
                   },
                   {
                       "path":  "scripts/audits/f-d4-gen-gate1-brief.mjs",
