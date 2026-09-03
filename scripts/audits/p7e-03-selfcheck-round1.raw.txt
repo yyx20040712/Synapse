@@ -1,0 +1,33 @@
+=== P7E-03 门一回炉 R1 分链自检（真退出码；locks 仍归主控） ===
+$ npm run quality:check
+exit=0
+
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用
+$ npm run tickets:check
+exit=0
+工单统计：共 119 个；open 0（weak 可领 0，strong 0）
+tickets 检查通过：注册表与代码一致
+$ npm run lint
+exit=0
+> eslint .
+
+$ npm run typecheck
+exit=2
+
+tests/unit/renderer/reader-search.store.test.tsx(106,77): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'string'.
+$ npm run test（全量）
+exit=0
+[2m Test Files [22m [1m[32m140 passed[39m[22m[90m (140)[39m
+[2m      Tests [22m [1m[32m1216 passed[39m[22m[90m (1216)[39m
+$ npm run build
+exit=0
+[32m✓ built in 1.76s[39m
+
+=== typecheck 修复后复跑（S2 夹具 pageOf 笔误） ===
+$ npm run typecheck
+exit=0
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+$ npm run test -- store 定向复跑
+exit=0
+[2m      Tests [22m [1m[32m17 passed[39m[22m[90m (17)[39m

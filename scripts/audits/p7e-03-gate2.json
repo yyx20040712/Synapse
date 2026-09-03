@@ -1,0 +1,4 @@
+{
+  "parse_error": true,
+  "raw_head": "{\"verdict\": \"PASS_WITH_WARNINGS\",\"findings\": [{\"severity\": \"WARN\",\"file\": \"src/renderer/features/reader/SearchHighlightLayer.tsx\",\"line_hint\": \"active 居中 useEffect（依赖含 boxes/activeIndex/lastCentered）\",\"issue\": \"同页多匹配连续 next/prev 时，居中逻辑可能先命中旧 active 块：activeIndex 变更后的首个 commit 中 boxes 仍是上一位匹配的测量结果，data-active='true' 仍指旧块；量测 effect 虽同步 setBoxes，但居中 effect 在同一批被动 effect 中仍以旧 boxes 查询到旧块，并提前把 lastCentered 记为当前 activeIndex。随后真正的新 active 块渲染时 lastCentered 已匹配，scrollIntoView 不再执行。结果是跨页跳转正常，但同一页内多个命中连续跳转时，若新匹配不在视口内则不会居中。\",\"evidence\": \"代码中的居中 effect 为：`const el = containerRef.current"
+}

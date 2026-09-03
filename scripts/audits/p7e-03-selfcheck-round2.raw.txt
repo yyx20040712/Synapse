@@ -1,0 +1,20 @@
+=== P7E-03 门一回炉 R2（最后一轮）分链自检（真退出码；locks/registry/invariants 不动） ===
+$ npm run test（全量）
+exit=0
+[2m Test Files [22m [1m[32m140 passed[39m[22m[90m (140)[39m
+[2m      Tests [22m [1m[32m1219 passed[39m[22m[90m (1219)[39m
+$ npm run quality:check
+exit=0
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用
+$ npm run tickets:check
+exit=0
+tickets 检查通过：注册表与代码一致
+$ npm run lint
+exit=0
+
+$ npm run typecheck
+exit=0
+
+$ npm run build
+exit=0
+[32m✓ built in 1.65s[39m

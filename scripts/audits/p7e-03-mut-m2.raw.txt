@@ -1,0 +1,12 @@
+=== M2 变异红证：reader-search.store 删代际守卫（cp 备份法） ===
+cp 备份完成
+0
+守卫零处（删除生效）
+--- 变异后定向测 ---
+npm_test_exit=1
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader-search.store.test.tsx[2m > [22mP7E-03 搜索 store —— submit 序列[2m > [22mS7 searching 中再提交新查询：代际守卫——旧代页回传作废，新代独占
+[31m[1mAssertionError[22m: expected [ …(2) ] to have a length of 3 but got 2[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (15)[39m
+--- 还原 ---
+diff 确认空=还原完整

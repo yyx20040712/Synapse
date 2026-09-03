@@ -24,6 +24,8 @@
  *   columnBasis 已随 onReady 布局口径重报——切布局 basis 重报时序先于用户
  *   点击）；onReady 重触发走 spProg.onColumnReady 恢复链滚回当前页（S1 声明
  *   期望：切布局不丢位置）
+ * - P7E-03 页内搜索装配：useReaderSearch（fileUrl 键效应清面板/ctrl+f/
+ *   翻页联动注入/受控面板节点）→ ReaderToolbar searchBox slot
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
@@ -46,6 +48,7 @@ import type { PageScrollRequest } from './PageColumn'
 import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
 import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
 import { SelectionLayer } from './SelectionLayer'
+import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from './reader.store'
 import { readActiveTab, useActiveTab } from './useActiveTab'
 import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
@@ -103,6 +106,11 @@ export function ReaderPage(): JSX.Element {
       }
     }, [])
   )
+
+  // P7E-03 页内搜索装配：fileUrl 键效应清面板+ctrl+f keymap+翻页联动注入+
+  // 受控面板节点（ReaderToolbar slot 消费；空态视图不渲染 toolbar=面板随
+  // store 态自隐，fileUrl 变化时经 reset 收口）
+  const searchBox = useReaderSearch(pdfDoc, fileUrl ?? '')
 
   // 打开请求两路（sr2-lg-08：注册必须先于闩锁消费——链见头注）：挂载时闩锁补读+实时监听；定路由/失败 toast 归 openFromBus
   useEffect(() => {
@@ -206,7 +214,8 @@ export function ReaderPage(): JSX.Element {
         pageStep={pageLayout === 'double' ? 2 : 1}
         onTogglePageLayout={() => {
           useReaderStore.getState().setPageLayout(pageLayout === 'double' ? 'single' : 'double')
-        }} />
+        }}
+        searchBox={searchBox} />
       <div className="flex min-h-0 flex-1">
         {outlineOpen ? (
           // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点

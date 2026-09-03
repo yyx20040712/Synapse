@@ -44,6 +44,7 @@ import type { Annotation } from '@shared/models/annotation'
 import { AnnotationLayer } from './AnnotationLayer'
 import { ReaderAiLayer } from './AiAnnotationLayer'
 import { PageColumn, type PageScrollRequest } from './PageColumn'
+import { SearchHighlightLayer } from './SearchHighlightLayer'
 import type { PDFDocumentProxy } from './PdfDocProvider'
 import type { PdfTextContent } from './PdfPageCanvas'
 import type { PageLayout } from './page-column-geometry'
@@ -105,7 +106,9 @@ export function PagesOverlay(props: {
     setPageTexts(del); setPageRoots(del)
   }, [])
 
-  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作） */
+  /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）。
+      P7E-03：SearchHighlightLayer 挂 ReaderAiLayer 后（DOM 序在 AnnotationLayer
+      后=叠于标注块之上——搜索瞬态视觉合理；内部订阅 reader-search.store） */
   const renderPageLayers = (no: number): JSX.Element => {
     const pt = pageTexts[no]
     const pr = pageRoots[no]
@@ -114,6 +117,7 @@ export function PagesOverlay(props: {
         {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
         {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
         <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
+        <SearchHighlightLayer page={no - 1} pageRoot={pr ?? null} />
       </PageFrame>
     )
   }

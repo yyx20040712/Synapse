@@ -1,0 +1,103 @@
+$ npm run test -- tests/unit/renderer/reader-search-ui.test.tsx（门一回炉 R2 先红——定向口径）
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/reader-search-ui.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reader-search-ui.test.tsx [2m([22m[2m23 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 64[2mms[22m[39m
+[31m   [31m×[31m P7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W1 尾空白查询：提交（store 侧已 trim）后 done 再 Enter=onNext（trim 口径一致——旧实现死循环重提交）[90m 5[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m P7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W2 IME 组合态 Enter：零提交零下一处（nativeEvent.isComposing 守卫——拼音确认候选词不进搜索语义）[90m 3[2mms[22m[31m[39m
+[31m     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[31m   [31m×[31m P7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W2 IME 组合态 Esc：不关面板（同守卫——取消候选词≠关闭搜索）[90m 2[2mms[22m[31m[39m
+[31m     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader-search-ui.test.tsx[2m > [22mP7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W1 尾空白查询：提交（store 侧已 trim）后 done 再 Enter=onNext（trim 口径一致——旧实现死循环重提交）
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/reader-search-ui.test.tsx:[2m188:20[22m[39m
+    [90m186| [39m    [34mmount[39m([33m<[39m[33mReaderSearchBox[39m [33m{[39m[33m...[39m[34mboxProps[39m({ state[33m:[39m [32m'done'[39m[33m,[39m query[33m:[39m [32m'smart[39m…
+    [90m187| [39m    [34mpressKey[39m([34msearchBoxInput[39m()[33m,[39m [32m'Enter'[39m)
+    [90m188| [39m    [34mexpect[39m(onNext)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                   [31m^[39m
+    [90m189| [39m    [34mexpect[39m(onSubmit)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m190| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader-search-ui.test.tsx[2m > [22mP7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W2 IME 组合态 Enter：零提交零下一处（nativeEvent.isComposing 守卫——拼音确认候选词不进搜索语义）
+[31m[1mAssertionError[22m: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/reader-search-ui.test.tsx:[2m198:24[22m[39m
+    [90m196| [39m    [34mpressKey[39m([34msearchBoxInput[39m()[33m,[39m [32m'Enter'[39m[33m,[39m { composing[33m:[39m [35mtrue[39m })
+    [90m197| [39m    [34mexpect[39m(onSubmit)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m198| [39m    [34mexpect[39m(onNext)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m   | [39m                       [31m^[39m
+    [90m199| [39m  })
+    [90m200| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader-search-ui.test.tsx[2m > [22mP7E-03 ReaderSearchBox —— 键位与展示[2m > [22mR2-W2 IME 组合态 Esc：不关面板（同守卫——取消候选词≠关闭搜索）
+[31m[1mAssertionError[22m: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array []
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/reader-search-ui.test.tsx:[2m205:25[22m[39m
+    [90m203| [39m    [34mmount[39m([33m<[39m[33mReaderSearchBox[39m [33m{[39m[33m...[39m[34mboxProps[39m({ state[33m:[39m [32m'done'[39m[33m,[39m query[33m:[39m [32m'智慧'[39m…
+    [90m204| [39m    [34mpressKey[39m([34msearchBoxInput[39m()[33m,[39m [32m'Escape'[39m[33m,[39m { composing[33m:[39m [35mtrue[39m })
+    [90m205| [39m    [34mexpect[39m(onClose)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m   | [39m                        [31m^[39m
+    [90m206| [39m  })
+    [90m207| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m20 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 13:22:17
+[2m   Duration [22m 1.36s[2m (transform 64ms, setup 0ms, collect 197ms, tests 64ms, environment 596ms, prepare 166ms)[22m
+
+exit=1

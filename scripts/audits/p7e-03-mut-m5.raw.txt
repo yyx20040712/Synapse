@@ -1,0 +1,12 @@
+=== M5 变异红证：ReaderToolbar slot 消费删——恒渲染旧占位 span（cp 备份法） ===
+（第 1 轮 {false ?? (} 连带杀兜底作废；第 2 轮括号不平衡文件级崩作废；本轮 null ?? 结构平衡）
+cp 备份完成
+221:      {null ?? (
+--- 变异后定向测 ---
+npm_test_exit=1
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader-search-ui.test.tsx[2m > [22mP7E-03 ReaderToolbar —— searchBox slot[2m > [22m传 searchBox：渲染 slot 内容+占位缺席（生产装配面恒传）
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m17 passed[39m[22m[90m (18)[39m
+--- 还原 ---
+diff 确认空=还原完整

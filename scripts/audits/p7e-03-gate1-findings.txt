@@ -1,0 +1,36 @@
+====[BLOCKING] tests/unit/renderer/reader-search-ui.test.tsx / tests/e2e/reader-search.spec.ts 全文件无 zoom/MutationObserver 用例
+issue: 态空间 S11（done→zoom 变更→文本层重渲→MutationObserver 重算高亮）无任何测试锚。票面 §① 态空间表声明「S1~S12——验收=逐格测试锚」，§⑤ 测试表亦要求逐格覆盖；但四个新测试文件中：store 测试不含 zoom 语义（zoom 不触 store），UI 测试所有重算均走 effect deps 直跑（mount/setState activeIndex），从未触发 MutationObserver→schedule→measure 路径，e2e 也无 zoom 动作。S11 是 12 格中唯一零锚格，且该路径（异步 observer+rAF 合并）恰是全票最易回归的异步面。
+suggestion: 补 S11 锚：jsdom 侧在 SearchHighlightLayer 挂载后对 .textLayer 容器 replaceChildren 触发 MutationObserver（rAF 已同步桩化），断言 hl 块重算后仍在且计数不变；或 e2e 侧 zoom+ 后断言 search-hl 可见性与几何。落盘后补入 locks 收口清单。
+
+====[WARN] src/renderer/features/reader/useReaderSearch.tsx ① fileUrl 键效应（prevFileUrl useRef 段）
+issue: INV-55 收口存在重挂载漏洞：搜索 store 是模块级单例，而 prevFileUrl 是组件实例级 ref（初始 null）。ReaderPage 重挂载（如切视图往返后打开另一篇文献）时首跑 effect 因 prevFileUrl.current===null 跳过 reset——上一篇文档的 done 态会话（query/matches/pageItems）原样复活到新文档视图上，pageItems 按页号命中时 SearchHighlightLayer 会在新文档页上尝试渲染旧文档的高亮映射。头注只防御了「fileUrl 不变的重挂」，未防御「身份已变的重挂」。同 doc 双 tab 切换（fileUrl 相同）不 reset 属可接受语义，但与票面 INV-55「换 tab 即 reset」字面有偏差，建议一并明确。
+suggestion: 把「上次生效 fileUrl」提升为模块级变量（与 store 同生命周期）做比较，或改用 store 内记录 lastFileUrl 的 resetIfDocChanged(fileUrl) 动作；并在 hook 测试（见下条）中补「重挂+fileUrl 已变→reset」用例。
+
+====[WARN] src/renderer/features/reader/SearchHighlightLayer.tsx scrolledMark useRef + active 居中 effect
+issue: scrolledMark 记账是组件实例级 ref。懒渲染窗口换出再换入（用户手动滚离 active 页再滚回）会导致层实例重建、scrolledMark 归零，active 匹配节点一挂载即再次 scrollIntoView({block:'center'})——劫持用户的手动滚动位置，与 F-03 scroll-progress 的用户接管语义相抵。同理 zoom 变更后 matches/activeIndex 引用不变、标记仍命中，active 匹配若被 zoom 挤出视口则不会重获居中（与 S11「保持可见」的读法存在张力）。
+suggestion: 居中资格记账提升到 reader-search.store（如 lastCenteredKey={matchesRef,activeIndex}），跨层实例生效；或改为仅在 pageTurner 翻页动作触发的当次赋予居中资格（显式消费一次性信号），避免重挂载隐式重获资格。
+
+====[WARN] src/renderer/features/reader/useReaderSearch.tsx 整个 hook（三 effect）
+issue: 装配 hook 零单测：①fileUrl→reset 接线（INV-55 唯一执行点）无任何测试锚（store 测试 S8 只锚 store.reset() 本身，e2e 不换文档）；②pageTurner 内 `t.page !== page` 判断只经 e2e 间接覆盖；③keymap 注册/注销成对（INV-14）无注销断言——若 cleanup 漏注销，e2e 单次路径不可见，多视图切换后快捷键行为漂移不可检出。
+suggestion: 补 useReaderSearch 单测（jsdom+hook 渲染或抽纯装配函数）：fileUrl 变化触发 reset、fileUrl 不变不重 reset、卸载后 keymap id 'reader-search' 已注销、pageTurner 在 tab.page===目标页时不调 setPage。
+
+====[NIT] tests/e2e/reader-search.spec.ts `toHaveCSS('background-color', 'rgb(220, 235, 245)')` 段
+issue: ①e2e 硬编码 --accent-soft 的解析值 rgb(220,235,245)，与 theme.css 单源形成脆耦合——主题调色即非缺陷性红。②toBeVisible+toHaveCSS 不断言遮挡：高亮层 z=1 在 canvas（z2）之下，若 pdf.js canvas 底色不透明化（render background 参数变化），全部断言仍绿而用户视觉高亮消失——「计算样式防线」防不住这一径。
+suggestion: 色值断言改为与 theme.css 变量读取比对或弱化为非透明断言；遮挡面可在 e2e 用 elementFromPoint 于 hl 中心点采样（应命中 canvas 而非意外遮挡层之上元素）或截图像素采样，至少记档为已知缺口。
+
+====[NIT] src/renderer/features/reader/reader-search.ts findInText toLowerCase 段
+issue: toLowerCase 非保长映射（典型 U+0130 'İ'→'i̇' 双码元）会使 hay 下标与 page.map（按原文建）错位，后续命中区间偏移。票面 §④ 已知边界清单未列此项。学术 PDF 出现率低但有真实语料（土耳其语引用、数学符号）。
+suggestion: 票面 §④ 补记该边界（最省），或改用逐字符大小写折叠比较保长对齐。
+
+====[NIT] tests/unit/renderer/reader-search.store.test.tsx S2 用例
+issue: S2 标题声称「零搜索：getPage 不取」，但断言只有 state/lastSubmitted/matches 三项，doc 桩无 getPage 调用计数——断言弱于标题承诺，若实现退化为空查询仍逐页提取则该用例不红。
+suggestion: makeDoc 增加 getPage 调用计数或在桩上挂 vi.fn，S2 补 `expect(getPageSpy).not.toHaveBeenCalled()`。
+
+====[NIT] tests/unit/renderer/reader-search-ui.test.tsx beforeEach defineProperty 桩段
+issue: Range.prototype.getClientRects / Element.prototype.scrollIntoView 经 defineProperty 注入，afterEach 的 vi.restoreAllMocks() 不还原 defineProperty——桩在套件结束后残留于该 jsdom 环境（文件级隔离下影响有限，但与本文件「桩即还」的整洁纪律不符）。
+suggestion: afterEach 补 delete/原描述符还原，或改用 vi.spyOn 系可恢复注入。
+
+====[NIT] src/renderer/features/reader/useReaderSearch.tsx ④ `const search = useReaderSearchStore()`
+issue: 全 store 订阅使 ReaderPage 随每次击键重渲染（实现者 §8.4 已自报）。功能正确但 PagesOverlay 子树 reconciliation 成本随输入线性发生，属于可预见的优化点而非缺陷。
+suggestion: selector 细分订阅或把 ReaderSearchBox 节点构造拆为独立 memo 组件，ReaderPage 只挂引用。
+

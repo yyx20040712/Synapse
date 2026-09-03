@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/ReaderSearchBox.tsx",
+      "line_hint": "onKeydown Enter 分支 `if (query !== lastSubmitted || state !== 'done')`",
+      "issue": "Enter 判定用未 trim 的 query 与已 trim 的 lastSubmitted 比较：store.submit 落账 `lastSubmitted: trimmed`，但 input 的 query 保留原样。用户查询含首尾空白（如 'smart '）时，done 后每次 Enter 都判定 query!==lastSubmitted → 无限重提交，永不进入 onNext——票面「再按=下一处」的 Chrome 式行为对该类查询完全失效，只能靠 › 按钮绕过。",
+      "evidence": "ReaderSearchBox：`if (query !== lastSubmitted || state !== 'done') { onSubmit(query); return }`；store：`set({ state: 'searching', lastSubmitted: trimmed, ... })`",
+      "suggestion": "判定改 `query.trim() !== lastSubmitted`，或 submit 同步置态时回写 `query: trimmed` 使两侧口径一致；补一个『带空白查询 done 后 Enter→onNext』的键位用例。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/renderer/features/reader/ReaderSearchBox.tsx",
+      "line_hint": "onKeydown Enter/Escape 处理段",
+      "issue": "未判 IME 组合态：中文拼音输入法下按 Enter 确认候选词时 e.key==='Enter' 会直接触发 onSubmit/onNext（Esc 同理会在用户意图取消候选时关掉面板）。本应用面向中文学术文献，CJK 查询是主路径而非边缘，属真实可复现的键位缺陷。",
+      "evidence": "onKeydown 内 `if (e.key === 'Enter') { e.preventDefault(); if (query !== lastSubmitted ...) onSubmit(query) ... }`，无 isComposing 守卫",
+      "suggestion": "Enter/Escape 分支前加 `if (e.nativeEvent.isComposing) return`；补 jsdom 用例（KeyboardEvent 带 isComposing=true 派发，断言 onSubmit/onClose 不触发）。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/useReaderSearch.tsx",
+      "line_hint": "keymap 注册 `{ key: 'f', ctrl: true, ... }`",
+      "issue": "文档级 keymap 只绑 ctrl，而 ReaderSearchBox 面板内等价路径接受 `(e.ctrlKey || e.metaKey)`——两处口径不一致，macOS 用户 Cmd+F 在焦点不在输入框时不触发面板。",
+      "evidence": "useReaderSearch：`{ key: 'f', ctrl: true, preventDefault: true, handler: ... }`；ReaderSearchBox：`if (e.key.toLowerCase() === 'f' && (e.ctrlKey || e.metaKey))`",
+      "suggestion": "keymap 注册补 meta 变体（或 keymap 层支持 ctrlOrMeta），与面板内路径对齐；或在票面 §① 键位表记档仅 Ctrl+F。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/reader-search.ts",
+      "line_hint": "buildPageText 头注「该项退化大小写敏感」",
+      "issue": "N2 修后非保长项的实际行为比头注口径更重：findInText 只降 query（`const q = query.toLowerCase()`），原 str 入索引的项只要含大写字符，连精确大小写查询也永不命中（如查询 'İX' 被降为 'i̇x'，与索引中 'İX' 不匹配）——即该类项整体不可检索，而非『大小写敏感可检索』。头注/票面 §④ 边界记档与实现行为有偏差。",
+      "evidence": "buildPageText 头注：『非保长项（İ→i̇ 双码元类）用原 str，该项退化大小写敏感』；findInText：`const q = query.toLowerCase()`；text 测试仅锚『降值串不命中』，未锚『精确原串查询同样不命中』",
+      "suggestion": "头注与票面 §④ 改述为『非保长项退化为不可检索（防偏移错位优先）』；或在 findInText 对含非保长展开的 query 做一次原样 fallback 查找并在 map 上保长命中。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/reader/ReaderToolbar.tsx",
+      "line_hint": "`{props.searchBox ?? (...)}` slot 段",
+      "issue": "两处零碎：①占位 span 的 title 文案由『页内高亮搜索 v2 提供…』改为『…本占位仅测试夹具路径』——若有存量受锁测试锚定旧 title 文案会非缺陷性红（全量 1216 绿间接证无碍，但 locks 收口清单未见该联动记录）；②装配面恒传 slot 后，idle 态 ReaderSearchBox 返回 null，工具栏失去常驻的 ml-auto 右撑元素，面板开合时右侧布局有抖动。",
+      "evidence": "旧 title：『页内高亮搜索 v2 提供；v1 全文检索走文献库 FTS（工具栏只放禁用占位）』→ 新 title：『页内高亮搜索面板由装配面 slot 提供（本占位仅测试夹具路径）』；ReaderSearchBox：`if (state === 'idle') return null`",
+      "suggestion": "①主控 locks 收口时确认旧 title 无受锁锚（或本 diff 已随 locked-change 程序联动）；②slot 外层包一个常驻 `ml-auto` 容器，面板显隐不牵动兄弟按钮位置。"
+    }
+  ],
+  "summary": "七项裁决修复逐条核验均 ADDRESSED：W1（bindDoc/sessionFileUrl 入 store，重挂漏洞面消除，wiring①红证 expected 'done' to be 'idle' 与旧实现吻合）、W2（lastCentered 记账入 store+跨实例用例）、W3（接线面三测含 INV-14 注销断言与 pageTurner 相等面）、N2（逐项保长降值+三红证）、N3（getPage spy 直锚）、N4（descriptor 显式还原）均与 diff 相符，自报无不符处；B1 的 S11 锚走 MutationObserver 路径成立——M6 摘 observer.observe 后 20 例中精确只红 S11（'110px'→'220px'），变异红证真实命中且证明该用例非经 effect deps 直跑。新破坏扫描未见新竞态/新恒真断言（S11 断言新旧几何两组不同值，非恒真）；行数、分层、依赖面合规。遗留为两个 WARN 级键位边缘缺陷（空白查询 Enter 死循环重提交、IME 组合态未守卫）与三个 NIT，不阻塞放行。",
+  "_per_item": "B1=ADDRESSED（M6 代偿成立）；W1=ADDRESSED；W2=ADDRESSED；W3=ADDRESSED；N2=ADDRESSED；N3=ADDRESSED；N4=ADDRESSED；N1/N5=主控裁决记档不修，合规"
+}

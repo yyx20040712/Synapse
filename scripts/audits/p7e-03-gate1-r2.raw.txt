@@ -1,0 +1,5 @@
+{
+  "verdict": "PASS",
+  "findings": [],
+  "summary": "三处定点处置全部落实且可验证：W1（Enter 比较改 query.trim()!==lastSubmitted，代码与头注一致，R2-W1 用例 'smart '/done→onNext 对旧实现必红——断言真实命中变异）、W2（onKeydown 首行 e.nativeEvent.isComposing 守卫，Enter/Esc 各一红证用例，jsdom defineProperty 桩路径在测试注释中诚实注明）、N2（reader-search.ts 头注+jsdoc 措辞已诚实化为「非保长语料不可搜」纯注释改动）。新破坏扫描未见问题：改动面严格限于自报的三文件三区，无范围蔓延；测试数字闭环（ui 20→23、全量 1216→1219、红证据 3 failed/20 passed 与三新用例一一对应、140 文件不变）；行数上限（125/162/450）合规；N1/N3 记档不修的理由（matches() 实读证伪、无受锁锚定面）与材料相符。终裁放行。"
+}

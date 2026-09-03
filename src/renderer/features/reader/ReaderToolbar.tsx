@@ -3,8 +3,9 @@
  *
  * ── 行为层 ──
  * - 页码显示/跳转、上/下页、缩放 -/100%/+（0.5~3 步进 0.1）、适应宽度
- * - 标注颜色选择（当前色）；内文搜索框（v1：全文检索走文献库 FTS，
- *   页内高亮搜索 v2——工具栏只放占位禁用态并 title 提示）
+ * - 标注颜色选择（当前色）；页内高亮搜索面板（P7E-03 兑现：经可选 slot
+ *   prop searchBox 注入——装配面 ReaderPage 恒传 useReaderSearch 产出；
+ *   缺席=旧占位 span 兜底，仅存量受锁测试夹具路径；库侧全文检索仍走 FTS）
  * - 选择模式开关（F-A3/INV-42，颜色组之后）：aria-pressed 反映当前态+选中
  *   态边框强调（颜色点选中态同语言）；toggle 语义在装配面 ReaderPage——
  *   工具栏纯受控只上抛 onToggleSelectionMode
@@ -35,6 +36,7 @@
  *   零变（PDF 区装饰浓度最低原则）
  */
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
 import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
@@ -63,6 +65,10 @@ export function ReaderToolbar(props: {
   onTogglePageLayout?: () => void
   /** F-R1 翻页步进（缺省 1=既有零变；双页装配面传 2=翻面语义） */
   pageStep?: number
+  /** P7E-03 页内搜索面板 slot（装配面 useReaderSearch 产出恒传；缺席=旧占位
+   *  span 兜底——存量受锁测试夹具直植 props 形状零破坏，onFitWidth 同款
+   *  可选先例形态） */
+  searchBox?: ReactNode
 }): JSX.Element {
   const { page, totalPages, zoom, color, onNavigate, onZoom, onColor, onFitWidth } = props
   const selectionMode = props.selectionMode ?? false
@@ -209,15 +215,18 @@ export function ReaderToolbar(props: {
         选择模式
       </button>
 
-      {/* 搜索占位（禁用态）：真实输入框的提示属性名会撞 quality 关卡的英文字面量禁令，
-          且 v1 本就不可输入——用非表单元素呈现提示文案，语义在 title */}
-      <span
-        className="ml-auto w-44 rounded border px-2 py-0.5"
-        style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
-        title="页内高亮搜索 v2 提供；v1 全文检索走文献库 FTS（工具栏只放禁用占位）"
-      >
-        全库检索请回文献库
-      </span>
+      {/* P7E-03 页内搜索面板 slot：生产装配面（ReaderPage 经 useReaderSearch）
+          恒传；缺席=旧占位 span 兜底（真输入框在 ReaderSearchBox——此处仅
+          存量受锁测试夹具路径） */}
+      {props.searchBox ?? (
+        <span
+          className="ml-auto w-44 rounded border px-2 py-0.5"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
+          title="页内高亮搜索面板由装配面 slot 提供（本占位仅测试夹具路径）"
+        >
+          全库检索请回文献库
+        </span>
+      )}
     </div>
   )
 }

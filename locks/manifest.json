@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T02:31:43.3713628Z",
+    "generatedAt":  "2026-09-03T05:38:56.1286483Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "7ce9dba398fd21532eb7e5365126a7783fa09dda53de34d895f6ce076988507b"
+                      "sha256":  "6673294f46642dd921ce4592faf07ab8cb792c8cbbad6d67d1a9743a0a5f2b1e"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -410,6 +410,10 @@
                       "sha256":  "b8e52a82bc44b33407d5d1bf248572deed5446386521af9ed9913b9917cd22cc"
                   },
                   {
+                      "path":  "tests/e2e/reader-search.spec.ts",
+                      "sha256":  "a6190e1e248048fb742e0e61f57d0f784af2ce8ad7ee939bd32b35add28f047c"
+                  },
+                  {
                       "path":  "tests/e2e/reader-text.spec.ts",
                       "sha256":  "831050cc86ab849bd3485053a60fab366dde147656902c08edb740ea821e0312"
                   },
@@ -752,6 +756,22 @@
                   {
                       "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
                       "sha256":  "ed8fa758f0b40cb784868cb73568cec134812682821c203e3c90b7c846d9b6ec"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-search.store.test.tsx",
+                      "sha256":  "72d09bf114b7ba2b0fbd36aa1675bce434affb4c2c09eb1b20b1b48ad9f77533"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-search-text.test.tsx",
+                      "sha256":  "354fecf8e87e264100774dcb77d5ded85f2d2d975d78a47ee914d966155c3e72"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-search-ui.test.tsx",
+                      "sha256":  "0ea6525dc7e830d571bf27ea23406daf08f6c4c4529695783e12c58d4fcc7ea1"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-search-wiring.test.tsx",
+                      "sha256":  "9382144bd81c4e6886f1b71b238ed975e50350cc4de1f2b99a53e8f91216d874"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-shortcuts.test.tsx",
