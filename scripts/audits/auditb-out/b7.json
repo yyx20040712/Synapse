@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "script": "auditb-b7.js",
+    "date": "2026-09-03T01:27:48.418Z"
+  },
+  "steps": {
+    "upsertSpaces": {
+      "ok": true,
+      "data": {
+        "id": "c08e0d06-7c08-4cfe-8998-c726a2f1efd5",
+        "name": ""
+      },
+      "error": null
+    },
+    "upsertTrimControl": {
+      "ok": true,
+      "name": "对照标签"
+    },
+    "renameSpaces": {
+      "ok": false,
+      "code": "INVALID_REQUEST",
+      "message": "标签名不能为空"
+    },
+    "list": [
+      {
+        "id": "c08e0d06-7c08-4cfe-8998-c726a2f1efd5",
+        "name": "",
+        "paperCount": 0
+      },
+      {
+        "id": "160af37a-332a-4afa-bd09-dffc3a21483f",
+        "name": "对照标签",
+        "paperCount": 0
+      }
+    ],
+    "abiPick": {
+      "wanted": "node-v137",
+      "pick": "node-v137",
+      "cacheDirs": [
+        "node-v137",
+        "node-v141"
+      ]
+    },
+    "dbRows": {
+      "total": 2,
+      "emptyNameCount": 1,
+      "emptyRows": [
+        {
+          "id": "c08e0d06-7c08-4cfe-8998-c726a2f1efd5",
+          "name": ""
+        }
+      ],
+      "allNames": [
+        "",
+        "对照标签"
+      ]
+    },
+    "bindingRestored": true
+  },
+  "verdict": {
+    "emptyNameInserted": true,
+    "upsertReturnedOk": true,
+    "renameGuardPresent": true
+  }
+}

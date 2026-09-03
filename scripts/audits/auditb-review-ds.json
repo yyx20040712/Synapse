@@ -1,0 +1,30 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "§一 B4 UI1 常驻流光 × 性能/功耗——N",
+      "line_hint": "结论行 / 静态链",
+      "issue": "零 longtask 只说明没有超过 50ms 的长任务，不能推出“主线程零占用”或“走合成器”；keyframes 只动 background-position 也只能排除 layout，未必排除 paint。A/B 同帧轮廓只能说明相对无差异，未提供渲染层/主线程任务 trace，纯合成器结论越过证据。",
+      "evidence": "两相 longtask 均 0、帧间隔 max 10.2ms（远低于 50ms 线）、开关流光帧轮廓零差——background-position 动画走合成器，主线程零占用。",
+      "suggestion": "将机制句降级为“当前口径下无 longtask、无帧轮廓差异”，或在结论前补 CDP/Tracing 的主线程任务与合成层证据；若判级线只认“纯合成器”，此 N 尚缺一环。"
+    },
+    {
+      "severity": "WARN",
+      "file": "§一 B6 TABS-04 关闭拦截 × SH3 三键 close × 最小化组合——N",
+      "line_hint": "结论行 / 动态数值表",
+      "issue": "动态证据只覆盖本会话中 IPC minimize 后 isMinimized 未变真；把原因直接归为 Win32 owned-modal 语义，并外推任务栏路径受同规则约束，缺少 OS 层或最小化事件链的实证/文档锚。静态 grep 只排除了 disable 路径，未排除应用层对 minimize 的其他抑制，属未标识的推演。",
+      "evidence": "模态期 minimize 调用 ok 但 isMinimized 恒 false——Win32 owned-modal 语义（模态挂起期间 owner 窗不可最小化，任务栏路径同受此 OS 规则约束）",
+      "suggestion": "改记为观察事实加“原因待与 Win32/Electron 文档对证”，或补充最小化请求的 OS 层返回/WM_SYSCOMMAND 路径证据后再作归因；结论 N 的成立应落在零丢失/零误关的行为事实上。"
+    },
+    {
+      "severity": "NIT",
+      "file": "§一 B1 SET1 zoom × 划选工具条+划选链定位——N",
+      "line_hint": "动态数值表“顶锚”行",
+      "issue": "括注“(=TOOLBAR_ABOVE−盒高)”放在“顶锚=42.0”行与数值不符：42−38.2=3.8 恰是 gapV，不是顶锚。若不修正会让读者误以为顶锚由盒高折算。",
+      "evidence": "| **顶锚（sel.top−tb.y）** | **42.0** | **42.0** | 与 TOOLBAR_ABOVE=42 精确一致（=TOOLBAR_ABOVE−盒高）→**错位=0px** |",
+      "suggestion": "改为“=TOOLBAR_ABOVE”，若想说明 gapV，把“(=TOOLBAR_ABOVE−盒高)”移到 gapV 行。"
+    }
+  ],
+  "summary": "报告结构完整、证据锚定总体扎实，B1-B7 全覆盖且对 BLOCKED 与替代取证有诚实交代；主要不足是把“无 longtask/最小化无效”等局部观测拔高为“合成器/主线程零占用/Win32 语义”等机制性结论，另有 B1 一处算术括注。以 PASS_WITH_WARNINGS 处理，修口或补 trace/文档锚后即达 PASS。"
+}

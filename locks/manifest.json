@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T01:14:54.8519033Z",
+    "generatedAt":  "2026-09-03T02:31:43.3713628Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -928,6 +928,10 @@
                   {
                       "path":  "tests/unit/services/tags-lifecycle.service.test.ts",
                       "sha256":  "1d3af3505a1fd1c1ec4d7af94a68f9114beb8dfa541ce20fae7cd3c4156c32c7"
+                  },
+                  {
+                      "path":  "tests/unit/services/tags-upsert-guard.test.ts",
+                      "sha256":  "0ed0c0b71afc525693ac2e35e53ca49ae0d497e4f143f98af94a8a69a4c09894"
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",

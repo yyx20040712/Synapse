@@ -3,7 +3,7 @@
  *
  * ── 行为层 ──
  * - list：repos.tags.listWithCounts()
- * - upsert：repos.tags.upsertByName（去空格）
+ * - upsert：repos.tags.upsertByName（去空格；trim 空 INVALID_REQUEST——B7）
  * - attach/detach：转调 repo 后返回 { ok: true }
  * - 生命周期三操作（P7E-01，错误语义归 service、数据事实归 repo）：
  *   rename：trim 空→INVALID_REQUEST；tagId 不存在→NOT_FOUND；与其他标签
@@ -52,9 +52,14 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
       return tags.listWithCounts()
     },
 
-    // 同名幂等由 repo 的 upsertByName 保证；service 只做输入清理（去首尾空格）
+    // 同名幂等由 repo 的 upsertByName 保证；service 只做输入清理（去首尾空格；
+    // trim 后空串拒绝——B7/AUDIT-B W1：纯空格名曾入库 name='' 行，对齐 rename 先例）
     async upsert(req) {
-      return tags.upsertByName(req.name.trim())
+      const name = req.name.trim()
+      if (name === '') {
+        throw new TagsDomainError('INVALID_REQUEST', '标签名不能为空')
+      }
+      return tags.upsertByName(name)
     },
 
     // INSERT OR IGNORE：重复挂接幂等，无需存在性分支

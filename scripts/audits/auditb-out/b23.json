@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "script": "auditb-b23.js",
+    "date": "2026-09-03T01:51:32.834Z"
+  },
+  "b2": {
+    "initial": {
+      "scrollTop": 12,
+      "scrollH": 6444,
+      "clientH": 676,
+      "nearestPage0": 0,
+      "pageCount": 8,
+      "srOnlyPage": 1,
+      "vp": {
+        "w": 1282,
+        "h": 802
+      },
+      "canvasW": 612
+    },
+    "boundsBefore": {
+      "x": 383,
+      "y": 151,
+      "w": 1282,
+      "h": 802,
+      "cw": 1281,
+      "ch": 802
+    },
+    "afterScroll": {
+      "scrollTop": 2578,
+      "scrollH": 6444,
+      "clientH": 676,
+      "nearestPage0": 3,
+      "pageCount": 8,
+      "srOnlyPage": 4,
+      "vp": {
+        "w": 1282,
+        "h": 802
+      },
+      "canvasW": 612
+    },
+    "maximizePath": "fallback-button",
+    "isMaximized": true,
+    "boundsAtMax": {
+      "x": -7,
+      "y": -7,
+      "w": 2064,
+      "h": 1120,
+      "cw": 2048,
+      "ch": 1104
+    },
+    "atMax": {
+      "scrollTop": 2578,
+      "scrollH": 6444,
+      "clientH": 978,
+      "nearestPage0": 3,
+      "pageCount": 8,
+      "srOnlyPage": 4,
+      "vp": {
+        "w": 2048,
+        "h": 1104
+      },
+      "canvasW": 612
+    },
+    "viewportAtMax": {
+      "w": 2048,
+      "h": 1104
+    },
+    "scrollEventsDuringMaximize": 0,
+    "atRestore": {
+      "scrollTop": 2578,
+      "scrollH": 6444,
+      "clientH": 676,
+      "nearestPage0": 3,
+      "pageCount": 8,
+      "srOnlyPage": 4,
+      "vp": {
+        "w": 1282,
+        "h": 802
+      },
+      "canvasW": 612
+    },
+    "scrollEventsDuringUnmaximize": 0,
+    "final": {
+      "scrollTop": 2578,
+      "scrollH": 6444,
+      "clientH": 676,
+      "nearestPage0": 3,
+      "pageCount": 8,
+      "srOnlyPage": 4,
+      "vp": {
+        "w": 1282,
+        "h": 802
+      },
+      "canvasW": 612
+    },
+    "dbLastReadPage": [
+      {
+        "path": "C:/Users/ADMINI~1/AppData/Local/Temp/synapse-auditb-b23/workspaces/default/synapse.db",
+        "papers": [
+          {
+            "id": "e2e-seed-paper",
+            "last_read_page": 3
+          }
+        ]
+      }
+    ],
+    "bindingRestored": true,
+    "summary": {
+      "pageJumps": {
+        "scroll_to_max": 0,
+        "max_to_restore": 0,
+        "restore_to_final": 0,
+        "netDrift": 0
+      },
+      "srOnly": {
+        "afterScroll": 4,
+        "atMax": 4,
+        "atRestore": 4,
+        "final": 4
+      },
+      "dbLastRead": 3,
+      "dbHit": [
+        {
+          "path": "b23/workspaces/default/synapse.db",
+          "lastRead": 3
+        }
+      ]
+    }
+  },
+  "b3": {
+    "body": {
+      "activeElement": "BODY",
+      "delta": 612.800048828125,
+      "keyTarget": "BODY."
+    },
+    "drag": {
+      "activeElement": "BODY",
+      "delta": 612.800048828125,
+      "keyTarget": "BODY."
+    },
+    "headerBtn": {
+      "activeElement": "BUTTON.ws-trigger",
+      "delta": 612.7998046875,
+      "keyTarget": "BUTTON.ws-trigger"
+    },
+    "wheelPathStatic": "ReaderPage.tsx onWheel → spProg.onUserTakeover + 原生滚动（wheel 不依赖焦点）",
+    "summary": {
+      "pageDownWorks_body": true,
+      "pageDownWorks_afterDragClick": true,
+      "pageDownWorks_headerBtnFocus": true,
+      "expectedStepPx": 608
+    }
+  }
+}
