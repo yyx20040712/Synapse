@@ -1,0 +1,48 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/ipc/export-clipboard.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/ipc/export-clipboard.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 8[2mms[22m[39m
+[31m   [31m×[31m ipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mcsv 分支：委托 buildCsv（buildBibtex 零调用），count=1[90m 4[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ [ 'p-1' ] ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/export-clipboard.test.ts[2m > [22mipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mcsv 分支：委托 buildCsv（buildBibtex 零调用），count=1
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ [ 'p-1' ] ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/ipc/export-clipboard.test.ts:[2m58:36[22m[39m
+    [90m 56| [39m    [35mconst[39m ipc [33m=[39m [34mcreateExportIpc[39m(deps)
+    [90m 57| [39m    [35mconst[39m r [33m=[39m [35mawait[39m ipc[33m.[39m[34mclipboard[39m({ format[33m:[39m [32m'csv'[39m[33m,[39m paperIds[33m:[39m [[32m'p-1'[39m] })
+    [90m 58| [39m    [34mexpect[39m(exportService[33m.[39mbuildCsv)[33m.[39m[34mtoHaveBeenCalledWith[39m([[32m'p-1'[39m])
+    [90m   | [39m                                   [31m^[39m
+    [90m 59| [39m    [34mexpect[39m(exportService[33m.[39mbuildBibtex)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m 60| [39m    [34mexpect[39m(clipboard[33m.[39mwriteText)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'\uFEFFTitle,Auth[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 14:27:13
+[2m   Duration [22m 703ms[2m (transform 75ms, setup 0ms, collect 190ms, tests 8ms, environment 0ms, prepare 162ms)[22m
+
+exit=1

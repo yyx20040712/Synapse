@@ -108,6 +108,12 @@ export const exportResSchema = z
 
 export const reportReqSchema = z.object({ paperId: z.string().min(1) }).strict()
 
+/** P7E-04 剪贴板导出请求：format 枚举单通道（bibtex/csv 同一构建器单源——
+ *  INV-56 禁复制第二份序列化）；paperIds min(1)=空选集第二道门（E3） */
+export const clipboardReqSchema = z
+  .object({ format: z.enum(['bibtex', 'csv']), paperIds: z.array(z.string().min(1)).min(1) })
+  .strict()
+
 // ── export_ corpus-item（AI-02：五件套提取回传 renderer→main 常规 invoke）──
 /** 逐项回传判别联合（背压：每页/每图一 invoke，await ack 后发下一项） */
 export const corpusItemReqSchema = z.discriminatedUnion('kind', [

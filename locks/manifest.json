@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T05:56:37.7924609Z",
+    "generatedAt":  "2026-09-03T06:48:24.5573857Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "6673294f46642dd921ce4592faf07ab8cb792c8cbbad6d67d1a9743a0a5f2b1e"
+                      "sha256":  "d7fde330fb67b2af45b6bff9a61037cc56005c926a2f2c23bd671980c17ccc6a"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -335,11 +335,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "2a34563130a84b2a5a6431e1cfea996578e56136d35581e01716ec2c1e0b8292"
+                      "sha256":  "d2406733eb27a53dc45171a7183937b056210af00a4db61168a171ada5aab842"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "26f85a08769373aab359c1cb79a59b0340ea90572a70044a2c180659d8f7ec0c"
+                      "sha256":  "72a8463dd38049318c263b8927d741d2500ba2fbe333eba5f0f1148200d880d3"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -396,6 +396,10 @@
                   {
                       "path":  "tests/e2e/e2e-env.ts",
                       "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                  },
+                  {
+                      "path":  "tests/e2e/export-clipboard.spec.ts",
+                      "sha256":  "b245f9c17a279b9c88065d8d1e4eaf44639012c83a5f1e01ddedecaa2d497ae2"
                   },
                   {
                       "path":  "tests/e2e/import-drag.spec.ts",
@@ -516,6 +520,10 @@
                   {
                       "path":  "tests/unit/ipc/export_.test.ts",
                       "sha256":  "c597bea516178d88ad3e4c13c331fcc0693e29f1df451298e6e11267fb1deeeb"
+                  },
+                  {
+                      "path":  "tests/unit/ipc/export-clipboard.test.ts",
+                      "sha256":  "136889a8614ef4ee6e1ef225f530a4fa19915775b0c571337afbd2617c11c436"
                   },
                   {
                       "path":  "tests/unit/ipc/import_.test.ts",
@@ -724,6 +732,10 @@
                   {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
                       "sha256":  "e7364b3787649905cebbba06e4bb398599022512340648bca3c9d5c8807f8ed2"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/paper-detail-clip.test.tsx",
+                      "sha256":  "be4f8bc5912956b891a5edd68d812e2a087bee9a260a78c3d08c368ed64f5aca"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",

@@ -24,6 +24,7 @@ import { join } from 'node:path'
 import {
   BrowserWindow,
   Menu,
+  clipboard,
   dialog,
   net,
   protocol,
@@ -169,7 +170,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       setQuitDirty,
       // R2-SH3：闭包直引下方 const window（TDZ 不可能触发——IPC 调用来自
       // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
-      controlWindow: (action) => controlWindow(window, action)
+      controlWindow: (action) => controlWindow(window, action),
+      // P7E-04：剪贴板写口（electron.clipboard 结构兼容 deps.clipboard 注入面）
+      clipboard
     }),
     workspaces: workspaceService
   })

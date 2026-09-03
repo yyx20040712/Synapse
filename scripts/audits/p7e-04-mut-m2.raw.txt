@@ -1,0 +1,144 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/ipc/export-clipboard.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/ipc/export-clipboard.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 9[2mms[22m[39m
+[31m   [31m×[31m ipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mbibtex 分支：委托 buildBibtex 逐参+写剪贴板收构建内容+count 回传+零对话框[90m 5[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "@misc{zhang_smart,[90m
+[32m-   title = {T}[90m
+[32m- }",[90m
+[31m+   "",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[31m   [31m×[31m ipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mcsv 分支：委托 buildCsv（buildBibtex 零调用），count=1[90m 1[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ '\ufeffTitle,Authors\n' ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "﻿Title,Authors[90m
+[32m- ",[90m
+[31m+   "",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[31m   [31m×[31m ipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mE5 先构建后写：service 抛错上抛且剪贴板零调用（零副作用）[90m 1[2mms[22m[31m[39m
+[31m     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "",
+    ]
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/export-clipboard.test.ts[2m > [22mipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mbibtex 分支：委托 buildBibtex 逐参+写剪贴板收构建内容+count 回传+零对话框
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ Array(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "@misc{zhang_smart,[90m
+[32m-   title = {T}[90m
+[32m- }",[90m
+[31m+   "",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/ipc/export-clipboard.test.ts:[2m48:33[22m[39m
+    [90m 46| [39m    [34mexpect[39m(exportService[33m.[39mbuildBibtex)[33m.[39m[34mtoHaveBeenCalledWith[39m([[32m'p-1'[39m[33m,[39m [32m'p-[39m…
+    [90m 47| [39m    [34mexpect[39m(exportService[33m.[39mbuildCsv)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m 48| [39m    [34mexpect[39m(clipboard[33m.[39mwriteText)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'@misc{zhang_smar[39m…
+    [90m   | [39m                                [31m^[39m
+    [90m 49| [39m    [34mexpect[39m(r)[33m.[39m[34mtoEqual[39m({ count[33m:[39m [34m2[39m })
+    [90m 50| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/export-clipboard.test.ts[2m > [22mipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mcsv 分支：委托 buildCsv（buildBibtex 零调用），count=1
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ '\ufeffTitle,Authors\n' ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "﻿Title,Authors[90m
+[32m- ",[90m
+[31m+   "",[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/ipc/export-clipboard.test.ts:[2m60:33[22m[39m
+    [90m 58| [39m    [34mexpect[39m(exportService[33m.[39mbuildCsv)[33m.[39m[34mtoHaveBeenCalledWith[39m([[32m'p-1'[39m])
+    [90m 59| [39m    [34mexpect[39m(exportService[33m.[39mbuildBibtex)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m 60| [39m    [34mexpect[39m(clipboard[33m.[39mwriteText)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'\uFEFFTitle,Auth[39m…
+    [90m   | [39m                                [31m^[39m
+    [90m 61| [39m    [34mexpect[39m(r)[33m.[39m[34mtoEqual[39m({ count[33m:[39m [34m1[39m })
+    [90m 62| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/export-clipboard.test.ts[2m > [22mipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）[2m > [22mE5 先构建后写：service 抛错上抛且剪贴板零调用（零副作用）
+[31m[1mAssertionError[22m: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "",
+    ]
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/ipc/export-clipboard.test.ts:[2m71:37[22m[39m
+    [90m 69| [39m    [35mconst[39m ipc [33m=[39m [34mcreateExportIpc[39m(deps)
+    [90m 70| [39m    [35mawait[39m [34mexpect[39m(ipc[33m.[39m[34mclipboard[39m({ format[33m:[39m [32m'bibtex'[39m[33m,[39m paperIds[33m:[39m [[32m'p-1'[39m] }…
+    [90m 71| [39m    [34mexpect[39m(clipboard[33m.[39mwriteText)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m   | [39m                                    [31m^[39m
+    [90m 72| [39m  })
+    [90m 73| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 14:27:33
+[2m   Duration [22m 715ms[2m (transform 74ms, setup 0ms, collect 191ms, tests 9ms, environment 0ms, prepare 154ms)[22m
+
+exit=1

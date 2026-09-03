@@ -54,6 +54,13 @@ export const API_SURFACE = {
   export_: {
     bibtex: { channel: 'export/bibtex', Req: S.exportSelectionReqSchema, Res: S.exportResSchema },
     csv: { channel: 'export/csv', Req: S.exportSelectionReqSchema, Res: S.exportResSchema },
+    // P7E-04：剪贴板导出（main 侧构建 main 侧写——内容不过 renderer）；Res=
+    // exportResSchema 的 count 子集（无落盘路径），值位 inline zod 先例=ai_sensor listByPaper
+    clipboard: {
+      channel: 'export/clipboard',
+      Req: S.clipboardReqSchema,
+      Res: z.object({ count: z.number().int().min(1) }).strict()
+    },
     report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
     corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },

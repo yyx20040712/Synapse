@@ -24,7 +24,9 @@
  *   取数与拼装；保存对话框在 ipc 层（UI 胶水）
  *
  * ── 生命周期层 ──
- * - 不做：导出到剪贴板（v2 预留：ipc 加通道）
+ * - 剪贴板导出（P7E-04 兑现原「v2 预留：ipc 加通道」注记）：ipc 层
+ *   export/clipboard 通道——构建复用本层 buildBibtex/buildCsv（单源，INV-56），
+ *   写剪贴板经 deps.clipboard 注入驻 ipc 层（UI 胶水语义），本层零新增方法
  *
  * ── 文化层 ──
  * - 测试：tests/unit/services/export.service.test.ts（已锁定，repos 桩）

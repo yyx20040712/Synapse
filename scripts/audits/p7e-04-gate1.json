@@ -1,0 +1,46 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "src/main/ipc/ipc-deps.ts",
+      "line_hint": "clipboard?: { writeText(text: string): void }",
+      "issue": "IpcDeps.clipboard 设为可选使编译期装配保证整体弱化：今后任何 ipc 域取用 deps.clipboard 都不会获得类型层面的必装配约束，仅靠 export_ handler 一处运行时守卫兜底。鉴于受锁 tests/utils/ipc-deps.ts 桩工厂禁改，本票内这是合理处置且已诚实申报，但应登记为待还原项：桩工厂解锁窗口出现时改回必填并移除守卫分支（或保留守卫作纵深防御）。",
+      "evidence": "ipc-deps.ts 注释「可选=受锁 makeIpcDeps 桩工厂（tests/utils/ipc-deps.ts）零改——设必填即其返回字面量类型红」；实现报告 §6-1「卡点：受锁 tests/utils/ipc-deps.ts…设必填即其返回字面量 TS2739 类型红，而该文件属禁改面」",
+      "suggestion": "在 registry 收口摘要或 invariants/技术债面登记一行「P7E-04 clipboard 可选=过渡态，ipc-deps 桩工厂解锁后还原必填」，防止可选化沉淀为永久形态。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/library/usePaperDetailActions.ts",
+      "line_hint": "catch 分支 if (isClip) showToast(CLIP_FAILED, 'error')",
+      "issue": "handler 的装配缺失响亮守卫消息「剪贴板依赖未装配（bootstrap 接线缺失）」与底层构建/写入错误 message 均被统一文案「复制到剪贴板失败」吞没，用户面与 renderer 侧日志均不可区分配置缺陷与运行时失败。票面授权了统一文案（E6/E7 无 CANCELLED 面），故不阻塞，但配置错误面可观测性受损。",
+      "evidence": "export_.ts「throw new Error('剪贴板依赖未装配（bootstrap 接线缺失）')」；hook catch「if (isClip) { showToast(CLIP_FAILED, 'error') }」；实现报告 §6-3「不透传底层 message」",
+      "suggestion": "isClip catch 内补一行 console.error 透传原始 error（仅日志不改 toast 文案），或 main 侧 register 折叠处确认 INTERNAL 错误带原 message 落日志。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "export type ClipboardReq = z.infer<typeof clipboardReqSchema>",
+      "issue": "ClipboardReq 导出类型在随附 diff 全文中无任何消费方（api-surface 用的是 schema 值 S.clipboardReqSchema），有死导出嫌疑；若契约类型推导链隐式消费则无碍，但材料面无法证实。",
+      "evidence": "schemas.ts 新增「export type ClipboardReq = z.infer<typeof clipboardReqSchema>」；diff 其余各件（api-surface/export_/bootstrap/hook/测试）均未 import 该类型",
+      "suggestion": "确认 api 门面类型推导是否消费 ClipboardReq；若无消费方，删除该导出或注释固化其对外契约用途。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/library/PaperDetailPanel.tsx",
+      "line_hint": "头注「工单：done / strong」及架构层段改写",
+      "issue": "头注顺手将历史工单 SR2-C-06 状态标记 open→done，并把 C-06 的「改动面…check-quality.mjs 白名单删」叙述压缩为「notes/NotesPanel 已删（C-06）」——属本票（P7E-04）声明范围外的历史叙述改写。内容本身与 registry 实况一致（e2e DEPS 含 SR2-C-06 且测试通过证明 done），无害但扩大了票面外改动面。",
+      "evidence": "diff：「- * [SR2-C-06] PaperDetailPanel —— 库侧笔记编辑面下线（工单：open / strong；」→「+ * …（工单：done / strong；」；「- * - 改动面：本文件（净减约 30 行）/notes/NotesPanel.tsx…check-quality.mjs 白名单**删**…」→「+ * - notes/NotesPanel 已删（C-06）…」",
+      "suggestion": "此类历史状态同步宜在票面声明或收口时统一处理；后续拆件票头注改动限定在本票动作清单段落。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/renderer/features/library/usePaperDetailActions.ts",
+      "line_hint": "if (exporting) return / setExporting(true)",
+      "issue": "busy 门依赖 React state 闭包：极端时序下（同一渲染帧内两次触发且重渲染未发生）闭包内 exporting 仍为旧值 false，理论上有重复 invoke 缝隙。此为原组件内联实现既有语义的保真迁移（非本票引入），且组件面 Button loading=disabled 提供 DOM 挡板、E4 harness 测试锚住 hook 门本身，实际风险极低。",
+      "evidence": "hook「} else if (action !== 'doi') { if (exporting) return; setExporting(true) }」；测试注释「组件面 Button loading=disabled 已挡 DOM 双击…harness 使 hook 门本身成为被测面」",
+      "suggestion": "可后续考虑 useRef 镜像 busy 态消除闭包缝隙；本票保真迁移优先，不要求回修。"
+    }
+  ],
+  "summary": "四大审计重点面均成立：拆件为保真迁移（busy 门分组语义逐分支比对与原实现等价，受锁 paper-detail-export.test.tsx 零改含在全绿 142 文件内）；clipboard 可选化的守卫-装配论证完备（bootstrap 恒装配+undefined 响亮抛错）；e2e 读回防线与 P7-A 先例同型（清场标记+条件重读+末次读值报错信息）；成功/失败 toast 与票面①逐字一致。态空间 E1~E8 逐格有锚（E8 由双 id 用例隐含覆盖），四组变异红证指向各自断言面非恒真。无 BLOCKING 发现；主要残余为 clipboard 可选化的编译期保证弱化（WARN，建议登记还原项）及若干可观测性/死导出/票面外头注改写 NIT。判 PASS_WITH_WARNINGS。"
+}

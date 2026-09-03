@@ -1,0 +1,153 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/paper-detail-clip.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE1 复制 BibTeX：clipboard 以 {format:bibtex, paperIds:[id]} 调用，toast 逐字含条数
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagEditor (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagEditor.tsx:13:11)
+    at div
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE1 复制 BibTeX：clipboard 以 {format:bibtex, paperIds:[id]} 调用，toast 逐字含条数
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE1 复制 BibTeX：clipboard 以 {format:bibtex, paperIds:[id]} 调用，toast 逐字含条数
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE2 复制 CSV：clipboard 以 {format:csv} 调用，toast「已复制 1 行列表到剪贴板」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagEditor (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagEditor.tsx:13:11)
+    at div
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE2 复制 CSV：clipboard 以 {format:csv} 调用，toast「已复制 1 行列表到剪贴板」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE2 复制 CSV：clipboard 以 {format:csv} 调用，toast「已复制 1 行列表到剪贴板」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE4 busy 门：exporting 进行期再触发短路（零重复 invoke），完成后 toast 正常
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE6 写失败：动作型失败 toast「复制到剪贴板失败」+busy 复位（可再次触发）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagEditor (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagEditor.tsx:13:11)
+    at div
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2mE6 写失败：动作型失败 toast「复制到剪贴板失败」+busy 复位（可再次触发）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2m拆件回归：report/bibtex/corpus 文件导出经 hook 路径仍工作（toast 逐字）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagEditor (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagEditor.tsx:13:11)
+    at div
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2m拆件回归：enrich 经 hook 路径仍工作（成功 toast+触发详情重读）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagEditor (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagEditor.tsx:13:11)
+    at div
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:53:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22m[2m拆件回归：enrich 经 hook 路径仍工作（成功 toast+触发详情重读）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/paper-detail-clip.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 50[2mms[22m[39m
+[31m   [31m×[31m E4 busy 门：exporting 进行期再触发短路（零重复 invoke），完成后 toast 正常[90m 4[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 2 times[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/paper-detail-clip.test.tsx[2m > [22mE4 busy 门：exporting 进行期再触发短路（零重复 invoke），完成后 toast 正常
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 2 times[39m
+[36m [2m❯[22m tests/unit/renderer/paper-detail-clip.test.tsx:[2m155:37[22m[39m
+    [90m153| [39m    btn[33m.[39m[34mclick[39m()
+    [90m154| [39m  })
+    [90m155| [39m  [34mexpect[39m(stubApi[33m.[39mexport_[33m.[39mclipboard)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                                    [31m^[39m
+    [90m156| [39m  [35mawait[39m [34mact[39m([35masync[39m () [33m=>[39m {
+    [90m157| [39m    [34mresolveClip[39m({ ok[33m:[39m [35mtrue[39m[33m,[39m data[33m:[39m { count[33m:[39m [34m1[39m } })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 14:27:52
+[2m   Duration [22m 1.38s[2m (transform 81ms, setup 0ms, collect 220ms, tests 50ms, environment 586ms, prepare 182ms)[22m
+
+exit=1

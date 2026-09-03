@@ -21,4 +21,8 @@ export interface IpcDeps {
   setQuitDirty: (dirty: boolean) => void
   /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
   controlWindow: (action: WindowControlAction) => { maximized: boolean }
+  /** P7E-04 剪贴板写口（bootstrap 装配 electron.clipboard；测试桩零 electron）。
+   *  可选=受锁 makeIpcDeps 桩工厂（tests/utils/ipc-deps.ts）零改——设必填即其
+   *  返回字面量类型红；装配缺失时 export_ handler 响亮抛错（接线缺陷不静默丢写） */
+  clipboard?: { writeText(text: string): void }
 }

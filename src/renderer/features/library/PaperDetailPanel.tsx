@@ -9,6 +9,9 @@
  *   两标识符）；编辑面唯一归阅读器侧栏（C-03/04 已就绪，C-06 排其后为此）
  * - 替代入口：按钮「去阅读器写笔记」→ requestOpenPaper(detail.id)
  *   （open-paper-bus.ts:17 同总线——App 切视图+ReaderPage 打开链既有零新增）
+ * - P7E-04：动作清单=enrich/report/bibtex/corpus/doi（既有）+ bibtex-clip/
+ *   csv-clip（复制 BibTeX/复制 CSV——runAction 分发+busy 态+toast 收口迁
+ *   usePaperDetailActions hook，纯逻辑/表现分离；按钮驻本面板，props 面零变）
  *
  * ── 接口层 ──
  * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
@@ -28,17 +31,14 @@
  */
 import { useEffect, useState } from 'react'
 import type { PaperSource, EnrichStatus } from '@shared/models/paper'
-import { api, unwrap, ApiClientError } from '../../api/client'
+import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
-import { showToast } from '../../shared/ui/Toast'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { TagEditor } from '../tags/TagEditor'
 import { MetaEditDialog } from './MetaEditDialog'
-
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const ACTION_FAILED = '操作失败'
+import { usePaperDetailActions } from './usePaperDetailActions'
 
 const SOURCE_LABEL: Record<PaperSource, string> = {
   local: '本地导入',
@@ -72,8 +72,6 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   // 元数据/标签变更后 bump 触发重读（TagEditor onChanged 亦走这里）
   const [reloadKey, setReloadKey] = useState(0)
   const [editing, setEditing] = useState(false)
-  const [enriching, setEnriching] = useState(false)
-  const [exporting, setExporting] = useState(false)
 
   const { data: detail, error, run } = useAsync(
     () => (paperId === null ? Promise.resolve(null) : unwrap(api.library.detail({ paperId }))),
@@ -85,44 +83,10 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
     void run()
   }, [run, paperId, reloadKey])
 
-  /** 动作型按钮统一收口：错误 toast + 成功后的刷新/提示 */
-  async function runAction(action: 'enrich' | 'report' | 'bibtex' | 'corpus' | 'doi'): Promise<void> {
-    if (detail === null) return
-    if (action === 'enrich') {
-      if (enriching) return
-      setEnriching(true)
-    } else if (action === 'report' || action === 'bibtex' || action === 'corpus') {
-      if (exporting) return
-      setExporting(true)
-    }
-    try {
-      if (action === 'enrich') {
-        const refreshed = await unwrap(api.enrich.fetch({ paperId: detail.id }))
-        if (refreshed.enrichStatus === 'failed') {
-          showToast('元数据增强失败：上游未响应或无匹配', 'error')
-        } else {
-          showToast('元数据增强完成', 'success')
-        }
-        setReloadKey((k) => k + 1)
-      } else if (action === 'report') {
-        const r = await unwrap(api.export_.report({ paperId: detail.id }))
-        showToast(`已导出 ${r.count} 条内容：${r.filePath}`, 'success')
-      } else if (action === 'bibtex') {
-        const r = await unwrap(api.export_.bibtex({ paperIds: [detail.id] }))
-        showToast(`已导出 ${r.count} 条题录：${r.filePath}`, 'success')
-      } else if (action === 'corpus') {
-        const r = await unwrap(api.export_.corpus({ paperId: detail.id }))
-        showToast(`已导出语料 md：${r.filePath}`, 'success')
-      } else if (detail.doi !== null) {
-        await unwrap(api.system.openExternal({ url: `https://doi.org/${detail.doi}` }))
-      }
-    } catch (e) {
-      showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
-    } finally {
-      setEnriching(false)
-      setExporting(false)
-    }
-  }
+  // P7E-04 拆件：动作逻辑（busy 门+invoke+toast）整体驻 hook，面板只保留按钮
+  const { enriching, exporting, runAction } = usePaperDetailActions(detail, () =>
+    setReloadKey((k) => k + 1)
+  )
 
   if (paperId === null) {
     // 回炉 R4：空态居中+菱形分隔夹持（文案逐字保留——e2e/断言面）
@@ -211,6 +175,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         </Button>
         <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex')}>
           导出 BibTeX
+        </Button>
+        <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex-clip')}>
+          复制 BibTeX
+        </Button>
+        <Button size="sm" loading={exporting} onClick={() => void runAction('csv-clip')}>
+          复制 CSV
         </Button>
         <Button size="sm" loading={exporting} onClick={() => void runAction('corpus')}>
           导出语料 md

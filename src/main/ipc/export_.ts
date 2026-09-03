@@ -8,6 +8,10 @@
  * - csv：同上（文件名 synapse-export.csv，扩展 csv）
  * - report：先取 detail 得标题 → buildReport(paperId) → saveFile(`${title安全化}.md`)
  *   → writeToFile → count 固定 1
+ * - clipboard（P7E-04）：format 枚举单通道——先构建（buildBibtex/buildCsv 单源
+ *   复用，构建失败零剪贴板副作用）后经 deps.clipboard.writeText 写系统剪贴板，
+ *   res { count }；无保存对话框 → 无 CANCELLED 分支（与 exportTo 文件导出的
+ *   语义差异——取消面不存在，失败面只有构建/写入两种）
  * - 文件名安全化：替换 Windows 非法字符 \\ / : * ? " < > | 与全角冒号为下划线、
  *   空白归一为下划线，截断 80 字符
  *
@@ -67,6 +71,24 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
     return { filePath: target, count }
   }
 
+  /** 剪贴板导出（P7E-04，E7 语义声明：无对话框→无 CANCELLED 分支）：先构建后
+   *  写（E5——构建失败零剪贴板副作用）；写口经 deps.clipboard 注入（main 侧
+   *  单点，INV-56），构建复用 buildBibtex/buildCsv（单源禁复制第二份序列化） */
+  async function exportClipboard(
+    format: 'bibtex' | 'csv',
+    paperIds: string[]
+  ): Promise<{ count: number }> {
+    if (deps.clipboard === undefined) {
+      throw new Error('剪贴板依赖未装配（bootstrap 接线缺失）')
+    }
+    const content =
+      format === 'bibtex'
+        ? await deps.services.export_.buildBibtex(paperIds)
+        : await deps.services.export_.buildCsv(paperIds)
+    deps.clipboard.writeText(content)
+    return { count: paperIds.length }
+  }
+
   return {
     corpusItem: (req) => deps.services.export_.corpusItem(req),
 
@@ -90,6 +112,8 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
     csv: (req) =>
       exportTo('synapse-export.csv', CSV_FILTER, () =>
         deps.services.export_.buildCsv(req.paperIds), req.paperIds.length),
+
+    clipboard: (req) => exportClipboard(req.format, req.paperIds),
 
     report: async (req) => {
       const detail = await deps.services.library.detail({ paperId: req.paperId })
