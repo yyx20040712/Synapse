@@ -17,7 +17,10 @@
  * - 本服务不做 IO（文件/网络都归别的 service）
  *
  * ── 生命周期层 ──
- * - 预留：智能过滤（引用数排序）在 v2 经新 repo 方法扩展
+ * - P7E-07 已兑现：智能排序（引用数排序）——librarySortSchema 加 cited_desc
+ *   枚举值，sort 经 LibraryQuery 直传 repo 的 ORDER_BY 映射（COALESCE 空值
+ *   归零+rowid 决胜）。勘误：原预留注记写「经新 repo 方法」，实际落位=
+ *   ORDER_BY 映射扩展（加值向后兼容，无新方法无新迁移）
  * - 不做：删除文献（v1 明确不做，防误删；如需清理走 DB 维护工具）
  *
  * ── 文化层 ──

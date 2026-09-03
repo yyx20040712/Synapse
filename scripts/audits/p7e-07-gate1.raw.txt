@@ -1,0 +1,22 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/papers-cited-sort.test.ts",
+      "line_hint": "S1 it 块（约 59-64 行）/S3 it 块（约 75-83 行）",
+      "issue": "新枚举值 cited_desc 的 schema 入参面无直接断言锚：S1~S5 均把 sort:'cited_desc' 字面量直传 repo.searchSummaries，S3 只验证 libraryQuerySchema.parse({}) 的缺省值，没有任何用例直接断言 libraryQuerySchema.parse({sort:'cited_desc'}) 被接受。红证实录（『no such column: undefined』）显示 repo 侧缺失键时是运行时 SQL 错而非 zod 拦截，说明 schema 是否是 repo 入口校验层在材料中不可确证；若 IPC 入参校验依赖该 schema，新值的运行时验收仅由 zod 定义+typecheck 兜底。",
+      "evidence": "S1: repo.searchSummaries({ sort: 'cited_desc', offset: 0, limit: 50 })；S3: const parsed = libraryQuerySchema.parse({})；报告 §4：『SqliteError: no such column: undefined=ORDER_BY 缺 cited_desc 键的运行时形态』",
+      "suggestion": "在 S3 或新增一行断言补锚：expect(libraryQuerySchema.parse({ sort: 'cited_desc' }).sort).toBe('cited_desc')，一行成本闭合 IPC 入参面对新枚举值的运行时验收。"
+    },
+    {
+      "severity": "NIT",
+      "file": "scripts/audits/p7e-07-impl.report.md（实现者报告 §2 文件清单）",
+      "line_hint": "§2 表格『tests/unit/db/repos/papers-cited-sort.test.ts | 新增（106 行）』",
+      "issue": "报告自报新测试文件 106 行，但 diff 新文件头为 @@ -0,0 +1,111 @@，逐行清点亦为 111 行，自报行数与 diff 实证差 5 行。虽远低于 500 行上限、无纪律后果，但报告数字与可核对证据不一致，属申报精度瑕疵。",
+      "evidence": "报告 §2：『tests/unit/db/repos/papers-cited-sort.test.ts | 新增（106 行） | S1~S5 五用例』；diff：『@@ -0,0 +1,111 @@』",
+      "suggestion": "更正报告行数为 111（或注明口径，如非空行计数），保持自报数字与 diff 实证一致。"
+    }
+  ],
+  "summary": "实现与票面高度一致：枚举加值向后兼容形态正确（与 P7E-06 切换删旧区分清晰），COALESCE 空值归零+rowid 决胜经前置探针实证、M1 删 COALESCE 变异为真实红（0-vs-NULL 相对序翻转被 S1 显式抓住），S1~S5 态空间逐格有具体断言无恒真断言，M2 typecheck/M3 决胜键三组变异红证成立且还原干净，受锁面单件最小增量、locks 268→269 与锁序合规，禁拼接 SQL/零新依赖/行数上限均不触。S1 种子加 cited=0 论文属票面态空间表偏差但为 M1 真实红所必需且已自裁申报，M3 引擎序依赖已诚实披露（实现态由决胜键兜底，可接受）。仅两处 NIT（schema 入参面直断言缺失、报告行数自报误差），不阻塞放行。"
+}

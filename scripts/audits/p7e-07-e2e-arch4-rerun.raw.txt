@@ -1,0 +1,8 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  ok 1 tests\e2e\reader-text.spec.ts:872:1 › F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照） (7.1s)
+
+  1 passed (7.5s)

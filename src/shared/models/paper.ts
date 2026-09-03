@@ -66,7 +66,8 @@ export const paperMetaPatchSchema = z
   .strict()
 export type PaperMetaPatch = z.infer<typeof paperMetaPatchSchema>
 
-export const librarySortSchema = z.enum(['added_desc', 'year_desc', 'title_asc'])
+// P7E-07：+cited_desc（被引降序——加值向后兼容，旧三值全部保留）
+export const librarySortSchema = z.enum(['added_desc', 'year_desc', 'title_asc', 'cited_desc'])
 export type LibrarySort = z.infer<typeof librarySortSchema>
 
 export const libraryQuerySchema = z

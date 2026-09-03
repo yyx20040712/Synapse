@@ -1,0 +1,661 @@
+We need answer as code audit. Need inspect materials. Need output JSON only. Need make verdict.
+
+Let's analyze thoroughly. We have ticket, diff, report. Need check hard rules, correctness, security, production quality, testing discipline. Need not fabricate.
+
+We need decide PASS? PASS_WITH_WARNINGS? FAIL. Need findings with severity, file, line_hint, issue, evidence based materials. Material appears meticulously self-consistent. However need find potential issues.
+
+Let's review changes.
+
+Files changed:
+- locks/manifest updated with paper.ts hash, new test hash.
+- src/main/db/repos/papers.queries.ts adds key to ORDER_BY Record. ORDER_BY is Readonly<Record<LibrarySort,string>>. Existing keys: added_desc/year_desc/title_asc. New cited_desc value: 'COALESCE(p.cited_by_count, 0) DESC, p.rowid DESC'. Need component: does papers.repo searchSummaries supports sort param? likely. Need ensure SQL injection no: mapping to constant.
+
+- src/main/services/library.service.ts comment updated.
+- FilterBar SORT_LABEL Record adds cited_desc. It is likely Record<LibrarySort,string>. Good.
+
+- src/shared/models/paper.ts z.enum adds cited_desc. Back compatible.
+
+- tests/unit/db/repos/papers-cited-sort.test.ts new file 111 lines. Need inspect.
+
+Test file imports createPapersRepo, PaperRow, libraryQuerySchema, SqliteDb, createTestDb.
+
+"row" returns PaperRow object with all fields. Need check PaperRow type includes enrich columns maybe? It might include id, file_ref etc but not cited_by_count? The insert uses PaperRow. Report says insert surface doesn't include ENR-01 three columns. In code row() returns no cited_by_count, enrich_status pending. likely insert schema doesn't require fields? row() provides enrich_status. No enrich columns aside? Maybe "ENR-01 三列" are cited_by_count, citation_count? Need not.
+
+Test "S1": seedQuad inserts p-c5 id p-c5 inserted first rowid=1, p-c0 second rowid=2, p-c12 third rowid=3, p-cN fourth rowid=4. setCited p-c5=5, p-c0=0, p-c12=12. p-cN NULL. Sorting cited_desc COALESCE, rowid DESC. COALESCE values: p-c12=12, p-c5=5, p-c0=0, p-cN=0. Rowid DESC among zero: p-cN rowid4 before p-c0 rowid2. Expected order ['p-c12','p-c5','p-cN','p-c0']. Good. It also tests NULL after 0? p-cN first among zero then p-c0, so 0 group. Actually S1 with seed p-cN NULL inserted after p-c0, rowid 4 vs 2 so p-cN before p-c0 with COALESCE. raw no COALESCE would produce p-c12,p-c5,p-c0,p-cN? Let's test: DESC NULL first? Wait raw DESC SQLite treats NULL as smallest? order c(12),a(5),d(0),b(NULL) according report. For seed a=p-c5,d=p-c0,c=p-c12,b=p-cN=> c,a,d,b = p-c12,p-c5,p-c0,p-cN. With COALESCE and rowid: c,a,b,d. Thus expected [p-c12,p-c5,p-cN,p-c0] catches M1 because p-cN moves before p-c0 vs after. Good.
+
+S2 inserts x1,x2,x3, all NULL. COALESCE all 0, rowid DESC => x3,x2,x1. Test good. But if remove rowid and raw? no. SQLite no stable defined but implementation rowid. However test expected rowid desc.
+
+S3 parse({}) default sort added_desc. seedQuad added_at increasing by insertion: p-c5 2026-01-01, p-c0 01-02, p-c12 01-03, p-cN 01-04. added_desc => p-cN,p-c12,p-c0,p-c5. explicit same. Good.
+
+S4: added_desc expected p-cN,p-c12,p-c0,p-c5. year_desc by year: p-c0 2024, p-c12 2023, p-c5 2022, p-cN 2021. Tie none. title_asc A文献 p-c0, B文献 p-c5, C p-c12, D p-cN. Good.
+
+S5: insert p-hi rowid1 NULL, set cited9; p-a rowid2, set7; p-b rowid3, set7. COALESCE all. Page limit 2 sorted: p-hi(9), then tie p-b(rowid3) before p-a(rowid2), so page1 p-hi,p-b, page2 p-a. Good. Tests total.
+
+Potential issues:
+- Test file contains SQL UPDATE string in unit test not SQL injection because literal no user. But not production. Could be against "禁止字符串拼接SQL"? It uses db.prepare('UPDATE ...') constant no concat, okay. Could be considered "SQL in test", not issue.
+
+- "always-active bare describe irrespective K3" potential guarded? material says P7E-06 precedent. Fine.
+
+- Comments in papers.queries.ts with Chinese text repeated: okay.
+
+- Hard rules: line counts? New test 111 lines allowed file <=500. Repo lines? total +? No issue. No new dependency. Locks +1. Layer one-way? service comment only. FilterBar renderer uses SORT_LABEL no import from main. shared model import from renderer? FilterBar already imports LibrarySort likely. queries has imported LibrarySort from shared? okay upward? Need check architecture perhaps shared models accessible main/renderer. No issue.
+
+- Cross-feature reference? No. FilterBar in library uses TagFilter existing.
+
+- SQL order by mapping constant, no string concat. Good.
+
+- Any "range creep": tickets/registry.ts diff from P7E-06? Actually diff shows registry line adds P7E-07 open. That is part of main control, implementer didn't touch. Material says "git diff --stat 6 files +20/-6 (其中 tickets/registry.ts 的 +1=主控建单条目，开工前已存在，实现者未触碰)". In diff shown includes registry entry. We don't need count.
+
+- Does P7E-07 ticket area service file src/main/services/library.service.ts but actual changes mostly in queries/FilterBar/models/tests. However primary service comment maybe "service zero change". Ticket says file `src/main/services/library.service.ts` area service. Is it okay to alter only comment there and real sorting code? ticket says implementation across files; because sort passes through existing query mapping. Seem okay. But file? registry says P7E-07 file library.service.ts because entrypoint? It says service zero change, changes in repo map. It is arguably acceptable.
+
+Potential subtle issue: `librarySortSchema` z.enum result type? Need test asserts. Good.
+
+Potential issue: The test imports PaperRow type from papers.repo; but PaperRow likely includes `cited_by_count?: number | null`? If not set? In row(), `id: over.id ?? 'p-1'`, all rows same id if not overridden. In seedQuad they override id. In `repo.insert(row(...))`: `paper` insert uses schema with `sha256` unique. They set sha256. For p-c5 row uses default sha256 'sha-aaa', etc. p-c0 override sha-b01. Good.
+
+Need check null in SQL ORDER BY `COALESCE(p.cited_by_count, 0) DESC, p.rowid DESC`. `cited_by_count` column in papers table? likely integer nullable. yes. If no index, ordering maybe okay.
+
+Potential issue: `FilterBar.tsx` SORT_LABEL Record must be compile-time closed. They added key. But are there other Record maps needing update due to new enum? They mention double `Record<LibrarySort,...>` FilterBar/queries. If there are more, TypeScript would fail if any `Record<LibrarySort, unknown>` missing unless service doesn't map. Because union type now includes cited_desc; if any Record elsewhere missing, compile would fail. They ran typecheck. If no compile fail then all records updated or no others. Good.
+
+Potential issue: IPC schema: `libraryQuerySchema` includes sort default? New enum parsing. Good. But `z.enum` used in schema, no catchall. no issue.
+
+Potential issue: "COALESCE explicit zero" semantics perhaps questionable: If p.cited_by_count NULL because "not yet enriched", treating NULL as zero means "not enriched" rows are sorted alongside cited=0 and at bottom. For descending sort "high-to-low", yes bottom. But if "not cited" vs "unknown" should maybe bottom? Ticket says desired. No fail.
+
+Potential issue: S3 test uses `libraryQuerySchema.parse({})` and expects added_desc. Need ensure this default is in schema default. Perhaps yes. But if parse({}) -> sort default added_desc. It calls repo.searchSummaries(parsed) where parsed is object with sort string, offset/limit? z schema might also default offset/limit? `parsed` type needs recognized. If libraryQuerySchema parse({}) gives `{sort:'added_desc', offset: ??}`. The code uses repo.searchSummaries(parsed) without specifying offset/limit; maybe repo.searchSummaries accepts parsed with optional offset/limit and internally has own default? Need inspect not in material. But explicit call includes offset/limit. If parsed doesn't have offset/limit maybe optional and default in repo. Test passes likely. Could be any? Not issue.
+
+Potential issue: S5 uses page size 2 and two pages, total=3, merges two pages. If there were random stable not deterministic, still expects p-hi,p-b,p-a. Covered by rowid. Good.
+
+Potential issue: test file line count: report says 106 vs diff 111. Diff shown final file: Let's count actual lines. New file content from diff after header. It includes 111 lines maybe. Let's count approximate: diff has +1 to +111? Last line +106? Actually `@@ -0,0 +1,111 @@` yes file has 111 lines. Report self says new test "106 行" but file is 111; gate1 NIT noted mismatch. Not BLOCKING.
+
+Need think if verification "M2 mutation by removing key from ORDER_BY" would compile? Wait `ORDER_BY` is typed as `Readonly<Record<LibrarySort, string>>`. Removing cited_desc key makes object missing required property; typecheck fail. Yes.
+
+M1 mutation "deleting COALESCE" changes string to `'p.cited_by_count DESC, p.rowid DESC'`. Then test S1 catches? Let's verify: raw NULL sort for p-cN vs p-c0 with both maybe p-cN NULL and p-c0 0. Without COALESCE, rows where cited_by_count is NULL are sorted as NULL first in ASC? Need careful. In SQLite, sort order: NULLs considered smaller than any value. ASC => NULL first; DESC => NULL last. Wait docs: For DESC, NULLs are last. So if all values: 12,5,NULL,0? DESC with NULL last places NULL after 0? Let's see: values high-to-low 12,5,0 then NULL last. Existing report says raw DESC order `c,a,d,b` where p-cN b NULL, p-c0 d 0 -> c 12, a 5, d 0, b NULL. Thus p-c0 before p-cN. With COALESCE values 12,5,0,0 tie rowid DESC among d (rowid2) and b(rowid4) => c,a,b,d. Test S1 expected p-c12,p-c5,p-cN,p-c0. So raw would be p-c12,p-c5,p-c0,p-cN => fail. M1 red. Good.
+
+M3 removing rowid: COALESCE values p-c12=12,p-c5=5,p-c0=0,p-cN=0; no tie break, SQLite returns row? likely insert rowid order? For p-c0 rowid2 vs p-cN rowid4 both 0, SQLite with no rowid maybe returns rowid ascending as scan. p-c0 then p-cN. Expected test says p-cN before p-c0 fail. S2/S5 fail. Good.
+
+Need consider if unit test fixture uses SQL UPDATE without transaction and unique constraints. beforeEach new in-memory. Good.
+
+Potential hidden concern: Does ORDER_BY mapping get applied with table alias p? Existing queries use p aliases. yes.
+
+Potential concern: comment says "COALESCE explicit zero - not-cached and cited 0 same level bottom, do not rely on SQLite NULL sorting default". But actual semantics differ from "not cached and cited 0 same level bottom" because tie rowid among cited=0/NULL means "newer rowid first" and a not-cached newer paper with NULL appears before an older cited=0 paper. In S1, p-cN (NULL) rowid4 before p-c0 (0) rowid2. If "same level bottom" okay. But for equal low sort, order determined by rowid high-to-low, which means inserted later first, not stable by title/id? "决胜键 rowid DESC" is consistent with other default added_desc's rowid DESC. But with COALESCE grouping, rowid is same direction. All good.
+
+Potential issue: If sort cited_desc with two rows different cited but rowid desc? If different cited, second sort rowid irrelevant. Good.
+
+Potential issue: There is no integration/e2e for UI sort dropdown selection. Ticket expected zero new e2e. Is UI feature "sort dropdown now has extra option" could break old tests? e2e 39 full green. Unit tests anchor SQL only. UI Object.entries driven; extra Record entry map. Is TypeScript typecheck enough for UI? It only ensures key exists but not label/presentation. Could new enum break a UI switch? Maybe FilterBar uses `<select>` with options mapping. Extra option no issue. If e2e sort lifecycle has exact option count? It passed. No new e2e acceptable. Need maybe blocker? No.
+
+Potential issue: "models/paper.ts 受锁" changed. Locks manifest hash updated. Was models/paper.ts pre-unlocked? Ticket says "受锁面（主控预解锁）：models/paper.ts 一件最小增量". As auditor material says. OK.
+
+Potential issue: If custom `guardedDescribe` discipline says tests always-active. Fine. "K3" etc.
+
+Potential issue: The diff modifies `locks/manifest.json` and new file path. Good.
+
+Potential issue: `Scripts/audits/p7e-07-red` probe raw not included in diff? Only material list not full. It might not be in repo? It's okay. It says gate? Perhaps red evidence should be under scripts/audits but not committed? Not in diff shown. They report. Does repo committed "scripts/audits/p7e-07-red/"? "先红纪律：全量口径落 scripts/audits/p7e-07-red/；.raw.txt。" In diff only six files, no raw files in scripts/audits. That might be a violation? Wait diff section includes tickets/registry.ts, not scripts. If red evidence .raw.txt are artifacts, perhaps not tracked? Ticket asked "全量口径落 scripts/audits/p7e-07-red/；.raw.txt." But files not in diff means perhaps generated transient not committed; gates audit evidence maybe not committed? Materials don't list actual raw file contents except report. Need not infer. As audit independent maybe lack of diff evidence? But "材料包" probably includes report; no need challenge.
+
+Potential issue: status in registry still "open" not "done" in diff. Ticket says "registry P7E-07 翻 done". Material registry entry in diff status: 'open'. The diff shown at bottom includes new ticket with status: 'open'. It says "开工前已存在，实现者未触碰" from implementer. Gate? But ticket says after completion should flip to done. At final material, registry still open? In report §? "registry P7E-07 翻 done" under ticket §6 acceptance, but diff shows open. It could be because status update is manual/maintainer and maybe not shown? Wait diff from ticket registry in §3 actually shows addition:
+`+ { id: 'P7E-07', file: ..., status: 'open', summary: ... }`
+No change to "done" later. That means work in registry remains open, violating ticket's lifecycle? Let's examine. The diff is "完整 diff" of implementer, maybe changes include registry entry added by master at ticket creation. The implementer report says "diff confirms = master created P7E-07 entry (status: open), implementer did not touch (prohibition)" So at implementation, ticket not yet flipped done. The acceptance says "registry P7E-07 翻 done" at the end by some owner after approvals? It's part of ticket lifecycle; not necessarily implementer. In similar previous summaries P7E-06 done entry summary says "status: done". Actually registry entries in code show P7E-04 through P7E-06 done. At ticket creation P7E-07 might have been added status open. But final audit after not flipped might be not failure? Hmm.
+
+Material §0 says "工单=票面；实现=diff（§3——6 改+1 新，其中1件受锁=models/paper.ts 枚举加值票面声明）；实现者自报=§4." Diff includes registry +1 with status open. Report §8.2 says "tickets/registry.ts 开工即 M: diff 确认=主控建单的 P7E-07 条目（status: open），实现者未触碰（禁令遵守）." So P7E-07 registry remains open even after verify? The diff is final implementation diff, not after status flip. Does final submission require "registry P7E-07 翻 done"? In ticket §⑥ acceptance maybe at end. But material may be pre-flip because final judge before flipping? Actually audit is "门二终审" perhaps after implementation before registry update? They include ticket open in registry so audit can track? They might expect finding if status open. But as code audit, verdict of code perhaps not blocked by status field? It is a non-code operational issue. Need decide if WARN? Since ticket says "registry P7E-07 翻 done" as acceptance; not yet done in diff. But audit scope perhaps code changes, not final official registry update; material says "提交 [locked-change] (models/paper.ts+新测试)" before registry flip? Need not.
+
+Maybe we can include as NIT/WARN: registry ticket status still open despite work complete; update to done to reflect acceptance. But is this material contradiction? Ticket acceptance §⑥ lists "registry P7E-07 翻 done". In §3 diff, registry has status open. Report §8.2 says not touched. This is an actual finding if final state should be done. However implementer says "主控建单条目...未触碰" due to禁令? Ticket ⑦ says "禁 git/registry/locks 除票面⑤锁序一次" so implementer forbidden from registry. So flipping done is for main controller after final approval. During final review, it can remain open. It might not be an issue with code. Because "门二终审" happens before flipping? All prior ticket registry entries status 'done' perhaps after approval. P7E-07 open expected at review. OK.
+
+Need inspect "gate-call.py kimi-backup main, deepseek 64k直接起" maybe irrelevant.
+
+Potential issue: "M1 red based on seed layout where NULL inserted after 0". Test expected [p-c12,p-c5,p-cN,p-c0], which means NULL (unknown) sorts before 0 because rowid DESC equals newer inserted first. If M1 deletes COALESCE and wants NULL bottom before 0? Wait S1 "expected order 12,5,NULL,0" in ticket table. Wait ticket table says S1: cited=5/NULL/12 sort=cited_desc expected order = 12,5,NULL (NULL垫底). Actually ticket's S1 only includes three rows, expected `12,5,NULL`. In diff test includes four papers with NULL and 0, expected [12,5,NULL,0] from test name. Ticket's test comment says "NULL与被引0同级=COALESCE归零，同级 rowid rowid 决胜后插在前". It lists NULL then 0. Hmm. Wait if expected `12,5,NULL,0` and NULL row rowid 4, zero row rowid2, yes. If ticket's S1 without 0 says order 12,5,NULL. Good.
+
+Potential nuance: "S1 NULL垫底" sentence in test says `cited=12/5/NULL/0 全序=[12,5,NULL,0]（NULL与被引0同级=COALESCE归零，同级 rowid 决胜后插在前）`. "NULL与被引0同级", but expected has NULL before 0 because rowid. If same-level and tie-break rowid, the exact ordering between "NULL to-be-enriched maybe inserted at different time" and "0 cited old paper" isn't "cited semantics" but recency. Fine.
+
+Potential issue: The user asked for final audit as "门二终审", not necessarily answer from codebase? Need produce findings.
+
+Let's more deeply look at code architecture from snippets: `papers.queries.ts` `ORDER_BY` type `Readonly<Record<LibrarySort, string>>` imported type `LibrarySort`. In `papers.queries.ts`, there is also maybe `searchSummaries` function constructing SQL:
+```
+const orderBy = ORDER_BY[sort]
+...
+return db.prepare(`... ORDER BY ${orderBy}`).all(...)
+```
+If sort is arbitrary? Schema validated. The orderBy constant is safe. Need check `sort` could be undefined? SearchSummaries maybe expects sort already field from schema. Existing queries use ORDER_BY[sort]? If undefined, extra test red says no such column. Good.
+
+Potential issue: The SQL value uses rowid on `papers` table. If table is created without rowid? likely not. `rowid` with table alias p? In SQLite `p.rowid` works. Good.
+
+Potential issue: `COALESCE(p.cited_by_count, 0)` means if p.cited_by_count is NULL but the paper is not enriched, and later enrich data? Fine.
+
+Potential issue: Tests call `db.prepare('UPDATE papers SET cited_by_count = ? WHERE id = ?').run(v, id)` but `v: number` no check integer. Values 5/0 etc. fine. If `cited_by_count` column absent due to migration not run? createTestDb likely applies migrations 001-008? P7E-07 depends 005. If absent tests fail. But they pass.
+
+Potential issue: Test `S3` says "schema default added_desc, behavior equal explicit". It invokes `repo.searchSummaries(parsed)`. If parsed has fields absent, maybe function returns `{items,total}`. To compare `explicit` where `offset:0, limit:50`. But if parsed default offset/limit not same as explicit? Yet passed. Fine.
+
+Potential issue: If sort key `cited_desc` goes through library.serviceto query? In `library.service.ts` comment says "sort 经 LibraryQuery 直传 repo 的 ORDER_BY 映射". Did they have to modify any function signature? No. The service method maybe maps incoming `LibraryQuery`; existing. If there was a switch in service restricting valid sort? It uses shared schema? no. Ticket says service zero change. Fine.
+
+Potential issue: There is duplicate plus "智能过滤/引用数排序" maybe UI label and comment. Fine.
+
+Potential issue: "always active bare describe" allows S1~S5 to run always. But if DB has other seed? Each test isolated. Good.
+
+Potential issue: "mutation M2: deleting key from ORDER_BY" as typecheck red. Does typecheck ever check test file? yes. But typecheck independently. Good.
+
+Potential issue: Need classify all findings. If there are no blocking, verdict PASS or PASS_WITH_WARNINGS. Existing gate1 had PWW with two NIT. For our final, we can decide maybe PASS_WITH_WARNINGS due to no substantive issues but minor NITs. However user's scoring output wants final. We need not defer to gate1. Need maybe include no BLOCKING.
+
+Let's search for real bug: The modifications do not update e.g. `SORT_LABEL` Record import? It already imported `LibrarySort`? likely. In diff SORT_LABEL:
+```
+const SORT_LABEL: Record<LibrarySort, string> = {
+  added_desc: '最近添加',
+  year_desc: '年份新→旧',
+  title_asc: '标题 A→Z',
+  cited_desc: '被引（高到低）'
+}
+```
+But where is `LibrarySort` imported? Not shown but original had it. Records double closed. Good.
+
+Does `librarySortSchema` z.enum with 4 values used in `FilterBar` via `SORT_LABEL` no update of initial sort? Typecheck ensures.
+
+Potential issue: z.enum order not matter. cited_desc is not default. Good.
+
+Potential issue: A new `LibrarySort` value added but perhaps not handled in any switch in renderer (e.g. if FilterBar shows select). The only Record is SORT_LABEL? Suppose there is a function `sortLabel(sort)` switch over LibrarySort using exhaustive switch? TypeScript would catch missing case? Only if switch default with never? If not, typecheck might not catch, but code could silently return undefined. Material says "Record type force closure = FilterBar/queries two Record". Did not mention other exhaustive switch. Need look from original? We can't. But if there were other Record maps, typecheck would catch as all property missing. If a `switch` no catch, not. However current pass of tests/e2e "FilterBar dropdown auto adds one" suggests no switch. Reasonable.
+
+Potential issue: "query value with `p.year DESC, p.added_at DESC, p.rowid DESC`" in year_desc; if null years? not relevant. no.
+
+Potential issue: "library.service.ts:20 comment update: P7E-07 changed file's architecture commentary with ticket id and implementation specifics, but comments should not reference cross feature? No.
+
+Potential issue: The internal comment in paper.ts "P7E-07: +cited_desc (被引降序—加值向后兼容, old three remain)" line length over? Chinese chars not line length? no.
+
+Potential issue: "tests lock manifest hash of paper.ts matches after enum change." Need externally verify? Hash provided unknown. Could compute impossible. No issue.
+
+Potential issue: "Token counts huge prior tickets" irrelevant.
+
+Potential issue: "scripts/audits/p7e-07-brief.md" not in diff perhaps under scripts not shown. Ticket prepped. No.
+
+Potential issue: "S5 total=3 but page2 only 1 item; merged = page1 + page2. If bug skips item due to offset but total=3, both pages each return items different? Suppose same-cited tie not rowid stable but p-hi,p-a then p-b? Test would fail. Good.
+Potential issue: "page1.total" calls total count maybe query without ORDER_BY? unaffected. Fine.
+
+Potential issue: "rowid DESC tie-break plus added_desc already rowid DESC; page semantics if insertions after first page occur? no concurrency. Fine.
+Potential issue: "No transaction issue": search no writes. Good.
+
+Need maybe focus on line count of test file 111 is under 500; repo line limit? total in repo ≤300? Wait hard rule says "行数上限 repo≤300 组件≤250 文件≤500" perhaps "repo≤300"? That seems weird. Maybe "repo" meaning changeset? A file? We need not compute diff +20/-6, okay. `library.service.ts` file maybe existing close to 250? They add 4 lines to comment. Could exceed 250? Need know existing file length unknown. Material says no line. Could be near 250 but not changed substantially. Not a finding.
+
+Need decide if "line_hint" for comments maybe mention "tickets/registry.ts P7E-07 status open" if finding. But no.
+
+Let's examine from adversarial viewpoint: S1 test description says "NULL 垫底且与被引 0 同级（COALESCE 归零——同级相对序 rowid 决胜，M1 变异锚：种子布局下 NULL 后插于 cited=0，删 COALESCE 后 0-vs-NULL 相对序翻转即红）" Wait if NULL and zero are "同级 with COALESCE", the S1 expected order is [12,5,NULL,0]. But if "NULL后插于cited=0", because rowid DESC and NULL rowid4 vs zero rowid2, NULL comes before zero. That means among "low group", a NULL (unknown) is before an actual 0. If NO COALESCE, raw SQL DESC with NULL considered lower, will put actual 0 before NULL if following high-to-low? Actually NULL is smallest in DESC, so NULL last after zeros. Thus COALESCE changes relative order of NULL vs 0: with COALESCE, NULL may appear before older 0 due to rowid tie. Is that desirable? "被引高到低" unknown as 0 means it can tie with 0, but if rowid desc then "newer unknown first" can appear before "older zero". The sort semantics "not cached and cited 0 same-level bottom" means no distinction between unknown and cited 0. But if one should treat no data as neutral, fine. However if sorting by actual academic influence, an unenriched paper could have high true citations and thus appear among bottom while a low cited paper (0) also bottom. Ticket says "未缓存论文与被引 0 同级垫底=影响力低在后语义显式化" arguably questionable because uncached not necessarily low influence. But ticket deliberately defines. Not bug.
+
+Potential issue: There is no ORDER BY `p.title` / `p.id` tie-break but rowid not stable between vacuum or delete? rowid stable for table no WITHOUT ROWID absent deletes. Deleting rows can reuse rowid? With INTEGER PRIMARY KEY id maybe rowid can be reused after delete unless AUTOINCREMENT. Sorting across deletes could vary? Existing sort uses rowid same. If a row is deleted and new row inserted, rowid may increase beyond max if no max? SQLite picks max+1 unless table empty? Usually yes without AUTOINCREMENT may choose max+1 unless max is 922337... So stable enough. Existing pattern. no.
+
+Potential issue: "additive enum to Zod with .strict()"? No.
+
+Potential issue: "Record value arbitrary SQL string constant" — but `ORDER_BY[sort]` where sort validated; if query service passes untrusted sort perhaps could be SQL injection if value not found? Actually mapping not template? Existing form. Candidate not. no.
+
+Potential issue: "Models/paper.ts is shared" new enum changes API contract. Backend renderer build with old main? Main/renderer same package. no.
+
+Potential issue: "New option label `被引（高到低）` fullwidth parentheses; consistent. no.
+
+Potential issue: "Added comment in paper.ts code line has Chinese chars and long line but prettier? verify lint passed. no.
+
+Potential issue: "Ticket §⑤ red files scripts/audits/p7e-07-red/; full set not in repo, maybe not tracked". Let's assess if we should flag. The material says evidence directory; not necessarily committed, audit can inspect local raw. For final audit material includes no raw but report. Could be considered evidence. Since user asks to cite materials only. We cannot assert absent. Avoid.
+
+Potential issue: "Manifest generatedAt time difference ~13 minutes; locks 269. Does new file hash match? no verification. Could flag "could not independently verify hashes" not issue.
+
+Potential issue: "No e2e spec added for the filter functionality; but requirement says 验收: if initial 39 e2e all green. It is okay because new UI option was automatically generated. Is a single e2e for sorting chain necessary? Maybe "UI dropdown Object.entries driven no new interaction mode" is somewhat strong but outcome of FilterBar option count? P7E-07 changes FilterBar label map; e2e 39 doesn't necessarily click sort dropdown at all; zero new e2e means no browser-level test that new option appears and triggers sorting. But unit/repo + typecheck and UI could be enough? Need weigh hard rule "测试锁定合约": new tests locked. Does project require e2e for UI? P7E-06 added e2e spec. P7E-04 no? It added one e2e. P7E-07 ticket explicitly decided zero new e2e due to no new interaction. As final audit, should validate argument. Need maybe note WARN if missing e2e could be considered. However gate1 accepted PWW. Our final could say PASS_WITH_WARNINGS with no new warning? Existing NITs. If no blocking, likely PASS_WITH_WARNINGS rather than PASS because gate1 had NITs? But final verdict can be PASS_WITH_WARNINGS to reflect findings (if any) or PASS if no findings. Material includes known gate1 NITs. We can include NIT? The output spec says if no findings, empty + PASS. But we already can add NITs. Need choose.
+
+Let's think of "test discipline: 恒真断言, 为过测试放宽断言, 变异红证是否真实命中, 态空间跨格序列是否逐格有测试锚." The new tests look strong. But there is a possible issue: The test file is "裸 describe always-active" with direct DB, but the first test's name says "S1 NULL 垫底：cited=12/5/NULL/0 全序=[12,5,NULL,0]" In "order [12,5,NULL,0]" weird because expected id order not cited values? It is `['p-c12','p-c5','p-cN','p-c0']`. That maps to cited `[12,5,NULL,0]`. Fine.
+Potential issue: S1's expected order `NULL` before `0` is based on rowid and "NULL 后插于 0" due to insertion order. If SQLite uses rowid DESC but without rowid DESC if remove rowid, raw COALESCE maybe engine result? It would likely input order p-c0 then p-cN? Actually with no rowid, SQLite natural scan is rowid ascending, so p-c0 (rowid2) before p-cN(rowid4). So test catches. Good.
+
+M2 mutation status: "M2 ORDER_BY missing key" typecheck red. But M2's "typecheck" is not a unit variant of behavior, but "类型闭环变异" okay.
+
+Potential issue: Ticket's "先红纪律：全量口径 ...". Report §4 red-full: run all tests with missing cited_desc ORDER_BY key (before implementation? Presumably after adding enum, FilterBar, test? For red test, they may have new tests but no ORDER_BY key? Need red before adding queries. It would fail no such column. They say red on S1/S2/S5, S3/S4 green. This is legitimate TDD? Did they first add tests then run before code? The new tests import `createPapersRepo` and call searchSummaries sort:'cited_desc'. Before adding ORDER_BY, at runtime no such column? It might fail in searchSql: `ORDER BY undefined`, but actually if SQL string built with undefined, error "no such column: undefined". Red. Then implement. Good.
+However S3/S4 green in red phase pass due to no cited_desc; demonstrates backward compat. Good.
+
+M1 mutation red: Need ensure report "M1 删 COALESCE S1 红 (1 failed | 4 passed)" but if deleting COALESCE changes from NULL last to 0 then NULL? Wait raw DESC NULL last means p-c0 before p-cN? Report says red. good.
+M3 mutation red: "S1/S2/S5 三用例红 (3 failed | 2 passed)". If deleting rowid from clauses but keeping COALESCE, SQLite engine order for tie might be rowid ascending for two p? S2 three all NULL tie, S2 expected p-x3,p-x2,p-x1 but engine order if rowid asc p-x1,p-x2,p-x3 fail. S5 p-b rowid 3 vs p-a rowid2 same cite 7, but with tie same and no rowid, SQLite probably p-a then p-b? Existing order page? Since insertion rowids p-hi(1), p-a(2), p-b(3); same 7 group p-a before p-b, but expected p-b before p-a. Fail. Great.
+Could also M1 with COALESCE removal no rowid fail. Good.
+
+Potential issue: All test assertions depend on rowid semantics, but S4 title/year no tie? Good.
+
+Potential issue: Should include S1 "sort explicit schema parse" maybe no. But not issue.
+
+Let's consider if the test uses direct SQL UPDATE in test and "禁字符串拼接SQL" might not apply. no.
+
+Potential security issue: `sort` may come from IPC payload. Does `libraryQuerySchema` validate sort before service? Yes. But sort is sent to repo through service? "sort 经 LibraryQuery 直传 repo" likely. If library service exposes `getLibraryPage` that accepts already-schema validated query through IPC. The query schema includes `.default('added_desc')` transform? Actually z.enum. But if service uses `libraryQuerySchema.parse` and not direct? Existing. If no, searchSummaries sorts by value into mapping. Safe. No dynamic SQL injection. Good.
+
+Potential issue: COALESCE expression uses `p.cited_by_count` integer. Fine.
+
+Potential issue: If `p.cited_by_count` NULL and there are `p.cited_by_count=0`, both in result after nonzero, but in UI, labels show no actual value because summary returns no `cited_by_count`? It doesn't matter.
+Potential issue: Need parse `libraryQuerySchema` to support new enum but `searchSummaries` function signature maybe expects `LibrarySort` not string; parsing gives value. Test direct with literal `'cited_desc'` accepted. Type is union? Because repo function parameter maybe `sort: LibrarySort`, TypeScript in tests no type if repo.searchSummaries expects `Query` structural with sort union; literal matches. Good.
+
+Potential issue: If "M2 typecheck red" by removing cited_desc key, then any other code in tests e.g. `SORT_LABEL` not used. Good.
+Potential issue: "db.prepare('UPDATE...')" no parameter binding? Actually parameters `?` and run args. Good.
+
+Potential issue: "line_hint for NIT about schema direct assert" maybe `tests/unit/db/repos/papers-cited-sort.test.ts` around line 40/ S. But if no material includes actual line numbers? We have code. Could cite "S3 only indirect" though S3 does parse schema missing sort. It actually does have a schema direct assert for default sort: `libraryQuerySchema.parse({}).sort`. It doesn't parse `{sort:'cited_desc'}`. Gate1 NIT says "schema入参面直断言缺 (S1~S5 direct repo; libraryQuerySchema.parse({sort:'cited_desc'}) enumeration not directly anchored)". But S1 uses `sort:'cited_desc'` to repo.searchSummaries, not schema. If invalid enum, the repo doesn't validate, but parse is at boundary elsewhere. Existing type safety ensures compile; but schema boundary not tested for new accepted enum. Is it necessary? No. Could cite. Another NIT report line count mismatch is about report, not code file; no code file. We could avoid NITs to output PASS? But if final gate should include warnings from gate1? It says gate1 PWW with NITs; final should probably echo? The task asks "审计" not "re-review gate1". We should give our own.
+
+Let's inspect hard rules: "禁新增依赖" no dependencies. "分层单向": New comment uses "repo" maybe? The comment is in service about repo. no.
+"跨 feature 互引红线": New test imports from renderer? No. It imports tests utils and main db/shared only. `FilterBar` in features/library imports labels and models? existing.
+"行数上限 repo≤300 组件≤250 文件≤500": New test file 111. no.
+"测试锁定": Locks updated. But is `locks/manifest.json` itself "受锁"; diff changes manifest. Lock hash for paper.ts includes new state. If paper.ts changes after lock then not. no.
+"受锁=票面声明最小增量": models/paper.ts changed. Manifest changed accordingly. no.
+
+Potential issue: "Ticket §⑤ says new tests `papers-cited-sort.test.ts（新）` S1 NULL 垫底/S2 决胜稳定/S3 缺省兼容/S4 旧三值回归/S5 分页跨界" done.
+"变异红证≥3: M1, M2, M3" done.
+"红证不成立即申报换变异" probe. done.
+"锁序: New test born generate+apply before verify" Report §7 says yes. Could be impossible to verify except raw names. Fine.
+
+Potential issue: "成本申报 token no self estimator." irrelevant.
+
+Potential issue: "M2 枚举值漏加 ORDER_BY" — Wait M2 mutation as described in ticket is "枚举值漏加 ORDER_BY（typecheck 红=类型闭环变异）" Means if enum value added but ORDER_BY not updated? Actually M2=枚举值漏加 ORDER_BY? Let's parse: M2 = "枚举值漏加 ORDER_BY" ambiguous. But report "M2 ORDER_BY 漏加键 (删 cited_desc 行): typecheck red". Equivalent. Good.
+
+Potential issue: "M1 red only one failed, but deletion of COALESCE would also affect S2? S2 all NULL; raw vs COALESCE for all NULL should be same because COALESCE doesn't change all same values; no. S5 no NULL. Good.
+
+Potential issue: "M3 deletes rowid from all three existing ORDER_BY? Mutation applies only cited_desc line, no impact other sorts. good.
+Potential issue: "No new SQL migration": because null column exists. good.
+
+Let's reason about repository code and API:
+`searchSummaries({ sort: 'cited_desc', offset:0, limit:50 })` may append `ORDER BY` after filters; with rowid and limit. No issue.
+Potential issue: Does `searchSummaries` use `p.cited_by_count` but table's alias p in ORDER BY? Existing other ORDER BY use p.added_at p.year. Since these tests pass, yes.
+Potential issue: The repo uses `db.prepare(...).all(...)` returning items and `total` from separate count. Test expects total count. no.
+Potential issue: "ORDER_BY mapping constant + stmt precompiled existing shape"; new ORDER_BY line with inline value is also constant. no.
+Potential issue: "Record used in tests? no".
+
+Now, could there be issue with rowid tie break on "sort=title_asc" preexisting uses rowid ASC not DESC? Title ascending tie by rowid ASC. New cited_desc uses rowid DESC. If two rows have same cited count and same position, order by rowid descending. Is that consistent with list of "added_desc default rowid DESC". For title_asc "A→Z and older first? not relevant. Is a tie-break direction of rowid arbitrary? It could be expected that ties sorted descending by recency. No spec. Ticket says rowid决胜 stable. Doesn't matter. Test S5 expects p-b rowid3 before p-a rowid2. Good.
+But tie-break rowid DESC not necessarily "after inserted later" but yes. Could be considered less semantically stable than tie-break by title/id, but existing three precedent. no.
+
+Potential issue: The test creates no explicit `cited_by_count` value for p-cN because default null. If table column default null. Good.
+Potential issue: `row()` returns `PaperRow` including `file_ref: 'ab/cd/aaa.pdf'`. Could violate file path? no.
+Potential issue: test file's helper setCited doesn't check count. no.
+Potential issue: "repo.insert(row(...))" invokes insert with "title" maybe no unique. no.
+
+Potential issue: "No repository method changed" but actual ORDER_BY is in repository queries file. Ticket says "library.service.ts:20 注解" etc. Fine.
+Potential issue: "Ticket says file src/main/services/library.service.ts, area service; but the actual core change in src/main/db/repos/papers.queries.ts > belongs repository layer. Is ticket file wrong? P7E-05 service ticket changed service and repo maybe. But P7E-07 ticket says "interface layer: enumeration plus ORDER_BY/SORT_LABEL each add one line" yes includes. area service still main because ticket intended service filter? no.
+Potential issue: "rowid is selected from table but when using GROUP BY distinct maybe no rowid? No group by perhaps. no.
+
+Potential issue: "COALESCE function call in ORDER BY prevents use of an index on cited_by_count" For a library with many papers, sorting by cited_by_count requires full scan order anyway unless indexed. Existing no index on cited_by_count? If many papers, performance? Ticket didn't address. Could this be production quality? cited_by_count cache column may not be indexed; ORDER BY with COALESCE could prevent index and force sort. The table likely small local library. Not in scope. Could WARN/NIT? Not blocking. But material doesn't mention indexing. Existing sorts on year/title also maybe no indexes. Not issue.
+
+Potential issue: Does `COALESCE(p.cited_by_count, 0) DESC, p.rowid DESC` ensure deterministic ordering if duplicate rows have same rowid? rowid unique. yes.
+
+Potential issue: Use SQLite "rowid" optimization and p alias. If view? no.
+Potential issue: `papers.repo.ts` uses `createPapersRepo(db)`. Test's `createTestDb()` returns `SqliteDb` likely better-sqlite3. If API of repo's insert expects enriched fields? Existing tests. no.
+
+Potential issue: "PaperRow type exported by papers.repo" and row() manual. If adding a new field to PaperRow in future, tests may fail typecheck if row missing. good.
+
+Potential issue: "Test count 1270; reported 5 new tests" Verify. Diff test file contains 5 `it` and no test.each. yes.
+Potential issue: "locked manifest 269" File count? `locks` before 268, +1 new file. papers.test hash. yes.
+
+Potential issue: "Implementer report says `git diff --stat`: 6 files +20/-6 (其中 tickets/registry.ts +1=主控建单条目...)` Actually final diff shows 7 files? Count in §3 diff: locks/manifest, papers.queries, library.service, FilterBar, models/paper, tests/papers-cited-sort, tickets/registry = 7. §2 says 6改+1新 = 7. Git diff --stat 6 files maybe excludes untracked new test? It says new test untracked not in diff stat. In final full diff includes new file. Not issue. If claim 6 files +20/-6, maybe plus new file (111). But "git diff --stat" without --stat doesn't show untracked. Report says "未跟踪新文件仅新测试一件." Actually before adding? At final, untracked? With lock manifest and commit maybe new file tracked? Hmm. Evidence inconsistent maybe no. But not code audit? Could note report precision NIT. Already gate1 noted line count. There may be more NIT due to report line "6 文件 +20/-6" but diff includes 7 paths because new untracked. It says "其中 tickets/registry.ts +1=... 开工前已存在，实现者未触碰" Wait if diff includes registry +1, then implementer's git diff was run at a time when registry new line already in index? Actually if main created ticket before implementation and then implementation edits queries etc, `git diff` of tracked files includes registry +1 compared to HEAD because main's addition is uncommitted/untracked in working tree? Hard to understand. But not important.
+
+Let's think of final stage of P7E-07. The material says "registration source = v35 etc." P7E-07 open in registry, but all previous six done. In final output, if registry open but work done not flipped, ticket not truly done. However as per workflow, final approval "门二终审" occurs before registry flip by main. The diff of implementer excludes flip because implementer prohibited. So not finding. But if final verdict PASS and then registry flip is a follow-up; okay.
+
+Potential issue: "TICKET_MAP Map of TICKETS, P7E-07 status open; if audit final says PASS, need later done." no.
+
+Potential issue: "Lock manifests hash changed for paper.ts but also paper.ts is shared model and enum addition has changed hash. Lock manifest 269. If models/paper.ts in manifest, adding enum changed hash; but no other file changed because tests not locked? yes.
+
+Potential issue: "The new `papers-cited-sort.test.ts` was added to lock manifest, but if typecheck/format generated maybe. no.
+
+Potential issue: "No mutation test on SQL label or UI option" M2? not needed. Could mention no direct UI test for label, but e2e no. However typecheck doesn't ensure label Chinese correct. Unit tests cannot. UI Object.entries. Is it okay? It could have typo and no tests catch except maybe e2e if one checks. Ticket acceptance says if gate requires e2e then add; no. Could WARN? Maybe not.
+
+Potential issue: "The test `S3 def compatibility` only checks parse({}) default. It doesn't verify no sort when `sort:undefined` in repo search. Since schema returns default. Good.
+Potential issue: "S4 old values return all values but not same rows with titles etc? yes.
+
+Potential issue: "The seeding `seedQuad` uses `repo.insert` with `enrich_status: pending`, yet sets cited_by_count directly leaving `enrich_status: pending` inconsistent. The table doesn't enforce. Not issue.
+Potential issue: "Should maybe set cited_by_count through repository method to exercise validation?" no.
+Potential issue: "Direct UPDATE of `cited_by_count` not parameterized? It is parameterized. okay.
+
+Potential issue: "Citation count values may exceed int? SQLite integer. no.
+
+Potential issue: "SQL injection from new mapping line: although mapping is a code constant, if user controls sort causing mapping value maybe malicious via prototype pollution? ORDER_BY[mapping] using object literal, not prototype? Since ORDER_BY is `Readonly<Record<LibrarySort,...>>` but runtime object literal only has four keys; if `sort` invalid from untrusted input, `ORDER_BY[sort]` returns undefined. If sort = `__proto__`? Object literal has no. Unless `sort = 'constructor'`, ORDER_BY[sort] returns? The object's prototype has constructor string, but Record method? Value can be function and SQL becomes "ORDER BY function"? Actually if bind, could error but not injection. Existing code likely validates known sort. no.
+
+Potential issue: "No e2e new spec but primary sorts cross test perhaps direct repo only. UI selection not tested. If FilterBar `SORT_LABEL` new record but UI options are generated by Object.entries; typecheck only ensures all keys, e2e full maybe sort dropdown changed count from 3 to 4. If e2e assumes 3 options in some UI-related test, would fail; full 39 zero failure so no issue. good.
+
+Potential issue: "Manifest diff generatedAt in future? date 2026-09-03 etc material from future. no.
+
+Let's consider whether "zero new e2e spec" line "if gate review requires e2e anchor then add" means not hard requirement. okay.
+
+Potential issue: "M2 mutation red via typecheck before running tests. Typecheck red but not unit tests. "Mutation red proof" typecheck red is accepted. no.
+
+Potential issue: "M1 mutation red evidence if selected mutation of removing COALESCE leaves comment mentioning COALESCE inaccurate; not issue in mutation backup.
+
+Potential issue: "Mutation backup method cp not git checkout; good."
+
+Potential issue: "The report §3 probe raw order "种子插入序 a(5), d(0), c(12), b(null)" and raw ORDER BY DESC → `c,a,d,b`; COALESCE DESC,rowid DESC → `c,a,b,d`." Wait explain: raw with `cited_by_count DESC` and no rowid clause if two? There is only one null b; raw order p-c? Let's map a(5)=p-c5 rowid1, d(0)=p-c0 rowid2, c(12)=p-c12 rowid3, b(null)=p-cN rowid4. With no rowid tie, for 12 unique, 5 unique, 0 unique, null. Output p-c12, p-c5, p-c0, p-cN. Good.
+With COALESCE,rowid: p-c12, p-c5, then tie zero (p-c0/p-cN), rowid DESC p-cN then p-c0. Good. yes.
+
+Potential issue: "NULL and 0 tie by COALESCE" but because rowid DESC, p-cN before p-c0. If report says "0-vs-NULL relative sort flips" relative order?? raw: p-c0 before p-cN. COALESCE: p-cN before p-c0. Yes.
+
+Could the use of rowid DESC as tie-break make "not cached and cited zero same kind bottom" but "NULL 后插" expected before 0 due to recency. If someone expected `12,5,0,NULL` for unknown after zero, no; but test aims for rowid tie. fine.
+
+Potential issue: Test file content uses "M1 变异锚：种子布局下 NULL 后插于 cited=0，删 COALESCE 后 0-vs-NULL 相对序翻转即红" That says deleting COALESCE returns 0-vs-NULL order to raw (0 then NULL), but expected with COALESCE is NULL then 0? Let's check if "deleted COALESCE" without rowid? Test's M1 mutation deletes COALESCE but still retains rowid? M1 = "删 COALESCE（→`p.cited_by_count DESC, p.rowid DESC`）". Ah important! Wait ticket says M1=删 COALESCE; not "also no rowid". The ORDER_BY with COALESCE deleted becomes `p.cited_by_count DESC, p.rowid DESC`, not raw `p.cited_by_count DESC`. In S1 with NULL last, p-cN NULL is last; it doesn't tie with p-c0. The rowid tie-break doesn't apply because different cited? DESc: 12, 5,0, NULL. Thus expected would be p-c12,p-c5,p-c0,p-cN. Test expected p-c12,p-c5,p-cN,p-c0 => fail. Good. M1 red.
+In probe, "raw" was `ORDER BY cited_by_count DESC` without rowid? Report says raw "ORDER BY cited_by_count DESC" → c,a,d,b. Mutated query includes rowid, but output with null single same. The difference is not due to rowid; 0 vs null not tie. Good.
+Suppose cited NULL counts? okay.
+
+S5 M3 = remove rowid -> COALESCE only no rowid; engine natural order rowid ASC among ties. Since not guaranteed but actual red. If SQLite version maybe future optimizer chooses other order? Not a test issue because mutation is absent; no deterministic guarantee? Unit should not rely on unspecified engine tie order for M3 red? The red proof uses current engine. But maybe mutation could produce same expected on another system if engine chooses rowid DESC, causing no red; but mutation is run in current env. The report notes SQLite undefined sort in no tie. However danger: if future implementation changes rowid no? No.
+Similarly S1/S2/S5 expected order relies on rowid DESC included. Deterministic. M3 if deleted rowid no order guarantee; but tests red in current SQLite. Fine.
+
+Potential issue: "M3 mutation deleting rowid from `cited_desc` would not cause typecheck red, but runtime engine order maybe undefined. In a supported future with another SQLite version, not deterministic. The red variant proof is in current environment only; okay."
+
+Potential issue: "The test's S5 page boundary tests rowid DESC tie-break by expecting p-b before p-a. But if papers were inserted in a different order via SQLite with rowid assignment, rowid order matches insertion. In real app with cascading? okay.
+
+Potential issue: "The new test file does not close DB after each, but in-memory DB finalized when `db` GC? Not critical. Could use afterEach db.close? Existing pattern maybe no. no.
+Potential issue: `crypto` no. no.
+
+Let's decide findings. We can output PASS_WITH_WARNINGS with one or more WARN/NIT. But if we include only NITs, verdict can PASS_WITH_WARNINGS? Output semantics: PASS, PASS_WITH_WARNINGS, FAIL. In previous P7E-06 gate review final "PWW 2 W 3 N". If we return PWW due to minor findings, okay. But perhaps should not manufacture warning. Let's search for a real WARN.
+
+Potential WARN: Record type closure is not fully established for UI: The only changes are three maps? Actually ticket claims "double Record closure = type enforcement two places", but `LibrarySort` is also used in `library.service.ts` perhaps no map. No issue.
+
+WARN candidate: `COALESCE` sorting may cause an unenriched paper (NULL) to be *interleaved with 0-cited based on rowid* rather than consistently after 0; in the test, S1 expects `[12,5,NULL,0]`. If the intent is "not-enriched should be bottom but with no distinction from 0", no. Ticket says old three? no. Not a bug. If they wanted "NULL absolute last after 0" but coalescing null with 0 means tie; with rowid DESC, a new unknown can appear above an older 0. Ticket explicitly says same-level. no.
+WARN candidate: No direct schema parse test for `cited_desc`; but S3 direct parse missing sort, and S1-S5 call repo with sort field but no schema. However if schema validation broke (e.g. `cited_desc` accidentally omitted from z.enum but compiler? If omitted from z.enum but type from z.infer still includes only old three? In TS source, if `sort: 'cited_desc'` passed to repo.searchSummaries, TypeScript may error because function parameter type uses LibrarySort old union. But in test file, they call `repo.searchSummaries({ sort: 'cited_desc', ...})`. Since repo.searchSummaries signature likely `{ sort: LibrarySort }`, if librarySortSchema were not updated (enum omitted), but ORDER_BY also would not have key? TypeScript would error "type '"cited_desc"' is not assignable to LibrarySort" if schema type used as parameter. But tests are red? Wait the TDD red omitted ORDER_BY only, not schema? Before implementation, they had updated schema enum and tests? Standard TDD: write failing tests and minimal code? Report red-full includes no ORDER_BY key but has enum update? They likely updated schema before red? But S1 repo.searchSummaries accepts because schema enum includes cited_desc. Typecheck in red phase? They test after adding schema? Suppose test uses string literal, it typechecks because repo.searchSummaries param `sort?: LibrarySort` from updated schema enum. If schema not updated, TS compile fail, not a unit red. M2 missing ORDER_BY runtime red. In any case, for final code schema is updated. Need direct parse? no.
+
+WARN candidate: `locks/manifest.json` includes new test but no e2e spec; no.
+WARN candidate: "M1 mutation test's comment says S1 is M1 anchor; but M1 mutation would also make the test fail for unrelated assertion? No, S1 expected `NULL,0`; deletion COALESCE expected `0,NULL`; good.
+WARN candidate: "Potential issue of using COALESCE in ORDER BY prevents the column value from being used because if `cited_by_count` is integer and there is no `NOT NULL` default, but okay.
+
+Let's think about SQLite sort default and COALESCE. Suppose query uses `COALESCE(p.cited_by_count, 0) DESC, p.rowid DESC`; if row is not cached NULL and actually has no citation count but could be high? They treat as 0. The ticket "not cached papers and cited 0 same level bottom" explicitly. no.
+
+Potential issue: `library.service.ts:20` comment says "P7E-07 已兑现：智能排序（引用数排序）——librarySortSchema 加 cited_desc 枚举值，sort 经 LibraryQuery 直传 repo 的 ORDER_BY 映射（COALESCE 空值归零+rowid 决胜）。勘误：原预留注记写「经新 repo 方法」，实际落位=ORDER_BY 映射扩展（加值向后兼容，无新方法无新迁移）". Wait it says P7E-07 已兑现 but registry/ticket status open. Comment "已兑现" maybe done before audit. no.
+
+Could issue with "P7E-07" in code comments referencing ticket IDs; existing code comments do not reference ticket? Precedent "P7E-05" maybe yes. no.
+Potential issue: It says `智能排序（引用数排序）` not `被引排序`. no.
+
+Potential issue: "S1 name cited=12/5/NULL/0. If read as cited values, [12,5,NULL,0] not high-to-low because NULL always last. okay.
+
+Potential issue: test at S4 expects title_asc order `['p-c0','p-c5','p-c12','p-cN']`: p-c5 title "B文献" rowid1 but title asc p-c0 A, p-c5 B, p-c12 C, p-cN D. If rowid tie no. good.
+Potential issue: "schema = z.enum; adding after title_asc changes default? no, z.enum defaults first value added_desc. Has `.default('added_desc')` maybe in libraryQuerySchema. The z.enum object's type union order no runtime effect. no.
+
+Potential issue: "FilterBar's SORT_LABEL might need `as const`? Existing no. no.
+
+Potential issue: "Transaction atomicity not relevant" no writes.
+Potential issue: "Race conditions" no.
+
+Potential issue: "A new enum `cited_desc` can be passed from renderer through IPC. Existing IPC channels perhaps libraryQuerySchema parse in main. If service uses direct method from renderer? no.
+
+Potential issue: "If main and renderer are in separate bundles, renderer could use new shared enum but main old version? no.
+Potential issue: "Version mismatches" no.
+
+Potential issue: "Testing uses direct DB `UPDATE` but tests not ended with `db.close()`, could leak handles in unit process. Not long-running; minor. Existing multi-tag tests perhaps same. no.
+
+Potential issue: "No test verifying all three old sort labels still in objects? Record type & S4 sort behavior. no.
+
+Let's maybe write findings:
+- NIT schema direct parse not anchored, file papers-cited-sort.test.ts, line hint S1-S5/setup. But material gate1 already had exact NIT. Should include? It is not significant.
+- NIT report line count mismatch 106 vs diff 111, file implementer report maybe not a file? Could include with file "tests/unit/... line_hint "report §2" but output file should maybe tests file? If finding point report precision, file not code. But "file" field expects repository file. Could use `tests/unit/db/repos/papers-cited-sort.test.ts` line_hint `diff '+1,111'` issue "实现者报告自述106行与diff 111行不一致". However affects no code. NIT.
+
+But perhaps final verdict could be PASS (no findings). Yet the presence of gate1 PWW and known NITs, if final doesn't include, okay? The user says "if no findings empty + PASS". Need no markdown. We can include NITs and verdict PASS_WITH_WARNINGS. Is a nonblocking NIT enough to be "PASS_WITH_WARNINGS"? It says PASS_WITH_WARNINGS should be used when warnings should be fixed but no blocking; NIT style suggestions maybe not "warning". If findings only NIT maybe PASS_WITH_WARNINGS seems overkill? But in previous gate2 of P7E-06 "PWW (2W...)"; P7E-07 gate1 "PWW... 2 NIT". So yes project style uses PWW with NIT. Might be accepted.
+
+Need maybe maybe include a WARN not just NIT? What could be actual issue that deserves WARN? Let's scrutinize test quality more.
+
+"变异红证是否真实命中": M2 typecheck red if ORDER_BY missing key. But M2 mutation is unrealistic because to have `ORDER_BY` record missing a key while `librarySortSchema` includes cited_desc and test calls it is impossible at runtime only due to no compile? Wait runtime could occur if `ORDER_BY` object in plain JS not typechecked? But in TypeScript project, typecheck would catch the static error before runtime. Red proof "no key causes typecheck fail" is okay. But "typecheck red" is not commit? yes.
+Could there be a subtle issue: `ORDER_BY` uses `Readonly<Record<LibrarySort,string>>`. If the key is absent, TypeScript error. But when they ran `npm run typecheck`, it would catch if code not transpiled? They may run `tsc` separately. Good. no.
+
+"为过测试放宽断言": New test's S1 assertion expected [12,5,NULL,0] rather than ticket? Ticket table S1 expected order=12,5,NULL. Test includes 0. no relaxed. no.
+
+"态空间跨格序列逐格": S1 includes 0 extra, S2 all null, S3, S4, S5. Good.
+Need maybe find issue: The ticket says "S1: 三论文 cited=5/NULL/12，sort=cited_desc ⇒ 顺序=12,5,NULL". In S1 test, the expected order has `p-cN`(NULL) before `p-c0`(0) because rowid desc, not purely cited values. But if you look at the order of cited values, [12,5,NULL,0] is not sorted with tie-break after null? null (unknown) assigned 0 due COALESCE. But if sorting by actual column with rowid desc, "12,5,NULL,0". The test proves. no.
+
+Potential issue: "Test file comment says rowid winner '后插在前' but SQLite rowid might not correspond to insertion if explicit id supplied by app. In `repo.insert(row(...))`, id override e.g. 'p-c5' passed. How are paper rowids assigned? The papers table likely has a TEXT primary key `id`, not INTEGER PRIMARY KEY. Wait! Whoa important. Let's examine. Paper table likely has id as text primary key? Many apps use UUID string as PRIMARY KEY. If `id` is TEXT PRIMARY KEY, then rowid still exists unless WITHOUT ROWID, but rowid is an implicit integer rowid, assigned by insertion order regardless of text primary key (unless WITHOUT ROWID). If table is created normally with text primary key, SQLite has rowid. Good. But if table declared `WITHOUT ROWID`? Then p.rowid invalid. Existing ORDER_BY uses p.rowid already, so table has rowid. Fine.
+Does `rowid` correspond to insertion order even when explicit text primary key inserted? Yes rowid autoincrement-ish. Unless rowid is reused after deletion. Fine.
+Could repo.insert use `INSERT OR REPLACE` and if user-specified id? no. no.
+
+Potential issue: "E2E 39 zero new spec, full green first failure reader-text 872 F-ARCH4-M1 intersecting with no ticket; directed rerun full green. Non-deterministic flutter recorded." This is in material baseline, not an issue of diff. Could maybe WARN: Existing e2e 39 first run had one failure not related; rerun green. They describe as flake and don't treat. Is that allowed? "If e2e fail, must investigate" They did. Fingerprint and no relation. no.
+
+Potential issue: "Main controller personally verified all 39/39 full green after rerun." no.
+Potential issue: "e2e 39 zero new spec but front list sorting option is not covered by e2e. If one were strict, code path from renderer select to main query isn't covered by any test? Maybe there may be existing tests? FilterBar UI behavior existing not e2e? It likely was covered by FilterBar tests? No. Ticket says no new e2e. Could WARN but not blocking. Since test discipline "entire sort chain" maybe no integration. But material says single-test full anchor? Hmm.
+For P7E-06, they added e2e spec due to UI click interactions. In P7E-07 changing select option should be testable but not necessary? The `FilterBar` `SORT_LABEL` new option and passing `sort` from UI somewhere could be skipped. Existing e2e maybe user can select sort, maybe no. If no e2e anchor, a regression in e.g. FilterBar selected state not sending `cited_desc` to onSortChange could allow compile but functionality broken. Does unit tests cover only repo sorting, not how UI parses label and emits sort. However this is an option in an existing select, and adding one option is declarative. But robust quality could require one e2e test selecting "被引（高到低）" and asserting order. Ticket explicitly accepted no e2e, but this is final audit not ticket? We can assess. Should we issue WARN? Maybe "由于排序入口由 Object.entries 驱动，且 tests cover repo + schema, no direct test for UI label/select handling and main IPC chain. Low risk, but no new e2e puts regression on wiring unnoticed. However not BLOCKING under current ticket's zero new e2e rationale." It's arguably an acceptable WARN. But material says "e2e: 本票零新 spec (排序链单测全锚+UI 下拉 Object.entries 驱动无新交互模式；若门审要求 e2e 锚再补)." The "pass-through sort" chain maybe already covered by existing tests? The UI select code existed for old sorts, only adding one option so use of old select code already tested by existing e2e? Maybe e2e for sort later perhaps yes. Existing 39 might include library sort? Not known. If it included selecting another sort and verifying, adding an item doesn't require new test. Hmm.
+
+Potential issue: In test file, the test title includes `p-cN` and `p-c0` order. But test does not assert `r.total` in S2? S2 total 3 yes. S1 total 4. S3 doesn't assert total. no.
+Potential issue: Test S3 using `libraryQuerySchema.parse({})` checks default but no sort field. Could parse be expensive no.
+Potential issue: S5 test actually test "new Set merged size 3", but if pages return duplicates with total=3 size would fail. Good. If one page has empty second but page1 total=3, page2 empty then merged len 2, size fail? It asserts page2 equals ['p-a']; so no. good.
+Potential issue: `page2` may include p-b duplicate if no stable? Assert fail. good.
+
+Potential issue: "No direct test of total count after sort? S1 total 4, S5 total 3. S4 no. okay.
+Potential issue: "Test's use of type ReturnType<typeof createPapersRepo> might be considered any? no.
+Potential issue: "Direct SQL update in test can be flagged as no migration? no.
+Potential issue: "No any usage" no.
+
+Potential issue: "SQL comment line in queries includes Chinese colon and `COALESCE` maybe char encode. no.
+Potential issue: "Rowid in SQL with alias may require table alias p not quoted. okay.
+
+Let's think of "architecture layering" violation: `tests/unit/db/repos/papers-cited-sort.test.ts` imports `libraryQuerySchema` from shared/models; test under db/repos, imports repo and shared types. That's fine. It does not import service or FilterBar. It tests schema default at repo test. Is it allowed for a repo unit test to test schema? It anchors S3. no.
+Potential issue: "FilterBar.tsx in renderer/features/library imports `SORT_LABEL` not in shared; duplicate labels. no.
+Potential issue: "paper.ts shared model is locked. New comment in English? no.
+
+Potential issue: "Record closure type in `ORDER_BY` uses `Readonly<Record<LibrarySort,string>>` but "LibrarySort" includes new key due to z.enum. Good.
+Potential issue: "New test locks but no change to e2e spec count; if sorting UI is a user-visible feature, maybe test line of code in new UI not locked. Could be WARN under "production quality" not. Hmm.
+
+Each previous P7E summary includes "main control personally verified full e2e? yes." But final may not require.
+
+Let's assess whether to return "FAIL" due to report says "门二 deepseek 64k 终审"—If found BLOCKING? Need no.
+
+Could there be hard rule "禁新增依赖" and in report mentions `probe使用 better-sqlite3 12.11.1 / node ABI 137 / :memory:` and `sqlite-abi.mjs use node`—no dependency added. okay.
+Could there be hard rule "文件行数上限 repo≤300 组件≤250 文件≤500" and test file 111 pass; FilterBar existing maybe 250? They add one line maybe FilterBar line count grows to ??? If FilterBar was 250 exactly? Component ≤250. Did adding one line push FilterBar over 250? Let's think. In P7E-04, PaperDetailPanel 248 reached red line, they split hook. FilterBar at line 29 within file; unknown line count. If FilterBar had exactly 250 before, after +1 = 251 would violate. But verify/lint may not check line count? Hard rule likely audited manually. Material says "组件≤250" and FilterBar is a component. Added one line. Is there evidence FilterBar line count passes? The material doesn't state line counts for FilterBar/services/queries. Could be a hidden issue. Let's infer from code context: FilterBar original probably around 150-200 lines. New format after +1 maybe near line 200 or 250. Not know. No evidence. Don't fabricate. no.
+
+Potential issue: The added test file 111 lines but `.raw.txt` evidence not shown. no.
+
+Potential issue: "registry.ts is a generated/maintained file usually under tickets, not implementation. Diff includes new P7E-07 open. That is not problem. But if final status open, perhaps. no.
+
+Potential issue: "Ticket summary object uses status open even after summary says "P7-E 预留点清扫七票末项; Design..." Should be done at completion. But not by implementer. Maybe if code is merged before status done, code quality gate doesn't enforce. no.
+
+Potential issue: "Integrity of lock manifest hash values cannot be verified from diff; report shows. no.
+
+Potential issue: "The ORDER_BY typed as Record but no `satisfies`; if adding enum key order? no.
+Potential issue: "SORT_LABEL typed as Record but no `satisfies`. no.
+
+Potential issue: "Adding `cited_desc` to `librarySortSchema` but not to any comment on allowed options in README docs. Ticket says UI Label enough, no docs. no.
+
+Potential issue: "cited_by_count cache refreshed on enrich; if unknown NULL sorted bottom. no.
+
+Potential issue: "No update to SQLite table index for sort; maybe okay. no.
+
+Potential issue: "M1 variant "删除COALESCE" only red in SQLite versions where NULL sorting default DESC last; if future or engine behavior changes, mutation may not be red? SQLite documented? SQLite doesn't explicitly? Actually as of current, NULLs sort before all values ASC, after all values DESC. Evolution rare. no.
+
+Potential issue: The probe "raw ASC → `b,d,a,c`" with p-cN b null first. no.
+
+Potential issue: "The implementation `COALESCE(p.cited_by_count, 0) DESC` and comments say not need SQLite NULL sort default but uses SQL function; okay.
+Potential issue: Could use `p.cited_by_count IS NULL` after non-null branch? no.
+
+Potential issue: "Query order for sort year_desc uses rowid DESC tie-break; if sort by title asc uses rowid asc. Sorting test S4 with all unique okay. Regression anchor might not catch tie-break if future changes rowid for old sorts? Not relevant. P7E-07 didn't change old keys. no.
+
+Potential issue: "Test S4 is not exactly 'same behavior as before' if underlying shared schema's enum order not? no.
+
+Potential issue: "No mutation of old sort keys after change to verify no accidental. no need.
+
+Potential issue: "COALESCE on nullable integer in ORDER BY with rowid desc. Does `rowid` exist for views? no.
+Potential issue: "Could rowid DESC and `LIMIT/OFFSET` be non-deterministic if schema has triggers? no.
+
+Potential issue: "Potential lexical issue in report: Test new file "106 行" vs "111 行" gate1 noted. If final report PWW with NIT maybe. Should we include? It is not code. But task asks only findings with file. We can set file "locks/manifest.json"? Hmm.
+
+Maybe output:
+{
+ "verdict":"PASS_WITH_WARNINGS",
+ "findings":[
+   {"severity":"NIT","file":"tests/unit/db/repos/papers-cited-sort.test.ts","line_hint":"whole new file","issue":"对 cited_desc 的 schema 入参面仍无直锚：仅经 repo/searchSummaries 运行时命中，parse({sort:'cited_desc'}) 枚举放行未单测；当前由 typecheck/既有 e2e 间接兜底","evidence":"S1~S5 均直传 repo.searchSummaries；S3 只 parse({}) 验证缺省","suggestion":"后续触碰该测试件时补 libraryQuerySchema.parse({ sort: 'cited_desc' }) 并断言 sort 值；或说明既有边界测试已覆盖"},
+   {"severity":"NIT","file":"tests/unit/db/repos/papers-cited-sort.test.ts","line_hint":"diff 头部 +1,111","issue":"实现者报告将新文件自报 106 行，与 diff 实证 111 行不一致；计数类数字应取机器实测","evidence":"报告 §2 表 '新增（106 行）'；diff 显示 '@@ -0,0 +1,111 @@'","suggestion":"以 wc -l/git diff --stat 实测口径回填报告"}
+ ],
+ "summary":"..."
+}
+Should verdict PWW with NITs? maybe. But if NITs don't require modification? "PASS_WITH_WARNINGS" suggests should fix? In their scale warnings only. However previous gate1 PWW had s NITs. Fine. Maybe include only one NIT about schema parse and line mismatch. This final is "PWW" as gate1. Yet our role should be independent, maybe not repeat gate1? Materials include gate1 trajectory; as terminal reviewer we can confirm. But could there be zero findings? Then "PASS" but earlier "pass with warnings" maybe less action. We might need decide based on "P7E-07 门二终审" probably expects final pass. Existing gate1 had PWW; if second gate returns PASS maybe overall pass? They likely tolerate. The output JSON should indicate either PASS/PWW. If only NITs, maybe PASS_WITH_WARNINGS aligns.
+
+Let's consider if findings should include a WARN around e2e no. But perhaps material's "门一 pass with warnings zero blocking" already flagged only NIT, and no other unresolved. In final, we can output PASS_WITH_WARNINGS with two NITs. However "PASS_WITH_WARNINGS" is used when there are findings with severity WARN or NIT? In output definitions, WARN "应当修但不阻塞"; NIT "风格建议". PASS_WITH_WARNINGS means warnings but not blocking; NITs alone could still "PASS"? Usually in project, PASS_WITH_WARNINGS includes non-blocking warnings maybe NITs. Use PWW.
+
+Need ensure evidence exact. The schema parse suggestion is from gate1 material not direct? The test diff indeed S3 parse({}) only, tests direct repo. Typecheck? pass. Yes.
+Line count evidence exact: report says "新增（106 行）", diff shows `+1,111`. Good.
+
+Potential finding about registry open? Maybe not.
+
+Let's maybe consider another possible real defect: In test `row()` default `doi: '10.1000/demo'`; If insert multiple rows without overriding doi, unique? Did they override? seedQuad rows all default doi '10.1000/demo', same DOI across all inserts! That means if `papers` table has a unique index/constraint on DOI, insert would fail. But tests apparently pass? Maybe table doesn't unique DOI or doi column not unique. Existing row helper P7E-06 multi-tag also default same DOI? It may not matter. no.
+Also default `sha256` override except p-c5. Good.
+`enrich_status` default etc.
+If default doi same in all rows, maybe repo insert schema has unique? no.
+Potential issue: `file_ref` default in all rows same; if table unique on file_ref tests fail. But not. no.
+
+Potential issue: In `seedQuad`, insert order p-c5/p-c0/p-c12/p-cN and setCited after all. If repo.insert auto-updates enriched fields to `null` when insert and overwrites? no.
+Potential issue: `setCited('p-cN'?)` no need null.
+Potential issue: In S2, three papers inserted with default `added_at`, all null. Search order rowid desc. Fine.
+Potential issue: In S2, sort with no limit? default? call includes offset/limit 50. good.
+Potential issue: S3 `byDefault` call lacks offset/limit; if repo.searchSummaries has default limit and explicit call limit 50 maybe same? If defaults differ from explicit, explicit comparison could fail? Actually parsed object might set defaults from schema (offset=0, limit=50) perhaps. Since z schema likely defaults offset/limit. no.
+Potential issue: `libraryQuerySchema.parse({})` returns parsed sort default but if repo underlying expects `sort` object property not there? parse converts. no.
+
+Potential issue: "added_desc" existing default in schema but if `repo.searchSummaries` doesn't require sort? okay.
+Potential issue: "S3 seedQuad inserted with cited values and defaults; explicit `added_desc: offset:0, limit:50`. byDefault from schema maybe returns limit 100, causing item arrays? It compares items arrays; if default limit 100, still same four; if schema limit 50? Likely. If parse({}) default offset 0 limit 50 from schema? not known. But tests pass. no.
+
+Potential issue: Tests run as part of verify; not present in green raw content? not in material. But report.
+
+Could there be issue with "files > 500" papers.queries.ts? Changed +4. no.
+
+Let's think about exact "line_hint" format: e.g. `src/main/db/repos/papers.queries.ts:22`? Need no accurate line? Based on diff, line with code relative? We can provide string "ORDER_BY block ~L22". But since not enough, "ORDER_BY block" okay. Use line_hint maybe `"ORDER_BY 新增行附近（第 22-25 行）"`; For test file we can use `"S3 test / 文件头"`. Fine.
+
+Need perhaps include "no BLOCKING" in summary. E.g. "实现与票面 Design/RED/lock 流程一致，COALESCE 语义由探针与 M1-M3 真实红证支撑，S1-S5 断言非恒真；未发现违反硬规则或正确性/安全问题。仅剩门一已记录的两条 NIT（schema 直锚缺位、行数申报不一致），不阻塞。"
+Need output only JSON no markdown. Make sure no "```".
+Need decide "verdict": PASS_WITH_WARNINGS. Wait if only NITs maybe perhaps PASS. Let's reason from severity scale: "NIT=风格建议" not necessarily "warning". The output verdict options do not say NIT alone means PWW; PASS_WITH_WARNINGS likely if there are WARN/NIT? It says "PASS_WITH_WARNINGS" should be when non-blocking findings. Since no blocking, but warnings. I can use PWW with NIT. But if "no findings empty + PASS"; if findings only NIT, PWW optional. In previous line "门一 Kimi ... PWW(0B/1W/4N)" actually design includes NIT as non-blocking warnings. So PWW.
+
+Potential no findings? We might not include if purely minor and no code should change. But output has two NIT. okay.
+
+Let's perhaps include a WARN? I want to avoid missing serious issue. Is there a serious "tests use `createPapersRepo(db)` but no `db.close()`; if in-memory DB remains open until GC, Vitest can process exit after forceExit; no issue.
+Maybe no BLOCKING.
+
+Let's examine the "tickets/registry.ts status open" issue more. Should we include NIT? If final expected flips to done at close, and the diff shows open. But the "diff" may be from before final, and implementer not allowed to touch registry. If terminal review should "P7E-07 翻 done", this ticket's registry status remains open. Should we add finding as WARN? Let's think: The complete diff includes registry plus line `{ id: 'P7E-07', file: ..., status: 'open', summary: ... }`. Since code state is not matching "done" ticket. But since registry isn't supposed to be changed by implementer and final confirmation yet to be made by main controller after approval, not Blocking. If final state should be "registry P7E-07 翻 done", we could mark "WARN: registry status still open at time of submission; flip done after acceptance." But in report, status open because main created it before implementation; not expected to be changed. In prior tickets, the final registry status 'done' says summary record. It might be that the terminal audit material generated before the status flip, but ticket acceptance says status done should happen in future. The final audit's "works" can still pass, with note. Should our finding be about "do not flip before passing gate"? no.
+
+Potential issue: "TICKET_MAP includes P7E-07 open; if full verify includes tickets linter checking that tickets with summary done? Not if open. no.
+
+Need perhaps include "line_hint": "tickets/registry.ts P7E-07 entry" issue "status remains 'open' although acceptance §⑥ requires 'registry P7E-07 翻 done'". Evidence `status: 'open'`. Severity NIT/WARN. But if main controller will flip after gate, finding maybe "after final approval". Is this a style/logistics not code? It is within material. If I include, summary maybe PWW. But maybe expected to not flag because implementer prohibited touching registry; as terminal gate, registry open essential. The tickets registry diff is one of the 7 paths; if code review diff includes an open status, gate should not merge until "registry done" change? Actually tickets/registry.ts is a tracked source file. In final output, if the diff truly only has open, not "done", then there is an outstanding TODO. The ticket acceptance says update done. The final review may represent before flipping, but after gate should be done. Could mention NIT after approval. However the user asked audit code not project status. If I include "registry status open" might confuse because no BLOCKING. Let's not.
+
+Potential issue: "M1 red variant deletions COALESCE leaves comment in code in mutation backup mentioning COALESCE but restored. no.
+Potential issue: "Mutation red files .raw.txt may alter locks? no.
+
+Let's also consider if `papers.queries.ts` has `ORDER_BY` mapping typed with readonly record, but `SORT_LABEL` in FilterBar is a `Record` not `Readonly` but use no mutation. no.
+
+Potential issue: If FilterBar does not include a way to set sort value "cited_desc"? Since `SORT_LABEL` is Record; `Object.entries(SORT_LABEL).map(([value,label]) => <option value={value}>...)` likely. Adding entry makes option. yes.
+Potential issue: What if FilterBar has order fixed by object insertion; cited_desc last in dropdown. no.
+Potential issue: Does z.enum's type used to generate all possible sort values in ARIA? no.
+
+Potential issue: "SORT_LABEL label '被引（高到低）' vs previous '年份新→旧' style. Fine.
+
+Potential issue: "Cited descending order puts year maybe not same; no.
+
+Let's think about "COALESCE explicit zero" if there are negative citation counts? no.
+Potential issue: "Migration 005 column could be DOUBLE? no.
+
+Potential issue: "There is no cast to integer, but cited_by_count integer. no.
+Potential issue: "Testing current SQL uses COALESCE over `p.cited_by_count` but if table contains zero-length? no.
+
+Potential issue: "No `sort: cited_desc` schema test direct parse and `libraryQuerySchema.parse({ sort: 'cited_desc', offset: 0, limit: 50 })` maybe if schema has default? no. NIT.
+
+Could there be a bigger "definition of done" failure: The ticket §⑤ says "全量口径落 scripts/audits/p7e-07-red/". The final diff does not include `scripts/audits/p7e-07-red/`, `p7e-07-brief.md`, `green-target.raw.txt`, etc. But those might be untracked artifacts in working dir not commit. In prior reports, raw evidence files likely local, not required in diff. no.
+
+Potential issue: "locks:generate/apply modifies lock manifest date and hashes; implementation's new test maybe line endings? no.
+
+Potential issue: "Verify all clean but e2e not run by implementer, main controller full. no.
+
+Let's formulate final JSON. Need ensure no trailing commas? Valid JSON. No markdown code fence. Use Chinese.
+
+Potential findings:
+1. NIT schema direct parse missing.
+Evidence: diff S3 test `const parsed = libraryQuerySchema.parse({})` only; S1~S5 调用 repo.searchSummaries with `sort:'cited_desc'` or old; no `parse({sort:'cited_desc'})`.
+
+But wait S1's `repo.searchSummaries({sort:'cited_desc'})` is a stronger integration through existing libraryQuery? It does not validate but if schema invalid, TypeScript compile catches? But if a bug uses z.enum val list but not accepts at runtime no compile? If z.enum list contains maybe type same? Direct parse not anchor. NIT.
+2. NIT report line count mismatch.
+Evidence: report "文件清单...新增（106 行）" vs diff `@@ -0,0 +1,111 @@`; this is legit.
+
+Potential third issue: "Implementer report self 'M2 枚举值漏加 ORDER_BY typecheck red' mutation was run after implementation (not red phase) but mutation evidence okay." no.
+Potential third issue "new comments reference Chinese punctuation which lint passed." no.
+
+Should "severity" for line mismatch maybe NIT. "file": maybe `tests/unit/db/repos/papers-cited-sort.test.ts`, "line_hint": "new file header / report §2"? Hmm issue is in report, not file. Could set "file": "tests/unit/db/repos/papers-cited-sort.test.ts", "line_hint": "diff hunk @@ -0,0 +1,111 @@" so okay.
+No WARN, no BLOCKING.
+
+Summary: "代码面零 BLOCKING：枚举加值向后兼容、ORDER_BY 映射常量且带 COALESCE+rowid、S1~S5 逐格有非恒真断言，M1~M3 变异红证与探针/锁 manifest 流程相符。受锁面仅 models/paper.ts+新测试最小增量，未发现违约/安全/正确性问题。仅存两条非阻塞 NIT，整体可放行。"
+
+Need maybe mention "registry open" no.
+
+Let's ensure JSON valid:
+```
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/papers-cited-sort.test.ts",
+      "line_hint": "S3 用例（seedQuad+libraryQuerySchema.parse({}) 附近）",
+      "issue": "对 cited_desc 的 schema 入参面没有直接断言：S1~S5 都直传 repo.searchSummaries，S3 仅 parse({}) 验证缺省 added_desc，未 parse({sort:'cited_desc'}) 验证新枚举被 schema 放行。",
+      "evidence": "diff 中 S1~S5 均调用 repo.searchSummaries({sort:'cited_desc',...})；S3 仅 `libraryQuerySchema.parse({})` 后断言 `parsed.sort === 'added_desc'`。",
+      "suggestion": "后续改动该测试文件时补一个 `libraryQuerySchema.parse({ sort: 'cited_desc' })` 断言（一次 parse 即可），或说明该边界已由 typecheck/既有链路测试覆盖。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/db/repos/papers-cited-sort.test.ts",
+      "line_hint": "diff hunk `@@ -0,0 +1,111 @@`",
+      "issue": "实现者报告将新增测试文件自报为 106 行，与实际 diff 的 111 行不符；申报精度瑕疵。",
+      "evidence": "实现者报告 §2 写作“新增（106 行）”，而完整 diff 显示 `new file mode 100644` 且 hunk 为 `+1,111`。",
+      "suggestion": "修订实现者报告中的行数，并以 `wc -l`/`git diff --stat` 实测数回填。"
+    }
+  ],
+  "summary": "..."
+}
+```
+Is `line_hint` for report mismatch in test file weird. Use file "tests/unit..." because cannot file report. Could set file: "tests/unit/db/repos/papers-cited-sort.test.ts"; okay.
+Potential if findings line "后续改动测试文件时补" and court maybe "must fix"? NIT. no.
+
+Maybe we should include only one finding? If report line count issue is outside diff and not in main code, but if no findings beyond NITs, PWW. It might be viewed as "echoing gate1" (identity desired). no.
+
+Let's think if the final answer should include "PASS_WITH_WARNINGS" if no fix required? Maybe if want "PASS" while including NITs contradictory? The task: verdict options and findings. We can set "PASS_WITH_WARNINGS" for NITs. Accept.
+
+Potential issue: "Output requirements only JSON no code fence" We comply.
+
+Need not mention all materials. Use exact "evidence" from input. Ensure not fabricating "S1~S5 direct call" true. For "line count 111" in evidence "完整 diff" is true. "report says 106 rows" true.
+Potential issue: "report §2 table says new test 106? Actually report table "tests/unit/db/repos/papers-cited-sort.test.ts | 新增（106 行）", but the diff has file `+1,111`; yes.
+Maybe evidence includes "not all raw files" no.
+
+Should we include "severity NIT" line mismatch is not code, but okay.
+Let's also maybe include "WARN" not? There is risk that returning only NITs "PASS_WITH_WARNINGS" might imply an "action" and gate outcome less than pure. But no BLOCKING. Previous P7E-07 gate1 "PWW 零 BLOCKING". Terminal "PASS_WITH_WARNINGS" is okay.
+
+Let's consider if there is a possible "blocking" around new test file being "always-active bare describe（P7E-06 same, K3: no guardedDescribe)"—What is K3? Could be project test rule "always-active only if no external fixtures"? Existing P7E-06 same. no.
+Potential issue: "K3: 不经 guardedDescribe" not in hard rules, no.
+Potential issue: "scripts/audits/p7e-07-red" not locked. no.
+
+Let's think if direct SQL update in test via `db.prepare` could be judged as "SQL string literal in code" violating "禁字符串拼接 SQL"? It says forbidden string-concat SQL. Here string is constant "UPDATE papers SET cited_by_count = ? WHERE id = ?" in test, parameterized. no concatenation. no.
+Potential issue: "Test helper has hard-coded SQL that is a different statement than production; if production migration changes column, test might be stale. But no.
+
+Potential issue: "COALESCE(cited_by_count,0) in ORDER BY means for rows with different null? no.
+
+Potential issue: "Adding record to ORDER_BY map but maybe query uses `sort` from `libraryQuerySchema` not `LibrarySort`? If schema default returns type LibrarySort. no.
+Potential issue: "Addition to SORT_LABEL and ORDER_BY after new enum passes typecheck; if `SORT_LABEL` had been typed as `Record<string,string>` then would not enforce all keys? But material says it is Record<LibrarySort,string>. Diff shows yes. okay.
+Potential issue: "New test file under tests/unit/db/repos but added to lock manifest; yes.
+Potential issue: "One file changed in `src/shared/models/paper.ts` creates schema but no migration needed. yes.
+Potential issue: "No fallback in older clients" same app. no.
+
+Let's maybe consider "Order of tests and document '3 failed in red; S3/S4 green because existing default; total tests 1270 not 1265+5 in red?' Red when new file added but code missing, total includes new file; yes. If 3 failed S1/S2/S5, S3 and S4 green? S3/S4 call repo.searchSummaries without `cited_desc` sort, but table schema? If query code changes not yet in? In red phase, ORDER_BY doesn't have cited_desc but S3/S4 sort old values so for all query `searchSummaries` constructs order by mapping old; no issue. Good. New file adds all S1-S5, so test count 1270, failed 3. Good.
+
+Potential issue: "S1 was also red due to no key; S2 red; S5 red; S3/S4 green. In test list, S5 has no cited_desc? Actually it sorts by cited_desc so red. yes.
+Potential issue: "M2 typecheck red after typecheck not tests. Good.
+
+Potential issue: "M1 mutation: They changed production code after green, run target tests only? Report mutation-m1.raw says S1 red 1 failed | 4 passed. They likely run target file not all. Accept. 3 mutation files all use cp. no.
+
+Potential issue: "No mutation red for S5 with M1? If delete COALESCE, S5 has no NULL so will pass; expected. M1 anchored to S1 only; M3 anchored S1/S2/S5. Good.
+
+Potential issue: "No mutation check for quote injection or sort arbitrary value? Existing. no.
+
+Potential issue: "P7E-07 order by new sort and labels but perhaps no category in "sort" on root select default from library state; because S1 direct repo not service. no.
+
+Let's decide final.
+
+Should summary say "PASS_WITH_WARNINGS" but includes only NITs "can pass"? "PASS_WITH_WARNINGS" indicates no blockers but recommended fixes. The NITs do not require code change. In summary mention "不阻塞".
+
+Need ensure JSON output is valid and no Chinese outside? Chinese in JSON is okay. Use ASCII? JSON can contain Unicode. Valid.
+Need not use markdown fences. no.
+Let's craft final carefully.
+
+Potential issue with "verdict" and "findings severity": If there are no WARN findings, some expected final verdict from previous gate "PWW" maybe okay. The NIT "implementation report line count" remains unresolved; should it block? no.
+Maybe final result should be "PASS" because no findings worth warning? But "PASS_WITH_WARNINGS" with NITs seems acceptable in context. Let's check text: "判级：BLOCKING=违反硬规则/正确性缺陷/安全问题必须回修；WARN=应当修但不阻塞；NIT=风格建议。没有发现给空 findings + PASS." It doesn't explicitly tie "verdict" to severity. If I include NITs, PASS_WITH_WARNINGS seems likely because warnings (style suggestions) should be considered but not blocking. Good.
+
+Could include a WARN for new file missing close? No. Maybe not.
+
+Let's think of potential "hard rule test lock" issue overlooked: New test file is added, and lock manifest updated to include it. But `locks/manifest.json` also changed hash of `src/shared/models/paper.ts`: 9af03c... -> 938e... This is a locked file. The ticket has "受锁=models/paper.ts enum adding value declared"; so okay. However if models/paper.ts is "src/shared/models/paper.ts" under lock but not "main" maybe `tickets/registry.ts`? yes.
+
+Potential issue: The `locks/manifest.json` path for new file is inserted after `papers.repo.test.ts` before `papers-multi-tag.test.ts`. That is okay.
+Potential issue: "locks 268→269 (+1 unit)"—Before `P7E-06` locks 268, plus new test file =269. yes.
+
+Potential issue: "No new e2e spec and e2e count remains 39. The lock manifest has no e2e addition. no.
+
+Potential issue: "e2e 39 full green first fail analysis "F-ARCH4-M1 not zero intersection" no. Not issue.
+Potential issue: "line count test file in report NIT from gate1 but not fixed? No need final? It is an audit finding of report; if implementation report remains with inaccurate number, should be corrected by implementer before closing? Since this is a process NIT, perhaps should be WARN? Maybe the ticket's own report is part of artifact; inaccurate self-reported line count could violate "申报 precision" discipline. But no code. Maybe if final can allow. NIT okay.
+
+Let's maybe add "severity":"WARN" for line count mismatch? It is "numeric self-declaration accuracy" in material; no code. Should be "NIT". Schema direct parse is NIT. Good.
+
+Potential issue: The "evidence" for schema direct assert not exactly "S3 only parse({})" yes.
+Line_hint for first NIT "S3 parse set / around line 69-75"? In diff no line numbers but can.
+Need not give actual line number? It asks line_hint. We can include approximate.
+Potential issue: "file" for second report mismatch no direct file; use test file. okay.
+Potential issue: "evidence" for second "implementation report §2" is not code "material original". okay.
+
+Let's ensure no false statement: "S1~S5 are all direct repo.searchSummaries" Actually S1 sort direct, S2 direct, S3 uses default parsed but still repo, S4 direct, S5 direct. True. S3 also parse. Good.
+Potential issue: "typecheck/既有 e2e" from material: gate1 says indirect by e2e/UI and typecheck. "既有 e2e/UI 与 typecheck" yes. We can cite not in evidence. okay.
+
+Let's formulate final JSON.

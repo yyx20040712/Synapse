@@ -1,0 +1,7 @@
+P7E-07 M1 probe: better-sqlite3 12.11.1 / node ABI 137 / :memory:
+insert order       : a(cited=5), d(cited=0), c(cited=12), b(cited=NULL)
+raw DESC           : c,a,d,b
+COALESCE(,0)+rowid : c,a,b,d
+raw ASC            : b,d,a,c
+verdict: DESC NULL sinks (same direction as COALESCE); order DIVERGES on 0-vs-NULL position (COALESCE ties by rowid, raw puts 0 before NULL)
+M1 del-COALESCE is really RED under this seed layout: true

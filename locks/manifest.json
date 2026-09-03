@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T12:44:48.2772037Z",
+    "generatedAt":  "2026-09-03T13:12:11.9684837Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -367,7 +367,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "9af03c10041f105d569c93f43d9b4debad9106e6062d22324cec313dab174173"
+                      "sha256":  "938e592f5105310dc685a7d1ab5dc0affae9930ecb1d3aaf169c9375498ed5dd"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -520,6 +520,10 @@
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
                       "sha256":  "330051a81a35893082f2a408cc7544d4b1bc076d5923b3d32dbce9e145b3f05e"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/papers-cited-sort.test.ts",
+                      "sha256":  "15260b0d2a1f7ec71305fd85025b06fd1db1ae88e3427ff9345f732d00615d6b"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers-multi-tag.test.ts",

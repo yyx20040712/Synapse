@@ -29,7 +29,8 @@ import { TagFilter } from '../tags/TagFilter'
 const SORT_LABEL: Record<LibrarySort, string> = {
   added_desc: '最近添加',
   year_desc: '年份新→旧',
-  title_asc: '标题 A→Z'
+  title_asc: '标题 A→Z',
+  cited_desc: '被引（高到低）'
 }
 
 export function FilterBar(props: {

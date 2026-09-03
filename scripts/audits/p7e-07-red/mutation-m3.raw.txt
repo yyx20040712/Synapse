@@ -1,0 +1,96 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/db/repos/papers-cited-sort.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/db/repos/papers-cited-sort.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 25[2mms[22m[39m
+[31m   [31m×[31m P7E-07 智能排序（引用数 cited_desc）[2m > [22mS1 NULL 垫底：cited=12/5/NULL/0 全序=[12,5,NULL,0]（NULL 与被引 0 同级=COALESCE 归零，同级 rowid 决胜后插在前）[90m 12[2mms[22m[31m[39m
+[31m     → expected [ 'p-c12', 'p-c5', 'p-c0', 'p-cN' ] to deeply equal [ 'p-c12', 'p-c5', 'p-cN', 'p-c0' ][39m
+[31m   [31m×[31m P7E-07 智能排序（引用数 cited_desc）[2m > [22mS2 全 NULL：三篇全未缓存 → 全同级 rowid 决胜稳定序（后插在前，不崩不随机）[90m 3[2mms[22m[31m[39m
+[31m     → expected [ 'p-x1', 'p-x2', 'p-x3' ] to deeply equal [ 'p-x3', 'p-x2', 'p-x1' ][39m
+[31m   [31m×[31m P7E-07 智能排序（引用数 cited_desc）[2m > [22mS5 分页跨界：同 cited 两篇跨页界 rowid 决胜不重不漏[90m 3[2mms[22m[31m[39m
+[31m     → expected [ 'p-hi', 'p-a' ] to deeply equal [ 'p-hi', 'p-b' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/db/repos/papers-cited-sort.test.ts[2m > [22mP7E-07 智能排序（引用数 cited_desc）[2m > [22mS1 NULL 垫底：cited=12/5/NULL/0 全序=[12,5,NULL,0]（NULL 与被引 0 同级=COALESCE 归零，同级 rowid 决胜后插在前）
+[31m[1mAssertionError[22m: expected [ 'p-c12', 'p-c5', 'p-c0', 'p-cN' ] to deeply equal [ 'p-c12', 'p-c5', 'p-cN', 'p-c0' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    "p-c12",[22m
+[2m    "p-c5",[22m
+[32m-   "p-cN",[39m
+[2m    "p-c0",[22m
+[31m+   "p-cN",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/db/repos/papers-cited-sort.test.ts:[2m62:38[22m[39m
+    [90m 60| [39m    [34mseedQuad[39m()
+    [90m 61| [39m    [35mconst[39m r [33m=[39m repo[33m.[39m[34msearchSummaries[39m({ sort[33m:[39m [32m'cited_desc'[39m[33m,[39m offset[33m:[39m [34m0[39m[33m,[39m li…
+    [90m 62| [39m    [34mexpect[39m(r[33m.[39mitems[33m.[39m[34mmap[39m((i) [33m=>[39m i[33m.[39mid))[33m.[39m[34mtoEqual[39m([[32m'p-c12'[39m[33m,[39m [32m'p-c5'[39m[33m,[39m [32m'p-cN'[39m[33m,[39m…
+    [90m   | [39m                                     [31m^[39m
+    [90m 63| [39m    [34mexpect[39m(r[33m.[39mtotal)[33m.[39m[34mtoBe[39m([34m4[39m)
+    [90m 64| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/db/repos/papers-cited-sort.test.ts[2m > [22mP7E-07 智能排序（引用数 cited_desc）[2m > [22mS2 全 NULL：三篇全未缓存 → 全同级 rowid 决胜稳定序（后插在前，不崩不随机）
+[31m[1mAssertionError[22m: expected [ 'p-x1', 'p-x2', 'p-x3' ] to deeply equal [ 'p-x3', 'p-x2', 'p-x1' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[32m-   "p-x3",[39m
+[32m-   "p-x2",[39m
+[2m    "p-x1",[22m
+[31m+   "p-x2",[39m
+[31m+   "p-x3",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/db/repos/papers-cited-sort.test.ts:[2m71:38[22m[39m
+    [90m 69| [39m    repo[33m.[39m[34minsert[39m([34mrow[39m({ id[33m:[39m [32m'p-x3'[39m[33m,[39m sha256[33m:[39m [32m'sha-x03'[39m[33m,[39m added_at[33m:[39m [32m'2026-0[39m…
+    [90m 70| [39m    [35mconst[39m r [33m=[39m repo[33m.[39m[34msearchSummaries[39m({ sort[33m:[39m [32m'cited_desc'[39m[33m,[39m offset[33m:[39m [34m0[39m[33m,[39m li…
+    [90m 71| [39m    [34mexpect[39m(r[33m.[39mitems[33m.[39m[34mmap[39m((i) [33m=>[39m i[33m.[39mid))[33m.[39m[34mtoEqual[39m([[32m'p-x3'[39m[33m,[39m [32m'p-x2'[39m[33m,[39m [32m'p-x1'[39m])
+    [90m   | [39m                                     [31m^[39m
+    [90m 72| [39m    [34mexpect[39m(r[33m.[39mtotal)[33m.[39m[34mtoBe[39m([34m3[39m)
+    [90m 73| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/db/repos/papers-cited-sort.test.ts[2m > [22mP7E-07 智能排序（引用数 cited_desc）[2m > [22mS5 分页跨界：同 cited 两篇跨页界 rowid 决胜不重不漏
+[31m[1mAssertionError[22m: expected [ 'p-hi', 'p-a' ] to deeply equal [ 'p-hi', 'p-b' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    "p-hi",[22m
+[32m-   "p-b",[39m
+[31m+   "p-a",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/db/repos/papers-cited-sort.test.ts:[2m104:42[22m[39m
+    [90m102| [39m    [35mconst[39m page1 [33m=[39m repo[33m.[39m[34msearchSummaries[39m({ sort[33m:[39m [32m'cited_desc'[39m[33m,[39m offset[33m:[39m [34m0[39m…
+    [90m103| [39m    [35mconst[39m page2 [33m=[39m repo[33m.[39m[34msearchSummaries[39m({ sort[33m:[39m [32m'cited_desc'[39m[33m,[39m offset[33m:[39m [34m2[39m…
+    [90m104| [39m    [34mexpect[39m(page1[33m.[39mitems[33m.[39m[34mmap[39m((i) [33m=>[39m i[33m.[39mid))[33m.[39m[34mtoEqual[39m([[32m'p-hi'[39m[33m,[39m [32m'p-b'[39m])
+    [90m   | [39m                                         [31m^[39m
+    [90m105| [39m    [34mexpect[39m(page1[33m.[39mtotal)[33m.[39m[34mtoBe[39m([34m3[39m)
+    [90m106| [39m    [34mexpect[39m(page2[33m.[39mitems[33m.[39m[34mmap[39m((i) [33m=>[39m i[33m.[39mid))[33m.[39m[34mtoEqual[39m([[32m'p-a'[39m])
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 20:56:53
+[2m   Duration [22m 677ms[2m (transform 56ms, setup 0ms, collect 168ms, tests 25ms, environment 0ms, prepare 200ms)[22m
+
+exit=1
