@@ -14,8 +14,9 @@
  *
  * ── 接口层 ──
  * - export function PageBox(props: { no; size; zoom; boxWidth; rendered;
- *     doc: PDFDocumentProxy | null; renderPage(no); onPageRender(no, payload);
- *     onError(msg) }): JSX.Element
+ *     doc: PDFDocumentProxy | null; renderPage(no); onPageRender(no, payload,
+ *     geometry: PdfPageGeometry); onError(msg) }): JSX.Element
+ *   （geometry 第三参=F-A6-b1 T1/T9 页几何通道透传——类型与 PdfPageCanvas 同源）
  *
  * ── 架构层 ── / ── 生命周期层 ──
  * - F-ARCH3 拆件纪律：函数形态原样迁（不加 useCallback/useMemo）；渲染窗口
@@ -23,7 +24,7 @@
  */
 import type { PDFDocumentProxy } from './PdfDocProvider'
 import { PdfPageCanvas } from './PdfPageCanvas'
-import type { PdfTextContent } from './PdfPageCanvas'
+import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import { pageBoxHeight, type PageBoxSize } from './page-column-geometry'
 
 export function PageBox(props: {
@@ -36,7 +37,7 @@ export function PageBox(props: {
   rendered: boolean
   doc: PDFDocumentProxy | null
   renderPage(no: number): JSX.Element
-  onPageRender(no: number, payload: PdfTextContent): void
+  onPageRender(no: number, payload: PdfTextContent, geometry: PdfPageGeometry): void
   onError(msg: string): void
 }): JSX.Element {
   const { no, size, zoom, boxWidth, rendered, doc } = props

@@ -14,9 +14,9 @@
  *   测试（onPageRender 回报入口+⑥ 透传锚断言面）；PageColumn 自身行为已由
  *   page-column.test 锁定，本票不重复锁（主控预裁 3）。
  * - TextLayer/AnnotationLayer/ReaderAiLayer：prop 快照桩——断言点是
- *   viewportScale/pageWidth/Height/page/pageRoot 等 prop 值，层自身行为各有
- *   测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api 赋值
- *   +双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
+ *   viewportScale/pageWidth/Height/geometry（F-A6-b1 页几何下钻）/page/pageRoot
+ *   等 prop 值，层自身行为各有测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client
+ *   顶层 window.api 赋值+双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
  * jsdom 手工造 [data-page-root]+canvas[data-pdf-canvas] DOM 片段供
  * handlePageRender 量测（getBoundingClientRect 实例级覆写——jsdom 无布局）。
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
@@ -37,15 +37,16 @@ const probe = vi.hoisted(() => ({
     zoom: number
     scrollContainerRef: RefObject<HTMLDivElement | null>
     scrollRequest: { paperId: string; page: number; seq: number } | null
-    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
+    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }, geometry: { rotate: number; view: number[] }) => void
     renderPage: (no: number) => JSX.Element
     onReady: (basisWidth: number) => void
     onError: (msg: string) => void
   },
   /** 桩当前渲染页集（测试改写+rerender 驱动 renderPage 内容挂/卸） */
   rendered: [] as number[],
-  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询） */
-  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number },
+  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询）；
+   *  textLayer.geometry=F-A6-b1 页几何下钻透传锚（T1/T9 通道装配面） */
+  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } },
   annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null },
   aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
 }))
@@ -57,7 +58,7 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
     zoom: number
     scrollContainerRef: RefObject<HTMLDivElement | null>
     scrollRequest: { paperId: string; page: number; seq: number } | null
-    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
+    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }, geometry: { rotate: number; view: number[] }) => void
     renderPage: (no: number) => JSX.Element
     onReady: (basisWidth: number) => void
     onError: (msg: string) => void
@@ -76,7 +77,7 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
 }))
 
 vi.mock('../../../src/renderer/features/reader/TextLayer', () => ({
-  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number }) => {
+  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } }) => {
     probe.textLayer = props
     return <div data-stub="text-layer" data-viewport-scale={props.viewportScale} data-page-width={props.pageWidth} data-page-height={props.pageHeight} />
   }
@@ -157,10 +158,11 @@ function remount(node: JSX.Element): void {
   })
 }
 
-/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链） */
-function report(no: number, text: PdfTextContent): void {
+/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链）；
+ *  geometry=F-A6-b1 页几何第三参（T1/T9 通道——判别值 90/CropBox 防回退假绿） */
+function report(no: number, text: PdfTextContent, geometry: { rotate: number; view: number[] } = { rotate: 90, view: [36, 36, 540, 720] }): void {
   act(() => {
-    probe.columnProps!.onPageRender(no, text)
+    probe.columnProps!.onPageRender(no, text, geometry)
   })
 }
 
@@ -198,7 +200,7 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
     expect(probe.aiLayer?.pageRoot).toBeNull()
   })
 
-  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
+  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒、geometry=回报第三参原值下钻)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
     const pageRoot = makePageRoot(1, 612.4, 792.6)
     mount(makeOverlay())
     report(1, makeText('首页文本'))
@@ -206,6 +208,8 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
     expect(probe.textLayer?.viewportScale).toBe(1.25)
     expect(probe.textLayer?.pageWidth).toBe(612)
     expect(probe.textLayer?.pageHeight).toBe(793)
+    // [F-A6-b1] 页几何透传锚：回报的 rotate/view 原值直达 TextLayer（T1/T9 通道装配面）
+    expect(probe.textLayer?.geometry).toEqual({ rotate: 90, view: [36, 36, 540, 720] })
     expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
     expect(probe.annotationLayer?.page).toBe(0)
     expect(probe.annotationLayer?.pageRoot).toBe(pageRoot)

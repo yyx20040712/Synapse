@@ -27,7 +27,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { PDFDocumentProxy } from './PdfDocProvider'
-import type { PdfTextContent } from './PdfPageCanvas'
+import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import { PageBox } from './PageBox'
 import {
   anchoredScrollTop,
@@ -66,7 +66,7 @@ export function PageColumn(props: {
   scrollContainerRef?: RefObject<HTMLDivElement | null>
   /** 段④：渲染窗口内每页的覆盖层装配（TextLayer/标注层/AI 层+SelectionLayer 挂载位） */
   renderPage(no: number): JSX.Element
-  onPageRender(no: number, payload: PdfTextContent): void
+  onPageRender(no: number, payload: PdfTextContent, geometry: PdfPageGeometry): void
   onError(msg: string): void
   /** 段①：页列就绪（载荷=列宽基准：布局口径最宽页/最宽完整行原始宽，fit-width 分母单源）；
    *  可见页上抛（SelectionLayer 锚定页挂载位消费——升序） */

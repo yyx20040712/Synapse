@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T19:35:44.3319705Z",
+    "generatedAt":  "2026-09-03T20:40:26.4681404Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -767,7 +767,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/pages-overlay.test.tsx",
-                      "sha256":  "3b645b785b65527895afa7fe3a957d03cb6487335f324047792d95f4bda5a798"
+                      "sha256":  "0570d7f6d19d5e93469c34ceeba40889863198a3d6f903a01a1e9fe383850e2f"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
@@ -787,7 +787,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
-                      "sha256":  "388670ec30aafb03d9a204b8fb02c433800c4881111ac4dee25291ab29bf9a2e"
+                      "sha256":  "119669303cee0502d46d3fe9129f6dc04ec41b60d7dd08d0f6b098e9e74139ef"
                   },
                   {
                       "path":  "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
@@ -888,6 +888,10 @@
                   {
                       "path":  "tests/unit/renderer/tags-lifecycle.store.test.ts",
                       "sha256":  "69537424f40c087470d34384323c58db9603726219145f0bc9ceb133aa69209a"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/text-layer.test.tsx",
+                      "sha256":  "25aa86b65dc9c9a50818ceb6197ae52668416fbf64536d408aca15e6f8b01316"
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",

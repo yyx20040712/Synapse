@@ -12,11 +12,12 @@
  *
  * ── 接口层 ──
  * - export function PdfPageCanvas(props: { doc: PDFDocumentProxy; pageNo: number;
- *     zoom: number; onPageRender(page: number, textContent: PdfTextContent): void;
- *     onError(msg: string): void }): JSX.Element
- * - pageNo 固定（页列模型：页码由 PageColumn 分配，不再跳变）
- * - PdfTextItem/PdfTextStyle/PdfTextContent 类型单源驻本文件（pdfjs TextItem
- *  /TextStyle 的结构子集——消费方 TextLayer/ReaderPage 不 import pdfjs-dist）
+ *     zoom: number; onPageRender(page, textContent: PdfTextContent,
+ *     geometry: PdfPageGeometry): void; onError(msg: string): void }): JSX.Element
+ * - pageNo 固定（页码 1 基；页列模型：页码由 PageColumn 分配，不再跳变）
+ * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型单源驻本文件
+ *   （pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方 TextLayer/
+ *   PagesOverlay 不 import pdfjs-dist）
  *
  * ── 架构层 ──
  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
@@ -64,6 +65,19 @@ export interface PdfTextContent {
   lang: string | null
 }
 
+/**
+ * 页几何通道（F-A6-b1 T1/T9 前置修复）：rotate=pdf.js page.rotate（/Rotate 值）；
+ * view=pdf.js page.view（CropBox∩MediaBox，[x0,y0,x1,y1] PDF 用户空间）——
+ * TextLayer duckViewport 的 rotation/rawDims 真值来源（与 canvas 渲染的
+ * getViewport 同源，二者不再各执一词）。userUnit≠1 的页 view 未乘 userUnit
+ * （官方 PageViewport.rawDims getter 会乘）——已知边界：真实库全档 userUnit=1
+ * （f-a6-forensic-verdict §1），触发后另行扩展
+ */
+export interface PdfPageGeometry {
+  rotate: number
+  view: [number, number, number, number]
+}
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
@@ -72,7 +86,7 @@ export function PdfPageCanvas(props: {
   doc: PDFDocumentProxy
   pageNo: number
   zoom: number
-  onPageRender(page: number, textContent: PdfTextContent): void
+  onPageRender(page: number, textContent: PdfTextContent, geometry: PdfPageGeometry): void
   onError(msg: string): void
 }): JSX.Element {
   const { doc, pageNo, zoom } = props
@@ -137,6 +151,11 @@ export function PdfPageCanvas(props: {
         items: textContent.items.filter((item): item is PdfTextItem => 'str' in item),
         styles: textContent.styles,
         lang: textContent.lang
+      }, {
+        // F-A6-b1 T1/T9 通道：与 viewport 同源的页几何（rotate/view）下钻——
+        // TextLayer duckViewport 的真值输入（view 数组断言四元组由结构保证）
+        rotate: pdfPage.rotate,
+        view: pdfPage.view as [number, number, number, number]
       })
     }
     render().catch((err: unknown) => {

@@ -10,6 +10,9 @@
  *   事件穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
  * - PageBox 页内容容器（h-fit）白纸承底层+isolation（层序比较域单页内封闭，
  *   跨页不互扰；暗色主题下页纸仍白——PDF 纸面语义）。
+ * - [F-A6-b1] onPageRender 第三参下钻页几何 {rotate,view}（T1/T9 修复通道：
+ *   TextLayer duckViewport 的 rotation/rawDims 真值来源；判别值 90/CropBox
+ *   [36,36,540,720] 防硬编码回退假绿）。
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -23,9 +26,15 @@ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z
 /** render 调用参数探针（断言面） */
 const renderCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>)
 
-/** 假 pdf 页（PdfPageCanvas 渲染链最小桩） */
+/** onPageRender 载荷探针（F-A6-b1 几何通道断言面——含第三参 geometry） */
+const renderReports = vi.hoisted(() => [] as Array<{ page: number; text: unknown; geo: unknown }>)
+
+/** 假 pdf 页（PdfPageCanvas 渲染链最小桩）。rotate/view 取判别值（90/CropBox 原点≠0）
+ * ——若实现硬编码 0/[0,0,0,0] 回退，几何断言立红（F-A6-b1 T1/T9 通道） */
 function fakePage(): unknown {
   return {
+    rotate: 90,
+    view: [36, 36, 540, 720],
     getViewport: () => ({ width: 600, height: 800 }),
     render: (opts: Record<string, unknown>) => {
       renderCalls.push(opts)
@@ -50,6 +59,7 @@ beforeEach(() => {
   document.body.appendChild(host)
   root = createRoot(host)
   renderCalls.length = 0
+  renderReports.length = 0
 })
 
 afterEach(() => {
@@ -85,6 +95,21 @@ describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
     expect(canvas!.style.zIndex).toBe(String(PAGE_LAYER_Z.canvas))
     expect(canvas!.style.pointerEvents).toBe('none')
     expect(canvas!.style.position).toBe('relative')
+  })
+
+  it('[F-A6-b1] onPageRender 第三参下钻页几何 rotate/view 原值（T1/T9 通道——TextLayer duckViewport 的真值输入）', async () => {
+    await act(async () => {
+      root!.render(
+        <PdfPageCanvas doc={fakeDoc()} pageNo={1} zoom={1}
+          onPageRender={(page, text, geo) => { renderReports.push({ page, text, geo }) }} onError={() => undefined} />
+      )
+    })
+    expect(renderReports.length).toBe(1)
+    expect(renderReports[0]!.page).toBe(1)
+    // 原值直传（判别值 90/[36,36,540,720]——非 0 原点非零旋转，防硬编码回退假绿）
+    expect(renderReports[0]!.geo).toEqual({ rotate: 90, view: [36, 36, 540, 720] })
+    // textContent 载荷不受几何通道影响（items/styles/lang 完整形态仍由第二参承载）
+    expect(renderReports[0]!.text).toEqual({ items: [], styles: {}, lang: null })
   })
 
   it('PageBox 页内容容器：白纸承底层+isolation（层序比较域单页内封闭）', () => {

@@ -10,11 +10,12 @@
  *   ④ 换文献清缓存 effect（键 fileUrl，只清两表——setPdfDoc(null) 留 ReaderPage，
  *     pdfDoc 是 OutlinePanel 数据源=布局职责）；
  *   ⑤ handlePageRender（PdfPageCanvas 渲染回报→页根域内量测 canvas CSS 盒→
- *     Math.round 写 pageTexts；pageRoots 引用相等不重写）；
+ *     Math.round 写 pageTexts；pageRoots 引用相等不重写；回报第三参页几何
+ *     rotate/view 随条目存储——F-A6-b1 T1/T9 通道）；
  *   ⑥ dropPageState（W3：两表同删）；
  *   ⑦ renderPageLayers 覆盖层工厂（TextLayer 挂载条件 pt!==undefined /
  *     AnnotationLayer 挂载条件 pr!==undefined / ReaderAiLayer 恒挂
- *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom）。
+ *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom；geometry 下钻透传）。
  * - 内装 PageColumn（十 props 全透传——F-R1 增 layout）：onPageRender（写
  *   注册表）与 renderPage（读注册表）读写同源必须同居一组件——这是本组件
  *   包 PageColumn 而非只提供工厂的原因（F-ARCH3 票面行为层）。
@@ -46,14 +47,16 @@ import { ReaderAiLayer } from './AiAnnotationLayer'
 import { PageColumn, type PageScrollRequest } from './PageColumn'
 import { SearchHighlightLayer } from './SearchHighlightLayer'
 import type { PDFDocumentProxy } from './PdfDocProvider'
-import type { PdfTextContent } from './PdfPageCanvas'
+import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import type { PageLayout } from './page-column-geometry'
 import { TextLayer } from './TextLayer'
 
-/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
+/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 页几何 + 该页 canvas CSS 盒） */
 interface PageText {
   page: number
   text: PdfTextContent
+  /** F-A6-b1 T1/T9 通道：渲染回报的页几何（rotate/view），透传 TextLayer */
+  geometry: PdfPageGeometry
   box: { w: number; h: number }
 }
 
@@ -87,13 +90,15 @@ export function PagesOverlay(props: {
     setPageRoots({})
   }, [fileUrl])
 
-  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
-  const handlePageRender = (no: number, text: PdfTextContent): void => {
+  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒）。
+      第三参 geometry=F-A6-b1 T1/T9 页几何通道（rotate/view 原值入注册表，
+      透传 TextLayer——duckViewport rotation/rawDims 真值化） */
+  const handlePageRender = (no: number, text: PdfTextContent, geometry: PdfPageGeometry): void => {
     const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
     const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
     if (canvas === null) return
     const rect = canvas.getBoundingClientRect()
-    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
+    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, geometry, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
     if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
   }
 
@@ -114,7 +119,7 @@ export function PagesOverlay(props: {
     const pr = pageRoots[no]
     return (
       <PageFrame no={no} onRecycle={dropPageState}>
-        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
+        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} geometry={pt.geometry} /> : null}
         {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
         <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
         <SearchHighlightLayer page={no - 1} pageRoot={pr ?? null} />
