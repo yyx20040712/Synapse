@@ -1,0 +1,6 @@
+
+    Error Context: test-results\z-r2e-probe-F-R2e-探针：划选高亮重开原位——仪表指纹矩阵\error-context.md
+
+  1 failed
+    tests\e2e\z-r2e-probe.spec.ts:224:1 › F-R2e 探针：划选高亮重开原位——仪表指纹矩阵 ────────────────────────────────
+  34 passed (1.7m)

@@ -60,7 +60,17 @@ export const saveProgressReqSchema = z
   .strict()
 export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
 
-// ── import_（对话框在 main 侧发起，renderer 不传任何路径）─────────────
+// ── import_（对话框/拖拽桥分别在 main/preload 侧产生路径，renderer 代码不传路径）──
+/**
+ * 拖拽导入请求（P7E-02）：paths 由 preload webUtils 桥（apiDrag.importDropped）
+ * 解析产生——renderer 不可构造本请求（通道对 renderer 隐藏，INV-07 修订/INV-54）。
+ * min(1)/max(100) 是 schema 层第二道数量门（第一道=preload planDroppedImports）。
+ */
+export const importPathsReqSchema = z
+  .object({ paths: z.array(z.string().min(1)).min(1).max(100) })
+  .strict()
+export type ImportPathsReq = z.infer<typeof importPathsReqSchema>
+
 export const importResultSchema = z
   .object({
     imported: z.array(paperSummarySchema),

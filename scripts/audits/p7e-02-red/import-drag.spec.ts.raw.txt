@@ -1,0 +1,35 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  x  1 tests\e2e\import-drag.spec.ts:14:1 › 拖拽导入：合成 File 被 preload 天然拒（toast 真实文本）+导入按钮回归 (10.4s)
+
+
+  1) tests\e2e\import-drag.spec.ts:14:1 › 拖拽导入：合成 File 被 preload 天然拒（toast 真实文本）+导入按钮回归 ────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('仅支持拖入 PDF 文件')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByText('仅支持拖入 PDF 文件')
+
+
+      32 |     el.dispatchEvent(ev)
+      33 |   })
+    > 34 |   await expect(win.getByText('仅支持拖入 PDF 文件')).toBeVisible({ timeout: 10_000 })
+         |                                               ^
+      35 |
+      36 |   await app.close()
+      37 | })
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\import-drag.spec.ts:34:47
+
+    Error Context: test-results\import-drag-拖拽导入：合成-File-被-preload-天然拒（toast-真实文本）-导入按钮回归\error-context.md
+
+  1 failed
+    tests\e2e\import-drag.spec.ts:14:1 › 拖拽导入：合成 File 被 preload 天然拒（toast 真实文本）+导入按钮回归 ─────────────

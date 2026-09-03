@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T00:28:58.7450077Z",
+    "generatedAt":  "2026-09-03T01:14:54.8519033Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "78ec3c3a6c6fca5f4d97836f843a8bf280f530f3e7b333c7d0159d8ea5d772f6"
+                      "sha256":  "7ce9dba398fd21532eb7e5365126a7783fa09dda53de34d895f6ce076988507b"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -335,11 +335,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "561b748ee22e7179d9e3377e8af30a95fca17ca3c2dc436b3d15ded0805b591a"
+                      "sha256":  "2a34563130a84b2a5a6431e1cfea996578e56136d35581e01716ec2c1e0b8292"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "437de2a87f7c7da0148802b99da5fbf05db1751422e7e628c1e20e9bbf0bff06"
+                      "sha256":  "26f85a08769373aab359c1cb79a59b0340ea90572a70044a2c180659d8f7ec0c"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -383,7 +383,7 @@
                   },
                   {
                       "path":  "tests/contracts/preload-surface.test.ts",
-                      "sha256":  "a99423d57663344dd72b7c59a4a0317179c46245d73d184aff1413b98cbb292c"
+                      "sha256":  "93c94c9085c5437444482406e0647c96492ec393840129a62cadf19fdfbdeab9"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -396,6 +396,10 @@
                   {
                       "path":  "tests/e2e/e2e-env.ts",
                       "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                  },
+                  {
+                      "path":  "tests/e2e/import-drag.spec.ts",
+                      "sha256":  "25b087b2716cb689a446f2675c97c7496728419042e32df0a0dfb7fedfd4ee96"
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
@@ -514,6 +518,10 @@
                       "sha256":  "94d1244527e658f45e79885a8ac33bbf7b164662d89a82acb562a3b0b72ff40b"
                   },
                   {
+                      "path":  "tests/unit/ipc/import-paths.test.ts",
+                      "sha256":  "977828ecfcb3e2aab29816c1a968f692d3c0ab9c7a338269bbefbd1f2af3dc18"
+                  },
+                  {
                       "path":  "tests/unit/ipc/library.test.ts",
                       "sha256":  "d082bf1ff772c45a86be42eb465fec36543f1a714450405b22360b855ae482da"
                   },
@@ -548,6 +556,10 @@
                   {
                       "path":  "tests/unit/main/migrate-user-data.test.ts",
                       "sha256":  "9999655afb5b241daa9c0ad2402c951c7d5ee13f73f2156143281aa34b534df4"
+                  },
+                  {
+                      "path":  "tests/unit/preload/drag-import.test.ts",
+                      "sha256":  "f22424ff168e8621f3899ca93e7f3b6f6df9c12aafc4f961734ce83a7b06ee65"
                   },
                   {
                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
@@ -612,6 +624,10 @@
                   {
                       "path":  "tests/unit/renderer/edge-label-layout.test.ts",
                       "sha256":  "95444216a7b010f5a486efa5cb4bf1d67ecca6c91c4f18d29e645a2f713b3da8"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/import-drag-ui.test.tsx",
+                      "sha256":  "f01e1f1c1ed4ade7a03fee31b9df96010c4ebef26be7c96c76dc1386168e132c"
                   },
                   {
                       "path":  "tests/unit/renderer/import-dropzone.test.tsx",

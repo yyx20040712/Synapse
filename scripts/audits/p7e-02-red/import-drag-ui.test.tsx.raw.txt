@@ -1,0 +1,105 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/import-drag-ui.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[90m 55[2mms[22m[39m
+[31m   [31m×[31m P7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD2 drop 全滤除：apiDrag 返回 none → toast 中文文案，回 idle 且不触发刷新[90m 26[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m P7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD3 drop 有效：busy（按钮禁用）→apiDrag 载荷=File 列表→结果汇报 toast+onImported→idle[90m 4[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [31m×[31m P7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD5 busy 期 drop：info toast 短路，apiDrag 零新增调用[90m 6[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ '导入进行中，请稍候', 'info' ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "导入进行中，请稍候",[90m
+[31m+   "暂不支持拖拽导入，请使用下方按钮选择文件或文件夹",[90m
+[2m    "info",[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[31m   [31m×[31m P7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD6 drop 超量：apiDrag 返回 too-many → toast 中文文案，busy 立即复位[90m 18[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/import-drag-ui.test.tsx[2m > [22mP7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD2 drop 全滤除：apiDrag 返回 none → toast 中文文案，回 idle 且不触发刷新
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/import-drag-ui.test.tsx:[2m123:21[22m[39m
+    [90m121| [39m    [35mawait[39m [34msettle[39m()
+    [90m122| [39m
+    [90m123| [39m    [34mexpect[39m(dragSpy)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                    [31m^[39m
+    [90m124| [39m    [34mexpect[39m(toastSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'仅支持拖入 PDF 文件'[39m[33m,[39m [32m'erro[39m…
+    [90m125| [39m    [34mexpect[39m(onImported)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/import-drag-ui.test.tsx[2m > [22mP7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD3 drop 有效：busy（按钮禁用）→apiDrag 载荷=File 列表→结果汇报 toast+onImported→idle
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/unit/renderer/import-drag-ui.test.tsx:[2m139:23[22m[39m
+    [90m137| [39m
+    [90m138| [39m    [90m// busy 相：按钮禁用；apiDrag 收到的正是 dataTransfer.files 展开[39m
+    [90m139| [39m    [34mexpect[39m([34mbusyNow[39m())[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                      [31m^[39m
+    [90m140| [39m    [35mconst[39m sent [33m=[39m dragSpy[33m.[39mmock[33m.[39mcalls[[34m0[39m][33m?.[39m[[34m0[39m] [35mas[39m { name[33m:[39m string }[]
+    [90m141| [39m    [34mexpect[39m(sent[33m.[39m[34mmap[39m((f) [33m=>[39m f[33m.[39mname))[33m.[39m[34mtoEqual[39m([[32m'a.pdf'[39m[33m,[39m [32m'b.pdf'[39m])
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/import-drag-ui.test.tsx[2m > [22mP7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD5 busy 期 drop：info toast 短路，apiDrag 零新增调用
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ '导入进行中，请稍候', 'info' ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   "导入进行中，请稍候",[90m
+[31m+   "暂不支持拖拽导入，请使用下方按钮选择文件或文件夹",[90m
+[2m    "info",[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/import-drag-ui.test.tsx:[2m161:22[22m[39m
+    [90m159| [39m
+    [90m160| [39m    [35mawait[39m [34mdrop[39m([{ name[33m:[39m [32m'c.pdf'[39m }])
+    [90m161| [39m    [34mexpect[39m(toastSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'导入进行中，请稍候'[39m[33m,[39m [32m'info'[39m)
+    [90m   | [39m                     [31m^[39m
+    [90m162| [39m    [34mexpect[39m(dragSpy)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+    [90m163| [39m    [34mexpect[39m(stubApi[33m.[39mimport_[33m.[39mfromDialog)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/import-drag-ui.test.tsx[2m > [22mP7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）[2m > [22mD6 drop 超量：apiDrag 返回 too-many → toast 中文文案，busy 立即复位
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/import-drag-ui.test.tsx:[2m173:21[22m[39m
+    [90m171| [39m    [35mawait[39m [34msettle[39m()
+    [90m172| [39m
+    [90m173| [39m    [34mexpect[39m(dragSpy)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                    [31m^[39m
+    [90m174| [39m    [34mexpect[39m(toastSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'一次最多拖入 100 个文件'[39m[33m,[39m [32m'[39m…
+    [90m175| [39m    [34mexpect[39m(onImported)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[90m (4)[39m
+[2m   Start at [22m 08:43:12
+[2m   Duration [22m 1.25s[2m (transform 46ms, setup 0ms, collect 121ms, tests 55ms, environment 582ms, prepare 174ms)[22m
+

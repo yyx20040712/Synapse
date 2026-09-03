@@ -44,7 +44,9 @@ export const API_SURFACE = {
   },
   import_: {
     fromDialog: { channel: 'import/from-dialog', Req: S.voidReqSchema, Res: S.importResultSchema },
-    fromFolder: { channel: 'import/from-folder', Req: S.voidReqSchema, Res: S.importResultSchema }
+    fromFolder: { channel: 'import/from-folder', Req: S.voidReqSchema, Res: S.importResultSchema },
+    // P7E-02：拖拽路径通道——main 侧全量注册，但 preload 不暴露（见 PRELOAD_HIDDEN_METHODS）
+    fromPaths: { channel: 'import/from-paths', Req: S.importPathsReqSchema, Res: S.importResultSchema }
   },
   enrich: {
     fetch: { channel: 'enrich/fetch', Req: S.enrichReqSchema, Res: paperDetailSchema }
@@ -153,6 +155,17 @@ type Ep<D extends keyof Surface, M extends keyof Surface[D]> =
  */
 type ComposedHandlerDomains = 'workspaces'
 
+/**
+ * preload 不暴露到 window.api 的方法（P7E-02 主控 Design 裁决）：
+ * fromPaths 通道 main 侧照常全量注册，但 renderer 不可达——路径串生命周期限
+ * preload 堆内（apiDrag 单口解析，INV-07 修订/INV-54）；被攻陷 renderer 即使
+ * 拿到 api 也无法 invoke 任意路径串。const+PreloadApi 的 Exclude 类型双消费
+ * 单源（先例=ComposedHandlerDomains 的消费形态）。
+ */
+export const PRELOAD_HIDDEN_METHODS = {
+  import_: ['fromPaths']
+} as const
+
 /** main 侧 service 契约：收已校验请求，返回纯数据（异常上抛由 register 统一折叠） */
 export type ApiHandlers = {
   [D in Exclude<keyof Surface, ComposedHandlerDomains>]: {
@@ -164,13 +177,35 @@ export type ApiHandlers = {
   }
 }
 
-/** renderer 可见的 API 形状：入参宽松（默认值可省），返回一律 Result */
+/** 域内隐藏方法名并集（域不在 PRELOAD_HIDDEN_METHODS → never，Exclude 恒等） */
+type HiddenOf<D extends keyof Surface> = D extends keyof typeof PRELOAD_HIDDEN_METHODS
+  ? (typeof PRELOAD_HIDDEN_METHODS)[D][number]
+  : never
+
+/** 域内 preload 可见方法键（隐藏面排除——单源消费 PRELOAD_HIDDEN_METHODS） */
+type VisibleMethodKeys<D extends keyof Surface> = Exclude<keyof Surface[D], HiddenOf<D>>
+
+/** 单通道的桥签名（Ep 推导收进别名体——mapped key 泛型调用与值位 Ep 索引访问
+ *  同现会踩 esbuild 解析缺陷，别名层规避；语义零变） */
+type MethodBridge<D extends keyof Surface, M extends keyof Surface[D]> = (
+  req: z.input<Ep<D, M>['Req']>
+) => Promise<Result<z.output<Ep<D, M>['Res']>>>
+
+/** renderer 可见的 API 形状：入参宽松（默认值可省），返回一律 Result；
+ *  隐藏通道（PRELOAD_HIDDEN_METHODS）从暴露面排除——单源消费 */
 export type PreloadApi = {
   [D in keyof Surface]: {
-    [M in keyof Surface[D]]: (
-      req: z.input<Ep<D, M>['Req']>
-    ) => Promise<Result<z.output<Ep<D, M>['Res']>>>
+    [M in VisibleMethodKeys<D>]: MethodBridge<D, M>
   }
+}
+
+/**
+ * 拖拽导入桥形状（P7E-02）：File → 路径解析唯一口（webUtils 经 preload），
+ * 与 api 同级暴露为 window.apiDrag——非 renderer 直连 ipc。File 类型可用
+ * （tsconfig.web / tsconfig.node 两套 lib 均含 DOM）。
+ */
+export type PreloadDrag = {
+  importDropped(files: File[]): Promise<Result<S.ImportResult>>
 }
 
 /** 展平的通道名列表（注册与对账用） */

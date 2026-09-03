@@ -4,7 +4,9 @@
  * ── 行为层 ──
  * - 两个按钮：「导入 PDF 文件」→ api.import_.fromDialog({})；
  *   「导入文件夹」→ api.import_.fromFolder({})
- * - 拖拽：v1 仅高亮提示"请使用按钮"（webUtils.getPathForFile 需 preload 暴露，v2）
+ * - 拖拽（P7E-02，原 v1 预留注记已兑现）：drop → window.apiDrag.importDropped(files)
+ *   ——File 经 preload webUtils 解析（.pdf 滤+数量上限）→ import/from-paths，
+ *   renderer 全程不接触路径串；busy 期 drop 短路提示（零 invoke）
  * - 进行中：订阅 apiEvents.onImportProgress 显示进度（文件名 current/total）
  * - 进度事件会话身份过滤（F-D4 B 面，INV-52——范式=corpus-export.store INV-18
  *   同族）：busy=false 时忽略（终局后跨通道迟到事件不写 state——渲染门之外的
@@ -20,12 +22,14 @@
  * - export function ImportDropZone(props: { onImported(): void }): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 路径全部由 main 侧对话框产生，renderer 无路径（安全 §6.3）
+ * - 路径合法来源=main 侧系统对话框 + 拖拽 File 经 preload webUtils 解析
+ *   （apiDrag 单口，P7E-02/INV-07 修订）；renderer 无路径字面量（INV-09 不变）
  * - 进度订阅在卸载时退订；busy 期间按钮禁点防重复发起
  */
 import { useEffect, useRef, useState } from 'react'
 import type { DragEvent } from 'react'
 import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
+import type { Result } from '@shared/app-error'
 import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
@@ -34,8 +38,11 @@ import type { ToastKind } from '../../shared/ui/Toast'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const IMPORT_FAILED = '导入失败'
 
-/** 拖拽高亮时的提示（Electron 沙箱下 renderer 拿不到真实路径，v1 不支持拖入） */
-const DROP_HINT = '暂不支持拖拽导入，请使用下方按钮选择文件或文件夹'
+/** 拖拽悬停提示（P7E-02 已接线：松手即经 preload 桥导入） */
+const DROP_HINT = '松开以导入 PDF 文件'
+
+/** busy 期再拖入的短路提示（D5——不发起第二次导入） */
+const IMPORT_BUSY_HINT = '导入进行中，请稍候'
 
 /** 进度阶段中文标签（与 ImportProgressEvent.phase 一一对应） */
 const PHASE_LABEL: Record<ImportProgressEvent['phase'], string> = {
@@ -46,6 +53,9 @@ const PHASE_LABEL: Record<ImportProgressEvent['phase'], string> = {
 }
 
 type ImportMode = 'dialog' | 'folder'
+
+/** 导入调用形态：dialog/folder/drag 三入口共用 runImport 壳（P7E-02 泛化，壳行为零变） */
+type ImportCall = () => Promise<Result<ImportResult>>
 
 /** 组装进度文案：阶段 + （current/total）+ 文件名 */
 function progressText(e: ImportProgressEvent): string {
@@ -96,20 +106,18 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
     return unsubscribe
   }, [])
 
-  async function runImport(mode: ImportMode): Promise<void> {
+  async function runImport(call: ImportCall): Promise<void> {
     if (busy) return
     sessionRef.current = null
     busyRef.current = true
     setBusy(true)
     setProgress(null)
     try {
-      const result =
-        mode === 'dialog'
-          ? await unwrap(api.import_.fromDialog({}))
-          : await unwrap(api.import_.fromFolder({}))
+      const result = await unwrap(call())
       reportImportResult(result, onImported)
     } catch (e) {
       // unwrap 已把 IPC 错误折叠为带中文 message 的 ApiClientError
+      // （拖拽面的 none/too-many 拒绝也是 Result 错误——同路折叠为中文 toast）
       showToast(e instanceof ApiClientError ? e.message : IMPORT_FAILED, 'error')
     } finally {
       busyRef.current = false
@@ -118,16 +126,29 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
     }
   }
 
-  // 拖拽仅做高亮 + 提示：沙箱 renderer 拿不到绝对路径，真实导入一律走 main 侧对话框
+  function startButtonImport(mode: ImportMode): void {
+    void runImport(
+      mode === 'dialog' ? () => api.import_.fromDialog({}) : () => api.import_.fromFolder({})
+    )
+  }
+
+  // 拖拽悬停高亮（D1）；导入动作在 drop 落点（handleDrop）
   function handleDragOver(e: DragEvent<HTMLDivElement>): void {
     e.preventDefault()
     setDragging(true)
   }
 
+  // 拖拽导入（P7E-02）：busy 短路提示（D5，零 invoke）；否则 File 列表交 preload 桥
+  // ——解析/.pdf 滤/数量上限全在 preload 堆内，路径串零接触 renderer（INV-54）
   function handleDrop(e: DragEvent<HTMLDivElement>): void {
     e.preventDefault() // 同时阻止浏览器默认打开文件
     setDragging(false)
-    showToast(DROP_HINT, 'info')
+    if (busyRef.current) {
+      showToast(IMPORT_BUSY_HINT, 'info')
+      return
+    }
+    const files = [...e.dataTransfer.files]
+    void runImport(() => window.apiDrag.importDropped(files))
   }
 
   return (
@@ -144,14 +165,14 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
         <Button
           variant="primary"
           disabled={busy}
-          onClick={() => void runImport('dialog')}
+          onClick={() => startButtonImport('dialog')}
         >
           导入 PDF 文件
         </Button>
         <Button
           variant="secondary"
           disabled={busy}
-          onClick={() => void runImport('folder')}
+          onClick={() => startButtonImport('folder')}
         >
           导入文件夹
         </Button>

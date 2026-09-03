@@ -1,0 +1,11 @@
+=== M5 命中证明：类型门行 grep（预期 0，原 1） ===
+0
+=== M5 目标测试输出（drag-import.test.ts——预期目录击穿用例红） ===
+[31m   [31m×[31m P7E-02 planDroppedImports —— 过滤与计数判定（纯函数）[2m > [22m类型门（W2 回炉）：目录项 type="" 即使路径后缀 .pdf 也剔除；注册类型 application/pdf 保留[90m 4[2mms[22m[31m[39m
+[31m     → expected { kind: 'ok', …(1) } to deeply equal { kind: 'ok', paths: [ 'E:/论文.pdf' ] }[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1mAssertionError[22m: expected { kind: 'ok', …(1) } to deeply equal { kind: 'ok', paths: [ 'E:/论文.pdf' ] }[39m
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (11)[39m
+=== 还原 diff（预期空） ===
+diff 空=还原成功

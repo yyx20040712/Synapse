@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { API_SURFACE, EVENT_CHANNELS } from '../../src/shared/ipc/api-surface'
+import { API_SURFACE, EVENT_CHANNELS, PRELOAD_HIDDEN_METHODS } from '../../src/shared/ipc/api-surface'
 
 /**
  * preload 暴露面对账（src/preload/index.ts 头部规约指定的契约测试）。
@@ -41,25 +41,29 @@ describe('contracts/preload-surface —— 运行时暴露面与接线表一致'
     mocks.removeListener.mockClear()
   })
 
-  it('window 只暴露 api 与 apiEvents 两个键（无额外泄漏面）', () => {
-    expect([...exposed.keys()].sort()).toEqual(['api', 'apiEvents'])
+  it('window 只暴露 api、apiDrag 与 apiEvents 三个键（无额外泄漏面）', () => {
+    expect([...exposed.keys()].sort()).toEqual(['api', 'apiDrag', 'apiEvents'])
   })
 
-  it('api 暴露面与 API_SURFACE 逐域逐方法一致（无多无少）', () => {
+  it('api 暴露面与 API_SURFACE 减 PRELOAD_HIDDEN_METHODS 一致（隐藏通道不上桥）', () => {
     const api = exposedApi()
+    const hidden = PRELOAD_HIDDEN_METHODS as Record<string, readonly string[]>
     expect(Object.keys(api).sort()).toEqual(Object.keys(API_SURFACE).sort())
     for (const [domain, methods] of Object.entries(API_SURFACE)) {
+      const expected = Object.keys(methods).filter((m) => !(hidden[domain] ?? []).includes(m))
       expect(
         Object.keys(api[domain] ?? {}).sort(),
-        `域 ${domain} 的方法集与接线表不一致`
-      ).toEqual(Object.keys(methods).sort())
+        `域 ${domain} 的方法集与接线表减隐藏面不一致`
+      ).toEqual(expected.sort())
     }
   })
 
-  it('每个方法按接线表通道转发且请求原样透传（全量对账，非抽样）', () => {
+  it('每个方法按接线表通道转发且请求原样透传（全量对账，非抽样；隐藏面除外）', () => {
     const api = exposedApi()
+    const hidden = PRELOAD_HIDDEN_METHODS as Record<string, readonly string[]>
     for (const [domain, methods] of Object.entries(API_SURFACE)) {
       for (const [method, ep] of Object.entries(methods)) {
+        if ((hidden[domain] ?? []).includes(method)) continue
         const fn = api[domain]?.[method]
         if (typeof fn !== 'function') throw new Error(`api.${domain}.${method} 不是函数`)
         const probe = { __probe: `${domain}.${method}` }
@@ -70,6 +74,13 @@ describe('contracts/preload-surface —— 运行时暴露面与接线表一致'
         ).toHaveBeenLastCalledWith(ep.channel, probe)
       }
     }
+  })
+
+  it('apiDrag 形状：仅 importDropped 单方法（拖拽桥单口——File→路径解析唯一途径）', () => {
+    const drag = exposed.get('apiDrag')
+    if (typeof drag !== 'object' || drag === null) throw new Error('window.apiDrag 未暴露')
+    expect(Object.keys(drag).sort()).toEqual(['importDropped'])
+    expect(typeof (drag as { importDropped: unknown }).importDropped).toBe('function')
   })
 
   it('事件桥：订阅接线表事件通道并透传 payload，退订函数移除同一监听', () => {

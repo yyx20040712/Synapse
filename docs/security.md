@@ -20,7 +20,7 @@
 - SQL 全预编译参数化；FTS 输入经 `escapeFtsQuery`（注入向量集在 tests/unit/db/fts.test.ts）
 - renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）
 - 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`）
-- 写盘仅经系统对话框路径（dialogs.ts 是唯一出口）
+- 写盘路径仅两来源：main 侧系统对话框（dialogs.ts）+ 拖拽 File 经 preload webUtils 解析（`apiDrag` 单口，P7E-02/INV-07 修订；路径串不出 preload 堆，fromPaths 通道对 renderer 隐藏）
 - 出网重定向一律不跟随（`redirect: 'error'`）：白名单外 3xx 目标零请求，防 SSRF/开放重定向
 
 ## 4. 外链与网络

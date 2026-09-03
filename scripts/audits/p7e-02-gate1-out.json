@@ -1,0 +1,38 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "tests/contracts/preload-surface.test.ts",
+      "line_hint": "受锁改向面整体",
+      "issue": "本票唯一的受锁测试文件改动未出现在 §3 已跟踪面 diff 中（§3 仅含 import_.ts/preload/index.ts/env.d.ts/ImportDropZone.tsx/api-surface.ts/schemas.ts/registry.ts 七件），门审无法独立核验「最小增量改写」「不动既有事件桥两用例」「全量对账转发用例跳过隐藏面属必要连带而非放宽断言」三项声明。该文件恰是 INV-54 隐藏面的主要锁定锚（减集断言+apiDrag 形状断言），属安全姿态变更面的核心证据，仅凭实现者自报（§5 超票面自裁申报第 1 项）不足以闭环。",
+      "evidence": "§5 改动文件清单：「tests/contracts/preload-surface.test.ts | 受锁改向：三键断言；暴露面=减集断言；转发用例隐藏面跳过；+apiDrag 形状用例（事件桥两用例零触碰）」；§3 diff 全文不含该文件。",
+      "suggestion": "门二材料包补入该文件 diff（或全文），重点复核：①既有用例的期望集改写是减集（删 fromPaths）而非重写断言强度；②「全量对账转发」用例的隐藏面跳过逻辑与 buildApi 同源消费 PRELOAD_HIDDEN_METHODS 而非硬编码 'fromPaths' 字面量；③事件桥两用例逐字未动。"
+    },
+    {
+      "severity": "WARN",
+      "file": "src/preload/drag-import.ts",
+      "line_hint": "planDroppedImports 后缀过滤行（if (!p.toLowerCase().endsWith('.pdf')) continue）",
+      "issue": "票面与实现共享的设计假设「目录拖入=File 项无 .pdf 后缀→自然剔除」存在漏洞：macOS/Windows 上目录可合法命名为 xxx.pdf，Electron 对被拖目录项同样给出路径，endsWith('.pdf') 判定通过，目录路径将进入 importFiles 载荷。虽然 importFiles 的 failed[] 尽力而为语义大概率兜底为一条失败明细，但用户会收到语义无据的「失败 1」，且这是 INV-54 声称的「等价于 dialog 的 *.pdf 过滤」的一处不等价（对话框过滤天然排除目录）。",
+      "evidence": "票面①行为层：「目录拖入=File 项无 .pdf 后缀→自然剔除」；drag-import.ts：「if (!p.toLowerCase().endsWith('.pdf')) continue // 非 PDF（含目录项）——剔除」。",
+      "suggestion": "任选其一：①preload 侧利用 File 对象启发式（目录拖入项的 File.type 恒为 ''）在 planDroppedImports 增一条剔除规则并补测试格；②main 侧 importFiles 入口 stat 守卫（更稳，与 schema 第二道门同层）；③若评估后接受现状，在票面「已知边界」与 INV-54 登记文中显式申报「名为 *.pdf 的目录可穿过滤入 failed[]」而非依赖「无 .pdf 后缀」这一不总成立的假设。"
+    },
+    {
+      "severity": "NIT",
+      "file": "src/shared/ipc/schemas.ts",
+      "line_hint": "import_ 域节头注释（diff 上下文中原样保留行）",
+      "issue": "节头注释「// ── import_（对话框在 main 侧发起，renderer 不传任何路径）──」在新增 importPathsReqSchema（preload 桥传路径）之后语义过时，与下方新 schema 的文档注释并存时易被后续读者误读为本域请求仍全无路径字段。",
+      "evidence": "§3 schemas.ts diff 上下文行：「// ── import_（对话框在 main 侧发起，renderer 不传任何路径）─────」紧随其后新增 importPathsReqSchema（paths 数组字段）。",
+      "suggestion": "节头改为「对话框/拖拽桥分别在 main/preload 侧产生路径，renderer 代码不传路径」，与 INV-07 修订后的口径对齐。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/unit/preload/drag-import.test.ts",
+      "line_hint": "文件头注第 2 行",
+      "issue": "头注「planDroppedImports 纯函数六分支」与实际 7 用例（ok/ok 边界/none/'' 滤/后缀大小写/混合/too-many）不符；票面文化层同样写「六分支」，实现实为七格，属注释滞后而非覆盖缺口。",
+      "evidence": "§4 头注：「planDroppedImports 纯函数六分支（ok/ok 边界/none/too-many/'' 滤/后缀大小写/混合）」——括号内列举实为 7 项。",
+      "suggestion": "头注与票面文化层同步改「七分支」，避免后续审计按「六」计数误判缺格。"
+    }
+  ],
+  "summary": "安全姿态变更面的核心设计（fromPaths 隐藏通道+PRELOAD_HIDDEN_METHODS const/类型双消费单源+apiDrag 单口解析、路径串不出 preload、数量上限 preload/schema 双层门一致为 100、合成 File 解析 '' 天然拒）在材料范围内落实正确，runImport 泛化保持了 F-D4 既有壳语义，变异红证 M1~M4 与态空间锚自洽，未发现阻塞项。两处 WARN：受锁契约测试的改动缺失于 diff 导致隐藏面锁定锚无法独立复核；「目录无 .pdf 后缀」假设可被命名为 *.pdf 的目录击穿，建议补守卫或显式申报边界。"
+}

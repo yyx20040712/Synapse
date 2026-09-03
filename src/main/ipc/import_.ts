@@ -5,6 +5,8 @@
  * - fromDialog：deps.dialogs.pickPdfFiles() → null（用户取消）返回空结果
  *   { imported: [], duplicates: [], failed: [] }；有路径→ deps.services.import_.importFiles(paths)
  * - fromFolder：pickFolder() 同上 → importFolder(folder)
+ * - fromPaths（P7E-02）：一行委托 importFiles(req.paths)——路径由 preload webUtils
+ *   桥（apiDrag.importDropped）解析产生，通道对 renderer 隐藏（INV-07 修订/INV-54）
  * - 进度推送已由 bootstrap 注入 services 桶（services.sendProgress → webContents.send），
  *   本层是纯薄分发，不碰 sendProgress、不重建 service 实例
  *
@@ -15,10 +17,12 @@
  * - 对话框取消不是错误（返回空 ImportResult）；import 的失败明细在 failed 数组
  *
  * ── 生命周期层 ──
- * - 不做：拖拽路径（renderer 的 webUtils.getPathForFile 在 preload 暴露——v2）
+ * - 拖拽路径已兑现（P7E-02，原 v2 预留注记）：File 经 preload webUtils 解析 →
+ *   apiDrag 单口 → 本通道；路径串生命周期限 preload 堆内
  *
  * ── 文化层 ──
- * - 测试：tests/unit/ipc/import_.test.ts（已锁定，dialogs/services 桩）
+ * - 测试：tests/unit/ipc/import_.test.ts（已锁定，dialogs/services 桩）；
+ *   fromPaths 用例在 tests/unit/ipc/import-paths.test.ts（新文件承载）
  */
 import type { ImportResult } from '../../shared/ipc/schemas'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
@@ -37,6 +41,8 @@ export function createImportIpc(deps: IpcDeps): ApiHandlers['import_'] {
     fromFolder: async () => {
       const folder = await deps.dialogs.pickFolder()
       return folder === null ? emptyImportResult() : deps.services.import_.importFolder(folder)
-    }
+    },
+    // 拖拽路径（P7E-02）：请求已过 preload 过滤（.pdf 后缀+数量上限）与 schema 双门
+    fromPaths: (req) => deps.services.import_.importFiles(req.paths)
   }
 }
