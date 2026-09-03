@@ -29,6 +29,7 @@
 import { useEffect, useRef } from 'react'
 import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import { PAGE_LAYER_Z } from './page-layer-z'
+import { clampScale } from './pdf-item-geometry'
 
 /**
  * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。
@@ -107,7 +108,7 @@ export function PdfPageCanvas(props: {
       renderTaskRef.current?.cancel()
       // 防御性收敛（页码 1 基；页列分配的 pageNo 天然有效，此处兜底）
       const page = Math.min(Math.max(1, Math.floor(pageNo)), doc.numPages)
-      const scale = Math.min(3, Math.max(0.5, zoom))
+      const scale = clampScale(zoom)
       const pdfPage = await doc.getPage(page)
       if (cancelled) {
         return

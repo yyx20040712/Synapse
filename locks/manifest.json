@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T21:39:26.7341253Z",
+    "generatedAt":  "2026-09-03T23:25:30.5202274Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -639,7 +639,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
-                      "sha256":  "305df6d74bce35e8e8f80731ca99e45841df2856a2cc9722210907a902c452ce"
+                      "sha256":  "97bc79ed40c3d0ff043ea68b65fe8a667a83ff8d9a9864f2147f5864c7dca67c"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
@@ -850,8 +850,16 @@
                       "sha256":  "dcf845f5f6f84b3f57fbbdf361c68870c117fd96c3edc5aa748ce1237abfb3c3"
                   },
                   {
+                      "path":  "tests/unit/renderer/selection-evaluate.test.tsx",
+                      "sha256":  "8d447c413ee10969df114e782f3fbd9f8dc80a1a58de6146971963fc90181783"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-geometry.test.ts",
+                      "sha256":  "fc6905884c08bc3408e377975e807c94af79c94bcd11cfcc4d08d07f08b13fb6"
+                  },
+                  {
                       "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
-                      "sha256":  "535a1e01845f16a76e0bcf79dd07dcdd6287e02a9a1d37204a2990207cd92bfa"
+                      "sha256":  "4c9e4dd49bde4a1150cb4aa47b6c8be9322feae0f8f36ae6cc462fbfe96c0d65"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
@@ -863,7 +871,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "22073d4fa2e012b516ca1ddddbd1e032ea69ae762b4103c717f23976bdde2cd7"
+                      "sha256":  "9a2c94bcf8461219ebd8f476cb26ca6e393e36531b7501cba6ea90f35ea5422a"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

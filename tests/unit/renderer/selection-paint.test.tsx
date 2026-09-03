@@ -8,6 +8,8 @@
  * - a 面（S1~S5）：拖选防抖路径自绘并集层渲染（相邻行重叠输入→块数=行数
  *   +块两两垂直分离=「单层单绘不叠深」）+保存 rects 与自绘块同源（所见即
  *   所存 S2）+Escape 工具条收而自绘留至选区真清（INV-37 修订语义 S5）；
+ *   [F-A6-c] S1b/S1c 两 it 改写为 rAF 语义（调度 rAF 对齐——帧前零渲染/单帧
+ *   渲染/帧随动断言面；S1/S2/S5 走 mouseup/防抖零改）；
  * - b 面：rectStyle band 自适应（顶贴字形带顶/底贴底——F-11 分数语义的
  *   自适应实现）+缺省 band 分数路径回归锚+bandFromMetrics 纯几何+
  *   AnnotationLayer 挂 B 接线（resolve→band→渲染）；
@@ -162,64 +164,61 @@ describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
     }
   })
 
-  it('S1b 拖选期零视觉反馈回归守卫（B1/门一回炉）：连续 selectionchange 不 mouseup——首个事件 leading 节流立即渲染自绘层，工具条防抖语义保持（未到期不出条）', async () => {
+  it('S1b 拖选期零视觉反馈回归守卫（B1/门一回炉→F-A6-c rAF 语义改写）：首 selectionchange 即排 rAF——单帧（16ms）内自绘层渲染且帧前零渲染（rAF 对齐非同步节流），工具条防抖 200ms 语义保持（t=150 仍不出条——防抖窗改短在此红）', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
     await mountLayer(page)
     clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
-    // 拖选中：selectionchange 连发（间隔 30ms——防抖 timer 持续重置的形态），
-    // 无 mouseup。修前纯防抖下 paint 到停顿 200ms 才出现（=SR2-F-08 病根复活）
-    for (let i = 0; i < 5; i += 1) {
-      fireSelectionChange()
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30)
-      })
-    }
-    // 不再推进任何时间：自绘层已在场（leading+trailing 节流）
+    // 拖选首事件（无 mouseup）。修前纯防抖下 paint 到停顿 200ms 才出现
+    // （=SR2-F-08 病根复活）；rAF 改形后首事件即排程、帧前零同步渲染
+    fireSelectionChange()
+    expect(paintLayer()).toBeNull()
+    // 单帧（t=16）：leading 首事件即排 rAF——≤16ms 零反馈红线
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16)
+    })
     expect(paintLayer()).not.toBeNull()
     expect(paintBlocks().length).toBeGreaterThanOrEqual(1)
-    // 工具条=防抖路径（既有弹出语义零变——末事件后 200ms 内不出条）
+    // 工具条=防抖路径（既有弹出语义零变——末事件后 200ms 内不出条；t=150 锚
+    // 防抖窗逐字保持，100ms 变异在此红）
     expect(toolbar()).toBeNull()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(210)
+      await vi.advanceTimersByTimeAsync(134)
+    })
+    expect(toolbar()).toBeNull()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(66)
     })
     expect(toolbar()).not.toBeNull()
   })
 
-  it('S1c trailing 随动（B1/W6·门一 r2）：拖选中窗口内末事件变更选区→停顿推进越过窗口缘→自绘块几何随动到新位置（非首帧）——纯防抖/只留 leading 均在此红', async () => {
+  it('S1c 帧随动（B1/W6·门一 r2→F-A6-c rAF 语义改写）：拖选中窗口内末事件变更选区→下一帧自绘块几何随动到新位置（非首帧）——节流窗丢帧/只渲染首帧的退化在此红', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
     await mountLayer(page)
     // 首帧行 A：选区 alpha（0..4），行盒 y=200 → 归一 top=0%
     clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
+    fireSelectionChange()
     await act(async () => {
-      fireSelectionChange()
+      await vi.advanceTimersByTimeAsync(16)
     })
     expect(paintBlocks().length).toBe(1)
     expect(pct(paintBlocks()[0]!, 'top')).toBeCloseTo(0, 6)
-    // 拖选中：窗口内连发（40ms 间隔×3，未过 200ms 窗口）——纯防抖下 timer
-    // 持续重置；随后 t=150 变更选区到行 B（ta b 不同文字范围 2..6，行盒
-    // y=400 → 归一 top=25%）再发一事件，然后**停顿**（拖选未松手）
-    for (let i = 0; i < 3; i += 1) {
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(40)
-      })
-      fireSelectionChange()
-    }
+    // 拖选中（防抖 200ms 窗内，未松手）变更选区到行 B（ta b 不同文字范围 2..6，
+    // 行盒 y=400 → 归一 top=25%）再发一事件——rAF 下一帧读**当下**选区随动
+    //（节流窗内丢帧/只渲染首帧的旧退化在此红；旧口径 trailing 窗尾断言随 rAF
+    // 改形逐帧化，语义面=「窗口内末事件必随动」保持）
     clientRects = [{ x: 100, y: 400, width: 300, height: 20 }]
     selectRange(span.firstChild!, 2, span.firstChild!, 6)
     fireSelectionChange()
-    // 停顿推进越过窗口缘（trailing 落地于 t=200——读**当下**选区 B）；
-    // 不推进到防抖到期点（t=320）——此刻的更新只能来自节流 trailing
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(85)
+      await vi.advanceTimersByTimeAsync(16)
     })
     const blocks = paintBlocks()
     expect(blocks.length).toBe(1)
-    // 随动到新行位置（25%）——非首帧位置（0%）：只留 leading 的退化在此红
-    //（t=150 窗口内事件被丢、无后续事件开新窗口→paint 停留 0%）
+    // 随动到新行位置（25%）——非首帧位置（0%）：首帧后不再渲染的退化在此红
     expect(pct(blocks[0]!, 'top')).toBeCloseTo(25, 4)
   })
 

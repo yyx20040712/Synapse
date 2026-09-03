@@ -70,12 +70,23 @@ import type { PdfTextItem, PdfTextStyle } from './PdfPageCanvas'
 import type { RowBand } from './annotation-resolve'
 
 /** viewport 通道（C1）：与 canvas 渲染的 page.getViewport({scale}) 同构输入——
- *  rotate/view 来自 PdfPageGeometry（b1 下钻真值），scale=当前 zoom（PdfPageCanvas
- *  同款 [0.5,3] 夹取由消费方做，本件原值直用） */
+ *  rotate/view 来自 PdfPageGeometry（b1 下钻真值），scale=当前 zoom 经 clampScale
+ *  夹取（[F-A6-c 门二 N1] 共享常量单一真相源——PdfPageCanvas 渲染通道与本件
+ *  viewport 通道同款夹取，防两处字面量漂移） */
 export interface ItemViewport {
   scale: number
   rotate: number
   view: [number, number, number, number]
+}
+
+/** zoom→viewport scale 夹取域下/上限（PdfPageCanvas 渲染与本件消费方共用——门二 N1） */
+export const ZOOM_SCALE_MIN = 0.5
+export const ZOOM_SCALE_MAX = 3
+
+/** zoom 夹取 [ZOOM_SCALE_MIN, ZOOM_SCALE_MAX]（单一真相源——原 PdfPageCanvas.tsx
+ *  字面量 [0.5,3] 与 selection-evaluate 消费面归一） */
+export function clampScale(zoom: number): number {
+  return Math.min(ZOOM_SCALE_MAX, Math.max(ZOOM_SCALE_MIN, zoom))
 }
 
 /** PDF 用户空间 → viewport CSS px 的六元变换（pdf.mjs:892-985 PageViewport

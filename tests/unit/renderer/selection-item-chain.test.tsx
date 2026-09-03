@@ -244,7 +244,11 @@ describe('F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道�
     act(() => {
       fireSelectionChange()
     })
-    // 拖选期（visual tick，selectionchange leading 即触发）：抑制渲染
+    // 拖选期（visual tick）：抑制渲染。[F-A6-c 时序适配申告] rAF 改形后视觉评估
+    // 挂帧点——帧前断言恒真退化，推进 16ms（rAF 帧后）断言快路径 G2 门非空转
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16)
+    })
     expect(firstRect()).toBeNull()
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200)

@@ -27,6 +27,7 @@
  * - 组件测试：tests/unit/renderer/selection-paint.test.tsx（S1~S5+F-A5 段
  *   a1/a2/c1/c2）+selection-layer.test.tsx（F-A4 反转守卫）。
  */
+import { memo } from 'react'
 import { createPortal } from 'react-dom'
 import type { AnnotationRect } from '@shared/models/annotation'
 import { matchBand, type RowBand } from './annotation-resolve'
@@ -36,7 +37,11 @@ import { PAGE_LAYER_Z } from './page-layer-z'
 /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */
 const PAINT_BG = 'rgba(0, 0, 0, 0.20)'
 
-export function SelectionPaint(props: {
+/** [F-A6-c] React.memo+props 稳定化（设计书 §3.3 次因面收敛）：root/rects/bands
+ *  均来自 SelectionLayer 的 paint 状态对象——仅在 setPaint 时更换引用，组件
+ *  其余状态更新（pending/busy/color/zoom 订阅）不再重渲染 portal 全子树；
+ *  拖选期帧产物由快路径整对象更换（引用变=重渲染，值同=跳过） */
+export const SelectionPaint = memo(function SelectionPaint(props: {
   /** 选区所在页盒（[data-page-root]——portal 目标树的根） */
   root: HTMLElement
   /** 归一化并集矩形（evaluate 管线产物——与保存 rects 同源） */
@@ -76,4 +81,4 @@ export function SelectionPaint(props: {
     </div>,
     host
   )
-}
+})

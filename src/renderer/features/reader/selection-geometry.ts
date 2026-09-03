@@ -97,36 +97,33 @@ export function toolbarMountPos(pageRoot: HTMLElement, sel: ViewportBox): { x: n
   return { x: (vp.x - mountBox.x) * scale, y: (vp.y - mountBox.y) * scale }
 }
 
-/** [B1 回炉] selectionchange 双路调度器：自绘层视觉=leading+trailing 节流
- *  （拖选全程持续触发时纯防抖的 timer 永远重置——::selection 已 transparent
- *  则拖选期零视觉反馈=历史删自绘轮的同型病根复活，ADR-0019 R1 修订档）；
- *  工具条评估=防抖（既有弹出语义零变）。工厂返回 handler（addEventListener
- *  直用）+cancel（mouseup/卸载成对清理——INV-14 同型）。 */
+/** [B1 回炉→F-A6-c rAF 对齐] selectionchange 双路调度器（设计书 §5.2）：
+ *  视觉路=首事件即排 requestAnimationFrame（leading ≤16ms——S1b 零反馈红线），
+ *  已排程则不重排=帧内合帧去重（同帧多次 selectionchange 恰一次 evaluateVisual
+ *  ——60Hz 上限+帧内天然合帧，取代 B1 的 200ms leading+trailing 节流[5Hz 步进
+ *  =D2a 病根，取证 §7 实测 mutation 间隔 ~200ms]）；settle 路=防抖 200ms 与
+ *  mouseup 即时全量逐字保持（工具条弹出语义/S1b 后半零变）。工厂返回 handler
+ *  （addEventListener 直用）+cancel（mouseup/卸载成对清理——rAF 句柄与防抖
+ *  双清，INV-14 同型）。rAF×React 并发面申报（设计书 §5.2）：rAF 后台/遮挡
+ *  暂停影响面=隐藏态程序化选区视觉陈旧（cosmetic——Electron 单窗口+拖选需
+ *  前台输入，真拖选不可触发）。 */
 export function createVisualScheduler(ops: {
   onVisual(): void
   onSettled(): void
   windowMs: number
 }): { handler(): void; cancel(): void } {
   let debounce: number | null = null
-  let trailing: number | null = null
-  let last = 0
+  let raf: number | null = null
   return {
     handler: () => {
-      const now = Date.now()
-      if (now - last >= ops.windowMs) {
-        last = now
-        if (trailing !== null) {
-          window.clearTimeout(trailing)
-          trailing = null
-        }
-        ops.onVisual()
-      } else if (trailing === null) {
-        trailing = window.setTimeout(() => {
-          trailing = null
-          last = Date.now()
+      // 视觉路：本帧未排程才排 rAF（帧内合帧去重）；回调读当下选区=帧随动
+      if (raf === null) {
+        raf = window.requestAnimationFrame(() => {
+          raf = null
           ops.onVisual()
-        }, ops.windowMs - (now - last))
+        })
       }
+      // settle 路：防抖（每事件重置——弹出语义零变）
       if (debounce !== null) window.clearTimeout(debounce)
       debounce = window.setTimeout(() => ops.onSettled(), ops.windowMs)
     },
@@ -135,9 +132,9 @@ export function createVisualScheduler(ops: {
         window.clearTimeout(debounce)
         debounce = null
       }
-      if (trailing !== null) {
-        window.clearTimeout(trailing)
-        trailing = null
+      if (raf !== null) {
+        window.cancelAnimationFrame(raf)
+        raf = null
       }
     }
   }

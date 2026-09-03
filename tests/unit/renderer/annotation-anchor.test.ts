@@ -370,3 +370,39 @@ describe('F-A6-b2 W1 mergeLineRects —— 扩簇 y 区间膨胀副作用回归'
     }
   })
 })
+
+// always-active（F-A6-c 门二 W2——pitch 缺省+跨行中心距 ≤2px 极限单视觉行形态：
+// W1 机理结论未覆盖面[其夹具 pitch 恒有定义]的守卫夹具。守卫非缺陷修复——
+// 构造后实测绿，机理在档：此形态 centerLimit=lh（pitch 缺省走 lineH 单门），
+// centerOk 对全部矩形恒过（|Δc|≤lh/2）不设防，防线=高度可比带 hComparable
+// （[0.5,2]×主导高——高瘦碎片=多行载体[旋转/竖排形态，h≈3.3×行高]在带外）
+// ——扩簇比较（F-A6-b2 T3）只在满足判据的簇中取最近，无可满足者新建簇：
+// 行簇与高瘦簇互不吸收，无跨视觉行并块）。
+describe('F-A6-c W2 mergeLineRects —— pitch 缺省极限形态（单视觉行判定×多行高瘦碎片）守卫', () => {
+  it('W2 全部相邻中心差 <2px（pitch 缺省=单视觉行形态判定）但含多行高瘦碎片：行块几何（y/h/x 并集）不含高瘦碎片贡献、高瘦碎片自成块——centerOk（centerLimit=lh）单门不设防时高度可比带挡跨行并块', () => {
+    // 行片段（h 12，中心 100/100.25）+高瘦碎片（h 40≈3.3×行高，中心 100/101）
+    // ——中心链 100,100,100.25,101 相邻差全 <2px → estimateLinePitch 缺省
+    const r1 = px(10, 94, 40, 12) // 行片段 1（y 序 3）
+    const r2 = px(60, 94.5, 30, 12) // 行片段 2（y 序 4）
+    const t1 = px(100, 80, 10, 40) // 多行高瘦碎片 1（y 序 1——跨 3 行形态）
+    const t2 = px(120, 81, 10, 40) // 多行高瘦碎片 2（y 序 2）
+    expect(estimateLinePitch([r1, r2, t1, t2])).toBeUndefined() // 形态前提锚：pitch 缺省
+    const out = mergeLineRects([r1, r2, t1, t2], 612, 12)
+    expect(out.length).toBe(2)
+    // y 序输出：高瘦块（y=80）在前、行块（y=94）在后
+    const tall = out[0]!
+    const row = out[1]!
+    // 行块：y/h=行主导矩形原样（未被高瘦碎片抬高/膨胀=无跨行并块）；x 并集
+    // 10..90 不含高瘦碎片（100..130）——hComparable 删除（只 centerOk）在此红
+    expect(row.y).toBeCloseTo(94, 5)
+    expect(row.h).toBeCloseTo(12, 5)
+    expect(row.x).toBe(10)
+    expect(row.x + row.w).toBeCloseTo(90, 5)
+    // 高瘦碎片自成块（y/h 本体——不被行簇吸收钳制）；两碎片 x 间隙 10<簇内
+    // 断段阈值（1.5×主导高 40=60）并段
+    expect(tall.y).toBeCloseTo(80, 5)
+    expect(tall.h).toBeCloseTo(40, 5)
+    expect(tall.x).toBe(100)
+    expect(tall.x + tall.w).toBeCloseTo(130, 5)
+  })
+})

@@ -34,6 +34,14 @@
  * pending.anchor.rects 与 paint 同源=保存链与视觉同一来源（INV-58 前半）。
  * 详见 selection-evaluate.ts 头注。
  *
+ * **F-A6-c D2 调度与快路径（rAF 对齐）**：视觉路=首事件即排 rAF+帧内合帧
+ * 去重（60Hz 上限——D2a 5Hz 步进根治）+快路径 evaluateVisual（项几何链直取
+ * INV-58 后半——clientRects/gCS 链尽消，gBCR/Range.gBCR 残余两项绝对量
+ * 在场：详见 selection-evaluate.ts 头注+裁决表 §12）；settle 路=防抖 200ms 与 mouseup 即时
+ * 全量逐字保持（cancel-before-evaluate 顺序保持）；四道守卫/跨页 toast/
+ * 工具条语义零变。**AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外
+ * 边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**。
+ *
  * ── 接口层 ── / ── 架构层 ──
  * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再
  *   导出（实现在 selection-geometry——F-A4 拆件，导出面零变）。锚定根=
@@ -62,7 +70,8 @@ export { closestPageRoot, pageIndexOf } from './selection-geometry'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const SAVE_FAILED = '标注保存失败'
 
-/** selectionchange 窗口（毫秒）：自绘层节流与工具条防抖同值两路（B1） */
+/** selectionchange settle 窗口（毫秒）：工具条防抖（F-A6-c 起视觉路已 rAF 对齐
+ *  60Hz——200ms 窗仅剩 settle 语义：拖选中停顿出条+程序化选选的 pending 落地） */
 const SELECTION_DEBOUNCE_MS = 200
 
 /** F-12 工具条误触发阈值（px）：位移小于此值=单击/双击（含选词）不出条
@@ -91,12 +100,13 @@ export function SelectionLayer(props: {
     // 量测回退双路+G2 门+工具条落点；本组件只供状态写口）
     const evaluate = createEvaluate({ pageRoot, paperId, setPaint, setPending })
 
-    // [B1 回炉] selectionchange 双路调度（selection-geometry 域工厂）：自绘层
-    // =leading+trailing 节流（拖选期持续触发下纯防抖永不落地=历史删自绘轮
-    // 的零反馈病根复活，ADR-0019 R1 修订档）；工具条评估=防抖（弹出语义零变）
+    // [B1 回炉→F-A6-c rAF 对齐] selectionchange 双路调度（selection-geometry 域
+    // 工厂）：视觉路=首事件即排 rAF+帧内合帧去重（60Hz 上限——D2a 5Hz 步进根治，
+    // onVisual=快路径 evaluateVisual 项几何链直取）；工具条评估=防抖 200ms
+    // （既有弹出语义零变）；cancel 清 rAF+防抖双句柄（INV-14）
     const scheduler = createVisualScheduler({
-      onVisual: () => evaluate(false, true),
-      onSettled: () => evaluate(false, false),
+      onVisual: () => evaluate.visual(),
+      onSettled: () => evaluate.full(false),
       windowMs: SELECTION_DEBOUNCE_MS
     })
     // F-12：记录最近一次 mousedown 落点（NaN=无记录——程序化事件/未捕获）
@@ -119,7 +129,7 @@ export function SelectionLayer(props: {
           return
         }
       }
-      evaluate(true, false)
+      evaluate.full(true)
     }
     const onKeyDown = (e: KeyboardEvent): void => {
       // INV-37（F-A4 修订）：Escape 只清组件态；自绘层随**选区**真清除而消失

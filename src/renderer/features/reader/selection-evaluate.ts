@@ -5,13 +5,36 @@
  * 切换，行为面经 selection-layer/selection-item-chain 测试锁）。
  *
  * ── 行为层 ──
- * - evaluate(fromMouseUp, visualOnly)：四道收敛守卫（选区空/跨页/页外不可锚定/
- *   零宽盒→setPaint(null)）→ 锚定（selectionToAnchor 三元组）→ [F-A6-b2] rects
- *   产链双路（项几何主链+DOM 量测回退，见下）→ setPaint → 非 visualOnly 时
- *   工具条落点（toolbarMountPos）+setPending
- * - visualOnly=[B1 回炉] 拖选期节流路径——只更新自绘层不动 pending（弹出语义
- *   独属防抖/mouseup 全量评估，零变）
- * - **F-A6-b2 rects 产链切换（R-迁移主链+DOM 量测回退双路结构）**：主链=
+ * - evaluateFull(fromMouseUp)（settle/mouseup 路）：四道收敛守卫（选区空/跨页/
+ *   页外不可锚定/零宽盒→setPaint(null)+setPending(null)）→ 锚定
+ *   （selectionToAnchor 三元组）→ [F-A6-b2] rects 产链双路（项几何主链+DOM
+ *   量测回退，见下）→ setPaint → 工具条落点（toolbarMountPos）+setPending
+ * - **[F-A6-c] evaluateVisual()（拖选期快路径——rAF 帧点消费）**：项几何链直取
+ *   （INV-58 后半：快路径与 settle 同族=pdf-item-geometry 项几何族，禁第二几何
+ *   口径；clientRects/gCS 链尽消（getClientRects/getComputedStyle 量恒零
+ *   ——gBCR/Range.gBCR 残余两项绝对量在场：零宽盒守卫 Range.gBCR×1+
+ *   pixelBoxOf 基准盒×1，§12 归一化净面披露在档）。链=轻量偏移 probe（Range.toString
+ *   ×2——省 selectionToAnchor 的 O(页文本) join+quote/prefix/suffix 切片与
+ *   rectsBetweenPoints/medianFontSizeBetween 全量几何/量测链）→page-items.store
+ *   直读页项→rectsForOffsetRange+基线分组+归一化→setPaint；**bands 项几何链
+ *   现算不缓存**（bandsFromItems 纯函数 O(被选项) 零布局读零 measureText——
+ *   无缓存摊销必要；第四轮取证 §12 tick 实测在档佐证）。四道守卫前置强制
+ *   （Kimi 拟定裁决 2-§5①）：(i) sel 空/坍缩→setPaint(null)；(ii) 跨页→
+ *   setPaint(null) 静默；(iii) 页外/textLayer 缺→setPaint(null)；(iv) 零宽盒→
+ *   setPaint(null)。G2 同门（selectionHealth unhealthy→setPaint(null) 拖选期
+ *   抑制）。visual 语义=只 setPaint 不动 pending（工具条弹出语义独属
+ *   settle/mouseup 全量，零变）。
+ * - **回退层级声明（票面 §1-B）**：快路径失败（probe 失败/页项缺失/偏移对账
+ *   失败/计算异常/退化区间）→回退=全量视觉评估（evaluateCore(false,true)——
+ *   自带 DOM 量测回退链）；全量的回退链=DOM 量测（b2 已建）——三层：快路径→
+ *   全量→DOM 量测。快路径自身零 console.warn（回退诊断单源=evaluateCore 的
+ *   itemChainFor，防每帧双 warn 刷屏）。
+ * - **INV-58 等价/同帧覆盖**：快路径偏移域=probe 全文偏移（selectionToAnchor
+ *   同源同式）→快慢产物同族同链等价；mouseup/settle 全量在快路径最后一帧后
+ *   执行（mouseup 形态=cancel 先清 rAF 再同步全量），setPaint 以全量产物同帧
+ *   覆盖（边界差额由此吸收——已知边界①/①'）。锚=selection-evaluate.test
+ *   快慢等价 it+同帧覆盖 it（票面强制）。
+ * - [F-A6-b2] rects 产链切换（R-迁移主链+DOM 量测回退双路结构）：主链=
  *   pdf-item-geometry.itemSelectionGeometry（基线分组并块+归一化
  *   pixelBoxOf(textLayer) 同盒 INV-37+mergeRects 终裁；bands 同步切
  *   bandsFromItems——C5 禁 rect 项源×band DOM 量测混用）；锚定三元组仍产自
@@ -27,23 +50,29 @@
  * - **通道**：页项 {items,styles,geometry} 经 page-items.store（PagesOverlay
  *   写/本域 evaluate 时刻 getState 直读——zoom 现读、viewport 现构，项几何
  *   不随 zoom 缓存=缩放不变零重算）
+ * - **[F-A6-c 门二 seam_ruling] AnnotationLayer 存量重锚域仍 DOM 量测域——
+ *   INV-58 票外边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**
  *
  * ── 接口层 ── / ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - export function createEvaluate(ctx)：工厂返回 evaluate 闭包（ctx=组件
- *   状态写口+挂载盒+文献 id——纯函数域件零 React 依赖）；PaintSelection/
- *   PendingSelection 类型随迁（SelectionLayer 消费）
+ * - export function createEvaluate(ctx)：工厂返回 {visual, full} 双路径闭包
+ *   （ctx=组件状态写口+挂载盒+文献 id——纯函数域件零 React 依赖）；
+ *   PaintSelection/PendingSelection 类型随迁（SelectionLayer 消费）
  * - 依赖单向：本件→anchor-serialize/annotation-anchor/annotation-resolve/
  *   pdf-item-geometry/page-items.store/reader.store/selection-geometry（零环）
- * - F-A6-c 增量预告：evaluateVisual/evaluateFull 双路径拆分宿主在此
- * - tests/unit/renderer/selection-layer.test.tsx（既有行为面）+
- *   selection-item-chain.test.tsx（F-A6-b2 接线面六用例）
+ * - probeOffsetLen 为 anchor-serialize 私有 probeTextLength 的本域复刻
+ *   （其导出面经锁定测试锚定不扩面——Rule of Three 第 2 次保持重复，口径
+ *   逐句对照 anchor-serialize.ts:168-187）
+ * - tests/unit/renderer/selection-layer.test.tsx（既有行为面——预计零改）+
+ *   selection-item-chain.test.tsx（F-A6-b2 接线面）+selection-evaluate.test.tsx
+ *   （F-A6-c 快慢等价/同帧覆盖/快路径守卫三锚）+selection-geometry.test.ts
+ *   （调度器直测——rAF 合帧去重/防抖保持/cancel）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './annotation-anchor'
 import { bandsForTextNodes, type RowBand } from './annotation-resolve'
-import { itemSelectionGeometry, reconcileItemsWithDom } from './pdf-item-geometry'
+import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './pdf-item-geometry'
 import type { ItemSelectionGeometry } from './pdf-item-geometry'
 import { usePageItemsStore } from './page-items.store'
 import { useReaderStore } from './reader.store'
@@ -101,7 +130,7 @@ function itemChainFor(pageNo: number, paperId: string, start: number, end: numbe
       items: entry.text.items,
       styles: entry.text.styles,
       viewport: {
-        scale: Math.min(3, Math.max(0.5, zoom)),
+        scale: clampScale(zoom),
         rotate: entry.geometry.rotate,
         view: entry.geometry.view
       },
@@ -115,10 +144,117 @@ function itemChainFor(pageNo: number, paperId: string, start: number, end: numbe
   }
 }
 
-/** evaluate 工厂：评估选区（动态锚定根）——四守卫+产链双路+G2 门+工具条落点 */
-export function createEvaluate(ctx: EvaluateContext): (fromMouseUp: boolean, visualOnly: boolean) => void {
+/** [F-A6-c] evaluate 双路径句柄：visual=拖选期快路径（rAF 帧点消费——项几何链
+ *  直取 INV-58 后半）；full=settle/mouseup 全量（保存与最终视觉的单一权威） */
+export interface EvaluateHandle {
+  visual(): void
+  full(fromMouseUp: boolean): void
+}
+
+/** evaluate 工厂：评估选区（动态锚定根）——快路径+四守卫+产链双路+G2 门+工具条落点 */
+export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
   const { pageRoot, paperId, setPaint, setPending } = ctx
-  return (fromMouseUp: boolean, visualOnly: boolean): void => {
+
+  /** probe-range 文本长度（anchor-serialize 私有 probeTextLength 本域复刻——口径
+   *  逐句同源 ：168-187；side='start' 探 [root 起..边界) 长度=边界全局偏移，
+   *  'end' 探 [边界..root 尾) 长度=其后文长度） */
+  function probeOffsetLen(root: HTMLElement, container: Node, offset: number, side: 'start' | 'end'): number | null {
+    try {
+      const probe = document.createRange()
+      probe.selectNodeContents(root)
+      if (side === 'start') {
+        probe.setEnd(container, offset)
+      } else {
+        probe.setStart(container, offset)
+      }
+      return probe.toString().length
+    } catch {
+      // 节点脱离文档等异常：快路径放弃，回退全量
+      return null
+    }
+  }
+
+  /** [F-A6-c] 快路径：项几何链直取。四道守卫前置（裁决 2-§5①）→轻量 probe→
+   *  page-items.store 直读→项几何→setPaint；失败（probe/页项/对账/计算/退化
+   *  区间）回退=全量视觉评估（evaluateCore(false,true)——DOM 量测回退链在位，
+   *  不动 pending）。守卫与 G2 命中均 setPaint(null)（跨页/G2 拖选期静默——
+   *  toast 门=fromMouseUp 属全量路，S5/G2 既有形态） */
+  function visual(): void {
+    const sel = window.getSelection()
+    // 守卫 (i)：sel 空/rangeCount 0/坍缩
+    if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
+      setPaint(null)
+      return
+    }
+    // 守卫 (ii)：跨页/跨出页盒——静默收层（无守卫时跨页偏移会被归一化进单页
+    // 项几何=新 D1 同族错乱源，裁决 2-§5① 强制条款）
+    const anchorRoot = closestPageRoot(sel.anchorNode)
+    const focusRoot = closestPageRoot(sel.focusNode)
+    if (anchorRoot !== focusRoot) {
+      setPaint(null)
+      return
+    }
+    // 守卫 (iii)：页外/textLayer 缺
+    const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
+    const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
+    if (pageNo === null || textLayer === null) {
+      setPaint(null)
+      return
+    }
+    const range = sel.getRangeAt(0)
+    // 守卫 (iv)：零宽盒（零文本/纯元素选区）
+    const box = range.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) {
+      setPaint(null)
+      return
+    }
+    // 轻量偏移 probe（Range.toString ×2 O(页文本)——join/quote/prefix/suffix
+    // 切片与 rectsBetweenPoints/medianFontSize 全量几何量测链全省）
+    const lead = probeOffsetLen(textLayer, range.startContainer, range.startOffset, 'start')
+    const tail = lead === null ? null : probeOffsetLen(textLayer, range.endContainer, range.endOffset, 'end')
+    const entry = usePageItemsStore.getState().pages[pageNo + 1]
+    let item: ItemSelectionGeometry | null = null
+    if (lead !== null && tail !== null && entry !== undefined) {
+      const domText = fullTextOf(textLayer)
+      if (reconcileItemsWithDom(entry.text.items, domText)) {
+        const start = lead
+        const end = domText.length - tail
+        if (end > start) {
+          try {
+            const zoom = useReaderStore.getState().tabs[paperId]?.zoom ?? 1
+            item = itemSelectionGeometry({
+              items: entry.text.items,
+              styles: entry.text.styles,
+              viewport: { scale: clampScale(zoom), rotate: entry.geometry.rotate, view: entry.geometry.view },
+              start,
+              end,
+              base: pixelBoxOf(textLayer)
+            })
+          } catch {
+            item = null // 计算异常→回退（诊断单源=evaluateCore 链内 warn）
+          }
+        }
+      }
+    }
+    if (item === null) {
+      // 快路径失败→回退=全量视觉评估（层级声明见头注；不动 pending）
+      evaluateCore(false, true)
+      return
+    }
+    // G2 同门：拖选期抑制渲染（静默——拖选中途不刷屏，INV-02 只挂完成时刻）
+    if (item.health.unhealthy) {
+      setPaint(null)
+      return
+    }
+    setPaint({ root: anchorRoot!, rects: item.rects, bands: item.bands })
+  }
+
+  /** 全量（settle/mouseup 路——现行逻辑零变，visualOnly 仅剩快路径回退一个活调用方） */
+  function full(fromMouseUp: boolean): void {
+    evaluateCore(fromMouseUp, false)
+  }
+
+  function evaluateCore(fromMouseUp: boolean, visualOnly: boolean): void {
     const sel = window.getSelection()
     if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
       if (!visualOnly) setPending(null)
@@ -180,4 +316,6 @@ export function createEvaluate(ctx: EvaluateContext): (fromMouseUp: boolean, vis
     const { x, y } = toolbarMountPos(pageRoot, { x: box.x, y: box.y, width: box.width, height: box.height })
     setPending({ anchor: item !== null ? { ...anchor, rects: item.rects } : anchor, pageNo: pageNo!, x, y })
   }
+
+  return { visual, full }
 }
