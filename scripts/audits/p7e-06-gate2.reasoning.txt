@@ -1,0 +1,504 @@
+Let me analyze this audit carefully. The materials are:
+
+1. Ticket P7E-06: multi-tag filter with AND intersection semantics
+2. Full diff of implementation
+3. Implementer report
+4. Gate 1 review trajectory
+
+Key things to verify:
+1. Contract and discipline: architectural rules, test locks, no new deps, no SQL string concatenation, etc.
+2. Correctness: AND intersection SQL, INV-53 removal semantics, edge cases
+3. Security: SQL injection (parameter binding)
+4. Production quality
+5. Test discipline
+
+Let me go through the diff piece by piece.
+
+### 1. `papers.queries.ts` buildFilters
+```ts
+for (const t of q.tagIds ?? []) {
+  where.push('EXISTS (SELECT 1 FROM paper_tags pt WHERE pt.paper_id = p.id AND pt.tag_id = ?)')
+  params.push(t)
+}
+```
+- Same pattern as the previous single tag EXISTS, but looped. Each tag gets its own EXISTS clause; where clauses joined by AND = intersection semantics.
+- Parameters are bound with `?` — no string concatenation of values, no injection.
+- LIMIT: `max(20)` enforced at schema level. But wait — the repo function `searchSummaries` probably only takes validated `LibraryQuery` — let me check. In the unit test, they call `repo.searchSummaries({ tagIds: ['t-a', 't-b'], sort: 'added_desc', offset: 0, limit: 50 })`. Does the repo parse the query through the schema? Hmm, actually in test T8 they test the schema directly. The repo function might not validate the schema — depends on IPC boundary. The potential issue: `tagIds` max(20) is schema-level. If a caller (in-process test) bypasses zod validation and passes 21 tags, the query loops 21 times — that's a minor concern but in production the IPC layer validates. Actually the ticket says "IPC 层防线锚" for T8 — schema applies at IPC boundary. So fine.
+
+- Is there a possible issue with `q.tagId` field deletion breaking other callers? The diff shows grep evidence (gate 1 says main controller added grep residue evidence — 零悬挂). Typecheck passing is evidence.
+
+### 2. `paper.ts` schema
+```ts
+tagIds: z.array(z.string().min(1)).min(1).max(20).optional(),
+```
+- Deleted `tagId`. Applies AND semantics via multiple EXISTS. Empty arrays rejected by min(1). UI converts empty to undefined. Fine.
+
+### 3. TagFilter.tsx
+- Props switched to selectedTagIds/onFilterChange.
+- Chip click toggle: active → filter out; inactive → append. Correct.
+- handleMutated: if disappearedId in selectedTagIds, call onFilterChange(filtered remaining) then onMutated. Order preserved. Removal semantics correct per INV-53 adaptation: remove only the disappeared id, keep others.
+
+Wait — one subtle thing: in handleMutated, after disappearing id removal and onFilterChange(remaining), if remaining is empty... `onFilterChange([])` — but the contract says empty array = clear all selected. In FilterBar, the conversion happens. But TagFilter itself doesn't need to converte; FilterBar does. However the invoation onFilterChange([]) is then handled by FilterBar converting to undefined. Good.
+
+But wait — a subtle issue: handleMutated calls onFilterChange with the filtered array. FilterBar's `onChange({ tagIds: ids.length > 0 ? ids : undefined })`. If the remaining set after removal is non-empty, e.g. [t-y], the filter is preserved. Correct. If empty, converted to undefined → full list. Correct.
+
+### 4. FilterBar.tsx
+```tsx
+selectedTagIds={query.tagIds ?? []}
+onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
+```
+Correct.
+
+### 5. INV-53 order preservation
+In the old code: if (disappearedId !== null && disappearedId === selectedTagId) { onFilterChange(null) } ; onMutated?.()
+New: if disappearedId !== null && selectedTagIds.includes(disappearedId) { onFilterChange(selectedTagIds.filter(id => id !== disappearedId)) }; onMutated?.()
+
+Order unchanged: filter-change first, then mutated.
+
+### 6. Tests
+
+Unit repo tests (papers-multi-tag.test.ts):
+- T1: seeds 甲 with A+B, 乙 with A. Query tagIds=['t-a','t-b'] → expect only p-1 (甲). Correct AND.
+- T4: ['t-a'] → both papers p-2, p-1 (added_desc order? p-2 added 2026-01-02 later, so sorted desc p-2 first). expect(['p-2','p-1']) — the ordering: added_at desc means p-2 (2026-01-02) before p-1 (2026-01-01). Correct.
+- no tagIds → returns all. Correct.
+- T8: 21 rejected, 20 allowed. Empty array rejected. Fine.
+
+Wait — the repo.searchSummaries call in T1 etc. — the type signature probably relies on the LibraryQuery type. `repo.searchSummaries({ tagIds: ... })` — the repo's `searchSummaries` might accept a `LibraryQuery` shape with offset/limit. OK.
+
+Side note on T8: the assertion `toThrow()` — it checks the schema. But the SQL layer isn't guarded by the max(20) at repo level. As discussed — schema enforced at IPC. Fine but maybe a note. Actually, is searchSummaries itself validating via schema? Probably not... Actually, existing pattern may have the repo taking already-validated queries. Not necessarily a defect since IPC layer validates.
+
+Renderer tests (tag-filter-multi.test.tsx):
+- T1/T2/T3 toggle sequence: renders TagFilter with selected array, click A → last called with ['t-a']; re-render with ['t-a']; click B → ['t-a','t-b']; re-render; aria-pressed checks; click A → ['t-b']; re-render; click B → []. Good.
+
+Hmm — wait, aria-pressed: in the TagFilter code shown in diff... Actually the diff doesn't show aria-pressed attribute in the chip button. Let me scan: the diff shows the button style props and onClick. The existing code probably has aria-pressed well before. The new test checks `aria-pressed` — fine since existing component presumably had it (not shown in diff context). The buttons use `buttonByText` with text like '水质（2）' — so chip text is name+paperCount.
+
+- T5: delete selected member. Renders with ['t-x','t-y'] (甲, 乙). Right-click 甲 → delete → confirm. Expects onFilterChange toHaveBeenCalledOnce with ['t-y'], onMutated once, filter before mutated.
+
+Note: after delete confirm resolves, TagFilter probably calls tags store refresh or list? In tag-lifecycle-ui original test the flows are the same. The list mock resolves with [乙]. And the re-render isn't called between (TagFilter maintains internal state?). Wait after delete, the code in TagFilter likely sets tags list from store refresh? In any case, assertions seem right.
+
+- T6: rename with id stable — expect no onFilterChange, once onMutated. Good.
+
+Note that T6 has `await new Promise((r) => setTimeout(r, 0))` after clicking 保存 — but no `act` wrapper around that microtask? Actually it's inside act(async () => { await new Promise(...) }). Right, it's within act. Fine.
+
+- T7: merge source in selected set: right-click 甲 (source t-x) → merge to 丙 (t-z). After merge, mock list returns [t-y, t-z]. Expects onFilterChange(['t-y']). Wait — the selected set was ['t-x','t-y']; merge source t-x disappears; so removal → [t-y]. And target t-z should not be auto-added. Correct per INV-53. Order preserved.
+
+- T3 assembly: FilterBar renders; click chip → onChange({tagIds:['t-a']}); re-render with tagIds; click again → onChange({tagIds: undefined}). Correct.
+
+e2e tag-filter-multi.spec.ts — seeds 3 papers, tags 甲=A+B via UI, 乙=A; clicks A then B → count 1, 甲 visible, 乙 absent, 丙 absent. Then deselect B → count 2 (甲乙), 丙 absent. Deselect A → count 3. Reasonable.
+
+However — one subtle thing: The e2e checks the chip with `getByRole('button', { name: '多选A（2）' })`. Names with full-width parentheses. After first re-visit, A count shows 2 (甲+乙), B count 1. Then clicks A (filters to 甲乙, both A). Then clicks B (filter to intersection 甲). Library list with loading re-triggers per select. Then click B again → deselect → [A] → filter 甲乙... wait they click B (to deselect) — B chip remains available? Yes because the button still in the filtered list? After selecting A, the chips remain visible because TagFilter shows all tags independent of filter. Good.
+
+But there's a possible race: after click on A filter, then immediately click on B — the list reload triggered by first click may still be in flight, and second click switches the query while loading. But they anchor to chip visibility etc. This is an e2e that the gate said passed twice. OK.
+
+### tag-lifecycle.spec.ts change (locked companion)
+Inserted before clicking 水质: a click on 水质监测（1）chip to deselect it — restoring the "single-select 水质" semantics to the sequence. Comment explains. Assertions unchanged. This is needed because in v2 the prior selected chip remains selected (叠加) and deletion test needs exact semantics. Reasonable.
+
+Let me check: the spec at :62 clicked 水治 (later renamed to 水质监测). Then at :91ish there's the sequence: after rename to 水质监测, clicked 水质 chip. In v1, clicking 水质 replaced 水治 selection → selected = 水质 only. In v2, clicking 水质 while 水质监测 still selected → selected = [水质监测, 水质]. Then delete 水质 flow expects full list? Actually the spec deletion sequence: selected 水质 → delete → filter cleared → full list. With v2 toggle, at the time deletion happens, tagIds=[t-水治, t-水质]. Deleting 水质 (disappeared t-水质 in selected) → INV-53 removes only t-水质 → remaining [t-水治] → list = 甲 only → but spec expects 乙 visible. Hence companion: deselect 水质监测 first so selected=[水质] → after delete → [] → full list. Correct and assertion-face zero change? They added a click which is an interaction step — assertion untouched.
+
+But wait: also the ordering issue — they inserted this click BEFORE clicking 水质 chip. Actually the insertion at diff line ~94: after "水质监测（1）" visible assertion, click it to cancel, then click 水质. Wait sequence in the spec: at line ~62 (the rename segment), clicked 水治 which was selected earlier? Let me reconstruct: the spec's deletion section comment says "删除：选中「水质」→筛选只剩甲乙（丙被滤掉）". To have 筛选只剩甲乙, filter = 水质 only. So clicking 水质监测 (which had been selected at rename-time segment) deselects it; then clicking 水质 selects only 水质. Both 甲乙 have 水质 (per comment). Good — it does restore the prior intent.
+
+Potential concern: clicking 水质监测（1） will set filter to [] (i.e., selected = none). This triggers clearing tagIds to undefined; then clicking 水质 sets to [水质]. So the deletion sequence exactly replicates the old single-select scenario. OK.
+
+The companion modifies a locked spec with main-controller authorization. Per implementer, they stopped, didn't modify spec, controller did. Fine per process.
+
+### papers.repo.test.ts:170 companion — changed `tagId: 't-1'` to `tagIds: ['t-1']` with same expectation ['p-2']. Assertion unchanged (semantically equivalent). Zero weakening? The assertion expects exactly ['p-2'] — with a single tag, AND intersection of one tag behaves like old tagId filter. Equivalent.
+
+### tag-lifecycle-ui.test.tsx companion — harness render signature changed from selectedTagId string|null to selectedTagIds string[]. Many call sites. The S2/S3 assertion changed from `toHaveBeenCalledWith(null)` to `toHaveBeenCalledWith([])`. Is this a semantic weakening? Old behavior onFilterChange(null) meant "clear filter". New behavior for single-element selection [t-1] is onFilterChange([]) — same semantic (clear selection). The assertion value changed but semantically equivalent... But note: in TagFilter's handleMutated for delete with selected single [t-1], disappearedId t-1 → filter(≠t-1) → []. So onFilterChange called with [] — the harness assertion is now checking real behavior. For a pure state migration, this is fine.
+
+However — a subtle concern — also invocationCallOrder assertions kept. They added `expect(filterOrder!, '...').toBeLessThan(mutatedOrder!)` — wait in original already there. OK.
+
+But wait — the relevant change in the merge test at line ~170: original code expected `onFilterChange(null)`? Actually, in old code at the merge test when source t-1 selected, deletion happens too, so onFilterChange(null) → new [] equivalence. Fine.
+
+### Locked files & harness
+
+Locks went from 265 to 268 — +2 unit spec files +1 e2e spec file. Since tag-lifecycle.spec.ts and the two test files existing already in lock, their hashes changed... Wait, the manifest: +2 unit files = papers-multi-tag + tag-filter-multi... e2e tag-filter-multi = 1. That's 3 new specs. Wait unit: 148 files vs 146 baseline (+2 unit) and e2e 38→39 (+1). The lock count +3 new files, plus changed hashes for modified locked files. Manifest shown: adds tag-filter-multi.spec.ts, papers-multi-tag.test.ts, tag-filter-multi.test.tsx — so 3 new file entries. 265→268. Yes.
+
+### Any issues with the new e2e spec being new file "always-active"? Fine.
+
+### Potential correctness issues to inspect
+
+1. **`buildFilters` interplay with year/collection/sort** — no interaction: WHERE parts just ANDed, fine.
+
+2. **Check strict() interplay of libraryQuerySchema** — deleting tagId and adding tagIds. If any remaining code sets tagId, strict() may reject? strict would reject unknown tagId. Typecheck ensures the type-level. The grep check found zero residue. Also the `Loose` etc.? libraryQuery strict is preexisting. Fine.
+
+3. **`max(20)` applied but repo searchSummaries isn't schema-validated in unit tests** — no issue because the test validates schema separately.
+
+Hmm wait. Actually let's think about whether the repo query path gets the parsed schema or raw object. In the IPC, presumably handler receives validated payload. The repo receives typed LibraryQuery. Fine.
+
+4. **Concern about `papers.repo.test.ts` companion test named "tagIds 过滤命中挂接文献" for unit filter — this test was within guardedDescribe?** The diff only changes the test name and input. If this was the v1 单选过滤锚, then T4 equivalent. Actually their own new T4 duplicates it. The reason for companion migration is the compile break from deleting tagId field. OK.
+
+5. **Potential hidden residue** — original line `if (q.tagId !== undefined)` removed — no other use of tagId in queries. Header comment on file shows still the old mention? Not visible in diff. But grep evidence suggests zero. Gate 1 says the residue grep was done by main controller:
+
+`p7e-06-tagid-residue-grep.raw.txt——精确 grep 零悬挂+文件级命中全为 tagIds 子串或 tags 通道独立面`. OK, acceptable.
+
+6. **BIG POSSIBLE ISSUE**: In `papers-multi-tag.test.ts`, the T1 test calls `repo.searchSummaries({ tagIds: ['t-a', 't-b'], sort: 'added_desc', offset: 0, limit: 50 })` — the repo presumably uses the `searchSummaries` function defined in repo? Hold on — there's a type question: `LibraryQuery` schema includes search/collectionId/year/sort... and `offset/limit` may be separate, not in the schema. Actually searchSummaries is typed through something like `LibraryQuery` plus pagination. Not important.
+
+But actually the important check: Does `buildFilters` use `q.tagIds` in the loop; is each iteration push an EXISTS with parameters — between loops `params.push(t)` well-defined. The SQL: where array JOIN AND? in searchSummaries:
+
+Assuming code beyond: `const cond = where.join(' AND ') ; ...`. Existing behavior. So [A,B] semantics correct.
+
+Let me manually simulate:
+where = [
+  EXISTS(... pt.tag_id = ?) with A,
+  EXISTS(... pt.tag_id = ?) with B
+]
+cond = EXISTS(...A) AND EXISTS(...B). For a paper to appear, there must be rows in paper_tags for A and rows for B — AND — intersection. Correct.
+
+M1 mutation changes join to OR → papers with A or B appear (乙混入) — given paper 甲 has both, paper 乙 has A only, with OR the search would return 甲乙: expect [p-1] only — false. Red hit genuinely.
+
+7. **INV-53 ordering**: tag-lifecycle UI tests assert that deletion/merge triggers onFilterChange then onMutated. This matches code: we call onFilterChange then onMutated. And only when disappeared id in selected set. If N/A, only onMutated. Tests cover both. Fine.
+
+Wait — but does the code in T5/T7 handle the fact that after calling onFilterChange, the parent's query updates asynchronously, but also handleMutated is triggered from the dialog onSubmit callback after a delete completes with `onMutated` to reload library. The INV-53 issue of stale tagIds in the query with dead id: onFilterChange uses setQuery which triggers reload. This is existing architecture.
+
+8. **Possible subtle issue about React controlled props re-render within TagFilter** — The TagFilter is rendered with props from parent store query; when a user clicks a chip, the parent updates query; query changes propagate to TagFilter via props.selectedTagIds. It's a controlled component. The internal logic uses props directly, no internal state. Tests re-render manually following the flow. Good.
+
+9. **InvocationCallOrder between onFilterChange selection and onMutated order with real dialog event async** — test ensures by mock invocationOrder. Fine.
+
+10. **`is` there any risk in tag-filter-multi.test's FilterBar assembly test? FilterBar likely calls useTagsStore with refresh? Actually FilterBar renders TagFilter, which mounts and does tags refresh with stubApi. They stubbed list. Also collections use mock. They also need to pass sort etc. renderBar sets base query { sort: 'added_desc', offset: 0, limit: 50 }. The FilterBar onChange receives patch {tagIds: ['t-a']} — then FilterBar uses library collections? Wait FilterBar per its header imports `api.library.collections` for filters. They stub collections resolve []. OK.
+
+11. Now — the tag-lifecycle.spec companion: Concern is whether the click restoring sequence also may break other invariants in that spec, e.g., chip 水质监测 count updates (1) after the deletion of 水质? Wait the spec's deletion segment: (per comment) after clicking 水质监测 to deselect, the current selection is ['水质'] as before in v1. But list of chips: 水质监测（1）+水质（2）+ etc., if 水质监测 was renamed from 水治. The delete of 水质 calls onMutated after onFilterChange([]); since deletion involves papers through paper_tags cascade. After reload, all list visible. The spec's assertion "P7E 乙文献" visible etc.
+
+Hmm — the spec companion click changes a filtering state, but would it ever alter a later assertion count? The delete flow expects "删除后死筛选自动清空→全列表". OK.
+
+12. **The changed manifest hashes**: In the diff's manifest chunk, we can't verify actual added spec hashes (just listed). Can't cross-check hash — not needed.
+
+13. **Notice in manifest diff ordering**: It lists `tests/e2e/tag-filter-multi.spec.ts` BEFORE `tag-lifecycle.spec.ts` alphabetical? Actually "tag-filter-multi" < "tag-lifecycle" yes alphabetical; the added tag-filter-multi entry placed after smoke, before tag-lifecycle. But that was the existing sort order file list in manifest — fine.
+
+14. **Scope creep check**: Implementer touched FilterBar header comment and TagFilter header comments, updated tag-lifecycle-ui header comments (S2/S3 wording) — authorized inside test companion? The claim: the harness comment at tagId→tagIds is within the companion scope; header comment with null 表述 was concurrently updated "顺带同步" — does that violate "受锁配套=最小增量"? The ui test file was already authorized as a locked companion; updating its internal comments coherently is within the same file and not the assertion weakening. Acceptable.
+
+15. **Any absence of test for T2 in repo test?** T2 mostly UI toggling; SEQ in unit new file covered: they have toggle sequence covering T1/T2/T3 in one test, assembly T3. T8 in repo. T6 id stability unit. T7 in unit. e2e covers sequence as well. Good.
+
+16. Wait — the T4 "单选特例" is covered in the new papers-multi-tag test. But there is a missing piece: T4 says "tagId 单选回归锚——e2e 既有链不破" — in the receiver FilterBar, 单选在 UI 层等价. In the new tag-filter UI test, T1/T2/T3 only start with empty selectedTagIds. Not test starting with a single selected filter and clicking another chip — old UI behavior of replacing. But with multi, clicking another attaches. T4 semantics require only that selecting one tag filters appropriately which is covered by T1 sequence's first click. Probably fine.
+
+17. **FilterBar assembly test** — the assertion `onChange` last called with { tagIds: undefined }. The FilterBar is also used in test render to create TagFilter inside; clicking chips goes through TagFilter → props.onFilterChange → FilterBar handler → onChange({tagIds...}). This test covers M3 red because when empty array not converted, onChange would receive {tagIds: []} — test expects {tagIds: undefined} and fails. Good.
+
+18. **Mutations validity**: M2 changes handleMutated to full-clear [] vs remaining — T5/T7 are anchored to toHaveBeenCalledWith(['t-y'])? but wait if the code changed to clear all — onFilterChange would have been called with [] — test expects ['t-y'] — red. Valid.
+
+M1 changed join to OR — T1 red. Valid.
+
+M3: three-expression? When disabled would make onFilterChange on TagFilter pass [] and FilterBar convert to `undefined` if the code were correct; but M3 means mutation in converts [] to []? Red at assembly T3: onChange({tagIds:[]}) expected undefined red. Hmm — M3 changes FilterBar to pass tagIds un-mutated to onChange: so onChange receives {tagIds:[]} — test expects {tagIds: undefined} → red — good.
+
+M4: toggle both-ways → only enters: T2 red (click A when selected leads removal expected; constant current selectedTagIds unchanged — would expect lastCalled ['t-b'] to have been actual?) Wait the code for M4 active always selectedTagIds = same; clicking A when active calls onFilterChange(active?...). If same array then onFilterChange(['t-a']) again while the test expects ['t-b'] -> red. Good.
+
+19. The implementer report discloses T6 and no-tagIds tests were "天然绿" in red phase and failure capability covered by M2/M4/e2e. An honest note — no strict requirement every newly added test be red first, but they described their reasoning. That's acceptable.
+
+20. File-length discipline: TagFilter.tsx ends 174 ≤ 250. New renderer test 261 lines — under file 500. Wait 文件 ≤500 for unit tests? Component ≤250. New test files 85/260/79 all <500. New TagFilter diff of file claimed 174 line total — under component limit 250. papers.queries.ts? Does this push over 500? The diff +~5 lines; unknown; baseline must be under 500 already; check says likely under.
+
+Wait — TagFilter.tsx after the change is now 174 lines? Original was ~155? The diff shows removing a couple and adding several. All fine.
+
+21. **Any concerns about `toggle` with an empty selectedTagIds array and clicking a chip in the "active ? ... : [...selectedTagIds, t.id]"** — correct spread, no mutation of original — good.
+
+22. **Do dead-id removals interact with ordering?** In ["filter", "..."] the order remains sorted by id; if the removal happens and leaves nonempty, append sequence retained. Good enough.
+
+23. **Possible issue with the E2E 2nd-level view switching: After seeding tags, they click `脉络` then `文献库` forcing remount (comment). But the seed paper titles clicked, then press Enter on tag inputs. Wait, after clicking paper "P7E06 甲文献", tags applied to detail panel. Then click 乙, type A. Fine. Then toggling view to ensure chips refresh before clicking chips.
+
+But at the click of A chip: getByRole button name exact '多选A（2）' with full width parentheses; likely they encode count with `（`. Chip text uses `${t.name}（${t.paperCount}）`. Good.
+
+After clicking A (count became 2), click B (1). Wait counts remain original; after filter... TagFilter `tags` store still has counts 2/1, chips with their counts unchanged (counting is static per notes). So the button names stay same before/after clicks. Good.
+
+24. Potential performance / SQL statement cache? The loop generates multiple distinct complete SQL statements 1..20 tags — prepared statement cache for each combination? Actually with parameter binding only, the SQL text varies per the number of tags in the array. If a user filters with 3 tags, SQL text with three EXISTS blocks; with 4, four. Statement cache grows combinatorially only with the array length count up to max 20 — meaning up to 20 distinct shapes... Wait each query uses the same SQL text if builtFilters only where the parameter counts. Length = each tag iteration adds a fixed SQL segment. So a 2-tag filter query SQL text differs from 3-tag; possible distinct 20 shapes, each a query with a different fixed `?` count. This isn't an injection issue. Cache size is limited. Not a concern, and it's even an explicit ticket. Fine.
+
+25. **One more correctness nuance**: In `buildFilters`, before P7E-06, there was a single EXISTS for tagId. The change replaced this with for-loop. But where were the `tagId` search on deleted? Not other query methods.
+
+26. Migration/db: none.
+
+27. Strict / zod issue: `tagIds` max of 20 elements; but UI can select unlimited chips? If at the 20th and then clicking the 21st would be passed through onFilterChange to the store `query`, and then when setting query tagIds len=21, the IPC schema parse would reject with a parse error => Toast or error? Max(20) is a safety at IPC, not at UI — no max in toggle. This could result in silent failure if the query setter lacks schema parse on renderer side — but likely renderer setQuery doesn't validate; the query object in renderer store may be validated on IPC send whereas the renderer itself may send invalid query to `getPapers`. If query travels over IPC — validation happens at the main side with schema — would reject and return error, UI shows error. Existing pattern upstream — not a correctness issue but could be a minor UX edge. But ticket schema: air-con rather than block because the design states max(20) so the IPC is the defence. Scenarios: selecting 20 chips is unlikely; but if more and then removal etc. However no warnings regarding the UI making it impossible. I'd call nit at most. Or maybe warn if this were merged into the query without parse at interface. There is no evidence of renderer limits. But the unit test T8 only tests schema parse not repo; a repo caller with 21 tags would generate 21 clause? If bypassing IPC no cap. But existing design decides schema-level max = anchoring at IPC. I'll keep this a nit.
+
+28. **Unexpected warning to look at: Sequence at FilterBar for TagFilter's auto-refresh.** In the tag filtering path: after clicking a filter chip, TagFilter onFilterChange → FilterBar onChange → store query set (setQuery). Then the library list uses debounce/effect to reload. This existing. Not introduced.
+
+29. **Do any existing tests elsewhere (beyond locks) rely on tagId that were updated?** It's a compile error guarantee, since TS would break. Those files noted + test harness + e2e. Are there other feature files invoking TagFilter? Search "TagFilter" usage universe may reveal FilterBar plus anything else? Since type check passes but TagFilter props signature changed — any type compile would fail for other usages. Since the compile is green, all callers updated. Fine. Also TagFilter's old props occurred in other tests? maybe; they updated only tag-lifecycle; new tag-filter-multi harness uses same TagFilter props. OK.
+
+30. **Potential DOM / accessibility** aria-pressed on TagFilter chip buttons — does existing TagFilter have aria-pressed? In old code in tag-lifecycle spec they mention quick snapshot "pressed". So yes chip includes aria-pressed attr. fine.
+
+31. **E2E tag-lifecycle companion correctness nuance**: It clicks `水质监测（1）` chip. But does spec currently leave the library list with the filter active such that clicking chip triggers reload etc. The pre-condition checks at :91: `await expect(win.getByRole('button', { name: '水质（2）' })).toBeVisible({ timeout: 10_000 })` because earlier they clicked through? Let's look at excerpt:
+
+At spec line ~91 before insertion:
+
+```
+await expect(win.getByRole('button', { name: '水质（2）' })).toBeVisible(...)
+```
+The insertion at this point:
+```
+await win.getByRole('button', { name: '水质监测（1）' }).click()
+await win.getByRole('button', { name: '水质（2）' }).click()
+```
+Then existing assertion `await expect(win.getByText('正在加载文献列表…')).toBeHidden(...)` then later they check the filtered output shows only 甲乙 and the chip? Let's reconstruct:
+
+Before instant:
+```
+// 删除：选中「水质」→筛选只剩甲乙…
+await win.getByRole('button', { name: '水质（2）' }).click()
+await expect(getByText('正在加载…')).toBeHidden
+await expect... getByText 甲乙...
+```
+Actually insertion inserted at that comment point.
+
+Then deleting 水质: when 水质 deleted, tagIds=['t-水治...'] was removed by clicking 水质监测? Wait: Pre-state: selected from the rename section? Earlier spec around rename time: at line 62 they clicked '水治'? Actually from the description, before the renaming part, the spec clicked "水治（2）" maybe in a section "筛选只剩甲乙" after another rename? Hold on, the excerpt at line ~91:
+
+Before the deletion, after rename to 水质监测, at line 91 they asserted `水质（2）` visible... Wait maybe there was already a section verifying selected died in order... need the original spec context?
+
+Wait — spec: upstream earlier test flow is:
+
+1. rename ("水治" → "水质监测") maybe per the renamed chip assertion and selection of 水治 had been clicked.
+2. Then rename merges...
+
+Actually description at the renamed :62 mention from the report — after they had clicked start from selection of '水治'. Original v1 spec behavior: clicking 水质 at some earlier step replaces. In v1 the selected before this deletion step was 水质（2）? Original: at the deletion of "水质" — this 水质 chip was created from a merge earlier? Wait the spec covers 改名→合并→删除 of tags. The deleted tag was "水治"? hmm.
+
+Given this ecosystem is complex, trust the snapshot evidence and the dual-green re-run.
+
+The important question: after inserting the extra click to deselect '水质监测', has an ordering anchor been maintained to list reload? Example: click 水质监测 → selection [] → triggers library reload; immediately click 水质 → set [水质] → reload while previous reload in flight. But Playwright click auto-waits with actionability; and chips remain clickable. Quick consecutive click may cause both queries: query change from tagIds undefined (filter 0) to tagIds [水质]; race in load results? The e2e has list-load anchors waiting. Real bug potential in app-side: double reload triggers. Either way assert waits correct. The report says tag-lifecycle.spec green twice after companion + new spec + full E2E 39/39. So race empirically absent.
+
+32. **Wait: tag lifecycle spec "先取消改名段选中的「水质监测」" says at line :62 the click was on the renamed segment? Wait clarify from earlier context — the diff comment: "（v2 toggle 点新 chip=叠加非换选——先取消改名段选中的「水质监测」（:62 点选其前身「水治」，id 稳定延续），恢复本段「单选水质」的换选序列语义（选中集=[水质]，甲乙均挂）"** So at line 62 the spec had earlier clicked 水治 which was then renamed to 水质监测 (id stable), both selected tags remain to it. Then by :94 if clicked 水质 (2), then [水治-id, water]. Yes cancellation insertion restores — appropriate.
+
+But here's an essence-check: the deletion then triggers INV-53 path to onFilterChange(remaining = []) because selection only [水质]. When deleted 「水质」, remaining after removing deleted = [] (since filter selected set only contains deleted) so filter cleared full list. Spec asserts full list — this is consistent with new semantics: the user had id-t-water... previously deselected — this doesn't count as extra fullclear assertion? It's precisely consistent.
+
+33. Let's check correctness of removed id = merged target? Ex. When a tag is deleted tagId passed as `disappearedId`. Merge: never for target? For merge source t-1 disappears, target maybe selected — when target selected invariant S4 picks not to clear filter (the target id is still valid, and if target selected and source not selected no filter move). In handleMutated code, `selectedTagIds.includes(disappearedId)` and only source ids are gone. If the selected merged target is stable — nothing changed, correct.
+
+But what about the case if source t-x in selected set AND the target t-z in selected? In merge test they assert after merge onFilterChange had toHaveBeenCalledWith(['t-y'])? They start selectedTagIds ['t-x','t-y'], disappearedId t-x only; remains ['t-y']. Good, without target auto add.
+
+34. Note on duplicate tagIds? Normal flow prevents duplicates due to toggle logic. Persisted query with duplicates? query stores array; FilterBar passes [] fallback, TagFilter active id in array — duplicates would cause active rendering weirdness: remains true; chip click removal filter removes all occurrences [id1==target all, obviously both removed]. Duplicates can only be constructed (programmatic setQuery path) from API external? The IPC side z.array allows duplicates (no unique); a malicious or naive client could. AND duplicates produce two identical EXISTS clauses — semantically same. No security problem. Duplicate array passed to onFilterChange when clicking inactive? if query duplicate but the chip toggle: selectedTagIds filter for removal removes all duplicates. After removing, array no dup. Not concern.
+
+35. **'active' styling uses same var accent**.
+
+36. **Possibility check for UI suite isolation**: tag-filter-multi UI test file's stubbing uses module-level global. It uses `renderFilter` with `act` import from react; React 19 rc? Consistent usage in existing accompanying tag-lifecycle test harness. It uses root render and acts.
+
+But note: filterBar test uses same `renderBar` which in turn renders FilterBar directly. Load TagsStore... They pass stub collections and list. OK.
+
+37. Manifest hash for tests/unit/renderer tag-lifecycle-ui included meaning companion apply. Verified using changed file hash set.
+
+All seems consistent.
+
+Now evaluate tricky technical candidates:
+
+**Wait — a concern regarding `q.tagIds` typed null in repo contracts:** LibraryQuery maybe uses "tagIds": string[] optional. In old type, `buildFilters` at `models/paper.ts` was in shared. In the DB repo type inference uses type from schema. The commit changed loading in main only. FilterBar constrains the `sort: 'added_desc'`, plus offset/limit.
+
+**Concern**: `buildFilters` loops through an arbitrary unknown typed `q.tagIds`; repo uses validated only. But the repo function itself is typed to the same LibraryQuery Input or output? Hmm, one case: after `z.object({...}).strict()` they call `.parse(...)` over IPC; but repo may accept `LibraryQuery` "parsed output type" — z.array output still plain. Fine.
+
+**Concern about SQLi** — all dynamic parts fixed text; the only dynamic values bound. `param` placeholders included. Escape no. Query code not user-provided. Good.
+
+**Security risk** in buildFilters: The previous code checking comment references. Check possibility where tag ids could be passed with length >=1 but maybe containing `%` etc. Parameter binds handled.
+
+**New imports/deps**: TagFilter.tsx retains same imports, shows Toast and others unchanged. No new client methods. filtered total import? The new UI test only imports tag libraries and stub; stubApi — no new modules.
+
+**registry**: status open in the diff at §? Wait interesting point—the tickets/registry.ts line changed area 'renderer'→'tags-ui'. But in the diff, the summary's new line still says status: 'open'... Actually registry line for P7E-06 has `status: 'open'`. Presumably ticket was in progress still (since verification done by main controller marking to done in the closing). After all verify passes and audits at gate two closure would be done by main controller. Since completion is not part of this change? diff kept open. Ticket paragraph itself says "收口主控单写 P7E-06 翻 done". But registry final snapshot expecting status done? In the report/issue, after the works finished and gate-2 audit it would be. But the changed registry line when the commit diff occurred shows status 'open' + initial summary. Now after implementer and main controller ops perhaps main controller later sets done. Not within this submitted diff, because that registry diff is pre-existing — modified (area type fix + summary text written upon build ticket). In the diff's registry from the material, the status remains whatever was before status "open". Actually in original diff context P7E-06 not present (the `+` line adds ticket? Wait diff `+` on the id 'P7E-06' line — meaning this diff adds the entire P7E-06 line? Ticket line was added when open with summary and area type 'renderer' first; later area corrected? But same line diff + has `area: 'tags-ui'` and status 'open' — we can't see if area fixing incorporated into line when added? This is main controller's commit amending maybe if it's still at the beginning. If the diff is part of a final commit, the ticket's status should be 'done'? But maybe main controller's closure write comes after gate-2 approval. The manifest in the changeset hasn't proven this mismatch. Look at expectation ⑥ “registry P7E-06 翻 done（收口主控单写）”. Since status still open — at the snapshot checked — but acceptance wasn't yet closed at the time of section? External actual conclusion inside the ticket has gate decisions not intended for us. Not a blocker. Could raise a nit at most… this final audit message expects final registry exactly as commit, probably 'done'. On the other hand, the material gave registry diff— it is not the point of P7E-06 expected final state? We cannot fabricate modifications. We might NIT that the goal remains open but closer may be in following steps main controlled. However since all acceptance already executed (verify etc.) should close by registry. Mainly outside audit. I'd avoid nit maybe.
+
+Ah hold on — not exactly. The diff's ticket registry P7E-06 line is an addition with status open and without completed details — but this doesn't match two reported later reality: (a) new spec companion and changed registries? Wait state at line "implementer diff + final materials"... Real diff of submitted final work includes `+ { id: 'P7E-06'...', ...status: 'open'... }` and the main controller hasn't updated it to done summary afterwards in this diff? This likely because pipeline: after acceptance, main controller marks ticket, but the diff pack shows all changes from base to final at this gate? If all changes final, then line leaving open would be inconsistent with 验收 step "registry P7E-06 翻 done"... but the overall project’s methodology says the status flip happens after gate 2 final exam pass, out-of-band for this pack. Many previous ticket summaries indetail end statuses done. In the materials (the summary line @ row), the new P7E-06 registry entry — if this diff is shown as pre-final with initial creation, the pair ticket addition couldn't happen from a file that came from the working tree (receipt). Given they are done finishing quickly: maybe the file shows open because actual P7E-06 hasn't been marked done until controller closes, which hasn't occurred yet as the gate-2 review is the last step? Okay.
+
+Wait, if gate-2 review not completed by the time materials exported, then `done` mark would be missing correctly. Wait "验收" gate-1 after global verify has to pass ... This could mean materials were collected before final paperwork? But other materials final state claims all green and main controller "亲验 39/39" etc. might actually happen at the current gathering. Still we don't judge.
+
+I'll mention if warranted as WARN? Actually better not put a status finding on the ticket registry, since our mandate only judges the material with no direct claim. Could mention a NIT suggestion if needed. The reports themselves assert this will be done by main controller; but it remains to verify because output reality... but we can't invent over-the-top. Could be a useful check-and-do list, but keeping risk on task's own guarantee. To be fair, WARN might not be justified (no evidence in code correctness). Not to deduct.
+
+Going now to look at gate-1 findings 1 WARN on spec waitForTimeout(500) — first boot of app self create DB and seedPaperRow after closing. This wait is not deterministic. It passed twice. Duplicates tag-lifecycle spec precedent which is known to be a sanctioned practice. fine as warning. Gate 1 already gave two warnings, zero? Wait gate1 had PWW with 2 Ws. They didn't choose because the gate runner... This second-door's verdict can give more or same.
+
+Our review final version: we can PASS_WITH_WARNINGS, or PASS? Need to determine if there's any actual BLOCKING defect.
+
+Let me search hard for a blocking bug.
+
+**TagFilter.handleMutated order stale-array issue**:
+```
+if (disappearedId !== null && selectedTagIds.includes(disappearedId)) {
+    onFilterChange(selectedTagIds.filter((id) => id !== disappearedId))
+}
+onMutated?.()
+```
+
+Suppose we've selected [X,Y], and X deletion triggers onMutation whose underlying lifecycle changes filters... This is unchanged pattern. But note: after the deletion, the tags list refresh from store and the query is updated synchronously. If multiple mutation changes the same tag simultaneously and disappears with a set of ids? Tags lifecycle dialog — deletion one at time — okay.
+
+**V1 selectedTagId = single**, old code with null semantics on a disjoint condition (changed). Now we use includes or filter every mutation response from dialog: For a dialog action where the file reference... the lifecycle target within TagFilter: tag.rename/merge/delete will be ordered as dialog. Selects removed from store if disappeared. Query changed if in selected set.
+
+But there is the important edge: **The "S4：合并目标=选中时筛选不动" invariant in original test from the UI suite still?** In new diff, S4 test? Tag lifecycle UI test set includes test of S4? Merge target selected t-2 with list ['t-1'...] etc? They didn't change such test.
+
+They keep merge target selected test with render(['t-2']) - no onFilterChange (merged source? source t-1 not selected with target selected). The new `handleMutated` with target selected — disappears source t-1 that's not in selected ['t-2'], thus filter stays. Correct.
+
+Also there was the old invariant mention in code comment: S4 ... stable id (target selected) filter does not change — by design still valid. Good.
+
+The E2E snapshot made visible: pressed state & filtering by selecting t-二... after deletion of t-water no bugs.
+
+**Potential issue: store query and deep reference**: The renderer passes `ids` to FilterBar: use this constructed new arrays and callback results in onChange creates an object with tagIds array from query spread. Not mutating.
+
+**Accessibility name as button target in e2e:** '多选A（2）'. Since the add-tag ui possibly saves Chinese tag; name appears as such. It uses `await win.getByText(title).first().click()` in another area. Text occurrences of the title could appear in card and list — after seeds no duplicates; after tagging on detail panel, there may be 2 occurrences. They always use first. fine.
+
+One might raise that in e2e after view switch, the tag count chips show `多选A（2）` in chips and also tag could be shown on rows for tags? There might be multiple matches at second assertions on titles at cards count — e.g. tag life first expects name '多选A（2）' also if a title has that literal string... It's a tag button — Role restrict. no issue.
+
+Playwright details: count assertions with **Wait** to have default timeout? Actually `toHaveCount` has default 5 seconds timeout but they set. `.toHaveCount(0)` counts elements : after filter list empty — 0 is immediately satisfiable even during loading emptiness flicker race! Here, danger: toHaveCount(0) with expectation when list is empty because loading not loaded; but first comes from 2 filtered to [A,B]; now if List loading => 0 — false negative could make the test pass wrongly. They have loaded card count 1 anchored just before; switch immediately to expect no 乙; if the filtering removes and triggers reload: exists .lib-count still one after query changed? But 乙 and 丙 assertions for 0 can pass during possible loading of race? in the same rendered view, after toggle B off, both remain absent because selection [A,B]. But list reload resets to empty until new result; card 1 assertion precedes immediately before two 0 assert; because during loading the card might be 0, count remains 0 too, thus would also hold as absence of others without evidence that refresh occurred. Actually they want document absence? Since intersection changed then. There's no visible delay expected; if loading complete no issue. in race, absence assertion could pass before fetch results (still no 乙). Test would still later (in cancellation path) retry to count 2 before actually loaded. But if the data returned not correct yet, count might timeout. So overall pass would be dependent on backend under test. Better than false positive? It may produce false positive if app never returns 乙 on toggling B off? But then the next stage count 2 would fail and reveal. e.g. after deselection B the filter [A,B] had loaded? Correct semantics means 甲乙. If data had intersection with B still wrong (B persisted): count 2 will not match because still 1? Could still time out and fail on count 2 stage. So it accurately catches backend errors.
+
+Good enough.
+
+Wait no — they deselect B: step to click B still selection [A]? Actually after two clicks earlier selected [A,B]. The "cancel" click of B is the same named button '多选B（1）' => it can be clicked while list is loading; but clicking doesn't require list loaded. The previous assertion expected count to be 1 at [A,B]; library effect triggered after filter changes, has cards loaded. Wait query changes twice very quickly: sequence to filter A, then click B with no wait. By time list finished loading for [A], count 1 passes eventually. If loading flickers empty but count anchored 10sec. Fine.
+
+After the second click immediate to B cancel: set [A]. Loading results... count 2 eventually. The subsequent toHaveCount calls are all waiting with timeout. But within that wait, list must first have display after query [A]. count matches. Then both names positive. Fine.
+
+Then click A (done), count 3 eventual.
+
+At the end app closes.
+
+Potential cleanup: The first jump seeds app creates DB. The actual launch with seedPaperRow after close uses launch that returns deterministic? close order uses app1, and then seed writes to userData "synapse...". If Windows path locks? e2e-env handles after close? No issue, existing recipe.
+
+Totally well-designed.
+
+**Double-check the truth of a claim about assertions in tag-lifecycle e2e:** They say “断言面零改” - looking at snippet, only insertion + comment.
+
+**S1 ... S12**? irrelevant.
+
+So overall pass with warnings.
+
+But I should inspect deeply something — the SQL in `buildFilters` already uses `tag_id` in test insert hard-coded in new test; DB table migration guaranteed tags via test fixture.
+
+**One potential correctness bug in schema Strict and `filter`...**
+
+LibraryQuerySchema uses `.strict()` and `.default` etc. Search for prior uses of `tagIds: undefined` in object — leaving tagIds undefined is okay due to optional. But query objects in old places could set `tagIds: []` we... To call FilterBar query receiving undefined is handled with [] guard; changing query to no-filter passes `{ tagIds: undefined }`. Both under the type? Maybe t signature expects `Partial<LibraryQuery>`; property may still need explicit allowed (LibraryQuery has no tagIds property except optional). 'tagIds': undefined allowed due to exactOptional? TypeScript with strict exact perhaps no? If they use patch `Partial<LibraryQuery>`, setting undefined works by forcing. FilterBar callback based on... The model type imports.
+
+The UI test proves and compile.
+
+**Now — think from the second gate: gate review asks us to see possibly missing the annotation that cross-feature dependence?** TagFilter located feature tags; FilterBar mentioned call injects `library.store` load — TagFilter still zero import — no issues.
+
+**PWW / PASS?** Based on strict schema there are no blocking issues.
+
+Several WARN quality notes candidates:
+
+1. In the separate papers-multi-tag test, test rows overlap row IDs across multiple isolated db, fine.
+2. Follow duplicate of "quality" expectations missing an explicit max repository validation of the 20 limit — schema validated at IPC layer... possible design difference since repo tests bypassed but that is consistent within architecture. Not enough.
+3. selection set no persistence recorded per the boundary.
+4. The new test tag-filter-multi has 260 lines (some redundancy, no matter).
+5. line lengths maybe over 120? There are import lines length line 'stubApi.tags.list.mockImplementation' etc — might violate style? lint passed.
+6. Residue line "selection count static" comment in tag-filter; all OK.
+
+One observation about M2 mutation and semantics of T6 test "rename" — when rename flow on [t-x, t-y] one tag also called in tag list refresh. Since list mock returns original two, no onFilterChange; only onMutated once. Good.
+
+Potential false positive in T6 because last line waits via async promise inside act, but if onFilterChange is asynchronously scheduled after a promise set by a chain, could the call not yet executed? They do `await act(async () => { await new Promise(r=>setTimeout(r,0)) })` — might need a second microtask. But from beforeEach and code, rename resolve chain in test usually awaits... They follow existing example from tag-lifecycle-ui? Actually original test T something included `expect(onFilterChange).not.toHaveBeenCalled()`; if flow not completed, false pass. But if flow incomplete, T6 would pass despite the code ignoring id stable? Wait T6 wants to detect regression in which onFilterChange might be wrongly called when id stable. If chain incomplete (not yet call), then expecting not called passes by fault. But implemented code's handleMutated only follows resolved Promise... Let's see unit flow: Button Save triggers or loading with mock resolving synchronous = resolved promise => handleMutated executed onto microtask. Mock implemented `async () => {ok...}` all promise, uses resumption after `await` with act maybe flush. Then after that `await act( async () => { new Promise(setTimeout...)})` -> run microtasks and callback; if handleMutated in promise chain after `await act(...)` from click, plus the list refresh in lifecycle... They do click inside act, so after click returns the synchronous chain up to await promise resolution; microtasks done by act flush. Extra timer wait leaves no call or call after then — in last wait they don't need onMutated? Wait expectation `expect(onMutated).toHaveBeenCalledTimes(1)` will time itself to fail if not yet — if the promise then continued after timer? Promise completion occurs due to microtasks before timers; by doing timer extra wait after asynchronous acceptance, there's enough time and they see outcome correctly. Resolved event continuations happen in microtasks before timer fires, all finished. So accurate.
+
+But there's something for T6: Rendering "新甲" update with tag list refresh rather than asserting new name. Not relevant? It exists in original ui tests. fine.
+
+**Now — should I cite tagId removal grep as evidence**? Material "tag-lifecycle UI ... zero references". Gate1 note: grep in manual by main controller: precisely zero dangling + file-level hits all tagIds substring or tags independent channel. Might be considered **evidence from material**.
+
+Let's consider if the ticket's exact statement "local repo ≤ 300..."? repo folder counts? Tag snippets no large changes. TagFilter.tsx declared 174 total ≤250. But there's a possible limit for File ≤500 — tests 261 under. Each new file under. No concern.
+
+Something unusual at unit files: new test files count Locks +2 unit (papers-multi-tag/tag-filter-multi); but tag-filter-multi.test has 5 mocked module-level; no extra global pollution? Fine.
+
+Also the test harness didn't import `guardedDescribe` per always-active; they use plain vitest global which is fine; baseline baseline 146.
+
+**One honest question on E2E all 39 39? Materials at the top: “e2e 38→39（全量 39/39 全绿主控亲验——新 spec 定向 2 passed 后全量复验）”; plausible. Avoid double-checking.
+
+Now possible Blockers? no.
+
+Let's just be mindful about user wants JSON only. I need to decide on verdict:
+
+- PASS? All main checklist appears. Given two warnings by prior gate plus some additions could use "PASS_WITH_WARNINGS". Do we treat flaws as WARN. The mandate says WARN "should fix, not block" — e.g., non-deterministic 500ms wait. Since identified and precedent — we could include.
+
+Maybe one further nuance: In the new repo test, the no-tagIds compatibility anchor tests `searchSummaries({ sort:..., offset, limit})` but **does not verify the row.abstract or "search"**; zero filter — returns all. OK.
+
+Large-ish: The renderer test doesn't test that after deletions by dialog and re-render the chips still include... not needed.
+
+What about **the new T5/T7 test's dependency on stubApi.tags.delete.mockResolvedValue success and the confirm dialog flow from the lifecycle-ui harness copied. It doesn't rerender after to update selected array? Then assertions about onFilterChange with filter derive from internal derived callback. fine.
+
+Actually, check a serious possibility of the old e2e red: Materials state specific red symptom got fixed by extra **click at 水质监测** eventually, not 水治. But their line says :62 point "点选其前身「水治」(id stable) " — That means before deletion segment in the spec, filter selected was still t-水治/水质监测, but right after change of name, the chip label now appears "水质监测". Good.
+
+What is position after deletion and then assert absolute list with `水质监测`? After water-delete, the text "水质监测" appears likely remains with count 1. The list full row may present 甲乙 as expected. good.
+
+Wait there's also third paper 丙; full list includes丙. spec states expectation inside the section cards count? Only text assertions; full list — everything. all fine.
+
+Just small observation: extra click toggling off — if v2 disabled both? can remain selected only 水质; delete triggers already including selection query [t-water2] with water absence and after clearing, then the actual click selecting water triggers load; load still in flight when deletion is clicked at removal sequence — the chips remain visible during filter loading, but the Library's "正在加载文献列表…" empty may interfere with assertions for list empty row? before asserting removed list rows, spec does: after deletion confirm dialog, click. They wait for '正在加载...' hidden then count — safe.
+
+Now Warnings list:
+
+1. Spec fixture wait 500 not deterministic (Gate 1 W1). Keep.
+
+2. Max 20 validation at schema only; UI toggle doesn't clamp and repo layer direct calls can construct unbounded SQL clauses. However in real architecture IPC parse barrier could cause the renderer at 21 chips to fail — the UI lacks constraint to avoid some errors once 21 chips selected. The app itself has usually fewer than ~12 tags. Could note as NIT improving product — only informational. But anything with severity = warn if it is genuine architecture gap? Since schema specifically in main IPC is the designed defence and max guards. It's correct that IPC boundary is externally visible but internal same-process invoke from renderer still goes over IPC layer (api call getPapers returns validation when query contains tagIds). That defense will produce main-side error which user may see (Toast) — the user can still recover by deselecting. Maybe it is a WARN to maintain UX? If IPC validates the whole LibraryQuery against schema that parses strict unknown fields — wait IPC main may parse payload with `libraryQuerySchema.parse`? If so strict with minimal fields sort default present, valid.
+
+Hmm check if a failed IPC parse returns an error; but the query store on renderer does not schema-parse. For a >20 chip it will be rejected & not update viewed query? The list keeps previous query and shows stale? Actually would fire change request with tagIds empty? Set query at renderer computed earlier with 21 entries; load Library parse result fails so row shows error. After reload at 21, if user then deselects one 20 could restore.
+
+Not "an actual blocker" but design intended max(20) is not communicated UI. I can mention as NIT due to intentional boundary.
+
+3. Tag counts static — declared boundary.
+
+4. Unexposed in eslint: `btn!` in test helpers — pre-existing style; NIT only.
+
+5. **Tests T6 and the no-tagIds test were green in the red phase well before implementation** — this is declared; but under testing discipline M2/M4 catch it (mutation anchors / e2e). Not warning.
+
+Nothing else.
+
+But let me be precise and claim "verdict": PASS_WITH_WARNINGS likely consistent with previous PWW. Should findings maybe include line-level for WARN's. Use file references with precise line hints.
+
+Wait, maybe severity of "the E2E waitForTimeout(500)" — if the callback previous gate considered warnings. We can add as WARN; even though two-line? Good.
+
+Second WARN: `Toggle` chip count behavior / item default includes `[]`? Note with the new empty array sent to FilterBar's onFilterChange only when clicking an active chip that itself was the only selected item; but if `selectedTagIds` already has zero, clicking further would not produce [].
+
+M3 mutation coverage—when UI child passes [] to parent - the assembly test path sends [] by clicking the only selected chip, then un-mutated action triggers FilterBar with assert. Good.
+
+Regarding "disabled array schema" null: in Option semantics old field deleted. FilterBar header commentary notes. no bug.
+
+Let's set them:
+
+- WARN-1 file tests/e2e tag-filter-multi.spec line 24 wait timeout 500 first launch seed. Evidence quote line `await (await seedApp.firstWindow()).waitForTimeout(500)`. suggestion deterministic wait for e.g. button, app is after first jump to build schema before closing. Actually firstWindow maybe gets to main by waitForTimeout... Deter sequence with app close must await readiness: if library UI showed... A deterministic UI wait less flaky. But note wait usually app fully load but they should wait app window's definite and then close. The tag-lifecycle spec same recipe = same known cost.
+
+- WARN-2: The renderer does nothing to prevent more than 20 selected chips while schema rejects 21 at IPC (max(20) as max query) — if 21 chips chosen, the load in the IPC app will error and could leave the list in error without directly actionable diagnostic; I include what SUGGEST: handle at message error and truncate/deselect? Or in FilterBar only pass `ids.slice(0,20)`? But to respect test not expected? The schema has validated tests but no UI guard. Because the ticket intentionally sets guard only on IPC layer; it may be acceptable. Maybe NIT not WARN; perhaps severity NIT not ticket's claims.
+
+- NIT-3 for use of non-null assertions in tests btn!/dialog()! — from prior existing style, take pre-existing helper style and mock no type narrowing. suggestion assert defined then with non-null.
+
+- NIT-4: stale boundary in tag lifecycle test "invocationCallOrder" may assert both variables defined — it's fine.
+
+But we should avoid making redundant/fake findings. Only those two need in the output? Gate1 had some warnings already. If responding "PASS" with empty might conflict with fact we accepted some WARN and find... If in our view everything is passable but they mention minor improvements, PWW appropriate.
+
+However, since as independent auditor given a PWW terminal state with no blockings: PWW doesn't prevent finale. As final second gate closing, the decision should be PASS if no blocking and warnings can be non-blockers? There is an instruction that output PWW means changes needed but can be deployed? In earlier examples, gate decision expected...
+
+Given no warning blockers but two possible, choose "PASS_WITH_WARNINGS". Provide summary.
+
+Need to provide line Evidence snippets accurately:
+
+1. `await (await seedApp.firstWindow()).waitForTimeout(500)` is from file `tests/e2e/tag-filter-multi.spec.ts` around line 25.
+
+2. The second warning about `max(20)` checked only at zod parse:
+
+Evidence quote: “T8 schema 上界（>20 拒收）+空数组拒收” vs FilterBar no cap.
+`onClick={() => onFilterChange(active ? selectedTagIds.filter(...) : [...selectedTagIds, t.id])}`
+
+Maybe I should include it as NIT. Max(20) schema-level is ticket-decided; UI chips rarely >20. Adding NIT rather than WARN keeps final PWW from too high.
+
+But requirement says WARN should be "fix". The code as given — process done — next upkeep can handle. If warnings unresolved, is it final? Pass with warnings yes.
+
+One more possibly real warning: In the SQL layer `params` type uses `unknown[]`, bound values from the zod `.min(1)` string only. However if some pipeline passes tag ids directly from `tagIds` from API no validation at repo. fine.
+
+I think to avoid lowering to PASS (the right answer might well be PASS) or add warnings? Let me consider test discipline dimension: they used `waitForTimeout(500)` currently 25; precedent existing spec passed however no direct user wait; after 39 all green. Probably likely PWW.
+
+But our job compare against rules: "tests are locks". All locked companion authorized. This implementation respected. To claim final PWW with warnings okay.
+
+Add two or 3 entries:
+
+- E2E wait WARN.
+- schema-level max not anchored to UI / loader error — NIT or WARN? It is robustness suggestion. I'd use NIT because it stems from chosen deliberate boundary. 
+- NIT null assertions in tests.
+- Consider issue mention: `tag-filter-multi.spec.ts` uses fixed `.first()` for title click but a list with titles has got because there could be titles equal — if text matches two in the UI? The seed titles unique and not duplicated on row; `.getByText().first` chooses maybe card detail… given no duplicates other than perhaps both in a card area? Wait "P7E06 甲文献" appears in list card. The detail tag panel & possibly PDF Tab title also "P7E06 甲文献" after select? Let's evaluate: after they select title, a PaperDetail side bar opens: it likely displays the paper title once plus the file tab heading possibly too. They don't care because they need to pick right paper; while opening first window: the row element `.lib-card` and detail title afterwards. `.getByText(title).first()` selection could be the doc row title, in filter no issue? Might click the card title — open detail? Existing e2e recipes guide: tag title required to click paper to open tag area. If first is row title under view but could be the exact library card label. It's what they click. no race with second match; subsequent call for other title same. They always click the relevant row label. Existing spec recipe uses same.
+
+- Sorting in e2e list with default added_desc; row titles filled added order. But tag counts seeded by title; when filtering, the count assertions. No issue.
+
+Set findings final:
+
+1. WARN file tests/e2e/tag-filter-multi.spec.ts, line 25 `waitForTimeout(500)`. issue: blind fixed wait for app bootstrap before closing; flake-prone. Evidence “await (await seedApp.firstWindow()).waitForTimeout(500)”. suggestion: wait deterministic signal, e.g. text「文献库」, to sync before close or go straight to seed after first launch await.
+
+2. WARN file src/renderer/features/tags/TagFilter.tsx line chip onClick/call. issue no guard cap limiting selectable; selecting 21 chips causes IPC zod rejection resulting in error state; UX boundary mismatch. Ticket max cap deliberate at IPC. suggestion: either disable selection over 20 in UI or annotate the Chip input flow/converts error to remove? Possibly simple document. Severity WARN with no severe. Might justify as WARN.
+
+Gate-1 warnings included this? no. Might keep as WARN (the count cap is plausible defensive layer edge).
+
+3. NIT for `btn!` etc in new test helpers: `expect(btn)` followed by non-null `btn!.dispatchEvent` etc. 
+
+Possibly add a NIT for static paperCount while selected but recorded in ticket as known boundary. Not in warning.
+
+Wait we should note the **real-ticket "strict()" schema + `tagIds` array pass** from param. It exists.
+
+More importantly — potential deeper issue to verify: searchSummaries call with ORIGINAL `query.year`? No.
+
+I also need evidence sentences for the entire result. Include only findings with precise source; not fabricated. Choose exact numbers.
+
+Line hints:
+
+- new E2E `tag-filter-multi.spec.ts` — line 25/26 `waitForTimeout(500)` actually line 24? From file "const seedApp = await launch(userData)\n  await (await seedApp.firstWindow()).waitForTimeout(500)\n  await seedApp.close()" so around line 23-24. From count: blank etc. Use "~L23".
+
+- Tag UI max no guard: `TagFilter.tsx` chip click, line_hint "~L108-113".
+
+Could include NIT in a same block.
+
+Let’s final judgment: PASS_WITH_WARNINGS.
+
+Summary: In general within ~2 phrases: dominant core proper: For looped EXISTS with params; deletion semantics correct etc. All required companion changes locked and documented; mutations are real. 2 remarks about fixture wait & max UI-facing guard.
+
+Ensure JSON valid with proper escaping.

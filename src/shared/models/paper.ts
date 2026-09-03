@@ -72,7 +72,10 @@ export type LibrarySort = z.infer<typeof librarySortSchema>
 export const libraryQuerySchema = z
   .object({
     search: z.string().max(200).optional(), // FTS：标题/摘要/作者
-    tagId: z.string().optional(),
+    // P7E-06 多选标签过滤（AND 交集）：tagId 单选已删（方案切换=删除旧方案——
+    // 单选=单元素特例，UI 面完全覆盖）；空选集由 UI 层收敛 undefined，空数组
+    // schema 级拒收=防歧义；max(20)=单查询爆炸上界（EXISTS 每标签一条）
+    tagIds: z.array(z.string().min(1)).min(1).max(20).optional(),
     collectionId: z.string().optional(),
     year: z.number().int().optional(),
     sort: librarySortSchema.default('added_desc'),

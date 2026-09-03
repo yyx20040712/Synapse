@@ -93,9 +93,11 @@ export function buildFilters(q: LibraryQuery): { cond: string; params: unknown[]
     where.push("(p.title LIKE ? ESCAPE '\\' OR p.authors_json LIKE ? ESCAPE '\\')")
     params.push(pat, pat)
   }
-  if (q.tagId !== undefined) {
+  // P7E-06 多选标签过滤：逐标签一条 EXISTS，where 数组 AND 拼接=交集语义
+  // （任一标签缺失即出局；禁 IN+GROUP BY HAVING——与既有拼接结构不兼容）
+  for (const t of q.tagIds ?? []) {
     where.push('EXISTS (SELECT 1 FROM paper_tags pt WHERE pt.paper_id = p.id AND pt.tag_id = ?)')
-    params.push(q.tagId)
+    params.push(t)
   }
   if (q.collectionId !== undefined) {
     where.push(

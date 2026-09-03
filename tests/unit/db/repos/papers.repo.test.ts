@@ -167,10 +167,10 @@ guardedDescribe(
         expect(p1?.noteCount).toBe(1)
       })
 
-      it('tagId 过滤命中挂接文献', () => {
+      it('tagIds 过滤命中挂接文献（P7E-06 契约切换：单元素=单选语义等价）', () => {
         db.prepare(`INSERT INTO tags (id, name) VALUES ('t-1','必读')`).run()
         db.prepare(`INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-2','t-1')`).run()
-        const r = repo.searchSummaries({ tagId: 't-1', sort: 'added_desc', offset: 0, limit: 50 })
+        const r = repo.searchSummaries({ tagIds: ['t-1'], sort: 'added_desc', offset: 0, limit: 50 })
         expect(r.items.map((i) => i.id)).toEqual(['p-2'])
       })
     })

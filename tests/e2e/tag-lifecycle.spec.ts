@@ -91,6 +91,10 @@ test('标签生命周期：改名→合并→删除（chip/行徽标真实文本
   await expect(win.getByRole('button', { name: '水质（2）' })).toBeVisible({ timeout: 10_000 })
 
   // —— 删除：选中「水质」→筛选只剩甲乙（丙被滤掉）；删除后死筛选自动清空→全列表 ——
+  // P7E-06 配套：v2 多选 toggle 下「点新 chip」=叠加非换选——先取消改名段
+  // 选中的「水质监测」（:62 点选其前身「水治」，id 稳定延续），恢复本段
+  // 「单选水质」的换选序列语义（选中集=[水质]，甲乙均挂）
+  await win.getByRole('button', { name: '水质监测（1）' }).click()
   await win.getByRole('button', { name: '水质（2）' }).click()
   // 先锚列表加载完成再断缺席（loading 中 rows 为空≠被滤掉——workspaces.spec 回炉教训）
   await expect(win.getByText('正在加载文献列表…')).toBeHidden({ timeout: 10_000 })

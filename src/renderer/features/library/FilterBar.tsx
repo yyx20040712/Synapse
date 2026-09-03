@@ -4,7 +4,7 @@
  * ── 行为层 ──
  * - FTS 搜索框（useDebounce 300ms 后回写 store.query.search；空串回 undefined 清条件）
  * - 下拉：集合（api.library.collections）、年份（library.store 列表数据推导）、排序三选
- * - TagFilter 组件嵌于此（标签过滤，v1 单选）
+ * - TagFilter 组件嵌于此（标签过滤，P7E-06 多选 AND 交集——空选集收敛 undefined）
  * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
  *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagFilter 零 import library.store）
  *
@@ -110,8 +110,8 @@ export function FilterBar(props: {
         </select>
       </div>
       <TagFilter
-        selectedTagId={query.tagId ?? null}
-        onFilterChange={(tagId) => onChange({ tagId: tagId ?? undefined })}
+        selectedTagIds={query.tagIds ?? []}
+        onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
         onMutated={() => void loadLibrary()}
       />
     </div>

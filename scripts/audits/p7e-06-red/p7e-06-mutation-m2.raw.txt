@@ -1,0 +1,108 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/tag-filter-multi.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/tag-filter-multi.test.tsx [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 63[2mms[22m[39m
+[31m   [31m×[31m P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）[2m > [22mT5 删除选中集成员：onFilterChange(剔除后剩余) 先于 onMutated（顺序锚多选形态）[90m 13[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ [ 't-y' ] ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   Array [[90m
+[32m-     "t-y",[90m
+[32m-   ],[90m
+[31m+   Array [],[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[31m   [31m×[31m P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）[2m > [22mT7 合并源∈选中集：源剔除且目标不自动入选（载荷恰=剩余集，顺序锚保持）[90m 5[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ [ 't-y' ] ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   Array [[90m
+[32m-     "t-y",[90m
+[32m-   ],[90m
+[31m+   Array [],[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tag-filter-multi.test.tsx[2m > [22mP7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）[2m > [22mT5 删除选中集成员：onFilterChange(剔除后剩余) 先于 onMutated（顺序锚多选形态）
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ [ 't-y' ] ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   Array [[90m
+[32m-     "t-y",[90m
+[32m-   ],[90m
+[31m+   Array [],[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/tag-filter-multi.test.tsx:[2m182:28[22m[39m
+    [90m180| [39m    [34mexpect[39m(onFilterChange)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m181| [39m    [90m// 剔除非全清：消失 id 出局、其余选中项保持（票面① INV-53 多选适配[39m…
+    [90m182| [39m    [34mexpect[39m(onFilterChange)[33m.[39m[34mtoHaveBeenCalledWith[39m([[32m't-y'[39m])
+    [90m   | [39m                           [31m^[39m
+    [90m183| [39m    [34mexpect[39m(onMutated)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m184| [39m    [35mconst[39m filterOrder [33m=[39m onFilterChange[33m.[39mmock[33m.[39minvocationCallOrder[[34m0[39m]
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tag-filter-multi.test.tsx[2m > [22mP7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）[2m > [22mT7 合并源∈选中集：源剔除且目标不自动入选（载荷恰=剩余集，顺序锚保持）
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ [ 't-y' ] ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[32m-   Array [[90m
+[32m-     "t-y",[90m
+[32m-   ],[90m
+[31m+   Array [],[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/tag-filter-multi.test.tsx:[2m234:28[22m[39m
+    [90m232| [39m    [34mexpect[39m(onFilterChange)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m233| [39m    [90m// 剔除 t-x、t-y 保持、t-z 不自动入选——载荷恰为剩余集[39m
+    [90m234| [39m    [34mexpect[39m(onFilterChange)[33m.[39m[34mtoHaveBeenCalledWith[39m([[32m't-y'[39m])
+    [90m   | [39m                           [31m^[39m
+    [90m235| [39m    [34mexpect[39m(onMutated)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m236| [39m    [35mconst[39m filterOrder [33m=[39m onFilterChange[33m.[39mmock[33m.[39minvocationCallOrder[[34m0[39m]
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 20:20:30
+[2m   Duration [22m 1.56s[2m (transform 91ms, setup 0ms, collect 249ms, tests 63ms, environment 703ms, prepare 203ms)[22m
+
+exit=1

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T12:02:38.0325230Z",
+    "generatedAt":  "2026-09-03T12:44:48.2772037Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "ff01e26662c6d13e65aa51220de760aff6a7e939960e0524424977ec5863b452"
+                      "sha256":  "43046ff3459f4fce38730fd8f62970f7adbb770dbad4c4bf34b391ce572ab339"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -367,7 +367,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "d23abc6e6ebdc04ffa849c1c6fd865d9987574aeafe36cb037b6cb29eb426570"
+                      "sha256":  "9af03c10041f105d569c93f43d9b4debad9106e6062d22324cec313dab174173"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -438,8 +438,12 @@
                       "sha256":  "f36755f6230cec7a2db00d80e8054ea6b60104f46ed4d7f6f28f81be54b54e83"
                   },
                   {
+                      "path":  "tests/e2e/tag-filter-multi.spec.ts",
+                      "sha256":  "f13292cb36f06e4d00eb5e97694b8514cd8fb2ef585ff91a1ae93b727f8b47fa"
+                  },
+                  {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
-                      "sha256":  "5a357b431666de0c2a215b3fc6160e09c05e3236c8c2d4eedc1707133c0649c2"
+                      "sha256":  "b5380eaf2d7ff3f6e035f2d390925c0d1ed78684f9a6ff4a2eafbb29873acb37"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
@@ -515,7 +519,11 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "66a0a103c1c9927e04b79e016933814ca54f7c9a52b9fddf4c5c96ea2e3d8df8"
+                      "sha256":  "330051a81a35893082f2a408cc7544d4b1bc076d5923b3d32dbce9e145b3f05e"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/papers-multi-tag.test.ts",
+                      "sha256":  "87c684dd66faf6eae741efac898e8b4833ed996f04f17c544c51e989aa5789b7"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
@@ -850,8 +858,12 @@
                       "sha256":  "70cc02af0eaae8af638c1bb4ba06d9c7ac777a8acb970edbe6c7fb947abd1e8a"
                   },
                   {
+                      "path":  "tests/unit/renderer/tag-filter-multi.test.tsx",
+                      "sha256":  "7ab6e2487530901fa915236bb874fbe6d5afd2d6217331b6631ea788f6c558fe"
+                  },
+                  {
                       "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
-                      "sha256":  "7b7b76e6dd0760df108a35c7ee1551bf6affa332abb6bc80b6da2b1c5eaf1766"
+                      "sha256":  "a4857689ba4e8eec813a1cb7d329cbc7fe4a4f2dca0b2a65d293883a09fff736"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",

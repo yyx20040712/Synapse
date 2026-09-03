@@ -2,8 +2,8 @@
 /**
  * [P7E-01] TagFilter 管理面（always-active）：chip 右键菜单+三对话框接线。
  *
- * S2/S3：删除/合并源=选中标签时，onFilterChange(null) 必须先于 onMutated()
- * （invocationCallOrder 锚——顺序反了=死 tagId 查询空列表窗）；S4：合并目标=
+ * S2/S3：删除/合并源=选中标签时，onFilterChange(剔除后空集) 必须先于 onMutated()
+ * （invocationCallOrder 锚——顺序反了=死标签 id 查询空列表窗）；S4：合并目标=
  * 选中时筛选不动；S8：对话框提交双击 busy 守卫防重复提交；S9：tags.length===1
  * 时「合并到…」菜单项禁用。
  * [门一回炉补锚] W3：菜单 Esc 关闭（keydown 契约）；N1：delete 提交飞行中
@@ -42,8 +42,8 @@ let host: HTMLDivElement | null = null
 let currentTags: TagWithCount[] = []
 
 async function render(
-  selectedTagId: string | null,
-  onFilterChange: (tagId: string | null) => void,
+  selectedTagIds: string[],
+  onFilterChange: (ids: string[]) => void,
   onMutated?: () => void
 ): Promise<void> {
   useTagsStore.setState({ tags: currentTags, loading: false, error: null })
@@ -53,7 +53,7 @@ async function render(
   root = createRoot(host)
   await act(async () => {
     root?.render(
-      <TagFilter selectedTagId={selectedTagId} onFilterChange={onFilterChange} onMutated={onMutated} />
+      <TagFilter selectedTagIds={selectedTagIds} onFilterChange={onFilterChange} onMutated={onMutated} />
     )
   })
 }
@@ -119,16 +119,17 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    await render('t-1', onFilterChange, onMutated)
+    await render(['t-1'], onFilterChange, onMutated)
     stubApi.tags.delete.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
     await rightClick('甲（2）')
     await click(buttonByText('删除'), '菜单·删除')
     await click(buttonByText('确认删除', dialog()!), '对话框·确认删除')
     expect(onFilterChange).toHaveBeenCalledTimes(1)
-    expect(onFilterChange).toHaveBeenCalledWith(null)
+    // 单选锚语义等价迁移（P7E-06）：选中集恰 [t-1]→剔除后空集=清除全部（v1 为 null）
+    expect(onFilterChange).toHaveBeenCalledWith([])
     expect(onMutated).toHaveBeenCalledTimes(1)
-    // 顺序锚（S2）：先清筛选（setQuery 清 tagId→library 自动重载）后通知 library 刷新
+    // 顺序锚（S2）：先清筛选（setQuery 清 tagIds→library 自动重载）后通知 library 刷新
     const filterOrder = onFilterChange.mock.invocationCallOrder[0]
     const mutatedOrder = onMutated.mock.invocationCallOrder[0]
     expect(filterOrder, 'onFilterChange 已被调用').toBeDefined()
@@ -143,7 +144,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    await render('t-2', onFilterChange, onMutated)
+    await render(['t-2'], onFilterChange, onMutated)
     stubApi.tags.delete.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
     await rightClick('甲（2）')
@@ -160,7 +161,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    await render('t-1', onFilterChange, onMutated)
+    await render(['t-1'], onFilterChange, onMutated)
     stubApi.tags.merge.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
     await rightClick('甲（2）')
@@ -168,7 +169,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     expect(dialog(), '合并对话框在场').not.toBeNull()
     await click(buttonByText('乙（1）', dialog()!), '对话框·目标 chip 乙（1）')
     expect(stubApi.tags.merge).toHaveBeenCalledWith({ sourceId: 't-1', targetId: 't-2' })
-    expect(onFilterChange).toHaveBeenCalledWith(null)
+    expect(onFilterChange).toHaveBeenCalledWith([])
     const filterOrder = onFilterChange.mock.invocationCallOrder[0]
     const mutatedOrder = onMutated.mock.invocationCallOrder[0]
     expect(filterOrder, 'onFilterChange 已被调用').toBeDefined()
@@ -184,7 +185,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    await render('t-2', onFilterChange, onMutated)
+    await render(['t-2'], onFilterChange, onMutated)
     stubApi.tags.merge.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
     await rightClick('甲（2）')
@@ -198,7 +199,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 1 }]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    await render(null, onFilterChange, onMutated)
+    await render([], onFilterChange, onMutated)
     let resolveRename!: (v: unknown) => void
     stubApi.tags.rename.mockImplementation(
       () => new Promise((r) => { resolveRename = r })
@@ -227,7 +228,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('S9 tags.length===1 时菜单「合并到…」禁用（无其他目标）', async () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
-    await render(null, vi.fn(), vi.fn())
+    await render([], vi.fn(), vi.fn())
     await rightClick('甲（0）')
     const mergeBtn = buttonByText('合并到…')
     expect(mergeBtn, '菜单项在场').toBeDefined()
@@ -236,7 +237,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('W3：菜单开→按 Escape→菜单关闭（keydown 关闭契约，unmount 清理）', async () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
-    await render(null, vi.fn(), vi.fn())
+    await render([], vi.fn(), vi.fn())
     await rightClick('甲（0）')
     expect(host?.querySelector('[data-testid="tag-menu"]'), '菜单在场').not.toBeNull()
     await act(async () => {
@@ -247,7 +248,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('N1：delete 提交飞行中取消被阻断（按钮禁用+Esc/遮罩 onClose no-op），resolve 成功后才关', async () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 2 }]
-    await render(null, vi.fn(), vi.fn())
+    await render([], vi.fn(), vi.fn())
     let resolveDelete!: (v: unknown) => void
     stubApi.tags.delete.mockImplementation(
       () => new Promise((r) => { resolveDelete = r })

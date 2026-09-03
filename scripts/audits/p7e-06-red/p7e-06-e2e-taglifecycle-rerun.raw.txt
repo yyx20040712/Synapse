@@ -1,0 +1,36 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  x  1 tests\e2e\tag-lifecycle.spec.ts:15:1 › 标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈） (12.5s)
+
+
+  1) tests\e2e\tag-lifecycle.spec.ts:15:1 › 标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈） ────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('P7E 乙文献').first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByText('P7E 乙文献').first()
+
+
+      106 |   await expect(win.getByRole('button', { name: '水质（2）' })).toHaveCount(0, { timeout: 10_000 })
+      107 |   for (const t of ['P7E 甲文献', 'P7E 乙文献', 'P7E 丙文献']) {
+    > 108 |     await expect(win.getByText(t).first()).toBeVisible({ timeout: 10_000 })
+          |                                            ^
+      109 |   }
+      110 |   // 甲行徽标仅剩「水质监测」（核心已并入、水质已删）
+      111 |   await expect(rowA.locator('.lib-tag')).toHaveCount(1)
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\tag-lifecycle.spec.ts:108:44
+
+    Error Context: test-results\tag-lifecycle-标签生命周期：改名→合并→删除（chip-行徽标真实文本-死筛选自愈）\error-context.md
+
+  1 failed
+    tests\e2e\tag-lifecycle.spec.ts:15:1 › 标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈） ─────────────────────
+exit=1

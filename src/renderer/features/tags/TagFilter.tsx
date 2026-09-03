@@ -1,28 +1,32 @@
 /**
- * [SR-TAG-02] TagFilter —— 标签筛选器（工单：done / weak + P7E-01）
+ * [SR-TAG-02] TagFilter —— 标签筛选器（工单：done / weak + P7E-01 + P7E-06）
  *
  * ── 行为层 ──
  * - 多选 chip 列表（数据 tags.store：{id,name,paperCount}）
- * - 选中态变化 → props.onFilterChange(tagId | null)（v1 单选标签过滤，多选 v2）
+ * - 选中态变化 → props.onFilterChange(ids)（P7E-06 多选 v2 已兑现——v1 单选
+ *   预留注记（TagFilter.tsx:6「多选 v2」）本票落地；AND 交集语义在 SQL 层
+ *   （buildFilters 逐标签 EXISTS），空数组=清除全部选中）
  * - 管理面（P7E-01）：chip 右键 → 菜单（重命名/合并到…/删除）→ 三对话框
  *   （TagLifecycle 拆件承载）；变更成功经 onMutated 上抛（FilterBar 注入
  *   library load——跨域互引红线合规路径，白名单既有）
  *
  * ── 接口层 ──
- * - export function TagFilter(props: { selectedTagId: string | null;
- *     onFilterChange(tagId: string | null): void;
+ * - export function TagFilter(props: { selectedTagIds: string[];
+ *     onFilterChange(ids: string[]): void;
  *     onMutated?: () => void }): JSX.Element
  *
  * ── 架构层 ──
  * - 数据自取：tags.store（挂载 refresh——行为层的"数据 tags.store"为准，建议/
  *   筛选共享单一数据源）；纯展示交互，自身不发其他请求
- * - 死 id 筛选清空顺序（S2/S3）：变更涉及消失 id 且===selectedTagId 时，先
- *   onFilterChange(null)（setQuery 清 tagId→library 自动重载）后 onMutated()
- *   ——顺序反了=死 tagId 查询空列表窗（INV-53）
+ * - 死 id 筛选剔除顺序（S2/S3）：变更涉及消失 id 且∈selectedTagIds 时，先
+ *   onFilterChange(剔除后剩余)（setQuery 清 tagIds→library 自动重载；剔除非
+ *   全清——其余选中项保持有效过滤，INV-53 多选适配）后 onMutated()
+ *   ——顺序反了=死标签 id 查询空列表窗（INV-53）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 空标签库显示引导文案（先在详情侧栏打标签）
- * - 测试：tests/unit/renderer/tag-lifecycle-ui.test.tsx（P7E-01，always-active）
+ * - 测试：tests/unit/renderer/tag-lifecycle-ui.test.tsx（P7E-01）
+ *   +tests/unit/renderer/tag-filter-multi.test.tsx（P7E-06，均 always-active）
  */
 import { useEffect, useRef, useState } from 'react'
 import { showToast } from '../../shared/ui/Toast'
@@ -41,11 +45,11 @@ interface DialogState {
 }
 
 export function TagFilter(props: {
-  selectedTagId: string | null
-  onFilterChange: (tagId: string | null) => void
+  selectedTagIds: string[]
+  onFilterChange: (ids: string[]) => void
   onMutated?: () => void
 }): JSX.Element {
-  const { selectedTagId, onFilterChange, onMutated } = props
+  const { selectedTagIds, onFilterChange, onMutated } = props
   const tags = useTagsStore((s) => s.tags)
   const refresh = useTagsStore((s) => s.refresh)
   const listError = useTagsStore((s) => s.error)
@@ -69,13 +73,14 @@ export function TagFilter(props: {
   }, [listError])
 
   /**
-   * 生命周期变更成功上抛（S2/S3/S4/S5 顺序契约）：
-   * disappearedId=null（rename）或稳定 id（合并目标选中）→筛选不动；
-   * 消失 id===selectedTagId→先 onFilterChange(null) 清死 id，后 onMutated()。
+   * 生命周期变更成功上抛（S2/S3/S4/S5 顺序契约）：disappearedId=null（rename）
+   * 或稳定 id（合并目标选中）→筛选不动；消失 id∈selectedTagIds→先
+   * onFilterChange(剔除后剩余)（剔除非全清——其余选中项保持；空集→UI 层
+   * 收敛 undefined→全列表自然回退），后 onMutated()。
    */
   function handleMutated(disappearedId: string | null): void {
-    if (disappearedId !== null && disappearedId === selectedTagId) {
-      onFilterChange(null)
+    if (disappearedId !== null && selectedTagIds.includes(disappearedId)) {
+      onFilterChange(selectedTagIds.filter((id) => id !== disappearedId))
     }
     onMutated?.()
   }
@@ -90,7 +95,7 @@ export function TagFilter(props: {
   return (
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label="标签筛选">
       {tags.map((t) => {
-        const active = t.id === selectedTagId
+        const active = selectedTagIds.includes(t.id)
         return (
           <button
             key={t.id}
@@ -102,7 +107,11 @@ export function TagFilter(props: {
               background: active ? 'var(--accent-soft)' : 'var(--panel)',
               color: active ? 'var(--accent)' : 'var(--text)'
             }}
-            onClick={() => onFilterChange(active ? null : t.id)}
+            onClick={() =>
+              onFilterChange(
+                active ? selectedTagIds.filter((id) => id !== t.id) : [...selectedTagIds, t.id]
+              )
+            }
             onContextMenu={(e) => {
               e.preventDefault()
               setMenu({ tag: t, anchor: { x: e.clientX, y: e.clientY } })
