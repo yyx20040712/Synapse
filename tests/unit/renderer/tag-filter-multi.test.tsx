@@ -8,6 +8,8 @@
  * onMutated——INV-53 顺序锚多选形态）；T6 改名 id 稳定筛选零动；T7 合并源∈
  * 选中集=剔除且目标不自动入选；T3 装配级=FilterBar 空数组收敛 undefined
  * （schema 拒收 [] 的 UI 侧防线——M3 变异锚）。
+ * P7X-01：T8/T9 选中上界 UI 感知（20 选中点 21 拦截 / 19 选中点 20 放行，
+ * 夹具与文案断言用字面量——常量变异必须红）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -256,5 +258,63 @@ describe('P7E-06 FilterBar 装配收敛（tagIds 形态）', () => {
     // 再点 A：toggle 出→空数组→收敛 undefined（零过滤，schema 级拒收 [] 的 UI 侧防线）
     await clickChip('水质（2）')
     expect(onChange).toHaveBeenLastCalledWith({ tagIds: undefined })
+  })
+})
+
+describe('P7X-01 标签选中上限 UI 感知（添加方向守卫，移除方向永不设限）', () => {
+  it('T8 上界拦截：20 选中点第 21 chip → toast 恰一次 + onFilterChange 零调用 + chip 保持未选', async () => {
+    currentTags = Array.from({ length: 21 }, (_, i) =>
+      tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
+    )
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
+    const onFilterChange = vi.fn()
+    const selected = currentTags.slice(0, 20).map((t) => t.id)
+    await renderFilter(selected, onFilterChange)
+    await clickChip('标签21（0）')
+    // 引导 toast 恰一次、info 级、文案含上界值（字面量锁定——常量变异必红）
+    expect(toastSpy).toHaveBeenCalledTimes(1)
+    expect(toastSpy).toHaveBeenCalledWith('最多同时筛选 20 个标签', 'info')
+    // 选中态零变：onFilterChange 零调用（选中集不进第 21 个）
+    expect(onFilterChange).not.toHaveBeenCalled()
+    // 被拦 chip 视觉保持未选
+    expect(buttonByText('标签21（0）')?.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('T9 边界放行：19 选中点第 20 chip → onFilterChange 恰一次、载荷 20 项含新 id + 零 toast', async () => {
+    currentTags = Array.from({ length: 20 }, (_, i) =>
+      tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
+    )
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
+    const onFilterChange = vi.fn()
+    const selected = currentTags.slice(0, 19).map((t) => t.id)
+    await renderFilter(selected, onFilterChange)
+    await clickChip('标签20（0）')
+    // 第 20 个合法入选（length=19 时添加）
+    expect(onFilterChange).toHaveBeenCalledTimes(1)
+    const payload: string[] = onFilterChange.mock.calls[0]?.[0] ?? []
+    expect(payload).toHaveLength(20)
+    expect(payload).toContain('t-20')
+    // 边界内不引导
+    expect(toastSpy).not.toHaveBeenCalled()
+  })
+
+  it('T10 上界移除锚（门二 R1）：20 选中点已选 chip → onFilterChange 恰一次、载荷 19 项不含该 id + 零 toast（守卫删 !active 变异的唯一杀手）', async () => {
+    currentTags = Array.from({ length: 21 }, (_, i) =>
+      tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
+    )
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
+    const onFilterChange = vi.fn()
+    const selected = currentTags.slice(0, 20).map((t) => t.id)
+    await renderFilter(selected, onFilterChange)
+    // 满选集上移除首个选中项——移除方向永不设限（票面 §1）
+    await clickChip('标签1（0）')
+    expect(onFilterChange).toHaveBeenCalledTimes(1)
+    const payload: string[] = onFilterChange.mock.calls[0]?.[0] ?? []
+    expect(payload).toHaveLength(19)
+    expect(payload).not.toContain('t-01')
+    expect(toastSpy).not.toHaveBeenCalled()
   })
 })

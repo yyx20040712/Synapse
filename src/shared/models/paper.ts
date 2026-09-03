@@ -70,13 +70,19 @@ export type PaperMetaPatch = z.infer<typeof paperMetaPatchSchema>
 export const librarySortSchema = z.enum(['added_desc', 'year_desc', 'title_asc', 'cited_desc'])
 export type LibrarySort = z.infer<typeof librarySortSchema>
 
+/**
+ * [P7X-01] 标签筛选选中上界：schema 与渲染层 TagFilter toggle 守卫同源消费
+ * （单查询爆炸上界——EXISTS 每标签一条；UI 侧提前拦截=提交期报错的 UX 断层消除）。
+ */
+export const TAG_FILTER_MAX = 20
+
 export const libraryQuerySchema = z
   .object({
     search: z.string().max(200).optional(), // FTS：标题/摘要/作者
     // P7E-06 多选标签过滤（AND 交集）：tagId 单选已删（方案切换=删除旧方案——
     // 单选=单元素特例，UI 面完全覆盖）；空选集由 UI 层收敛 undefined，空数组
-    // schema 级拒收=防歧义；max(20)=单查询爆炸上界（EXISTS 每标签一条）
-    tagIds: z.array(z.string().min(1)).min(1).max(20).optional(),
+    // schema 级拒收=防歧义；上界经 TAG_FILTER_MAX 同源（UI 消费同源——P7X-01）
+    tagIds: z.array(z.string().min(1)).min(1).max(TAG_FILTER_MAX).optional(),
     collectionId: z.string().optional(),
     year: z.number().int().optional(),
     sort: librarySortSchema.default('added_desc'),

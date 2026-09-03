@@ -3,6 +3,8 @@
  *
  * ── 行为层 ──
  * - 多选 chip 列表（数据 tags.store：{id,name,paperCount}）
+ * - P7X-01 上界守卫：添加方向且选中数 ≥ TAG_FILTER_MAX（@shared/models/paper
+ *   同源）→ 零变更 + info toast「最多同时筛选 N 个标签」（N 常量插值）
  * - 选中态变化 → props.onFilterChange(ids)（P7E-06 多选 v2 已兑现——v1 单选
  *   预留注记（TagFilter.tsx:6「多选 v2」）本票落地；AND 交集语义在 SQL 层
  *   （buildFilters 逐标签 EXISTS），空数组=清除全部选中）
@@ -29,6 +31,7 @@
  *   +tests/unit/renderer/tag-filter-multi.test.tsx（P7E-06，均 always-active）
  */
 import { useEffect, useRef, useState } from 'react'
+import { TAG_FILTER_MAX } from '@shared/models/paper'
 import { showToast } from '../../shared/ui/Toast'
 import { useTagsStore, type TagWithCount } from './tags.store'
 import { TagLifecycleMenu } from './TagLifecycleMenu'
@@ -107,11 +110,18 @@ export function TagFilter(props: {
               background: active ? 'var(--accent-soft)' : 'var(--panel)',
               color: active ? 'var(--accent)' : 'var(--text)'
             }}
-            onClick={() =>
+            onClick={() => {
+              // P7X-01 上界守卫（添加方向；移除方向永不设限）：选中数已达
+              // TAG_FILTER_MAX（与 schema 同源）→ 零变更 + info 级引导 toast
+              // ——第 21 个 chip 不再等到提交才被 schema 打回（UX 断层消除）
+              if (!active && selectedTagIds.length >= TAG_FILTER_MAX) {
+                showToast(`最多同时筛选 ${TAG_FILTER_MAX} 个标签`, 'info')
+                return
+              }
               onFilterChange(
                 active ? selectedTagIds.filter((id) => id !== t.id) : [...selectedTagIds, t.id]
               )
-            }
+            }}
             onContextMenu={(e) => {
               e.preventDefault()
               setMenu({ tag: t, anchor: { x: e.clientX, y: e.clientY } })
