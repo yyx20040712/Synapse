@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T20:40:26.4681404Z",
+    "generatedAt":  "2026-09-03T21:39:26.7341253Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -639,7 +639,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
-                      "sha256":  "3e25bf6b0968e8b14709ade6db9ba352855163f614c3ef1109856d245c5fdf9e"
+                      "sha256":  "305df6d74bce35e8e8f80731ca99e45841df2856a2cc9722210907a902c452ce"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
@@ -786,6 +786,10 @@
                       "sha256":  "1a9750a6d03a014da9a82311c4797ee688e74a803470afe995e5feacc62c0c35"
                   },
                   {
+                      "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
+                      "sha256":  "58a1ef10073dff66f0f3cb726a07aebb02586d0af1baba260e8674ff6de985cd"
+                  },
+                  {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
                       "sha256":  "119669303cee0502d46d3fe9129f6dc04ec41b60d7dd08d0f6b098e9e74139ef"
                   },
@@ -844,6 +848,10 @@
                   {
                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",
                       "sha256":  "dcf845f5f6f84b3f57fbbdf361c68870c117fd96c3edc5aa748ce1237abfb3c3"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
+                      "sha256":  "535a1e01845f16a76e0bcf79dd07dcdd6287e02a9a1d37204a2990207cd92bfa"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",

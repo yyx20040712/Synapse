@@ -22,6 +22,18 @@
  * 滚动容器可视区夹取+选区近顶下翻转（selection-geometry 纯函数——修
  * ui-scale≠1 双重放大+偏远缺陷）。层叠序完整推演见 selection-paint.tsx 头注。
  *
+ * **F-A6-b2 rects 产链切换（R-迁移主链+DOM 量测回退双路结构）**：evaluate
+ * 域整体拆 selection-evaluate.ts（组件 ≤250 行红线触发——票面预判条款；
+ * 设计书 §5.1 本有此件=F-A6-c 快/慢路径宿主，本票提前拆出）：项几何链为主
+ * （pdf-item-geometry——基线分组并块+归一化 pixelBoxOf(textLayer) 同盒
+ * INV-37+mergeRects 终裁；bands 同源派生 C5；通道=page-items.store 单源
+ * 注册表、zoom 现读/viewport 现构）；回退三因（页项缺失/偏移对账失败/计算
+ * 异常）走现行 DOM 量测链原样兜底+console.warn 不静默；G2 降级门 active
+ * （拖选期抑制渲染+mouseup 时刻 toast 拒绝——门一 W2 口径对齐跨页拒绝形态，
+ * settle 防抖路径静默防拖选中途刷屏，INV-02）。
+ * pending.anchor.rects 与 paint 同源=保存链与视觉同一来源（INV-58 前半）。
+ * 详见 selection-evaluate.ts 头注。
+ *
  * ── 接口层 ── / ── 架构层 ──
  * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再
  *   导出（实现在 selection-geometry——F-A4 拆件，导出面零变）。锚定根=
@@ -30,19 +42,18 @@
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载
- *   收起退订。测试：selection-layer/selection-paint.test（F-A4 三面）
+ *   收起退订。测试：selection-layer/selection-paint.test（F-A4 三面）+
+ *   selection-item-chain.test（F-A6-b2 接线面）
  */
 import { useEffect, useRef, useState } from 'react'
-import type { Annotation, AnnotationInput, AnnotationKind, AnnotationRect } from '@shared/models/annotation'
+import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
-import { findRangeAtOffset, pixelBoxOf } from './annotation-anchor'
-import { bandsForTextNodes, type RowBand } from './annotation-resolve'
 import { pushUndo } from './annotation-undo'
+import { createEvaluate, type PaintSelection, type PendingSelection } from './selection-evaluate'
 import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
-import { closestPageRoot, pageIndexOf, toolbarMountPos, createVisualScheduler } from './selection-geometry'
+import { createVisualScheduler } from './selection-geometry'
 import { useReaderStore } from './reader.store'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
@@ -51,30 +62,12 @@ export { closestPageRoot, pageIndexOf } from './selection-geometry'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const SAVE_FAILED = '标注保存失败'
 
-/** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
-const CROSS_PAGE_HINT = '选区跨页，不支持创建标注'
-
 /** selectionchange 窗口（毫秒）：自绘层节流与工具条防抖同值两路（B1） */
 const SELECTION_DEBOUNCE_MS = 200
 
 /** F-12 工具条误触发阈值（px）：位移小于此值=单击/双击（含选词）不出条
- *  （用户令「一点就出选项条」；无 mousedown 记录的程序化/键盘选区不设限） */
+ * （用户令「一点就出选项条」；无 mousedown 记录的程序化/键盘选区不设限） */
 const DRAG_SELECT_THRESHOLD_PX = 3
-
-/** 待确认的划选（锚定结果+选区所在页 0 基+工具条挂载盒本地落点） */
-interface PendingSelection {
-  anchor: SelectionAnchor
-  pageNo: number
-  x: number
-  y: number
-}
-
-/** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects+F-A5 行簇字形带；清除=层卸载） */
-interface PaintSelection {
-  root: HTMLElement
-  rects: AnnotationRect[]
-  bands: RowBand[]
-}
 
 export function SelectionLayer(props: {
   pageRoot: HTMLElement | null
@@ -94,54 +87,9 @@ export function SelectionLayer(props: {
   useEffect(() => {
     if (pageRoot === null) return
 
-    /** 评估选区（动态锚定根）：页内锚定；跨页拒绝（mouseup 提示）；页外/不可锚定/零宽静默收（层随清）。
-     *  visualOnly=[B1 回炉] 拖选期节流路径——只更新自绘层（视觉反馈），不动
-     *  pending（工具条弹出语义独属防抖/mouseup 全量评估，零变） */
-    const evaluate = (fromMouseUp: boolean, visualOnly: boolean): void => {
-      const sel = window.getSelection()
-      if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
-        if (!visualOnly) setPending(null)
-        setPaint(null)
-        return
-      }
-      const anchorRoot = closestPageRoot(sel.anchorNode)
-      const focusRoot = closestPageRoot(sel.focusNode)
-      if (anchorRoot !== focusRoot) {
-        // 跨页/跨出页盒：不创建+toast（INV-02 禁静默——仅挂 mouseup 时刻，
-        // 防抖路径静默防拖选中途刷屏）
-        if (fromMouseUp) showToast(CROSS_PAGE_HINT, 'info')
-        if (!visualOnly) setPending(null)
-        setPaint(null)
-        return
-      }
-      // 两边界同盒（同为 null=页外选区——静默收起，与页列无关）
-      const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
-      const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
-      const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
-      // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义
-      if (anchor === null || textLayer === null) {
-        if (!visualOnly) setPending(null)
-        setPaint(null)
-        return
-      }
-      const box = sel.getRangeAt(0).getBoundingClientRect()
-      if (box.width === 0 && box.height === 0) {
-        if (!visualOnly) setPending(null)
-        setPaint(null)
-        return
-      }
-      // [F-A4 a] 自绘并集层=保存 rects 同源；[F-A5 a/b] bands=行簇字形带
-      // **节点口径**（选区自身 textNodes——免疫 CSS 行盒整体偏移错绑上一行，
-      // 真机实锤小字号紧排文档行盒偏上 ~9px）；退化空数组=行盒原样回退
-      const range = findRangeAtOffset(textLayer, anchor.start, anchor.end)
-      setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })
-      if (visualOnly) {
-        return
-      }
-      // [F-A4 c 面] 工具条挂载盒本地落点（翻转+夹取+÷有效 zoom——geometry 域）
-      const { x, y } = toolbarMountPos(pageRoot, { x: box.x, y: box.y, width: box.width, height: box.height })
-      setPending({ anchor, pageNo: pageNo!, x, y })
-    }
+    // [F-A6-b2] evaluate 域件（selection-evaluate.ts——四守卫+项几何主链/DOM
+    // 量测回退双路+G2 门+工具条落点；本组件只供状态写口）
+    const evaluate = createEvaluate({ pageRoot, paperId, setPaint, setPending })
 
     // [B1 回炉] selectionchange 双路调度（selection-geometry 域工厂）：自绘层
     // =leading+trailing 节流（拖选期持续触发下纯防抖永不落地=历史删自绘轮

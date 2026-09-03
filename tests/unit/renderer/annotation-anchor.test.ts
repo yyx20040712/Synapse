@@ -309,3 +309,64 @@ describe('F-V1 mergeLineRects —— 紧凑行距（盒高>行距）行簇错联
     expect(out[0]!.y).toBe(100)
   })
 })
+
+// always-active（F-A6-b2 T3——取证 real3882 step3 sizes 序列交错拆簇在档；先红后绿）
+describe('F-A6-b2 mergeLineRects —— y 序交错失联修复（聚类比较扩到全部簇，annotation-merge.ts:26-28 先例语义）', () => {
+  it('T3-a 交错夹具：行 1 后段（y=102）被行 2 高瘦段（y=101，h=26 超高度可比带）隔在末簇之后——旧实现（只与末簇比较）拆 3 簇=同行双块锯齿形态，全簇比较后行 1 两段并簇', () => {
+    const a1 = px(10, 100, 50, 12) // 行 1 段 1（中心 106）
+    const b1 = px(10, 101, 20, 26) // 行 2 高瘦段（中心 114；h=26 > 2×12=24 不可比，独立成簇）
+    const a2 = px(70, 102, 40, 10) // 行 1 段 2（中心 107）——y 序排在 b1 后，与末簇（b1）高度不可比
+    const out = mergeLineRects([a1, b1, a2], 600)
+    expect(out.length).toBe(2)
+    // 行 1 两段并簇：x 并集 10..110（锯齿修复面——旧实现行 1 拆 10..60 与 70..110 两块）
+    const row1 = out.find((r) => r.h <= 12)!
+    expect(row1.x).toBe(10)
+    expect(row1.x + row1.w).toBeCloseTo(110, 5)
+  })
+
+  it('T3-b 双行交替夹具：行 1/行 2 片段按 y 序交错（a1,b1,b2,a2——行 1 后段殿后），行 2 两段为高度不可比的 tall 变体——全簇比较下 2 块（各行 x 并集），旧实现拆 3 簇（行 1 双块=锯齿）', () => {
+    const a1 = px(10, 100, 30, 12) // 行 1 段 1
+    const b1 = px(200, 101, 30, 26) // 行 2 tall 段 1
+    const a2 = px(50, 102, 30, 10) // 行 1 段 2（y 序殿后——与末簇（行 2）高度不可比）
+    const b2 = px(240, 101, 30, 26) // 行 2 tall 段 2（与 b1 同基线——y 序在 a2 前）
+    const out = mergeLineRects([a1, b1, a2, b2], 600)
+    expect(out.length).toBe(2)
+    const row1 = out.find((r) => r.h <= 12)!
+    const row2 = out.find((r) => r.h > 12)!
+    expect(row1.x).toBe(10)
+    expect(row1.x + row1.w).toBeCloseTo(80, 5) // a1∪a2 = 10..80
+    expect(row2.x).toBe(200)
+    expect(row2.x + row2.w).toBeCloseTo(270, 5) // b1∪b2 = 200..270
+  })
+})
+
+// always-active（F-A6-b2 门一 W1 回炉——扩簇后「排序保证同簇连续」旧不变量
+// 失效的拓扑回归锁：非相邻旧簇并入拉大 groupTop/Bottom 是否影响后续聚类）。
+// 机理结论（本用例=守卫，非缺陷修复）：区间膨胀不参与跨行判据——centerOk 门
+// 恒为主导矩形口径（区间只喂 yOverlap 分支，该分支仅 pitch 缺省[全部相邻中心
+// 差 <2px=单视觉行形态]时启用，含远距行的输入 pitch 恒有定义）；行块垂直分离
+// 由 mergeSegment 的 pitch 高度钳制保住（盒高 ≤2×行距时钳到行距）。
+describe('F-A6-b2 W1 mergeLineRects —— 扩簇 y 区间膨胀副作用回归', () => {
+  it('W1 三行 y 序交错+跨簇中心距：行 1 后段跨过行 2 簇回并行 1（y 序 r1,r2,r3 交错），不产生跨行误并块且行块两两垂直分离（pitch 钳制后）', () => {
+    const r1 = px(10, 100, 30, 20) // 行 1 锚（中心 110，h 20）
+    const r2 = px(10, 116, 30, 12) // 行 2（中心 122，h 12）
+    const r3 = px(60, 101.5, 30, 20) // 行 1 后段（中心 111.5——y 序在 r2 后，跨簇回并 c1）
+    const r4 = px(10, 132, 30, 20) // 行 3（中心 142）
+    const r5 = px(60, 133, 30, 12) // 行 3 后段（中心 139，就近并入 c3）
+    const out = mergeLineRects([r1, r2, r3, r4, r5], 600)
+    // 每视觉行恰一块（r3 失联另起簇的旧形态在本夹具为 4 块——T3 侧牙）
+    expect(out.length).toBe(3)
+    ;[100, 116, 132].forEach((y, i) => expect(out[i]!.y).toBeCloseTo(y, 5))
+    // 行归属（x 并集）：行 1 = r1∪r3（跨簇回并）、行 2 = r2 独立（未被行 1/行 3 吸收=无跨行误并）、行 3 = r4∪r5
+    expect(out[0]!.x).toBe(10)
+    expect(out[0]!.x + out[0]!.w).toBeCloseTo(90, 5)
+    expect(out[1]!.x).toBe(10)
+    expect(out[1]!.x + out[1]!.w).toBeCloseTo(40, 5)
+    expect(out[2]!.x).toBe(10)
+    expect(out[2]!.x + out[2]!.w).toBeCloseTo(90, 5)
+    // 行块两两垂直分离保持（盒高 20>行距但 ≤2×行距 → pitch 钳制到 10.5）
+    for (let i = 1; i < out.length; i += 1) {
+      expect(out[i - 1]!.y + out[i - 1]!.h).toBeLessThanOrEqual(out[i]!.y + 1e-6)
+    }
+  })
+})

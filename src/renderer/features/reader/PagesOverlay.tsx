@@ -4,9 +4,11 @@
  * ── 行为层 ──
  * - 七件自 ReaderPage 原样迁入（本组件为页面缓存注册表宿主——F-01 头注声明
  *   「ReaderPage 只装配」的漂移收口，纯重构行为零变）：
- *   ① PageText（页号+文本载荷+canvas CSS 盒，成对更新契约）；
+ *   ① PageText（页号+文本载荷+canvas CSS 盒，成对更新契约——[F-A6-b2] 存储
+ *     位迁 page-items.store.PageItemEntry，字段零变）；
  *   ② PageFrame（渲染窗口内页的卸载哨，onRecycle 回收）；
- *   ③ pageTexts/pageRoots 两个 useState（缓存注册表）；
+ *   ③ pageTexts/pageRoots 两个缓存注册表（[F-A6-b2] pageTexts=usePageItemsStore
+ *     订阅——R-迁移下钻通道单源宿主，写者仍唯本组件；pageRoots 保持 useState）；
  *   ④ 换文献清缓存 effect（键 fileUrl，只清两表——setPdfDoc(null) 留 ReaderPage，
  *     pdfDoc 是 OutlinePanel 数据源=布局职责）；
  *   ⑤ handlePageRender（PdfPageCanvas 渲染回报→页根域内量测 canvas CSS 盒→
@@ -49,16 +51,8 @@ import { SearchHighlightLayer } from './SearchHighlightLayer'
 import type { PDFDocumentProxy } from './PdfDocProvider'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import type { PageLayout } from './page-column-geometry'
+import { usePageItemsStore } from './page-items.store'
 import { TextLayer } from './TextLayer'
-
-/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 页几何 + 该页 canvas CSS 盒） */
-interface PageText {
-  page: number
-  text: PdfTextContent
-  /** F-A6-b1 T1/T9 通道：渲染回报的页几何（rotate/view），透传 TextLayer */
-  geometry: PdfPageGeometry
-  box: { w: number; h: number }
-}
 
 /** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
 function PageFrame(props: { no: number; onRecycle(no: number): void; children: ReactNode }): JSX.Element {
@@ -81,12 +75,14 @@ export function PagesOverlay(props: {
   layout?: PageLayout
 }): JSX.Element {
   const { doc, fileUrl, totalPages, zoom, annotations, scrollContainerRef, scrollRequest, onReady, onError } = props
-  const [pageTexts, setPageTexts] = useState<Record<number, PageText>>({})
+  // [F-A6-b2] pageTexts 存储位迁 page-items.store（R-迁移下钻通道单源——写者仍唯
+  // 本组件三写口，读方=TextLayer 挂载渲染+SelectionLayer evaluate 时刻直读）
+  const pageTexts = usePageItemsStore((s) => s.pages)
   const [pageRoots, setPageRoots] = useState<Record<number, HTMLElement>>({})
 
   // 换文献：丢弃旧页文本/页根（防陈旧文本层——TextLayer 以页对齐才渲染）
   useEffect(() => {
-    setPageTexts({})
+    usePageItemsStore.getState().clear()
     setPageRoots({})
   }, [fileUrl])
 
@@ -98,7 +94,7 @@ export function PagesOverlay(props: {
     const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
     if (canvas === null) return
     const rect = canvas.getBoundingClientRect()
-    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, geometry, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
+    usePageItemsStore.getState().setEntry({ page: no, text, geometry, box: { w: Math.round(rect.width), h: Math.round(rect.height) } })
     if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
   }
 
@@ -108,7 +104,8 @@ export function PagesOverlay(props: {
       if (prev[no] === undefined) return prev
       const next = { ...prev }; delete next[no]; return next
     }
-    setPageTexts(del); setPageRoots(del)
+    usePageItemsStore.getState().drop(no)
+    setPageRoots(del)
   }, [])
 
   /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）。

@@ -258,11 +258,10 @@ function medianFontSizeBetween(a: DomPoint, b: DomPoint): number | undefined {
 const DEDUP_EPSILON_PX = 0.5
 /** 高度可比带：矩形高在簇主导矩形高的 [0.5,2] 倍内视为同行字号变体（上标/公式），
  *  超出按旋转/竖排文本独立成簇（高瘦矩形并入行簇会 corrupt y/h 与并集）。贪心
- *  比对当前主导：行内高度方差 ≥2.2× 时主导切换可拆行；且聚类只与末簇比较——
- *  高瘦矩形恰排在同一行两碎片之间（y 序插队）时，后碎片与真行簇"失联"另起簇。
- *  两场景后果同为同行拆两矩形（multiply 下无叠深、几何各自正确），属 ADR-0002
- *  复杂排版近似边界——修法应是把比较扩到全部簇，而非放宽可比带/重叠率（会引入
- *  跨行误并，损失大于所得） */
+ *  比对当前主导：行内高度方差 ≥2.2× 时主导切换可拆行。[F-A6-b2 T3] 聚类已扩到
+ *  全部簇（就近并入）——高瘦矩形排在同一行两碎片之间（y 序插队）时后碎片不再
+ *  与真行簇"失联"（旧「只与末簇比较」局限的修复，修法在档=扩簇比较而非放宽
+ *  可比带/重叠率——放宽会引入跨行误并，损失大于所得） */
 const HEIGHT_RATIO_MIN = 0.5
 const HEIGHT_RATIO_MAX = 2
 /** y 重叠率门槛：重叠像素须 ≥ 较小高度（新矩形高 vs 主导高取小）的 25% 才算同行
@@ -343,11 +342,15 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
   if (unique.length <= 1) {
     return unique
   }
-  // ② y 区间重叠聚类（组内 y 区间为成员并集；排序保证同簇连续）——
+  // ② y 区间重叠聚类（组内 y 区间为成员并集）——
   //    [F-A4] lineH 在场改中心距判据（头注行高感知；高度可比带两种判据通用）；
   //    [F-V1] pitch（≥2 视觉行可估）在场时中心距阈值取 min(lineH, 行距, 主导高)/2
   //    ——紧凑行距（盒高>行距）下盒高/y 重叠率/膨胀 lineH 均会把相邻视觉行聚进
   //    同簇（跨行杂交并集+丢行，真机 f-v1-diag 实证），实测行距为纲。
+  //    [F-A6-b2 T3] 聚类比较扩到全部簇（annotation-merge.ts:26-28 先例语义——
+  //    修「只与末簇比较」的 y 序交错失联：同行后段被相邻行高瘦段隔在末簇之外
+  //    时另起簇=同行双块锯齿形态，取证 real3882 step3 sizes 序列交错在档）：
+  //    在全部既有簇中取满足判据且中心距最近者并入，无满足者新建簇。
   const lh = lineH !== undefined && Number.isFinite(lineH) && lineH > 0 ? lineH : null
   const pitch = estimateLinePitch(unique)
   const sorted = [...unique].sort((a, b) => a.y - b.y || a.x - b.x)
@@ -355,8 +358,9 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
   const groupTop: number[] = []
   const groupBottom: number[] = []
   for (const r of sorted) {
-    const gi = rowGroups.length - 1
-    if (gi >= 0) {
+    let best = -1
+    let bestDist = Number.POSITIVE_INFINITY
+    for (let gi = 0; gi < rowGroups.length; gi += 1) {
       const dom = dominantOf(rowGroups[gi]!)
       const overlapPx = Math.min(groupBottom[gi]!, r.y + r.h) - Math.max(groupTop[gi]!, r.y)
       const yOverlap =
@@ -369,15 +373,22 @@ export function mergeLineRects(pixels: PixelBox[], pageWidth: number, lineH?: nu
         Math.abs(r.y + r.h / 2 - (dom.y + dom.h / 2)) <= (centerLimit ?? 0) / 2
       const hComparable = r.h >= dom.h * HEIGHT_RATIO_MIN && r.h <= dom.h * HEIGHT_RATIO_MAX
       if ((centerLimit !== null ? centerOk : yOverlap) && hComparable) {
-        rowGroups[gi]!.push(r)
-        groupTop[gi] = Math.min(groupTop[gi]!, r.y)
-        groupBottom[gi] = Math.max(groupBottom[gi]!, r.y + r.h)
-        continue
+        const dist = Math.abs(r.y + r.h / 2 - (dom.y + dom.h / 2))
+        if (dist <= bestDist) {
+          best = gi
+          bestDist = dist
+        }
       }
     }
-    rowGroups.push([r])
-    groupTop.push(r.y)
-    groupBottom.push(r.y + r.h)
+    if (best >= 0) {
+      rowGroups[best]!.push(r)
+      groupTop[best] = Math.min(groupTop[best]!, r.y)
+      groupBottom[best] = Math.max(groupBottom[best]!, r.y + r.h)
+    } else {
+      rowGroups.push([r])
+      groupTop.push(r.y)
+      groupBottom.push(r.y + r.h)
+    }
   }
   // ③④ 簇内 x 间隙断段与段合并
   const out: PixelBox[] = []
