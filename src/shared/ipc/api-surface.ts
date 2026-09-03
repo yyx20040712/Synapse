@@ -84,7 +84,11 @@ export const API_SURFACE = {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
     upsert: { channel: 'tags/upsert', Req: S.tagNameReqSchema, Res: tagSchema },
     attach: { channel: 'tags/attach', Req: S.attachTagReqSchema, Res: S.trueAckSchema },
-    detach: { channel: 'tags/detach', Req: S.detachTagReqSchema, Res: S.trueAckSchema }
+    detach: { channel: 'tags/detach', Req: S.detachTagReqSchema, Res: S.trueAckSchema },
+    // P7E-01 标签生命周期三通道（register/preload 泛型全通道遍历零改）
+    rename: { channel: 'tags/rename', Req: S.renameTagReqSchema, Res: tagSchema },
+    merge: { channel: 'tags/merge', Req: S.mergeTagReqSchema, Res: S.trueAckSchema },
+    delete: { channel: 'tags/delete', Req: S.tagIdReqSchema, Res: S.trueAckSchema }
   },
   notes: {
     get: { channel: 'notes/get', Req: S.paperIdReqSchema, Res: S.noteGetResSchema },

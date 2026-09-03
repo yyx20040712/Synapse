@@ -347,6 +347,16 @@ export const attachTagReqSchema = z
   .object({ paperId: z.string().min(1), tagId: z.string().min(1) })
   .strict()
 export const detachTagReqSchema = attachTagReqSchema
+/** P7E-01 标签生命周期三请求（delete） */
+export const tagIdReqSchema = z.object({ tagId: z.string().min(1) }).strict()
+/** P7E-01 rename（name 与 upsert 同界：min(1) 拦不住纯空格，service 层再 trim 判空） */
+export const renameTagReqSchema = z
+  .object({ tagId: z.string().min(1), name: z.string().min(1).max(50) })
+  .strict()
+/** P7E-01 merge（source===target 的业务拒绝在 service——zod 表达不了跨字段） */
+export const mergeTagReqSchema = z
+  .object({ sourceId: z.string().min(1), targetId: z.string().min(1) })
+  .strict()
 
 // ── notes ───────────────────────────────────────────────────────
 export const noteGetResSchema = noteSchema.nullable()

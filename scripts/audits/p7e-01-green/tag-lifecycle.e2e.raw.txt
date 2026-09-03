@@ -1,0 +1,8 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 1 test using 1 worker
+
+  ok 1 tests\e2e\tag-lifecycle.spec.ts:15:1 › 标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈） (2.4s)
+
+  1 passed (2.8s)

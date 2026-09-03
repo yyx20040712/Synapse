@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-02T17:39:30.4817778Z",
+    "generatedAt":  "2026-09-03T00:28:58.7450077Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "337e02cf76f4970cb4213454f65affd72b4370ae60d0d0b8579c7d7e9d1ad6ce"
+                      "sha256":  "78ec3c3a6c6fca5f4d97836f843a8bf280f530f3e7b333c7d0159d8ea5d772f6"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -335,11 +335,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "72deb168331e125ec8c9ccd8ea060466e09af3fe771bc3ed8fd42e969964181e"
+                      "sha256":  "561b748ee22e7179d9e3377e8af30a95fca17ca3c2dc436b3d15ded0805b591a"
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "76508df3d5ebe7877feb47e858f9488dbbcc907357543fac4045cf668d95dce9"
+                      "sha256":  "437de2a87f7c7da0148802b99da5fbf05db1751422e7e628c1e20e9bbf0bff06"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -418,6 +418,10 @@
                       "sha256":  "f36755f6230cec7a2db00d80e8054ea6b60104f46ed4d7f6f28f81be54b54e83"
                   },
                   {
+                      "path":  "tests/e2e/tag-lifecycle.spec.ts",
+                      "sha256":  "5a357b431666de0c2a215b3fc6160e09c05e3236c8c2d4eedc1707133c0649c2"
+                  },
+                  {
                       "path":  "tests/e2e/workspaces.spec.ts",
                       "sha256":  "b1004b5587b3a7443bfa64f7a1c8200685090f9a03a7d1ee68010f39af8e0d28"
                   },
@@ -488,6 +492,10 @@
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
                       "sha256":  "a6cff2d4b021d9b1c742805a121fba50c6b77b0a6b5d5c56aa410b01bb446799"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/tags-lifecycle.repo.test.ts",
+                      "sha256":  "4e3b8c5d463cd4036117daeb5ed2d787a06be8fece393be270602a2956d1c897"
                   },
                   {
                       "path":  "tests/unit/http/http-client.test.ts",
@@ -774,8 +782,16 @@
                       "sha256":  "70cc02af0eaae8af638c1bb4ba06d9c7ac777a8acb970edbe6c7fb947abd1e8a"
                   },
                   {
+                      "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+                      "sha256":  "7b7b76e6dd0760df108a35c7ee1551bf6affa332abb6bc80b6da2b1c5eaf1766"
+                  },
+                  {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
                       "sha256":  "9263b53845dcb2c0eec51a6501541f3671ff3757c666f27bd623f2631b9d4c00"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/tags-lifecycle.store.test.ts",
+                      "sha256":  "69537424f40c087470d34384323c58db9603726219145f0bc9ceb133aa69209a"
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
@@ -892,6 +908,10 @@
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                  },
+                  {
+                      "path":  "tests/unit/services/tags-lifecycle.service.test.ts",
+                      "sha256":  "1d3af3505a1fd1c1ec4d7af94a68f9114beb8dfa541ce20fae7cd3c4156c32c7"
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",

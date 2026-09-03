@@ -1,0 +1,30 @@
+    [90m 64| [39m    [35mconst[39m tag [33m=[39m repo[33m.[39m[34mupsertByName[39m([32m'待删'[39m)
+    [90m 65| [39m    repo[33m.[39m[34mattach[39m([32m'p-1'[39m[33m,[39m tag[33m.[39mid)
+    [90m 66| [39m    repo[33m.[39m[34mdeleteTag[39m(tag[33m.[39mid)
+    [90m   | [39m         [31m^[39m
+    [90m 67| [39m    [35mconst[39m remain [33m=[39m db
+    [90m 68| [39m      [33m.[39mprepare[33m<[39m[string][33m,[39m { n[33m:[39m number }[33m>[39m([32m'SELECT COUNT(*) AS n FROM pap[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/db/repos/tags-lifecycle.repo.test.ts[2m > [22mP7E-01 tags.repo —— 生命周期（rename/merge/delete）[2m > [22mmergeTags 事务原子性：第二步抛错→第三步不执行且异常上抛（mock db 语句桩）
+[31m[1mAssertionError[22m: expected [Function] to throw error including '第二步炸了' but got 'mockedRepo.mergeTags is not a function'[39m
+
+Expected: [32m"第二步炸了"[39m
+Received: [31m"mockedRepo.mergeTags is not a function"[39m
+
+[36m [2m❯[22m tests/unit/db/repos/tags-lifecycle.repo.test.ts:[2m95:60[22m[39m
+    [90m 93| [39m      [35mthrow[39m [35mnew[39m [33mError[39m([32m'第二步炸了'[39m)
+    [90m 94| [39m    })
+    [90m 95| [39m    [34mexpect[39m(() [33m=>[39m mockedRepo[33m.[39m[34mmergeTags[39m([32m'src-id'[39m[33m,[39m [32m'tgt-id'[39m))[33m.[39m[34mtoThrow[39m([32m'第[39m…
+    [90m   | [39m                                                           [31m^[39m
+    [90m 96| [39m    [90m// 第一步已执行且参数序=(target, source)（SELECT paper_id, ? … WHE[39m…
+    [90m 97| [39m    [34mexpect[39m([34mfindStmt[39m([32m'SELECT paper_id, ? FROM paper_tags'[39m)[33m.[39mrun)[33m.[39m[34mtoHaveB[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[90m (5)[39m
+[2m   Start at [22m 07:42:34
+[2m   Duration [22m 685ms[2m (transform 41ms, setup 0ms, collect 154ms, tests 23ms, environment 0ms, prepare 161ms)[22m
+

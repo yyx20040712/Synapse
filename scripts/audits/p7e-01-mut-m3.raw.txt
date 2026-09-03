@@ -1,0 +1,22 @@
+=== M3 变异：store mutate 成功后撤链式 refresh（陈旧列表） ===
+--- 命中证明：变异前 'await get().refresh()' 计数=2，变异后：
+1
+--- 测试运行（期望红）：
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/renderer/tags-lifecycle.store.test.ts:[2m98:47[22m[39m
+    [90m 96| [39m    [34mresolveOld[39m({ ok[33m:[39m [35mfalse[39m[33m,[39m error[33m:[39m { code[33m:[39m [32m'DB_ERROR'[39m[33m,[39m message[33m:[39m [32m'旧失[39m…
+    [90m 97| [39m    [35mawait[39m concurrent[33m.[39m[35mcatch[39m(() [33m=>[39m undefined)
+    [90m 98| [39m    [34mexpect[39m(useStore[33m.[39m[34mgetState[39m()[33m.[39mtags[[34m0[39m][33m?.[39mname)[33m.[39m[34mtoBe[39m([32m'最新'[39m) [90m// 只认最新[39m…
+    [90m   | [39m                                              [31m^[39m
+    [90m 99| [39m    [34mexpect[39m(useStore[33m.[39m[34mgetState[39m()[33m.[39merror)[33m.[39m[34mtoBeNull[39m() [90m// 迟到旧失败被 loadS[39m…
+    [90m100| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 08:06:39
+[2m   Duration [22m 570ms[2m (transform 30ms, setup 0ms, collect 34ms, tests 41ms, environment 0ms, prepare 158ms)[22m
+

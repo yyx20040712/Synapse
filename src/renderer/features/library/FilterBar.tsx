@@ -5,6 +5,8 @@
  * - FTS 搜索框（useDebounce 300ms 后回写 store.query.search；空串回 undefined 清条件）
  * - 下拉：集合（api.library.collections）、年份（library.store 列表数据推导）、排序三选
  * - TagFilter 组件嵌于此（标签过滤，v1 单选）
+ * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
+ *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagFilter 零 import library.store）
  *
  * ── 接口层 ──
  * - export function FilterBar(props: { query: LibraryQuery;
@@ -36,6 +38,7 @@ export function FilterBar(props: {
 }): JSX.Element {
   const { query, onChange } = props
   const papers = useLibraryStore((s) => s.papers)
+  const loadLibrary = useLibraryStore((s) => s.load)
   const [text, setText] = useState(query.search ?? '')
   const debounced = useDebounce(text, 300)
   const { data: collections, run: loadCollections } = useAsync(
@@ -109,6 +112,7 @@ export function FilterBar(props: {
       <TagFilter
         selectedTagId={query.tagId ?? null}
         onFilterChange={(tagId) => onChange({ tagId: tagId ?? undefined })}
+        onMutated={() => void loadLibrary()}
       />
     </div>
   )

@@ -1,0 +1,14 @@
+    [90m 85| [39m  })
+    [90m 86| [39m  [34mexpect[39m(host[33m?.[39m[34mquerySelector[39m([32m'[data-testid="tag-menu"]'[39m)[33m,[39m [32m'右键后菜单[39m…
+    [90m   | [39m                                                                         [31m^[39m
+    [90m 87| [39m}
+    [90m 88| [39m
+[90m [2m❯[22m tests/unit/renderer/tag-lifecycle-ui.test.tsx:[2m224:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[90m (6)[39m
+[2m   Start at [22m 07:43:21
+[2m   Duration [22m 1.25s[2m (transform 48ms, setup 0ms, collect 135ms, tests 27ms, environment 593ms, prepare 178ms)[22m
+

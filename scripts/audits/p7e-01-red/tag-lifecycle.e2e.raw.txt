@@ -1,0 +1,22 @@
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByTestId('tag-menu')
+
+
+      64 |   await expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(1)
+      65 |   await win.getByRole('button', { name: '水治（1）' }).click({ button: 'right' })
+    > 66 |   await expect(menu).toBeVisible()
+         |                      ^
+      67 |   await menu.getByRole('menuitem', { name: '重命名' }).click()
+      68 |   const dialog = win.getByRole('dialog')
+      69 |   const renameInput = win.getByLabel('新标签名')
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\tag-lifecycle.spec.ts:66:22
+
+    Error Context: test-results\tag-lifecycle-标签生命周期：改名→合并→删除（chip-行徽标真实文本-死筛选自愈）\error-context.md
+
+  1 failed
+    tests\e2e\tag-lifecycle.spec.ts:15:1 › 标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈） ─────────────────────

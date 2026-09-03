@@ -89,7 +89,7 @@ export function TagEditor(props: {
     }
   }
 
-  /** ×：移除挂接（不动标签本身——删除标签 v2） */
+  /** ×：移除挂接（不动标签本身——标签删除走 TagFilter 管理面，P7E-01 已实现） */
   async function removeTag(tagId: string): Promise<void> {
     if (busy) return
     setBusy(true)

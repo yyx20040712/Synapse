@@ -1,8 +1,9 @@
 /**
- * [SR-IPC-04] ipc/tags —— 标签域装配（工单：done / weak）
+ * [SR-IPC-04] ipc/tags —— 标签域装配（工单：done / weak + P7E-01）
  *
  * ── 行为层 ──
- * - 纯委托：list→services.tags.list；upsert→….upsert；attach→…；detach→…
+ * - 纯委托：list→services.tags.list；upsert→….upsert；attach→…；detach→…；
+ *   rename/merge/delete→…（P7E-01 生命周期三通道）
  * - 本文件没有任何业务逻辑，每方法一行转调
  *
  * ── 接口层 ──
@@ -24,6 +25,9 @@ export function createTagsIpc(deps: IpcDeps): ApiHandlers['tags'] {
     list: (req) => deps.services.tags.list(req),
     upsert: (req) => deps.services.tags.upsert(req),
     attach: (req) => deps.services.tags.attach(req),
-    detach: (req) => deps.services.tags.detach(req)
+    detach: (req) => deps.services.tags.detach(req),
+    rename: (req) => deps.services.tags.rename(req),
+    merge: (req) => deps.services.tags.merge(req),
+    delete: (req) => deps.services.tags.delete(req)
   }
 }
