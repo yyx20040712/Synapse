@@ -1,0 +1,65 @@
+diff --git a/tests/e2e/z-r2e-probe.spec.ts b/tests/e2e/z-r2e-probe.spec.ts
+index a9f47d4496..964482460e 100644
+--- a/tests/e2e/z-r2e-probe.spec.ts
++++ b/tests/e2e/z-r2e-probe.spec.ts
+@@ -167,6 +167,42 @@ async function stableGate(win: Page): Promise<void> {
+   }
+ }
+ 
++
++/** [z-r2e 立案修] 几何稳定门（INV-51 双态收敛——crib reader-text.spec stableRel
++ * 已验证配方）：前置观察窗 400ms（fallback→resolved 跳变余量——双采样一致不能
++ * 区分「跳变已结束」与「未开始」）+120ms 间隔采样、连续 3 点（2 对相邻一致）
++ * 0.1px 内收敛才放行；25 轮穷尽 fail loudly（静默继续=把假红面留给双态——
++ * 门二 B-1 同款）。两程量测前各过门：pass1 裸 boundingBox 竞速 resolve 是
++ * 2 现立案的根因（z-r2e-flake-case.md），pass2 裸测同险（s2RelY 稳是时序
++ * 巧合非保证）。 */
++async function rectStableGate(win: Page): Promise<void> {
++  const measure = (): Promise<{ x: number; y: number; w: number; h: number } | null> =>
++    win.evaluate(() => {
++      const r = document.querySelector('[data-testid="annotation-rect"]')?.getBoundingClientRect()
++      if (r === undefined || r.width <= 0 || r.height <= 0) return null
++      return { x: r.x, y: r.y, w: r.width, h: r.height }
++    })
++  await win.waitForTimeout(400)
++  let prev = await measure()
++  let streak = 0
++  for (let i = 0; i < 25; i++) {
++    await win.waitForTimeout(120)
++    const cur = await measure()
++    if (
++      cur !== null && prev !== null &&
++      Math.abs(cur.x - prev.x) < 0.1 && Math.abs(cur.y - prev.y) < 0.1 &&
++      Math.abs(cur.w - prev.w) < 0.1 && Math.abs(cur.h - prev.h) < 0.1
++    ) {
++      streak += 1
++      if (streak >= 2) return
++    } else {
++      streak = 0
++    }
++    prev = cur
++  }
++  throw new Error('annotation-rect 几何 25 轮采样未收敛（双态瞬态/漂移超预算——fail loudly）')
++}
++
+ /** 滚动事件驱动记录器（落帧源定位——scroll 事件捕获阶段全容器覆盖+500ms 兜底
+  * 采样；rAF 方案在 Electron 失焦/遮挡窗口下被完全暂停——实测零执行，弃用） */
+ interface ScrollLogPoint { t: number; tag: string; y: number | null; ch: number | null; sh: number | null }
+@@ -252,6 +288,8 @@ test('F-R2e 探针：划选高亮重开原位——仪表指纹矩阵', async ()
+   await expect(rect.first()).toBeVisible()
+   await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+   await expect(rect).toHaveCount(1)
++  // [z-r2e 立案修] 几何稳定门先行（pass1 裸测竞速 resolve=2 现根因）
++  await rectStableGate(win)
+   const box1 = await rect.first().boundingBox()
+   const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()
+   const a1 = await atomSample(win)
+@@ -275,6 +313,8 @@ test('F-R2e 探针：划选高亮重开原位——仪表指纹矩阵', async ()
+   await expect(rect2).toHaveCount(1)
+   await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+   if (STABLE) await stableGate(win2)
++  // [z-r2e 立案修] 几何稳定门（pass2 裸测同险——双程同口径）
++  await rectStableGate(win2)
+   const box2 = await rect2.first().boundingBox()
+   const box2T = Date.now()
+   if (INJECT === 1) await injectScroll(win2, 3.45)

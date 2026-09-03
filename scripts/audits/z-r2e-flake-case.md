@@ -34,9 +34,15 @@
 
 - **根因归属=探针测量面**（pass1 缺稳定门——与原用例 stableRel 双程口径不对齐），
   产品行为=INV-51 已锚定双态。
-- **修法（候选，另立受锁小票）**：pass1 量测前加 `if (STABLE) await stableGate(win)`
-  （与 pass2 同口径）；z-r2e-probe.spec.ts 属 tests/ 受锁面——走 unlock→改→relock
-  →[locked-change]。红证形态=本档两现 payload（flake 竞速窗不可确定性复刻——
-  P7A 注入复刻先例不适用于纯时序竞速，以两次在档失败数据为红证据申报）。
+- **修法勘误（2026-09-03 修票时发现）**：初拟「pass1 加 `if (STABLE) await
+  stableGate(win)`」**修不到点上**——探针的 stableGate 是**滚动**稳定门（scrollTop
+  收敛循环），不锚 INV-51 的几何双态（fallback→resolved 的 rect 跳变）。正确修法=
+  **rectStableGate（几何双采样稳定门）**——crib 受锁 reader-text.spec stableRel
+  已验证配方：前置观察窗 400ms（fallback→resolved 余量）+120ms 间隔采样、连续
+  3 点（2 对相邻一致）0.1px 内收敛才放行、25 轮穷尽 fail loudly（静默继续=把
+  假红面留给双态）；**两程**量测前各过门（pass2 同样裸测——s2RelY 稳只是时序
+  巧合非保证）。z-r2e-probe.spec.ts 属 tests/ 受锁面——unlock→改→relock→
+  [locked-change]。红证形态=本档两现 payload（时序竞速不可确定性复刻——P7A
+  注入复刻先例不适用于纯时序竞速，以两次在档失败数据为红证据申报）。
 - **立案时点排队**：P7E-03 提交后即修（探针 flake 污染后续每票 e2e 基线——
   每次全量跑都可能随机红一次，审查带宽消耗面）。

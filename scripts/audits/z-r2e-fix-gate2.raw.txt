@@ -1,0 +1,22 @@
+{
+  "verdict": "PASS",
+  "findings": [
+    {
+      "severity": "NIT",
+      "file": "tests/e2e/z-r2e-probe.spec.ts",
+      "line_hint": "rectStableGate 的 measure 守卫",
+      "issue": "守卫只校验 c.width<=0，未校验 canvas 高度；若 canvas 宽非零高为零仍会进入收敛采样，理论上在 canvas 布局后续变化时漏过稳定门。",
+      "evidence": "代码 `if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null`；任务材料记档「canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿」。",
+      "suggestion": "在守卫中增加 `|| c.height <= 0`，返回 null 等待后续样本。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/e2e/z-r2e-probe.spec.ts",
+      "line_hint": "rectStableGate 的 throw 消息",
+      "issue": "错误消息只包含末次样本，不足以仅从消息区分持续漂移还是双态瞬态；实际判读依赖 mutLog/series 旁路已接受。",
+      "evidence": "`throw new Error(... 末次样本=${JSON.stringify(prev)})`; 任务材料「单点样本判别力弱=判别实际靠 mutLog/series 旁路在档」。",
+      "suggestion": "可（可选）在 throw 消息中附带最近 3~5 次采样序列，便于不查旁路也能判读；不阻塞。"
+    }
+  ],
+  "summary": "修复范围集中在受锁测试文件，未触碰产品代码/新依赖，无硬规则或跨 feature 引入；rectStableGate 的两点收敛+前置观察窗+超时 fail loudly 与立案根因（pass1 裸测竞速 resolve）具有直接因果对应，红证申报以两现失败 payload 替代不可确定性复刻诚实充分。机器面全量 e2e 36/36 在档且锁一致。仅余两条已记档 NIT，不影响通过。"
+}

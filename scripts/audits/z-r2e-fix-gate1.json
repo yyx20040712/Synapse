@@ -1,0 +1,30 @@
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "tests/e2e/z-r2e-probe.spec.ts",
+      "line_hint": "pass2 调用点（diff @@ -275,6 +313,8 块，`if (STABLE) await stableGate(win2)` 之后）",
+      "issue": "口径不对称：pass2 的滚动稳定门 stableGate 以 `if (STABLE)` 为条件，而新加的 rectStableGate 无条件执行。若该探针存在 STABLE=0 的非稳态取证模式（原口径下 pass2 裸 boundingBox 正是用来捕捉未收敛双态的），新门会在量测前强制等待至多 ~3.4s（400ms 前置窗+25×120ms 采样），把探针原本要观察的双态跳变掩掉，取证语义被改变。票面注释以「双程同口径」一笔带过，未论证对非 STABLE 模式的影响。机器面仅申报「定向探针 ×2 绿」，未说明是否覆盖 STABLE=0 形态。",
+      "evidence": "diff 中 `if (STABLE) await stableGate(win2)` 与紧邻的无条件 `await rectStableGate(win2)` 并列；注释「[z-r2e 立案修] 几何稳定门（pass2 裸测同险——双程同口径）」；§0「定向探针 ×2 绿（7.3s/7.2s——含 400ms 前置窗+采样）」",
+      "suggestion": "二选一：(a) 若探针仅用于稳态口径，将 rectStableGate 也挂到 STABLE 条件下并在注释中声明「非稳态模式不做几何门=有意保留裸测取证面」；(b) 若确需无条件过门，在票面补一句对 STABLE=0 模式语义影响的论证（或实证该模式不存在/已废弃）。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/e2e/z-r2e-probe.spec.ts",
+      "line_hint": "rectStableGate throw 语句（diff 新增块末行）",
+      "issue": "fail loudly 的错误消息不含任何采样数据。本文件是取证探针，25 轮穷尽后抛出的消息只有一句结论，未携带末次/峰值几何样本，复盘时无法区分「双态瞬态」与「持续漂移」两种触发路径（消息里并列了这两种可能却无判别数据）。",
+      "evidence": "diff 新增：`throw new Error('annotation-rect 几何 25 轮采样未收敛（双态瞬态/漂移超预算——fail loudly）')`",
+      "suggestion": "throw 时附上前末两次（或最大偏差一对）采样值，如 `…未收敛（last=${JSON.stringify(prev)} cur=${JSON.stringify(cur)}）`，与探针 mutLog/series 取证口径一致。"
+    },
+    {
+      "severity": "NIT",
+      "file": "tests/e2e/z-r2e-probe.spec.ts",
+      "line_hint": "pass1 `const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()`",
+      "issue": "rectStableGate 只锚 annotation-rect 自身几何，未锚参照系 canvas[data-pdf-canvas]；探针最终断言是相对几何（rel1.y−rel2.y），若参照 canvas 自身在量测窗口内位移，相对指纹仍有理论竞速残口。立案档证据（s2RelY 八采样恒稳 60.64、dy/dh 与 INV-51 band 收边数值吻合）表明参照系在两次出现中均稳定，故仅作残险记录，不构成回修。",
+      "evidence": "diff：`const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()` 无任何前置门；立案档「s2RelY 八采样恒稳 60.64（pass2 已稳态）」",
+      "suggestion": "可在 rectStableGate 注释中补一句「参照 canvas 几何稳定有立案档证据（s2RelY 八采样恒稳），故门仅锚 rect」，把残险假设显式化，避免后续审票重复质询。"
+    }
+  ],
+  "summary": "修法与根因因果闭合：rectStableGate 的 400ms 前置窗+双采样收敛直接封死 pass1 裸 boundingBox 竞速 fallback→resolved 的窗口，采样逻辑（3 连点/0.1px/25 轮穷尽 throw）与注释规格一致，无恒真断言、无范围蔓延、红证形态如实申报。无 BLOCKING 发现；主要遗留是 pass2 新门无条件执行与 stableGate 的 STABLE 条件不对称，可能对非稳态取证模式造成语义掩蔽，需补论证或对齐条件。"
+}
