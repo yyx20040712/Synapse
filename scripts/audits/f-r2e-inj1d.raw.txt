@@ -1,0 +1,26 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+Running 1 test using 1 worker
+
+  x  1 tests\e2e\z-r2e-probe.spec.ts:175:1 › F-R2e 探针：划选高亮重开原位——仪表指纹矩阵 (3.1s)
+
+
+  1) tests\e2e\z-r2e-probe.spec.ts:175:1 › F-R2e 探针：划选高亮重开原位——仪表指纹矩阵 ───────────────────────────────
+
+    Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'scrollTop')
+        at rec (eval at evaluate (:311:30), <anonymous>:11:47)
+        at eval (eval at evaluate (:311:30), <anonymous>:20:5)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at rec (eval at evaluate (:311:30), <anonymous>:11:47)
+        at eval (eval at evaluate (:311:30), <anonymous>:20:5)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at startScrollLog (E:\class\智慧水务\Synapse_remake\tests\e2e\z-r2e-probe.spec.ts:127:14)
+        at E:\class\智慧水务\Synapse_remake\tests\e2e\z-r2e-probe.spec.ts:218:9
+
+    Error Context: test-results\z-r2e-probe-F-R2e-探针：划选高亮重开原位——仪表指纹矩阵\error-context.md
+
+  1 failed
+    tests\e2e\z-r2e-probe.spec.ts:175:1 › F-R2e 探针：划选高亮重开原位——仪表指纹矩阵 ────────────────────────────────

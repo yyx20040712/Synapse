@@ -1,0 +1,22 @@
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tag-filter-multi.test.tsx[2m > [22mP7X-01 标签选中上限 UI 感知（添加方向守卫，移除方向永不设限）[2m > [22mT9 边界放行：19 选中点第 20 chip → onFilterChange 恰一次、载荷 20 项含新 id + 零 toast
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/tag-filter-multi.test.tsx:[2m295:28[22m[39m
+    [90m293| [39m    [35mawait[39m [34mclickChip[39m([32m'标签20（0）'[39m)
+    [90m294| [39m    [90m// 第 20 个合法入选（length=19 时添加）[39m
+    [90m295| [39m    [34mexpect[39m(onFilterChange)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m296| [39m    [35mconst[39m payload[33m:[39m string[] [33m=[39m onFilterChange[33m.[39mmock[33m.[39mcalls[[34m0[39m][33m?.[39m[[34m0[39m] [33m??[39m []
+    [90m297| [39m    [34mexpect[39m(payload)[33m.[39m[34mtoHaveLength[39m([34m20[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 22:35:56
+[2m   Duration [22m 1.48s[2m (transform 84ms, setup 0ms, collect 259ms, tests 58ms, environment 604ms, prepare 216ms)[22m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m

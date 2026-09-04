@@ -1,0 +1,94 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [32m✓[39m tests/unit/renderer/settings.store.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 68[2mms[22m[39m
+ [32m✓[39m tests/unit/renderer/r3-rdr-set-visual.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m挂载即订阅 exportCorpus 事件；卸载成对注销（INV-14 消费方级）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m挂载即订阅 exportCorpus 事件；卸载成对注销（INV-14 消费方级）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m生产组装：createCorpusExtractor 收 loadDocument=loadPdfDocument 单点+sendItem 接 window.api.export_.corpusItem
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m事件双型分发：extract-request→提取器；progress→store 进度回写（在途）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m事件双型分发：extract-request→提取器；progress→store 进度回写（在途）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m终局 toast 成功面：fileCount 入文案；errorCount>0 部分=info 档，全成=success 档（INV-02）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2museExportCorpusEvents —— App 层事件桥 [SR2-AI-04][2m > [22m[2m终局 toast 失败面：折叠错误 message 直达 toast（EXPORT_BUSY/CANCELLED 同型，INV-02/INV-13）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m初始渲染：「导出语料」按钮可点；进度行不渲染（无会话）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m初始渲染：「导出语料」按钮可点；进度行不渲染（无会话）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m点击导出：经 store.start 真链路以 {} invoke corpusSession（全库口径——目录选择在通道内，INV-07）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m点击导出：经 store.start 真链路以 {} invoke corpusSession（全库口径——目录选择在通道内，INV-07）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m点击导出：经 store.start 真链路以 {} invoke corpusSession（全库口径——目录选择在通道内，INV-07）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2mbusy 期间按钮 disabled（会话单飞的 UI 预防面）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2mbusy 期间按钮 disabled（会话单飞的 UI 预防面）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2mbusy 期间按钮 disabled（会话单飞的 UI 预防面）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m进度行：streaming 呈现「提取全文 done/total」；终局 done+errorCount 部分成功可见
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2m进度行：streaming 呈现「提取全文 done/total」；终局 done+errorCount 部分成功可见
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2mSettingsPage 挂载：设置页渲染后「导出语料」按钮可见（R14 防线）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at ZcodeLinkSection (E:\class\智慧水务\Synapse_remake\src\renderer\features\settings\ZcodeLinkSection.tsx:14:47)
+    at div
+    at SettingsPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\settings\SettingsPage.tsx:33:42)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at SettingsPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\settings\SettingsPage.tsx:33:42)
+Warning: The current testing environment is not configured to support act(...)
+    at SettingsPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\settings\SettingsPage.tsx:33:42)
+
+[90mstderr[2m | tests/unit/renderer/corpus-export.test.tsx[2m > [22m[2mCorpusExportSection —— 设置页 AI 语料导出节 [SR2-AI-04][2m > [22m[2mSettingsPage 挂载：设置页渲染后「导出语料」按钮可见（R14 防线）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/corpus-export.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[90m 45[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+[2m   Start at [22m 01:19:29
+[2m   Duration [22m 1.85s[2m (transform 220ms, setup 0ms, collect 755ms, tests 140ms, environment 1.78s, prepare 617ms)[22m
+

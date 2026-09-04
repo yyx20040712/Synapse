@@ -1,0 +1,42 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/windows/window-state.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m F-G3 boundsToPersist —— maximized 态关窗持久化取 normal bounds[2m > [22mmaximized：getBounds 是最大化尺寸，持久化取 getNormalBounds（下次启动恢复还原态而非大窗非最大化）[90m 2[2mms[22m[31m[39m
+[31m     → boundsToPersist is not a function[39m
+[31m   [31m×[31m F-G3 boundsToPersist —— maximized 态关窗持久化取 normal bounds[2m > [22m常态：getNormalBounds 与 getBounds 等值——非最大化路径行为零变旁证[90m 0[2mms[22m[31m[39m
+[31m     → boundsToPersist is not a function[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/windows/window-state.test.ts[2m > [22mF-G3 boundsToPersist —— maximized 态关窗持久化取 normal bounds[2m > [22mmaximized：getBounds 是最大化尺寸，持久化取 getNormalBounds（下次启动恢复还原态而非大窗非最大化）
+[31m[1mTypeError[22m: boundsToPersist is not a function[39m
+[36m [2m❯[22m tests/unit/windows/window-state.test.ts:[2m64:12[22m[39m
+    [90m 62| [39m      getNormalBounds[33m:[39m () [33m=>[39m ({ x[33m:[39m [34m120[39m[33m,[39m y[33m:[39m [34m60[39m[33m,[39m width[33m:[39m [34m1280[39m[33m,[39m height[33m:[39m [34m80[39m…
+    [90m 63| [39m    }
+    [90m 64| [39m    [34mexpect[39m([34mboundsToPersist[39m(win))[33m.[39m[34mtoEqual[39m({ x[33m:[39m [34m120[39m[33m,[39m y[33m:[39m [34m60[39m[33m,[39m width[33m:[39m [34m1280[39m[33m,[39m…
+    [90m   | [39m           [31m^[39m
+    [90m 65| [39m  })
+    [90m 66| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/windows/window-state.test.ts[2m > [22mF-G3 boundsToPersist —— maximized 态关窗持久化取 normal bounds[2m > [22m常态：getNormalBounds 与 getBounds 等值——非最大化路径行为零变旁证
+[31m[1mTypeError[22m: boundsToPersist is not a function[39m
+[36m [2m❯[22m tests/unit/windows/window-state.test.ts:[2m70:12[22m[39m
+    [90m 68| [39m    [35mconst[39m b [33m=[39m { x[33m:[39m [34m10[39m[33m,[39m y[33m:[39m [34m20[39m[33m,[39m width[33m:[39m [34m800[39m[33m,[39m height[33m:[39m [34m600[39m }
+    [90m 69| [39m    [35mconst[39m win [33m=[39m { getBounds[33m:[39m () [33m=>[39m ({ [33m...[39mb })[33m,[39m getNormalBounds[33m:[39m () [33m=>[39m …
+    [90m 70| [39m    [34mexpect[39m([34mboundsToPersist[39m(win))[33m.[39m[34mtoEqual[39m({ x[33m:[39m [34m10[39m[33m,[39m y[33m:[39m [34m20[39m[33m,[39m width[33m:[39m [34m800[39m[33m,[39m h…
+    [90m   | [39m           [31m^[39m
+    [90m 71| [39m  })
+    [90m 72| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 01:15:39
+[2m   Duration [22m 547ms[2m (transform 23ms, setup 0ms, collect 39ms, tests 10ms, environment 0ms, prepare 137ms)[22m
+

@@ -1,0 +1,80 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m② 尺寸变化 refit：挂载（W1 gBCR 回退口径）fit 后改 clientWidth=W2→派发 callback→transform=fitViewport(nodes, layout, W2, H)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑦ 无自激励（S5）：callback 内 setViewport 新值重渲染→无新 RO 注册/disconnect/重复 observe
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/lineage-viewport-refit.test.tsx [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 61[2mms[22m[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）[90m 10[2mms[22m[31m[39m
+[31m     → expected 1.2790697674418605 not to be 1.2790697674418605 // Object.is equality[39m
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑧ 初始回调幂等（回炉 1 W3）：挂载非空图（fit effect 已跑）→手动派发一次桩 callback（模拟 observe 后规范要求的初始通知）→transform 与挂载 fit 结果相等
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）
+[31m[1mAssertionError[22m: expected 1.2790697674418605 not to be 1.2790697674418605 // Object.is equality[39m
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m210:30[22m[39m
+    [90m208| [39m      })
+    [90m209| [39m      [35mconst[39m wheeled [33m=[39m [34mparseViewport[39m([34mviewportTransform[39m())
+    [90m210| [39m      [34mexpect[39m(wheeled[33m![39m[33m.[39mk)[33m.[39mnot[33m.[39m[34mtoBe[39m(fitted[33m![39m[33m.[39mk) [90m// wheel 确实改了视口（前[39m…
+    [90m   | [39m                             [31m^[39m
+    [90m211| [39m      [34mstubClientSize[39m(svg[33m,[39m [34m500[39m[33m,[39m [34m600[39m) [90m// 布局盒变化（量测也变——与② 同口[39m…
+    [90m212| [39m      [34mfireRO[39m([34mlastRO[39m())
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 07:33:07
+[2m   Duration [22m 1.42s[2m (transform 65ms, setup 0ms, collect 194ms, tests 61ms, environment 642ms, prepare 175ms)[22m
+

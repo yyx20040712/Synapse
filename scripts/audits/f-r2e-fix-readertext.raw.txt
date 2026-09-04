@@ -1,0 +1,20 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+Running 13 tests using 1 worker
+
+  ok  1 tests\e2e\reader-text.spec.ts:134:1 › 打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-01 保持） (1.7s)
+  ok  2 tests\e2e\reader-text.spec.ts:199:1 › 划选高亮后重开仍在原位；批注编辑与删除可用 (3.0s)
+  ok  3 tests\e2e\reader-text.spec.ts:277:1 › P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截 (2.6s)
+  ok  4 tests\e2e\reader-text.spec.ts:382:1 › F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚动不闪收 (2.1s)
+  ok  5 tests\e2e\reader-text.spec.ts:491:1 › 划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言） (2.0s)
+  ok  6 tests\e2e\reader-text.spec.ts:523:1 › 划选备注后渲染为整行色块（note kind 渲染存在性，INV-06） (2.0s)
+  ok  7 tests\e2e\reader-text.spec.ts:550:1 › P7-A 交互：侧栏分隔条拖拽（SplitPane 集成） (1.7s)
+  ok  8 tests\e2e\reader-text.spec.ts:578:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） (1.9s)
+  ok  9 tests\e2e\reader-text.spec.ts:612:1 › P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久 (4.5s)
+  ok 10 tests\e2e\reader-text.spec.ts:665:1 › F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订） (1.8s)
+  ok 11 tests\e2e\reader-text.spec.ts:754:1 › F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（INV-A/B/C 装配级） (1.9s)
+  ok 12 tests\e2e\reader-text.spec.ts:854:1 › F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照） (7.0s)
+  ok 13 tests\e2e\reader-text.spec.ts:1029:1 › A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线 (4.0s)
+
+  13 passed (36.8s)

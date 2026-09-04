@@ -1,0 +1,93 @@
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index cee18c206..585e4339a 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -1,4 +1,4 @@
+-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
++import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+ import { spawn } from 'node:child_process'
+ import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+@@ -51,6 +51,42 @@ function launch(userData: string): Promise<ElectronApplication> {
+   })
+ }
+ 
++/**
++ * [F-R2e 修] 稳态原子测量：标注块相对页面 canvas 的归一几何（x/y/w/h）。
++ * 两源瞬态均能造成恰 y 轴假红（排查档 scripts/audits/f-r2e-investigation.md）：
++ * ①重锚双态——AnnotationLayer 先渲染存量行盒几何（fallback），resolve 完成后
++ * 跳 band 收边几何（MutationObserver 实测 y 差 4.44px、窗 ~8ms，负载态可拉长
++ * ——F-A4 场 W-G1 备案 3.45px 同族）；②两次独立 boundingBox 调用之间的滚动
++ * 落帧（注入实验 dy=Δ 线性实证）。故先双采样稳定门跨过双态瞬态，再以单
++ * evaluate 同帧取 rect/canvas 两盒——同帧差值对滚动平移不变。断言语义
++ * （稳态"原位"）与 2px 容差不变，仅采样口径收敛；相对 canvas 归一同时
++ * 消窗口几何漂移（窗口状态恢复取整差——原 boundingBox 版同理）。
++ */
++async function stableRel(win: Page): Promise<{ x: number; y: number; w: number; h: number }> {
++  const measure = (): Promise<{ x: number; y: number; w: number; h: number } | null> =>
++    win.evaluate(() => {
++      const r = document.querySelector('[data-testid="annotation-rect"]')?.getBoundingClientRect()
++      const c = document.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect()
++      if (r === undefined || c === undefined) return null
++      return { x: r.x - c.x, y: r.y - c.y, w: r.width, h: r.height }
++    })
++  let prev = await measure()
++  for (let i = 0; i < 10; i++) {
++    await win.waitForTimeout(120)
++    const cur = await measure()
++    if (
++      cur !== null && prev !== null &&
++      Math.abs(cur.x - prev.x) < 0.1 && Math.abs(cur.y - prev.y) < 0.1 &&
++      Math.abs(cur.w - prev.w) < 0.1 && Math.abs(cur.h - prev.h) < 0.1
++    ) {
++      return cur
++    }
++    prev = cur
++  }
++  expect(prev, '标注块稳态几何不可得（10 轮采样未收敛）').not.toBeNull()
++  return prev!
++}
++
+ /**
+  * 种子落库（better-sqlite3 双 ABI 处理）：
+  * e2e 前构建链已把 build/Release 切到 electron ABI，而本测试进程是 Node——
+@@ -190,13 +226,8 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
+   await expect(rect.first()).toHaveCSS('opacity', '1')
+   // 单行单 span 划选：行级合并后恰 1 矩形（逐 clientRect 透传回归即 >1）
+   await expect(rect).toHaveCount(1)
+-  const box1 = await rect.first().boundingBox()
+-  const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()
+-  expect(box1).not.toBeNull()
+-  expect(page1).not.toBeNull()
+-  // 位置记取归一到页面盒：窗口绝对坐标会随窗口几何漂移（窗口状态持久化的恢复值
+-  // 与默认值有取整差、滚动条出现与否影响居中），"原位"语义是相对页面而非相对窗口
+-  const rel1 = { x: box1!.x - page1!.x, y: box1!.y - page1!.y }
++  // [F-R2e 修] 稳态原子测量（stableRel 头注——双态瞬态+滚动撕裂双源假红面）
++  const m1 = await stableRel(win)
+   await app.close()
+ 
+   // 第二程：重开同一文献，高亮仍渲染在原位（位置断言，不只断言存在）
+@@ -212,17 +243,14 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
+   // [F-A5/ADR-0019 R2] 背景板序第二程同锁（multiply 摘除+z=1）
+   await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+   await expect(win2.getByTestId('annotation-layer')).toHaveCSS('z-index', '1')
+-  const box2 = await rect2.first().boundingBox()
+-  const page2 = await win2.locator('canvas[data-pdf-canvas]').boundingBox()
+-  expect(box2).not.toBeNull()
+-  expect(page2).not.toBeNull()
+-  const rel2 = { x: box2!.x - page2!.x, y: box2!.y - page2!.y }
++  // [F-R2e 修] 稳态原子测量（第二程同口径——重锚双态窗口在此程）
++  const m2 = await stableRel(win2)
+   // 同一渲染管线下归一化矩形应一致（相对页面盒比较，≤2px 容差吞字度量测噪声；
+   // 尺寸不经窗口几何，直接比）
+-  expect(Math.abs(rel1.x - rel2.x)).toBeLessThanOrEqual(2)
+-  expect(Math.abs(rel1.y - rel2.y)).toBeLessThanOrEqual(2)
+-  expect(Math.abs(box1!.width - box2!.width)).toBeLessThanOrEqual(2)
+-  expect(Math.abs(box1!.height - box2!.height)).toBeLessThanOrEqual(2)
++  expect(Math.abs(m1.x - m2.x)).toBeLessThanOrEqual(2)
++  expect(Math.abs(m1.y - m2.y)).toBeLessThanOrEqual(2)
++  expect(Math.abs(m1.w - m2.w)).toBeLessThanOrEqual(2)
++  expect(Math.abs(m1.h - m2.h)).toBeLessThanOrEqual(2)
+ 
+   // 点击色块 → 四选项菜单 → 添加笔记开编辑弹层 → 删除（confirm 自动接受）→ 色块消失
+   // （P7-A 菜单前置后编辑器只能经「添加笔记」到达——直开路径已收口）

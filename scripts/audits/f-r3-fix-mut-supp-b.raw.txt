@@ -1,0 +1,9 @@
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 12:46:09
+[2m   Duration [22m 4.80s[2m (transform 82ms, setup 0ms, collect 180ms, tests 4.11s, environment 0ms, prepare 155ms)[22m
+
+exit=0
+
+--- [主控补正 2026-09-02] 尾行 exit=0 为标注失真（同 supp-a：tee 管道尾 $? 坑）。
+--- 红证本体=上方 vitest 摘要「Tests 2 failed | 11 passed」「Test Files 1 failed」。

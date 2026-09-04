@@ -1,0 +1,9 @@
+[f-r3 01:38:08] 文献库卡片数 9
+[f-r3 01:38:09] S0 单开基线 {"rendered":true,"pageErrors":0,"consoleErrors":0}
+[f-r3 01:38:10] pageerror@S1-rapid-open#open1: Error: Worker was terminated
+[f-r3 01:38:11] S1 快速连开 {"n":9,"elapsedMs":1285,"pageErrors":1,"consoleErrors":0,"msgSamples":["Error: Worker was terminated"]}
+[f-r3 01:38:14] pageerror@S2-open-close#open25: Error: Worker was terminated
+[f-r3 01:38:17] pageerror@S2-open-close#open35: Error: Worker was terminated
+[f-r3 01:38:23] S2 开关循环 {"mode":"open→120ms→closeTab","rounds":6,"cycles":54,"closeFail":0,"elapsedMs":12124,"pageErrors":2,"consoleErrors":0}
+[f-r3 01:38:23] S3 健康面 {"rendered":true,"spanCount":260,"pageErrors":0}
+F-R3 PROBE: S0=0 err | S1=1 err(9 开/1285ms) | S2=2 err(54 开关循环/closeFail=0) | S3 health=OK | 总 pageerror=3 / unhandled=0

@@ -1,0 +1,426 @@
+We need answer only JSON object. Need audit. Need inspect materials. Need decide verdict. Need follow instructions. Need use material only. Need include findings. Let's parse carefully.
+
+We need audit code change in tests/e2e/z-r2e-probe.spec.ts. Need evaluate against rules. We have no repo AGENTS except mentions. Need infer.
+
+Task: final audit of fix. Need output JSON verdict PASS/PASS_WITH_WARNINGS/FAIL, findings.
+
+Need analyze diff and case file and summary.
+
+First understand original test context from diff snippets. Need identify potential issues.
+
+The diff adds rectStableGate function and calls before box1 and before box2/pass2 (after if STABLE stableGate(win2)). Need assess correctness, safety, etc.
+
+Material includes:
+- task description with summary of prior gate: "门一 PWW(1W/2N)→三改→定点复核 PASS（余 2 NIT 记档不修：单点样本判别力弱=判别实际靠 mutLog/series 旁路在档；canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿）". Actually this seems referring to previous? We need judge final.
+
+Need know red claim: two occurrence payload. Need examine if honest. They assert cannot deterministically repro due timing race, red evidence = two failure payloads. Need decide if acceptable. Since e2e flakes no deterministic repro, two failures in log may be enough? Need audit.
+
+Need evaluate diff in detail.
+
+Function rectStableGate:
+
+```
+async function rectStableGate(win: Page): Promise<void> {
+  const measure = (): Promise<{ x: number; y: number; w: number; h: number } | null> =>
+    win.evaluate(() => {
+      const r = document.querySelector('[data-testid="annotation-rect"]')?.getBoundingClientRect()
+      const c = document.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect()
+      if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null
+      return { x: r.x - c.x, y: r.y - c.y, w: r.width, h: r.height }
+    })
+  await win.waitForTimeout(400)
+  let prev = await measure()
+  let streak = 0
+  for (let i = 0; i < 25; i++) {
+    await win.waitForTimeout(120)
+    const cur = await measure()
+    if (
+      cur !== null && prev !== null &&
+      Math.abs(cur.x - prev.x) < 0.1 && Math.abs(cur.y - prev.y) < 0.1 &&
+      Math.abs(cur.w - prev.w) < 0.1 && Math.abs(cur.h - prev.h) < 0.1
+    ) {
+      streak += 1
+      if (streak >= 2) return
+    } else {
+      streak = 0
+    }
+    prev = cur
+  }
+  throw new Error(...)
+}
+```
+
+Need think if measure uses `document.querySelector('canvas[data-pdf-canvas]')` - if multiple canvases? Existing code uses `win.locator('canvas[data-pdf-canvas]').boundingBox()` locator perhaps first? Need maybe single canvas? Need infer from test. The measure returns only if `c.width <= 0` (canvas width), not if rect? It checks r.width <=0 etc, c.width <=0. c.height not check; if zero canvas height can produce? Hmm. Wait "canvas 高度守卫缺失" note from previous may still? Material says "余 2 NIT 记档不修：单点样本判别力弱=判别实际靠 mutLog/series 旁路在档；canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿" This appears a summary of previous warnings? In task top "门一 PWW(1W/2N)→三改→定点复核 PASS（余 2 NIT 记档不修..." Maybe in the final package, they note two nit left unaddressed. Need assess if these nits should be WARN? Need likely not blocking. But maybe need mention.
+
+Let's identify potential issues with new function:
+
+1. Semantics of "continuous 3 points (2 adjacent same)"? They wait 400ms then measure prev, each loop wait 120, measure cur. If stable streak reaches 2: first comparison i=0 stable (streak 1), i=1 stable (streak 2) return. That is three samples? prev initial + two cur? Actually samples: measure initial; after 120 cur1 compare -> if stable streak1; after 120 cur2 compare to prev=cur1 -> if stable streak2 return. Thus it has three measurements (initial, cur1, cur2) with two adjacent differences stable. The comment says "连续 3 点（2 对相邻一致）" yes. Good.
+
+2. If initial measure is null, prev=null. If later measure becomes non-null, cur != null but prev is null; condition false; streak=0; prev now non-null; after 120 next can compare. That is okay. But if measure returns null repeatedly 25*120 ~3s plus initial, error. Total max wait 400 + 25*120 = 3400 ms plus operations. Not too long.
+
+3. "双采样一致不能区分跳变已结束与未开始" addressed with 400ms window + maybe stable fails after? If fallback->resolved happens after initial? Need examine.
+
+Suppose rect jumps from fallback to resolved at some time during gate. Because it samples every 120ms, if jump between samples, then cur diff >0.1 resets. Need need stable streak after jump? The gate can return only after two consecutive stable intervals. If jump occurs before final two samples, then it returns resolved state. If jump occurs after gate returns? Wait if gate returns because last two stable samplings, a jump could occur after. But the whole point is to reduce chance. Can't guarantee no future changes. The failed race was measurement immediately after visibility/count assertions: rect visible, count 1, then box1. The product updates AnnotationLayer from fallback to resolved after? Need understand sequence. It likely happens soon after annotations load. The 400ms wait before first measure includes initial jump. In failure, rect's boundingBox was measured before resolved final; no gate. By adding wait, probably catches jump.
+
+Could there be a scenario where jump occurs >400ms + 3s after? If app is delayed, not stable. But gate loops 3s. If a state change later than 3.4 sec after function starts, can produce failure. But maybe acceptable. Need compare stableRel approved in reader-text.spec. They crib that recipe, limits.
+
+Potential issue: The function uses a fixed 400ms pre-window and 120ms intervals. If event loop delayed or browser not settled. Maybe okay.
+
+Important: The pass2 path: before `const box2 = await rect2.first().boundingBox()` and after waiting for rect2 and stable gate conditional. It calls stableGate(win2) only if STABLE, then always rectStableGate(win2). That's okay.
+
+But we need understand test around line 224 vs 329. Wait diff adds call in test before "box1" maybe earlier around line 258, after `await expect(rect.first()).toBeVisible()`, `expect win...`, `expect rect count`. It does not add gate before any atomSample? No.
+
+Need think of "two程量测前各过门": pass1 uses rectStableGate before box1; pass2 uses rectStableGate before box2 after rect2 visible. But what about `atomSample`? Let's reconstruct test "F-R2e 探针：划选高亮重开原位——仪表指纹矩阵". Probably:
+
+```
+const rect = win.getByTestId('annotation-rect')
+await expect(rect.first()).toBeVisible()
+await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
+await expect(rect).toHaveCount(1)
+await rectStableGate(win)
+const box1 = await rect.first().boundingBox()
+const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()
+const a1 = await atomSample(win)
+...
+const win2 = ...
+await goto...
+await expect(rect2).toHaveCount(1)
+...
+if (STABLE) await stableGate(win2)
+await rectStableGate(win2)
+const box2 = await rect2.first().boundingBox()
+const box2T = Date.now()
+...
+```
+
+Could pass1 have `stableGate` previous? Need not.
+
+Need inspect "mutLog/series" references: There is comment in function says "无条件执行（不经 STABLE 条件——该旗只辖滚动稳定对照组；稳态原位断言语义循原用例 stableRel 同款无条件，双态时间线仍由 mutLog/series 完整记录，取证语义无损）". This comment maybe refers to two mechanisms added elsewhere. Need audit whether the comment aligns with existing test code? It may be overly elaborate but no.
+
+Potential issue: "same-frame atomic relative geometry": It queries `r` and `c` inside single evaluate. But `r` and `c` are two separate DOM elements; evaluating both in one JS task guarantees both represent same frame? Generally getBoundingClientRect forces layout. If read `r` then `c`, no async between; but layout could have invalidated due style changes? In same synchronous task, no mutation unless code in getter? No. It is atomic enough. It computes relative x = r.x - c.x. If canvas and rect are not in same containing coordinate? r.x and c.x relative to viewport. Difference invariant to viewport scroll if both in same document. Good.
+
+But if the canvas has CSS transform or if rect is in annotation layer over page, relative coordinate of rect to canvas remains? If AnnotationLayer child maybe with page dimensions. yes.
+
+Potential issue: The gate only checks stability by comparing consecutive samples; if there is slow monotonic drift, after 3 samples all stable? We measured at least 240ms apart; if drift rate <0.1 over 240ms, could pass. But if final assertion threshold 2px, false fail could still happen if drift continues 2px after few sec? Existing flake dy 4.4375 in maybe 8ms. 0.1 over 120ms is strict. But if font loading shifts layout gradually >3s later, possible rare. Not impossible.
+
+Potential issue: There is no `canvas[data-pdf-canvas]` height guard (`c.height <=0` not in condition). If canvas has zero height, relative y still maybe valid; but if layout not done? The previous nit said "canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿" Wait use existing condition only checks `c.width <= 0`, not height or r? Let's parse docs: If c.width <=0 returns null; but if c.height=0? c.height can be >0? getBoundingClientRect height could be zero if canvas display? However if canvas has zero height, `measure()` might not return null and relative geometry may be weird; but the gate can still stabilize. The "not false green" issue? Need understand.
+
+If `canvas` height is zero, maybe canvas not laid out, `r.y-c.y` maybe something. But annotation rect visible? If canvas height zero, page invalid. It would later fail maybe because page1 boundingBox height zero? Need no.
+
+Need assess "line limits" AGENTS rules: repo≤300? Material: "行数上限 repo≤300 组件≤250 文件≤500" Need know test file currently line count? Diff adds net ~47 lines. Existing spec maybe around 400? Need not know from materials. We only have diff not full. Could violate file≤500? Need cannot tell. Need see new lines around 167 and 296 etc. Original line count maybe test file length? Diff shows additions from 167 to around 293? Actually snippet shows + lines at around line 167, then call at 252. Total additions 44 net. If file line count in original around 330? Diff "index" no exact. Cannot assess repo≤? "repo≤300" maybe means repo? Wait "repo≤300 components≤250 file≤500" maybe line limit for single file? Need probably no issue.
+
+Potential issue: "禁新增依赖": no new deps.
+
+"分层单向" no product code changed, test only.
+
+"受锁流程 unlock→改→relock" appears done per metadata? Task says "已走/最小增量/无票面外改动". We need verify not possible from diff? It says diff only in tests file. No product code. Need mention no violation.
+
+Could be FAIL because of red evidence honesty? Need decide.
+
+Let's parse task "红证形态申报：时序竞速不可确定性复刻（P7A 注入先例不适用），以两现失败 payload（z-r2e-flake-case.md §一）为红证据——请审视该申报是否诚实充分." Need evaluate honesty. In materials, case file includes "two occurrences table with reruns green", root cause evidence. It says cannot deterministically repro because timing race; P7A example not applicable. Need ask: Is "注入先例" P7A maybe applicable? If they could inject artificial delay? But maybe not because cannot deterministically reproduce product race? Actually they could artificially alter network/file load timing or use route to delay? Maybe with Playwright route? But if underlying component fetches? Need not use P7A if not available. The question for auditor: Is it honest to claim no deterministic reproducibility? Need compare existing P7A injection precedent known? Material only says P7A injection precedent not applicable to pure timing race. We lack specifics. We can assess case file's rooting. It has "两现同族" with detailed evidence. That seems sufficiently honest if reproducible not possible in e2e environment.
+
+Need consider "mutLog/series 旁路" in previous findings: Some logs used to classify pass1 vs pass2. The new gate is not perfect if a change occurs after gate returns, but product state can change only in finite sequence. The logs record all mutation times. However if gate returns before actual final state and a mutation occurs later, fail would be real product? Wait if product later has fallback -> resolved, then measurement after gate may be fail. But if gate returns only after 3 stable samples, there could be final state change after that? Need explore.
+
+The failure mechanism: Because "AnnotationLayer 双态在档: 挂载先渲染存量行盒 fallback 几何→resolve 完成跳 band 收边几何, 实测 y 差 4.44px/正常负载窗 ~8ms". The initial fail was pass1 captures "resolve 前 fallback" while pass2 captures resolved? Wait if pass1 first test is just opened page? It needs to select annotation etc. Let's reconstruct. "z-r2e 探针: 划选高亮重开原位" Maybe steps: open pdf, create highlight annotation, then reload/open? Actually maybe after certain actions. First pass measures after an annotation appears? AnnotationLayer maybe loads stored rects. Fallback->resolved occurs when annotation resolved mutations? Need "pass1 裸测竞速 resolve" maybe first measurement after page open; pass2 after reopen. Mutations are product's annotation rendering pipeline: it emits AnnotationRect with fallback DOM, then when data resolves? Wait "双态" INV-51: mount first renders storage row boxes fallback geometry -> resolve complete jumps band收边 geometry. If rect re-renders after a mutation event? It might be triggered asynchronously after open. The fallback->resolved jump may happen at some point after DOM visible. It might happen before measurement if enough time.
+
+New gate waits until relative geometry stable for 240ms. Once final resolved state occurs, no further jump. If jump after gate, then test still catches, but can that happen? It could happen if app still loading async for >3.4s. But maybe if it happens then fail; however test should perhaps wait? But if the app is slow, if all visible and stable then later updates after gate, that is a real product "late update" possibly not intended? Actually AnnotationLayer may have update by mutation after resolve; if measurement before update, test would compare fallback vs resolved? Since first pass may measure later? Hmm.
+
+But flake's assertion compares rel1 and rel2 between open1 and open2. If product transitions from fallback to resolved at some time after gate, if both measurements happen after gate but before future state change, they align maybe fallback or resolved? Wait there might be no "future change" after stable if transition already finished. New gate's purpose is to wait for process done. If "resolve" happens at time unknown >3.4s, then gate passes before; measurement after gate catches pre-transition. If project has known normal load window ~8ms, 400ms overkill. If environment slow, 3.4s maybe enough? But could fail after. Flaky no? But if constant slow, it would fail every time? Not gate issue.
+
+Maybe instead of waiting fixed, better to await condition based on "mutLog count" or `stableRel` exact? But function is enough.
+
+Need identify if all four dimensions addressed. Since code not in diff for pass1 original maybe gate. Is there any pass2 use of boundingBox before rectStableGate for wait? They call `await rect2.first().boundingBox()`? no.
+
+Potential bug: The measure's `r` query uses `document.querySelector('[data-testid="annotation-rect"]')`, but if multiple rect elements? The test uses `rect.first()` and `rect2.first()` maybe locators. `querySelector` returns first in DOM order. Could be same as `rect.first()`? Playwright locator `.first()` returns first matching element, in DOM order? According to Playwright `.first()` returns locator to first matching element (maybe DOM order). So likely yes. However at pass2, there are maybe after scroll? rect count? At measurement time rect count 1. QuerySelector returns first. Good.
+
+Need consider if `getBoundingClientRect` returns DOMRect object, and accessing properties inside evaluate works. no serialization issue.
+
+Potential issue: `document.querySelector('canvas[data-pdf-canvas]')` querySelector with element selectors; if canvas element exists but no data-pdf-canvas? In pdf rendering maybe multiple canvas only page? But test earlier queries `canvas[data-pdf-canvas]`; okay.
+
+Potential issue: They wait before first measure 400ms. This means every invocation adds ~400ms + at least 240ms (if first two comparisons stable) = 640ms plus overhead. Test invocation times. In e2e, okay.
+
+Potential issue: If `measure()` returns null (e.g., because canvas width 0), prev null and loop continues. If after 25 iterations no non-null, throw. This fail loudly but no timeout? It doesn't include entire test timeout maybe at default 30s? Gate max 3.4s. okay.
+
+Potential issue: `win.waitForTimeout` is discouraged? In Playwright it's okay for e2e.
+
+Potential issue: Hard rule "测试锁定" maybe tests should lock reference to existing approved stableRel? Here the diff comments say "crib reader-text.spec stableRel 已验证配方"; but no code import because cross-feature? z-r2e-probe.spec.ts separate. It duplicated logic instead of referencing. Is that allowed? The project may have "crib" pattern: copy from approved code, no cross feature? Need know "跨 feature 互引红线" from AGENTS: likely no code imports across features. Tests? z-r2e probe is test maybe feature "r2e"? "crib" likely allowed? Need assess: It "crib reader-text.spec stableRel", not import, safe. But could be "测试锁定" should lock against reference? not issue.
+
+Need understand case file says "stableRel" in reader-text.spec already has similar gate. Did they copy exactly? Let's infer from names: stableRel likely "double sampling stable gate": "in reader-text.spec stableRel async"? The new code comment: "INV-51 双态收敛——crib reader-text.spec stableRel 已验证配方". It's a crib of a proven receipt. Good.
+
+But maybe diff's function comment in code says "门二 B-1 同款" etc referencing internal design docs? no harm.
+
+Need evaluate "fail loudly with sample": It throws Error with `JSON.stringify(prev)`. If prev null, message "null". okay. It does not include last cur? If last iteration measure returns null, prev from prior, message might be stale but okay.
+
+Need examine the condition for stability: It uses <0.1, not <=? Fine.
+
+Potential issue: The initial `prev` measured after 400ms but before for-loop. If measure returns null, streak set? It sets streak 0; after 25 iterations with no stable pair, fails. If last measure returns null? Message with prev maybe from previous, not last. Good.
+
+Need think about `r.width` or `c.width` includes fractional etc. <0.1 strict; if zoom changes? no.
+
+Need consider "same-frame atomic relative geometry" but test's later measurements use `rect.first().boundingBox()` and `canvas...boundingBox()` separately? In original lines after gate:
+```
+const box1 = await rect.first().boundingBox()
+const page1 = await win.locator('canvas...').boundingBox()
+```
+These are not same-frame. After gate, stable state, okay. The gate ensures no jump; but separate calls could be subject to scroll/viewport change between. Yet probably no scroll or change. However the original failure assertion uses rel1.y etc from boundingBoxes of rect and canvas possibly same? Need see not in diff. This maybe "pass2" separate. Wait the earlier "rectStableGate" comment says "量测口径=同帧原子相对几何 (rect 与 canvas 单 evaluate 内取值——参照系位移与 rect 跳变同窗收敛，终局断言恰比较此相对量, 门二 W-A 同帧纪律)." But final test likely still uses boundingBox separate? Let's reason: box1 = rect.first().boundingBox(); page1 = canvas.boundingBox(); rel1 = maybe compute `(box1.y - page1.y)` etc. Since they are separate `evaluate`, not same frame? Actually Playwright boundingBox does measure in Chromium at that moment; between may be frames. But if stable no concern. The gate's measurement uses same-frame only for gate, not for final measurement. The root cause is measuring early, not relative same-frame. They could have changed final to same-frame but didn't. Is that a discrepancy? The final test still has a tiny race between `rect.box` and `canvas.box`, but likely annotation layer stable. If page/scroller moves between, could alter relative y? There may be no scroll. The earlier flake was due rect jump relative to canvas; if gate waits for stable, both bounding boxes are stable. No issue.
+
+However the comment "量测口径=同帧原子相对几何" might be misleading because final measurements are not same-frame atomic! Let's examine. The gate itself uses same-frame relative geometry as an indicator to decide stability. After gate returns, the actual measured relative target could still differ if rect and canvas move in separate calls. But if no movement, okay. Maybe "门二 W-A 同帧纪律" refers to final assertion should also be same-frame? Need know. The "FAIL point" at :329 compared `rel1.y` vs `rel2.y` with y values perhaps computed as box y positions, not same frame? If final assertion measures same-frame? It might use `page1 = canvas.boundingBox()` and box1 = rect boundingBox separately, then compute difference. Not same-frame. So "门二 W-A 同帧纪律" might be aspirational? But this code doesn't fix final. Hmm.
+
+Need inspect diff's new code comment likely authored by LLM and may include claims. Need check if the "same-frame atomic relative geometry" is in gate's measurement only. It says "量测口径=**同帧原子相对几何**（rect 与 canvas 单 evaluate 内取值——参照系位移与 rect 跳变同窗收敛，终局断言恰比较此相对量，门二 W-A 同帧纪律）。" That phrase "终局断言恰比较此相对量" maybe indicates final assertion compares this relative amount? Actually final assertion uses rel1.y-rel2.y where rel1.y maybe not computed with same-frame. But perhaps original uses rect bounding box y and page y; `rel1.y = box1.y`? Wait "s2RelY" maybe "same-frame atomic? The functions 'atomSample' perhaps? Need reconstruct from names in diff:
+
+```
+const a1 = await atomSample(win)
+...
+const box1 = await rect.first().boundingBox()
+const page1 = await win.locator('canvas[data-pdf-canvas]').boundingBox()
+```
+
+Then later? Diff shows around lines 252-296. We don't see full test. The assertion at line 329 `expect(abs(rel1.y-rel2.y)).toBeLessThanOrEqual(2)` probably variables maybe `rel1` from earlier. Could `rel1.y` be measured by same evaluate? Need not know.
+
+Let's not overread.
+
+Need audit case file's root cause evidence: "mutLog pass1=3 < pass2=5 (pass1 测量时 resolve 变更序列未完)" It attributes to mutLog count. The logs are in test? Does gate guarantee mutations complete? It samples geometry. The gate could return before mutation log count final if final mutation occurs >240ms later. But if logs available, a more robust gate could wait for mutation log count equal to expected or compare count? Not necessarily.
+
+Need check "fail loudly with last sample—wait for convergence" good.
+
+Potential issue: The new gate is "无条件执行" in pass2 even after `if (STABLE) await stableGate(win2)`. If STABLE false, they still call rectStableGate; if STABLE true, both stableGate and rectStableGate. That's intended. But makes runtime cost ~0.6s per execution min (not huge).
+
+Potential issue: It doesn't check whether canvas/rect has nonzero height relative. It only ensures stable. If rect/canvas both hidden? It returns only if visible count earlier? yes.
+
+Potential issue: Use `Page` type from Playwright; already imported.
+
+Need consider material states "locks 256 一致" hard rule. The diff modifies test file, probably not lock? "受锁面" maybe file should be remounted? They said done. We can't verify from diff alone. Need mention "无法在 diff 验证 lock 流程"? But task says ①处置核对 and maybe package includes "受锁流程 unlock→改→relock 已走". The judge should accept? "不要编造材料不存在内容." We should base on provided statement. It says "受锁流程 unlock→改→relock 已走/最小增量/无票面外改动" in §0; perhaps we can mention no violation.
+
+Need determine verdict. Likely PASS_WITH_WARNINGS? Let's evaluate potential WARN: previous notes "2 NIT 记档不修: single sample discrimination weak; canvas height guard missing". But maybe these are remaining from previous gate? Actually task "门一 PWW(1W/2N)→三改→定点复核 PASS（余 2 NIT 记档不修..." There was one warning and two nits, then after third change, fixed? Wait read carefully: "受锁小票（主控压缩票形态——B7 先例）：z-r2e-probe.spec.ts flake 两现同族立案→修（rectStableGate 几何稳定门 v2：同帧原子相对几何+fail loudly 带样本+无条件门论证）→门一 PWW(1W/2N)→三改→定点复核 PASS（余 2 NIT 记档不修：单点样本判别力弱=判别实际靠 mutLog/series 旁路在档；canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿）。" This seems like a chronological description of a previous review (maybe gate one) and changes. V2 final? There was "门一 PWW(1W/2N)" when code v1? Then "三改" and "定点复核 PASS", leaving 2 NIT. So now final audit.
+
+Potential WARN items if not fixed? No because previous final PASS with 2 NIT. We can decide if those NITs should be WARN or BLOCKING? Let's evaluate.
+
+"单点样本判别力弱=判别实际靠 mutLog/series 旁路在档" Maybe means the design of "fail loudly with sample" cannot distinguish a single transient disturbance if by next sample it resolves; because only consecutive stable pairwise needed. But gate returns after 2 stable comparisons; if a transient spike occurs at sample 0, then sample1 returns normal, comparison reset? Let's analyze: If prev=fallback, cur1=resolved jump, low; next iteration sample2=same as resolved, high, sample3=same high etc. It requires two adjacent stable in resolved, so after one high, if second high yes returns. That means if unstable over one sample? Actually to distinguish transient vs sustained drift, only last sample in error message; but one high alone can be considered okay if followed by stable. But if no fail, no need. The "fail loudly with last sample" would only occur if not stable for two consecutive intervals. A transient disturbance shorter than 120ms may go unobserved (if between samples), but if between samples it can't affect measurement? Actually if fallback state lasts <120ms, with one sample in fallback then next resolved = huge jump between samples, detected as unstable. Wait if transient occurs and resolve back by next sample, since cur1 after resolved? Let's simulate: Sample0 at t=0 fallback; sample1 at t=120 resolved; diff>0.1 -> streak0; sample2 at t=240 maybe if resolved, diff 0 -> streak1; sample3 at t=360 0 -> streak2 return. Thus gate returns after 360ms but the jump was observed and tolerated because after it stable. That's okay. If final measured at sample4 after gate, stable. If transient jump was sole fallback that existed from t=0 to measurement? Actually if fallback->resolved jump is a one-time transition, we want wait until after jump. The gate sees one jump, then two stable samples. It returns if jump happened at t=120 and samples 240/360 stable. So fine.
+
+If the final mutation happens after the gate (e.g., jump occurs just after return at sample3), gate misses. But probability limited. Could perhaps check mutation log to ensure no new mutations after gate. But not necessary maybe.
+
+"canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿": Need parse. measure function only checks r.width/r.height/c.width >0, not c.height. Suppose annotation-rect visible, canvas width >0 but height=0. Then measure returns non-null; if geometry remains stable? If canvas height zero, rect-y relative maybe? If canvas height zero, layout of page? It might later get nonzero height and jump, gate could catch if before return. If it becomes nonzero only after gate, test may fail? The nit says "漏过后续仍走收敛逻辑不假绿" maybe previously a test assertion uses `if (c.width === 0)` to skip the stable gate so that later code does follow convergence logic? Wait phrase: "canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿" Hmm "漏过后续仍走收敛逻辑不假绿" maybe means a canvas height check is missing such that the gate can return not-green? Let's parse: Missing height guard means if canvas has nonzero width but zero height, it might pass? Actually a guard should reject zero height; absent => gate returns early? Example canvas is not fully laid out but bounding rect width >0 with height=0 (when just inserted); if annotation rect is present at y? The relative geometry may not be meaningful or stable, leading to "convergence logic" detecting false? Not clear.
+
+Need not invent too much.
+
+Notably code in measure checks:
+```
+if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null
+```
+It checks rect width and height but canvas only width. Why not `c.height <=0`? The nit says missing canvas height guard. If canvas height zero, the code doesn't return null, and gate may continue. But if the canvas height is zero, the relative position could be stable at weird values, then after layout it jumps. However Playwright boundingBox after gate sees actual height. If actual canvas height zero at gate time and later changes, maybe gate misses? There is no reason not to add c.height <=0. It is a low-cost improvement. They chose not to fix; but if this can cause flake, maybe WARN.
+
+Need know "单点样本判别力弱" maybe they put in diff "fail loudly with last sample" but message uses JSON.stringify(prev), not last sample cur. It says `末次样本=${JSON.stringify(prev)}`. If fail at i=24, `prev` is previous sampling before last? Let's trace: For each iteration:
+```
+await wait
+cur = await measure()
+if (stable) {...} else { streak=0 }
+prev = cur
+```
+At final iteration i=24, after comparing, if unstable, streak=0, prev=cur. Then loop ends and throws with prev. So prev is last cur, okay. If ith? yes.
+
+But in failure, they report only one "single point sample"— cannot distinguish whether the last state is fallback or whether a steady? It says "双态瞬态 vs 持续漂移可判别" With a single sample not enough; but mutLog/series are auxiliary. NIT.
+
+Need inspect the actual code style: triple-slash? It uses `0.1px` "0.1 px" etc. Fine.
+
+Potential issue: A new helper function in test file adds more than? The task says line limit repo≤300 components≤250 file≤500. Wait "repo≤300" might mean "repo ≤300 files"? Not line? The original says "行数上限 repo≤300 组件≤250 文件≤500": perhaps repo≤300? It says line count limits: repo≤300? That can't be repo≤300 lines for repo no. Maybe weird. Likely "repo≤300? But anyway test file can increase. Need no.
+
+Need decide final. Since the task's own summary from previous gate says PASS plus two NIT. This audit likely should PASS_WITH_WARNINGS? But "门一 PWW(1W/2N)→三改→定点复核 PASS（余 2 NIT 记档不修）" Means current state should be PASS or PWW? The "终裁 JSON" can include just NIT? In prior process, "PASS" with NIT? Probably verdict can be PASS_WITH_WARNINGS if findings. They explicitly say final has remaining 2 NIT "记档不修". Need include them? The instructions: NIT = style suggestion, may not block. If you include NIT findings, verdict options PASS/PASS_WITH_WARNINGS/FAIL. Typically PASS_WITH_WARNINGS if WARN findings, not NIT? They use "PWW(1W/2N)" so PWW includes warnings or nits. "定点复核 PASS（余 2 NIT 记档不修）" Maybe later they decided PASS despite NIT? In this audit, if no WARN, can output PASS with NIT findings? The schema has verdict PASS or PASS_WITH_WARNINGS. The task uses "终裁 JSON"; We need decide: If we include NIT only, do we return PASS or PASS_WITH_WARNINGS? Definition says "PASS_WITH_WARNINGS" for findings that should be fixed but not blocking. NIT are not "should fix". The previous "PASS (余2 NIT)" means PASS despite NIT? I'd maybe output PASS with NIT findings. But output requires if no findings empty; if findings no severity WARN? Verdict could "PASS" if all findings NIT. But in sample PWW(1W/2N) includes NIT count. However current says "余 2 NIT 记档不修" from prior "PASS" suggests final can be PASS with NIT. Need no "WARN". The final instructions: "判级: BLOCKING=... WARN=应当修但不阻塞; NIT=风格建议." It doesn't specify verdict mapping. Could still PASS with NIT? Usually PWW if warnings. Hmm.
+
+But are there any WARN/BLOCKING? We need thoroughly evaluate.
+
+Let's map all relevant requirements.
+
+1. "契约与纪律": 受锁小票 (locked ticket): z-r2e-probe.spec.ts. It modifies only test file. Adds only one function and two calls. No product code. No cross-feature import. No deps. It does not include lock file diff? Not expected. No concern.
+
+2. "正确性": RectStableGate logic: 
+   - The "same-frame atomic" measure returns `null` if query selectors not found. But it only checks `r.width`, `r.height`, and `c.width`, not `c.height`. Potential flake. Need decide if WARN. If c.height 0, measure not null and could stabilize? But if canvas height 0, annotation rect visible? Drawing on canvas? If annotation rect independent of canvas? hmm.
+   - Does final test measure with rectStableGate and no mutation. likely pass.
+   - It doesn't assert whether final state is resolved vs fallback? Wait stable gate could stabilize at fallback before resolved transition, then throw? Actually if no resolved occurs within 3.4s due environment slow, after 3.4s stable fallback and gate returns; then measurement at fallback. Pass2 maybe measured after resolved? Maybe if resolved comes after 3.4s, then still can fail. But if normal load window ~8ms, no issue.
+   - Should gate use "mutation observer log" to know when resolve finishes? Not necessary but robust.
+
+Maybe the main issue: The code's function is in the test but only called before `box1` and `box2`. But at pass1 before gate they do `await expect(rect.first()).toBeVisible(); ... await expect(rect).toHaveCount(1);` It doesn't address the case where fallback->resolved occurs *after* the gate before measurement? Hmm.
+
+Need examine exact sequence from event logs:
+- rect/visible/count assertions happen after navigating or after annotation creation. Let's attempt reconstruct from test path:
+"F-R2e 探针：划选高亮重开原位——仪表指纹矩阵". Likely in a fresh page render a PDF and then use mouse to select text and add highlight. There may be AnnotationLayer for existing annotation? It opens "两页"? Wait "划选高亮重开原位" The test first selects some text and highlights annotation, then can reload? Hmm.
+
+The failure dy=4.4375 in pass1 first measurement likely after "open" of a document that contains annotation? Maybe the test opens a page with a highlight rect from previous state. Need not.
+
+No product code changes; all good.
+
+Need look at "红证形态申报": could be challenged because "two failures with reruns green" is not red proof but just evidence. The audit instructions for tests: "变异红证是否真实命中" (mutation red proof). Here no mutation. We need evaluate honesty of red proof. We don't have "z-r2e-flake-case.md" full, only case file. It documents runs. Maybe "不可确定性复刻" is honest. A reviewer might reject because no actual red reproduced after code change? But e2e flakes cannot be deterministic. There is precedent perhaps. The task asks "请审视该申报是否诚实充分". We can say acceptable: two independent occurrences with payloads and root-cause evidence are sufficient, given timing race not injectable and reruns green consistent.
+
+Need consider "product face zero defects" claims based on stableRel. They say 35/35 functional pass. That's from logs. Fine.
+
+Need identify any false claim in root cause: It says "mutLog pass1=3 < pass2=5（pass1 测量时 resolve 变更序列未完）". But if pass1=3 and pass2=5, and pass1 measured before pass2, obviously at the time pass1 log count 3; by pass2 log count 5 because more mutations occurred. It doesn't prove pass1 measurement was before resolve; it could be pass2 receives more mutations because separate page load has actual different count? Wait let's reason: There is one test run to measure pass1 before reopening? "pass1" = first program session? It measures at first load, then later "reopen" = second load. Counts pass1=3, pass2=5: two separate page loads, each with own mutLog count. It is not same count before/after? The field 'mutLog' likely counts MutationObserver mutations in each session? During pass1 measurement code can access current log count; during pass2 separate session log count. If each page load should produce same 5 mutations, pass1 count 3 indicates measured before mutations done. If not deterministic number of mutations could differ. The failure dy=4.4375 aligns, s2RelY stable. Good.
+
+Need think of WARN due to lack of test assertion anchoring new gate behavior? The new helper is internal to one test; no unit test. But e2e test itself locks via target. The "test discipline" says perhaps mutation red proof for new test? Not applicable.
+
+Could there be hard rule "测试锁定" that test code changes in locked file require a mutation test? Not.
+
+Need evaluate "范围蔓延": no out-of-ticket changes. But the diff includes additions to pass2 using gate after STABLE, and "unconditional gate" is in actual function? No product. The case file says "修法勘误" changed from initial `stableGate`. This is within ticket.
+
+Potential issue: `rectStableGate` always waits even if test is in `STABLE` false. It adds time to every run. But STABLE maybe environmental feature flag; no "unconditional gate" affects "untable"? Wait comment says "无条件执行（不经 STABLE 条件——该旗只辖滚动稳定对照组...）". If STABLE false, there is no stable gate. If software is in inherently unstable environment? It still waits. Okay.
+
+Need analyze if "fail loudly" with `prev` possibly null lacks "last sample" if no non-null in 25 iterations after initial. But okay.
+
+Potential issue: The code uses `win.evaluate(() => { ... })` without passing args. In Playwright, if evaluate callback returns a promise? It's sync. okay.
+
+Potential issue: In the comment they say "rect 与 canvas 单 evaluate 内取值" but code uses `document.querySelector` not locator; if element not attached because overlay not created, returns null; returns null. no.
+
+Potential issue: The expression `Math.abs(cur.x - prev.x) < 0.1` when prev/cur maybe fractional with -0 etc. okay.
+
+Potential issue: The stable gate could allow fallback state because both fallback and resolved positions differ only by ~0? No failure dy about 4.44; so catches.
+
+Potential issue: Wait if fallback height large 44 and resolved height 39, top y same? dy? The relative y difference maybe annotation top same? In failure dy=4.4375 means rect y relative to canvas moved down? If bounding boxes measured separately, canvas page y can change due scroll? Hmm.
+
+No code product.
+
+Could final verdict be PASS because no substantive finding? Need perhaps include two NIT findings per noted in task. But "输出只 JSON". Need decide wording.
+
+Let's examine whether any findings should be NIT not "记档不修"? Should include NIT if they are real. The final audit should maybe mention them to be transparent. But if previous "PASS (余 2 NIT 记档不修)" already knows, final could output PASS with findings? The user asked "终裁 JSON", likely expects final conclusion. They may be checking if we catch these NIT? We can include them as NIT. Summary: no blocking/warn, pass.
+
+Need parse exact two NIT:
+1. "单点样本判别力弱=判别实际靠 mutLog/series 旁路在档"
+2. "canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿"
+
+Need perhaps formulate them in findings. But we need not include if we judge not relevant? Let's examine "canvas 高度守卫缺失" evidence: In new code:
+```
+const c = document.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect()
+...
+if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null
+```
+Indeed no `c.height <= 0`. That's a clear asymmetry. But why is this important? If canvas height = 0, `c.width <=0` not enough. Could get stable relative geometry? Need maybe if canvas height 0 but width >0, x relative maybe still valid, y relative maybe invalid? If later height changes, gate might not catch if after gate. But actual annotation rect visible over a zero-height canvas? If canvas height 0 but annotation rect y? In PDF renderer, page container has height, canvas height should be >some. If due to display none, both width/height 0. If width >0 height 0 impossible for normal? A CSS canvas can have width nonzero and height 0. If it has no height but maybe annotation rect coordinates still okay? The warning suggests adding guard easy.
+This is NIT not WARN because condition rare; they acknowledged and won't fix.
+
+Need "single point sample discrimination" might be a more conceptual design: The error message only includes last sample, but cannot tell if transient or steady based on one sample. The actual full time series sampling might show not? But gate itself records only last sample. If fail loop, the last sample could be after a transient? Let's understand: The gate fails after 25 samples not stable two consecutive intervals. This could happen due alternating high/low each sample, or drift. The error includes last sample only, not history. If last sample appears at resolved geometry but fail due previous unstable, message can't see if resolved state is reached just too late. The function says "fail loudly 带样本——双态瞬态 vs 持续漂移可判别"; But with only last sample, maybe not enough to distinguish. Yet if still unstable after 25 samples, product probably broken. It could be transient disturbance at each iteration? no.
+
+NIT issue. We can include both.
+
+Potential WARN: The helper doesn't check canvas height. Is it "应当修但不阻塞"? But previous files says NIT; maybe output with NIT, verdict PASS. The instructions say WARN = should fix but non-blocking. Since not blocking, maybe NIT fits.
+
+Need include no BLOCKING. If include WARN? Let's see if any should be WARN due to "failure can cause flake unresolved in rare case": Canvas height zero edge and late mutation. But compared to root, low risk. Since previous review already marked NIT after careful consideration, no need overturn.
+
+Need maybe mention "two NIT could be closed as accepted" in summary.
+
+Need consider "行数上限" no.
+
+Potential important issue: The new function is in a test file, but adds comments longer than function? It is okay.
+
+Potential problem with "25 轮穷尽 fail loudly" but if `measure()` returns null due to missing elements, the loop will continue; if element absent for all 25, throw after 3s. The gate's fail message will include maybe "null". But before call there are visible/count expectations, so not absent. Could be needed.
+
+Potential issue: The new waitForTimeout(400) means in all situations gate waits 400ms, including when canvas/rect not ready? Could cause no harm. It might add unnecessary latency; NIT.
+
+Potential issue: "single Eval for rect and canvas but no shared page element; if both are not in same CSS containing block due to page overflow/scroll, their bounding rect values are viewport coords; computing rect.x - canvas.x gives relative position to canvas if annotation layer coordinate equals canvas? okay."
+
+Potential issue: "rect and canvas same evaluate returns object with rounded? no."
+
+Potential issue: "The lock description: repo≤300 components≤250 files≤500" Could new diff exceed file≤500? Let's estimate original z-r2e-probe.spec.ts had line 329 at assertion based on diff. Wait line numbers:
+- New function inserted after around line 167? Actually diff shows `@@ -167,6 +167,50 @@` means original line 167. The new function ends around 213? Then later `@@ -252,6 +296,8 @@` means after insertion original line 252 now 296. Then `@@ -275,6 +321,8 @@` original line 275 now 321. So original file had at least 275/ maybe 376 lines? New file line count about? The final file likely around 380? Need file≤500 no issue. The function adds 44 lines to file; no repo. Good.
+
+Need decide output.
+
+But before final, let's consider if the gate as implemented could itself produce a new type of flake: If `measure()` includes `rect` and `canvas` in same JS context, but the canvas position may change when page's scroll container scrolls due to scroll anchoring or scrollbar appearing. It computes `r.x - c.x`; if canvas's x/y changes due to scroll, rect's x/y changes same if both inside scroll container? If annotation rect and canvas are siblings inside a page container; if the page container is translated due to scroll, both shift together, so difference invariant. Wait earlier test uses `boundingBox` values and maybe does not account for scroll? It uses `page1` canvas box and rect box separately, difference might also invariant if both shifted. Good.
+
+Potential flake due to y comparing `rect.y - canvas.y` but if viewport scrolls between measure? Gate no. Later final not.
+
+Need assess "参考系位移与 rect 跳变同窗收敛": If both elements shift together (e.g., page scroll stabilizes), relative difference stable although absolute positions still moving. Gate can return while absolute positions still drifting? If both drift same relative zero, final assertion might compare relative, so okay. But if absolute positions still drift due to animation and not same relative? wrong.
+
+Need maybe recommend `c.height <=0` NIT.
+
+Should we include "line_hint" for findings? yes.
+
+Need output exactly JSON. No markdown. Need include "evidence" exact quotes.
+
+Let's craft findings two NIT:
+
+1. file: tests/e2e/z-r2e-probe.spec.ts, line_hint "rectStableGate measure 守卫 around 'r.width <= 0 || ... || c.width <= 0'", issue "canvas 高度未纳入守卫，若 canvas 宽非零高为零仍会进入收敛采样；后续布局生效时可能漏过稳定判定", evidence "code: if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null" and task note "canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿（记档 NIT）", suggestion "在 return null 条件中增加 c.height <= 0".
+
+Need make sure evidence is in input. Code condition is exactly in diff; note included in task. Good.
+
+2. issue single-point sample discrimination. Need identify file/line hint: function's error message "末次样本" only. issue "fail loudly 带的是单点末次样本，无法仅凭该消息区分持续漂移与双态瞬态；判读实际依赖 mutLog/series 旁路". Evidence: "throw new Error(... `末次样本=${JSON.stringify(prev)}`)" and task note "单点样本判别力弱=判别实际靠 mutLog/series 旁路在档". Suggestion "可选：错误消息附带最近 3~5 次样本序列或采样时间戳；但不阻塞".
+
+Maybe another finding WARN? Let's think if "unconditional gate without checking STABLE flag" maybe if stableGate not used for `reader-text.spec` because `STABLE`? Wait comment: "无条件执行（不经 STABLE 条件——该旗只辖滚动稳定对照组）". This might be a design mismatch. If STABLE flag exists for controlling stable gate in different environment, applying an unconditional gate can mask non-determinism in environments where stable gate intentionally disabled? But STABLE likely constant for feature mode. Not.
+
+Potential hard rule "禁跨 feature 互引红线": z-r2e test and reader-text.spec maybe features. It cribs (copies) not import. The comments mention "crib" content, but code contains no reference to other feature. The diff includes no import. Fine.
+Potential "tests lock": no test lock changes; maybe Need run full e2e 36/36? in task.
+
+Need maybe in summary state "无阻断/无警告，仅有已记档 NIT；修复与根因链吻合。" If findings are NIT, verdict PASS. The output text can say summary includes all. The user requested "两三句总体判断".
+
+Need decide "verdict": If findings include NIT, should verdict "PASS_WITH_WARNINGS"? Let's search instructions: "没有发现给空 findings + PASS". It doesn't say only PASS if no findings. But finding severity include NIT; PASS_WITH_WARNINGS if warnings. Historically "PWW" means PASS_WITH_WARNINGS and includes NIT? In task phrase "门一 PWW(1W/2N)" exactly PWW with 1 warn and 2 nits. That indicates their previous "PWW(1W/2N)" included NITs but had one warning causing PWW. "定点复核 PASS（余 2 NIT 记档不修）": They used PASS when only NIT remained. So with NIT only, verdict should PASS. Therefore output PASS and findings with two NIT. Is that contradictory? Fine.
+
+Need maybe include "findings" with NIT even if verdict PASS. In schema, verdict PASS with findings perhaps acceptable? Typically no; but task says "余 2 NIT 记档不修" so yes.
+
+Should we include any WARN? I think no.
+
+Let's consider whether "红证形态申报" honesty/reliability deserves a finding maybe NIT? We can mention in summary no issue.
+
+Need maybe include no findings? But user might expect catching two NIT. Since "余 2 NIT 记档不修" in the materials, if final audit passes with no mention, seems we ignored. Better include them as NIT.
+
+Need ensure not overstate NIT as causing false green. The task text already says "记档不修", so include as NIT "记档不修，不阻塞". Good.
+
+Need perhaps "line_hint" maybe "rectStableGate(...) at diff after 252/321" and "measure guard".
+
+Need include `evidence` with code quote. Let's formulate JSON.
+
+Need no markdown code fence. Use raw JSON.
+
+Let's draft.
+
+```
+{
+ "verdict": "PASS",
+ "findings": [
+  {
+   "severity": "NIT",
+   "file": "tests/e2e/z-r2e-probe.spec.ts",
+   "line_hint": "rectStableGate 的 measure 返回守卫",
+   "issue": "守卫只校验 c.width<=0，未校验 canvas 高度；若 canvas 宽非零高为零仍会进入收敛采样，理论上在 canvas 布局后续变化时漏过稳定门。",
+   "evidence": "代码 `if (r === undefined || c === undefined || r.width <= 0 || r.height <= 0 || c.width <= 0) return null`；任务材料记档「canvas 高度守卫缺失=漏过后续仍走收敛逻辑不假绿」。",
+   "suggestion": "在守卫中增加 `|| c.height <= 0`，返回 null 等待后续样本。"
+  },
+  {
+   "severity": "NIT",
+   "file": "tests/e2e/z-r2e-probe.spec.ts",
+   "line_hint": "rectStableGate 的 throw 消息",
+   "issue": "错误消息只包含末次样本，不足以仅从消息区分持续漂移还是双态瞬态；实际判读依赖 mutLog/series 旁路已接受。",
+   "evidence": "`throw new Error(... 末次样本=${JSON.stringify(prev)})`; 任务材料「单点样本判别力弱=判别实际靠 mutLog/series 旁路在档」。",
+   "suggestion": "可（可选）在 throw 消息中附带最近 3~5 次采样序列，便于不查旁路也能判读；不阻塞。"
+  }
+ ],
+ "summary": "修复范围集中在受锁测试文件，未触碰产品代码/新依赖，无硬规则或跨 feature 引入；rectStableGate 的两点收敛+前置观察窗+超时 fail loudly 与立案根因（pass1 裸测竞速 resolve）具有直接因果对应，红证申报以两现失败 payload 替代不可确定性复刻诚实充分。仅余两条已记档 NIT，不影响通过。"
+}
+```
+
+Need ensure "红证" phrase maybe not final if we think okay. Good.
+
+Let's consider if "findings" severity NIT and PASS okay. Maybe if the instruction "PASS if no findings" means if findings non-empty, cannot PASS? But phrase could be interpreted: if no findings, give PASS; otherwise use PASS_WITH_WARNINGS. Yet previous "定点复核 PASS（余 2 NIT 记档不修）" strongly says PASS despite NIT. So fine.
+
+Question: Should "NIT" count as "findings"? Yes.
+
+Need maybe include "all e2e 36/36 exit 0" maybe in summary? Yes maybe:
+"机器面全量 e2e 36/36 在档且锁一致；成本不是质量问题" perhaps not. Summary should be two-three sentences. Add maybe "机器面 36/36 在档与锁一致". We have 3 sentences? Let's count:
+1. "修复范围 ... 直接因果对应，红证..."
+2. "机器面全量 e2e 36/36 在档..."
+3. "仅余两条已记档 NIT..."
+Good.
+
+Need avoid unsupported "36/36" if stated in task "全量 e2e 36/36 exit=0 在档". It's in input. okay.
+
+Let's maybe include final verdict "PASS". Good.
+
+But let's reflect: Did we miss any actual BLOCKING: "禁新增依赖" no. "单点样本判别力弱=判别实际靠 mutLog/series 旁路在档": This was in previous accepted, not a new issue. Good.
+
+Need maybe perhaps "full e2e 36/36" means only rerun? If material says "全量 e2e 36/36 exit=0 在档". no issue.
+
+Let's think if "红证形态申报" could be a potential WARN because they did not reproduce after fix; but in flaky e2e, no deterministic repro. They have two failure payloads. The root evidence is strong. Accept.
+
+One subtle issue: Case file Section 二 "failure机理" says "pass1 测量时 resolve 变更序列未完" but mutation log pass1=3 vs pass2=5. But if pass1 is the first test pass and pass2 second pass after reopen, mutLog count difference could simply be because the two pages are different pages? Wait test title "划选高亮重开原位" maybe pass1 and pass2 are both pages after opening an existing document? It might compare first open and reopen. The line count "pass1=3 < pass2=5" may be from two separate page sessions, not before/after. The root cause statement says pass1 measurement before resolve because "resolve 变更序列" longer. If slow load, pass1 may not yet get no. no issue.
+
+Need perhaps "product 35/35" from p7e-03? In final ticket says "全量 e2e 36/36 exit=0 在档" includes fixed? yes.
+
+One potential issue: The test modified with new function should be in "受锁面" and the lock of file "unchanged" maybe after relock. The material says "locks 256 一致" maybe evidence. Good.
+
+I think good.
+
+Need ensure no markdown fences. Produce final JSON.

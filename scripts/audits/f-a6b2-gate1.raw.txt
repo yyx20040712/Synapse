@@ -1,0 +1,23 @@
+## 裁决
+PASS_WITH_WARNINGS
+
+## 发现（逐条）
+
+- [WARN] annotation-anchor.ts T3 扩簇比较：`lineH` 在场时判据只有 centerOk+hComparable、不含 y 区间重叠，扩到全簇后，理论上一个矩形可并入**非相邻**旧簇（其 groupTop/Bottom 已不相交），把该簇 y 区间拉大，影响后续成员的聚类拓扑。证据：diff「在全部既有簇中取满足判据且中心距最近者并入」。旧实现的「排序保证同簇连续」注释被删，而该不变量在新实现下不再成立。建议：补一个跨簇并入后 y 区间膨胀的回归用例，或并入条件加 y 重叠下限。
+- [WARN] selection-evaluate.ts G2 toast 时机：`unhealthy` 分支用 `!visualOnly` 门控而非 `fromMouseUp`——拖选中途每次 settle（trailing 防抖）全量评估都会弹 `GEOMETRY_REJECT_HINT`，与跨页拒绝「防抖路径静默防拖选中途刷屏」的既有形态不一致（跨页用 fromMouseUp 门）。材料自述「mouseup/settle 完整评估时刻 toast」系有意，但与「跨页拒绝既有形态的一致性」票面任务存在口径差。建议：确认拖选期 settle 重复弹 toast 是否可接受，或改 fromMouseUp 门。
+- [NIT] itemSelectionGeometry 归一化：`x: clamp01(r.x / base.w)` 与 `w: clamp01(r.w / base.w)` 分别独立夹取——负 x 夹到 0 而 w 不联动缩减，x+w 可 >1 且矩形右缘漂移（G2 右溢判在 px 域前置，落库矩形不自洽）。建议：w 用 `clamp01((r.x+r.w)/base.w) − clamp01(r.x/base.w)` 端点式。
+- [NIT] §5 标称「改 5 件」但包内仅见 4 件 diff（PagesOverlay/SelectionLayer/annotation-anchor/其测试），manifest diff 缺席，范围合规性（第 5 件是否越清单）无法从本包核验。建议：补 manifest diff。
+- [NIT] baselineGroupBlocks 断段阈值用行并集高 `dom.h`：旋转 90° 页行内项盒 h 大 w 小，`1.5×dom.h` 阈值对 x 向分栏失效——旋转页多栏桥接风险。材料已申报「真实库 rotate=0 全档零触发」，故仅 NIT。
+- [NIT] §7 自述缺口④：grapheme/RTL/竖排运行时触发面仍零，仅单测闭合；M4 变异红证在档可接受，但属真实数据未验证面。
+
+## 五维逐条立场
+
+- **纯函数正确性**：viewport 数学逐行核对与 pdf.mjs PageViewport 构造器缺省形态（含 180° 的 d=1 怪癖、90/270 偏移轴互换、transform 合成式）一致；偏移表/对账/基线分组/bands clamp 口径与声明及 annotation-resolve:93-97 自洽；细分 a<b 由前置过滤保证；发现仅归一化夹取与旋转页断段两 NIT。
+- **通道与产链切换**：单源注册表三写口与原 useState 语义同构（setEntry/drop/clear 一一对应原 diff），四道守卫逐字保留，回退三因 warn 不静默，pending.anchor.rects 与 paint 同源达成 INV-58 前半；toast 门控口径差记 WARN。
+- **T2/T3 加固**：交错夹具 T3-a/b 断言行内并簇+x 并集，先红后绿声明与夹具构造（b1 高瘦 h=26>2×12 卡可比带）自洽；全簇比较的代价面见首条 WARN，测试未覆盖 y 区间膨胀副作用。
+- **事故修复质量**：r3a 减原点修复（只消费盒宽高=平移不变）与 r3b 角度门（|sin|<0.35≈20.5°）均有取证实证+回归单测+变异红证，G2 全抑制反向验证检测器有效属强证据；角度门阈值面（20.5° 内仍可能中心 y 聚类桥接近水平斜排）已含边界申报，可接受。
+- **红线**：diff 面未见调度器/TextLayer/anchor-serialize 改动，无恒真断言/占位（右溢 2px 占位系上游裁决表 §6 在档授权）；第 5 件 diff 缺席使范围核验不完备，记 NIT 不升级。
+
+## 总评
+
+迁移数学锚定 pdf.js 源码逐行可核、双事故修复有实证链、INV-58/INV-37/C5 口径保持，主链达标可信。两 WARN（T3 全簇比较的 y 区间膨胀副作用、G2 toast 门控与跨页形态口径差）均为边界面非主链错几何，不阻过门但应入档跟踪。

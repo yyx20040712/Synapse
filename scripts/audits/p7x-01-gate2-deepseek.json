@@ -1,0 +1,24 @@
+[routing]: run=20260903144516-hy1v source=deepseek model=deepseek-v4-flash switches=0 usage=in=4189,out=25695 latency=206145ms (by ds-call.mjs 链)
+
+{
+  "verdict": "PASS_WITH_WARNINGS",
+  "findings": [
+    {
+      "severity": "WARN",
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "line_hint": "P7X-01 describe 新增段（T8/T9）",
+      "issue": "“移除方向永不设限”缺上界锚点测试。新增两个用例都从未选中 chip 发起；若守卫被改成无条件 length>=max 拦截（即删掉 !active），T8/T9 都无法杀死该变异。",
+      "evidence": "T8: clickChip('标签21（0）')，调用时 selectedTagIds.length=20 且 t21 不在选中集；T9: clickChip('标签20（0）')，length=19 且 t20 不在选中集；没有 length=20 且点击已选 chip 的用例。",
+      "suggestion": "增加 T10：20 选中时点击第 20 个已选 chip，断言 onFilterChange 恰一次、载荷 19 项且不含 t-20、toastSpy 零调用。"
+    },
+    {
+      "severity": "NIT",
+      "file": "locks/manifest.json",
+      "line_hint": "manifest diff 中只改 paper.ts/tag-filter-multi.test.tsx 的 sha，未出现 TagFilter.tsx",
+      "issue": "TagFilter.tsx 是本票实际修改文件，却未出现在 locks/manifest diff；若锁清单覆盖所有受锁文件，这是锁覆盖缺口。但票面写明受锁配套=paper.ts+tests，故属存疑项而非确证实现偏差。",
+      "evidence": "完整 diff 同时包含 TagFilter.tsx 内容改动，但纸面锁变更不包含该路径。",
+      "suggestion": "在收口说明中确认 TagFilter.tsx 是否处于锁规则外；若应在锁内，需 unlock/locks:apply 后再 verify。"
+    }
+  ],
+  "summary": "正确性终裁：守卫逻辑为 `!active && selectedTagIds.length >= TAG_FILTER_MAX`，与票面“添加方向且已满则拦截；移除方向不设限”逐字一致。19→20 因 19>=20 false 放行，20→21 因 true 拦截；移除方向因 active=true 不进入守卫。handleMutated 在 P7E-06/T7 语义中只剔除或保留原 id，不新增候选，故无 20→21 旁路。单源论证成立：schema `.max(TAG_FILTER_MAX)` 与 TagFilter 均消费同一导出常量，材料内无第二处手写 20 作为业务阈值；测试中硬编码 20/21 是变异锚，不应视为漂移。测试真实性：T8 在 guard absent、>=改>、常量改值、过严四个方向均有红证（T9/M4 补过严）；失败方向盲区恰是上界移除路径，因此给 WARN。证据链各产物相互自洽，无可见伪造断点；sha256 复算无法零仓库验证，但材料包明示门二在档复算，接受该依赖。对 Kimi 门一 NIT 表态：NIT1 接受；NIT2 接受（若夹具无状态则 aria 断言弱，但主锁是 toast+onFilterChange 双断言）；NIT3 接受；NIT4 接受。收口前置条件：若按票面字面只有 T8/T9，可收口但上述 WARN 保留；更稳妥是先补 T10，再执行 locks:apply + npm run verify 全绿。提交信息建议：`P7X-01: TagFilter UI 第21个标签拦截，TAG_FILTER_MAX 同源 schema/UI，补 T8/T9 上界边界用例（补 T10 时追加 removal-at-bound）`。"
+}

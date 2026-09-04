@@ -1,0 +1,41 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/services/workspace.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 598[2mms[22m[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行[90m 44[2mms[22m[31m[39m
+[31m     → expected undefined to be '课题C3' // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m [ tests/unit/services/workspace.test.ts ][22m
+[31m[1mError[22m: EBUSY: resource busy or locked, unlink 'C:\Users\ADMINI~1\AppData\Local\Temp\synapse-ws-c3-fuAWRT\workspaces\default\synapse.db'[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行
+[31m[1mAssertionError[22m: expected undefined to be '课题C3' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"课题C3"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/services/workspace.test.ts:[2m447:26[22m[39m
+    [90m445| [39m    gate[33m.[39m[34mexit[39m()
+    [90m446| [39m    [35mconst[39m created [33m=[39m [35mawait[39m svc[33m.[39m[34mcreate[39m({ name[33m:[39m [32m'课题C3'[39m })
+    [90m447| [39m    [34mexpect[39m(created[33m.[39mname)[33m.[39m[34mtoBe[39m([32m'课题C3'[39m)
+    [90m   | [39m                         [31m^[39m
+    [90m448| [39m    [34mexpect[39m([35mawait[39m [34mreadPointer[39m(u))[33m.[39m[34mtoEqual[39m({ currentId[33m:[39m [33mDEFAULT_WS_ID[39m })…
+    [90m449| [39m    [34mexpect[39m([34massembledDirs[39m())[33m.[39m[34mtoEqual[39m([]) [90m// L0 create 物化不走 assemble[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m15 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 01:22:10
+[2m   Duration [22m 1.41s[2m (transform 106ms, setup 0ms, collect 322ms, tests 598ms, environment 0ms, prepare 166ms)[22m
+

@@ -29,3 +29,7 @@ local-state-backup/
 dev-launch.cmd
 dist_new/
 scripts/audits/model-routing-log.jsonl
+
+# audits 探针数据目录不入库（F-AUDIT-01 口径 2026-09-05：证据件 raw/md/json 入库,
+# *out* 数据目录体积大可再生不入——目录形态尾斜杠,closeout 文件名免疫;已跟踪历史件不受影响）
+scripts/audits/*out*/

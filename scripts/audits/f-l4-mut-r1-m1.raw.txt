@@ -1,0 +1,192 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m② 尺寸变化 refit：挂载（W1 gBCR 回退口径）fit 后改 clientWidth=W2→派发 callback→transform=fitViewport(nodes, layout, W2, H)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑦ 无自激励（S5）：callback 内 setViewport 新值重渲染→无新 RO 注册/disconnect/重复 observe
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/lineage-viewport-refit.test.tsx [2m([22m[2m8 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[90m 59[2mms[22m[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）[90m 27[2mms[22m[31m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m② 尺寸变化 refit：挂载（W1 gBCR 回退口径）fit 后改 clientWidth=W2→派发 callback→transform=fitViewport(nodes, layout, W2, H)[90m 9[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）[90m 7[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始[90m 2[2mms[22m[31m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调[90m 4[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）[90m 3[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑦ 无自激励（S5）：callback 内 setViewport 新值重渲染→无新 RO 注册/disconnect/重复 observe[90m 3[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[31m   [31m×[31m F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑧ 初始回调幂等（回炉 1 W3）：挂载非空图（fit effect 已跑）→手动派发一次桩 callback（模拟 observe 后规范要求的初始通知）→transform 与挂载 fit 结果相等[90m 4[2mms[22m[31m[39m
+[31m     → 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑧ 初始回调幂等（回炉 1 W3）：挂载非空图（fit effect 已跑）→手动派发一次桩 callback（模拟 observe 后规范要求的初始通知）→transform 与挂载 fit 结果相等
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 8 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m164:39[22m[39m
+    [90m162| [39m      [35mconst[39m g [33m=[39m [34mchain[39m()
+    [90m163| [39m      [34mmount[39m([33m<[39m[33mLineageCanvas[39m [33mnodes[39m[33m=[39m[33m{[39mg[33m.[39mnodes[33m}[39m [33medges[39m[33m=[39m[33m{[39mg[33m.[39medges[33m}[39m [33m/[39m[33m>[39m)
+    [90m164| [39m      [34mexpect[39m([33mROStub[39m[33m.[39minstances[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m   | [39m                                      [31m^[39m
+    [90m165| [39m      [35mconst[39m svg [33m=[39m host[33m?.[39m[34mquerySelector[39m([32m'[data-testid="lineage-canvas"]'[39m)
+    [90m166| [39m      [34mexpect[39m([34mlastRO[39m()[33m.[39mobserveTargets)[33m.[39m[34mtoEqual[39m([svg])
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m② 尺寸变化 refit：挂载（W1 gBCR 回退口径）fit 后改 clientWidth=W2→派发 callback→transform=fitViewport(nodes, layout, W2, H)
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m188:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m212:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m226:39[22m[39m
+    [90m224| [39m    [35mtry[39m {
+    [90m225| [39m      [34mmount[39m([33m<[39m[33mLineageCanvas[39m [33mnodes[39m[33m=[39m[33m{[39m[][33m}[39m [33medges[39m[33m=[39m[33m{[39m[][33m}[39m [33m/[39m[33m>[39m)
+    [90m226| [39m      [34mexpect[39m([33mROStub[39m[33m.[39minstances[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m) [90m// svg 常驻（W2 先例）——[39m…
+    [90m   | [39m                                      [31m^[39m
+    [90m227| [39m      [35mconst[39m before [33m=[39m m[33m.[39mspy[33m.[39mmock[33m.[39mcalls[33m.[39mlength
+    [90m228| [39m      [34mfireRO[39m([34mlastRO[39m())
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m241:18[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m259:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑦ 无自激励（S5）：callback 内 setViewport 新值重渲染→无新 RO 注册/disconnect/重复 observe
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m275:18[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m⑧ 初始回调幂等（回炉 1 W3）：挂载非空图（fit effect 已跑）→手动派发一次桩 callback（模拟 observe 后规范要求的初始通知）→transform 与挂载 fit 结果相等
+[31m[1mError[22m: 无 RO 实例（未注册——实现缺失或已 disconnect 清场）[39m
+[36m [2m❯[22m lastRO tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m45:31[22m[39m
+    [90m 43| [39m[35mconst[39m lastRO [33m=[39m ()[33m:[39m [33mROStub[39m [33m=>[39m {
+    [90m 44| [39m  [35mconst[39m ro [33m=[39m [33mROStub[39m[33m.[39minstances[[33mROStub[39m[33m.[39minstances[33m.[39mlength [33m-[39m [34m1[39m]
+    [90m 45| [39m  [35mif[39m (ro [33m===[39m undefined) [35mthrow[39m [35mnew[39m [33mError[39m([32m'无 RO 实例（未注册——实现缺失[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m 46| [39m  [35mreturn[39m ro
+    [90m 47| [39m}
+[90m [2m❯[22m tests/unit/renderer/lineage-viewport-refit.test.tsx:[2m304:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[90m (8)[39m
+[2m   Start at [22m 07:32:25
+[2m   Duration [22m 1.49s[2m (transform 73ms, setup 0ms, collect 203ms, tests 59ms, environment 646ms, prepare 213ms)[22m
+

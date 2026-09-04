@@ -1,0 +1,57 @@
+# Kimi K3 增量裁决：F-A6 几何源迁移修订
+
+## 1. 增量裁决
+
+**采纳（带 7 项必修条件）**——路线技术成立，A/B 裁定结构正确，并入位置基本无矛盾；但存在 1 处数据流断点、1 处同源口径接缝、1 个包内新证实候选（T9），须落入 F-A6-a 票面后方可定稿。
+
+**理由（全落包内证据）**：
+
+1. **前提证实**：PdfTextItem 确自带 `width/height/transform`（PdfPageCanvas.tsx interface 块，设计引 :39-41 与包内行位吻合），且 PdfPageCanvas 已将完整载荷（items+styles+lang）经 onPageRender 上交——**迁移路线的原料在档，无需新增 pdfjs 调用**。
+2. **"矩形真值"定性成立但需收窄措辞**：item.width/height 源自嵌入字体度量+内容流定位，按构造无 DOM 回退测量噪声——成立。但"真值"仅对**字体数据正常的 PDF**成立；畸形字体下项数据本身可错，设计已预留 T8 出口，措辞可保留。
+3. **T1 通道缺失由本包源码级证实**（详 §3），迁移"只修矩形半边、span 定位半边仍需 rotation 通道"的切分与证据吻合——切分正确。
+4. **A/B 对照判据方向正确**：甲/乙双落盘+分叉裁定（乙净甲错→迁移主修；同错→T8）是完备的证伪结构；缺量化阈值与第三结局，属必修非推翻项。
+5. **并入位置核验**：§0 双路线段/§2.2 探针段 6/§2.3 G1/§4 公共面声明/§5.1 新件行/§5.4 b 票分叉/§6 R3③——七处互相引用闭合，未发现自相矛盾。两处遗漏见 §2 漏洞 6/7。
+
+**必修条件（入 F-A6-a 票面）**：C1 viewport/styles  plumbing 断点（漏洞 1）；C2 细分规则改 grapheme 簇+RTL/vertical 分支（漏洞 2）；C3 item↔span 计数对齐探针（漏洞 3）；C4 A/B 判据量化阈值+第三结局（漏洞 4）；C5 bands 同源声明（漏洞 5）；C6 G2 检测器输入口径随路线分叉（漏洞 6）；C7 新增 T9（CropBox 原点）入取证矩阵（§3）。
+
+## 2. 项声明几何方案漏洞清单
+
+1. **【承重·数据流断点】viewport 无通道下达到选择域**。pdf-item-geometry 签名要 `viewport`，但包内证据显示：onPageRender 只回调 textContent（PdfPageCanvas props 契约），viewport 是 PdfPageCanvas 渲染闭包内局部量，TextLayer 侧用的是**重建的 duckViewport 而非真 viewport**。且两份 viewport 在 rotation≠0 时不等价（canvas 含 page.rotate、duck 硬编码 0）。§5.1 模块清单**无任何文件承担 viewport（或 page rotate+scale+viewBox）下钻到 ReaderPage/SelectionLayer**——迁移主链缺料。另：签名缺 `styles`——§4 锚定数学要 fontSizeAsc，ascent/descent 在 styles[fontName] 里（PdfTextStyle 在档），纯函数签名必须含。
+2. **【误差放大面】项内"按字符比例细分"的四类错切**：①JS `str.length` 计 UTF-16 码元，星外字符算 2→细分点系统性偏移，须按 grapheme/codepoint 计；②RTL 项（dir 字段在档）视觉序与逻辑序反向，比例细分方向须翻转，混合 bidi 更复杂；③`PdfTextStyle.vertical` 在档——竖排项宽/高轴互换，细分沿纵轴；④连字/零宽字符/比例字体使"等宽假设"在项内不成立。包络兜底（右溢结构性消灭）成立，但**项内选中边界的抖动**未申报——应补"项内边界=近似值，settle 同帧终裁"入 §6 已知边界。
+3. **【一项一 span 前提脆弱面】** 前提引档外票 P7E-03，本包可加固：PdfPageCanvas 过滤 `'str' in item` 只保 str 项——但**空串项（str===''）仍通过过滤**，pdf.js 是否为其产 span 未证；hasEOL/br 节点、空白项折叠均可能使 items 序与 span 序错位。必修探针：`items.length` vs `container.querySelectorAll('span').length` 计数对齐+抽项文本比对（取证票一行代码，成本可忽略）。
+4. **【A/B 判据完备性】** ①"乙干净"缺量化定义——应定：每视觉行块数=行数、右溢=0px、与 canvas 墨带重叠率阈值；②缺第三结局"乙错甲对"（pdf.js 文本层对 span 有 scaleX 补偿机制——包外，但正因如此不能预选甲必错）：处置=维持 R-加固+立案 pdfjs 补偿面核查；③"甲乙同错→维持 R-加固"措辞不严——同错若源在项数据，加固治不了源头，只能治下游聚类噪声，判据文案应改"加固降为症状缓解+T8 立案"。
+5. **【同源口径接缝】** 迁移只换 rect 源，**bands 仍走 DOM span 量测**（bandsForTextNodes：getComputedStyle/measureText，§3.2 在档）。项几何 rect×DOM 量测 band 的 matchBand 绑定=新的两口径混用，恰是 b 链错绑的同构风险。INV-58"同管线"声明未覆盖 rect/band 同源——须声明：迁移路线下 bands 亦由项几何派生，或 A/B 段同时落带绑定对照证明混用无害。
+6. **【G2 口径未随路线分叉】** G2 检测器输入=「选区 clientRects 与 textLayer 盒偏离率」——R-迁移成立后 rect 源不再经 clientRects，检测器输入应改项矩形口径。§2.3/§5.4 未声明此分叉。
+7. **【正向协同未申报】** 迁移消灭快路径全部布局读（getClientRects 出链）=D2 收益的结构性加固，且优于会话缓存方案。§5.4 c 票快路径仍写「raw selection range clientRects」——若 R-迁移成立，c 票快路径矩形源应分叉为项几何；票面缺此条件分支（b→c 串行序已备好承接）。
+8. **【NIT】** §2.2 探针段编号 1,2,3,5,6 跳号缺 4。
+
+## 3. 一轮 ？ 清单升级结果
+
+| 项 | 一轮态 | 本轮裁定 | 包内证据 |
+|---|---|---|---|
+| markedContent 进 collectSpans | 预判证伪待核 | **升级=证伪 ✓** | `pdfPage.getTextContent()` 无参调用（includeMarkedContent 默认关，行注自认）+`items.filter('str' in item)`——TextLayer 收到的 items 不含 markedContent 项，DOM 侧无生成源。残余：运行时计数探针保留为零成本确认项，不再承重 |
+| T1 页旋转 | 待证（证据包外） | **升级=机理证实 ✓（通道缺失闭合）；病灶归属仍待运行时** | canvas 侧 `pdfPage.getViewport({ scale })` 默认含 page.rotate；TextLayer 侧 `duckViewport` 硬编码 `rotation: 0`，且头注自认「页旋转（/Rotate 90/180/270）v1 不支持——props 契约无 rotation 通道」。结构性错位链源码级闭合。§0/§2.1 的"T1 待证候选"措辞应改"机理证实、触发待 page.rotate 探针" |
+| **新发现 T9** | — | **新候选立案（源码级嫌疑）** | duckViewport `rawDims` 硬编码 `pageX: 0, pageY: 0`——非零 CropBox 原点的页，rotation=0 也会发生文本层与墨带的整体平移错位。取证矩阵应加 T9=viewBox 原点≠0（探针：page.view 前两项），与 T1 同族但独立于旋转 |
+| §2.1 c 残余腿（父盒定位/显式尺寸） | 包外待核 | **半升级**：TextLayer 容器显式 `width/height=pageWidth/pageHeight`+className textLayer 在包 ✓；position:absolute/inset:0 在 text-layer.css（设计引在档，本增量包未含，沿用基线口径）；父盒定位属性仍包外（PageBox） | TextLayer.tsx style 块 |
+
+## 4. 承重断言新清单
+
+| # | 断言 | 态 | 锚点/缺口 |
+|---|---|---|---|
+| K1 | PdfTextItem 自带 width/height/transform（迁移原料在档） | ✓ | PdfPageCanvas.tsx interface 块（设计引 :39-41，与包内行位吻合） |
+| K2 | textContent 完整载荷（items+styles+lang）已上交 onPageRender | ✓ | PdfPageCanvas.tsx 回调段 `onPageRenderRef.current(page, { items…, styles, lang })` |
+| K3 | getTextContent 未开 includeMarkedContent+str 过滤 → markedContent 证伪 | ✓ | `pdfPage.getTextContent()` 无参 + `filter((item): item is PdfTextItem => 'str' in item)` |
+| K4 | canvas viewport 含 page.rotate | ✓ | `pdfPage.getViewport({ scale })`（pdf.js 默认语义，设计一轮已引） |
+| K5 | TextLayer rotation 通道缺失 | ✓ | duckViewport `rotation: 0` + 头注「页旋转 v1 不支持」 |
+| K6 | duckViewport viewBox 原点假设为 (0,0)（T9 嫌疑源） | ✓ | rawDims `pageX: 0, pageY: 0` |
+| K7 | TextLayer 容器显式尺寸=canvas CSS 尺寸同源 | ✓ | style 块 `width/height: pageWidth/pageHeight` + `--scale-factor` |
+| K8 | viewport→选择域下钻通道存在 | **? 缺** | 包内无任何文件承担；C1 必修（§5.1 漏行） |
+| K9 | 项矩形合成精确公式（Util.transform/appendText/layoutText+scaleX 补偿机制） | ? 缺 | pdfjs-dist 源码包外，设计已挂 F-A6-a 行级复核项——维持 |
+| K10 | 一项一 span（含空串项/EOL/br 干扰面） | ? 缺 | P7E-03 档外引；C3 计数探针必修 |
+| K11 | page.rotate/page.view 运行时值（T1/T9 病灶归属） | ? 缺 | 运行时探针，注入面三选一已有 WARN-4 前置 |
+| K12 | 病灶 PDF 项数据是否异常（T8 判定） | ? 缺 | A/B 对照段第 6 段交付 |
+| K13 | text-layer.css position:absolute+inset:0 | ? | 设计引在档（:103-112 等），本增量包未含——沿用基线档口径，不新增承重 |
+| K14 | bands 在迁移路线下与 rect 同源 | **? 缺（新）** | C5：INV-58 声明面未覆盖 rect/band 口径，漏洞 5 |
+| K15 | G2 检测器输入口径随路线分叉 | **? 缺（新）** | C6：§2.3/§5.4 未声明 |
+
+**裁决结语**：迁移路线是把 D1 从「噪声量测的稳健解读」升格为「构造性真值直取」，方向上优于纯 R-加固，且与 B 案正交、对 D2 有正向协同——采纳。C1（viewport 下钻）是唯一承重级断点，其余为票面级修补；T9 为本轮包内证据的新产出，建议直接写入取证矩阵。

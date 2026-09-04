@@ -1,0 +1,4 @@
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tag-filter-multi.test.tsx[2m > [22mP7X-01 标签选中上限 UI 感知（添加方向守卫，移除方向永不设限）[2m > [22mT10 上界移除锚（门二 R1）：20 选中点已选 chip → onFilterChange 恰一次、载荷 19 项不含该 id + 零 toast（守卫删 !active 变异的唯一杀手）
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m

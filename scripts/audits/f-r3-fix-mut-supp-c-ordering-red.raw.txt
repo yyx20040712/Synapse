@@ -1,0 +1,89 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2mdestroy 失败不阻断：complete 已上报（尽力而为面）
+[22m[39mCorpusExtractor destroy 失败（已忽略） Error: destroy 失败（尽力而为面）
+    at Object.destroy [90m(E:\class\智慧水务\Synapse_remake\[39mtests\unit\renderer\corpus-extractor.test.ts:51:48[90m)[39m
+    at runExtraction [90m(E:\class\智慧水务\Synapse_remake\[39msrc\renderer\features\reader\CorpusExtractor.ts:286:21[90m)[39m
+
+[90mstderr[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2m在途收第二请求：忽略（防御分支——main 编排保证串行）
+[22m[39mCorpusExtractor 忽略在途期间的 extract-request s-2
+
+[90mstdout[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2m真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e）
+[22m[39mWarning: Please use the `legacy` build in Node.js environments.
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+(node:25488) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 8)
+(Use `node --trace-warnings ...` to show where the warning was created)
+ [31m❯[39m tests/unit/renderer/corpus-extractor.test.ts [2m([22m[2m14 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 4203[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m全链：逐页 fulltext+页图回传（页序与文本序）→complete 终局 [33m611[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m背压：任一时刻在途 invoke ≤1（await ack 后才发下一项） [33m480[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22manno 裁剪：标注随所在页回传（存储 0 基页→提取 1 基页）+annotationId 载荷 [33m485[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22minvoke 折叠错误：failed 路径——error 上报+destroy 释放+后续请求可接续 [33m992[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m文档加载失败：error 上报（无页数据） [33m358[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22mdestroy 失败不阻断：complete 已上报（尽力而为面） [33m358[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m在途收第二请求：忽略（防御分支——main 编排保证串行） [33m355[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e） [33m547[2mms[22m[39m
+[31m   [31m×[31m F-R3 settleLoadTask —— loadingTask 加载失败终接（worker 线程不泄漏）[2m > [22m顺序语义：重抛发生在 destroy settle 之后（await 销毁完才进错误上报——门二 W 补锚）[90m 15[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/corpus-extractor.test.ts[2m > [22mF-R3 settleLoadTask —— loadingTask 加载失败终接（worker 线程不泄漏）[2m > [22m顺序语义：重抛发生在 destroy settle 之后（await 销毁完才进错误上报——门二 W 补锚）
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m tests/unit/renderer/corpus-extractor.test.ts:[2m314:22[22m[39m
+    [90m312| [39m    [35mawait[39m [35mnew[39m [33mPromise[39m((r) [33m=>[39m [34msetTimeout[39m(r[33m,[39m [34m0[39m))
+    [90m313| [39m    [34mexpect[39m(destroyReturned)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m314| [39m    [34mexpect[39m(rejected)[33m.[39m[34mtoBe[39m([35mfalse[39m)
+    [90m   | [39m                     [31m^[39m
+    [90m315| [39m    [34mresolveDestroy[39m()
+    [90m316| [39m    [35mawait[39m [35mnew[39m [33mPromise[39m((r) [33m=>[39m [34msetTimeout[39m(r[33m,[39m [34m0[39m))
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Unhandled Errors [27m[22m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[1m[7m Unhandled Rejection [27m[22m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: 加载失败[39m
+[36m [2m❯[22m tests/unit/renderer/corpus-extractor.test.ts:[2m298:18[22m[39m
+    [90m296| [39m    [35mlet[39m resolveDestroy[33m:[39m () [33m=>[39m [35mvoid[39m [33m=[39m () [33m=>[39m {}
+    [90m297| [39m    [35mconst[39m destroySettled [33m=[39m [35mnew[39m [33mPromise[39m[33m<[39m[35mvoid[39m[33m>[39m((r) [33m=>[39m { resolveDestroy [33m=[39m…
+    [90m298| [39m    [35mconst[39m boom [33m=[39m [35mnew[39m [33mError[39m([32m'加载失败'[39m)
+    [90m   | [39m                 [31m^[39m
+    [90m299| [39m    [35mlet[39m destroyReturned [33m=[39m [35mfalse[39m
+    [90m300| [39m    [35mconst[39m task[33m:[39m [33mPdfjsLoadTaskLike[39m[33m<[39mnumber[33m>[39m [33m=[39m {
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m146:14[22m[39m
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m533:11[22m[39m
+[90m [2m❯[22m runWithTimeout ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m39:7[22m[39m
+[90m [2m❯[22m runTest ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m1056:17[22m[39m
+[90m [2m❯[22m runSuite ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m1205:15[22m[39m
+[90m [2m❯[22m runSuite ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m1205:15[22m[39m
+[90m [2m❯[22m runFiles ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m1262:5[22m[39m
+[90m [2m❯[22m startTests ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/@vitest/runner/dist/index.js:[2m1271:3[22m[39m
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:[2m126:11[22m[39m
+
+[31mThis error originated in "[1mtests/unit/renderer/corpus-extractor.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1m顺序语义：重抛发生在 destroy settle 之后（await 销毁完才进错误上报——门二 W 补锚）[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m13 passed[39m[22m[90m (14)[39m
+[2m     Errors [22m [1m[31m1 error[39m[22m
+[2m   Start at [22m 12:53:20
+[2m   Duration [22m 4.98s[2m (transform 78ms, setup 0ms, collect 173ms, tests 4.20s, environment 0ms, prepare 185ms)[22m
+
+exit=1

@@ -1,0 +1,8 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm.
+
+Running 1 test using 1 worker
+
+  ok 1 tests\e2e\z-r2e-probe.spec.ts:152:1 › F-R2e 探针：划选高亮重开原位——仪表指纹矩阵 (5.5s)
+
+  1 passed (6.0s)

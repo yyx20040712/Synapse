@@ -1,0 +1,66 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/services/workspace.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 641[2mms[22m[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mF-D4 import in-flight 时 switch/create/rename 抛中文 CONFLICT 且零库副作用（拒在 closeCurrent 之前）[90m 42[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'ws-64e4442c' }" instead of rejecting[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行[90m 41[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'ws-6e487cbe' }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m [ tests/unit/services/workspace.test.ts ][22m
+[31m[1mError[22m: EBUSY: resource busy or locked, unlink 'C:\Users\ADMINI~1\AppData\Local\Temp\synapse-ws-d4-ETtcHj\workspaces\default\synapse.db'[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mF-D4 import in-flight 时 switch/create/rename 抛中文 CONFLICT 且零库副作用（拒在 closeCurrent 之前）
+[31m[1mAssertionError[22m: promise resolved "{ id: 'ws-64e4442c' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "id": "ws-64e4442c",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/unit/services/workspace.test.ts:[2m423:45[22m[39m
+    [90m421| [39m    [35mawait[39m [34mexpect[39m(svc[33m.[39m[35mswitch[39m({ id[33m:[39m [33mDEFAULT_WS_ID[39m }))[33m.[39mrejects[33m.[39m[34mtoMatchObj[39m…
+    [90m422| [39m    [35mawait[39m [34mexpect[39m(svc[33m.[39m[35mswitch[39m({ id[33m:[39m [33mDEFAULT_WS_ID[39m }))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/[39m…
+    [90m423| [39m    [35mawait[39m [34mexpect[39m(svc[33m.[39m[34mcreate[39m({ name[33m:[39m [32m'课题X'[39m }))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/导入[39m…
+    [90m   | [39m                                            [31m^[39m
+    [90m424| [39m    [35mawait[39m [34mexpect[39m(svc[33m.[39m[34mrename[39m({ id[33m:[39m [33mDEFAULT_WS_ID[39m[33m,[39m name[33m:[39m [32m'改名X'[39m }))[33m.[39mrej…
+    [90m425| [39m    [34mexpect[39m([34mcloseCalls[39m())[33m.[39m[34mtoBe[39m([34m0[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行
+[31m[1mAssertionError[22m: promise resolved "{ id: 'ws-6e487cbe' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "id": "ws-6e487cbe",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/unit/services/workspace.test.ts:[2m438:46[22m[39m
+    [90m436| [39m    gate[33m.[39m[34menter[39m()
+    [90m437| [39m    [90m// 时序表第①格（in-flight × create）：拒且零库副作用[39m
+    [90m438| [39m    [35mawait[39m [34mexpect[39m(svc[33m.[39m[34mcreate[39m({ name[33m:[39m [32m'课题C3'[39m }))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/导入[39m…
+    [90m   | [39m                                             [31m^[39m
+    [90m439| [39m    [34mexpect[39m([34mcloseCalls[39m())[33m.[39m[34mtoBe[39m([34m0[39m)
+    [90m440| [39m    [90m// 并发中间态 2→1：首个 import 完成，仍 in-flight——拒面不变（计数[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 01:25:59
+[2m   Duration [22m 1.53s[2m (transform 108ms, setup 0ms, collect 361ms, tests 641ms, environment 0ms, prepare 182ms)[22m
+

@@ -1,0 +1,56 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/main/import-gate.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 5[2mms[22m[39m
+[31m   [31m×[31m main/import-gate —— import 并发计数（C-3 N1 转正：中间态测试锚）[2m > [22m单会话：enter→in-flight，exit→空闲[90m 4[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [31m×[31m main/import-gate —— import 并发计数（C-3 N1 转正：中间态测试锚）[2m > [22m并发双 import 计数中间态 2→1→0：首个完成不误释互斥（>0 判定），全完成才空闲[90m 0[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/main/import-gate.test.ts[2m > [22mmain/import-gate —— import 并发计数（C-3 N1 转正：中间态测试锚）[2m > [22m单会话：enter→in-flight，exit→空闲
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/unit/main/import-gate.test.ts:[2m9:29[22m[39m
+    [90m  7| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mfalse[39m)
+    [90m  8| [39m    gate[33m.[39m[34menter[39m()
+    [90m  9| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m 10| [39m    gate[33m.[39m[34mexit[39m()
+    [90m 11| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mfalse[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/main/import-gate.test.ts[2m > [22mmain/import-gate —— import 并发计数（C-3 N1 转正：中间态测试锚）[2m > [22m并发双 import 计数中间态 2→1→0：首个完成不误释互斥（>0 判定），全完成才空闲
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/unit/main/import-gate.test.ts:[2m20:29[22m[39m
+    [90m 18| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mtrue[39m) [90m// 计数=2：双 import 在途[39m
+    [90m 19| [39m    gate[33m.[39m[34mexit[39m() [90m// 首个 import 完成：2→1[39m
+    [90m 20| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mtrue[39m) [90m// 仍 in-flight——次个未完不误释[39m…
+    [90m   | [39m                            [31m^[39m
+    [90m 21| [39m    gate[33m.[39m[34mexit[39m() [90m// 次个完成：1→0[39m
+    [90m 22| [39m    [34mexpect[39m(gate[33m.[39m[34minFlight[39m())[33m.[39m[34mtoBe[39m([35mfalse[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m   Start at [22m 01:21:00
+[2m   Duration [22m 561ms[2m (transform 20ms, setup 0ms, collect 33ms, tests 5ms, environment 0ms, prepare 179ms)[22m
+

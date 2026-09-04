@@ -1,0 +1,173 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/services/workspace.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m15 failed[39m[2m)[22m[90m 67[2mms[22m[39m
+[31m   [31m×[31m ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m遗留布局整体迁入 default：库数据不丢+wal/shm/files 随迁+指针=default[90m 31[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m迁移幂等：已迁移后二次调用不动（default 库已在=跳过，行仍在）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m崩溃断点续迁：workspaces/default 已建但库未移入 → 仍完成迁移（防孤儿库）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m指针缺省/损坏=降级目录序第一，不崩溃[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22mworkspaces/ 在但零有效目录 → 建 default 空课题（库已迁移可开）[90m 4[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mL0 会话：list 合成 default；create 物化遗留（旧数据入 default）+新课题空库已迁移[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mrename 生效且 list 反映；ghost id 抛中文 NOT_FOUND[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mswitch：ghost NOT_FOUND；真切换=关旧库→指针→装配新库（真 SQLite 句柄失效断言）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mbusy 串行守卫：切换进行中并发 switch 抛中文 CONFLICT[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mW1-a L0 链：list 只见 default → switch 回 default=物化+提前返回（不二段重建）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mW1-b L0 链：create(B)+switch(B)=物化(default)+切换二合一（default 行完整+根库清空）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mW2 switch 装配失败：中文错误上抛 → busy 已释 → 重试成功且指针终态一致[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mF-D4 import in-flight 时 switch/create/rename 抛中文 CONFLICT 且零库副作用（拒在 closeCurrent 之前）[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m workspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[31m   [31m×[31m data-layer.container —— 稳定 facade 热换（ipc/协议层零改动的机制面）[2m > [22mservices/fileStore 经 facade 活指向当前课题；重建关旧库；papersFileRef 间接取[90m 2[2mms[22m[31m[39m
+[31m     → The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 15 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m遗留布局整体迁入 default：库数据不丢+wal/shm/files 随迁+指针=default
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m迁移幂等：已迁移后二次调用不动（default 库已在=跳过，行仍在）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m崩溃断点续迁：workspaces/default 已建但库未移入 → 仍完成迁移（防孤儿库）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22m指针缺省/损坏=降级目录序第一，不崩溃
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mrename 生效且 list 反映；ghost id 抛中文 NOT_FOUND
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mswitch：ghost NOT_FOUND；真切换=关旧库→指针→装配新库（真 SQLite 句柄失效断言）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mbusy 串行守卫：切换进行中并发 switch 抛中文 CONFLICT
+[31m[1mError[22m: The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[90m [2m❯[22m bindings node_modules/bindings/bindings.js:[2m112:48[22m[39m
+[90m [2m❯[22m new Database node_modules/better-sqlite3/lib/database.js:[2m48:64[22m[39m
+[36m [2m❯[22m Module.openDatabase src/main/db/connection.ts:[2m24:14[22m[39m
+    [90m 22| [39m[90m/** 打开数据库并应用 pragma。dbPath 传 ':memory:' 用于单元测试。 */[39m
+    [90m 23| [39m[35mexport[39m [35mfunction[39m [34mopenDatabase[39m(dbPath[33m:[39m string)[33m:[39m [33mSqliteDb[39m {
+    [90m 24| [39m  [35mconst[39m db [33m=[39m [35mnew[39m [33mDatabase[39m(dbPath)
+    [90m   | [39m             [31m^[39m
+    [90m 25| [39m  [35mfor[39m ([35mconst[39m pragma [35mof[39m [33mDB_PRAGMAS[39m) {
+    [90m 26| [39m    db[33m.[39m[34mpragma[39m(pragma)
+[90m [2m❯[22m seedLegacyLayout tests/unit/services/workspace.test.ts:[2m63:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/15]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新首启[2m > [22mworkspaces/ 在但零有效目录 → 建 default 空课题（库已迁移可开）
+[31m[1mError[22m: The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[90m [2m❯[22m bindings node_modules/bindings/bindings.js:[2m112:48[22m[39m
+[90m [2m❯[22m new Database node_modules/better-sqlite3/lib/database.js:[2m48:64[22m[39m
+[36m [2m❯[22m Module.openDatabase src/main/db/connection.ts:[2m24:14[22m[39m
+    [90m 22| [39m[90m/** 打开数据库并应用 pragma。dbPath 传 ':memory:' 用于单元测试。 */[39m
+    [90m 23| [39m[35mexport[39m [35mfunction[39m [34mopenDatabase[39m(dbPath[33m:[39m string)[33m:[39m [33mSqliteDb[39m {
+    [90m 24| [39m  [35mconst[39m db [33m=[39m [35mnew[39m [33mDatabase[39m(dbPath)
+    [90m   | [39m             [31m^[39m
+    [90m 25| [39m  [35mfor[39m ([35mconst[39m pragma [35mof[39m [33mDB_PRAGMAS[39m) {
+    [90m 26| [39m    db[33m.[39m[34mpragma[39m(pragma)
+[90m [2m❯[22m initWorkspaceDb src/main/workspace-layout.ts:[2m40:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/15]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mL0 会话：list 合成 default；create 物化遗留（旧数据入 default）+新课题空库已迁移
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mW1-a L0 链：list 只见 default → switch 回 default=物化+提前返回（不二段重建）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mW1-b L0 链：create(B)+switch(B)=物化(default)+切换二合一（default 行完整+根库清空）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mW2 switch 装配失败：中文错误上抛 → busy 已释 → 重试成功且指针终态一致
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mF-D4 import in-flight 时 switch/create/rename 抛中文 CONFLICT 且零库副作用（拒在 closeCurrent 之前）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mworkspace.service —— list/create/rename/switch/currentName[2m > [22mC-3 时序表第③格显式化（跨格序列 拒→放行）：真 gate enter×2 拒——exit 一次（2→1）仍拒——再 exit（1→0）放行
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/workspace.test.ts[2m > [22mdata-layer.container —— 稳定 facade 热换（ipc/协议层零改动的机制面）[2m > [22mservices/fileStore 经 facade 活指向当前课题；重建关旧库；papersFileRef 间接取
+[31m[1mError[22m: The module '\\?\E:\class\智慧水务\Synapse_remake\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 146. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).[39m
+[90m [2m❯[22m bindings node_modules/bindings/bindings.js:[2m112:48[22m[39m
+[90m [2m❯[22m new Database node_modules/better-sqlite3/lib/database.js:[2m48:64[22m[39m
+[36m [2m❯[22m Module.openDatabase src/main/db/connection.ts:[2m24:14[22m[39m
+    [90m 22| [39m[90m/** 打开数据库并应用 pragma。dbPath 传 ':memory:' 用于单元测试。 */[39m
+    [90m 23| [39m[35mexport[39m [35mfunction[39m [34mopenDatabase[39m(dbPath[33m:[39m string)[33m:[39m [33mSqliteDb[39m {
+    [90m 24| [39m  [35mconst[39m db [33m=[39m [35mnew[39m [33mDatabase[39m(dbPath)
+    [90m   | [39m             [31m^[39m
+    [90m 25| [39m  [35mfor[39m ([35mconst[39m pragma [35mof[39m [33mDB_PRAGMAS[39m) {
+    [90m 26| [39m    db[33m.[39m[34mpragma[39m(pragma)
+[90m [2m❯[22m openMigrated tests/unit/services/workspace.test.ts:[2m78:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/15]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m15 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 01:21:33
+[2m   Duration [22m 902ms[2m (transform 102ms, setup 0ms, collect 337ms, tests 67ms, environment 0ms, prepare 170ms)[22m
+

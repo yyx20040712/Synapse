@@ -1,0 +1,33 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2mdestroy 失败不阻断：complete 已上报（尽力而为面）
+[22m[39mCorpusExtractor destroy 失败（已忽略） Error: destroy 失败（尽力而为面）
+    at Object.destroy [90m(E:\class\智慧水务\Synapse_remake\[39mtests\unit\renderer\corpus-extractor.test.ts:51:48[90m)[39m
+    at runExtraction [90m(E:\class\智慧水务\Synapse_remake\[39msrc\renderer\features\reader\CorpusExtractor.ts:286:21[90m)[39m
+
+[90mstderr[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2m在途收第二请求：忽略（防御分支——main 编排保证串行）
+[22m[39mCorpusExtractor 忽略在途期间的 extract-request s-2
+
+[90mstdout[2m | tests/unit/renderer/corpus-extractor.test.ts[2m > [22m[2mCorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m[2m真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e）
+[22m[39mWarning: Please use the `legacy` build in Node.js environments.
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+
+ [32m✓[39m tests/unit/renderer/corpus-extractor.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 4102[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m全链：逐页 fulltext+页图回传（页序与文本序）→complete 终局 [33m605[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m背压：任一时刻在途 invoke ≤1（await ack 后才发下一项） [33m466[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22manno 裁剪：标注随所在页回传（存储 0 基页→提取 1 基页）+annotationId 载荷 [33m468[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22minvoke 折叠错误：failed 路径——error 上报+destroy 释放+后续请求可接续 [33m984[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m文档加载失败：error 上报（无页数据） [33m358[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22mdestroy 失败不阻断：complete 已上报（尽力而为面） [33m346[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m在途收第二请求：忽略（防御分支——main 编排保证串行） [33m356[2mms[22m[39m
+   [33m[2m✓[22m[39m CorpusExtractor —— 全文/图提取器（四态迁移+背压+裁剪数学） [SR2-AI-02][2m > [22m真 pdfjs 集成：多页工厂 PDF 的文本提取全链（getTextContent 真解析；render 面 e2e） [33m471[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 12:52:56
+[2m   Duration [22m 4.79s[2m (transform 75ms, setup 0ms, collect 186ms, tests 4.10s, environment 0ms, prepare 172ms)[22m
+
+exit=0

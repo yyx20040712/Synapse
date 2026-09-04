@@ -1,0 +1,78 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/tab-dirty.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/tab-dirty.test.tsx[2m > [22m[2mtab-dirty —— 两写面灰点信号聚合 [SR2-TABS-03][2m > [22m[2museTabDirtyAggregate：任一 tab 任一写面 dirty → true；全净 → false
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/tab-dirty.test.tsx[2m > [22m[2mTabBar —— 灰点渲染与关闭脏 tab 确认（组件级） [SR2-TABS-03][2m > [22m[2m灰点渲染：annotations 面（TabState.dirty）与 notes 面（pending）任一即渲染 ●；clean 无
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/tab-dirty.test.tsx[2m > [22m[2mTabBar —— 灰点渲染与关闭脏 tab 确认（组件级） [SR2-TABS-03][2m > [22m[2m关闭确认：dirty tab 取消不放行（confirm false→不关）；确认放行
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/tab-dirty.test.tsx[2m > [22m[2mTabBar —— 灰点渲染与关闭脏 tab 确认（组件级） [SR2-TABS-03][2m > [22m[2m关闭确认：clean tab 直接关（不弹窗）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [31m❯[39m tests/unit/renderer/tab-dirty.test.tsx [2m([22m[2m10 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 33[2mms[22m[39m
+[31m   [31m×[31m A3 弃改收口：dirty 确认接受→notes 条目被 discard；取消不弃改；clean 直通幂等[90m 3[2mms[22m[31m[39m
+[31m     → expected { title: '', contentMd: '悬置草稿', …(3) } to be undefined[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tab-dirty.test.tsx[2m > [22mA3 弃改收口：dirty 确认接受→notes 条目被 discard；取消不弃改；clean 直通幂等
+[31m[1mAssertionError[22m: expected { title: '', contentMd: '悬置草稿', …(3) } to be undefined[39m
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+Object {
+  "contentMd": "悬置草稿",
+  "pending": true,
+  "savedAt": null,
+  "saving": false,
+  "title": "",
+}
+
+[36m [2m❯[22m tests/unit/renderer/tab-dirty.test.tsx:[2m293:55[22m[39m
+    [90m291| [39m  confirmSpy[33m.[39m[34mmockReturnValue[39m([35mtrue[39m)
+    [90m292| [39m  [34mexpect[39m([34mconfirmCloseDirty[39m([32m'p-1'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m293| [39m  [34mexpect[39m(useNotesStore[33m.[39m[34mgetState[39m()[33m.[39mnoteByPaper[[32m'p-1'[39m])[33m.[39m[34mtoBeUndefined[39m()
+    [90m   | [39m                                                      [31m^[39m
+    [90m294| [39m  [90m// clean 直通：不弹窗、收口幂等 no-op（无条目不抛错）[39m
+    [90m295| [39m  [34mexpect[39m([34mconfirmCloseDirty[39m([32m'p-clean'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 12:40:21
+[2m   Duration [22m 1.30s[2m (transform 73ms, setup 0ms, collect 190ms, tests 33ms, environment 598ms, prepare 173ms)[22m
+

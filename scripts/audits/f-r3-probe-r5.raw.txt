@@ -1,0 +1,7 @@
+[f-r3 02:27:44] 文献库卡片数 9
+[f-r3 02:27:45] S0 单开基线 {"rendered":true,"pageErrors":0,"consoleErrors":0}
+[f-r3 02:27:46] S1 快速连开 {"n":1,"elapsedMs":157,"pageErrors":0,"consoleErrors":0,"msgSamples":[]}
+[f-r3 02:27:52] S1b 单次切换净测 {"pageErrors":0,"errors":[]}
+[f-r3 02:27:52] S2 开关循环 {"mode":"open→120ms→closeTab","rounds":0,"cycles":0,"closeFail":0,"elapsedMs":0,"pageErrors":0,"consoleErrors":0}
+[f-r3 02:27:52] S3 健康面 {"rendered":true,"spanCount":260,"pageErrors":0}
+F-R3 PROBE: S0=0 err | S1=0 err(1 开/157ms) | S1b 单次切换=0 err | S2=0 err(0 开关循环/closeFail=0) | S3 health=OK | 总 pageerror=0 / unhandled=0 / 主进程 console-error=0

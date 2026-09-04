@@ -1,0 +1,500 @@
+Need produce audit in Chinese, markdown ≤200 lines. Need be adversarial. Need examine design revision and Kimi ruling. Need verify three conditions have been incorporated: T1 downgrade, markedContent pending, four guards. Also find new problems. Need cite evidence from package.
+
+Let's carefully analyze.
+
+We need output structure:
+1. 审核裁决 (PASS/PASS_WITH_WARNINGS/FAIL)
+2. findings graded list (BLOCKING/WARN/NIT each with location+problem+evidence+fix)
+3. independent verification of Kimi three preconditions (T1 downgrade/markedContent pending/four guards—check text)
+4. new problems not mentioned by Kimi.
+
+Need not overlong, ≤200 lines. Need identify design flaws internal contradictions omissions unimplementables.
+
+Let's inspect design thoroughly.
+
+First status header says "Kimi K3 拟定复核毕（有条件采纳——三前置条件已全部落入：T1 降待证候选/markedContent 预判证伪待核/快路径四道守卫强制条款）". Need verify.
+
+T1 in §0: "待证候选 T1=页旋转 /Rotate≠0... 列取证矩阵平等项，不预选" yes.
+
+markedContent §2.1: "markedContent 预判证伪待核（getTextContent 调用面在包外——取证票 grep+运行时探针双证后定谳）"; endOfContent 证伪. yes.
+
+Four guards in §5.1 selection-evaluate.ts row text includes "守卫前置（强制条款——Kimi 拟定裁决 2-§5①）... (i)...(iv)" yes.
+
+Need also verify §2-§0 rewrite adopted yes "病根判定 ... T1 ... 列取证矩阵平等项". §2-§2① c changed to inset:0 argument yes. ② markedContent wording "预判证伪" yes. ③ T1 "待证候选" at 2.1. §2-§5① included. §2-§5② TextLayer row has "行号与改法以 F-A6-a 对 TextLayer/PdfPageCanvas 的行级复核为准；若 T1 证伪则本行整行删除..." yes. §2-§6 included INV-37 semantic weakening explicit registration at R3 ⑤. Need verify if "同步 INV-37 修订条款" included? In §5.1 invariants update includes INV-37 dispatch clause; §6 says "④INV-37 调度条款同步（200ms 防抖驱动→rAF 对齐双路），新 INV-58"; ⑤ explicit. yes.
+
+Now adversarial findings. Need identify plausible flaws.
+
+Potential issues:
+
+1. Internal inconsistency: §1 S1 table says current scheduling = "节流视觉（leading+trailing 200ms）/防抖 settle（200ms）/mouseup 即时全量（SelectionLayer.tsx:149-175）". Then state table S1 visual performance "自绘层 5Hz 步进跟随... 节流 leading+trailing (selection-geometry.ts:114-129)". But design later references "节流视觉" with evaluate(visualOnly) and "fromMouseUp". Fine.
+
+But contradiction in §3.1: 200ms throttle under continuous selectionchange yields 5Hz yes. But if events arrive within window, trailing timer after remaining; because each event resets debounce but not throttle. Times? Let's simulate: event at t0 triggers leading; next event at t0+10: trailing set to t0+200. Further events at t0+20 etc no new leading, trailing remains t0+200. At t0+200 trailing fires and last=t0+200. okay. If event after trailing? t0+250 triggers leading because 50<200? Wait condition now-last>=200, now=250,last=200, diff=50 <200 so no leading, trailing set timer 150 at t0+400. Thus cadence ≈200 from last visual. yes.
+
+2. Potential issue: design's §5.2 says visual path "selectionchange→若本帧未排程则 requestAnimationFrame(evaluateVisual)——60Hz 上限、帧内天然合帧". But there may be trailing? Need no.
+
+3. New problem: "rAF 对齐" with createVisualScheduler currently has "200ms 防抖驱动节流"; they modify to rAF but claim S1b "零反馈红线" held. Potential issue: rAF in Electron/background or high-frequency selection changes, okay.
+
+4. Need identify deeper: D1 diagnosis with mergeLineRects etc. Could be flaws.
+
+Let's read merged code snippets: Current evaluate:
+- selectionToAnchor(textLayer, sel) returns anchor with rects? Need infer. Then findRangeAtOffset textLayer anchor start/end returns range with textNodes. Then setPaint uses anchor.rects and bandsForTextNodes(range.textNodes.map node, pixelBoxOf(textLayer)).
+- So current visual is based on anchor.rects produced by selectionToAnchor. Design says D2b second rectsBetweenPoints is full redundancy and visual-only path "quote/prefix/suffix zero consumption" but visual uses anchor.rects, so first pass necessary. It proposes fast path raw selection range clientRects → merge same-origin functions. But current pipeline normalizes via anchor offsets. Is fast path equivalent? Not always; known boundary issues settle override. Fine.
+
+Potential issue with "evaluateFull（现行逻辑迁移+删 visualOnly 死参面——onVisual 不再调 evaluate(·,true) 后 SelectionLayer.tsx:103/113/123/129/138-139 分支全死, P10 死代码即删）" Wait if evaluateFull only from mouseup and debounce, visualOnly always false; fromMouseUp true for mouseup, false for debounce/settle. So visualOnly parameter dead. But code branches "if (!visualOnly) setPending(null)" and early returns would simplify. They call evaluateFull. Fine.
+
+But note: according to §1 current S1' settlement with "拖选停顿 >200ms" triggers evaluate(false,false) and tooltip "提前弹出" despite no mouseup. In fast path design settle debounce 200ms zero. Under rAF, tooltip still at 200ms no change. okay.
+
+Potential new issue: In §5.1 "evaluateFull（现行逻辑迁移+删 visualOnly 死参面 ...）" and "selection-evaluate.ts（新）" duplicates evaluate's four guards. If they migrate logic, okay.
+
+Potential issue: §5.1 says "SelectionLayer.tsx 249→~200±5（实测测算 −47：evaluate 闭包 48 行+import 收缩 3−新接线 4；红线解除）". But code has useEffect callback etc. If remove evaluate function, need import createVisualScheduler and use evaluateVisual from selection-evaluate. Fine.
+
+Potential issue: "SelectionLayer 249→~200±5 ... net −47~−55" but earlier table line "SelectionLayer 249→~200±5（实测测算 −47：evaluate 闭包 48 行+import 收缩 3−新接线 4；红线解除）". OK.
+
+Potential issue: In D2 diagnosis claim "每视觉 tick 走全量 evaluate：全页 TreeWalker×2 + ... + 每 span 双 getComputedStyle+canvas measureText" Current selectionToAnchor first does collectSpans twice? Need inspect. selectionToAnchor probably collectSpans + median? Actually anchor-serialize in external not included. But code snippet imports selectionToAnchor, findRangeAtOffset, pixelBoxOf. The design says first evaluate in SelectionLayer: selectionToAnchor(textLayer, sel) probably calls collectSpans, offsetToPoint, rectsBetweenPoints(first,last,pixelBoxOf(root)); then findRangeAtOffset calls collectSpans second and rectsBetweenPoints. So yes.
+
+Potential issue: "第二次与第一次 first/last/base 逐位相同→产物纯冗余（唯一增量=textNodes）" Actually second call's main purpose is to retrieve textNodes for bands. Are rectsBetweenPoints product identical? They need findRangeAtOffset range textNodes. Could derive by canonical offsets; yes if selectionToAnchor already has rects, doesn't need second rects. But note output of first and second rectsBetweenPoints may differ? They use same first/last/base, so same. Need ensure first/last are computed from offsets in findRangeAtOffset? Potential nuance: findRangeAtOffset takes textLayer, start,end, perhaps does collect spans and offset conversion; rectsBetweenPoints first/last same anchors as range. Fine.
+
+Potential issue: The "same root same offsets" but if selectionToAnchor's start/end "anchor.start/end" are zero-based indices into concat text sequences. findRangeAtOffset second rectsBetweenPoints maybe first/last based on found text nodes, same. Yes.
+
+Potential issue: "unique increment=textNodes" but second pass affects "anchor.start/end"? no.
+
+Potential issue: §3.2 says "markup quote/prefix/suffix slice O(选区长)+O(32) — visual path zero consumption"; but selectionToAnchor must construct complete text string to find offsets; quote/prefix/suffix from that string maybe not if visual zero. In fast path, they remove quote/prefix/suffix. But anchor text needed? For current visual, anchor object includes quote but not used in visual path. So yes.
+
+Potential issue: G2 detector: "选区 clientRects 与 textLayer 盒的偏离率超阈" Not specified. If in evaluation no clientRects? Not enough.
+
+Potential issue: G2 G1: §2.3 "G1 修复：T1 走 rotation 通道修复（§5）；T2/T3/T4/T7 走判据修复." But G2 "不可修复残余形态 (T5)" Detection formula ambiguous. Not blocking maybe.
+
+Potential issue: T1 repair design: §5.1 TextLayer.tsx add rotation channel. But design T1 says root cause suspected canvas viewport includes page.rotate while text layer duckViewport rotation 0. If /Rotate≠0 page rendered by canvas? PDF pages with text layer; doesn't fix D1 perhaps. Need no.
+
+Potential issue: "若 B 落地后真机仍感知卡顿 C 为备案案非并行" okay.
+
+Potential issue: INV-37 contradiction:
+- §6 says "**INV-37 语义弱化显式登记...** 拖选期视觉=所见≈所存 (fast path geometry transient approx)... 松手及保存时刻所见即所存严格保持".
+- Wait "所见即所存" INV-37 likely save rects match visual. Under B, after mouseup, if user clicks save within 200ms? Actually mouseup invokes evaluate(true,false) immediately full, so pending set immediately with full rects; paint set immediately to full. Settle no conflict. If "松手瞬间快→settle" known boundary? Hmm fast->settle with no mouseup? S1' trailing? Let's understand settle after no movement: onSettled triggers full evaluate and updates pending/paint. If user continues after pause, onVisual fast path updates paint, but pending remains? Wait in existing setter, visualOnly only updates paint, doesn't clear pending; pending set only full. If a settle happened at pause, setPending. Later user continues selection changes (no mouseup) after pending exists; existing behavior: "S1' 停顿出条→继续拖: 后续 selectionchange 走节流+防抖双路, pending 被下一次 settle 全量覆盖" and tooltip position with selection? onVisual doesn't move tooltip, only onSettled updates pending; §Q9 says "工具条位置随动" maybe no, settle set pending at 200ms pauses. Wait onSettled due to debounce after each selectionchange? In current code, visual throttle leading/trailing and debounce reset every selectionchange; if continuous drag events arrive within 200ms, no settle. If pause >200ms, settle occurs, tooltip appears while no mouseup. If continue, each subsequent settle after pauses will update pending; if continuous before pause, no updates. Tooltip maybe stays. Q9 says "pending 被下一次 settle 全量覆盖——工具条位置随动" yes if eventual pause. Fine.
+
+But §6 says "松手及保存时刻所见即所存严格保持". During S1' pause >200ms, if tooltip appears and user can click save while still mousedown? Toolbar likely cannot click without releasing mouse? Actually after drag pause, mouse button still down; mobile/trackpad? It says S1' "toolbar 提前弹出（既有语义）"; if user clicks save before mouseup impossible because need second pointer? Maybe selection still active; click toolbar likely collapses? But prior design handles. Not key.
+
+Potential issue: Invariant in F-A4 line says "Escape only clears pending/tooltip; layer follows selection true clear". Yet current onKeyDown Escape setPending(null), not clear selection. So after Escape, paint stays until selectionchange? Wait if selection still exists and no selectionchange, layer remains. INV-37 revision says Escape clears pending/tooltip; layer with selection true cleared. Actually "Escape 只清 pending/工具条" yes state table S7 "工具条收、层保留（INV-37）". Contradiction? It says INV-37: visual-state sync? In header "Escape 只清 pending/工具条. 自绘层随**选区**真清除而消失". S7 says "层保留". That's consistent.
+
+Potential issue from Kimi: three preconditions are in design but one subtle missing: Kimi §2-§6 says "并同步 INV-37 修订条款" maybe design didn't show explicit invariant wording line beyond R3 paragraph. It says "INV-37 调度条款同步 ... 新 INV-58" and "⑤INV-37 语义弱化显式登记". Does that satisfy "同步修订条款"? Likely enough.
+
+Need include independent verification list item: four security guards exactly present in section §5.1? Need quote. Yes.
+
+Need find new issues not in Kimi. Let's brainstorm rigorously.
+
+Potential major bug: "快路径预算：1× getClientRects+1× gBCR+merge（CPU）+缓存命中≈亚毫秒~2ms" But getClientRects on the entire Range in PDF text may be expensive; with thousands of spans maybe returns many rects. Still maybe small. But not proof.
+
+Potential major bug: "拖选会话缓存 WeakMap key=span elem + baseline; zoom changes key naturally changes via baseline." If key = span element and baseline size, okay. But "mid-drag zoom one frame stale corrected by settle" if zoom happens during drag, raw range changed? Maybe visual one frame stale. Fine.
+
+Potential major bug: §5.2 scheduler with rAF "selectionchange → if no rAF scheduled schedule evaluateVisual" uses rAF but doesn't account for selectionchange after mouseup? okay. But all selection changes may occur in same frame; `requestAnimationFrame` max 60Hz. At frame time, evaluate reads current selection. If multiple events, one eval per frame. Good.
+
+But need inspect design's claim S1b zero feedback "leading first event immediate rAF (≤16ms)". rAF not immediate; user may perceive 1-frame delay acceptable.
+
+Potential issue: scheduler "frame内合帧去重" but existing createVisualScheduler tests absent; new unit anchor "same frame multiple selectionchange exactly once evaluateVisual"—but rAF scheduling from document selectionchange cannot be observed synchronously. Need vi.stubGlobal rAF. okay.
+
+Potential issue: `requestAnimationFrame` and React state setPaint: If `evaluateVisual` calls setPaint synchronously in rAF, in non-act React 18 warnings; tests with fake. Runtime fine.
+
+Potential issue with "portal repaint root" etc.
+
+Potential issue: "§5.1 new file selection-evaluate.ts: merge same source functions." "INV-58 fast path must reuse mergeLineRects+mergeRects+pixelBoxOf same function family; no second geometry". But proposed fast path from raw range `getClientRects` yields client rect list (viewport coordinate) directly, while current mergeLineRects? Need understand mergeLineRects likely takes clientRects? In annotation-anchor.ts, mergeLineRects at 325-404 maybe takes rects? The custom function maybe uses getClientRects? Let's infer. If annotation-anchor's mergeLineRects takes raw `ClientRect[]` and returns "normalized"? Design says "mergeLineRects 聚类", "same source functions"; likely by passing rects from getClientRects. Fine.
+
+Potential issue: "raw range getClientRects"—if `sel.getRangeAt(0).getClientRects()` returns all client rects, not normalized to textLayer local? Current rectsBetweenPoints normalizes to pixelBoxOf(textLayer). Fast path need raw client rects then same merge? Wait §D2 mechanism says evaluate current normalize? Need inspect anchor-serialize absent. But design says fast path "raw range clientRects→同源 merge→缓存 bands". Then how normalize? In `SelectionPaint`, rects are normalized fractions relative to textLayer? Check `AnnotationRect` x,y,h,w maybe normalized? In selection-paint style uses `r.y*100%`, so rects likely normalized (0~1) relative textLayer. In SelectionLayer current `rects: anchor.rects`, selectionToAnchor probably normalizes clientRect by pixelBoxOf. Fast path needs raw range clientRects (viewport coords), merge maybe expects normalized? Design mentions G1 guard "range.getBoundingClientRect zero..." and spec "evaluateVisual: raw range clientRects→same-source merge→cache bands"; no explicit normalization step to pixelBoxOf until perhaps "normalization baseline = texture page textLayer pixelBoxOf (same settle box)" only in guard clause. It says "归一化基准=选区所在页 textLayer 的 pixelBoxOf（与 settle 同盒）" after guard. But fast path description lacks explicit normalization of clientRects via pixelBoxOf. This could be ambiguity. Maybe if mergeLineRects expects viewport pixel coordinates and selection-paint? Let's locate annotation-anchor.ts references: `mergeLineRects` "聚类判据 height comparable bands, y order" and "x union". SelectionPaint rects normalized by *100%. `anchor.rects` produced by selectionToAnchor must be normalized because it uses `pixelBoxOf(textLayer)`. If anchor-serialize rectsBetweenPoints(first,last,pixelBoxOf(root)) with pixelBoxOf returns left%, maybe yes. Fast path raw clientRects need divide by pixelBoxOf. Design says "归一化基准=..." but doesn't list "normalize" in the fast path chain. Could be a gap but maybe in omitted new file pseudo? It says "evaluateVisual（快路径：raw range clientRects→同源 merge→缓存 bands）" no explicit normalize to textLayer coordinate. Later "归一化基准=选区所在页 textLayer 的 pixelBoxOf（与 settle 同盒）" is a sentence in guard; suggests there is normalization. But "raw range clientRects" dimension are viewport coordinates; `mergeLineRects` existing functions? Need not flag unless clear.
+
+Potential issue: D1/D2 causes independent of visual channel. D1 pipeline fix plus B fast path. But B fast path uses raw range clientRects, not anchor.rects. However raw Range corresponds to actual browser selection over text layer. D1 root causes: selection Range clientRects "on abnormal text-layer itself wrong" from "rotated/marked content"? Actually if textLayer geometry wrong (T1), raw Range clientRects wrong; fast path and settle maybe both wrong. D1 fix at source. okay.
+
+Potential major issue: They propose "TextLayer duckViewport rotation channel" if T1 true. But if canvas viewport includes page.rotate and text layer rotation=0, actual selection rects on text layer may be entirely wrong. Does rotation channel alone fix? Need know code. no.
+
+Potential issue: Scope/alignment with INV: A/B/C table says B "INV-37 only dispatch; new INV-58; INV-05/42 unchanged". But §6 R3 says "INV-37 semantic weakening explicit register (Kimi 2-§6 — B established premise)"—"semantic weakening" is not merely dispatch. Minor wording: §4 row "INV-37 仅调度条款" seems false/contradicts later INV-37 semantic weakening explicit registration. In §4 table, B row "INV-37 仅调度条款；新 INV-58" and comparison "所见即所存 INV-37 保持...松手 settle 覆盖帧可有贴边级跳变...". But §6 explicitly weakens INV-37 during drag to "所存≈". Is that contradiction? Let's examine: Kimi says "B 的代价是 INV-37 在拖选期由「所见即所存」弱化为「所见≈所存」". In §4 table B row under "所见即所存 INV-37": "保持（快路径同一几何管线，§5 INV-58 锁死；松手 settle 覆盖帧可有贴边级跳变——§6 边界①，F-A6-c 票面锁...）". This "保持" is misleading: it claims INV-37 "保持" while §6 rows says weakens. Design §0 says "所见即所存 INV-37 | 保持（快路径同一几何管线；松手瞬间快→settle 可有贴边级跳变...)" at §0 table too. That seems a genuine internal contradiction: INV-37 strict semantics cannot be both "保持" and "语义弱化". They note "所见≈所存" in §6, but earlier "保持" not qualified. Could be WARN/BLOCKING? It could confuse implementers. Need not define R1? Since Kimi didn't mention. In §0 first table row "所见即所存 INV-37 | 保持（快路径同一几何管线；松手瞬间快→settle 可有贴边级跳变——§6 边界①，票面锁同帧覆盖断言）" equals strict? It acknowledges jump. But all design semantic in §6 explicit. The contradiction remains "保持" vs "弱化". Need flag as WARN maybe.
+
+Potential issue: User asked "找漏洞、矛盾、遗漏、不可实现" not just major. Need many findings.
+
+Potential issue: MarkedContent: §2.1 says endOfContent 证伪 because "user-select:none (text-layer.css:103-112)". Does CSS rule ensure no selection boundary? If text has user-select:none, can a Text node inside still be part of selection anchor? user-select none doesn't prevent programmatic Range containing it or selection? For user drag, yes. endOfContent element (officially marker with no text) maybe CSS selects it if it's a span? It has no text, no Range boundary? If it has marker text? getTextContent maybe no text. no.
+
+Potential issue: "markedContent 预判证伪待核" then in state S9 "检测器（取证后定）" and active line markedContent no longer included. okay.
+
+Potential issue: "D1 root: Range clientRects in abnormal text layer itself wrong, mergeLineRects amplified" If root cause T1 rotation not in package, and markedContent pending, design not fully root-caused before approval. Kimi condition says F-A6-a evidence ticket before implementation. Good.
+
+Potential issue: "user must decide "① tooltip during drag pause>200ms existing semantics keep". But §1 says "Current existing semantics" not necessarily "default" in V. If user doesn't decide? §0 "用户需拍板"; document status "待用户过目方案 §0 拍板三点". It might block implementation? The design is "pending user decision". Fine.
+
+Potential issue: §1 S9 new state but state table says "设计新增（现行=层照渲错误 rects）"; maybe S9 not in "selection lifecycle" but okay.
+
+Potential issue: D1 mechanism names "clientRectsBetween 回退证伪" design states "真机 Chromium 恒实现, empty only zero text intervals intercepted by zero width precheck". But in code snippet in SelectionLayer evaluate has zero check box after selecting anchor? Actually it does wait: `const sel = window.getSelection()`, checks collapse, roots, textLayer/anchor, then zero box before findRangeAtOffset; if Range spans zero width but nonzero? okay.
+
+Potential issue: "T6 零高/零宽盒残余" matrix item but then §2.1(d) "zero-width precheck" claims empty returns impossible? Contradiction: In T6 "零高/零宽盒残余" listed under morphology classification maybe because if getClientRects empty? It says clientRectsBetween fallback only when getClientRects absent/empty; zero text interception prevents empty. But zero-height/width box isn't empty? okay. T6 maybe residual from "zero-high/zero-wide" actual rect maybe can contribute abnormal? no.
+
+Potential issue: "diag probe: environment page.rotate, textLayer box, scale factor; spans {text, gBCR, fontSize...} to distinguish T1/T5; original clientRects, intermediates... good". Implementable.
+
+Potential issue: "E2E/Electron devtools evaluate injection script with JSON; page.rotate needs inside browser pdf.js API not DOM; script environment Electron devtools can maybe access PDF.js page? It must be run in renderer with pdfPage? If script runs in e2e, cannot know page.rotate unless app exposes. It says Electron devtools/e2e evaluate possible via app internals? Need consider "不可实现点". The diagnostic tool is expected from implementer's own; not enough details but optional. But design's "探针脚本四段落盘 JSON" may be not fully specified how to read page.rotate from DOM. Since T1 in PdfPageCanvas external. A generic DOM script cannot access page.rotate; if no app hook, not possible. But can use PDF.js API in the renderer via global? unknown. Could flag WARN: probe environment section contradictory: generic evaluate injection in Electron devtools can't read `page.rotate` unless devtools can evaluate into module scope; not reliable. But maybe implementer can add. Is that a finding? It says "F-A6-a 取证票 users provide same PDF; no implementation face" but diag script is implementation-like. It likely requires modifications to expose page.rotate. We could mention.
+
+Potential major issue: "设计稿全文 + Kimi + source excerpts". Design states current SelectionLayer 249 lines? Code excerpt line numbers not line count, but header B1 etc likely >200? We can't verify exact but Kimi says okay approximate. Not relevant.
+
+Potential issue: "Throttle D2a: 200ms throttle = 5Hz step visual, direct cause." Current scheduler's visual leading + trailing. But selectionchange isn't guaranteed continuous? yes.
+
+Potential issue: "On each visual tick current code invokes selectionToAnchor and findRangeAtOffset, but setPaint uses anchor.rects and band; selectionToAnchor includes collectSpans twice and first passes all. Then rect anchor used also quote. Fast path if use raw range clientRects no anchor offsets. Does raw range getClientRects include collapsed? no. It relies on range; if selection contains areas not text? okay.
+
+Potential issue: In current code "零宽 box check" in evaluate is after selectionToAnchor and findRangeAtOffset? Actually code snippet shows:
+- after null/anchorRoot/textLayer/anchor checks, `const box = sel.getRangeAt(0).getBoundingClientRect(); if zero → clear;`
+- then findRangeAtOffset... So selectionToAnchor occurs before zero check. Thus zero-width selection can be expensive though rare. Guard in fast path should be early? Kimi guard list includes zero width guard; design says fast path must reuse four guard (iv) yes. But it doesn't specify ordering relative to evaluateVisual; okay.
+
+Potential issue: "markUP quote/prefix/suffix visual path zero consumption" Wait `anchor.rects` from selectionToAnchor. If an anchor is null? no.
+
+Potential issue: §5.1 row selection-evaluate says "S9检测器挂点" but S9 defined in state table "异常 PDF 降级" and G2 only if "取证后确认不可修复的残余形态"; no acceptance criteria. Might be WARN for vague.
+
+Potential issue: §2.2 "探针 experiments user same PDF reproduce" but design at status "pending user approval"; no "same PDF" included. User must supply after approval. Okay.
+
+Potential issue: New test files locked-change "诞生即 locks:generate+apply" maybe if scripts/audits/f-a6-diag.mjs new not under tests? fine.
+
+Potential issue: "受锁测试配套 selection-paint.test currently 17 it, S1b/S1c..." not in package; Kimi flagged ?; design says "grep 实测" but no actual grep output. In this review pack, source excerpt doesn't include test files. Kimi already flagged. Our independent review can note unresolved packages? The task says "一切断言落 evidence in package"; missing test files means exact test counts unverifiable. But Kimi already "?". We can not repeat? Might include WARN because design still asserts with no evidence. Need "new problems" not mentioned by Kimi? Yet the task asks verify conditions and findings. We can mention many.
+
+Need decide overall verdict. Is it PASS_WITH_WARNINGS or FAIL? We need adversarial not block. The design is rich, with Kimi conditions. There are some issues but likely PASS_WITH_WARNINGS if no blocking. But maybe there is a serious BLOCKING problem. Let's search harder.
+
+Could there be a fundamental contradiction regarding "所见即所存" in B? Kimi says B requires weakening INV-37 to "≈" during drag. In a document's state table, INV-37 compliance row says B "保持（快路径同一几何管线...）". But B doesn't "keep" strict; does it? Let's parse "所见即所存" maybe exact phrase "visual WYSIWYG with saved rects". The design says "settle full authority for save and final vision" and current "Mousedown full evaluate immediate on mouseup sets paint to anchor.rects. How can drag visual be weak? Actually under current code, paint = anchor.rects from full evaluate, so exact. Under B, in drag visual = fast path rects, which may not match equivalent full path. If user releases mouse, mouseup immediately calls full evaluate before save and visual moves to full rects. User sees during drag approximate, but at release strict. If user somehow saves after release, saved rects equal post-release final vision. During pause >200ms settle occurs, pending and paint may be full; if continue dragging, fast path visual may diverge from pending? Wait if user can click save while mouse still down after toolbar pause, pending from settle equals current full before continue. If continue, visual changes via fast path but pending stays old until next settle after pause; if user clicks save without releasing? Click maybe mousedown over toolbar may cancel selection? not. Could be narrow. But after S1' with tooltip appears while dragging paused, then user might stop drag entirely but mouse still down and click? Hard. Maybe save while holding mousedown? Usually left mouse button must be released to click toolbar, which triggers evaluate false before? The toolbar mouseup is ignored if within toolbar? Code onMouseUp checks if e.target inside toolbar then return, not if moved. It does not evaluate; then toolbar click event handles. If mouse is released over toolbar, selection collapse? toolbar mousedown likely preventDefault? It says toolbar buttons mousedown prevents selection collapse? In code onMouseDown document listener runs first maybe button mousedown then prevent? not shown. But existing semantics. So save after release over toolbar; onMouseUp returns, full not evaluated; pending from settle? If selection not collapsed, maybe okay. Hmm. But not necessary.
+
+Potential BLOCKING: §5.1 guard for cross-page: In current evaluate, cross-page selection detected by `closestPageRoot(sel.anchorNode) !== closestPageRoot(sel.focusNode)`; if anchorRoot null and focusRoot null (both outside page), roots equal, pageNo null, textLayer null → setPaint(null). It then "same root null=outside page". In fast path guard list from Kimi only (ii) root mismatch. But if both are null (external selection), (iii) "页外/textLayer缺" catches? textLayer missing through anchor root null? No textLayer query fails. evaluateVisual must check textLayer. If design includes "页外/textLayer 缺→setPaint(null)" yes. Good.
+
+Potential BLOCKING: on fast path if selection range contains at least one page, anchorNode/focusNode same page? ok.
+
+Potential issue: "D1 and D2 root causes not real from source? D1's `y-sort interleaving` etc." But Kimi verified.
+
+Potential issue: New problem: `mergeLineRects` fix "聚类比较扩到全部簇" but if y intervals interleave, comparing to all clusters and merging should determine cluster by containment? Need if row group "一行"? Not clear. But has annotation-merge precedent. Could be implementable.
+
+Potential issue: `pitch filter lower bound 0.5× dominant height` may cause under-splitting? no.
+
+Potential issue: `T3 y order interleaving` if span boxes from adjacent lines overlap in y due to line-height; merge all cluster can incorrectly merge all? Need unknown.
+
+Potential issue: A vs B table "R1 根治保持 | B保持(全程自绘 single layer); C static keep but drag transient 0.36 reappear." In B if fast path uses raw range rects and merge based on same, no stacked alpha because paint each rect alpha same and non-overlap? Does raw range getClientRects return overlapping rects for overlapping spans? If overlap (inline elements/lines) then their rect union in paint one rect? Paint draws merged rects no overlap, ok. If multiple rects overlap after merge? mergeRects should separate. yes.
+
+Potential issue: "D1 fix independent of visual channel" but if visual channel native::selection A, no paint, but saved rects still wrong if selection itself wrong; D1 same root. okay.
+
+Potential issue: D2 B "replace with rAF 60Hz" but browser events "mousemove" processed 120Hz/144Hz; rAF at display refresh. On 120Hz display, rAF 120Hz, still max. Electron likely 60. okay.
+
+Potential issue: §5.2 optional P2 "period adaptive >8ms frame skip 30Hz" Maybe with 120Hz, skip not half? Not spec. optional.
+
+Potential issue: rAF schedule on selectionchange "本帧未排程" but how to avoid stale after DOM text moved without selectionchange e.g zoom? They say zoom changes key; if mid-drag zoom occurs no selectionchange maybe stale visual until next selectionchange; "one frame stale settle" but no mouse movement no selectionchange? tooltip? Not issue.
+
+Potential issue: "setPaint constantly new objects causing portal re-render; React.memo with props stableization." In evaluateVisual setPaint new object each tick; if repeated rAF but selection unchanged due to event before frame, there may be still evaluateVisual setPaint same deterministic values; every frame can set same values. Scheduler cancels previous? It says schedule one per frame; if selection change event once but same? Each selectionchange definitely change. Could add guard if geometry unchanged? no. Minor.
+
+Potential issue: `selection-evaluate.ts` fast path has not in state if selection extends to multiple DOM? It might include findRangeAtOffset removed. But if raw range contains overlapping text nodes with no parent? Need "mergeLineRects" expects text node text? No.
+
+Potential issue: "cache bands WeakMap key span + baseline; mid-drag zoom one frame stale; known boundary." But bands and rects of a span depend on CSS line-height etc; if zoom CSS percentage not refresh? Windows browser zoom invalidates layout; gBCR still old? no.
+
+Potential issue: `WeakMap` with key "span element + baseline box size"; if zoom changes element same but pixelBox box changes; key includes baseline. Good.
+
+Potential issue: "G2 detector suppress paint and reject save toast at save before". The detection in fast path doesn't handle "clientRects 偏离率" maybe all malformed selections will produce divergence, but if saving prompt user. okay.
+
+Potential issue: "No implementation of T1 until F-A6-b; if T1 confirmed, modifying TextLayer/PdfPageCanvas will touch two text layer coordinate planes; if incorrectly implemented, could break normal PDFs." But F-A6-a evidence.
+
+Potential issue: "state space S7: after Escape tooltip closed, layer reserved; Q2: drag continues? Escape does not interrupt drag." In browser keyboard Escape while mouse button down? Does it clear current selection? likely not. okay.
+
+Potential issue: "Q3: cross-page recycling extreme form handled by effect cleanup." Under drag across pages, if anchor page removed, selection collapse? okay.
+
+Potential issue: F-A6-b changes annotation-anchor's mergeLineRects which affects save rects too, but D1 geometry source. Could affect annotation anchor tests. okay.
+
+Potential issue: "D1 diagnosis says `mergeLineRects` clustering judgement on abnormal line boxes" But user bug with "same PDF" maybe not reproduced? no.
+
+Potential issue: "D2 D2b every tick full-cost table has quote/prefix/suffix under visual zero consumption, but in full flow current immediate at mouseup needs these for pending. They propose fast path doesn't need anchor. At release, mouseup full evaluate recalculates. good.
+
+Potential issue: "Do not remove quote from current evaluateFull" maybe.
+
+Potential issue: "Scheduler settle 200ms zero"; if visual path rAF and onSettled still calls evaluateFull at pause >200ms. During continuous drag with events every 40ms, debounce reset constantly, no settle; visual updates every frame. But prior throttle trailing timer? New no trailing. Good.
+
+Potential issue: if selectionchange events stop after mousedown released? mouseup triggers evaluate immediate; if not enough movement, onMouseUp setPending null and return without clearing paint; but it says self-paint cleared by debounce on selection collapse. If selection remains but no mouseup and no selectionchange? okay.
+
+Potential issue: "selectionchange fires asynchronously? In browsers event fires many". rAF fine.
+
+Potential issue: "Guards in fast path duplicated; if any guard fails setPaint null but does it clear pending? Since visual only path shouldn't clear pending; in current visualOnly false if visualOnly? Actually evaluate(false,true) visualOnly true, all null guard branches use `if (!visualOnly) setPending(null)` so pending preserved. New evaluateVisual same. But if onSettled full evaluate uses same guards, pending cleared. Good.
+
+Could BLOCKING: Four guards list (i)-(iv), but design §5.2 says "settle path 防抖 200ms 与 mouseup 即时全量逐字保持" and "mouseup cancel-before-evaluate". In B, evaluateFull retains four guards. okay.
+
+Potential issue: "evaluateFull 现行逻辑迁移" but to remove visualOnly branch, if returns need not differentiate "fromMouseUp" for toast. But `fromMouseUp` controls cross-page toast for full path. When mouseup full, true. When settle after pause (no mouseup) false. Current evaluate(false,false) on settle, if cross-page, no toast. In visual path no toast. So migrate.
+
+Potential issue: There is no mention of removing `visualOnly` on code branch `if (visualOnly) return` after setPaint: full path starts pending. Fast path separate. Yes.
+
+Potential issue: "INV-58 anchor: same fixture equivalence test." Good.
+
+Potential issue: "settle products same-frame overlay fast-path product" but tests maybe with fake timers/rAF. no.
+
+Potential issue: "Fast path not used after mouse delay >200? settle? Some selectionchange after mouseup? mouseup evaluate full. settle full. Good.
+
+Potential issue: "B table says Settle path semantics zero change" but state S1' "拖选停顿 >200ms 工具条提前弹出" remains. Yes.
+
+Potential issue: "paint object union rects not including text nodes? raw selection range getClientRects returns DOM range rects including text; current anchor rects includes from first/last to offset; similar. Potential discrepancy in prefix/suffix? okay.
+
+Potential issue "D1 公共面是三案公共（几何源头修复，与视觉通道选择无关）" Yet G2 suppression and rejection uses paint; if A native selected then G2 no way to suppress native visual and could reject save, but A def. no.
+
+Potential issue: "T1 rotation issue not included in current D1 matrix equality? T1 is "候选中 endOfContent? no."
+
+Let's see if any conditions:
+Kimi §2-§0 says "T1 ... no design can preselect as first discriminant; only equality matrix item" Design §2.2 says "T2/T3... T7...", T1 first in list "形态分类清单: T1页旋转; T2..." Wait is that contradictory? In §2.2, T1 appears first in morphology classification list (not explicit priority). "列入取证矩阵 T1 项，判别优先级由取证票按复现结果裁定" yes. It says classification list order T1 first, but not priority. Could be okay. However §2.1 order: markedContent then T1. They say "取证矩阵平等项，不预选". But in §2.2 "判别准则" says "original clientRects wrong→T1/T5 (source fix)" not T1 priority. okay.
+Kimi §2-§5 guard force included in §5.1, but in "selection-evaluate.ts new evaluateVisual (fast path raw range...) guards before" okay. Need if guards in actual "new file's implementation"? design enough.
+
+Consider status "涉修订：ADR-0019 R3、INV-37 条款、新 INV-58" yes.
+
+Now potential BLOCKING: The design's §5.1 states "快路径每 tick 必须复用 current evaluate four guards: (iii) 页外/textLayer 缺→setPaint(null)." But if textLayer absent, how can `getClientRects` from raw range include non-text? If user selects outside page but same `anchorRoot` pageRoot because root? For example selection starts/ends on page container whitespace outside textLayer? closestPageRoot same page pageRoot; textLayer exists only if selection within text layer? If selection includes text within text layer plus outside? Range getClientRects can cover outside and inside; normalization to textLayer box works? current selectionToAnchor if anchorRoot textLayer exists and selectionToAnchor may include text? if textLayer exists, text nodes inside? Range outside includes page no text? textLayer non-null. But if pageNo non-null and textLayer exists, it passes current. It doesn't restrict both endpoints text nodes. Wait current `selectionToAnchor(textLayer, sel)` receives textLayer and sel; likely collectSpans inside textLayer and maps offsets? If selection includes outside, maybe anchor null? Unknown. Existing four guard not include whether all selected nodes inside textLayer. "页外" maybe means closestPageRoot null. So possible new same bug? The guard says textLayer absent, not range inside text layer. But current behavior had same. no.
+
+Potential issue: "closestPageRoot(anchorNode)" when anchorNode is a text node inside text layer; crosses pageRoot. If anchorNode is pageRoot itself? returns page. okay.
+
+Potential issue: "fast path uses raw range Range.getClientRects with span-level CSS maybe includes text layer; no need collectSpans?" no.
+
+Potential issue: "B selects self-drawn single layer but if PDF wrong, G2 rejects save toasts only on save, but state says S9 detector suppresses paint rendering on detection. If paint suppressed during selection, user may not have anchor to act? Maybe detector runs at start and suppresses, then save toast from G2. okay.
+
+Potential issue: "用户体验: user may complain cannot select corrupted pages; better than wrong save. okay.
+
+Potential issue: "T1 page rotation if confirmed fixed, but no "TextLayer rotation channel" proven enough. If user's PDF has no rotate? A evidence.
+
+Potential issue: "diagnostic script cannot find current selection because selectionchange state after mouseup clears; need reproduce programmatically via e2e with selectText? It says user real PDF, script Electron devtools. If use user mouse, script must attach before interaction. okay.
+
+Potential issue: §2.2 "落盘 JSON" in renderer from devtools may not write FS due CSP? Electron main? no. Could use devtools save. But not design.
+
+Potential issue: "E2E new assertion '2 frames within paint geometry change'" But existing tests maybe no fxp etc. Can implement.
+
+Potential issue: "Testing locked-change file counts no direct evidence" We might list as WARN from Kimi maybe "Kimi flagged 6 ? items" The design revision says "Kimi K3 拟定裁决（scripts/audits/f-a6-design-r3.raw.txt——14 ✓+6 ? 清单在档）" But in package only full ruling, not raw 14? This package includes Kimi full with ? in section 3. The six ? items all package-external. The design status doesn't mention these "?"s all resolved? It says preconditions all; but Kimi §3 has ? items and §4 repeat to verify on A? Need check: If Kimi says "候选稿按 six edits revised then baseline; three conditions none absent". Some ? are accepted as "F-A6-c ticket re-list" e.g test files. The design revision still includes exact 17/14 etc and "grep tests"(claimed). Should our audit require these are WARN? We cannot independently verify because no evidence, but not necessarily finding if no packaged. Let's frame as "依纪律，包内无证据不背书；建议终裁时要求 F-A6-c 票实际 grep 输出重列, 不能按 17/14 写死"—but Kimi already asked. Design's implementation section uses them as if final, except §5.3 "具体数以取证裁决后票面先红清单为准." Hmm.
+
+Need identify independent new problems. Let's find enough.
+
+Potential internal contradiction #45 SelectionLayer "code organization red line" table in §0 says "改动: SelectionLayer 249→~200±5（本就贴250红线，必拆）" but §0 "B code organization: SelectionLayer 249→~200±5...红线解除". Fine. §5.1 line "SelectionLayer.tsx ... 249→~200±5" okay.
+
+Potential flaw: §4 "Benchmarks: code organization B new module selection-evaluate +~170; SelectionLayer ~200. code org total? okay.
+
+Potential flaw: "SelectionLayer.tsx exports closestPageRoot/pageIndex in two places? table selection-evaluate? no.
+
+Potential issue: "Fast path from selectionchange every frame, but current `SelectionLayer` listens selectionchange document-wide, so when selection in another tab? PageRoot effect per page; maybe only page with listener. no.
+
+Potential issue: "paint portal target root anchorRoot; if selection changes to another page by dragging across, visual path guard clears previous. If fast path eval abort before `setPaint(null)`? yes. Then mouseup full maybe toast. ok.
+
+Potential issue: "Q9: after S1' tooltip is visible and user continues dragging, in B visual path only setPaint not setPending, so tooltip remains stale until next settle. But current behavior also onVisual doesn't update pending/tooltip because visualOnly doesn't setPending. Wait existing visualOnly only updates paint, not pending. Yet S1' tooltip from prior settle remains; if user continues, tooltip doesn't move until next pause >200ms. Q9 says "toolbar position follows" only when next settle; but §Q9 says "pending 被下一次 settle 全量覆盖——工具条位置随动，无死锁." It doesn't claim during current drag. Existing semantics. okay.
+
+Potential issue: "During drag after settle and visual-only, if current selection extends beyond existing pending, fast path visual and saved pending (if user somehow saves by keyboard?) diverges severely until next settle. But invariant weakens at drag. okay.
+
+Potential issue: "INV-37 semantic weak "approx" but G2 rejects save if visual wrong. no.
+
+Potential issue: "D1 batch root cause T3/T4 etc: line rects y-sort interleaving only if adjacent line y intervals overlap. But line boxes generally do not overlap in y. However in abnormal text layer due to line height? Wait clientRects of spans selected in reading order, not visual order. Ah! This is an important one. `getClientRects` returns rects in DOM order (reading order), not visual top-to-bottom. For multi-column PDF or RTL? The y sequence may not be sorted. They use sorted? mergeLineRects "unique→sorted→rowGroups→segments" sorted by y? They maybe sort. Interleaving with tight lines/transforms means sort y yields fragments. okay.
+
+Potential issue: "only compare with last row cluster in sorted y order" If a row has multiple fragments with slightly different y; after sorting, fragments of row B may fall between fragments of row A if line boxes overlap y? likely in tight leading line boxes don't overlap if text line height > font height; but with fractional line boxes maybe adjacent glyphs overlap? Example CJK: line-height=1.2, font ascent+descent≈1.2, margins 0.1? adjacent line vertical ranges don't overlap usually. But transform/vertical-align could. If y intervals physically not overlap, no interleave; then T3 cannot cause wrong merge. But candidate says "y序交错时（紧行距/行盒整体偏移使相邻行盒 y 区间穿插）". Could happen if rotation? T3? no. Not need.
+
+Potential issue: `mergeLineRects` with "height comparable band [0.5,2]" can separate same line different font sizes; a2 compare last only. For same line base y and varying heights, sorted by y; rowGroups start at one span, neighboring sub/sup with y different but if within 2x height, maybe same cluster? If >2x, new row. T2.
+
+Potential issue: "centerLimit=min(pitch,domH,lh)/2 collapses fragments considered different row". okay.
+
+Potential issue: Range clientRects from multi-line selection are fragments sorted in DOM order but not necessarily line order. There is known behavior Chromium returns selection rects order in DOM order except reversed? For RTL? Could cause wrong. Not in design.
+
+Potential issue: "D1 user PDF maybe multi-column; T7."
+
+Potential issue: "Fast path current raw `range.getClientRects` may include multiple rects per text line; mergeLineRects same." okay.
+
+Potential issue: "D2 current E2E S1b zero feedback red line" no.
+
+Potential issue: "In selection-evaluate fast path, replacing span Enumeration with raw Range loses `textNodes` info needed for bands cache? raw range itself can be used? They also need selected textNodes for bands. Design says fast path removes collectSpans and bands cache from session. But bands are per span? "拖选会话缓存 (span band/fontSize/baseline)". How to compute bands if no textNodes? Maybe Range.getClientRects and detect spans? Wait "bandsForTextNodes" needs actual textNodes for each rect. Fast path raw range doesn't enumerate spans, so cannot match bands to rects? In current selection-paint, bands are RowBand[] and each rect matches by `matchBand` center. To build RowBands maybe from range textNodes. Design says "快路径：raw range clientRects→同源 merge→缓存 bands" But to know which text spans are selected for band cache, it might still need collectSpans? Maybe "band" cache can be from selected textNodes determined by Range? Range can get textNodes from start/end; but current D2 redundant says no need full textNodes, only visual range; but for bands maybe need list of spans anyway? Let's examine current setPaint: `range = findRangeAtOffset(...)` returns `{textNodes}`; bands = bandsForTextNodes(range.textNodes.map(t=>t.node), pixelBoxOf(textLayer)). In fast path if don't call findRangeAtOffset, no textNodes. But raw range's client rects correspond to text; yet cached bands require text nodes. Could use `Range.getClientRects` only, but CSS style and bands for each selection rect need selected text node elements. One can derive selected text nodes by traversing range with TreeWalker, but that's what current second pass does? Wait `findRangeAtOffset` does collectSpans whole page and maybe returns textNodes; not just traversal of selected range? It says "textNodes" only selected increment additional. But to get text nodes overlapping range, a single traversal of range could be enough (selected nodes only), not full-page collectSpans. Kimi's redundancy list "textNodes 改由 Range 子树父元素枚举替代" suggests yes can traverse selected range. But design's fast path "raw range clientRects → same-source merge → cache bands" still needs selected text node elements for full text style? If bands only based on selected text, can enumerate range's common ancestor subtree, not full page. But design says "textNodes 改由 Range 子树父元素枚举替代" in redundant list and "快路径预算 ~选区矩形数级, not page scale." Are you sure? Enumerating selected range subtree still maybe O(selected text), good. But current second pass full collect spans is wasted. For target spans, need their CSS boxes; if "缓存命中", span list from previous frames? Initial fast path still needs selected text nodes once. If selection range changes every mouse pixel, selected text nodes list changes; if we traverse range selected, O(selection size) per tick maybe thousands spans, still not "rect count" and maybe costly. Could then used cached spent map. Perhaps.
+
+But Section 5.1 says fast path "raw range clientRects→同源 merge→缓存 bands" lacks explicit upstream: to update bands for a growing/shrinking selection, one must know selected text nodes or account for new spans. Could cache bands by spanning all textLayer? For current visual bands are whole page? Wait bandsForTextNodes gets selected textNodes only, returns RowBand for selected rows. If selection grows to a new text node not in cache, need query it. Need range traversal incremental. Missing. Maybe selection change fires and Range will be modified; can get commonAncestor and traverse only new part? not stated. This may be significant. But what does `RowBand` do? Bands define row clusters with vertical and horizontal clamp. `selection-paint` for each rect calls matchBand(bands,r) returns band with vertical top/height and clampedHorizontal. To render each rect, if no new span? If raw rect from new span is included, vertical from CSS box default may be okay, but user bug D1 depends on exact band. If only cached from selection start, new selection row won't get band and will fall back to r height? Actually if bands missed, selection-paint not possible because bands prop from paint? Bands could be full page? Let's understand architecture: `bands` RowBand[] derived from selected text nodes; if new span appears but no band, matchBand returns undefined; in SelectionPaint, band undefined => vertical top/r.y/height/r.h and horizontal r.x/r.w without clamped. That might show incorrect text box. But perhaps same geometry from raw range rect in local? no.
+
+Fast path summary says "bands 量测 getComputedStyle/measureText→拖选会话缓存（WeakMap键=span elem + baseline）" This cache doesn't explain how to find selected elements without collectSpans. Existing second pass `findRangeAtOffset` full page was also how first? But to reference cache, need at very least enumerate text nodes within current range. Is that less expensive than full page but still maybe. In D2b list "1. second collectSpans+rectsBetweenPoints+medianFontSize+merge full chain (100% redundant, textNodes replaced by Range subtree parent element enumeration)" This enumerates range. Good. Then fast path needs a selected text nodes enumeration with Range subtree. That can be done using range.getClientRects perhaps each rect has no element mapping; but can intersect rects with text spans? Hard. Maybe selected parent enumeration O(selection). But design doesn't list it in fast path budget. It lists only "1× getClientRects+1× gBCR+merge (CPU)+cache hit" no "range subtree enumeration". That might make budget unrealistic? Need inspect Rows: getClientRects itself returns rects but not elements. matchBand requires borders; SelectionPaint `bands` could be recomputed by iterating all selected text nodes; selected text count likely small for a normal selection, not whole page; maybe okay. But if drag across many pages? no cross page; selection across many lines on long doc could be millions chars; not. The "budget 亚毫秒 -2ms" implausible if using range enumeration + DOMRect. But moving selection by adding one line doesn't require recalc all spans if incremental? no detail. Could be a problem.
+
+Potential issue: "fast path uses current selection range; on each mousemove browser selectionchange maybe Range updates by adding/removing text nodes. Querying getClientRects each frame is required. To get bands for newly selected spans, one can run TreeWalker over common ancestor but only difference from prior; or perhaps easier: matches bands based on rect y and font metrics from rows not text nodes? RowBand source likely needs selected text nodes. The design's dream of not enumerating all spans is achievable by Range traversal only over `range.commonAncestorContainer` maybe all page if multi-block; but still not full page? PDF textLayer all text under page; common ancestor may be textLayer, so TreeWalker over entire textLayer = O(page), unless intersect with range. Need select range intersection. Could read `Range.intersectsNode` to test nodes? still full page unless starts at selection. Hard. But not impossible with selectors? Hmm.
+
+Maybe more fundamental: Rapt.
+Let's evaluate severe BLOCKING: Fast path's "no full page collectSpan" requires selected text node enumeration. Proposed fast path due to `range.getClientRects` provides geometry directly; but current `bandsForTextNodes` takes selected textNodes. Need selected textNodes to create `bare bands`. The new evaluateVisual's output must include bands. If omitted, selection-paint fallback may show wrong due no band; violating D1 "public face" fix? Actually public geometry fix plus bands? Wait Paint per rect has vertical style normally from band; if no band, it draws rect's own raw y/h from merge. But with abnormal rows, D1 rendered wrong because row boxes CSS height overflow; bands correct. If fast path doesn't compute band, visual during drag may be wrong (less correct); settle after release will layer correct. But user's D2 + D1 maybe sees wrong visual during drag? Existing D1 complaint visible after drag? It may appear during drag too. If fast path initially lacks bands, D1 during drag remains wrong until settle. Could violate "B after drag? Hmm user would see wrong". Need maybe cache can eventually.
+
+The design says "bands 量测→session cache WeakMap key=span elem+baseline"—to build bands for growing selection, need identify new span elements. Potential.
+
+Could this be in §5.1 "selection-evaluate.ts new evaluateVisual (fast path: raw range clientRects→same-source merge→cache bands)" It doesn't include span enumeration. In redundancy list #1 "textNodes 改由 Range 子树父元素枚举替代" suggests an enumeration. But fast path chain lacks. The clean fix in a "fast path" likely:
+- fetch range.clientRects directly, merge, and for vertical bands use "band for each rect by span?" Need span from rect not given.
+- Or maybe legacy `mergeLineRects` original input is `Range.getClientRects()` and does not know text nodes; vertical is rect itself. `RowBand` from selected text nodes uses font metrics but fast path can omit bands and use merged rect exactly. Since D1 source fix plus `mergeLineRects` maybe no need RowBand? Wait SelectionPaint uses bands for vertical top/height to avoid CSS line box overflow, but if rect raw comes from text selection text frame, why does row box not match? Actually bandsOverTextNodes from actual selected text nodes? Not sure. In current code if selected text nodes inside text layer with per-span positioning, range.getClientRects yields precise glyph boxes, not whole line boxes. Then `bands` from textNodes maybe yields same? Actually F-A5 says "vertical=band (top to glyph top/bottom edge) — fix previous CSS fallback row box on small font overflow". If Range.getClientRects returns fragment boxes tied to text node range, likely precise. mergeLineRects groups fragments into line/row by y and x union. Bands based on text nodes and median font? Why F-A5 band issue? It computes RowBand independent of range maybe for rendering each rect at correct row height.
+
+Need not delve.
+
+As adversarial reviewer, we can flag "span enumeration for bands missing" maybe WARN/BLOCKING. But we lack exact code of `RowBand` and `selection-paint`? Source excerpt "bands=RowBand[]" and selection paint if band undefined uses rect r.y/h; so not fatal, but D1 maybe.
+
+Potential "B new fast path doesn't satisfy INV-58 no second geometry because it bypasses `selectionToAnchor` but still uses same merge functions if `getClientRects` output differs inside different scales due CSS transforms. But same source can be. no.
+
+Potential "raw range clientRects vs selection anchor Range reconstructed: raw Range in a text layer may be in live DOM; reconstructed range from offsets at settle is different object but same bounds; boundary offsets may resolve differently if text is changed between drag and release." They mention.
+
+Potential BLOCKING: "C as fallback if B still laggy after land" but design selects B; if B fails after implementation, C would require reverting B? It says C "backup standalone, forbidden with B (P10 switch rule=delete old)." If B is already integrated in production? P10 means plan switching delete, but C maybe cannot coexist. okay.
+
+Potential issue: "D2 root cause "200ms节流" maybe semantics is intentional tooltip debounce; to improve, a leading immediate and trailing? They change visual to rAF; no issue.
+
+Potential issue: "Settled path with 200ms debounce is not canceled/reset after mouseup? Existing onMouseUp cancels scheduler then evaluate full. But if selectionchanges generated by findRange etc after save remove ranges? Document selectionchange event scheduler.handler still attached; after `removeAllRanges`, selectionchange triggers scheduler.handler and may schedule settle evaluate after 200ms, which will evaluate empty and clear paint/pending. But save already clear; okay. Could happen after onMouseUp full evaluate? remove selection by user maybe. fine.
+
+Potential issue: "No memo in SelectionPaint but adding memo may not prevent rerender because paint object new, parent re-renders; with memo props object new so no effect unless object normalized. props stableization includes same arrays? setPaint creates new rects arrays; no.
+
+Potential "fast path cache bands WeakMap text span + baseline; if baseline changes due to layout mid-drag, old values expire. Good.
+
+Potential issue: "T1 F-A6-b modifies TextLayer rotation; if T1 false line deleted but if true feature cannot be certified because F-A6-a is user-specific PDF diagnosis; maybe general. no.
+
+Potential issue: "S9 state detector (post取证) not fully specified; if G2 threshold unknown, no acceptance criteria before implementation. We can WARN.
+
+Potential issue: "Design says 'D1 common surface fix orthogonal to visual channel selection' and 'three options compare only D2'; but A returns native ::selection visual channel and thus D1 visual original wrong? Actually A's native selection also visual with overlay? Chromium draws native selection over text spans; if text span transformed/rotated? maybe follows spans, can be wrong. D1 fix at text layer source can fix. A uses no paint/bands so no self-draw with union and bands; when selection spans glyphs, native selection color may not merge and overlap causing darkening? R1 issue. okay.
+
+Now we need create audit with 3 sections plus findings. Need under 200 lines. Each finding with location/problem/evidence/fix. Should not too many but enough. Need maybe four categories:
+- BLOCKING none or one?
+Let's decide overall PASS_WITH_WARNINGS due no fatal issue but maybe need fix before final? Wording: "有条件通过/通过附警告" Perhaps "PASS_WITH_WARNINGS" if design adoptable with warnings resolved on implementation/tickets; maybe no BLOCKING. But we can include an "issue requiring registration as explicit precondition" because invariant contradiction. Should it be BLOCKING? Let's judge.
+
+Potential "INV-37 contradiction" is serious because B can only adopted under semantic weakening; if tables say "保持", user might think invariant no change and sign off. Since design asks user "拍板", and §6 has explicit weakening but §0 not. The status says "待用户过目方案". For user overread, must not hide. Kimi also noted "必须显式登记，不得隐含". The design included §6 but §0/§4 rows "保持" without "≈" is maybe not hiding because §6 known. Classification WARN/blocking? I'd say BLOCKING? The "三前置条件" doesn't include this? It was Kimi's §2-§6 rewrite. It has been incorporated. But contradiction between "保持" and "弱化" undermines user decision. Maybe BLOCKING? Yet not a design invalid, just text tightening. Could still be final pending minor. "PASS_WITH_WARNINGS" is likely expected, not FAIL unless truly broken.
+
+But is there hidden BLOCKING cause from "Kimi conditions all fall but the T1 issue is outside package, so D1 root cause unresolved"—Should design be FAIL due incomplete evidence? No Kimi allowed evidence ticket F-A6-a and "取证票先行" after design approval. This is process-designed. okay.
+
+Need maybe include "No BLOCKING; findings WARN/NIT".
+
+Let's craft findings:
+
+WARN-1: Invariant contradiction between §0/§4 "INV-37 保持" and §6 "语义弱化". Location §0 table row, §4 B row, §6 R3⑤. Evidence: §0 says "保持（快路径同一几何管线；松手瞬间快→settle 可有贴边级跳变）" while §6 says "弱化……所见≈所存". Fix: At first two rows use "保持（语义弱化已登记，拖选期≈，松手/保存严格）" or separate. Also note §4 table "INV-37 修订面: 小（INV-37 调度条款+INV-58新增）" missing semantic weakening; adjust.
+
+WARN-2: evaluateVisual data pipeline not closed: no step from raw Range to selected text nodes/span maps for bands/cache. §5.1 chain "raw range clientRects→同源 merge→缓存 bands" cannot initialize cache on newly selected spans without an enumerated text node set; current bandsForTextNodes requires textNodes. The design in §3.4.1 says replace textNodes by range subtree enumeration but then doesn't put this step in evaluateVisual module description or tick budget. Could understate cost/substitute a new O(selection) pass. Fix: in selection-evaluate.ts list selected textNode enumeration/incremental update step and account; or define bands as optional during drag and allow fallback? Must explicit.
+
+WARN-3: Fast-path "raw range clientRects" coordinate system/normalization not explicit. Existing anchor rects normalized by pixelBoxOf before setPaint (SelectionPaint uses percent). §5.1 guard note only normal baseline, but no transform in pipeline. Could produce same root error? Wait if raw range gBCR coordinates and merge functions inputs expected viewport? unknown. The fix: state equation: localRect = viewportToLayer(range.getClientRects / textLayer.getBoundingClientRect?), same as settle. Actually guard says normalization baseline selection page textLayer. Need add in chain. Good.
+
+WARN-4: Some execution plan promises "if one test turns red, implementation deviated" (§5.3 selection-layer.test expected zero changes). But §5.2 rAF change can alter timing that selection-layer assertions on mouseup? It says all zero; but changing scheduler where `createVisualScheduler` replaced with rAF semantics may affect test if selection-layer test asserts visual cadence? Without evidence. Not necessary.
+
+WARN-5: Test counts/external file numbers from package cannot verify; Kimi already "?". However design says "grep实测" no output; F-A6-c ticket must recalc, not lock-in. Maybe not.
+
+WARN-6: Diagnostic & G2 vague: "diverge threshold" not defined and no acceptance; G2 can be an unbounded open implementation area. §2.3 says detector "取证后" and §5.4 says F-A6-a decision table. Since a may decide no need. WARN.
+
+WARN-7: The new "S9 detector" in fast path on each tick may itself be expensive/layout with pixelBox every frame; if computing deviation via all clientRects every tick? Maybe not.
+
+Potential "T1 and text layer rotation: duckViewport rotation channel in §5.1 appears in B blueprint despite T1 unproven; row says if T1 false delete. Because user needs choose point ② "whether rotate fix included". §0 "用户需拍板 point ②". It should not be in F-A6-b until decided; but fine.
+
+Potential "NIT-1: §2.2 list has T1 first, could infer priority despite no preselection"; but no.
+
+Potential "NIT-2: In §5.3 new script f-a6-diag.mjs has "~+150 (birth on locks:generate+apply)" though diagnostic scripts under scripts/audits not renderer; no "locked change". no.
+
+Potential "NIT-3: Style: "SelectionLayer 249 → good." no.
+
+Need include "independent verification of Kimi conditions": T1: yes no preselection? verify text. markedContent yes "预判证伪" not 证伪; yes. Four guards exact. Also verify §2-§6 condition ⑤ text exactly. Good.
+
+Need perhaps mention "the two conditions T1 & markedContent depend on outside-package evidence; the revision has honored wording but not converted evidence; F-A6-a remains mandatory." Good.
+
+New issues:
+Need include "new, not mentioned by Kimi" explicitly clear: WARN-1 etc. Maybe in findings categorise "Kimi未提"; Since Kimi also required explicit weakening, contradiction is partly new.
+
+Let's also consider "B table's claim "INV-37 only dispatch clause" contradiction with Kimi's semantic weakening; because Kimi asked add to R3 ⑤; design also added section 6. Actually §4 table row "INV/ADR revision scope: B small (INV-37 dispatch clause + INV-58 new)" could be interpreted scope not semantics. But same row "所见即所存 INV-37 keep". This should be flagged.
+
+Now line count estimate: Need keep under 200 lines. We can use headings and list. Chinese.
+
+Potential "BLOCKING" none; should "PASS_WITH_WARNINGS". Provide "0 BLOCKING, 5 WARN, 3 NIT". More concise.
+
+Let's formulate:
+
+1. 审核裁决
+- PASS_WITH_WARNINGS not pass unconditional.
+- state "终裁建议：附条件通过，警告项须落入 F-A6-a/c 票面或终稿修订，不必重新设计。"
+
+Findings:
+BLOCKING none.
+WARN-1: INV-37 consistency:
+Location §0三案一表/§4对比表/§6⑤.
+Problem: First tables claim "保持", §4 says revision face "仅调度条款", §6 says "语义弱化 explicit". What should user decide? It is exactly "弱化". If user reads §0 they'll think no semantic change.
+Evidence: §0 row: "所见即所存 INV-37 | 保持…"; §6 "弱化为显式代价"; §4 "INV-37 仅调度条款".
+Fix: all tables replace "保持" with "拖选期弱化（≈）+松手/保存严格恢复"; the revision columns include "INV-37 语义弱化登记".
+
+WARN-2: fast path span/band enumeration gap.
+Detailed as above.
+Location §5.1/§3.4/§5.2.
+Problem etc.
+Fix: update.
+
+WARN-3: No normalize detail.
+Location §5.1 selection-evaluate chain.
+Problem etc.
+Fix.
+
+WARN-4:
+Maybe "new fast path's DOM read order and rAF setPaint":
+No, maybe not.
+
+Let's find another strong warning independent:
+
+WARN-4: T1 "not preselected" but F-A6-a diagnostic needs instrument. Diag script includes "环境段 page.rotate" but script doesn't know how to access page.rotate in DOM; no package evidence of app global exposing pdfPage. If script uses Electron devtools evaluate only, cannot retrieve `page.rotate` inside module closure. It can query maybe `document.querySelector('canvas').__pdfPage`? no source. Design requires implementation of probe without described injection surface. F-A6-a has no code? But script is code. Could be WARN with fix "F-A6-a first decide probe access and may add temporary expose only in test build". However if T1 is package external, any page.rotate probe requires PdfPageCanvas context or query PDF.js API. no evidence.
+
+WARN-5: T5 "span CSS box wider than ink" no repair if systemic; but "clampedHorizontal source wrong". Detection threshold undefined for G2. Maybe okay.
+
+WARN-6: "Should not implement S9 detector if no evidence of irreparable; open scope for F-A6-a. no.
+
+NIT:
+- NIT1 §2.2 order T1 first; though says equality, change label to "按判定链顺序" to remove ambiguity.
+- NIT2 §5.3 Table "selection-layer expected zero change" understate "if red indicates implementation deviation" can be dangerous; tests around scheduler may change? Not.
+- NIT3 "visual tick budget not measured; D2 says ten-milliseconds plausible but not performance benchmark in package. Add F-A6-a to record tick duration and pre/post."
+
+Need verify conditions section:
+T1: check §0 and §2.1 wording. Need output "落实: 是". Mention no "预选 first" but there is "T1" first in morphology list; §2.1 says equal and priority by ticket; acceptable? Maybe should "基本落实" because T1 still first in matrix list? But there is no "first discriminant"; no "priority". Since user wants audit. We can verify fully or with caveat. I'd say "已落入，但 §2.2列表顺序仍将 T1 置于首位，建议加序说明" NIT.
+
+markedContent: yes "预判证伪"; endOfContent stays 证伪; good.
+
+four guards: yes all i-iv copied.
+
+§2-§2① anchor c yes.
+
+§2-§5 TextLayer line adjusted yes.
+
+§2-§6 explicit weakening yes.
+
+Also if include "from K conditions all three are textually in; no missing textual obligation except need not make them top-level acceptance criteria"? Good.
+
+Need perhaps mention "Condition: T1 downgrade and markedContent wait can't be bled into B implementation before F-A6-a." In blueprint F-A6-b includes TextLayer rotation after a. It says if T1 false delete. That's okay.
+
+Let's guard line count. Each line maybe 5-10 chars. We can make around 150.
+
+Need Chinese with Markdown. Must not exceed 200 lines. We can produce about 120 bullets.
+
+Need ensure evidence in package: cite design text quotes. No fabricated names? Source code excerpts line references if no numbers? Some refer to line numbers. okay.
+
+Let's craft with moderate detail.
+
+Potential add "独立核验"
+- T1: Passed. Quote §0 phrase, §2.1 phrase. Maybe note "没有把 T1 作为取证优先项" but "取证矩阵 T1 项".
+- markedContent: Passed. "预判证伪待核" remains. But perhaps "prejudgment proven pending" phrasing weird; Kimi wanted "prejudice 证伪" (not truth). good.
+- four guards: Passed. Full list quoted.
+- Also "Kimi 2-§6 condition"? Since user asked third from Kimi "three preconditions" not include §6 but "四道守卫条款" says third. Actually user's list in output says "T1降级/markedContent待核/四道守卫条款——逐条核对修订稿文本" so yes.
+
+Need in findings ensure no repeated Kimi issues. We can label "Kimi未提". 
+
+Maybe another major new issue: "§2.3 G1/G2 and §5.4 F-A6-a: G2 detection only after取证 confirms irreparable (T5). But in state S9 table at §1 says "D检测器（取证后定）" and S9 in all states. If G2 is optional, why S9 a formal state with "detector after forensics"? no issue.
+
+Potential issue: "F-A6-b pipeline repair modifies anchor's geometry used by settled save; if public geometry repair changes root cause, may affect existing annotations? no.
+
+Potential issue: "Non-A/B? no.
+
+Need perhaps mention not blocking "visual results approximate weakens INV-37; user must make informed choice: §0 '拍板① keep >200ms' but not ask "invariant weakening?"; The design asks users to approve final implementation but not explicitly "INV-37 semantics weakening" in §0 one-page decision. That's dangerous because status says pending user over. The §0 one-page has "用户需拍板": ① tooltip semantics; ② rotate fix; ③ fallback. It doesn't ask user to approve "INV-37 semantics weakening #5", only footnote in §6. But "所见即所存" is core user guarantee; if weakening needs user decision, should be in §0, not hidden in §6. This is serious and new. It combines with INV contradiction. Let's elevate WARN-1: "INV-37 weakening is required by Kimi but not in §0 decision list. The document's status says pending user over §0; user must explicitly拍板 weaken." This is important. Fix.
+
+Potential issue: "D2 B chosen; C fallback if B still lag. If B's fast-path visual is sometimes approximated, a user who originally asked "所见即所存" might prefer C? C drag period no same. no.
+
+Potential issue: "D1 T1 evidence outside package; F-A6-a before b but design gives F-A6-b "TextLayer rotation" and TextLayer +25 line change, estimated but not actual; okay.
+
+Potential issue: "ADR R3 §6 amendment says "INV-37 semantic weakening is explicit cost" but invariants doc update maybe final R3, okay.
+
+Potential issue: "If fast-path not exact, INV-37 weak in drag; state table row S1 '自绘层 5Hz…' doesn't mention potential D1 wrong during drag? no.
+
+Potential issue: "B's settle full authority at mouseup, but fast-path K visual track may produce bands? if no textNodes, fallback. Already.
+
+Potential issue: "v visual "raw range clientRects" = browser selection paint geometry. If doc has overlapping text spans (F-A4/R1 root), raw range clientRects might produce overlapping rects; but merge union layer prevents alpha stacking? Actually raw rects for overlapping text layers might overlap before merge. It says same merge. If overlap rects become separate by row/segment? Current F-A4 mergeLineRects + mergeRects from anchor.rects ensures merged rects separated? 0.36 root fix relies merging overlapping spans into one? Wait if overlapping from multi-line same positions but different spans, range selection on top span only? user's R1 issue "overlapping inline spans" likely simultaneous selections not overlap. no.
+
+Potential issue: "Fast path raw Range getClientRects includes rects in DOM order but if includes text nodes hidden? getClientRects excludes display:none and zero? okay.
+
+Potential "New S9 detector in fast path: if "异常 PDF" and G2 says suppress paint + toast on save; if suppressed paint, D1 visible gone; okay.
+
+Potential "D1 source fix uses mergeCluster to all rowGroups, with e.g. many rows with overlapping y due text frame transforms could merge all into one. Guard? Existing annotation-merge precedent handles? no.
+
+Potential "T1 repair if true: canvas viewport with rotation vs duckViewport rotation 0. If TextLayer's CSS transform is maybe already aligned by parent? no.
+
+Potential "scale factor line in diag includes --scale-factor CSS var? no.
+
+Need choose findings not too speculative. Need all "assertions fall on package evidence"; our concern about missing textNodes in fastpath can be anchored by current code snippet: SelectionLayer setPaint calls bandsForTextNodes(range.textNodes.map(t => t.node), pixelBoxOf(textLayer)); and design proposal "evaluateVisual raw range clientRects→merge→cache bands." It doesn't mention `range.textNodes`, so gap anchored.
+
+Need concise.
+
+Potential WARN-4: "Existing rapid scheduling function currently no direct test; §5.2 says one new unit at least. But 5.3 "selection-layer.test expected zero change"; if visual update now asynchronous rAF (not synchronous), any selection-layer tests that simulate selectionchange and assert immediate may red. Kimi package no test file. But design said no direct test? Hmm.
+
+Let's inspect test evidence from package: none. We can say "Cannot verify; not WARN because Kimi already known".
+
+Potential WARN: "createVisualScheduler no direct tests; replacing scheduler to rAF with React 18 act not tested in component? They plan new. okay.
+
+Potential WARN: "Performance budget no 'measure' until real device" etc.
+
+Need overall final maybe "PASS_WITH_WARNINGS" with warnings must be carried in F-A6-a/c. If need choices for Kimi "conditions all textually in", yes.
+
+Let's draft.
+
+Line count: 120-180. Use line breaks after each list.
+
+Need maybe avoid too much "Kimi also said" in new section. We can say "以下为未充分覆盖".
+
+Let's create final now.

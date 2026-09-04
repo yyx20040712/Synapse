@@ -1,0 +1,726 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [32m✓[39m tests/unit/renderer/lineage-viewport-scale.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m② 尺寸变化 refit：挂载（W1 gBCR 回退口径）fit 后改 clientWidth=W2→派发 callback→transform=fitViewport(nodes, layout, W2, H)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑦ 无自激励（S5）：callback 内 setViewport 新值重渲染→无新 RO 注册/disconnect/重复 observe
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-viewport-refit.test.tsx[2m > [22m[2mF-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）[2m > [22m[2m⑧ 初始回调幂等（回炉 1 W3）：挂载非空图（fit effect 已跑）→手动派发一次桩 callback（模拟 observe 后规范要求的初始通知）→transform 与挂载 fit 结果相等
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/lineage-viewport-refit.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[90m 63[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m节点文本真实渲染（标题与年份可见——「渲染出真实文本」红线）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m主题节点样式区分：paperId null 标记 data-kind=theme，文献节点 paper
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m空图空态文案（导入/添加入口归 LG-03——本单仅文案不留死按钮）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2mW2 回归：空→非空转场后 pan/zoom 可用（listener 不因空态首挂载失绑）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2m覆盖节点用覆盖位置渲染（不参与自动布局）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— 只读渲染[2m > [22m[2mSR2-LG-07 边 label：沿贝塞尔中点渲染真实文本；空 label 边不渲染 text
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mzoom：滚轮上滚放大（scale>1）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mzoom 钳制：连续放大不超 4，连续缩小不低 0.25
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mpan：空白处拖拽平移（translate 变化）；节点上按下不平移
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineageCanvas —— pan/zoom（INV-14）[2m > [22m[2mINV-14 成对清理：unmount 后 svg/window 上注册的 listener 同 type 同引用全移除
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2m「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageCanvas (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageCanvas.tsx:21:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mR2-LG10 auto-fit 视口自适应（票面 P1）[2m > [22m[2mR2-LG10 题名分档宽：长题名卡 rect 宽 260/短题名 180（nodeWidth 单源消费）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑧slots 传递：同锚两条长标签经放置器错开（两 FO 位置不等——回炉 1 R1 后首自由位=dx 第二档 166）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mF-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）[2m > [22m[2m⑨wheel 主动滚动（回炉 1 R2）：截断标签上滚轮→scrollTop 恰增 deltaY+zoom 不触发；未截断→zoom 正常
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mloading：挂载期呈加载文案，graph 取数一次
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready：取数成功渲染节点真实文本（经 store 分发，画布消费）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready 空图：空态文案（列表型空非错误）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mready 空图：空态文案（列表型空非错误）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2merror：取数失败呈错误条+重试按钮；重试再取数成功恢复
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2merror：取数失败呈错误条+重试按钮；重试再取数成功恢复
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mstore 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-canvas.test.tsx[2m > [22m[2mLineagePage —— 取数三态（lineage.store 数据单源）[2m > [22m[2mstore 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/lineage-canvas.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[90m 142[2mms[22m[39m
+[90mstdout[2m | tests/unit/renderer/lineage-board.test.tsx
+[22m[39mWarning: Please use the `legacy` build in Node.js environments.
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）[2m > [22m[2m拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）[2m > [22m[2m拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）[2m > [22m[2m单击=选中上抛（位移低于阈值不触发写）；onSelectNode 形态照票面（04 侧板消费面）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+[lineage-layout] 剔除 1 条破坏树约束的边（多父/环/自环/悬空——INV-27 service 层已守，此为布局防御第二道，不丢节点）
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+[lineage-layout] 剔除 1 条破坏树约束的边（多父/环/自环/悬空——INV-27 service 层已守，此为布局防御第二道，不丢节点）
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2m删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2mcore_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）[2m > [22m[2mcore_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 保存态指示（autosave-first：无保存按钮）[2m > [22m[2m失败指示+重试：error 条可见，重试点击重发；成功后指示消退
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 保存态指示（autosave-first：无保存按钮）[2m > [22m[2m失败指示+重试：error 条可见，重试点击重发；成功后指示消退
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 添加节点对话框（两型）[2m > [22m[2m文献型：library.list 搜索选取→paperId 绑定+元数据默认
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 添加节点对话框（两型）[2m > [22m[2m文献型：library.list 搜索选取→paperId 绑定+元数据默认
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 添加节点对话框（两型）[2m > [22m[2m文献型：library.list 搜索选取→paperId 绑定+元数据默认
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 添加节点对话框（两型）[2m > [22m[2m主题型：title 输入→paperId null 节点
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+    at LineageAddNodeDialog (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageAddNodeDialog.tsx:10:49)
+    at div
+    at LineageBoard (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineageBoard.tsx:23:39)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 添加节点对话框（两型）[2m > [22m[2m主题型：title 输入→paperId null 节点
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）[2m > [22m[2m确认接受→lineage/import 调用+成功计数 toast+graph 刷新（store 重取）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）[2m > [22m[2mconfirm 取消→不调 import 通道（无操作）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）[2m > [22m[2mconfirm 取消→不调 import 通道（无操作）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）[2m > [22m[2m校验失败=errors 清单 toast（汇总计数+首条 path/reason 真实文本）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2mLineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）[2m > [22m[2m校验失败=errors 清单 toast（汇总计数+首条 path/reason 真实文本）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2m组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）[2m > [22m[2mlineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at PaperDetailPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\PaperDetailPanel.tsx:54:11)
+    at aside
+    at div
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+    at TagFilter (E:\class\智慧水务\Synapse_remake\src\renderer\features\tags\TagFilter.tsx:10:11)
+    at div
+    at FilterBar (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\FilterBar.tsx:21:11)
+    at div
+    at LibraryPage (E:\class\智慧水务\Synapse_remake\src\renderer\features\library\LibraryPage.tsx:26:41)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at LineagePage (E:\class\智慧水务\Synapse_remake\src\renderer\features\lineage\LineagePage.tsx:14:40)
+    at ErrorBoundary (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:101:1)
+    at main
+    at div
+    at div
+    at App (E:\class\智慧水务\Synapse_remake\src\renderer\app\App.tsx:157:49)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2m组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）[2m > [22m[2mlineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/lineage-board.test.tsx[2m > [22m[2m组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）[2m > [22m[2mlineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/lineage-board.test.tsx [2m([22m[2m14 tests[22m[2m)[22m[90m 145[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m52 passed[39m[22m[90m (52)[39m
+[2m   Start at [22m 07:30:39
+[2m   Duration [22m 3.38s[2m (transform 514ms, setup 0ms, collect 1.86s, tests 353ms, environment 6.04s, prepare 873ms)[22m
+

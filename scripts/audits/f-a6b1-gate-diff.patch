@@ -1,0 +1,488 @@
+diff --git a/src/renderer/features/reader/PageBox.tsx b/src/renderer/features/reader/PageBox.tsx
+index f82a362cec..0ad3471301 100644
+--- a/src/renderer/features/reader/PageBox.tsx
++++ b/src/renderer/features/reader/PageBox.tsx
+@@ -14,8 +14,9 @@
+  *
+  * ── 接口层 ──
+  * - export function PageBox(props: { no; size; zoom; boxWidth; rendered;
+- *     doc: PDFDocumentProxy | null; renderPage(no); onPageRender(no, payload);
+- *     onError(msg) }): JSX.Element
++ *     doc: PDFDocumentProxy | null; renderPage(no); onPageRender(no, payload,
++ *     geometry: PdfPageGeometry); onError(msg) }): JSX.Element
++ *   （geometry 第三参=F-A6-b1 T1/T9 页几何通道透传——类型与 PdfPageCanvas 同源）
+  *
+  * ── 架构层 ── / ── 生命周期层 ──
+  * - F-ARCH3 拆件纪律：函数形态原样迁（不加 useCallback/useMemo）；渲染窗口
+@@ -23,7 +24,7 @@
+  */
+ import type { PDFDocumentProxy } from './PdfDocProvider'
+ import { PdfPageCanvas } from './PdfPageCanvas'
+-import type { PdfTextContent } from './PdfPageCanvas'
++import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import { pageBoxHeight, type PageBoxSize } from './page-column-geometry'
+ 
+ export function PageBox(props: {
+@@ -36,7 +37,7 @@ export function PageBox(props: {
+   rendered: boolean
+   doc: PDFDocumentProxy | null
+   renderPage(no: number): JSX.Element
+-  onPageRender(no: number, payload: PdfTextContent): void
++  onPageRender(no: number, payload: PdfTextContent, geometry: PdfPageGeometry): void
+   onError(msg: string): void
+ }): JSX.Element {
+   const { no, size, zoom, boxWidth, rendered, doc } = props
+diff --git a/src/renderer/features/reader/PageColumn.tsx b/src/renderer/features/reader/PageColumn.tsx
+index 3cc456e49f..301ef0d23e 100644
+--- a/src/renderer/features/reader/PageColumn.tsx
++++ b/src/renderer/features/reader/PageColumn.tsx
+@@ -27,7 +27,7 @@
+ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+ import type { RefObject } from 'react'
+ import type { PDFDocumentProxy } from './PdfDocProvider'
+-import type { PdfTextContent } from './PdfPageCanvas'
++import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import { PageBox } from './PageBox'
+ import {
+   anchoredScrollTop,
+@@ -66,7 +66,7 @@ export function PageColumn(props: {
+   scrollContainerRef?: RefObject<HTMLDivElement | null>
+   /** 段④：渲染窗口内每页的覆盖层装配（TextLayer/标注层/AI 层+SelectionLayer 挂载位） */
+   renderPage(no: number): JSX.Element
+-  onPageRender(no: number, payload: PdfTextContent): void
++  onPageRender(no: number, payload: PdfTextContent, geometry: PdfPageGeometry): void
+   onError(msg: string): void
+   /** 段①：页列就绪（载荷=列宽基准：布局口径最宽页/最宽完整行原始宽，fit-width 分母单源）；
+    *  可见页上抛（SelectionLayer 锚定页挂载位消费——升序） */
+diff --git a/src/renderer/features/reader/PagesOverlay.tsx b/src/renderer/features/reader/PagesOverlay.tsx
+index 164abcdb18..6094477f60 100644
+--- a/src/renderer/features/reader/PagesOverlay.tsx
++++ b/src/renderer/features/reader/PagesOverlay.tsx
+@@ -10,11 +10,12 @@
+  *   ④ 换文献清缓存 effect（键 fileUrl，只清两表——setPdfDoc(null) 留 ReaderPage，
+  *     pdfDoc 是 OutlinePanel 数据源=布局职责）；
+  *   ⑤ handlePageRender（PdfPageCanvas 渲染回报→页根域内量测 canvas CSS 盒→
+- *     Math.round 写 pageTexts；pageRoots 引用相等不重写）；
++ *     Math.round 写 pageTexts；pageRoots 引用相等不重写；回报第三参页几何
++ *     rotate/view 随条目存储——F-A6-b1 T1/T9 通道）；
+  *   ⑥ dropPageState（W3：两表同删）；
+  *   ⑦ renderPageLayers 覆盖层工厂（TextLayer 挂载条件 pt!==undefined /
+  *     AnnotationLayer 挂载条件 pr!==undefined / ReaderAiLayer 恒挂
+- *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom）。
++ *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom；geometry 下钻透传）。
+  * - 内装 PageColumn（十 props 全透传——F-R1 增 layout）：onPageRender（写
+  *   注册表）与 renderPage（读注册表）读写同源必须同居一组件——这是本组件
+  *   包 PageColumn 而非只提供工厂的原因（F-ARCH3 票面行为层）。
+@@ -46,14 +47,16 @@ import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { PageColumn, type PageScrollRequest } from './PageColumn'
+ import { SearchHighlightLayer } from './SearchHighlightLayer'
+ import type { PDFDocumentProxy } from './PdfDocProvider'
+-import type { PdfTextContent } from './PdfPageCanvas'
++import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import type { PageLayout } from './page-column-geometry'
+ import { TextLayer } from './TextLayer'
+ 
+-/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 该页 canvas CSS 盒） */
++/** 当前页文本与几何（成对更新：页号 + 文本载荷 + 页几何 + 该页 canvas CSS 盒） */
+ interface PageText {
+   page: number
+   text: PdfTextContent
++  /** F-A6-b1 T1/T9 通道：渲染回报的页几何（rotate/view），透传 TextLayer */
++  geometry: PdfPageGeometry
+   box: { w: number; h: number }
+ }
+ 
+@@ -87,13 +90,15 @@ export function PagesOverlay(props: {
+     setPageRoots({})
+   }, [fileUrl])
+ 
+-  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒） */
+-  const handlePageRender = (no: number, text: PdfTextContent): void => {
++  /** PdfPageCanvas 渲染完成回报：每页自量（按页号查该页盒内 canvas CSS 盒）。
++      第三参 geometry=F-A6-b1 T1/T9 页几何通道（rotate/view 原值入注册表，
++      透传 TextLayer——duckViewport rotation/rawDims 真值化） */
++  const handlePageRender = (no: number, text: PdfTextContent, geometry: PdfPageGeometry): void => {
+     const pageRoot = document.querySelector<HTMLElement>(`[data-page-root="${no}"]`)
+     const canvas = pageRoot?.querySelector('canvas[data-pdf-canvas]') ?? null
+     if (canvas === null) return
+     const rect = canvas.getBoundingClientRect()
+-    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
++    setPageTexts((prev) => ({ ...prev, [no]: { page: no, text, geometry, box: { w: Math.round(rect.width), h: Math.round(rect.height) } } }))
+     if (pageRoot !== null) setPageRoots((prev) => (prev[no] === pageRoot ? prev : { ...prev, [no]: pageRoot }))
+   }
+ 
+@@ -114,7 +119,7 @@ export function PagesOverlay(props: {
+     const pr = pageRoots[no]
+     return (
+       <PageFrame no={no} onRecycle={dropPageState}>
+-        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} /> : null}
++        {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} geometry={pt.geometry} /> : null}
+         {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
+         <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
+         <SearchHighlightLayer page={no - 1} pageRoot={pr ?? null} />
+diff --git a/src/renderer/features/reader/PdfPageCanvas.tsx b/src/renderer/features/reader/PdfPageCanvas.tsx
+index 71aeb59d79..2aa537326c 100644
+--- a/src/renderer/features/reader/PdfPageCanvas.tsx
++++ b/src/renderer/features/reader/PdfPageCanvas.tsx
+@@ -12,11 +12,12 @@
+  *
+  * ── 接口层 ──
+  * - export function PdfPageCanvas(props: { doc: PDFDocumentProxy; pageNo: number;
+- *     zoom: number; onPageRender(page: number, textContent: PdfTextContent): void;
+- *     onError(msg: string): void }): JSX.Element
+- * - pageNo 固定（页列模型：页码由 PageColumn 分配，不再跳变）
+- * - PdfTextItem/PdfTextStyle/PdfTextContent 类型单源驻本文件（pdfjs TextItem
+- *  /TextStyle 的结构子集——消费方 TextLayer/ReaderPage 不 import pdfjs-dist）
++ *     zoom: number; onPageRender(page, textContent: PdfTextContent,
++ *     geometry: PdfPageGeometry): void; onError(msg: string): void }): JSX.Element
++ * - pageNo 固定（页码 1 基；页列模型：页码由 PageColumn 分配，不再跳变）
++ * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型单源驻本文件
++ *   （pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方 TextLayer/
++ *   PagesOverlay 不 import pdfjs-dist）
+  *
+  * ── 架构层 ──
+  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
+@@ -64,6 +65,19 @@ export interface PdfTextContent {
+   lang: string | null
+ }
+ 
++/**
++ * 页几何通道（F-A6-b1 T1/T9 前置修复）：rotate=pdf.js page.rotate（/Rotate 值）；
++ * view=pdf.js page.view（CropBox∩MediaBox，[x0,y0,x1,y1] PDF 用户空间）——
++ * TextLayer duckViewport 的 rotation/rawDims 真值来源（与 canvas 渲染的
++ * getViewport 同源，二者不再各执一词）。userUnit≠1 的页 view 未乘 userUnit
++ * （官方 PageViewport.rawDims getter 会乘）——已知边界：真实库全档 userUnit=1
++ * （f-a6-forensic-verdict §1），触发后另行扩展
++ */
++export interface PdfPageGeometry {
++  rotate: number
++  view: [number, number, number, number]
++}
++
+ function errorMessage(err: unknown): string {
+   return err instanceof Error ? err.message : String(err)
+ }
+@@ -72,7 +86,7 @@ export function PdfPageCanvas(props: {
+   doc: PDFDocumentProxy
+   pageNo: number
+   zoom: number
+-  onPageRender(page: number, textContent: PdfTextContent): void
++  onPageRender(page: number, textContent: PdfTextContent, geometry: PdfPageGeometry): void
+   onError(msg: string): void
+ }): JSX.Element {
+   const { doc, pageNo, zoom } = props
+@@ -137,6 +151,11 @@ export function PdfPageCanvas(props: {
+         items: textContent.items.filter((item): item is PdfTextItem => 'str' in item),
+         styles: textContent.styles,
+         lang: textContent.lang
++      }, {
++        // F-A6-b1 T1/T9 通道：与 viewport 同源的页几何（rotate/view）下钻——
++        // TextLayer duckViewport 的真值输入（view 数组断言四元组由结构保证）
++        rotate: pdfPage.rotate,
++        view: pdfPage.view as [number, number, number, number]
+       })
+     }
+     render().catch((err: unknown) => {
+diff --git a/src/renderer/features/reader/TextLayer.tsx b/src/renderer/features/reader/TextLayer.tsx
+index 3f64b4cfce..58d7373b45 100644
+--- a/src/renderer/features/reader/TextLayer.tsx
++++ b/src/renderer/features/reader/TextLayer.tsx
+@@ -12,10 +12,13 @@
+  *
+  * ── 接口层 ──
+  * - export interface TextLayerProps { textContent: PdfTextContent; viewportScale: number;
+- *     pageWidth: number; pageHeight: number }
++ *     pageWidth: number; pageHeight: number; geometry: PdfPageGeometry }
+  * - export function TextLayer(props: TextLayerProps): JSX.Element
++ * - export function duckViewport(scale, rotate, view): PageViewport（纯函数导出供直测）
++ * - export function rotatedContainerBox(rotate, pageWidth, pageHeight): ContainerBox（同上）
+  * - textContent 为 PdfCanvas 回调的完整载荷（items + styles + lang）：TextLayer 按
+  *   fontName 查 styles 无回退，styles 必须真实传自 getTextContent（集成期实证）
++ * - geometry 必填（F-A6-b1：缺省即 bug 面——rotation/rawDims 无回退默认值）
+  *
+  * ── 架构层 ──
+  * - pdfjs-dist import 白名单三文件之一（INV-16：PdfCanvas/TextLayer/CorpusExtractor）
+@@ -28,7 +31,7 @@
+ import { useEffect, useRef } from 'react'
+ import type { CSSProperties } from 'react'
+ import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
+-import type { PdfTextContent } from './PdfPageCanvas'
++import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import './text-layer.css'
+ import { PAGE_LAYER_Z } from './page-layer-z'
+ 
+@@ -37,31 +40,73 @@ export interface TextLayerProps {
+   viewportScale: number
+   pageWidth: number
+   pageHeight: number
++  /** F-A6-b1 T1/T9：页几何（rotate/view）——duckViewport rotation/rawDims 真值源 */
++  geometry: PdfPageGeometry
+ }
+ 
+ /**
+  * v4 的 TextLayer 类要求 PageViewport 实例，但 PageViewport 类不从主入口导出
+  * （运行时实测 undefined；d.ts 仅导出类型）。类内部只读取 scale / rotation /
+- * rawDims 三个成员（4.10.38 源码核对），props 已含等价信息，按 PDF 用户空间
+- * 尺寸重建：pageWidth/pageHeight 是缩放后的 CSS 尺寸，除以 scale 还原原始页尺寸。
+- * 局限：页旋转（/Rotate 90/180/270）v1 不支持——props 契约无 rotation 通道
+- * （canvas 渲染不受影响，仅文本层对齐失效）；需要时扩展点在此函数的 rotation 字段。
++ * rawDims 三个成员（4.10.38 源码核对，F-A6-b1 复核仍成立：构造器 #scale=scale×
++ * devicePixelRatio、#rotation=rotation（update 重排+setLayerDimensions 写容器
++ * data-main-rotation）、rawDims→#transform=[1,0,0,-1,-pageX,pageY+pageHeight]+
++ * span 位置百分比分母；PageViewport.rawDims getter 语义=view 跨度×userUnit——
++ * 本仓 userUnit=1 全档成立，见 PdfPageGeometry 已知边界注）。
++ *
++ * F-A6-b1（T1/T9 前置修复，依据 f-a6-forensic-verdict §2/§5 阶段 1）：
++ * - rotation=geometry.rotate 真值（原硬编码 0——/Rotate≠0 页文本层与 canvas 墨带
++ *   错位，合成 S1 实证 outside 5/8 span 落盒外）；
++ * - rawDims=geometry.view 真值（原硬编码 pageX:0/pageY:0——CropBox 原点≠0 页整体
++ *   平移 x+36.01/y−37.40px，合成 S2 实证）。原「页旋转 v1 不支持」局限解除。
++ * 纯函数（数学域）导出供单测直测（tests/unit/renderer/text-layer.test.tsx）。
+  */
+-function duckViewport(scale: number, pageWidth: number, pageHeight: number): PageViewport {
++export function duckViewport(scale: number, rotate: number, view: [number, number, number, number]): PageViewport {
+   return {
+     scale,
+-    rotation: 0,
++    rotation: rotate,
+     rawDims: {
+-      pageWidth: pageWidth / scale,
+-      pageHeight: pageHeight / scale,
+-      pageX: 0,
+-      pageY: 0
++      pageWidth: view[2] - view[0],
++      pageHeight: view[3] - view[1],
++      pageX: view[0],
++      pageY: view[1]
+     }
+   } as unknown as PageViewport
+ }
+ 
++/** rotatedContainerBox 产物：容器 CSS 盒（90/270 带变换） */
++export interface ContainerBox {
++  width: number
++  height: number
++  transform?: string
++}
++
++/**
++ * 旋转页容器盒（F-A6-b1 T1）：pdf.js TextLayer 的 span 位置恒为【未旋转用户空间】
++ * 百分比（#appendText 数学不含页旋转），页旋转由容器 CSS 变换承担——官方
++ * pdf_viewer.css:3104-3112 通用规则 [data-main-rotation="90"]{transform:
++ * rotate(90deg) translateY(-100%)} 等（setLayerDimensions 已把 data-main-rotation
++ * 写上容器，但 repo 的 text-layer.css 只提取了 .textLayer 系规则、该通用属性
++ * 选择器规则无消费者——故在此内联等价变换，不动受锁 CSS 提取面）。
++ * pageWidth/pageHeight=旋转后 canvas CSS 盒（挂载方量测）：90/270 交换还原未旋转
++ * 盒（旋转后恰覆盖 canvas 盒——与 PageViewport 构造器旋转分支的宽高互换一致）；
++ * 0 零行为变（46 页真实库形态）。纯函数导出供单测直测。
++ */
++export function rotatedContainerBox(rotate: number, pageWidth: number, pageHeight: number): ContainerBox {
++  const rot = ((rotate % 360) + 360) % 360
++  if (rot === 90) {
++    return { width: pageHeight, height: pageWidth, transform: 'rotate(90deg) translateY(-100%)' }
++  }
++  if (rot === 180) {
++    return { width: pageWidth, height: pageHeight, transform: 'rotate(180deg) translate(-100%, -100%)' }
++  }
++  if (rot === 270) {
++    return { width: pageHeight, height: pageWidth, transform: 'rotate(270deg) translateX(-100%)' }
++  }
++  return { width: pageWidth, height: pageHeight }
++}
++
+ export function TextLayer(props: TextLayerProps): JSX.Element {
+-  const { textContent, viewportScale, pageWidth, pageHeight } = props
++  const { textContent, viewportScale, pageWidth, pageHeight, geometry } = props
+   const containerRef = useRef<HTMLDivElement | null>(null)
+ 
+   useEffect(() => {
+@@ -77,10 +122,11 @@ export function TextLayer(props: TextLayerProps): JSX.Element {
+     }
+     const layer = new PdfJsTextLayer({
+       // 完整载荷直传（items+styles+lang）：按 fontName 查 styles 无回退，
+-      // 自造空 styles 会让首个文本项崩——集成期实证
++      // 自造空 styles 会让首个文本项崩——集成期实证（载荷不含 geometry——
++      // textContentSource 不得加非 TextContent 字段，防 pdf.js 兼容面）
+       textContentSource: textContent,
+       container,
+-      viewport: duckViewport(viewportScale, pageWidth, pageHeight)
++      viewport: duckViewport(viewportScale, geometry.rotate, geometry.view)
+     })
+     // props 变化/卸载 → cancel() 令 render() 拒绝属正常控制流；其余失败仅损失
+     // 文本选择能力（canvas 阅读不受影响），本组件 props 契约无错误通道——
+@@ -89,16 +135,20 @@ export function TextLayer(props: TextLayerProps): JSX.Element {
+       console.error('[TextLayer] 渲染失败：', err)
+     })
+     return () => layer.cancel()
+-  }, [textContent, viewportScale, pageWidth, pageHeight])
++  }, [textContent, viewportScale, pageWidth, pageHeight, geometry])
+ 
+-  // --scale-factor 供官方 CSS 的 span 字号 calc 使用；宽高与 PdfCanvas 的 canvas
+-  // CSS 尺寸一致（inset:0 之上再显式给定，确保与页面盒对齐）
++  // --scale-factor 供官方 CSS 的 span 字号 calc 使用；宽高=canvas CSS 盒同源量测
++  // （inset:0 之上再显式给定，确保与页面盒对齐）；旋转页（90/270）由
++  // rotatedContainerBox 交换为未旋转盒并施加官方等价变换（T1——span 百分比
++  // 数学在未旋转空间，容器变换负责与旋转后 canvas 对齐）
+   // zIndex=层序常量单源显式化（与官方 css z0 同值——序防漂移，F-A5 c）
++  const box = rotatedContainerBox(geometry.rotate, pageWidth, pageHeight)
+   const style = {
+-    width: `${pageWidth}px`,
+-    height: `${pageHeight}px`,
++    width: `${box.width}px`,
++    height: `${box.height}px`,
+     zIndex: PAGE_LAYER_Z.text,
+-    '--scale-factor': String(viewportScale)
++    '--scale-factor': String(viewportScale),
++    ...(box.transform !== undefined ? { transform: box.transform } : {})
+   } as CSSProperties
+ 
+   return <div ref={containerRef} className="textLayer" style={style} />
+diff --git a/tests/unit/renderer/pages-overlay.test.tsx b/tests/unit/renderer/pages-overlay.test.tsx
+index ee94105d1e..3577159f7a 100644
+--- a/tests/unit/renderer/pages-overlay.test.tsx
++++ b/tests/unit/renderer/pages-overlay.test.tsx
+@@ -14,9 +14,9 @@
+  *   测试（onPageRender 回报入口+⑥ 透传锚断言面）；PageColumn 自身行为已由
+  *   page-column.test 锁定，本票不重复锁（主控预裁 3）。
+  * - TextLayer/AnnotationLayer/ReaderAiLayer：prop 快照桩——断言点是
+- *   viewportScale/pageWidth/Height/page/pageRoot 等 prop 值，层自身行为各有
+- *   测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client 顶层 window.api 赋值
+- *   +双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
++ *   viewportScale/pageWidth/Height/geometry（F-A6-b1 页几何下钻）/page/pageRoot
++ *   等 prop 值，层自身行为各有测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client
++ *   顶层 window.api 赋值+双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
+  * jsdom 手工造 [data-page-root]+canvas[data-pdf-canvas] DOM 片段供
+  * handlePageRender 量测（getBoundingClientRect 实例级覆写——jsdom 无布局）。
+  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
+@@ -37,15 +37,16 @@ const probe = vi.hoisted(() => ({
+     zoom: number
+     scrollContainerRef: RefObject<HTMLDivElement | null>
+     scrollRequest: { paperId: string; page: number; seq: number } | null
+-    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
++    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }, geometry: { rotate: number; view: number[] }) => void
+     renderPage: (no: number) => JSX.Element
+     onReady: (basisWidth: number) => void
+     onError: (msg: string) => void
+   },
+   /** 桩当前渲染页集（测试改写+rerender 驱动 renderPage 内容挂/卸） */
+   rendered: [] as number[],
+-  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询） */
+-  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number },
++  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询）；
++   *  textLayer.geometry=F-A6-b1 页几何下钻透传锚（T1/T9 通道装配面） */
++  textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } },
+   annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null },
+   aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
+ }))
+@@ -57,7 +58,7 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+     zoom: number
+     scrollContainerRef: RefObject<HTMLDivElement | null>
+     scrollRequest: { paperId: string; page: number; seq: number } | null
+-    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }) => void
++    onPageRender: (no: number, payload: { items: unknown[]; styles: Record<string, unknown>; lang: string | null }, geometry: { rotate: number; view: number[] }) => void
+     renderPage: (no: number) => JSX.Element
+     onReady: (basisWidth: number) => void
+     onError: (msg: string) => void
+@@ -76,7 +77,7 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+ }))
+ 
+ vi.mock('../../../src/renderer/features/reader/TextLayer', () => ({
+-  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number }) => {
++  TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } }) => {
+     probe.textLayer = props
+     return <div data-stub="text-layer" data-viewport-scale={props.viewportScale} data-page-width={props.pageWidth} data-page-height={props.pageHeight} />
+   }
+@@ -157,10 +158,11 @@ function remount(node: JSX.Element): void {
+   })
+ }
+ 
+-/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链） */
+-function report(no: number, text: PdfTextContent): void {
++/** 经桩暴露的 onPageRender 回报（act 内驱动 setState→渲染→effect 全链）；
++ *  geometry=F-A6-b1 页几何第三参（T1/T9 通道——判别值 90/CropBox 防回退假绿） */
++function report(no: number, text: PdfTextContent, geometry: { rotate: number; view: number[] } = { rotate: 90, view: [36, 36, 540, 720] }): void {
+   act(() => {
+-    probe.columnProps!.onPageRender(no, text)
++    probe.columnProps!.onPageRender(no, text, geometry)
+   })
+ }
+ 
+@@ -198,7 +200,7 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
+     expect(probe.aiLayer?.pageRoot).toBeNull()
+   })
+ 
+-  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
++  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒、geometry=回报第三参原值下钻)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
+     const pageRoot = makePageRoot(1, 612.4, 792.6)
+     mount(makeOverlay())
+     report(1, makeText('首页文本'))
+@@ -206,6 +208,8 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
+     expect(probe.textLayer?.viewportScale).toBe(1.25)
+     expect(probe.textLayer?.pageWidth).toBe(612)
+     expect(probe.textLayer?.pageHeight).toBe(793)
++    // [F-A6-b1] 页几何透传锚：回报的 rotate/view 原值直达 TextLayer（T1/T9 通道装配面）
++    expect(probe.textLayer?.geometry).toEqual({ rotate: 90, view: [36, 36, 540, 720] })
+     expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
+     expect(probe.annotationLayer?.page).toBe(0)
+     expect(probe.annotationLayer?.pageRoot).toBe(pageRoot)
+diff --git a/tests/unit/renderer/pdf-page-canvas.test.tsx b/tests/unit/renderer/pdf-page-canvas.test.tsx
+index cfebcb935c..528a050e48 100644
+--- a/tests/unit/renderer/pdf-page-canvas.test.tsx
++++ b/tests/unit/renderer/pdf-page-canvas.test.tsx
+@@ -10,6 +10,9 @@
+  *   事件穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
+  * - PageBox 页内容容器（h-fit）白纸承底层+isolation（层序比较域单页内封闭，
+  *   跨页不互扰；暗色主题下页纸仍白——PDF 纸面语义）。
++ * - [F-A6-b1] onPageRender 第三参下钻页几何 {rotate,view}（T1/T9 修复通道：
++ *   TextLayer duckViewport 的 rotation/rawDims 真值来源；判别值 90/CropBox
++ *   [36,36,540,720] 防硬编码回退假绿）。
+  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
+  */
+ import { act } from 'react'
+@@ -23,9 +26,15 @@ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z
+ /** render 调用参数探针（断言面） */
+ const renderCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>)
+ 
+-/** 假 pdf 页（PdfPageCanvas 渲染链最小桩） */
++/** onPageRender 载荷探针（F-A6-b1 几何通道断言面——含第三参 geometry） */
++const renderReports = vi.hoisted(() => [] as Array<{ page: number; text: unknown; geo: unknown }>)
++
++/** 假 pdf 页（PdfPageCanvas 渲染链最小桩）。rotate/view 取判别值（90/CropBox 原点≠0）
++ * ——若实现硬编码 0/[0,0,0,0] 回退，几何断言立红（F-A6-b1 T1/T9 通道） */
+ function fakePage(): unknown {
+   return {
++    rotate: 90,
++    view: [36, 36, 540, 720],
+     getViewport: () => ({ width: 600, height: 800 }),
+     render: (opts: Record<string, unknown>) => {
+       renderCalls.push(opts)
+@@ -50,6 +59,7 @@ beforeEach(() => {
+   document.body.appendChild(host)
+   root = createRoot(host)
+   renderCalls.length = 0
++  renderReports.length = 0
+ })
+ 
+ afterEach(() => {
+@@ -87,6 +97,21 @@ describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
+     expect(canvas!.style.position).toBe('relative')
+   })
+ 
++  it('[F-A6-b1] onPageRender 第三参下钻页几何 rotate/view 原值（T1/T9 通道——TextLayer duckViewport 的真值输入）', async () => {
++    await act(async () => {
++      root!.render(
++        <PdfPageCanvas doc={fakeDoc()} pageNo={1} zoom={1}
++          onPageRender={(page, text, geo) => { renderReports.push({ page, text, geo }) }} onError={() => undefined} />
++      )
++    })
++    expect(renderReports.length).toBe(1)
++    expect(renderReports[0]!.page).toBe(1)
++    // 原值直传（判别值 90/[36,36,540,720]——非 0 原点非零旋转，防硬编码回退假绿）
++    expect(renderReports[0]!.geo).toEqual({ rotate: 90, view: [36, 36, 540, 720] })
++    // textContent 载荷不受几何通道影响（items/styles/lang 完整形态仍由第二参承载）
++    expect(renderReports[0]!.text).toEqual({ items: [], styles: {}, lang: null })
++  })
++
+   it('PageBox 页内容容器：白纸承底层+isolation（层序比较域单页内封闭）', () => {
+     act(() => {
+       root!.render(
