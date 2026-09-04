@@ -1,0 +1,49 @@
+Let me audit this carefully. Need to check data consistency, root cause chain, conclusion validity, self-report honesty, final disposition.
+
+Data consistency checks:
+- §3: health set 20 anchors = 4 pages × 5. Health pages: 3882-p2, 3882-p7, 1c2d-p4, 1c2d-p9 — 4 pages ✓. Pathological: p6, s1rot, s2crop = 3 pages × 5 = 15 ✓. Total 35 ✓.
+- §3 strata: 6 (1c2d multi-line) + 6 (3882 multi-line) + 8 (single-line all pages) = 20 ✓. Wait — single-line anchors ×2 per page = 2 per page × 4 health pages = 8 ✓. Multi-line = page top/bottom/cross-line = 3 per page × 4 = 12, split 6+6 ✓.
+- Percentages: p2 145/522 = 27.78% ✓ "27.8%". p7 228/839 = 27.17% "27.2%" ✓.
+- Span outside: 1/501 = 0.2% ✓; 1/829 = 0.12% ✓.
+- §6: p2-bottom 1/41 = 2.44% ✓; p7-bottom 1/67 = 1.49% ✓. But note §6 says "页级 1/501、1/829（f-a6 健康口径 0~0.12% 同款复现）" — §1 says 0.2% for p2, which is above the f-a6 0~0.12% range. Claiming "同款复现" while 0.2% > 0.12% — minor overstatement. WARN/NIT.
+- §6 separation ratio: f-a6 was 25~62.5% vs 0~0.12% (≥200x). Current: pathological 50~100% vs healthy max 2.44% → 100/2.44 ≈ 41x, 50/2.44 ≈ 20.5x. "间隔 ≈20~41 倍" ✓. "缩水 5~10 倍" — 200/20=10, 200/41≈4.9 ✓.
+- Task 2: grapheme ratio upper bound 0.88~0.97 vs observed single-line 0.8816~0.9745 — observed max 0.9745 slightly exceeds claimed upper bound 0.97. Minor inconsistency — the stated "上限 ~0.88-0.97" but observed interval goes to 0.9745. Actually "上限 0.88~0.97" is odd phrasing (a range for an upper bound). Observed 0.9745 > 0.97. WARN on this: claimed approximation upper bound slightly contradicted by observed max, though tilde "~" gives slack. Also the claim "0.99 门对该锚形态结构性不可达" is supported by 8/8 <0.99 but the "approx upper bound 0.88~0.97" isn't derived, just asserted from observations. Weak derivation but acceptable for forensics. Actually the deeper issue: the claim that 0.99 is "structurally unreachable" is an extrapolation from 8 samples — but they flag it for design book adjudication, so honest.
+- §4-1: "盒顶=基线（低于正常项 ~0.7×fontH）" — wait, if ascent=0, box top = baseline, normal box top = baseline - ascent ≈ baseline - 0.7~0.8×fontH. So the box top is *higher* (smaller extent upward) than normal... Actually in PDF coordinates y up. Box top = baseline + ascent normally. With ascent=0, box top = baseline, which is *lower* than normal top. The text says "低于正常项 ~0.7×fontH" — consistent. Then "行并集膨胀" — hmm, if box top is lower, the line union... "同行盒顶 126.9 vs 133.6 双形, 行块 16px vs 真值 9.5px". Line union 16px vs truth 9.5px — expansion. How does ascent=0 cause expansion of the union? If some items have top at baseline (lower top) and the line union includes baseline-to-bottom descent... Actually the union of boxes in the same line: if different items have different tops (126.9 vs 133.6), the union spans from min top to max bottom → inflated. OK plausible. "DOM span 实测 11.2px" — truth 9.5px from baselineRowTruth, DOM 11.2px. Fine.
+- §5 s2crop: "声明 ascent 12.9px 越出" — but earlier §4 says some fonts declare ascent 0. s2crop is synthetic with ascent 12.9, fine.
+- s2crop DOM IoU1D 0.9532~0.9999 — one anchor 0.9532 <0.99 but that's pathological set, criterion a only applies to health set. OK.
+- p6 DOM IoU1D 0.8663~0.9981 — pathological, fine.
+- §7: "b/c 结论不翻案——修复后只会更强" — this is a forward assertion, not evidence-backed; "只会更强" is speculative. WARN: final disposition asserts b/c won't flip and "only stronger" without re-run evidence — mild overreach but stated as expectation. Actually they plan to re-run only criterion a after fix. Saying b/c "不翻案" pre-judges. WARN.
+- Task 3: does the stratified result support "fixable defect not route error"? 1c2d 6/6 pass vs 3882 0/6 fail with identified root cause (ascent-0 in 27% items) — yes, reasonably supported. But caution: root cause attribution to ascent-0 — is there direct evidence that fixing ascent would bring 3882 to ≥0.99? They measured line union inflation 16 vs 9.5px. The IoU1D for multi-line 3882 anchors is 0.6232~0.7617 — x-axis interval IoU though! Wait, IoU1D = x-axis intersection/union. If the defect is in y (box top/baseline, line union inflation), how does that explain x-axis IoU1D failure? Hmm. "y 门配对" — IoU1D paired with y gate? "IoU1D=x 轴区间交/并（f-a6 overlapMetric.iouX 同族——判据 a 主数字，y 门配对）". So the comparison is per-block x-interval IoU, paired somehow with y. If line structure diverges (row counts differ — line union merges lines), then block pairing/indexing differs → x-interval pairing misaligned → IoU1D collapse. §3 band note: "3882 中位 0.0055/0.0190 但 max 0.7745=行结构分叉索引错对污染" — confirms line structure divergence causes index mismatch. So IoU1D failure mechanism: line count/structure divergence → wrong block pairing → x IoU collapse. Is that stated explicitly in §4? §4-1 says "基线分组行并集膨胀" — line merging. Chain: ascent 0 → box top = baseline → baseline grouping merges lines → line structure divergence → block pairing misalignment → IoU1D collapse. The writeup doesn't fully spell out the last hop from y-domain line inflation to x-axis IoU1D numbers, but §3 band note covers "行结构分叉索引错对". Reasonably closed but the causal hop could be flagged as a NIT/WARN: the explicit linkage between line-union inflation (y domain) and IoU1D (x domain) failure relies on index-pairing misalignment stated only in band context. Hmm, is that a real gap? For an adversarial audit, worth a WARN: 归因跳步——判据 a 主数字是 x 轴 IoU1D，而根因是 y 域行并集膨胀；两者之间的桥（行结构分叉→块配对索引错位→x 区间错对）只在 band 统计口径里以"索引错对污染"侧面出现，未用逐锚配对错位计数直接钉死（如错对锚数/错位块数）。Evidence: §3 "max 0.7745=行结构分叉索引错对污染（根因§4，申报不作判据）"。
+- §4-1 line references: pdf.mjs:11226-11266/10894, consumption point 11079 — consumption point 11079 is *before* the definition lines 11226-11266? That's plausible in a bundle (usage before definition textually). Not checkable.
+- §8-5: "探针调试三轮（前两轮失败……修复过程未分段留 raw）" — honest declaration, but means final raw log only covers final round; earlier rounds' fixes not auditable. Declared — honest.
+- §8-7: correcting f-a6 documentation discrepancy — honest.
+- §2 CSP: declared.
+- Potential美化 check §6: "健康侧零误伤（max 2.44%<5% 阈）" — is there a 5% threshold established? "5% 阈" appears without provenance in the material. Where does the 5% threshold come from? Not defined anywhere in the ticket. WARN: undeclared threshold. Evidence: "max 2.44%<5% 阈" — the 5% threshold's source not cited (票面口径未引). Good catch.
+- §6 "s1rot-top：rightOver 3.2px（dom/span 形态）... s1rot-top dom/span unhealthy、item healthy" consistent with §5 "右溢 3.2px". ✓ But §5 says top=domNorm 3 blocks vs truth 1, includes "右溢 3.2px" ✓.
+- §5 s1rot DOM "2/5 锚" distortion but only details top and multi — 2/5 ✓.
+- §6 unhealthy trigger count: 2/15 triggers: s2crop-top (all three forms) and s1rot-top (dom/span) = 2 anchors ✓.
+- §1 p6: "中位字高 6px" consistent §8-1 ✓.
+- §2: "locks 注册 281 条=278+3" consistent §9 ✓.
+- 分层 n 加总 = 6+6+8=20 ✓ as the task hints.
+- §3 "最差 0.6232（3882-p2-multi）" and strata "0.6232~0.7617" ✓.
+- §7 table: a "占比 6/20（30%）" ✓.
+- Check claim "reconcile 7/7 页全真" and "重定位 35/35 全零" — 35 = 7×5 ✓.
+- §5 s2crop "DOM span 同判 1/2 越界" vs §6 "span=0.5" — 0.5 = 1/2 ✓ consistent.
+- §6 pathological 15 anchors "其余 13 锚全 0" — 15-2=13 ✓.
+- One more: §4-2 says "IoU1D 上限 ~0.88-0.97（8/8 锚 <0.99）" but §3 observed single-line range 0.8816~0.9745 — max exceeds the claimed upper bound 0.97. Minor inconsistency; also终裁 repeats "近似上限 0.88~0.97". The 0.9745 > 0.97 contradiction is small but an adversarial auditor should flag: 自报上限与观测区间上沿不自恰（0.9745>0.97）。WARN or NIT. Given "~" approximate, NIT maybe. I'll make it WARN-lite... The terminal ruling硬codes "固有近似上限 0.88~0.97" into design book — an observed counterexample (0.9745) already exceeds it, so enshrining it as "固有近似上限" is premature. WARN.
+- Also task 2 asks whether 0.88~0.97 "足以解释 8/8 单行锚 <0.99" — yes observations all below 0.99.
+- Task 5: disposition matching evidence: ①ascent fix — supported by §4-1 direct read; ②criterion stratification — supported but upper bound issue; ③S6 retention + blind spot registration — supported by §6 two-case evidence. Reasonable.
+- Another check: §7 says "3882 即 f-a6 样本，27% 项该形态在档" — and claims F-A6-b2 漏网缺陷. This is attribution: ascent-0 defect existed during f-a6 but f-a6 anchors didn't cover it. Plausible, declared. Fine.
+- §6 "间隔量级缩水 5~10 倍": 200/41≈4.9, 200/20=10 ✓.
+- §3 dy median values p2=1.82 etc — consistent with "量级 0.3~2.6px" in §4-3/§7 ✓.
+- Possible issue: §5 p6 row claims "无分叉" yet DOM IoU1D range 0.8663~0.9981 — low end 0.8663 due to grapheme boundary single-line anchors, not structural. Fine.
+- Criterion b "部分成立" — reasonable.
+- Check §1 s2crop: "ROW1 基线 y=720=裁剪盒顶缘" view is [36,36,540,720] so crop top edge = 720 ✓ internally consistent with §8-7 correction.
+
+Now decide verdict: No blocking contradictions; a few WARNs: (1) causal hop x-IoU1D vs y-domain root cause not directly nailed with pairing-misalignment counts; (2) 5% threshold unsourced; (3) grapheme "upper bound 0.88~0.97" contradicted by observed 0.9745 and enshrined into design book prematurely; (4) "b/c 不翻案——修复后只会更强" prejudges without rerun; (5) §6 "0~0.12% 同款复现" while p2 page-level 0.2% exceeds that range (minor beautification). NITs: 页级 span 盒外 0.2% vs f-a6 0~0.12% claim.
+
+Verdict: PASS_WITH_WARNINGS.
+
+Five tasks stance one sentence each.
+
+Keep ≤1200 Chinese chars. Be compact.

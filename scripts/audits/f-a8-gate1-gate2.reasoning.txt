@@ -1,0 +1,518 @@
+We need answer JSON only. Need assess verdict. Need examine material carefully for issues, closedness, evidence alignment. We are adversarial senior reviewer. Need produce JSON with verdict PASS/PASS_WITH_WARNINGS/FAIL and findings.
+
+Need understand task: We audit "F-A8 Gate 1 forensic ticket" decision gate record. Provided implementation report summary, verdict table with corrections embedded, no codebase. Need evaluate terminal three questions, decision gate finality, machine side. Need find gaps, unresolved, disconnect between final verdict and evidence, closeability. We only have material. Need not invent.
+
+We need decide if PASS/PWW/FAIL. Need inspect evidence and claims for inconsistencies. Since material has many details but maybe some missing pieces / contradictions. Need identify BLOCKING issues, WARN, NIT. Need summary.
+
+Let's parse context.
+
+There is a ticket F-A8 Gate 1: "重锚域同族化迁移门 1 取证票 (decision gate record: criterion a fail -> redesign)." Already passed Gate 1 by Kimi K3 PWW (4W2N) + master corrections (W2/W3/W4/N1 direct changes; W1 moved to gate 1b probe upgrade item into final verdict section; N2 discipline line to handover).
+
+We need terminal audit with three questions:
+① Gate 1 disposition closure (W2 upper bound expression fix / W4 remove pre-determination / W1 transfer rerun item / W3 threshold source / N1 wording—against final verdict table embedded corrections).
+② Decision gate finality (Gate 1 fail -> redesign + three actions [ascent fix / caliber layering / S6 retain+blind spot] — evidence matches; gate 1b project boundary clear; ticket itself closeable [probe three locks 281+verdict table+data not in git convention]).
+③ Machine side (verify 155/1345/exit=0 matches ticket; locks 278+3=281; src/ zero modification declared — ticket purely forensic).
+
+Need produce findings if issues.
+
+Let's inspect.
+
+Material in Chinese. Need understand institutional context. F-A8 is a migration of anchor domain? "重锚域同族化迁移门 1" maybe migrating anchor logic from old to new? Gate 1 forensic ticket. We see implementation report maybe by GLM5.3flash subagent. Ticket included decision gate. Need audit final.
+
+Given final verdict: Gate 1 "not pass -> back to design" with three actions. That is plausible because criterion a failed. Need verify final decision aligns with evidence: Criterion a: healthy pages dual chain IoU≥0.99; results 6/20 30% worst 0.6232. Thus fail. Criterion b partial; c weak. So overall Gate 1 fail is supported. Need ensure "back to design" is correct gate action? The decision gate likely based on criteria a/b/c. If a fails, gate 1 not pass -> redesign. Seems.
+
+Potential concerns:
+
+- There is a master correction "W1 归门 1b 探针升级项写入终裁节": W1 originally? Master corrections included W2 upper bound expression, W4 remove presupposition, W1 transfer to rerun item, W3 threshold origin, N1 wording. Need check final verdict table includes those corrections. It includes W2 marker "门一审 W2 修正:0.97 上限已被自家样本 0.9745 越过,禁当立约数字"; W4 marker "门一审 W4 修正:ascent 修复改变项盒几何,b/c 输入面同被触及"; W3 in §6 "出处=SELECTION_DEV_RATIO_THRESHOLD=0.05 常量,pdf-item-geometry.ts:399/f-a6 G2 同源[门一审 W3 补注]"; N1 "页级 1/501、1/829（与 f-a6 健康口径 0~0.12% 同量级、上沿略超 0.2%[门一审 N1 修正]）" Need check W1? W1 "转复跑项" maybe "Repair after rerun probe upgrade item" included: "门 1b 复跑探针升级项（门一审 W1）=补 3882 六锚块配对错位计数（错对锚数/块数——钉死 y 域行膨胀→x 轴 IoU1D 错对因果跳步,复跑若仍不过可判修补无效还是配对口径问题）" It is in final verdict. Good.
+
+Need find discrepancy: Implementation report header says verify 155/1345/exit=0. In data files list verify raw. But maybe 155/1345 are counts? Need not.
+
+Potential major issue: "探针三件 locks 281+裁决表+数据不入 git 惯例" in question. But materials claim locks 278+3, but new locked files three: f-a8-gate1-diag.mjs etc. Existing file count? Need see evidence: "已 locks 注册 281 条=278+3" and terminal "locks 278+3=281". Need verify from raw? We can't access, but raw evidence names f-a8-gate1-locksgen{,2,3,4}.raw.txt + locksapply{,2,3,4} and unlock. It says "终态 281=278+3" but no listing. Could be okay.
+
+Need check if "数据不入 git" is represented: data files out directory not in git. But "src/ 零改申报——本票纯取证面" However in verdict, decision gate includes "ascent≤0→0.8 兜底修立为门 1b 前置票" so this ticket did not change src. Good.
+
+But there is possibly an inconsistency: Implementation report Section 4 "locks 实录" is cut off: "新受锁件三：`f-a8-gate1-diag.mjs`（" then text ends. This is a truncated "报告头" because user says "实现者报告头（报告全文在档）" maybe included just first part, "locks 实录" incomplete due to quote. Could count as incomplete evidence? But we don't need require full in material as "在档" means full report is in archive; we as terminal audit may have full? User gave summary and verdict table. Not issue.
+
+Potential issue: "F-A8 门 1 取证票 ·门二终审材料包（deepseek v4flash,零仓库接触）" This is our prompt. Need not mention.
+
+Let's identify issues as adversarial:
+
+1. In §3 results, "占比 6/20（30%）" but criterion a says "健康页双链 IoU≥0.99" maybe threshold should be applied to each of 20 anchors? They count six anchors pass. Yet maybe "健康页" pages are four pages; 20 anchors across 4 pages. They don't aggregate page-level all anchors? They report 30% of anchors. The criterion in verdict table says "健康页双链 IoU≥0.99"—maybe requires every? "占比+最差值" from票面. Ticket's criterion "a 健康页双链 IoU≥0.99" likely measuring all pages? A 30% of anchors pass and worst 0.6232, so fail. Fine.
+
+2. Decision "门 1 不过→回设计" due failing a. But if a is pass/fail, perhaps failure means go back to implementation? They say "回设计" because route-gating. Could be okay. Need check three actions:
+- Action 1: ascent fix as gate 1b pre-ticket. Is this a code change? If gate 1 failed, shouldn't code changes happen at gate 0? The final says "门 1b 前置修立票" and "回门 0 级补丁" contradictory? It says "修后复跑本取证器判据 a". Is this "回设计" or "回实现"? It counts as "回设计" because resulting from design? But actually code defect patch is a source fix, likely belongs to earlier implementation. However because criterion a failure exposes defect, going back to design with an action to make a hotfix before Gate 1b could be okay. Need find boundary clear? "门 1b 立项边界清晰" asks check. It defines gate 1b as the pre-fix ticket? Hmm.
+
+Let's understand gates: There is "门 1b 前置修立票" from final. It is not "回门 0" maybe because there are multiple migration gates. It might be an internal "gate 1b" to address defect. But does action 2 "判据 a 口径分层入设计书" require modifying design document after failing gate 1 and then rerun? Whose decision? Need see if "回设计" has an action plan. It says "三动作" with details. Sounds clear enough.
+
+Potential contradiction: "W1" was "转复跑项", so W1 says "门 1b 复跑探针升级项 = add 3882 six-anchor block pairing mismatch count" If action 2 includes lifting caliber layering "锚形态分层度量非降门"; okay. But if you change decision criterion to layered (whole-line anchors 0.99 gate, in-item boundary approximate surface), after failure maybe can pass? The master's final says "非降门" and "本设计书 §6 门 1 条款补口径" suggests modifying design criterion to reveal layer; could make a fail pass. Not problematic.
+
+Potential issue: "ascent≤0 →0.8 兜底" patch and "G2 blind spot register" but they also state "DOM chain immune; ascent values in styles are declared; pdf.js has fallback DEFAULT_FONT_ASCENT=0.8." The proposed fix "ascent≤0 →0.8" is consistent. However if a "font" has ascent:0 due to actual font metrics? Could setting 0.8 arbitrary? They cite pdf.js fallback. Probably okay. But question is not actual code.
+
+Potential issue in evidence:
+- "CSP (script-src 'self'+file:// source) excludes page injection" likely not security evident? It describes architecture only.
+
+- "reconcile 7/7 pages true; relocate 35/35 zero" Are these meaningful fairness? Maybe.
+
+- In §2 "双链形态与守卫声明" says "mLR 复刻守卫: 3882 p2/p7 guard=false — 复刻陈旧非产品缺陷: f-a6-diag-lib's mergeLineRectsReplica replicates pre-T3 semantics... chain A uses true functions (replica only comparison non-bearing)". This is a self-declared issue: The guard false on 2/7 pages means the tool's comparison against "replica" designed by f-a6? But "guard=false" may be an implementation workaround; since chain A doesn't rely on replica, okay. Yet if the "取证器" is meant to compare against replica? Need not.
+
+- But wait: "真值=f-a6-diag-lib.baselineRowTruth+真 rectsForOffsetRange/baselineGroupBlocks (右溢/outside/零高块口径对齐 f-a6 C4); G2=真 selectionHealth 三形态." If gate 1 is a migration's forensic test with criterion a "health pages dual-chain IoU≥0.99", the "truth" for chain A and chain B? Need evaluate if chain B uses actual resolveAnnotationRectsItem from new code? "链 B（项几何）=真整函数" export resolveAnnotationRectsItem. Chain A uses true DOM chain functions. This is likely a good forensic setup.
+
+Potential issue: "锚点族: five per page deterministic; 重定位 35/35 all zero" This means anchor found exactly at source, no self-healing path needed; can't test relocation. Data gap noted.
+
+Potential issue: "健康=real3882 p2/p7+real1c2d p4/p9; pathological = s1rot/s2crop + real1c2d p6". However "real1c2d p6" has only 10 items/46 chars, "no declaration geometry pathology" due selection. If no pathology, including it as pathological page but concluding no divergence is honest. This weakens "criterion b" but verdict says partial established. Good.
+
+Potential BLOCKING? Maybe not.
+
+Let's examine given verdict "PASS_WITH_WARNINGS" perhaps likely due no code, no demonstrable actual verification? Need decide overall if terminal audit should pass gate 1 record. We need maybe pass because all three closure questions satisfied? But find warnings. Need not find blockers if no showstopper. But maybe there is a blocker hidden: In §4 root cause chain, point 1 says "real3882 pages exist styles ascent:0. pdf-item-geometry.ts:217 Number.isFinite(style.ascent) ? style.ascent : 0.8—0 有限 value consumed -> item top=baseline -> baseline group row union inflated." Yet a "style ascent:0" and descent 0? If `descent:0`, `fontH = ascent+descent`? Maybe actual item height zero? Let's abstract. Could be indeed.
+
+Potential issue with "W2 upper bound expression closure": W2 says 0.97 maximum actually exceeded by sample 0.9745, cannot use as contract number. Final verdict in action 2 says "observed range 0.8816~0.9745 (structural upper limit undetermined, gate 1b rerun to converge—W2 corrected: 0.97 upper limit already crossed by own sample 0.9745, forbidden as contract number)." The proposed design book should not set a hard 0.97 limit. Good.
+
+But in §3 observation "项内部分选中单行锚 0/8 0.8816~0.9745", so W2 "0.97 upper bound been crossed by 0.9745" not "exceeded" meaning "0.97 upper limit had been exceeded." Since no "door approved" yet. Good.
+
+Potential issue "W4去预断": In final verdict action 1, says "门 1b 毕后判据 a 复跑重判（b/c 随复跑确认——不预断方向[门一审 W4 修正:ascent 修复改变项盒几何,b/c 输入面同被触及]）". Good.
+
+Potential issue "W1 transfer": In final §7 "门 1b 复跑探针升级项（门一审 W1）=补 3882 六锚块配对错位计数..." Is that enough to improve a blocked cause? The failure causes include ascent and grapheme scaling. But if the only reason for the failure in 3882 is mismatch due to inflated row union, adding "block配对错位计数" will distinguish. Good.
+
+Potential issue "W3 threshold source": They cite "SELECTION_DEV_RATIO_THRESHOLD=0.05 常量, pdf-item-geometry.ts:399 / f-a6 G2 same source." Is that enough? It provides exact source.
+
+Potential issue "N1 wording": In §6 healthy pages "上沿略超 0.2%[门一审 N1 修正]" Need understand N1 might have flagged "0.2%"? It says f-a6 health aspect 0~0.12%, current p2 span 2.44% at anchor level? Wait careful: table: Health set 20 anchors: item/dom all 0; span: 18/20 anchors 0, p2-bottom=1/41 (2.44%), p7-bottom=1/67 (1.49%)—page level 1/501, 1/829 (with f-a6 healthy range 0~0.12% same order, upper edge slightly over 0.2% [N1 correction]). Aha there is ambiguity. p2-bottom 2.44% refers anchor's outsideRatio? Actually a span block containing 41 boxes, 1 outside? 2.44%; page-level outside spans ratio 1/501 =0.2%; f-a6 range 0~0.12%. Slight over. Fine.
+
+Potential issue "G2 threshold 5% source is used as valid despite health 2.44%<5%." Fine.
+
+Potential issue "judgment c conclusion 'weakly reproducible' and S6 retain + blind zone" good.
+
+Potential concern: The final verdict says "门 1 整体不过→回设计" but then partially endorses "ascent fix" as action. If the defect is in `pdf-item-geometry.ts:217` (an implementation file under `src/`? likely code under src but maybe not migration domain? Could make this not purely forensic; but ticket owns source? The last machine check says "src/ 零改申报——本票纯取证面"; the proposed fix in gate 1b would later change src. No blocker.
+
+Potential issue: "F-A6-b2 漏网缺陷修复" claim means F-A8 gate 1 discovered a bug in F-A6. Need evidence? "3882 i.e. f-a6 sample, 27% items this shape on file" If F-A6 sample had 27% ascent:0 items, then F-A6's own anchors did not cover those? "F-A6 取证锚未覆盖 ascent-0 字体面" is not demonstrated but plausible. Not relevant final verdict? It labels defect twice. Could be overclaim. Need check if final verdict has evidence: It says "3882 即 f-a6 样本，27% 项该形态在档"; whether F-A6 anchors covered? F-A6 diagnosis? We don't have F-A6 details. The statement "F-A6 取证锚未覆盖" might be a conclusion without evidence in this material. Is that in the final verdict table? Yes in decision record. Could this be BLOCKING? Maybe not for decision "not pass -> redesign"; but it may affect whether this is "漏网缺陷" which might not be knowable. It doesn't determine overall gate result. Could be WARN: unsupported assertion. Need decide.
+
+Need infer from "门一 Kimi K3 PWW (4W2N)" means previous reviewers raised 4 warnings 2 nits? W2 etc. Main controller corrected. We are terminal gate. We need find any miss. There may be warnings from previous? Need "4W2N" perhaps "4 warnings 2 nits" from Gate 1 Kimi? They are embedded W1/W2/W3/W4, N1/N2. Maybe in material "主控修正（W2/W3/W4/N1 直改落表;W1 归门 1b 探针升级项写入终裁节;N2 纪律行归交接书）" The final verdict table should contain W2/W3/W4/N1 embedded markers. Does not contain N2 perhaps because moved to handover book. Good.
+
+Potential "W1 转复跑项" in final as "门一审 W1" seems still a no-change to verdict? okay.
+
+Potential "PWW with warning" maybe because "verify 155/1345/exit=0" raw file in evidence says tail exit=0, but in report Section 2 data: "f-a8-gate1-verify.raw.txt（155/1345/exit=0）" Need if raw evidence "runs: 155 passed, 1345 total?" Maybe "verify 155/1345/exit=0" means a verify suite with 155? Need not.
+
+Let's look at machine side:
+- "verify 155/1345/exit=0 与票面预期吻合" But ticket maybe states "f-a8-gate1-verify.raw.txt (real exit code)". There is no evidence in material of what expected. "票面预期" probably in ticket. We don't have it except implementation report. Fine.
+
+- "locks 278+3=281": We don't have lock count evidence, only claims. But terminal can accept raw files in archive. Need not verify from material. But there are raw lock filenames with four rounds: `locksgen{,2,3,4}` and `locksapply{,2,3,4}` and `unlock{,2,3,4}`. Data list says final state 281=278+3. There is no generated `locks` file content listed; but as no code, cannot check. The report says "locks generate+apply (including four rounds modification re-lock actual record)". Good.
+
+Potential issue: Three new lock files "diag.mjs + lib.mjs/page.mjs" but in section 4 of report data? "新受锁件三: f-a8-gate1-diag.mjs（" truncated. Are page.mjs/lib.mjs "probe three pieces"? They are new files. Existing 278 pre-existing locks in repo? yes.
+
+Potential issue: In section 1 "CSP (script-src 'self'+file:// source) excludes page injection => true functions all Node-side consumption (f-a6 precedent)" If true functions are "esbuild bundle Node side consumption" then they're not running in actual renderer context? They build bundle and require it. The "chain A" includes DOM functions from renderer code but run on synthetic DOM? Wait: It says chain A runs "真 locateQuote 核（verifyQuoteItem 单项数组喂 DOM 全文）" presumably in Node on DOM string? It may not consume real browser DOM, except page spans boxes from renderer. This is an approximation. It uses page-internal captured data and "页内 canvas CSS 盒". Is this a faithful chain? It is not executing actual renderer code. However "true functions" are imported via bundles; actual DOM environment recreated? If it is "双链同页双跑: same anchor (page-internal deterministic anchor family) on A=DOM chain (true locateQuote core + true mergeLineRects + true mergeRects + true bandFromMetrics — esbuild bundle Node side consumption) and B=item geometry chain." "CSP ... excludes page injection -> true functions all Node side consumption" There is no actual browser DOM? It consumes "DOM全文" as a string and page spans. Need for IoU metrics maybe okay? But could be questionable because chain A is supposed to be actual DOM chain as in app. If not running in browser DOM, does "DOM" chain truly reflect renderer? It probably simulates enough. But this was ticket's design. The final gate doesn't claim actual app E2E; it is forensic. Maybe accepted.
+
+Potential issue: "IoU2D 被系统性行盒-字形盒顶差压制 (§3-dy), not chain distortion main evidence—denomination invention declared (ticket's 'block-wise IoU' uncertain dimension)." This is important. The ticket says criterion a uses "IoU" but doesn't specify dimension. They choose IoU1D as master and also IoU2D. If "IoU" in original criterion likely 2D area/union? Wait "IoU1D=x 轴区间交/并 (f-a6 overlapMetric.iouX same family—criterion a primary number, y gate pairing); IoU2D=greedy max intersection area aggregate (supplementary). Ticket's 'block-wise IoU' undefined dimension." They choose. This could be a self-negotiated criterion; can result in misleading. Let's examine.
+
+If anchors are selection regions spanning text lines/words. Typically IoU is 2D area of rectangles. But they choose IoU1D (x-axis only) due f-a6. They say "y gate pairing" may ensure y? Need parse: "IoU1D=x 轴区间交/并（f-a6 overlapMetric.iouX 同族——判据 a 主数字，y 门配对）；IoU2D=贪心最大交面积聚合（补充口径）。" "y门配对" perhaps "y gate paired" means evaluate separately? It may be "x-axis interval I/U, with y gate pair?" Maybe in table §3 dy. Wait if "intra-line YoU?" Hmm.
+
+If the criterion "IoU≥0.99" likely an overlap metric between two rectangles, not line-wise. Choosing 1D and ignoring y can be *more* permissive if y differences moderate? Actually IoU1D x-axis only never considers y vertical, whereas y gate? They separately use paired y-center difference? Need understand. If x-axis interval of blocks from two chains: They align blocks by anchor indexes? Then compare per-block x intervals? For multi-line anchors, block intervals along y? There is "block top/bottom" per row? Actually selection annotation items and DOM spans have rectangles: A selection from y/offset? Wait "bands" are rows; each row has rectangles. IoU1D compares x projection per row band perhaps. "y gate paired" maybe require y-center diff below threshold? In §3 dy they report problem: Pairing by anchor index count equal: p2 dy median 1.82 px, p7 0.32, p4 1.10, p9 2.56. "该 dy 系统顶差把 IoU2D 压到 0.17~0.75" So if they used 2D area IoU, values would be terrible even when x exact. They chose 1D for criterion a to avoid vertical dy penalty? But they also in §4-3 say dy 0.3-2.6px not structural. If 2D was the canonical "IoU", criterion a would be passed? Wait no Worse: Their 1D values 0.62-0.99; 2D 0.17-0.75. If original criterion was 2D, the failure would be even stronger, but due dy rather than x? In fact they want prove x divergence? Let's think.
+
+Actually IoU1D could be x-axis overlap for text lines if x and y are coordinates within page? If line-by-line row blocks, each row is a horizontal band; within each row, use "x intervals"? Wait if it's x-axis "区间交/并" on page coordinates with y fixed, between rectangles, exactly on same y you can compare horizontal extent for text selection? The f-a6 `overlapMetric.iouX` maybe computes intersection over union of horizontal ranges of rectangles after "uniting" by y bands. It may be a heuristic for "selection shape" not actual geometric area. The phrase from ticket "f-a6 IoU_x same family = main criterion number + y gate paired" suggests they intentionally retained same metric as f-a6. Not necessarily issue.
+
+Could there be a BLOCKING due "disconnect between final decision and evidence" because §3 says criterion a "not pass" due 30%/0.6232; but §4 root cause says "IoU2D systematically suppressed by vertical difference; not chain distortion." The final action 2 modifies criterion to "anchor shape layering", but it does NOT address using IoU1D as a valid criterion. If criterion a was "IoU≥0.99" and all values are below due vertical dy, could "dual-chain IoU" being 1D only be a premature exculpation? Actually it's still failing. The fix (ascent 0.8) only affects p2/p7's 0.62-0.76, which are actually due as-y? Wait p2/p7 have multi-line anchors 0.6232~0.7617, p4/p9 have 0.9919-0.9998; item-internal anchors 0.88-0.97. Ascent fix may make 3882 multi-line pass? The mismatch pair issue includes inflated row union; fix reduces row union, likely. So action 1 may remedy. Fine.
+
+Potential issue: "node-side all 38 pages no declared geometric pathology" but page p6 chosen as sparse. Criterion b needs pathological pages with declared content? But because none found, p6 no divergence. This reduces diagnostic power. The final verdict retained S6 based mainly synthetic. No blocker.
+
+Potential issue: Is "run.raw.txt exit=0" enough perhaps not. There may be "采集器重页 20s" note: page-internal collector takes 20s on repeated page despite Promise 9s timeout. The run evidence at end exit=0; okay.
+
+Potential issue: "Agent implementation report says 'Electron single launch batch + 9s bottom; collector repeated page 20s declared'." 9s timeout? If page-internal collector took 20s, likely passes due promise catches? Need no.
+
+Potential issue: "reconcile 7/7 pages true" but real3882 p2/p7 guard false for replica; reconcile? It says "reconcile 7/7 pages all true; relocation 35/35 all zero." If guard false means chain A/B maybe counts equal? Not.
+
+Potential issue: "p6 sparse scan page 10 items/46 chars/median height 6px; anchor 5 single forms?" For such sparse, an anchor spanning? If only 46 chars, 5 anchors covering page首/页尾/跨行/单行*x2 possible. No issue.
+
+Potential issue: "styles declaration 'ascent:0, descent:0' fonts" In PDF fonts, ascent/descent in FontDescriptor can legitimately be zero? The correct fallback in pdf.js `getAscent` is for missing ascent? Wait `getAscent` in TextLayer has three-tier fallback: measure fontBoundingBox, ink scanning, DEFAULT_FONT_ASCENT=0.8. That implies if font ascent property 0 may be invalid and fallback is triggered. The code in pdf-item-geometry.ts:217 uses if finite style.ascent else 0.8; if 0 finite, "0" should be treated as missing? If actual font ascent=0 impossible for visible text. Fix to `style.ascent > 0 ? ... : 0.8` plausible. No issue.
+
+Potential issue: "src/tests zero modification (git surface §5)" But they claim "src/ 零改申报" only. Did they modify `scripts/audits/`? "probe three pieces locks registered", so yes. No `src/`. But did they modify `scripts/audits/f-a6-diag-lib.js`? Not listed. They reused existing f-a6-diag-lib; no changes. "locks:generate+apply" maybe they have changed scripts/audits? It's okay.
+
+Potential issue: "Four rounds lock modification re-lock real record" This means during development they modified probe files after generating locks, re-locked. Good.
+
+Potential issue: "probe three pieces locks 281" Wait in machine side "探针三件 locks 281+裁决表+数据不入 git 惯例" Actually verdict table is not a lock? Locks applies to files requiring licensing? Need not.
+
+Potential issue: "judgment c: health 0/20 false positives (span max 2.44%<5%)" Could `span` detector with 18/20 zero and p2/p7 bottom nonzero. 2.44% outside ratio but selectionHealth threshold 0.05, so healthy. Fine.
+
+Potential issue: "S6 preserve rationale: true positive two forms detected [s2crop crop edge out-of-bounds 100% / s1rot rotation artifacts right overrun 3.2px]" Wait §6 says s2crop-top item/dom=1.0 (1/1 box truly beyond) and span=0.5; so 100% not necessarily an indicator of chain error. It is true content lies outside crop edge, not DOM distortion. If the purpose of S6 is to detect "DOM fallback layer distortion" then a genuine selection outside crop box is not a distortion. The final says "S6 价值=回退层最后防线非高频拦截" and "真阳性两形态确证 DOM 回退层失真存在". But for s2crop, the DOM had no distortion; the "outside" is true content beyond crop edge. It is "real positive" for DOM? They classify as true-positive "crop edge content beyond", but in selectionHealth it is "unhealthy" because the outsideRatio says something is outside the viewport, even if true content genuinely outside. If page content itself has glyphs outside CropBox, selected item's rect may legitimately exceed crop? Need evaluate: If a user selects text at top row whose baseline at y=720 equal crop top edge, and font ascent extends above 720 (outside cropBox/page visible area), is that a "pathological" condition? In PDF rendering, glyphs outside crop box are clipped? The item text exists at coordinates y >? Wait crop box top at y=720? Page coordinate origin lower-left? In PDF, top of crop may be y=720? If text baseline at 720, glyph ascent extend above 720, so visually outside the visible page (maybe clipped). A chain that maps item rect including ascent to outside the page is not a DOM distortion but a real coordinate outside visual boundaries. Does "selectionHealth" detect outside relative to view? It would mark unhealthy. The "真阳性" claims true content outside. It isn't false, but if user cannot select unclipped glyph? Actually if text is at top edge, glyphs may be partially clipped, but TextLayer may still create spans outside. Hmm.
+
+In §5 s2crop: They say "top 锚 outside=1/1=真值一致越界（ROW1 基线 y=720=裁剪盒顶缘，声明 ascent 12.9px 越出——内容真在裁剪缘外，DOM span 同判 1/2 越界）". Thus both item truth and DOM span agree that the top line's ascent is beyond crop edge. This is not a pair chain mismatch; criterion b "necklace true values + DOM distortion" can be established by "真值一致越界" as truth and no divergence. But they do not claim s2crop proves DOM distortion; they say "失真可示侧由 s2crop-top G2 真阳性替代证据" in final? Let's read §5 table: s2crop row "项链贴合真值 5/5"; "DOM 链失真可示 不成立: DOM 链正确"; "单侧成立 (项链贴合侧; 失真可示侧由 s2crop-top G2 真阳性替代证据, §6)". Thus for criterion b, they satisfy one side via s1rot and use s2crop G2 true positive as alternative. Fine.
+
+But in final verdict action 3 "S6 保留依据=真阳性两形态确证 DOM 回退层失真存在[s2crop 裁剪缘越界 100%/s1rot 旋转伪迹右溢 3.2px]". Wait s2crop 100% "裁剪缘越界" is *not DOM fallback layer distortion*; indeed s2crop DOM was correct. It is a G2 detector trigger, not necessarily DOM distortion. The action says "真阳性两形态确证 DOM 回退层失真存在" but the s2crop form is true content at crop edge, not a DOM distortion. So there could be a mismatch: S6's value is to detect "selectionHealth" abnormalities: DOM layer distortion or real clipping? In final action 3 "S6 价值=回退层最后防线非高频拦截"; if s2crop true positive isn't DOM distortion, it can't prove "DOM fallback distortion" exists. But s1rot one form does. Let's parse "DOM 回退层失真存在[s2crop 裁剪缘越界 100%/s1rot 旋转伪迹右溢 3.2px]" It lists both, but only s1rot is genuine DOM distortion; s2crop is item outside? Actually s2crop DOM was not distorted but "DOM span 同判 1/2 越界" is also a true out-of-bounds span? The G2 detector sees DOM span outside (one of two?) That's not "distortion" but could be a true characteristic. If the "DOM fallback layer" has a span outside crop, is that a fallback layer distortion? No, because content is actually outside? The action wording "true positive two forms confirms DOM fallback layer distortion exists" overgeneralizes. Should this be BLOCKING? It may be a warning about imprecise evidence. Since S6 retained is justified by s1rot alone; the extra s2crop "true positive" is not needed. Final's statement could mislead. But because overall decision includes retention with "last line of defense" and blind spot, not necessarily invalid. However this is exactly "final decision and evidence disconnect" maybe potential WARN.
+
+Let's inspect final: It states "S6 格保留+盲区登记（保留依据=真阳性两形态确证 DOM 回退层失真存在[s2crop 裁剪缘越界 100%/s1rot 旋转伪迹右溢 3.2px]——S6 价值=回退层最后防线非高频拦截；ascent-0 类 G2 盲区登记为已知边界，修复后盲区面随主链正确性提升而缩）". It calls "s2crop 裁剪缘越界 100%" a true positive; in §6 "s2crop-top: item/dom=1.0 (1/1 box truly beyond), span=0.5." This indicates DOM and item both know true beyond. It is correct to say "s2crop true-positive crop-edge overrun" maybe, not "DOM distortion". The phrase "DOM 回退层失真存在" perhaps "回退层失真" refers to any "outsideRatio" in G2 may be a "DOM fallback selection health" anomaly; but if content truly beyond, it is not an anomaly due to fallback. Hmm.
+
+Potential issue with "G2 blind zone" due ascent-0 row inflation not visible. After fix, the max health-page distortion disappears. The final says "修复后盲区面随主链正确性提升而缩"—reasonable.
+
+Let's search for other possible contradictions.
+
+- "Page set: health = real3882 p2/p7+real1c2d p4/p9; pathology=s1rot/s2crop+real1c2d p6." In §7 "判据 b: 病理页项链贴合真值+DOM 失真可示" "P6 no bifurcation". The final general criterion b "部分成立". Good.
+
+- "判据 a裁定不过: 30%/0.6232 双失守; 子面 1c2d clean font pages 100% pass." Then action 2 "IoU 口径按锚形分层 entry-level." Wait if 1c2d subface clean fonts 100% pass and 3882 due bug, then after ascent fix 3882 might pass. But item-internal single-line anchors still 0/8 due grapheme scaling. The proposed "0.99 gate for whole-line boundaries; item-internal boundary approximate surface" would remove 8 items from fail face? Layer stratification not lowering gate. But if criterion applies to all "anchor shapes", and custom design separates "whole-line" and "partial selected in-item", how do you aggregate? Need perhaps a "dominant mode" expected? Need no issue.
+
+Potential WARN: "顶内边界 grapheme ratio scaling is route inherent semantics, 0.99 door structurally unreachable"—but the criterion in design is same for all anchors. Making it layered means changing the acceptance criterion after seeing data, which can be a "moving goalposts." They justify that those anchors measure boundary approximation, not chain correctness. But does the original design say "anchor family includes item-internal partial selection"? Yes, the ticket anchor family explicitly includes "single-row anchors = single-node internal offset window"; so their design included item-internal anchors and perhaps should have specified expectation. Without original ticket, but the final says "票面锚形态 5 条" includes single-row x2. The criterion a text "healthy page dual-chain IoU≥0.99" made no exception. The proposal to add layering could allow all whole-line anchors to pass but doesn't make failure "pass" if in-item anchors excluded? It might be accepted as a design correction. Need not block.
+
+Potential issue: The final recommends "S6 保留+盲区登记." But if criterion c is weak quantitaive reproduction and has blind zone, retaining S6 as "last line defense" still can be justified by two true positives; however S6 might produce false positives in legitimate crop edge content as s2crop demonstrates? Wait p s2crop "true positive" is unhealthy because item outside ratio 1.0; but if the actual content is outside crop, any detector would be "unhealthy." If S6 is monitoring DOM/selection health to catch fallback transforms, detecting legitimate content beyond crop box is not a false positive technically but not an error. Could cause noisy warnings on documents with clipped text at page boundary. Need not.
+
+Potential issue: "DOM chain immune ascent because pdf.js TextLayer #getAscent fallback at pdf.mjs:11226..." But is the DOM chain truly immune? In real browser, PDF.js TextLayer might apply `height` of line and `transform` including ascent? Maybe no.
+
+Potential issue: "resolveAnnotationRectsItem uses styles ascent for each item, but DOM chain creates spans with inline styles based on pdf.js textContent style ascent? Actually pdf.js pdf.mjs's appendText uses #getAscent; if DOM chain is actual TextLayer, yes.
+
+Potential issue: "Node-side chain B entry = Node pdfjs declaration data + page canvas CSS box equivalent assembly." If "canvas CSS box" gBCR(w,h) at current zoom could be affected by rotation? For rotate 90, canvas CSS box h/w swapped? They likely handle. In s1rot, it worked (5/5 necklaces). Good.
+
+Potential issue: Data not in git "scripts/audits/f-a8-gate1-out/" But raw files in `scripts/audits/` directly: `f-a8-gate1-run.raw.txt` and `locks*.raw.txt`. Are those in git? Wait data list in report Section 2 says: `scripts/audits/f-a8-gate1-out/` (not in git): page/dual/verdict/synthetic. Evidence raw at `f-a8-gate1-run.raw.txt`, `f-a8-gate1-verify.raw.txt`, locks*.raw.txt — those are in `scripts/audits/`, not necessarily in out/. If they are not in .gitignore, could enter git? The "data not in git convention" says data files listed under out/ not in git. Raw files are evidence, maybe in git? However if evidence raw contains large logs, maybe under scripts/audits (tracked?) Could be an issue: "数据不入 git 惯例" might fail because evidence raw not stored in out. Let's inspect data file list in Section 2: 
+
+- `scripts/audits/f-a8-gate1-out/`（不入 git）：`<tag>-p<n>-page.json` ×7 ...、`<tag>-p<n>-dual.json` ×7 ...、`verdict-summary.json`、`s1rot.pdf`/`s2crop.pdf`。
+- 证据 raw：`f-a8-gate1-run.raw.txt`（exit=0）、`f-a8-gate1-verify.raw.txt`（155/1345/exit=0）、`f-a8-gate1-locksgen{,2,3,4}.raw.txt`+`locksapply{,2,3,4}.raw.txt`（终态 281=278+3）、`f-a8-gate1-unlock{,2,3,4}.raw.txt`。 These raw are listed not under out in the first bullet, but in section 2 they say "证据 raw: ..." Perhaps they are in `scripts/audits/` root. The report Section 9 (from full? "数据文件清单（scripts/audits/f-a8-gate1-out/，不入 git）：... 运行/锁证据：`../f-a8-gate1-run.raw.txt`..." in verdict table §9 explicitly says out dir, and raw files one level above (`../`). It says "数据文件清单 (scripts/audits/f-a8-gate1-out/, no git): ... run/lock evidence: ../f-a8-gate1-run.raw.txt etc." Wait §9 in final text: 
+"## 9 数据文件清单（scripts/audits/f-a8-gate1-out/，不入 git）
+- `<tag>-p<n>-page.json` ×7...
+- ...
+- 运行/锁证据：`../f-a8-gate1-run.raw.txt`...
+"
+This headers: all under `scripts/audits/f-a8-gate1-out/` not in git? Then run/lock evidence outside? Actually `../f-a8-gate1-run.raw.txt` relative to out/ = `scripts/audits/f-a8-gate1-run.raw.txt`, not under out/. So the header "not in git" possibly applies only out items; raw evidence not under out might be in scripts/audits and possibly untracked. Implementation report earlier: "运行证据= f-a8-gate1-run.raw.txt (tail exit=0)". There is an "F-A8 Gate 1" artifact. Is raw evidence under `scripts/audits/` tracked in git? It can be in git as evidence. Not necessarily contrary "data not in git" if those raw are considered evidence, maybe in git? It says "数据不入 git 惯例" and raw may remain in git? Let's examine question machine side: "探针三件 locks 281+裁决表+数据不入 git 惯例" Maybe "data not in git" implies all data including output JSON, synthetic PDF, raw `run`/`verify` logs not committed. But locks raw maybe perhaps should be committed? lock evidence usually recorded? Hmm.
+
+Could be no issue.
+
+Potential issue: "verb: verify 155/1345/exit=0 and ticket expectation." Could be a test run with 155/1345 not explained. In repository context, maybe tests count "155 passed, 1345 total"? A ticket "pure forensics" should not run all unit tests? Why does a diagnostician run verify? "Machine side" says verify 155/1345/exit=0 matches ticket. Maybe they ran a subset to ensure no source changed and locks. No issue.
+
+Potential issue: "run.raw.txt" has "Electron single launch batch 7 pages; 9s Promise fallback (collector retry page 20s)" Wait "采集器重页 20s" Could be "retry failed pages 20s"? "重页" means repeated page. It says "9s bottom; collector重页20s declared." If a collector repeated page takes >9s, the fallback may kill it, but they declared. Not issue.
+
+Potential issue: "f-a6-diag-lib.baselineRowTruth" used as truth. But if chain B actual function after bug fix? No.
+
+Potential issue: "external code? Last row table says `s2crop-p1` page-level span box outside 1/8; row1 baseline 720=crop top." In §5 "top anchor outside=1/1=truth same out-of-bounds." Good.
+
+Potential issue: "real3882 p2/p7 guard=false due mergeLineRectsReplica replicated pre-T3 semantics; f-a6-diag-lib is pre-T3." Wait if f-a6's lib's "mergeLineRectsReplica" replicating old semantics is used in f-a8 gate1? They set guard false specifically. But "真值=f-a6-diag-lib.baselineRowTruth+真 rectsForOffsetRange/baselineGroupBlocks"; They don't use replica? Actually chain A includes "真 mergeLineRects" and also `mergeNear` replica? In §2 "bands=真 bandFromMetrics (ar-bundle)+mergeNear 复刻 (9 lines, f-a6 §8 sentence-level comparison precedent)." "mLR 复刻守卫": In D page collection, there is "mLR 复刻 guard" to compare chain A's mergeLineRects output to replica? If guard false, okay.
+
+Potential issue: "重定位 35/35全零 (atA=atB=start—construction site true, verifyQuote in place passes)" This means anchors are too easy? Since anchor specs are deterministic, not adversarial. Not issue.
+
+Potential issue: "all healthy pages? s1rot/s2crop/p6 are pages with 8/8/10 items not enough? Criterion a only healthy pages? 35 anchors. Fine.
+
+Potential issue: "subagent = GLM5.3flash; main controller = GLM5.3; different? No.
+
+Potential issue: "环境统一档欠账披露——派发未显式定档，按主控同源档执行" This is one potential WARN: undispatched environment pinned? It says same as master's source, disclosed. Could have affected? It explicitly discloses a data gap. Is this enough? It might be an "environment not pinned" procedural gap but not blocking.
+
+Potential issue: "Node pdfjs declaration data + page canvas CSS box equivalent assembly — handlePageRender writer contract same shape." If actual chain B uses "真函数" and "entry=Node pdfjs declaration data from Node, not renderer output?" For "chain B item geometry chain," entry equals `getTextContent` output plus page canvas dimensions. They claim writer contract same shape. Fine.
+
+Potential issue: "In report header, 'G2/truth = true functions: pg-bundle's rectsForOffsetRange/baselineGroupBlocks/selectionHealth'. The function `rectsForOffsetRange` itself maybe needs code under test. It is both "truth" and "chain B"? Wait "真值=f-a6-diag-lib.baselineRowTruth+真 rectsForOffsetRange/baselineGroupBlocks" is the item geometry truth. If `rectsForOffsetRange` and `baselineGroupBlocks` are production code under test in the migration, using them as truth is circular? Let's understand.
+
+F-A8 "重锚域同族化迁移" perhaps migrating selection algorithms from f-a6? The code under test is `resolveAnnotationRectsItem`? They execute "链 B（项几何）=真整函数 export resolveAnnotationRectsItem"; for G2/truth, they use `rectsForOffsetRange`/`baselineGroupBlocks` "真函数" from pg-bundle. Are `baselineGroupBlocks` and `rectsForOffsetRange` also production code under test? If so, using them as ground truth for "selectionHealth" G2 is self-referential. The final says "真值=f-a6-diag-lib.baselineRowTruth+真 rectsForOffsetRange/baselineGroupBlocks（右溢/outside/零高块口径对齐 f-a6 C4）; G2=真 selectionHealth 三形态（item/dom/span）." Let's parse:
+- `rectsForOffsetRange` probably a function from existing code that computes item rects for range offsets? Maybe to get "truth".
+- `baselineGroupBlocks` maybe old stable version? "pg-bundle" maybe "item-geometry bundle" is actual current code under test? Wait chain B uses `resolveAnnotationRectsItem`; `resolveAnnotationRectsItem` may call `rectsForOffsetRange`/baselineGroupBlocks internally. If they use same function as truth to generate "necklace" then compare chain B to itself? They also compare to "baselineRowTruth" from f-a6-diag-lib? Let's seek.
+
+In ticket: "双链同页双跑: A=DOM chain ... B=item geometry chain (true resolveAnnotationRectsItem whole function; entry=Node pdfjs declarations+page canvas CSS box equivalent assembly)" To evaluate correctness of B, they need ground truth. "产品对比: IoU1D + IoU2D + block count + band pairwise; truth=f-a6-diag-lib.baselineRowTruth+true rectsForOffsetRange/baselineGroupBlocks (right overrun/outside/zero-height block aligning); G2=true selectionHealth three forms (item/dom/span)." Wait "necklace attaches to truth": In criterion b "病理页项链贴合真值+DOM失真可示": "项链" likely item geometry chain (B) compared to "truth values" in terms of blocks from `rectsForOffsetRange/baselineGroupBlocks`. If `resolveAnnotationRectsItem` is built on the same code as `rectsForOffsetRange`, comparing them could be circular. But perhaps "resolveAnnotationRectsItem" is the new migrating function in a different domain, while "rectsForOffsetRange/baselineGroupBlocks" are old stable reference (f-a6's old domain) functions acting as ground truth. Indeed "f-a6-diag-lib.baselineRowTruth" from previous diagnostic library is ground truth. Need not.
+
+Let's map terms:
+- "锚域" maybe "anchor domain": "重锚域同族化迁移" involves migrating "anchor overlay calculations" from "selection/anchor" old domain to "item geometry"? There are two code paths: "resolveAnnotationRectsItem" (new?) and "rectsForOffsetRange"/"baselineGroupBlocks" (old? maybe old item geometry reference). If the object is "truth" old, and chain B is new "resolveAnnotationRectsItem," not circular. Wait chain B description in report: "B=项几何链（真 resolveAnnotationRectsItem 整函数；entry=Node pdfjs 声明数据+页内 canvas CSS 盒等价组装——handlePageRender 写者契约同形）。" The chain B itself is "item geometry chain," perhaps the new implementation. The truth is "f-a6-diag-lib.baselineRowTruth+"真 rectsForOffsetRange/baselineGroupBlocks"—these functions are perhaps existing "legacy" anchors from f-a6 and `resolveAnnotationRectsItem` is intended to match old line blocks. If so fine.
+
+- Then "真值=f-a6-diag-lib.baselineRowTruth+真 rectsForOffsetRange/baselineGroupBlocks (右溢/outside/零高块口径对齐 f-a6 C4)" These are reference old functions. If the chain B returns "item geometry" exactly produced by `resolveAnnotationRectsItem`, comparing to old reference functions is meaningful.
+
+But in §5 "项链 5/5 贴真值（块数=行真值...）" The "真值" includes row count and whether outside/right-overrun/zero-height. Good.
+
+Potential issue: "Use f-a6-diag-lib.baselineRowTruth" maybe hardcoded for pages not in f-a6? s1rot/s2crop are f-a6 same synthetic; real1c2d p4 etc maybe from f-a6. Since "baselineRowTruth" in f-a6 library may only cover pages? In §2 "真值行数=f-a6-diag-lib.baselineRowTruth (viewport.transform through true viewportTransformFor same shape passed)." If they used f-a6's baselineRowTruth, it likely has data for those pages/synthetic? It may be a functional baseline row library that computes row truth from any page. Need no.
+
+Potential issue: "mLR 复刻守卫: 3882 p2/p7 guard=false" If guard false means there is not the usual comparison to reference replica. Why guard false for only pages that fail? Could be suspicious: They might disable guard to avoid failing? But they claim "replica old not product defect." Let's evaluate.
+
+They have `f-a6-diag-lib` containing `mergeLineRectsReplica`, maybe a duplicate of legacy mergeLineRects to verify. The old replica doesn't incorporate T3 fix. For 3882 p2/p7, guard false is because "replica old must mismatch"—so they set it false. But if p2/p7 are also the pages where criterion a fails, setting guard false might hide a flaw? The "guard" likely only used for debug; not acceptance. They disclose. Not blocker.
+
+Potential issue: "3882 p2/p7 guard=false — replica stale non-product defect: f-a6-diag-lib's mergeLineRectsReplica copies pre-T3 semantics (clustering only compares with last cluster), current true function has expanded all-cluster nearby merge (annotation-anchor.ts:260-264 T3 fix note)" Wait that is not "mLR" specifically? If f-a6's replica is outdated because T3 fixed production but didn't fix replica in f-a6-diag-lib. Then in 3882 pages "复刻陈旧非产品缺陷." That sounds like f-a6's diagnostic tool itself has a bug; but they use it only in guard for two pages. It is a known limitation. Could be WARN but not blocking.
+
+Potential issue: "band pairwise counts equal anchor index pairs; 3882 max 0.77 index mismatch pollution, not criterion. But why max 0.77 in root cause; maybe p2/p7 fail mostly due row union expansion not pairing? They say "x-axis IoU1D mismatch causality jump" in W1 probe. Actually in §3 band stats max 0.7745 = row structure bifurcation index mismatch pollution, root cause §4, not criterion. Then W1 says add block pairing mismatch count "钉死 y 域行膨胀→x 轴 IoU1D 错对因果跳步" — so final recognizes the causal link is not nailed. Good.
+
+Potential issue: "IoU1D values for 3882 multi-line anchors low (0.62-0.76) perhaps because pairing rows incorrectly due row expansion, not x overlap. If true, the root cause is not necessarily item geometry bug but metric's reliance on pairing; the gate result may be overly harsh. The final wants further probe in 1b to pin." This is okay but could weaken criterion a verdict. Decision to fail based on criterion a with metric artifacts may be premature. However criterion a was expected 0.99; observed low regardless. If due y domain row expansion, that's a chain B discrepancy vs DOM truth (row union inflated), even if x overlap shifted. It is a real distortion in geometry? Yes.
+
+Potential issue: "s1rot no band stats; s1rot N/A rotate semantics band mismatch, f-a6 §9-4 blind spot." Thus band disagreement not evaluated there. No issue.
+
+Potential issue: "G2 detector healthItem/dom/span: healthItem = item boxes × item necklace blocks? Wait all three are not all DOM? Need no.
+
+Potential issue: "selectionHealth item form f-a6 healthy all 0; span with at most 2.44%; page-level 0.2%, slightly over 0.12% f-a6 range. The N1 correction says f-a6 healthy 0~0.12%; upper edge slightly exceeds 0.2%." Wait 0.2% is page-level, not same as anchor-level. But f-a6's healthy 0~0.12% likely also page-level (outsideRatio of selected spans?). They say "上沿略超 0.2%[N1 修正]" There is an inconsistency: 1/501 = 0.1996%, so "略超 0.2%" is close to 0.2 but actually below 0.2. 1/501 = 0.1996% (round 0.20%). "slightly over 0.2%" maybe false; 0.2% is rounded, not over. Wait 1/501 = 0.1996008%, which is less than 0.2%. 1/829 = 0.1206% within range. The text says "上沿略超 0.2%" in prompt, but mathematically 1/501=0.2%, not over. If f-a6 upper 0.12%, current p2 page-level 0.2%, over f-a6 but not over 0.2%. The bracket says [N1 correction] perhaps previous review corrected from "0.2%" to "略超0.2%"? Let's check Table §6: "p2-bottom=1/41（2.44%）、p7-bottom=1/67（1.49%）——页级 1/501、1/829（与 f-a6 健康口径 0~0.12% 同量级、上沿略超 0.2%[门一审 N1 修正]）" Maybe they are comparing p2-bottom=1/41 = 2.44% to 0.2%? Wait p2-bottom=1/41 2.44%. "上沿略超0.2%" odd. Maybe a previous N1 asked to modify from "符合 0.2%" to "略超 0.2%" — Actually if 2.44% > 0.2%, yes if N1 was about "anchor-level upper edge 2.44%" or "f-a6 healthy range 0~0.12%"? The bracket "N1 correction" from master maybe corrected "上沿略超 0.2%" from some previous statement? Let's parse exact: "(与 f-a6 健康口径 0~0.12% 同量级、上沿略超 0.2%[门一审 N1 修正])". "上沿略超 0.2%" with bracket likely N1 said "页级上沿略超 0.2%, 不是 0.12%"? Hmm.
+
+1/829=0.12%, 1/501=0.2%. f-a6 range 0~0.12%, so current p7 0.12% inside, current p2 0.2% slightly above. Thus "上沿略超 0.2%" maybe typo: "上沿略超 f-a6 上沿 0.08个百分点? No. 0.2% not "略超 0.2%" but "超 0.12% 至 0.2%". If bracket says N1 corrected something, maybe exact phrase is "上沿 0.2%" not "略超 0.2%". We can flag as NIT.
+
+But let's not overfocus.
+
+Potential BLOCKING: The final verdict table says "三判据数字+根因链+主控终裁栏留空" in implementation report header? Wait in report title "裁决表=同目录 f-a8-gate1-forensic-verdict.md (三判据数字+根因链+主控终裁栏留空)." That implies the verdict table in the report originally had final blank? But later "主控已终裁" and text includes terminal. What is "forensic-verdict.md"? The prompt's "裁决表全文（含主控终裁节+门一审修正内嵌标记）" has full verdict. The report header maybe says verdict file "主控终裁栏留空" because this is the report from implementer before master terminal? Not issue.
+
+Potential issue: "实现者报告头 (implementation report header)" says "报告全文在档". But "④ locks 实录: 新受锁件三：`f-a8-gate1-diag.mjs`（" is cut off. Maybe because material package truncated report. Could not satisfy full evidence; but terminal has verdict table. Maybe we should flag incomplete evidence if no code base? The user says "实现者报告头（报告全文在档）" so full report is in records, not all shown. Fine.
+
+Potential issue: "票面=scripts/audits/f-a8-gate1-impl-brief.md" and "裁决表=同目录 f-a8-gate1-forensic-verdict.md" It says "(三判据数字+根因链+主控终裁栏留空)" in same sentence: "裁决表=同目录 f-a8-gate1-forensic-verdict.md
+> （三判据数字+根因链+主控终裁栏留空）。本报告=⑤ 报告契约面。" Hmm this material maybe from the original forensics? Actually "本报告=⑤ 报告契约面." It says verdict table is separate with main controller terminal blank. But later final "裁决表全文（含主控终裁节...）". So master later filled. okay.
+
+Potential issue: "主控终裁（GLM5.3, 2026-09-04）" The implementation agent also GLM5.3flash subagent, same as master maybe not independent. Not issue.
+
+Potential issue: "门 1b 前置修立票" "前置票" a code fix should be "门 0"? Maybe label doesn't matter.
+
+Let's examine "三问" in terminal audit specifically asks:
+
+① "门一处置闭合度（W2 上限表述修正/W4 去预断/W1 转复跑项/W3 阈值出处/N1 措辞——对照下述裁决表内嵌修正标记）。"
+Need evaluate if corrections are properly reflected. We can say yes with minor caveats. Need check W2: In final text action 2 "0.97 上限已被自家样本 0.9745 越过,禁当立约数字" This is an odd expression: W2's original issue might have been that a "0.97 upper bound" was claimed as a structural upper limit in implementation report's suggestion (it says "approximation upper limit 0.88~0.97"). The main controller corrected by saying cannot treat 0.97 as contract number because 0.9745 exceeds it. In final, it also says "observed range 0.8816~0.9745 (structural upper limit undetermined, 门 1b 复跑再收敛——W2 corrected: 0.97 upper bound has been crossed by own sample 0.9745, prohibited as contract number)". Let's verify numbers.
+Observation in §3 "项内部分选中单行锚 0/8 range 0.8816~0.9745." Implementation suggestion §3 says "grapheme ratio fine approximate upper limit (0.88~0.97)"? In prompt "次要：grapheme 比例细分对项内边界锚的近似上限（0.88~0.97）=路线固有语义，0.99 门对该形态结构性不可达（判据口径需设计书分层）." It says upper limit 0.88~0.97, actual 0.8816~0.9745. Thus 0.97 upper bound indeed crossed by 0.9745. Good.
+
+But in §4 root cause 2: "比例切点 vs 实际字形推进差数字符宽→IoU1D 上限 ~0.88-0.97（8/8 锚 <0.99）." It still says upper limit "~0.88-0.97" but actual max 0.9745 > 0.97. Wait root cause says if upper limit is 0.88-0.97, actual 0.9745 contradicts by 0.0045. In §4 it repeats "上限 ~0.88-0.97" and final W2 says don't treat 0.97 upper as contract. But §4's wording "上限 ~0.88-0.97" remains in table though W2 says it's invalid. That could be residual issue! In final §7 root cause row: "根因=ascent-0 直消费（可修域）+边界比例细分（语义固有）+dy 域差（0.3~2.6px）" not mentioning 0.97. Action 2 has warning. But §4-2 text in the verdict (section 4 root cause chain) states "IoU1D 上限 ~0.88-0.97". Does W2 not correct that section? The initial material "裁决表全文" includes "4 根因链": item 2 says "上限 ~0.88-0.97" — it's a "structural approximation upper limit" but actual max 0.9745. This is an internal inconsistency not fully resolved. Wait if "~0.88-0.97" is a range and 0.9745 is close, with tilde approximate; but "上限 0.97" vs measured 0.9745 is invalid as a hard bound. W2 warns not to use as contract number, but §4's statement can stand as approximate. The final decision record should perhaps amend all occurrences. The W2 correction is only in action 2, not in root cause. Does this count as closure? Maybe minor NIT.
+
+Potential issue: "N1 wording"—what was N1? It appears "N1 措辞" in first question. In final table §6 "上沿略超 0.2%" could be the N1 correction. Let's search for "N1" in material: Question mentions N1 wording. Final table bracket at §6: "[门一审 N1 修正]" around 0.2%. So likely N1 concerned the wording "max 2.44%" or "f-a6 健康口径 0~0.12% same order; upper edge slightly above 0.2%." Need determine if resolved. It is embedded. Good.
+
+Potential issue: "W3 threshold source": In §6 they insert threshold 0.05 constant from code/f-a6. Good.
+
+Potential issue: "W4去预断": In final §7 action 1 bracket "不预断方向 [W4]" yes.
+
+So first question likely pass.
+
+② "决策门终位（门 1 不过→回设计+三动作[ascent 修/口径分层/S6 保留+盲区]——与证据匹配;门 1b 立项边界清晰;取证票自身可收口[探针三件 locks 281+裁决表+数据不入 git 惯例]）。"
+Need check whether "门1b 立项边界清晰" maybe not; "ascent 修立为门 1b 前置票" plus "修后复跑本取证器判据 a" plus "判据 a 口径分层入设计书" plus "S6 保留+盲区登记" clear. But some boundaries overlap:
+- Action 1 says create gate 1b pre-fix ticket and after fix rerun.
+- Action 2 says add caliber layering to design. But if design changes, should be before fix? "本设计书 §6 门 1 条款补口径" maybe in gate 1b. It says "动作②判据 a 口径分层入设计书." This is a design change that could affect criterion. But action 1 says run result determines if patch effective; if layer criterion changes in parallel, complicate. But "锚形分层度量非降门" and action 1 says "修后复跑本取证器判据 a," so maybe same criteria after layering. It might require sequence: first action 2 modifies criterion, then rerun. But final doesn't state sequence. Does this create ambiguous gate 1b? It says "门 1b 毕后判据 a 复跑重判"; "门 1b 复跑探针升级项"; the fix and layering both within 1b. The order not explicit, but can be managed.
+- "S6 retian + blind register" maybe not a code action. No issue.
+
+Could flag WARN for "门 1b 边界不够 sequence: action 2 changes acceptance caliber and action 1 changes implementation; if both before rerun, pass/fail cannot attribute cause." Does final require? It says "补 3882 六锚块配对错位计数" to distinguish patch ineffective vs pairing issue. Not exactly layering. Hmm.
+
+Potential issue: The initial criterion a might be modified by layer stratum, so if 1c2d whole-line anchors pass 6/6 but maybe after action 1 and after removing in-item partial anchors? If final fail passes due redefinition, that is a "降门" unless the design intended layered semantics. The final explicitly "非降门", but can assert. Not blocking.
+
+Potential issue: "取证票自身可收口 [probe three locks 281+verdict table+data no git]" We don't see actual "verdict table" committed? Fine.
+
+③ "机器面 ..." Need evaluate if any inconsistent machine evidence. The report says "verify 155/1345/exit=0" but section 2 report says "f-a8-gate1-verify.raw.txt（155/1345/exit=0）"; final data says "f-a8-gate1-verify.raw.txt (true exit code)" maybe 155/1345? Wait table §9 says "```.../f-a8-gate1-verify.raw.txt（真退出码）```" not mention 155/1345. Implementation summary says "verify 155/1345/exit=0" maybe from raw. The word "verify 155/1345" might mean "155 files verified, 1345 lines"? Actually "verify raw 155/1345/exit=0" could be a status from `git diff`? It sounds like `npx eslint` output "155 problems (0 errors, 1345 warnings)"? Wait 155/1345 maybe "155 files changed, 1345 insertions"?? Let's explore.
+
+"verify 155/1345/exit=0" in Python? Could represent "155 passed, 1345 warnings"? Maybe "155/1345" as "exit code 0" not enough. In code repositories, a command `npm test --verify` output `155 passing, 1345 pending`? Or a lock verification script outputs `locks 281`? It might not be a problem.
+
+Potential issue: "src/ zero modification declared" but final says "ascent fix" will be "回门 0 级补丁" after gate; no source change now. Good.
+
+Potential issue: Report's data file list says "终态 281=278+3" but in lock sequence there were unlock files "unlock{2,3,4}.raw" meaning they unlocked before changing? If final state 281, no issue.
+
+Potential issue: "locks:generate+apply four-round modification real record." If source code unchanged, why locks for scripts? Good.
+
+Potential issue: "probe three artifacts lock generated lock count 281" The final verdict table says "已 locks 注册 281 条=278+3" Might be okay.
+
+Potential issue: There are "f-a8-gate1-locksgen{,2,3,4}.raw.txt" and "locksapply{,2,3,4}" but no `locksgen1`? "gen{,2,3,4}" means gen, gen2, gen3, gen4? The comma brace expansion produces gen, gen2? Actually `{,2,3,4}` expands to empty and 2,3,4, so `locksgen`, `locksgen2`, `locksgen3`, `locksgen4` (four rounds). Good.
+
+Potential issue: "unlock{,2,3,4}.raw" no unlock? likely initial no? Fine.
+
+Potential issue: "探针三件 locks: diag.mjs + diag-lib.mjs/page.mjs"—but report says "probe three parts locks: f-a8-gate1-diag.mjs + -lib.mjs + -page.mjs" but "探针三件 locks 281" in question "probe three locks 281"; likely.
+
+Potential issue: "票面纯取证面" means no src changes, but "探针" scripts in `scripts/audits/` count as "not code". okay.
+
+Let's formulate final JSON. Need decide verdict. I lean "PASS_WITH_WARNINGS" because no fundamental blockers, but several warnings (or maybe one "WARN" for final overstatement and numerical words) and NITs. Need ensure no "BLOCKING." However if we find a blocker, verdict "FAIL." Let's see if we can justify a blocker.
+
+Try to identify an actual fail: "F-A8 Gate1 forensic ticket finality" says "门 1 不过→回设计+三动作" but "门 1 不过→回设计" is from failure criterion a. The "三动作" include a source fix code patch. But "门 1" is a gate; failure means return to design. The final action "ascent≤0→0.8 兜底修立为门 1b 前置票" is not exactly a design action; but a fix is not a design revision. If the migration process requires "门 1 不过→回设计" and not "回实现", having a code fix in same decision could violate gate discipline. Yet they call it "回门 0 级补丁" in implementation suggestions? Wait final says "主控终裁：门1 不过→回设计，三动作：①ascent≤0→0.8 兜底修立为门 1b 前置票（...回门 0 级补丁? Actually §7 "实现者建议: ①ascent...（回门 0 级补丁+复跑本取证器)" under implementer suggestion. Main control final says "修立为门 1b 前置票", not "回门 0". If a source defect is found, the proper gate might be "送修" not "回设计". However in F-A8 process perhaps "回设计" is name of remediating criteria and implementation, including code patch. Not possible to know without explicit process. The user query's final says "decision gate record: criterion a fail -> design." So perhaps expected final "门 1 不过→回设计". Do not second-guess.
+
+Potential blocker: "F-A8 Gate1 is to decide if old anchor code can be migrated; criterion a measures false chain agreement; but candidate code may be unaffected by ascent bug? Wait code under migration? Maybe if `pdf-item-geometry.ts:217` is old code not new? If the fix would change production behavior, not just forensic gate, it should not be made in a diagnostic gate without prior code-change approval. But final says decision gate initiates a ticket. That's acceptable.
+
+Potential blocker: "No final evidence that main master has authority / approval." Not part material.
+
+Potential blocker: "is it safe to mark S6 preserve based on true positives when S6 is designed to detect selection health and s1rot DOM distortion is in rotated pages but S6 no longer triggered in dominant page? no."
+
+Let's think if final "RTL/竖排 runtime trigger surface remains zero" should make Gate1 non-closeable because goal is migration of anchor domain including RTL? It says data gap: "RTL/竖排运行时触发面仍零 (f-a6 §9-4 gap continuation); 35 anchors relocate all zero; zoom≠1 untested." The ticket itself maybe expected to cover RTL/vertical? If not, should be known "data gap" not blocker. The decision "not pass -> redesign" and gate 1b project maybe could include those probes? The final doesn't list them in 1b actions except W1? It uses action 2 to adjust criterion and action 1 to patch, action 3 S6. It does not address RTL/vertical or zoom data gaps. Are those part of criterion? If f-a6 known gaps and this F-A8 ticket had to cover them? The "F-A8 Gate1" might be a "重锚域同族化迁移" related to f-a6. If RTL/vertical is a known gap, leaving it unaddressed could undermine "gate1b project boundary clear"? However the final verdict doesn't need all unsupported runtime surfaces if gate1 as such fails and is going back to design. On return to design, those gaps can be addressed. But if the "decision gate" asks whether to proceed, unresolved data gaps should be listed as "non-verdict" or included? They are in §8 data gaps. The final "取证票自身可收口" maybe includes "data gaps" not blocking. Good.
+
+Potential warning: "F-A8 Gate1 criterion a tested only 2D continuous? Did not measure page-level all operations? not."
+
+Potential issue: "Gate status criterion c weak reproducible" and final action 3 says "S6 retain." If CR2 is merely "weakly reproducible" (criterion c is a logical AND? maybe c should be "CR2 G2 separation degree clear"; result weak, thus criterion c also maybe fail. But overall only criterion a fails. Could a "weak" c mean not established and S6 should be removed? Not necessarily; "separation direction retained, quantity weak." Need no.
+
+Potential "S6 保留" despite "c not clear?" The "S6" maybe a gate to keep? Actually S6 is a system component in question: retain or remove? With weak evidence, retaining as last line defense is conservative. Good.
+
+Potential issue: "Criterion b partial成立" means likely not fully satisfies, so overall Gate1 not pass, consistent.
+
+Potential problem with W2 marker in final §7 action: It says "结构性上限未定,门 1b 复跑再收敛——门一审 W2 修正:0.97 上限已被自家样本 0.9745 越过,禁当立约数字" This is a bit odd: "0.97 upper bound was crossed" but all samples max 0.9745; yes slightly. The final decision should avoid "0.97 as a contract"; but the "design doc layering" might need an "approx surface" but no upper numeric. Maybe No hard bound but "non-0.99 threshold" requires a threshold. It says "Structural upper limit undetermined, to be converged with rerun" — while changing acceptance criterion needs some boundary as target; not enough? It will be determined later in 1b, so okay.
+
+Potential issue: In §4 root cause 2 states "grapheme segmentation approximate upper limit ...= inherent semantics." Yet W2 says structural upper bound unknown. If the design doc must avoid 0.97, How will the "分层" set threshold? It may state "item-internal boundaries excluded or assessed with known approximate error"—could avoid numerical threshold. The final says no high bound. Fine.
+
+Potential issue: "unhealthy trigger p2-bottom = 1/41 (2.44%)" but in decision c table "health 0/20 false positives (span口径 max 2.44%<5%)". Is a G2 false positive definition if outsideRatio 2.44% below 5%; yes no trigger. Good.
+
+Potential issue: "w4 says b/c input same touched by ascent fix." Wait c is selectionHealth healthItem (item boxes) is indeed touched by ascent fix (item geometry). b's DOM side is not; item side yes. Good.
+
+Potential issue: "n1 wording means p2 page-level 0.2% maybe was written 0.12%? It says "上沿略超 0.2%"—Maybe N1 asked to correct "上沿略超 0.2%" to "上沿达 0.2%（超 f-a6 0.12% 上沿）", but final still "超 0.2%" wrong. Let's examine:
+N1 relates to "措辞" maybe concerning "0.12%" or "0.2%" thresholds. If N1 was "页级 1/501 = 0.1996%,不得写作 0.2%"? But bracket says "N1 修正" at 0.2%. Maybe previous W? Need maybe a NIT.
+
+Potential issue: "s2crop p1 view crop [36,36,540,720], ROW1 baseline y=720 = crop top. Content true beyond crop. In pdf coordinate y increases upward; if crop box top=720, baseline at y=720 means glyphs with ascent extend above y=720 (outside). But in rotated? No rotate 0. So yes.
+
+Potential issue: "healthDom for s2crop-top item/dom=1.0, span=0.5": dom=1.0 means a DOM block has all boxes outside? Yet DOM span "same judge 1/2 outside": one of two span boxes outside. Could conflict with no DOM distortion. Not.
+
+Potential issue: "Outside = content outside page canvas? or outside selection? If user selects top line partly clipped, not "pathology". no.
+
+Potential "Machine side": "src/ zero modification" but if they used `esbuild bundle out/f-a8-bundles/ar-bundle.mjs`, it may create bundle file under out/ and might be in git? Not src. Okay.
+
+Potential issue: "CSP's file:// source" and "esbuild bundle Node side" There is no "file:// source" in Node? If CSP includes file:// but renderer page might be loaded via http? Not code. no.
+
+Potential issue: "Chain B uses `Node pdfjs declaration data+page canvas CSS box equivalent assembly`. But if the actual app uses `page canvas CSS box` after transform on zoom, and if `canvas box` maybe rounded `w/h`; they round to integers. Domain handling after rotate? In entry, canvas CSS box `{w:Math.round(gBCR.w),h:Math.round(gBCR.h)}`. For rotate 90, page view width/height swap; gBCR of canvas in "screen" orientation can be close but not exact integer due CSS device pixel ratio. This rounding may introduce up to 0.5 px error. Could impact 0.99 IoU thresholds? They report in §8 data gap: "zoom≠1 untested (entry.box 反推 scale 的 ~1px 残差面未获数据)." So a known limitation. Does it matter for decision? If the gate is a strict dual-chain correlation, using rounded page canvas dims could break high IoU? They still pass 1c2d. Not blocker.
+
+Potential issue: "We didn't test actual pdf viewer "floating tool?" no.
+
+Let's decide final severity counts. We can include:
+- WARN 1: Final action 3 overstates S6 retention evidence: s2crop "裁剪缘越界 100%" is not "DOM fallback distortion" but true content beyond crop; only s1rot is DOM distortion. The evidence in §5/§6 says DOM chain correct on s2crop. Thus text should distinguish genuine clipping/out-of-bounds positives from fallback distortion positives, otherwise the basis for S6 retention is imprecise.
+- WARN 2: Gate 1b boundary/sequence not fully pinned: action 2 changes acceptance criterion (anchor layered) and action 1 source fix could both land before criterion a rerun; attribution of pass/fail vs patch and criterion is ambiguous unless a staged sequence (layering first? or fix-only rerun then layering) is defined. No evidence of ordering. Also "STRUCTURAL UPPER LIMIT undetermined, gate 1b rerun to converge" leaves the new acceptance threshold open; if gate 1b is formally opened from this decision, an open criterion may be a closeability gap. But maybe acceptable if "layered metric not lowering gate" and no numeric max named. Could be a WARN.
+- WARN 3: "F-A6-b2 漏网缺陷" claim unsupported: final says F-A6 forensic anchors didn't cover ascent-0 font. Materials show 3882 is f-a6 sample, 27% items have ascent:0, but not that F-A6 anchors missed them; therefore "漏网缺陷" attribution not established from provided evidence. Could affect prioritization.
+- WARN? "Machine evidence claims can't verify from material"—not an issue? As no code repository, but material includes raw file names only. Terminal should not invent. Perhaps cannot verify lock count 281 or verify 155/1345 from included material, but because evidence files not transcribed, the audit likely assumes "在档." We should not flag as "not in evidence" unless our question says no repo access but materials include names. Wait "拿不到代码库，只审随附材料." Attached material includes report headers but not raw contents. Should we treat raw contents as given? Since package says evidence raw files are in archive; material "在档". The terminal might not directly access them. But as terminal, we may not need to independently verify. The "machine side" question asks "verify 155/1345/exit=0 与票面预期吻合" — We don't have actual raw. We could note "raw files cited but not included, so only self-report." But is that a valid finding? The review is of the ticket; the implementation report/table asserts raw exists and exit=0. In a digital audit, evidence raw could be considered included by reference. We shouldn't manufacture issue. We can say "as evidenced by report table."
+
+Need check if "PASS_WITH_WARNINGS" is acceptable. If several warnings but no blockers, yes. The "verdict": PASS_WITH_WARNINGS. The summary should mention core decision evidence supports not pass->redo; warnings about overstatement/ordering/claim unsupported, not affect gate outcome.
+
+But if there are no blockers, could "PASS" despite warnings? The instruction says select PASS_WITH_WARNINGS if warnings. We can include warnings not affecting final.
+
+Could there be enough to make FAIL due WARN? no.
+
+Let's ensure findings don't include issues that are actually in material refuted.
+- WARN 1: Need cite evidence:
+  - In §5 s2crop table: "DOM 链失真可示 不成立：DOM 链正确（IoU1D 0.9532~0.9999）"; §6 "s2crop-top item/dom=1.0 (1/1 盒真越界)". So final action 3 citation "s2crop 裁剪缘越界 100%" as "DOM 回退层失真" is misleading. It may be a "G2 true positive" but not a DOM chain distortion. This is a real disconnect. Suggested: reword to separate "真越界/裁剪缘阳性" from "DOM 链回退失真（以 s1rot 为证）"; retain S6 value can cite two positive arms but with distinct labels.
+- WARN 2: Gate1b "ascent≤0→0.8兜底修立为门1b前置票" and "判据a口径分层入设计书" both before rerun? In final action says "门 1b 毕后判据 a 复跑重判", but doesn't sequence criterion layering and patch. If both happen, the rerun uses new criterion, so cannot tell whether source defect fixed vs criterion relaxed. If process wants decision to back-to-design, action 2 perhaps should open in design doc before rerun; action 1 might be a separate fix outside criterion? Hmm. "W1" added probe to distinguish if "修补无效还是配对口径问题" but not action2. There is unaddressed dependence. Suggest block "修立后按旧判据先复跑一次（仅看6个多行锚是否入0.99）再做判据分层，或在1b票中单列pass criteria." This is not known.
+
+Could WARN 2 be overreach? Maybe decision action "①ascent fix+复跑本取证器判据 a" could be done before action 2? It says action 1 patch + rerun record a; action 2 layering caliber into design doc. If they do action 1 and rerun while original criterion a 0.99, it will test patch. Then action 2 for future. The action list order likely intended sequence. So no clear ambiguity. But "门1b毕后判据a复跑重判" means after all three, yes. Hmm. Maybe don't include severe WARN, maybe a NIT about sequencing not explicit.
+
+- WARN 3: F-A6-b2 leak claim. Evidence "3882 即 f-a6 样本，27% 项该形态在档" implies f-a6's sample had 27% affected, so if f-a6 had anchors over full page it could have been caught. But maybe F-A6 forensic anchors did not cover because only some pages? Not shown. It says "F-A6 取证锚未覆盖 ascent-0 字体面" in final action 1. This is probably a "characterization" in decision. Could be supported by "3882即f-a6样本" but not necessarily. We can cite no specific evidence. Maybe a NIT "attribution unsupported" not WARN.
+
+Let's think of more obvious "NIT": Section 3 "IoU1D matched count 6/20" but "healthy pages all four: 1c2d p4/p9 6/6 and 3882 0/6; item internal 0/8." Count 6+0+8=14, not 20? Wait there are 20 anchors = 5 per healthy page ×4 =20. Section breaks:
+- 节点对齐多行锚 @1c2d: n=6 (page首/页尾/跨行 each two? Across 1c2d p4/p9: 3 anchors per page ×2=6)
+- 节点对齐多行锚 @3882: n=6 (3 anchors ×2 pages)
+- 项内部分选中单行锚: n=8 (single-row anchors? 5 anchors per page includes 单行×2 plus? Wait anchor family 5: page首/页尾/跨行/单行×2 = five. For all 4 pages, multi-line? page首 maybe a single line? Let's define:
+  - 锚点族: page首/页尾/跨行/单行×2. "单行锚点=单节点内部偏移窗". "节点对齐多行锚" comprises page首/页尾/跨行? These might all be multi-line; n=6 per set = 3 per page *2? For 1c2d six over two pages? Actually set "节点对齐多行锚@1c2d-p4/p9" has 6 means 3*2. Same for 3882 p2/p7. "项内部分选中单行锚" 8 = 单行×2 per page ×4? But if "page首/页尾/跨行" are all three multi-line, plus "单行×2" two single-line = total 5*4=20. Yes. So n calculations: For c? in §6, "健康集 20 anchors" yes.
+Then "1c2d multi-line anchors 6/6 pass? yes. 3882 multi-line anchors 0/6. Item internal single-line anchors 0/8. So pass count 6/20. Good.
+
+Potential issue: In §3, "s1rot N/A (band semantic misalignment)" but criterion? no.
+
+Potential issue: "p6 pathological no divergence" means one page of "pathological set" actually not pathological. If pathological set included p6 as a sample, why use it for health? It demonstrates no false positives in sparse. no.
+
+Potential issue: "Criterion b real1c2d-p6: IoU1D 0.8663~0.9981; if sparse and no divergence, why IoU not close 1? Because single line in-item? Wait p6 anchors 5/5 block count true, IoU 0.8663~0.9981, no divergence? It says "DOM same fitting — IoU1D 0.8663~0.9981" all below 0.99 for some, but not classed as health divergence? p6 is pathological set; not included in criterion a. In criterion b "necklace fit truth" means block counts match; not IoU.
+
+Potential issue: "node side no declared geometric pathology pages" means p6 "on page actual no items" maybe selected. Fine.
+
+Potential issue: "s1rot DOM distortion 2/5 zero height artifacts" uses DOM chain distortion measure. If the pathological trigger is "DOM 2/5" (zero-height artifacts), does DOM chain actual "DOM" spans perhaps have zero-height due an actual bug; G2 can detect. Good.
+
+Potential issue: "DOM chain immune to ascent because pdfjs TextLayer doesn't use declaration ascent." Then in s1rot with rotation, DOM zero-height artifacts are not from ascent. no.
+
+Potential issue: "ascent:0 font declaration in fonts used in f-a6 sample; pdf-item-geometry.ts:217 'Number.isFinite(style.ascent) ? style.ascent : 0.8' means finite 0 consumed. But if style.descent also 0, row height maybe `lineHeight`? The code consumes ascent but may ignore descent? If descent 0, item height maybe using ascent only. Could still. no.
+
+Potential issue: Final "repair domain single point" not data.
+
+Let's think of one potentially BLOCKING: "The result 'verify 155/1345/exit=0' may represent 1345 lock files from existing locks. Wait locks 278+3. What is 155/1345? Could be from `git status --porcelain` showing 155 modified? Let's infer from phrase "verify 155/1345/exit=0" in report and "machine side verify..." It might be a "Lockfile check" runs e.g. "npm run verify" outputs "155 passed, 1345 skipped"? Actually "155/1345" likely a preexisting test runner count, not relevant. Evidence raw file has tail maybe "155 test files passed, 1345 assertions"? The prompt "verify 155/1345/exit=0"—the "155" maybe "155 targets checked? 1345 files?" If raw includes "verified: 155/1345 tasks? exit=0". no issue.
+
+Potential issue: "f-a6-diag-lib.baselineRowTruth+true rect... used as true" if current domain differs? no.
+
+Potential issue: "locks final state 281=278+3": Wait before F-A8 locks total "278"; lock registry final claims "281=278+3". However "locks add* "raw" shows applying 3; Generate shows "278+3=281". Report says "新受锁件三: diag.mjs (..." but maybe only two new because `-lib.mjs`/`-page.mjs` preexisting? Let's parse section 4 from report header: "## 4 locks 实录
+
+新受锁件三：`f-a8-gate1-diag.mjs`（" Exactly "new locked items three: f-a8-gate1-diag.mjs" then cut. likely lists all three. Good.
+
+Potential issue: "If no code in src, but this audit ticket itself created new scripts (diag etc), should have locks? yes.
+
+Potential issue: "数据不入 git convention" not clear if "f-a8-gate1-forensic-verdict.md" itself in git; yes.
+
+No blocker.
+
+Let's phrase findings maybe:
+1. WARN severity: S6 wording conflates a true out-of-crop geometry with DOM fallback distortion. Evidence: §5 says s2crop DOM chain correct and out-of-bounds is truth-consistent (§6 "1/1 盒真越界"); yet终裁 says "s2crop 裁剪缘越界 100% ... DOM 回退层失真存在". Suggest final wording: only s1rot is DOM fallback distortion; s2crop is a genuine page-edge positive but same "G2检出" class; if keeping S6, justify separately.
+2. WARN: "门1b复跑判据a" sequencing and layering is not closed. Evidence:终裁 action ① is source patch "修立为门1b前置票"; action② is "判据a口径分层入设计书"; no explicit "先用旧判据仅验证修复效果再做口径分层" order. If both before rerun, failing/pass result cannot attribute. Also §4 still says approximate limit 0.97, while final action says 0.97 forbidden; residual wording could confuse 1b acceptance. Suggest define a staged check with old 0.99/count metric first on whole-line anchors, then add layered norm. Actually §4 "limit 0.97" remains, W2 correction only in terminal action. Maybe separate finding:
+2. WARN/NIT: W2 not propagated in §4-2: still says "上限 ~0.88-0.97" though §7 says "0.97 上限已被 0.9745 越过,禁当立约数字." If final decisions are source of truth for 1b, root-cause section contradicts the corrected wording. Could mislead. Suggest align. That's a WARN or NIT? NIT.
+3. WARN: "F-A6-b2 漏网缺陷" is not established by provided evidence. Cite "3882 即 f-a6 样本，27% 项该形态在档"—that only shows f-a6 corpus has the bug shape; no F-A6 anchor coverage evidence. Suggest mark as inference: "F-A6 取证锚未覆盖 ascent-0 面（待核）" or remove.
+Maybe not issue if "in file" phrase "F-A6 取证锚未覆盖" in final is authoritative? But zero code? no matter.
+
+Need decide if final "PASS_WITH_WARNINGS" vs "PASS". Warnings list should not include spurious. The most defensible is WARN for conflation. Are there any more direct issue about "门 1b 前置修立票" vs "门1 不过→回设计"? Maybe WARN? Could be.
+
+Let's examine terminal decision "门 1 不过" but the result "门1b" not part of gate? It says "F-A8 门 1 取证票（决策门记录：判据 a 不过→回设计）" Overall verdict "fail -> redesign" is closed. It doesn't pass gate. Therefore warnings are mostly on wording and clarity, not on verdict. Good.
+
+Let's consider if any warning should be BLOCKING because final decision cannot be cleanly closed without ordering. The terminal review asks "门1b立项边界清晰; 取证票自身可收口." If 1b action 2 changes acceptance criterion "0.99 for line boundaries" while action1 "new issue" leaves criterion partially open, a ticket can still be closed as "not pass -> redesign" with action plan; new criteria need not be fully known at closure. So not blocking.
+
+Potential problem: The final verdict says "S6 格保留+盲区登记" as an action when Gate1 failed. The process might require returning to design and not retaining/rejecting S6 before redesign? However it is a decision under §6 evidence; okay.
+
+Let's not include too many nitpicks. But user requests findings with severity. Need output JSON only, no markdown.
+
+Need write summary in Chinese, 2-3 sentences. Mention overall verdict maybe "门一三个处置点均已落表, 门1不过与证据匹配, 机器面自洽; 但有若干措辞/归因/时序上的可收口瑕疵，不改变裁决方向."
+
+Need include findings with issue and evidence exactly. Let's build.
+
+Finding 1:
+severity WARN
+target: "终裁动作③/S6 保留依据"
+issue: "把 s2crop 的'真越界'当成'DOM 回退层失真'的证据，与 §5 的'DOM 链正确'矛盾。S6 保留可以直接基于 s1rot 的失真形态，不需把真实裁剪缘越界也算作回退层失真。"
+evidence: "§5 s2crop 行：'DOM 链失真可示：不成立——DOM 链正确'；§6 's2crop-top item/dom=1.0（1/1 盒真越界）'；终裁动作③仍写 '真阳性两形态确证 DOM 回退层失真存在[s2crop 裁剪缘越界 100%/s1rot 旋转伪迹右溢 3.2px]'"
+suggestion: "将 s2crop 归为'内容真越界阳性（G2 检出但非 DOM 失真）'，仅以 s1rot 作为 DOM 回退层失真证据；S6 保留依据改述为'两类 G2 阳性均能被拦截 + s1rot 已确证回退失真'。"
+
+Finding 2:
+severity WARN
+target: "门 1b 复跑判定与口径分层顺序"
+issue: "未明确动作①旧判据复跑与动作②判据分层之间的先后；若两者同时生效后复跑，不能把判据 a 的 pass/fail 归因于 ascent 修复，还是因分层而不再统计项内锚。"
+evidence: "终裁节：动作①'ascent≤0→0.8 兜底修立为门 1b 前置票…修后复跑本取证器判据 a'；动作②'判据 a 口径分层入设计书…锚形态分层度量非降门'；W1 探针要'钉死…因果跳步'但未规定执行顺序"
+suggestion: "在门 1b 票中规定顺序：先用未分层的原判据/或分层前同一定义跑一次 ascent 修复后的 3882 六锚占比，再做口径分层；或将分层前的基线数据单独留档，避免复跑归因混叠。"
+
+Finding 3:
+severity NIT maybe WARN? 
+target: "§4 根因 2 与 W2 修正的残留冲突"
+issue: "W2 已禁止把 0.97 当立约上限，但 §4 根因链仍写'上限 ~0.88-0.97'；且 0.8816~0.9745 的实测最大值已越过该粗略上限，容易在 1b 执行时被当作结构性界。"
+evidence: "§4-2 '比例切点 vs 实际字形推进差数字符宽→IoU1D 上限 ~0.88-0.97（8/8 锚 <0.99）'；终裁动作② '[门一审 W2 修正：0.97 上限已被自家样本 0.9745 越过，禁当立约数字]'"
+suggestion: "把 §4 的约数改为实测区间并注明'结构性上限未定，待 1b 复跑收敛'，与终裁节表述一致。"
+
+Finding 4:
+severity NIT or WARN:
+target: "F-A6-b2 漏网缺陷定性"
+issue: "终裁动作①将 ascent 修复双重定性为 'F-A6-b2 漏网缺陷'，但随附证据只能证明 f-a6 样本 3882 有 27% 项为该形态，没有显示 F-A6 取证锚实际覆盖或未覆盖该字体面的记录；'漏网'是一个未能闭合的归因。"
+evidence: "终裁动作①：'双重身份=F-A6-b2 漏网缺陷修复…F-A6 取证锚未覆盖 ascent-0 字体面——3882 即 f-a6 样本，27% 项该形态在档'"
+suggestion: "改述为'本取证暴露 F-A6 样本集中存在 ascent-0 面；是否属 F-A6-b2 漏网待交接核验'，避免在门 1b 中把待核事项写成已证结论。"
+
+Finding 5 maybe "机器面 raw not in included material"? Not unless necessary.
+
+Potential "NIT: '上沿略超 0.2%' mathematically not over 0.2%; 1/501=0.1996%." But this phrase might mean "slightly beyond the 0.12% f-a6 upper edge, reaching 0.2%" not "beyond 0.2%". It says "上沿略超 0.2%" maybe weird. Could be typo; should be "上沿 0.2%（超 f-a6 上沿）." Let's add as NIT? Hmm.
+
+In final §6 bracket itself "上沿略超 0.2%[门一审 N1 修正]" It appears after N1 correction, so likely exact text is intended. Don't flag if uncertain.
+
+Potential warning "N1 wording" from first question: It specifically asks check N1 wording. If not flag, maybe okay. Let's not create false finding.
+
+Let's revisit "N1 措辞" to ensure final includes exact wording. It says "上沿略超 0.2%" — maybe "N1" issue was originally "上沿略超0.2%" and was corrected. Since they mention bracket, considered closed. Good.
+
+Potential issue in final data "IoU1D>=0.99" with 0.9919~0.9998; actual "0.9919" is >=0.99 yes. "最差0.6232" with two decimals. Good.
+
+Potential issue in §5 s1rot "项链 5/5 贴真值... 右溢 0; outside 0; zero-height 0" but top "truth row 1/1" etc. In f-a6 chain B, "ascent=0"? no.
+
+Potential issue in §6 "病理 2/15" (15 anchors over three pathological pages s1rot5+s2crop5+p6 5); okay.
+
+Potential issue "s2crop-top outside=true; DOM 链 no distortion; in §6 unhealthy trigger 2/15 includes s2crop-top item/dom=1.0; criterion c "two forms true positive" not false? yes.
+
+Potential warning final says "S6 retain evidence = true positives two forms confirm DOM fallback distortion exists" but §6 says s2crop DOM no distortion. Good catch.
+
+Potential issue "G2 blind zone: 3882 ascent-0 row expansion invisible; G2 only outside/right overrun arms has no detection face." In S6 retain, if the largest health-page distortion class is invisible and after fix will shrink, S6 maybe weak; why retain? Because last defense. No issue.
+
+Potential issue "selectionHealth item/dom/span all three are "true selectionHealth" functions; Health page error max 2.44% <5 threshold; p2 bottom 1/41 triggers? No, below 5%. But on next source change if span threshold counts ratio only per detected spans not full health? no.
+
+Potential issue "F-A6 run over p7 is max items page; p6 most sparse; no natural pathological geometry; synthetic pages from f-a6; good.
+
+Potential issue "T9 fixed DOM? f-a6 b1 rerun in file." yes.
+
+Potential issue "unlock raw not no access to repo." no.
+
+Let's see if one of these WARNs might require FAIL? The instructions: if "处置未闭合、终裁与证据脱节、可收口性缺口" find. It might be FAIL only if blocking. We found WARN severities. The verdict "PASS_WITH_WARNINGS" indicates permissible with warnings. It asks "没有发现给空 findings + PASS." So pass_with_warnings okay.
+
+Need output "summary" as Chinese, and JSON no markdown. Ensure valid JSON. Need escape not issue. Use array.
+
+Let's craft concise.
+
+Need consider if finding 2 severity should be WARN; yes. Finding 4 NIT? fine. Use severity "WARN" for 1 and 2, "NIT" for 3/4. But if "findings" contains no BLOCKING, "verdict": "PASS_WITH_WARNINGS" okay.
+
+Let's order by severity: WARN then WARN then NIT.
+
+Need not mention "from material" beyond.
+
+Let's formulate in JSON:
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "findings": [
+  {
+   "severity": "WARN",
+   "target": "终裁动作③/S6 保留依据",
+   "issue": "终裁将 s2crop 的‘裁剪缘越界 100%’列为‘DOM 回退层失真存在’的证据，与裁决表 §5 自身对 s2crop 的裁定冲突；这条阳性是内容/真值层面的一致越界，不是 DOM 链失真。",
+   "evidence": "§5 s2crop 行：‘DOM 链失真可示——不成立：DOM 链正确’；§6：‘s2crop-top：item/dom=1.0（1/1 盒真越界）’；终裁动作③写：‘真阳性两形态确证 DOM 回退层失真存在[s2crop 裁剪缘越界 100%/s1rot 旋转伪迹右溢 3.2px]’。",
+   "suggestion": "把 s2crop 归为‘内容真越界阳性（G2 可拦截，但并非回退层失真）’，S6 保留依据的单点回退失真证据只写 s1rot，或分别两案列述。"
+  },
+  {
+   "severity": "WARN",
+   "target": "门 1b 复跑的判据口径与修补顺序",
+   "issue": "终裁动作①（ascent 修补）与动作②（判据 a 口径分层）都进 1b，但没有规定先按旧口径验收修补、再做分层的顺序；若二者齐头并进，复跑后判据 a 的通过/不通过无法归因于修补有效还是口径改动。",
+   "evidence": "终裁节动作①：‘ascent≤0→0.8 兜底修立为门 1b 前置票……修后复跑本取证器判据 a’；动作②：‘判据 a 口径分层入设计书’；W1 探针项只补配对错位计数，未给执行序列。",
+   "suggestion": "在门 1b 票内明确 staged 验收：先用当前票面同口径单测并判 3882/全量锚过门情况，再落口径分层；至少保留分层前数字到同一 verdict JSON，避免因果混叠。"
+  },
+  {
+   "severity": "NIT",
+   "target": "判据 a 根因链中的 grapheme 上限表述",
+   "issue": "W2 已否定 0.97 可做立约上限，但 §4-2 仍保留‘上限 ~0.88-0.97’；实测 0.9745 已越过该粗上限，文本不一致会误导后续 1b。",
+   "evidence": "§4-2：‘IoU1D 上限 ~0.88-0.97（8/8 锚 <0.99）’；终裁动作②：‘0.97 上限已被自家样本 0.9745 越过，禁当立约数字’。",
+   "suggestion": "把 §4-2 改为‘实测区间 0.8816~0.9745，结构性上限未定，待门 1b 复跑收敛’，与 W2 修正一致。"
+  },
+  {
+   "severity": "NIT",
+   "target": "‘F-A6-b2 漏网缺陷’定性",
+   "issue": "材料能证明 3882 为 f-a6 样本且存在 27% ascent-0 字体项，但没有给出 F-A6 取证锚的覆盖记录，因此‘F-A6 取证锚未覆盖’导致‘漏网’的说法在随附证据上未闭合。",
+   "evidence": "终裁动作①：‘双重身份=F-A6-b2 漏网缺陷修复……F-A6 取证锚未覆盖 ascent-0 字体面——3882 即 f-a6 样本，27% 项该形态在档’。",
+   "suggestion": "改为‘本取证揭示 F-A6 样本集内存在 ascent-0 字体面；是否 F-A6-b2 漏网需经 F-A6 锚覆盖记录核验’，不要把待核证写成已证结论。"
+  }
+ ],
+ "summary": "门一各修正点均已落表，门 1 ‘不过→回设计’与判据 a 的 30%/0.6232 等证据匹配；探针 locks、verify 与零 src 改动的机器面自洽。但终裁仍在个别地方把‘真越界’说成‘DOM 回退失真’，并对门 1b 的修补/口径分层顺序未作锁定，另有 0.97 残留表述与漏网归因待核。以上合计为需修正的警告级/可收口级瑕疵，不推翻现有门 1 裁决。"
+}
+
+Need ensure JSON valid, no single quotes? JSON allows only double quotes; all strings double. Chinese quotes okay inside strings. Need escape no line breaks. Use Unicode text okay. Need no markdown fences.
