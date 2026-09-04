@@ -1,0 +1,343 @@
+用户要求我以对抗审核员（deepseek 审核位）的身份，审查一份设计文档及其配套的任务简报，仅基于提供的材料进行评估。我需要按照以下维度进行分析：
+
+1. 材料边界纪律——设计文档中的断言是否有依据支持
+2. 推理链 §0
+3. 状态空间完备性 S0~S6
+4. verifyQuoteItem 的构建
+5. 落地风险
+
+然后输出一个 JSON 响应，包含 verdict、changes_required、changes_optional 和 summary。
+
+让我从仔细阅读所有材料开始。
+
+**任务简报（材料边界）**：
+
+1. Annotation/AiAnnotationLayer 中的现有未知锚链路使用 DOM 测量族（findRangeAtOffset→getClientRects→mergeLineRects+span gBCR 字形条带推导）
+2. 三个生产链域的状态：保存链（新，使用 item geometry）、保存链（旧，使用 DOM measurement）、锚链（AnnotationLayer/AiAnnotationLayer，使用 DOM measurement）——输出至 resolved[id]={rects,bands}，仅展示用，写回不可用
+
+3. 渲染消费链代码摘录：
+
+```tsx
+pageAnnotations.map((a) =>
+  mergeRects(resolved[a.id]?.rects ?? a.rects, lineH).map((r, i) => (
+    <div data-testid="annotation-rect" ... style={rectStyle(a.kind, a.color, r, matchBand(resolved[a.id]?.bands ?? fallbackBands, r))} .../>
+  )))
+```
+
+4. 锚链代码摘录：
+
+```tsx
+// 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算 rects
+  // +行盒自适应字形带（F-A4 b②——annotation-resolve 域，组件 ≤250 红线拆出）；
+  // 失败回退存量，仅显示层不回写库
+  useEffect(() => {
+    if (pageRoot === null) {
+      return
+    }
+    const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement | null
+    if (textLayer === null) {
+      return
+    }
+    let scheduled = false
+    const resolve = (): void => {
+      scheduled = false
+      const next = resolveAnnotationRects({ textLayer, annotations, page })
+      setResolved(next)
+      setLineH(normalizedLineHeight(textLayer))
+      // 重锚失败者存量 rects 过 band 单源（成功者 bands 已在 next——两路同数学）
+      const failed = annotations.filter((a) => a.page === page && next[a.id] === undefined && a.rects.length > 0)
+      setFallbackBands(failed.length > 0 ? bandsNearRects(textLayer, failed.flatMap((a) => a.rects)) : [])
+    }
+    // 文本层 span 逐个入 DOM（pdf.js render() 异步）：rAF 合并成每帧一次
+    const schedule = (): void => {
+      if (!scheduled) {
+        scheduled = true
+        requestAnimationFrame(resolve)
+      }
+    }
+    resolve()
+    const observer = new MutationObserver(schedule)
+    observer.observe(textLayer, { childList: true, subtree: true })
+    return () => observer.disconnect()
+```
+
+5. annotation-resolve.ts 头部注释
+
+6. selection-evaluate.ts 头部注释（供参考）
+
+**来自任务简报的关键点**：
+
+- 威胁风险：R1 跨模态矩形配对，R2 显示覆盖语义，R3 verifyQuote 自愈机制的领域依赖
+- 关键事实：模型包含 startOffset/endOffset/quoteText/rects；pdf-item-geometry 导出 buildItemOffsets、rectsForOffsetRange、bandsFromItems、baselineGroupBlocks、reconcileItemsWithDom、selectionHealth、clampScale；page-items.store（zustand）中存储 page items；INV-47、INV-58、INV-37，宪法约束；优先示例。
+
+现在，我要审阅设计文档：
+
+该设计提出“domain harmonization”，将所有可见的锚定链路切换到 item geometry family，并使用 DOM measurement 作为回退。
+
+**第 0 节 - 两个测量系统中投影的一致性**
+
+设计断言：
+- 持久化坐标系 = page-normalized fraction（anchor.rects）
+- 两套测量系统向该坐标系投影同一文本
+- PDF 声明几何 = 防御失真——根植于文档自身坐标系
+- 浏览器渲染测量 = 在病理性页面上失真
+- 数值关系（依据 §3-2 selectionHealth evidence）：健康页面偏差 0~0.12% → seam 风险潜伏无法观测；病理性页面差异 25~62.5% → 基于 DOM 的投影是错误的
+
+设计声称在健康的页面上，A/B 行为是等价的，方案的差异只在病理性页面才会显现——而彼时的可信投影是 item geometry family。这就为 A. 优于 B. 提供了核心论据。
+
+这里存在潜在漏洞：
+1. 声称“在健康的页面上，A/B 行为是等价的”——这是真的吗？A 方案（item geometry chain）和 B 方案（guard + coexistence）在健康页面上的行为是否完全等同？实际上并非如此。即使在健康页面上，item geometry projection 与 DOM geometry projection 也可能存在微妙差别（item geometry 可能无法捕捉某些 CSS 布局特性，如 line-height 差异、额外的 letter 间距等）。如果 DOM 测量能够捕捉到 item geometry 遗漏的一些视觉细节（例如 CSS 变换、字体回退、文本渲染差异），那么在健康页面上它们可能并不等同，但即便存在细微差异，由于偏差在 0%-0.12% 之间，这些差异或许不会造成视觉可见的问题。
+2. “健康页面 IoU≈1 但并非完全=1”——该陈述表明项目内部数据，但偏移差异虽小却真实存在。这是否是替代方案选择的部分标准？
+
+实际上更深层的潜在漏洞在于：设计明确同意 B 在病理性页面上无法生成正确的值（只能检测并降级）。但 B 的主要价值，是将 DOM 测量作为一种“双重检查”或验证手段，而不仅仅是另一个几何来源？抑或 B 的本质在于治理两套测量系统的共存——通过守卫来保证不会错误配对？设计以此论证：B 在病理性页面上只能“检测并降级”——而这在设计作者看来使得 A 成为更优选择。
+
+但还有一件可能被遗漏的关键事项——这或许是一个重大的审查发现：**selection-evaluate.ts header 中体现了“三层回退”与 item-geometry 优先的做法**（快路径 → full path → DOM measurement）。设计提到了 F-A6 的三层回退，但正确指出现有注释标注的层级：快路径（ITEM DOMAIN）→ 全量（用于 mouseup 路径，其本身具有 DOM measurement fallback）→ DOM measurement。
+
+嗯，可验证的是，selection 路径的锚定（settle/mouseup 全量路径）原本就具有 DOM 测量回退构建。而设计使注释链路保持三种时态并存——但这并非确切关切。
+
+**与简报的一致性：状态空间 S0-S6**
+
+设计定义了这些状态：
+- S0 mount：读取 page-items.store（§3-3 direct-read precedents）
+- S1 item reconciliation：如果 store 命中，则运行 reconcileItemsWithDom → false 则 S4
+- S2 citation reconciliation + re-anchor 中：verifyQuoteItem 校正 → rectsForOffsetRange + bandsFromItems → 如果成功 S3a 否则 S3b
+- S3a resolved（item geometry domain）
+- S3b single-item fallback to stored values——存储的 rects + bandsNearRects
+- S4 page-level fallback（DOM measurement）——当 page items 缺失/reconciliation 失败时；DOM chain 整体降级为回退层 → G2 健康时转 S5，G2 病理性时转 S6
+- S5 resolved（DOM domain，标记）——仅用于展示
+- S6 pathological page suppression cell——当 S4 + selectionHealth unhealthy 时禁止 DOM re-anchor display，直接显示存储的 rects + bands（F-11 fraction path）
+
+对于“S4 → G2 健康 → S5”或“S4 → G2 病理性 → S6”这个流程，一个值得怀疑的点是：**G2 检查使用 selectionHealth 来判定页面级采样是否病理性，但 selectionHealth 是为 selection 域设计的检测器（在 selection 路径中）。若其输入是对齐的选段产物，而非带注释的锚链……将 selectionHealth 作为特定页面的通用“病理性页面”评价指标，再用于重锚链路，是否恰当？** 设计说（第 1.1 节）：“G2 判定依据 §1 selection-evaluate 先例「unhealthy→抑制」。S6 为新增格，理由：病理页 DOM 回退产物即 R2 之害本身。” 然而，selection-evaluate.ts 提及 selectionHealth 用于鼠标悬停路径——它评估的是基于 DOM 文本层状态的 selection 健康状态。但 page annotation 的 anchor 链路先以何种方式修改 DOM？请细想一下 selection 是文本层的简洁片段，DOM 量测时能更接近于测量文本层——如果整个文本层因 pdf.js 过程而出错，影响的是所有依赖该文本层 DOM 的量测操作。在 measure page 的 select 场景与 measure page 中的 annotation anchor 场景中，在同一个文本层 DOM 上是否会观察到类似的失效模式？如果依据 V1/F-A6 evidence，text-layer 异常形态会导致 25–62.5% 的偏离，那么是的，两者都会受到影响。不过，selectionHealth 在 selection-evaluate.ts 中的既定用途，是用作拖选期的抑制开关；此处却将其重新用作一个通用页面级病理性指标——这很可能可以呈现成一处需要做出说明的假设。
+
+**针对 §0 逻辑的批判性评价**：
+§0 说：健康页面上 A/B 行为是等价的；它们只在病理性页面上存在差异——彼时的可信投影即 item geometry family。这引出 A 优先于 B.
+
+论点缺陷如下：
+1. “等价”并非完全正确的比对——在健康页面上，A 会生成 item geometry 投影；B 会守卫 DOM measurement projection 并保持向后兼容。交付物不同（一种作为 future-proof 的投影，另一种是基于 DEM 的兼容实现），但用户所见的视觉输出非常接近。将 A 与 B 在“行为等价”幌子下等量齐观，混淆了正确度与视觉外观。
+2. 即便在健康的页面上，item geometry vs DOM 测量之间也存在差异——只是小的系统性偏置/非偏差性差异。若要声称某种“完全等价”，有些草率。
+3. 即使病理性页面确实从 DOM 投影中引出了失败，A 也无法覆盖 item store 重建中存储条目的场景；B 相反聚焦于守卫但无法正确重建——但是，当一个 item store 中同时存在 items-based 和 DOM-based 的存量时，设计到底如何解决读取和合并这些异构的现实？如果 A 是 winner，它仍需要处理一个现实：库值是在 DOM measurement 域中存储的。“resolution”可能不是归一的（或者是？）
+
+实际上，我需要仔细注意 **R3**：verifyQuote 校正 —— 设计承认 A 不能满足：“该项自愈”需要使用 item geometry 来构建等价物。第 3 节设计 verifyQuoteItem(items，startOffset，endOffset，quoteText，prefix?，suffix?)——声称使用全部来自材料库的模块组件构建该 object 是可能达到的。该对象首先通过 buildItemOffsets(items) 构建 span{...} 数组，然后粘合得到文本，采用与 selectionToAnchor 相同的 quote/prefix/suffix 切片逻辑来查找 quoteText——这依赖：①selectionToAnchor 的切片逻辑必须与可声明断言一致；②材料中锚中是否真的记录过该切片逻辑吗？
+
+从任务简报看：原文在引用 selection-evaluate.ts：“快路径偏移域 = probe 全文偏移（selectionToAnchor 同源同式）”。但任何位置都未给出函数体，也未给出切片逻辑描述（除了 semantics 是 quote 并加入 prefix/suffix）。因此，从材料中无法得知 verifyQuote 的匹配核是否会复用 selectionToAnchor 的“同款切片”——这将是一个设计假设。设计标注了该点：“假设：需主控验证——verifyQuote 匹配核是否纯文本函数可直接复用；若否，按上段复刻（仍材料内）。” 
+
+所以，设计大致承认此前的叙述尚未被验证。它确实标注为需主控验证条目，但这并不完全可靠——由于 A 在病理页面处理中会破坏 verifyQuote 语义，因此这种域内等价物成为硬要求。若非纯文本可复用，则若要完成 verifyQuote（设计声称可重用的同名区块）需要编写新的逻辑——新的逻辑若出现缺陷，不会影响现有自愈，而是会影响 item-based equivalent 的基石。
+
+**设计文档更缺乏的一个关键是：它并未考虑何时需要重锚，及锚链是否真的需要再次运行 verifyQuote。**
+
+所谓“verify”，是对比已存储的 anchor quote text 与渲染生成的 DOM 文本（即文本层 DOM）——如果人工在选中文本内容时其对应 pdf 文本与 DOM 因字号/样式投影存在系统性位移（排版偏移），所存储的 offset startOffset/endOffset 需经过校正。但如果 DOM 与 item store 在文本上是一致的，是否可以简化 verify？该 design 在 Section 2 进一步说明 verifyQuoteItem 与 verifyQuote 的域语义是等价的。
+
+我在此标注：因为当前 annotation anchor 保存域（F-A6 domain of selection）的注释锚、recalls 是否也在消费 pdf-item-geometry，这确实是一个确切的原始域（F-A6 域=selection 产链），所以 item store 是被自身实现使用的。
+
+让我们聚焦于设计中的真实缺陷：
+
+**缺陷1状态空间：状态 S0 直接读取 page-items.store —— 但没有任何异步语义或取消机制。当前链路由 rAF (requestAnimationFrame) 调度，读取 DOM 量测作为同步值。当标注正在显示/正在修改，而 store 中没有任何 items，或 store 尚在加载中时——S0 是持续了 rAF，还是等待 store——在 render 链路读取时立即失败？**
+
+该 design 称 S0 直接读取 page-items.store（§3-3 direct-read precedent——快路径的 precedent in selection）。但 selection 测量针对一个正被用户选中的文本（有一个确定性锚的上下文），annotation 可能在其显示寿命中随时出现。若 store 为空/缺席，S0 将过渡至 S4 回退——但 store 何时就绪？这是否会使注释先闪现 DOM 回退态，而后当下一个 mutation 到来时跳到 item geometry 态？
+
+设计文档表示变异监视器（MutationObserver）与现有节奏保持，但若 item store 尚未变更—— item 进入后是否会触发？来自 task brief 的 page-items.store 项：store 被“注册 item/page geometry...”。其中是否存在一个 observer 订阅可以令 annotation layer 在页面 item 注册时察觉出现？task brief 未详细说明加载语义，仅指出 store 是 zustand。因此，“store readiness race”是否被材料覆盖的事实尚不明确。若这一前置性组件缺失，实际落地很容易出现条件竞争——标注会在 loads 中按照 DOM-measurement 显示，然后切换到 item geometry，这违背了解决方案“正确投影”的目标。
+
+但这也许是一点瑕疵——实际上调用 MutationObserver 的工作方式是：文本层的文本覆盖在每次解析时完成；这就立刻 refresh 值。如果已注册 page items store，那么只要文本层中的 spans 渲染，resolve 就会运行；如果 annotation layer 先运行于覆盖渲染之前，就走 DOM 值；之后当 DOM 文本渲染并触发 mutation，resolve 会再次尝试 item store ——如果 store 未加载，就会返回 DOM-measurement——当 store 载荷加载完成时，没有任何 mutation 会在 DOM 中触发，因此基于 item 的解析永远也不会进行。只有 store 中某 listener 存在时才会触发 re-resolution。这一点缺乏处理。
+
+然而，在 selection 世界中 store 发生于 selection 事件，DOM 文本层已经就绪。在 annotation 场景中，其运行时序彼此独立，因此必须协调 store 供应与文本层解析。设计并没有说文本层解析和 item store 数据注册都已完成，并整合于统一流程的判断中。它在第6节 S4 项中提及：fallback=“store 就绪后 MutationObserver 节奏重入 S0”。 但 store 状态变更方式并不引发 mutation observer。MutationObserver 观察的是 textLayer DOM，而不是 store。如果 store 延迟 arrive，而文本层不再改变，则不会触发任何重试。且 store 就绪项（第7节,page-item 缺席）这一条为风险是否足够？
+
+**缺陷2：混域现状跨 store resets 的表现** —— 如果 anchor.rects 既有 item 又有 DOM 域，而 item-based chain 在 render 时通过混序归并（） / 现有值并串？render 路径的做法是 resolved ? resolved(a.id)?.rects??a.rects、resolved ? resolved(a.id)?.bands : fallbackBands。如果 anchor.rects item-based 存在，匹配了 resolved item 值，实际得到相同的值——matchBand selected band 恒等于该 rect 相同族来自 band coverage 原本存于 rects 内的几何。但若是 legacy DOM location matching failed，就落到 a.rects —若 a.resolved 存在即采用 item，若是 item 不存在就从遗留数据取——即 item→ 若你 item。
+
+然后重要部分：那 fallback 当 DOM/resolved?===不存在时老 rects 从 legacy DOM 展示经 S3b fallback state? 状态 S3b：single-item fallback——存储的 rects + bandsNearRects。但 bandsNearRects 需要 textLayer DOM 测量（其实是 DOM），rendering history 说 fallbackBands 在全局文件中按失败集生成。尚未崩溃？
+
+其实注释说明：bandsNearRects(textLayer, rects) 是 DOM 测量。设计让一条 S3b 时继续使用 bandsNearRects，但此前，在 S3b 的每个分支里，“若 rect 来自 legacy DOM 域而与 render 匹配—— 它可理解为 rect 配对于遗留 bands 的同家”—— 但若 rect 在 item 域、bands 经 DOM，问题即 R1 经此返回（设计本身称 S3b is 中的可跨越的家族配对，依 INV-59 作限定）。这无法解决触发它的 R1，所谓 single-item fallback “采用 old rects+bandsNearRects”构建状态 —— fallback 到底意味着什么？
+
+对此设计在 S3b 说：“该引文 quote reconciliation 失败则 →将存储 rects 与 bandsNearRects 作为各自保留值的 fallback……现有语义保持逐位一致（不劣化现状）”。但这会产生原封不动的 R1。设计承认这一情况存在于 S3b，并以 INV-59 将其备案—— “跨族配对仅允许在 S3b/S5 fallback 单元格中并作为已知边界登记”。将 uneliminated R1 视为已识别限制，是否是放弃得过多？
+
+不过，如果用户现有工作流本已包含 DOM fallback，这与当前的故障模式一致，因此不会变差。但这并未消除 R1——只将主链中的消除，把剩余部分引入 S3b+登记。设计列下“R1 residual（S3b/S5 跨族配对）→ INV-59 限制 fallback 单元格并登记 ”。其使用 INV-59 的处理“所有引文都从单一几何域对 account.匹配”，对 R1 残余而言未必是净化。
+
+**缺陷3. 对 item geometry relation 与 text-layer 的现实情况对比：在 §0 b）定位:item geometry domain 并未通过 “DOM”共享。但 band display（行盒高亮 bar 渲染）依赖 row band generation from items，而这些来自 item geometry 构造的一个实际布置。随 text-layer occurrence（annotations mark text layer box height）出现时，如果有其他 horizontal position offsets —— 若 PDF.js 在单个 scaling mode 中呈现若干细节（在当前渲染 时机 的 zoom transitions at mid-zoom 期间），item geometry 是否独立于 text layer render scale 参数？以及该 item geometry / DOM 之间的某种残余异步导致 item geometry shifts on zoom — 而 annotation rect rendering 为 absolute positioned overlay synchronised against viewport —— 当 scaling 应用时，如果 annotation layer 对 cached item geometry 的尺寸不正确是否会产生偏差？这是它在 §1.2 所提 zoom 行为：“项几何族随 viewport 重合成=天然正确（几何×viewport 定义如此）” —— 而它的实现是尺寸乘以 viewport。如果 zoom 被应用，V 会更新，重新计算生成的几何。在 Mouse Zoom transition 之间，若过渡所用 rAF 不被触发 resize，直到 mutation……此项已在注释流程中由 viewport geometry recomputation 与 DOM rect or 支持？可假定 item geometry pipelines use page viewport parameters that update automatically通过 pdf.js events, 但此关联未必显式。这一点在设计中被当作 given，而未定义 domain。
+
+**缺陷4. §0 argument “healthy page: A/B equivalent”—— 在一条合理解释里……在 healthy page with positive detection (item generation) —— B 保护DOM 非健康,DOM与item两条chain输出的值也许近似相同——只是 DOM fallback lines 并非 A。可是即便 healthy 里,有某种差异（0.12%）为 matchBand etc? selectionHealth normal 0–0.12%, 是 IoU 0.12? 可能产生视觉差异。0.12% 平均偏移小但不明显。若原文强调这种差异可以忽略不计, 需要基于 matchband 阈值下视觉的差异不显著。此处的脆弱 claim 过度以 IoU 域表述。
+
+**缺陷5. 当下 designer 可能遗漏的一点:一个 item geometry 的可用序章要求 store.rects 存在顺序。但 anchor 包含多个 rects(每行?),其保存的 quote span candidate could cross item spans。验证: rectsForOffsetRange API 接收 offset 区间, 生成 rect?从材料它输入 `offset区间→rect` 的直白 extract。若 quote 是两个 section 之间的、跨 item 的? rects 由 each ref? (猜测,不作无关修改)。
+
+**缺陷7：文档切换 —— 设计仅说 observer.disconnect 存在；但上下文关于 store wipe ?? store state 在文档/页切换中没有清除。设计将 store 中 entries per page 以参数识别，而 store 随docSwitch 重置？其响应说明若 store 未在 document change 时清除，老 page entries 会造成页面切换重入 S0采用正确 page? design 已表示“页项随文档切换，S0 reentry is……” 其实 zustand store 跨文档是否清除?无法从 task brief 论证——只 claim “store follows document switching” 自身即是对真相的假定。应标记为 assumption 而非素材表述的行为。
+
+**其余: critical look at S6。**
+
+S6 = pathological page suppression cell: The design“直接显示存储 rects + bands走可用 fallback path（当 DOM 投影已证失真）”。但一旦store有items（pathological 时） 为何会仅回到 stored rects? item 域 valid projection 不该在store item presence时一样可用？S4 是 page-items缺席或有 reconciliation 失败 →你进入了 DOM chain of legacy. 这时你的情况是“item 不可用且有病理”, store rect/... item only 皆缺”。此处库存 quote 里其实含可能的 item offset? No,从 problem defined,离线持久 = anchor.rects, it can 存储 item selection geometry (new) 或 DOM meaure(legacy)。若 item store丢失(缺失文本层 failure cases) 未能 generate valid values; 那么就显示 curated stash + BandsNearRects。BandsNearRects又是 DOM measurement —— 从 pathological observation,其suppressed render. 若仅渲染无带形的 stored? 若 bands 被禁用会影响视觉? 设计此处表示“直显存量 rects+bands 走缺省路径(F-11 分数路径先例)”——这是说缺 band 也 ok, 直显 via annotation resolve（rect sort etc)? F-11 fraction path precedent(from annotation-resolve header where缺 bands → via F-11 FALLBACK)。是：所以 S6 将 suppressed bands fallback logic accepted低 binding。
+
+但是，S6 还有一个隐藏问题：如果在 S4 中，“G2 pathological” 是通过 selectionHealth 从 …… store reconciliation value 给的，而这个 value 同样是 由S4 DOM chain的产出作为 selection measure? selectionHealth 是基于文本层和 store 文本的比对，但 S4选择没有生成? health unhealthy 必须被调用—— S4 其实会调用 DOM 的 legacy resolve?假如 textLayer 已渲染,无论健康与否,它会对DOM chain生成数据。而若情况病态且 DOM chain会得到错 projection: 它必须丢弃 resolveAnnotationRects 值, 以避免 R2。设计正确地保持显示存量值。对,这就是操作域。但同时需要警惕 : pathology 判断本身需读取 DOM测量。在 pathological 页面部分 text-layer 异常形态导致 lost的测量,selectionHealth 能实施吗——若缺失 text-layer nodes, 在 S4 回退仍存在?（来自 R 描述 header: pathological = text-layer 测量为25-62.5%差异并且可以来自诸如 text layer overflow、mispositioning;可能仍然能够进行 measurement of? select query itself is reliable when there is some DOM?）—— 此项假定需要验证; 但作为 S6 was designed is okay。
+
+**缺陷8：设计对 INV registration 的论证。**
+
+- INV-58 expansion : from selection-produced chain to + anchor production — 将链条合并入同一 family 而全部可显示: 语义。BUT 当 design 让 DOM fallback in 'explicit fallback layer labeled' 时对该 prohibition 是否破坏了 uniform family 作为 invariant？ 它对注释作例外标记道 — DOM measurement 只允许在 explicit labelled fallback layers以 masked domain 出现。selection chain (F-A6 evaluateQuick) 已经有 DOM fallback in全量评估。两条 inv are each conservative? 设计书明确绕开了需要移除的 DOM geometry from fallback 以遵守 single-family，它让 fallback in 'explicit fallback' 并以 domain labels 进行管理。似乎是为对抗质疑而进行了缓解。
+
+- INV-47 applicability:mergeLineRects no longer re-entry primary anchor path: Scope shrink mention。INV-47 archived state assertion lock 细节： `pitch double gate + fallback ..fidelity intact`. INV-47 mergeRects in lineH requires caller side? mergeRects at line 43 remains,used 消费链(deprecated record reads with DOM merged) and fallback uses mergeRects in similar way. If mergeLineRects不再重入链执行,被锁测试 asserted for match merges,不再触发——设计建议 if locks test assert call paths trigger locked change flows ?? It says if depends assert call surface then needed流程; 那么是否存在 concern that**引退并未真正解决 INV-47 受打击面，仅仅将其迁移,以及 render消费链会不会仍使用 mergeRects** .
+
+消费链:
+```tsx
+mergeRects(resolved[a.id]?.rects ?? a.rects, lineH) ...
+```
+render-chain continues mergeRects (not mergeLineRects) with resolved rects同 from item geometry —— mergeRects is 同样的 merge 功能 。While design 决定 mergeLineRects特定离开… wait it says “mergeRects挂 lineH”（设计书 INV-47 节:适用面收缩 …mergeRects 挂 lineH）。source code -- mergeRects来自消费链并且为render, 它永远不直接 under INV-47? INV-47 是受锁⑪号锁断言 mergeLineRects/mergeRects pitch double gate+缺省语义。经过评估如果已保存 rects如今是新 family以及 item-domain which use line-segment-like rect? 几何族相同性质如果 each-line rects not needing 合并? 现实已经 item anchor 值……为何被合并; 它们的 rect 为 each word run 现 rendered 行为。用户调用 mergeRects仅输入旧库 rect;仍受 pitch。设计并未修改 mergeRects 调用路径，只是说调用它的 merged values 的语义不同——如果仓库 rects 已item-based, mergeable 的样本是单个行闭合矩形,使用 merge Rects is not pitch? 独立 层面,将Rects提升到可 merge 需要的操作 其实与 line pitch 相关的 legacy DOM rect 数据不是必须的,属于 item values?但这并非重点——重锚 resolved（DOM fallback）一直是旧 DOM rects。在item domain中产生的 rects 会各有该范围内 text-run 的line boxes 每符宽度… 设置越细, 合并需求就减弱, INV-47 适用面收缩可能有充分理由。
+
+- INV-60 - This 发明可以会与已有 rule “storage writing prevent update” 描述 status。未通过材料无法 validation correctness;看起来合理。
+
+- 新增 INV-59 同族配对禁令——但要发 notes: S3b/S5跨族 return: INV-59 says essential resolved.rects与bands must同族; 跨族 pair仅禁止回退格并且须登记已知边界(消 R1残余为主链)。 S3b/S5本应 fallback semantic preserve legacy DOM。 当store rect？or S5 likely? S5 items absent所以 resolve produce item? Actually S5 happens only S4 when item absent,legacy DOM measured got new rects; It isDOM-labelled,其bands由DOM ring生成 — 两者一致。 S3b则至少对 rects item 对应bandsDom is an actual same族。于是 “同族禁令 + explicit exceptions” 是一种退化设计，不如 “domain identity” precise。
+
+Missing key in design **§2 options table correction**: 其 A+C1 row 声明 “消除 R1/R2/R3 ”；但表格在前边几个 section 已不断指出残余存在于 fallback 路径(R1 residual)并将归义于 invitation。表中也含S3b, R3 instance？“verifyQuote 等价(§3 节点可构建)”——列。需要上下文。
+
+VerifyQuoteItem construct itself以及“domain semantics equivalent”必须作出取舍。这是替代 verifyQuote’s‘自愈’的函数吗？旧 verifyQuote在重锚时运行 如果它又匹配某偏移——实际上 verifyQuote 涉及quoteText↔DOM 文本对账以自校正排版漂移; Why is self-healing 在ITEM domain works不同?因为 item text is DOM text? if DOM text is corrupted (pathological)然而 item text可能与DOM text相同还是不同？ 它可以从某些 alternate source? That's actual item offset不位于pdf.js text? which provenance?
+
+As design constructs, item text derived from buildItemOffsets(items) 然后 translate the logic from selectionToAnchor。It states “join 项文本后按selectionToAnchor同式 quote/prefix/suffix 切片逻辑”。
+
+对比 quote semantics, 原 verifyQuote aligns quoteText to DOM。 若 text DOM in pathological suffers, does item text suffer?假如 textLayer DOM 具有畸形 spans / reordering, yet item store与 DOM reconciling fails... all fall to S4. quote may still match text content in its own完整路径？请区别 geometry displacement、text reordering, re-entry nodes — 若其文本顺序损坏 or内容重复……verifyQuoteItem uses canonical items text (store-grounded),而 stores 逻辑文本——如此这般自愈相对在 store 中的语义而促成这种。 OK.
+
+两个未知数：
+(a) 如何需要 PDF.js 每页文本的 item store 的 canonical text? And it anchored using buildItemOffsets items 而 item text 是否存储… task brief states buildItemOffsets(items)=> {spans,total}. 不清楚它是否为 spans中每个 item 包含 text. 若不知文本 stored，design cannot join text from offsets alone. Actually from selection use, selection链路将引文用 quote start/end offsets，并以此从 page items DOM text 获取 rect? 或许 item contains textString. But we lack dataset to prove that? design does know textAnchor item… 若无文本，则无法进行 quoteText matching against item text 。设计引用它建立在其之上的“buildItemOffsets 得到 页项文本窗” 这一语句其实是它自己赋予的，non-task-brief。如果 items 没有附加文本，verifyQuoteItem 不能 matcher quotes。材料显示没有字段模型细节如 pdf-item 是否含其文本？看selection快路径轻量 offset probe引用 … light probe（Range.toString×2）所以 selection offset mapping可能 uses page text index rather than scanning original quote text in store? `selectionToAnchor`需要 join O(page text) 在 headers中 —— includes text index→offset mapping—— those spans from page items must have文字值;何谓文档就 item域 in 各自 text extraction? yes likely ItemStore holds. 设计可以凭证据。
+
+还有**(c)病理率定义必须 25-62.5%, healthy 0-0.12. 病理分类阈值5%选用selectionHealth? 一个 page that have DOM text vs item text consistent (0.1% divergence) 在有 slightly differently shift of glyphs? For display: 设计还是走 item 当作项几何等rects可见——无论健康与病态均向item域重锚, 而不是一 key 区分. In state chart only in S4 fallback case—good enough: on healthy text layer,anchor can very likely pass item reconciliation and得到S3a resolved带item domain.
+
+**疑问：设计对替代 B 无安全守卫：'A+B' 组合消除?**
+
+设计表格的组合? A 的 DOM fallback 存在,虽然一旦调用在S6 disabled… B guard could still附加于S4/S5? Actually renderer 路径缺 matchband 来自S5? 它不需要额外防域错误: resolved 被标签 domain,并且 matchBand = 同派生 via item生成或 DOM derive. Try adding B guard would也 require “保留 two domain value generators as companions co-existing, or B only be registered guard diagnostics?而材料宪法：“方案切换=删除旧方案”(不允许两个长期并存几何方案)。设计解读为 B（guarding coexistence）违反长共存方案，固拒之。宪法原文精确来自先例 §3-7? taskbrief fact 7: “宪法约束：“方案切换=删除旧方案”（不允许两套几何方案长期并存）”. 是。没有长期并存; 采用 A+DOM as fallback层。但 fallback 仍是第二几何。宪法注释若指删除旧方案在切换中不可存留双源;fallback、退化语义如 F-A6’s三层回退是否有先例。于是它正确允许 fallback链。
+
+**阶段 gate1 / first comparative real-device** 设计 §5-6 设计门0: verifyQuoteItem 纯 function+单测绿; 门1复跑—new & old同页双跑。 同时修改段落说 compare two display? 会不会引发与 material 一致性；不可 on same page with selection ? 它在 overlay double-run 是测试基础设施 可执行 isolated pass… not worth raising.
+
+**Changes that should be required:**
+
+主审位：哪个是真实最高关键问题？ Let's assemble top issues:
+
+1. **Store readiness / stall gap** (S0->S4 rule misses re-entry signal): 当 pageRoot already has full textLayer, store 尚未注册（懒加载、竞速）,resolve() 不存在该页面 item; S4 ->S5 (DOM) applies project DOM值;当 store 接收到 items 后页面内既没有mutation也没有 explicit S0-store subscription/trigger re-run,则 resolved item values never get recomputed。这是让 A 的 guarantee 落空的关键漏洞;设计仅通过 MutationObserver节奏可以处理 (实际文本层变化),但 store填写本身并不触发 mutation observer。已在风险表“page item absent”只 claim“S4 fallback。store就绪后 MutationObserver rhythm S0 reentry”,但经不起推敲,因为 reentry signal be from store only. Material告知 page-items.store is zustand; Zustand provides subscription,并可作为 reactive-read hook. Chain closure (resolve function)内部现有语义无 store订阅, 需要的 adapter change (resolveAnnotationRectsItem )去让主链把 store作为可能的状态源or externally called again. 必须补充商店订阅重跑流程或在resolveAnnotationRectsItem里每次 mutation driven 探。 
+
+2. **VerifyQuoteItem 基础真实性不足** claim §3 may be “材料内可复刻”: On material provided, selectionToAnchor的存在与“同源同式”语义见于 selection-evaluate 头注,但没有函数体,其 quote/prefix/suffix 切片机制并非已经证明可用于 annotation anchor 的verifyQuoteItem? verification as design assumption stated? If not validated the decision gate0 may pass since假设的裁决是主控可deny. 但正因 if it Deny clause makes R3 residual remains hidden-only 自愈缺失? Risk table said fallback semantics=keep offset library values (not self healing). Perhaps enough.
+
+3. **误用 selectionHealth——它乃 selection chain 的 guard 检测器,却因 serving as annotation S4 domain pathology detector 而无适配**：selection-evaluate header 说健康 / pathological rate on selection-produced comparison. 适用于 page 病灶 pathological? 在 render page 上比较 item text & DOM 可以被独立 computed— 若输入 item text+DOM text 与 selection 做比较, 它不是 selection 单专属。possible to reuse but未作为 annotation condition 在任何地方验证。必须假设 material。此外 S6 suppression 可用 DOM 值时，selectionHealth 只有执行 DOM evaluation之后才能知晓;因此S4先build then after health decide discard DOM resolved product? 若 pathological discard dom result but damage若渲染曾使用? Should discard before render, renderS6 after health outcome. fine.
+
+4. **INV/status gap but 并不严重**。
+
+5. **S3b / INV-59: phrase residual R1 remains here should explicitly no longer be a bullet under “消除R1”**; 相比 source transform... 该方案实际上离开 S3b 的 cross-family pairing 作为已知 boundary by INV-59 而 document not claim complete elimination? 其 §0 已经说“resolved[id]={rects,bands} 同族同域（消 R1）”, result 链路只有在 S3a 造成R1; 在S3b有 cross-domain pair in sink 由 INV-59 register known,因此 “消除R1” 主要 claim。ok if known table.
+
+6. **Input mismatch: DOM bands v item Rects in S3b: fallbackBands legacy behavior existing as R1; 你可以通过视觉可见 R1 错误匹配保留在 failure 上。** 可行…not a regretful ?
+
+What about"受锁面"—design covers.
+
+Is verdict ENDORSE_WITH_CHANGES? 有缺陷但其方向有据可以修订。the design overall well-built; with main gap store readiness. I'dlikely end with ENDORSE_WITH_CHANGES if I discover some material-level logic holes. Compose required changes.
+
+Let's produce a balanced review，并考虑五个维度的强制输出。
+
+**过一遍所有五维度 detail comprehensive thinking to refine demands:**
+
+**Dimension 1 材料边界纪律**:
+- Design references select section numbers (all but a few unlabeled) 。检查未经 label..? “材料外断言均显式标注”——It marks assumption+preconditions at§3。“G2 matching applicability” used without assumption label, potentially assumed from selection-evaluate header “unhealthy→setPaint(null)”and design expands to annotation. Also §1.2 “store 页项随文档切换” — not material — unlabeled assumption. §1.2 “observer.disconnect已有（现码在案）”—— truth from task-b material. “zoom recomposition natural” is definition from material. Hard to question. This triggers verification issues.
+
+**Dimension 2 reasoning chain** (§0) p:
+   A/B equivalence healthy→ equivalence? Since healthy and pathological thresholds concrete data, not direct evidence for all pages. "Equivalent" in exactly their error pattern, must qualify by identical? This conclusion used to argue A's cost (break health behavior) low. 在0.12% diff no visual significance assumption, not direct evidence, indicates missing statement.
+
+   “hierarchical唯一可信投影=item 族” derivation excludes hypothesis that DOM-measure family might after corrected by not-layout shift ??? The evidence from V1/F-A6 pathological text layer make DOM unreliable. On cases unknown material. Acceptable reasoning.
+
+**Dimension 3 态空间缺格、序列**: 已经探索空隙:
+ - Store readiness not as S stage
+ - The S-state per annotation per page misses “store 可用但尚未 reconcile / partial page items” check route (single-item unfound:若store已有些item但当前quote spans落在缺席 item range上?) the design S1 reconcile items with dom is page-level; S4 page fallback — if某句话的一个span absent,其余页正常,page-level失败 into DOM fallback then S6 pathological 压制整批注释?? Should single-quote be S3b off-level failureof quote after pass page reconciliation? Already two fallback levels: 页面 item check and per-quote reconciliation. For quote in page where page reconciliation pass but该项缺失or 项不完整— quote match fail→S3b存量; ok。 对于缺项页级 S4 pathology->整页引用回退——yes.
+
+ - S4 health health assignment: G2 "selectionHealth unhealthy" may in pathological suppression skip S5. What if data in store is mix新/旧? s5(suppress) ok.
+
+ - Additional cross-case:e color mode/隐层、visual-only reading——not in materials? maybe unnecessary.
+
+**Dimension 4 构造**: covered.
+
+**Dimension 5 落地风险**:
+   - INVs already.
+   - verifyQuoteItem on actual reference — same.
+   - Domain-marker field "resolved increases domain marker（仅运行时，不触模型锁）" OK.
+   - Risks for matchBand threshold & R1等.
+
+**changes_required"候选:**
+1. 在保证 execute S0 re-entry on store load — unless verify material给subscribe/store就绪事件, or主动在 annotation resolve re-fires周期性/显式 until一次 resolved? More robust design: replace local MutationObserver schedule to include store subscription（store items arrive→schedule）；page load的 text 无变化情形使用 storesignals state readiness before resolve (module读 items store via hook? zustand). Need new design text.
+
+2. 为“S4→S6 的病理判定”对 annotationdomain的适用需适配或假设标记；设计与selection-evaluate §1 对应是 chain-to-own 的检测项，不应改用到另一产链 without声明输入独立性或检验存续项(如 annotation 输入=DOS text + item store文本可能共源? 即使真当 G2 reuse行为由 system-state? 但引用不可证…… at least 门2前置？should be run revalidate real-device given same pages? Could add门1 also验证 S6可复现)。
+
+3. §3 verifyQuoteItem复刻的切片逻辑在 materials 尚无代码证据，应将“selectionToAnchor同式切片逻辑可复刻”由一个带假设标记 upfrom a需要主控validation to a明确 gate-0 deliverable + 提供 mini-spec that verified via test (set matched quote at shifted offsets)。它实质是主功能的硬前提。也许门0是给出 spec? Actually gate0是单元测试绿,若失败那红作为 gate 要求…… but design has若不可复刻→assumption sentinel answer already.这个 only optional.
+
+4. mark §1.2“store页项随文档切换” as assumption (store wipe) with pending main-control check;若 store只按 pageId/把 page wiped via its own event,否则 stale store导致错误对账到错page? S0 can use page-scoped lookups accordingly. If no page关联 null可以 conflict. 
+
+5. 推演链 healthy equivalence claim nuance optional with threshold visible: 0-0.12%平均不代表每条注释/每页都无 >5%,存在值?需要提“按视觉无可见差”from已有的 0.12 IOU no display visual data; if一 rectangle 占位差跨到相邻 line difference…… selection health 0.12% refers可能覆盖; 页面 IoU近似1显示差无可察觉?可补充取样佐证。
+
+6. path S3b“bandsNearRects” remains DOM measure, so S3b hascross-family pair intentionally: should把“同族配对令(INV-59)”要求 main chain pass while已知 boundary时仍维持下“同族 or 标记”已被注册语义; so invariant statement incomplete. 提升为required: labels extended to fallback states S3b/S5; rendering diagnostic has known boundary annotation。此处分级为 changes_required 或者 optional? 既然设计 includes INV-59 and "跨族in only S3b/S5 must register",实际 invariant says exception register; content已满足.Could not require.
+
+7. 阶段 gate-2 when INV-47 lock tests assertcall path的话 would need change; its a broad conditional—but design spec conditional. Fine.
+
+Potential critical dimension: design document making real claims not in materials to justify… design said “S5 store等前例” maybe too. Let's make required changes list limited, concise.
+
+ We should only provide content contained? We need no fabricated. Provide output JSON and optional arrays.
+
+Compose verdict: ENDORSE_WITH_CHANGES. Summary两三句 with changed direction.
+
+Let's exact wording careful:
+
+Required changes list (all with target, issue, suggestion):
+
+1. target: "态空间 S0/S4 过渡与 store 就绪"
+issue: "当 textLayer 已渲染完毕但 page-items.store 尚未提供页项时,设计只有"S4→DOM回退→store就绪后 MutationObserver 节奏重入S0";但 store 就绪/页项注册本身不触发 textLayer 的 MutationObserver,若 DOM 不再变化,项几何主链将不会在 store 填充后重新运行,状态滞留在 DOM 回退层——与 §0'病理页唯一可信投影'主张相矛盾,且这是 §0-§6 未覆盖的态空间缺格。" Suggest明确 store 订阅/通知或 store-load check triggered schedule,否则 re-run条件。
+
+2. target: "G2 判定（S4/S6）"
+issue: "材料中 selectionHealth 是 G2检测器，在 selection-evaluate 的应用域=selection产链（mouseup/settle/tracking suppression），判定输入=selection evaluator所得 DOM文本比较。设计将其无条件用于 annotation 重锚回退层 page-level pathological 判定，需证明或验证它在本链路亦能可比较的输入得到可重复的25%-62.5分离；至少在切换前提供同 data-source 取证。" Suggestion: mark as需主控验证/加门1对 sample pathological页复验 selectionHealth annotation call context.
+
+3. target: "§3 verifyQuoteItem 构造与门0"
+issue: "断言的 selectionToAnchor同式切片逻辑只能从 selection-evaluate 头注确认其存在与语义归属，材料未提供函数体或切片伪码——同式可复刻并不是材料内可推出事实，这是已被design标注的"假设:需主控验证"," design本身已标注。 Evaluate risk量级:该项是A对R3自愈必需的硬前提，建议 状态 not optional. Want ensure主控裁决… changes though ifs listed suggested include如果主控裁决材料不可据复刻 then— step— gate 0 by test.
+
+Perhaps changes required should be concrete useful add "门0判据中增加验收：以现有 verifyQuote 对同一 fixture 的校正结果作为 oracle, verifyQuoteItem 输出与并录 oracle (或 若不成立应接受的降级语义) 。" Hmm but oracle DOM old may？require active DOM。 ok.
+
+4. target "§1.2文档切换跨格" issue: "store页项随文档切换"是未标注的材料外行为假设——zustand store absence wipe semantics未涵盖;若 store按页索引未清理,文档切换后 S0 读入 stale页项,…" suggestion "标注假设并增加 page-id key scope / 对账验证 or direct new materials wait主控验证".
+
+5. target: "《风险表》"R3-equivalent cannot成立则 A degrades = 存量直接自取…"?? Not.
+
+Maybe optional not required optional suggestions include: healthy-equal nuance; S3b register; etc.
+
+Now consider severity on store readiness: Could reviewer see existing resolve on mutation observer rAF loop covers stores arrival because they render textLayer then mutation fire when pdfjs inserts spans; after resolves complete, store should arrive soon; but new render pipeline could item store async by select? if user selects only when store available because that same pipeline is dependent on store,所以store likely registered page as part of rendering load in sync with item generation by textLayer? If store construction process via pdf item provider insert register... The text layer might be constructed by DOM read; store built by engine separately before presentation? unknown from材料. 的确 must say has unresolved race => required change.
+
+We might not claim line: "DOM不再变化" 可以推 signal store arrives no DOM changes; plausible whether page became interactive. Yes.
+
+What other critical fatal? Inconsistency state S3b uses stored rects+bandsNearRects from annotation-resolve existing fallback with .textLayer. If page in failure quote domain? For single-quote reconcile fail while page items present: S3b by design makes single item visible by stored rect + DOM bands。如果 items in page present 但没有包括该 quote rect 的 anchor offset（失败的 exactly query? offset?), quote-specific reconcile failure原因 因为items missing对应文本（例如 annotation on page text not matching item store) or due to quote text mismatch…but the item page可用 yet current S3b feed由bandsNearRects被 DOM measures。既然整个页的 item reconciliation passed items↔DOM text match, 那 DOM band measurement probably okay, yet still R1——这是可接受。 This would include pathological cases 25-62.5 where items and DOM mismatch on geometry,但在文本层出现misformat text高度 may bands near rect to fallback incorrect? Any R1 that design already retains failed.
+
+Good.
+
+Need focus output compact.
+
+Also review more for required change possibility: §2 A+C1 says complexity中等 and "积木已在§3-2"（rectsForOffsetRange/…） existed。 Yes task material says pdf-item-geometry exports rectsForOffsetRange bandsFromItems constants from §3-2 real facts. okay.
+
+"annotation-resolve.ts head says verifyQuote 从 anchor-serialize import — anchor-serialize is not in material beyond annotation module… import included, okay.
+
+Another edge: design "A与C1 论据③……主链迁移三件套 precedent（§3-8）…; F-A6 三层回退（快→全→DOM） material exists as'回退诊断单源= itemChainFor'... They claim “warn 不静默 §3-8 precedent”….material code section: "快路径自身零 console.warn（回退诊断单源=evaluateCore的 itemChainFor，防每帧双warn刷屏）" They are referencing that as支持 warn 不静默. yes.
+
+Now dimension "落地风险 with INV 47……". Since route has three possible to modify a code path anyway as "受锁面" has [locked-change] if required... Design proposed avoiding函数体 zero-mod and renaming field solved. One missing: If mergeRects used in消费链 (line 42) and sub. Annotation resolve all new item geometry includes already merged fine vs if bands lineH——normalizedLineHeight(textLayer) invoked still? Yes if true design must keep DOM gBCR measurement even when resolveAnnotationRectsItem successful, because lineH normalized from textLayer—它属于DOM family,而 now resolved item rects consume mergeRects with lineH;还有消费链无论主链都还取决于 lineH(DOM) 以将 rects 合并为 render blocks。这个明显吗？lineH = normalizedLineHeight(textLayer)——从选测 uses [F-A4] . annotation layer has lineH setting; render消费 merges rects with lineH. lineH是 DOM测量 (getComputedStyle font-size median / height). 如果使用 item geometry to bake correct rects, lineH may not affect item rects…在消费中 “mergeRects(resolved…rects,a rects,lineH)”这些 rects get merge by lineH, likely uses pitch. mergeRects reads lineH for same-row detection. If item geometry resolves coordinates unaffected by DOM weirdness lineH? zoom text weird pathological could affect lineH too; resolved item rects might still absorb erroneous. Design归 zero change consumption ⇒ for main-chain correct projection, lineH won't affect rects unless needed. Actually render消费 applies mergeRects in normal path but expects rects maybe a single line? annotation anchor can cross multiple? Perhaps unchanged normal same before……不深入.
+
+Additional issue target "resolveAnnotationRectsItem 主链 . resolve function returns next.setResolved; but bands来自 item geometry pass; ResolvedAnnotation type has bands same data, not domain标记 yet —设计说两组件 resolved 增域标记字段 (types with data only run-time). okay.
+
+S6 skip resolved gives fallbackBands values, so in S6 no explicit标记? all ok.
+
+Query wording asked "没有需要修改的写空数组". We'll produce array with required changes:
+
+1 target: §1.1/态空间 S0–S4 过渡
+issue: store就绪竞态 reentrance; MutationObserver only observes DOM .textLayer, store asynchronous populates not scheduled.
+suggestion: 为重锚闭包/ S0注 store subscription;若store空时 delayed, store item填充后要主动schedule resolve else item path为 stale hidden fallback. Add detection in page item store existing by state.
+
+2 target: "§1.1 G2 判定/S6 抑制格"
+issue: selectionHealth is attached material are apply to selection only with no direct evidence to anchor context... unknown。
+suggestion: at gate1真机取证 new adding R-S6 case;门0/main验证 mark assumption; or实现适配逻辑/说明输入 pair source.
+
+3 target: "§1.2 文档切换/跨文档序列"
+issue: “store 页项随文档切换” assumed, no store-scope材料。
+suggestion need main-control validation with logic pageId匹配, plus stale data risk;或者设计页码 keyed lookup to get old item immediately after Page transition item...
+
+4 target: "§3 verifyQuoteItem硬依赖"
+issue: suggestion可能 if主控validation回执——材料没函数体. 
+suggestion: Require gate0完整 outputs above:若复刻不可作, A仍可继续（R3降级）but需要主控显式选择;同时 stage keep? 此可能optional. include required? Design already recognized, says "需主控验证", gate0前置 demands it. So an "required" for gate target to make as an acceptance not only assumption. Add.
+
+Optional:
+- "§0 healthy equivalent nuance" suggest add "0.12%差异不显著或框匹配视觉取样" to support.
+- "S3b跨binding actual" optional? INV registration already; maybe no.
+- "落地 line helper/ mergeRects: 消费链仍有 DOM(lineH)可能影响主链渲染 — note if test fails compute lineH dom fall back? During S6 no DOM lineH merge? " optional? Might be okay.
+- INV-60 etc.
+
+Summary（2-3句）: 设计核心方向与顺序基本成立，但其状态定义中 store 就绪transition缺口/selectionHealth跨域再利用两处是主要推理空洞，须补 gate证/适配; §3 assumption… acceptable. With these completionscan enter终裁.
+
+Now output JSON no fencing text, Chinese.
+
+Ensure arrays note phrase. Avoid fabricate。 no markdown fence.

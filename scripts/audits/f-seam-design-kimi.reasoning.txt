@@ -1,0 +1,47 @@
+The user wants a full design document in markdown, ≤4000 Chinese characters, following the 7-section structure. Key constraints:
+
+- Argue from the geometric convergence essence: two measurement systems' projection consistency onto the same persisted coordinate system. Healthy pages IoU≈1, pathological pages diverge 25~62.5%.
+- Explicit A/B/C combination matrix, not bundling. C is orthogonal dimension.
+- verifyQuote equivalence: material says pdf-item-geometry exports buildItemOffsets→{spans,total}, reconcileItemsWithDom(items, domText)→bool. So quoteText↔items text window reconciliation IS constructible within material boundary (buildItemOffsets spans provide text; compare quoteText). So A is feasible — construct verifyQuote-in-item-domain: search quoteText in concatenated item text, adjust offsets.
+- Recommend: A (re-anchor domain homogenization) + C variant (read-time merge gradual cleanup, no migration script — F-A4 precedent), reject B as standalone but retain guard layers as fallback diagnostics.
+- INV registrations: INV-58 extension to annotation re-anchor domain; INV-47 applicability change (mergeLineRects no longer on main re-anchor path); new INV maybe "annotation re-anchor same-geometry-family".
+- State machine, testing, staging, risk table.
+
+Must be ≤4000 Chinese character equivalents. Be compact. Mark all assertions with 依据 citations. Mark out-of-material assumptions explicitly.
+
+Let me draft.
+
+Key argument on the essence: persistence coordinate system = normalized fractions relative to page/viewport. Two measurement systems (PDF declared geometry via item transform/width/height × viewport; browser DOM measurement via getClientRects etc.) project the same text into this coordinate system. Healthy page: both projections coincide (IoU≈1, deviation 0~0.12% per fact 2), so seam is benign — R1/R2 latent. Pathological page (text-layer anomalous, 25~62.5% divergence): DOM measurement is corrupted while PDF declared geometry remains grounded in the document's own coordinate space; thus (a) R1 cross-domain pairing mismatch becomes visible mis-binding; (b) R2 display override means displaying corrupted values over sound stored values; (c) verifyQuote "self-healing" heals toward the DOM-distorted frame — self-healing direction is wrong on pathological pages: it corrects offsets so quotes match DOM text, then measures in the distorted DOM frame. Actually verifyQuote corrects offset drift (reflow), which is legitimately needed; but the geometry measurement after correction is in the distorted frame. In item-geometry domain: reconcile quoteText against items text (from buildItemOffsets spans), correct offsets within item coordinate system, then measure via rectsForOffsetRange — equivalent self-healing without DOM dependence. Feasibility within material: buildItemOffsets→{spans,total} gives offset→span mapping; spans presumably carry text? Material says buildItemOffsets(items)→{spans,total}; selectionToAnchor does O(页文本) join — item text is joinable per selection-evaluate note ("省 selectionToAnchor 的 O(页文本) join+quote/prefix/suffix 切片"). reconcileItemsWithDom(items, domText)→bool exists. So quoteText↔items reconciliation: join item texts, search quoteText (with the same fuzzy-matching semantics as verifyQuote — assumption: verifyQuote matching algorithm is reusable on a text string, since it's pure text reconciliation — but material says verifyQuote is quoteText↔DOM 对账; whether it's a pure function on text unknown — mark 假设:需主控验证 that verifyQuote's matching core can be lifted to operate on item-text window, or reimplemented).
+
+Combination matrix: A×C variants. C options: C1 read-time merge gradual cleanup (F-A4 precedent, recommended), C2 domain tagging, C3 one-shot migration script (touches DB lock surface). B standalone = long-term dual family violates 宪法「方案切换=删除旧方案」; B's guards can be absorbed as A's fallback-layer diagnostics (三层回退 warn).
+
+Recommendation: A + C1, with B's guard math surviving only as fallback diagnostics (itemChainFor-style warn source), not as a co-equal geometry path.
+
+Module-level change surface:
+- annotation-resolve.ts: resolveAnnotationRects main chain → page-items.store 直读 (F-A6-b2 先例) → rectsForOffsetRange(startOffset..endOffset)+bandsFromItems; new verifyQuoteItem(itemText, quote, offsets) 对账; reconcileItemsWithDom gate; fallback → legacy DOM chain (resolveAnnotationRectsDom renamed, kept as fallback until 删除旧方案 at seam closure gate).
+- AnnotationLayer.tsx: resolved consumption unchanged; fallbackBands only for DOM-fallback path... Actually with A: on success rects/bands both item-domain (同族配对, R1 eliminated on main chain); on fallback failure → stored rects (mixed) × bandsNearRects — R1 residual on fallback path only, register as known boundary.
+
+State machine: 挂载→页项就绪检查(page-items.store 有无该页)→对账(reconcileItemsWithDom / quote 对账)→重锚中→resolved(项几何) | 回退DOM→resolved(DOM) | 失败→存量显示; G2 病理格: selectionHealth unhealthy → 禁止 DOM 回退? G2 precedent: unhealthy→setPaint(null) 拖选期抑制. For annotations: pathological page DOM untrustworthy → DOM fallback would display distorted rects; policy: G2 病理页 DOM 回退降级为「存量 rects 直显+无 bands 重算」or suppress? Material G2 unhealthy→setPaint(null). For annotation display, suppressing display entirely is bad; better: 病理页回退产物标记 low-confidence, bands 消费降级缺省（F-11 分数路径先例 — matchBand fallback). Keep compact.
+
+Cross-sequence: 懒渲染重挂 (MutationObserver+rAF 节奏不变, F-A1), zoom 变化 (重锚重跑, 项几何域天然随 viewport 重合成), 文档切换 (store 页项切换, effect 清理 observer.disconnect 已有).
+
+verifyQuote equivalence design (§3 of output): 
+- 项几何域 verifyQuoteItem: 输入 quoteText/prefix/suffix + items; join 页项文本 (buildItemOffsets spans 文本窗), 滑窗匹配 quote（容忍空白差异）→ 得校正偏移 (s', e'); 与库值 (startOffset,endOffset) 偏差 >阈值 → 采用校正值（仅显示层,不回写——保持「失败回退存量,仅显示不回写」语义, R3 域内等价）。
+- 失败语义: 对账失败 → 不重锚该条 → 回退存量 rects 显示（同现语义）。
+- 假设标注: verifyQuote 匹配核是否可提为纯函数作用任意文本串 → 需主控验证; 若不可, 以 selectionToAnchor 同式 quote/prefix/suffix 切片逻辑复刻于 items 文本（材料内 selectionToAnchor 已含该切片, 属材料内可构造）。
+
+INV registration:
+- INV-58 扩域条款草案: 适用域扩为「selection 产链 + Annotation/AiAnnotation 重锚链」; DOM 量测仅允许存在于显式回退层且产物标域。
+- INV-47 适用面: mergeLineRects 自主链移除后, 适用面收缩至回退层+存量读时归并 (mergeRects 挂 lineH); 锁断言数值面不变。
+- 新 INV-59（草）: 「标注重锚同族令——resolved.rects 与 bands 必须同族配对; 跨族配对仅允许在失败回退格且登记」。
+- 新 INV-60? maybe 「所见≠所存登记」: 显示覆盖语义登记扩展 INV-37? INV-37 是拖选期弱化。标注域显示覆盖 → 登记条款: 重锚成功覆盖库值仅显示层, 不回写; 域标注入 resolved。可作为 INV-37 扩注而非新 INV。Keep as 新 INV「重锚显示覆盖登记」。
+
+Test surface: unit tests (verifyQuoteItem pure, rectsForOffsetRange 集成 mock store, 回退层级, matchBand 同族), e2e (病理页 fixture 显示正确性), 受锁: tests/** sha256 改动 → [locked-change]; INV-47 锁测试若断言 mergeLineRects 调用面 → 需 locks 流程. 先红判据: 新测试在旧实现上红（重锚域断言项几何族来源→旧 DOM 实现红）. 取证: 健康/病理页双 fixture 真机对照 (V1/F-A6 取证先例), 复跑 25~62.5% 分叉页集.
+
+Staging: 门0 前置: verifyQuoteItem 纯函数+单测; 门1 复跑对照: 新旧重锚产物同页对照 (健康页 IoU 应≈1, 病理页分叉期望项几何=canvas 视觉); 门2 主链切换+旧 DOM 链降回退; 门3 观察期后删除旧回退? 宪法方案切换=删除旧方案 — but F-A6 三层回退 keeps DOM as fallback. So 回退层保留属「回退链」非「并存方案」——需论证: F-A6 先例三层回退已确立 DOM 量测为回退层合法性, 本案同构. 删除的是「DOM 量测作为主链」。
+
+Risk table: R1→同族配对+回退格登记; R2→INV 登记+域标记; R3→verifyQuoteItem; 页项缺席→回退层; 对账假阳性→prefix/suffix 双侧校验+阈值; 性能→store 直读 O(页项) 优于 DOM 遍历 (selection-evaluate 先例 probe 省 O(页文本) join — hmm, quote join is O(页文本) cost; cache joined text per page? 材料外优化→标假设 or just note reconcile 每页一次可摊销, 标「假设:需主控验证」).
+
+Word budget: ≤4000 汉字当量. Write tightly, use tables.
+
+Let me write the markdown now. No fences around the whole thing? "直接输出设计书 markdown 全文，无围栏外的多余文字" — output the markdown directly.
