@@ -301,7 +301,7 @@ export function resolveAnnotationRects(args: {
 }
 
 /**
- * [F-A8 门0] 重锚纯域版（项几何族——S0–S3a 状态机的纯函数核，设计书
+ * [F-A8 门0] 重锚纯域版（项几何族——S0–S3b 状态机的纯函数核，设计书
  * docs/design/2026-09-04_f-seam-reanchor-design.md §1.1/§3）：
  * - S0：entry null → {}（页项缺席——接线层走 DOM 回退链，纯函数不编排回退）；
  * - S1 DOM 对账=门 2 接线面（接线时有 textLayer DOM 可对账），本域 entry

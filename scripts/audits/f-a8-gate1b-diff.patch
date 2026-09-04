@@ -1,0 +1,265 @@
+diff --git a/docs/adr/0019-selection-feedback-native-route.md b/docs/adr/0019-selection-feedback-native-route.md
+index 68064eebef..7c88ef8641 100644
+--- a/docs/adr/0019-selection-feedback-native-route.md
++++ b/docs/adr/0019-selection-feedback-native-route.md
+@@ -214,3 +214,15 @@
+   申报）**：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn 段①
+   page.view 未旋转口径）与 canvas 渲染盒错配——页框阴影/布局面缺陷（selection 几何
+   链不受影响：paint 块落 canvas 真盒内），真实库全档 rotate=0 未显现，另案立案。
++
++
++### R3 勘误注记（2026-09-04，F-A8 门 1b 取证触发）
++
++- **⑧ ascent=0 声明字体直消费（限定性勘误）**：R3 取证期（F-A6 全程）的项几何链对
++  `styles.ascent===0` 声明字体（3882 样本 27%+ 项）按 0 直消费——该类项盒顶=基线，
++  ascent-0 主导行的行并集膨胀（实测 16px vs 真值 9.5px）。F-A6 取证锚采集面**覆盖**
++  该缺陷形态（C1 锚窗 [2079,4704) 含 66/250=26.4% ascent-0 项）而未检出——「健康页
++  逐位不变」结论在混合行形态（正常项主导行盒顶）下真实，但其「全健康」覆盖声明按本
++  勘误缩限（66 项矩形膨胀实测未补证前，按「覆盖而未检出」限定表述）。修复=F-A8 门 1b
++  （ascent≤0→0.8 兜底，缺省常量 DEFAULT_FONT_ASCENT=0.8 同源——selection+annotation
++  双链共同缺陷修复）。复跑：3882 多行锚 0.62~0.76→≥0.9942，ascent 因果面清零。
+\ No newline at end of file
+diff --git a/docs/design/2026-09-04_f-seam-reanchor-design.md b/docs/design/2026-09-04_f-seam-reanchor-design.md
+index 6175a6ea0f..934d7d3996 100644
+--- a/docs/design/2026-09-04_f-seam-reanchor-design.md
++++ b/docs/design/2026-09-04_f-seam-reanchor-design.md
+@@ -143,3 +143,29 @@ C 为独立维度（存量处置），与 A/B 自由组合：
+   整体降回退层+INV-58 扩域/INV-47 适用面/INV-59/INV-60 登记同步。
+ - **门 3**（收口票）：e2e+全量取证+观察期后 DOM 回退层去留裁决（保留=回退
+   层非并存方案）。
++
++
++## 增补：门 1 staged 复跑结论与判据 a 口径分层（2026-09-04 门 1b 后主控落笔）
++
++- **第一步（旧口径）结果：修补有效**——ascent≤0→0.8 兜底（pdf-item-geometry
++  :218）后复跑：3882 多行锚 top/multi×2 从 0.62~0.76 恢复 ≥0.9942;错对 6 锚
++  44 块→3 锚 22 块且残余全部定位 bottom 2 锚+单行 8 锚;健康集 6/20→10/20
++  （复跑档 f-a8-gate1-out/ 修前档 -out-prefix/）。
++- **判据 a 分层口径（本节起生效,门 2 放行判定基准）**：
++  - **L1 整行边界常规锚**（页首/页尾/跨行,常规行形态）：0.99 门——实测
++    10/10 达标（≥0.9942;bottom 异形态区锚除外归 L3）。
++  - **L2 项内部分选中锚**（单行）：grapheme 比例细分近似面——本轮实测区间
++    0.8816~0.9745 逐位不变（修补零因果在案）,结构性上限未定（后续复跑再
++    收敛）——申报边界,非门。
++  - **L3 异形态区锚**（页缘竖排边栏条带/参考文献上下标行——两链聚类语义
++    差）：bottom 2 锚——已知边界申报（项链边栏分 2 块 vs DOM 1 块+上下标
++    行在两链容差边界分段不同;**非 ascent 因果的直接证据[门 1b 回炉 W2 升级]**:
++    修补在 bottom 窗生效（项级 Δtop=−0.8×fontH 全非零）+块级膨胀 16.1→10.4px
++    已消（dh=−5.5px）而 IoU/错对不动（dx/dw 全零）——失守归因于双根因非 ascent;
++    非回退层失真——两分段皆合理,真值行数判定与机制占比分解=后续观察项,
++    不阻塞门 2）。
++- **门 2 放行**：L1 达标+L2/L3 已知边界申报 → 判据 a 分层口径过门,门 2
++  （主链切换）具备开工条件（判据 b/c 随复跑确认——门 1b 复跑数据在档）。
++- **ascent 修复双重身份最终定性**：selection+annotation 双链共同缺陷修复;
++  F-A6-b2 侧=限定性勘误（ADR-0019 R3 勘误注记⑧——「采集面覆盖缺陷形态
++  26.4% 而未检出」;66 项矩形膨胀实测未补证前禁用「假阴坐实」表述）。
+\ No newline at end of file
+diff --git a/locks/manifest.json b/locks/manifest.json
+index a88553f4f3..f60fc603e2 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-04T02:25:50.7755513Z",
++    "generatedAt":  "2026-09-04T03:24:29.1124381Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -127,11 +127,11 @@
+                   },
+                   {
+                       "path":  "scripts/audits/f-a8-gate1-diag.mjs",
+-                      "sha256":  "d8a7c4855c67d885f00180aea4cc39d5a8bd51061a727bf1c8f83551d862bb27"
++                      "sha256":  "7da18d1d936e42a1f43fe6f3d85b612bf02ede6caa8324555d9b8163f46b87e8"
+                   },
+                   {
+                       "path":  "scripts/audits/f-a8-gate1-lib.mjs",
+-                      "sha256":  "270ee271604cff6f7183c58bed1fc30340e18f9fdb88319449e5bd37a418c67f"
++                      "sha256":  "15919cc46ce938e08d55474aa2487715e3312422e47d635f69888c21c71546af"
+                   },
+                   {
+                       "path":  "scripts/audits/f-a8-gate1-page.mjs",
+@@ -803,7 +803,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
+-                      "sha256":  "58a1ef10073dff66f0f3cb726a07aebb02586d0af1baba260e8674ff6de985cd"
++                      "sha256":  "1d9bb9e5c9959d6a63249d498242ee81c1ab4dce12edd9900086d131ce398be4"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
+diff --git a/scripts/audits/f-a8-gate1-diag.mjs b/scripts/audits/f-a8-gate1-diag.mjs
+index b9752c7fe5..c512e682ea 100644
+--- a/scripts/audits/f-a8-gate1-diag.mjs
++++ b/scripts/audits/f-a8-gate1-diag.mjs
+@@ -39,7 +39,7 @@ import {
+ import { evalScrollPage } from './f-a6-diag-page.mjs'
+ import { evalCollectPage } from './f-a8-gate1-page.mjs'
+ import {
+-  areaIou, iou1D, blockIouPairs, bandPairs, itemViewportOfReplica, offsetsOfItems,
++  areaIou, iou1D, blockIouPairs, bandPairs, mispairBlocks, itemViewportOfReplica, offsetsOfItems,
+   spanBoxesAsItemBoxes, annotationOf
+ } from './f-a8-gate1-lib.mjs'
+ 
+@@ -304,11 +304,13 @@ async function main() {
+         const rectsB = rb !== undefined ? rb.rects : null
+         const bandsB = rb !== undefined ? rb.bands : null
+         // 对比：1D x 轴 IoU（f-a6 口径——判据 a 主数字）+2D 面积 IoU（申报：
+-        // 行盒 vs 声明字形盒系统顶偏压制 2D 值）+逐块 IoU+band 逐对差
++        // 行盒 vs 声明字形盒系统顶偏压制 2D 值）+逐块 IoU+band 逐对差+块配对
++        // 错位计数（门 1b W1——y 膨胀→x 错对因果钉死，修复预期错对=0）
+         const cmp = rectsB === null ? null : {
+           io1d: iou1D(rectsA, rectsB, 2 / tlBox.h),
+           area: areaIou(rectsA, rectsB),
+           blocks: blockIouPairs(rectsA, rectsB, 2 / tlBox.h),
++          mispair: mispairBlocks(rectsA, rectsB),
+           bands: bandsB === null ? null : bandPairs(bandsA, bandsB),
+           countA: rectsA.length, countB: rectsB.length, bandsA: bandsA.length, bandsB: bandsB.length
+         }
+@@ -370,9 +372,11 @@ async function main() {
+         iou1d: oks.map((r) => r.cmp.io1d.iou),
+         iouArea: oks.map((r) => r.cmp.area.iou),
+         dyMedianPx: oks.length > 0 ? medOfPx(oks.flatMap((r) => r.cmp.blocks.map((b) => b.dy))) * tlBox.h : null,
++        mispairAnchors: oks.filter((r) => r.cmp.mispair.mispairedBlocks > 0).length,
++        mispairBlocks: oks.reduce((s, r) => s + r.cmp.mispair.mispairedBlocks, 0),
+         guardAllEqual: rows.every((r) => r.guardEqual !== false)
+       }
+-      log(`双链 ${key}（${pg.set}）: reconcile=${reconcile} anchors=${rows.length} resolved=${oks.length} IoU1D=[${fmt(summary.pages[key].iou1d)}] IoU2D=[${fmt(summary.pages[key].iouArea)}] dyMed=${summary.pages[key].dyMedianPx === null ? 'null' : summary.pages[key].dyMedianPx.toFixed(2)}px guard=${summary.pages[key].guardAllEqual}`)
++      log(`双链 ${key}（${pg.set}）: reconcile=${reconcile} anchors=${rows.length} resolved=${oks.length} IoU1D=[${fmt(summary.pages[key].iou1d)}] IoU2D=[${fmt(summary.pages[key].iouArea)}] dyMed=${summary.pages[key].dyMedianPx === null ? 'null' : summary.pages[key].dyMedianPx.toFixed(2)}px mispair=${summary.pages[key].mispairAnchors}锚/${summary.pages[key].mispairBlocks}块 guard=${summary.pages[key].guardAllEqual}`)
+     }
+   }
+ 
+diff --git a/scripts/audits/f-a8-gate1-lib.mjs b/scripts/audits/f-a8-gate1-lib.mjs
+index d3b2259870..7b6d48a4f2 100644
+--- a/scripts/audits/f-a8-gate1-lib.mjs
++++ b/scripts/audits/f-a8-gate1-lib.mjs
+@@ -1,6 +1,7 @@
+ /**
+  * F-A8 门 1 取证库（f-a8-gate1-diag.mjs 依赖件）——双链产物对比数学（纯 Node）：
+- * 逐块 IoU/聚合面积 IoU/band 逐对差/entry→viewport 复刻/Annotation 组装。
++ * 逐块 IoU/聚合面积 IoU/band 逐对差/块配对错位计数（门 1b W1）/entry→viewport
++ * 复刻/Annotation 组装。
+  *
+  * 纪律声明：本件零 DOM/零副作用；真函数（esbuild bundle）不在本件——主脚本
+  * 消费 bundle 导出面（resolveAnnotationRectsItem/mergeLineRects/mergeRects/
+@@ -134,6 +135,29 @@ export function bandPairs(bandsA, bandsB) {
+   return out
+ }
+ 
++/** 块配对错位计数（F-A8 门 1b W1——y 域行膨胀→x 轴 IoU1D 错对因果钉死）：
++ *  A/B 各按文档序 (y,x) 排序后逐 A 取最近 y 中心 B（blockIouPairs 同配对器
++ *  独立指派）；结构一致时正确配对必同秩（同序同位），秩错位=错对块（错行/
++ *  双绑/漏绑统称——y 膨胀行结构分叉后该对的 x 区间对照不可信）。countA≠countB
++ *  时分叉点后秩整体位移，全数计错（保守上界——结构分叉=所有配对不可信，
++ *  常规页实测 countA=countB）。修复预期=错对锚数 0/错对块数 0。 */
++export function mispairBlocks(rectsA, rectsB) {
++  const byDoc = (r1, r2) => r1.y - r2.y || r1.x - r2.x
++  const A = rectsA.map(normRect).sort(byDoc)
++  const B = rectsB.map(normRect).sort(byDoc)
++  let mispaired = 0
++  for (let i = 0; i < A.length; i += 1) {
++    let best = -1
++    let bestD = Number.POSITIVE_INFINITY
++    for (let j = 0; j < B.length; j += 1) {
++      const d = Math.abs(B[j].y + B[j].h / 2 - (A[i].y + A[i].h / 2))
++      if (d < bestD) { bestD = d; best = j }
++    }
++    if (best !== i) mispaired += 1
++  }
++  return { countA: A.length, countB: B.length, mispairedBlocks: mispaired }
++}
++
+ /** entry → ItemViewport 复刻（annotation-resolve.ts itemViewportOf:373-382 同式——
+  *  私有函数不导出故复刻；scale 自 entry.box 反推=真函数口径） */
+ export function itemViewportOfReplica(entry) {
+diff --git a/src/renderer/features/reader/anchor-serialize.ts b/src/renderer/features/reader/anchor-serialize.ts
+index e212371a8a..c60f5032a2 100644
+--- a/src/renderer/features/reader/anchor-serialize.ts
++++ b/src/renderer/features/reader/anchor-serialize.ts
+@@ -67,7 +67,7 @@ export function verifyQuote(
+   selector: { prefix: string; quote: string; suffix: string; start: number }
+ ): number | null {
+   // 空 quote 短路在 fullTextOf 之前（提取前旧码同序——空引文不触 DOM 遍历，
+-  // 触达面还原[门一 N1]；locateQuote 内同检查保留=verifyQuoteItem 路径防线）
++  // 触达面还原[门一 N1]；locateQuote 内同检查保留=两入口共用兜底防线）
+   if (selector.quote.length === 0) {
+     return null
+   }
+@@ -87,6 +87,11 @@ export function verifyQuoteItem(
+   items: ReadonlyArray<{ str: string }>,
+   selector: { prefix: string; quote: string; suffix: string; start: number }
+ ): number | null {
++  // 空 quote 短路在 items 拼接之前（与 verifyQuote 入口对齐——空引文不触
++  // 拼接遍历，触达面对称[门二 NIT 转门 1b 顺带]；locateQuote 内同检查保留=双防线）
++  if (selector.quote.length === 0) {
++    return null
++  }
+   const text = items
+     .map((it) => it.str)
+     .filter((s) => s.length > 0)
+diff --git a/src/renderer/features/reader/annotation-resolve.ts b/src/renderer/features/reader/annotation-resolve.ts
+index 7e849d299b..c82ab4d865 100644
+--- a/src/renderer/features/reader/annotation-resolve.ts
++++ b/src/renderer/features/reader/annotation-resolve.ts
+@@ -301,7 +301,7 @@ export function resolveAnnotationRects(args: {
+ }
+ 
+ /**
+- * [F-A8 门0] 重锚纯域版（项几何族——S0–S3a 状态机的纯函数核，设计书
++ * [F-A8 门0] 重锚纯域版（项几何族——S0–S3b 状态机的纯函数核，设计书
+  * docs/design/2026-09-04_f-seam-reanchor-design.md §1.1/§3）：
+  * - S0：entry null → {}（页项缺席——接线层走 DOM 回退链，纯函数不编排回退）；
+  * - S1 DOM 对账=门 2 接线面（接线时有 textLayer DOM 可对账），本域 entry
+diff --git a/src/renderer/features/reader/pdf-item-geometry.ts b/src/renderer/features/reader/pdf-item-geometry.ts
+index 36c2ba9fed..7e1c6c1fd5 100644
+--- a/src/renderer/features/reader/pdf-item-geometry.ts
++++ b/src/renderer/features/reader/pdf-item-geometry.ts
+@@ -50,7 +50,9 @@
+  * - ascent 口径声明：取 styles 声明值（pdf.js TextStyle.ascent）而非 canvas
+  *   量测值——乙轨已实证口径（b1 §2 T9 分解：声明 0.718×18=12.92 vs 量测
+  *   14.33；项矩形=声明几何，构造不含量测伪迹）；fontName 查 styles 缺席/
+- *   ascent 非有限 → 0.8 兜底（pdf.js #appendText 同款缺省）。
++ *   ascent 非有限或 ≤0 → 0.8 兜底（缺省常量与 pdf.mjs DEFAULT_FONT_ASCENT
++ *   同源、链语义类比——#getAscent 三级量测链在无 canvas 环境的退化形态未在
++ *   档核实；0=字体未声明非合法度量，F-A8 门 1b）。
+  * - 依赖单向：本件→annotation-merge（mergeRects 终裁——INV-A~D 保证，乙2
+  *   验证管线同构[diag normB2]）；零环；纯函数零 DOM/React 依赖
+  *
+@@ -214,7 +216,7 @@ function itemBoxOf(
+   const vertical = style?.vertical === true
+   if (vertical) angle += Math.PI / 2
+   const fontH = Math.hypot(tx[2]!, tx[3]!)
+-  const ascent = style !== undefined && Number.isFinite(style.ascent) ? style.ascent : 0.8
++  const ascent = style !== undefined && Number.isFinite(style.ascent) && style.ascent > 0 ? style.ascent : 0.8
+   const sinA = Math.sin(angle)
+   const cosA = Math.cos(angle)
+   const ox = tx[4]! + ascent * fontH * sinA
+diff --git a/tests/unit/renderer/pdf-item-geometry.test.tsx b/tests/unit/renderer/pdf-item-geometry.test.tsx
+index 55defbc23c..21189481b9 100644
+--- a/tests/unit/renderer/pdf-item-geometry.test.tsx
++++ b/tests/unit/renderer/pdf-item-geometry.test.tsx
+@@ -73,6 +73,24 @@ describe('pdf-item-geometry 项矩形（viewport transform 合成——pdf.mjs 
+     expect(boxes[0]!.fontH).toBeCloseTo(10, 6)
+   })
+ 
++  it('ascent≤0 兜底 0.8（F-A8 门 1b——pdf.mjs #getAscent DEFAULT_FONT_ASCENT=0.8 先例：0=字体未声明非合法度量）：ascent:0 样式 → 盒顶=基线−0.8×fontH=84（修前直消费 0：盒顶贴基线 92=行膨胀缺失必红）', () => {
++    const styles = { g1: { ...STYLE_H, ascent: 0, descent: 0 } }
++    const { boxes } = rectsForOffsetRange([mkItem('ASC', 72, 700)], styles, VP0, 0, 3)
++    expect(boxes[0]!.rect.y).toBeCloseTo(84, 6)
++    expect(boxes[0]!.rect.h).toBeCloseTo(10, 6)
++    // 负 ascent（有限但非法度量）同兜底 0.8
++    const neg = rectsForOffsetRange([mkItem('NEG', 72, 700)], { g1: { ...STYLE_H, ascent: -0.05, descent: -0.2 } }, VP0, 0, 3)
++    expect(neg.boxes[0]!.rect.y).toBeCloseTo(84, 6)
++  })
++
++  it('ascent 正常度量逐位不变回归（门 1b）：0.7 直消费 → 盒顶=85；样式缺席（fontName 无 styles 条目）→ 0.8 兜底口径不变（=84）', () => {
++    const ok = rectsForOffsetRange([mkItem('N7', 72, 700)], { g1: { ...STYLE_H, ascent: 0.7, descent: -0.3 } }, VP0, 0, 2)
++    expect(ok.boxes[0]!.rect.y).toBeCloseTo(85, 6)
++    expect(ok.boxes[0]!.rect.h).toBeCloseTo(10, 6)
++    const absent = rectsForOffsetRange([mkItem('N0', 72, 700, { fontName: 'g9' })], STYLES, VP0, 0, 2)
++    expect(absent.boxes[0]!.rect.y).toBeCloseTo(84, 6)
++  })
++
+   it('旋转 90 页：viewportTransformFor=[0,1,1,0,0,0]，项盒轴随行进角 π/2 旋转（手算 {698,72,10,100}）+vProj=−tx4（行分隔随旋转轴换）', () => {
+     const { boxes } = rectsForOffsetRange([mkItem('ROT', 72, 700)], STYLES, VP90, 0, 3)
+     expect(boxes[0]!.rect.x).toBeCloseTo(698, 6)

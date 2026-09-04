@@ -73,6 +73,24 @@ describe('pdf-item-geometry 项矩形（viewport transform 合成——pdf.mjs �
     expect(boxes[0]!.fontH).toBeCloseTo(10, 6)
   })
 
+  it('ascent≤0 兜底 0.8（F-A8 门 1b——pdf.mjs #getAscent DEFAULT_FONT_ASCENT=0.8 先例：0=字体未声明非合法度量）：ascent:0 样式 → 盒顶=基线−0.8×fontH=84（修前直消费 0：盒顶贴基线 92=行膨胀缺失必红）', () => {
+    const styles = { g1: { ...STYLE_H, ascent: 0, descent: 0 } }
+    const { boxes } = rectsForOffsetRange([mkItem('ASC', 72, 700)], styles, VP0, 0, 3)
+    expect(boxes[0]!.rect.y).toBeCloseTo(84, 6)
+    expect(boxes[0]!.rect.h).toBeCloseTo(10, 6)
+    // 负 ascent（有限但非法度量）同兜底 0.8
+    const neg = rectsForOffsetRange([mkItem('NEG', 72, 700)], { g1: { ...STYLE_H, ascent: -0.05, descent: -0.2 } }, VP0, 0, 3)
+    expect(neg.boxes[0]!.rect.y).toBeCloseTo(84, 6)
+  })
+
+  it('ascent 正常度量逐位不变回归（门 1b）：0.7 直消费 → 盒顶=85；样式缺席（fontName 无 styles 条目）→ 0.8 兜底口径不变（=84）', () => {
+    const ok = rectsForOffsetRange([mkItem('N7', 72, 700)], { g1: { ...STYLE_H, ascent: 0.7, descent: -0.3 } }, VP0, 0, 2)
+    expect(ok.boxes[0]!.rect.y).toBeCloseTo(85, 6)
+    expect(ok.boxes[0]!.rect.h).toBeCloseTo(10, 6)
+    const absent = rectsForOffsetRange([mkItem('N0', 72, 700, { fontName: 'g9' })], STYLES, VP0, 0, 2)
+    expect(absent.boxes[0]!.rect.y).toBeCloseTo(84, 6)
+  })
+
   it('旋转 90 页：viewportTransformFor=[0,1,1,0,0,0]，项盒轴随行进角 π/2 旋转（手算 {698,72,10,100}）+vProj=−tx4（行分隔随旋转轴换）', () => {
     const { boxes } = rectsForOffsetRange([mkItem('ROT', 72, 700)], STYLES, VP90, 0, 3)
     expect(boxes[0]!.rect.x).toBeCloseTo(698, 6)

@@ -1,0 +1,2 @@
+locks 检查通过：281 个受锁文件与 manifest 一致
+exit=0

@@ -1,6 +1,7 @@
 /**
  * F-A8 门 1 取证库（f-a8-gate1-diag.mjs 依赖件）——双链产物对比数学（纯 Node）：
- * 逐块 IoU/聚合面积 IoU/band 逐对差/entry→viewport 复刻/Annotation 组装。
+ * 逐块 IoU/聚合面积 IoU/band 逐对差/块配对错位计数（门 1b W1）/entry→viewport
+ * 复刻/Annotation 组装。
  *
  * 纪律声明：本件零 DOM/零副作用；真函数（esbuild bundle）不在本件——主脚本
  * 消费 bundle 导出面（resolveAnnotationRectsItem/mergeLineRects/mergeRects/
@@ -132,6 +133,29 @@ export function bandPairs(bandsA, bandsB) {
     })
   }
   return out
+}
+
+/** 块配对错位计数（F-A8 门 1b W1——y 域行膨胀→x 轴 IoU1D 错对因果钉死）：
+ *  A/B 各按文档序 (y,x) 排序后逐 A 取最近 y 中心 B（blockIouPairs 同配对器
+ *  独立指派）；结构一致时正确配对必同秩（同序同位），秩错位=错对块（错行/
+ *  双绑/漏绑统称——y 膨胀行结构分叉后该对的 x 区间对照不可信）。countA≠countB
+ *  时分叉点后秩整体位移，全数计错（保守上界——结构分叉=所有配对不可信，
+ *  常规页实测 countA=countB）。修复预期=错对锚数 0/错对块数 0。 */
+export function mispairBlocks(rectsA, rectsB) {
+  const byDoc = (r1, r2) => r1.y - r2.y || r1.x - r2.x
+  const A = rectsA.map(normRect).sort(byDoc)
+  const B = rectsB.map(normRect).sort(byDoc)
+  let mispaired = 0
+  for (let i = 0; i < A.length; i += 1) {
+    let best = -1
+    let bestD = Number.POSITIVE_INFINITY
+    for (let j = 0; j < B.length; j += 1) {
+      const d = Math.abs(B[j].y + B[j].h / 2 - (A[i].y + A[i].h / 2))
+      if (d < bestD) { bestD = d; best = j }
+    }
+    if (best !== i) mispaired += 1
+  }
+  return { countA: A.length, countB: B.length, mispairedBlocks: mispaired }
 }
 
 /** entry → ItemViewport 复刻（annotation-resolve.ts itemViewportOf:373-382 同式——

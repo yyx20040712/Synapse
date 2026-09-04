@@ -39,7 +39,7 @@ import {
 import { evalScrollPage } from './f-a6-diag-page.mjs'
 import { evalCollectPage } from './f-a8-gate1-page.mjs'
 import {
-  areaIou, iou1D, blockIouPairs, bandPairs, itemViewportOfReplica, offsetsOfItems,
+  areaIou, iou1D, blockIouPairs, bandPairs, mispairBlocks, itemViewportOfReplica, offsetsOfItems,
   spanBoxesAsItemBoxes, annotationOf
 } from './f-a8-gate1-lib.mjs'
 
@@ -304,11 +304,13 @@ async function main() {
         const rectsB = rb !== undefined ? rb.rects : null
         const bandsB = rb !== undefined ? rb.bands : null
         // 对比：1D x 轴 IoU（f-a6 口径——判据 a 主数字）+2D 面积 IoU（申报：
-        // 行盒 vs 声明字形盒系统顶偏压制 2D 值）+逐块 IoU+band 逐对差
+        // 行盒 vs 声明字形盒系统顶偏压制 2D 值）+逐块 IoU+band 逐对差+块配对
+        // 错位计数（门 1b W1——y 膨胀→x 错对因果钉死，修复预期错对=0）
         const cmp = rectsB === null ? null : {
           io1d: iou1D(rectsA, rectsB, 2 / tlBox.h),
           area: areaIou(rectsA, rectsB),
           blocks: blockIouPairs(rectsA, rectsB, 2 / tlBox.h),
+          mispair: mispairBlocks(rectsA, rectsB),
           bands: bandsB === null ? null : bandPairs(bandsA, bandsB),
           countA: rectsA.length, countB: rectsB.length, bandsA: bandsA.length, bandsB: bandsB.length
         }
@@ -370,9 +372,11 @@ async function main() {
         iou1d: oks.map((r) => r.cmp.io1d.iou),
         iouArea: oks.map((r) => r.cmp.area.iou),
         dyMedianPx: oks.length > 0 ? medOfPx(oks.flatMap((r) => r.cmp.blocks.map((b) => b.dy))) * tlBox.h : null,
+        mispairAnchors: oks.filter((r) => r.cmp.mispair.mispairedBlocks > 0).length,
+        mispairBlocks: oks.reduce((s, r) => s + r.cmp.mispair.mispairedBlocks, 0),
         guardAllEqual: rows.every((r) => r.guardEqual !== false)
       }
-      log(`双链 ${key}（${pg.set}）: reconcile=${reconcile} anchors=${rows.length} resolved=${oks.length} IoU1D=[${fmt(summary.pages[key].iou1d)}] IoU2D=[${fmt(summary.pages[key].iouArea)}] dyMed=${summary.pages[key].dyMedianPx === null ? 'null' : summary.pages[key].dyMedianPx.toFixed(2)}px guard=${summary.pages[key].guardAllEqual}`)
+      log(`双链 ${key}（${pg.set}）: reconcile=${reconcile} anchors=${rows.length} resolved=${oks.length} IoU1D=[${fmt(summary.pages[key].iou1d)}] IoU2D=[${fmt(summary.pages[key].iouArea)}] dyMed=${summary.pages[key].dyMedianPx === null ? 'null' : summary.pages[key].dyMedianPx.toFixed(2)}px mispair=${summary.pages[key].mispairAnchors}锚/${summary.pages[key].mispairBlocks}块 guard=${summary.pages[key].guardAllEqual}`)
     }
   }
 

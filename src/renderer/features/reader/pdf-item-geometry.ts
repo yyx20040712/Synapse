@@ -50,7 +50,9 @@
  * - ascent 口径声明：取 styles 声明值（pdf.js TextStyle.ascent）而非 canvas
  *   量测值——乙轨已实证口径（b1 §2 T9 分解：声明 0.718×18=12.92 vs 量测
  *   14.33；项矩形=声明几何，构造不含量测伪迹）；fontName 查 styles 缺席/
- *   ascent 非有限 → 0.8 兜底（pdf.js #appendText 同款缺省）。
+ *   ascent 非有限或 ≤0 → 0.8 兜底（缺省常量与 pdf.mjs DEFAULT_FONT_ASCENT
+ *   同源、链语义类比——#getAscent 三级量测链在无 canvas 环境的退化形态未在
+ *   档核实；0=字体未声明非合法度量，F-A8 门 1b）。
  * - 依赖单向：本件→annotation-merge（mergeRects 终裁——INV-A~D 保证，乙2
  *   验证管线同构[diag normB2]）；零环；纯函数零 DOM/React 依赖
  *
@@ -214,7 +216,7 @@ function itemBoxOf(
   const vertical = style?.vertical === true
   if (vertical) angle += Math.PI / 2
   const fontH = Math.hypot(tx[2]!, tx[3]!)
-  const ascent = style !== undefined && Number.isFinite(style.ascent) ? style.ascent : 0.8
+  const ascent = style !== undefined && Number.isFinite(style.ascent) && style.ascent > 0 ? style.ascent : 0.8
   const sinA = Math.sin(angle)
   const cosA = Math.cos(angle)
   const ox = tx[4]! + ascent * fontH * sinA

@@ -1,0 +1,42 @@
+健康集全量（20 锚）                                    n=20 ≥0.99=10/20(50%) 区间=0.6584~0.9998 中位=0.9745 错对块合计=22
+├ 整行边界锚@1c2d-p4/p9（6）                          n=6 ≥0.99=6/6(100%) 区间=0.9919~0.9998 中位=0.9946 错对块合计=0
+├ 整行边界锚@3882-p2/p7（6）                          n=6 ≥0.99=4/6(67%) 区间=0.6584~0.9983 中位=0.9942 错对块合计=22
+└ 项内部分选中单行锚（全页集 8）                             n=8 ≥0.99=0/8(0%) 区间=0.8816~0.9745 中位=0.9074 错对块合计=0
+病理集全量（15 锚）                                    n=15 ≥0.99=6/15(40%) 区间=0.1335~0.9999 中位=0.9734 错对块合计=4
+--- 逐锚明细 ---
+real3882-p2   top      io1d=0.9968 io2d=0.5337 mis=0 dyMed=0.0040 G2(i/d/s)=false/false/false relocB=0
+real3882-p2   bottom   io1d=0.6820 io2d=0.4225 mis=6 dyMed=0.0004 G2(i/d/s)=false/false/false relocB=0
+real3882-p2   multi    io1d=0.9978 io2d=0.4033 mis=0 dyMed=0.0049 G2(i/d/s)=false/false/false relocB=0
+real3882-p2   single   io1d=0.8975 io2d=0.6456 mis=0 dyMed=0.0016 G2(i/d/s)=false/false/false relocB=0
+real3882-p2   single2  io1d=0.9074 io2d=0.6394 mis=0 dyMed=0.0016 G2(i/d/s)=false/false/false relocB=0
+real3882-p7   top      io1d=0.9942 io2d=0.4124 mis=0 dyMed=0.0041 G2(i/d/s)=false/false/false relocB=0
+real3882-p7   bottom   io1d=0.6584 io2d=0.4016 mis=13 dyMed=0.0001 G2(i/d/s)=false/false/false relocB=0
+real3882-p7   multi    io1d=0.9983 io2d=0.4728 mis=3 dyMed=0.0033 G2(i/d/s)=false/false/false relocB=0
+real3882-p7   single   io1d=0.9745 io2d=0.6940 mis=0 dyMed=0.0019 G2(i/d/s)=false/false/false relocB=0
+real3882-p7   single2  io1d=0.9735 io2d=0.6934 mis=0 dyMed=0.0018 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p4   top      io1d=0.9922 io2d=0.5762 mis=0 dyMed=0.0040 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p4   bottom   io1d=0.9996 io2d=0.7504 mis=0 dyMed=0.0018 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p4   multi    io1d=0.9958 io2d=0.7031 mis=0 dyMed=0.0017 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p4   single   io1d=0.8816 io2d=0.6218 mis=0 dyMed=0.0016 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p4   single2  io1d=0.9197 io2d=0.6379 mis=0 dyMed=0.0016 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p9   top      io1d=0.9919 io2d=0.6983 mis=0 dyMed=-0.0016 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p9   bottom   io1d=0.9998 io2d=0.5974 mis=0 dyMed=0.0042 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p9   multi    io1d=0.9946 io2d=0.6120 mis=0 dyMed=0.0040 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p9   single   io1d=0.8956 io2d=0.6215 mis=0 dyMed=0.0019 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p9   single2  io1d=0.9701 io2d=0.6791 mis=0 dyMed=0.0019 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p6   top      io1d=0.9981 io2d=0.4518 mis=0 dyMed=0.0028 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p6   bottom   io1d=0.9949 io2d=0.6773 mis=0 dyMed=0.0008 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p6   multi    io1d=0.8663 io2d=0.6159 mis=0 dyMed=0.0008 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p6   single   io1d=0.9925 io2d=0.6686 mis=0 dyMed=0.0013 G2(i/d/s)=false/false/false relocB=0
+real1c2d-p6   single2  io1d=0.9734 io2d=0.6680 mis=0 dyMed=0.0008 G2(i/d/s)=false/false/false relocB=0
+s1rot-p1      top      io1d=0.2473 io2d=0.7030 mis=2 dyMed=0.0001 G2(i/d/s)=false/true/true relocB=0
+s1rot-p1      bottom   io1d=0.7031 io2d=0.7030 mis=0 dyMed=0.0001 G2(i/d/s)=false/false/false relocB=0
+s1rot-p1      multi    io1d=0.1335 io2d=0.2512 mis=2 dyMed=0.0001 G2(i/d/s)=false/false/false relocB=0
+s1rot-p1      single   io1d=0.7031 io2d=0.6919 mis=0 dyMed=-0.0032 G2(i/d/s)=false/false/false relocB=0
+s1rot-p1      single2  io1d=0.7031 io2d=0.6989 mis=0 dyMed=0.0009 G2(i/d/s)=false/false/false relocB=0
+s2crop-p1     top      io1d=0.9999 io2d=0.3878 mis=0 dyMed=-0.0059 G2(i/d/s)=true/true/true relocB=0
+s2crop-p1     bottom   io1d=0.9999 io2d=0.7031 mis=0 dyMed=0.0024 G2(i/d/s)=false/false/false relocB=0
+s2crop-p1     multi    io1d=0.9532 io2d=0.6702 mis=0 dyMed=0.0023 G2(i/d/s)=false/false/false relocB=0
+s2crop-p1     single   io1d=0.9796 io2d=0.6918 mis=0 dyMed=0.0023 G2(i/d/s)=false/false/false relocB=0
+s2crop-p1     single2  io1d=0.9938 io2d=0.6990 mis=0 dyMed=0.0024 G2(i/d/s)=false/false/false relocB=0
+exit=0

@@ -67,7 +67,7 @@ export function verifyQuote(
   selector: { prefix: string; quote: string; suffix: string; start: number }
 ): number | null {
   // 空 quote 短路在 fullTextOf 之前（提取前旧码同序——空引文不触 DOM 遍历，
-  // 触达面还原[门一 N1]；locateQuote 内同检查保留=verifyQuoteItem 路径防线）
+  // 触达面还原[门一 N1]；locateQuote 内同检查保留=两入口共用兜底防线）
   if (selector.quote.length === 0) {
     return null
   }
@@ -87,6 +87,11 @@ export function verifyQuoteItem(
   items: ReadonlyArray<{ str: string }>,
   selector: { prefix: string; quote: string; suffix: string; start: number }
 ): number | null {
+  // 空 quote 短路在 items 拼接之前（与 verifyQuote 入口对齐——空引文不触
+  // 拼接遍历，触达面对称[门二 NIT 转门 1b 顺带]；locateQuote 内同检查保留=双防线）
+  if (selector.quote.length === 0) {
+    return null
+  }
   const text = items
     .map((it) => it.str)
     .filter((s) => s.length > 0)

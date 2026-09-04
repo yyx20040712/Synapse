@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T02:25:50.7755513Z",
+    "generatedAt":  "2026-09-04T03:24:29.1124381Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -127,11 +127,11 @@
                   },
                   {
                       "path":  "scripts/audits/f-a8-gate1-diag.mjs",
-                      "sha256":  "d8a7c4855c67d885f00180aea4cc39d5a8bd51061a727bf1c8f83551d862bb27"
+                      "sha256":  "7da18d1d936e42a1f43fe6f3d85b612bf02ede6caa8324555d9b8163f46b87e8"
                   },
                   {
                       "path":  "scripts/audits/f-a8-gate1-lib.mjs",
-                      "sha256":  "270ee271604cff6f7183c58bed1fc30340e18f9fdb88319449e5bd37a418c67f"
+                      "sha256":  "15919cc46ce938e08d55474aa2487715e3312422e47d635f69888c21c71546af"
                   },
                   {
                       "path":  "scripts/audits/f-a8-gate1-page.mjs",
@@ -803,7 +803,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
-                      "sha256":  "58a1ef10073dff66f0f3cb726a07aebb02586d0af1baba260e8674ff6de985cd"
+                      "sha256":  "1d9bb9e5c9959d6a63249d498242ee81c1ab4dce12edd9900086d131ce398be4"
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",

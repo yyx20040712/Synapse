@@ -1,0 +1,20 @@
+Warning: UnknownErrorException: Unable to load font data at: file:///E:/class/智慧水务/Synapse_remake/node_modules/pdfjs-dist/standard_fonts/FoxitSerif.pfb
+== p2 items=522 ==
+  g_d0_f1 items=312 ascent=0.699 descent=-0.217 
+  g_d0_f3 items=113 ascent=0 descent=0 <== ascent<=0
+  g_d0_f6 items=40 ascent=0.699 descent=-0.205 
+  g_d0_f4 items=26 ascent=0 descent=0 <== ascent<=0
+  g_d0_f2 items=12 ascent=0.718 descent=-0.207 
+  g_d0_f5 items=8 ascent=0.737 descent=-0.205 
+  g_d0_f7 items=6 ascent=0 descent=0 <== ascent<=0
+  g_d0_f9 items=4 ascent=0.683 descent=-0.217 
+  g_d0_f8 items=1 ascent=0.718 descent=-0.207 
+== p7 items=839 ==
+  g_d0_f1 items=518 ascent=0.699 descent=-0.217 
+  g_d0_f3 items=228 ascent=0 descent=0 <== ascent<=0
+  g_d0_f6 items=75 ascent=0.699 descent=-0.205 
+  g_d0_f10 items=10 ascent=0.431 descent=0 
+  g_d0_f9 items=4 ascent=0.683 descent=-0.217 
+  g_d0_f8 items=3 ascent=0.718 descent=-0.207 
+  g_d0_f2 items=1 ascent=0.718 descent=-0.207 
+exit=0
