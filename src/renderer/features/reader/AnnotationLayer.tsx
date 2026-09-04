@@ -6,15 +6,13 @@
  *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
  *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
  *   （F-11 顶/底收边修标注下偏；F-A4 b② 行盒自适应 band——重锚字形带在场
- *   时顶贴字形顶缘底贴底缘），rects 行级合并见
- *   annotation-anchor.mergeLineRects，两路径（划选保存/重开重锚）同口径；
+ *   时顶贴字形顶缘底贴底缘）；DOM 回退层行级合并=annotation-anchor.mergeLineRects
+ *   （[F-A8 门2] 适用面收缩 INV-47）；
  *   渲染读时另过 annotation-merge.mergeRects 归并（F-A1 挂 B，INV-E——
  *   F-A4 b① 行高感知 lineH 注入；存量缺陷态 rects 库数据零迁移，读时归并
- *   存量渐净；resolved 产物已过挂 A，幂等无害）；重锚+字形带计算=
- *   annotation-resolve 域（F-A4 拆件——组件 ≤250 红线）
- * - 打开文档/翻页时对每条标注 verifyQuote 重定位（排版变化自愈，仅影响显示不回写
- *   库；失败则按存量 rects 显示）。pdf.js 文本层异步入 DOM，MutationObserver +
- *   requestAnimationFrame 合并重算
+ *   存量渐净；resolved 产物已过挂 A，幂等无害）
+ * - 打开文档/翻页时三层编排重锚（[F-A8 门2] 项几何主链→DOM 回退→存量兜底
+ *   ——annotation-resolve-layered 域；仅显示不回写库；MutationObserver+rAF 合并）
  * - 点击标注：弹四选项菜单（AnnotationMenu：复制引文→剪贴板+失败 toast；删除→
  *   confirm→api.reader.deleteAnnotation；添加笔记→开批注编辑 AnnotationEditor
  *   （comment textarea，保存 api.reader.updateAnnotation）；取消收起）——点击他条
@@ -41,7 +39,9 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { resolveAnnotationRects, normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './annotation-resolve'
+import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './annotation-resolve'
+import { resolveAnnotationRectsLayered } from './annotation-resolve-layered'
+import { usePageItemsStore } from './page-items.store'
 import { mergeRects } from './annotation-merge'
 import { pushUndo } from './annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
@@ -58,7 +58,7 @@ const DELETE_CONFIRM = '删除这条标注？'
 /** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */
 type ResolvedRects = Record<string, ResolvedAnnotation>
 
-/** 弹层目标（连同命中矩形，供菜单/编辑器定位）——菜单与编辑器互斥使用同形 */
+/** 弹层目标（连同命中矩形供定位）——菜单与编辑器互斥使用同形 */
 interface PopupTarget {
   annotation: Annotation
   rect: AnnotationRect
@@ -75,27 +75,27 @@ export function AnnotationLayer(props: {
 }): JSX.Element | null {
   const { annotations, page, pageRoot, onChanged } = props
   const [resolved, setResolved] = useState<ResolvedRects>({})
-  // [F-A4 b①] 挂 B 行高感知 lineH（textLayer span 字号中位数/textLayer 盒高；
-  // 量测退化 undefined=旧行为——存量缺陷态 rects 读时归并同口径受益）
+  // [F-A4 b①] 挂 B 行高感知 lineH（textLayer span 字号中位数/textLayer 盒高；量测退化 undefined=旧行为）
   const [lineH, setLineH] = useState<number | undefined>(undefined)
-  // [F-A5 b] 存量回退 band：重锚失败（verifyQuote 假）的 rects 经同一
-  // bandsNearRects 单源（修前=F-11 分数回退行盒口径，票面 §0b③）
+  // [F-A5 b] 存量回退 band：重锚失败条目（S3b/S6）的 rects 经 bandsNearRects 单源
   const [fallbackBands, setFallbackBands] = useState<RowBand[]>([])
   const [menu, setMenu] = useState<PopupTarget | null>(null)
   const [editing, setEditing] = useState<PopupTarget | null>(null)
   const [busy, setBusy] = useState(false)
   // F-A3（INV-42）：选择模式自订阅（per-tab，SelectionLayer color 先例；props 零变）
   const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
-  // 进入选择模式：关已开菜单/编辑器（S1/S5；草稿丢弃=Escape 同语义；切回不自动恢复）；useLayoutEffect=paint 前收起，无中间帧可点击已死弹层（票面 §4）
+  // [F-A8 门2 CR1] 页项 store 订阅（pages[page+1] 条目变化→resolve 重调度——
+  // store 晚于 textLayer 就绪竞态由订阅兜底；CR3 键=当前渲染页，文档切换=clear
+  // 重填；缺席归一 null——编排器 S0 判定口径）
+  const pageEntry = usePageItemsStore((s) => s.pages[page + 1]) ?? null
+  // 进入选择模式：关已开菜单/编辑器（S1/S5；useLayoutEffect=paint 前收起，票面 §4）
   useLayoutEffect(() => {
     if (selectionMode) { setMenu(null); setEditing(null) }
   }, [selectionMode])
 
   const pageAnnotations = annotations.filter((a) => a.page === page)
 
-  // 文本层就绪后重锚：verifyQuote 校正偏移（自愈排版漂移）→ findRangeAtOffset 重算 rects
-  // +行盒自适应字形带（F-A4 b②——annotation-resolve 域，组件 ≤250 红线拆出）；
-  // 失败回退存量，仅显示层不回写库
+  // 文本层就绪后重锚 [F-A8 门2]：三层编排（项几何→DOM→存量——layered 域；仅显示不回写）
   useEffect(() => {
     if (pageRoot === null) {
       return
@@ -107,10 +107,9 @@ export function AnnotationLayer(props: {
     let scheduled = false
     const resolve = (): void => {
       scheduled = false
-      const next = resolveAnnotationRects({ textLayer, annotations, page })
+      const next = resolveAnnotationRectsLayered({ textLayer, annotations, page, entry: pageEntry })
       setResolved(next)
       setLineH(normalizedLineHeight(textLayer))
-      // 重锚失败者存量 rects 过 band 单源（成功者 bands 已在 next——两路同数学）
       const failed = annotations.filter((a) => a.page === page && next[a.id] === undefined && a.rects.length > 0)
       setFallbackBands(failed.length > 0 ? bandsNearRects(textLayer, failed.flatMap((a) => a.rects)) : [])
     }
@@ -125,7 +124,7 @@ export function AnnotationLayer(props: {
     const observer = new MutationObserver(schedule)
     observer.observe(textLayer, { childList: true, subtree: true })
     return () => observer.disconnect()
-  }, [annotations, page, pageRoot])
+  }, [annotations, page, pageRoot, pageEntry])
 
   /** 批注保存：api 成功 → store 同步 → 收起弹层 → onChanged 通知 */
   async function saveComment(a: Annotation, comment: string): Promise<void> {
@@ -202,6 +201,7 @@ export function AnnotationLayer(props: {
               key={`${a.id}:${i}`}
               data-testid="annotation-rect"
               data-annotation-id={a.id}
+              data-source={resolved[a.id]?.source}
               role="button"
               aria-label={`标注：${a.quoteText}`}
               title={a.comment !== '' ? a.comment : a.quoteText}

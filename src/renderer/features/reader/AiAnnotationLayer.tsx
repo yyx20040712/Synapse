@@ -67,9 +67,9 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AnnotationRect } from '@shared/models/annotation'
-import { verifyQuote } from './anchor-serialize'
-import { findRangeAtOffset, pixelBoxOf } from './annotation-anchor'
-import { bandsForTextNodes, matchBand, type RowBand } from './annotation-resolve'
+import { matchBand, type RowBand } from './annotation-resolve'
+import { resolveAiNotesLayered } from './annotation-resolve-layered'
+import { usePageItemsStore } from './page-items.store'
 import { bandVertical } from './annotation-style'
 import { PAGE_LAYER_Z } from './page-layer-z'
 import { QUESTION_COLOR } from './ai-note-style'
@@ -80,11 +80,13 @@ import { useReaderStore } from './reader.store'
 type ResolvedRects = Record<string, AnnotationRect[]>
 
 /** 本地重锚缓存（paperId+页键——键变即整体作废重算；bands=节点口径行簇
- *  字形带按 noteId 键控——绑定不经几何匹配，免疫行盒整体偏移） */
+ *  字形带按 noteId 键控——绑定不经几何匹配，免疫行盒整体偏移；source=
+ *  [F-A8 门2] 产物域标记 'item'|'dom'——INV-60 运行时不入库） */
 interface AnchorCache {
   key: string
   rects: ResolvedRects
   bands: Record<string, RowBand[]>
+  source: Record<string, 'item' | 'dom'>
 }
 
 /** 参与重锚的行：有锚引文（篇级/无锚行天然不入层）+页匹配（anchorPage 1 基） */
@@ -101,10 +103,14 @@ export function AiAnnotationLayer(props: {
   onJumpToNote(aiNoteId: string): void
 }): JSX.Element | null {
   const { aiNotes, page, pageRoot, onJumpToNote } = props
-  const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {}, bands: {} })
+  const [cache, setCache] = useState<AnchorCache>({ key: '', rects: {}, bands: {}, source: {} })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // F-A3（INV-42）：选择模式自订阅（AnnotationLayer 同型；props 接口零变）
   const selectionMode = useReaderStore((s) => s.tabs[s.activeId ?? '']?.selectionMode ?? false)
+  // [F-A8 门2 CR1] 页项 store 订阅（与 AnnotationLayer 同构——store 晚于
+  // textLayer 就绪竞态由订阅兜底；CR3 键=当前渲染页，文档切换=clear 重填；
+  // 缺席归一 null——编排器 S0 判定口径）
+  const pageEntry = usePageItemsStore((s) => s.pages[page + 1]) ?? null
 
   // 进入选择模式：清选中描边（S4——rects 惰性化，data-highlight 全 false）；
   // 切回常规恢复 auto 不自动重选（用户重新点击）。useLayoutEffect=paint 前
@@ -118,9 +124,9 @@ export function AiAnnotationLayer(props: {
   // 缓存键：paperId（行内同篇——取首行）+页；换篇/翻页即失效
   const cacheKey = `${pageNotes[0]?.paperId ?? aiNotes[0]?.paperId ?? ''}:${page}`
 
-  // 文本层就绪后重锚：verifyQuote → findRangeAtOffset（与 AnnotationLayer 同
-  // 管线同节奏——MutationObserver+rAF 合并重算；AI 行无存量 rects 可回退，
-  // 重锚失败=不渲染该段）
+  // 文本层就绪后重锚 [F-A8 门2]：三层编排（项几何主链→DOM 回退——与
+  // AnnotationLayer 共形，annotation-resolve-layered 域；MutationObserver+rAF
+  // 合并节奏不变；AI 行无存量 rects 可回退，重锚失败/抑制=不渲染该段）
   useEffect(() => {
     if (pageRoot === null) {
       return
@@ -132,29 +138,8 @@ export function AiAnnotationLayer(props: {
     let scheduled = false
     const resolve = (): void => {
       scheduled = false
-      const next: ResolvedRects = {}
-      const bands: Record<string, RowBand[]> = {}
-      const base = pixelBoxOf(textLayer)
-      for (const n of pageNotes) {
-        const at = verifyQuote(textLayer, {
-          prefix: n.prefixText,
-          quote: n.quoteText,
-          suffix: n.suffixText,
-          start: 0
-        })
-        if (at === null) {
-          continue
-        }
-        const range = findRangeAtOffset(textLayer, at, at + n.quoteText.length)
-        if (range !== null && range.rects.length > 0) {
-          next[n.id] = range.rects
-          // [F-A5 b] 节点口径带：引文自身 textNodes→bandsForTextNodes（绑定
-          // 不经几何匹配——免疫 CSS 行盒整体偏移错绑上一行；修前裸行盒
-          // 在小字号紧排文档上下偏+侵入相邻行=图2 根因）
-          bands[n.id] = bandsForTextNodes(range.textNodes.map((t) => t.node), base)
-        }
-      }
-      setCache({ key: cacheKey, rects: next, bands })
+      const next = resolveAiNotesLayered({ textLayer, notes: pageNotes, page, entry: pageEntry })
+      setCache({ key: cacheKey, rects: next.rects, bands: next.bands, source: next.source })
     }
     const schedule = (): void => {
       if (!scheduled) {
@@ -166,10 +151,11 @@ export function AiAnnotationLayer(props: {
     const observer = new MutationObserver(schedule)
     observer.observe(textLayer, { childList: true, subtree: true })
     return () => observer.disconnect()
-  }, [pageNotes, pageRoot, cacheKey])
+  }, [pageNotes, pageRoot, cacheKey, pageEntry])
 
   // 键变（翻页/换篇）即弃旧缓存（下轮重锚收敛前不渲染错页 rects）
   const resolved = cache.key === cacheKey ? cache.rects : {}
+  const resolvedSource = cache.key === cacheKey ? cache.source : {}
 
   return (
     <div
@@ -187,6 +173,7 @@ export function AiAnnotationLayer(props: {
             key={`${n.id}:${i}`}
             data-testid="ai-note-rect"
             data-ai-note-id={n.id}
+            data-source={resolvedSource[n.id]}
             data-highlight={n.id === selectedId}
             role="button"
             aria-label={`AI 笔记：${n.quoteText}`}

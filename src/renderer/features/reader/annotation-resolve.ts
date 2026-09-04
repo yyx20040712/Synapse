@@ -3,9 +3,10 @@
  * 拆出——组件 ≤250 行红线预裁；票面 §3 拆件结构）。
  *
  * ── 行为层 ──
- * - resolveAnnotationRects：verifyQuote 校正偏移（自愈排版漂移）→
- *   findRangeAtOffset 重算 rects——逐条等价自 AnnotationLayer 原 resolve
- *   闭包迁出（行为零变：失败回退存量，仅显示层不回写库）；
+ * - resolveAnnotationRectsDom [F-A8 门2 改名]：verifyQuote 校正偏移（自愈排版
+ *   漂移）→ findRangeAtOffset 重算 rects——原 resolveAnnotationRects 整体改名
+ *   降为 S4 页级回退层（**函数体零改**=INV-47 数值面不动，受锁断言锚）；
+ *   三层编排（项几何主链→本 DOM 回退→存量兜底）见 annotation-resolve-layered；
  * - resolveAnnotationRectsItem [F-A8 门0]：重锚纯域版（项几何族）——
  *   entry（page-items.store 页项）+annotations → verifyQuoteItem 逐条对账
  *   校偏 → itemSelectionGeometry 产 {rects,bands}；entry null→{}、失败条目
@@ -61,10 +62,13 @@ export interface RowBand {
   x1?: number
 }
 
-/** 重锚结果（id → { rects, bands }；缺项回退存量 rects 由消费方兜底） */
+/** 重锚结果（id → { rects, bands, source }；缺项回退存量 rects 由消费方兜底）。
+ *  source [F-A8 门2]=产物域标记（'item'=项几何主链 / 'dom'=S4 DOM 回退层）——
+ *  INV-60 显示覆盖语义锚：运行时调试面+单测断言面，不入库（渲染样式零差）。 */
 export interface ResolvedAnnotation {
   rects: AnnotationRect[]
   bands: RowBand[]
+  source?: 'item' | 'dom'
 }
 
 /** span 字体度量（canvas measureText 产物——墨带实界+回退字体布局带） */
@@ -267,8 +271,8 @@ export function bandsNearRects(textLayer: HTMLElement, rects: AnnotationRect[]):
   return bands
 }
 
-/** 重锚+行盒自适应（AnnotationLayer 挂 B 宿主调用；逐条等价迁出+band 增量） */
-export function resolveAnnotationRects(args: {
+/** 重锚+行盒自适应（S4 DOM 回退层——F-A8 门2 前为重锚主链；函数体零改） */
+export function resolveAnnotationRectsDom(args: {
   textLayer: HTMLElement
   annotations: Annotation[]
   page: number
@@ -369,8 +373,9 @@ export function resolveAnnotationRectsItem(
 /** 页项条目 → viewport（rotate=90/270 时 canvas 宽对应 view 高——宽高互换；
  *  box 反推 scale=Math.round 后 CSS 盒/跨度，与 clampScale(zoom) 真值差 <1px
  *  取整粒度——水平轴（宽）scale/base 严格约除消取整差；垂直轴依赖 box 宽高
- *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]） */
-function itemViewportOf(entry: PageItemEntry): ItemViewport {
+ *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]）。
+ *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费 */
+export function itemViewportOf(entry: PageItemEntry): ItemViewport {
   const [x0, y0, x1, y1] = entry.geometry.view
   const rot = ((entry.geometry.rotate % 360) + 360) % 360
   const domWidth = rot === 90 || rot === 270 ? y1 - y0 : x1 - x0

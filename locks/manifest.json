@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T03:24:29.1124381Z",
+    "generatedAt":  "2026-09-04T05:11:34.9049630Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "94d88004782148a373daaa7d1e1d7b15d848b5304c6365ff551cb1c6d8219165"
+                      "sha256":  "2a5430fd8fc0b818a44d472407cd1961fb1f945fbf0261720be1c4795353c160"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -631,7 +631,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
-                      "sha256":  "9ca3ad512628cf3c394dfff99ded57ca9e8fbd5460a1431ca493db35215915d9"
+                      "sha256":  "be33a952104ede4ce12deaee6c840fe442c97b79a4a146360a6972487f50b6fd"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
@@ -659,7 +659,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
-                      "sha256":  "a0694c04bc225108200954de2d87134fc513f04b647f3d1094fa3b0679fb3c04"
+                      "sha256":  "ad023cc651cfe0c788030ee690e33720af51189d61d4231e42d6de1ad6a37292"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",

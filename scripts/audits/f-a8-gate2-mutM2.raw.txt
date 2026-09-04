@@ -1,0 +1,36 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/annotation-layer.test.tsx [2m([22m[2m10 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 66[2mms[22m[39m
+[31m   [31m×[31m F-A8 门2 —— 三层编排（S0~S6）+CR1 store 订阅竞态+域标记[2m > [22mS6 病理抑制：对账失败+区间项盒全盒外→DOM 产物抑制（直显存量 rects）+warn 单源[90m 5[2mms[22m[31m[39m
+[31m     → expected 'dom' to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-layer.test.tsx[2m > [22mF-A8 门2 —— 三层编排（S0~S6）+CR1 store 订阅竞态+域标记[2m > [22mS6 病理抑制：对账失败+区间项盒全盒外→DOM 产物抑制（直显存量 rects）+warn 单源
+[31m[1mAssertionError[22m: expected 'dom' to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+"dom"
+
+[36m [2m❯[22m tests/unit/renderer/annotation-layer.test.tsx:[2m338:48[22m[39m
+    [90m336| [39m    [35mconst[39m block [33m=[39m host[33m![39m[33m.[39mquerySelector[33m<[39m[33mHTMLElement[39m[33m>[39m([32m'[data-testid="anno[39m…
+    [90m337| [39m    [34mexpect[39m(block)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m338| [39m    [34mexpect[39m(block[33m![39m[33m.[39m[34mgetAttribute[39m([32m'data-source'[39m))[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                                               [31m^[39m
+    [90m339| [39m    [34mexpect[39m([34minlinePct[39m(block[33m![39m[33m,[39m [32m'top'[39m))[33m.[39m[34mtoBeCloseTo[39m([34m25.2[39m[33m,[39m [34m3[39m)
+    [90m340| [39m    [34mexpect[39m([34minlinePct[39m(block[33m![39m[33m,[39m [32m'height'[39m))[33m.[39m[34mtoBeCloseTo[39m([34m1.56[39m[33m,[39m [34m3[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 12:46:13
+[2m   Duration [22m 1.48s[2m (transform 98ms, setup 0ms, collect 294ms, tests 66ms, environment 608ms, prepare 207ms)[22m
+
+exit=1

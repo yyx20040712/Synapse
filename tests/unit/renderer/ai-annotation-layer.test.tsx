@@ -19,6 +19,8 @@ import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locat
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
@@ -298,5 +300,115 @@ describe('F-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面�
     // 修前=裸行盒（jsdom 回退 span 盒 top 25%/height 2%）；band=25.375%/1.625%
     expect(parseFloat(r.style.top)).toBeCloseTo(25.375, 4)
     expect(parseFloat(r.style.height)).toBeCloseTo(1.625, 4)
+  })
+})
+
+// ══ F-A8 门2：AI 段三层编排接线（项几何主链+S4 DOM 回退+域标记）══
+// 与 AnnotationLayer 共形（设计书 §1.1 态空间+终裁 CR1/CR3）；数值期望手算
+// （viewport [0,0,612,792]/scale=1/字号 10/ascent 0.8；quote='正文'@7..9 落
+// item['中段正文内容'] span[5,11) f0=2/6 f1=4/6→rect={105.3333,112,33.3333,10}
+// →left=17.2113%/top=14.1414%；jsdom DOM 链兜底=0/0/100% 形态可区分）。
+/** 门2 样式（门 0 anchor-item-verify.test 同款） */
+const FA8_STYLE: PdfTextStyle = { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false }
+
+function fa8Item(str: string, y: number): PdfTextItem {
+  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, 72, y], fontName: 'g1', hasEOL: false }
+}
+
+function fa8Entry(items: PdfTextItem[]): PageItemEntry {
+  return {
+    page: 1,
+    text: { items, styles: { g1: FA8_STYLE }, lang: null },
+    geometry: { rotate: 0, view: [0, 0, 612, 792] },
+    box: { w: 612, h: 792 }
+  }
+}
+
+describe('F-A8 门2 —— AI 段三层编排接线（项几何主链+域标记）', () => {
+  beforeEach(() => {
+    usePageItemsStore.getState().clear()
+  })
+
+  /** DOM=单 span 三段拼接（与 items 拼接同串——S1 对账通过）；AI note 带
+   *  prefix/suffix 双锚（start=0 漂移重定位语义——AI 行无 startOffset） */
+  function anchorNote(): AiNote {
+    return {
+      ...note({ id: 'n-item', question: 'Q1', quote: '正文' }),
+      prefixText: '中段',
+      suffixText: '内容'
+    }
+  }
+
+  it('store 空（S0 缺席）→现状 DOM 链（S4）+域标记 dom', () => {
+    const pageRoot = makePageRoot('前文第一段中段正文内容后文第三段')
+    mount(
+      <AiAnnotationLayer aiNotes={[anchorNote()]} page={0} pageRoot={pageRoot} onJumpToNote={() => undefined} />
+    )
+    const r = rects()[0]!
+    expect(r).not.toBeUndefined()
+    expect(r.getAttribute('data-source')).toBe('dom')
+    expect(parseFloat(r.style.left)).toBeCloseTo(0, 3)
+    expect(parseFloat(r.style.width)).toBeCloseTo(100, 3)
+  })
+
+  it('store 注入 entry（S1 通过）→项几何主链（S2）+域标记 item+项几何手算数值', () => {
+    const pageRoot = makePageRoot('前文第一段中段正文内容后文第三段')
+    usePageItemsStore.getState().setEntry(
+      fa8Entry(['前文第一段', '中段正文内容', '后文第三段'].map((str, i) => fa8Item(str, 700 - i * 28)))
+    )
+    mount(
+      <AiAnnotationLayer aiNotes={[anchorNote()]} page={0} pageRoot={pageRoot} onJumpToNote={() => undefined} />
+    )
+    const r = rects()[0]!
+    expect(r).not.toBeUndefined()
+    expect(r.getAttribute('data-source')).toBe('item')
+    expect(parseFloat(r.style.left)).toBeCloseTo(17.2113, 3)
+    expect(parseFloat(r.style.top)).toBeCloseTo(14.1414, 3)
+  })
+
+  it('S3b：S1 通过但引文不存在于 items 域→该段零 rects（AI 无存量可回退）', () => {
+    const pageRoot = makePageRoot('前文第一段中段正文内容后文第三段')
+    usePageItemsStore.getState().setEntry(
+      fa8Entry(['前文第一段', '中段正文内容', '后文第三段'].map((str, i) => fa8Item(str, 700 - i * 28)))
+    )
+    mount(
+      <AiAnnotationLayer
+        aiNotes={[note({ id: 'miss', question: 'Q2', quote: '不存在的引文' })]}
+        page={0}
+        pageRoot={pageRoot}
+        onJumpToNote={() => undefined}
+      />
+    )
+    expect(rects().length).toBe(0)
+  })
+})
+
+// [F-A8 门2 回炉 W4] AI 侧 CR1 竞态 fixture（AnnotationLayer 同型——store 空挂载
+// →S4 dom；注入 entry→订阅触发重 resolve=项几何产物 item；S0 翻转断言）
+describe('F-A8 门2 回炉 W4 —— AI 侧 CR1 store 订阅竞态', () => {
+  beforeEach(() => {
+    usePageItemsStore.getState().clear()
+  })
+
+  it('store 空挂载→S4（dom）；注入 entry→订阅触发重 resolve=项几何产物（item）', () => {
+    const pageRoot = makePageRoot('前文第一段中段正文内容后文第三段')
+    const n = {
+      ...note({ id: 'n-race', question: 'Q1', quote: '正文' }),
+      prefixText: '中段',
+      suffixText: '内容'
+    }
+    mount(<AiAnnotationLayer aiNotes={[n]} page={0} pageRoot={pageRoot} onJumpToNote={() => undefined} />)
+    const before = rects()[0]!
+    expect(before).not.toBeUndefined()
+    expect(before.getAttribute('data-source')).toBe('dom')
+    act(() => {
+      usePageItemsStore.getState().setEntry(
+        fa8Entry(['前文第一段', '中段正文内容', '后文第三段'].map((str, i) => fa8Item(str, 700 - i * 28)))
+      )
+    })
+    const after = rects()[0]!
+    expect(after).not.toBeUndefined()
+    expect(after.getAttribute('data-source')).toBe('item')
+    expect(parseFloat(after.style.left)).toBeCloseTo(17.2113, 3)
   })
 })
