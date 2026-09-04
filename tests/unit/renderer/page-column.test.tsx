@@ -12,6 +12,8 @@
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
  * F-05 增补：段⑤程序滚动改走 scrollIntoNearestScroller(页盒,'start')（单容器
  * 收敛，INV-34——数学正确性锚在 scroll-converge.test；本文件断言调用形）。
+ * F-A7 增补：旋转页尺寸口径（makeDoc 可选 rotate 参+90/180/270/-90 四用例
+ * ——pageSizes=viewport 旋转口径，/Rotate 元数据适配非手动旋转特性）。
  */
 import { act, useEffect } from 'react'
 import type { RefObject } from 'react'
@@ -66,9 +68,9 @@ class MockIO {
   }
 }
 
-/** 六页文档桩（全部 612×792） */
-function makeDoc(pages: number): { doc: PDFDocumentProxy; getPage: ReturnType<typeof vi.fn> } {
-  const getPage = vi.fn(async (no: number): Promise<{ view: number[] }> => ({ view: [0, 0, 612, 792 * (no === 1 ? 1 : 1)] }))
+/** 六页文档桩（全部 612×792；F-A7 rotate 可选参缺省 0——既有调用面零破） */
+function makeDoc(pages: number, rotate = 0): { doc: PDFDocumentProxy; getPage: ReturnType<typeof vi.fn> } {
+  const getPage = vi.fn(async (no: number): Promise<{ view: number[]; rotate?: number }> => ({ view: [0, 0, 612, 792 * (no === 1 ? 1 : 1)], rotate }))
   const doc = { numPages: pages, getPage } as unknown as PDFDocumentProxy
   return { doc, getPage }
 }
@@ -523,5 +525,54 @@ describe('F-04 缩放中心锚与列宽基准（纯函数+组件装配）', () =
       />
     )
     expect(onReady).toHaveBeenCalledWith(612)
+  })
+})
+
+describe('F-A7 旋转页尺寸口径（pageSizes=viewport 旋转口径——/Rotate 元数据适配）', () => {
+  /** 单页文档挂载锚：view 612×792（未旋转口径）→盒尺寸随 rotate 口径变化 */
+  async function mountRotated(rotate: number, onReady?: (basisWidth: number) => void): Promise<void> {
+    const { doc } = makeDoc(1, rotate)
+    await mount(
+      <PageColumn
+        doc={doc}
+        totalPages={1}
+        zoom={1}
+        renderPage={(no) => <span data-rendered-page={no} />}
+        onPageRender={() => undefined}
+        onError={() => undefined}
+        onReady={onReady}
+      />
+    )
+  }
+
+  it('rotate=90：占位盒宽高交换（view 612×792→盒 792×612）+onReady 基准同口径', async () => {
+    const onReady = vi.fn()
+    await mountRotated(90, onReady)
+    const box = host!.querySelector<HTMLElement>('[data-page-box="1"]')!
+    expect(box.style.width).toBe('792px')
+    expect(box.style.height).toBe('612px')
+    // fit-width 分母（onReady basisWidth）同口径受益：旋转后宽=792
+    expect(onReady).toHaveBeenCalledWith(792)
+  })
+
+  it('rotate=180：不交换（612×792 原样——180° 无横竖翻转）', async () => {
+    await mountRotated(180)
+    const box = host!.querySelector<HTMLElement>('[data-page-box="1"]')!
+    expect(box.style.width).toBe('612px')
+    expect(box.style.height).toBe('792px')
+  })
+
+  it('rotate=270：交换（792×612）', async () => {
+    await mountRotated(270)
+    const box = host!.querySelector<HTMLElement>('[data-page-box="1"]')!
+    expect(box.style.width).toBe('792px')
+    expect(box.style.height).toBe('612px')
+  })
+
+  it('rotate=-90：负值归一化（((-90%360)+360)%360=270）后交换（792×612）', async () => {
+    await mountRotated(-90)
+    const box = host!.querySelector<HTMLElement>('[data-page-box="1"]')!
+    expect(box.style.width).toBe('792px')
+    expect(box.style.height).toBe('612px')
   })
 })

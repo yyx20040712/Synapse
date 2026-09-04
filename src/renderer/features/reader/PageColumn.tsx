@@ -11,7 +11,7 @@
  * 布局口径 basisWidth）；布局切换走轻 effect 重报 onReady（不重跑
  * getPage）；IO deps 增 layout（列↔行 DOM 重排后重挂）；段⑥锚总高按
  * 布局口径；懒渲染回收/scroll-progress 回写/程序滚动按页号消费零改。── 行为层：
- * - 段①页列就绪管线：doc 就绪→逐页 getPage→view 尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady(列宽基准)→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。
+ * - 段①页列就绪管线：doc 就绪→逐页 getPage→尺寸数组（缓存单源）→占位盒全列（总高确定）→onReady(列宽基准)→F-03 恢复 scrollTo；越界夹取锚本段（scrollToPage 前 clamp——openPaper 时 totalPages≡0 不可行）。[F-A7 增补 2026-09-04] 尺寸口径=viewport 旋转口径（rotate 归一化后 %180===90 交换宽高，/Rotate 元数据适配）。
  * - 段②占位盒布局：高=pageSizes[no]×zoom；宽=列宽（最宽页×zoom 居中；双页=各自页宽，行内左顶对齐）；未渲染盒空白。
  * - 段③懒渲染窗口：视口±1 页真渲染（canvas+覆盖层经 renderPage）；离屏>2 页销毁；IntersectionObserver 占位盒驱动（INV-30：canvas 生命周期=渲染窗口绑定）。
  * - 段④层实例化分工：覆盖层（TextLayer/AnnotationLayer/AiAnnotationLayer）经 renderPage(no) 每渲染页一套（props 不变父层循环）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02；挂载位=可见首报告）。
@@ -22,7 +22,7 @@
  * ── 接口层 ──
  * - props={doc,totalPages,zoom,layout?,renderWindow=1,recycleWindow=2,scrollContainerRef?,renderPage(no),onPageRender,onError,onReady(列宽基准),scrollRequest,onVisibleChange}；页盒布局+IO+回收调度+scrollToPage+缩放锚+页尺寸缓存单源。
  * ── 架构层 ── 分层不动；零新依赖；INV-01/29/30/33 语义全保持。
- * ── 生命周期层/文化层 ── 不做：页内偏移进度/虚拟滚动/旋转页/跨页选区/持续 fit/手势 pinch。测试=page-column+reader-double-page；e2e=reader-text/reader-scroll；真机=f-r1-verify.mjs。
+ * ── 生命周期层/文化层 ── 不做：页内偏移进度/虚拟滚动/手动旋转阅读/跨页选区/持续 fit/手势 pinch。测试=page-column+reader-double-page；e2e=reader-text/reader-scroll；真机=f-r1-verify.mjs。
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
@@ -110,9 +110,9 @@ export function PageColumn(props: {
       for (let no = 1; no <= totalPages; no += 1) {
         const page = await doc.getPage(no)
         if (cancelled) return
-        const view = page.view
-        // view=[x0,y0,x1,y1]（pdfjs 契约）；?? 0 兜底非法数组的防御位
-        sizes.push({ width: (view[2] ?? 0) - (view[0] ?? 0), height: (view[3] ?? 0) - (view[1] ?? 0) })
+        // [F-A7] viewport 旋转口径：view=[x0,y0,x1,y1] 契约与 ?? 0 防御位不变；rotate（?? 0 防御 mock 无 rotate 字段）归一化后 %180===90 时交换宽高（与 canvas getViewport 同源；内联数学先例 pdf-item-geometry；userUnit≠1 边界沿 PdfPageGeometry 口径）
+        const rot = ((page.rotate ?? 0) % 360 + 360) % 360
+        sizes.push(rot % 180 === 90 ? { width: (page.view[3] ?? 0) - (page.view[1] ?? 0), height: (page.view[2] ?? 0) - (page.view[0] ?? 0) } : { width: (page.view[2] ?? 0) - (page.view[0] ?? 0), height: (page.view[3] ?? 0) - (page.view[1] ?? 0) })
       }
       if (!cancelled) {
         setPageSizes(sizes)

@@ -14,7 +14,9 @@
  *   ——INV/受锁测试消费面；PageLayout 类型单源驻本件）。
  */
 
-/** 页原始尺寸（pdf 用户空间，scale=1 基准——zoom 乘法在盒几何层） */
+/** 页原始尺寸（pdf 用户空间，scale=1 基准——zoom 乘法在盒几何层；F-A7 起=
+ *  viewport 旋转口径：/Rotate 归一化后 %180===90 页已交换宽高，与 canvas
+ *  渲染盒同口径——构造侧 PageColumn 段①单源归一，本件纯函数透明消费） */
 export interface PageBoxSize {
   width: number
   height: number

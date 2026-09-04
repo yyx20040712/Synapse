@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T00:05:20.5947969Z",
+    "generatedAt":  "2026-09-04T00:52:25.1570619Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -439,7 +439,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "884e64bcbc1adbefbdd40ddac4fe247407d87287f56d6d7558f5ac659990c372"
+                      "sha256":  "9603ab47b4b5677777fa04cc2ac9b9551d51d359dba235b4890abc3122f5843d"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -763,7 +763,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
-                      "sha256":  "f3775f6ec2ee7ceb60c1a101c33b9d76061533e27ccd2b9746fdb006ec0d1fa7"
+                      "sha256":  "2ce2d41056601c520f59a8eb95a67df28766585fe242e4a92c14b5420c663a3f"
                   },
                   {
                       "path":  "tests/unit/renderer/pages-overlay.test.tsx",

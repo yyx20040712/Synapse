@@ -1,0 +1,60 @@
+Let me audit. Key checks:
+
+1. Math: rotation normalization for rotate ∈ {0,90,180,270,-90,-270,450}:
+- 0: ((0%360)+360)%360=0 → 0%180=0 ≠90 → no swap. Correct.
+- 90: 90%180=90 → swap. Correct.
+- 180: 180%180=0 → no swap. Correct.
+- 270: 270%180=90 → swap. Correct.
+- -90: -90%360=-90 (JS), +360=270 → swap. Correct.
+- -270: -270%360=-270, +360=90 → swap. Correct.
+- 450: 450%360=90 → swap. Correct.
+
+All consistent with implementation. Edge: rotate=-360? (-360%360)=-0, +360=360, %360=0 → no swap, fine.
+
+2. e2e "修前形态差 >300px 必红" claim: fixture CropBox 504×684 view (CropBox [36 36 540 720] → 504×684). Pre-fix box=504 wide... wait viewport 684×504. box 504×684 vs canvas 684×504. At fit-width ~1.63×: box width = 504×zoom? Wait — PageBox sizes = size×zoom. But fit-width: columnWidthFor based on basisWidth... pre-fix basisWidth=504 (未旋转 view width 504), fit-width zoom = container/504. Hmm, claim: box width = 504×z, canvas width = 684×z? Actually canvas renders with getViewport at scale=z. Fit-width computed from basisWidth=504 → z such that 504×z = container → canvas width 684×z = 684/504 × container = 1.357× container, overflowing. Difference in width = (684-504)×z. With z~1.63 → diff = 180×1.63 ≈ 293px. Hmm claim says >300px. 180×1.63=293.4, slightly under 300. But canvas width 1116px = 684×1.63 per F-A6-d measured. So diff 1116 - 504×1.63=821.5 → 294.5. "差 >300px" — slightly exaggerated. Height diff: box height 684×1.63=1115 vs canvas 504×1.63=821.5, diff ~293. So "修前形态差 >300px 必红" is borderline overstated (~293px < 300). But still >>2px tolerance → must fail. The claim "必红" holds (293 > 2), but ">300px" number is inaccurate. WARN or NIT. Actually the ticket claim in the gate task says "修前形态差 >300px 必红" — my calc gives ~293px. The direction of the assertion: still red, so the tolerance doesn't swallow the mismatch. WARN on numeric embellishment.
+
+Also note e2e new test asserts boxW>boxH direction — fine.
+
+3. Unit test onReady(792): with single page, columnWidthFor basis = widest page width = 792 after swap. OK.
+
+4. Concern: makeDoc rotate param applies rotate to all pages — fine for single-page test. But note `792 * (no === 1 ? 1 : 1)` — silly existing code, unchanged.
+
+5. Concern: the swapped width uses view[3]-view[1] as width — for a view with non-zero origin, swapped dimensions: viewport rotation of rect... pdfjs getViewport with rotation swaps width/height of the view box. width = view[2]-view[0] = 612, height = view[3]-view[1] = 792. After swap: width=792, height=612. Matches canvas getViewport (rotation 90 viewport width = viewBox height). Correct per pdfjs (rotation 90/270 swap w/h; offset effects minimal with userUnit=1). OK.
+
+But subtle: for CropBox with non-zero origin [36 36 540 720], getViewport rotation 90 gives width 684 height 504 — matches swap of (540-36=504? wait width=540-36=504, height=720-36=684). Swap → 684×504. Yes correct.
+
+6. Push line ~280 chars — readability debt, declared. Also the ternary duplicates full expressions; could have computed w/h vars then conditionally swapped — but line limit 250 constraint. Reported self-ruling; acceptable but WARN readability.
+
+7. Wait — line count: PageColumn was 249 lines, limit 250. The compacting into 3 lines... but they added a comment line (F-A7) plus removed 2 lines, added 3 lines net +1? Old: 3 lines (const view; comment; sizes.push). New: 3 lines (comment; const rot; sizes.push). So 249+0? Header note line ① extended in-place (same line, longer). So component stays 249? Claim "首版 250+ 被拦" then compacted. Plausible. Any future line addition breaks limit — D concern, suggest splitting comment. WARN.
+
+8. e2e new test: does it disable... `expect(geo!.boxW)` uses non-null assertion after toBeNull check — fine.
+
+9. Missing: e2e test doesn't assert that the page actually has rotation applied... it relies on fixture. OK.
+
+10. Concern: unit tests don't cover rotate=450 or -270, but -90 covers negative normalization; 180 covers no-swap. Adequate. Missing userUnit note — declared.
+
+11. First-red: only 3 failed (90/270/-90), 180 green pre-fix — declared as mathematically inevitable, corroborated by mutation B flipping condition → 8 reds including 4 existing rotate=0. Good.
+
+12. B red lines: locks flow 277 unchanged, manifest diff shows only generatedAt + 2 sha updates — consistent. Test assertions not weakened — F-A6-d assertions unchanged, only comment updated. Good.
+
+13. A: file list matches 4 files + manifest. Five-layer compliance: state space unchanged ✓; interface: PageBoxSize shape unchanged, comment added ✓; header note "手动旋转阅读" ✓; e2e :925 comment updated ✓ per ruling ⑤; makeDoc optional rotate zero-break ✓.
+
+14. Potential issue: header line ① now contains both F-A7 addendum AND the long line — declared.
+
+15. D honesty: self-reports complete? They declared ①②③. The push-line 280 chars — "多断言禁与行尾注释同置" rule: the new code lines have no trailing comments ✓. But the comment line is long.
+
+16. One check: e2e ±2px tolerance with direction assertion — could a wrong (unswapped) build pass? Pre-fix: boxW-boxH direction would be 504<684 → boxW>boxH fails too. Double protection. Good.
+
+17. Nit: unit test only asserts style width/height and onReady — mount uses zoom=1, so 792px fine.
+
+18. The "差>300px" — compute precisely: 180 × 1.63 = 293.4. Claim overstated. But maybe zoom slightly larger; fit-width ~1.63 approximate. Marginal. WARN (numeric embellishment) — actual ~293 < 300, but "必红" still holds since tolerance is 2px. Suggest correct to ~290px or ">250px".
+
+Also check: is the claim direction right that diff is >300? box 504×1.63=821.5; canvas 684×1.63=1114.9; diff 293.4. Yes.
+
+Another check: viewport scale — canvas gets scale=zoom. Fit-width denominator pre-fix = basisWidth=504 (unswapped), so zoom bigger than post-fix. Post-fix basis=684 → zoom smaller. Both consistent.
+
+Mutation A: 删交换分支=3 failed — the three swap tests red, 180 green. Consistent.
+
+Overall: PASS_WITH_WARNINGS.
+
+Format ≤1500 汉字当量, compact markdown.

@@ -924,10 +924,9 @@ test('F-A6-d 组合页（/Rotate 90×/CropBox 非零原点）：文本层对齐�
 
   // —— ③ 关键断言：块 gBCR 落渲染页盒（canvas 盒=textLayer 宿主纸盒——
   //    pixelBoxOf 归一化同盒，D1 右溢判据域）内（同帧取两盒——平移不变）。
-  //    参考系申报（F-A6-d 首跑红证发现）：/Rotate≠0 页上 [data-page-box] 占位
-  //    盒=page.view 未旋转口径（PageColumn 段①）而 canvas/纸盒=旋转交换口径，
-  //    两者错配=票外既有布局缺陷（真实库 46 页全 rotate=0 未显现；本票禁改
-  //    src——已申报主控另行立案，本断言以渲染页真盒为判据域）——
+  //    参考系申报（F-A7 已修复：PageColumn 段① pageSizes=viewport 旋转口径，
+  //    页框与 canvas/纸盒渲染盒一致——修前错配形态档 f-a6-forensic-verdict）；
+  //    断言仍以 canvas 盒为判据域（渲染真盒）——
   const geo = await win.evaluate(() => {
     const root = document.querySelector('[data-page-root]')
     const canvas = root?.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect() ?? null
@@ -945,6 +944,41 @@ test('F-A6-d 组合页（/Rotate 90×/CropBox 非零原点）：文本层对齐�
     expect(b.right, '组合页划选块不溢渲染页盒右缘（D1 右溢主链）').toBeLessThanOrEqual(geo.canvas!.right + 2)
     expect(b.bottom, '组合页划选块不溢渲染页盒底缘').toBeLessThanOrEqual(geo.canvas!.bottom + 2)
   }
+  await app.close()
+})
+
+/**
+ * [F-A7] 旋转页占位盒口径小票（PageColumn 段① pageSizes=viewport 旋转口径
+ * 的 e2e 收口——fixture 复用 F-A6-d 组合页）：修复前 [data-page-box] 占位盒=
+ * page.view 未旋转口径（504×684）而 canvas=getViewport 旋转口径（684×504）
+ * →canvas 横向溢出页盒+纵向底部空条（错配形态档 f-a6-forensic-verdict）；
+ * 修复后两者宽高各自一致（±2px 容差吞 floor 亚像素取整——与 F-A6-d 同口径；
+ * 绝对像素值随容器宽漂移故禁用，fit-width 默认缩放 ~1.63×）。方向断言=盒宽
+ * >盒高（viewport 口径横纸 684>504）；真实库全档 rotate=0 未显现，合成页
+ * 为唯一守护面（生命周期层——/Rotate 元数据适配非手动旋转阅读特性）。
+ */
+test('F-A7 旋转页（/Rotate 90）：占位盒与 canvas 渲染盒宽高一致（viewport 旋转口径）', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 e2e 旋转页口径文献'
+  const { app } = await seedAndLaunch(title, createRotatedCropPdf())
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // 同帧取两盒（gBCR 实测——渲染真值非恒真断言）
+  const geo = await win.evaluate(() => {
+    const box = document.querySelector('[data-page-box]')?.getBoundingClientRect() ?? null
+    const canvas = document.querySelector('[data-page-root] canvas[data-pdf-canvas]')?.getBoundingClientRect() ?? null
+    if (box === null || canvas === null) return null
+    return { boxW: box.width, boxH: box.height, cvW: canvas.width, cvH: canvas.height }
+  })
+  expect(geo, '旋转页前提成立（占位盒与 canvas 均在场）').not.toBeNull()
+  // 修前形态=盒 504×684 vs canvas 684×504（差=180×zoom，fit-width ~1.63× 下 ≈293px ≫2px 容差必红）
+  expect(Math.abs(geo!.boxW - geo!.cvW)).toBeLessThanOrEqual(2)
+  expect(Math.abs(geo!.boxH - geo!.cvH)).toBeLessThanOrEqual(2)
+  // 方向断言：viewport 口径横纸（宽>高——等比缩放不改变方向）
+  expect(geo!.boxW).toBeGreaterThan(geo!.boxH)
   await app.close()
 })
 
