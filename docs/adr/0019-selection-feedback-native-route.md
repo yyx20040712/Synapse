@@ -1,6 +1,6 @@
 # ADR-0019 划选视觉反馈回退官方原生半透明路线（R1）
 
-日期：2026-08-29 · 状态：已裁决（执行=SR2-F-08） · 取代：SR2-F-06/SR2-F-07 的 ::selection 处置 · 上游：`docs/prompts/2026-08-29_loop-handoff.md` §2F1 · 取证：`scripts/audits/f1-forensics.report.md`
+日期：2026-08-29（R3 修订 2026-09-04） · 状态：已裁决（执行=SR2-F-08） · 取代：SR2-F-06/SR2-F-07 的 ::selection 处置 · 上游：`docs/prompts/2026-08-29_loop-handoff.md` §2F1 · 取证：`scripts/audits/f1-forensics.report.md`
 
 ## 背景
 
@@ -150,3 +150,67 @@
   接受+台账备案，用户如遇此类 PDF 另开票换「色块 z 于 canvas 上+normal」
   回退路径）**；AI 选中描边随层垫底（描边
   落 rect 边缘空白区可见，压墨段被墨盖——交互反馈弱化，报门审）。
+
+## R3 修订：拖选视觉调度 rAF 对齐+评估双路径+几何管线加固（F-A6，2026-09-04）
+
+状态：已裁决（执行=F-A6 a/b1/b2/c，2026-09-04）
+
+- **修订依据**：用户实报 2026-09-03（图证定性）——某 PDF 划选灰块锯齿拼接+右侧溢出，
+  拖选反馈一卡一卡；五轮方案（F-06/07/08/09/A4+A5）后残留，远超「同类缺陷二次触发即
+  重构」线，registry F-A6 立案纪律=设计文档先行
+  （`docs/design/2026-09-03_f-a6-selection-root-fix.md`）。根因双独立：D1=几何源头在
+  异常 text-layer 上错（自绘层照渲=所见即所存的几何源头错）；D2=拖选期 200ms 节流
+  粒度（5Hz 步进）+每 tick 全量评估冗余（含与视觉无关的锚定序列化与二次几何往返）。
+- **落地形态**（按四轮取证终态校正——数字单一来源 `scripts/audits/f-a6-forensic-verdict.md`
+  §1~§12；设计书 §6 草案的「clientRects→缓存 bands」R-加固形态经 a 轮 A/B 裁定改落
+  R-迁移主链）：①视觉通道**不变**（::selection 保持 transparent、自绘并集层保持——
+  本修订区别于 R1/R2 的通道级修订，是通道内调度与管线修订）；②拖选期=快路径
+  evaluateVisual（rAF 对齐 60Hz：首事件即排 rAF leading ≤16ms+帧内合帧去重——取代
+  200ms 节流 5Hz 步进），settle（mouseup 即时+防抖 200ms）=全量评估零变（锚定三元组/
+  保存链权威单点）；快路径数据链=**R-几何源迁移**主链（page-items.store 直读页项→
+  rectsForOffsetRange+基线分组+bandsFromItems——与 settle 同族，INV-58；DOM 量测降为
+  快→全量→DOM 三层回退的末端，回退三因 warn 不静默）；bands 现算不缓存
+  （bandsFromItems 纯函数零布局读——最重样本 real3882 快路径链 CPU <2ms 实测）；③D1
+  公共面=阶段化决策门落地 R-迁移（b1 T1/T9 前置修复[duckViewport rotation 通道+
+  rawDims 真值化]→阶段 2 复跑 S1/S2 形态消除[决策门过，门二 PASS+ENDORSE]→b2 主链
+  迁移[门二 PWW 零 BLOCKING]）；TextLayer rotation 通道（T1/T9 机理证实+合成触发证实
+  ——非草案「证伪删除」分支；rotation×CropBox 组合面 e2e 收口=F-A6-d）+G2 降级门
+  active（项盒偏离率 ≥5% 阈[健康页 0~0.12% vs 病理页 25%+ 分界，>4 倍安全边距]→拖选期
+  setPaint(null)+mouseup toast 拒绝，INV-02；右溢 >2px 支=占位阈值，随真实复现证据启用；
+  r3a 事故中实证拦截错几何）；④INV-37 调度条款同步（200ms 防抖驱动→rAF 对齐双路），
+  新 INV-58 锁「快路径同管线」；⑤**INV-37 语义弱化显式登记（Kimi 拟定裁决 2-§6——
+  B 案成立的前置条件，用户裁决 2026-09-03）**：拖选期视觉=**所见≈所存**（快路径几何为
+  settle 权威的瞬态近似，边界贴齐/band 口径差额由 settle 同帧终裁覆盖）；**松手及保存
+  时刻所见即所存严格保持**（settle 全量为单一权威）。此弱化为本次修订的显式代价，
+  登记而非隐含。
+- **落地终态数字**（四轮对照，f-a6-forensic-verdict.md §10/§11/§12）：D1 面——健康页
+  块数 42/10/3 逐位不变+右溢 0；IoU_x 全样本提升（b2 轮 0.9996/0.9982/—/0.9998/0.9998
+  →第三轮 0.9999/1/0.9987/1/1，1c2d 分数 view 页 0.9982→1）；甲乙同链 shift ≤0.01px
+  （按构造）；s1rot 3 块=行真值且零高伪迹块经项几何链构造性消除（b1 轮 2 块零高）；
+  s2crop 双向平移 x+36.01/y−37.40px→0.03/−0.1。D2 面——mutations 7→20（20 次 dispatch
+  全跟随）；间隔中位 200ms→59.5ms（dispatch 节奏 50ms 为界——rAF 帧栅格量化 50/60
+  交替在档）；全链 delta med 降 2.5~3×（3882 11.9ms，max ≤15.5=帧点等待上界，链本身
+  亚毫秒）；布局读（real3882）：b2 轮 gBCR 18/gCS 685→c 轮 gBCR 24 绝对量（1.2/mutation，
+  b2=2.6/mutation）/gCS 87（−87%）；clientRects 8→1（残余=末尾 settle 单次全量）——
+  快路径每 tick clientRects/gCS=0。
+- **不随修订变化**：锚定三元组/保存链/INV-05 两路径同口径/F-12 触发阈值/选择模式
+  （INV-42）/工具条定位与弹出语义（含拖选中停顿 >200ms 出条）/Escape 语义（INV-37
+  主体）。
+- **已知边界申报**：①快路径用原始选区 range，选区边界落在元素容器（非文本节点）时与
+  settle 重构 range 有边界贴齐差额——settle 终裁覆盖，拖选期瞬时不计入所存（零宽差额
+  rect 被 mergeRects W_MIN 滤除；textNodes 两套枚举口径差一 span 的 band 差由
+  selection-evaluate.test 同帧覆盖 it 显式锚）；①' 项内细分边界=近似值（grapheme 簇
+  比例细分在连字/比例字体下项内选中起点可有抖动，项矩形包络兜底，settle 同帧终裁覆盖
+  ——RTL/竖排运行时触发面为零，单测夹具补验证在档）；②mid-drag zoom 缓存陈旧——c
+  落地无 bands 量测缓存（纯函数现算），该面不适用；同帧覆盖断言以 mid-drag zoom 差分
+  形态锚「终态=全量产物」；③旋转/竖排内容跳过 mergeRects 终裁（角度门 |sin(行进角)|
+  <0.35——r3b 事故修复面：中心 y 聚类对竖排段的桥接；INV-D 行间钳制不适用已申报，
+  真实库 rotate=0 全档零触发）；④live range 诱发链（mouseup 后 portal DOM 结构插入诱发
+  原生 selectionchange→新 rAF 重渲一次）=生产幂等无害（快/全量同族同产物，INV-58
+  等价性吸收，visual 不动 pending）——组件级 W1 it 预渲染隔离在档，不锚 e2e（d 票
+  裁量）；⑤若真机复评 B 案仍有可感卡顿，C 案（拖选原生+settle 接管）为备案单案，禁止
+  与 B 并存（P10 方案切换=删旧）；⑥AnnotationLayer 存量重锚域仍走 DOM 量测几何（门二
+  seam_ruling——INV-58 票外边界，同族化独立票排期）；⑦**d 票 e2e 收口新发现（票外
+  申报）**：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn 段①
+  page.view 未旋转口径）与 canvas 渲染盒错配——页框阴影/布局面缺陷（selection 几何
+  链不受影响：paint 块落 canvas 真盒内），真实库全档 rotate=0 未显现，另案立案。

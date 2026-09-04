@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-03T23:25:30.5202274Z",
+    "generatedAt":  "2026-09-04T00:05:20.5947969Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "43046ff3459f4fce38730fd8f62970f7adbb770dbad4c4bf34b391ce572ab339"
+                      "sha256":  "94d88004782148a373daaa7d1e1d7b15d848b5304c6365ff551cb1c6d8219165"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -439,7 +439,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "831050cc86ab849bd3485053a60fab366dde147656902c08edb740ea821e0312"
+                      "sha256":  "884e64bcbc1adbefbdd40ddac4fe247407d87287f56d6d7558f5ac659990c372"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -1091,7 +1091,7 @@
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",
-                      "sha256":  "771eaa5b064fc360404a52ab35eb647c52efe4c0d8613e42c4f6c8cf336f758f"
+                      "sha256":  "ae2e5e9c6ea4e7acd9f9a27fb9d66684f586873d7957de96544b37946bec20fb"
                   },
                   {
                       "path":  "tsconfig.json",

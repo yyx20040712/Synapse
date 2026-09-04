@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createMultiLinePdf, createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT } from '../utils/pdf-factory'
+import { createMultiLinePdf, createMultiPagePdf, createRotatedCropPdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT, PDF_ROTATED_CROP_TEXT } from '../utils/pdf-factory'
 
 /** 拉起子进程跑 seed-paper.cjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
 function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
@@ -850,6 +850,180 @@ test('F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（
   for (let i = 1; i < byY.length; i += 1) {
     expect(byY[i - 1]!.y + byY[i - 1]!.h).toBeLessThanOrEqual(byY[i]!.y + 1e-9)
   }
+  await app.close()
+})
+
+/**
+ * [F-A6-d] 旋转×CropBox 组合页小票（b1 门一 N3 已知边界兑现——单测各半边
+ * 独立锚[tests/unit/renderer/text-layer.test.tsx 旋转态/CropBox 态分列用例]，
+ * 组合面=/Rotate 90 × /CropBox [36 36 540 720] 双病理叠加，e2e 收口锚定）：
+ * - ①文本层对齐墨带：同页 textLayer span gBCR 与 canvas gBCR 包含度 ≥0.5
+ *   （交集面积/span 面积——span 至少半身落渲染盒内；单 evaluate 同帧取两盒，
+ *   [W1 回炉判据升级]——duckViewport rotation 通道+rawDims 真值化[TextLayer
+ *   容器变换]+项几何主链[b2]的端到端对齐验证；修前形态=s1rot outside 5/8
+ *   span 落盒外+s2crop 双向平移 36px，scripts/audits/f-a6-forensic-verdict.md §2/§10）；
+ * - ②程序化划选（:790-800 配方）→ selection-toolbar 可见+selection-rects
+ *   块数=行真值（单行 fixture=1 块）；
+ * - ③关键断言：selection-rect 块 gBCR 落渲染页盒（canvas 盒=pixelBoxOf
+ *   归一化同盒）内——旋转+非零原点双病理下不溢出（T1/T9+组合面的 D1 右溢
+ *   主链 e2e 级闭合；2px 容差吞百分比渲染亚像素取整）。首跑红证申报：/Rotate≠0
+ *   页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn 段① page.view 口径）
+ *   与 canvas 错配=票外既有布局缺陷（真实库全档 rotate=0 未显现），本断言以
+ *   渲染页真盒为判据域，页框错配另案申报主控立案。
+ */
+test('F-A6-d 组合页（/Rotate 90×/CropBox 非零原点）：文本层对齐墨带+划选块=行真值且不溢页盒（T1/T9 组合面 e2e 闭合）', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 e2e 组合页文献'
+  const { app } = await seedAndLaunch(title, createRotatedCropPdf())
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // —— ① 文本层对齐墨带（同帧取两盒——包含度=交集面积/span 自身面积：span
+  //    至少半身落 canvas 渲染盒内；对「整体出盒」（修前 outside 5/8 形态）与
+  //    「中间态失真」（部分越缘）均有鉴别力。旋转页 span 为 90° 旋转盒，gBCR
+  //    取渲染域轴对齐包围盒，面积比直接可算[W1 回炉判据升级 2026-09-04]）——
+  const align = await win.evaluate(() => {
+    const root = document.querySelector('[data-page-root]')
+    const span = root?.querySelector('.textLayer span') ?? null
+    const canvas = root?.querySelector('canvas[data-pdf-canvas]') ?? null
+    if (span === null || canvas === null) return null
+    const s = span.getBoundingClientRect()
+    const c = canvas.getBoundingClientRect()
+    const ow = Math.min(s.right, c.right) - Math.max(s.left, c.left)
+    const oh = Math.min(s.bottom, c.bottom) - Math.max(s.top, c.top)
+    const inter = ow > 0 && oh > 0 ? ow * oh : 0
+    const spanArea = s.width * s.height
+    return { ratio: spanArea > 0 ? inter / spanArea : 0, overlapW: ow, overlapH: oh }
+  })
+  expect(align, '组合页前提成立（span 与 canvas 均在场）').not.toBeNull()
+  expect(
+    align!.ratio,
+    `T1/T9 组合面：文本层 span 与 canvas 墨带包含度 ≥0.5（实测 ${align!.ratio.toFixed(3)}——span 至少半身落渲染盒内）`
+  ).toBeGreaterThanOrEqual(0.5)
+
+  // —— ② 程序化划选（单行全选——selectionchange settle 路径产 pending）——
+  await win.evaluate(() => {
+    const span = document.querySelector('[data-page-root] .textLayer span')
+    const node = span?.firstChild
+    if (node === null || node === undefined) throw new Error('组合页前提不成立：文本节点缺席')
+    const range = document.createRange()
+    range.setStart(node, 0)
+    range.setEnd(node, (node.textContent ?? '').length)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    document.dispatchEvent(new Event('selectionchange'))
+  })
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 3_000 })
+  const rects = win.getByTestId('selection-rect')
+  await expect(rects.first()).toBeVisible()
+  // 块数=行真值：合成单行文本经项几何链（基线分组并块）恰 1 块
+  await expect(rects).toHaveCount(1)
+
+  // —— ③ 关键断言：块 gBCR 落渲染页盒（canvas 盒=textLayer 宿主纸盒——
+  //    pixelBoxOf 归一化同盒，D1 右溢判据域）内（同帧取两盒——平移不变）。
+  //    参考系申报（F-A6-d 首跑红证发现）：/Rotate≠0 页上 [data-page-box] 占位
+  //    盒=page.view 未旋转口径（PageColumn 段①）而 canvas/纸盒=旋转交换口径，
+  //    两者错配=票外既有布局缺陷（真实库 46 页全 rotate=0 未显现；本票禁改
+  //    src——已申报主控另行立案，本断言以渲染页真盒为判据域）——
+  const geo = await win.evaluate(() => {
+    const root = document.querySelector('[data-page-root]')
+    const canvas = root?.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect() ?? null
+    const blocks = Array.from(document.querySelectorAll('[data-testid="selection-rect"]')).map((el) => {
+      const r = el.getBoundingClientRect()
+      return { x: r.x, y: r.y, right: r.right, bottom: r.bottom }
+    })
+    return { canvas: canvas === null ? null : { x: canvas.x, y: canvas.y, right: canvas.right, bottom: canvas.bottom }, blocks }
+  })
+  expect(geo.canvas, '渲染页盒在场（canvas）').not.toBeNull()
+  expect(geo.blocks.length).toBe(1)
+  for (const b of geo.blocks) {
+    expect(b.x, '组合页划选块不溢渲染页盒左缘').toBeGreaterThanOrEqual(geo.canvas!.x - 2)
+    expect(b.y, '组合页划选块不溢渲染页盒顶缘').toBeGreaterThanOrEqual(geo.canvas!.y - 2)
+    expect(b.right, '组合页划选块不溢渲染页盒右缘（D1 右溢主链）').toBeLessThanOrEqual(geo.canvas!.right + 2)
+    expect(b.bottom, '组合页划选块不溢渲染页盒底缘').toBeLessThanOrEqual(geo.canvas!.bottom + 2)
+  }
+  await app.close()
+})
+
+/**
+ * [F-A6-d] 拖选随动小票（设计书 §5.3 可选项——票面裁量=锚；c 票门二放行条件
+ * 的 e2e 面）：程序化连发 selectionchange（3 次、间隔 ~50ms、每轮选区末端 +1
+ * 字符——恒定选区下 React diff 无 DOM 变更，a 票 §9-2 实证）→ selection-rects
+ * 子树在 300ms 内 ≥2 次变更。rAF 对齐调度的 e2e 级验证：修前 200ms 节流
+ * （5Hz 步进）下 3 次 50ms 间隔连发至多 1 次可见变更（首帧 leading），修后
+ * rAF（≤16.7ms 排程）每轮各随动。时序容差声明：e2e 环境帧栅格对 50ms 间隔
+ * 量化（50/60 交替在档），断言「300ms 窗内 ≥2 次」而非严格帧级（jsdom 级
+ * 帧对齐已由 selection-geometry.test C1/C2 锚定）。
+ * live range 诱发链不锚 e2e（票面裁量）：生产幂等无害（快/全量同族同产物=
+ * INV-58 等价性吸收）+组件级 W1 it 已锚+预渲染隔离在档（c 票门一 W1 处置档）。
+ */
+test('F-A6-d 拖选随动：连发 selectionchange（3 次×~50ms、每轮+1 字符）→300ms 内 selection-rects 子树 ≥2 次变更（rAF 对齐 e2e 级）', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 e2e 拖选随动文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  // 首帧划选在场（部分选区——后续每轮 +1 字符有增长面）
+  await win.evaluate(() => {
+    const span = Array.from(document.querySelectorAll('.textLayer span'))
+      .find((s) => (s.textContent ?? '').includes('SMART'))
+    const node = span?.firstChild
+    if (node === null || node === undefined) throw new Error('拖选随动前提不成立：文本节点缺席')
+    const range = document.createRange()
+    range.setStart(node, 0)
+    range.setEnd(node, 4)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    document.dispatchEvent(new Event('selectionchange'))
+  })
+  await expect(win.getByTestId('selection-rects')).toBeVisible({ timeout: 3_000 })
+  // settle 落定（首帧全量产物在场——观察面从稳态起算，末轮 settle 全量若在窗内
+  // 落地只增计不改判据）
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 3_000 })
+
+  // 连发 3 轮：每轮选区末端 +1 字符（5→6→7→8）+dispatch selectionchange，
+  // 间隔 ~50ms；MutationObserver（childList+subtree+attributes:style）记
+  // selection-rects 子树变更时刻；观察窗=自首轮 dispatch 起 300ms
+  const stamps = await win.evaluate(async () => {
+    const layer = document.querySelector('[data-testid="selection-rects"]')
+    const span = Array.from(document.querySelectorAll('.textLayer span'))
+      .find((s) => (s.textContent ?? '').includes('SMART'))
+    const node = span?.firstChild
+    if (layer === null || node === null || node === undefined) {
+      throw new Error('拖选随动前提不成立：层/文本节点缺席')
+    }
+    const t0 = performance.now()
+    const times: number[] = []
+    const mo = new MutationObserver(() => {
+      times.push(performance.now() - t0)
+    })
+    mo.observe(layer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] })
+    const sel = window.getSelection()
+    for (let i = 1; i <= 3; i += 1) {
+      const range = document.createRange()
+      range.setStart(node, 0)
+      range.setEnd(node, 4 + i)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+      document.dispatchEvent(new Event('selectionchange'))
+      await new Promise<void>((resolve) => setTimeout(resolve, 50))
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, 300 - (performance.now() - t0))))
+    mo.disconnect()
+    return times
+  })
+  expect(
+    stamps.length,
+    `rAF 对齐：3 次 50ms 间隔连发在 300ms 窗内产生 ≥2 次块变更（实测时刻=[${stamps.map((t) => t.toFixed(0)).join(', ')}]ms；修前 200ms 节流=5Hz 步进至多 1 次）`
+  ).toBeGreaterThanOrEqual(2)
   await app.close()
 })
 

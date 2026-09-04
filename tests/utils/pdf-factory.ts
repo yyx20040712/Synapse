@@ -128,3 +128,31 @@ export function createMultiLinePdf(lines: readonly string[] = PDF_MULTILINE_TEXT
   ]
   return assemblePdf(objects)
 }
+
+/** 组合页已知文本（F-A6-d e2e 旋转×CropBox 小票——reader-text 断言用同一字符串） */
+export const PDF_ROTATED_CROP_TEXT = 'ROTATED CROP TEST DOC'
+
+/**
+ * 旋转×CropBox 组合页变体（F-A6-d 收口票：/Rotate 90 + /CropBox [36 36 540 720]
+ * ——T1 页旋转×T9 非零原点双病理叠加）。b1 门一 N3 已知边界兑现：单测各半边
+ * 独立锚（text-layer.test 旋转态/CropBox 态分列用例），组合面由本 fixture 的
+ * e2e 小票收口（scripts/audits/f-a6-forensic-verdict.md §10 已知边界段）。
+ * 行基线 y=640：CropBox 顶缘 720 内侧 80pt——避开「基线贴顶缘致字形 ascent
+ * 越出裁剪盒」的检出口径差伪迹（§10 s2crop outside 1/8 归因段）；x=72 为
+ * 左缘 36 内侧 36pt。对象布局同 createTinyPdf（1=Catalog 2=Pages 3=Page
+ * 4=Contents 5=Font）。
+ */
+export function createRotatedCropPdf(text = PDF_ROTATED_CROP_TEXT): Uint8Array {
+  const stream = `BT /F1 18 Tf 72 640 Td (${esc(text)}) Tj ET`
+  // /Length 是字节数（与 buildPdfObjects 同口径按 UTF-8 字节计）
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /CropBox [36 36 540 720] /Rotate 90 /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (${esc(text)}) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
