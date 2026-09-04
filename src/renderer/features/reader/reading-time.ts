@@ -38,7 +38,8 @@
  * - 与 scroll-progress 互不 import（票面§3 红线）——复合器消费 ProgressAccountView
  *   结构类型（ScrollProgress 加 takePending/pendingIds 口后结构满足），装配面
  *   ReaderPage 同时持两模块复合；依赖单向同惯例。
- * - 落库搭车 saveProgress（secondsDelta 可选）——继承其完整生命周期钩子链
+ * - 落库经 outbox enqueue 搭车 saveProgress 通道（P7X-02：invokeOne 直发+
+ *   吞错改道持久队列 at-least-once，失败可恢复）——继承其完整生命周期钩子链
  *   （防抖/关 tab/closeAll/卸载收尾），禁独立通道（两账本两通道=漏一即丢账）。
  * - INV-57（收口主控登记）：时长账本唯一宿主=本模块 ledger；reading_seconds
  *   唯一写点=papers.repo updateReadPage 第三参。
@@ -48,8 +49,9 @@
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/reading-time.test.ts（R1~R7+R10+零头结转+复合
- *   flusher+formatReadingTime 边界，时间全注入）；e2e reader-reading-time.spec
- *   （显示面+迁移升级链冒烟——时间流逝不加速不断言）。
+ *   flusher+formatReadingTime 边界，时间全注入）+reading-time-outbox.test
+ *   （P7X-02 队列态空间）；e2e reader-reading-time.spec（显示面+迁移升级链
+ *   冒烟）+reading-time-replay.spec（P7X-02 重启重放链）。
  */
 import { useEffect } from 'react'
 
@@ -203,8 +205,9 @@ export interface ProgressAccountView {
 }
 
 export interface CompositeFlusherDeps {
-  /** 单通道落库口（装配注入 api.reader.saveProgress） */
-  saveProgress(paperId: string, page: number, secondsDelta: number): void | Promise<void>
+  /** T1 入队口（装配注入 outbox enqueue 铸造闭包——发送依赖已移交 outbox
+   *  单例（P7X-02），单通道不变零新 IPC；签名=原 saveProgress 直发同形） */
+  enqueue(paperId: string, page: number, secondsDelta: number): void
   /** 页码缺席时该 tab 的当前页（store tab.page） */
   currentPageOf(paperId: string): number
 }
@@ -229,11 +232,14 @@ export function chunkSeconds(sec: number): number[] {
 }
 
 /** 复合 flusher（装配面注册进 store.registerProgressFlusher——closeTab/close
- *  消费）：进度页+时长账一次 invoke（sec>0||page 在场才发；两账皆空零 invoke）。
+ *  消费）：进度页+时长账一次入队（sec>0||page 在场才入；两账皆空零条目）。
  *  分片（R2 回炉/门一 BLOCKING）：时长账仅收尾口一次性回吐——连续阅读>1h 后
- *  关 tab 回吐值>3600 会被 zod 拒收且吞错=整段静默丢失（击穿 INV-57）；故
- *  sec>3600 拆 3600 整数片+尾片依次 invoke（页码同一 pending page 重复写=
- *  last_read_page set 幂等无害；物理上界 24 片/24h） */
+ *  关 tab 回吐值>3600 会被 zod 拒收（吞错静默丢失击穿 INV-57）；故 sec>3600
+ *  拆 3600 整数片+尾片依次 enqueue（页码同一 pending page 重复写=
+ *  last_read_page set 幂等无害；物理上界 24 片/24h）。
+ *  直发改道（P7X-02）：invokeOne 原「直发+吞错」改 outbox.enqueue——页码在
+ *  enqueue 时点定死（重放期不取「当前页」防 last_read_page 回退），落盘
+ *  失败可恢复性由 outbox 态空间承载（at-least-once） */
 export function createCompositeProgressFlusher(
   sp: ProgressAccountView,
   rt: ReadingTime,
@@ -242,17 +248,7 @@ export function createCompositeProgressFlusher(
   const invokeOne = (paperId: string, page: number | undefined, sec: number): void => {
     if (page === undefined && sec <= 0) return
     const basePage = page ?? deps.currentPageOf(paperId)
-    for (const chunk of chunkSeconds(sec)) {
-      try {
-        // 尽力而为（进度/时长非关键数据，同步抛错/拒绝均吞——scroll-progress 同规约）
-        void Promise.resolve(deps.saveProgress(paperId, basePage, chunk)).then(
-          () => undefined,
-          () => undefined
-        )
-      } catch {
-        /* 吞错 */
-      }
-    }
+    for (const chunk of chunkSeconds(sec)) deps.enqueue(paperId, basePage, chunk)
   }
   return {
     flush(paperId) {

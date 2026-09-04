@@ -89,9 +89,11 @@ export function ReaderPage(): JSX.Element {
   // F-03 滚动进度状态机（装配工厂闭包 scrollAreaRef；接线见 useScrollProgressWiring）
   const spProg = useMemo(() => createReaderScrollProgress(scrollAreaRef), [])
   // P7E-05 时长账本+复合 flusher（装配块驻 reading-time.ts——组件行数关卡配套；
-  // 计时门接线 R3/R4/R7/R10+进度时长单通道合并 Design 裁决）
-  const { rt: rtTime, flusher: compositeFlusher } = useReaderReadingTime(spProg)
-  useScrollProgressWiring(spProg, fileUrl, paperId, columnScroll, compositeFlusher)
+  // 计时门接线 R3/R4/R7/R10+进度时长单通道合并 Design 裁决）；P7X-02 R7 并入：
+  // spView=dispose 尾账页码改道 outbox 的包装视图（其余面直通）——wiring 消费
+  // 包装视图，页码旁路消除（单队列 seq 序）
+  const { rt: rtTime, flusher: compositeFlusher, spView } = useReaderReadingTime(spProg)
+  useScrollProgressWiring(spView, fileUrl, paperId, columnScroll, compositeFlusher)
   useReadingTimeWiring(rtTime, paperId, fileUrl !== null)
   // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
   const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)

@@ -1,0 +1,225 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reading-time-outbox.test.ts [2m([22m[2m23 tests[22m[2m | [22m[31m10 failed[39m[2m)[22m[90m 15[2mms[22m[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发[90m 5[2mms[22m[31m[39m
+[31m     → expected undefined to be 'pending' // Object.is equality[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）[90m 1[2mms[22m[31m[39m
+[31m     → expected undefined to be 'in-flight' // Object.is equality[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发[90m 2[2mms[22m[31m[39m
+[31m     → expected [ …(3) ] to have a length of 1 but got 3[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）[90m 0[2mms[22m[31m[39m
+[31m     → expected undefined to be 'pending' // Object.is equality[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）[90m 1[2mms[22m[31m[39m
+[31m     → expected [ { paperId: 'p-1', page: 1, …(2) } ] to have a length of 2 but got 1[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）[90m 0[2mms[22m[31m[39m
+[31m     → expected [ …(2) ] to have a length of 1 but got 2[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发[90m 0[2mms[22m[31m[39m
+[31m     → expected [ { paperId: 'p-1', page: 1, …(2) } ] to have a length of 5 but got 1[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22m排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）[90m 0[2mms[22m[31m[39m
+[31m     → expected [ …(2) ] to have a length of 1 but got 2[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mdispose 不变量④：停扫描但已发 invoke 回调仍更新 store[90m 0[2mms[22m[31m[39m
+[31m     → expected [ …(2) ] to have a length of 1 but got 2[39m
+[31m   [31m×[31m reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22menqueue 恒不抛：store put 抛错→退化内存重试+强 WARN[90m 1[2mms[22m[31m[39m
+[31m     → expected [] to have a length of 1 but got +0[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 10 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发
+[31m[1mAssertionError[22m: expected undefined to be 'pending' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"pending"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m107:30[22m[39m
+    [90m105| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-2'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m4[39m[33m,[39m [34m30[39m[33m,[39m [34m2[39m))
+    [90m106| [39m    [35mconst[39m persisted [33m=[39m h[33m.[39m[34mentry[39m([32m'ob-2'[39m)
+    [90m107| [39m    [34mexpect[39m(persisted[33m?.[39mstate)[33m.[39m[34mtoBe[39m([32m'pending'[39m)
+    [90m   | [39m                             [31m^[39m
+    [90m108| [39m    [34mexpect[39m(persisted[33m?.[39mattempts)[33m.[39m[34mtoBe[39m([34m0[39m)
+    [90m109| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）
+[31m[1mAssertionError[22m: expected undefined to be 'in-flight' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"in-flight"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m116:27[22m[39m
+    [90m114| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-1'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m3[39m[33m,[39m [34m45[39m[33m,[39m [34m1[39m))
+    [90m115| [39m    [35mconst[39m atSend [33m=[39m h[33m.[39msendCalls[[34m0[39m][33m?.[39mstatesAtSend[33m.[39m[34mfind[39m((e) [33m=>[39m e[33m.[39mid [33m===[39m [32m'[39m…
+    [90m116| [39m    [34mexpect[39m(atSend[33m?.[39mstate)[33m.[39m[34mtoBe[39m([32m'in-flight'[39m)
+    [90m   | [39m                          [31m^[39m
+    [90m117| [39m  })
+    [90m118| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发
+[31m[1mAssertionError[22m: expected [ …(3) ] to have a length of 1 but got 3[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 3[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m124:25[22m[39m
+    [90m122| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-2'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m2[39m[33m,[39m [34m22[39m[33m,[39m [34m2[39m))
+    [90m123| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-3'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m3[39m[33m,[39m [34m33[39m[33m,[39m [34m3[39m))
+    [90m124| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m125| [39m    [34mexpect[39m(h[33m.[39msendCalls[[34m0[39m][33m?.[39msecondsDelta)[33m.[39m[34mtoBe[39m([34m11[39m)
+    [90m126| [39m    h[33m.[39mflight[[34m0[39m][33m?.[39m[34mresolve[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）
+[31m[1mAssertionError[22m: expected undefined to be 'pending' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"pending"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m160:23[22m[39m
+    [90m158| [39m    [35mawait[39m [34mtick[39m()
+    [90m159| [39m    [35mconst[39m e1 [33m=[39m h[33m.[39m[34mentry[39m([32m'ob-1'[39m)
+    [90m160| [39m    [34mexpect[39m(e1[33m?.[39mstate)[33m.[39m[34mtoBe[39m([32m'pending'[39m)
+    [90m   | [39m                      [31m^[39m
+    [90m161| [39m    [34mexpect[39m(e1[33m?.[39mattempts)[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m162| [39m    [34mexpect[39m(e1[33m?.[39mlastError)[33m.[39m[34mtoBe[39m([32m'db busy'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）
+[31m[1mAssertionError[22m: expected [ { paperId: 'p-1', page: 1, …(2) } ] to have a length of 2 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m177:25[22m[39m
+    [90m175| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m176| [39m    h[33m.[39m[34madvance[39m([34m1[39m)
+    [90m177| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m2[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m178| [39m    h[33m.[39mflight[[34m1[39m][33m?.[39m[34mreject[39m([35mnew[39m [33mError[39m([32m'fail-2'[39m))
+    [90m179| [39m    [35mawait[39m [34mtick[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）
+[31m[1mAssertionError[22m: expected [ …(2) ] to have a length of 1 but got 2[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m192:25[22m[39m
+    [90m190| [39m    [35mawait[39m [34mtick[39m()
+    [90m191| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-2'[39m[33m,[39m [32m'p-b'[39m[33m,[39m [34m1[39m[33m,[39m [34m22[39m[33m,[39m [34m2[39m))
+    [90m192| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m193| [39m    h[33m.[39m[34madvance[39m([34m1000[39m)
+    [90m194| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m3[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mT6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发
+[31m[1mAssertionError[22m: expected [ { paperId: 'p-1', page: 1, …(2) } ] to have a length of 5 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 5[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m248:25[22m[39m
+    [90m246| [39m      [35mif[39m (round [33m<[39m [33mOUTBOX_MAX_ATTEMPTS[39m) h[33m.[39m[34madvance[39m([34mbackoffDelayMs[39m(round))
+    [90m247| [39m    }
+    [90m248| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([33mOUTBOX_MAX_ATTEMPTS[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m249| [39m    [34mexpect[39m(h[33m.[39m[34mentry[39m([32m'ob-1'[39m)[33m?.[39mstate)[33m.[39m[34mtoBe[39m([32m'dead-letter'[39m)
+    [90m250| [39m    [34mexpect[39m(h[33m.[39mwarns)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22m排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）
+[31m[1mAssertionError[22m: expected [ …(2) ] to have a length of 1 but got 2[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m316:25[22m[39m
+    [90m314| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-2'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m3[39m[33m,[39m [34m77[39m[33m,[39m [34m2[39m))
+    [90m315| [39m    [35mawait[39m [34mtick[39m()
+    [90m316| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m317| [39m    h[33m.[39mflight[[34m0[39m][33m?.[39m[34mresolve[39m()
+    [90m318| [39m    [35mawait[39m [34mtick[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22mdispose 不变量④：停扫描但已发 invoke 回调仍更新 store
+[31m[1mAssertionError[22m: expected [ …(2) ] to have a length of 1 but got 2[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m337:25[22m[39m
+    [90m335| [39m    h[33m.[39mob[33m.[39m[34mdispose[39m()
+    [90m336| [39m    h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-2'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m2[39m[33m,[39m [34m22[39m[33m,[39m [34m2[39m))
+    [90m337| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m   | [39m                        [31m^[39m
+    [90m338| [39m    h[33m.[39mflight[[34m0[39m][33m?.[39m[34mresolve[39m()
+    [90m339| [39m    [35mawait[39m [34mtick[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reading-time-outbox.test.ts[2m > [22mreading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）[2m > [22menqueue 恒不抛：store put 抛错→退化内存重试+强 WARN
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/reading-time-outbox.test.ts:[2m370:21[22m[39m
+    [90m368| [39m    [34mexpect[39m(() [33m=>[39m h[33m.[39mob[33m.[39m[34menqueue[39m(h[33m.[39m[34mdraft[39m([32m'ob-1'[39m[33m,[39m [32m'p-1'[39m[33m,[39m [34m1[39m[33m,[39m [34m11[39m[33m,[39m [34m1[39m)))[33m.[39mnot[33m.[39m[34mt[39m…
+    [90m369| [39m    [34mexpect[39m(h[33m.[39msendCalls)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m370| [39m    [34mexpect[39m(h[33m.[39mwarns)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m   | [39m                    [31m^[39m
+    [90m371| [39m    [34mexpect[39m(h[33m.[39mwarns[[34m0[39m][33m?.[39mkind)[33m.[39m[34mtoBe[39m([32m'error'[39m)
+    [90m372| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m10 failed[39m[22m[2m | [22m[1m[32m13 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 00:47:12
+[2m   Duration [22m 579ms[2m (transform 41ms, setup 0ms, collect 74ms, tests 15ms, environment 0ms, prepare 231ms)[22m
+
+exit=1

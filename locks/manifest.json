@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T15:40:30.7641988Z",
+    "generatedAt":  "2026-09-04T17:04:15.4769432Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "2a5430fd8fc0b818a44d472407cd1961fb1f945fbf0261720be1c4795353c160"
+                      "sha256":  "4c0e7bc1cd764f6fdecebe6f91a36e545f030b89de7b1f639d414e458fefa291"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -250,6 +250,14 @@
                       "sha256":  "683b0107b2e204b051748e4cea6af244a38cc26e96dc9948920500c9a4cc3db4"
                   },
                   {
+                      "path":  "scripts/audits/p7x02-impl-e2e-probe.mjs",
+                      "sha256":  "0c523fb359ebc0b69e51e4269af8c4ab3cea36743b54be9861f85d91eafd53e0"
+                  },
+                  {
+                      "path":  "scripts/audits/p7x02-ls-probe.mjs",
+                      "sha256":  "7956b8f7b0f2aa2056267e5577b42366659566ce41675e52e99cf03a09d9a421"
+                  },
+                  {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",
                       "sha256":  "ec75b92a1d153c2716bab0360adaaa64cfd793a5c4683ea93d7049b34d4bc560"
                   },
@@ -456,6 +464,10 @@
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
                       "sha256":  "9603ab47b4b5677777fa04cc2ac9b9551d51d359dba235b4890abc3122f5843d"
+                  },
+                  {
+                      "path":  "tests/e2e/reading-time-replay.spec.ts",
+                      "sha256":  "9cedd32c211047f2488b8b66f0a9c353f44cc2eaed27069424ef01d7dc251e57"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -859,7 +871,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reading-time.test.ts",
-                      "sha256":  "69df484f7c4caf34161f2e401ccb5cbe1683392c53e372155db31602d61c2c42"
+                      "sha256":  "a2e3ededefadfac25be8cc7b76fb605d99ff66a51f8daab5d6961307aecc39a0"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
+                      "sha256":  "bc7f220723e4d85800d1aafa9337c74acdcae399c7d69fde3bf161e02fb92868"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",

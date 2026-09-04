@@ -62,7 +62,8 @@ function makeSpView(pending: Record<string, number>) {
   }
 }
 
-/** 复合 flusher 测试台：saved 记录单通道 invoke 三元组 */
+/** 复合 flusher 测试台：enqueued 记录入队三元组（P7X-02 收尾口改道等价面：
+ * invoke 直发改 outbox.enqueue——载荷三元组同形，直发吞错语义移交队列态空间） */
 function makeFlusher(
   pending: Record<string, number>,
   rt: ReadingTime,
@@ -70,16 +71,16 @@ function makeFlusher(
 ): {
   flush(paperId: string): void
   flushAll(): void
-  saved: Array<{ paperId: string; page: number; secondsDelta: number }>
+  enqueued: Array<{ paperId: string; page: number; secondsDelta: number }>
 } {
-  const saved: Array<{ paperId: string; page: number; secondsDelta: number }> = []
+  const enqueued: Array<{ paperId: string; page: number; secondsDelta: number }> = []
   const flusher = createCompositeProgressFlusher(makeSpView(pending), rt, {
-    saveProgress: (paperId, page, secondsDelta) => {
-      saved.push({ paperId, page, secondsDelta })
+    enqueue: (paperId, page, secondsDelta) => {
+      enqueued.push({ paperId, page, secondsDelta })
     },
     currentPageOf: () => currentPage
   })
-  return { ...flusher, saved }
+  return { ...flusher, enqueued }
 }
 
 beforeEach(() => {
@@ -101,14 +102,14 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     expect(h.flushed).toHaveLength(0)
   })
 
-  it('R2：R1 后复合 flush(pid)→单次 saveProgress(pendingPage, 45)；ledger 清零', () => {
+  it('R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零', () => {
     const h = makeHarness()
     const pending: Record<string, number> = { 'p-1': 3 }
     const f = makeFlusher(pending, h.rt)
     h.rt.start('p-1')
     h.advance(45_000)
     f.flush('p-1')
-    expect(f.saved).toEqual([{ paperId: 'p-1', page: 3, secondsDelta: 45 }])
+    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 3, secondsDelta: 45 }])
     expect(h.ledger('p-1')).toBe(0)
   })
 
@@ -140,7 +141,7 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     expect(h.ledger('B')).toBe(15)
   })
 
-  it('R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次 invoke（不双写）', () => {
+  it('R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）', () => {
     const h = makeHarness()
     const pending: Record<string, number> = { 'p-1': 2 }
     const f = makeFlusher(pending, h.rt)
@@ -148,7 +149,7 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     h.advance(15_000)
     f.flush('p-1')
     f.flushAll()
-    expect(f.saved).toEqual([{ paperId: 'p-1', page: 2, secondsDelta: 15 }])
+    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 2, secondsDelta: 15 }])
   })
 
   it('R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）', () => {
@@ -162,10 +163,10 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     h.advance(15_000)
     h.rt.stop()
     f.flushAll()
-    expect(f.saved).toContainEqual({ paperId: 'p-sec', page: 9, secondsDelta: 30 })
-    expect(f.saved).toContainEqual({ paperId: 'p-page', page: 4, secondsDelta: 0 })
-    expect(f.saved).toContainEqual({ paperId: 'p-both', page: 9, secondsDelta: 15 })
-    expect(f.saved).toHaveLength(3)
+    expect(f.enqueued).toContainEqual({ paperId: 'p-sec', page: 9, secondsDelta: 30 })
+    expect(f.enqueued).toContainEqual({ paperId: 'p-page', page: 4, secondsDelta: 0 })
+    expect(f.enqueued).toContainEqual({ paperId: 'p-both', page: 9, secondsDelta: 15 })
+    expect(f.enqueued).toHaveLength(3)
   })
 
   it('R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）', () => {
@@ -202,14 +203,14 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     expect(h.rt.collectAndZero('p-1')).toBe(15)
   })
 
-  it('R2 分片（门一 BLOCKING）：账 4000s→flush→两次 invoke（3600+400）+账清零', () => {
+  it('R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零', () => {
     const h = makeHarness()
     const pending: Record<string, number> = { 'p-1': 3 }
     const f = makeFlusher(pending, h.rt)
     h.rt.start('p-1')
     h.advance(4_000_000)
     f.flush('p-1')
-    expect(f.saved).toEqual([
+    expect(f.enqueued).toEqual([
       { paperId: 'p-1', page: 3, secondsDelta: 3_600 },
       { paperId: 'p-1', page: 3, secondsDelta: 400 }
     ])
@@ -261,7 +262,7 @@ describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
     h.advance(READING_TICK_MS)
     h.advance(7_000)
     f.flush('p-1')
-    expect(f.saved).toEqual([{ paperId: 'p-1', page: 9, secondsDelta: 22 }])
+    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 9, secondsDelta: 22 }])
   })
 
   it('tick 常量=15s（票面：READING_TICK_MS）', () => {

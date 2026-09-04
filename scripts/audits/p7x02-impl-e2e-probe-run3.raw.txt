@@ -1,0 +1,7 @@
+userData = C:\Users\ADMINI~1\AppData\Local\Temp\synapse-obx-probe-QLDFk6
+rowAfterSeed = {"s":0,"p":0}
+seeded = true
+rowAfterApp1 = {"s":0,"p":0}
+row = {"s":210,"p":1}
+VERDICT = "PASS——重放落库 210s/页 1（T5 恢复+队头序全链）"
+exit=0
