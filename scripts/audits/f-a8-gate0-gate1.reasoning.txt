@@ -1,0 +1,89 @@
+Let me carefully audit this. The task: adversarial audit of F-A8 gate 0 ticket.
+
+Key math checks:
+
+① verifyQuoteItem's "map str → filter empty → join" vs buildItemOffsets "empty-excluded span table (start=cursor accumulate, empty items skipped zero-consumption)" — offset equivalence in three forms: empty items interspersed, all-empty, empty prefix/suffix.
+
+The claim: buildItemOffsets computes spans with start=cursor, skipping empty strings (zero width, no cursor consumption). The joined text after filtering empty strings = concatenation of non-empty strings. So text index positions match cursor positions. Empty items skipped → zero consumption → next non-empty item's start = sum of previous non-empty lengths = its index in joined text. Equivalent. All-empty → text "" → quote.length===0? No, quote non-empty → locateQuote on empty text → indexOf fails → null. buildItemOffsets would produce empty spans; verifyQuoteItem on all-empty items → text="" → same null result... wait, does the DOM version also return null? Yes, quote not found. Fine. Empty prefix/suffix items — filtered, no contribution. Equivalence holds mathematically.
+
+But one subtlety: equivalence to buildItemOffsets is asserted but buildItemOffsets isn't actually consumed here — verifyQuoteItem's text is passed to locateQuote, and then itemSelectionGeometry consumes start/end offsets computed... wait, resolveAnnotationRectsItem passes `start: at` into itemSelectionGeometry with `items: entry.text.items`. itemSelectionGeometry internally presumably uses buildItemOffsets to map offsets to rects. So the offset at returned by verifyQuoteItem (computed on filtered-join text) must match buildItemOffsets' span starts. Given buildItemOffsets skips empty strings with zero consumption, at is consistent. Good — this is actually the critical alignment point: text built by filter-join, offsets consumed by buildItemOffsets span table. If buildItemOffsets counted empty strings with zero-width spans at cursor, indices still match since empty contributes zero. Claim holds.
+
+② scale 反推: scale = box.w / domWidth, rotate 90/270 width/height swap. rotate is passed unnormalized to viewport (entry.geometry.rotate, not rot) — the normalized rot only used for domWidth computation. If rotate is e.g. 450, rot=90, domWidth uses y-span; but viewport.rotate=450 — does itemSelectionGeometry handle 450? It presumably does its own normalization or expects 0/90/180/270. Potential mismatch: itemViewportOf normalizes rot for width computation but passes raw rotate. Also for negative rotate like -90 → rot=270 → y-span; viewport.rotate=-90. If itemSelectionGeometry normalizes the same way, consistent; material doesn't confirm. WARN candidate: rotate normalization asymmetry (rot normalized for domWidth but raw rotate passed downstream — normalization equivalence downstream unevidenced).
+
+Scale/base 自洽约除: base = {x:0,y:0,w:box.w,h:box.h}. scale = box.w/domWidth. Normalization presumably divides pixel coords by base dims; rects computed as (item coords × scale − offset) / base.w. Since scale = box.w/domWidth and base.w = box.w, the box.w cancels: (coord × box.w/domWidth)/box.w = coord/domWidth. So zoom-invariant and rounding of box.w (Math.round CSS box) cancels — claim "消取整差" holds only if box.w used in both scale and base are identical values — yes, both from entry.box.w. True.
+
+But rotate 90/270: base.h vs scale relation — for rotated pages, normalized height uses base.h and vertical coords scaled by scale = box.w/domWidth(=view height for 90/270). For rotate=90, canvas height corresponds to view width (x-span). If scale = box.w/(y-span), then vertical pixel = x-coord×scale, normalized by base.h=box.h. box.h ≈ scale×(x-span) if box is proportional (CSS box of canvas, aspect = view aspect). Approximation relies on box aspect exactly matching view aspect — Math.round rounding of box.h independent of box.w introduces error not cancelled for rotated pages? For rotate=90: horizontal normalization: coord_y × scale / box.w where scale=box.w/(y1-y0) → exact cancel. Vertical normalization: coord_x × scale / box.h = coord_x × box.w /[(y-span)·box.h]. box.w/box.h ≈ (y-span)/(x-span) (canvas CSS box proportional). Rounding: box.w=round(scale_true×(y-span)), box.h=round(scale_true×(x-span)). Ratio box.w/box.h has independent rounding errors, so rotated vertical normalization has ~1px rounding residual not cancelled. Claim says "归一化缩放不变且消取整差" — for 90/270 vertical axis, the cancellation is only approximate (up to box aspect rounding). This is a subtle math nit — "同族精度带内" is hedged. Could flag as WARN/NIT: 90/270 竖直轴约除不完全（box 宽高独立取整）。That's a genuine mathematical finding the "消取整差" claim overstates. Actually let me double check: scale=box.w/domWidth where domWidth=y-span for rot 90/270. In itemSelectionGeometry, presumably coordinates transformed: for rotate 90, pixel x = f(y coord), pixel y = f(x coord), both × scale. Normalized: x_norm = px_x/base.w = px_x/box.w; y_norm = px_y/box.h. px_y = (x−x0)×scale (roughly). y_norm = (x−x0)×box.w/[(y-span)×box.h]. For this to be scale-invariant need box.w/box.h = (y-span)/(x-span), true only up to rounding of box.w/box.h independently. So residual ~0.5px/box.h. Whereas unrotated: y_norm=(y−y0)×scale/box.h = (y−y0)×box.w/[(x-span)×box.h] — wait unrotated domWidth=x-span, scale=box.w/(x-span); vertical: (y)×scale/box.h needs box.w/box.h=(x-span)/(y-span) — same aspect ratio issue! So actually even unrotated vertical axis relies on aspect ratio of box matching view. Hmm — so "消取整差" applies fully only to the horizontal axis; vertical axis always relies on box aspect ≈ view aspect. Unless itemSelectionGeometry normalizes y by base.h and the scale factor similarly... yes same. So the claim of "消取整差" is overstated for the vertical axis in all rotations; it's within rounding tolerance (~1px relative). The material hedges with "同族精度带内". I'd flag as WARN (overstatement of cancellation, but bounded).
+
+Also rotate passing raw value vs normalized for viewport — flag.
+
+③ oracle 三态覆盖: 原位命中/漂移重定位/失败 vs scoring core (原位优先+prefix 2+suffix 1+nearest). The oracle double-runs verifyQuote vs verifyQuoteItem — but since both call the same locateQuote single source, the oracle after extraction only verifies the text-construction equivalence (fullTextOf vs items join), not the scoring itself. The scoring is covered by existing locked 28-case verifyQuote tests. 疑虑2 admits no tie-break nearest-offset case. Mutation tests: 打分权重翻转 1 红 / 拼接序破坏 7 红 / 三态之一破坏 1 红. Weight flip only 1 red — suggests weak coverage of scoring branches (only one test distinguishes weight flip). That's a coverage-thinness signal: 疑虑2 concedes tie-break uncovered. WARN: 打分核覆盖依赖受锁既有测试传递,oracle 双跑因单源化退化为拼接等价测试,权重翻转仅 1 红=鉴别力薄.
+
+Other checks:
+
+A 母本符合度: 裁决② said "buildItemOffsets(items).spans 拼页全文→locateQuote" — implementation deviates to self-held map/filter/join. Justification TS6142. Claim: anchor-serialize reachable from locked annotation-anchor.test.ts (.ts) in tsconfig.node program, no jsx option → import of pdf-item-geometry (which type-imports PdfPageCanvas.tsx) triggers TS6142. Plausible. Rule of Three 2nd occurrence — 头注在案. Deviation is blocking-justified, declared. OK but: 票面裁决② explicitly prescribed buildItemOffsets path; deviation合理性 depends on TS6142 evidence — raw .txt files claimed, 14 evidence files archived but not in the pack. Can't verify; declared honestly. Accept with note.
+
+However — 自裁① says spans 拼接逐字节等价, but I should check: does buildItemOffsets spans actually concatenate to the same? Claimed main control verified source. Fine.
+
+裁决⑤ fixture/测试三态: implemented per report 40/40.
+
+File list: 4 items, item 4 unused — declared. But wait: 清单3 new test file named anchor-item-verify.test.tsx — extension deviated .ts→.tsx (自裁③, declared, domain precedent pdf-item-geometry.test.tsx). OK.
+
+Check resolveAnnotationRectsItem vs 裁决③: signature (entry, annotations, page) ✓; entry null→{} ✓; reconcile omitted with 头注 ✓ (S1 trust = store writer uniqueness); 归一化复用 itemSelectionGeometry 导出面 ✓ (no second normalization impl); viewport 现构参照 selection 快路径 — implemented via itemViewportOf; S3b 缺席 ✓.
+
+One thing: 裁决③ says "通过→逐条 verifyQuoteItem→校正 start→rectsForOffsetRange+bandsFromItems 产 {rects,bands}" but implementation uses itemSelectionGeometry instead. 裁决③ also says "直接复用其内部形态或导出面" referring to itemSelectionGeometry's normalization — so using itemSelectionGeometry whole is arguably beyond字面 but within "复用导出面" spirit... Actually 裁决③: "rectsForOffsetRange+bandsFromItems 产 {rects,bands}（归一化——参照 selection 链 itemSelectionGeometry 的归一化数学，直接复用其内部形态或导出面，禁第二份归一化实现）". Using itemSelectionGeometry directly (which wraps rectsForOffsetRange+bandsFromItems+normalization presumably) satisfies "复用导出面". Not declared as a self-ruling deviation though! 自裁①~⑦ don't mention substituting itemSelectionGeometry for rectsForOffsetRange+bandsFromItems. This is an undeclared deviation from 裁决③'s literal pipeline. But it reduces duplication — arguably the better reading. Flag as WARN: 未申报的裁决③字面偏离（rectsForOffsetRange+bandsFromItems→itemSelectionGeometry 整管线），方向合规但申报缺失.
+
+Wait — is itemSelectionGeometry actually equivalent to rectsForOffsetRange+bandsFromItems+normalize? Presumably it's the selection-chain pipeline. "块数与 itemSelectionGeometry 同族一致——可对照断言" per 裁决⑤ suggests direct use is anticipated. The fixture compares against itemSelectionGeometry. Hmm, actually using itemSelectionGeometry makes that对照 tautological. Minor.
+
+Another check: quote boundary — `end: at + a.quoteText.length`. If quote contains... offsets in item text序 — quote length in chars = offsets consumed in joined text since quote matched at `at` in the joined text. But careful: quote matched in filtered-join text; the span between at and at+quote.length in buildItemOffsets coordinates — since offsets are in same filtered text coordinate system, and itemSelectionGeometry consumes offsets in buildItemOffsets coordinates which we established equivalent — OK.
+
+Edge: quote containing characters that... fine.
+
+verifyQuote 行为零变: verifyQuote now = locateQuote(fullTextOf(root), selector). Previously the body was inline with `const text = fullTextOf(root)`. diff shows only deletion of that line and parameterization. Behavior identical if fullTextOf called once before — yes, same order: quote.length===0 check happens before fullTextOf now? Let's look: in locateQuote, `if (quote.length === 0) return null` comes before... in new code, verifyQuote calls locateQuote(fullTextOf(root), selector) — fullTextOf(root) is evaluated BEFORE locateQuote runs, so fullTextOf is now called even when quote is empty! Previously: `if (quote.length === 0) return null` came before `const text = fullTextOf(root)`. So for empty quote, old behavior: return null without touching DOM; new behavior: fullTextOf(root) evaluated (DOM traversal) then null. Return value identical (null), but side-effect/timing difference: fullTextOf(root) on a detached/odd root could throw where before it returned null. Strictly "行为零变" at the return-value level, but evaluation order changed — fullTextOf now runs for empty quote. If fullTextOf can throw or is expensive, this is a subtle behavior change. Is that material? fullTextOf is pure DOM read; on any HTMLElement root it works. Locked 28 tests green. Worth a NIT: 空 quote 短路前 fullTextOf 求值顺序变化（返回值零变，DOM 触达面变化）.
+
+Actually check the diff: in locateQuote, destructure then `if (quote.length === 0) return null` then... the `- const text = fullTextOf(root)` line removed; in new verifyQuote, argument fullTextOf(root) evaluated eagerly. Yes, confirmed ordering change. NIT.
+
+B 宪法: 受锁基准 = existing annotation-anchor.test.ts 28 cases green + locks manifest. Evidence: verify 155 files/1341 cases exit 0. locks:generate for new test file ✓ manifest diff shows added entry with sha256, generatedAt bumped. anchor-serialize.ts non-locked confirmed? Claimed. Can't verify but plausible.
+
+TS6142 自裁真实性: pre-ruling by 主控 (section 3 of pack says 实测). Accept.
+
+C: mutation red evidence 3: weight flip 1 red / join order break 7 reds / one of three states broken 1 red. Requirement was ≥2 ✓. 首红=stub throw 12/12 red 行为红形态 ✓ (票面 prefers behavior red). fixture 修正 honest ✓.
+
+D 报告诚实性: 自裁①~⑦ all cross-checkable against diff — ① header note present in diff ✓; ② structural minimal face in diff ✓; ③ manifest shows .tsx ✓; ④ Record<string, ResolvedAnnotation> in diff ✓; ⑤ itemViewportOf in diff ✓; ⑥ fixture fix narrative — only report, can't verify from diff, but declared; ⑦ pdf-item-geometry zero change ✓ (diff has no such file).
+
+E 接缝: S1 省略 trust declaration — 头注明示 ✓ per diff ("S1 DOM 对账=门 2 接线面…写者契约在 page-items.store 头注"). But: trust in entry means if store writer contract breaks, reanchor silently works on stale items — door 2 must wire reconcile. 票面裁决③ sanctioned this. OK.
+
+S3b: failure → absent, wiring layer falls back ✓.
+
+One more: `if (a.page !== page || a.quoteText.length === 0) continue` — quoteText empty skip ✓.
+
+PageItemEntry null vs undefined — signature null only, fine.
+
+Also annotations entries where verifyQuoteItem returns corrected offset but quote length... fine.
+
+Another potential issue: oracle 双跑 uses same locateQuote — after extraction, oracle equivalence tests verifyQuote(DOM) vs verifyQuoteItem(items) — since both funnel to locateQuote, any divergence would only come from text construction. That's the point. But does it also catch buildItemOffsets divergence? No — buildItemOffsets isn't in the loop. The equivalence to buildItemOffsets rests on 主控 source reading, not tests. The offsets fed into itemSelectionGeometry rely on buildItemOffsets span table; if buildItemOffsets did NOT skip empties (e.g., counted them as zero-width spans at cursor — same indices) fine, but if it inserted separators/newlines between items, indices diverge. Claimed main control verified source code. An actual unit test locking verifyQuoteItem offsets against buildItemOffsets spans would be stronger — 空串项穿插用例 locks filter-join behavior, but not against buildItemOffsets directly. WARN candidate: 与 buildItemOffsets 的等价锁定=主控源码核读而非机器测试,空串用例只锁自持拼接自身行为. Actually the oracle "空串项穿插等价锁定" — locks equivalence between... unclear. If it only tests verifyQuoteItem with empty items vs DOM text, it does lock the filter-join semantics vs DOM fullTextOf, but buildItemOffsets alignment remains by-inspection. Reasonable WARN.
+
+Also geo null handling: `if (geo !== null)` — itemSelectionGeometry can return null; entry skipped silently — consistent S3b? Not documented but fine.
+
+The `base` uses box w/h and x:0,y:0 — "原点不参与" per header. OK.
+
+Now the vertical-axis rounding overstatement — is it worth flagging? The claim: "scale/base 自洽约除 → 归一化缩放不变且消取整差（比快路径 [精确 scale+取整 base] 离散差更小）". My analysis: horizontal axis exact cancel; vertical axis depends on box aspect matching view aspect up to independent rounding of box.w and box.h. So "消取整差" holds for the axis whose span defines scale; the other axis carries ~1px relative rounding. Still within "同族精度带内". NIT/WARN. I'll make it a WARN since it's a math-claim overstatement in a math-focused ticket, but bounded.
+
+Actually wait — does itemSelectionGeometry normalize using base.w for x and base.h for y? "归一化只消费盒宽高，原点不参与". So yes. My analysis stands.
+
+Also rotate raw pass: rot normalized for domWidth but viewport.rotate = entry.geometry.rotate raw. If rotate=450: domWidth=y-span (correct for effective 90), viewport.rotate=450. If downstream normalizes identically, consistent; if not, breaks. Materials don't show itemSelectionGeometry's normalization. Also for rotate values not multiple of 90? PDF rotate is multiple of 90 by spec. The 450 case — would entry.geometry.rotate ever be non-canonical? PDF spec says 0/90/180/270. The defensive normalization `((rotate % 360)+360)%360` suggests they worried about it; passing raw downstream is inconsistent defensiveness. NIT.
+
+Verdict: PASS_WITH_WARNINGS.
+
+Findings list:
+1. [WARN] oracle 三态在 locateQuote 单源化后退化为拼接等价测试;打分核(权重/就近)靠受锁 28 用例传递覆盖,权重翻转变异仅 1 红,就近分支无用例(疑虑②自认). 建议后续补强 tie-break 夹逼用例.
+2. [WARN] 与 buildItemOffsets 偏移口径等价=主控源码核读,非机器锁定;空串用例只锁自持拼接自身. 建议门2前加 verifyQuoteItem 偏移 vs buildItemOffsets spans 对账测试.
+3. [WARN] scale 反推「消取整差」只在定义 scale 的轴严格成立;垂直轴依赖 box 宽高比≈view 跨度比(box.w/box.h 独立取整),有界残差~1px 相对;报告已用「同族精度带内」对冲但措辞过强. 
+4. [WARN] 裁决③字面管线 rectsForOffsetRange+bandsFromItems 被替换为 itemSelectionGeometry 整管线,未列入自裁申报(方向合规但申报缺失);且使「块数与 itemSelectionGeometry 对照断言」成同义反复.
+5. [NIT] verifyQuote 薄壳化后空 quote 短路前 fullTextOf(root) 提前求值(返回值零变,DOM 触达面变化).
+6. [NIT] itemViewportOf 对 rot 归一化取 domWidth 但 viewport.rotate 传原值,非规范 rotate(450/-90)下与下游归一化一致性未证.
+
+工单 A~E one-liners.
+
+数学对账 three lines.
+
+Keep under 1500 汉字当量. Write compactly.

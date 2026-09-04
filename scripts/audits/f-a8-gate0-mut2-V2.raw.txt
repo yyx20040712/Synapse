@@ -1,0 +1,181 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/anchor-item-verify.test.tsx [2m([22m[2m12 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[90m 22[2mms[22m[39m
+[31m   [31m×[31m F-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m三态其一：原位命中（prefix/quote/suffix 全吻合）→ 同返原偏移[90m 7[2mms[22m[31m[39m
+[31m     → expected 2 to be 7 // Object.is equality[39m
+[31m   [31m×[31m F-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m三态其二：前部增删漂移（DOM prepend 两字/items 前插两字项）→ 同返校正偏移（prefix 锚自愈）[90m 1[2mms[22m[31m[39m
+[31m     → expected 7 to be 9 // Object.is equality[39m
+[31m   [31m×[31m F-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m空串项穿插（items 含 str 空项、DOM 无对应节点）→ 同偏移（buildItemOffsets 剔空串口径）[90m 1[2mms[22m[31m[39m
+[31m     → expected 2 to be 7 // Object.is equality[39m
+[31m   [31m×[31m F-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m引文双出现：一处 prefix+suffix 双锚/一处无锚 → 同选双锚位（原位失效重定位）[90m 0[2mms[22m[31m[39m
+[31m     → expected null to be 1 // Object.is equality[39m
+[31m   [31m×[31m F-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m引文双出现：一处仅 suffix 锚（score 1）/一处仅 prefix 锚（score 2）→ 同选 prefix 锚位（权重 2>1）[90m 0[2mms[22m[31m[39m
+[31m     → expected 2 to be 8 // Object.is equality[39m
+[31m   [31m×[31m F-A8 门0 resolveAnnotationRectsItem —— 重锚纯域版（S0/S2/S3b）[2m > [22m正常条目 → rects/bands 与 itemSelectionGeometry 同参直调逐位一致（同族对照——跨 item 引文两行两块）[90m 1[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ 'a1' ][39m
+[31m   [31m×[31m F-A8 门0 resolveAnnotationRectsItem —— 重锚纯域版（S0/S2/S3b）[2m > [22m漂移条目（entry items 前部多两字、startOffset 仍为旧值）→ 校正 start 产出=直调校正偏移形态[90m 10[2mms[22m[31m[39m
+[31m     → expected [ { page: +0, …(4) }, …(1) ] to deeply equal [ { page: +0, …(4) }, …(1) ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 7 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m三态其一：原位命中（prefix/quote/suffix 全吻合）→ 同返原偏移
+[31m[1mAssertionError[22m: expected 2 to be 7 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 7[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m81:20[22m[39m
+    [90m 79| [39m    [35mconst[39m itemAt [33m=[39m [34mverifyQuoteItem[39m(items[33m,[39m sel)
+    [90m 80| [39m    [34mexpect[39m(domAt)[33m.[39m[34mtoBe[39m([34m7[39m)
+    [90m 81| [39m    [34mexpect[39m(itemAt)[33m.[39m[34mtoBe[39m(domAt)
+    [90m   | [39m                   [31m^[39m
+    [90m 82| [39m  })
+    [90m 83| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m三态其二：前部增删漂移（DOM prepend 两字/items 前插两字项）→ 同返校正偏移（prefix 锚自愈）
+[31m[1mAssertionError[22m: expected 7 to be 9 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 9[39m
+[31m+ 7[39m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m92:20[22m[39m
+    [90m 90| [39m    [35mconst[39m itemAt [33m=[39m [34mverifyQuoteItem[39m(items[33m,[39m sel)
+    [90m 91| [39m    [34mexpect[39m(domAt)[33m.[39m[34mtoBe[39m([34m9[39m)
+    [90m 92| [39m    [34mexpect[39m(itemAt)[33m.[39m[34mtoBe[39m(domAt)
+    [90m   | [39m                   [31m^[39m
+    [90m 93| [39m  })
+    [90m 94| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m空串项穿插（items 含 str 空项、DOM 无对应节点）→ 同偏移（buildItemOffsets 剔空串口径）
+[31m[1mAssertionError[22m: expected 2 to be 7 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 7[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m127:20[22m[39m
+    [90m125| [39m    [35mconst[39m itemAt [33m=[39m [34mverifyQuoteItem[39m(items[33m,[39m sel)
+    [90m126| [39m    [34mexpect[39m(domAt)[33m.[39m[34mtoBe[39m([34m7[39m)
+    [90m127| [39m    [34mexpect[39m(itemAt)[33m.[39m[34mtoBe[39m(domAt)
+    [90m   | [39m                   [31m^[39m
+    [90m128| [39m  })
+    [90m129| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m引文双出现：一处 prefix+suffix 双锚/一处无锚 → 同选双锚位（原位失效重定位）
+[31m[1mAssertionError[22m: expected null to be 1 // Object.is equality[39m
+
+[32m- Expected:[39m 
+1
+
+[31m+ Received:[39m 
+null
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m138:20[22m[39m
+    [90m136| [39m    [35mconst[39m itemAt [33m=[39m [34mverifyQuoteItem[39m(items[33m,[39m sel)
+    [90m137| [39m    [34mexpect[39m(domAt)[33m.[39m[34mtoBe[39m([34m1[39m)
+    [90m138| [39m    [34mexpect[39m(itemAt)[33m.[39m[34mtoBe[39m(domAt)
+    [90m   | [39m                   [31m^[39m
+    [90m139| [39m  })
+    [90m140| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 oracle —— verifyQuote vs verifyQuoteItem（DOM 域与 items 域同文本双跑）[2m > [22m引文双出现：一处仅 suffix 锚（score 1）/一处仅 prefix 锚（score 2）→ 同选 prefix 锚位（权重 2>1）
+[31m[1mAssertionError[22m: expected 2 to be 8 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m149:20[22m[39m
+    [90m147| [39m    [35mconst[39m itemAt [33m=[39m [34mverifyQuoteItem[39m(items[33m,[39m sel)
+    [90m148| [39m    [34mexpect[39m(domAt)[33m.[39m[34mtoBe[39m([34m8[39m)
+    [90m149| [39m    [34mexpect[39m(itemAt)[33m.[39m[34mtoBe[39m(domAt)
+    [90m   | [39m                   [31m^[39m
+    [90m150| [39m  })
+    [90m151| [39m})
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 resolveAnnotationRectsItem —— 重锚纯域版（S0/S2/S3b）[2m > [22m正常条目 → rects/bands 与 itemSelectionGeometry 同参直调逐位一致（同族对照——跨 item 引文两行两块）
+[31m[1mAssertionError[22m: expected [] to deeply equal [ 'a1' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   "a1",[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m203:30[22m[39m
+    [90m201| [39m    [35mconst[39m a [33m=[39m [34mmkAnnotation[39m()
+    [90m202| [39m    [35mconst[39m out [33m=[39m [34mresolveAnnotationRectsItem[39m([34mmkEntry[39m(items)[33m,[39m [a][33m,[39m [34m1[39m)
+    [90m203| [39m    [34mexpect[39m([33mObject[39m[33m.[39m[34mkeys[39m(out))[33m.[39m[34mtoEqual[39m([[32m'a1'[39m])
+    [90m   | [39m                             [31m^[39m
+    [90m204| [39m    [35mconst[39m geo [33m=[39m [34mitemSelectionGeometry[39m({
+    [90m205| [39m      items[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/anchor-item-verify.test.tsx[2m > [22mF-A8 门0 resolveAnnotationRectsItem —— 重锚纯域版（S0/S2/S3b）[2m > [22m漂移条目（entry items 前部多两字、startOffset 仍为旧值）→ 校正 start 产出=直调校正偏移形态
+[31m[1mAssertionError[22m: expected [ { page: +0, …(4) }, …(1) ] to deeply equal [ { page: +0, …(4) }, …(1) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    Object {[22m
+[2m      "h": 0.012626262626262624,[22m
+[2m      "page": 0,[22m
+[32m-     "w": 0.0326797385620915,[39m
+[32m-     "x": 0.24836601307189543,[39m
+[31m+     "w": 0.09803921568627452,[39m
+[31m+     "x": 0.1830065359477124,[39m
+[2m      "y": 0.1414141414141414,[22m
+[2m    },[22m
+[2m    Object {[22m
+[2m      "h": 0.012626262626262624,[22m
+[2m      "page": 0,[22m
+[32m-     "w": 0.10893246187363834,[39m
+[31m+     "w": 0.054466230936819154,[39m
+[2m      "x": 0.11764705882352941,[22m
+[2m      "y": 0.17676767676767677,[22m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/renderer/anchor-item-verify.test.tsx:[2m234:27[22m[39m
+    [90m232| [39m    })
+    [90m233| [39m    [34mexpect[39m(geo)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m234| [39m    [34mexpect[39m(out[33m.[39ma1[33m![39m[33m.[39mrects)[33m.[39m[34mtoEqual[39m(geo[33m![39m[33m.[39mrects)
+    [90m   | [39m                          [31m^[39m
+    [90m235| [39m    [34mexpect[39m(out[33m.[39ma1[33m![39m[33m.[39mbands)[33m.[39m[34mtoEqual[39m(geo[33m![39m[33m.[39mbands)
+    [90m236| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 09:28:33
+[2m   Duration [22m 1.38s[2m (transform 49ms, setup 0ms, collect 127ms, tests 22ms, environment 598ms, prepare 196ms)[22m
+
+exit=1

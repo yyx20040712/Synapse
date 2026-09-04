@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T00:52:25.1570619Z",
+    "generatedAt":  "2026-09-04T01:41:08.1179532Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -632,6 +632,10 @@
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
                       "sha256":  "fe0f12d47c3ac80c7b082997359faa4e5ceb836aa5473fa8950f74f5afc6a88c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/anchor-item-verify.test.tsx",
+                      "sha256":  "d13aa5319d4365a22dd016b21432c22f35cbd8b5c5b3e80ea6f00339e860aed3"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",

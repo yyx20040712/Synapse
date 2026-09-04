@@ -6,6 +6,11 @@
  * - resolveAnnotationRects：verifyQuote 校正偏移（自愈排版漂移）→
  *   findRangeAtOffset 重算 rects——逐条等价自 AnnotationLayer 原 resolve
  *   闭包迁出（行为零变：失败回退存量，仅显示层不回写库）；
+ * - resolveAnnotationRectsItem [F-A8 门0]：重锚纯域版（项几何族）——
+ *   entry（page-items.store 页项）+annotations → verifyQuoteItem 逐条对账
+ *   校偏 → itemSelectionGeometry 产 {rects,bands}；entry null→{}、失败条目
+ *   缺席（S3b 语义=接线层回退存量，纯函数只缺席）。门 2 接线前零消费方
+ *   （门 0=纯函数域前置票）；
  * - [F-A4 b②] 行盒自适应字形带：重锚 range.textNodes 的 span 实测盒
  *   （gBCR）+canvas 字体度量（measureText 的 actualBoundingBox Ascent/
  *   Descent=墨带实界+fontBoundingBox=回退字体布局带）→ 推算字形带
@@ -41,8 +46,10 @@
  *   AnnotationLayer 挂 B 接线）+ F-A5 段（bandsNearRects 三消费点）。
  */
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { verifyQuote } from './anchor-serialize'
+import { verifyQuote, verifyQuoteItem } from './anchor-serialize'
 import { findRangeAtOffset, pixelBoxOf, type PixelBox } from './annotation-anchor'
+import { itemSelectionGeometry, type ItemViewport } from './pdf-item-geometry'
+import type { PageItemEntry } from './page-items.store'
 
 /** 行簇字形带（归一化域；center=带中心——渲染块匹配键；x0/x1=行簇 span
  *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测） */
@@ -291,6 +298,87 @@ export function resolveAnnotationRects(args: {
     }
   }
   return next
+}
+
+/**
+ * [F-A8 门0] 重锚纯域版（项几何族——S0–S3a 状态机的纯函数核，设计书
+ * docs/design/2026-09-04_f-seam-reanchor-design.md §1.1/§3）：
+ * - S0：entry null → {}（页项缺席——接线层走 DOM 回退链，纯函数不编排回退）；
+ * - S1 DOM 对账=门 2 接线面（接线时有 textLayer DOM 可对账），本域 entry
+ *   信任=store 写者唯一性（PagesOverlay handlePageRender 回报——写者契约在
+ *   page-items.store 头注）；
+ * - S2：逐条 verifyQuoteItem 校正偏移（textQuote 自愈——与 DOM 版同核
+ *   locateQuote 单源）→ itemSelectionGeometry 产 {rects,bands}（归一化数学
+ *   直复用 selection 链管线导出面，禁第二份归一化实现）；
+ * - S3b：对账失败/空串引文/他页条目 → 该条缺席（接线层回退存量，纯函数只
+ *   缺席）；计算异常（畸形 rotate/几何非有限）逐条 try 缺席（selection 快
+ *   路径 itemChainFor 同款 try 先例）。
+ * viewport 现构=selection 快路径同款数学（rotate/view 来自 entry.geometry，
+ * 调用即构不缓存——缩放不变）；scale 自 entry.box 反推（box=PdfPageCanvas
+ * clampScale(zoom) 渲染的 canvas CSS 盒回报——PagesOverlay 写者契约，反推值
+ * =夹取后真值；水平轴 scale/base 严格约除消取整差；垂直轴依赖 box 宽高比
+ * ≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]）。base
+ * 盒本地帧（itemSelectionGeometry 头注：归一化只消费盒宽高，原点不参与）。
+ */
+export function resolveAnnotationRectsItem(
+  entry: PageItemEntry | null,
+  annotations: Annotation[],
+  page: number
+): Record<string, ResolvedAnnotation> {
+  if (entry === null) {
+    return {}
+  }
+  const viewport = itemViewportOf(entry)
+  if (!Number.isFinite(viewport.scale) || viewport.scale <= 0) {
+    return {}
+  }
+  const base: PixelBox = { x: 0, y: 0, w: entry.box.w, h: entry.box.h }
+  const next: Record<string, ResolvedAnnotation> = {}
+  for (const a of annotations) {
+    if (a.page !== page || a.quoteText.length === 0) {
+      continue
+    }
+    const at = verifyQuoteItem(entry.text.items, {
+      prefix: a.prefixText,
+      quote: a.quoteText,
+      suffix: a.suffixText,
+      start: a.startOffset
+    })
+    if (at === null) {
+      continue
+    }
+    try {
+      const geo = itemSelectionGeometry({
+        items: entry.text.items,
+        styles: entry.text.styles,
+        viewport,
+        start: at,
+        end: at + a.quoteText.length,
+        base
+      })
+      if (geo !== null) {
+        next[a.id] = { rects: geo.rects, bands: geo.bands }
+      }
+    } catch {
+      // 畸形 rotate 等计算异常——该条缺席（S3b 同判据，快路径 try 先例）
+    }
+  }
+  return next
+}
+
+/** 页项条目 → viewport（rotate=90/270 时 canvas 宽对应 view 高——宽高互换；
+ *  box 反推 scale=Math.round 后 CSS 盒/跨度，与 clampScale(zoom) 真值差 <1px
+ *  取整粒度——水平轴（宽）scale/base 严格约除消取整差；垂直轴依赖 box 宽高
+ *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]） */
+function itemViewportOf(entry: PageItemEntry): ItemViewport {
+  const [x0, y0, x1, y1] = entry.geometry.view
+  const rot = ((entry.geometry.rotate % 360) + 360) % 360
+  const domWidth = rot === 90 || rot === 270 ? y1 - y0 : x1 - x0
+  return {
+    scale: domWidth > 0 ? entry.box.w / domWidth : Number.NaN,
+    rotate: entry.geometry.rotate,
+    view: entry.geometry.view
+  }
 }
 
 /** textLayer 行高（归一化域——挂 B mergeRects lineH；span 字号中位数/盒高）。

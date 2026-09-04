@@ -1,0 +1,26 @@
+## 裁决
+PASS_WITH_WARNINGS
+
+## 发现（逐条）
+
+- [WARN] oracle 覆盖退化：locateQuote 单源化后，verifyQuote vs verifyQuoteItem 双跑只剩「文本构造等价」鉴别力，打分核靠受锁 28 用例传递覆盖；变异红证「打分权重翻转 1 红」=权重分支仅 1 用例有鉴别力，且疑虑②自认「未单列同分双出现取距原偏移最近分支」。证据：实现者声明「变异红证 3（打分权重翻转 1 红…）」+疑虑②。建议：门 2 前补 tie-break 夹逼用例。
+- [WARN] verifyQuoteItem↔buildItemOffsets 等价是人工核读而非机器锁定：自持拼接的空串穿插用例只锁自身行为，与 spans 表 start=cursor 的对账无测试；主控预裁「已核源码…三重零贡献等价」即人工裁定。门 0 是门 2 放大器，建议补 verifyQuoteItem 偏移 vs buildItemOffsets.spans 的机械对账测试。
+- [WARN] 「消取整差」措辞过强：scale=box.w/domWidth 只在定义 scale 的轴严格约除；垂直轴依赖 box 宽高比≈view 跨度比，而 box.w/box.h 独立取整（头注自承「Math.round 后 CSS 盒」），留 ~1px 级相对残差，rotate 90/270 时同样。报告以「同族精度带内」对冲可接受，但数学主张应降级为有界近似。证据：自裁⑤「归一化缩放不变且消取整差」。
+- [WARN] 裁决③字面管线被换且未申报：裁决③写「rectsForOffsetRange+bandsFromItems 产 {rects,bands}」，实现为 itemSelectionGeometry 整管线（方向更优、合「复用导出面」精神），但自裁①~⑦未列此项；且使裁决⑤「块数与 itemSelectionGeometry 对照断言」沦为同义反复。建议：补记自裁或主控追认。
+- [NIT] verifyQuote 薄壳化后 `locateQuote(fullTextOf(root), selector)` 使 fullTextOf 在空 quote 短路前提前求值——返回值零变，但 DOM 触达面变化（极端 root 下旧码不触 DOM 即返 null）。
+- [NIT] itemViewportOf 对 rot 做 `((r%360)+360)%360` 归一化取 domWidth，却把原始 rotate 传给 viewport；非规范值（450/-90）下与下游归一化口径一致性无证据。
+
+## 工单 A~E 逐条立场
+- A：符合——文件清单 4 项（第 4 备而未用如实申报）；裁决②偏离有 TS6142 阻断性理由+头注在案，正当；唯裁决③管线替换漏申报（见 WARN4）。
+- B：达标——受锁基准=既有 28 用例绿+manifest 新增条目 sha256 在 diff 可核；TS6142 实测经主控预裁背书；Rule of Three 第 2 次保持重复+第 3 处上抽条件头注在案，合规。
+- C：良——首红=桩 throw 行为红（合票面优先序），fixture 误修正如实记录；核提取 diff 仅删 fullTextOf 行+参数化，保真充分；弱点在打分核鉴别力（WARN1/2）。
+- D：诚实——自裁①②③④⑤⑦均与 diff/头注逐条对上；⑥仅报告可述无从对账但形态合理；tsconfig.node 配置债申报负责。
+- E：正确——S1 省略的信任声明（store 写者唯一性）与 S3b 只缺席不回退均按裁决③头注明示；INV/设计书本票零更新边界成立。
+
+## 数学对账
+① 等价成立：buildItemOffsets 剔空串零消耗 ⟹ 非空项 start=前置非空长度和=filter 后 join 下标；穿插/全空（text=""→null）/前后缀空三形态逐一吻合——但系推理+人工核读，非机械锁定（WARN2）。
+② 缩放不变成立：水平轴 box.w 严格约除且消取整差；垂直轴（含 90/270 互换后）依赖 box 宽高比≈view 跨度比，残差有界 ~1px，「消取整差」为过强表述（WARN3）。
+③ 覆盖不完备：oracle 三态覆盖 locateQuote 三出口，但权重（2/1）与就近分支鉴别力=权重翻转仅 1 红+就近分支零用例，靠受锁面传递（WARN1）。
+
+## 总评
+提取保真、申报纪律与绕行正当性均经得起对账，可作门 2 地基。但作为放大器票，两处机械锁定的缺席（打分核分支、buildItemOffsets 对账）应在门 2 接线前补强，而非无限期挂「后续补强」。

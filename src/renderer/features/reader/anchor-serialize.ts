@@ -9,16 +9,25 @@
  *   容器统一成立）；prefix/suffix 按 CONTEXT_CHARS=32 截取（WADM 惯例）
  * - verifyQuote：前缀/引文/后缀校验 start 偏移是否仍有效；失效时 textQuote
  *   自愈重定位——原位校验优先，重定位打分 score=prefix 2+suffix 1，同级取距
- *   原偏移最近者
- * - 偏移约定：verifyQuote 的 start 与返回值均指 quote 首字符的页内偏移（页内
- *   全文拼接口径在 annotation-anchor）；rects 的 page 恒为 0——实际页码由
- *   调用方在持久化时改写
+ *   原偏移最近者。定位核 locateQuote=纯文本函数（DOM/items 两域共享单源，
+ *   F-A8 门0 提取——verifyQuote 行为零变）
+ * - verifyQuoteItem [F-A8 门0]：verifyQuote 的 items 域等价物——页项文本
+ *   （剔空串项逐项 str 拼接，与 buildItemOffsets 偏移表同口径——空串项零宽
+ *   不入拼接，产出逐字节相同）上同核校验/自愈；偏移口径=页内文本序（两族
+ *   共有——DOM/items 拼接系统性差由 S1 reconcile 守卫拦截，本函数不做口径
+ *   转换）
+ * - 偏移约定：verifyQuote/verifyQuoteItem 的 start 与返回值均指 quote 首字符
+ *   的页内偏移（DOM 侧页内全文拼接口径在 annotation-anchor，items 侧=剔空串
+ *   逐项拼接）；rects 的 page 恒为 0——实际页码由调用方在持久化时改写
  *
  * ── 接口层 ──
  * - export interface SelectionAnchor
  * - export function selectionToAnchor(root, selection): SelectionAnchor | null
  * - export function verifyQuote(root, selector): number | null
- * - matchAt/probeTextLength/CONTEXT_CHARS 保持模块私有
+ * - export function verifyQuoteItem(items, selector): number | null [F-A8 门0]
+ *   （items 参数=结构最小面 {str:string}——消费方传 PdfTextItem[] 结构兼容；
+ *   不 import PdfPageCanvas 类型链的缘由见架构层）
+ * - matchAt/locateQuote/probeTextLength/CONTEXT_CHARS 保持模块私有
  * - 几何与遍历原语消费自 annotation-anchor 公共面（collectSpans/fullTextOf/
  *   offsetToPoint/rectsBetweenPoints/pixelBoxOf）——类型单一真相源，本模块
  *   零类型复写
@@ -27,6 +36,12 @@
  * - 依赖单向 anchor-serialize→annotation-anchor→annotation-merge（零环）；
  *   本模块=锚定格式与校验域，未来锚定格式扩展的增长点；锚定计算域（DOM 文本
  *   遍历/偏移互转/几何管线）仍在 annotation-anchor
+ * - **不 import pdf-item-geometry/PdfPageCanvas**（含 type）：本模块经受锁
+ *   annotation-anchor.test.ts 可达 tsconfig.node 程序（tests 目录 .ts 文件
+ *   include，无 jsx 选项），任一触 PdfPageCanvas.tsx 的边都触发 TS6142；故
+ *   items 拼接就地自持（剔空串 filter+join，与 pdf-item-geometry.itemsTextOf
+ *   同式——Rule of Three 第 2 次保持重复，第 3 处出现时上抽共享件并届时
+ *   一并解 tsconfig.node jsx 缺陷）
  * - 文本枚举唯一发生在 annotation-anchor；本模块仅借 Range 做长度探测
  *   （probeTextLength 的 Range.toString 非遍历）
  *
@@ -51,11 +66,48 @@ export function verifyQuote(
   root: HTMLElement,
   selector: { prefix: string; quote: string; suffix: string; start: number }
 ): number | null {
+  // 空 quote 短路在 fullTextOf 之前（提取前旧码同序——空引文不触 DOM 遍历，
+  // 触达面还原[门一 N1]；locateQuote 内同检查保留=verifyQuoteItem 路径防线）
+  if (selector.quote.length === 0) {
+    return null
+  }
+  return locateQuote(fullTextOf(root), selector)
+}
+
+/**
+ * [F-A8 门0] items 域引文对账：页项文本（剔空串项逐项 str 拼接——与
+ * buildItemOffsets 偏移表同口径，空串项零宽不入拼接产出逐字节相同；与 DOM
+ * fullTextOf 同域的页内文本序）上执行与 verifyQuote 同核的定位校验。偏移口径
+ * =页内文本序（两族共有——DOM 拼接与 items 拼接的系统性差由 S1 reconcile
+ * 守卫拦截[b2 r3a 同构防线]，本函数不负责口径转换）。items 参数=结构最小面
+ * {str:string}（PdfTextItem[] 结构兼容；不 import PdfPageCanvas 类型链的缘由
+ * 见头注架构层）
+ */
+export function verifyQuoteItem(
+  items: ReadonlyArray<{ str: string }>,
+  selector: { prefix: string; quote: string; suffix: string; start: number }
+): number | null {
+  const text = items
+    .map((it) => it.str)
+    .filter((s) => s.length > 0)
+    .join('')
+  return locateQuote(text, selector)
+}
+
+/**
+ * 引文定位核（纯文本——DOM/items 两域共享单源，F-A8 门0 自 verifyQuote 提取，
+ * 行为零变）：原位校验优先（前缀/引文/后缀在 start 处全部吻合直接返回原偏移）；
+ * 失效时 textQuote 自愈重定位——引文全出现扫描，打分 score=prefix 2+suffix 1，
+ * 同级取距原偏移最近者
+ */
+function locateQuote(
+  text: string,
+  selector: { prefix: string; quote: string; suffix: string; start: number }
+): number | null {
   const { prefix, quote, suffix, start } = selector
   if (quote.length === 0) {
     return null
   }
-  const text = fullTextOf(root)
   // 原位校验：前缀/引文/后缀在 start 处全部吻合则直接返回原偏移
   if (matchAt(text, start, prefix, quote, suffix)) {
     return start
