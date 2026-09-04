@@ -71,7 +71,19 @@ const TOKENS: Array<[string, string]> = [
   ['--annotation-green', '#86efac'],
   ['--annotation-blue', '#93c5fd'],
   ['--annotation-red', '#fca5a5'],
-  ['--annotation-purple', '#d8b4fe']
+  ['--annotation-purple', '#d8b4fe'],
+  // ── P7D-01 批一：token 收敛值（registry 裁决——非 mockup :root 面）──
+  ['--dur-press', '0.08s'],
+  ['--dur-tint', '0.12s'],
+  ['--dur-fast', '0.14s'],
+  ['--dur-base', '0.18s'],
+  ['--dur-lazy', '0.2s'],
+  ['--dur-rise', '0.22s'],
+  ['--dur-flow', '0.3s'],
+  ['--z-float', '10'],
+  ['--z-anchor-pop', '20'],
+  ['--z-pop-veil', '40'],
+  ['--z-pop', '50']
 ]
 
 describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
@@ -166,6 +178,139 @@ describe('R2-SH2 决5——衬线消费清零+gold-night 别名退役（源码�
     // 同清零——负锚扩覆盖分域样式文件（主控压缩票 2026-08-29）
     expect(libCss, 'library.css 衬线消费应清零（决5 lib 年份/标题明文）').not.toContain(
       'var(--font-display)'
+    )
+  })
+})
+
+describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
+  /**
+   * 批一迁移（registry 裁决「甲式机械迁移零视觉差」）：动效时长 32 处→7 个
+   * --dur-* token+弹层 z 序四值→4 个 --z-* 语义 token+lineage inline 数值
+   * 间距 12 处→tailwind class——值不变仅载体变（无头截图 diff 验收=p7d01-
+   * visual-probe）。形态锁防回退：duration 字面量消费后仅存定义处；弹层
+   * tsx 禁 z-(10|20|40|50) 裸值 class 与 theme.css z-index 裸值；lineage
+   * 六件禁数值间距属性（marginLeft:'auto'/var() 值放行——非数值间距）。
+   */
+  const wsCss = readFileSync(
+    fileURLToPath(new URL('../../../src/renderer/features/workspaces/workspace.css', import.meta.url)),
+    'utf8'
+  )
+  const readSrc = (rel: string): string =>
+    readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
+  const POPUP_TSX = [
+    '../../../src/renderer/shared/ui/Dialog.tsx',
+    '../../../src/renderer/shared/ui/Toast.tsx',
+    '../../../src/renderer/features/reader/AnnotationMenu.tsx',
+    '../../../src/renderer/features/reader/AnnotationEditor.tsx',
+    '../../../src/renderer/features/reader/SelectionToolbar.tsx',
+    '../../../src/renderer/features/tags/TagLifecycleMenu.tsx',
+    '../../../src/renderer/features/lineage/LineageToolbar.tsx',
+    '../../../src/renderer/features/lineage/LineageNodeMenu.tsx',
+    '../../../src/renderer/features/lineage/LineageBoard.tsx'
+  ]
+    .map(readSrc)
+    .join('\n')
+  const LINEAGE_SPACING_TSX = [
+    '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
+    '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
+    '../../../src/renderer/features/lineage/LineageSideAiNotes.tsx',
+    '../../../src/renderer/features/lineage/LineageSideManualNote.tsx',
+    '../../../src/renderer/features/lineage/LineageSidePanel.tsx',
+    '../../../src/renderer/features/lineage/LineageSideTags.tsx'
+  ]
+    .map(readSrc)
+    .join('\n')
+  const countLiteral = (text: string, literal: string): number =>
+    (text.match(new RegExp(literal.replaceAll('.', '\\.'), 'g')) ?? []).length
+  const DURATION_COUNTS: Array<[string, string, number]> = [
+    ['0.08s', css, 1],
+    ['0.08s', wsCss, 0],
+    ['0.08s', libCss, 0],
+    ['0.12s', css, 1],
+    ['0.12s', wsCss, 0],
+    ['0.12s', libCss, 0],
+    ['0.14s', css, 1],
+    ['0.14s', wsCss, 0],
+    ['0.14s', libCss, 0],
+    ['0.18s', css, 1],
+    ['0.18s', wsCss, 0],
+    ['0.18s', libCss, 0],
+    ['0.2s', css, 1],
+    ['0.2s', wsCss, 0],
+    ['0.2s', libCss, 0],
+    ['0.22s', css, 1],
+    ['0.22s', wsCss, 0],
+    ['0.22s', libCss, 0],
+    ['0.3s', css, 1],
+    ['0.3s', wsCss, 0],
+    ['0.3s', libCss, 0]
+  ]
+
+  it.each(DURATION_COUNTS)('duration 字面量 %s 消费后仅存 token 定义处（出现 %s 次）', (literal, text, expected) => {
+    expect(countLiteral(text, literal)).toBe(expected)
+  })
+
+  it('theme.css 禁 z-index 裸值四档（弹层 z 序收敛到 --z-* token）', () => {
+    expect(css).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+  })
+
+  it('弹层九 tsx 禁 z-(10|20|40|50) 裸值 class（v4 变量简写形态锁）', () => {
+    expect(POPUP_TSX).not.toMatch(/\bz-(10|20|40|50)\b/)
+  })
+
+  it('弹层九 tsx 禁 z-[数字] arbitrary class（回炉 W2：弹层 z 必须消费 --z-* 变量）', () => {
+    expect(POPUP_TSX).not.toMatch(/\bz-\[\d+\]/)
+  })
+
+  it('三 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3：ms 形态等价绕过全禁）', () => {
+    // 只锁声明面（增量面）：现状 \dms 实测仅 2 处注释字样（theme.css:319
+    // 「瞬态 80~120ms」/workspace.css:52「入场 160ms」），声明值全 s 形态——
+    // 注释行不含声明关键词不误咬；0.30s 等价变体主控裁定不锁（值等价不破坏
+    // 零视觉差，锁面过宽脆断言反噬——记档已知边界）
+    const MS_DECL = /\b(transition|animation)[^;{}]*[0-9]ms/
+    expect(css).not.toMatch(MS_DECL)
+    expect(wsCss).not.toMatch(MS_DECL)
+    expect(libCss).not.toMatch(MS_DECL)
+  })
+
+  it('lineage 六件禁数值间距属性（inline 间距清扫到 tailwind class）', () => {
+    // 引号字符类覆盖单/双/模板串三形态（回炉 W1：双引号与反引号值同为回填面）
+    expect(LINEAGE_SPACING_TSX).not.toMatch(
+      /(padding|margin|gap)(Top|Bottom|Left|Right)?:\s*['"`]?[\d-]/
+    )
+  })
+
+  it('lineage 六件禁数值间距属性——双引号/模板串形态单证（W1 鉴别锚）', () => {
+    // 独立锚定双引号与反引号两种引号形态（防字符类笔误退化成仅单引号）
+    expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\s*"[\d-]/)
+    expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\s*`[\d-]/)
+  })
+
+  it('LineageNodeCard 间距 class 在场（pt-2/gap-1——防「全删不补」假绿）', () => {
+    const card = readSrc('../../../src/renderer/features/lineage/LineageNodeCard.tsx')
+    expect(card).toContain('className="pt-2"')
+    expect(card).toContain('className="gap-1"')
+  })
+
+  it('LineageNodeMeta 间距 class 在场（px-1/gap-0.75/px-0.75/pl-1）', () => {
+    const meta = readSrc('../../../src/renderer/features/lineage/LineageNodeMeta.tsx')
+    expect(meta).toContain('className="px-1"')
+    expect(meta).toContain('className="gap-0.75 px-0.75"')
+    expect(meta).toContain('className="pl-1"')
+  })
+
+  it('侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）', () => {
+    const tags = readSrc('../../../src/renderer/features/lineage/LineageSideTags.tsx')
+    expect(tags).toContain('m-0 pl-1.5 font-medium')
+    expect(tags).toContain('className="gap-0.75 px-1"')
+    expect(readSrc('../../../src/renderer/features/lineage/LineageSidePanel.tsx')).toContain(
+      'pl-1.5'
+    )
+    expect(readSrc('../../../src/renderer/features/lineage/LineageSideAiNotes.tsx')).toContain(
+      'pl-1.5'
+    )
+    expect(readSrc('../../../src/renderer/features/lineage/LineageSideManualNote.tsx')).toContain(
+      'pl-1.5'
     )
   })
 })

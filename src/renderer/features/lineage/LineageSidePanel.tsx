@@ -108,8 +108,7 @@ const SIDE_GLASS: CSSProperties = {
 /** 分组 h4（核心 idea）accent 左缘条（R2-LG11 浅色板） */
 const H4_ACCENT: CSSProperties = {
   color: 'var(--text-dim)',
-  borderLeft: '3px solid var(--accent)',
-  paddingLeft: 6
+  borderLeft: '3px solid var(--accent)'
 }
 
 /** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
@@ -178,7 +177,7 @@ export function LineageSidePanel(props: {
         </p>
       </section>
       <section data-testid="lineage-side-idea">
-        <h4 className="m-0 font-medium" style={H4_ACCENT}>核心 idea</h4>
+        <h4 className="m-0 pl-1.5 font-medium" style={H4_ACCENT}>核心 idea</h4>
         <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
         </p>

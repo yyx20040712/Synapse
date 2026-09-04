@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-04T05:11:34.9049630Z",
+    "generatedAt":  "2026-09-04T15:40:30.7641988Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -244,6 +244,10 @@
                   {
                       "path":  "scripts/audits/f-v2-diag.mjs",
                       "sha256":  "40b9bb27655f7ec1d4d6144d316c9ac70a4ab04dfb59fb07fb4a9dba21316b78"
+                  },
+                  {
+                      "path":  "scripts/audits/p7d01-visual-probe.mjs",
+                      "sha256":  "683b0107b2e204b051748e4cea6af244a38cc26e96dc9948920500c9a4cc3db4"
                   },
                   {
                       "path":  "scripts/audits/r2-f11-forensics.mjs",
@@ -927,7 +931,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "85091a76d7788fece76ad899c9d4b6dc5eff4952647fdfe96d931005f2bb0d6f"
+                      "sha256":  "12d4edac025eb788c4f4f0a30f8f35daf717b862eecf54c43d7202e1ba4ccb56"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

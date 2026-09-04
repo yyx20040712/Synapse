@@ -1,0 +1,30 @@
+[sweep] lib: trans=24 z=1 reducedMotion=false
+[shot] lib.png
+[sweep] wsPanel: trans=27 z=1 reducedMotion=false
+[shot] ws-panel.png
+[sweep] settings: trans=14 z=1 reducedMotion=false
+[shot] settings.png
+[sweep] lineageToast: trans=8 z=4 reducedMotion=false
+[sweep] lineageCanvas: trans=8 z=3 reducedMotion=false
+[shot] lineage-canvas.png
+[sweep] lineageSide: trans=8 z=3 reducedMotion=false
+[shot] lineage-side.png
+[sweep] lineageSideTagged: trans=8 z=3 reducedMotion=false
+[shot] lineage-side-tagged.png
+[sweep] dialog: trans=8 z=4 reducedMotion=false
+[shot] dialog.png
+[sweep] reader: trans=16 z=12 reducedMotion=false
+[shot] reader.png
+[after] 探针完成 → E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-out\after
+[FAIL] tokens: --dur-press="80ms" 期望 "0.08s"; --dur-tint=".12s" 期望 "0.12s"; --dur-fast=".14s" 期望 "0.14s"; --dur-base=".18s" 期望 "0.18s"; --dur-lazy=".2s" 期望 "0.2s"; --dur-rise=".22s" 期望 "0.22s"; --dur-flow=".3s" 期望 "0.3s"
+[ok] png lib.png 逐字节相同
+[ok] png ws-panel.png 逐字节相同
+[ok] png settings.png 逐字节相同
+[ok] png lineage-canvas.png 逐字节相同
+[ok] png lineage-side.png 逐字节相同
+[ok] png lineage-side-tagged.png 逐字节相同
+[ok] png dialog.png 逐字节相同
+[ok] png reader.png 逐字节相同
+[ok] sweeps: 全部态 windowSize/trans/zi 逐键相同
+[COMPARE] FAIL
+exit=1

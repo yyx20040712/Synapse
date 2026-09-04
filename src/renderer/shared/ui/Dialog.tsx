@@ -40,7 +40,7 @@ export function Dialog(props: {
   }
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-(--z-pop) flex items-center justify-center bg-black/40 p-4"
       // 点遮罩关闭；卡片内部（含表单）阻止冒泡防误关
       onClick={onClose}
       onMouseDown={(e) => e.stopPropagation()}

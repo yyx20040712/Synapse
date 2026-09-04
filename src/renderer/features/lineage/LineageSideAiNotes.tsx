@@ -68,8 +68,8 @@ export function LineageSideAiNotes(props: {
   return (
     <section data-testid="lineage-side-ai-notes" className="flex flex-col gap-1">
       <h4
-        className="m-0 font-medium"
-        style={{ color: 'var(--text-dim)', borderLeft: '3px solid var(--accent)', paddingLeft: 6 }}
+        className="m-0 pl-1.5 font-medium"
+        style={{ color: 'var(--text-dim)', borderLeft: '3px solid var(--accent)' }}
       >
         AI 笔记
       </h4>

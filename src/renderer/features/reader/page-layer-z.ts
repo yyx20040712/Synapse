@@ -14,8 +14,8 @@
  *    灰块视觉在色块上）。
  *
  * 比较域：PageBox 页内容容器（h-fit）isolation:isolate——四层比较封闭在
- * 单页内，跨页互扰不可能。弹层（菜单 z-20/编辑器 z-20/工具条 z-10）在页盒
- * 兄弟位，天然高于本域诸层。
+ * 单页内，跨页互扰不可能。弹层（菜单 z-(--z-anchor-pop)/编辑器
+ * z-(--z-anchor-pop)/工具条 z-(--z-float)）在页盒兄弟位，天然高于本域诸层。
  */
 export const PAGE_LAYER_Z = {
   /** 官方 text-layer.css 的 z0（内联同值显式化——序单源防漂移） */

@@ -48,7 +48,6 @@ import { LineageNodeMeta } from './LineageNodeMeta'
  * ——minHeight 0 显式声明为防御）。
  */
 const TITLE_STYLE = {
-  paddingTop: 8,
   flex: 1,
   minHeight: 0,
   fontSize: '12.5px',
@@ -131,20 +130,20 @@ export function LineageNodeCard(props: {
           实现保断言」先例执行）；HTML 属性值不入 textContent 单源保持 */}
       <foreignObject x={-w / 2 + 12} y={-h / 2} width={w - 24} height={h}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div ref={titleRef} style={TITLE_STYLE} title={n.title}>
+          <div ref={titleRef} className="pt-2" style={TITLE_STYLE} title={n.title}>
             {n.title}
           </div>
           {/* 底行信息区（F-LG13 锚：恒 24px；F-LG14 填充=LineageNodeMeta——
               含金量+标签组+年份三段，高度含在统一高 110 内（主控裁决 6）） */}
           <div
             data-card-footer
+            className="gap-1"
             style={{
               height: 24,
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4,
               fontSize: '12px',
               color: 'var(--text-dim)'
             }}

@@ -55,7 +55,7 @@ export function AnnotationMenu(props: {
   return (
     <div
       data-testid="annotation-menu"
-      className="absolute z-20 flex gap-1 rounded border p-1 text-xs"
+      className="absolute z-(--z-anchor-pop) flex gap-1 rounded border p-1 text-xs"
       style={{
         // 左沿贴命中矩形并夹取，避免右侧溢出页根（对齐 AnnotationEditor 先例）
         left: `${Math.min(rect.x * 100, 55)}%`,

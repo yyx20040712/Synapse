@@ -31,7 +31,6 @@ const TAG_CHIP_STYLE = {
   flexShrink: 0,
   fontSize: '10px',
   lineHeight: '16px',
-  padding: '0 4px',
   borderRadius: 3,
   color: 'var(--danger)',
   background: 'rgba(179, 64, 58, 0.08)',
@@ -44,8 +43,6 @@ const TAG_BOX_STYLE = {
   height: 18,
   display: 'flex',
   alignItems: 'center',
-  gap: 3,
-  padding: '0 3px',
   border: '1px solid #dfa84a',
   borderRadius: 4,
   overflowX: 'auto',
@@ -69,9 +66,9 @@ export function LineageNodeMeta(props: {
         </span>
       )}
       {tags.length > 0 && (
-        <div data-card-tags style={{ ...TAG_BOX_STYLE, flex: '0 1 auto' }}>
+        <div data-card-tags className="gap-0.75 px-0.75" style={{ ...TAG_BOX_STYLE, flex: '0 1 auto' }}>
           {tags.map((t) => (
-            <span key={t} data-card-tag style={TAG_CHIP_STYLE}>
+            <span key={t} data-card-tag className="px-1" style={TAG_CHIP_STYLE}>
               {t}
             </span>
           ))}
@@ -79,7 +76,8 @@ export function LineageNodeMeta(props: {
       )}
       <span
         data-card-year
-        style={{ flexShrink: 0, marginLeft: 'auto', paddingLeft: 4, whiteSpace: 'nowrap' }}
+        className="pl-1"
+        style={{ flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}
       >
         {n.year === null ? '未知年份' : String(n.year)}
       </span>

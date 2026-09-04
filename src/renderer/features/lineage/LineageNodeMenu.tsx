@@ -46,12 +46,12 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
   return (
     <>
       {/* 透明遮罩：点击任意处关闭（菜单本体 stopPropagation） */}
-      <div className="fixed inset-0 z-40" onClick={props.onClose} />
+      <div className="fixed inset-0 z-(--z-pop-veil)" onClick={props.onClose} />
       <div
         data-testid="lineage-node-menu"
         role="menu"
         aria-label={`节点菜单：${node.title}`}
-        className="fixed z-50 w-40 rounded border py-1 shadow-lg"
+        className="fixed z-(--z-pop) w-40 rounded border py-1 shadow-lg"
         style={{
           left: anchor.x,
           top: anchor.y,

@@ -18,7 +18,7 @@ export function LineageToolbar(props: {
 }): JSX.Element {
   const { saveStatus, lastWriteError } = props
   return (
-    <div className="lineage-toolbar absolute left-2 top-2 z-10">
+    <div className="lineage-toolbar absolute left-2 top-2 z-(--z-float)">
       <button
         type="button"
         data-testid="lineage-add-node"

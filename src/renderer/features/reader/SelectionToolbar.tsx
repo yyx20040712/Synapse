@@ -3,7 +3,7 @@
  * renderer 组件 250 行上限强制；DOM 形状/testid/交互零变化）
  *
  * - 定位=SelectionLayer evaluate 产出的挂载盒相对落点（props.x/y 透传）；
- *   z-10=层叠序最顶（完整推演见 SelectionLayer.tsx 头注 F-07）
+ *   z-(--z-float)=层叠序最顶（完整推演见 SelectionLayer.tsx 头注 F-07）
  * - 容器 mousedown 阻止默认（防抢焦点/坍缩选区）——按钮 click 才是动作语义；
  *   containerRef 由 SelectionLayer 持有（mouseup 命中工具条时不评估选区）
  * - 颜色按钮=per-tab 选择器状态（props.color/onColor——useReaderStore 订阅
@@ -34,7 +34,7 @@ export function SelectionToolbar(props: {
     <div
       ref={containerRef}
       data-testid="selection-toolbar"
-      className="absolute z-10 flex items-center gap-1 rounded border px-1.5 py-1 text-xs"
+      className="absolute z-(--z-float) flex items-center gap-1 rounded border px-1.5 py-1 text-xs"
       style={{
         left: x,
         top: y,

@@ -44,7 +44,7 @@ export function ToastHost(): JSX.Element {
   return (
     // 容器穿透（pointer-events-none）：右上 320px 常驻区域不得拦截底层 UI 的点击
     // （此前无卡片处也挡），卡片自身恢复可交互（× 关闭按钮）
-    <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2">
+    <div className="pointer-events-none fixed right-4 top-4 z-(--z-pop) flex w-80 flex-col gap-2">
       {list.map((item) => (
         <ToastCard key={item.id} item={item} onClose={() => dismiss(item.id)} />
       ))}

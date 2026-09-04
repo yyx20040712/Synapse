@@ -16,8 +16,6 @@ import type { LineageNode } from '@shared/models/lineage'
 const SIDE_TAG_CHIP: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 3,
-  padding: '0 4px',
   borderRadius: 3,
   fontSize: 11,
   color: 'var(--danger)',
@@ -45,12 +43,12 @@ export function LineageSideTags(props: {
 
   return (
     <section data-testid="lineage-side-tags">
-      <h4 className="m-0 font-medium" style={{ borderLeft: '3px solid var(--accent)', paddingLeft: 6, color: 'var(--text-dim)' }}>
+      <h4 className="m-0 pl-1.5 font-medium" style={{ borderLeft: '3px solid var(--accent)', color: 'var(--text-dim)' }}>
         标签
       </h4>
       <div className="flex flex-wrap items-center gap-1">
         {tags.map((t) => (
-          <span key={t} data-testid="lineage-tag-chip" style={SIDE_TAG_CHIP}>
+          <span key={t} data-testid="lineage-tag-chip" className="gap-0.75 px-1" style={SIDE_TAG_CHIP}>
             {t}
             <button
               type="button"

@@ -1,0 +1,10 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-out\determinism-check.cjs
+  1:20  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  1:53  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 2 problems (2 errors, 0 warnings)
+
+exit=1

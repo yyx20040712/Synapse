@@ -34,12 +34,12 @@ export function TagLifecycleMenu(props: {
   return (
     <>
       {/* 透明遮罩：点击任意处关闭（菜单本体 stopPropagation） */}
-      <div className="fixed inset-0 z-40" onClick={props.onClose} />
+      <div className="fixed inset-0 z-(--z-pop-veil)" onClick={props.onClose} />
       <div
         data-testid="tag-menu"
         role="menu"
         aria-label={`标签菜单：${tag.name}`}
-        className="fixed z-50 w-40 rounded border py-1 shadow-lg"
+        className="fixed z-(--z-pop) w-40 rounded border py-1 shadow-lg"
         style={{
           left: anchor.x,
           top: anchor.y,

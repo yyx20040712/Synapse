@@ -154,7 +154,7 @@ export function LineageBoard(props: {
           白底 accent 描边，行为零变） */}
       {pendingLink !== null && (
         <div
-          className="absolute left-1/2 top-2 z-10 flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"
+          className="absolute left-1/2 top-2 z-(--z-float) flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"
           style={{ borderColor: 'var(--accent)', background: 'var(--panel)', color: 'var(--accent)' }}
           data-testid="lineage-pending-link"
         >

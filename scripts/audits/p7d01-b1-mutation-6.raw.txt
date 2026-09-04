@@ -1,4 +1,27 @@
-@import 'tailwindcss';
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/theme.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/theme.test.ts [2m([22m[2m88 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m P7D-01 批一 token 收敛防线（三轴形态锁）[2m > [22m三 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3：ms 形态等价绕过全禁）[90m 3[2mms[22m[31m[39m
+[31m     → expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' not to match /\b(transition|animation)[^;{}]*[0-9]ms/[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/theme.test.ts[2m > [22mP7D-01 批一 token 收敛防线（三轴形态锁）[2m > [22m三 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3：ms 形态等价绕过全禁）
+[31m[1mAssertionError[22m: expected '@import \'tailwindcss\';\n\n/* 主题变量 v…' not to match /\b(transition|animation)[^;{}]*[0-9]ms/[39m
+
+[32m- Expected:[39m 
+/\b(transition|animation)[^;{}]*[0-9]ms/
+
+[31m+ Received:[39m 
+"@import 'tailwindcss';
 
 /* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
    token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
@@ -349,7 +372,7 @@ body,
   color: var(--text);
   border-color: var(--border);
   transition:
-    background var(--dur-fast) ease,
+    background 140ms ease,
     border-color var(--dur-fast) ease,
     transform var(--dur-press) ease;
 }
@@ -643,3 +666,21 @@ body,
     animation: none;
   }
 }
+"
+
+[36m [2m❯[22m tests/unit/renderer/theme.test.ts:[2m271:21[22m[39m
+    [90m269| [39m    [90m// 零视觉差，锁面过宽脆断言反噬——记档已知边界）[39m
+    [90m270| [39m    [35mconst[39m [33mMS_DECL[39m [33m=[39m [36m/\b(transition|animation)[^;{}]*[0-9]ms/[39m
+    [90m271| [39m    [34mexpect[39m(css)[33m.[39mnot[33m.[39m[34mtoMatch[39m([33mMS_DECL[39m)
+    [90m   | [39m                    [31m^[39m
+    [90m272| [39m    [34mexpect[39m(wsCss)[33m.[39mnot[33m.[39m[34mtoMatch[39m([33mMS_DECL[39m)
+    [90m273| [39m    [34mexpect[39m(libCss)[33m.[39mnot[33m.[39m[34mtoMatch[39m([33mMS_DECL[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m87 passed[39m[22m[90m (88)[39m
+[2m   Start at [22m 23:40:02
+[2m   Duration [22m 579ms[2m (transform 23ms, setup 0ms, collect 37ms, tests 10ms, environment 0ms, prepare 244ms)[22m
+
+exit=1

@@ -31,7 +31,7 @@ export function AnnotationEditor(props: {
   return (
     <div
       data-testid="annotation-editor"
-      className="absolute z-20 flex w-72 flex-col gap-2 rounded border p-2 text-xs"
+      className="absolute z-(--z-anchor-pop) flex w-72 flex-col gap-2 rounded border p-2 text-xs"
       style={{
         // 左沿贴命中矩形并夹取，避免右侧溢出页根
         left: `${Math.min(rect.x * 100, 55)}%`,
