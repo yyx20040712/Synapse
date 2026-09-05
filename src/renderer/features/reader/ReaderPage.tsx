@@ -3,7 +3,10 @@
  *
  * ── 行为层 ──
  * - 无打开文档：空态引导；打开：openPaper→PdfDocProvider+PageColumn 页列+
- *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+ *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）——装配 JSX
+ *   分组（空态引导/主区滚动容器/工具栏+目录布局）职责归 ReaderPageView.tsx
+ *   （[F-SPLIT-01] 自本件拆出 2026-09-05，语句零改；F-03 三口接线
+ *   onScroll/wheel/pointerdown 随 JSX 原样迁，keydown 见快捷键件）
  * - 接收 library 侧"打开文献"事件（挂载闩锁补读+实时监听；定路由归 openFromBus）
  * - [sr2-lg-08] 时序竞态修复：挂载效应内监听器注册必须先于闩锁消费——消费链 openFromBus→locateAnchor→waitOpen（tab 缺席）会同步重发 OPEN_PAPER_EVENT（事件②），旧序自丢失→waitOpen 8s 超时停旧 tab=「脉络双击笔记总跳最后打开的文章」根因；先注册则事件②被自身 handler 接住→无锚分支 store.openPaper 正常打开（链声明独立于 F-07；全链取证见 scripts/audits/sr2-lg-08-brief.md）
  * - F-01 连续滚动改造：页列几何/懒渲染回收归 PageColumn；页面缓存注册表
@@ -11,8 +14,10 @@
  *   本组件只装配——声明与实现对齐）
  * - F-03 滚动进度装配：scroll-progress 状态机接线（onScroll/wheel/pointerdown
  *   三口+keydown；页列就绪→恢复链滚回记忆页盒顶）；快捷键=容器滚动步（四键
- *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源）；SelectionLayer 挂内容级
- *   稳定包装盒（N4：滚动中锚定页切换不重挂组件→工具条不闪收）
+ *   一屏−一行重叠+空格满屏，SCROLL_STEP_RATIO 单源——装配块归
+ *   reader-shortcut-handlers.ts，[F-SPLIT-01] 自本件拆出 2026-09-05，deps []
+ *   零变）；SelectionLayer 挂内容级稳定包装盒（N4：滚动中锚定页切换不重挂
+ *   组件→工具条不闪收）
  * - F-04 缩放收官：fit-width 分母=列宽基准（onReady 上报）；缩放锚经 scrollContainerRef 交段⑥
  * - F-05（缺陷 A）根两分支 overflow-hidden 防外层滚动泄漏（INV-34）
  * - F-A3 选择模式装配：selectionMode 取 active tab（?? false）；toggle 语义在
@@ -42,21 +47,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
 import { openFromBus } from './open-paper-anchor'
-import { OutlineAside } from './OutlineAside'
-import { SplitPane } from '../../shared/ui/SplitPane'
-import { TabBar } from './TabBar'
-import { PdfDocProvider } from './PdfDocProvider'
-import { PagesOverlay } from './PagesOverlay'
 import type { PageScrollRequest } from './PageColumn'
-import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
-import { ReaderToolbar, ZOOM_STEP, round2 } from './ReaderToolbar'
-import { SelectionLayer } from './SelectionLayer'
 import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from './reader.store'
 import { readActiveTab, useActiveTab } from './useActiveTab'
 import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
 import { useReaderReadingTime } from './reading-time-setup'
 import { useReadingTimeWiring } from './reading-time'
+import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
+import { ReaderPageView } from './ReaderPageView'
 import { showToast } from '../../shared/ui/Toast'
 
 export function ReaderPage(): JSX.Element {
@@ -98,25 +97,8 @@ export function ReaderPage(): JSX.Element {
   // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
   const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)
 
-  // 快捷键装配（F-03 迁移：翻页键=容器滚动步；经 ref/getState 取最新——恒定身份）
-  useReaderShortcuts(
-    useMemo(() => {
-      const scrollByRatio = (ratio: number): void => {
-        const el = scrollAreaRef.current
-        if (el !== null) el.scrollBy({ top: Math.round(el.clientHeight * ratio) })
-      }
-      return {
-        prevPage: () => scrollByRatio(-SCROLL_STEP_RATIO),
-        nextPage: () => scrollByRatio(SCROLL_STEP_RATIO),
-        spaceScroll: () => scrollByRatio(1),
-        zoomStep: (dir: 1 | -1) => {
-          const t = readActiveTab()
-          if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
-        },
-        undo: () => void useReaderStore.getState().undo()
-      }
-    }, [])
-  )
+  // 快捷键装配（F-03 迁移：翻页键=容器滚动步——reader-shortcut-handlers）
+  useReaderShortcutHandlers(scrollAreaRef)
 
   // P7E-03 页内搜索装配：fileUrl 键效应清面板+ctrl+f keymap+翻页联动注入+
   // 受控面板节点（ReaderToolbar slot 消费；空态视图不渲染 toolbar=面板随
@@ -169,80 +151,13 @@ export function ReaderPage(): JSX.Element {
     setZoom((uiScale * (el.clientWidth - 24)) / columnBasis.current)
   }
 
-  if (paperId === null || fileUrl === null) {
-    // 空态三形合一（无 tab/loading/error）；TabBar 保留——error tab 必须可见可关可切
-    return (
-      <div className="flex h-full flex-col overflow-hidden">
-        <TabBar />
-        <div
-          className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm"
-          style={{ color: tab?.status === 'error' ? 'var(--danger)' : 'var(--text-dim)' }}
-        >
-          <p>{paperId === null ? '阅读器' : tab?.status === 'error' ? '打开文献失败' : '正在打开文献…'}</p>
-          {paperId === null && <p className="text-xs">从文献库打开一篇文献（双击文献行）</p>}
-        </div>
-      </div>
-    )
-  }
-  // 主区（开/收两分支共用）：滚动容器内 PdfDocProvider（doc 生命周期）+PagesOverlay
-  // （页面缓存注册表+覆盖层装配——F-ARCH3 拆分件）；SelectionLayer 挂稳定盒（N4）
-  const mainContent = (
-    <div
-      ref={scrollAreaRef}
-      className="min-w-0 flex-1 overflow-auto p-3"
-      onScroll={() => spProg.onScrollEvent()}
-      // 用户接管三类信号之二（keydown 见 wiring hook 的 document 监听；W-B）
-      onWheel={() => spProg.onUserTakeover()}
-      onPointerDown={() => spProg.onUserTakeover()}
-    >
-      <div ref={setSelectionMount} className="relative">
-        <PdfDocProvider fileUrl={fileUrl} onDocInfo={(info) => setTotalPages(info.numPages)} onDocReady={setPdfDoc} onError={handlePdfError}>
-          {(doc) => (
-            <PagesOverlay doc={doc} fileUrl={fileUrl} totalPages={totalPages} zoom={zoom} annotations={annotations}
-              scrollContainerRef={scrollAreaRef} scrollRequest={columnScroll} layout={pageLayout}
-              onReady={handleColumnReady} onError={handlePdfError} />
-          )}
-        </PdfDocProvider>
-        {/* page=弃用位（F-02 动态锚定）；挂载盒=稳定包装盒（N4）；F-SL：onSaved
-            闭包捕获渲染帧 paperId（与 SelectionLayer props.paperId 同源同帧），
-            store 按其寻址——保存 await 窗内切 tab 不生幽灵标注 */}
-        <SelectionLayer pageRoot={selectionMount} paperId={paperId} page={0} onSaved={(a) => addAnnotation(paperId, a)} />
-      </div>
-      <p className="sr-only">{`共 ${totalPages} 页，当前第 ${page + 1} 页，标注 ${annotations.length} 条`}</p>
-    </div>
-  )
-
+  // 装配渲染（空态引导/主区/工具栏+目录——ReaderPageView，[F-SPLIT-01] 拆件）
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <TabBar />
-      <ReaderToolbar page={page} totalPages={totalPages} zoom={zoom} color={color}
-        onNavigate={setPage} onZoom={setZoom} onColor={setColor} onFitWidth={fitWidth}
-        selectionMode={selectionMode}
-        onToggleSelectionMode={() => {
-          useReaderStore.getState().setSelectionMode(!selectionMode)
-        }}
-        pageLayout={pageLayout}
-        pageStep={pageLayout === 'double' ? 2 : 1}
-        onTogglePageLayout={() => {
-          useReaderStore.getState().setPageLayout(pageLayout === 'double' ? 'single' : 'double')
-        }}
-        searchBox={searchBox} />
-      <div className="flex min-h-0 flex-1">
-        {outlineOpen ? (
-          // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点
-          <SplitPane paneId="reader-outline" side="left" defaultWidth={224} min={160} max={480}
-            children={{
-              pane: <OutlineAside pdfDoc={pdfDoc} onCollapse={() => setOutlineOpen(false)} />,
-              main: null
-            }} />
-        ) : (
-          <button type="button" className="shrink-0 self-start border-b border-r px-1 py-2 text-xs"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={() => setOutlineOpen(true)}>
-            目录
-          </button>
-        )}
-        {mainContent}
-      </div>
-    </div>
+    <ReaderPageView paperId={paperId} tabStatus={tab?.status} page={page} totalPages={totalPages} zoom={zoom} color={color}
+      selectionMode={selectionMode} pageLayout={pageLayout} annotations={annotations} columnScroll={columnScroll} searchBox={searchBox}
+      pdfDoc={pdfDoc} outlineOpen={outlineOpen} setOutlineOpen={setOutlineOpen} scrollAreaRef={scrollAreaRef} spProg={spProg}
+      selectionMount={selectionMount} setSelectionMount={setSelectionMount} fileUrl={fileUrl} setTotalPages={setTotalPages}
+      setPdfDoc={setPdfDoc} handleColumnReady={handleColumnReady} handlePdfError={handlePdfError} fitWidth={fitWidth}
+      setPage={setPage} setZoom={setZoom} setColor={setColor} addAnnotation={addAnnotation} />
   )
 }

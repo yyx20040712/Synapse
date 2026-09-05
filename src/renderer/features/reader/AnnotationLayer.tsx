@@ -13,11 +13,12 @@
  *   存量渐净；resolved 产物已过挂 A，幂等无害）
  * - 打开文档/翻页时三层编排重锚（[F-A8 门2] 项几何主链→DOM 回退→存量兜底
  *   ——annotation-resolve-layered 域；仅显示不回写库；MutationObserver+rAF 合并）
- * - 点击标注：弹四选项菜单（AnnotationMenu：复制引文→剪贴板+失败 toast；删除→
- *   confirm→api.reader.deleteAnnotation；添加笔记→开批注编辑 AnnotationEditor
- *   （comment textarea，保存 api.reader.updateAnnotation）；取消收起）——点击他条
- *   标注=切目标，不残留双弹层；成功后经 reader.store.updateAnnotation/
- *   removeAnnotation 同步本地数组并回调 onChanged
+ * - 弹层块职责归 AnnotationPopups.tsx（四选项菜单+AnnotationEditor 编辑 JSX
+ *   与 saveComment/copyQuote/deleteAnnotation 动作函数；menu/editing/busy
+ *   状态归属本层不变——经 props 收值+set 函数回写；[F-SPLIT-01] 自本件拆出
+ *   2026-09-05）：复制引文→剪贴板+失败 toast；删除→confirm→api；添加笔记→
+ *   批注编辑（保存 api.reader.updateAnnotation）；点击他条标注=切目标不残留
+ *   双弹层；成功后经 reader.store 同步本地数组并回调 onChanged
  * - sortKey 由仓储层生成（"页码:页内序号"），渲染按 props 顺序即可
  *
  * ── 接口层 ──
@@ -26,7 +27,8 @@
  *
  * ── 架构层 ──
  * - 重锚根是页根内 .textLayer 容器（与 SelectionLayer 同口径）；annotation-anchor
- *   是唯一 DOM 遍历点；api 调用 + store 三方法同步在本层，AnnotationEditor 纯展示
+ *   是唯一 DOM 遍历点；api 调用+store 三方法同步随弹层动作归 AnnotationPopups
+ *   （[F-SPLIT-01] 随迁），AnnotationEditor 纯展示
  * - 色块层 pointer-events:none 仅矩形可命中——点击标注即开菜单；矩形上方能否
  *   发起文本重选由选择模式条件化（F-A3/INV-42，F-A2 根治）：常规=v1 约束
  *   保持（从矩形外起选）；选择模式=rect 穿透（拖选可在标注块上发起；rectStyle
@@ -36,36 +38,18 @@
  * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
  */
 import { useEffect, useLayoutEffect, useState } from 'react'
-import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { api, unwrap, ApiClientError } from '../../api/client'
-import { showToast } from '../../shared/ui/Toast'
+import type { Annotation } from '@shared/models/annotation'
 import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './annotation-resolve'
 import { resolveAnnotationRectsLayered } from './annotation-resolve-layered'
 import { usePageItemsStore } from './page-items.store'
 import { mergeRects } from './annotation-merge'
-import { pushUndo } from './annotation-undo'
-import { AnnotationEditor } from './AnnotationEditor'
-import { AnnotationMenu } from './AnnotationMenu'
 import { rectStyle } from './annotation-style'
 import { PAGE_LAYER_Z } from './page-layer-z'
 import { useReaderStore } from './reader.store'
-
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const UPDATE_FAILED = '标注保存失败'
-const DELETE_FAILED = '标注删除失败'
-const DELETE_CONFIRM = '删除这条标注？'
+import { AnnotationPopups, type PopupTarget } from './AnnotationPopups'
 
 /** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */
 type ResolvedRects = Record<string, ResolvedAnnotation>
-
-/** 弹层目标（连同命中矩形供定位）——菜单与编辑器互斥使用同形 */
-interface PopupTarget {
-  annotation: Annotation
-  rect: AnnotationRect
-}
-
-/** 复制失败的动作型提示（双路径共用；菜单已乐观收起，重试=重新点击标注） */
-const COPY_FAILED = '复制到剪贴板失败，可点击标注重试'
 
 export function AnnotationLayer(props: {
   annotations: Annotation[]
@@ -126,64 +110,6 @@ export function AnnotationLayer(props: {
     return () => observer.disconnect()
   }, [annotations, page, pageRoot, pageEntry])
 
-  /** 批注保存：api 成功 → store 同步 → 收起弹层 → onChanged 通知 */
-  async function saveComment(a: Annotation, comment: string): Promise<void> {
-    if (busy) {
-      return
-    }
-    setBusy(true)
-    try {
-      const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
-      const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
-      useReaderStore.getState().updateAnnotation(saved)
-      pushUndo(a.paperId, { kind: 'comment-edit', before: a })
-      useReaderStore.getState().clearTabDirty(a.paperId)
-      setEditing(null)
-      onChanged()
-    } catch (e) {
-      // 保存失败：tab 灰点置位（TABS-03 两写面之一）
-      useReaderStore.getState().markTabDirty(a.paperId)
-      showToast(e instanceof ApiClientError ? e.message : UPDATE_FAILED, 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  /** 复制引文：双路径失败 toast（同步异常/写入拒绝，INV-02 动作型）→ 收起菜单 */
-  function copyQuote(a: Annotation): void {
-    setMenu(null)
-    try {
-      void navigator.clipboard.writeText(a.quoteText).catch(() => {
-        showToast(COPY_FAILED, 'error')
-      })
-    } catch {
-      showToast(COPY_FAILED, 'error')
-    }
-  }
-
-  /** 删除：confirm 确认 → api → store 同步 → 收起（菜单/编辑器一并）→ onChanged 通知 */
-  async function deleteAnnotation(a: Annotation): Promise<void> {
-    if (busy || !window.confirm(DELETE_CONFIRM)) {
-      return
-    }
-    setBusy(true)
-    try {
-      await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
-      useReaderStore.getState().removeAnnotation(a.id)
-      pushUndo(a.paperId, { kind: 'delete', annotation: a })
-      useReaderStore.getState().clearTabDirty(a.paperId)
-      setEditing(null)
-      setMenu(null)
-      onChanged()
-    } catch (e) {
-      // 删除失败：tab 灰点置位（TABS-03 两写面之一）
-      useReaderStore.getState().markTabDirty(a.paperId)
-      showToast(e instanceof ApiClientError ? e.message : DELETE_FAILED, 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <>
       <div
@@ -219,31 +145,7 @@ export function AnnotationLayer(props: {
           ))
         )}
       </div>
-      {menu !== null && (
-        <AnnotationMenu
-          annotation={menu.annotation}
-          rect={menu.rect}
-          busy={busy}
-          onCopy={() => copyQuote(menu.annotation)}
-          onDelete={() => void deleteAnnotation(menu.annotation)}
-          onAddNote={() => {
-            setEditing(menu)
-            setMenu(null)
-          }}
-          onCancel={() => setMenu(null)}
-        />
-      )}
-      {editing !== null && (
-        <AnnotationEditor
-          key={editing.annotation.id}
-          annotation={editing.annotation}
-          rect={editing.rect}
-          busy={busy}
-          onCancel={() => setEditing(null)}
-          onSave={(comment) => void saveComment(editing.annotation, comment)}
-          onDelete={() => void deleteAnnotation(editing.annotation)}
-        />
-      )}
+      <AnnotationPopups menu={menu} editing={editing} busy={busy} setMenu={setMenu} setEditing={setEditing} setBusy={setBusy} onChanged={onChanged} />
     </>
   )
 }

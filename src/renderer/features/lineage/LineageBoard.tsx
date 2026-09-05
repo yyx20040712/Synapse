@@ -5,13 +5,15 @@
  * ── 行为层 ──
  * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父+改 core_idea）：
  *   **节点拖拽**=写 x/y 覆盖（JSON Canvas 模式——拖拽落点存库，重置
- *   自动布局=清空 x/y 的按钮动作）；**加节点**两型（从文献库添加=
- *   搜索选取 paper 建节点（paperId 绑定+title/year 取元数据默认可改）/
- *   添加主题节点=纯手工 title——「阶段分组」语义）；**加边**=源节点
- *   菜单「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有
- *   子边删除+新边添加两动作组合（UI 呈现单操作，service 两调用——
- *   树约束下改父=换父）；core_idea 编辑=textarea（负面清单红线——
- *   md 只展示不渲染同族）
+ *   自动布局=清空 x/y 的按钮动作）；**加节点**两型（从文献库添加=搜索选取
+ *   paper 建节点（paperId 绑定+title/year 取元数据默认可改）/添加主题节点=
+ *   纯手工 title——「阶段分组」语义）+core_idea 编辑=textarea（负面清单
+ *   红线——md 只展示不渲染同族）的对话框装配职责归 LineageBoardDialogs.tsx
+ *   （[F-SPLIT-01] 自本件拆出 2026-09-05，语句零改）；**加边**=源节点菜单
+ *   「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有子边删除+
+ *   新边添加两动作组合（UI 呈现单操作，service 两调用——树约束下改父=换父）
+ *   的菜单+目标选取提示职责归 LineageBoardMenu.tsx（[F-SPLIT-01] 自本件
+ *   拆出 2026-09-05，语句零改）
  * - **树约束 UI 守卫**（INV-27 消费面）：加边 to 已有父/成环/自环三
  *   拒绝路径=动作型 toast 中文 reason（**树守卫宿主=LG-01 service
  *   upsertEdge 运行时守卫**（门一 W1 闭合）——本单零守卫代码只接
@@ -52,7 +54,8 @@
  * - renderer/features/lineage 域内聚（Board 编辑层与 Canvas 渲染层
  *   分文件——组件 ≤250 行红线拆分预案：节点菜单/添加节点对话框子
  *   组件化=LineageNodeMenu/LineageAddNodeDialog/LineageEditIdeaDialog
- *   三件）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
+ *   三件+[F-SPLIT-01] 装配分组件 LineageBoardMenu/LineageBoardDialogs
+ *   两件）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
  *   禁直调 ipc/禁 Node API
  *
  * ── 生命周期层 ──
@@ -77,25 +80,9 @@ import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
 import { importLineageDraft } from './lineage-import'
 import { LineageCanvas } from './LineageCanvas'
-import { LineageNodeMenu } from './LineageNodeMenu'
-import { LineageAddNodeDialog } from './LineageAddNodeDialog'
-import { LineageEditIdeaDialog } from './LineageEditIdeaDialog'
-import { LineageTagDialog } from './LineageTagDialog'
-import { LineageManualDialogs } from './LineageManualDialogs'
 import { LineageToolbar } from './LineageToolbar'
-import type { LineageNode } from '@shared/models/lineage'
-
-/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」R2-LG12） */
-interface PendingLink {
-  source: string
-  mode: 'link' | 'reparent' | 'ref'
-}
-
-const MODE_HINT: Record<PendingLink['mode'], string> = {
-  link: '连线模式：点击目标节点（源 → 目标，目标成为子节点）',
-  reparent: '改父模式：点击新父节点',
-  ref: '参考连接模式：点击目标文献（综述 → 目标，淡灰虚线）'
-}
+import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
+import { LineageBoardDialogs } from './LineageBoardDialogs'
 
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
@@ -108,7 +95,7 @@ export function LineageBoard(props: {
   const lastWriteError = useLineageStore((s) => s.lastWriteError)
   const store = useLineageStore.getState
 
-  const [menu, setMenu] = useState<{ node: LineageNode; anchor: { x: number; y: number } } | null>(null)
+  const [menu, setMenu] = useState<MenuTarget | null>(null)
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
@@ -116,17 +103,6 @@ export function LineageBoard(props: {
   // F-LG15 人工父双对话框宿主 state（连接目标选择/管理 label+删除）
   const [manualParentId, setManualParentId] = useState<string | null>(null)
   const [manualManageId, setManualManageId] = useState<string | null>(null)
-
-  // tree 父边（kind=tree——manual 入边不算 tree 父，F-LG15：菜单「删除父连线」
-  // 仅针对 tree 边，manual 边删除走管理对话框）
-  const menuParentEdge =
-    menu === null
-      ? null
-      : edges.find((e) => e.toNode === menu.node.id && e.kind === 'tree') ?? null
-  const menuManualEdges =
-    menu === null ? [] : edges.filter((e) => e.toNode === menu.node.id && e.kind === 'manual')
-  const ideaNode = ideaNodeId === null ? null : nodes.find((n) => n.id === ideaNodeId) ?? null
-  const tagNode = tagNodeId === null ? null : nodes.find((n) => n.id === tagNodeId) ?? null
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
@@ -150,21 +126,6 @@ export function LineageBoard(props: {
         onRetrySave={() => store().retrySave()}
       />
 
-      {/* 目标选取模式提示条（连线到…/改父…激活期——R2-LG11 浅色板态：
-          白底 accent 描边，行为零变） */}
-      {pendingLink !== null && (
-        <div
-          className="absolute left-1/2 top-2 z-(--z-float) flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"
-          style={{ borderColor: 'var(--accent)', background: 'var(--panel)', color: 'var(--accent)' }}
-          data-testid="lineage-pending-link"
-        >
-          <span>{MODE_HINT[pendingLink.mode]}</span>
-          <button type="button" className="underline" onClick={() => setPendingLink(null)}>
-            取消
-          </button>
-        </div>
-      )}
-
       <LineageCanvas
         nodes={nodes}
         edges={edges}
@@ -178,72 +139,17 @@ export function LineageBoard(props: {
         }}
       />
 
-      {menu !== null && (
-        <LineageNodeMenu
-          node={menu.node}
-          parentEdge={menuParentEdge}
-          manualParentEdges={menuManualEdges}
-          anchor={menu.anchor}
-          onClose={() => setMenu(null)}
-          onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
-          onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
-          onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
-          onLinkManualParent={(id) => { setManualParentId(id); setMenu(null) }}
-          onManageManualParents={(id) => { setManualManageId(id); setMenu(null) }}
-          onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
-          onAddTag={(id) => { setTagNodeId(id); setMenu(null) }}
-          onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
-          onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}
-        />
-      )}
+      {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink 与各
+          对话框开关 state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
+          absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响） */}
+      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink}
+        setManualParentId={setManualParentId} setManualManageId={setManualManageId} setIdeaNodeId={setIdeaNodeId} setTagNodeId={setTagNodeId} />
 
-      <LineageAddNodeDialog
-        open={addOpen}
-        existingPaperIds={nodes.map((n) => n.paperId).filter((p): p is string => p !== null)}
-        onClose={() => setAddOpen(false)}
-        onAddPaper={(p) => store().addPaperNode(p)}
-        onAddTheme={(t) => store().addThemeNode(t)}
-      />
-
-      {ideaNode !== null && (
-        <LineageEditIdeaDialog
-          key={ideaNode.id}
-          open
-          node={ideaNode}
-          onClose={() => setIdeaNodeId(null)}
-          onSave={(id, idea) => store().editCoreIdea(id, idea)}
-        />
-      )}
-
-      {/* F-LG14 添加标签对话框（key 重挂载重置输入——EditIdeaDialog 同型）；
-          保存=既有 tags 合并新标签整组写（去重双保险：面板侧 includes 短路+
-          main repo 写边界单源） */}
-      {tagNode !== null && (
-        <LineageTagDialog
-          key={tagNode.id}
-          open
-          node={tagNode}
-          onClose={() => setTagNodeId(null)}
-          onSave={(id, tag) => {
-            const current = tagNode.tags ?? []
-            if (!current.includes(tag)) store().setNodeTags(id, [...current, tag])
-          }}
-        />
-      )}
-      {/* F-LG15 人工父双对话框宿主（连接目标选择/管理 label+删除——拆件
-          LineageManualDialogs；写路径收口 store.linkManualParent·
-          editManualEdgeLabel·removeEdge） */}
-      <LineageManualDialogs
-        nodes={nodes}
-        edges={edges}
-        manualParentId={manualParentId}
-        manualManageId={manualManageId}
-        onCloseParent={() => setManualParentId(null)}
-        onCloseManage={() => setManualManageId(null)}
-        onLinkManualParent={(childId, parentId, label) => store().linkManualParent(childId, parentId, label)}
-        onEditEdgeLabel={(edgeId, label) => store().editManualEdgeLabel(edgeId, label)}
-        onRemoveEdge={(edgeId) => store().removeEdge(edgeId)}
-      />
+      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——加节点两型/core_idea/标签/
+          人工父四对话框装配） */}
+      <LineageBoardDialogs nodes={nodes} addOpen={addOpen} setAddOpen={setAddOpen}
+        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} tagNodeId={tagNodeId} setTagNodeId={setTagNodeId}
+        manualParentId={manualParentId} setManualParentId={setManualParentId} manualManageId={manualManageId} setManualManageId={setManualManageId} />
     </div>
   )
 }
