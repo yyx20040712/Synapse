@@ -511,8 +511,9 @@ describe('F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）', (
     expect(labels?.[1]?.scrollTop).toBe(0)
   })
 
-  it('⑩CSS 文本锁：theme.css 含 .lineage-edge-label 声明形态（break-word/max-height/overflow hidden）+:hover 段 overflow-y auto', () => {
-    const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
+  it('⑩CSS 文本锁：theme-lineage.css 含 .lineage-edge-label 声明形态（break-word/max-height/overflow hidden）+:hover 段 overflow-y auto', () => {
+    // [F-CSS-01] 拆件再锚：边标签皮肤随脉络域迁 theme-lineage.css
+    const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8')
     // 正则锚定声明形态（[^}]* 不跨段——防注释字样救活，SET1 变异③先例）
     expect(css).toMatch(/\.lineage-edge-label\s*\{[^}]*overflow-wrap:\s*break-word[^}]*\}/)
     expect(css).toMatch(/\.lineage-edge-label\s*\{[^}]*max-height[^}]*\}/)

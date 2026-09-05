@@ -176,8 +176,9 @@ describe('windows/window-control —— frameless 窗口形状', () => {
 })
 
 describe('windows/window-control —— drag/no-drag 皮肤锁（CSS 文本断言，theme.test.ts 同型）', () => {
+  // [F-CSS-01] 拆件再锚：drag/no-drag 声明随 App 壳皮肤段迁 theme-shell.css
   const css = readFileSync(
-    fileURLToPath(new URL('../../../src/renderer/shared/theme.css', import.meta.url)),
+    fileURLToPath(new URL('../../../src/renderer/shared/theme-shell.css', import.meta.url)),
     'utf8'
   )
 

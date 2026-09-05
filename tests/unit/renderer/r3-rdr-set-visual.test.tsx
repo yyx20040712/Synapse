@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * [R3-RDR+R3-SET] 阅读器周边+设置页视觉重制 —— 渲染级断言+theme.css 材质
+ * [R3-RDR+R3-SET] 阅读器周边+设置页视觉重制 —— 渲染级断言+theme-reader.css 材质
  * 文本锁（library-cards.test 同口径：CSS 字面断言防漂移）。always-active 裸
  * describe（K3——不经 guardedDescribe 守卫）。
  *
@@ -48,7 +48,8 @@ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
 // jsdom 环境 CSS 文本读取走 cwd 相对路径（theme.test 的 URL 法仅 node 环境可用）
-const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
+// [F-CSS-01] 拆件再锚：阅读器周边+设置卡皮肤段自 theme.css 迁 theme-reader.css
+const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-reader.css'), 'utf8')
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -89,7 +90,7 @@ function makeTab(id: string): TabState {
 }
 
 describe('R3-U3 ReaderToolbar —— 玻璃浮层皮肤（装饰浓度最低：仅皮肤零布局变）', () => {
-  it('工具条根挂 rdr-toolbar 玻璃浮层类；theme.css 值面=--panel-glass+blur10+金 hairline 底缘', () => {
+  it('工具条根挂 rdr-toolbar 玻璃浮层类；theme-reader.css 值面=--panel-glass+blur10+金 hairline 底缘', () => {
     mount(
       <ReaderToolbar
         page={0}
@@ -117,7 +118,7 @@ describe('R3-U3 TabBar —— 纸面 tab+active 金 hairline 底缘', () => {
     useNotesStore.setState({ noteByPaper: {} })
   })
 
-  it('active tab 挂 rdr-tab-active 类（非 active 不挂）；theme.css 值面=纸面底+inset 金底缘', () => {
+  it('active tab 挂 rdr-tab-active 类（非 active 不挂）；theme-reader.css 值面=纸面底+inset 金底缘', () => {
     useReaderStore.setState({
       tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') },
       order: ['p-1', 'p-2'],

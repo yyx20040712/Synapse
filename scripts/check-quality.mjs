@@ -126,6 +126,17 @@ for (const f of srcFiles) {
   }
 }
 
+// 4b) [F-CSS-01] CSS 行数关卡——token/皮肤域分离防回归（theme.css 分域拆件
+//     后登记;拆件现状最大件 ~236 行,450 上限留增长余量;同 split('\n') 口径）。
+//     独立收集面：不并入 srcFiles（ts/tsx 占位/乱码扫描面不意外扩到 CSS）。
+for (const f of walk(join(root, 'src', 'renderer'), (p) => p.endsWith('.css'))) {
+  const rel = relative(root, f).replaceAll('\\', '/')
+  const lines = readFileSync(f, 'utf-8').split('\n').length
+  if (lines > 450) {
+    violations.push(`${rel}: CSS 文件 ${lines} 行超上限 450（分域拆件——token/皮肤域分离）`)
+  }
+}
+
 // 5) 分层方向（解析后绝对路径判断——ESLint glob 分不清 shared/ipc 契约与 main/ipc 层）
 //    services 不得 import main/ipc；db 不得 import services / main/ipc
 const layerRules = [

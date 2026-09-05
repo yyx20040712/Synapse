@@ -27,6 +27,26 @@ const libCss = readFileSync(
   fileURLToPath(new URL('../../../src/renderer/features/library/library.css', import.meta.url)),
   'utf8'
 )
+/** [F-CSS-01] theme.css 分域拆件（2026-09-05）——四皮肤域文件读取面（libCss
+ *  同构）：shell=App 壳（顶栏/缩放/三键/nav+reduced-motion 守卫随域驻其末）、
+ *  buttons=syn-btn 族+菱形分隔、reader=阅读器周边+设置卡、lineage=脉络
+ *  浅色严谨板。token :root/全局基座/keyframes 留守 theme.css（见上 css 面）。 */
+const shellCss = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme-shell.css', import.meta.url)),
+  'utf8'
+)
+const buttonsCss = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme-buttons.css', import.meta.url)),
+  'utf8'
+)
+const readerCss = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme-reader.css', import.meta.url)),
+  'utf8'
+)
+const lineageCss = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme-lineage.css', import.meta.url)),
+  'utf8'
+)
 
 /** [token 声明, 期望值]——css 内应含 "<token>: <value>;"（含尾分号防 --gold 匹配到 --gold-soft 系前缀） */
 const TOKENS: Array<[string, string]> = [
@@ -104,24 +124,25 @@ describe('R3-TH1 回炉 B1——Button 皮肤类防线（内联恒压类选择�
   /**
    * 联审 B1：静态皮肤住内联 style 时，内联声明在层叠上恒压任何类选择器
    * （无论特异性），挂 :hover 类=永不生效（primary 提亮 .45→.7 与 ghost
-   * 金铜 hover 曾静默失效）。修复形态=静态+hover 全迁 theme.css 类。
+   * 金铜 hover 曾静默失效）。修复形态=静态+hover 全迁皮肤类文件（F-CSS-01 起
+   * syn-btn 族住 theme-buttons.css）。
    * 本组断言锁两层：皮肤类规则存在（值面）+Button.tsx 不再用内联变体
    * 皮肤（形态面——防回退到内联）。
    */
   it('primary 静态皮肤在类规则中（CTA：inset 金 hairline .45 + 6px 切角）', () => {
-    expect(css, '.syn-btn-primary 静态类应在场').toMatch(/\.syn-btn-primary\s*\{/)
-    expect(css, 'inset 金 hairline .45（mockup CTA 静态值）').toMatch(
+    expect(buttonsCss, '.syn-btn-primary 静态类应在场（theme-buttons.css）').toMatch(/\.syn-btn-primary\s*\{/)
+    expect(buttonsCss, 'inset 金 hairline .45（mockup CTA 静态值）').toMatch(
       /\.syn-btn-primary\s*\{[^}]*rgba\(201, 168, 106, 0\.45\)/
     )
-    expect(css, '6px 切角 clip-path（定稿注意事项①）').toMatch(/\.syn-btn-primary\s*\{[^}]*clip-path/)
+    expect(buttonsCss, '6px 切角 clip-path（定稿注意事项①）').toMatch(/\.syn-btn-primary\s*\{[^}]*clip-path/)
   })
 
   it('primary hover 提亮 .45→.7 在类规则中', () => {
-    expect(css).toMatch(/\.syn-btn-primary:not\(:disabled\):hover\s*\{[^}]*rgba\(227, 201, 143, 0\.7\)/)
+    expect(buttonsCss).toMatch(/\.syn-btn-primary:not\(:disabled\):hover\s*\{[^}]*rgba\(227, 201, 143, 0\.7\)/)
   })
 
   it('ghost hover 金铜在类规则中', () => {
-    expect(css).toMatch(/\.syn-btn-ghost:not\(:disabled\):hover\s*\{[^}]*var\(--gold\)/)
+    expect(buttonsCss).toMatch(/\.syn-btn-ghost:not\(:disabled\):hover\s*\{[^}]*var\(--gold\)/)
   })
 
   it('Button.tsx 不再以变体皮肤内联压类（B1 形态锁）', () => {
@@ -143,17 +164,17 @@ describe('R2-SET1 界面缩放——CSS 文本锁（内容行缩放+PDF 页列�
    * 恢复 612×792+textLayer 对位不破坏；单独 zoom:1 无效——相乘语义）。
    */
   it('.app-content-row 缩放声明在场（--ui-scale 变量单源）', () => {
-    expect(css, '.app-content-row 类应在场（App 内容行）').toContain('.app-content-row')
+    expect(shellCss, '.app-content-row 类应在场（App 内容行——theme-shell.css）').toContain('.app-content-row')
     expect(
-      css,
+      shellCss,
       'zoom 值必须经 --ui-scale 变量（非内联）——正则锚定声明形态防注释字样救活'
     ).toMatch(/\.app-content-row\s*\{[^}]*zoom:\s*var\(--ui-scale,\s*1\);/)
   })
 
   it('[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）', () => {
-    expect(css, '页列属性选择器三态通配应在场').toContain('[data-page-column]')
+    expect(shellCss, '页列属性选择器三态通配应在场').toContain('[data-page-column]')
     expect(
-      css,
+      shellCss,
       '补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明'
     ).toMatch(/\[data-page-column\]\s*\{[^}]*zoom:\s*calc\(1 \/ var\(--ui-scale,\s*1\)\);/)
   })
@@ -179,6 +200,11 @@ describe('R2-SH2 决5——衬线消费清零+gold-night 别名退役（源码�
     expect(libCss, 'library.css 衬线消费应清零（决5 lib 年份/标题明文）').not.toContain(
       'var(--font-display)'
     )
+    // F-CSS-01：拆件后衬线消费负锚扩至四皮肤域文件（消费面随皮肤段走防回填）
+    expect(shellCss, 'theme-shell.css 衬线消费应清零').not.toContain('var(--font-display)')
+    expect(buttonsCss, 'theme-buttons.css 衬线消费应清零').not.toContain('var(--font-display)')
+    expect(readerCss, 'theme-reader.css 衬线消费应清零').not.toContain('var(--font-display)')
+    expect(lineageCss, 'theme-lineage.css 衬线消费应清零').not.toContain('var(--font-display)')
   })
 })
 
@@ -226,32 +252,64 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     ['0.08s', css, 1],
     ['0.08s', wsCss, 0],
     ['0.08s', libCss, 0],
+    ['0.08s', shellCss, 0],
+    ['0.08s', buttonsCss, 0],
+    ['0.08s', readerCss, 0],
+    ['0.08s', lineageCss, 0],
     ['0.12s', css, 1],
     ['0.12s', wsCss, 0],
     ['0.12s', libCss, 0],
+    ['0.12s', shellCss, 0],
+    ['0.12s', buttonsCss, 0],
+    ['0.12s', readerCss, 0],
+    ['0.12s', lineageCss, 0],
     ['0.14s', css, 1],
     ['0.14s', wsCss, 0],
     ['0.14s', libCss, 0],
+    ['0.14s', shellCss, 0],
+    ['0.14s', buttonsCss, 0],
+    ['0.14s', readerCss, 0],
+    ['0.14s', lineageCss, 0],
     ['0.18s', css, 1],
     ['0.18s', wsCss, 0],
     ['0.18s', libCss, 0],
+    ['0.18s', shellCss, 0],
+    ['0.18s', buttonsCss, 0],
+    ['0.18s', readerCss, 0],
+    ['0.18s', lineageCss, 0],
     ['0.2s', css, 1],
     ['0.2s', wsCss, 0],
     ['0.2s', libCss, 0],
+    ['0.2s', shellCss, 0],
+    ['0.2s', buttonsCss, 0],
+    ['0.2s', readerCss, 0],
+    ['0.2s', lineageCss, 0],
     ['0.22s', css, 1],
     ['0.22s', wsCss, 0],
     ['0.22s', libCss, 0],
+    ['0.22s', shellCss, 0],
+    ['0.22s', buttonsCss, 0],
+    ['0.22s', readerCss, 0],
+    ['0.22s', lineageCss, 0],
     ['0.3s', css, 1],
     ['0.3s', wsCss, 0],
-    ['0.3s', libCss, 0]
+    ['0.3s', libCss, 0],
+    ['0.3s', shellCss, 0],
+    ['0.3s', buttonsCss, 0],
+    ['0.3s', readerCss, 0],
+    ['0.3s', lineageCss, 0]
   ]
 
   it.each(DURATION_COUNTS)('duration 字面量 %s 消费后仅存 token 定义处（出现 %s 次）', (literal, text, expected) => {
     expect(countLiteral(text, literal)).toBe(expected)
   })
 
-  it('theme.css 禁 z-index 裸值四档（弹层 z 序收敛到 --z-* token）', () => {
+  it('主题 CSS 禁 z-index 裸值四档（弹层 z 序收敛到 --z-* token——F-CSS-01 扩四皮肤件）', () => {
     expect(css).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+    expect(shellCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+    expect(buttonsCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+    expect(readerCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+    expect(lineageCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
   })
 
   it('弹层九 tsx 禁 z-(10|20|40|50) 裸值 class（v4 变量简写形态锁）', () => {
@@ -262,15 +320,20 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(POPUP_TSX).not.toMatch(/\bz-\[\d+\]/)
   })
 
-  it('三 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3：ms 形态等价绕过全禁）', () => {
-    // 只锁声明面（增量面）：现状 \dms 实测仅 2 处注释字样（theme.css:319
-    // 「瞬态 80~120ms」/workspace.css:52「入场 160ms」），声明值全 s 形态——
-    // 注释行不含声明关键词不误咬；0.30s 等价变体主控裁定不锁（值等价不破坏
-    // 零视觉差，锁面过宽脆断言反噬——记档已知边界）
+  it('七 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3 全禁+F-CSS-01 扩四皮肤件）', () => {
+    // 只锁声明面（增量面）：现状 \dms 实测仅 2 处注释字样（theme-buttons.css
+    // 「瞬态 80~120ms」——F-CSS-01 拆件自原 theme.css:319 随迁/workspace.css:52
+    // 「入场 160ms」），声明值全 s 形态——注释行不含声明关键词不误咬；0.30s
+    // 等价变体主控裁定不锁（值等价不破坏零视觉差，锁面过宽脆断言反噬——记档
+    // 已知边界）
     const MS_DECL = /\b(transition|animation)[^;{}]*[0-9]ms/
     expect(css).not.toMatch(MS_DECL)
     expect(wsCss).not.toMatch(MS_DECL)
     expect(libCss).not.toMatch(MS_DECL)
+    expect(shellCss).not.toMatch(MS_DECL)
+    expect(buttonsCss).not.toMatch(MS_DECL)
+    expect(readerCss).not.toMatch(MS_DECL)
+    expect(lineageCss).not.toMatch(MS_DECL)
   })
 
   it('lineage 六件禁数值间距属性（inline 间距清扫到 tailwind class）', () => {

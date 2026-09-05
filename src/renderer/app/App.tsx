@@ -129,7 +129,7 @@ export function App(): JSX.Element {
   useEffect(() => {
     settingsLoad().catch(() => undefined)
   }, [settingsLoad])
-  // 数据通道单点：档位→CSS 变量（theme.css .app-content-row/[data-page-column]
+  // 数据通道单点：档位→CSS 变量（theme-shell.css .app-content-row/[data-page-column]
   // 消费——皮肤住类 B1；变量属数据通道非内联皮肤）
   useEffect(() => {
     document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
@@ -163,15 +163,15 @@ export function App(): JSX.Element {
         </div>
         <span className="app-nav-ver">v0.1</span>
         {/* R2-SH3：frameless 自绘 caption 三键（版本号 margin-left:auto 吸收
-            空隙，三键组排最右——bilibili 式；皮肤住 theme.css） */}
+            空隙，三键组排最右——bilibili 式；皮肤住 theme-shell.css） */}
         <TitleBarControls />
       </header>
       {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
           R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——header
           在行外结构性豁免（E5：caption 三键/顶栏保持系统观感）；PDF 页列在
-          theme.css [data-page-column] 反向补偿恒视觉 1.0 */}
+          theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
       <div className="app-content-row flex min-h-0 flex-1">
-        {/* R3-TH1 墨青侧栏（.app-nav 系=theme.css 誊录自 mockup）——R2-SH2
+        {/* R3-TH1 墨青侧栏（.app-nav 系=theme-shell.css 誊录自 mockup）——R2-SH2
             品牌行退役迁顶栏后，nav 首行直接起导航项 */}
         <nav className="app-nav">
           {NAV.map((item) => (

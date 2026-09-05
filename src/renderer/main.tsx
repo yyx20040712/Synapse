@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
 import { getReaderOutbox } from './features/reader/reading-time-setup'
 import './shared/theme.css'
+// [F-CSS-01] theme.css 分域拆件——import 序=原相对序（源顺序=层叠语义）：
+// token 留守件先行（@import tailwindcss+:root 必先于一切消费方），四皮肤件
+// 按原 theme.css 内段序 壳→按钮→阅读器→脉络
+import './shared/theme-shell.css'
+import './shared/theme-buttons.css'
+import './shared/theme-reader.css'
+import './shared/theme-lineage.css'
 
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('找不到 #root 挂载点')

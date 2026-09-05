@@ -21,7 +21,8 @@
  * ── 架构层 ──
  * - renderer → window.api.system.windowControl（既有机制零新面）；action 类型
  *   经 shared/ipc/schemas 单源复用（纯 type import，禁手写第二份）
- * - 皮肤住 theme.css 类（B1 教训：禁内联 style 承载交互态）
+ * - 皮肤住 theme-shell.css 类（B1 教训：禁内联 style 承载交互态——F-CSS-01
+ *   自 theme.css 拆出）
  *
  * ── 生命周期层 ──
  * - effect：get-state 拉初值（时序自包含，不依赖 did-finish-load 推送——

@@ -9,8 +9,8 @@
  * - export function DiamondRule(): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 样式全在 theme.css .lib-rule*（token 单源）；R3-LIB（筛选区|列表）与
- *   R3-U4（设置分节）复用同一语法
+ * - 样式全在 theme-buttons.css .lib-rule*（token 单源——F-CSS-01 自 theme.css
+ *   拆出）；R3-LIB（筛选区|列表）与 R3-U4（设置分节）复用同一语法
  */
 export function DiamondRule(): JSX.Element {
   return (

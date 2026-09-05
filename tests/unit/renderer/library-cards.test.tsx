@@ -51,9 +51,10 @@ import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 // jsdom 环境 import.meta.url 是 http: 协议——CSS 文本读取走 cwd 相对路径
 // （theme.test.ts 的 URL 法仅 node 环境可用）。lib-* 规则住 feature 本地
 // library.css（theme.css 500 行上限拆分，由 LibraryPage 挂载导入）；
-// .lib-rule* 三段住 theme.css（回炉 W3：R3-U4 复用依赖的共享语法位）
+// .lib-rule* 三段住 theme-buttons.css（回炉 W3 迁入共享语法位；F-CSS-01
+// 自 theme.css 二次拆件再锚）
 const css = readFileSync(join(process.cwd(), 'src/renderer/features/library/library.css'), 'utf8')
-const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
+const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-buttons.css'), 'utf8')
 
 /** 列表卡夹具：默认带年份/期刊/两标签（venue 空与 year 空由用例覆写） */
 function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummary {
@@ -223,7 +224,8 @@ describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 
   })
 
   it('菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）', () => {
-    // 回炉 W3：.lib-rule* 迁 theme.css（共享语法位——R3-U4 复用依赖）
+    // 回炉 W3：.lib-rule* 迁共享语法位（R3-U4 复用依赖;F-CSS-01 起住
+    // theme-buttons.css）
     expect(cssTheme).toMatch(/\.lib-rule-line\s*\{[^}]*min-width: 24px/)
     expect(cssTheme).toMatch(/\.lib-rule-line\s*\{[^}]*flex: 1/)
     expect(cssTheme).toMatch(/\.lib-rule-gem\s*\{[^}]*rotate\(45deg\)/)
@@ -299,7 +301,7 @@ describe('R3-LIB 回炉一（门一 3B+3W）', () => {
     expect(css).toMatch(/\.lib-card-meta\s*\{[^}]*font-size: 10\.5px/)
   })
 
-  it('W3 共享位：theme.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）', () => {
+  it('W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）', () => {
     expect(cssTheme).toMatch(/\.lib-rule-line-l\s*\{[^}]*linear-gradient\(90deg, transparent, var\(--border-gold\)\)/)
     expect(cssTheme).toMatch(/\.lib-rule-line-r\s*\{[^}]*linear-gradient\(90deg, var\(--border-gold\), transparent\)/)
     expect(cssTheme).toMatch(/\.lib-rule-gem\s*\{[^}]*background: var\(--gold\)/)

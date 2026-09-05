@@ -17,7 +17,7 @@ import type { ReactNode } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
-/** 变体皮肤=theme.css 的 .syn-btn-<variant> 类（回炉 B1：静态与 hover 必须
+/** 变体皮肤=theme-buttons.css 的 .syn-btn-<variant> 类（回炉 B1：静态与 hover 必须
  *  同层——内联 style 层叠上恒压类选择器，静态在内联+hover 挂类=hover 静默
  *  失效。防线=tests/unit/renderer/theme.test.ts B1 describe） */
 

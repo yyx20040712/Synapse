@@ -92,13 +92,13 @@ export function ReaderToolbar(props: {
     setPageInput(String(page + 1))
   }
 
-  // R3-U3 皮肤票：控件走 ghost 变体语言（theme.css .syn-btn-ghost——Button
-  // 组件同款皮肤类；不经 Button 组件因其不带 title prop，「适应宽度」禁用态
-  // title 提示属交互面零变项，保留原生 button）
+  // R3-U3 皮肤票：控件走 ghost 变体语言（theme-buttons.css .syn-btn-ghost
+  // ——Button 组件同款皮肤类；不经 Button 组件因其不带 title prop，「适应宽度」
+  // 禁用态 title 提示属交互面零变项，保留原生 button）
   const btn = 'syn-btn-ghost rounded border px-2 py-0.5 text-xs disabled:opacity-50'
 
   return (
-    // 玻璃浮层皮肤（--panel-glass+blur10+金 hairline 底缘——theme.css 单源；
+    // 玻璃浮层皮肤（--panel-glass+blur10+金 hairline 底缘——theme-reader.css 单源；
     // 文档流位置零变：纯皮肤票，F-05 滚动收敛面不扰动）
     <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-2 px-3 py-2 text-xs">
       <div className="flex items-center gap-1">

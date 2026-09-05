@@ -1,0 +1,113 @@
+/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——共享按钮域皮肤：syn-btn 变体族
+   （R3-TH1）+R3 菱形分隔线（.lib-rule*——DiamondRule 组件消费）。
+   纯迁移值零改;import 序=theme-shell.css 之后。 */
+
+/* ══ 共享 Button 变体皮肤（R3-TH1；回炉 B1：静态+hover 全迁类）══
+   B1 教训：静态皮肤住内联 style 时，内联声明层叠上恒压任何类选择器，
+   :hover 挂类=永不生效——静态与 hover 必须同层（本节均为非 @layer 规则，
+   层叠上压过 tailwind utilities 层：unlayered > layered）。
+   CTA 语法：primary=墨青+inset 金 hairline(.45 静态→hover .7 提亮，定稿
+   注意事项①)+6px 切角；ghost hover=金铜。
+   R2-UI1 增量：primary 渐变底+hover 渐变流动（background-position 平移）；
+   全族 :active=游戏钮按压反馈（色变+微缩+下沉，瞬态 80~120ms）。 */
+.syn-btn-primary {
+  background: linear-gradient(150deg, #3a76ab 0%, var(--accent) 48%, #234a6d 100%);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
+  color: #ffffff;
+  border-color: #234a6d;
+  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.45), var(--shadow-1);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition:
+    background-position var(--dur-flow) ease,
+    box-shadow var(--dur-base) ease,
+    transform var(--dur-press) ease,
+    filter var(--dur-tint) ease;
+}
+.syn-btn-primary:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.7), var(--shadow-2);
+  /* 渐变流动：hover 期渐变端点平移到亮端（R2-UI1） */
+  background-position: 100% 50%;
+}
+.syn-btn-primary:not(:disabled):active {
+  background-position: 100% 50%;
+  filter: brightness(0.88);
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 201, 143, 0.7),
+    inset 0 2px 6px rgba(11, 26, 40, 0.45);
+}
+.syn-btn-secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+  transition:
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-press) ease;
+}
+.syn-btn-secondary:not(:disabled):active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(1px) scale(0.98);
+}
+.syn-btn-danger {
+  background: var(--panel);
+  color: var(--danger);
+  border-color: var(--danger);
+  transition:
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-press) ease;
+}
+.syn-btn-danger:not(:disabled):active {
+  background: rgba(179, 64, 58, 0.12);
+  filter: brightness(0.96);
+  transform: translateY(1px) scale(0.98);
+}
+.syn-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-press) ease;
+}
+.syn-btn-ghost:not(:disabled):hover {
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+.syn-btn-ghost:not(:disabled):active {
+  color: var(--gold);
+  background: rgba(207, 174, 114, 0.3);
+  transform: scale(0.96);
+}
+
+/* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
+   筛选区|列表与详情空态、R3-U4 设置分节复用同一语法；线段 min-width 24px+
+   flex:1 窄窗防碰撞——设计定稿注意事项③）══ */
+.lib-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lib-rule-line {
+  flex: 1;
+  min-width: 24px;
+  height: 1px;
+}
+.lib-rule-line-l {
+  background: linear-gradient(90deg, transparent, var(--border-gold));
+}
+.lib-rule-line-r {
+  background: linear-gradient(90deg, var(--border-gold), transparent);
+}
+.lib-rule-gem {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
