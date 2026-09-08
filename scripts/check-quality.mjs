@@ -164,6 +164,30 @@ for (const { layer, forbids } of layerRules) {
   }
 }
 
+// 6) [F-LINT-01] C-8 全量 CSS 字号负锚——F-CSS-02 W1 通道闭合（新增 CSS
+//    自动入锚；与 theme.test.ts 七件测试锚=纵深防御，互不替代）。正则
+//    单源=受锁 theme.test.ts FS_DECL 行提取（零正则复制）；读失败/提取
+//    null/walk 零 CSS 文件=哨兵硬红（只哨工具失能态——终裁档 §0 攻击面 5）。
+//    颜色消费负锚 C-4/B-5 设计毕（终裁档 §1）因存量 61+6 真违规未清顺延
+//    F-CSS-03 颜色 token 化战役票——清理毕即落（终裁档 §5 修正终裁 1/2）。
+const themeTestPath = join(root, 'tests', 'unit', 'renderer', 'theme.test.ts')
+let fsDeclRe = null
+try {
+  const m = readFileSync(themeTestPath, 'utf-8').match(/FS_DECL = \/(.+)\/gi/)
+  if (m) fsDeclRe = new RegExp(m[1], 'gi')
+  else violations.push('哨兵：theme.test.ts FS_DECL 提取失败（match null）——哨兵正则或常量行变更（F-LINT-01 C-8）')
+} catch (e) {
+  violations.push(`哨兵：theme.test.ts 读取失败（${e.message}）——文件缺席即关卡失能（F-LINT-01 C-8）`)
+}
+const cssAll = walk(join(root, 'src'), (p) => p.endsWith('.css'))
+if (cssAll.length === 0) violations.push('哨兵：src 下 walk 零 CSS 文件——结构失能（F-LINT-01 C-8）')
+for (const f of cssAll) {
+  if (!fsDeclRe) break
+  const rel = relative(root, f).replaceAll('\\', '/')
+  const hits = readFileSync(f, 'utf-8').match(fsDeclRe) ?? []
+  if (hits.length > 0) violations.push(`${rel}: CSS 字号字面量 ${hits.length} 处（单源=--fs-* token；样例：${hits.slice(0, 3).join(' / ')}）`)
+}
+
 if (violations.length > 0) {
   console.error('quality 检查未通过：')
   for (const v of violations) console.error('  - ' + v)

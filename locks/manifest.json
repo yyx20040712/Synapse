@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-08T19:41:29.2112726Z",
+    "generatedAt":  "2026-09-08T20:49:32.2443916Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "dabcca7262bc4030908065977dc63c5d634005a54ea6c1df69b4110af7da48e1"
+                      "sha256":  "88ea5c10e1d40863bf72f0ec4b8f725bc5a24403ed74e73b5457dc0031ee4aea"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "08543f05924da0ff5ef978d51afe0ef82577106589b1edccd6096cd644f1985c"
+                      "sha256":  "b83dd4b9c27fbdd9fbbccf5ebd7f85cf59e1c56e847fb9e95f1a560c5de699d0"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
