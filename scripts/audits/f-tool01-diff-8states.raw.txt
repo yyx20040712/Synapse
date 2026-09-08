@@ -1,0 +1,59 @@
+[visual-diff-locate] 算法: 16px 块网格 / TH6=RGB 任一通道 |a-b|>6 / cnt>=4 → 差分块; 连续差分行合并为带
+[visual-diff-locate] 三坑自证: ①goto file:// 载体原源页 ②launch --allow-file-access-from-files ③全部路径 pathToFileURL（仓路径含中文）
+[visual-diff-locate] baseline=E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-out\baseline
+[visual-diff-locate] after=E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-out\after
+[visual-diff-locate] states(8)=dialog,lib,lineage-canvas,lineage-side,lineage-side-tagged,reader,settings,ws-panel
+[visual-diff-locate] 载体页就绪: file:///C:/Users/ADMINI%7E1/AppData/Local/Temp/vd-locate-rf9VzQ/carrier.html（goto file:// 原源页）
+[state] dialog 1608x1009 grid=101x64 diff-blocks=250 bands=4
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[160,352) x=[0,800) rows=12 blocks=105
+  band 4: y=[944,992) x=[0,896) rows=3 blocks=97
+[state] lib 1608x1009 grid=101x64 diff-blocks=253 bands=8
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,144) x=[0,224) rows=3 blocks=27
+  band 3: y=[160,192) x=[32,128) rows=2 blocks=12
+  band 4: y=[208,240) x=[32,112) rows=2 blocks=10
+  band 5: y=[256,304) x=[32,112) rows=3 blocks=7
+  band 6: y=[448,496) x=[240,1184) rows=3 blocks=93
+  band 7: y=[704,752) x=[240,720) rows=3 blocks=40
+  band 8: y=[944,992) x=[0,224) rows=3 blocks=28
+[state] lineage-canvas 1608x1009 grid=101x64 diff-blocks=256 bands=5
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[160,352) x=[0,800) rows=12 blocks=105
+  band 4: y=[464,480) x=[848,928) rows=1 blocks=5
+  band 5: y=[944,992) x=[0,896) rows=3 blocks=98
+[state] lineage-side 1608x1009 grid=101x64 diff-blocks=256 bands=5
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[160,352) x=[0,800) rows=12 blocks=105
+  band 4: y=[464,480) x=[848,928) rows=1 blocks=5
+  band 5: y=[944,992) x=[0,896) rows=3 blocks=98
+[state] lineage-side-tagged 1608x1009 grid=101x64 diff-blocks=256 bands=5
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[160,352) x=[0,800) rows=12 blocks=105
+  band 4: y=[464,480) x=[848,928) rows=1 blocks=5
+  band 5: y=[944,992) x=[0,896) rows=3 blocks=98
+[state] reader 1608x1009 grid=101x64 diff-blocks=135 bands=5
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[144,240) x=[0,224) rows=6 blocks=52
+  band 4: y=[256,304) x=[32,112) rows=3 blocks=7
+  band 5: y=[944,992) x=[0,224) rows=3 blocks=28
+[state] settings 1608x1009 grid=101x64 diff-blocks=137 bands=4
+  band 1: y=[16,64) x=[48,1424) rows=3 blocks=36
+  band 2: y=[96,128) x=[32,128) rows=2 blocks=12
+  band 3: y=[160,304) x=[0,224) rows=9 blocks=61
+  band 4: y=[944,992) x=[0,224) rows=3 blocks=28
+[state] ws-panel 1608x1009 grid=101x64 diff-blocks=322 bands=6
+  band 1: y=[0,192) x=[0,1424) rows=12 blocks=144
+  band 2: y=[208,240) x=[32,112) rows=2 blocks=10
+  band 3: y=[256,304) x=[32,112) rows=3 blocks=7
+  band 4: y=[448,496) x=[240,1184) rows=3 blocks=93
+  band 5: y=[704,752) x=[240,720) rows=3 blocks=40
+  band 6: y=[944,992) x=[0,224) rows=3 blocks=28
+[visual-diff-locate] 汇总: 8 态 / 42 差分带 / JSON=E:\class\智慧水务\Synapse_remake\scripts\audits\visual-diff-report.json
+[visual-diff-locate] 完成（带=定位输出非判定——对位归调用方，见头注三件套语境）
+exit=0

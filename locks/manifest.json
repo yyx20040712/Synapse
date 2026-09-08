@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-08T16:05:41.2217614Z",
+    "generatedAt":  "2026-09-08T19:06:37.3649843Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -288,6 +288,10 @@
                   {
                       "path":  "scripts/audits/v11-accept.mjs",
                       "sha256":  "d0f1c067be37fffda084f990f682c64fb79ed135bb2169054586de500c57de45"
+                  },
+                  {
+                      "path":  "scripts/audits/visual-diff-locate.mjs",
+                      "sha256":  "3b4aabe452593facca2e916f6e42e1ca7be3dc94502368e603292353eea80ff5"
                   },
                   {
                       "path":  "scripts/check-locks.mjs",

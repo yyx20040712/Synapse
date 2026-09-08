@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "tool": "scripts/audits/visual-diff-locate.mjs",
+    "date": "2026-09-08T19:10:24.772Z",
+    "algorithm": {
+      "blockPx": 16,
+      "threshold": "RGB 任一通道 |a-b|>6",
+      "minDiffPixels": 4
+    },
+    "baselineDir": "E:\\class\\智慧水务\\Synapse_remake\\scripts\\audits\\p7d01-out\\baseline",
+    "afterDir": "E:\\class\\智慧水务\\Synapse_remake\\scripts\\audits\\p7d01-out\\baseline",
+    "states": [
+      "dialog",
+      "lib",
+      "lineage-canvas",
+      "lineage-side",
+      "lineage-side-tagged",
+      "reader",
+      "settings",
+      "ws-panel"
+    ]
+  },
+  "states": {
+    "dialog": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "lib": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "lineage-canvas": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "lineage-side": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "lineage-side-tagged": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "reader": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "settings": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    },
+    "ws-panel": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
+    }
+  }
+}

@@ -1,0 +1,19 @@
+=== 回炉 2 终态代码负例六支全量（2026-09-09 03:00:16）===
+--- neg1 无参（期望 exit 2）
+[visual-diff-locate][FAIL] 用法: node scripts/audits/visual-diff-locate.mjs <baselineDir> <afterDir> [s1,s2,...] [--json f] | --crop <state>,<x>,<y>,<w>,<h> [--out f]
+neg1_noargs exit=2
+--- neg2 态缺文件（期望 exit 2）
+[visual-diff-locate][FAIL] baseline 缺 nosuchstate.png（目录 E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-out\baseline）
+neg2_missing_state exit=2
+--- neg3 差分尺寸不等（期望 exit 1；after 目录含 194px reader.png）
+[visual-diff-locate][FAIL] 态 reader 两图尺寸不等: baseline=1608x1009 after=1608x194（对比前提破坏）
+neg3_diff_size_mismatch exit=1
+--- neg4 目录参数传 PNG 文件路径（期望 exit 2 不是目录）
+[visual-diff-locate][FAIL] baseline 不是目录（传了文件路径?）: scripts/audits/p7d01-out/baseline/lib.png
+neg4_dir_is_file exit=2
+--- neg5 crop 尺寸不等（B-1 验证，期望 exit 1）
+[visual-diff-locate][FAIL] crop 两图尺寸不等: baseline=1608x1009 after=1608x194（对比前提破坏）
+neg5_crop_size_mismatch exit=1
+--- neg6 .png 改名文本文件（页内加载失败，实测落码如实记）
+    at img.onerror (eval at evaluate (:311:30), <anonymous>:5:29)
+neg6_fake_png exit=2

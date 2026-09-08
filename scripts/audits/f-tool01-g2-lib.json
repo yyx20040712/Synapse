@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "tool": "scripts/audits/visual-diff-locate.mjs",
+    "date": "2026-09-08T19:10:31.421Z",
+    "algorithm": {
+      "blockPx": 16,
+      "threshold": "RGB 任一通道 |a-b|>6",
+      "minDiffPixels": 4
+    },
+    "baselineDir": "E:\\class\\智慧水务\\Synapse_remake\\scripts\\audits\\p7d01-out\\baseline",
+    "afterDir": "E:\\class\\智慧水务\\Synapse_remake\\scripts\\audits\\p7d01-out\\after",
+    "states": [
+      "lib"
+    ]
+  },
+  "states": {
+    "lib": {
+      "width": 1608,
+      "height": 1009,
+      "gridW": 101,
+      "gridH": 64,
+      "diffBlocks": 253,
+      "bandCount": 8,
+      "bands": [
+        {
+          "y": [
+            16,
+            64
+          ],
+          "x": [
+            48,
+            1424
+          ],
+          "rows": 3,
+          "blocks": 36
+        },
+        {
+          "y": [
+            96,
+            144
+          ],
+          "x": [
+            0,
+            224
+          ],
+          "rows": 3,
+          "blocks": 27
+        },
+        {
+          "y": [
+            160,
+            192
+          ],
+          "x": [
+            32,
+            128
+          ],
+          "rows": 2,
+          "blocks": 12
+        },
+        {
+          "y": [
+            208,
+            240
+          ],
+          "x": [
+            32,
+            112
+          ],
+          "rows": 2,
+          "blocks": 10
+        },
+        {
+          "y": [
+            256,
+            304
+          ],
+          "x": [
+            32,
+            112
+          ],
+          "rows": 3,
+          "blocks": 7
+        },
+        {
+          "y": [
+            448,
+            496
+          ],
+          "x": [
+            240,
+            1184
+          ],
+          "rows": 3,
+          "blocks": 93
+        },
+        {
+          "y": [
+            704,
+            752
+          ],
+          "x": [
+            240,
+            720
+          ],
+          "rows": 3,
+          "blocks": 40
+        },
+        {
+          "y": [
+            944,
+            992
+          ],
+          "x": [
+            0,
+            224
+          ],
+          "rows": 3,
+          "blocks": 28
+        }
+      ]
+    }
+  }
+}
