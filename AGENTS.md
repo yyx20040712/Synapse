@@ -155,6 +155,12 @@ development Model Selection+loop-engineering references/06）；**架构与
 - staging 一律显式列文件（或先 `git status` 核对未跟踪面）——`git add -A <目录>`
   会扫入未跟踪残留（2026-08-26 scripts/audits 误扫实录）；提交后勿复打 log
   （工具已回显，超长 message 双倍上下文成本）。
+- **scripts/audits 留档三桶口径**（2026-09-05 F-AUDIT-01 终裁，此后常态）：
+  ①证据件（raw/md/json/patch/diff——含简报/报告/门审档/verify 与变异输出）
+  **随收口提交显式列入库**；②`*out*` 探针数据目录不入库——`.gitignore
+  ` `scripts/audits/*out*/` 目录形态已拦（尾斜杠目录匹配，closeout 文件名
+  免疫；已跟踪历史件不受影响）；③mutation backup 副本禁驻留（变异还原毕
+  即删——源文件 cp 副本留档=冗余面）。收口毕 `git status` 未跟踪面应为零。
 - 中文一律 UTF-8；Windows 下写文件后验证可读。
 
 ### 明确不做（v1 负面清单——防止顺手实现）
