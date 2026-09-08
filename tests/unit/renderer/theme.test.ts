@@ -103,7 +103,15 @@ const TOKENS: Array<[string, string]> = [
   ['--z-float', '10'],
   ['--z-anchor-pop', '20'],
   ['--z-pop-veil', '40'],
-  ['--z-pop', '50']
+  ['--z-pop', '50'],
+  // ── P7D-01 批二：字号六档语义刻度（用户裁决 2026-09-08——docs/design/
+  //    2026-09-08_p7d01-b2-fontscale-ruling.md；负锚见批二 describe）──
+  ['--fs-micro', '10px'],
+  ['--fs-caption', '11px'],
+  ['--fs-body', '12px'],
+  ['--fs-strong', '13px'],
+  ['--fs-title', '14px'],
+  ['--fs-display', '17px']
 ]
 
 describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
@@ -375,5 +383,72 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(readSrc('../../../src/renderer/features/lineage/LineageSideManualNote.tsx')).toContain(
       'pl-1.5'
     )
+  })
+})
+
+describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 重绑锁）', () => {
+  /**
+   * 批二迁移（用户裁决 2026-09-08——docs/design/2026-09-08_p7d01-b2-fontscale-
+   * ruling.md）：font-size 消费面 30 处硬编码→6 个 --fs-* token（13 处值变化=
+   * 裁决预期非缺陷+17 处仅换载体零视觉差）；tailwind text-xs×131/text-sm×25 经
+   * v4 @theme 重绑并入单源（arbitrary 值 text-[10px] 不受重绑——tsx 面单改
+   * var 载体）。
+   * 负锚口径注记（与批一 DURATION_COUNTS 的差异）：px 是通用长度单位
+   * （padding/radius/border 同值并存——实测 theme.css '12px' 现状 1 次为
+   * --radius-m 定义行，皮肤件非 font-size 声明同值多见），纯文本计数必误咬；
+   * 故负锚锚定「font-size: <字面量>;」声明形态（七 CSS 全 0），token 定义行
+   * 由 TOKENS 六正锚独立锁定——防护语义等价（定义正锚+消费负锚）。
+   */
+  const wsFsCss = readFileSync(
+    fileURLToPath(new URL('../../../src/renderer/features/workspaces/workspace.css', import.meta.url)),
+    'utf8'
+  )
+  const FS_CSS: Array<[string, string]> = [
+    ['theme.css', css],
+    ['theme-shell.css', shellCss],
+    ['theme-buttons.css', buttonsCss],
+    ['theme-reader.css', readerCss],
+    ['theme-lineage.css', lineageCss],
+    ['library.css', libCss],
+    ['workspace.css', wsFsCss]
+  ]
+  const FS_LITERALS = [
+    '9.5px', '10px', '10.5px', '11px', '11.5px', '12px',
+    '12.5px', '13px', '13.5px', '14px', '15px', '17px'
+  ]
+  const FS_COUNTS: Array<[string, string, string]> = FS_CSS.flatMap(([name, text]) =>
+    FS_LITERALS.map((lit) => [lit, name, text] as [string, string, string])
+  )
+  const FS_TSX = [
+    '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
+    '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
+    '../../../src/renderer/features/lineage/LineageSideTags.tsx',
+    '../../../src/renderer/features/reader/TabBar.tsx'
+  ]
+    .map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
+    .join('\n')
+
+  it.each(FS_COUNTS)(
+    'font-size 声明字面量 %s 在 %s 消费后归零（字号单源=--fs-* token）',
+    (lit, name, text) => {
+      const decl = new RegExp(`font-size:\\s*${lit.replaceAll('.', '\\.')}\\s*;`, 'g')
+      expect((text.match(decl) ?? []).length, `${name} 禁 font-size: ${lit} 字面量回填`).toBe(0)
+    }
+  )
+
+  it('四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）', () => {
+    expect(FS_TSX, '票面明文形态：单引号数字开头').not.toContain("fontSize: '1")
+    expect(FS_TSX, '数值 fontSize 全形态（含无引号数字——SideTags fontSize: 11 形态）')
+      .not.toMatch(/fontSize:\s*['"`]?\d/)
+  })
+
+  it('四 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）', () => {
+    expect(FS_TSX, '票面明文形态：text-[10 前缀').not.toContain('text-[10')
+    expect(FS_TSX, '数字开头 arbitrary（# 开头色值不咬）').not.toMatch(/text-\[\d/)
+  })
+
+  it('@theme 重绑在场（tailwind text-xs/text-sm 并入 --fs-* 单源——漂移即红）', () => {
+    expect(css).toContain('--text-xs: var(--fs-body)')
+    expect(css).toContain('--text-sm: var(--fs-title)')
   })
 })

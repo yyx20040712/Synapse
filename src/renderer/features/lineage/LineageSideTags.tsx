@@ -17,7 +17,7 @@ const SIDE_TAG_CHIP: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   borderRadius: 3,
-  fontSize: 11,
+  fontSize: 'var(--fs-caption)',
   color: 'var(--danger)',
   background: 'rgba(179, 64, 58, 0.08)',
   border: '1px solid rgba(179, 64, 58, 0.25)'

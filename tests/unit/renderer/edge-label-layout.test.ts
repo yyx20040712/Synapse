@@ -17,9 +17,9 @@ import { fitViewport } from '../../../src/renderer/features/lineage/lineage-view
 import type { LayoutResult } from '../../../src/renderer/features/lineage/lineage-layout'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 
-/** 放置器档距（票面：lh=12.35=37.05/3 行行高） */
-const LH = 12.35
-/** 碰撞盒间隙（票面：gap 4——盒宽=est+4/盒高=37.05+4） */
+/** 放置器档距（P7D-01 批二回炉：lh=13=39/3 行行高——字号 9.5→10 耦合族随迁） */
+const LH = 13
+/** 碰撞盒间隙（票面：gap 4——盒宽=est+4/盒高=39+4） */
 const GAP = 4
 
 /** 标签碰撞盒（中心+半宽高——与实现同口径，供相交断言） */
@@ -36,10 +36,10 @@ function disjoint(
 }
 
 describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
-  it('①估算宽度：CJK 9.5/字、其余 4.75/字、+左右 padding 4、钳 130、空串 0', () => {
+  it('①估算宽度：CJK 10/字、其余 5/字、+左右 padding 4、钳 130、空串 0（批二回炉估宽基准随迁）', () => {
     // 码点 >0x2E80 计全宽（CJK 统表/扩展/全角标点——主控口径，头注声明）
-    expect(estimateLabelWidth('中中')).toBe(23) // 4 + 2×9.5
-    expect(estimateLabelWidth('中a')).toBe(18.25) // 4 + 9.5 + 4.75
+    expect(estimateLabelWidth('中中')).toBe(24) // 4 + 2×10
+    expect(estimateLabelWidth('中a')).toBe(19) // 4 + 10 + 5
     // 60 拉丁=4+285=289 → 钳 130
     expect(estimateLabelWidth('a'.repeat(60))).toBe(EDGE_LABEL_MAX_W)
     // 空 label 不渲染（既有语义）——碰撞盒零宽
@@ -52,7 +52,7 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
       { id: 'e2', label: '二'.repeat(40), anchor: { x: 0, y: 0 } }
     ]
     const m = placeEdgeLabels(items, [])
-    // 两盒（w=130+4 钳制满宽）不相交：竖移 ≥(41.05+41.05)/2 → 首自由位 +4lh
+    // 两盒（w=130+4 钳制满宽）不相交：竖移 ≥(43+43)/2 → 首自由位 +4lh
     expect(disjoint(labelBox(m.get('e1')!, items[0]!.label), labelBox(m.get('e2')!, items[1]!.label))).toBe(true)
     for (const it of items) {
       // 偏移序封顶 ±10lh（回炉 1 R1：±5lh 实测不足——真库锚在节点中心需 |dy|≥~85）
@@ -65,7 +65,7 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
       { id: 'e1', label: '一'.repeat(40), anchor: { x: 0, y: 0 } },
       { id: 'e2', label: '二'.repeat(40), anchor: { x: 0, y: 0 } }
     ]
-    // nodeHeight 100 档节点盒（半高 50）：外扩 6 后 96×56——|dy|≥76.525 才分离
+    // nodeHeight 100 档节点盒（半高 50）：外扩 6 后 96×56——|dy|≥77.5 才分离
     const nodeBoxes = [{ x: 0, y: 0, hw: 90, hh: 50 }]
     const m = placeEdgeLabels(items, nodeBoxes)
     const box = { x: 0, y: 0, hw: 96, hh: 56 }
@@ -79,14 +79,18 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
   })
 
   it('③标签与节点盒相交：按确定性偏移序搜到自由位——结果与节点盒（外扩 6）不相交且离开锚点', () => {
+    // 批二回炉估宽随迁适配：基准 9.5→10 使 '说明文字' 估宽 42→44（hw 23→24），
+    // dx 第三档 |x|=80 对旧 hw 50 盒由撞（78<79）翻转为分离（80≥80）——dy=0
+    // 档即命中自由位、「y 偏移已发生」前提失效；节点盒 hw 50→52（外扩 58）
+    // 恢复 dy=0 全档相撞触发条件，断言面不放宽（not 0+disjoint 原样）。
     const items = [{ id: 'e1', label: '说明文字', anchor: { x: 0, y: 0 } }]
-    // 节点盒中心在锚上方 40（hw 50/hh 20）：anchor 档 y 相交（触发偏移搜索）
-    const nodeBoxes = [{ x: 0, y: -40, hw: 50, hh: 20 }]
+    // 节点盒中心在锚上方 40（hw 52/hh 20）：anchor 档 y 相交（触发偏移搜索）
+    const nodeBoxes = [{ x: 0, y: -40, hw: 52, hh: 20 }]
     const m = placeEdgeLabels(items, nodeBoxes)
     const slot = m.get('e1')!
     expect(slot.y).not.toBe(0) // 偏移已发生（非原位硬放）
     // 外扩 6 后的节点盒与结果碰撞盒分离（用户保证①核心断言）
-    expect(disjoint(labelBox(slot, items[0]!.label), { x: 0, y: -40, hw: 56, hh: 26 })).toBe(true)
+    expect(disjoint(labelBox(slot, items[0]!.label), { x: 0, y: -40, hw: 58, hh: 26 })).toBe(true)
   })
 
   it('③b单标签锚在 100 高节点盒中心：移出（dy=0 档 dx 第二档 ±166 分离或 dy 跨盒——回炉 1 R1）', () => {
@@ -112,7 +116,7 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
   it('⑤全候选位被占：回 anchor（best effort——节点盒铺满 ±10lh×dx 两档包络，回炉 1 重设计）', () => {
     const items = [{ id: 'e1', label: '长'.repeat(40), anchor: { x: 0, y: 0 } }]
     // 满宽标签（w=134/dx 档 ±83/±166）包络：x 域 ±(166+67)=±233、y 域
-    // ±(10lh+20.525)=±144 ——环绕大盒 hw 250/hh 155（外扩 256×161）全覆盖
+    // ±(10lh+21.5)=±151.5 ——环绕大盒 hw 250/hh 155（外扩 256×161）全覆盖
     const nodeBoxes = [{ x: 0, y: 0, hw: 250, hh: 155 }]
     expect(placeEdgeLabels(items, nodeBoxes).get('e1')).toEqual({ x: 0, y: 0 })
   })

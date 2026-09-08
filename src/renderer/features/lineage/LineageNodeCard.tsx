@@ -50,7 +50,7 @@ import { LineageNodeMeta } from './LineageNodeMeta'
 const TITLE_STYLE = {
   flex: 1,
   minHeight: 0,
-  fontSize: '12.5px',
+  fontSize: 'var(--fs-body)',
   lineHeight: '18px',
   color: 'var(--text)',
   overflowY: 'auto',
@@ -144,7 +144,7 @@ export function LineageNodeCard(props: {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px',
+              fontSize: 'var(--fs-body)',
               color: 'var(--text-dim)'
             }}
           >

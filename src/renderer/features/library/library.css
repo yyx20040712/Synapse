@@ -97,7 +97,7 @@
 .lib-card-year {
   flex: none;
   min-width: 44px;
-  font-size: 17px;
+  font-size: var(--fs-display);
   color: var(--gold);
 }
 /* 空年份 ◆（回炉 R3）：9px 淡金菱形占位，year 槽 min-width 44px 保对齐 */
@@ -111,7 +111,7 @@
 }
 .lib-card-title {
   min-height: 38px;
-  font-size: 14px;
+  font-size: var(--fs-title);
   line-height: 1.45;
   font-weight: 600;
   display: -webkit-box;
@@ -122,7 +122,7 @@
 .lib-card-venue {
   display: block;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -133,7 +133,7 @@
   margin-top: 9px;
 }
 .lib-tag {
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   color: var(--accent);
   background: var(--accent-soft);
   border-radius: 6px;
@@ -141,7 +141,7 @@
 }
 .lib-card-tagmore {
   align-self: center;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   color: var(--text-dim);
 }
 .lib-card-meta {
@@ -149,13 +149,13 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 9px;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
 /* 筛选 chips：搜索框/下拉统一胶囊语法（mockup .chip/.search） */
 .lib-chip {
-  font-size: 12px;
+  font-size: var(--fs-body);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -208,17 +208,17 @@
   min-height: 160px;
 }
 .lib-detail-title {
-  font-size: 15px;
+  font-size: var(--fs-title);
   font-weight: 500;
   line-height: 1.5;
 }
 .lib-detail-k {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--fs-caption);
   letter-spacing: 1px;
 }
 .lib-detail-v-serif {
-  font-size: 15px;
+  font-size: var(--fs-title);
   color: var(--gold);
 }
 .lib-detail-abs {

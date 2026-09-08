@@ -29,7 +29,7 @@ export function formatMetricsText(m: LineagePaperMetrics | null | undefined): st
 /** 标签小块样式（红示意：红字小片——用户图7「红小块」） */
 const TAG_CHIP_STYLE = {
   flexShrink: 0,
-  fontSize: '10px',
+  fontSize: 'var(--fs-micro)',
   lineHeight: '16px',
   borderRadius: 3,
   color: 'var(--danger)',

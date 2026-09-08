@@ -13,7 +13,7 @@
  *   INV-36/38 只读消费）；恰好接触（间距=半和）不算重叠（严格 < 判相交）。
  * - est 宽度偏差（latin 0.5em 近似）由 gap 4px+渲染 FO 恒 130 吸收——碰撞
  *   盒略窄于实际时重叠 ≤ 数 px 的残差，声明容差不修。
- * - dy ∈ 0,+lh,−lh,…±10lh（lh=12.35=37.05/3 行行高，±123.5/20 档）；同档
+ * - dy ∈ 0,+lh,−lh,…±10lh（lh=13=39/3 行行高，±130/20 档）；同档
  *   dx ∈ 0,−(w/2+16),+(w/2+16),−(w/2+16)×2,+(w/2+16)×2。**包络=回炉 1 R1
  *   实测依据**（f-l1c-verify.json）：nodeHeight 100 档半高 50+外扩 6+标签
  *   半高 18.5+gap → 锚在节点中心需 |dy|≥~85 或 dx≥~163，原 ±5lh=61.75/
@@ -26,10 +26,10 @@
  */
 /** 标签渲染盒恒宽（渲染 FO 恒上限尺寸——短标签透明空区无视觉影响） */
 export const EDGE_LABEL_MAX_W = 130
-/** 标签渲染盒恒高（3 行 × 9.5px × 1.3 行高） */
-export const EDGE_LABEL_H = 37.05
+/** 标签渲染盒恒高（3 行 × 10px × 1.3 行高——P7D-01 批二回炉：字号 9.5→10 耦合族随迁） */
+export const EDGE_LABEL_H = 39
 /** 放置器档距（先竖移的步长=单行行高） */
-const LH = 12.35
+const LH = 13
 /** 碰撞盒间隙 */
 const GAP = 4
 /** 节点盒外扩（标签与节点卡之间的呼吸距） */
@@ -37,8 +37,8 @@ const NODE_PAD = 6
 
 /**
  * 标签估宽（只用于碰撞盒——渲染 FO 恒 130 宽，窄标签碰撞盒窄=放置更自然）：
- * 码点 >0x2E80 计全宽 9.5px/字（口径：覆盖 CJK 统表/扩展/全角标点——
- * CJK 部首 0x2E80 起全数计入），其余半宽 4.75px/字；+左右 padding 合计 4；
+ * 码点 >0x2E80 计全宽 10px/字（口径：覆盖 CJK 统表/扩展/全角标点——
+ * CJK 部首 0x2E80 起全数计入），其余半宽 5px/字；+左右 padding 合计 4；
  * 钳 ≤130。空串=0（空 label 不渲染，碰撞盒零宽）。
  */
 export function estimateLabelWidth(label: string): number {
@@ -46,7 +46,7 @@ export function estimateLabelWidth(label: string): number {
   if (label === '') return 0
   let w = 4
   for (const ch of label) {
-    w += ch.codePointAt(0)! > 0x2e80 ? 9.5 : 4.75
+    w += ch.codePointAt(0)! > 0x2e80 ? 10 : 5
   }
   return Math.min(w, EDGE_LABEL_MAX_W)
 }

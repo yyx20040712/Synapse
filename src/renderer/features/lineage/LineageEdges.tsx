@@ -10,9 +10,9 @@
  *   （kind=manual，F-LG15）=var(--manual-edge) 1.4 虚线 7 5（琥珀长虚线——
  *   与 tree 实线/ref 点线三方色型双区分）。glow filter 全撤（浅色板）。
  * - **边 label=F-L1-C 变体 C 窄幅注释**（案册定稿 2026-08-30 用户裁决）：
- *   foreignObject 恒 130×37.05（EDGE_LABEL_MAX_W/H 单源——渲染盒恒上限，
+ *   foreignObject 恒 130×39（EDGE_LABEL_MAX_W/H 单源——渲染盒恒上限，
  *   短标签透明空区无视觉影响，FO pointerEvents none）内 HTML div
- *   `lineage-edge-label`（皮肤类驻 theme.css：9.5px 斜体 #6b7280 白晕
+ *   `lineage-edge-label`（皮肤类驻 theme.css：10px 斜体 #6b7280 白晕
  *   text-shadow；自然换行 break-word+max-height 3 行+overflow hidden——
  *   真实溢出内容承载滚动语义）+title 全文 tooltip（U2a 同款）。
  *   锚点=props.slots 槽位（Canvas 从 edge-label-layout 放置器算入，

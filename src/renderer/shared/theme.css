@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* P7D-01 批二：tailwind 字号类并入 --fs-* 单源（v4 @theme 重绑——text-xs×131
+   =--fs-body / text-sm×25=--fs-title,零逐处改写;arbitrary 值 text-[10px]
+   不受重绑,消费面按清单改 var 载体。用户裁决 2026-09-08——docs/design/
+   2026-09-08_p7d01-b2-fontscale-ruling.md） */
+@theme {
+  --text-xs: var(--fs-body);
+  --text-sm: var(--fs-title);
+}
+
 /* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
    token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
    lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
@@ -45,6 +54,14 @@
   --z-anchor-pop: 20;  /* 页内锚定弹层（阅读器标注菜单/编辑器） */
   --z-pop-veil: 40;    /* 弹层透明捕捉层（菜单 backdrop） */
   --z-pop: 50;         /* 弹层主体（模态/toast/菜单面板） */
+  /* ── 字号六档语义刻度（P7D-01 批二：用户裁决 2026-09-08——docs/design/
+     2026-09-08_p7d01-b2-fontscale-ruling.md;消费面禁字面量,INV-61）── */
+  --fs-micro: 10px;    /* 极小（脉络边标签/侧栏版本号/tab 关闭钮） */
+  --fs-caption: 11px;  /* 注脚（卡片 meta/图例/侧板节标系） */
+  --fs-body: 12px;     /* 正文基准（text-xs 同锚） */
+  --fs-strong: 13px;   /* 强调（nav 主字/侧板标题系） */
+  --fs-title: 14px;    /* 标题（详情标题/顶栏应用名,text-sm 同锚） */
+  --fs-display: 17px;  /* 展示（卡片衬线年份） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #1b2333;
   --ink-hi: #232d44;

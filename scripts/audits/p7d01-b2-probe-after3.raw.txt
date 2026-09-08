@@ -1,0 +1,10 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+electronApplication.firstWindow: Target page, context or browser has been closed
+    at E:\class\智慧水务\Synapse_remake\scripts\audits\p7d01-visual-probe.mjs:203:22 {
+  log: []
+}
+
+Node.js v24.20.0

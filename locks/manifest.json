@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-05T01:01:02.1980857Z",
+    "generatedAt":  "2026-09-08T16:05:41.2217614Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "4c0e7bc1cd764f6fdecebe6f91a36e545f030b89de7b1f639d414e458fefa291"
+                      "sha256":  "af55aa69ae6dea03736d4b659c609349094db1cf78fae3e61728495aecbfc899"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -707,7 +707,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/edge-label-layout.test.ts",
-                      "sha256":  "95444216a7b010f5a486efa5cb4bf1d67ecca6c91c4f18d29e645a2f713b3da8"
+                      "sha256":  "fff2bfb6c41f577239ab07123996941af39fce3c4b43045d2598286e8799e316"
                   },
                   {
                       "path":  "tests/unit/renderer/import-drag-ui.test.tsx",
@@ -727,7 +727,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "e74d54afa082dccc5314a687a26fa6dfe0b529062be0d417ca1f3826024e8ee9"
+                      "sha256":  "84a3817b929ed177992f813db5489d57125069888f9e8dc59b670a18ce5d6390"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
@@ -735,7 +735,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
-                      "sha256":  "08dce970a185bb7ebff4ef2340c2d7439e1fb8ff2463c81347c68d7caafde0e0"
+                      "sha256":  "5c778a72e306c585a2c458d5f6c194440dc882135c39f938216a7cc1cd61f72e"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-canvas-visual.test.tsx",
@@ -947,7 +947,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "9312e70b0a01d79a1ae969717d915ce663352e82faf98f0030dd606604045115"
+                      "sha256":  "639651636327f79105e71f476a9e03d86f1c164e8ec667a8675ab3d53a9eb986"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

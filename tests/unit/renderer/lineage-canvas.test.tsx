@@ -450,7 +450,7 @@ describe('F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）', (
     return { nodes, edges: [e1, e2] }
   }
 
-  it('⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×37.05+title 全文 tooltip', () => {
+  it('⑦标签渲染形态：foreignObject 内 HTML div（class lineage-edge-label）+FO 恒 130×39+title 全文 tooltip', () => {
     const g = widePair()
     mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
     const label = host?.querySelector('[data-edge-label]')
@@ -459,7 +459,7 @@ describe('F-L1-C 边标签（变体 C 换行+防重叠放置+悬停滚动）', (
     // FO 恒上限尺寸（主控预裁 1：短标签透明空区免 est 偏差裁字）
     const fo = label?.closest('foreignObject')
     expect(fo?.getAttribute('width')).toBe('130')
-    expect(fo?.getAttribute('height')).toBe('37.05')
+    expect(fo?.getAttribute('height')).toBe('39')
     expect(label?.getAttribute('title')).toBe('谱'.repeat(40))
   })
 

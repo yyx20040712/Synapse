@@ -293,12 +293,16 @@ describe('R3-LIB 回炉一（门一 3B+3W）', () => {
     expect(css).toMatch(/\.lib-chip-on\s*\{[^}]*border-color: var\(--accent\)/)
   })
 
-  it('R1+R2 材质微调：dropzone 透明底落纸面；题名 14px/600、venue 11px、meta 10.5px', () => {
+  // P7D-01 批二（token 化配套——实现者自裁申报）：字号断言载体字面量→
+  // var(--fs-*)（title 14/venue 11 值不变零视觉差；meta 10.5→11=caption 档
+  // 用户裁决变化面）——值面锚随迁 theme.test.ts TOKENS 六正锚+FS 负锚矩阵；
+  // 本断言强度不放宽（逐类逐属性 toMatch 同构）。
+  it('R1+R2 材质微调：dropzone 透明底落纸面；题名 fs-title/600、venue/meta fs-caption（批二 token 化,meta 10.5→11 裁决变化）', () => {
     expect(css).toMatch(/\.lib-dropzone\s*\{[^}]*background: transparent/)
-    expect(css).toMatch(/\.lib-card-title\s*\{[^}]*font-size: 14px/)
+    expect(css).toMatch(/\.lib-card-title\s*\{[^}]*font-size: var\(--fs-title\)/)
     expect(css).toMatch(/\.lib-card-title\s*\{[^}]*font-weight: 600/)
-    expect(css).toMatch(/\.lib-card-venue\s*\{[^}]*font-size: 11px/)
-    expect(css).toMatch(/\.lib-card-meta\s*\{[^}]*font-size: 10\.5px/)
+    expect(css).toMatch(/\.lib-card-venue\s*\{[^}]*font-size: var\(--fs-caption\)/)
+    expect(css).toMatch(/\.lib-card-meta\s*\{[^}]*font-size: var\(--fs-caption\)/)
   })
 
   it('W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）', () => {
