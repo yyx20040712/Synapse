@@ -82,6 +82,13 @@ registry 现存 2 open：**F-A8**（门 3 观察期——真机使用证据未�
   图像回 CDN URL 时 analyze_image 目检上下两半「几乎一致」——最终裁定
   靠 drawImage 目标坐标代码语义推演（y=0 vs y=h+2 铁证）。**代码语义
   确定性>视觉相似性判断**,图像验证是辅助不是终审。
+- **git add 显式列表禁 2>/dev/null 吞错+add 后核对 index 面再 commit**
+  （F-LINT-01 收口补提交案）：列表含不存在文件名→git add 整条 fatal
+  被吞→四核心文件（C-8 段/INV-11/registry/manifest）静默漏出提交
+  3b03d2a4cd,两提交后 git status 才暴露；补提交=已验证终态零新改动
+  （f-lint01-closeout-verify.raw.txt exit=0）。「staging 显式列文件」
+  纪律补半步：**add 后 `grep '^M \|^A '` 核对 index 面与预期清单一致
+  再 commit**——commit 回显的 files changed 数与预期文件数对不上即停。
 
 ## 5. 环境事实滚动
 
