@@ -1,0 +1,5 @@
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用
