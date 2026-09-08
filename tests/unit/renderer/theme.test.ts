@@ -393,11 +393,18 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
    * 裁决预期非缺陷+17 处仅换载体零视觉差）；tailwind text-xs×131/text-sm×25 经
    * v4 @theme 重绑并入单源（arbitrary 值 text-[10px] 不受重绑——tsx 面单改
    * var 载体）。
-   * 负锚口径注记（与批一 DURATION_COUNTS 的差异）：px 是通用长度单位
-   * （padding/radius/border 同值并存——实测 theme.css '12px' 现状 1 次为
-   * --radius-m 定义行，皮肤件非 font-size 声明同值多见），纯文本计数必误咬；
-   * 故负锚锚定「font-size: <字面量>;」声明形态（七 CSS 全 0），token 定义行
-   * 由 TOKENS 六正锚独立锁定——防护语义等价（定义正锚+消费负锚）。
+   * 负锚口径注记（F-CSS-02 升级 2026-09-09+回炉 1 补 calc 载体通道——正则
+   * 全域形态）：px 是通用长度单位（padding/radius/border 同值并存——纯
+   * 文本计数必误咬，批二教训），故负锚不锚文本计数而锚「font-size 声明
+   * 值段内任意 数字+单位 字面量」正则全域归零——/font-size:[^;{}]*
+   * [\d.]+\s*[a-z%]/gi：[^;{}]* 不跨声明界（;/{/} 即停）而值段中缀扫全，
+   * calc/clamp/min/max 载体内字面量（如 calc(12px + var(--fs-body))）同拦
+   * 而无单位乘算（calc(var(--fs-body) * 2)）不误咬；数字后任意单位首字符
+   * 即拦（px/pt/em/rem/% 全覆盖）；i 防大写变体绕过；不依赖尾分号（块末
+   * 声明合法无分号形态同拦）——较批二字面量枚举矩阵闭合其漏通道（新值/
+   * 无分号/大小写/非 px 单位/calc 载体——五通道）；var(--fs-*) 载体不误咬
+   * 前提=六 token 名全字母无数字且无 fallback 字面量；token 定义行由
+   * TOKENS 六正锚独立锁定——防护语义等价（定义正锚+消费负锚）。
    */
   const wsFsCss = readFileSync(
     fileURLToPath(new URL('../../../src/renderer/features/workspaces/workspace.css', import.meta.url)),
@@ -412,13 +419,10 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
     ['library.css', libCss],
     ['workspace.css', wsFsCss]
   ]
-  const FS_LITERALS = [
-    '9.5px', '10px', '10.5px', '11px', '11.5px', '12px',
-    '12.5px', '13px', '13.5px', '14px', '15px', '17px'
-  ]
-  const FS_COUNTS: Array<[string, string, string]> = FS_CSS.flatMap(([name, text]) =>
-    FS_LITERALS.map((lit) => [lit, name, text] as [string, string, string])
-  )
+  /** 任意「数字+单位」font-size 字面量（值段中缀全域——calc/clamp/min/max
+   *  载体内同拦，[^;{}]* 不跨 ;/{} 声明界；g 全域计数+i 大小写不敏感+无
+   *  分号依赖；match 带 g 不受 lastIndex 跨用例污染） */
+  const FS_DECL = /font-size:[^;{}]*[\d.]+\s*[a-z%]/gi
   const FS_TSX = [
     '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
     '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
@@ -428,13 +432,10 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
     .map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
     .join('\n')
 
-  it.each(FS_COUNTS)(
-    'font-size 声明字面量 %s 在 %s 消费后归零（字号单源=--fs-* token）',
-    (lit, name, text) => {
-      const decl = new RegExp(`font-size:\\s*${lit.replaceAll('.', '\\.')}\\s*;`, 'g')
-      expect((text.match(decl) ?? []).length, `${name} 禁 font-size: ${lit} 字面量回填`).toBe(0)
-    }
-  )
+  it.each(FS_CSS)('%s 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）', (name, text) => {
+    const hits = text.match(FS_DECL) ?? []
+    expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)
+  })
 
   it('四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）', () => {
     expect(FS_TSX, '票面明文形态：单引号数字开头').not.toContain("fontSize: '1")

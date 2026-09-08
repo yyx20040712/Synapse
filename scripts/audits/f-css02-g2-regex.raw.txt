@@ -1,0 +1,15 @@
+src/renderer/shared/theme.css: hits=0
+src/renderer/shared/theme-shell.css: hits=0
+src/renderer/shared/theme-buttons.css: hits=0
+src/renderer/shared/theme-reader.css: hits=0
+src/renderer/shared/theme-lineage.css: hits=0
+src/renderer/features/library/library.css: hits=0
+src/renderer/features/workspaces/workspace.css: hits=0
+"font-size:13.5px}" bite=true expectBite=true => OK
+"font-size: calc(12px + var(--fs-body))" bite=true expectBite=true => OK
+"font-size: var(--fs-body)" bite=false expectBite=false => OK
+"font-size: calc(var(--fs-body) * 2)" bite=false expectBite=false => OK
+"font: 12px/1.5 serif" bite=false expectBite=false => OK
+"font-size: 0" bite=false expectBite=false => OK
+"font-size : 12px" bite=false expectBite=false => OK
+exit=0
