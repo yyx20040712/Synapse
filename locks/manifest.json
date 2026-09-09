@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T14:13:07.4651054Z",
+    "generatedAt":  "2026-09-09T14:13:50.4888099Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -140,6 +140,22 @@
                   {
                       "path":  "scripts/audits/f-a8-gate1-page.mjs",
                       "sha256":  "d3a1a7897373aae469b91c0f7653f5e03d820f366419694e88a9980d67a5402d"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a9-canvas.mjs",
+                      "sha256":  "78d994c82d95f1ab9505d96243e2cd36ceeb29ea50862fa65a9d0efbecb0ab14"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a9-diag.mjs",
+                      "sha256":  "ed821bf7b8fad5dfa794de7ad3162ccc2a781981128a524e557761c20f5c5002"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a9-real.mjs",
+                      "sha256":  "778b1eb925217b79036713af50f62b3ef59fcfd93ecae599a6d986c8000ffaf0"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a9-verify-real.mjs",
+                      "sha256":  "89052e9cc6371adc1010819141f3f69bd2d90d898f974255597567a35d9637f7"
                   },
                   {
                       "path":  "scripts/audits/f-d4-gen-gate1-brief.mjs",
@@ -732,6 +748,10 @@
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
                       "sha256":  "2e3222a22213953064494636b5c96450683cbaf8e11d984bc3bf46a35a1a07f6"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/band-calibration.test.tsx",
+                      "sha256":  "15d8fdbe5df52474d93a3f8287fafc4405614aa780ce13b79086837c98acae85"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",

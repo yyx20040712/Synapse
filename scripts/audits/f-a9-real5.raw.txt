@@ -1,0 +1,170 @@
+UNDERLINE_RECTS [
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 514.3375244140625,
+  "bottom": 516.3375244140625,
+  "height": 2,
+  "left": 1289.362548828125,
+  "width": 235.40000915527344,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 524.7625122070312,
+  "bottom": 526.7625122070312,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.96250915527344,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 535.25,
+  "bottom": 537.25,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9375,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 549.2250366210938,
+  "bottom": 551.2250366210938,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9375,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 556.1625366210938,
+  "bottom": 558.1625366210938,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9499969482422,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 566.5875244140625,
+  "bottom": 568.5875244140625,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.96250915527344,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 577.0625,
+  "bottom": 579.0625,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9375,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 587.4874877929688,
+  "bottom": 589.4874877929688,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.96250915527344,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 597.9750366210938,
+  "bottom": 599.9750366210938,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.96250915527344,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 608.4000244140625,
+  "bottom": 610.4000244140625,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9499969482422,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 618.8875122070312,
+  "bottom": 620.8875122070312,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9499969482422,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 629.3125,
+  "bottom": 631.3125,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.91250610351562,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 639.7999877929688,
+  "bottom": 641.7999877929688,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.97500610351562,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 650.2250366210938,
+  "bottom": 652.2250366210938,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.9250030517578,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 660.7000122070312,
+  "bottom": 662.7000122070312,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 250.97500610351562,
+  "label": "标注： systematic literature review was conduct"
+ },
+ {
+  "id": "02fc848c-f",
+  "source": "item",
+  "top": 671.1375122070312,
+  "bottom": 673.1375122070312,
+  "height": 2,
+  "left": 1273.8499755859375,
+  "width": 124.67500305175781,
+  "label": "标注： systematic literature review was conduct"
+ }
+]
+UNDERLINE_NEAR_SPANS [
+ {
+  "text": "Material and method",
+  "top": 490.4875183105469,
+  "bottom": 498.46251821517944,
+  "height": 7.974999904632568,
+  "left": 1286.0125732421875,
+  "width": 80.46777343

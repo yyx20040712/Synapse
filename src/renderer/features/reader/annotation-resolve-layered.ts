@@ -50,6 +50,7 @@ import {
   type ResolvedAnnotation,
   type RowBand
 } from './annotation-resolve'
+import { calibrateBands, spanBoxesOf } from './annotation-band-calibrate'
 import {
   itemSelectionGeometry,
   reconcileItemsWithDom,
@@ -124,7 +125,16 @@ export function resolveAnnotationRectsLayered(args: {
 }): Record<string, ResolvedAnnotation> {
   const { textLayer, annotations, page, entry } = args
   if (entry !== null && reconcileItemsWithDom(entry.text.items, fullTextOf(textLayer))) {
-    return markSource(resolveAnnotationRectsItem(entry, annotations, page), 'item')
+    // [F-A9] 标注带垂直几何渲染时刻校准（方案 A——DOM span 盒实测一次共享逐条
+    // 匹配；量测退化/窗不命中=派生 band 原样——underline 低位切字消）
+    const base = { x: 0, y: 0, w: entry.box.w, h: entry.box.h }
+    const spans = spanBoxesOf(textLayer)
+    const item = resolveAnnotationRectsItem(entry, annotations, page)
+    const calibrated: Record<string, ResolvedAnnotation> = {}
+    for (const [id, v] of Object.entries(item)) {
+      calibrated[id] = { ...v, bands: spans === null ? v.bands : calibrateBands(spans, v.bands, base) }
+    }
+    return markSource(calibrated, 'item')
   }
   if (entry !== null) {
     warn(`第 ${page + 1} 页 items/DOM 文本对账失败——S4 DOM 回退层接管`)
@@ -174,6 +184,8 @@ export function resolveAiNotesLayered(args: {
     const viewport = itemViewportOf(entry)
     if (Number.isFinite(viewport.scale) && viewport.scale > 0) {
       const base = { x: 0, y: 0, w: entry.box.w, h: entry.box.h }
+      // [F-A9] AI 段带渲染时刻校准材料（DOM span 盒一次量测——逐段共享）
+      const spans = spanBoxesOf(textLayer)
       for (const n of notes) {
         if (n.quoteText.length === 0) {
           continue
@@ -198,7 +210,7 @@ export function resolveAiNotesLayered(args: {
           })
           if (geo !== null) {
             out.rects[n.id] = geo.rects
-            out.bands[n.id] = geo.bands
+            out.bands[n.id] = spans === null ? geo.bands : calibrateBands(spans, geo.bands, base)
             out.source[n.id] = 'item'
           }
         } catch {

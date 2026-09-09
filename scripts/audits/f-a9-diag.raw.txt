@@ -1,0 +1,45 @@
+{
+  "spanInfo": [
+    {
+      "text": "SMART WATER TEST DOC",
+      "top": 184.03750610351562,
+      "bottom": 202.03750610351562,
+      "height": 18,
+      "left": 607.1625366210938,
+      "width": 229.0173797607422,
+      "font": "18px sans-serif",
+      "lh": "18px"
+    },
+    {
+      "text": "SECOND LINE SAMPLE",
+      "top": 208.03750610351562,
+      "bottom": 226.03750610351562,
+      "height": 18,
+      "left": 607.1625366210938,
+      "width": 200.0634765625,
+      "font": "18px sans-serif",
+      "lh": "18px"
+    }
+  ],
+  "paintInfo": [
+    {
+      "top": 185.46250915527344,
+      "bottom": 203.45001029968262,
+      "height": 17.98750114440918,
+      "left": 653,
+      "width": 125.95000457763672
+    }
+  ],
+  "underInfo": [
+    {
+      "top": 201.46250915527344,
+      "bottom": 203.46250915527344,
+      "height": 2,
+      "left": 653,
+      "width": 125.95000457763672,
+      "kind": "0728fd9c",
+      "source": "item"
+    }
+  ],
+  "warns": []
+}

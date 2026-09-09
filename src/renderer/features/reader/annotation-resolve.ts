@@ -53,13 +53,17 @@ import { itemSelectionGeometry, type ItemViewport } from './pdf-item-geometry'
 import type { PageItemEntry } from './page-items.store'
 
 /** 行簇字形带（归一化域；center=带中心——渲染块匹配键；x0/x1=行簇 span
- *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测） */
+ *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测；
+ *  calTop/calBottom [F-A9]=渲染时刻 textLayer span 盒实测校准值（方案 A
+ *  ——annotation-band-calibrate 注入；缺省=无校准材料回退派生值） */
 export interface RowBand {
   top: number
   bottom: number
   center: number
   x0?: number
   x1?: number
+  calTop?: number
+  calBottom?: number
 }
 
 /** 重锚结果（id → { rects, bands, source }；缺项回退存量 rects 由消费方兜底）。
@@ -109,7 +113,10 @@ export function bandFromMetrics(
 }
 
 /** 渲染块 → 最近中心带（|Δcenter| ≤ rect.h 才匹配；bands 空→undefined；
- *  返回含 x0/x1（在场时）——F-A5 a 面自绘块水平界夹取源） */
+ *  返回含 x0/x1（在场时）——F-A5 a 面自绘块水平界夹取源。
+ *  [F-A9] cal 域在场 → 返回 top/bottom 替换为校准值（渲染时刻 DOM span 校准
+ *  ——annotation-band-calibrate 注入；**匹配仍按派生 center**——校准位移不
+ *  参与行归属判定=错绑零风险；cal 缺席 → 派生值原样=回退语义零变） */
 export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { top: number; bottom: number; x0?: number; x1?: number } | undefined {
   if (bands === undefined || bands.length === 0) {
     return undefined
@@ -122,7 +129,7 @@ export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { to
     }
   }
   return best !== null && Math.abs(best.center - c) <= r.h
-    ? { top: best.top, bottom: best.bottom, x0: best.x0, x1: best.x1 }
+    ? { top: best.calTop ?? best.top, bottom: best.calBottom ?? best.bottom, x0: best.x0, x1: best.x1 }
     : undefined
 }
 

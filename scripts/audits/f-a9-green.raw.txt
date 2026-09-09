@@ -1,0 +1,12 @@
+
+ [32m✓[39m tests/unit/renderer/band-calibration.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[90m 79[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 20:04:37
+[2m   Duration [22m 1.65s[2m (transform 142ms, setup 0ms, collect 443ms, tests 79ms, environment 596ms, prepare 174ms)[22m
+
+[2m      Tests [22m [1m[32m1028 passed[39m[22m[90m (1028)[39m
+[2m   Start at [22m 20:04:40
+[2m   Duration [22m 33.31s[2m (transform 12.60s, setup 0ms, collect 48.98s, tests 12.79s, environment 431.80s, prepare 56.33s)[22m
+

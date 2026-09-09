@@ -1,0 +1,148 @@
+copied entries: ai-sensor, Dictionaries, Local State, Local Storage, Network, Preferences, Session Storage, settings.json, SharedStorage, synapse.db.copy-shm, synapse.db.copy-wal, window-state.json, workspace.json, workspaces
+workspace pointer exists: true
+{
+  "spans": [
+    {
+      "text": "FORUM",
+      "top": 173.85000610351562,
+      "bottom": 187.82500648498535,
+      "height": 13.975000381469727,
+      "left": 1238.8250732421875,
+      "width": 51.213478088378906,
+      "font": "13.97px sans-serif",
+      "lh": "13.97px"
+    },
+    {
+      "text": "Johannes von Kries and the History of Wa",
+      "top": 240.52500915527344,
+      "bottom": 258.4875087738037,
+      "height": 17.962499618530273,
+      "left": 1030.800048828125,
+      "width": 467.32275390625,
+      "font": "17.96px sans-serif",
+      "lh": "17.96px"
+    },
+    {
+      "text": "Arris S. Tijsseling",
+      "top": 274.82501220703125,
+      "bottom": 284.800012588501,
+      "height": 9.975000381469727,
+      "left": 1001,
+      "width": 77.78926086425781,
+      "font": "9.98px sans-serif",
+      "lh": "9.98px"
+    },
+    {
+      "text": "Lecturer, Dept. of Mathematics and Compu",
+      "top": 287.9750061035156,
+      "bottom": 296.45000648498535,
+      "height": 8.475000381469727,
+      "left": 1001,
+      "width": 251.4689483642578,
+      "font": "8.48px serif",
+      "lh": "8.48px"
+    },
+    {
+      "text": "of Technology, P.O. Box 513, 5600 MB Ein",
+      "top": 298.1875,
+      "bottom": 306.6625003814697,
+      "height": 8.475000381469727,
+      "left": 1001,
+      "width": 242.4114227294922,
+      "font": "8.48px serif",
+      "lh": "8.48px"
+    },
+    {
+      "text": "Alexander Anderson",
+      "top": 321.1499938964844,
+      "bottom": 331.1249942779541,
+      "height": 9.975000381469727,
+      "left": 1001,
+      "width": 90.9566421508789,
+      "font": "9.98px sans-serif",
+      "lh": "9.98px"
+    },
+    {
+      "text": "Senior Lecturer, School of Mechanical an",
+      "top": 334.3000183105469,
+      "bottom": 342.7750186920166,
+      "height": 8.475000381469727,
+      "left": 1001,
+      "width": 251.4734344482422,
+      "font": "8.48px serif",
+      "lh": "8.48px"
+    },
+    {
+      "text": "of Newcastle upon Tyne, Newcastle NE1 7R",
+      "top": 344.4375,
+      "bottom": 352.9125003814697,
+      "height": 8.475000381469727,
+      "left": 1001,
+      "width": 182.8224639892578,
+      "font": "8.48px serif",
+      "lh": "8.48px"
+    },
+    {
+      "text": "Introduction",
+      "top": 380.3999938964844,
+      "bottom": 390.3749942779541,
+      "height": 9.975000381469727,
+      "left": 1001,
+      "width": 58.209571838378906,
+      "font": "9.98px sans-serif",
+      "lh": "9.98px"
+    },
+    {
+      "text": "Water hammer in pipe systems encompasses",
+      "top": 404.4750061035156,
+      "bottom": 413.95000648498535,
+      "height": 9.475000381469727,
+      "left": 1001,
+      "width": 251.68077087402344,
+      "font": "9.48px serif",
+      "lh": "9.48px"
+    },
+    {
+      "text": "ena familiar to engineers, including",
+      "top": 415.63751220703125,
+      "bottom": 425.112512588501,
+      "height": 9.475000381469727,
+      "left": 1001,
+      "width": 136.74649047851562,
+      "font": "9.48px serif",
+      "lh": "9.48px"
+    },
+    {
+      "text": " ",
+      "top": 415.63751220703125,
+      "bottom": 425.112512588501,
+      "height": 9.475000381469727,
+      "left": 1137.5999755859375,
+      "width": 2.4375,
+      "font": "9.48px serif",
+      "lh": "9.48px"
+    },
+    {
+      "text": "\u0001",
+      "top": 415.01251220703125,
+      "bottom": 424.487512588501,
+      "height": 9.475000381469727,
+      "left": 1140.4749755859375,
+      "width": 9.487500190734863,
+      "font": "9.48px monospace",
+      "lh": "9.48px"
+    },
+    {
+      "text": "1",
+      "top": 415.63751220703125,
+      "bottom": 425.112512588501,
+      "height": 9.475000381469727,
+      "left": 1143.6624755859375,
+      "width": 4.474999904632568,
+      "font": "9.48px serif",
+      "lh": "9.48px"
+    }
+  ],
+  "anns": [],
+  "spanCount": 1281
+}

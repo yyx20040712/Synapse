@@ -1,0 +1,12 @@
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 5 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 matchBand —— cal 域替换（匹配键仍派生 center）[2m > [22mcal 在场：返回 top/bottom=校准值；匹配按派生 center（rect 绑正确行不受校准位移干扰）
+[31m[1mAssertionError[22m: expected 0.17929292929292928 to be close to 0.17954545454545454, received difference is 0.00025252525252525415, but expected 5e-7[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 标注链挂载 —— AnnotationLayer（underline 低位切字/灰带偏移消）[2m > [22m小字号 β 形态：highlight 带 y=行盒顶/高=行盒高（calTop=114.2/792=14.4192%、高 8/792=1.0101%）
+[31m[1mAssertionError[22m: expected 14.3939 to be close to 14.41919191919192, received difference is 0.025291919191920087, but expected 0.0005[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 标注链挂载 —— AnnotationLayer（underline 低位切字/灰带偏移消）[2m > [22m小字号 β 形态：underline=底缘下 2px 细条（top=calc(15.4293% − 2px)=span 行盒底上 2px）
+[31m[1mAssertionError[22m: expected 'calc(15.0126% - 2px)' to be 'calc(15.4293% - 2px)' // Object.is equality[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 标注链挂载 —— AnnotationLayer（underline 低位切字/灰带偏移消）[2m > [22m大字号（18px，f-a9-diag 形态）不回退：校准=span 行盒值（top 13.1566%——非派生 13.3333%）
+[31m[1mAssertionError[22m: expected 13.3333 to be close to 13.156565656565657, received difference is 0.17673434343434202, but expected 0.0005[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 预览链挂载 —— SelectionLayer（img1 灰预览带偏移消）[2m > [22mpaint 块垂直=校准行盒（top 10.8880%/height 1.0101%）；落库 rects=派生域零变（INV-58 前半）
+[31m[1mAssertionError[22m: expected 10.8586 to be close to 10.883838383838384, received difference is 0.025238383838384948, but expected 0.0005[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (10)[39m

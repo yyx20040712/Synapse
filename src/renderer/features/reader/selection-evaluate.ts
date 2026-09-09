@@ -72,6 +72,7 @@ import { showToast } from '../../shared/ui/Toast'
 import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './annotation-anchor'
 import { bandsForTextNodes, type RowBand } from './annotation-resolve'
+import { calibrateBandsWithSpans } from './annotation-band-calibrate'
 import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './pdf-item-geometry'
 import type { ItemSelectionGeometry } from './pdf-item-geometry'
 import { usePageItemsStore } from './page-items.store'
@@ -246,7 +247,9 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       setPaint(null)
       return
     }
-    setPaint({ root: anchorRoot!, rects: item.rects, bands: item.bands })
+    // [F-A9] 预览带垂直几何渲染时刻校准（方案 A——DOM span 盒实测；量测退化/
+    // 窗不命中=派生 band 原样，img1 灰带偏移消）
+    setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
   }
 
   /** 全量（settle/mouseup 路——现行逻辑零变，visualOnly 仅剩快路径回退一个活调用方） */
@@ -302,7 +305,8 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       return
     }
     if (item !== null) {
-      setPaint({ root: anchorRoot!, rects: item.rects, bands: item.bands })
+      // [F-A9] 同 visual 快路径——预览带渲染时刻校准（快慢两路同款=INV-58 快慢等价保持）
+      setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
     } else {
       const range = findRangeAtOffset(textLayer, anchor.start, anchor.end)
       setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })

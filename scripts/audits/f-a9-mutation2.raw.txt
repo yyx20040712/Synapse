@@ -1,0 +1,12 @@
+=== M2 水平窗删右界臂（g.left < x1Px 删）===
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 纯几何 —— calibrateBandsWithSpans（窗口+回退零变）[2m > [22m水平不重叠（span 在 band 水平域外）→ cal 缺席
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (12)[39m
+=== M3 垂直窗删下界臂（cy > bottomPx 删——门一示例形态[边界>=/阈值<=0]经查对既有断言无判别力[无边界值/半像素夹具]，取同面等效形态=删臂）===
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 纯几何 —— calibrateBandsWithSpans（窗口+回退零变）[2m > [22m窗口不命中（span 中心域外——受锁 item-chain 夹具形态）→ cal 域缺席（项链产物零变）
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (12)[39m
+=== M4 删域一致防御（BASE_MISMATCH 检查短路）——证 C3 域错配用例判别力 ===
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/band-calibration.test.tsx[2m > [22mF-A9 纯几何 —— calibrateBandsWithSpans（窗口+回退零变）[2m > [22m[C3] 域错配回退：量测盒宽与渲染 base 差 >1px（620 vs 612）→不校准（cal 缺席原样——域错配=回退非错校）
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (12)[39m
