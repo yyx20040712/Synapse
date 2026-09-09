@@ -105,3 +105,12 @@ org-delta.jsonl 首行）。三段通道全程在档（scripts/audits/2026-09-10
 +smoke/r2 证据件）：Kimi 咨询→Kimi 设计书→deepseek 审核 5B/5W/3N→主控终裁
 全数采纳并实现。**§2 八票执行序不受影响**；派发器 v2 回归 R1~R6 全量执行=
 独立验证窗（ai-dev-org v1.0 冻结前置），Kimi 额度紧张时以 §2 票面优先。
+
+**同窗追加（在场轮续）**：技能增件三批——skill-gc.mjs（技能目录清理，
+已修 ai-sensor 坏件+归档删重定向页）/补岗两枚（设计岗+SRE 诊断岗，
+07/06 修订 v1.1）/references/08 文档群治理件+WaterPrint 适配任务书
+（waterprint/.workflow/adapt-brief-ai-dev-org-2026-09-10.md）——08 与适配书
+经 Kimi+deepseek 双源审查两轮回炉至「22/22 ADDRESSED+有条件放行、条件
+全落实」（档=scripts/audits/2026-09-10_doc-gov-* 九件；四次审查派发均走
+ds-call-v2 --role auditor-readonly=角色档案链路首次实战，role_sig 恒
+de7c6402）。
