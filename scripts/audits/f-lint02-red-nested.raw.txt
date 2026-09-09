@@ -1,0 +1,15 @@
+dup-constants：扫描 216 文件 / 141 声明 / 11 跨文件同值组
+  [baseline 待收敛] ACTION_FAILED = '操作失败' ×3 文件（src/renderer/features/library/usePaperDetailActions.ts, src/renderer/features/reader/AiNotesStatus.tsx, src/renderer/features/settings/ZcodeLinkSection.tsx）
+  [baseline 待收敛] COLUMN_GAP_H_FACTOR = 1.5 ×2 文件（src/renderer/features/reader/annotation-anchor.ts, src/renderer/features/reader/pdf-item-geometry.ts）
+  [baseline 待收敛] COLUMN_GAP_PAGE_RATIO = 0.02 ×2 文件（src/renderer/features/reader/annotation-anchor.ts, src/renderer/features/reader/pdf-item-geometry.ts）
+  [baseline 待收敛] btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50' ×2 文件（src/renderer/features/reader/AnnotationEditor.tsx, src/renderer/features/reader/AnnotationMenu.tsx）
+  [baseline 待收敛] STATUS_POLL_MS = 5000 ×2 文件（src/renderer/features/reader/AiNotesStatus.tsx, src/renderer/features/settings/ZcodeLinkSection.tsx）
+  [baseline 待收敛] TAG_OP_FAILED = '标签操作失败' ×2 文件（src/renderer/features/tags/TagEditor.tsx, src/renderer/features/tags/tags.store.ts）
+  [baseline 待收敛] ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5' ×2 文件（src/renderer/features/lineage/LineageNodeMenu.tsx, src/renderer/features/tags/TagLifecycleMenu.tsx）
+  [baseline 待收敛] OP_FAILED = '操作失败' ×4 文件（src/renderer/features/settings/SettingsPage.tsx, src/renderer/features/settings/UiScaleSection.tsx, src/renderer/features/workspaces/WorkspaceSection.tsx, src/renderer/features/workspaces/WorkspaceSwitcher.tsx）
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '操作失败'（7 声明 / 7 文件：ACTION_FAILED / OP_FAILED）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：SAVE_FAILED / UPDATE_FAILED）
+B-2 副产物：未 export 字面量 const 83 处（DUP_CONSTANTS_B2=1 展开清单）
+dup-constants 检查通过：红层 8 组 baseline 待收敛（F-LINT-03 候选）/ warn 3 组不卡 CI
+exit=0

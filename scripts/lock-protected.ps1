@@ -17,7 +17,8 @@ function Get-ProtectedFiles {
     Where-Object { $_.FullName -notmatch '\\node_modules\\|\\out\\|\\dist\\|\\coverage\\' }
   foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
       'playwright.config.ts', 'electron.vite.config.ts',
-      'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json')) {
+      'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
+      'scripts/dup-constants.baseline.json')) {
     $p = Join-Path $root $cfg
     if (Test-Path $p) { $files += Get-Item $p }
   }

@@ -38,6 +38,9 @@ function protectedFiles() {
     join(root, 'tsconfig.json'),
     join(root, 'tsconfig.node.json'),
     join(root, 'tsconfig.web.json'),
+    // [F-LINT-02] baseline 棘轮防绕过（终裁 §3）：scripts/*.json 不在 walk 自动面，
+    // 单文件显式登记——baseline 变更必经 [locked-change] 人类审查位
+    join(root, 'scripts', 'dup-constants.baseline.json'),
     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
   ].filter((p) => existsSync(p))
   return [...new Set(files)].sort()

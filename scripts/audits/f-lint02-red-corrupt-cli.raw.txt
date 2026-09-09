@@ -1,0 +1,16 @@
+dup-constants 告警：scripts/dup-constants.baseline.json 解析失败按空 baseline 处理——检查文件是否损坏（Expected property name or '}' in JSON at position 2 (line 1 column 3)）
+dup-constants：扫描 214 文件 / 141 声明 / 11 跨文件同值组
+  [红] ACTION_FAILED = '操作失败' 跨 3 文件（src/renderer/features/library/usePaperDetailActions.ts, src/renderer/features/reader/AiNotesStatus.tsx, src/renderer/features/settings/ZcodeLinkSection.tsx）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] COLUMN_GAP_H_FACTOR = 1.5 跨 2 文件（src/renderer/features/reader/annotation-anchor.ts, src/renderer/features/reader/pdf-item-geometry.ts）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] COLUMN_GAP_PAGE_RATIO = 0.02 跨 2 文件（src/renderer/features/reader/annotation-anchor.ts, src/renderer/features/reader/pdf-item-geometry.ts）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50' 跨 2 文件（src/renderer/features/reader/AnnotationEditor.tsx, src/renderer/features/reader/AnnotationMenu.tsx）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] STATUS_POLL_MS = 5000 跨 2 文件（src/renderer/features/reader/AiNotesStatus.tsx, src/renderer/features/settings/ZcodeLinkSection.tsx）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] TAG_OP_FAILED = '标签操作失败' 跨 2 文件（src/renderer/features/tags/TagEditor.tsx, src/renderer/features/tags/tags.store.ts）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5' 跨 2 文件（src/renderer/features/lineage/LineageNodeMenu.tsx, src/renderer/features/tags/TagLifecycleMenu.tsx）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [红] OP_FAILED = '操作失败' 跨 4 文件（src/renderer/features/settings/SettingsPage.tsx, src/renderer/features/settings/UiScaleSection.tsx, src/renderer/features/workspaces/WorkspaceSection.tsx, src/renderer/features/workspaces/WorkspaceSwitcher.tsx）——同名同值跨文件（baseline 外新增——收敛到 src/shared 唯一定义点）
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '操作失败'（7 声明 / 7 文件：ACTION_FAILED / OP_FAILED）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：SAVE_FAILED / UPDATE_FAILED）
+B-2 副产物：未 export 字面量 const 83 处（DUP_CONSTANTS_B2=1 展开清单）
+dup-constants 检查未通过：红层新增/漂移 8 组；baseline 损坏（硬拦截）
+exit=1

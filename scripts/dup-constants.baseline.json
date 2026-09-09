@@ -1,0 +1,80 @@
+{
+  "_comment": "F-LINT-02 baseline 棘轮（终裁书 f-lint02-design-final.md §3）：存量真命中指纹=name+kind+value+文件集（无行号）。任何变更（收敛删减/漂移）须更新本文件并带 [locked-change] 提交尾注——棘轮位=人类审查。实测 8 组（对拍修正：终裁 §4 预估 6 组漏算了 '操作失败' 组内的 ACTION_FAILED×3/OP_FAILED×4 同名子对，按 §2.3 判据同名同文案跨文件入红层，以 §4『对拍通过为验收』为准）。",
+  "entries": [
+    {
+      "name": "ACTION_FAILED",
+      "kind": "string",
+      "value": "操作失败",
+      "files": [
+        "src/renderer/features/library/usePaperDetailActions.ts",
+        "src/renderer/features/reader/AiNotesStatus.tsx",
+        "src/renderer/features/settings/ZcodeLinkSection.tsx"
+      ]
+    },
+    {
+      "name": "OP_FAILED",
+      "kind": "string",
+      "value": "操作失败",
+      "files": [
+        "src/renderer/features/settings/SettingsPage.tsx",
+        "src/renderer/features/settings/UiScaleSection.tsx",
+        "src/renderer/features/workspaces/WorkspaceSection.tsx",
+        "src/renderer/features/workspaces/WorkspaceSwitcher.tsx"
+      ]
+    },
+    {
+      "name": "COLUMN_GAP_H_FACTOR",
+      "kind": "number",
+      "value": "1.5",
+      "files": [
+        "src/renderer/features/reader/annotation-anchor.ts",
+        "src/renderer/features/reader/pdf-item-geometry.ts"
+      ]
+    },
+    {
+      "name": "COLUMN_GAP_PAGE_RATIO",
+      "kind": "number",
+      "value": "0.02",
+      "files": [
+        "src/renderer/features/reader/annotation-anchor.ts",
+        "src/renderer/features/reader/pdf-item-geometry.ts"
+      ]
+    },
+    {
+      "name": "btn",
+      "kind": "string",
+      "value": "rounded border px-2 py-0.5 text-xs disabled:opacity-50",
+      "files": [
+        "src/renderer/features/reader/AnnotationEditor.tsx",
+        "src/renderer/features/reader/AnnotationMenu.tsx"
+      ]
+    },
+    {
+      "name": "STATUS_POLL_MS",
+      "kind": "number",
+      "value": "5000",
+      "files": [
+        "src/renderer/features/reader/AiNotesStatus.tsx",
+        "src/renderer/features/settings/ZcodeLinkSection.tsx"
+      ]
+    },
+    {
+      "name": "TAG_OP_FAILED",
+      "kind": "string",
+      "value": "标签操作失败",
+      "files": [
+        "src/renderer/features/tags/TagEditor.tsx",
+        "src/renderer/features/tags/tags.store.ts"
+      ]
+    },
+    {
+      "name": "ITEM_STYLE",
+      "kind": "string",
+      "value": "block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5",
+      "files": [
+        "src/renderer/features/lineage/LineageNodeMenu.tsx",
+        "src/renderer/features/tags/TagLifecycleMenu.tsx"
+      ]
+    }
+  ]
+}

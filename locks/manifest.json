@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T12:21:26.6002736Z",
+    "generatedAt":  "2026-09-09T14:10:55.9698955Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -306,12 +306,16 @@
                       "sha256":  "3b4aabe452593facca2e916f6e42e1ca7be3dc94502368e603292353eea80ff5"
                   },
                   {
+                      "path":  "scripts/check-dup-constants.mjs",
+                      "sha256":  "1a98ef14cb5177b4cdeb4e683dd6664f1af7eb8a010c0c430e556b9dd8f7705f"
+                  },
+                  {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "1e9c25e24be7dee79a9d8f426f471590ab6428f1ba8c1e4bc23d816b7d6f2588"
+                      "sha256":  "ca750f39f3bf4ffd243ebedc51b8c29a549420241a33ee2c6878a06f16e313c1"
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "b83dd4b9c27fbdd9fbbccf5ebd7f85cf59e1c56e847fb9e95f1a560c5de699d0"
+                      "sha256":  "69a6d77385a06ad0b047759d7ecb6b8fe332ff8e2064fae28054c88e51ea1276"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -320,6 +324,10 @@
                   {
                       "path":  "scripts/dist.mjs",
                       "sha256":  "4cdafec1ac639b005e6e9d418ff29ecfc68423aa49cd6c4d13742fed6599dc85"
+                  },
+                  {
+                      "path":  "scripts/dup-constants.baseline.json",
+                      "sha256":  "8d7a6892cd3adecfed5380a5f9d3ca0fdc5693e8d8ad66b0978d3b174dd9841e"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
@@ -331,7 +339,7 @@
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
-                      "sha256":  "1b7243a82f1f2b8c8a22a96c270068c0caf2e4b47119fc41f8274b927b1c372c"
+                      "sha256":  "82f81946376d68de5a9a22693fd9d8769053b86c74e8389d3a7ddb5a77559a7b"
                   },
                   {
                       "path":  "scripts/new-ticket.ps1",
@@ -479,7 +487,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "9437789d1b03a56c9beceaf5538564496a8622607103ba356e88a467e0bd7f6a"
+                      "sha256":  "40a9966750363c32f2928fb8b07cb8b26216e01f2c2658f24518730e1b7cdd74"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -720,10 +728,6 @@
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
                       "sha256":  "2e3222a22213953064494636b5c96450683cbaf8e11d984bc3bf46a35a1a07f6"
-                  },
-                  {
-                      "path":  "tests/unit/renderer/band-calibration.test.tsx",
-                      "sha256":  "edf66fdd00a4d01f5a6c721da9461af2515c513933f33157b1828bec26d7f5e2"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",

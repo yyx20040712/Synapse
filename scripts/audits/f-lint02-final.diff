@@ -1,0 +1,77 @@
+diff --git a/package.json b/package.json
+index a965f5bf0f..faec9dd2b4 100644
+--- a/package.json
++++ b/package.json
+@@ -19,6 +19,7 @@
+     "preview": "electron-vite preview",
+     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+     "lint": "eslint .",
++    "lint:dup-constants": "node scripts/check-dup-constants.mjs",
+     "test": "node scripts/sqlite-abi.mjs use node && vitest run",
+     "test:watch": "vitest",
+     "test:e2e": "npm run build && playwright test",
+diff --git a/scripts/check-locks.mjs b/scripts/check-locks.mjs
+index 0ec3254ebf..1156d359e8 100644
+--- a/scripts/check-locks.mjs
++++ b/scripts/check-locks.mjs
+@@ -38,6 +38,9 @@ function protectedFiles() {
+     join(root, 'tsconfig.json'),
+     join(root, 'tsconfig.node.json'),
+     join(root, 'tsconfig.web.json'),
++    // [F-LINT-02] baseline 棘轮防绕过（终裁 §3）：scripts/*.json 不在 walk 自动面，
++    // 单文件显式登记——baseline 变更必经 [locked-change] 人类审查位
++    join(root, 'scripts', 'dup-constants.baseline.json'),
+     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
+   ].filter((p) => existsSync(p))
+   return [...new Set(files)].sort()
+diff --git a/scripts/check-quality.mjs b/scripts/check-quality.mjs
+index bc63612125..79be0f891d 100644
+--- a/scripts/check-quality.mjs
++++ b/scripts/check-quality.mjs
+@@ -6,6 +6,7 @@
+  */
+ import { readdirSync, readFileSync, statSync } from 'node:fs'
+ import { dirname, join, relative, resolve, sep } from 'node:path'
++import { scanDuplicateConstants, formatDupDetails, clipped } from './check-dup-constants.mjs'
+ 
+ const root = process.cwd()
+ const violations = []
+@@ -188,9 +189,23 @@ for (const f of cssAll) {
+   if (hits.length > 0) violations.push(`${rel}: CSS 字号字面量 ${hits.length} 处（单源=--fs-* token；样例：${hits.slice(0, 3).join(' / ')}）`)
+ }
+ 
++// 7) [F-LINT-02] B-1 同值双常量——同名同值跨 ≥2 文件即红（trivial/同文件豁免、
++//    异名同文案 warn 不卡 CI；baseline 棘轮=存量真命中放行待收敛）。判据与边界
++//    矩阵见 scripts/check-dup-constants.mjs 头注（独立跑：npm run lint:dup-constants）。
++//    [门一 C-3] 信息性明细（baseline 待收敛+warn）与 CLI 路径同走 clipped 20 行截断；
++//    newRed=红走 violations 全量（拦截语义不截断，与各段一致）
++const dupResult = scanDuplicateConstants(root)
++for (const v of dupResult.newRed) violations.push(`dup-constants: ${v}`)
++for (const line of clipped(formatDupDetails(dupResult))) console.log('  ' + line)
++console.log(
++  `dup-constants：扫描 ${dupResult.stats.files} 文件 / ${dupResult.stats.decls} 声明——` +
++  `红层 ${dupResult.baselineHits.length} 组 baseline 待收敛（F-LINT-03 候选）、新增 ${dupResult.newRed.length} 组、` +
++  `warn ${dupResult.warnGroups.length} 组（异名同文案不卡 CI）`
++)
++
+ if (violations.length > 0) {
+   console.error('quality 检查未通过：')
+   for (const v of violations) console.error('  - ' + v)
+   process.exit(1)
+ }
+-console.log('quality 检查通过：无占位标记 / 无乱码 / 无跨域引用')
++console.log('quality 检查通过：无占位标记 / 无乱码 / 无跨域引用 / 无同值双常量新增')
+diff --git a/scripts/lock-protected.ps1 b/scripts/lock-protected.ps1
+index d8deebef0a..6fa11b5210 100644
+--- a/scripts/lock-protected.ps1
++++ b/scripts/lock-protected.ps1
+@@ -17,7 +17,8 @@ function Get-ProtectedFiles {
+     Where-Object { $_.FullName -notmatch '\\node_modules\\|\\out\\|\\dist\\|\\coverage\\' }
+   foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
+       'playwright.config.ts', 'electron.vite.config.ts',
+-      'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json')) {
++      'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
++      'scripts/dup-constants.baseline.json')) {
+     $p = Join-Path $root $cfg
+     if (Test-Path $p) { $files += Get-Item $p }
+   }
