@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T11:23:31.7765031Z",
+    "generatedAt":  "2026-09-09T12:21:26.6002736Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -479,7 +479,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "9603ab47b4b5677777fa04cc2ac9b9551d51d359dba235b4890abc3122f5843d"
+                      "sha256":  "9437789d1b03a56c9beceaf5538564496a8622607103ba356e88a467e0bd7f6a"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -691,7 +691,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
-                      "sha256":  "a48ec3af2f2f73660150fdb9f084cf4ca23d2a561ec5a906ef1d6774991adaf5"
+                      "sha256":  "94e5c0c28edcb4bf2ea26a60aff1d9df397fa6ec74913744fb9bee2d8027fbba"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
@@ -706,6 +706,10 @@
                       "sha256":  "36bdef2de01067ea588035a9cf29af000bcc5439316b8bd54e3c7a55b6a995f0"
                   },
                   {
+                      "path":  "tests/unit/renderer/annotation-popups-autosave.test.tsx",
+                      "sha256":  "4733e2bab22731c6fbb31e5487fe0000da9a2f3a034fb27ee516cde491ad8e00"
+                  },
+                  {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
                       "sha256":  "0c3fec0f4c0db142a602a72f899347459370cde4a9fe183b9ee8ec2f69287f5c"
                   },
@@ -716,6 +720,10 @@
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
                       "sha256":  "2e3222a22213953064494636b5c96450683cbaf8e11d984bc3bf46a35a1a07f6"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/band-calibration.test.tsx",
+                      "sha256":  "edf66fdd00a4d01f5a6c721da9461af2515c513933f33157b1828bec26d7f5e2"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",

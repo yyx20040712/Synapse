@@ -289,6 +289,50 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await app2.close()
 })
 
+/** [F-A11] 笔记编辑 UX 三支验收（输入→停顿→已保存标记 / undo·redo 按钮对 /
+ *  关闭重开回读）——jsdom 单测 16 用例外的真机整链面（api+db 回读）。 */
+test('F-A11 笔记编辑：自动保存已保存标记+撤销重做+关闭重开回读', async () => {
+  skipIfPending(F02_DEPS)
+  const title = '智慧水务 F-A11 笔记 UX 文献'
+  const { app, userData } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  // 划选→高亮→经菜单开笔记编辑器（P7-A 前置：编辑器只能经「添加笔记」到达）
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '高亮' }).click()
+  await expect(win.getByTestId('annotation-rect').first()).toBeVisible()
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  const editor = win.getByTestId('annotation-editor')
+  await expect(editor).toBeVisible()
+  const ta = editor.getByRole('textbox', { name: '批注内容' })
+
+  // ①输入→停顿（800ms 防抖）→「已保存」标记在场（自动保存零反馈缺陷的整链闭环）
+  await ta.fill('奶龙笔记 e2e 回读')
+  await expect(editor.getByTestId('annotation-saved-flag')).toBeVisible({ timeout: 5_000 })
+  await expect(editor.getByTestId('annotation-saved-flag')).toContainText('已保存')
+
+  // ②撤销/重做按钮对：fill 为一步入栈——undo 一步回空、redo 复原
+  await editor.getByTestId('annotation-editor-undo').click()
+  await expect(ta).toHaveValue('')
+  await editor.getByTestId('annotation-editor-redo').click()
+  await expect(ta).toHaveValue('奶龙笔记 e2e 回读')
+
+  // ③关闭重开笔记在（回读）：Escape 收起→重开编辑器→批注内容已在
+  await ta.press('Escape')
+  await expect(win.getByTestId('annotation-editor')).toHaveCount(0)
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  const editor2 = win.getByTestId('annotation-editor')
+  await expect(editor2.getByRole('textbox', { name: '批注内容' })).toHaveValue('奶龙笔记 e2e 回读')
+  await app.close()
+})
+
 /** P7-B 三序列依赖：渲染链 + tab 骨架（TABS-01/02）+ 退出拦截（TABS-04） */
 const TABS_DEPS = [...DEPS, 'SR2-TABS-01', 'SR2-TABS-02', 'SR2-TABS-04'] as const
 

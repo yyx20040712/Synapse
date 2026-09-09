@@ -1,0 +1,200 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/annotation-editor-ux.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/annotation-editor-ux.test.tsx [2m([22m[2m13 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[90m 110[2mms[22m[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m初始态：无已保存标记、撤销/重做均禁用、800ms 后未输入不触发自动保存[90m 26[2mms[22m[31m[39m
+[31m     → Cannot read properties of null (reading 'disabled')[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m输入停顿 800ms → onAutosave 收值且 resolve true → 「已保存」标记在场[90m 6[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m防抖窗口内续输合并：只调一次、值=最后值[90m 3[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22mresolve false → 「保存失败」标记[90m 3[2mms[22m[31m[39m
+[31m     → expected undefined to be '保存失败' // Object.is equality[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m保存中续输（跨格序列）：在途结果不作废 dirty → 下一轮存新值后才显「已保存」[90m 2[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m回退到初始值也再存（lastSaved 语义）：存 x 后 undo 回初始 → 第二次调用收初始值[90m 3[2mms[22m[31m[39m
+[31m     → expected 1st "spy" call to have been called with [ 'x' ], but called only 0 times[39m
+[31m   [31m×[31m F-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m按钮对逐步回退/复原：三步输入 → 撤两步 → 重做一步，disabled 态随栈变化[90m 3[2mms[22m[31m[39m
+[31m     → Cannot read properties of null (reading 'disabled')[39m
+[31m   [31m×[31m F-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m键盘拦截接值栈：ctrl+z 回退、ctrl+y / ctrl+shift+z 重做，均 preventDefault[90m 3[2mms[22m[31m[39m
+[31m     → expected 'ab' to be 'a' // Object.is equality[39m
+[31m   [31m×[31m F-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m栈上限 100：105 步输入后撤 100 步达第 5 值且撤销禁用，重做可复 1 步[90m 18[2mms[22m[31m[39m
+[31m     → Cannot read properties of null (reading 'click')[39m
+[31m   [31m×[31m F-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22m成功链：api+store 同步、pushUndo 会话单 entry（两轮停顿仅一次）、不收层、标记已保存[90m 36[2mms[22m[31m[39m
+[31m     → expected "spy" to be called 1 times, but got 0 times[39m
+[31m   [31m×[31m F-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22m失败链：api 抛 ApiClientError → markTabDirty+toast、编辑器在场、「保存失败」[90m 2[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ 'paper-1' ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 11 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m初始态：无已保存标记、撤销/重做均禁用、800ms 后未输入不触发自动保存
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'disabled')[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m179:20[22m[39m
+    [90m177| [39m    [35mconst[39m { onAutosave } [33m=[39m [34mrenderEditor[39m()
+    [90m178| [39m    [34mexpect[39m([34msavedFlag[39m())[33m.[39m[34mtoBeNull[39m()
+    [90m179| [39m    [34mexpect[39m([34mundoBtn[39m()[33m.[39mdisabled)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                   [31m^[39m
+    [90m180| [39m    [34mexpect[39m([34mredoBtn[39m()[33m.[39mdisabled)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m181| [39m    [35mawait[39m [34mact[39m([35masync[39m () [33m=>[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m输入停顿 800ms → onAutosave 收值且 resolve true → 「已保存」标记在场
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m197:24[22m[39m
+    [90m195| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m100[39m)
+    [90m196| [39m    })
+    [90m197| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                       [31m^[39m
+    [90m198| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'我是奶龙'[39m)
+    [90m199| [39m    [34mexpect[39m([34msavedFlag[39m()[33m?.[39mtextContent)[33m.[39m[34mtoBe[39m([32m'已保存'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m防抖窗口内续输合并：只调一次、值=最后值
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m212:24[22m[39m
+    [90m210| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m211| [39m    })
+    [90m212| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                       [31m^[39m
+    [90m213| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'我是奶龙'[39m)
+    [90m214| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22mresolve false → 「保存失败」标记
+[31m[1mAssertionError[22m: expected undefined to be '保存失败' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"保存失败"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m222:38[22m[39m
+    [90m220| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m221| [39m    })
+    [90m222| [39m    [34mexpect[39m([34msavedFlag[39m()[33m?.[39mtextContent)[33m.[39m[34mtoBe[39m([32m'保存失败'[39m)
+    [90m   | [39m                                     [31m^[39m
+    [90m223| [39m  })
+    [90m224| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m保存中续输（跨格序列）：在途结果不作废 dirty → 下一轮存新值后才显「已保存」
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m234:24[22m[39m
+    [90m232| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m233| [39m    })
+    [90m234| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                       [31m^[39m
+    [90m235| [39m    [34mtypeInto[39m([34mtextarea[39m()[33m,[39m [32m'ab'[39m)
+    [90m236| [39m    [35mawait[39m [34mact[39m([35masync[39m () [33m=>[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m回退到初始值也再存（lastSaved 语义）：存 x 后 undo 回初始 → 第二次调用收初始值
+[31m[1mAssertionError[22m: expected 1st "spy" call to have been called with [ 'x' ], but called only 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m259:24[22m[39m
+    [90m257| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m258| [39m    })
+    [90m259| [39m    [34mexpect[39m(onAutosave)[33m.[39m[34mtoHaveBeenNthCalledWith[39m([34m1[39m[33m,[39m [32m'x'[39m)
+    [90m   | [39m                       [31m^[39m
+    [90m260| [39m    [34mact[39m(() [33m=>[39m {
+    [90m261| [39m      [34mundoBtn[39m()[33m.[39m[34mclick[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m按钮对逐步回退/复原：三步输入 → 撤两步 → 重做一步，disabled 态随栈变化
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'disabled')[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m296:20[22m[39m
+    [90m294| [39m    [34mtypeInto[39m(ta[33m,[39m [32m'ab'[39m)
+    [90m295| [39m    [34mtypeInto[39m(ta[33m,[39m [32m'abc'[39m)
+    [90m296| [39m    [34mexpect[39m([34mundoBtn[39m()[33m.[39mdisabled)[33m.[39m[34mtoBe[39m([35mfalse[39m)
+    [90m   | [39m                   [31m^[39m
+    [90m297| [39m    [34mact[39m(() [33m=>[39m {
+    [90m298| [39m      [34mundoBtn[39m()[33m.[39m[34mclick[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m键盘拦截接值栈：ctrl+z 回退、ctrl+y / ctrl+shift+z 重做，均 preventDefault
+[31m[1mAssertionError[22m: expected 'ab' to be 'a' // Object.is equality[39m
+
+Expected: [32m"a"[39m
+Received: [31m"a[7mb[27m"[39m
+
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m327:22[22m[39m
+    [90m325| [39m      ta[33m.[39m[34mdispatchEvent[39m(undoEvt)
+    [90m326| [39m    })
+    [90m327| [39m    [34mexpect[39m(ta[33m.[39mvalue)[33m.[39m[34mtoBe[39m([32m'a'[39m)
+    [90m   | [39m                     [31m^[39m
+    [90m328| [39m    [34mexpect[39m(undoEvt[33m.[39mdefaultPrevented)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m329| [39m    [34mpressKey[39m(ta[33m,[39m { key[33m:[39m [32m'y'[39m[33m,[39m ctrlKey[33m:[39m [35mtrue[39m })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ② 撤销/重做值栈 —— AnnotationEditor[2m > [22m栈上限 100：105 步输入后撤 100 步达第 5 值且撤销禁用，重做可复 1 步
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'click')[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m345:17[22m[39m
+    [90m343| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m [34m100[39m[33m;[39m i[33m++[39m) {
+    [90m344| [39m      [34mact[39m(() [33m=>[39m {
+    [90m345| [39m        [34mundoBtn[39m()[33m.[39m[34mclick[39m()
+    [90m   | [39m                [31m^[39m
+    [90m346| [39m      })
+    [90m347| [39m    }
+[90m [2m❯[22m Proxy.act node_modules/react/cjs/react.development.js:[2m2512:16[22m[39m
+[90m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m344:7[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22m成功链：api+store 同步、pushUndo 会话单 entry（两轮停顿仅一次）、不收层、标记已保存
+[31m[1mAssertionError[22m: expected "spy" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m384:29[22m[39m
+    [90m382| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m383| [39m    })
+    [90m384| [39m    [34mexpect[39m(mocks[33m.[39mapiUpdate)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+    [90m   | [39m                            [31m^[39m
+    [90m385| [39m    [34mexpect[39m(mocks[33m.[39mapiUpdate[33m.[39mmock[33m.[39mcalls[[34m0[39m][33m![39m[[34m0[39m][33m.[39mannotation[33m.[39mcomment)[33m.[39m[34mtoBe[39m(…
+    [90m386| [39m    [34mexpect[39m(mocks[33m.[39mstoreUpdateAnnotation)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22m失败链：api 抛 ApiClientError → markTabDirty+toast、编辑器在场、「保存失败」
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ 'paper-1' ][90m
+
+Received: 
+
+[31m[90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m tests/unit/renderer/annotation-editor-ux.test.tsx:[2m425:37[22m[39m
+    [90m423| [39m      [35mawait[39m vi[33m.[39m[34madvanceTimersByTimeAsync[39m([34m800[39m)
+    [90m424| [39m    })
+    [90m425| [39m    [34mexpect[39m(mocks[33m.[39mstoreMarkTabDirty)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'paper-1'[39m)
+    [90m   | [39m                                    [31m^[39m
+    [90m426| [39m    [34mexpect[39m(mocks[33m.[39mshowToast)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'保存失败测试'[39m[33m,[39m [32m'erro[39m…
+    [90m427| [39m    [34mexpect[39m(setEditing)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m11 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 19:14:04
+[2m   Duration [22m 1.28s[2m (transform 51ms, setup 0ms, collect 89ms, tests 110ms, environment 586ms, prepare 163ms)[22m
+

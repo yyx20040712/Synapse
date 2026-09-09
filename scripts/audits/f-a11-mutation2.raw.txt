@@ -1,0 +1,7 @@
+=== F-A11 回炉变异红证 2（W-1 修复面，cp 备份法）===
+--- 变异 C：fireAutosave else 分支 W-1 重挂 scheduleAutosave() → undefined（W-1 跨格用例应红）---
+[31m   [31m×[31m F-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m在途保存×期间回退 lastSaved（W-1 跨格）：resolve 后防抖重挂 → 第二次收当前值落盘[90m 7[2mms[22m[31m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-editor-ux.test.tsx[2m > [22mF-A11 ① 自动保存反馈 —— AnnotationEditor[2m > [22m在途保存×期间回退 lastSaved（W-1 跨格）：resolve 后防抖重挂 → 第二次收当前值落盘
+--- 还原 C：diff 备份 ---
+RESTORE DIFF EMPTY（还原确认）
