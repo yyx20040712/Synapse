@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * check-quality.mjs —— 质量扫描关卡（受锁文件）。
- * 检查：Node 版本守卫 / 占位标记 / 乱码特征 / renderer features 跨域互引。
+ * 检查：Node 版本守卫 / 占位标记 / 乱码特征 / renderer features 跨域互引
+ * / CSS 字号+颜色字面量消费负锚（第 6 段——COLOR_RE 与 eslint.config.js
+ * B-5 内联 rule 双写面逐字一致，改一处必同步另一处）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -169,24 +171,43 @@ for (const { layer, forbids } of layerRules) {
 //    自动入锚；与 theme.test.ts 七件测试锚=纵深防御，互不替代）。正则
 //    单源=受锁 theme.test.ts FS_DECL 行提取（零正则复制）；读失败/提取
 //    null/walk 零 CSS 文件=哨兵硬红（只哨工具失能态——终裁档 §0 攻击面 5）。
-//    颜色消费负锚 C-4/B-5 设计毕（终裁档 §1）因存量 61+6 真违规未清顺延
-//    F-CSS-03 颜色 token 化战役票——清理毕即落（终裁档 §5 修正终裁 1/2）。
+//    [W3 哨兵 2026-09-10 F-CSS-03] 提取前对文本 matchAll(/FS_DECL = \//g)
+//    计数：>1 处=多处歧义哨兵红——单处 .match() 在多 FS_DECL 形态下静默取
+//    第一处，正则漂移即字号锚失明（0 处落入 match null 支双兜底）。
+//    [C-4 CSS 颜色字面量消费负锚 2026-09-10 F-CSS-03 落地] 颜色 token 化
+//    迁移毕（61+6 存量清零——终裁档 §5 立案顺延件兑现）后同循环落码：
+//    行级豁免=--name: 定义行（token 定义即字面量合法所在地，CR3a 改简——
+//    零 token 名清单依赖）；COLOR_RE 命中行=红。COLOR_RE 与 eslint.config.js
+//    B-5 内联 rule（tsx inline style 面）双写面逐字一致——改一处必改另一处。
 const themeTestPath = join(root, 'tests', 'unit', 'renderer', 'theme.test.ts')
 let fsDeclRe = null
 try {
-  const m = readFileSync(themeTestPath, 'utf-8').match(/FS_DECL = \/(.+)\/gi/)
-  if (m) fsDeclRe = new RegExp(m[1], 'gi')
-  else violations.push('哨兵：theme.test.ts FS_DECL 提取失败（match null）——哨兵正则或常量行变更（F-LINT-01 C-8）')
+  const themeTestText = readFileSync(themeTestPath, 'utf-8')
+  const declCount = [...themeTestText.matchAll(/FS_DECL = \//g)].length
+  if (declCount > 1) {
+    violations.push(`哨兵：theme.test.ts FS_DECL 多处（${declCount} 处）歧义——哨兵[W3]：静默取第一处风险，人工消歧（F-CSS-03）`)
+  } else {
+    const m = themeTestText.match(/FS_DECL = \/(.+)\/gi/)
+    if (m) fsDeclRe = new RegExp(m[1], 'gi')
+    else violations.push('哨兵：theme.test.ts FS_DECL 提取失败（match null）——哨兵正则或常量行变更（F-LINT-01 C-8）')
+  }
 } catch (e) {
   violations.push(`哨兵：theme.test.ts 读取失败（${e.message}）——文件缺席即关卡失能（F-LINT-01 C-8）`)
 }
 const cssAll = walk(join(root, 'src'), (p) => p.endsWith('.css'))
-if (cssAll.length === 0) violations.push('哨兵：src 下 walk 零 CSS 文件——结构失能（F-LINT-01 C-8）')
+if (cssAll.length === 0) violations.push('哨兵：src 下 walk 零 CSS 文件——结构失能（F-LINT-01 C-8/C-4）')
+const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/
 for (const f of cssAll) {
-  if (!fsDeclRe) break
   const rel = relative(root, f).replaceAll('\\', '/')
-  const hits = readFileSync(f, 'utf-8').match(fsDeclRe) ?? []
-  if (hits.length > 0) violations.push(`${rel}: CSS 字号字面量 ${hits.length} 处（单源=--fs-* token；样例：${hits.slice(0, 3).join(' / ')}）`)
+  const content = readFileSync(f, 'utf-8')
+  if (fsDeclRe) {
+    const hits = content.match(fsDeclRe) ?? []
+    if (hits.length > 0) violations.push(`${rel}: CSS 字号字面量 ${hits.length} 处（单源=--fs-* token；样例：${hits.slice(0, 3).join(' / ')}）`)
+  }
+  content.split('\n').forEach((line, i) => {
+    if (/^\s*--[\w-]+\s*:/.test(line)) return
+    if (COLOR_RE.test(line)) violations.push(`${rel}:${i + 1}: CSS 颜色字面量消费（单源=--* token）：${line.trim().slice(0, 80)}`)
+  })
 }
 
 // 7) [F-LINT-02] B-1 同值双常量——同名同值跨 ≥2 文件即红（trivial/同文件豁免、

@@ -40,7 +40,7 @@ export function SelectionToolbar(props: {
         top: y,
         background: 'var(--panel)',
         borderColor: 'var(--border)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+        boxShadow: 'var(--shadow-pop-sm)'
       }}
       // 阻止 mousedown 抢焦点/坍缩选区：按钮 click 才是动作语义
       onMouseDown={(e) => e.preventDefault()}

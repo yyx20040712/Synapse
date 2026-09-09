@@ -2,11 +2,11 @@
    全住类规则，内联 style 只许留功能态（如错误色），否则 :hover/:active
    挂类被内联恒压=静默失效）══
    病灶史：R2-SH2 把切换器从墨青侧栏迁到白顶栏后，触发钮仍用夜面配色
-   （米白字 #efe9da + 5% 白底 + borderColor 无 border 宽度类=边框不渲染）
+   （米白字 + 5% 白底 + borderColor 无 border 宽度类=边框不渲染）
    ——白底贴米白字，用户实锤「几乎不可见」。本皮肤=亮面按钮语法：
    冷色调（accent 墨青蓝）实边框 + 冷调流光渐变 + 按压反馈。token 走
-   theme.css :root 单源（rgba(44,95,138,x)=--accent 透明度族，先例
-   rgba(201,168,106,x)=金族）。 */
+   theme.css :root 单源（--accent 透明度族=--accent-aNN 系，先例
+   金族）。 */
 
 /* 触发钮：冷蓝实边框+白→冷蓝白渐变流光（syn-pan-x 往返，6s 缓拍） */
 .ws-trigger {
@@ -14,9 +14,9 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid rgba(44, 95, 138, 0.55);
+  border: 1px solid var(--accent-a55);
   border-radius: var(--radius-m);
-  background: linear-gradient(120deg, #ffffff 0%, var(--accent-soft) 45%, #ffffff 100%);
+  background: linear-gradient(120deg, var(--panel) 0%, var(--accent-soft) 45%, var(--panel) 100%);
   background-size: 220% 100%;
   animation: syn-pan-x 6s ease-in-out infinite;
   color: var(--text);
@@ -31,14 +31,14 @@
 }
 .ws-trigger:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(44, 95, 138, 0.12), var(--shadow-2);
+  box-shadow: 0 0 0 3px var(--accent-a12), var(--shadow-2);
 }
 /* 按压反馈（游戏钮语义）：下沉+微缩+内阴影——「按下去了」的实体读感 */
 .ws-trigger:active {
   border-color: var(--accent);
   filter: brightness(0.96);
   transform: translateY(1px) scale(0.98);
-  box-shadow: inset 0 2px 4px rgba(27, 35, 51, 0.18);
+  box-shadow: inset 0 2px 4px var(--ink-a18);
 }
 .ws-trigger:focus-visible {
   outline: 2px solid var(--accent);
@@ -63,7 +63,7 @@
   gap: 4px;
   min-width: 200px;
   padding: 6px;
-  border: 1px solid rgba(44, 95, 138, 0.45);
+  border: 1px solid var(--accent-a45);
   border-radius: var(--radius-m);
   background: var(--panel);
   color: var(--text);
@@ -102,7 +102,7 @@
   color: var(--accent);
 }
 .ws-item:active {
-  background: rgba(44, 95, 138, 0.22);
+  background: var(--accent-a22);
   color: var(--accent);
   transform: scale(0.97);
 }
@@ -116,7 +116,7 @@
 /* 新建课题输入：冷蓝描边字段，focus 冷蓝描边加浓 */
 .ws-field {
   padding: 4px 8px;
-  border: 1px solid rgba(44, 95, 138, 0.45);
+  border: 1px solid var(--accent-a45);
   border-radius: var(--radius-s);
   background: var(--panel);
   color: var(--text);
@@ -125,7 +125,7 @@
 .ws-field:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(44, 95, 138, 0.15);
+  box-shadow: 0 0 0 2px var(--accent-a15);
 }
 
 /* 无障碍守卫（theme.css 同族）：系统「减少动态效果」时流光与入场动画关 */

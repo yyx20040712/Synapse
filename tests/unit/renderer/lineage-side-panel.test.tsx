@@ -308,7 +308,7 @@ it('主题节点：仅前两区+空态文案；笔记通道零调用', async () 
   expect(stubApi.notes.get).not.toHaveBeenCalled()
 })
 
-it('R2-LG11 侧板浅色化：白玻璃底 rgba(255,255,255,0.92)+边 #e4ded1+blur12；h4 accent 左缘条；条目卡白底淡描边（防回退）', async () => {
+it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 accent 左缘条；条目卡白底淡描边（防回退）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1', { question: 'Q1' })] })
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
   mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
@@ -316,9 +316,11 @@ it('R2-LG11 侧板浅色化：白玻璃底 rgba(255,255,255,0.92)+边 #e4ded1+bl
   // 面板白玻璃底（R2-LG11 浅色严谨板）。backdrop-filter 在 jsdom 不入 style
   // 属性序列化（实证：仅 DOM 属性可读）——经 style.backdropFilter 属性断言
   const rootEl = q('[data-testid="lineage-side-panel"]') as HTMLElement
-  expect(rootEl.getAttribute('style')).toContain('rgba(255, 255, 255, 0.92)')
-  // 边 #e4ded1——border shorthand 经 CSSOM 归一为 rgb() 等价值（jsdom 实证）
-  expect(rootEl.getAttribute('style')).toContain('rgb(228, 222, 209)')
+  // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定；
+  // var() 载体在 jsdom style 序列化原样保留，无 CSSOM rgb 归一）
+  expect(rootEl.getAttribute('style')).toContain('var(--panel-a92)')
+  // 边 --border（原 #e4ded1——值面由 theme.test.ts 既有 token 正锚锁定）
+  expect(rootEl.getAttribute('style')).toContain('var(--border)')
   expect(rootEl.style.backdropFilter).toBe('blur(12px)')
   // 分组 h4 accent 左缘条（核心 idea/AI 笔记/人工笔记三处齐改——去金夜色）
   const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
@@ -326,11 +328,11 @@ it('R2-LG11 侧板浅色化：白玻璃底 rgba(255,255,255,0.92)+边 #e4ded1+bl
   for (const h of h4s) {
     expect(h.getAttribute('style')).toContain('var(--accent)')
   }
-  // AI 条目卡（白底+沿用淡描边 rgba(151,160,187,0.28)）——hex 经 CSSOM
-  // 归一为 rgb() 等价值（jsdom 实证，同上）
+  // AI 条目卡（白底 --panel+沿用淡描边 --note-border）——[F-CSS-03] 断言载体
+  // 随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
   const card = q('[data-ai-note-id="a1"]')?.getAttribute('style') ?? ''
-  expect(card).toContain('rgb(255, 255, 255)')
-  expect(card).toContain('rgba(151, 160, 187, 0.28)')
+  expect(card).toContain('var(--panel)')
+  expect(card).toContain('var(--note-border)')
   // QUESTION_COLOR 左缘条零改锚（AI-08 分色单源不因换肤回退）
   expect(q('[data-question="Q1"] h5')?.getAttribute('style')).toContain(QUESTION_COLOR.Q1)
 })

@@ -21,8 +21,8 @@ type Phase = 'loading' | 'ready' | 'error'
  * token；testid/文案零改。
  */
 const NOTE_CARD = {
-  background: '#ffffff',
-  borderColor: 'rgba(151, 160, 187, 0.28)'
+  background: 'var(--panel)',
+  borderColor: 'var(--note-border)'
 } as const
 
 export function LineageSideManualNote(props: { paperId: string }): JSX.Element {

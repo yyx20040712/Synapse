@@ -25,9 +25,9 @@
   border-radius: var(--radius-l);
   /* 渐变+inset 顶高光（mockup .card 材质三件套之二）；背景裁到 padding-box——
      渐变端点与 border 交界处亚像素缝隙锁（设计定稿注意事项②） */
-  background: linear-gradient(168deg, #fffdf9 0%, var(--panel) 40%, #fdfaf3 100%);
+  background: linear-gradient(168deg, var(--lib-paper-hi) 0%, var(--panel) 40%, var(--lib-paper-lo) 100%);
   background-clip: padding-box;
-  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-1), inset 0 1px 0 var(--panel-a90);
   cursor: pointer;
   transition: box-shadow var(--dur-rise) ease, border-color var(--dur-rise) ease, transform var(--dur-rise) ease;
 }
@@ -53,8 +53,8 @@
    期金 ring 不被 hover 值覆盖——单一类选择器 (0,1,0) 压不过 (0,2,0)） */
 .lib-card.lib-card-selected {
   border-color: var(--gold);
-  box-shadow: var(--shadow-2), inset 0 0 0 1px rgba(201, 168, 106, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-2), inset 0 0 0 1px var(--border-gold-a45),
+    inset 0 1px 0 var(--panel-a90);
 }
 .lib-card.lib-card-selected .lib-corner {
   opacity: 0.9;

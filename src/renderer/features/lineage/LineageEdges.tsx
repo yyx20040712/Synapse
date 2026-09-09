@@ -39,7 +39,7 @@ import { EDGE_LABEL_H, EDGE_LABEL_MAX_W } from './edge-label-layout'
 /** 推断边标记（label 含「推断」两字即推断型） */
 const INFERRED_MARK = '推断'
 /** 推断边色（浅色板灰蓝） */
-const INFERRED_STROKE = '#8a94a6'
+const INFERRED_STROKE = 'var(--edge-inferred)'
 
 export function LineageEdges(props: {
   edges: LineageEdge[]

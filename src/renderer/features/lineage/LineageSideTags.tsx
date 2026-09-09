@@ -19,8 +19,8 @@ const SIDE_TAG_CHIP: CSSProperties = {
   borderRadius: 3,
   fontSize: 'var(--fs-caption)',
   color: 'var(--danger)',
-  background: 'rgba(179, 64, 58, 0.08)',
-  border: '1px solid rgba(179, 64, 58, 0.25)'
+  background: 'var(--danger-a08)',
+  border: '1px solid var(--danger-a25)'
 }
 
 export function LineageSideTags(props: {

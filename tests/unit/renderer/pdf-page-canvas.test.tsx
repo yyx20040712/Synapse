@@ -4,8 +4,9 @@
  * [locked-change] 授权面——主控已 unlock）。
  *
  * 锁三断言（票面 §0c「canvas 透明底+色块垫底」的实现面）：
- * - pdf.js render 以 background 'rgba(255,255,255,0)' 调用（透明底——墨带
- *   之外透出下层色块=背景板语义；pdfjs 默认 #ffffff 填充会把色块全遮死）；
+ * - pdf.js render 以 background 'transparent' 调用（透明底——墨带
+ *   之外透出下层色块=背景板语义；pdfjs 默认白填充会把色块全遮死；
+ *   [F-CSS-03] 原字面 rgba(255,255,255,0) 等价改写为 CSS 关键字）；
  * - canvas 内联 z=PAGE_LAYER_Z.canvas 且 pointer-events:none（墨在色块上，
  *   事件穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
  * - PageBox 页内容容器（h-fit）白纸承底层+isolation（层序比较域单页内封闭，
@@ -74,14 +75,15 @@ afterEach(() => {
 })
 
 describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
-  it('render 以透明背景调用（background rgba(255,255,255,0)——墨外透出下层色块）', async () => {
+  it('render 以透明背景调用（background transparent——墨外透出下层色块）', async () => {
     await act(async () => {
       root!.render(
         <PdfPageCanvas doc={fakeDoc()} pageNo={1} zoom={1} onPageRender={() => undefined} onError={() => undefined} />
       )
     })
     expect(renderCalls.length).toBe(1)
-    expect(renderCalls[0]!.background).toBe('rgba(255,255,255,0)')
+    // [F-CSS-03] rgba(255,255,255,0) 等价改写 CSS 关键字（alpha 0 渲染零差）
+    expect(renderCalls[0]!.background).toBe('transparent')
   })
 
   it('canvas 内联 z=层级常量+pointer-events none（事件穿透——标注 rect/文本层手势零回归）', async () => {
@@ -122,8 +124,9 @@ describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
     const pageRoot = host!.querySelector<HTMLElement>('[data-page-root="1"]')
     expect(pageRoot).not.toBeNull()
     const sheet = pageRoot!.firstElementChild as HTMLElement
-    // jsdom 内联色归一化为 rgb 形
-    expect(sheet.style.background).toBe('rgb(255, 255, 255)')
+    // [F-CSS-03] 断言载体随 token 化迁移：白纸承底层消费 --panel（值面由
+    // theme.test.ts 既有 token 正锚锁定）；var() 载体 jsdom 原样保留无归一
+    expect(sheet.style.background).toBe('var(--panel)')
     expect(sheet.style.isolation).toBe('isolate')
   })
 })

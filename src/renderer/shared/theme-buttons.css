@@ -11,12 +11,12 @@
    R2-UI1 增量：primary 渐变底+hover 渐变流动（background-position 平移）；
    全族 :active=游戏钮按压反馈（色变+微缩+下沉，瞬态 80~120ms）。 */
 .syn-btn-primary {
-  background: linear-gradient(150deg, #3a76ab 0%, var(--accent) 48%, #234a6d 100%);
+  background: linear-gradient(150deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-deep) 100%);
   background-size: 160% 160%;
   background-position: 0% 50%;
-  color: #ffffff;
-  border-color: #234a6d;
-  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.45), var(--shadow-1);
+  color: var(--panel);
+  border-color: var(--accent-deep);
+  box-shadow: inset 0 0 0 1px var(--border-gold-a45), var(--shadow-1);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
   transition:
     background-position var(--dur-flow) ease,
@@ -25,7 +25,7 @@
     filter var(--dur-tint) ease;
 }
 .syn-btn-primary:not(:disabled):hover {
-  box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.7), var(--shadow-2);
+  box-shadow: inset 0 0 0 1px var(--gold-bright-a70), var(--shadow-2);
   /* 渐变流动：hover 期渐变端点平移到亮端（R2-UI1） */
   background-position: 100% 50%;
 }
@@ -34,8 +34,8 @@
   filter: brightness(0.88);
   transform: translateY(1px) scale(0.98);
   box-shadow:
-    inset 0 0 0 1px rgba(227, 201, 143, 0.7),
-    inset 0 2px 6px rgba(11, 26, 40, 0.45);
+    inset 0 0 0 1px var(--gold-bright-a70),
+    inset 0 2px 6px var(--btn-press-tint);
 }
 .syn-btn-secondary {
   background: var(--panel);
@@ -62,7 +62,7 @@
     transform var(--dur-press) ease;
 }
 .syn-btn-danger:not(:disabled):active {
-  background: rgba(179, 64, 58, 0.12);
+  background: var(--danger-a12);
   filter: brightness(0.96);
   transform: translateY(1px) scale(0.98);
 }
@@ -81,7 +81,7 @@
 }
 .syn-btn-ghost:not(:disabled):active {
   color: var(--gold);
-  background: rgba(207, 174, 114, 0.3);
+  background: var(--gold-press);
   transform: scale(0.96);
 }
 

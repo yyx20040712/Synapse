@@ -13,10 +13,10 @@
    token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
    lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
    防漂移锁 = tests/unit/renderer/theme.test.ts（值漂移即红）。
-   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面 #cfae72 别名 --gold-night
+   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面值别名 --gold-night
    已随 R2-SH2 决5 别名退役删除——LG10 结案：全仓消费=0，死代码即删）；
    --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
-   rgb(253,224,71) 精确断言锁死（预知必红则不制造红，预裁②口径）。 */
+   黄色精确断言锁死（预知必红则不制造红，预裁②口径）。 */
 :root {
   /* ── 亮面：暖纸白 + 墨青 + 金铜（学术优雅系）── */
   --bg: #f6f4ee;
@@ -87,6 +87,72 @@
   --annotation-blue: #93c5fd;
   --annotation-red: #fca5a5;
   --annotation-purple: #d8b4fe;
+  /* ── F-CSS-03 颜色 token（2026-09-09 用户双裁决零视觉差迁移：值原样入库,
+     同值合并共享单 token;白→--panel/暖灰描边→--border 直接消费既有 token
+     不立第二源;命名规约=基色 alpha 族 <基token>-a<两位alpha>（如 --accent-a45）
+     +单用途取主导用途名+影子复合值沿 --shadow-* 词汇;50 值命名表=
+     scripts/audits/f-css03-impl.report.md 附录;消费负锚=check-quality C-4
+     [CSS 行级,--name: 定义行豁免]+eslint B-5 [tsx inline style];值防漂移=
+     theme.test.ts TOKENS 正锚）── */
+  /* accent 透明度族（基色=--accent）*/
+  --accent-a10: rgba(44, 95, 138, 0.1);
+  --accent-a12: rgba(44, 95, 138, 0.12);
+  --accent-a15: rgba(44, 95, 138, 0.15);
+  --accent-a20: rgba(44, 95, 138, 0.2);
+  --accent-a22: rgba(44, 95, 138, 0.22);
+  --accent-a35: rgba(44, 95, 138, 0.35);
+  --accent-a45: rgba(44, 95, 138, 0.45);
+  --accent-a55: rgba(44, 95, 138, 0.55);
+  /* 金族透明度（基色=--border-gold/--gold-bright;第三基色挂
+     --gold-soft 系语义名）*/
+  --border-gold-a15: rgba(201, 168, 106, 0.15);
+  --border-gold-a28: rgba(201, 168, 106, 0.28);
+  --border-gold-a45: rgba(201, 168, 106, 0.45);
+  --border-gold-a50: rgba(201, 168, 106, 0.5);
+  --gold-bright-a70: rgba(227, 201, 143, 0.7);
+  --gold-press: rgba(207, 174, 114, 0.3);
+  /* danger 透明度族（基色=--danger）*/
+  --danger-a08: rgba(179, 64, 58, 0.08);
+  --danger-a12: rgba(179, 64, 58, 0.12);
+  --danger-a25: rgba(179, 64, 58, 0.25);
+  /* 白透明度族（基色=--panel;--panel-glass 0.72 为既存语义名）*/
+  --panel-a06: rgba(255, 255, 255, 0.06);
+  --panel-a07: rgba(255, 255, 255, 0.07);
+  --panel-a35: rgba(255, 255, 255, 0.35);
+  --panel-a88: rgba(255, 255, 255, 0.88);
+  --panel-a90: rgba(255, 255, 255, 0.9);
+  --panel-a92: rgba(255, 255, 255, 0.92);
+  /* caption 三键（Windows 系统红）*/
+  --close-red: #e81123;
+  --close-red-press: #f1707a;
+  /* 侧栏 nav 墨青域（文本阶梯+结构色）*/
+  --nav-text: #cfd5e4;
+  --nav-item-text: #aeb6ca;
+  --nav-item-text-hover: #e6eaf4;
+  --nav-item-text-press: #eaf1fa;
+  --nav-item-text-current: #f3eddd;
+  --nav-ver-text: #8d95ad;
+  --nav-ver-border: rgba(141, 149, 173, 0.4);
+  --nav-foot-text: #6d7590;
+  --ink-deep: #171e2f;
+  --ink-a18: rgba(27, 35, 51, 0.18);
+  /* syn-btn primary 渐变端点+按压内影色 */
+  --accent-hi: #3a76ab;
+  --accent-deep: #234a6d;
+  --btn-press-tint: rgba(11, 26, 40, 0.45);
+  /* 文献库卡片纸渐变端点 */
+  --lib-paper-hi: #fffdf9;
+  --lib-paper-lo: #fdfaf3;
+  /* 脉络域（边标签/推断边/节点 meta 描边/note 卡描边）*/
+  --edge-label-text: #6b7280;
+  --edge-inferred: #8a94a6;
+  --node-meta-border: #dfa84a;
+  --note-border: rgba(151, 160, 187, 0.28);
+  /* 阅读器（划选自绘层灰+页盒/弹层影——影复合值沿 --shadow-* 词汇）*/
+  --reader-selection-paint: rgba(0, 0, 0, 0.2);
+  --shadow-page: 0 1px 4px rgba(0, 0, 0, 0.12);
+  --shadow-pop-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-pop-md: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
 html,
@@ -102,7 +168,7 @@ body,
   color: var(--text);
   background: var(--bg);
   /* 纸面微纹理：极淡斜向丝纹（shell-library mockup 同款） */
-  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 6px);
+  background-image: repeating-linear-gradient(115deg, var(--panel-a35) 0 2px, transparent 2px 6px);
 }
 
 /* [F-CSS-01] 分域拆件 2026-09-05：皮肤段按 ══ 分节拆出 theme-shell/-buttons/

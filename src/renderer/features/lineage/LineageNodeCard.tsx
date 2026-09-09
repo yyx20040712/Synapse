@@ -118,7 +118,7 @@ export function LineageNodeCard(props: {
         width={w}
         height={h}
         rx={8}
-        fill="#ffffff"
+        fill="var(--panel)"
         stroke={props.core ? 'var(--accent)' : 'var(--node-branch)'}
         strokeWidth={strokeWidth}
         strokeDasharray={dashed ? '6 4' : undefined}

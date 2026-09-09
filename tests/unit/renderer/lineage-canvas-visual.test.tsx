@@ -97,7 +97,7 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(core?.getAttribute('stroke-width')).toBe('2.25')
     expect(core?.getAttribute('stroke-dasharray')).toBeNull()
     expect(core?.getAttribute('data-selected')).toBe('true')
-    expect(core?.getAttribute('fill')).toBe('#ffffff')
+    expect(core?.getAttribute('fill')).toBe('var(--panel)')
     // 文献·普通：branch 1 实线（未选中）
     const plain = host?.querySelector('[data-node-id="R1"] rect')
     expect(plain?.getAttribute('stroke')).toBe('var(--node-branch)')
@@ -187,7 +187,7 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(host?.textContent).toContain('2020 年')
   })
 
-  it('边三型色（§1.1.3 矩阵）：普通 branch 1.2 实线/推断 #8a94a6 虚线 5 4/综述关联 survey-edge 1.4 虚线 2 3（优先级>推断）', () => {
+  it('边三型色（§1.1.3 矩阵）：普通 branch 1.2 实线/推断 --edge-inferred 虚线 5 4/综述关联 survey-edge 1.4 虚线 2 3（优先级>推断）', () => {
     const nodes = [
       node('A', { year: 2020, title: '源头' }),
       node('B', { year: 2021, title: '承接' }),
@@ -197,7 +197,8 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     const solid: LineageEdge = { ...edge('B', 'C'), label: '实链·继承' }
     mount(<LineageCanvas nodes={nodes} edges={[inferred, solid]} />)
     const p1 = host?.querySelector('[data-edge-id="e-A-B"]')
-    expect(p1?.getAttribute('stroke')).toBe('#8a94a6')
+    // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
+    expect(p1?.getAttribute('stroke')).toBe('var(--edge-inferred)')
     expect(p1?.getAttribute('stroke-width')).toBe('1.2')
     expect(p1?.getAttribute('stroke-dasharray')).toBe('5 4')
     expect(p1?.getAttribute('filter')).toBeNull()
@@ -232,8 +233,8 @@ describe('R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObjec
     expect(p?.getAttribute('stroke')).toBe('var(--survey-edge)')
     expect(p?.getAttribute('stroke-width')).toBe('1.4')
     expect(p?.getAttribute('stroke-dasharray')).toBe('2 3')
-    // 变异红证锚：优先级翻转（推断先判）会把该边染成 #8a94a6 虚线 5 4
-    expect(p?.getAttribute('stroke')).not.toBe('#8a94a6')
+    // 变异红证锚：优先级翻转（推断先判）会把该边染成 --edge-inferred 虚线 5 4
+    expect(p?.getAttribute('stroke')).not.toBe('var(--edge-inferred)')
   })
 
   it('图例四项真实文本（浅色白卡圆角非交互——data-legend+aria-hidden）', () => {

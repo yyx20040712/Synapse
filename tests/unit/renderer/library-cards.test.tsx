@@ -206,7 +206,8 @@ describe('R3-LIB 菱形分隔线（筛选区与列表之间）', () => {
 describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）', () => {
   it('卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）', () => {
     expect(css, '.lib-card 渐变（mockup .card 逐值）').toMatch(/\.lib-card\s*\{[^}]*linear-gradient\(168deg/)
-    expect(css, 'inset 顶高光').toMatch(/\.lib-card\s*\{[^}]*inset 0 1px 0 rgba\(255, 255, 255, 0\.9\)/)
+    // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
+    expect(css, 'inset 顶高光').toMatch(/\.lib-card\s*\{[^}]*inset 0 1px 0 var\(--panel-a90\)/)
     expect(css, '背景裁到 padding-box（定稿注意事项②）').toMatch(
       /\.lib-card\s*\{[^}]*background-clip: padding-box/
     )
@@ -259,12 +260,12 @@ describe('R3-LIB 回炉一（门一 3B+3W）', () => {
     expect(css, '空态居中').toMatch(/\.lib-detail-empty\s*\{[^}]*align-items: center/)
   })
 
-  it('R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring .45+shadow-2+角饰常显（两档于 hover）', () => {
+  it('R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring a45+shadow-2+角饰常显（两档于 hover）', () => {
     // 渐变保留=.lib-card-selected 段不声明 background（继承 .lib-card 渐变），
     // 锁「不覆盖」形态：段内不得出现 background 覆盖声明
     const seg = css.match(/\.lib-card-selected\s*\{[^}]*\}/)?.[0] ?? ''
     expect(seg).toContain('border-color: var(--gold)')
-    expect(seg).toContain('inset 0 0 0 1px rgba(201, 168, 106, 0.45)')
+    expect(seg).toContain('inset 0 0 0 1px var(--border-gold-a45)')
     expect(seg).toContain('var(--shadow-2)')
     expect(seg, '选中段不得平色覆盖渐变（门一独立裁）').not.toMatch(/background: var\(--accent-soft\)/)
     expect(css, '角饰常显').toMatch(/\.lib-card-selected \.lib-corner\s*\{[^}]*var\(--gold\)/)

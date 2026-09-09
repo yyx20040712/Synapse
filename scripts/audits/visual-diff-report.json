@@ -1,7 +1,7 @@
 {
   "meta": {
     "tool": "scripts/audits/visual-diff-locate.mjs",
-    "date": "2026-09-08T19:00:33.280Z",
+    "date": "2026-09-09T15:52:30.788Z",
     "algorithm": {
       "blockPx": 16,
       "threshold": "RGB 任一通道 |a-b|>6",
@@ -26,584 +26,72 @@
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 250,
-      "bandCount": 4,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            160,
-            352
-          ],
-          "x": [
-            0,
-            800
-          ],
-          "rows": 12,
-          "blocks": 105
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            896
-          ],
-          "rows": 3,
-          "blocks": 97
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "lib": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 253,
-      "bandCount": 8,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            144
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 3,
-          "blocks": 27
-        },
-        {
-          "y": [
-            160,
-            192
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            208,
-            240
-          ],
-          "x": [
-            32,
-            112
-          ],
-          "rows": 2,
-          "blocks": 10
-        },
-        {
-          "y": [
-            256,
-            304
-          ],
-          "x": [
-            32,
-            112
-          ],
-          "rows": 3,
-          "blocks": 7
-        },
-        {
-          "y": [
-            448,
-            496
-          ],
-          "x": [
-            240,
-            1184
-          ],
-          "rows": 3,
-          "blocks": 93
-        },
-        {
-          "y": [
-            704,
-            752
-          ],
-          "x": [
-            240,
-            720
-          ],
-          "rows": 3,
-          "blocks": 40
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 3,
-          "blocks": 28
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "lineage-canvas": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 256,
-      "bandCount": 5,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            160,
-            352
-          ],
-          "x": [
-            0,
-            800
-          ],
-          "rows": 12,
-          "blocks": 105
-        },
-        {
-          "y": [
-            464,
-            480
-          ],
-          "x": [
-            848,
-            928
-          ],
-          "rows": 1,
-          "blocks": 5
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            896
-          ],
-          "rows": 3,
-          "blocks": 98
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "lineage-side": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 256,
-      "bandCount": 5,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            160,
-            352
-          ],
-          "x": [
-            0,
-            800
-          ],
-          "rows": 12,
-          "blocks": 105
-        },
-        {
-          "y": [
-            464,
-            480
-          ],
-          "x": [
-            848,
-            928
-          ],
-          "rows": 1,
-          "blocks": 5
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            896
-          ],
-          "rows": 3,
-          "blocks": 98
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "lineage-side-tagged": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 256,
-      "bandCount": 5,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            160,
-            352
-          ],
-          "x": [
-            0,
-            800
-          ],
-          "rows": 12,
-          "blocks": 105
-        },
-        {
-          "y": [
-            464,
-            480
-          ],
-          "x": [
-            848,
-            928
-          ],
-          "rows": 1,
-          "blocks": 5
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            896
-          ],
-          "rows": 3,
-          "blocks": 98
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "reader": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 135,
-      "bandCount": 5,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            144,
-            240
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 6,
-          "blocks": 52
-        },
-        {
-          "y": [
-            256,
-            304
-          ],
-          "x": [
-            32,
-            112
-          ],
-          "rows": 3,
-          "blocks": 7
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 3,
-          "blocks": 28
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "settings": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 137,
-      "bandCount": 4,
-      "bands": [
-        {
-          "y": [
-            16,
-            64
-          ],
-          "x": [
-            48,
-            1424
-          ],
-          "rows": 3,
-          "blocks": 36
-        },
-        {
-          "y": [
-            96,
-            128
-          ],
-          "x": [
-            32,
-            128
-          ],
-          "rows": 2,
-          "blocks": 12
-        },
-        {
-          "y": [
-            160,
-            304
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 9,
-          "blocks": 61
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 3,
-          "blocks": 28
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     },
     "ws-panel": {
       "width": 1608,
       "height": 1009,
       "gridW": 101,
       "gridH": 64,
-      "diffBlocks": 322,
-      "bandCount": 6,
-      "bands": [
-        {
-          "y": [
-            0,
-            192
-          ],
-          "x": [
-            0,
-            1424
-          ],
-          "rows": 12,
-          "blocks": 144
-        },
-        {
-          "y": [
-            208,
-            240
-          ],
-          "x": [
-            32,
-            112
-          ],
-          "rows": 2,
-          "blocks": 10
-        },
-        {
-          "y": [
-            256,
-            304
-          ],
-          "x": [
-            32,
-            112
-          ],
-          "rows": 3,
-          "blocks": 7
-        },
-        {
-          "y": [
-            448,
-            496
-          ],
-          "x": [
-            240,
-            1184
-          ],
-          "rows": 3,
-          "blocks": 93
-        },
-        {
-          "y": [
-            704,
-            752
-          ],
-          "x": [
-            240,
-            720
-          ],
-          "rows": 3,
-          "blocks": 40
-        },
-        {
-          "y": [
-            944,
-            992
-          ],
-          "x": [
-            0,
-            224
-          ],
-          "rows": 3,
-          "blocks": 28
-        }
-      ]
+      "diffBlocks": 0,
+      "bandCount": 0,
+      "bands": []
     }
   }
 }

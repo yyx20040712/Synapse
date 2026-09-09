@@ -8,6 +8,10 @@ import tseslint from 'typescript-eslint'
  * 3. renderer 禁 Node/Electron——最小权限（安全 §6.1）
  * 4. 禁 any / eval——弱模型幻觉的第一道闸
  * 5. features 跨域互引由 scripts/check-quality.mjs 静态检查（glob 表达不了的相对路径规则）
+ * 6. [F-CSS-03 B-5 2026-09-10] synapse/no-inline-color——tsx inline style
+ *    颜色字面量负锚（INV-11 颜色消费单源=--* token）。COLOR_RE 与
+ *    scripts/check-quality.mjs 第 6 段 C-4 双写面逐字一致——改一处必同步
+ *    另一处（§8.6 双写面纪律）。
  */
 export default tseslint.config(
   {
@@ -182,6 +186,45 @@ export default tseslint.config(
         }
       ]
     }
+  },
+  {
+    // [F-CSS-03 B-5] tsx inline style 颜色字面量负锚（设计=终裁档 §1 B-5，
+    // 2026-09-10 迁移毕落地）。AST 面：JSXAttribute[name='style']→
+    // JSXExpressionContainer→ObjectExpression→Property.value=Literal 命中
+    // COLOR_RE→report；var() 载体 Literal 不命中正则天然豁免；模板串/表达式
+    // 值不检（单文件态面）。COLOR_RE 与 check-quality.mjs C-4 消费正则双写面
+    // 逐字一致+两文件头注互指（§8.6 纪律）
+    files: ['src/renderer/**/*.tsx'],
+    plugins: {
+      synapse: {
+        rules: {
+          'no-inline-color': {
+            create(context) {
+              const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/
+              return {
+                JSXAttribute(node) {
+                  if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'style') return
+                  const v = node.value
+                  if (!v || v.type !== 'JSXExpressionContainer') return
+                  const obj = v.expression
+                  if (!obj || obj.type !== 'ObjectExpression') return
+                  for (const prop of obj.properties) {
+                    if (prop.type !== 'Property') continue
+                    const val = prop.value
+                    if (!val || val.type !== 'Literal') continue
+                    const s = String(val.value)
+                    if (COLOR_RE.test(s)) {
+                      context.report({ node: val, message: `inline style 颜色字面量 "${s}"——颜色消费单源=--* token（INV-11）` })
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    rules: { 'synapse/no-inline-color': 'error' }
   },
   {
     files: ['tests/**/*.ts', '**/*.test.ts'],

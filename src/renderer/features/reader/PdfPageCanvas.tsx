@@ -136,7 +136,7 @@ export function PdfPageCanvas(props: {
         canvasContext: ctx,
         viewport,
         transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
-        background: 'rgba(255,255,255,0)'
+        background: 'transparent'
       })
       renderTaskRef.current = task
       await task.promise

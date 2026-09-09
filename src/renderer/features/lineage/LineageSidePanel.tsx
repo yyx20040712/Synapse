@@ -98,9 +98,9 @@ import { LineageSideTags } from './LineageSideTags'
  * 卡见两子件。testid/文案/QUESTION_COLOR 左缘条零改（纯 style 层）。
  */
 const SIDE_GLASS: CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.92)',
+  background: 'var(--panel-a92)',
   backdropFilter: 'blur(12px)',
-  border: '1px solid #e4ded1',
+  border: '1px solid var(--border)',
   borderRadius: 12,
   boxShadow: 'var(--shadow-2)'
 }

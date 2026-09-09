@@ -33,7 +33,7 @@ const TAG_CHIP_STYLE = {
   lineHeight: '16px',
   borderRadius: 3,
   color: 'var(--danger)',
-  background: 'rgba(179, 64, 58, 0.08)',
+  background: 'var(--danger-a08)',
   whiteSpace: 'nowrap'
 } as const
 
@@ -43,7 +43,7 @@ const TAG_BOX_STYLE = {
   height: 18,
   display: 'flex',
   alignItems: 'center',
-  border: '1px solid #dfa84a',
+  border: '1px solid var(--node-meta-border)',
   borderRadius: 4,
   overflowX: 'auto',
   overflowY: 'hidden',

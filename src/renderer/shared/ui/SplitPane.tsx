@@ -172,7 +172,7 @@ export function SplitPane(props: {
       className="h-full w-1 shrink-0 cursor-col-resize"
       // R3-TH1：分隔线金化——侧栏右缘金渐隐线同款语法（端点保留 .15 可见度，
       // 全透明端点会削弱拖拽目标发现性）
-      style={{ background: 'linear-gradient(180deg, rgba(201,168,106,.15), rgba(201,168,106,.5), rgba(201,168,106,.15))' }}
+      style={{ background: 'linear-gradient(180deg, var(--border-gold-a15), var(--border-gold-a50), var(--border-gold-a15))' }}
       onPointerDown={onHandleDown}
       onKeyDown={onHandleKey}
       onDoubleClick={() => {

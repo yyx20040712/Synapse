@@ -185,7 +185,8 @@ describe('F-LG15 manual 边渲染（LineageEdges 三方可区分）', () => {
     mount(<LineageCanvas nodes={nodes} edges={[inferred]} />)
     const p = q('[data-edge-id="e-infer"]')
     expect(p?.getAttribute('stroke')).toBe('var(--manual-edge)')
-    expect(p?.getAttribute('stroke')).not.toBe('#8a94a6') // 变异红证锚：优先级翻转即染推断灰
+    // 变异红证锚：优先级翻转即染推断灰（[F-CSS-03] 载体随迁保活）
+    expect(p?.getAttribute('stroke')).not.toBe('var(--edge-inferred)')
   })
 
   it('manual 优先于综述启发（门一 W1）：端点为综述题名节点的 manual 边仍 manual 琥珀不被 surveyIds 吞色', () => {

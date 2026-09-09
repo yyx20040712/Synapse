@@ -46,14 +46,14 @@ export function PageBox(props: {
       data-page-box={no}
       className="relative shrink-0"
       // [F-06] 页盒 panel 底+柔和阴影（缺陷 B）；渲染/占位同底消色差跳动
-      style={{ width: boxWidth, height: pageBoxHeight(size, zoom), background: 'var(--panel)', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
+      style={{ width: boxWidth, height: pageBoxHeight(size, zoom), background: 'var(--panel)', boxShadow: 'var(--shadow-page)' }}
     >
       {rendered ? (
         <div data-page-root={no} className="absolute inset-0 flex justify-center">
           {/* [F-A5 c/ADR-0019 R2] 白纸承底层（canvas 透明底的承白面——暗色主题
               下页纸仍白，PDF 纸面语义）+isolation（层序比较域封闭单页内，跨页
               互扰不可能——页内层序见 page-layer-z 单源） */}
-          <div className="relative h-fit" style={{ background: '#ffffff', isolation: 'isolate' }}>
+          <div className="relative h-fit" style={{ background: 'var(--panel)', isolation: 'isolate' }}>
             <PdfPageCanvas doc={doc!} pageNo={no} zoom={zoom} onPageRender={props.onPageRender} onError={props.onError} />
             {props.renderPage(no)}
           </div>

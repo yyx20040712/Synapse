@@ -111,7 +111,60 @@ const TOKENS: Array<[string, string]> = [
   ['--fs-body', '12px'],
   ['--fs-strong', '13px'],
   ['--fs-title', '14px'],
-  ['--fs-display', '17px']
+  ['--fs-display', '17px'],
+  // ── F-CSS-03 颜色 token 化（2026-09-09 用户双裁决：零视觉差口径[值原样
+  //    入库,同值合并共享]+语义命名优先[一值一 token,名取主导用途,多用途
+  //    中性名]——50 值=48 新 token+2 既有 token 消费[#ffffff→--panel/
+  //    #e4ded1→--border,不立第二源]；命名表=scripts/audits/f-css03-impl.
+  //    report.md 附录；消费负锚=check-quality C-4+eslint B-5）──
+  ['--accent-a10', 'rgba(44, 95, 138, 0.1)'],
+  ['--accent-a12', 'rgba(44, 95, 138, 0.12)'],
+  ['--accent-a15', 'rgba(44, 95, 138, 0.15)'],
+  ['--accent-a20', 'rgba(44, 95, 138, 0.2)'],
+  ['--accent-a22', 'rgba(44, 95, 138, 0.22)'],
+  ['--accent-a35', 'rgba(44, 95, 138, 0.35)'],
+  ['--accent-a45', 'rgba(44, 95, 138, 0.45)'],
+  ['--accent-a55', 'rgba(44, 95, 138, 0.55)'],
+  ['--border-gold-a15', 'rgba(201, 168, 106, 0.15)'],
+  ['--border-gold-a28', 'rgba(201, 168, 106, 0.28)'],
+  ['--border-gold-a45', 'rgba(201, 168, 106, 0.45)'],
+  ['--border-gold-a50', 'rgba(201, 168, 106, 0.5)'],
+  ['--gold-bright-a70', 'rgba(227, 201, 143, 0.7)'],
+  ['--gold-press', 'rgba(207, 174, 114, 0.3)'],
+  ['--danger-a08', 'rgba(179, 64, 58, 0.08)'],
+  ['--danger-a12', 'rgba(179, 64, 58, 0.12)'],
+  ['--danger-a25', 'rgba(179, 64, 58, 0.25)'],
+  ['--panel-a06', 'rgba(255, 255, 255, 0.06)'],
+  ['--panel-a07', 'rgba(255, 255, 255, 0.07)'],
+  ['--panel-a35', 'rgba(255, 255, 255, 0.35)'],
+  ['--panel-a88', 'rgba(255, 255, 255, 0.88)'],
+  ['--panel-a90', 'rgba(255, 255, 255, 0.9)'],
+  ['--panel-a92', 'rgba(255, 255, 255, 0.92)'],
+  ['--close-red', '#e81123'],
+  ['--close-red-press', '#f1707a'],
+  ['--nav-text', '#cfd5e4'],
+  ['--nav-item-text', '#aeb6ca'],
+  ['--nav-item-text-hover', '#e6eaf4'],
+  ['--nav-item-text-press', '#eaf1fa'],
+  ['--nav-item-text-current', '#f3eddd'],
+  ['--nav-ver-text', '#8d95ad'],
+  ['--nav-ver-border', 'rgba(141, 149, 173, 0.4)'],
+  ['--nav-foot-text', '#6d7590'],
+  ['--ink-deep', '#171e2f'],
+  ['--ink-a18', 'rgba(27, 35, 51, 0.18)'],
+  ['--accent-hi', '#3a76ab'],
+  ['--accent-deep', '#234a6d'],
+  ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
+  ['--lib-paper-hi', '#fffdf9'],
+  ['--lib-paper-lo', '#fdfaf3'],
+  ['--edge-label-text', '#6b7280'],
+  ['--edge-inferred', '#8a94a6'],
+  ['--node-meta-border', '#dfa84a'],
+  ['--note-border', 'rgba(151, 160, 187, 0.28)'],
+  ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
+  ['--shadow-page', '0 1px 4px rgba(0, 0, 0, 0.12)'],
+  ['--shadow-pop-sm', '0 2px 8px rgba(0, 0, 0, 0.15)'],
+  ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)']
 ]
 
 describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
@@ -137,16 +190,18 @@ describe('R3-TH1 回炉 B1——Button 皮肤类防线（内联恒压类选择�
    * 本组断言锁两层：皮肤类规则存在（值面）+Button.tsx 不再用内联变体
    * 皮肤（形态面——防回退到内联）。
    */
-  it('primary 静态皮肤在类规则中（CTA：inset 金 hairline .45 + 6px 切角）', () => {
+  it('primary 静态皮肤在类规则中（CTA：inset 金 hairline a45 + 6px 切角）', () => {
     expect(buttonsCss, '.syn-btn-primary 静态类应在场（theme-buttons.css）').toMatch(/\.syn-btn-primary\s*\{/)
-    expect(buttonsCss, 'inset 金 hairline .45（mockup CTA 静态值）').toMatch(
-      /\.syn-btn-primary\s*\{[^}]*rgba\(201, 168, 106, 0\.45\)/
+    // [F-CSS-03] 断言形态随 token 化迁移：rgba 字面量→var() 载体锚
+    // （值面由 TOKENS --border-gold-a45 正锚独立锁定，此处锁「皮肤住类」形态）
+    expect(buttonsCss, 'inset 金 hairline a45（mockup CTA 静态值——F-CSS-03 token 载体）').toMatch(
+      /\.syn-btn-primary\s*\{[^}]*var\(--border-gold-a45\)/
     )
     expect(buttonsCss, '6px 切角 clip-path（定稿注意事项①）').toMatch(/\.syn-btn-primary\s*\{[^}]*clip-path/)
   })
 
-  it('primary hover 提亮 .45→.7 在类规则中', () => {
-    expect(buttonsCss).toMatch(/\.syn-btn-primary:not\(:disabled\):hover\s*\{[^}]*rgba\(227, 201, 143, 0\.7\)/)
+  it('primary hover 提亮 a45→a70 在类规则中', () => {
+    expect(buttonsCss).toMatch(/\.syn-btn-primary:not\(:disabled\):hover\s*\{[^}]*var\(--gold-bright-a70\)/)
   })
 
   it('ghost hover 金铜在类规则中', () => {

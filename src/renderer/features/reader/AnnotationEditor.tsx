@@ -45,7 +45,7 @@ export function AnnotationEditor(props: {
         top: `calc(${(rect.y + rect.h) * 100}% + 6px)`,
         background: 'var(--panel)',
         borderColor: 'var(--border)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.18)'
+        boxShadow: 'var(--shadow-pop-md)'
       }}
     >
       <p className="line-clamp-2" style={{ color: 'var(--text-dim)' }}>
@@ -119,7 +119,7 @@ export function AnnotationEditor(props: {
         <button
           type="button"
           className={btn}
-          style={{ background: 'var(--accent)', color: '#ffffff', borderColor: 'var(--accent)' }}
+          style={{ background: 'var(--accent)', color: 'var(--panel)', borderColor: 'var(--accent)' }}
           disabled={busy}
           onClick={() => onSave(comment)}
         >

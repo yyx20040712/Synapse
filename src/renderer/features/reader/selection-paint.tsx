@@ -35,7 +35,7 @@ import { bandVertical, clampedHorizontal } from './annotation-style'
 import { PAGE_LAYER_Z } from './page-layer-z'
 
 /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */
-const PAINT_BG = 'rgba(0, 0, 0, 0.20)'
+const PAINT_BG = 'var(--reader-selection-paint)'
 
 /** [F-A6-c] React.memo+props 稳定化（设计书 §3.3 次因面收敛）：root/rects/bands
  *  均来自 SelectionLayer 的 paint 状态对象——仅在 setPaint 时更换引用，组件

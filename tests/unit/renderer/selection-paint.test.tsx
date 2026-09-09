@@ -134,7 +134,7 @@ afterEach(() => {
 })
 
 describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
-  it('S1 拖选防抖路径渲染自绘层：跨 3 行重叠输入（行间 4px 垂直重叠）→块数=行数+两两垂直分离+色 rgba(0,0,0,0.2)', async () => {
+  it('S1 拖选防抖路径渲染自绘层：跨 3 行重叠输入（行间 4px 垂直重叠）→块数=行数+两两垂直分离+色 token 载体（--reader-selection-paint）', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
     await mountLayer(page)
@@ -154,7 +154,8 @@ describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
     const blocks = paintBlocks()
     expect(blocks.length).toBe(3)
     for (const b of blocks) {
-      expect(b.style.background).toBe('rgba(0, 0, 0, 0.2)')
+      // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
+      expect(b.style.background).toBe('var(--reader-selection-paint)')
     }
     // 归并后行间钳制：按 top 排序两两 bottom ≤ next.top+1e-9（输入重叠被
     // 消除——「重叠部分渲染不加深」的构造性保证）
