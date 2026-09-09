@@ -196,7 +196,10 @@ try {
 }
 const cssAll = walk(join(root, 'src'), (p) => p.endsWith('.css'))
 if (cssAll.length === 0) violations.push('哨兵：src 下 walk 零 CSS 文件——结构失能（F-LINT-01 C-8/C-4）')
-const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/
+// i 标志=CSS 函数名大小写不敏感（RGB(255,0,0) 合法渲染生效）——缺 i 则大写
+// 形态绕过负锚（补审 Kimi p1 B-1，2026-09-10）；hex 段已含 A-F 加 i 无副作用。
+// 与 eslint.config.js B-5 的 COLOR_RE 逐字一致（含标志位）——双写面纪律。
+const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/i
 for (const f of cssAll) {
   const rel = relative(root, f).replaceAll('\\', '/')
   const content = readFileSync(f, 'utf-8')

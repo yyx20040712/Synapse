@@ -200,7 +200,9 @@ export default tseslint.config(
         rules: {
           'no-inline-color': {
             create(context) {
-              const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/
+              // i 标志=CSS 函数名大小写不敏感（补审 Kimi p1 B-1）——与
+              // check-quality.mjs C-4 的 COLOR_RE 逐字一致（含标志位）
+              const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/i
               return {
                 JSXAttribute(node) {
                   if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'style') return

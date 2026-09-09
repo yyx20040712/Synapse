@@ -1,0 +1,3 @@
+[routing] run=20260909224313-f4ac 尝试源 1/3: kimi-main(kimi-k3)
+[kimi-main] fetch failed,退避 5000ms
+[kimi-main] HTTP 504,退避 10000ms(第 2 次)

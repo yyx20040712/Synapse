@@ -1,0 +1,36 @@
+[routing]: run=20260909232022-f1g4 source=kimi-main model=kimi-k3 switches=0 usage=in=6768,out=6563 latency=195556ms (by ds-call.mjs 链)
+
+# F-CSS-03 补审·片三（CSS 迁移面）门一报告
+
+## 对账结果（工单①②③④快速结论）
+
+- **①48 token 对账**：diff 新增定义逐数=48（accent8+金6+danger3+panel6+close2+nav8+ink2+btn3+lib2+脉络4+reader4），与附录表 48 行名/值逐对一致；+2 既有=50 与表尾自述吻合。**无计数/名/值偏差**。
+- **②+行残留**：本片全部 + 行均为 `var()` 消费或定义行（豁免内），未见字面量残留。
+- **③值等价**：逐项比对本片全部迁移对，含缩写/尾零形态（`.15`/`.5`/`.12`/`0.20`），rgba 数值全等。
+- **④特异性**：全为同选择器同声明内值载体替换，无结构/层叠变动，特异性不变——确认成立。
+
+## 发现
+
+**[W1] 命名规约自相矛盾（规约写在本段注释里）**
+规约注释定「基色 alpha 族 `<基token>-a<NN>`」，但 `--nav-ver-border: rgba(141,149,173,0.4)` 基色即 `--nav-ver-text: #8d95ad`（141,149,173），未命名 `-a40`；`--gold-press` 基色 #cfae72 即 :16 注释自证的 `--gold-night` 值，未命名 `--gold-night-a30`。且段注释称「第三基色挂 --gold-soft 系语义名」而实际名为 `--gold-press`，注释与实现不符。
+证据：theme.css 新增段 `--nav-ver-border` / `--gold-press` 定义行及上方规约注释。
+
+**[W2] 锚驱动注释阉割致外部引用失真**
+`issue #17561`→`issue 17561` 删 `#`、theme.css:16/19 注释删 `#cfae72`/`rgb(253,224,71)` 精值——可判别为规避 C-4 行级锚。GitHub issue 标准引用带 `#`，删后检索/跳转失真；精值迁往 ADR-0019 仅部分缓解。
+证据：text-layer.css @@ -40 `issue #17561 同族`→`issue 17561 同族`。
+
+**[W3] --panel 跨语义复用耦合（已声明为用户裁决，仍留档）**
+按钮文字 `color:#ffffff→var(--panel)`（theme-buttons.css:17、theme-shell.css:121/125）、text-shadow 描边（theme-lineage.css:133）、workspace 渐变端点（:19）均复用面板底色 token。--panel 语义=surface，票面已有 `--gold-night` 夜面前例，未来换肤时上述文字/描影将静默跟随。
+证据：theme-buttons.css `color: var(--panel);`（原 `#ffffff`）。
+
+**[W4][不确定] 负锚双关卡盲区候选**
+原注释「米白字 #efe9da + 5% 白底」指向 tsx 工具类取色；#efe9da 与 5% 白均不在 48 token/附录表。若实体为 tsx arbitrary-value 类字面量，则 C-4（CSS 行级）与 B-5（tsx inline style）均不覆盖=迁移+关卡双漏。本注释仅是间接证据，需片四 tsx diff 佐证，不确定。
+证据：workspace.css:5 `（米白字 #efe9da + 5% 白底…`（本 diff 已删值）；附录 50 表无此二值。
+
+**[N1] var() 无 fallback 的 IACVT 静默失败面**：token 缺失时声明整体失效而非回退；但定义与消费同文件同 :root，风险可忽略。
+**[N2] 注释可追溯性代价**：精值→ADR-0019+外部 report 附录+git 历史，链路可溯，除 W2 外代价可接受。
+**[N3] text-layer.css 本片仅注释迁移**，实际声明消费在 tsx（selection-paint），本片无法验证其无残留——属分片边界，非缺陷。
+
+## 统计
+
+B0 / W4 / N3（+对账 4 项全过）。**总评**：值等价与计数零偏差、迁移完整，问题集中于命名规约自洽性与注释保真，无阻断项，建议收口前修 W1 注释/命名不一致。

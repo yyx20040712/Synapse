@@ -103,8 +103,9 @@
   --accent-a35: rgba(44, 95, 138, 0.35);
   --accent-a45: rgba(44, 95, 138, 0.45);
   --accent-a55: rgba(44, 95, 138, 0.55);
-  /* 金族透明度（基色=--border-gold/--gold-bright;第三基色挂
-     --gold-soft 系语义名）*/
+  /* 金族透明度（基色=--border-gold/--gold-bright;第三基色按按压用途取
+     语义名 --gold-press——与 --gold-soft 同基不同 alpha 档，按零视觉差
+     口径不合并[alpha 档压缩不做]）*/
   --border-gold-a15: rgba(201, 168, 106, 0.15);
   --border-gold-a28: rgba(201, 168, 106, 0.28);
   --border-gold-a45: rgba(201, 168, 106, 0.45);
