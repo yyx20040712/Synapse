@@ -1,0 +1,7 @@
+PASS R2a 档案装载 vs golden 字节比对 gate1-reviewer:= drafter:= auditor-readonly:=
+PASS R2b 派发器 dry-run assembled_system vs golden gate1-reviewer:= drafter:= auditor-readonly:=
+PASS R5 exit=2(期2) stderr全源尽=true 事件计数 attempt=12/12 switch=2/2 exhaust=1/1 chain=kimi-main→kimi-backup→deepseek 账本exhaust=true
+PASS R4 流水:尾100行坏0行跳0行(旧版本) 事件分布={"attempt":68,"switch":8,"exhaust":4,"ok":20}；账本:尾23行坏0行跳0行(旧版本) 事件分布={"ok":18,"switch":4,"exhaust":1}
+
+regression 汇总：4/4 过（项=R2a/R2b/R5/R4）
+exit=0

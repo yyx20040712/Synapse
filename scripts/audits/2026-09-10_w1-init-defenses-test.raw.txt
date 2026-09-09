@@ -1,0 +1,64 @@
+== W1 init-defenses 实测证据（2026-09-10，三 stack+幂等重跑）==
+
+----- stack=npm-verify：init -----
+[OK] 宪法骨架+ORG-SEG 生成+预算自检（PASS ORG-SEG 段非空白字符 327/600）: AGENTS.md
+[OK] CI 骨架（stack=npm-verify）: .github/workflows/ci-defenses.yml
+[OK] 门禁聚合入口（npm 门禁聚合（探测 package.json scripts））: scripts/verify.mjs
+[OK] 任务书六段模板: docs/templates/task-brief-template.md
+[OK] 台账: docs/ledger.md
+[OK] org-delta 初始化: .zcode/org-delta.jsonl（首行=init 事件）
+[OK] .gitignore 片段追加
+
+防线日汇总：完成 7 项 / 跳过 0 项（stack=npm-verify）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+----- stack=npm-verify：门禁入口产物可跑 -----
+SKIP package.json 不存在——先 npm init 并配置上方 GATES 对应 scripts
+exit=0
+SKIP package.json 不存在——先 npm init 并配置上方 GATES 对应 scripts（STRICT：视为 FAIL）
+strict-exit=1
+----- stack=npm-verify：幂等重跑 -----
+
+防线日汇总：完成 0 项 / 跳过 7 项（stack=npm-verify）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+
+----- stack=pnpm-pygates：init -----
+[OK] 宪法骨架+ORG-SEG 生成+预算自检（PASS ORG-SEG 段非空白字符 327/600）: AGENTS.md
+[OK] CI 骨架（stack=pnpm-pygates）: .github/workflows/ci-defenses.yml
+[OK] 门禁聚合入口（pnpm+py 门禁聚合（探测 ruff/mypy/pytest））: scripts/run_gates.py
+[OK] 任务书六段模板: docs/templates/task-brief-template.md
+[OK] 台账: docs/ledger.md
+[OK] org-delta 初始化: .zcode/org-delta.jsonl（首行=init 事件）
+[OK] .gitignore 片段追加
+
+防线日汇总：完成 7 项 / 跳过 0 项（stack=pnpm-pygates）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+----- stack=pnpm-pygates：门禁入口产物可跑 -----
+SKIP ruff（未安装）→ pnpm add -D ruff 或 pipx install ruff
+SKIP mypy（未安装）→ pnpm add -D mypy 或 pipx install mypy
+-- gate pytest: pytest
+gates 汇总：FAIL ×1（宽松模式，缺失 gate 不阻断）
+exit(尾行语义=FAIL×零测试属探测语义,工具已执行)=见上
+----- stack=pnpm-pygates：幂等重跑 -----
+
+防线日汇总：完成 0 项 / 跳过 7 项（stack=pnpm-pygates）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+
+----- stack=generic：init -----
+[OK] 宪法骨架+ORG-SEG 生成+预算自检（PASS ORG-SEG 段非空白字符 327/600）: AGENTS.md
+[OK] CI 骨架（stack=generic）: .github/workflows/ci-defenses.yml
+[OK] 门禁聚合入口（generic 门禁聚合（手填 GATES 数组））: scripts/verify-generic.sh
+[OK] 任务书六段模板: docs/templates/task-brief-template.md
+[OK] 台账: docs/ledger.md
+[OK] org-delta 初始化: .zcode/org-delta.jsonl（首行=init 事件）
+[OK] .gitignore 片段追加
+
+防线日汇总：完成 7 项 / 跳过 0 项（stack=generic）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+----- stack=generic：门禁入口产物可跑 -----
+SKIP 零 gate（骨架态）——把本项目检查命令填入 GATES 数组后投产
+exit=0
+----- stack=generic：幂等重跑 -----
+
+防线日汇总：完成 0 项 / 跳过 7 项（stack=generic）
+下一步：逐项核对技能 references/05 §4 首周清单——脚手架≠防线齐装，缺的 gate 按 [SKIP] 行提示补齐
+
