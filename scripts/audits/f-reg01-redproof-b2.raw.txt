@@ -1,0 +1,4 @@
+工单统计：共 166 个；open 7（weak 可领 0，strong 7）
+tickets 检查未通过：
+  - 工单 T-99 的 id 不在白名单（SR/SR2/R1~R3/F/P7x/B7/C）——新前缀须同步 check-tickets.mjs ID_WHITELIST
+new_version_exit=1

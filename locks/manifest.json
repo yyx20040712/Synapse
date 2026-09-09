@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T00:20:02.7017303Z",
+    "generatedAt":  "2026-09-09T11:22:52.1821040Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -307,7 +307,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "51c5aa5f510bb40c4e8e548d7be55e3d9e436b6612997081c0bb4ffec86b4efb"
+                      "sha256":  "c9e7deb90d399091ac9cd4c6625581de95bab1a9c1510f7f4ce8e3d801aa6fa4"
                   },
                   {
                       "path":  "scripts/dist.mjs",
@@ -680,6 +680,10 @@
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
                       "sha256":  "97bc79ed40c3d0ff043ea68b65fe8a667a83ff8d9a9864f2147f5864c7dca67c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
+                      "sha256":  "a48ec3af2f2f73660150fdb9f084cf4ca23d2a561ec5a906ef1d6774991adaf5"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",

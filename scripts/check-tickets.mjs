@@ -8,34 +8,55 @@
  * 6. v2 工单防线（B4 条款，2026-08-23）：SR2-* 工单文件头必须携带 "// b3: P7-X"
  *    裁决指针注释行，且 P7-X 必须是 docs/ROADMAP.md Phase 7+ 的已裁决候选——
  *    增量候选须经 B3 增量裁决先落 ROADMAP，再开工单（防工单化阶段任意加塞）
+ * 7. v3 全域化（F-REG-01，2026-09-10）：行级解析（免疫 summary 行内自平衡
+ *    花括号的块级漏捕）+ id 前缀白名单 + 文件存在性全域——旧块级 objRe 只捕
+ *    SR2?- 前缀，非 SR 系 44 票+SR 系嵌套截断 2 票=46 票完全脱检（F 系 done
+ *    票 file 指向不存在路径曾平凡绿，红证 f-reg01-redproof-a.raw.txt）；
+ *    门一 B-1 回炉：解析数对账哨兵+file 空串校验（防行格式漂移静默脱检）
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const root = process.cwd()
 const registryPath = join(root, 'tickets', 'registry.ts')
 const registry = readFileSync(registryPath, 'utf-8')
 
 const tickets = []
-// 键序无关解析：先按对象字面量切块，再逐字段提取（旧版单正则锁 id→file→owner→status
-// 顺序，键序重排的工单会从所有检查中静默消失）
-const objRe = /\{[^{}]*?\bid:\s*'(SR2?-[A-Z]+-\d+)'[^{}]*?\}/g
-let m
-while ((m = objRe.exec(registry)) !== null) {
-  const body = m[0]
+// 行级解析（F-REG-01 全域化）：registry 条目为单行对象（id/file/area/owner/status
+// 均在 summary 字段前、字段序稳定），行级提取天然免疫 summary 内行内自平衡
+// 花括号——旧块级 objRe 的 [^{}] 在 summary 含 {...} 时提前截断（7 票曾静默
+// 漏检），且其 SR2?- 前缀限定使 F/P/R/B/C 系票整体脱检
+for (const line of registry.split('\n')) {
+  const m = /^\s*\{ id: '([^']+)', file: '([^']*)'/.exec(line)
+  if (!m) continue
   const fieldOf = (name) => {
-    const fm = new RegExp(`\\b${name}:\\s*'([^']+)'`).exec(body)
+    const fm = new RegExp(`\\b${name}:\\s*'([^']+)'`).exec(line)
     return fm === null ? null : fm[1]
   }
   const id = m[1]
-  const file = fieldOf('file')
+  const file = m[2]
   const owner = fieldOf('owner')
   const status = fieldOf('status')
-  if (file === null || owner === null || status === null) {
-    console.error(`工单 ${id} 缺少 file/owner/status 必填字段`)
+  if (owner === null || status === null) {
+    console.error(`工单 ${id} 缺少 owner/status 必填字段`)
     process.exit(1)
   }
   tickets.push({ id, file, owner, status })
+}
+
+// 对账哨兵（门一 B-1 回炉+门二 W-1/gate2r W-1 双向收紧）：①status 字段计数
+// （值域 open|done）②id 全文计数（不锚行首——兜多行对象/非标 status 形态：
+// 两类票行首正则与 status 计数均不见而 id 行恒在；summary 实测无 id: 字面量）
+// ——任一 ≠ 成功解析数即硬红（exit 1）
+const statusLineCount = (registry.match(/\bstatus:\s*'(?:open|done)'/g) || []).length
+const idAnyCount = (registry.match(/\bid:\s*'/g) || []).length
+if (statusLineCount !== tickets.length || idAnyCount !== tickets.length) {
+  console.error(
+    `registry 对账失败：status 字段 ${statusLineCount}/id 全文 ${idAnyCount} ≠ 成功解析 ${tickets.length}` +
+      `——存在格式漂移/多行对象/非标 status 票被静默排除`
+  )
+  process.exit(1)
 }
 const byId = new Map(tickets.map((t) => [t.id, t]))
 
@@ -52,6 +73,22 @@ function walk(dir, filter, acc = []) {
 
 const violations = []
 
+// 0) 全工单号格式白名单（F-REG-01）：前缀全集=registry 165 票实测——SR/SR2/
+//    R1/R2/R3/F/C 系须至少一段后缀；P7 系显式枚举（裸形态仅 B7/P7A 两枚实存；
+//    门二 W-2 收紧：P7D/E/X 后缀系不可裸，新前缀免同步逃逸口已封）
+const ID_WHITELIST = /^((SR2?|R[123]|F|C)(-[A-Z0-9]+)+|P7A|(P7D|P7E|P7X)(-[A-Z0-9]+)+|B7)$/
+for (const t of tickets) {
+  if (!ID_WHITELIST.test(t.id)) {
+    violations.push(
+      `工单 ${t.id} 的 id 不在白名单（SR/SR2/R1~R3/F/C 带后缀；P7A/P7D/P7E/P7X；B7）——新前缀须同步 check-tickets.mjs ID_WHITELIST`
+    )
+  }
+  // 门一 B-1 回炉：file 空串=existsSync(root) 恒真的全规则免疫通道，硬拦
+  if (t.file === '') {
+    violations.push(`工单 ${t.id} 的 file 字段为空串（指向仓库根=存在性恒过、内容检查全跳）`)
+  }
+}
+
 // 1) 工单文件必须存在
 for (const t of tickets) {
   if (!existsSync(join(root, t.file.replaceAll('/', '\\')))) {
@@ -65,6 +102,9 @@ for (const t of tickets) {
 //    - tests：guardedDescribe('号') 是激活机制的合法引用（guard.ts：翻 done 即激活，
 //      注释与断言同理）；仅占位调用受限——unimplementedObject('号')/NotImplementedError('号')
 //      的号必须存在，且不得指向 done 工单（防样例挂真实号随工单完成而失效）
+// 引用一致性扫描维持 SR 系（F-REG-01 终裁）：非 SR 票号在 src/tests 以规约
+// 头注形态大量注释引用（R2-SH1/P7E-05/F-LG14 等实测），无占位桩语义，
+// 纳入扫描即大面积误报；全域票（含非 SR）受规则 0/1/3/4b 覆盖
 const srcFiles = [
   ...walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p)),
   ...walk(join(root, 'tests'), (p) => /\.(ts|tsx|mjs)$/.test(p))
@@ -104,9 +144,22 @@ for (const f of srcFiles) {
 }
 
 // 3) done 工单的文件不得再含 NotImplementedError / unimplementedObject
+// 校验器自身豁免（门二 B-7）：本脚本源码含检测词字面量（正则+注释），对
+// 自身运行规则 3 必自匹配假红——file=本脚本的票跳过内容检查（结构性必然）
+const SELF_REL = relative(root, fileURLToPath(import.meta.url)).replaceAll('\\', '/')
+// DIR 形态豁免清单（门一 W-2 回炉）：目录票无文件内容可检，但任意目录放行
+// =逃逸口——限定到已盘点两票，新增 DIR 票须同步本清单（与白名单同机制）
+const DIR_FILE_EXEMPT = new Set(['F-AUDIT-01', 'P7X-03'])
 for (const t of tickets.filter((x) => x.status === 'done')) {
+  if (t.file === SELF_REL) continue
   const p = join(root, t.file.replaceAll('/', '\\'))
   if (!existsSync(p)) continue
+  if (statSync(p).isDirectory()) {
+    if (!DIR_FILE_EXEMPT.has(t.id)) {
+      violations.push(`工单 ${t.id} 的 file 指向目录 ${t.file}——不在 DIR_FILE_EXEMPT 清单（新增目录票须同步豁免清单）`)
+    }
+    continue
+  }
   const content = readFileSync(p, 'utf-8')
   if (/unimplementedObject|NotImplementedError\(/.test(content)) {
     violations.push(`${t.id} 已 done，但文件仍含未实现占位：${t.file}`)
@@ -114,7 +167,9 @@ for (const t of tickets.filter((x) => x.status === 'done')) {
 }
 
 // 4) open 且 .tsx 的 UI 工单文件必须渲染 data-ticket 占位（骨架可见性）
-for (const t of tickets.filter((x) => x.status === 'open' && x.file.endsWith('.tsx'))) {
+//    F-REG-01：限定 SR 系——本防线为骨架票设计，F 系 open 票（F-A9/F-A10/
+//    F-A11）是立案时已实现的真组件，无骨架占位语义，纳入即误报
+for (const t of tickets.filter((x) => /^SR2?-/.test(x.id) && x.status === 'open' && x.file.endsWith('.tsx'))) {
   const p = join(root, t.file.replaceAll('/', '\\'))
   if (!existsSync(p)) continue
   const content = readFileSync(p, 'utf-8')
@@ -130,6 +185,12 @@ for (const t of tickets.filter((x) => x.status === 'open' && x.file.endsWith('.t
 for (const t of tickets.filter((x) => x.status === 'done')) {
   const p = join(root, t.file.replaceAll('/', '\\'))
   if (!existsSync(p)) continue
+  if (statSync(p).isDirectory()) {
+    if (!DIR_FILE_EXEMPT.has(t.id)) {
+      violations.push(`工单 ${t.id} 的 file 指向目录 ${t.file}——不在 DIR_FILE_EXEMPT 清单`)
+    }
+    continue
+  }
   const content = readFileSync(p, 'utf-8')
   if (content.includes(`data-ticket="${t.id}"`)) {
     violations.push(`${t.id} 已 done，但文件仍含自身 data-ticket 骨架占位：${t.file}`)
@@ -175,6 +236,7 @@ for (const t of tickets) {
   if (!t.id.startsWith('SR2-')) continue
   const p = join(root, t.file.replaceAll('/', '\\'))
   if (!existsSync(p)) continue // 文件缺失已在规则 1 报告
+  if (statSync(p).isDirectory()) continue // SR2 票现无目录形态；防御性守卫防 EISDIR（门一 W-5）
   const content = readFileSync(p, 'utf-8')
   // 指针必须位于文件头注释区（首个代码语句之前）——放正文/尾部不算（deepseek 一审 WARN 收紧）
   const codeStart = /\n\s*(?:import|export|const|let|function|class)\b/.exec(content)

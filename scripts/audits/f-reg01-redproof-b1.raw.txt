@@ -1,0 +1,4 @@
+工单统计：共 165 个；open 7（weak 可领 0，strong 7）
+tickets 检查未通过：
+  - 工单 F-A6 指向的文件不存在：src/renderer/features/reader/__nonexist-f-reg01.tsx
+new_version_exit=1

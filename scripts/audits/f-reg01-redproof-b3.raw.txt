@@ -1,0 +1,6 @@
+工单统计：共 165 个；open 7（weak 可领 0，strong 7）
+tickets 检查未通过：
+  - 工单 F-DOC-01 的 file 字段为空串（指向仓库根=存在性恒过、内容检查全跳）
+  - 工单 F-DOC-01 的 file 指向目录 ——不在 DIR_FILE_EXEMPT 清单（新增目录票须同步豁免清单）
+  - 工单 F-DOC-01 的 file 指向目录 ——不在 DIR_FILE_EXEMPT 清单
+empty_file_exit=1

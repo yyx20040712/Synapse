@@ -1,0 +1,3 @@
+[routing]: run=20260909111648-695o source=deepseek model=deepseek-v4-flash switches=0 usage=in=3258,out=25510 latency=202458ms (by ds-call.mjs 链)
+
+B(W-1)：`check-tickets.mjs` 的哨兵 `statusLineCount = (registry.match(/\bstatus:\s*'(?:open|done)'/g)||[]).length` 只统计 `open|done`，多行对象若 status 是 `'closed'`/缺失/带空格，则它既不进 `tickets` 也不被计数，`statusLineCount===tickets.length` 仍成立——多行对象可静默脱检；summary 伪造 `status` 字面量只会增大计数、不能制造绕行，但会造成假红。W(B-7)：`if (t.file === SELF_REL) continue` 是原始字符串等值，未对 `t.file` 做 `./`/反斜杠归一化，若 registry 写成 `'./scripts/check-tickets.mjs'` 或 `'scripts\\check-tickets.mjs'`，SELF_REL 豁免即失效并对自身假红；done-sim 是否覆盖该形态不确定。N(W-2)：`ID_WHITELIST` 覆盖注释所列 `P7A/B7/P7D-E-X-suffix/R2-SH1/F-LG14` 等形态，且机器证据 `exit=0`；165 票全集未提供，故只能按现有证据判 N，无法独立核验全集。
