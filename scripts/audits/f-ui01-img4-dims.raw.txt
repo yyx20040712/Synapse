@@ -1,0 +1,2 @@
+scripts/audits/f-ui01-img4-header.png 271x54
+scripts/audits/f-ui01-fullwindow.png 1603x1003

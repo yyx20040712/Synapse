@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T11:22:52.1821040Z",
+    "generatedAt":  "2026-09-09T11:23:31.7765031Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -236,6 +236,14 @@
                   {
                       "path":  "scripts/audits/f-sw1-probe2.mjs",
                       "sha256":  "67a08bb558f616a90fc4ce0763ed1b035e767061504f51792313abef9b6f4826"
+                  },
+                  {
+                      "path":  "scripts/audits/f-ui01-probe.mjs",
+                      "sha256":  "0b7a8ad8a090dd4339508bd0d16335ce19e0e833680bd5203390cd16f7d525df"
+                  },
+                  {
+                      "path":  "scripts/audits/f-ui01-shot.mjs",
+                      "sha256":  "ef7a3447eb2847e82810970a0eaa72a700bdcefaa6f26e53a97661a615737ff9"
                   },
                   {
                       "path":  "scripts/audits/f-v1-diag.mjs",
