@@ -34,7 +34,9 @@
  *   只经 anchor-serialize 间接调用；AnnotationLayer/AiAnnotationLayer 直调
  *   findRangeAtOffset（几何）+经 anchor-serialize 调 verifyQuote（校验）。
  *   几何原语公共面亦在本模块（F-ARCH4 起 anchor-serialize 消费此面——依赖
- *   单向 anchor-serialize→本模块→annotation-merge，零环）
+ *   单向 anchor-serialize→本模块→annotation-merge；[F-LINT-03] 本模块另值
+ *   import pdf-item-geometry 的 COLUMN_GAP_*（其对 PixelBox 为 type-only
+ *   import 编译期擦除——运行时单向，零值环）
  *
  * ── 生命周期层 ──
  * - 性能约束：单页千级文本节点 <10ms；不做跨页标注（v1 负面清单）
@@ -46,6 +48,7 @@
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { mergeRects } from './annotation-merge'
+import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './pdf-item-geometry'
 
 export interface DOMRange {
   rects: AnnotationRect[]
@@ -268,9 +271,8 @@ const HEIGHT_RATIO_MAX = 2
  *  ——同行片段（上标/基线偏移）重叠率近 1；紧行距（leading ≤ ~0.93em）下相邻行盒
  *  1~2px 亚像素重叠率 ~0.1，不得误并（并则合并矩形取主导行 y/h，次行不被覆盖） */
 const Y_OVERLAP_RATIO_MIN = 0.25
-/** 簇内 x 大间隙断段阈值：max(1.5×主导矩形高, 页宽 2%)——防多栏/大缩进桥接成一个矩形 */
-const COLUMN_GAP_H_FACTOR = 1.5
-const COLUMN_GAP_PAGE_RATIO = 0.02
+// 簇内 x 大间隙断段阈值（[F-LINT-03] 单源驻 pdf-item-geometry——max(1.5×主导
+// 矩形高, 页宽 2%) 防多栏/大缩进桥接成一个矩形；本地同值声明退役）
 /** [F-V1] 行距估计：同片段对/tall-short 变体的中心差（实测 ~0.2-2.4px）不参与估计 */
 const INTRA_ROW_GAP_PX = 2
 

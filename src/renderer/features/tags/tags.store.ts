@@ -37,8 +37,9 @@ export type TagWithCount = Tag & { paperCount: number }
 /** 命令型动作返回：发起方据 ok 分支 toast（错误不进 store.error） */
 export type TagsMutationResult = { ok: true } | { ok: false; error: AppError }
 
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const TAG_OP_FAILED = '标签操作失败'
+/** 意外异常（非 ApiClientError）时的兜底中文消息（[F-LINT-03] tags 域单源
+ *  ——TagEditor 同文案本地声明退役，组件→store import） */
+export const TAG_OP_FAILED = '标签操作失败'
 
 export interface TagsStore {
   tags: TagWithCount[]

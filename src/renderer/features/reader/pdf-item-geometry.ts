@@ -309,10 +309,10 @@ export function itemRects(
 // ── 基线分组并块（取证口径 2——f-a6-diag-lib baselineGroupBlocks 移植+组内
 //    x 大间隙断段[票面 §1-3「并集/断段」——镜像 mergeLineRects COLUMN_GAP 语义]）──
 
-/** 簇内 x 大间隙断段阈值（与 annotation-anchor 私有常量同值——跨件私有常量，
- *  值域契约由两处测试锚定；Rule of Three 第 2 次保持重复） */
-const COLUMN_GAP_H_FACTOR = 1.5
-const COLUMN_GAP_PAGE_RATIO = 0.02
+/** 簇内 x 大间隙断段阈值（[F-LINT-03] reader 几何单源——annotation-anchor
+ *  同值本地声明退役改 import；值域契约由两处测试锚定不变） */
+export const COLUMN_GAP_H_FACTOR = 1.5
+export const COLUMN_GAP_PAGE_RATIO = 0.02
 
 /** v 轴投影聚类（排序+相邻差>tol 断簇——与取证 baselineRowTruth 同语义同容差） */
 function groupByBaseline(boxes: ItemBox[], tolPx: number): ItemBox[][] {

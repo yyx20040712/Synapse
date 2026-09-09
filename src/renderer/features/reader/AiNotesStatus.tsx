@@ -11,8 +11,8 @@
  *   **ai-sensor/observe**（主控裁决方向 B，2026-08-27：status+per-paper
  *   hasPendingJob/productExists/archivedExists 四事实单次聚合——六态判定
  *   事实单源；STATUS_POLL_MS=5s 仅组件挂载期间=笔记面板打开，ADR §1 门控；
- *   卸载清 interval，INV-14 成对同族；轮询常量仍为本域私有——Rule of Three
- *   第 2 次保持重复，第 3 处出现时抽 shared）
+ *   卸载清 interval，INV-14 成对同族；轮询常量 [F-LINT-03] 已抽
+ *   shared/ui-constants 与 ZcodeLinkSection 同源）
  * - 「导入 AI 笔记」按钮（done-unimported 态——六态表见 ai-notes-phase.ts）：
  *   调 ai-notes/import（07 目录级全量——幂等使无害）→三桶 toast（imported/
  *   skipped 计数+errors 篇名）→list/observe 刷新（E1 手动激活形态——D2b
@@ -29,15 +29,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED, STATUS_POLL_MS } from '../../shared/ui-constants'
 import { useAiNotesStore } from './ai-notes.store'
 import { derivePhase } from './ai-notes-phase'
 
-/** 轮询周期（组件域私有——头注行为层声明） */
-const STATUS_POLL_MS = 5000
 /** 连续轮询失败阈值（≥ 此值显示离线提示行） */
 const POLL_FAIL_THRESHOLD = 3
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const ACTION_FAILED = '操作失败'
 
 export function AiNotesStatus(props: { paperId: string; hasNotes: boolean }): JSX.Element {
   const { paperId, hasNotes } = props
@@ -98,7 +95,7 @@ export function AiNotesStatus(props: { paperId: string; hasNotes: boolean }): JS
     requestRead(paperId)
       .then(() => loadObserve(paperId).catch(() => undefined))
       .catch((e: unknown) => {
-        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+        showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
       })
   }
 
@@ -115,7 +112,7 @@ export function AiNotesStatus(props: { paperId: string; hasNotes: boolean }): JS
         void loadObserve(paperId).catch(() => undefined)
       })
       .catch((e: unknown) => {
-        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+        showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
       })
   }
 

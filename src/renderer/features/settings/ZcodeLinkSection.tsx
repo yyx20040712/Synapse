@@ -23,12 +23,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClientError, api, unwrap } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED, STATUS_POLL_MS } from '../../shared/ui-constants'
 import type { ZcodeLinkDetectRes } from '@shared/ipc/schemas'
-
-/** 轮询周期（组件域私有——Rule of Three 第 2 次保持重复；第 3 处出现时抽 shared） */
-const STATUS_POLL_MS = 5000
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const ACTION_FAILED = '操作失败'
 
 const CONFIRM_FIRST = '将把 AI 传感器技能安装到 zcode 技能目录。确认安装？'
 const CONFIRM_OVERWRITE = '检测到已有技能目录，安装将覆盖其中文件。确认覆盖？'
@@ -73,7 +69,7 @@ export function ZcodeLinkSection(): JSX.Element {
         return run() // re-detect→installed-idle（迁移收口）
       })
       .catch((e: unknown) => {
-        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+        showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
       })
       .finally(() => {
         setBusy(false)

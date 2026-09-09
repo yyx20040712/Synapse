@@ -1,0 +1,12 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 lint:dup-constants
+> node scripts/check-dup-constants.mjs
+
+dup-constants：扫描 216 文件 / 131 声明 / 2 跨文件同值组
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：SAVE_FAILED / UPDATE_FAILED）
+B-2 副产物：未 export 字面量 const 66 处（DUP_CONSTANTS_B2=1 展开清单）
+dup-constants 检查通过：红层 0 组 baseline 待收敛（F-LINT-03 候选）/ warn 2 组不卡 CI
+exit=0

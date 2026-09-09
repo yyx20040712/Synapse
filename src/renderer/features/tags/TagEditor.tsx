@@ -20,10 +20,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { useTagsStore } from './tags.store'
-
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const TAG_OP_FAILED = '标签操作失败'
+import { useTagsStore, TAG_OP_FAILED } from './tags.store'
 
 export function TagEditor(props: {
   paperId: string

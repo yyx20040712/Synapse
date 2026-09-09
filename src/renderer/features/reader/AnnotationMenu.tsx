@@ -38,8 +38,7 @@
  * - 禁止 any；组件 ≤250 行
  */
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-
-const btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50'
+import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
 
 export function AnnotationMenu(props: {
   annotation: Annotation

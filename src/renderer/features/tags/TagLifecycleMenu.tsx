@@ -7,9 +7,8 @@
  * Dialog 域）。所有动作只上抛回调——对话框宿主与写路径在 TagFilter。
  */
 import { useEffect } from 'react'
+import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 import type { TagWithCount } from './tags.store'
-
-const ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5'
 
 export function TagLifecycleMenu(props: {
   tag: TagWithCount
@@ -51,7 +50,7 @@ export function TagLifecycleMenu(props: {
         <button
           type="button"
           role="menuitem"
-          className={ITEM_STYLE}
+          className={MENU_ITEM_STYLE}
           style={{ color: 'var(--text)' }}
           onClick={() => props.onRename(tag)}
         >
@@ -60,7 +59,7 @@ export function TagLifecycleMenu(props: {
         <button
           type="button"
           role="menuitem"
-          className={`${ITEM_STYLE} disabled:opacity-50`}
+          className={`${MENU_ITEM_STYLE} disabled:opacity-50`}
           style={{ color: 'var(--text)' }}
           disabled={!props.canMerge}
           onClick={() => props.onMerge(tag)}
@@ -70,7 +69,7 @@ export function TagLifecycleMenu(props: {
         <button
           type="button"
           role="menuitem"
-          className={ITEM_STYLE}
+          className={MENU_ITEM_STYLE}
           style={{ color: 'var(--danger)' }}
           onClick={() => props.onDelete(tag)}
         >

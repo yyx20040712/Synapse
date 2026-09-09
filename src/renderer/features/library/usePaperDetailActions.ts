@@ -28,9 +28,7 @@ import { useState } from 'react'
 import type { PaperDetail } from '@shared/models/paper'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const ACTION_FAILED = '操作失败'
+import { OP_FAILED } from '../../shared/ui-constants'
 
 /** 剪贴板动作失败文案（E6/E7：无 CANCELLED 面，失败统一动作型） */
 const CLIP_FAILED = '复制到剪贴板失败'
@@ -100,7 +98,7 @@ export function usePaperDetailActions(
         console.error('[PaperDetailActions] 剪贴板导出失败', e)
         showToast(CLIP_FAILED, 'error')
       } else {
-        showToast(e instanceof ApiClientError ? e.message : ACTION_FAILED, 'error')
+        showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
       }
     } finally {
       setEnriching(false)

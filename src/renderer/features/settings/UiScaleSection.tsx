@@ -26,11 +26,9 @@ import { UI_SCALE, type UiScale } from '@shared/ipc/schemas'
 import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED } from '../../shared/ui-constants'
 import { useSettingsStore } from './settings.store'
 import { SettingsSection } from './SettingsSection'
-
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const OP_FAILED = '操作失败'
 
 /** R2-SET1 界面缩放三档档名（百分比经 UI_SCALE 数值单源推导，不手写第二份） */
 const UI_SCALE_LABEL: Record<UiScale, string> = { small: '小', medium: '中', large: '大' }

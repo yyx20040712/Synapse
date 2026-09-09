@@ -29,10 +29,9 @@
 import { useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED } from '../../shared/ui-constants'
 import { useWorkspaceStore, selectCurrentName } from './workspace.store'
 import './workspace.css'
-
-const OP_FAILED = '操作失败'
 
 export function WorkspaceSwitcher(props: { dirty: boolean; onManage: () => void }): JSX.Element {
   const items = useWorkspaceStore((s) => s.items)

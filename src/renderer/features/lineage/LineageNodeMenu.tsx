@@ -13,6 +13,7 @@
  * 域——菜单轻量面不挂键盘）。所有动作只上抛回调——写路径收口在 Board→store。
  */
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 import { isSurvey } from './lineage-classify'
 
 export interface LineageNodeMenuProps {
@@ -39,8 +40,6 @@ export interface LineageNodeMenuProps {
   onRemoveNode(nodeId: string): void
 }
 
-const ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5'
-
 export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
   const { node, parentEdge, anchor } = props
   return (
@@ -60,48 +59,48 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkTo(node.id)}>
+        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkTo(node.id)}>
           连线到…
         </button>
-        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
+        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
           改父…
         </button>
         {node.paperId !== null && isSurvey(node.title) && (
         <button
           type="button"
           role="menuitem"
-          className={ITEM_STYLE}
+          className={MENU_ITEM_STYLE}
           style={{ color: 'var(--text)' }}
           onClick={() => props.onAddRefLink(node.id)}
         >
           添加参考连接
         </button>
         )}
-        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkManualParent(node.id)}>
+        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkManualParent(node.id)}>
           连接父文献…
         </button>
         {props.manualParentEdges.length > 0 && (
           <button
             type="button"
             role="menuitem"
-            className={ITEM_STYLE}
+            className={MENU_ITEM_STYLE}
             style={{ color: 'var(--text)' }}
             onClick={() => props.onManageManualParents(node.id)}
           >
             管理人工连线…
           </button>
         )}
-        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onEditIdea(node.id)}>
+        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onEditIdea(node.id)}>
           编辑核心想法
         </button>
-        <button type="button" role="menuitem" className={ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onAddTag(node.id)}>
+        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onAddTag(node.id)}>
           添加标签…
         </button>
         {parentEdge !== null && (
           <button
             type="button"
             role="menuitem"
-            className={ITEM_STYLE}
+            className={MENU_ITEM_STYLE}
             style={{ color: 'var(--text)' }}
             onClick={() => props.onRemoveParentEdge(parentEdge.id)}
           >
@@ -111,7 +110,7 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
         <button
           type="button"
           role="menuitem"
-          className={ITEM_STYLE}
+          className={MENU_ITEM_STYLE}
           style={{ color: 'var(--danger)' }}
           onClick={() => props.onRemoveNode(node.id)}
         >

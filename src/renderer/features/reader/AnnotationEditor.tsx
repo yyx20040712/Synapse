@@ -12,9 +12,8 @@
  */
 import { useEffect, useRef } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
 import { useAnnotationDraft } from './use-annotation-draft'
-
-const btn = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50'
 
 export function AnnotationEditor(props: {
   annotation: Annotation

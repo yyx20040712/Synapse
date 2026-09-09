@@ -23,6 +23,7 @@ import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED } from '../../shared/ui-constants'
 import { useSettingsStore } from './settings.store'
 import { CorpusExportSection } from './CorpusExportSection'
 import { SettingsSection } from './SettingsSection'
@@ -30,8 +31,6 @@ import { UiScaleSection } from './UiScaleSection'
 import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
 
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
-const OP_FAILED = '操作失败'
 const SAVE_OK = '设置已保存'
 
 const THEME_LABEL: Record<AppSettings['theme'], string> = {

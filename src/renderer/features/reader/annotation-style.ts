@@ -25,6 +25,10 @@ export const COLOR_LABEL: Record<AnnotationColor, string> = {
   purple: '紫'
 }
 
+/** 标注弹层小按钮类名串（[F-LINT-03] reader 域单源——AnnotationEditor/
+ *  AnnotationMenu 两处同值本地声明退役；同一视觉元件族：弹层内动作小按钮） */
+export const ANNOTATION_BTN_CLASS = 'rounded border px-2 py-0.5 text-xs disabled:opacity-50'
+
 /** F-11 下偏修正：顶/底收边比例（占矩形高）——clientRects 行盒贴的是 CSS
  *  回退字体墨带而非 PDF 真实字形带：量测实锤（scripts/audits/r2-f11-out，
  *  真机 6.38px 行）底缘悬至基线下 ~1.5px（回退 sans 的 descent 带=「标注

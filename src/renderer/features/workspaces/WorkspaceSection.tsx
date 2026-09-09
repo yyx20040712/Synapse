@@ -21,9 +21,8 @@
 import { useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { OP_FAILED } from '../../shared/ui-constants'
 import { useWorkspaceStore } from './workspace.store'
-
-const OP_FAILED = '操作失败'
 
 export function WorkspaceSection(props: { dirty: boolean }): JSX.Element {
   const items = useWorkspaceStore((s) => s.items)

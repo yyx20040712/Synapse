@@ -1,0 +1,4 @@
+[routing] run=20260909225735-5oxh 尝试源 1/1: kimi-main(kimi-k3)
+[kimi-main] HTTP 504,退避 5000ms(第 1 次)
+[kimi-main] HTTP 504,退避 10000ms(第 2 次)
+[kimi-main] HTTP 504,退避 20000ms(第 3 次)
