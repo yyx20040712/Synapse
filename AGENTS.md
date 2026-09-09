@@ -148,6 +148,19 @@ development Model Selection+loop-engineering references/06）；**架构与
 - 闲时视觉决策零承担（遇即挂起）；e2e 非确定红立案线照旧（上方通则）；每会话
   首动作=技能清点（上方开工纪律）。
 
+<!-- ORG-SEG:BEGIN v1 -->
+### 组织协作通用层（技能 ai-dev-org——2026-09-10 起）
+
+- 跨项目组织规范（岗位×模型路由×部门墙×成本账本）=用户全局技能
+  **ai-dev-org**（loop-engineering 升级替代件，旧件已归档重定向）；本宪法
+  三屋段为 Synapse 特化实例，冲突时以本宪法为准。
+- 派发新形态：ds-call-v2（--role 角色档案化）随技能发布；本仓受锁
+  ds-call.mjs v1 继续服役至回归 R1~R6 全过后按 [locked-change] 切换，
+  两版禁混用于同一工单。
+- 供应商事实唯一真相源=org-config（项目覆盖件 .zcode/org-config.json）；
+  组织差异回灌=.zcode/org-delta.jsonl（技能 05 移植指南 §6 协议）。
+<!-- ORG-SEG:END -->
+
 ### 依赖与提交
 
 - **禁止新增依赖**，确需新增 → 先 ADR + [dep-change] 尾注。运行时依赖预算 ≤15 个。

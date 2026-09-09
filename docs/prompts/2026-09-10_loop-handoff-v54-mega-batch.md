@@ -96,3 +96,12 @@
 - Kimi 窗口/审计包体量阈值照 v53 §4（>30KB 504 风险;5h 窗 403）。
 - 沿用 v53/v52 各条（正则负锚单源配方/Playwright 三坑/§6.2 三件套/
   visual-diff-locate 工具=本窗 F-CSS-03 验收主战具）。
+
+## 6. 在场插入项（2026-09-10——非 §2 票面）
+
+用户指令直入：组织技能化战役（用户全局技能 ai-dev-org 落地+loop-engineering
+退役迁移+本仓 AGENTS.md 增 ORG-SEG 段+methodology §4.5 增指针+.zcode/
+org-delta.jsonl 首行）。三段通道全程在档（scripts/audits/2026-09-10_org-skill-*
++smoke/r2 证据件）：Kimi 咨询→Kimi 设计书→deepseek 审核 5B/5W/3N→主控终裁
+全数采纳并实现。**§2 八票执行序不受影响**；派发器 v2 回归 R1~R6 全量执行=
+独立验证窗（ai-dev-org v1.0 冻结前置），Kimi 额度紧张时以 §2 票面优先。
