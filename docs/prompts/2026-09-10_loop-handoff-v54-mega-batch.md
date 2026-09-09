@@ -114,3 +114,11 @@ org-delta.jsonl 首行）。三段通道全程在档（scripts/audits/2026-09-10
 全落实」（档=scripts/audits/2026-09-10_doc-gov-* 九件；四次审查派发均走
 ds-call-v2 --role auditor-readonly=角色档案链路首次实战，role_sig 恒
 de7c6402）。
+
+**同窗再续（用户裁决）**：技能实现面补审三包全链（A 代码/B 治理+角色/
+C 正文，Kimi+deepseek 双源多轮回炉——dispatcher 升 v2.1.0 修 2B 级真缺陷
+（角色路由死配置/账本 ENOENT 重复计费面）、registry v1.1.0、skill-gc v1.1、
+正文层闭证在档 scripts/audits/2026-09-10_skill-audit-*+c-closure）；岗位
+编制口径更正=8 岗+人类裁决位（此前 9 岗系误计）。**Synapse 文档群对齐
+不在本会话执行**（用户裁决）——指引文档=docs/prompts/2026-09-10_doc-align-brief.md
+（新会话开工件，预盘点候选六项在档待用户裁决）。
