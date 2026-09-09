@@ -1,0 +1,242 @@
+{
+ "kidsTotal": 410,
+ "around": [
+  {
+   "k": 84,
+   "tag": "SPAN",
+   "text": "\"existing infrastructure (Kesha\"",
+   "box": {
+    "x": 1004.9,
+    "y": 448.6,
+    "w": 251.1,
+    "h": 8,
+    "top": 448.6,
+    "bottom": 456.6,
+    "left": 1004.9,
+    "right": 1256
+   },
+   "pos": "absolute",
+   "fontSize": "7.97px",
+   "attrs": [
+    "role=presentation",
+    "dir=ltr",
+    "style=left: 6.31%; top: 38.49%; font-size: cal"
+   ]
+  },
+  {
+   "k": 85,
+   "tag": "BR",
+   "text": "\"\"",
+   "box": {
+    "x": 967.4,
+    "y": 508.2,
+    "w": 0,
+    "h": 21.6,
+    "top": 508.2,
+    "bottom": 529.8,
+    "left": 967.4,
+    "right": 967.4
+   },
+   "pos": "absolute",
+   "fontSize": "16px",
+   "attrs": [
+    "role=presentation"
+   ]
+  },
+  {
+   "k": 86,
+   "tag": "SPAN",
+   "text": "\"stated by Ahad et al. (2020), \"",
+   "box": {
+    "x": 1004.9,
+    "y": 459.2,
+    "w": 251.1,
+    "h": 8,
+    "top": 459.2,
+    "bottom": 467.1,
+    "left": 1004.9,
+    "right": 1256
+   },
+   "pos": "absolute",
+   "fontSize": "7.97px",
+   "attrs": [
+    "role=presentation",
+    "dir=ltr",
+    "style=left: 6.31%; top: 39.82%; font-size: cal"
+   ]
+  },
+  {
+   "k": 87,
+   "tag": "BR",
+   "text": "\"\"",
+   "box": {
+    "x": 967.4,
+    "y": 524.2,
+    "w": 0,
+    "h": 21.6,
+    "top": 524.2,
+    "bottom": 545.8,
+    "left": 967.4,
+    "right": 967.4
+   },
+   "pos": "absolute",
+   "fontSize": "16px",
+   "attrs": [
+    "role=presentation"
+   ]
+  },
+  {
+   "k": 88,
+   "tag": "SPAN",
+   "text": "\"cities are efficient and relia\"",
+   "box": {
+    "x": 1004.9,
+    "y": 469.6,
+    "w": 248.5,
+    "h": 8,
+    "top": 469.6,
+    "bottom": 477.6,
+    "left": 1004.9,
+    "right": 1253.5
+   },
+   "pos": "absolute",
+   "fontSize": "7.97px",
+   "attrs": [
+    "role=presentation",
+    "dir=ltr",
+    "style=left: 6.31%; top: 41.14%; font-size: cal"
+   ]
+  },
+  {
+   "k": 89,
+   "tag": "SPAN",
+   "text": "\"-\"",
+   "box": {
+    "x": 1253.4,
+    "y": 469.6,
+    "w": 2.8,
+    "h": 8,
+    "top": 469.6,
+    "bottom": 477.6,
+    "left": 1253.4,
+    "right": 1256.2
+   },
+   "pos": "absolute",
+   "fontSize": "7.97px",
+   "attrs": [
+    "role=presentation",
+    "dir=ltr",
+    "style=left: 48.07%; top: 41.14%; font-size: ca"
+   ]
+  },
+  {
+   "k": 90,
+   "tag": "BR",
+   "text": "\"\"",
+   "box": {
+    "x": 967.4,
+    "y": 540.2,
+    "w": 0,
+    "h": 21.6,
+    "top": 540.2,
+    "bottom": 561.8,
+    "left": 967.4,
+    "right": 967.4
+   },
+   "pos": "absolute",
+   "fontSize": "16px",
+   "attrs": [
+    "role=presentation"
+   ]
+  }
+ ],
+ "lastBox": {
+  "top": 532.3,
+  "right": 1133.7,
+  "bottom": 540.3
+ },
+ "nextBox": {
+  "top": 542.8,
+  "left": 1016.9
+ },
+ "marker87": {
+  "k": 87,
+  "tag": "BR",
+  "text": "\"\"",
+  "box": {
+   "x": 967.4,
+   "y": 524.2,
+   "w": 0,
+   "h": 21.6,
+   "top": 524.2,
+   "bottom": 545.8,
+   "left": 967.4,
+   "right": 967.4
+  },
+  "pos": "absolute",
+  "fontSize": "16px",
+  "attrs": [
+   "role=presentation"
+  ]
+ },
+ "markerIsBlank": true,
+ "noMeasure": false,
+ "rowSample": [
+  {
+   "text": "technologies (Mohanty et",
+   "top": 532.3,
+   "right": 1133.7
+  },
+  {
+   "text": "the required spatial and",
+   "top": 532.3,
+   "right": 1524.9
+  }
+ ],
+ "rowCount": 2,
+ "leftRow": null,
+ "mkPrev": {
+  "k": 86,
+  "tag": "SPAN",
+  "text": "\"stated by Ahad et al. (2020), \"",
+  "box": {
+   "x": 1004.9,
+   "y": 459.2,
+   "w": 251.1,
+   "h": 8,
+   "top": 459.2,
+   "bottom": 467.1,
+   "left": 1004.9,
+   "right": 1256
+  },
+  "pos": "absolute",
+  "fontSize": "7.97px",
+  "attrs": [
+   "role=presentation",
+   "dir=ltr",
+   "style=left: 6.31%; top: 39.82%; font-size: cal"
+  ]
+ },
+ "mkNext": {
+  "k": 88,
+  "tag": "SPAN",
+  "text": "\"cities are efficient and relia\"",
+  "box": {
+   "x": 1004.9,
+   "y": 469.6,
+   "w": 248.5,
+   "h": 8,
+   "top": 469.6,
+   "bottom": 477.6,
+   "left": 1004.9,
+   "right": 1253.5
+  },
+  "pos": "absolute",
+  "fontSize": "7.97px",
+  "attrs": [
+   "role=presentation",
+   "dir=ltr",
+   "style=left: 6.31%; top: 41.14%; font-size: cal"
+  ]
+ }
+}

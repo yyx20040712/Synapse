@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T14:24:48.8898241Z",
+    "generatedAt":  "2026-09-09T14:25:31.4250719Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -68,6 +68,46 @@
                   {
                       "path":  "scripts/audits/f1-forensics5b.mjs",
                       "sha256":  "83a8b9061370ec0e6ca738fcabdf87da9a0bf285cbf73efa70a6ba9d5b00c2df"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-diag2-real.mjs",
+                      "sha256":  "f25bf5898ef2604bf2343c94a96920fea54550eddcbcaeee8a5d72f95e87e060"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-diag3-real.mjs",
+                      "sha256":  "da4e7a5dccb6c8dec529c00d851e7837efd4dce4d7b385c82c40d0b3ca89ee2c"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-diag4-real.mjs",
+                      "sha256":  "e0f119f6522b791a02cd415205b7e5785d21af3d8c5512fd308623ca6df9c09e"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-diag-real.mjs",
+                      "sha256":  "359e35fcd6f163e111fbf6d6a49122faafaba2bcc544db2c296ce1aa64313e25"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-findpage.mjs",
+                      "sha256":  "a1485ae95a45f4b47b57e93722b851bf185d6c92cb6e381a83e8d80c51717405"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-layout.mjs",
+                      "sha256":  "aff08e50f482aa68dc22ad5cc4cc9ffcba02e5585cc4621f1af0b1087c5b4aed"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-para.mjs",
+                      "sha256":  "e1b2010bdff084ded73540802fada0a6c84ce60ed43735e7ab18a238d7d9d57c"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-para1.mjs",
+                      "sha256":  "d9d0e5e56f69dd9f2369bc9ea0dac49458bf05958b50b008fa060bd93a59b669"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-verify-real.mjs",
+                      "sha256":  "8544265fc14c6fa18e50b3bac7b9928e91984968a99108269f8c96b0bb3bda89"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a10-ws.mjs",
+                      "sha256":  "397e1d5f31a3b4855700b446d9d81a742db4182ac7990f615640808b7f78c523"
                   },
                   {
                       "path":  "scripts/audits/f-a1-forensics.mjs",
@@ -704,6 +744,10 @@
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
                       "sha256":  "fe0f12d47c3ac80c7b082997359faa4e5ceb836aa5473fa8950f74f5afc6a88c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/anchor-blank-snap.test.ts",
+                      "sha256":  "c655189e49416d86ee8b24e10e9bebdef6a713c8d6ece46aced65ab838d307cb"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-item-verify.test.tsx",

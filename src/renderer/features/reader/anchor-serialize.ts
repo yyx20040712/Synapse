@@ -7,6 +7,10 @@
  *   rects；选区任一边界在 root 之外（跨页/页外）或 quote 为空（纯元素/零宽
  *   选择）返回 null；边界点→全局偏移用 probe-range 文本长度探测（文本/元素
  *   容器统一成立）；prefix/suffix 按 CONTEXT_CHARS=32 截取（WADM 惯例）
+ * - [F-A10] 段末空白 affinity：边界先经 anchor-blank-snap 归一化——浏览器把
+ *   行尾/段首空白点击解析为 pdf.js 空白标记 span 槽位（DOM 序≠视觉序，实测
+ *   两方向跳跃：丢下半段/img2 带下一段），按标记盒视觉行重解析到本行行尾/
+ *   行首；非标记边界与无量测环境语义零变（详 anchor-blank-snap 头注）
  * - verifyQuote：前缀/引文/后缀校验 start 偏移是否仍有效；失效时 textQuote
  *   自愈重定位——原位校验优先，重定位打分 score=prefix 2+suffix 1，同级取距
  *   原偏移最近者。定位核 locateQuote=纯文本函数（DOM/items 两域共享单源，
@@ -54,6 +58,7 @@
  *   本模块——用例体零改）；e2e reader-text.spec.ts 划选保存链（收口裁判）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
+import { snapBlankBoundary } from './anchor-blank-snap'
 import {
   collectSpans,
   fullTextOf,
@@ -190,14 +195,23 @@ export function selectionToAnchor(
   if (total === 0) {
     return null
   }
+  // [F-A10] 段末空白 affinity 归一化：空白标记槽位按标记形态与边界侧重解析
+  // （end=本行行尾/start=下一行首——门一回炉 C-1；非标记边界原样）
+  const startBoundary = snapBlankBoundary(root, range.startContainer, range.startOffset, 'start')
+  const endBoundary = snapBlankBoundary(root, range.endContainer, range.endOffset, 'end')
   // 边界点 → 全局偏移：probe-range 的文本长度（文档序拼接口径与 collectSpans 一致）
-  const leadLen = probeTextLength(root, range.startContainer, range.startOffset, 'start')
-  const tailLen = probeTextLength(root, range.endContainer, range.endOffset, 'end')
+  const leadLen = probeTextLength(root, startBoundary.node, startBoundary.offset, 'start')
+  const tailLen = probeTextLength(root, endBoundary.node, endBoundary.offset, 'end')
   if (leadLen === null || tailLen === null) {
     return null
   }
-  const start = leadLen
-  const end = total - tailLen
+  // [C-1] 归一化翻转兜底：起点推进可能越过回拖终点（start>end）——互换防有效
+  // 划选静默丢；原生 Range 恒 start≤end，仅归一化形态可入此支
+  let start = leadLen
+  let end = total - tailLen
+  if (end < start) {
+    ;[start, end] = [end, start]
+  }
   if (end <= start) {
     return null
   }
