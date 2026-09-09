@@ -244,6 +244,12 @@ development Model Selection+loop-engineering references/06）；**架构与
   须配 repo-local `http.sslBackend=openssl` + 自带 CA bundle（配置命令见
   DEV-SETUP §3；.git/config 不随 clone 走，新机必配）
 - 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）
+- **shell 隔层传参四坑（v54 三现+v55 定型+v56 补一条，探针纪律）**：Git Bash→
+  Windows node.exe 隔层上——①node -e 双引号内 `$` 被 bash 展开；②中文经
+  shell 传参 GBK 化；③printf 正则变形；④**argv 丢弃含换行的参数**（v56
+  F-CSS-03 红证实录：多行脚本经 argv 传 node 静默丢参，输出空/异常非报错）。
+  探针类代码一律 Write/Edit 直写文件后 `node 文件`；node -e 仅限纯 ASCII
+  单行。
 - git geometric-repack「File exists」rename 竞态为 Windows 文件锁族噪声（2026-09-02
   三现+`git gc --prune=now` 同报——gc 不自愈）；提交与仓库完整性无碍（fsck 亲验
   exit=0），忽略即可，勿因此重装或重建仓库
