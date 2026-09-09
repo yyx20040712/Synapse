@@ -294,7 +294,7 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
 test('F-A11 笔记编辑：自动保存已保存标记+撤销重做+关闭重开回读', async () => {
   skipIfPending(F02_DEPS)
   const title = '智慧水务 F-A11 笔记 UX 文献'
-  const { app, userData } = await seedAndLaunch(title)
+  const { app } = await seedAndLaunch(title)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
