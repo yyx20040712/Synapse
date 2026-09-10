@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-10T00:10:21.7355375Z",
+    "generatedAt":  "2026-09-10T01:37:21.5291825Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "f892400287e55d720e6394c5783a304a45ccd9f7fffa1d23040d221ff7928054"
+                      "sha256":  "cc22b5859c3e960eb65a1e1d34adb388ce7e44f0514ee46a2233924eb2ec9980"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -108,6 +108,14 @@
                   {
                       "path":  "scripts/audits/f-a10-ws.mjs",
                       "sha256":  "397e1d5f31a3b4855700b446d9d81a742db4182ac7990f615640808b7f78c523"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a12-db-query.mjs",
+                      "sha256":  "524545c75ecd3f39085cffd7b68e688547f8b850139ca04a8c7437021613533d"
+                  },
+                  {
+                      "path":  "scripts/audits/f-a12-verify-real.mjs",
+                      "sha256":  "28380ac758b6e8f80d17f090d95aa03bbee1c6dc6b20d3c45a9759c00983ad7a"
                   },
                   {
                       "path":  "scripts/audits/f-a1-forensics.mjs",
@@ -982,6 +990,10 @@
                       "sha256":  "bc7f220723e4d85800d1aafa9337c74acdcae399c7d69fde3bf161e02fb92868"
                   },
                   {
+                      "path":  "tests/unit/renderer/release-affinity.test.ts",
+                      "sha256":  "873addf2aa01d55b316c359af05503ab09e423b07fb7018b91f49b3f45a55215"
+                  },
+                  {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
                       "sha256":  "0046759b1c0bc8c6c5d53a7e90199f1b1e47473c303e4959257ad2368c7b7f8d"
                   },
@@ -1004,6 +1016,10 @@
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
                       "sha256":  "b3cfc864796a64a0adfeb5075f3179d020bc80d3c6f0ae6cc46759276b385a22"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/selection-layer-fa12.test.tsx",
+                      "sha256":  "61b699d7186185a88c84fc3902ff8929db2b527b02916bb0643a16c4b2d4b63e"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-mode.test.tsx",

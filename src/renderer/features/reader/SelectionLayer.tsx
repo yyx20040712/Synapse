@@ -42,6 +42,12 @@
  * 工具条语义零变。**AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外
  * 边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**。
  *
+ * **F-A12 划选释放点浅探 affinity（事件层重定向）**：mouseup 真划选（位移≥3px
+ * ——程序化零触）且释放点在 focus 行上方间隙、更近上一视觉行 → focus 经
+ * release-affinity.releaseAffinity 重定向上一行行尾（锚定侧原样）后 evaluate.full
+ * 同帧照常（G2 文本位下探——锚定层零 DOM 信号，事件层手势几何裁决；完整判据/
+ * 手势态表/时间线=release-affinity.ts 头注）。
+ *
  * ── 接口层 ── / ── 架构层 ──
  * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再
  *   导出（实现在 selection-geometry——F-A4 拆件，导出面零变）。锚定根=
@@ -61,7 +67,8 @@ import { pushUndo } from './annotation-undo'
 import { createEvaluate, type PaintSelection, type PendingSelection } from './selection-evaluate'
 import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
-import { createVisualScheduler } from './selection-geometry'
+import { createVisualScheduler, closestPageRoot } from './selection-geometry'
+import { releaseAffinity } from './release-affinity'
 import { useReaderStore } from './reader.store'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
@@ -121,12 +128,35 @@ export function SelectionLayer(props: {
       if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
       scheduler.cancel()
       // F-12：位移过小=单击/双击误触不出条（自绘层留待防抖路径随选区坍缩清除）
+      let dragged = false
       if (Number.isFinite(downX)) {
         const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
         downX = downY = Number.NaN
         if (moved < DRAG_SELECT_THRESHOLD_PX) {
           setPending(null)
           return
+        }
+        dragged = true
+      }
+      // [F-A12] 浅探 affinity：真划选（dragged——程序化 mouseup 零触）且释放点
+      // 在 focus 行上方间隙、更近上一视觉行 → focus 重定向上一行行尾（锚定侧
+      // 原样）；随后 evaluate.full 同帧消费已重定向选区（时间线逐帧推演=
+      // release-affinity.ts 头注——mouseup→cancel→F-12 门→判定→setBaseAndExtent
+      // →evaluate.full(true)，排队的 selectionchange 由 visual 快路径幂等吸收）
+      if (dragged) {
+        const sel = window.getSelection()
+        if (sel !== null && sel.rangeCount > 0 && !sel.isCollapsed) {
+          const anchorRoot = closestPageRoot(sel.anchorNode)
+          if (anchorRoot !== null && closestPageRoot(sel.focusNode) === anchorRoot) {
+            const textLayer = anchorRoot.querySelector('.textLayer') as HTMLElement | null
+            if (textLayer !== null) {
+              const target = releaseAffinity(textLayer, sel, e.clientX, e.clientY)
+              if (target !== null) {
+                // 前置 rangeCount>0 且非坍缩守卫蕴含 anchorNode 必在
+                sel.setBaseAndExtent(sel.anchorNode!, sel.anchorOffset, target.node, target.offset)
+              }
+            }
+          }
         }
       }
       evaluate.full(true)

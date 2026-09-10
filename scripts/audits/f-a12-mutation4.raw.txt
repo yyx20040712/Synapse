@@ -1,0 +1,43 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run release-affinity
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/release-affinity.test.ts [2m([22m[2m14 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 38[2mms[22m[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22mW2 释放 y 高于上一视觉行盒顶（跨多行）→ 零变 null（防御上界）[90m 6[2mms[22m[31m[39m
+[31m     → expected { node: Text{ …(1) }, offset: 8 } to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22mW2 释放 y 高于上一视觉行盒顶（跨多行）→ 零变 null（防御上界）
+[31m[1mAssertionError[22m: expected { node: Text{ …(1) }, offset: 8 } to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+Object {
+  "node": EF third,
+  "offset": 8,
+}
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m236:49[22m[39m
+    [90m234| [39m    document[33m.[39mbody[33m.[39m[34mappend[39m(root)
+    [90m235| [39m    [35mconst[39m sel [33m=[39m [34mselOf[39m({ node[33m:[39m r1[33m.[39mfirstChild[33m![39m[33m,[39m offset[33m:[39m [34m0[39m }[33m,[39m { node[33m:[39m r1[33m.[39m…
+    [90m236| [39m    [34mexpect[39m([34mreleaseAffinity[39m(root[33m,[39m sel[33m,[39m [34m100[39m[33m,[39m [34m75[39m))[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                                                [31m^[39m
+    [90m237| [39m  })
+    [90m238| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m13 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 09:17:05
+[2m   Duration [22m 1.32s[2m (transform 58ms, setup 0ms, collect 153ms, tests 38ms, environment 605ms, prepare 189ms)[22m
+

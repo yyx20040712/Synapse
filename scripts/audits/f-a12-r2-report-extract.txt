@@ -1,0 +1,30 @@
+## 9. 门一 R1 回炉处置表（2026-09-10，B=0/W=5/N=4——W1-W4 回炉，W5 入档）
+
+| 门审项 | 处置 | 证据 |
+| --- | --- | --- |
+| W1（必修）判据缺「释放 x 处上一行无文本」编码——票面缺陷机制明示触发前提，原判据只有 y 几何 | 已修：新增 nearestGroupOf（columnGroups 复用+rowEndOf 同型距离式，Rule of Three 第 2 次保持重复）——prev 行按释放 x 定位最近栏组，要求 upX > 该栏组最右文本盒 right+1px（1px 容差对齐 F-A10 `<= box.left + 1` 惯例）才触发；upX 落域内（含容差）=上一行该 x 处有文本→null（组左缘外同式蕴含零变） | 红证 W1（紧间隙同款几何 x=800 域内+878.7 右缘容差→零变，对回炉前代码红，f-a12-red3.raw.txt）→绿；变异 MW1（删栏组域判别）=1 红（f-a12-mutation3.raw.txt）；G2 复刻用例（x=907.7>877.7+1）保持触发 ✓ |
+| W2（必修）跨多行释放（upY < prev 行盒顶）判据恒真只上挪一行=错误终态 | 已修：upY ≥ Math.min(prev tops) 防御上界（不可达形态保守零变） | 红证 W2（释放 y=75 高于 prev 盒顶 80→零变，对回炉前代码红——恒真形态实证复刻）→绿；变异 MW2（删上界）=1 红（f-a12-mutation4.raw.txt） |
+| W3（必修）翻转兜底缺本票面用例 | 已补：backward 链（anchor=r2 中部、focus 解析到 r1、释放 (75,93)→target=r0 行尾全局 8<anchor 21）→接线等价链断言 selectionToAnchor start=8/end=21/quote='AB firstCD se'（C-1 翻转兜底在本票 backward 链真实存活） | 对回炉前代码即绿（既有 C-1 兜底面回归锁——非新行为红证，如实申报）；随 W1/W2 落地同链复验绿 |
+| W4（必修）接线态无组件级测试 | 已补新件 tests/unit/renderer/selection-layer-fa12.test.tsx（137 行 3 用例，act+createRoot+document dispatch，参照受锁 selection-layer.test.tsx 手法零改它）：①程序化 mouseup（无 mousedown 记录）零重定向 ②moved<3px F-12 早退零重定向 ③真划选（mousedown 行内→mouseup 上方间隙行尾空白区）focus 重定向 r0 行尾+锚定侧原样 | 对回炉前后代码均绿（dragged 门+接线为既有面=锁面非红面，如实申报）；**夹具教训**：首版漏桩 Range.prototype.getBoundingClientRect（jsdom 原生无此方法——受锁件专门桩它的原因），evaluateCore:287 抛 TypeError 成 vitest 套件级 Unhandled Errors 1——且被我的 grep 过滤掩蔽两轮（red4/green2 假绿档），verify 真退出码 1 才拦截（f-a12-verify.raw.txt 首跑档）；已补零盒桩（evaluate 走零宽盒守卫早退——接线断言面=selection 终态）并重刷全部证据档（green2/verify 现 0 Unhandled） |
+
+W5=入档（门一档案为准，无代码面动作）。
+
+**回炉证链**：红 2（W1/W2 对回炉前代码，f-a12-red3.raw.txt）→绿定向 17/17→
+全量 **162 文件/1579 用例**（回炉前 161/1573+W1/W2/W3 三用例+W4 三用例）
+（f-a12-green2.raw.txt，0 Unhandled）→变异 MW1/MW2 各 1 红+还原 diff 空+备份
+删→typecheck/lint 净→locks 315→**316**（W4 新件入锁，generate+apply+check
+一致）→**npm run verify 全链真退出码=0**（f-a12-verify.raw.txt：quality+
+tickets+locks+lint+typecheck+test 162/1579+build）。
+
+**回炉面申报**：
+- 判据微调第二次（W1 x 域判别为收紧——非放松：G2 触发面收窄到「行尾空白区」
+  原义；W2 为防御上界）；头注判据段/态表/函数 docstring 同步。
+- 既有夹具 upX 严谨化（T1 G2 浅下探 60→100、T6 双栏 200→260、T9 等距
+  60→100、T11 60→100）：原夹具 x 落栏组域内与「行尾空白区」票面语义不符，
+  W1 落地后必红——修正为语义正确形态（对回炉前代码断言中性，red3 档内全绿
+  佐证）。
+- nearestGroupOf 与 rowEndOf 内部距离式同型重复（Rule of Three 第 2 次保持
+  重复，禁第 3 处）；W1 定位组与 rowEndOf 内部定位组同输入同式=必然一致。
+- 过程教训（自罚申报）：①grep 过滤掩蔽 Unhandled Errors 两轮——证据档检索
+  必含错误面模式（本次 red4/green2 已重刷为净档）；②`grep -c` 计数 0 的
+  退出码 1 截断 && 链——计数后接链改用 `;` 或显式 `|| true`（本次致一次

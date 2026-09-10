@@ -32,6 +32,10 @@
  *   （side='start'|'end'——br 类吸附目标按边界侧区分；输入输出同构——未命中
  *   时返回等值新对象；锚定链消费=anchor-serialize selectionToAnchor 的输入
  *   归一化，快/慢路径最终锚定同源）
+ * - [F-A12] 几何复用面（几何单源，禁两处复制聚类逻辑）：export boxOf（量测
+ *   守卫盒——四零盒 null）/visualRows（中心聚类视觉行）/columnGroups（行内
+ *   栏聚类）/rowEndOf（最近栏组行尾边界）+ export type Box；消费方=
+ *   release-affinity（释放点浅探重定向——事件层判定，与锚定归一化互不替代）
  *
  * ── 架构层 ──
  * - 依赖单向 anchor-serialize→本模块→annotation-anchor（几何原语公共面
@@ -59,8 +63,9 @@ export interface DomBoundary {
 /** 归一化的边界侧（br 类吸附目标按此区分——C-1） */
 export type BoundarySide = 'start' | 'end'
 
-/** 像素盒（top/bottom/left/right——getBoundingClientRect 视口口径） */
-interface Box {
+/** 像素盒（top/bottom/left/right——getBoundingClientRect 视口口径）。
+ *  [F-A12] 起导出——release-affinity 事件层判定复用同型盒（几何单源） */
+export interface Box {
   top: number
   bottom: number
   left: number
@@ -84,8 +89,9 @@ function isBlankMarker(el: Element | null): boolean {
 
 /** 元素量测盒；无布局量测（jsdom 未打桩=含原点四零盒）或非函数 → null（归一化
  *  放弃）。真浏览器的零尺寸标记（br/空 span）原点真实（绝对定位 left/top 仍在）
- *  ——位置即信号（真机复测第一轮实证：按尺寸判会把真标记误杀） */
-function boxOf(el: Element | null): Box | null {
+ *  ——位置即信号（真机复测第一轮实证：按尺寸判会把真标记误杀）。
+ *  [F-A12] 起导出——release-affinity focus 盒/行盒同守卫口径 */
+export function boxOf(el: Element | null): Box | null {
   if (el === null || typeof el.getBoundingClientRect !== 'function') {
     return null
   }
@@ -117,8 +123,9 @@ function markerAt(node: Node, offset: number): Element | null {
 
 /** 中心聚类成视觉行：相邻中心差 ≤ max(2, 半高) 合并；输出按中心升序。
  *  [C-2] 最近单行制——容差内集在跨行居中标记下会同时纳入两行，改为聚类后
- *  取最近一行，等距并列取中心更小者（阅读序上行） */
-function visualRows(items: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ span: NodeSpan; box: Box }>> {
+ *  取最近一行，等距并列取中心更小者（阅读序上行）。
+ *  [F-A12] 起导出——release-affinity 上一直觉行定位复用（输出中心升序=阅读序） */
+export function visualRows(items: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ span: NodeSpan; box: Box }>> {
   const sorted = [...items].sort((a, b) => (a.box.top + a.box.bottom) / 2 - (b.box.top + b.box.bottom) / 2)
   const rows: Array<Array<{ span: NodeSpan; box: Box }>> = []
   for (const it of sorted) {
@@ -159,8 +166,9 @@ function nearestRow(root: HTMLElement, markerCy: number): Array<{ span: NodeSpan
   return best
 }
 
-/** 行内栏聚类：按 left 升序，x 间隙大于阈值断组（同视觉行的多栏文本互不吸附） */
-function columnGroups(row: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ span: NodeSpan; box: Box }>> {
+/** 行内栏聚类：按 left 升序，x 间隙大于阈值断组（同视觉行的多栏文本互不吸附）。
+ *  [F-A12] 起导出——release-affinity 经 rowEndOf 间接消费（单源不改语义） */
+export function columnGroups(row: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ span: NodeSpan; box: Box }>> {
   const sorted = [...row].sort((a, b) => a.box.left - b.box.left)
   const groups: Array<Array<{ span: NodeSpan; box: Box }>> = []
   for (const r of sorted) {
@@ -175,8 +183,10 @@ function columnGroups(row: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ s
   return groups
 }
 
-/** 行尾边界：标记最近栏组内最右文本的末尾 */
-function rowEndOf(row: Array<{ span: NodeSpan; box: Box }>, box: Box): DomBoundary | null {
+/** 行尾边界：标记最近栏组内最右文本的末尾。
+ *  [F-A12] 起导出——release-affinity 重定向目标=上一视觉行（释放 x 最近栏组）行尾，
+ *  box 入参即释放点合成盒（left/right=upX）——语义同一：最近栏组定向 */
+export function rowEndOf(row: Array<{ span: NodeSpan; box: Box }>, box: Box): DomBoundary | null {
   const groups = columnGroups(row)
   let best: Array<{ span: NodeSpan; box: Box }> | null = null
   let bestDist = Number.POSITIVE_INFINITY

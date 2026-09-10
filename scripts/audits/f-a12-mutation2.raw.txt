@@ -1,0 +1,124 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run release-affinity
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/release-affinity.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22mG2 浅下探：释放点在 focus 行上方间隙且更近上一行 → 重定向上一行行尾，落库终点不带下段头[90m 7[2mms[22m[31m[39m
+[31m     → expected +0 to be 8 // Object.is equality[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m向上浅上探对称：backward 划选 focus 被解析到下侧行、释放点更近上一行 → focus 重定向上一行行尾[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 8 // Object.is equality[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m双栏：上一视觉行双栏组，释放 x 定向最近（右）栏组行尾，不跨栏误吸[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 6 // Object.is equality[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m等距（距上一行盒底=距 focus 行盒顶）→ 取上一行重定向（对齐 blank-snap C-2 等距取上行精神）[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 8 // Object.is equality[39m
+[31m   [31m×[31m F-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m紧间隙实测 G2 几何复刻（间隙 2.5px，释放仅高 focus 盒顶 0.5px、低于上一行盒底 2px）→ 浅探余量内重定向[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 36 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 5 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22mG2 浅下探：释放点在 focus 行上方间隙且更近上一行 → 重定向上一行行尾，落库终点不带下段头
+[31m[1mAssertionError[22m: expected +0 to be 8 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m68:28[22m[39m
+    [90m 66| [39m    [34mexpect[39m(target)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m 67| [39m    [34mexpect[39m(target[33m![39m[33m.[39mnode)[33m.[39m[34mtoBe[39m(s1[33m.[39mfirstChild)
+    [90m 68| [39m    [34mexpect[39m(target[33m![39m[33m.[39moffset)[33m.[39m[34mtoBe[39m([34m8[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m 69| [39m    [35mconst[39m a [33m=[39m [34mredirectedAnchor[39m(root[33m,[39m sel[33m,[39m [34m60[39m[33m,[39m [34m115[39m)
+    [90m 70| [39m    [34mexpect[39m(a)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m向上浅上探对称：backward 划选 focus 被解析到下侧行、释放点更近上一行 → focus 重定向上一行行尾
+[31m[1mAssertionError[22m: expected +0 to be 8 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m111:28[22m[39m
+    [90m109| [39m    [34mexpect[39m(target)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m110| [39m    [34mexpect[39m(target[33m![39m[33m.[39mnode)[33m.[39m[34mtoBe[39m(r0[33m.[39mfirstChild)
+    [90m111| [39m    [34mexpect[39m(target[33m![39m[33m.[39moffset)[33m.[39m[34mtoBe[39m([34m8[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m112| [39m    [90m// 接线等价链：全文 'EF thirdAB firstCD second'（25）——重定向后选[39m…
+    [90m113| [39m    [35mconst[39m a [33m=[39m [34mredirectedAnchor[39m(root[33m,[39m sel[33m,[39m [34m75[39m[33m,[39m [34m93[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m双栏：上一视觉行双栏组，释放 x 定向最近（右）栏组行尾，不跨栏误吸
+[31m[1mAssertionError[22m: expected +0 to be 6 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 6[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m145:28[22m[39m
+    [90m143| [39m    [34mexpect[39m(target)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m144| [39m    [34mexpect[39m(target[33m![39m[33m.[39mnode)[33m.[39m[34mtoBe[39m(r0[33m.[39mfirstChild)
+    [90m145| [39m    [34mexpect[39m(target[33m![39m[33m.[39moffset)[33m.[39m[34mtoBe[39m([34m6[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m146| [39m  })
+    [90m147| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m等距（距上一行盒底=距 focus 行盒顶）→ 取上一行重定向（对齐 blank-snap C-2 等距取上行精神）
+[31m[1mAssertionError[22m: expected +0 to be 8 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m179:28[22m[39m
+    [90m177| [39m    [35mconst[39m target [33m=[39m [34mreleaseAffinity[39m(root[33m,[39m sel[33m,[39m [34m60[39m[33m,[39m [34m120[39m)
+    [90m178| [39m    [34mexpect[39m(target)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m179| [39m    [34mexpect[39m(target[33m![39m[33m.[39moffset)[33m.[39m[34mtoBe[39m([34m8[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m180| [39m  })
+    [90m181| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/release-affinity.test.ts[2m > [22mF-A12 释放点浅探 affinity（release-affinity 重定向判定）[2m > [22m紧间隙实测 G2 几何复刻（间隙 2.5px，释放仅高 focus 盒顶 0.5px、低于上一行盒底 2px）→ 浅探余量内重定向
+[31m[1mAssertionError[22m: expected +0 to be 36 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 36[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/renderer/release-affinity.test.ts:[2m195:28[22m[39m
+    [90m193| [39m    [34mexpect[39m(target)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m194| [39m    [34mexpect[39m(target[33m![39m[33m.[39mnode)[33m.[39m[34mtoBe[39m(s1[33m.[39mfirstChild)
+    [90m195| [39m    [34mexpect[39m(target[33m![39m[33m.[39moffset)[33m.[39m[34mtoBe[39m(s1[33m.[39mtextContent[33m![39m[33m.[39mlength)
+    [90m   | [39m                           [31m^[39m
+    [90m196| [39m  })
+    [90m197| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 08:52:02
+[2m   Duration [22m 1.27s[2m (transform 55ms, setup 0ms, collect 143ms, tests 13ms, environment 596ms, prepare 187ms)[22m
+
