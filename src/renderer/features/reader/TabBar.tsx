@@ -136,7 +136,7 @@ export function TabBar(): JSX.Element | null {
                 aria-label="有未保存修改"
                 data-testid="tab-dirty-dot"
                 className="shrink-0 text-[length:var(--fs-micro)] leading-none"
-                style={{ color: 'var(--warning, orange)' }}
+                style={{ color: 'var(--warning)' }}
               >
                 ●
               </span>
