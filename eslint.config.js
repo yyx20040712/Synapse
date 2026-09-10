@@ -1,4 +1,5 @@
 import tseslint from 'typescript-eslint'
+import { COLOR_RE, stripUrlFunctions } from './scripts/color-re.mjs'
 
 /**
  * ESLint 扁平配置 —— 架构规则的可执行化（教训 C1：文档无强制等于没写）。
@@ -9,9 +10,11 @@ import tseslint from 'typescript-eslint'
  * 4. 禁 any / eval——弱模型幻觉的第一道闸
  * 5. features 跨域互引由 scripts/check-quality.mjs 静态检查（glob 表达不了的相对路径规则）
  * 6. [F-CSS-03 B-5 2026-09-10] synapse/no-inline-color——tsx inline style
- *    颜色字面量负锚（INV-11 颜色消费单源=--* token）。COLOR_RE 与
- *    scripts/check-quality.mjs 第 6 段 C-4 双写面逐字一致——改一处必同步
- *    另一处（§8.6 双写面纪律）。
+ *    颜色字面量负锚（INV-11 颜色消费单源=--* token）。[F-LINT-04 ③
+ *    2026-09-10] COLOR_RE/stripUrlFunctions 单源=scripts/color-re.mjs，
+ *    本件与 check-quality.mjs 第 6 段均 import 该件——双写面物理消失；
+ *    内联回退哨兵=check-quality 6b 段对本文件文本 matchAll 计数>0 即红；
+ *    import 失败 fail-closed 抛错（禁 try/catch 回退内联）。
  */
 export default tseslint.config(
   {
@@ -192,17 +195,15 @@ export default tseslint.config(
     // 2026-09-10 迁移毕落地）。AST 面：JSXAttribute[name='style']→
     // JSXExpressionContainer→ObjectExpression→Property.value=Literal 命中
     // COLOR_RE→report；var() 载体 Literal 不命中正则天然豁免；模板串/表达式
-    // 值不检（单文件态面）。COLOR_RE 与 check-quality.mjs C-4 消费正则双写面
-    // 逐字一致+两文件头注互指（§8.6 纪律）
+    // 值不检（单文件态面）。[F-LINT-04 ③⑦ 2026-09-10] COLOR_RE/
+    // stripUrlFunctions import 自 scripts/color-re.mjs 单源（本文件头注
+    // 互指；url(#x)=id 引用非色值，剥离后再检）
     files: ['src/renderer/**/*.tsx'],
     plugins: {
       synapse: {
         rules: {
           'no-inline-color': {
             create(context) {
-              // i 标志=CSS 函数名大小写不敏感（补审 Kimi p1 B-1）——与
-              // check-quality.mjs C-4 的 COLOR_RE 逐字一致（含标志位）
-              const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/i
               return {
                 JSXAttribute(node) {
                   if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'style') return
@@ -215,7 +216,7 @@ export default tseslint.config(
                     const val = prop.value
                     if (!val || val.type !== 'Literal') continue
                     const s = String(val.value)
-                    if (COLOR_RE.test(s)) {
+                    if (COLOR_RE.test(stripUrlFunctions(s))) {
                       context.report({ node: val, message: `inline style 颜色字面量 "${s}"——颜色消费单源=--* token（INV-11）` })
                     }
                   }

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-10T01:37:21.5291825Z",
+    "generatedAt":  "2026-09-10T02:01:19.3969558Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -15,7 +15,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "98b030c4df6aeb1e30f403c0a466d60b5da9bc54ca769c7a8738dc3a8eb2d0f3"
+                      "sha256":  "3f9326d98e1c0c77999cdb57bef7ecef33ad6fce0dcff4830d33d1d972173750"
                   },
                   {
                       "path":  "playwright.config.ts",
@@ -383,11 +383,15 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "838b11c0dea6ea30001f159cae2a554da263374f581d87f6b43004d4e1045ad4"
+                      "sha256":  "bf9fb0c723d08b7693fc398897e8afbc4938409a3a262c0e9dd19981bb12bcf0"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
                       "sha256":  "c9e7deb90d399091ac9cd4c6625581de95bab1a9c1510f7f4ce8e3d801aa6fa4"
+                  },
+                  {
+                      "path":  "scripts/color-re.mjs",
+                      "sha256":  "d8bf71a3be2ca579929a9331acecc26fc95a81f6e8c8f46093f473f01048b395"
                   },
                   {
                       "path":  "scripts/dist.mjs",

@@ -1,0 +1,6 @@
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
+dup-constants：扫描 217 文件 / 132 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查未通过：
+  - 哨兵：theme.test.ts FS_DECL 多处（2 处）歧义——哨兵[W3]：静默取第一处风险，人工消歧（F-CSS-03）
+  - eslint.config.js: 内联 hex 正则回退 1 处（哨兵[F-LINT-04 ③]：COLOR_RE 单源=scripts/color-re.mjs，禁内联回退/字符串拼正则——单源失能即红）
