@@ -137,7 +137,8 @@ export function TextLayer(props: TextLayerProps): JSX.Element {
     return () => layer.cancel()
   }, [textContent, viewportScale, pageWidth, pageHeight, geometry])
 
-  // --scale-factor 供官方 CSS 的 span 字号 calc 使用；宽高=canvas CSS 盒同源量测
+  // --scale-factor 供官方 CSS 的 span 字号 calc 使用（动态注入——C-4c 白名单
+  // DYNAMIC_TOKENS 登记 scripts/check-quality.mjs）；宽高=canvas CSS 盒同源量测
   // （inset:0 之上再显式给定，确保与页面盒对齐）；旋转页（90/270）由
   // rotatedContainerBox 交换为未旋转盒并施加官方等价变换（T1——span 百分比
   // 数学在未旋转空间，容器变换负责与旋转后 canvas 对齐）

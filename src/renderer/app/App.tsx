@@ -130,7 +130,8 @@ export function App(): JSX.Element {
     settingsLoad().catch(() => undefined)
   }, [settingsLoad])
   // 数据通道单点：档位→CSS 变量（theme-shell.css .app-content-row/[data-page-column]
-  // 消费——皮肤住类 B1；变量属数据通道非内联皮肤）
+  // 消费——皮肤住类 B1；变量属数据通道非内联皮肤；--ui-scale 动态注入——
+  // C-4c 白名单 DYNAMIC_TOKENS 登记 scripts/check-quality.mjs）
   useEffect(() => {
     document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
   }, [uiScale])

@@ -1,0 +1,12 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
+dup-constants：扫描 218 文件 / 133 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查未通过：
+  - C-4c var() 语义锚：--ghost-x 引用悬空（引用于 src/renderer/tmp-t4-r1.tsx）——定义 token 于 theme.css 或登记 DYNAMIC_TOKENS
+exit=1

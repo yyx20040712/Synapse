@@ -5,7 +5,8 @@
  * / CSS 字号+颜色字面量消费负锚（第 6 段——[F-LINT-04 ③ 2026-09-10 起
  * COLOR_RE 单源=scripts/color-re.mjs，本件与 eslint.config.js B-5 均
  * import 该件；双写面物理消失，6b 哨兵段哨内联回退）/ 色值 token 同值
- * 守卫（②）/ 内联回退哨兵（③，6b 段）/ 同值双常量（第 7 段）。
+ * 守卫（②）/ 内联回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——
+ * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -284,6 +285,65 @@ for (const sp of SENTINEL_SCAN_FILES) {
   const hits = [...text.matchAll(META_RE)]
   if (hits.length > 0) {
     violations.push(`${relative(root, sp)}: 内联 hex 正则回退 ${hits.length} 处（哨兵[F-LINT-04 ③]：COLOR_RE 单源=scripts/color-re.mjs，禁内联回退/字符串拼正则——单源失能即红）`)
+  }
+}
+
+// 6c) [F-LINT-04 T4] C-4c var() 语义锚——跨文件聚合独立 pass（B-1 check-dup-constants
+//     独立 pass 先例——R−D−W 三集聚合超 eslint 单文件隔离模型，载体=check-quality）。
+//     R=src 全域（.css/.ts/.tsx）注释剥离后 matchAll /var\(\s*(--[\w-]+)/g 引用名集
+//     （Map<名, Set<相对路径>>——红时逐名列引用文件）；注释叙述不入 R
+//     （--gold-night 退役史先例，Kimi 设计书 2.4）。CSS 只剥 /* */ 块注释
+//     （CSS 无 // 语法，不误伤 url(//host) 形态）；ts/tsx 加剥行首 // 注释。
+//     D=theme.css 定义名集，postcss walkDecls 提取——AST 天然剥注释（注释内
+//     --name: 伪定义不进 D=探针 f-t4pre-rdw.mjs VAR_DEF 不剥注释已知差异点的
+//     加固，门一 T4PRE N3）；仅 theme.css=token 定义单源纪律机器锚定——他 css
+//     文件定义 token 被引用即红=防漂移非误报。@theme 重绑 var() 消费
+//     （--text-xs: var(--fs-body)）天然 R∩D 自洽不红；theme-shell.css
+//     var(--ui-scale, 1) fallback=动态注入时序容错非色值 token fallback——
+//     捕获组取首参不受影响，维持。扫描任一异常=push violation 非吞错
+//     （fail-open 统一，终裁 §1.6）。
+// DYNAMIC_TOKENS=C-4c 白名单单源——注入点代码侧注释回指本常量名（双向互指辅链）：
+//   --ui-scale     → App.tsx:136（documentElement.style.setProperty 动态注入）
+//   --scale-factor → TextLayer.tsx:151（textLayer 容器 style 键动态注入）
+const DYNAMIC_TOKENS = ['--ui-scale', '--scale-factor']
+const VAR_REF_RE = /var\(\s*(--[\w-]+)/g
+const varRefFiles = walk(join(root, 'src'), (p) => /\.(css|ts|tsx)$/.test(p))
+const varRefMap = new Map() // 引用名 → Set<相对路径>
+for (const f of varRefFiles) {
+  const rel = relative(root, f).replaceAll('\\', '/')
+  let text
+  try {
+    text = readFileSync(f, 'utf-8')
+  } catch (e) {
+    violations.push(`${rel}: C-4c 读取失败（${e.message}）——fail-open 上报非吞错（F-LINT-04 T4）`)
+    continue
+  }
+  let stripped = text.replace(/\/\*[\s\S]*?\*\//g, '')
+  if (!rel.endsWith('.css')) stripped = stripped.replace(/^\s*\/\/.*$/gm, '')
+  for (const m of stripped.matchAll(VAR_REF_RE)) {
+    if (!varRefMap.has(m[1])) varRefMap.set(m[1], new Set())
+    varRefMap.get(m[1]).add(rel)
+  }
+}
+const varDefSet = new Set()
+let varDefOk = true
+try {
+  postcss
+    .parse(readFileSync(join(root, 'src/renderer/shared/theme.css'), 'utf-8'), { from: 'src/renderer/shared/theme.css' })
+    .walkDecls((decl) => {
+      if (decl.prop.startsWith('--')) varDefSet.add(decl.prop)
+    })
+} catch (e) {
+  varDefOk = false
+  violations.push(`C-4c var() 语义锚：theme.css 解析失败（${String(e.message).split('\n')[0]}）——D 集失能 fail-open 上报（F-LINT-04 T4）`)
+}
+if (varDefOk) {
+  for (const [name, files] of varRefMap) {
+    if (!varDefSet.has(name) && !DYNAMIC_TOKENS.includes(name)) {
+      violations.push(
+        `C-4c var() 语义锚：${name} 引用悬空（引用于 ${[...files].join(', ')}）——定义 token 于 theme.css 或登记 DYNAMIC_TOKENS`
+      )
+    }
   }
 }
 
