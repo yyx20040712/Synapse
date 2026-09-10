@@ -1,0 +1,163 @@
+diff --git a/eslint.config.js b/eslint.config.js
+index 4cc0c0f154..2790915d38 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -9,8 +9,9 @@ import { COLOR_RE, stripUrlFunctions } from './scripts/color-re.mjs'
+  * 3. renderer 禁 Node/Electron——最小权限（安全 §6.1）
+  * 4. 禁 any / eval——弱模型幻觉的第一道闸
+  * 5. features 跨域互引由 scripts/check-quality.mjs 静态检查（glob 表达不了的相对路径规则）
+- * 6. [F-CSS-03 B-5 2026-09-10] synapse/no-inline-color——tsx inline style
+- *    颜色字面量负锚（INV-11 颜色消费单源=--* token）。[F-LINT-04 ③
++ * 6. [F-CSS-03 B-5 2026-09-10] synapse/no-inline-color——[F-LINT-04-T2
++ *    2026-09-10 扩义] tsx 面颜色字面量负锚（原=tsx inline style 面；
++ *    INV-11 颜色消费单源=--* token）。[F-LINT-04 ③
+  *    2026-09-10] COLOR_RE/stripUrlFunctions 单源=scripts/color-re.mjs，
+  *    本件与 check-quality.mjs 第 6 段均 import 该件——双写面物理消失；
+  *    内联回退哨兵=check-quality 6b 段对本文件文本 matchAll 计数>0 即红；
+@@ -191,34 +192,127 @@ export default tseslint.config(
+     }
+   },
+   {
+-    // [F-CSS-03 B-5] tsx inline style 颜色字面量负锚（设计=终裁档 §1 B-5，
+-    // 2026-09-10 迁移毕落地）。AST 面：JSXAttribute[name='style']→
+-    // JSXExpressionContainer→ObjectExpression→Property.value=Literal 命中
+-    // COLOR_RE→report；var() 载体 Literal 不命中正则天然豁免；模板串/表达式
+-    // 值不检（单文件态面）。[F-LINT-04 ③⑦ 2026-09-10] COLOR_RE/
+-    // stripUrlFunctions import 自 scripts/color-re.mjs 单源（本文件头注
+-    // 互指；url(#x)=id 引用非色值，剥离后再检）
++    // [F-CSS-03 B-5] tsx 颜色字面量负锚（设计=终裁档 §1 B-5，2026-09-10
++    // 迁移毕落地）。[F-LINT-04-T2 2026-09-10] 语义扩义：原「tsx inline
++    // style 面」→「tsx 面」（终裁档 §2 T2 行+§1.1 修正条款），新增两条
++    // visitor 路径，AST 三路径全貌：
++    // ① JSXAttribute[name='style']（原路径保留不动）→JSXExpressionContainer
++    //   →ObjectExpression→Property.value=Literal 命中 COLOR_RE→report；
++    //   var() 载体 Literal 不命中正则天然豁免；模板串/表达式值不检。
++    // ② VariableDeclarator：init 递归 unwrap（TSAsExpression/
++    //   TSSatisfiesExpression→expression；Object.freeze(...)→arguments[0]；
++    //   深度上限 4 防御——超限原样返回即不判，不误报）后两形态判定：
++    //   ObjectExpression=逐属性判定（弃「全 Literal 门」——混计算属性/
++    //   引用值不豁免整对象；key=Identifier 或 string Literal 均入判，
++    //   属性名只用于报错信息）+单值 string Literal 命中即报（主控裁决
++    //   扩展：单值常量与对象表同绕过通道，对称闭合）。SpreadElement/
++    //   嵌套对象/模板串/二元式等非 Literal 值=明示不检残留面（与 style
++    //   面语义对称）。
++    // ③ JSXAttribute 属性名域（style 外）：显式表 fill|stroke|color|
++    //   stop-color|flood-color|lighting-color ∪ endsWith('Color') 后缀
++    //   （camelCase 表 stopColor/floodColor/lightingColor 天然命中）；
++    //   value=string Literal 命中即报；域外属性名（data-x 等）不报。
++    //   属性域判定用字符串方法非正则——rule 内零内联 hex 特征正则
++    //   （check-quality 6b 哨兵扫本文件文本，内联 hex 正则=哨兵红）。
++    // [F-LINT-04 ③⑦ 2026-09-10] COLOR_RE/stripUrlFunctions import 自
++    // scripts/color-re.mjs 单源（本文件头注互指；url(#x)=id 引用非色值，
++    // 剥离后再检）
+     files: ['src/renderer/**/*.tsx'],
+     plugins: {
+       synapse: {
+         rules: {
+           'no-inline-color': {
+             create(context) {
++              const hitsColor = (s) => COLOR_RE.test(stripUrlFunctions(s))
++              // init 层递归 unwrap（as const/satisfies/Object.freeze——
++              // Object.freeze({...} as const) 双层等嵌套均经此递归）
++              const unwrapInit = (node, depth = 0) => {
++                if (!node || depth > 4) return node
++                if (node.type === 'TSAsExpression' || node.type === 'TSSatisfiesExpression') {
++                  return unwrapInit(node.expression, depth + 1)
++                }
++                if (
++                  node.type === 'CallExpression' &&
++                  node.callee.type === 'MemberExpression' &&
++                  node.callee.object.type === 'Identifier' &&
++                  node.callee.object.name === 'Object' &&
++                  node.callee.property.type === 'Identifier' &&
++                  node.callee.property.name === 'freeze'
++                ) {
++                  return unwrapInit(node.arguments[0], depth + 1)
++                }
++                return node
++              }
+               return {
++                VariableDeclarator(node) {
++                  const init = unwrapInit(node.init)
++                  if (!init) return
++                  const name = node.id.type === 'Identifier' ? node.id.name : '(destructured)'
++                  if (init.type === 'ObjectExpression') {
++                    // 逐属性判定：仅 string Literal 值入判——SpreadElement/
++                    // 嵌套对象/模板串/二元式/调用式=明示不检残留面
++                    for (const prop of init.properties) {
++                      if (prop.type !== 'Property') continue
++                      if (prop.key.type !== 'Identifier' && prop.key.type !== 'Literal') continue
++                      const val = prop.value
++                      if (!val || val.type !== 'Literal' || typeof val.value !== 'string') continue
++                      if (hitsColor(val.value)) {
++                        const keyName =
++                          prop.key.type === 'Identifier' ? prop.key.name : String(prop.key.value)
++                        context.report({
++                          node: val,
++                          message: `模块常量色值字面量 "${val.value}"（${name}.${keyName}）——颜色消费单源=--* token（INV-11）`
++                        })
++                      }
++                    }
++                  } else if (
++                    init.type === 'Literal' &&
++                    typeof init.value === 'string' &&
++                    hitsColor(init.value)
++                  ) {
++                    context.report({
++                      node: init,
++                      message: `模块常量色值字面量 "${init.value}"（${name}）——颜色消费单源=--* token（INV-11）`
++                    })
++                  }
++                },
+                 JSXAttribute(node) {
+-                  if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'style') return
+-                  const v = node.value
+-                  if (!v || v.type !== 'JSXExpressionContainer') return
+-                  const obj = v.expression
+-                  if (!obj || obj.type !== 'ObjectExpression') return
+-                  for (const prop of obj.properties) {
+-                    if (prop.type !== 'Property') continue
+-                    const val = prop.value
+-                    if (!val || val.type !== 'Literal') continue
+-                    const s = String(val.value)
+-                    if (COLOR_RE.test(stripUrlFunctions(s))) {
+-                      context.report({ node: val, message: `inline style 颜色字面量 "${s}"——颜色消费单源=--* token（INV-11）` })
++                  if (node.name.type !== 'JSXIdentifier') return
++                  const attr = node.name.name
++                  if (attr === 'style') {
++                    // 原 B-5 style 路径（行为保留不动——仅 guard 子句拆分接入新域）
++                    const v = node.value
++                    if (!v || v.type !== 'JSXExpressionContainer') return
++                    const obj = v.expression
++                    if (!obj || obj.type !== 'ObjectExpression') return
++                    for (const prop of obj.properties) {
++                      if (prop.type !== 'Property') continue
++                      const val = prop.value
++                      if (!val || val.type !== 'Literal') continue
++                      const s = String(val.value)
++                      if (COLOR_RE.test(stripUrlFunctions(s))) {
++                        context.report({ node: val, message: `inline style 颜色字面量 "${s}"——颜色消费单源=--* token（INV-11）` })
++                      }
+                     }
++                    return
++                  }
++                  // [F-LINT-04-T2] SVG/attr 面属性名域：显式表 ∪ camelCase 后缀
++                  const EXPLICIT_ATTRS = [
++                    'fill',
++                    'stroke',
++                    'color',
++                    'stop-color',
++                    'flood-color',
++                    'lighting-color'
++                  ]
++                  if (!EXPLICIT_ATTRS.includes(attr) && !attr.endsWith('Color')) return
++                  const v = node.value
++                  if (!v || v.type !== 'Literal' || typeof v.value !== 'string') return
++                  if (hitsColor(v.value)) {
++                    context.report({
++                      node: v,
++                      message: `SVG/attr 颜色字面量 "${v.value}"（${attr}）——颜色消费单源=--* token（INV-11）`
++                    })
+                   }
+                 }
+               }

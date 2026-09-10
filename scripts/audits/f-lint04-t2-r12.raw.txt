@@ -1,0 +1,11 @@
+$ npx eslint src/renderer/lint-red-probe-r12.tsx (rework red case R12: expect R12=2 errors / R13=1 / R14=1, exit=1)
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+E:\class\智慧水务\Synapse_remake\src\renderer\lint-red-probe-r12.tsx
+  1:26  error  模块常量色值字面量 "#111111"（DUAL.a）——颜色消费单源=--* token（INV-11）  synapse/no-inline-color
+  1:40  error  模块常量色值字面量 "#222222"（DUAL.b）——颜色消费单源=--* token（INV-11）  synapse/no-inline-color
+
+✖ 2 problems (2 errors, 0 warnings)
+
+exit=1

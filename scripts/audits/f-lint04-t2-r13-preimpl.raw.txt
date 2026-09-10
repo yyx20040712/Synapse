@@ -1,0 +1,4 @@
+$ npx eslint src/renderer/lint-red-probe-r13-pre.tsx (R13 pre-impl: container-wrapped fill literal, expect 0 errors = N2 detection missing, TDD red)
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+exit=0

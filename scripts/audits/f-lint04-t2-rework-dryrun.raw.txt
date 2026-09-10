@@ -1,0 +1,10 @@
+$ node scripts/audits/f-lint04-t2-dryrun.mjs (rework recheck: expect self-check OK + all-zero)
+self-check OK（A+2/B+1/C1+1/C3+1 全命中——规则实跑证明）
+
+=== F-LINT-04 T2 dry-run（tsx 总数=77，renderer 面=77）===
+A 模块常量色值表命中=0 形态分列= {}
+B 单值色值常量命中=0 形态分列= {}
+C1 已知 SVG camelCase 表=0  C3 兜底域=0  C4 其他属性=0
+D 现行 style 面基线=0（存量绿=应 0）
+sum-check=0
+exit=0

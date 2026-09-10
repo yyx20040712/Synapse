@@ -1,0 +1,10 @@
+$ npx eslint src/renderer/lint-red-probe-r8.tsx (red case R8: expect exactly the no-inline-color error, exit=1)
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+E:\class\智慧水务\Synapse_remake\src\renderer\lint-red-probe-r8.tsx
+  1:40  error  SVG/attr 颜色字面量 "#ffffff"（stopColor）——颜色消费单源=--* token（INV-11）  synapse/no-inline-color
+
+✖ 1 problem (1 error, 0 warnings)
+
+exit=1
