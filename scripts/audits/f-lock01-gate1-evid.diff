@@ -1,0 +1,85 @@
+diff --git a/scripts/audits/f-lock01-mutation.raw.txt b/scripts/audits/f-lock01-mutation.raw.txt
+new file mode 100644
+index 0000000000..c6478a8fff
+--- /dev/null
++++ b/scripts/audits/f-lock01-mutation.raw.txt
+@@ -0,0 +1,44 @@
++=== F-LOCK-01 mutation red proof: shared collector is really consumed by unlock ===
++--- mutation in place (baseline entry renamed to nonexistent path): ---
++19:      '__f-lock01-mutation__.nonexistent')) {
++--- precondition: set baseline IsReadOnly=True (simulate locked state, no manifest touch) ---
++pre-unlock baseline IsReadOnly: True
++--- npm run locks:unlock with MUTATED collector ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:unlock
++> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1
++
++ÒÑ½âËø 311 ¸öÎÄ¼ş¡£¸ÄÍêºóÔËĞĞ npm run locks:apply ÖØĞÂËø¶¨¡£
++baseline IsReadOnly after mutated unlock (expect True = RED): True
++=== mutation red phase done ===
++=== mutation restore phase ===
++--- restore self-check: mutation marker must be 0, baseline entry must be 1 ---
++mutation marker count: 0
++baseline entry count: 0
++restore check: BOM=true CR=0
++--- re-run unlock with RESTORED collector ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:unlock
++> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1
++
++ÒÑ½âËø 312 ¸öÎÄ¼ş¡£¸ÄÍêºóÔËĞĞ npm run locks:apply ÖØĞÂËø¶¨¡£
++baseline IsReadOnly after restored unlock (expect False): False
++--- final: npm run locks:apply back to locked state ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:apply
++> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
++
++ÒÑËø¶¨ 312 ¸öÎÄ¼ş£¨Ö»¶Á£©¡£manifest ¼ÇÂ¼ 312 Ìõ¡£
++Ìá½» manifest ±ä¸üÊ±£¬Ìá½»ĞÅÏ¢±ØĞë´ø [locked-change] Î²×¢¡£
++final baseline IsReadOnly (expect True): True
++=== mutation restore done ===
++--- correction: previous "baseline entry count: 0" was a shell quoting artifact; fixed-string grep recheck ---
++6:# scripts/dup-constants.baseline.jsonï¼›ä¸‰å¤„ç‹¬ç«‹å®šä¹‰æ¼‚ç§»åæ”¶æ•›ä¸ºå•ä¸€æ¥æºã€‚
++19:      'scripts/dup-constants.baseline.json')) {
++marker grep exit=0 ; fixed-string entry grep found above (lines 6 comment + 19 collection entry)
+diff --git a/scripts/audits/f-lock01-prered.raw.txt b/scripts/audits/f-lock01-prered.raw.txt
+new file mode 100644
+index 0000000000..9e508e1bd0
+--- /dev/null
++++ b/scripts/audits/f-lock01-prered.raw.txt
+@@ -0,0 +1,29 @@
++=== F-LOCK-01 prered: defect evidence BEFORE any file change ===
++--- step1: npm run locks:apply (lock all; expect "311") ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:apply
++> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
++
++ÒÑËø¶¨ 311 ¸öÎÄ¼ş£¨Ö»¶Á£©¡£manifest ¼ÇÂ¼ 311 Ìõ¡£
++Ìá½» manifest ±ä¸üÊ±£¬Ìá½»ĞÅÏ¢±ØĞë´ø [locked-change] Î²×¢¡£
++--- step2: npm run locks:unlock (defective collector; expect count-1=310) ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:unlock
++> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1
++
++ÒÑ½âËø 310 ¸öÎÄ¼ş¡£¸ÄÍêºóÔËĞĞ npm run locks:apply ÖØĞÂËø¶¨¡£
++--- step3: baseline.json IsReadOnly after unlock (expect True = DEFECT) ---
++True
++--- step4: locks:check total for cross-check (expect 311) ---
++npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
++
++> synapse@0.1.0 locks:check
++> node scripts/check-locks.mjs
++
++locks æ£€æŸ¥é€šè¿‡ï¼š311 ä¸ªå—é”æ–‡ä»¶ä¸ manifest ä¸€è‡´
++=== prered done ===

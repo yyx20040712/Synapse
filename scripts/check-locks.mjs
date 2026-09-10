@@ -22,7 +22,7 @@ function walk(dir, filter, acc = []) {
   return acc
 }
 
-/** 受锁集合（与 lock-protected.ps1 保持一致——修改需 [locked-change]） */
+/** 受锁集合（与 scripts/get-protected-files.ps1——lock/unlock 两脚本 dot-source 共用的收集函数——保持跨语言一致；修改需 [locked-change]） */
 function protectedFiles() {
   const files = [
     ...walk(join(root, 'tests'), () => true),

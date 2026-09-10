@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-09T23:38:43.7690172Z",
+    "generatedAt":  "2026-09-10T00:10:21.7355375Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -371,7 +371,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "ca750f39f3bf4ffd243ebedc51b8c29a549420241a33ee2c6878a06f16e313c1"
+                      "sha256":  "d88be807d8f7d221a0c4fcd5e84a96cb13a27a7fbc343e6a2078442495e2e2e3"
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
@@ -390,6 +390,10 @@
                       "sha256":  "cc29271c57a458c0864783b4e50a3c5a1cc31bea4be329b49ef56bcdc3c610c6"
                   },
                   {
+                      "path":  "scripts/get-protected-files.ps1",
+                      "sha256":  "96af95a070f24e16d269a03e83afaae58e38a2538ef27f1651de9f2759599275"
+                  },
+                  {
                       "path":  "scripts/installer-smoke.mjs",
                       "sha256":  "d5c1bd4d41cfb8f4d9027c4b67fe017c954818f26ece6a9480570fd4c8c4c165"
                   },
@@ -399,7 +403,7 @@
                   },
                   {
                       "path":  "scripts/lock-protected.ps1",
-                      "sha256":  "82f81946376d68de5a9a22693fd9d8769053b86c74e8389d3a7ddb5a77559a7b"
+                      "sha256":  "49c277b4886c5a0ba8909fc404049047fda5cfeb0bc675164c94d80a0de13475"
                   },
                   {
                       "path":  "scripts/new-ticket.ps1",
@@ -411,7 +415,7 @@
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
-                      "sha256":  "63eb9cc27d2989193ea9bd3a78d13173acdc27934034c7c4c5f6c89142774a5f"
+                      "sha256":  "52985801e18b4d95d7eea49dbd9a83ae5855af2c12baa627e68b41dafb074727"
                   },
                   {
                       "path":  "src/main/db/migrations/001_init.sql",

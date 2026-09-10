@@ -2,29 +2,15 @@
 # 用法：
 #   npm run locks:apply     解锁→重算 sha256→写 manifest→设只读
 #   npm run locks:generate  仅重算 manifest（不设只读）
-# 受锁集合与 scripts/check-locks.mjs 一致；合法修改流程见 AGENTS.md（需 [locked-change] 尾注）
+# 受锁集合由 scripts/get-protected-files.ps1 单一来源提供（lock/unlock 两脚本
+# dot-source 共用，与 check-locks.mjs 跨语言对齐）；合法修改流程见 AGENTS.md（需 [locked-change] 尾注）
 param([switch]$GenerateOnly)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-function Get-ProtectedFiles {
-  $files = @()
-  $files += Get-ChildItem -Path (Join-Path $root 'tests') -Recurse -File
-  $files += Get-ChildItem -Path (Join-Path $root 'src/shared') -Recurse -File
-  $files += Get-ChildItem -Path (Join-Path $root 'src/main/db/migrations') -Recurse -File
-  $files += Get-ChildItem -Path $root -Recurse -File -Include *.test.ts, *.test.tsx |
-    Where-Object { $_.FullName -notmatch '\\node_modules\\|\\out\\|\\dist\\|\\coverage\\' }
-  foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
-      'playwright.config.ts', 'electron.vite.config.ts',
-      'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
-      'scripts/dup-constants.baseline.json')) {
-    $p = Join-Path $root $cfg
-    if (Test-Path $p) { $files += Get-Item $p }
-  }
-  $files += Get-ChildItem -Path (Join-Path $root 'scripts') -Recurse -File -Include *.mjs, *.ps1
-  $files | Sort-Object -Property FullName -Unique
-}
+# 受锁集合单一来源（F-LINT-03 异常项收敛，F-LOCK-01 落地）
+. (Join-Path $PSScriptRoot 'get-protected-files.ps1')
 
 # 1) 先全部解锁（幂等 + 允许重新锁定更新后的内容）
 Get-ProtectedFiles | ForEach-Object { try { $_.IsReadOnly = $false } catch {} }

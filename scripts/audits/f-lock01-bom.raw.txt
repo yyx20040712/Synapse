@@ -1,0 +1,3 @@
+scripts/get-protected-files.ps1 | BOM=true | CR=0 | LF=25 | FFFD=false
+scripts/lock-protected.ps1 | BOM=true | CR=0 | LF=42 | FFFD=false
+scripts/unlock-protected.ps1 | BOM=true | CR=0 | LF=15 | FFFD=false
