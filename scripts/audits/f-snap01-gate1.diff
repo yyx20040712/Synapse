@@ -1,0 +1,38 @@
+diff --git a/src/renderer/features/reader/anchor-blank-snap.ts b/src/renderer/features/reader/anchor-blank-snap.ts
+index 2fc06cc10d..a0bf906984 100644
+--- a/src/renderer/features/reader/anchor-blank-snap.ts
++++ b/src/renderer/features/reader/anchor-blank-snap.ts
+@@ -67,10 +67,11 @@ interface Box {
+   right: number
+ }
+ 
+-/** 栏间断组阈值系数：x 间隙 > max(20px, 2.5×盒高) 断栏（annotation-anchor
+- *  COLUMN_GAP 同族判据的量测侧简化） */
+-const COLUMN_GAP_MIN_PX = 20
+-const COLUMN_GAP_H_FACTOR = 2.5
++/** 栏间断组阈值系数：x 间隙 > max(20px, 2.5×盒高) 断栏。与 pdf-item-geometry
++ *  的 COLUMN_GAP_H_FACTOR（=1.5，pdf item 侧）同族判据的量测侧简化——值不同
++ *  用途不同，BLANK_SNAP_ 前缀防同名混引（v57 §2-8 撞名观察收敛） */
++const BLANK_SNAP_GAP_MIN_PX = 20
++const BLANK_SNAP_GAP_H_FACTOR = 2.5
+ 
+ /** 空白标记：pdf.js 行 break（br）/空串项/纯空白项的渲染产物（textContent
+  *  去空白后为空） */
+@@ -165,7 +166,7 @@ function columnGroups(row: Array<{ span: NodeSpan; box: Box }>): Array<Array<{ s
+   for (const r of sorted) {
+     const g = groups[groups.length - 1]
+     const h = Math.max(2, r.box.bottom - r.box.top)
+-    if (g !== undefined && r.box.left - g[g.length - 1]!.box.right <= Math.max(COLUMN_GAP_MIN_PX, COLUMN_GAP_H_FACTOR * h)) {
++    if (g !== undefined && r.box.left - g[g.length - 1]!.box.right <= Math.max(BLANK_SNAP_GAP_MIN_PX, BLANK_SNAP_GAP_H_FACTOR * h)) {
+       g.push(r)
+     } else {
+       groups.push([r])
+@@ -244,7 +245,7 @@ export function snapBlankBoundary(root: HTMLElement, node: Node, offset: number,
+   //    三分语义保持）；左无栏组（左页边）→ 右侧最近栏组首字符（段首缩进类）。
+   const groups = columnGroups(row)
+   const host = groups.find((g) => {
+-    const tol = Math.max(COLUMN_GAP_MIN_PX, COLUMN_GAP_H_FACTOR * Math.max(2, g[0]!.box.bottom - g[0]!.box.top))
++    const tol = Math.max(BLANK_SNAP_GAP_MIN_PX, BLANK_SNAP_GAP_H_FACTOR * Math.max(2, g[0]!.box.bottom - g[0]!.box.top))
+     return box.left <= g[g.length - 1]!.box.right + tol && box.right >= g[0]!.box.left - tol
+   })
+   if (host !== undefined) {
