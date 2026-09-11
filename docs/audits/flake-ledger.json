@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "note": "[F-TESTREF-W4] e2e flake 台账——立案骨架（票面载体）。实现期以 {spec,case,count,fingerprint,status,first_seen,resolution} 结构收录 P7-A/F-R2e/z-r2e/tag-lifecycle/F-ARCH4-M1/F-G11/settings.png/corpus-export 八线历史（终裁 §4-4 W4 行），替代散落交接书散文计数。",
+  "cases": []
+}

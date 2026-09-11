@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-10T12:56:31.2005646Z",
+    "generatedAt":  "2026-09-11T16:07:41.5032498Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -392,6 +392,10 @@
                   {
                       "path":  "scripts/check-quality.mjs",
                       "sha256":  "59d0d82097c66ba2c6bbc629c0d76ceb58be9769b5e3f5686bdc1efff81d13ea"
+                  },
+                  {
+                      "path":  "scripts/check-test-surface.mjs",
+                      "sha256":  "91b26b385cb7b4c76b11c5c35c5edcfb885727effa18e4e39969492ee42ec26e"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -1246,8 +1250,16 @@
                       "sha256":  "b51bff4c5570f37d8d592578dfcfefc539dc4951556e564df31c5398c3833aa1"
                   },
                   {
+                      "path":  "tests/utils/api-client-mock.ts",
+                      "sha256":  "d57d415fe42ddb7371002e47f18ec61ecfd1bfb22576217f6068d7261bcdd68d"
+                  },
+                  {
                       "path":  "tests/utils/fixtures.ts",
                       "sha256":  "407343b3814aada42271a94652686766edf32f8b41f595e141304a7c93a4ca96"
+                  },
+                  {
+                      "path":  "tests/utils/geometry.ts",
+                      "sha256":  "fee4850ad6c8595d68efbf9c50a96e6a4750bcb8b2859ad25aefb8d6f5565729"
                   },
                   {
                       "path":  "tests/utils/guard.ts",
