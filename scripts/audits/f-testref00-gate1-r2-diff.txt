@@ -1,0 +1,1016 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 17cfa9d899..e56ba5ceb6 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -112,3 +112,42 @@ jobs:
+             fi
+           fi
+           echo "manifest 无变更或已带尾注"
++
++      # [F-TESTREF-00] 测试重构战役范围闸（设计定稿 §7-W7 终案：逐提交判定）。
++      # 带 [test-refactor] 尾注的提交 diff 路径必须 ⊆ 战役白名单（src/** 一律红）。
++      # 尾注自愿制=设计 W7 语义（W2 门一裁定接受）：测试面另有 locks sha 锁+
++      # [locked-change] guard 独立守护，本范围闸=战役附加层，无强制闭合非缺陷。
++      # package.json 放行论证=依赖变更已被 verify job 的 [dep-change] guard 独立
++      # 拦截，双闸正交。scripts/audits/** 为本仓证据目录实态（设计白名单
++      # docs/audits/** 之外补登——实现票自裁申报在档）。
++      # W3（门一回炉）：白名单正则带结尾锚（禁 scripts/check-test-surface-evil/
++      # 前缀逃逸）。W1（门一回炉）：git diff-tree -m -r 取 merge 双父并集（保守向）。
++      # W4（门一回炉）：BASE 不可达先 fetch origin main 兜底 merge-base，仍失败
++      # 才跳过且 notice 升 warning。
++      - name: 测试重构战役范围闸（[test-refactor]）
++        shell: bash
++        run: |
++          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
++          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
++            echo "事件基线不可达，尝试 origin/main 兜底（门一 W4）"
++            git fetch origin main >/dev/null 2>&1 || true
++            BASE=$(git merge-base origin/main HEAD 2>/dev/null || true)
++          fi
++          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
++            echo "::warning::基线不可用（新分支首推/强推重写且 origin/main 兜底失败），跳过范围闸（门一 W4）"
++            exit 0
++          fi
++          TR_RE='^tests/|^scripts/(check-test-surface(\.mjs)?$|test-surface(\.mjs)?$|test-surface/|test-surface\.(baseline|exemptions)\.json$)|^\.github/workflows/|^package(-lock)?\.json$|^docs/prompts/|^docs/design/|^tickets/registry\.ts$|^locks/manifest\.json$|^AGENTS\.md$|^docs/(methodology|invariants)\.md$|^docs/audits/|^scripts/audits/'
++          BAD=0
++          for C in $(git log --format=%H "$BASE..HEAD"); do
++            if git log -1 --format=%B "$C" | grep -q '\[test-refactor\]'; then
++              OFF=$(git diff-tree --no-commit-id --name-only -m -r "$C" | grep -Ev "$TR_RE" || true)
++              if [ -n "$OFF" ]; then
++                echo "::error::提交 ${C:0:8} 带 [test-refactor] 但 diff 超出战役白名单（src/** 等禁止；门一 W1/W3 修正版）："
++                echo "$OFF"
++                BAD=1
++              fi
++            fi
++          done
++          if [ "$BAD" -eq 0 ]; then echo "范围闸通过（无 [test-refactor] 提交或全部在白名单内）"; fi
++          exit $BAD
+diff --git a/AGENTS.md b/AGENTS.md
+index a27b257c49..08ab691289 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -126,6 +126,7 @@ development Model Selection+loop-engineering references/06）；**架构与
+ 4. `npm run verify` 绿 → 报告人类审查 `git diff` → 人类翻 registry 状态 → 提交。
+ 5. 卡住了就停，报告卡点；**不许删检查、不许放宽断言、不许引入新依赖**。
+ 6. 测试红了先怀疑自己的实现；确认是测试/契约问题 → 停下报告。
++7. **[test-refactor] 测试重构战役票**：动 tests/** 须双尾注 `[locked-change][test-refactor]`——CI 范围闸机检 diff 路径白名单（src/** 红）、verify 的 `test-surface:check` 机检契约面 C_after ⊇ C_before；有意收紧/删改先取主控裁决再落 `scripts/test-surface.exemptions.json` 豁免（reason+rulingLink）；战役毕基线再生成走 `npm run test-surface:baseline`+全量 diff 审计（设计定稿=docs/design/2026-09-11_f-testref00-design-final.md）。
+ 
+ ### 闲时连续开发（无人值守场，2026-09-03 立制）
+ 
+diff --git a/docs/methodology.md b/docs/methodology.md
+index 2175d87e0e..a247cc092a 100644
+--- a/docs/methodology.md
++++ b/docs/methodology.md
+@@ -153,6 +153,9 @@ commit 长 message。
+ > 改空即用，模板偏差=回炉主要来源，勿即兴。
+ > 通用模板版=ai-dev-org references/02 §4/07（2026-09-10 doc-align 注记）；
+ > 本节为 Synapse 实例（含 ⑤a~⑤i 项目条款）。
++> [test-refactor] 测试重构战役票规约（2026-09-11 F-TESTREF-00 起）：双尾注
++> `[locked-change][test-refactor]`+CI 范围闸+指纹门（C 面 ⊇ 机检），详见
++> docs/design/2026-09-11_f-testref00-design-final.md。
+ 
+ ### 4.1 实现者简报模板（主控→实现者子代理）
+ 
+diff --git a/package.json b/package.json
+index faec9dd2b4..ecb71004c6 100644
+--- a/package.json
++++ b/package.json
+@@ -20,10 +20,13 @@
+     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+     "lint": "eslint .",
+     "lint:dup-constants": "node scripts/check-dup-constants.mjs",
++    "test-surface:check": "node scripts/check-test-surface.mjs check",
++    "test-surface:baseline": "node scripts/check-test-surface.mjs baseline",
++    "test-surface:stats": "node scripts/check-test-surface.mjs stats",
+     "test": "node scripts/sqlite-abi.mjs use node && vitest run",
+     "test:watch": "vitest",
+     "test:e2e": "npm run build && playwright test",
+-    "verify": "npm run quality:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build",
++    "verify": "npm run quality:check && npm run test-surface:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build",
+     "quality:check": "node scripts/check-quality.mjs",
+     "tickets:check": "node scripts/check-tickets.mjs",
+     "locks:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1 -GenerateOnly",
+diff --git a/scripts/check-locks.mjs b/scripts/check-locks.mjs
+index e29313aa82..cd0b55ce87 100644
+--- a/scripts/check-locks.mjs
++++ b/scripts/check-locks.mjs
+@@ -41,6 +41,10 @@ function protectedFiles() {
+     // [F-LINT-02] baseline 棘轮防绕过（终裁 §3）：scripts/*.json 不在 walk 自动面，
+     // 单文件显式登记——baseline 变更必经 [locked-change] 人类审查位
+     join(root, 'scripts', 'dup-constants.baseline.json'),
++    // [F-TESTREF-00] 指纹门信任根入锁（门一 R1 B1）：基线/豁免被清空或篡改
++    // 若不受锁=门对削弱静默放行（sha256 对账拦截）——与 ps1 侧 Get-ProtectedFiles 对齐
++    join(root, 'scripts', 'test-surface.baseline.json'),
++    join(root, 'scripts', 'test-surface.exemptions.json'),
+     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
+   ].filter((p) => existsSync(p))
+   return [...new Set(files)].sort()
+diff --git a/scripts/check-test-surface.mjs b/scripts/check-test-surface.mjs
+index 5f61b56550..1e3f8b3aa5 100644
+--- a/scripts/check-test-surface.mjs
++++ b/scripts/check-test-surface.mjs
+@@ -1,14 +1,386 @@
++#!/usr/bin/env node
+ /**
+- * [F-TESTREF-00] 测试面指纹门——立案骨架（设计链进行中，本件为票面载体）。
++ * [F-TESTREF-00] 测试面指纹门 check-test-surface.mjs（受锁文件）。
+  *
+  * 职责：抽取 tests/** 契约面（C 面=用例标题多重集+expect 断言规范化文本多重集
+- * +guardedDescribe 工单号集+skip/only 标记）与基线比对，C_after ⊇ C_before
+- * 多重集判定——「测试不可静默削弱」从纪律升级为机检。设计定稿=
+- * docs/design/（F-TESTREF-00 设计链三跳档）；裁决参数=
+- * docs/design/2026-09-11_glm-ruling-arch-complexity-and-test-campaign.md §4-2。
+- *
+- * 本骨架在票收口前不接入 verify 链与 CI——门未上线即不执法。
+- * 实现须含三支变异红证（删用例→红/改断言字面量→红/加用例→绿+delta）。
+- * 受锁件（诞生即 locks:generate+apply）。[test-refactor][locked-change]
++ * +guardedDescribe 工单号集+skip/only 标记+体内条件 skip 文本多重集）与基线比对，
++ * C_after ⊇ C_before 多重集判定——「测试不可静默削弱」从纪律升级为机检。设计定稿=
++ * docs/design/2026-09-11_f-testref00-design-final.md（裁决参数：W1 传播/W2 断言
++ * 单元/W4 签名计数/B1 skipSites 双向红/B2 SKIP_ADDED/W5 ACTIVATED/W6 哨兵）；
++ * 裁决链=docs/design/2026-09-11_glm-ruling-arch-complexity-and-test-campaign.md §4-2。
++ *
++ * 抽取器 lib=scripts/test-surface/extract.mjs（两处实现自裁见该件头注：
++ * skipSites 文件级多重集、哨兵 AST 形态判定）。
++ *
++ * exit code：0=通过（delta 绿）/ 1=契约违背或 UNRESOLVABLE / 2=基线缺失或损坏
++ * （硬阻断禁自愈——显式执行 `npm run test-surface:baseline` 并全量审计 diff）/
++ * 3=豁免清单 schema 非法。baseline 子命令仅显式调用（本脚本无任何红了重写分支）。
++ *
++ * 用例闸=指纹闸蕴含（caseCount 单调不减是 ⊇ 的推论，delta 汇总行显式打印计数）。
++ * [test-refactor][locked-change]
+  */
+-process.exit(0)
++import { existsSync, readFileSync, writeFileSync } from 'node:fs'
++import { join } from 'node:path'
++import { pathToFileURL } from 'node:url'
++import { extractAll, statsOf } from './test-surface/extract.mjs'
++
++const BASELINE_PATH = 'scripts/test-surface.baseline.json'
++const EXEMPTIONS_PATH = 'scripts/test-surface.exemptions.json'
++
++function die(code, msg) {
++  console.error(msg)
++  process.exit(code)
++}
++
++function loadBaseline(root) {
++  const p = join(root, BASELINE_PATH)
++  if (!existsSync(p)) return { missing: true }
++  try {
++    const parsed = JSON.parse(readFileSync(p, 'utf8').replace(/^\uFEFF/, ''))
++    if (parsed?.version !== 1 || parsed?.files === null || typeof parsed.files !== 'object' || Array.isArray(parsed.files)) {
++      return { corrupt: true }
++    }
++    // 基线健全性下限（门一 B1b+N7）：空/退化 files 使 C_after ⊇ ∅ 恒真——按
++    // corrupt（exit 2 硬阻断）处理；stats 字段同时用活（死字段 N7 收口）。
++    const fileCount = Object.keys(parsed.files).length
++    if (fileCount < 1 || !parsed.stats || typeof parsed.stats !== 'object' || parsed.stats.fileCount !== fileCount || !(parsed.stats.caseCount >= 1)) {
++      return { corrupt: true }
++    }
++    return { files: parsed.files, stats: parsed.stats }
++  } catch {
++    return { corrupt: true }
++  }
++}
++
++/** 豁免清单加载+schema 校验（Kimi §6：reason/rulingLink 非空必填；匹配键≥1） */
++function loadExemptions(root) {
++  const p = join(root, EXEMPTIONS_PATH)
++  const empty = { entries: [] }
++  if (!existsSync(p)) return empty
++  let parsed
++  try {
++    parsed = JSON.parse(readFileSync(p, 'utf8').replace(/^\uFEFF/, ''))
++  } catch (e) {
++    die(3, `[test-surface] 豁免清单损坏：${EXEMPTIONS_PATH} JSON 解析失败（${e.message}）—— schema 非法即红`)
++  }
++  if (parsed?.version !== 1 || !Array.isArray(parsed?.entries)) {
++    die(3, `[test-surface] 豁免清单 schema 非法：须为 {version:1, entries:[...]}（exit 3）`)
++  }
++  for (const e of parsed.entries) {
++    const hasMatcher = e.caseTitle !== undefined || e.assertionText !== undefined || e.skipSiteText !== undefined
++    if (typeof e.file !== 'string' || e.file === '' || !hasMatcher || typeof e.reason !== 'string' || e.reason === '' || typeof e.rulingLink !== 'string' || e.rulingLink === '') {
++      die(3, `[test-surface] 豁免条目 schema 非法（须含 file+匹配键 caseTitle/assertionText/skipSiteText 至少其一+非空 reason+rulingLink）：${JSON.stringify(e)}`)
++    }
++  }
++  return { entries: parsed.entries }
++}
++
++function caseSignature(c) {
++  return JSON.stringify({ a: [...c.assertions].sort(), m: [...c.markers].sort() })
++}
++
++function countMultiset(items) {
++  const m = new Map()
++  for (const it of items) m.set(it, (m.get(it) ?? 0) + 1)
++  return m
++}
++
++/** 豁免匹配（N2 从宽：file 精确+匹配键精确；同 title 重复用例=已知限制，条目宜附细键） */
++function exemptionHits(exemptions, kind, file, payload) {
++  const hits = []
++  for (const e of exemptions.entries) {
++    if (e.file !== file) continue
++    if (kind === 'case' && e.caseTitle === payload.title && (e.assertionText === undefined || payload.assertions.includes(e.assertionText))) hits.push(e)
++    if (kind === 'assert' && e.assertionText === payload.assertionText && (e.caseTitle === undefined || e.caseTitle === payload.title)) hits.push(e)
++    if (kind === 'skipsite' && e.skipSiteText === payload.text) hits.push(e)
++  }
++  return hits
++}
++
++function fmtRelLine(file, line) {
++  return line === undefined ? file : `${file}:${line}`
++}
++
++/** 主判定：返回 { failures:[], deltas:[], exemptHits:Set, statsLine } */
++function judge(baseFiles, cur) {
++  const failures = []
++  const deltas = []
++  const exemptHitKeys = new Set()
++  const paths = [...new Set([...Object.keys(baseFiles), ...cur.keys()])].sort()
++  let baseCaseTotal = 0
++  let curCaseTotal = 0
++  let baseAssertTotal = 0
++  let curAssertTotal = 0
++  let baseSkipTotal = 0
++  let curSkipTotal = 0
++
++  for (const path of paths) {
++    const b = baseFiles[path]
++    const c = cur.get(path)
++    if (b && !c) {
++      failures.push({ kind: 'FILE_MISSING', path, line: undefined, text: path })
++      baseCaseTotal += b.cases.length
++      baseSkipTotal += b.conditionalSkipSites.length + b.hardSkipSites.length
++      for (const cs of b.cases) baseAssertTotal += cs.assertions.length
++      continue
++    }
++    if (!b && c) {
++      deltas.push(`NEW_FILE ${path}（${c.cases.length} 用例）`)
++      curCaseTotal += c.cases.length
++      curSkipTotal += c.conditionalSkipSites.length + c.hardSkipSites.length
++      for (const cs of c.cases) curAssertTotal += cs.assertions.length
++      // 新文件体内 skip 双桶亦=「新增」→红（B1 语义覆盖新文件场景——回炉轮
++      // 补面，保守向申报；豁免通道同款）
++      for (const text of c.conditionalSkipSites) {
++        if (exemptionHits(loadExemptionsCache, 'skipsite', path, { text }).length === 0) {
++          failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
++        }
++      }
++      for (const text of c.hardSkipSites) {
++        if (exemptionHits(loadExemptionsCache, 'skipsite', path, { text }).length === 0) {
++          failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
++        }
++      }
++      for (const cs of c.cases) {
++        if (cs.markers.includes('skip') && exemptionHits(loadExemptionsCache, 'case', path, cs).length === 0) {
++          failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
++        } else {
++          deltas.push(`NEW ${path} › ${cs.title} (line ${cs.line}, ${cs.assertions.length} assertions)`)
++        }
++      }
++      continue
++    }
++    // 两态比对
++    baseCaseTotal += b.cases.length
++    curCaseTotal += c.cases.length
++    baseSkipTotal += b.conditionalSkipSites.length + b.hardSkipSites.length
++    curSkipTotal += c.conditionalSkipSites.length + c.hardSkipSites.length
++    for (const cs of b.cases) baseAssertTotal += cs.assertions.length
++    for (const cs of c.cases) curAssertTotal += cs.assertions.length
++
++    // ticketIds：基线 ⊄ 当前 → 红
++    const curTickets = new Set(c.ticketIds)
++    for (const id of b.ticketIds) {
++      if (!curTickets.has(id)) failures.push({ kind: 'TICKETS_MISSING', path, line: undefined, text: id })
++    }
++
++    // only（含 W1 传播）恒红
++    for (const cs of c.cases) {
++      if (cs.markers.includes('only')) failures.push({ kind: 'ONLY_FORBIDDEN', path, line: cs.line, text: cs.title })
++    }
++
++    // conditionalSkipSites：文件级多重集双向红（设计 B1——非字面量条件形态）
++    const bCond = countMultiset(b.conditionalSkipSites)
++    const cCond = countMultiset(c.conditionalSkipSites)
++    for (const [text, n] of bCond) {
++      const curN = cCond.get(text) ?? 0
++      for (let i = 0; i < n - curN; i++) {
++        const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
++        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
++        else failures.push({ kind: 'SKIPSITE_REMOVED', path, line: undefined, text })
++      }
++    }
++    for (const [text, n] of cCond) {
++      const baseN = bCond.get(text) ?? 0
++      for (let i = 0; i < n - baseN; i++) {
++        const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
++        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
++        else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
++      }
++    }
++
++    // hardSkipSites（门一 W8 终案）：新增=红（等价「新增 skip」）；删除=激活
++    // 绿+delta（与 markers 激活语义一致）；文本相同两桶间不互抵（桶隔离判定）。
++    const bHard = countMultiset(b.hardSkipSites)
++    const cHard = countMultiset(c.hardSkipSites)
++    for (const [text, n] of bHard) {
++      const curN = cHard.get(text) ?? 0
++      for (let i = 0; i < n - curN; i++) {
++        const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
++        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
++        else deltas.push(`ACTIVATED ${path} 「${text}」（hardSkipSite 删除）`)
++      }
++    }
++    for (const [text, n] of cHard) {
++      const baseN = bHard.get(text) ?? 0
++      for (let i = 0; i < n - baseN; i++) {
++        const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
++        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
++        else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
++      }
++    }
++
++    // 用例按 key 分组 → 签名多重集计数 ⊆ 判定（W4）
++    const bGroups = new Map()
++    for (const cs of b.cases) {
++      if (!bGroups.has(cs.key)) bGroups.set(cs.key, [])
++      bGroups.get(cs.key).push(cs)
++    }
++    const cGroups = new Map()
++    for (const cs of c.cases) {
++      if (!cGroups.has(cs.key)) cGroups.set(cs.key, [])
++      cGroups.get(cs.key).push(cs)
++    }
++
++    for (const [key, bCases] of bGroups) {
++      const cCases = cGroups.get(key) ?? []
++      const curSigs = countMultiset(cCases.map(caseSignature))
++      for (const bcs of bCases) {
++        const sig = caseSignature(bcs)
++        if ((curSigs.get(sig) ?? 0) > 0) {
++          curSigs.set(sig, curSigs.get(sig) - 1)
++          continue
++        }
++        // W5：skip→激活（绿+delta）
++        if (bcs.markers.includes('skip')) {
++          const activatedSig = JSON.stringify({ a: [...bcs.assertions].sort(), m: bcs.markers.filter((m) => m !== 'skip').sort() })
++          if ((curSigs.get(activatedSig) ?? 0) > 0) {
++            curSigs.set(activatedSig, curSigs.get(activatedSig) - 1)
++            deltas.push(`ACTIVATED ${path} › ${bcs.title} (line ${bcs.line})`)
++            continue
++          }
++        }
++        // 基线签名无配对 → MISSING_CASE（先试豁免，再 MISSING_ASSERT 细化）
++        const hit = exemptionHits(loadExemptionsCache, 'case', path, bcs)
++        if (hit.length > 0) {
++          exemptHitKeys.add(`case:${path}:${bcs.title}`)
++          continue
++        }
++        // MISSING_ASSERT 细化：当前同 key 存在 markers 同、断言为其子集的签名
++        const sigObj = JSON.parse(sig)
++        let detailed = false
++        for (const ccs of cCases) {
++          if (JSON.stringify([...ccs.markers].sort()) !== JSON.stringify(sigObj.m)) continue
++          const curA = countMultiset(ccs.assertions)
++          const missing = []
++          for (const a of bcs.assertions) {
++            const n = curA.get(a) ?? 0
++            if (n > 0) curA.set(a, n - 1)
++            else missing.push(a)
++          }
++          if (missing.length > 0 && missing.length < bcs.assertions.length) {
++            for (const a of missing) {
++              const ahit = exemptionHits(loadExemptionsCache, 'assert', path, { assertionText: a, title: bcs.title })
++              if (ahit.length > 0) exemptHitKeys.add(`assert:${path}:${a}`)
++              else failures.push({ kind: 'MISSING_ASSERT', path, line: bcs.line, text: a })
++            }
++            detailed = true
++            break
++          }
++        }
++        if (!detailed) failures.push({ kind: 'MISSING_CASE', path, line: bcs.line, text: bcs.title })
++      }
++    }
++
++    // 当前超出基线的签名 → NEW（带 skip → SKIP_ADDED，B2 含新用例形态）
++    for (const [key, cCases] of cGroups) {
++      void key
++      const bCases = bGroups.get(key) ?? []
++      const bNeed = countMultiset(bCases.map(caseSignature))
++      // skip 签名的激活回填位：基线 skip 版可消费当前无 skip 同断言签名（W5 已在上
++      // 半场消费并打 ACTIVATED——此处补记可激活位，防其落入 NEW/双报）
++      const activatable = new Map()
++      for (const bcs of bCases) {
++        if (!bcs.markers.includes('skip')) continue
++        const s = JSON.stringify({ a: [...bcs.assertions].sort(), m: bcs.markers.filter((m) => m !== 'skip').sort() })
++        activatable.set(s, (activatable.get(s) ?? 0) + 1)
++      }
++      for (const cs of cCases) {
++        const sig = caseSignature(cs)
++        if ((bNeed.get(sig) ?? 0) > 0) {
++          bNeed.set(sig, bNeed.get(sig) - 1)
++          continue
++        }
++        if ((activatable.get(sig) ?? 0) > 0) {
++          activatable.set(sig, activatable.get(sig) - 1)
++          continue
++        }
++        if (cs.markers.includes('skip')) {
++          const hit = exemptionHits(loadExemptionsCache, 'case', path, cs)
++          if (hit.length > 0) exemptHitKeys.add(`case:${path}:${cs.title}`)
++          else failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
++          continue
++        }
++        deltas.push(`NEW ${path} › ${cs.title} (line ${cs.line}, ${cs.assertions.length} assertions)`)
++      }
++    }
++  }
++
++  const statsLine = `files: ${Object.keys(baseFiles).length} base / ${cur.size} cur | cases: ${baseCaseTotal} base / ${curCaseTotal} cur` +
++    ` | assertions: ${baseAssertTotal} base / ${curAssertTotal} cur | skipSites: ${baseSkipTotal} base / ${curSkipTotal} cur`
++  return { failures, deltas, exemptHitKeys, statsLine }
++}
++
++let loadExemptionsCache = { entries: [] }
++
++function serializeBaseline(surfaces, extraStats) {
++  const files = {}
++  for (const [p, s] of [...surfaces.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
++    files[p] = {
++      ticketIds: [...s.ticketIds].sort(),
++      conditionalSkipSites: s.conditionalSkipSites,
++      hardSkipSites: s.hardSkipSites,
++      cases: s.cases.map((c) => ({
++        key: c.key,
++        describePath: c.describePath,
++        title: c.title,
++        markers: c.markers,
++        line: c.line,
++        assertions: c.assertions
++      }))
++    }
++  }
++  return JSON.stringify({ version: 1, files, stats: extraStats }, null, 2) + '\n'
++}
++
++function cmdStats(root) {
++  const { surfaces, unresolvable } = extractAll(root)
++  const stats = statsOf(surfaces, unresolvable)
++  for (const u of unresolvable) console.error(`UNRESOLVABLE ${u.file}:${u.line} ${u.reason}`)
++  console.log(`[test-surface] stats ${JSON.stringify(stats)}`)
++  if (unresolvable.length > 0) die(1, `[test-surface] 抽取含 ${unresolvable.length} 处不可静态判定（exit 1）`)
++}
++
++function cmdBaseline(root) {
++  const { surfaces, unresolvable } = extractAll(root)
++  for (const u of unresolvable) console.error(`UNRESOLVABLE ${u.file}:${u.line} ${u.reason}`)
++  const stats = statsOf(surfaces, unresolvable)
++  // W5（门一回炉）：UNRESOLVABLE 非空先阻断后写盘——禁写脏基线（surfaces 缺
++  // 失该用例却落盘，后续 check 复用即静默脏基线）
++  if (unresolvable.length > 0) die(1, `[test-surface] 基线生成期含 ${unresolvable.length} 处不可静态判定（exit 1，基线未写入——先改写为静态形态或裁决豁免）`)
++  writeFileSync(join(root, BASELINE_PATH), serializeBaseline(surfaces, stats), 'utf8')
++  console.log(`[test-surface] baseline 已写入 ${BASELINE_PATH}`)
++  console.log(`[test-surface] stats ${JSON.stringify(stats)}`)
++}
++
++function cmdCheck(root) {
++  const bl = loadBaseline(root)
++  if (bl.missing || bl.corrupt) {
++    die(2, `[test-surface] 基线${bl.missing ? '缺失' : '损坏'}：${BASELINE_PATH}（exit 2 硬阻断禁自愈）——显式执行 \`npm run test-surface:baseline\` 再生成并对基线 diff 做全量审计`)
++  }
++  loadExemptionsCache = loadExemptions(root)
++  const { surfaces, unresolvable } = extractAll(root)
++  for (const u of unresolvable) console.error(`UNRESOLVABLE ${u.file}:${u.line} ${u.reason}`)
++  const { failures, deltas, exemptHitKeys, statsLine } = judge(bl.files, surfaces)
++  console.log(`[test-surface] ${statsLine}`)
++  for (const d of deltas) console.log(`[test-surface] ${d}`)
++  console.log(`[test-surface] exemptions entries: ${loadExemptionsCache.entries.length} hits: ${exemptHitKeys.size} stale: ${loadExemptionsCache.entries.length - exemptHitKeys.size}`)
++  if (unresolvable.length > 0) {
++    console.error(`[test-surface] FAIL 抽取含 ${unresolvable.length} 处不可静态判定`)
++    die(1, '[test-surface] 检查未通过：UNRESOLVABLE（hint: 动态形态改写为静态，或走 scripts/test-surface.exemptions.json 豁免通道）')
++  }
++  if (failures.length > 0) {
++    for (const f of failures) console.error(`[test-surface] FAIL ${f.kind} ${fmtRelLine(f.path, f.line)} 「${f.text}」`)
++    die(1, `[test-surface] 检查未通过：${failures.length} 处契约违背（hint: 若为有意收紧/删改，先取主控裁决，再落 scripts/test-surface.exemptions.json 豁免通道 reason+rulingLink）`)
++  }
++  console.log('[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）')
++}
++
++if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
++  const root = process.cwd()
++  const cmd = process.argv[2] ?? 'check'
++  if (cmd === 'stats') cmdStats(root)
++  else if (cmd === 'baseline') cmdBaseline(root)
++  else if (cmd === 'check') cmdCheck(root)
++  else die(1, `[test-surface] 未知子命令：${cmd}（可用：check（默认）/ baseline / stats）`)
++}
+diff --git a/scripts/get-protected-files.ps1 b/scripts/get-protected-files.ps1
+index a6d45c50ff..f6a23c43d1 100644
+--- a/scripts/get-protected-files.ps1
++++ b/scripts/get-protected-files.ps1
+@@ -16,7 +16,9 @@ function Get-ProtectedFiles {
+   foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
+       'playwright.config.ts', 'electron.vite.config.ts',
+       'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
+-      'scripts/dup-constants.baseline.json')) {
++      'scripts/dup-constants.baseline.json',
++      'scripts/test-surface.baseline.json',
++      'scripts/test-surface.exemptions.json')) {
+     $p = Join-Path $root $cfg
+     if (Test-Path $p) { $files += Get-Item $p }
+   }
+diff --git a/scripts/test-surface.exemptions.json b/scripts/test-surface.exemptions.json
+new file mode 100644
+index 0000000000..7f19696e7b
+--- /dev/null
++++ b/scripts/test-surface.exemptions.json
+@@ -0,0 +1,4 @@
++{
++  "version": 1,
++  "entries": []
++}
+diff --git a/scripts/test-surface/extract.mjs b/scripts/test-surface/extract.mjs
+new file mode 100644
+index 0000000000..f6eeb12dad
+--- /dev/null
++++ b/scripts/test-surface/extract.mjs
+@@ -0,0 +1,477 @@
++#!/usr/bin/env node
++/**
++ * scripts/test-surface/extract.mjs —— [F-TESTREF-00] 测试面抽取器 lib（受锁文件；
++ * [locked-change] 声明面随主件——门一 N10 补齐，受锁变更尾注与主件同携带）。
++ *
++ * 职责：解析 tests/** 白名单用例文件（*.test.ts / *.test.tsx / *.spec.ts /
++ * *.spec.tsx——门一 W7 扩）的契约面（C 面）：用例（describe 路径+标题+markers+
++ * expect 断言规范化文本多重集）+ guardedDescribe 工单号集 + 体内条件 skip 规范化
++ * 文本多重集。设计母本=docs/design/2026-09-11_f-testref00-design-final.md
++ * （W6/W1/W2/W3/B1 裁决参数）。与设计字面的实现自裁（均有 DoD 硬项支撑，
++ * 详见主件头注与实现报告自裁申报段）：
++ *  ① skipSites 挂 FileSurface（文件级多重集）而非 CaseEntry——存量 15 处
++ *    依赖门惯用法中 14 处物理位于模块级 helper（skipIfPending）体内、1 处在
++ *    describe 体顶层，用例级归因需调用内联且会按调用点数放大（17≠15）；
++ *    文件级计数在「新增依赖门调用/删调用」场景与用例级等价（计数增减双向红），
++ *    删整个用例由 MISSING_CASE 兜底，无漏报。
++ *  ② 漏扫哨兵用 AST 用例形态判定而非纯文本正则——guard.ts 的
++ *    describe(label, fn)（双标识符参=转发调用）按设计正则会误伤，与 DoD
++ *    「stats 全量 UNRESOLVABLE=0」冲突；AST 判定（callee 纯标识符
++ *    it/test/describe 或带后缀属性访问形态，且首参字符串字面量或任一参为
++ *    函数字面量——门一 W7 扩）防漏性等价（真用例文件必含函数字面量参数），
++ *    误报面更小（转发调用不命中）。
++ * skip 双桶（门一 W8 终案）：conditionalSkipSites（非字面量条件形态，双向红）
++ * 与 hardSkipSites（0 参/字面量真值形态——新增红、删除=激活绿 delta）。
++ * import 别名检测（门一 W6）：vitest/@playwright/test 的 it/test/describe 说明符
++ * 别名或伪装本地名、namespace import → UNRESOLVABLE（用例 API 不可静态判定）。
++ * it.each（W3 终案）：const 单跳解析（全文件唯一 const+ArrayLiteral 声明，
++ * 标识符存在赋值/更新/多处声明即保守红）；字面量消费位=真实值，非静态位=
++ * ⟨nse:源文本空白归一⟩（css→wsCss=源文本变=键变=红）；行计数入多重集。
++ * expect 断言（W2 终案）：单元=最外层 expect 调用链 getText+空白归一，
++ * 全记不去重（同链去重除外——链内嵌 expect 爬到同一链顶自然合并）；
++ * 收集域=用例回调体子树（含体内嵌套声明函数——模块级 helper 不计）。
++ */
++import { readFileSync, readdirSync, statSync } from 'node:fs'
++import { join } from 'node:path'
++import ts from 'typescript'
++
++const WHITELIST_RE = /\.(test\.ts|test\.tsx|spec\.ts|spec\.tsx)$/
++const TS_LIKE_RE = /\.(ts|tsx)$/
++const TEST_API_SOURCE_RE = /^['"](vitest|@playwright\/test)['"]$/
++const THREE_API = new Set(['it', 'test', 'describe'])
++const DESCRIBE_PLAIN = new Set(['describe', 'test.describe'])
++const DESCRIBE_SKIP = new Set(['describe.skip', 'test.describe.skip', 'xdescribe'])
++const DESCRIBE_ONLY = new Set(['describe.only', 'test.describe.only'])
++const CASE_PLAIN = new Set(['it', 'test'])
++const CASE_SKIP = new Set(['it.skip', 'test.skip', 'xit', 'xtest'])
++const CASE_ONLY = new Set(['it.only', 'test.only'])
++// CASE_TODO/CASE_FIXME 为 vitest API（it.todo/it.fixme）建模命名，非占位标记
++// （门一 W11 主控裁定接受——check-quality 扫描域=src+tests 不含 scripts，verify 绿实证）
++const CASE_TODO = new Set(['it.todo', 'test.todo'])
++const CASE_FIXME = new Set(['it.fixme', 'test.fixme'])
++const CONSERVATIVE_REDS = new Set([
++  'it.skipIf', 'it.runIf', 'test.skipIf', 'test.runIf',
++  'it.concurrent', 'test.concurrent', 'test.extend',
++  'describe.configure', 'test.describe.configure'
++])
++
++export function walkFiles(dir, filter, acc = []) {
++  for (const name of readdirSync(dir)) {
++    const p = join(dir, name)
++    const st = statSync(p)
++    if (st.isDirectory()) walkFiles(p, filter, acc)
++    else if (filter(p)) acc.push(p)
++  }
++  return acc
++}
++
++function calleeText(node) {
++  if (ts.isIdentifier(node)) return node.text
++  if (ts.isPropertyAccessExpression(node)) {
++    const base = calleeText(node.expression)
++    return base === null ? null : `${base}.${node.name.text}`
++  }
++  return null
++}
++
++function staticTitleOf(expr) {
++  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text
++  return null
++}
++
++function isFunctionExpr(e) {
++  return ts.isArrowFunction(e) || ts.isFunctionExpression(e)
++}
++
++/** 字面量静态值（number 保留源文本形态——printf %s 需原样字符串） */
++function literalValueOf(e) {
++  let n = e
++  while (ts.isParenthesizedExpression(n)) n = n.expression
++  if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) return { v: n.text, num: false }
++  if (ts.isNumericLiteral(n) && !/n$/i.test(n.text)) return { v: n.text, num: true }
++  if (n.kind === ts.SyntaxKind.TrueKeyword) return { v: true, num: false }
++  if (n.kind === ts.SyntaxKind.FalseKeyword) return { v: false, num: false }
++  if (n.kind === ts.SyntaxKind.NullKeyword) return { v: null, num: false }
++  return null
++}
++
++/** 字面量真值判定（B1 三态：字面量 truthy=等价声明 skip） */
++function isStaticTruthy(expr) {
++  const lit = literalValueOf(expr)
++  if (!lit) return null
++  if (lit.num) return Number(lit.v) !== 0
++  if (typeof lit.v === 'string') return lit.v !== ''
++  return Boolean(lit.v)
++}
++
++export function normalizeWs(text) {
++  return text.replace(/\s+/g, ' ').trim()
++}
++
++/** expect 链顶：沿 PropertyAccess/Call 链上爬（链内嵌 expect 合并到同一链顶） */
++function chainTop(node) {
++  let n = node
++  while (n.parent && (ts.isPropertyAccessExpression(n.parent) || ts.isCallExpression(n.parent))) n = n.parent
++  return n
++}
++
++function lineOf(node, sf) {
++  return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
++}
++
++function mergeMarkers(stackFrames, own) {
++  const all = new Set(own)
++  for (const f of stackFrames) for (const m of f.markers) all.add(m)
++  return [...all].sort()
++}
++
++/** printf 标题展开（Kimi §3.4 子集：%%/%s/%d/%i/%j/%#；$#；子集外保守红） */
++function printfExpand(template, cells, index) {
++  let out = ''
++  let ai = 0
++  const next = () => {
++    if (ai >= cells.length) return { over: true }
++    return { cell: cells[ai++] }
++  }
++  const fmt = (t, cell) => (cell.nse !== undefined ? `⟨nse:${cell.nse}⟩` : t === 'j' ? JSON.stringify(cell.lit.v) : String(cell.lit.v))
++  for (let i = 0; i < template.length; i++) {
++    const c = template[i]
++    if (c === '$') {
++      const d = template[i + 1]
++      if (d === '#') { out += String(index); i++; continue }
++      if (d !== undefined && /[A-Za-z_{]/.test(d)) return { bad: `$${d} 形态不在 v1 子集` }
++      out += c
++      continue
++    }
++    if (c !== '%') { out += c; continue }
++    const t = template[++i]
++    if (t === undefined) { out += '%'; continue }
++    if (t === '%') { out += '%'; continue }
++    if (t === '#') { out += String(index); continue }
++    if (t === 's' || t === 'd' || t === 'i' || t === 'j') {
++      const got = next()
++      if (got.over) return { bad: '消费位超出展开行元素数' }
++      out += fmt(t, got.cell)
++      continue
++    }
++    return { bad: `%${t} 不在 v1 printf 子集` }
++  }
++  return { title: out }
++}
++
++/**
++ * import 别名检测（门一 W6）：vitest/@playwright/test 源的 it/test/describe
++ * 说明符被别名（imported≠local）或伪装本地名（local∈三词但 imported∉）→
++ * UNRESOLVABLE；namespace import（v.it() 形态 calleeText 不匹配白名单）同红
++ * （超裁决保守向，回炉申报）。存量全部直名 import（预检 grep 实证）。
++ */
++function importAliasCheck(sf, relPath, unresolvable) {
++  for (const stmt of sf.statements) {
++    if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteral(stmt.moduleSpecifier)) continue
++    if (!TEST_API_SOURCE_RE.test(stmt.moduleSpecifier.getText(sf))) continue
++    const clause = stmt.importClause
++    if (!clause) continue
++    const line = lineOf(stmt, sf)
++    if (clause.name) {
++      // default import：imported='default'——local∈三词即伪装形态
++      if (THREE_API.has(clause.name.text)) {
++        unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（default import as ${clause.name.text}）` })
++      }
++    }
++    const bindings = clause.namedBindings
++    if (!bindings) continue
++    if (ts.isNamespaceImport(bindings)) {
++      unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（namespace import * as ${bindings.name.text}——${bindings.name.text}.it() 形态白名单外）` })
++      continue
++    }
++    if (ts.isNamedImports(bindings)) {
++      for (const spec of bindings.elements) {
++        if (!ts.isIdentifier(spec.name)) continue
++        const imported = spec.propertyName && ts.isIdentifier(spec.propertyName) ? spec.propertyName.text : spec.name.text
++        const local = spec.name.text
++        if (THREE_API.has(imported) && local !== imported) {
++          unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（${imported} as ${local}）` })
++        } else if (THREE_API.has(local) && !THREE_API.has(imported)) {
++          unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（${imported} as ${local}——伪装本地名）` })
++        }
++      }
++    }
++  }
++}
++
++/**
++ * 单文件抽取（白名单域）。unresolvable 收集 {file,line,reason}（不中断——
++ * 全量明细一次输出）。
++ */
++function extractFile(absPath, relPath, unresolvable) {
++  const text = readFileSync(absPath, 'utf8')
++  const kind = relPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
++  const sf = ts.createSourceFile(absPath, text, ts.ScriptTarget.Latest, true, kind)
++  const red = (node, reason) => unresolvable.push({ file: relPath, line: lineOf(node, sf), reason })
++  importAliasCheck(sf, relPath, unresolvable)
++
++  // 预扫描：const X = ArrayLiteral 声明表 + 标识符赋值/更新表（单跳解析防护）
++  const constArrays = new Map()
++  const mutatedIds = new Set()
++  function preScan(node) {
++    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isArrayLiteralExpression(node.initializer)) {
++      const list = node.parent
++      if ((list.flags & ts.NodeFlags.Const) !== 0) {
++        if (!constArrays.has(node.name.text)) constArrays.set(node.name.text, [])
++        constArrays.get(node.name.text).push(node.initializer)
++      }
++    }
++    if (ts.isBinaryExpression(node) && ts.isIdentifier(node.left) && (node.operatorToken.kind === ts.SyntaxKind.EqualsToken || node.operatorToken.kind >= ts.SyntaxKind.FirstCompoundAssignment)) {
++      mutatedIds.add(node.left.text)
++    }
++    if ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) && (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) && ts.isIdentifier(node.operand)) mutatedIds.add(node.operand.text)
++    ts.forEachChild(node, preScan)
++  }
++  preScan(sf)
++
++  const surface = { ticketIds: new Set(), conditionalSkipSites: [], hardSkipSites: [], cases: [] }
++  const stack = [{ title: null, markers: [] }]
++  let currentCase = null
++
++  function resolveEachRows(srcNode) {
++    if (ts.isArrayLiteralExpression(srcNode)) return { rows: srcNode.elements.map(resolveElement) }
++    if (ts.isIdentifier(srcNode)) {
++      const name = srcNode.text
++      if (mutatedIds.has(name)) return { bad: `each 数组标识符 ${name} 存在赋值/更新` }
++      const decls = constArrays.get(name)
++      if (!decls || decls.length !== 1) return { bad: `each 数组标识符 ${name} 无唯一 const+ArrayLiteral 声明` }
++      return { rows: decls[0].elements.map(resolveElement) }
++    }
++    return { bad: 'each 第 1 参非 ArrayLiteral 或可解析 const 标识符' }
++  }
++  function resolveElement(e) {
++    const lit = literalValueOf(e)
++    if (lit) return { lit }
++    if (ts.isArrayLiteralExpression(e)) {
++      return { tuple: e.elements.map((el) => {
++        const inner = literalValueOf(el)
++        return inner ? { lit: inner } : { nse: normalizeWs(el.getText(sf)) }
++      }) }
++    }
++    return null
++  }
++  function cellsOf(row) {
++    if (row.tuple !== undefined) return row.tuple
++    return [row]
++  }
++
++  function collectCaseBody(entry, callback) {
++    const prev = currentCase
++    currentCase = entry
++    entry._chainSet = new Set()
++    ts.forEachChild(callback, visit)
++    entry.assertions = [...entry._chainSet].map((n) => normalizeWs(n.getText(sf)))
++    delete entry._chainSet
++    currentCase = prev
++  }
++
++  function visit(node) {
++    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'expect' && currentCase !== null) {
++      currentCase._chainSet.add(chainTop(node))
++    }
++    if (ts.isCallExpression(node)) {
++      const ct = calleeText(node.expression)
++      if (ct === 'guardedDescribe') {
++        const idArg = node.arguments[0]
++        const titleArg = node.arguments[1]
++        const ticketId = idArg && ts.isStringLiteral(idArg) ? idArg.text : null
++        const title = titleArg ? staticTitleOf(titleArg) : null
++        if (ticketId === null || title === null) {
++          red(node, 'guardedDescribe 工单号/标题非字符串字面量')
++        } else {
++          surface.ticketIds.add(ticketId)
++          stack.push({ title, markers: stack[stack.length - 1].markers })
++          ts.forEachChild(node, visit)
++          stack.pop()
++          return
++        }
++      } else if (DESCRIBE_PLAIN.has(ct) || DESCRIBE_SKIP.has(ct) || DESCRIBE_ONLY.has(ct)) {
++        const own = DESCRIBE_SKIP.has(ct) ? ['skip'] : DESCRIBE_ONLY.has(ct) ? ['only'] : []
++        const titleArg = node.arguments[0]
++        const title = titleArg ? staticTitleOf(titleArg) : null
++        if (title === null) {
++          red(node, 'describe 标题非字符串字面量（动态标题不可静态判定）')
++        } else {
++          const parentMarkers = stack[stack.length - 1].markers
++          stack.push({ title, markers: [...new Set([...parentMarkers, ...own])] })
++          ts.forEachChild(node, visit)
++          stack.pop()
++          return
++        }
++      } else if (ts.isCallExpression(node.expression) && ct === null) {
++        // 潜在 each 形态：外层被调者本身是调用（it.each(ARR)(title, fn)）——
++        // calleeText 对 CallExpression 返回 null，须取内层调用的被调者文本
++        const inner = calleeText(node.expression.expression)
++        if (inner !== null && (inner.startsWith('it.each') || inner.startsWith('test.each') || inner.startsWith('describe.each'))) {
++          if (inner !== 'it.each' && inner !== 'test.each') {
++            red(node, `${inner} 形态不在 v1 支持子集（describe.each/带后缀 each）`)
++          } else {
++            const srcNode = node.expression.arguments[0]
++          const titleArg = node.arguments[0]
++          const callback = node.arguments.find((a) => isFunctionExpr(a)) ?? null
++          const resolved = srcNode ? resolveEachRows(srcNode) : { bad: 'each 缺少数组参数' }
++          const tpl = titleArg && (ts.isStringLiteral(titleArg) || ts.isNoSubstitutionTemplateLiteral(titleArg)) ? titleArg.text : null
++          if (resolved.bad) red(node, `it.each 解析失败：${resolved.bad}`)
++          else if (tpl === null) red(node, 'it.each 标题模板非静态字符串（插值模板不可静态判定）')
++          else {
++            const holder = { assertions: [] }
++            if (callback) collectCaseBody(holder, callback)
++            resolved.rows.forEach((row, idx) => {
++              if (row === null) return
++              const got = printfExpand(tpl, cellsOf(row), idx)
++              if (got.bad !== undefined) {
++                red(node, `it.each 标题展开失败（行 ${idx}）：${got.bad}`)
++                return
++              }
++              const describePath = stack.slice(1).map((f) => f.title)
++              surface.cases.push({
++                key: JSON.stringify([...describePath, got.title]),
++                describePath,
++                title: got.title,
++                markers: mergeMarkers(stack, []),
++                line: lineOf(titleArg, sf),
++                assertions: [...holder.assertions],
++                _eachRow: true
++              })
++            })
++            if (resolved.rows.some((r) => r === null)) red(node, 'it.each 数组含不可解析元素（顶层仅接受字面量/字面量元组）')
++            return
++          }
++          }
++        }
++      } else if (CASE_PLAIN.has(ct) || CASE_SKIP.has(ct) || CASE_ONLY.has(ct) || CASE_TODO.has(ct) || CASE_FIXME.has(ct)) {
++        const titleArg = node.arguments[0]
++        const hasFn = node.arguments.some((a) => isFunctionExpr(a))
++        const own = CASE_SKIP.has(ct) ? ['skip'] : CASE_ONLY.has(ct) ? ['only'] : CASE_TODO.has(ct) ? ['todo'] : CASE_FIXME.has(ct) ? ['fixme'] : []
++        const isDeclaration = titleArg !== undefined && staticTitleOf(titleArg) !== null && hasFn
++        if (!isDeclaration && (CASE_SKIP.has(ct) || CASE_FIXME.has(ct))) {
++          // W8 双桶三态（文件级建模，自裁①）：非声明形态=体内 skip。
++          // conditional 桶（非字面量条件）双向红；hard 桶（0 参/字面量真值）
++          // 新增红、删除=激活绿 delta（与 markers 激活语义一致）。
++          if (node.arguments.length === 0 || node.arguments[0] === undefined) {
++            surface.hardSkipSites.push(normalizeWs(node.getText(sf))) // test.skip() 0 参=恒 skip
++          } else {
++            const truthy = isStaticTruthy(node.arguments[0])
++            if (truthy === null) surface.conditionalSkipSites.push(normalizeWs(node.getText(sf)))
++            else if (truthy) surface.hardSkipSites.push(normalizeWs(node.getText(sf)))
++            // 字面量假值条件（false/0）=永不触发，不建模
++          }
++          ts.forEachChild(node, visit)
++          return
++        }
++        const title = titleArg !== undefined ? staticTitleOf(titleArg) : null
++        if (title === null) {
++          red(node, `用例标题非字符串字面量（${ct} 动态标题不可静态判定）`)
++        } else {
++          const describePath = stack.slice(1).map((f) => f.title)
++          const entry = {
++            key: JSON.stringify([...describePath, title]),
++            describePath,
++            title,
++            markers: mergeMarkers(stack, own),
++            line: lineOf(titleArg, sf),
++            assertions: []
++          }
++          surface.cases.push(entry)
++          const callback = node.arguments.find((a) => isFunctionExpr(a))
++          if (callback) collectCaseBody(entry, callback)
++          return
++        }
++      } else if (CONSERVATIVE_REDS.has(ct)) {
++        red(node, `${ct} 形态不在 v1 支持子集（保守红，走豁免或改写为静态形态）`)
++      }
++    }
++    ts.forEachChild(node, visit)
++  }
++  visit(sf)
++  surface.cases.forEach((c) => { c.markers = [...new Set(c.markers)].sort() })
++  return {
++    ticketIds: [...surface.ticketIds].sort(),
++    conditionalSkipSites: surface.conditionalSkipSites,
++    hardSkipSites: surface.hardSkipSites,
++    cases: surface.cases
++  }
++}
++
++/** 漏扫哨兵（设计 W6+自裁②+门一 W7 扩）：非白名单 .ts/.tsx 含用例调用形态 →
++ *  保守红。callee 识别面=纯标识符三词 或 带后缀属性访问（calleeText 匹配
++ *  /^(it|test|describe)\./）；命中后仍按参数形态判定（首参字符串字面量或
++ *  任一参函数字面量）——guard.ts 的 describe(label, fn)/describe.skip(label, fn)
++ *  转发调用（双标识符参）不误伤，真用例（带回调）不漏。 */
++function sentinelCheck(absPath, relPath, unresolvable) {
++  const text = readFileSync(absPath, 'utf8')
++  const kind = relPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
++  const sf = ts.createSourceFile(absPath, text, ts.ScriptTarget.Latest, true, kind)
++  importAliasCheck(sf, relPath, unresolvable)
++  function visit(node) {
++    if (ts.isCallExpression(node)) {
++      const ct = calleeText(node.expression)
++      const isBareThree = ts.isIdentifier(node.expression) && THREE_API.has(node.expression.text)
++      const isDottedThree = ct !== null && /^(it|test|describe)\./.test(ct)
++      if (isBareThree || isDottedThree) {
++        const looksCase =
++          (node.arguments[0] !== undefined && (ts.isStringLiteral(node.arguments[0]) || ts.isNoSubstitutionTemplateLiteral(node.arguments[0]))) ||
++          node.arguments.some((a) => isFunctionExpr(a))
++        if (looksCase) {
++          unresolvable.push({ file: relPath, line: lineOf(node, sf), reason: `漏扫哨兵：非白名单文件含用例调用形态（${isDottedThree ? ct : 'it/test/describe'}——门一 W7 扩）` })
++          return
++        }
++      }
++    }
++    ts.forEachChild(node, visit)
++  }
++  visit(sf)
++}
++
++/** 全量抽取：tests/** → {surfaces: Map<posixRel, FileSurface>, unresolvable: []} */
++export function extractAll(root) {
++  const all = walkFiles(join(root, 'tests'), (p) => TS_LIKE_RE.test(p))
++  const surfaces = new Map()
++  const unresolvable = []
++  for (const abs of all) {
++    const rel = abs.replaceAll('\\', '/').slice(root.replaceAll('\\', '/').length + 1)
++    if (WHITELIST_RE.test(rel)) {
++      surfaces.set(rel, extractFile(abs, rel, unresolvable))
++    } else {
++      sentinelCheck(abs, rel, unresolvable)
++    }
++  }
++  return { surfaces, unresolvable }
++}
++
++/** stats 汇总（DoD 数字全部机器实测于此；门一 W8——skipSiteCount=双桶和，
++ *  向后兼容口径；conditionalSkipSiteCount/hardSkipSiteCount 新字段） */
++export function statsOf(surfaces, unresolvable) {
++  let caseCount = 0
++  let assertionCount = 0
++  let conditionalSkipSiteCount = 0
++  let hardSkipSiteCount = 0
++  let ticketIdCount = 0
++  let eachExpandedRows = 0
++  for (const s of surfaces.values()) {
++    caseCount += s.cases.length
++    conditionalSkipSiteCount += s.conditionalSkipSites.length
++    hardSkipSiteCount += s.hardSkipSites.length
++    ticketIdCount += s.ticketIds.length
++    for (const c of s.cases) {
++      assertionCount += c.assertions.length
++      if (c._eachRow) eachExpandedRows++
++    }
++  }
++  return {
++    fileCount: surfaces.size,
++    caseCount,
++    assertionCount,
++    skipSiteCount: conditionalSkipSiteCount + hardSkipSiteCount,
++    conditionalSkipSiteCount,
++    hardSkipSiteCount,
++    ticketIdCount,
++    eachExpandedRows,
++    unresolvableCount: unresolvable.length
++  }
++}

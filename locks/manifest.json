@@ -1,9 +1,9 @@
 {
-    "generatedAt":  "2026-09-11T16:07:41.5032498Z",
+    "generatedAt":  "2026-09-11T18:07:55.1322907Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
-                      "sha256":  "9814bc555958951242b4d8b4de7b3adade6959758f0ead26f3bbbbb0a669793a"
+                      "sha256":  "4542553623950a7d208991876879a32504d9672ddefaf2c63f15727737faa924"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -387,7 +387,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "d88be807d8f7d221a0c4fcd5e84a96cb13a27a7fbc343e6a2078442495e2e2e3"
+                      "sha256":  "0e463f528df3f78f5049afc4b50f7b77cfeb0b50f3de91d78890a749b4ae4be4"
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
@@ -395,7 +395,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "91b26b385cb7b4c76b11c5c35c5edcfb885727effa18e4e39969492ee42ec26e"
+                      "sha256":  "476a9612cddf06f8275567540f4e1e8373b61f225edca11a79a2c6639b750304"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -415,7 +415,7 @@
                   },
                   {
                       "path":  "scripts/get-protected-files.ps1",
-                      "sha256":  "96af95a070f24e16d269a03e83afaae58e38a2538ef27f1651de9f2759599275"
+                      "sha256":  "fb57e53bfcae7c288d51f0b004c5942c5ff900e627383274a93039f7dffaf480"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
@@ -436,6 +436,18 @@
                   {
                       "path":  "scripts/sqlite-abi.mjs",
                       "sha256":  "e68baceb4d1aea5c007224af0025248760ed23f647d9d0809d5c1fefb48c7b5e"
+                  },
+                  {
+                      "path":  "scripts/test-surface.baseline.json",
+                      "sha256":  "f10502bd4598f002dbd7fe4c0077e12d8fe065c739b8438d7d215c4bbc04934a"
+                  },
+                  {
+                      "path":  "scripts/test-surface.exemptions.json",
+                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+                  },
+                  {
+                      "path":  "scripts/test-surface/extract.mjs",
+                      "sha256":  "55a9e7a1a0e14d80afae53d8dd342ae35759d99612ae90cd6c940f738d9eff6a"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",

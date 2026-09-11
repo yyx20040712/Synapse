@@ -16,7 +16,9 @@ function Get-ProtectedFiles {
   foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
       'playwright.config.ts', 'electron.vite.config.ts',
       'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
-      'scripts/dup-constants.baseline.json')) {
+      'scripts/dup-constants.baseline.json',
+      'scripts/test-surface.baseline.json',
+      'scripts/test-surface.exemptions.json')) {
     $p = Join-Path $root $cfg
     if (Test-Path $p) { $files += Get-Item $p }
   }

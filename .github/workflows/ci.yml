@@ -112,3 +112,42 @@ jobs:
             fi
           fi
           echo "manifest 无变更或已带尾注"
+
+      # [F-TESTREF-00] 测试重构战役范围闸（设计定稿 §7-W7 终案：逐提交判定）。
+      # 带 [test-refactor] 尾注的提交 diff 路径必须 ⊆ 战役白名单（src/** 一律红）。
+      # 尾注自愿制=设计 W7 语义（W2 门一裁定接受）：测试面另有 locks sha 锁+
+      # [locked-change] guard 独立守护，本范围闸=战役附加层，无强制闭合非缺陷。
+      # package.json 放行论证=依赖变更已被 verify job 的 [dep-change] guard 独立
+      # 拦截，双闸正交。scripts/audits/** 为本仓证据目录实态（设计白名单
+      # docs/audits/** 之外补登——实现票自裁申报在档）。
+      # W3（门一回炉）：白名单正则带结尾锚（禁 scripts/check-test-surface-evil/
+      # 前缀逃逸）。W1（门一回炉）：git diff-tree -m -r 取 merge 双父并集（保守向）。
+      # W4（门一回炉）：BASE 不可达先 fetch origin main 兜底 merge-base，仍失败
+      # 才跳过且 notice 升 warning。
+      - name: 测试重构战役范围闸（[test-refactor]）
+        shell: bash
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "事件基线不可达，尝试 origin/main 兜底（门一 W4）"
+            git fetch origin main >/dev/null 2>&1 || true
+            BASE=$(git merge-base origin/main HEAD 2>/dev/null || true)
+          fi
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::warning::基线不可用（新分支首推/强推重写且 origin/main 兜底失败），跳过范围闸（门一 W4）"
+            exit 0
+          fi
+          TR_RE='^tests/|^scripts/(check-test-surface(\.mjs)?$|test-surface(\.mjs)?$|test-surface/|test-surface\.(baseline|exemptions)\.json$)|^\.github/workflows/|^package(-lock)?\.json$|^docs/prompts/|^docs/design/|^tickets/registry\.ts$|^locks/manifest\.json$|^AGENTS\.md$|^docs/(methodology|invariants)\.md$|^docs/audits/|^scripts/audits/'
+          BAD=0
+          for C in $(git log --format=%H "$BASE..HEAD"); do
+            if git log -1 --format=%B "$C" | grep -q '\[test-refactor\]'; then
+              OFF=$(git diff-tree --no-commit-id --name-only -m -r "$C" | grep -Ev "$TR_RE" || true)
+              if [ -n "$OFF" ]; then
+                echo "::error::提交 ${C:0:8} 带 [test-refactor] 但 diff 超出战役白名单（src/** 等禁止；门一 W1/W3 修正版）："
+                echo "$OFF"
+                BAD=1
+              fi
+            fi
+          done
+          if [ "$BAD" -eq 0 ]; then echo "范围闸通过（无 [test-refactor] 提交或全部在白名单内）"; fi
+          exit $BAD

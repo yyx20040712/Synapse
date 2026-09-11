@@ -41,6 +41,10 @@ function protectedFiles() {
     // [F-LINT-02] baseline 棘轮防绕过（终裁 §3）：scripts/*.json 不在 walk 自动面，
     // 单文件显式登记——baseline 变更必经 [locked-change] 人类审查位
     join(root, 'scripts', 'dup-constants.baseline.json'),
+    // [F-TESTREF-00] 指纹门信任根入锁（门一 R1 B1）：基线/豁免被清空或篡改
+    // 若不受锁=门对削弱静默放行（sha256 对账拦截）——与 ps1 侧 Get-ProtectedFiles 对齐
+    join(root, 'scripts', 'test-surface.baseline.json'),
+    join(root, 'scripts', 'test-surface.exemptions.json'),
     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
   ].filter((p) => existsSync(p))
   return [...new Set(files)].sort()

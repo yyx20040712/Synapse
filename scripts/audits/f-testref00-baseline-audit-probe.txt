@@ -1,0 +1,14 @@
+ticketIds: []
+skipSites: 0
+each rows: 160
+sample TOKENS[0]: --bg 声明为设计定稿值 #f6f4ee | assertions: ["expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"]
+sample DURATION[0]: duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）
+sample DURATION[1]: duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）
+sample FS_CSS[0]: theme.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）
+assert sample: "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+case: body 视觉底换新 --bg 且保留 html/body/#root overflow 锁（Q1 不变量） | markers: [] | line: 175 | first assert: "expect(css).toContain('overflow: hidden')"
+case: primary 静态皮肤在类规则中（CTA：inset 金 hairline a45 + 6px 切角） | markers: [] | line: 193 | first assert: "expect(buttonsCss, '.syn-btn-primary 静态类应在场（theme-buttons.css）').toMatch(/\\.syn-btn-primary\\s*\\{/)"
+e2e cases: 2 | skipSites: ["test.skip(pending.length > 0, `延期：依赖或自身工单未完成 [${pending.join(', ')}]`)","test.skip(!isTicketDone('SR2-F-05'), '延期：工单 SR2-F-05 未完成')"]
+e2e first case: "收官全链：INV-01 三层/键位滚动步/缩放中心锚（ctrl+wheel 段迁移）/fit-width 列宽基准/标注原位抽验/离屏回收/进度恢复" | markers: []
+reader-text cases: 17 | skipSites: 1
+unresolvable: 0
