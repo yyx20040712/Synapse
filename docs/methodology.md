@@ -153,6 +153,9 @@ commit 长 message。
 > 改空即用，模板偏差=回炉主要来源，勿即兴。
 > 通用模板版=ai-dev-org references/02 §4/07（2026-09-10 doc-align 注记）；
 > 本节为 Synapse 实例（含 ⑤a~⑤i 项目条款）。
+> [test-refactor] 测试重构战役票规约（2026-09-11 F-TESTREF-00 起）：双尾注
+> `[locked-change][test-refactor]`+CI 范围闸+指纹门（C 面 ⊇ 机检），详见
+> docs/design/2026-09-11_f-testref00-design-final.md。
 
 ### 4.1 实现者简报模板（主控→实现者子代理）
 

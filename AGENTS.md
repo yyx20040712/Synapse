@@ -126,6 +126,7 @@ development Model Selection+loop-engineering references/06）；**架构与
 4. `npm run verify` 绿 → 报告人类审查 `git diff` → 人类翻 registry 状态 → 提交。
 5. 卡住了就停，报告卡点；**不许删检查、不许放宽断言、不许引入新依赖**。
 6. 测试红了先怀疑自己的实现；确认是测试/契约问题 → 停下报告。
+7. **[test-refactor] 测试重构战役票**：动 tests/** 须双尾注 `[locked-change][test-refactor]`——CI 范围闸机检 diff 路径白名单（src/** 红）、verify 的 `test-surface:check` 机检契约面 C_after ⊇ C_before；有意收紧/删改先取主控裁决再落 `scripts/test-surface.exemptions.json` 豁免（reason+rulingLink）；战役毕基线再生成走 `npm run test-surface:baseline`+全量 diff 审计（设计定稿=docs/design/2026-09-11_f-testref00-design-final.md）。
 
 ### 闲时连续开发（无人值守场，2026-09-03 立制）
 
