@@ -156,6 +156,9 @@ commit 长 message。
 > [test-refactor] 测试重构战役票规约（2026-09-11 F-TESTREF-00 起）：双尾注
 > `[locked-change][test-refactor]`+CI 范围闸+指纹门（C 面 ⊇ 机检），详见
 > docs/design/2026-09-11_f-testref00-design-final.md。
+> 治理五指标（2026-09-11 架构裁决 §3-2 起）：每份交接书基线段滚动携带
+> test:src LOC 比/locks 文件数/registry open-done/audits 体量/.git 体量
+> 五数——治理层预算盘点用，勿新增常驻脚本（M5 自反性：盘点半机械不值得机件）。
 
 ### 4.1 实现者简报模板（主控→实现者子代理）
 
