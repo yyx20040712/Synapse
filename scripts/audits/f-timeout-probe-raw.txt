@@ -1,0 +1,4 @@
+[probe] server on :60578, delay=400000ms, client cap=1200000ms
+[armA fetch+undici] FAIL elapsed=306.3s error=TypeError:fetch failed
+[armB node:http] OK status=200 body={"ok":true} elapsed=400.0s
+[probe] done
