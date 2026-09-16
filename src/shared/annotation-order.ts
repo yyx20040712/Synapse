@@ -40,7 +40,7 @@ import type { Annotation } from './models/annotation'
 
 /** 文档序全序比较器：页码→页内偏移→创建序→id 兜底（INV-24 单源，禁字符串比较）。
  *  createdAt 用 ASCII 字典序（ISO-8601 按位比较跨环境确定——localeCompare 受
- *  运行 locale 影响威胁全序确定性，deepseek W1 裁决不采） */
+ *  运行 locale 影响威胁全序确定性，故不采） */
 export function compareAnnotations(a: Annotation, b: Annotation): number {
   if (a.page !== b.page) return a.page - b.page
   if (a.startOffset !== b.startOffset) return a.startOffset - b.startOffset

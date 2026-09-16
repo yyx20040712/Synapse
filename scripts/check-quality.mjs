@@ -14,6 +14,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import postcss from 'postcss'
 import { COLOR_RE, META_RE, stripUrlFunctions } from './color-re.mjs'
 import { scanDuplicateConstants, formatDupDetails, clipped } from './check-dup-constants.mjs'
+import { scanModelNames } from './check-model-names.mjs'
 
 const root = process.cwd()
 const violations = []
@@ -363,6 +364,11 @@ console.log(
   `红层 ${dupResult.baselineHits.length} 组 baseline 待收敛（F-LINT-03 候选）、新增 ${dupResult.newRed.length} 组、` +
   `warn ${dupResult.warnGroups.length} 组（异名同文案不卡 CI）`
 )
+
+// 8) 模型代号负锚（清洗批 2026-09-16 起）——src 下 .ts/.tsx 出现 AI 模型
+//    代号即红（过程痕迹不入源码；词表/扫描面单源=scripts/check-model-names.mjs，
+//    import 先例=scanDuplicateConstants）。
+for (const v of scanModelNames(root)) violations.push(`model-names: ${v}`)
 
 if (violations.length > 0) {
   console.error('quality 检查未通过：')

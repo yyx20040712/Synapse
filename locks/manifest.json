@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-11T18:07:55.1322907Z",
+    "generatedAt":  "2026-09-16T00:16:48.4502328Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -390,8 +390,12 @@
                       "sha256":  "0e463f528df3f78f5049afc4b50f7b77cfeb0b50f3de91d78890a749b4ae4be4"
                   },
                   {
+                      "path":  "scripts/check-model-names.mjs",
+                      "sha256":  "f53ee687a63fed15fc4fb64c5686abd10309c7282755e0021c09e260fd70ef32"
+                  },
+                  {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "59d0d82097c66ba2c6bbc629c0d76ceb58be9769b5e3f5686bdc1efff81d13ea"
+                      "sha256":  "d1ca66ba553527f78e2a9faa32c70fb6f92ee394683df148c01384c1c52f54bd"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -487,7 +491,7 @@
                   },
                   {
                       "path":  "src/shared/annotation-order.ts",
-                      "sha256":  "631b37d85a9e94c6966059255ecaac8e1bd94735d502ab201ca792348f6ddee9"
+                      "sha256":  "694d039513f1f94c3e5fe94d73540e274cdef87f13856df4f937a54cd8cbb8ab"
                   },
                   {
                       "path":  "src/shared/app-error.ts",
