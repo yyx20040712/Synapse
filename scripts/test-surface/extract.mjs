@@ -39,6 +39,9 @@ const WHITELIST_RE = /\.(test\.ts|test\.tsx|spec\.ts|spec\.tsx)$/
 const TS_LIKE_RE = /\.(ts|tsx)$/
 const TEST_API_SOURCE_RE = /^['"](vitest|@playwright\/test)['"]$/
 const THREE_API = new Set(['it', 'test', 'describe'])
+// 别名监视集（Kimi 补审 W-2）：import 检测面=三词+expect（expect as exp 形态
+// 会使断言收集零指纹——新文件以别名书写断言即整面逃逸）；哨兵面沿用 THREE_API
+const ALIAS_WATCHED = new Set([...THREE_API, 'expect'])
 const DESCRIBE_PLAIN = new Set(['describe', 'test.describe'])
 const DESCRIBE_SKIP = new Set(['describe.skip', 'test.describe.skip', 'xdescribe'])
 const DESCRIBE_ONLY = new Set(['describe.only', 'test.describe.only'])
@@ -160,10 +163,10 @@ function printfExpand(template, cells, index) {
 }
 
 /**
- * import 别名检测（门一 W6）：vitest/@playwright/test 源的 it/test/describe
- * 说明符被别名（imported≠local）或伪装本地名（local∈三词但 imported∉）→
+ * import 别名检测（门一 W6+Kimi 补审 W-2）：vitest/@playwright/test 源的
+ * it/test/describe/expect 说明符被别名（imported≠local）或伪装本地名 →
  * UNRESOLVABLE；namespace import（v.it() 形态 calleeText 不匹配白名单）同红
- * （超裁决保守向，回炉申报）。存量全部直名 import（预检 grep 实证）。
+ * （超裁决保守向，回炉申报）。存量全部直名 import（预检 grep 实证含 expect）。
  */
 function importAliasCheck(sf, relPath, unresolvable) {
   for (const stmt of sf.statements) {
@@ -173,8 +176,8 @@ function importAliasCheck(sf, relPath, unresolvable) {
     if (!clause) continue
     const line = lineOf(stmt, sf)
     if (clause.name) {
-      // default import：imported='default'——local∈三词即伪装形态
-      if (THREE_API.has(clause.name.text)) {
+      // default import：imported='default'——local∈监视集即伪装形态
+      if (ALIAS_WATCHED.has(clause.name.text)) {
         unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（default import as ${clause.name.text}）` })
       }
     }
@@ -189,10 +192,10 @@ function importAliasCheck(sf, relPath, unresolvable) {
         if (!ts.isIdentifier(spec.name)) continue
         const imported = spec.propertyName && ts.isIdentifier(spec.propertyName) ? spec.propertyName.text : spec.name.text
         const local = spec.name.text
-        if (THREE_API.has(imported) && local !== imported) {
-          unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（${imported} as ${local}）` })
-        } else if (THREE_API.has(local) && !THREE_API.has(imported)) {
-          unresolvable.push({ file: relPath, line, reason: `用例 API 别名 import 不可静态判定（${imported} as ${local}——伪装本地名）` })
+        if (ALIAS_WATCHED.has(imported) && local !== imported) {
+          unresolvable.push({ file: relPath, line, reason: `用例/断言 API 别名 import 不可静态判定（${imported} as ${local}）` })
+        } else if (ALIAS_WATCHED.has(local) && !ALIAS_WATCHED.has(imported)) {
+          unresolvable.push({ file: relPath, line, reason: `用例/断言 API 别名 import 不可静态判定（${imported} as ${local}——伪装本地名）` })
         }
       }
     }

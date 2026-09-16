@@ -101,7 +101,9 @@ function fmtRelLine(file, line) {
   return line === undefined ? file : `${file}:${line}`
 }
 
-/** 主判定：返回 { failures:[], deltas:[], exemptHits:Set, statsLine } */
+/** 主判定：返回 { failures:[], deltas:[], exemptHits:Set, statsLine }。
+ * exemptHitKeys 存**豁免条目对象**（Kimi 补审 N-1：按条目身份计——同条目多次
+ * 命中只计一、一条跨 kind 命中不虚计；stale=零命中条目数）。 */
 function judge(baseFiles, cur) {
   const failures = []
   const deltas = []
@@ -142,6 +144,12 @@ function judge(baseFiles, cur) {
         }
       }
       for (const cs of c.cases) {
+        // Kimi 补审 B-1：新文件分支缺 only 判定=逃逸通道（新文件 it.only 走
+        // NEW delta 绿——only 聚焦语义使全仓测试静默缩水）。only 恒红含新文件。
+        if (cs.markers.includes('only')) {
+          failures.push({ kind: 'ONLY_FORBIDDEN', path, line: cs.line, text: cs.title })
+          continue
+        }
         if (cs.markers.includes('skip') && exemptionHits(loadExemptionsCache, 'case', path, cs).length === 0) {
           failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
         } else {
@@ -176,7 +184,7 @@ function judge(baseFiles, cur) {
       const curN = cCond.get(text) ?? 0
       for (let i = 0; i < n - curN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
+        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
         else failures.push({ kind: 'SKIPSITE_REMOVED', path, line: undefined, text })
       }
     }
@@ -184,7 +192,7 @@ function judge(baseFiles, cur) {
       const baseN = bCond.get(text) ?? 0
       for (let i = 0; i < n - baseN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
+        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
         else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
       }
     }
@@ -197,7 +205,7 @@ function judge(baseFiles, cur) {
       const curN = cHard.get(text) ?? 0
       for (let i = 0; i < n - curN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
+        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
         else deltas.push(`ACTIVATED ${path} 「${text}」（hardSkipSite 删除）`)
       }
     }
@@ -205,7 +213,7 @@ function judge(baseFiles, cur) {
       const baseN = bHard.get(text) ?? 0
       for (let i = 0; i < n - baseN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) exemptHitKeys.add(`skipsite:${path}:${text}`)
+        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
         else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
       }
     }
@@ -243,7 +251,7 @@ function judge(baseFiles, cur) {
         // 基线签名无配对 → MISSING_CASE（先试豁免，再 MISSING_ASSERT 细化）
         const hit = exemptionHits(loadExemptionsCache, 'case', path, bcs)
         if (hit.length > 0) {
-          exemptHitKeys.add(`case:${path}:${bcs.title}`)
+          for (const h of hit) exemptHitKeys.add(h)
           continue
         }
         // MISSING_ASSERT 细化：当前同 key 存在 markers 同、断言为其子集的签名
@@ -261,7 +269,7 @@ function judge(baseFiles, cur) {
           if (missing.length > 0 && missing.length < bcs.assertions.length) {
             for (const a of missing) {
               const ahit = exemptionHits(loadExemptionsCache, 'assert', path, { assertionText: a, title: bcs.title })
-              if (ahit.length > 0) exemptHitKeys.add(`assert:${path}:${a}`)
+              if (ahit.length > 0) { for (const h of ahit) exemptHitKeys.add(h) }
               else failures.push({ kind: 'MISSING_ASSERT', path, line: bcs.line, text: a })
             }
             detailed = true
@@ -297,11 +305,33 @@ function judge(baseFiles, cur) {
         }
         if (cs.markers.includes('skip')) {
           const hit = exemptionHits(loadExemptionsCache, 'case', path, cs)
-          if (hit.length > 0) exemptHitKeys.add(`case:${path}:${cs.title}`)
+          if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
           else failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
           continue
         }
         deltas.push(`NEW ${path} › ${cs.title} (line ${cs.line}, ${cs.assertions.length} assertions)`)
+      }
+    }
+  }
+
+  // Kimi 补审 W-1：既有用例加 skip 时上半场 MISSING_CASE 与下半场 SKIP_ADDED
+  // 双报（同因复述）——输出级去重（计数感知：一条 SKIP_ADDED 抵一条同
+  // path+title 的 MISSING_CASE；判定与 exit 不变，两态比对逻辑零触碰）。
+  {
+    const skipAddedCounts = new Map()
+    for (const f of failures) {
+      if (f.kind !== 'SKIP_ADDED') continue
+      const k = `${f.path} ${f.text}`
+      skipAddedCounts.set(k, (skipAddedCounts.get(k) ?? 0) + 1)
+    }
+    for (let i = failures.length - 1; i >= 0; i--) {
+      const f = failures[i]
+      if (f.kind !== 'MISSING_CASE') continue
+      const k = `${f.path} ${f.text}`
+      const n = skipAddedCounts.get(k) ?? 0
+      if (n > 0) {
+        skipAddedCounts.set(k, n - 1)
+        failures.splice(i, 1)
       }
     }
   }

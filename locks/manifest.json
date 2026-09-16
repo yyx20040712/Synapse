@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-16T00:16:48.4502328Z",
+    "generatedAt":  "2026-09-16T01:47:54.9554185Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -210,6 +210,10 @@
                       "sha256":  "ce55586cd19531935a6d9fe08cc8a549515f89a9e89ed70d1b0b99b1830cdde0"
                   },
                   {
+                      "path":  "scripts/audits/f-kimi-fix-mutations.mjs",
+                      "sha256":  "6d6cd80a926ef46b89a519d98d529aed3809610c7cf0bae1265d55f80764cc3c"
+                  },
+                  {
                       "path":  "scripts/audits/f-l1c-forensics.mjs",
                       "sha256":  "9e9dbb3fa77ece674eb358156b2279234ebf7457fc073439648accd9016b6146"
                   },
@@ -399,7 +403,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "476a9612cddf06f8275567540f4e1e8373b61f225edca11a79a2c6639b750304"
+                      "sha256":  "c57e27d359694e529314849de910a213330fe7ad77eafa2b97b583e9e068478c"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -451,7 +455,7 @@
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
-                      "sha256":  "55a9e7a1a0e14d80afae53d8dd342ae35759d99612ae90cd6c940f738d9eff6a"
+                      "sha256":  "7bf40f6da9bdcf793603b26f0b77b4da5722035d17f894ed3116e04415d6f909"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
