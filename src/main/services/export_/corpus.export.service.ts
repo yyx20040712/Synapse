@@ -288,7 +288,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     // 防御（门一 N2 采纳）：悬挂的终局推进不得误清新会话单飞锁/二次 reject——
     // 该不变量不依赖提取器串行协议成立
     if (session !== s) return
-    // 先清理后释放单飞锁（deepseek W2：清理期间新会话的 manifest.tmp 不被误删）
+    // 先清理后释放单飞锁（清理期间新会话的 manifest.tmp 不被误删）
     await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
     session = null
     s.reject(new SessionError('IO_ERROR', message))

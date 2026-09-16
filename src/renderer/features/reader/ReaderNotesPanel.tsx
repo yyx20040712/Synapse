@@ -74,7 +74,7 @@ export function ReaderNotesPanel(props: {
   const saveSoon = useNotesStore((s) => s.saveSoon)
 
   const [loadFailed, setLoadFailed] = useState(false)
-  /** 周期失败按 paperId 分键（deepseek W3+B1 合并处置）：A 的保存失败在切回 A
+  /** 周期失败按 paperId 分键：A 的保存失败在切回 A
    *  时仍可见（重试入口不失联）；跨 paper 判定基线互不污染 */
   const [saveFailedByPaper, setSaveFailedByPaper] = useState<Record<string, boolean>>({})
   const saveFailed = paperId === null ? false : (saveFailedByPaper[paperId] ?? false)

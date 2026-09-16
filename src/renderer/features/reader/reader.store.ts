@@ -326,7 +326,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
           throw e
         } finally {
           // 身份校验：仅当 Map 记录仍是本加载才删（closeTab 后立即重开同 id 时，
-          // Map 里已是新加载的记录，旧 finally 不得误删——deepseek r2 BLOCKING 修复）
+          // Map 里已是新加载的记录，旧 finally 不得误删）
           if (load !== null && inflightOpen.get(id) === load) {
             inflightOpen.delete(id)
           }
@@ -455,7 +455,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       try {
         outcome = await runUndo(paperId)
       } catch (e) {
-        // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误（deepseek r3 W2）
+        // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误
         console.error('[reader.store] undo 异常', e)
         showToast('撤销失败，请重试', 'error')
         return

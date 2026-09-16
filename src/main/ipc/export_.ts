@@ -140,7 +140,7 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
         throw new ExportIpcError('CANCELLED', '已取消保存')
       }
       const count = await deps.services.export_.writeCorpusSet(dir, entries)
-      // filePath 指真实落盘位置 <dir>/corpus（deepseek N1——目录级返回会让
+      // filePath 指真实落盘位置 <dir>/corpus（目录级返回会让
       // 消费方 toast 误导用户找错层级）
       return { filePath: join(dir, 'corpus'), count, skipped }
     }

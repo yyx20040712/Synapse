@@ -6,7 +6,7 @@
  * - 三栏并列=三个并列选项卡（目录/缩略图/笔记——tab 并列非三栏同时可见）。
  *   tablist 三项宿主在本组件（OutlinePanel 内部 tab 态+tablist 已摘除，改
  *   mode prop 化——pdfjs 句柄与目录/缩略图行为零变化，纯结构迁移）
- * - tab 态迁移表（三态互斥，事件=点击 setTab(id)；deepseek N4）：
+ * - tab 态迁移表（三态互斥，事件=点击 setTab(id)）：
  *   | 现态 | 点击 outline/thumbs | 点击 notes |
  *   | --- | --- | --- |
  *   | 任意 | outline/thumbs（OutlinePanel 常驻挂载仅 CSS 隐藏——目录树/滚动/
@@ -137,7 +137,7 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {/* OutlinePanel 常驻挂载（notes 态仅 CSS 隐藏）——目录树/滚动/懒加载
-            状态跨三栏切换全保留（deepseek W1：卸载重挂会闪加载态+丢状态）；
+            状态跨三栏切换全保留（卸载重挂会闪加载态+丢状态）；
             ReaderNotesPanel 编辑态驻 notes.store，按需挂载即走合并保护 */}
         <div style={{ display: tab === 'notes' ? 'none' : 'block', height: '100%' }}>
           <OutlinePanel pdfDoc={pdfDoc} mode={tab === 'notes' ? 'outline' : tab} currentPage={currentPage} onNavigate={navigate} />

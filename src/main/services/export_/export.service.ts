@@ -162,7 +162,7 @@ export function createExportService(deps: { repos: Repos }): ExportService {
       for (let i = 0; i < ids.length; i += 1) {
         const id = ids[i]
         if (id === undefined) continue
-        // 每 25 篇让出事件循环（better-sqlite3 同步取数+装配，大库不卡 main——deepseek W1）
+        // 每 25 篇让出事件循环（better-sqlite3 同步取数+装配，大库不卡 main）
         if (i > 0 && i % 25 === 0) {
           await new Promise<void>((resolve) => setImmediate(resolve))
         }
@@ -181,7 +181,7 @@ export function createExportService(deps: { repos: Repos }): ExportService {
           })
         } catch (e) {
           // 仅业务性跳过（NOT_FOUND）入 skipped；程序缺陷（转义/类型等意外异常）
-          // 上抛失败可见——不把 bug 静默折叠成「跳过」（deepseek W3）
+          // 上抛失败可见——不把 bug 静默折叠成「跳过」
           if (e instanceof ExportDomainError) {
             skipped.push({ paperId: id, reason: e.message })
           } else {
@@ -206,7 +206,7 @@ export function createExportService(deps: { repos: Repos }): ExportService {
         await mkdir(corpusDir, { recursive: true })
         for (const e of entries) {
           // paperId 消防消毒（id 由 import.service 生成本可信——纵深防御，
-          // deepseek N6：异常 id 不越出 corpus 目录）
+          // 异常 id 不越出 corpus 目录）
           const safeId = e.paperId.replace(/[^a-zA-Z0-9_-]/g, '_')
           await writeFile(join(corpusDir, `${safeId}.md`), e.content, 'utf8')
         }

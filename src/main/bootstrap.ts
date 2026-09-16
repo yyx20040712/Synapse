@@ -219,7 +219,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
             type: 'warning',
             message,
             buttons: ['确认退出', '取消'],
-            // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据（deepseek W2）
+            // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据）
             defaultId: 1,
             cancelId: 1,
             noLink: true

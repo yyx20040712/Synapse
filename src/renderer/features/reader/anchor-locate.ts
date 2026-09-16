@@ -149,7 +149,7 @@ async function waitOpen(paperId: string, seq: number): Promise<OpenOutcome> {
   if (existing === undefined || existing.status === 'error') {
     requestOpenPaper(paperId)
   }
-  // 已知窄窗（deepseek W2，头注存档——INV-22 push 竞态窄窗同型）：requestOpenPaper
+  // 已知窄窗（头注存档——INV-22 push 竞态窄窗同型）：requestOpenPaper
   // 发出即不可撤回，并发定位多篇时旧请求可能多打开一个 tab；open-paper-bus 对
   // ready tab 幂等激活，多余 tab 由用户关闭——序号守卫保证旧请求后续副作用截断
   let seen = false
@@ -169,7 +169,7 @@ async function waitOpen(paperId: string, seq: number): Promise<OpenOutcome> {
 type VerifyOutcome = 'exact' | 'page' | 'stale'
 
 /** verifying：等文本层可判后 verifyQuote（anchor-anchor 唯一 DOM 遍历点；
- *  DOM 异常按验证失败继续轮询（deepseek N2）；目标 tab 消失即作废（S6）。
+ *  DOM 异常按验证失败继续轮询；目标 tab 消失即作废（S6）。
  *  F-02 页限定：目标页盒（data-page-root=anchorPage+1，PageColumn 1 基）内查
  *  .textLayer——多页列渲染窗内全局第一=邻页文本层（错误页验证/邻页引文误
  *  命中）；页盒缺席（单页宿主/无页列夹具）回退全局唯一 textLayer */
@@ -209,7 +209,7 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
 }
 
 /** exact 副作用：滚动目标元素居中+闪烁（AnnotationLayer data-annotation-id 锚；
- *  属性值转义防选择器注入——deepseek W1） */
+ *  属性值转义防选择器注入） */
 function flashAnnotation(annotationId: string): void {
   flashTarget('data-annotation-id', annotationId)
 }
@@ -248,7 +248,7 @@ export async function locateAnchor(target: LocateTarget): Promise<LocateResult> 
   const seq = ++locateSeq
 
   // ③paper 层：篇级（anchor=null）开篇；无引文（quoteText<2 无验证意义）但
-  // anchorPage 已知时仍跳该页（防「跳回第 0 页」边界回归——deepseek r2 W2）。
+  // anchorPage 已知时仍跳该页（防「跳回第 0 页」边界回归）。
   // 仅 ready 态直接操作（loading/error/absent 只负责打开，不与加载流冲突——N1）
   if (target.anchor === null || target.anchor.quoteText.length < 2) {
     const tab = useReaderStore.getState().tabs[target.paperId]

@@ -191,7 +191,7 @@ export interface QuitGuardDeps {
  * clean 放行；dirty → preventDefault → 确认框 → 确认=destroy 强制关闭（destroy
  * 不再触发 close，无重入）/取消=窗口保持（dirty 缓存不迁）。确认框模态天然挡住
  * 弹出期间的重复 close（头注防重入依据）。对话框异常按取消处理：窗口保持可
- * 重试，避免 preventDefault 后关闭路径死锁（deepseek W1 处置）。
+ * 重试，避免 preventDefault 后关闭路径死锁。
  */
 export async function handleCloseWithQuitGuard(
   dirty: boolean,

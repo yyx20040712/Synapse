@@ -64,7 +64,7 @@ import { makeCitationKey } from './bibtex.serializer'
 
 export const CORPUS_USER_PREFIX = '[user]'
 
-/** AI 段来源标识（v1 生产者=测试夹具；字符集消毒防前缀语法破坏——deepseek N1） */
+/** AI 段来源标识（v1 生产者=测试夹具；字符集消毒防前缀语法破坏） */
 export function corpusAiPrefix(source: string): string {
   return `[ai:${source.replace(/[[\]\s:]/g, '-')}]`
 }
@@ -125,7 +125,7 @@ export interface CorpusAssembleInput {
 }
 
 /** YAML 单引号标量：内部单引号翻倍；CR/LF 归一为空格（单行标量——换行会
- *  破坏 front-matter 行结构，元数据换行无信息量，deepseek B1 裁决采纳；
+ *  破坏 front-matter 行结构，元数据换行无信息量；
  *  流指示符 , [ ] { } 在引号标量内不特殊——YAML 规范豁免，仅裸标量受限） */
 function yamlStr(s: string): string {
   return `'${s.replace(/\r?\n/g, ' ').replaceAll("'", "''")}'`
@@ -163,7 +163,7 @@ function frontMatter(paper: PaperDetail, annotationCount: number): string[] {
 }
 
 /** 引文行组：多行引文逐行补 `> ` 前缀（块引用续行不靠 lazy continuation——
- *  空行即断开，deepseek r2 W1）；页码标注附末行 */
+ *  空行即断开）；页码标注附末行 */
 function quoteLines(a: Annotation): string[] {
   const rows = a.quoteText.split(/\r?\n/).map((l) => `> ${l}`)
   rows[rows.length - 1] = `${rows[rows.length - 1]}（p.${a.page + 1}）`
