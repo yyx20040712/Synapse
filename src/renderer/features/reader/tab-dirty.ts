@@ -68,7 +68,7 @@ export function tabDirtySignals(paperId: string): TabDirtySignals {
 
 /** 退出拦截上报源：任一**已打开 tab** 任一写面 dirty → true（订阅两 store，响应式）。
  *  notes 面扫描限定在 reader.store 的 tab 键集内——已关闭 tab 的 pending 草稿
- *  残留（noteByPaper 不驱逐）不产生退出误报（deepseek 一审 W1 处置）。
+ *  残留（noteByPaper 不驱逐）不产生退出误报。
  *  annoAny 布尔 selector 每次 set 重算后经 Object.is 比较——多 dirty 清一仍 true
  *  不重渲染属正确（值未变），非短路陷阱（r2 NIT 注记） */
 export function useTabDirtyAggregate(): boolean {
@@ -81,7 +81,7 @@ export function useTabDirtyAggregate(): boolean {
 /** notes 面草稿字典（pending 镜像）的响应式转手——TabBar 等消费方经本聚合器
  * 订阅（本模块是 reader 域唯一 notes.store 引用点，check-quality 白名单例外）。
  *  只投影 pending 布尔并 useShallow 比较：打字期的 contentMd 变化不触发
- *  TabBar 重渲染（pending 值不变即浅等——deepseek r2 WARN 处置） */
+ *  TabBar 重渲染（pending 值不变即浅等） */
 export function useNotesDrafts(): Record<string, boolean> {
   return useNotesStore(
     useShallow((s) =>

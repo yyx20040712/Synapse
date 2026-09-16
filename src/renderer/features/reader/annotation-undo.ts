@@ -18,12 +18,12 @@
  *   返回 {done:false, reason:'api-failed'}；成功 → 弹栈 + 返回 apply 指令
  *   （store 同步由调用侧 reader.store.undo() 执行，本模块不 import reader.store
  *   也不 import Toast——失败 toast 在 store 消费边界发，INV-02）
- * - **id remap**（deepseek r2 BLOCKING 修复）：delete 逆重建分配新 id 后，全栈
+ * - **id remap**：delete 逆重建分配新 id 后，全栈
  *   改写该标注旧 id 引用（create/delete/comment-edit 三类条目）——否则连撤
  *   两次时第二次按旧 id 落空，重建标注永久残留
- * - **in-flight 互斥**（deepseek r2 BLOCKING 修复）：撤销进行中再触发 →
+ * - **in-flight 互斥**：撤销进行中再触发 →
  *   {done:false, reason:'busy'}（消费方静默合并——连按 ctrl+z 等价一次撤销）
- * - 撤销会话状态机（宪法前置表——deepseek r6 W2 补）：
+ * - 撤销会话状态机（宪法前置表）：
  *   | 态（per-paper） | pushUndo | undo 触发 | api 成功 | api !ok/异常 |
  *   | empty | →ready(1) | no-op→empty | — | — |
  *   | ready | →ready(+1；≥50 时 FIFO 头部截断) | →in-flight | →ready（按身份移除被撤条目） | →ready（栈不变，可重试） |
@@ -117,11 +117,11 @@ function toInput(a: Annotation): AnnotationInput {
   }
 }
 
-/** re-create 后全栈改写旧 id 引用（deepseek BLOCKING 修复：重建分配新 id，
+/** re-create 后全栈改写旧 id 引用（重建分配新 id，
  *  栈内更早的 create/delete/comment-edit 条目若仍引旧 id，后续按序撤销会
  *  deleteAnnotation/updateAnnotation 落空——同一标注的操作链必须整体改指新 id）。
  *  skip=正被撤销的条目（**按对象身份**跳过：await 期间同篇可能已入栈，下标
- *  会漂移；保持其对象身份稳定供成功后按身份移除——deepseek r6 B） */
+ *  会漂移；保持其对象身份稳定供成功后按身份移除） */
 function remapStackIds(s: UndoEntry[], oldId: string, newId: string, skip: UndoEntry): void {
   for (let i = 0; i < s.length; i++) {
     const e = s[i]!
@@ -136,7 +136,7 @@ function remapStackIds(s: UndoEntry[], oldId: string, newId: string, skip: UndoE
   }
 }
 
-/** in-flight 互斥（deepseek r2 BLOCKING 修复；r4 BLOCKING 修正为 **Set**）：
+/** in-flight 互斥（实现为 **Set**）：
  *  per-paper 互斥集合——同篇撤销进行中再触发返回 busy（消费方静默合并），
  *  他篇互不阻塞（单槽变量会被并发篇覆盖导致互斥失效，Set 各篇独立） */
 const undoInFlightPapers = new Set<string>()
@@ -177,14 +177,14 @@ export async function undo(paperId: string): Promise<UndoOutcome> {
       apply = { type: 'upsert', annotation: r.data }
     }
     // 按身份移除（非下标——await 期间同篇入栈触发 FIFO 截断会使下标左移甚至
-    // 把本条挤出栈；身份不在则自然跳过；互斥保证无并发撤销写栈。deepseek r5b）
+    // 把本条挤出栈；身份不在则自然跳过；互斥保证无并发撤销写栈。）
     const idx = s.indexOf(top)
     if (idx !== -1) {
       s.splice(idx, 1)
     }
     return { done: true, apply }
   } catch (e) {
-    // 非 API 层异常打到控制台（编程错误不静默——deepseek NIT 处置）；结果仍按
+    // 非 API 层异常打到控制台（编程错误不静默）；结果仍按
     // 可重试失败返回（下次 dirty/undo 沿自愈）
     if (!(e instanceof ApiClientError)) {
       console.error('[annotation-undo] 撤销异常', e)

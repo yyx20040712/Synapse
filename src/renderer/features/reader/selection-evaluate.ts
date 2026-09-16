@@ -19,7 +19,7 @@
  *   直读页项→rectsForOffsetRange+基线分组+归一化→setPaint；**bands 项几何链
  *   现算不缓存**（bandsFromItems 纯函数 O(被选项) 零布局读零 measureText——
  *   无缓存摊销必要；第四轮取证 §12 tick 实测在档佐证）。四道守卫前置强制
- *   （Kimi 拟定裁决 2-§5①）：(i) sel 空/坍缩→setPaint(null)；(ii) 跨页→
+ *   ：(i) sel 空/坍缩→setPaint(null)；(ii) 跨页→
  *   setPaint(null) 静默；(iii) 页外/textLayer 缺→setPaint(null)；(iv) 零宽盒→
  *   setPaint(null)。G2 同门（selectionHealth unhealthy→setPaint(null) 拖选期
  *   抑制）。visual 语义=只 setPaint 不动 pending（工具条弹出语义独属
