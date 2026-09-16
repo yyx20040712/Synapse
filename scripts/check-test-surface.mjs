@@ -318,16 +318,19 @@ function judge(baseFiles, cur) {
   // 双报（同因复述）——输出级去重（计数感知：一条 SKIP_ADDED 抵一条同
   // path+title 的 MISSING_CASE；判定与 exit 不变，两态比对逻辑零触碰）。
   {
+    // 键分隔符=\0（Kimi 复核 N-1 采纳：空格分隔在含空格路径+标题拼接下有理论
+    // 碰撞面——\0 不可出现于路径/标题文本，碰撞面归零）
+    const keyOf = (f) => `${f.path}\0${f.text}`
     const skipAddedCounts = new Map()
     for (const f of failures) {
       if (f.kind !== 'SKIP_ADDED') continue
-      const k = `${f.path} ${f.text}`
+      const k = keyOf(f)
       skipAddedCounts.set(k, (skipAddedCounts.get(k) ?? 0) + 1)
     }
     for (let i = failures.length - 1; i >= 0; i--) {
       const f = failures[i]
       if (f.kind !== 'MISSING_CASE') continue
-      const k = `${f.path} ${f.text}`
+      const k = keyOf(f)
       const n = skipAddedCounts.get(k) ?? 0
       if (n > 0) {
         skipAddedCounts.set(k, n - 1)

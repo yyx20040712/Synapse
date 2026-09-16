@@ -137,7 +137,11 @@ async function callSource(src, prompt, { record = true } = {}) {
         method: req.method,
         headers: req.headersReal,
         body: JSON.stringify(req.body),
-        signal: AbortSignal.timeout(600_000),
+        // 客户端上限 20 分钟（2026-09-16 用户指令，与派发器 v2.2.1 同日）。
+        // 注意：本 v1 仍走 global fetch（undici）——其内建 headers/body 300s 默认
+        // 会先于本值掐断非流式长推理（>5min 无字节场景）；完整修=传输层换
+        // node:http（见技能侧 ds-call-v2.mjs v2.2.1），v1 退役前不复制该改造。
+        signal: AbortSignal.timeout(1_200_000),
       })
       if (RETRYABLE(res.status)) {
         // 末次守卫（复审 B3 修）：耗尽即抛真实状态码——外层 catch 落 switch 事件

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-16T01:47:54.9554185Z",
+    "generatedAt":  "2026-09-16T02:06:35.4036070Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -39,7 +39,7 @@
                   },
                   {
                       "path":  "scripts/audits/ds-call.mjs",
-                      "sha256":  "d21215719538ffaa247e00305651cfbf56950792e3ff88392a595a621f27e55e"
+                      "sha256":  "166f2a009b8a701b12671c9e5896384398c278405b81fdb0f0025527f9a73629"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
@@ -318,6 +318,10 @@
                       "sha256":  "5f4eeba8d3a6342f3c6982c0e52404f6189a757efff49d0bcbabd0f20b33ff2e"
                   },
                   {
+                      "path":  "scripts/audits/f-timeout-probe.mjs",
+                      "sha256":  "b5ff75a4633a07b429e4a7619269a6db375ccfe8432ca83856b1044f222dd4e1"
+                  },
+                  {
                       "path":  "scripts/audits/f-ui01-probe.mjs",
                       "sha256":  "0b7a8ad8a090dd4339508bd0d16335ce19e0e833680bd5203390cd16f7d525df"
                   },
@@ -403,7 +407,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "c57e27d359694e529314849de910a213330fe7ad77eafa2b97b583e9e068478c"
+                      "sha256":  "9d5f7d674a277e58820cdbe7b281ccc85e3e550ab1b627042687da663b91a770"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
