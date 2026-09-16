@@ -33,7 +33,8 @@
     "locks:apply": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1",
     "locks:check": "node scripts/check-locks.mjs",
     "locks:unlock": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1",
-    "ticket:new": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/new-ticket.ps1"
+    "ticket:new": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/new-ticket.ps1",
+    "lint:model-names": "node scripts/check-model-names.mjs"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",
