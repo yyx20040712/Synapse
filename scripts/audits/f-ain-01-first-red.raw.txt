@@ -1,0 +1,64 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/services/ai-notes-import.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/services/ai-notes-import.test.ts [2m([22m[2m12 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 96[2mms[22m[39m
+[31m   [31m×[31m F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）[90m 9[2mms[22m[31m[39m
+[31m     → expected 1 to be +0 // Object.is equality[39m
+[31m   [31m×[31m F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）[90m 14[2mms[22m[31m[39m
+[31m     → expected [ 'p-1' ] to deeply equal [ 'p-1', 'p-2' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/ai-notes-import.test.ts[2m > [22mF-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/unit/services/ai-notes-import.test.ts:[2m225:36[22m[39m
+    [90m223| [39m  [34mexpect[39m(r1[33m.[39merrors)[33m.[39m[34mtoHaveLength[39m([34m1[39m)
+    [90m224| [39m  [34mexpect[39m(r1[33m.[39merrors[[34m0[39m][33m![39m[33m.[39mreason)[33m.[39m[34mtoContain[39m([32m'导入失败'[39m)
+    [90m225| [39m  [34mexpect[39m(repo[33m.[39m[34mcountByPaper[39m([32m'p-1'[39m))[33m.[39m[34mtoBe[39m([34m0[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m226| [39m  [34mexpect[39m([35mawait[39m [34mnamesIn[39m([32m'corpus-ai'[39m))[33m.[39m[34mtoEqual[39m([[32m'p-1.json'[39m])
+    [90m227| [39m  [34mexpect[39m([35mawait[39m [34mnamesIn[39m([32m'archive'[39m))[33m.[39m[34mtoEqual[39m([])
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/ai-notes-import.test.ts[2m > [22mF-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）
+[31m[1mAssertionError[22m: expected [ 'p-1' ] to deeply equal [ 'p-1', 'p-2' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[2m    "p-1",[22m
+[32m-   "p-2",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/unit/services/ai-notes-import.test.ts:[2m261:25[22m[39m
+    [90m259| [39m  [35mawait[39m [34mputProduct[39m([32m'p-2'[39m[33m,[39m [[34mfileRow[39m({ content_md[33m:[39m [32m'B 旧回答'[39m })])
+    [90m260| [39m  [35mconst[39m rPre [33m=[39m [35mawait[39m svc[33m.[39m[34mimportAll[39m()
+    [90m261| [39m  [34mexpect[39m(rPre[33m.[39mimported)[33m.[39m[34mtoEqual[39m([[32m'p-1'[39m[33m,[39m [32m'p-2'[39m])
+    [90m   | [39m                        [31m^[39m
+    [90m262| [39m  [90m// 异 sha 新产物：A 重灌成功、B 注入中断（deleteByPaper 已跑——半删面[39m…
+    [90m263| [39m  [35mawait[39m [34mputProduct[39m([32m'p-1'[39m[33m,[39m [
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 06:55:09
+[2m   Duration [22m 765ms[2m (transform 54ms, setup 0ms, collect 157ms, tests 96ms, environment 0ms, prepare 188ms)[22m
+
+AIN_FIRST_RED_EXIT=1

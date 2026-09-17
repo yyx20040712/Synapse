@@ -121,7 +121,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
         ...createAiNotesImportService({
           rootDir: deps.aiSensorRootDir,
           repo: deps.repos.aiNotes,
-          paperExists: (id) => deps.repos.papers.findById(id) !== null
+          paperExists: (id) => deps.repos.papers.findById(id) !== null,
+          withTransaction: deps.repos.withTransaction // F-AIN-01 回灌事务（lineage 行同型）
         }),
         ...createZcodeLinkService({
           zcodeBaseDir: deps.zcodeBaseDir,

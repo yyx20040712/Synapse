@@ -11,6 +11,10 @@
  * - **幂等=archive 账本机制**：archive/<paperId>.json 存在且 sha256==源文件 →
  *   跳过（skipped）；存在但 sha 不同 → 清面重灌（deleteByPaper+整套重插
  *   ——AI-01 幂等原语）；无 archive → 首次导入
+ * - **回灌写入=withTransaction 全有或全无（F-AIN-01）**：清面+整套重插包单篇
+ *   事务（对齐 lineage.service 清面重灌事务先例的全有或全无标准；中断/异常
+ *   零半删半插——archive 账本判定/readFile/rename 等 fs 面仍在事务外，fs 非
+ *   事务面）；事务边界=单篇非整批（部分成功语义保持）；幂等三路径语义不变
  * - **账本前提登记（门一 W07-1 处置，两条机器事实）**：①paperId 不复用
  *   （导入服务以 randomUUID 生成不循环——import.service.ts 现实现）；②
  *   paper 删→CASCADE 清 ai_notes（003 迁移）后 archive 残留无害（扫描只看
@@ -83,6 +87,9 @@ export interface AiNotesImportDeps {
   repo: Pick<AiNotesRepo, 'insert' | 'deleteByPaper' | 'listByPaper'>
   /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
   paperExists: (paperId: string) => boolean
+  /** 事务边界（repos.withTransaction 注入——清面+整套重插原子性，F-AIN-01
+   *  lineage.service 同型） */
+  withTransaction: <T>(fn: () => T) => T
 }
 
 /** 产物文件行形状（ADR-0015 §1 字面，snake_case 文件面） */
@@ -184,9 +191,12 @@ export function createAiNotesImportService(deps: AiNotesImportDeps): AiNotesImpo
         return 'failed'
       }
       const inputs = parseRows(raw, paperId, src)
-      // 幂等重灌原语：异 sha 先清面再整套重插（AI-01）
-      deps.repo.deleteByPaper(paperId)
-      for (const input of inputs) deps.repo.insert(input)
+      // 幂等重灌原语：异 sha 先清面再整套重插（AI-01）；写入=withTransaction
+      // 全有或全无（F-AIN-01，lineage.service 先例）——中断/异常零半删半插
+      deps.withTransaction(() => {
+        deps.repo.deleteByPaper(paperId)
+        for (const input of inputs) deps.repo.insert(input)
+      })
       await mkdir(archiveDir, { recursive: true })
       await rm(dest, { force: true }) // Windows rename 不覆盖已存在目标
       await rename(src, dest)
