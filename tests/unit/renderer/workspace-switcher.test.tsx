@@ -10,22 +10,15 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    workspaces: {
-      list: vi.fn(),
-      create: vi.fn(),
-      rename: vi.fn(),
-      switch: vi.fn()
-    }
+const stubApi = makeApiStub({
+  workspaces: {
+    list: vi.fn(),
+    create: vi.fn(),
+    rename: vi.fn(),
+    switch: vi.fn()
   }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
 })
 
 import { WorkspaceSwitcher } from '../../../src/renderer/features/workspaces/WorkspaceSwitcher'

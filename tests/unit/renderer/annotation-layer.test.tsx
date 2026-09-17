@@ -12,18 +12,14 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeApiStub } from '../../utils/api-client-mock'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
 import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: {} },
-  unwrap: vi.fn(),
-  ApiClientError: class extends Error {}
-}))
-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
+makeApiStub({ reader: {} })
 
 /** 归一化域矩形夹具 */
 function rect(x: number, y: number, w: number, h: number): AnnotationRect {

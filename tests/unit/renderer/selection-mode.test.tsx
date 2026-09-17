@@ -19,6 +19,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import type { AiNote } from '../../../src/shared/models/ai-note'
+import { makeApiStub } from '../../utils/api-client-mock'
+
+makeApiStub({ reader: {} })
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
@@ -27,13 +30,6 @@ import {
   useReaderStore,
   type TabState
 } from '../../../src/renderer/features/reader/reader.store'
-
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: {} },
-  unwrap: vi.fn(),
-  ApiClientError: class extends Error {}
-}))
-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
 
 /** 归一化域矩形夹具 */
 function rect(x: number, y: number, w: number, h: number): AnnotationRect {

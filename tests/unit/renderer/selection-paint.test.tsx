@@ -21,6 +21,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
@@ -28,16 +29,14 @@ import { bandFromMetrics } from '../../../src/renderer/features/reader/annotatio
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 
-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: { saveAnnotation: saveMock } },
-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
-    const r = await p
-    return r.data
-  },
-  ApiClientError: class extends Error {}
-}))
+
+const saveMock = vi.fn()
+makeApiStub({ reader: { saveAnnotation: saveMock } })
+// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
+stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+  const r = await p
+  return r.data
+})
 
 /** jsdom 无布局：元素 rect 按预设表返回 */
 const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()

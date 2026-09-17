@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T17:31:09Z
+- heartbeat_utc: 2026-09-17T18:24:12Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 3
+- checked_done: 4
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -72,7 +72,7 @@
 
 ### 第二波·F-TESTREF 余票（大中票一火一票；W2 小可随 W1C 同火）
 
-- [ ] F-TESTREF-W1A（mock 工厂下沉，39 文件）
+- [x] F-TESTREF-W1A（mock 工厂下沉，39 文件）
 - [ ] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
 - [ ] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
 - [ ] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
@@ -120,6 +120,45 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 2 — 2026-09-18（执行者会话：F-TESTREF-W1A mock 工厂下沉，完成）
+- claim: claim-1789666638-b2｜开始 17:37:18Z｜收口 18:24:12Z｜勾选 3→4。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  health-scan）；实现面=本会话直接实现（磨刀石验证+分批迁移+三重机检），systematic-
+  debugging（用——两次回炉定位：toast-store 浅替换 App 级崩/顺序契约违反）；其余
+  前端/安全等技能无交集不加载。派发档位：主控=GLM5.3 max（本会话）；门一=ops-gate1-k1
+  绑定（k3 max）；门二=ops-adjudicator 绑定（deepseek-flash max）——均异构于实现者。
+- **交付**：tests/utils/api-client-mock.ts 工厂单源（makeApiStub/stubApiEvents/stubUnwrap/
+  toastSpy/toastStoreSpy+顶层三 vi.mock 运行时注册）+40 测试文件迁移（实测口径：api/client
+  vi.mock 38 文件+Toast 25+toast-store 6，目标级交集后唯一文件 40；票面 39/32 为立案时
+  近似）。净删 261 行（+368/-629，41 文件）。
+- **C 面零变化实证**：test-surface:check 基线=当前全同（179 文件/1623 用例/4979 断言/
+  15 skipSites）——R2/R3 机检锁定；变异红证：断言 .not 移除→MISSING_ASSERT 红→cp 备份
+  还原 diff 空→复绿；verify 全链 exit 0（Node 24.20.0，162 文件 1579 用例+build）；
+  health-scan RED=0（WARN1=cfg 漂移历史欠账回显）。
+- **两次回炉留痕**（票内自处，未超回炉上限）：①toast-store 初版浅替换→App 级测试挂
+  ToastHost 消费 getToastItems 崩（No export 错）→改统一展开型；②selection 系列把工厂
+  import 留在原 mock 块位（被测 imports 之后）——vi.mock 运行时注册不享 hoisting→
+  mock 静默失效（DOM 断言过、spy 断言全 0）→工厂 import 上移至 vitest import 后，
+  8 文件脚本批量修复。
+- **教训两条**：①ugrep 复合正则与 GNU grep 行为差异致「unwrap 在 src 零使用」假阴性
+  ——关键否定结论须换正则交叉验证；②bash 复合命令内 node -e 引号翻车三次——探针
+  一律 Write 文件后 node 跑（宪法既有纪律的再实证）。
+- **门一 PASS_WITH_WARNINGS**（B=0/W=4/N=6，审档=w1a-gate1-diff.patch+会话档）：W1
+  unwrap 语义变化（门二复核：anchor-locate.ts 全文零 unwrap 使用/AnnotationPopups
+  失败链走 reject 传播不经 !ok 分支）+W2 真 showToast 副作用切除（内存队列无观测断言）
+  +W3 apiEvents Proxy 仅 get trap（src 消费=三处方法调用无 in/spread/keys——grep 实证）
+  +W4 mocks.showToast 占位接缝（注释声明契约）——主控处置全数闭合。N1 尾随逗号毛边
+  已清。
+- **门二 GO**（无 P0/P1/P2；口径修正入档：W1 同类变更实为 5 文件面（anchor-locate/
+  annotation-layer/reader-search-wiring/selection-mode/annotation-popups——余 3 文件
+  被测面为空门面 api.reader={} 无消费）、W2 切除面=40 文件双入口统一 spy；179/1623=
+  指纹门扫描域 vs 162/1579=vitest 运行域两口径说明）。审档双输出存会话档（裁决书 §8
+  先例）。
+- 证据件入库：scripts/audits/w1a-{api-files,both-files,toast-files}.txt（普查面）+
+  w1a-migrate-plan.json（迁移计划）+w1a-gate1-diff.patch（门一审包）。
+- Rulings 待用户：无新增。
+- 无进展计数：归零（3→4 有进展）。
 
 ### batch 0 — 2026-09-18（主控建板，未点火）
 - 深度设计门：过（ai-dev-org 路由——org-ledger 在案+战役简报《裁决书》v1.1 已入库）

@@ -20,37 +20,24 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import type { LineageNode } from '../../../src/shared/models/lineage'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
+import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
-const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
-  stubApi: {
-    ai_sensor: { listByPaper: vi.fn() },
-    notes: { get: vi.fn() },
-    lineage: { graph: vi.fn() }
-  },
+const stubApi = makeApiStub({
+  ai_sensor: { listByPaper: vi.fn() },
+  notes: { get: vi.fn() },
+  lineage: { graph: vi.fn() }
+})
+stubApiEvents({
+  onExportCorpus: vi.fn(() => () => undefined),
+  onImportProgress: vi.fn(() => () => undefined)
+})
+
+const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
   openPaperStub: vi.fn(),
   locateAnchorStub: vi.fn(),
   requestAnchoredStub: vi.fn(),
   notifyAiNoteStub: vi.fn()
 }))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return {
-    ...real,
-    api: stubApi as unknown as typeof clientModule.api,
-    apiEvents: {
-      onExportCorpus: vi.fn(() => () => undefined),
-      onImportProgress: vi.fn(() => () => undefined)
-    }
-  }
-})
-
-vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
-  const real = await importOriginal<typeof toastStoreModule>()
-  return { ...real, showToast: vi.fn() }
-})
 
 // 消费方级用例：reader.store 仅需 getState().openPaper + notifyAiNoteHighlight
 // （open-paper-anchor 面——LG-06 起 anchor 分支亦发面板信号）

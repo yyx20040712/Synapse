@@ -10,28 +10,14 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationKind } from '../../../src/shared/models/annotation'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
 import { guardedDescribe } from '../../utils/guard'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    notes: { get: vi.fn(), save: vi.fn() }
-  }
-}))
+const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
 stubApi.notes.get = notesGet
 const notesSave = vi.fn()
 stubApi.notes.save = notesSave
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: vi.fn() }
-})
 
 import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
 import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'

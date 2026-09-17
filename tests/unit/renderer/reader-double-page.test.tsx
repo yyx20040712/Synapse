@@ -21,6 +21,7 @@ import type { RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import {
@@ -47,16 +48,13 @@ const { openMock, listMock } = vi.hoisted(() => ({
   })),
   listMock: vi.fn(async () => ({ ok: true as const, data: [] }))
 }))
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: { open: openMock, listAnnotations: listMock } },
-  // 真实 unwrap 契约：收 Promise<Result> 内部 await 再解包（mock 同契约）
-  unwrap: async (call: Promise<{ ok: boolean; data?: unknown; error?: { message: string } }>) => {
-    const r = await call
-    if (!r.ok) throw new Error(r.error?.message ?? 'api error')
-    return r.data
-  },
-  ApiClientError: class extends Error {}
-}))
+makeApiStub({ reader: { open: openMock, listAnnotations: listMock } })
+// 真实 unwrap 契约：收 Promise<Result> 内部 await 再解包（原 mock 同契约保留）
+stubUnwrap(async (call: Promise<{ ok: boolean; data?: unknown; error?: { message: string } }>) => {
+  const r = await call
+  if (!r.ok) throw new Error(r.error?.message ?? 'api error')
+  return r.data
+})
 
 /** 桩 IntersectionObserver（jsdom 无实现——本票不驱动可见性，仅消噪音） */
 class MockIO {

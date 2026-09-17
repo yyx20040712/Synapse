@@ -22,33 +22,23 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
+import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    lineage: {
-      graph: vi.fn(),
-      upsertNode: vi.fn(),
-      removeNode: vi.fn(),
-      upsertEdge: vi.fn(),
-      removeEdge: vi.fn(),
-      importDraft: vi.fn()
-    },
-    library: { list: vi.fn() },
-    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
-  }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return {
-    ...real,
-    api: stubApi as unknown as typeof clientModule.api,
-    apiEvents: {
-      onExportCorpus: vi.fn(() => () => undefined),
-      onImportProgress: vi.fn(() => () => undefined)
-    }
-  }
+const stubApi = makeApiStub({
+  lineage: {
+    graph: vi.fn(),
+    upsertNode: vi.fn(),
+    removeNode: vi.fn(),
+    upsertEdge: vi.fn(),
+    removeEdge: vi.fn(),
+    importDraft: vi.fn()
+  },
+  library: { list: vi.fn() },
+  system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
+})
+stubApiEvents({
+  onExportCorpus: vi.fn(() => () => undefined),
+  onImportProgress: vi.fn(() => () => undefined)
 })
 
 import { App } from '../../../src/renderer/app/App'

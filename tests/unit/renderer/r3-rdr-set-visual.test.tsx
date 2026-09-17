@@ -15,22 +15,10 @@ import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub } from '../../utils/api-client-mock'
 
 /** SettingsPage 渲染链隔离：api/Toast 桩+两个自持节组件桩（行为面各有己测锁定） */
-const { stubApi, toastSpy } = vi.hoisted(() => ({
-  stubApi: { settings: { get: vi.fn(async () => ({ ok: true, data: null })) } },
-  toastSpy: vi.fn()
-}))
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: toastSpy }
-})
+makeApiStub({ settings: { get: vi.fn(async () => ({ ok: true, data: null })) } })
 vi.mock('../../../src/renderer/features/settings/CorpusExportSection', () => ({
   CorpusExportSection: () => null
 }))

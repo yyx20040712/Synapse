@@ -10,23 +10,11 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi, zcodeDetect, zcodeInstall } = vi.hoisted(() => {
-  const zcodeDetect = vi.fn()
-  const zcodeInstall = vi.fn()
-  return { stubApi: { ai_sensor: { zcodeDetect, zcodeInstall } }, zcodeDetect, zcodeInstall }
-})
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: vi.fn() }
-})
+const zcodeDetect = vi.fn()
+const zcodeInstall = vi.fn()
+makeApiStub({ ai_sensor: { zcodeDetect, zcodeInstall } })
 
 import { showToast } from '../../../src/renderer/shared/ui/Toast'
 import { ZcodeLinkSection } from '../../../src/renderer/features/settings/ZcodeLinkSection'

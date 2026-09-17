@@ -12,7 +12,8 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { makeApiStub } from '../../utils/api-client-mock'
 import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
 import {
   createReaderSearchInitialState,
@@ -25,12 +26,8 @@ import {
   type TabState
 } from '../../../src/renderer/features/reader/reader.store'
 
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: {} },
-  unwrap: vi.fn(),
-  ApiClientError: class extends Error {}
-}))
-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: vi.fn() }))
+
+makeApiStub({ reader: {} })
 
 /** 宿主：只消费 hook（返回节点弃置——接线面不评 UI） */
 function Host(props: { pdfDoc: unknown; fileUrl: string }): null {

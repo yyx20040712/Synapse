@@ -13,21 +13,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Tag } from '../../../src/shared/models/tag'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub, } from '../../utils/api-client-mock'
 
-const { stubApi, toastSpy } = vi.hoisted(() => ({
-  stubApi: { tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() } },
-  toastSpy: vi.fn()
-}))
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: toastSpy }
-})
+const stubApi = makeApiStub({ tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() } })
 
 import { TagFilter } from '../../../src/renderer/features/tags/TagFilter'
 import { useTagsStore } from '../../../src/renderer/features/tags/tags.store'

@@ -14,29 +14,16 @@
  *   +加失败=合法中间态（节点暂无父，森林语义）+toast 指明+重试只重发加边
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    lineage: {
-      graph: vi.fn(),
-      upsertNode: vi.fn(),
-      removeNode: vi.fn(),
-      upsertEdge: vi.fn(),
-      removeEdge: vi.fn()
-    }
+const stubApi = makeApiStub({
+  lineage: {
+    graph: vi.fn(),
+    upsertNode: vi.fn(),
+    removeNode: vi.fn(),
+    upsertEdge: vi.fn(),
+    removeEdge: vi.fn()
   }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-
-vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
-  const real = await importOriginal<typeof toastStoreModule>()
-  return { ...real, showToast: vi.fn(real.showToast) }
 })
 
 import { showToast } from '../../../src/renderer/shared/ui/toast-store'

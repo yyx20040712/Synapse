@@ -15,29 +15,14 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PaperSummary } from '../../../src/shared/models/paper'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
-const { stubApi, onImportProgressSpy, toastSpy } = vi.hoisted(() => ({
-  stubApi: {
-    library: { list: vi.fn(), collections: vi.fn() },
-    tags: { list: vi.fn() }
-  },
-  onImportProgressSpy: vi.fn(() => () => undefined),
-  toastSpy: vi.fn()
-}))
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return {
-    ...real,
-    api: stubApi as unknown as typeof clientModule.api,
-    apiEvents: { onImportProgress: onImportProgressSpy } as unknown as typeof clientModule.apiEvents
-  }
+const stubApi = makeApiStub({
+  library: { list: vi.fn(), collections: vi.fn() },
+  tags: { list: vi.fn() }
 })
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: toastSpy }
-})
+const onImportProgressSpy = vi.fn(() => () => undefined)
+stubApiEvents({ onImportProgress: onImportProgressSpy })
 
 import { PaperList } from '../../../src/renderer/features/library/PaperList'
 import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
