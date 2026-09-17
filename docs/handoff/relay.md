@@ -7,7 +7,7 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: <未布防——点火后由 CronList 取回回填>
+- automation_id: automation-e8255b42-9698-40da-a62b-8896ef575e8f
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
@@ -135,3 +135,12 @@
 - 执行路由段新增「未规划裁决项处置」：用户级（负面清单/新依赖/制度/防线/测试
   自身错误/视觉）挂起跳次+批次日志记 Rulings 待用户，单批挂起 ≥2 项或整波受阻
   → 收口后 HOLD 呈报；主控级回炉三分法自处；已规划呈裁节点产出即勾项不阻塞。
+
+### batch 0 增补三 — 2026-09-18（布防会话点火，用户显式布防确认）
+- 布防前校验全过：`grep -c '^- \[ \]'` 计 24 / status READY / claim "-" /
+  automation_id 未回填；板未重建（仅本批回填+本留痕）。
+- 深度设计门复检过（org 路由：org-ledger 在案+《裁决书》v1.1 在案）。常驻火已建
+  （*/5 分钟轮询，prompt=技能火模板原文），automation_id 已 tmp+rename 原子写
+  回填并回读确认。
+- 本布防会话=调度员宿主：火只投给本会话，每回合仅 UI 开批不跑批，须保持存活。
+  停止三径：清单全勾自动 DONE / HOLD 止损 / 手动删火。
