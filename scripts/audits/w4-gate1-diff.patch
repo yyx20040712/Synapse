@@ -1,0 +1,308 @@
+diff --git a/docs/DEV-SETUP.md b/docs/DEV-SETUP.md
+index 18b686f019..4ec25c77ba 100644
+--- a/docs/DEV-SETUP.md
++++ b/docs/DEV-SETUP.md
+@@ -65,8 +65,10 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进
+ ## 5. 基线核对（全绿才算环境就绪）
+ 
+ ```bash
+-npm run verify        # 预期 exit 0：107 文件 890 用例 / locks 166 / 工单 open 0
+-npm run build && npm run test:e2e   # 预期 26/26（e2e 不含在 verify 里，须单独跑）
++npm run verify        # 预期 exit 0：166 文件 1713 用例 / locks 334（工单 open 数随排程浮动，
++                      # 以 tickets/registry.ts 实时为准）
++npm run build && npm run test:e2e   # 预期默认门 42/42（W2 起=app project 不含探针；一键全跑 44
++                      # 用 test:e2e:all；e2e 不含在 verify 里，须单独跑）
+ ```
+ 
+ - 数字对不上：先看是否 Node 版本≠24 / sqlite-abi 未切换（`npm run test` 内含
+diff --git a/docs/audits/flake-ledger.json b/docs/audits/flake-ledger.json
+index 8d49584a85..4796158f7a 100644
+--- a/docs/audits/flake-ledger.json
++++ b/docs/audits/flake-ledger.json
+@@ -1,5 +1,78 @@
+ {
+   "version": 1,
+-  "note": "[F-TESTREF-W4] e2e flake 台账——立案骨架（票面载体）。实现期以 {spec,case,count,fingerprint,status,first_seen,resolution} 结构收录 P7-A/F-R2e/z-r2e/tag-lifecycle/F-ARCH4-M1/F-G11/settings.png/corpus-export 八线历史（终裁 §4-4 W4 行），替代散落交接书散文计数。",
+-  "cases": []
++  "note": "[F-TESTREF-W4] e2e flake 台账——机器可读不确定面登记（替代散落交接书散文计数，P7-A 七现跨 5 份交接书的人肉维护终结；2026-09-11 终裁 §4-4 W4 行）。数据源=charter §1.4 审计快照（docs/design/2026-09-11_test-system-optimization-charter.md——计数截至 2026-09-11 立账时点）+各线史料档（见 resolution 指针）；first_seen 以史料可考证时点为准，无法精确到日的线以该用例最早存在场次记。新 flake 处置通则=AGENTS 测试纪律「同用例 2 次非确定失败即立案」（失败指纹记差值/同值/序列位置；复跑绿不销项）。",
++  "cases": [
++    {
++      "spec": "tests/e2e/reader-text.spec.ts",
++      "case": "剪贴板读回断言系（P7-A）",
++      "count": 7,
++      "fingerprint": "同值/外部资源（系统剪贴板被外部占用+异步竞态）",
++      "status": "resolved",
++      "first_seen": "2026-08-23",
++      "resolution": "已修：清除标记+5×200ms 条件重读（[locked-change]；史料=2026-08-23 起跨 5 份交接书——P7-A 战役，立案线通则的前案）"
++    },
++    {
++      "spec": "tests/e2e/reader-text.spec.ts",
++      "case": "划选高亮后重开仍在原位",
++      "count": 2,
++      "fingerprint": "同值 y=3.45px>2px 容差（回落→重锚双态瞬态）",
++      "status": "resolved",
++      "first_seen": "2026-09-02",
++      "resolution": "已修：stableRel 双采样稳定门（INV-51 稳态口径；史料=scripts/audits/f-r2e-investigation.md）"
++    },
++    {
++      "spec": "tests/e2e/z-r2e-probe.spec.ts",
++      "case": "几何指纹矩阵探针（rel 对拍）",
++      "count": 2,
++      "fingerprint": "探针自身测量竞态（二现 dy=+4.4375/dh=−4.975——首现 resolve 即红族）",
++      "status": "resolved",
++      "first_seen": "2026-09-03",
++      "resolution": "已修：rectStableGate v2（史料=scripts/audits/z-r2e-flake-case.md——2 现同族触发立案线首案）"
++    },
++    {
++      "spec": "tests/e2e/tag-lifecycle.spec.ts",
++      "case": "chip 交互系",
++      "count": 2,
++      "fingerprint": "同位置（重挂载窗/陈旧数据窗）",
++      "status": "resolved",
++      "first_seen": "2026-09-03",
++      "resolution": "已修：key=detail.id+stale guard（P7E-01 场；史料=docs/prompts/2026-09-03_loop-handoff-v29-p7e01-tag-lifecycle.md）"
++    },
++    {
++      "spec": "tests/e2e/reader-text.spec.ts",
++      "case": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
++      "count": 1,
++      "fingerprint": "toast 3s 超时未现",
++      "status": "observing",
++      "first_seen": "2026-08-30",
++      "resolution": "观察中（再 1 现立案；史料=docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md）"
++    },
++    {
++      "spec": "tests/e2e/（split-pane 分隔条拖拽序列）",
++      "case": "F-G11 分隔条拖拽",
++      "count": 1,
++      "fingerprint": "序列相关（拖动反向；确认 1+未捕获 1 不计）",
++      "status": "observing",
++      "first_seen": "2026-09-02",
++      "resolution": "观察中（史料=docs/prompts/2026-09-02_loop-handoff-v27-wg1-closed.md §F-G11）"
++    },
++    {
++      "spec": "scripts/audits（settings 页视觉快照——像素 diff 工具层）",
++      "case": "settings.png 非确定带",
++      "count": 1,
++      "fingerprint": "y=[208,240) 色带瞬时",
++      "status": "observing",
++      "first_seen": "2026-09-10",
++      "resolution": "观察中（再现 2 次立案；史料=docs/prompts/2026-09-10_loop-handoff-v56-css03-closed.md）"
++    },
++    {
++      "spec": "tests/e2e/corpus-export.spec.ts",
++      "case": "全链导出系",
++      "count": 3,
++      "fingerprint": "与剪贴板同时现（疑同族全局资源）",
++      "status": "unpursued",
++      "first_seen": "2026-08-27",
++      "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）"
++    }
++  ]
+ }
+diff --git a/docs/design/2026-09-11_test-system-optimization-charter.md b/docs/design/2026-09-11_test-system-optimization-charter.md
+index c169fe2aca..83a93de01b 100644
+--- a/docs/design/2026-09-11_test-system-optimization-charter.md
++++ b/docs/design/2026-09-11_test-system-optimization-charter.md
+@@ -291,7 +291,8 @@ reader + lineage 两个特性树合计 **21,385 行 = 58%** 的测试量。
+ - [ ] **零 `src/` 变更**（范围闸全绿；`git diff --stat <战役起>..<战役终>` 无 src）。
+ - [ ] **C 面零损失**（指纹门全绿；用例总数 ≥ 基线）。
+ - [ ] **覆盖率门槛不降**：本地 `npm run test -- --coverage` 亲跑，70/85/60 三档不破。
+-- [ ] **e2e 全绿**：本地 `npm run test:e2e` 亲跑（34 依赖门现全 open→全跑；0 skip）。
++- [ ] **e2e 全绿**：本地 `npm run test:e2e` 默认门亲跑（W2 起=--project=app，
++  42 例不含探针）+`npm run test:e2e:all` 一键全跑 44 例亲跑（双真退出码；0 skip）。
+ - [ ] **每个 S 面合并提交记账净删行数**（量化收益，交接书 §3 成本账本）。
+ - [ ] **locks 即时 apply**；受锁面变更随提交同步（禁跨提交延迟）。
+ - [ ] **新增受锁脚本即时 `locks:generate`+`apply`**（`check-test-surface.mjs` 诞生即入锁）。
+diff --git a/docs/design/2026-09-18_complexity-governance-ruling.md b/docs/design/2026-09-18_complexity-governance-ruling.md
+index 1e18578b49..997ab77413 100644
+--- a/docs/design/2026-09-18_complexity-governance-ruling.md
++++ b/docs/design/2026-09-18_complexity-governance-ruling.md
+@@ -114,7 +114,7 @@
+ | 票 | 内容 |
+ | --- | --- |
+ | F-DEDUP-01（微扩） | 既定服务层去重（DomainError 16 份/原子写 4 处/清洗多份单源化）+ 顺手项：app-file:// URL 三处拼装收编单源（corpus.export.service.ts:239 硬编码未用 APP_FILE_SCHEME） |
+-| F-GEOM-01 扩容版 | 双几何族同族化 + **reader 子域目录化**（裁决 5）。设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁），设计书必须含：锚定簇态空间表+跨格序列推演+**回落档语义裁决**（前史 09-11 §3-1 明文要件，缺一不受理）、**六子域目录重组清单与迁移序**（anchors/view/interact/panels/time/state+域内单向依赖图）、净删行数记账；并**承袭前史两条款**：「测试逼生产保形状五例解耦票池随 GEOM 设计书统筹」（09-11 §4-5）、契约面生长评估（09-11 §3-3 观察项，同族化触 selection 通道时一并评估）。验收底色：e2e 44 全绿不破+锚定回归网 |
++| F-GEOM-01 扩容版 | 双几何族同族化 + **reader 子域目录化**（裁决 5）。设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁），设计书必须含：锚定簇态空间表+跨格序列推演+**回落档语义裁决**（前史 09-11 §3-1 明文要件，缺一不受理）、**六子域目录重组清单与迁移序**（anchors/view/interact/panels/time/state+域内单向依赖图）、净删行数记账；并**承袭前史两条款**：「测试逼生产保形状五例解耦票池随 GEOM 设计书统筹」（09-11 §4-5）、契约面生长评估（09-11 §3-3 观察项，同族化触 selection 通道时一并评估）。验收底色：e2e 一键全跑（test:e2e:all）44 全绿不破——默认门 test:e2e=42 例不含探针（W2 拆分后口径）+锚定回归网 |
+ 
+ ### 梯队四：第二波域归位战役群（GEOM 后；裁决 6 全选）
+ 
+diff --git a/docs/handoff/relay.md b/docs/handoff/relay.md
+index 359637998f..7af7f44a35 100644
+--- a/docs/handoff/relay.md
++++ b/docs/handoff/relay.md
+@@ -6,14 +6,14 @@
+ > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
+ > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
+ 
+-- status: READY
++- status: RUNNING
+ - automation_id: automation-e8255b42-9698-40da-a62b-8896ef575e8f
+ - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
+ - spec: docs/design/2026-09-18_complexity-governance-ruling.md
+ - poll_interval_min: 5
+ - fire_budget_min: 120
+-- heartbeat_utc: 2026-09-17T21:02:00Z
+-- claim: -
++- heartbeat_utc: 2026-09-17T21:01:34Z
++- claim: claim-1789678894-b6
+ - no_progress_count: 0
+ - checked_total: 24
+ - checked_done: 8
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 1a4c59c267..1c8d14f23a 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -76,6 +76,8 @@
+ | INV-60 | 重锚显示覆盖登记（F-A8 门2，2026-09-04 随主链切换落地登记）：重锚成功产物（项几何主链/S4 DOM 回退层）覆盖库值 rects **仅显示层、永不回写**（annotation.rects 库数据零迁移零触碰——重锚是渲染态推导非数据变更；INV-37 只覆盖拖选期不扩其文，本条另立）；产物域标记 source:'item'\|'dom' 随 resolved 运行时走（调试面=渲染块 data-source 属性+单测断言面；**不入库**=Annotation 模型锁面零触碰），渲染行为零差（色块样式不区分源） | src/renderer/features/reader/annotation-resolve.ts（ResolvedAnnotation.source 可选域）+AnnotationLayer.tsx/AiAnnotationLayer.tsx（data-source 调试属性）+annotation-resolve-layered.ts（markSource 唯一标域点） | 单测（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe：域标记断言（S0/S4='dom'/S2='item'/S3b·S6 抑制=无标记）+M3 主链换 DOM 变异→域标记断言红证在档；e2e reader-text「划选高亮后重开仍在原位」INV-51 稳态口径回归=显示覆盖不回写的端到端面） | 已锚定（单测级 F-A8 门2 本单；e2e 面随全量 reader-text 回归） |
+ | INV-61 | 字号六档语义刻度单源：font-size 消费面禁字面量（CSS 声明/inline/arbitrary），tailwind text-xs/text-sm 经 v4 @theme 重绑到 --fs-* token——档位与锚值变更=用户裁决+本册 | P7D-01 批二用户裁决 2026-09-08（docs/design/2026-09-08_p7d01-b2-fontscale-ruling.md）；token 定义=src/renderer/shared/theme.css :root --fs-* 段+@theme 重绑块，消费面=四皮肤件+library.css+workspace.css+四 tsx inline+tailwind 类 | theme.test.ts（TOKENS 六正锚+FS 正则全域负锚（font-size 声明值段内 数字+单位 字面量归零——新值/无分号/大小写/非 px 单位/calc 载体五通道闭合；font 简写/冒号前空白/无单位零=已知边界不入锚；2026-09-09 F-CSS-02 升级+回炉 1）+@theme 重绑锁）+library-cards.test.tsx 三断言随迁 token 载体（实现者自裁申报在档） | 已锚定（2026-09-08 批二） |
+ | INV-62 | 划选终点事件层可重定向：mouseup 真划选（位移≥3px）且释放点浅探（focus 行盒顶上方间隙+距上一视觉行盒底 ≤ max(距 focus 盒顶, 4px 余量)+释放 x 在上一行释放 x 最近栏组右缘+1px 外——该处无文本）时，selection focus 可被改写为上一行（该栏组）行尾（锚定侧原样）——锚定链输入此前仅浏览器原生解析（F-A10 G2 文本位下探锚定层零 DOM 信号），事件层改写须发生在 evaluate.full 之前同帧消费终态；量测不可用环境零变 | F-A12 2026-09-10；判定=src/renderer/features/reader/release-affinity.ts（纯函数——手势态表+事件时间线驻头注）；接线=SelectionLayer.onMouseUp（dragged 门=程序化零触） | release-affinity.test.ts 17 用例（G2 紧间隙复刻/深点零变/词间空格行盒内零触/向上对称面/四零盒守卫/双栏最近栏组定向/首行零变/坍缩零触/等距取上一行/大间隙刻意零变/W1 域判别+容差双点/W2 跨多行上界/C-1 翻转兜底回归网）+selection-layer-fa12.test.tsx 接线三态锁（程序化零触/微位移早退/真划选触发） | 已锚定（单测级 F-A12 本单；已知边界=栏间隙释放保守零变[R-2]+组内 right 非单调选组偏差[R-1 罕见保守]——观察备案真机再现再立票） |
++| INV-63 | 测试面单调性：tests/** 契约面（用例标题多重集+expect 断言规范化文本多重集+skip 标记）只增不减——[test-refactor] 类重构/迁移在任何名义下不得静默削弱回归网；有意收紧/删改必须先取主控裁决再落豁免清单（reason+rulingLink 非空），禁直接改基线 | F-TESTREF-00 指纹门设计（docs/design/2026-09-11_f-testref00-design-final.md W1~W6 参数族）+AGENTS「工单工作流 [test-refactor] 段」（F-TESTREF-W4，2026-09-18 入册——战役收官把已落地机制升格登记；战役毕基线重冻结=test-surface:baseline 显式执行+全量 diff 审计） | 机检：`npm run test-surface:check`（C_after ⊇ C_before 多重集判定+UNRESOLVABLE 硬阻断；verify 链第 2 步+CI 同口径；基线重生成仅显式 `test-surface:baseline`——脚本无红了自愈分支） | 已锚定（机制=F-TESTREF-00 2026-09-11 落地链，W1A~W3 五批实战验证——迁移类票 C 面零变化三重实证惯例成于其上） |
++| INV-64 | e2e 内禁截图比对：tests/e2e/** 禁 `toHaveScreenshot`（及同类像素快照断言）——视觉回归的像素 diff 限 scripts/audits 工具层（探针取证域，settings.png 先例）；e2e「看见」类断言=计算样式+真实文本（INV-06 口径——几何可见 ≠ 视觉可见）。现存 0 处=既成事实升格受检不变量（2026-09-11 终裁 §4-4 W4 行） | F-TESTREF-W4（2026-09-18 入册）+scripts/check-quality.mjs 第 9 段负锚 | 机检：check-quality.mjs 第 9 段（tests/e2e 下 .ts/.tsx 出现 toHaveScreenshot 即红——quality 关卡，verify 链+CI 同口径） | 已锚定（本票落锚：负锚上线+收录时清点 0 命中） |
+ 
+ ## 维护规则
+ 
+diff --git a/scripts/check-quality.mjs b/scripts/check-quality.mjs
+index 4ff202cf13..835899e857 100644
+--- a/scripts/check-quality.mjs
++++ b/scripts/check-quality.mjs
+@@ -6,7 +6,8 @@
+  * COLOR_RE 单源=scripts/color-re.mjs，本件与 eslint.config.js B-5 均
+  * import 该件；双写面物理消失，6b 哨兵段哨内联回退）/ 色值 token 同值
+  * 守卫（②）/ 内联回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——
+- * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）。
++ * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）
++ * / e2e 截图比对负锚（第 9 段——INV-64）。
+  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
+  */
+ import { readdirSync, readFileSync, statSync } from 'node:fs'
+@@ -370,6 +371,17 @@ console.log(
+ //    import 先例=scanDuplicateConstants）。
+ for (const v of scanModelNames(root)) violations.push(`model-names: ${v}`)
+ 
++// 9) e2e 截图比对负锚（[F-TESTREF-W4] 2026-09-18 起，INV-64）——tests/e2e 下
++//    .ts/.tsx 出现 toHaveScreenshot 即红：像素 diff 限 scripts/audits 工具层
++//    （探针取证域，settings.png 先例），e2e「看见」类断言=计算样式+真实文本
++//    （INV-06 口径）。现存 0 处=既成事实升格受检不变量（2026-09-11 终裁
++//    §4-4 W4 行）。
++for (const f of walk(join(root, 'tests', 'e2e'), (p) => /\.(ts|tsx)$/.test(p))) {
++  if (/\btoHaveScreenshot\b/.test(readFileSync(f, 'utf8'))) {
++    violations.push(`${relative(root, f)}: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/audits 工具层；e2e 断言=计算样式+文本）`)
++  }
++}
++
+ if (violations.length > 0) {
+   console.error('quality 检查未通过：')
+   for (const v of violations) console.error('  - ' + v)
+diff --git a/tests/contracts/constants.test.ts b/tests/contracts/constants.test.ts
+index 10e559d64c..54ab02bbed 100644
+--- a/tests/contracts/constants.test.ts
++++ b/tests/contracts/constants.test.ts
+@@ -27,7 +27,13 @@ describe('contracts/constants —— 全局常量冻结 pin（单一出处）',
+   })
+ 
+   it('标注调色板与 annotationColorSchema 一一对应（zod enum options 反射——两处漂移即红）', () => {
+-    expect([...annotationColorSchema.options].sort()).toEqual([...ANNOTATION_COLORS].sort())
++    // W3 门二 P2-3 搭车（W4 落）：原 [ ...ANNOTATION_COLORS ].sort() 对照系
++    // z.enum(ANNOTATION_COLORS) 反射回 ANNOTATION_COLORS——同源构造等式自反
++    // 恒真；改两侧字面量 pin 使 constants/schema 任一侧漂移真红。本件系 W3
++    // 新增未入战役前基线（指纹门 NEW delta 形态）——改写无契约面损失，裁决
++    // 留痕=relay.md batch 5 门二 P2-3。
++    expect([...ANNOTATION_COLORS]).toEqual(['yellow', 'green', 'blue', 'red', 'purple'])
++    expect([...annotationColorSchema.options].sort()).toEqual(['blue', 'green', 'purple', 'red', 'yellow'])
+     expect(ANNOTATION_COLORS).toHaveLength(5)
+   })
+ 
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 9d770bdef8..1360ea4958 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -1,4 +1,4 @@
+-import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
++import { test, expect, type ElectronApplication } from '@playwright/test'
+ import { mkdtemp } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+ import { mkdirSync, writeFileSync } from 'node:fs'
+@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createMultiLinePdf, createMultiPagePdf, createRotatedCropPdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT, PDF_ROTATED_CROP_TEXT } from '../utils/pdf-factory'
+ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
++import { stableRel } from './stable-rel'
+ 
+ /**
+  * 阅读器 e2e：断言渲染出 PDF 里的真实文本。
+@@ -26,59 +27,8 @@ function skipIfPending(deps: readonly string[]): void {
+   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
+ }
+ 
+-/**
+- * [F-R2e 修] 稳态原子测量：标注块相对页面 canvas 的归一几何（x/y/w/h）。
+- * 两源瞬态均能造成恰 y 轴假红（排查档 scripts/audits/f-r2e-investigation.md）：
+- * ①重锚双态——AnnotationLayer 先渲染存量行盒几何（fallback），resolve 完成后
+- * 跳 band 收边几何（MutationObserver 实测 y 差 4.44px、正常负载窗 ~8ms；
+- * W-G1 备案 3.45px 同族嫌疑——归属未定死见档 §4）；②两次独立 boundingBox
+- * 调用之间的滚动落帧（注入实验 dy=Δ 线性实证）。故先双采样稳定门跨过双态
+- * 瞬态，再以单 evaluate 同帧取 rect/canvas 两盒——同帧差值对滚动平移不变。
+- * 断言语义=稳态"原位"（初渲染瞬态位不属断言面——内部时序非缺陷）；可见性
+- * 守卫保留（零盒=display:none 形态视为未就绪，穷尽即红——门一 W-4）；
+- * 穷尽未收敛=fail loudly（静默返回末值会把假红面留给瞬态——门一 B-1）。
+- * 相对 canvas 归一消窗口几何漂移（窗口状态恢复取整差——原版同理）；时长
+- * 代价两程各 ≤3s（门一 N-3 备案）。
+- */
+-async function stableRel(win: Page): Promise<{ x: number; y: number; w: number; h: number }> {
+-  const measure = (): Promise<{ x: number; y: number; w: number; h: number } | null> =>
+-    win.evaluate(() => {
+-      const r = document.querySelector('[data-testid="annotation-rect"]')?.getBoundingClientRect()
+-      const c = document.querySelector('canvas[data-pdf-canvas]')?.getBoundingClientRect()
+-      if (r === undefined || c === undefined) return null
+-      // 可见性守卫：零盒（display:none/未渲染形态）=未就绪，不当稳定值（W-4）
+-      if (r.width <= 0 || r.height <= 0 || c.width <= 0 || c.height <= 0) return null
+-      return { x: r.x - c.x, y: r.y - c.y, w: r.width, h: r.height }
+-    })
+-  // 门二 W-A 加固一：前置观察窗（400ms＞双态基线窗 8ms×50）——双采样一致
+-  // 不能区分「跳变已结束」与「跳变未开始」，前置窗给 fallback→resolved 留余量
+-  await win.waitForTimeout(400)
+-  let prev = await measure()
+-  let streak = 0
+-  for (let i = 0; i < 25; i++) {
+-    await win.waitForTimeout(120)
+-    const cur = await measure()
+-    if (
+-      cur !== null && prev !== null &&
+-      Math.abs(cur.x - prev.x) < 0.1 && Math.abs(cur.y - prev.y) < 0.1 &&
+-      Math.abs(cur.w - prev.w) < 0.1 && Math.abs(cur.h - prev.h) < 0.1
+-    ) {
+-      // 门二 W-A 加固二：连续 3 采样点（2 对相邻一致≈360ms 平台）才返回——
+-      // 双点一致即返回会在 fallback 平台提前收敛（resolve 推迟则假红通道仍开）
+-      streak += 1
+-      if (streak >= 2) {
+-        return cur
+-      }
+-    } else {
+-      streak = 0
+-    }
+-    prev = cur
+-  }
+-  expect(prev, '标注块 3s 内未出现（元素缺失或恒不可见）').not.toBeNull()
+-  // B-1：非收敛必须红——穷尽静默返回末值=断言输入不可靠且恰在负载态位形触发
+-  expect(false, '标注块几何 25 轮（3s）采样未收敛——双态瞬态/漂移超预算，断言输入不可靠').toBe(true)
+-  throw new Error('unreachable')
+-}
++/** [F-R2e 修] 稳态原子测量已随 F-TESTREF-W4 下沉共享助手（stable-rel.ts，
++ * INV-51 口径单源——头注语义与配方逐字迁驻该件） */
+ 
+ /** F-01 批 1 依赖：渲染链 + 页列几何/懒渲染（多页可见断言的承载者） */
+ const COLUMN_DEPS = [...DEPS, 'SR2-F-01'] as const
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index c9b9eaa84e..e737da574b 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -275,7 +275,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'F-TESTREF-W1C', file: 'tests/e2e/e2e-env.ts', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W1c=e2e 脚手架单源（W1B 后收口 2026-09-18）：launch 5 副本（smoke 内联 6 调用+4 spec 函数副本）+seedPaperRow 4 spec 本地定义（15 引用文件）+first-window 500ms→close 配方 14 文件 20 块→e2e-env.ts 单源（71→82 行，+bootstrapMigrations helper 原三行块逐字收敛）；语义保真=reader-search SEED_ID 硬编码调用点显式补参/corpus readFile 后部 6 消费保留/reader-text app.evaluate 回调参数 electron 非 import 辨析（lint 实证清）；三重实证=指纹门 179/1623/4979/15 全同+变异红证（Synapse→MUTATED→MISSING_ASSERT×2 红→mv 通道还原复绿——已重锁态 cp 直接写被拦教训）+e2e 全量 44 passed EXIT 0（2.1m）；净删 tests 域 +72/-351（16 文件，门二双路闭合）；门一 PW（W1 记账分域修正+N1-N5 处置）+门二 GO_WITH_CONDITIONS（P1 三项全处置：默认门 42/全跑 44 双补跑+记账终态勘误+提交形态矩阵白名单亲验）；[test-refactor][locked-change]' },
+   { id: 'F-TESTREF-W2', file: 'tests/e2e/z-r2e-probe.spec.ts', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W2=探针 spec 移出默认门（W1C 同火收口 2026-09-18）：playwright.config.ts projects 拆分 app（testIgnore=/z-.*-probe\\.spec\\.ts$/）+probe（testMatch 同式）——@probe 标签形态弃用（动 test() 标题即动 C 面）故 spec 文件零改动；package.json test:e2e→--project=app（默认门 42 用例不含探针）+新增 test:e2e:all（--project=app --project=probe 一键全跑，反模式防 flake 复发无捕获面）；CI ci.yml:74 裸 npx playwright test 无过滤=全 project 仍含探针（行为不变亲验）；forbidOnly 顶层声明两 project 承袭；三通道真跑全绿=app 42 passed（1.9m）/all 44 passed（2.1m）/迁移前全量 44 passed 双 EXIT=0 落档（w1c-e2e-{appgate,allgate,full}.log）；门二 P2-2 留痕=charter:294/DEV-SETUP:69/裁决书:117 的 test:e2e 全量语义失准回写归 W4 收官票统一处理；[test-refactor][locked-change]' },
+   { id: 'F-TESTREF-W3', file: 'src/shared/ipc/schemas.ts', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W3=src/shared 直接契约测试补齐（前置 W2 毕——纯增票）：覆盖倒挂最薄面 src/shared 1403 行（schemas.ts 467+api-surface.ts 227 两契约真相源文件现仅间接覆盖/直接契约测试 316 行，比值 0.32 全仓最薄且装最大源文件）→直接契约测试：zod 边界（schemas 逐 schema 边界值/非法态）、api-surface 通道完整性（55 invoke 通道接线表闭合性/隐藏通道/ComposedHandlerDomains 域）、app-error 错误码封闭性；目标 ≥0.8（终裁承袭宪章建议——具体阈值设计裁决）；纯增不受 C 面禁删约束但受先红后绿纪律（每测试必须能失败一次）；新测试 always-active 不经 guardedDescribe（K3 威胁在三屋结构性缺位）；[test-refactor][locked-change]' },
+-  { id: 'F-TESTREF-W4', file: 'docs/audits/flake-ledger.json', area: 'infra', owner: 'strong', status: 'open', summary: '测试优化战役 W4=不确定面机件化（前置 W3 毕——战役收官票）：flake 台账 docs/audits/flake-ledger.json（{spec,case,count,fingerprint,status,first_seen,resolution}——替代散落交接书散文计数，P7-A 七现跨 5 份交接书的人肉维护终结）+reader-text 内联 stableRel（400ms 预窗+25×120ms 采样+失败响亮）下沉共享 e2e 助手+INV-63（测试面单调性——用例/断言只增不减，F-TESTREF-00 机制锚定）与 INV-64（e2e 内禁截图比对——像素 diff 限 scripts/audits 工具层，现存 0 处 toHaveScreenshot 既成事实升格受检不变量）入册 docs/invariants.md；战役收口段并入本票（W5：本地 coverage 70/85/60 三档亲跑+e2e 全绿亲跑真退出码落盘+全战役净删行数总账）；[test-refactor][locked-change]' },
++  { id: 'F-TESTREF-W4', file: 'docs/audits/flake-ledger.json', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W4=不确定面机件化（战役收官票，2026-09-18 收口）：flake 台账 docs/audits/flake-ledger.json 八线历史收录（P7-A 七现/F-R2e 2/z-r2e 2/tag-lifecycle 2/F-ARCH4-M1 1 观察中/F-G11 1 观察中/settings.png 1 观察中/corpus-export 3 未立票——数据源=charter §1.4 审计快照+各线史料档）+stableRel 下沉 tests/e2e/stable-rel.ts 共享助手（reader-text 消费替换，变异红证=streak 2→999 e2e 稳态用例红 w4-mutation-stable-rel.log）+INV-63（测试面单调性——指纹门 C_after ⊇ C_before 机检锚定）/INV-64（e2e 禁截图比对——check-quality 第 9 段 toHaveScreenshot 负锚，注入红证 w4-inv64-anchor-red.log）入册 docs/invariants.md；战役收口段（W5）兑现=coverage 三档亲跑 EXIT 0（全局 86.6 lines≥70/repos 85/renderer 60）+e2e 双通道亲跑（默认门 42/42+一键全跑 44/44 双 EXIT=0 落档 w4-e2e-{appgate,allgate}.log）+战役净删总账（tests 域已提交 +1622/-1618+W4 +78/-55：迁移三票净删 -737、W3 契约测试纯增 +741、W4 净 +23）+基线重冻结（179→183 文件/1623→1757 用例/4979→5334 断言，共有面排除行号逐字节全同 w4-baseline-refreeze-audit.md）；搭车两项落=调色板断言字面量五色 pin（W3 门二 P2-3）+test:e2e 语义三处回写（charter:294/DEV-SETUP/裁决书:117，W2 门二 P2-2）；S1 触发检查=零存量命中不触发（w4-s1-probe.txt）；[test-refactor][locked-change]' },
+   { id: 'F-DEDUP-01', file: 'src/main/services/library.service.ts', area: 'service', owner: 'strong', status: 'open', summary: '服务层偶然复杂度收敛（终裁 §3-4——审计 P2 采纳：DomainError 15 文件定义 class X…Error extends/17 文件引用+原子写 tmp+rename 4 文件 13 处+id/path 清洗多份——Rule of Three 早已越过）：DomainError 基类上提 src/main/services/shared/domain-error.ts 单源（17 引用文件同票迁移）+原子写单源（tmp+rename helper）+path/id 清洗单源；分层铁律 ipc→services→repos→db 单向不破（共享件=被依赖下游位，非横向耦合——ZcodeLink→AiSensor 既有唯一例外不动）；动 src+tests 双面不属 F-TESTREF 战役（独立 [locked-change] 常规三屋票）；**微扩（2026-09-18 裁决书在册扩容）**：app-file:// URL 三处拼装收编单源（corpus.export.service.ts:239 硬编码未用 APP_FILE_SCHEME——顺手项裁决书 §3 梯队三）；排期=F-TESTREF 战役毕后（终裁 §3-4）' },
+   { id: 'F-GEOM-01', file: 'src/renderer/features/reader/pdf-item-geometry.ts', area: 'reader', owner: 'strong', status: 'open', summary: 'INV-58 双几何族同族化战役（终裁 §3-1——审计建议 1 采纳：selection-evaluate.ts:54 源码自述「AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外边界，同族化=独立票」票已 done 接缝仍在=M2 多路线并存的乘积级交互真身）：pdf.js 项声明几何族（pdf-item-geometry.ts 515 行主链）收编 DOM 量测几何族（annotation-anchor.ts 454 行）——单一真相源化；重锚三档回落（annotation-resolve-layered S0-S6）/band 推导三处/边界归一两机制随族收敛；**设计链三跳票**（Kimi 拟定→deepseek 审→GLM 终裁）——设计书必须含态空间表+跨格序列推演+回落档语义裁决，缺一不受理；验收底色=e2e 44 用例全绿不破+锚定回归网+净删行数记账（M2 收敛量化证据）；「测试逼生产保形状」五例解耦票池随本战役设计书统筹（终裁 §5-2）；**扩容（2026-09-18 裁决 5）**：reader 子域目录化并入本战役同场做完——设计书必须含六子域目录重组清单与迁移序（anchors/view/interact/panels/time/state+域内单向依赖图）；同族化触 selection 通道时一并评估契约面生长（09-11 §3-3 观察项承袭）；排期=F-TESTREF 战役+F-DEDUP-01 后压轴；[locked-change]' },
+ 

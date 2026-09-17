@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T21:02:00Z
+- heartbeat_utc: 2026-09-17T21:49:52Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 8
+- checked_done: 9
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -77,7 +77,7 @@
 - [x] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
 - [x] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
 - [x] F-TESTREF-W3（src/shared 直接契约测试补齐）
-- [ ] F-TESTREF-W4（flake 台账+INV-63/64，战役收官票；F-TESTREF-S1 若触发随火搭车，
+- [x] F-TESTREF-W4（flake 台账+INV-63/64，战役收官票；F-TESTREF-S1 若触发随火搭车，
       不触发不阻塞）
 
 ### 第三波·梯队二：风险清账+组织对齐（小票组同火；ELE 呈裁即停）
@@ -120,6 +120,85 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 6 — 2026-09-18（执行者会话：F-TESTREF-W4 战役收官票，完成）
+- claim: claim-1789678894-b6｜开始 21:01:34Z｜收口 21:49:52Z｜勾选 8→9。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/health-scan）；实现面=本会话直接实现（文档+机检+下沉迁移，
+  W1A-C 先例）；TDD 技能不加载（理由：票面=台账/不变量登记+配方逐字下沉迁移，
+  「能失败一次」以两变异红证兑现——streak 2→999 稳态用例红+toHaveScreenshot
+  注入负锚红，还原链全落档）；systematic-debugging 不加载（无排障面——两次
+  回炉均为文书口径修正非缺陷定位）。派发档位：主控=GLM5.3 max（本会话）；
+  门一=ops-gate1-k1 绑定（k3 max）；门二=ops-adjudicator 绑定（deepseek-flash
+  max）——均异构于实现者。
+- **交付六件**：①docs/audits/flake-ledger.json 八线收录（P7-A 7 resolved/
+  F-R2e 2/z-r2e 2/tag-lifecycle 2 resolved/F-ARCH4-M1 1/F-G11 1/settings.png 1
+  observing/corpus-export 3 unpursued——数据源=charter §1.4 审计快照+八线史料
+  档，门二逐线比对 8/8 成立）；②tests/e2e/stable-rel.ts 共享助手（69 行，配方
+  逐字下沉+INV-51 口径单源；reader-text 删内联挂 import，z-r2e rectStableGate
+  刻意保持内联——探针取证语义自裁经门一 A 项复核）；③INV-63（测试面单调性
+  ——指纹门 C_after ⊇ C_before 机检锚定）/INV-64（e2e 禁截图比对——check-quality
+  第 9 段 toHaveScreenshot 负锚）入册 docs/invariants.md（尾号 62→64）；④搭车
+  W3 门二 P2-3=调色板断言字面量五色 pin（标题未动、断言 2→3，NEW delta 形态
+  无需豁免——该件系 W3 新增未入战役前基线）；⑤搭车 W2 门二 P2-2=test:e2e 语义
+  三处回写（charter:294/裁决书:117/DEV-SETUP——verify 数字行顺手对齐为收官
+  真数，票内自裁经门一 E 项复核）；⑥S1 触发检查=W12/N11/N15 三类探针零命中
+  不触发（w4-s1-probe.txt；探针 v1 误报白名单合法 it.each——v2 修正口径后归零）。
+- **战役收口段（W5）兑现**：coverage 三档亲跑 COVERAGE_EXIT=0（全局 86.6
+  lines≥70/repos 97.12≥85/renderer 由 thresholds exit 背书）；e2e 双通道 E2E_
+  APP_EXIT=0（42 passed 2.0m）+E2E_ALL_EXIT=0（44 passed 2.2m）；战役净删总账
+  （tests 域已提交 +1622/-1618+W4 终态 +81/-56：迁移三票净删 -737、W3 契约
+  测试纯增 +741、W4 净 +25 含门审后 +3 行处置）；**基线重冻结**（AGENTS
+  [test-refactor] 段战役毕义务）：179→183 文件/1623→1757 用例/4979→5334 断言/
+  skipSites 15 零变——共有 179 文件排除 line 字段逐字节全同（57 文件粗差异=
+  迁移行号漂移），纯增=W3 四件+W4 一断言，exemptions 零条目；审计档
+  w4-baseline-refreeze-audit.md（门二抽查 2 共有文件互证）。
+- **机检终态**：verify 全链 VERIFY_EXIT=0（quality 含第 9 段新负锚+tickets
+  195 票 open 15（verify 跑时 W4 已翻——收口态）+locks 334+lint+typecheck+
+  test 166 文件 1713 用例+build，Node 24.20.0）；health-scan RED=0（WARN1=cfg
+  漂移历史欠账回显，batch 2~5 同款）。
+- **变异红证两件+复绿链**：①streak>=2→999（永不收敛）→e2e 稳态用例红（红点
+  stable-rel.ts:65 穷尽分支、调用栈经 reader-text.spec:130——证明消费共享版）
+  →cp 备份还原 diff 空→终态 e2e 默认门 42 全绿=复绿实证（P1-2 绿半证经门二
+  裁定以终态亲验+全量复跑闭合）；②stable-rel.ts 注入 toHaveScreenshot 注释
+  →check-quality EXIT=1 红消息精确点名→删注入→终态 verify quality 段绿=复绿
+  实证。raw=w4-mutation-stable-rel.log+w4-inv64-anchor-red.log。
+- **门一 PASS_WITH_WARNINGS**（B0/W6/N10）处置：W1 台账两线伪路径→spec 置
+  null+载体说明进 case；W2 settings.png 门槛（累计 3）偏离通则（累计 2）→行内
+  声明系 charter §1.4 原文口径；W3「逐字迁驻」声明过当+头注丢 W-G1 句→两件
+  声明改准（配方逐字/头注删节改写）+stable-rel 头注补 W-G1 排查细节指向；
+  W4 INV-64 声明面（「及同类」）大于锚面→声明与锚面对齐（手写 screenshot 面
+  =未来负锚扩展位显式登记）；W5 简报计数 ±1 两处（reader-text 单文件 -54 非
+  -55；指针注释 2 行非 3 行）→本日志勘误口径；W6 心跳回退 26s=batch5 收口
+  时钟近似值与本会话实测宿主钟差，非时序异常。
+- **门二 GO_WITH_CONDITIONS**（P0=0/P1=4/P2=5）处置：P1-1 真退出码落盘缺失
+  （首跑 log 用 `; echo EXIT=$?` 未追加进文件——echo 落终端）→终态四跑补录
+  （VERIFY/COVERAGE/E2E_APP/E2E_ALL 四标记全在 log 尾，W1C 惯例形态）；P1-2
+  变异还原复绿半证→终态复跑闭合（见上）；P1-3 门审后小改重锁复验→处置毕
+  locks:check 334 一致+终态 verify 绿；P1-4 记账 +78/-55 与终态差 2 行→git
+  diff --stat 终态实测 +81/-56 回写 registry。P2-1 open 口径失配（verify 跑时
+  16→收口 15）→本日志注明；P2-2 证据件 6 实为 12（w4-test-surface-delta.log
+  漏列+简报/patch 自身）→本日志列全；P2-3 INV-51/z-r2e 头注两处指针指向下沉
+  前旧址→已对齐（stable-rel.ts 新址）；P2-4 registry 翻 done 先于门审=可回退
+  形态，门二 GO 后保持；P2-5 变异 raw 为节选无 EXIT 行→教训条。
+- 证据件入库（scripts/audits/，12 件）：w4-{verify-full.log；coverage.log；
+  e2e-appgate.log；e2e-allgate.log；mutation-stable-rel.log；inv64-anchor-red.log；
+  s1-probe.txt；test-surface-delta.log；baseline-before-refreeze.json；
+  baseline-refreeze-audit.md；gate1-brief.md；gate1-diff.patch}。
+- 教训三条：①**退出码落盘形态**：`cmd > log 2>&1; echo EXIT=$?` 的 echo 落
+  终端不进 log——必须 `echo "X_EXIT=$?" >> log`（门二 P1-1 拦截；W1C 的
+  `E2E_APP_EXIT=0` 形态本就是追加式，照抄时丢了 >>——「真退出码禁信转述」的
+  机器面=标记必须物理在日志内）；②**审包体积纪律**：git diff HEAD 全量 7360
+  行（baseline 2481+manifest 大头）超重——工件面默认剔除后 308 行（ORG-12
+  再实证，未跟踪新件须附全文附录=W1B 教训①同族）；③**锁操作时序修正**
+  （W1B 教训③「集中一次走」的补充）：门审 W 级处置必然触发二次锁往返——
+  apply 的正确锚点=门审处置毕后最后一次，而非「实现毕即 apply」（本批往返
+  三次：实现毕/门一处置后/门二处置后）。
+- Rulings 待用户：无新增（票内自裁五项——豁免形态判定/DEV-SETUP 数字行顺手
+  对齐/z-r2e 保持内联/first_seen 精度分层/基线重冻结时机——均经门一对抗拷问
+  +门二复核闭合）。
+- 无进展计数：归零（8→9 有进展）。**F-TESTREF 战役七票（00/W1A/W1B/W1C/
+  W2/W3/W4）全毕——第二波清空，下一波=第三波 F-SESS-01 起。**
 
 ### batch 5 — 2026-09-18（执行者会话：F-TESTREF-W3 src/shared 直接契约测试补齐，完成）
 - claim: claim-1789676496-b5｜开始 20:21:36Z｜收口 21:02:00Z｜勾选 7→8。

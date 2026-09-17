@@ -168,7 +168,7 @@ async function stableGate(win: Page): Promise<void> {
 }
 
 
-/** [z-r2e 立案修] 几何稳定门（INV-51 双态收敛——crib reader-text.spec stableRel
+/** [z-r2e 立案修] 几何稳定门（INV-51 双态收敛——crib stableRel 共享配方（W4 下沉前原驻 reader-text.spec——现 tests/e2e/stable-rel.ts）
  * 已验证配方）：前置观察窗 400ms（fallback→resolved 跳变余量——双采样一致不能
  * 区分「跳变已结束」与「未开始」）+120ms 间隔采样、连续 3 点（2 对相邻一致）
  * 0.1px 内收敛才放行；25 轮穷尽 fail loudly（消息带末次样本——双态瞬态 vs 持续
