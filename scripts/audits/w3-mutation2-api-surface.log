@@ -1,0 +1,59 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/contracts/api-surface-closure.test.ts [2m([22m[2m19 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 8[2mms[22m[39m
+[31m   [31m×[31m contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）[2m > [22m通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）[90m 4[2mms[22m[31m[39m
+[31m     → expected 54 to be 55 // Object.is equality[39m
+[31m   [31m×[31m contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）[2m > [22m域 settings 方法集 pin[90m 1[2mms[22m[31m[39m
+[31m     → expected [ 'get', 'set' ] to deeply equal [ 'diagNetwork', 'get', 'set' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/contracts/api-surface-closure.test.ts[2m > [22mcontracts/api-surface-closure —— 接线表闭合性（55 通道 pin）[2m > [22m通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）
+[31m[1mAssertionError[22m: expected 54 to be 55 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 55[39m
+[31m+ 54[39m
+
+[36m [2m❯[22m tests/contracts/api-surface-closure.test.ts:[2m36:34[22m[39m
+    [90m 34| [39m[34mdescribe[39m([32m'contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）[39m…
+    [90m 35| [39m  [34mit[39m([32m'通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-ch[39m…
+    [90m 36| [39m    [34mexpect[39m([34mallChannels[39m()[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m55[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m 37| [39m  })
+    [90m 38| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/contracts/api-surface-closure.test.ts[2m > [22mcontracts/api-surface-closure —— 接线表闭合性（55 通道 pin）[2m > [22m域 settings 方法集 pin
+[31m[1mAssertionError[22m: expected [ 'get', 'set' ] to deeply equal [ 'diagNetwork', 'get', 'set' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[32m-   "diagNetwork",[39m
+[2m    "get",[22m
+[2m    "set",[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/contracts/api-surface-closure.test.ts:[2m45:81[22m[39m
+    [90m 43| [39m
+    [90m 44| [39m  it[33m.[39m[34meach[39m([33mDOMAIN_PINS[39m)([32m'域 %s 方法集 pin'[39m[33m,[39m (domain[33m,[39m methods) [33m=>[39m {
+    [90m 45| [39m    [34mexpect[39m([33mObject[39m[33m.[39m[34mkeys[39m([33mAPI_SURFACE[39m[domain [35mas[39m keyof [35mtypeof[39m [33mAPI_SURFACE[39m]…
+    [90m   | [39m                                                                                [31m^[39m
+    [90m 46| [39m  })
+    [90m 47| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m17 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 04:32:50
+[2m   Duration [22m 644ms[2m (transform 56ms, setup 0ms, collect 143ms, tests 8ms, environment 0ms, prepare 175ms)[22m
+

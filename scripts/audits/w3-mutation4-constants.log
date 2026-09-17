@@ -1,0 +1,39 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/contracts/constants.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 7[2mms[22m[39m
+[31m   [31m×[31m contracts/constants —— 全局常量冻结 pin（单一出处）[2m > [22m出网 host 白名单冻结（安全 §6.4——新增需 ADR+[locked-change]）[90m 5[2mms[22m[31m[39m
+[31m     → expected [ 'api.crossref.orgx', …(2) ] to deeply equal [ 'api.crossref.org', …(2) ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/contracts/constants.test.ts[2m > [22mcontracts/constants —— 全局常量冻结 pin（单一出处）[2m > [22m出网 host 白名单冻结（安全 §6.4——新增需 ADR+[locked-change]）
+[31m[1mAssertionError[22m: expected [ 'api.crossref.orgx', …(2) ] to deeply equal [ 'api.crossref.org', …(2) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[32m-   "api.crossref.org",[39m
+[31m+   "api.crossref.orgx",[39m
+[2m    "api.openalex.org",[22m
+[2m    "export.arxiv.org",[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/contracts/constants.test.ts:[2m26:39[22m[39m
+    [90m 24| [39m[34mdescribe[39m([32m'contracts/constants —— 全局常量冻结 pin（单一出处）'[39m[33m,[39m () [33m=>[39m {
+    [90m 25| [39m  [34mit[39m([32m'出网 host 白名单冻结（安全 §6.4——新增需 ADR+[locked-change]）'[39m[33m,[39m …
+    [90m 26| [39m    [34mexpect[39m([[33m...[39m[33mALLOWED_REMOTE_HOSTS[39m])[33m.[39m[34mtoEqual[39m([[32m'api.crossref.org'[39m[33m,[39m [32m'ap[39m…
+    [90m   | [39m                                      [31m^[39m
+    [90m 27| [39m  })
+    [90m 28| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 04:33:22
+[2m   Duration [22m 570ms[2m (transform 30ms, setup 0ms, collect 68ms, tests 7ms, environment 0ms, prepare 168ms)[22m
+
