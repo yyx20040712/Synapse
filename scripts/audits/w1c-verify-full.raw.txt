@@ -1,0 +1,66 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 verify
+> npm run quality:check && npm run test-surface:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build
+
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
+dup-constants：扫描 219 文件 / 132 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用 / 无同值双常量新增
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test-surface:check
+> node scripts/check-test-surface.mjs check
+
+[test-surface] files: 179 base / 179 cur | cases: 1623 base / 1623 cur | assertions: 4979 base / 4979 cur | skipSites: 15 base / 15 cur
+[test-surface] exemptions entries: 0 hits: 0 stale: 0
+[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 195 个；open 19（weak 可领 0，strong 19）
+tickets 检查通过：注册表与代码一致
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:check
+> node scripts/check-locks.mjs
+
+locks 检查未通过：
+  - 受锁文件被修改：playwright.config.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/ai-notes-section.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/corpus-export.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/e2e-env.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/export-clipboard.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/lineage.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/reader-reading-time.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/reader-scroll.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/reader-search.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/reader-text.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/reading-time-replay.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/smoke.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/tag-filter-multi.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/tag-lifecycle.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/workspaces.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/z-r2e-probe.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+  - 受锁文件被修改：tests/e2e/z-wg1-probe.spec.ts（回滚，或走 unlock → 改 → relock → [locked-change] 流程）
+VERIFY_EXIT=1

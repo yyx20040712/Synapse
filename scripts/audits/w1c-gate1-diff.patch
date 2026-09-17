@@ -1,0 +1,1027 @@
+diff --git a/docs/handoff/relay.md b/docs/handoff/relay.md
+index b608bb6949..d4aa0bf9ee 100644
+--- a/docs/handoff/relay.md
++++ b/docs/handoff/relay.md
+@@ -6,14 +6,14 @@
+ > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
+ > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
+ 
+-- status: READY
++- status: RUNNING
+ - automation_id: automation-e8255b42-9698-40da-a62b-8896ef575e8f
+ - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
+ - spec: docs/design/2026-09-18_complexity-governance-ruling.md
+ - poll_interval_min: 5
+ - fire_budget_min: 120
+-- heartbeat_utc: 2026-09-17T19:35:00Z
+-- claim: -
++- heartbeat_utc: 2026-09-17T19:36:24Z
++- claim: claim-1789673784-b4
+ - no_progress_count: 0
+ - checked_total: 24
+ - checked_done: 5
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 455b51067a..5a6c1368cc 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-17T19:31:45.3793910Z",
++    "generatedAt":  "2026-09-17T20:04:33.0670448Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -19,7 +19,7 @@
+                   },
+                   {
+                       "path":  "playwright.config.ts",
+-                      "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
++                      "sha256":  "1dfcb8bf6bbdf214fd51d9bbfa505b271d1a70010d298f5aff0645be47cc956d"
+                   },
+                   {
+                       "path":  "scripts/audits/2026-09-10_r2-byte-compare.mjs",
+@@ -563,19 +563,19 @@
+                   },
+                   {
+                       "path":  "tests/e2e/ai-notes-section.spec.ts",
+-                      "sha256":  "f3c8d76fb0dbabf000ee83a627e4ee84a5d3b501305ab677e0bc0761dff0898d"
++                      "sha256":  "ed05228f4e6b7c2083d7b48febdf557f1582de8cde1a3a93166e2518aced1239"
+                   },
+                   {
+                       "path":  "tests/e2e/corpus-export.spec.ts",
+-                      "sha256":  "973bf57ff6c1e68b233cae913202d3763246c714636ba8b6050e060a677adac5"
++                      "sha256":  "2e47ab8b6282b11137e90dd9baf70434fdf869275e746f0399e32a0f54b74a25"
+                   },
+                   {
+                       "path":  "tests/e2e/e2e-env.ts",
+-                      "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
++                      "sha256":  "cd4f668ad3943ed8f9f2c82c5ae13d3c44a668d0eae090021a35ba87abb703dc"
+                   },
+                   {
+                       "path":  "tests/e2e/export-clipboard.spec.ts",
+-                      "sha256":  "b245f9c17a279b9c88065d8d1e4eaf44639012c83a5f1e01ddedecaa2d497ae2"
++                      "sha256":  "b3c828594818d4bbb38e750b4d87dc92dfc87eb3e3f6c01fdb8420f3f78cf981"
+                   },
+                   {
+                       "path":  "tests/e2e/import-drag.spec.ts",
+@@ -583,27 +583,27 @@
+                   },
+                   {
+                       "path":  "tests/e2e/lineage.spec.ts",
+-                      "sha256":  "ddcf62550b0809b8bd0215c5d869369da789e46690c36e19e0bea63fd0a5e1bf"
++                      "sha256":  "b25fa272d615d995842abc1ac199668d9d9e667e2fe31aa15ba329000cc7c612"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-reading-time.spec.ts",
+-                      "sha256":  "ab91d6ce027ffbff488400b863ca28b23023029d5fc2c91c15c69055ee1cad11"
++                      "sha256":  "4a465dfcbc4dceaaf7f087febdc304ca4cb4db052b9a40bdf165aaf8c7830aa9"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+-                      "sha256":  "b8e52a82bc44b33407d5d1bf248572deed5446386521af9ed9913b9917cd22cc"
++                      "sha256":  "f2636e369600095ee3fa2f5c856a1a76983bf0c883acd648aa2ab008618c2022"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-search.spec.ts",
+-                      "sha256":  "a6190e1e248048fb742e0e61f57d0f784af2ce8ad7ee939bd32b35add28f047c"
++                      "sha256":  "6bae753e2cbf1232c6f2b950e367197ddf41469104cc78331118746647957a3a"
+                   },
+                   {
+                       "path":  "tests/e2e/reader-text.spec.ts",
+-                      "sha256":  "40a9966750363c32f2928fb8b07cb8b26216e01f2c2658f24518730e1b7cdd74"
++                      "sha256":  "75b48628d247ab74ece98858b26500293edfe6da2f0ae2d686e5e4df8ed6f389"
+                   },
+                   {
+                       "path":  "tests/e2e/reading-time-replay.spec.ts",
+-                      "sha256":  "9cedd32c211047f2488b8b66f0a9c353f44cc2eaed27069424ef01d7dc251e57"
++                      "sha256":  "c78670f5b7f9c53a08791528e9e3b828294f5362ec68f8b0ee03dd6fc8966521"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -611,19 +611,19 @@
+                   },
+                   {
+                       "path":  "tests/e2e/smoke.spec.ts",
+-                      "sha256":  "f36755f6230cec7a2db00d80e8054ea6b60104f46ed4d7f6f28f81be54b54e83"
++                      "sha256":  "e0e2b52b5371bc015f60655d656ffba4484e66ebf046ccadadff9a0b16263084"
+                   },
+                   {
+                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
+-                      "sha256":  "f13292cb36f06e4d00eb5e97694b8514cd8fb2ef585ff91a1ae93b727f8b47fa"
++                      "sha256":  "a44c2b35115b483d6a04603d6b4197c021c9c16cc8fd980fe4144a834b2f24dc"
+                   },
+                   {
+                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
+-                      "sha256":  "b5380eaf2d7ff3f6e035f2d390925c0d1ed78684f9a6ff4a2eafbb29873acb37"
++                      "sha256":  "392303d026c315ef93bb4d92f52b29433758340312135a0de7bcd2883184e567"
+                   },
+                   {
+                       "path":  "tests/e2e/workspaces.spec.ts",
+-                      "sha256":  "b1004b5587b3a7443bfa64f7a1c8200685090f9a03a7d1ee68010f39af8e0d28"
++                      "sha256":  "6e1966b7be9bfbef13f63c5576bf0ac489c9957fa0c26d9084fb3b456be5f0be"
+                   },
+                   {
+                       "path":  "tests/e2e/zcode-link.spec.ts",
+@@ -631,11 +631,11 @@
+                   },
+                   {
+                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
+-                      "sha256":  "b74d476ee50699c5e3b42e716fbc9e79e64a256a2249ac326edb4b13b92770f0"
++                      "sha256":  "24b36dd89112887d4a873da56d6d4770c89219cf7f60460eb3b82ffbe66ce6e1"
+                   },
+                   {
+                       "path":  "tests/e2e/z-wg1-probe.spec.ts",
+-                      "sha256":  "6027c162f30b3729ca1c43fb54023023566b1ea505b1152b9f9f8460b6f66911"
++                      "sha256":  "40bb226f3411d40804b0e2cb7398b02ae5d514e916f808eafe51eeac011f7c59"
+                   },
+                   {
+                       "path":  "tests/security/csp-meta.test.ts",
+diff --git a/package.json b/package.json
+index b6f52202e8..937cac8e34 100644
+--- a/package.json
++++ b/package.json
+@@ -25,7 +25,8 @@
+     "test-surface:stats": "node scripts/check-test-surface.mjs stats",
+     "test": "node scripts/sqlite-abi.mjs use node && vitest run",
+     "test:watch": "vitest",
+-    "test:e2e": "npm run build && playwright test",
++    "test:e2e": "npm run build && playwright test --project=app",
++    "test:e2e:all": "npm run build && playwright test --project=app --project=probe",
+     "verify": "npm run quality:check && npm run test-surface:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build",
+     "quality:check": "node scripts/check-quality.mjs",
+     "tickets:check": "node scripts/check-tickets.mjs",
+diff --git a/playwright.config.ts b/playwright.config.ts
+index 028835730f..5ea3c7782d 100644
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -3,6 +3,12 @@ import { defineConfig } from '@playwright/test'
+ /**
+  * e2e 配置——只跑 Electron（_electron 启动打包产物 out/main/index.js）。
+  * 运行前提：先 npm run build。CI-only：本地弱模型不需要跑 e2e（防环境噪音）。
++ *
++ * [F-TESTREF-W2] 探针分层：z-*-probe.spec.ts 是 flake 捕获仪非产品测试
++ * （宪章 §4-W2——已录 flake 2 起发生在探针自身），独立 probe project；
++ * 默认门（npm run test:e2e → --project=app）不跑，一键全跑走
++ * npm run test:e2e:all（反模式：移出后 flake 复发无捕获面）。forbidOnly
++ * 顶层声明对两个 project 均生效（沿用）。
+  */
+ export default defineConfig({
+   testDir: 'tests/e2e',
+@@ -16,5 +22,11 @@ export default defineConfig({
+   },
+   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }], ['list']] : 'list',
+   timeout: 60_000,
+-  outputDir: 'test-results'
++  outputDir: 'test-results',
++  projects: [
++    // 产品测试默认门（排除探针）
++    { name: 'app', testIgnore: /z-.*-probe\.spec\.ts$/ },
++    // flake 捕获仪（探针）——独立通道，默认不跑
++    { name: 'probe', testMatch: /z-.*-probe\.spec\.ts$/ }
++  ]
+ })
+diff --git a/tests/e2e/ai-notes-section.spec.ts b/tests/e2e/ai-notes-section.spec.ts
+index cdf8f99c85..5d8270c59a 100644
+--- a/tests/e2e/ai-notes-section.spec.ts
++++ b/tests/e2e/ai-notes-section.spec.ts
+@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * AI 笔记面板 e2e（SR2-AI-08，受锁）。
+@@ -32,9 +32,7 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘
+   const sensorRoot = join(userData, 'ai-sensor')
+ 
+   // 第一跳：让应用自己完成建库迁移（reader-text 同型）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 种子：一篇真实 PDF
+   const bytes = createTinyPdf(`AI 面板 e2e ${PDF_KNOWN_TEXT}`)
+@@ -166,9 +164,7 @@ test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))
+   const sensorRoot = join(userData, 'ai-sensor')
+ 
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   const bytes = createTinyPdf(`AI 渲染层 e2e ${PDF_KNOWN_TEXT}`)
+   const sha = createHash('sha256').update(bytes).digest('hex')
+diff --git a/tests/e2e/corpus-export.spec.ts b/tests/e2e/corpus-export.spec.ts
+index 264d4b1a1a..a8fa8c5d10 100644
+--- a/tests/e2e/corpus-export.spec.ts
++++ b/tests/e2e/corpus-export.spec.ts
+@@ -1,70 +1,12 @@
+-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
+-import { spawn } from 'node:child_process'
+-import { copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
++import { test, expect } from '@playwright/test'
++import { mkdtemp, readFile } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createMultiPagePdf } from '../utils/pdf-factory'
+-
+-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝（reader-text.spec 同型——
+- *  本文件按 Rule of Three 第二次重复保留，第三次出现时抽共用基建） */
+-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+-  return new Promise((resolve, reject) => {
+-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
+-      env,
+-      stdio: 'inherit'
+-    })
+-    child.on('exit', (code) => {
+-      if (code === 0) {
+-        resolve()
+-      } else {
+-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
+-      }
+-    })
+-    child.on('error', reject)
+-  })
+-}
+-
+-function launch(userData: string): Promise<ElectronApplication> {
+-  return electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
+-}
+-
+-/** 种子落库（better-sqlite3 双 ABI 处理——reader-text.spec 同型：备份 electron
+- *  绑定→子进程用 node ABI 落库→finally 还原；Windows 文件锁决定必须子进程） */
+-async function seedPaperRow(
+-  userData: string,
+-  fileRef: string,
+-  sha: string,
+-  title: string,
+-  id: string
+-): Promise<void> {
+-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+-  const cacheDir = join(pkgDir, 'abi-cache')
+-  const wanted = `node-v${process.versions.modules}`
+-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
+-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
+-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
+-  const electronBinding = await readFile(releaseBinding)
+-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+-  try {
+-    await runSeedScript({
+-      ...process.env,
+-      SEED_DB: join(userData, 'synapse.db'),
+-      SEED_FILE_REF: fileRef,
+-      SEED_SHA: sha,
+-      SEED_TITLE: title,
+-      SEED_ID: id
+-    } as NodeJS.ProcessEnv)
+-  } finally {
+-    await writeFile(releaseBinding, electronBinding)
+-  }
+-}
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+ 
+@@ -93,10 +35,9 @@ test('AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-aicorpus-'))
+   const exportDir = await mkdtemp(join(tmpdir(), 'synapse-aicorpus-out-'))
+ 
+-  // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw；
++  // e2e-env.ts 单源——W1C 收敛）
++  await bootstrapMigrations(userData)
+ 
+   // 种子：两篇真实多页 PDF（提取面；标记词各异——sha 唯一约束）+一篇幽灵
+   // （行在文件缺——篇失败序列）
+diff --git a/tests/e2e/e2e-env.ts b/tests/e2e/e2e-env.ts
+index c4d3a0e680..ce1a0baa7b 100644
+--- a/tests/e2e/e2e-env.ts
++++ b/tests/e2e/e2e-env.ts
+@@ -1,9 +1,10 @@
+ /**
+- * [SR2-AI-08] e2e 环境基建共用（launch+seedPaperRow）。
++ * [SR2-AI-08] e2e 环境基建共用（launch+seedPaperRow+bootstrapMigrations）。
+  *
+  * Rule of Three 抽取形态：reader-text.spec / corpus-export.spec 各持一份
+- * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；既有两 spec
+- * 的收敛改写属受锁面改动（超本票面），归主控裁量，不在本单顺手改。
++ * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；W1C
++ * （F-TESTREF-W1C）把各 spec 内联的 launch 5 副本、seedPaperRow 4 份本地
++ * 定义与第一跳迁移配方（14 处复制）收敛到本单源。
+  */
+ import { _electron as electron, type ElectronApplication } from '@playwright/test'
+ import { spawn } from 'node:child_process'
+@@ -17,6 +18,16 @@ export function launch(userData: string, extraEnv: Record<string, string> = {}):
+   })
+ }
+ 
++/**
++ * 第一跳：让应用自己完成建库迁移——launch 开窗等 500ms 再关（不 import
++ * src 内部模块，Playwright 不认 ?raw；迁移留给应用自身的启动链）。
++ */
++export async function bootstrapMigrations(userData: string): Promise<void> {
++  const app = await launch(userData)
++  await (await app.firstWindow()).waitForTimeout(500)
++  await app.close()
++}
++
+ /** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝 */
+ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+   return new Promise((resolve, reject) => {
+diff --git a/tests/e2e/export-clipboard.spec.ts b/tests/e2e/export-clipboard.spec.ts
+index 1c8275ac63..5ba4a35e21 100644
+--- a/tests/e2e/export-clipboard.spec.ts
++++ b/tests/e2e/export-clipboard.spec.ts
+@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createTinyPdf } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * P7E-04 导出剪贴板 e2e（装配级，1 综合用例）。
+@@ -29,9 +29,7 @@ test('P7E-04 导出剪贴板：详情面板「复制 BibTeX」→主进程剪贴
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-clip-'))
+ 
+   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——corpus-export 同型）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
+   const bytes = createTinyPdf(title)
+diff --git a/tests/e2e/lineage.spec.ts b/tests/e2e/lineage.spec.ts
+index e1cce8df8a..e323a765b3 100644
+--- a/tests/e2e/lineage.spec.ts
++++ b/tests/e2e/lineage.spec.ts
+@@ -72,7 +72,7 @@ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /** 守卫=仅依赖组（主控裁定 5：自身条件收敛，见文件头实现注） */
+ const DEPS = ['SR2-LG-01', 'SR2-LG-02', 'SR2-LG-03', 'SR2-LG-04'] as const
+@@ -132,9 +132,7 @@ function parseTranslate(s: string | null): { x: number; y: number } | null {
+ 
+ /** 建库迁移第一跳（reader-text 同型：不 import src 内部模块） */
+ async function firstHop(userData: string): Promise<void> {
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ }
+ 
+ /** 种子三篇（甲真实 PDF；根/乙幽灵行——脉络 graph 不读其文件） */
+diff --git a/tests/e2e/reader-reading-time.spec.ts b/tests/e2e/reader-reading-time.spec.ts
+index b10ac421c3..00022f3633 100644
+--- a/tests/e2e/reader-reading-time.spec.ts
++++ b/tests/e2e/reader-reading-time.spec.ts
+@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
+ import { spawn } from 'node:child_process'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createTinyPdf } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * P7E-05 阅读时长 e2e（装配级显示面冒烟，1 综合用例）。
+@@ -70,9 +70,7 @@ test('P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-rt-'))
+ 
+   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——export-clipboard 同型）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
+   const bytes = createTinyPdf(title)
+diff --git a/tests/e2e/reader-scroll.spec.ts b/tests/e2e/reader-scroll.spec.ts
+index d0d9771111..fbece0db4a 100644
+--- a/tests/e2e/reader-scroll.spec.ts
++++ b/tests/e2e/reader-scroll.spec.ts
+@@ -33,84 +33,28 @@
+  * - 验收：verify 全绿+e2e 全量（翻 done 后 22 过+0 skip 推演）；用户走查
+  *   （滚动阅读体验视检——战役最终验收人=用户）。
+  */
+-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
+-import { spawn } from 'node:child_process'
+-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
++import { test, expect } from '@playwright/test'
++import { mkdtemp } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+ import { mkdirSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /** 双条件守卫（依赖∪自身——LG-05/corpus-export 先例）：全链用例随
+  * F-01~03 就绪与 F-04 实现展开 */
+ const DEPS = ['SR2-F-01', 'SR2-F-02', 'SR2-F-03', 'SR2-F-04']
+ const pending = DEPS.filter((d) => !isTicketDone(d))
+ 
+-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
+-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+-  return new Promise((resolve, reject) => {
+-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
+-      env,
+-      stdio: 'inherit'
+-    })
+-    child.on('exit', (code) => {
+-      if (code === 0) {
+-        resolve()
+-      } else {
+-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
+-      }
+-    })
+-    child.on('error', reject)
+-  })
+-}
+-
+-function launch(userData: string): Promise<ElectronApplication> {
+-  return electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
+-}
+-
+-/**
+- * 种子落库（better-sqlite3 双 ABI 处理，与 reader-text.spec 同配方——第 2 次
+- * 重复保持重复，Rule of Three）：备份 electron 绑定→换 node 绑定→子进程落库
+- * →finally 还原（Windows 文件锁：进程内 import 会让还原 EBUSY 毒化 launch）。
+- */
+-async function seedPaperRow(userData: string, fileRef: string, sha: string, title: string, id: string): Promise<void> {
+-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+-  const cacheDir = join(pkgDir, 'abi-cache')
+-  const wanted = `node-v${process.versions.modules}`
+-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
+-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
+-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
+-  const electronBinding = await readFile(releaseBinding)
+-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+-  try {
+-    await runSeedScript({
+-      ...process.env,
+-      SEED_DB: join(userData, 'synapse.db'),
+-      SEED_FILE_REF: fileRef,
+-      SEED_SHA: sha,
+-      SEED_TITLE: title,
+-      SEED_ID: id
+-    } as NodeJS.ProcessEnv)
+-  } finally {
+-    await writeFile(releaseBinding, electronBinding)
+-  }
+-}
+-
+ test.describe('reader-scroll —— F-04 收官', () => {
+   test.skip(pending.length > 0, `延期：依赖或自身工单未完成 [${pending.join(', ')}]`)
+ 
+   test('收官全链：INV-01 三层/键位滚动步/缩放中心锚（ctrl+wheel 段迁移）/fit-width 列宽基准/标注原位抽验/离屏回收/进度恢复', async () => {
+     const userData = await mkdtemp(join(tmpdir(), 'synapse-f04-'))
+     // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+-    const seedApp = await launch(userData)
+-    await (await seedApp.firstWindow()).waitForTimeout(500)
+-    await seedApp.close()
++    await bootstrapMigrations(userData)
+ 
+     // 6 页受管文件（离屏回收需页数>渲染窗口+缓冲；每页单行 P<n> KNOWN——
+     // ASCII 单 run 可被 getByText 单节点命中，批 1 同口径）
+@@ -285,9 +229,7 @@ test.describe('reader-scroll —— F-05 程序滚动单容器收敛', () => {
+   test('缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移', async () => {
+     const userData = await mkdtemp(join(tmpdir(), 'synapse-f05-'))
+     // 建库迁移（同配方：让应用自己完成，不 import src 内部模块）
+-    const seedApp = await launch(userData)
+-    await (await seedApp.firstWindow()).waitForTimeout(500)
+-    await seedApp.close()
++    await bootstrapMigrations(userData)
+ 
+     const bytes = createMultiPagePdf(6, PDF_KNOWN_TEXT)
+     const sha = createHash('sha256').update(bytes).digest('hex')
+diff --git a/tests/e2e/reader-search.spec.ts b/tests/e2e/reader-search.spec.ts
+index c577dc7d07..8236f7be95 100644
+--- a/tests/e2e/reader-search.spec.ts
++++ b/tests/e2e/reader-search.spec.ts
+@@ -1,30 +1,12 @@
+-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
+-import { spawn } from 'node:child_process'
+-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
++import { test, expect } from '@playwright/test'
++import { mkdtemp } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+ import { mkdirSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+-
+-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
+-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+-  return new Promise((resolve, reject) => {
+-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
+-      env,
+-      stdio: 'inherit'
+-    })
+-    child.on('exit', (code) => {
+-      if (code === 0) {
+-        resolve()
+-      } else {
+-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
+-      }
+-    })
+-    child.on('error', reject)
+-  })
+-}
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * [P7E-03] 页内高亮搜索 e2e：装配级全链（fixture=createMultiPagePdf(3)，每页
+@@ -33,7 +15,8 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+  * （提交搜索）→页 1 高亮块可见（计算样式+几何——jsdom 不可达面在此真机
+  * Chromium 断言）+计数 1/3→Enter（下一处）→P2 文本入视口+计数 2/3+页 2
+  * 高亮可见（两段式滚动：setPage 页盒顶→active 居中）→Esc→高亮清零+面板关。
+- * 形态 crib reader-text.spec.ts（seedAndLaunch 配方/双 ABI seed/launch 帮手）。
++ * 形态 crib reader-text.spec.ts（第一跳/双 ABI seed/launch 帮手——W1C 起收
++ * 敛于 e2e-env.ts 单源）。
+  */
+ const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR2-F-01'] as const
+ 
+@@ -43,42 +26,6 @@ function skipIfPending(deps: readonly string[]): void {
+   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
+ }
+ 
+-function launch(userData: string): Promise<ElectronApplication> {
+-  return electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
+-}
+-
+-/**
+- * 种子落库（better-sqlite3 双 ABI 处理，reader-text.spec 同配方）：
+- * 备份 electron 绑定→换 abi-cache 里本进程 ABI 的 node 绑定→子进程落库→
+- * finally 恢复（Windows 文件锁——落库必须在子进程）。
+- */
+-async function seedPaperRow(userData: string, fileRef: string, sha: string, title: string): Promise<void> {
+-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+-  const cacheDir = join(pkgDir, 'abi-cache')
+-  const wanted = `node-v${process.versions.modules}`
+-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
+-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
+-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
+-  const electronBinding = await readFile(releaseBinding)
+-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+-  try {
+-    await runSeedScript({
+-      ...process.env,
+-      SEED_DB: join(userData, 'synapse.db'),
+-      SEED_FILE_REF: fileRef,
+-      SEED_SHA: sha,
+-      SEED_TITLE: title,
+-      SEED_ID: 'e2e-seed-p7e03'
+-    } as NodeJS.ProcessEnv)
+-  } finally {
+-    await writeFile(releaseBinding, electronBinding)
+-  }
+-}
+-
+ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高亮→Esc 清零', async () => {
+   // 两跳 Electron 启动+建库迁移占大头（首跑实测 51.9s 贴 60s 默认线——机器
+   // 抖动越界实测一次）；预算提到 120s（z-wg1-probe 先例同款）
+@@ -87,10 +34,8 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高
+   const title = '智慧水务 e2e 页内搜索文献'
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e03-'))
+ 
+-  // 第一跳：让应用自己完成建库迁移（reader-text.spec 同配方）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  // 第一跳：让应用自己完成建库迁移（e2e-env.ts 单源——W1C 收敛）
++  await bootstrapMigrations(userData)
+ 
+   // 3 页受管文件（每页单行 P<n> KNOWN——`smart water` 每页恰 1 命中）
+   const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+@@ -99,7 +44,7 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高
+   const abs = join(userData, 'files', ...fileRef.split('/'))
+   mkdirSync(dirname(abs), { recursive: true })
+   writeFileSync(abs, bytes)
+-  await seedPaperRow(userData, fileRef, sha, title)
++  await seedPaperRow(userData, fileRef, sha, title, 'e2e-seed-p7e03')
+ 
+   const app = await launch(userData)
+   const win = await app.firstWindow()
+diff --git a/tests/e2e/reader-text.spec.ts b/tests/e2e/reader-text.spec.ts
+index 5c5aa33cbf..9d770bdef8 100644
+--- a/tests/e2e/reader-text.spec.ts
++++ b/tests/e2e/reader-text.spec.ts
+@@ -1,30 +1,12 @@
+-import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+-import { spawn } from 'node:child_process'
+-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
++import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
++import { mkdtemp } from 'node:fs/promises'
+ import { createHash } from 'node:crypto'
+ import { mkdirSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createMultiLinePdf, createMultiPagePdf, createRotatedCropPdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT, PDF_ROTATED_CROP_TEXT } from '../utils/pdf-factory'
+-
+-/** 拉起子进程跑 seed-paper.cjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
+-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
+-  return new Promise((resolve, reject) => {
+-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
+-      env,
+-      stdio: 'inherit'
+-    })
+-    child.on('exit', (code) => {
+-      if (code === 0) {
+-        resolve()
+-      } else {
+-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
+-      }
+-    })
+-    child.on('error', reject)
+-  })
+-}
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * 阅读器 e2e：断言渲染出 PDF 里的真实文本。
+@@ -44,13 +26,6 @@ function skipIfPending(deps: readonly string[]): void {
+   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
+ }
+ 
+-function launch(userData: string): Promise<ElectronApplication> {
+-  return electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
+-}
+-
+ /**
+  * [F-R2e 修] 稳态原子测量：标注块相对页面 canvas 的归一几何（x/y/w/h）。
+  * 两源瞬态均能造成恰 y 轴假红（排查档 scripts/audits/f-r2e-investigation.md）：
+@@ -105,47 +80,6 @@ async function stableRel(win: Page): Promise<{ x: number; y: number; w: number;
+   throw new Error('unreachable')
+ }
+ 
+-/**
+- * 种子落库（better-sqlite3 双 ABI 处理）：
+- * e2e 前构建链已把 build/Release 切到 electron ABI，而本测试进程是 Node——
+- * 直接 new Database 会 NODE_MODULE_VERSION 崩溃。做法：备份当前绑定 → 换上
+- * abi-cache 里本进程 ABI 的 node 绑定 → 子进程（seed-paper.mjs）落库 →
+- * finally 恢复 electron 绑定（后续 electron.launch 依赖它）。
+- * 落库必须在子进程：Windows 锁定已加载进当前进程的原生模块文件，进程内
+- * import 会让 finally 的还原 EBUSY、build/Release 残留 node 绑定，毒化后续
+- * electron.launch（错 ABI 启动即崩）——子进程退出即释放文件锁，还原必然成功。
+- * 命令行只有 node 与静态脚本路径，落库值经环境变量传入（不经 argv/shell）。
+- */
+-async function seedPaperRow(
+-  userData: string,
+-  fileRef: string,
+-  sha: string,
+-  title: string,
+-  id = 'e2e-seed-paper'
+-): Promise<void> {
+-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+-  const cacheDir = join(pkgDir, 'abi-cache')
+-  const wanted = `node-v${process.versions.modules}`
+-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
+-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
+-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
+-  const electronBinding = await readFile(releaseBinding)
+-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+-  try {
+-    await runSeedScript({
+-      ...process.env,
+-      SEED_DB: join(userData, 'synapse.db'),
+-      SEED_FILE_REF: fileRef,
+-      SEED_SHA: sha,
+-      SEED_TITLE: title,
+-      SEED_ID: id
+-    } as NodeJS.ProcessEnv)
+-  } finally {
+-    await writeFile(releaseBinding, electronBinding)
+-  }
+-}
+-
+ /** F-01 批 1 依赖：渲染链 + 页列几何/懒渲染（多页可见断言的承载者） */
+ const COLUMN_DEPS = [...DEPS, 'SR2-F-01'] as const
+ 
+@@ -154,9 +88,7 @@ test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-reader-mp-'))
+ 
+   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 受管文件（3 页——createMultiPagePdf 每页单行 "P<n> <KNOWN>"，ASCII 单 run
+   // 可被 getByText 单节点命中；P7B marker 先例同口径）
+@@ -340,9 +272,7 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/
+   skipIfPending(TABS_DEPS)
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7b-'))
+   // 第一跳：建库迁移
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 种子三篇：甲/乙真实文件；丙只种行不落文件（error 场景）。正文断言用
+   // ASCII 单 run 标记词——CJK 会被 pdfjs 文本层逐字分项，getByText 单节点匹配不到
+@@ -445,9 +375,7 @@ test('F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚
+   skipIfPending(F03_DEPS)
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-f03-'))
+   // 第一跳：建库迁移
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 3 页受管文件（批 1 配方——每页单行 P<n> KNOWN，ASCII 单 run 可 getByText 命中）
+   const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+@@ -538,9 +466,7 @@ async function seedAndLaunch(
+ ): Promise<{ app: ElectronApplication; userData: string }> {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-annot-'))
+   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+   const sha = createHash('sha256').update(bytes).digest('hex')
+   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+   const abs = join(userData, 'files', ...fileRef.split('/'))
+@@ -729,9 +655,7 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-f06-'))
+ 
+   // 第一跳：让应用自己完成建库迁移（批 1 配方）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 3 页受管文件（批 1 配方——每页单行 P<n> KNOWN，页间分隔断言需要多页）
+   const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+diff --git a/tests/e2e/reading-time-replay.spec.ts b/tests/e2e/reading-time-replay.spec.ts
+index df6b7712f4..5ff530ab34 100644
+--- a/tests/e2e/reading-time-replay.spec.ts
++++ b/tests/e2e/reading-time-replay.spec.ts
+@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
+ import { spawn } from 'node:child_process'
+ import { isTicketDone } from '../../tickets/registry'
+ import { createTinyPdf } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * P7X-02 阅读时长 outbox 重启重放 e2e（SYNAPSE_USER_DATA 双 launch，1 综合用例）。
+@@ -103,9 +103,7 @@ test('P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-obx-'))
+ 
+   // 第一跳：让应用自建库 v8（不 import src 内部模块——reader-reading-time 同型）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
+   const bytes = createTinyPdf(title)
+diff --git a/tests/e2e/smoke.spec.ts b/tests/e2e/smoke.spec.ts
+index 78b93bc6ad..0a919923b7 100644
+--- a/tests/e2e/smoke.spec.ts
++++ b/tests/e2e/smoke.spec.ts
+@@ -1,9 +1,10 @@
+-import { test, expect, _electron as electron } from '@playwright/test'
++import { test, expect } from '@playwright/test'
+ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+ import { cspHeaderValue } from '../../src/main/security/csp'
+ import { API_SURFACE } from '../../src/shared/ipc/api-surface'
++import { launch } from './e2e-env'
+ 
+ /**
+  * 冒烟 e2e（骨架期即激活）：应用能启动、三入口导航、内容区渲染。
+@@ -11,13 +12,7 @@ import { API_SURFACE } from '../../src/shared/ipc/api-surface'
+  */
+ test('应用启动：侧栏三入口可见且可切换', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: {
+-      ...process.env,
+-      SYNAPSE_USER_DATA: userData
+-    } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible()
+@@ -32,10 +27,7 @@ test('应用启动：侧栏三入口可见且可切换', async () => {
+ 
+ test('应用启动：主区域渲染了内容（空态或占位均可，白屏即红）', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke2-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+   const main = win.locator('main')
+@@ -45,10 +37,7 @@ test('应用启动：主区域渲染了内容（空态或占位均可，白屏
+ 
+ test('preload 桥已注入：window.api 暴露全部域 + apiEvents 在位 + CSP meta 与策略常量一致', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke3-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+   const state = await win.evaluate(() => {
+@@ -72,10 +61,7 @@ test('preload 桥已注入：window.api 暴露全部域 + apiEvents 在位 + CSP
+ 
+ test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ app-file:// fetch 不被 CSP 拦截', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke4-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+ 
+@@ -117,10 +103,7 @@ test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+
+ 
+ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke5-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
+ 
+@@ -159,10 +142,7 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
+ 
+ test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 56（豁免锁——rect 断言非 computed）', async () => {
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
+-  const app = await electron.launch({
+-    args: ['out/main/index.js'],
+-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
+-  })
++  const app = await launch(userData)
+   const win = await app.firstWindow()
+   await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
+ 
+diff --git a/tests/e2e/tag-filter-multi.spec.ts b/tests/e2e/tag-filter-multi.spec.ts
+index 8beb1e1e98..7c2677478f 100644
+--- a/tests/e2e/tag-filter-multi.spec.ts
++++ b/tests/e2e/tag-filter-multi.spec.ts
+@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
+ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * [P7E-06] 标签多选过滤 e2e（always-active，无工单门）。
+@@ -16,9 +16,7 @@ test('标签多选过滤：两标签交集→取消一个→全清回全列表',
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e6-'))
+ 
+   // 第一跳：应用自建库表（tag-lifecycle.spec 同配方——不 import src 内部模块）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 三篇种子（甲乙=票面双文献双标签分化主体；丙=全列表对照锚——三态列表可区分）
+   const papers = [
+diff --git a/tests/e2e/tag-lifecycle.spec.ts b/tests/e2e/tag-lifecycle.spec.ts
+index 1a3d57b00a..fd5232da9e 100644
+--- a/tests/e2e/tag-lifecycle.spec.ts
++++ b/tests/e2e/tag-lifecycle.spec.ts
+@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
+ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * [P7E-01] 标签生命周期 e2e（always-active，无工单门）。
+@@ -16,9 +16,7 @@ test('标签生命周期：改名→合并→删除（chip/行徽标真实文本
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e-'))
+ 
+   // 第一跳：应用自建库表（workspaces.spec 同配方——不 import src 内部模块）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 三篇种子（只列行不开阅读器——无需真实 PDF 文件；sha 互异避唯一约束）
+   const papers = [
+diff --git a/tests/e2e/workspaces.spec.ts b/tests/e2e/workspaces.spec.ts
+index 746893ffd1..3708ed4eea 100644
+--- a/tests/e2e/workspaces.spec.ts
++++ b/tests/e2e/workspaces.spec.ts
+@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
+ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+  * [R1-WS2] 课题切换 e2e（验收判据场景，ADR-0018——always-active，无工单门）。
+@@ -19,9 +19,7 @@ test('课题切换：新建课题 B 后库/脉络整体切换，切回后文献
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-ws-'))
+ 
+   // 第一跳：应用自建库表（不 import src 内部模块——Playwright 不认 ?raw）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  await bootstrapMigrations(userData)
+ 
+   // 旧布局种子：文献行直写 userData 根 synapse.db（e2e 种子链零改动兼容面）
+   const sha = 'e'.repeat(64)
+diff --git a/tests/e2e/z-r2e-probe.spec.ts b/tests/e2e/z-r2e-probe.spec.ts
+index b2afed97fb..1ae42c2821 100644
+--- a/tests/e2e/z-r2e-probe.spec.ts
++++ b/tests/e2e/z-r2e-probe.spec.ts
+@@ -23,7 +23,7 @@ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ import { isTicketDone } from '../../tickets/registry'
+ 
+ const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR-RDR-05', 'SR-RDR-06', 'SR2-F-02'] as const
+@@ -270,10 +270,8 @@ test('F-R2e 探针：划选高亮重开原位——仪表指纹矩阵', async ()
+   const title = '智慧水务 e2e 标注链文献 R2E探针'
+   const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-r2e-'))
+-  // 第一跳：应用自建库迁移（seedAndLaunch 配方——探针自带副本，不 import spec）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  // 第一跳：应用自建库迁移（e2e-env.ts 单源——W1C 收敛）
++  await bootstrapMigrations(userData)
+   const sha = createHash('sha256').update(bytes).digest('hex')
+   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+   mkdirSync(dirname(join(userData, 'files', ...fileRef.split('/'))), { recursive: true })
+diff --git a/tests/e2e/z-wg1-probe.spec.ts b/tests/e2e/z-wg1-probe.spec.ts
+index eb9143fe38..5238b1c79f 100644
+--- a/tests/e2e/z-wg1-probe.spec.ts
++++ b/tests/e2e/z-wg1-probe.spec.ts
+@@ -27,7 +27,7 @@ import { mkdtemp } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { dirname, join } from 'node:path'
+ import { createMultiLinePdf, PDF_MULTILINE_TEXT } from '../utils/pdf-factory'
+-import { launch, seedPaperRow } from './e2e-env'
++import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ import { isTicketDone } from '../../tickets/registry'
+ 
+ const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR-RDR-05', 'SR-RDR-06', 'SR2-F-02'] as const
+@@ -221,10 +221,8 @@ test('W-G1 多行判别探针：跨 3 行划选高亮重开原位——中间轮
+   const title = '智慧水务 e2e 多行判别探针文献 W-G1'
+   const bytes = createMultiLinePdf()
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-wg1-'))
+-  // 第一跳：应用自建库迁移（z-r2e-probe 同款配方——探针自带副本，不 import spec）
+-  const seedApp = await launch(userData)
+-  await (await seedApp.firstWindow()).waitForTimeout(500)
+-  await seedApp.close()
++  // 第一跳：应用自建库迁移（e2e-env.ts 单源——W1C 收敛）
++  await bootstrapMigrations(userData)
+   const sha = createHash('sha256').update(bytes).digest('hex')
+   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+   mkdirSync(dirname(join(userData, 'files', ...fileRef.split('/'))), { recursive: true })
