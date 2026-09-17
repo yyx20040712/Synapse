@@ -10,25 +10,13 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PaperDetail } from '../../../src/shared/models/paper'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi, toastSpy } = vi.hoisted(() => ({
-  stubApi: {
-    library: { detail: vi.fn() },
-    enrich: { fetch: vi.fn() },
-    export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
-    system: { openExternal: vi.fn() }
-  },
-  toastSpy: vi.fn()
-}))
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: toastSpy }
+const stubApi = makeApiStub({
+  library: { detail: vi.fn() },
+  enrich: { fetch: vi.fn() },
+  export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
+  system: { openExternal: vi.fn() }
 })
 
 import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'

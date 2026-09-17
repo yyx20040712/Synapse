@@ -1,0 +1,1592 @@
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 8f737c853a..2e121e9512 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -16,8 +16,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub } from '../../utils/api-client-mock'
+ import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
+ 
+ const observe = vi.fn()
+@@ -25,30 +24,20 @@ const listByPaper = vi.fn()
+ const requestAiRead = vi.fn()
+ const importAll = vi.fn()
+ 
+-const { stubApi, locateAnchor } = vi.hoisted(() => ({
+-  stubApi: {
+-    ai_sensor: {
+-      observe: vi.fn(),
+-      listByPaper: vi.fn(),
+-      requestAiRead: vi.fn(),
+-      importAll: vi.fn()
+-    }
+-  },
+-  locateAnchor: vi.fn()
+-}))
++const stubApi = makeApiStub({
++  ai_sensor: {
++    observe: vi.fn(),
++    listByPaper: vi.fn(),
++    requestAiRead: vi.fn(),
++    importAll: vi.fn()
++  }
++})
+ stubApi.ai_sensor.observe = observe
+ stubApi.ai_sensor.listByPaper = listByPaper
+ stubApi.ai_sensor.requestAiRead = requestAiRead
+ stubApi.ai_sensor.importAll = importAll
+ 
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: vi.fn() }
+-})
++const { locateAnchor } = vi.hoisted(() => ({ locateAnchor: vi.fn() }))
+ vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
+   const real = await importOriginal<typeof anchorLocateModule>()
+   return { ...real, locateAnchor }
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 86c30d06d8..556d7e2120 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -10,23 +10,18 @@
+  */
+ import { act } from 'react'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
+ import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
+ import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+-const { toastSpy, scrollerMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), scrollerMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
++makeApiStub({ reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } })
++const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
+ // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
+ vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+   scrollIntoNearestScroller: scrollerMock
+ }))
+-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } },
+-  unwrap: vi.fn(),
+-  ApiClientError: class extends Error {}
+-}))
+ 
+ function makeTab(id: string, page = 0): TabState {
+   return {
+diff --git a/tests/unit/renderer/annotation-layer.test.tsx b/tests/unit/renderer/annotation-layer.test.tsx
+index 1d97b1267a..15892451a2 100644
+--- a/tests/unit/renderer/annotation-layer.test.tsx
++++ b/tests/unit/renderer/annotation-layer.test.tsx
+@@ -12,18 +12,14 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub } from '../../utils/api-client-mock'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+ import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+ import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: {} },
+-  unwrap: vi.fn(),
+-  ApiClientError: class extends Error {}
+-}))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
++makeApiStub({ reader: {} })
+ 
+ /** 归一化域矩形夹具 */
+ function rect(x: number, y: number, w: number, h: number): AnnotationRect {
+diff --git a/tests/unit/renderer/annotation-popups-autosave.test.tsx b/tests/unit/renderer/annotation-popups-autosave.test.tsx
+index 4a71d73e81..6f232f4761 100644
+--- a/tests/unit/renderer/annotation-popups-autosave.test.tsx
++++ b/tests/unit/renderer/annotation-popups-autosave.test.tsx
+@@ -14,6 +14,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
++import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
+ import { AnnotationPopups } from '../../../src/renderer/features/reader/AnnotationPopups'
+ import { ApiClientError } from '../../../src/renderer/api/client'
+ 
+@@ -26,26 +27,11 @@ const mocks = vi.hoisted(() => ({
+   storeRemoveAnnotation: vi.fn(),
+   storeNotifyNoteHighlight: vi.fn(),
+   pushUndo: vi.fn(),
+-  showToast: vi.fn()
++  // Toast 入口 spy=共享工厂实例（下方顶层语句替换——体内经 mocks.showToast 断言）
++  showToast: undefined as unknown as ReturnType<typeof vi.fn>
+ }))
+-
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } },
+-  // 对齐真实语义（client.ts unwrap：await call 后判 ok 再返 data）
+-  unwrap: vi.fn(async (call: Promise<{ ok: boolean; data: unknown }>) => {
+-    const r = await call
+-    if (!r.ok) throw new Error('unwrap: !ok')
+-    return r.data
+-  }),
+-  // 对齐真实签名 ApiClientError(code, message)（client.ts）——tsc 按真实类型检查
+-  ApiClientError: class extends Error {
+-    constructor(_code: string, message: string) {
+-      super(message)
+-    }
+-  }
+-}))
+-
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: mocks.showToast }))
++mocks.showToast = toastSpy
++makeApiStub({ reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } })
+ 
+ vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+   useReaderStore: {
+diff --git a/tests/unit/renderer/app-quit-dirty.test.tsx b/tests/unit/renderer/app-quit-dirty.test.tsx
+index fd2fe4e3c7..a70a66d904 100644
+--- a/tests/unit/renderer/app-quit-dirty.test.tsx
++++ b/tests/unit/renderer/app-quit-dirty.test.tsx
+@@ -22,33 +22,23 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    lineage: {
+-      graph: vi.fn(),
+-      upsertNode: vi.fn(),
+-      removeNode: vi.fn(),
+-      upsertEdge: vi.fn(),
+-      removeEdge: vi.fn(),
+-      importDraft: vi.fn()
+-    },
+-    library: { list: vi.fn() },
+-    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
+-  }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: {
+-      onExportCorpus: vi.fn(() => () => undefined),
+-      onImportProgress: vi.fn(() => () => undefined)
+-    }
+-  }
++const stubApi = makeApiStub({
++  lineage: {
++    graph: vi.fn(),
++    upsertNode: vi.fn(),
++    removeNode: vi.fn(),
++    upsertEdge: vi.fn(),
++    removeEdge: vi.fn(),
++    importDraft: vi.fn()
++  },
++  library: { list: vi.fn() },
++  system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
++})
++stubApiEvents({
++  onExportCorpus: vi.fn(() => () => undefined),
++  onImportProgress: vi.fn(() => () => undefined)
+ })
+ 
+ import { App } from '../../../src/renderer/app/App'
+diff --git a/tests/unit/renderer/app-shell.test.tsx b/tests/unit/renderer/app-shell.test.tsx
+index 24e6ea1d0b..a8e2124a2a 100644
+--- a/tests/unit/renderer/app-shell.test.tsx
++++ b/tests/unit/renderer/app-shell.test.tsx
+@@ -15,28 +15,18 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    lineage: { graph: vi.fn() },
+-    library: { list: vi.fn() },
+-    settings: { get: vi.fn(), set: vi.fn() },
+-    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
+-    workspaces: { list: vi.fn() }
+-  }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: {
+-      onExportCorpus: vi.fn(() => () => undefined),
+-      onImportProgress: vi.fn(() => () => undefined)
+-    }
+-  }
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  lineage: { graph: vi.fn() },
++  library: { list: vi.fn() },
++  settings: { get: vi.fn(), set: vi.fn() },
++  system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
++  workspaces: { list: vi.fn() }
++})
++stubApiEvents({
++  onExportCorpus: vi.fn(() => () => undefined),
++  onImportProgress: vi.fn(() => () => undefined)
+ })
+ 
+ import { App } from '../../../src/renderer/app/App'
+diff --git a/tests/unit/renderer/band-calibration.test.tsx b/tests/unit/renderer/band-calibration.test.tsx
+index fe849a2fa2..15b026fbf3 100644
+--- a/tests/unit/renderer/band-calibration.test.tsx
++++ b/tests/unit/renderer/band-calibration.test.tsx
+@@ -24,6 +24,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/annotation-band-calibrate'
+@@ -33,16 +34,14 @@ import { createReaderStoreInitialState, useReaderStore } from '../../../src/rend
+ import type { PdfTextContent, PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回 */
+ const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+diff --git a/tests/unit/renderer/corpus-export.test.tsx b/tests/unit/renderer/corpus-export.test.tsx
+index e1c1917d0c..7c9234b0b2 100644
+--- a/tests/unit/renderer/corpus-export.test.tsx
++++ b/tests/unit/renderer/corpus-export.test.tsx
+@@ -10,34 +10,23 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { ExtractRequestEvent } from '../../../src/shared/ipc/schemas'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub, stubApiEvents, toastSpy } from '../../utils/api-client-mock'
+ 
+-/** 桩装配共享位（hoisted——vi.mock 工厂与用例两侧同引用） */
+-const { stubApi, onExportCorpusSpy, offSpy, extractorHandle, loadDocSentinel, toastSpy, holder } =
+-  vi.hoisted(() => ({
+-    stubApi: {
+-      settings: { get: vi.fn() },
+-      export_: { corpusSession: vi.fn(), corpusItem: vi.fn() }
+-    },
+-    onExportCorpusSpy: vi.fn(),
+-    offSpy: vi.fn(),
+-    extractorHandle: vi.fn(),
+-    loadDocSentinel: ((): Promise<never> => Promise.reject(new Error('sentinel'))),
+-    toastSpy: vi.fn(),
+-    holder: { cb: null as ((e: unknown) => void) | null, deps: null as unknown }
+-  }))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi,
+-    apiEvents: {
+-      onExportCorpus: onExportCorpusSpy
+-    }
+-  }
++const stubApi = makeApiStub({
++  settings: { get: vi.fn() },
++  export_: { corpusSession: vi.fn(), corpusItem: vi.fn() }
+ })
++const onExportCorpusSpy = vi.fn()
++const offSpy = vi.fn()
++stubApiEvents({ onExportCorpus: onExportCorpusSpy })
++
++/** 桩装配共享位（hoisted——vi.mock 工厂与用例两侧同引用） */
++const { extractorHandle, loadDocSentinel, holder } = vi.hoisted(() => ({
++  extractorHandle: vi.fn(),
++  loadDocSentinel: ((): Promise<never> => Promise.reject(new Error('sentinel'))),
++  holder: { cb: null as ((e: unknown) => void) | null, deps: null as unknown }
++}))
++
+ // CorpusExtractor 模块桩：捕获生产组装 deps；handleEvent 转 Spy（提取器本体行为
+ // 已由 corpus-extractor.test 锁定——本文件只锁「桥把它接进来」的接线面）
+ vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
+@@ -47,10 +36,6 @@ vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
+     return { handleEvent: extractorHandle }
+   }
+ }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
+-})
+ 
+ import { CorpusExportSection } from '../../../src/renderer/features/settings/CorpusExportSection'
+ import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
+diff --git a/tests/unit/renderer/import-drag-ui.test.tsx b/tests/unit/renderer/import-drag-ui.test.tsx
+index 77edf23d82..8eb3466ec6 100644
+--- a/tests/unit/renderer/import-drag-ui.test.tsx
++++ b/tests/unit/renderer/import-drag-ui.test.tsx
+@@ -13,32 +13,14 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { ImportProgressEvent, ImportResult } from '../../../src/shared/ipc/schemas'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+-
+-const { stubApi, onImportProgressSpy, offSpy, toastSpy, dragSpy, holder } = vi.hoisted(() => ({
+-  stubApi: {
+-    import_: { fromDialog: vi.fn(), fromFolder: vi.fn() }
+-  },
+-  onImportProgressSpy: vi.fn(),
+-  offSpy: vi.fn(),
+-  toastSpy: vi.fn(),
+-  dragSpy: vi.fn(),
+-  holder: { cb: null as ((e: ImportProgressEvent) => void) | null }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: { onImportProgress: onImportProgressSpy } as unknown as typeof clientModule.apiEvents
+-  }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
+-})
++import { makeApiStub, stubApiEvents, toastSpy } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({ import_: { fromDialog: vi.fn(), fromFolder: vi.fn() } })
++const onImportProgressSpy = vi.fn()
++const offSpy = vi.fn()
++stubApiEvents({ onImportProgress: onImportProgressSpy })
++const dragSpy = vi.fn()
++const holder = { cb: null as ((e: ImportProgressEvent) => void) | null }
+ 
+ import { ImportDropZone } from '../../../src/renderer/features/library/ImportDropZone'
+ 
+diff --git a/tests/unit/renderer/import-dropzone.test.tsx b/tests/unit/renderer/import-dropzone.test.tsx
+index d21739b0b9..d372525388 100644
+--- a/tests/unit/renderer/import-dropzone.test.tsx
++++ b/tests/unit/renderer/import-dropzone.test.tsx
+@@ -12,32 +12,13 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { ImportProgressEvent } from '../../../src/shared/ipc/schemas'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+-
+-/** 桩装配共享位（hoisted——vi.mock 工厂与用例两侧同引用） */
+-const { stubApi, onImportProgressSpy, offSpy, toastSpy, holder } = vi.hoisted(() => ({
+-  stubApi: {
+-    import_: { fromDialog: vi.fn(), fromFolder: vi.fn() }
+-  },
+-  onImportProgressSpy: vi.fn(),
+-  offSpy: vi.fn(),
+-  toastSpy: vi.fn(),
+-  holder: { cb: null as ((e: ImportProgressEvent) => void) | null }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: { onImportProgress: onImportProgressSpy } as unknown as typeof clientModule.apiEvents
+-  }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
+-})
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({ import_: { fromDialog: vi.fn(), fromFolder: vi.fn() } })
++const onImportProgressSpy = vi.fn()
++const offSpy = vi.fn()
++stubApiEvents({ onImportProgress: onImportProgressSpy })
++const holder = { cb: null as ((e: ImportProgressEvent) => void) | null }
+ 
+ import { ImportDropZone } from '../../../src/renderer/features/library/ImportDropZone'
+ 
+diff --git a/tests/unit/renderer/library-cards.test.tsx b/tests/unit/renderer/library-cards.test.tsx
+index 8bd6287dd0..244bebec91 100644
+--- a/tests/unit/renderer/library-cards.test.tsx
++++ b/tests/unit/renderer/library-cards.test.tsx
+@@ -15,29 +15,14 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { PaperSummary } from '../../../src/shared/models/paper'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
+ 
+-const { stubApi, onImportProgressSpy, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { list: vi.fn(), collections: vi.fn() },
+-    tags: { list: vi.fn() }
+-  },
+-  onImportProgressSpy: vi.fn(() => () => undefined),
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: { onImportProgress: onImportProgressSpy } as unknown as typeof clientModule.apiEvents
+-  }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++const stubApi = makeApiStub({
++  library: { list: vi.fn(), collections: vi.fn() },
++  tags: { list: vi.fn() }
+ })
++const onImportProgressSpy = vi.fn(() => () => undefined)
++stubApiEvents({ onImportProgress: onImportProgressSpy })
+ 
+ import { PaperList } from '../../../src/renderer/features/library/PaperList'
+ import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
+diff --git a/tests/unit/renderer/lineage-board.test.tsx b/tests/unit/renderer/lineage-board.test.tsx
+index cd0b93c5ea..68bda2980e 100644
+--- a/tests/unit/renderer/lineage-board.test.tsx
++++ b/tests/unit/renderer/lineage-board.test.tsx
+@@ -14,39 +14,23 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
+-
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    lineage: {
+-      graph: vi.fn(),
+-      upsertNode: vi.fn(),
+-      removeNode: vi.fn(),
+-      upsertEdge: vi.fn(),
+-      removeEdge: vi.fn(),
+-      importDraft: vi.fn()
+-    },
+-    library: { list: vi.fn() },
+-    system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
+-  }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: {
+-      onExportCorpus: vi.fn(() => () => undefined),
+-      onImportProgress: vi.fn(() => () => undefined)
+-    }
+-  }
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  lineage: {
++    graph: vi.fn(),
++    upsertNode: vi.fn(),
++    removeNode: vi.fn(),
++    upsertEdge: vi.fn(),
++    removeEdge: vi.fn(),
++    importDraft: vi.fn()
++  },
++  library: { list: vi.fn() },
++  system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
+ })
+-
+-vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastStoreModule>()
+-  return { ...real, showToast: vi.fn(real.showToast) }
++stubApiEvents({
++  onExportCorpus: vi.fn(() => () => undefined),
++  onImportProgress: vi.fn(() => () => undefined)
+ })
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/toast-store'
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+index b68d40c192..77d0be040e 100644
+--- a/tests/unit/renderer/lineage-canvas.test.tsx
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -14,16 +14,9 @@ import { readFileSync } from 'node:fs'
+ import { join } from 'node:path'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+-import type * as clientModule from '../../../src/renderer/api/client'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: { lineage: { graph: vi.fn() } }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
++const stubApi = makeApiStub({ lineage: { graph: vi.fn() } })
+ 
+ import { LineageCanvas } from '../../../src/renderer/features/lineage/LineageCanvas'
+ import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
+diff --git a/tests/unit/renderer/lineage-manual-edit.test.tsx b/tests/unit/renderer/lineage-manual-edit.test.tsx
+index 3e22e8d91a..4d6403ce36 100644
+--- a/tests/unit/renderer/lineage-manual-edit.test.tsx
++++ b/tests/unit/renderer/lineage-manual-edit.test.tsx
+@@ -15,24 +15,17 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    lineage: {
+-      graph: vi.fn(),
+-      upsertNode: vi.fn(),
+-      removeNode: vi.fn(),
+-      upsertEdge: vi.fn(),
+-      removeEdge: vi.fn()
+-    },
+-    library: { list: vi.fn() }
+-  }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
++import { makeApiStub } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  lineage: {
++    graph: vi.fn(),
++    upsertNode: vi.fn(),
++    removeNode: vi.fn(),
++    upsertEdge: vi.fn(),
++    removeEdge: vi.fn()
++  },
++  library: { list: vi.fn() }
+ })
+ 
+ import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
+diff --git a/tests/unit/renderer/lineage-side-panel.test.tsx b/tests/unit/renderer/lineage-side-panel.test.tsx
+index 81e2e69733..8365f2a811 100644
+--- a/tests/unit/renderer/lineage-side-panel.test.tsx
++++ b/tests/unit/renderer/lineage-side-panel.test.tsx
+@@ -20,38 +20,25 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import type { LineageNode } from '../../../src/shared/models/lineage'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
+-
+-const { stubApi, openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
+-  stubApi: {
+-    ai_sensor: { listByPaper: vi.fn() },
+-    notes: { get: vi.fn() },
+-    lineage: { graph: vi.fn() }
+-  },
++import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  ai_sensor: { listByPaper: vi.fn() },
++  notes: { get: vi.fn() },
++  lineage: { graph: vi.fn() }
++})
++stubApiEvents({
++  onExportCorpus: vi.fn(() => () => undefined),
++  onImportProgress: vi.fn(() => () => undefined)
++})
++
++const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
+   openPaperStub: vi.fn(),
+   locateAnchorStub: vi.fn(),
+   requestAnchoredStub: vi.fn(),
+   notifyAiNoteStub: vi.fn()
+ }))
+ 
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return {
+-    ...real,
+-    api: stubApi as unknown as typeof clientModule.api,
+-    apiEvents: {
+-      onExportCorpus: vi.fn(() => () => undefined),
+-      onImportProgress: vi.fn(() => () => undefined)
+-    }
+-  }
+-})
+-
+-vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastStoreModule>()
+-  return { ...real, showToast: vi.fn() }
+-})
+-
+ // 消费方级用例：reader.store 仅需 getState().openPaper + notifyAiNoteHighlight
+ // （open-paper-anchor 面——LG-06 起 anchor 分支亦发面板信号）
+ vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+diff --git a/tests/unit/renderer/lineage-store-write.test.ts b/tests/unit/renderer/lineage-store-write.test.ts
+index 45dc438c33..ae5722760d 100644
+--- a/tests/unit/renderer/lineage-store-write.test.ts
++++ b/tests/unit/renderer/lineage-store-write.test.ts
+@@ -14,29 +14,16 @@
+  *   +加失败=合法中间态（节点暂无父，森林语义）+toast 指明+重试只重发加边
+  */
+ import { beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastStoreModule from '../../../src/renderer/shared/ui/toast-store'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    lineage: {
+-      graph: vi.fn(),
+-      upsertNode: vi.fn(),
+-      removeNode: vi.fn(),
+-      upsertEdge: vi.fn(),
+-      removeEdge: vi.fn()
+-    }
++const stubApi = makeApiStub({
++  lineage: {
++    graph: vi.fn(),
++    upsertNode: vi.fn(),
++    removeNode: vi.fn(),
++    upsertEdge: vi.fn(),
++    removeEdge: vi.fn()
+   }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-
+-vi.mock('../../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastStoreModule>()
+-  return { ...real, showToast: vi.fn(real.showToast) }
+ })
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/toast-store'
+diff --git a/tests/unit/renderer/lineage-tag-edit.test.tsx b/tests/unit/renderer/lineage-tag-edit.test.tsx
+index 1b801e5dc9..b064ef9c91 100644
+--- a/tests/unit/renderer/lineage-tag-edit.test.tsx
++++ b/tests/unit/renderer/lineage-tag-edit.test.tsx
+@@ -12,25 +12,18 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+-import type * as clientModule from '../../../src/renderer/api/client'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    ai_sensor: { listByPaper: vi.fn() },
+-    notes: { get: vi.fn() },
+-    lineage: {
+-      graph: vi.fn(),
+-      upsertNode: vi.fn(),
+-      removeNode: vi.fn(),
+-      upsertEdge: vi.fn(),
+-      removeEdge: vi.fn()
+-    }
++const stubApi = makeApiStub({
++  ai_sensor: { listByPaper: vi.fn() },
++  notes: { get: vi.fn() },
++  lineage: {
++    graph: vi.fn(),
++    upsertNode: vi.fn(),
++    removeNode: vi.fn(),
++    upsertEdge: vi.fn(),
++    removeEdge: vi.fn()
+   }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+ })
+ 
+ import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
+diff --git a/tests/unit/renderer/outline-aside.test.tsx b/tests/unit/renderer/outline-aside.test.tsx
+index fa760eb53f..6ea1710506 100644
+--- a/tests/unit/renderer/outline-aside.test.tsx
++++ b/tests/unit/renderer/outline-aside.test.tsx
+@@ -10,21 +10,10 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { Annotation } from '../../../src/shared/models/annotation'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+ import { guardedDescribe } from '../../utils/guard'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: { notes: { get: vi.fn(), save: vi.fn() } }
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: vi.fn() }
+-})
++const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
+ 
+ import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
+ import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+diff --git a/tests/unit/renderer/paper-detail-cited.test.tsx b/tests/unit/renderer/paper-detail-cited.test.tsx
+index eb227d4aea..60176b9de1 100644
+--- a/tests/unit/renderer/paper-detail-cited.test.tsx
++++ b/tests/unit/renderer/paper-detail-cited.test.tsx
+@@ -10,25 +10,13 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { detail: vi.fn() },
+-    enrich: { fetch: vi.fn() },
+-    export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
+-    system: { openExternal: vi.fn() }
+-  },
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++const stubApi = makeApiStub({
++  library: { detail: vi.fn() },
++  enrich: { fetch: vi.fn() },
++  export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
++  system: { openExternal: vi.fn() }
+ })
+ 
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+diff --git a/tests/unit/renderer/paper-detail-clip.test.tsx b/tests/unit/renderer/paper-detail-clip.test.tsx
+index c0ae12ca31..a03e964099 100644
+--- a/tests/unit/renderer/paper-detail-clip.test.tsx
++++ b/tests/unit/renderer/paper-detail-clip.test.tsx
+@@ -12,27 +12,13 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+-
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { detail: vi.fn() },
+-    enrich: { fetch: vi.fn() },
+-    export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn(), clipboard: vi.fn() },
+-    system: { openExternal: vi.fn() }
+-  },
+-  toastSpy: vi.fn()
+-}))
+-
+-// client 只 stub api 门面；unwrap/ApiClientError 保留真实现（Result 解包契约同型）
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  library: { detail: vi.fn() },
++  enrich: { fetch: vi.fn() },
++  export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn(), clipboard: vi.fn() },
++  system: { openExternal: vi.fn() }
+ })
+ 
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+diff --git a/tests/unit/renderer/paper-detail-export.test.tsx b/tests/unit/renderer/paper-detail-export.test.tsx
+index be883aa655..585cfba3ca 100644
+--- a/tests/unit/renderer/paper-detail-export.test.tsx
++++ b/tests/unit/renderer/paper-detail-export.test.tsx
+@@ -10,27 +10,13 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
+ 
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { detail: vi.fn() },
+-    enrich: { fetch: vi.fn() },
+-    export_: { report: vi.fn(), bibtex: vi.fn() },
+-    system: { openExternal: vi.fn() }
+-  },
+-  toastSpy: vi.fn()
+-}))
+-
+-// client 只 stub api 门面；unwrap/ApiClientError 保留真实现（Result 解包契约同型）
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++const stubApi = makeApiStub({
++  library: { detail: vi.fn() },
++  enrich: { fetch: vi.fn() },
++  export_: { report: vi.fn(), bibtex: vi.fn() },
++  system: { openExternal: vi.fn() }
+ })
+ 
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+diff --git a/tests/unit/renderer/paper-detail-notes-off.test.tsx b/tests/unit/renderer/paper-detail-notes-off.test.tsx
+index 8d2243f036..230c7513e7 100644
+--- a/tests/unit/renderer/paper-detail-notes-off.test.tsx
++++ b/tests/unit/renderer/paper-detail-notes-off.test.tsx
+@@ -10,26 +10,14 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+ import { guardedDescribe } from '../../utils/guard'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { detail: vi.fn() },
+-    enrich: { fetch: vi.fn() },
+-    export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
+-    system: { openExternal: vi.fn() }
+-  },
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++const stubApi = makeApiStub({
++  library: { detail: vi.fn() },
++  enrich: { fetch: vi.fn() },
++  export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn() },
++  system: { openExternal: vi.fn() }
+ })
+ 
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+diff --git a/tests/unit/renderer/r3-rdr-set-visual.test.tsx b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+index 9215faf57d..687651369f 100644
+--- a/tests/unit/renderer/r3-rdr-set-visual.test.tsx
++++ b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+@@ -15,22 +15,10 @@ import { join } from 'node:path'
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+ /** SettingsPage 渲染链隔离：api/Toast 桩+两个自持节组件桩（行为面各有己测锁定） */
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: { settings: { get: vi.fn(async () => ({ ok: true, data: null })) } },
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
+-})
++makeApiStub({ settings: { get: vi.fn(async () => ({ ok: true, data: null })) } })
+ vi.mock('../../../src/renderer/features/settings/CorpusExportSection', () => ({
+   CorpusExportSection: () => null
+ }))
+diff --git a/tests/unit/renderer/reader-double-page.test.tsx b/tests/unit/renderer/reader-double-page.test.tsx
+index 1731922250..dc16bcdbc2 100644
+--- a/tests/unit/renderer/reader-double-page.test.tsx
++++ b/tests/unit/renderer/reader-double-page.test.tsx
+@@ -21,6 +21,7 @@ import type { RefObject } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { PDFDocumentProxy } from 'pdfjs-dist'
++import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+ import {
+@@ -47,16 +48,13 @@ const { openMock, listMock } = vi.hoisted(() => ({
+   })),
+   listMock: vi.fn(async () => ({ ok: true as const, data: [] }))
+ }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { open: openMock, listAnnotations: listMock } },
+-  // 真实 unwrap 契约：收 Promise<Result> 内部 await 再解包（mock 同契约）
+-  unwrap: async (call: Promise<{ ok: boolean; data?: unknown; error?: { message: string } }>) => {
+-    const r = await call
+-    if (!r.ok) throw new Error(r.error?.message ?? 'api error')
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++makeApiStub({ reader: { open: openMock, listAnnotations: listMock } })
++// 真实 unwrap 契约：收 Promise<Result> 内部 await 再解包（原 mock 同契约保留）
++stubUnwrap(async (call: Promise<{ ok: boolean; data?: unknown; error?: { message: string } }>) => {
++  const r = await call
++  if (!r.ok) throw new Error(r.error?.message ?? 'api error')
++  return r.data
++})
+ 
+ /** 桩 IntersectionObserver（jsdom 无实现——本票不驱动可见性，仅消噪音） */
+ class MockIO {
+diff --git a/tests/unit/renderer/reader-notes-panel.test.tsx b/tests/unit/renderer/reader-notes-panel.test.tsx
+index c02e20ffb7..62edc62503 100644
+--- a/tests/unit/renderer/reader-notes-panel.test.tsx
++++ b/tests/unit/renderer/reader-notes-panel.test.tsx
+@@ -10,29 +10,15 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationKind } from '../../../src/shared/models/annotation'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+ import { guardedDescribe } from '../../utils/guard'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    notes: { get: vi.fn(), save: vi.fn() }
+-  }
+-}))
++const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
+ const notesGet = vi.fn()
+ stubApi.notes.get = notesGet
+ const notesSave = vi.fn()
+ stubApi.notes.save = notesSave
+ 
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: vi.fn() }
+-})
+-
+ import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
+ import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
+ import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+diff --git a/tests/unit/renderer/reader-page-open-race.test.tsx b/tests/unit/renderer/reader-page-open-race.test.tsx
+index 858726fdf4..e6c0d89715 100644
+--- a/tests/unit/renderer/reader-page-open-race.test.tsx
++++ b/tests/unit/renderer/reader-page-open-race.test.tsx
+@@ -27,16 +27,9 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: { reader: { open: vi.fn(), listAnnotations: vi.fn(), saveProgress: vi.fn() } }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
++makeApiStub({ reader: { open: vi.fn(), listAnnotations: vi.fn(), saveProgress: vi.fn() } })
+ 
+ vi.mock('../../../src/renderer/features/reader/PdfDocProvider', () => ({
+   PdfDocProvider: () => null
+diff --git a/tests/unit/renderer/reader-search-wiring.test.tsx b/tests/unit/renderer/reader-search-wiring.test.tsx
+index a6453d1fc6..1338833996 100644
+--- a/tests/unit/renderer/reader-search-wiring.test.tsx
++++ b/tests/unit/renderer/reader-search-wiring.test.tsx
+@@ -12,7 +12,8 @@
+  */
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { afterEach, beforeEach, describe, expect, it } from 'vitest'
++import { makeApiStub } from '../../utils/api-client-mock'
+ import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
+ import {
+   createReaderSearchInitialState,
+@@ -25,12 +26,8 @@ import {
+   type TabState
+ } from '../../../src/renderer/features/reader/reader.store'
+ 
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: {} },
+-  unwrap: vi.fn(),
+-  ApiClientError: class extends Error {}
+-}))
+-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: vi.fn() }))
++
++makeApiStub({ reader: {} })
+ 
+ /** 宿主：只消费 hook（返回节点弃置——接线面不评 UI） */
+ function Host(props: { pdfDoc: unknown; fileUrl: string }): null {
+diff --git a/tests/unit/renderer/reader-search.store.test.tsx b/tests/unit/renderer/reader-search.store.test.tsx
+index ba336fa676..1f51df134b 100644
+--- a/tests/unit/renderer/reader-search.store.test.tsx
++++ b/tests/unit/renderer/reader-search.store.test.tsx
+@@ -6,14 +6,12 @@
+  * 直植复位；toast 模块 mock 观测 S10）。
+  */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { toastStoreSpy as toastMock } from '../../utils/api-client-mock'
+ import {
+   createReaderSearchInitialState,
+   useReaderSearchStore
+ } from '../../../src/renderer/features/reader/reader-search.store'
+ 
+-const { toastMock } = vi.hoisted(() => ({ toastMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastMock }))
+-
+ /** 单页文本项数组（每段一个 item——组装夹具用） */
+ function pageOf(...strs: string[]): { items: unknown[] } {
+   return {
+diff --git a/tests/unit/renderer/reader-shortcuts.test.tsx b/tests/unit/renderer/reader-shortcuts.test.tsx
+index 696592faa1..8f32406a34 100644
+--- a/tests/unit/renderer/reader-shortcuts.test.tsx
++++ b/tests/unit/renderer/reader-shortcuts.test.tsx
+@@ -2,6 +2,7 @@
+ import { afterEach, describe, expect, it, vi } from 'vitest'
+ import { act } from 'react'
+ import { createRoot } from 'react-dom/client'
++import '../../utils/api-client-mock'
+ import {
+   useReaderShortcuts,
+   SCROLL_STEP_RATIO,
+@@ -9,7 +10,6 @@ import {
+ } from '../../../src/renderer/features/reader/ReaderShortcuts'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
+ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+ 
+ /** 挂载只调用本 hook 的探针组件；返回卸载句柄 */
+diff --git a/tests/unit/renderer/selection-evaluate.test.tsx b/tests/unit/renderer/selection-evaluate.test.tsx
+index 3ccb300b48..1ff111423f 100644
+--- a/tests/unit/renderer/selection-evaluate.test.tsx
++++ b/tests/unit/renderer/selection-evaluate.test.tsx
+@@ -26,21 +26,20 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（textLayer 盒=归一化基准 612×792） */
+ const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+diff --git a/tests/unit/renderer/selection-item-chain.test.tsx b/tests/unit/renderer/selection-item-chain.test.tsx
+index 9781d3241e..76af8ac394 100644
+--- a/tests/unit/renderer/selection-item-chain.test.tsx
++++ b/tests/unit/renderer/selection-item-chain.test.tsx
+@@ -16,22 +16,21 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（textLayer 盒=归一化基准 612×792） */
+ const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+diff --git a/tests/unit/renderer/selection-layer-fa12.test.tsx b/tests/unit/renderer/selection-layer-fa12.test.tsx
+index 726032371e..0e16e2d81b 100644
+--- a/tests/unit/renderer/selection-layer-fa12.test.tsx
++++ b/tests/unit/renderer/selection-layer-fa12.test.tsx
+@@ -10,18 +10,17 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ interface Box { top: number; bottom: number; left: number; right: number }
+ 
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index f03f068692..e3d633f226 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -17,6 +17,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import {
+   SelectionLayer,
+   closestPageRoot,
+@@ -24,17 +25,13 @@ import {
+ } from '../../../src/renderer/features/reader/SelectionLayer'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  // unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（页盒几何——坐标换算断言的输入） */
+ const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+diff --git a/tests/unit/renderer/selection-mode.test.tsx b/tests/unit/renderer/selection-mode.test.tsx
+index 4a3c1328cd..36ee5e5371 100644
+--- a/tests/unit/renderer/selection-mode.test.tsx
++++ b/tests/unit/renderer/selection-mode.test.tsx
+@@ -19,6 +19,9 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
++import { makeApiStub } from '../../utils/api-client-mock'
++
++makeApiStub({ reader: {} })
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+@@ -28,13 +31,6 @@ import {
+   type TabState
+ } from '../../../src/renderer/features/reader/reader.store'
+ 
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: {} },
+-  unwrap: vi.fn(),
+-  ApiClientError: class extends Error {}
+-}))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
+-
+ /** 归一化域矩形夹具 */
+ function rect(x: number, y: number, w: number, h: number): AnnotationRect {
+   return { page: 0, x, y, w, h }
+diff --git a/tests/unit/renderer/selection-paint.test.tsx b/tests/unit/renderer/selection-paint.test.tsx
+index 849757c553..4e81843a36 100644
+--- a/tests/unit/renderer/selection-paint.test.tsx
++++ b/tests/unit/renderer/selection-paint.test.tsx
+@@ -21,6 +21,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
+@@ -28,16 +29,14 @@ import { bandFromMetrics } from '../../../src/renderer/features/reader/annotatio
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ 
+-const { toastSpy, saveMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), saveMock: vi.fn() }))
+-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: toastSpy }))
+-vi.mock('../../../src/renderer/api/client', () => ({
+-  api: { reader: { saveAnnotation: saveMock } },
+-  unwrap: async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
+-    const r = await p
+-    return r.data
+-  },
+-  ApiClientError: class extends Error {}
+-}))
++
++const saveMock = vi.fn()
++makeApiStub({ reader: { saveAnnotation: saveMock } })
++// unwrap 透传 Result.data（成功路径——失败路径不经组件分支外的形态）
++stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> => {
++  const r = await p
++  return r.data
++})
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回 */
+ const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+diff --git a/tests/unit/renderer/tag-filter-multi.test.tsx b/tests/unit/renderer/tag-filter-multi.test.tsx
+index 94cf2e797b..36ee6b511b 100644
+--- a/tests/unit/renderer/tag-filter-multi.test.tsx
++++ b/tests/unit/renderer/tag-filter-multi.test.tsx
+@@ -14,23 +14,11 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
+ 
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: {
+-    library: { collections: vi.fn() },
+-    tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() }
+-  },
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
++const stubApi = makeApiStub({
++  library: { collections: vi.fn() },
++  tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() }
+ })
+ 
+ import { TagFilter } from '../../../src/renderer/features/tags/TagFilter'
+diff --git a/tests/unit/renderer/tag-lifecycle-ui.test.tsx b/tests/unit/renderer/tag-lifecycle-ui.test.tsx
+index f964a748ab..e67d24034f 100644
+--- a/tests/unit/renderer/tag-lifecycle-ui.test.tsx
++++ b/tests/unit/renderer/tag-lifecycle-ui.test.tsx
+@@ -13,21 +13,9 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { Tag } from '../../../src/shared/models/tag'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub, } from '../../utils/api-client-mock'
+ 
+-const { stubApi, toastSpy } = vi.hoisted(() => ({
+-  stubApi: { tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() } },
+-  toastSpy: vi.fn()
+-}))
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: toastSpy }
+-})
++const stubApi = makeApiStub({ tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() } })
+ 
+ import { TagFilter } from '../../../src/renderer/features/tags/TagFilter'
+ import { useTagsStore } from '../../../src/renderer/features/tags/tags.store'
+diff --git a/tests/unit/renderer/workspace-switcher.test.tsx b/tests/unit/renderer/workspace-switcher.test.tsx
+index 07c11f3bc9..d3842bcdd9 100644
+--- a/tests/unit/renderer/workspace-switcher.test.tsx
++++ b/tests/unit/renderer/workspace-switcher.test.tsx
+@@ -10,22 +10,15 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    workspaces: {
+-      list: vi.fn(),
+-      create: vi.fn(),
+-      rename: vi.fn(),
+-      switch: vi.fn()
+-    }
++import { makeApiStub } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  workspaces: {
++    list: vi.fn(),
++    create: vi.fn(),
++    rename: vi.fn(),
++    switch: vi.fn()
+   }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+ })
+ 
+ import { WorkspaceSwitcher } from '../../../src/renderer/features/workspaces/WorkspaceSwitcher'
+diff --git a/tests/unit/renderer/workspace.store.test.ts b/tests/unit/renderer/workspace.store.test.ts
+index 0b6b8f7a23..0fee19a9c4 100644
+--- a/tests/unit/renderer/workspace.store.test.ts
++++ b/tests/unit/renderer/workspace.store.test.ts
+@@ -10,22 +10,15 @@
+  * jsdom 环境：confirm/reload 均为 not implemented——统一 stub。
+  */
+ import { beforeEach, describe, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-
+-const { stubApi } = vi.hoisted(() => ({
+-  stubApi: {
+-    workspaces: {
+-      list: vi.fn(),
+-      create: vi.fn(),
+-      rename: vi.fn(),
+-      switch: vi.fn()
+-    }
++import { makeApiStub } from '../../utils/api-client-mock'
++
++const stubApi = makeApiStub({
++  workspaces: {
++    list: vi.fn(),
++    create: vi.fn(),
++    rename: vi.fn(),
++    switch: vi.fn()
+   }
+-}))
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+ })
+ 
+ import { useWorkspaceStore, selectCurrentName } from '../../../src/renderer/features/workspaces/workspace.store'
+diff --git a/tests/unit/renderer/zcode-link-section.test.tsx b/tests/unit/renderer/zcode-link-section.test.tsx
+index 35d32dbc9b..3a50292626 100644
+--- a/tests/unit/renderer/zcode-link-section.test.tsx
++++ b/tests/unit/renderer/zcode-link-section.test.tsx
+@@ -10,23 +10,11 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+-import type * as clientModule from '../../../src/renderer/api/client'
+-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
++import { makeApiStub } from '../../utils/api-client-mock'
+ 
+-const { stubApi, zcodeDetect, zcodeInstall } = vi.hoisted(() => {
+-  const zcodeDetect = vi.fn()
+-  const zcodeInstall = vi.fn()
+-  return { stubApi: { ai_sensor: { zcodeDetect, zcodeInstall } }, zcodeDetect, zcodeInstall }
+-})
+-
+-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
+-  const real = await importOriginal<typeof clientModule>()
+-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+-})
+-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
+-  const real = await importOriginal<typeof toastModule>()
+-  return { ...real, showToast: vi.fn() }
+-})
++const zcodeDetect = vi.fn()
++const zcodeInstall = vi.fn()
++makeApiStub({ ai_sensor: { zcodeDetect, zcodeInstall } })
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+ import { ZcodeLinkSection } from '../../../src/renderer/features/settings/ZcodeLinkSection'
+diff --git a/tests/utils/api-client-mock.ts b/tests/utils/api-client-mock.ts
+index fd92b0e5f1..6de81c8e1b 100644
+--- a/tests/utils/api-client-mock.ts
++++ b/tests/utils/api-client-mock.ts
+@@ -1,10 +1,98 @@
+ /**
+- * [F-TESTREF-W1A] api/client 与 Toast mock 共享工厂——立案骨架（票面载体）。
++ * 测试基建：api/client 与 Toast/toast-store mock 共享工厂（F-TESTREF-W1A 单源）。
+  *
+- * 目标：vi.mock('…api/client') 39 文件+Toast/toast-store mock 32 文件的各自
+- * 声明收敛为本件单源（工厂形态按存量最高频模式收敛——设计在票内小判）。
+- * 红线：R1 零 src 变更；C 面零变化由指纹门对拍（F-TESTREF-00 前置毕）。
+- * 裁决与战役序：docs/design/2026-09-11_glm-ruling-arch-complexity-and-test-campaign.md §4-4。
+- * 实现期本件被 39+32 文件 import 后生效；受锁件。[test-refactor][locked-change]
++ * 用法（顺序契约）：测试文件必须**先** import 本工厂、**后** import 被测模块——
++ * 本文件顶层的 vi.mock 在模块求值时向 vitest 注册路径 mock，注册先于被测模块
++ * 加载则拦截生效（vitest 每测试文件独立模块图，状态互不串扰）。顺序写反时
++ * 被测模块拿真 api（jsdom 下 window.api=undefined），调用即红，非静默失效。
++ *
++ * 典型迁移形态（体内 stubApi/toastSpy 引用零改动）：
++ *   import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
++ *   const stubApi = makeApiStub({ workspaces: { list: vi.fn() } })  // 顶层语句
++ *   import 被测模块……（写在工厂 import 之后）
++ *
++ * 形态收敛依据（票内小判，断言语义零变化）：
++ * - api/client 统一 importOriginal 展开型（存量最高频 26/38）：真模块 jsdom 加载
++ *   安全（26 文件长期实证）；浅替换型的 unwrap/ApiClientError 在 renderer src
++ *   零使用（死形状），并入展开型无语义影响。mock 绑定共享桩对象（引用固定、
++ *   makeApiStub 在顶层语句阶段填充内容——被测代码运行时已可见）。
++ * - apiEvents 为覆盖式代理：未覆盖键透传真实现（jsdom 下 window.apiEvents
++ *   undefined，与原「整体替换后其余成员 undefined」语义等价）。
++ * - Toast 统一展开型（15/25）：其余导出仅 ToastHost（app 级组装专用，被测
++ *   feature 零 import）；toast-store 统一展开型（App 级测试挂 ToastHost 时
++ *   真 Toast.tsx 消费 getToastItems/dismiss/subscribeToasts——浅替换会崩，
++ *   实证 2026-09-18）。两目标 spy 独立（存量无一文件双目标共享 spy）。
++ *
++ * 边界：仅 renderer/jsdom 测试面适用——api/client 展开型会加载真模块（顶层
++ * 读 window），node 环境测试禁用本工厂的 api mock（toast 面不受限）。
++ * 受锁文件。[test-refactor][locked-change]
+  */
+-export {}
++import { vi } from 'vitest'
++import type * as clientModule from '../../src/renderer/api/client'
++import type * as toastModule from '../../src/renderer/shared/ui/Toast'
++import type * as toastStoreModule from '../../src/renderer/shared/ui/toast-store'
++
++// 桩状态：引用在 mock 工厂返回时固定，内容由 makeApiStub/stubApiEvents 在测试
++// 文件顶层语句阶段填充（静态 import 全部完成后、任何用例运行前）。
++const stubState = {
++  api: {} as Record<string, unknown>,
++  apiEventsOverrides: {} as Record<string, unknown>,
++  unwrapOverride: null as null | ((call: Promise<unknown>) => Promise<unknown>),
++  unwrapReal: null as null | ((call: Promise<unknown>) => Promise<unknown>),
++  toast: vi.fn(),
++  toastStore: vi.fn()
++}
++
++vi.mock('../../src/renderer/api/client', async (importOriginal) => {
++  const real = await importOriginal<typeof clientModule>()
++  stubState.unwrapReal = real.unwrap as unknown as typeof stubState.unwrapReal
++  return {
++    ...real,
++    api: stubState.api as unknown as typeof clientModule.api,
++    // unwrap 经 wrapper 每次调用时解析：默认真实现，stubUnwrap 后走覆盖
++    // （存量浅替换型的「成功路径透传」语义保持通道）
++    unwrap: (call: Promise<unknown>) =>
++      (stubState.unwrapOverride ?? stubState.unwrapReal)?.(call),
++    apiEvents: new Proxy(
++      {},
++      {
++        get: (_target, key) =>
++          typeof key === 'string' && key in stubState.apiEventsOverrides
++            ? stubState.apiEventsOverrides[key]
++            : (real.apiEvents as Record<string | symbol, unknown> | undefined)?.[key]
++      }
++    ) as unknown as typeof clientModule.apiEvents
++  }
++})
++
++vi.mock('../../src/renderer/shared/ui/Toast', async (importOriginal) => {
++  const real = await importOriginal<typeof toastModule>()
++  return { ...real, showToast: stubState.toast }
++})
++
++vi.mock('../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
++  const real = await importOriginal<typeof toastStoreModule>()
++  return { ...real, showToast: stubState.toastStore }
++})
++
++/** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
++export function makeApiStub<T extends object>(shape: T): T {
++  Object.assign(stubState.api, shape)
++  return shape
++}
++
++/** 覆盖 apiEvents 成员（未覆盖键透传真实现；jsdom 下真值 undefined） */
++export function stubApiEvents(shape: Record<string, unknown>): void {
++  Object.assign(stubState.apiEventsOverrides, shape)
++}
++
++/** 覆盖 unwrap（默认真实现——!ok 抛 ApiClientError；存量浅替换透传形态用） */
++export function stubUnwrap<T>(fn: (call: Promise<T>) => Promise<unknown>): void {
++  stubState.unwrapOverride = fn as unknown as (call: Promise<unknown>) => Promise<unknown>
++}
++
++/** Toast 模块入口的 showToast spy（经 `…/ui/Toast` import 的被测代码可见） */
++export const toastSpy = stubState.toast
++
++/** toast-store 直连入口的 showToast spy（经 `…/ui/toast-store` import 的被测代码可见） */
++export const toastStoreSpy = stubState.toastStore

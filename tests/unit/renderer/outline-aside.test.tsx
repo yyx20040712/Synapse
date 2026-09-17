@@ -10,21 +10,10 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Annotation } from '../../../src/shared/models/annotation'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
 import { guardedDescribe } from '../../utils/guard'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: { notes: { get: vi.fn(), save: vi.fn() } }
-}))
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: vi.fn() }
-})
+const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 
 import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'

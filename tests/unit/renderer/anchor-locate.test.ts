@@ -10,22 +10,17 @@
  */
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
 import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
 import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
 import { guardedDescribe } from '../../utils/guard'
 
-const { toastSpy, scrollerMock } = vi.hoisted(() => ({ toastSpy: vi.fn(), scrollerMock: vi.fn() }))
-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
+makeApiStub({ reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } })
+const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
 vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
   scrollIntoNearestScroller: scrollerMock
-}))
-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastSpy }))
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } },
-  unwrap: vi.fn(),
-  ApiClientError: class extends Error {}
 }))
 
 function makeTab(id: string, page = 0): TabState {

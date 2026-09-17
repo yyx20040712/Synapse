@@ -14,16 +14,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import type * as clientModule from '../../../src/renderer/api/client'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: { lineage: { graph: vi.fn() } }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
+const stubApi = makeApiStub({ lineage: { graph: vi.fn() } })
 
 import { LineageCanvas } from '../../../src/renderer/features/lineage/LineageCanvas'
 import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'

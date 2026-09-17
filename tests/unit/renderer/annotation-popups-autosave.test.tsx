@@ -14,6 +14,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
+import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
 import { AnnotationPopups } from '../../../src/renderer/features/reader/AnnotationPopups'
 import { ApiClientError } from '../../../src/renderer/api/client'
 
@@ -26,26 +27,11 @@ const mocks = vi.hoisted(() => ({
   storeRemoveAnnotation: vi.fn(),
   storeNotifyNoteHighlight: vi.fn(),
   pushUndo: vi.fn(),
-  showToast: vi.fn()
+  // Toast 入口 spy=共享工厂实例（下方顶层语句替换——体内经 mocks.showToast 断言）
+  showToast: undefined as unknown as ReturnType<typeof vi.fn>
 }))
-
-vi.mock('../../../src/renderer/api/client', () => ({
-  api: { reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } },
-  // 对齐真实语义（client.ts unwrap：await call 后判 ok 再返 data）
-  unwrap: vi.fn(async (call: Promise<{ ok: boolean; data: unknown }>) => {
-    const r = await call
-    if (!r.ok) throw new Error('unwrap: !ok')
-    return r.data
-  }),
-  // 对齐真实签名 ApiClientError(code, message)（client.ts）——tsc 按真实类型检查
-  ApiClientError: class extends Error {
-    constructor(_code: string, message: string) {
-      super(message)
-    }
-  }
-}))
-
-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: mocks.showToast }))
+mocks.showToast = toastSpy
+makeApiStub({ reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } })
 
 vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
   useReaderStore: {

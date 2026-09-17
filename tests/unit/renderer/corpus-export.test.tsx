@@ -10,34 +10,23 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { ExtractRequestEvent } from '../../../src/shared/ipc/schemas'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub, stubApiEvents, toastSpy } from '../../utils/api-client-mock'
+
+const stubApi = makeApiStub({
+  settings: { get: vi.fn() },
+  export_: { corpusSession: vi.fn(), corpusItem: vi.fn() }
+})
+const onExportCorpusSpy = vi.fn()
+const offSpy = vi.fn()
+stubApiEvents({ onExportCorpus: onExportCorpusSpy })
 
 /** 桩装配共享位（hoisted——vi.mock 工厂与用例两侧同引用） */
-const { stubApi, onExportCorpusSpy, offSpy, extractorHandle, loadDocSentinel, toastSpy, holder } =
-  vi.hoisted(() => ({
-    stubApi: {
-      settings: { get: vi.fn() },
-      export_: { corpusSession: vi.fn(), corpusItem: vi.fn() }
-    },
-    onExportCorpusSpy: vi.fn(),
-    offSpy: vi.fn(),
-    extractorHandle: vi.fn(),
-    loadDocSentinel: ((): Promise<never> => Promise.reject(new Error('sentinel'))),
-    toastSpy: vi.fn(),
-    holder: { cb: null as ((e: unknown) => void) | null, deps: null as unknown }
-  }))
+const { extractorHandle, loadDocSentinel, holder } = vi.hoisted(() => ({
+  extractorHandle: vi.fn(),
+  loadDocSentinel: ((): Promise<never> => Promise.reject(new Error('sentinel'))),
+  holder: { cb: null as ((e: unknown) => void) | null, deps: null as unknown }
+}))
 
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return {
-    ...real,
-    api: stubApi,
-    apiEvents: {
-      onExportCorpus: onExportCorpusSpy
-    }
-  }
-})
 // CorpusExtractor 模块桩：捕获生产组装 deps；handleEvent 转 Spy（提取器本体行为
 // 已由 corpus-extractor.test 锁定——本文件只锁「桥把它接进来」的接线面）
 vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
@@ -47,10 +36,6 @@ vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
     return { handleEvent: extractorHandle }
   }
 }))
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: toastSpy }
-})
 
 import { CorpusExportSection } from '../../../src/renderer/features/settings/CorpusExportSection'
 import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'

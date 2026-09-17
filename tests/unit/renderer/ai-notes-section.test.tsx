@@ -16,8 +16,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
-import type * as clientModule from '../../../src/renderer/api/client'
-import type * as toastModule from '../../../src/renderer/shared/ui/Toast'
+import { makeApiStub } from '../../utils/api-client-mock'
 import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
 
 const observe = vi.fn()
@@ -25,30 +24,20 @@ const listByPaper = vi.fn()
 const requestAiRead = vi.fn()
 const importAll = vi.fn()
 
-const { stubApi, locateAnchor } = vi.hoisted(() => ({
-  stubApi: {
-    ai_sensor: {
-      observe: vi.fn(),
-      listByPaper: vi.fn(),
-      requestAiRead: vi.fn(),
-      importAll: vi.fn()
-    }
-  },
-  locateAnchor: vi.fn()
-}))
+const stubApi = makeApiStub({
+  ai_sensor: {
+    observe: vi.fn(),
+    listByPaper: vi.fn(),
+    requestAiRead: vi.fn(),
+    importAll: vi.fn()
+  }
+})
 stubApi.ai_sensor.observe = observe
 stubApi.ai_sensor.listByPaper = listByPaper
 stubApi.ai_sensor.requestAiRead = requestAiRead
 stubApi.ai_sensor.importAll = importAll
 
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
-})
-vi.mock('../../../src/renderer/shared/ui/Toast', async (importOriginal) => {
-  const real = await importOriginal<typeof toastModule>()
-  return { ...real, showToast: vi.fn() }
-})
+const { locateAnchor } = vi.hoisted(() => ({ locateAnchor: vi.fn() }))
 vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
   const real = await importOriginal<typeof anchorLocateModule>()
   return { ...real, locateAnchor }

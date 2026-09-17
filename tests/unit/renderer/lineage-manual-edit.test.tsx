@@ -15,24 +15,17 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import type * as clientModule from '../../../src/renderer/api/client'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    lineage: {
-      graph: vi.fn(),
-      upsertNode: vi.fn(),
-      removeNode: vi.fn(),
-      upsertEdge: vi.fn(),
-      removeEdge: vi.fn()
-    },
-    library: { list: vi.fn() }
-  }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
+const stubApi = makeApiStub({
+  lineage: {
+    graph: vi.fn(),
+    upsertNode: vi.fn(),
+    removeNode: vi.fn(),
+    upsertEdge: vi.fn(),
+    removeEdge: vi.fn()
+  },
+  library: { list: vi.fn() }
 })
 
 import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'

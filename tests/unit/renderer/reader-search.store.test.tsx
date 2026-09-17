@@ -6,13 +6,11 @@
  * 直植复位；toast 模块 mock 观测 S10）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toastStoreSpy as toastMock } from '../../utils/api-client-mock'
 import {
   createReaderSearchInitialState,
   useReaderSearchStore
 } from '../../../src/renderer/features/reader/reader-search.store'
-
-const { toastMock } = vi.hoisted(() => ({ toastMock: vi.fn() }))
-vi.mock('../../../src/renderer/shared/ui/toast-store', () => ({ showToast: toastMock }))
 
 /** 单页文本项数组（每段一个 item——组装夹具用） */
 function pageOf(...strs: string[]): { items: unknown[] } {

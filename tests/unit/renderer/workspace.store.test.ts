@@ -10,22 +10,15 @@
  * jsdom 环境：confirm/reload 均为 not implemented——统一 stub。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as clientModule from '../../../src/renderer/api/client'
+import { makeApiStub } from '../../utils/api-client-mock'
 
-const { stubApi } = vi.hoisted(() => ({
-  stubApi: {
-    workspaces: {
-      list: vi.fn(),
-      create: vi.fn(),
-      rename: vi.fn(),
-      switch: vi.fn()
-    }
+const stubApi = makeApiStub({
+  workspaces: {
+    list: vi.fn(),
+    create: vi.fn(),
+    rename: vi.fn(),
+    switch: vi.fn()
   }
-}))
-
-vi.mock('../../../src/renderer/api/client', async (importOriginal) => {
-  const real = await importOriginal<typeof clientModule>()
-  return { ...real, api: stubApi as unknown as typeof clientModule.api }
 })
 
 import { useWorkspaceStore, selectCurrentName } from '../../../src/renderer/features/workspaces/workspace.store'

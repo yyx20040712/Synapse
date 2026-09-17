@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import '../../utils/api-client-mock'
 import {
   useReaderShortcuts,
   SCROLL_STEP_RATIO,
@@ -9,7 +10,6 @@ import {
 } from '../../../src/renderer/features/reader/ReaderShortcuts'
 import { guardedDescribe } from '../../utils/guard'
 
-vi.mock('../../../src/renderer/shared/ui/Toast', () => ({ showToast: vi.fn() }))
 import { showToast } from '../../../src/renderer/shared/ui/Toast'
 
 /** 挂载只调用本 hook 的探针组件；返回卸载句柄 */
