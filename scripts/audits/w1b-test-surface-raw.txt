@@ -1,0 +1,10 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test-surface:check
+> node scripts/check-test-surface.mjs check
+
+[test-surface] files: 179 base / 179 cur | cases: 1623 base / 1623 cur | assertions: 4979 base / 4979 cur | skipSites: 15 base / 15 cur
+[test-surface] exemptions entries: 0 hits: 0 stale: 0
+[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）
+SURFACE_EXIT=0

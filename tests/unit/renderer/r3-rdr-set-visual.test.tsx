@@ -26,10 +26,11 @@ vi.mock('../../../src/renderer/features/settings/ZcodeLinkSection', () => ({
   ZcodeLinkSection: () => null
 }))
 
+import { makeTab } from '../../utils/factories'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
 import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 // act() 环境声明（library-cards 同口径——免 React 警告刷屏）
@@ -61,22 +62,6 @@ afterEach(() => {
 })
 
 /** ready 态完整 tab 形状（tab-bar.test 同配方） */
-function makeTab(id: string): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
-  }
-}
-
 describe('R3-U3 ReaderToolbar —— 玻璃浮层皮肤（装饰浓度最低：仅皮肤零布局变）', () => {
   it('工具条根挂 rdr-toolbar 玻璃浮层类；theme-reader.css 值面=--panel-glass+blur10+金 hairline 底缘', () => {
     mount(

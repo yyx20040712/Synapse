@@ -9,9 +9,9 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { PaperDetail } from '../../../src/shared/models/paper'
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeDetail } from '../../utils/factories'
 
 const stubApi = makeApiStub({
   library: { detail: vi.fn() },
@@ -22,33 +22,6 @@ const stubApi = makeApiStub({
 
 import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
-
-function makeDetail(): PaperDetail {
-  return {
-    id: 'paper-1',
-    title: '样例论文',
-    authors: ['张三'],
-    year: 2026,
-    venue: 'Journal of Testing',
-    doi: null,
-    tagNames: [],
-    collectionNames: [],
-    annotationCount: 0,
-    noteCount: 1,
-    lastReadPage: 0,
-    readingSeconds: 0,
-    addedAt: 't',
-    abstract: '',
-    arxivId: null,
-    source: 'local',
-    enrichStatus: 'pending',
-    fileUrl: 'app-file://paper-1',
-    fileName: 'a.pdf',
-    updatedAt: 't',
-    tags: [],
-    collections: []
-  }
-}
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null

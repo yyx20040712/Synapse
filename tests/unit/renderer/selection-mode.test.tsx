@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 
 makeApiStub({ reader: {} })
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
@@ -27,8 +28,7 @@ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnot
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import {
   createReaderStoreInitialState,
-  useReaderStore,
-  type TabState
+  useReaderStore
 } from '../../../src/renderer/features/reader/reader.store'
 
 /** 归一化域矩形夹具 */
@@ -57,23 +57,6 @@ function ann(): Annotation {
 }
 
 /** ready 态完整 tab（tab-bar.test 同配方+selectionMode 维度） */
-function makeTab(id: string, selectionMode = false): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false,
-    selectionMode
-  }
-}
-
 /** AI 段夹具（ai-annotation-layer.test 同配方） */
 function aiNoteFixture(): AiNote {
   return {
@@ -169,7 +152,7 @@ describe('F-A3 选择模式 —— store 面（TabState.selectionMode 生命周�
 
   it('② S3 per-tab：A(true)/B(false) 切换各自记忆；setSelectionMode 只动 active', () => {
     useReaderStore.setState({
-      tabs: { 'p-a': makeTab('p-a', true), 'p-b': makeTab('p-b') },
+      tabs: { 'p-a': makeTab('p-a', { selectionMode: true }), 'p-b': makeTab('p-b', { selectionMode: false }) },
       order: ['p-a', 'p-b'],
       activeId: 'p-a'
     })

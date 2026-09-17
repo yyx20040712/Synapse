@@ -13,6 +13,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineRangeClientRects, domRect } from '../../utils/geometry'
 import { ReaderSearchBox } from '../../../src/renderer/features/reader/ReaderSearchBox'
 import { SearchHighlightLayer } from '../../../src/renderer/features/reader/SearchHighlightLayer'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
@@ -39,10 +40,8 @@ function remount(node: JSX.Element): void {
   })
 }
 
-/** 视口盒桩（Range.getClientRects 返回元素——toPageRelative 只读 x/y/width/height） */
-function rect(x: number, y: number, w: number, h: number): DOMRect {
-  return { x, y, width: w, height: h, top: y, left: x, right: x + w, bottom: y + h, toJSON: () => ({}) } as DOMRect
-}
+/** 视口盒桩（Range.getClientRects 返回元素——toPageRelative 只读 x/y/width/height）；
+ *  domRect 全字段同形（共享 geometry 单源） */
 
 /** 页根桩：.textLayer 内按序 spans（SearchHighlightLayer 量测输入） */
 function makeSpans(spanTexts: string[]): HTMLSpanElement[] {
@@ -103,8 +102,8 @@ function boxProps(over: Partial<Parameters<typeof ReaderSearchBox>[0]>): Paramet
   }
 }
 
-/** defineProperty 桩的原 descriptor（门一 N4：afterEach 显式还原不裸留） */
-let origClientRects: PropertyDescriptor | undefined
+/** defineProperty 桩句柄（门一 N4：afterEach 显式还原不裸留） */
+let rangeRectsStub: { mock: ReturnType<typeof vi.fn>; restore(): void } | null = null
 let origScrollIntoView: PropertyDescriptor | undefined
 
 beforeEach(() => {
@@ -116,11 +115,9 @@ beforeEach(() => {
   })
   // Range 几何桩：jsdom 无 getClientRects 实现（定义注入）；真布局归 e2e——
   // jsdom 只断渲染存在性与 px 样式映射
-  origClientRects = Object.getOwnPropertyDescriptor(Range.prototype, 'getClientRects')
-  Object.defineProperty(Range.prototype, 'getClientRects', {
-    value: vi.fn((): DOMRectList => [rect(110, 60, 40, 12)] as unknown as DOMRectList),
-    configurable: true
-  })
+  rangeRectsStub = defineRangeClientRects(
+    (): DOMRectList => [domRect(110, 60, 40, 12)] as unknown as DOMRectList
+  )
   // scrollIntoView jsdom 无实现——active 居中路径的可观测桩
   origScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
   Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true })
@@ -137,11 +134,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   // 门一 N4：defineProperty 桩按原 descriptor 显式还原（原无实现=删属性）
-  if (origClientRects === undefined) {
-    delete (Range.prototype as { getClientRects?: unknown }).getClientRects
-  } else {
-    Object.defineProperty(Range.prototype, 'getClientRects', origClientRects)
-  }
+  rangeRectsStub?.restore()
   if (origScrollIntoView === undefined) {
     delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
   } else {
@@ -307,7 +300,7 @@ describe('P7E-03 SearchHighlightLayer —— 渲染面', () => {
     plantDone(0)
     const pageRoot = makePageRoot(['SMART WATER', 'x'])
     // 页根盒偏移桩：视口盒(110,60)−根盒(100,50)=页内相对(10,10)
-    vi.spyOn(pageRoot.querySelector('.textLayer')!, 'getBoundingClientRect').mockReturnValue(rect(100, 50, 612, 792))
+    vi.spyOn(pageRoot.querySelector('.textLayer')!, 'getBoundingClientRect').mockReturnValue(domRect(100, 50, 612, 792))
     mount(<SearchHighlightLayer page={0} pageRoot={pageRoot} />)
     const hls = host!.querySelectorAll<HTMLElement>('[data-testid="search-hl"]')
     expect(hls).toHaveLength(1)
@@ -391,8 +384,9 @@ describe('P7E-03 SearchHighlightLayer —— 渲染面', () => {
     expect(hlBefore.style.left).toBe('110px')
     expect(hlBefore.style.width).toBe('40px')
     // 重排后的新视口几何（clientRects 桩换返回值）
-    const rectsMock = (Range.prototype as unknown as { getClientRects: ReturnType<typeof vi.fn> }).getClientRects
-    rectsMock.mockImplementation((): DOMRectList => [rect(220, 120, 80, 20)] as unknown as DOMRectList)
+    rangeRectsStub!.mock.mockImplementation(
+      (): DOMRectList => [domRect(220, 120, 80, 20)] as unknown as DOMRectList
+    )
     // zoom 重渲模拟：TextLayer effect 的 container.replaceChildren()+span 重挂同型
     const layer = pageRoot.querySelector('.textLayer')!
     await act(async () => {

@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { seedLineage } from '../../utils/factories'
 
 const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
@@ -58,19 +59,6 @@ const settle = async (turns = 6): Promise<void> => {
       await Promise.resolve()
     })
   }
-}
-
-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
-  useLineageStore.setState({
-    nodes,
-    edges,
-    status: 'ready',
-    error: null,
-    saveStatus: 'saved',
-    lastWriteError: null,
-    queue: [],
-    flushing: false
-  })
 }
 
 let root: Root | null = null
@@ -142,7 +130,7 @@ afterEach(() => {
 // ── 节点菜单「添加标签」入口+Board 全链 ─────────────────────────
 
 it('Board 全链：右键→「添加标签…」→对话框输入→保存=upsert-node 全量载荷含 tags 合并', async () => {
-  seed([node('A', { tags: ['综述'], coreIdea: '想法', title: '锚点', year: 2019 })])
+  seedLineage([node('A', { tags: ['综述'], coreIdea: '想法', title: '锚点', year: 2019 })])
   stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: serverNode(node('A', req)) })
   )
@@ -176,7 +164,7 @@ it('Board 全链：右键→「添加标签…」→对话框输入→保存=ups
 })
 
 it('对话框取消=零写；主题节点同样有「添加标签…」入口', async () => {
-  seed([node('T', { paperId: null, tags: null })])
+  seedLineage([node('T', { paperId: null, tags: null })])
   mount(<LineageBoard onSelectNode={() => undefined} />)
   openMenu('T')
   clickMenu('添加标签…')
@@ -192,7 +180,7 @@ it('对话框取消=零写；主题节点同样有「添加标签…」入口', 
 })
 
 it('空标签名不派发（按钮禁用或提交短路——空串标签不入库）', async () => {
-  seed([node('A')])
+  seedLineage([node('A')])
   mount(<LineageBoard onSelectNode={() => undefined} />)
   openMenu('A')
   clickMenu('添加标签…')
@@ -259,7 +247,7 @@ it('侧板同名标签短路：已存在标签再添加不派发（同节点同�
 // ── store setNodeTags 写面 ────────────────────────────────────
 
 it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）', async () => {
-  seed([node('A', { tags: ['综述'], x: 500, y: 400 })])
+  seedLineage([node('A', { tags: ['综述'], x: 500, y: 400 })])
   stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: serverNode(node('A', req)) })
   )

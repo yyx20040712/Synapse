@@ -9,14 +9,15 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { Annotation } from '../../../src/shared/models/annotation'
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 
 import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import type { Annotation } from '../../../src/shared/models/annotation'
 
 // jsdom 无 IntersectionObserver（缩略图懒渲染依赖）——最小桩（永不触发回调=不渲染图）
 class IntersectionObserverStub {
@@ -42,22 +43,6 @@ function ann(id: string, page: number): Annotation {
     comment: '',
     createdAt: '2026-05-01T00:00:00Z',
     updatedAt: '2026-05-01T00:00:00Z'
-  }
-}
-
-function makeTab(id: string, annotations: Annotation[] = []): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 20,
-    zoom: 1,
-    color: 'yellow',
-    annotations,
-    status: 'ready',
-    dirty: false
   }
 }
 
@@ -91,7 +76,7 @@ function tabsOf(): HTMLElement[] {
 beforeEach(() => {
   vi.clearAllMocks()
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
-  useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', [ann('a-x', 7)]) }, order: ['p-1'], activeId: 'p-1' })
+  useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', { annotations: [ann('a-x', 7)], totalPages: 20 }) }, order: ['p-1'], activeId: 'p-1' })
 })
 
 afterEach(() => {

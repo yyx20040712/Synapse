@@ -1,0 +1,2231 @@
+diff --git a/tests/unit/renderer/ai-annotation-layer.test.tsx b/tests/unit/renderer/ai-annotation-layer.test.tsx
+index acf0a4dd90..da7e3a7e67 100644
+--- a/tests/unit/renderer/ai-annotation-layer.test.tsx
++++ b/tests/unit/renderer/ai-annotation-layer.test.tsx
+@@ -13,10 +13,12 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { stubElementRects, type StubBox } from '../../utils/geometry'
++import { makeTab } from '../../utils/factories'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
+ import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+ import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+@@ -72,22 +74,6 @@ function makePageRoot(text: string): HTMLDivElement {
+   return root
+ }
+ 
+-function makeTab(id: string, page = 0): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+@@ -265,17 +251,14 @@ describe('F-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面
+   it('AI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks', () => {
+     // gBCR 桩：textLayer (0,0,600,800)/span (30,200,300,16)；canvas 度量桩
+     // asc10/desc3/fAsc14/fDesc4 → 半前导 −1 基线 213 → band=[203,216]/800
+-    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
++    const boxes = new Map<Element, StubBox>()
+     const pageRoot = makePageRoot('SMART WATER TEST DOC')
+     const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement
+     const span = textLayer.querySelector('span') as HTMLElement
+     boxes.set(pageRoot, { x: 0, y: 0, width: 600, height: 800 })
+     boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
+     boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
+-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-      const r = boxes.get(this)
+-      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-    })
++    stubElementRects(boxes)
+     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+       font: '',
+       measureText: () => ({
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 2e121e9512..7556254a33 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -17,6 +17,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
+ 
+ const observe = vi.fn()
+@@ -45,7 +46,7 @@ vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOrig
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+ import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import { useAiNotesStore } from '../../../src/renderer/features/reader/ai-notes.store'
+ import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+ 
+@@ -92,22 +93,6 @@ function note(id: string, role: AiNote['role'], question: AiNote['question']): A
+   }
+ }
+ 
+-function makeTab(id: string): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+diff --git a/tests/unit/renderer/anchor-blank-snap.test.ts b/tests/unit/renderer/anchor-blank-snap.test.ts
+index 69d3ef0949..009d9300ac 100644
+--- a/tests/unit/renderer/anchor-blank-snap.test.ts
++++ b/tests/unit/renderer/anchor-blank-snap.test.ts
+@@ -1,5 +1,6 @@
+ // @vitest-environment jsdom
+ import { afterEach, describe, expect, it } from 'vitest'
++import { stubRectOf } from '../../utils/geometry'
+ import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+ 
+@@ -13,17 +14,12 @@ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anch
+ 
+ interface Box { top: number; bottom: number; left: number; right: number }
+ 
+-/** 给元素打量测桩（真浏览器 getBoundingClientRect 的 jsdom 替身） */
+-function rectOf(el: HTMLElement, b: Box): void {
+-  el.getBoundingClientRect = () =>
+-    ({ x: b.left, y: b.top, top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.right - b.left, height: b.bottom - b.top, toJSON: () => ({}) }) as DOMRect
+-}
+ 
+ /** 造一个 pdf.js 文本层形态的 span（文本+量测盒） */
+ function mkSpan(text: string, b: Box): HTMLSpanElement {
+   const s = document.createElement('span')
+   s.textContent = text
+-  rectOf(s, b)
++  stubRectOf(s, b)
+   return s
+ }
+ 
+@@ -31,7 +27,7 @@ function mkSpan(text: string, b: Box): HTMLSpanElement {
+ function mkBr(b: Box): HTMLBRElement {
+   const br = document.createElement('br')
+   br.setAttribute('role', 'presentation')
+-  rectOf(br, b)
++  stubRectOf(br, b)
+   return br
+ }
+ 
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 556d7e2120..8b21378c49 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -11,8 +11,9 @@
+ import { act } from 'react'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+@@ -23,22 +24,6 @@ vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+   scrollIntoNearestScroller: scrollerMock
+ }))
+ 
+-function makeTab(id: string, page = 0): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ /** 构造页根+文本层（单页视图：document 内唯一 .textLayer——与 ReaderPage 结构同型） */
+ function mountTextLayer(text: string): HTMLElement {
+   const root = document.createElement('div')
+@@ -87,7 +72,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+   })
+ 
+   it('S2 已开跨页：setPage(annotation.page)→文本层就绪→exact', async () => {
+-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+     mountTextLayer('target quote here')
+     mountAnchorEl('a-2')
+     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-2', anchor: anchorOf('target quote', 3) })
+@@ -96,7 +81,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+   })
+ 
+   it('S3 verifyQuote 失败：page 降级（停留该页+toast 锚定失效提示）', async () => {
+-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+     mountTextLayer('completely different text')
+     const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('gone quote', 5) })
+     await act(async () => {
+@@ -110,7 +95,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
+   })
+ 
+   it('S4 篇级（anchor=null）：paper（回开篇）', async () => {
+-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 4) }, order: ['p-1'], activeId: 'p-1' })
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', { page: 4 }) }, order: ['p-1'], activeId: 'p-1' })
+     const r = await locateAnchor({ paperId: 'p-1', anchor: null })
+     expect(r).toBe('paper')
+     expect(useReaderStore.getState().tabs['p-1']?.page).toBe(0)
+diff --git a/tests/unit/renderer/annotation-editor-ux.test.tsx b/tests/unit/renderer/annotation-editor-ux.test.tsx
+index 4f32a3e718..645a404f28 100644
+--- a/tests/unit/renderer/annotation-editor-ux.test.tsx
++++ b/tests/unit/renderer/annotation-editor-ux.test.tsx
+@@ -16,29 +16,11 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
++import { makeAnnotation } from '../../utils/factories'
++import type { AnnotationRect } from '../../../src/shared/models/annotation'
+ import { AnnotationEditor } from '../../../src/renderer/features/reader/AnnotationEditor'
+ 
+ /** 完整形态最小标注（comment 可覆写——lastSaved 语义用例需非空初值） */
+-function makeAnnotation(comment = ''): Annotation {
+-  return {
+-    id: 'anno-1',
+-    paperId: 'paper-1',
+-    page: 0,
+-    kind: 'highlight',
+-    color: 'yellow',
+-    quoteText: '被标注的引文内容',
+-    prefixText: '前',
+-    suffixText: '后',
+-    startOffset: 1,
+-    endOffset: 10,
+-    rects: [{ page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }],
+-    comment,
+-    createdAt: '2026-08-23T00:00:00Z',
+-    updatedAt: '2026-08-23T00:00:00Z'
+-  }
+-}
+-
+ const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
+ 
+ let root: Root | null = null
+diff --git a/tests/unit/renderer/annotation-layer.test.tsx b/tests/unit/renderer/annotation-layer.test.tsx
+index 15892451a2..1d7f759b63 100644
+--- a/tests/unit/renderer/annotation-layer.test.tsx
++++ b/tests/unit/renderer/annotation-layer.test.tsx
+@@ -13,6 +13,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { stubElementRects, type StubBox } from '../../utils/geometry'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+@@ -129,14 +130,11 @@ describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面
+     span.textContent = 'SMART WATER TEST DOC'
+     textLayer.appendChild(span)
+     page.appendChild(textLayer)
+-    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
++    const boxes = new Map<Element, StubBox>()
+     boxes.set(page, { x: 0, y: 0, width: 600, height: 800 })
+     boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
+     boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
+-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-      const r = boxes.get(this)
+-      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-    })
++    stubElementRects(boxes)
+     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+       font: '',
+       measureText: () => ({
+diff --git a/tests/unit/renderer/annotation-menu.test.tsx b/tests/unit/renderer/annotation-menu.test.tsx
+index b09a004ed3..be2f07db27 100644
+--- a/tests/unit/renderer/annotation-menu.test.tsx
++++ b/tests/unit/renderer/annotation-menu.test.tsx
+@@ -2,30 +2,12 @@
+ import { act } from 'react'
+ import { createRoot } from 'react-dom/client'
+ import { expect, it, vi } from 'vitest'
+-import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
++import { makeAnnotation } from '../../utils/factories'
++import type { AnnotationRect } from '../../../src/shared/models/annotation'
+ import { AnnotationMenu } from '../../../src/renderer/features/reader/AnnotationMenu'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+ /** 完整形态的最小标注（类型契约：接口层全字段） */
+-function makeAnnotation(): Annotation {
+-  return {
+-    id: 'anno-1',
+-    paperId: 'paper-1',
+-    page: 0,
+-    kind: 'highlight',
+-    color: 'yellow',
+-    quoteText: '被标注的引文内容',
+-    prefixText: '前',
+-    suffixText: '后',
+-    startOffset: 1,
+-    endOffset: 10,
+-    rects: [{ page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }],
+-    comment: '',
+-    createdAt: '2026-08-23T00:00:00Z',
+-    updatedAt: '2026-08-23T00:00:00Z'
+-  }
+-}
+-
+ /** 命中矩形靠右（x=0.8）以覆盖左沿夹取分支 */
+ const RIGHT_RECT: AnnotationRect = { page: 0, x: 0.8, y: 0.5, w: 0.1, h: 0.05 }
+ 
+diff --git a/tests/unit/renderer/annotation-popups-autosave.test.tsx b/tests/unit/renderer/annotation-popups-autosave.test.tsx
+index 6f232f4761..a5db3c035d 100644
+--- a/tests/unit/renderer/annotation-popups-autosave.test.tsx
++++ b/tests/unit/renderer/annotation-popups-autosave.test.tsx
+@@ -15,6 +15,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
+ import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
++import { makeAnnotation } from '../../utils/factories'
+ import { AnnotationPopups } from '../../../src/renderer/features/reader/AnnotationPopups'
+ import { ApiClientError } from '../../../src/renderer/api/client'
+ 
+@@ -54,25 +55,6 @@ vi.mock('../../../src/renderer/features/reader/annotation-undo', () => ({
+ }))
+ 
+ /** 完整形态最小标注（comment 可覆写——终值断言用） */
+-function makeAnnotation(comment = ''): Annotation {
+-  return {
+-    id: 'anno-1',
+-    paperId: 'paper-1',
+-    page: 0,
+-    kind: 'highlight',
+-    color: 'yellow',
+-    quoteText: '被标注的引文内容',
+-    prefixText: '前',
+-    suffixText: '后',
+-    startOffset: 1,
+-    endOffset: 10,
+-    rects: [{ page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }],
+-    comment,
+-    createdAt: '2026-08-23T00:00:00Z',
+-    updatedAt: '2026-08-23T00:00:00Z'
+-  }
+-}
+-
+ const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
+ 
+ let root: Root | null = null
+diff --git a/tests/unit/renderer/band-calibration.test.tsx b/tests/unit/renderer/band-calibration.test.tsx
+index 15b026fbf3..fa03d7e389 100644
+--- a/tests/unit/renderer/band-calibration.test.tsx
++++ b/tests/unit/renderer/band-calibration.test.tsx
+@@ -25,6 +25,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
++import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/annotation-band-calibrate'
+@@ -44,8 +45,8 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+ })
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回 */
+-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+-let origRangeGBCR: (() => DOMRect) | undefined
++const rects = new Map<Element, StubBox>()
++let rangeStub: { restore(): void } | null = null
+ const rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+ 
+ /** [F-A9 β 形态] 字体样式：ascent 0.75 声明（≠pdf.js span 定位的回退字体量测
+@@ -155,12 +156,8 @@ beforeEach(() => {
+   usePageItemsStore.getState().clear()
+   useReaderStore.setState(createReaderStoreInitialState())
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    const r = rects.get(this)
+-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-  })
+-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
+-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
++  stubElementRects(rects)
++  rangeStub = stubRangeGBCR(() => rangeRect)
+   window.getSelection()?.removeAllRanges()
+ })
+ 
+@@ -171,7 +168,7 @@ afterEach(() => {
+   root = null
+   host?.remove()
+   host = null
+-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
++  rangeStub?.restore()
+   document.body.innerHTML = ''
+   vi.restoreAllMocks()
+   vi.useRealTimers()
+diff --git a/tests/unit/renderer/lineage-board.test.tsx b/tests/unit/renderer/lineage-board.test.tsx
+index 68bda2980e..7b5e94b322 100644
+--- a/tests/unit/renderer/lineage-board.test.tsx
++++ b/tests/unit/renderer/lineage-board.test.tsx
+@@ -15,6 +15,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+ import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
++import { seedLineage } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   lineage: {
+@@ -60,19 +61,6 @@ function edge(id: string, from: string, to: string): LineageEdge {
+ /** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */
+ const OVL = { x: 500, y: 400 }
+ 
+-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
+-  useLineageStore.setState({
+-    nodes,
+-    edges,
+-    status: 'ready',
+-    error: null,
+-    saveStatus: 'saved',
+-    lastWriteError: null,
+-    queue: [],
+-    flushing: false
+-  })
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+@@ -191,7 +179,7 @@ afterEach(() => {
+ 
+ describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () => {
+   it('拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）', async () => {
+-    seed([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
++    seedLineage([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     drag(nodeEl('A'), 60, 30)
+     await flush()
+@@ -208,7 +196,7 @@ describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () =
+ 
+   it('单击=选中上抛（位移低于阈值不触发写）；onSelectNode 形态照票面（04 侧板消费面）', async () => {
+     const onSelect = vi.fn()
+-    seed([node('A', OVL)])
++    seedLineage([node('A', OVL)])
+     mount(<LineageBoard onSelectNode={onSelect} />)
+     clickNode(nodeEl('A'))
+     await flush()
+@@ -219,7 +207,7 @@ describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () =
+ 
+ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）', () => {
+   it('加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}', async () => {
+-    seed([node('A'), node('B')])
++    seedLineage([node('A'), node('B')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('A')
+     clickMenu('连线到…')
+@@ -242,7 +230,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
+         ok: false,
+         error: { code: 'CONFLICT', message: reason }
+       })
+-      seed([node('A'), node('B')])
++      seedLineage([node('A'), node('B')])
+       mount(<LineageBoard onSelectNode={() => undefined} />)
+       openMenu('A')
+       clickMenu('连线到…')
+@@ -257,7 +245,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
+   })
+ 
+   it('改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）', async () => {
+-    seed([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
++    seedLineage([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     clickMenu('改父…')
+@@ -268,7 +256,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
+   })
+ 
+   it('删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷', async () => {
+-    seed([node('A'), node('B')], [edge('e-1', 'A', 'B')])
++    seedLineage([node('A'), node('B')], [edge('e-1', 'A', 'B')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     clickMenu('删除父连线')
+@@ -282,7 +270,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
+   })
+ 
+   it('core_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）', async () => {
+-    seed([node('A', { ...OVL, coreIdea: '旧想法' })])
++    seedLineage([node('A', { ...OVL, coreIdea: '旧想法' })])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('A')
+     clickMenu('编辑核心想法')
+@@ -310,7 +298,7 @@ describe('LineageBoard —— 保存态指示（autosave-first：无保存按钮
+     stubApi.lineage.upsertNode
+       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
+       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
+-    seed([node('A', OVL)])
++    seedLineage([node('A', OVL)])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     drag(nodeEl('A'), 20, 10)
+     await flush()
+@@ -339,7 +327,7 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
+       }
+     })
+     stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('N9', { paperId: 'paper-9' }) })
+-    seed([])
++    seedLineage([])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     act(() => {
+       (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
+@@ -379,7 +367,7 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
+     stubApi.lineage.upsertNode.mockResolvedValue({
+       ok: true, data: node('T1', { paperId: null, title: '阶段二' })
+     })
+-    seed([])
++    seedLineage([])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     act(() => {
+       (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
+@@ -418,7 +406,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款
+       data: { ok: true, nodeCount: 3, edgeCount: 2 }
+     })
+     stubApi.lineage.graph.mockClear()
+-    seed([])
++    seedLineage([])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     expect(stubApi.lineage.graph).not.toHaveBeenCalled() // Board 挂载不自动取数
+     act(() => {
+@@ -434,7 +422,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款
+ 
+   it('confirm 取消→不调 import 通道（无操作）', async () => {
+     const spy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+-    seed([])
++    seedLineage([])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     act(() => {
+       (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
+@@ -458,7 +446,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款
+       }
+     })
+     stubApi.lineage.graph.mockClear()
+-    seed([])
++    seedLineage([])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     act(() => {
+       (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
+@@ -475,7 +463,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款
+ 
+ describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）', () => {
+   it('lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）', async () => {
+-    seed([])
++    seedLineage([])
+     stubApi.lineage.graph.mockResolvedValue({
+       ok: true,
+       data: { nodes: [node('A', OVL)], edges: [] }
+diff --git a/tests/unit/renderer/lineage-canvas.test.tsx b/tests/unit/renderer/lineage-canvas.test.tsx
+index 77d0be040e..cf6011a9cc 100644
+--- a/tests/unit/renderer/lineage-canvas.test.tsx
++++ b/tests/unit/renderer/lineage-canvas.test.tsx
+@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { readFileSync } from 'node:fs'
+ import { join } from 'node:path'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { stubViewportRect } from '../../utils/geometry'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+ import { makeApiStub } from '../../utils/api-client-mock'
+ 
+@@ -83,14 +84,6 @@ function parseViewport(s: string): { tx: number; ty: number; k: number } | null
+   return m ? { tx: Number(m[1]), ty: Number(m[2]), k: Number(m[3]) } : null
+ }
+ 
+-/** 桩量测（jsdom 无布局）：Element.prototype.getBoundingClientRect 固定返回
+- *  视口盒（selection-layer.test 同族——app 级 mock 配方先例） */
+-function stubViewportRect(width: number, height: number) {
+-  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    return { x: 0, y: 0, top: 0, left: 0, right: width, bottom: height, width, height, toJSON: () => ({}) } as DOMRect
+-  })
+-}
+-
+ beforeEach(() => {
+   vi.clearAllMocks()
+   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+@@ -299,7 +292,7 @@ describe('LineageCanvas —— pan/zoom（INV-14）', () => {
+ 
+ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
+   it('首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）', () => {
+-    const spy = stubViewportRect(800, 600)
++    const { spy } = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -319,7 +312,7 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
+   })
+ 
+   it('不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口', () => {
+-    const spy = stubViewportRect(800, 600)
++    const { spy } = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -355,7 +348,7 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
+   })
+ 
+   it('「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）', () => {
+-    const spy = stubViewportRect(800, 600)
++    const { spy } = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+diff --git a/tests/unit/renderer/lineage-manual-edit.test.tsx b/tests/unit/renderer/lineage-manual-edit.test.tsx
+index 4d6403ce36..787d361988 100644
+--- a/tests/unit/renderer/lineage-manual-edit.test.tsx
++++ b/tests/unit/renderer/lineage-manual-edit.test.tsx
+@@ -16,6 +16,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { seedLineage } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   lineage: {
+@@ -59,19 +60,6 @@ const settle = async (turns = 6): Promise<void> => {
+   }
+ }
+ 
+-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
+-  useLineageStore.setState({
+-    nodes,
+-    edges,
+-    status: 'ready',
+-    error: null,
+-    saveStatus: 'saved',
+-    lastWriteError: null,
+-    queue: [],
+-    flushing: false
+-  })
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+@@ -221,7 +209,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+     stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string; label?: string }) =>
+       ({ ok: true, data: edge('e-new', req.from, req.to, 'manual') })
+     )
+-    seed([
++    seedLineage([
+       node('B', { title: '子文献', year: 2021 }),
+       node('P1', { title: '平行路线甲', year: 2019 }),
+       node('P2', { title: '平行路线乙', year: 2019 })
+@@ -271,7 +259,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+   })
+ 
+   it('取消=零写（对话框关闭不派发）', async () => {
+-    seed([node('B'), node('P1')])
++    seedLineage([node('B'), node('P1')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     clickMenu('连接父文献…')
+@@ -284,7 +272,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+   })
+ 
+   it('未选目标禁用确认（空选择短路——不派发）', async () => {
+-    seed([node('B'), node('P1')])
++    seedLineage([node('B'), node('P1')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     clickMenu('连接父文献…')
+@@ -308,7 +296,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+       })
+     )
+     const manualEdge = { ...edge('e-man1', 'P1', 'B', 'manual'), label: '初判' }
+-    seed([node('B'), node('P1', { title: '平行路线甲', year: 2019 })], [manualEdge])
++    seedLineage([node('B'), node('P1', { title: '平行路线甲', year: 2019 })], [manualEdge])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     // B（有 manual 入边）有管理项
+     openMenu('B')
+@@ -339,7 +327,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+ 
+   it('管理对话框删除=remove-edge；无 manual 边节点无「管理人工连线…」项', async () => {
+     const manualEdge = edge('e-man1', 'P1', 'B', 'manual')
+-    seed([node('B'), node('P1')], [manualEdge])
++    seedLineage([node('B'), node('P1')], [manualEdge])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     clickMenu('管理人工连线…')
+@@ -356,12 +344,12 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
+   })
+ 
+   it('「删除父连线」仅针对 tree 边：节点只有 manual 父（无 tree 父）时该项不呈现', async () => {
+-    seed([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', 'manual')])
++    seedLineage([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', 'manual')])
+     mount(<LineageBoard onSelectNode={() => undefined} />)
+     openMenu('B')
+     expect(menuButtons().some((b) => b.textContent === '删除父连线')).toBe(false)
+     // 加 tree 父后该项呈现且指向 tree 边
+-    seed([node('B'), node('P1'), node('T')], [edge('e-man1', 'P1', 'B', 'manual'), edge('e-tree1', 'T', 'B', 'tree')])
++    seedLineage([node('B'), node('P1'), node('T')], [edge('e-man1', 'P1', 'B', 'manual'), edge('e-tree1', 'T', 'B', 'tree')])
+     openMenu('B')
+     clickMenu('删除父连线')
+     await settle()
+@@ -376,7 +364,7 @@ describe('F-LG15 store manual 写面', () => {
+     stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string }) =>
+       ({ ok: true, data: edge('e-m', req.from, req.to, 'manual') })
+     )
+-    seed([node('B'), node('P1')])
++    seedLineage([node('B'), node('P1')])
+     useLineageStore.getState().linkManualParent('B', 'P1', '逻辑线说明')
+     await settle()
+     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
+@@ -399,7 +387,7 @@ describe('F-LG15 store manual 写面', () => {
+             : edge('e-new', req.from, req.to, 'manual')
+       })
+     )
+-    seed([node('B'), node('P1')], [{ ...edge('e-man1', 'P1', 'B', 'manual'), label: '旧说明' }])
++    seedLineage([node('B'), node('P1')], [{ ...edge('e-man1', 'P1', 'B', 'manual'), label: '旧说明' }])
+     useLineageStore.getState().editManualEdgeLabel('e-man1', '新说明')
+     await settle()
+     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
+diff --git a/tests/unit/renderer/lineage-tag-edit.test.tsx b/tests/unit/renderer/lineage-tag-edit.test.tsx
+index b064ef9c91..e6872420b3 100644
+--- a/tests/unit/renderer/lineage-tag-edit.test.tsx
++++ b/tests/unit/renderer/lineage-tag-edit.test.tsx
+@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { seedLineage } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   ai_sensor: { listByPaper: vi.fn() },
+@@ -60,19 +61,6 @@ const settle = async (turns = 6): Promise<void> => {
+   }
+ }
+ 
+-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
+-  useLineageStore.setState({
+-    nodes,
+-    edges,
+-    status: 'ready',
+-    error: null,
+-    saveStatus: 'saved',
+-    lastWriteError: null,
+-    queue: [],
+-    flushing: false
+-  })
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+@@ -142,7 +130,7 @@ afterEach(() => {
+ // ── 节点菜单「添加标签」入口+Board 全链 ─────────────────────────
+ 
+ it('Board 全链：右键→「添加标签…」→对话框输入→保存=upsert-node 全量载荷含 tags 合并', async () => {
+-  seed([node('A', { tags: ['综述'], coreIdea: '想法', title: '锚点', year: 2019 })])
++  seedLineage([node('A', { tags: ['综述'], coreIdea: '想法', title: '锚点', year: 2019 })])
+   stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+     ({ ok: true, data: serverNode(node('A', req)) })
+   )
+@@ -176,7 +164,7 @@ it('Board 全链：右键→「添加标签…」→对话框输入→保存=ups
+ })
+ 
+ it('对话框取消=零写；主题节点同样有「添加标签…」入口', async () => {
+-  seed([node('T', { paperId: null, tags: null })])
++  seedLineage([node('T', { paperId: null, tags: null })])
+   mount(<LineageBoard onSelectNode={() => undefined} />)
+   openMenu('T')
+   clickMenu('添加标签…')
+@@ -192,7 +180,7 @@ it('对话框取消=零写；主题节点同样有「添加标签…」入口',
+ })
+ 
+ it('空标签名不派发（按钮禁用或提交短路——空串标签不入库）', async () => {
+-  seed([node('A')])
++  seedLineage([node('A')])
+   mount(<LineageBoard onSelectNode={() => undefined} />)
+   openMenu('A')
+   clickMenu('添加标签…')
+@@ -259,7 +247,7 @@ it('侧板同名标签短路：已存在标签再添加不派发（同节点同
+ // ── store setNodeTags 写面 ────────────────────────────────────
+ 
+ it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）', async () => {
+-  seed([node('A', { tags: ['综述'], x: 500, y: 400 })])
++  seedLineage([node('A', { tags: ['综述'], x: 500, y: 400 })])
+   stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+     ({ ok: true, data: serverNode(node('A', req)) })
+   )
+diff --git a/tests/unit/renderer/lineage-viewport-refit.test.tsx b/tests/unit/renderer/lineage-viewport-refit.test.tsx
+index e79fa9920f..daf6fc9da5 100644
+--- a/tests/unit/renderer/lineage-viewport-refit.test.tsx
++++ b/tests/unit/renderer/lineage-viewport-refit.test.tsx
+@@ -17,6 +17,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { stubViewportRect } from '../../utils/geometry'
+ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+ import { fitViewport } from '../../../src/renderer/features/lineage/lineage-viewport'
+ import { layoutLineage } from '../../../src/renderer/features/lineage/lineage-layout'
+@@ -53,25 +54,9 @@ function fireRO(ro: ROStub): void {
+   })
+ }
+ 
+-/** 可变量测桩：原型 gBCR（挂载前就位——挂载 fit 走 clientWidth||rect.width
+- *  回退路径 [F-L2] jsdom 口径；canvas.test stubViewportRect 可变版） */
+-function stubGBCR(width: number, height: number) {
+-  let w = width
+-  let h = height
+-  const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    return { x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) } as DOMRect
+-  })
+-  return {
+-    spy,
+-    set: (nw: number, nh: number): void => {
+-      w = nw
+-      h = nh
+-    }
+-  }
+-}
+-
+ /** per-instance 可变 clientWidth/clientHeight（直取主路径——真机 clientWidth
+- *  优先于 gBCR 回退；scale.test.ts:23-40 同族手法） */
++ *  优先于 gBCR 回退；scale.test.ts:23-40 同族手法）；原型可变 gBCR 桩=
++ *  共享 stubViewportRect（geometry.ts，本文件消费 m.spy） */
+ function stubClientSize(el: Element, width: number, height: number) {
+   let w = width
+   let h = height
+@@ -157,7 +142,7 @@ afterEach(() => {
+ 
+ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）', () => {
+   it('① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）', () => {
+-    const m = stubGBCR(800, 600)
++    const m = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -176,7 +161,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+     // x 紧（700:460/380=1.21 < 440/344=1.28；500:260/380=0.68 < 1.28）下 W2
+     // 直取主路径可判。（F-LG13 后卡恒 240×110——x/y 比随新包围盒变化，
+     // 前提锚 k≠1 仍成立：460/440=1.045≠1，W2 仍可判别。）
+-    const m = stubGBCR(700, 600)
++    const m = stubViewportRect(700, 600)
+     try {
+       const g = chain()
+       const layout = layoutLineage(g.nodes, g.edges)
+@@ -198,7 +183,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+   })
+ 
+   it('③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）', () => {
+-    const m = stubGBCR(800, 600)
++    const m = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -221,7 +206,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+   })
+ 
+   it('④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始', () => {
+-    const m = stubGBCR(800, 600)
++    const m = stubViewportRect(800, 600)
+     try {
+       mount(<LineageCanvas nodes={[]} edges={[]} />)
+       expect(ROStub.instances.length).toBe(1) // svg 常驻（W2 先例）——空图同注册
+@@ -235,7 +220,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+   })
+ 
+   it('⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调', () => {
+-    const m = stubGBCR(800, 600)
++    const m = stubViewportRect(800, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -252,7 +237,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+   })
+ 
+   it('⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）', () => {
+-    const m = stubGBCR(0, 0)
++    const m = stubViewportRect(0, 0)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -269,7 +254,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+     // 实际变化）→fireRO→setViewport 新值→重渲染必然发生（前提锚：transform
+     // 串变化）——在此真重渲染后再断言 RO 无重注册（原版量测未变=fit 同值
+     // React bail 不重渲染，「instances 不变」是平凡真——门一 W4 裁决）。
+-    const m = stubGBCR(700, 600)
++    const m = stubViewportRect(700, 600)
+     try {
+       const g = chain()
+       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
+@@ -295,7 +280,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1
+     // 真实浏览器挂载路径=fit effect+RO 初始回调双 doFit——幂等性显式锁
+     // （同量测同输入同输出；fireRO 前 doFitRef 已就位=useLayoutEffect 同步
+     // 赋值先于浏览器任何派发帧——W1 竞态消除的可测面）。
+-    const m = stubGBCR(700, 600)
++    const m = stubViewportRect(700, 600)
+     try {
+       const g = chain()
+       const layout = layoutLineage(g.nodes, g.edges)
+diff --git a/tests/unit/renderer/lineage-viewport-scale.test.ts b/tests/unit/renderer/lineage-viewport-scale.test.ts
+index 9a674205aa..8bb3a679a4 100644
+--- a/tests/unit/renderer/lineage-viewport-scale.test.ts
++++ b/tests/unit/renderer/lineage-viewport-scale.test.ts
+@@ -13,6 +13,7 @@
+  * 尺寸下跳过）——由真机探针 f-l2-fix-verify.mjs 场景 A 锁。
+  */
+ import { afterEach, describe, expect, it, vi } from 'vitest'
++import { domRect } from '../../utils/geometry'
+ import { rootToLocalScale } from '../../../src/renderer/features/lineage/lineage-viewport'
+ 
+ /**
+@@ -23,17 +24,7 @@ import { rootToLocalScale } from '../../../src/renderer/features/lineage/lineage
+ function stubMeasured(clientWidth: number, gBCRWidth: number): HTMLElement {
+   const el = document.createElement('div')
+   Object.defineProperty(el, 'clientWidth', { get: () => clientWidth, configurable: true })
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+-    x: 0,
+-    y: 0,
+-    top: 0,
+-    left: 0,
+-    right: 0,
+-    bottom: 0,
+-    width: gBCRWidth,
+-    height: 0,
+-    toJSON: () => ({})
+-  } as DOMRect)
++  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(domRect(0, 0, gBCRWidth, 0))
+   return el
+ }
+ 
+diff --git a/tests/unit/renderer/outline-aside.test.tsx b/tests/unit/renderer/outline-aside.test.tsx
+index 6ea1710506..c477c04303 100644
+--- a/tests/unit/renderer/outline-aside.test.tsx
++++ b/tests/unit/renderer/outline-aside.test.tsx
+@@ -9,14 +9,15 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+-import type { Annotation } from '../../../src/shared/models/annotation'
+ import { guardedDescribe } from '../../utils/guard'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
+ 
+ import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
++import type { Annotation } from '../../../src/shared/models/annotation'
+ 
+ // jsdom 无 IntersectionObserver（缩略图懒渲染依赖）——最小桩（永不触发回调=不渲染图）
+ class IntersectionObserverStub {
+@@ -45,22 +46,6 @@ function ann(id: string, page: number): Annotation {
+   }
+ }
+ 
+-function makeTab(id: string, annotations: Annotation[] = []): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 20,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations,
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ /** duck-typed pdfjs 文档句柄（目录一项，目的地=显式页号 3；getOutline=vi.fn 可计数） */
+ function fakeDoc(): unknown {
+   return {
+@@ -91,7 +76,7 @@ function tabsOf(): HTMLElement[] {
+ beforeEach(() => {
+   vi.clearAllMocks()
+   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+-  useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', [ann('a-x', 7)]) }, order: ['p-1'], activeId: 'p-1' })
++  useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', { annotations: [ann('a-x', 7)], totalPages: 20 }) }, order: ['p-1'], activeId: 'p-1' })
+ })
+ 
+ afterEach(() => {
+diff --git a/tests/unit/renderer/pages-overlay.test.tsx b/tests/unit/renderer/pages-overlay.test.tsx
+index 3577159f7a..936e7362ee 100644
+--- a/tests/unit/renderer/pages-overlay.test.tsx
++++ b/tests/unit/renderer/pages-overlay.test.tsx
+@@ -25,6 +25,7 @@ import { act } from 'react'
+ import type { RefObject } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { domRect } from '../../utils/geometry'
+ import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+@@ -114,8 +115,7 @@ function makePageRoot(no: number, w: number, h: number): HTMLElement {
+   pageRoot.setAttribute('data-page-root', String(no))
+   const canvas = document.createElement('canvas')
+   canvas.setAttribute('data-pdf-canvas', 'true')
+-  canvas.getBoundingClientRect = (): DOMRect =>
+-    ({ x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) }) as DOMRect
++  canvas.getBoundingClientRect = (): DOMRect => domRect(0, 0, w, h)
+   pageRoot.appendChild(canvas)
+   manualHost!.appendChild(pageRoot)
+   return pageRoot
+diff --git a/tests/unit/renderer/paper-detail-cited.test.tsx b/tests/unit/renderer/paper-detail-cited.test.tsx
+index 60176b9de1..0310ca2d1a 100644
+--- a/tests/unit/renderer/paper-detail-cited.test.tsx
++++ b/tests/unit/renderer/paper-detail-cited.test.tsx
+@@ -11,6 +11,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeDetail } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   library: { detail: vi.fn() },
+@@ -21,33 +22,6 @@ const stubApi = makeApiStub({
+ 
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+ 
+-function makeDetail(): PaperDetail {
+-  return {
+-    id: 'paper-1',
+-    title: '样例论文',
+-    authors: ['张三'],
+-    year: 2026,
+-    venue: 'Journal of Testing',
+-    doi: null,
+-    tagNames: [],
+-    collectionNames: [],
+-    annotationCount: 0,
+-    noteCount: 1,
+-    lastReadPage: 0,
+-    readingSeconds: 0,
+-    addedAt: 't',
+-    abstract: '',
+-    arxivId: null,
+-    source: 'local',
+-    enrichStatus: 'pending',
+-    fileUrl: 'app-file://paper-1',
+-    fileName: 'a.pdf',
+-    updatedAt: 't',
+-    tags: [],
+-    collections: []
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+diff --git a/tests/unit/renderer/paper-detail-clip.test.tsx b/tests/unit/renderer/paper-detail-clip.test.tsx
+index a03e964099..6d7b29ad61 100644
+--- a/tests/unit/renderer/paper-detail-clip.test.tsx
++++ b/tests/unit/renderer/paper-detail-clip.test.tsx
+@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { PaperDetail } from '../../../src/shared/models/paper'
+ import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
++import { makeDemoDetail } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   library: { detail: vi.fn() },
+@@ -24,38 +25,11 @@ const stubApi = makeApiStub({
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+ import { usePaperDetailActions } from '../../../src/renderer/features/library/usePaperDetailActions'
+ 
+-function makeDetail(): PaperDetail {
+-  return {
+-    id: 'paper-1',
+-    title: '样例论文',
+-    authors: ['张三', '李四'],
+-    year: 2026,
+-    venue: 'Journal of Testing',
+-    doi: '10.0000/demo',
+-    tagNames: [],
+-    collectionNames: [],
+-    annotationCount: 2,
+-    noteCount: 1,
+-    lastReadPage: 0,
+-    readingSeconds: 0,
+-    addedAt: '2026-08-24T00:00:00Z',
+-    abstract: '摘要内容',
+-    arxivId: null,
+-    source: 'local',
+-    enrichStatus: 'pending',
+-    fileUrl: 'app-file://paper-1',
+-    fileName: 'demo.pdf',
+-    updatedAt: '2026-08-24T00:00:00Z',
+-    tags: [],
+-    collections: []
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+ async function renderPanel(): Promise<void> {
+-  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDetail() })
++  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDemoDetail() })
+   host = document.createElement('div')
+   document.body.appendChild(host)
+   root = createRoot(host)
+@@ -79,7 +53,7 @@ async function renderHarness(): Promise<HTMLButtonElement> {
+   document.body.appendChild(host)
+   root = createRoot(host)
+   await act(async () => {
+-    root?.render(<Harness detail={makeDetail()} onRefresh={() => {}} />)
++    root?.render(<Harness detail={makeDemoDetail()} onRefresh={() => {}} />)
+   })
+   return host.querySelector('button') as HTMLButtonElement
+ }
+@@ -172,7 +146,7 @@ it('拆件回归：report/bibtex/corpus 文件导出经 hook 路径仍工作（t
+ })
+ 
+ it('拆件回归：enrich 经 hook 路径仍工作（成功 toast+触发详情重读）', async () => {
+-  stubApi.enrich.fetch.mockResolvedValue({ ok: true, data: makeDetail() })
++  stubApi.enrich.fetch.mockResolvedValue({ ok: true, data: makeDemoDetail() })
+   await renderPanel()
+   await click('增强元数据')
+   expect(stubApi.enrich.fetch).toHaveBeenCalledWith({ paperId: 'paper-1' })
+diff --git a/tests/unit/renderer/paper-detail-export.test.tsx b/tests/unit/renderer/paper-detail-export.test.tsx
+index 585cfba3ca..f01a62f958 100644
+--- a/tests/unit/renderer/paper-detail-export.test.tsx
++++ b/tests/unit/renderer/paper-detail-export.test.tsx
+@@ -9,8 +9,8 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+-import type { PaperDetail } from '../../../src/shared/models/paper'
+ import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
++import { makeDemoDetail } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   library: { detail: vi.fn() },
+@@ -22,38 +22,11 @@ const stubApi = makeApiStub({
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+-function makeDetail(): PaperDetail {
+-  return {
+-    id: 'paper-1',
+-    title: '样例论文',
+-    authors: ['张三', '李四'],
+-    year: 2026,
+-    venue: 'Journal of Testing',
+-    doi: '10.0000/demo',
+-    tagNames: [],
+-    collectionNames: [],
+-    annotationCount: 2,
+-    noteCount: 1,
+-    lastReadPage: 0,
+-    readingSeconds: 0,
+-    addedAt: '2026-08-24T00:00:00Z',
+-    abstract: '摘要内容',
+-    arxivId: null,
+-    source: 'local',
+-    enrichStatus: 'pending',
+-    fileUrl: 'app-file://paper-1',
+-    fileName: 'demo.pdf',
+-    updatedAt: '2026-08-24T00:00:00Z',
+-    tags: [],
+-    collections: []
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+ async function renderPanel(): Promise<void> {
+-  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDetail() })
++  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDemoDetail() })
+   host = document.createElement('div')
+   document.body.appendChild(host)
+   root = createRoot(host)
+diff --git a/tests/unit/renderer/paper-detail-notes-off.test.tsx b/tests/unit/renderer/paper-detail-notes-off.test.tsx
+index 230c7513e7..24b8853a06 100644
+--- a/tests/unit/renderer/paper-detail-notes-off.test.tsx
++++ b/tests/unit/renderer/paper-detail-notes-off.test.tsx
+@@ -9,9 +9,9 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+-import type { PaperDetail } from '../../../src/shared/models/paper'
+ import { guardedDescribe } from '../../utils/guard'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeDetail } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({
+   library: { detail: vi.fn() },
+@@ -23,33 +23,6 @@ const stubApi = makeApiStub({
+ import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+ 
+-function makeDetail(): PaperDetail {
+-  return {
+-    id: 'paper-1',
+-    title: '样例论文',
+-    authors: ['张三'],
+-    year: 2026,
+-    venue: 'Journal of Testing',
+-    doi: null,
+-    tagNames: [],
+-    collectionNames: [],
+-    annotationCount: 0,
+-    noteCount: 1,
+-    lastReadPage: 0,
+-    readingSeconds: 0,
+-    addedAt: 't',
+-    abstract: '',
+-    arxivId: null,
+-    source: 'local',
+-    enrichStatus: 'pending',
+-    fileUrl: 'app-file://paper-1',
+-    fileName: 'a.pdf',
+-    updatedAt: 't',
+-    tags: [],
+-    collections: []
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+diff --git a/tests/unit/renderer/r3-rdr-set-visual.test.tsx b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+index 687651369f..98321a8c99 100644
+--- a/tests/unit/renderer/r3-rdr-set-visual.test.tsx
++++ b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+@@ -26,10 +26,11 @@ vi.mock('../../../src/renderer/features/settings/ZcodeLinkSection', () => ({
+   ZcodeLinkSection: () => null
+ }))
+ 
++import { makeTab } from '../../utils/factories'
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+ import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+ import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ 
+ // act() 环境声明（library-cards 同口径——免 React 警告刷屏）
+@@ -61,22 +62,6 @@ afterEach(() => {
+ })
+ 
+ /** ready 态完整 tab 形状（tab-bar.test 同配方） */
+-function makeTab(id: string): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ describe('R3-U3 ReaderToolbar —— 玻璃浮层皮肤（装饰浓度最低：仅皮肤零布局变）', () => {
+   it('工具条根挂 rdr-toolbar 玻璃浮层类；theme-reader.css 值面=--panel-glass+blur10+金 hairline 底缘', () => {
+     mount(
+diff --git a/tests/unit/renderer/reader-double-page.test.tsx b/tests/unit/renderer/reader-double-page.test.tsx
+index dc16bcdbc2..4f347ab763 100644
+--- a/tests/unit/renderer/reader-double-page.test.tsx
++++ b/tests/unit/renderer/reader-double-page.test.tsx
+@@ -22,6 +22,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { PDFDocumentProxy } from 'pdfjs-dist'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+ import {
+@@ -35,8 +36,7 @@ import {
+ } from '../../../src/renderer/features/reader/page-column-geometry'
+ import {
+   createReaderStoreInitialState,
+-  useReaderStore,
+-  type TabState
++  useReaderStore
+ } from '../../../src/renderer/features/reader/reader.store'
+ 
+ // store 面 openPaper 链的 api 桩（selection-mode.test 同法：模块 mock，
+@@ -114,23 +114,6 @@ function remount(node: JSX.Element): void {
+ }
+ 
+ /** ready 态完整 tab（selection-mode.test 同配方+pageLayout 维度） */
+-function makeTab(id: string, pageLayout?: 'single' | 'double'): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false,
+-    ...(pageLayout !== undefined ? { pageLayout } : {})
+-  }
+-}
+-
+ beforeEach(() => {
+   MockIO.instances = []
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+@@ -165,7 +148,7 @@ describe('F-R1 双页 —— store 面（TabState.pageLayout 生命周期）', (
+ 
+   it('①b per-tab 记忆：A(double)/B(single) 切换各自保持；setPageLayout 只动 active', () => {
+     useReaderStore.setState({
+-      tabs: { 'p-a': makeTab('p-a', 'double'), 'p-b': makeTab('p-b') },
++      tabs: { 'p-a': makeTab('p-a', { pageLayout: 'double' }), 'p-b': makeTab('p-b') },
+       order: ['p-a', 'p-b'],
+       activeId: 'p-a'
+     })
+@@ -187,7 +170,7 @@ describe('F-R1 双页 —— store 面（TabState.pageLayout 生命周期）', (
+     expect(useReaderStore.getState().tabs['p-new']?.pageLayout).toBe('single')
+     // error 态重开：{...prev, status:'loading'} 继承面——prev=double 沿用（zoom 先例）
+     useReaderStore.setState({
+-      tabs: { 'p-e': { ...makeTab('p-e', 'double'), status: 'error' } },
++      tabs: { 'p-e': { ...makeTab('p-e', { pageLayout: 'double' }), status: 'error' } },
+       order: ['p-e'],
+       activeId: 'p-e'
+     })
+diff --git a/tests/unit/renderer/reader-notes-panel.test.tsx b/tests/unit/renderer/reader-notes-panel.test.tsx
+index 62edc62503..28ef351495 100644
+--- a/tests/unit/renderer/reader-notes-panel.test.tsx
++++ b/tests/unit/renderer/reader-notes-panel.test.tsx
+@@ -12,6 +12,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationKind } from '../../../src/shared/models/annotation'
+ import { guardedDescribe } from '../../utils/guard'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
+ const notesGet = vi.fn()
+@@ -21,7 +22,7 @@ stubApi.notes.save = notesSave
+ 
+ import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
+ import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
+-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
++import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ 
+ function ann(id: string, page: number, off: number, kind: AnnotationKind, comment: string): Annotation {
+@@ -43,22 +44,6 @@ function ann(id: string, page: number, off: number, kind: AnnotationKind, commen
+   }
+ }
+ 
+-function makeTab(id: string): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+diff --git a/tests/unit/renderer/reader-search-ui.test.tsx b/tests/unit/renderer/reader-search-ui.test.tsx
+index c431a54b27..c763bb5f8e 100644
+--- a/tests/unit/renderer/reader-search-ui.test.tsx
++++ b/tests/unit/renderer/reader-search-ui.test.tsx
+@@ -13,6 +13,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { defineRangeClientRects, domRect } from '../../utils/geometry'
+ import { ReaderSearchBox } from '../../../src/renderer/features/reader/ReaderSearchBox'
+ import { SearchHighlightLayer } from '../../../src/renderer/features/reader/SearchHighlightLayer'
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+@@ -39,10 +40,8 @@ function remount(node: JSX.Element): void {
+   })
+ }
+ 
+-/** 视口盒桩（Range.getClientRects 返回元素——toPageRelative 只读 x/y/width/height） */
+-function rect(x: number, y: number, w: number, h: number): DOMRect {
+-  return { x, y, width: w, height: h, top: y, left: x, right: x + w, bottom: y + h, toJSON: () => ({}) } as DOMRect
+-}
++/** 视口盒桩（Range.getClientRects 返回元素——toPageRelative 只读 x/y/width/height）；
++ *  domRect 全字段同形（共享 geometry 单源） */
+ 
+ /** 页根桩：.textLayer 内按序 spans（SearchHighlightLayer 量测输入） */
+ function makeSpans(spanTexts: string[]): HTMLSpanElement[] {
+@@ -103,8 +102,8 @@ function boxProps(over: Partial<Parameters<typeof ReaderSearchBox>[0]>): Paramet
+   }
+ }
+ 
+-/** defineProperty 桩的原 descriptor（门一 N4：afterEach 显式还原不裸留） */
+-let origClientRects: PropertyDescriptor | undefined
++/** defineProperty 桩句柄（门一 N4：afterEach 显式还原不裸留） */
++let rangeRectsStub: { mock: ReturnType<typeof vi.fn>; restore(): void } | null = null
+ let origScrollIntoView: PropertyDescriptor | undefined
+ 
+ beforeEach(() => {
+@@ -116,11 +115,9 @@ beforeEach(() => {
+   })
+   // Range 几何桩：jsdom 无 getClientRects 实现（定义注入）；真布局归 e2e——
+   // jsdom 只断渲染存在性与 px 样式映射
+-  origClientRects = Object.getOwnPropertyDescriptor(Range.prototype, 'getClientRects')
+-  Object.defineProperty(Range.prototype, 'getClientRects', {
+-    value: vi.fn((): DOMRectList => [rect(110, 60, 40, 12)] as unknown as DOMRectList),
+-    configurable: true
+-  })
++  rangeRectsStub = defineRangeClientRects(
++    (): DOMRectList => [domRect(110, 60, 40, 12)] as unknown as DOMRectList
++  )
+   // scrollIntoView jsdom 无实现——active 居中路径的可观测桩
+   origScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
+   Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true })
+@@ -137,11 +134,7 @@ afterEach(() => {
+   vi.unstubAllGlobals()
+   vi.restoreAllMocks()
+   // 门一 N4：defineProperty 桩按原 descriptor 显式还原（原无实现=删属性）
+-  if (origClientRects === undefined) {
+-    delete (Range.prototype as { getClientRects?: unknown }).getClientRects
+-  } else {
+-    Object.defineProperty(Range.prototype, 'getClientRects', origClientRects)
+-  }
++  rangeRectsStub?.restore()
+   if (origScrollIntoView === undefined) {
+     delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+   } else {
+@@ -307,7 +300,7 @@ describe('P7E-03 SearchHighlightLayer —— 渲染面', () => {
+     plantDone(0)
+     const pageRoot = makePageRoot(['SMART WATER', 'x'])
+     // 页根盒偏移桩：视口盒(110,60)−根盒(100,50)=页内相对(10,10)
+-    vi.spyOn(pageRoot.querySelector('.textLayer')!, 'getBoundingClientRect').mockReturnValue(rect(100, 50, 612, 792))
++    vi.spyOn(pageRoot.querySelector('.textLayer')!, 'getBoundingClientRect').mockReturnValue(domRect(100, 50, 612, 792))
+     mount(<SearchHighlightLayer page={0} pageRoot={pageRoot} />)
+     const hls = host!.querySelectorAll<HTMLElement>('[data-testid="search-hl"]')
+     expect(hls).toHaveLength(1)
+@@ -391,8 +384,9 @@ describe('P7E-03 SearchHighlightLayer —— 渲染面', () => {
+     expect(hlBefore.style.left).toBe('110px')
+     expect(hlBefore.style.width).toBe('40px')
+     // 重排后的新视口几何（clientRects 桩换返回值）
+-    const rectsMock = (Range.prototype as unknown as { getClientRects: ReturnType<typeof vi.fn> }).getClientRects
+-    rectsMock.mockImplementation((): DOMRectList => [rect(220, 120, 80, 20)] as unknown as DOMRectList)
++    rangeRectsStub!.mock.mockImplementation(
++      (): DOMRectList => [domRect(220, 120, 80, 20)] as unknown as DOMRectList
++    )
+     // zoom 重渲模拟：TextLayer effect 的 container.replaceChildren()+span 重挂同型
+     const layer = pageRoot.querySelector('.textLayer')!
+     await act(async () => {
+diff --git a/tests/unit/renderer/reader-search-wiring.test.tsx b/tests/unit/renderer/reader-search-wiring.test.tsx
+index 1338833996..b0601a8740 100644
+--- a/tests/unit/renderer/reader-search-wiring.test.tsx
++++ b/tests/unit/renderer/reader-search-wiring.test.tsx
+@@ -14,6 +14,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
+ import {
+   createReaderSearchInitialState,
+@@ -22,8 +23,7 @@ import {
+ } from '../../../src/renderer/features/reader/reader-search.store'
+ import {
+   createReaderStoreInitialState,
+-  useReaderStore,
+-  type TabState
++  useReaderStore
+ } from '../../../src/renderer/features/reader/reader.store'
+ 
+ 
+@@ -59,22 +59,6 @@ function remount(node: JSX.Element): void {
+ }
+ 
+ /** ready 态完整 tab（selection-mode.test 同配方） */
+-function makeTab(id: string, page = 0): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false
+-  }
+-}
+-
+ /** 植入 done 会话（pageTurner/fileUrl 用例的公共夹具；act 包裹——宿主在挂
+  *  中，store 写入驱动其重渲染须走 act 防警告） */
+ function plantSearchDone(matchPages: number[]): SearchMatch[] {
+@@ -154,7 +138,7 @@ describe('P7E-03 useReaderSearch 接线 —— keymap 注册/注销成对（INV-
+ 
+ describe('P7E-03 useReaderSearch 接线 —— pageTurner 翻页联动（INV-29）', () => {
+   it("③ 目标页≠tab.page→setPage({scroll:'to'})；相等→不调（scrollRequest 不 bump）", () => {
+-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
++    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
+     mount(<Host pdfDoc={null} fileUrl="app-file://a" />)
+     plantSearchDone([0, 1])
+     act(() => {
+diff --git a/tests/unit/renderer/release-affinity.test.ts b/tests/unit/renderer/release-affinity.test.ts
+index 8a2e9e5a8b..270b1a315d 100644
+--- a/tests/unit/renderer/release-affinity.test.ts
++++ b/tests/unit/renderer/release-affinity.test.ts
+@@ -1,5 +1,6 @@
+ // @vitest-environment jsdom
+ import { afterEach, describe, expect, it } from 'vitest'
++import { stubRectOf } from '../../utils/geometry'
+ import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
+ import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+@@ -14,17 +15,12 @@ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anch
+ 
+ interface Box { top: number; bottom: number; left: number; right: number }
+ 
+-/** 给元素打量测桩（真浏览器 getBoundingClientRect 的 jsdom 替身——F-A10 同款） */
+-function rectOf(el: HTMLElement, b: Box): void {
+-  el.getBoundingClientRect = () =>
+-    ({ x: b.left, y: b.top, top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.right - b.left, height: b.bottom - b.top, toJSON: () => ({}) }) as DOMRect
+-}
+ 
+ /** 造一个 pdf.js 文本层形态的 span（文本+量测盒） */
+ function mkSpan(text: string, b: Box): HTMLSpanElement {
+   const s = document.createElement('span')
+   s.textContent = text
+-  rectOf(s, b)
++  stubRectOf(s, b)
+   return s
+ }
+ 
+diff --git a/tests/unit/renderer/scroll-converge.test.ts b/tests/unit/renderer/scroll-converge.test.ts
+index 2d2b9f27fc..2fadc5cab3 100644
+--- a/tests/unit/renderer/scroll-converge.test.ts
++++ b/tests/unit/renderer/scroll-converge.test.ts
+@@ -13,20 +13,12 @@
+  * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
+  */
+ import { afterEach, describe, expect, it, vi } from 'vitest'
++import { stubElementRect } from '../../utils/geometry'
+ import {
+   nearestScrollAncestor,
+   scrollIntoNearestScroller
+ } from '../../../src/renderer/features/reader/scroll-converge'
+ 
+-/** 桩盒几何：el 的 getBoundingClientRect 固定返回给定矩形（F-R2 回炉 1 起
+- *  z 来自 computed zoom 桩（stubZoom），height 不再承担量纲角色）。 */
+-function stubRect(el: HTMLElement, top: number, height = 10): void {
+-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+-    top, right: top + 10, bottom: top + height, left: 0, width: 10, height, x: 0, y: top,
+-    toJSON: () => ({})
+-  } as DOMRect)
+-}
+-
+ /** 桩 CSS zoom（F-R2 回炉 1：effectiveZoom=computed zoom 链直读——jsdom 不
+  *  识别 zoom 属性，经 getComputedStyle mock 注入；其余属性/元素透传真实值
+  *  （overflowY 祖先判定不受扰）。 */
+@@ -95,8 +87,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('start 数学：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）；嵌套取最近——outer 零位移', () => {
+     const { outer, inner, target } = buildNested()
+-    stubRect(inner, 100, 400)
+-    stubRect(target, 550)
++    stubElementRect(inner, 0, 100, 10, 400)
++    stubElementRect(target, 0, 550, 10, 10)
+     stubScrollDims(inner, 2000, 400)
+     stubScrollDims(outer, 3000, 600)
+     inner.scrollTop = 30
+@@ -109,8 +101,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('center 数学：scrollTop += (elRect.top + h/2) − (scrollerRect.top + clientH/2)（居中）', () => {
+     const { inner, target } = buildNested()
+-    stubRect(inner, 100, 400)
+-    stubRect(target, 900, 80)
++    stubElementRect(inner, 0, 100, 10, 400)
++    stubElementRect(target, 0, 900, 10, 80)
+     stubScrollDims(inner, 2000, 400)
+     inner.scrollTop = 0
+     scrollIntoNearestScroller(target, 'center')
+@@ -120,16 +112,16 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+ 
+   it('顶底夹取：目标在上方越界→夹 0；在下方越界→夹 scrollHeight−clientHeight（显式夹取，jsdom 无浏览器夹取）', () => {
+     const f = buildNested()
+-    stubRect(f.inner, 100, 400)
++    stubElementRect(f.inner, 0, 100, 10, 400)
+     stubScrollDims(f.inner, 2000, 400)
+     f.inner.scrollTop = 50
+     // 目标盒顶 60 < 容器顶 100 → raw 50+(60−100)=10？构造真越界：目标 30
+-    stubRect(f.target, 30)
++    stubElementRect(f.target, 0, 30, 10, 10)
+     scrollIntoNearestScroller(f.target, 'start')
+     expect(f.inner.scrollTop, 'raw=50+(30−100)=−20 → 夹 0').toBe(0)
+     // 底夹取：目标盒顶 1900 → raw=0+(1900−100)=1800 > 2000−400=1600 → 夹 1600
+     f.inner.scrollTop = 0
+-    stubRect(f.target, 1900)
++    stubElementRect(f.target, 0, 1900, 10, 10)
+     scrollIntoNearestScroller(f.target, 'start')
+     expect(f.inner.scrollTop).toBe(1600)
+   })
+@@ -141,8 +133,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+     const item = document.createElement('div')
+     aside.appendChild(item)
+     document.body.appendChild(aside)
+-    stubRect(aside, 40, 300)
+-    stubRect(item, 500, 20)
++    stubElementRect(aside, 0, 40, 10, 300)
++    stubElementRect(item, 0, 500, 10, 20)
+     stubScrollDims(aside, 900, 300)
+     scrollIntoNearestScroller(item, 'center')
+     // (500+10) − (40+150) = 320
+@@ -153,8 +145,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+   it('start 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）', () => {
+     const { inner, target } = buildNested()
+     stubZoom(inner, 1.25)
+-    stubRect(inner, 100, 500)
+-    stubRect(target, 600, 250)
++    stubElementRect(inner, 0, 100, 10, 500)
++    stubElementRect(target, 0, 600, 10, 250)
+     stubScrollDims(inner, 2000, 400)
+     inner.scrollTop = 30
+     scrollIntoNearestScroller(target, 'start')
+@@ -165,8 +157,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+   it('center 双空间折算（z=1.5）：elRect 侧除 z，clientHeight 项保持本地空间', () => {
+     const { inner, target } = buildNested()
+     stubZoom(inner, 1.5)
+-    stubRect(inner, 110, 600)
+-    stubRect(target, 1460, 300)
++    stubElementRect(inner, 0, 110, 10, 600)
++    stubElementRect(target, 0, 1460, 10, 300)
+     stubScrollDims(inner, 2000, 400)
+     inner.scrollTop = 0
+     scrollIntoNearestScroller(target, 'center')
+@@ -177,8 +169,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
+   it('z≠1 底夹取：clamp 上限保持本地口径 scrollHeight−clientHeight（不随 z 缩放）', () => {
+     const { inner, target } = buildNested()
+     stubZoom(inner, 1.25)
+-    stubRect(inner, 100, 500)
+-    stubRect(target, 2500, 250)
++    stubElementRect(inner, 0, 100, 10, 500)
++    stubElementRect(target, 0, 2500, 10, 250)
+     stubScrollDims(inner, 2000, 400)
+     inner.scrollTop = 0
+     scrollIntoNearestScroller(target, 'start')
+diff --git a/tests/unit/renderer/scroll-progress.test.tsx b/tests/unit/renderer/scroll-progress.test.tsx
+index 9fb6110a6b..8205a285e4 100644
+--- a/tests/unit/renderer/scroll-progress.test.tsx
++++ b/tests/unit/renderer/scroll-progress.test.tsx
+@@ -11,6 +11,7 @@
+  * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
+  */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { stubElementRect } from '../../utils/geometry'
+ import {
+   createScrollProgress,
+   measurePageBoxes,
+@@ -354,23 +355,11 @@ describe('scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）', () =>
+     })
+     Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
+     el.scrollTop = 110
+-    const rect = (top: number, height: number): DOMRect =>
+-      ({
+-        top,
+-        right: 0,
+-        bottom: top + height,
+-        left: 0,
+-        width: 0,
+-        height,
+-        x: 0,
+-        y: top,
+-        toJSON: () => ({})
+-      }) as DOMRect
+-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(0, 100 * z))
++    stubElementRect(el, 0, 0, 0, 100 * z)
+     for (const c of [0, 200, 400]) {
+       const box = document.createElement('div')
+       box.setAttribute('data-page-box', String(c))
+-      vi.spyOn(box, 'getBoundingClientRect').mockReturnValue(rect((c - 110) * z, 100 * z))
++      stubElementRect(box, 0, (c - 110) * z, 0, 100 * z)
+       el.appendChild(box)
+     }
+     document.body.appendChild(el)
+diff --git a/tests/unit/renderer/selection-evaluate.test.tsx b/tests/unit/renderer/selection-evaluate.test.tsx
+index 1ff111423f..b7a30806f7 100644
+--- a/tests/unit/renderer/selection-evaluate.test.tsx
++++ b/tests/unit/renderer/selection-evaluate.test.tsx
+@@ -27,6 +27,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
++import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+@@ -42,8 +43,8 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+ })
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（textLayer 盒=归一化基准 612×792） */
+-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+-let origRangeGBCR: (() => DOMRect) | undefined
++const rects = new Map<Element, StubBox>()
++let rangeStub: { restore(): void } | null = null
+ const rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+ 
+ /** 单页夹具（口径 crib item-chain：textLayer 盒置于视口绝对位 (500,300) 域锁；
+@@ -144,12 +145,8 @@ beforeEach(() => {
+   usePageItemsStore.getState().clear()
+   useReaderStore.setState(createReaderStoreInitialState())
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    const r = rects.get(this)
+-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-  })
+-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
+-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
++  stubElementRects(rects)
++  rangeStub = stubRangeGBCR(() => rangeRect)
+   window.getSelection()?.removeAllRanges()
+ })
+ 
+@@ -160,7 +157,7 @@ afterEach(() => {
+   root = null
+   host?.remove()
+   host = null
+-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
++  rangeStub?.restore()
+   document.body.innerHTML = ''
+   vi.restoreAllMocks()
+   vi.useRealTimers()
+diff --git a/tests/unit/renderer/selection-item-chain.test.tsx b/tests/unit/renderer/selection-item-chain.test.tsx
+index 76af8ac394..c393fd6427 100644
+--- a/tests/unit/renderer/selection-item-chain.test.tsx
++++ b/tests/unit/renderer/selection-item-chain.test.tsx
+@@ -17,6 +17,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
++import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+@@ -33,8 +34,8 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+ })
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（textLayer 盒=归一化基准 612×792） */
+-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+-let origRangeGBCR: (() => DOMRect) | undefined
++const rects = new Map<Element, StubBox>()
++let rangeStub: { restore(): void } | null = null
+ const rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+ 
+ /** 页根+textLayer（span 文本=itemsText——对账前提）。textLayer 盒置于视口
+@@ -112,12 +113,8 @@ beforeEach(() => {
+   useReaderStore.setState(createReaderStoreInitialState())
+   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    const r = rects.get(this)
+-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-  })
+-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
+-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
++  stubElementRects(rects)
++  rangeStub = stubRangeGBCR(() => rangeRect)
+   window.getSelection()?.removeAllRanges()
+ })
+ 
+@@ -128,7 +125,7 @@ afterEach(() => {
+   root = null
+   host?.remove()
+   host = null
+-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
++  rangeStub?.restore()
+   document.body.innerHTML = ''
+   vi.restoreAllMocks()
+   vi.useRealTimers()
+diff --git a/tests/unit/renderer/selection-layer-fa12.test.tsx b/tests/unit/renderer/selection-layer-fa12.test.tsx
+index 0e16e2d81b..453dba9753 100644
+--- a/tests/unit/renderer/selection-layer-fa12.test.tsx
++++ b/tests/unit/renderer/selection-layer-fa12.test.tsx
+@@ -10,6 +10,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { stubRectOf } from '../../utils/geometry'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ 
+@@ -22,13 +23,6 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+   return r.data
+ })
+ 
+-interface Box { top: number; bottom: number; left: number; right: number }
+-
+-/** 打量测桩（真浏览器 getBoundingClientRect 的 jsdom 替身——直挂元素自有属性） */
+-function rectOf(el: HTMLElement, b: Box): void {
+-  el.getBoundingClientRect = () =>
+-    ({ x: b.left, y: b.top, top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.right - b.left, height: b.bottom - b.top, toJSON: () => ({}) }) as DOMRect
+-}
+ 
+ /** 单页夹具：r0「EF third」[80,90]x[10,70] / r1「AB first」[100,110]x[10,80]。
+  *  释放点 (75,93)：y 在 r1 上方间隙偏近 r0、x=75 在 r0 行尾空白区（右缘 70 外） */
+@@ -37,13 +31,13 @@ function mountFixture(): { page: HTMLElement; r0: HTMLSpanElement; r1: HTMLSpanE
+   page.setAttribute('data-page-root', '1')
+   const textLayer = document.createElement('div')
+   textLayer.className = 'textLayer'
+-  rectOf(textLayer, { top: 60, bottom: 160, left: 0, right: 300 })
++  stubRectOf(textLayer, { top: 60, bottom: 160, left: 0, right: 300 })
+   const r0 = document.createElement('span')
+   r0.textContent = 'EF third'
+-  rectOf(r0, { top: 80, bottom: 90, left: 10, right: 70 })
++  stubRectOf(r0, { top: 80, bottom: 90, left: 10, right: 70 })
+   const r1 = document.createElement('span')
+   r1.textContent = 'AB first'
+-  rectOf(r1, { top: 100, bottom: 110, left: 10, right: 80 })
++  stubRectOf(r1, { top: 100, bottom: 110, left: 10, right: 80 })
+   textLayer.append(r0, r1)
+   page.append(textLayer)
+   document.body.append(page)
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index e3d633f226..8a475f7b8c 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -18,6 +18,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
++import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import {
+   SelectionLayer,
+   closestPageRoot,
+@@ -34,10 +35,10 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+ })
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回（页盒几何——坐标换算断言的输入） */
+-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
++const rects = new Map<Element, StubBox>()
+ /** jsdom Range 无布局方法：选区 rect 可变桩（视口坐标） */
+ let rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+-let origRangeGBCR: (() => DOMRect) | undefined
++let rangeStub: { restore(): void } | null = null
+ 
+ /** F-01 后结构：两页盒（data-page-root 1 基）各含 .textLayer（单 span 文本） */
+ function mountColumnFixture(): { page1: HTMLElement; page2: HTMLElement; span1: HTMLElement; span2: HTMLElement } {
+@@ -103,12 +104,8 @@ beforeEach(() => {
+   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+   onSaved = vi.fn()
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    const r = rects.get(this)
+-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-  })
+-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
+-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
++  stubElementRects(rects)
++  rangeStub = stubRangeGBCR(() => rangeRect)
+   window.getSelection()?.removeAllRanges()
+ })
+ 
+@@ -119,7 +116,7 @@ afterEach(() => {
+   root = null
+   host?.remove()
+   host = null
+-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
++  rangeStub?.restore()
+   document.body.innerHTML = ''
+   vi.restoreAllMocks()
+   vi.useRealTimers()
+diff --git a/tests/unit/renderer/selection-mode.test.tsx b/tests/unit/renderer/selection-mode.test.tsx
+index 36ee5e5371..bdfa92e7a0 100644
+--- a/tests/unit/renderer/selection-mode.test.tsx
++++ b/tests/unit/renderer/selection-mode.test.tsx
+@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { makeApiStub } from '../../utils/api-client-mock'
++import { makeTab } from '../../utils/factories'
+ 
+ makeApiStub({ reader: {} })
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+@@ -27,8 +28,7 @@ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnot
+ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+ import {
+   createReaderStoreInitialState,
+-  useReaderStore,
+-  type TabState
++  useReaderStore
+ } from '../../../src/renderer/features/reader/reader.store'
+ 
+ /** 归一化域矩形夹具 */
+@@ -57,23 +57,6 @@ function ann(): Annotation {
+ }
+ 
+ /** ready 态完整 tab（tab-bar.test 同配方+selectionMode 维度） */
+-function makeTab(id: string, selectionMode = false): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false,
+-    selectionMode
+-  }
+-}
+-
+ /** AI 段夹具（ai-annotation-layer.test 同配方） */
+ function aiNoteFixture(): AiNote {
+   return {
+@@ -169,7 +152,7 @@ describe('F-A3 选择模式 —— store 面（TabState.selectionMode 生命周
+ 
+   it('② S3 per-tab：A(true)/B(false) 切换各自记忆；setSelectionMode 只动 active', () => {
+     useReaderStore.setState({
+-      tabs: { 'p-a': makeTab('p-a', true), 'p-b': makeTab('p-b') },
++      tabs: { 'p-a': makeTab('p-a', { selectionMode: true }), 'p-b': makeTab('p-b', { selectionMode: false }) },
+       order: ['p-a', 'p-b'],
+       activeId: 'p-a'
+     })
+diff --git a/tests/unit/renderer/selection-paint.test.tsx b/tests/unit/renderer/selection-paint.test.tsx
+index 4e81843a36..ebe5c02aaf 100644
+--- a/tests/unit/renderer/selection-paint.test.tsx
++++ b/tests/unit/renderer/selection-paint.test.tsx
+@@ -22,6 +22,12 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
++import {
++  stubElementRects,
++  stubRangeClientRects,
++  stubRangeGBCR,
++  type StubBox
++} from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
+@@ -39,13 +45,13 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown>
+ })
+ 
+ /** jsdom 无布局：元素 rect 按预设表返回 */
+-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
++const rects = new Map<Element, StubBox>()
+ /** Range 客户端矩形桩（多行选区夹具的输入面——视口坐标） */
+-let clientRects: Array<{ x: number; y: number; width: number; height: number }> = []
++let clientRects: StubBox[] = []
+ /** 选区 range rect 桩（工具条定位输入——视口坐标） */
+ let rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+-let origRangeGBCR: (() => DOMRect) | undefined
+-let origRangeGCR: (() => DOMRectList) | undefined
++let rangeStub: { restore(): void } | null = null
++let clientRectsStub: { restore(): void } | null = null
+ 
+ /** 单页夹具：页盒（data-page-root）+textLayer+单 span；rect 桩按参数注入 */
+ function makePage(no: string, box: { x: number; y: number; width: number; height: number }, text: string): { page: HTMLElement; textLayer: HTMLElement; span: HTMLElement } {
+@@ -107,14 +113,9 @@ beforeEach(() => {
+   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
+   onSaved = vi.fn()
+   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+-    const r = rects.get(this)
+-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
+-  })
+-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
+-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
+-  origRangeGCR = Range.prototype.getClientRects as () => DOMRectList
+-  Range.prototype.getClientRects = (() => clientRects.map((r) => ({ ...r, toJSON: () => r }))) as unknown as () => DOMRectList
++  stubElementRects(rects)
++  rangeStub = stubRangeGBCR(() => rangeRect)
++  clientRectsStub = stubRangeClientRects(() => clientRects)
+   window.getSelection()?.removeAllRanges()
+ })
+ 
+@@ -125,8 +126,8 @@ afterEach(() => {
+   root = null
+   host?.remove()
+   host = null
+-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
+-  if (origRangeGCR !== undefined) Range.prototype.getClientRects = origRangeGCR
++  rangeStub?.restore()
++  clientRectsStub?.restore()
+   document.body.innerHTML = ''
+   vi.restoreAllMocks()
+   vi.useRealTimers()
+diff --git a/tests/unit/renderer/tab-bar.test.tsx b/tests/unit/renderer/tab-bar.test.tsx
+index 18c8485b0a..fcd2a0852f 100644
+--- a/tests/unit/renderer/tab-bar.test.tsx
++++ b/tests/unit/renderer/tab-bar.test.tsx
+@@ -10,6 +10,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { makeTab } from '../../utils/factories'
+ import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+ import type { TabState } from '../../../src/renderer/features/reader/reader.store'
+ import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+@@ -17,23 +18,6 @@ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+ /** 构造指定状态的 tab（默认 ready 态完整形状） */
+-function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false,
+-    ...patch
+-  }
+-}
+-
+ /** 注入 store 状态并挂载（store 单例复用，setState 即时生效） */
+ function mountWith(props: { tabs: Record<string, TabState>; order: string[]; activeId: string | null }): void {
+   useReaderStore.setState(props)
+diff --git a/tests/unit/renderer/tab-dirty.test.tsx b/tests/unit/renderer/tab-dirty.test.tsx
+index c2935db0b5..73a94b9832 100644
+--- a/tests/unit/renderer/tab-dirty.test.tsx
++++ b/tests/unit/renderer/tab-dirty.test.tsx
+@@ -8,6 +8,7 @@
+ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { makeTab } from '../../utils/factories'
+ import { isTabDirty, useTabDirtyAggregate, confirmCloseDirty } from '../../../src/renderer/features/reader/tab-dirty'
+ import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+ import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+@@ -15,23 +16,6 @@ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ import type { TabState } from '../../../src/renderer/features/reader/reader.store'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+-function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
+-  return {
+-    paperId: id,
+-    fileUrl: `app-file://${id}`,
+-    fileName: `${id}.pdf`,
+-    title: '',
+-    page: 0,
+-    totalPages: 10,
+-    zoom: 1,
+-    color: 'yellow',
+-    annotations: [],
+-    status: 'ready',
+-    dirty: false,
+-    ...patch
+-  }
+-}
+-
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+ 
+diff --git a/tests/utils/geometry.ts b/tests/utils/geometry.ts
+index 10682d8069..c5ef0eb5d7 100644
+--- a/tests/utils/geometry.ts
++++ b/tests/utils/geometry.ts
+@@ -1,11 +1,149 @@
+ /**
+- * [F-TESTREF-W1B] 几何桩共享助手——立案骨架（票面载体）。
+- *
+- * 目标：getClientRects/getBoundingClientRect 几何桩 22 文件 97 处的各自实现
+- * 收敛为本件单源（含常用局部工厂 makeTab/makeAnnotation/seed/makeDetail 下沉——
+- * 与 tests/utils/fixtures.ts 协同不重复）。
+- * 红线：R1 零 src 变更；C 面零变化由指纹门对拍（F-TESTREF-00 前置毕）。
+- * 裁决与战役序：docs/design/2026-09-11_glm-ruling-arch-complexity-and-test-campaign.md §4-4。
+- * 受锁件。[test-refactor][locked-change]
++ * 测试基建：jsdom 几何量测桩共享单源（F-TESTREF-W1B）。
++ *
++ * 口径（票内勘误留痕）：票面「22 文件/97 处」为调研期方法名 grep 口径——
++ * 其中 e2e 5 spec 的命中全部是真实浏览器测量调用（win.evaluate 内真布局），
++ * 非桩、不在收敛面；真桩收敛面=unit 17 文件（A 查表族 7/B 直挂族 3/
++ * D 视口族 3/E 实例族 3/F 注入族 1，selection-paint 双方法跨族）。
++ *
++ * 三族安装对的还原语义（与存量逐字同，迁移零语义变化）：
++ * - spyOn 族（stubElementRects/stubViewportRect/stubElementRect）：安装责任
++ *   在本件，卸载责任在测试文件 afterEach 的 vi.restoreAllMocks()——存量
++ *   selection 系 7 文件均已有该调用，保持不动。
++ * - Range 直赋族（stubRangeGBCR/stubRangeClientRects）：jsdom Range 无原生
++ *   gBCR/gCR 实现，orig 可能 undefined；disposer.restore() 在 orig===undefined
++ *   时跳过还原（与存量 `if (orig !== undefined)` 语义逐字同——vitest 每文件
++ *   独立 jsdom，原型态不跨文件）。
++ * - defineProperty 族（defineRangeClientRects）：按原 descriptor 显式还原，
++ *   原无实现=删属性（门一 N4 教训形态）。
++ *
++ * 被测代码对桩盒的字段消费面：A 查表族只读 x/y/width/height（桩盒仅此四
++ * 字段，存量形态）；domRect/boxRect 全字段（e2e 同形语义保真）。
++ *
++ * 局部工厂命名规范（宪章 §1.3「94 文件」面的战役规范句）：新建局部工厂
++ * 一律 make* 前缀+领域名词；跨 ≥2 文件重复的先入 tests/utils/factories.ts
++ * （renderer 域）或 fixtures.ts（node/通用域）再引用，禁第三处手抄。
++ *
++ * 红线：R1 零 src 变更；C 面零变化由指纹门对拍。受锁文件。
++ * [test-refactor][locked-change]
+  */
+-export {}
++import { vi, type MockInstance } from 'vitest'
++
++/** 桩盒四字段（A 查表族的 Map 值/Range 直赋族的源形状） */
++export interface StubBox {
++  x: number
++  y: number
++  width: number
++  height: number
++}
++
++/** 伪造完整 DOMRect（四边导出+toJSON——真浏览器同形语义） */
++export function domRect(x: number, y: number, width: number, height: number): DOMRect {
++  return {
++    x,
++    y,
++    width,
++    height,
++    top: y,
++    left: x,
++    right: x + width,
++    bottom: y + height,
++    toJSON: () => ({})
++  } as DOMRect
++}
++
++/** 四边盒（top/bottom/left/right）转 DOMRect——rectOf 直挂族同构形状 */
++export function boxRect(b: { top: number; bottom: number; left: number; right: number }): DOMRect {
++  return domRect(b.left, b.top, b.right - b.left, b.bottom - b.top)
++}
++
++/** B 族：元素直挂量测桩（anchor-blank-snap/release-affinity/fa12 形——
++ *  直挂元素自有属性，不经原型 spyOn，无需还原） */
++export function stubRectOf(el: HTMLElement, b: { top: number; bottom: number; left: number; right: number }): void {
++  el.getBoundingClientRect = () => boxRect(b)
++}
++
++/** A 族：Element.prototype.getBoundingClientRect 查表桩（缺项零盒）——
++ *  vi.restoreAllMocks 还原（文件 afterEach 责任，存量语义） */
++export function stubElementRects(rects: Map<Element, StubBox>): MockInstance {
++  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
++    const r = rects.get(this)
++    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
++  })
++}
++
++/** D 族：原型级固定/可变视口盒桩（(0,0,w,h) 全字段）——set 可变（refit 形）；
++ *  固定用法忽略 set，vi.restoreAllMocks 还原 */
++export function stubViewportRect(
++  width: number,
++  height: number
++): { spy: MockInstance; set: (w: number, h: number) => void } {
++  let w = width
++  let h = height
++  const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
++    return domRect(0, 0, w, h)
++  })
++  return {
++    spy,
++    set: (nw: number, nh: number): void => {
++      w = nw
++      h = nh
++    }
++  }
++}
++
++/** E 族：实例级盒桩（scroll-converge/scroll-progress 形）——
++ *  vi.restoreAllMocks 还原 */
++export function stubElementRect(el: Element, x: number, y: number, width: number, height: number): MockInstance {
++  return vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(domRect(x, y, width, height))
++}
++
++/** Range.getBoundingClientRect 直赋桩——getter 源可变（selection 系
++ *  rangeRect 每用例重赋、桩读当时值的语义）；restore 按 orig 还原 */
++export function stubRangeGBCR(getRect: () => StubBox): { restore(): void } {
++  const orig = Range.prototype.getBoundingClientRect as (() => DOMRect) | undefined
++  Range.prototype.getBoundingClientRect = () => ({ ...getRect() }) as DOMRect
++  return {
++    restore(): void {
++      if (orig !== undefined) Range.prototype.getBoundingClientRect = orig
++    }
++  }
++}
++
++/** Range.getClientRects 直赋桩——getter 源可变（selection-paint clientRects
++ *  语义；元素浅拷贝+toJSON 指回源对象，存量形态） */
++export function stubRangeClientRects(getRects: () => StubBox[]): { restore(): void } {
++  const orig = Range.prototype.getClientRects as (() => DOMRectList) | undefined
++  Range.prototype.getClientRects = (() =>
++    getRects().map((r) => ({ ...r, toJSON: () => r }))) as unknown as () => DOMRectList
++  return {
++    restore(): void {
++      if (orig !== undefined) Range.prototype.getClientRects = orig
++    }
++  }
++}
++
++/** Range.getClientRects defineProperty 注入（reader-search-ui 形：jsdom 原无
++ *  实现，vi.fn 注入+descriptor 语义还原，原无实现=删属性）——mock 暴露供
++ *  用例内 mockImplementation 重排（视口几何换值场景） */
++export function defineRangeClientRects(fn: () => DOMRectList): {
++  mock: ReturnType<typeof vi.fn>
++  restore(): void
++} {
++  const orig = Object.getOwnPropertyDescriptor(Range.prototype, 'getClientRects')
++  const mock = vi.fn(fn)
++  Object.defineProperty(Range.prototype, 'getClientRects', {
++    value: mock,
++    configurable: true
++  })
++  return {
++    mock,
++    restore(): void {
++      if (orig === undefined) {
++        delete (Range.prototype as { getClientRects?: unknown }).getClientRects
++      } else {
++        Object.defineProperty(Range.prototype, 'getClientRects', orig)
++      }
++    }
++  }
++}

@@ -13,10 +13,12 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubElementRects, type StubBox } from '../../utils/geometry'
+import { makeTab } from '../../utils/factories'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
 import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
@@ -70,22 +72,6 @@ function makePageRoot(text: string): HTMLDivElement {
   textLayer.appendChild(span)
   root.appendChild(textLayer)
   return root
-}
-
-function makeTab(id: string, page = 0): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
-  }
 }
 
 let root: Root | null = null
@@ -265,17 +251,14 @@ describe('F-A5 —— AI 段 band 单源（b 面）+色块垫底层序（c 面�
   it('AI 段垂直=行簇字形带（band 单源——非裸行盒 rects）+层序 z=colorBlocks', () => {
     // gBCR 桩：textLayer (0,0,600,800)/span (30,200,300,16)；canvas 度量桩
     // asc10/desc3/fAsc14/fDesc4 → 半前导 −1 基线 213 → band=[203,216]/800
-    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
+    const boxes = new Map<Element, StubBox>()
     const pageRoot = makePageRoot('SMART WATER TEST DOC')
     const textLayer = pageRoot.querySelector('.textLayer') as HTMLElement
     const span = textLayer.querySelector('span') as HTMLElement
     boxes.set(pageRoot, { x: 0, y: 0, width: 600, height: 800 })
     boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
     boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-      const r = boxes.get(this)
-      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
-    })
+    stubElementRects(boxes)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       font: '',
       measureText: () => ({

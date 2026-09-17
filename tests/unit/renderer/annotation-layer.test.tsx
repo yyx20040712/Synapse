@@ -13,6 +13,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { stubElementRects, type StubBox } from '../../utils/geometry'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
@@ -129,14 +130,11 @@ describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面
     span.textContent = 'SMART WATER TEST DOC'
     textLayer.appendChild(span)
     page.appendChild(textLayer)
-    const boxes = new Map<Element, { x: number; y: number; width: number; height: number }>()
+    const boxes = new Map<Element, StubBox>()
     boxes.set(page, { x: 0, y: 0, width: 600, height: 800 })
     boxes.set(textLayer, { x: 0, y: 0, width: 600, height: 800 })
     boxes.set(span, { x: 30, y: 200, width: 300, height: 16 })
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-      const r = boxes.get(this)
-      return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
-    })
+    stubElementRects(boxes)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       font: '',
       measureText: () => ({

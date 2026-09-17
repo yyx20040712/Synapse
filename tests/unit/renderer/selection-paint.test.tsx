@@ -22,6 +22,12 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+import {
+  stubElementRects,
+  stubRangeClientRects,
+  stubRangeGBCR,
+  type StubBox
+} from '../../utils/geometry'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
@@ -39,13 +45,13 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> 
 })
 
 /** jsdom 无布局：元素 rect 按预设表返回 */
-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+const rects = new Map<Element, StubBox>()
 /** Range 客户端矩形桩（多行选区夹具的输入面——视口坐标） */
-let clientRects: Array<{ x: number; y: number; width: number; height: number }> = []
+let clientRects: StubBox[] = []
 /** 选区 range rect 桩（工具条定位输入——视口坐标） */
 let rangeRect = { x: 10, y: 900, width: 200, height: 20 }
-let origRangeGBCR: (() => DOMRect) | undefined
-let origRangeGCR: (() => DOMRectList) | undefined
+let rangeStub: { restore(): void } | null = null
+let clientRectsStub: { restore(): void } | null = null
 
 /** 单页夹具：页盒（data-page-root）+textLayer+单 span；rect 桩按参数注入 */
 function makePage(no: string, box: { x: number; y: number; width: number; height: number }, text: string): { page: HTMLElement; textLayer: HTMLElement; span: HTMLElement } {
@@ -107,14 +113,9 @@ beforeEach(() => {
   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
   onSaved = vi.fn()
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    const r = rects.get(this)
-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
-  })
-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
-  origRangeGCR = Range.prototype.getClientRects as () => DOMRectList
-  Range.prototype.getClientRects = (() => clientRects.map((r) => ({ ...r, toJSON: () => r }))) as unknown as () => DOMRectList
+  stubElementRects(rects)
+  rangeStub = stubRangeGBCR(() => rangeRect)
+  clientRectsStub = stubRangeClientRects(() => clientRects)
   window.getSelection()?.removeAllRanges()
 })
 
@@ -125,8 +126,8 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
-  if (origRangeGCR !== undefined) Range.prototype.getClientRects = origRangeGCR
+  rangeStub?.restore()
+  clientRectsStub?.restore()
   document.body.innerHTML = ''
   vi.restoreAllMocks()
   vi.useRealTimers()

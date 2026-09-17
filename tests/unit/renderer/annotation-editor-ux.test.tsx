@@ -16,29 +16,11 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
+import { makeAnnotation } from '../../utils/factories'
+import type { AnnotationRect } from '../../../src/shared/models/annotation'
 import { AnnotationEditor } from '../../../src/renderer/features/reader/AnnotationEditor'
 
 /** 完整形态最小标注（comment 可覆写——lastSaved 语义用例需非空初值） */
-function makeAnnotation(comment = ''): Annotation {
-  return {
-    id: 'anno-1',
-    paperId: 'paper-1',
-    page: 0,
-    kind: 'highlight',
-    color: 'yellow',
-    quoteText: '被标注的引文内容',
-    prefixText: '前',
-    suffixText: '后',
-    startOffset: 1,
-    endOffset: 10,
-    rects: [{ page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }],
-    comment,
-    createdAt: '2026-08-23T00:00:00Z',
-    updatedAt: '2026-08-23T00:00:00Z'
-  }
-}
-
 const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
 
 let root: Root | null = null

@@ -10,6 +10,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { makeTab } from '../../utils/factories'
 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
 import type { TabState } from '../../../src/renderer/features/reader/reader.store'
 import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
@@ -17,23 +18,6 @@ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 构造指定状态的 tab（默认 ready 态完整形状） */
-function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false,
-    ...patch
-  }
-}
-
 /** 注入 store 状态并挂载（store 单例复用，setState 即时生效） */
 function mountWith(props: { tabs: Record<string, TabState>; order: string[]; activeId: string | null }): void {
   useReaderStore.setState(props)

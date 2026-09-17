@@ -12,6 +12,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationKind } from '../../../src/shared/models/annotation'
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
@@ -21,7 +22,7 @@ stubApi.notes.save = notesSave
 
 import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
 import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 function ann(id: string, page: number, off: number, kind: AnnotationKind, comment: string): Annotation {
@@ -40,22 +41,6 @@ function ann(id: string, page: number, off: number, kind: AnnotationKind, commen
     comment,
     createdAt: '2026-05-01T00:00:00Z',
     updatedAt: '2026-05-01T00:00:00Z'
-  }
-}
-
-function makeTab(id: string): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
   }
 }
 

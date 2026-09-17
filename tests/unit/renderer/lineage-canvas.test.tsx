@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubViewportRect } from '../../utils/geometry'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub } from '../../utils/api-client-mock'
 
@@ -81,14 +82,6 @@ const viewportTransform = (): string =>
 function parseViewport(s: string): { tx: number; ty: number; k: number } | null {
   const m = s.match(/^translate\((-?[\d.]+), (-?[\d.]+)\) scale\(([\d.]+)\)$/)
   return m ? { tx: Number(m[1]), ty: Number(m[2]), k: Number(m[3]) } : null
-}
-
-/** 桩量测（jsdom 无布局）：Element.prototype.getBoundingClientRect 固定返回
- *  视口盒（selection-layer.test 同族——app 级 mock 配方先例） */
-function stubViewportRect(width: number, height: number) {
-  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    return { x: 0, y: 0, top: 0, left: 0, right: width, bottom: height, width, height, toJSON: () => ({}) } as DOMRect
-  })
 }
 
 beforeEach(() => {
@@ -299,7 +292,7 @@ describe('LineageCanvas —— pan/zoom（INV-14）', () => {
 
 describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
   it('首载 fit：全图+层带标签入视口（transform 离开初始 {0,0,1}；k=容纳比取小）', () => {
-    const spy = stubViewportRect(800, 600)
+    const { spy } = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -319,7 +312,7 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
   })
 
   it('不抢用户视口：pan 置 userInteracted 后 nodes 引用变化不重置视口', () => {
-    const spy = stubViewportRect(800, 600)
+    const { spy } = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -355,7 +348,7 @@ describe('R2-LG10 auto-fit 视口自适应（票面 P1）', () => {
   })
 
   it('「适应视图」按钮：pan 抢占后显式复位重触发 fit（回到 fitted 值）', () => {
-    const spy = stubViewportRect(800, 600)
+    const { spy } = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)

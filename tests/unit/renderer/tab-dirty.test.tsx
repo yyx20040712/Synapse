@@ -8,29 +8,13 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { makeTab } from '../../utils/factories'
 import { isTabDirty, useTabDirtyAggregate, confirmCloseDirty } from '../../../src/renderer/features/reader/tab-dirty'
 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
 import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import type { TabState } from '../../../src/renderer/features/reader/reader.store'
 import { guardedDescribe } from '../../utils/guard'
-
-function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false,
-    ...patch
-  }
-}
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null

@@ -9,8 +9,8 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { PaperDetail } from '../../../src/shared/models/paper'
 import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
+import { makeDemoDetail } from '../../utils/factories'
 
 const stubApi = makeApiStub({
   library: { detail: vi.fn() },
@@ -22,38 +22,11 @@ const stubApi = makeApiStub({
 import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
 import { guardedDescribe } from '../../utils/guard'
 
-function makeDetail(): PaperDetail {
-  return {
-    id: 'paper-1',
-    title: '样例论文',
-    authors: ['张三', '李四'],
-    year: 2026,
-    venue: 'Journal of Testing',
-    doi: '10.0000/demo',
-    tagNames: [],
-    collectionNames: [],
-    annotationCount: 2,
-    noteCount: 1,
-    lastReadPage: 0,
-    readingSeconds: 0,
-    addedAt: '2026-08-24T00:00:00Z',
-    abstract: '摘要内容',
-    arxivId: null,
-    source: 'local',
-    enrichStatus: 'pending',
-    fileUrl: 'app-file://paper-1',
-    fileName: 'demo.pdf',
-    updatedAt: '2026-08-24T00:00:00Z',
-    tags: [],
-    collections: []
-  }
-}
-
 let root: Root | null = null
 let host: HTMLDivElement | null = null
 
 async function renderPanel(): Promise<void> {
-  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDetail() })
+  stubApi.library.detail.mockResolvedValue({ ok: true, data: makeDemoDetail() })
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)

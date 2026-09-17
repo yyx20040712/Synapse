@@ -22,6 +22,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import {
@@ -35,8 +36,7 @@ import {
 } from '../../../src/renderer/features/reader/page-column-geometry'
 import {
   createReaderStoreInitialState,
-  useReaderStore,
-  type TabState
+  useReaderStore
 } from '../../../src/renderer/features/reader/reader.store'
 
 // store 面 openPaper 链的 api 桩（selection-mode.test 同法：模块 mock，
@@ -114,23 +114,6 @@ function remount(node: JSX.Element): void {
 }
 
 /** ready 态完整 tab（selection-mode.test 同配方+pageLayout 维度） */
-function makeTab(id: string, pageLayout?: 'single' | 'double'): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false,
-    ...(pageLayout !== undefined ? { pageLayout } : {})
-  }
-}
-
 beforeEach(() => {
   MockIO.instances = []
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -165,7 +148,7 @@ describe('F-R1 双页 —— store 面（TabState.pageLayout 生命周期）', (
 
   it('①b per-tab 记忆：A(double)/B(single) 切换各自保持；setPageLayout 只动 active', () => {
     useReaderStore.setState({
-      tabs: { 'p-a': makeTab('p-a', 'double'), 'p-b': makeTab('p-b') },
+      tabs: { 'p-a': makeTab('p-a', { pageLayout: 'double' }), 'p-b': makeTab('p-b') },
       order: ['p-a', 'p-b'],
       activeId: 'p-a'
     })
@@ -187,7 +170,7 @@ describe('F-R1 双页 —— store 面（TabState.pageLayout 生命周期）', (
     expect(useReaderStore.getState().tabs['p-new']?.pageLayout).toBe('single')
     // error 态重开：{...prev, status:'loading'} 继承面——prev=double 沿用（zoom 先例）
     useReaderStore.setState({
-      tabs: { 'p-e': { ...makeTab('p-e', 'double'), status: 'error' } },
+      tabs: { 'p-e': { ...makeTab('p-e', { pageLayout: 'double' }), status: 'error' } },
       order: ['p-e'],
       activeId: 'p-e'
     })

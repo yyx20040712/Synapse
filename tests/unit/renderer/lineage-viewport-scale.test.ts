@@ -13,6 +13,7 @@
  * 尺寸下跳过）——由真机探针 f-l2-fix-verify.mjs 场景 A 锁。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { domRect } from '../../utils/geometry'
 import { rootToLocalScale } from '../../../src/renderer/features/lineage/lineage-viewport'
 
 /**
@@ -23,17 +24,7 @@ import { rootToLocalScale } from '../../../src/renderer/features/lineage/lineage
 function stubMeasured(clientWidth: number, gBCRWidth: number): HTMLElement {
   const el = document.createElement('div')
   Object.defineProperty(el, 'clientWidth', { get: () => clientWidth, configurable: true })
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
-    x: 0,
-    y: 0,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: gBCRWidth,
-    height: 0,
-    toJSON: () => ({})
-  } as DOMRect)
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(domRect(0, 0, gBCRWidth, 0))
   return el
 }
 

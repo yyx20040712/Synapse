@@ -27,6 +27,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
 import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
 import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
@@ -42,8 +43,8 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> 
 })
 
 /** jsdom 无布局：元素 rect 按预设表返回（textLayer 盒=归一化基准 612×792） */
-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
-let origRangeGBCR: (() => DOMRect) | undefined
+const rects = new Map<Element, StubBox>()
+let rangeStub: { restore(): void } | null = null
 const rangeRect = { x: 10, y: 900, width: 200, height: 20 }
 
 /** 单页夹具（口径 crib item-chain：textLayer 盒置于视口绝对位 (500,300) 域锁；
@@ -144,12 +145,8 @@ beforeEach(() => {
   usePageItemsStore.getState().clear()
   useReaderStore.setState(createReaderStoreInitialState())
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    const r = rects.get(this)
-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
-  })
-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
+  stubElementRects(rects)
+  rangeStub = stubRangeGBCR(() => rangeRect)
   window.getSelection()?.removeAllRanges()
 })
 
@@ -160,7 +157,7 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
+  rangeStub?.restore()
   document.body.innerHTML = ''
   vi.restoreAllMocks()
   vi.useRealTimers()
