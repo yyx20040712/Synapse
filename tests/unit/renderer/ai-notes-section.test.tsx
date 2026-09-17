@@ -17,6 +17,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
 
 const observe = vi.fn()
@@ -45,7 +46,7 @@ vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOrig
 
 import { showToast } from '../../../src/renderer/shared/ui/Toast'
 import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { useAiNotesStore } from '../../../src/renderer/features/reader/ai-notes.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
 
@@ -89,22 +90,6 @@ function note(id: string, role: AiNote['role'], question: AiNote['question']): A
     contentMd: `内容-${id}`,
     createdAt: 't',
     updatedAt: 't'
-  }
-}
-
-function makeTab(id: string): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page: 0,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
   }
 }
 

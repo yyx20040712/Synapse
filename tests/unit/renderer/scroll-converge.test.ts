@@ -13,19 +13,11 @@
  * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { stubElementRect } from '../../utils/geometry'
 import {
   nearestScrollAncestor,
   scrollIntoNearestScroller
 } from '../../../src/renderer/features/reader/scroll-converge'
-
-/** 桩盒几何：el 的 getBoundingClientRect 固定返回给定矩形（F-R2 回炉 1 起
- *  z 来自 computed zoom 桩（stubZoom），height 不再承担量纲角色）。 */
-function stubRect(el: HTMLElement, top: number, height = 10): void {
-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-    top, right: top + 10, bottom: top + height, left: 0, width: 10, height, x: 0, y: top,
-    toJSON: () => ({})
-  } as DOMRect)
-}
 
 /** 桩 CSS zoom（F-R2 回炉 1：effectiveZoom=computed zoom 链直读——jsdom 不
  *  识别 zoom 属性，经 getComputedStyle mock 注入；其余属性/元素透传真实值
@@ -95,8 +87,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
 
   it('start 数学：scrollTop += elRect.top − scrollerRect.top（盒顶对齐视口顶）；嵌套取最近——outer 零位移', () => {
     const { outer, inner, target } = buildNested()
-    stubRect(inner, 100, 400)
-    stubRect(target, 550)
+    stubElementRect(inner, 0, 100, 10, 400)
+    stubElementRect(target, 0, 550, 10, 10)
     stubScrollDims(inner, 2000, 400)
     stubScrollDims(outer, 3000, 600)
     inner.scrollTop = 30
@@ -109,8 +101,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
 
   it('center 数学：scrollTop += (elRect.top + h/2) − (scrollerRect.top + clientH/2)（居中）', () => {
     const { inner, target } = buildNested()
-    stubRect(inner, 100, 400)
-    stubRect(target, 900, 80)
+    stubElementRect(inner, 0, 100, 10, 400)
+    stubElementRect(target, 0, 900, 10, 80)
     stubScrollDims(inner, 2000, 400)
     inner.scrollTop = 0
     scrollIntoNearestScroller(target, 'center')
@@ -120,16 +112,16 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
 
   it('顶底夹取：目标在上方越界→夹 0；在下方越界→夹 scrollHeight−clientHeight（显式夹取，jsdom 无浏览器夹取）', () => {
     const f = buildNested()
-    stubRect(f.inner, 100, 400)
+    stubElementRect(f.inner, 0, 100, 10, 400)
     stubScrollDims(f.inner, 2000, 400)
     f.inner.scrollTop = 50
     // 目标盒顶 60 < 容器顶 100 → raw 50+(60−100)=10？构造真越界：目标 30
-    stubRect(f.target, 30)
+    stubElementRect(f.target, 0, 30, 10, 10)
     scrollIntoNearestScroller(f.target, 'start')
     expect(f.inner.scrollTop, 'raw=50+(30−100)=−20 → 夹 0').toBe(0)
     // 底夹取：目标盒顶 1900 → raw=0+(1900−100)=1800 > 2000−400=1600 → 夹 1600
     f.inner.scrollTop = 0
-    stubRect(f.target, 1900)
+    stubElementRect(f.target, 0, 1900, 10, 10)
     scrollIntoNearestScroller(f.target, 'start')
     expect(f.inner.scrollTop).toBe(1600)
   })
@@ -141,8 +133,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
     const item = document.createElement('div')
     aside.appendChild(item)
     document.body.appendChild(aside)
-    stubRect(aside, 40, 300)
-    stubRect(item, 500, 20)
+    stubElementRect(aside, 0, 40, 10, 300)
+    stubElementRect(item, 0, 500, 10, 20)
     stubScrollDims(aside, 900, 300)
     scrollIntoNearestScroller(item, 'center')
     // (500+10) − (40+150) = 320
@@ -153,8 +145,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
   it('start 双空间折算（z=1.25）：gBCR 视觉差值除 z 后加进本地 scrollTop（dSt=δv/z）', () => {
     const { inner, target } = buildNested()
     stubZoom(inner, 1.25)
-    stubRect(inner, 100, 500)
-    stubRect(target, 600, 250)
+    stubElementRect(inner, 0, 100, 10, 500)
+    stubElementRect(target, 0, 600, 10, 250)
     stubScrollDims(inner, 2000, 400)
     inner.scrollTop = 30
     scrollIntoNearestScroller(target, 'start')
@@ -165,8 +157,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
   it('center 双空间折算（z=1.5）：elRect 侧除 z，clientHeight 项保持本地空间', () => {
     const { inner, target } = buildNested()
     stubZoom(inner, 1.5)
-    stubRect(inner, 110, 600)
-    stubRect(target, 1460, 300)
+    stubElementRect(inner, 0, 110, 10, 600)
+    stubElementRect(target, 0, 1460, 10, 300)
     stubScrollDims(inner, 2000, 400)
     inner.scrollTop = 0
     scrollIntoNearestScroller(target, 'center')
@@ -177,8 +169,8 @@ describe('scroll-converge —— 程序滚动单容器收敛（INV-34）', () =>
   it('z≠1 底夹取：clamp 上限保持本地口径 scrollHeight−clientHeight（不随 z 缩放）', () => {
     const { inner, target } = buildNested()
     stubZoom(inner, 1.25)
-    stubRect(inner, 100, 500)
-    stubRect(target, 2500, 250)
+    stubElementRect(inner, 0, 100, 10, 500)
+    stubElementRect(target, 0, 2500, 10, 250)
     stubScrollDims(inner, 2000, 400)
     inner.scrollTop = 0
     scrollIntoNearestScroller(target, 'start')

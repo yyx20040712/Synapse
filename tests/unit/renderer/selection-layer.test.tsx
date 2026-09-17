@@ -18,6 +18,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
 import {
   SelectionLayer,
   closestPageRoot,
@@ -34,10 +35,10 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> 
 })
 
 /** jsdom 无布局：元素 rect 按预设表返回（页盒几何——坐标换算断言的输入） */
-const rects = new Map<Element, { x: number; y: number; width: number; height: number }>()
+const rects = new Map<Element, StubBox>()
 /** jsdom Range 无布局方法：选区 rect 可变桩（视口坐标） */
 let rangeRect = { x: 10, y: 900, width: 200, height: 20 }
-let origRangeGBCR: (() => DOMRect) | undefined
+let rangeStub: { restore(): void } | null = null
 
 /** F-01 后结构：两页盒（data-page-root 1 基）各含 .textLayer（单 span 文本） */
 function mountColumnFixture(): { page1: HTMLElement; page2: HTMLElement; span1: HTMLElement; span2: HTMLElement } {
@@ -103,12 +104,8 @@ beforeEach(() => {
   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
   onSaved = vi.fn()
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    const r = rects.get(this)
-    return { x: r?.x ?? 0, y: r?.y ?? 0, width: r?.width ?? 0, height: r?.height ?? 0 } as DOMRect
-  })
-  origRangeGBCR = Range.prototype.getBoundingClientRect as () => DOMRect
-  Range.prototype.getBoundingClientRect = () => ({ ...rangeRect }) as DOMRect
+  stubElementRects(rects)
+  rangeStub = stubRangeGBCR(() => rangeRect)
   window.getSelection()?.removeAllRanges()
 })
 
@@ -119,7 +116,7 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
-  if (origRangeGBCR !== undefined) Range.prototype.getBoundingClientRect = origRangeGBCR
+  rangeStub?.restore()
   document.body.innerHTML = ''
   vi.restoreAllMocks()
   vi.useRealTimers()

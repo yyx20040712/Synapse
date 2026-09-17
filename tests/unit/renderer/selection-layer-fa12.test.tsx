@@ -10,6 +10,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubRectOf } from '../../utils/geometry'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
 
@@ -22,13 +23,6 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> 
   return r.data
 })
 
-interface Box { top: number; bottom: number; left: number; right: number }
-
-/** 打量测桩（真浏览器 getBoundingClientRect 的 jsdom 替身——直挂元素自有属性） */
-function rectOf(el: HTMLElement, b: Box): void {
-  el.getBoundingClientRect = () =>
-    ({ x: b.left, y: b.top, top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.right - b.left, height: b.bottom - b.top, toJSON: () => ({}) }) as DOMRect
-}
 
 /** 单页夹具：r0「EF third」[80,90]x[10,70] / r1「AB first」[100,110]x[10,80]。
  *  释放点 (75,93)：y 在 r1 上方间隙偏近 r0、x=75 在 r0 行尾空白区（右缘 70 外） */
@@ -37,13 +31,13 @@ function mountFixture(): { page: HTMLElement; r0: HTMLSpanElement; r1: HTMLSpanE
   page.setAttribute('data-page-root', '1')
   const textLayer = document.createElement('div')
   textLayer.className = 'textLayer'
-  rectOf(textLayer, { top: 60, bottom: 160, left: 0, right: 300 })
+  stubRectOf(textLayer, { top: 60, bottom: 160, left: 0, right: 300 })
   const r0 = document.createElement('span')
   r0.textContent = 'EF third'
-  rectOf(r0, { top: 80, bottom: 90, left: 10, right: 70 })
+  stubRectOf(r0, { top: 80, bottom: 90, left: 10, right: 70 })
   const r1 = document.createElement('span')
   r1.textContent = 'AB first'
-  rectOf(r1, { top: 100, bottom: 110, left: 10, right: 80 })
+  stubRectOf(r1, { top: 100, bottom: 110, left: 10, right: 80 })
   textLayer.append(r0, r1)
   page.append(textLayer)
   document.body.append(page)

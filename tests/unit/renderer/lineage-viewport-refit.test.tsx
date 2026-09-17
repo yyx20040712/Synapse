@@ -17,6 +17,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubViewportRect } from '../../utils/geometry'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { fitViewport } from '../../../src/renderer/features/lineage/lineage-viewport'
 import { layoutLineage } from '../../../src/renderer/features/lineage/lineage-layout'
@@ -53,25 +54,9 @@ function fireRO(ro: ROStub): void {
   })
 }
 
-/** 可变量测桩：原型 gBCR（挂载前就位——挂载 fit 走 clientWidth||rect.width
- *  回退路径 [F-L2] jsdom 口径；canvas.test stubViewportRect 可变版） */
-function stubGBCR(width: number, height: number) {
-  let w = width
-  let h = height
-  const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    return { x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) } as DOMRect
-  })
-  return {
-    spy,
-    set: (nw: number, nh: number): void => {
-      w = nw
-      h = nh
-    }
-  }
-}
-
 /** per-instance 可变 clientWidth/clientHeight（直取主路径——真机 clientWidth
- *  优先于 gBCR 回退；scale.test.ts:23-40 同族手法） */
+ *  优先于 gBCR 回退；scale.test.ts:23-40 同族手法）；原型可变 gBCR 桩=
+ *  共享 stubViewportRect（geometry.ts，本文件消费 m.spy） */
 function stubClientSize(el: Element, width: number, height: number) {
   let w = width
   let h = height
@@ -157,7 +142,7 @@ afterEach(() => {
 
 describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 ①~⑦）', () => {
   it('① 注册面：挂载非空图→桩 observe 收到 svg 元素（data-testid lineage-canvas）', () => {
-    const m = stubGBCR(800, 600)
+    const m = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -176,7 +161,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
     // x 紧（700:460/380=1.21 < 440/344=1.28；500:260/380=0.68 < 1.28）下 W2
     // 直取主路径可判。（F-LG13 后卡恒 240×110——x/y 比随新包围盒变化，
     // 前提锚 k≠1 仍成立：460/440=1.045≠1，W2 仍可判别。）
-    const m = stubGBCR(700, 600)
+    const m = stubViewportRect(700, 600)
     try {
       const g = chain()
       const layout = layoutLineage(g.nodes, g.edges)
@@ -198,7 +183,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
   })
 
   it('③ 门语义（userInteracted 不抢视口）：wheel 置门→派发 RO callback→视口保持 wheel 后值（数值断言）', () => {
-    const m = stubGBCR(800, 600)
+    const m = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -221,7 +206,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
   })
 
   it('④ 空图（nodes=0）：派发 callback→不 fit（量测未发生——早退在量测前，锁链序）且视口停初始', () => {
-    const m = stubGBCR(800, 600)
+    const m = stubViewportRect(800, 600)
     try {
       mount(<LineageCanvas nodes={[]} edges={[]} />)
       expect(ROStub.instances.length).toBe(1) // svg 常驻（W2 先例）——空图同注册
@@ -235,7 +220,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
   })
 
   it('⑤ 成对清理（INV-14 同型）：unmount→桩 disconnect 被调', () => {
-    const m = stubGBCR(800, 600)
+    const m = stubViewportRect(800, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -252,7 +237,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
   })
 
   it('⑥ 量测守卫：clientWidth=0 桩面（jsdom 布局不可量测）→callback→视口不变（不产生退化 fit）', () => {
-    const m = stubGBCR(0, 0)
+    const m = stubViewportRect(0, 0)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -269,7 +254,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
     // 实际变化）→fireRO→setViewport 新值→重渲染必然发生（前提锚：transform
     // 串变化）——在此真重渲染后再断言 RO 无重注册（原版量测未变=fit 同值
     // React bail 不重渲染，「instances 不变」是平凡真——门一 W4 裁决）。
-    const m = stubGBCR(700, 600)
+    const m = stubViewportRect(700, 600)
     try {
       const g = chain()
       mount(<LineageCanvas nodes={g.nodes} edges={g.edges} />)
@@ -295,7 +280,7 @@ describe('F-L4 视口尺寸变化 refit（ResizeObserver 方案——票面 5.1 
     // 真实浏览器挂载路径=fit effect+RO 初始回调双 doFit——幂等性显式锁
     // （同量测同输入同输出；fireRO 前 doFitRef 已就位=useLayoutEffect 同步
     // 赋值先于浏览器任何派发帧——W1 竞态消除的可测面）。
-    const m = stubGBCR(700, 600)
+    const m = stubViewportRect(700, 600)
     try {
       const g = chain()
       const layout = layoutLineage(g.nodes, g.edges)

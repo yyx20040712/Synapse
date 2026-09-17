@@ -16,6 +16,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { seedLineage } from '../../utils/factories'
 
 const stubApi = makeApiStub({
   lineage: {
@@ -57,19 +58,6 @@ const settle = async (turns = 6): Promise<void> => {
       await Promise.resolve()
     })
   }
-}
-
-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
-  useLineageStore.setState({
-    nodes,
-    edges,
-    status: 'ready',
-    error: null,
-    saveStatus: 'saved',
-    lastWriteError: null,
-    queue: [],
-    flushing: false
-  })
 }
 
 let root: Root | null = null
@@ -221,7 +209,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
     stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string; label?: string }) =>
       ({ ok: true, data: edge('e-new', req.from, req.to, 'manual') })
     )
-    seed([
+    seedLineage([
       node('B', { title: '子文献', year: 2021 }),
       node('P1', { title: '平行路线甲', year: 2019 }),
       node('P2', { title: '平行路线乙', year: 2019 })
@@ -271,7 +259,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
   })
 
   it('取消=零写（对话框关闭不派发）', async () => {
-    seed([node('B'), node('P1')])
+    seedLineage([node('B'), node('P1')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('连接父文献…')
@@ -284,7 +272,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
   })
 
   it('未选目标禁用确认（空选择短路——不派发）', async () => {
-    seed([node('B'), node('P1')])
+    seedLineage([node('B'), node('P1')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('连接父文献…')
@@ -308,7 +296,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
       })
     )
     const manualEdge = { ...edge('e-man1', 'P1', 'B', 'manual'), label: '初判' }
-    seed([node('B'), node('P1', { title: '平行路线甲', year: 2019 })], [manualEdge])
+    seedLineage([node('B'), node('P1', { title: '平行路线甲', year: 2019 })], [manualEdge])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     // B（有 manual 入边）有管理项
     openMenu('B')
@@ -339,7 +327,7 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
 
   it('管理对话框删除=remove-edge；无 manual 边节点无「管理人工连线…」项', async () => {
     const manualEdge = edge('e-man1', 'P1', 'B', 'manual')
-    seed([node('B'), node('P1')], [manualEdge])
+    seedLineage([node('B'), node('P1')], [manualEdge])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('管理人工连线…')
@@ -356,12 +344,12 @@ describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
   })
 
   it('「删除父连线」仅针对 tree 边：节点只有 manual 父（无 tree 父）时该项不呈现', async () => {
-    seed([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', 'manual')])
+    seedLineage([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', 'manual')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     expect(menuButtons().some((b) => b.textContent === '删除父连线')).toBe(false)
     // 加 tree 父后该项呈现且指向 tree 边
-    seed([node('B'), node('P1'), node('T')], [edge('e-man1', 'P1', 'B', 'manual'), edge('e-tree1', 'T', 'B', 'tree')])
+    seedLineage([node('B'), node('P1'), node('T')], [edge('e-man1', 'P1', 'B', 'manual'), edge('e-tree1', 'T', 'B', 'tree')])
     openMenu('B')
     clickMenu('删除父连线')
     await settle()
@@ -376,7 +364,7 @@ describe('F-LG15 store manual 写面', () => {
     stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string }) =>
       ({ ok: true, data: edge('e-m', req.from, req.to, 'manual') })
     )
-    seed([node('B'), node('P1')])
+    seedLineage([node('B'), node('P1')])
     useLineageStore.getState().linkManualParent('B', 'P1', '逻辑线说明')
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
@@ -399,7 +387,7 @@ describe('F-LG15 store manual 写面', () => {
             : edge('e-new', req.from, req.to, 'manual')
       })
     )
-    seed([node('B'), node('P1')], [{ ...edge('e-man1', 'P1', 'B', 'manual'), label: '旧说明' }])
+    seedLineage([node('B'), node('P1')], [{ ...edge('e-man1', 'P1', 'B', 'manual'), label: '旧说明' }])
     useLineageStore.getState().editManualEdgeLabel('e-man1', '新说明')
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({

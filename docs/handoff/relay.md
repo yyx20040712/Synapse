@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T18:24:12Z
+- heartbeat_utc: 2026-09-17T19:35:00Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 4
+- checked_done: 5
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -73,7 +73,7 @@
 ### 第二波·F-TESTREF 余票（大中票一火一票；W2 小可随 W1C 同火）
 
 - [x] F-TESTREF-W1A（mock 工厂下沉，39 文件）
-- [ ] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
+- [x] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
 - [ ] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
 - [ ] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
 - [ ] F-TESTREF-W3（src/shared 直接契约测试补齐）
@@ -120,6 +120,58 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 3 — 2026-09-18（执行者会话：F-TESTREF-W1B 几何桩+局部工厂下沉，完成）
+- claim: claim-1789669600-b3｜开始 18:26:40Z｜收口 19:35:00Z｜勾选 4→5。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  health-scan）；实现面=本会话直接实现（磨刀石验证+六批迁移+三重机检，W1A 先例），
+  systematic-debugging（用——三次回炉定位）。其余工程技能与本票（tests/** 重构面）
+  无交集不加载。派发档位：主控=GLM5.3 max（本会话）；门一=ops-gate1-k1 绑定
+  （k3 max）；门二=ops-adjudicator 绑定（deepseek-flash max）——均异构于实现者。
+- **交付**：tests/utils/geometry.ts 几何桩单源（11→149 行：三族安装对
+  stubElementRects/stubViewportRect/stubElementRect+stubRangeGBCR/
+  stubRangeClientRects/defineRangeClientRects+domRect/boxRect/stubRectOf）+
+  tests/utils/factories.ts 新件（118 行：makeTab(patch)/makeAnnotation/
+  makeDetail+makeDemoDetail/seedLineage）+37 unit 文件迁移（几何 17+工厂 21-
+  交集 ai-annotation-layer=1；makeTab×11/makeAnnotation×3/makeDetail×4/
+  seed×3）。净删 tests 域 +324/-639（38 跟踪文件+未跟踪 factories 118 行）；
+  locks manifest 328→329。
+- **票面口径勘误（票内自裁留痕，门二裁「不需升级用户裁决」）**：票面 22 文件/97 处
+  =调研期方法名 grep 口径——e2e 5 spec 的 36 行命中全为 win.evaluate 内真实浏览器
+  测量非桩、零改动；真桩收敛面=unit 17。工厂 ×4/×3/×3/×2 系调研期口径，实测扩至
+  ×11/×3/×4/×3 全数收敛。「94 文件命名规范」落为 geometry.ts 头注规范句（全量
+  重命名=纯 churn 不做）。fa12 Range 零盒桩（8 字段全 0）保留文件内——selection 系
+  4 字段展开形不可无损互换（undefined↔0 分支风险）。
+- **C 面零变化三重实证**：指纹门 179 文件/1623 用例/4979 断言/15 skipSites 全同
+  （raw=scripts/audits/w1b-test-surface-raw.txt）；变异红证：删 selection-paint
+  几何断言→MISSING_ASSERT 红（精确行号）→cp 备份还原→复绿；verify 全链 exit 0
+  （162 文件/1579 用例+build，Node 24.20.0，raw=w1b-verify-full.log）。
+- **三次票内回炉留痕**：①lineage 三文件 factories import 先于 api-client-mock——
+  vi.mock 注册晚于 factories 顶层 useLineageStore 模块图加载→store 持真 api→
+  spy 0 调用 11 红→import 调序（W1A 顺序契约再实证+门一 W2 追查出另 9 文件同位
+  序隐患→统一调序防呆收口）；②selection-mode 原局部 makeTab 显式写
+  selectionMode:false，共享基样缺席（undefined）→断言红→调用点显式补键
+  （arrange 段改动 C 面安全）；③scroll-converge 迁移脚本正则竞态+bash node -e
+  $ 展开（宪法在册坑第四次实证）3 行参数被清空→逐行修复+两参调用点补 height 实参。
+- **门一 FAIL→补件复审 PASS**（回炉 1 轮合规）：首轮 B1=审包缺 factories.ts
+  （未跟踪新文件不入 git diff——**审包打包法缺陷教训：未跟踪新件须显式入包**）/
+  W1 计数 36 应为 37（anchor-blank-snap 与 anchor-locate 名字看混）/W2 九文件
+  import 位序/W3+简报凭印象数字（计数纪律）。补件（factories 全文+manifest
+  hunks+简报二处置）后复审 PASS B=0/W=0/N=4（N1-N4' 全记录级：right 字段
+  惰性/键缺席布尔等价/五文件惰性模块边/boxRect 无外部消费）。
+- **门二 GO_WITH_CONDITIONS（P0=0/P1=1/P2=5）**：独立复算全数字逐字对上
+  （+324/-639/147-9/118/329/37=17+21-1）；N2'/N3' 亲读 src 消费面闭合
+  （lineage-viewport.ts 仅 width/clientWidth；selection-mode ①用例断言全在
+  store 写后）；P1-1=亲跑 raw 留档（已落 w1b-test-surface-raw.txt+
+  w1b-verify-full.log，双 exit 0）；P2-5=registry summary 已写实测口径。
+- 证据件入库：scripts/audits/w1b-{geo-survey.md,gate1-brief.md,gate1-brief2.md,
+  gate1-diff.patch,test-surface-raw.txt,verify-full.log}。
+- 教训三条：①审包生成对未跟踪新文件盲——新交付件必须显式附全文或先 git add -N；
+  ②简报计数凭印象两处失实（+107/+148 vs 实测 +147/118）——计数落笔前脚本实测
+  纪律的再实证；③locks:apply 中途落锁会拦后续 lint 修复写入——锁操作应集中在
+  迁移面全部完成后一次走（本批 unlock/apply 往返四次）。
+- Rulings 待用户：无新增（票面口径勘误经门二裁处为票内自裁合规，不升用户级）。
+- 无进展计数：归零（4→5 有进展）。
 
 ### batch 2 — 2026-09-18（执行者会话：F-TESTREF-W1A mock 工厂下沉，完成）
 - claim: claim-1789666638-b2｜开始 17:37:18Z｜收口 18:24:12Z｜勾选 3→4。

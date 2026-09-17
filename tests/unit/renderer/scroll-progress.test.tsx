@@ -11,6 +11,7 @@
  * [F-R2] 双空间折算用例（受锁改写，[locked-change] 授权面）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stubElementRect } from '../../utils/geometry'
 import {
   createScrollProgress,
   measurePageBoxes,
@@ -354,23 +355,11 @@ describe('scroll-progress 页盒量测视觉/本地折算（F-R2 B-2）', () => 
     })
     Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
     el.scrollTop = 110
-    const rect = (top: number, height: number): DOMRect =>
-      ({
-        top,
-        right: 0,
-        bottom: top + height,
-        left: 0,
-        width: 0,
-        height,
-        x: 0,
-        y: top,
-        toJSON: () => ({})
-      }) as DOMRect
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(0, 100 * z))
+    stubElementRect(el, 0, 0, 0, 100 * z)
     for (const c of [0, 200, 400]) {
       const box = document.createElement('div')
       box.setAttribute('data-page-box', String(c))
-      vi.spyOn(box, 'getBoundingClientRect').mockReturnValue(rect((c - 110) * z, 100 * z))
+      stubElementRect(box, 0, (c - 110) * z, 0, 100 * z)
       el.appendChild(box)
     }
     document.body.appendChild(el)

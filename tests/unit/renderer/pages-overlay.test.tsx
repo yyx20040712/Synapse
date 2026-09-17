@@ -25,6 +25,7 @@ import { act } from 'react'
 import type { RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { domRect } from '../../utils/geometry'
 import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
@@ -114,8 +115,7 @@ function makePageRoot(no: number, w: number, h: number): HTMLElement {
   pageRoot.setAttribute('data-page-root', String(no))
   const canvas = document.createElement('canvas')
   canvas.setAttribute('data-pdf-canvas', 'true')
-  canvas.getBoundingClientRect = (): DOMRect =>
-    ({ x: 0, y: 0, top: 0, left: 0, right: w, bottom: h, width: w, height: h, toJSON: () => ({}) }) as DOMRect
+  canvas.getBoundingClientRect = (): DOMRect => domRect(0, 0, w, h)
   pageRoot.appendChild(canvas)
   manualHost!.appendChild(pageRoot)
   return pageRoot

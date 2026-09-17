@@ -2,30 +2,12 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { expect, it, vi } from 'vitest'
-import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
+import { makeAnnotation } from '../../utils/factories'
+import type { AnnotationRect } from '../../../src/shared/models/annotation'
 import { AnnotationMenu } from '../../../src/renderer/features/reader/AnnotationMenu'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 完整形态的最小标注（类型契约：接口层全字段） */
-function makeAnnotation(): Annotation {
-  return {
-    id: 'anno-1',
-    paperId: 'paper-1',
-    page: 0,
-    kind: 'highlight',
-    color: 'yellow',
-    quoteText: '被标注的引文内容',
-    prefixText: '前',
-    suffixText: '后',
-    startOffset: 1,
-    endOffset: 10,
-    rects: [{ page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }],
-    comment: '',
-    createdAt: '2026-08-23T00:00:00Z',
-    updatedAt: '2026-08-23T00:00:00Z'
-  }
-}
-
 /** 命中矩形靠右（x=0.8）以覆盖左沿夹取分支 */
 const RIGHT_RECT: AnnotationRect = { page: 0, x: 0.8, y: 0.5, w: 0.1, h: 0.05 }
 

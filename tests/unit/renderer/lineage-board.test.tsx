@@ -15,6 +15,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
+import { seedLineage } from '../../utils/factories'
 
 const stubApi = makeApiStub({
   lineage: {
@@ -59,19 +60,6 @@ function edge(id: string, from: string, to: string): LineageEdge {
 
 /** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */
 const OVL = { x: 500, y: 400 }
-
-function seed(nodes: LineageNode[], edges: LineageEdge[] = []): void {
-  useLineageStore.setState({
-    nodes,
-    edges,
-    status: 'ready',
-    error: null,
-    saveStatus: 'saved',
-    lastWriteError: null,
-    queue: [],
-    flushing: false
-  })
-}
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -191,7 +179,7 @@ afterEach(() => {
 
 describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () => {
   it('拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）', async () => {
-    seed([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
+    seedLineage([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     drag(nodeEl('A'), 60, 30)
     await flush()
@@ -208,7 +196,7 @@ describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () =
 
   it('单击=选中上抛（位移低于阈值不触发写）；onSelectNode 形态照票面（04 侧板消费面）', async () => {
     const onSelect = vi.fn()
-    seed([node('A', OVL)])
+    seedLineage([node('A', OVL)])
     mount(<LineageBoard onSelectNode={onSelect} />)
     clickNode(nodeEl('A'))
     await flush()
@@ -219,7 +207,7 @@ describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () =
 
 describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）', () => {
   it('加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}', async () => {
-    seed([node('A'), node('B')])
+    seedLineage([node('A'), node('B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('A')
     clickMenu('连线到…')
@@ -242,7 +230,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
         ok: false,
         error: { code: 'CONFLICT', message: reason }
       })
-      seed([node('A'), node('B')])
+      seedLineage([node('A'), node('B')])
       mount(<LineageBoard onSelectNode={() => undefined} />)
       openMenu('A')
       clickMenu('连线到…')
@@ -257,7 +245,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
   })
 
   it('改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）', async () => {
-    seed([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
+    seedLineage([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('改父…')
@@ -268,7 +256,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
   })
 
   it('删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷', async () => {
-    seed([node('A'), node('B')], [edge('e-1', 'A', 'B')])
+    seedLineage([node('A'), node('B')], [edge('e-1', 'A', 'B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('删除父连线')
@@ -282,7 +270,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
   })
 
   it('core_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）', async () => {
-    seed([node('A', { ...OVL, coreIdea: '旧想法' })])
+    seedLineage([node('A', { ...OVL, coreIdea: '旧想法' })])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('A')
     clickMenu('编辑核心想法')
@@ -310,7 +298,7 @@ describe('LineageBoard —— 保存态指示（autosave-first：无保存按钮
     stubApi.lineage.upsertNode
       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
-    seed([node('A', OVL)])
+    seedLineage([node('A', OVL)])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     drag(nodeEl('A'), 20, 10)
     await flush()
@@ -339,7 +327,7 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
       }
     })
     stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('N9', { paperId: 'paper-9' }) })
-    seed([])
+    seedLineage([])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     act(() => {
       (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
@@ -379,7 +367,7 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
     stubApi.lineage.upsertNode.mockResolvedValue({
       ok: true, data: node('T1', { paperId: null, title: '阶段二' })
     })
-    seed([])
+    seedLineage([])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     act(() => {
       (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
@@ -418,7 +406,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款�
       data: { ok: true, nodeCount: 3, edgeCount: 2 }
     })
     stubApi.lineage.graph.mockClear()
-    seed([])
+    seedLineage([])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     expect(stubApi.lineage.graph).not.toHaveBeenCalled() // Board 挂载不自动取数
     act(() => {
@@ -434,7 +422,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款�
 
   it('confirm 取消→不调 import 通道（无操作）', async () => {
     const spy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    seed([])
+    seedLineage([])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     act(() => {
       (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
@@ -458,7 +446,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款�
       }
     })
     stubApi.lineage.graph.mockClear()
-    seed([])
+    seedLineage([])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     act(() => {
       (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
@@ -475,7 +463,7 @@ describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款�
 
 describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）', () => {
   it('lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）', async () => {
-    seed([])
+    seedLineage([])
     stubApi.lineage.graph.mockResolvedValue({
       ok: true,
       data: { nodes: [node('A', OVL)], edges: [] }

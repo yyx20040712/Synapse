@@ -14,6 +14,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
 import {
   createReaderSearchInitialState,
@@ -22,8 +23,7 @@ import {
 } from '../../../src/renderer/features/reader/reader-search.store'
 import {
   createReaderStoreInitialState,
-  useReaderStore,
-  type TabState
+  useReaderStore
 } from '../../../src/renderer/features/reader/reader.store'
 
 
@@ -59,22 +59,6 @@ function remount(node: JSX.Element): void {
 }
 
 /** ready 态完整 tab（selection-mode.test 同配方） */
-function makeTab(id: string, page = 0): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
-  }
-}
-
 /** 植入 done 会话（pageTurner/fileUrl 用例的公共夹具；act 包裹——宿主在挂
  *  中，store 写入驱动其重渲染须走 act 防警告） */
 function plantSearchDone(matchPages: number[]): SearchMatch[] {
@@ -154,7 +138,7 @@ describe('P7E-03 useReaderSearch 接线 —— keymap 注册/注销成对（INV-
 
 describe('P7E-03 useReaderSearch 接线 —— pageTurner 翻页联动（INV-29）', () => {
   it("③ 目标页≠tab.page→setPage({scroll:'to'})；相等→不调（scrollRequest 不 bump）", () => {
-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     mount(<Host pdfDoc={null} fileUrl="app-file://a" />)
     plantSearchDone([0, 1])
     act(() => {

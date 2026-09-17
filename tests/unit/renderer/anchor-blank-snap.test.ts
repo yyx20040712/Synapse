@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
+import { stubRectOf } from '../../utils/geometry'
 import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
 import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
 
@@ -13,17 +14,12 @@ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anch
 
 interface Box { top: number; bottom: number; left: number; right: number }
 
-/** 给元素打量测桩（真浏览器 getBoundingClientRect 的 jsdom 替身） */
-function rectOf(el: HTMLElement, b: Box): void {
-  el.getBoundingClientRect = () =>
-    ({ x: b.left, y: b.top, top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.right - b.left, height: b.bottom - b.top, toJSON: () => ({}) }) as DOMRect
-}
 
 /** 造一个 pdf.js 文本层形态的 span（文本+量测盒） */
 function mkSpan(text: string, b: Box): HTMLSpanElement {
   const s = document.createElement('span')
   s.textContent = text
-  rectOf(s, b)
+  stubRectOf(s, b)
   return s
 }
 
@@ -31,7 +27,7 @@ function mkSpan(text: string, b: Box): HTMLSpanElement {
 function mkBr(b: Box): HTMLBRElement {
   const br = document.createElement('br')
   br.setAttribute('role', 'presentation')
-  rectOf(br, b)
+  stubRectOf(br, b)
   return br
 }
 

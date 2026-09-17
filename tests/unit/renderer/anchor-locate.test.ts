@@ -11,8 +11,9 @@
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
+import { makeTab } from '../../utils/factories'
 import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
-import { useReaderStore, type TabState } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
 import { guardedDescribe } from '../../utils/guard'
 
@@ -22,22 +23,6 @@ const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
 vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
   scrollIntoNearestScroller: scrollerMock
 }))
-
-function makeTab(id: string, page = 0): TabState {
-  return {
-    paperId: id,
-    fileUrl: `app-file://${id}`,
-    fileName: `${id}.pdf`,
-    title: '',
-    page,
-    totalPages: 10,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'ready',
-    dirty: false
-  }
-}
 
 /** 构造页根+文本层（单页视图：document 内唯一 .textLayer——与 ReaderPage 结构同型） */
 function mountTextLayer(text: string): HTMLElement {
@@ -87,7 +72,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
   })
 
   it('S2 已开跨页：setPage(annotation.page)→文本层就绪→exact', async () => {
-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     mountTextLayer('target quote here')
     mountAnchorEl('a-2')
     const r = await locateAnchor({ paperId: 'p-1', annotationId: 'a-2', anchor: anchorOf('target quote', 3) })
@@ -96,7 +81,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
   })
 
   it('S3 verifyQuote 失败：page 降级（停留该页+toast 锚定失效提示）', async () => {
-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 0) }, order: ['p-1'], activeId: 'p-1' })
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     mountTextLayer('completely different text')
     const p = locateAnchor({ paperId: 'p-1', anchor: anchorOf('gone quote', 5) })
     await act(async () => {
@@ -110,7 +95,7 @@ guardedDescribe('SR2-C-05', 'anchor-locate —— INV-20 三层防线', () => {
   })
 
   it('S4 篇级（anchor=null）：paper（回开篇）', async () => {
-    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', 4) }, order: ['p-1'], activeId: 'p-1' })
+    useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1', { page: 4 }) }, order: ['p-1'], activeId: 'p-1' })
     const r = await locateAnchor({ paperId: 'p-1', anchor: null })
     expect(r).toBe('paper')
     expect(useReaderStore.getState().tabs['p-1']?.page).toBe(0)
