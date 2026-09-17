@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T21:49:52Z
-- claim: -
+- heartbeat_utc: 2026-09-17T23:26:25Z
+- claim: claim-1789682221-b7
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 9
+- checked_done: 12
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -82,9 +82,9 @@
 
 ### 第三波·梯队二：风险清账+组织对齐（小票组同火；ELE 呈裁即停）
 
-- [ ] F-SESS-01（导出会话悬挂修复，票面含态空间表）
-- [ ] F-AIN-01（回灌事务包裹）＋可同火收 F-DEP-01
-- [ ] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
+- [x] F-SESS-01（导出会话悬挂修复，票面含态空间表）
+- [x] F-AIN-01（回灌事务包裹）＋可同火收 F-DEP-01
+- [x] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
 - [ ] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
       呈裁后本项即勾，实施属后续波次不在本板**）
 - [ ] F-ALIGN-01（组织定版对齐：R1~R6 真跑+ds-call v1→v2 切换呈批+ORG-SEG v2 重写
@@ -120,6 +120,50 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 7 — 2026-09-18（执行者会话：第三波梯队二前三票 F-SESS-01+F-AIN-01+F-DEP-01，完成 3 项）
+- claim: claim-1789682221-b7｜开始 21:57:01Z｜收口 23:53:00Z｜勾选 9→12。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/health-scan/换源状态机）；实现面=ops-executor 绑定子代理（三票
+  TDD 红→绿→变异红证）；systematic-debugging 不加载（三票均为票面修法已定的
+  实现面，无排障定位——F-SESS-01 的相位推演属设计论证非缺陷排查）。派发档位：
+  主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash max）；
+  门一=ops-gate1-k1 **两次 Provider authentication failed→按换源状态机切
+  ops-gate1-k2 备源承载**（k3 max）；门二=ops-adjudicator 绑定（deepseek-flash
+  max）——门审均异构于实现者。
+- **F-SESS-01（提交 cbd3996ceb）**：advance 终局守卫+abortActiveSession（复用
+  failSession）+failSession 终局标记同步前移（setImmediate check 相位 vs rm
+  线程池回路的事件循环论证+M1 反证）+bootstrap webContents 双事件接线
+  （did-start-navigation isMainFrame+render-process-gone，经 container liveProxy）；
+  态空间表扩格（迁移表 abort 行/跨格序列七→八行）；测试=单测 4+e2e renderer
+  重载格（43/45 双通道）；INV-65 入册（门一 W1 处置）。门一 PW B0W2N9+门二
+  GWC P0=0P1=1P2=5，全处置。
+- **F-AIN-01（提交 8645a0f2bc）**：deleteByPaper+重插包 withTransaction（deps
+  注入=lineage 同型）单篇全有或全无；测试 a1 两相（首插中断零行/重灌中断旧
+  数据完整）+a2 跨篇隔离；M1=IIFE 直调变异双红。门一 PW B0W1N8（W1=首红
+  指纹归属失实→报告 §3 勘误段入档）+门二 GWC P0=0P1=2P2=5。
+- **F-DEP-01（提交 1caa072b26）**：postcss ^8.5.26 devDep 显式化+lockfile
+  同步（零下载实证=显式化非新增）；机检三件（CI_DRYRUN/npm ls/verify）；
+  **干净环境 npm ci=降级口径**（本地 dry-run+CI 背书，CI 首跑=最终背书——
+  未本地实测，门二 P1-2 呈报口径）。[dep-change]+[locked-change] 分票落。
+- **机检终态**：verify 全链 EXIT=0（指纹门 183 文件/1757→1764 用例/5334→5372
+  断言/skipSites 15；vitest 166/1713→1719；locks 334；F-SESS-01 后主控亲跑
+  VERIFY/E2E_APP/E2E_ALL 三标记落盘 raw）；health-scan RED=0（WARN1=cfg 漂移
+  历史欠账回显）；check-tickets 195 票/open 12。
+- 教训三条：①**RESTORE 标记归档缺口连续两票同款**（F-SESS-01 W2+F-AIN-01
+  P2-1——还原 diff 空/复绿 EXIT 落终端不进 raw）：变异跑的还原证据输出必须
+  `>> raw` 随跑随录（batch 6 教训①的扩展面：不止 echo EXIT，一切想引用的
+  机器输出都要物理落档）；②git log 管道 `head -c N` 会撕裂 UTF-8 多字节字符
+  致提交信息「乱码」假象——数据层无损，验证 message 完整性用 `--format=%s |
+  tail -c N` 或不截断（宪法 shell 四坑的第五变体：显示层截断≠数据层损坏）；
+  ③门二建议项留档：指纹门 `expect.poll` 抽取盲区（extract.mjs:277 仅认
+  Identifier callee，存量 12 处）建议并入 F-TESTREF-S1 票面；lineage+回灌同族
+  事务不变量批量补册窗口随 F-SENSOR-01/F-DEDUP-01 场次评估（门二 P2-3/P2-5）。
+- Rulings 待用户：无新增（三票自裁均经门一对抗拷问+门二复核闭合；F-ELE-01
+  呈裁节点=下波既定安排）。
+- 无进展计数：归零（9→12 有进展）。**第三波剩两项：F-ELE-01（纯调研呈裁即
+  停）/F-ALIGN-01（制度+配置复合批单火专注）——下波建议 F-ELE-01 单火（产出
+  呈裁后本板即勾，实施属后续波次）。**
 
 ### batch 6 — 2026-09-18（执行者会话：F-TESTREF-W4 战役收官票，完成）
 - claim: claim-1789678894-b6｜开始 21:01:34Z｜收口 21:49:52Z｜勾选 8→9。
