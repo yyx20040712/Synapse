@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T21:43:05.1425740Z",
+    "generatedAt":  "2026-09-17T22:37:29.1551922Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "982296c59b5d918cccc133268c2a520f7adab1daaa81352909485abfa5cfbe61"
+                      "sha256":  "7b53b888e38cbf7fdf36bbf86b1f7e4bf1cec403233407c306680ebfab749a43"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -583,7 +583,7 @@
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
-                      "sha256":  "2e47ab8b6282b11137e90dd9baf70434fdf869275e746f0399e32a0f54b74a25"
+                      "sha256":  "3adbc79f07c221dca40f2cd7ab6fc12c796818ad9ebf858d3dc5fa3cf0d38041"
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
@@ -1175,7 +1175,7 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",
-                      "sha256":  "8cc5fc8d2ad8ba9198e3756dd8c8eb74a41076ee84e408bae3c741b6d0a90871"
+                      "sha256":  "811a15a5607749c83d254078127e1a3fcd69c3e8352393e514ca728e3dd309a0"
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",

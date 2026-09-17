@@ -145,3 +145,77 @@ test('AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+
 
   await app.close()
 })
+
+/**
+ * F-SESS-01 renderer 重载格（受锁）：streaming 中 renderer reload（main 存活）
+ * →webContents did-start-navigation→abortActiveSession→单飞锁释放；重进设置页
+ * 再发起不再 EXPORT_BUSY，第二会话全链完成（端到端实证）。dialog 桩不随
+ * renderer 重置（main 进程对象）。崩溃格（render-process-gone）同一 abort
+ * 通道，e2e 不注入崩溃（同型处置单测覆盖）。always-active：实现与本测试同票
+ * 原子落地，无依赖延期面（亦不新增 skipSites——指纹门 B2 口径）。
+ */
+test('F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成', async () => {
+  test.info().annotations.push({ type: 'note', description: 'F-SESS-01 renderer 重载格' })
+
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-aicorpus-'))
+  const exportDir = await mkdtemp(join(tmpdir(), 'synapse-aicorpus-out-'))
+  await bootstrapMigrations(userData)
+
+  // 两篇种子（无幽灵——本格焦点=重载中止，非篇失败序列）
+  const papers = [
+    { id: 'e2e-ai-a', title: 'AI 语料导出 e2e 甲文献', marker: 'AISENSOR-A-MARK' },
+    { id: 'e2e-ai-b', title: 'AI 语料导出 e2e 乙文献', marker: 'AISENSOR-B-MARK' }
+  ] as const
+  for (const p of papers) {
+    const bytes = createMultiPagePdf(2, p.marker)
+    const sha = createHash('sha256').update(bytes).digest('hex')
+    const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+    const abs = join(userData, 'files', ...fileRef.split('/'))
+    mkdirSync(dirname(abs), { recursive: true })
+    writeFileSync(abs, bytes)
+    await seedPaperRow(userData, fileRef, sha, p.title, p.id)
+  }
+
+  // 残留同旧 test（第二会话清空重建面照走）
+  mkdirSync(join(exportDir, 'corpus'), { recursive: true })
+  writeFileSync(join(exportDir, 'corpus', 'stale.md'), 'STALE PRODUCT')
+  writeFileSync(join(exportDir, 'manifest.tmp.json'), '{"stale":true}')
+  writeFileSync(join(exportDir, 'user-notes.txt'), 'USER FILE KEEPS')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
+
+  // 目录选择对话框桩（main 进程对象——reload 后仍在）
+  await app.evaluate((electronMod, dir) => {
+    ;(
+      electronMod.dialog as unknown as {
+        showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+      }
+    ).showOpenDialog = async () => ({ canceled: false, filePaths: [dir] })
+  }, exportDir)
+
+  await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '导出语料' }).click()
+
+  // streaming 实证：任一篇页快照落盘即 figure 回传在途（篇序=库序，不写死
+  // 首篇身份——两篇任一 page-1.png 出现即 streaming）
+  await expect
+    .poll(() => papers.some((p) => existsSync(join(exportDir, 'figures', p.id, 'page-1.png'))), {
+      timeout: 60_000
+    })
+    .toBe(true)
+
+  // renderer 重载（main 存活）→did-start-navigation→abort（1-2s 跑完）
+  await win.reload()
+  await win.waitForTimeout(1500)
+
+  // reload 后 UI 从库页起：重进设置页再发起——断言不再 EXPORT_BUSY（第二会话
+  // 全链完成的端到端实证）
+  await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
+  await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '导出语料' }).click()
+  await expect(win.getByText('语料导出完成：2 篇')).toBeVisible({ timeout: 60_000 })
+
+  await app.close()
+})

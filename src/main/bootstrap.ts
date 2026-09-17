@@ -228,6 +228,21 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     })
   })
 
+  // F-SESS-01：renderer 重载/崩溃（main 存活）→中止在途语料导出会话——否则
+  // corpusItem 永不回传，streaming 永挂，EXPORT_BUSY 单飞锁永不释放。SPA 应用
+  // 内路由不触发主帧导航——不误杀应用内跳转（service 头注跨格序列「导出中
+  // 用户导航离开设置页」行为不变）；首次加载也触发 did-start-navigation：idle
+  // 时 abort 返回 false 空转，无害
+  window.webContents.on('did-start-navigation', (details) => {
+    if (!details.isMainFrame) return
+    void container.services.export_.abortActiveSession('渲染进程导航/重载，导出会话中止')
+  })
+  window.webContents.on('render-process-gone', (_event, details) => {
+    void container.services.export_.abortActiveSession(
+      `渲染进程崩溃（${details.reason}），导出会话中止`
+    )
+  })
+
   // R2-SH3：maximize 状态推送（含双击 drag 区最大化等系统行为沿）→ renderer
   // 图标态；初值由 renderer 挂载时 get-state 拉取（主控预裁②：时序自包含）
   bindWindowStateEvents(window, (p) => window.webContents.send(EVENT_CHANNELS.windowState, p))

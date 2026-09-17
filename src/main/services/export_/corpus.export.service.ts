@@ -28,14 +28,16 @@
  *   | streaming | 流式落盘写盘失败（回传成功但写 corpus/fulltext/figures 出错） | →failed | 同上处置（故障源与回传失败不同——日志区分）；manifest 不写 |
  *   | finalizing | manifest 终写完成 | →done | resolve {dir,fileCount,errorCount} |
  *   | finalizing | 写盘/rename 异常 | →failed | 折叠错误 resolve |
- *   | 任意 | 进程/窗口死 | →interrupted | 无 manifest=工具不可激活；无 IPC 悬挂（同死） |
- *   跨格序列七行（实现测试须逐格闭合）：
+ *   | 任意在途（preparing/streaming/finalizing） | renderer 重载/崩溃（main 存活——webContents 主帧导航/render-process-gone） | →failed | abortActiveSession：清 manifest.tmp 残留+释放单飞锁+折叠 reject（IO_ERROR）；advance 守卫拦悬挂终写 manifest；重跑=清空重建（幂等） |
+ *   | 任意 | 进程/窗口死 | →interrupted | 无 manifest=工具不可激活；无 IPC 悬挂（同死）；renderer 单死（main 存活）由 abort 行覆盖（原「main 死则 renderer 同死」语义保留） |
+ *   跨格序列八行（实现测试须逐格闭合）：
  *   | 跨格序列 | 期望行为 |
  *   | --- | --- |
  *   | 正常全链 | preparing→streaming→finalizing→done；manifest 存在且 sha 全匹配 |
  *   | 篇失败（文件缺失/损坏） | 该篇进 errors[]，会话继续；done=部分成功，UI 呈现 errorCount |
  *   | chunk 回传失败（invoke 折叠错误） | 会话 failed；toast（INV-02）；manifest 不写；重跑修复 |
  *   | 中断（窗口关/进程退） | 无 manifest→工具不可激活；重跑=清空重建（幂等） |
+ *   | renderer 重载（streaming 中） | 会话 failed：单飞锁即时释放，再发起不再 EXPORT_BUSY；无 manifest=工具不可激活；重跑=清空重建 |
  *   | 并发第二会话 | EXPORT_BUSY 拒绝+按钮 disabled |
  *   | 导出中用户导航离开设置页 | 流不中断（监听在 App 层）；完成/失败 toast 常驻可见 |
  *   | renderer 逐页回传 | 每页一 invoke，await ack 后发下一页（天然背压）——streaming 态内数据流机制（非状态迁移，载荷 schema 见 AI-02 接口层） |
@@ -81,6 +83,9 @@
  * - exportCorpusSession({dir, paperIds?})：终局 resolve {dir,fileCount,errorCount}
  * - corpusItem(req)：AI-02 回传通道消费端（流式落盘+会话推进；载荷失配
  *   →INVALID_REQUEST 防御拒绝不扰动在途会话）
+ * - abortActiveSession(reason)：renderer 重载/崩溃时中止在途会话（F-SESS-01；
+ *   bootstrap webContents 事件接线消费，非 IPC 面——reject 消费方=已死 renderer
+ *   收不到 Result）
  * - IPC [受锁]：export/corpus-session 通道（Req corpusSessionReqSchema/
  *   Res corpusSessionResSchema）；export/corpus-item（AI-02 建通道，本单
  *   main 侧消费流式落盘）；exportCorpus 事件发送器经 bootstrap 装配桶注入
@@ -178,6 +183,9 @@ export interface CorpusExportService {
   exportCorpusSession(input: { dir: string; paperIds?: string[] }): Promise<CorpusSessionRes>
   /** renderer 回传消费端（AI-02 通道：流式落盘+会话推进） */
   corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
+  /** renderer 重载/崩溃（main 存活）时中止在途会话（F-SESS-01——bootstrap 接线
+   *  webContents 事件消费；无在途会话返回 false 空转无害） */
+  abortActiveSession(reason: string): Promise<boolean>
 }
 
 const MANIFEST_TMP = 'manifest.tmp.json'
@@ -204,6 +212,9 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
 
   /** streaming→下一篇或 finalizing（advance——迁移表 streaming 行） */
   async function advance(s: ActiveSession): Promise<void> {
+    // 守卫：已终局（failed/aborted）会话的悬挂推进不得终写 manifest/resolve
+    // ——abortActiveSession 与 failSession 均先同步置空 session（终局标记）
+    if (session !== s) return
     const next = s.queue.shift()
     if (next !== undefined) {
       await startPaper(s, next)
@@ -288,9 +299,12 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     // 防御（门一 N2 采纳）：悬挂的终局推进不得误清新会话单飞锁/二次 reject——
     // 该不变量不依赖提取器串行协议成立
     if (session !== s) return
-    // 先清理后释放单飞锁（清理期间新会话的 manifest.tmp 不被误删）
-    await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
+    // 单飞锁同步释放（终局标记先于异步清理）：已排队（setImmediate）的悬挂
+    // 终局推进在 check 阶段运行时 advance 守卫据此拦截——释放晚于该窗会竞态
+    // 终写 manifest；清理窗内新会话的 manifest.tmp 不受影响（新会话 cleanRebuild
+    // 自清残留，且其 finalizing 终写远晚于本 rm 完成）
     session = null
+    await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
     s.reject(new SessionError('IO_ERROR', message))
   }
 
@@ -417,6 +431,15 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
         throw e
       }
       return { ok: true }
+    },
+
+    async abortActiveSession(reason: string) {
+      // 迁移表 abort 行：renderer 重载/崩溃（main 存活）→在途会话 failed
+      //（复用 failSession 同型处置——清 tmp+释放单飞锁+reject，无第二套清理）
+      const s = session
+      if (s === null) return false
+      await failSession(s, reason)
+      return true
     }
   }
 }

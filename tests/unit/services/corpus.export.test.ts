@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -328,6 +329,81 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
       })
       await emulateExtractor(h, (await nextExtract(h, 0)))
       await first
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）', async () => {
+    const h = await makeHarness()
+    try {
+      await seedPaper(h, 'p-1', '中止篇')
+      const first = h.svc.exportCorpusSession({ dir: h.dir })
+      const r1 = await nextExtract(h, 0)
+      // 首篇 request 后不回传——renderer 死亡模拟（corpusItem 永不再来）
+      const aborted = await h.svc.abortActiveSession('渲染进程重载')
+      expect(aborted).toBe(true)
+      await expect(first).rejects.toMatchObject({ code: 'IO_ERROR' })
+      expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)
+      // 单飞锁已释放：第二会话不再 EXPORT_BUSY，正常推进到下一 extract-request
+      const second = h.svc.exportCorpusSession({ dir: h.dir })
+      const r2 = await nextExtract(h, 1)
+      expect(r2.sessionId).not.toBe(r1.sessionId)
+      await emulateExtractor(h, r2)
+      expect((await second).fileCount).toBe(1)
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false', async () => {
+    const h = await makeHarness()
+    try {
+      const before = await h.svc.abortActiveSession('idle 空转')
+      expect(before).toBe(false)
+      await seedPaper(h, 'p-1', '防御篇')
+      const session = h.svc.exportCorpusSession({ dir: h.dir })
+      await emulateExtractor(h, await nextExtract(h, 0))
+      await session
+      const after = await h.svc.abortActiveSession('终局后迟到 abort')
+      expect(after).toBe(false)
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest', async () => {
+    const h = await makeHarness()
+    try {
+      await seedPaper(h, 'p-1', '竞态篇')
+      const session = h.svc.exportCorpusSession({ dir: h.dir })
+      const r = await nextExtract(h, 0)
+      await emulateExtractor(h, r)
+      // 同一微任务轮内立即 abort（先于 setImmediate 的 check 阶段执行）——
+      // abort 与已排队终局推进的竞态窗
+      const aborted = await h.svc.abortActiveSession('渲染进程重载')
+      expect(aborted).toBe(true)
+      await expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })
+      // 等一拍：悬挂的 setImmediate 推进窗口过尽后再验盘面
+      await new Promise((res) => setTimeout(res, 20))
+      expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）', async () => {
+    const h = await makeHarness()
+    try {
+      await seedPaper(h, 'p-1', '迟到篇')
+      const session = h.svc.exportCorpusSession({ dir: h.dir })
+      const r = await nextExtract(h, 0)
+      const aborted = await h.svc.abortActiveSession('渲染进程重载')
+      expect(aborted).toBe(true)
+      await expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })
+      await expect(
+        h.svc.corpusItem({ sessionId: r.sessionId, paperId: 'p-1', kind: 'complete' })
+      ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
     } finally {
       await h.dispose()
     }
