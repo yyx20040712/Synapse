@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T20:48:23.4354926Z",
+    "generatedAt":  "2026-09-17T21:43:05.1425740Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "cc22b5859c3e960eb65a1e1d34adb388ce7e44f0514ee46a2233924eb2ec9980"
+                      "sha256":  "982296c59b5d918cccc133268c2a520f7adab1daaa81352909485abfa5cfbe61"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -403,7 +403,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "d1ca66ba553527f78e2a9faa32c70fb6f92ee394683df148c01384c1c52f54bd"
+                      "sha256":  "3ef3001ecf711f05dba2a347f38bf6efebac40e96442910f010cbf50747c1c50"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -451,7 +451,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "f10502bd4598f002dbd7fe4c0077e12d8fe065c739b8438d7d215c4bbc04934a"
+                      "sha256":  "f86be888baabfdb8dd224a3b3a3280d028f4c75d4a01243b3733234667182551"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
@@ -567,7 +567,7 @@
                   },
                   {
                       "path":  "tests/contracts/constants.test.ts",
-                      "sha256":  "c2748e9df156980d035abe80cf8d401e28c6c4e576f3fefb6f9dfd32690e03cf"
+                      "sha256":  "283a6f4f7c2956a60f2656b32cdb841b32a55d2d563ddc80d48da5ea7be18f89"
                   },
                   {
                       "path":  "tests/contracts/preload-surface.test.ts",
@@ -615,7 +615,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "75b48628d247ab74ece98858b26500293edfe6da2f0ae2d686e5e4df8ed6f389"
+                      "sha256":  "b08e7e66b02f5b6ad9e2fbda35a698c89e5fd83bdabf4c1d0c74c9392b3a1aed"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -628,6 +628,10 @@
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
                       "sha256":  "e0e2b52b5371bc015f60655d656ffba4484e66ebf046ccadadff9a0b16263084"
+                  },
+                  {
+                      "path":  "tests/e2e/stable-rel.ts",
+                      "sha256":  "bd3949a82b0b46c5a74bf3e1bf93a7920ac65f3842b3b5970dbc05f6646dae43"
                   },
                   {
                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
@@ -647,7 +651,7 @@
                   },
                   {
                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
-                      "sha256":  "24b36dd89112887d4a873da56d6d4770c89219cf7f60460eb3b82ffbe66ce6e1"
+                      "sha256":  "8ee85e53e219a16ae175f68815ce5d0d4283206bc01c68bdfb3e7758b64db339"
                   },
                   {
                       "path":  "tests/e2e/z-wg1-probe.spec.ts",

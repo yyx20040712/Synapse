@@ -291,7 +291,8 @@ reader + lineage 两个特性树合计 **21,385 行 = 58%** 的测试量。
 - [ ] **零 `src/` 变更**（范围闸全绿；`git diff --stat <战役起>..<战役终>` 无 src）。
 - [ ] **C 面零损失**（指纹门全绿；用例总数 ≥ 基线）。
 - [ ] **覆盖率门槛不降**：本地 `npm run test -- --coverage` 亲跑，70/85/60 三档不破。
-- [ ] **e2e 全绿**：本地 `npm run test:e2e` 亲跑（34 依赖门现全 open→全跑；0 skip）。
+- [ ] **e2e 全绿**：本地 `npm run test:e2e` 默认门亲跑（W2 起=--project=app，
+  42 例不含探针）+`npm run test:e2e:all` 一键全跑 44 例亲跑（双真退出码；0 skip）。
 - [ ] **每个 S 面合并提交记账净删行数**（量化收益，交接书 §3 成本账本）。
 - [ ] **locks 即时 apply**；受锁面变更随提交同步（禁跨提交延迟）。
 - [ ] **新增受锁脚本即时 `locks:generate`+`apply`**（`check-test-surface.mjs` 诞生即入锁）。

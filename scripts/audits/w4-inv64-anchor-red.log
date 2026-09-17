@@ -1,0 +1,5 @@
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
+dup-constants：扫描 219 文件 / 132 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查未通过：
+  - tests\e2e\stable-rel.ts: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/audits 工具层；e2e 断言=计算样式+文本）

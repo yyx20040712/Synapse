@@ -27,7 +27,13 @@ describe('contracts/constants —— 全局常量冻结 pin（单一出处）', 
   })
 
   it('标注调色板与 annotationColorSchema 一一对应（zod enum options 反射——两处漂移即红）', () => {
-    expect([...annotationColorSchema.options].sort()).toEqual([...ANNOTATION_COLORS].sort())
+    // W3 门二 P2-3 搭车（W4 落）：原 [ ...ANNOTATION_COLORS ].sort() 对照系
+    // z.enum(ANNOTATION_COLORS) 反射回 ANNOTATION_COLORS——同源构造等式自反
+    // 恒真；改两侧字面量 pin 使 constants/schema 任一侧漂移真红。本件系 W3
+    // 新增未入战役前基线（指纹门 NEW delta 形态）——改写无契约面损失，裁决
+    // 留痕=relay.md batch 5 门二 P2-3。
+    expect([...ANNOTATION_COLORS]).toEqual(['yellow', 'green', 'blue', 'red', 'purple'])
+    expect([...annotationColorSchema.options].sort()).toEqual(['blue', 'green', 'purple', 'red', 'yellow'])
     expect(ANNOTATION_COLORS).toHaveLength(5)
   })
 

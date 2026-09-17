@@ -1,5 +1,78 @@
 {
   "version": 1,
-  "note": "[F-TESTREF-W4] e2e flake 台账——立案骨架（票面载体）。实现期以 {spec,case,count,fingerprint,status,first_seen,resolution} 结构收录 P7-A/F-R2e/z-r2e/tag-lifecycle/F-ARCH4-M1/F-G11/settings.png/corpus-export 八线历史（终裁 §4-4 W4 行），替代散落交接书散文计数。",
-  "cases": []
+  "note": "[F-TESTREF-W4] e2e flake 台账——机器可读不确定面登记（替代散落交接书散文计数，P7-A 七现跨 5 份交接书的人肉维护终结；2026-09-11 终裁 §4-4 W4 行）。数据源=charter §1.4 审计快照（docs/design/2026-09-11_test-system-optimization-charter.md——计数截至 2026-09-11 立账时点）+各线史料档（见 resolution 指针）；first_seen 以史料可考证时点为准，无法精确到日的线以该用例最早存在场次记。新 flake 处置通则=AGENTS 测试纪律「同用例 2 次非确定失败即立案」（失败指纹记差值/同值/序列位置；复跑绿不销项）。",
+  "cases": [
+    {
+      "spec": "tests/e2e/reader-text.spec.ts",
+      "case": "剪贴板读回断言系（P7-A）",
+      "count": 7,
+      "fingerprint": "同值/外部资源（系统剪贴板被外部占用+异步竞态）",
+      "status": "resolved",
+      "first_seen": "2026-08-23",
+      "resolution": "已修：清除标记+5×200ms 条件重读（[locked-change]；史料=2026-08-23 起跨 5 份交接书——P7-A 战役，立案线通则的前案）"
+    },
+    {
+      "spec": "tests/e2e/reader-text.spec.ts",
+      "case": "划选高亮后重开仍在原位",
+      "count": 2,
+      "fingerprint": "同值 y=3.45px>2px 容差（回落→重锚双态瞬态）",
+      "status": "resolved",
+      "first_seen": "2026-09-02",
+      "resolution": "已修：stableRel 双采样稳定门（INV-51 稳态口径；史料=scripts/audits/f-r2e-investigation.md）"
+    },
+    {
+      "spec": "tests/e2e/z-r2e-probe.spec.ts",
+      "case": "几何指纹矩阵探针（rel 对拍）",
+      "count": 2,
+      "fingerprint": "探针自身测量竞态（二现 dy=+4.4375/dh=−4.975——首现 resolve 即红族）",
+      "status": "resolved",
+      "first_seen": "2026-09-03",
+      "resolution": "已修：rectStableGate v2（史料=scripts/audits/z-r2e-flake-case.md——2 现同族触发立案线首案）"
+    },
+    {
+      "spec": "tests/e2e/tag-lifecycle.spec.ts",
+      "case": "chip 交互系",
+      "count": 2,
+      "fingerprint": "同位置（重挂载窗/陈旧数据窗）",
+      "status": "resolved",
+      "first_seen": "2026-09-03",
+      "resolution": "已修：key=detail.id+stale guard（P7E-01 场；史料=docs/prompts/2026-09-03_loop-handoff-v29-p7e01-tag-lifecycle.md）"
+    },
+    {
+      "spec": "tests/e2e/reader-text.spec.ts",
+      "case": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
+      "count": 1,
+      "fingerprint": "toast 3s 超时未现",
+      "status": "observing",
+      "first_seen": "2026-08-30",
+      "resolution": "观察中（再 1 现立案；史料=docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md）"
+    },
+    {
+      "spec": null,
+      "case": "F-G11 分隔条拖拽（split-pane 分隔条 e2e 序列——史料未载精确 spec 文件，v27 记 e2e 8 全量 1 红）",
+      "count": 1,
+      "fingerprint": "序列相关（拖动反向；确认 1+未捕获 1 不计）",
+      "status": "observing",
+      "first_seen": "2026-09-02",
+      "resolution": "观察中（史料=docs/prompts/2026-09-02_loop-handoff-v27-wg1-closed.md §F-G11）"
+    },
+    {
+      "spec": null,
+      "case": "settings.png 非确定带（载体=scripts/audits 像素 diff 工具层快照，非 e2e spec——工具层故 spec 置 null）",
+      "count": 1,
+      "fingerprint": "y=[208,240) 色带瞬时",
+      "status": "observing",
+      "first_seen": "2026-09-10",
+      "resolution": "观察中（再现 2 次立案=累计 3 门槛，系 charter §1.4 原文口径——工具层像素带非确定带宽高于 e2e 断言红，门槛从宽非笔误；史料=docs/prompts/2026-09-10_loop-handoff-v56-css03-closed.md）"
+    },
+    {
+      "spec": "tests/e2e/corpus-export.spec.ts",
+      "case": "全链导出系",
+      "count": 3,
+      "fingerprint": "与剪贴板同时现（疑同族全局资源）",
+      "status": "unpursued",
+      "first_seen": "2026-08-27",
+      "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）"
+    }
+  ]
 }

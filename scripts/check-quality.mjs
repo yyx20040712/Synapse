@@ -6,7 +6,8 @@
  * COLOR_RE 单源=scripts/color-re.mjs，本件与 eslint.config.js B-5 均
  * import 该件；双写面物理消失，6b 哨兵段哨内联回退）/ 色值 token 同值
  * 守卫（②）/ 内联回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——
- * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）。
+ * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）
+ * / e2e 截图比对负锚（第 9 段——INV-64）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -369,6 +370,17 @@ console.log(
 //    代号即红（过程痕迹不入源码；词表/扫描面单源=scripts/check-model-names.mjs，
 //    import 先例=scanDuplicateConstants）。
 for (const v of scanModelNames(root)) violations.push(`model-names: ${v}`)
+
+// 9) e2e 截图比对负锚（[F-TESTREF-W4] 2026-09-18 起，INV-64）——tests/e2e 下
+//    .ts/.tsx 出现 toHaveScreenshot 即红：像素 diff 限 scripts/audits 工具层
+//    （探针取证域，settings.png 先例），e2e「看见」类断言=计算样式+真实文本
+//    （INV-06 口径）。现存 0 处=既成事实升格受检不变量（2026-09-11 终裁
+//    §4-4 W4 行）。
+for (const f of walk(join(root, 'tests', 'e2e'), (p) => /\.(ts|tsx)$/.test(p))) {
+  if (/\btoHaveScreenshot\b/.test(readFileSync(f, 'utf8'))) {
+    violations.push(`${relative(root, f)}: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/audits 工具层；e2e 断言=计算样式+文本）`)
+  }
+}
 
 if (violations.length > 0) {
   console.error('quality 检查未通过：')
