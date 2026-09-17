@@ -23,7 +23,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 import { isTicketDone } from '../../tickets/registry'
 
 const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR-RDR-05', 'SR-RDR-06', 'SR2-F-02'] as const
@@ -270,10 +270,8 @@ test('F-R2e 探针：划选高亮重开原位——仪表指纹矩阵', async ()
   const title = '智慧水务 e2e 标注链文献 R2E探针'
   const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
   const userData = await mkdtemp(join(tmpdir(), 'synapse-r2e-'))
-  // 第一跳：应用自建库迁移（seedAndLaunch 配方——探针自带副本，不 import spec）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  // 第一跳：应用自建库迁移（e2e-env.ts 单源——W1C 收敛）
+  await bootstrapMigrations(userData)
   const sha = createHash('sha256').update(bytes).digest('hex')
   const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
   mkdirSync(dirname(join(userData, 'files', ...fileRef.split('/'))), { recursive: true })

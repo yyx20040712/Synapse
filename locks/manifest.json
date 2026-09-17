@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T19:31:45.3793910Z",
+    "generatedAt":  "2026-09-17T20:17:05.5361011Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -563,19 +563,19 @@
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
-                      "sha256":  "f3c8d76fb0dbabf000ee83a627e4ee84a5d3b501305ab677e0bc0761dff0898d"
+                      "sha256":  "ed05228f4e6b7c2083d7b48febdf557f1582de8cde1a3a93166e2518aced1239"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
-                      "sha256":  "973bf57ff6c1e68b233cae913202d3763246c714636ba8b6050e060a677adac5"
+                      "sha256":  "2e47ab8b6282b11137e90dd9baf70434fdf869275e746f0399e32a0f54b74a25"
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
-                      "sha256":  "f471084c035d72e1d8ec8c06b38cb619ecc8ad548b565cbb4ec41b508294db15"
+                      "sha256":  "cd4f668ad3943ed8f9f2c82c5ae13d3c44a668d0eae090021a35ba87abb703dc"
                   },
                   {
                       "path":  "tests/e2e/export-clipboard.spec.ts",
-                      "sha256":  "b245f9c17a279b9c88065d8d1e4eaf44639012c83a5f1e01ddedecaa2d497ae2"
+                      "sha256":  "b3c828594818d4bbb38e750b4d87dc92dfc87eb3e3f6c01fdb8420f3f78cf981"
                   },
                   {
                       "path":  "tests/e2e/import-drag.spec.ts",
@@ -583,27 +583,27 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "ddcf62550b0809b8bd0215c5d869369da789e46690c36e19e0bea63fd0a5e1bf"
+                      "sha256":  "b25fa272d615d995842abc1ac199668d9d9e667e2fe31aa15ba329000cc7c612"
                   },
                   {
                       "path":  "tests/e2e/reader-reading-time.spec.ts",
-                      "sha256":  "ab91d6ce027ffbff488400b863ca28b23023029d5fc2c91c15c69055ee1cad11"
+                      "sha256":  "4a465dfcbc4dceaaf7f087febdc304ca4cb4db052b9a40bdf165aaf8c7830aa9"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
-                      "sha256":  "b8e52a82bc44b33407d5d1bf248572deed5446386521af9ed9913b9917cd22cc"
+                      "sha256":  "f2636e369600095ee3fa2f5c856a1a76983bf0c883acd648aa2ab008618c2022"
                   },
                   {
                       "path":  "tests/e2e/reader-search.spec.ts",
-                      "sha256":  "a6190e1e248048fb742e0e61f57d0f784af2ce8ad7ee939bd32b35add28f047c"
+                      "sha256":  "6bae753e2cbf1232c6f2b950e367197ddf41469104cc78331118746647957a3a"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "40a9966750363c32f2928fb8b07cb8b26216e01f2c2658f24518730e1b7cdd74"
+                      "sha256":  "75b48628d247ab74ece98858b26500293edfe6da2f0ae2d686e5e4df8ed6f389"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
-                      "sha256":  "9cedd32c211047f2488b8b66f0a9c353f44cc2eaed27069424ef01d7dc251e57"
+                      "sha256":  "c78670f5b7f9c53a08791528e9e3b828294f5362ec68f8b0ee03dd6fc8966521"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -611,19 +611,19 @@
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "f36755f6230cec7a2db00d80e8054ea6b60104f46ed4d7f6f28f81be54b54e83"
+                      "sha256":  "e0e2b52b5371bc015f60655d656ffba4484e66ebf046ccadadff9a0b16263084"
                   },
                   {
                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
-                      "sha256":  "f13292cb36f06e4d00eb5e97694b8514cd8fb2ef585ff91a1ae93b727f8b47fa"
+                      "sha256":  "a44c2b35115b483d6a04603d6b4197c021c9c16cc8fd980fe4144a834b2f24dc"
                   },
                   {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
-                      "sha256":  "b5380eaf2d7ff3f6e035f2d390925c0d1ed78684f9a6ff4a2eafbb29873acb37"
+                      "sha256":  "392303d026c315ef93bb4d92f52b29433758340312135a0de7bcd2883184e567"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
-                      "sha256":  "b1004b5587b3a7443bfa64f7a1c8200685090f9a03a7d1ee68010f39af8e0d28"
+                      "sha256":  "6e1966b7be9bfbef13f63c5576bf0ac489c9957fa0c26d9084fb3b456be5f0be"
                   },
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
@@ -631,11 +631,11 @@
                   },
                   {
                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
-                      "sha256":  "b74d476ee50699c5e3b42e716fbc9e79e64a256a2249ac326edb4b13b92770f0"
+                      "sha256":  "24b36dd89112887d4a873da56d6d4770c89219cf7f60460eb3b82ffbe66ce6e1"
                   },
                   {
                       "path":  "tests/e2e/z-wg1-probe.spec.ts",
-                      "sha256":  "6027c162f30b3729ca1c43fb54023023566b1ea505b1152b9f9f8460b6f66911"
+                      "sha256":  "40bb226f3411d40804b0e2cb7398b02ae5d514e916f808eafe51eeac011f7c59"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",

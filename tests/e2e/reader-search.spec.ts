@@ -1,30 +1,12 @@
-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
-import { spawn } from 'node:child_process'
-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+import { test, expect } from '@playwright/test'
+import { mkdtemp } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
-
-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
-      env,
-      stdio: 'inherit'
-    })
-    child.on('exit', (code) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
-      }
-    })
-    child.on('error', reject)
-  })
-}
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [P7E-03] 页内高亮搜索 e2e：装配级全链（fixture=createMultiPagePdf(3)，每页
@@ -33,7 +15,8 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
  * （提交搜索）→页 1 高亮块可见（计算样式+几何——jsdom 不可达面在此真机
  * Chromium 断言）+计数 1/3→Enter（下一处）→P2 文本入视口+计数 2/3+页 2
  * 高亮可见（两段式滚动：setPage 页盒顶→active 居中）→Esc→高亮清零+面板关。
- * 形态 crib reader-text.spec.ts（seedAndLaunch 配方/双 ABI seed/launch 帮手）。
+ * 形态 crib reader-text.spec.ts（第一跳/双 ABI seed/launch 帮手——W1C 起收
+ * 敛于 e2e-env.ts 单源）。
  */
 const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR2-F-01'] as const
 
@@ -41,42 +24,6 @@ const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR2-F-01'] as
 function skipIfPending(deps: readonly string[]): void {
   const pending = deps.filter((d) => !isTicketDone(d))
   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
-}
-
-function launch(userData: string): Promise<ElectronApplication> {
-  return electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
-}
-
-/**
- * 种子落库（better-sqlite3 双 ABI 处理，reader-text.spec 同配方）：
- * 备份 electron 绑定→换 abi-cache 里本进程 ABI 的 node 绑定→子进程落库→
- * finally 恢复（Windows 文件锁——落库必须在子进程）。
- */
-async function seedPaperRow(userData: string, fileRef: string, sha: string, title: string): Promise<void> {
-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
-  const cacheDir = join(pkgDir, 'abi-cache')
-  const wanted = `node-v${process.versions.modules}`
-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
-  const electronBinding = await readFile(releaseBinding)
-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
-  try {
-    await runSeedScript({
-      ...process.env,
-      SEED_DB: join(userData, 'synapse.db'),
-      SEED_FILE_REF: fileRef,
-      SEED_SHA: sha,
-      SEED_TITLE: title,
-      SEED_ID: 'e2e-seed-p7e03'
-    } as NodeJS.ProcessEnv)
-  } finally {
-    await writeFile(releaseBinding, electronBinding)
-  }
 }
 
 test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高亮→Esc 清零', async () => {
@@ -87,10 +34,8 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高�
   const title = '智慧水务 e2e 页内搜索文献'
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e03-'))
 
-  // 第一跳：让应用自己完成建库迁移（reader-text.spec 同配方）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  // 第一跳：让应用自己完成建库迁移（e2e-env.ts 单源——W1C 收敛）
+  await bootstrapMigrations(userData)
 
   // 3 页受管文件（每页单行 P<n> KNOWN——`smart water` 每页恰 1 命中）
   const bytes = createMultiPagePdf(3, PDF_KNOWN_TEXT)
@@ -99,7 +44,7 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高�
   const abs = join(userData, 'files', ...fileRef.split('/'))
   mkdirSync(dirname(abs), { recursive: true })
   writeFileSync(abs, bytes)
-  await seedPaperRow(userData, fileRef, sha, title)
+  await seedPaperRow(userData, fileRef, sha, title, 'e2e-seed-p7e03')
 
   const app = await launch(userData)
   const win = await app.firstWindow()

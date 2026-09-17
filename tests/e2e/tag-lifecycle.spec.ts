@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [P7E-01] 标签生命周期 e2e（always-active，无工单门）。
@@ -16,9 +16,7 @@ test('标签生命周期：改名→合并→删除（chip/行徽标真实文本
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e-'))
 
   // 第一跳：应用自建库表（workspaces.spec 同配方——不 import src 内部模块）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 三篇种子（只列行不开阅读器——无需真实 PDF 文件；sha 互异避唯一约束）
   const papers = [

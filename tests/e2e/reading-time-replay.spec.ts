@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * P7X-02 阅读时长 outbox 重启重放 e2e（SYNAPSE_USER_DATA 双 launch，1 综合用例）。
@@ -103,9 +103,7 @@ test('P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动�
   const userData = await mkdtemp(join(tmpdir(), 'synapse-obx-'))
 
   // 第一跳：让应用自建库 v8（不 import src 内部模块——reader-reading-time 同型）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
   const bytes = createTinyPdf(title)

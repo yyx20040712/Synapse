@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * P7E-04 导出剪贴板 e2e（装配级，1 综合用例）。
@@ -29,9 +29,7 @@ test('P7E-04 导出剪贴板：详情面板「复制 BibTeX」→主进程剪贴
   const userData = await mkdtemp(join(tmpdir(), 'synapse-clip-'))
 
   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——corpus-export 同型）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
   const bytes = createTinyPdf(title)

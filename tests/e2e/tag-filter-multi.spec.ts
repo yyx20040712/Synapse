@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [P7E-06] 标签多选过滤 e2e（always-active，无工单门）。
@@ -16,9 +16,7 @@ test('标签多选过滤：两标签交集→取消一个→全清回全列表',
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e6-'))
 
   // 第一跳：应用自建库表（tag-lifecycle.spec 同配方——不 import src 内部模块）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 三篇种子（甲乙=票面双文献双标签分化主体；丙=全列表对照锚——三态列表可区分）
   const papers = [

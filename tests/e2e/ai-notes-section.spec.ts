@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * AI 笔记面板 e2e（SR2-AI-08，受锁）。
@@ -32,9 +32,7 @@ test('AI 笔记面板全链：写 job→心跳 fixture→reading→产物落盘�
   const sensorRoot = join(userData, 'ai-sensor')
 
   // 第一跳：让应用自己完成建库迁移（reader-text 同型）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 种子：一篇真实 PDF
   const bytes = createTinyPdf(`AI 面板 e2e ${PDF_KNOWN_TEXT}`)
@@ -166,9 +164,7 @@ test('AI 标注渲染层：含锚行导入→阅读器 AI 高亮块可见→点�
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ai09-'))
   const sensorRoot = join(userData, 'ai-sensor')
 
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   const bytes = createTinyPdf(`AI 渲染层 e2e ${PDF_KNOWN_TEXT}`)
   const sha = createHash('sha256').update(bytes).digest('hex')
