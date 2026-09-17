@@ -1,9 +1,10 @@
 /**
- * [SR2-AI-08] e2e 环境基建共用（launch+seedPaperRow）。
+ * [SR2-AI-08] e2e 环境基建共用（launch+seedPaperRow+bootstrapMigrations）。
  *
  * Rule of Three 抽取形态：reader-text.spec / corpus-export.spec 各持一份
- * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；既有两 spec
- * 的收敛改写属受锁面改动（超本票面），归主控裁量，不在本单顺手改。
+ * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；W1C
+ * （F-TESTREF-W1C）把各 spec 内联的 launch 5 副本、seedPaperRow 4 份本地
+ * 定义与第一跳迁移配方（14 处复制）收敛到本单源。
  */
 import { _electron as electron, type ElectronApplication } from '@playwright/test'
 import { spawn } from 'node:child_process'
@@ -15,6 +16,16 @@ export function launch(userData: string, extraEnv: Record<string, string> = {}):
     args: ['out/main/index.js'],
     env: { ...process.env, SYNAPSE_USER_DATA: userData, ...extraEnv } as Record<string, string>
   })
+}
+
+/**
+ * 第一跳：让应用自己完成建库迁移——launch 开窗等 500ms 再关（不 import
+ * src 内部模块，Playwright 不认 ?raw；迁移留给应用自身的启动链）。
+ */
+export async function bootstrapMigrations(userData: string): Promise<void> {
+  const app = await launch(userData)
+  await (await app.firstWindow()).waitForTimeout(500)
+  await app.close()
 }
 
 /** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝 */

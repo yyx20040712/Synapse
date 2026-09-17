@@ -72,7 +72,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /** 守卫=仅依赖组（主控裁定 5：自身条件收敛，见文件头实现注） */
 const DEPS = ['SR2-LG-01', 'SR2-LG-02', 'SR2-LG-03', 'SR2-LG-04'] as const
@@ -132,9 +132,7 @@ function parseTranslate(s: string | null): { x: number; y: number } | null {
 
 /** 建库迁移第一跳（reader-text 同型：不 import src 内部模块） */
 async function firstHop(userData: string): Promise<void> {
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 }
 
 /** 种子三篇（甲真实 PDF；根/乙幽灵行——脉络 graph 不读其文件） */

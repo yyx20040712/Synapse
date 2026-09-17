@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf } from '../utils/pdf-factory'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * P7E-05 阅读时长 e2e（装配级显示面冒烟，1 综合用例）。
@@ -70,9 +70,7 @@ test('P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分
   const userData = await mkdtemp(join(tmpdir(), 'synapse-rt-'))
 
   // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——export-clipboard 同型）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
   const bytes = createTinyPdf(title)

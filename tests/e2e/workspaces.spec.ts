@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [R1-WS2] 课题切换 e2e（验收判据场景，ADR-0018——always-active，无工单门）。
@@ -19,9 +19,7 @@ test('课题切换：新建课题 B 后库/脉络整体切换，切回后文献�
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ws-'))
 
   // 第一跳：应用自建库表（不 import src 内部模块——Playwright 不认 ?raw）
-  const seedApp = await launch(userData)
-  await (await seedApp.firstWindow()).waitForTimeout(500)
-  await seedApp.close()
+  await bootstrapMigrations(userData)
 
   // 旧布局种子：文献行直写 userData 根 synapse.db（e2e 种子链零改动兼容面）
   const sha = 'e'.repeat(64)

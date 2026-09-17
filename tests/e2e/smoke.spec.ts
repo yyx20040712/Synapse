@@ -1,9 +1,10 @@
-import { test, expect, _electron as electron } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cspHeaderValue } from '../../src/main/security/csp'
 import { API_SURFACE } from '../../src/shared/ipc/api-surface'
+import { launch } from './e2e-env'
 
 /**
  * 冒烟 e2e（骨架期即激活）：应用能启动、三入口导航、内容区渲染。
@@ -11,13 +12,7 @@ import { API_SURFACE } from '../../src/shared/ipc/api-surface'
  */
 test('应用启动：侧栏三入口可见且可切换', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: {
-      ...process.env,
-      SYNAPSE_USER_DATA: userData
-    } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible()
@@ -32,10 +27,7 @@ test('应用启动：侧栏三入口可见且可切换', async () => {
 
 test('应用启动：主区域渲染了内容（空态或占位均可，白屏即红）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke2-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   const main = win.locator('main')
@@ -45,10 +37,7 @@ test('应用启动：主区域渲染了内容（空态或占位均可，白屏�
 
 test('preload 桥已注入：window.api 暴露全部域 + apiEvents 在位 + CSP meta 与策略常量一致', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke3-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   const state = await win.evaluate(() => {
@@ -72,10 +61,7 @@ test('preload 桥已注入：window.api 暴露全部域 + apiEvents 在位 + CSP
 
 test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ app-file:// fetch 不被 CSP 拦截', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke4-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
@@ -117,10 +103,7 @@ test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ 
 
 test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke5-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
 
@@ -159,10 +142,7 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
 
 test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 56（豁免锁——rect 断言非 computed）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
-  const app = await electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
+  const app = await launch(userData)
   const win = await app.firstWindow()
   await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
 

@@ -33,74 +33,20 @@
  * - 验收：verify 全绿+e2e 全量（翻 done 后 22 过+0 skip 推演）；用户走查
  *   （滚动阅读体验视检——战役最终验收人=用户）。
  */
-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
-import { spawn } from 'node:child_process'
-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+import { test, expect } from '@playwright/test'
+import { mkdtemp } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /** 双条件守卫（依赖∪自身——LG-05/corpus-export 先例）：全链用例随
  * F-01~03 就绪与 F-04 实现展开 */
 const DEPS = ['SR2-F-01', 'SR2-F-02', 'SR2-F-03', 'SR2-F-04']
 const pending = DEPS.filter((d) => !isTicketDone(d))
-
-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝（错误细节走 stdio 继承） */
-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
-      env,
-      stdio: 'inherit'
-    })
-    child.on('exit', (code) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
-      }
-    })
-    child.on('error', reject)
-  })
-}
-
-function launch(userData: string): Promise<ElectronApplication> {
-  return electron.launch({
-    args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData } as Record<string, string>
-  })
-}
-
-/**
- * 种子落库（better-sqlite3 双 ABI 处理，与 reader-text.spec 同配方——第 2 次
- * 重复保持重复，Rule of Three）：备份 electron 绑定→换 node 绑定→子进程落库
- * →finally 还原（Windows 文件锁：进程内 import 会让还原 EBUSY 毒化 launch）。
- */
-async function seedPaperRow(userData: string, fileRef: string, sha: string, title: string, id: string): Promise<void> {
-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
-  const cacheDir = join(pkgDir, 'abi-cache')
-  const wanted = `node-v${process.versions.modules}`
-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
-  const electronBinding = await readFile(releaseBinding)
-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
-  try {
-    await runSeedScript({
-      ...process.env,
-      SEED_DB: join(userData, 'synapse.db'),
-      SEED_FILE_REF: fileRef,
-      SEED_SHA: sha,
-      SEED_TITLE: title,
-      SEED_ID: id
-    } as NodeJS.ProcessEnv)
-  } finally {
-    await writeFile(releaseBinding, electronBinding)
-  }
-}
 
 test.describe('reader-scroll —— F-04 收官', () => {
   test.skip(pending.length > 0, `延期：依赖或自身工单未完成 [${pending.join(', ')}]`)
@@ -108,9 +54,7 @@ test.describe('reader-scroll —— F-04 收官', () => {
   test('收官全链：INV-01 三层/键位滚动步/缩放中心锚（ctrl+wheel 段迁移）/fit-width 列宽基准/标注原位抽验/离屏回收/进度恢复', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-f04-'))
     // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——Playwright 不认 ?raw）
-    const seedApp = await launch(userData)
-    await (await seedApp.firstWindow()).waitForTimeout(500)
-    await seedApp.close()
+    await bootstrapMigrations(userData)
 
     // 6 页受管文件（离屏回收需页数>渲染窗口+缓冲；每页单行 P<n> KNOWN——
     // ASCII 单 run 可被 getByText 单节点命中，批 1 同口径）
@@ -285,9 +229,7 @@ test.describe('reader-scroll —— F-05 程序滚动单容器收敛', () => {
   test('缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-f05-'))
     // 建库迁移（同配方：让应用自己完成，不 import src 内部模块）
-    const seedApp = await launch(userData)
-    await (await seedApp.firstWindow()).waitForTimeout(500)
-    await seedApp.close()
+    await bootstrapMigrations(userData)
 
     const bytes = createMultiPagePdf(6, PDF_KNOWN_TEXT)
     const sha = createHash('sha256').update(bytes).digest('hex')
