@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T23:26:25Z
-- claim: claim-1789682221-b7
+- heartbeat_utc: 2026-09-18T00:12:00Z
+- claim: claim-1789687924-b8
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 12
+- checked_done: 13
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -85,7 +85,7 @@
 - [x] F-SESS-01（导出会话悬挂修复，票面含态空间表）
 - [x] F-AIN-01（回灌事务包裹）＋可同火收 F-DEP-01
 - [x] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
-- [ ] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
+- [x] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
       呈裁后本项即勾，实施属后续波次不在本板**）
 - [ ] F-ALIGN-01（组织定版对齐：R1~R6 真跑+ds-call v1→v2 切换呈批+ORG-SEG v2 重写
       含裁决 13 条文+词汇表补全+账本断流核查；制度+配置复合批，单火专注）
@@ -120,6 +120,59 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 8 — 2026-09-18（执行者会话：第三波 F-ELE-01 Electron 升级预研，呈裁即停，完成）
+- claim: claim-1789687924-b8｜开始 23:32:04Z｜收口 00:12:00Z｜勾选 12→13。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/
+  轻量双审/health-scan/源健康检查）；实现面=纯调研零代码——ops-executor
+  不派（无 TDD 面）、systematic-debugging 不加载（无缺陷排查面）；门审=
+  轻量双审（文档/制度批档位）：门一=ops-gate1-k1 绑定（k3 max，源健康
+  检查推荐 k1——窗口类失效按链首选）、裁决位=ops-adjudicator 绑定
+  （deepseek-flash max）——均异构于调研执行者（本会话 GLM5.3 max）。
+- **交付**：docs/reports/2026-09-18_ele-upgrade-prestudy.md 骨架→调研
+  报告全文（五要件齐：矩阵/Node24 兼容/工作量风险清单/暴露窗评估/结论
+  呈裁）。核心发现：①**僵局已破**——better-sqlite3 v13.0.x（2026-07-21
+  发布）N-API 化，prebuilt 随 npm 包发布（prebuilds/win32-x64.node，
+  tarball 11.4MB sha512 对 registry integrity 一致），12.11.2/12.12.0
+  双 E404 仍不在 npm 但已不重要；②三运行时实测全过（Node 24.20.0 ABI
+  137/Node 25.2.1 ABI 141/Electron 42.9.3 main ABI 146 同一份 .node
+  加载+FTS5+transaction+pragma）；③支持线（endoflife 09-17 快照）：
+  42 EOL 2026-10-20 剩 33 天/43→2027-01-05/44→2027-03-02；④breaking
+  项目面核对：43 一处体感（dialog defaultPath 三调用点未传）、44 两小改
+  （clipboard writeText Promise 化三点+ANGLE 渲染回归）+主不确定项=
+  @playwright/test 1.49 驱 44 CDP 漂移；⑤建议两票分离（bsq13 先行
+  低风险→Electron 44 后行中风险，43 中间档不推荐——同工作量半窗口）。
+- **呈裁（Rulings 待用户）**：F-ELE-01 实施时机——报告 §5 选项 a~d
+  （a 推荐=维持裁决 1 F-GEOM-01 收口后两票分离实施；b 提前插队；c 仅
+  先行 bsq13；d 维持现状至 Phase 6）。呈裁材料=报告全文+证据件；用户
+  裁决后实施票按《裁决书》§3 P9/新波次入板，实施前按 §6.6 强制复核
+  矩阵时效（重跑镜像目录清单+npm view 两探针+EOL 二源核对，约 10 分钟）。
+- **门审**：门一 PASS_WITH_WARNINGS B0W4N5（W1 探针标签硬编码无版本
+  自证→补跑 v25.2.1 自证+勘误注入档/W2 两日期无包内证据→published_at
+  六值入档/W3 node-abi 三版本口径→存档句改准三版本一致+前瞻 alpha 条目
+  /W4 git status 无原始输出→快照入档）；裁决位 GO_WITH_CONDITIONS
+  P0=0P1=1P2=3（P1=修订清单漏列 AGENTS/ADR-0006「v13.x 无 win 预编译」
+  失准句+「前提基于 v12」措辞→报告两处改准补列；P2=e2e「44 用例」失准
+  →两处改「默认门 43+一键全跑 45」/EOL 单源→§5 补二源复核句/*.log 被
+  .gitignore 拦→收口 git add -f）——全处置；回炉条件③「实施票以 --list
+  实测 e2e 数入票面」记入实施票要求。
+- **机检终态**：verify 双跑 EXIT=0（翻 registry 前 ele01-verify.log+翻
+  后 ele01-verify2.log；195 票 open 12→11）；health-scan RED=0（WARN1
+  =cfg 漂移历史欠账回显 batch 2~7 同款）；locks 面零变更（manifest 334
+  不含 audits/docs-reports/tickets 路径——generate+apply 曾产时间戳
+  diff 即时还原，本票无 [locked-change]/[dep-change] 义务）。
+- 证据件入库（scripts/audits/，4 件+verify.log 经 -f）：ele01-{probes.txt；
+  mirror-index.json；gate1-brief.md；verify.log（-f——*.log 被 ignore 拦，
+  裁决位 P2-3）；verify2.log（同 -f）}。
+- 教训三条：①探针输出标签必须带运行时自证（--version/process.versions
+  打印）——硬编码「NODE24_LOAD_OK」在宿主 node=25 下跑出=标签失实，
+  门一 W1 拦截（宪法「计数类数字落笔前实测」的探针变体）；②locks:
+  generate+apply 在零条目差时仍产 generatedAt 时间戳 diff——无锁面
+  变更的票不要跑锁命令，跑了要还原而非提交；③.gitignore `*.log` 全局
+  拦截证据件 .log——证据件入库前 git check-ignore 自查，命中即 -f 显式
+  列入（裁决位 P2-3；宪法「staging 显式列文件」的补充面）。
+- 无进展计数：归零（12→13 有进展）。**第三波剩一项：F-ALIGN-01（制度+
+  配置复合批单火专注）——下波建议 F-ALIGN-01 单火。**
 
 ### batch 7 — 2026-09-18（执行者会话：第三波梯队二前三票 F-SESS-01+F-AIN-01+F-DEP-01，完成 3 项）
 - claim: claim-1789682221-b7｜开始 21:57:01Z｜收口 23:53:00Z｜勾选 9→12。
