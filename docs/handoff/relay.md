@@ -1,0 +1,108 @@
+# 批次接力状态板（机器门控文件——火按此行动，人可读）
+
+> 项目：Synapse_remake ｜ 战役简报=docs/design/2026-09-18_complexity-governance-ruling.md
+> （14 项用户裁决+五梯队编排 v1.1，下称《裁决书》；本板清单为《裁决书》§3 的执行投影，
+> 排程冲突时以《裁决书》为准并回改本板）。
+> 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
+> 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
+
+- status: READY
+- automation_id: <未布防——点火后由 CronList 取回回填>
+- plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
+- spec: docs/design/2026-09-18_complexity-governance-ruling.md
+- poll_interval_min: 5
+- fire_budget_min: 120
+- heartbeat_utc: <ISO8601，批内每任务/每门审等待间隙刷新>
+- claim: -
+- no_progress_count: 0
+- checked_total: 24
+- checked_done: 0
+
+## protocol（火的最小兜底协议——技能不可加载时按此执行）
+
+1. 按上方 status 行动：READY → 原子 claim（写 RUNNING+claim+心跳后回读确认）
+   再按「执行清单」领批至预算；RUNNING 且心跳 <30min → 退出；RUNNING 且心跳
+   ≥30min → 核对 git 进度后接管；DONE/HOLD → CronDelete(automation_id) 后退出。
+2. 收口：更新清单复选框、追加批次日志、刷新心跳；清单全勾（`grep -c '^- \[ \]'`
+   计 0）→ status: DONE + CronDelete + 终报（含 Rulings 全清单）；否则 → READY。
+3. 禁止创建任何新自动化。停止事由（破坏性/安全敏感/仓外副作用 push/merge/发布/
+   计划破碎到每条路都是猜）→ status: HOLD + CronDelete 后呈报。
+
+## 执行路由（ai-dev-org 项目——批内引擎）
+
+- 每票走三屋管道：实现者子代理（TDD 红→绿→变异红证）→ 门一 → 门二 → 主控收口
+  （亲验 verify 真退出码+locks+diff 范围→翻 registry→提交）。派发通道按《裁决书》
+  裁决 13：**绑定子代理（ops-*）为主**，外部派发器=健康探针+后备。
+- **单火负载基准**：大中票一火一票；小票组一火 2-3 票（波次头注有分组建议）。
+  每票独立提交（断点保护）；**不留半门审提交**（提交前该票门审完成或整体还原挂起）。
+- 火协议收口步 health-scan RED=0 与票面 DoD verify **并行不互并**（《裁决书》裁决 14）。
+- AGENTS 闲时纪律全数适用：三停止条件/单票回炉 ≤2/e2e 非确定红立案线（2 次立案）/
+  视觉决策零承担（挂起跳次）/计数落笔前机器实测。
+- 立案执行序（新票）：《裁决书》§5——骨架件（file 必须真实存在）→ registry 条目 →
+  locks:generate+apply → verify → 提交。
+
+## 执行清单（波次=接力顺序；`- [ ]` 勾选即完成）
+
+### 第一波·立案批（一火完成；本波全部为 registry/骨架面，无业务实现）
+
+- [ ] T0｜check-tickets 重复 id 哨兵微票（双审 B 级发现，受锁 [locked-change]）
+- [ ] T1｜12 新票立案：F-SESS-01/F-AIN-01/F-DEP-01/F-ELE-01/F-ALIGN-01/F-LAYER-01/
+      F-SENSOR-01/F-EXPORT-01/F-TIME-01/F-DOCGOV-01/F-PROC-01/F-STOR-01
+      （骨架头注五层规约引用《裁决书》对应行；全部 owner:'strong'）
+- [ ] T2｜在册扩容票面修订：F-DEDUP-01（+app-file URL 单源）、F-GEOM-01（+目录化）
+
+### 第二波·F-TESTREF 余票（大中票一火一票；W2 小可随 W1C 同火）
+
+- [ ] F-TESTREF-W1A（mock 工厂下沉，39 文件）
+- [ ] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
+- [ ] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
+- [ ] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
+- [ ] F-TESTREF-W3（src/shared 直接契约测试补齐）
+- [ ] F-TESTREF-W4（flake 台账+INV-63/64，战役收官票；F-TESTREF-S1 若触发随火搭车，
+      不触发不阻塞）
+
+### 第三波·梯队二：风险清账+组织对齐（小票组同火；ELE 呈裁即停）
+
+- [ ] F-SESS-01（导出会话悬挂修复，票面含态空间表）
+- [ ] F-AIN-01（回灌事务包裹）＋可同火收 F-DEP-01
+- [ ] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
+- [ ] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
+      呈裁后本项即勾，实施属后续波次不在本板**）
+- [ ] F-ALIGN-01（组织定版对齐：R1~R6 真跑+ds-call v1→v2 切换呈批+ORG-SEG v2 重写
+      含裁决 13 条文+词汇表补全+账本断流核查；制度+配置复合批，单火专注）
+
+### 第四波·梯队三：既定战役（GEOM 战役大，设计链与实现分项）
+
+- [ ] F-DEDUP-01（服务层去重微扩版：DomainError/原子写/清洗+app-file URL 单源）
+- [ ] F-GEOM-01 设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁；设计书要件=
+      态空间表+跨格序列+回落档语义裁决+六子域目录重组清单+净删行数记账+前史两
+      条款承袭；定稿件独立提交）
+- [ ] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
+      验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
+
+### 第五波·梯队四：第二波域归位（LAYER/TIME 小票组同火）
+
+- [ ] F-LAYER-01（settings 下沉；随票落 L1 锁线 [locked-change]）
+- [ ] F-TIME-01（时长链瘦身评估，产出呈裁不实施）＋可同火收上项
+- [ ] F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）
+- [ ] F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离）
+
+### 第六波·梯队五：文档+制度+存储（DOCGOV 必须晚于 ALIGN，已在波次序保证）
+
+- [ ] F-DOCGOV-01（文档补课批+ROADMAP 退役两强制条款+多窗口 INV 登记，
+      invariants.md 受锁 [locked-change]；ai-sensor 段随 F-SENSOR-01 终态回写）
+- [ ] F-PROC-01（制度批：DoD 回写项/事故档回流段/治理指标+3/白名单冻结/M2 预防句/
+      直调补记规则/裁决 14 入 methodology）
+- [ ] F-STOR-01（audits 出库归档+manifest 同步 [locked-change]+AGENTS 三桶口径①
+      修订呈批+本机 52M 清理）
+
+> **P9 池（5 项）不入本板**——用户点单启项时按《裁决书》§3 P9 表立案并在此追加波次。
+> 备选池与触发线=《裁决书》§5（含前史池承袭）。
+> Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
+
+## 批次日志（追加，勿改写）
+
+### batch 0 — 2026-09-18（主控建板，未点火）
+- 深度设计门：过（ai-dev-org 路由——org-ledger 在案+战役简报《裁决书》v1.1 已入库）
+- 板已建（24 项清单），**火未布防**（用户指令本会话不正式开工）——点火入口待用户
+  显式 `/batch-relay`；未点火期间手动会话按本板清单领批同规执行。
