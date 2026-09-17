@@ -1,0 +1,68 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/services/corpus.export.test.ts
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/services/corpus.export.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[33m 339[2mms[22m[39m
+[31m   [31m×[31m corpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）[90m 16[2mms[22m[31m[39m
+[31m     → h.svc.abortActiveSession is not a function[39m
+[31m   [31m×[31m corpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false[90m 4[2mms[22m[31m[39m
+[31m     → h.svc.abortActiveSession is not a function[39m
+[31m   [31m×[31m corpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest[90m 26[2mms[22m[31m[39m
+[31m     → ENOTEMPTY: directory not empty, rmdir 'C:\Users\ADMINI~1\AppData\Local\Temp\corpus-session-Vw7hNi'[39m
+[31m   [31m×[31m corpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）[90m 16[2mms[22m[31m[39m
+[31m     → h.svc.abortActiveSession is not a function[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/corpus.export.test.ts[2m > [22mcorpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）
+[31m[1mTypeError[22m: h.svc.abortActiveSession is not a function[39m
+[36m [2m❯[22m tests/unit/services/corpus.export.test.ts:[2m344:35[22m[39m
+    [90m342| [39m      [35mconst[39m r1 [33m=[39m [35mawait[39m [34mnextExtract[39m(h[33m,[39m [34m0[39m)
+    [90m343| [39m      [90m// 首篇 request 后不回传——renderer 死亡模拟（corpusItem 永不再来[39m…
+    [90m344| [39m      [35mconst[39m aborted [33m=[39m [35mawait[39m h[33m.[39msvc[33m.[39m[34mabortActiveSession[39m([32m'渲染进程重载'[39m)
+    [90m   | [39m                                  [31m^[39m
+    [90m345| [39m      [34mexpect[39m(aborted)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m346| [39m      [35mawait[39m [34mexpect[39m(first)[33m.[39mrejects[33m.[39m[34mtoMatchObject[39m({ code[33m:[39m [32m'IO_ERROR'[39m })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/corpus.export.test.ts[2m > [22mcorpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false
+[31m[1mTypeError[22m: h.svc.abortActiveSession is not a function[39m
+[36m [2m❯[22m tests/unit/services/corpus.export.test.ts:[2m362:34[22m[39m
+    [90m360| [39m    [35mconst[39m h [33m=[39m [35mawait[39m [34mmakeHarness[39m()
+    [90m361| [39m    [35mtry[39m {
+    [90m362| [39m      [35mconst[39m before [33m=[39m [35mawait[39m h[33m.[39msvc[33m.[39m[34mabortActiveSession[39m([32m'idle 空转'[39m)
+    [90m   | [39m                                 [31m^[39m
+    [90m363| [39m      [34mexpect[39m(before)[33m.[39m[34mtoBe[39m([35mfalse[39m)
+    [90m364| [39m      [35mawait[39m [34mseedPaper[39m(h[33m,[39m [32m'p-1'[39m[33m,[39m [32m'防御篇'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/corpus.export.test.ts[2m > [22mcorpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest
+[31m[1mError[22m: ENOTEMPTY: directory not empty, rmdir 'C:\Users\ADMINI~1\AppData\Local\Temp\corpus-session-Vw7hNi'[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/corpus.export.test.ts[2m > [22mcorpus.export.service —— 五件套导出会话（状态机+manifest+幂等） [SR2-AI-03][2m > [22mF-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）
+[31m[1mTypeError[22m: h.svc.abortActiveSession is not a function[39m
+[36m [2m❯[22m tests/unit/services/corpus.export.test.ts:[2m401:35[22m[39m
+    [90m399| [39m      [35mconst[39m session [33m=[39m h[33m.[39msvc[33m.[39m[34mexportCorpusSession[39m({ dir[33m:[39m h[33m.[39mdir })
+    [90m400| [39m      [35mconst[39m r [33m=[39m [35mawait[39m [34mnextExtract[39m(h[33m,[39m [34m0[39m)
+    [90m401| [39m      [35mconst[39m aborted [33m=[39m [35mawait[39m h[33m.[39msvc[33m.[39m[34mabortActiveSession[39m([32m'渲染进程重载'[39m)
+    [90m   | [39m                                  [31m^[39m
+    [90m402| [39m      [34mexpect[39m(aborted)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m403| [39m      [35mawait[39m [34mexpect[39m(session)[33m.[39mrejects[33m.[39m[34mtoMatchObject[39m({ code[33m:[39m [32m'IO_ERROR'[39m })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 06:07:35
+[2m   Duration [22m 1.29s[2m (transform 153ms, setup 0ms, collect 457ms, tests 339ms, environment 0ms, prepare 175ms)[22m
+
+FIRST_RED_EXIT=1
