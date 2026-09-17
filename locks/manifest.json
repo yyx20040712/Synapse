@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T22:37:29.1551922Z",
+    "generatedAt":  "2026-09-17T22:56:35.5133562Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -1155,7 +1155,7 @@
                   },
                   {
                       "path":  "tests/unit/services/ai-notes-import.test.ts",
-                      "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
+                      "sha256":  "88d0667be1e6cd3c8919dff017e7bc1cf610e7c26794497d4be1f35f32d94536"
                   },
                   {
                       "path":  "tests/unit/services/ai-sensor.service.test.ts",

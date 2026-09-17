@@ -1,0 +1,425 @@
+diff --git a/docs/handoff/relay.md b/docs/handoff/relay.md
+index 1e81ca4fb2..86aad58ba8 100644
+--- a/docs/handoff/relay.md
++++ b/docs/handoff/relay.md
+@@ -6,17 +6,17 @@
+ > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
+ > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
+ 
+-- status: READY
++- status: RUNNING
+ - automation_id: automation-e8255b42-9698-40da-a62b-8896ef575e8f
+ - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
+ - spec: docs/design/2026-09-18_complexity-governance-ruling.md
+ - poll_interval_min: 5
+ - fire_budget_min: 120
+-- heartbeat_utc: 2026-09-17T21:49:52Z
+-- claim: -
++- heartbeat_utc: 2026-09-17T22:52:27Z
++- claim: claim-1789682221-b7
+ - no_progress_count: 0
+ - checked_total: 24
+-- checked_done: 9
++- checked_done: 10
+ 
+ ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
+ 
+@@ -82,7 +82,7 @@
+ 
+ ### 第三波·梯队二：风险清账+组织对齐（小票组同火；ELE 呈裁即停）
+ 
+-- [ ] F-SESS-01（导出会话悬挂修复，票面含态空间表）
++- [x] F-SESS-01（导出会话悬挂修复，票面含态空间表）
+ - [ ] F-AIN-01（回灌事务包裹）＋可同火收 F-DEP-01
+ - [ ] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
+ - [ ] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 14e342b48f..2175abcd42 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-17T22:37:29.1551922Z",
++    "generatedAt":  "2026-09-17T22:56:35.5133562Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -1155,7 +1155,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/ai-notes-import.test.ts",
+-                      "sha256":  "506be8aa0e21558c5604bcf4a05618b0f3e38d988e9c8a06387f50d5d5694026"
++                      "sha256":  "88d0667be1e6cd3c8919dff017e7bc1cf610e7c26794497d4be1f35f32d94536"
+                   },
+                   {
+                       "path":  "tests/unit/services/ai-sensor.service.test.ts",
+diff --git a/package-lock.json b/package-lock.json
+index d889109eca..74412718d7 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -30,6 +30,7 @@
+         "electron-vite": "^2.1.0",
+         "eslint": "^9.17.0",
+         "jsdom": "^25.0.1",
++        "postcss": "^8.5.26",
+         "tailwindcss": "^4.0.0",
+         "typescript": "~5.6.3",
+         "typescript-eslint": "^8.18.0",
+diff --git a/package.json b/package.json
+index 937cac8e34..02ac708268 100644
+--- a/package.json
++++ b/package.json
+@@ -59,6 +59,7 @@
+     "electron-vite": "^2.1.0",
+     "eslint": "^9.17.0",
+     "jsdom": "^25.0.1",
++    "postcss": "^8.5.26",
+     "tailwindcss": "^4.0.0",
+     "typescript": "~5.6.3",
+     "typescript-eslint": "^8.18.0",
+diff --git a/scripts/audits/f-ain-01-impl.report.md b/scripts/audits/f-ain-01-impl.report.md
+new file mode 100644
+index 0000000000..0bf8cdfd66
+--- /dev/null
++++ b/scripts/audits/f-ain-01-impl.report.md
+@@ -0,0 +1,93 @@
++# F-AIN-01 实现者报告（ops-executor）
++
++## 0. 开工技能清点（宪法会话开工纪律）
++
++- test-driven-development：**用**——a1/a2 先红（withTransaction 缺失→中断半删半插）
++  →实现绿→M1 变异红证。
++- systematic-debugging：**用**——两处中途红（a2 区分度零/tickets 门占位拦截）按
++  红因定位→最小修→复验处置。
++- verification-before-completion：**用**——verify 全链真退出码落盘+e2e 零回归补跑。
++- 其余技能：**不用**——纯 main 服务层票，无 UI/部署/新依赖面（理由如名）。
++
++## 1. 实现摘要
++
++缺陷：importOne 的 deleteByPaper+逐行重插无事务——中断/异常时半删半插
++（旧面被清+部分新行落库）。
++
++修法（票面全落）：
++
++- `AiNotesImportDeps` 增必选 `withTransaction: <T>(fn: () => T) => T`
++  （lineage.service.ts:77 同型）。
++- importOne 两步写入包 `deps.withTransaction(() => { deleteByPaper; for insert })`；
++  archive 账本判定/readFile/rename 仍在事务外（fs 非事务面）。
++- services/index.ts aiNotesImport 装配注入 `withTransaction: deps.repos.withTransaction`
++  （lineage 行同型）。
++- 头注行为层补行：回灌写入=withTransaction 全有或全无（中断/异常零半删半插；
++  事务边界=单篇非整批——部分成功语义保持；幂等三路径语义不变）。
++
++## 2. 文件清单
++
++| 文件 | 行数 | 增减 | 说明 |
++| --- | --- | --- | --- |
++| src/main/services/ai_sensor/ai-notes-import.service.ts | 227→236 | +16/-6 区段 | deps 接口+事务包裹+头注行为层行 |
++| src/main/services/index.ts | 153（+1） | +1 | 装配注入 withTransaction |
++| tests/unit/services/ai-notes-import.test.ts | 194→303 | +114 | a1/a2 两用例+注入探针 helper+harness 注入（[locked-change] 面） |
++| locks/manifest.json | — | sha 同步 | 随 unlock→generate→apply 链 |
++
++## 3. 红证
++
++- **首红**（实现前）：`scripts/audits/f-ain-01-first-red.raw.txt`，
++  AIN_FIRST_RED_EXIT=1——a1+a2 双红（a1 `expected 1 to be +0`=首插半插残留；
++  a2 `expected +0 to be 1`=重灌半删清零），存量 10 绿。
++- **M1**（withTransaction 包裹改 IIFE 直调=fn() 形态）：
++  `scripts/audits/f-ain-01-m1-mutation.raw.txt`，AIN_M1_EXIT=1——a1+a2 双红
++  （简报要求 a1 红为下限，双红=半插+半删两面均敏感）。还原=cp 备份法：
++  diff 空（M1_RESTORE_DIFF_EMPTY），备份即删，复绿 RESTORE_GREEN_EXIT=0。
++
++## 4. 测试证据（真退出码）
++
++| 命令 | 退出码 | 关键输出 |
++| --- | --- | --- |
++| 定向单测（npm run test -- ai-notes-import.test.ts） | 0 | 12/12（存量 10+新 2） |
++| npm run typecheck | 0 | 双 tsconfig 过 |
++| npx eslint（三改动文件） | 0 | 无违规 |
++| npm run verify（全链） | 0 | VERIFY_EXIT=0；指纹门 183 文件/用例 1762→1764（+2）/断言 5372（+22）/skipSites 15；vitest 166 文件/1719 用例（1717+2）；locks 334 一致 |
++| npm run test:e2e（默认门，零回归自证） | 0 | 43 passed（2.0m） |
++
++## 5. locks 实录
++
++unlock（334）→ 测试文件两用例+harness 注入落盘 → 首红取证 → 实现四件 → 定向绿
++→ M1 变异/还原（src 非锁面，测试文件未再动）→ `npm run locks:generate`（334）→
++`npm run locks:apply` → locks:check EXIT=0；verify 内复验 334/334 一致。
++（主控提交带 [locked-change] 尾注。）
++
++## 6. 自裁申报
++
++1. **a1 合并简报两路径为一用例两相**：简报「异 sha 重灌路径（或首次导入）」以
++   「或」并列——合并为「首插中断零行（字面『零行』断言落此相）+成功导入后异 sha
++   重灌中断旧数据完整（deleteByPaper 回滚面）」，两面全覆盖。
++2. **a2 重设**：首版（B 首插即断+无预置数据）先绿——无事务下 B 也不留半态，
++   区分度为零；按简报「首红=a1/a2 红」预期重设为「B 预置旧数据+异 sha 重灌中断」
++   （B 的 deleteByPaper 无事务时已提交=半删面锚点），重设后红绿敏感+M1 双红实证。
++3. **首绿途中一次测试自纠红**：a2 前置导入误用 beforeEach svc（paperExists 桩不
++   含 p-2→判幽灵），改用例内自建 clean service——测试夹具问题非实现缺陷。
++4. **头注/注释去「SR2-LG-01」工单号字样**：tickets:check 机检拦「源文件引用已
++   完成工单号=占位残留」（首跑 verify 红×2）——简报措辞「对齐 SR2-LG-01」改
++   「lineage.service 清面重灌事务先例」语义措辞，语义零损。
++5. **头注行为层新行并入 a2 括号要求**的「事务边界=单篇非整批（部分成功语义
++   保持）」声明。
++6. **e2e 默认门补跑**：简报未列 e2e 验收项，因 build 面变更（main bundle）补
++   43/43 零回归自证。
++
++## 7. 疑虑
++
++- withTransaction 为必选注入（lineage 同型，简报指定）——装配点漏注入由
++  typecheck 编译期拦截，无运行时缺省面；测试 harness 注入=db.transaction 同式
++  （repos/index.ts:37 单源形态）。
++- fs 面（rename/archive 移动）仍在事务外=简报明示非事务面：重灌 DB 提交后
++  rename 失败→产物留 corpus-ai，下次导入幂等修复（既有语义未动）。
++
++## 8. 机读尾栏
++
++MODEL-SELF: model-field:account:bigmodel-individual-coding-plan/GLM-5.3$max
++LEDGER-CLAIM: role=ops-executor executor=model-field:account:bigmodel-individual-coding-plan/GLM-5.3$max units=2 outcome=done
+diff --git a/scripts/audits/f-dep-01-impl.report.md b/scripts/audits/f-dep-01-impl.report.md
+new file mode 100644
+index 0000000000..3679e2e101
+--- /dev/null
++++ b/scripts/audits/f-dep-01-impl.report.md
+@@ -0,0 +1,50 @@
++# F-DEP-01 实现者报告（ops-executor）
++
++## 1. 实现摘要
++
++缺陷（F-LINT-04 门一 W-4 申报）：scripts/check-quality.mjs 直接
++`import postcss from 'postcss'` 而 package.json 无显式声明——hoisting 传递依赖
++（vite 5.4.21 链下 8.5.26），npm 扁平 node_modules 下今日可解析，pnpm/strict 或
++上游去依赖即断（断时 fail-closed 红向）。
++
++修法：devDependencies 显式化 `"postcss": "^8.5.26"`（jsdom 与 tailwindcss 之间
++字母序插入，^ 随库内惯例）+ `npm install postcss@^8.5.26 --save-dev` 同步
++lockfile。**此为显式化既有传递依赖非新增依赖**（裁决 4 语义；版本与 lockfile
++现值 8.5.26 一致，^ 范围解析落同版）。零源码变更。
++
++## 2. 文件清单
++
++| 文件 | 增减 | 说明 |
++| --- | --- | --- |
++| package.json | +1 行 | devDependencies 增 postcss ^8.5.26（[dep-change] 面） |
++| package-lock.json | +1 行 | 仅根 packages 声明条目——node_modules/postcss 传递条目 8.5.26 已在（vite 依赖沿用 dedupe） |
++
++## 3. 机检三件（真退出码）
++
++| 命令 | 退出码 | 关键输出 |
++| --- | --- | --- |
++| npm ci --dry-run | 0 | CI_DRYRUN_EXIT=0（lockfile 与 package.json 一致）；日志=scripts/audits/f-dep-01-npm-ci-dryrun.raw.txt |
++| npm ls postcss | 0 | synapse@0.1.0 直挂 `├── postcss@8.5.26`；vite@5.4.21 链 deduped；日志=f-dep-01-npm-ls.raw.txt |
++| npm run verify（全链） | 0 | check-quality 的 postcss import 面照常绿（quality 检查通过：无占位标记/无乱码/无跨域引用/无同值双常量新增）；全链绿证据=f-ain-01-verify.raw.txt（VERIFY_EXIT=0，同场双票共验） |
++
++npm install 本体：NPM_INSTALL_EXIT=0（日志=f-dep-01-npm-install.raw.txt）。
++
++干净环境验收口径（主控裁决）：本地不真跑 npm ci（ABI 重切+耗时）——以
++`npm ci --dry-run` EXIT=0 + CI ci.yml:33-34 `npm ci` 面为背书，此口径呈报注明。
++
++## 4. 自裁申报
++
++1. 双通道落法：package.json 手改（字母序+^ 风格）后 `npm install
++   postcss@^8.5.26 --save-dev` 同步 lockfile——简报允许「先手改再 install 或
++   install 带版本」任一形态，终态=双件同步（各 +1 行最小 delta）。
++2. postcss 呈报口径：显式化既有传递依赖（非新增），版本 ^8.5.26 与 lockfile
++   现值一致——按简报要求写明。
++
++## 5. 疑虑
++
++- 无。npm audit 输出为存量告警（与本次 +1 声明无关，install 日志存档）。
++
++## 6. 机读尾栏
++
++MODEL-SELF: model-field:account:bigmodel-individual-coding-plan/GLM-5.3$max
++LEDGER-CLAIM: role=ops-executor executor=model-field:account:bigmodel-individual-coding-plan/GLM-5.3$max units=1 outcome=done
+diff --git a/src/main/services/ai_sensor/ai-notes-import.service.ts b/src/main/services/ai_sensor/ai-notes-import.service.ts
+index 9c50e83022..5fb69d8b69 100644
+--- a/src/main/services/ai_sensor/ai-notes-import.service.ts
++++ b/src/main/services/ai_sensor/ai-notes-import.service.ts
+@@ -11,6 +11,10 @@
+  * - **幂等=archive 账本机制**：archive/<paperId>.json 存在且 sha256==源文件 →
+  *   跳过（skipped）；存在但 sha 不同 → 清面重灌（deleteByPaper+整套重插
+  *   ——AI-01 幂等原语）；无 archive → 首次导入
++ * - **回灌写入=withTransaction 全有或全无（F-AIN-01）**：清面+整套重插包单篇
++ *   事务（对齐 lineage.service 清面重灌事务先例的全有或全无标准；中断/异常
++ *   零半删半插——archive 账本判定/readFile/rename 等 fs 面仍在事务外，fs 非
++ *   事务面）；事务边界=单篇非整批（部分成功语义保持）；幂等三路径语义不变
+  * - **账本前提登记（门一 W07-1 处置，两条机器事实）**：①paperId 不复用
+  *   （导入服务以 randomUUID 生成不循环——import.service.ts 现实现）；②
+  *   paper 删→CASCADE 清 ai_notes（003 迁移）后 archive 残留无害（扫描只看
+@@ -83,6 +87,9 @@ export interface AiNotesImportDeps {
+   repo: Pick<AiNotesRepo, 'insert' | 'deleteByPaper' | 'listByPaper'>
+   /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
+   paperExists: (paperId: string) => boolean
++  /** 事务边界（repos.withTransaction 注入——清面+整套重插原子性，F-AIN-01
++   *  lineage.service 同型） */
++  withTransaction: <T>(fn: () => T) => T
+ }
+ 
+ /** 产物文件行形状（ADR-0015 §1 字面，snake_case 文件面） */
+@@ -184,9 +191,12 @@ export function createAiNotesImportService(deps: AiNotesImportDeps): AiNotesImpo
+         return 'failed'
+       }
+       const inputs = parseRows(raw, paperId, src)
+-      // 幂等重灌原语：异 sha 先清面再整套重插（AI-01）
+-      deps.repo.deleteByPaper(paperId)
+-      for (const input of inputs) deps.repo.insert(input)
++      // 幂等重灌原语：异 sha 先清面再整套重插（AI-01）；写入=withTransaction
++      // 全有或全无（F-AIN-01，lineage.service 先例）——中断/异常零半删半插
++      deps.withTransaction(() => {
++        deps.repo.deleteByPaper(paperId)
++        for (const input of inputs) deps.repo.insert(input)
++      })
+       await mkdir(archiveDir, { recursive: true })
+       await rm(dest, { force: true }) // Windows rename 不覆盖已存在目标
+       await rename(src, dest)
+diff --git a/src/main/services/index.ts b/src/main/services/index.ts
+index eb8fe8bfab..a7e773d0aa 100644
+--- a/src/main/services/index.ts
++++ b/src/main/services/index.ts
+@@ -121,7 +121,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
+         ...createAiNotesImportService({
+           rootDir: deps.aiSensorRootDir,
+           repo: deps.repos.aiNotes,
+-          paperExists: (id) => deps.repos.papers.findById(id) !== null
++          paperExists: (id) => deps.repos.papers.findById(id) !== null,
++          withTransaction: deps.repos.withTransaction // F-AIN-01 回灌事务（lineage 行同型）
+         }),
+         ...createZcodeLinkService({
+           zcodeBaseDir: deps.zcodeBaseDir,
+diff --git a/tests/unit/services/ai-notes-import.test.ts b/tests/unit/services/ai-notes-import.test.ts
+index 645214ad2e..1b3ec10b6b 100644
+--- a/tests/unit/services/ai-notes-import.test.ts
++++ b/tests/unit/services/ai-notes-import.test.ts
+@@ -2,7 +2,8 @@
+  * [SR2-AI-07] ai-notes-import.service —— 回灌导入器（锁定合约）。
+  * 覆盖面：幂等三路径（无 archive 首导/同 sha 跳过/异 sha 清面重灌不重复）/
+  * 行级 zod 拒非法 role/question/幽灵 paperId 拦截/损坏 JSON/目录不存在空结果/
+- * archive 移动后二跑全 skipped/Result 三桶形状/listByPaper 透传。
++ * archive 移动后二跑全 skipped/Result 三桶形状/listByPaper 透传/F-AIN-01
++ * 事务原子性（中断注入零半删半插+跨篇隔离——withTransaction 全有或全无）。
+  * repo 交互=真库夹具（AI-01 测试同型）；fs 夹具目录驱动（AI-06 同型）。
+  *
+  * 激活方式（ADR-0017 裁决 3，AI-06 同型自裁申报）：always-active 不经
+@@ -61,7 +62,9 @@ beforeEach(async () => {
+     rootDir: root,
+     repo,
+     // bad-1 亦为已存在篇（该用例专测损坏 JSON 面，非幽灵面）
+-    paperExists: (id) => id === 'p-1' || id === 'bad-1'
++    paperExists: (id) => id === 'p-1' || id === 'bad-1',
++    // F-AIN-01：真库事务（repos.withTransaction 同式——repos/index.ts 单源形态）
++    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
+   })
+ })
+ 
+@@ -191,3 +194,110 @@ it('listByPaper 透传 repo（确定性序+空篇空数组）', async () => {
+   await svc.importAll()
+   expect((await svc.listByPaper('p-1')).length).toBe(1)
+ })
++
++/** F-AIN-01：注入中断的 repo 包装（第 nth 次 insert 抛错——事务敏感性探针） */
++function failingInsertRepo(nth: number): typeof repo {
++  let calls = 0
++  return {
++    ...repo,
++    insert: (input) => {
++      calls += 1
++      if (calls === nth) throw new Error(`注入中断：第 ${nth} 行 insert 失败`)
++      return repo.insert(input)
++    }
++  }
++}
++
++it('F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）', async () => {
++  // 阶段一：首次导入第 2 行 insert 抛错→回滚后该篇零行（无半插）+errors 落
++  // 「导入失败」+产物留 corpus-ai 不移 archive（失败篇不掩盖面语义保持）
++  await putProduct('p-1', [fileRow(), fileRow({ question: 'Q2' })])
++  const failing = createAiNotesImportService({
++    rootDir: root,
++    repo: failingInsertRepo(2),
++    paperExists: (id) => id === 'p-1',
++    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
++  })
++  const r1 = await failing.importAll()
++  expect(r1.imported).toEqual([])
++  expect(r1.errors).toHaveLength(1)
++  expect(r1.errors[0]!.reason).toContain('导入失败')
++  expect(repo.countByPaper('p-1')).toBe(0)
++  expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])
++  expect(await namesIn('archive')).toEqual([])
++
++  // 阶段二：成功导入 2 行后异 sha 重灌第 2 行抛错→回滚后旧 2 行完整（无半删
++  // ——deleteByPaper 已回滚，旧内容非新内容）
++  const rOk = await svc.importAll()
++  expect(rOk.imported).toEqual(['p-1'])
++  expect(repo.countByPaper('p-1')).toBe(2)
++  await putProduct('p-1', [
++    fileRow({ content_md: '新回答一' }),
++    fileRow({ question: 'Q2', content_md: '新回答二' })
++  ])
++  const failing2 = createAiNotesImportService({
++    rootDir: root,
++    repo: failingInsertRepo(2),
++    paperExists: (id) => id === 'p-1',
++    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
++  })
++  const r2 = await failing2.importAll()
++  expect(r2.imported).toEqual([])
++  expect(r2.errors).toHaveLength(1)
++  expect(repo.countByPaper('p-1')).toBe(2)
++  const contents = (await svc.listByPaper('p-1')).map((n) => n.contentMd).sort()
++  expect(contents).toEqual(['回答内容', '回答内容'])
++  expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])
++})
++
++it('F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）', async () => {
++  db.prepare(
++    'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)'
++  ).run('p-2', 'b.pdf', 's-2', 't', 't')
++  // 预置：两篇均成功首导（B 留旧数据——重灌中断的回滚锚点）；本用例专用
++  // clean service（paperExists 覆盖 p-2——beforeEach 桩不含）
++  await putProduct('p-1', [fileRow(), fileRow({ question: 'Q2' })])
++  await putProduct('p-2', [fileRow({ content_md: 'B 旧回答' })])
++  const preSvc = createAiNotesImportService({
++    rootDir: root,
++    repo,
++    paperExists: (id) => id === 'p-1' || id === 'p-2',
++    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
++  })
++  const rPre = await preSvc.importAll()
++  expect(rPre.imported).toEqual(['p-1', 'p-2'])
++  // 异 sha 新产物：A 重灌成功、B 注入中断（deleteByPaper 已跑——半删面锚点）
++  await putProduct('p-1', [
++    fileRow({ content_md: 'A 新回答一' }),
++    fileRow({ question: 'Q2', content_md: 'A 新回答二' })
++  ])
++  await putProduct('p-2', [fileRow({ content_md: 'B 新回答' })])
++  let bSeen = false
++  const mixed = createAiNotesImportService({
++    rootDir: root,
++    repo: {
++      ...repo,
++      insert: (input) => {
++        if (input.paperId === 'p-2') {
++          bSeen = true
++          throw new Error('注入中断：p-2 写入失败')
++        }
++        return repo.insert(input)
++      }
++    },
++    paperExists: (id) => id === 'p-1' || id === 'p-2',
++    withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
++  })
++  const r = await mixed.importAll()
++  expect(bSeen).toBe(true)
++  expect(r.imported).toEqual(['p-1'])
++  expect(r.errors.map((e) => e.paperId)).toEqual(['p-2'])
++  // A 新数据完整落库（B 的失败不回滚 A——事务边界=单篇非整批，部分成功语义）
++  expect(repo.countByPaper('p-1')).toBe(2)
++  const aContents = (await svc.listByPaper('p-1')).map((n) => n.contentMd).sort()
++  expect(aContents).toEqual(['A 新回答一', 'A 新回答二'])
++  // B 旧数据完整保留（B 自身的 deleteByPaper 已回滚——无半删）
++  expect(repo.countByPaper('p-2')).toBe(1)
++  expect((await svc.listByPaper('p-2'))[0]?.contentMd).toBe('B 旧回答')
++  expect(await namesIn('corpus-ai')).toEqual(['p-2.json'])
++})
