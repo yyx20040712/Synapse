@@ -18,18 +18,31 @@
 - checked_total: 24
 - checked_done: 0
 
-## protocol（火的最小兜底协议——技能不可加载时按此执行）
+## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
-1. 按上方 status 行动：READY → 原子 claim（写 RUNNING+claim+心跳后回读确认）
-   再按「执行清单」领批至预算；RUNNING 且心跳 <30min → 退出；RUNNING 且心跳
-   ≥30min → 核对 git 进度后接管；DONE/HOLD → CronDelete(automation_id) 后退出。
-2. 收口：更新清单复选框、追加批次日志、刷新心跳；清单全勾（`grep -c '^- \[ \]'`
-   计 0）→ status: DONE + CronDelete + 终报（含 Rulings 全清单）；否则 → READY。
-3. 禁止创建任何新自动化。停止事由（破坏性/安全敏感/仓外副作用 push/merge/发布/
-   计划破碎到每条路都是猜）→ status: HOLD + CronDelete 后呈报。
+- **收到火 prompt 的会话=调度员**（投递实证：火只投给创建自动化的布防会话）：
+  读板，READY → UI 开批（侧边栏展开 → AXPress「新建任务」→「选择项目」勾选本
+  项目 → Escape 收菜单 → 真实点击 textfield 建立焦点 → app 级 strategy=event
+  键盘写入下方执行指令 → 回读确认文本落框且发送按钮激活 → 点发送）；RUNNING 且
+  心跳 <30min → 退出；RUNNING 且心跳 ≥30min → 核对 git 进度后接管；DONE/HOLD →
+  CronDelete(automation_id) 后退出。UI 选择器漂移时降级为会话内直跑，批次日志记欠账。
+- **被注入执行指令的新任务会话=执行者**：开工首步 Skill 加载 ai-dev-org（组织
+  主干）→ 读板，READY → 原子 claim（写 RUNNING+claim+心跳后回读确认）→ 按
+  「执行清单」领批至 fire_budget_min → 收口：勾选框更新（有 git 则提交）+批次
+  日志追加+心跳刷新；无进展计数（勾选数未增 +1，连续 3 → HOLD+CronDelete+终报）；
+  清单全勾（`grep -c '^- \[ \]'` 计 0）→ DONE+CronDelete+终报（含 Rulings 全
+  清单）；否则 → READY。
+- **执行指令**（调度员注入新任务用，原文）：「（引用技能 batch-relay）基于
+  E:\class\智慧水务\Synapse_remake\docs\handoff\relay.md 交接文档继续开发——开工
+  首步先加载技能 ai-dev-org，再按接力火协议认领并执行本批（工作区根
+  E:\class\智慧水务\Synapse_remake，相对路径以此为基）」
+- 禁止创建任何新自动化。停止事由（破坏性/安全敏感/仓外副作用 push/merge/发布/
+  计划破碎到每条路都是猜）→ status: HOLD + CronDelete 后呈报。
 
 ## 执行路由（ai-dev-org 项目——批内引擎）
 
+- **开工首步（执行者）**：Skill 加载 ai-dev-org（组织主干）——2026-09-18 版火
+  协议/注入指令已内置此步；技能不可载时以 AGENTS.md 宪法+本板为兜底。
 - 每票走三屋管道：实现者子代理（TDD 红→绿→变异红证）→ 门一 → 门二 → 主控收口
   （亲验 verify 真退出码+locks+diff 范围→翻 registry→提交）。派发通道按《裁决书》
   裁决 13：**绑定子代理（ops-*）为主**，外部派发器=健康探针+后备。
@@ -106,3 +119,8 @@
 - 深度设计门：过（ai-dev-org 路由——org-ledger 在案+战役简报《裁决书》v1.1 已入库）
 - 板已建（24 项清单），**火未布防**（用户指令本会话不正式开工）——点火入口待用户
   显式 `/batch-relay`；未点火期间手动会话按本板清单领批同规执行。
+
+### batch 0 增补 — 2026-09-18（主控同步技能更新，未点火状态修订无 claim 冲突）
+- batch-relay 技能更新落板：①执行者开工首步 Skill 加载 ai-dev-org 已入火协议/
+  注入指令（protocol 段与执行路由段同步）；②protocol 段按新版模板重构为「角色
+  自识别」结构（调度员 UI 开批路径+执行指令原文内嵌——技能载不上时板自含）。
