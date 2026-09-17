@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T20:17:38.3397074Z",
+    "generatedAt":  "2026-09-17T20:48:23.4354926Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -503,7 +503,7 @@
                   },
                   {
                       "path":  "src/shared/app-error.ts",
-                      "sha256":  "0d9ca73aae244b4b19fdd329cbbfd0dfe1300822bf073cb6b96f74e82dd6c01b"
+                      "sha256":  "2a9876ab51ef12edbe322f20856982c9c7ab788496d6772bfda16391b4ae345f"
                   },
                   {
                       "path":  "src/shared/constants.ts",
@@ -554,12 +554,28 @@
                       "sha256":  "e12d322d1d3a5622427e212849b776b979903808903656b2aa5fde89ac70d687"
                   },
                   {
+                      "path":  "tests/contracts/api-surface-closure.test.ts",
+                      "sha256":  "23493152b6e1aedbaa993493ecf3784c52ab37e7e23f269e68230be2512c8cfe"
+                  },
+                  {
                       "path":  "tests/contracts/app-error.test.ts",
                       "sha256":  "fff854b2eae15be8a00189ef15d8500638eae454513211a2c3d40472e56cf2ac"
                   },
                   {
+                      "path":  "tests/contracts/app-error-closure.test.ts",
+                      "sha256":  "00ff0420c788c1a7aad1124bfbbaf4537f7b82e49679edf62c9655ace6f3e8ca"
+                  },
+                  {
+                      "path":  "tests/contracts/constants.test.ts",
+                      "sha256":  "c2748e9df156980d035abe80cf8d401e28c6c4e576f3fefb6f9dfd32690e03cf"
+                  },
+                  {
                       "path":  "tests/contracts/preload-surface.test.ts",
                       "sha256":  "93c94c9085c5437444482406e0647c96492ec393840129a62cadf19fdfbdeab9"
+                  },
+                  {
+                      "path":  "tests/contracts/schemas.test.ts",
+                      "sha256":  "b44abb3c2059a985fe3e531ce1fe2ea24438b7f2afa07f0d05274938580ed9d2"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",

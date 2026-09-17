@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T20:17:53Z
+- heartbeat_utc: 2026-09-17T21:02:00Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 7
+- checked_done: 8
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -76,7 +76,7 @@
 - [x] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
 - [x] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
 - [x] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
-- [ ] F-TESTREF-W3（src/shared 直接契约测试补齐）
+- [x] F-TESTREF-W3（src/shared 直接契约测试补齐）
 - [ ] F-TESTREF-W4（flake 台账+INV-63/64，战役收官票；F-TESTREF-S1 若触发随火搭车，
       不触发不阻塞）
 
@@ -120,6 +120,67 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 5 — 2026-09-18（执行者会话：F-TESTREF-W3 src/shared 直接契约测试补齐，完成）
+- claim: claim-1789676496-b5｜开始 20:21:36Z｜收口 21:02:00Z｜勾选 7→8。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/health-scan）；实现面=本会话直接实现（纯增契约测试+机检+六源变异红证，
+  W1A-C 先例）；TDD 技能不加载（理由：票面=对既有源补直接契约测试，先红后绿
+  以源变异红证兑现——六条全红且还原 diff 空）。派发档位：主控=GLM5.3 max
+  （本会话）；门一=ops-gate1-k1 绑定（k3 max）；门二=ops-adjudicator 绑定
+  （deepseek-flash max）——均异构于实现者。
+- **设计裁决（票内自裁，门二裁「成立且保守向」）**：①比值口径=直接契约测试
+  （tests/contracts 行数）/src/shared 除 models 契约面——基线 316/992=0.318≈0.32
+  唯一复算吻合（316/1403=0.225 对不上）；终态 1057 行：立案基线口径 1057/992=
+  1.066、终态口径 1057/995=1.062（app-error 本票 +3 行），双口径 ≥0.8 达标。
+  ②源面唯一变更=app-error.ts APP_ERROR_CODES 导出+as const satisfies（零行为
+  变更）——错误码封闭性双向机检（类型级 Equal+运行时全集）的唯一反射源。
+- **交付**：四新件 tests/contracts/{schemas.test.ts 493 行 89 用例；api-surface-
+  closure.test.ts 125 行 21 用例；app-error-closure.test.ts 68 行 18 用例；
+  constants.test.ts 55 行 6 用例}——schemas=67 schema 夹具表三方闭合（VALID⟷
+  SCHEMA_NAMES⟷运行时 zod 导出）+strict 首层探针+嵌套模型层八位探针+边界专项
+  （秒/数量门/长度界/5000/2048/corpusItem refine 双向/两臂互斥/null 语义/默认
+  填充/UI_SCALE 闭合/枚举基数）；api-surface=55 通道计数/12 域方法集/14 路由
+  前缀/隐藏集本体 pin/事件通道值+/event 后缀互斥/载荷配对/workspaces 组合域；
+  app-error=15 码类型级 Equal+运行时全集+逐码 toAppError 探针+集外回落；
+  constants=host 白名单冻结/调色板⟷annotationColorSchema.options/协议名/HTTP
+  预算/MAX_PAGE_SIZE⟷libraryQuery limit 同源。既有测试件零改动。
+- **机检终态**：verify 全链 EXIT=0（166 文件/1713 用例+build，Node 24.20.0）；
+  指纹门 179→183 文件/1623→1757 用例/4979→5333 断言/15 skipSites（+134=
+  89+21+18+6 逐件精确吻合，纯增零删）；locks 329→333；tickets 195/open 16。
+- **六变异红证**（logs=scripts/audits/w3-mutation{1..6}*.log+w3-mutation3-
+  typecheck.log）：①schemas.ts max(3600)→3599=秒边界红；②api-surface.ts 删
+  diagNetwork=计数+方法集双红；③app-error.ts 删 CANCELLED=vitest 红+typecheck
+  红（含 Equal 断言本体 TS2344；另 asAppErrorCode includes 处 TS2345——门二
+  P2-2 勘误：报错宿主是 includes 参型收窄非 satisfies 本体）；④constants.ts
+  白名单漂移红；⑤annotation.ts 首 .strict() 删除=嵌套探针红；⑥PRELOAD_
+  HIDDEN_METHODS 清空=集合本体 pin 红。还原 diff 空六连（间接佐证=锁 sha 对账
+  绿+指纹 base=cur——门二 P2-1 口径）。注：mutation3-typecheck.log 含 3 条
+  schemas.test.ts TS18048 为当时未修的中间态残留（终态已修、verify 绿——防
+  误读，门二 P2-2）。
+- **门一 PASS_WITH_WARNINGS**（B0/W2/N6）处置：W1 隐藏集引用检查型 vacuous
+  green→补集合本体 pin+变异⑥红证；W2 strict 探针仅首对象层→补嵌套八位探针
+  +头注口径修正+变异⑤红证；N3 事件通道值未 pin→三通道字符串精确 pin；N4
+  枚举基数缺口→clipboard format/zcodeLinkDetect state/两 phase 的 .shape
+  options pin；N1 简报计数 18→19 勘误（终态 21 专项）；N5 不立案；N6=主控
+  误引首跑 UNRESOLVABLE 残留数字→终态勘误。
+- **门二 GO_WITH_CONDITIONS**（P0=0/P1=2/P2=4）处置：P1-1 记录勘误（api-
+  surface-closure 申报 122 实测 125——本日志已改用 125；比值双口径明示如上）；
+  P1-2 提交形态（[test-refactor][locked-change] 双尾注+manifest 与 src/tests
+  同一提交+w3-* 证据件显式入库+提交前未跟踪面为零——本批收口兑现）。P2-3
+  调色板断言同源构造恒真（z.enum(ANNOTATION_COLORS) 等式自反）→改字面量
+  五色 pin 留 W4 搭车。
+- 证据件入库：scripts/audits/w3-{verify-full.log；mutation1-schemas.log；
+  mutation2-api-surface.log；mutation3-app-error.log；mutation3-typecheck.log；
+  mutation4-constants.log；mutation5-nested-strict.log；mutation6-hidden-pin.log；
+  gate1-diff.patch}。
+- 教训两条：①计数纪律再实证——api-surface-closure 申报 122 实测 125（门二
+  拦），且首跑 UNRESOLVABLE 失败跑残留数字（1671/5103）误入门一简报——**引用
+  机检数字必须取通过跑日志，失败跑数字禁引**；②it.each 数组带 as const 会破
+  指纹门抽取器 const+ArrayLiteral 单跳解析（UNRESOLVABLE 红）——裸数组字面量
+  形态是硬约束（typecheck 后再跑一次指纹门应成收口惯例）。
+- Rulings 待用户：无新增（票内自裁两项均经门一/门二复核闭合）。
+- 无进展计数：归零（7→8 有进展）。
 
 ### batch 4 — 2026-09-18（执行者会话：F-TESTREF-W1C e2e 脚手架单源＋W2 探针移出默认门，完成 2 项）
 - claim: claim-1789673784-b4｜开始 19:36:24Z｜收口 20:17:53Z｜勾选 5→7。

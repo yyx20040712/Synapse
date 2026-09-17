@@ -46,8 +46,11 @@ export function err(code: AppErrorCode, message: string, detail?: string): Resul
   return { ok: false, error: detail === undefined ? { code, message } : { code, message, detail } }
 }
 
-/** AppErrorCode 全集（toAppError 的结构化识别用；新增码必须同步这里） */
-const APP_ERROR_CODES: readonly AppErrorCode[] = [
+/** AppErrorCode 全集（toAppError 的结构化识别用；新增码必须同步这里）。
+ *  导出+as const satisfies（零行为变更）：tests/contracts/app-error-closure.test.ts
+ *  据此做封闭性双向机检——字面量联合 ⟷ AppErrorCode 类型级 Equal + 运行时
+ *  全集对账（类型/数组任一侧单边扩码即编译红或测试红，封闭枚举不再靠肉眼） */
+export const APP_ERROR_CODES = [
   'EXPORT_BUSY',
   'NOT_IMPLEMENTED',
   'INVALID_REQUEST',
@@ -63,7 +66,7 @@ const APP_ERROR_CODES: readonly AppErrorCode[] = [
   'PARSE_ERROR',
   'CANCELLED',
   'INTERNAL'
-]
+] as const satisfies readonly AppErrorCode[]
 
 function asAppErrorCode(v: unknown): AppErrorCode | undefined {
   return typeof v === 'string' && APP_ERROR_CODES.includes(v as AppErrorCode)
