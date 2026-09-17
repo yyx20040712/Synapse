@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: <ISO8601，批内每任务/每门审等待间隙刷新>
+- heartbeat_utc: 2026-09-17T17:31:09Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 0
+- checked_done: 3
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -64,11 +64,11 @@
 
 ### 第一波·立案批（一火完成；本波全部为 registry/骨架面，无业务实现）
 
-- [ ] T0｜check-tickets 重复 id 哨兵微票（双审 B 级发现，受锁 [locked-change]）
-- [ ] T1｜12 新票立案：F-SESS-01/F-AIN-01/F-DEP-01/F-ELE-01/F-ALIGN-01/F-LAYER-01/
+- [x] T0｜check-tickets 重复 id 哨兵微票（双审 B 级发现，受锁 [locked-change]）
+- [x] T1｜12 新票立案：F-SESS-01/F-AIN-01/F-DEP-01/F-ELE-01/F-ALIGN-01/F-LAYER-01/
       F-SENSOR-01/F-EXPORT-01/F-TIME-01/F-DOCGOV-01/F-PROC-01/F-STOR-01
       （骨架头注五层规约引用《裁决书》对应行；全部 owner:'strong'）
-- [ ] T2｜在册扩容票面修订：F-DEDUP-01（+app-file URL 单源）、F-GEOM-01（+目录化）
+- [x] T2｜在册扩容票面修订：F-DEDUP-01（+app-file URL 单源）、F-GEOM-01（+目录化）
 
 ### 第二波·F-TESTREF 余票（大中票一火一票；W2 小可随 W1C 同火）
 
@@ -144,6 +144,7 @@
   回填并回读确认。
 - 本布防会话=调度员宿主：火只投给本会话，每回合仅 UI 开批不跑批，须保持存活。
   停止三径：清单全勾自动 DONE / HOLD 止损 / 手动删火。
+
 ### batch 0 增补四 — 2026-09-18（调度员首班开批纠偏：项目绑定漏步）
 - 事故：首班 UI 开批跳过 protocol 段「选择项目」勾选步（误信技能「新建任务默认同
   工作区」校准），任务落在 default（=菜单「不在项目中工作」态），未入 Synapse_remake
@@ -157,3 +158,46 @@
   聊天输入框仍须 event）。
 - Rulings 待用户：batch-relay 技能 SKILL.md「已校准：新建任务默认同工作区」条目与
   实测相悖，建议修订为「必须显式勾选」（技能文件在用户全局目录，调度员不改）。
+
+### batch 1 — 2026-09-18（执行者会话：第一波·立案批，完成 3/3）
+- claim: claim-1789665003-b1｜开始 2026-09-17T17:10:03Z｜收口 17:31:09Z｜
+  勾选 0→3（T0/T1/T2 全毕）。
+- 技能清点：batch-relay（用——本批点火协议）、ai-dev-org（用——组织主干/执行
+  路由/收口 health-scan）；其余工程技能本批为 registry/骨架立案面（无业务实现、
+  无测试面、无调试面）不加载——理由：纯工单文件+registry 数据变更，verify 关卡
+  即机检。派发档位：主控=GLM5.3（本会话）max 思考；门审=轻量双审（文档/制度批
+  档位）：门一 K1 绑定子代理（k3 档）+裁决位绑定子代理（deepseek-flash 档）。
+- **T0**：check-tickets 重复 id 哨兵（+13 行=5 注释+8 代码，插在计数对账哨兵后、
+  byId 构建前）。红证：注入重复 F-DEDUP-01 行→EXIT=1（报错「工单 F-DEDUP-01
+  重复登记——Map 后写会静默覆盖先登记条目」）→cp 备份法还原 diff 空（作用面=
+  registry.ts 单文件 vs HEAD）→复跑 EXIT=0。受锁单链：unlock→改→generate→apply
+  （manifest 含新 sha）。附加活性证据：骨架头注初版含「SR-RDR-02」字样被规则 2
+  拦红（src 文件引用 done SR 票占位），改述「在册先例」后绿——规则 2 在新文件面活。
+- **T1**：12 新票立案（registry 183→195 票，open 9→21 全 strong）。file 锚=8 既有
+  真实文件+4 新建骨架（F-ELE-01/F-TIME-01 调研报告载体、F-LAYER-01 settings.service.ts、
+  F-EXPORT-01 export-session-state.ts——骨架均头注五层规约+export {} 空体）。F-STOR-01
+  为 DIR 形态票（file=scripts/audits/，翻 done 时须同步 DIR_FILE_EXEMPT [locked-change]
+  ——票面已声明）。
+- **T2**：F-DEDUP-01 微扩（+app-file URL 三处收编单源，:239 硬编码未用
+  APP_FILE_SCHEME）+F-GEOM-01 扩容（+六子域目录重组清单与迁移序入设计书要件）。
+  两票均 open 未实现态，扩容正当；计划同步义务核对=本板第四波两行已含扩容要件。
+- **机检全绿**：verify 全链 exit=0（quality+tickets+locks+lint+typecheck+test+build，
+  Node 24.20.0）；check-tickets 195 票/EXIT=0；locks 328 一致；health-scan RED=0
+  （WARN×1=cfg 漂移，历史欠账非本批引入，回显计数）。
+- **轻量双审**：门一（k3 绑定）PASS_WITH_WARNINGS B=0/W=2/N=9；裁决位（deepseek
+  绑定）首轮 FAIL（证据不足型——审包缺原件）→补包（§5 原文/机检输出/红证记录/
+  两票 open 证据）→复裁 PASS_WITH_WARNINGS B=0/W-R=3/N=5。处置：门一 W1（变形
+  重复逃逸）经规则 0 ID_WHITELIST 论证闭合（大小写/尾空格均被白名单拦红，与哨兵
+  构成双边界，不改代码）；门一 W2/裁决位 W-R3（计数快照与机检原件）——92 audits
+  锁项/47 SR2 票两项本批实测吻合（grep -c），其余为《裁决书》§7 证据档调研期实测
+  转述+票面义务（F-PROC-01 执行时基线重测）；裁决位 W-R1/W-R2 计划同步与在途认知
+  均核毕闭合。双审原始输出存会话档（《裁决书》§8 先例——审档默认仓外归宿，
+  F-STOR-01 在途不另建仓内审档文件）。
+- **竞态事故与修复（教训入档）**：执行者认领读板（基于工作区）与调度员增补四
+  提交（a38bfa786d）同窗——tmp 基于旧版，mv 覆盖把增补四段+protocol 一句截短
+  抹掉；git diff 对 HEAD 发现后即从 HEAD 逐字恢复（增补四段+「裁决本身待用户、
+  不阻塞接力」全句），终态 diff 纯增量。**教训：执行者写板（含收口）前必须
+  `git show HEAD:docs/handoff/relay.md` 对基线，勿以工作区 Read 为底**——调度员
+  会话全程存活随时可能提交批次日志。
+- Rulings 待用户：无新增（batch 0 增补四的技能修订 Ruling 仍在案待用户）。
+- 无进展计数：归零（0→3 有进展）。

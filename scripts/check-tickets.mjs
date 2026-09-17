@@ -58,6 +58,19 @@ if (statusLineCount !== tickets.length || idAnyCount !== tickets.length) {
   )
   process.exit(1)
 }
+// 重复 id 哨兵（2026-09-18 立案批搭车微票——裁决书 §5/§8 双审 B 级发现）：
+// byId/TICKET_MAP 的 Map 构建对重复 id 后写静默覆盖（先例：新 F-DOC-01 与
+// 2026-09-09 既有 done 票撞号曾平凡通过——两审独立命中）；下方计数对账哨兵
+// 只核解析数不核唯一性，此通道在 byId 构建前先拦，防先登记条目被顶替后
+// 其全域规则集体失锚
+const idSeen = new Set()
+for (const t of tickets) {
+  if (idSeen.has(t.id)) {
+    console.error(`工单 ${t.id} 重复登记——Map 后写会静默覆盖先登记条目（id 必须全表唯一）`)
+    process.exit(1)
+  }
+  idSeen.add(t.id)
+}
 const byId = new Map(tickets.map((t) => [t.id, t]))
 
 function walk(dir, filter, acc = []) {
