@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T20:17:05.5361011Z",
+    "generatedAt":  "2026-09-17T20:17:38.3397074Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -19,7 +19,7 @@
                   },
                   {
                       "path":  "playwright.config.ts",
-                      "sha256":  "0f6fc0551f7f853eb8f3615a77bdfca26e1a66b5bc9cf5d86e8dcbf242278961"
+                      "sha256":  "1dfcb8bf6bbdf214fd51d9bbfa505b271d1a70010d298f5aff0645be47cc956d"
                   },
                   {
                       "path":  "scripts/audits/2026-09-10_r2-byte-compare.mjs",

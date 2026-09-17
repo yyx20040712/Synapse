@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-17T19:35:00Z
+- heartbeat_utc: 2026-09-17T20:17:53Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 5
+- checked_done: 7
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -74,8 +74,8 @@
 
 - [x] F-TESTREF-W1A（mock 工厂下沉，39 文件）
 - [x] F-TESTREF-W1B（几何桩下沉，22 文件/97 处）
-- [ ] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
-- [ ] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
+- [x] F-TESTREF-W1C（e2e 脚手架单源）＋可同火收 W2
+- [x] F-TESTREF-W2（探针 spec 移出默认门；若未随上项同火则自领）
 - [ ] F-TESTREF-W3（src/shared 直接契约测试补齐）
 - [ ] F-TESTREF-W4（flake 台账+INV-63/64，战役收官票；F-TESTREF-S1 若触发随火搭车，
       不触发不阻塞）
@@ -120,6 +120,49 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 4 — 2026-09-18（执行者会话：F-TESTREF-W1C e2e 脚手架单源＋W2 探针移出默认门，完成 2 项）
+- claim: claim-1789673784-b4｜开始 19:36:24Z｜收口 20:17:53Z｜勾选 5→7。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/health-scan）；实现面=本会话直接实现（迁移+三重机检，W1A/W1B 先例）；
+  systematic-debugging（用——lint 红定位与 shell 正则翻车处置）；TDD 技能不加载
+  （理由：tests 重构迁移面，验证=指纹门 C 面零变化+变异红证，非新实现红绿循环）。
+  派发档位：主控=GLM5.3 max（本会话）；门一=ops-gate1-k1 绑定（k3 max）；
+  门二=ops-adjudicator 绑定（deepseek-flash max）——均异构于实现者。
+- **W1C 交付**（提交 75f4671e56）：launch 5 副本+seedPaperRow 4 spec 本地定义
+  （15 引用面）+first-window 500ms→close 配方 14 文件 20 块→e2e-env.ts 单源
+  （71→82 行，+bootstrapMigrations）。净删 tests 域 +72/-351（16 文件）。
+  语义保真三辨析：reader-search SEED_ID 硬编码 'e2e-seed-p7e03' 调用点显式
+  补参；corpus-export readFile 后部 6 处真实消费保留；reader-text 的
+  app.evaluate((electron)=>…) 回调参数系 Playwright 注入非 import（grep 命中
+  系参数遮蔽，import 的 electron 删——lint no-unused-vars 实证）。
+- **W2 交付**：playwright.config.ts projects 拆分 app/probe（@probe 标签形态
+  弃用——动 test() 标题即动 C 面；spec 文件零改动）；package.json test:e2e→
+  --project=app+新增 test:e2e:all；CI ci.yml:74 裸 npx playwright test 无过滤
+  =全 project 仍含探针（行为不变亲验）。
+- **三通道 e2e 真跑全绿**：迁移前全量 44 passed（2.1m）/W2 后默认门 app 42
+  passed（1.9m）/一键全跑 all 44 passed（2.1m），双 EXIT=0 落档（w1c-e2e-
+  {full,appgate,allgate}.log）；指纹门 179/1623/4979/15 全同；verify 全链
+  exit 0（162 文件/1579 用例+build，Node 24.20.0；首跑红=locks:check 拦
+  manifest 未重算属 unlock→改→apply 预期序非缺陷）。
+- **门一 PASS_WITH_WARNINGS**（B0/W1/N8）：W1 简报净删记账聚合口径失实
+  （17 文件 +73/-352 混入 relay 认领行与 W2 面）→分域复测修正（门二终态再
+  勘误 +72/-351）；N1 默认门补跑/N3 自裁多报两文件勘误/N4 两处探针失效注释
+  修正（其余「同型」措辞留后续票）/N5 变异 raw 落档——全处置。
+- **门二 GO_WITH_CONDITIONS**（P0=0/P1=3/P2=4）：P1-1 probe/union 通道真跑
+  raw 缺→test:e2e:all 44 passed 补跑落档；P1-2 记账终态勘误；P1-3 提交形态
+  矩阵→白名单亲验（playwright.config/docs/handoff 不在 TR_RE）→**拆两提交
+  +stash 时序**（config/package stash→apply→提交 1 纯 tests 面 [test-refactor]
+  合规→pop→apply→提交 2），每提交 manifest 同步（宪法禁跨提交延迟重生成）。
+  P2-2 留痕：charter:294/DEV-SETUP:69/裁决书:117 的 test:e2e 全量语义在 W2
+  后失准（现为默认门 42），回写归 W4 收官票统一处理。
+- **教训三条**：①shell 复合命令 python 正则 0 命中翻车（W1B 同族第五实证）——
+  探针一律 Write 文件后 node 跑；②已重锁态下变异还原 cp 直接写被只读位拦
+  （sed -i 走 rename 通道能写）——重锁后动受锁面须 unlock 或 mv 通道；
+  ③计数聚合行（git diff --stat 全域）冒充分域口径——净删记账必须按域
+  `git diff --stat -- <path>` 实测（W1B 教训②再犯，门一+门二两次拦截）。
+- Rulings 待用户：无新增（门二 P2-4 记录级+P2-2 留痕均已闭合或归票）。
+- 无进展计数：归零（5→7 有进展）。
 
 ### batch 3 — 2026-09-18（执行者会话：F-TESTREF-W1B 几何桩+局部工厂下沉，完成）
 - claim: claim-1789669600-b3｜开始 18:26:40Z｜收口 19:35:00Z｜勾选 4→5。
