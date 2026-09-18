@@ -12,7 +12,7 @@
  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
  */
 import { describe, expect, it } from 'vitest'
-import { mergeRects, W_MIN } from '../../../src/renderer/features/reader/annotation-merge'
+import { mergeRects, W_MIN } from '../../../src/renderer/features/reader/anchors/annotation-merge'
 import type { AnnotationRect } from '@shared/models/annotation'
 
 /** 归一化域矩形夹具（0..1，zod strict 五字段） */

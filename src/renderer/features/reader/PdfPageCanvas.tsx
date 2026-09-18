@@ -30,13 +30,13 @@
 import { useEffect, useRef } from 'react'
 import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import { PAGE_LAYER_Z } from './state/page-layer-z'
-import { clampScale } from './pdf-item-geometry'
-import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './geometry-types'
+import { clampScale } from './anchors/pdf-item-geometry'
+import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './anchors/geometry-types'
 
 // 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
 // import 本件零触（ai-annotation-layer.test:25/pdf-item-geometry.test:18 等
 // 十处 tests/**/*.tsx）
-export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from './geometry-types'
+export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from './anchors/geometry-types'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)

@@ -27,7 +27,7 @@ import {
   viewportTransformFor,
   type ItemBox,
   type ItemViewport
-} from '../../../src/renderer/features/reader/pdf-item-geometry'
+} from '../../../src/renderer/features/reader/anchors/pdf-item-geometry'
 
 /** 横排样式（ascent 0.8/descent −0.2——盒=基线±(8,2)px@fontH10） */
 const STYLE_H: PdfTextStyle = { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false }

@@ -4,11 +4,11 @@ import {
   estimateLinePitch,
   findRangeAtOffset,
   mergeLineRects
-} from '../../../src/renderer/features/reader/annotation-anchor'
+} from '../../../src/renderer/features/reader/anchors/annotation-anchor'
 import {
   selectionToAnchor,
   verifyQuote
-} from '../../../src/renderer/features/reader/anchor-serialize'
+} from '../../../src/renderer/features/reader/anchors/anchor-serialize'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 构造多文本节点的页根：<p>前文</p><p>中段正文</p><p>后文</p> */

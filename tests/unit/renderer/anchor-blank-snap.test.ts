@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
-import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
-import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
 
 /**
  * F-A10 划选段末空白 affinity——pdf.js 行 break 标记（<br role=presentation>，

@@ -4,7 +4,7 @@
  * resolve 链恰一次跳变（fallback→resolved，两态差 4.44/4.97），中间轮不存在；
  * 3.45 与两已知机制数值均不等 → 候选 c（多 span 逐个入 DOM 的 rAF 合并 resolve
  * 中间轮——部分 DOM 下 fallbackBands 只量测在场 span，band 部分适配可产出
- * 中间几何值，annotation-resolve.ts:224 bandsNearRects）待多行判别。
+ * 中间几何值，anchors/annotation-resolve.ts:224 bandsNearRects）待多行判别。
  * 复刻 reader-text.spec F-A1 多行用例位形（同 fixture/同程序化跨 3 行选区/
  * 同高亮链——:775 起），叠加仪表：
  *   - 双记录器（scroll 事件驱动全容器 + rect MutationObserver 逐轮记全部

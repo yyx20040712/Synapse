@@ -24,7 +24,7 @@ import {
   closestPageRoot,
   pageIndexOf
 } from '../../../src/renderer/features/reader/SelectionLayer'
-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation } from '@shared/models/annotation'
 

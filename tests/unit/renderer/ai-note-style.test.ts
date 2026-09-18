@@ -11,7 +11,7 @@ import {
   QUESTION_TEXT,
   ROLE_LABEL,
   ROLE_ORDER
-} from '../../../src/renderer/features/reader/ai-note-style'
+} from '../../../src/renderer/features/reader/anchors/ai-note-style'
 
 describe('ai-note-style 七问分色单源', () => {
   it('八问全枚举覆盖：各持 CSS 变量取色+非空中文标签（无硬编码色值）', () => {

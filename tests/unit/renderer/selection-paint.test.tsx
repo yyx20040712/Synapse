@@ -30,10 +30,10 @@ import {
 } from '../../utils/geometry'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
-import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
-import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
+import { rectStyle } from '../../../src/renderer/features/reader/anchors/annotation-style'
+import { bandFromMetrics } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 

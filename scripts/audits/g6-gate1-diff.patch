@@ -1,0 +1,1613 @@
+diff --git a/docs/handoff/relay.md b/docs/handoff/relay.md
+index 2ae0e6408e..f625ce67e8 100644
+--- a/docs/handoff/relay.md
++++ b/docs/handoff/relay.md
+@@ -6,16 +6,16 @@
+ > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
+ > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
+ 
+-- status: READY
++- status: RUNNING
+ - automation_id: automation-bf8fd7d7-fa7b-4194-a850-2c702565068e
+ - shared_fire: true
+ - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
+ - spec: docs/design/2026-09-18_complexity-governance-ruling.md
+ - poll_interval_min: 10
+-- last_dispatch: 2026-09-18T22:06:13+08:00
++- last_dispatch: 2026-09-18T22:56:11+08:00
+ - fire_budget_min: 120
+-- heartbeat_utc: 2026-09-18T15:05:00Z
+-- claim: -
++- heartbeat_utc: 2026-09-18T14:57:35Z
++- claim: claim-1789743426-b18
+ - no_progress_count: 0
+ - checked_total: 35
+ - checked_done: 21
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 4d60495a25..5cdd9119fc 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-18T14:20:07.7955424Z",
++    "generatedAt":  "2026-09-18T15:19:45.9438007Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -37,6 +37,10 @@
+                       "path":  "scripts/audits/audit0-p1b-multi.mjs",
+                       "sha256":  "6726313e89226eaf51a23db82488a214351287b9491163ebdef0d043fc9acaef"
+                   },
++                  {
++                      "path":  "scripts/audits/b18-claim.mjs",
++                      "sha256":  "094d093050d864500c170dfb2f559eecc2271c23e48bae76248e28efbf496926"
++                  },
+                   {
+                       "path":  "scripts/audits/f1-forensics.mjs",
+                       "sha256":  "d49dfe244844e6944ea5b409a2287b8c6e1464f551b688d9d9a1faa3b0697c59"
+@@ -365,6 +369,26 @@
+                       "path":  "scripts/audits/g4-recon-tests.mjs",
+                       "sha256":  "ce8ffa2c45c4a70f61a0b1b0e42b870ae1b5accdff670f95136f49b84a6c035b"
+                   },
++                  {
++                      "path":  "scripts/audits/g6-oneway.mjs",
++                      "sha256":  "288ec91827050ed7bd6d14120c7dd327cf63d6e9973dfb576d583f9a2aa4cd10"
++                  },
++                  {
++                      "path":  "scripts/audits/g6-recon.mjs",
++                      "sha256":  "fa9771ac13108b48eb9cef960b1ae944a5f0c04253669e4b6ca4cb104b44b48c"
++                  },
++                  {
++                      "path":  "scripts/audits/g6-recon2.mjs",
++                      "sha256":  "58505e8b6942787616441ca830ebe23401a2d8a241b49b4278d16efe154e0f6b"
++                  },
++                  {
++                      "path":  "scripts/audits/g6-recon3.mjs",
++                      "sha256":  "6aa98aaf9fe530b9f7891320e3446ec25e102414be82613784a8f478456e1194"
++                  },
++                  {
++                      "path":  "scripts/audits/g6-rewrite.mjs",
++                      "sha256":  "dda04cbd50ddb9160423395bc6e62e48d898934bbc70183c5e9e310c94198725"
++                  },
+                   {
+                       "path":  "scripts/audits/p7d01-visual-probe.mjs",
+                       "sha256":  "683b0107b2e204b051748e4cea6af244a38cc26e96dc9948920500c9a4cc3db4"
+@@ -427,7 +451,7 @@
+                   },
+                   {
+                       "path":  "scripts/check-quality.mjs",
+-                      "sha256":  "1d60f7b5a254e23401769c82f8e4f3cc263ed37a29927760c47627551db7f7f2"
++                      "sha256":  "7a436638ca767c0de627ab43cba8b6a260500ff70463f16126251dd5181c106b"
+                   },
+                   {
+                       "path":  "scripts/check-test-surface.mjs",
+@@ -683,7 +707,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/z-wg1-probe.spec.ts",
+-                      "sha256":  "40bb226f3411d40804b0e2cb7398b02ae5d514e916f808eafe51eeac011f7c59"
++                      "sha256":  "676354d1ebebff75a295413479f436e2984b3d6a08d6d91fb0cdaf49bc96ef98"
+                   },
+                   {
+                       "path":  "tests/security/csp-meta.test.ts",
+@@ -831,7 +855,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
+-                      "sha256":  "96d1f7544f9f64ca49c6ebe9280f11020d76792744195b1d5268e8b54334ccbe"
++                      "sha256":  "b60569fdc91a717f1faa8b71a371115d34c689f2c8c08f14e0fb099d587ecf17"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
+@@ -839,27 +863,27 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
+-                      "sha256":  "975d758ca39fa8f046d3876b9d77aca42baa950d3ebb9110e32de1d673fbbdb5"
++                      "sha256":  "402b9226d680efeaaa497a04cfd64e8055fe7a55fe4026b43a3bd62a12fd38c7"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
+-                      "sha256":  "fe0f12d47c3ac80c7b082997359faa4e5ceb836aa5473fa8950f74f5afc6a88c"
++                      "sha256":  "033dfdf544bb7f3bd77bff8e0281ea5109ee7e6449c3009a917eae075eb26a93"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-blank-snap.test.ts",
+-                      "sha256":  "d73c8acdc2b7d0b35784fb5e45b838340e0c24bad6834f88005fda7079e0a096"
++                      "sha256":  "a23d9c419a22d1c588425b96d46161b2c48f2c4f515cfa2c732e3c8e88f3cbe2"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-item-verify.test.tsx",
+-                      "sha256":  "d13aa5319d4365a22dd016b21432c22f35cbd8b5c5b3e80ea6f00339e860aed3"
++                      "sha256":  "bdd028d5dbca3b9d02fa07a3c9ed9f579e7a0c81c365144c80e6aa3b4af00a6f"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
+-                      "sha256":  "262d9e0387154fa8a5dfca1f34620e8d687f23cc46e69de4b528f04a94fdace9"
++                      "sha256":  "1715ade7d1c2a9a8bd4dd8fcb817814e5415abed5d8ab400b3ce553d88d8a099"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
+-                      "sha256":  "345364070e3124090143ac4c4aaf999877db6ddeee126ac14c574f56f2668257"
++                      "sha256":  "f9b4c7e00e11855eb2b29b724e91b3bc1998e01ec5118b2f544149af6e4eb5c3"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
+@@ -867,7 +891,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
+-                      "sha256":  "440615398540d2a90ea51652fec481f178d1bad4976a162714013bf3dfc41fdd"
++                      "sha256":  "269f091a7a46467fab8f80906000fba5db10e7b208d1e6eba3ee9ec7527e66e7"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",
+@@ -875,7 +899,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-merge.test.ts",
+-                      "sha256":  "36bdef2de01067ea588035a9cf29af000bcc5439316b8bd54e3c7a55b6a995f0"
++                      "sha256":  "e37750d04049f5980c8277d19be5a27911e99b846cfcfe2d894dc8faa7def5b4"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/annotation-popups-autosave.test.tsx",
+@@ -895,7 +919,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
+-                      "sha256":  "93e6327b2ca1c5af62f3e8b967d80008d43faae107078b188f708ba795c55d6c"
++                      "sha256":  "7ad21cf3c02baf8a9d3b6b1d1bbcb231d5b96e4a075dd5efc69d8b56145c5156"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
+@@ -963,7 +987,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
+-                      "sha256":  "f380c56b379989193e3a30e03c58e45d5e972e9130c0859aac615151c500b74b"
++                      "sha256":  "749a7c0ba13347b9c5e1737ba0651265756922b9c3421599ead0797ce9a61969"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
+@@ -1019,7 +1043,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
+-                      "sha256":  "1d9bb9e5c9959d6a63249d498242ee81c1ab4dce12edd9900086d131ce398be4"
++                      "sha256":  "f7b9dd7accc8442a825fb31f7d58c0f73be6fd1041b5962d817fbea1366139ce"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
+@@ -1079,7 +1103,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/release-affinity.test.ts",
+-                      "sha256":  "30e2638bfa5e1bdb5fa3df284a2a93622e69c308e04a3153cce9aacd313cfca5"
++                      "sha256":  "408d5dddd901394ed0d9e01d48ace739529faa7ca5c4b6129f084452e04a5f4f"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
+@@ -1091,7 +1115,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-evaluate.test.tsx",
+-                      "sha256":  "1f33fa02cfdad54ee6b9abeef96f2043a2cf1bdb819da656e08014eb879bd7f2"
++                      "sha256":  "3a49988d06c469db804475345abc949aab7b8e2ca8213cf7a9a832a34c686da3"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-geometry.test.ts",
+@@ -1099,11 +1123,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
+-                      "sha256":  "61f3e47ae710aaad1ef2f51abcae1b5ac5793ede7b86455c436e8d284ddc7ba5"
++                      "sha256":  "baacd306e28788e202b3ca46e0de1181cdde612859a31b6f73ca7a1fa77c1768"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
+-                      "sha256":  "8e8dd1fee4c3069519836427afabd6c87107a22113621f86c4a549a5c56d5514"
++                      "sha256":  "59b728326dfa71347004dce8160644eedcb21c531b2183bca632056466970f9f"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-layer-fa12.test.tsx",
+@@ -1115,7 +1139,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
+-                      "sha256":  "0d51a5294fae9d3c6cae6f1bf2e15568ea54b4ee998e5944522068417f8d777a"
++                      "sha256":  "c3b95cc14b10f9f93a210d668b0a9a6c7f9e433590caa9c5e2b75e04b7b2fb82"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/settings.store.test.ts",
+diff --git a/scripts/audits/b18-claim.mjs b/scripts/audits/b18-claim.mjs
+new file mode 100644
+index 0000000000..4f176490e0
+--- /dev/null
++++ b/scripts/audits/b18-claim.mjs
+@@ -0,0 +1,35 @@
++import { readFileSync, writeFileSync, renameSync } from 'node:fs';
++
++const path = 'docs/handoff/relay.md';
++const raw = readFileSync(path, 'utf8');
++
++const nowUtc = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
++const claim = 'claim-1789743426-b18';
++
++const out = raw
++  .replace(/^- status: READY$/m, `- status: RUNNING`)
++  .replace(/^- claim: -$/m, `- claim: ${claim}`)
++  .replace(/^- heartbeat_utc: .*$/m, `- heartbeat_utc: ${nowUtc}`);
++
++// 守卫：三处替换必须各命中一次
++for (const marker of ['- status: RUNNING', `- claim: ${claim}`, `- heartbeat_utc: ${nowUtc}`]) {
++  if (!out.split('\n').some((l) => l === marker)) {
++    console.error(`CLAIM_GUARD_FAIL: ${marker}`);
++    process.exit(1);
++  }
++}
++
++const tmp = `${path}.tmp`;
++writeFileSync(tmp, out, 'utf8');
++renameSync(tmp, path);
++
++// 回读确认
++const back = readFileSync(path, 'utf8');
++const ok =
++  back.split('\n').includes('- status: RUNNING') &&
++  back.split('\n').includes(`- claim: ${claim}`) &&
++  back.split('\n').includes(`- heartbeat_utc: ${nowUtc}`) &&
++  back.includes('- last_dispatch: 2026-09-18T22:56:11+08:00') &&
++  back.includes('- checked_done: 21');
++console.log(ok ? `CLAIM_OK ${claim} @ ${nowUtc}` : 'CLAIM_READBACK_FAIL');
++process.exit(ok ? 0 : 1);
+diff --git a/scripts/audits/g6-oneway.mjs b/scripts/audits/g6-oneway.mjs
+new file mode 100644
+index 0000000000..045553e38d
+--- /dev/null
++++ b/scripts/audits/g6-oneway.mjs
+@@ -0,0 +1,97 @@
++#!/usr/bin/env node
++/**
++ * g6-oneway.mjs —— F-GEOM-01-G6 迁移后核验（零改动，只读）。
++ * ① §3.1 单向核验：state→anchors 反向边零存在；anchors→state 边恰 3
++ *    （anchor-locate.ts:88/:89 + open-paper-anchor.ts:26）；time↔anchors 互边零存在。
++ * ② 旧径残留零检查：全代码面不应再存在指向迁移前旧路径的 import 说明符。
++ */
++import { readFileSync, readdirSync, statSync } from 'node:fs'
++import { join, relative } from 'node:path'
++
++const root = process.cwd()
++const READER = join(root, 'src', 'renderer', 'features', 'reader')
++const MOVED = [
++  'pdf-item-geometry', 'annotation-anchor', 'annotation-merge', 'annotation-resolve',
++  'annotation-resolve-layered', 'annotation-band-calibrate', 'anchor-serialize',
++  'anchor-blank-snap', 'anchor-locate', 'page-items.store', 'open-paper-anchor',
++  'annotation-style', 'ai-note-style', 'geometry-types'
++]
++
++function walk(dir, acc = []) {
++  for (const name of readdirSync(dir)) {
++    const p = join(dir, name)
++    const st = statSync(p)
++    if (st.isDirectory()) walk(p, acc)
++    else if (/\.(ts|tsx)$/.test(name)) acc.push(p)
++  }
++  return acc
++}
++
++const SPEC_RE = /(?:import|export)\s+(?:type\s+)?[\s\S]*?from\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g
++function specsOf(text) {
++  const out = []
++  let m
++  SPEC_RE.lastIndex = 0
++  while ((m = SPEC_RE.exec(text)) !== null) out.push(m[1] || m[2])
++  return out
++}
++
++// ① 单向核验
++const stateFiles = walk(join(READER, 'state'))
++const timeFiles = walk(join(READER, 'time'))
++const anchorsFiles = walk(join(READER, 'anchors'))
++let stateToAnchors = 0, timeToAnchors = 0, anchorsToTime = 0, anchorsToState = []
++for (const f of [...stateFiles, ...timeFiles, ...anchorsFiles]) {
++  const rel = relative(root, f).replaceAll('\\', '/')
++  const specs = specsOf(readFileSync(f, 'utf-8'))
++  for (const s of specs) {
++    if (!s.startsWith('.')) continue
++    const hit = (mod) => new RegExp(`(^|/)${mod.replace('.', '\\.')}(\\.ts|\\.tsx)?$`).test(s)
++    const pointsAnchors = s.includes('/anchors/') || (s.startsWith('./') && MOVED.some(hit))
++    if (rel.includes('/state/') && pointsAnchors) stateToAnchors++
++    if (rel.includes('/time/') && pointsAnchors) timeToAnchors++
++    if (rel.includes('/anchors/') && /(^|\/)time\//.test(s.slice(2))) anchorsToTime++
++    if (rel.includes('/anchors/') && /(^|\/)state\//.test(s.slice(2))) anchorsToState.push(`${rel} -> ${s}`)
++  }
++}
++console.log('=== ① §3.1 单向核验 ===')
++console.log(`state→anchors 反向边: ${stateToAnchors}（期望 0）`)
++console.log(`time→anchors 边: ${timeToAnchors}（期望 0）`)
++console.log(`anchors→time 边: ${anchorsToTime}（期望 0）`)
++console.log(`anchors→state 边: ${anchorsToState.length}（期望 3）`)
++for (const e of anchorsToState) console.log(`  anchors→state: ${e}`)
++
++// ② 旧径残留零检查（src+tests+scripts 代码面）
++const scan = [
++  ...walk(join(root, 'src')),
++  ...walk(join(root, 'tests')),
++  join(root, 'scripts', 'check-quality.mjs')
++].filter((p) => statSync(p).isFile())
++let residual = 0
++for (const f of scan) {
++  const rel = relative(root, f).replaceAll('\\', '/')
++  const lines = readFileSync(f, 'utf-8').split(/\r?\n/)
++  lines.forEach((line, i) => {
++    // 旧形态：reader 根 './x'、跨域 '../reader/x'、tests '.../reader/x'、白名单 'reader/x'
++    for (const b of MOVED) {
++      const be = b.replace('.', '\\.')
++      const oldForms = [
++        new RegExp(`'\\./${be}'`), new RegExp(`"\\./${be}"`),
++        new RegExp(`/reader/${be}'`), new RegExp(`"reader/${be}"`), new RegExp(`'reader/${be}'`)
++      ]
++      if (oldForms.some((re) => re.test(line))) {
++        // anchors 域内同层 './x' 合法（互引）——排除
++        if (rel.startsWith('src/renderer/features/reader/anchors/')) continue
++        // 新形态误匹配排除：'./anchors/x' 不匹配 `'./x'`；'reader/anchors/x' 不匹配 `/reader/x'`
++        residual++
++        console.log(`RESIDUAL ${rel}:${i + 1}: ${line.trim().slice(0, 140)}`)
++      }
++    }
++  })
++}
++console.log('=== ② 旧径残留零检查 ===')
++console.log(`旧径残留行数: ${residual}（期望 0）`)
++const ok = stateToAnchors === 0 && timeToAnchors === 0 && anchorsToTime === 0 &&
++  anchorsToState.length === 3 && residual === 0
++console.log(`ONEWAY_RESULT=${ok ? 'PASS' : 'FAIL'}`)
++process.exit(ok ? 0 : 1)
+diff --git a/scripts/audits/g6-recon.mjs b/scripts/audits/g6-recon.mjs
+new file mode 100644
+index 0000000000..1d36b6f33a
+--- /dev/null
++++ b/scripts/audits/g6-recon.mjs
+@@ -0,0 +1,59 @@
++// G6 派发前全边侦察：14 件被迁对象的全部 import 消费面（src+tests 分类）
++import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { join } from 'node:path';
++
++const root = process.cwd();
++const MOVED = [
++  'pdf-item-geometry', 'annotation-anchor', 'annotation-merge', 'annotation-resolve',
++  'annotation-resolve-layered', 'annotation-band-calibrate', 'anchor-serialize',
++  'anchor-blank-snap', 'anchor-locate', 'page-items.store', 'open-paper-anchor',
++  'annotation-style', 'ai-note-style', 'geometry-types'
++];
++
++function walk(dir, acc) {
++  for (const e of readdirSync(dir)) {
++    const p = join(dir, e);
++    const s = statSync(p);
++    if (s.isDirectory()) walk(p, acc);
++    else if (/\.(ts|tsx)$/.test(e)) acc.push(p);
++  }
++  return acc;
++}
++
++const files = [
++  ...walk(join(root, 'src'), []),
++  ...walk(join(root, 'tests'), [])
++];
++
++const hits = [];
++for (const f of files) {
++  const rel = f.slice(root.length + 1).replace(/\\/g, '/');
++  const lines = readFileSync(f, 'utf8').split('\n');
++  lines.forEach((line, i) => {
++    if (!/\bfrom\s+['"]|import\s+['"]/.test(line)) return;
++    for (const m of MOVED) {
++      // 匹配 import 路径以 /m 或 './m' 等结尾指向被迁件
++      const re = new RegExp(`['"][^'"]*/${m}['"]|['"]\\./${m}['"]`);
++      if (re.test(line)) {
++        hits.push({ file: rel, line: i + 1, text: line.trim(), target: m });
++        break;
++      }
++    }
++  });
++}
++
++// 分类：被迁件自身（域内互引）/ reader 域内消费 / src 跨特性 / tests
++const self = hits.filter((h) => /^src\/renderer\/features\/reader\/[^/]+$/.test(h.file));
++const inReader = hits.filter((h) => h.file.startsWith('src/renderer/features/reader/') && !/^src\/renderer\/features\/reader\/[^/]+$/.test(h.file));
++const srcOutside = hits.filter((h) => h.file.startsWith('src/') && !h.file.startsWith('src/renderer/features/reader/'));
++const inTests = hits.filter((h) => h.file.startsWith('tests/'));
++
++const dump = (label, arr) => {
++  console.log(`\n=== ${label} (${arr.length} hits) ===`);
++  for (const h of arr) console.log(`${h.file}:${h.line}\t[${h.target}]\t${h.text}`);
++};
++dump('SELF (moved files internal)', self);
++dump('READER subdir consumers', inReader);
++dump('SRC outside reader', srcOutside);
++dump('TESTS', inTests);
++console.log(`\nTOTAL=${hits.length} self=${self.length} reader=${inReader.length} srcOutside=${srcOutside.length} tests=${inTests.length}`);
+diff --git a/scripts/audits/g6-recon2.mjs b/scripts/audits/g6-recon2.mjs
+new file mode 100644
+index 0000000000..0b9b7ce5ce
+--- /dev/null
++++ b/scripts/audits/g6-recon2.mjs
+@@ -0,0 +1,90 @@
++// G6 补充侦察：被迁件对外 import / 字符串提名面 / 配置面 / registry / e2e
++import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { join } from 'node:path';
++
++const root = process.cwd();
++const MOVED = [
++  'pdf-item-geometry', 'annotation-anchor', 'annotation-merge', 'annotation-resolve',
++  'annotation-resolve-layered', 'annotation-band-calibrate', 'anchor-serialize',
++  'anchor-blank-snap', 'anchor-locate', 'page-items.store', 'open-paper-anchor',
++  'annotation-style', 'ai-note-style', 'geometry-types'
++];
++const R = 'src/renderer/features/reader';
++
++function walk(dir, acc) {
++  for (const e of readdirSync(dir)) {
++    const p = join(dir, e);
++    const s = statSync(p);
++    if (s.isDirectory()) walk(p, acc);
++    else if (/\.(ts|tsx|mjs|json|md)$/.test(e)) acc.push(p);
++  }
++  return acc;
++}
++
++// ① 14 件内部对外（跨域/跨特性）import——深度修正面
++console.log('=== [1] moved files' + `'` + ' outbound imports (non-sibling) ===');
++for (const m of MOVED) {
++  for (const ext of ['.ts', '.tsx']) {
++    let txt;
++    try { txt = readFileSync(join(root, R, m + ext), 'utf8'); } catch { continue; }
++    txt.split('\n').forEach((l, i) => {
++      const mt = l.match(/from\s+['"]([^'"]+)['"]/);
++      if (mt && !/^\.\//.test(mt[1]) === false && mt[1].startsWith('.') && !new RegExp(`^\\./(${MOVED.join('|')})$`).test(mt[1])) {
++        console.log(`${R}/${m}${ext}:${i + 1}\t${mt[1]}\t| ${l.trim().slice(0, 90)}`);
++      }
++    });
++  }
++}
++
++// ② 全 src/tests 非 import 行的路径字符串提名（注释/文档字符串）
++console.log('\n=== [2] string/comment mentions of reader/<moved> paths ===');
++const files = [...walk(join(root, 'src'), []), ...walk(join(root, 'tests'), [])];
++for (const f of files) {
++  const rel = f.slice(root.length + 1).replace(/\\/g, '/');
++  const isMovedSelf = MOVED.some((m) => rel === `${R}/${m}.ts` || rel === `${R}/${m}.tsx`);
++  readFileSync(f, 'utf8').split('\n').forEach((l, i) => {
++    if (/\bfrom\s+['"]/.test(l) && /['"][^'"]*\/(\w[\w.]*)['"]/.test(l) && MOVED.some((m) => new RegExp(`['"][^'"]*/${m}['"]`).test(l))) return; // import 行已在主侦察
++    for (const m of MOVED) {
++      if (new RegExp(`reader/${m}[.'\\s"]|reader/${m}$`).test(l) && l.includes(`reader/${m}`)) {
++        if (isMovedSelf && l.includes(`./`)) continue; // 自身头注同层提名
++        console.log(`${rel}:${i + 1}\t[${m}]\t${l.trim().slice(0, 110)}`);
++        break;
++      }
++    }
++  });
++}
++
++// ③ 配置面：eslint INV-16 + check-quality + vitest/playwright/tsconfig 中 anchors 件名
++console.log('\n=== [3] config mentions ===');
++const cfgs = ['eslint.config.js', 'scripts/check-quality.mjs', 'vitest.config.ts', 'playwright.config.ts', 'tsconfig.web.json', 'tsconfig.json', 'package.json'];
++for (const c of cfgs) {
++  let txt;
++  try { txt = readFileSync(join(root, c), 'utf8'); } catch { continue; }
++  txt.split('\n').forEach((l, i) => {
++    for (const m of MOVED) {
++      if (l.includes(m)) { console.log(`${c}:${i + 1}\t[${m}]\t${l.trim().slice(0, 110)}`); break; }
++    }
++  });
++}
++
++// ④ registry file 字段随迁义务
++console.log('\n=== [4] registry file fields pointing at moved paths ===');
++const reg = readFileSync(join(root, 'tickets/registry.ts'), 'utf8');
++reg.split('\n').forEach((l, i) => {
++  for (const m of MOVED) {
++    if (l.includes(`reader/${m}.`)) { console.log(`tickets/registry.ts:${i + 1}\t[${m}]\t${l.trim().slice(0, 130)}`); break; }
++  }
++});
++
++// ⑤ e2e spec 14 件名字符串面（任何出现形态）
++console.log('\n=== [5] e2e spec string surface ===');
++const e2eDir = join(root, 'tests/e2e');
++for (const f of walk(e2eDir, [])) {
++  const rel = f.slice(root.length + 1).replace(/\\/g, '/');
++  readFileSync(f, 'utf8').split('\n').forEach((l, i) => {
++    for (const m of MOVED) {
++      if (l.includes(m)) { console.log(`${rel}:${i + 1}\t[${m}]\t${l.trim().slice(0, 110)}`); break; }
++    }
++  });
++}
++console.log('\nDONE');
+diff --git a/scripts/audits/g6-recon3.mjs b/scripts/audits/g6-recon3.mjs
+new file mode 100644
+index 0000000000..144f2be03b
+--- /dev/null
++++ b/scripts/audits/g6-recon3.mjs
+@@ -0,0 +1,151 @@
++#!/usr/bin/env node
++/**
++ * g6-recon3.mjs —— F-GEOM-01-G6 实现者独立全边复核探针（零改动，只读）。
++ * 目的：对简报清单（B~H 段）做独立对账，捕捉侦察遗漏（动态 import/字符串路径/配置面）。
++ * 输出：分类计数 + 「票面清单外命中」明细（应为空——非空即停工申报素材）。
++ */
++import { readFileSync, readdirSync, statSync } from 'node:fs'
++import { join, relative, basename, extname } from 'node:path'
++
++const root = process.cwd()
++const READER = join(root, 'src', 'renderer', 'features', 'reader')
++
++const MOVED = [
++  'pdf-item-geometry', 'annotation-anchor', 'annotation-merge', 'annotation-resolve',
++  'annotation-resolve-layered', 'annotation-band-calibrate', 'anchor-serialize',
++  'anchor-blank-snap', 'anchor-locate', 'page-items.store', 'open-paper-anchor',
++  'annotation-style', 'ai-note-style', 'geometry-types'
++]
++const MOVED_SET = new Set(MOVED)
++
++// 扫描面：代码+配置（docs/ 归档不扫——非编译面）
++function walk(dir, acc = []) {
++  for (const name of readdirSync(dir)) {
++    if (['node_modules', 'out', 'dist', '.git', 'coverage', 'audits', 'locks'].includes(name)) continue
++    const p = join(dir, name)
++    const st = statSync(p)
++    if (st.isDirectory()) walk(p, acc)
++    else if (/\.(ts|tsx|js|mjs|cjs|json)$/.test(extname(p))) acc.push(p)
++  }
++  return acc
++}
++const files = [
++  ...walk(join(root, 'src')),
++  ...walk(join(root, 'tests')),
++  ...walk(join(root, 'scripts')),
++  join(root, 'package.json'), join(root, 'eslint.config.js'), join(root, 'vitest.config.ts'),
++  join(root, 'playwright.config.ts'), join(root, 'electron.vite.config.ts'),
++  join(root, 'tsconfig.json'), join(root, 'tsconfig.node.json'), join(root, 'tsconfig.web.json')
++].filter((p) => { try { return statSync(p).isFile() } catch { return false } })
++
++// import/export/require/import() 说明符抽取（含 type import 与 export-from）
++const SPEC_RE = /(?:import|export)\s+(?:type\s+)?[\s\S]*?from\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)|\bvi\.mock\s*\(\s*['"]([^'"]+)['"]/g
++
++function specifiers(text) {
++  const out = []
++  let m
++  SPEC_RE.lastIndex = 0
++  while ((m = SPEC_RE.exec(text)) !== null) {
++    out.push(m[1] || m[2] || m[3] || m[4])
++  }
++  return out
++}
++
++// 简报票面清单（file:line → 类别），用于对账"清单外命中"
++const TICKET = new Set()
++// C 段（reader 根消费 35 处）
++const C = {
++  'FragmentNotesList.tsx': [12], 'AiNoteGroupList.tsx': [37], 'PagesOverlay.tsx': [54],
++  'AiAnnotationLayer.tsx': [70, 71, 72, 73, 75], 'SelectionToolbar.tsx': [17],
++  'AnnotationLayer.tsx': [42, 43, 44, 45, 46], 'AiNotesSection.tsx': [50],
++  'ReaderToolbar.tsx': [42], 'AnnotationEditor.tsx': [15], 'AnnotationMenu.tsx': [41],
++  'release-affinity.ts': [80, 81], 'OutlineAside.tsx': [46],
++  'PdfPageCanvas.tsx': [33, 34, 39], 'reader-search.store.ts': [41],
++  'selection-evaluate.ts': [72, 73, 74, 75, 76, 77, 78], 'selection-paint.tsx': [35, 36],
++  'ReaderPage.tsx': [49]
++}
++for (const [f, ls] of Object.entries(C)) for (const l of ls) TICKET.add(`src/renderer/features/reader/${f}:${l}:C`)
++// D 段
++TICKET.add('src/renderer/features/lineage/LineageSideAiNotes.tsx:22:D')
++// E 段（tests 34 行）
++const E = {
++  'ai-note-style.test.ts': [14], 'annotation-merge.test.ts': [15],
++  'anchor-item-verify.test.tsx': [28, 29, 30, 31, 32], 'pdf-item-geometry.test.tsx': [30],
++  'anchor-blank-snap.test.ts': [4, 5], 'release-affinity.test.ts': [5, 6],
++  'ai-notes-section.test.tsx': [21, 42, 51], 'anchor-locate.test.ts': [15],
++  'band-calibration.test.tsx': [31, 32, 33], 'lineage-side-panel.test.tsx': [47, 61, 63],
++  'selection-evaluate.test.tsx': [32], 'annotation-layer.test.tsx': [20],
++  'ai-annotation-layer.test.tsx': [20, 22, 24], 'selection-item-chain.test.tsx': [22],
++  'annotation-anchor.test.ts': [7, 11], 'selection-paint.test.tsx': [33, 34, 36],
++  'selection-layer.test.tsx': [27]
++}
++for (const [f, ls] of Object.entries(E)) for (const l of ls) TICKET.add(`tests/unit/renderer/${f}:${l}:E`)
++// F 段
++TICKET.add('scripts/check-quality.mjs:99:F')
++// H 段（e2e 注释——非 import 行，单列核对）
++
++const hits = []      // 全部对 14 件名之一的引用命中（file:line:spec:类别）
++const extras = []    // 票面清单外命中
++let intraEdges = 0   // 域内互引（14 件之间）
++
++for (const f of files) {
++  const rel = relative(root, f).replaceAll('\\', '/')
++  const text = readFileSync(f, 'utf-8')
++  const lines = text.split(/\r?\n/)
++  const specs = specifiers(text)
++  // 逐行粗扫（import 行 + vi.mock 行 + check-quality 白名单行 + e2e 注释提名行）
++  lines.forEach((line, i) => {
++    const ln = i + 1
++    const matched = MOVED.filter((b) => line.includes(`/${b}'`) || line.includes(`/${b}"`) ||
++      line.includes(`'./${b}'`) || line.includes(`"./${b}"`) ||
++      (line.includes(b) && /\.(ts|tsx|mjs|js)$/.test(extname(f)) && /['"]/.test(line) &&
++        new RegExp(`(^|[^\\w./-])${b.replace('.', '\\.')}(['"]|$)`).test(line)))
++    if (matched.length === 0) return
++    // 只记真正指向 reader 域（相对 './x'、'../reader/x'、'...reader/x' 或 check-quality 白名单 'reader/x'）
++    const pointing = matched.some((b) =>
++      new RegExp(`(\\./|/reader/|reader/|'\\./)${b.replace('.', '\\.')}(\\.|['"])`).test(line) ||
++      line.includes(`'./${b}'`) || line.includes(`reader/${b}`))
++    if (!pointing) return
++    const key = `${rel}:${ln}`
++    const ticketed = [...TICKET].some((t) => t.startsWith(`${key}:`))
++    const inMovedFile = rel.startsWith('src/renderer/features/reader/') &&
++      MOVED_SET.has(basename(rel).replace(/\.tsx?$/, ''))
++    hits.push({ key, line: line.trim(), matched, ticketed, inMovedFile, rel })
++    if (ticketed) return
++    if (inMovedFile) { intraEdges++; return } // 域内互引（票面 25 处零改写）
++    extras.push({ key, line: line.trim().slice(0, 160), matched })
++  })
++  void specs
++}
++
++// 域内互引独立计数：14 件内 './sibling' 指向 14 件之一的 import 说明符
++let intraBySpec = 0
++for (const b of MOVED) {
++  const f = join(READER, b + (statSync(join(READER, b + '.ts')).isFile() ? '.ts' : '.tsx'))
++  const text = readFileSync(f, 'utf-8')
++  for (const s of specifiers(text)) {
++    if (s.startsWith('./')) {
++      const target = s.slice(2).replace(/\.(ts|tsx)$/, '')
++      if (MOVED_SET.has(target)) intraBySpec++
++    }
++  }
++}
++
++const cCount = hits.filter((h) => h.ticketed && h.key.includes(':C'.replace(':C', '')) && [...TICKET].some((t) => t.startsWith(`${h.key}:C`))).length
++const eCount = hits.filter((h) => [...TICKET].some((t) => t.startsWith(`${h.key}:E`))).length
++
++console.log('=== G6 recon3 独立复核 ===')
++console.log(`扫描文件数: ${files.length}`)
++console.log(`票面 C 段命中: ${[...TICKET].filter((t) => t.endsWith(':C')).length} 登记 / ${cCount} 实命中`)
++console.log(`票面 D 段命中: ${[...TICKET].filter((t) => t.endsWith(':D')).length} 登记 / ${hits.filter((h) => [...TICKET].some((t) => t.startsWith(`${h.key}:D`))).length} 实命中`)
++console.log(`票面 E 段命中: ${[...TICKET].filter((t) => t.endsWith(':E')).length} 登记 / ${eCount} 实命中`)
++console.log(`域内互引（行级计）: ${intraEdges}；说明符级计: ${intraBySpec}（票面=25）`)
++console.log(`清单外命中（应分类复核）: ${extras.length}`)
++for (const x of extras) console.log(`  EXTRA ${x.key}: ${x.line}`)
++// F 段白名单行核对（check-quality :99 + :87 注释行形态）
++const cq = readFileSync(join(root, 'scripts', 'check-quality.mjs'), 'utf-8').split(/\r?\n/)
++console.log(`F 段 check-quality.mjs:87 => ${cq[86].trim().slice(0, 100)}`)
++console.log(`F 段 check-quality.mjs:99 => ${cq[98].trim().slice(0, 100)}`)
++// H 段 e2e 注释提名核对
++const e2e = readFileSync(join(root, 'tests', 'e2e', 'z-wg1-probe.spec.ts'), 'utf-8').split(/\r?\n/)
++console.log(`H 段 z-wg1-probe.spec.ts:7 含旧径提名 => ${e2e[6].includes('annotation-resolve.ts:224')}`)
+diff --git a/scripts/audits/g6-rewrite.mjs b/scripts/audits/g6-rewrite.mjs
+new file mode 100644
+index 0000000000..4cb248afb3
+--- /dev/null
++++ b/scripts/audits/g6-rewrite.mjs
+@@ -0,0 +1,160 @@
++#!/usr/bin/env node
++/**
++ * g6-rewrite.mjs —— F-GEOM-01-G6 M3 迁移批量改写（简报 B~H 段精确清单）。
++ * 两遍制：pass1 全断言（任一行不含旧串/含多于一处即整体退出 1，零写盘），
++ * pass2 逐文件写盘。行号制：只在指定行内做一次子串替换。
++ * 用法：node scripts/audits/g6-rewrite.mjs src|locked
++ *   src    = B/C/D/G 段（非受锁面）
++ *   locked = E/F/H 段（受锁面——须先 locks:unlock）
++ */
++import { readFileSync, writeFileSync } from 'node:fs'
++import { join } from 'node:path'
++
++const root = process.cwd()
++const phase = process.argv[2]
++if (phase !== 'src' && phase !== 'locked') {
++  console.error('usage: node scripts/audits/g6-rewrite.mjs src|locked')
++  process.exit(1)
++}
++
++const R = 'src/renderer/features/reader'
++const T = 'tests/unit/renderer'
++
++// [file, line, oldSub, newSub, tag]
++const SRC_EDITS = [
++  // B 段：被迁件入边深度修正恰 7 行
++  [`${R}/anchors/anchor-locate.ts`, 88, `'./state/reader.store'`, `'../state/reader.store'`, 'B'],
++  [`${R}/anchors/anchor-locate.ts`, 89, `'./state/scroll-converge'`, `'../state/scroll-converge'`, 'B'],
++  [`${R}/anchors/anchor-locate.ts`, 90, `'../../shared/open-paper-bus'`, `'../../../shared/open-paper-bus'`, 'B'],
++  [`${R}/anchors/anchor-locate.ts`, 91, `'../../shared/ui/toast-store'`, `'../../../shared/ui/toast-store'`, 'B'],
++  [`${R}/anchors/open-paper-anchor.ts`, 26, `'./state/reader.store'`, `'../state/reader.store'`, 'B'],
++  [`${R}/anchors/open-paper-anchor.ts`, 27, `'../../shared/ui/toast-store'`, `'../../../shared/ui/toast-store'`, 'B'],
++  [`${R}/anchors/open-paper-anchor.ts`, 28, `'../../shared/open-paper-bus'`, `'../../../shared/open-paper-bus'`, 'B'],
++  // C 段：reader 根未迁文件消费面恰 35 处（'./x' → './anchors/x'）
++  [`${R}/FragmentNotesList.tsx`, 12, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AiNoteGroupList.tsx`, 37, `'./ai-note-style'`, `'./anchors/ai-note-style'`, 'C'],
++  [`${R}/PagesOverlay.tsx`, 54, `'./page-items.store'`, `'./anchors/page-items.store'`, 'C'],
++  [`${R}/AiAnnotationLayer.tsx`, 70, `'./annotation-resolve'`, `'./anchors/annotation-resolve'`, 'C'],
++  [`${R}/AiAnnotationLayer.tsx`, 71, `'./annotation-resolve-layered'`, `'./anchors/annotation-resolve-layered'`, 'C'],
++  [`${R}/AiAnnotationLayer.tsx`, 72, `'./page-items.store'`, `'./anchors/page-items.store'`, 'C'],
++  [`${R}/AiAnnotationLayer.tsx`, 73, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AiAnnotationLayer.tsx`, 75, `'./ai-note-style'`, `'./anchors/ai-note-style'`, 'C'],
++  [`${R}/SelectionToolbar.tsx`, 17, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AnnotationLayer.tsx`, 42, `'./annotation-resolve'`, `'./anchors/annotation-resolve'`, 'C'],
++  [`${R}/AnnotationLayer.tsx`, 43, `'./annotation-resolve-layered'`, `'./anchors/annotation-resolve-layered'`, 'C'],
++  [`${R}/AnnotationLayer.tsx`, 44, `'./page-items.store'`, `'./anchors/page-items.store'`, 'C'],
++  [`${R}/AnnotationLayer.tsx`, 45, `'./annotation-merge'`, `'./anchors/annotation-merge'`, 'C'],
++  [`${R}/AnnotationLayer.tsx`, 46, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AiNotesSection.tsx`, 50, `'./anchor-locate'`, `'./anchors/anchor-locate'`, 'C'],
++  [`${R}/ReaderToolbar.tsx`, 42, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AnnotationEditor.tsx`, 15, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/AnnotationMenu.tsx`, 41, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/release-affinity.ts`, 80, `'./annotation-anchor'`, `'./anchors/annotation-anchor'`, 'C'],
++  [`${R}/release-affinity.ts`, 81, `'./anchor-blank-snap'`, `'./anchors/anchor-blank-snap'`, 'C'],
++  [`${R}/OutlineAside.tsx`, 46, `'./anchor-locate'`, `'./anchors/anchor-locate'`, 'C'],
++  [`${R}/PdfPageCanvas.tsx`, 33, `'./pdf-item-geometry'`, `'./anchors/pdf-item-geometry'`, 'C'],
++  [`${R}/PdfPageCanvas.tsx`, 34, `'./geometry-types'`, `'./anchors/geometry-types'`, 'C'],
++  [`${R}/PdfPageCanvas.tsx`, 39, `'./geometry-types'`, `'./anchors/geometry-types'`, 'C'],
++  [`${R}/reader-search.store.ts`, 41, `'./geometry-types'`, `'./anchors/geometry-types'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 72, `'./anchor-serialize'`, `'./anchors/anchor-serialize'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 73, `'./annotation-anchor'`, `'./anchors/annotation-anchor'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 74, `'./annotation-resolve'`, `'./anchors/annotation-resolve'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 75, `'./annotation-band-calibrate'`, `'./anchors/annotation-band-calibrate'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 76, `'./pdf-item-geometry'`, `'./anchors/pdf-item-geometry'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 77, `'./pdf-item-geometry'`, `'./anchors/pdf-item-geometry'`, 'C'],
++  [`${R}/selection-evaluate.ts`, 78, `'./page-items.store'`, `'./anchors/page-items.store'`, 'C'],
++  [`${R}/selection-paint.tsx`, 35, `'./annotation-resolve'`, `'./anchors/annotation-resolve'`, 'C'],
++  [`${R}/selection-paint.tsx`, 36, `'./annotation-style'`, `'./anchors/annotation-style'`, 'C'],
++  [`${R}/ReaderPage.tsx`, 49, `'./open-paper-anchor'`, `'./anchors/open-paper-anchor'`, 'C'],
++  // D 段：跨特性 src 消费恰 1 处
++  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', 22, `'../reader/ai-note-style'`, `'../reader/anchors/ai-note-style'`, 'D'],
++  // G 段：registry.ts 全域随迁恰 10 行（file 字段路径段加 anchors/，status 零触碰）
++  ['tickets/registry.ts', 101, 'reader/annotation-anchor.ts', 'reader/anchors/annotation-anchor.ts', 'G'],
++  ['tickets/registry.ts', 160, 'reader/anchor-locate.ts', 'reader/anchors/anchor-locate.ts', 'G'],
++  ['tickets/registry.ts', 205, 'reader/anchor-locate.ts', 'reader/anchors/anchor-locate.ts', 'G'],
++  ['tickets/registry.ts', 212, 'reader/open-paper-anchor.ts', 'reader/anchors/open-paper-anchor.ts', 'G'],
++  ['tickets/registry.ts', 223, 'reader/ai-note-style.ts', 'reader/anchors/ai-note-style.ts', 'G'],
++  ['tickets/registry.ts', 244, 'reader/annotation-resolve.ts', 'reader/anchors/annotation-resolve.ts', 'G'],
++  ['tickets/registry.ts', 265, 'reader/anchor-blank-snap.ts', 'reader/anchors/anchor-blank-snap.ts', 'G'],
++  ['tickets/registry.ts', 280, 'reader/pdf-item-geometry.ts', 'reader/anchors/pdf-item-geometry.ts', 'G'],
++  ['tickets/registry.ts', 292, 'reader/geometry-types.ts', 'reader/anchors/geometry-types.ts', 'G'],
++  ['tickets/registry.ts', 297, 'reader/annotation-anchor.ts', 'reader/anchors/annotation-anchor.ts', 'G']
++]
++
++const LOCKED_EDITS = [
++  // E 段：tests 受锁面恰 34 行（reader/x → reader/anchors/x；含 2 处 vi.mock 调用行）
++  [`${T}/ai-note-style.test.ts`, 14, 'reader/ai-note-style', 'reader/anchors/ai-note-style', 'E'],
++  [`${T}/annotation-merge.test.ts`, 15, 'reader/annotation-merge', 'reader/anchors/annotation-merge', 'E'],
++  [`${T}/anchor-item-verify.test.tsx`, 28, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/anchor-item-verify.test.tsx`, 29, 'reader/annotation-resolve', 'reader/anchors/annotation-resolve', 'E'],
++  [`${T}/anchor-item-verify.test.tsx`, 30, 'reader/annotation-anchor', 'reader/anchors/annotation-anchor', 'E'],
++  [`${T}/anchor-item-verify.test.tsx`, 31, 'reader/pdf-item-geometry', 'reader/anchors/pdf-item-geometry', 'E'],
++  [`${T}/anchor-item-verify.test.tsx`, 32, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/pdf-item-geometry.test.tsx`, 30, 'reader/pdf-item-geometry', 'reader/anchors/pdf-item-geometry', 'E'],
++  [`${T}/anchor-blank-snap.test.ts`, 4, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/anchor-blank-snap.test.ts`, 5, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/release-affinity.test.ts`, 5, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/release-affinity.test.ts`, 6, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/ai-notes-section.test.tsx`, 21, 'reader/anchor-locate', 'reader/anchors/anchor-locate', 'E'],
++  [`${T}/ai-notes-section.test.tsx`, 42, 'reader/anchor-locate', 'reader/anchors/anchor-locate', 'E'],
++  [`${T}/ai-notes-section.test.tsx`, 51, 'reader/ai-note-style', 'reader/anchors/ai-note-style', 'E'],
++  [`${T}/anchor-locate.test.ts`, 15, 'reader/anchor-locate', 'reader/anchors/anchor-locate', 'E'],
++  [`${T}/band-calibration.test.tsx`, 31, 'reader/annotation-band-calibrate', 'reader/anchors/annotation-band-calibrate', 'E'],
++  [`${T}/band-calibration.test.tsx`, 32, 'reader/annotation-resolve', 'reader/anchors/annotation-resolve', 'E'],
++  [`${T}/band-calibration.test.tsx`, 33, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/lineage-side-panel.test.tsx`, 47, 'reader/anchor-locate', 'reader/anchors/anchor-locate', 'E'],
++  [`${T}/lineage-side-panel.test.tsx`, 61, 'reader/open-paper-anchor', 'reader/anchors/open-paper-anchor', 'E'],
++  [`${T}/lineage-side-panel.test.tsx`, 63, 'reader/ai-note-style', 'reader/anchors/ai-note-style', 'E'],
++  [`${T}/selection-evaluate.test.tsx`, 32, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/annotation-layer.test.tsx`, 20, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/ai-annotation-layer.test.tsx`, 20, 'reader/anchor-locate', 'reader/anchors/anchor-locate', 'E'],
++  [`${T}/ai-annotation-layer.test.tsx`, 22, 'reader/ai-note-style', 'reader/anchors/ai-note-style', 'E'],
++  [`${T}/ai-annotation-layer.test.tsx`, 24, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/selection-item-chain.test.tsx`, 22, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/annotation-anchor.test.ts`, 7, 'reader/annotation-anchor', 'reader/anchors/annotation-anchor', 'E'],
++  [`${T}/annotation-anchor.test.ts`, 11, 'reader/anchor-serialize', 'reader/anchors/anchor-serialize', 'E'],
++  [`${T}/selection-paint.test.tsx`, 33, 'reader/annotation-style', 'reader/anchors/annotation-style', 'E'],
++  [`${T}/selection-paint.test.tsx`, 34, 'reader/annotation-resolve', 'reader/anchors/annotation-resolve', 'E'],
++  [`${T}/selection-paint.test.tsx`, 36, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  [`${T}/selection-layer.test.tsx`, 27, 'reader/page-items.store', 'reader/anchors/page-items.store', 'E'],
++  // F 段：配置面恰 1 行
++  ['scripts/check-quality.mjs', 99, "'reader/ai-note-style'", "'reader/anchors/ai-note-style'", 'F'],
++  // H 段：e2e 注释勘正恰 1 处（行号不变）
++  ['tests/e2e/z-wg1-probe.spec.ts', 7, 'annotation-resolve.ts:224', 'anchors/annotation-resolve.ts:224', 'H']
++]
++
++const edits = (phase === 'src' ? SRC_EDITS : LOCKED_EDITS)
++
++// pass1：全断言（零写盘）
++const byFile = new Map()
++for (const [f] of edits) if (!byFile.has(f)) byFile.set(f, readFileSync(join(root, f), 'utf-8').split(/\r?\n/))
++
++let fail = 0
++for (const [f, ln, oldS, newS, tag] of edits) {
++  const lines = byFile.get(f)
++  const line = lines[ln - 1] ?? ''
++  const n = line.split(oldS).length - 1
++  if (n !== 1) {
++    console.error(`ASSERT-FAIL [${tag}] ${f}:${ln} 旧串出现 ${n} 次（期望 1）`)
++    console.error(`  行内容: ${line.trim().slice(0, 140)}`)
++    fail++
++  } else if (line.includes(newS)) {
++    console.error(`ASSERT-FAIL [${tag}] ${f}:${ln} 已含新串（重复执行？）`)
++    fail++
++  }
++}
++if (fail > 0) { console.error(`pass1 断言失败 ${fail} 处——零写盘退出`); process.exit(1) }
++
++// pass2：逐文件写盘（保留各行行尾原样——split(/\r?\n/) + join('\n') 统一 LF，仓库 .gitattributes 强制 LF）
++for (const [f] of byFile) {
++  const lines = byFile.get(f)
++  for (const [ff, ln, oldS, newS] of edits) {
++    if (ff !== f) continue
++    lines[ln - 1] = lines[ln - 1].replace(oldS, newS)
++  }
++  writeFileSync(join(root, f), lines.join('\n'), 'utf-8')
++}
++
++const tags = {}
++for (const [, , , , t] of edits) tags[t] = (tags[t] ?? 0) + 1
++console.log(`phase=${phase} 改写完成：${edits.length} 行 / ${byFile.size} 文件 ${JSON.stringify(tags)}`)
+diff --git a/scripts/check-quality.mjs b/scripts/check-quality.mjs
+index 4510ad25f9..5a47746636 100644
+--- a/scripts/check-quality.mjs
++++ b/scripts/check-quality.mjs
+@@ -96,7 +96,7 @@ const COMPOSITION_ROOT_ALLOW = new Map([
+   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
+   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
+   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
+-  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/ai-note-style']],
++  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
+   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']]
+ ])
+ 
+diff --git a/src/renderer/features/lineage/LineageSideAiNotes.tsx b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+index 5deb72221b..6abbfb433f 100644
+--- a/src/renderer/features/lineage/LineageSideAiNotes.tsx
++++ b/src/renderer/features/lineage/LineageSideAiNotes.tsx
+@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react'
+ import { api, unwrap } from '../../api/client'
+ import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
+ import type { AiNote } from '@shared/models/ai-note'
+-import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
++import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/anchors/ai-note-style'
+ 
+ type Phase = 'loading' | 'ready' | 'error'
+ 
+diff --git a/src/renderer/features/reader/AiAnnotationLayer.tsx b/src/renderer/features/reader/AiAnnotationLayer.tsx
+index 66fc037f00..d4bf60b790 100644
+--- a/src/renderer/features/reader/AiAnnotationLayer.tsx
++++ b/src/renderer/features/reader/AiAnnotationLayer.tsx
+@@ -67,12 +67,12 @@
+ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+ import type { AiNote } from '@shared/models/ai-note'
+ import type { AnnotationRect } from '@shared/models/annotation'
+-import { matchBand, type RowBand } from './annotation-resolve'
+-import { resolveAiNotesLayered } from './annotation-resolve-layered'
+-import { usePageItemsStore } from './page-items.store'
+-import { bandVertical } from './annotation-style'
++import { matchBand, type RowBand } from './anchors/annotation-resolve'
++import { resolveAiNotesLayered } from './anchors/annotation-resolve-layered'
++import { usePageItemsStore } from './anchors/page-items.store'
++import { bandVertical } from './anchors/annotation-style'
+ import { PAGE_LAYER_Z } from './state/page-layer-z'
+-import { QUESTION_COLOR } from './ai-note-style'
++import { QUESTION_COLOR } from './anchors/ai-note-style'
+ import { useAiNotesStore } from './state/ai-notes.store'
+ import { useReaderStore } from './state/reader.store'
+ 
+diff --git a/src/renderer/features/reader/AiNoteGroupList.tsx b/src/renderer/features/reader/AiNoteGroupList.tsx
+index 44a98b2bbc..bf82551991 100644
+--- a/src/renderer/features/reader/AiNoteGroupList.tsx
++++ b/src/renderer/features/reader/AiNoteGroupList.tsx
+@@ -34,7 +34,7 @@
+ import { useEffect, useRef, useState } from 'react'
+ import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
+ import type { AiNote, AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
+-import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
++import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './anchors/ai-note-style'
+ 
+ /** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
+ export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {
+diff --git a/src/renderer/features/reader/AiNotesSection.tsx b/src/renderer/features/reader/AiNotesSection.tsx
+index 64927c0b6a..b1ea9fd4d6 100644
+--- a/src/renderer/features/reader/AiNotesSection.tsx
++++ b/src/renderer/features/reader/AiNotesSection.tsx
+@@ -47,7 +47,7 @@
+  *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
+  */
+ import { useEffect } from 'react'
+-import { locateAnchor } from './anchor-locate'
++import { locateAnchor } from './anchors/anchor-locate'
+ import { AiNoteGroupList } from './AiNoteGroupList'
+ import { AiNotesStatus } from './AiNotesStatus'
+ import { derivePhase } from './state/ai-notes-phase'
+diff --git a/src/renderer/features/reader/AnnotationEditor.tsx b/src/renderer/features/reader/AnnotationEditor.tsx
+index 9f602576fe..a65700db1e 100644
+--- a/src/renderer/features/reader/AnnotationEditor.tsx
++++ b/src/renderer/features/reader/AnnotationEditor.tsx
+@@ -12,7 +12,7 @@
+  */
+ import { useEffect, useRef } from 'react'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+-import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
++import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
+ import { useAnnotationDraft } from './use-annotation-draft'
+ 
+ export function AnnotationEditor(props: {
+diff --git a/src/renderer/features/reader/AnnotationLayer.tsx b/src/renderer/features/reader/AnnotationLayer.tsx
+index 719acc788b..e59633d86f 100644
+--- a/src/renderer/features/reader/AnnotationLayer.tsx
++++ b/src/renderer/features/reader/AnnotationLayer.tsx
+@@ -39,11 +39,11 @@
+  */
+ import { useEffect, useLayoutEffect, useState } from 'react'
+ import type { Annotation } from '@shared/models/annotation'
+-import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './annotation-resolve'
+-import { resolveAnnotationRectsLayered } from './annotation-resolve-layered'
+-import { usePageItemsStore } from './page-items.store'
+-import { mergeRects } from './annotation-merge'
+-import { rectStyle } from './annotation-style'
++import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './anchors/annotation-resolve'
++import { resolveAnnotationRectsLayered } from './anchors/annotation-resolve-layered'
++import { usePageItemsStore } from './anchors/page-items.store'
++import { mergeRects } from './anchors/annotation-merge'
++import { rectStyle } from './anchors/annotation-style'
+ import { PAGE_LAYER_Z } from './state/page-layer-z'
+ import { useReaderStore } from './state/reader.store'
+ import { AnnotationPopups, type PopupTarget } from './AnnotationPopups'
+diff --git a/src/renderer/features/reader/AnnotationMenu.tsx b/src/renderer/features/reader/AnnotationMenu.tsx
+index a3a1b7c59d..502d18b92d 100644
+--- a/src/renderer/features/reader/AnnotationMenu.tsx
++++ b/src/renderer/features/reader/AnnotationMenu.tsx
+@@ -38,7 +38,7 @@
+  * - 禁止 any；组件 ≤250 行
+  */
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+-import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
++import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
+ 
+ export function AnnotationMenu(props: {
+   annotation: Annotation
+diff --git a/src/renderer/features/reader/FragmentNotesList.tsx b/src/renderer/features/reader/FragmentNotesList.tsx
+index 9bf726d23a..678979b0e5 100644
+--- a/src/renderer/features/reader/FragmentNotesList.tsx
++++ b/src/renderer/features/reader/FragmentNotesList.tsx
+@@ -9,7 +9,7 @@
+ import { useEffect, useMemo, useRef } from 'react'
+ import type { Annotation } from '@shared/models/annotation'
+ import { sortByDocumentOrder } from '@shared/annotation-order'
+-import { COLOR_SWATCH } from './annotation-style'
++import { COLOR_SWATCH } from './anchors/annotation-style'
+ 
+ /** 引文/批注摘要截断（显示策略） */
+ const EXCERPT_MAX = 60
+diff --git a/src/renderer/features/reader/OutlineAside.tsx b/src/renderer/features/reader/OutlineAside.tsx
+index 97f47d5274..5b6bd508d5 100644
+--- a/src/renderer/features/reader/OutlineAside.tsx
++++ b/src/renderer/features/reader/OutlineAside.tsx
+@@ -43,7 +43,7 @@
+  *   笔记 tab 挂载/目录跳页经 store/片段单击页级定位/空态
+  */
+ import { useEffect, useState } from 'react'
+-import { locateAnchor } from './anchor-locate'
++import { locateAnchor } from './anchors/anchor-locate'
+ import { OutlinePanel } from './OutlinePanel'
+ import { ReaderNotesPanel } from './ReaderNotesPanel'
+ import { useReaderStore } from './state/reader.store'
+diff --git a/src/renderer/features/reader/PagesOverlay.tsx b/src/renderer/features/reader/PagesOverlay.tsx
+index daea1ec34f..2dcd5fb764 100644
+--- a/src/renderer/features/reader/PagesOverlay.tsx
++++ b/src/renderer/features/reader/PagesOverlay.tsx
+@@ -51,7 +51,7 @@ import { SearchHighlightLayer } from './SearchHighlightLayer'
+ import type { PDFDocumentProxy } from './state/PdfDocProvider'
+ import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import type { PageLayout } from './page-column-geometry'
+-import { usePageItemsStore } from './page-items.store'
++import { usePageItemsStore } from './anchors/page-items.store'
+ import { TextLayer } from './TextLayer'
+ 
+ /** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */
+diff --git a/src/renderer/features/reader/PdfPageCanvas.tsx b/src/renderer/features/reader/PdfPageCanvas.tsx
+index 83cbf64178..75bb80b9fc 100644
+--- a/src/renderer/features/reader/PdfPageCanvas.tsx
++++ b/src/renderer/features/reader/PdfPageCanvas.tsx
+@@ -30,13 +30,13 @@
+ import { useEffect, useRef } from 'react'
+ import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
+ import { PAGE_LAYER_Z } from './state/page-layer-z'
+-import { clampScale } from './pdf-item-geometry'
+-import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './geometry-types'
++import { clampScale } from './anchors/pdf-item-geometry'
++import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './anchors/geometry-types'
+ 
+ // 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
+ // import 本件零触（ai-annotation-layer.test:25/pdf-item-geometry.test:18 等
+ // 十处 tests/**/*.tsx）
+-export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from './geometry-types'
++export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from './anchors/geometry-types'
+ 
+ function errorMessage(err: unknown): string {
+   return err instanceof Error ? err.message : String(err)
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/ReaderPage.tsx
+index 0922782b85..b873d341e6 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/ReaderPage.tsx
+@@ -46,7 +46,7 @@
+  */
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+-import { openFromBus } from './open-paper-anchor'
++import { openFromBus } from './anchors/open-paper-anchor'
+ import type { PageScrollRequest } from './PageColumn'
+ import { useReaderSearch } from './useReaderSearch'
+ import { useReaderStore } from './state/reader.store'
+diff --git a/src/renderer/features/reader/ReaderToolbar.tsx b/src/renderer/features/reader/ReaderToolbar.tsx
+index b1db182338..57eaed3d38 100644
+--- a/src/renderer/features/reader/ReaderToolbar.tsx
++++ b/src/renderer/features/reader/ReaderToolbar.tsx
+@@ -39,7 +39,7 @@ import { useEffect, useState } from 'react'
+ import type { ReactNode } from 'react'
+ import type { AnnotationColor } from '@shared/models/annotation'
+ import { ANNOTATION_COLORS } from '@shared/constants'
+-import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
++import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
+ 
+ /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
+  *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */
+diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToolbar.tsx
+index de031b89fe..69c860e715 100644
+--- a/src/renderer/features/reader/SelectionToolbar.tsx
++++ b/src/renderer/features/reader/SelectionToolbar.tsx
+@@ -14,7 +14,7 @@
+ import type { MutableRefObject } from 'react'
+ import type { AnnotationColor, AnnotationKind } from '@shared/models/annotation'
+ import { ANNOTATION_COLORS } from '@shared/constants'
+-import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
++import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
+ 
+ /** 工具条三种动作（kind→中文文案——按钮 map 单源） */
+ const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
+diff --git a/src/renderer/features/reader/ai-note-style.ts b/src/renderer/features/reader/anchors/ai-note-style.ts
+similarity index 100%
+rename from src/renderer/features/reader/ai-note-style.ts
+rename to src/renderer/features/reader/anchors/ai-note-style.ts
+diff --git a/src/renderer/features/reader/anchor-blank-snap.ts b/src/renderer/features/reader/anchors/anchor-blank-snap.ts
+similarity index 100%
+rename from src/renderer/features/reader/anchor-blank-snap.ts
+rename to src/renderer/features/reader/anchors/anchor-blank-snap.ts
+diff --git a/src/renderer/features/reader/anchor-locate.ts b/src/renderer/features/reader/anchors/anchor-locate.ts
+similarity index 98%
+rename from src/renderer/features/reader/anchor-locate.ts
+rename to src/renderer/features/reader/anchors/anchor-locate.ts
+index 670d222ef4..59fc5d8de6 100644
+--- a/src/renderer/features/reader/anchor-locate.ts
++++ b/src/renderer/features/reader/anchors/anchor-locate.ts
+@@ -85,10 +85,10 @@
+  * - INV-20 随本单翻已锚定（服务单测级；消费方级随后续工单补）
+  */
+ import { verifyQuote } from './anchor-serialize'
+-import { useReaderStore } from './state/reader.store'
+-import { scrollIntoNearestScroller } from './state/scroll-converge'
+-import { requestOpenPaper } from '../../shared/open-paper-bus'
+-import { showToast } from '../../shared/ui/toast-store'
++import { useReaderStore } from '../state/reader.store'
++import { scrollIntoNearestScroller } from '../state/scroll-converge'
++import { requestOpenPaper } from '../../../shared/open-paper-bus'
++import { showToast } from '../../../shared/ui/toast-store'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+ export interface LocateAnchor extends Pick<Annotation, 'quoteText' | 'prefixText' | 'suffixText'> {
+diff --git a/src/renderer/features/reader/anchor-serialize.ts b/src/renderer/features/reader/anchors/anchor-serialize.ts
+similarity index 100%
+rename from src/renderer/features/reader/anchor-serialize.ts
+rename to src/renderer/features/reader/anchors/anchor-serialize.ts
+diff --git a/src/renderer/features/reader/annotation-anchor.ts b/src/renderer/features/reader/anchors/annotation-anchor.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-anchor.ts
+rename to src/renderer/features/reader/anchors/annotation-anchor.ts
+diff --git a/src/renderer/features/reader/annotation-band-calibrate.ts b/src/renderer/features/reader/anchors/annotation-band-calibrate.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-band-calibrate.ts
+rename to src/renderer/features/reader/anchors/annotation-band-calibrate.ts
+diff --git a/src/renderer/features/reader/annotation-merge.ts b/src/renderer/features/reader/anchors/annotation-merge.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-merge.ts
+rename to src/renderer/features/reader/anchors/annotation-merge.ts
+diff --git a/src/renderer/features/reader/annotation-resolve-layered.ts b/src/renderer/features/reader/anchors/annotation-resolve-layered.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-resolve-layered.ts
+rename to src/renderer/features/reader/anchors/annotation-resolve-layered.ts
+diff --git a/src/renderer/features/reader/annotation-resolve.ts b/src/renderer/features/reader/anchors/annotation-resolve.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-resolve.ts
+rename to src/renderer/features/reader/anchors/annotation-resolve.ts
+diff --git a/src/renderer/features/reader/annotation-style.ts b/src/renderer/features/reader/anchors/annotation-style.ts
+similarity index 100%
+rename from src/renderer/features/reader/annotation-style.ts
+rename to src/renderer/features/reader/anchors/annotation-style.ts
+diff --git a/src/renderer/features/reader/geometry-types.ts b/src/renderer/features/reader/anchors/geometry-types.ts
+similarity index 100%
+rename from src/renderer/features/reader/geometry-types.ts
+rename to src/renderer/features/reader/anchors/geometry-types.ts
+diff --git a/src/renderer/features/reader/open-paper-anchor.ts b/src/renderer/features/reader/anchors/open-paper-anchor.ts
+similarity index 92%
+rename from src/renderer/features/reader/open-paper-anchor.ts
+rename to src/renderer/features/reader/anchors/open-paper-anchor.ts
+index af59e929d4..ba3d710583 100644
+--- a/src/renderer/features/reader/open-paper-anchor.ts
++++ b/src/renderer/features/reader/anchors/open-paper-anchor.ts
+@@ -23,9 +23,9 @@
+  * 票面=scripts/audits/sr2-lg-06-brief.md。
+  */
+ import { locateAnchor } from './anchor-locate'
+-import { useReaderStore } from './state/reader.store'
+-import { showToast } from '../../shared/ui/toast-store'
+-import type { OpenPaperRequest } from '../../shared/open-paper-bus'
++import { useReaderStore } from '../state/reader.store'
++import { showToast } from '../../../shared/ui/toast-store'
++import type { OpenPaperRequest } from '../../../shared/open-paper-bus'
+ 
+ export function openFromBus(req: OpenPaperRequest): void {
+   if (req.anchor !== undefined) {
+diff --git a/src/renderer/features/reader/page-items.store.ts b/src/renderer/features/reader/anchors/page-items.store.ts
+similarity index 100%
+rename from src/renderer/features/reader/page-items.store.ts
+rename to src/renderer/features/reader/anchors/page-items.store.ts
+diff --git a/src/renderer/features/reader/pdf-item-geometry.ts b/src/renderer/features/reader/anchors/pdf-item-geometry.ts
+similarity index 100%
+rename from src/renderer/features/reader/pdf-item-geometry.ts
+rename to src/renderer/features/reader/anchors/pdf-item-geometry.ts
+diff --git a/src/renderer/features/reader/reader-search.store.ts b/src/renderer/features/reader/reader-search.store.ts
+index 3f8e5eb5b7..081f1db5fd 100644
+--- a/src/renderer/features/reader/reader-search.store.ts
++++ b/src/renderer/features/reader/reader-search.store.ts
+@@ -38,7 +38,7 @@
+ import { create } from 'zustand'
+ import { asSearchDoc, buildPageText, findInText, toTextItems } from './reader-search'
+ import type { SearchItemRange } from './reader-search'
+-import type { PdfTextItem } from './geometry-types'
++import type { PdfTextItem } from './anchors/geometry-types'
+ import { showToast } from '../../shared/ui/toast-store'
+ 
+ export type ReaderSearchStateName = 'idle' | 'open' | 'searching' | 'done'
+diff --git a/src/renderer/features/reader/release-affinity.ts b/src/renderer/features/reader/release-affinity.ts
+index 5539c30c32..29ed3c1aba 100644
+--- a/src/renderer/features/reader/release-affinity.ts
++++ b/src/renderer/features/reader/release-affinity.ts
+@@ -77,8 +77,8 @@
+  *   backward 翻转兜底链；接线面=selection-layer-fa12.test.tsx[W4 dragged
+  *   门两态+触发态]）
+  */
+-import { collectSpans, type NodeSpan } from './annotation-anchor'
+-import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchor-blank-snap'
++import { collectSpans, type NodeSpan } from './anchors/annotation-anchor'
++import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchors/anchor-blank-snap'
+ 
+ /** 浅探运动过冲余量（px）：紧间隙排版（实测段间 2.5px）下释放点距上一行盒底
+  *  2px 即为浅下探实态——纯距离判据会漏（头注申报）；4px=人类释放过冲量级
+diff --git a/src/renderer/features/reader/selection-evaluate.ts b/src/renderer/features/reader/selection-evaluate.ts
+index 226541edd6..3368fb5427 100644
+--- a/src/renderer/features/reader/selection-evaluate.ts
++++ b/src/renderer/features/reader/selection-evaluate.ts
+@@ -69,13 +69,13 @@
+  */
+ import type { AnnotationRect } from '@shared/models/annotation'
+ import { showToast } from '../../shared/ui/Toast'
+-import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
+-import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './annotation-anchor'
+-import { bandsForTextNodes, type RowBand } from './annotation-resolve'
+-import { calibrateBandsWithSpans } from './annotation-band-calibrate'
+-import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './pdf-item-geometry'
+-import type { ItemSelectionGeometry } from './pdf-item-geometry'
+-import { usePageItemsStore } from './page-items.store'
++import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchors/anchor-serialize'
++import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './anchors/annotation-anchor'
++import { bandsForTextNodes, type RowBand } from './anchors/annotation-resolve'
++import { calibrateBandsWithSpans } from './anchors/annotation-band-calibrate'
++import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './anchors/pdf-item-geometry'
++import type { ItemSelectionGeometry } from './anchors/pdf-item-geometry'
++import { usePageItemsStore } from './anchors/page-items.store'
+ import { useReaderStore } from './state/reader.store'
+ import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
+ 
+diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+index db0302217a..1633ddcb32 100644
+--- a/src/renderer/features/reader/selection-paint.tsx
++++ b/src/renderer/features/reader/selection-paint.tsx
+@@ -32,8 +32,8 @@
+ import { memo } from 'react'
+ import { createPortal } from 'react-dom'
+ import type { AnnotationRect } from '@shared/models/annotation'
+-import { matchBand, type RowBand } from './annotation-resolve'
+-import { bandVertical, clampedHorizontal } from './annotation-style'
++import { matchBand, type RowBand } from './anchors/annotation-resolve'
++import { bandVertical, clampedHorizontal } from './anchors/annotation-style'
+ import { PAGE_LAYER_Z } from './state/page-layer-z'
+ 
+ /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */
+diff --git a/tests/e2e/z-wg1-probe.spec.ts b/tests/e2e/z-wg1-probe.spec.ts
+index 5238b1c79f..54297c81b3 100644
+--- a/tests/e2e/z-wg1-probe.spec.ts
++++ b/tests/e2e/z-wg1-probe.spec.ts
+@@ -4,7 +4,7 @@
+  * resolve 链恰一次跳变（fallback→resolved，两态差 4.44/4.97），中间轮不存在；
+  * 3.45 与两已知机制数值均不等 → 候选 c（多 span 逐个入 DOM 的 rAF 合并 resolve
+  * 中间轮——部分 DOM 下 fallbackBands 只量测在场 span，band 部分适配可产出
+- * 中间几何值，annotation-resolve.ts:224 bandsNearRects）待多行判别。
++ * 中间几何值，anchors/annotation-resolve.ts:224 bandsNearRects）待多行判别。
+  * 复刻 reader-text.spec F-A1 多行用例位形（同 fixture/同程序化跨 3 行选区/
+  * 同高亮链——:775 起），叠加仪表：
+  *   - 双记录器（scroll 事件驱动全容器 + rect MutationObserver 逐轮记全部
+diff --git a/tests/unit/renderer/ai-annotation-layer.test.tsx b/tests/unit/renderer/ai-annotation-layer.test.tsx
+index f5f7f21b29..d43a993301 100644
+--- a/tests/unit/renderer/ai-annotation-layer.test.tsx
++++ b/tests/unit/renderer/ai-annotation-layer.test.tsx
+@@ -17,11 +17,11 @@ import { stubElementRects, type StubBox } from '../../utils/geometry'
+ import { makeTab } from '../../utils/factories'
+ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
+-import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
++import { locateAnchor } from '../../../src/renderer/features/reader/anchors/anchor-locate'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+-import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
+-import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+ // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
+diff --git a/tests/unit/renderer/ai-note-style.test.ts b/tests/unit/renderer/ai-note-style.test.ts
+index 98046f5376..2db6770322 100644
+--- a/tests/unit/renderer/ai-note-style.test.ts
++++ b/tests/unit/renderer/ai-note-style.test.ts
+@@ -11,7 +11,7 @@ import {
+   QUESTION_TEXT,
+   ROLE_LABEL,
+   ROLE_ORDER
+-} from '../../../src/renderer/features/reader/ai-note-style'
++} from '../../../src/renderer/features/reader/anchors/ai-note-style'
+ 
+ describe('ai-note-style 七问分色单源', () => {
+   it('八问全枚举覆盖：各持 CSS 变量取色+非空中文标签（无硬编码色值）', () => {
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 33b0e442ba..58747fa844 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -18,7 +18,7 @@ import type { AiNote } from '../../../src/shared/models/ai-note'
+ import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
+ import { makeApiStub } from '../../utils/api-client-mock'
+ import { makeTab } from '../../utils/factories'
+-import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
++import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchors/anchor-locate'
+ 
+ const observe = vi.fn()
+ const listByPaper = vi.fn()
+@@ -39,7 +39,7 @@ stubApi.ai_sensor.requestAiRead = requestAiRead
+ stubApi.ai_sensor.importAll = importAll
+ 
+ const { locateAnchor } = vi.hoisted(() => ({ locateAnchor: vi.fn() }))
+-vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
++vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', async (importOriginal) => {
+   const real = await importOriginal<typeof anchorLocateModule>()
+   return { ...real, locateAnchor }
+ })
+@@ -48,7 +48,7 @@ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+ import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useAiNotesStore } from '../../../src/renderer/features/reader/state/ai-notes.store'
+-import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
+ 
+ /** observe 四事实（六态判定输入——ai-sensor/observe Res 形状） */
+ function facts(patch: {
+diff --git a/tests/unit/renderer/anchor-blank-snap.test.ts b/tests/unit/renderer/anchor-blank-snap.test.ts
+index 009d9300ac..c2ae6d582c 100644
+--- a/tests/unit/renderer/anchor-blank-snap.test.ts
++++ b/tests/unit/renderer/anchor-blank-snap.test.ts
+@@ -1,8 +1,8 @@
+ // @vitest-environment jsdom
+ import { afterEach, describe, expect, it } from 'vitest'
+ import { stubRectOf } from '../../utils/geometry'
+-import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+-import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
++import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
++import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+ 
+ /**
+  * F-A10 划选段末空白 affinity——pdf.js 行 break 标记（<br role=presentation>，
+diff --git a/tests/unit/renderer/anchor-item-verify.test.tsx b/tests/unit/renderer/anchor-item-verify.test.tsx
+index 61f354e063..ffe14c0878 100644
+--- a/tests/unit/renderer/anchor-item-verify.test.tsx
++++ b/tests/unit/renderer/anchor-item-verify.test.tsx
+@@ -25,11 +25,11 @@
+  */
+ import { afterEach, describe, expect, it } from 'vitest'
+ import type { Annotation } from '../../../src/shared/models/annotation'
+-import { verifyQuote, verifyQuoteItem } from '../../../src/renderer/features/reader/anchor-serialize'
+-import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reader/annotation-resolve'
+-import type { PixelBox } from '../../../src/renderer/features/reader/annotation-anchor'
+-import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/reader/pdf-item-geometry'
+-import type { PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
++import { verifyQuote, verifyQuoteItem } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
++import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
++import type { PixelBox } from '../../../src/renderer/features/reader/anchors/annotation-anchor'
++import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/reader/anchors/pdf-item-geometry'
++import type { PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+ /** 横排样式（pdf-item-geometry.test 同款：ascent 0.8/descent −0.2） */
+diff --git a/tests/unit/renderer/anchor-locate.test.ts b/tests/unit/renderer/anchor-locate.test.ts
+index 0323ebc61e..21597c5362 100644
+--- a/tests/unit/renderer/anchor-locate.test.ts
++++ b/tests/unit/renderer/anchor-locate.test.ts
+@@ -12,7 +12,7 @@ import { act } from 'react'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
+ import { makeTab } from '../../utils/factories'
+-import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
++import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchors/anchor-locate'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
+ import { guardedDescribe } from '../../utils/guard'
+diff --git a/tests/unit/renderer/annotation-anchor.test.ts b/tests/unit/renderer/annotation-anchor.test.ts
+index cad92212e0..32d7ebc29a 100644
+--- a/tests/unit/renderer/annotation-anchor.test.ts
++++ b/tests/unit/renderer/annotation-anchor.test.ts
+@@ -4,11 +4,11 @@ import {
+   estimateLinePitch,
+   findRangeAtOffset,
+   mergeLineRects
+-} from '../../../src/renderer/features/reader/annotation-anchor'
++} from '../../../src/renderer/features/reader/anchors/annotation-anchor'
+ import {
+   selectionToAnchor,
+   verifyQuote
+-} from '../../../src/renderer/features/reader/anchor-serialize'
++} from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+ /** 构造多文本节点的页根：<p>前文</p><p>中段正文</p><p>后文</p> */
+diff --git a/tests/unit/renderer/annotation-layer.test.tsx b/tests/unit/renderer/annotation-layer.test.tsx
+index fc94995e66..0b20a872dc 100644
+--- a/tests/unit/renderer/annotation-layer.test.tsx
++++ b/tests/unit/renderer/annotation-layer.test.tsx
+@@ -17,7 +17,7 @@ import { stubElementRects, type StubBox } from '../../utils/geometry'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
+-import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+ makeApiStub({ reader: {} })
+diff --git a/tests/unit/renderer/annotation-merge.test.ts b/tests/unit/renderer/annotation-merge.test.ts
+index cc1842d733..55948679d2 100644
+--- a/tests/unit/renderer/annotation-merge.test.ts
++++ b/tests/unit/renderer/annotation-merge.test.ts
+@@ -12,7 +12,7 @@
+  * always-active（ADR-0017 裁决 3 新测试不经 guardedDescribe）。
+  */
+ import { describe, expect, it } from 'vitest'
+-import { mergeRects, W_MIN } from '../../../src/renderer/features/reader/annotation-merge'
++import { mergeRects, W_MIN } from '../../../src/renderer/features/reader/anchors/annotation-merge'
+ import type { AnnotationRect } from '@shared/models/annotation'
+ 
+ /** 归一化域矩形夹具（0..1，zod strict 五字段） */
+diff --git a/tests/unit/renderer/band-calibration.test.tsx b/tests/unit/renderer/band-calibration.test.tsx
+index 014ca908c4..026c0457f4 100644
+--- a/tests/unit/renderer/band-calibration.test.tsx
++++ b/tests/unit/renderer/band-calibration.test.tsx
+@@ -28,9 +28,9 @@ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+-import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/annotation-band-calibrate'
+-import { matchBand, type RowBand } from '../../../src/renderer/features/reader/annotation-resolve'
+-import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
++import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/anchors/annotation-band-calibrate'
++import { matchBand, type RowBand } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
++import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import type { PdfTextContent, PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+diff --git a/tests/unit/renderer/lineage-side-panel.test.tsx b/tests/unit/renderer/lineage-side-panel.test.tsx
+index f91262cbfc..4d976f5ec7 100644
+--- a/tests/unit/renderer/lineage-side-panel.test.tsx
++++ b/tests/unit/renderer/lineage-side-panel.test.tsx
+@@ -44,7 +44,7 @@ const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub }
+ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
+   useReaderStore: { getState: () => ({ openPaper: openPaperStub, notifyAiNoteHighlight: notifyAiNoteStub }) }
+ }))
+-vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({
++vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', () => ({
+   locateAnchor: locateAnchorStub
+ }))
+ // Page 编排用例：总线发送面 mock（消费方级用例不经它）
+@@ -58,9 +58,9 @@ vi.mock('../../../src/renderer/shared/open-paper-bus', () => ({
+ import { showToast } from '../../../src/renderer/shared/ui/toast-store'
+ import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
+ import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
+-import { openFromBus } from '../../../src/renderer/features/reader/open-paper-anchor'
++import { openFromBus } from '../../../src/renderer/features/reader/anchors/open-paper-anchor'
+ import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+-import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
++import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
+ 
+ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
+   return {
+diff --git a/tests/unit/renderer/pdf-item-geometry.test.tsx b/tests/unit/renderer/pdf-item-geometry.test.tsx
+index 21189481b9..c721323bb6 100644
+--- a/tests/unit/renderer/pdf-item-geometry.test.tsx
++++ b/tests/unit/renderer/pdf-item-geometry.test.tsx
+@@ -27,7 +27,7 @@ import {
+   viewportTransformFor,
+   type ItemBox,
+   type ItemViewport
+-} from '../../../src/renderer/features/reader/pdf-item-geometry'
++} from '../../../src/renderer/features/reader/anchors/pdf-item-geometry'
+ 
+ /** 横排样式（ascent 0.8/descent −0.2——盒=基线±(8,2)px@fontH10） */
+ const STYLE_H: PdfTextStyle = { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false }
+diff --git a/tests/unit/renderer/release-affinity.test.ts b/tests/unit/renderer/release-affinity.test.ts
+index 270b1a315d..742c52fcdc 100644
+--- a/tests/unit/renderer/release-affinity.test.ts
++++ b/tests/unit/renderer/release-affinity.test.ts
+@@ -2,8 +2,8 @@
+ import { afterEach, describe, expect, it } from 'vitest'
+ import { stubRectOf } from '../../utils/geometry'
+ import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
+-import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+-import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
++import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
++import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+ 
+ /**
+  * F-A12 划选释放点浅探 affinity（release-affinity 事件层重定向）——F-A10 G2 遗留：
+diff --git a/tests/unit/renderer/selection-evaluate.test.tsx b/tests/unit/renderer/selection-evaluate.test.tsx
+index e16bda2673..864ec1fdf3 100644
+--- a/tests/unit/renderer/selection-evaluate.test.tsx
++++ b/tests/unit/renderer/selection-evaluate.test.tsx
+@@ -29,7 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+diff --git a/tests/unit/renderer/selection-item-chain.test.tsx b/tests/unit/renderer/selection-item-chain.test.tsx
+index 8f6800ad80..0b30368ccf 100644
+--- a/tests/unit/renderer/selection-item-chain.test.tsx
++++ b/tests/unit/renderer/selection-item-chain.test.tsx
+@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index 5ab18d045c..db58ac371c 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -24,7 +24,7 @@ import {
+   closestPageRoot,
+   pageIndexOf
+ } from '../../../src/renderer/features/reader/SelectionLayer'
+-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+diff --git a/tests/unit/renderer/selection-paint.test.tsx b/tests/unit/renderer/selection-paint.test.tsx
+index 2c4d3e2f30..8a56cebf42 100644
+--- a/tests/unit/renderer/selection-paint.test.tsx
++++ b/tests/unit/renderer/selection-paint.test.tsx
+@@ -30,10 +30,10 @@ import {
+ } from '../../utils/geometry'
+ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+-import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
+-import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
++import { rectStyle } from '../../../src/renderer/features/reader/anchors/annotation-style'
++import { bandFromMetrics } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
+-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
++import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ 
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index 6753534c1e..05734e3935 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -98,7 +98,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR-NET-03', file: 'src/main/services/enrich/providers/arxiv.ts', area: 'network', owner: 'weak', status: 'done', summary: 'arXiv API 封装' },
+ 
+   // ── reader 强模型模块（strong-open，Phase 3 决策门后实现）──────────
+-  { id: 'SR-RDR-01', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '文本偏移↔DOM 定位纯函数（WADM 思路）' },
++  { id: 'SR-RDR-01', file: 'src/renderer/features/reader/anchors/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '文本偏移↔DOM 定位纯函数（WADM 思路）' },
+   { id: 'SR-RDR-02', file: 'src/renderer/features/reader/PdfPageCanvas.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'pdf.js canvas 渲染封装（v4 API；原 PdfCanvas.tsx 经 SR2-F-01 拆分为 PdfDocProvider+PdfPageCanvas——注册文件随直系继承者迁移，旧文件已删）' },
+   { id: 'SR-RDR-03', file: 'src/renderer/features/reader/TextLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '官方 TextLayer CSS 接线' },
+ 
+@@ -157,7 +157,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-C-02', file: 'src/main/services/export_/corpus.assemble.ts', area: 'service', owner: 'strong', status: 'done', summary: 'corpus md 装配纯函数（ADR-0011 v1.1 口径+R12 装配单源条款）+单篇/全库导出通道与入口' },
+   { id: 'SR2-C-03', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '阅读器笔记面板（总评层 notes.store 消费+片段层列表；save-status 下沉 shared；ADR-0008 五模块不动）' },
+   { id: 'SR2-C-04', file: 'src/renderer/features/reader/OutlineAside.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '侧栏三栏宿主（目录/缩略图/笔记 tablist 上移+OutlinePanel mode 化+ReaderPage props 削减）' },
+-  { id: 'SR2-C-05', file: 'src/renderer/features/reader/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'N1 锚点定位服务（INV-20 三层防线 exact/page/paper 单入口+F-aware 滚动接缝+标注单击反向同步）' },
++  { id: 'SR2-C-05', file: 'src/renderer/features/reader/anchors/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'N1 锚点定位服务（INV-20 三层防线 exact/page/paper 单入口+F-aware 滚动接缝+标注单击反向同步）' },
+   { id: 'SR2-C-06', file: 'src/renderer/features/library/PaperDetailPanel.tsx', area: 'library-ui', owner: 'strong', status: 'done', summary: '库侧笔记编辑面下线（NotesPanel 删除+「去阅读器写笔记」入口——方案切换=删除旧方案红线）' },
+ 
+   // ── Phase 7-G AI 传感器链条应用面第一批（strong，2026-08-27 开单；b3 指针
+@@ -202,14 +202,14 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-ENR-01', file: 'src/main/services/enrich/cited-by.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '含金量抓取缓存（迁移 005 papers 三可空列+瀑布响应携带零新增请求+citedByPatch 强制刷新纯函数（0 与 NULL 判别 === null）+applyEnrichment 独立 citedBy 参数——PaperMetaPatch/update-meta 契约零触碰+paperDetailSchema 三 optional 字段）——D3-A 档 ADR-0011 契约字段供给；票面双门档 scripts/audits/enr-ticketing-*' },
+   { id: 'SR2-ENR-02', file: 'src/shared/venue-tier.ts', area: 'service', owner: 'strong', status: 'done', summary: 'venueTier 映射与装配（b3: P7-G 裁决链在本头注声明——corpus.assemble.ts 头指针保持 P7-C 不动；三档种子表 venueToTier+front-matter/manifest 可选字段两形装配+citedByFetchedAt 配对省略+INTERFACE sha 消费者提示+ADR-0011 v1.2 补注）——依赖 ENR-01 数据面' },
+   { id: 'SR2-F-01', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '页列几何与懒渲染回收（b3: P7-F；占位盒+视口±1 渲染+离屏>2 回收 IntersectionObserver+页列就绪管线+层实例化分工（SelectionLayer 单实例）+setPage 双源 scroll:to|none 防回弹+:125/:116 单页假设处遇+PdfCanvas 拆 PdfDocProvider/PdfPageCanvas 旧删+INV-16 白名单迁移 [locked-change]）；实现段预拆五段——票面 scripts/audits/p7f-ticketing-draft.md' },
+-  { id: 'SR2-F-02', file: 'src/renderer/features/reader/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '四层多页化收口与跳页兼容（b3: P7-F 裁决链在本条声明——anchor-locate.ts 头指针保持 P7-C 不动，一文件双裁决链；verifyWhenReady :153 页限定+SelectionLayer 动态锚定根+跨页选区拒绝 toast+跳页全链 e2e；locateAnchor 签名零触碰=F-aware 冻结面）——依赖 F-01 页列' },
++  { id: 'SR2-F-02', file: 'src/renderer/features/reader/anchors/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '四层多页化收口与跳页兼容（b3: P7-F 裁决链在本条声明——anchor-locate.ts 头指针保持 P7-C 不动，一文件双裁决链；verifyWhenReady :153 页限定+SelectionLayer 动态锚定根+跨页选区拒绝 toast+跳页全链 e2e；locateAnchor 签名零触碰=F-aware 冻结面）——依赖 F-01 页列' },
+   { id: 'SR2-F-03', file: 'src/renderer/features/reader/scroll-progress.ts', area: 'reader', owner: 'strong', status: 'done', summary: '滚动进度回写恢复与键位迁移（b3: P7-F；六态状态机宪法前置——writing 用 scroll:none 防回弹/用户接管=wheel|keydown|pointerdown 三类非 scroll 信号/per-tab Record 记账+就绪时夹取恢复页顶+PAGE_KEYS 四键滚动步+空格新增；scroll-progress 模块拆分 store 净减；零迁移整数页粒度）——依赖 F-02 串行（ReaderPage 装配共享+受锁 e2e 排他）' },
+   { id: 'SR2-F-04', file: 'tests/e2e/reader-scroll.spec.ts', area: 'e2e', owner: 'strong', status: 'done', summary: '缩放重定义与收官 e2e（b3: P7-F；注册文件=e2e 票 LG-05 先例；zoom 视口中心保持纯函数+fit-width 列宽基准+收官全链 spec——离屏回收/进度恢复/标注原位/键位/缩放锚/INV-01+ctrl+wheel 段迁移批 4+战役收官报告）——依赖 F-01/02/03 全部' },
+   { id: 'SR2-F-05', file: 'src/renderer/features/reader/state/scroll-converge.ts', area: 'reader', owner: 'strong', status: 'done', summary: '程序滚动单容器收敛（b3: P7-F；验收缺陷 A 修复——TabBar 被 scrollIntoView 祖先传播顶出视口；真泄漏面=viewport scrollingElement 门一/门二双核准；scrollIntoNearestScroller 最近滚动祖先差值法（start/center）替换 PageColumn 段⑤+anchor-locate flashElement 两处原生 scrollIntoView+ReaderPage 根两分支 overflow-hidden+Toolbar shrink-0；INV-34 登记禁祖先传播；e2e 窄视口 TabBar 恒可见回归锁 scrollingElement+main 双零断言）[locked-change]——票面 scripts/audits/sr2-f-05-brief.md；依赖 F-01~04（段⑤/flash 链既有形态）' },
+   { id: 'SR2-F-06', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '页间分隔与选区不透明（b3: P7-F；验收缺陷 B+C 视觉修复——B 页盒 var(--panel) 底+0 1px 4px rgba(0,0,0,.12) 阴影渲染/占位同底消色差跳动+gap 不动；C ::selection 半透明→不透明近似色（关键实证：Chromium 不解析 ::selection 的 color-mix 行 fallback 行才是生效行故两行都改 rgb(191 191 255)——门一探查快照+变异②双证据核准）+text-layer.css 头注偏离登记；e2e reader-text.spec 新 test 自守卫（B 页盒底色/阴影/与 --bg 可辨+C ::selection 无透明分量）；单测零触碰）[locked-change]——票面 scripts/audits/sr2-f-06-brief.md；依赖 F-01~05（PageColumn 排他）' },
+   { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选自绘选区+AI 层去 multiply（b3: P7-F；复测缺陷 P1 修复——F-06 不透明 ::selection 遮 canvas 字形根因推翻：pdfjs 文本层 span color:transparent 字形在下层，半透明才透字，「压白底等效色」只对纯白底成立；B 案=::selection 置 transparent（两行同值死代码收敛单行）+SelectionLayer 按 anchor.rects 自绘 30% accent 半透明选区块（z:2/pointer-events:none/禁 multiply——单层单绘根除重叠 span 逐元素叠绘；247 行触 250 拆 SelectionRects/SelectionToolbar 两件 DOM 零变化）+AiAnnotationLayer 摘容器 multiply 保 opacity:0.45（与 AnnotationLayer 层间叠乘路径清零——AI-09 起既有机制）；门一 C 项层叠链源码级三判据全过+机制三断言锁回炉（e2e computed style mixBlendMode/pointerEvents/zIndex——F-06「审色值没审机制」教训同构残余堵口）；受锁 reader-text.spec F-06 小票 C 节守卫改写（transparent+自绘层+alpha∈(0,1)）+selection-layer.test 2 it）[locked-change]——票面 scripts/audits/sr2-f-07-brief.md；依赖 F-06（推翻其 C 案）+AI-09（层链既有）' },
+   { id: 'SR2-ENR-03', file: 'src/renderer/features/library/PaperDetailPanel.tsx', area: 'library-ui', owner: 'strong', status: 'done', summary: '详情面板被引数透出（b3: ENR 域；验收缺陷 D 修复——UI 透出面缺位非 bug：数据链全通（迁移 005→detailById 装配→schema optional）唯独 renderer 零引用；「期刊」与「来源」间加一行 Row（citedByCount===undefined 空→Row 自动 —；零值显示 0）；新测试 paper-detail-cited.test.tsx 3 it always-active（124/缺省 —/零值 0 边界）；shared/models 零触碰）[locked-change]（新测试入锁 143→144）——票面 scripts/audits/sr2-enr-03-brief.md；依赖 ENR-01/02 数据面' },
+-  { id: 'SR2-LG-06', file: 'src/renderer/features/reader/open-paper-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '脉络跳转接笔记面板信号（b3: P7-H；验收缺陷 E2 修复——跳转链完整且定位成功但 OutlineAside tab 本地态不切；anchor 分支 locateAnchor 之前 req.aiNoteId 有值先发 notifyAiNoteHighlight（AI-09 全套语义复用：持久 state 切 notes tab+列表滚动高亮，tab 未开早发不丢失挂载后补切）；无锚/裸锚路径零触碰；受锁 lineage-side-panel.test 加 2 it（notify 先于 locateAnchor——invocationCallOrder 三破坏形态全红）+stub 池扩 notifyAiNoteStub）[locked-change]——票面 scripts/audits/sr2-lg-06-brief.md；依赖 LG-04 接缝（bus 载荷 aiNoteId）+AI-09 信号' },
++  { id: 'SR2-LG-06', file: 'src/renderer/features/reader/anchors/open-paper-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '脉络跳转接笔记面板信号（b3: P7-H；验收缺陷 E2 修复——跳转链完整且定位成功但 OutlineAside tab 本地态不切；anchor 分支 locateAnchor 之前 req.aiNoteId 有值先发 notifyAiNoteHighlight（AI-09 全套语义复用：持久 state 切 notes tab+列表滚动高亮，tab 未开早发不丢失挂载后补切）；无锚/裸锚路径零触碰；受锁 lineage-side-panel.test 加 2 it（notify 先于 locateAnchor——invocationCallOrder 三破坏形态全红）+stub 池扩 notifyAiNoteStub）[locked-change]——票面 scripts/audits/sr2-lg-06-brief.md；依赖 LG-04 接缝（bus 载荷 aiNoteId）+AI-09 信号' },
+   { id: 'SR2-LG-07', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络布局非单调年份树修复+边 label 渲染（b3: P7-H；验收缺陷 E1 修复——兄弟约束仅共享年份层触发→年份-拓扑错位树（子比父早 119 年）offset 恒 0 全树退化单列；Frame 增根占位 rootLo/rootHi+兄弟约束增补 mergedRootHi+SIBLING_GAP−rootLo 下限（直接兄弟不论层必横向错开，深层不共享层仍可交错紧凑性保留）；M1 夹具四遍独立手推逐位吻合 {Brown=Reynolds=200,Cross=90,水锤史=310} 分叉可见；边 label 沿贝塞尔中点渲染（LineageEdges.tsx 拆件 61 行——Canvas 269 触 250 红线驱动；空串不渲染+data-edge-label 钩）+Board 摘预留声明；受锁 lineage-layout.test +3 it（M1 夹具/紧凑保持/跨夹具）+lineage-canvas.test 边 label it；auto-fit 观察项不做）[locked-change]——票面 scripts/audits/sr2-lg-07-brief.md；依赖 LG-02 布局件' },
+   { id: 'SR2-LG-08', file: 'src/renderer/features/lineage/LineageSidePanel.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络跳转挂载时序竞态修复（b3: P7-H；复测缺陷 P3 修复——取证三级跳：交接书数据面假说被只读 SQL 推翻（真库 Synapse Remake/synapse.db ai_notes 四 paper_id×22 均匀+nodes 四绑定各异；com.synapse.app 下为陈旧残留库），主控亲读七跳全对，根因=ReaderPage 挂载效应闩锁消费 :118-119 先于监听器注册 :121——locateAnchor→waitOpen 同步重发 requestOpenPaper 事件自丢失（唯一在场监听器=App setView no-op）→无角色调 store.openPaper→8s 超时停留原 tab=「总跳最后打开的文章」，滞留闩锁下次 remount 迟到打开=「篇内定位正常」自洽；tab 已开/页内路径无竞态=e2e 全绿原因；StrictMode 双挂载旧序意外自愈=dev/e2e 表现分裂佐证）；修法=addEventListener 提前 3 行换序（挂载期外无未注册窗口——联审独立推演+全部派发点攻击维持）+防御修 LineageSidePanel:134 n.paperId（条目自身归属）；新测试 reader-page-open-race.test 入锁（bus/store/anchor 链全真件，mock 面三件不在竞态链——首红 spy 0 次+变异复红同错同行号=真锁时序））[locked-change]——票面 scripts/audits/sr2-lg-08-brief.md；依赖 LG-04 总线载荷链+LG-06 面板信号' },
+   { id: 'R1-WS1', file: 'src/main/services/workspaces/workspace.service.ts', area: 'workspaces', owner: 'strong', status: 'done', summary: '课题域主进程·库级隔离地基（ADR-0018 裁决：userData/workspaces/<id>/ 各含 synapse.db+files/，sha256 去重/FTS/备份天然按课题+受锁面最小+「切课题=切库」零跨库泄漏类缺陷面；三候选否决 collections 挂标与 topic_id 外键）——①装配容器化：data-layer.container.ts Proxy facade 稳定壳（ipc/index+register 零 diff 实证）热换 db/repos/services/fileStore；②workspace.service+fs：list/create/rename/switch（busy 串行守卫中文 DomainError+装配失败重试幂等）；③IPC workspaces 四通道受锁扩容（schemas+api-surface+contracts+preload）；④遗留迁移幂等（根 synapse.db+files 整体入 workspaces/default/——L0 态自裁：全新首启库留根不预建目录，门一独立取证裁为 e2e 种子配方（seed-paper 直插无建表+SEED_DB 写死根路径）唯一兼容解非设计缺陷；L0 会话内物化双段链回炉锚定）；⑤INV-35 登记（同时刻至多一课题库+switch 串行+指针损坏降级首课题）。门一 0B/3W/4N（W1/W2 状态机测试缺口回炉 3 it 全绿零实现变更）+门二 PASS（W4 死断言复活+N5 中文防线锚定二轮回炉）——双轮全闭环；新测试 workspace.test 14 it 入锁 145→146；e2e 24 passed=迁移兼容验收）[locked-change]——票面 scripts/audits/r1-ws1-brief.md；依赖 ADR-0018+bootstrap 装配先例' },
+@@ -220,7 +220,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'R3-LIB', file: 'src/renderer/features/library/library.css', area: 'library-ui', owner: 'strong', status: 'done', summary: '文献库视觉重制（用户需求 R3 库视图——视觉规范=mockup shell-library.html v2）：行→卡片网格（auto-fill minmax(340px,1fr)）+材质三件套（暖白渐变+inset 顶高光+background-clip 防亚像素缝）+hover 金 hairline+L 角饰显形+translateY/shadow 升档+衬线年份/两行截断题名 min-height/斜体 venue 空隐藏/6px 胶囊标签/tabular-nums；FilterBar chips 化（lib-chip-on 镜像 .chip.on）+DiamondRule 菱形分隔组件（.lib-rule* 三段迁 theme.css=R3-U4 复用单源）+ImportDropZone 金虚线透明底；PaperDetailPanel 衬线皮肤+空态 DiamondRule 居中（文案逐字）；新件 library.css/DiamondRule.tsx/library-cards.test；交互/文案/testid 全保留（e2e 25 零必然红）。门一 FAIL 3B/3W（真机截图多模态评审 6.5/10 三问题实因：拖放区色阶断裂/卡片层级扁平+空年份丑/详情空态死白）→回炉七项（透明底/字号阶差 14-600/11/10.5/空年份 9px 淡金◆/空态/选中卡金 hairline 独立裁/样式迁移）→门二 PASS（W1 选中卡 hover 级联塌缩——:hover (0,2,0) 压单类 (0,1,0)，主控亲修复合选择器 .lib-card.lib-card-selected 零红；真机复评条件留收官段）。16 it；首红/变异/rework1 日志全落盘。verify 856 用例+e2e 25 passed（F-04 偶发双复跑绿裁定零交集））[locked-change]——票面 scripts/audits/r3-lib-brief.md；依赖 R3-TH1 token+mockup v2' },
+   { id: 'R3-RDRSET', file: 'src/renderer/features/settings/SettingsSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '阅读器周边+设置页视觉（视觉役收官单元——设计定稿浓度表：阅读器=装饰浓度最低）：ReaderToolbar 玻璃浮层（panel-glass+blur10+金底缘——border-b 等高 1px 换 CSS 零占位，F-05 shrink-0/flex-wrap/py-2 几何零变）+ghost 控件+衬线页码；TabBar active 金 hairline 底缘（inset 零占位）；OutlineAside 金缘 tab+ReaderNotesPanel h4 金左缘条节标（阅读器侧板保持亮面——夜色只属脉络域）；SettingsPage 分节卡+金节标衬线+节间 DiamondRule 复用（SettingsSection.tsx 拆件，作用域 CSS 自持节）；红线零触碰机检实证（AiAnnotationLayer/AnnotationLayer/SelectionRects/scroll-converge/PageColumn/multiply/z-index 九名 grep 计数全 0——F-07 层叠链+F-05 滚动收敛面不动）。联审 PASS 无返工（reader-text.spec 107 断言五次全量从未红；e2e 间歇红三线证据裁定环境波动+backdrop-filter 边缘贡献留 W1 观察项——再现 ≥2 立案 A/B 摘 blur）。3 新 it；首红/变异/rework 日志落盘。verify 859 用例+e2e 25 passed×2）[locked-change]——票面 scripts/audits/r3-rdr-set-brief.md；依赖 R3-TH1 token+R3-LIB DiamondRule' },
+   { id: 'SR2-AI-11', file: 'src/renderer/features/reader/AiNoteGroupList.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记呈现轴转置（b3: P7-G；验收缺陷 F 修复——用户口径「问题一+一审:xxx。二审:xxx。裁决:xxx。」：groupNotes 按 AI_NOTE_QUESTIONS 单源序转置（{question,items}，空组剔除）+组头 QUESTION_LABEL 分色条+组内条目头 ROLE_LABEL 分段（QUESTION_LABEL 被顶替防冗余——门一核准贴口径，anchorPage/色点保留）；ROLE_LABEL 单源改值「一审/二审/裁决」（消费方两处=面板+脉络侧板——票面「三消费方」取证误差坐实，AiAnnotationLayer 仅消费 QUESTION_COLOR）；LineageSideAiNotes 同步转置不抽件（Rule of Three 维持）；shared 零触碰；受锁 3→5 扩容（门一核准必然红：lineage-side-panel.test+lineage.spec T4 接缝归责同步）；e2e ai-notes-section 2 test+lineage.spec T4 改写）[locked-change]——票面 scripts/audits/sr2-ai-11-brief.md；依赖 AI-08 分节件+AI-09 高亮' },
+-  { id: 'SR2-AI-12', file: 'src/renderer/features/reader/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记组头补原始命题（b3: P7-G；复测缺陷 P2 修复——组头仅「第N问」短标签读者对不上号，七问原始命题仓内零存在唯一源=蓝图 §4.2 表：QUESTION_TEXT 映射新增（七值机器抽取 diff 证逐字誊自蓝图；类型 Record<Exclude<AiNoteQuestion,divergence>,string>——divergence 为角色节非七问成员保持短标签，Exclude=编译器强制两消费位分歧唯一形态）+两消费位组头拼「第N问：原始命题」（AiNoteGroupList h4+LineageSideAiNotes h5——跨域单源自动同达合 INV-11）；纯 renderer 呈现面零 IPC 零 shared；受锁必然红 5 处先行留证（ai-notes-section×3+lineage-side-panel:291+e2e 两 spec）+ai-note-style.test TEXT 键集非空新 it；联审 0B/3W/5N PASS——誊录逐字性联审独立机器重演 diff 空，W3 Q4~Q7 文案持续锁定缺口记遗留池（键集断言拦键漂移不拦值漂移））[locked-change]——票面 scripts/audits/sr2-ai-12-brief.md；依赖 AI-11 转置组头位' },
++  { id: 'SR2-AI-12', file: 'src/renderer/features/reader/anchors/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记组头补原始命题（b3: P7-G；复测缺陷 P2 修复——组头仅「第N问」短标签读者对不上号，七问原始命题仓内零存在唯一源=蓝图 §4.2 表：QUESTION_TEXT 映射新增（七值机器抽取 diff 证逐字誊自蓝图；类型 Record<Exclude<AiNoteQuestion,divergence>,string>——divergence 为角色节非七问成员保持短标签，Exclude=编译器强制两消费位分歧唯一形态）+两消费位组头拼「第N问：原始命题」（AiNoteGroupList h4+LineageSideAiNotes h5——跨域单源自动同达合 INV-11）；纯 renderer 呈现面零 IPC 零 shared；受锁必然红 5 处先行留证（ai-notes-section×3+lineage-side-panel:291+e2e 两 spec）+ai-note-style.test TEXT 键集非空新 it；联审 0B/3W/5N PASS——誊录逐字性联审独立机器重演 diff 空，W3 Q4~Q7 文案持续锁定缺口记遗留池（键集断言拦键漂移不拦值漂移））[locked-change]——票面 scripts/audits/sr2-ai-12-brief.md；依赖 AI-11 转置组头位' },
+   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选视觉反馈回退官方原生半透明（F1 修正役 R1 路线——ADR-0019；复测站 3「全面失败+0.5~5s 延迟」根修）：①text-layer.css ::selection/::-moz-selection 回官方 rgba(0 0 255 / 0.25)（逐字对照 pdfjs-dist pdf_viewer.css:678-685；br 两规则保持 transparent）；②删 SelectionRects.tsx 整件+SelectionLayer 摘 overlay 计算/渲染（P10 方案切换=删旧）；③视觉通道=原生 ::selection（拖选第一帧即反馈，零 JS 链路——取证：自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+拖选期死寂=根因双实锤，O(n) 遍历 0~0.6ms 假说证伪）；④工具条/保存/undo/Escape 零变；AnnotationLayer 单层 multiply+AI 层去 multiply（F-07 层间修复）保留；⑤受锁两文件第三次改写：e2e F-06 小票 C 节（官方半透明精确值+selection-rects 防回归 0 计数+L7 延迟预算 toolbar≤1.5s）+unit F-07a 改防回归守卫/F-07b 删——票面 scripts/audits/sr2-f-08-brief.md；取证 scripts/audits/f1-forensics.report.md；三屋：实现 1.95M tok/858 用例绿+门一 PASS 0B/4W/7N+门二 PASS 零回炉（W3=INV-37 登记）；依赖 ADR-0019 裁决' },
+   { id: 'SR2-F-09', file: 'src/renderer/features/reader/text-layer.css', area: 'reader', owner: 'strong', status: 'done', summary: '划选选中色改灰（用户令 2026-08-29：仿 WPS——灰色选中/标注纯色；v5 核查=标注纯色+重合不加重已成立零改）：text-layer.css ::selection/::-moz-selection rgba(0 0 255 / 0.25)→rgba(0 0 0 / 0.30)（≈白纸 #B3B3B3）；受锁 e2e reader-text.spec F-06 小票 C 节精确值断言+测试名同步；INV-37/ADR-0019 补记（用户指令偏离官方值的显式登记）；压缩路径票（单值变更+守卫同步，主控直做——变异红证 sr2-f-09-mutation.raw.txt：css 改回蓝→F-06 小票红点精确锁值；verify 858+locks+e2e 25 passed 全绿；v5b 真机像素证=差分区 93.3% 中性灰/均值 rgb(151,154,155)）；核查档 scripts/audits/f1-out/f1-forensics5.json+v5 截图+执行记录 sr2-f-09-record.md' },
+   { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' },
+@@ -241,7 +241,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'P7E-07', file: 'src/main/services/library.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '智能排序（P7-E 预留点清扫七票末项=**P7-E 余序清空**；Design=枚举加值 cited_desc（向后兼容旧三值全保留——与 P7E-06 切换删旧对照）+COALESCE(cited_by_count,0) DESC 空值显式归零垫底（探针前置实录：DESC 下 NULL 默认垫底但 0-vs-NULL 相对序由引擎决定——删 COALESCE 变异 M1 真实红）+rowid 决胜+双 Record<LibrarySort> 类型强制闭环（M2 漏键 typecheck 红证）+SORT_LABEL『被引（高到低）』+:20 预留注记兑现（含「经新 repo 方法」→「ORDER_BY 映射扩展」勘误）；态空间 S1~S5 逐格锚+M1~M3 变异红证还原空；门一 Kimi（backup）PWW 零 BLOCKING+门二 deepseek 64k PWW——双 PWW 零回炉（2 NIT 双门同题：schema 入参直锚 parse({sort:cited_desc}) 缺位→下次合法触碰该测试件时补+报告行数自报 106 vs diff 实证 111 申报精度——计数须机器实测纪律再证）；e2e 零新 spec（单测全锚+下拉 Object.entries 驱动——双门接受论证）——主控亲验全量 39/39（首轮 1 failed=reader-text:872 F-ARCH4-M1 与本票零交集+定向复跑绿+复验全绿=非确定抖动第 1 现记录指纹不立案）；实现者 GLM5.3 统一档一轮 1.69M tok；verify 149 文件 1270（+1 文件+5 用例）/locks 269（268+1）；票面+报告+两门审档在案）' },
+   { id: 'F-A6', file: 'src/renderer/features/reader/selection-paint.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选渲染错乱+拖选卡顿根治（用户实报 2026-09-03：某 PDF 选区灰块锯齿拼接/右侧溢出（图证在档）+选中延迟一卡一卡；五轮方案残留=F-A4 自绘并集层的 D1 rects evaluate 在异常 text-layer PDF 上错乱/D2 拖选期 200ms 防抖全量重算+portal 重渲染卡顿——历史 F-06/07/08/09/A4 五轮触发远超二次重构线，纪律=设计文档先行（态空间+两病根机理推演+方案对比）再实现；涉 ADR-0019 R3 修订；**a 取证票毕 2026-09-04**：f-a6-diag 三件（探针/库/页内采集器——五段探针+A/B 对照+tick 前测）+裁决表 f-a6-forensic-verdict.md（门一 Kimi PWW 回炉闭合+门二 deepseek PWW 4W2N 主控直裁落地，双档 §9-7/8）；核心裁定=**R-迁移为主修（阶段化决策门：阶段1 T1/T9 duckViewport 前置修复→阶段2 复跑 A/B 对照确认 S1/S2 消除→阶段3 主链迁移落地）**——真实库 46 页 T1/T9 零触发（合成 S1/S2 触发量化闭合：outside 5/8、平移 x+36.01/y−37.40）；真实样本甲乙同净（IoU 0.9996/0.9999）+mLR 对项盒结构性拆簇反证（211/151 vs 行真值 43/10）；用户实报重形态未复现（轻形态 3/39 行双块）——修复集以机理+合成证据裁定+验收条件随票流转（§5）；G2=偏离率≥5%（健康 0~0.12% vs 病理 25~62.5%，间隔≥200 倍）+右溢支占位+仅新增复现证据时启用；tick 基线=5Hz 步进实测（间隔 199.8~207.3ms）+每 tick gBCR≈101/gCS≈391（3882 页）；verify 149/1273/locks 272（269+脚本三件）全绿 [locked-change]；**b1 阶段 1+2 毕 2026-09-04**：T1/T9 前置修复（TextLayer duckViewport rotation/rawDims 真值化+rotatedContainerBox 容器旋转半边[pdf.mjs 4.10.38 源码级：span 恒未旋转用户空间百分比，页旋转由容器 CSS 变换承担——官方 pdf_viewer.css data-main-rotation 规则的内联等价]+PdfPageGeometry 第三参下钻[PdfPageCanvas→PageBox/PageColumn 纯类型扩→PagesOverlay→TextLayer geometry 必填无回退]）——**阶段 2 决策门过（门二终位 PASS+ENDORSE）**：s1rot outside 5/8→0/8+A_paint 1→3=行真值、s2crop 双向平移 36px→0.03/IoU 0.8213→0.9998、健康页块数逐位不变（1c2d IoU 0.9982=ENDORSE 度量精度改进）、tick 同量级；单测 text-layer.test 新 11 用例（duckViewport 直测+四旋转态+jsdom 语义级+transform-origin 锁）+变异红证 2；门一 Kimi PWW 2W3N 回炉闭合+门二 deepseek PASS 零 findings（档 f-a6b1-gate1/2）；裁决表 §10 决策门记录+两轮取证数据 f-a6-diag-out-a1/ 与 f-a6-diag-out/ 在档；verify 150/1285/locks 273 全绿亲验 [locked-change]；**b2 阶段 3 主链迁移毕 2026-09-04**：pdf-item-geometry.ts 新件（497 行——viewport transform 内联数学零 pdfjs import/rectsForOffsetRange+grapheme 细分[RTL/竖排/四角包围盒,取证 §9-4 缺口单测补]/基线分组并块/bandsFromItems C5 同源/selectionHealth G2[偏离率≥5%+右溢 2px 占位]+偏移表对账）+page-items.store.ts 单源注册表（pageTexts useState 整体迁入）+selection-evaluate.ts 拆件（evaluate 域迁出,四道守卫逐字保留,SelectionLayer 250 红线解除）+rects/bands 产链切项几何（save 落库同源=INV-58 前半）+DOM 量测降回退（三因 warn 不静默）+T2/T3 回退加固（聚类比较扩到全部簇,先红 2 后绿）+G2 active（拖选抑制+fromMouseUp toast——门一回炉对齐跨页形态）;第三轮取证 r3c：健康页 paint 逐位不变+IoU 全升（0.9996→0.9999/0.9982→1）+s1rot 零高伪迹构造性消除+tick gBCR 709→18/gCS 2734→685（通道生效）——两实现事故 r3a[项盒域差→G2 实战拦截]/r3b[mergeRects 终裁角度门]取证明证后修复;单测 22+6 用例+变异红证 6 组;门一 Kimi PWW 2W4N（W1 守卫用例=区间膨胀结构性惰性零改动/W2 toast 门/N1 归一化端点式——回炉闭合）+门二 deepseek PWW 2W2N 零 BLOCKING（seam_ruling:AnnotationLayer 重锚域=INV-58 票外边界,F-A6-c 开工条件排期同族化;输出经 reasoning 通道主控提取在档）;verify 152/1316/locks 275 全绿亲验 [locked-change]；**c D2 调度与快路径票毕 2026-09-04**：selection-geometry rAF 对齐（leading 首事件即排 ≤16ms+帧内合帧去重+settle 防抖 200ms 逐字+cancel 清双句柄,旧 200ms 节流整体删除）+快路径 evaluateVisual（四道守卫前置+G2 同门+轻量 probe 复刻+store 直读+itemSelectionGeometry 同族=INV-58 后半,回退三层[快→全量→DOM 量测]）+SelectionPaint memo+门二开工条件三件（clampScale 单源/pitch 极限守卫夹具[绿=防线在 hComparable,MUT4 红证]/AnnotationLayer seam 头注入档）;第四轮取证 r4:mutations 7→20 全跟随+间隔 200→59.5ms（dispatch 界,rAF 帧栅格量化 50/60 交替）+delta med 32.3→11.9ms+gCS 685→87（仅末尾 settle）+clientRects 8→1（快 tick 零——clientRects/gCS 链尽消,gBCR 绝对量上行披露在档）+D1 面逐位不变;S1b/S1c 改写 rAF 语义+新 selection-geometry.test 4 it（合帧去重锚）/selection-evaluate.test 4 it（快慢等价+同帧覆盖+跨页守卫+W1 cancel-before-evaluate 顺序锚[先红:删 cancel 恰红]）+变异红证 4+MUT2 重跑留档;门一 Kimi PWW 2W2N 回炉闭合（W1 过程发现=portal DOM 插入诱发原生 selectionchange→rAF 幂等重渲,定性生产无害[INV-58 等价性吸收]+预渲染隔离）+门二 deepseek **PASS 零 findings**（c 可收口+d 开工条件满足）;e2e reader-text 13/13 主动跑绿;verify 154/1325/locks 277 全绿亲验 [locked-change]；**d 收口票毕 2026-09-04**：e2e 两新小票[组合页=createRotatedCropPdf fixture（/Rotate 90×/CropBox [36 36 540 720]——b1 门一 N3 组合面缺口兑现）断言 span×canvas 包含度 ≥0.5（实测 1.000——门一回炉 W1 判据升级）+toolbar+块数=行真值 1+块 gBCR 不溢渲染页盒；拖选随动=连发 selectionchange 3 次×50ms 每轮+1 字符→300ms 窗 ≥2 次块变更（rAF e2e 级）]；断言红证 4（块数 1→2 恒红/随动判据翻转红/包含度方向翻转红[Received 1 vs ≤0.1]/右缘期望收紧红[Received 1116.11 vs ≤549.2]——文件备份法还原 diff 空）；live range 诱发链不锚 e2e（裁量：生产幂等无害+W1 it 组件级已锚+预渲染隔离在档）；全量 e2e 41/41 绿零 skip（39+2，F-ARCH4-M1 原:872 本轮绿=第 2 现未再现——观察清单：再 1 现即按 e2e 非确定失败立案线[同用例 2 次]立案）；INV-37 调度条款改写+拖选期弱化「所见≈所存」显式登记（用户裁决 2026-09-03）+F-A5 band 口径接缝修正+锚列扩容；INV-58 新登记（invariants.md:73——同几何族+C5 同源+适用域 selection 产链+AnnotationLayer 票外 seam+三层回退，已锚定 2026-09-04）；ADR-0019 R3 修订段落笔（已裁决 执行=F-A6 a/b1/b2/c，终态数字按裁决表 §10/§11/§12 校正）；门一 Kimi PWW 2W3N 回炉 W1 闭合+门二 deepseek PWW「五票在材料层面可宣告完成」（W2 立案回执=本提交 F-A7 兑现）；locks 277；verify 154/1325+e2e 41/41 全绿亲验 [locked-change]——**票外新发现移交 F-A7**：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn page.view 未旋转口径 vs canvas getViewport 旋转口径），页框与渲染盒错配；selection 几何链不受影响（块与 span 墨带贴合坐标证据在档），真实库全档 rotate=0 未显现）' },
+   { id: 'F-A7', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '旋转页占位盒宽高交换缺失（**毕 2026-09-04 三屋全链**）：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高——PageColumn 页尺寸缓存单源用 page.view 未旋转口径 vs canvas getViewport 旋转口径，页框与渲染盒错配（页框/占位视觉错形）；selection 几何链不受影响（F-A6-d e2e 组合页块与 span 墨带贴合坐标证据在档）；真实库全档 rotate=0 未显现（低优先）；修法方向=页尺寸缓存/占位计算按 viewport 旋转口径取（与 b1 PdfPageGeometry 通道同源），e2e 复用 createRotatedCropPdf 断言页框与 canvas 盒一致；**实现**=PageColumn 段① pageSizes 构造改 viewport 旋转口径（rotate ?? 0 归一化 ((r%360)+360)%360 后 %180===90 交换宽高——与 b1 PdfPageGeometry 通道同源禁 getViewport 调用,mock 面零扩大）；pageSizes 语义=viewport 口径（PageBoxSize 注释声明,basisWidth/锚总高自动受益——rotate=90 单测含 onReady(792) 锚）；头注「不做：旋转页」澄清「手动旋转阅读」（/Rotate 元数据适配非旋转特性,接缝归责在案）；单测 4 it（90 交换 792×612/180 不交换/270 交换/-90 负值归一化——首红 3 红[180 修前绿=数学必然,变异 B 补证]）+变异红证×2（删交换分支 3 红/交换条件翻转 8 红=rotate=0 守卫面被保护）；e2e 新小票（占位盒×canvas 盒宽高差 ≤2px+方向断言宽>高;修前差=180×zoom≈293px 必红）+F-A6-d 参考系注释更新（F-A7 已修复态）；门一 Kimi K3 PWW 2W2N（W1 注释数字 293px 实测口径回炉闭合/W2 248 字符 push 行可读性债务=本票接受登记——**已知债务：PageColumn 压线 250 行上限+248 字符行,后续行增即拆件**）+门二 deepseek v4flash PASS 零 findings（独立复算+可宣告完成）；verify 154/1329/locks 277/e2e 42 零 skip 全绿亲验 [locked-change]' },
+-  { id: 'F-A8', file: 'src/renderer/features/reader/annotation-resolve.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AnnotationLayer 重锚域同族化（b2 门二 seam_ruling 排期项立案 2026-09-04;设计链三跳毕=Kimi K3 拟定[推荐 A+C1]→deepseek v4flash 对抗审核 ENDORSE_WITH_CHANGES[CR×4+CO×2]→GLM5.3 主控终裁[三处材料外假设源码验证毕]——终裁版设计书 docs/design/2026-09-04_f-seam-reanchor-design.md）：重锚主链迁项几何族（resolveAnnotationRectsItem=startOffset/endOffset+page-items.store 页项→reconcileItemsWithDom 对账→verifyQuoteItem[verifyQuote 打分核纯文本复刻——oracle 比对单测:同漂移 fixture 两函数校正结果逐位一致,主控已验证匹配核纯文本性 anchor-serialize.ts:50-100]→rectsForOffsetRange+bandsFromItems 同族同域）+DOM 量测链整体降回退层（resolveAnnotationRects 改名 …Dom 函数体零改=INV-47 数值面不动）;态空间 S0~S6（S6 病理页抑制格待门 1 取证——selectionHealth 跨产链复用=假设非事实,annotation 产链分离度不可复现则 S6 裁撤）+CR1 store 订阅重入（usePageItemsStore 现成 react 订阅形态——MutationObserver 只观察 DOM 面,store 晚到竞态 fixture 入测试面）;存量处置=C1 读时归并渐净（F-A4 先例,零迁移）;INV 登记=INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链]+INV-47 适用面收缩登记+新 INV-59[重锚同族配对令——主链消 R1,回退格 S3b/S5 显式持有跨族配对=已知边界]+INV-60[重锚显示覆盖登记——仅显示不回写+域标记运行时不入库];阶段门 0~3（门 0=verifyQuoteItem+oracle 单测/S1 reconcile 接线;门 1=新旧链同页双跑取证+G2 分离度复现;门 2=状态机上线+INV 登记同步;门 3=收口+回退层去留裁决）;CR3 旧文档命中风险主控裁决排除（store 纯页号索引+换文献 fileUrl 效应整表清空——源码事实在案）；**门 0 前置票毕 2026-09-04**：anchor-serialize locateQuote 纯文本核提取（verifyQuote 薄壳化行为零变+受锁基准 28 用例绿+空 quote 前置守卫触达面还原[N1]）+verifyQuoteItem（items 域对账——自持剔空串拼接与 buildItemOffsets 偏移表口径机械对账锁定[W2];TS6142 阻断自裁=结构最小面+Rule of Three 第 2 次,第 3 处上抽条件头注在案）+resolveAnnotationRectsItem 纯域版（S0~S3b:entry null→{}/逐条 verifyQuoteItem 校偏→itemSelectionGeometry 整管线产 {rects,bands}[W4 主控追认=裁决③导出面复用兑现]/scale 自 entry.box 反推[水平轴严格约除,垂直轴 ~1px 有界残差=W3 口径]/畸形 try 缺席）;oracle 三态（jsdom DOM×items 双跑逐位一致）+tie-break 正反+打分序+全表对账 16 用例（新件 anchor-item-verify.test.tsx）;变异红证 4（拼接序 7 红/权重 1 红/三态 1 红/tie-break 翻转双用例红）;门一 Kimi K3 PWW 4W2N（W1 tie-break 补/W2 机械锁定补/W3 措辞降级/N1 守卫——回炉一轮全闭合;W4 追认/N2 主控源码排除[viewportTransformFor:98 同式归一化]）+门二 deepseek v4flash PASS（2 NIT 表述级=verifyQuoteItem 入口短路对称性+注释状态机编号统一——**转门 1 票面顺带**）;tsconfig.node.json 无 jsx 配置债=观察项（实现者疑虑申报,单独立票候选）;verify 155/1345/locks 278 exit=0 亲验（门 1/2 开工条件就绪——门二终位结论）；**门 1 取证票毕 2026-09-04（决策门记录:判据 a 不过→回设计——门 1b 前置修立票）**：探针三件 f-a8-gate1-diag/lib/page.mjs（locks 281=278+3）+裁决表 f-a8-gate1-forensic-verdict.md;7 页×35 锚全落链（reconcile 7/7 真/relocate 全零——构造位即真位）;判据 a 不过（IoU1D≥0.99 占比 6/20 最差 0.6232——**新根因=ascent=0 声明字体 27% 项被 pdf-item-geometry.ts:217 Number.isFinite 直消费致项链行块膨胀 16px vs 真值 9.5px[DOM 链免疫=pdf.mjs #getAscent 三级兜底 DEFAULT_FONT_ASCENT=0.8 先例]**+grapheme 比例细分项内边界锚近似区间 0.8816~0.9745[结构性上限未定]+dy 域差 0.3~2.6px;1c2d 干净字体页 6/6 过=「可修缺陷+口径分层非路线错误」对照面）;判据 b 部分成立（s1rot 双向:项链 5/5 贴真值+DOM 2/5 失真;s2crop 单侧;p6 无分叉——病理标签未证实如实记录）;判据 c 弱式（健康 0/20 误伤+病理 2/15 检出——间隔 20~41x vs f-a6 ≥200x[pre-fix 形态];ascent-0 类 G2 盲区在档）;主控终裁三动作:①门 1b 前置修（ascent≤0→0.8 兜底——双重身份候选=F-A6-b2 漏网[待锚覆盖记录核验]+selection 链同族受益;staged 验收序=旧口径复跑验收修补→口径分层再落[门二 W2]）②判据 a 口径分层入设计书 ③S6 保留+盲区登记（s1rot=回退层失真拦截直证/s2crop=内容真越界拦截——分案列述[门二 W1]）;门一 Kimi K3 PWW 4W2N（W2 上限表述/W4 去预断/W1 配对错位计数转探针升级项/W3 阈值出处——全部主控直改落表）+门二 deepseek v4flash PWW 2W2N（W1 S6 归因分案/W2 staged 序+N3 §4-2 口径统一/N4 漏网去未证定性——全部落表）;探针调试三轮前两轮未分段留 raw=纪律备注（交接书教训行）;verify 155/1345/locks 281 exit=0 亲验；**门 1b 前置修票毕 2026-09-04（staged 第一步完结——修补有效+判据 a 分层口径过门+门 2 放行）**：pdf-item-geometry :218 ascent 兜底（Number.isFinite && >0 否则 0.8——缺省常量 DEFAULT_FONT_ASCENT 同源/链语义类比[W1 措辞纪律:非「先例对齐」,三级量测链退化形态未在档核实]）——selection+annotation 双链共同缺陷修复;新 it×2 先红（ascent:0 夹具盒顶=基线-0.8×fontH 92≠84）+变异红证（条件删 >0 红,备份还原 diff 空）;staged 复跑（修前档 -out-prefix/ 另存）:3882 top/multi 多行锚 0.62~0.76→≥0.9942+错对 6 锚 44 块→3 锚 22 块=ascent 因果面清零;bottom 2 锚修后 0.6820/0.6584 不动——回炉 W2 三层数据=**非 ascent 因果直接证据**（项级 Δtop=−0.8×fontH 全非零=修补生效+块级膨胀 16.1→10.4px 已消+x 向 dx/dw 全零——失守归双根因[页缘竖排边栏分段+参考文献上下标行分段=两链聚类语义差];原「逐位不变」推断作废但结论被更强证据取代）;单行 8 锚 0.8816~0.9745 逐位不变（grapheme 细分近似面）;健康集 6/20→10/20;**N4 翻案**：f-a6 C1 锚窗 [2079,4704) 含 66/250=26.4% ascent-0 项=采集面覆盖缺陷形态而未检出——**限定性勘误落 ADR-0019 R3 注记⑧**（「健康页逐位不变」在混合行形态下真实/「全健康」覆盖声明缩限;66 项矩形膨胀实测未补证前禁「假阴坐实」表述——实现者报告 §7 原文保留,以本注记为缩限声明[W3 跨文件纪律]）;受锁单测标题「先例」残留=主控裁豁免（语义无错,再动受锁件成本>收益）;门 0 两 NIT 顺带（verifyQuoteItem 入口空 quote 短路=触达面对称+注释 S0~S3b 统一）;判据 a 分层口径落设计书（L1 整行常规锚[健康集/干净行结构页口径] 10/10 ≥0.99 min 0.9919 中位 0.9946/L2 项内细分近似面 0.8816~0.9745/L3 异形态区 bottom 双根因直接证据/L4 旋转域 s1rot——关联 ADR-0019 /Rotate 另案）——门 2 放行判定基准;门一 Kimi K3 PWW 4W2N（W1 措辞/W2 项级 diff——回炉一轮:W2 结果=证据升级主控裁 BLOCKED 解除;W3 主控限定措辞/W4+N1 转第二步）+门二 deepseek v4flash PWW 4W2N（W1 L1 数字 min 0.9919 非 0.9942/W2 ADR 聚合句锚亚型化/W3 跨文件措辞/W4 s1rot 落 L4——全部主控直改落档;N1 轮次噪声口径/N2 档名索引=bottomdiff/mutation raw 在档收口声明）;**主控事故在档**：python io.open(path,"w",newline 参数错值) 在 ValueError 前已截断 ADR-0019（git checkout HEAD 恢复,零丢失——HEAD 版无未提交改动）——教训=destructive open 前全参数核对,与 git checkout 纪律同族记交接书;verify 155/1347/locks 281 exit=0 亲验（修后两轮+回炉后一轮）;selection e2e 16/16 绿；**门 2 主链切换票毕 2026-09-04（S0~S6 状态机上线——INV-58 扩域兑现）**：annotation-resolve-layered.ts 新件（228 行——Annotation 版 resolveAnnotationRectsLayered+AI 段版 resolveAiNotesLayered[S3b=不渲染语义]+domProductSuppressed S6 共享判定;依赖单向零环;resolve 每次现算不缓存随宿主 F-A1 节奏）+resolveAnnotationRects 改名 …Dom 函数体零改（S4 页级回退层——INV-47 数值面锚）+两组件接线（CR1 usePageItemsStore react 订阅重入+CR3 page 键取数+resolved source 域标记 item/dom 运行时不入库）+S1 接线对账 reconcileItemsWithDom+S6 病理抑制（unhealthy→Annotation 缺席回退存量/AI 段不渲染+warn 单源——**触发=项盒健康代理**[blocks clamp01 恒盒内,实由 boxes 越界触发——项盒健康而 DOM 链独立病理不拦,门 3 复核=W1 回炉补注]）；单测先红 8 用例+回炉 W4 AI 侧 CR1 竞态 fixture（12/12+M1 双组件证据=M1[Annotation] 与 M1 撇号变体[AI] 各红,变异还原 diff 空）+变异 M1/M2/M3 各 exit=1;INV 四条落册（INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链——DOM 量测仅显式回退层+产物标域]/INV-47 适用面收缩[回退层行为面不变——受锁⑪锚定件间接保证,W5 措辞降层]/INV-59 重锚同族配对令[主链消 R1,S3b/S5 显式持有跨族配对=已知边界——**证据件 anchor-item-verify.test.tsx 随本提交补 add 兑现**=门二 W1 标注+门一 W3 硬前置 git ls-files 校验]/INV-60 重锚显示覆盖登记[仅显示不回写+source 域标记]）；全量 e2e 42/42（INV-51 标注面稳态口径绿,F-ARCH4-M1 零现）+探针复跑 7 页×5 锚与门 1 档**逐位相同 maxΔ=0.0000**（健康面接线零漂移铁证——S1 失败/S6 抑制路径由单测 S 格补=N2 证据边界明示）；门一 Kimi K3 PWW 5W2N 回炉一轮全闭合（W1/W4/W5/N1/N2;W2 box 口径差=门 3 观察期真机偏差分布记录/W3=收口硬校验）+门二 deepseek PWW 1W2N（W1=INV-59 证据件未入库时点禁称已锚定→本提交兑现+标注;N1 AnchorCache 头注旧措辞/N2 INV-58 S4 单一入口措辞 vs AI 段内联分支——**转门 3 票面顺带**）；**门 0 遗留 CI 隐患修复=本提交补 git add tests/unit/renderer/anchor-item-verify.test.tsx**（manifest 有 sha 无文件——门 0 收口 staged 清单遗漏实录,教训行 v46;提交前 git ls-files 硬校验）;verify 155/1357/locks 281 exit=0 亲验+回炉后一轮;**门 3 前置量化取证 F-A8-G3A 毕 2026-09-05**（主控自为+门一 Kimi 三轮复核定稿——bottom 双根因机制占比分解:非边栏区[参考文献/正文行块差]贡献 89.28%/89.14%[对称差口径 p2/p7],边栏带聚合块 10.72%/10.86% 少数派;报告 scripts/audits/f-a8-g3a-bottom-decomp.md[复算配方+未舍入精确值];开放项转门 3=边栏块来源机制[非竖排 span 已证否]/bottom 锚 rect 收集窗定义[p2 污染上界 11.2%/p7 零]/INV-60 显示覆盖语义[盒几何不可证留真机人审];设计书 §6 门 3 附记在案）;**门 3 收口 2026-09-09（真机引导测试——用户在场轮,测试脚本与四图证据 f-a9/f-a10/f-a11/f-ui01-img*.png 在档）**:观察期证据达成（DB mtime 09-09 07:21+当日标注 created 09-09 07:16,均晚于门 2 落地 09-04;WAL 干净关闭 checkpoint 归零=DB mtime 即证据）;三开放项处置=①边栏块来源机制:用户目检 real3882[=《2007-johannes-von-kries-and-the-history-of-water-hammer》]p2/p7 页缘=空无可见内容→**幽灵块/DOM 量测伪影结论**（非真实页缘文字——G3A 边栏带 10.7% 少数派贡献的机制定性）②rect 收集窗定义→转 F-A9 票面（同几何族一并核）③INV-60 显示覆盖语义:关标签重开标注/笔记原位=**人审 PASS**;测试另暴露四新缺陷全立案=F-A9[标注带垂直几何]/F-A10[划选段末 affinity]/F-A11[笔记保存反馈+撤回恢复]/F-UI-01[顶栏左簇垂直居中——用户已裁决];**F-A8 战役收官**（门 0~3 全链在档）' },
++  { id: 'F-A8', file: 'src/renderer/features/reader/anchors/annotation-resolve.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AnnotationLayer 重锚域同族化（b2 门二 seam_ruling 排期项立案 2026-09-04;设计链三跳毕=Kimi K3 拟定[推荐 A+C1]→deepseek v4flash 对抗审核 ENDORSE_WITH_CHANGES[CR×4+CO×2]→GLM5.3 主控终裁[三处材料外假设源码验证毕]——终裁版设计书 docs/design/2026-09-04_f-seam-reanchor-design.md）：重锚主链迁项几何族（resolveAnnotationRectsItem=startOffset/endOffset+page-items.store 页项→reconcileItemsWithDom 对账→verifyQuoteItem[verifyQuote 打分核纯文本复刻——oracle 比对单测:同漂移 fixture 两函数校正结果逐位一致,主控已验证匹配核纯文本性 anchor-serialize.ts:50-100]→rectsForOffsetRange+bandsFromItems 同族同域）+DOM 量测链整体降回退层（resolveAnnotationRects 改名 …Dom 函数体零改=INV-47 数值面不动）;态空间 S0~S6（S6 病理页抑制格待门 1 取证——selectionHealth 跨产链复用=假设非事实,annotation 产链分离度不可复现则 S6 裁撤）+CR1 store 订阅重入（usePageItemsStore 现成 react 订阅形态——MutationObserver 只观察 DOM 面,store 晚到竞态 fixture 入测试面）;存量处置=C1 读时归并渐净（F-A4 先例,零迁移）;INV 登记=INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链]+INV-47 适用面收缩登记+新 INV-59[重锚同族配对令——主链消 R1,回退格 S3b/S5 显式持有跨族配对=已知边界]+INV-60[重锚显示覆盖登记——仅显示不回写+域标记运行时不入库];阶段门 0~3（门 0=verifyQuoteItem+oracle 单测/S1 reconcile 接线;门 1=新旧链同页双跑取证+G2 分离度复现;门 2=状态机上线+INV 登记同步;门 3=收口+回退层去留裁决）;CR3 旧文档命中风险主控裁决排除（store 纯页号索引+换文献 fileUrl 效应整表清空——源码事实在案）；**门 0 前置票毕 2026-09-04**：anchor-serialize locateQuote 纯文本核提取（verifyQuote 薄壳化行为零变+受锁基准 28 用例绿+空 quote 前置守卫触达面还原[N1]）+verifyQuoteItem（items 域对账——自持剔空串拼接与 buildItemOffsets 偏移表口径机械对账锁定[W2];TS6142 阻断自裁=结构最小面+Rule of Three 第 2 次,第 3 处上抽条件头注在案）+resolveAnnotationRectsItem 纯域版（S0~S3b:entry null→{}/逐条 verifyQuoteItem 校偏→itemSelectionGeometry 整管线产 {rects,bands}[W4 主控追认=裁决③导出面复用兑现]/scale 自 entry.box 反推[水平轴严格约除,垂直轴 ~1px 有界残差=W3 口径]/畸形 try 缺席）;oracle 三态（jsdom DOM×items 双跑逐位一致）+tie-break 正反+打分序+全表对账 16 用例（新件 anchor-item-verify.test.tsx）;变异红证 4（拼接序 7 红/权重 1 红/三态 1 红/tie-break 翻转双用例红）;门一 Kimi K3 PWW 4W2N（W1 tie-break 补/W2 机械锁定补/W3 措辞降级/N1 守卫——回炉一轮全闭合;W4 追认/N2 主控源码排除[viewportTransformFor:98 同式归一化]）+门二 deepseek v4flash PASS（2 NIT 表述级=verifyQuoteItem 入口短路对称性+注释状态机编号统一——**转门 1 票面顺带**）;tsconfig.node.json 无 jsx 配置债=观察项（实现者疑虑申报,单独立票候选）;verify 155/1345/locks 278 exit=0 亲验（门 1/2 开工条件就绪——门二终位结论）；**门 1 取证票毕 2026-09-04（决策门记录:判据 a 不过→回设计——门 1b 前置修立票）**：探针三件 f-a8-gate1-diag/lib/page.mjs（locks 281=278+3）+裁决表 f-a8-gate1-forensic-verdict.md;7 页×35 锚全落链（reconcile 7/7 真/relocate 全零——构造位即真位）;判据 a 不过（IoU1D≥0.99 占比 6/20 最差 0.6232——**新根因=ascent=0 声明字体 27% 项被 pdf-item-geometry.ts:217 Number.isFinite 直消费致项链行块膨胀 16px vs 真值 9.5px[DOM 链免疫=pdf.mjs #getAscent 三级兜底 DEFAULT_FONT_ASCENT=0.8 先例]**+grapheme 比例细分项内边界锚近似区间 0.8816~0.9745[结构性上限未定]+dy 域差 0.3~2.6px;1c2d 干净字体页 6/6 过=「可修缺陷+口径分层非路线错误」对照面）;判据 b 部分成立（s1rot 双向:项链 5/5 贴真值+DOM 2/5 失真;s2crop 单侧;p6 无分叉——病理标签未证实如实记录）;判据 c 弱式（健康 0/20 误伤+病理 2/15 检出——间隔 20~41x vs f-a6 ≥200x[pre-fix 形态];ascent-0 类 G2 盲区在档）;主控终裁三动作:①门 1b 前置修（ascent≤0→0.8 兜底——双重身份候选=F-A6-b2 漏网[待锚覆盖记录核验]+selection 链同族受益;staged 验收序=旧口径复跑验收修补→口径分层再落[门二 W2]）②判据 a 口径分层入设计书 ③S6 保留+盲区登记（s1rot=回退层失真拦截直证/s2crop=内容真越界拦截——分案列述[门二 W1]）;门一 Kimi K3 PWW 4W2N（W2 上限表述/W4 去预断/W1 配对错位计数转探针升级项/W3 阈值出处——全部主控直改落表）+门二 deepseek v4flash PWW 2W2N（W1 S6 归因分案/W2 staged 序+N3 §4-2 口径统一/N4 漏网去未证定性——全部落表）;探针调试三轮前两轮未分段留 raw=纪律备注（交接书教训行）;verify 155/1345/locks 281 exit=0 亲验；**门 1b 前置修票毕 2026-09-04（staged 第一步完结——修补有效+判据 a 分层口径过门+门 2 放行）**：pdf-item-geometry :218 ascent 兜底（Number.isFinite && >0 否则 0.8——缺省常量 DEFAULT_FONT_ASCENT 同源/链语义类比[W1 措辞纪律:非「先例对齐」,三级量测链退化形态未在档核实]）——selection+annotation 双链共同缺陷修复;新 it×2 先红（ascent:0 夹具盒顶=基线-0.8×fontH 92≠84）+变异红证（条件删 >0 红,备份还原 diff 空）;staged 复跑（修前档 -out-prefix/ 另存）:3882 top/multi 多行锚 0.62~0.76→≥0.9942+错对 6 锚 44 块→3 锚 22 块=ascent 因果面清零;bottom 2 锚修后 0.6820/0.6584 不动——回炉 W2 三层数据=**非 ascent 因果直接证据**（项级 Δtop=−0.8×fontH 全非零=修补生效+块级膨胀 16.1→10.4px 已消+x 向 dx/dw 全零——失守归双根因[页缘竖排边栏分段+参考文献上下标行分段=两链聚类语义差];原「逐位不变」推断作废但结论被更强证据取代）;单行 8 锚 0.8816~0.9745 逐位不变（grapheme 细分近似面）;健康集 6/20→10/20;**N4 翻案**：f-a6 C1 锚窗 [2079,4704) 含 66/250=26.4% ascent-0 项=采集面覆盖缺陷形态而未检出——**限定性勘误落 ADR-0019 R3 注记⑧**（「健康页逐位不变」在混合行形态下真实/「全健康」覆盖声明缩限;66 项矩形膨胀实测未补证前禁「假阴坐实」表述——实现者报告 §7 原文保留,以本注记为缩限声明[W3 跨文件纪律]）;受锁单测标题「先例」残留=主控裁豁免（语义无错,再动受锁件成本>收益）;门 0 两 NIT 顺带（verifyQuoteItem 入口空 quote 短路=触达面对称+注释 S0~S3b 统一）;判据 a 分层口径落设计书（L1 整行常规锚[健康集/干净行结构页口径] 10/10 ≥0.99 min 0.9919 中位 0.9946/L2 项内细分近似面 0.8816~0.9745/L3 异形态区 bottom 双根因直接证据/L4 旋转域 s1rot——关联 ADR-0019 /Rotate 另案）——门 2 放行判定基准;门一 Kimi K3 PWW 4W2N（W1 措辞/W2 项级 diff——回炉一轮:W2 结果=证据升级主控裁 BLOCKED 解除;W3 主控限定措辞/W4+N1 转第二步）+门二 deepseek v4flash PWW 4W2N（W1 L1 数字 min 0.9919 非 0.9942/W2 ADR 聚合句锚亚型化/W3 跨文件措辞/W4 s1rot 落 L4——全部主控直改落档;N1 轮次噪声口径/N2 档名索引=bottomdiff/mutation raw 在档收口声明）;**主控事故在档**：python io.open(path,"w",newline 参数错值) 在 ValueError 前已截断 ADR-0019（git checkout HEAD 恢复,零丢失——HEAD 版无未提交改动）——教训=destructive open 前全参数核对,与 git checkout 纪律同族记交接书;verify 155/1347/locks 281 exit=0 亲验（修后两轮+回炉后一轮）;selection e2e 16/16 绿；**门 2 主链切换票毕 2026-09-04（S0~S6 状态机上线——INV-58 扩域兑现）**：annotation-resolve-layered.ts 新件（228 行——Annotation 版 resolveAnnotationRectsLayered+AI 段版 resolveAiNotesLayered[S3b=不渲染语义]+domProductSuppressed S6 共享判定;依赖单向零环;resolve 每次现算不缓存随宿主 F-A1 节奏）+resolveAnnotationRects 改名 …Dom 函数体零改（S4 页级回退层——INV-47 数值面锚）+两组件接线（CR1 usePageItemsStore react 订阅重入+CR3 page 键取数+resolved source 域标记 item/dom 运行时不入库）+S1 接线对账 reconcileItemsWithDom+S6 病理抑制（unhealthy→Annotation 缺席回退存量/AI 段不渲染+warn 单源——**触发=项盒健康代理**[blocks clamp01 恒盒内,实由 boxes 越界触发——项盒健康而 DOM 链独立病理不拦,门 3 复核=W1 回炉补注]）；单测先红 8 用例+回炉 W4 AI 侧 CR1 竞态 fixture（12/12+M1 双组件证据=M1[Annotation] 与 M1 撇号变体[AI] 各红,变异还原 diff 空）+变异 M1/M2/M3 各 exit=1;INV 四条落册（INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链——DOM 量测仅显式回退层+产物标域]/INV-47 适用面收缩[回退层行为面不变——受锁⑪锚定件间接保证,W5 措辞降层]/INV-59 重锚同族配对令[主链消 R1,S3b/S5 显式持有跨族配对=已知边界——**证据件 anchor-item-verify.test.tsx 随本提交补 add 兑现**=门二 W1 标注+门一 W3 硬前置 git ls-files 校验]/INV-60 重锚显示覆盖登记[仅显示不回写+source 域标记]）；全量 e2e 42/42（INV-51 标注面稳态口径绿,F-ARCH4-M1 零现）+探针复跑 7 页×5 锚与门 1 档**逐位相同 maxΔ=0.0000**（健康面接线零漂移铁证——S1 失败/S6 抑制路径由单测 S 格补=N2 证据边界明示）；门一 Kimi K3 PWW 5W2N 回炉一轮全闭合（W1/W4/W5/N1/N2;W2 box 口径差=门 3 观察期真机偏差分布记录/W3=收口硬校验）+门二 deepseek PWW 1W2N（W1=INV-59 证据件未入库时点禁称已锚定→本提交兑现+标注;N1 AnchorCache 头注旧措辞/N2 INV-58 S4 单一入口措辞 vs AI 段内联分支——**转门 3 票面顺带**）；**门 0 遗留 CI 隐患修复=本提交补 git add tests/unit/renderer/anchor-item-verify.test.tsx**（manifest 有 sha 无文件——门 0 收口 staged 清单遗漏实录,教训行 v46;提交前 git ls-files 硬校验）;verify 155/1357/locks 281 exit=0 亲验+回炉后一轮;**门 3 前置量化取证 F-A8-G3A 毕 2026-09-05**（主控自为+门一 Kimi 三轮复核定稿——bottom 双根因机制占比分解:非边栏区[参考文献/正文行块差]贡献 89.28%/89.14%[对称差口径 p2/p7],边栏带聚合块 10.72%/10.86% 少数派;报告 scripts/audits/f-a8-g3a-bottom-decomp.md[复算配方+未舍入精确值];开放项转门 3=边栏块来源机制[非竖排 span 已证否]/bottom 锚 rect 收集窗定义[p2 污染上界 11.2%/p7 零]/INV-60 显示覆盖语义[盒几何不可证留真机人审];设计书 §6 门 3 附记在案）;**门 3 收口 2026-09-09（真机引导测试——用户在场轮,测试脚本与四图证据 f-a9/f-a10/f-a11/f-ui01-img*.png 在档）**:观察期证据达成（DB mtime 09-09 07:21+当日标注 created 09-09 07:16,均晚于门 2 落地 09-04;WAL 干净关闭 checkpoint 归零=DB mtime 即证据）;三开放项处置=①边栏块来源机制:用户目检 real3882[=《2007-johannes-von-kries-and-the-history-of-water-hammer》]p2/p7 页缘=空无可见内容→**幽灵块/DOM 量测伪影结论**（非真实页缘文字——G3A 边栏带 10.7% 少数派贡献的机制定性）②rect 收集窗定义→转 F-A9 票面（同几何族一并核）③INV-60 显示覆盖语义:关标签重开标注/笔记原位=**人审 PASS**;测试另暴露四新缺陷全立案=F-A9[标注带垂直几何]/F-A10[划选段末 affinity]/F-A11[笔记保存反馈+撤回恢复]/F-UI-01[顶栏左簇垂直居中——用户已裁决];**F-A8 战役收官**（门 0~3 全链在档）' },
+   { id: 'P7D-01', file: 'src/renderer/shared/theme.css', area: 'ui-kit', owner: 'strong', status: 'done', summary: 'P7-D 玻璃 UX 战役首票：design token 先铺（用户裁决 2026-09-03 开工且优先级高；**方向已裁 2026-09-03 在场轮=「乙字号+甲其余」**；**批一毕 2026-09-04 三屋全链[提交随本注记]**：动效 32 处→--dur-press/tint/fast/base/lazy/rise/flow 七 token+间距 inline 12 处→tailwind class[lineage 域六文件,B1 形态] +层级弹层 z-{10,20,40,50}→--z-float/anchor-pop/pop-veil/pop 四 token 语义命名[12 class+theme.css 2 raw]——零视觉差三重铁证=探针 p7d01-visual-probe.mjs[主控工具入锁]基线双跑 DETERMINISM PASS+迁移后 [COMPARE] PASS[11 token 计算值精确匹配+8 态截图 sha256 逐字节相同+全 DOM 计算样式 transition/zIndex 逐键相同+compiledRules 11 utility 编译面断言];theme.test.ts 受锁扩展[TOKENS+11+负锚 21 三元组+层级/间距形态锁+ms 声明段锁——变异红证 6 次];门一 deepseek 兜底[Kimi 双源 8×504 耗尽换源实录——C 三盲区回炉一轮 W1/W2/W3 闭合]+门二 PASS 无条件[亲跑矩阵四数字命中];verify 155 文件/1398 用例/locks 282/e2e 42 exit=0 亲验;INV「design token 单源」延后批二一并登记=票面在档决策）;批二在场轮待：字号 12 值→语义刻度 5~6 档+mockup 多模态评审+5 个 .5 半值归并逐档用户裁（视觉票面条款全套=批二适用）;底数盘点在档 docs/design/2026-09-03_p7d01-token-candidates.md——字号轴债最重 29 处/12 值、动效 32 token/7 档、间距 97% tailwind、层级近零债；B5 切换器面板 125% 档反差（×1.248）用户裁决认可=可接受设计，统一缩放体系复核产出核查结论供档不预改;**批二毕 2026-09-08 三屋全链[提交随本注记]——P7-D 战役收官**：用户在场轮四问全落推荐案（裁决档 docs/design/2026-09-08_p7d01-b2-fontscale-ruling.md+mockup 六面板评审）——六档刻度 --fs-micro 10/caption 11/body 12/strong 13/title 14/display 17;13 处值变化（9.5×3/10.5×4/11.5×1/12.5×1/13.5×1/15×3）+17 处仅换载体+tailwind 156 处经 v4 @theme 重绑（--text-xs:var(--fs-body)/--text-sm:var(--fs-title)）零逐处改写;30 处硬编码替换+theme.test.ts 受锁扩展 93 新用例（TOKENS 六正锚+FS 负锚声明形态矩阵 84+tsx 形态 2+@theme 锁 1——先红 27 红）;INV-61 登记（字号单源——font-size 消费面禁字面量+@theme 重绑）;**§6.2 口径切换首用**：探针 COMPARE FAIL=预期红（8 态 DIFF）,定向验收三件套=像素差分带对位（变化带恰落预期组件区无意外区）+crop 目检 0 可见差+DOM 计算样式断言 13/13（六 token+变化组件+tailwind 重绑真机生效）;**回炉两轮（主控 E-3 清理时抓到第 14 处耦合族——门一/实现者均漏）**：edge-label 盒高族 8 处迁移（max-height 37.05→39/EDGE_LABEL_H/LH 12.35→13/±123.5→±130——字号 9.5→10 后 3 行 39px>37.05px 截断行为差）+估宽基准 9.5/4.75→10/5 随迁（防重叠碰撞盒语义,主控裁决非纯容差）;两自裁追认（负锚声明形态口径=px 纯文本计数被 padding/radius 污染结构性不可行/library-cards 三断言 token 化配套=F-CSS-01 再锚同型）;实现者 GLM5.3flash 三轮（首证 2.16M+回炉 1.84M+续命 0.97M）;门一 Kimi K3 PWW W4/N13（W 全处置:B-4 裁决档随提交/C-2C-3 负锚升级增强单候选/E-3 清毕+暴露耦合族）;门二 GLM5.3 同源欠账如实记 PASS 无条件（verify 1543 EXIT=0+DOM 断言 13/13 复跑+变异 --fs-body 恰 1 红还原空+耦合族唯一性扩大口径独立复核）;verify 156 文件/1543 用例/locks 286 exit=0 亲验' },
+   { id: 'P7X-01', file: 'src/renderer/features/tags/TagFilter.tsx', area: 'tags-ui', owner: 'strong', status: 'done', summary: '标签选中上限 UI 感知（P7E-06 门二 WARN 立项——用户裁决 2026-09-03 全立项；修=TagFilter toggle 添加方向守卫（!active && length>=TAG_FILTER_MAX→零变更+info toast「最多同时筛选 N 个标签」常量插值；移除方向永不设限）+TAG_FILTER_MAX=20 自 paper.ts 导出单源（schema .max 与 UI 同消费——漂移结构性消除故不登记 INV）；T8 拦截/T9 边界放行/T10 上界移除锚三 it+变异五证（M1 删守卫/M2 >=改>/M3 常量漂移→T8 红；M4 过严-1→恰 T9 红；M5 删 !active→恰 T10 红——deepseek 门二 WARN 回炉 R1 主控压缩补齐）；三屋全程=实现者（GLM 统一档欠账）+门一 Kimi K3（**ds-call 外链正式档**——PASS_WITH_WARNINGS 零 B 零 W 4N：T9 先红本性/aria 断言弱冗余/死 id 票外深化面/sha256 零仓库不可复算）+门二 deepseek v4flash（PWW 1W=T10 盲区已回炉销项/1N=TagFilter 不在锁面=锁范围本就不含 renderer 源码——收口说明核毕）+GLM 同源预审一轮（欠账披露——主控误降级门审链后被用户纠正，正式门审以 Kimi/deepseek 为准，预审不作放行依据）；verify exit=0 亲验（149 文件/1273 用例/locks 269）[locked-change]；票面 scripts/audits/p7x-01-brief.md+M1~M5 变异档+两门审 JSON 在案' },
+   { id: 'P7X-02', file: 'src/renderer/features/reader/time/reading-time-setup.ts', area: 'reader', owner: 'strong', status: 'done', summary: '时长落盘重试/outbox（INV-57 注记候选立项——用户裁决 2026-09-03 全立项；分片级失败=部分静默丢失（尽力而为吞错规约）——重试或 outbox 兜底使尾账落盘失败可恢复；设计面=与 saveProgress 单通道的关系（禁双账本）+重启恢复语义；**设计链三跳毕+实现票全链毕 2026-09-04[提交随本注记]**：设计链=Kimi K3 拟定 B 案 renderer localStorage 持久 outbox→deepseek ENDORSE_WITH_CHANGES 4CR+4CO→GLM5.3 终裁（队头阻塞+T7 取消/at-least-once+T5 计 attempts 重复界 N×3600s 每条/R7 并入同队列/localStorage 双 launch 实证 PASS——p7x02-ls-probe.mjs）;终裁版设计书 docs/design/2026-09-04_p7x02-reading-time-outbox.md（含 §10 门一追记——活卷防抖直发面交叠窗=暂态回退自愈边界第 8 条）;实现=reading-time-outbox.ts 298 行[态机 T1~T6 全注入]+outbox-store.ts 87 行[每条目独立 key]+三收尾口改道[含 R7 sp.dispose seconds=0]+INV-57 注记两句[锚条款零动]+回炉一轮三 W[渲染先行+全阻断闸门[身份快照不依赖 seq 单调]+e2e DB 轮询——B-1 白屏/B-3 启动 WARN 丢失同根消除+A-2 语义兑现];测试=23+1 用例 always-active+变异 4 证+e2e reading-time-replay.spec[注种崩溃残留→T5→真 IPC→真 sqlite,守卫随本 done 激活]+探针三轮 PASS;门一 deepseek 直发[101KB 超 Kimi 体量类预跳实录]+处置表;门二 PASS 无条件[亲跑 verify/probe/变异抽查+C-1/C-2 源码复核];verify 156 文件/1422 用例/locks 286/e2e 42+1→done 激活后 43 亲验）' },
+@@ -262,7 +262,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'F-DOC-01', file: 'docs/methodology.md', area: 'infra', owner: 'strong', status: 'done', summary: 'methodology §4.1 增⑤i「设计期存量 dry-run 实证」条款（F-LINT-01 终裁改向教训成文——2026-09-09 用户裁决入批）:涉「存量态」假设的规则/关卡/负锚类设计书必须附存量形态 dry-run 统计输出（一行 grep/walk 计数即可前置暴露「存量零误报」类验收与事实互斥——F-LINT-01 案:C-4/B-5 设计链三跳三方齐漏存量验证,实现期才暴露 61+6 真命中=一轮实现+改向成本;「验收项存在≠已验证」）;条款位=§4.1 简报模板⑤系（⑤h 之后⑤i）;纯文档票——verify 全链+UTF-8,无测试面' },
+   { id: 'P7X-03', file: 'docs/reports/', area: 'infra', owner: 'strong', status: 'done', summary: 'B6 模态期最小化语义对证（AUDIT-B 留场场——用户裁决 2026-09-03 全立项；**对证成立=结案推演升文档实证，免实现**（票面预判兑现）：机制链=tab-dirty.ts:110 window.confirm→Chromium 原生 owned-modal（探针 enabled:false 直接观测）→MSDN About Dialog Boxes 系统级明文「owner 禁用至对话框销毁+不可激活」+Electron 文档「modal disables parent」+native_window_views.cc SetEnabled→EnableWindow 源注（issue #50068 purposely disabled）+SO 3777551 任务栏同语义实证——门审质疑三点（归因推演/任务栏外推/应用层抑制未排除）逐点销项；边界申报=SC_MINIMIZE 精确内部路径无逐行源注但 B6 结论依赖的行为面三层闭合）；报告 docs/reports/2026-09-03_p7x03-b6-modal-minimize-crosscheck.md；B6 结案（AUDIT-B 留场场项销项）+Electron 模态边缘行为族附注监控备忘不入案' },
+   { id: 'F-LOCK-01', file: 'scripts/unlock-protected.ps1', area: 'infra', owner: 'strong', status: 'done', summary: 'unlock/lock 脚本受锁集合不对称修复（F-LINT-03 实现者异常项——v57 §2-2 立案候选）：unlock 收集面漏 scripts/dup-constants.baseline.json（lock 与 check-locks.mjs 均含）——集合三处独立定义漂移实录（两次 chmod +w 绕行）;**收口 2026-09-10 三屋全链**：新件 get-protected-files.ps1（25 行 BOM+LF）驻单一 Get-ProtectedFiles（集合含 baseline.json 逐字迁移）+lock/unlock dot-source（57→42/26→14 行）+check-locks.mjs:25 注释改指共享件（门一 N3——头注互指双向闭合）;红证三支=prered（apply 311→unlock 310 差 1 实锤+baseline True 缺陷）/postred（unlock 312→False→apply→True→check 312 过）/mutation（共享件条目改名→unlock 311+True=单点生效证明→还原复绿）;门一 Kimi kimi-main 三轮（R1 B0/W2/N5 放行附条件→回炉 W1 死变量+N3[实现者子代理本环境不可续命——主控亲改两行,先例 F-CSS-03]+W2=审包 verify-tail 拼装乱序所致主控行号连续序当庭出示→R2 独立无 R1 记忆提三新破坏→R3 三件现状出示五项全销项无阻断+3 非阻断观察备案[mjs walk 排除面=R1 已审存量/排序口径差异=Map 比对非序敏感/解锁步静默 catch=存量语义可控]）;门二统一档[Agent 工具无 model 参数环境限制,同源欠账如实记]PASS 无条件（四清单+机器面亲跑:check-locks 312 一致/manifest 312 含新件+baseline 双在册/翻 done 推演不红/BOM 无 CR 无 FFFD 独立复算）;locks 311→312（新件入 scripts walk 面 delta 可解释）;verify 160 文件/1562 用例 exit=0 亲验两跑（回炉前后）;证据群 f-lock01-*.raw.txt+gate1 三轮回执与 prompt+diff 切片+gate2 全入库' },
+-  { id: 'F-SNAP-01', file: 'src/renderer/features/reader/anchor-blank-snap.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'anchor-blank-snap 撞名常量语义化（v57 §2-8 观察候选——F-LINT-03 收口备案「局部同名不同值易埋雷」）：本件局部 COLUMN_GAP_MIN_PX=20/COLUMN_GAP_H_FACTOR=2.5 与 pdf-item-geometry export 的 COLUMN_GAP_H_FACTOR=1.5 同名不同值不同用途（DOM 量测侧 vs pdf item 侧）——读者/import 混引风险;**收口 2026-09-10 三屋全链（主控自为实现——先例 F-AUDIT-01）**：改名 BLANK_SNAP_GAP_MIN_PX/BLANK_SNAP_GAP_H_FACTOR（声明 2+消费 2 全替换）+注释三行重写（明示与 pdf-item-geometry 同族判据值域区分 2.5 vs 1.5+撞名收敛由来）;零行为差实证=test 16/16 零漂移（行为锚不锚名——tests 对新旧名均零命中）+typecheck 双 project+B-1 红层 0（**措辞更正[门一 W]：红层判据=同名+同值跨 ≥2 文件,与 export 无关——本票不入红层真因=2.5≠1.5 同名不同值,非「局部常量免 B-1」;两个非 export 同名同值 const 跨文件同样红**）+新名全库唯一 4 处仅本件+本件旧名余 1 处=注释指名 pdf-item-geometry 侧（那边名字不变）;门一 GLM 同源降级（§4.5 可省面=≤3 文件小批非受锁——A/B/C/D 全 N+1W 措辞）+门二统一档 PASS 无条件（亲跑矩阵:16/16/grep 唯一性/dup-constants 红层 0/diff 两文件/typecheck 补跑 exit=0）;verify 全链 exit=0 亲验' },
++  { id: 'F-SNAP-01', file: 'src/renderer/features/reader/anchors/anchor-blank-snap.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'anchor-blank-snap 撞名常量语义化（v57 §2-8 观察候选——F-LINT-03 收口备案「局部同名不同值易埋雷」）：本件局部 COLUMN_GAP_MIN_PX=20/COLUMN_GAP_H_FACTOR=2.5 与 pdf-item-geometry export 的 COLUMN_GAP_H_FACTOR=1.5 同名不同值不同用途（DOM 量测侧 vs pdf item 侧）——读者/import 混引风险;**收口 2026-09-10 三屋全链（主控自为实现——先例 F-AUDIT-01）**：改名 BLANK_SNAP_GAP_MIN_PX/BLANK_SNAP_GAP_H_FACTOR（声明 2+消费 2 全替换）+注释三行重写（明示与 pdf-item-geometry 同族判据值域区分 2.5 vs 1.5+撞名收敛由来）;零行为差实证=test 16/16 零漂移（行为锚不锚名——tests 对新旧名均零命中）+typecheck 双 project+B-1 红层 0（**措辞更正[门一 W]：红层判据=同名+同值跨 ≥2 文件,与 export 无关——本票不入红层真因=2.5≠1.5 同名不同值,非「局部常量免 B-1」;两个非 export 同名同值 const 跨文件同样红**）+新名全库唯一 4 处仅本件+本件旧名余 1 处=注释指名 pdf-item-geometry 侧（那边名字不变）;门一 GLM 同源降级（§4.5 可省面=≤3 文件小批非受锁——A/B/C/D 全 N+1W 措辞）+门二统一档 PASS 无条件（亲跑矩阵:16/16/grep 唯一性/dup-constants 红层 0/diff 两文件/typecheck 补跑 exit=0）;verify 全链 exit=0 亲验' },
+   { id: 'F-A12', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选释放点浅探 affinity 事件层重定向（F-A10 G2 遗留——v57 §2-3 立案候选）：G2=mouseup 浅下探时 caretRangeFromPoint 因释放 x 处上一行无文本把终点送下段 span 文本位 offset>0（img2 实据 end=1504）——与刻意深点 DOM 态零信号,锚定层不可辨（f-a10-impl.report §6.1）,须事件层手势几何;**收口 2026-09-10 三屋全链**：新件 release-affinity.ts（210 行纯函数——releaseAffinity(root,selection,upX,upY) 判定:upY<focus 盒顶+距上一行盒底≤max(距 focus 盒顶,SHALLOW_PROBE_MAX_PX=4 余量[实测驱动微调——段间间隙仅 2.5px 纯距离判据不触发,红证 red2 锁定]+upX>上一行最近栏组右缘+1px[W1 门一回炉——票面「释放 x 处上一行无文本」前提的编码化,nearestGroupOf 栏组域判别]+upY≥上一行盒带顶[W2 防御上界]→返回上一行行尾 DomBoundary）+SelectionLayer 接线（dragged 旗标门=程序化零触;setBaseAndExtent 锚定侧原样只改 focus;evaluate.full 同帧消费——事件时间线逐帧推演驻头注[门一事件类强制审项]）+anchor-blank-snap export 扩 5 几何面（boxOf/visualRows/columnGroups/rowEndOf/Box——几何单源零复制）;防误伤=词间空格行盒内恒零触+重定向后 C-1 翻转兜底回归网;**真机复测**=G2 focus=(Mohanty span,36=行尾)/end_offset=1465（修复前 1504）/paint 540.3<段顶 542.8 不跨段/落库 suffix=下段首/G1 回归 1465 不破;e2e 申报替代（浏览器 caret 下探非确定 1/4 次指纹+受锁 pdf-factory 扩权面——jsdom 实测几何复刻 17 用例+真机矩阵为证[前提未锁在档注明]）;门一 Kimi 两轮（R1 B0/W5/N4 放行——W1 域判别/W2 上界/W3 翻转用例/W4 接线三态锁回炉,R2 全 ADDRESSED 收口放行+R1 异式选组偏差/R2 栏间隙保守零变=主控亲核入档）+门二统一档 PASS 无条件（17/17 亲跑/316 一致/1579 对账/翻 done 推演）;INV-62 登记已锚定（事件层重定向判据+时间线）;实现者两轮（7.5M+5.6M tok——回炉轮连带修正:既有夹具 upX 严谨化 4 处+W4 漏桩被 verify 真退出码拦截后重刷证据）;locks 312→316;verify 162 文件/1579 用例 exit=0 亲验（实现者首跑 raw 缺 exit 标记=证据缺口主控亲跑补证）' },
+   { id: 'F-LINT-04', file: 'scripts/check-quality.mjs', area: 'infra', owner: 'strong', status: 'done', summary: '颜色关卡扩展战役 T1（**收口 2026-09-10 三屋全链**）=③COLOR_RE 单源化+⑦url 顺修+②⑥postcss 化（设计链三跳毕——Kimi 拟定 f-lint04-design-kimi.md→deepseek ENDORSE_WITH_CHANGES f-lint04-review-ds.md→GLM5.3 终裁 docs/design/2026-09-10_f-lint04-design-final.md;终裁前当场证伪=eslint.config.js ESM import OK/postcss 8.5.26 树内零新依赖/动态拼名 0/分号面 0/@theme var() 现状零同值）;**T1 范围（终裁 §2 表）**：①新件 scripts/color-re.mjs 驻 COLOR_RE 唯一字面量（禁 g/y 标志——RegExp 共享 lastIndex 污染禁令驻头注）+META_RE（哨兵用 hex 特征形态——第三副本闭合）②check-quality.mjs+eslint.config.js 两消费文件 import 化（双写面物理消失;import 失败 fail-closed 抛错禁 try/catch 回退内联）③哨兵=matchAll(META_RE) 扫两消费文件内联回退（哨兵行自身用 import 的 META_RE 执行不自咬）④⑦顺修=单源正则处 url() 剥离（url(#x)=id 引用非色值）⑤②⑥postcss 化=C-4 CSS 面整体迁 root.walkDecls（decl.prop 以 -- 开头=token 定义天然豁免——行级豁免/单行多声明/引号分号边界三题消解）+色值域 token 同值守卫（value 命中 COLOR_RE 的声明行同值对红——@theme var() 重绑天然出域）;**验收（终裁 §3）**：先红证五支（同值 token 植入红/minified 多声明红/url(#face) 不红+#face 裸写红/内联回退恰一条哨兵红+import 改名 fail-closed 红）+存量零误报（82 声明行等价+全 CSS 零新红）+W3/③注入式并存测试+verify 全链+[locked-change]+locks（check-quality/eslint.config 受锁改+新件诞生即锁）;不做面=终裁 §4 五项明示;T2（AST 扩展）/T4 前置（--warning token 化）/T4（var() 语义锚）=后续候选票（v58 §2）' },
+   { id: 'F-LINT-04-T2', file: 'eslint.config.js', area: 'infra', owner: 'strong', status: 'done', summary: '颜色关卡扩展战役 T2=①B-5 AST 扩展（v58 §2-1 候选——终裁 §2 表 T2 跳，设计链三跳已在 T1 档毕，本票纯实现跳零新设计）：synapse/no-inline-color rule（域=src/renderer/**/*.tsx 不变）扩两条 visitor 路径——(a) VariableDeclarator：init 递归 unwrap（TSAsExpression/TSSatisfiesExpression/Object.freeze CallExpression→arguments[0]，深度上限 4 防御）后两形态判定：ObjectExpression=逐属性判定（deepseek 硬伤①修正——弃「全 Literal 门」：混计算属性/引用值对象不豁免，逐 Property 判 value 为 string Literal 且 stripUrlFunctions 后命中 COLOR_RE 即报；key=Identifier 或 string Literal 均入判[kebab key 形态]；SpreadElement/嵌套对象/模板串/二元式=明示不检残留面与现行 style 面语义对称）+单值 Literal=命中即报（主控裁决扩展：终裁字面=ObjectExpression 色值表，单值常量同绕过通道对称闭合纳入——dry-run B=0 零负担）；(b) JSXAttribute 面扩：属性名域=fill|stroke|color 显式三词 ∪ /Color$ 后缀（camelCase 表 stopColor/floodColor/lightingColor=子集）∪ kebab 同族 stop-color|flood-color|lighting-color（JSX 可解析误用形态——R11 红证实证）→ value 为 string Literal 命中即报（[N2 回炉加码] 含 JSXExpressionContainer 包裹形态 fill={\x27#fff\x27} 同检）；域外属性名（data-x 等）不报。**前置 dry-run 毕（⑤i 口径）**：scripts/audits/f-lint04-t2-dryrun.mjs（eslint Linter API flat 模式+self-check 内证）——77 tsx（全 renderer）四面全 0+.ts 面补盘 0 → 域维持 tsx 不扩张。**收口 2026-09-10 三屋全链**：红证矩阵 R1-R14+NR1-NR5（R12 单对象双属性恰 2 error 逐属性全量证明/R13 container 包裹[改前探针 0 error=TDD 红]/R14 双层嵌套 unwrap）+preimpl 探针+变异三态（visitor 改名 R1 复绿/R8 独立仍红/还原复红）+存量 lint 全绿+dry-run 复跑 0；门一 Kimi kimi-main 两轮（R1 B0/W4/N7 放行附条件——W1 申报失实[门一独立抓到与主控自查吻合]/W2 COLOR_RE 状态性[主控亲证销项=i 标志无 g]/W3 深度 off-by-one/W4 raw 混杂[主控销项=拼包伪影原件纯净]→回炉轮 1 五项=W1 上提 create 级+W3 depth>=4+N2 主控加码+R12-R14 补证+报告更新→R2 定点复核指令 1-4 全 ADDRESSED+零新破坏+收口放行+两非阻断条件主控亲验销项[R12 原件双 error 行完整/345 行实测]）；门二统一档[环境无 model 参数欠账如实记]PASS 无条件（B0/W0/N2——四清单独立复算+机器面亲跑八项+TDD 链 13 件原件抽验；N-G2-1=dryrun.mjs sha 红因系主控回炉期亲改探针头注 kebab 误判修正——归属自证在案）；不做面：哨兵域窄维持入档（v58 §2-6/7）；.ts 面；嵌套对象表深度>1；命名色/十进制（终裁 §4 承袭）；Object[\x27freeze\x27] 计算属性/深度>4 截断=formally 注记残留面（门一 N3/N1③）；theme.test.ts 防漂移锁不加（T4 C-4c 上线后 R−D 锚反向护体——观察注记）' },
+@@ -277,7 +277,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'F-TESTREF-W3', file: 'src/shared/ipc/schemas.ts', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W3=src/shared 直接契约测试补齐（前置 W2 毕——纯增票）：覆盖倒挂最薄面 src/shared 1403 行（schemas.ts 467+api-surface.ts 227 两契约真相源文件现仅间接覆盖/直接契约测试 316 行，比值 0.32 全仓最薄且装最大源文件）→直接契约测试：zod 边界（schemas 逐 schema 边界值/非法态）、api-surface 通道完整性（55 invoke 通道接线表闭合性/隐藏通道/ComposedHandlerDomains 域）、app-error 错误码封闭性；目标 ≥0.8（终裁承袭宪章建议——具体阈值设计裁决）；纯增不受 C 面禁删约束但受先红后绿纪律（每测试必须能失败一次）；新测试 always-active 不经 guardedDescribe（K3 威胁在三屋结构性缺位）；[test-refactor][locked-change]' },
+   { id: 'F-TESTREF-W4', file: 'docs/audits/flake-ledger.json', area: 'infra', owner: 'strong', status: 'done', summary: '测试优化战役 W4=不确定面机件化（战役收官票，2026-09-18 收口）：flake 台账 docs/audits/flake-ledger.json 八线历史收录（P7-A 七现/F-R2e 2/z-r2e 2/tag-lifecycle 2/F-ARCH4-M1 1 观察中/F-G11 1 观察中/settings.png 1 观察中/corpus-export 3 未立票——数据源=charter §1.4 审计快照+各线史料档）+stableRel 下沉 tests/e2e/stable-rel.ts 共享助手（reader-text 消费替换，变异红证=streak 2→999 e2e 稳态用例红 w4-mutation-stable-rel.log）+INV-63（测试面单调性——指纹门 C_after ⊇ C_before 机检锚定）/INV-64（e2e 禁截图比对——check-quality 第 9 段 toHaveScreenshot 负锚，注入红证 w4-inv64-anchor-red.log）入册 docs/invariants.md；战役收口段（W5）兑现=coverage 三档亲跑 EXIT 0（全局 86.6 lines≥70/repos 85/renderer 60）+e2e 双通道亲跑（默认门 42/42+一键全跑 44/44 双 EXIT=0 落档 w4-e2e-{appgate,allgate}.log）+战役净删总账（tests 域已提交 +1622/-1618+W4 终态 +81/-56：迁移三票净删 -737、W3 契约测试纯增 +741、W4 净 +25——含门审后 W 级处置 +3 行头注/指针对齐）+基线重冻结（179→183 文件/1623→1757 用例/4979→5334 断言，共有面排除行号逐字节全同 w4-baseline-refreeze-audit.md）；搭车两项落=调色板断言字面量五色 pin（W3 门二 P2-3）+test:e2e 语义三处回写（charter:294/DEV-SETUP/裁决书:117，W2 门二 P2-2）；S1 触发检查=零存量命中不触发（w4-s1-probe.txt）；[test-refactor][locked-change]' },
+   { id: 'F-DEDUP-01', file: 'src/main/services/library.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '服务层偶然复杂度收敛（2026-09-18 收口：四收敛面全落+排除面恰好——DomainError 基类 services/shared/domain-error.ts 单源 15 文件一行继承（new.target.name 零样板，HttpFetchError 三参+status 特例，NotImplementedError/ApiClientError 排除）/原子写 atomicWriteFile 三开关 4 文件 6 调用点（manifest 固定名+ai-notes-import 移动语义保持内联）/sanitizePathToken 2 处（safeFileName 展示名家族+db LIKE SQL 家族排除）/app-file URL 单源 src/shared/app-file-url.ts 3 处收编（corpus.export:250 硬编码消灭）；28 文件 +436/-220 修改面净删 108；TDD 首红→全量绿 170 文件/1745 用例+变异红证 4 条；指纹门纯增 183→187/1757→1790；e2e 默认门 43/43；INV-66 原子写单源+INV-67 回灌事务性（batch 7 P2-5 登记债销项）入册；门一 PW B0W3N8 回炉 1 闭+门二 GWC P1 收口序兑现）（原票面：终裁 §3-4 审计 P2 采纳——DomainError 15 文件/原子写 4 文件/清洗多份 Rule of Three 越界+微扩 app-file:// URL 三处收编单源；分层铁律不破共享件=被依赖下游位；[locked-change]）' },
+-  { id: 'F-GEOM-01', file: 'src/renderer/features/reader/pdf-item-geometry.ts', area: 'reader', owner: 'strong', status: 'open', summary: 'INV-58 双几何族同族化战役（终裁 §3-1——审计建议 1 采纳：selection-evaluate.ts:54 源码自述「AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外边界，同族化=独立票」票已 done 接缝仍在=M2 多路线并存的乘积级交互真身）：pdf.js 项声明几何族（pdf-item-geometry.ts 515 行主链）收编 DOM 量测几何族（annotation-anchor.ts 454 行）——单一真相源化；重锚三档回落（annotation-resolve-layered S0-S6）/band 推导三处/边界归一两机制随族收敛；**设计链三跳票**（Kimi 拟定→deepseek 审→GLM 终裁）——设计书必须含态空间表+跨格序列推演+回落档语义裁决，缺一不受理；验收底色=e2e 44 用例全绿不破+锚定回归网+净删行数记账（M2 收敛量化证据）；「测试逼生产保形状」五例解耦票池随本战役设计书统筹（终裁 §5-2）；**扩容（2026-09-18 裁决 5）**：reader 子域目录化并入本战役同场做完——设计书必须含六子域目录重组清单与迁移序（anchors/view/interact/panels/time/state+域内单向依赖图）；同族化触 selection 通道时一并评估契约面生长（09-11 §3-3 观察项承袭）；排期=F-TESTREF 战役+F-DEDUP-01 后压轴；**实施票已立案（2026-09-18 立案批）：F-GEOM-01-G1~G11 按设计书 §5.3 切分入册，板行=docs/handoff/relay.md 第四波子项逐票勾选，母票随 G11 翻 done**；[locked-change]' },
++  { id: 'F-GEOM-01', file: 'src/renderer/features/reader/anchors/pdf-item-geometry.ts', area: 'reader', owner: 'strong', status: 'open', summary: 'INV-58 双几何族同族化战役（终裁 §3-1——审计建议 1 采纳：selection-evaluate.ts:54 源码自述「AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外边界，同族化=独立票」票已 done 接缝仍在=M2 多路线并存的乘积级交互真身）：pdf.js 项声明几何族（pdf-item-geometry.ts 515 行主链）收编 DOM 量测几何族（annotation-anchor.ts 454 行）——单一真相源化；重锚三档回落（annotation-resolve-layered S0-S6）/band 推导三处/边界归一两机制随族收敛；**设计链三跳票**（Kimi 拟定→deepseek 审→GLM 终裁）——设计书必须含态空间表+跨格序列推演+回落档语义裁决，缺一不受理；验收底色=e2e 44 用例全绿不破+锚定回归网+净删行数记账（M2 收敛量化证据）；「测试逼生产保形状」五例解耦票池随本战役设计书统筹（终裁 §5-2）；**扩容（2026-09-18 裁决 5）**：reader 子域目录化并入本战役同场做完——设计书必须含六子域目录重组清单与迁移序（anchors/view/interact/panels/time/state+域内单向依赖图）；同族化触 selection 通道时一并评估契约面生长（09-11 §3-3 观察项承袭）；排期=F-TESTREF 战役+F-DEDUP-01 后压轴；**实施票已立案（2026-09-18 立案批）：F-GEOM-01-G1~G11 按设计书 §5.3 切分入册，板行=docs/handoff/relay.md 第四波子项逐票勾选，母票随 G11 翻 done**；[locked-change]' },
+ 
+   // ── 2026-09-18 F-GEOM-01 实施票立案批（G1~G11——设计书 §5.3 切分；票面
+   //    引用 docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md
+@@ -289,12 +289,12 @@ export const TICKETS: readonly Ticket[] = [
+   //    存在性硬红兜底，属票面声明的批量改写面非票面外静默批改；
+   //    G2 受锁面最重（selection-layer.test
+   //    改写+豁免清单），大中票一火一票 ──
+-  { id: 'F-GEOM-01-G1', file: 'src/renderer/features/reader/geometry-types.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'M0 类型下沉切环（设计书 §3.3/§3.4；1/11）：新件=本 file（立案骨架，实现者领票时改写真身）落 PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry（现驻 PdfPageCanvas.tsx:38-77）+PixelBox（annotation-anchor）+RowBand（annotation-resolve）+COLUMN_GAP_H_FACTOR/COLUMN_GAP_PAGE_RATIO（pdf-item-geometry——常量与类型同居 anchors 语义位）；PdfPageCanvas 保留 export type 再导出（受锁测试旧路径 import 零触——M0 无受锁面）；切断三处 type-only 环（pdf-item-geometry↔annotation-anchor/annotation-resolve/PdfPageCanvas）+两 store→PdfPageCanvas 边（page-items.store:37/reader-search.store:41 改 import 本件）+annotation-anchor 的 COLUMN_GAP 值 import 改向本件（anchors 域内最终无环）；红线=零文件移动（目录迁移归 G6）；验收=unit 全绿+typecheck+verify 全链（变异红证=删 PdfPageCanvas 再导出→旧路径 import type 在 tsc 关卡编译红——tsconfig.web.json include 含 tests/**/*.tsx 覆盖受锁测试→还原）【done 2026-09-18 batch 13：7 文件 +140/-110；三环+两 store 边切断终态全域核验；变异红证主证 TS2305×5+TS2459×27=32 错误行+副证 TS2724×3 双闭环；门一 PW B0W1N3（W1 计数勘误销）/门二 GO P0=0P1=0N=6；e2e 不跑=设计书 §3.4 M0 行口径（零运行时值变），父级 e2e 验收归 G11】' },
++  { id: 'F-GEOM-01-G1', file: 'src/renderer/features/reader/anchors/geometry-types.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'M0 类型下沉切环（设计书 §3.3/§3.4；1/11）：新件=本 file（立案骨架，实现者领票时改写真身）落 PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry（现驻 PdfPageCanvas.tsx:38-77）+PixelBox（annotation-anchor）+RowBand（annotation-resolve）+COLUMN_GAP_H_FACTOR/COLUMN_GAP_PAGE_RATIO（pdf-item-geometry——常量与类型同居 anchors 语义位）；PdfPageCanvas 保留 export type 再导出（受锁测试旧路径 import 零触——M0 无受锁面）；切断三处 type-only 环（pdf-item-geometry↔annotation-anchor/annotation-resolve/PdfPageCanvas）+两 store→PdfPageCanvas 边（page-items.store:37/reader-search.store:41 改 import 本件）+annotation-anchor 的 COLUMN_GAP 值 import 改向本件（anchors 域内最终无环）；红线=零文件移动（目录迁移归 G6）；验收=unit 全绿+typecheck+verify 全链（变异红证=删 PdfPageCanvas 再导出→旧路径 import type 在 tsc 关卡编译红——tsconfig.web.json include 含 tests/**/*.tsx 覆盖受锁测试→还原）【done 2026-09-18 batch 13：7 文件 +140/-110；三环+两 store 边切断终态全域核验；变异红证主证 TS2305×5+TS2459×27=32 错误行+副证 TS2724×3 双闭环；门一 PW B0W1N3（W1 计数勘误销）/门二 GO P0=0P1=0N=6；e2e 不跑=设计书 §3.4 M0 行口径（零运行时值变），父级 e2e 验收归 G11】' },
+   { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/selection-evaluate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '保存链单源门+几何死面收敛（设计书 §2.4/§3.5——**战役唯一行为变更票**；2/11）：①保存门=evaluateCore itemChainFor 返 null 时 setPaint 照渲 DOM 回退形状（视觉连续，现状）+setPending(null)（原为 pending=DOM 形状 anchor）+warn 单源（复用 itemChainFor 诊断单源）——「所见≠所存时不给保存入口」（生产影响≈零：item 链失败三因健康页近零发生，主存活面=jsdom 测试环境）；②probeOffsetLen 收敛（selection-evaluate 复刻 anchor-serialize 私有 probeTextLength≈15 行→显式导出面+复刻删除）；③rectsFromRange 死导出面删除（src 零消费+受锁测试 1 用例≈25 行——死代码即删宪法条，候选项经双门裁）；受锁面先行对账义务（§2.4）=tests/unit/renderer/selection-layer.test.tsx 14 用例无 page-items 桩（grep 实测零命中）——立案时先出断言对账表（§5.2 风险 1），保存流用例补页项桩（tests/utils 工厂面 page-items.store 直改先例）+断言面按项族产物更新；指纹门 C 面变更走豁免清单条目（reason=设计书 §2.4+裁决链）+条目数 >10 呈主控复裁（§5.2 风险 2）；INV-58 修订（保存链条款+selection-evaluate:54 stale 自述重写）随本票；[locked-change][test-refactor]；验收=指纹门 C_after ⊇ C_before+锚定回归网+e2e 默认门【done 2026-09-18 batch 14：10 文件 +112/-88；对账表扩三文件实勘=selection-paint 6 例补桩+item-chain 回退①改写（TDD 红锚）+rectsFromRange 删例，豁免恰 2 条；首红/T3 悬空红/双变异红证（M1 保存门+M2 TS2459）全档；门一 PW B0W1N7（W1=RoT 第 4 份助手→后置 G7 随迁抽取）/门二 GWC P0=0P1=3（口径更正+收口三件全兑现）；vitest 170/1744+e2e 默认门 43/43+verify EXIT=0】' },
+   { id: 'F-GEOM-01-G3', file: 'docs/invariants.md', area: 'infra', owner: 'strong', status: 'done', summary: 'band 三档绑定+跨族交互点登记（设计书 §2.5/§2.6——纯登记面零行为变更；3/11）：新 INV（暂记 INV-68 号段，落册接续现尾号 67）=几何产链档位绑定——档1 项族 bandsFromItems=selection 快/全量主链+S2/S3a 唯一源/档2 bandsForTextNodes（DOM 节点口径）=S4（Annotation+AI 段）+selection 全量显示回退专用且产物不入库（rects 与 bands 同源——C5 精神）/档3 bandsNearRects（DOM 几何口径）=S3b 存量专用；禁跨档消费+禁新增第四推导；F-A9 calibrateBands=三档之上显示层校准不参与行归属（现状不变）；现状消费面经核已天然档位绑定（设计期 grep 逐一核对）——本票=事实升 INV 登记防未来漂移；跨族交互点登记（§2.6 表：#2 S6 项盒判定边界注/#3 S4 双族同屏显式档/#4 显示回退 transient 声明）+坐标域三处换算域声明头注（selection-geometry localScale/lineage-viewport rootToLocalScale/itemViewportOf）+INV-58 边界注（防 r3a 型域差事故重演）；#1 闭合/#5 头注消除归 G2 落款；INV 册受锁 unlock→改→apply 单链 [locked-change]【done 2026-09-18 batch 15：6 文件 +33/-18 终态（5 代码/登记件+manifest）；INV-68 落册 :84+INV-58 坐标域边界注+三处头注域声明+selection-paint/annotation-resolve 陈旧头注勘正（接缝归责——F-A5「三消费点」族 5 处清零，含门一 W1+门二 P2-1）；门一 PW B0W2N7（W1 同族残留勘正/W2 状态词改「未锚定」裁落）/门二 GWC P0=0P1=1P2=1（P1-1 行号锚实测修正 :237/:277/:302+P2-1 模块头注三处——均选菜单(a)收口前修复，净零行变化设计防锚再漂）；verify 三跑全 EXIT=0（终跑=open 18→17 恰 G3 翻 done+locks 338+test 170/1744+指纹门 187/1789/5411 零漂移）】' },
+   { id: 'F-GEOM-01-G4', file: 'src/renderer/features/reader/state/reader.store.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M1=state/ 域迁移（设计书 §3.2/§3.4；4/11）：10 文件迁 reader/state/——reader.store/tab-dirty/useActiveTab/annotation-undo/page-layer-z/ai-notes.store/ai-notes-phase/PdfDocProvider/CorpusExtractor/scroll-converge（scroll-converge 三消费方 anchor-locate/usePageColumnScroll/scroll-progress 置底避免 anchors→view 反向边——W7 处置；CorpusExtractor=终裁补列件）；受锁面随步同链 unlock→改→apply=CorpusExtractor 相关测试 import（corpus-extractor/corpus-export/pdf-factory）+eslint.config.js INV-16 块 PdfDocProvider/CorpusExtractor 两路径（四路径分步随迁首步）；域内单向核验=state 不依赖任何域（§3.1 置底）；翻 done 时 file 字段随迁改写 state/reader.store.ts（SR-RDR-02 先例）；验收=verify 全链；【收口 2026-09-18 batch16】受锁面实勘勘正=tests 30 件/41 行（票面 3 件系设计书 §3.4 起草漏计，pdf-factory 实为注释提名零 import 面）；实现者终验 tickets 红 18 行三类（9 路径不存在+4 占位+5 guardedDescribe 映射）全因 registry 随迁=主控后置面——九行落妥后 verify 全链 EXIT=0（g4-verify-master.log）；门一 PW B0W1N6（W1=报告 tests 括注枚举失实，勘误 :39）/门二 GWC P0=0P1=1P2=3N=6 全兑现（staging 名册 26 件实测校准+open 17→16+翻 done 前置本步）；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G5', file: 'src/renderer/features/reader/time/reading-time.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M2=time/ 域迁移（设计书 §3.4；5/11）：4 文件迁 reader/time/——reading-time/reading-time-setup/reading-time-outbox/reading-time-outbox-store；受锁面=reading-time 系测试 import 同链 unlock→改→apply；域间单向=time→state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
+-  { id: 'F-GEOM-01-G6', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M3=anchors/ 域迁移（设计书 §3.4；6/11——受锁面最重迁移步）：13 存量+geometry-types（G1 产物）迁 reader/anchors/——pdf-item-geometry/annotation-anchor/annotation-merge/annotation-resolve/annotation-resolve-layered/annotation-band-calibrate/anchor-serialize/anchor-blank-snap/anchor-locate/page-items.store/open-paper-anchor/annotation-style/ai-note-style+geometry-types；受锁面=anchor-locate 跨特性消费 import 改向（lineage×2+open-paper-bus——§5.2 风险 3 一次改向+check-quality 跨域规则同步核）+锚定回归网 18 物理件 import（§5.1 名单 17 项中 selection-layer×2=selection-layer.test+selection-layer-fa12.test 双文件——tests/unit/renderer ls 实测=18；selection-evaluate/selection-layer×2/selection-item-chain/selection-geometry/selection-paint/selection-mode/annotation-anchor/annotation-layer/ai-annotation-layer/annotation-merge/anchor-blank-snap/anchor-item-verify/anchor-locate/band-calibration/pdf-item-geometry/pages-overlay/pdf-page-canvas）+pdf-factory（CorpusExtractor import）；验收=verify 全绿+锚定回归网专项跑；翻 done 时 file 随迁改写；[locked-change][test-refactor]' },
++  { id: 'F-GEOM-01-G6', file: 'src/renderer/features/reader/anchors/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M3=anchors/ 域迁移（设计书 §3.4；6/11——受锁面最重迁移步）：13 存量+geometry-types（G1 产物）迁 reader/anchors/——pdf-item-geometry/annotation-anchor/annotation-merge/annotation-resolve/annotation-resolve-layered/annotation-band-calibrate/anchor-serialize/anchor-blank-snap/anchor-locate/page-items.store/open-paper-anchor/annotation-style/ai-note-style+geometry-types；受锁面=anchor-locate 跨特性消费 import 改向（lineage×2+open-paper-bus——§5.2 风险 3 一次改向+check-quality 跨域规则同步核）+锚定回归网 18 物理件 import（§5.1 名单 17 项中 selection-layer×2=selection-layer.test+selection-layer-fa12.test 双文件——tests/unit/renderer ls 实测=18；selection-evaluate/selection-layer×2/selection-item-chain/selection-geometry/selection-paint/selection-mode/annotation-anchor/annotation-layer/ai-annotation-layer/annotation-merge/anchor-blank-snap/anchor-item-verify/anchor-locate/band-calibration/pdf-item-geometry/pages-overlay/pdf-page-canvas）+pdf-factory（CorpusExtractor import）；验收=verify 全绿+锚定回归网专项跑；翻 done 时 file 随迁改写；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G7', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M4=interact/ 域迁移（设计书 §3.4；7/11）：7 文件迁 reader/interact/——SelectionLayer/SelectionToolbar/selection-evaluate/selection-geometry/selection-paint/release-affinity/use-annotation-draft；受锁面=selection 系测试 import 同链（G2 已改写面随迁）；域间单向=interact→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链+selection 回归；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设计书 §3.4；8/11）：8 文件迁 reader/panels/——OutlineAside/OutlinePanel/OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/FragmentNotesList；受锁面=notes/outline 系测试 import+check-quality.mjs:96-97 两路径（ReaderNotesPanel）随步同链；域间单向=panels→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G9', file: 'src/renderer/features/reader/PdfPageCanvas.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M6a=view 渲染簇迁移（设计书 §3.4——W1 处置拆两步之一；9/11）：14 文件迁 reader/view/——PageColumn/PageBox/PagesOverlay/PdfPageCanvas/TextLayer/text-layer.css/page-column-geometry/usePageColumnScroll/usePageLazyWindow/scroll-progress/AnnotationLayer/AiAnnotationLayer/AnnotationPopups/ReaderPageView；受锁面=对应测试 import+eslint.config.js INV-16 块 PdfPageCanvas/TextLayer 两路径随迁（四路径分步随迁第 3/4 步）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },

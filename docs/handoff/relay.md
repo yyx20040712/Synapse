@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-18T22:06:13+08:00
+- last_dispatch: 2026-09-18T22:56:11+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T15:05:00Z
+- heartbeat_utc: 2026-09-18T15:49:55Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 21
+- checked_done: 22
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -123,7 +123,7 @@
       消费者目标串两行随步改写（门二 P1-3 登记，漏改=M1 verify quality 红）+
       registry 全域随迁义务首用（file 指向被迁路径的票一并改写））
 - [x] F-GEOM-01-G5（目录化 M2 time/ 4 件 §3.4 [locked-change][test-refactor]）
-- [ ] F-GEOM-01-G6（目录化 M3 anchors/ 13+1 件 §3.4——受锁面最重：锚定
+- [x] F-GEOM-01-G6（目录化 M3 anchors/ 13+1 件 §3.4——受锁面最重：锚定
       回归网 18 物理件+跨特性 import（lineage×2+open-paper-bus）；
       check-quality:99 行（lineage→ai-note-style）对账到行号（门二 P1-3c））
 - [ ] F-GEOM-01-G7（目录化 M4 interact/ 7 件 §3.4
@@ -159,6 +159,92 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 18 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G6 目录化 M3 anchors/ 14 文件迁移，完成）
+- claim: claim-1789743426-b18｜认领 14:57:35Z｜收口 2026-09-18T15:49:55Z｜勾选 21→22。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌
+  等价红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-
+  debugging 不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位
+  面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定
+  （GLM5.3flash $max）；门一=**ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户
+  指令 2026-09-18 调度员转达：k1 周额度封顶本批起 k2 承载，勿再派 k1）**；门二=
+  ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（零行为纯迁移）**：M3=anchors/ 域迁移——pdf-item-geometry(509)/
+  annotation-anchor(427)/annotation-merge(172)/annotation-resolve(413)/
+  annotation-resolve-layered(251)/annotation-band-calibrate(119)/anchor-serialize
+  (259)/anchor-blank-snap(284)/anchor-locate(293)/page-items.store(69)/
+  open-paper-anchor(43)/annotation-style(119)/ai-note-style(60) 十三存量+
+  geometry-types(103) 共 14 件 3121 行迁 reader/anchors/（git rename 相似度
+  12×100%+anchor-locate 98%+open-paper-anchor 92%）；改写面=B 段入边深度修正
+  恰 7 行（anchor-locate :88/:89/:90/:91+open-paper-anchor :26/:27/:28——
+  ./state/→../state/ 3 行+../../shared/→../../../shared/ 4 行，open-paper-bus
+  实驻 **shared 域**非 lineage，票面定性勘正）+C 段 reader 根未迁消费 35 处/17
+  文件（./x→./anchors/x）+D 段跨特性 1（LineageSideAiNotes:22）+E 段 tests
+  受锁面 34 行/17 物理件（含 2 vi.mock 行）+F 段 check-quality:99 白名单值+
+  G 段 registry 全域随迁 10 行（status 零触碰）+H 段 e2e 注释勘正 1（z-wg1-
+  probe.spec:7 行号不变）；域内互引 25 处零改写；§3.1 单向核验：state→anchors
+  反向边 0+anchors→state 恰 3 边+time 互边 0+旧径残留 0。
+- **票面口径勘正三项（门一 K1~K3 裁实）**：①「lineage×2」=src import 1+
+  check-quality 白名单 1（恰 2 处但形态与票面暗示不同）；②「open-paper-bus」
+  系 shared 域文件（深度修正归 B 段 4 行）；③「pdf-factory（CorpusExtractor
+  import）」零命中——门一实物读 tests/utils/pdf-factory.ts 全文零 import（纯
+  字节工厂），起草残留（G4 实勘先例延续）。
+- **TDD 证据链**：基线 verify EXIT=0 锚（g6-verify-baseline2.log——首跑
+  baseline EXIT=1 系主控三侦察探针未即时锁登记红，generate+apply 348 后复绿，
+  教训①）；实现者七关卡+verify 全绿（g6-verify7/g6-verify-final）；变异红证
+  M1（AnnotationLayer:42 回退旧径→TS2307 EXIT=2→cp 还原 diff 空→复绿——restore
+  EXIT 双行物理在档）+M2（anchor-locate.test:15 回退→模块解析红 EXIT=1→还原→
+  13/13 复绿→复锁）；**构建产物哈希与 G5 恒等**（index-D3egZtl2.js/index-
+  BfpEygSE.css 同名=内容哈希恒等，零行为最强旁证，N3 标配）；锚定回归网 18 件
+  /211 用例绿（含 5 零改写件，stderr 栈帧指新径旁证）。
+- **门审**：门一 k2 **PASS_WITH_WARNINGS B0/W1/N6**——A1~A6 逐 hunk 成立+深度
+  数学验算+实物抽核；W1=主控审包简报「44 文件」计数失实（patch 实证 60 diff
+  头——grep -c 行匹配数误当文件数落笔，教训②）；N1=板头心跳 15:05 系 batch17
+  收口近似值非时序异常（batch6 W6 同款票外）；N2=impl-brief ⑤「345」与③「348」
+  并立（基线首跑前预留旧数，勘误留痕不回改）；N3/N4=主控侦察探针正则盲区
+  （vi.mock 形态+../../出边——recon2/recon3 补捕闭合，教训③）；N6=调度面
+  混入提交面（b18-claim.mjs+relay.md 随收口提交，G4/G5 先例裁量）。门二
+  **GO_WITH_CONDITIONS P0=0/P1=2/P2=1/N=8**——22 条逐条裁决+数字独立复算全过
+  （门一 R1 残余 12 件逐件清零 Σ3121）；P1-1 翻 done 后终跑+P1-2 staging
+  白名单 14 rename 对核验——两条件收口全兑现；P2-1 **G11 对账债精化**：设计书
+  §3.2 anchors 段括号行数 11/13 偏差（−6/−27/−1/−3/−1×7；2 件吻合）+§5.1
+  基线计数差 1790/5417→1789/5411（G2 删例所致）——并入 G11 收官对账清单；
+  回炉=0。
+- **机检终态**：收口终跑 verify 全链 **G6_VERIFY_FINAL2_EXIT=0**（翻 done 后
+  跑，变量法物理落档 g6-verify-final2.log 末行，Node 24.20.0：open 15→14=恰
+  G6 翻 done+locks 351 一致（log:87）+test 1744 用例（log:3830）+指纹门
+  187/1789/5411 零漂移（log:27）+build 绿）；e2e 不跑（零行为口径，义务归
+  G11——门二 #22 同裁）；**health-scan RED×0 WARN×0**（账本补记后）；账本
+  51→54 行（executor+门一 k2+门二，主控补记 node JSON.stringify——脚本用毕
+  即删零驻留）。
+- 证据件入库（scripts/audits/，27 件）：g6-{recon.mjs；recon.log；recon2.mjs；
+  recon2.log；recon3.mjs；recon3.log；rewrite.mjs；rewrite-src.log；
+  rewrite-locked.log；oneway.mjs；oneway.log；impl-brief.md；impl-report.md；
+  verify-baseline.log；verify-baseline2.log；verify7.log；verify-final.log；
+  verify-final2.log；mutation.log；build-hash.log；anchored-net.log；
+  gate1-brief.md；gate1-report.md（岗无写通道主控逐字归档）；gate1-diff.patch；
+  gate2-brief.md；gate2-report.md（同型归档）}+b18-claim.mjs——14 .log 经
+  git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置；首写 26/11 两处
+  计数误，提交前 ls 实测勘正——教训②自查拦截实例）。
+- 教训三条：①**主控自产探针锁登记延迟再犯**（基线首跑 EXIT=1——recon/
+  recon2/claim 三 .mjs 写完未即时 locks:generate+apply，宪法明文义务违反，
+  G4 教训①姊妹面第二现：**探针落盘与锁登记必须同一动作批次**，勿等 verify
+  拦截）；②**审包文书面数字未实测**（门一 W1：gate1-brief 写「44 文件」系
+  grep -c 输出直接当文件数——diff 文件数应以 patch diff 头计数为准；「计数
+  落笔前实测」的主控审包侧变体，batch 15/16 简报侧教训同族第三现）；③**
+  侦察探针正则覆盖面缺口**（N3/N4：import 行过滤器漏 vi.mock 调用形态+出边
+  扫描漏 ../ 前缀——迁移侦察探针模板应含：from/import/vi.mock( 三形态+
+  出边含 ../ 一级；实测由 recon2 字符串面+实现者 recon3 双复核兜底闭合）。
+- Rulings 待用户：无新增（票内自裁 4 项经门一 S1~S4 逐条裁「充分」+门二 #16~#20
+  复核闭合；门审处置 W1 勘误/P1-1/P1-2/P2-1 全兑现；受锁面 34 行=[locked-change]
+  [test-refactor] 双尾注权限内）。
+- 无进展计数：归零（21→22 有进展）。**下波=F-GEOM-01-G7（目录化 M4 interact/
+  7 件 §3.4 [locked-change][test-refactor]——SelectionLayer/SelectionToolbar/
+  selection-evaluate/selection-geometry/selection-paint/release-affinity/
+  use-annotation-draft；受锁面=selection 系测试 import 按本批实勘口径先侦察
+  后落简报+验收 selection 回归；大中票一火一票）。**
+
 
 ### batch 17 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G5 目录化 M2 time/ 4 文件迁移，完成）
 - claim: claim-1789740440-b17｜认领 14:07:20Z｜收口 2026-09-18T15:05:00Z｜勾选 20→21。

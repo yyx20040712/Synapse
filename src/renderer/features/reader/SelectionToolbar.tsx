@@ -14,7 +14,7 @@
 import type { MutableRefObject } from 'react'
 import type { AnnotationColor, AnnotationKind } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
-import { COLOR_LABEL, COLOR_SWATCH } from './annotation-style'
+import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
 
 /** 工具条三种动作（kind→中文文案——按钮 map 单源） */
 const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }

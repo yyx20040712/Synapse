@@ -12,7 +12,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
+import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
 import { useAnnotationDraft } from './use-annotation-draft'
 
 export function AnnotationEditor(props: {
