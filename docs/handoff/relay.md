@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T05:39:46+08:00
+- last_dispatch: 2026-09-19T06:49:52+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T22:38:39Z
-- claim: claim-1789767847-b23（已收口 2026-09-19T06:38:39）
+- heartbeat_utc: 2026-09-18T23:46:00Z
+- claim: claim-1789771843-b24（已收口 2026-09-19T07:46:00）
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 28
+- checked_done: 30
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -148,8 +148,8 @@
 
 ### 第五波·梯队四：第二波域归位（LAYER/TIME 小票组同火）
 
-- [ ] F-LAYER-01（settings 下沉；随票落 L1 锁线 [locked-change]）
-- [ ] F-TIME-01（时长链瘦身评估，产出呈裁不实施）＋可同火收上项
+- [x] F-LAYER-01（settings 下沉；随票落 L1 锁线 [locked-change]）
+- [x] F-TIME-01（时长链瘦身评估，产出呈裁不实施）＋可同火收上项
 - [ ] F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）
 - [ ] F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离）
 
@@ -167,6 +167,18 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 24 — 2026-09-19（执行者会话：第五波 F-LAYER-01+F-TIME-01 小票组同火，完成）
+- claim: claim-1789771843-b24｜认领 2026-09-18T22:50:43Z｜收口 2026-09-19T07:46:00｜勾选 28→30。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/门审矩阵/ORG-12 审包/health-scan/账本 v3 补记/换源状态机+审计兜底降级路径）；TDD 双轨（F-LAYER-01=实现者六段简报内嵌红绿闭环+变异红证 M1/M2；F-TIME-01=纯调研零代码无 TDD 面——batch 8 F-ELE-01 先例）；systematic-debugging 不加载（下沉修法=票面定稿+主控侦察前置+方案 B 裁定；评估票无排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash $max）；门一=**k2 绑定连续两次 Provider authentication failed（668/610ms 即死）→log-triage --health 归因 kimi-backup 5h 配额窗耗尽（22:59:38 403「5-hour usage limit」实证）→deepseek 审计兜底位外发承载（ds-call-v2 --source deepseek，batch 20 先例；k1=用户封顶禁派；**门一/门二同族 deepseek 欠账如实登记**——kimi 恢复补跑 Ruling 新增实例 b24）**；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审对实现者（GLM5.3flash）均异构成立。
+- **交付 F-LAYER-01（零行为下沉+L1 锁线）**：①settings.service.ts 骨架→真身 101 行（readSettings zod 校验/损坏回退默认+get 尽力写回/set 原子写/diagNetwork 并发 ping——逐行同构下沉，头注五层规约含裁决书指针+A-1 修正 uiScale 默认值句）；②ipc/settings.ts 83→36 行薄分发（三 handler 纯委托+构造点=ipc 工厂；**方案 B=主控侦察裁定不挂 ServiceBundle**——settings 无 repos 依赖+挂桶需改受锁桩工厂 tests/utils/ipc-deps.ts 超票面受锁面，IpcDeps.userDataDir/ping 现成注入面）；③eslint.config.js services 块 group 补 'electron'（**L1 实勘勘正：票面「三处新红线」中 shared:136/db:154 系既有态，本票只补 services 一处=三域闭合**——G4 实勘先例口径）；受锁面恰=票面预列单件，桩工厂/tests/**/bootstrap/services/index.ts 零触碰。
+- **交付 F-TIME-01（评估呈裁票）**：docs/reports/2026-09-18_time-chain-prestudy.md 骨架→评估报告全文——全链盘点（time/ 四件 829+显示件 13+scroll-progress 367 关联+测试 1,202，wc 实测）；**核心发现=outbox 是页码+时长双账本共用通道**（三收尾口单入队点 setup:84——拆除牵连页码链非纯时长票）+通道性质错配（at-least-once 为不可靠通道设计 vs 本地 IPC+同步 SQLite）+ledger 内存态才是崩溃主暴露面；四选项呈裁（0 维持/1 拆持久层/2a 全拆回 P7X-02 前直发**主推荐 −1,072 行纯删票**/2b 加内存重试/3 tick 即发极简 −600 需 mini 设计链）；口径对照句（票面「约 1,100」=战役群 1,196 口径）。
+- **门审（回炉 0）**：门一 deepseek 兜底 **PASS B0/W3/N9**——W3=报告 −1,032 数字矛盾（成分和 1,072）+缺 1,100 口径对照+覆盖声明过强（diagNetwork 包内不可证）→主控三修（−1,072+对照段+2a/2b 拆档）+N 证据销项（A-3 ESLint group 精确名匹配——门二审以 rule 源码实读闭环：node_modules no-restricted-imports.js:311-314 ignore 语义无子串误伤）。门二 **GWC P0=0/P1=3/P2=3/N=6**——A~D 全表独立复算（L1 三域亲读/M2 红证 2-failed 用例粒度精确对位=M2.log:6-10+用例 1/2 fallback 敏感推演）+**新发现 P1-1：reading-time.ts:61 re-export 有受锁测试消费面**（reading-time.test.ts:5-9——报告「零风险微删」失实，删行=tests 面 [locked-change][test-refactor]）→主控勘正 §1.4/§3-E 两处落妥；同族欠账裁决「不影响本批判定力」（门二全部裁决自原始件重推未采信门一转述+反证新增 P1-1=去相关工具面有效）；P1 三条件全兑现（P1-1 Edit/P1-2 终跑 verify/P1-3 e2e）。
+- **机检终态**：基线 verify EXIT=0 锚（open 8/locks 372/170·1744/指纹门 187·1789·5411·skip15 零漂移）+实现者 verify EXIT=0；翻票 FLIP_EXIT=0（FLIP_MOVED=2/RESIDUE=0/OPEN 8→6）；**终跑 verify B24_CLOSEOUT_VERIFY_EXIT=0**（含全部修正面：open 6=恰双票翻 done+locks 374=373+flip 探针+指纹门零漂移+170·1744+build 绿——renderer 产物恒等 index-D3egZtl2.js 1,392.72kB+index-BfpEygSE.css 52.49kB，main 产物 181.89kB 重构预期态不适用恒等断言）；**e2e 默认门 43/43 纯绿 EXIT=0（1.9m）——在册 flake corpus-export.spec:157 未触发**（门二 P1-3 第一分支纯绿收口，禁写约束解除）；**health-scan RED×0 WARN×0**（账本 76 行终态后跑——G9 教训②序兑现）；账本 73→76 行（executor+gate1 外发+adjudicator，主控补记仓外临时 .cjs 用毕即删，findings 对象形）；锁链 371→374（372 claim→373 heartbeat→374 flip 每步即时登记）。
+- P2 三条勘误留痕（门二）：P2-1 主控简报头「403 双证在档 b24-gate1-dispatch.log」引用失准——403 实证在 log-triage 输出（未入库）+org-ledger:74-75，批次日志本句即勘正档；P2-2 impl 报告锁数括注「HEAD 口径 372」勘正=371→372→373 链；P2-3 行号漂移勘记（gate2-brief D.3 reading-time.ts:52→实 :41-43；报告 §1.2 reader.service.ts:75-77→实 :76-78——内容均正确）。
+- 教训两条：①**门二预批序 5/6 的 relay 回写时点**（预批序把 relay 回写放提交后=产生未提交脏面，主控按 b22/b23 先例合并为「回写→一次提交」——预批序与宪法「收口毕未跟踪面清零」冲突时以先例惯例执行并在日志留痕）；②**评估票的消费面扫描必须含 tests/**（门二 P1-1：re-export 零消费判断只扫了 src/ 生产面——受锁测试 import 面是独立消费通道，「零消费」类断言须双面扫描后在册）。
+- Rulings 待用户（+1）：**F-TIME-01 降档档位**（报告 §5：T1 五档 0/1/2a/2b/3 主推荐 2a——全拆 outbox 回 P7X-02 前直发形态 −1,072 行纯删票+INV-57 主锚零触碰；T2 排期随下波）——呈裁材料=报告全文+INV-57 现文；已规划呈裁节点口径=产出即勾项不阻塞接力（1 项<2 不触发 HOLD）。另：kimi 恢复补跑 Ruling（batch 20 立）本批新增 b24 实例。
+- 无进展计数：归零（28→30 有进展）。**第五波过半（LAYER/TIME 毕）。下批=F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）→F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离——**开工须携 flake 台账 corpus-export 线 count 5 指纹首查——门二 G10 裁决义务**）；小票组同火或单火按票面裁量；若用户已裁 F-TIME-01 档位则实施票随下波入板。**
 
 ### batch 23 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G11 战役收官票+母票 F-GEOM-01 翻 done——**GEOM 战役全波毕**，完成）
 - claim: claim-1789767847-b23｜认领 2026-09-18T21:44:07Z｜收口 2026-09-19T06:38:39｜勾选 26→28。

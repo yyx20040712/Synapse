@@ -167,8 +167,10 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['**/db/connection*', '**/db/migrate*', '**/db/migrations/**'],
-              message: 'services 只能经 repos 访问数据库（ipc→services→repos→db 单向）；不得上探 main/ipc（check-quality 按解析路径强制）'
+              // [F-LAYER-01] L1 锁线：services 禁 electron——core 可抽包
+              //（裁决书 §4 L1；shared/db 两块既有同款禁令，本块补齐=三域闭合）
+              group: ['**/db/connection*', '**/db/migrate*', '**/db/migrations/**', 'electron'],
+              message: 'services 只能经 repos 访问数据库（ipc→services→repos→db 单向）；不得上探 main/ipc（check-quality 按解析路径强制）；禁依赖 electron——core 可抽包（裁决书 §4 L1，F-LAYER-01）'
             }
           ]
         }

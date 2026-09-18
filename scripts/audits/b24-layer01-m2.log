@@ -1,0 +1,65 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/ipc/settings.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 20[2mms[22m[39m
+[31m   [31m×[31m ipc/settings —— JSON 读写与网络诊断 [SR-IPC-08][2m > [22mget：无文件返回默认值（contactEmail 合法 email，theme=system）[90m 6[2mms[22m[31m[39m
+[31m     → expected 'dark' to be 'system' // Object.is equality[39m
+[31m   [31m×[31m ipc/settings —— JSON 读写与网络诊断 [SR-IPC-08][2m > [22mset→get 往返一致；损坏文件回退默认[90m 5[2mms[22m[31m[39m
+[31m     → expected 'dark' to be 'system' // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/settings.test.ts[2m > [22mipc/settings —— JSON 读写与网络诊断 [SR-IPC-08][2m > [22mget：无文件返回默认值（contactEmail 合法 email，theme=system）
+[31m[1mAssertionError[22m: expected 'dark' to be 'system' // Object.is equality[39m
+
+Expected: [32m"system"[39m
+Received: [31m"dark"[39m
+
+[36m [2m❯[22m tests/unit/ipc/settings.test.ts:[2m25:21[22m[39m
+    [90m 23| [39m    [35mconst[39m ipc [33m=[39m [34mcreateSettingsIpc[39m([35mawait[39m [34mfreshDeps[39m())
+    [90m 24| [39m    [35mconst[39m s [33m=[39m [35mawait[39m ipc[33m.[39m[35mget[39m({})
+    [90m 25| [39m    [34mexpect[39m(s[33m.[39mtheme)[33m.[39m[34mtoBe[39m([32m'system'[39m)
+    [90m   | [39m                    [31m^[39m
+    [90m 26| [39m    [34mexpect[39m(s[33m.[39mcontactEmail)[33m.[39m[34mtoContain[39m([32m'@'[39m)
+    [90m 27| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/ipc/settings.test.ts[2m > [22mipc/settings —— JSON 读写与网络诊断 [SR-IPC-08][2m > [22mset→get 往返一致；损坏文件回退默认
+[31m[1mAssertionError[22m: expected 'dark' to be 'system' // Object.is equality[39m
+
+Expected: [32m"system"[39m
+Received: [31m"dark"[39m
+
+[36m [2m❯[22m tests/unit/ipc/settings.test.ts:[2m41:28[22m[39m
+    [90m 39| [39m    )
+    [90m 40| [39m    [35mconst[39m fallback [33m=[39m [35mawait[39m ipc[33m.[39m[35mget[39m({})
+    [90m 41| [39m    [34mexpect[39m(fallback[33m.[39mtheme)[33m.[39m[34mtoBe[39m([32m'system'[39m)
+    [90m   | [39m                           [31m^[39m
+    [90m 42| [39m  })
+    [90m 43| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 07:01:23
+[2m   Duration [22m 735ms[2m (transform 116ms, setup 0ms, collect 217ms, tests 20ms, environment 0ms, prepare 199ms)[22m
+
+MUTATED_TEST_EXIT=1
+RESTORE_DIFF_EXIT=0 (0=空diff=还原干净)
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [32m✓[39m tests/unit/ipc/settings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 07:01:32
+[2m   Duration [22m 735ms[2m (transform 117ms, setup 0ms, collect 225ms, tests 15ms, environment 0ms, prepare 160ms)[22m
+
+RESTORED_TEST_EXIT=0

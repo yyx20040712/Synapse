@@ -1,83 +1,36 @@
 /**
- * [SR-IPC-08] ipc/settings —— 设置域（工单：done / weak）
+ * [SR-IPC-08][F-LAYER-01] ipc/settings —— 设置域薄分发
+ *（业务已下沉 services/settings.service.ts，2026-09-19 零行为迁移）
  *
  * ── 行为层 ──
- * - 自包含域（无独立 service）：settings.json 读写 + 网络诊断
- * - get：读 {userDataDir}/settings.json；不存在/损坏/不合 schema → 返回默认
- *   { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system' }（尽力写回文件）
- * - set：原子写（单源=services/shared/atomic-write，F-DEDUP-01——先写 .tmp 再
- *   rename；req 已由 register 过 appSettingsSchema 校验）
- * - diagNetwork：对 shared/constants 的 ALLOWED_REMOTE_HOSTS 并发 deps.ping(host)，
- *   返回 [{host, ok, latencyMs}]
+ * - 零业务：get/set/diagNetwork 三 handler 纯委托 service（行为全貌=
+ *   service 头注；受锁测试经本层穿透锁业务，任一行为漂移=测试红）
  *
  * ── 接口层 ──
  * - export function createSettingsIpc(deps: IpcDeps): ApiHandlers['settings']
+ * - 内部构造 createSettingsService({ userDataDir, ping }) 后透传
  *
  * ── 架构层 ──
- * - 可 import：node:fs/promises、node:path、shared/constants、zod（appSettingsSchema）
- *   + services/shared/atomic-write（被依赖下游位，ipc→services 方向不破）
- * - 读写一律 UTF-8（教训 C4：中文乱码防线）；写回失败不阻断 get（默认值照常返回）
+ * - 只 import：IpcDeps/ApiHandlers（type）+ services/settings.service
+ *   （ipc→services 方向不破）；本层不再触碰 node:fs 等实现件
  *
  * ── 生命周期层 ──
- * - 不做：主题热切换（renderer 读 theme 自行处理）
+ * - 构造点=本工厂（方案 B——不挂 ServiceBundle，bootstrap/装配面零触碰）
  *
  * ── 文化层 ──
- * - 测试：tests/unit/ipc/ipc/settings.test.ts（已锁定，deps.userDataDir 用临时目录）
+ * - 裁决书：docs/design/2026-09-18_complexity-governance-ruling.md
+ *   裁决 6/§3 梯队四/§4 L1
+ * - 测试：tests/unit/ipc/settings.test.ts（受锁零改，deps.userDataDir 用临时目录）
  */
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { appSettingsSchema, type AppSettings } from '../../shared/ipc/schemas'
-import { ALLOWED_REMOTE_HOSTS, DEFAULT_CONTACT_EMAIL, SETTINGS_FILE_NAME } from '../../shared/constants'
-import { atomicWriteFile } from '../services/shared/atomic-write'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './ipc-deps'
-
-const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
+import { createSettingsService } from '../services/settings.service'
 
 export function createSettingsIpc(deps: IpcDeps): ApiHandlers['settings'] {
-  const settingsPath = join(deps.userDataDir, SETTINGS_FILE_NAME)
-
-  /** 读文件 → zod 校验；任一环节失败返回默认（损坏文件交由写回覆盖） */
-  async function readSettings(): Promise<AppSettings> {
-    try {
-      const raw = await readFile(settingsPath, 'utf-8')
-      const parsed = appSettingsSchema.safeParse(JSON.parse(raw))
-      if (parsed.success) {
-        return parsed.data
-      }
-    } catch {
-      // 不存在/损坏：走默认
-    }
-    return DEFAULTS
-  }
-
+  const service = createSettingsService({ userDataDir: deps.userDataDir, ping: deps.ping })
   return {
-    async get(_req) {
-      const settings = await readSettings()
-      if (settings === DEFAULTS) {
-        // 尽力写回默认（失败不阻断返回；下次 get 仍一致）
-        try {
-          await atomicWriteFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
-        } catch {
-          // 目录只读等环境问题：默认值照常返回
-        }
-      }
-      return settings
-    },
-
-    async set(req) {
-      await atomicWriteFile(settingsPath, `${JSON.stringify(req, null, 2)}\n`)
-      return req
-    },
-
-    async diagNetwork(_req) {
-      const items = await Promise.all(
-        ALLOWED_REMOTE_HOSTS.map(async (host) => {
-          const r = await deps.ping(host)
-          return { host, ok: r.ok, latencyMs: r.latencyMs }
-        })
-      )
-      return items
-    }
+    get: (req) => service.get(req),
+    set: (req) => service.set(req),
+    diagNetwork: (req) => service.diagNetwork(req)
   }
 }

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T22:35:24.7656967Z",
+    "generatedAt":  "2026-09-18T23:19:07.4891167Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -15,7 +15,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "e636f5106e1bd10d96a9b41818b759a5dcad2e225260c851d04e39ce06732eee"
+                      "sha256":  "e03d96adb62374ddf14c97ab4ee0cb923d9ce0ee4aacb1a30e84d9334aa495d8"
                   },
                   {
                       "path":  "playwright.config.ts",
@@ -48,6 +48,18 @@
                   {
                       "path":  "scripts/audits/b22-claim.mjs",
                       "sha256":  "cc74b3223ef7b1915c9e7214d966bf909a9410e06dd11dac1c1c2612ae2b407d"
+                  },
+                  {
+                      "path":  "scripts/audits/b24-claim.mjs",
+                      "sha256":  "40b83122ebb3c7d44e680984aa27c7b052b5d48bc294cc16e1fd4e2863bf4f8a"
+                  },
+                  {
+                      "path":  "scripts/audits/b24-heartbeat.mjs",
+                      "sha256":  "5bfc04eb6e9f277c24d473998f8e70a0811f484d286984c9a80a4538a66f1903"
+                  },
+                  {
+                      "path":  "scripts/audits/b24-tickets-flip.mjs",
+                      "sha256":  "d09bdba7e494cb041bf46440d52ad48f033c09423c3f2bb6529e9bd572483cf2"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
