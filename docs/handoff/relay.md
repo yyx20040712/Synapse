@@ -12,7 +12,7 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T00:52:00Z
+- heartbeat_utc: 2026-09-18T01:09:14Z
 - claim: claim-1789689710-b9
 - no_progress_count: 0
 - checked_total: 24
