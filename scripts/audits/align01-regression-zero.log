@@ -1,0 +1,12 @@
+PASS R2a 档案装载 vs golden 字节比对+MANIFEST 一致 gate1-reviewer:= drafter:= auditor-readonly:=
+PASS R2b 派发器 dry-run assembled_system vs golden gate1-reviewer:= drafter:= auditor-readonly:=
+PASS R5 exit=2(期2) stderr全源尽=true 事件计数 attempt=12/12 switch=2/2 exhaust=1/1（链长3推导）chain=kimi-main→kimi-backup→deepseek 账本exhaust=true
+FAIL R4 流水:尾100行坏0行（含未知事件0）跳0行(旧版本)外来0行(他源channel标记) 事件分布={"attempt":80,"exhaust":7,"switch":13}；cfg哈希一致=false（流水 1a93765499cd vs live cfg:545b6843a147）；账本:尾25行全部为旧版本/外来行（校验域真空——若派发器已升版，先更新本脚本 schema）
+PASS R7 账本 schema 指针唯一指向 02 §9 SKILL.md:✓ org-seg.snippet:✓
+PASS R8 log-triage:exit=0/全过=true/验收断言=true org-config:exit=0/全过=true deploy-check:exit=0/全过=true
+PASS R9 scrub 复制体与源字面量一致=true
+PASS R10 b1/b2/b6 回归面——①结构断言:非注释行fetch命中=0 node:http(s)import=✓；③向量:splitEndpoint=全过/classify+ensure=全过；②mock往返:glm=✓(exit=0 正文+流水attempt/ok行)/ds=✓(exit=0)；⑤null守卫(mock发现面):✓(exit=5 降级行+其余源续列)；④B1向量(registry错误面):全过 坏JSON→exit=3(期3)/[fatal]=true；roles:null→exit=3(期3)/[fatal]=true；共享件零触碰=true
+SKIP R1 未给 --r1——真实派发配给保护，~9k Kimi tokens；冻结裁决前须跑或显式登记欠账（SKIP 不计入通过数——ds-W6）
+
+regression 汇总：7/8 过，FAIL ×1，SKIP ×1（未跑项不计入通过数）（项=R2a/R2b/R5/R4/R7/R8/R9/R10/R1）
+REGZERO_EXIT=1

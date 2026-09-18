@@ -1,0 +1,4 @@
+FAIL R4 流水:尾100行坏0行（含未知事件0）跳0行(旧版本)外来0行(他源channel标记) 事件分布={"attempt":76,"switch":12,"exhaust":6,"ok":6}；cfg哈希一致=false（流水 1a93765499cd vs live cfg:545b6843a147）；账本:尾25行全部为旧版本/外来行（校验域真空——若派发器已升版，先更新本脚本 schema）
+
+regression 汇总：0/1 过，FAIL ×1（项=R4）
+R4RECHECK_EXIT=1

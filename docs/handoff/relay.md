@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T00:12:00Z
-- claim: claim-1789687924-b8
+- heartbeat_utc: 2026-09-18T00:52:00Z
+- claim: claim-1789689710-b9
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 13
+- checked_done: 14
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -87,7 +87,7 @@
 - [x] F-DEP-01（postcss 显式化 [dep-change]；若未随上项同火则自领）
 - [x] F-ELE-01（Electron 升级预研，纯调研零 src 变更；**产出呈用户裁实施时机——
       呈裁后本项即勾，实施属后续波次不在本板**）
-- [ ] F-ALIGN-01（组织定版对齐：R1~R6 真跑+ds-call v1→v2 切换呈批+ORG-SEG v2 重写
+- [x] F-ALIGN-01（组织定版对齐：R1~R6 真跑+ds-call v1→v2 切换呈批+ORG-SEG v2 重写
       含裁决 13 条文+词汇表补全+账本断流核查；制度+配置复合批，单火专注）
 
 ### 第四波·梯队三：既定战役（GEOM 战役大，设计链与实现分项）
@@ -120,6 +120,68 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 9 — 2026-09-18（执行者会话：第三波 F-ALIGN-01 组织定版对齐，第三波清空，完成）
+- claim: claim-1789689710-b9｜开始 00:01:50Z｜收口 00:52:00Z｜勾选 13→14。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/
+  regression R1~R10/账本核查/health-scan/预算机检）；systematic-debugging 不
+  加载（制度+配置文书票，无缺陷排查面——R4 两子域为口径分析非排障）；
+  ops-executor 不派（纯文书+机检面，主控直做）。派发档位：主控=GLM5.3 max
+  （本会话）；门一=**外部派发器 ds-call-v2 实弹**（kimi-main k3，--role
+  gate1-reviewer——runbook 择路权行使，理由=切换前实弹验证+R4 落账，报告
+  §4 申报+追认项呈裁）；门二=ops-adjudicator 绑定（deepseek-flash max）。
+- **交付（票面四子任务全毕）**：①R1~R6 回归真跑（销 doc-align 阶段 3 悬空
+  承诺）——零成本面 7 项 PASS+R1 真实派发 PASS（3 样例双源方向 3/3）+R4
+  首跑 FAIL 两子域（cfg 哈希=R1 --project tmp 隔离设计与项目覆盖件口径
+  互斥；账本校验域真空=断流实锤）→门一实弹落账后终态复跑 PASS（cfg 双侧
+  545b6843a147+账本 26 行态 ok:1）——**R1~R10 终态全绿**；R3/R6 缺位之谜
+  破案=git 查证链（R3 并入 R1'3 合并项/R6=流程门禁两翼非测试项，票面
+  R1~R6 全义达成）；②ORG-SEG v1→v2 重写（钉版 v2.0.1@2e292bb+裁决 13
+  主通道条文+切换状态行+预算机检句，**599/600 PASS**——两次超限 637/602
+  实弹被拦后裁剪）+宪法三屋段门一通道句改（裁决 13 双落点齐）；③词汇
+  映射表 6→12 数据行（实现者子代理/drafter/auditor-readonly/
+  sre-diagnostic/design-reviewer/项目账本）；④账本断流核查（末笔
+  09-09T02:21:05Z 断流 9 天/根因=绑定子代理不经派发器链而写入器只挂
+  派发器链（结构性）/Synapse 面 outcome 零乱码/落法三条=门一实弹首笔
+  v3+F-PROC-01 ⑤ 补记规则+技能侧写入器欠账）——核查报告+切换呈批一体件
+  docs/reports/2026-09-18_align01-org-audit.md。
+- **门审**：门一三轮（实弹 v2 链）——首轮 FAIL B3W2N3（复跑转绿无证据/
+  R3R6 无声缺位/时态矛盾）→处置（R4 实测回填+R3/R6 git 查证+时态修正）
+  →二轮 FAIL B1W3N4（R2/R5/R7~R10 无随包证据/§3 与 patch 原文未随包/
+  通道张力）→处置（zero.log+patch 68 行真全文+六项清单 diff 实证+§7
+  通道张力说明段）→**三审 PASS_WITH_WARNINGS B0W2N4**（W1 钉版号与文件
+  轨迹号矛盾→祖先关系实证+报告澄清句；W2 防护声明超证据→口径改「会话
+  内实弹验证/未接项目 CI」）——全处置；门二 GO_WITH_CONDITIONS P0=0
+  P1=1 P2=6——P1-1=报告「间隔 5 提交全为 docs 面」被 reflog 证伪（实为
+  间隔 13 提交/5 个非 docs）已修正+成因注明；P2 六项全处置（行数快照
+  时点/引文校准/自证口径/预算余量注意/R2 格式注/latency 口径知悉）。
+- **Rulings 待用户（+2，与 batch 8 ELE 实施时机并档）**：①ds-call v1→v2
+  切换批准（报告 §7 选项 a 推荐/b 暂缓/c 双轨+批准后动作清单+附带欠账
+  三条：技能侧 R4 cfg 口径互斥修复/绑定子代理账本写入器接线/F-PROC-01 ⑤
+  不受影响）；②v2 未批先用追认（本批门一三轮实弹走 v2——超自裁面如实
+  呈裁，不追认则门一审作废重走 v1）。
+- **机检终态**：verify 全链 EXIT=0（tickets 一致——registry 翻 done 后
+  态+locks 334+build）；**health-scan RED×0 WARN×0——batch 2~8 连年回显
+  的「cfg 漂移历史欠账」WARN 被本批门一实弹落账清零**（流水尾行 live
+  hash）；账本 28 行（三轮门一派发逐轮落 v3，findings 与审报尾栏逐字
+  咬合——门二亲数）；预算机检 599/600；locks 面零变更（AGENTS.md/relay/
+  报告/证据件均不在 334 项内，无 [locked-change]/[dep-change] 义务）。
+- 证据件入库（scripts/audits/，16 件+docs/reports/1 件）：align01-
+  {regression-zero.log；regression-r1.log；regression-r4-recheck.log；
+  regression-r4-final.log；verify.log（五件 .log 经 -f 过 *.log ignore）；
+  agents-diff.patch；gate1-brief.md/report.md；gate1-brief2.md/report2.md；
+  gate1-brief3.md/report3.md；gate2-brief.md/gate2-report.md}（dispatch×3
+  log 不入库——routing 头在三轮 report 首行已档）。
+- 教训三条：①**git log | head -N 截断以偏概全**（P1-1：报告「间隔 5 提交
+  全为 docs」实为 13 提交 5 个非 docs——head -5 只见前 5 行就落笔；计数
+  纪律变体：不止数字要实测，**集合论断（全为/均为）禁用截断视图**）；
+  ②**预写终态=占位残留的时态变体**（门一 B1/B3：报告把「复跑后应绿」写成
+  既成事实——流程内预留回填段必须显式标「待实测」且结论句不得先行）；
+  ③**审包「全文随包」声称必须逐字兑现**（门一二轮 W2：节选自称「全部
+  内容性变更」被 -/+ 行缺失打脸——自包含审包要么全文要么明说节选范围）。
+- 无进展计数：归零（13→14 有进展）。**第三波全清（SESS/AIN/DEP/ELE/ALIGN
+  五票毕，勾选 14/24）——下波=第四波 F-DEDUP-01（服务层去重微扩版），
+  F-GEOM-01 设计链随后（裁决 1 序：设计链三跳先于实现）。**
 
 ### batch 8 — 2026-09-18（执行者会话：第三波 F-ELE-01 Electron 升级预研，呈裁即停，完成）
 - claim: claim-1789687924-b8｜开始 23:32:04Z｜收口 00:12:00Z｜勾选 12→13。
