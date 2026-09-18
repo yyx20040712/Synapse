@@ -24,6 +24,8 @@ import {
   closestPageRoot,
   pageIndexOf
 } from '../../../src/renderer/features/reader/SelectionLayer'
+import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation } from '@shared/models/annotation'
 
 const saveMock = vi.fn()
@@ -51,6 +53,11 @@ function mountColumnFixture(): { page1: HTMLElement; page2: HTMLElement; span1: 
   document.body.append(page1, page2)
   rects.set(page1, { x: 0, y: 0, width: 600, height: 800 })
   rects.set(page2, { x: 0, y: 812, width: 600, height: 800 })
+  // [F-GEOM-01-G2 对账表 A] textLayer 盒桩（同页盒）：项几何链 base（归一化
+  // 基准盒）与 G2 健康判定消费 gBCR——缺桩时 pixelBoxOf 兜底 1×1，项盒全越
+  // 界 → G2 门误拦项链（回退态不挂工具条）
+  rects.set(page1.querySelector('.textLayer')!, { x: 0, y: 0, width: 600, height: 800 })
+  rects.set(page2.querySelector('.textLayer')!, { x: 0, y: 812, width: 600, height: 800 })
   return { page1, page2, span1: page1.querySelector('span')!, span2: page2.querySelector('span')! }
 }
 
@@ -66,6 +73,25 @@ function selectRange(startNode: Node, startOff: number, endNode: Node, endOff: n
 
 const fireSelectionChange = (): void => {
   document.dispatchEvent(new Event('selectionchange'))
+}
+
+/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10）
+ *  ——[F-GEOM-01-G2 对账表 A] 页项桩三助手（crib selection-item-chain.test:63-76）：
+ *  G2 保存门后回退态（item 链失败）不挂工具条，「工具条在场」用例需页项在位
+ *  且对账通过（items 拼接==DOM 全文——fixture 页 2 文本 'page two gamma delta'） */
+function mkItem(str: string, x: number, y: number): PdfTextItem {
+  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+}
+
+function mkText(items: PdfTextItem[]): PdfTextContent {
+  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+}
+
+/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+  act(() => {
+    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
+  })
 }
 const fireMouseUp = (): void => {
   document.dispatchEvent(new MouseEvent('mouseup'))
@@ -101,6 +127,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
   rects.clear()
+  usePageItemsStore.getState().clear()
   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
   onSaved = vi.fn()
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -152,6 +179,7 @@ describe('SelectionLayer 纯函数（F-02 页盒遍历）', () => {
 describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
   it('P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算并÷有效 zoom（F-A4 c 面归一）', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     // [F-A4] mount 有效 zoom 桩：clientWidth 480/gBCR 600=0.8（ui-scale/CSS
     // zoom 子树内的挂载盒——修前 gBCR 视口差直写 left/top 被再放大 1.25 倍）
     Object.defineProperty(page1, 'clientWidth', { value: 480, configurable: true })
@@ -196,6 +224,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('P3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -217,6 +246,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('F-12b 真拖选出条：mousedown→mouseup 位移 ~5.8px（≥3px 阈值）——mouseup 即时评估路径保持', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -228,6 +258,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('F-12c 无 mousedown 记录的 mouseup 放行（程序化 dispatch/键盘选区无鼠标轨迹——P3 兼容面显式化）', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -238,6 +269,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('P4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -266,6 +298,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('P5 Escape 清：工具条出现后按 Esc 收起', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -280,6 +313,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('P6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）', async () => {
     const { page1, page2, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {
@@ -312,6 +346,7 @@ describe('SelectionLayer 动态锚定根（选区态状态机）', () => {
 
   it('F-A4 守卫（反转）：pending 态（mouseup 后工具条在场）自绘并集层在场——ADR-0019 R1 修订', async () => {
     const { page1, span2 } = mountColumnFixture()
+    seedRegistry(2, mkText([mkItem('page two gamma delta', 72, 700)]))
     await mountLayer(page1)
     selectRange(span2.firstChild!, 0, span2.firstChild!, 4)
     act(() => {

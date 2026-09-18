@@ -3,8 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   estimateLinePitch,
   findRangeAtOffset,
-  mergeLineRects,
-  rectsFromRange
+  mergeLineRects
 } from '../../../src/renderer/features/reader/annotation-anchor'
 import {
   selectionToAnchor,
@@ -68,20 +67,6 @@ guardedDescribe('SR-RDR-01', 'annotation-anchor —— 文本偏移↔DOM 定位
   it('verifyQuote：引文不存在 → null', () => {
     const root = buildPage()
     expect(verifyQuote(root, { prefix: 'x', quote: '不存在的引文', suffix: 'y', start: 0 })).toBeNull()
-  })
-
-  it('rectsFromRange：返回归一化矩形（0..1）', () => {
-    const root = buildPage()
-    const r = findRangeAtOffset(root, 0, 2)
-    expect(r).not.toBeNull()
-    const rects = rectsFromRange(r!, { w: 612, h: 792 })
-    expect(rects.length).toBeGreaterThanOrEqual(1)
-    for (const rect of rects) {
-      expect(rect.x).toBeGreaterThanOrEqual(0)
-      expect(rect.x + rect.w).toBeLessThanOrEqual(1.0001)
-      expect(rect.y).toBeGreaterThanOrEqual(0)
-      expect(rect.y + rect.h).toBeLessThanOrEqual(1.0001)
-    }
   })
 
   // selectionToAnchor 需要 Selection API：jsdom 要求选区相关节点挂在文档上才可靠

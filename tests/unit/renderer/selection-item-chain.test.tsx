@@ -201,7 +201,7 @@ describe('F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道�
     expect(parseFloat(rect!.style.top)).toBeCloseTo((168 / 792) * 100, 2)
   })
 
-  it('回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）', async () => {
+  it('回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默', async () => {
     const { page1, span } = mountPageFixture('AB')
     await mountLayer(page1)
     selectAllOf(span)
@@ -212,7 +212,7 @@ describe('F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道�
     const rect = firstRect()
     expect(rect).not.toBeNull()
     expect(parseFloat(rect!.style.top)).toBeCloseTo((200 / 792) * 100, 2)
-    expect(toolbar()).not.toBeNull()
+    expect(toolbar()).toBeNull()
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('页项数据缺失'))
     expect(toastSpy).not.toHaveBeenCalled()
   })

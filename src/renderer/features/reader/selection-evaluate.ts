@@ -40,9 +40,8 @@
  *   bandsFromItems——C5 禁 rect 项源×band DOM 量测混用）；锚定三元组仍产自
  *   selectionToAnchor（偏移/quote/prefix/suffix 零变，rects 字段切换来源——
  *   pending.anchor.rects 与 paint 同源=保存链与视觉同一来源，INV-58 前半）。
- *   **回退路径**（页项缺失/偏移对账失败/计算异常三因，触发面收敛）：现行 DOM
- *   量测链原样兜底（rects=anchor.rects[mLR 链]+bands=bandsForTextNodes 节点
- *   口径）——回退不静默（console.warn+paint 层照渲零功能损失）
+ *   **回退（三因）＝仅显示不入库（F-GEOM-01-G2 保存门）**：paint 照渲 DOM
+ *   量测产物（视觉连续）+pending=null 无保存入口+warn 单源（itemChainFor 三因）
  * - **G2 降级门挂点**（active：真实健康页偏离率 0~0.12% 永不误伤，合成病理页
  *   复现时确实拦——「仅新增复现证据时启用」的落地形态）：拖选期抑制渲染
  *   （setPaint(null)）+mouseup 时刻 toast 拒绝（INV-02 禁静默；门一 W2 口径
@@ -50,8 +49,9 @@
  * - **通道**：页项 {items,styles,geometry} 经 page-items.store（PagesOverlay
  *   写/本域 evaluate 时刻 getState 直读——zoom 现读、viewport 现构，项几何
  *   不随 zoom 缓存=缩放不变零重算）
- * - **[F-A6-c 门二 seam_ruling] AnnotationLayer 存量重锚域仍 DOM 量测域——
- *   INV-58 票外边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**
+ * - AnnotationLayer 重锚主链自 F-A8 门 2 起已项几何族（存量 rects S3b 回退
+ *   +显式回退层语义=INV-58/档 2 登记）；本行旧「票外边界」自述随 G2 消除
+ *   （设计书 §2.6 交互点 5）
  *
  * ── 接口层 ── / ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - export function createEvaluate(ctx)：工厂返回 {visual, full} 双路径闭包
@@ -59,17 +59,17 @@
  *   PaintSelection/PendingSelection 类型随迁（SelectionLayer 消费）
  * - 依赖单向：本件→anchor-serialize/annotation-anchor/annotation-resolve/
  *   pdf-item-geometry/page-items.store/reader.store/selection-geometry（零环）
- * - probeOffsetLen 为 anchor-serialize 私有 probeTextLength 的本域复刻
- *   （其导出面经锁定测试锚定不扩面——Rule of Three 第 2 次保持重复，口径
- *   逐句对照 anchor-serialize.ts:168-187）
- * - tests/unit/renderer/selection-layer.test.tsx（既有行为面——预计零改）+
+ * - probeTextLength 消费自 anchor-serialize 导出面单源（F-GEOM-01-G2 收敛，
+ *   本域复刻已删）
+ * - tests/unit/renderer/selection-layer.test.tsx（既有行为面——G2 起含页项桩
+ *   〔对账表 A——回退态不挂工具条〕）+
  *   selection-item-chain.test.tsx（F-A6-b2 接线面）+selection-evaluate.test.tsx
  *   （F-A6-c 快慢等价/同帧覆盖/快路径守卫三锚）+selection-geometry.test.ts
  *   （调度器直测——rAF 合帧去重/防抖保持/cancel）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { showToast } from '../../shared/ui/Toast'
-import { selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
+import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchor-serialize'
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './annotation-anchor'
 import { bandsForTextNodes, type RowBand } from './annotation-resolve'
 import { calibrateBandsWithSpans } from './annotation-band-calibrate'
@@ -156,25 +156,6 @@ export interface EvaluateHandle {
 export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
   const { pageRoot, paperId, setPaint, setPending } = ctx
 
-  /** probe-range 文本长度（anchor-serialize 私有 probeTextLength 本域复刻——口径
-   *  逐句同源 ：168-187；side='start' 探 [root 起..边界) 长度=边界全局偏移，
-   *  'end' 探 [边界..root 尾) 长度=其后文长度） */
-  function probeOffsetLen(root: HTMLElement, container: Node, offset: number, side: 'start' | 'end'): number | null {
-    try {
-      const probe = document.createRange()
-      probe.selectNodeContents(root)
-      if (side === 'start') {
-        probe.setEnd(container, offset)
-      } else {
-        probe.setStart(container, offset)
-      }
-      return probe.toString().length
-    } catch {
-      // 节点脱离文档等异常：快路径放弃，回退全量
-      return null
-    }
-  }
-
   /** [F-A6-c] 快路径：项几何链直取。四道守卫前置（裁决 2-§5①）→轻量 probe→
    *  page-items.store 直读→项几何→setPaint；失败（probe/页项/对账/计算/退化
    *  区间）回退=全量视觉评估（evaluateCore(false,true)——DOM 量测回退链在位，
@@ -211,8 +192,8 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     }
     // 轻量偏移 probe（Range.toString ×2 O(页文本)——join/quote/prefix/suffix
     // 切片与 rectsBetweenPoints/medianFontSize 全量几何量测链全省）
-    const lead = probeOffsetLen(textLayer, range.startContainer, range.startOffset, 'start')
-    const tail = lead === null ? null : probeOffsetLen(textLayer, range.endContainer, range.endOffset, 'end')
+    const lead = probeTextLength(textLayer, range.startContainer, range.startOffset, 'start')
+    const tail = lead === null ? null : probeTextLength(textLayer, range.endContainer, range.endOffset, 'end')
     const entry = usePageItemsStore.getState().pages[pageNo + 1]
     let item: ItemSelectionGeometry | null = null
     if (lead !== null && tail !== null && entry !== undefined) {
@@ -308,17 +289,23 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       // [F-A9] 同 visual 快路径——预览带渲染时刻校准（快慢两路同款=INV-58 快慢等价保持）
       setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
     } else {
+      // [F-GEOM-01-G2 保存门] item 链失败＝仅显示不入库（设计书 §2.4）：paint 照渲
+      // DOM 回退形状（视觉连续）；pending=null 不挂工具条＝无保存入口（「所见≠所存
+      // 时不给保存入口」）；诊断单源＝itemChainFor 三因 warn（零新增 warn 位）
       const range = findRangeAtOffset(textLayer, anchor.start, anchor.end)
       setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })
+      if (!visualOnly) setPending(null)
+      return
     }
     if (visualOnly) {
       return
     }
     // [F-A4 c 面] 工具条挂载盒本地落点（翻转+夹取+÷有效 zoom——geometry 域）；
     // [F-A6-b2] pending.anchor.rects 切项几何链产物=保存链与视觉同一来源
-    // （save() 落库 rects 即 pending.anchor.rects——INV-58 前半）
+    // （save() 落库 rects 即 pending.anchor.rects——INV-58 前半；G2 保存门后本段
+    // 仅项链成功可达——pending.anchor.rects 恒为项族形状）
     const { x, y } = toolbarMountPos(pageRoot, { x: box.x, y: box.y, width: box.width, height: box.height })
-    setPending({ anchor: item !== null ? { ...anchor, rects: item.rects } : anchor, pageNo: pageNo!, x, y })
+    setPending({ anchor: { ...anchor, rects: item.rects }, pageNo: pageNo!, x, y })
   }
 
   return { visual, full }

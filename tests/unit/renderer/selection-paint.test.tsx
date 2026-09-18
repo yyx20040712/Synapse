@@ -33,6 +33,8 @@ import { AnnotationLayer } from '../../../src/renderer/features/reader/Annotatio
 import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
 import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 
 
@@ -77,6 +79,25 @@ function selectRange(startNode: Node, startOff: number, endNode: Node, endOff: n
   sel?.addRange(range)
 }
 
+/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10）
+ *  ——[F-GEOM-01-G2 对账表 C] 页项桩三助手（crib selection-item-chain.test:63-76）：
+ *  G2 保存门后回退态不挂工具条，工具条/保存流用例需页项在位且对账通过
+ *  （items 拼接==DOM 全文——文本对 makePage 参数逐字对账） */
+function mkItem(str: string, x: number, y: number): PdfTextItem {
+  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+}
+
+function mkText(items: PdfTextItem[]): PdfTextContent {
+  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+}
+
+/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+  act(() => {
+    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
+  })
+}
+
 const fireSelectionChange = (): void => {
   document.dispatchEvent(new Event('selectionchange'))
 }
@@ -109,6 +130,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
   rects.clear()
+  usePageItemsStore.getState().clear()
   clientRects = []
   rangeRect = { x: 10, y: 900, width: 200, height: 20 }
   onSaved = vi.fn()
@@ -168,6 +190,7 @@ describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
   it('S1b 拖选期零视觉反馈回归守卫（B1/门一回炉→F-A6-c rAF 语义改写）：首 selectionchange 即排 rAF——单帧（16ms）内自绘层渲染且帧前零渲染（rAF 对齐非同步节流），工具条防抖 200ms 语义保持（t=150 仍不出条——防抖窗改短在此红）', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta gamma delta', 72, 700)]))
     await mountLayer(page)
     clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
@@ -226,6 +249,7 @@ describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
   it('S2 所见即所存：保存 rects 与自绘块同源（块数/left/top 一致——同一 evaluate 管线产物）', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta gamma delta', 72, 700)]))
     await mountLayer(page)
     clientRects = [
       { x: 100, y: 200, width: 300, height: 20 },
@@ -261,6 +285,7 @@ describe('F-A4 a 面 —— 自绘并集层（单层单绘不叠深）', () => {
   it('S5 Escape：工具条收而自绘层保留；选区真清除（坍缩+selectionchange）→自绘随清（INV-37 视觉-状态严格同步）', async () => {
     const { page, span } = makePage('1', { x: 100, y: 200, width: 600, height: 800 }, 'alpha beta gamma delta')
     document.body.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta gamma delta', 72, 700)]))
     await mountLayer(page)
     clientRects = [{ x: 100, y: 200, width: 300, height: 20 }]
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
@@ -382,6 +407,7 @@ describe('F-A4 c 面 —— 工具条定位归一（÷有效 zoom+视口夹取+�
     Object.defineProperty(mount, 'clientWidth', { value: 480, configurable: true })
     const { page, span } = makePage('1', { x: 0, y: 620, width: 600, height: 800 }, 'alpha beta')
     mount.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta', 72, 700)]))
     await mountLayer(mount)
     rangeRect = { x: 10, y: 630, width: 200, height: 20 }
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
@@ -399,6 +425,7 @@ describe('F-A4 c 面 —— 工具条定位归一（÷有效 zoom+视口夹取+�
     const mount = makeScrollerFixture({ x: 0, y: 600, width: 1200, height: 2000 })
     const { page, span } = makePage('1', { x: 0, y: 620, width: 600, height: 800 }, 'alpha beta')
     mount.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta', 72, 700)]))
     await mountLayer(mount)
     rangeRect = { x: 10, y: 630, width: 200, height: 20 }
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
@@ -415,6 +442,7 @@ describe('F-A4 c 面 —— 工具条定位归一（÷有效 zoom+视口夹取+�
     const mount = makeScrollerFixture({ x: 0, y: 600, width: 1200, height: 2000 })
     const { page, span } = makePage('1', { x: 0, y: 620, width: 600, height: 800 }, 'alpha beta')
     mount.appendChild(page)
+    seedRegistry(1, mkText([mkItem('alpha beta', 72, 700)]))
     await mountLayer(mount)
     rangeRect = { x: 1150, y: 1000, width: 200, height: 20 }
     selectRange(span.firstChild!, 0, span.firstChild!, 4)
