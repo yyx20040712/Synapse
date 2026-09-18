@@ -132,6 +132,11 @@ R4FINAL_EXIT=0
 
 ## 7. ds-call v1→v2 切换呈批（Rulings 待用户）
 
+> **处置回执（2026-09-18 用户裁决，relay batch 9 增补段）**：R2=**a 批准
+> 切换**+R3=**追认**（batch 9 门一审 v2 实弹链有效）+R1=a（ELE 实施时机
+> 维持裁决 1）。切换已即时兑现：unlock→删 v1→locks 334→333→ORG-SEG 状态
+> 行改「已切换」+methodology 档位表行改 ds-call-v2+[locked-change] 提交。
+
 **呈批事项**：受锁 `scripts/audits/ds-call.mjs`（v1，Kimi 链派发器，
 fetch 传输层带已确诊 undici headersTimeout≈300s 缺陷）切换为技能
 `ds-call-v2.mjs`（node:http(s) 直连+signal 唯一超时源+角色档案化）。

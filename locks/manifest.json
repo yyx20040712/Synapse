@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-17T22:56:35.5133562Z",
+    "generatedAt":  "2026-09-18T01:06:38.1926580Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -36,10 +36,6 @@
                   {
                       "path":  "scripts/audits/audit0-p1b-multi.mjs",
                       "sha256":  "6726313e89226eaf51a23db82488a214351287b9491163ebdef0d043fc9acaef"
-                  },
-                  {
-                      "path":  "scripts/audits/ds-call.mjs",
-                      "sha256":  "166f2a009b8a701b12671c9e5896384398c278405b81fdb0f0025527f9a73629"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",

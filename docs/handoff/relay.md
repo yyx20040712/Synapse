@@ -121,6 +121,23 @@
 
 ## 批次日志（追加，勿改写）
 
+### batch 9 增补 — 2026-09-18（用户在场裁决三项 Rulings，执行者会话兑现）
+- **用户裁决（原文口径）**：R1=a（维持裁决 1：F-GEOM-01 收口后两票分离实施
+  A→B）；R2=a（**批准 ds-call v1→v2 切换**，附带欠账三条确认：技能侧 R4
+  cfg 口径修复/技能侧绑定子代理账本写入器接线/F-PROC-01 ⑤ 补记规则在途）；
+  R3=**追认**（batch 9 门一审 v2 实弹链有效，F-ALIGN-01 收口维持）。
+- **切换收口即时兑现**（批准后动作清单=align 报告 §7）：locks:unlock→
+  删 scripts/audits/ds-call.mjs→locks:generate+apply（manifest 334→333）+
+  AGENTS ORG-SEG 切换状态行改「已切换」+methodology §4 档位表门一行
+  「ds-call.mjs 扩展链」改「ds-call-v2 链」+[locked-change] 提交；
+  model-routing-log 迁移核对=batch 9 门二复算记录④已闭环（v2 流水含
+  R1 六笔+门一三轮，账本 28 行三方对账）——v1 历史流水件保留为审计档。
+- R1=a 落法：板面「Electron 实施窗」注记维持（F-ELE-01 呈裁获准且
+  F-GEOM-01 收口后新波次入板）；实施前按裁决书 §6.6 强制复核矩阵时效。
+- 教训一条：manifest 结构=数组（path 字段项），查锁须逐项比 path——
+  `Object.keys(files).includes(路径)` 对数组恒 false=假阴性（本会话实测
+  翻车一次，幸该结论当时已经门二逐项复核无污染；计数纪律的查询方法变体）。
+
 ### batch 9 — 2026-09-18（执行者会话：第三波 F-ALIGN-01 组织定版对齐，第三波清空，完成）
 - claim: claim-1789689710-b9｜开始 00:01:50Z｜收口 00:52:00Z｜勾选 13→14。
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/

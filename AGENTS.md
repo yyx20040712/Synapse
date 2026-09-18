@@ -182,9 +182,8 @@ development Model Selection+loop-engineering references/06）；**架构与
 - **门一主通道=绑定子代理**（ops-*，$max 显式档位——2026-09-18 裁决 13
   入宪，同技能 06 §6 补遗口径）；外部派发器 ds-call=健康探针+后备通道
   （runbook 择路权保留）。
-- 派发器切换状态：受锁 ds-call.mjs v1 服役中；v2 切换=R1~R6 回归
-  （已真跑，结果=核查报告）+用户呈批后按 [locked-change] 执行，
-  切换后 v1 删除，两版禁混用于同一工单。
+- 派发器=ds-call-v2（2026-09-18 用户裁决批准切换，v1 已删除，
+  [locked-change] 在档；历史档引用 v1 属撰写时态）。
 - 供应商事实唯一真相源=org-config（项目覆盖件 .zcode/org-config.json）；
   组织差异回灌=.zcode/org-delta.jsonl（技能 05 移植指南 §6 协议）。
 - 段预算机检：本段 ≤600 非空白字符
