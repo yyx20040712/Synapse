@@ -11,7 +11,7 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-18T19:21:53+08:00
+- last_dispatch: 2026-09-18T20:30:44+08:00
 - fire_budget_min: 120
 - heartbeat_utc: 2026-09-18T12:26:00Z
 - claim: claim-1789730608-b15
