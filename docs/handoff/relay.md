@@ -7,10 +7,11 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-cbab13a4-2cf7-4b7f-a88b-59dda6687cae
+- automation_id: automation-c21dd023-3a61-42de-80b0-754bc3f2e872
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
+- last_dispatch: -
 - fire_budget_min: 120
 - heartbeat_utc: 2026-09-18T07:32:00Z
 - claim: claim-1789708660-b14
@@ -21,7 +22,8 @@
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
 - **收到火 prompt 的会话=调度员**（投递实证：火只投给创建自动化的布防会话）：
-  读板，READY → UI 开批（侧边栏展开 → AXPress「新建任务」→「选择项目」勾选本
+  读板，READY 且 last_dispatch 距今 ≥30min → UI 开批（<30min=发布静默窗，
+  一行退出；侧边栏展开 → AXPress「新建任务」→「选择项目」勾选本
   项目 → Escape 收菜单 → 真实点击 textfield 建立焦点 → app 级 strategy=event
   键盘写入下方执行指令 → 回读确认文本落框且发送按钮激活 → 点发送）；RUNNING 且
   心跳 <30min → 退出；RUNNING 且心跳 ≥30min → 核对 git 进度后接管；DONE/HOLD →
@@ -148,6 +150,17 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 14 增补三 — 2026-09-18（调度员换防：停火后用户显式 /batch-relay 重布防）
+- 旧火处置：CronDelete(automation-e8255b42-…) 回执 not found（batch 10 换防时已亡，
+  本次用户指令点名复核）+CronList 空集复核，无孤儿火。
+- 重新布防：CronCreate */10（interval=10 minute，recurring），prompt=技能火模板原文；
+  新 automation_id=automation-c21dd023-3a61-42de-80b0-754bc3f2e872 已 tmp+rename 原子
+  回填本板；同步增补 last_dispatch 字段+protocol 调度员句补静默窗条件（技能火班节律，
+  用户裁决 2026-09-18——发布后 30min 静默、有效班=30/40/50/60…）。
+- status 维持 READY（batch 14 收口态），claim/勾选数（18/35）未动。本会话接任调度员
+  宿主（火只投给本会话）：此后每回合仅「开批通道」UI 开批不自跑批，保持存活。
+  下批指引不变=F-GEOM-01-G3（band 三档绑定+跨族交互点登记 INV-68 落册，纯登记面）。
 
 ### batch 14 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G2 保存链单源门+死面收敛，完成——**末批，接力停**）
 - claim: claim-1789708660-b14｜开始 05:17:40Z｜中途用户暂停（05:56Z~06:4xZ，见增补二）
