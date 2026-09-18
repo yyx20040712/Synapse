@@ -7,8 +7,10 @@
  *   0.20×2≈0.36 加深缺陷根治）。
  * - 色 rgba(0,0,0,0.20)：同修前观感（R2-F-10 灰 0.20 在案；白纸合成
  *   ≈#CCCCCC 可辨）。
- * - [F-A5 a 面] 块几何=行簇字形带单源（bandsNearRects 产 RowBand——与
- *   标注/AI 三消费点同基准）：垂直=band（顶贴字形顶/底贴底缘——修前
+ * - [F-A5 a 面] 块几何=行簇字形带单源（[F-GEOM-01-G3] 勘正：RowBand 按
+ *   档绑定（INV-68）——selection 产链喂档1 bandsFromItems 校准版/档2
+ *   bandsForTextNodes 显示回退；band 匹配=matchBand，与标注层渲染同基准）：
+ *   垂直=band（顶贴字形顶/底贴底缘——修前
  *   CSS 回退行盒在小字号文档上 1.5~2 倍行高、上下溢出约半行，真机基线
  *   1.57~1.83× 在档）；水平=行簇 span 实际端点夹取（clampedHorizontal
  *   ——修前行盒越出文字区）。band 缺席（jsdom/量测退化）→ 行盒原样
@@ -46,7 +48,9 @@ export const SelectionPaint = memo(function SelectionPaint(props: {
   root: HTMLElement
   /** 归一化并集矩形（evaluate 管线产物——与保存 rects 同源） */
   rects: AnnotationRect[]
-  /** [F-A5] 行簇字形带（bandsNearRects 产物——缺省=行盒原样回退） */
+  /** 行簇字形带（[F-A5]——缺省=行盒原样回退）。[F-GEOM-01-G3] 档位勘正：
+   *  selection 产链实际喂入档1 校准版（calibrateBandsWithSpans(item.bands)）或
+   *  档2 显示回退产物；bandsNearRects=档3、真实消费仅 AnnotationLayer S3b（INV-68） */
   bands?: RowBand[]
 }): JSX.Element {
   const { root, rects, bands } = props

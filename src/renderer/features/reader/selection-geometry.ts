@@ -58,7 +58,9 @@ export function pageIndexOf(root: HTMLElement): number | null {
   return Number.isInteger(no) && no >= 1 ? no - 1 : null
 }
 
-/** 视口→挂载盒本地坐标比值（1/有效 zoom；量测退化→1 直通） */
+/** 视口→挂载盒本地坐标比值（1/有效 zoom；量测退化→1 直通）。
+ * [F-GEOM-01-G3] 域声明：本换算=UI 布局域（视口→挂载盒本地 px），非 PDF
+ * 几何域——不参与锚定/归一化数学（INV-58 坐标域边界注；r3a 型域差防线参照） */
 export function localScale(el: Element, rect?: DOMRect): number {
   const rw = (rect ?? el.getBoundingClientRect()).width
   const cw = el.clientWidth

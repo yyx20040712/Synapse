@@ -13,11 +13,11 @@
 - poll_interval_min: 10
 - last_dispatch: 2026-09-18T19:21:53+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T07:32:00Z
-- claim: claim-1789708660-b14
+- heartbeat_utc: 2026-09-18T12:26:00Z
+- claim: claim-1789730608-b15
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 18
+- checked_done: 19
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -107,7 +107,7 @@
 - [x] F-GEOM-01-G2（保存链单源门+死面收敛 §2.4/§3.5——**唯一行为变更票**，
       [locked-change][test-refactor]；受锁面=selection-layer.test 14 用例
       改写+指纹门豁免清单）
-- [ ] F-GEOM-01-G3（band 三档绑定+跨族交互点登记 §2.5/§2.6——INV-68 落册
+- [x] F-GEOM-01-G3（band 三档绑定+跨族交互点登记 §2.5/§2.6——INV-68 落册
       [locked-change]，纯登记面）
 - [ ] F-GEOM-01-G4（目录化 M1 state/ 10 件 §3.4 [locked-change][test-refactor]；
       **开工前补票面**——check-quality.mjs:96 tab-dirty 键+:98 CorpusExtractor
@@ -150,6 +150,60 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 15 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G3 band 三档绑定+跨族交互点登记，完成）
+- claim: claim-1789730608-b15｜开始 11:21:45Z（认领 11:23:28Z）｜收口 12:26:00Z｜勾选 18→19。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=纯登记面无适用对象（简报③-1
+  预裁+门一预裁项 1 复核认同——零行为变更无可变异对象，batch 12/8 先例）；systematic-
+  debugging 不加载（无排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor
+  绑定（GLM5.3flash $max）；门一=ops-gate1-k1 绑定（kimi-main k3 $max——正常承载）；
+  门二=ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（纯登记面零行为变更）**：①INV-68 落册（invariants.md:84 接续尾号 67——band
+  三档绑定：档1 bandsFromItems=selection 快/全量主链+S2/S3a 唯一源/档2
+  bandsForTextNodes=S4+selection 全量显示回退专用且产物不入库/档3 bandsNearRects=S3b
+  存量专用，禁跨档消费+禁第四推导+calibrateBands 三档之上现状不变+§2.6 交互点
+  #2/#3/#4 终态收口句）；②INV-58 尾部坐标域边界注（localScale=UI 布局域/
+  rootToLocalScale=lineage 域件/itemViewportOf=项族域内——防 r3a 型域差事故重演，
+  事故背景 F-A6-b2 项盒域差 G2 实战拦截）；③三处换算头注域声明；④陈旧头注勘正
+  五处（selection-paint 两处+annotation-resolve 三处——F-A5「三消费点」族谎言面清零，
+  接缝归责纪律：与 INV-68 档3 唯一消费登记互斥的声明全部对准）。6 文件 +33/-18
+  （实现者交付 +21/-8+门审处置增量：W1 勘正+3/-1、P2-1 净零行重写、P1-1 行号
+  锚 :237/:277/:302 实测修正）。
+- **消费面核对（INV-68 前提事实）**：主控侦察+门一开卷双核——档1=selection-evaluate
+  :130/:207+annotation-resolve 主链（itemSelectionGeometry:506 内 bandsFromItems）；
+  档2=annotation-resolve:302（S4）+selection-evaluate:296（显示回退）；档3=
+  AnnotationLayer.tsx:98 唯一；calibrateBands 三档之上（layered :135/:213+selection-
+  evaluate :233/:290）——「现状天然档位绑定」成立。
+- **门审**：门一 **PASS_WITH_WARNINGS B0/W2/N7**——引用锚 10 处抽核全命中+零行为
+  逐 hunk 成立；W1=annotation-resolve:231 同族陈旧头注漏勘正（主控随收口勘正）/
+  W2=INV-68 状态词「已登记」越维护规则三档词表（门一裁改「未锚定」推翻主控保留
+  倾向——:88 明文规则行，接受）。门二 **GO_WITH_CONDITIONS P0=0/P1=1/P2=1/N=5**——
+  W1/W2 处置逐字落准+增量隔离唯一 hunk；新发现 P1-1（W1 净+2 行致 INV-68 行号锚
+  失准→主控实测修正 :237/:277/:302）+P2-1（模块头注 :21-23/:25-28/:49 同族残句→
+  主控净零行变化设计重写防锚再漂）——均选菜单(a)收口前修复，未留 G11 债（G11 既有
+  断锚债义务仍在：目录化迁移后 INV-68 行号锚随迁刷新）。
+- **机检终态**：verify 三跑全 EXIT=0（实现者首跑+主控 W1/W2 处置后+P1/P2 修复后
+  终跑 g3-verify-final3.log：206 票 open 18→17=恰 G3 翻 done+locks 338 一致+
+  test 170 文件/1744 用例+指纹门 187/1789/5411 零漂移+豁免 2hits/2stale0+build 绿）；
+  locks 链三轮 unlock→改→apply（manifest 每轮与 invariants.md 同步）；e2e 不跑
+  （零行为变更——G1/batch 12 同口径，父级 e2e 验收义务归 G11）；**health-scan
+  RED×0 WARN×0**（账本补记后复跑同绿）；账本 42→45 行（executor+门一+门二，绑定岗
+  主控补记 node JSON.stringify——临时 .cjs 用毕即删）。
+- 证据件入库（scripts/audits/，11 件）：g3-{impl-brief.md；impl-report.md；gate1-brief.md；
+  gate1-report.md（岗无写通道主控逐字归档）；gate1-diff.patch；gate2-brief.md；
+  gate2-report.md（同型逐字归档）；gate2-diff.patch}+三 .log（verify-final/final2/
+  final3——git add -f 入库，.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训：轻量一条——主控简报的路径与计数断言落笔前同样须实测（本批简报两处瑕疵被
+  实现者/门一审勘误：manifest 路径 scripts/locks.manifest.json→实为 locks/manifest.json、
+  总数 +21/-9→实为 +21/-8——「计数落笔前实测」纪律的简报侧变体：简报是实现者输入，
+  错路径/错计数会传导成下游自裁）。
+- Rulings 待用户：无新增（票内自裁 6 项+门审处置 W1/W2/P1-1/P2-1 均闭合；G11 断锚债
+  为既有票面义务非新增）。
+- 无进展计数：归零（18→19 有进展）。**下波=F-GEOM-01-G4（目录化 M1 state/ 10 件
+  [locked-change][test-refactor] 大中票一火一票；开工前补票面=check-quality.mjs:96
+  tab-dirty 键+:98 CorpusExtractor 消费者目标串两行随步改写（门二 P1-3 登记，漏改
+  =M1 verify quality 红）+registry 全域随迁义务首用——batch 12 板注）。**
 
 ### batch 14 增补三 — 2026-09-18（调度员换防：停火后用户显式 /batch-relay 重布防）
 - 旧火处置：CronDelete(automation-e8255b42-…) 回执 not found（batch 10 换防时已亡，
