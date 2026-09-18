@@ -7,10 +7,10 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-e8255b42-9698-40da-a62b-8896ef575e8f
+- automation_id: automation-cbab13a4-2cf7-4b7f-a88b-59dda6687cae
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
-- poll_interval_min: 5
+- poll_interval_min: 10
 - fire_budget_min: 120
 - heartbeat_utc: 2026-09-18T02:32:00Z
 - claim: claim-1789693931-b10
@@ -120,6 +120,16 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 10 增补 — 2026-09-18（调度员换防：旧布防会话终结，重新布防）
+- 旧火处置：CronDelete(automation-e8255b42-…) 回执 not found（工作区内已不存在
+  ——先序会话或客户端侧已删，无孤儿火）；CronList 复核空集后布防，未留双火。
+- 重新布防：CronCreate `*/10`（interval=10 minute，recurring），prompt=技能火
+  模板原文；新 automation_id=automation-cbab13a4-2cf7-4b7f-a88b-59dda6687cae
+  已 tmp+rename 原子回填本板，poll_interval_min 5→10 同步改准；status 维持
+  READY（batch 10 收口态），claim/勾选数（15/24）未动。
+- 本会话接任调度员宿主（火只投给本会话）：此后每回合仅「开批通道」UI 开批
+  不自跑批，保持存活。下批指引不变=F-GEOM-01 设计链三跳（单火专注）。
 
 ### batch 10 — 2026-09-18（执行者会话：第四波 F-DEDUP-01 服务层去重微扩，完成）
 - claim: claim-1789693931-b10｜开始 01:12:11Z｜收口 02:32:00Z｜勾选 14→15。
