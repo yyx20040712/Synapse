@@ -1,0 +1,25 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 206 个；open 12（weak 可领 0，strong 12）
+tickets 检查未通过：
+  - 工单 SR-RDR-02 指向的文件不存在：src/renderer/features/reader/PdfPageCanvas.tsx
+  - 工单 SR-RDR-03 指向的文件不存在：src/renderer/features/reader/TextLayer.tsx
+  - 工单 SR-RDR-06 指向的文件不存在：src/renderer/features/reader/AnnotationLayer.tsx
+  - 工单 SR2-AI-09 指向的文件不存在：src/renderer/features/reader/AiAnnotationLayer.tsx
+  - 工单 SR2-F-01 指向的文件不存在：src/renderer/features/reader/PageColumn.tsx
+  - 工单 SR2-F-03 指向的文件不存在：src/renderer/features/reader/scroll-progress.ts
+  - 工单 SR2-F-06 指向的文件不存在：src/renderer/features/reader/PageColumn.tsx
+  - 工单 SR2-F-09 指向的文件不存在：src/renderer/features/reader/text-layer.css
+  - 工单 F-A7 指向的文件不存在：src/renderer/features/reader/PageColumn.tsx
+  - 工单 F-SPLIT-01 指向的文件不存在：src/renderer/features/reader/PageColumn.tsx
+  - 工单 F-A9 指向的文件不存在：src/renderer/features/reader/AnnotationLayer.tsx
+  - 工单 F-GEOM-01-G9 指向的文件不存在：src/renderer/features/reader/PdfPageCanvas.tsx
+  - src/renderer/features/reader/view/PageColumn.tsx: 引用了已完成工单 SR2-F-01 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/view/TextLayer.tsx: 引用了已完成工单 SR-RDR-03 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/view/scroll-progress.ts: 引用了已完成工单 SR2-F-03 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/view/AnnotationLayer.tsx: 引用了已完成工单 SR-RDR-06 的占位（该工单已 done，本文件应是独立实现）
+TICKETS_EXIT=1

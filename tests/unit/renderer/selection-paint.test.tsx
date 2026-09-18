@@ -30,7 +30,7 @@ import {
 } from '../../utils/geometry'
 import { mkItem, mkText, seedRegistry } from '../../utils/factories'
 import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
-import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
 import { rectStyle } from '../../../src/renderer/features/reader/anchors/annotation-style'
 import { bandFromMetrics } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'

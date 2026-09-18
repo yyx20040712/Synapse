@@ -23,8 +23,8 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
 
 makeApiStub({ reader: {} })
-import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
-import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
+import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
+import { AiAnnotationLayer } from '../../../src/renderer/features/reader/view/AiAnnotationLayer'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import {
   createReaderStoreInitialState,

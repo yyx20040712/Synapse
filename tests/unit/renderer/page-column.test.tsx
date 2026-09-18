@@ -20,7 +20,7 @@ import type { RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
+import { PageColumn } from '../../../src/renderer/features/reader/view/PageColumn'
 import {
   anchoredScrollTop,
   clampPageToColumn,
@@ -30,7 +30,7 @@ import {
   pageBoxHeight,
   recycledPages,
   windowPages
-} from '../../../src/renderer/features/reader/page-column-geometry'
+} from '../../../src/renderer/features/reader/view/page-column-geometry'
 
 // F-05：段⑤程序滚动的消费形断言锚（单容器收敛函数替身——真数学在
 // scroll-converge.test 锚定，本文件不重复实现数学）

@@ -7,18 +7,18 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-9d2ab6a4-8aa2-4f96-9a44-fa9b23577f85
+- automation_id: automation-4a8cb784-c14b-4941-89f3-ffe1b0cec6e5
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T02:52:22+08:00
+- last_dispatch: 2026-09-19T03:48:46+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T19:48:00Z
-- claim: -
+- heartbeat_utc: 2026-09-18T20:48:00Z
+- claim: claim-1789761018-b21
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 24
+- checked_done: 25
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -133,7 +133,7 @@
       readFileSync/字符串路径形态全扩展名预扫，命中行号写入票面受锁面清单；
       theme.test 对 G8 零命中（门二实测），config 面 check-quality:97
       ReaderNotesPanel 已在票面）
-- [ ] F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件 §3.4
+- [x] F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件 §3.4
       [locked-change][test-refactor]；**同上字符串面预扫义务**——theme.test
       对 G9 零命中（门二实测），config 面 eslint:90-91 已在票面）
 - [ ] F-GEOM-01-G10（目录化 M6b view 工具簇 13 件 §3.4
@@ -167,6 +167,89 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 21 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G9 目录化 M6a view 渲染簇 14 文件迁移，完成）
+- claim: claim-1789761018-b21｜认领 2026-09-18T19:50:30Z｜收口 2026-09-18T20:48:00Z｜勾选 24→25。
+  （本批窗口内两调度员事件：增补四=用户再删火+增补五=新会话换防新火 automation-4a8cb784——
+  均声明在途 b21 不受影响，claim 全程未被动。）
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记/换源状态机认知）；TDD=实现者六段简报内嵌
+  等价红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-debugging
+  不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位面）。派发档位：
+  主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash $max）；门一=
+  **ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 2026-09-18 调度员转达 k1 封顶
+  k2 承载续；本班 5h 窗口已重置正常承载，G8 期 403 未再现）**；门二=ops-adjudicator
+  绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（零行为纯迁移）**：M6a=view 渲染簇——PageColumn(164)/PageBox(64)/PagesOverlay(132)/
+  PdfPageCanvas(146)/TextLayer(156)/text-layer.css(116)/page-column-geometry(174)/
+  usePageColumnScroll(66)/usePageLazyWindow(83)/scroll-progress(367)/AnnotationLayer(151)/
+  AiAnnotationLayer(234)/AnnotationPopups(202)/ReaderPageView(157) 十四件 2212 行（wc 实测；
+  13 件对设计书 §3.2 各 −1=无尾换行口径登记 G11 对账债；PdfPageCanvas 146 vs 188 系 G1
+  类型下沉已削非本票面）迁 reader/view/（git rename 14 对相似度 94-100%）；改写面=A 深度
+  修正恰 44 行（state 18+anchors 14+panels 1+interact 1+上跨 api/shared 4+**reader 根驻留
+  M6b 件 ../X 6**——PageColumnView/SearchHighlightLayer/AnnotationEditor/AnnotationMenu/
+  TabBar/ReaderToolbar，M6a/M6b 拆分声明中间态边）+B src 消费 7 行/3 件（reader-search:32+
+  PageColumnView:25-27+ReaderPage:50/54/58）+C tests 30 行/16 件（vi.mock 5）+D 跨特性 0
+  +E config 2 行（eslint.config.js:90/91——INV-16 四路径分步随迁第 3/4 步）+F registry 随迁
+  12 行+G9 翻 done（file→view/PdfPageCanvas.tsx；另消 4 条镜像面红=迁移件头注提名 done 票
+  失 file 锚豁免）+G 字符串面零动作（板注预扫义务兑现：readFileSync/字符串形态全仓 0 命中，
+  theme.test 对 G9 零命实证 g9-recon.log）。
+- **TDD 证据链**：基线 verify EXIT=0 锚（g9-verify-baseline.log：206 票 open 12/locks 360/
+  170 文件 1744 用例/指纹门 187·1789·5411·skip15）；七关卡（lint/typecheck/test 170/1744/
+  build/quality/locks 364 全 EXIT=0；tickets 红=registry 收口面预期态）；中探针 EXIT=2 恰
+  56 错全 tests 面（src 面 0 错；open-race 仅 vi.mock 面=tsc 盲区由套件绿闭合）；变异红证
+  M1（ReaderPage:58 回退旧径→TS2307 EXIT=2→cp 还原 diff 空→复绿）+M2（page-column.test:23
+  回退→模块解析红 EXIT=1→还原→复锁→24 passed 复绿）全变量法物理在档；**构建产物哈希恒等**
+  （index-D3egZtl2.js 1,392.72kB+index-BfpEygSE.css 52.49kB+pdf.worker 同名——G5-G9 恒等链
+  第五票）；§3.1 单向核验（g9-one-way v2）：view→{anchors 14,state 18,panels 1,interact 1,
+  time 0}+域内互引 26+根驻留 6+上跨 4=70 出边全对账+反向边 0+旧径残留五通道（旧径/点径/
+  别名/动态 import/vi.mock）全 0。
+- **门审（回炉 0）**：门一 k2 **PASS_WITH_WARNINGS B0/W1/N10**——逐 hunk 零行为断言+计数
+  A44/B7-3/C30-16（vi.mock 5）/E2/rename14 亲数全中+域序单向合规+受锁面纯路径改写断言；
+  W1=单向探针 v1 输出被 v2 覆盖未留档（处置=本日志注记：证据缺口成立、v2 修复方向更严格
+  +门二独立复扫同向补偿；**后续场探针各版本输出全量留档**）；N8=PdfPageCanvas:36-38 G1 期
+  「受锁测试旧路径零触」注释陈旧→**归 G11 头注扫尾**；N3=root↔view 中间态边→**G10（M6b）
+  收官重扫**；N1/N2/N4-N7/N9/N10 转门二持仓闭合。门二 ops-adjudicator **GO_WITH_CONDITIONS
+  P0=0/P1=1/P2=5/N=8**——A-H 全表独立复算（禁采信转述）+21 日志 30 处 EXIT 物理标记亲读+
+  五通道残留亲扫全 0+锁链 360→364 逐步复推+tickets 清红预演（12 行映射+规则 1/2/6 预演）+
+  收口序 H 预批附四补强（staging 含 diff.patch+gate2 件/12 行映射表/尾验预期值清单/注记
+  同批落笔）；**P1-1=impl-report 两处锁数失实（363/359 应为 364/360）——更正段已追记报告尾
+  （勘误留痕不回改）**；P2 五条=指纹数字取证位置更正（在 baseline log:27）/*.bak 表述精确化
+  （g4 期历史档非 G9 残留）/GBK 日志 grep -a 口径/N8 归 G11 确认/N9 归因措辞——均收口注记。
+- **机检终态**：收口终跑 verify 全链 **G9_CLOSEOUT_VERIFY_EXIT=0** 变量法物理在档
+  （g9-closeout-verify.log:3914，Node 24.20.0：open 12→11=恰 G9 翻 done+locks 364 一致
+  （log:87）+Test Files 170/Tests 1744（log:3873）+指纹门 187/1789/5411/skip15 零漂移
+  （log:27）+build 绿产物同名）；tickets 翻 done 单跑 FLIP_EXIT=0（open 11+12 行随迁+镜像面
+  同消）；e2e 不跑（零行为口径，义务归 G11——G1-G8 同裁；门二 N5 同口径：G10 有 43 用例门）；
+  **health-scan 首跑 RED×1→账本行修形后复跑 RED×0 WARN×0**（g9-healthscan.log/
+  g9-healthscan2.log）；账本 62→65 行（executor+门一 k2+门二，主控补记 node .cjs 临时件
+  用毕即删——**findings 字段首写为字符串形被 findings-parser 执法拦（audit_surface 岗须
+  对象形，G5/G7 先例），修形复跑闭合**）。
+- 证据件入库（scripts/audits/，37 件 g9-*）：recon/one-way/rewrite-a/rewrite-b/rewrite-ce
+  五 .mjs+对应 .log；impl-brief/impl-report（含 P1-1 更正段）；gate1-brief/report/
+  diff.patch；gate2-brief/report；verify-baseline/closeout-verify/tickets-flip 三 .log；
+  gate-{lint,typecheck,test,build,quality,tickets,locks} 七 .log+locks-{ce,final,gen1,gen2,
+  apply-ce} 五 .log；midprobe-typecheck/m1/m2-mutation/gitmv-status/healthscan/
+  healthscan2 .log——.log 系经 git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**主控补记账本行 findings 形态**（字符串形过不了 health-scan findings-parser
+  的 typeof object 执法——G8 字符串行因 adjudicator/executor 不在 audit_surface 漏网，本批
+  gate1 行首次踩中；补记模板=对象形 {"B/W/N","verdict","note"}，G5/G7 先例口径）；②**G8 期
+  health-scan 先于账本末次补记跑的扫描时点缺陷本批显形**（本批首跑 RED 实为自产新行而非
+  G8 exhaust 行——exhaust 行 event≠ok 天然豁免；**health-scan 必须在账本终态后跑**，G8 的
+  「先扫描后补记」序属流程缺口留痕）；③**探针版本覆盖=证据灭失**（门一 W1：v1 有缺陷当场
+  修正 v2 PASS 但 v1 输出被覆盖——探针迭代须各版本输出分别落档，自利性归因「探针缺陷非
+  实现缺陷」无原始证据即不可审计）。
+- Rulings 待用户：无新增（G8 期「kimi 链额度恢复后是否补跑 G8 门一+G10/G11 承载口径」
+  Ruling 仍在案——本批 k2 已自然恢复承载实证在档，供用户裁决参考；票内自裁含 reader 根
+  驻留 6 边中间态/镜像面红归因/P1-1 更正追记等均经门一裁+门二复核闭合；受锁面 30 行=
+  [locked-change][test-refactor] 双尾注权限内）。
+- 无进展计数：归零（24→25 有进展）。**下波=F-GEOM-01-G10（目录化 M6b view 工具簇 13 件
+  §3.4 [locked-change][test-refactor]——ReaderPage/ReaderToolbar/TabBar/reader-shortcut-
+  handlers/ReaderShortcuts/AnnotationEditor/AnnotationMenu/useReaderSearch/ReaderSearchBox/
+  reader-search/reader-search.store/SearchHighlightLayer/PageColumnView；受锁面预列恰 3 行
+  字符串面（门二 P2-1 实测行号）：theme.test.ts:292 AnnotationMenu.tsx/:293 AnnotationEditor
+  .tsx/:485 TabBar.tsx——readFileSync 形态锁清单+e2e 43 默认门+指纹门；root↔view 中间态边
+  收官重扫（门一 N3/门二附注）；大中票一火一票。**
 
 ### batch 20 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G8 目录化 M5 panels/ 8 文件迁移，完成）
 - claim: claim-1789757612-b20｜认领 2026-09-18T18:53:32Z｜收口 2026-09-18T19:48:00Z｜勾选 23→24。
@@ -1523,3 +1606,39 @@
   早于姊妹板 23:19:54——首班有效火轮到本板，下批指引不变=F-GEOM-01-G7（M4
   interact/ 7 件）。
 - 既有板上转达条款（门一审 k2 承载直至用户另行通知）继续随执行指令原文生效。
+
+### 调度员增补四 — 2026-09-19T03:51:12+08:00（hub 停火：用户令删火，新会话换防交接）
+- 用户在 hub 调度会话下达删火令：全局轮转火 automation-9d2ab6a4-8aa2-4f96-9a44-
+  fa9b23577f85 已 CronDelete（回执 deleted:true，CronList 空集复核）。本条为调度员
+  尾部纯追加，claim/状态字段未动；板头 automation_id 字段行保留旧值仅为历史审计
+  指向。
+- 本火任内战果：G7/G8 两批完成（勾选 22→24，提交 d7f2f4c31a/4de23ab9e0），G9 已于
+  03:48:46 发布并认领。
+- **在途 batch 21（G9，claim-1789761018-b21）不受影响——执行者独立于火，自行完成
+  收口（翻票+提交+板回写 READY）**。收口后本板停于 READY 且无火接续——此为预期态
+  非异常。恢复两径同规：用户显式 /batch-relay 重布防（新 automation_id 回填本板，
+  换防协议 hub 变体），或手动会话按本板清单领批。
+- 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令
+  优先）。
+- 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入指令生效。
+
+### 调度员增补五 — 2026-09-19T03:57+08:00（hub 换防：新调度会话接替，重布全局轮转火）
+- 旧火核查：CronList 空集——增补四删火对象 automation-9d2ab6a4-… 确认已亡，零清场
+  动作；新火布防后 CronList 复核全局恰一条，无双火。
+- 深度设计门（换防重走）：过——`.zcode/org-ledger.jsonl` 活跃（末笔=batch20-g8
+  adjudicator 行 @09-18T19:40Z，文件 mtime 09-19 03:27）、《裁决书》占位符 grep
+  零命中、执行清单机检 24 勾+11 开=35 与板头计数一致。
+- 板面处置：字段对照当前技能模板零缺失（无增行）；在途 b21 判活=心跳 09-19
+  03:50:30 新鲜+实物在途（scripts/audits/g9-recon.mjs 未跟踪侦察件+locks/
+  manifest.json 修改+板面认领笔）——claim-1789761018-b21 未动，status 维持
+  RUNNING；本条尾部纯追加；板头 automation_id 字段行已锚定替换为新火 id
+  （锚定计数=1 守卫过；历史日志旧 id 存量 2 处叙述不动）。
+- 新全局火=automation-4a8cb784-c14b-4941-89f3-ffe1b0cec6e5（新 hub 调度会话创建，
+  全局唯一 */10 轮转，服务本板+waterprint 板）。b21 收口回写 READY 后，火班按
+  轮转规则（READY ∧ last_dispatch 距今 ≥30min 最老优先）自然接续。
+- UI 开批通道实测经验三条（前任调度会话 2026-09-19 实测，火回合开批时适用）：
+  ①「新建任务」侧边栏按钮常不可寻址——Ctrl+N 快捷键实测有效；②新任务视图预置
+  继承项目绑定（值不可读）——必须先按「取消选择当前项目」清空并确认清空后再
+  搜索勾选目标项目，防「勾选已选项反致解绑」；③调度侧 Edit 改板遇「文件已改」
+  护栏系执行者并发写入，重读后再落笔。
+- 既有板上转达条款（门一审 k2 承载直至用户另行通知）照原文继续随注入指令生效。

@@ -87,8 +87,8 @@ export default tseslint.config(
     // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx）
     files: [
       'src/renderer/features/reader/state/PdfDocProvider.tsx',
-      'src/renderer/features/reader/PdfPageCanvas.tsx',
-      'src/renderer/features/reader/TextLayer.tsx',
+      'src/renderer/features/reader/view/PdfPageCanvas.tsx',
+      'src/renderer/features/reader/view/TextLayer.tsx',
       'src/renderer/features/reader/state/CorpusExtractor.ts'
     ],
     rules: {

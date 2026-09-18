@@ -15,7 +15,7 @@
  * G2 阈值改 0.5——文件备份法，红证档随完成报告）。
  */
 import { describe, expect, it } from 'vitest'
-import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 import {
   SELECTION_DEV_RATIO_THRESHOLD,
   baselineGroupBlocks,

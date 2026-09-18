@@ -27,7 +27,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { domRect } from '../../utils/geometry'
 import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/state/PdfDocProvider'
-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 /** 桩共享位（vi.hoisted——vi.mock 工厂与用例两侧同引用） */
 const probe = vi.hoisted(() => ({
@@ -52,7 +52,7 @@ const probe = vi.hoisted(() => ({
   aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
 }))
 
-vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+vi.mock('../../../src/renderer/features/reader/view/PageColumn', () => ({
   PageColumn: (props: {
     doc: PDFDocumentProxy
     totalPages: number
@@ -77,28 +77,28 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
   }
 }))
 
-vi.mock('../../../src/renderer/features/reader/TextLayer', () => ({
+vi.mock('../../../src/renderer/features/reader/view/TextLayer', () => ({
   TextLayer: (props: { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } }) => {
     probe.textLayer = props
     return <div data-stub="text-layer" data-viewport-scale={props.viewportScale} data-page-width={props.pageWidth} data-page-height={props.pageHeight} />
   }
 }))
 
-vi.mock('../../../src/renderer/features/reader/AnnotationLayer', () => ({
+vi.mock('../../../src/renderer/features/reader/view/AnnotationLayer', () => ({
   AnnotationLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
     probe.annotationLayer = props
     return <div data-stub="annotation-layer" data-page={props.page} />
   }
 }))
 
-vi.mock('../../../src/renderer/features/reader/AiAnnotationLayer', () => ({
+vi.mock('../../../src/renderer/features/reader/view/AiAnnotationLayer', () => ({
   ReaderAiLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
     probe.aiLayer = props
     return <div data-stub="ai-layer" data-page={props.page} />
   }
 }))
 
-import { PagesOverlay } from '../../../src/renderer/features/reader/PagesOverlay'
+import { PagesOverlay } from '../../../src/renderer/features/reader/view/PagesOverlay'
 
 /** 文档桩（PageColumn 已 mock——doc 仅透传，无 getPage 调用面） */
 const DOC = { numPages: 6 } as unknown as PDFDocumentProxy

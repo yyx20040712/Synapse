@@ -22,7 +22,7 @@
  * - F-ARCH3 拆件纪律：函数形态原样迁（不加 useCallback/useMemo）；渲染窗口
  *   判定（rendered）由宿主传入，canvas 生命周期=渲染窗口绑定（INV-30）不变。
  */
-import type { PDFDocumentProxy } from './state/PdfDocProvider'
+import type { PDFDocumentProxy } from '../state/PdfDocProvider'
 import { PdfPageCanvas } from './PdfPageCanvas'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import { pageBoxHeight, type PageBoxSize } from './page-column-geometry'

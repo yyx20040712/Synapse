@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T19:24:55.4742775Z",
+    "generatedAt":  "2026-09-18T20:07:28.3917930Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -15,7 +15,7 @@
                   },
                   {
                       "path":  "eslint.config.js",
-                      "sha256":  "267299cff6e41831c451ffa582b081b27c1c9cc3dcf6db1c4f88f6b86d220c7f"
+                      "sha256":  "e636f5106e1bd10d96a9b41818b759a5dcad2e225260c851d04e39ce06732eee"
                   },
                   {
                       "path":  "playwright.config.ts",
@@ -420,6 +420,26 @@
                   {
                       "path":  "scripts/audits/g8-s31-check.mjs",
                       "sha256":  "649ef4102fd25547c5e3382fd111d3962977d465fc5ded2aae1d205baa5a04de"
+                  },
+                  {
+                      "path":  "scripts/audits/g9-one-way.mjs",
+                      "sha256":  "4b5e0db2400ba36c9d99d3fa24fde57d8e5fd5fce3518c033dd21c6990a50136"
+                  },
+                  {
+                      "path":  "scripts/audits/g9-recon.mjs",
+                      "sha256":  "e0b06060c18bbfb7e61bf330b0eed06123d809e83cc865924e95ddf1918a3ec8"
+                  },
+                  {
+                      "path":  "scripts/audits/g9-rewrite-a.mjs",
+                      "sha256":  "611491f04ad05b93bb340de43fd65fcc843f39cda2e96dd0f349ad47e8972fd3"
+                  },
+                  {
+                      "path":  "scripts/audits/g9-rewrite-b.mjs",
+                      "sha256":  "334b46a422e8fda5cb2b95f9f7649ce2456fa38d4136d302a7ed6d6e5f3af5da"
+                  },
+                  {
+                      "path":  "scripts/audits/g9-rewrite-ce.mjs",
+                      "sha256":  "953ccee98719887c048d209b73c16957440d8c9e541133ccc96ae89ebf2d86b2"
                   },
                   {
                       "path":  "scripts/audits/p7d01-visual-probe.mjs",
@@ -887,7 +907,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
-                      "sha256":  "b60569fdc91a717f1faa8b71a371115d34c689f2c8c08f14e0fb099d587ecf17"
+                      "sha256":  "97db73a28d9a403a2595bb52d9a386f99a2d33c81257cb56ac5bc9f66e0aab31"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
@@ -907,7 +927,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-item-verify.test.tsx",
-                      "sha256":  "bdd028d5dbca3b9d02fa07a3c9ed9f579e7a0c81c365144c80e6aa3b4af00a6f"
+                      "sha256":  "deaaaefe4628b9cae3dd24b379b9bd1f737143f83a0be7dd435513039f0d452c"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
@@ -923,7 +943,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
-                      "sha256":  "269f091a7a46467fab8f80906000fba5db10e7b208d1e6eba3ee9ec7527e66e7"
+                      "sha256":  "26545e5b0668dada91615aa7926e155a0143c889900fbecc6e7638510c583bf3"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",
@@ -935,7 +955,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-popups-autosave.test.tsx",
-                      "sha256":  "ccf1c095c07ddfc9f70e33307fc39cc4f43ea06f78f1f46f45718e0c3564a126"
+                      "sha256":  "1e15a04457c978fd36c9540cfd21e543f088cf65dffde9886f721b1bf72e3853"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-undo.test.ts",
@@ -951,7 +971,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
-                      "sha256":  "8c815ef31ab6bb800f75e64a9ca64d77549d5452807955a412eb57ec04f0d56d"
+                      "sha256":  "004132be79ad7e718d49e2539700569ff41e70be15ffd916760207a35982b2d8"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
@@ -1051,11 +1071,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
-                      "sha256":  "9edeb8b2e5d0eb30f48765768bc15c1ff9729158c2651c99471eb227cb17c8c6"
+                      "sha256":  "8cb4ca450a5fe7fed3977076b411c96f2bccdc546ebce3d26e37605a4a2e6f2e"
                   },
                   {
                       "path":  "tests/unit/renderer/pages-overlay.test.tsx",
-                      "sha256":  "6aed5a427565cfbab89a4a2fb3526e6e083398a533f51e2ce4e8a9b2676e9da2"
+                      "sha256":  "139f517d1df551c970cde6a88cc689eeec5d802ec011c5e77373bd0c51da4c0b"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
@@ -1075,11 +1095,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
-                      "sha256":  "f7b9dd7accc8442a825fb31f7d58c0f73be6fd1041b5962d817fbea1366139ce"
+                      "sha256":  "38b256e6fa58e53a8c3c4a75c3e1ee076251880127552e580b3a08d8bae09e89"
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
-                      "sha256":  "0350b1391e66e0895942d33b0bd953d33d350209f6dc1f9250e72937394af703"
+                      "sha256":  "ecfcf8397c37535c14637cdcf236eba5a2f9a44fde7f884a4d8a5a3f2d7bf5ef"
                   },
                   {
                       "path":  "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
@@ -1091,7 +1111,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-double-page.test.tsx",
-                      "sha256":  "ad7675cd5b020c93a613d721b792fec89e5319f3ac4954ae19803e40366a8477"
+                      "sha256":  "689e41e9213f4dedd0aaa9f5e9ce015582d5b69647bd4e0f6735d14cc466f451"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
@@ -1099,7 +1119,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
-                      "sha256":  "c1188c52ed84bef9b6b07eee7439bc72cf3d15fa0aba398791958cf7fb2a5467"
+                      "sha256":  "500d4e82d290c0a58715471d7399040fbfdd9b95a79d816969b3cd964ce4e6e0"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-search.store.test.tsx",
@@ -1107,7 +1127,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-search-text.test.tsx",
-                      "sha256":  "354fecf8e87e264100774dcb77d5ded85f2d2d975d78a47ee914d966155c3e72"
+                      "sha256":  "83e182ba6666677787a09cc430410a30cc1facc02d5f5947a3d6fffc4da56b0a"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-search-ui.test.tsx",
@@ -1143,7 +1163,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-progress.test.tsx",
-                      "sha256":  "5abaa7d5501499654695b6d917055819f979bbf02363edeb8dccc547d85404c8"
+                      "sha256":  "0fd966c532f9fc20f4990118b453d537c5885a9869343c32d8f02c2fdacf6cf2"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-evaluate.test.tsx",
@@ -1167,11 +1187,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-mode.test.tsx",
-                      "sha256":  "18f41528d6037295576320bf277cb3aa7e7867a3ba109f61203a21791b8271de"
+                      "sha256":  "a96b81948886111c7c8cfe41e479396e323a5b67286338d6f8c6124d15e8f668"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "0bfb007ee0b5973451e70c3492953d66a2e16dd8d8cf66d426906b87179e9f1e"
+                      "sha256":  "365b92794c0a478d0e25637dc4e13a27340276cc02adcfed219278570da2943f"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
@@ -1207,7 +1227,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/text-layer.test.tsx",
-                      "sha256":  "25aa86b65dc9c9a50818ceb6197ae52668416fbf64536d408aca15e6f8b01316"
+                      "sha256":  "185fdbcec0278f04893273471e95bcb34ca534a00c8e0bd2735105af0054aa23"
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",

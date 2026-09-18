@@ -23,7 +23,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
-import { PageColumn } from '../../../src/renderer/features/reader/PageColumn'
+import { PageColumn } from '../../../src/renderer/features/reader/view/PageColumn'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import {
   anchoredScrollTop,
@@ -33,7 +33,7 @@ import {
   columnWidthFor,
   layoutRows,
   rowWidth
-} from '../../../src/renderer/features/reader/page-column-geometry'
+} from '../../../src/renderer/features/reader/view/page-column-geometry'
 import {
   createReaderStoreInitialState,
   useReaderStore

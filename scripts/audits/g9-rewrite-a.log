@@ -1,0 +1,14 @@
+PageColumn.tsx: 2 edits
+PageBox.tsx: 1 edits
+PagesOverlay.tsx: 3 edits
+PdfPageCanvas.tsx: 4 edits
+TextLayer.tsx: 1 edits
+usePageColumnScroll.ts: 1 edits
+scroll-progress.ts: 4 edits
+AnnotationLayer.tsx: 7 edits
+AiAnnotationLayer.tsx: 8 edits
+AnnotationPopups.tsx: 6 edits
+ReaderPageView.tsx: 7 edits
+TOTAL_A_EDITS=44
+REWRITE_A_OK
+A_EXIT=0

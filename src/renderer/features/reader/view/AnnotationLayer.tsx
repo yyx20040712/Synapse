@@ -39,13 +39,13 @@
  */
 import { useEffect, useLayoutEffect, useState } from 'react'
 import type { Annotation } from '@shared/models/annotation'
-import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from './anchors/annotation-resolve'
-import { resolveAnnotationRectsLayered } from './anchors/annotation-resolve-layered'
-import { usePageItemsStore } from './anchors/page-items.store'
-import { mergeRects } from './anchors/annotation-merge'
-import { rectStyle } from './anchors/annotation-style'
-import { PAGE_LAYER_Z } from './state/page-layer-z'
-import { useReaderStore } from './state/reader.store'
+import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from '../anchors/annotation-resolve'
+import { resolveAnnotationRectsLayered } from '../anchors/annotation-resolve-layered'
+import { usePageItemsStore } from '../anchors/page-items.store'
+import { mergeRects } from '../anchors/annotation-merge'
+import { rectStyle } from '../anchors/annotation-style'
+import { PAGE_LAYER_Z } from '../state/page-layer-z'
+import { useReaderStore } from '../state/reader.store'
 import { AnnotationPopups, type PopupTarget } from './AnnotationPopups'
 
 /** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */
