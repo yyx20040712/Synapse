@@ -12,10 +12,10 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T03:15:54Z
-- claim: claim-1789698911-b11
-- no_progress_count: 0
-- checked_total: 24
+- heartbeat_utc: 2026-09-18T04:27:08Z
+- claim: claim-1789702503-b12
+- no_progress_count: 1
+- checked_total: 35
 - checked_done: 16
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
@@ -100,6 +100,32 @@
       415 行（三接缝闭合+三机制驳回+69 文件映射/八步迁移+G1~G11 切分+INV 清单）】
 - [ ] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
       验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
+- [ ] F-GEOM-01-G1（M0 类型下沉切环 §3.3——geometry-types 单源+三环切断；
+      骨架已立 src/renderer/features/reader/geometry-types.ts）
+- [ ] F-GEOM-01-G2（保存链单源门+死面收敛 §2.4/§3.5——**唯一行为变更票**，
+      [locked-change][test-refactor]；受锁面=selection-layer.test 14 用例
+      改写+指纹门豁免清单）
+- [ ] F-GEOM-01-G3（band 三档绑定+跨族交互点登记 §2.5/§2.6——INV-68 落册
+      [locked-change]，纯登记面）
+- [ ] F-GEOM-01-G4（目录化 M1 state/ 10 件 §3.4 [locked-change][test-refactor]；
+      **开工前补票面**——check-quality.mjs:96 tab-dirty 键+:98 CorpusExtractor
+      消费者目标串两行随步改写（门二 P1-3 登记，漏改=M1 verify quality 红）+
+      registry 全域随迁义务首用（file 指向被迁路径的票一并改写））
+- [ ] F-GEOM-01-G5（目录化 M2 time/ 4 件 §3.4 [locked-change][test-refactor]）
+- [ ] F-GEOM-01-G6（目录化 M3 anchors/ 13+1 件 §3.4——受锁面最重：锚定
+      回归网 18 物理件+跨特性 import（lineage×2+open-paper-bus）；
+      check-quality:99 行（lineage→ai-note-style）对账到行号（门二 P1-3c））
+- [ ] F-GEOM-01-G7（目录化 M4 interact/ 7 件 §3.4
+      [locked-change][test-refactor]）
+- [ ] F-GEOM-01-G8（目录化 M5 panels/ 8 件 §3.4 [locked-change][test-refactor]）
+- [ ] F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件 §3.4
+      [locked-change][test-refactor]）
+- [ ] F-GEOM-01-G10（目录化 M6b view 工具簇 13 件 §3.4
+      [locked-change][test-refactor]——eslint INV-16 四路径分步随迁收官）
+- [ ] F-GEOM-01-G11（战役收官：头注扫尾+净删/交互点记账+验收门全跑
+      （e2e 一键全跑 45+默认门 43）+INV 终册+基线重冻结 [locked-change]；
+      **收官时定 INV 册历史 reader 路径引用口径**（保留 vs 随迁刷新——
+      门二 P2-2）；本票毕=本父行+registry 母票同步翻 done）
 
 ### 第五波·梯队四：第二波域归位（LAYER/TIME 小票组同火）
 
@@ -122,6 +148,73 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 12 — 2026-09-18（执行者会话：第四波 F-GEOM-01 实现票立案批 G1~G11，完成）
+- claim: claim-1789702503-b12｜开始 03:35:03Z｜收口 04:27:08Z｜勾选 16/24→
+  16/35（+11 子项上板零勾选=立案批计划内零勾选步——batch 1 立案批可勾
+  T0~T2 因板面即任务行，本批板面无对应勾选行属结构差异；no_progress
+  按协议字面 0→1 留痕，下批 G1 起恢复）。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织
+  主干/轻量双审档位/ORG-12 审包/health-scan/账本 v3 补记）；writing-plans
+  不加载（票面要件=设计书 §5.3 定稿切分，非新计划立项）；TDD/
+  systematic-debugging 不加载（纯 registry/骨架立案面，零业务实现零排障
+  ——验证=check-tickets+verify 机检门）。派发档位：主控=GLM5.3 max
+  （本会话）；门一=ops-gate1-k1 **连续两次 Provider authentication
+  failed→换源状态机切 ops-gate1-k2 备源承载**（kimi k3 max，zipoo——
+  log-triage --health 窗口推荐 k1=派发器链对绑定通道失效无信号的结构性
+  盲区，账本行如实记）；门二=ops-adjudicator 绑定（deepseek-flash max）
+  ——轻量双审（文档/制度批档位），均异构于主控执行面。
+- **交付**：tickets/registry.ts 195→206 票（+11=F-GEOM-01-G1~G11 全
+  strong open，open 9→20）+母票立案注记（母票随 G11 翻 done）+块注释
+  （含**全域随迁义务**——目录化迁移步落盘时 registry 全体 file 指向被迁
+  路径的票（含 done 票与 G 票自身）一并随迁改写，波及 40+ 票次（门一 W1
+  处置，门二独立实测波及面 55 条 reader 路径票=外部 45+本批 10））；两
+  骨架=src/renderer/features/reader/geometry-types.ts（G1 票面载体）+
+  docs/reports/2026-09-18_f-geom01-campaign-closeout.md（G11 记账载体）。
+  票面要件=设计书 §5.3 切分表+§2.4/§2.5/§2.6/§3.2/§3.3/§3.4/§3.5/§5.1/
+  §5.2 条件逐项内嵌（M6b 括注「ReaderPage 等」按 §3.2 总表 27=14+13
+  补全=PageColumnView——门二独立复算吻合）。
+- **门审**：门一（k2 承载）**PASS_WITH_WARNINGS B0/W2/N3**——W1 全域
+  随迁义务缺口（处置=块注释补段）／W2 锚定回归网计数口径（处置=主控
+  tests ls 实测=**18 物理件**（§5.1 名单 17 项之 selection-layer×2=
+  selection-layer.test+selection-layer-fa12.test 双文件），G6 票面改
+  实测口径）／N1 落板时态（收口兑现）／N2 G1 红证前提（处置=
+  tsconfig.web.json include 含 tests/**/*.tsx 亲核，票面前提明示）／
+  N3 设计书两表层瑕疵（M6b 括号未闭合+§2.4/§5.3 新 INV 归属张力——记录
+  不改动，registry 按 §5.3 正确）。门二 **GO_WITH_CONDITIONS
+  P0=0/P1=3/P2=2/N=6**——P1-1 落板保真（本收口兑现：11 子项顶层行+
+  id 与 registry 一一对应人工核对过+counts 24→35/no_progress 0→1）；
+  P1-2 单提交范围（显式列文件兑现）；P1-3 **M1 check-quality 白名单
+  条目归属缺口（门二独立命中，门一未见）**：check-quality.mjs:96
+  tab-dirty 键+:98 CorpusExtractor 消费者目标串两行全批票面零归属、
+  漏随步改写=M1 verify quality 红——按最轻闭合本日志登记+板 G4 子项行
+  预注+G4 开工前票面补记；P2-1 门一报告行号基准=处置前 registry（终态
+  292-302）；P2-2 INV 册历史 reader 路径引用随迁口径 G11 收官时定（板
+  G11 子项行已注）。门二独立复算全一致（206=195+11/open 20/G6 18 件/
+  M6b 27=14+13/骨架零占位零乱码/verify 数字/锁集合反证）。
+- **机检**：verify 全链双跑 EXIT=0（首跑+处置后终树跑，标记
+  GEOM01_FILING_VERIFY(_FINAL)_EXIT=0 物理在两 raw 末行；206 票 open 20
+  +locks 338 零变更+test 170 文件/1745 用例与 batch 11 基线零漂移+
+  test-surface 门过（既有纯增滞后态零新增）+build 绿）；check-tickets
+  单跑 EXIT=0；**零受锁面**——本批触及三路径（tickets/registry.ts/
+  src/renderer/**/docs/reports/**）均不在受锁集合（get-protected-files
+  逐类核对），零 [locked-change] 义务零 locks 操作（batch 8 教训②反向
+  面：无锁面不跑锁命令）；e2e 未跑（零 src 行为变更——geometry-types.ts
+  空体全仓零 import，门二独立 grep 证实，batch 1 立案批同口径）；
+  **health-scan RED×0 WARN×0 可收口**；账本 34→36 行（门一 k2+门二，
+  绑定岗主控补记 v3 行 node JSON.stringify——heredoc 禁令遵守）。
+- 证据件入库（scripts/audits/，7 件）：geom01-impl-{gate1-brief.md;
+  gate1-report.md（岗无写通道主控逐字归档）;registry.patch（处置后终态
+  35 行）;verify.raw.txt;verify-final.raw.txt;gate2-brief.md;
+  gate2-report.md（同型逐字归档）}。
+- 教训：无新增（k1 绑定通道 auth 失败第二现——batch 7 换源先例直接适用；
+  log-triage --health 对绑定通道失效无信号的结构性盲区已入账本行注记，
+  换源决策以真实派发回执为准的惯例确立）。
+- Rulings 待用户：无新增（票内自裁 5 项——锚选择/板面子项形态/零锁面/
+  e2e 不跑/no_progress+1——均经门一拷问+门二复核闭合）。
+- 无进展计数：+1（16→16 零勾选=立案批结构差异如上申报；连续 3 才 HOLD）。
+  **下波=F-GEOM-01-G1（M0 类型下沉切环，大中票一火一票）——G4 开工前
+  票面补 P1-3 两行已板注。**
 
 ### batch 11 — 2026-09-18（执行者会话：第四波 F-GEOM-01 设计链三跳，完成）
 - claim: claim-1789698911-b11｜开始 02:35:11Z｜收口 03:15:54Z｜勾选 15→16。
