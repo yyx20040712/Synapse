@@ -15,9 +15,10 @@
  *     zoom: number; onPageRender(page, textContent: PdfTextContent,
  *     geometry: PdfPageGeometry): void; onError(msg: string): void }): JSX.Element
  * - pageNo 固定（页码 1 基；页列模型：页码由 PageColumn 分配，不再跳变）
- * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型单源驻本文件
- *   （pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方 TextLayer/
- *   PagesOverlay 不 import pdfjs-dist）
+ * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型真源=
+ *   geometry-types（pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方
+ *   TextLayer/PagesOverlay 不 import pdfjs-dist）；本件 type 再导出保受锁
+ *   测试旧路径（ai-annotation-layer.test:25 等——F-GEOM-01-G1 M0 切环）
  *
  * ── 架构层 ──
  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
@@ -30,54 +31,12 @@ import { useEffect, useRef } from 'react'
 import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import { PAGE_LAYER_Z } from './page-layer-z'
 import { clampScale } from './pdf-item-geometry'
+import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './geometry-types'
 
-/**
- * 对外文本项类型：pdfjs TextItem 的结构子集（str/几何/变换，含行尾标记）。
- * 主入口未再导出 TextItem 类型，且边界上本文件应自持契约——消费方不 import pdfjs-dist
- */
-export interface PdfTextItem {
-  str: string
-  dir: string
-  width: number
-  height: number
-  transform: number[]
-  fontName: string
-  hasEOL: boolean
-}
-
-/**
- * 字体样式（pdfjs TextStyle 结构子集）：TextLayer 排版（ascent/descent）与
- * 文本朝向（vertical）计算必需，按 items 里的 fontName 索引
- */
-export interface PdfTextStyle {
-  fontFamily: string
-  ascent: number
-  descent: number
-  vertical: boolean
-}
-
-/**
- * 页文本内容：TextLayer 生成可选中文本层的完整输入。styles 缺省会令其按
- * fontName 的样式查找拿到 undefined 而崩——集成期实证，不再是可省字段
- */
-export interface PdfTextContent {
-  items: PdfTextItem[]
-  styles: Record<string, PdfTextStyle>
-  lang: string | null
-}
-
-/**
- * 页几何通道（F-A6-b1 T1/T9 前置修复）：rotate=pdf.js page.rotate（/Rotate 值）；
- * view=pdf.js page.view（CropBox∩MediaBox，[x0,y0,x1,y1] PDF 用户空间）——
- * TextLayer duckViewport 的 rotation/rawDims 真值来源（与 canvas 渲染的
- * getViewport 同源，二者不再各执一词）。userUnit≠1 的页 view 未乘 userUnit
- * （官方 PageViewport.rawDims getter 会乘）——已知边界：真实库全档 userUnit=1
- * （f-a6-forensic-verdict §1），触发后另行扩展
- */
-export interface PdfPageGeometry {
-  rotate: number
-  view: [number, number, number, number]
-}
+// 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
+// import 本件零触（ai-annotation-layer.test:25/pdf-item-geometry.test:18 等
+// 十处 tests/**/*.tsx）
+export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from './geometry-types'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)

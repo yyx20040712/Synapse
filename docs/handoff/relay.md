@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T04:27:08Z
-- claim: claim-1789702503-b12
-- no_progress_count: 1
+- heartbeat_utc: 2026-09-18T05:10:21Z
+- claim: claim-1789705913-b13
+- no_progress_count: 0
 - checked_total: 35
-- checked_done: 16
+- checked_done: 17
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -100,7 +100,7 @@
       415 行（三接缝闭合+三机制驳回+69 文件映射/八步迁移+G1~G11 切分+INV 清单）】
 - [ ] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
       验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
-- [ ] F-GEOM-01-G1（M0 类型下沉切环 §3.3——geometry-types 单源+三环切断；
+- [x] F-GEOM-01-G1（M0 类型下沉切环 §3.3——geometry-types 单源+三环切断；
       骨架已立 src/renderer/features/reader/geometry-types.ts）
 - [ ] F-GEOM-01-G2（保存链单源门+死面收敛 §2.4/§3.5——**唯一行为变更票**，
       [locked-change][test-refactor]；受锁面=selection-layer.test 14 用例
@@ -148,6 +148,56 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 13 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G1 M0 类型下沉切环，完成）
+- claim: claim-1789705913-b13｜开始 04:31:53Z｜收口 05:20:00Z｜勾选 16→17。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；实现面=ops-executor 绑定子代理
+  （零行为变更重构票——TDD 面以票面指定变异红证机制兑现，主证+副证双闭环）；
+  systematic-debugging 不加载（票面修法=设计书 §3.3 定稿切分+主控派发前全边侦察
+  前置，无排障定位面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor
+  绑定（GLM5.3flash $max）；门一=ops-gate1-k1 绑定（kimi-main k3 $max——本次
+  正常，batch 7/12 两次 auth 失败未再现）；门二=ops-adjudicator 绑定
+  （deepseek-flash $max）——门审均异构于实现者。
+- **交付**：geometry-types.ts 真身（103 行零 import 置底：PdfTextItem/PdfTextStyle/
+  PdfTextContent/PdfPageGeometry 四类型+PixelBox+RowBand+COLUMN_GAP 两常量逐字
+  含注释迁入）+三处 export type 再导出（PdfPageCanvas 四类型/annotation-anchor
+  PixelBox/annotation-resolve RowBand——受锁测试旧路径零触=M0 零受锁面机制）+
+  三环切断（pig→anchor/resolve/Canvas 三向 type import 全改向+anchor 的
+  COLUMN_GAP 值 import 改向=anchors 域内无环）+两 store→Canvas type 边消除
+  （page-items.store/reader-search.store）。7 文件 +140/-110（geometry-types
+  +83/Canvas −41/anchor −1/resolve −7/pig −5/page-items +1/search-store 0）。
+- **变异红证**：主证删 Canvas 再导出→typecheck EXIT=2（TS2305×5+TS2459×27=32
+  错误行=消费面精确枚举：src 6 件+tests 10 件）→还原 diff 空→复绿；副证删
+  PixelBox 再导出→TS2724×3（含受锁锚 anchor-item-verify.test:30）→还原→复绿；
+  cp 备份法全程（禁 git checkout 宪法条遵守）。
+- **门审**：门一 k1 **PASS_WITH_WARNINGS B0/W1/N3**——W1 实现者报告计数与 raw
+  矛盾（grep 误计探针节头/标记行：33→32、4→3）→主控勘误处置销（报告勘误段+
+  门二 N1 句尾补正）；N1 首跑红无 raw（环境前置文字申报采信）/N2 RowBand 无专项
+  变异（票面 DoD 合规，typecheck 锚定兜底）/N3 .log 入库提醒。门二 **GO
+  P0=0/P1=0/N=6**——四组关键数字独立复算全成立（±行数逐 hunk/32=5+27/3/
+  170/1745）+locks manifest 338 反证零锁面+收口五面预批；N3 口径修正=e2e 不跑
+  依设计书 §3.4 M0 行（零运行时值变：常量 1.5/0.02 同值亲核+type-only 编译期
+  擦除——勿引 batch 12 空骨架类比），父级 e2e 验收义务归 G11；N5 收口清单全兑现。
+- **机检终态**：verify 全链终跑 G1_VERIFY_FINAL_EXIT=0（206 票 open 20→19=恰 G1
+  翻 done+locks 338 零变更+test 170 文件/1745 用例零漂移+test-surface 门过+
+  build 绿）；实现者侧 typecheck/unit/lint 三绿在档；**零受锁面**（7 源文件+
+  证据件+registry+relay 均不在 manifest 338 项，门二独立反证——22 条 src 受锁
+  全在 migrations/shared）；**health-scan RED×0 WARN×0**（账本补记后复跑）；
+  账本 36→39 行（executor+门一+门二，绑定岗主控补记 node 脚本 JSON.stringify
+  ——临时 .cjs 件用毕即删零驻留，避开 scripts/*.mjs 受锁自动面）。
+- 证据件入库（scripts/audits/，13 件）：g1-{impl-brief.md；impl-report.md；
+  gate1-brief.md；gate1-report.md；gate1-diff.patch；gate2-brief.md；
+  gate2-report.md；verify-final.raw.txt}+五 .log（typecheck/unit/lint/
+  mutation-reexport/mutation-pixelbox——git add -f 入库，.gitignore *.log 拦截
+  按 batch 8 教训③处置）。
+- 教训：无新增等级（门一 W1=既有「探针输出引用」族查询侧变体：grep 计数须把
+  探针自身节头/标记行与错误行分口径数——已在账本行注记，未污染代码面）。
+- Rulings 待用户：无新增（票内自裁 4 项——sqlite-abi 前置定性/变异码形家族/
+  头注注释缺陷自愈/.log 入库裁量，均经门一 G 项+门二逐项复核认可）。
+- 无进展计数：归零（16→17 有进展）。**下波=F-GEOM-01-G2（保存链单源门——战役
+  唯一行为变更票 [locked-change][test-refactor] 大中票一火一票；§2.4 受锁面
+  先行对账义务=立案时先出 selection-layer.test 14 用例断言对账表再动手）。**
 
 ### batch 12 — 2026-09-18（执行者会话：第四波 F-GEOM-01 实现票立案批 G1~G11，完成）
 - claim: claim-1789702503-b12｜开始 03:35:03Z｜收口 04:27:08Z｜勾选 16/24→

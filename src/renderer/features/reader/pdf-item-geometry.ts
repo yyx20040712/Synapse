@@ -37,9 +37,9 @@
  * - viewport 通道（C1）：签名经 ItemViewport{scale,rotate,view}——与 b1 的
  *   PdfPageGeometry 同源真值（rotate=page.rotate、view=page.view）；归一化
  *   基准=pixelBoxOf(textLayer)（INV-37 同盒——消费方传入，本件纯函数不读 DOM）
- * - 类型单一真相源：PdfTextItem/PdfTextStyle 消费自 PdfPageCanvas、PixelBox
- *   自 annotation-anchor、RowBand 自 annotation-resolve（跨模块 import 类型
- *   合法——同 feature 内），零类型复写
+ * - 类型单一真相源：PdfTextItem/PdfTextStyle/PixelBox/RowBand 四类型+
+ *   COLUMN_GAP_* 两常量均自 geometry-types（M0 切环终态——F-GEOM-01-G1；
+ *   跨模块 import 类型合法——同 feature 内），零类型复写
  *
  * ── 架构层 ──
  * - **零 pdfjs-dist import（INV-16 白名单不扩）**：viewport.transform 与
@@ -66,10 +66,9 @@
  *   ——取证 §9-4 数据缺口[RTL/竖排/grapheme 细分运行时触发面零]的单测补）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
-import type { PixelBox } from './annotation-anchor'
 import { mergeRects, W_MIN } from './annotation-merge'
-import type { PdfTextItem, PdfTextStyle } from './PdfPageCanvas'
-import type { RowBand } from './annotation-resolve'
+import type { PdfTextItem, PdfTextStyle, PixelBox, RowBand } from './geometry-types'
+import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './geometry-types'
 
 /** viewport 通道（C1）：与 canvas 渲染的 page.getViewport({scale}) 同构输入——
  *  rotate/view 来自 PdfPageGeometry（b1 下钻真值），scale=当前 zoom 经 clampScale
@@ -307,12 +306,8 @@ export function itemRects(
 }
 
 // ── 基线分组并块（取证口径 2——f-a6-diag-lib baselineGroupBlocks 移植+组内
-//    x 大间隙断段[票面 §1-3「并集/断段」——镜像 mergeLineRects COLUMN_GAP 语义]）──
-
-/** 簇内 x 大间隙断段阈值（[F-LINT-03] reader 几何单源——annotation-anchor
- *  同值本地声明退役改 import；值域契约由两处测试锚定不变） */
-export const COLUMN_GAP_H_FACTOR = 1.5
-export const COLUMN_GAP_PAGE_RATIO = 0.02
+//    x 大间隙断段[票面 §1-3「并集/断段」——镜像 mergeLineRects COLUMN_GAP 语义；
+//    COLUMN_GAP_* 真源=geometry-types（F-GEOM-01-G1 M0 切环），顶部 import]）──
 
 /** v 轴投影聚类（排序+相邻差>tol 断簇——与取证 baselineRowTruth 同语义同容差） */
 function groupByBaseline(boxes: ItemBox[], tolPx: number): ItemBox[][] {
