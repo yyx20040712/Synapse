@@ -7,17 +7,18 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-c21dd023-3a61-42de-80b0-754bc3f2e872
+- automation_id: automation-bf8fd7d7-fa7b-4194-a850-2c702565068e
+- shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-18T20:30:44+08:00
+- last_dispatch: 2026-09-18T22:06:13+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T13:39:59Z
-- claim: claim-1789734695-b16
+- heartbeat_utc: 2026-09-18T15:05:00Z
+- claim: -
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 20
+- checked_done: 21
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -40,8 +41,14 @@
   E:\class\智慧水务\Synapse_remake，相对路径以此为基）。用户指令（2026-09-18
   调度员转达）：门一 k1（ops-gate1-k1）周额度已达上限——本批起门一审一律改用
   ops-gate1-k2（zipoo 源）承载，勿再派发 k1，直至用户另行通知」
+- **hub 守卫（shared_fire 板，2026-09-18 布防补齐）**：本板挂全局轮转火——
+  DONE/HOLD/无进展 3 连时**只置状态+终报，禁删火**（删火权归 hub 调度员，须全部
+  成员板终态才收线）；调度员回合=hub 轮转：在 READY ∧ last_dispatch 距今 ≥30min
+  的成员板中挑 last_dispatch 最老一块（`-`=从未发布视作最老；并列取火 prompt
+  清单序），每回合至多开一批；本板 protocol 上述 CronDelete 字样在 hub 模式下
+  一律以本守卫句为准。
 - 禁止创建任何新自动化。停止事由（破坏性/安全敏感/仓外副作用 push/merge/发布/
-  计划破碎到每条路都是猜）→ status: HOLD + CronDelete 后呈报。
+  计划破碎到每条路都是猜）→ status: HOLD + 终报呈报（hub 板不删火）。
 
 ## 执行路由（ai-dev-org 项目——批内引擎）
 
@@ -115,7 +122,7 @@
       **开工前补票面**——check-quality.mjs:96 tab-dirty 键+:98 CorpusExtractor
       消费者目标串两行随步改写（门二 P1-3 登记，漏改=M1 verify quality 红）+
       registry 全域随迁义务首用（file 指向被迁路径的票一并改写））
-- [ ] F-GEOM-01-G5（目录化 M2 time/ 4 件 §3.4 [locked-change][test-refactor]）
+- [x] F-GEOM-01-G5（目录化 M2 time/ 4 件 §3.4 [locked-change][test-refactor]）
 - [ ] F-GEOM-01-G6（目录化 M3 anchors/ 13+1 件 §3.4——受锁面最重：锚定
       回归网 18 物理件+跨特性 import（lineage×2+open-paper-bus）；
       check-quality:99 行（lineage→ai-note-style）对账到行号（门二 P1-3c））
@@ -152,6 +159,97 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 17 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G5 目录化 M2 time/ 4 文件迁移，完成）
+- claim: claim-1789740440-b17｜认领 14:07:20Z｜收口 2026-09-18T15:05:00Z｜勾选 20→21。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌
+  等价红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-
+  debugging 不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位面）。
+  派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash
+  $max）；门一=**ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 2026-09-18
+  调度员转达：k1 周额度封顶本批起 k2 承载）**；门二=ops-adjudicator 绑定
+  （deepseek-flash $max）——门审均异构于实现者。
+- **交付（零行为纯迁移）**：M2=time/ 域迁移——reading-time(303)/reading-time-
+  setup(139)/reading-time-outbox(300)/reading-time-outbox-store(87) 四件 829 行
+  迁 reader/time/（git rename 相似度 100/100/95/99）；改写 12 行=深度修正 5
+  （setup:13/:14 深度+1+`:15/:16` ./state/→../state/——time→state 唯一域边；
+  reading-time:61 re-export 深度）+跨特性消费 3（main.tsx:4+ReaderPage:55/:56）
+  +注释勘正 1（shared/reading-time-format.ts:4）+tests 受锁面 3 行 2 文件
+  （reading-time.test:9+reading-time-outbox.test:10/:15 纯路径改写）；域内同层
+  4 处零改写；e2e 两 spec 零触碰（命中系字符串/注释）；配置面零涉及
+  （check-quality :96/:98 系 M1 state 面；eslint INV-16 四路径无 time 件）；
+  registry 全域随迁义务本步恰 2 行（P7X-02 done 票+G5 自身）。§3.1 单向核验：
+  state→time 反向边零存在+time→state 唯一边+零新增域边。
+- **TDD 证据链**：基线 verify EXIT=0 锚（206 票/open 16/locks 345/test 170/1744/
+  指纹门 187/1789/5411）；迁移后七关卡独立取证全绿（quality+指纹门零漂移+locks+
+  lint+typecheck+test+build；tickets 红=registry 旧径=收口职责预期内）；变异红证
+  M1（main.tsx:4 回退旧径→TS2307 EXIT=2→还原 diff identical→typecheck 复绿）+
+  M2（test:9 回退旧径→Failed to load url EXIT=1→还原→17/17 复绿+复锁）；
+  **构建产物哈希四方恒等（门一 N3 升格标配兑现）**：index-D3egZtl2.js 1,392.72
+  kB+index-BfpEygSE.css 52.49 kB 跨「G4 master 在档→本批基线（迁移前）→迁移后
+  →收口终跑」同名同尺寸。
+- **门审**：门一（k2 承载，PASS_WITH_WARNINGS B0/W3/N5）——零行为断言逐 hunk
+  成立+深度数学逐行验算；W1 终跑放行硬条件/W2 提交面白名单核验/W3 变量法取证
+  ——三 W 收口全兑现；N1=注释同行旧名残留（主控收口处置：format:4 同行二次改写
+  reader/time/reading-time，门二 #3 裁处置充分）。门二 **GO_WITH_CONDITIONS
+  P0=0/P1=2/P2=3/N=6**——20 条逐条裁决+14 组数字独立复算（829 算术/locks 345
+  逐条数回/manifest 值级/tests 恰 3 行/registry 受影响行恰 2 双证/板 20/35 预核）；
+  P1-1 终跑变量法+P1-2 冻结序（全量写入→终跑→单提交）两条件全兑现；P2-2=设计书
+  §3.2 time/ 行数每件 +1 偏差（304/140/301/88 vs 实测 303/139/300/87——文档
+  口径非本票缺陷，**登记 G11 收官对账债**）；P2-3=后续迁移票 restore log 落
+  变量法 EXIT（教训登记）；回炉=0。
+- **机检终态**：收口终跑 verify 全链 **G5_VERIFY_FINAL_EXIT=0**（变量法物理
+  落档 g5-verify-final.log 末行，Node 24.20.0：open 15=恰 G5 翻 done+locks 345
+  一致（log:87）+test 170 文件/1744 用例（log:3835/:3836）+指纹门 187/1789/5411
+  零漂移（log:27）+build 绿+产物第四次同哈希）；e2e 不跑（零行为口径，义务归
+  G11——门一 N3 边界+门二同口径）；**health-scan RED×0 WARN×0**（账本补记后）；
+  账本 48→51 行（executor+门一 k2+门二，绑定岗主控补记 node JSON.stringify——
+  临时 .cjs 用毕即删；账本=仓外件不入库历史惯例，git ls-files 空证）。
+- 证据件入库（scripts/audits/，15 件）：g5-{impl-brief.md；impl-report.md；
+  impl-raw.log；impl-verify.log；impl-partial.log；impl-mutation1.log；
+  impl-mutation1-restore.log；impl-mutation2.log；impl-mutation2-restore.log；
+  gate1-brief.md；gate1-report.md（岗无写通道主控归档）；gate1-diff.patch；
+  gate2-brief.md；gate2-report.md（同型归档）；verify-final.log}——8 .log 经
+  git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**heredoc 中文归档损伤**（门一报告 cat<<'EOF' 落盘「恒定」→「恁
+  定」字符损伤一处，回读核验拦截后 Write 工具重写——shell 隔层四坑 heredoc 族
+  再实证：不止反斜杠塌缩，中文字节同样被吃；**中文内容归档一律 Write 工具，
+  禁 heredoc**）；②**主控简报起草侧两缺陷被下游拦截**（基线 open 17 系起草
+  时点滞后实测 16+漏列门一 N3 构建哈希恒等标配义务——基线序天然覆盖自动兑现，
+  但义务未显式进简报=主控输入面缺陷，实现者自裁①与门二 N3 各拦一处；「简报是
+  下游输入」纪律的主控侧变体再确认）；③门二 P2-3（变异还原 diff identical 系
+  echo 自证无命令回显——后续迁移票 restore log 尾物理落变量法 EXIT）；④**add
+  链静默半失效**（收口首次提交漏迁移本体 4 件——白名单首条 add 链末尾误带不
+  存在路径 fatal，2>/dev/null 吞错+&&链断，src 面未暂存；补漏时误以为 src 面
+  已暂存仅补 M/md 面→提交 23 files 无 rename→HEAD 处于 import 悬空态；核对
+  create mode 清单+deletions 计数拦截→补暂存 amend 修复（终态=27 files/
+  +12736/-24，rename 100/100/95/99 四对全识别，ls-tree+干净树亲验；板内不落
+  本批自引用提交哈希——amend 即漂移，哈希以 git log 为准）；
+  教训=**add 链禁 2>/dev/null 吞错+提交后必核 create/rename mode 清单与 ±行数
+  对账**——batch 8 教训③「staging 显式列文件」的执行侧变体）。
+- Rulings 待用户：无新增（票内自裁 4 项经门一逐条裁「准」+门二 #14~#17 复核
+  闭合；门审处置 W1/W2/W3/P1-1/P1-2/N1 全兑现；受锁面 3 行=[locked-change]
+  [test-refactor] 双尾注权限内）。
+- 无进展计数：归零（20→21 有进展）。**下波=F-GEOM-01-G6（目录化 M3 anchors/
+  13+1 件 §3.4 [locked-change][test-refactor]——受锁面最重：锚定回归网 18 物理
+  件+跨特性 import（lineage×2+open-paper-bus）+check-quality:99 行（lineage→
+  ai-note-style）对账到行号（门二 P1-3c 板注）；大中票一火一票。**
+
+### batch 16 增补三 — 2026-09-18 21:56（hub 布防：用户显式 /batch-relay，加入多项目轮转）
+- 深度设计门（ai-dev-org 路线）：过——`.zcode/org-ledger.jsonl` 活跃（batch16-g4
+  三岗 ok @21:37）、《裁决书》24KB 占位符零命中（grep TBD|TODO|稍后实现|适当处理|
+  implement later）、执行清单机检 20/35 勾与板头计数一致。
+- 换防复位：claim 归「-」（batch 16 收口遗留 token）；status READY/no_progress 0
+  原样；补 `shared_fire: true` 字段行+protocol hub 守卫句（存量板补齐）。板不重建，
+  本增补以下历史全数保留。
+- 旧火核查：CronList 空集（21:43 用户删火后无火）——无火可清；板头旧
+  automation_id 字段行将由 hub 新火 id 锚定替换（旧 id 在历史日志 2 处存量不动，
+  字段行锚定+计数守卫 3 处中 1 处）。
+- hub 火=全局唯一 */10 轮转火（hub 调度会话创建，服务本板+waterprint 板）；
+  本板 last_dispatch=2026-09-18T20:30:44+08:00（静默窗已过）；姊妹板 waterprint
+  last_dispatch=`-`（从未发布视作最老）——首班有效火轮到其 B2-1 批先行的可能性大。
+- 门一 k2 换源指令（增补一）留存板面，继续随注入指令生效。
 
 ### batch 16 增补二 — 2026-09-18（调度员停火：用户指令「删火」）
 - 用户对本调度员会话明示「删火」：常驻火 automation-c21dd023-3a61-42de-80b0-754bc3f2e872

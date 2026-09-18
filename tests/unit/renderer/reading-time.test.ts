@@ -6,7 +6,7 @@ import {
   READING_TICK_MS,
   type ReadingTime,
   type ReadingTimeDeps
-} from '../../../src/renderer/features/reader/reading-time'
+} from '../../../src/renderer/features/reader/time/reading-time'
 
 /**
  * P7E-05：reading-time 时长账本+复合 flusher 锁定测试。

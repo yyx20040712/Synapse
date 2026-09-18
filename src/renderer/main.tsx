@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
-import { getReaderOutbox } from './features/reader/reading-time-setup'
+import { getReaderOutbox } from './features/reader/time/reading-time-setup'
 import './shared/theme.css'
 // [F-CSS-01] theme.css 分域拆件——import 序=原相对序（源顺序=层叠语义）：
 // token 留守件先行（@import tailwindcss+:root 必先于一切消费方），四皮肤件
