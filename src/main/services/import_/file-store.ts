@@ -9,20 +9,15 @@
  * 安全（§6.3）：file_ref 一律相对路径+正斜杠；解析结果必须在受管根内。
  * 测试：tests/unit/services/file-store.test.ts（去重/穿越攻击向量/非 PDF 拒绝）。
  */
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { mkdir, readFile, stat } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
-import type { AppErrorCode } from '../../../shared/app-error'
+import { atomicWriteFile } from '../shared/atomic-write'
+import { DomainError } from '../shared/domain-error'
 
-export class FileStoreError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'FileStoreError'
-    this.code = code
-  }
-}
+/** 受管存储域错误（基类一行继承——name/code 经 shared/domain-error 自动落，
+ *  F-DEDUP-01 单源；受锁测试 import 本导出面，出口保持 file-store.ts 不变） */
+export class FileStoreError extends DomainError {}
 
 export interface StoredFile {
   /** 受管存储内相对路径（正斜杠），如 "ab/cd/<sha>.pdf" */
@@ -138,17 +133,15 @@ function basename(p: string): string {
 }
 
 async function copyOrWrite(dest: string, bytes: Uint8Array): Promise<void> {
-  // 原子写：先写同目录临时文件，成功后 rename 到最终路径。
+  // 原子写单源=services/shared/atomic-write（F-DEDUP-01）：先写同目录临时文件
+  // （uniqueTmp），成功后 rename 到最终路径。
   // 直写目标路径一旦中途崩溃会留下截断文件，而文件名=内容 sha256 会让去重逻辑
   // 永久复用损坏文件（无法通过重新导入自愈）；rename 在同卷上原子。
-  // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）。
-  const { writeFile, rename, rm } = await import('node:fs/promises')
-  const tmp = `${dest}.tmp-${randomUUID()}`
+  // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）——FileStoreError
+  // 包装与 basename-only 文案留在调用侧（单源原样上抛 fs 错误，域化归调用方）。
   try {
-    await writeFile(tmp, bytes)
-    await rename(tmp, dest)
+    await atomicWriteFile(dest, bytes, { uniqueTmp: true, cleanOnFail: true })
   } catch (e) {
-    await rm(tmp, { force: true }).catch(() => undefined)
     throw new FileStoreError(
       'IO_ERROR',
       `写入受管文件失败：${basename(dest)}（${e instanceof Error ? e.message : String(e)}）`

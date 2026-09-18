@@ -12,6 +12,7 @@
 import { z } from 'zod'
 import type { AppErrorCode } from '../../shared/app-error'
 import { ALLOWED_REMOTE_HOSTS, HTTP_MAX_RETRIES, HTTP_TIMEOUT_MS } from '../../shared/constants'
+import { DomainError } from '../services/shared/domain-error'
 
 const zUnknown = z.unknown()
 
@@ -20,15 +21,14 @@ export const HTTP_MAX_RESPONSE_BYTES = 20 * 1024 * 1024
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 
-export class HttpFetchError extends Error {
-  readonly code: AppErrorCode
+/** 域错误（基类一行继承=services/shared/domain-error，F-DEDUP-01 单源——
+ *  特例保留三参 constructor 加 status 字段；name 经基类 new.target 自动落） */
+export class HttpFetchError extends DomainError {
   /** 上游 HTTP 状态码（网络层错误时缺省）；provider 用它区分 404 与其他错误 */
   readonly status?: number
 
   constructor(code: AppErrorCode, message: string, status?: number) {
-    super(message)
-    this.name = 'HttpFetchError'
-    this.code = code
+    super(code, message)
     this.status = status
   }
 }

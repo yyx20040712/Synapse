@@ -25,25 +25,17 @@
  * - 不做：多设备同步进度
  *
  * ── 文化层 ──
- * - NOT_FOUND 抛本文件私有的域错误类（与 library.service 的 DomainError /
- *   import.service 的 ImportDomainError 同构：带 code 的 Error，register 经
- *   toAppError 保留语义折叠为 AppError；各自私有是既定惯例，避免服务间横向依赖）
+ * - NOT_FOUND 抛本域错误类（F-DEDUP-01 起一行继承 services/shared/domain-error
+ *   基类：带 code 的 Error，register 经 toAppError 保留语义折叠为 AppError；
+ *   基类=被依赖下游位共享件，非服务间横向耦合——「各自私有」旧惯例废止）
  * - 测试：tests/unit/services/reader.service.test.ts（已锁定）
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
+import { DomainError } from './shared/domain-error'
 
 /** 域错误：open 的"文献不存在"与 update 的"标注不存在"载体 */
-class ReaderDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'ReaderDomainError'
-    this.code = code
-  }
-}
+class ReaderDomainError extends DomainError {}
 
 export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader'] {
   const { papers, annotations } = deps.repos

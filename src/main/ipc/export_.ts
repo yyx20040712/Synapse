@@ -17,8 +17,9 @@
  *
  * ── 接口层 ──
  * - export function createExportIpc(deps: IpcDeps): ApiHandlers['export_']
- * - 取消错误按域错误惯例抛带 code 的 Error（register 经 toAppError 折叠，见
- *   library.service 规约——.CancelledError 单独子类没有必要）
+ * - 取消错误按域错误惯例抛带 code 的 Error（register 经 toAppError 折叠；
+ *   基类单源=services/shared/domain-error，F-DEDUP-01——.CancelledError
+ *   单独子类没有必要）
  *
  * ── 架构层 ──
  * - 对话框与写文件的顺序：先构建内容再询问路径（构建失败不弹框）
@@ -27,20 +28,12 @@
  * - 测试：tests/unit/ipc/export_.test.ts（已锁定，dialogs/services 桩）
  */
 import { join } from 'node:path'
-import type { AppErrorCode } from '../../shared/app-error'
+import { DomainError } from '../services/shared/domain-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './ipc-deps'
 
-/** 域错误：用户取消保存（CANCELLED）载体 */
-class ExportIpcError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'ExportIpcError'
-    this.code = code
-  }
-}
+/** 域错误：用户取消保存（CANCELLED）载体（基类一行继承——F-DEDUP-01 单源） */
+class ExportIpcError extends DomainError {}
 
 const BIB_FILTER = [{ name: 'BibTeX', extensions: ['bib'] }]
 const CSV_FILTER = [{ name: 'CSV', extensions: ['csv'] }]

@@ -11,6 +11,7 @@
 import { access, constants } from 'node:fs/promises'
 import type { Protocol } from 'electron'
 import { APP_FILE_SCHEME } from '../../shared/constants'
+import { APP_FILE_URL_PREFIX } from '../../shared/app-file-url'
 import type { FileStore } from '../services/import_/file-store'
 
 /** paperId → file_ref 的窄查询（由 bootstrap 从 papers.repo 注入） */
@@ -18,7 +19,7 @@ export type PaperFileLookup = (paperId: string) => Promise<string | null>
 
 /** URL 解析纯函数：合法返回 paperId，非法返回 null（单测覆盖攻击向量） */
 export function parseAppFileUrl(rawUrl: string): string | null {
-  const prefix = `${APP_FILE_SCHEME}://`
+  const prefix = APP_FILE_URL_PREFIX
   if (!rawUrl.startsWith(prefix)) return null
   // 只允许 "scheme://<id>" 或末尾一个 "/"：带路径/查询/片段一律拒绝
   const rest = decodeURIComponent(rawUrl.slice(prefix.length))

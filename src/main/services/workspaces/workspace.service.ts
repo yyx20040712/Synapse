@@ -53,7 +53,7 @@ import { existsSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { DB_FILE_NAME } from '../../../shared/constants'
-import type { AppErrorCode } from '../../../shared/app-error'
+import { DomainError } from '../shared/domain-error'
 import {
   DEFAULT_WS_ID,
   DEFAULT_WS_NAME,
@@ -81,15 +81,8 @@ export interface WorkspaceServiceDeps {
   importInFlight: () => boolean
 }
 
-class WorkspaceDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'WorkspaceDomainError'
-    this.code = code
-  }
-}
+/** 域错误载体（基类一行继承=services/shared/domain-error——F-DEDUP-01 单源） */
+class WorkspaceDomainError extends DomainError {}
 
 function wsNotFound(id: string): WorkspaceDomainError {
   return new WorkspaceDomainError('NOT_FOUND', `课题不存在：${id}`)

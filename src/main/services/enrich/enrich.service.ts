@@ -35,8 +35,8 @@
  */
 import type { PaperSource } from '../../../shared/models/paper'
 import type { PaperDetail, PaperMetaPatch } from '../../../shared/models/paper'
-import type { AppErrorCode } from '../../../shared/app-error'
 import type { Repos } from '../../db/repos'
+import { DomainError } from '../shared/domain-error'
 import type { CrossrefProvider, EnrichedWork } from './providers/crossref'
 import type { OpenalexProvider } from './providers/openalex'
 import type { ArxivProvider } from './providers/arxiv'
@@ -48,16 +48,8 @@ export interface EnrichProviders {
   arxiv: ArxivProvider
 }
 
-/** 域错误：目标文献不存在（与 library/reader 的 DomainError 同构） */
-class EnrichDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'EnrichDomainError'
-    this.code = code
-  }
-}
+/** 域错误：目标文献不存在（shared/domain-error 基类一行继承——F-DEDUP-01 单源） */
+class EnrichDomainError extends DomainError {}
 
 /** 增强命中候选（三源统一为 EnrichedWork；openalex/arxiv 附带 arxivId） */
 type Candidate = EnrichedWork & { arxivId?: string | null }

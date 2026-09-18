@@ -48,9 +48,9 @@
  *   ④ done→pending→…（重读请求；多篇并发=多篇 job 并存，工具逐篇串行
  *      ——queue 既有串行语义，reading 期以 currentPaper 示队列进度）
  *   ⑤ 同篇重复写 job：pending 已含 P → 幂等返回（不写第二个文件）
- * - 协议文件一律原子写（tmp+rename——manifest 终局单写 R5/R8 同型先例）；
- *   协议根/子目录初始化=首写时 mkdir recursive 幂等（应用与工具两侧首写
- *   各自保证，N06-6）
+ * - 协议文件一律原子写（tmp+rename——单源=services/shared/atomic-write，
+ *   F-DEDUP-01；manifest 终局单写 R5/R8 同型先例）；协议根/子目录初始化=
+ *   首写时 mkdir recursive 幂等（应用与工具两侧首写各自保证，N06-6）
  *
  * ── 接口层 ──
  * - export interface AiSensorService {
@@ -112,9 +112,10 @@
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import { randomUUID } from 'node:crypto'
-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readdir, readFile, stat } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { SensorStatus } from '../../../shared/ipc/schemas'
+import { atomicWriteFile } from '../shared/atomic-write'
 
 /** 协议目录名（协议根=join(userData, AI_SENSOR_DIR_NAME)——bootstrap 装配层解析） */
 export const AI_SENSOR_DIR_NAME = 'ai-sensor'
@@ -183,14 +184,6 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
   const pendingDir = join(deps.rootDir, 'pending')
   const corpusAiDir = join(deps.rootDir, 'corpus-ai')
   const archiveDir = join(deps.rootDir, 'archive')
-
-  /** 原子写（tmp+rename——R5/R8 manifest 终局单写同型；父目录首写 mkdir recursive 幂等 N06-6） */
-  async function writeAtomic(path: string, content: string): Promise<void> {
-    const tmp = `${path}.tmp`
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(tmp, content, 'utf8')
-    await rename(tmp, path)
-  }
 
   /** 扫描 pending job（ENOENT=空；损坏文件上抛含路径——禁静默跳过，三态分离） */
   async function scanPending(): Promise<PendingJob[]> {
@@ -277,9 +270,12 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
       const existing = jobs.find((j) => j.paperId === paperId)
       if (existing !== undefined) return { jobId: existing.jobId } // 幂等⑤：不写第二个文件
       const jobId = uuid()
-      await writeAtomic(
+      // 原子写单源（ensureDir——父目录首写 mkdir recursive 幂等 N06-6；
+      // F-DEDUP-01 收编，行为同旧 writeAtomic）
+      await atomicWriteFile(
         join(pendingDir, `${jobId}.json`),
-        `${JSON.stringify({ paperId, kind: JOB_KIND, requestedAt: now() }, null, 2)}\n`
+        `${JSON.stringify({ paperId, kind: JOB_KIND, requestedAt: now() }, null, 2)}\n`,
+        { ensureDir: true }
       )
       return { jobId }
     },

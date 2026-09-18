@@ -19,8 +19,8 @@
  * ── 架构层 ──
  * - 存在性预检经 listWithCounts（携带全量 id；本地单用户小表——repo 面保持
  *   票面四方法不增 findById）；better-sqlite3 同步单连接，预检与写入之间无交错
- * - TagsDomainError：Error+readonly code: AppErrorCode（NotesDomainError 同型），
- *   register 经 toAppError 折叠为 AppError 透传 renderer
+ * - TagsDomainError：services/shared/domain-error 基类一行继承（F-DEDUP-01
+ *   单源），register 经 toAppError 折叠为 AppError 透传 renderer
  *
  * ── 生命周期层 ──
  * - 改名/合并/删除已实现（P7E-01——原「v2 预留」注记兑现）
@@ -29,20 +29,12 @@
  * - 测试：tests/unit/services/tags.service.test.ts（已锁定，repos 桩）
  *   + tests/unit/services/tags-lifecycle.service.test.ts（P7E-01，always-active）
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
+import { DomainError } from './shared/domain-error'
 
-/** 域错误载体（rename/merge/delete 的校验序拒绝；与 notes 域 DomainError 同构） */
-class TagsDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'TagsDomainError'
-    this.code = code
-  }
-}
+/** 域错误载体（rename/merge/delete 的校验序拒绝；基类一行继承） */
+class TagsDomainError extends DomainError {}
 
 export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
   const { tags } = deps.repos

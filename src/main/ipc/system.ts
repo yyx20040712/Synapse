@@ -21,21 +21,13 @@
  *   setQuitDirty 通道透传断言落 tests/unit/windows/quit-dirty-guard.test.ts
  *   （check-tickets 规则 5：guardedDescribe 文件须 import 工单登记文件）
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import { openExternalGuarded } from '../security/shell-guard'
+import { DomainError } from '../services/shared/domain-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './ipc-deps'
 
-/** 域错误：外链未过守卫（拒绝即错，不静默） */
-class SystemDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'SystemDomainError'
-    this.code = code
-  }
-}
+/** 域错误：外链未过守卫（拒绝即错，不静默；基类一行继承——F-DEDUP-01 单源） */
+class SystemDomainError extends DomainError {}
 
 export function createSystemIpc(deps: IpcDeps): ApiHandlers['system'] {
   return {

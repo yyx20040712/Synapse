@@ -13,20 +13,13 @@
  * 结构化透传中文 reason，renderer 按 code 分支（丢弃动作+toast vs 系统型
  * 保留重试）。
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
+import { DomainError } from '../services/shared/domain-error'
 import type { IpcDeps } from './ipc-deps'
 
-/** 域错误载体（export_.ts ExportIpcError 同型——.CancelledError 子类无必要） */
-class LineageIpcError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'LineageIpcError'
-    this.code = code
-  }
-}
+/** 域错误载体（shared/domain-error 基类一行继承——F-DEDUP-01 单源；
+ *  .CancelledError 子类无必要） */
+class LineageIpcError extends DomainError {}
 
 export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
   return {

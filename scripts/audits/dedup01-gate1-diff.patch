@@ -1,0 +1,1196 @@
+diff --git a/src/main/db/repos/papers.repo.ts b/src/main/db/repos/papers.repo.ts
+index 739fdf6a1e..3b59fd52aa 100644
+--- a/src/main/db/repos/papers.repo.ts
++++ b/src/main/db/repos/papers.repo.ts
+@@ -30,7 +30,7 @@
+  * - 测试：tests/unit/db/repos/papers.repo.test.ts（已锁定；先读测试再实现）
+  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
+  */
+-import { APP_FILE_SCHEME } from '../../../shared/constants'
++import { appFileUrl } from '../../../shared/app-file-url'
+ import type Database from 'better-sqlite3'
+ import type { SqliteDb } from '../connection'
+ import {
+@@ -248,7 +248,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+         arxivId: r.arxiv_id,
+         source: r.source,
+         enrichStatus: r.enrich_status,
+-        fileUrl: `${APP_FILE_SCHEME}://${r.id}`,
++        fileUrl: appFileUrl(r.id),
+         fileName: r.file_ref.slice(slashPos),
+         updatedAt: r.updated_at,
+         // ENR-01：三缓存字段配对透出（写入面三列同写，count 非 null 蕴含
+diff --git a/src/main/http/http-client.ts b/src/main/http/http-client.ts
+index f9075207cd..740fcb9af9 100644
+--- a/src/main/http/http-client.ts
++++ b/src/main/http/http-client.ts
+@@ -12,6 +12,7 @@
+ import { z } from 'zod'
+ import type { AppErrorCode } from '../../shared/app-error'
+ import { ALLOWED_REMOTE_HOSTS, HTTP_MAX_RETRIES, HTTP_TIMEOUT_MS } from '../../shared/constants'
++import { DomainError } from '../services/shared/domain-error'
+ 
+ const zUnknown = z.unknown()
+ 
+@@ -20,15 +21,14 @@ export const HTTP_MAX_RESPONSE_BYTES = 20 * 1024 * 1024
+ 
+ export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
+ 
+-export class HttpFetchError extends Error {
+-  readonly code: AppErrorCode
++/** 域错误（基类一行继承=services/shared/domain-error，F-DEDUP-01 单源——
++ *  特例保留三参 constructor 加 status 字段；name 经基类 new.target 自动落） */
++export class HttpFetchError extends DomainError {
+   /** 上游 HTTP 状态码（网络层错误时缺省）；provider 用它区分 404 与其他错误 */
+   readonly status?: number
+ 
+   constructor(code: AppErrorCode, message: string, status?: number) {
+-    super(message)
+-    this.name = 'HttpFetchError'
+-    this.code = code
++    super(code, message)
+     this.status = status
+   }
+ }
+diff --git a/src/main/ipc/export_.ts b/src/main/ipc/export_.ts
+index 538f872479..6f2bb91316 100644
+--- a/src/main/ipc/export_.ts
++++ b/src/main/ipc/export_.ts
+@@ -17,8 +17,9 @@
+  *
+  * ── 接口层 ──
+  * - export function createExportIpc(deps: IpcDeps): ApiHandlers['export_']
+- * - 取消错误按域错误惯例抛带 code 的 Error（register 经 toAppError 折叠，见
+- *   library.service 规约——.CancelledError 单独子类没有必要）
++ * - 取消错误按域错误惯例抛带 code 的 Error（register 经 toAppError 折叠；
++ *   基类单源=services/shared/domain-error，F-DEDUP-01——.CancelledError
++ *   单独子类没有必要）
+  *
+  * ── 架构层 ──
+  * - 对话框与写文件的顺序：先构建内容再询问路径（构建失败不弹框）
+@@ -27,20 +28,12 @@
+  * - 测试：tests/unit/ipc/export_.test.ts（已锁定，dialogs/services 桩）
+  */
+ import { join } from 'node:path'
+-import type { AppErrorCode } from '../../shared/app-error'
++import { DomainError } from '../services/shared/domain-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { IpcDeps } from './ipc-deps'
+ 
+-/** 域错误：用户取消保存（CANCELLED）载体 */
+-class ExportIpcError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'ExportIpcError'
+-    this.code = code
+-  }
+-}
++/** 域错误：用户取消保存（CANCELLED）载体（基类一行继承——F-DEDUP-01 单源） */
++class ExportIpcError extends DomainError {}
+ 
+ const BIB_FILTER = [{ name: 'BibTeX', extensions: ['bib'] }]
+ const CSV_FILTER = [{ name: 'CSV', extensions: ['csv'] }]
+diff --git a/src/main/ipc/lineage.ts b/src/main/ipc/lineage.ts
+index 5063497039..c55e97b001 100644
+--- a/src/main/ipc/lineage.ts
++++ b/src/main/ipc/lineage.ts
+@@ -13,20 +13,13 @@
+  * 结构化透传中文 reason，renderer 按 code 分支（丢弃动作+toast vs 系统型
+  * 保留重试）。
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
++import { DomainError } from '../services/shared/domain-error'
+ import type { IpcDeps } from './ipc-deps'
+ 
+-/** 域错误载体（export_.ts ExportIpcError 同型——.CancelledError 子类无必要） */
+-class LineageIpcError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'LineageIpcError'
+-    this.code = code
+-  }
+-}
++/** 域错误载体（shared/domain-error 基类一行继承——F-DEDUP-01 单源；
++ *  .CancelledError 子类无必要） */
++class LineageIpcError extends DomainError {}
+ 
+ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
+   return {
+diff --git a/src/main/ipc/settings.ts b/src/main/ipc/settings.ts
+index afbfb2e211..2edb9cb026 100644
+--- a/src/main/ipc/settings.ts
++++ b/src/main/ipc/settings.ts
+@@ -5,7 +5,8 @@
+  * - 自包含域（无独立 service）：settings.json 读写 + 网络诊断
+  * - get：读 {userDataDir}/settings.json；不存在/损坏/不合 schema → 返回默认
+  *   { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system' }（尽力写回文件）
+- * - set：原子写（先写 .tmp 再 rename；req 已由 register 过 appSettingsSchema 校验）
++ * - set：原子写（单源=services/shared/atomic-write，F-DEDUP-01——先写 .tmp 再
++ *   rename；req 已由 register 过 appSettingsSchema 校验）
+  * - diagNetwork：对 shared/constants 的 ALLOWED_REMOTE_HOSTS 并发 deps.ping(host)，
+  *   返回 [{host, ok, latencyMs}]
+  *
+@@ -14,6 +15,7 @@
+  *
+  * ── 架构层 ──
+  * - 可 import：node:fs/promises、node:path、shared/constants、zod（appSettingsSchema）
++ *   + services/shared/atomic-write（被依赖下游位，ipc→services 方向不破）
+  * - 读写一律 UTF-8（教训 C4：中文乱码防线）；写回失败不阻断 get（默认值照常返回）
+  *
+  * ── 生命周期层 ──
+@@ -22,22 +24,16 @@
+  * ── 文化层 ──
+  * - 测试：tests/unit/ipc/ipc/settings.test.ts（已锁定，deps.userDataDir 用临时目录）
+  */
+-import { readFile, rename, writeFile } from 'node:fs/promises'
++import { readFile } from 'node:fs/promises'
+ import { join } from 'node:path'
+ import { appSettingsSchema, type AppSettings } from '../../shared/ipc/schemas'
+ import { ALLOWED_REMOTE_HOSTS, DEFAULT_CONTACT_EMAIL, SETTINGS_FILE_NAME } from '../../shared/constants'
++import { atomicWriteFile } from '../services/shared/atomic-write'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { IpcDeps } from './ipc-deps'
+ 
+ const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
+ 
+-/** 原子写：.tmp 落盘后 rename，避免半截文件被读到 */
+-async function atomicWrite(path: string, content: string): Promise<void> {
+-  const tmp = `${path}.tmp`
+-  await writeFile(tmp, content, 'utf-8')
+-  await rename(tmp, path)
+-}
+-
+ export function createSettingsIpc(deps: IpcDeps): ApiHandlers['settings'] {
+   const settingsPath = join(deps.userDataDir, SETTINGS_FILE_NAME)
+ 
+@@ -61,7 +57,7 @@ export function createSettingsIpc(deps: IpcDeps): ApiHandlers['settings'] {
+       if (settings === DEFAULTS) {
+         // 尽力写回默认（失败不阻断返回；下次 get 仍一致）
+         try {
+-          await atomicWrite(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
++          await atomicWriteFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
+         } catch {
+           // 目录只读等环境问题：默认值照常返回
+         }
+@@ -70,7 +66,7 @@ export function createSettingsIpc(deps: IpcDeps): ApiHandlers['settings'] {
+     },
+ 
+     async set(req) {
+-      await atomicWrite(settingsPath, `${JSON.stringify(req, null, 2)}\n`)
++      await atomicWriteFile(settingsPath, `${JSON.stringify(req, null, 2)}\n`)
+       return req
+     },
+ 
+diff --git a/src/main/ipc/system.ts b/src/main/ipc/system.ts
+index 262ad1af39..5203c3de11 100644
+--- a/src/main/ipc/system.ts
++++ b/src/main/ipc/system.ts
+@@ -21,21 +21,13 @@
+  *   setQuitDirty 通道透传断言落 tests/unit/windows/quit-dirty-guard.test.ts
+  *   （check-tickets 规则 5：guardedDescribe 文件须 import 工单登记文件）
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import { openExternalGuarded } from '../security/shell-guard'
++import { DomainError } from '../services/shared/domain-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { IpcDeps } from './ipc-deps'
+ 
+-/** 域错误：外链未过守卫（拒绝即错，不静默） */
+-class SystemDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'SystemDomainError'
+-    this.code = code
+-  }
+-}
++/** 域错误：外链未过守卫（拒绝即错，不静默；基类一行继承——F-DEDUP-01 单源） */
++class SystemDomainError extends DomainError {}
+ 
+ export function createSystemIpc(deps: IpcDeps): ApiHandlers['system'] {
+   return {
+diff --git a/src/main/protocol/app-file.protocol.ts b/src/main/protocol/app-file.protocol.ts
+index 246cec39f9..894b4d1345 100644
+--- a/src/main/protocol/app-file.protocol.ts
++++ b/src/main/protocol/app-file.protocol.ts
+@@ -11,6 +11,7 @@
+ import { access, constants } from 'node:fs/promises'
+ import type { Protocol } from 'electron'
+ import { APP_FILE_SCHEME } from '../../shared/constants'
++import { APP_FILE_URL_PREFIX } from '../../shared/app-file-url'
+ import type { FileStore } from '../services/import_/file-store'
+ 
+ /** paperId → file_ref 的窄查询（由 bootstrap 从 papers.repo 注入） */
+@@ -18,7 +19,7 @@ export type PaperFileLookup = (paperId: string) => Promise<string | null>
+ 
+ /** URL 解析纯函数：合法返回 paperId，非法返回 null（单测覆盖攻击向量） */
+ export function parseAppFileUrl(rawUrl: string): string | null {
+-  const prefix = `${APP_FILE_SCHEME}://`
++  const prefix = APP_FILE_URL_PREFIX
+   if (!rawUrl.startsWith(prefix)) return null
+   // 只允许 "scheme://<id>" 或末尾一个 "/"：带路径/查询/片段一律拒绝
+   const rest = decodeURIComponent(rawUrl.slice(prefix.length))
+diff --git a/src/main/services/ai_sensor/ai-sensor.service.ts b/src/main/services/ai_sensor/ai-sensor.service.ts
+index bad6c29c36..7be17a3114 100644
+--- a/src/main/services/ai_sensor/ai-sensor.service.ts
++++ b/src/main/services/ai_sensor/ai-sensor.service.ts
+@@ -48,9 +48,9 @@
+  *   ④ done→pending→…（重读请求；多篇并发=多篇 job 并存，工具逐篇串行
+  *      ——queue 既有串行语义，reading 期以 currentPaper 示队列进度）
+  *   ⑤ 同篇重复写 job：pending 已含 P → 幂等返回（不写第二个文件）
+- * - 协议文件一律原子写（tmp+rename——manifest 终局单写 R5/R8 同型先例）；
+- *   协议根/子目录初始化=首写时 mkdir recursive 幂等（应用与工具两侧首写
+- *   各自保证，N06-6）
++ * - 协议文件一律原子写（tmp+rename——单源=services/shared/atomic-write，
++ *   F-DEDUP-01；manifest 终局单写 R5/R8 同型先例）；协议根/子目录初始化=
++ *   首写时 mkdir recursive 幂等（应用与工具两侧首写各自保证，N06-6）
+  *
+  * ── 接口层 ──
+  * - export interface AiSensorService {
+@@ -112,9 +112,10 @@
+  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+  */
+ import { randomUUID } from 'node:crypto'
+-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+-import { dirname, join } from 'node:path'
++import { readdir, readFile, stat } from 'node:fs/promises'
++import { join } from 'node:path'
+ import type { SensorStatus } from '../../../shared/ipc/schemas'
++import { atomicWriteFile } from '../shared/atomic-write'
+ 
+ /** 协议目录名（协议根=join(userData, AI_SENSOR_DIR_NAME)——bootstrap 装配层解析） */
+ export const AI_SENSOR_DIR_NAME = 'ai-sensor'
+@@ -184,14 +185,6 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
+   const corpusAiDir = join(deps.rootDir, 'corpus-ai')
+   const archiveDir = join(deps.rootDir, 'archive')
+ 
+-  /** 原子写（tmp+rename——R5/R8 manifest 终局单写同型；父目录首写 mkdir recursive 幂等 N06-6） */
+-  async function writeAtomic(path: string, content: string): Promise<void> {
+-    const tmp = `${path}.tmp`
+-    await mkdir(dirname(path), { recursive: true })
+-    await writeFile(tmp, content, 'utf8')
+-    await rename(tmp, path)
+-  }
+-
+   /** 扫描 pending job（ENOENT=空；损坏文件上抛含路径——禁静默跳过，三态分离） */
+   async function scanPending(): Promise<PendingJob[]> {
+     let names: string[]
+@@ -277,9 +270,12 @@ export function createAiSensorService(deps: AiSensorDeps): AiSensorService {
+       const existing = jobs.find((j) => j.paperId === paperId)
+       if (existing !== undefined) return { jobId: existing.jobId } // 幂等⑤：不写第二个文件
+       const jobId = uuid()
+-      await writeAtomic(
++      // 原子写单源（ensureDir——父目录首写 mkdir recursive 幂等 N06-6；
++      // F-DEDUP-01 收编，行为同旧 writeAtomic）
++      await atomicWriteFile(
+         join(pendingDir, `${jobId}.json`),
+-        `${JSON.stringify({ paperId, kind: JOB_KIND, requestedAt: now() }, null, 2)}\n`
++        `${JSON.stringify({ paperId, kind: JOB_KIND, requestedAt: now() }, null, 2)}\n`,
++        { ensureDir: true }
+       )
+       return { jobId }
+     },
+diff --git a/src/main/services/enrich/enrich.service.ts b/src/main/services/enrich/enrich.service.ts
+index a39b54ffc3..33c3f76b6b 100644
+--- a/src/main/services/enrich/enrich.service.ts
++++ b/src/main/services/enrich/enrich.service.ts
+@@ -35,8 +35,8 @@
+  */
+ import type { PaperSource } from '../../../shared/models/paper'
+ import type { PaperDetail, PaperMetaPatch } from '../../../shared/models/paper'
+-import type { AppErrorCode } from '../../../shared/app-error'
+ import type { Repos } from '../../db/repos'
++import { DomainError } from '../shared/domain-error'
+ import type { CrossrefProvider, EnrichedWork } from './providers/crossref'
+ import type { OpenalexProvider } from './providers/openalex'
+ import type { ArxivProvider } from './providers/arxiv'
+@@ -48,16 +48,8 @@ export interface EnrichProviders {
+   arxiv: ArxivProvider
+ }
+ 
+-/** 域错误：目标文献不存在（与 library/reader 的 DomainError 同构） */
+-class EnrichDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'EnrichDomainError'
+-    this.code = code
+-  }
+-}
++/** 域错误：目标文献不存在（shared/domain-error 基类一行继承——F-DEDUP-01 单源） */
++class EnrichDomainError extends DomainError {}
+ 
+ /** 增强命中候选（三源统一为 EnrichedWork；openalex/arxiv 附带 arxivId） */
+ type Candidate = EnrichedWork & { arxivId?: string | null }
+diff --git a/src/main/services/export_/corpus.export.service.ts b/src/main/services/export_/corpus.export.service.ts
+index 5c481f4f9b..d23914a3ab 100644
+--- a/src/main/services/export_/corpus.export.service.ts
++++ b/src/main/services/export_/corpus.export.service.ts
+@@ -119,7 +119,7 @@
+ import { createHash } from 'node:crypto'
+ import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+ import { join } from 'node:path'
+-import type { AppErrorCode } from '../../../shared/app-error'
++import { appFileUrl } from '../../../shared/app-file-url'
+ import type {
+   CorpusItemReq,
+   CorpusSessionRes,
+@@ -128,18 +128,15 @@ import type {
+ } from '../../../shared/ipc/schemas'
+ import type { PaperDetail } from '../../../shared/models/paper'
+ import type { Repos } from '../../db/repos'
++import { DomainError } from '../shared/domain-error'
++import { sanitizePathToken } from '../shared/sanitize'
+ import type { FileStore } from '../import_/file-store'
+ import { assembleCorpusMd, orderAiNotes } from './corpus.assemble'
+ import { INTERFACE_MD } from './interface-template'
+ 
+-/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等） */
+-class SessionError extends Error {
+-  readonly code: AppErrorCode
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.code = code
+-  }
+-}
++/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等）；
++ *  基类一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
++class SessionError extends DomainError {}
+ 
+ export interface CorpusExportDeps {
+   repos: Repos
+@@ -247,7 +244,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
+       type: 'extract-request',
+       sessionId: s.sessionId,
+       paperId: paper.id,
+-      url: `app-file://${paper.id}`,
++      url: appFileUrl(paper.id),
+       annotations: annotations.map((a) => ({ id: a.id, rects: a.rects }))
+     }
+     sendProgress(s, 'streaming')
+@@ -406,12 +403,12 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
+         } else if (req.kind === 'figure') {
+           const figDir = join(s.dir, 'figures', cur.paperId)
+           await mkdir(figDir, { recursive: true })
+-          // renderer 载荷自由串不裸拼路径（路径穿越防御——C-02 safeId 同型）：
++          // renderer 载荷自由串不裸拼路径（路径穿越防御——消毒单源=
++          // services/shared/sanitize，F-DEDUP-01；C-02 safeId 同族）：
+           // id 由应用生成本可信，纵深防御防篡改载荷（annotationId 含 ../ 等）
+-          const safeName = (raw: string): string => raw.replace(/[^a-zA-Z0-9_-]/g, '_')
+           const name =
+             req.figure === 'anno'
+-              ? `anno-${safeName(req.annotationId ?? 'unknown')}.png`
++              ? `anno-${sanitizePathToken(req.annotationId ?? 'unknown')}.png`
+               : `page-${req.page}.png`
+           await writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))
+           cur.figures.push(`figures/${cur.paperId}/${name}`)
+diff --git a/src/main/services/export_/export.service.ts b/src/main/services/export_/export.service.ts
+index afd7238aac..699ee1e9da 100644
+--- a/src/main/services/export_/export.service.ts
++++ b/src/main/services/export_/export.service.ts
+@@ -34,9 +34,10 @@
+ import { existsSync } from 'node:fs'
+ import { mkdir, writeFile } from 'node:fs/promises'
+ import { join } from 'node:path'
+-import type { AppErrorCode } from '../../../shared/app-error'
+ import type { PaperDetail } from '../../../shared/models/paper'
+ import type { Repos } from '../../db/repos'
++import { DomainError } from '../shared/domain-error'
++import { sanitizePathToken } from '../shared/sanitize'
+ import {
+   makeCitationKey,
+   serializeBibtex,
+@@ -45,16 +46,9 @@ import {
+ import { assembleCorpusMd } from './corpus.assemble'
+ import { buildReadingReport } from './markdown.report'
+ 
+-/** 域错误：NOT_FOUND（报告目标不存在）与 IO_ERROR（写盘失败）载体 */
+-class ExportDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'ExportDomainError'
+-    this.code = code
+-  }
+-}
++/** 域错误：NOT_FOUND（报告目标不存在）与 IO_ERROR（写盘失败）载体——基类
++ *  一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
++class ExportDomainError extends DomainError {}
+ 
+ export interface CorpusSetEntry {
+   paperId: string
+@@ -205,9 +199,9 @@ export function createExportService(deps: { repos: Repos }): ExportService {
+       try {
+         await mkdir(corpusDir, { recursive: true })
+         for (const e of entries) {
+-          // paperId 消防消毒（id 由 import.service 生成本可信——纵深防御，
+-          // 异常 id 不越出 corpus 目录）
+-          const safeId = e.paperId.replace(/[^a-zA-Z0-9_-]/g, '_')
++          // paperId 消毒单源=services/shared/sanitize（F-DEDUP-01；id 由
++          // import.service 生成本可信——纵深防御，异常 id 不越出 corpus 目录）
++          const safeId = sanitizePathToken(e.paperId)
+           await writeFile(join(corpusDir, `${safeId}.md`), e.content, 'utf8')
+         }
+       } catch (e) {
+diff --git a/src/main/services/import_/file-store.ts b/src/main/services/import_/file-store.ts
+index 088cddf259..cd0e04b3c6 100644
+--- a/src/main/services/import_/file-store.ts
++++ b/src/main/services/import_/file-store.ts
+@@ -9,20 +9,15 @@
+  * 安全（§6.3）：file_ref 一律相对路径+正斜杠；解析结果必须在受管根内。
+  * 测试：tests/unit/services/file-store.test.ts（去重/穿越攻击向量/非 PDF 拒绝）。
+  */
+-import { createHash, randomUUID } from 'node:crypto'
++import { createHash } from 'node:crypto'
+ import { mkdir, readFile, stat } from 'node:fs/promises'
+ import { isAbsolute, resolve, sep } from 'node:path'
+-import type { AppErrorCode } from '../../../shared/app-error'
++import { atomicWriteFile } from '../shared/atomic-write'
++import { DomainError } from '../shared/domain-error'
+ 
+-export class FileStoreError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'FileStoreError'
+-    this.code = code
+-  }
+-}
++/** 受管存储域错误（基类一行继承——name/code 经 shared/domain-error 自动落，
++ *  F-DEDUP-01 单源；受锁测试 import 本导出面，出口保持 file-store.ts 不变） */
++export class FileStoreError extends DomainError {}
+ 
+ export interface StoredFile {
+   /** 受管存储内相对路径（正斜杠），如 "ab/cd/<sha>.pdf" */
+@@ -138,17 +133,15 @@ function basename(p: string): string {
+ }
+ 
+ async function copyOrWrite(dest: string, bytes: Uint8Array): Promise<void> {
+-  // 原子写：先写同目录临时文件，成功后 rename 到最终路径。
++  // 原子写单源=services/shared/atomic-write（F-DEDUP-01）：先写同目录临时文件
++  // （uniqueTmp），成功后 rename 到最终路径。
+   // 直写目标路径一旦中途崩溃会留下截断文件，而文件名=内容 sha256 会让去重逻辑
+   // 永久复用损坏文件（无法通过重新导入自愈）；rename 在同卷上原子。
+-  // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）。
+-  const { writeFile, rename, rm } = await import('node:fs/promises')
+-  const tmp = `${dest}.tmp-${randomUUID()}`
++  // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）——FileStoreError
++  // 包装与 basename-only 文案留在调用侧（单源原样上抛 fs 错误，域化归调用方）。
+   try {
+-    await writeFile(tmp, bytes)
+-    await rename(tmp, dest)
++    await atomicWriteFile(dest, bytes, { uniqueTmp: true, cleanOnFail: true })
+   } catch (e) {
+-    await rm(tmp, { force: true }).catch(() => undefined)
+     throw new FileStoreError(
+       'IO_ERROR',
+       `写入受管文件失败：${basename(dest)}（${e instanceof Error ? e.message : String(e)}）`
+diff --git a/src/main/services/import_/import.service.ts b/src/main/services/import_/import.service.ts
+index 4cf7623869..fa3ca1b84b 100644
+--- a/src/main/services/import_/import.service.ts
++++ b/src/main/services/import_/import.service.ts
+@@ -43,11 +43,11 @@
+ import { randomUUID } from 'node:crypto'
+ import { readdir } from 'node:fs/promises'
+ import { join } from 'node:path'
+-import type { AppErrorCode } from '../../../shared/app-error'
+ import type { ImportProgressEvent, ImportResult } from '../../../shared/ipc/schemas'
+ import type { Collection } from '../../../shared/models/collection'
+ import type { PaperSummary } from '../../../shared/models/paper'
+ import type { PaperRow, Repos } from '../../db/repos'
++import { DomainError } from '../shared/domain-error'
+ import type { FileStore } from './file-store'
+ import type { PdfMetaExtraction } from './pdf-meta.extract'
+ 
+@@ -59,16 +59,9 @@ export interface ImportService {
+ /**
+  * 域错误：仅文件夹整体读不了时抛出（code 经 register 的 toAppError 保留语义）。
+  * 单文件失败不抛——按"尽力而为"进 failed。
++ * 基类一行继承=services/shared/domain-error（F-DEDUP-01 单源）。
+  */
+-class ImportDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'ImportDomainError'
+-    this.code = code
+-  }
+-}
++class ImportDomainError extends DomainError {}
+ 
+ /** 批处理单元：源路径 + 所属集合（importFiles 一律 null，根目录文件也为 null） */
+ interface BatchEntry {
+diff --git a/src/main/services/library.service.ts b/src/main/services/library.service.ts
+index 7e71875f4a..8304384009 100644
+--- a/src/main/services/library.service.ts
++++ b/src/main/services/library.service.ts
+@@ -24,30 +24,24 @@
+  * - 不做：删除文献（v1 明确不做，防误删；如需清理走 DB 维护工具）
+  *
+  * ── 文化层 ──
+- * - NOT_FOUND 场景抛内置 DomainError（本文件定义并导出 class DomainError extends Error，
+- *   带 code: AppErrorCode 字段）——register 会经 toAppError 折叠
++ * - NOT_FOUND 场景抛 DomainError（F-DEDUP-01 起定义上提 services/shared/
++ *   domain-error 单源；本文件 re-export 保既有导出 API 稳定——历史零值导入者，
++ *   主控 grep 实证）——register 会经 toAppError 折叠
+  * - updateMeta 落库后重读 detailById 返回聚合详情（契约要求 PaperDetail，
+  *   而 repo 的 updateMeta 只回原始表行）
+  * - 测试：tests/unit/services/library.service.test.ts（已锁定，repo 用内存桩）
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { Repos } from '../db/repos'
++import { DomainError } from './shared/domain-error'
+ 
+ /**
+  * 域错误：service 层业务语义（如"资源不存在"）的载体。
+  * toAppError 对带合法 code 字段的 Error 会保留 code 与 message 折叠成 AppError，
+- * 前端据此按码分支。
++ * 前端据此按码分支。（定义已上提 shared/domain-error 单源——F-DEDUP-01；
++ * 此处 re-export 维持本文件历史导出面。）
+  */
+-export class DomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'DomainError'
+-    this.code = code
+-  }
+-}
++export { DomainError }
+ 
+ /** 统一的"文献不存在"错误（detail / updateMeta 共用同一语义与文案） */
+ function paperNotFound(paperId: string): DomainError {
+diff --git a/src/main/services/lineage/lineage.service.ts b/src/main/services/lineage/lineage.service.ts
+index d56c57aa74..a10cf35613 100644
+--- a/src/main/services/lineage/lineage.service.ts
++++ b/src/main/services/lineage/lineage.service.ts
+@@ -24,7 +24,6 @@
+  * 测试：tests/unit/services/lineage-import.test.ts [受锁新增]（always-active）。
+  */
+ import { readFile } from 'node:fs/promises'
+-import type { AppErrorCode } from '../../../shared/app-error'
+ import { isSurveyTitle, lineageDraftSchema } from '../../../shared/models/lineage'
+ import type {
+   LineageEdge,
+@@ -34,6 +33,7 @@ import type {
+ } from '../../../shared/models/lineage'
+ import { venueToTier, type VenueTier } from '../../../shared/venue-tier'
+ import type { LineageRepo } from '../../db/repos/lineage.repo'
++import { DomainError } from '../shared/domain-error'
+ 
+ /** 行级校验错误（path=字段路径如 nodes.0.title / edges.1.to_paper_id） */
+ export interface DraftIssue {
+@@ -85,21 +85,13 @@ export interface LineageServiceDeps {
+ }
+ 
+ /**
+- * 域错误（reader.service ReaderDomainError 同型，LG-03 接线需要）：code 经
+- * toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
++ * 域错误（LG-03 接线需要；shared/domain-error 基类一行继承——F-DEDUP-01 单源）：
++ * code 经 toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
+  * reason——「reason 透传 toast」不成立）。CONFLICT=业务规则拒绝（树守卫/
+  * 幽灵 paperId），消费方按码分支（丢弃动作+toast，区别于系统型失败保留重试）。
+  * message 中文原文不变（LG-01 受锁测试断言子串不受影响）。
+  */
+-class LineageDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'LineageDomainError'
+-    this.code = code
+-  }
+-}
++class LineageDomainError extends DomainError {}
+ 
+ /**
+  * 草稿三段校验（纯函数：同输入同输出）。
+diff --git a/src/main/services/notes.service.ts b/src/main/services/notes.service.ts
+index c793fdf9b9..5558ca6d69 100644
+--- a/src/main/services/notes.service.ts
++++ b/src/main/services/notes.service.ts
+@@ -11,8 +11,9 @@
+  *
+  * ── 架构层 ──
+  * - 薄层；只依赖 repos 桶（禁止 import db/connection，ESLint 强制）
+- * - NOT_FOUND 判定需要 papers.findById；域错误与 library/reader 的
+- *   DomainError 同构：带 code 的 Error，register 经 toAppError 折叠为 AppError
++ * - NOT_FOUND 判定需要 papers.findById；域错误一行继承 services/shared/
++ *   domain-error 基类（F-DEDUP-01 单源——被依赖下游位共享件，非服务间横向
++ *   耦合），register 经 toAppError 折叠为 AppError
+  *
+  * ── 生命周期层 ──
+  * - 不做：多篇笔记/双链（负面清单）
+@@ -20,20 +21,12 @@
+  * ── 文化层 ──
+  * - 测试：tests/unit/services/notes.service.test.ts（已锁定，repos 桩）
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { Repos } from '../db/repos'
++import { DomainError } from './shared/domain-error'
+ 
+ /** 域错误：save 的"文献不存在"与 remove 的"笔记不存在"载体 */
+-class NotesDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'NotesDomainError'
+-    this.code = code
+-  }
+-}
++class NotesDomainError extends DomainError {}
+ 
+ export function createNotesService(deps: { repos: Repos }): ApiHandlers['notes'] {
+   const { papers, notes } = deps.repos
+diff --git a/src/main/services/reader.service.ts b/src/main/services/reader.service.ts
+index 31a93b2ba2..667824f0b7 100644
+--- a/src/main/services/reader.service.ts
++++ b/src/main/services/reader.service.ts
+@@ -25,25 +25,17 @@
+  * - 不做：多设备同步进度
+  *
+  * ── 文化层 ──
+- * - NOT_FOUND 抛本文件私有的域错误类（与 library.service 的 DomainError /
+- *   import.service 的 ImportDomainError 同构：带 code 的 Error，register 经
+- *   toAppError 保留语义折叠为 AppError；各自私有是既定惯例，避免服务间横向依赖）
++ * - NOT_FOUND 抛本域错误类（F-DEDUP-01 起一行继承 services/shared/domain-error
++ *   基类：带 code 的 Error，register 经 toAppError 保留语义折叠为 AppError；
++ *   基类=被依赖下游位共享件，非服务间横向耦合——「各自私有」旧惯例废止）
+  * - 测试：tests/unit/services/reader.service.test.ts（已锁定）
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { Repos } from '../db/repos'
++import { DomainError } from './shared/domain-error'
+ 
+ /** 域错误：open 的"文献不存在"与 update 的"标注不存在"载体 */
+-class ReaderDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'ReaderDomainError'
+-    this.code = code
+-  }
+-}
++class ReaderDomainError extends DomainError {}
+ 
+ export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader'] {
+   const { papers, annotations } = deps.repos
+diff --git a/src/main/services/shared/atomic-write.ts b/src/main/services/shared/atomic-write.ts
+new file mode 100644
+index 0000000000..60ab189432
+--- /dev/null
++++ b/src/main/services/shared/atomic-write.ts
+@@ -0,0 +1,52 @@
++/**
++ * [F-DEDUP-01] 原子写单源（tmp+rename）——先写同目录临时文件，成功后 rename
++ * 到最终路径（同卷 rename 原子；直写目标路径一旦中途崩溃会留下半截文件）。
++ * 收敛前 4 处副本：file-store copyOrWrite（bytes+uniqueTmp+cleanOnFail）/
++ * ai-sensor writeAtomic（ensureDir）/workspace.fs atomicWrite（裸调）/
++ * ipc settings atomicWrite（裸调）。
++ *
++ * 形态：
++ * - tmp 名：默认 `${path}.tmp`；uniqueTmp 时 `${path}.tmp-${randomUUID()}`（同
++ *   目标并发双写互不抢占同一 tmp 路径）
++ * - content：string 按 'utf8' 落盘；Uint8Array 直写字节
++ * - opts.ensureDir：首写前 mkdir 父目录（recursive 幂等）——默认不开（调用方
++ *   自建目录的旧语义保持）
++ * - opts.cleanOnFail：失败时尽力删 tmp（rm force 吞 ENOENT）——默认不开；错误
++ *   包装（域错误化/消息只含文件名）留在调用侧，本模块原样上抛 fs 错误
++ *
++ * 排除面（保持内联不动，票面裁决）：corpus.export manifest 终写（固定名
++ * manifest.tmp.json=态空间表契约的残留清理语义）；ai-notes-import 的 rm+rename
++ * （移动语义非内容写）。测试：tests/unit/services/shared/atomic-write.test.ts。
++ */
++import { randomUUID } from 'node:crypto'
++import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
++import { dirname } from 'node:path'
++
++export interface AtomicWriteOptions {
++  /** 首写前 mkdir 父目录（recursive） */
++  ensureDir?: boolean
++  /** tmp 名附 randomUUID（同目标并发双写互不覆盖） */
++  uniqueTmp?: boolean
++  /** 失败时尽力清除 tmp 残留 */
++  cleanOnFail?: boolean
++}
++
++export async function atomicWriteFile(
++  path: string,
++  content: string | Uint8Array,
++  opts?: AtomicWriteOptions
++): Promise<void> {
++  const tmp = opts?.uniqueTmp ? `${path}.tmp-${randomUUID()}` : `${path}.tmp`
++  try {
++    if (opts?.ensureDir === true) {
++      await mkdir(dirname(path), { recursive: true })
++    }
++    await writeFile(tmp, content, typeof content === 'string' ? 'utf8' : undefined)
++    await rename(tmp, path)
++  } catch (e) {
++    if (opts?.cleanOnFail === true) {
++      await rm(tmp, { force: true }).catch(() => undefined)
++    }
++    throw e
++  }
++}
+diff --git a/src/main/services/shared/domain-error.ts b/src/main/services/shared/domain-error.ts
+new file mode 100644
+index 0000000000..27015f20ca
+--- /dev/null
++++ b/src/main/services/shared/domain-error.ts
+@@ -0,0 +1,15 @@
++import type { AppErrorCode } from '../../../shared/app-error'
++/**
++ * 服务层域错误基类（F-DEDUP-01 单源）：带 AppErrorCode 的 Error，
++ * register 出口经 toAppError 按 code 字段折叠（鸭子类型，不按类名）。
++ * 子类名经 new.target.name 自动落 name 字段——各域子类一行继承零样板。
++ */
++export class DomainError extends Error {
++  readonly code: AppErrorCode
++
++  constructor(code: AppErrorCode, message: string) {
++    super(message)
++    this.name = new.target.name
++    this.code = code
++  }
++}
+diff --git a/src/main/services/shared/sanitize.ts b/src/main/services/shared/sanitize.ts
+new file mode 100644
+index 0000000000..7f8a68d684
+--- /dev/null
++++ b/src/main/services/shared/sanitize.ts
+@@ -0,0 +1,14 @@
++/**
++ * [F-DEDUP-01] 路径段清洗单源——白名单 [a-zA-Z0-9_-] 之外的字符一律换 '_'。
++ * C-02 家族：renderer 载荷自由串不裸拼路径的纵深防御（id 由应用生成本可信，
++ * 防篡改载荷携带 ../ 等路径穿越片段）。收敛前 2 处同正则副本：
++ * export.service safeId（corpus/<safeId>.md）/corpus.export safeName
++ * （figures/<paperId>/anno-<safeName>.png）。
++ *
++ * 排除面（异构家族不迁，票面裁决）：ipc/export_ safeFileName（展示名消毒：
++ * 全角冒号+空白归一+截断 80，语义不同）；db 层 LIKE 转义 ×3（SQL 家族+db 层
++ * 禁 import services）。测试：tests/unit/services/shared/sanitize.test.ts。
++ */
++export function sanitizePathToken(raw: string): string {
++  return raw.replace(/[^a-zA-Z0-9_-]/g, '_')
++}
+diff --git a/src/main/services/tags.service.ts b/src/main/services/tags.service.ts
+index 051015f6a4..266e170887 100644
+--- a/src/main/services/tags.service.ts
++++ b/src/main/services/tags.service.ts
+@@ -19,8 +19,8 @@
+  * ── 架构层 ──
+  * - 存在性预检经 listWithCounts（携带全量 id；本地单用户小表——repo 面保持
+  *   票面四方法不增 findById）；better-sqlite3 同步单连接，预检与写入之间无交错
+- * - TagsDomainError：Error+readonly code: AppErrorCode（NotesDomainError 同型），
+- *   register 经 toAppError 折叠为 AppError 透传 renderer
++ * - TagsDomainError：services/shared/domain-error 基类一行继承（F-DEDUP-01
++ *   单源），register 经 toAppError 折叠为 AppError 透传 renderer
+  *
+  * ── 生命周期层 ──
+  * - 改名/合并/删除已实现（P7E-01——原「v2 预留」注记兑现）
+@@ -29,20 +29,12 @@
+  * - 测试：tests/unit/services/tags.service.test.ts（已锁定，repos 桩）
+  *   + tests/unit/services/tags-lifecycle.service.test.ts（P7E-01，always-active）
+  */
+-import type { AppErrorCode } from '../../shared/app-error'
+ import type { ApiHandlers } from '../../shared/ipc/api-surface'
+ import type { Repos } from '../db/repos'
++import { DomainError } from './shared/domain-error'
+ 
+-/** 域错误载体（rename/merge/delete 的校验序拒绝；与 notes 域 DomainError 同构） */
+-class TagsDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'TagsDomainError'
+-    this.code = code
+-  }
+-}
++/** 域错误载体（rename/merge/delete 的校验序拒绝；基类一行继承） */
++class TagsDomainError extends DomainError {}
+ 
+ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
+   const { tags } = deps.repos
+diff --git a/src/main/services/workspaces/workspace.fs.ts b/src/main/services/workspaces/workspace.fs.ts
+index 686323c529..db011e599d 100644
+--- a/src/main/services/workspaces/workspace.fs.ts
++++ b/src/main/services/workspaces/workspace.fs.ts
+@@ -16,8 +16,10 @@
+  *   只住本域文件——禁入 shared/constants.ts（renderer 不见路径，避免无谓受锁扩容）。
+  *
+  * ── 架构层 ──
+- * - 只 import node:fs/node:path/node:crypto；不触 db、不触 electron（单测纯 fs 可测）。
+- * - 协议文件一律 tmp+rename 原子写（settings ipc / INV-26 同型）。
++ * - 只 import node:fs/node:path/node:crypto 与 services/shared/atomic-write
++ *   （F-DEDUP-01 原子写单源——被依赖下游位，不破分层单向）；不触 db、不触
++ *   electron（单测纯 fs 可测）。
++ * - 协议文件一律 tmp+rename 原子写（INV-26 同型）。
+  *
+  * ── 生命周期层 ──
+  * - 不做：workspace 目录手工编辑的 watch 兼容；meta 版本字段（v1 无 schema 演进面）。
+@@ -27,9 +29,10 @@
+  */
+ import { randomUUID } from 'node:crypto'
+ import { existsSync } from 'node:fs'
+-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
++import { mkdir, readdir, readFile, rename, stat } from 'node:fs/promises'
+ import { join } from 'node:path'
+ import { DB_FILE_NAME, MANAGED_FILES_DIR } from '../../../shared/constants'
++import { atomicWriteFile } from '../shared/atomic-write'
+ 
+ /** 课题目录集根目录名（userData 下） */
+ export const WORKSPACES_DIR_NAME = 'workspaces'
+@@ -59,13 +62,6 @@ export async function generateWorkspaceId(rootDir: string): Promise<string> {
+   throw new Error('课题 id 生成失败：随机碰撞超过重试上限')
+ }
+ 
+-/** 原子写（tmp+rename——半截文件永不入目） */
+-async function atomicWrite(path: string, content: string): Promise<void> {
+-  const tmp = `${path}.tmp`
+-  await writeFile(tmp, content, 'utf-8')
+-  await rename(tmp, path)
+-}
+-
+ export function pointerPath(userDataDir: string): string {
+   return join(userDataDir, POINTER_FILE_NAME)
+ }
+@@ -98,7 +94,7 @@ export async function readPointerId(userDataDir: string): Promise<string | null>
+ }
+ 
+ export async function writePointer(userDataDir: string, id: string): Promise<void> {
+-  await atomicWrite(pointerPath(userDataDir), `${JSON.stringify({ currentId: id }, null, 2)}\n`)
++  await atomicWriteFile(pointerPath(userDataDir), `${JSON.stringify({ currentId: id }, null, 2)}\n`)
+ }
+ 
+ /** 目录扫描：workspaces/ 下持 meta.json 的合法 id 目录，字典序（=「目录序」单源） */
+@@ -134,7 +130,7 @@ export async function readMeta(rootDir: string, id: string): Promise<WorkspaceMe
+ 
+ /** meta.json 写（create/rename 落点；createdAt 不变语义由调用方保持） */
+ export async function writeMeta(rootDir: string, id: string, meta: WorkspaceMeta): Promise<void> {
+-  await atomicWrite(join(rootDir, id, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`)
++  await atomicWriteFile(join(rootDir, id, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`)
+ }
+ 
+ async function moveIfExists(src: string, dest: string): Promise<void> {
+diff --git a/src/main/services/workspaces/workspace.service.ts b/src/main/services/workspaces/workspace.service.ts
+index e66f32d126..88414a2ca8 100644
+--- a/src/main/services/workspaces/workspace.service.ts
++++ b/src/main/services/workspaces/workspace.service.ts
+@@ -53,7 +53,7 @@ import { existsSync } from 'node:fs'
+ import { stat } from 'node:fs/promises'
+ import { join } from 'node:path'
+ import { DB_FILE_NAME } from '../../../shared/constants'
+-import type { AppErrorCode } from '../../../shared/app-error'
++import { DomainError } from '../shared/domain-error'
+ import {
+   DEFAULT_WS_ID,
+   DEFAULT_WS_NAME,
+@@ -81,15 +81,8 @@ export interface WorkspaceServiceDeps {
+   importInFlight: () => boolean
+ }
+ 
+-class WorkspaceDomainError extends Error {
+-  readonly code: AppErrorCode
+-
+-  constructor(code: AppErrorCode, message: string) {
+-    super(message)
+-    this.name = 'WorkspaceDomainError'
+-    this.code = code
+-  }
+-}
++/** 域错误载体（基类一行继承=services/shared/domain-error——F-DEDUP-01 单源） */
++class WorkspaceDomainError extends DomainError {}
+ 
+ function wsNotFound(id: string): WorkspaceDomainError {
+   return new WorkspaceDomainError('NOT_FOUND', `课题不存在：${id}`)
+diff --git a/src/shared/app-file-url.ts b/src/shared/app-file-url.ts
+new file mode 100644
+index 0000000000..e40c124e8b
+--- /dev/null
++++ b/src/shared/app-file-url.ts
+@@ -0,0 +1,14 @@
++import { APP_FILE_SCHEME } from './constants'
++/**
++ * [F-DEDUP-01] app-file:// URL 拼装单源（微扩主目标）：收敛前 3 处拼装——
++ * papers.repo fileUrl（用 APP_FILE_SCHEME 模板串）/app-file.protocol prefix
++ * 解析（同型模板串）/corpus.export 提取请求 url（硬编码 'app-file://' 字面量
++ * ——未走 APP_FILE_SCHEME 的漂移面）。scheme 单源仍是 shared/constants 的
++ * APP_FILE_SCHEME（本件只派生 prefix 与拼装函数）。
++ * 测试：tests/unit/shared/app-file-url.test.ts。
++ */
++export const APP_FILE_URL_PREFIX = `${APP_FILE_SCHEME}://`
++
++export function appFileUrl(paperId: string): string {
++  return `${APP_FILE_URL_PREFIX}${paperId}`
++}
+diff --git a/tests/unit/services/shared/atomic-write.test.ts b/tests/unit/services/shared/atomic-write.test.ts
+new file mode 100644
+index 0000000000..0c87d9f03d
+--- /dev/null
++++ b/tests/unit/services/shared/atomic-write.test.ts
+@@ -0,0 +1,108 @@
++import { mkdtemp, mkdir, readFile, readdir, stat } from 'node:fs/promises'
++import { tmpdir } from 'node:os'
++import { join } from 'node:path'
++import { afterAll, describe, expect, it } from 'vitest'
++import { atomicWriteFile } from '../../../../src/main/services/shared/atomic-write'
++
++/**
++ * [F-DEDUP-01] services/shared/atomic-write 直接单测——原子写单源契约。
++ * 收敛前 4 处 tmp+rename 副本（file-store copyOrWrite / ai-sensor writeAtomic /
++ * workspace.fs atomicWrite / ipc settings atomicWrite）。本件锁定共用行为：
++ * string/bytes 双形态、tmp 不残留、ensureDir 深目录、uniqueTmp 并发互不覆盖、
++ * cleanOnFail 失败清理。失败注入沿用 corpus.export.test 的「目录占位」确定性
++ * 手法（rename 到已存在目录必失败，Windows/Linux 双平台无 chmod 依赖）。
++ * 新测试 always-active。
++ */
++
++const tempRoots: string[] = []
++async function newDir(): Promise<string> {
++  const dir = await mkdtemp(join(tmpdir(), 'atomic-write-'))
++  tempRoots.push(dir)
++  return dir
++}
++afterAll(async () => {
++  const fs = await import('node:fs/promises')
++  for (const dir of tempRoots) await fs.rm(dir, { recursive: true, force: true })
++})
++
++/** 目录内 .tmp* 残留计数（终局断言的共用取数） */
++async function tmpCount(dir: string): Promise<number> {
++  const names = await readdir(dir)
++  return names.filter((n) => n.includes('.tmp')).length
++}
++
++describe('services/shared/atomic-write —— 原子写单源', () => {
++  it('string 形态：UTF-8 落盘内容一致（中文无损坏）', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'a.txt')
++    await atomicWriteFile(target, '设置内容：中文\n')
++    expect(await readFile(target, 'utf8')).toBe('设置内容：中文\n')
++  })
++
++  it('bytes 形态：Uint8Array 直写（不被字符串化）', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'b.bin')
++    const bytes = new Uint8Array([0, 137, 80, 68, 70, 45, 49, 255])
++    await atomicWriteFile(target, bytes)
++    const back = new Uint8Array(await readFile(target))
++    expect(Buffer.from(back).equals(Buffer.from(bytes))).toBe(true)
++  })
++
++  it('终名存在且默认 tmp 不残留（固定名 tmp 形态）', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'c.json')
++    await atomicWriteFile(target, '{}')
++    expect((await stat(target)).isFile()).toBe(true)
++    expect(await tmpCount(dir)).toBe(0)
++  })
++
++  it('ensureDir：深目录父链不存在时自动创建', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'x', 'y', 'z', 'd.json')
++    await atomicWriteFile(target, 'deep', { ensureDir: true })
++    expect(await readFile(target, 'utf8')).toBe('deep')
++  })
++
++  it('ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义）', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'no', 'such', 'dir', 'e.json')
++    await expect(atomicWriteFile(target, 'x')).rejects.toThrow()
++  })
++
++  it('uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'f.bin')
++    const first = new Uint8Array(2048).fill(1)
++    const second = new Uint8Array(2048).fill(2)
++    // allSettled 口径：Windows 对「同目标并发替换」可瞬态拒绝后到者的 rename
++    //（平台竞态非本模块契约）；单源要保的是各写手 tmp 独立——终名永远是一方
++    // 的完整字节，绝不出现两写手共享 tmp 的字节交错半文件
++    const outcomes = await Promise.allSettled([
++      atomicWriteFile(target, first, { uniqueTmp: true, cleanOnFail: true }),
++      atomicWriteFile(target, second, { uniqueTmp: true, cleanOnFail: true })
++    ])
++    expect(outcomes.some((o) => o.status === 'fulfilled')).toBe(true)
++    const back = new Uint8Array(await readFile(target))
++    expect(back.byteLength).toBe(2048)
++    const allFirst = back.every((b) => b === 1)
++    const allSecond = back.every((b) => b === 2)
++    expect(allFirst || allSecond).toBe(true)
++    expect(await tmpCount(dir)).toBe(0)
++  })
++
++  it('cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'occupied')
++    await mkdir(target)
++    await expect(atomicWriteFile(target, 'x', { cleanOnFail: true })).rejects.toThrow()
++    expect(await tmpCount(dir)).toBe(0)
++  })
++
++  it('cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面）', async () => {
++    const dir = await newDir()
++    const target = join(dir, 'occupied2')
++    await mkdir(target)
++    await expect(atomicWriteFile(target, 'x')).rejects.toThrow()
++    expect(await tmpCount(dir)).toBe(1)
++  })
++})
+diff --git a/tests/unit/services/shared/domain-error.test.ts b/tests/unit/services/shared/domain-error.test.ts
+new file mode 100644
+index 0000000000..98ee0474e5
+--- /dev/null
++++ b/tests/unit/services/shared/domain-error.test.ts
+@@ -0,0 +1,61 @@
++import { describe, expect, it } from 'vitest'
++import { toAppError, type AppErrorCode } from '../../../../src/shared/app-error'
++import { DomainError } from '../../../../src/main/services/shared/domain-error'
++import { HttpFetchError } from '../../../../src/main/http/http-client'
++
++/**
++ * [F-DEDUP-01] services/shared/domain-error 直接单测——服务层域错误基类契约。
++ * 15 处同构子类收敛为「一行继承零样板」，本件锁定基类的三条行为底线：
++ * ①name 经 new.target.name 自动落子类名（迁移前各文件手写 this.name 的保真面
++ * ②instanceof 链成立（子类消费方可按基类统一窄化）；③register 出口经
++ * toAppError 按 code 字段折叠（鸭子类型，不按类名——非法码回落 INTERNAL）。
++ * 新测试 always-active；测试桩子类=各域子类的最小消费代表。
++ */
++
++/** 测试桩子类：一行继承（各域子类迁移后的标准形态） */
++class StubDomainError extends DomainError {}
++
++describe('services/shared/domain-error —— 域错误基类', () => {
++  it('基类直构：name=DomainError，code 与 message 保留', () => {
++    const e = new DomainError('NOT_FOUND', '文献不存在：p-1')
++    expect(e.name).toBe('DomainError')
++    expect(e.code).toBe('NOT_FOUND')
++    expect(e.message).toBe('文献不存在：p-1')
++  })
++
++  it('子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物', () => {
++    const stub = new StubDomainError('IO_ERROR', '桩错误')
++    expect(stub.name).toBe('StubDomainError')
++    const http = new HttpFetchError('NETWORK_ERROR', '网络错误')
++    expect(http.name).toBe('HttpFetchError')
++  })
++
++  it('instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error', () => {
++    const stub = new StubDomainError('IO_ERROR', '桩错误')
++    expect(stub instanceof DomainError).toBe(true)
++    expect(stub instanceof Error).toBe(true)
++    expect(new DomainError('INTERNAL', 'x') instanceof Error).toBe(true)
++  })
++
++  it('toAppError 按 code 折叠：合法码保留 code 与中文 message', () => {
++    const app = toAppError(new StubDomainError('CONFLICT', '标签名已被占用'))
++    expect(app.code).toBe('CONFLICT')
++    expect(app.message).toBe('标签名已被占用')
++  })
++
++  it('toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名）', () => {
++    const e = new StubDomainError('NOT_A_REAL_CODE' as AppErrorCode, '带非法码的域错误')
++    const app = toAppError(e)
++    expect(app.code).toBe('INTERNAL')
++    expect(app.message).toBe('发生未预期的内部错误')
++    expect(app.detail).toBe('带非法码的域错误')
++  })
++
++  it('HttpFetchError 三参形态：status 字段保留且 code 仍可折叠', () => {
++    const e = new HttpFetchError('UPSTREAM_ERROR', '上游返回 HTTP 503', 503)
++    expect(e.status).toBe(503)
++    expect(e.code).toBe('UPSTREAM_ERROR')
++    const app = toAppError(e)
++    expect(app.code).toBe('UPSTREAM_ERROR')
++  })
++})
+diff --git a/tests/unit/services/shared/sanitize.test.ts b/tests/unit/services/shared/sanitize.test.ts
+new file mode 100644
+index 0000000000..8a85857441
+--- /dev/null
++++ b/tests/unit/services/shared/sanitize.test.ts
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from 'vitest'
++import { sanitizePathToken } from '../../../../src/main/services/shared/sanitize'
++
++/**
++ * [F-DEDUP-01] services/shared/sanitize 直接单测——路径段清洗单源契约。
++ * 收敛前 2 处同正则副本（export.service safeId / corpus.export safeName），
++ * C-02 家族：renderer 载荷自由串不裸拼路径的纵深防御（id 由应用生成本可信，
++ * 防篡改载荷的路径穿越）。白名单 = [a-zA-Z0-9_-]，其余一律 '_'。新测试
++ * always-active；it.each 用裸数组字面量（指纹门抽取器硬约束）。
++ */
++
++describe('services/shared/sanitize —— 路径段清洗单源', () => {
++  it.each([
++    ['paper-42_ok', 'paper-42_ok'],
++    ['ABCxyz019', 'ABCxyz019'],
++    ['../etc/passwd', '___etc_passwd'],
++    ['..\\crew', '___crew'],
++    ['a b\tc\nd', 'a_b_c_d'],
++    ['论文：2024', '___2024'],
++    ['', '']
++  ])('消毒：%s → %s', (raw, expected) => {
++    expect(sanitizePathToken(raw)).toBe(expected)
++  })
++
++  it('白名单字符全程保持（混合长串不变）', () => {
++    expect(sanitizePathToken('Uuid-9_Ab-z0')).toBe('Uuid-9_Ab-z0')
++  })
++
++  it('穿越向量逐段消毒：连续点与多斜杠不存活', () => {
++    expect(sanitizePathToken('....//')).toBe('______')
++    expect(sanitizePathToken('a/../../b')).toBe('a_______b')
++  })
++})
+diff --git a/tests/unit/shared/app-file-url.test.ts b/tests/unit/shared/app-file-url.test.ts
+new file mode 100644
+index 0000000000..0a142fec9b
+--- /dev/null
++++ b/tests/unit/shared/app-file-url.test.ts
+@@ -0,0 +1,27 @@
++import { describe, expect, it } from 'vitest'
++import { APP_FILE_SCHEME } from '../../../src/shared/constants'
++import { APP_FILE_URL_PREFIX, appFileUrl } from '../../../src/shared/app-file-url'
++
++/**
++ * [F-DEDUP-01] src/shared/app-file-url 直接单测——app-file:// URL 拼装单源契约。
++ * 收敛前 3 处拼装（papers.repo fileUrl / app-file.protocol prefix 解析 /
++ * corpus.export 提取请求 url 硬编码字面量——微扩主目标消灭面）。本件锁定
++ * prefix 常量与 APP_FILE_SCHEME 的一致性（双源漂移即红）。新测试 always-active。
++ */
++
++describe('src/shared/app-file-url —— URL 拼装单源', () => {
++  it('prefix 常量 = APP_FILE_SCHEME + "://"（与协议常量同源对账）', () => {
++    expect(APP_FILE_URL_PREFIX).toBe(`${APP_FILE_SCHEME}://`)
++    expect(APP_FILE_URL_PREFIX).toBe('app-file://')
++  })
++
++  it('appFileUrl：prefix + paperId 拼接', () => {
++    expect(appFileUrl('p-abc-123')).toBe('app-file://p-abc-123')
++  })
++
++  it('appFileUrl：结果以 prefix 起且去 prefix 后还原 id', () => {
++    const id = '0192f0x9'
++    expect(appFileUrl(id).startsWith(APP_FILE_URL_PREFIX)).toBe(true)
++    expect(appFileUrl(id).slice(APP_FILE_URL_PREFIX.length)).toBe(id)
++  })
++})
