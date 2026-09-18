@@ -1,0 +1,228 @@
+
+=== 活代码面（src+tests+配置）: 0 hits ===
+
+=== 活脚本面（scripts/*.mjs/*.ps1 非 audits）: 0 hits ===
+
+=== tickets 面: 0 hits ===
+
+=== 文档面（docs+*.md）: 214 hits ===
+docs/design/2026-09-03_f-a6-selection-root-fix.md:168:| `src/renderer/features/reader/selection-evaluate.ts`（新） | evaluateVisual（快路径数据链——**双路线（deepseek 终位 WARN-
+docs/design/2026-09-03_f-a6-selection-root-fix.md:169:| `src/renderer/features/reader/SelectionLayer.tsx` | evaluate 迁出+双路径接线（**红线解除目标 ≤220——实施以实际 diff 为准**，dee
+docs/design/2026-09-03_f-a6-selection-root-fix.md:170:| `src/renderer/features/reader/selection-geometry.ts` | createVisualScheduler 改 rAF 对齐：leading 首事件即排 rAF（
+docs/design/2026-09-03_f-a6-selection-root-fix.md:171:| `src/renderer/features/reader/selection-paint.tsx` | React.memo+props 稳定化 | +~8 |
+docs/invariants.md:73:| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-it
+docs/invariants.md:78:| INV-62 | 划选终点事件层可重定向：mouseup 真划选（位移≥3px）且释放点浅探（focus 行盒顶上方间隙+距上一视觉行盒底 ≤ max(距 focus 盒顶, 4px 余量)+释放 x 在上一行释放 x 最近栏组右缘+1px 外——该处无文本）时，sele
+scripts/audits/audit-c-scan-review-brief.md:158:**组件级写路径（全读）**：`reader/SelectionLayer.tsx`（249 行）、`reader/AnnotationLayer.tsx`（80-209 行写路径段）、`reader/ReaderPage.
+scripts/audits/audit-c-scan-review-brief.md:282:### SelectionLayer.tsx（src/renderer/features/reader/SelectionLayer.tsx，249 行）
+scripts/audits/audit-c-scan.md:31:**组件级写路径（全读）**：`reader/SelectionLayer.tsx`（249 行）、`reader/AnnotationLayer.tsx`（80-209 行写路径段）、`reader/ReaderPage.tsx`（60-179 行装
+scripts/audits/audit-c-scan.md:156:### SelectionLayer.tsx（src/renderer/features/reader/SelectionLayer.tsx，249 行）
+scripts/audits/auditc-brief.md:1178:  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 'done',
+scripts/audits/auditc-brief.md:1281:  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done'
+scripts/audits/auditc-brief.md:1295:  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done'
+scripts/audits/auditc-review-brief.md:1424:  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 
+scripts/audits/auditc-review-brief.md:1527:  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status:
+scripts/audits/auditc-review-brief.md:1541:  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status:
+scripts/audits/ds-health-review-brief.md:1341:  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', statu
+scripts/audits/ds-health-review-brief.md:1444:  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', stat
+scripts/audits/ds-health-review-brief.md:1458:  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', stat
+scripts/audits/f-a12-gate1-prompt.md:21:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-prompt.md:23:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-prompt.md:24:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-prompt.md:161:diff --git a/src/renderer/features/reader/release-affinity.ts b/src/renderer/features/reader/release-affinity.ts
+scripts/audits/f-a12-gate1-prompt.md:165:+++ b/src/renderer/features/reader/release-affinity.ts
+scripts/audits/f-a12-gate1-r2-prompt.md:41:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-r2-prompt.md:43:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-r2-prompt.md:44:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a12-gate1-r2-prompt.md:105:diff --git a/src/renderer/features/reader/release-affinity.ts b/src/renderer/features/reader/release-affinity.ts
+scripts/audits/f-a12-gate1-r2-prompt.md:109:+++ b/src/renderer/features/reader/release-affinity.ts
+scripts/audits/f-a12-gate2.md:31:- 翻 done 推演：registry L266 file='src/renderer/features/reader/SelectionLayer.tsx' 存在 ✓（状态 open——收口前不翻，正确）。
+scripts/audits/f-a12-impl.report.md:32:| src/renderer/features/reader/release-affinity.ts | 新增 | 166（≤300 ✓） |
+scripts/audits/f-a12-impl.report.md:33:| src/renderer/features/reader/SelectionLayer.tsx | 修改 +32/-1 | 207→237（组件 ≤250 ✓） |
+scripts/audits/f-a4-gate1-brief.md:140:- src/renderer/features/reader/SelectionLayer.tsx（172 行 diff，终态 **249 行** wc 实测——组件 ≤250 红线内）
+scripts/audits/f-a4-gate1-brief.md:151:- src/renderer/features/reader/selection-geometry.ts（**85 行**——localScale/toolbarViewportPos/closestPageRoot/pageIndexOf/
+scripts/audits/f-a4-gate1-brief.md:152:- src/renderer/features/reader/selection-paint.tsx（**62 行**——SelectionPaint portal 组件）
+scripts/audits/f-a4-gate1-brief.md:244: M src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-brief.md:3555:+- src/renderer/features/reader/SelectionLayer.tsx（172 行 diff，终态 **249 行** wc 实测——组件 ≤250 红线内）
+scripts/audits/f-a4-gate1-brief.md:3566:+- src/renderer/features/reader/selection-geometry.ts（**85 行**——localScale/toolbarViewportPos/closestPageRoot/pageIndexO
+scripts/audits/f-a4-gate1-brief.md:3567:+- src/renderer/features/reader/selection-paint.tsx（**62 行**——SelectionPaint portal 组件）
+scripts/audits/f-a4-gate1-brief.md:3659:+ M src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-brief.md:18318:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-brief.md:18320:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-brief.md:18321:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-brief.md:19096:diff --git a/src/renderer/features/reader/selection-geometry.ts b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a4-gate1-brief.md:19100:+++ b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a4-gate1-brief.md:19187:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a4-gate1-brief.md:19191:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:3388:+- src/renderer/features/reader/SelectionLayer.tsx（172 行 diff，终态 **249 行** wc 实测——组件 ≤250 红线内）
+scripts/audits/f-a4-gate1-r2-brief.md:3399:+- src/renderer/features/reader/selection-geometry.ts（初版 85 行——localScale/toolbarViewportPos/closestPageRoot/pageInde
+scripts/audits/f-a4-gate1-r2-brief.md:3400:+- src/renderer/features/reader/selection-paint.tsx（**62 行**——SelectionPaint portal 组件）
+scripts/audits/f-a4-gate1-r2-brief.md:3492:+ M src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:18231:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:18233:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:18234:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:19040:diff --git a/src/renderer/features/reader/selection-geometry.ts b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a4-gate1-r2-brief.md:19044:+++ b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a4-gate1-r2-brief.md:19190:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a4-gate1-r2-brief.md:19194:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a4-impl.report.md:20:- src/renderer/features/reader/SelectionLayer.tsx（172 行 diff，终态 **249 行** wc 实测——组件 ≤250 红线内）
+scripts/audits/f-a4-impl.report.md:31:- src/renderer/features/reader/selection-geometry.ts（初版 85 行——localScale/toolbarViewportPos/closestPageRoot/pageIndexOf/常量
+scripts/audits/f-a4-impl.report.md:32:- src/renderer/features/reader/selection-paint.tsx（**62 行**——SelectionPaint portal 组件）
+scripts/audits/f-a4-impl.report.md:125: M src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a5-gate1-brief.md:122:- src/renderer/features/reader/selection-paint.tsx（band 垂直+水平夹取+z3；**80 行**）
+scripts/audits/f-a5-gate1-brief.md:123:- src/renderer/features/reader/SelectionLayer.tsx（evaluate 节点口径带注入；**250 行**=上限）
+scripts/audits/f-a5-gate1-brief.md:847:+- src/renderer/features/reader/selection-paint.tsx（band 垂直+水平夹取+z3；**80 行**）
+scripts/audits/f-a5-gate1-brief.md:848:+- src/renderer/features/reader/SelectionLayer.tsx（evaluate 节点口径带注入；**250 行**=上限）
+scripts/audits/f-a5-gate1-brief.md:2917:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a5-gate1-brief.md:2919:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a5-gate1-brief.md:2920:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a5-gate1-brief.md:3288:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a5-gate1-brief.md:3290:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a5-gate1-brief.md:3291:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a5-impl.report.md:20:- src/renderer/features/reader/selection-paint.tsx（band 垂直+水平夹取+z3；**80 行**）
+scripts/audits/f-a5-impl.report.md:21:- src/renderer/features/reader/SelectionLayer.tsx（evaluate 节点口径带注入；**250 行**=上限）
+scripts/audits/f-a6-design-ds-package.md:169:| `src/renderer/features/reader/selection-evaluate.ts`（新） | evaluateVisual（快路径：raw range clientRects→同源 merge→缓存 ba
+scripts/audits/f-a6-design-ds-package.md:170:| `src/renderer/features/reader/SelectionLayer.tsx` | evaluate 迁出+双路径接线（249→~200±5，测算 −47：evaluate 闭包 48 行+import 收
+scripts/audits/f-a6-design-ds-package.md:171:| `src/renderer/features/reader/selection-geometry.ts` | createVisualScheduler 改 rAF 对齐：leading 首事件即排 rAF（≤16ms，S1b
+scripts/audits/f-a6-design-ds-package.md:172:| `src/renderer/features/reader/selection-paint.tsx` | React.memo+props 稳定化 | +~8 |
+scripts/audits/f-a6-design-ds-package.md:302:### src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6-design-ds-package.md:555:### src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6-design-ds-package.md:703:### src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6-design-kimi-package.md:9:  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', statu
+scripts/audits/f-a6-design-kimi-package.md:10:  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', stat
+scripts/audits/f-a6-design-kimi-package.md:173:### src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6-design-kimi-package.md:426:### src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6-design-kimi-package.md:509:### src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6-design-kimi-package.md:2046:| `src/renderer/features/reader/selection-evaluate.ts`（新） | evaluateVisual（快路径：raw range clientRects→同源 merge→缓存
+scripts/audits/f-a6-design-kimi-package.md:2047:| `src/renderer/features/reader/SelectionLayer.tsx` | evaluate 迁出+双路径接线（249→~200±5，测算 −47：evaluate 闭包 48 行+impor
+scripts/audits/f-a6-design-kimi-package.md:2048:| `src/renderer/features/reader/selection-geometry.ts` | createVisualScheduler 改 rAF 对齐：leading 首事件即排 rAF（≤16ms，
+scripts/audits/f-a6-design-kimi-package.md:2049:| `src/renderer/features/reader/selection-paint.tsx` | React.memo+props 稳定化 | +~8 |
+scripts/audits/f-a6-geom-ds-package.md:173:| `src/renderer/features/reader/selection-evaluate.ts`（新） | evaluateVisual（快路径数据链——deepseek WARN-2/3 闭合：**视口 clientRe
+scripts/audits/f-a6-geom-ds-package.md:174:| `src/renderer/features/reader/SelectionLayer.tsx` | evaluate 迁出+双路径接线（**红线解除目标 ≤220——实施以实际 diff 为准**，deepseek NIT-4
+scripts/audits/f-a6-geom-ds-package.md:175:| `src/renderer/features/reader/selection-geometry.ts` | createVisualScheduler 改 rAF 对齐：leading 首事件即排 rAF（≤16ms，S1b 零
+scripts/audits/f-a6-geom-ds-package.md:176:| `src/renderer/features/reader/selection-paint.tsx` | React.memo+props 稳定化 | +~8 |
+scripts/audits/f-a6-geom-kimi-package.md:172:| `src/renderer/features/reader/selection-evaluate.ts`（新） | evaluateVisual（快路径数据链——deepseek WARN-2/3 闭合：**视口 client
+scripts/audits/f-a6-geom-kimi-package.md:173:| `src/renderer/features/reader/SelectionLayer.tsx` | evaluate 迁出+双路径接线（**红线解除目标 ≤220——实施以实际 diff 为准**，deepseek NIT
+scripts/audits/f-a6-geom-kimi-package.md:174:| `src/renderer/features/reader/selection-geometry.ts` | createVisualScheduler 改 rAF 对齐：leading 首事件即排 rAF（≤16ms，S1b
+scripts/audits/f-a6-geom-kimi-package.md:175:| `src/renderer/features/reader/selection-paint.tsx` | React.memo+props 稳定化 | +~8 |
+scripts/audits/f-a6b2-gate1-package.md:859:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6b2-gate1-package.md:861:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6b2-gate1-package.md:862:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6b2-gate2-package.md:874:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6b2-gate2-package.md:876:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6b2-gate2-package.md:877:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate1-package.md:503:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate1-package.md:505:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate1-package.md:506:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate1-package.md:591:diff --git a/src/renderer/features/reader/selection-evaluate.ts b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate1-package.md:593:--- a/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate1-package.md:594:+++ b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate1-package.md:812:diff --git a/src/renderer/features/reader/selection-geometry.ts b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate1-package.md:814:--- a/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate1-package.md:815:+++ b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate1-package.md:883:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6c-gate1-package.md:885:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6c-gate1-package.md:886:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6c-gate2-package.md:518:diff --git a/src/renderer/features/reader/SelectionLayer.tsx b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate2-package.md:520:--- a/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate2-package.md:521:+++ b/src/renderer/features/reader/SelectionLayer.tsx
+scripts/audits/f-a6c-gate2-package.md:606:diff --git a/src/renderer/features/reader/selection-evaluate.ts b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate2-package.md:608:--- a/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate2-package.md:609:+++ b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a6c-gate2-package.md:827:diff --git a/src/renderer/features/reader/selection-geometry.ts b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate2-package.md:829:--- a/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate2-package.md:830:+++ b/src/renderer/features/reader/selection-geometry.ts
+scripts/audits/f-a6c-gate2-package.md:898:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6c-gate2-package.md:900:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6c-gate2-package.md:901:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-a6d-gate1-package.md:123:+| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pd
+scripts/audits/f-a8-gate2-gate1-package.md:93:-| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族*
+scripts/audits/f-a8-gate2-gate1-package.md:94:+| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/s
+scripts/audits/f-a8-gate2-gate2-package.md:68:-| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族*
+scripts/audits/f-a8-gate2-gate2-package.md:69:+| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/s
+scripts/audits/f-a9-gate1-pkg.md:122:diff --git a/src/renderer/features/reader/selection-evaluate.ts b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-gate1-pkg.md:124:--- a/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-gate1-pkg.md:125:+++ b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-gate1-pkg.md:634:- `src/renderer/features/reader/selection-evaluate.ts`：visual 快路径与
+scripts/audits/f-a9-gate2-pkg.md:117:diff --git a/src/renderer/features/reader/selection-evaluate.ts b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-gate2-pkg.md:119:--- a/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-gate2-pkg.md:120:+++ b/src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/f-a9-impl.report.md:41:- `src/renderer/features/reader/selection-evaluate.ts`：visual 快路径与
+scripts/audits/f-arch4-impl.report.md:33:- `src/renderer/features/reader/SelectionLayer.tsx`（import 换源
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:441:+| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:443:+| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:710:diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToo
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:712:--- a/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:713:+++ b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:723:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-pai
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:725:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:726:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:1735:| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate1-kimi-retry-prompt.md:1737:| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-gate1-prompt.md:441:+| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate1-prompt.md:443:+| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-gate1-prompt.md:710:diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate1-prompt.md:712:--- a/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate1-prompt.md:713:+++ b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate1-prompt.md:723:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate1-prompt.md:725:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate1-prompt.md:726:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate1-prompt.md:1735:| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate1-prompt.md:1737:| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-gate2-prompt.md:499:+| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate2-prompt.md:501:+| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-gate2-prompt.md:768:diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate2-prompt.md:770:--- a/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate2-prompt.md:771:+++ b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-gate2-prompt.md:781:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate2-prompt.md:783:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate2-prompt.md:784:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-gate2-prompt.md:1793:| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-gate2-prompt.md:1795:| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-impl.report.md:229:| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-impl.report.md:231:| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-kimi-p3-prompt.md:336:| --reader-selection-paint | `rgba(0, 0, 0, 0.2)` | features/reader/selection-paint.tsx（`0.20` 尾零 ※） |
+scripts/audits/f-css03-kimi-p3-prompt.md:338:| --shadow-pop-sm | `0 2px 8px rgba(0, 0, 0, 0.15)` | features/reader/SelectionToolbar.tsx |
+scripts/audits/f-css03-kimi-p4-prompt.md:106:diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-kimi-p4-prompt.md:108:--- a/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-kimi-p4-prompt.md:109:+++ b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/f-css03-kimi-p4-prompt.md:113:diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-kimi-p4-prompt.md:115:--- a/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-kimi-p4-prompt.md:116:+++ b/src/renderer/features/reader/selection-paint.tsx
+scripts/audits/f-css03-kimi-p4.md:6:证据：`src/renderer/features/reader/selection-paint.tsx:41 const PAINT_BG = 'var(--reader-selection-paint)'`
+scripts/audits/f-lint01-gate1-prompt.md:189:4. src/renderer/features/reader/SelectionToolbar.tsx:43（boxShadow rgba）
+scripts/audits/f-lint01-impl.report.md:60:4. src/renderer/features/reader/SelectionToolbar.tsx:43（boxShadow rgba）
+scripts/audits/f-lint02-design-pkg.md:57:  src/renderer/features/reader/SelectionLayer.tsx: DRAG_SELECT_THRESHOLD_PX
+scripts/audits/f-lint02-design-pkg.md:71:  src/renderer/features/reader/SelectionLayer.tsx: SELECTION_DEBOUNCE_MS
+scripts/audits/f-lint02-design-pkg.md:79:  src/renderer/features/reader/selection-geometry.ts: TOOLBAR_HEIGHT
+scripts/audits/f-lint02-design-pkg.md:108:  src/renderer/features/reader/SelectionLayer.tsx: SAVE_FAILED
+scripts/audits/f02-impl.report.md:42:| src/renderer/features/reader/SelectionLayer.tsx | 改 243→249 | 动态锚定根+跨页拒绝+坐标经页盒（quality 组件 ≤250 关卡内） |
+scripts/audits/g2-gate1-brief.md:10:- registry 票 F-GEOM-01-G2（file=src/renderer/features/reader/selection-evaluate.ts，
+scripts/audits/g2-impl-brief.md:11:**T1 保存门（唯一行为变更）**：src/renderer/features/reader/selection-evaluate.ts
+scripts/audits/g2-impl-report.md:26:| T1+T2+T5 | src/renderer/features/reader/selection-evaluate.ts | +20/-33 | 保存门 else 臂+尾段收窄；probeTextLength import+2 调用点改名+删
+scripts/audits/g3-impl-brief.md:26:   - `src/renderer/features/reader/selection-geometry.ts`（1~26 行头注+61~66 行 localScale）
+scripts/audits/g3-impl-brief.md:30:   - `src/renderer/features/reader/selection-paint.tsx`（49 行 bands props 头注——见③-5）
+scripts/audits/g3-impl-report.md:42:| src/renderer/features/reader/selection-geometry.ts | +3/-1 | localScale 域声明 |
+scripts/audits/g3-impl-report.md:45:| src/renderer/features/reader/selection-paint.tsx | +7/-3 | 两处陈旧声明勘正 |
+scripts/audits/geom01-impl-gate1-brief.md:45:  { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/selection-evaluate.ts', area: 'reader', owner: 'strong'
+scripts/audits/kimi-health-brief.md:1129:  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 'd
+scripts/audits/kimi-health-brief.md:1232:  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: '
+scripts/audits/kimi-health-brief.md:1246:  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: '
+scripts/audits/p7d01-b1-gate1-package.md:505:diff --git a/src/renderer/features/reader/SelectionToolbar.tsx b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/p7d01-b1-gate1-package.md:507:--- a/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/p7d01-b1-gate1-package.md:508:+++ b/src/renderer/features/reader/SelectionToolbar.tsx
+scripts/audits/p7d01-b1-gate1-package.md:786:+    '../../../src/renderer/features/reader/SelectionToolbar.tsx',
+scripts/audits/p7e-01-gate1-package.md:959:   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status
+scripts/audits/p7e-01-gate2-package.md:954:   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status
+scripts/audits/p7e-02-gate1-package.md:672:   { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status
+scripts/audits/p7f-ticketing-draft.md:134:`// b3: P7-F`(注册文件=src/renderer/features/reader/SelectionLayer.tsx 改造)
+scripts/audits/p7x02-gate1-package.md:256: | INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settl
+scripts/audits/sr2-f-07-impl.report.md:73:| `src/renderer/features/reader/SelectionLayer.tsx` | 改 | 头注 F-07 段（层叠次推演）；PendingSelection+overlay；evaluate 容器换算；渲染改挂
+scripts/audits/sr2-f-07-impl.report.md:75:| `src/renderer/features/reader/SelectionToolbar.tsx` | **新** | 划选工具条组件（同上；KIND_LABEL 随迁） |
+scripts/audits/sr2-f-08-brief.md:27:  3. `src/renderer/features/reader/SelectionLayer.tsx`：摘 `SelectionRects`
+scripts/audits/sr2-f-08-impl.report.md:22:| `src/renderer/features/reader/SelectionLayer.tsx` | 改（249→226 行） | 头注 F-07 层叠推演段改写 F-08；摘 import（旧 :51）/PendingSelec
+
+=== 归档面（scripts/audits——历史档预期命中零改）: 0 hits ===
+
+活边残留合计（活代码+活脚本+tickets）=0
+活边残留合计=0
+G7_FULLSCAN2_DONE

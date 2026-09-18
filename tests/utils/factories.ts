@@ -11,17 +11,24 @@
  *   +makeDemoDetail()（演示形=export/clip——作者双人/DOI/计数 2/演示时间戳）。
  * - seedLineage：3 文件逐字同形（useLineageStore.setState 直植）→ 调用点
  *   seed( 改名 seedLineage(。
+ * - mkItem/mkText/seedRegistry：各 ×4 → 单源（F-GEOM-01-G7 RoT 债销项=b14
+ *   门一 W1 登记；seedRegistry 统一收敛参数化超集形，selection-evaluate 原
+ *   两参固定版在默认参数下行为等价）。
  *
- * 边界：本件含 renderer store 值依赖（useLineageStore）——node 环境 db 域
- * 测试禁 import 本件（用 fixtures.ts）；盒几何桩看 tests/utils/geometry.ts。
+ * 边界：本件含 renderer store 值依赖（useLineageStore/usePageItemsStore+act）
+ * ——node 环境 db 域测试禁 import 本件（用 fixtures.ts）；盒几何桩看
+ * tests/utils/geometry.ts。
  * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更；C 面零变化指纹门。
  * 受锁文件。[test-refactor][locked-change]
  */
+import { act } from 'react'
 import type { TabState } from '../../src/renderer/features/reader/state/reader.store'
 import type { Annotation } from '../../src/shared/models/annotation'
 import type { PaperDetail } from '../../src/shared/models/paper'
 import type { LineageEdge, LineageNode } from '../../src/shared/models/lineage'
+import type { PdfTextContent, PdfTextItem } from '../../src/renderer/features/reader/anchors/geometry-types'
 import { useLineageStore } from '../../src/renderer/features/lineage/lineage.store'
+import { usePageItemsStore } from '../../src/renderer/features/reader/anchors/page-items.store'
 
 /** ready 态完整 tab（patch 覆盖——tab-bar 形基样） */
 export function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
@@ -114,5 +121,21 @@ export function seedLineage(nodes: LineageNode[], edges: LineageEdge[] = []): vo
     lastWriteError: null,
     queue: [],
     flushing: false
+  })
+}
+
+/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
+export function mkItem(str: string, x: number, y: number): PdfTextItem {
+  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+}
+
+export function mkText(items: PdfTextItem[]): PdfTextContent {
+  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+}
+
+/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+export function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+  act(() => {
+    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
   })
 }

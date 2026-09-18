@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
-import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
+import { releaseAffinity } from '../../../src/renderer/features/reader/interact/release-affinity'
 import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
 import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
 

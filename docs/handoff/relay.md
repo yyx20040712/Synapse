@@ -7,18 +7,18 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-bf8fd7d7-fa7b-4194-a850-2c702565068e
+- automation_id: automation-9d2ab6a4-8aa2-4f96-9a44-fa9b23577f85
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-18T22:56:11+08:00
+- last_dispatch: 2026-09-19T01:26:23+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T15:49:55Z
+- heartbeat_utc: 2026-09-18T19:05:00Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 22
+- checked_done: 23
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -126,13 +126,21 @@
 - [x] F-GEOM-01-G6（目录化 M3 anchors/ 13+1 件 §3.4——受锁面最重：锚定
       回归网 18 物理件+跨特性 import（lineage×2+open-paper-bus）；
       check-quality:99 行（lineage→ai-note-style）对账到行号（门二 P1-3c））
-- [ ] F-GEOM-01-G7（目录化 M4 interact/ 7 件 §3.4
+- [x] F-GEOM-01-G7（目录化 M4 interact/ 7 件 §3.4
       [locked-change][test-refactor]）
-- [ ] F-GEOM-01-G8（目录化 M5 panels/ 8 件 §3.4 [locked-change][test-refactor]）
+- [ ] F-GEOM-01-G8（目录化 M5 panels/ 8 件 §3.4 [locked-change][test-refactor]；
+      **开工前票面补字符串面预扫义务**——门一 W1-b/门二 P2-1：对迁移目标做
+      readFileSync/字符串路径形态全扩展名预扫，命中行号写入票面受锁面清单；
+      theme.test 对 G8 零命中（门二实测），config 面 check-quality:97
+      ReaderNotesPanel 已在票面）
 - [ ] F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件 §3.4
-      [locked-change][test-refactor]）
+      [locked-change][test-refactor]；**同上字符串面预扫义务**——theme.test
+      对 G9 零命中（门二实测），config 面 eslint:90-91 已在票面）
 - [ ] F-GEOM-01-G10（目录化 M6b view 工具簇 13 件 §3.4
-      [locked-change][test-refactor]——eslint INV-16 四路径分步随迁收官）
+      [locked-change][test-refactor]——eslint INV-16 四路径分步随迁收官；
+      **票面受锁面预列恰 3 行字符串面（门二 P2-1 实测行号）**：
+      theme.test.ts:292 AnnotationMenu.tsx/:293 AnnotationEditor.tsx/
+      :485 TabBar.tsx——readFileSync 形态锁清单，不预列=必踩同族盲区）
 - [ ] F-GEOM-01-G11（战役收官：头注扫尾+净删/交互点记账+验收门全跑
       （e2e 一键全跑 45+默认门 43）+INV 终册+基线重冻结 [locked-change]；
       **收官时定 INV 册历史 reader 路径引用口径**（保留 vs 随迁刷新——
@@ -159,6 +167,87 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 19 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G7 目录化 M4 interact/ 7 件迁移+RoT 工厂抽取，完成）
+- claim: claim-1789752460-b19｜认领 2026-09-18T17:27:40Z｜收口 2026-09-18T19:05:00Z｜勾选 22→23。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌
+  等价红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-
+  debugging 不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位
+  面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定
+  （GLM5.3flash $max，两轮=实现+裁准处置）；门一=**ops-gate1-k2 绑定（kimi k3
+  $max，zipoo——用户指令 2026-09-18 调度员转达：k1 周额度封顶 k2 承载续）**；
+  门二=ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（零行为纯迁移+受锁测试工厂 RoT 抽取）**：M4=interact/ 域迁移——
+  SelectionLayer(238)/SelectionToolbar(78)/selection-evaluate(312)/
+  selection-geometry(143)/selection-paint(88)/release-affinity(210)/
+  use-annotation-draft(192) 七件迁 reader/interact/（git rename 5RM+2R 纯零改）；
+  改写面=A 深度修正恰 19 行（Layer 4+Toolbar 1+evaluate 9+paint 3+affinity 2；
+  geometry/draft 零相对 import）+B src 消费 2（ReaderPageView:41+
+  AnnotationEditor:16）+C tests 9 文件（8 路径行+**theme.test:294 readFileSync
+  字符串面裁准追加**——recon import 形态扫描盲区，停工申报→主控裁准 01:54，
+  G4 受锁面实勘勘正先例）+**RoT 债销项**（b14 门一 W1 登记）：selection 系 4 件
+  mkItem/mkText/seedRegistry ×4→tests/utils/factories.ts 单源（mkItem/mkText
+  逐字同构唯一体数=1；seedRegistry 两变体收敛参数化超集形——24 调用点全 2 参
+  形态门二实测）；anchors 域 2 份 mkItem（4 参 opts 变体）不同构不动（RoT 线
+  2 份未触发，G11 对账登记）；F registry 8 对随迁（status 零触碰）；实现面
+  20 文件 +67/-112。
+- **TDD 证据链**：基线 verify EXIT=0 锚（g7-verify-baseline3.log——首跑红=
+  主控探针 lint 未用变量+b 改后未即时重锁，教训①）；变异红证 M1（ReaderPageView:
+  41 回退旧径→typecheck TS2307 EXIT=2→cp 还原 diff 空→复绿）+M2（selection-
+  layer.test 回退→模块解析红 EXIT=1→还原→复绿→复锁——restore 变量法 EXIT
+  双行物理落 log，M2 首试 cp 被只读拦+解锁重走双记录在档）；**构建产物哈希
+  恒等**（index-D3egZtl2.js 1,392.72kB+index-BfpEygSE.css 52.49kB——Vite 内容
+  哈希入名，基线/终跑双点同名，门一 N3 标配）；§3.1 单向核验 interact→
+  {anchors,state} 出边 19（与 A 段一一对应）+反向边 0+旧径残留 0。
+- **门审**：门一 k2 **PASS_WITH_WARNINGS B0/W1/N7**——A1~A6 逐 hunk 成立+
+  深度数学逐行验算+RoT 逐字性（唯一体数证明+等价演绎）+自裁 6 条全裁准；
+  W1=字符串形态旧径扫描盲区同族第三现+**G10 第四现前瞻铁证**（theme.test
+  形态锁清单 :292/:293 引 AnnotationMenu/AnnotationEditor=G10 迁移件）——
+  处置 a 全扩展名分域补扫（g7-fullscan2：活代码/活脚本/tickets 三域 0 hits）
+  /b G8/G9/G10 板注预列（已落板）。门二 **GO_WITH_CONDITIONS P0=0/P1=3/
+  P2=3/N=3**——数字独立复算全过（seedRegistry 等价加强至 24 调用点实测、
+  build 双点包内自证）；P1-1 locks 355→356 重认证（终跑断言兑现）/P1-2 探针
+  4 件+证据件 add -f/P1-3 fullscan2 归档域 wc-l 管道伪零禁沿用（收口说明
+  按更正语句落：docs 面 214=tracked 下界，归档面=历史提名零动作）；P2-1
+  G10 预列恰 3 行（+:485 TabBar——门一漏第三处，板注已含）/P2-2 仓总定位令
+  （收口兑现：实现 67/112+relay 29/5+manifest 31/11=127/128 精确闭合，旧
+  差 1/1=W1 探针入锁中间态）/P2-3 誊录以机器实测值更正；N-1 门一「6 hunk」
+  实为 7 hunk 誊录笔误；回炉=0。
+- **机检终态**：收口终跑 verify 全链 **G7_CLOSEOUT_VERIFY2_EXIT=0** 变量法
+  物理落档（g7-closeout-verify2.log 末行，Node 24.20.0：open 14→13=恰 G7 翻
+  done+locks 356 一致+Test Files 170/Tests 1744+指纹门 187/1789/5411/skip15
+  零漂移+build 产物同名同尺寸）；首跑 closeout EXIT=1=主控 fullscan2 探针
+  lint 未用变量再犯（教训①第二宗）；e2e 不跑（零行为口径，义务归 G11——
+  G4-G6 同裁）；**health-scan RED×0 WARN×0**（账本补记后）；账本 54→58 行
+  （executor 两轮+门一 k2+门二，主控补记 node .cjs 临时件用毕即删）。
+- 证据件入库（scripts/audits/）：g7-{recon.mjs；recon.log；recon2.mjs；
+  recon2.log；oneway-check.mjs（实现者产）；fullscan2.mjs；fullscan.log；
+  fullscan2.log；impl-brief.md；impl-report.md；verify-baseline.log；
+  verify-baseline2.log；verify-baseline3.log；impl-verify.log；closeout-
+  verify.log；closeout-verify2.log；mutation 系实现者件；build-hash.log；
+  selection-regression.log；gate1-brief.md；gate1-report.md（岗无写通道主控
+  逐字归档）；gate1-diff.patch；gate2-report.md（同型归档）；healthscan.log}
+  ——.log 经 git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**主控自产探针三连自伤**（同批两宗 lint 未用变量=recon.mjs
+  existsSync/NEW_DIR+fullscan2.mjs docs/audits——b16 教训①同族再犯×2；第三宗
+  =翻 done 的 node -e 复合多操作内多余 replace 负向前瞻误删 G4 行尾致
+  check-tickets 红「206≠205」，.cjs 修复——**探针/改锁面操作一律 Write 文件
+  后 node 跑+写前 lint 自查+单文件单目的**，node -e 仅限纯 ASCII 单行单操作，
+  画蛇添足的「防重清理」正则是自伤面）；②**侦察字符串形态盲区第三现**
+  （theme.test:294 readFileSync——G6 N3-N4 同族；已在 G8/G9/G10 板注预列
+  预扫义务+G10 恰 3 行行号，第四现防线就位）；③**W1 探针入锁使在档数字
+  过期**（门二 P1-1 捕获：终跑 355 已被 fullscan2 入锁涨到 356——收口链
+  中新增探针后一切在档 attestation 数字必须重认证，禁引旧值）。
+- Rulings 待用户：无新增（票内自裁含 theme.test 裁准/RoT 收敛超集形/anchors
+  2 份不动/归档件 3 处不动/type import 删除等——均经门一自裁段+门二逐条
+  复核闭合；受锁面 9 文件+factories+registry=[locked-change][test-refactor]
+  双尾注权限内）。
+- 无进展计数：归零（22→23 有进展）。**下波=F-GEOM-01-G8（目录化 M5 panels/
+  8 件 §3.4 [locked-change][test-refactor]——OutlineAside/OutlinePanel/
+  OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+  FragmentNotesList；受锁面=notes/outline 系测试 import+check-quality:97
+  ReaderNotesPanel 两路径+**字符串面预扫义务（板注已预列）**；大中票一火一票）。**
 
 ### batch 18 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G6 目录化 M3 anchors/ 14 文件迁移，完成）
 - claim: claim-1789743426-b18｜认领 14:57:35Z｜收口 2026-09-18T15:49:55Z｜勾选 21→22。
@@ -1339,3 +1428,27 @@
   会话全程存活随时可能提交批次日志。
 - Rulings 待用户：无新增（batch 0 增补四的技能修订 Ruling 仍在案待用户）。
 - 无进展计数：归零（0→3 有进展）。
+
+### 调度员增补二 — 2026-09-18T23:55:50+08:00（hub 停火：用户令删火，新会话接替换防）
+- 用户在 hub 调度会话下达删火令：全局轮转火 automation-bf8fd7d7-fa7b-4194-a850-
+  2c702565068e 已 CronDelete（回执 deleted:true，CronList 空集复核）。本条为
+  调度员尾部纯追加。
+- 用户将开新会话接替 hub 调度位，按技能「换防协议」hub 变体重布防：板不重建、
+  新火 id 届时锚定回填本板 automation_id 字段行（本行现值仅历史审计指向）。
+- 在途 b18（G6 收口相：双门审报告+final verify 已落盘）不受影响——执行者独立
+  于火，自行收口（翻票+提交+板回写 READY）。
+
+### 调度员增补三 — 2026-09-19T01:19:16+08:00（hub 换防：新调度会话接替，重布全局轮转火）
+- 旧火核查：CronList 空集——增补二删火令对象 automation-bf8fd7d7-… 确认已亡，
+  无双火风险，零清场动作。
+- 深度设计门（换防重走）：过——`.zcode/org-ledger.jsonl` 活跃（末笔=batch 18
+  门二 G6 行 @09-18 23:48）、《裁决书》占位符 grep 零命中、执行清单机检 22 勾+13
+  开=35 与板头计数一致。
+- 板面处置：status READY/claim「-」/no_progress 0 均为换防期望态零复位；字段
+  对照当前技能模板零缺失（无增行）；本条尾部纯追加，历史日志全数保留；板头
+  automation_id 字段行已锚定替换为新火 id（历史日志旧 id 存量不动）。
+- 新全局火=automation-9d2ab6a4-8aa2-4f96-9a44-fa9b23577f85（新 hub 调度会话创建，
+  全局唯一 */10 轮转，服务本板+waterprint 板）；本板 last_dispatch=09-18T22:56:11
+  早于姊妹板 23:19:54——首班有效火轮到本板，下批指引不变=F-GEOM-01-G7（M4
+  interact/ 7 件）。
+- 既有板上转达条款（门一审 k2 承载直至用户另行通知）继续随执行指令原文生效。

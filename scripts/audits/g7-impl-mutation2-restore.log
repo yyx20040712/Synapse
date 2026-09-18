@@ -1,0 +1,54 @@
+M2_RESTORE_EXIT=1
+M2_DIFF_EXIT=1
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/selection-layer.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-layer.test.tsx[2m [ tests/unit/renderer/selection-layer.test.tsx ][22m
+[31m[1mError[22m: Failed to resolve import "../../../src/renderer/features/reader/SelectionLayer" from "tests/unit/renderer/selection-layer.test.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mE:/class/智慧水务/Synapse_remake/tests/unit/renderer/selection-layer.test.tsx[39m:27:7
+[33m  10 |    closestPageRoot,
+  11 |    pageIndexOf
+  12 |  } from "../../../src/renderer/features/reader/SelectionLayer";
+     |          ^
+  13 |  import { usePageItemsStore } from "../../../src/renderer/features/reader/anchors/page-items.store";
+  14 |  const saveMock = vi.fn();[39m
+[90m [2m❯[22m TransformPluginContext._formatError ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49258:41[22m[39m
+[90m [2m❯[22m TransformPluginContext.error ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49253:16[22m[39m
+[90m [2m❯[22m normalizeUrl ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64307:23[22m[39m
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64439:39[22m[39m
+[90m [2m❯[22m TransformPluginContext.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64366:7[22m[39m
+[90m [2m❯[22m PluginContainer.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49099:18[22m[39m
+[90m [2m❯[22m loadAndTransform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m51978:27[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 01:47:46
+[2m   Duration [22m 1.09s[2m (transform 7ms, setup 0ms, collect 0ms, tests 0ms, environment 593ms, prepare 201ms)[22m
+
+M2_REGREEN_EXIT=1
+M2_RELOCK_EXIT=0
+M2_RESTORE_EXIT=0
+M2_DIFF_EXIT=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [32m✓[39m tests/unit/renderer/selection-layer.test.tsx [2m([22m[2m14 tests[22m[2m)[22m[90m 72[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 01:48:55
+[2m   Duration [22m 1.65s[2m (transform 130ms, setup 0ms, collect 452ms, tests 72ms, environment 606ms, prepare 206ms)[22m
+
+M2_REGREEN_EXIT=0
+M2_RELOCK_EXIT=0

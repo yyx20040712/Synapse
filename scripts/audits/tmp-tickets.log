@@ -1,0 +1,2 @@
+registry 对账失败：status 字段 206/id 全文 206 ≠ 成功解析 205——存在格式漂移/多行对象/非标 status 票被静默排除
+TICKETS_EXIT=1

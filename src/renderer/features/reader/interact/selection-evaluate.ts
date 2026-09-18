@@ -68,15 +68,15 @@
  *   （调度器直测——rAF 合帧去重/防抖保持/cancel）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
-import { showToast } from '../../shared/ui/Toast'
-import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchors/anchor-serialize'
-import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './anchors/annotation-anchor'
-import { bandsForTextNodes, type RowBand } from './anchors/annotation-resolve'
-import { calibrateBandsWithSpans } from './anchors/annotation-band-calibrate'
-import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './anchors/pdf-item-geometry'
-import type { ItemSelectionGeometry } from './anchors/pdf-item-geometry'
-import { usePageItemsStore } from './anchors/page-items.store'
-import { useReaderStore } from './state/reader.store'
+import { showToast } from '../../../shared/ui/Toast'
+import { probeTextLength, selectionToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
+import { findRangeAtOffset, fullTextOf, pixelBoxOf } from '../anchors/annotation-anchor'
+import { bandsForTextNodes, type RowBand } from '../anchors/annotation-resolve'
+import { calibrateBandsWithSpans } from '../anchors/annotation-band-calibrate'
+import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from '../anchors/pdf-item-geometry'
+import type { ItemSelectionGeometry } from '../anchors/pdf-item-geometry'
+import { usePageItemsStore } from '../anchors/page-items.store'
+import { useReaderStore } from '../state/reader.store'
 import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
 
 /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
