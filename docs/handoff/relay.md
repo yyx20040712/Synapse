@@ -6,18 +6,18 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: RUNNING
+- status: READY
 - automation_id: automation-c21dd023-3a61-42de-80b0-754bc3f2e872
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - last_dispatch: 2026-09-18T20:30:44+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T13:00:23Z
+- heartbeat_utc: 2026-09-18T13:39:59Z
 - claim: claim-1789734695-b16
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 19
+- checked_done: 20
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -111,7 +111,7 @@
       改写+指纹门豁免清单）
 - [x] F-GEOM-01-G3（band 三档绑定+跨族交互点登记 §2.5/§2.6——INV-68 落册
       [locked-change]，纯登记面）
-- [ ] F-GEOM-01-G4（目录化 M1 state/ 10 件 §3.4 [locked-change][test-refactor]；
+- [x] F-GEOM-01-G4（目录化 M1 state/ 10 件 §3.4 [locked-change][test-refactor]；
       **开工前补票面**——check-quality.mjs:96 tab-dirty 键+:98 CorpusExtractor
       消费者目标串两行随步改写（门二 P1-3 登记，漏改=M1 verify quality 红）+
       registry 全域随迁义务首用（file 指向被迁路径的票一并改写））
@@ -152,6 +152,66 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 16 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G4 目录化 M1 state/ 10 文件迁移，完成）
+- claim: claim-1789734695-b16｜认领 12:31:35Z｜收口 2026-09-18T13:39:59Z｜勾选 19→20。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌等价红绿
+  闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-debugging 主控
+  不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置；实现者侧两次停工根因定位
+  系其简报内嵌纪律）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor
+  绑定（GLM5.3flash $max）；门一=ops-gate1-k1 **连续两次 Provider authentication
+  failed→换源状态机切 ops-gate1-k2 备源承载**（kimi k3 $max，zipoo——第三现，结构性
+  盲区在案）；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（提交 6f4058f750，零行为纯迁移）**：M1=state/ 域迁移——reader.store/tab-dirty/
+  useActiveTab/annotation-undo/page-layer-z/ai-notes.store/ai-notes-phase/PdfDocProvider/
+  CorpusExtractor/scroll-converge 十文件 1445 行迁 reader/state/（git rename 相似度
+  98~100% 十对全识别）；深度修正 8 行（CorpusExtractor 3+reader.store 2+tab-dirty/
+  annotation-undo/ai-notes.store 各 1——置底核验零例外）；src 消费面 50 行/31 文件
+  （域内 48+跨域 App.tsx:12/useExportCorpusEvents.ts:32）；tests 受锁面 41 行/30 文件
+  纯路径改写零用例增删；配置 2+2（eslint INV-16 :89/:92 随迁+check-quality :96 键/:98
+  值=门二 P1-3 板注义务兑现）；registry 全域随迁义务首用九行（含 G4 自身 file 字段）。
+  受锁面实勘勘正：设计书 §3.4 M1 行「3 件」系起草漏计——实 30 件/41 行（reader.store
+  独占 23 行；pdf-factory=注释提名零 import 面）。
+- **TDD 证据链**：基线 verify EXIT=0 锚（探针 lint 缺陷两次停工申报合规——主控裁决 A
+  链：修探针 1 行+接受刷新版 raw）；变异红证 M1（TabBar 回退旧径→TS2307 EXIT=2→还原
+  diff 空→复绿）+M2（测试件删 state/ 段→模块解析红 EXIT=1→还原→复绿→复锁）三段在档。
+- **门审**：门一（k2 承载）**PASS_WITH_WARNINGS B0/W1/N6**——零行为断言逐 hunk 成立+
+  构建产物哈希三方恒等最强旁证（index-D3egZtl2.js 1,392.72kB 同名同尺寸跨 baseline/
+  partial/master）；W1=实现报告 tests 括注枚举失实（主数字 30/41 三面互证无误）→勘误
+  :39 处置销；N3=构建哈希恒等建议升格 G5+ 迁移票标配（采纳）。门二 **GO_WITH_
+  CONDITIONS P0=0/P1=1/P2=3/N=6**——14 项裁决全成立+数字逐组独立复算全过；P1-1=
+  staging 名册按实测校准（26→29 件含终态新增三件；*.log add -f+porcelain 清零自查）
+  →兑现；P2-1 tickets 红行数 18≠5 勘正入 registry 收口注记/P2-2 open 口径 17→16/
+  P2-3 翻 done 前置提交前（g4-tickets-flip.log+g4-verify-final2.log EXIT=0 封
+  「已验证态≠提交态」缝）——三条件全兑现。
+- **机检终态**：verify 双跑 EXIT=0（registry 九行落妥后 master+翻 done 后 final2：
+  206 票 open 17→16=恰 G4 翻 done+locks 345 一致（338+recon 3+fix 3+encoding 1）+
+  test 170 文件/1744 用例+指纹门 187/1789/5411 零漂移+豁免 2hits 零新增+build 绿）；
+  e2e 不跑（零行为口径，义务归 G11——门一 N6/门二 #14 同裁）；**health-scan RED×0
+  WARN×0**；账本 45→48 行（executor 三段+门一 k2+门二，绑定岗主控补记 node
+  JSON.stringify——.cjs 用毕即删）。
+- 证据件入库（scripts/audits/，29 件）：g4-{recon-imports/internal/tests 三探针 .mjs+
+  三 .log+imports.log.bak-diff 双版 raw；fix-deep/src/tests 三 .mjs+三 .log；encoding-
+  normalize.mjs；impl-brief.md；impl-report.md（含 W1 勘误行）；gate1-brief.md；
+  gate1-report.md（岗无写通道主控逐字归档）；gate1-diff.patch；gate2-brief.md；
+  gate2-report.md（同型逐字归档）}+六 .log（baseline-verify/verify-final/verify-partial/
+  verify-master/verify-final2/tickets-flip——14 .log 经 git add -f 入库，.gitignore
+  *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**自产工具件入锁前先过自身 lint**（主控侦察探针 no-unused-vars 未用
+  声明预登入锁后拦下基线 verify——「工具件写完即时 generate+apply」的姊妹义务=诞生
+  即须过 lint 门；主控侧缺陷由实现者停工申报拦住，两轮裁决才清）；②**简报侧证据件
+  计数凭印象**（门二审包简报写「8 .log」实 12→终态 14，被门二 P1-1 校准——「计数
+  落笔前实测」的简报侧再实证，batch 15 教训同族：简报是下游输入，错计数传导成下游
+  自裁面）；③k1 auth 失败第三现（batch 7/12 先例直接适用，换源以真实派发回执为准
+  惯例再确认——零新增等级）。
+- Rulings 待用户：无新增（票内自裁 10 项经门一③逐项裁成立+门二 #13 复核闭合；门审
+  处置 W1 勘误/P1-1/P2-1/2/3 全兑现；受锁面勘正 30 件=[locked-change][test-refactor]
+  双尾注权限内票内自裁）。
+- 无进展计数：归零（19→20 有进展）。**下波=F-GEOM-01-G5（M2 目录化 time/ 4 件
+  §3.4 [locked-change][test-refactor]——reading-time/reading-time-setup/reading-time-
+  outbox/reading-time-outbox-store；受锁面=reading-time 系测试 import 按本批 30 件
+  实勘口径先侦察后落简报；门一 N3 构建哈希恒等旁证升格标配采纳）。**
 
 ### batch 16 增补 — 2026-09-18（调度员注记：用户指令门一换源 k2——随注入指令转达）
 - 用户对调度员会话明示：门一 k1（ops-gate1-k1，kimi-main 主源）周额度达上限，
