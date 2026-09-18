@@ -16,9 +16,10 @@
  *     geometry: PdfPageGeometry): void; onError(msg: string): void }): JSX.Element
  * - pageNo 固定（页码 1 基；页列模型：页码由 PageColumn 分配，不再跳变）
  * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型真源=
- *   geometry-types（pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方
- *   TextLayer/PagesOverlay 不 import pdfjs-dist）；本件 type 再导出保受锁
- *   测试旧路径（ai-annotation-layer.test:25 等——F-GEOM-01-G1 M0 切环）
+ *   anchors/geometry-types（pdfjs TextItem/TextStyle 的结构子集+页几何通道
+ *   ——消费方 TextLayer/PagesOverlay 不 import pdfjs-dist）；本件 type 再导出
+ *   供受锁测试经 view/ 新径消费（ai-annotation-layer.test:25 等 8 件——
+ *   F-GEOM-01-G1 M0 切环，明细见下方再导出行注）
  *
  * ── 架构层 ──
  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
@@ -33,9 +34,11 @@ import { PAGE_LAYER_Z } from '../state/page-layer-z'
 import { clampScale } from '../anchors/pdf-item-geometry'
 import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from '../anchors/geometry-types'
 
-// 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
-// import 本件零触（ai-annotation-layer.test:25/pdf-item-geometry.test:18 等
-// 十处 tests/**/*.tsx）
+// 类型再导出（真源=anchors/geometry-types——F-GEOM-01-G1 M0 切环）：现行受锁
+// 测试经 reader/view/ 新径消费本件 9 处——8 件取类型再导出（text-layer:41/
+// pdf-item-geometry:18/anchor-item-verify:33/annotation-layer:21/
+// ai-annotation-layer:25/pages-overlay:30/band-calibration:35/
+// reader-search-text:21）+1 件组件本测（pdf-page-canvas.test:23）
 export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from '../anchors/geometry-types'
 
 function errorMessage(err: unknown): string {

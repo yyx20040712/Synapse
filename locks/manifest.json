@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T21:34:59.1109351Z",
+    "generatedAt":  "2026-09-18T22:35:24.7656967Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c8f86b3a9590216061248abaffee4b7d67166a34a0100482dcc99ee836959c3f"
+                      "sha256":  "2a51396922e69444dd3877f5fc2927e2c38a1ac1fce28245a90df55f4e121690"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -351,7 +351,7 @@
                   },
                   {
                       "path":  "scripts/audits/g10-oneway.mjs",
-                      "sha256":  "2f20293aed08d9c788537a70100d3e7200931d59cd4c8dab0af184a14eb2d95f"
+                      "sha256":  "fb4710032b13740b4af338f08a1790d33845e4bf50b322fd60be02dcc7738518"
                   },
                   {
                       "path":  "scripts/audits/g10-recon.mjs",
@@ -360,6 +360,18 @@
                   {
                       "path":  "scripts/audits/g10-tickets-flip.mjs",
                       "sha256":  "7ddee7361de3c0493c09f260846057d7491d0570c369d81c3508302261b144b3"
+                  },
+                  {
+                      "path":  "scripts/audits/g11-inv-anchor-check.mjs",
+                      "sha256":  "af744bf171a71c8182ea08ef97692afa55ef464bc77e2aca823b720f23edbfe9"
+                  },
+                  {
+                      "path":  "scripts/audits/g11-netstat.mjs",
+                      "sha256":  "51eca30ddbc4ee2abcf5af3ba06c2399635b3191f0d4b726a1eaf8735b1bcbe9"
+                  },
+                  {
+                      "path":  "scripts/audits/g11-tickets-flip.mjs",
+                      "sha256":  "ba6dc3248d8770467873ef738aff5dc8b6c8afd322057f12ccd581221f93d5c8"
                   },
                   {
                       "path":  "scripts/audits/g4-encoding-normalize.mjs",
@@ -567,7 +579,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "f86be888baabfdb8dd224a3b3a3280d028f4c75d4a01243b3733234667182551"
+                      "sha256":  "3c13fa9f420b3c6479adab64223fa971adee53c0c8ca95ed15af5371812e21f5"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
