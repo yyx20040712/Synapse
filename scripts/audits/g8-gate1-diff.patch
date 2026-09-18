@@ -1,0 +1,242 @@
+diff --git a/scripts/check-quality.mjs b/scripts/check-quality.mjs
+index 5a47746636..e6cefccb32 100644
+--- a/scripts/check-quality.mjs
++++ b/scripts/check-quality.mjs
+@@ -94,7 +94,7 @@ const COMPOSITION_ROOT_ALLOW = new Map([
+   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
+   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
+   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
+-  ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
++  ['src/renderer/features/reader/panels/ReaderNotesPanel.tsx', ['notes/notes.store']],
+   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
+   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
+   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']]
+diff --git a/src/renderer/features/reader/ReaderPageView.tsx b/src/renderer/features/reader/ReaderPageView.tsx
+index 96299d5034..428f7a0ceb 100644
+--- a/src/renderer/features/reader/ReaderPageView.tsx
++++ b/src/renderer/features/reader/ReaderPageView.tsx
+@@ -32,7 +32,7 @@ import type { Annotation } from '@shared/models/annotation'
+ import type { PageScrollRequest } from './PageColumn'
+ import type { PageLayout } from './page-column-geometry'
+ import type { createReaderScrollProgress } from './scroll-progress'
+-import { OutlineAside } from './OutlineAside'
++import { OutlineAside } from './panels/OutlineAside'
+ import { SplitPane } from '../../shared/ui/SplitPane'
+ import { TabBar } from './TabBar'
+ import { PdfDocProvider } from './state/PdfDocProvider'
+diff --git a/src/renderer/features/reader/AiNoteGroupList.tsx b/src/renderer/features/reader/panels/AiNoteGroupList.tsx
+similarity index 99%
+rename from src/renderer/features/reader/AiNoteGroupList.tsx
+rename to src/renderer/features/reader/panels/AiNoteGroupList.tsx
+index bf82551991..c5ffe2d3b9 100644
+--- a/src/renderer/features/reader/AiNoteGroupList.tsx
++++ b/src/renderer/features/reader/panels/AiNoteGroupList.tsx
+@@ -34,7 +34,7 @@
+ import { useEffect, useRef, useState } from 'react'
+ import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
+ import type { AiNote, AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
+-import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './anchors/ai-note-style'
++import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../anchors/ai-note-style'
+ 
+ /** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
+ export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {
+diff --git a/src/renderer/features/reader/AiNotesSection.tsx b/src/renderer/features/reader/panels/AiNotesSection.tsx
+similarity index 95%
+rename from src/renderer/features/reader/AiNotesSection.tsx
+rename to src/renderer/features/reader/panels/AiNotesSection.tsx
+index b1ea9fd4d6..84659d8355 100644
+--- a/src/renderer/features/reader/AiNotesSection.tsx
++++ b/src/renderer/features/reader/panels/AiNotesSection.tsx
+@@ -47,12 +47,12 @@
+  *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
+  */
+ import { useEffect } from 'react'
+-import { locateAnchor } from './anchors/anchor-locate'
++import { locateAnchor } from '../anchors/anchor-locate'
+ import { AiNoteGroupList } from './AiNoteGroupList'
+ import { AiNotesStatus } from './AiNotesStatus'
+-import { derivePhase } from './state/ai-notes-phase'
+-import { useAiNotesStore } from './state/ai-notes.store'
+-import { useActiveTab } from './state/useActiveTab'
++import { derivePhase } from '../state/ai-notes-phase'
++import { useAiNotesStore } from '../state/ai-notes.store'
++import { useActiveTab } from '../state/useActiveTab'
+ import type { AiNote } from '@shared/models/ai-note'
+ 
+ /** 空数组稳定引用（selector 快照引用稳定——防 useSyncExternalStore 无限重渲染） */
+diff --git a/src/renderer/features/reader/AiNotesStatus.tsx b/src/renderer/features/reader/panels/AiNotesStatus.tsx
+similarity index 95%
+rename from src/renderer/features/reader/AiNotesStatus.tsx
+rename to src/renderer/features/reader/panels/AiNotesStatus.tsx
+index a8a1244669..5a80f91f33 100644
+--- a/src/renderer/features/reader/AiNotesStatus.tsx
++++ b/src/renderer/features/reader/panels/AiNotesStatus.tsx
+@@ -27,11 +27,11 @@
+  *   missing 三态分离在 06 服务）；按钮动作型失败 toast（INV-02 两型分清）
+  */
+ import { useEffect, useRef, useState } from 'react'
+-import { ApiClientError } from '../../api/client'
+-import { showToast } from '../../shared/ui/Toast'
+-import { OP_FAILED, STATUS_POLL_MS } from '../../shared/ui-constants'
+-import { useAiNotesStore } from './state/ai-notes.store'
+-import { derivePhase } from './state/ai-notes-phase'
++import { ApiClientError } from '../../../api/client'
++import { showToast } from '../../../shared/ui/Toast'
++import { OP_FAILED, STATUS_POLL_MS } from '../../../shared/ui-constants'
++import { useAiNotesStore } from '../state/ai-notes.store'
++import { derivePhase } from '../state/ai-notes-phase'
+ 
+ /** 连续轮询失败阈值（≥ 此值显示离线提示行） */
+ const POLL_FAIL_THRESHOLD = 3
+diff --git a/src/renderer/features/reader/FragmentNotesList.tsx b/src/renderer/features/reader/panels/FragmentNotesList.tsx
+similarity index 98%
+rename from src/renderer/features/reader/FragmentNotesList.tsx
+rename to src/renderer/features/reader/panels/FragmentNotesList.tsx
+index 678979b0e5..adbda9f4ee 100644
+--- a/src/renderer/features/reader/FragmentNotesList.tsx
++++ b/src/renderer/features/reader/panels/FragmentNotesList.tsx
+@@ -9,7 +9,7 @@
+ import { useEffect, useMemo, useRef } from 'react'
+ import type { Annotation } from '@shared/models/annotation'
+ import { sortByDocumentOrder } from '@shared/annotation-order'
+-import { COLOR_SWATCH } from './anchors/annotation-style'
++import { COLOR_SWATCH } from '../anchors/annotation-style'
+ 
+ /** 引文/批注摘要截断（显示策略） */
+ const EXCERPT_MAX = 60
+diff --git a/src/renderer/features/reader/OutlineAside.tsx b/src/renderer/features/reader/panels/OutlineAside.tsx
+similarity index 97%
+rename from src/renderer/features/reader/OutlineAside.tsx
+rename to src/renderer/features/reader/panels/OutlineAside.tsx
+index 5b6bd508d5..8d8e0f9f9b 100644
+--- a/src/renderer/features/reader/OutlineAside.tsx
++++ b/src/renderer/features/reader/panels/OutlineAside.tsx
+@@ -43,11 +43,11 @@
+  *   笔记 tab 挂载/目录跳页经 store/片段单击页级定位/空态
+  */
+ import { useEffect, useState } from 'react'
+-import { locateAnchor } from './anchors/anchor-locate'
++import { locateAnchor } from '../anchors/anchor-locate'
+ import { OutlinePanel } from './OutlinePanel'
+ import { ReaderNotesPanel } from './ReaderNotesPanel'
+-import { useReaderStore } from './state/reader.store'
+-import { useActiveTab } from './state/useActiveTab'
++import { useReaderStore } from '../state/reader.store'
++import { useActiveTab } from '../state/useActiveTab'
+ 
+ type AsideTab = 'outline' | 'thumbs' | 'notes'
+ 
+diff --git a/src/renderer/features/reader/OutlinePanel.tsx b/src/renderer/features/reader/panels/OutlinePanel.tsx
+similarity index 98%
+rename from src/renderer/features/reader/OutlinePanel.tsx
+rename to src/renderer/features/reader/panels/OutlinePanel.tsx
+index 9720d2af54..e1bb07065d 100644
+--- a/src/renderer/features/reader/OutlinePanel.tsx
++++ b/src/renderer/features/reader/panels/OutlinePanel.tsx
+@@ -19,7 +19,7 @@
+  *   本组件在途请求失败一律静默降级（目录/缩略图缺席不影响主阅读）
+  */
+ import { useEffect, useState } from 'react'
+-import type { PDFDocumentProxy } from './state/PdfDocProvider'
++import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+ import { Thumbnail } from './OutlineThumb'
+ 
+ /** 目录树节点（pdfjs OutlineItem 结构子集） */
+diff --git a/src/renderer/features/reader/OutlineThumb.tsx b/src/renderer/features/reader/panels/OutlineThumb.tsx
+similarity index 96%
+rename from src/renderer/features/reader/OutlineThumb.tsx
+rename to src/renderer/features/reader/panels/OutlineThumb.tsx
+index 5f916f8a4f..88f0804122 100644
+--- a/src/renderer/features/reader/OutlineThumb.tsx
++++ b/src/renderer/features/reader/panels/OutlineThumb.tsx
+@@ -3,7 +3,7 @@
+  * 卸载取消在途任务。渲染调用全走句柄方法，不引入 pdfjs 运行时依赖。
+  */
+ import { useEffect, useRef } from 'react'
+-import type { PDFDocumentProxy, RenderTask } from './state/PdfDocProvider'
++import type { PDFDocumentProxy, RenderTask } from '../state/PdfDocProvider'
+ 
+ /** 缩略图渲染比例（规约：scale 0.2） */
+ export const THUMB_SCALE = 0.2
+diff --git a/src/renderer/features/reader/ReaderNotesPanel.tsx b/src/renderer/features/reader/panels/ReaderNotesPanel.tsx
+similarity index 97%
+rename from src/renderer/features/reader/ReaderNotesPanel.tsx
+rename to src/renderer/features/reader/panels/ReaderNotesPanel.tsx
+index 2432166a8e..44de067562 100644
+--- a/src/renderer/features/reader/ReaderNotesPanel.tsx
++++ b/src/renderer/features/reader/panels/ReaderNotesPanel.tsx
+@@ -44,15 +44,15 @@
+  * - 组件 ≤250 行（两层拆 FragmentNotesList 守恒）
+  */
+ import { useEffect, useRef, useState } from 'react'
+-import { ApiClientError } from '../../api/client'
+-import { showToast } from '../../shared/ui/Toast'
+-import { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
++import { ApiClientError } from '../../../api/client'
++import { showToast } from '../../../shared/ui/Toast'
++import { deriveSaveStatus, detectSaveFailed } from '../../../shared/save-status'
+ import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
+ import type { Annotation } from '@shared/models/annotation'
+-import { useNotesStore } from '../notes/notes.store'
++import { useNotesStore } from '../../notes/notes.store'
+ import { AiNotesSection } from './AiNotesSection'
+ import { FragmentNotesList } from './FragmentNotesList'
+-import { useActiveTab } from './state/useActiveTab'
++import { useActiveTab } from '../state/useActiveTab'
+ 
+ /** 意外异常（非 ApiClientError）时的兜底中文消息 */
+ const LOAD_FAILED = '笔记加载失败'
+diff --git a/tests/unit/renderer/ai-note-collapse.test.tsx b/tests/unit/renderer/ai-note-collapse.test.tsx
+index d61eae08ce..fce2c562f3 100644
+--- a/tests/unit/renderer/ai-note-collapse.test.tsx
++++ b/tests/unit/renderer/ai-note-collapse.test.tsx
+@@ -13,7 +13,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it } from 'vitest'
+ import type { AiNote, AiNoteRole, AiNoteQuestion } from '../../../src/shared/models/ai-note'
+-import { AiNoteGroupList } from '../../../src/renderer/features/reader/AiNoteGroupList'
++import { AiNoteGroupList } from '../../../src/renderer/features/reader/panels/AiNoteGroupList'
+ 
+ function note(id: string, role: AiNoteRole, question: AiNoteQuestion): AiNote {
+   return {
+diff --git a/tests/unit/renderer/ai-notes-section.test.tsx b/tests/unit/renderer/ai-notes-section.test.tsx
+index 58747fa844..d711564cd7 100644
+--- a/tests/unit/renderer/ai-notes-section.test.tsx
++++ b/tests/unit/renderer/ai-notes-section.test.tsx
+@@ -45,7 +45,7 @@ vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', async (im
+ })
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+-import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
++import { AiNotesSection } from '../../../src/renderer/features/reader/panels/AiNotesSection'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useAiNotesStore } from '../../../src/renderer/features/reader/state/ai-notes.store'
+ import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
+diff --git a/tests/unit/renderer/outline-aside.test.tsx b/tests/unit/renderer/outline-aside.test.tsx
+index 2afd4d187d..e37f51b30d 100644
+--- a/tests/unit/renderer/outline-aside.test.tsx
++++ b/tests/unit/renderer/outline-aside.test.tsx
+@@ -15,7 +15,7 @@ import { makeTab } from '../../utils/factories'
+ 
+ const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
+ 
+-import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
++import { OutlineAside } from '../../../src/renderer/features/reader/panels/OutlineAside'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import type { Annotation } from '../../../src/shared/models/annotation'
+ 
+diff --git a/tests/unit/renderer/reader-notes-panel.test.tsx b/tests/unit/renderer/reader-notes-panel.test.tsx
+index 8f31358537..2da97559ef 100644
+--- a/tests/unit/renderer/reader-notes-panel.test.tsx
++++ b/tests/unit/renderer/reader-notes-panel.test.tsx
+@@ -20,8 +20,8 @@ stubApi.notes.get = notesGet
+ const notesSave = vi.fn()
+ stubApi.notes.save = notesSave
+ 
+-import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
+-import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
++import { ReaderNotesPanel } from '../../../src/renderer/features/reader/panels/ReaderNotesPanel'
++import { FragmentNotesList } from '../../../src/renderer/features/reader/panels/FragmentNotesList'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ 

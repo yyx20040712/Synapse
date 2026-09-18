@@ -13,7 +13,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import type { AiNote, AiNoteRole, AiNoteQuestion } from '../../../src/shared/models/ai-note'
-import { AiNoteGroupList } from '../../../src/renderer/features/reader/AiNoteGroupList'
+import { AiNoteGroupList } from '../../../src/renderer/features/reader/panels/AiNoteGroupList'
 
 function note(id: string, role: AiNoteRole, question: AiNoteQuestion): AiNote {
   return {

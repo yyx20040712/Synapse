@@ -1,0 +1,7 @@
+-rw-r--r-- 1 Administrator 197121   59923 Sep 19 03:04 out/renderer/assets/index-BfpEygSE.css
+-rw-r--r-- 1 Administrator 197121 1402437 Sep 19 03:04 out/renderer/assets/index-D3egZtl2.js
+---sha256---
+9c3b8b84396410230ce263286f35aaab45ebfb1f3a3026f0d9ea3aa7b4ca3f2a *out/renderer/assets/index-D3egZtl2.js
+dcace2e7481c724b80186a4822fe252b403be154bcb06d5bbcb5f79a068a97d5 *out/renderer/assets/index-BfpEygSE.css
+BUILD_HASH_LOG_EXIT=0
+OUTER_EXIT=0

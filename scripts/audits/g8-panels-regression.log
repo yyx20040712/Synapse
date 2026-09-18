@@ -1,0 +1,496 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m①默认态：一审/二审条目不在 DOM（collapsed），裁决条目在（expanded）+三段头 aria-expanded 各就位
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m②点一审段头：条目出现+aria-expanded 真（段间不联动——二审仍收起；再点二审同理展开）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m③再点一审段头：收起（条目退场+aria-expanded 假）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m④段头条数标注：段名(条数)（一审(3)/二审(1)/裁决(1)——折叠只藏视觉不删数据）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m⑥B1 高亮自动展开：highlightAiNoteId 命中折叠段条目（点 AI 标注语义）→段自动展开+该条目滚动进视口+data-highlight
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at AiNoteGroupList (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\AiNoteGroupList.tsx:127:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-note-collapse.test.tsx[2m > [22m[2m⑤无该段数据不渲染空段头（组内无裁决段→无裁决段头；段头缺失 per-组 per-段判定）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/ai-note-collapse.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mhidden：无 job 无产物无 DB 数据——仅按钮行（无状态行无分节）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mhidden：无 job 无产物无 DB 数据——仅按钮行（无状态行无分节）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2midle：无 job 无未导入产物但有 DB 数据——按钮行+分节，无状态行
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2midle：无 job 无未导入产物但有 DB 数据——按钮行+分节，无状态行
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mpending：job 在且心跳不新鲜——等待拾取文案（含 state 自述）+按钮禁用
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mpending：job 在且心跳不新鲜——等待拾取文案（含 state 自述）+按钮禁用
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mpending：status.json 不存在（工具从未运行）——文案无自述括号
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mpending：status.json 不存在（工具从未运行）——文案无自述括号
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mqueued：job 在+心跳新鲜+currentPaper=他篇——「当前：他篇」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mqueued：job 在+心跳新鲜+currentPaper=他篇——「当前：他篇」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mqueued：currentPaper=null——无他篇名
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mqueued：currentPaper=null——无他篇名
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mreading：心跳新鲜+currentPaper=P——「AI 正在读本文（state）」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mdone-unimported：产物在+未归档+job 无——待导入+导入按钮
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mdone-unimported：产物在+未归档+job 无——待导入+导入按钮
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列①：hidden→pending→queued（他篇）→reading→done-unimported→idle（导入完成回稳态）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列③：reading→（心跳过期+job 在）→pending（工具中断统一「等待 zcode」呈现）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列③：reading→（心跳过期+job 在）→pending（工具中断统一「等待 zcode」呈现）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列⑤：换 tab（paperId 变）→全态重评估（per-tab 语义）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m跨格序列⑤：换 tab（paperId 变）→全态重评估（per-tab 语义）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m轮询失败 error 态：连续失败 3 次显示离线提示行（静默不 toast），成功即复位
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m轮询失败 error 态：连续失败 3 次显示离线提示行（静默不 toast），成功即复位
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m轮询失败 error 态：连续失败 3 次显示离线提示行（静默不 toast），成功即复位
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mstatus.json 损坏（readStatus 上抛→observe 拒绝）计入连续失败计数（损坏≠missing 三态分离）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mstatus.json 损坏（readStatus 上抛→observe 拒绝）计入连续失败计数（损坏≠missing 三态分离）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m导入按钮三桶 toast：imported/skipped 计数+errors 篇名（error 级）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m导入按钮三桶 toast：imported/skipped 计数+errors 篇名（error 级）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m导入失败（动作型）toast error
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m导入失败（动作型）toast error
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m「AI 读文献」失败（动作型）toast error；无本地残留态（writeStatusProtocol 幂等自愈——重试可再点）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m载入：api.notes.get → 标题/正文回填；pending=false 显示「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m「AI 读文献」失败（动作型）toast error；无本地残留态（writeStatusProtocol 幂等自愈——重试可再点）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标签+分色条），组内条目按 role 分段标注
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m分节分组：question 组按 AI_NOTE_QUESTIONS 序呈现（组头中文标签+分色条），组内条目按 role 分段标注
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m载入：api.notes.get → 标题/正文回填；pending=false 显示「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m载入失败：toast+禁用输入+重试按钮可见（动作型失败，INV-02）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m分组序单源：乱序输入仍按 AI_NOTE_QUESTIONS 序（非输入序——呈现轴=shared 单源）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m载入失败：toast+禁用输入+重试按钮可见（动作型失败，INV-02）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m分组序单源：乱序输入仍按 AI_NOTE_QUESTIONS 序（非输入序——呈现轴=shared 单源）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m空组剔除：无条目的 question 不渲染组（无 Q2 条目则无「第二问」组头）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m空组剔除：无条目的 question 不渲染组（无 Q2 条目则无「第二问」组头）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m组内 role 标签：同 question 组内三 role 条目头呈现一审/二审/裁决（role 可辨+role 序）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m组内 role 标签：同 question 组内三 role 条目头呈现一审/二审/裁决（role 可辨+role 序）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mdivergence 组转置：独立「分歧报告」组头（非七问特殊组，不随裁决 role 组）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2mdivergence 组转置：独立「分歧报告」组头（非七问特殊组，不随裁决 role 组）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m只读断言：分节内无任何写交互元素（无 input/textarea/select——INV-19）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m只读断言：分节内无任何写交互元素（无 input/textarea/select——INV-19）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m条目单击→locateAnchor（INV-20 单入口消费方；anchorPage 1 基→0 基页）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/ai-notes-section.test.tsx[2m > [22m[2m卸载清 interval（INV-14 成对同族）：unmount 后不再轮询
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/ai-notes-section.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[90m 85[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at ReaderNotesPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\ReaderNotesPanel.tsx:23:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at ReaderNotesPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\ReaderNotesPanel.tsx:23:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at ReaderNotesPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\ReaderNotesPanel.tsx:23:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at ReaderNotesPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\ReaderNotesPanel.tsx:23:11)
+Warning: The current testing environment is not configured to support act(...)
+    at ReaderNotesPanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\ReaderNotesPanel.tsx:23:11)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m空态：activeId=null 时笔记 tab 显示引导（不崩）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/outline-aside.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[90m 50[2mms[22m[39m
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mReaderNotesPanel —— 总评层（notes.store 消费） [SR2-C-03][2m > [22m[2m跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mFragmentNotesList —— 片段层（C-01 序消费） [SR2-C-03][2m > [22m[2m按文档序渲染（乱序入参重排）；单击条目回调 onLocate(id)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/reader-notes-panel.test.tsx[2m > [22m[2mFragmentNotesList —— 片段层（C-01 序消费） [SR2-C-03][2m > [22m[2m空态文案与高亮滚动（highlightAnnotationId 条目 scrollIntoView）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/reader-notes-panel.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[90m 59[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m41 passed[39m[22m[90m (41)[39m
+[2m   Start at [22m 03:08:05
+[2m   Duration [22m 2.68s[2m (transform 341ms, setup 0ms, collect 1.49s, tests 234ms, environment 6.19s, prepare 1.04s)[22m
+
+G8_PANELS_REGRESSION_EXIT=0

@@ -1,0 +1,124 @@
+M2_BACKUP_EXIT=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:unlock
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1
+
+�ѽ��� 359 ���ļ������������ npm run locks:apply ����������
+M2_UNLOCK_EXIT=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/outline-aside.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/outline-aside.test.tsx[2m [ tests/unit/renderer/outline-aside.test.tsx ][22m
+[31m[1mError[22m: Failed to resolve import "../../../src/renderer/features/reader/OutlineAside" from "tests/unit/renderer/outline-aside.test.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mE:/class/智慧水务/Synapse_remake/tests/unit/renderer/outline-aside.test.tsx[39m:18:29
+[33m  7  |  import { makeTab } from "../../utils/factories";
+  8  |  const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } });
+  9  |  import { OutlineAside } from "../../../src/renderer/features/reader/OutlineAside";
+     |                                ^
+  10 |  import { useReaderStore } from "../../../src/renderer/features/reader/state/reader.store";
+  11 |  class IntersectionObserverStub {[39m
+[90m [2m❯[22m TransformPluginContext._formatError ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49258:41[22m[39m
+[90m [2m❯[22m TransformPluginContext.error ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49253:16[22m[39m
+[90m [2m❯[22m normalizeUrl ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64307:23[22m[39m
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64439:39[22m[39m
+[90m [2m❯[22m TransformPluginContext.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64366:7[22m[39m
+[90m [2m❯[22m PluginContainer.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49099:18[22m[39m
+[90m [2m❯[22m loadAndTransform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m51978:27[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 03:06:56
+[2m   Duration [22m 1.10s[2m (transform 8ms, setup 0ms, collect 0ms, tests 0ms, environment 594ms, prepare 171ms)[22m
+
+M2_MUTATION_VITEST_EXIT=1
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:apply
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
+
+������ 359 ���ļ���ֻ������manifest ��¼ 359 ����
+�ύ manifest ���ʱ���ύ��Ϣ����� [locked-change] βע��
+M2_RELOCK_EXIT=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+    at OutlinePanel (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlinePanel.tsx:13:11)
+    at div
+    at div
+    at aside
+    at OutlineAside (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\panels\OutlineAside.tsx:17:11)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/renderer/outline-aside.test.tsx[2m > [22m[2mOutlineAside —— 三栏宿主 [SR2-C-04][2m > [22m[2m空态：activeId=null 时笔记 tab 显示引导（不崩）
+[22m[39mWarning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/renderer/outline-aside.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[90m 49[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 03:07:47
+[2m   Duration [22m 1.76s[2m (transform 228ms, setup 0ms, collect 626ms, tests 49ms, environment 596ms, prepare 160ms)[22m
+
+M2_REGREEN_VITEST_EXIT=0
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:check
+> node scripts/check-locks.mjs
+
+locks 检查通过：359 个受锁文件与 manifest 一致
+M2_FINAL_LOCKSCHECK_EXIT=0

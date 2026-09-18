@@ -47,12 +47,12 @@
  *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
  */
 import { useEffect } from 'react'
-import { locateAnchor } from './anchors/anchor-locate'
+import { locateAnchor } from '../anchors/anchor-locate'
 import { AiNoteGroupList } from './AiNoteGroupList'
 import { AiNotesStatus } from './AiNotesStatus'
-import { derivePhase } from './state/ai-notes-phase'
-import { useAiNotesStore } from './state/ai-notes.store'
-import { useActiveTab } from './state/useActiveTab'
+import { derivePhase } from '../state/ai-notes-phase'
+import { useAiNotesStore } from '../state/ai-notes.store'
+import { useActiveTab } from '../state/useActiveTab'
 import type { AiNote } from '@shared/models/ai-note'
 
 /** 空数组稳定引用（selector 快照引用稳定——防 useSyncExternalStore 无限重渲染） */

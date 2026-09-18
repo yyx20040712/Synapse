@@ -1,0 +1,4 @@
+PANELS_MOCK_EXIT=1
+tests/unit/renderer/outline-aside.test.tsx:0
+tests/unit/renderer/ai-note-collapse.test.tsx:0
+tests/unit/renderer/reader-notes-panel.test.tsx:0

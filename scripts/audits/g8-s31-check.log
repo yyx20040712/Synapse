@@ -1,0 +1,23 @@
+S31_LINT_EXIT=0
+== FACE1 panels outbound edges (../anchors/ | ../state/) ==
+OutlineAside.tsx -> ../anchors/anchor-locate [anchors]
+OutlineAside.tsx -> ../state/reader.store [state]
+OutlineAside.tsx -> ../state/useActiveTab [state]
+OutlinePanel.tsx -> ../state/PdfDocProvider [state]
+OutlineThumb.tsx -> ../state/PdfDocProvider [state]
+ReaderNotesPanel.tsx -> ../state/useActiveTab [state]
+AiNotesSection.tsx -> ../anchors/anchor-locate [anchors]
+AiNotesSection.tsx -> ../state/ai-notes-phase [state]
+AiNotesSection.tsx -> ../state/ai-notes.store [state]
+AiNotesSection.tsx -> ../state/useActiveTab [state]
+AiNoteGroupList.tsx -> ../anchors/ai-note-style [anchors]
+AiNotesStatus.tsx -> ../state/ai-notes.store [state]
+AiNotesStatus.tsx -> ../state/ai-notes-phase [state]
+FragmentNotesList.tsx -> ../anchors/annotation-style [anchors]
+FACE1_SUMMARY anchors=4 state=10 total=14
+== FACE2 reverse edges (state|anchors|time|interact -> panels) ==
+FACE2_SUMMARY reverse=0
+== FACE3 old-path residue across src/tests/scripts/tickets ==
+FACE3_SUMMARY residue=0
+S31_FINAL_PASS=true
+S31_RUN_EXIT=0

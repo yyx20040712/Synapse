@@ -15,7 +15,7 @@ import { makeTab } from '../../utils/factories'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 
-import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
+import { OutlineAside } from '../../../src/renderer/features/reader/panels/OutlineAside'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import type { Annotation } from '../../../src/shared/models/annotation'
 
