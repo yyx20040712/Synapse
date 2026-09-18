@@ -46,7 +46,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
-import { openFromBus } from './open-paper-anchor'
+import { openFromBus } from './anchors/open-paper-anchor'
 import type { PageScrollRequest } from './PageColumn'
 import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from './state/reader.store'

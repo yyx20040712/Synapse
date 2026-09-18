@@ -38,7 +38,7 @@
  * - 禁止 any；组件 ≤250 行
  */
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { ANNOTATION_BTN_CLASS as btn } from './annotation-style'
+import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
 
 export function AnnotationMenu(props: {
   annotation: Annotation

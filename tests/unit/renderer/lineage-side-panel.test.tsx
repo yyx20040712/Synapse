@@ -44,7 +44,7 @@ const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub }
 vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
   useReaderStore: { getState: () => ({ openPaper: openPaperStub, notifyAiNoteHighlight: notifyAiNoteStub }) }
 }))
-vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({
+vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', () => ({
   locateAnchor: locateAnchorStub
 }))
 // Page 编排用例：总线发送面 mock（消费方级用例不经它）
@@ -58,9 +58,9 @@ vi.mock('../../../src/renderer/shared/open-paper-bus', () => ({
 import { showToast } from '../../../src/renderer/shared/ui/toast-store'
 import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
 import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
-import { openFromBus } from '../../../src/renderer/features/reader/open-paper-anchor'
+import { openFromBus } from '../../../src/renderer/features/reader/anchors/open-paper-anchor'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
-import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
 
 function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   return {

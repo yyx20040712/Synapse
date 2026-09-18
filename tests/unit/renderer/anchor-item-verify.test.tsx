@@ -25,11 +25,11 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Annotation } from '../../../src/shared/models/annotation'
-import { verifyQuote, verifyQuoteItem } from '../../../src/renderer/features/reader/anchor-serialize'
-import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reader/annotation-resolve'
-import type { PixelBox } from '../../../src/renderer/features/reader/annotation-anchor'
-import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/reader/pdf-item-geometry'
-import type { PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+import { verifyQuote, verifyQuoteItem } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
+import type { PixelBox } from '../../../src/renderer/features/reader/anchors/annotation-anchor'
+import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/reader/anchors/pdf-item-geometry'
+import type { PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
 /** 横排样式（pdf-item-geometry.test 同款：ascent 0.8/descent −0.2） */

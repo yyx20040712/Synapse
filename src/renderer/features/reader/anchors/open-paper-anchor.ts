@@ -23,9 +23,9 @@
  * 票面=scripts/audits/sr2-lg-06-brief.md。
  */
 import { locateAnchor } from './anchor-locate'
-import { useReaderStore } from './state/reader.store'
-import { showToast } from '../../shared/ui/toast-store'
-import type { OpenPaperRequest } from '../../shared/open-paper-bus'
+import { useReaderStore } from '../state/reader.store'
+import { showToast } from '../../../shared/ui/toast-store'
+import type { OpenPaperRequest } from '../../../shared/open-paper-bus'
 
 export function openFromBus(req: OpenPaperRequest): void {
   if (req.anchor !== undefined) {

@@ -43,7 +43,7 @@
  *   笔记 tab 挂载/目录跳页经 store/片段单击页级定位/空态
  */
 import { useEffect, useState } from 'react'
-import { locateAnchor } from './anchor-locate'
+import { locateAnchor } from './anchors/anchor-locate'
 import { OutlinePanel } from './OutlinePanel'
 import { ReaderNotesPanel } from './ReaderNotesPanel'
 import { useReaderStore } from './state/reader.store'

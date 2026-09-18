@@ -2,8 +2,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
 import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
-import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
-import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
 
 /**
  * F-A12 划选释放点浅探 affinity（release-affinity 事件层重定向）——F-A10 G2 遗留：

@@ -77,8 +77,8 @@
  *   backward 翻转兜底链；接线面=selection-layer-fa12.test.tsx[W4 dragged
  *   门两态+触发态]）
  */
-import { collectSpans, type NodeSpan } from './annotation-anchor'
-import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchor-blank-snap'
+import { collectSpans, type NodeSpan } from './anchors/annotation-anchor'
+import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchors/anchor-blank-snap'
 
 /** 浅探运动过冲余量（px）：紧间隙排版（实测段间 2.5px）下释放点距上一行盒底
  *  2px 即为浅下探实态——纯距离判据会漏（头注申报）；4px=人类释放过冲量级

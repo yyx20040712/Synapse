@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T14:20:07.7955424Z",
+    "generatedAt":  "2026-09-18T15:19:45.9438007Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -36,6 +36,10 @@
                   {
                       "path":  "scripts/audits/audit0-p1b-multi.mjs",
                       "sha256":  "6726313e89226eaf51a23db82488a214351287b9491163ebdef0d043fc9acaef"
+                  },
+                  {
+                      "path":  "scripts/audits/b18-claim.mjs",
+                      "sha256":  "094d093050d864500c170dfb2f559eecc2271c23e48bae76248e28efbf496926"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
@@ -366,6 +370,26 @@
                       "sha256":  "ce8ffa2c45c4a70f61a0b1b0e42b870ae1b5accdff670f95136f49b84a6c035b"
                   },
                   {
+                      "path":  "scripts/audits/g6-oneway.mjs",
+                      "sha256":  "288ec91827050ed7bd6d14120c7dd327cf63d6e9973dfb576d583f9a2aa4cd10"
+                  },
+                  {
+                      "path":  "scripts/audits/g6-recon.mjs",
+                      "sha256":  "fa9771ac13108b48eb9cef960b1ae944a5f0c04253669e4b6ca4cb104b44b48c"
+                  },
+                  {
+                      "path":  "scripts/audits/g6-recon2.mjs",
+                      "sha256":  "58505e8b6942787616441ca830ebe23401a2d8a241b49b4278d16efe154e0f6b"
+                  },
+                  {
+                      "path":  "scripts/audits/g6-recon3.mjs",
+                      "sha256":  "6aa98aaf9fe530b9f7891320e3446ec25e102414be82613784a8f478456e1194"
+                  },
+                  {
+                      "path":  "scripts/audits/g6-rewrite.mjs",
+                      "sha256":  "dda04cbd50ddb9160423395bc6e62e48d898934bbc70183c5e9e310c94198725"
+                  },
+                  {
                       "path":  "scripts/audits/p7d01-visual-probe.mjs",
                       "sha256":  "683b0107b2e204b051748e4cea6af244a38cc26e96dc9948920500c9a4cc3db4"
                   },
@@ -427,7 +451,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "1d60f7b5a254e23401769c82f8e4f3cc263ed37a29927760c47627551db7f7f2"
+                      "sha256":  "7a436638ca767c0de627ab43cba8b6a260500ff70463f16126251dd5181c106b"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -683,7 +707,7 @@
                   },
                   {
                       "path":  "tests/e2e/z-wg1-probe.spec.ts",
-                      "sha256":  "40bb226f3411d40804b0e2cb7398b02ae5d514e916f808eafe51eeac011f7c59"
+                      "sha256":  "676354d1ebebff75a295413479f436e2984b3d6a08d6d91fb0cdaf49bc96ef98"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",
@@ -831,7 +855,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",
-                      "sha256":  "96d1f7544f9f64ca49c6ebe9280f11020d76792744195b1d5268e8b54334ccbe"
+                      "sha256":  "b60569fdc91a717f1faa8b71a371115d34c689f2c8c08f14e0fb099d587ecf17"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
@@ -839,27 +863,27 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
-                      "sha256":  "975d758ca39fa8f046d3876b9d77aca42baa950d3ebb9110e32de1d673fbbdb5"
+                      "sha256":  "402b9226d680efeaaa497a04cfd64e8055fe7a55fe4026b43a3bd62a12fd38c7"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
-                      "sha256":  "fe0f12d47c3ac80c7b082997359faa4e5ceb836aa5473fa8950f74f5afc6a88c"
+                      "sha256":  "033dfdf544bb7f3bd77bff8e0281ea5109ee7e6449c3009a917eae075eb26a93"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-blank-snap.test.ts",
-                      "sha256":  "d73c8acdc2b7d0b35784fb5e45b838340e0c24bad6834f88005fda7079e0a096"
+                      "sha256":  "a23d9c419a22d1c588425b96d46161b2c48f2c4f515cfa2c732e3c8e88f3cbe2"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-item-verify.test.tsx",
-                      "sha256":  "d13aa5319d4365a22dd016b21432c22f35cbd8b5c5b3e80ea6f00339e860aed3"
+                      "sha256":  "bdd028d5dbca3b9d02fa07a3c9ed9f579e7a0c81c365144c80e6aa3b4af00a6f"
                   },
                   {
                       "path":  "tests/unit/renderer/anchor-locate.test.ts",
-                      "sha256":  "262d9e0387154fa8a5dfca1f34620e8d687f23cc46e69de4b528f04a94fdace9"
+                      "sha256":  "1715ade7d1c2a9a8bd4dd8fcb817814e5415abed5d8ab400b3ce553d88d8a099"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
-                      "sha256":  "345364070e3124090143ac4c4aaf999877db6ddeee126ac14c574f56f2668257"
+                      "sha256":  "f9b4c7e00e11855eb2b29b724e91b3bc1998e01ec5118b2f544149af6e4eb5c3"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
@@ -867,7 +891,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",
-                      "sha256":  "440615398540d2a90ea51652fec481f178d1bad4976a162714013bf3dfc41fdd"
+                      "sha256":  "269f091a7a46467fab8f80906000fba5db10e7b208d1e6eba3ee9ec7527e66e7"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-menu.test.tsx",
@@ -875,7 +899,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-merge.test.ts",
-                      "sha256":  "36bdef2de01067ea588035a9cf29af000bcc5439316b8bd54e3c7a55b6a995f0"
+                      "sha256":  "e37750d04049f5980c8277d19be5a27911e99b846cfcfe2d894dc8faa7def5b4"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-popups-autosave.test.tsx",
@@ -895,7 +919,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
-                      "sha256":  "93e6327b2ca1c5af62f3e8b967d80008d43faae107078b188f708ba795c55d6c"
+                      "sha256":  "7ad21cf3c02baf8a9d3b6b1d1bbcb231d5b96e4a075dd5efc69d8b56145c5156"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
@@ -963,7 +987,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "f380c56b379989193e3a30e03c58e45d5e972e9130c0859aac615151c500b74b"
+                      "sha256":  "749a7c0ba13347b9c5e1737ba0651265756922b9c3421599ead0797ce9a61969"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
@@ -1019,7 +1043,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
-                      "sha256":  "1d9bb9e5c9959d6a63249d498242ee81c1ab4dce12edd9900086d131ce398be4"
+                      "sha256":  "f7b9dd7accc8442a825fb31f7d58c0f73be6fd1041b5962d817fbea1366139ce"
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-page-canvas.test.tsx",
@@ -1079,7 +1103,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/release-affinity.test.ts",
-                      "sha256":  "30e2638bfa5e1bdb5fa3df284a2a93622e69c308e04a3153cce9aacd313cfca5"
+                      "sha256":  "408d5dddd901394ed0d9e01d48ace739529faa7ca5c4b6129f084452e04a5f4f"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
@@ -1091,7 +1115,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-evaluate.test.tsx",
-                      "sha256":  "1f33fa02cfdad54ee6b9abeef96f2043a2cf1bdb819da656e08014eb879bd7f2"
+                      "sha256":  "3a49988d06c469db804475345abc949aab7b8e2ca8213cf7a9a832a34c686da3"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-geometry.test.ts",
@@ -1099,11 +1123,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
-                      "sha256":  "61f3e47ae710aaad1ef2f51abcae1b5ac5793ede7b86455c436e8d284ddc7ba5"
+                      "sha256":  "baacd306e28788e202b3ca46e0de1181cdde612859a31b6f73ca7a1fa77c1768"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "8e8dd1fee4c3069519836427afabd6c87107a22113621f86c4a549a5c56d5514"
+                      "sha256":  "59b728326dfa71347004dce8160644eedcb21c531b2183bca632056466970f9f"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer-fa12.test.tsx",
@@ -1115,7 +1139,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "0d51a5294fae9d3c6cae6f1bf2e15568ea54b4ee998e5944522068417f8d777a"
+                      "sha256":  "c3b95cc14b10f9f93a210d668b0a9a6c7f9e433590caa9c5e2b75e04b7b2fb82"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

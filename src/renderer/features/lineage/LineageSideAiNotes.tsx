@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react'
 import { api, unwrap } from '../../api/client'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote } from '@shared/models/ai-note'
-import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style'
+import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/anchors/ai-note-style'
 
 type Phase = 'loading' | 'ready' | 'error'
 

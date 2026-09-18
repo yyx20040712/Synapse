@@ -47,7 +47,7 @@
  *   +e2e ai-notes-section.spec.ts（均受锁，always-active）
  */
 import { useEffect } from 'react'
-import { locateAnchor } from './anchor-locate'
+import { locateAnchor } from './anchors/anchor-locate'
 import { AiNoteGroupList } from './AiNoteGroupList'
 import { AiNotesStatus } from './AiNotesStatus'
 import { derivePhase } from './state/ai-notes-phase'

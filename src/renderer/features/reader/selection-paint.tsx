@@ -32,8 +32,8 @@
 import { memo } from 'react'
 import { createPortal } from 'react-dom'
 import type { AnnotationRect } from '@shared/models/annotation'
-import { matchBand, type RowBand } from './annotation-resolve'
-import { bandVertical, clampedHorizontal } from './annotation-style'
+import { matchBand, type RowBand } from './anchors/annotation-resolve'
+import { bandVertical, clampedHorizontal } from './anchors/annotation-style'
 import { PAGE_LAYER_Z } from './state/page-layer-z'
 
 /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */

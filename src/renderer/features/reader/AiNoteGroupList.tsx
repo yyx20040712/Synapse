@@ -34,7 +34,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote, AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
-import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './ai-note-style'
+import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from './anchors/ai-note-style'
 
 /** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
 export function groupNotes(notes: AiNote[]): Array<{ question: AiNoteQuestion; items: AiNote[] }> {

@@ -29,7 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
 import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
 import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
-import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 

@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { Annotation } from '@shared/models/annotation'
 import { sortByDocumentOrder } from '@shared/annotation-order'
-import { COLOR_SWATCH } from './annotation-style'
+import { COLOR_SWATCH } from './anchors/annotation-style'
 
 /** 引文/批注摘要截断（显示策略） */
 const EXCERPT_MAX = 60

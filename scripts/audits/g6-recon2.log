@@ -1,0 +1,62 @@
+=== [1] moved files' outbound imports (non-sibling) ===
+src/renderer/features/reader/anchor-locate.ts:88	./state/reader.store	| import { useReaderStore } from './state/reader.store'
+src/renderer/features/reader/anchor-locate.ts:89	./state/scroll-converge	| import { scrollIntoNearestScroller } from './state/scroll-converge'
+src/renderer/features/reader/open-paper-anchor.ts:26	./state/reader.store	| import { useReaderStore } from './state/reader.store'
+
+=== [2] string/comment mentions of reader/<moved> paths ===
+src/renderer/features/lineage/LineageSideAiNotes.tsx:22	[ai-note-style]	import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/ai-note-style
+tests/unit/renderer/ai-note-style.test.ts:14	[ai-note-style]	} from '../../../src/renderer/features/reader/ai-note-style'
+tests/unit/renderer/annotation-merge.test.ts:15	[annotation-merge]	import { mergeRects, W_MIN } from '../../../src/renderer/features/reader/annotation-merge'
+tests/unit/renderer/anchor-item-verify.test.tsx:28	[anchor-serialize]	import { verifyQuote, verifyQuoteItem } from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/anchor-item-verify.test.tsx:29	[annotation-resolve]	import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reader/annotation-resolve'
+tests/unit/renderer/anchor-item-verify.test.tsx:30	[annotation-anchor]	import type { PixelBox } from '../../../src/renderer/features/reader/annotation-anchor'
+tests/unit/renderer/anchor-item-verify.test.tsx:31	[pdf-item-geometry]	import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/rea
+tests/unit/renderer/anchor-item-verify.test.tsx:32	[page-items.store]	import type { PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/pdf-item-geometry.test.tsx:30	[pdf-item-geometry]	} from '../../../src/renderer/features/reader/pdf-item-geometry'
+tests/unit/renderer/anchor-blank-snap.test.ts:4	[anchor-serialize]	import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/anchor-blank-snap.test.ts:5	[anchor-serialize]	import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/release-affinity.test.ts:5	[anchor-serialize]	import { selectionToAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/release-affinity.test.ts:6	[anchor-serialize]	import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/ai-notes-section.test.tsx:21	[anchor-locate]	import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
+tests/unit/renderer/ai-notes-section.test.tsx:42	[anchor-locate]	vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
+tests/unit/renderer/ai-notes-section.test.tsx:51	[ai-note-style]	import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+tests/unit/renderer/anchor-locate.test.ts:15	[anchor-locate]	import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
+tests/unit/renderer/band-calibration.test.tsx:31	[annotation-band-calibrate]	import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/annotation-band-calibrate'
+tests/unit/renderer/band-calibration.test.tsx:32	[annotation-resolve]	import { matchBand, type RowBand } from '../../../src/renderer/features/reader/annotation-resolve'
+tests/unit/renderer/band-calibration.test.tsx:33	[page-items.store]	import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/lineage-side-panel.test.tsx:47	[anchor-locate]	vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({
+tests/unit/renderer/lineage-side-panel.test.tsx:61	[open-paper-anchor]	import { openFromBus } from '../../../src/renderer/features/reader/open-paper-anchor'
+tests/unit/renderer/lineage-side-panel.test.tsx:63	[ai-note-style]	import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+tests/unit/renderer/selection-evaluate.test.tsx:32	[page-items.store]	import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/annotation-layer.test.tsx:20	[page-items.store]	import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/ai-annotation-layer.test.tsx:20	[anchor-locate]	import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
+tests/unit/renderer/ai-annotation-layer.test.tsx:22	[ai-note-style]	import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+tests/unit/renderer/ai-annotation-layer.test.tsx:24	[page-items.store]	import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/selection-item-chain.test.tsx:22	[page-items.store]	import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/annotation-anchor.test.ts:7	[annotation-anchor]	} from '../../../src/renderer/features/reader/annotation-anchor'
+tests/unit/renderer/annotation-anchor.test.ts:11	[anchor-serialize]	} from '../../../src/renderer/features/reader/anchor-serialize'
+tests/unit/renderer/selection-paint.test.tsx:33	[annotation-style]	import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
+tests/unit/renderer/selection-paint.test.tsx:34	[annotation-resolve]	import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
+tests/unit/renderer/selection-paint.test.tsx:36	[page-items.store]	import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+tests/unit/renderer/selection-layer.test.tsx:27	[page-items.store]	import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
+
+=== [3] config mentions ===
+scripts/check-quality.mjs:87	[ai-note-style]	//    ai-note-style 单源（INV-11——跨域复用与域内复写二害取轻：白名单受控
+scripts/check-quality.mjs:99	[ai-note-style]	['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/ai-note-style']],
+
+=== [4] registry file fields pointing at moved paths ===
+tickets/registry.ts:101	[annotation-anchor]	{ id: 'SR-RDR-01', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', sum
+tickets/registry.ts:160	[anchor-locate]	{ id: 'SR2-C-05', file: 'src/renderer/features/reader/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary:
+tickets/registry.ts:205	[anchor-locate]	{ id: 'SR2-F-02', file: 'src/renderer/features/reader/anchor-locate.ts', area: 'reader', owner: 'strong', status: 'done', summary:
+tickets/registry.ts:212	[open-paper-anchor]	{ id: 'SR2-LG-06', file: 'src/renderer/features/reader/open-paper-anchor.ts', area: 'reader', owner: 'strong', status: 'done', sum
+tickets/registry.ts:223	[ai-note-style]	{ id: 'SR2-AI-12', file: 'src/renderer/features/reader/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary
+tickets/registry.ts:244	[annotation-resolve]	{ id: 'F-A8', file: 'src/renderer/features/reader/annotation-resolve.ts', area: 'reader', owner: 'strong', status: 'done', summary
+tickets/registry.ts:265	[anchor-blank-snap]	{ id: 'F-SNAP-01', file: 'src/renderer/features/reader/anchor-blank-snap.ts', area: 'reader', owner: 'strong', status: 'done', sum
+tickets/registry.ts:280	[pdf-item-geometry]	{ id: 'F-GEOM-01', file: 'src/renderer/features/reader/pdf-item-geometry.ts', area: 'reader', owner: 'strong', status: 'open', sum
+tickets/registry.ts:292	[geometry-types]	{ id: 'F-GEOM-01-G1', file: 'src/renderer/features/reader/geometry-types.ts', area: 'reader', owner: 'strong', status: 'done', sum
+tickets/registry.ts:297	[annotation-anchor]	{ id: 'F-GEOM-01-G6', file: 'src/renderer/features/reader/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'open', 
+
+=== [5] e2e spec string surface ===
+tests/e2e/z-wg1-probe.spec.ts:7	[annotation-resolve]	* 中间几何值，annotation-resolve.ts:224 bandsNearRects）待多行判别。
+
+DONE

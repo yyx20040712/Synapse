@@ -96,7 +96,7 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
-  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/ai-note-style']],
+  ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']]
 ])
 

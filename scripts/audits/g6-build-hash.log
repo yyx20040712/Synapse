@@ -1,0 +1,7 @@
+=== G6 build artifact hash identity (2026-09-18) ===
+-rw-r--r-- 1 Administrator 197121   59923 Sep 18 23:17 out/renderer/assets/index-BfpEygSE.css
+-rw-r--r-- 1 Administrator 197121 1402437 Sep 18 23:17 out/renderer/assets/index-D3egZtl2.js
+G5 baseline (brief ③-4): index-D3egZtl2.js / index-BfpEygSE.css
+result: names identical => content-hash identical => zero-byte output drift
+index-D3egZtl2.js 1402437 bytes sha256=9c3b8b8439641023
+index-BfpEygSE.css 59923 bytes sha256=dcace2e7481c724b

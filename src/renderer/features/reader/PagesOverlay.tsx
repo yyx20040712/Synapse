@@ -51,7 +51,7 @@ import { SearchHighlightLayer } from './SearchHighlightLayer'
 import type { PDFDocumentProxy } from './state/PdfDocProvider'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import type { PageLayout } from './page-column-geometry'
-import { usePageItemsStore } from './page-items.store'
+import { usePageItemsStore } from './anchors/page-items.store'
 import { TextLayer } from './TextLayer'
 
 /** 渲染窗口内页的卸载哨（F-01 回收同删 pageTexts+pageRoots 条目——W3） */

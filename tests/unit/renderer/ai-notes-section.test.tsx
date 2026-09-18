@@ -18,7 +18,7 @@ import type { AiNote } from '../../../src/shared/models/ai-note'
 import { AI_NOTE_QUESTIONS } from '../../../src/shared/models/ai-note'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
-import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchor-locate'
+import type * as anchorLocateModule from '../../../src/renderer/features/reader/anchors/anchor-locate'
 
 const observe = vi.fn()
 const listByPaper = vi.fn()
@@ -39,7 +39,7 @@ stubApi.ai_sensor.requestAiRead = requestAiRead
 stubApi.ai_sensor.importAll = importAll
 
 const { locateAnchor } = vi.hoisted(() => ({ locateAnchor: vi.fn() }))
-vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOriginal) => {
+vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', async (importOriginal) => {
   const real = await importOriginal<typeof anchorLocateModule>()
   return { ...real, locateAnchor }
 })
@@ -48,7 +48,7 @@ import { showToast } from '../../../src/renderer/shared/ui/Toast'
 import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useAiNotesStore } from '../../../src/renderer/features/reader/state/ai-notes.store'
-import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
+import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
 
 /** observe 四事实（六态判定输入——ai-sensor/observe Res 形状） */
 function facts(patch: {
