@@ -16,8 +16,10 @@
  *   只住本域文件——禁入 shared/constants.ts（renderer 不见路径，避免无谓受锁扩容）。
  *
  * ── 架构层 ──
- * - 只 import node:fs/node:path/node:crypto；不触 db、不触 electron（单测纯 fs 可测）。
- * - 协议文件一律 tmp+rename 原子写（settings ipc / INV-26 同型）。
+ * - 只 import node:fs/node:path/node:crypto 与 services/shared/atomic-write
+ *   （F-DEDUP-01 原子写单源——被依赖下游位，不破分层单向）；不触 db、不触
+ *   electron（单测纯 fs 可测）。
+ * - 协议文件一律 tmp+rename 原子写（INV-26 同型）。
  *
  * ── 生命周期层 ──
  * - 不做：workspace 目录手工编辑的 watch 兼容；meta 版本字段（v1 无 schema 演进面）。
@@ -27,9 +29,10 @@
  */
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { DB_FILE_NAME, MANAGED_FILES_DIR } from '../../../shared/constants'
+import { atomicWriteFile } from '../shared/atomic-write'
 
 /** 课题目录集根目录名（userData 下） */
 export const WORKSPACES_DIR_NAME = 'workspaces'
@@ -57,13 +60,6 @@ export async function generateWorkspaceId(rootDir: string): Promise<string> {
     if (!existsSync(join(rootDir, id))) return id
   }
   throw new Error('课题 id 生成失败：随机碰撞超过重试上限')
-}
-
-/** 原子写（tmp+rename——半截文件永不入目） */
-async function atomicWrite(path: string, content: string): Promise<void> {
-  const tmp = `${path}.tmp`
-  await writeFile(tmp, content, 'utf-8')
-  await rename(tmp, path)
 }
 
 export function pointerPath(userDataDir: string): string {
@@ -98,7 +94,7 @@ export async function readPointerId(userDataDir: string): Promise<string | null>
 }
 
 export async function writePointer(userDataDir: string, id: string): Promise<void> {
-  await atomicWrite(pointerPath(userDataDir), `${JSON.stringify({ currentId: id }, null, 2)}\n`)
+  await atomicWriteFile(pointerPath(userDataDir), `${JSON.stringify({ currentId: id }, null, 2)}\n`)
 }
 
 /** 目录扫描：workspaces/ 下持 meta.json 的合法 id 目录，字典序（=「目录序」单源） */
@@ -134,7 +130,7 @@ export async function readMeta(rootDir: string, id: string): Promise<WorkspaceMe
 
 /** meta.json 写（create/rename 落点；createdAt 不变语义由调用方保持） */
 export async function writeMeta(rootDir: string, id: string, meta: WorkspaceMeta): Promise<void> {
-  await atomicWrite(join(rootDir, id, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`)
+  await atomicWriteFile(join(rootDir, id, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`)
 }
 
 async function moveIfExists(src: string, dest: string): Promise<void> {

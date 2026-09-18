@@ -30,7 +30,7 @@
  * - 测试：tests/unit/db/repos/papers.repo.test.ts（已锁定；先读测试再实现）
  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
  */
-import { APP_FILE_SCHEME } from '../../../shared/constants'
+import { appFileUrl } from '../../../shared/app-file-url'
 import type Database from 'better-sqlite3'
 import type { SqliteDb } from '../connection'
 import {
@@ -248,7 +248,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
         arxivId: r.arxiv_id,
         source: r.source,
         enrichStatus: r.enrich_status,
-        fileUrl: `${APP_FILE_SCHEME}://${r.id}`,
+        fileUrl: appFileUrl(r.id),
         fileName: r.file_ref.slice(slashPos),
         updatedAt: r.updated_at,
         // ENR-01：三缓存字段配对透出（写入面三列同写，count 非 null 蕴含

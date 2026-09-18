@@ -24,30 +24,24 @@
  * - 不做：删除文献（v1 明确不做，防误删；如需清理走 DB 维护工具）
  *
  * ── 文化层 ──
- * - NOT_FOUND 场景抛内置 DomainError（本文件定义并导出 class DomainError extends Error，
- *   带 code: AppErrorCode 字段）——register 会经 toAppError 折叠
+ * - NOT_FOUND 场景抛 DomainError（F-DEDUP-01 起定义上提 services/shared/
+ *   domain-error 单源；本文件 re-export 保既有导出 API 稳定——历史零值导入者，
+ *   主控 grep 实证）——register 会经 toAppError 折叠
  * - updateMeta 落库后重读 detailById 返回聚合详情（契约要求 PaperDetail，
  *   而 repo 的 updateMeta 只回原始表行）
  * - 测试：tests/unit/services/library.service.test.ts（已锁定，repo 用内存桩）
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
+import { DomainError } from './shared/domain-error'
 
 /**
  * 域错误：service 层业务语义（如"资源不存在"）的载体。
  * toAppError 对带合法 code 字段的 Error 会保留 code 与 message 折叠成 AppError，
- * 前端据此按码分支。
+ * 前端据此按码分支。（定义已上提 shared/domain-error 单源——F-DEDUP-01；
+ * 此处 re-export 维持本文件历史导出面。）
  */
-export class DomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'DomainError'
-    this.code = code
-  }
-}
+export { DomainError }
 
 /** 统一的"文献不存在"错误（detail / updateMeta 共用同一语义与文案） */
 function paperNotFound(paperId: string): DomainError {

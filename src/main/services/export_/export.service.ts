@@ -34,9 +34,10 @@
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AppErrorCode } from '../../../shared/app-error'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
+import { DomainError } from '../shared/domain-error'
+import { sanitizePathToken } from '../shared/sanitize'
 import {
   makeCitationKey,
   serializeBibtex,
@@ -45,16 +46,9 @@ import {
 import { assembleCorpusMd } from './corpus.assemble'
 import { buildReadingReport } from './markdown.report'
 
-/** 域错误：NOT_FOUND（报告目标不存在）与 IO_ERROR（写盘失败）载体 */
-class ExportDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'ExportDomainError'
-    this.code = code
-  }
-}
+/** 域错误：NOT_FOUND（报告目标不存在）与 IO_ERROR（写盘失败）载体——基类
+ *  一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
+class ExportDomainError extends DomainError {}
 
 export interface CorpusSetEntry {
   paperId: string
@@ -205,9 +199,9 @@ export function createExportService(deps: { repos: Repos }): ExportService {
       try {
         await mkdir(corpusDir, { recursive: true })
         for (const e of entries) {
-          // paperId 消防消毒（id 由 import.service 生成本可信——纵深防御，
-          // 异常 id 不越出 corpus 目录）
-          const safeId = e.paperId.replace(/[^a-zA-Z0-9_-]/g, '_')
+          // paperId 消毒单源=services/shared/sanitize（F-DEDUP-01；id 由
+          // import.service 生成本可信——纵深防御，异常 id 不越出 corpus 目录）
+          const safeId = sanitizePathToken(e.paperId)
           await writeFile(join(corpusDir, `${safeId}.md`), e.content, 'utf8')
         }
       } catch (e) {

@@ -24,7 +24,6 @@
  * 测试：tests/unit/services/lineage-import.test.ts [受锁新增]（always-active）。
  */
 import { readFile } from 'node:fs/promises'
-import type { AppErrorCode } from '../../../shared/app-error'
 import { isSurveyTitle, lineageDraftSchema } from '../../../shared/models/lineage'
 import type {
   LineageEdge,
@@ -34,6 +33,7 @@ import type {
 } from '../../../shared/models/lineage'
 import { venueToTier, type VenueTier } from '../../../shared/venue-tier'
 import type { LineageRepo } from '../../db/repos/lineage.repo'
+import { DomainError } from '../shared/domain-error'
 
 /** 行级校验错误（path=字段路径如 nodes.0.title / edges.1.to_paper_id） */
 export interface DraftIssue {
@@ -85,21 +85,13 @@ export interface LineageServiceDeps {
 }
 
 /**
- * 域错误（reader.service ReaderDomainError 同型，LG-03 接线需要）：code 经
- * toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
+ * 域错误（LG-03 接线需要；shared/domain-error 基类一行继承——F-DEDUP-01 单源）：
+ * code 经 toAppError 结构化透传（普通 Error 的 message 会被折叠进 detail 埋掉中文
  * reason——「reason 透传 toast」不成立）。CONFLICT=业务规则拒绝（树守卫/
  * 幽灵 paperId），消费方按码分支（丢弃动作+toast，区别于系统型失败保留重试）。
  * message 中文原文不变（LG-01 受锁测试断言子串不受影响）。
  */
-class LineageDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'LineageDomainError'
-    this.code = code
-  }
-}
+class LineageDomainError extends DomainError {}
 
 /**
  * 草稿三段校验（纯函数：同输入同输出）。

@@ -43,11 +43,11 @@
 import { randomUUID } from 'node:crypto'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AppErrorCode } from '../../../shared/app-error'
 import type { ImportProgressEvent, ImportResult } from '../../../shared/ipc/schemas'
 import type { Collection } from '../../../shared/models/collection'
 import type { PaperSummary } from '../../../shared/models/paper'
 import type { PaperRow, Repos } from '../../db/repos'
+import { DomainError } from '../shared/domain-error'
 import type { FileStore } from './file-store'
 import type { PdfMetaExtraction } from './pdf-meta.extract'
 
@@ -59,16 +59,9 @@ export interface ImportService {
 /**
  * 域错误：仅文件夹整体读不了时抛出（code 经 register 的 toAppError 保留语义）。
  * 单文件失败不抛——按"尽力而为"进 failed。
+ * 基类一行继承=services/shared/domain-error（F-DEDUP-01 单源）。
  */
-class ImportDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'ImportDomainError'
-    this.code = code
-  }
-}
+class ImportDomainError extends DomainError {}
 
 /** 批处理单元：源路径 + 所属集合（importFiles 一律 null，根目录文件也为 null） */
 interface BatchEntry {

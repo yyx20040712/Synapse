@@ -119,7 +119,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AppErrorCode } from '../../../shared/app-error'
+import { appFileUrl } from '../../../shared/app-file-url'
 import type {
   CorpusItemReq,
   CorpusSessionRes,
@@ -128,18 +128,15 @@ import type {
 } from '../../../shared/ipc/schemas'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
+import { DomainError } from '../shared/domain-error'
+import { sanitizePathToken } from '../shared/sanitize'
 import type { FileStore } from '../import_/file-store'
 import { assembleCorpusMd, orderAiNotes } from './corpus.assemble'
 import { INTERFACE_MD } from './interface-template'
 
-/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等） */
-class SessionError extends Error {
-  readonly code: AppErrorCode
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.code = code
-  }
-}
+/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等）；
+ *  基类一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
+class SessionError extends DomainError {}
 
 export interface CorpusExportDeps {
   repos: Repos
@@ -247,7 +244,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
       type: 'extract-request',
       sessionId: s.sessionId,
       paperId: paper.id,
-      url: `app-file://${paper.id}`,
+      url: appFileUrl(paper.id),
       annotations: annotations.map((a) => ({ id: a.id, rects: a.rects }))
     }
     sendProgress(s, 'streaming')
@@ -406,12 +403,12 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
         } else if (req.kind === 'figure') {
           const figDir = join(s.dir, 'figures', cur.paperId)
           await mkdir(figDir, { recursive: true })
-          // renderer 载荷自由串不裸拼路径（路径穿越防御——C-02 safeId 同型）：
+          // renderer 载荷自由串不裸拼路径（路径穿越防御——消毒单源=
+          // services/shared/sanitize，F-DEDUP-01；C-02 safeId 同族）：
           // id 由应用生成本可信，纵深防御防篡改载荷（annotationId 含 ../ 等）
-          const safeName = (raw: string): string => raw.replace(/[^a-zA-Z0-9_-]/g, '_')
           const name =
             req.figure === 'anno'
-              ? `anno-${safeName(req.annotationId ?? 'unknown')}.png`
+              ? `anno-${sanitizePathToken(req.annotationId ?? 'unknown')}.png`
               : `page-${req.page}.png`
           await writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))
           cur.figures.push(`figures/${cur.paperId}/${name}`)

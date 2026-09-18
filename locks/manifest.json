@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T01:06:38.1926580Z",
+    "generatedAt":  "2026-09-18T02:18:59.7887181Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "7b53b888e38cbf7fdf36bbf86b1f7e4bf1cec403233407c306680ebfab749a43"
+                      "sha256":  "a7fdad6a198c68ce819012a955ed50033c2c302b8e2bd34612dcd62d793b9774"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -500,6 +500,10 @@
                   {
                       "path":  "src/shared/app-error.ts",
                       "sha256":  "2a9876ab51ef12edbe322f20856982c9c7ab788496d6772bfda16391b4ae345f"
+                  },
+                  {
+                      "path":  "src/shared/app-file-url.ts",
+                      "sha256":  "bff8ccab266ceb151da8c28923896dd2c46a316d53a9efad3816041d6a341d32"
                   },
                   {
                       "path":  "src/shared/constants.ts",
@@ -1238,6 +1242,18 @@
                       "sha256":  "00b6d6d37806d15f86c666fec405ebfe25a9a067a7e1444f422312023a4a656d"
                   },
                   {
+                      "path":  "tests/unit/services/shared/atomic-write.test.ts",
+                      "sha256":  "ab355273b860685893ad8b35b04b809de3f8025376a7cf03fb6c9d990364e144"
+                  },
+                  {
+                      "path":  "tests/unit/services/shared/domain-error.test.ts",
+                      "sha256":  "ce84e037305676207f873d66ea780c35a4083a8a7cddc88ce10ff68c3e689e2b"
+                  },
+                  {
+                      "path":  "tests/unit/services/shared/sanitize.test.ts",
+                      "sha256":  "1324fa3339b133039514e6707c9b667552a0ff13d6824d8c7a536f711d3df649"
+                  },
+                  {
                       "path":  "tests/unit/services/tags.service.test.ts",
                       "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
                   },
@@ -1260,6 +1276,10 @@
                   {
                       "path":  "tests/unit/shared/annotation-order.test.ts",
                       "sha256":  "13ff6f09edd7c348593d95379c52a098ecc18a7b3588dec79ba50953b621bd03"
+                  },
+                  {
+                      "path":  "tests/unit/shared/app-file-url.test.ts",
+                      "sha256":  "723eafa0587d48fb74732d04601e5f80fe7b990004154e070cbc9f4c9728407a"
                   },
                   {
                       "path":  "tests/unit/shared/venue-tier.test.ts",

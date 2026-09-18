@@ -11,8 +11,9 @@
  *
  * ── 架构层 ──
  * - 薄层；只依赖 repos 桶（禁止 import db/connection，ESLint 强制）
- * - NOT_FOUND 判定需要 papers.findById；域错误与 library/reader 的
- *   DomainError 同构：带 code 的 Error，register 经 toAppError 折叠为 AppError
+ * - NOT_FOUND 判定需要 papers.findById；域错误一行继承 services/shared/
+ *   domain-error 基类（F-DEDUP-01 单源——被依赖下游位共享件，非服务间横向
+ *   耦合），register 经 toAppError 折叠为 AppError
  *
  * ── 生命周期层 ──
  * - 不做：多篇笔记/双链（负面清单）
@@ -20,20 +21,12 @@
  * ── 文化层 ──
  * - 测试：tests/unit/services/notes.service.test.ts（已锁定，repos 桩）
  */
-import type { AppErrorCode } from '../../shared/app-error'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
+import { DomainError } from './shared/domain-error'
 
 /** 域错误：save 的"文献不存在"与 remove 的"笔记不存在"载体 */
-class NotesDomainError extends Error {
-  readonly code: AppErrorCode
-
-  constructor(code: AppErrorCode, message: string) {
-    super(message)
-    this.name = 'NotesDomainError'
-    this.code = code
-  }
-}
+class NotesDomainError extends DomainError {}
 
 export function createNotesService(deps: { repos: Repos }): ApiHandlers['notes'] {
   const { papers, notes } = deps.repos
