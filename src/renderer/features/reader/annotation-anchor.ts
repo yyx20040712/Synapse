@@ -6,7 +6,6 @@
  * - 文本偏移 ↔ DOM 范围 互转（WADM textPosition 思路）：
  *   findRangeAtOffset(root: HTMLElement, start: number, end: number): DOMRange | null
  *   —— 遍历文本节点累计字符偏移，命中区间返回 { rects, textNodes }
- * - rectsFromRange(range, pageSize): AnnotationRect[]（归一化 0..1）
  * - mergeLineRects(pixels, pageWidth)（2026-08-23 Q3 修复演进）：clientRects 行级
  *   合并——同形去重/y 重叠聚行簇（高度可比带防旋转文本互并）/x 大间隙断段（防
  *   多栏桥接）/段内 x 并集+y/h 取主导矩形；rectsBetweenPoints 归一化前调用，
@@ -27,7 +26,7 @@
  * - export interface NodeSpan/DomPoint（几何域类型——驻本件单一真相源）；
  *   PixelBox 真源=geometry-types（F-GEOM-01-G1 M0 切环，本件 type 再导出
  *   保受锁测试旧路径 anchor-item-verify.test:30）
- * - export function findRangeAtOffset/rectsFromRange/mergeLineRects/estimateLinePitch，
+ * - export function findRangeAtOffset/mergeLineRects/estimateLinePitch，
  *   及几何原语公共面 collectSpans/fullTextOf/offsetToPoint/rectsBetweenPoints/pixelBoxOf
  *   （F-ARCH4 扩面——anchor-serialize 的合法消费面；全部纯/幂等，无 React 依赖）
  *
@@ -147,30 +146,6 @@ export function offsetToPoint(spans: NodeSpan[], global: number): DomPoint | nul
   }
   const last = spans[spans.length - 1]
   return last === undefined ? null : { node: last.node, offset: last.end - last.start }
-}
-
-export function rectsFromRange(
-  range: DOMRange,
-  pageSize: { w: number; h: number }
-): AnnotationRect[] {
-  // findRangeAtOffset 产出的 rects 已按页根盒归一化，直接透传（真实渲染的主路径）
-  if (range.rects.length > 0) {
-    return range.rects
-  }
-  // 手工构造的 DOMRange（未经 findRangeAtOffset）：从 textNodes 重建几何，
-  // 按声明的页面尺寸归一化。此路径无页根原点可扣减，仅在无布局量测的场景使用
-  const first = range.textNodes[0]
-  const last = range.textNodes[range.textNodes.length - 1]
-  if (first === undefined || last === undefined) {
-    return []
-  }
-  const base: PixelBox = { x: 0, y: 0, w: Math.max(pageSize.w, 1), h: Math.max(pageSize.h, 1) }
-  return rectsBetweenPoints(
-    { node: first.node, offset: first.offset },
-    // DOMRange 不携带区间末端信息，末节点只能覆盖到其文本末尾（单节点区间精确）
-    { node: last.node, offset: last.node.data.length },
-    base
-  )
 }
 
 /** 元素盒；无布局环境（jsdom/离屏）时各分量为 0，尺寸兜底为 1 防除零 */

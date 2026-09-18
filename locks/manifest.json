@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T02:18:59.7887181Z",
+    "generatedAt":  "2026-09-18T05:46:12.0518881Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "a7fdad6a198c68ce819012a955ed50033c2c302b8e2bd34612dcd62d793b9774"
+                      "sha256":  "887c63855202cd175a1a554297c1a3b4209581e0bbc08949bc863100a9e493ce"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -451,7 +451,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+                      "sha256":  "ac07e5493c001a3fa530c577860655cb6a84307534172390299a2a5bc7aa126b"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -831,7 +831,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-anchor.test.ts",
-                      "sha256":  "97bc79ed40c3d0ff043ea68b65fe8a667a83ff8d9a9864f2147f5864c7dca67c"
+                      "sha256":  "345364070e3124090143ac4c4aaf999877db6ddeee126ac14c574f56f2668257"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
@@ -1071,11 +1071,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
-                      "sha256":  "439a0020140fe7d0a09d31997b5fe7417ab1cbdff11b623e19fd4336604f10de"
+                      "sha256":  "84eecf212c579d0e5690a00022a7e8e475656e069d4329e628a0bdfc6ed56afa"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "a211480108e346671cf7ea20ed89f1198e03deff86ed4bcf31c96bfc247d1a6e"
+                      "sha256":  "8e8dd1fee4c3069519836427afabd6c87107a22113621f86c4a549a5c56d5514"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer-fa12.test.tsx",
@@ -1087,7 +1087,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "2d8b2e44cb8b93e41166267dd327dda3e1943bb9d822a1368d280a72f736c066"
+                      "sha256":  "f927f8f75410c81a4322aacbfdb7f2352ce84956bf1220b8dd3038813b63ca31"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",

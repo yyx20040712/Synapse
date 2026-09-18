@@ -31,7 +31,8 @@
  * - export function verifyQuoteItem(items, selector): number | null [F-A8 门0]
  *   （items 参数=结构最小面 {str:string}——消费方传 PdfTextItem[] 结构兼容；
  *   不 import PdfPageCanvas 类型链的缘由见架构层）
- * - matchAt/locateQuote/probeTextLength/CONTEXT_CHARS 保持模块私有
+ * - matchAt/locateQuote/CONTEXT_CHARS 保持模块私有；probeTextLength 经
+ *   F-GEOM-01-G2 导出（selection-evaluate 快路径单源消费——本域复刻已删）
  * - 几何与遍历原语消费自 annotation-anchor 公共面（collectSpans/fullTextOf/
  *   offsetToPoint/rectsBetweenPoints/pixelBoxOf）——类型单一真相源，本模块
  *   零类型复写
@@ -236,7 +237,7 @@ export function selectionToAnchor(
  * side='end' 探 [边界..root 尾) → 长度是其后文长度（调用方用 total 相减）。
  * Range.toString 按文档序拼接相交文本节点的命中区间，元素/文本容器统一成立
  */
-function probeTextLength(
+export function probeTextLength(
   root: HTMLElement,
   container: Node,
   offset: number,

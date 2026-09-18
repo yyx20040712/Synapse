@@ -6,17 +6,17 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: RUNNING
+- status: READY
 - automation_id: automation-cbab13a4-2cf7-4b7f-a88b-59dda6687cae
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T05:57:00Z
+- heartbeat_utc: 2026-09-18T07:32:00Z
 - claim: claim-1789708660-b14
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 17
+- checked_done: 18
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -102,7 +102,7 @@
       验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
 - [x] F-GEOM-01-G1（M0 类型下沉切环 §3.3——geometry-types 单源+三环切断；
       骨架已立 src/renderer/features/reader/geometry-types.ts）
-- [ ] F-GEOM-01-G2（保存链单源门+死面收敛 §2.4/§3.5——**唯一行为变更票**，
+- [x] F-GEOM-01-G2（保存链单源门+死面收敛 §2.4/§3.5——**唯一行为变更票**，
       [locked-change][test-refactor]；受锁面=selection-layer.test 14 用例
       改写+指纹门豁免清单）
 - [ ] F-GEOM-01-G3（band 三档绑定+跨族交互点登记 §2.5/§2.6——INV-68 落册
@@ -148,6 +148,68 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 14 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G2 保存链单源门+死面收敛，完成——**末批，接力停**）
+- claim: claim-1789708660-b14｜开始 05:17:40Z｜中途用户暂停（05:56Z~06:4xZ，见增补二）
+  ｜收口 07:32:00Z｜勾选 17→18。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌红→绿→
+  变异红证；systematic-debugging 不加载（修法=设计书 §2.4 定稿+主控派发前全边侦察
+  前置，无排障定位面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor
+  绑定（GLM5.3flash $max）；门一=ops-gate1-k1 绑定（kimi-main k3 $max——正常承载）；
+  门二=ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（战役唯一行为变更票）**：①保存门=evaluateCore item 链失败（三因）else 臂
+  改「paint 照渲 DOM 回退形状（视觉连续）+setPending(null)（无工具条=无保存入口）
+  +warn 单源（itemChainFor 零新增）」+尾段 pending 构造三元删除（恒项族形状——
+  「所见≠所存时不给保存入口」，设计书 §2.4/§2.2 序列⑤接缝闭合）；②probeTextLength
+  单源化（anchor-serialize 显式导出+selection-evaluate 复刻删除）；③rectsFromRange
+  死导出面删除（src+头注 2 处+测试 1 例，全仓零残留）；INV-58 修订（保存链条款+
+  stale 自述闭合记录）+selection-evaluate 头注重写五处（§2.6 交互点 5 消除）。
+  10 文件 +112/-88（selection-evaluate +20/-33、anchor-serialize +3/-2、
+  annotation-anchor +1/-26、invariants +1/-1、exemptions +14/-1、selection-layer
+  .test +35/-0、item-chain +2/-2、paint.test +28/-0、anchor.test +1/-16、manifest
+  +7/-7）。
+- **受锁面先行对账义务兑现**：对账表（g2-assertion-reconciliation.md）主控侦察后
+  **实勘扩三文件**——票面点名 selection-layer 14 例之外补入：selection-paint 17 例
+  （6 例零桩+工具条/保存流依赖=同因补桩断言零改）、item-chain 回退①（改写=本票
+  TDD 红锚）、annotation-anchor rectsFromRange（删例）。四文件合计 16 用例改写/补桩
+  +1 删例，其余 22+11 例零改。豁免恰 2 条（≤10 无呈裁）；指纹门 C 面：layer/paint
+  纯桩增零变+回退①新题 NEW 项+旧题豁免。
+- **TDD 证据链**：首红 RED_EXIT=1（回退①工具条 null 断言钉住接缝）→T3 删除序证红
+  （先删 src 导出→import 悬空红=证唯一消费面）→全量绿 170 文件/1744 用例（=1745−1）
+  +锚定回归网 9 文件/98 用例→变异红证 M1（保存门回退挂 DOM pending→回退①红+还原
+  diff 空+复绿）+M2（删 probeTextLength export→typecheck TS2459 红+还原）。
+- **门审**：门一 k1 **PASS_WITH_WARNINGS B0/W1/N7**——越表断言零命中（全在表
+  A/B/C/D）；W1=mkItem/mkText/seedRegistry 第 4 份触发 RoT→主控裁决**后置 G7 目录化
+  迁移票随迁抽取**（本票中途扩面将作废刚过审对账表边界；G7 票面「selection 系测试
+  import 随迁」为承接锚——**RoT 债登记**）；N3/N4 对账表补记+措辞对齐已处置。
+  门二 **GO_WITH_CONDITIONS P0=0/P1=3/P2=3/N=3**——四组数字独立复算全对上（±行数/
+  豁免逐字+C 面标题全集/锁面 338+6 受锁件在册/EXIT 标记物理在档）；P1-1 指纹门
+  口径更正（**基线 JSON stats=183/1757/5334** vs 开工 cur 187/1790/5417 vs 终态 cur
+  187/1789/5411——「基线 187/1790/5417」系设计书 §5.1 时点数，已落对账表勘误）；
+  P1-2/P1-3 收口清单本段+提交兑现。
+- **机检终态**：主控 verify 终跑 G2_VERIFY_FINAL_EXIT=0（g2-verify-final2.log：quality
+  绿+指纹门绿（exemptions 2/2/0）+tickets 206 票 open 19→18=恰 G2 翻 done+locks 338
+  一致+lint/typecheck+test 170/1744+build 绿）；实现者侧 verify EXIT=0 双档（
+  g2-verify-final.log）；e2e 默认门 43 passed E2E_EXIT=0（无 corpus-export 超时，flake
+  口径未触发；45 全跑义务归 G11）；locks 链 unlock→改→generate→apply 一轮（manifest
+  +7/-7=generatedAt+6 受锁件 sha，与提交同步）；**health-scan RED×0 WARN×0**；账本
+  39→42 行（executor+门一+门二，绑定岗主控补记 node JSON.stringify——临时 .cjs 用毕
+  即删）。
+- 证据件入库（scripts/audits/，15 件）：g2-{assertion-reconciliation.md；impl-brief.md；
+  impl-report.md；gate1-brief.md；gate1-report.md；gate1-diff.patch；gate2-brief.md；
+  gate2-report.md}（7 .md+1 .patch）+七 .log（red-fallback1/green-full/mutation1-
+  savegate/mutation2-probe/verify-final/e2e-appgate 六实现者件+主控终跑 verify-final2
+  ——git add -f 入库，.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训：无新增等级（实现者自裁①「直跑 npx 未切 node ABI→184 例假红」=既有 ABI 守卫
+  面的执行侧变体，log 重建+偏差说明行处置合规——门一 N1/门二 P2-3 复核认可）。
+- Rulings 待用户：无新增（票内自裁 6 项——对账表扩三文件实勘/textLayer 盒桩夹具
+  必要件/RoT 后置 G7/ABI 首跑口径/TS2459 同语义/.log add -f——均经门一对抗拷问+
+  门二复核闭合）。
+- 无进展计数：归零（17→18 有进展）。**本批=末批（用户停火令，见增补）：接力停——
+  板停于 READY 无火，恢复两径=用户显式 /batch-relay 重布防或手动会话按板领批；
+  余量 17 项（第四波 G3~G11+第五/六波），下票若续=F-GEOM-01-G3（band 三档绑定
+  INV-68 落册，纯登记面）。**
 
 ### batch 14 增补 — 2026-09-18（调度员停火：用户裁决避开下午高峰）
 - 用户裁决两段：①完成当前批（b14=F-GEOM-01-G2）即停，后续不再开批；

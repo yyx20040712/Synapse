@@ -1,0 +1,219 @@
+=== M1 保存门变异红证（cp 备份法——禁 git checkout，未提交面保护）===
+--- cp 备份 selection-evaluate.ts ---
+BACKUP_CP_EXIT=0
+--- 变异：保存门 else 臂改回挂 DOM pending（旧行为）→ 跑 selection-item-chain ---
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/selection-item-chain.test.tsx[2m > [22m[2mF-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m[2m回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.visual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:223:7)
+    at Object.onVisual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:115:32)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:123:15
+    at invokeTheCallbackFunction (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\Function.js:19:26) [90mundefined[39m
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.full (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:238:5)
+    at Object.onSettled (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:116:33)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:128:46
+    at callTimer (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vitest/dist/chunks/vi.DgezovHB.js:2300:25) [90mundefined[39m
+
+[90mstderr[2m | tests/unit/renderer/selection-item-chain.test.tsx[2m > [22m[2mF-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m[2m回退②偏移对账失败：items 拼接≠DOM 全文 → DOM 量测链兜底+warn（回退触发面收敛的第二因）
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.visual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:223:7)
+    at Object.onVisual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:115:32)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:123:15
+    at invokeTheCallbackFunction (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\Function.js:19:26) [90mundefined[39m
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.full (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:238:5)
+    at Object.onSettled (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:116:33)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:128:46
+    at callTimer (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vitest/dist/chunks/vi.DgezovHB.js:2300:25) [90mundefined[39m
+
+ [31m❯[39m tests/unit/renderer/selection-item-chain.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 60[2mms[22m[39m
+[31m   [31m×[31m F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默[90m 11[2mms[22m[31m[39m
+[31m     → expected <div …(3)>…(9)</div> to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/selection-item-chain.test.tsx[2m > [22mF-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默
+[31m[1mAssertionError[22m: expected <div …(3)>…(9)</div> to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+<div
+  class="absolute z-(--z-float) flex items-center gap-1 rounded border px-1.5 py-1 text-xs"
+  data-testid="selection-toolbar"
+  style="left: -490px; top: 558px; background: var(--panel); border-color: var(--border); box-shadow: var(--shadow-pop-sm);"
+>
+  <button
+    aria-label="标注色：黄"
+    aria-pressed="true"
+    class="h-4 w-4 rounded-full border"
+    style="background: var(--annotation-yellow); border-color: var(--text);"
+    type="button"
+  />
+  <button
+    aria-label="标注色：绿"
+    aria-pressed="false"
+    class="h-4 w-4 rounded-full border"
+    style="background: var(--annotation-green); border-color: var(--border);"
+    type="button"
+  />
+  <button
+    aria-label="标注色：蓝"
+    aria-pressed="false"
+    class="h-4 w-4 rounded-full border"
+    style="background: var(--annotation-blue); border-color: var(--border);"
+    type="button"
+  />
+  <button
+    aria-label="标注色：红"
+    aria-pressed="false"
+    class="h-4 w-4 rounded-full border"
+    style="background: var(--annotation-red); border-color: var(--border);"
+    type="button"
+  />
+  <button
+    aria-label="标注色：紫"
+    aria-pressed="false"
+    class="h-4 w-4 rounded-full border"
+    style="background: var(--annotation-purple); border-color: var(--border);"
+    type="button"
+  />
+  <span
+    class="mx-0.5 inline-block h-3 w-px"
+    style="background: var(--border);"
+  />
+  <button
+    class="rounded border px-2 py-0.5 disabled:opacity-50"
+    style="border-color: var(--border);"
+    type="button"
+  >
+    高亮
+  </button>
+  <button
+    class="rounded border px-2 py-0.5 disabled:opacity-50"
+    style="border-color: var(--border);"
+    type="button"
+  >
+    下划线
+  </button>
+  <button
+    class="rounded border px-2 py-0.5 disabled:opacity-50"
+    style="border-color: var(--border);"
+    type="button"
+  >
+    备注
+  </button>
+</div>
+
+[36m [2m❯[22m tests/unit/renderer/selection-item-chain.test.tsx:[2m215:23[22m[39m
+    [90m213| [39m    [34mexpect[39m(rect)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()
+    [90m214| [39m    [34mexpect[39m([34mparseFloat[39m(rect[33m![39m[33m.[39mstyle[33m.[39mtop))[33m.[39m[34mtoBeCloseTo[39m(([34m200[39m [33m/[39m [34m792[39m) [33m*[39m [34m100[39m[33m,[39m…
+    [90m215| [39m    [34mexpect[39m([34mtoolbar[39m())[33m.[39m[34mtoBeNull[39m()
+    [90m   | [39m                      [31m^[39m
+    [90m216| [39m    [34mexpect[39m(warnSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m(expect[33m.[39m[34mstringContaining[39m([32m'页项[39m…
+    [90m217| [39m    [34mexpect[39m(toastSpy)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 13:44:14
+[2m   Duration [22m 1.60s[2m (transform 123ms, setup 0ms, collect 427ms, tests 60ms, environment 597ms, prepare 159ms)[22m
+
+MUT1_RED_EXIT=1
+--- cp 还原 + diff 空证 ---
+RESTORE_CP_EXIT=0
+MUT1_DIFF_EMPTY_EXIT=0（diff 无输出=零残留）
+BACKUP_RM_EXIT=0（副本即删不驻留）
+--- 复跑复绿 ---
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+[90mstderr[2m | tests/unit/renderer/selection-item-chain.test.tsx[2m > [22m[2mF-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m[2m回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.visual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:223:7)
+    at Object.onVisual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:115:32)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:123:15
+    at invokeTheCallbackFunction (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\Function.js:19:26) [90mundefined[39m
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.full (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:238:5)
+    at Object.onSettled (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:116:33)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:128:46
+    at callTimer (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vitest/dist/chunks/vi.DgezovHB.js:2300:25) [90mundefined[39m
+
+[90mstderr[2m | tests/unit/renderer/selection-item-chain.test.tsx[2m > [22m[2mF-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）[2m > [22m[2m回退②偏移对账失败：items 拼接≠DOM 全文 → DOM 量测链兜底+warn（回退触发面收敛的第二因）
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.visual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:223:7)
+    at Object.onVisual (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:115:32)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:123:15
+    at invokeTheCallbackFunction (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\Function.js:19:26) [90mundefined[39m
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (E:\class\智慧水务\Synapse_remake\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at measureContext (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:136:50)
+    at Module.bandsForTextNodes (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\annotation-resolve.ts:210:15)
+    at evaluateCore (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:296:82)
+    at Object.full (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-evaluate.ts:238:5)
+    at Object.onSettled (E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\SelectionLayer.tsx:116:33)
+    at E:\class\智慧水务\Synapse_remake\src\renderer\features\reader\selection-geometry.ts:128:46
+    at callTimer (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vitest/dist/chunks/vi.DgezovHB.js:2300:25) [90mundefined[39m
+
+ [32m✓[39m tests/unit/renderer/selection-item-chain.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 59[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 13:44:35
+[2m   Duration [22m 1.58s[2m (transform 123ms, setup 0ms, collect 417ms, tests 59ms, environment 596ms, prepare 205ms)[22m
+
+MUT1_RESTORE_GREEN_EXIT=0

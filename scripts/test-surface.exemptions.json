@@ -1,4 +1,17 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "file": "tests/unit/renderer/selection-item-chain.test.tsx",
+      "caseTitle": "回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）",
+      "reason": "F-GEOM-01-G2 保存门行为变更（设计书 §2.4/§2.1 行 3）：回退态=仅显示不入库，工具条（保存入口）断言翻转，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md#2.4"
+    },
+    {
+      "file": "tests/unit/renderer/annotation-anchor.test.ts",
+      "caseTitle": "rectsFromRange：返回归一化矩形（0..1）",
+      "reason": "F-GEOM-01-G2 死面收敛③（设计书 §3.5 清单①）：rectsFromRange src 零消费，唯一直测面随导出删除（死代码即删，候选项经双门裁）",
+      "rulingLink": "docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md#3.5"
+    }
+  ]
 }
