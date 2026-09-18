@@ -68,11 +68,11 @@
     {
       "spec": "tests/e2e/corpus-export.spec.ts",
       "case": "全链导出系",
-      "count": 3,
-      "fingerprint": "与剪贴板同时现（疑同族全局资源）",
+      "count": 4,
+      "fingerprint": "与剪贴板同时现（疑同族全局资源）+独立 60s 整用例超时（2026-09-18 全套跑 3.0m 环境慢态；定向复跑 2.2s/3.8s 双绿——负载敏感型）",
       "status": "unpursued",
       "first_seen": "2026-08-27",
-      "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）"
+      "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）；2026-09-18 第 4 观测（GEOM 设计链批，scripts/audits/geom01-e2e-corpus-rerun.raw.txt 指纹档）——立案线（2 次）早已越过，立案排查归后续批（建议与 F-EXPORT-01 拆件票同场）"
     }
   ]
 }

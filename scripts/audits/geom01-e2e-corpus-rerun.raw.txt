@@ -1,0 +1,10 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 2 tests using 1 worker
+
+  ok 1 [app] › tests\e2e\corpus-export.spec.ts:31:1 › AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建 (2.2s)
+  ok 2 [app] › tests\e2e\corpus-export.spec.ts:157:1 › F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成 (3.8s)
+
+  2 passed (6.4s)
+RERUN_EXIT=0
