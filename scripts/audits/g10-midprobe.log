@@ -1,0 +1,25 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+tests/unit/renderer/annotation-editor-ux.test.tsx(21,34): error TS2307: Cannot find module '../../../src/renderer/features/reader/AnnotationEditor' or its corresponding type declarations.
+tests/unit/renderer/annotation-menu.test.tsx(7,32): error TS2307: Cannot find module '../../../src/renderer/features/reader/AnnotationMenu' or its corresponding type declarations.
+tests/unit/renderer/r3-rdr-set-visual.test.tsx(30,31): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderToolbar' or its corresponding type declarations.
+tests/unit/renderer/r3-rdr-set-visual.test.tsx(31,24): error TS2307: Cannot find module '../../../src/renderer/features/reader/TabBar' or its corresponding type declarations.
+tests/unit/renderer/reader-double-page.test.tsx(27,31): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderToolbar' or its corresponding type declarations.
+tests/unit/renderer/reader-page-open-race.test.tsx(43,28): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderPage' or its corresponding type declarations.
+tests/unit/renderer/reader-search-text.test.tsx(20,8): error TS2307: Cannot find module '../../../src/renderer/features/reader/reader-search' or its corresponding type declarations.
+tests/unit/renderer/reader-search-ui.test.tsx(17,33): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderSearchBox' or its corresponding type declarations.
+tests/unit/renderer/reader-search-ui.test.tsx(18,38): error TS2307: Cannot find module '../../../src/renderer/features/reader/SearchHighlightLayer' or its corresponding type declarations.
+tests/unit/renderer/reader-search-ui.test.tsx(19,31): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderToolbar' or its corresponding type declarations.
+tests/unit/renderer/reader-search-ui.test.tsx(23,8): error TS2307: Cannot find module '../../../src/renderer/features/reader/reader-search.store' or its corresponding type declarations.
+tests/unit/renderer/reader-search-wiring.test.tsx(18,33): error TS2307: Cannot find module '../../../src/renderer/features/reader/useReaderSearch' or its corresponding type declarations.
+tests/unit/renderer/reader-search-wiring.test.tsx(23,8): error TS2307: Cannot find module '../../../src/renderer/features/reader/reader-search.store' or its corresponding type declarations.
+tests/unit/renderer/reader-search.store.test.tsx(13,8): error TS2307: Cannot find module '../../../src/renderer/features/reader/reader-search.store' or its corresponding type declarations.
+tests/unit/renderer/reader-shortcuts.test.tsx(10,8): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderShortcuts' or its corresponding type declarations.
+tests/unit/renderer/selection-mode.test.tsx(28,31): error TS2307: Cannot find module '../../../src/renderer/features/reader/ReaderToolbar' or its corresponding type declarations.
+tests/unit/renderer/tab-bar.test.tsx(14,24): error TS2307: Cannot find module '../../../src/renderer/features/reader/TabBar' or its corresponding type declarations.
+tests/unit/renderer/tab-dirty.test.tsx(13,24): error TS2307: Cannot find module '../../../src/renderer/features/reader/TabBar' or its corresponding type declarations.
+MIDPROBE_TYPECHECK_EXIT=2

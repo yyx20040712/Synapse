@@ -15,12 +15,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
-import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
+import { useReaderSearch } from '../../../src/renderer/features/reader/view/useReaderSearch'
 import {
   createReaderSearchInitialState,
   useReaderSearchStore,
   type SearchMatch
-} from '../../../src/renderer/features/reader/reader-search.store'
+} from '../../../src/renderer/features/reader/view/reader-search.store'
 import {
   createReaderStoreInitialState,
   useReaderStore

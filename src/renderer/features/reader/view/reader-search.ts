@@ -29,7 +29,7 @@
  * - 零 DOM 副作用纯函数（spansForItems 只读查询）；已知边界（票面 §④）：
  *   跨行匹配=行盒原样、RTL/竖排按 ltr、whitespace 不归一。
  */
-import type { PdfTextItem } from './view/PdfPageCanvas'
+import type { PdfTextItem } from './PdfPageCanvas'
 
 /** 字符映射项：text 下标 → 所属文本项与项内偏移；-1/-1=换行哨兵 */
 export interface CharMapEntry {

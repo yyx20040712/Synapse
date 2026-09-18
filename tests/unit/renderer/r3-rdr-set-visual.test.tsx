@@ -27,8 +27,8 @@ vi.mock('../../../src/renderer/features/settings/ZcodeLinkSection', () => ({
 }))
 
 import { makeTab } from '../../utils/factories'
-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
-import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
+import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
 import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'

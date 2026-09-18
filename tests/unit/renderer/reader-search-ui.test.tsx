@@ -14,13 +14,13 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineRangeClientRects, domRect } from '../../utils/geometry'
-import { ReaderSearchBox } from '../../../src/renderer/features/reader/ReaderSearchBox'
-import { SearchHighlightLayer } from '../../../src/renderer/features/reader/SearchHighlightLayer'
-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+import { ReaderSearchBox } from '../../../src/renderer/features/reader/view/ReaderSearchBox'
+import { SearchHighlightLayer } from '../../../src/renderer/features/reader/view/SearchHighlightLayer'
+import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
 import {
   createReaderSearchInitialState,
   useReaderSearchStore
-} from '../../../src/renderer/features/reader/reader-search.store'
+} from '../../../src/renderer/features/reader/view/reader-search.store'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null

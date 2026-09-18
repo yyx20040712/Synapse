@@ -1,0 +1,213 @@
+== [1] OUT-EDGES (13 files, relative imports only) ==
+AnnotationEditor.tsx (2)
+  :15 ./anchors/annotation-style
+  :16 ./interact/use-annotation-draft
+AnnotationMenu.tsx (1)
+  :41 ./anchors/annotation-style
+PageColumnView.tsx (4)
+  :24 ./state/PdfDocProvider
+  :25 ./view/PdfPageCanvas
+  :26 ./view/PageBox
+  :27 ./view/page-column-geometry
+ReaderPage.tsx (12)
+  :48 ../../shared/open-paper-bus
+  :49 ./anchors/open-paper-anchor
+  :50 ./view/PageColumn
+  :51 ./useReaderSearch
+  :52 ./state/reader.store
+  :53 ./state/useActiveTab
+  :54 ./view/scroll-progress
+  :55 ./time/reading-time-setup
+  :56 ./time/reading-time
+  :57 ./reader-shortcut-handlers
+  :58 ./view/ReaderPageView
+  :59 ../../shared/ui/Toast
+ReaderSearchBox.tsx (1)
+  :31 ./reader-search.store
+ReaderShortcuts.ts (3)
+  :46 ../../shared/keymap
+  :47 ../../shared/ui/Toast
+  :48 ../../shared/keymap
+ReaderToolbar.tsx (1)
+  :42 ./anchors/annotation-style
+SearchHighlightLayer.tsx (3)
+  :38 ./reader-search
+  :39 ./reader-search.store
+  :40 ./state/page-layer-z
+TabBar.tsx (3)
+  :41 ./state/reader.store
+  :42 ./state/tab-dirty
+  :43 ./state/reader.store
+reader-search.store.ts (4)
+  :39 ./reader-search
+  :40 ./reader-search
+  :41 ./anchors/geometry-types
+  :42 ../../shared/ui/toast-store
+reader-search.ts (1)
+  :32 ./view/PdfPageCanvas
+reader-shortcut-handlers.ts (4)
+  :18 ./state/reader.store
+  :19 ./state/useActiveTab
+  :20 ./ReaderShortcuts
+  :21 ./ReaderToolbar
+useReaderSearch.tsx (5)
+  :31 ../../shared/keymap
+  :32 ./state/useActiveTab
+  :33 ./state/reader.store
+  :34 ./ReaderSearchBox
+  :35 ./reader-search.store
+
+== [2] IN-EDGES (consumers of the 13 old paths across src/tests/scripts) ==
+src/renderer/app/App.tsx (1)
+  :7 import { ReaderPage } from '../features/reader/ReaderPage'
+src/renderer/features/reader/useReaderSearch.tsx (2)
+  :34 import { ReaderSearchBox } from './ReaderSearchBox'
+  :35 import { useReaderSearchStore } from './reader-search.store'
+src/renderer/features/reader/SearchHighlightLayer.tsx (2)
+  :38 import { spansForItems, toPageRelative } from './reader-search'
+  :39 import { useReaderSearchStore } from './reader-search.store'
+src/renderer/features/reader/ReaderSearchBox.tsx (1)
+  :31 import type { ReaderSearchStateName } from './reader-search.store'
+src/renderer/features/reader/reader-shortcut-handlers.ts (2)
+  :20 import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
+  :21 import { ZOOM_STEP, round2 } from './ReaderToolbar'
+src/renderer/features/reader/reader-search.store.ts (2)
+  :39 import { asSearchDoc, buildPageText, findInText, toTextItems } from './reader-search'
+  :40 import type { SearchItemRange } from './reader-search'
+src/renderer/features/reader/ReaderPage.tsx (2)
+  :51 import { useReaderSearch } from './useReaderSearch'
+  :57 import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
+src/renderer/features/reader/view/PageColumn.tsx (1)
+  :32 import { PageColumnView } from '../PageColumnView'
+src/renderer/features/reader/view/PagesOverlay.tsx (1)
+  :50 import { SearchHighlightLayer } from '../SearchHighlightLayer'
+src/renderer/features/reader/view/AnnotationPopups.tsx (2)
+  :35 import { AnnotationEditor } from '../AnnotationEditor'
+  :36 import { AnnotationMenu } from '../AnnotationMenu'
+src/renderer/features/reader/view/ReaderPageView.tsx (2)
+  :37 import { TabBar } from '../TabBar'
+  :40 import { ReaderToolbar } from '../ReaderToolbar'
+tests/unit/renderer/annotation-menu.test.tsx (1)
+  :7 import { AnnotationMenu } from '../../../src/renderer/features/reader/AnnotationMenu'
+tests/unit/renderer/tab-bar.test.tsx (1)
+  :14 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+tests/unit/renderer/tab-dirty.test.tsx (1)
+  :13 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+tests/unit/renderer/reader-search-text.test.tsx (1)
+  :20 } from '../../../src/renderer/features/reader/reader-search'
+tests/unit/renderer/annotation-editor-ux.test.tsx (1)
+  :21 import { AnnotationEditor } from '../../../src/renderer/features/reader/AnnotationEditor'
+tests/unit/renderer/r3-rdr-set-visual.test.tsx (2)
+  :30 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+  :31 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+tests/unit/renderer/reader-double-page.test.tsx (1)
+  :27 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+tests/unit/renderer/reader-search-wiring.test.tsx (2)
+  :18 import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
+  :23 } from '../../../src/renderer/features/reader/reader-search.store'
+tests/unit/renderer/reader-page-open-race.test.tsx (1)
+  :43 import { ReaderPage } from '../../../src/renderer/features/reader/ReaderPage'
+tests/unit/renderer/reader-shortcuts.test.tsx (1)
+  :10 } from '../../../src/renderer/features/reader/ReaderShortcuts'
+tests/unit/renderer/reader-search.store.test.tsx (1)
+  :13 } from '../../../src/renderer/features/reader/reader-search.store'
+tests/unit/renderer/reader-search-ui.test.tsx (4)
+  :17 import { ReaderSearchBox } from '../../../src/renderer/features/reader/ReaderSearchBox'
+  :18 import { SearchHighlightLayer } from '../../../src/renderer/features/reader/SearchHighlightLayer'
+  :19 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+  :23 } from '../../../src/renderer/features/reader/reader-search.store'
+tests/unit/renderer/selection-mode.test.tsx (1)
+  :28 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+scripts/audits/g9-rewrite-a.mjs (6)
+  :13 ['PageColumn.tsx', "from './PageColumnView'", "from '../PageColumnView'"],
+  :17 ['PagesOverlay.tsx', "from './SearchHighlightLayer'", "from '../SearchHighlightLayer'"],
+  :55 ['AnnotationPopups.tsx', "from './AnnotationEditor'", "from '../AnnotationEditor'"],
+  :56 ['AnnotationPopups.tsx', "from './AnnotationMenu'", "from '../AnnotationMenu'"],
+  :63 ['ReaderPageView.tsx', "from './TabBar'", "from '../TabBar'"],
+  :64 ['ReaderPageView.tsx', "from './ReaderToolbar'", "from '../ReaderToolbar'"],
+scripts/audits/g9-rewrite-b.mjs (7)
+  :9 ['reader-search.ts', "from './PdfPageCanvas'", "from './view/PdfPageCanvas'"],
+  :11 ['PageColumnView.tsx', "from './PdfPageCanvas'", "from './view/PdfPageCanvas'"],
+  :12 ['PageColumnView.tsx', "from './PageBox'", "from './view/PageBox'"],
+  :13 ['PageColumnView.tsx', "from './page-column-geometry'", "from './view/page-column-geometry'"],
+  :15 ['ReaderPage.tsx', "from './PageColumn'", "from './view/PageColumn'"],
+  :16 ['ReaderPage.tsx', "from './scroll-progress'", "from './view/scroll-progress'"],
+  :17 ['ReaderPage.tsx', "from './ReaderPageView'", "from './view/ReaderPageView'"],
+IN_EDGE_TOTAL=49
+
+== [3] STRING-FORM refs (all extensions, whole repo minus node_modules/dist/.git/out-dirs) ==
+tickets/registry.ts (7)
+  :106 { id: 'SR-RDR-04', file: 'src/renderer/features/reader/ReaderPage.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '阅读器页面组装（多 tab）' },
+  :109 { id: 'SR-RDR-07', file: 'src/renderer/features/reader/ReaderToolbar.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '阅读器工具栏' },
+  :140 { id: 'SR2-KEY-02', file: 'src/renderer/features/reader/ReaderShortcuts.ts', area: 'reader', owner: 'strong', status: 'done', summary: '阅读器快捷键+ctrl 滚轮缩放（挂 keymap，翻页键位映射表）' },
+  :141 { id: 'SR2-ANNO-01', file: 'src/renderer/features/reader/AnnotationMenu.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '标注四选项菜单（复制引文/删除/添加笔记/取消）' },
+  :147 { id: 'SR2-TABS-02', file: 'src/renderer/features/reader/TabBar.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '阅读器多标签栏（order/activeId 消费，loading/error 态，关闭叉）' },
+  :237 { id: 'P7E-03', file: 'src/renderer/features/reader/ReaderToolbar.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '页内高亮搜索（P7-E 预留点清扫三票；b3: P7-E+B1 §3 预留 ReaderToolbar.tsx:7,163+ReaderShortcuts.ts:38；Design=索引全文档（逐页 getTextContent 文本域，未渲染页也计数）+高亮仅渲染窗口（TextLayer DOM span 建 Range 取 clientRects——pdfjs 4.10 每项恰一 span 前提，数量不符降级零高亮只计数）+代际守卫（submit 自增/close/reset 失效）+ReaderToolbar searchBox slot 兑现占位（缺席=旧占位兜底——受锁夹具零破坏）+ctrl+f 独立 keymap id reader-search（不经 ReaderShortcuts 受锁面）；新五源文件（reader-search.ts 纯函数域/store/ReaderSearchBox/SearchHighlightLayer/useReaderSearch）+Enter 提交制（再按=下一处/Shift+Enter 上一处/Esc 关）+两段式滚动（pageTurner→setPage scroll:to 页盒顶+active scrollIntoView 居中）；态空间 S1~S12 逐格锚+INV-55 登记；门一 Kimi FAIL 1B/3W/5N→回炉 R1 七修（S11 MO 重算锚+M6 代偿/bindDoc 会话身份记账修重挂漏洞/lastCentered store 记账防滚动劫持/wiring 三测/逐项安全降小写/S2 spy/descriptor 还原）→复核 PWW 新 2W→回炉 R2 三改（Enter trim 比较/IME isComposing 守卫——中文主路径/非保长语料注释诚实化）→定点复核 PASS 零发现+门二 deepseek PASS 零发现（首调 32k 截断 PARSE_ERROR→64k 重试通过）；实现者 GLM5.3 统一档三轮 ~32.0M tok（环境无 model 参数欠账披露）；单测 140 文件 1219（既有实测 136/1163——v31 基线 135 勘误+56 新增）/locks 256（251+5）/e2e 36（35+1）；环境事件=e2e 超时硬杀砸中 seedPaperRow 换绑窗（绑定残留已恢复+md5 亲验 electron-v146——隐患记档属受锁共享面）；票面 scripts/audits/p7e-03-brief.md+报告+三轮门审档在案）' },
+  :258 { id: 'F-A11', file: 'src/renderer/features/reader/AnnotationEditor.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '笔记编辑 UX 双缺（2026-09-09 真机测试用户反馈原文:「添加笔记后关闭,保存选项未出现,也未找到撤回/恢复按钮」）;**取证定性=非丢数据**（当日 comment『我是奶龙』已落盘 annotations.comment——自动保存在位但零反馈）;缺项①保存状态反馈（输入停顿后『已保存』标记——用户不知已存即反馈缺失）②编辑器撤回/恢复按钮对（textarea 原生 Ctrl+Z 在而无按钮面——加 undo/redo 按钮,值栈或 execCommand 实现,禁新依赖）;验收=e2e/DOM:输入→停顿→已保存标记在场;undo 点击回退/redo 复原;关闭重开笔记在（回读）' },
+tests/unit/renderer/theme.test.ts (3)
+  :292 '../../../src/renderer/features/reader/AnnotationMenu.tsx',
+  :293 '../../../src/renderer/features/reader/AnnotationEditor.tsx',
+  :485 '../../../src/renderer/features/reader/TabBar.tsx'
+scripts/audits/f-sl-gen-gate1-brief.mjs (1)
+  :8 'src/renderer/features/reader/ReaderPage.tsx',
+STRING_FORM_TOTAL=11
+
+== [4] eslint.config.js reader refs ==
+:89 'src/renderer/features/reader/state/PdfDocProvider.tsx',
+:90 'src/renderer/features/reader/view/PdfPageCanvas.tsx',
+:91 'src/renderer/features/reader/view/TextLayer.tsx',
+:92 'src/renderer/features/reader/state/CorpusExtractor.ts'
+
+== [5] ROOT<->VIEW intermediate edges baseline ==
+view/PageColumn.tsx:30 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+view/PageColumn.tsx:32 import { PageColumnView } from '../PageColumnView'
+view/PageBox.tsx:25 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+view/PagesOverlay.tsx:50 import { SearchHighlightLayer } from '../SearchHighlightLayer'
+view/PagesOverlay.tsx:51 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+view/PagesOverlay.tsx:54 import { usePageItemsStore } from '../anchors/page-items.store'
+view/PdfPageCanvas.tsx:32 import { PAGE_LAYER_Z } from '../state/page-layer-z'
+view/PdfPageCanvas.tsx:33 import { clampScale } from '../anchors/pdf-item-geometry'
+view/PdfPageCanvas.tsx:34 import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from '../anchors/geometry-types'
+view/PdfPageCanvas.tsx:39 export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from '../anchors/geometry-types'
+view/TextLayer.tsx:36 import { PAGE_LAYER_Z } from '../state/page-layer-z'
+view/usePageColumnScroll.ts:26 import { scrollIntoNearestScroller } from '../state/scroll-converge'
+view/scroll-progress.ts:49 import { effectiveZoom } from '../state/scroll-converge'
+view/scroll-progress.ts:50 import { api } from '../../../api/client'
+view/scroll-progress.ts:51 import { useReaderStore } from '../state/reader.store'
+view/scroll-progress.ts:52 import type { ProgressFlusher } from '../state/reader.store'
+view/AnnotationLayer.tsx:42 import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from '../anchors/annotation-resolve'
+view/AnnotationLayer.tsx:43 import { resolveAnnotationRectsLayered } from '../anchors/annotation-resolve-layered'
+view/AnnotationLayer.tsx:44 import { usePageItemsStore } from '../anchors/page-items.store'
+view/AnnotationLayer.tsx:45 import { mergeRects } from '../anchors/annotation-merge'
+view/AnnotationLayer.tsx:46 import { rectStyle } from '../anchors/annotation-style'
+view/AnnotationLayer.tsx:47 import { PAGE_LAYER_Z } from '../state/page-layer-z'
+view/AnnotationLayer.tsx:48 import { useReaderStore } from '../state/reader.store'
+view/AiAnnotationLayer.tsx:70 import { matchBand, type RowBand } from '../anchors/annotation-resolve'
+view/AiAnnotationLayer.tsx:71 import { resolveAiNotesLayered } from '../anchors/annotation-resolve-layered'
+view/AiAnnotationLayer.tsx:72 import { usePageItemsStore } from '../anchors/page-items.store'
+view/AiAnnotationLayer.tsx:73 import { bandVertical } from '../anchors/annotation-style'
+view/AiAnnotationLayer.tsx:74 import { PAGE_LAYER_Z } from '../state/page-layer-z'
+view/AiAnnotationLayer.tsx:75 import { QUESTION_COLOR } from '../anchors/ai-note-style'
+view/AiAnnotationLayer.tsx:76 import { useAiNotesStore } from '../state/ai-notes.store'
+view/AiAnnotationLayer.tsx:77 import { useReaderStore } from '../state/reader.store'
+view/AnnotationPopups.tsx:32 import { api, unwrap, ApiClientError } from '../../../api/client'
+view/AnnotationPopups.tsx:33 import { showToast } from '../../../shared/ui/Toast'
+view/AnnotationPopups.tsx:34 import { pushUndo } from '../state/annotation-undo'
+view/AnnotationPopups.tsx:35 import { AnnotationEditor } from '../AnnotationEditor'
+view/AnnotationPopups.tsx:36 import { AnnotationMenu } from '../AnnotationMenu'
+view/AnnotationPopups.tsx:37 import { useReaderStore } from '../state/reader.store'
+view/ReaderPageView.tsx:35 import { OutlineAside } from '../panels/OutlineAside'
+view/ReaderPageView.tsx:36 import { SplitPane } from '../../../shared/ui/SplitPane'
+view/ReaderPageView.tsx:37 import { TabBar } from '../TabBar'
+view/ReaderPageView.tsx:38 import { PdfDocProvider } from '../state/PdfDocProvider'
+view/ReaderPageView.tsx:40 import { ReaderToolbar } from '../ReaderToolbar'
+view/ReaderPageView.tsx:41 import { SelectionLayer } from '../interact/SelectionLayer'
+view/ReaderPageView.tsx:42 import { useReaderStore } from '../state/reader.store'
+-- root files importing ./view/ (will become intra-domain after move):
+PageColumnView.tsx:25 import type { PdfPageGeometry, PdfTextContent } from './view/PdfPageCanvas'
+PageColumnView.tsx:26 import { PageBox } from './view/PageBox'
+PageColumnView.tsx:27 import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './view/page-column-geometry'
+ReaderPage.tsx:50 import type { PageScrollRequest } from './view/PageColumn'
+ReaderPage.tsx:54 import { createReaderScrollProgress, useScrollProgressWiring } from './view/scroll-progress'
+ReaderPage.tsx:58 import { ReaderPageView } from './view/ReaderPageView'
+reader-search.ts:32 import type { PdfTextItem } from './view/PdfPageCanvas'

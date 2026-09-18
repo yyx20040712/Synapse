@@ -43,9 +43,9 @@
  * - 剪贴板失败 toast 即动作型反馈；禁止静默吞错；禁止 any；文件 ≤200 行
  */
 import { useEffect } from 'react'
-import { registerKeymap, unregisterKeymap } from '../../shared/keymap'
-import { showToast } from '../../shared/ui/Toast'
-import type { KeyBinding } from '../../shared/keymap'
+import { registerKeymap, unregisterKeymap } from '../../../shared/keymap'
+import { showToast } from '../../../shared/ui/Toast'
+import type { KeyBinding } from '../../../shared/keymap'
 
 /** 本 hook 在 keymap 的注册 id（唯一来源，卸载成对注销） */
 const KEYMAP_ID = 'reader-shortcuts'

@@ -21,10 +21,10 @@
  *   onError(msg) }): JSX.Element（width=宿主 columnWidthFor 单源计算传入）
  */
 import type { MutableRefObject } from 'react'
-import type { PDFDocumentProxy } from './state/PdfDocProvider'
-import type { PdfPageGeometry, PdfTextContent } from './view/PdfPageCanvas'
-import { PageBox } from './view/PageBox'
-import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './view/page-column-geometry'
+import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+import { PageBox } from './PageBox'
+import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './page-column-geometry'
 
 export function PageColumnView(props: {
   /** 宿主列根 ref（IO/段⑤程序滚动的 [data-page-box] 查询根——useRef 实返型） */

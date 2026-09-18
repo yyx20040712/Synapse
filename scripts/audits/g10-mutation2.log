@@ -1,0 +1,52 @@
+== g10 M2 mutation: tab-bar.test.tsx:14 revert to old path (locked file: unlock->mutate->test) ==
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:unlock
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/unlock-protected.ps1
+
+�ѽ��� 366 ���ļ������������ npm run locks:apply ����������
+UNLOCK_EXIT=0
+14:import { TabBar } from '../../../src/renderer/features/reader/TabBar'
+15:import type { TabState } from '../../../src/renderer/features/reader/state/reader.store'
+16:import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test
+> node scripts/sqlite-abi.mjs use node && vitest run tests/unit/renderer/tab-bar.test.tsx
+
+sqlite-abi 当前绑定：node（v137）
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/tab-bar.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/tab-bar.test.tsx[2m [ tests/unit/renderer/tab-bar.test.tsx ][22m
+[31m[1mError[22m: Failed to resolve import "../../../src/renderer/features/reader/TabBar" from "tests/unit/renderer/tab-bar.test.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mE:/class/智慧水务/Synapse_remake/tests/unit/renderer/tab-bar.test.tsx[39m:14:23
+[33m  4  |  import { afterEach, beforeEach, expect, it, vi } from "vitest";
+  5  |  import { makeTab } from "../../utils/factories";
+  6  |  import { TabBar } from "../../../src/renderer/features/reader/TabBar";
+     |                          ^
+  7  |  import { useReaderStore } from "../../../src/renderer/features/reader/state/reader.store";
+  8  |  import { useNotesStore } from "../../../src/renderer/features/notes/notes.store";[39m
+[90m [2m❯[22m TransformPluginContext._formatError ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49258:41[22m[39m
+[90m [2m❯[22m TransformPluginContext.error ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49253:16[22m[39m
+[90m [2m❯[22m normalizeUrl ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64307:23[22m[39m
+[90m [2m❯[22m ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64439:39[22m[39m
+[90m [2m❯[22m TransformPluginContext.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m64366:7[22m[39m
+[90m [2m❯[22m PluginContainer.transform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49099:18[22m[39m
+[90m [2m❯[22m loadAndTransform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m51978:27[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 05:00:31
+[2m   Duration [22m 1.14s[2m (transform 7ms, setup 0ms, collect 0ms, tests 0ms, environment 596ms, prepare 210ms)[22m
+
+M2_MUTATION_TEST_EXIT=1

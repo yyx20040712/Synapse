@@ -24,7 +24,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
 import { PageColumn } from '../../../src/renderer/features/reader/view/PageColumn'
-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
 import {
   anchoredScrollTop,
   columnTotalHeight,

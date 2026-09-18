@@ -1,0 +1,19 @@
+== g10 M2 restore chain: cp restore -> diff empty -> locks:apply -> vitest green ==
+M2_RESTORE_DIFF_EXIT=0 (0=empty diff)
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 locks:apply
+> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/lock-protected.ps1
+
+ÒÑËø¶¨ 366 ¸öÎÄ¼þ£¨Ö»¶Á£©¡£manifest ¼ÇÂ¼ 366 Ìõ¡£
+Ìá½» manifest ±ä¸üÊ±£¬Ìá½»ÐÅÏ¢±ØÐë´ø [locked-change] Î²×¢¡£
+M2_RELOCK_APPLY_EXIT=0
+-- vitest rerun tail --
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 05:01:08
+[2m   Duration [22m 1.45s[2m (transform 132ms, setup 0ms, collect 298ms, tests 46ms, environment 603ms, prepare 164ms)[22m
+
+M2_RESTORE_TEST_EXIT=0
+M2 backup deleted
+M2_RESTORE_EXIT=0

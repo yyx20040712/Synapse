@@ -38,8 +38,8 @@
 import { create } from 'zustand'
 import { asSearchDoc, buildPageText, findInText, toTextItems } from './reader-search'
 import type { SearchItemRange } from './reader-search'
-import type { PdfTextItem } from './anchors/geometry-types'
-import { showToast } from '../../shared/ui/toast-store'
+import type { PdfTextItem } from '../anchors/geometry-types'
+import { showToast } from '../../../shared/ui/toast-store'
 
 export type ReaderSearchStateName = 'idle' | 'open' | 'searching' | 'done'
 

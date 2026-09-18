@@ -15,8 +15,8 @@
  */
 import { useMemo } from 'react'
 import type { RefObject } from 'react'
-import { useReaderStore } from './state/reader.store'
-import { readActiveTab } from './state/useActiveTab'
+import { useReaderStore } from '../state/reader.store'
+import { readActiveTab } from '../state/useActiveTab'
 import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
 import { ZOOM_STEP, round2 } from './ReaderToolbar'
 

@@ -1,0 +1,30 @@
+== W1: per-file relative import counts (13 files, expect 44=33 rewritten + 11 same-root) ==
+AnnotationEditor: 2
+AnnotationMenu: 1
+PageColumnView: 4
+ReaderPage: 12
+ReaderSearchBox: 1
+ReaderShortcuts: 3
+ReaderToolbar: 1
+SearchHighlightLayer: 3
+TabBar: 3
+reader-search.store: 4
+reader-search: 1
+reader-shortcut-handlers: 4
+useReaderSearch: 5
+
+== W1: the 11 same-root lines physical ==
+src/renderer/features/reader/view/ReaderPage.tsx:51:import { useReaderSearch } from './useReaderSearch'
+src/renderer/features/reader/view/ReaderPage.tsx:57:import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
+src/renderer/features/reader/view/SearchHighlightLayer.tsx:38:import { spansForItems, toPageRelative } from './reader-search'
+src/renderer/features/reader/view/SearchHighlightLayer.tsx:39:import { useReaderSearchStore } from './reader-search.store'
+src/renderer/features/reader/view/ReaderSearchBox.tsx:31:import type { ReaderSearchStateName } from './reader-search.store'
+src/renderer/features/reader/view/reader-search.store.ts:39:import { asSearchDoc, buildPageText, findInText, toTextItems } from './reader-search'
+src/renderer/features/reader/view/reader-search.store.ts:40:import type { SearchItemRange } from './reader-search'
+src/renderer/features/reader/view/useReaderSearch.tsx:34:import { ReaderSearchBox } from './ReaderSearchBox'
+src/renderer/features/reader/view/useReaderSearch.tsx:35:import { useReaderSearchStore } from './reader-search.store'
+src/renderer/features/reader/view/reader-shortcut-handlers.ts:20:import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
+src/renderer/features/reader/view/reader-shortcut-handlers.ts:21:import { ZOOM_STEP, round2 } from './ReaderToolbar'
+
+== W2a: e2e specs old-path residue scan ==
+E2E_OLDPATH_ZERO_HITS

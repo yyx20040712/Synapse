@@ -40,7 +40,7 @@ vi.mock('../../../src/renderer/features/reader/view/PageColumn', () => ({
   nearestPage: () => 0
 }))
 
-import { ReaderPage } from '../../../src/renderer/features/reader/ReaderPage'
+import { ReaderPage } from '../../../src/renderer/features/reader/view/ReaderPage'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { requestOpenPaperAnchored, takePendingOpenPaper } from '../../../src/renderer/shared/open-paper-bus'
 

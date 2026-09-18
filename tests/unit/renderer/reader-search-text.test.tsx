@@ -17,7 +17,7 @@ import {
   spansForItems,
   toPageRelative,
   toTextItems
-} from '../../../src/renderer/features/reader/reader-search'
+} from '../../../src/renderer/features/reader/view/reader-search'
 import type { PdfTextItem } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 function item(str: string, hasEOL = false): PdfTextItem {

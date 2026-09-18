@@ -1,0 +1,53 @@
+== [1] reader 根驻留文件（必须 0）==
+root_resident_files=0
+== [2] view 出边（view→五子域单向+域内互引+上跨）==
+view_out_edges={"anchors":19,"state":29,"panels":1,"interact":2,"time":2} intra_view=50 up_cross=11
+== [3] 反向边（五子域→view，必须 0）==
+reverse_edges=0
+== [4] 旧径残留五通道（src+tests 全文，scan_files=422，必须全 0）==
+ch_oldImport=0
+ch_dotPath=0
+ch_alias=0
+ch_dynamicImport=4
+tests/unit/renderer/annotation-undo.test.ts:28 return await import('../../../src/renderer/features/reader/s
+tests/unit/renderer/reader-store-undo-race.test.ts:35 const undoMod = await import('../../../src/renderer/features
+tests/unit/renderer/reader-store-undo-race.test.ts:36 const storeMod = await import('../../../src/renderer/feature
+tests/unit/renderer/reader.store.test.ts:25 const mod = await import('../../../src/renderer/features/rea
+ch_viMock=15
+tests/unit/renderer/page-column.test.tsx:38 vi.mock('../../../src/renderer/features/reader/state/scroll-
+tests/unit/renderer/anchor-locate.test.ts:23 vi.mock('../../../src/renderer/features/reader/state/scroll-
+tests/unit/renderer/corpus-export.test.tsx:32 vi.mock('../../../src/renderer/features/reader/state/CorpusE
+tests/unit/renderer/lineage-side-panel.test.tsx:44 vi.mock('../../../src/renderer/features/reader/state/reader.
+tests/unit/renderer/lineage-side-panel.test.tsx:47 vi.mock('../../../src/renderer/features/reader/anchors/ancho
+tests/unit/renderer/annotation-popups-autosave.test.tsx:37 vi.mock('../../../src/renderer/features/reader/state/reader.
+tests/unit/renderer/annotation-popups-autosave.test.tsx:49 vi.mock('../../../src/renderer/features/reader/state/annotat
+tests/unit/renderer/ai-annotation-layer.test.tsx:29 vi.mock('../../../src/renderer/features/reader/state/scroll-
+tests/unit/renderer/pages-overlay.test.tsx:55 vi.mock('../../../src/renderer/features/reader/view/PageColu
+tests/unit/renderer/pages-overlay.test.tsx:80 vi.mock('../../../src/renderer/features/reader/view/TextLaye
+tests/unit/renderer/pages-overlay.test.tsx:87 vi.mock('../../../src/renderer/features/reader/view/Annotati
+tests/unit/renderer/pages-overlay.test.tsx:94 vi.mock('../../../src/renderer/features/reader/view/AiAnnota
+tests/unit/renderer/ai-notes-section.test.tsx:42 vi.mock('../../../src/renderer/features/reader/anchors/ancho
+tests/unit/renderer/reader-page-open-race.test.tsx:34 vi.mock('../../../src/renderer/features/reader/state/PdfDocP
+tests/unit/renderer/reader-page-open-race.test.tsx:38 vi.mock('../../../src/renderer/features/reader/view/PageColu
+== 判定 ==
+ONEWAY_VERDICT=FAIL (2 项违规)
+ - [4] dynamicImport 通道残留 4 处（见上）
+ - [4] viMock 通道残留 15 处（见上）
+ONEWAY_PROBE_EXIT=1
+
+== v2 rerun（谓词收敛=旧径 13 件形态；v1 FAIL 见上=红能力实证）==
+== [1] reader 根驻留文件（必须 0）==
+root_resident_files=0
+== [2] view 出边（view→五子域单向+域内互引+上跨）==
+view_out_edges={"anchors":19,"state":29,"panels":1,"interact":2,"time":2} intra_view=50 up_cross=11
+== [3] 反向边（五子域→view，必须 0）==
+reverse_edges=0
+== [4] 旧径残留五通道（src+tests 全文，scan_files=422，必须全 0）==
+ch_oldImport=0
+ch_dotPath=0
+ch_alias=0
+ch_dynamicImport=0
+ch_viMock=0
+== 判定 ==
+ONEWAY_VERDICT=PASS（反向边 0+根驻留 0+中间态边清零+旧径残留五通道全 0）
+ONEWAY_PROBE_V2_EXIT=0
