@@ -16,7 +16,7 @@ import { makeTab } from '../../utils/factories'
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 
 import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import type { Annotation } from '../../../src/shared/models/annotation'
 
 // jsdom 无 IntersectionObserver（缩略图懒渲染依赖）——最小桩（永不触发回调=不渲染图）

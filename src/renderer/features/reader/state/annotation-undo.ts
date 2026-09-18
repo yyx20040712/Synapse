@@ -58,7 +58,7 @@
  *   正确性（含 input 去 id 断言）、LIFO、深度截断、api 失败不弹栈+重试、空栈
  *   no-op、per-tab 隔离+clearStack
  */
-import { api, ApiClientError } from '../../api/client'
+import { api, ApiClientError } from '../../../api/client'
 import type { Annotation, AnnotationInput } from '@shared/models/annotation'
 
 /** 三类逆操作载荷（判别联合——kind 即原操作名） */

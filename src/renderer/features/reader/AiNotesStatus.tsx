@@ -30,8 +30,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { OP_FAILED, STATUS_POLL_MS } from '../../shared/ui-constants'
-import { useAiNotesStore } from './ai-notes.store'
-import { derivePhase } from './ai-notes-phase'
+import { useAiNotesStore } from './state/ai-notes.store'
+import { derivePhase } from './state/ai-notes-phase'
 
 /** 连续轮询失败阈值（≥ 此值显示离线提示行） */
 const POLL_FAIL_THRESHOLD = 3

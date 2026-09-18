@@ -19,10 +19,10 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/state/PdfDocProvider'
 import { PdfPageCanvas } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import { PageBox } from '../../../src/renderer/features/reader/PageBox'
-import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 
 /** render 调用参数探针（断言面） */
 const renderCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>)

@@ -22,7 +22,7 @@ const ann: Annotation = {
 async function loadStore(api: unknown) {
   vi.resetModules()
   vi.stubGlobal('window', { api })
-  const mod = await import('../../../src/renderer/features/reader/reader.store')
+  const mod = await import('../../../src/renderer/features/reader/state/reader.store')
   return mod.useReaderStore
 }
 

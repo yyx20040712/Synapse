@@ -85,8 +85,8 @@
  * - INV-20 随本单翻已锚定（服务单测级；消费方级随后续工单补）
  */
 import { verifyQuote } from './anchor-serialize'
-import { useReaderStore } from './reader.store'
-import { scrollIntoNearestScroller } from './scroll-converge'
+import { useReaderStore } from './state/reader.store'
+import { scrollIntoNearestScroller } from './state/scroll-converge'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { showToast } from '../../shared/ui/toast-store'
 import type { Annotation } from '@shared/models/annotation'

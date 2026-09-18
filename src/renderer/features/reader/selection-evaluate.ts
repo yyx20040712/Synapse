@@ -76,7 +76,7 @@ import { calibrateBandsWithSpans } from './annotation-band-calibrate'
 import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './pdf-item-geometry'
 import type { ItemSelectionGeometry } from './pdf-item-geometry'
 import { usePageItemsStore } from './page-items.store'
-import { useReaderStore } from './reader.store'
+import { useReaderStore } from './state/reader.store'
 import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
 
 /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */

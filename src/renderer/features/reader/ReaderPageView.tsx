@@ -35,11 +35,11 @@ import type { createReaderScrollProgress } from './scroll-progress'
 import { OutlineAside } from './OutlineAside'
 import { SplitPane } from '../../shared/ui/SplitPane'
 import { TabBar } from './TabBar'
-import { PdfDocProvider } from './PdfDocProvider'
+import { PdfDocProvider } from './state/PdfDocProvider'
 import { PagesOverlay } from './PagesOverlay'
 import { ReaderToolbar } from './ReaderToolbar'
 import { SelectionLayer } from './SelectionLayer'
-import { useReaderStore } from './reader.store'
+import { useReaderStore } from './state/reader.store'
 
 /** store 动作精确类型（setPage/setZoom/setColor/addAnnotation——单源 typeof 派生） */
 type ReaderStore = ReturnType<typeof useReaderStore.getState>

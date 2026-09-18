@@ -52,7 +52,7 @@ import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../notes/notes.store'
 import { AiNotesSection } from './AiNotesSection'
 import { FragmentNotesList } from './FragmentNotesList'
-import { useActiveTab } from './useActiveTab'
+import { useActiveTab } from './state/useActiveTab'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const LOAD_FAILED = '笔记加载失败'

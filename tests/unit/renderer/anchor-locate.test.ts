@@ -13,14 +13,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, toastStoreSpy as toastSpy } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
 import { locateAnchor, LOCATE_OPEN_TIMEOUT_MS } from '../../../src/renderer/features/reader/anchor-locate'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
 import { guardedDescribe } from '../../utils/guard'
 
 makeApiStub({ reader: { saveProgress: vi.fn(async () => ({ ok: true, data: null })) } })
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
-vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+vi.mock('../../../src/renderer/features/reader/state/scroll-converge', () => ({
   scrollIntoNearestScroller: scrollerMock
 }))
 

@@ -81,10 +81,10 @@
  * - INV-14 不适用（无 DOM 监听面）
  */
 import { create } from 'zustand'
-import { api, unwrap } from '../../api/client'
+import { api, unwrap } from '../../../api/client'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
 import { clearStack, undo as runUndo, type UndoOutcome } from './annotation-undo'
-import { showToast } from '../../shared/ui/toast-store'
+import { showToast } from '../../../shared/ui/toast-store'
 
 export interface TabState {
   paperId: string

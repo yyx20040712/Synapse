@@ -37,7 +37,7 @@ import {
 import {
   createReaderStoreInitialState,
   useReaderStore
-} from '../../../src/renderer/features/reader/reader.store'
+} from '../../../src/renderer/features/reader/state/reader.store'
 
 // store 面 openPaper 链的 api 桩（selection-mode.test 同法：模块 mock，
 // 组件面（PageColumn/ReaderToolbar）不消费 api——mock 仅作用于 reader.store）

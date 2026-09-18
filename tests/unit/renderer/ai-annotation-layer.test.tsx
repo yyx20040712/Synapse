@@ -18,15 +18,15 @@ import { makeTab } from '../../utils/factories'
 import type { AiNote } from '../../../src/shared/models/ai-note'
 import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
 import { locateAnchor } from '../../../src/renderer/features/reader/anchor-locate'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
-import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
 import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
-vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+vi.mock('../../../src/renderer/features/reader/state/scroll-converge', () => ({
   scrollIntoNearestScroller: scrollerMock
 }))
 

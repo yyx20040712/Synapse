@@ -31,10 +31,10 @@
 import { useEffect, useRef } from 'react'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { pushUndo } from './annotation-undo'
+import { pushUndo } from './state/annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
-import { useReaderStore } from './reader.store'
+import { useReaderStore } from './state/reader.store'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const UPDATE_FAILED = '标注保存失败'

@@ -1,0 +1,120 @@
+MUT2 BACKUP OK 20:59:46
+=== MUT2: vitest on mutated (expect RED module resolution) ===
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/class/智慧水务/Synapse_remake[39m
+
+ [31m❯[39m tests/unit/renderer/reader.store.test.ts [2m([22m[2m28 tests[22m[2m | [22m[31m28 failed[39m[2m)[22m[90m 39[2mms[22m[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mopenPaper：新建 loading tab→ready，写入 fileUrl/fileName/lastReadPage 并加载标注[90m 5[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mopen 失败：error 不吞（上抛给 UI 层 toast）且 tab 置 error 态（占位可重试）[90m 2[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22msetPage 边界夹取（0..totalPages，作用于 active tab）；addAnnotation 追加；removeAnnotation 删除[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22msetZoom 夹取 0.5~3；setColor 更新（作用于 active tab）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mactiveId=null（无 tab）：setter 全 no-op 不炸[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则③（open 面）：open(A) 悬挂→open(B) 就绪→A 响应迟到→写入 A 自己的 tab，B 展示不受干扰[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则③（标注面）：旧 tab 的标注响应迟到写入旧 tab，不污染当前展示[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则①：loading 中 closeTab → tab absent，迟到响应丢弃（不复活已关 tab）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose()（App 切视图语义）：关闭全部 tab 并复位，在途加载作废[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose() 全关时在途加载作废：悬挂响应到达后不复活任何 tab[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mloading 重入 openPaper：尾随在途加载（不提前 resolve、不重复发起、失败不双报）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mcloseTab 后重开同 id：旧加载 finally 不误删新 inflight 记录（重入尾随仍有效）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m幂等激活：ready 态 tab 重入 openPaper 不重复加载、不重置状态[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22merror 态重入 openPaper = 重试（error → loading → ready）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mS1 换 tab 不失忆：A 的页码/缩放保留在 tab，activateTab(A) 恢复展示[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mS2 关 tab 收缩序：关 active 取右邻→无右邻取左邻→全关 null；关非 active 不动 activeId[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m拆链（F-03）：setPage 不再自带防抖落库——翻页后 5s saveProgress 零调用[90m 2[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mcloseTab 接线（F-03）：被关 tab 经注册的进度 flusher 立即 flush（装配面注册）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose() 接线（F-03）：全关时 flushAll 一次收账；未注册时 no-op 不炸[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mF-01：setPage 默认 scroll:'to'——写页+bump scrollRequest 程序滚动信号（paperId+夹取页+递增 seq）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m reader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mF-01：setPage {scroll:'none'}——写页但 scrollRequest 原样不动（滚动回写防回弹，B1）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m 缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变——托管文件基名）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-ARCH1 closeTab 瞬态信号清理[2m > [22m被关 tab 的 scrollRequest 清空（重开同 id 不吃旧信号回跳旧页）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-ARCH1 closeTab 瞬态信号清理[2m > [22m他 tab 的 scrollRequest 不误伤（在途信号只清属被关 tab 的）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-ARCH1 closeTab 瞬态信号清理[2m > [22mnoteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-ARCH1 closeTab 瞬态信号清理[2m > [22m关后台 tab 不清激活 tab 的瞬态通知（门一 W-1：关 B 不干扰 A 的 noteHighlight）[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-SL addAnnotation per-paper 寻址（幽灵标注守卫）[2m > [22m用例①：activeId=B 时 addAnnotation("p-1", ann) 写 A 的 tab，B 的 annotations 不变[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[31m   [31m×[31m F-SL addAnnotation per-paper 寻址（幽灵标注守卫）[2m > [22m用例②：paperId 的 tab 已关 → no-op 不炸，其余 tab 不受影响[90m 1[2mms[22m[31m[39m
+[31m     → Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 28 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mopenPaper：新建 loading tab→ready，写入 fileUrl/fileName/lastReadPage 并加载标注
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mopen 失败：error 不吞（上抛给 UI 层 toast）且 tab 置 error 态（占位可重试）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22msetPage 边界夹取（0..totalPages，作用于 active tab）；addAnnotation 追加；removeAnnotation 删除
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22msetZoom 夹取 0.5~3；setColor 更新（作用于 active tab）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mactiveId=null（无 tab）：setter 全 no-op 不炸
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则③（open 面）：open(A) 悬挂→open(B) 就绪→A 响应迟到→写入 A 自己的 tab，B 展示不受干扰
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则③（标注面）：旧 tab 的标注响应迟到写入旧 tab，不污染当前展示
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m规则①：loading 中 closeTab → tab absent，迟到响应丢弃（不复活已关 tab）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose()（App 切视图语义）：关闭全部 tab 并复位，在途加载作废
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose() 全关时在途加载作废：悬挂响应到达后不复活任何 tab
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mloading 重入 openPaper：尾随在途加载（不提前 resolve、不重复发起、失败不双报）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mcloseTab 后重开同 id：旧加载 finally 不误删新 inflight 记录（重入尾随仍有效）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m幂等激活：ready 态 tab 重入 openPaper 不重复加载、不重置状态
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22merror 态重入 openPaper = 重试（error → loading → ready）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mS1 换 tab 不失忆：A 的页码/缩放保留在 tab，activateTab(A) 恢复展示
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mS2 关 tab 收缩序：关 active 取右邻→无右邻取左邻→全关 null；关非 active 不动 activeId
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22m拆链（F-03）：setPage 不再自带防抖落库——翻页后 5s saveProgress 零调用
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mcloseTab 接线（F-03）：被关 tab 经注册的进度 flusher 立即 flush（装配面注册）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mclose() 接线（F-03）：全关时 flushAll 一次收账；未注册时 no-op 不炸
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mF-01：setPage 默认 scroll:'to'——写页+bump scrollRequest 程序滚动信号（paperId+夹取页+递增 seq）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mreader.store —— per-tab 多文献状态（tab 生命周期+竞态守卫） [SR2-TABS-01][2m > [22mF-01：setPage {scroll:'none'}——写页但 scrollRequest 原样不动（滚动回写防回弹，B1）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22m缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变——托管文件基名）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-ARCH1 closeTab 瞬态信号清理[2m > [22m被关 tab 的 scrollRequest 清空（重开同 id 不吃旧信号回跳旧页）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-ARCH1 closeTab 瞬态信号清理[2m > [22m他 tab 的 scrollRequest 不误伤（在途信号只清属被关 tab 的）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-ARCH1 closeTab 瞬态信号清理[2m > [22mnoteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-ARCH1 closeTab 瞬态信号清理[2m > [22m关后台 tab 不清激活 tab 的瞬态通知（门一 W-1：关 B 不干扰 A 的 noteHighlight）
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-SL addAnnotation per-paper 寻址（幽灵标注守卫）[2m > [22m用例①：activeId=B 时 addAnnotation("p-1", ann) 写 A 的 tab，B 的 annotations 不变
+[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/reader.store.test.ts[2m > [22mF-SL addAnnotation per-paper 寻址（幽灵标注守卫）[2m > [22m用例②：paperId 的 tab 已关 → no-op 不炸，其余 tab 不受影响
+[31m[1mError[22m: Failed to load url ../../../src/renderer/features/reader/reader.store (resolved id: ../../../src/renderer/features/reader/reader.store) in E:/class/智慧水务/Synapse_remake/tests/unit/renderer/reader.store.test.ts. Does the file exist?[39m
+[90m [2m❯[22m loadAndTransform ../../%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m51969:17[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/28]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m28 failed[39m[22m[90m (28)[39m
+[2m   Start at [22m 21:00:09
+[2m   Duration [22m 642ms[2m (transform 96ms, setup 0ms, collect 141ms, tests 39ms, environment 0ms, prepare 153ms)[22m
+
+MUT2_VITEST_RED_EXIT=1
+MUT2_RESTORE_DIFF_EMPTY
+MUT2_BACKUP_REMOVED
+=== MUT2: vitest re-run on restored (expect GREEN) ===
+[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 21:00:41
+[2m   Duration [22m 846ms[2m (transform 112ms, setup 0ms, collect 138ms, tests 187ms, environment 0ms, prepare 187ms)[22m
+
+MUT2_VITEST_GREEN_EXIT=0
+=== MUT2: relock ===
+已锁定 344 个文件（只读）。manifest 记录 344 条。
+提交 manifest 变更时，提交信息必须带 [locked-change] 尾注。
+locks 检查通过：344 个受锁文件与 manifest 一致
+
+# encoding-fix: :116-:117 powershell 输出 GBK→UTF-8 归一（内容未变；v1 尾注自身编码缺陷已重写）

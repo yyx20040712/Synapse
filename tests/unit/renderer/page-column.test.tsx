@@ -35,7 +35,7 @@ import {
 // F-05：段⑤程序滚动的消费形断言锚（单容器收敛函数替身——真数学在
 // scroll-converge.test 锚定，本文件不重复实现数学）
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))
-vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+vi.mock('../../../src/renderer/features/reader/state/scroll-converge', () => ({
   scrollIntoNearestScroller: scrollerMock
 }))
 

@@ -42,7 +42,7 @@ stubApiEvents({
 })
 
 import { App } from '../../../src/renderer/app/App'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 let root: Root | null = null

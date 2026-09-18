@@ -23,7 +23,7 @@
  * 聚合（主控裁决方向 B，2026-08-27——六态状态机判定事实单源）。
  */
 import { create } from 'zustand'
-import { api, unwrap } from '../../api/client'
+import { api, unwrap } from '../../../api/client'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AiNotesImportRes, ObserveRes } from '@shared/ipc/schemas'
 

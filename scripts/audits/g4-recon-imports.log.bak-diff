@@ -1,0 +1,150 @@
+
+=== reader.store (src:29 tests:21) ===
+  [src]   coverage/renderer/features/reader/reader.store.ts.html
+  [src]   .mimosa/hook-state/sess_8c4226df-8a12-49b5-bb68-09ab7fce1825.json
+  [src]   .mimosa/hook-state/sess_473c1230-44bd-4f71-bbfd-bc16414dbfc5.json
+  [src]   .mimosa/hook-state/sess_f8fb99e4-6ac0-4d4c-a868-bf1b15dc006b.json
+  [src]   .mimosa/hook-state/sess_a0a4a978-d149-4316-ab6a-c35ba0140ec6.json
+  [src]   .mimosa/hook-state/sess_58626663-7f7d-4468-83c8-92fe1d30b32a.json
+  [src]   tickets/registry.ts
+  [src]   src/renderer/features/reader/useActiveTab.ts
+  [src]   src/renderer/features/reader/open-paper-anchor.ts
+  [src]   src/renderer/features/reader/useReaderSearch.tsx
+  [src]   src/renderer/features/reader/scroll-progress.ts
+  [src]   src/renderer/features/reader/AiAnnotationLayer.tsx
+  [src]   src/renderer/features/reader/reading-time-setup.ts
+  [src]   src/renderer/features/reader/AnnotationLayer.tsx
+  [src]   src/renderer/features/reader/reader-shortcut-handlers.ts
+  [src]   src/renderer/features/reader/ReaderPage.tsx
+  [src]   src/renderer/features/reader/ReaderPageView.tsx
+  [src]   src/renderer/features/reader/AnnotationPopups.tsx
+  [src]   src/renderer/features/reader/SelectionLayer.tsx
+  [src]   src/renderer/features/reader/TabBar.tsx
+  [src]   src/renderer/features/reader/OutlineAside.tsx
+  [src]   src/renderer/features/reader/anchor-locate.ts
+  [src]   src/renderer/features/reader/tab-dirty.ts
+  [src]   src/renderer/features/reader/selection-evaluate.ts
+  [src]   scripts/audits/undo01-r2.audit.json
+  [src]   scripts/audits/undo01-r3.audit.json
+  [src]   scripts/audits/undo01-r6.audit.json
+  [src]   scripts/audits/arch-out/arch-scan.json
+  [src]   scripts/audits/f-sl-gen-gate1-brief.mjs
+  [test]  tests/utils/factories.ts
+  [test]  tests/unit/renderer/tab-bar.test.tsx
+  [test]  tests/unit/renderer/tab-dirty.test.tsx
+  [test]  tests/unit/renderer/reader.store.test.ts
+  [test]  tests/unit/renderer/reader-store-undo-race.test.ts
+  [test]  tests/unit/renderer/ai-notes-section.test.tsx
+  [test]  tests/unit/renderer/anchor-locate.test.ts
+  [test]  tests/unit/renderer/app-quit-dirty.test.tsx
+  [test]  tests/unit/renderer/band-calibration.test.tsx
+  [test]  tests/unit/renderer/lineage-side-panel.test.tsx
+  [test]  tests/unit/renderer/r3-rdr-set-visual.test.tsx
+  [test]  tests/unit/renderer/reader-double-page.test.tsx
+  [test]  tests/unit/renderer/reader-notes-panel.test.tsx
+  [test]  tests/unit/renderer/reader-search-wiring.test.tsx
+  [test]  tests/unit/renderer/selection-evaluate.test.tsx
+  [test]  tests/unit/renderer/reader-page-open-race.test.tsx
+  [test]  tests/unit/renderer/annotation-popups-autosave.test.tsx
+  [test]  tests/unit/renderer/ai-annotation-layer.test.tsx
+  [test]  tests/unit/renderer/selection-mode.test.tsx
+  [test]  tests/unit/renderer/outline-aside.test.tsx
+  [test]  tests/unit/renderer/selection-item-chain.test.tsx
+
+=== tab-dirty (src:6 tests:1) ===
+  [src]   coverage/renderer/features/reader/tab-dirty.ts.html
+  [src]   tickets/registry.ts
+  [src]   src/renderer/app/App.tsx
+  [src]   src/renderer/features/reader/TabBar.tsx
+  [src]   scripts/audits/g4-recon-imports.mjs
+  [src]   scripts/check-quality.mjs
+  [test]  tests/unit/renderer/tab-dirty.test.tsx
+
+=== useActiveTab (src:7 tests:0) ===
+  [src]   coverage/renderer/features/reader/useActiveTab.ts.html
+  [src]   src/renderer/features/reader/useReaderSearch.tsx
+  [src]   src/renderer/features/reader/reader-shortcut-handlers.ts
+  [src]   src/renderer/features/reader/ReaderPage.tsx
+  [src]   src/renderer/features/reader/AiNotesSection.tsx
+  [src]   src/renderer/features/reader/OutlineAside.tsx
+  [src]   src/renderer/features/reader/ReaderNotesPanel.tsx
+
+=== annotation-undo (src:11 tests:3) ===
+  [src]   coverage/renderer/features/reader/annotation-undo.ts.html
+  [src]   tickets/registry.ts
+  [src]   src/renderer/features/reader/AnnotationPopups.tsx
+  [src]   src/renderer/features/reader/SelectionLayer.tsx
+  [src]   src/renderer/features/reader/reader.store.ts
+  [src]   scripts/audits/undo01-r2.audit.json
+  [src]   scripts/audits/undo01-r3.audit.json
+  [src]   scripts/audits/undo01-r4.audit.json
+  [src]   scripts/audits/undo01-r5b.audit.json
+  [src]   scripts/audits/undo01-r6.audit.json
+  [src]   scripts/audits/arch-out/arch-scan.json
+  [test]  tests/unit/renderer/annotation-undo.test.ts
+  [test]  tests/unit/renderer/reader-store-undo-race.test.ts
+  [test]  tests/unit/renderer/annotation-popups-autosave.test.tsx
+
+=== page-layer-z (src:8 tests:4) ===
+  [src]   coverage/renderer/features/reader/page-layer-z.ts.html
+  [src]   src/renderer/features/reader/SearchHighlightLayer.tsx
+  [src]   src/renderer/features/reader/AiAnnotationLayer.tsx
+  [src]   src/renderer/features/reader/AnnotationLayer.tsx
+  [src]   src/renderer/features/reader/TextLayer.tsx
+  [src]   src/renderer/features/reader/PdfPageCanvas.tsx
+  [src]   src/renderer/features/reader/selection-paint.tsx
+  [src]   scripts/audits/f-a5-gen-gate1-brief.mjs
+  [test]  tests/unit/renderer/pdf-page-canvas.test.tsx
+  [test]  tests/unit/renderer/annotation-layer.test.tsx
+  [test]  tests/unit/renderer/ai-annotation-layer.test.tsx
+  [test]  tests/unit/renderer/selection-paint.test.tsx
+
+=== ai-notes.store (src:4 tests:1) ===
+  [src]   coverage/renderer/features/reader/ai-notes.store.ts.html
+  [src]   src/renderer/features/reader/AiAnnotationLayer.tsx
+  [src]   src/renderer/features/reader/AiNotesSection.tsx
+  [src]   src/renderer/features/reader/AiNotesStatus.tsx
+  [test]  tests/unit/renderer/ai-notes-section.test.tsx
+
+=== ai-notes-phase (src:3 tests:0) ===
+  [src]   coverage/renderer/features/reader/ai-notes-phase.ts.html
+  [src]   src/renderer/features/reader/AiNotesSection.tsx
+  [src]   src/renderer/features/reader/AiNotesStatus.tsx
+
+=== PdfDocProvider (src:8 tests:3) ===
+  [src]   eslint.config.js
+  [src]   src/renderer/features/reader/OutlineThumb.tsx
+  [src]   src/renderer/features/reader/OutlinePanel.tsx
+  [src]   src/renderer/features/reader/PageBox.tsx
+  [src]   src/renderer/features/reader/PagesOverlay.tsx
+  [src]   src/renderer/features/reader/PageColumn.tsx
+  [src]   src/renderer/features/reader/ReaderPageView.tsx
+  [src]   src/renderer/features/reader/PageColumnView.tsx
+  [test]  tests/unit/renderer/pdf-page-canvas.test.tsx
+  [test]  tests/unit/renderer/reader-page-open-race.test.tsx
+  [test]  tests/unit/renderer/pages-overlay.test.tsx
+
+=== CorpusExtractor (src:7 tests:2) ===
+  [src]   coverage/renderer/features/reader/CorpusExtractor.ts.html
+  [src]   coverage/renderer/features/settings/useExportCorpusEvents.ts.html
+  [src]   eslint.config.js
+  [src]   tickets/registry.ts
+  [src]   src/renderer/features/settings/useExportCorpusEvents.ts
+  [src]   scripts/audits/ai02-impl.audit.json
+  [src]   scripts/check-quality.mjs
+  [test]  tests/unit/renderer/corpus-extractor.test.ts
+  [test]  tests/unit/renderer/corpus-export.test.tsx
+
+=== scroll-converge (src:5 tests:4) ===
+  [src]   coverage/renderer/features/reader/scroll-converge.ts.html
+  [src]   tickets/registry.ts
+  [src]   src/renderer/features/reader/scroll-progress.ts
+  [src]   src/renderer/features/reader/usePageColumnScroll.ts
+  [src]   src/renderer/features/reader/anchor-locate.ts
+  [test]  tests/unit/renderer/page-column.test.tsx
+  [test]  tests/unit/renderer/anchor-locate.test.ts
+  [test]  tests/unit/renderer/ai-annotation-layer.test.tsx
+  [test]  tests/unit/renderer/scroll-converge.test.ts
+
+=== SUMMARY ===
+src total=88 tests total=39 grand=127

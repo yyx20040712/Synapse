@@ -24,7 +24,7 @@ import {
 import {
   createReaderStoreInitialState,
   useReaderStore
-} from '../../../src/renderer/features/reader/reader.store'
+} from '../../../src/renderer/features/reader/state/reader.store'
 
 
 makeApiStub({ reader: {} })

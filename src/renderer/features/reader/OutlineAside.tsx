@@ -46,8 +46,8 @@ import { useEffect, useState } from 'react'
 import { locateAnchor } from './anchor-locate'
 import { OutlinePanel } from './OutlinePanel'
 import { ReaderNotesPanel } from './ReaderNotesPanel'
-import { useReaderStore } from './reader.store'
-import { useActiveTab } from './useActiveTab'
+import { useReaderStore } from './state/reader.store'
+import { useActiveTab } from './state/useActiveTab'
 
 type AsideTab = 'outline' | 'thumbs' | 'notes'
 

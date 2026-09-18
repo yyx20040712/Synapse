@@ -46,8 +46,8 @@ vi.mock('../../../src/renderer/features/reader/anchor-locate', async (importOrig
 
 import { showToast } from '../../../src/renderer/shared/ui/Toast'
 import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
-import { useAiNotesStore } from '../../../src/renderer/features/reader/ai-notes.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+import { useAiNotesStore } from '../../../src/renderer/features/reader/state/ai-notes.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/ai-note-style'
 
 /** observe 四事实（六态判定输入——ai-sensor/observe Res 形状） */

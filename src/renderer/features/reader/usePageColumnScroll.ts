@@ -23,7 +23,7 @@
 import { useEffect } from 'react'
 import type { MutableRefObject, RefObject } from 'react'
 import { clampPageToColumn, type PageBoxSize } from './page-column-geometry'
-import { scrollIntoNearestScroller } from './scroll-converge'
+import { scrollIntoNearestScroller } from './state/scroll-converge'
 
 /** 程序滚动请求（reader.store scrollRequest 的形状——INV-29 单口消费面） */
 export interface PageScrollRequest {

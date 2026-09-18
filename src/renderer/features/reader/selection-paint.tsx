@@ -34,7 +34,7 @@ import { createPortal } from 'react-dom'
 import type { AnnotationRect } from '@shared/models/annotation'
 import { matchBand, type RowBand } from './annotation-resolve'
 import { bandVertical, clampedHorizontal } from './annotation-style'
-import { PAGE_LAYER_Z } from './page-layer-z'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
 
 /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */
 const PAINT_BG = 'var(--reader-selection-paint)'

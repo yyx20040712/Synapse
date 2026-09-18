@@ -31,7 +31,7 @@ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionL
 import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/annotation-band-calibrate'
 import { matchBand, type RowBand } from '../../../src/renderer/features/reader/annotation-resolve'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
-import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import type { PdfTextContent, PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation } from '@shared/models/annotation'
 

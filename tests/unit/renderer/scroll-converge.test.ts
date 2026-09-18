@@ -17,7 +17,7 @@ import { stubElementRect } from '../../utils/geometry'
 import {
   nearestScrollAncestor,
   scrollIntoNearestScroller
-} from '../../../src/renderer/features/reader/scroll-converge'
+} from '../../../src/renderer/features/reader/state/scroll-converge'
 
 /** 桩 CSS zoom（F-R2 回炉 1：effectiveZoom=computed zoom 链直读——jsdom 不
  *  识别 zoom 属性，经 getComputedStyle mock 注入；其余属性/元素透传真实值

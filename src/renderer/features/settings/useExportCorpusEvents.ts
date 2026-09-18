@@ -29,7 +29,7 @@
 import { useEffect } from 'react'
 import { api, apiEvents } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { createCorpusExtractor, loadPdfDocument } from '../reader/CorpusExtractor'
+import { createCorpusExtractor, loadPdfDocument } from '../reader/state/CorpusExtractor'
 import { useCorpusExportStore } from './corpus-export.store'
 
 export function useExportCorpusEvents(): void {

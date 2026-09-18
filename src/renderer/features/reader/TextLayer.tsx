@@ -33,7 +33,7 @@ import type { CSSProperties } from 'react'
 import { TextLayer as PdfJsTextLayer, type PageViewport } from 'pdfjs-dist'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import './text-layer.css'
-import { PAGE_LAYER_Z } from './page-layer-z'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
 
 export interface TextLayerProps {
   textContent: PdfTextContent

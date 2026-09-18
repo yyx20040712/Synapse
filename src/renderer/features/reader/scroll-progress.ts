@@ -46,10 +46,10 @@
 import { useEffect } from 'react'
 import type { RefObject } from 'react'
 import { nearestPage } from './PageColumn'
-import { effectiveZoom } from './scroll-converge'
+import { effectiveZoom } from './state/scroll-converge'
 import { api } from '../../api/client'
-import { useReaderStore } from './reader.store'
-import type { ProgressFlusher } from './reader.store'
+import { useReaderStore } from './state/reader.store'
+import type { ProgressFlusher } from './state/reader.store'
 
 /** 滚动位置状态机六态（票面字面） */
 export type ScrollStateName = 'idle' | 'scrolling' | 'pending' | 'writing' | 'restoring' | 'loading'
