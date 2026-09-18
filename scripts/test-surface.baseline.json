@@ -2212,6 +2212,18 @@
             "expect(existsSync(join(exportDir, 'manifest.tmp.json'))).toBe(false)",
             "expect(await readFile(join(exportDir, 'user-notes.txt'), 'utf8')).toBe('USER FILE KEEPS')"
           ]
+        },
+        {
+          "key": "[\"F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成\"]",
+          "describePath": [],
+          "title": "F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成",
+          "markers": [],
+          "line": 157,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByText('语料导出完成：2 篇')).toBeVisible({ timeout: 60_000 })"
+          ]
         }
       ]
     },
@@ -6956,7 +6968,7 @@
           ],
           "title": "findRangeAtOffset：命中中段文本（跨节点累计偏移）",
           "markers": [],
-          "line": 29,
+          "line": 28,
           "assertions": [
             "expect(r).not.toBeNull()",
             "expect(r!.textNodes.length).toBeGreaterThanOrEqual(1)"
@@ -6969,7 +6981,7 @@
           ],
           "title": "findRangeAtOffset：越界返回 null",
           "markers": [],
-          "line": 38,
+          "line": 37,
           "assertions": [
             "expect(findRangeAtOffset(root, 999, 1000)).toBeNull()",
             "expect(findRangeAtOffset(root, 5, 3)).toBeNull()"
@@ -6982,7 +6994,7 @@
           ],
           "title": "findRangeAtOffset：跨节点区间（跨 <p>）能命中两个文本节点",
           "markers": [],
-          "line": 44,
+          "line": 43,
           "assertions": [
             "expect(r).not.toBeNull()",
             "expect(r!.textNodes.length).toBe(2)"
@@ -6995,7 +7007,7 @@
           ],
           "title": "verifyQuote：前缀/引文/后缀全部吻合 → 返回原偏移",
           "markers": [],
-          "line": 52,
+          "line": 51,
           "assertions": [
             "expect(at).toBe(7)"
           ]
@@ -7007,7 +7019,7 @@
           ],
           "title": "verifyQuote：前部插入文本后仍能重定位（textQuote 自愈）",
           "markers": [],
-          "line": 58,
+          "line": 57,
           "assertions": [
             "expect(at).toBe(9)"
           ]
@@ -7019,26 +7031,9 @@
           ],
           "title": "verifyQuote：引文不存在 → null",
           "markers": [],
-          "line": 68,
+          "line": 67,
           "assertions": [
             "expect(verifyQuote(root, { prefix: 'x', quote: '不存在的引文', suffix: 'y', start: 0 })).toBeNull()"
-          ]
-        },
-        {
-          "key": "[\"annotation-anchor —— 文本偏移↔DOM 定位\",\"rectsFromRange：返回归一化矩形（0..1）\"]",
-          "describePath": [
-            "annotation-anchor —— 文本偏移↔DOM 定位"
-          ],
-          "title": "rectsFromRange：返回归一化矩形（0..1）",
-          "markers": [],
-          "line": 73,
-          "assertions": [
-            "expect(r).not.toBeNull()",
-            "expect(rects.length).toBeGreaterThanOrEqual(1)",
-            "expect(rect.x).toBeGreaterThanOrEqual(0)",
-            "expect(rect.x + rect.w).toBeLessThanOrEqual(1.0001)",
-            "expect(rect.y).toBeGreaterThanOrEqual(0)",
-            "expect(rect.y + rect.h).toBeLessThanOrEqual(1.0001)"
           ]
         },
         {
@@ -7048,7 +7043,7 @@
           ],
           "title": "selectionToAnchor：文本节点边界 → start/end/quote/prefix/suffix",
           "markers": [],
-          "line": 93,
+          "line": 78,
           "assertions": [
             "expect(a).not.toBeNull()",
             "expect(a!.start).toBe(7)",
@@ -7066,7 +7061,7 @@
           ],
           "title": "selectionToAnchor：元素边界（offset 是子节点索引）同样成立",
           "markers": [],
-          "line": 114,
+          "line": 99,
           "assertions": [
             "expect(a).not.toBeNull()",
             "expect(a!.start).toBe(5)",
@@ -7081,7 +7076,7 @@
           ],
           "title": "selectionToAnchor：选区跨出 root → null（跨页/页外不算本页锚定）",
           "markers": [],
-          "line": 131,
+          "line": 116,
           "assertions": [
             "expect(selectionToAnchor(root, sel as Selection)).toBeNull()"
           ]
@@ -7093,7 +7088,7 @@
           ],
           "title": "selectionToAnchor：collapsed / 空 rangeCount → null",
           "markers": [],
-          "line": 145,
+          "line": 130,
           "assertions": [
             "expect(selectionToAnchor(root, sel as Selection)).toBeNull()"
           ]
@@ -7105,7 +7100,7 @@
           ],
           "title": "同行两片段（y 重叠、x 相邻）合并为一个矩形：x 并集、y/h 取主导（面积最大者）",
           "markers": [],
-          "line": 164,
+          "line": 149,
           "assertions": [
             "expect(out.length).toBe(1)",
             "expect(out[0]!.x).toBe(10)",
@@ -7121,7 +7116,7 @@
           ],
           "title": "不同行（y 区间不重叠）不合并：两矩形按 y 升序输出",
           "markers": [],
-          "line": 173,
+          "line": 158,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(out[0]!.y).toBe(100)",
@@ -7135,7 +7130,7 @@
           ],
           "title": "同行大 x 间隙断段（防多栏桥接）：间隙 > max(1.5×主导高, 页宽 2%) 处分开",
           "markers": [],
-          "line": 180,
+          "line": 165,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(out[0]!.x).toBe(10)",
@@ -7151,7 +7146,7 @@
           ],
           "title": "同形重复矩形（亚像素量测差）去重",
           "markers": [],
-          "line": 192,
+          "line": 177,
           "assertions": [
             "expect(out.length).toBe(1)"
           ]
@@ -7163,7 +7158,7 @@
           ],
           "title": "高瘦矩形（旋转/竖排形态，h 超主导高 2 倍）不并入行簇：独立成簇输出",
           "markers": [],
-          "line": 197,
+          "line": 182,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(tallOut).toBeDefined()",
@@ -7178,7 +7173,7 @@
           ],
           "title": "混排字号同行（上标 h=8 vs 主文本 h=12）同簇合并，y/h 取主导",
           "markers": [],
-          "line": 209,
+          "line": 194,
           "assertions": [
             "expect(out.length).toBe(1)",
             "expect(out[0]!.w).toBe(70)",
@@ -7193,7 +7188,7 @@
           ],
           "title": "相邻行亚像素重叠（紧行距舍入，重叠 <25% 较小高度）不并簇",
           "markers": [],
-          "line": 217,
+          "line": 202,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(out[0]!.y).toBe(100)",
@@ -7207,7 +7202,7 @@
           ],
           "title": "单矩形与空数组透传",
           "markers": [],
-          "line": 225,
+          "line": 210,
           "assertions": [
             "expect(mergeLineRects([], 600)).toEqual([])",
             "expect(mergeLineRects([one], 600)).toEqual([one])"
@@ -7220,7 +7215,7 @@
           ],
           "title": "a: 缺省路径（无行高注入）——y 重叠率判据链并把行 1-4 并成一块（丢行）→ 行距自适应判据后每视觉行恰一块",
           "markers": [],
-          "line": 272,
+          "line": 257,
           "assertions": [
             "expect(out[4]!.x + out[4]!.w).toBeCloseTo(1249.2, 5)"
           ]
@@ -7232,7 +7227,7 @@
           ],
           "title": "b: 行高注入（PDF 行高 12.66）——盒高 14.4>行距逐行重叠 2.4px（INV-D 级联下推/带错绑根因）→ 块高钳到行距估计且相邻行块不重叠",
           "markers": [],
-          "line": 279,
+          "line": 264,
           "assertions": [
             "expect(out.length).toBe(7)",
             "expect(r.h).toBeLessThanOrEqual(12.3)",
@@ -7246,7 +7241,7 @@
           ],
           "title": "c: 行高量测膨胀（24px）——中心距阈值 12px 把行 1-2/3-5/6-7 并簇（跨行杂交并集+丢行）→ 行距钳制阈值后 7 块",
           "markers": [],
-          "line": 292,
+          "line": 277,
           "assertions": []
         },
         {
@@ -7256,7 +7251,7 @@
           ],
           "title": "d: estimateLinePitch——真机流 y 中心差下中位 ≈11.8；单行/同行片段（中心差<2px）→ undefined；常规两行 → 30",
           "markers": [],
-          "line": 297,
+          "line": 282,
           "assertions": [
             "expect(estimateLinePitch(tightRowsFixture())).toBeCloseTo(11.8, 5)",
             "expect(estimateLinePitch([px(10, 100, 50, 12)])).toBeUndefined()",
@@ -7271,7 +7266,7 @@
           ],
           "title": "e: 常规行距（盒高 12 < 行距 30）行为零变：同簇 y/h 严格取主导，高度钳制不触发",
           "markers": [],
-          "line": 305,
+          "line": 290,
           "assertions": [
             "expect(out.length).toBe(1)",
             "expect(out[0]!.h).toBe(12)",
@@ -7285,7 +7280,7 @@
           ],
           "title": "T3-a 交错夹具：行 1 后段（y=102）被行 2 高瘦段（y=101，h=26 超高度可比带）隔在末簇之后——旧实现（只与末簇比较）拆 3 簇=同行双块锯齿形态，全簇比较后行 1 两段并簇",
           "markers": [],
-          "line": 315,
+          "line": 300,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(row1.x).toBe(10)",
@@ -7299,7 +7294,7 @@
           ],
           "title": "T3-b 双行交替夹具：行 1/行 2 片段按 y 序交错（a1,b1,b2,a2——行 1 后段殿后），行 2 两段为高度不可比的 tall 变体——全簇比较下 2 块（各行 x 并集），旧实现拆 3 簇（行 1 双块=锯齿）",
           "markers": [],
-          "line": 327,
+          "line": 312,
           "assertions": [
             "expect(out.length).toBe(2)",
             "expect(row1.x).toBe(10)",
@@ -7315,7 +7310,7 @@
           ],
           "title": "W1 三行 y 序交错+跨簇中心距：行 1 后段跨过行 2 簇回并行 1（y 序 r1,r2,r3 交错），不产生跨行误并块且行块两两垂直分离（pitch 钳制后）",
           "markers": [],
-          "line": 350,
+          "line": 335,
           "assertions": [
             "expect(out.length).toBe(3)",
             "expect(out[i]!.y).toBeCloseTo(y, 5)",
@@ -7335,7 +7330,7 @@
           ],
           "title": "W2 全部相邻中心差 <2px（pitch 缺省=单视觉行形态判定）但含多行高瘦碎片：行块几何（y/h/x 并集）不含高瘦碎片贡献、高瘦碎片自成块——centerOk（centerLimit=lh）单门不设防时高度可比带挡跨行并块",
           "markers": [],
-          "line": 382,
+          "line": 367,
           "assertions": [
             "expect(estimateLinePitch([r1, r2, t1, t2])).toBeUndefined()",
             "expect(out.length).toBe(2)",
@@ -16779,7 +16774,7 @@
           ],
           "title": "快慢等价（INV-58 后半）：同夹具下 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）",
           "markers": [],
-          "line": 167,
+          "line": 152,
           "assertions": [
             "expect(fast.length).toBeGreaterThanOrEqual(1)",
             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
@@ -16793,7 +16788,7 @@
           ],
           "title": "同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）",
           "markers": [],
-          "line": 187,
+          "line": 172,
           "assertions": [
             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
             "expect(rect).not.toBeNull()",
@@ -16807,7 +16802,7 @@
           ],
           "title": "快路径守卫前置（裁决 2-§5①(ii)）：跨页选区 visual 路 rAF 帧后仍静默 setPaint(null)——无守卫时快路径把跨页偏移归一化进单页=paint 出块在此红",
           "markers": [],
-          "line": 219,
+          "line": 204,
           "assertions": [
             "expect(firstRect()).toBeNull()",
             "expect(toastSpy).not.toHaveBeenCalled()",
@@ -16822,7 +16817,7 @@
           ],
           "title": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）",
           "markers": [],
-          "line": 243,
+          "line": 228,
           "assertions": [
             "expect(firstRect()).not.toBeNull()",
             "expect(toolbar()).not.toBeNull()",
@@ -16906,7 +16901,7 @@
           ],
           "title": "通道生效：注册表条目在位+对账通过 → paint 块=项声明几何（top≈10.6061%=84/792，DOM 量测链给 25.25% 必红——判别性）",
           "markers": [],
-          "line": 135,
+          "line": 119,
           "assertions": [
             "expect(toolbar()).not.toBeNull()",
             "expect(rect).not.toBeNull()",
@@ -16923,7 +16918,7 @@
           ],
           "title": "保存链同源（INV-58 前半）：落库 rects=pending.anchor.rects=项几何链产物（y≈84/792）",
           "markers": [],
-          "line": 153,
+          "line": 137,
           "assertions": [
             "expect(saveMock).toHaveBeenCalledTimes(1)",
             "expect(arg.annotation.rects.length).toBeGreaterThanOrEqual(1)",
@@ -16938,24 +16933,24 @@
           ],
           "title": "zoom 现读：tab.zoom=2 → 项盒按 scale2 计算（top≈21.2121%=168/792——zoom 通道接线锚）",
           "markers": [],
-          "line": 181,
+          "line": 165,
           "assertions": [
             "expect(rect).not.toBeNull()",
             "expect(parseFloat(rect!.style.top)).toBeCloseTo((168 / 792) * 100, 2)"
           ]
         },
         {
-          "key": "[\"F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）\",\"回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）\"]",
+          "key": "[\"F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）\",\"回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默\"]",
           "describePath": [
             "F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）"
           ],
-          "title": "回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）",
+          "title": "回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默",
           "markers": [],
-          "line": 204,
+          "line": 188,
           "assertions": [
             "expect(rect).not.toBeNull()",
             "expect(parseFloat(rect!.style.top)).toBeCloseTo((200 / 792) * 100, 2)",
-            "expect(toolbar()).not.toBeNull()",
+            "expect(toolbar()).toBeNull()",
             "expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('页项数据缺失'))",
             "expect(toastSpy).not.toHaveBeenCalled()"
           ]
@@ -16967,7 +16962,7 @@
           ],
           "title": "回退②偏移对账失败：items 拼接≠DOM 全文 → DOM 量测链兜底+warn（回退触发面收敛的第二因）",
           "markers": [],
-          "line": 220,
+          "line": 204,
           "assertions": [
             "expect(rect).not.toBeNull()",
             "expect(parseFloat(rect!.style.top)).toBeCloseTo((200 / 792) * 100, 2)",
@@ -16981,7 +16976,7 @@
           ],
           "title": "G2 降级门（active，门一 W2 口径）：病理页项（盒 x=700 全出 612 盒，偏离率 1≥5%）→ 拖选/防抖路径静默抑制（settle 不 toast——对齐跨页拒绝形态防拖选中途刷屏）+mouseup 时刻 toast 拒绝（INV-02）",
           "markers": [],
-          "line": 235,
+          "line": 219,
           "assertions": [
             "expect(firstRect()).toBeNull()",
             "expect(toastSpy).not.toHaveBeenCalled()",
@@ -17055,7 +17050,7 @@
           ],
           "title": "closestPageRoot：文本节点向上最近页盒（data-page-root）；页列外/空节点=null",
           "markers": [],
-          "line": 126,
+          "line": 135,
           "assertions": [
             "expect(closestPageRoot(span2.firstChild)).toBe(page2)",
             "expect(closestPageRoot(page2)).toBe(page2)",
@@ -17070,7 +17065,7 @@
           ],
           "title": "pageIndexOf：data-page-root 值 1 基→0 基；缺失/非法值=null",
           "markers": [],
-          "line": 137,
+          "line": 146,
           "assertions": [
             "expect(pageIndexOf(page1)).toBe(0)",
             "expect(pageIndexOf(page5)).toBe(4)",
@@ -17085,7 +17080,7 @@
           ],
           "title": "P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算并÷有效 zoom（F-A4 c 面归一）",
           "markers": [],
-          "line": 153,
+          "line": 162,
           "assertions": [
             "expect(bar).not.toBeNull()",
             "expect(parseFloat(bar!.style.left)).toBeCloseTo(8, 2)",
@@ -17100,7 +17095,7 @@
           ],
           "title": "P2 跨页选区（anchorNode 页盒≠focusNode 页盒）：mouseup 拒绝+toast，无工具条（INV-02 禁静默）",
           "markers": [],
-          "line": 174,
+          "line": 184,
           "assertions": [
             "expect(toolbar()).toBeNull()",
             "expect(toastSpy).toHaveBeenCalledWith('选区跨页，不支持创建标注', 'info')"
@@ -17113,7 +17108,7 @@
           ],
           "title": "P2b 跨页选区的防抖路径不 toast（程序化/拖选中途——toast 只挂用户完成拖选的 mouseup 时刻）",
           "markers": [],
-          "line": 185,
+          "line": 195,
           "assertions": [
             "expect(toolbar()).toBeNull()",
             "expect(toastSpy).not.toHaveBeenCalled()"
@@ -17126,7 +17121,7 @@
           ],
           "title": "P3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）",
           "markers": [],
-          "line": 197,
+          "line": 207,
           "assertions": [
             "expect(toolbar()).not.toBeNull()"
           ]
@@ -17138,7 +17133,7 @@
           ],
           "title": "F-12a 单击/双击误触不出条：mousedown→mouseup 位移 ~1.4px（<3px 阈值）——选区在场也收起（用户令「一点就出选项条」=误触发）",
           "markers": [],
-          "line": 207,
+          "line": 218,
           "assertions": [
             "expect(toolbar()).toBeNull()"
           ]
@@ -17150,7 +17145,7 @@
           ],
           "title": "F-12b 真拖选出条：mousedown→mouseup 位移 ~5.8px（≥3px 阈值）——mouseup 即时评估路径保持",
           "markers": [],
-          "line": 218,
+          "line": 229,
           "assertions": [
             "expect(toolbar()).not.toBeNull()"
           ]
@@ -17162,7 +17157,7 @@
           ],
           "title": "F-12c 无 mousedown 记录的 mouseup 放行（程序化 dispatch/键盘选区无鼠标轨迹——P3 兼容面显式化）",
           "markers": [],
-          "line": 229,
+          "line": 241,
           "assertions": [
             "expect(toolbar()).not.toBeNull()"
           ]
@@ -17174,7 +17169,7 @@
           ],
           "title": "P4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流",
           "markers": [],
-          "line": 239,
+          "line": 252,
           "assertions": [
             "expect(saveMock).toHaveBeenCalledTimes(1)",
             "expect(arg.annotation.page).toBe(1)",
@@ -17189,7 +17184,7 @@
           ],
           "title": "P5 Escape 清：工具条出现后按 Esc 收起",
           "markers": [],
-          "line": 267,
+          "line": 281,
           "assertions": [
             "expect(toolbar()).not.toBeNull()",
             "expect(toolbar()).toBeNull()"
@@ -17202,7 +17197,7 @@
           ],
           "title": "P6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）",
           "markers": [],
-          "line": 281,
+          "line": 296,
           "assertions": [
             "expect(toolbar()).not.toBeNull()",
             "expect(toolbar()).toBeNull()"
@@ -17215,7 +17210,7 @@
           ],
           "title": "P7 页外选区（侧栏等与页盒无关）静默收起：无工具条无 toast",
           "markers": [],
-          "line": 299,
+          "line": 315,
           "assertions": [
             "expect(toolbar()).toBeNull()",
             "expect(toastSpy).not.toHaveBeenCalled()"
@@ -17228,7 +17223,7 @@
           ],
           "title": "F-A4 守卫（反转）：pending 态（mouseup 后工具条在场）自绘并集层在场——ADR-0019 R1 修订",
           "markers": [],
-          "line": 313,
+          "line": 329,
           "assertions": [
             "expect(toolbar()).not.toBeNull()",
             "expect(selRects()).not.toBeNull()",
@@ -17379,7 +17374,7 @@
           ],
           "title": "S1 拖选防抖路径渲染自绘层：跨 3 行重叠输入（行间 4px 垂直重叠）→块数=行数+两两垂直分离+色 token 载体（--reader-selection-paint）",
           "markers": [],
-          "line": 137,
+          "line": 140,
           "assertions": [
             "expect(paintLayer()).not.toBeNull()",
             "expect(blocks.length).toBe(3)",
@@ -17394,7 +17389,7 @@
           ],
           "title": "S1b 拖选期零视觉反馈回归守卫（B1/门一回炉→F-A6-c rAF 语义改写）：首 selectionchange 即排 rAF——单帧（16ms）内自绘层渲染且帧前零渲染（rAF 对齐非同步节流），工具条防抖 200ms 语义保持（t=150 仍不出条——防抖窗改短在此红）",
           "markers": [],
-          "line": 168,
+          "line": 171,
           "assertions": [
             "expect(paintLayer()).toBeNull()",
             "expect(paintLayer()).not.toBeNull()",
@@ -17411,7 +17406,7 @@
           ],
           "title": "S1c 帧随动（B1/W6·门一 r2→F-A6-c rAF 语义改写）：拖选中窗口内末事件变更选区→下一帧自绘块几何随动到新位置（非首帧）——节流窗丢帧/只渲染首帧的退化在此红",
           "markers": [],
-          "line": 197,
+          "line": 201,
           "assertions": [
             "expect(paintBlocks().length).toBe(1)",
             "expect(pct(paintBlocks()[0]!, 'top')).toBeCloseTo(0, 6)",
@@ -17426,7 +17421,7 @@
           ],
           "title": "S2 所见即所存：保存 rects 与自绘块同源（块数/left/top 一致——同一 evaluate 管线产物）",
           "markers": [],
-          "line": 226,
+          "line": 230,
           "assertions": [
             "expect(arg.annotation.rects.length).toBe(blocks.length)",
             "expect(pct(blocks[i]!, 'left')).toBeCloseTo(arg.annotation.rects[i]!.x * 100, 6)",
@@ -17441,7 +17436,7 @@
           ],
           "title": "S5 Escape：工具条收而自绘层保留；选区真清除（坍缩+selectionchange）→自绘随清（INV-37 视觉-状态严格同步）",
           "markers": [],
-          "line": 261,
+          "line": 266,
           "assertions": [
             "expect(toolbar()).not.toBeNull()",
             "expect(paintLayer()).not.toBeNull()",
@@ -17457,7 +17452,7 @@
           ],
           "title": "band 在场：highlight 顶=band.top、高=band.bottom−band.top（顶贴字形顶缘底贴底缘）",
           "markers": [],
-          "line": 287,
+          "line": 293,
           "assertions": [
             "expect(parseFloat(s.top as string)).toBeCloseTo(20.5, 6)",
             "expect(parseFloat(s.height as string)).toBeCloseTo(3.3, 6)"
@@ -17470,7 +17465,7 @@
           ],
           "title": "band 在场：underline 实条贴 band.bottom 上方 2px（calc 形态）",
           "markers": [],
-          "line": 294,
+          "line": 300,
           "assertions": [
             "expect(s.top).toBe('calc(23.8% - 2px)')",
             "expect(s.height).toBe('2px')"
@@ -17483,7 +17478,7 @@
           ],
           "title": "band 缺省：F-11 分数路径原样（回归锚——存量 rects 无 band 时的兜底）",
           "markers": [],
-          "line": 301,
+          "line": 307,
           "assertions": [
             "expect(parseFloat(s.top as string)).toBeCloseTo(20.2, 6)",
             "expect(parseFloat(s.height as string)).toBeCloseTo(1.56, 6)"
@@ -17496,7 +17491,7 @@
           ],
           "title": "bandFromMetrics 纯几何：span 盒+字体度量→归一化字形带（fs<布局带高时半前导为负——基线随 CSS 负前导下沉）",
           "markers": [],
-          "line": 308,
+          "line": 314,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.top).toBeCloseTo(0.00125, 10)",
@@ -17511,7 +17506,7 @@
           ],
           "title": "AnnotationLayer 挂 B 接线：resolve→band 匹配→渲染顶/高=band 值（非 F-11 分数）",
           "markers": [],
-          "line": 323,
+          "line": 329,
           "assertions": [
             "expect(block).not.toBeNull()",
             "expect(pct(block!, 'top')).toBeCloseTo(25.125, 4)",
@@ -17525,7 +17520,7 @@
           ],
           "title": "归一：mount 有效 zoom=0.8（clientWidth 480/gBCR 600）→工具条 left/top=视口差×0.8",
           "markers": [],
-          "line": 380,
+          "line": 386,
           "assertions": [
             "expect(bar).not.toBeNull()",
             "expect(parseFloat(bar!.style.left)).toBeCloseTo(8, 2)",
@@ -17539,7 +17534,7 @@
           ],
           "title": "近顶下翻转：选区顶距滚动容器顶 <42px →工具条放选区下方（top ≥ 选区底）",
           "markers": [],
-          "line": 398,
+          "line": 405,
           "assertions": [
             "expect(bar).not.toBeNull()",
             "expect(parseFloat(bar!.style.top)).toBeCloseTo(58, 6)"
@@ -17552,7 +17547,7 @@
           ],
           "title": "视口夹取：选区右缘越滚动容器右缘 → left 夹到容器内（1200−180=1020）",
           "markers": [],
-          "line": 414,
+          "line": 422,
           "assertions": [
             "expect(bar).not.toBeNull()",
             "expect(parseFloat(bar!.style.left)).toBeCloseTo(1020, 6)"
@@ -17565,7 +17560,7 @@
           ],
           "title": "a1 自绘块垂直=行簇字形带（band 单源——非 CSS 回退行盒）：top/height=band 值",
           "markers": [],
-          "line": 452,
+          "line": 461,
           "assertions": [
             "expect(blocks.length).toBe(1)",
             "expect(pct(blocks[0]!, 'top')).toBeCloseTo(0.125, 4)",
@@ -17579,7 +17574,7 @@
           ],
           "title": "a2 自绘块水平界=行簇 span 实际端点：行盒越出 span 簇→左右夹入 [x0,x1]",
           "markers": [],
-          "line": 467,
+          "line": 476,
           "assertions": [
             "expect(blocks.length).toBe(1)",
             "expect(pct(blocks[0]!, 'left')).toBeCloseTo(100 / 6, 4)",
@@ -17593,7 +17588,7 @@
           ],
           "title": "c1 自绘层 z=层级常量最上（选区交互视觉保持最上——票面 §0c）",
           "markers": [],
-          "line": 482,
+          "line": 491,
           "assertions": [
             "expect(paintLayer()!.style.zIndex).toBe(String(PAGE_LAYER_Z.selectionPaint))"
           ]
@@ -17605,7 +17600,7 @@
           ],
           "title": "c2 层序常量单源（防回归序）：色块垫底 < canvas < 自绘最上；textLayer 官方 z0 在色块下（视觉透明无碍）",
           "markers": [],
-          "line": 492,
+          "line": 501,
           "assertions": [
             "expect(PAGE_LAYER_Z.canvas).toBeGreaterThan(PAGE_LAYER_Z.colorBlocks)",
             "expect(PAGE_LAYER_Z.selectionPaint).toBeGreaterThan(PAGE_LAYER_Z.canvas)",
@@ -21631,7 +21626,7 @@
           "describePath": [],
           "title": "目录不存在→空结果三桶（首次无产物=合法态非错误）",
           "markers": [],
-          "line": 87,
+          "line": 90,
           "assertions": [
             "expect(r).toEqual({ imported: [], skipped: [], errors: [] })"
           ]
@@ -21641,7 +21636,7 @@
           "describePath": [],
           "title": "无 archive 首导：写入 DB+产物移 archive（corpus-ai 清空）",
           "markers": [],
-          "line": 92,
+          "line": 95,
           "assertions": [
             "expect(r.imported).toEqual(['p-1'])",
             "expect(r.skipped).toEqual([])",
@@ -21657,7 +21652,7 @@
           "describePath": [],
           "title": "archive 同 sha：二跑 skipped，不重复写（archive 移动后全 skipped 跨格序列）",
           "markers": [],
-          "line": 113,
+          "line": 116,
           "assertions": [
             "expect(r.skipped).toEqual(['p-1'])",
             "expect(r.imported).toEqual([])",
@@ -21671,7 +21666,7 @@
           "describePath": [],
           "title": "archive 异 sha：清面重灌不重复（deleteByPaper+整套重插）",
           "markers": [],
-          "line": 126,
+          "line": 129,
           "assertions": [
             "expect(r.imported).toEqual(['p-1'])",
             "expect(r.skipped).toEqual([])",
@@ -21684,7 +21679,7 @@
           "describePath": [],
           "title": "行级 zod 拒非法 role：该篇入 errors（中文 reason 含路径），产物不移不写 DB",
           "markers": [],
-          "line": 139,
+          "line": 142,
           "assertions": [
             "expect(r.imported).toEqual([])",
             "expect(r.errors).toHaveLength(1)",
@@ -21699,7 +21694,7 @@
           "describePath": [],
           "title": "行级 zod 拒非法 question（七问 v1 冻结）",
           "markers": [],
-          "line": 150,
+          "line": 153,
           "assertions": [
             "expect(r.errors).toHaveLength(1)",
             "expect(repo.countByPaper('p-1')).toBe(0)"
@@ -21710,7 +21705,7 @@
           "describePath": [],
           "title": "幽灵 paperId 拦截：不在 papers 表→该篇失败",
           "markers": [],
-          "line": 157,
+          "line": 160,
           "assertions": [
             "expect(r.imported).toEqual([])",
             "expect(r.errors).toHaveLength(1)",
@@ -21723,7 +21718,7 @@
           "describePath": [],
           "title": "损坏 JSON/非数组形态：该篇失败入 errors 不中断整批（部分成功）",
           "markers": [],
-          "line": 166,
+          "line": 169,
           "assertions": [
             "expect(r.imported).toEqual([])",
             "expect(r.errors).toHaveLength(2)",
@@ -21735,7 +21730,7 @@
           "describePath": [],
           "title": "多篇混合：imported/skipped/errors 三桶并存（Result 三桶形状）",
           "markers": [],
-          "line": 177,
+          "line": 180,
           "assertions": [
             "expect(r.imported).toEqual([])",
             "expect(r.skipped).toEqual(['p-1'])",
@@ -21747,10 +21742,50 @@
           "describePath": [],
           "title": "listByPaper 透传 repo（确定性序+空篇空数组）",
           "markers": [],
-          "line": 188,
+          "line": 191,
           "assertions": [
             "expect(await svc.listByPaper('p-1')).toEqual([])",
             "expect((await svc.listByPaper('p-1')).length).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）\"]",
+          "describePath": [],
+          "title": "F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）",
+          "markers": [],
+          "line": 211,
+          "assertions": [
+            "expect(r1.imported).toEqual([])",
+            "expect(r1.errors).toHaveLength(1)",
+            "expect(r1.errors[0]!.reason).toContain('导入失败')",
+            "expect(repo.countByPaper('p-1')).toBe(0)",
+            "expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])",
+            "expect(await namesIn('archive')).toEqual([])",
+            "expect(rOk.imported).toEqual(['p-1'])",
+            "expect(repo.countByPaper('p-1')).toBe(2)",
+            "expect(r2.imported).toEqual([])",
+            "expect(r2.errors).toHaveLength(1)",
+            "expect(repo.countByPaper('p-1')).toBe(2)",
+            "expect(contents).toEqual(['回答内容', '回答内容'])",
+            "expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])"
+          ]
+        },
+        {
+          "key": "[\"F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）\"]",
+          "describePath": [],
+          "title": "F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）",
+          "markers": [],
+          "line": 253,
+          "assertions": [
+            "expect(rPre.imported).toEqual(['p-1', 'p-2'])",
+            "expect(bSeen).toBe(true)",
+            "expect(r.imported).toEqual(['p-1'])",
+            "expect(r.errors.map((e) => e.paperId)).toEqual(['p-2'])",
+            "expect(repo.countByPaper('p-1')).toBe(2)",
+            "expect(aContents).toEqual(['A 新回答一', 'A 新回答二'])",
+            "expect(repo.countByPaper('p-2')).toBe(1)",
+            "expect((await svc.listByPaper('p-2'))[0]?.contentMd).toBe('B 旧回答')",
+            "expect(await namesIn('corpus-ai')).toEqual(['p-2.json'])"
           ]
         }
       ]
@@ -22415,7 +22450,7 @@
           ],
           "title": "正常全链：两篇→五件套落盘（corpus md golden/fulltext 页界 \\f/figures/manifest sha 全匹配）",
           "markers": [],
-          "line": 132,
+          "line": 133,
           "assertions": [
             "expect(['p-1', 'p-2']).toContain(r1.paperId)",
             "expect(r1.url).toBe(`app-file://${r1.paperId}`)",
@@ -22444,7 +22479,7 @@
           ],
           "title": "ENR-02 装配两形：含缓存值篇 md 带两字段+manifest 条目带 citedByCount/citedByFetchedAt 成对；无缓存篇两形缺省",
           "markers": [],
-          "line": 200,
+          "line": 201,
           "assertions": [
             "expect(mdCited).toContain('citedByCount: 12')",
             "expect(mdCited).toContain(\"venueTier: 'T1'\")",
@@ -22465,7 +22500,7 @@
           ],
           "title": "ENR-02 INTERFACE 声明存在性：指标口径节两字段可选性+sha 消费者提示（W6）",
           "markers": [],
-          "line": 245,
+          "line": 246,
           "assertions": [
             "expect(INTERFACE_MD).toContain('citedByCount')",
             "expect(INTERFACE_MD).toContain('venueTier')",
@@ -22480,7 +22515,7 @@
           ],
           "title": "幂等重导：同库重跑=产物文件逐字节稳定（manifest exportedAt 不参与断言）",
           "markers": [],
-          "line": 252,
+          "line": 253,
           "assertions": [
             "expect(second.md).toBe(first.md)",
             "expect(second.ft).toBe(first.ft)",
@@ -22494,7 +22529,7 @@
           ],
           "title": "篇失败：文件缺失篇进 errors[] 会话继续（部分成功）",
           "markers": [],
-          "line": 279,
+          "line": 280,
           "assertions": [
             "expect(r.paperId).toBe('p-ok')",
             "expect(result.errorCount).toBe(1)",
@@ -22510,7 +22545,7 @@
           ],
           "title": "renderer 篇失败（kind:error）：errors[] 接续——errors 会话继续跨格",
           "markers": [],
-          "line": 303,
+          "line": 304,
           "assertions": [
             "expect(result).toEqual({ dir: h.dir, fileCount: 1, errorCount: 1 })"
           ]
@@ -22522,9 +22557,66 @@
           ],
           "title": "EXPORT_BUSY：会话进行中第二会话拒绝（单飞）",
           "markers": [],
-          "line": 320,
+          "line": 321,
           "assertions": [
             "expect(h.svc.exportCorpusSession({ dir: h.dir })).rejects.toMatchObject({ code: 'EXPORT_BUSY' })"
+          ]
+        },
+        {
+          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）\"]",
+          "describePath": [
+            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
+          ],
+          "title": "F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）",
+          "markers": [],
+          "line": 337,
+          "assertions": [
+            "expect(aborted).toBe(true)",
+            "expect(first).rejects.toMatchObject({ code: 'IO_ERROR' })",
+            "expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)",
+            "expect(r2.sessionId).not.toBe(r1.sessionId)",
+            "expect((await second).fileCount).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false\"]",
+          "describePath": [
+            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
+          ],
+          "title": "F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false",
+          "markers": [],
+          "line": 359,
+          "assertions": [
+            "expect(before).toBe(false)",
+            "expect(after).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest\"]",
+          "describePath": [
+            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
+          ],
+          "title": "F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest",
+          "markers": [],
+          "line": 375,
+          "assertions": [
+            "expect(aborted).toBe(true)",
+            "expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })",
+            "expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）\"]",
+          "describePath": [
+            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
+          ],
+          "title": "F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）",
+          "markers": [],
+          "line": 395,
+          "assertions": [
+            "expect(aborted).toBe(true)",
+            "expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })",
+            "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: 'p-1', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })"
           ]
         },
         {
@@ -22534,7 +22626,7 @@
           ],
           "title": "落盘失败：会话 failed（无 manifest）——同名目录占位致写盘 ENOTDIR",
           "markers": [],
-          "line": 336,
+          "line": 412,
           "assertions": [
             "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: r.paperId, kind: 'figure', figure: 'page', page: 1, payload: Buffer.from('P').toString('base64') }) ).rejects.toThrow()",
             "expect(session).rejects.toThrow()",
@@ -22549,7 +22641,7 @@
           ],
           "title": "会话开始清空重建：旧 manifest+残留产物清除（中断重跑幂等）；目录根用户文件不动",
           "markers": [],
-          "line": 365,
+          "line": 441,
           "assertions": [
             "expect(corpusFiles).toEqual(['p-new.md'])",
             "expect(manifest.stale).toBeUndefined()",
@@ -22563,7 +22655,7 @@
           ],
           "title": "corpusItem 载荷失配：sessionId/paperId 与在途不符→INVALID_REQUEST（防御）",
           "markers": [],
-          "line": 389,
+          "line": 465,
           "assertions": [
             "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: '别的篇', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
             "expect( h.svc.corpusItem({ sessionId: '别的会话', paperId: 'p-1', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
@@ -22577,7 +22669,7 @@
           ],
           "title": "目录隔离守卫：corpusSet 目标目录含 manifest.json→拒绝（防轻量导出污染五件套目录）",
           "markers": [],
-          "line": 409,
+          "line": 485,
           "assertions": [
             "expect(exportSvc.writeCorpusSet(h.dir, entries)).rejects.toMatchObject({ code: 'CONFLICT' })"
           ]
@@ -22589,7 +22681,7 @@
           ],
           "title": "orderAiNotes：role→question→createdAt 分组序（first-read Q1 在 second-read Q1 前；divergence 殿后）",
           "markers": [],
-          "line": 424,
+          "line": 500,
           "assertions": [
             "expect(ordered.map((e) => `${e.sourceRole}:${e.question ?? ''}`)).toEqual([ 'first-read:Q1', 'first-read:Q2', 'second-read:Q1', 'adjudicate:divergence' ])"
           ]
@@ -24235,6 +24327,320 @@
         }
       ]
     },
+    "tests/unit/services/shared/atomic-write.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"string 形态：UTF-8 落盘内容一致（中文无损坏）\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "string 形态：UTF-8 落盘内容一致（中文无损坏）",
+          "markers": [],
+          "line": 35,
+          "assertions": [
+            "expect(await readFile(target, 'utf8')).toBe('设置内容：中文\\n')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"bytes 形态：Uint8Array 直写（不被字符串化）\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "bytes 形态：Uint8Array 直写（不被字符串化）",
+          "markers": [],
+          "line": 42,
+          "assertions": [
+            "expect(Buffer.from(back).equals(Buffer.from(bytes))).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"终名存在且默认 tmp 不残留（固定名 tmp 形态）\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "终名存在且默认 tmp 不残留（固定名 tmp 形态）",
+          "markers": [],
+          "line": 51,
+          "assertions": [
+            "expect((await stat(target)).isFile()).toBe(true)",
+            "expect(await tmpCount(dir)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"ensureDir：深目录父链不存在时自动创建\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "ensureDir：深目录父链不存在时自动创建",
+          "markers": [],
+          "line": 59,
+          "assertions": [
+            "expect(await readFile(target, 'utf8')).toBe('deep')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义）\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义）",
+          "markers": [],
+          "line": 66,
+          "assertions": [
+            "expect(atomicWriteFile(target, 'x')).rejects.toThrow()"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(outcomes.some((o) => o.status === 'fulfilled')).toBe(true)",
+            "expect(back.byteLength).toBe(2048)",
+            "expect(allFirst || allSecond).toBe(true)",
+            "expect(await tmpCount(dir)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛",
+          "markers": [],
+          "line": 93,
+          "assertions": [
+            "expect(atomicWriteFile(target, 'x', { cleanOnFail: true })).rejects.toThrow()",
+            "expect(await tmpCount(dir)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面）\"]",
+          "describePath": [
+            "services/shared/atomic-write —— 原子写单源"
+          ],
+          "title": "cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面）",
+          "markers": [],
+          "line": 101,
+          "assertions": [
+            "expect(atomicWriteFile(target, 'x')).rejects.toThrow()",
+            "expect(await tmpCount(dir)).toBe(1)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/shared/domain-error.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"基类直构：name=DomainError，code 与 message 保留\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "基类直构：name=DomainError，code 与 message 保留",
+          "markers": [],
+          "line": 19,
+          "assertions": [
+            "expect(e.name).toBe('DomainError')",
+            "expect(e.code).toBe('NOT_FOUND')",
+            "expect(e.message).toBe('文献不存在：p-1')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物",
+          "markers": [],
+          "line": 26,
+          "assertions": [
+            "expect(stub.name).toBe('StubDomainError')",
+            "expect(http.name).toBe('HttpFetchError')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error",
+          "markers": [],
+          "line": 33,
+          "assertions": [
+            "expect(stub instanceof DomainError).toBe(true)",
+            "expect(stub instanceof Error).toBe(true)",
+            "expect(new DomainError('INTERNAL', 'x') instanceof Error).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"toAppError 按 code 折叠：合法码保留 code 与中文 message\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "toAppError 按 code 折叠：合法码保留 code 与中文 message",
+          "markers": [],
+          "line": 40,
+          "assertions": [
+            "expect(app.code).toBe('CONFLICT')",
+            "expect(app.message).toBe('标签名已被占用')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名）\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名）",
+          "markers": [],
+          "line": 46,
+          "assertions": [
+            "expect(app.code).toBe('INTERNAL')",
+            "expect(app.message).toBe('发生未预期的内部错误')",
+            "expect(app.detail).toBe('带非法码的域错误')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/domain-error —— 域错误基类\",\"HttpFetchError 三参形态：status 字段保留且 code 仍可折叠\"]",
+          "describePath": [
+            "services/shared/domain-error —— 域错误基类"
+          ],
+          "title": "HttpFetchError 三参形态：status 字段保留且 code 仍可折叠",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect(e.status).toBe(503)",
+            "expect(e.code).toBe('UPSTREAM_ERROR')",
+            "expect(app.code).toBe('UPSTREAM_ERROR')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/shared/sanitize.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：paper-42_ok → paper-42_ok\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：paper-42_ok → paper-42_ok",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：ABCxyz019 → ABCxyz019\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：ABCxyz019 → ABCxyz019",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：../etc/passwd → ___etc_passwd\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：../etc/passwd → ___etc_passwd",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：..\\\\crew → ___crew\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：..\\crew → ___crew",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：a b\\tc\\nd → a_b_c_d\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：a b\tc\nd → a_b_c_d",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：论文：2024 → ___2024\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒：论文：2024 → ___2024",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒： → \"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "消毒： → ",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(sanitizePathToken(raw)).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"白名单字符全程保持（混合长串不变）\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "白名单字符全程保持（混合长串不变）",
+          "markers": [],
+          "line": 25,
+          "assertions": [
+            "expect(sanitizePathToken('Uuid-9_Ab-z0')).toBe('Uuid-9_Ab-z0')"
+          ]
+        },
+        {
+          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"穿越向量逐段消毒：连续点与多斜杠不存活\"]",
+          "describePath": [
+            "services/shared/sanitize —— 路径段清洗单源"
+          ],
+          "title": "穿越向量逐段消毒：连续点与多斜杠不存活",
+          "markers": [],
+          "line": 29,
+          "assertions": [
+            "expect(sanitizePathToken('....//')).toBe('______')",
+            "expect(sanitizePathToken('a/../../b')).toBe('a_______b')"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/tags-lifecycle.service.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -25026,6 +25432,51 @@
         }
       ]
     },
+    "tests/unit/shared/app-file-url.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"prefix 常量 = APP_FILE_SCHEME + \\\"://\\\"（与协议常量同源对账）\"]",
+          "describePath": [
+            "src/shared/app-file-url —— URL 拼装单源"
+          ],
+          "title": "prefix 常量 = APP_FILE_SCHEME + \"://\"（与协议常量同源对账）",
+          "markers": [],
+          "line": 13,
+          "assertions": [
+            "expect(APP_FILE_URL_PREFIX).toBe(`${APP_FILE_SCHEME}://`)",
+            "expect(APP_FILE_URL_PREFIX).toBe('app-file://')"
+          ]
+        },
+        {
+          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"appFileUrl：prefix + paperId 拼接\"]",
+          "describePath": [
+            "src/shared/app-file-url —— URL 拼装单源"
+          ],
+          "title": "appFileUrl：prefix + paperId 拼接",
+          "markers": [],
+          "line": 18,
+          "assertions": [
+            "expect(appFileUrl('p-abc-123')).toBe('app-file://p-abc-123')"
+          ]
+        },
+        {
+          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"appFileUrl：结果以 prefix 起且去 prefix 后还原 id\"]",
+          "describePath": [
+            "src/shared/app-file-url —— URL 拼装单源"
+          ],
+          "title": "appFileUrl：结果以 prefix 起且去 prefix 后还原 id",
+          "markers": [],
+          "line": 22,
+          "assertions": [
+            "expect(appFileUrl(id).startsWith(APP_FILE_URL_PREFIX)).toBe(true)",
+            "expect(appFileUrl(id).slice(APP_FILE_URL_PREFIX.length)).toBe(id)"
+          ]
+        }
+      ]
+    },
     "tests/unit/shared/venue-tier.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -25754,14 +26205,14 @@
     }
   },
   "stats": {
-    "fileCount": 183,
-    "caseCount": 1757,
-    "assertionCount": 5334,
+    "fileCount": 187,
+    "caseCount": 1789,
+    "assertionCount": 5411,
     "skipSiteCount": 15,
     "conditionalSkipSiteCount": 15,
     "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
-    "eachExpandedRows": 254,
+    "eachExpandedRows": 261,
     "unresolvableCount": 0
   }
 }

@@ -14,11 +14,11 @@
 - poll_interval_min: 10
 - last_dispatch: 2026-09-19T05:39:46+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T22:10:00Z
-- claim: claim-1789764128-b22
+- heartbeat_utc: 2026-09-18T22:38:39Z
+- claim: claim-1789767847-b23（已收口 2026-09-19T06:38:39）
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 26
+- checked_done: 28
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -109,7 +109,7 @@
       条款承袭；定稿件独立提交）【收口 2026-09-18：提交 af946a5324——设计书
       docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md
       415 行（三接缝闭合+三机制驳回+69 文件映射/八步迁移+G1~G11 切分+INV 清单）】
-- [ ] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
+- [x] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
       验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
 - [x] F-GEOM-01-G1（M0 类型下沉切环 §3.3——geometry-types 单源+三环切断；
       骨架已立 src/renderer/features/reader/geometry-types.ts）
@@ -141,7 +141,7 @@
       **票面受锁面预列恰 3 行字符串面（门二 P2-1 实测行号）**：
       theme.test.ts:292 AnnotationMenu.tsx/:293 AnnotationEditor.tsx/
       :485 TabBar.tsx——readFileSync 形态锁清单，不预列=必踩同族盲区）
-- [ ] F-GEOM-01-G11（战役收官：头注扫尾+净删/交互点记账+验收门全跑
+- [x] F-GEOM-01-G11（战役收官：头注扫尾+净删/交互点记账+验收门全跑
       （e2e 一键全跑 45+默认门 43）+INV 终册+基线重冻结 [locked-change]；
       **收官时定 INV 册历史 reader 路径引用口径**（保留 vs 随迁刷新——
       门二 P2-2）；本票毕=本父行+registry 母票同步翻 done）
@@ -167,6 +167,21 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 23 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G11 战役收官票+母票 F-GEOM-01 翻 done——**GEOM 战役全波毕**，完成）
+- claim: claim-1789767847-b23｜认领 2026-09-18T21:44:07Z｜收口 2026-09-19T06:38:39｜勾选 26→28。
+- 开场三态：B 态变体——b22 会话并行存活非僵死（本会话侦察期其完成最后提交 62ef3802ad 05:41:06+08 并吸收主控已暂存的 relay 终态）；恢复 verify 转 G11 基线锚（b22-recovery-verify.log EXIT=0：open 10/locks 368/170·1744）。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——三屋派发/门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=验证探针先行等价（netstat+INV 十三锚验证——B1 回炉后册文扫描段补强为真防线）；systematic-debugging 不加载（收官记账票无排障面——B1 定位由对抗审给出）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash $max，两轮=实现+回炉 #1）；门一=ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 k1 封顶 k2 承载续）；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审均异构于实现者。
+- **交付（零行为收官票）**：五义务=①头注扫尾（view/PdfPageCanvas :18-21+:36-40 两处陈旧句重写——现行 9 处消费面实测清单落注+g10-oneway.mjs 头注谓词盲区限制说明=门二 G10 P2-2 销项）；②记账报告真身 docs/reports/2026-09-18_f-geom01-campaign-closeout.md（净删双口径：域分组 71 files +313/−309 净+4+逐票 Σ+428/−424+wc 70/11,815 vs 69/11,791 Δ+1f/+24——净+4 vs 预测−20~−80 构成五项诚实分析+毛额 ±115 链式双计机制注记（门二 P2-2）；交互点 §2.6 表 5→4+1 逐点现行锚；对账债三项销（§3.2 行数口径 ×G5-G10 无尾换行 +69 机制全量抽验复现+§5.1 计数差 1790/5417→1789/5411+PdfPageCanvas 146=188−42））；③INV 终册（11 处平铺旧径→域前缀+INV-47/58/68 声明处裸名加前缀+「路径口径」小节=锚定列随迁刷新/历史叙述保留（销 b12 门二 P2-2 悬置）+§5.4 相容确认三注记）；④基线同值重冻结 183/1757/5334→187/1789/5411/skip15（零测试面变更预期态；diff 审计 875 行；exemptions 2 条 G2 旧条目主控裁保留=惰性桥接审计史——门二 G 裁成立：checker 新基线零咨询无法静默掩蔽）；⑤母票联动（registry G11+F-GEOM-01 双翻 done）。
+- **验收门（票面 §5.1 底色全达）**：e2e 双门=默认门 **43/43 绿 EXIT=0**+一键全跑 **45/45 绿 EXIT=0**（2.1m）——串行跑防负载敏感 flake 自扰；**在册 flake（corpus-export.spec:157 台账 count 5）双门未发=门二 G10 特例边界声明凭未触发使用纯绿收口**；flake-ledger 零 diff；锚定回归网 18 文件/211 用例绿；**构建产物恒等链第八票**（sha256 三件 9c3b8b84…/dcace2e7…/1baa1844… 门二与 g8/g10 前链档 64 hex 逐位亲比全同——门一 N4 前链不确定项闭合）。
+- **门审（回炉恰 1 次）**：门一 k2 **FAIL B1/W1/N5**——B1=INV-47 声明处全路径漏刷（「11 处」计数失实三处书面+探针硬编码意图态=漏网根因）→回炉 #1 四件（第 11 处补刷+探针册文扫描段补强 v1 档保留 v2 新落+残句顺改+N2 两侧非代码=0 严格同域销项）+复验 verify EXIT=0+哈希逐位同；N1-N5 转门二持仓。门二 **GWC P0=0/P1=3/P2=4/N=4 回炉 0**——A~J 全表独立复算（未采信转述：sha 亲比/记账双 route/13 锚全核/exemptions 惰性论证=亲读 checker 咨询路径）；P1 三条件全兑现：P1-1 flip 脚本入锁 371（锁链 368→370 executor 两探针→371 flip）+P1-2 序勘正（账本先于 health-scan——主控简报序缺陷被门二拦，G9 教训②复现防线生效）+P1-3 名册勘误（check2 系 .log 非 .mjs+staging 补 flip/registry/relay）；P2 四条=尺寸口径注记（vite 展示值 vs 字节 1,402,437/59,923/1,375,838——已落报告 §3）+毛额 ±115 机制句（已落 §1.2）+删侧 131 越上界 +11 骨架口径注记（已落 §1.4）+基线侧 raw log/探针判定面边界两条归后续票。
+- **机检终态**：终跑 verify **G11_CLOSEOUT_VERIFY_EXIT=0** 变量法物理在档（open 10→8=恰双票翻 done+locks 371 一致+Test Files 170/Tests 1744+指纹门绿+build 产物同名）；翻票单跑 FLIP_EXIT=0（FLIP_MOVED=2/RESIDUE=0）；**health-scan RED×0 WARN×0**（g11-healthscan.log——账本 68→72 终态后跑，P1-2 序兑现）；账本 72 行（executor 两轮+门一 k2+门二，主控补记仓外临时件用毕即删，findings 对象形）。
+- 证据件入库（scripts/audits/，25 件 g11-*+b22-recovery-verify.log）：impl-brief/impl-report（含 §8 回炉段）/gate1-brief/report/diff.patch/gate2-brief/report/diff.patch 八 .md+.patch；netstat+inv-anchor-check+tickets-flip 三 .mjs+对应 .log；verify 双档+build-hash 双档+anchored-net+baseline-diff+closeout-verify+healthscan+e2e 双门 .log——.log 系 git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**开场三态 B 判定须防「并行存活」误判**（b22 非死于提交前而是与本会话并行收口——HEAD 推进+暂存面消失=活会话信号；恢复动作前先 git log 时点核对；本批 b22 的 commit 吸收了主控暂存的 relay 终态，无害但属侥幸）；②**简报序也是审计面**（门二 P1-2：主控收口序简报把 health-scan 写在账本前=G9 教训②的简报侧复现，被门二对先例逐条拦下）；③**探针验意图 vs 验文本**（门一 B1 根因：探针硬编码目标态路径验存在性，册面错字零感知——文本面断言必须从被验文件提取实测值再断言，禁硬编码预期值）。
+- Rulings 待用户：无新增（票内自裁含豁免 2 条保留（惰性桥接审计史）/INV 路径口径主控裁（锚定列刷新+叙述保留——b12 悬置销项，门二 A 复核）/e2e 串行口径/P2 后续票两条；受锁面=invariants/oneway/baseline/manifest+探针三件=[locked-change] 权限内；零 tests/** 触碰=无 [test-refactor] 尾注）。
+- 无进展计数：归零（26→28 有进展）。**第四波 F-GEOM-01 全波毕（设计链+G1~G11 十一票+母票 done）。下波=第五波·梯队四第二波域归位：F-LAYER-01（settings 下沉，随票落 L1 锁线 [locked-change]）＋可同火 F-TIME-01（时长链瘦身评估产出呈裁不实施）；F-SENSOR-01/F-EXPORT-01 随后（F-EXPORT-01 开工须携 flake 台账 corpus-export 线 count 5 指纹首查——门二 G10 裁决义务）；小票组同火口径见执行路由段。**
+
+
 
 ### batch 22 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G10 目录化 M6b view 工具簇 13 文件迁移·view 域收官步，完成）
 - claim: claim-1789764128-b22｜认领 2026-09-18T20:42:08Z｜收口 2026-09-18T22:10:00Z｜勾选 25→26。

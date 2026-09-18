@@ -4,6 +4,9 @@
 // + reader 根驻留文件=0（根=纯目录容器）+ view 域 ../X 直指根件形态=0（中间态边清零）
 // + 旧径残留五通道（旧径 import/点径/别名/动态 import/vi.mock）=0。
 // 扫描范围=src/**+tests/**（tickets/registry.ts=主控收口面不在扫描面；scripts/audits=历史证据件零动作，G7/G8 先例）。
+// 限制（G10 门二 P2-2 登记，G11 补注）：oldPathHit 谓词锚定 `src/renderer/features/reader/`
+// 字面前缀——不覆盖无 `src/` 前缀的相对旧径形态（如 `../../reader/X` 类别名/相对写法）；
+// 该盲区由深度修正面（相对 import 全量闭合核验）承载，本探针不重复扫。
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 

@@ -1,0 +1,1709 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 3cf3360381..c7e19bf842 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -31,7 +31,7 @@
+ | INV-17 | 语料导出幂等：corpus md front-matter 不含 exportedAt（时间戳只进 manifest）；contentSha/fulltextSha=文件字节 sha256；同库重导出逐字节稳定 | ADR-0011 v1.1+corpus.assemble.ts（2026-08-25 计划审查 R6 定稿——消除「sha 不含 exportedAt」与 front-matter 含时间戳的口径矛盾） | golden+结构断言（SR2-AI-03：corpus.export.test 幂等重导逐字节用例+manifest contentSha/fulltextSha=文件字节断言+corpus md golden=assembleCorpusMd 输出逐字节） | 已锚定（2026-08-27 SR2-AI-03——幂等范围=产物文件，manifest 含 exportedAt 不参与逐字节断言） |
+ | INV-18 | 导出会话协议：manifest 终局单写（临时文件+rename 原子替换）；会话开始删旧 manifest+清空重建 corpus/fulltext/figures；单会话单飞（EXPORT_BUSY）；中断=无 manifest=工具侧不可激活，重跑即修复；**串行不死锁时序（2026-08-27 e2e 实证补条）：篇终局推进必须延后至 complete/error 的 invoke 回复之后（deferOutcome）——事件先于回复到达 renderer 时提取器防御分支丢请求，串行链挂死** | ADR-0011 v1.1+corpus.export.service（2026-08-25 计划审查 R5/R8/R9 定稿；状态机表=ai-plan-review §6） | 单测+e2e（SR2-AI-03 单测级：终局单写 tmp+rename/清空重建含 tmp 残留/EXPORT_BUSY 单飞拒绝/落盘失败=会话 failed 无 manifest+重跑修复——corpus.export.test 十用例；e2e 消费方级=SR2-AI-04 corpus-export.spec：全链多篇+残留清空重建+目录根用户文件不动） | 已锚定（单测级 2026-08-27 SR2-AI-03；e2e 面 2026-08-27 SR2-AI-04——时序补条即 e2e 多篇序列首跑红实证） |
+ | INV-19 | AI 锚定段渲染对等、存储独立：AI 笔记经 verifyQuote 重锚入标注层同一几何管线渲染（七问分色单源）；数据永不写 annotations 表；AI 标注 v1 只读（无编辑/删除写路径） | ADR-0015+AnnotationLayer 消费面（2026-08-25 N2 裁决——D3 独立表的渲染面延伸） | 单测+组件测试（SR2-AI-09：tests/unit/renderer/ai-annotation-layer.test.tsx——渲染对等 verifyQuote 真→rects+七问分色/重锚失败零 rects/只读断言无菜单无编辑器/exact 滚动 data-ai-note-id） | 已锚定（2026-09-02 状态升格——工单 done 而册状态滞后，体检场发现+文档群维护场核销；**存储独立=repo 零耦合头注契约+实现 diff 证明（ai_notes.repo「不做：annotations 表任何改动」），无专门断言——写路径唯一性由 repo schema 类型面承载，弱锚注记**） |
+-| INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+src/renderer/features/reader/anchor-locate.ts（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享；2026-08-26 C-05 落地） | 单测（anchor-locate.test 9 用例：三防线 S1~S5+超时 S6+作废两形态 S7/S9+并发序号守卫 S8）+消费方用例（N1 接线随 C-04/05；P7-G 消费方级用例随 SR2-AI-08+exact 层延展（data-ai-note-id）用例随 SR2-AI-09——2026-08-27 批二工单化定级；P7-H 脉络侧板随 SR2-LG-04） | 已锚定（服务单测级 2026-08-26；跨视图消费方级随 SR2-AI-08/09 补；脉络侧板消费方级=SR2-LG-04，2026-08-27） |
++| INV-20 | 锚点定位三层防线单入口：①quote 三元组重锚（滚动+闪烁）②anchor_page 页级降级（跳页+提示）③无锚/篇级仅开篇——一切跳转消费方（笔记面板 N1/脉络图 N3/未来面）共用同一「锚点定位服务」，禁各写降级 | ADR-0015+src/renderer/features/reader/anchors/anchor-locate.ts（2026-08-25 N2 裁决「三层防线升格验收条款」+N1/N3 共享；2026-08-26 C-05 落地） | 单测（anchor-locate.test 9 用例：三防线 S1~S5+超时 S6+作废两形态 S7/S9+并发序号守卫 S8）+消费方用例（N1 接线随 C-04/05；P7-G 消费方级用例随 SR2-AI-08+exact 层延展（data-ai-note-id）用例随 SR2-AI-09——2026-08-27 批二工单化定级；P7-H 脉络侧板随 SR2-LG-04） | 已锚定（服务单测级 2026-08-26；跨视图消费方级随 SR2-AI-08/09 补；脉络侧板消费方级=SR2-LG-04，2026-08-27） |
+ | INV-21 | 伴随进程边界：应用零 LLM 出网维持（与 INV-08 联动）；应用永不 spawn zcode/会话——设置页联动仅发现+装技能+心跳显示；AI 工作只由用户在 zcode 侧启动 | ADR-0015（2026-08-25 E1=B'/N4 裁决） | e2e（不代启断言）+架构评审 | 已锚定（2026-08-27 SR2-AI-10：detect/install 纯 fs 实现+e2e zcode-link.spec 纯 fs 落地断言（装技能全流程后 skills 目录文件存在且与模板逐字节一致，零进程行为依赖）） |
+ | INV-22 | 退出拦截 dirty 链路：renderer 聚合信号（**tab dirty ∪ lineage dirty**——`useTabDirtyAggregate() \|\| useLineageDirty()`（LG-03 扩面：lineage 保存态≠saved 即脏，ADR-0014 接缝条款——组合根单点扩 App.tsx，tab-dirty.ts 行为面零触碰））沿变化沿 push 上报 system/set-quit-dirty（禁止 close 事件内反向拉取 renderer）；main 模块缓存值为 close 守卫唯一判定源；dirty close=preventDefault+模态二次确认（默认焦点=取消），确认=destroy（不再触发 close，无重入），对话框异常按取消处理（窗口保持可重试）。已知窄窗（deepseek r2 WARN 存档）：push 模式存在一跳上报延迟——工单头注裁决权衡过，pull 模式时序复杂度更差不采 | main-window.ts（SR2-TABS-04，2026-08-25 deepseek W1/W2 处置后定稿）+P7-B B3-问2 退出拦截裁决 | 单测（quit-dirty-guard.test 七用例）+装配级 e2e（P7-B 收官「退」序列：dirty→取消窗口保持/确认 destroy）+组合根组件用例（lineage-board.test.tsx：lineage 保存失败→dirty=true 沿 set-quit-dirty 上报——LG-03，2026-08-27） | 已锚定（2026-08-25 收官 e2e 收口；∪lineage 扩面=组件级锚定 2026-08-27 LG-03——e2e 面随 LG-05） |
+ | INV-23 | 撤销栈语义：栈 per-tab 模块级自持（随 closeTab 清理，不跨 tab）；LIFO+深度 50 FIFO 截断；api 失败不弹栈可重试；同篇 in-flight 互斥（busy，他篇不阻塞——Set 互斥）；delete 逆重建新 id 后全栈 remap 旧 id 引用（按对象身份跳过被撤条目）；成功后按对象身份移除（indexOf——await 期间入栈/FIFO 截断致下标漂移不误删） | annotation-undo.ts（SR2-UNDO-01，2026-08-25 deepseek r2~r6 五轮收敛定稿） | 单测（annotation-undo.test 15 用例：三逆操作/remap 三跨格序列/互斥含并发篇/身份移除含截断挤出/截断/失败重试/空栈/隔离） | 已锚定（单测级，2026-08-25） |
+@@ -45,21 +45,21 @@
+ | INV-31 | 滚动→页进度回写=视口中心最近页（纯函数，PageColumn.nearestPage 单源）：scroll-progress 状态机在防抖到期时按 (scrollTop+clientHeight/2) 所落页盒记账（整数页粒度，页内偏移不存）；回写经 setPage {scroll:'none'}（INV-29 'none' 支）只落账不触发程序滚动；回写竞 tab 切换时 writing 前校验 activeId——失配丢弃 setPage（防把 A 的页写进 B 的 tab），per-tab 账（saveProgress 按 paperId）照落 | scroll-progress.ts 状态机 fire()（SR2-F-03，2026-08-28 登记） | 单测跨格锚（scroll-progress.test：六态全格+五序列——失配丢弃/关 tab flush/中心页边界含中缝取前页）+e2e 批 3（滚动→关→重开=恢复页锚定） | 已锚定（单测级 2026-08-28 SR2-F-03；e2e 批 3 取证落盘，registry 翻 done 后常规跑激活） |
+ | INV-32 | 程序滚动用户接管（RESTORING 取消）：程序滚动（恢复/跳页/locate，均经 INV-29 scrollRequest 单口）进行中，用户以 wheel/keydown/pointerdown 三类**非 scroll** 输入信号介入即取消程序目标转 scrolling（程序 scrollToPage 自发的 scroll 事件不算用户滚动）；后续 scroll 事件恢复记账 | scroll-progress.ts onUserTakeover/装配面三口（ReaderPage onWheel/onPointerDown+wiring hook keydown；SR2-F-03，2026-08-28 登记） | 单测锚（scroll-progress.test：restoring→scrolling 接管格+程序自发 scroll 不记账格）+S4 竞态序列 | 已锚定（单测级 2026-08-28 SR2-F-03） |
+ | INV-33 | 缩放中心保持：zoom 变化（ctrl+wheel/工具栏/适应宽度任一来源）后视口中心内容不动——(scrollTop+vh/2)/总高 比值经纯函数 anchoredScrollTop 保持（顶/底夹取；间隙不随 zoom 缩放的口径由 columnTotalHeight 承载）；实现链=PageColumn 段⑥布局效应程序修正 scrollTop（滚动位置镜像=容器 scroll 事件被动监听），程序性修正不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）；fit-width 分母=列宽基准（最宽页原始宽，页列就绪 onReady 载荷单源，一次性 zoom 语义保持） | page-column-geometry.ts anchoredScrollTop/columnTotalHeight+PageColumn 段⑥+ReaderPage fitWidth（SR2-F-04，2026-08-28 登记） | 单测锚（page-column.test：anchoredScrollTop 比值/顶底夹取/退化防御+columnTotalHeight 间隙口径+组件 scrollTop 修正精确断言）+e2e 收官链（reader-scroll.spec 中心最近页保持+fit 列宽贴合断言；M3 变异恰中实证） | 已锚定（单测+e2e 级 2026-08-28 SR2-F-04；e2e 随收官链取证落盘，registry 翻 done 后常规跑激活） |
+-| INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 computed overflowY∈{auto,scroll}，hidden/visible 不入选），**禁用 Element.scrollIntoView 于滚动链**（CSSOM 语义=滚所有可滚祖先——2026-08-28 缺陷 A 实测泄漏面含 overflow:hidden 的 document viewport（scrollingElement 仍可被程序滚动）与 main，TabBar 被顶出视口无自愈）；防御纵深=ReaderPage 根两分支 overflow-hidden+ReaderToolbar 根 shrink-0（flex-wrap 折行只影响阅读器内部高度）；列表内滚动 block:'nearest'（FragmentNotesList/AiNoteGroupList/PaperList）与面板自身滚动语义不在本册约束面 | src/renderer/features/reader/scroll-converge.ts（SR2-F-05，2026-08-28 登记；消费方=PageColumn 段⑤ 'start'/anchor-locate flashElement 'center'——同一不变量同一实现，Rule of Three 从 1 收敛） | 单测锚（scroll-converge.test 六用例：最近祖先选取含嵌套取最近与 hidden 不入选/start 数学/center 数学/顶底夹取/无滚动祖先不动/aside 消费形）+受锁三文件消费形断言（page-column/anchor-locate/ai-annotation-layer 模块 mock）+e2e（reader-scroll.spec F-05：scrollingElement 与 main 双 scrollTop===0+TabBar bbox≥0+根 overflow-hidden 在位——窄视口页码跳转+PageDown 两链）；**F-R2 量纲附注（2026-09-02）**：差值法视觉项必须经 effectiveZoom 折算到本地 scrollTop 空间——祖先 zoom≠1 时 gBCR=本地×Z 而 scrollTop 读写皆本地（探针 P1 实证）；**量测口径=自 scroller 至 documentElement 逐层 computed zoom 链乘积（回炉 1 定案，弃 gBCR/clientHeight 比值法——比值含横滚动条+亚像素 ε≈0.0005 实证污染；'normal'/undefined→NaN→1 跳过，jsdom 桩=getComputedStyle mock 注入）**；口径边界=只覆盖 scroller 祖先链，内部 zoom 层不在量测（当前豁免层在祖先侧）；B-2 getPageBoxes 同折算同空间比较 | 已锚定（单测+e2e 级 2026-08-28 SR2-F-05；e2e 随守卫态 22+1 skip，registry 翻 done 后 23+0 常规跑激活；F-R2 视觉/本地双空间桩用例 2026-09-02 增锚） |
++| INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 computed overflowY∈{auto,scroll}，hidden/visible 不入选），**禁用 Element.scrollIntoView 于滚动链**（CSSOM 语义=滚所有可滚祖先——2026-08-28 缺陷 A 实测泄漏面含 overflow:hidden 的 document viewport（scrollingElement 仍可被程序滚动）与 main，TabBar 被顶出视口无自愈）；防御纵深=ReaderPage 根两分支 overflow-hidden+ReaderToolbar 根 shrink-0（flex-wrap 折行只影响阅读器内部高度）；列表内滚动 block:'nearest'（FragmentNotesList/AiNoteGroupList/PaperList）与面板自身滚动语义不在本册约束面 | src/renderer/features/reader/state/scroll-converge.ts（SR2-F-05，2026-08-28 登记；消费方=PageColumn 段⑤ 'start'/anchor-locate flashElement 'center'——同一不变量同一实现，Rule of Three 从 1 收敛） | 单测锚（scroll-converge.test 六用例：最近祖先选取含嵌套取最近与 hidden 不入选/start 数学/center 数学/顶底夹取/无滚动祖先不动/aside 消费形）+受锁三文件消费形断言（page-column/anchor-locate/ai-annotation-layer 模块 mock）+e2e（reader-scroll.spec F-05：scrollingElement 与 main 双 scrollTop===0+TabBar bbox≥0+根 overflow-hidden 在位——窄视口页码跳转+PageDown 两链）；**F-R2 量纲附注（2026-09-02）**：差值法视觉项必须经 effectiveZoom 折算到本地 scrollTop 空间——祖先 zoom≠1 时 gBCR=本地×Z 而 scrollTop 读写皆本地（探针 P1 实证）；**量测口径=自 scroller 至 documentElement 逐层 computed zoom 链乘积（回炉 1 定案，弃 gBCR/clientHeight 比值法——比值含横滚动条+亚像素 ε≈0.0005 实证污染；'normal'/undefined→NaN→1 跳过，jsdom 桩=getComputedStyle mock 注入）**；口径边界=只覆盖 scroller 祖先链，内部 zoom 层不在量测（当前豁免层在祖先侧）；B-2 getPageBoxes 同折算同空间比较 | 已锚定（单测+e2e 级 2026-08-28 SR2-F-05；e2e 随守卫态 22+1 skip，registry 翻 done 后 23+0 常规跑激活；F-R2 视觉/本地双空间桩用例 2026-09-02 增锚） |
+ | INV-35 | 课题库单活四联（ADR-0018 库级分目录）：①同一时刻至多一个课题库打开（switch=关旧→指针→装配→换引用，容器 current 单值；全新首启=legacy-fresh 态库在 userData 根，二次启动迁移入 workspaces/default——受锁 e2e 种子配方兼容的硬前提）②switch/create/rename 变更互斥单飞（busy 守卫，并发=CONFLICT 中文 DomainError）③指针 workspace.json 缺省/损坏/失指=降级「目录序第一」不崩溃；遗留迁移崩溃断点续迁（遗留 db 在且 default 库不在=条件仍真，db 文件最后移=提交点，无孤儿库）④**渲染层切换面（R1-WS2 登记）**：切换=dirty 确认→IPC switch→`location.reload()` 全新 stores（ADR-0018 裁决路径——零 stale 态类别）；reload 经 will-navigate 同 URL 唯一放行（shouldBlockNavigation 严格等值——外站/异 file/data: 变体全 deny，护栏意图不变）；弃改后悬置防抖写竞窗由 notes→papers FK+foreign_keys=ON 偶然兜底——**无 FK 新表接入课题切换面须显式防悬置写**；**2026-09-02 A3 兑现修订**：弃改悬置写 renderer 面已闭（INV-50 discard 族=「显式防悬置写」条款落地），且「FK 偶然兜底」表述修正——main 侧归属校验=notes.service papers.findById→NOT_FOUND 显式先行（FK 为第二层非唯一防线） | workspace.service.ts 头注状态机+workspace.fs.ts 搬移序（R1-WS1 登记）；渲染面=workspace.store.ts switch 流程+main-window.ts shouldBlockNavigation（R1-WS2 登记） | 单测（workspace.test.ts 14 it：迁移随迁+幂等+断点续迁+L0+指针双降级+busy CONFLICT+facade 热换+L0 双段链+失败重试）+e2e 24 迁移兼容；渲染面单测（workspace.store/workspace-switcher dirty 拦截+reload+内联错误重试/main-window-navigation 双面三 it）+e2e workspaces.spec（种子→新建 B→reload 库空+脉络空态→切回完整——加载终态锚防假绿窗） | 已锚定（单测+e2e 级 2026-08-28 R1-WS1+R1-WS2 全链） |
+ | INV-36 | 脉络节点宽度单源（F-LG13 修订 2026-08-31，用户令「方框都一样大小」）：nodeWidth(title) **恒返 NODE_W=240**（签名兼容保留——R2-LG10 三档 180/220/260 语义随令删除，题名长短不再影响占位宽；题名过长由卡内题名区滚动承载 INV-38）——布局占位（lineage-layout place 半宽）/卡面渲染（LineageNodeCard rect）/auto-fit 包围盒（fitViewport+edge-label-layout 节点盒）三消费点同一纯函数，禁任一处手写卡宽；**auto-fit 抢占门**：panbg pointerdown/滚轮 zoom 置 userInteracted 后 nodes 变化不重置视口，「适应视图」按钮（lineage-fit-view）=复位唯一入口；data-viewport transform 串格式 `translate(x, y) scale(k)` 为 e2e 解析契约（逐字符保持） | lineage-layout.ts nodeWidth+lineage-viewport.ts useViewportController 状态机头注（R2-LG10 2026-08-29 登记；F-LG13 2026-08-31 修订——统一尺寸） | 单测（lineage-layout.test F-LG13 统一宽字面锚 it+兄弟占位 256 恰值 it；lineage-canvas.test 统一 rect 宽 240 it——含 jsdom 量测桩）+e2e（lineage.spec T1 全节点 rect 240x110 单值断言——属性级 k 无关） | 已锚定（单测级 F-LG13 本单；e2e 面随主控收口） |
+ | INV-37 | 划选视觉=自绘并集层（ADR-0019 R1/R3 修订，F-A4 2026-08-31；R3=F-A6 2026-09-04）：选区视觉反馈是**浏览器选区状态**的直接函数（evaluate 产链归并产物经 selection-paint portal 进选区所在页盒单层单绘——与保存 rects 同源；色 rgba(0,0,0,0.20) 同 R2-F-10 观感；**R3 调度双路**：拖选期=rAF 对齐快路径[selection-geometry createVisualScheduler——首事件即排 rAF leading ≤16ms+帧内合帧去重，取代 200ms 节流 5Hz 步进]，settle[mouseup 即时+防抖 200ms]=全量单一权威；**拖选期语义弱化=显式登记（用户裁决 2026-09-03）：所见≈所存**——快路径同族项几何管线的瞬态近似（四道收敛守卫+G2 同门；INV-58 锁同几何族），**松手/保存时刻严格恢复所见即所存**=settle 全量单一权威）。::selection 背景=transparent（text-layer.css——官方 pdf.js 逐 span 绘制在重叠行盒处叠深，CSS 层无解；SR2-F-08 原生路线两病根已解：拖选零反馈→rAF 快路径在场，accent 近不可见→观感灰在案）。组件态（pending/工具条）与选区视觉**允许分离**——Escape 只清 pending（工具条收），自绘层保留至选区真正清除（点击坍缩/保存 removeAllRanges 同步清/承载页卸载）；`[data-testid="selection-rects"]` 在 pending 态**在场**（R1 修订反转原 0 计数守卫——受锁两测试已改向） | text-layer.css `.textLayer ::selection`=transparent（F-A4）+SelectionLayer paint 态渲染 SelectionPaint（portal 页盒；z=page-layer-z.selectionPaint=3 页内最上——色块垫底 canvas 透明底墨带之下，ADR-0019 R2；[F-A5] 块垂直=行簇字形带+水平界=端点夹取+缺省行盒原样回退——**[F-A6] selection 产链 bands 已迁项几何派生（bandsFromItems，INV-58 同源禁令）；bandsForTextNodes 节点口径驻标注域（AnnotationLayer——票外适用域）**；[F-A6] 产链=selection-evaluate 双路径[快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威]+selection-geometry rAF 调度器） | e2e（reader-text.spec F-06 小票：::selection transparent+selection-rects 在场+块色 rgba(0,0,0,0.2)+toolbar ≤1.5s；F-A6-d 两小票[2026-09-04]：旋转×CropBox 组合页[块=行真值+不溢渲染页盒+span×canvas 交集]+拖选随动[300ms 窗 ≥2 次块变更]）+unit（selection-layer.test F-A4 反转守卫+selection-paint.test S1~S5：并集渲染/所见即所存/Escape 语义/清除随选——M2 变异红证在档；**F-A6-c 扩锚**：selection-geometry.test C1~C4[帧内合帧去重/leading ≤16ms/防抖 200ms 逐字保持/cancel 双句柄]+selection-evaluate.test[快慢等价+同帧覆盖（mid-drag zoom 形态）+快路径跨页守卫+W1 mouseup cancel-before-evaluate 顺序锚]） | 已锚定（e2e+单测级 2026-08-31 F-A4，真机 f-a4-verify-after.json 12/12；2026-09-04 F-A6-c/d 扩锚调度与快路径——拖选期弱化语义随 R3 落笔在案） |
+ | INV-38 | 脉络卡高单源（F-LG13 修订 2026-08-31）：nodeHeight(title) **恒返 NODE_H=110**（签名兼容保留——R2-LG11 行数分档 64/82/100 随令删除）；卡结构=题名区 flex:1 **overflow-y auto+scrollbar-width thin**（完整题名常驻 DOM，line-clamp 删除；**滚轮归属**：卡 g 根原生 wheel 委托——题名溢出 scrollHeight>clientHeight+1 时 stopPropagation 阻画布 zoom+preventDefault+主动 scrollTop 钳滚动（INV-41 同款时序依据：React 合成 onWheel 晚于 svg 原生 zoom listener 不可达），未溢出不吞 zoom；滚动条拖动=原生恒归题名）+底行信息区 24px（data-card-footer——F-LG14 填充锚，高度含在 110 内）；三消费（LineageNodeCard rect 高/LineageEdges 端点 ±h/2 经 geom 预构建/lineage-viewport fitViewport 包围盒）同一纯函数，禁任一处手写卡高；**紧凑布局随令（F-LG13「中间没有空地」）**：SIBLING_GAP 40→16/TREE_GAP 80→24/SURVEY_COL_GAP 80→24（LAYER_GAP 140 年份时间轴语义不动）；**B1 单源化补记**：BAND_LEFT(-200)/BAND_RIGHT(99999)/LAYER_LABEL_DY(32) 驻 lineage-layout.ts 导出——fitViewport 左界/Canvas 层带线 x1/x2/年份标 y 偏移消费同源禁各写；综述右列（决3）：isSurvey 节点不进树（x/y 双覆盖综述除外）、列左缘=max(非右列右缘)+SURVEY_COL_GAP(24)、同层输入序错开≥半宽和+SIBLING_GAP、y=year 层带 | lineage-layout.ts nodeHeight+常量区+综述列段（R2-LG11 2026-08-29 登记；F-LG13 2026-08-31 修订——统一卡高+题名滚动）+LineageNodeCard.tsx 滚轮委托+lineage-classify.ts isSurvey/isCore（决2 D1' 出度口径 2026-08-29 真机复评修正：研究性论文出度≥2——「被引≥2 开宗立派」=≥2 继承者；入度版在 INV-27 树单父下数学恒假） | 单测（lineage-layout.test F-LG13 统一高字面锚 it+综述右列精确值 648 it 含变异红证锚 P.x=C1.x；lineage-classify.test 8 it；lineage-canvas.test 题名滚轮归属 it+统一 rect 高 110 it；lineage-canvas-visual.test 题名滚动区 DOM it+底行 24px；变异红证 M1~M4 在档 scripts/audits/f-lg13-mut-m*.log） | 已锚定（单测级 F-LG13 本单；e2e/真机面随主控收口） |
+ | INV-39 | 界面缩放三档只缩 HTML 文本面：uiScale（small/medium/large，数值单源 shared/ipc/schemas `UI_SCALE`=1/1.1/1.25）经 App 挂载 load（失败容忍默认档）+订阅→effect 单点写 documentElement `--ui-scale`→内容行 `.app-content-row` 整行 zoom（nav+main）；**PDF 页列恒补偿**：`[data-page-column]` `zoom: calc(1 / var(--ui-scale, 1))` 三态通配（ready/loading/error）——canvas 视觉恒基线（探针实测 canvas 跟随×1.1 即位图拉伸模糊，反向补偿精确恢复 612×792+textLayer 对位不破坏；单独 zoom:1 无效=相乘语义），reader 自有页缩放（viewport scale）与界面档正交；**header/caption 结构性豁免**：zoom 挂内容行，header 在行外恒 56px（44→56 用户裁决 2026-08-31 增高令——断言/登记册随令同步）；settings set 通道 Req=完整 appSettingsSchema（register strict 校验+整体落盘）→**一切 set 调用必须组装全量**（缺省字段被 zod default 静默填默认值抹掉现值）；zoom 效果断言面必须量 getBoundingClientRect（computed fontSize 对 CSS zoom 无感——探针实测） | App.tsx（挂载 load+变量 effect+内容行类）+theme.css（.app-content-row/[data-page-column] 声明）+SettingsPage.tsx（点档全量 save）（R2-SET1，2026-08-29 登记） | 单测（app-shell 变量两面：挂载档+save 变化沿；settings.store uiScale 透传；ipc 旧文件 default 兼容+set 持久化）+CSS 文本锁（theme.test 正则锚定声明形态——防注释字样救活，变异③实证）+e2e（smoke.spec R2-SET1 用例：nav 首项 rect ×1.25±2px+header 恒 56，rect 断言非 computed） | 已锚定（单测级 R2-SET1 本单全绿+变异四方向红证在档；e2e 随主控收口统一跑） |
+-| INV-40 | 标注矩形归并（F-A1，multiply 单乘语义的数学表达）：同一标注的渲染色块集合**两两不相交**（INV-A）+**每行至多一块**（INV-B，行内 x 并集）+**零宽块不入集合**（INV-C，w≤W_MIN=1/612 归一化域≈1px@612pt）+**相邻行块垂直边界钳制**（INV-D，下行顶≥上行底）；持久化兼容（INV-E）——存量 rects 渲染读时过同一归并器，库零迁移、存量渐净；单源=`mergeRects` 纯函数（确定性六步：滤零宽→(中心y,x,y) 全序→与全部既有簇比中心距聚类（容差 min(hNew,hRowMedian[,lineH])/2——高瘦免疫；**F-A4 行高感知**：可选 lineH（PDF 行高，选区 span 字号中位数/textLayer 盒高——annotation-anchor rectsBetweenPoints 挂 A+AnnotationLayer 挂 B 两路注入）钳制容差，紧行距下 CSS 回退行盒膨胀不再跨行并簇）→行内归并（h/中心y 取下中位，单成员恒等）→行间钳制→(y,x) 稳定排序）；幂等（已归并输入值不变——单块/单成员行不经浮点往返）；**[F-A4 修订 2026-08-31]** 原已知边界（leading≲0.75×行盒高跨行并簇成单高块）已修复：mergeLineRects 像素域聚行判据在 lineH 在场时改「中心距 ≤ lineH/2」（替代 y 区间重叠率 25% 判据——真行高为基准），mergeRects 容差同步 lineH 钳制；lineH 缺省=旧行为存档（受锁 ⑪ 存档断言）。真机实锤：修前 3 行拖选并簇 1 块→修后 3 块分行、块顶贴行簇顶 ≤1.5px（f-a4-verify baseline/after 对照在档）；字号量测口径=本地 CSS px（视口域阈值在 PDF zoom≠1 时等效收紧 1/zoom，方向安全——代码注释声明） | src/renderer/features/reader/annotation-merge.ts（mergeRects 单源+W_MIN 导出）；挂 A=annotation-anchor.rectsBetweenPoints 归一化后收口（划选保存/重开重锚/rectsFromRange 手工三路径）；挂 B=AnnotationLayer 渲染 map 读时归并（resolved 幂等无害+a.rects 存量渐净；[F-A5] 渲染垂直几何=行簇字形带单源——重锚成功走节点口径带/存量回退走几何口径 bandsNearRects，annotation-resolve 域）（F-A1，2026-08-30 登记；F-A5 补注） | 单测（annotation-merge.test ①~⑩：零宽滤除/同行交叠并集/同位重复并入/负间隙钳制后两两相交面积 0/混合族 INV-A/单块恒等/幂等/高瘦+紧行距判别/排序确定性/混排字号中位——M3/M4/M5 变异红证在档）+组件（annotation-layer.test：存量缺陷态 rects 读时归并=挂 B/INV-E 锁，M1 红证）+e2e（reader-text.spec F-A1 多行用例：跨 3 行划选→库内+渲染双侧「块数=行数」断言（取证实证锚定），M2 红证） | 已锚定（单测+组件+e2e 级 2026-08-30 F-A1 三屋；真库取证 f-a1-verify.json：7 块→5 块=行数/零宽 0/间隙全正/两两相交 0） |
++| INV-40 | 标注矩形归并（F-A1，multiply 单乘语义的数学表达）：同一标注的渲染色块集合**两两不相交**（INV-A）+**每行至多一块**（INV-B，行内 x 并集）+**零宽块不入集合**（INV-C，w≤W_MIN=1/612 归一化域≈1px@612pt）+**相邻行块垂直边界钳制**（INV-D，下行顶≥上行底）；持久化兼容（INV-E）——存量 rects 渲染读时过同一归并器，库零迁移、存量渐净；单源=`mergeRects` 纯函数（确定性六步：滤零宽→(中心y,x,y) 全序→与全部既有簇比中心距聚类（容差 min(hNew,hRowMedian[,lineH])/2——高瘦免疫；**F-A4 行高感知**：可选 lineH（PDF 行高，选区 span 字号中位数/textLayer 盒高——annotation-anchor rectsBetweenPoints 挂 A+AnnotationLayer 挂 B 两路注入）钳制容差，紧行距下 CSS 回退行盒膨胀不再跨行并簇）→行内归并（h/中心y 取下中位，单成员恒等）→行间钳制→(y,x) 稳定排序）；幂等（已归并输入值不变——单块/单成员行不经浮点往返）；**[F-A4 修订 2026-08-31]** 原已知边界（leading≲0.75×行盒高跨行并簇成单高块）已修复：mergeLineRects 像素域聚行判据在 lineH 在场时改「中心距 ≤ lineH/2」（替代 y 区间重叠率 25% 判据——真行高为基准），mergeRects 容差同步 lineH 钳制；lineH 缺省=旧行为存档（受锁 ⑪ 存档断言）。真机实锤：修前 3 行拖选并簇 1 块→修后 3 块分行、块顶贴行簇顶 ≤1.5px（f-a4-verify baseline/after 对照在档）；字号量测口径=本地 CSS px（视口域阈值在 PDF zoom≠1 时等效收紧 1/zoom，方向安全——代码注释声明） | src/renderer/features/reader/anchors/annotation-merge.ts（mergeRects 单源+W_MIN 导出）；挂 A=annotation-anchor.rectsBetweenPoints 归一化后收口（划选保存/重开重锚/rectsFromRange 手工三路径）；挂 B=AnnotationLayer 渲染 map 读时归并（resolved 幂等无害+a.rects 存量渐净；[F-A5] 渲染垂直几何=行簇字形带单源——重锚成功走节点口径带/存量回退走几何口径 bandsNearRects，annotation-resolve 域）（F-A1，2026-08-30 登记；F-A5 补注） | 单测（annotation-merge.test ①~⑩：零宽滤除/同行交叠并集/同位重复并入/负间隙钳制后两两相交面积 0/混合族 INV-A/单块恒等/幂等/高瘦+紧行距判别/排序确定性/混排字号中位——M3/M4/M5 变异红证在档）+组件（annotation-layer.test：存量缺陷态 rects 读时归并=挂 B/INV-E 锁，M1 红证）+e2e（reader-text.spec F-A1 多行用例：跨 3 行划选→库内+渲染双侧「块数=行数」断言（取证实证锚定），M2 红证） | 已锚定（单测+组件+e2e 级 2026-08-30 F-A1 三屋；真库取证 f-a1-verify.json：7 块→5 块=行数/零宽 0/间隙全正/两两相交 0） |
+ | INV-41 | 脉络边标签三保证（F-L1-C，用户裁决变体 C+两条硬性保证 2026-08-30）：①渲染盒恒 foreignObject 130×37.05（EDGE_LABEL_MAX_W/H 单源）+`.lineage-edge-label` 类（9.5px 斜体 #6b7280 白晕 text-shadow+break-word 换行+max-height 3 行+overflow hidden——真实溢出承载滚动语义）；②**槽位恒经 placeEdgeLabels 防重叠放置**（锚=贝塞尔中点，与 LineageEdges 回退公式同式——两处头注互指；碰撞盒=estimateLabelWidth+gap4×37.05+gap4，节点盒外扩 6；偏移序 dy 0,±lh…±10lh（lh=12.35）×dx 五档（0,±(hw+16),±(hw+16)×2）——**回炉 1 实测依据**：±5lh 撑不出 100 高节点盒（分离阈精确 76.525/86.45）；全占位回 anchor=声明式 best effort（⑤环绕盒夹具锁）；贪心依赖输入序（序稳定性契约非交换性）；③**截断标签悬停滚动**：g 根原生 wheel 委托（React 合成 onWheel 时序晚于 svg 原生 zoom listener——不可达，头注在档）命中截断标签（scrollHeight>clientHeight+1）时 stopPropagation（防 zoom）+preventDefault（防默认）+主动 `scrollTop=clamp(+deltaY)`（防 Chromium foreignObject 滚轮路由不确定）；未截断零拦截；槽位盒恒参与 auto-fit 包围盒（fitViewport 第 5 参 labelBoxes，被推出的标签不消失在 fit 视野外） | src/renderer/features/lineage/edge-label-layout.ts（放置器+估宽单源）+LineageEdges.tsx（FO 换装+wheel 委托+slots 消费）+LineageCanvas.tsx（slots/labelBoxes useMemo）+lineage-viewport.ts（fitViewport labelBoxes）+theme.css（.lineage-edge-label+:hover overflow-y:auto——B1 教训交互态住类）（F-L1-C，2026-08-30 登记） | 单测（edge-label-layout.test ①~⑥+②b/③b 真库场景+⑤环绕盒回退+fit 数值锁——M4/M5/R1/R2 变异红证）+组件（lineage-canvas.test ⑦~⑩：FO 形态/slots 生效/wheel 双向锚（scrollTop 恰增 deltaY+未截断放行）/CSS 声明形态正则锁——M1/M2/M3/R2R 红证）+真机取证（f-l1-out/f-l1c-verify.json：注入碰撞源 5 标签/4 节点 labelOverlaps=0/nodeOverlaps=0+截断标签 wheel scrollTop=16 恰为隐藏量+viewport transform 不变） | 已锚定（单测+组件+真机级 2026-08-30 F-L1-C 三屋+回炉 1） |
+ | INV-42 | 选择模式交互不变量（F-A3，2026-08-30；**2026-09-02 AUDIT-C C-2① 真机直测补锚+口径修正**）：选择模式（`TabState.selectionMode=true`，per-tab 与 zoom/color 同型）下**两层防线**：①用户标注层与 AI 标注层一切渲染 rect `pointer-events:none`（声明面——点击穿透）；②onClick 内 `if (selectionMode) return` 守卫兜**一切到达 rect 的点击**（真鼠标与程序化派发同拦——**2026-09-02 C-2① 变异红证实测修正**：原「守卫兜程序化派发」表述不完整；程序化 `HTMLElement.click()` 不走 hit-test 是守卫存在的理由，非守卫的唯一拦截面）——点击穿透零副作用；拖选可在 rect 上发起=SelectionLayer 正常链路（**F-A2 根治**：mousedown 落 pointerEvents:auto 块上浏览器不发起文本选择的机制面解除）；常规（=false，默认）保持现状（点击标注=菜单/AI 段跳转）；**进入选择模式经 useLayoutEffect 在 paint 前关闭已开菜单/编辑器+清 AI 选中描边，切回常规不自动恢复**（S1/S4/S5——编辑器草稿丢弃=Escape 同语义；busy 在途结果回调幂等）；SelectionLayer 不消费模式（正交零改）；字段缺席（存量测试夹具直植形态）=常规态——生产单源 makeLoadingTab 显式 false，消费方一律 `?? false` 兜底 | reader.store.ts 头注（面③生命周期迁移表）+AnnotationLayer/AiAnnotationLayer 头注（F-A3 段）+ReaderPage.tsx 装配（toggle 语义在装配面，工具栏纯受控）（F-A3，2026-08-30 登记） | 单测（selection-mode.test ①~⑧ always-active：store 翻转+no-op/per-tab S3/rect pointerEvents 两态+点击零副作用/S1 菜单臂+编辑器臂双锁/S4 描边清除/工具栏 aria-pressed+回调——变异红证 M1~M5+M2'（只摘 setEditing(null)→仅⑧红））+真机取证（f-a3-out/f-a3-verify.json 三场景：A 常规压块拖选 selLen=0 负向对照/B 选择模式 58 rect 全 none+压点 hitTest 落文本 SPAN+同点位拖选 selLen=81+工具条+保存计数 1→2/C 切回 auto+点击出菜单）+**真机直测补锚（C-2①，2026-09-02）**：f-a3-n6-verify.mjs——B-n6 选择模式真鼠标单击 rect 中心：零副作用四断言（无菜单/无编辑器/零选区/annotationId 计数不变）+穿透证明（elementFromPoint=SPAN 非 rect）+C 对照常规模式同点位点击菜单出现（非恒真证明）；变异红证=pointerEvents none→auto 探针红（styleNone+penetrated 双断言承载——票面预判「菜单将出现」被实测证伪：守卫对真鼠标同拦，处置经门一裁有效）；AI 层如实条件执行（真实库副本无 ai-note-rect=absent 记录） | 已锚定（单测+真机级 2026-08-30 F-A3 三屋+回炉 1；**N6 弱锚已销项**——2026-09-02 AUDIT-C C-2① 真机直测落地，三层推断升级为直接锚；已知脆弱点备案：C 对照坐标沿用 B 场采样（模式切换若致 rect 重锚微移可能误红——门一 W1 在档，实测 PASS） |
+ 
+ | INV-43 | lineage 视口坐标系不变量（F-L2，2026-08-30）：视口数学三消费点（fit 量测/wheel 锚点/pan 增量）**恒以 svg 本地坐标系计量**——fit=`el.clientWidth/clientHeight` 直取（CSS 本地布局 px，不含祖先 zoom）；wheel/pan=根框差值×`rootToLocalScale(el, rect?)` 归一（比值=clientWidth/gBCR.width=1/有效 zoom，嵌套自动复合、零 CSS 类耦合；任一量测≤0→1 防御）。**SET1 接缝**：`.app-content-row { zoom: var(--ui-scale) }`（theme.css）缩放子树内 `getBoundingClientRect()` 返回根框视觉 px（含 zoom），直接入 transform 数学=k 虚大→内容溢出视口（修前 large 档溢出 211.75px 实证）；事件 clientX 亦为根框 px（真鼠标 CDP 实测不除 zoom）。已知回退：fit 的 `clientWidth\|\|rect.width` 回退分支仅 jsdom 桩面可达（受锁测试只 stub gBCR——不劣于修前；真浏览器有布局恒走主路径，门一 W-1 备案「真机不可达性未证」残余理论风险）；clientWidth 整数舍入噪声 ≈0.03% 声明接受 | lineage-viewport.ts 头注（两坐标系口径+SET1 互指）+rootToLocalScale 单源导出（F-L2，2026-08-30 登记） | 单测（lineage-viewport-scale.test ①~⑤ always-active：zoom 子树模拟 1158/1447.5→0.8/zoom=1 恒等/守卫四组合（0/0、0/800、800/0→1）/嵌套复合 0.64/rect 可选参单读——M1/M2+mutn3/mutw2 变异红证）+真机取证（f-l2-out/f-l2-fix-verify.json 14/14：SET1 三档×fit 全节点入视口（large 1532.5≤1683 修复主断言）/k 随 clientWidth 正比自洽/pan dtx=80.03≈100×0.8 本地口径） | 已锚定（单测+真机级 2026-08-30 F-L2 三屋+回炉 1；弱锚备案：嵌套 zoom 复合无真机场景（④数学锁）、fit 回退真机不可达性未证、M3 型 fit 消费点 jsdom 不可达由探针 A 门锁） |
+ | INV-44 | lineage 视口尺寸变化自适应（F-L4，2026-08-31）：fit 触发源扩面「svg 布局盒尺寸变化」（uiScale 换档/窗口 resize 均其二阶来源）——ResizeObserver 观察 svg，回调与既有 fit effect **共用同一 doFit**（早退链顺序零变：userInteracted 不抢/nodes=0 不 fit/量测 0 跳过）。**门语义不变量**：userInteracted=true 时任何触发源（nodes 变化/尺寸变化）不抢视口。**S5 无自激励**：setViewport 只改 `<g data-viewport>` transform，svg 布局盒由父布局决定→不再触发 RO。**doFitRef 经 useLayoutEffect 提交后同步更新**（先于浏览器渲染步骤的 RO 回调帧——消「渲染提交→赋值前」陈旧闭包窗口，门一 W1 回炉）。**动机场景可达性（主控裁决如实降级）**：换档在当前 App 页面互斥（App.tsx:193-198 settings 与 lineage 条件渲染互斥）下用户路径=重挂载 mount fit（本就正确，探针 A-main 锁）；RO 兑现面=窗口 resize/挂载中布局变化+未来结构变化保险 | lineage-viewport.ts 头注 [F-L4] 段（F-L4，2026-08-31 登记） | 单测（lineage-viewport-refit.test ①~⑧ always-active：observe 注册面/尺寸变化 refit 数值断言/门语义不抢/空图/成对清理/量测守卫/无自激励非平凡（699/698 真新值重渲染锚）/初始回调幂等——M1~M5 变异红证，M5 检出 ②⑦⑧）+真机取证（f-l4-out/f-l4-verify.json 13/13：A-main 换档+重挂载 transform 逐位=fitViewport 期望（node 直载源码复算）/A-resize RO 端到端/B 门语义逐位相等/C 清理零泄漏/diagnostic cssZoomTriggersRO=true——fallback 判据直证不成立） | 已锚定（单测+真机级 2026-08-31 F-L4 三屋+回炉 1；弱锚备案：⑦二次 fireRO 断言弱于注释（N-r1）/~~探针固定 waitForTimeout 脆性（CI 慢机误报风险）~~**已销项（2026-09-02 AUDIT-C C-2③）**——f-l4-verify.mjs 固定等待 15 处全部轮询化（grep=0 实测），重跑 13/13 全过；实现顺带实证「条件成立≠状态稳定」（首版 lineageReady 只判 transform 非值遭 identity 初值中间帧竞态两红，补连续两次采样同值判据后稳定——固定等待侥幸绿的反向实证在档 scripts/audits/c2-impl.report.md）/挂载初始 fit 的 clientWidth 直取路径仅由 RO 端覆盖（r1-N2）） |
+ | INV-45 | 阅读器双页几何不变量（F-R1，2026-08-31）：pageLayout（per-tab 可选字段+?? 'single' 兜底）下——**列宽=最宽完整行**（双页行宽=左+右+PAGE_GAP_PX，行内 gap 不随 zoom——与 INV-33 盒间距常量同源；**末行孤页不计列宽**，故末行右盒缺席渲染行宽恒=左盒宽无跳变）；**行高=max(左右页高)**；**切布局不重跑 getPage 管线**（尺寸缓存单源复用，仅重派生行+重报 onReady 新口径 basisWidth）且**不丢位置**（onReady 链经 spProg.onColumnReady 恢复链滚回当前页）；**fitWidth 分母=onReady 上报的布局口径 basisWidth**（双页=行宽 scale=1）；双页翻页步进=2（pageStep 缺省 1=单页零变）；scroll-progress 回写/懒渲染回收/INV-29/30/33 语义全保持（nearestPage 行内两盒同 top 零特判） | page-column-geometry.ts（layoutRows/rowWidth/columnWidthFor/columnTotalHeightFor 单源）+PageColumn.tsx 头注 [F-R1] 段（F-R1，2026-08-31 登记） | 单测（reader-double-page.test ①~⑦ always-active 16 用例：store 生命周期/几何纯函数/行 DOM+末行单盒专项/管道不重跑（getPage 计数）/工具栏 pageStep/fitWidth 分母/锚总高口径——M1~M5+W3 六变异红证）+真机取证（f-r1-out/f-r1-verify.json 17/17：行宽公式 595+595+12/fitWidth 全列口径 133%≈(1625−24)/1202/翻面 +2 行盒顶 Δtop=0/往返位置保持同源锚 |Δ|=0+basis 269%→133%/roots 上界 10） | 已锚定（单测+真机级 2026-08-31 F-R1 三屋+回炉 2；弱锚备案：真库无奇数页文献——末行单盒真机面由单测③ DOM 断言代锁（E 走双盒分支）/e2e 双页覆盖未入票（备案后续）/布局切换 IO 重挂窗口期瞬时渲染膨胀（roots 上界锁，无跳顶实证） |
+-| INV-46 | 页内层序=背景板不变量（F-A5/ADR-0019 R2，2026-08-31 用户「背景板」令）：阅读器每页覆盖层的绘制序恒 **标注/AI 色块 < PDF canvas 墨带 < 自绘选区层**（textLayer 官方 z0 透明纯手势面）——实现为单源常量 `page-layer-z.PAGE_LAYER_Z`（text:0/colorBlocks:1/canvas:2/selectionPaint:3），色块混合 normal（multiply 全数摘除——F-07 荧光笔语义废止），canvas 以 `background:'rgba(255,255,255,0)'` 透明底渲染且 `pointer-events:none`（墨带恒为最高「字」——色块内文字像素纯黑不被染；标注 rect 点击/文本划选手势经明纸穿透零回归）；比较域=PageBox 页内容容器 `isolation:isolate`+白纸承底层（暗色主题页纸仍白）。弹层（菜单/编辑器 z-20/工具条 z-10）为页盒兄弟位天然高于本域 | src/renderer/features/reader/page-layer-z.ts（常量单源）+PdfPageCanvas.tsx（透明底+canvas 样式）+PageBox.tsx（isolate+白纸）+AnnotationLayer/AiAnnotationLayer.tsx（z=colorBlocks+multiply 摘除）+selection-paint.tsx（z=selectionPaint）+TextLayer.tsx（z 同值显式化） | unit（pdf-page-canvas.test：透明底参数+canvas 样式+白纸/isolate；selection-paint.test c1/c2：自绘 z 最上+常量序；annotation-layer/ai-annotation-layer.test：层 z=colorBlocks+multiply 缺席——M5 变异红证在档）+e2e（reader-text.spec 两程 mix-blend normal+z=1）+真机（f-a5-verify-after.json c/z-order×2+c/text-pure-black 块内最暗核=0） | 已锚定（单测+e2e+真机像素级 2026-08-31 F-A5） |
+-| INV-47 | rect 归并紧凑行距双门（F-V1，2026-08-31 用户图1/图2「整段拖选断位漂移」）：紧凑排版（textLayer span 盒高>行距，相邻行 y 区间重叠——修前 y 重叠判据跨行并簇产杂交矩形/丢行/同行双块，探针 f-v1-diag.json 实证）下两道门：①`mergeLineRects` 簇判据=pitch 在场时中心距 ≤ min(pitch, 主导高[, lineH])/2——`estimateLinePitch`=y 中心差滤 <2px 行内噪声后**下中位**（纯下中位对离群免疫——「30%×最大差」相对下限被 232px 远距零宽盒毒化实证修前事故在档）；段输出高度在可比带 pitch<主导高≤2×pitch 钳到行距（y 恒取主导不动；可比带外不钳=标题/旋转负向保护）；②`mergeRects` 终裁 lineH 在场时聚类容差追加归一化域 pitch 估计；**lineH/pitch 缺省=F-A4 原口径逐位不动**（受锁⑪存档断言锁）；修复在 rectsBetweenPoints 公共管线=选区/标注/AI 三消费点同源。**已知边界备案**（门一 W1/W3）：同行片段中心差 ∈[2px, h/2) 时 pitch 可被行内噪声劫持致像素域同行拆块——依赖 mergeRects 终裁（容差 h/2 量级）并回，观察项无实害病例；verify 探针行表 ±4px 聚行不分栏，双栏 y 对齐行合并为全宽端点——跨栏杂交块残余理论盲区（源头已被簇修复+x 断段阈值覆盖）。**适用面收缩注记（F-A8 门2，2026-09-04）**：mergeLineRects 退出重锚主链（重锚主链自门 2 起项几何族 baselineGroupBlocks——INV-58 扩域）——适用面收缩为「S4 DOM 回退层（回退层行为面不变——resolveAnnotationRectsDom 函数体零改，mergeLineRects/estimateLinePitch 受锁⑪锚定件[annotation-anchor.ts]行为不受本改名影响的间接保证）+存量读时归并（渲染面 mergeRects 挂 lineH）」 | src/renderer/features/reader/annotation-anchor.ts（estimateLinePitch 导出+mergeLineRects 双门）+annotation-merge.ts（pitchN 终裁）+annotation-resolve-layered.ts（F-A8 门2：回退层唯一编排入口） | 单测（annotation-anchor.test F-V1 a~e 五用例：缺省链并丢行/INV-D 级联下推/量测膨胀杂交/估计器数值+单行 undefined/常规域零变——M2/M3 变异红证收口补档在案；annotation-merge.test f/g 两用例含 M4b 缺省存档红证）+真机（f-v1-out/f-v1-verify.json 五判据：紧凑文档蓝链 7 行 7 块 x 全在行端点±2px+黄链同+第二篇双栏文献回归 7 行 7 块+pageerror 0） | 已锚定（单测+真机级 2026-08-31 F-V1 三屋+门一对抗深审；适用面收缩=F-A8 门2，回退层函数体零改在案） |
++| INV-46 | 页内层序=背景板不变量（F-A5/ADR-0019 R2，2026-08-31 用户「背景板」令）：阅读器每页覆盖层的绘制序恒 **标注/AI 色块 < PDF canvas 墨带 < 自绘选区层**（textLayer 官方 z0 透明纯手势面）——实现为单源常量 `page-layer-z.PAGE_LAYER_Z`（text:0/colorBlocks:1/canvas:2/selectionPaint:3），色块混合 normal（multiply 全数摘除——F-07 荧光笔语义废止），canvas 以 `background:'rgba(255,255,255,0)'` 透明底渲染且 `pointer-events:none`（墨带恒为最高「字」——色块内文字像素纯黑不被染；标注 rect 点击/文本划选手势经明纸穿透零回归）；比较域=PageBox 页内容容器 `isolation:isolate`+白纸承底层（暗色主题页纸仍白）。弹层（菜单/编辑器 z-20/工具条 z-10）为页盒兄弟位天然高于本域 | src/renderer/features/reader/state/page-layer-z.ts（常量单源）+PdfPageCanvas.tsx（透明底+canvas 样式）+PageBox.tsx（isolate+白纸）+AnnotationLayer/AiAnnotationLayer.tsx（z=colorBlocks+multiply 摘除）+selection-paint.tsx（z=selectionPaint）+TextLayer.tsx（z 同值显式化） | unit（pdf-page-canvas.test：透明底参数+canvas 样式+白纸/isolate；selection-paint.test c1/c2：自绘 z 最上+常量序；annotation-layer/ai-annotation-layer.test：层 z=colorBlocks+multiply 缺席——M5 变异红证在档）+e2e（reader-text.spec 两程 mix-blend normal+z=1）+真机（f-a5-verify-after.json c/z-order×2+c/text-pure-black 块内最暗核=0） | 已锚定（单测+e2e+真机像素级 2026-08-31 F-A5） |
++| INV-47 | rect 归并紧凑行距双门（F-V1，2026-08-31 用户图1/图2「整段拖选断位漂移」）：紧凑排版（textLayer span 盒高>行距，相邻行 y 区间重叠——修前 y 重叠判据跨行并簇产杂交矩形/丢行/同行双块，探针 f-v1-diag.json 实证）下两道门：①`mergeLineRects` 簇判据=pitch 在场时中心距 ≤ min(pitch, 主导高[, lineH])/2——`estimateLinePitch`=y 中心差滤 <2px 行内噪声后**下中位**（纯下中位对离群免疫——「30%×最大差」相对下限被 232px 远距零宽盒毒化实证修前事故在档）；段输出高度在可比带 pitch<主导高≤2×pitch 钳到行距（y 恒取主导不动；可比带外不钳=标题/旋转负向保护）；②`mergeRects` 终裁 lineH 在场时聚类容差追加归一化域 pitch 估计；**lineH/pitch 缺省=F-A4 原口径逐位不动**（受锁⑪存档断言锁）；修复在 rectsBetweenPoints 公共管线=选区/标注/AI 三消费点同源。**已知边界备案**（门一 W1/W3）：同行片段中心差 ∈[2px, h/2) 时 pitch 可被行内噪声劫持致像素域同行拆块——依赖 mergeRects 终裁（容差 h/2 量级）并回，观察项无实害病例；verify 探针行表 ±4px 聚行不分栏，双栏 y 对齐行合并为全宽端点——跨栏杂交块残余理论盲区（源头已被簇修复+x 断段阈值覆盖）。**适用面收缩注记（F-A8 门2，2026-09-04）**：mergeLineRects 退出重锚主链（重锚主链自门 2 起项几何族 baselineGroupBlocks——INV-58 扩域）——适用面收缩为「S4 DOM 回退层（回退层行为面不变——resolveAnnotationRectsDom 函数体零改，mergeLineRects/estimateLinePitch 受锁⑪锚定件[annotation-anchor.ts]行为不受本改名影响的间接保证）+存量读时归并（渲染面 mergeRects 挂 lineH）」 | src/renderer/features/reader/anchors/annotation-anchor.ts（estimateLinePitch 导出+mergeLineRects 双门）+anchors/annotation-merge.ts（pitchN 终裁）+anchors/annotation-resolve-layered.ts（F-A8 门2：回退层唯一编排入口） | 单测（annotation-anchor.test F-V1 a~e 五用例：缺省链并丢行/INV-D 级联下推/量测膨胀杂交/估计器数值+单行 undefined/常规域零变——M2/M3 变异红证收口补档在案；annotation-merge.test f/g 两用例含 M4b 缺省存档红证）+真机（f-v1-out/f-v1-verify.json 五判据：紧凑文档蓝链 7 行 7 块 x 全在行端点±2px+黄链同+第二篇双栏文献回归 7 行 7 块+pageerror 0） | 已锚定（单测+真机级 2026-08-31 F-V1 三屋+门一对抗深审；适用面收缩=F-A8 门2，回退层函数体零改在案） |
+ | INV-48 | 脉络节点标签与含金量展示不变量（F-LG14，2026-08-31 用户图6/图7）：①**tags 存储契约**=lineage_nodes.tags JSON 数组 TEXT（迁移 007），NULL=无标签（存量库零迁移兼容），**同节点同名标签去重恒成立**——写边界单源 dedupeLineageTags（shared/models/lineage.ts）经 repo.upsertNode 单点收口（service upsert/导入/应用内增删全经此口，DB 恒无重复标签；面板/对话框面 includes 短路=第一道 UX 防）；draft 节点 tags 可选（缺省省略=旧版草稿零破坏——ADR-0014 修订 v1.1）；②**含金量口径字面**=「引 {citedByCount} · {venueTier}档」并列原始值不合成单一分数（用户裁决在档）；citedByCount null/undefined=「引 —」；venueTier 未映射=「未定」；0=值非缺（判别 === null——ENR-01「从未抓到」与「已抓到且为 0」分立口径透传到卡面）；③**join 单源**=graph 通道 paperMetrics 批量 in-query 单语句（禁 N+1 逐节点通道调用——主控裁决），venueTier 映射单源 venueToTier（受锁常量零改），渲染层零额外取数（store 单读随行）；④主题节点（paperId null）底行=仅年份+标签（无含金量段——绑定态语义分界）；⑤标签增删=整组写经既有 upsert-node 通道（autosave-first 语义不变，payload tags 条件展开保既有调用点形状） | src/shared/models/lineage.ts（dedupeLineageTags 单源+draft tags schema）+src/main/db/repos/lineage.repo.ts（写边界收口）+src/main/services/lineage/lineage.service.ts（graph join+importDraft tags）+renderer LineageNodeMeta.tsx（口径字面 formatMetricsText 单源）（F-LG14，2026-08-31 登记） | 单测（lineage-tags.test：迁移 007/tags 列可空/draft 校验四态/导入落库去重/graph join 三元组+批量单语句 spy 计数锚；lineage-node-meta.test：含金量五口径字面锚+主题节点无含金量段+标签容器有无+24px 锚；lineage-tag-edit.test：Board 全链 payload/对话框取消零写/空标签短路/侧板增删上抛/store setNodeTags 载荷回填） | 已锚定（单测级 F-LG14 本单；真机 f-lg14-verify.mjs 面随收口） |
+ | INV-49 | pdfjs 文档生命周期销毁序（F-R3，2026-09-02 AUDIT-C C-1 修票）：①**worker-per-task 事实**——每个未传 worker 的 loadingTask 自带专属 PDFWorker，destroy=唯一终止口；应用面两个创建点句柄必须在册：PdfDocProvider（task 常量+cleanup destroy——既有）与 CorpusExtractor loadPdfDocument（**失败也释放**——settleLoadTask：失败路径 destroy 恰一次且自身拒绝吞并、**await settle 后**重抛原错误；成功路径零 destroy，doc.destroy 归 runExtraction finally——P6 泄漏面已闭）；②**destroy 竞态窗=接受残余**——destroy 落流加载窗内时 pdfjs 4.10.38 worker 泵产生 worker 世界 unhandled rejection（`Error: Worker was terminated`，经 CDP 汇入 pageerror 仪表通道），定性=devtools-only 噪声非破坏型（用户路径零影响，6/6 健康在档）；**不升级裁决**：v5.5.207 已修主逃逸点（onFailure 终接守卫）但同族悬尾（pdfManagerReady 链）master 仍在+destroy() 族硬化（claim 拒绝+_setupCapability）仅 6.3.289 起——任一档位不承诺零同族噪声，跨 major 回归面（INV-30/INV-16/P1 形状/e2e 全量重验）不换 devtools-only 收益（档案=scripts/audits/f-r3-upstream-check.md，逐 tag 可复现）；**升级再评估触发条件**=上游悬尾族全消时连同 destroy() 族硬化一并重评；③监控锚=主进程 console-message level1「getTextContent - ignoring errors…Worker task was terminated」代理计数（F-R3 探针 r7 实证可收）——仅监控不设阈 | PdfDocProvider.tsx 文档生命周期 effect+CorpusExtractor.ts settleLoadTask 与头注状态机表+scripts/audits/f-r3-investigation.md（排查闭环）+f-r3-upstream-check.md（上游查证档案）（F-R3，2026-09-02 登记） | 单测（corpus-extractor.test settleLoadTask 四径：成功不调 destroy/失败 destroy 恰一次/destroy 自身拒绝吞并不覆盖原错误/重抛在 destroy settle 之后——主控补变异 A/B/C 红证在档）——噪声本体无应用面机器断言（库内缺陷接受残余，监控=主进程代理计数备案） | 部分（泄漏面已锚单测级；噪声面=显式接受残余+监控备案） |
+ | INV-50 | 弃改=完整弃改（A3，2026-09-02 AUDIT-C C-3 扫描 §1.2-a 修票）：用户显式弃改确认后 notes 悬置面全闭三件套——①**discard API**（notes.store discardPendingEdit/discardAllPendingEdits：清防抖 timer+pendingEdit/touchedFields/lastEditedAt/editSeq 四元数据+条目删除，全幂等）；②**in-flight 代际守卫**（saveSoon 派发快照 discardGen，.then/.catch 回调首行代际已变=全 no-op——防回调经 draftOf 重建已删条目/复活 pending 镜像）；③**接线两点**（tab-dirty confirmCloseDirty 守门内=弃改收口点，**一切 tab 关闭路径必经本守门**——TabBar 双点两位在案；workspace.store switchTo 确认后/await invoke 前=切课题收口，跨域受控例外=check-quality COMPOSITION_ROOT_ALLOW 白名单机器锚）。语义边界：closeAll（App 切视图）非弃改不触发（autosave-first 草稿存活+timer 继续跑）；App dirty 聚合含 notes pending（useTabDirtyAggregate 扫开 tab 键集——clean 直达=no-op 成立）；已接受残余=in-flight save 已派发毫秒窗（DB 落地不可回收；跨课题面由 main 归属校验兜——notes.service papers.findById→NOT_FOUND 显式先行，FK 为第二层）+load 回调 discard 后到达重建条目=服务器基线非弃改内容（复活不可能：pendingEdit 已清必走整版落地） | notes.store.ts discard 族（头注四跨格序列）+tab-dirty.ts confirmCloseDirty（弃改收口点头注）+workspace.store.ts switchTo（A3，2026-09-02 登记） | 单测（notes.store.test discard 族七用例+reject 版序列②——变异 M1~M4+「仅摘 .catch 守卫」变异红证在档）+e2e（reader-text.spec「A3 复活面端到端」：防抖窗内关脏 tab 确认弃改→重开=基线，「已保存」载入锚防假绿）+tab-dirty/workspace.store 接线用例 | 已锚定（单测+e2e 级 A3 本单） |
+@@ -67,21 +67,21 @@
+ | INV-52 | import 会话身份两合一（F-D4，2026-09-02 AUDIT-C D4 修票；范式=corpus-export INV-18 同族）：①**互斥 gate**——import.service importFiles/importFolder 每次调用入口 gate.enter()、finally gate.exit()（尽力而为与域错误抛出路径都必经 finally）；gate=bootstrap 顶层一次创建的闭包计数器（容器 assemble 闭包之外——每层 service 重建但 gate 同一对象，switch 后 in-flight 计数仍跨层有效）；workspace.service create/rename/switch 三入口在 busy 检查旁查 importInFlight()（计数>0）→CONFLICT「导入进行中，请稍后再试」，**先于 closeCurrent/materializeLegacy（拒时零库副作用）**；in-flight 判定=main 侧计数单源，renderer busy 不参与（两进程面各自独立）；拒绝=用户稍后重试（低频窗=大文件夹导入分钟级）②**进度事件 sessionId**——ImportProgressEvent 增 sessionId（min(1)）；每次 importFiles/importFolder 调用入口 randomUUID() 一次，该次调用内全部进度事件（含 scanning/done）同 id；ImportDropZone 订阅回调三滤：busyRef=false 忽略（终局后迟到事件不写 state）+sessionRef 首事件锚定+异身份忽略（runImport 入口重置）——残余窗=新会话 start 后首事件前（旧事件须跨越终局+用户点击两层，理论窗，照 corpus-export.store 注释同口径） | import.service.ts（gate+sessionId 头注）/workspace.service.ts（互斥三入口+跨格序列⑥头注）/bootstrap.ts（gate 顶层创建）/ImportDropZone.tsx（三滤+残余窗头注）/schemas.ts（sessionId 契约）（F-D4，2026-09-02 登记） | 单测（import.service.test F-D4 describe 三用例：全程同 id+两次调用不同/gate 计数 failed 折叠路径/域错误路径 finally exit——变异 M1「exit 挪出 finally」红证在档；workspace.test「import in-flight 时三入口 CONFLICT 中文+closeCalls/assembledDirs 零库副作用」；import-dropzone.test.tsx 四用例：订阅成对退订/本会话写/异身份滤——变异 M2「删异身份过滤」红证在档/idle 不写不锚定） | 已锚定（单测级 F-D4 本单） |
+ | INV-53 | 标签 id 消失即引用清空（P7E-01，2026-09-03 标签生命周期票）：标签 id 因**删除/合并（源）**消失后，一切 renderer 持有的该 id 引用必须**当场清空**——首登记面=library 筛选 query.tagId：TagFilter 变更成功回调中消失 id===selectedTagId 时**先** onFilterChange(null)（FilterBar→onChange→library.store setQuery 清 tagId+自动重载）**后** onMutated()（library load 刷新行徽标）——顺序反了=死 tagId 经 papers.queries EXISTS 过滤得空列表窗；rename/合并目标 id 稳定筛选不动（S4/S5）；主进程侧死 id 天然安全（001 FK CASCADE 清 paper_tags+悬挂 attach 由 FK 抛错兜底）；renderer 跨域合规路径=TagFilter 经 props 回调上抛（禁 import library.store，COMPOSITION_ROOT_ALLOW 白名单制） | src/renderer/features/tags/TagFilter.tsx（handleMutated 顺序契约+头注）+src/renderer/features/library/FilterBar.tsx（onMutated 注入点）+src/renderer/features/tags/TagLifecycle.tsx（onMutated 载荷 disappearedId：rename=null/merge=源 id/delete=自身 id）（P7E-01，2026-09-03 登记） | 单测（tag-lifecycle-ui.test.tsx：S2/S3 invocationCallOrder 先于锚+S4 目标选中筛选不动+M4 变异「撤 onFilterChange(null)」红证在档）+e2e（tag-lifecycle.spec 删除段：选中态删除后丙文献回归全列表=死筛选自愈装配级） | 已锚定（单测+e2e 级 P7E-01 本单） **P7E-06 多选适配（2026-09-03）**：tagIds 数组交集形态下死 id 处置=剔除消失 id 非全清（其余选中项保持有效过滤，剔除后空集→undefined→全列表自然回退），顺序锚不变；预扫教训在档=「单选交互=多选特例」仅在单元素选中集成立，连续点击两 chip 的换选序列非特例（tag-lifecycle.spec 配套插取消点击恢复序列语义——交互序列等价≠单元素特例等价） |
+ | INV-54 | 拖拽路径单源（P7E-02，2026-09-03 拖拽导入票）：①**File→path 解析唯一口**=preload webUtils 经 window.apiDrag.importDropped——路径字符串生命周期限 preload 堆内，renderer 全程零接触；②**fromPaths 通道对 renderer 隐藏**——PRELOAD_HIDDEN_METHODS 单源（const+PreloadApi Exclude 类型双消费），main 侧照常全量注册；被攻陷 renderer 即使拿到 window.api 也无法 invoke 任意路径串（合成 File 经 webUtils 解析得 ''=天然拒）；③**数量上限 100 双层门**（preload planDroppedImports MAX_DROP_FILES+importPathsReqSchema max 同值）；④**类型门**（W2 回炉）：File.type==='' 项剔除——目录项 type 恒 ''（目录可合法命名 *.pdf 击穿后缀滤）；已知残余=无注册类型的真实 PDF 被保守拒（提示语引导按钮导入，对话框路径无此限） | src/preload/drag-import.ts（planDroppedImports+MAX_DROP_FILES 头注）/src/preload/index.ts（buildDrag+隐藏面跳过）/src/shared/ipc/api-surface.ts（PRELOAD_HIDDEN_METHODS+PreloadDrag）/tests/contracts/preload-surface.test.ts（减集断言+apiDrag 形状）（P7E-02，2026-09-03 登记） | 单测（drag-import.test 八分支：'' 滤/类型门/后缀大小写/混合/数量门——M1/M5 变异红证在档+M4「删隐藏跳过」契约减集断言红）+契约测试（preload-surface）+e2e（import-drag.spec D2 装配级：合成 File→toast 真实文本） | 已锚定（单测+契约+e2e 级 P7E-02 本单；真实 OS 拖拽正向链=手动验收面申报） |
+-| INV-55 | 页内搜索会话挂文档身份+代际守卫（P7E-03，2026-09-03 页内高亮搜索票）：①**会话生命周期挂 reader 视图文档身份**——reader-search.store 持 sessionFileUrl，装配面 useReaderSearch fileUrl 键效应调 bindDoc(fileUrl)：**变化即代际失效+全清**（换文档/换内容寻址身份），不变=no-op（同文档视图往返/重挂不清——会话保留为正确语义；门一 W1 回炉：实例级 ref 在重挂首跑 null 跳过=旧文档会话复活漏洞，记账入 store 根治）；②**在途搜索代际守卫**（INV-03 同族）——submit 每次自增 generation，逐页回传代际不符→作废终止；close/reset 同使代际失效；③**索引全文档/高亮仅渲染窗口**——搜索计数与窗口无关（确定性投影），高亮矩形=TextLayer DOM span 建 Range 取 clientRects（pdfjs 4.10 每文本项恰一 span 契约，数量不符→该页零高亮只计数=降级不崩）；④**active 居中记账单源**=store.lastCentered（matches 数组身份+activeIndex 比对）——跨层实例/跨懒渲染重挂生效，防实例重建隐式重获居中资格劫持用户滚动（门一 W2 回炉） | src/renderer/features/reader/reader-search.store.ts（bindDoc/sessionFileUrl/lastCentered/generation 头注）/useReaderSearch.tsx（fileUrl 键效应→bindDoc+keymap 'reader-search' 成对）/SearchHighlightLayer.tsx（居中记账读写 store+span 契约降级）/reader-search.ts（纯函数域头注）（P7E-03，2026-09-03 登记） | 单测（reader-search.store.test：bindDoc 变化/同值+代际守卫 S7+reset 序列；reader-search-wiring.test：fileUrl 变化/重挂不重置+keymap 注册注销成对 INV-14+pageTurner 条件；reader-search-ui.test：S11 MO 重算锚+层重挂不二次居中——M6 变异「摘 observer.observe」红证在档）+e2e（reader-search.spec 装配级全链：Ctrl+F→小写跨大小写命中→逐处跳页高亮→Esc 清零） | 已锚定（单测+wiring+e2e 级 P7E-03 本单） |
++| INV-55 | 页内搜索会话挂文档身份+代际守卫（P7E-03，2026-09-03 页内高亮搜索票）：①**会话生命周期挂 reader 视图文档身份**——reader-search.store 持 sessionFileUrl，装配面 useReaderSearch fileUrl 键效应调 bindDoc(fileUrl)：**变化即代际失效+全清**（换文档/换内容寻址身份），不变=no-op（同文档视图往返/重挂不清——会话保留为正确语义；门一 W1 回炉：实例级 ref 在重挂首跑 null 跳过=旧文档会话复活漏洞，记账入 store 根治）；②**在途搜索代际守卫**（INV-03 同族）——submit 每次自增 generation，逐页回传代际不符→作废终止；close/reset 同使代际失效；③**索引全文档/高亮仅渲染窗口**——搜索计数与窗口无关（确定性投影），高亮矩形=TextLayer DOM span 建 Range 取 clientRects（pdfjs 4.10 每文本项恰一 span 契约，数量不符→该页零高亮只计数=降级不崩）；④**active 居中记账单源**=store.lastCentered（matches 数组身份+activeIndex 比对）——跨层实例/跨懒渲染重挂生效，防实例重建隐式重获居中资格劫持用户滚动（门一 W2 回炉） | src/renderer/features/reader/view/reader-search.store.ts（bindDoc/sessionFileUrl/lastCentered/generation 头注）/useReaderSearch.tsx（fileUrl 键效应→bindDoc+keymap 'reader-search' 成对）/SearchHighlightLayer.tsx（居中记账读写 store+span 契约降级）/reader-search.ts（纯函数域头注）（P7E-03，2026-09-03 登记） | 单测（reader-search.store.test：bindDoc 变化/同值+代际守卫 S7+reset 序列；reader-search-wiring.test：fileUrl 变化/重挂不重置+keymap 注册注销成对 INV-14+pageTurner 条件；reader-search-ui.test：S11 MO 重算锚+层重挂不二次居中——M6 变异「摘 observer.observe」红证在档）+e2e（reader-search.spec 装配级全链：Ctrl+F→小写跨大小写命中→逐处跳页高亮→Esc 清零） | 已锚定（单测+wiring+e2e 级 P7E-03 本单） |
+ | INV-56 | 导出内容构建器单源+剪贴板写单口（P7E-04，2026-09-03 导出剪贴板票）：①**文件路径与剪贴板路径共用同一构建器**——export/clipboard 通道经 buildBibtex/buildCsv 直用（ipc 层 format 枚举分发），禁复制第二份序列化（题录格式漂移不可能——文件导出与剪贴板导出同源）；②**剪贴板写唯一口**=IpcDeps.clipboard 注入面（ipc 层经 deps 消费，bootstrap 装配 electron.clipboard——DB 派生内容全程 main 侧，renderer 只发 ids+format）；③**先构建后写**（构建失败零剪贴板副作用）；④无对话框→无 CANCELLED 分支（与文件导出 exportTo 的语义差异——失败面只有构建/写入两种）；已知还原项=clipboard 现为可选注入（受锁 makeIpcDeps 桩工厂禁改下的处置+handler 响亮守卫），下次合法触碰 tests/utils/ipc-deps.ts 的场次补必填+桩工厂同步 | src/main/ipc/export_.ts（exportClipboard+头注）/src/main/ipc/ipc-deps.ts（clipboard 注入面）/src/main/bootstrap.ts（electron.clipboard 装配）/src/shared/ipc/schemas.ts+api-surface.ts（clipboardReqSchema+通道）（P7E-04，2026-09-03 登记） | 单测（export-clipboard.test：bibtex/csv 委托逐参+count 回传+先构建后写「service 抛错→clipboard 零调用」+装配缺失响亮——M1/M2 变异红证在档）+renderer（paper-detail-clip.test：E1/E2/E4 busy 短路+toast 逐字——M3/M4 红证在档）+e2e（export-clipboard.spec：主进程 clipboard.readText 含 @+title——P7-A 读回先例+清场竞态防线） | 已锚定（单测+renderer+e2e 级 P7E-04 本单） |
+-| INV-57 | 阅读时长单口累加+分片上界（P7E-05，2026-09-03 阅读时长统计票）：①**reading_seconds 唯一写点**=papers.repo updateReadPage 第三参（原子 SQL 累加 reading_seconds=reading_seconds+?，禁 read-modify-write 两步）；②**时长账本唯一宿主**=reading-time.ts 模块 ledger（关 tab/closeAll/卸载三收尾口经复合 flusher 与进度账同批落库——漏一即丢账的结构性防线）；③**计时门=ready×visible 双条件**（输入级 idle 不做=v1 申报边界）；settle 吸收仅 visible（防 hidden 段虚计——R1 回炉）/结转不依赖可见性（可见零头实转不丢——门二 R3 裁决解耦）；④**单次 invoke 时长上界=3600×chunkSeconds 分片单源**（三消费点：invokeOne（R5/R6）+dispose 逐笔分片（R7）+setup onFlush 防御深度——>1h 回吐分片落账禁单笔超界，门一 R2+门二 R3 两轮收口）。注记面（P7X-02 落地更新 2026-09-04）：R7 卸载双 invoke 已并入 outbox 单队列（时长 onFlush+进度 sp.dispose 均 enqueue——页码两来源回退窗消除）；分片级失败=outbox 兜底（at-least-once,重复界 N×3600s/条——T5 计 attempts 拦停;P7X-02 落地）；localStorage 退化面=内存重试+强 WARN 申报；ledger 无 24h 钳制（「24 片/24h」=物理估算口径非逻辑封顶）；sec<0 入 chunkSeconds=不可达前置（settle Math.max(0) 保证） | src/main/db/repos/papers.repo.ts（updateReadPage 第三参）/src/renderer/features/reader/reading-time.ts（ledger/settle 吸收结转解耦/chunkSeconds 分片单源+PROGRESS_SECONDS_CHUNK=3600 与 schemas 同值对齐）/reading-time-setup.ts（复合 flusher 装配+onFlush 分片消费）/src/shared/ipc/schemas.ts（secondsDelta int 0..3600 optional）/src/main/db/migrations/008_reading_time.sql（P7E-05，2026-09-03 登记） | 单测（reading-time.test：R1~R7+R10 态空间+R3×R6 跨格（hidden 收尾零虚计）+R2 分片 4000→3600+400+R3 dispose 分片双 invoke+可见零头 hidden 结转——M5（settle 吸收门）/M6（invokeOne 分片）/M7（dispose 分片）变异红证在档，M2 载体失效转移 M5 实录；papers-reading-time.test：累加原子 30+45=75+R8 缺省 0+回读；migrate-reading-time.test：R9 新库/存量升级 user_version=8；reader-time.test：service 透传）+e2e（reader-reading-time.spec：存量库升级链+「阅读 0 分钟」显示面） | 已锚定（单测+e2e 级 P7E-05 本单） |
+-| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-item-geometry 项声明几何族：rectsForOffsetRange+基线分组 baselineGroupBlocks+bandsFromItems——b2 主链迁移/c 快路径接线），禁止第二几何口径（防松手同帧把旧错几何带回——deepseek 终位 WARN-3）；rect 与 bands 同由项几何+styles 派生（C5，禁项源 rect×DOM 量测 band 混用——matchBand 两口径混用=b 链错绑同构风险）；**适用域=selection 产链（evaluate→paint→pending.anchor.rects→save）+Annotation/AiAnnotation 重锚链（F-A8 门2 起项几何族=重锚主链）**；DOM 量测仅允许存在于显式回退层（resolveAnnotationRectsDom=S4 页级回退，**函数体零改**=INV-47 数值面锚）且产物必须标域（source:'dom'——INV-60）；**[F-GEOM-01-G2 保存门，2026-09-18] selection 全量评估 item 链失败（页项缺失/偏移对账失败/计算异常三因）＝仅显示不入库**：paint 照渲 DOM 回退形状（视觉连续）＋pending=null（不挂工具条＝无保存入口）——「所见≠所存时不给保存入口」，保存链落库 rects 恒为项族形状（原 pending=DOM 形状 anchor 可入库的接缝闭合，设计书 §2.4/§2.2 序列⑤）；诊断单源＝itemChainFor 三因 warn；**S6 名实（门一 W1 补注）：S6 触发=项盒健康代理——blocks 经 clamp01×base 构造恒落盒内，unhealthy 实由 boxes[项几何]越界触发，项盒健康而 DOM 链独立病理时 S6 不拦（门 3 随回退层去留复核）**；回退层允许（DOM 量测=快→全量→DOM 三层回退的末端，warn 不静默——三回退因：页项缺失/偏移对账失败/计算异常）；**[F-GEOM-01-G3 坐标域边界注，2026-09-18]** 坐标域三处换算的域归属——selection-geometry localScale=UI 布局域换算（非 PDF 几何域，不参与锚定/归一化数学）；lineage-viewport rootToLocalScale=lineage 域件（INV-43 svg 口径，跨域出 reader 几何战役范围）；annotation-resolve itemViewportOf=项族域内换算（entry 反推，产物 viewport 只入项几何族数学——精度带=门一 W3 口径既有，禁直接混入 DOM 量测域比较）；防 r3a 型域差事故重演（F-A6-b2 实现事故：viewport 产 textLayer 盒本地域 vs gBCR 绝对域混用，G2 检测器实战拦截——事故档 f-a6-diag-out-r3a 在案） | src/renderer/features/reader/selection-evaluate.ts（双路径单文件：快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威）+pdf-item-geometry.ts（项几何族单源：viewportTransformFor/rectsForOffsetRange/baselineGroupBlocks/bandsFromItems+G2 检测器阈值常量）+SelectionLayer.tsx 接线（evaluate 域拆出+paint 态承载）+page-items.store（zustand 单源注册表——页项/几何下钻通道）+**annotation-resolve-layered.ts（F-A8 门2：重锚三层编排器 S0~S6——AnnotationLayer/AiAnnotationLayer 共形消费）** | 单测（selection-evaluate.test：快慢等价 it——同夹具 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）+同帧覆盖 it——快路径帧落地后全量覆盖（mid-drag zoom 差分形态，终态=全量产物）+快路径跨页守卫 it+W1 mouseup 顺序锚；MUT3 快路径守卫(ii) 删除红证在档）+四轮取证 A/B 对照（scripts/audits/f-a6-forensic-verdict.md §11/§12——甲乙同链 shift ≤0.01px 按构造+D1 面逐位零回归）+**annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe（S0 缺席/S1 对账失败回退/S2 项几何产物/S3b 条目回退/S6 病理抑制/CR1 竞态 fixture/域标记——M1 删订阅/M2 删 S6/M3 主链换 DOM 变异红证在档）**；G2 保存门锚＝selection-item-chain.test 回退①改写（工具条 null——变异红证在档） | 已锚定（2026-09-04 F-A6；F-A8 门2 扩域同日） |
++| INV-57 | 阅读时长单口累加+分片上界（P7E-05，2026-09-03 阅读时长统计票）：①**reading_seconds 唯一写点**=papers.repo updateReadPage 第三参（原子 SQL 累加 reading_seconds=reading_seconds+?，禁 read-modify-write 两步）；②**时长账本唯一宿主**=reading-time.ts 模块 ledger（关 tab/closeAll/卸载三收尾口经复合 flusher 与进度账同批落库——漏一即丢账的结构性防线）；③**计时门=ready×visible 双条件**（输入级 idle 不做=v1 申报边界）；settle 吸收仅 visible（防 hidden 段虚计——R1 回炉）/结转不依赖可见性（可见零头实转不丢——门二 R3 裁决解耦）；④**单次 invoke 时长上界=3600×chunkSeconds 分片单源**（三消费点：invokeOne（R5/R6）+dispose 逐笔分片（R7）+setup onFlush 防御深度——>1h 回吐分片落账禁单笔超界，门一 R2+门二 R3 两轮收口）。注记面（P7X-02 落地更新 2026-09-04）：R7 卸载双 invoke 已并入 outbox 单队列（时长 onFlush+进度 sp.dispose 均 enqueue——页码两来源回退窗消除）；分片级失败=outbox 兜底（at-least-once,重复界 N×3600s/条——T5 计 attempts 拦停;P7X-02 落地）；localStorage 退化面=内存重试+强 WARN 申报；ledger 无 24h 钳制（「24 片/24h」=物理估算口径非逻辑封顶）；sec<0 入 chunkSeconds=不可达前置（settle Math.max(0) 保证） | src/main/db/repos/papers.repo.ts（updateReadPage 第三参）/src/renderer/features/reader/time/reading-time.ts（ledger/settle 吸收结转解耦/chunkSeconds 分片单源+PROGRESS_SECONDS_CHUNK=3600 与 schemas 同值对齐）/reading-time-setup.ts（复合 flusher 装配+onFlush 分片消费）/src/shared/ipc/schemas.ts（secondsDelta int 0..3600 optional）/src/main/db/migrations/008_reading_time.sql（P7E-05，2026-09-03 登记） | 单测（reading-time.test：R1~R7+R10 态空间+R3×R6 跨格（hidden 收尾零虚计）+R2 分片 4000→3600+400+R3 dispose 分片双 invoke+可见零头 hidden 结转——M5（settle 吸收门）/M6（invokeOne 分片）/M7（dispose 分片）变异红证在档，M2 载体失效转移 M5 实录；papers-reading-time.test：累加原子 30+45=75+R8 缺省 0+回读；migrate-reading-time.test：R9 新库/存量升级 user_version=8；reader-time.test：service 透传）+e2e（reader-reading-time.spec：存量库升级链+「阅读 0 分钟」显示面） | 已锚定（单测+e2e 级 P7E-05 本单） |
++| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-item-geometry 项声明几何族：rectsForOffsetRange+基线分组 baselineGroupBlocks+bandsFromItems——b2 主链迁移/c 快路径接线），禁止第二几何口径（防松手同帧把旧错几何带回——deepseek 终位 WARN-3）；rect 与 bands 同由项几何+styles 派生（C5，禁项源 rect×DOM 量测 band 混用——matchBand 两口径混用=b 链错绑同构风险）；**适用域=selection 产链（evaluate→paint→pending.anchor.rects→save）+Annotation/AiAnnotation 重锚链（F-A8 门2 起项几何族=重锚主链）**；DOM 量测仅允许存在于显式回退层（resolveAnnotationRectsDom=S4 页级回退，**函数体零改**=INV-47 数值面锚）且产物必须标域（source:'dom'——INV-60）；**[F-GEOM-01-G2 保存门，2026-09-18] selection 全量评估 item 链失败（页项缺失/偏移对账失败/计算异常三因）＝仅显示不入库**：paint 照渲 DOM 回退形状（视觉连续）＋pending=null（不挂工具条＝无保存入口）——「所见≠所存时不给保存入口」，保存链落库 rects 恒为项族形状（原 pending=DOM 形状 anchor 可入库的接缝闭合，设计书 §2.4/§2.2 序列⑤）；诊断单源＝itemChainFor 三因 warn；**S6 名实（门一 W1 补注）：S6 触发=项盒健康代理——blocks 经 clamp01×base 构造恒落盒内，unhealthy 实由 boxes[项几何]越界触发，项盒健康而 DOM 链独立病理时 S6 不拦（门 3 随回退层去留复核）**；回退层允许（DOM 量测=快→全量→DOM 三层回退的末端，warn 不静默——三回退因：页项缺失/偏移对账失败/计算异常）；**[F-GEOM-01-G3 坐标域边界注，2026-09-18]** 坐标域三处换算的域归属——selection-geometry localScale=UI 布局域换算（非 PDF 几何域，不参与锚定/归一化数学）；lineage-viewport rootToLocalScale=lineage 域件（INV-43 svg 口径，跨域出 reader 几何战役范围）；annotation-resolve itemViewportOf=项族域内换算（entry 反推，产物 viewport 只入项几何族数学——精度带=门一 W3 口径既有，禁直接混入 DOM 量测域比较）；防 r3a 型域差事故重演（F-A6-b2 实现事故：viewport 产 textLayer 盒本地域 vs gBCR 绝对域混用，G2 检测器实战拦截——事故档 f-a6-diag-out-r3a 在案） | src/renderer/features/reader/interact/selection-evaluate.ts（双路径单文件：快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威）+anchors/pdf-item-geometry.ts（项几何族单源：viewportTransformFor/rectsForOffsetRange/baselineGroupBlocks/bandsFromItems+G2 检测器阈值常量）+interact/SelectionLayer.tsx 接线（evaluate 域拆出+paint 态承载）+anchors/page-items.store.ts（zustand 单源注册表——页项/几何下钻通道）+**anchors/annotation-resolve-layered.ts（F-A8 门2：重锚三层编排器 S0~S6——AnnotationLayer/AiAnnotationLayer 共形消费）** | 单测（selection-evaluate.test：快慢等价 it——同夹具 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）+同帧覆盖 it——快路径帧落地后全量覆盖（mid-drag zoom 差分形态，终态=全量产物）+快路径跨页守卫 it+W1 mouseup 顺序锚；MUT3 快路径守卫(ii) 删除红证在档）+四轮取证 A/B 对照（scripts/audits/f-a6-forensic-verdict.md §11/§12——甲乙同链 shift ≤0.01px 按构造+D1 面逐位零回归）+**annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe（S0 缺席/S1 对账失败回退/S2 项几何产物/S3b 条目回退/S6 病理抑制/CR1 竞态 fixture/域标记——M1 删订阅/M2 删 S6/M3 主链换 DOM 变异红证在档）**；G2 保存门锚＝selection-item-chain.test 回退①改写（工具条 null——变异红证在档） | 已锚定（2026-09-04 F-A6；F-A8 门2 扩域同日） |
+ 
+-| INV-59 | 重锚同族配对令（F-A8 门2，2026-09-04 随主链切换落地登记）：标注/AI 段重锚产物 resolved.rects 与 resolved.bands 必须**同几何族**（项几何主链=rectsForOffsetRange 项盒+bandsFromItems 同源派生；S4 DOM 回退层=findRangeAtOffset 行盒+bandsForTextNodes 节点口径同源）——主链禁跨族配对（消 R1：正确 rects×失真 bands 互漂错绑）；跨族配对仅允许显式回退格且属登记边界：**S3b 条目回退**（存量 rects[库]×bandsNearRects[DOM 量测]——现状语义逐位保持）与 **S5/S6 页级回退**（DOM 产物或其抑制后的存量直显）；matchBand 阈值（\|Δcenter\|≤rect.h）仍在为跨格边界兜底 | src/renderer/features/reader/annotation-resolve.ts（ResolvedAnnotation 域内 rects/bands 成对产出+resolveAnnotationRectsItem 同族管线）+annotation-resolve-layered.ts（三层编排=同族配对的编排保证——主链产物 rect/band 同域，跨族仅在登记回退格） | 单测（annotation-layer.test F-A8 门2 describe：S2 项几何产物 rect/band 同族数值断言（块几何=band 几何同基线）+S3b/S6 回退格跨族配对=登记边界渲染断言；anchor-item-verify.test：resolveAnnotationRectsItem 产物与 itemSelectionGeometry 同参直调逐位一致（rects+bands 双断言）） | 已锚定（单测级 F-A8 门2 本单——证据件 anchor-item-verify.test.tsx 为门 0 遗留未跟踪件,随门 2 收口提交补 git add 后生效[门二 W1 标注]） |
+-| INV-60 | 重锚显示覆盖登记（F-A8 门2，2026-09-04 随主链切换落地登记）：重锚成功产物（项几何主链/S4 DOM 回退层）覆盖库值 rects **仅显示层、永不回写**（annotation.rects 库数据零迁移零触碰——重锚是渲染态推导非数据变更；INV-37 只覆盖拖选期不扩其文，本条另立）；产物域标记 source:'item'\|'dom' 随 resolved 运行时走（调试面=渲染块 data-source 属性+单测断言面；**不入库**=Annotation 模型锁面零触碰），渲染行为零差（色块样式不区分源） | src/renderer/features/reader/annotation-resolve.ts（ResolvedAnnotation.source 可选域）+AnnotationLayer.tsx/AiAnnotationLayer.tsx（data-source 调试属性）+annotation-resolve-layered.ts（markSource 唯一标域点） | 单测（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe：域标记断言（S0/S4='dom'/S2='item'/S3b·S6 抑制=无标记）+M3 主链换 DOM 变异→域标记断言红证在档；e2e reader-text「划选高亮后重开仍在原位」INV-51 稳态口径回归=显示覆盖不回写的端到端面） | 已锚定（单测级 F-A8 门2 本单；e2e 面随全量 reader-text 回归） |
++| INV-59 | 重锚同族配对令（F-A8 门2，2026-09-04 随主链切换落地登记）：标注/AI 段重锚产物 resolved.rects 与 resolved.bands 必须**同几何族**（项几何主链=rectsForOffsetRange 项盒+bandsFromItems 同源派生；S4 DOM 回退层=findRangeAtOffset 行盒+bandsForTextNodes 节点口径同源）——主链禁跨族配对（消 R1：正确 rects×失真 bands 互漂错绑）；跨族配对仅允许显式回退格且属登记边界：**S3b 条目回退**（存量 rects[库]×bandsNearRects[DOM 量测]——现状语义逐位保持）与 **S5/S6 页级回退**（DOM 产物或其抑制后的存量直显）；matchBand 阈值（\|Δcenter\|≤rect.h）仍在为跨格边界兜底 | src/renderer/features/reader/anchors/annotation-resolve.ts（ResolvedAnnotation 域内 rects/bands 成对产出+resolveAnnotationRectsItem 同族管线）+annotation-resolve-layered.ts（三层编排=同族配对的编排保证——主链产物 rect/band 同域，跨族仅在登记回退格） | 单测（annotation-layer.test F-A8 门2 describe：S2 项几何产物 rect/band 同族数值断言（块几何=band 几何同基线）+S3b/S6 回退格跨族配对=登记边界渲染断言；anchor-item-verify.test：resolveAnnotationRectsItem 产物与 itemSelectionGeometry 同参直调逐位一致（rects+bands 双断言）） | 已锚定（单测级 F-A8 门2 本单——证据件 anchor-item-verify.test.tsx 为门 0 遗留未跟踪件,随门 2 收口提交补 git add 后生效[门二 W1 标注]） |
++| INV-60 | 重锚显示覆盖登记（F-A8 门2，2026-09-04 随主链切换落地登记）：重锚成功产物（项几何主链/S4 DOM 回退层）覆盖库值 rects **仅显示层、永不回写**（annotation.rects 库数据零迁移零触碰——重锚是渲染态推导非数据变更；INV-37 只覆盖拖选期不扩其文，本条另立）；产物域标记 source:'item'\|'dom' 随 resolved 运行时走（调试面=渲染块 data-source 属性+单测断言面；**不入库**=Annotation 模型锁面零触碰），渲染行为零差（色块样式不区分源） | src/renderer/features/reader/anchors/annotation-resolve.ts（ResolvedAnnotation.source 可选域）+AnnotationLayer.tsx/AiAnnotationLayer.tsx（data-source 调试属性）+annotation-resolve-layered.ts（markSource 唯一标域点） | 单测（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe：域标记断言（S0/S4='dom'/S2='item'/S3b·S6 抑制=无标记）+M3 主链换 DOM 变异→域标记断言红证在档；e2e reader-text「划选高亮后重开仍在原位」INV-51 稳态口径回归=显示覆盖不回写的端到端面） | 已锚定（单测级 F-A8 门2 本单；e2e 面随全量 reader-text 回归） |
+ | INV-61 | 字号六档语义刻度单源：font-size 消费面禁字面量（CSS 声明/inline/arbitrary），tailwind text-xs/text-sm 经 v4 @theme 重绑到 --fs-* token——档位与锚值变更=用户裁决+本册 | P7D-01 批二用户裁决 2026-09-08（docs/design/2026-09-08_p7d01-b2-fontscale-ruling.md）；token 定义=src/renderer/shared/theme.css :root --fs-* 段+@theme 重绑块，消费面=四皮肤件+library.css+workspace.css+四 tsx inline+tailwind 类 | theme.test.ts（TOKENS 六正锚+FS 正则全域负锚（font-size 声明值段内 数字+单位 字面量归零——新值/无分号/大小写/非 px 单位/calc 载体五通道闭合；font 简写/冒号前空白/无单位零=已知边界不入锚；2026-09-09 F-CSS-02 升级+回炉 1）+@theme 重绑锁）+library-cards.test.tsx 三断言随迁 token 载体（实现者自裁申报在档） | 已锚定（2026-09-08 批二） |
+-| INV-62 | 划选终点事件层可重定向：mouseup 真划选（位移≥3px）且释放点浅探（focus 行盒顶上方间隙+距上一视觉行盒底 ≤ max(距 focus 盒顶, 4px 余量)+释放 x 在上一行释放 x 最近栏组右缘+1px 外——该处无文本）时，selection focus 可被改写为上一行（该栏组）行尾（锚定侧原样）——锚定链输入此前仅浏览器原生解析（F-A10 G2 文本位下探锚定层零 DOM 信号），事件层改写须发生在 evaluate.full 之前同帧消费终态；量测不可用环境零变 | F-A12 2026-09-10；判定=src/renderer/features/reader/release-affinity.ts（纯函数——手势态表+事件时间线驻头注）；接线=SelectionLayer.onMouseUp（dragged 门=程序化零触） | release-affinity.test.ts 17 用例（G2 紧间隙复刻/深点零变/词间空格行盒内零触/向上对称面/四零盒守卫/双栏最近栏组定向/首行零变/坍缩零触/等距取上一行/大间隙刻意零变/W1 域判别+容差双点/W2 跨多行上界/C-1 翻转兜底回归网）+selection-layer-fa12.test.tsx 接线三态锁（程序化零触/微位移早退/真划选触发） | 已锚定（单测级 F-A12 本单；已知边界=栏间隙释放保守零变[R-2]+组内 right 非单调选组偏差[R-1 罕见保守]——观察备案真机再现再立票） |
++| INV-62 | 划选终点事件层可重定向：mouseup 真划选（位移≥3px）且释放点浅探（focus 行盒顶上方间隙+距上一视觉行盒底 ≤ max(距 focus 盒顶, 4px 余量)+释放 x 在上一行释放 x 最近栏组右缘+1px 外——该处无文本）时，selection focus 可被改写为上一行（该栏组）行尾（锚定侧原样）——锚定链输入此前仅浏览器原生解析（F-A10 G2 文本位下探锚定层零 DOM 信号），事件层改写须发生在 evaluate.full 之前同帧消费终态；量测不可用环境零变 | F-A12 2026-09-10；判定=src/renderer/features/reader/interact/release-affinity.ts（纯函数——手势态表+事件时间线驻头注）；接线=SelectionLayer.onMouseUp（dragged 门=程序化零触） | release-affinity.test.ts 17 用例（G2 紧间隙复刻/深点零变/词间空格行盒内零触/向上对称面/四零盒守卫/双栏最近栏组定向/首行零变/坍缩零触/等距取上一行/大间隙刻意零变/W1 域判别+容差双点/W2 跨多行上界/C-1 翻转兜底回归网）+selection-layer-fa12.test.tsx 接线三态锁（程序化零触/微位移早退/真划选触发） | 已锚定（单测级 F-A12 本单；已知边界=栏间隙释放保守零变[R-2]+组内 right 非单调选组偏差[R-1 罕见保守]——观察备案真机再现再立票） |
+ | INV-63 | 测试面单调性：tests/** 契约面（用例标题多重集+expect 断言规范化文本多重集+skip 标记）只增不减——[test-refactor] 类重构/迁移在任何名义下不得静默削弱回归网；有意收紧/删改必须先取主控裁决再落豁免清单（reason+rulingLink 非空），禁直接改基线 | F-TESTREF-00 指纹门设计（docs/design/2026-09-11_f-testref00-design-final.md W1~W6 参数族）+AGENTS「工单工作流 [test-refactor] 段」（F-TESTREF-W4，2026-09-18 入册——战役收官把已落地机制升格登记；战役毕基线重冻结=test-surface:baseline 显式执行+全量 diff 审计） | 机检：`npm run test-surface:check`（C_after ⊇ C_before 多重集判定+UNRESOLVABLE 硬阻断；verify 链第 2 步+CI 同口径；基线重生成仅显式 `test-surface:baseline`——脚本无红了自愈分支） | 已锚定（机制=F-TESTREF-00 2026-09-11 落地链，W1A~W3 五批实战验证——迁移类票 C 面零变化三重实证惯例成于其上） |
+ | INV-64 | e2e 内禁截图比对：tests/e2e/** 禁 `toHaveScreenshot` 断言——视觉回归的像素 diff 限 scripts/audits 工具层（探针取证域，settings.png 先例）；e2e「看见」类断言=计算样式+真实文本（INV-06 口径——几何可见 ≠ 视觉可见）。现存 0 处=既成事实升格受检不变量（2026-09-11 终裁 §4-4 W4 行；锚面=本 API——手写 screenshot+自比对属未来负锚扩展位，声明与锚面刻意对齐） | F-TESTREF-W4（2026-09-18 入册）+scripts/check-quality.mjs 第 9 段负锚 | 机检：check-quality.mjs 第 9 段（tests/e2e 下 .ts/.tsx 出现 toHaveScreenshot 即红——quality 关卡，verify 链+CI 同口径） | 已锚定（本票落锚：负锚上线+注入红证 w4-inv64-anchor-red.log） |
+ | INV-65 | 导出会话中止单源：renderer 重载/崩溃（main 存活）→bootstrap webContents 双事件（did-start-navigation 仅 isMainFrame+render-process-gone）→corpus.export 单例 abortActiveSession→failSession 同型处置（清 manifest.tmp+**同步**释放单飞锁（INV-18 扩展面——终局标记先于异步清理落盘，setImmediate 悬挂推进被 advance 终局守卫按会话对象身份拦截）+折叠 reject IO_ERROR）。**安全前提**：renderer 为纯组件态 SPA（无 pushState/hash/锚点 in-page 导航——App.tsx ViewId useState 形态），主帧导航事件语义等价于「renderer 生命周期重开」；未来引入 in-page 路由（hash 路由/history API）即触发本条复审（isMainFrame 过滤充分性重估） | F-SESS-01（2026-09-18 入册；宪法「新增跨模块行为不登记本册视同未完成」——门一 W1 处置）+src/main/services/export_/corpus.export.service.ts 头注态空间表 abort 行 | 单测锚（corpus.export.test 四用例：streaming-abort 释放单飞/防御两格/advance 守卫竞态窗/迟到回传 INVALID_REQUEST）+e2e 锚（corpus-export.spec renderer 重载格：streaming 中 reload→再发起全链完成）+变异红证双件（M1 删守卫 t3 红/M2 断接线 e2e 红） | 已锚定（F-SESS-01 落锚；render-process-gone 格接线由 typecheck+同通道单测覆盖——运行时崩溃注入红证欠账留档票内） |
+ | INV-66 | 受管**内容写盘**原子性单源：一切「同路径内容落盘」（JSON/字节覆写）走 services/shared/atomic-write 的 atomicWriteFile（tmp+rename 同卷原子；直写目标路径=半截文件可观测违例）。**边界（刻意限定）**：仅内容写盘——不覆盖协议流（corpus.export manifest 终写=固定名 manifest.tmp.json 态空间契约残留清理语义，保持内联）与移动语义（ai-notes-import rm+rename 归档挪位）；既有 6 调用点=file-store（uniqueTmp+cleanOnFail）/ai-sensor（ensureDir）/workspace.fs ×2/settings ×2；新增内容写盘点必须经本单源（新直写 writeFile 覆写目标=review 拦截位） | F-DEDUP-01（2026-09-18 入册；四副本收敛的单源承诺缺册=未定义行为）+src/main/services/shared/atomic-write.ts 头注 | 单测锚（tests/unit/services/shared/atomic-write.test.ts 8 用例：string/bytes 双形态/终名存在 tmp 零残留/ensureDir/uniqueTmp 并发各写手 tmp 独立（allSettled 口径——Windows 同目标并发 rename 平台竞态，单源真契约=tmp 独立不字节交错）/cleanOnFail）+变异红证（M2 删 rename→终名存在断言红）+调用方既有测试（file-store/ai-sensor/workspaces/settings 全绿=迁移行为等价） | 已锚定（F-DEDUP-01 落锚；RESTORE 标记为 echo 自声明的既有欠账同 batch 7 P2-1 族） |
+ | INV-67 | AI 笔记回灌事务性：ai-notes-import 回灌=deleteByPaper+重插**同包 withTransaction** 全有或全无（首插中断零行/重灌中断旧数据完整；跨篇隔离——lineage 导入同族同标准先例对齐）。**登记性质**：行为=2026-09-18 F-AIN-01 已落地，本条系 batch 7 门二 P2-5 遗留「lineage+回灌同族事务不变量批量补册窗口」的登记债销项（非 F-DEDUP-01 行为变更）；同族窗口未纳部分（lineage 清面重灌语义细目）随 F-SENSOR-01 场评估补册，防半窗遗漏 | F-AIN-01（行为落地）+F-DEDUP-01（2026-09-18 补册销项）+src/main/services/ai_sensor/ai-notes-import.service.ts 头注事务段 | 单测锚（tests/unit ai-notes-import a1 两相+跨篇隔离；lineage 同族既有事务测试）+变异红证（F-AIN-01 M1=IIFE 直调变异双红） | 已锚定（F-AIN-01 落地链 2026-09-18；本册登记滞后一日=F-DEDUP-01 场次窗口闭合） |
+-| INV-68 | 几何产链 band 档位绑定（F-GEOM-01-G3，2026-09-18）：band 三推导各绑一档，**禁跨档消费+禁新增第四推导**——档1 项族 bandsFromItems（pdf-item-geometry.ts:366）=selection 快/全量主链（selection-evaluate.ts:130/207 经 itemSelectionGeometry:506）+S2/S3a（annotation-resolve resolveAnnotationRectsItem）唯一源；档2 bandsForTextNodes（annotation-resolve.ts:209，DOM 节点口径）=S4（annotation-resolve.ts:277 resolveAnnotationRectsDom——Annotation+AI 段经 annotation-resolve-layered 编排；档2 bands 消费行 :302）+selection 全量显示回退（selection-evaluate.ts:296）专用且产物不入库（G2 保存门后 transient，rects 与 bands 同源=C5 精神）；档3 bandsNearRects（annotation-resolve.ts:237，DOM 几何口径）=S3b 存量专用（AnnotationLayer.tsx:98 唯一消费）；F-A9 calibrateBands（annotation-band-calibrate.ts:77）=三档之上显示层校准器（窗匹配+校准不参与行归属——现状不变）。跨族交互点终态收口（设计书 §2.6）：#3 S4 双族同屏=显式档（档2 落款）+同源 bands 绑定；#4 selection 显示回退=transient 显式声明「仅显示不入库」（selection-evaluate.ts:43/292 G2 已落——本条引用不重复登记）；#2 S6 项盒判定边界注=INV-58 既有「S6 名实（门一 W1 补注）」覆盖（引用，不重复登记）。**登记性质**：现状消费面经核已天然档位绑定——本条=事实升 INV 防未来漂移，非行为变更（设计书 §2.5 原话） | pdf-item-geometry.ts（bandsFromItems 档1 单源）+annotation-resolve.ts（档2 bandsForTextNodes/档3 bandsNearRects 驻件）+annotation-resolve-layered.ts（S0~S6 编排）+selection-evaluate.ts（档1 主链+档2 显示回退消费）+AnnotationLayer.tsx（档3 唯一消费） | 既有测试网（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe S0~S6+selection 系列）——登记性质=事实升格，行为锚=既有测试（口径同 INV-67 登记债销项） | 未锚定（门一 W2 裁改词：登记性质=事实升格防漂移非行为变更，无独立红证面——防线=未来跨档消费走 review 拦截位，非 CI 负锚） |
++| INV-68 | 几何产链 band 档位绑定（F-GEOM-01-G3，2026-09-18）：band 三推导各绑一档，**禁跨档消费+禁新增第四推导**——档1 项族 bandsFromItems（pdf-item-geometry.ts:366）=selection 快/全量主链（selection-evaluate.ts:130/207 经 itemSelectionGeometry:506）+S2/S3a（annotation-resolve resolveAnnotationRectsItem）唯一源；档2 bandsForTextNodes（annotation-resolve.ts:209，DOM 节点口径）=S4（annotation-resolve.ts:277 resolveAnnotationRectsDom——Annotation+AI 段经 annotation-resolve-layered 编排；档2 bands 消费行 :302）+selection 全量显示回退（selection-evaluate.ts:296）专用且产物不入库（G2 保存门后 transient，rects 与 bands 同源=C5 精神）；档3 bandsNearRects（annotation-resolve.ts:237，DOM 几何口径）=S3b 存量专用（AnnotationLayer.tsx:98 唯一消费）；F-A9 calibrateBands（annotation-band-calibrate.ts:77）=三档之上显示层校准器（窗匹配+校准不参与行归属——现状不变）。跨族交互点终态收口（设计书 §2.6）：#3 S4 双族同屏=显式档（档2 落款）+同源 bands 绑定；#4 selection 显示回退=transient 显式声明「仅显示不入库」（selection-evaluate.ts:43/292 G2 已落——本条引用不重复登记）；#2 S6 项盒判定边界注=INV-58 既有「S6 名实（门一 W1 补注）」覆盖（引用，不重复登记）。**登记性质**：现状消费面经核已天然档位绑定——本条=事实升 INV 防未来漂移，非行为变更（设计书 §2.5 原话） | anchors/pdf-item-geometry.ts（bandsFromItems 档1 单源）+anchors/annotation-resolve.ts（档2 bandsForTextNodes/档3 bandsNearRects 驻件）+anchors/annotation-resolve-layered.ts（S0~S6 编排）+interact/selection-evaluate.ts（档1 主链+档2 显示回退消费）+view/AnnotationLayer.tsx（档3 唯一消费） | 既有测试网（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe S0~S6+selection 系列）——登记性质=事实升格，行为锚=既有测试（口径同 INV-67 登记债销项） | 未锚定（门一 W2 裁改词：登记性质=事实升格防漂移非行为变更，无独立红证面——防线=未来跨档消费走 review 拦截位，非 CI 负锚） |
+ 
+ ## 维护规则
+ 
+@@ -89,3 +89,21 @@
+ - 锚定方式优先级：lint/CI > 单测 > e2e > 架构评审（越靠左越不可绕过）。
+ - 本册与 ADR 的分工：ADR 记「为什么这样设计」（决策+取舍），本册记「什么必须永远成立」
+   （不变量+防线）。小而致命的声明（如 INV-01）配得上登记，不必等到"配得上 ADR"。
++
++## 路径口径（G11 定，2026-09-19——销 b12 门二 P2-2 悬置项）
++
++- **现行锚定列（声明处/锚定状态列）随域迁移刷新，恒指现行路径；历史叙述性引用
++  （事故背景/前史/日期锚）保留原文不回改。** F-GEOM-01 六子域目录化（G4~G10）
++  后本册 11 处 `features/reader/<平铺>` 旧径已随迁刷新为域前缀现行径（G11，
++  2026-09-19 落款；INV-47/58/68 声明处列裸文件名同步加前缀）；此后文件再迁域，
++  锚定列同步刷新，叙述性历史引用不动。
++- **§5.4 相容确认三注记（F-GEOM-01 战役验收，G11 落款并入本节）**：
++  - **INV-47 确认不修订**——S4 函数体零改延续（resolveAnnotationRectsDom 函数体
++    F-GEOM-01 全程未触，INV-47 数值面锚不受同族化与目录化影响，锚定件现行径
++    =anchors/annotation-anchor.ts）；
++  - **INV-37 相容确认**——INV-68 档位绑定与 INV-37「快路径同族项几何管线的瞬态
++    近似（四道收敛守卫+G2 同门；INV-58 锁同几何族）」条款无冲突（同族禁令同向、
++    档位面为其子集声明，语义零交叠）；
++  - **INV-60 相容确认**——INV-58 [F-GEOM-01-G3] 坐标域边界注与 INV-60「产物域
++    标记 source:'item'\|'dom'」条款无冲突（域归属声明只限定换算数学的入域，
++    不改变标域单点 markSource=anchors/annotation-resolve-layered.ts 唯一标域点）。
+diff --git a/docs/reports/2026-09-18_f-geom01-campaign-closeout.md b/docs/reports/2026-09-18_f-geom01-campaign-closeout.md
+index 75f839793d..bf8893f7bb 100644
+--- a/docs/reports/2026-09-18_f-geom01-campaign-closeout.md
++++ b/docs/reports/2026-09-18_f-geom01-campaign-closeout.md
+@@ -1,19 +1,138 @@
+-# [F-GEOM-01-G11] GEOM 战役收官记账——立案骨架（票面载体）
++# [F-GEOM-01-G11] GEOM 战役收官记账报告
+ 
+ > 收官票（设计书 §3.5/§5.1——F-TESTREF-W4 同款收官义务）：头注重写扫尾+
+ > 净删/交互点记账+验收门全跑+INV 终册+指纹门基线重冻结；F-GEOM-01 母票
+-> 随本票翻 done（registry+relay 父行同步）。本件=记账报告载体（标题
+-> 日期=立案日，内容日期以文内为准）。
+-
+-## 待落清单
+-
+-- 净删行数记账：git diff --stat 按域分组实测（reader 69 文件/11,860 行
+-  基线；逐项清单对账设计书 §3.5——净删目标 −50~−60 行+全域净额 −20~−80）
+-- 跨族交互点计数表（§2.6：现状 5 点→终态 4 点全显式+1 点闭合）
+-- 验收门全跑记录：e2e 一键全跑 test:e2e:all 45+默认门 43+锚定回归网+指纹门
+-- INV 终册状态（§5.4：INV-68/INV-58 修订落款核验+INV-47 不修订确认+
+-  INV-37/INV-60 相容确认）
+-- 基线重冻结审计（C_after ⊇ C_before+豁免清单全量 diff 审计）
++> 随本票翻 done（registry+relay 父行同步——翻票归主控收口）。本件=记账报告
++> 真身（标题日期=立案日，内容日期以文内为准；G11 实现=2026-09-19）。
++> 数据来源标注：**[探针]**=g11-netstat.log / g11-inv-anchor-check.log；
++> **[git]**=git diff -M --numstat 逐票实测；**[relay]**=relay.md batch 17~22
++> 日志既档数据（G10 13 件已 G11 抽验复现，见 §5）。
++
++## 1. 净删行数记账（§3.5 口径——诚实版）
++
++### 1.1 域分组净删实测 [探针 g11-netstat.log]
++
++基准=c05e2ff8dd（G1 前夜，70 文件含 geometry-types 立案骨架）→HEAD（62ef3802ad），
++`git diff -M --numstat` 按终态域分组：
++
++| 域 | files | insertions | deletions | 净额 |
++| --- | --- | --- | --- | --- |
++| state/ | 10 | +8 | −8 | 0 |
++| time/ | 4 | +5 | −5 | 0 |
++| anchors/ | 14 | +160 | −88 | **+72**（新件 geometry-types.ts +103/−0） |
++| interact/ | 7 | +48 | −55 | **−7** |
++| panels/ | 8 | +21 | −21 | 0 |
++| view/ | 27 | +71 | −112 | **−41** |
++| （基点根删除） | 1 | +0 | −20 | −20（geometry-types.ts 立案骨架，G1 删根建 anchors/ 正式版） |
++| **合计** | **71** | **+313** | **−309** | **净 +4** |
++
++### 1.2 逐票净账 [git]
++
++| 票 | reader 目录 numstat | 净额 | 性质 |
++| --- | --- | --- | --- |
++| G1（M0 切环） | +140/−110 | +30 | geometry-types +100/−17、PdfPageCanvas +9/−50（类型下沉削 42 wc 口径）、annotation-anchor +12/−13 等七件 |
++| G2（保存门+死面删） | +24/−61 | **−37** | anchor-serialize +3/−2；annotation-anchor +1/−26（§3.5 ①rectsFromRange 死面 ≈25 预测→删 26 兑现）；selection-evaluate +20/−33（②复刻收敛+③分支简化） |
++| G3（三档绑定登记） | +26/−15 | +11 | 纯注记（坐标域边界注+陈旧头注勘正五处） |
++| G4~G10（七域迁移） | +56/−56、+7/−7、+42/−42、+21/−21、+22/−22、+51/−51、+39/−39 | 全 0 | 相对 import 改写+域注/字符串面等量交换（Σ+238/−238） |
++| **合计** | **+428/−424** | **+4** | 逐票净额与整段 diff 净额（+4）自洽 |
++
++### 1.3 两口径并列声明（§3.5 N2 双轨口径）
++
++- **diff-changed-lines 净额=+4**（1.1/1.2 表，rename 计账下两种切法净额一致）；
++- **wc 总行数**：现值 70 文件/11,815 行（逻辑行数逐文件求和 [探针]；state 1445/
++  time 829/anchors 3121/interact 1259/panels 1173/view 3988）vs af946a5324
++  设计书基线 69 文件/11,791 行（同口径 git show 逐文件）→ **Δ+1 文件/+24 行**；
++- 设计书记载 11,860=11,791+69（逐文件恰+1 的无尾换行口径差，同 G5~G10 对账债
++  机制，见 §5）；
++- **LOC 辅助指标声明承袭**：本战役收益主证=交互面全部显式化+保存链闭合（§2.6
++  交互点计数），不以 LOC 为唯一量化（B4 处置原文）。
++
++### 1.4 净 +4 vs 预测 −20~−80 的诚实构成分析
++
++删侧全部兑现：G2 删 61（预测 ①②③ 合计 50~60——实测 26+33=59 兑现）+G1 骨架
++删 20+PdfPageCanvas 类型下沉删 50（numstat；wc 口径 42）——与预测删侧模型
++（净删 50~60+类型搬迁源等量减少 40~60）吻合。
++
++正偏差全部来自**增侧注记/类型新件未入预测模型**（逐项）：
++
++1. geometry-types.ts 新件 +103 vs 预测「geometry-types 净增 +40~60」——超预测
++   +43：类型下沉不止 PdfPageCanvas 单点（G1 该文件即 +100/−17 扩写，含
++   ItemBox/RowBand 等全链类型面）；
++2. G2 增 24 行=保存门分支构造+itemChainFor 三因诊断注记（预测只列删侧；头注
++   重写预测原文「±50 改到哪写到哪」）；
++3. G3 增 26 行=坐标域三处边界注+F-A5 陈旧头注勘正（纯登记票注记）；
++4. G1 其余增 ~37 行=头注/类型再导出链改写；
++5. 迁移七票 G4~G10 +238/−238 等量交换（域注/字符串面注记与删量对称，贡献净额 0）。
++
++INV 落册段实测：G2 invariants +1/−1（INV-58 保存门条款）+G3 invariants +2/−1
++（INV-68 落册+INV-58 坐标域尾注）[git]。**勘正申报**：实现简报②「G3 INV-68
++落册段+33/−18」未能复现（G3 src+docs 合计=+28/−16；src+docs+tests=+89/−20；
++全文件=+12587/−23，无口径得出 +33/−18）——本报告按实测落笔。
++
++## 2. 跨族交互点计数表（§2.6：现状 5 点 → 终态 4+1 闭合）
++
++| # | 交互点 | 终态 | 现行锚（G11 逐点实证） |
++| --- | --- | --- | --- |
++| 1 | 保存链可落 DOM 形状 rects（S-i 接缝） | **闭合**（§2.4 保存门） | INV-58 [F-GEOM-01-G2 保存门] 条款（item 链失败三因＝仅显示不入库+pending=null）；锚=selection-item-chain.test 回退①改写（工具条 null——变异红证在档） |
++| 2 | S6 以项盒判定 DOM 产物 | 在+边界注显式登记（不修） | INV-58「S6 名实（门一 W1 补注）：S6 触发=项盒健康代理」；INV-68 #2 引用落款（不重复登记） |
++| 3 | S4 回退层双族同屏 | 在（显式档+同源 bands 绑定） | INV-68 档2 落款：bandsForTextNodes（anchors/annotation-resolve.ts:209）=S4（:277 resolveAnnotationRectsDom，档2 bands 消费 :302）专用且产物不入库 [探针全 PASS] |
++| 4 | selection 显示回退 transient DOM 形状 | 在（显式声明「仅显示不入库」） | interact/selection-evaluate.ts:43（头注「回退（三因）＝仅显示不入库」）+:292（G2 保存门注）——INV-68 #4 落款引用 [探针 PASS] |
++| 5 | selection-evaluate stale seam 自述（F-A8 前时态） | **消除**（头注随票重写） | 现行头注 grep「stale」零命中（G11 grep 实证——F-A8 前时态自述已随 G2 头注重写消除） |
++
++现状 5 点（2 点无登记）→终态 4 点全部显式登记/INV 锚定+1 点闭合 ✓（与设计书
++§2.6 终态逐行对合）。
++
++## 3. 验收门记录（§5.1——G11 实跑面）
++
++- **verify 全链**：npm run verify EXIT=0（g11-impl-verify.log——quality+
++  tickets+locks+lint+typecheck+test+build 全绿）；
++- **指纹门**：基线重冻结 183/1757/5334（F-TESTREF-W4 冻结值）→187/1789/5411/
++  skip15（G11 值）——**cur 预期同值冻结兑现**（stats 与冻结前 cur 逐位一致，无
++  停工条件）；test-surface:check 绿（C_after ⊇ C_before；exemptions 2 条 stale
++  票面零动作，处置归主控收口）；diff 审计=g11-baseline-diff.log（875 行差异体=
++  G2 后新增契约面，含 F-SESS-01 renderer 重载格用例）；
++- **锚定回归网**：§5.1 清单 17 项=18 文件（selection-layer×2）定向绿——18 文件/
++  211 用例全过（g11-anchored-net.log EXIT=0）；
++- **构建产物名恒等**：dist/index-D3egZtl2.js（1,392.72kB）+index-BfpEygSE.css
++  （52.49kB）+pdf.worker 产物与 G2~G10 恒等链基线同名同尺寸（g11-build-hash.log
++  ——注释级改动经 esbuild minify 剥注释产物恒等，e2e flake 因果排除承重前提兑现）；
++- **e2e 两门**（主控收口序实测，2026-09-19）：**一键全跑 test:e2e:all 45/45
++  全绿 EXIT=0**（g11-e2e-allgate.log，2.1m）+**默认门 test:e2e 43/43 全绿
++  EXIT=0**（g11-e2e-appgate.log）——设计书 §5.1 验收底色「e2e 一键全跑 45 例
++  全绿不破+默认门 43」双门达标；**在册 flake（corpus-export.spec:157 F-SESS-01
++  重载格，台账 count 5）本轮双门均未发**——门二特例边界声明凭（在册 flake+
++  bundle 恒等排除+承接票 F-EXPORT-01 在排程）三条件未触发使用，纯绿收口；
++  两门串行跑（负载敏感型 flake 防自扰），台账零新增指纹。
++
++## 4. INV 终册状态（§5.4 四项+口径落款）
++
++- **INV-68 落册**（G3，2026-09-18）✓；G11 行号锚 13 处逐个验证全 PASS 未漂移
++  （366/506/130/207/209/237/277/302/98/77/43/292/296——g11-inv-anchor-check.log，
++  未漂勿动兑现）+INV-47/58/68 声明处文件现行存在性 13/13；
++- **INV-58 修订**（G2 保存门条款+G3 坐标域边界注）✓；
++- **INV-47 确认不修订**（S4 函数体零改延续——F-GEOM-01 全程未触）；
++- **INV-37/INV-60 相容确认**（档位绑定与坐标域/域标记条款无冲突——现行条款号
++  引用）；
++- **路径口径小节落款**（G11 定，销 b12 门二 P2-2 悬置项）：现行锚定列随域迁移
++  刷新恒指现行路径/历史叙述性引用保留原文不回改；本票随迁刷新 11 处
++  `features/reader/<平铺>` 旧径+INV-47/58/68 声明处裸名加域前缀；
++  **门一 B1 回炉**：INV-47 声明处全路径第 11 处随本回炉补刷（初版漏刷致
++  「11 处」一度失实），11 处计数全量兑现（补强探针册文扫描段实测
++  g11-inv-anchor-check2.log 全 PASS）；
++- §5.4 相容确认三注记（INV-47 不修订+INV-37/INV-60 相容）并入该小节落款。
++
++## 5. G11 对账债清单销项段（全部标记：对账债销项——口径差确认，非实现缺陷）
++
++1. **设计书 §3.2 行数口径累计** [relay batch 17~22]：G5 4 件各+1；G6 11/13 件
++   偏差=−6/−27/−1/−3/−1×7+2 件吻合；G7 零债；G8 8 件各+1；G9 13 件各−1；
++   G10 13 件各+1——机制=设计书立案行数为「逐文件 wc 实测+1」型口径（无尾换行
++   补偿），迁移零行为纯净移不改行数；**G11 抽验**：G10 13 件现值逻辑行数合计
++   1776 vs 设计书合计 1789=恰各+1 复现 ✓；基线全量同机制实证：af946a5324 的
++   69 文件设计书记载 11,860 vs 同口径实测 11,791=恰+69 ✓；
++2. **§5.1 计数差 1790/5417→1789/5411**（G2 rectsFromRange 死面随删测试用例
++   1 例）：基线重冻结实测 1789/5411 ✓（§3 指纹门段）；
++3. **PdfPageCanvas 146 vs 188**（G1 类型下沉削 42）：G1 numstat +9/−50（净
++   −41）+无尾换行口径差 1=wc 口径削 42 ✓。
+ 
+ ## 裁决与排程序
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 6143ff4d7e..e66e3c0dbc 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-18T21:34:59.1109351Z",
++    "generatedAt":  "2026-09-18T22:21:38.7723483Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -7,7 +7,7 @@
+                   },
+                   {
+                       "path":  "docs/invariants.md",
+-                      "sha256":  "c8f86b3a9590216061248abaffee4b7d67166a34a0100482dcc99ee836959c3f"
++                      "sha256":  "2a51396922e69444dd3877f5fc2927e2c38a1ac1fce28245a90df55f4e121690"
+                   },
+                   {
+                       "path":  "electron.vite.config.ts",
+@@ -351,7 +351,7 @@
+                   },
+                   {
+                       "path":  "scripts/audits/g10-oneway.mjs",
+-                      "sha256":  "2f20293aed08d9c788537a70100d3e7200931d59cd4c8dab0af184a14eb2d95f"
++                      "sha256":  "fb4710032b13740b4af338f08a1790d33845e4bf50b322fd60be02dcc7738518"
+                   },
+                   {
+                       "path":  "scripts/audits/g10-recon.mjs",
+@@ -361,6 +361,14 @@
+                       "path":  "scripts/audits/g10-tickets-flip.mjs",
+                       "sha256":  "7ddee7361de3c0493c09f260846057d7491d0570c369d81c3508302261b144b3"
+                   },
++                  {
++                      "path":  "scripts/audits/g11-inv-anchor-check.mjs",
++                      "sha256":  "af744bf171a71c8182ea08ef97692afa55ef464bc77e2aca823b720f23edbfe9"
++                  },
++                  {
++                      "path":  "scripts/audits/g11-netstat.mjs",
++                      "sha256":  "51eca30ddbc4ee2abcf5af3ba06c2399635b3191f0d4b726a1eaf8735b1bcbe9"
++                  },
+                   {
+                       "path":  "scripts/audits/g4-encoding-normalize.mjs",
+                       "sha256":  "16c2db17dc3fb99570acf66775d957703a7fed18b50d69c287bdfa4f75ee6023"
+@@ -567,7 +575,7 @@
+                   },
+                   {
+                       "path":  "scripts/test-surface.baseline.json",
+-                      "sha256":  "f86be888baabfdb8dd224a3b3a3280d028f4c75d4a01243b3733234667182551"
++                      "sha256":  "3c13fa9f420b3c6479adab64223fa971adee53c0c8ca95ed15af5371812e21f5"
+                   },
+                   {
+                       "path":  "scripts/test-surface.exemptions.json",
+diff --git a/scripts/audits/g10-oneway.mjs b/scripts/audits/g10-oneway.mjs
+index 6cff5a59d1..9cd21c8d2f 100644
+--- a/scripts/audits/g10-oneway.mjs
++++ b/scripts/audits/g10-oneway.mjs
+@@ -4,6 +4,9 @@
+ // + reader 根驻留文件=0（根=纯目录容器）+ view 域 ../X 直指根件形态=0（中间态边清零）
+ // + 旧径残留五通道（旧径 import/点径/别名/动态 import/vi.mock）=0。
+ // 扫描范围=src/**+tests/**（tickets/registry.ts=主控收口面不在扫描面；scripts/audits=历史证据件零动作，G7/G8 先例）。
++// 限制（G10 门二 P2-2 登记，G11 补注）：oldPathHit 谓词锚定 `src/renderer/features/reader/`
++// 字面前缀——不覆盖无 `src/` 前缀的相对旧径形态（如 `../../reader/X` 类别名/相对写法）；
++// 该盲区由深度修正面（相对 import 全量闭合核验）承载，本探针不重复扫。
+ import { readdirSync, readFileSync, statSync } from 'node:fs'
+ import { join } from 'node:path'
+ 
+diff --git a/scripts/test-surface.baseline.json b/scripts/test-surface.baseline.json
+index 42d18754c5..594b1b35d9 100644
+--- a/scripts/test-surface.baseline.json
++++ b/scripts/test-surface.baseline.json
+@@ -2212,6 +2212,18 @@
+             "expect(existsSync(join(exportDir, 'manifest.tmp.json'))).toBe(false)",
+             "expect(await readFile(join(exportDir, 'user-notes.txt'), 'utf8')).toBe('USER FILE KEEPS')"
+           ]
++        },
++        {
++          "key": "[\"F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成\"]",
++          "describePath": [],
++          "title": "F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成",
++          "markers": [],
++          "line": 157,
++          "assertions": [
++            "expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })",
++            "expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })",
++            "expect(win.getByText('语料导出完成：2 篇')).toBeVisible({ timeout: 60_000 })"
++          ]
+         }
+       ]
+     },
+@@ -6956,7 +6968,7 @@
+           ],
+           "title": "findRangeAtOffset：命中中段文本（跨节点累计偏移）",
+           "markers": [],
+-          "line": 29,
++          "line": 28,
+           "assertions": [
+             "expect(r).not.toBeNull()",
+             "expect(r!.textNodes.length).toBeGreaterThanOrEqual(1)"
+@@ -6969,7 +6981,7 @@
+           ],
+           "title": "findRangeAtOffset：越界返回 null",
+           "markers": [],
+-          "line": 38,
++          "line": 37,
+           "assertions": [
+             "expect(findRangeAtOffset(root, 999, 1000)).toBeNull()",
+             "expect(findRangeAtOffset(root, 5, 3)).toBeNull()"
+@@ -6982,7 +6994,7 @@
+           ],
+           "title": "findRangeAtOffset：跨节点区间（跨 <p>）能命中两个文本节点",
+           "markers": [],
+-          "line": 44,
++          "line": 43,
+           "assertions": [
+             "expect(r).not.toBeNull()",
+             "expect(r!.textNodes.length).toBe(2)"
+@@ -6995,7 +7007,7 @@
+           ],
+           "title": "verifyQuote：前缀/引文/后缀全部吻合 → 返回原偏移",
+           "markers": [],
+-          "line": 52,
++          "line": 51,
+           "assertions": [
+             "expect(at).toBe(7)"
+           ]
+@@ -7007,7 +7019,7 @@
+           ],
+           "title": "verifyQuote：前部插入文本后仍能重定位（textQuote 自愈）",
+           "markers": [],
+-          "line": 58,
++          "line": 57,
+           "assertions": [
+             "expect(at).toBe(9)"
+           ]
+@@ -7019,28 +7031,11 @@
+           ],
+           "title": "verifyQuote：引文不存在 → null",
+           "markers": [],
+-          "line": 68,
++          "line": 67,
+           "assertions": [
+             "expect(verifyQuote(root, { prefix: 'x', quote: '不存在的引文', suffix: 'y', start: 0 })).toBeNull()"
+           ]
+         },
+-        {
+-          "key": "[\"annotation-anchor —— 文本偏移↔DOM 定位\",\"rectsFromRange：返回归一化矩形（0..1）\"]",
+-          "describePath": [
+-            "annotation-anchor —— 文本偏移↔DOM 定位"
+-          ],
+-          "title": "rectsFromRange：返回归一化矩形（0..1）",
+-          "markers": [],
+-          "line": 73,
+-          "assertions": [
+-            "expect(r).not.toBeNull()",
+-            "expect(rects.length).toBeGreaterThanOrEqual(1)",
+-            "expect(rect.x).toBeGreaterThanOrEqual(0)",
+-            "expect(rect.x + rect.w).toBeLessThanOrEqual(1.0001)",
+-            "expect(rect.y).toBeGreaterThanOrEqual(0)",
+-            "expect(rect.y + rect.h).toBeLessThanOrEqual(1.0001)"
+-          ]
+-        },
+         {
+           "key": "[\"annotation-anchor —— 文本偏移↔DOM 定位\",\"selectionToAnchor：文本节点边界 → start/end/quote/prefix/suffix\"]",
+           "describePath": [
+@@ -7048,7 +7043,7 @@
+           ],
+           "title": "selectionToAnchor：文本节点边界 → start/end/quote/prefix/suffix",
+           "markers": [],
+-          "line": 93,
++          "line": 78,
+           "assertions": [
+             "expect(a).not.toBeNull()",
+             "expect(a!.start).toBe(7)",
+@@ -7066,7 +7061,7 @@
+           ],
+           "title": "selectionToAnchor：元素边界（offset 是子节点索引）同样成立",
+           "markers": [],
+-          "line": 114,
++          "line": 99,
+           "assertions": [
+             "expect(a).not.toBeNull()",
+             "expect(a!.start).toBe(5)",
+@@ -7081,7 +7076,7 @@
+           ],
+           "title": "selectionToAnchor：选区跨出 root → null（跨页/页外不算本页锚定）",
+           "markers": [],
+-          "line": 131,
++          "line": 116,
+           "assertions": [
+             "expect(selectionToAnchor(root, sel as Selection)).toBeNull()"
+           ]
+@@ -7093,7 +7088,7 @@
+           ],
+           "title": "selectionToAnchor：collapsed / 空 rangeCount → null",
+           "markers": [],
+-          "line": 145,
++          "line": 130,
+           "assertions": [
+             "expect(selectionToAnchor(root, sel as Selection)).toBeNull()"
+           ]
+@@ -7105,7 +7100,7 @@
+           ],
+           "title": "同行两片段（y 重叠、x 相邻）合并为一个矩形：x 并集、y/h 取主导（面积最大者）",
+           "markers": [],
+-          "line": 164,
++          "line": 149,
+           "assertions": [
+             "expect(out.length).toBe(1)",
+             "expect(out[0]!.x).toBe(10)",
+@@ -7121,7 +7116,7 @@
+           ],
+           "title": "不同行（y 区间不重叠）不合并：两矩形按 y 升序输出",
+           "markers": [],
+-          "line": 173,
++          "line": 158,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(out[0]!.y).toBe(100)",
+@@ -7135,7 +7130,7 @@
+           ],
+           "title": "同行大 x 间隙断段（防多栏桥接）：间隙 > max(1.5×主导高, 页宽 2%) 处分开",
+           "markers": [],
+-          "line": 180,
++          "line": 165,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(out[0]!.x).toBe(10)",
+@@ -7151,7 +7146,7 @@
+           ],
+           "title": "同形重复矩形（亚像素量测差）去重",
+           "markers": [],
+-          "line": 192,
++          "line": 177,
+           "assertions": [
+             "expect(out.length).toBe(1)"
+           ]
+@@ -7163,7 +7158,7 @@
+           ],
+           "title": "高瘦矩形（旋转/竖排形态，h 超主导高 2 倍）不并入行簇：独立成簇输出",
+           "markers": [],
+-          "line": 197,
++          "line": 182,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(tallOut).toBeDefined()",
+@@ -7178,7 +7173,7 @@
+           ],
+           "title": "混排字号同行（上标 h=8 vs 主文本 h=12）同簇合并，y/h 取主导",
+           "markers": [],
+-          "line": 209,
++          "line": 194,
+           "assertions": [
+             "expect(out.length).toBe(1)",
+             "expect(out[0]!.w).toBe(70)",
+@@ -7193,7 +7188,7 @@
+           ],
+           "title": "相邻行亚像素重叠（紧行距舍入，重叠 <25% 较小高度）不并簇",
+           "markers": [],
+-          "line": 217,
++          "line": 202,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(out[0]!.y).toBe(100)",
+@@ -7207,7 +7202,7 @@
+           ],
+           "title": "单矩形与空数组透传",
+           "markers": [],
+-          "line": 225,
++          "line": 210,
+           "assertions": [
+             "expect(mergeLineRects([], 600)).toEqual([])",
+             "expect(mergeLineRects([one], 600)).toEqual([one])"
+@@ -7220,7 +7215,7 @@
+           ],
+           "title": "a: 缺省路径（无行高注入）——y 重叠率判据链并把行 1-4 并成一块（丢行）→ 行距自适应判据后每视觉行恰一块",
+           "markers": [],
+-          "line": 272,
++          "line": 257,
+           "assertions": [
+             "expect(out[4]!.x + out[4]!.w).toBeCloseTo(1249.2, 5)"
+           ]
+@@ -7232,7 +7227,7 @@
+           ],
+           "title": "b: 行高注入（PDF 行高 12.66）——盒高 14.4>行距逐行重叠 2.4px（INV-D 级联下推/带错绑根因）→ 块高钳到行距估计且相邻行块不重叠",
+           "markers": [],
+-          "line": 279,
++          "line": 264,
+           "assertions": [
+             "expect(out.length).toBe(7)",
+             "expect(r.h).toBeLessThanOrEqual(12.3)",
+@@ -7246,7 +7241,7 @@
+           ],
+           "title": "c: 行高量测膨胀（24px）——中心距阈值 12px 把行 1-2/3-5/6-7 并簇（跨行杂交并集+丢行）→ 行距钳制阈值后 7 块",
+           "markers": [],
+-          "line": 292,
++          "line": 277,
+           "assertions": []
+         },
+         {
+@@ -7256,7 +7251,7 @@
+           ],
+           "title": "d: estimateLinePitch——真机流 y 中心差下中位 ≈11.8；单行/同行片段（中心差<2px）→ undefined；常规两行 → 30",
+           "markers": [],
+-          "line": 297,
++          "line": 282,
+           "assertions": [
+             "expect(estimateLinePitch(tightRowsFixture())).toBeCloseTo(11.8, 5)",
+             "expect(estimateLinePitch([px(10, 100, 50, 12)])).toBeUndefined()",
+@@ -7271,7 +7266,7 @@
+           ],
+           "title": "e: 常规行距（盒高 12 < 行距 30）行为零变：同簇 y/h 严格取主导，高度钳制不触发",
+           "markers": [],
+-          "line": 305,
++          "line": 290,
+           "assertions": [
+             "expect(out.length).toBe(1)",
+             "expect(out[0]!.h).toBe(12)",
+@@ -7285,7 +7280,7 @@
+           ],
+           "title": "T3-a 交错夹具：行 1 后段（y=102）被行 2 高瘦段（y=101，h=26 超高度可比带）隔在末簇之后——旧实现（只与末簇比较）拆 3 簇=同行双块锯齿形态，全簇比较后行 1 两段并簇",
+           "markers": [],
+-          "line": 315,
++          "line": 300,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(row1.x).toBe(10)",
+@@ -7299,7 +7294,7 @@
+           ],
+           "title": "T3-b 双行交替夹具：行 1/行 2 片段按 y 序交错（a1,b1,b2,a2——行 1 后段殿后），行 2 两段为高度不可比的 tall 变体——全簇比较下 2 块（各行 x 并集），旧实现拆 3 簇（行 1 双块=锯齿）",
+           "markers": [],
+-          "line": 327,
++          "line": 312,
+           "assertions": [
+             "expect(out.length).toBe(2)",
+             "expect(row1.x).toBe(10)",
+@@ -7315,7 +7310,7 @@
+           ],
+           "title": "W1 三行 y 序交错+跨簇中心距：行 1 后段跨过行 2 簇回并行 1（y 序 r1,r2,r3 交错），不产生跨行误并块且行块两两垂直分离（pitch 钳制后）",
+           "markers": [],
+-          "line": 350,
++          "line": 335,
+           "assertions": [
+             "expect(out.length).toBe(3)",
+             "expect(out[i]!.y).toBeCloseTo(y, 5)",
+@@ -7335,7 +7330,7 @@
+           ],
+           "title": "W2 全部相邻中心差 <2px（pitch 缺省=单视觉行形态判定）但含多行高瘦碎片：行块几何（y/h/x 并集）不含高瘦碎片贡献、高瘦碎片自成块——centerOk（centerLimit=lh）单门不设防时高度可比带挡跨行并块",
+           "markers": [],
+-          "line": 382,
++          "line": 367,
+           "assertions": [
+             "expect(estimateLinePitch([r1, r2, t1, t2])).toBeUndefined()",
+             "expect(out.length).toBe(2)",
+@@ -16779,7 +16774,7 @@
+           ],
+           "title": "快慢等价（INV-58 后半）：同夹具下 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）",
+           "markers": [],
+-          "line": 167,
++          "line": 152,
+           "assertions": [
+             "expect(fast.length).toBeGreaterThanOrEqual(1)",
+             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
+@@ -16793,7 +16788,7 @@
+           ],
+           "title": "同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）",
+           "markers": [],
+-          "line": 187,
++          "line": 172,
+           "assertions": [
+             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
+             "expect(rect).not.toBeNull()",
+@@ -16807,7 +16802,7 @@
+           ],
+           "title": "快路径守卫前置（裁决 2-§5①(ii)）：跨页选区 visual 路 rAF 帧后仍静默 setPaint(null)——无守卫时快路径把跨页偏移归一化进单页=paint 出块在此红",
+           "markers": [],
+-          "line": 219,
++          "line": 204,
+           "assertions": [
+             "expect(firstRect()).toBeNull()",
+             "expect(toastSpy).not.toHaveBeenCalled()",
+@@ -16822,7 +16817,7 @@
+           ],
+           "title": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）",
+           "markers": [],
+-          "line": 243,
++          "line": 228,
+           "assertions": [
+             "expect(firstRect()).not.toBeNull()",
+             "expect(toolbar()).not.toBeNull()",
+@@ -16906,7 +16901,7 @@
+           ],
+           "title": "通道生效：注册表条目在位+对账通过 → paint 块=项声明几何（top≈10.6061%=84/792，DOM 量测链给 25.25% 必红——判别性）",
+           "markers": [],
+-          "line": 135,
++          "line": 119,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()",
+             "expect(rect).not.toBeNull()",
+@@ -16923,7 +16918,7 @@
+           ],
+           "title": "保存链同源（INV-58 前半）：落库 rects=pending.anchor.rects=项几何链产物（y≈84/792）",
+           "markers": [],
+-          "line": 153,
++          "line": 137,
+           "assertions": [
+             "expect(saveMock).toHaveBeenCalledTimes(1)",
+             "expect(arg.annotation.rects.length).toBeGreaterThanOrEqual(1)",
+@@ -16938,24 +16933,24 @@
+           ],
+           "title": "zoom 现读：tab.zoom=2 → 项盒按 scale2 计算（top≈21.2121%=168/792——zoom 通道接线锚）",
+           "markers": [],
+-          "line": 181,
++          "line": 165,
+           "assertions": [
+             "expect(rect).not.toBeNull()",
+             "expect(parseFloat(rect!.style.top)).toBeCloseTo((168 / 792) * 100, 2)"
+           ]
+         },
+         {
+-          "key": "[\"F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）\",\"回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）\"]",
++          "key": "[\"F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）\",\"回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默\"]",
+           "describePath": [
+             "F-A6-b2 项几何链接线（SelectionLayer×page-items.store 通道）"
+           ],
+-          "title": "回退①页项缺失：注册表空 → DOM 量测链兜底（span 量测盒 top≈25.25%=200/792≠项链 10.61%——判别性）+console.warn 不静默+零功能损失（工具条在）",
++          "title": "回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默",
+           "markers": [],
+-          "line": 204,
++          "line": 188,
+           "assertions": [
+             "expect(rect).not.toBeNull()",
+             "expect(parseFloat(rect!.style.top)).toBeCloseTo((200 / 792) * 100, 2)",
+-            "expect(toolbar()).not.toBeNull()",
++            "expect(toolbar()).toBeNull()",
+             "expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('页项数据缺失'))",
+             "expect(toastSpy).not.toHaveBeenCalled()"
+           ]
+@@ -16967,7 +16962,7 @@
+           ],
+           "title": "回退②偏移对账失败：items 拼接≠DOM 全文 → DOM 量测链兜底+warn（回退触发面收敛的第二因）",
+           "markers": [],
+-          "line": 220,
++          "line": 204,
+           "assertions": [
+             "expect(rect).not.toBeNull()",
+             "expect(parseFloat(rect!.style.top)).toBeCloseTo((200 / 792) * 100, 2)",
+@@ -16981,7 +16976,7 @@
+           ],
+           "title": "G2 降级门（active，门一 W2 口径）：病理页项（盒 x=700 全出 612 盒，偏离率 1≥5%）→ 拖选/防抖路径静默抑制（settle 不 toast——对齐跨页拒绝形态防拖选中途刷屏）+mouseup 时刻 toast 拒绝（INV-02）",
+           "markers": [],
+-          "line": 235,
++          "line": 219,
+           "assertions": [
+             "expect(firstRect()).toBeNull()",
+             "expect(toastSpy).not.toHaveBeenCalled()",
+@@ -17055,7 +17050,7 @@
+           ],
+           "title": "closestPageRoot：文本节点向上最近页盒（data-page-root）；页列外/空节点=null",
+           "markers": [],
+-          "line": 126,
++          "line": 135,
+           "assertions": [
+             "expect(closestPageRoot(span2.firstChild)).toBe(page2)",
+             "expect(closestPageRoot(page2)).toBe(page2)",
+@@ -17070,7 +17065,7 @@
+           ],
+           "title": "pageIndexOf：data-page-root 值 1 基→0 基；缺失/非法值=null",
+           "markers": [],
+-          "line": 137,
++          "line": 146,
+           "assertions": [
+             "expect(pageIndexOf(page1)).toBe(0)",
+             "expect(pageIndexOf(page5)).toBe(4)",
+@@ -17085,7 +17080,7 @@
+           ],
+           "title": "P1 挂载盒≠选区页仍正确（F-01 自裁 4 中间态解除）：防抖路径工具条出现+坐标经页盒换算并÷有效 zoom（F-A4 c 面归一）",
+           "markers": [],
+-          "line": 153,
++          "line": 162,
+           "assertions": [
+             "expect(bar).not.toBeNull()",
+             "expect(parseFloat(bar!.style.left)).toBeCloseTo(8, 2)",
+@@ -17100,7 +17095,7 @@
+           ],
+           "title": "P2 跨页选区（anchorNode 页盒≠focusNode 页盒）：mouseup 拒绝+toast，无工具条（INV-02 禁静默）",
+           "markers": [],
+-          "line": 174,
++          "line": 184,
+           "assertions": [
+             "expect(toolbar()).toBeNull()",
+             "expect(toastSpy).toHaveBeenCalledWith('选区跨页，不支持创建标注', 'info')"
+@@ -17113,7 +17108,7 @@
+           ],
+           "title": "P2b 跨页选区的防抖路径不 toast（程序化/拖选中途——toast 只挂用户完成拖选的 mouseup 时刻）",
+           "markers": [],
+-          "line": 185,
++          "line": 195,
+           "assertions": [
+             "expect(toolbar()).toBeNull()",
+             "expect(toastSpy).not.toHaveBeenCalled()"
+@@ -17126,7 +17121,7 @@
+           ],
+           "title": "P3 mouseup 即时评估：页内选区松手即出工具条（不等防抖窗——程序化选选走 P1 防抖，两路径互备）",
+           "markers": [],
+-          "line": 197,
++          "line": 207,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()"
+           ]
+@@ -17138,7 +17133,7 @@
+           ],
+           "title": "F-12a 单击/双击误触不出条：mousedown→mouseup 位移 ~1.4px（<3px 阈值）——选区在场也收起（用户令「一点就出选项条」=误触发）",
+           "markers": [],
+-          "line": 207,
++          "line": 218,
+           "assertions": [
+             "expect(toolbar()).toBeNull()"
+           ]
+@@ -17150,7 +17145,7 @@
+           ],
+           "title": "F-12b 真拖选出条：mousedown→mouseup 位移 ~5.8px（≥3px 阈值）——mouseup 即时评估路径保持",
+           "markers": [],
+-          "line": 218,
++          "line": 229,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()"
+           ]
+@@ -17162,7 +17157,7 @@
+           ],
+           "title": "F-12c 无 mousedown 记录的 mouseup 放行（程序化 dispatch/键盘选区无鼠标轨迹——P3 兼容面显式化）",
+           "markers": [],
+-          "line": 229,
++          "line": 241,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()"
+           ]
+@@ -17174,7 +17169,7 @@
+           ],
+           "title": "P4 保存页=选区所在页（0 基动态推导，非挂载页）：高亮落库参数+onSaved 回流",
+           "markers": [],
+-          "line": 239,
++          "line": 252,
+           "assertions": [
+             "expect(saveMock).toHaveBeenCalledTimes(1)",
+             "expect(arg.annotation.page).toBe(1)",
+@@ -17189,7 +17184,7 @@
+           ],
+           "title": "P5 Escape 清：工具条出现后按 Esc 收起",
+           "markers": [],
+-          "line": 267,
++          "line": 281,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()",
+             "expect(toolbar()).toBeNull()"
+@@ -17202,7 +17197,7 @@
+           ],
+           "title": "P6 选区所在页 DOM 卸载（页回收/zoom 文本层重建同机制）→选区清→工具条收（防悬空锚）",
+           "markers": [],
+-          "line": 281,
++          "line": 296,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()",
+             "expect(toolbar()).toBeNull()"
+@@ -17215,7 +17210,7 @@
+           ],
+           "title": "P7 页外选区（侧栏等与页盒无关）静默收起：无工具条无 toast",
+           "markers": [],
+-          "line": 299,
++          "line": 315,
+           "assertions": [
+             "expect(toolbar()).toBeNull()",
+             "expect(toastSpy).not.toHaveBeenCalled()"
+@@ -17228,7 +17223,7 @@
+           ],
+           "title": "F-A4 守卫（反转）：pending 态（mouseup 后工具条在场）自绘并集层在场——ADR-0019 R1 修订",
+           "markers": [],
+-          "line": 313,
++          "line": 329,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()",
+             "expect(selRects()).not.toBeNull()",
+@@ -17379,7 +17374,7 @@
+           ],
+           "title": "S1 拖选防抖路径渲染自绘层：跨 3 行重叠输入（行间 4px 垂直重叠）→块数=行数+两两垂直分离+色 token 载体（--reader-selection-paint）",
+           "markers": [],
+-          "line": 137,
++          "line": 140,
+           "assertions": [
+             "expect(paintLayer()).not.toBeNull()",
+             "expect(blocks.length).toBe(3)",
+@@ -17394,7 +17389,7 @@
+           ],
+           "title": "S1b 拖选期零视觉反馈回归守卫（B1/门一回炉→F-A6-c rAF 语义改写）：首 selectionchange 即排 rAF——单帧（16ms）内自绘层渲染且帧前零渲染（rAF 对齐非同步节流），工具条防抖 200ms 语义保持（t=150 仍不出条——防抖窗改短在此红）",
+           "markers": [],
+-          "line": 168,
++          "line": 171,
+           "assertions": [
+             "expect(paintLayer()).toBeNull()",
+             "expect(paintLayer()).not.toBeNull()",
+@@ -17411,7 +17406,7 @@
+           ],
+           "title": "S1c 帧随动（B1/W6·门一 r2→F-A6-c rAF 语义改写）：拖选中窗口内末事件变更选区→下一帧自绘块几何随动到新位置（非首帧）——节流窗丢帧/只渲染首帧的退化在此红",
+           "markers": [],
+-          "line": 197,
++          "line": 201,
+           "assertions": [
+             "expect(paintBlocks().length).toBe(1)",
+             "expect(pct(paintBlocks()[0]!, 'top')).toBeCloseTo(0, 6)",
+@@ -17426,7 +17421,7 @@
+           ],
+           "title": "S2 所见即所存：保存 rects 与自绘块同源（块数/left/top 一致——同一 evaluate 管线产物）",
+           "markers": [],
+-          "line": 226,
++          "line": 230,
+           "assertions": [
+             "expect(arg.annotation.rects.length).toBe(blocks.length)",
+             "expect(pct(blocks[i]!, 'left')).toBeCloseTo(arg.annotation.rects[i]!.x * 100, 6)",
+@@ -17441,7 +17436,7 @@
+           ],
+           "title": "S5 Escape：工具条收而自绘层保留；选区真清除（坍缩+selectionchange）→自绘随清（INV-37 视觉-状态严格同步）",
+           "markers": [],
+-          "line": 261,
++          "line": 266,
+           "assertions": [
+             "expect(toolbar()).not.toBeNull()",
+             "expect(paintLayer()).not.toBeNull()",
+@@ -17457,7 +17452,7 @@
+           ],
+           "title": "band 在场：highlight 顶=band.top、高=band.bottom−band.top（顶贴字形顶缘底贴底缘）",
+           "markers": [],
+-          "line": 287,
++          "line": 293,
+           "assertions": [
+             "expect(parseFloat(s.top as string)).toBeCloseTo(20.5, 6)",
+             "expect(parseFloat(s.height as string)).toBeCloseTo(3.3, 6)"
+@@ -17470,7 +17465,7 @@
+           ],
+           "title": "band 在场：underline 实条贴 band.bottom 上方 2px（calc 形态）",
+           "markers": [],
+-          "line": 294,
++          "line": 300,
+           "assertions": [
+             "expect(s.top).toBe('calc(23.8% - 2px)')",
+             "expect(s.height).toBe('2px')"
+@@ -17483,7 +17478,7 @@
+           ],
+           "title": "band 缺省：F-11 分数路径原样（回归锚——存量 rects 无 band 时的兜底）",
+           "markers": [],
+-          "line": 301,
++          "line": 307,
+           "assertions": [
+             "expect(parseFloat(s.top as string)).toBeCloseTo(20.2, 6)",
+             "expect(parseFloat(s.height as string)).toBeCloseTo(1.56, 6)"
+@@ -17496,7 +17491,7 @@
+           ],
+           "title": "bandFromMetrics 纯几何：span 盒+字体度量→归一化字形带（fs<布局带高时半前导为负——基线随 CSS 负前导下沉）",
+           "markers": [],
+-          "line": 308,
++          "line": 314,
+           "assertions": [
+             "expect(band).not.toBeNull()",
+             "expect(band!.top).toBeCloseTo(0.00125, 10)",
+@@ -17511,7 +17506,7 @@
+           ],
+           "title": "AnnotationLayer 挂 B 接线：resolve→band 匹配→渲染顶/高=band 值（非 F-11 分数）",
+           "markers": [],
+-          "line": 323,
++          "line": 329,
+           "assertions": [
+             "expect(block).not.toBeNull()",
+             "expect(pct(block!, 'top')).toBeCloseTo(25.125, 4)",
+@@ -17525,7 +17520,7 @@
+           ],
+           "title": "归一：mount 有效 zoom=0.8（clientWidth 480/gBCR 600）→工具条 left/top=视口差×0.8",
+           "markers": [],
+-          "line": 380,
++          "line": 386,
+           "assertions": [
+             "expect(bar).not.toBeNull()",
+             "expect(parseFloat(bar!.style.left)).toBeCloseTo(8, 2)",
+@@ -17539,7 +17534,7 @@
+           ],
+           "title": "近顶下翻转：选区顶距滚动容器顶 <42px →工具条放选区下方（top ≥ 选区底）",
+           "markers": [],
+-          "line": 398,
++          "line": 405,
+           "assertions": [
+             "expect(bar).not.toBeNull()",
+             "expect(parseFloat(bar!.style.top)).toBeCloseTo(58, 6)"
+@@ -17552,7 +17547,7 @@
+           ],
+           "title": "视口夹取：选区右缘越滚动容器右缘 → left 夹到容器内（1200−180=1020）",
+           "markers": [],
+-          "line": 414,
++          "line": 422,
+           "assertions": [
+             "expect(bar).not.toBeNull()",
+             "expect(parseFloat(bar!.style.left)).toBeCloseTo(1020, 6)"
+@@ -17565,7 +17560,7 @@
+           ],
+           "title": "a1 自绘块垂直=行簇字形带（band 单源——非 CSS 回退行盒）：top/height=band 值",
+           "markers": [],
+-          "line": 452,
++          "line": 461,
+           "assertions": [
+             "expect(blocks.length).toBe(1)",
+             "expect(pct(blocks[0]!, 'top')).toBeCloseTo(0.125, 4)",
+@@ -17579,7 +17574,7 @@
+           ],
+           "title": "a2 自绘块水平界=行簇 span 实际端点：行盒越出 span 簇→左右夹入 [x0,x1]",
+           "markers": [],
+-          "line": 467,
++          "line": 476,
+           "assertions": [
+             "expect(blocks.length).toBe(1)",
+             "expect(pct(blocks[0]!, 'left')).toBeCloseTo(100 / 6, 4)",
+@@ -17593,7 +17588,7 @@
+           ],
+           "title": "c1 自绘层 z=层级常量最上（选区交互视觉保持最上——票面 §0c）",
+           "markers": [],
+-          "line": 482,
++          "line": 491,
+           "assertions": [
+             "expect(paintLayer()!.style.zIndex).toBe(String(PAGE_LAYER_Z.selectionPaint))"
+           ]
+@@ -17605,7 +17600,7 @@
+           ],
+           "title": "c2 层序常量单源（防回归序）：色块垫底 < canvas < 自绘最上；textLayer 官方 z0 在色块下（视觉透明无碍）",
+           "markers": [],
+-          "line": 492,
++          "line": 501,
+           "assertions": [
+             "expect(PAGE_LAYER_Z.canvas).toBeGreaterThan(PAGE_LAYER_Z.colorBlocks)",
+             "expect(PAGE_LAYER_Z.selectionPaint).toBeGreaterThan(PAGE_LAYER_Z.canvas)",
+@@ -21631,7 +21626,7 @@
+           "describePath": [],
+           "title": "目录不存在→空结果三桶（首次无产物=合法态非错误）",
+           "markers": [],
+-          "line": 87,
++          "line": 90,
+           "assertions": [
+             "expect(r).toEqual({ imported: [], skipped: [], errors: [] })"
+           ]
+@@ -21641,7 +21636,7 @@
+           "describePath": [],
+           "title": "无 archive 首导：写入 DB+产物移 archive（corpus-ai 清空）",
+           "markers": [],
+-          "line": 92,
++          "line": 95,
+           "assertions": [
+             "expect(r.imported).toEqual(['p-1'])",
+             "expect(r.skipped).toEqual([])",
+@@ -21657,7 +21652,7 @@
+           "describePath": [],
+           "title": "archive 同 sha：二跑 skipped，不重复写（archive 移动后全 skipped 跨格序列）",
+           "markers": [],
+-          "line": 113,
++          "line": 116,
+           "assertions": [
+             "expect(r.skipped).toEqual(['p-1'])",
+             "expect(r.imported).toEqual([])",
+@@ -21671,7 +21666,7 @@
+           "describePath": [],
+           "title": "archive 异 sha：清面重灌不重复（deleteByPaper+整套重插）",
+           "markers": [],
+-          "line": 126,
++          "line": 129,
+           "assertions": [
+             "expect(r.imported).toEqual(['p-1'])",
+             "expect(r.skipped).toEqual([])",
+@@ -21684,7 +21679,7 @@
+           "describePath": [],
+           "title": "行级 zod 拒非法 role：该篇入 errors（中文 reason 含路径），产物不移不写 DB",
+           "markers": [],
+-          "line": 139,
++          "line": 142,
+           "assertions": [
+             "expect(r.imported).toEqual([])",
+             "expect(r.errors).toHaveLength(1)",
+@@ -21699,7 +21694,7 @@
+           "describePath": [],
+           "title": "行级 zod 拒非法 question（七问 v1 冻结）",
+           "markers": [],
+-          "line": 150,
++          "line": 153,
+           "assertions": [
+             "expect(r.errors).toHaveLength(1)",
+             "expect(repo.countByPaper('p-1')).toBe(0)"
+@@ -21710,7 +21705,7 @@
+           "describePath": [],
+           "title": "幽灵 paperId 拦截：不在 papers 表→该篇失败",
+           "markers": [],
+-          "line": 157,
++          "line": 160,
+           "assertions": [
+             "expect(r.imported).toEqual([])",
+             "expect(r.errors).toHaveLength(1)",
+@@ -21723,7 +21718,7 @@
+           "describePath": [],
+           "title": "损坏 JSON/非数组形态：该篇失败入 errors 不中断整批（部分成功）",
+           "markers": [],
+-          "line": 166,
++          "line": 169,
+           "assertions": [
+             "expect(r.imported).toEqual([])",
+             "expect(r.errors).toHaveLength(2)",
+@@ -21735,7 +21730,7 @@
+           "describePath": [],
+           "title": "多篇混合：imported/skipped/errors 三桶并存（Result 三桶形状）",
+           "markers": [],
+-          "line": 177,
++          "line": 180,
+           "assertions": [
+             "expect(r.imported).toEqual([])",
+             "expect(r.skipped).toEqual(['p-1'])",
+@@ -21747,11 +21742,51 @@
+           "describePath": [],
+           "title": "listByPaper 透传 repo（确定性序+空篇空数组）",
+           "markers": [],
+-          "line": 188,
++          "line": 191,
+           "assertions": [
+             "expect(await svc.listByPaper('p-1')).toEqual([])",
+             "expect((await svc.listByPaper('p-1')).length).toBe(1)"
+           ]
++        },
++        {
++          "key": "[\"F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）\"]",
++          "describePath": [],
++          "title": "F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无）",
++          "markers": [],
++          "line": 211,
++          "assertions": [
++            "expect(r1.imported).toEqual([])",
++            "expect(r1.errors).toHaveLength(1)",
++            "expect(r1.errors[0]!.reason).toContain('导入失败')",
++            "expect(repo.countByPaper('p-1')).toBe(0)",
++            "expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])",
++            "expect(await namesIn('archive')).toEqual([])",
++            "expect(rOk.imported).toEqual(['p-1'])",
++            "expect(repo.countByPaper('p-1')).toBe(2)",
++            "expect(r2.imported).toEqual([])",
++            "expect(r2.errors).toHaveLength(1)",
++            "expect(repo.countByPaper('p-1')).toBe(2)",
++            "expect(contents).toEqual(['回答内容', '回答内容'])",
++            "expect(await namesIn('corpus-ai')).toEqual(['p-1.json'])"
++          ]
++        },
++        {
++          "key": "[\"F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）\"]",
++          "describePath": [],
++          "title": "F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批）",
++          "markers": [],
++          "line": 253,
++          "assertions": [
++            "expect(rPre.imported).toEqual(['p-1', 'p-2'])",
++            "expect(bSeen).toBe(true)",
++            "expect(r.imported).toEqual(['p-1'])",
++            "expect(r.errors.map((e) => e.paperId)).toEqual(['p-2'])",
++            "expect(repo.countByPaper('p-1')).toBe(2)",
++            "expect(aContents).toEqual(['A 新回答一', 'A 新回答二'])",
++            "expect(repo.countByPaper('p-2')).toBe(1)",
++            "expect((await svc.listByPaper('p-2'))[0]?.contentMd).toBe('B 旧回答')",
++            "expect(await namesIn('corpus-ai')).toEqual(['p-2.json'])"
++          ]
+         }
+       ]
+     },
+@@ -22415,7 +22450,7 @@
+           ],
+           "title": "正常全链：两篇→五件套落盘（corpus md golden/fulltext 页界 \\f/figures/manifest sha 全匹配）",
+           "markers": [],
+-          "line": 132,
++          "line": 133,
+           "assertions": [
+             "expect(['p-1', 'p-2']).toContain(r1.paperId)",
+             "expect(r1.url).toBe(`app-file://${r1.paperId}`)",
+@@ -22444,7 +22479,7 @@
+           ],
+           "title": "ENR-02 装配两形：含缓存值篇 md 带两字段+manifest 条目带 citedByCount/citedByFetchedAt 成对；无缓存篇两形缺省",
+           "markers": [],
+-          "line": 200,
++          "line": 201,
+           "assertions": [
+             "expect(mdCited).toContain('citedByCount: 12')",
+             "expect(mdCited).toContain(\"venueTier: 'T1'\")",
+@@ -22465,7 +22500,7 @@
+           ],
+           "title": "ENR-02 INTERFACE 声明存在性：指标口径节两字段可选性+sha 消费者提示（W6）",
+           "markers": [],
+-          "line": 245,
++          "line": 246,
+           "assertions": [
+             "expect(INTERFACE_MD).toContain('citedByCount')",
+             "expect(INTERFACE_MD).toContain('venueTier')",
+@@ -22480,7 +22515,7 @@
+           ],
+           "title": "幂等重导：同库重跑=产物文件逐字节稳定（manifest exportedAt 不参与断言）",
+           "markers": [],
+-          "line": 252,
++          "line": 253,
+           "assertions": [
+             "expect(second.md).toBe(first.md)",
+             "expect(second.ft).toBe(first.ft)",
+@@ -22494,7 +22529,7 @@
+           ],
+           "title": "篇失败：文件缺失篇进 errors[] 会话继续（部分成功）",
+           "markers": [],
+-          "line": 279,
++          "line": 280,
+           "assertions": [
+             "expect(r.paperId).toBe('p-ok')",
+             "expect(result.errorCount).toBe(1)",
+@@ -22510,7 +22545,7 @@
+           ],
+           "title": "renderer 篇失败（kind:error）：errors[] 接续——errors 会话继续跨格",
+           "markers": [],
+-          "line": 303,
++          "line": 304,
+           "assertions": [
+             "expect(result).toEqual({ dir: h.dir, fileCount: 1, errorCount: 1 })"
+           ]
+@@ -22522,11 +22557,68 @@
+           ],
+           "title": "EXPORT_BUSY：会话进行中第二会话拒绝（单飞）",
+           "markers": [],
+-          "line": 320,
++          "line": 321,
+           "assertions": [
+             "expect(h.svc.exportCorpusSession({ dir: h.dir })).rejects.toMatchObject({ code: 'EXPORT_BUSY' })"
+           ]
+         },
++        {
++          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）\"]",
++          "describePath": [
++            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
++          ],
++          "title": "F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY）",
++          "markers": [],
++          "line": 337,
++          "assertions": [
++            "expect(aborted).toBe(true)",
++            "expect(first).rejects.toMatchObject({ code: 'IO_ERROR' })",
++            "expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)",
++            "expect(r2.sessionId).not.toBe(r1.sessionId)",
++            "expect((await second).fileCount).toBe(1)"
++          ]
++        },
++        {
++          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false\"]",
++          "describePath": [
++            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
++          ],
++          "title": "F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false",
++          "markers": [],
++          "line": 359,
++          "assertions": [
++            "expect(before).toBe(false)",
++            "expect(after).toBe(false)"
++          ]
++        },
++        {
++          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest\"]",
++          "describePath": [
++            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
++          ],
++          "title": "F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest",
++          "markers": [],
++          "line": 375,
++          "assertions": [
++            "expect(aborted).toBe(true)",
++            "expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })",
++            "expect(existsSync(join(h.dir, 'manifest.json'))).toBe(false)"
++          ]
++        },
++        {
++          "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）\"]",
++          "describePath": [
++            "corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）"
++          ],
++          "title": "F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面）",
++          "markers": [],
++          "line": 395,
++          "assertions": [
++            "expect(aborted).toBe(true)",
++            "expect(session).rejects.toMatchObject({ code: 'IO_ERROR' })",
++            "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: 'p-1', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })"
++          ]
++        },
+         {
+           "key": "[\"corpus.export.service —— 五件套导出会话（状态机+manifest+幂等）\",\"落盘失败：会话 failed（无 manifest）——同名目录占位致写盘 ENOTDIR\"]",
+           "describePath": [
+@@ -22534,7 +22626,7 @@
+           ],
+           "title": "落盘失败：会话 failed（无 manifest）——同名目录占位致写盘 ENOTDIR",
+           "markers": [],
+-          "line": 336,
++          "line": 412,
+           "assertions": [
+             "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: r.paperId, kind: 'figure', figure: 'page', page: 1, payload: Buffer.from('P').toString('base64') }) ).rejects.toThrow()",
+             "expect(session).rejects.toThrow()",
+@@ -22549,7 +22641,7 @@
+           ],
+           "title": "会话开始清空重建：旧 manifest+残留产物清除（中断重跑幂等）；目录根用户文件不动",
+           "markers": [],
+-          "line": 365,
++          "line": 441,
+           "assertions": [
+             "expect(corpusFiles).toEqual(['p-new.md'])",
+             "expect(manifest.stale).toBeUndefined()",
+@@ -22563,7 +22655,7 @@
+           ],
+           "title": "corpusItem 载荷失配：sessionId/paperId 与在途不符→INVALID_REQUEST（防御）",
+           "markers": [],
+-          "line": 389,
++          "line": 465,
+           "assertions": [
+             "expect( h.svc.corpusItem({ sessionId: r.sessionId, paperId: '别的篇', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
+             "expect( h.svc.corpusItem({ sessionId: '别的会话', paperId: 'p-1', kind: 'complete' }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
+@@ -22577,7 +22669,7 @@
+           ],
+           "title": "目录隔离守卫：corpusSet 目标目录含 manifest.json→拒绝（防轻量导出污染五件套目录）",
+           "markers": [],
+-          "line": 409,
++          "line": 485,
+           "assertions": [
+             "expect(exportSvc.writeCorpusSet(h.dir, entries)).rejects.toMatchObject({ code: 'CONFLICT' })"
+           ]
+@@ -22589,7 +22681,7 @@
+           ],
+           "title": "orderAiNotes：role→question→createdAt 分组序（first-read Q1 在 second-read Q1 前；divergence 殿后）",
+           "markers": [],
+-          "line": 424,
++          "line": 500,
+           "assertions": [
+             "expect(ordered.map((e) => `${e.sourceRole}:${e.question ?? ''}`)).toEqual([ 'first-read:Q1', 'first-read:Q2', 'second-read:Q1', 'adjudicate:divergence' ])"
+           ]
+@@ -24235,6 +24327,320 @@
+         }
+       ]
+     },
++    "tests/unit/services/shared/atomic-write.test.ts": {
++      "ticketIds": [],
++      "conditionalSkipSites": [],
++      "hardSkipSites": [],
++      "cases": [
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"string 形态：UTF-8 落盘内容一致（中文无损坏）\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "string 形态：UTF-8 落盘内容一致（中文无损坏）",
++          "markers": [],
++          "line": 35,
++          "assertions": [
++            "expect(await readFile(target, 'utf8')).toBe('设置内容：中文\\n')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"bytes 形态：Uint8Array 直写（不被字符串化）\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "bytes 形态：Uint8Array 直写（不被字符串化）",
++          "markers": [],
++          "line": 42,
++          "assertions": [
++            "expect(Buffer.from(back).equals(Buffer.from(bytes))).toBe(true)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"终名存在且默认 tmp 不残留（固定名 tmp 形态）\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "终名存在且默认 tmp 不残留（固定名 tmp 形态）",
++          "markers": [],
++          "line": 51,
++          "assertions": [
++            "expect((await stat(target)).isFile()).toBe(true)",
++            "expect(await tmpCount(dir)).toBe(0)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"ensureDir：深目录父链不存在时自动创建\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "ensureDir：深目录父链不存在时自动创建",
++          "markers": [],
++          "line": 59,
++          "assertions": [
++            "expect(await readFile(target, 'utf8')).toBe('deep')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义）\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义）",
++          "markers": [],
++          "line": 66,
++          "assertions": [
++            "expect(atomicWriteFile(target, 'x')).rejects.toThrow()"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留",
++          "markers": [],
++          "line": 72,
++          "assertions": [
++            "expect(outcomes.some((o) => o.status === 'fulfilled')).toBe(true)",
++            "expect(back.byteLength).toBe(2048)",
++            "expect(allFirst || allSecond).toBe(true)",
++            "expect(await tmpCount(dir)).toBe(0)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛",
++          "markers": [],
++          "line": 93,
++          "assertions": [
++            "expect(atomicWriteFile(target, 'x', { cleanOnFail: true })).rejects.toThrow()",
++            "expect(await tmpCount(dir)).toBe(0)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/atomic-write —— 原子写单源\",\"cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面）\"]",
++          "describePath": [
++            "services/shared/atomic-write —— 原子写单源"
++          ],
++          "title": "cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面）",
++          "markers": [],
++          "line": 101,
++          "assertions": [
++            "expect(atomicWriteFile(target, 'x')).rejects.toThrow()",
++            "expect(await tmpCount(dir)).toBe(1)"
++          ]
++        }
++      ]
++    },
++    "tests/unit/services/shared/domain-error.test.ts": {
++      "ticketIds": [],
++      "conditionalSkipSites": [],
++      "hardSkipSites": [],
++      "cases": [
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"基类直构：name=DomainError，code 与 message 保留\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "基类直构：name=DomainError，code 与 message 保留",
++          "markers": [],
++          "line": 19,
++          "assertions": [
++            "expect(e.name).toBe('DomainError')",
++            "expect(e.code).toBe('NOT_FOUND')",
++            "expect(e.message).toBe('文献不存在：p-1')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物",
++          "markers": [],
++          "line": 26,
++          "assertions": [
++            "expect(stub.name).toBe('StubDomainError')",
++            "expect(http.name).toBe('HttpFetchError')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error",
++          "markers": [],
++          "line": 33,
++          "assertions": [
++            "expect(stub instanceof DomainError).toBe(true)",
++            "expect(stub instanceof Error).toBe(true)",
++            "expect(new DomainError('INTERNAL', 'x') instanceof Error).toBe(true)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"toAppError 按 code 折叠：合法码保留 code 与中文 message\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "toAppError 按 code 折叠：合法码保留 code 与中文 message",
++          "markers": [],
++          "line": 40,
++          "assertions": [
++            "expect(app.code).toBe('CONFLICT')",
++            "expect(app.message).toBe('标签名已被占用')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名）\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名）",
++          "markers": [],
++          "line": 46,
++          "assertions": [
++            "expect(app.code).toBe('INTERNAL')",
++            "expect(app.message).toBe('发生未预期的内部错误')",
++            "expect(app.detail).toBe('带非法码的域错误')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/domain-error —— 域错误基类\",\"HttpFetchError 三参形态：status 字段保留且 code 仍可折叠\"]",
++          "describePath": [
++            "services/shared/domain-error —— 域错误基类"
++          ],
++          "title": "HttpFetchError 三参形态：status 字段保留且 code 仍可折叠",
++          "markers": [],
++          "line": 54,
++          "assertions": [
++            "expect(e.status).toBe(503)",
++            "expect(e.code).toBe('UPSTREAM_ERROR')",
++            "expect(app.code).toBe('UPSTREAM_ERROR')"
++          ]
++        }
++      ]
++    },
++    "tests/unit/services/shared/sanitize.test.ts": {
++      "ticketIds": [],
++      "conditionalSkipSites": [],
++      "hardSkipSites": [],
++      "cases": [
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：paper-42_ok → paper-42_ok\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：paper-42_ok → paper-42_ok",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：ABCxyz019 → ABCxyz019\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：ABCxyz019 → ABCxyz019",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：../etc/passwd → ___etc_passwd\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：../etc/passwd → ___etc_passwd",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：..\\\\crew → ___crew\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：..\\crew → ___crew",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：a b\\tc\\nd → a_b_c_d\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：a b\tc\nd → a_b_c_d",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒：论文：2024 → ___2024\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒：论文：2024 → ___2024",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"消毒： → \"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "消毒： → ",
++          "markers": [],
++          "line": 21,
++          "assertions": [
++            "expect(sanitizePathToken(raw)).toBe(expected)"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"白名单字符全程保持（混合长串不变）\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "白名单字符全程保持（混合长串不变）",
++          "markers": [],
++          "line": 25,
++          "assertions": [
++            "expect(sanitizePathToken('Uuid-9_Ab-z0')).toBe('Uuid-9_Ab-z0')"
++          ]
++        },
++        {
++          "key": "[\"services/shared/sanitize —— 路径段清洗单源\",\"穿越向量逐段消毒：连续点与多斜杠不存活\"]",
++          "describePath": [
++            "services/shared/sanitize —— 路径段清洗单源"
++          ],
++          "title": "穿越向量逐段消毒：连续点与多斜杠不存活",
++          "markers": [],
++          "line": 29,
++          "assertions": [
++            "expect(sanitizePathToken('....//')).toBe('______')",
++            "expect(sanitizePathToken('a/../../b')).toBe('a_______b')"
++          ]
++        }
++      ]
++    },
+     "tests/unit/services/tags-lifecycle.service.test.ts": {
+       "ticketIds": [],
+       "conditionalSkipSites": [],
+@@ -25026,6 +25432,51 @@
+         }
+       ]
+     },
++    "tests/unit/shared/app-file-url.test.ts": {
++      "ticketIds": [],
++      "conditionalSkipSites": [],
++      "hardSkipSites": [],
++      "cases": [
++        {
++          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"prefix 常量 = APP_FILE_SCHEME + \\\"://\\\"（与协议常量同源对账）\"]",
++          "describePath": [
++            "src/shared/app-file-url —— URL 拼装单源"
++          ],
++          "title": "prefix 常量 = APP_FILE_SCHEME + \"://\"（与协议常量同源对账）",
++          "markers": [],
++          "line": 13,
++          "assertions": [
++            "expect(APP_FILE_URL_PREFIX).toBe(`${APP_FILE_SCHEME}://`)",
++            "expect(APP_FILE_URL_PREFIX).toBe('app-file://')"
++          ]
++        },
++        {
++          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"appFileUrl：prefix + paperId 拼接\"]",
++          "describePath": [
++            "src/shared/app-file-url —— URL 拼装单源"
++          ],
++          "title": "appFileUrl：prefix + paperId 拼接",
++          "markers": [],
++          "line": 18,
++          "assertions": [
++            "expect(appFileUrl('p-abc-123')).toBe('app-file://p-abc-123')"
++          ]
++        },
++        {
++          "key": "[\"src/shared/app-file-url —— URL 拼装单源\",\"appFileUrl：结果以 prefix 起且去 prefix 后还原 id\"]",
++          "describePath": [
++            "src/shared/app-file-url —— URL 拼装单源"
++          ],
++          "title": "appFileUrl：结果以 prefix 起且去 prefix 后还原 id",
++          "markers": [],
++          "line": 22,
++          "assertions": [
++            "expect(appFileUrl(id).startsWith(APP_FILE_URL_PREFIX)).toBe(true)",
++            "expect(appFileUrl(id).slice(APP_FILE_URL_PREFIX.length)).toBe(id)"
++          ]
++        }
++      ]
++    },
+     "tests/unit/shared/venue-tier.test.ts": {
+       "ticketIds": [],
+       "conditionalSkipSites": [],
+@@ -25754,14 +26205,14 @@
+     }
+   },
+   "stats": {
+-    "fileCount": 183,
+-    "caseCount": 1757,
+-    "assertionCount": 5334,
++    "fileCount": 187,
++    "caseCount": 1789,
++    "assertionCount": 5411,
+     "skipSiteCount": 15,
+     "conditionalSkipSiteCount": 15,
+     "hardSkipSiteCount": 0,
+     "ticketIdCount": 57,
+-    "eachExpandedRows": 254,
++    "eachExpandedRows": 261,
+     "unresolvableCount": 0
+   }
+ }
+diff --git a/src/renderer/features/reader/view/PdfPageCanvas.tsx b/src/renderer/features/reader/view/PdfPageCanvas.tsx
+index 4384b799ae..51c56de3fd 100644
+--- a/src/renderer/features/reader/view/PdfPageCanvas.tsx
++++ b/src/renderer/features/reader/view/PdfPageCanvas.tsx
+@@ -16,9 +16,10 @@
+  *     geometry: PdfPageGeometry): void; onError(msg: string): void }): JSX.Element
+  * - pageNo 固定（页码 1 基；页列模型：页码由 PageColumn 分配，不再跳变）
+  * - PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry 类型真源=
+- *   geometry-types（pdfjs TextItem/TextStyle 的结构子集+页几何通道——消费方
+- *   TextLayer/PagesOverlay 不 import pdfjs-dist）；本件 type 再导出保受锁
+- *   测试旧路径（ai-annotation-layer.test:25 等——F-GEOM-01-G1 M0 切环）
++ *   anchors/geometry-types（pdfjs TextItem/TextStyle 的结构子集+页几何通道
++ *   ——消费方 TextLayer/PagesOverlay 不 import pdfjs-dist）；本件 type 再导出
++ *   供受锁测试经 view/ 新径消费（ai-annotation-layer.test:25 等 8 件——
++ *   F-GEOM-01-G1 M0 切环，明细见下方再导出行注）
+  *
+  * ── 架构层 ──
+  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
+@@ -33,9 +34,11 @@ import { PAGE_LAYER_Z } from '../state/page-layer-z'
+ import { clampScale } from '../anchors/pdf-item-geometry'
+ import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from '../anchors/geometry-types'
+ 
+-// 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
+-// import 本件零触（ai-annotation-layer.test:25/pdf-item-geometry.test:18 等
+-// 十处 tests/**/*.tsx）
++// 类型再导出（真源=anchors/geometry-types——F-GEOM-01-G1 M0 切环）：现行受锁
++// 测试经 reader/view/ 新径消费本件 9 处——8 件取类型再导出（text-layer:41/
++// pdf-item-geometry:18/anchor-item-verify:33/annotation-layer:21/
++// ai-annotation-layer:25/pages-overlay:30/band-calibration:35/
++// reader-search-text:21）+1 件组件本测（pdf-page-canvas.test:23）
+ export type { PdfTextItem, PdfTextStyle, PdfTextContent, PdfPageGeometry } from '../anchors/geometry-types'
+ 
+ function errorMessage(err: unknown): string {

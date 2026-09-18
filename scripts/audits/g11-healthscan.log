@@ -1,0 +1,13 @@
+[info] 项目 Synapse_remake：exhaust 后已补还（ok 2026-09-18）
+[info] 账本 54 行无 truncated 字段（schema v1 历史行）——④ 对历史行豁免，其覆盖率为已知欠账
+[info] 尾窗 ok 源分布：deepseek-chat/glm-5.3flash/zipoo/zcode-subagent/deepseek
+[info] 用量 kimi-main：17 次 ok，累计 in=64,925 out=97,854
+[info] 用量 kimi-backup：3 次 ok，累计 in=762 out=103
+[info] 用量 deepseek：9 次 ok，累计 in=67,569 out=130,136
+[info] 用量 glm-5.3flash：8 次 ok，累计 in=0 out=0
+[info] 用量 deepseek-chat：8 次 ok，累计 in=0 out=0
+[info] 用量 zipoo：3 次 ok，累计 in=0 out=0
+[info] 用量 zcode-subagent：12 次 ok，累计 in=0 out=0
+[info] 审计 findings 汇总：17 行，verdict 分布={"FAIL":2,"PASS":2,"PASS_WITH_WARNINGS":11,"DRAFT_DELIVERED":1,"REWORK":1}，累计 B=9/W=34/N=87
+health-scan 汇总：RED ×0 / WARN ×0（WARN 不阻断但须回显计数，累计出现即按升格条件处置，W-1）（账本行 72/流水行 591/窗口 20/审计岗 drafter,gate1-reviewer,auditor-readonly）——可收口
+HEALTHSCAN_EXIT=0

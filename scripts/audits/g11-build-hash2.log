@@ -1,0 +1,11 @@
+== g11 回炉 #1 构建产物名比对（恒等链复验）==
+基线：index-D3egZtl2.js 1,402,437 字节 + index-BfpEygSE.css 59,923 字节 + pdf.worker.min-yatZIOMy.mjs 1,375,838 字节（回炉前 g11-build-hash.log）
+-- 回炉后现值 --
+index-BfpEygSE.css 59923
+index-D3egZtl2.js 1402437
+pdf.worker.min-yatZIOMy.mjs 1375838
+9c3b8b84396410230ce263286f35aaab45ebfb1f3a3026f0d9ea3aa7b4ca3f2a *out/renderer/assets/index-D3egZtl2.js
+dcace2e7481c724b80186a4822fe252b403be154bcb06d5bbcb5f79a068a97d5 *out/renderer/assets/index-BfpEygSE.css
+1baa1844c89c80a5b2797c916e75ab29254be46d8e9cb53cb6364d7aad84be36 *out/renderer/assets/pdf.worker.min-yatZIOMy.mjs
+结论：三产物回炉前后同名同尺寸同 sha256——注释级回炉（invariants 前缀+头注从句+探针补强）零产物影响，无停工条件
+EXIT=0

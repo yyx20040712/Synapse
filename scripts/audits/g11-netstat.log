@@ -1,0 +1,95 @@
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+== [1] 域分组净删（git diff -M --numstat c05e2ff8dd..HEAD）==
+state/     files=10 +8/-8 net=+0 
+time/      files=4 +5/-5 net=+0 
+anchors/   files=14 +160/-88 net=+72 新件=[anchors/geometry-types.ts (+103/-0)]
+interact/  files=7 +48/-55 net=-7 
+panels/    files=8 +21/-21 net=+0 
+view/      files=27 +71/-112 net=-41 
+(基点根删除)/ files=1 +0/-20 [geometry-types.ts (+0/-20)]
+合计 files=71 (+313/-309) 净额=+4（含 rename 计数）
+== [2] wc 现值（逻辑行数逐文件求和）==
+files=70 total_lines=11815
+  state/ = 1445
+  time/ = 829
+  anchors/ = 3121
+  interact/ = 1259
+  panels/ = 1173
+  view/ = 3988
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+warning: unable to find all commit-graph files
+== [3] af946a5324 设计书基线（git show 逐文件，同口径逻辑行数）==
+files=69 total_lines=11791（设计书 §3.5 记载 69 文件/11,860 行）
+对账：现值 70 文件 11815 行 vs 基线 69 文件 11791 行 → Δ文件=1 Δ行=24
+== [4] 异常面 ==
+无（bin/M-A 非域路径/根驻留全零）
+EXIT=0
