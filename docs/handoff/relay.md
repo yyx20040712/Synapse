@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T02:32:00Z
-- claim: claim-1789693931-b10
+- heartbeat_utc: 2026-09-18T03:15:54Z
+- claim: claim-1789698911-b11
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 15
+- checked_done: 16
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -93,9 +93,11 @@
 ### 第四波·梯队三：既定战役（GEOM 战役大，设计链与实现分项）
 
 - [x] F-DEDUP-01（服务层去重微扩版：DomainError/原子写/清洗+app-file URL 单源）
-- [ ] F-GEOM-01 设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁；设计书要件=
+- [x] F-GEOM-01 设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁；设计书要件=
       态空间表+跨格序列+回落档语义裁决+六子域目录重组清单+净删行数记账+前史两
-      条款承袭；定稿件独立提交）
+      条款承袭；定稿件独立提交）【收口 2026-09-18：提交 af946a5324——设计书
+      docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md
+      415 行（三接缝闭合+三机制驳回+69 文件映射/八步迁移+G1~G11 切分+INV 清单）】
 - [ ] F-GEOM-01 实现（按批准设计书切执行票立案后**在本清单此行下追加子项逐票勾选**；
       验收=e2e 44 全绿不破+锚定回归网+净删行数记账）
 
@@ -120,6 +122,60 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 11 — 2026-09-18（执行者会话：第四波 F-GEOM-01 设计链三跳，完成）
+- claim: claim-1789698911-b11｜开始 02:35:11Z｜收口 03:15:54Z｜勾选 15→16。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/设计链
+  三跳派发/ORG-12 审包纪律/账本 v3/health-scan）；writing-plans 不加载（设计书
+  要件=票面+《裁决书》指定，非新计划立项；实施票 G1~G11 立案属后续批）；
+  systematic-debugging 不用（设计面无排障——e2e 红处置=取证+复跑非定位）；
+  TDD 不加载（纯设计文书票零代码面，验证=三跳对抗+机检门）。派发档位：主控=
+  GLM5.3 max（本会话=终裁位）；hop1=ds-call-v2 --role drafter（kimi-main
+  kimi-k3 max，tier=prime）；hop2=ds-call-v2 --role auditor-readonly
+  （deepseek deepseek-v4-flash，tier=debt-readonly，payg 费用面留痕）；
+  hop3=主控终裁——两跳异构+主控裁，符合宪法设计链分工。
+- **交付（提交 af946a5324）**：设计书定稿 415 行——终裁总纲=F-A8 后主链已同族，
+  本战役真收敛面=闭合最后三接缝：①保存链可落 DOM 族 rects 入库（唯一行为变更
+  =「保存门」：item 链失败=只显示不保存，§2.4）；②band 三推导档位绑定表（§2.5
+  登记）；③类型级三环+几何簇平铺（M0 类型下沉 geometry-types+八步迁移序）。
+  S4/S6/S0 三回退因全部维持现状定界——拟稿「族管线包装/S0 挂起守卫/
+  viewportVersion 帧守卫」三机制经审核+终裁驳回（空增量/前提缺失/M5 自反性）。
+  69 文件权威映射（state10+anchors13+time4+interact7+panels8+view27，ls 逐项
+  对账）；净删目标诚实化 −50~−60 行逐项清单+收益主证改跨族交互点计数（5 点→
+  4 点全显式+1 闭合）；前史两条款承袭（五例票池全维持+契约面零通道）；INV
+  清单（新增档位绑定+修订 INV-58 保存链条款+INV-47 不修订）。
+- **三跳实录**：hop1 拟定 256 行草案+6 待澄清（in7035/out24741/latency554s）→
+  终裁位亲核 6 项全闭（Q2 两 store 边 type-only 确证/Q3 page-items=单文件=
+  主控证据脚本正则伪影/Q5 warn=console.warn 零通道/Q6 store 无就绪信号/
+  Q1 计数自洽）→hop2 对抗审核**返工 B5/W7/N4**（in16315/out18244/latency80s
+  ——五 B 含终裁位预置关注点 A1/A3 独立命中）→hop3 终裁逐条处置（设计书 §7
+  处置表 16 行全闭环；终裁另发现拟稿漏列 CorpusExtractor+幽灵行 reader——
+  证据脚本正则伪影两处一并修正）。
+- **e2e 红处置实录**：定稿日默认门全套跑 corpus-export 60s 超时红（42 绿，
+  套跑 3.0m 慢于常态 ~2m）→定向复跑 2/2 绿 6.4s（geom01-e2e-corpus-rerun.
+  raw.txt）→负载敏感型非确定红；flake 台账 corpus-export 线 count 3→4
+  （独立超时新指纹，历史「与剪贴板同时现」）+立案标记归后续批（建议与
+  F-EXPORT-01 拆件票同场——立案线 2 次早已越过，属工程排程序非用户级）；
+  设计书 §5.1 基线注记同步诚实化。
+- **机检**：verify 全链 EXIT=0（干树基线=195 票 open 9+locks 338+test 170 文件
+  1745 用例+build，Node 24.20.0）；check-quality 终树 EXIT=0（新增 docs 面
+  占位/乱码零自查+机检双过）；**health-scan RED×0 WARN×0**；无受锁面变更
+  （audits .md/.raw/docs/design/flake-ledger 均不在 338 项内——提交前逐项
+  核，[locked-change] 义务零）；账本 32→34 行（两跳 ds-call-v2 自动落账；
+  手补重复行去重并归自动行+findings 补记）。
+- 教训三条：①**管道退出码陷阱自擒**（`npm run test:e2e | tail; echo $?` 取的是
+  tail 的 0——真实 1 failed 差点漏判；探针命令自身也要守「真退出码物理落档」
+  ——batch 6 教训①同坑变体）；②**多行 node -e 隔层静默失败第七变体**（flake
+  台账更新多行脚本经 node -e 无输出无报错=引号被隔层吃掉，回读 count 仍 3 才
+  发现——「探针一律 Write 文件后 node 跑」对本会话同样适用）；③**hop1 简报
+  漏 FINDINGS 尾栏要求**（ds-call-v2 自动行从产物尾栏解析 findings，无尾栏=
+  行缺字段→health-scan RED 拦截；行内补记 DRAFT_DELIVERED+根因注记——后续
+  设计链派发简报须含「产物末栏 FINDINGS: B=/W=/N=/VERDICT=」条款）。
+- Rulings 待用户：无新增（设计书 G1~G11 实施票立案=常规排程序；e2e corpus-
+  export 立案票建议归 F-EXPORT-01 场次=工程排程序）。
+- 无进展计数：归零（15→16 有进展）。**第四波剩一项：F-GEOM-01 实现——下波=
+  按设计书 §5.3 切执行票立案批（G1~G11 骨架件+registry+locks 立案序），随后
+  在本板 F-GEOM-01 实现行下追加子项逐票勾选。**
 
 ### batch 10 增补 — 2026-09-18（调度员换防：旧布防会话终结，重新布防）
 - 旧火处置：CronDelete(automation-e8255b42-…) 回执 not found（工作区内已不存在
