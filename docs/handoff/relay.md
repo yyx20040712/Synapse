@@ -6,15 +6,15 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: READY
+- status: RUNNING
 - automation_id: automation-c21dd023-3a61-42de-80b0-754bc3f2e872
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - last_dispatch: 2026-09-18T20:30:44+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T12:26:00Z
-- claim: claim-1789730608-b15
+- heartbeat_utc: 2026-09-18T12:31:35Z
+- claim: claim-1789734695-b16
 - no_progress_count: 0
 - checked_total: 35
 - checked_done: 19
@@ -37,7 +37,9 @@
 - **执行指令**（调度员注入新任务用，原文）：「（引用技能 batch-relay）基于
   E:\class\智慧水务\Synapse_remake\docs\handoff\relay.md 交接文档继续开发——开工
   首步先加载技能 ai-dev-org，再按接力火协议认领并执行本批（工作区根
-  E:\class\智慧水务\Synapse_remake，相对路径以此为基）」
+  E:\class\智慧水务\Synapse_remake，相对路径以此为基）。用户指令（2026-09-18
+  调度员转达）：门一 k1（ops-gate1-k1）周额度已达上限——本批起门一审一律改用
+  ops-gate1-k2（zipoo 源）承载，勿再派发 k1，直至用户另行通知」
 - 禁止创建任何新自动化。停止事由（破坏性/安全敏感/仓外副作用 push/merge/发布/
   计划破碎到每条路都是猜）→ status: HOLD + CronDelete 后呈报。
 
@@ -150,6 +152,14 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 16 增补 — 2026-09-18（调度员注记：用户指令门一换源 k2——随注入指令转达）
+- 用户对调度员会话明示：门一 k1（ops-gate1-k1，kimi-main 主源）周额度达上限，
+  后续任务门一审换 ops-gate1-k2（zipoo 备源）承载。落法=板面「执行指令」原文
+  追加该指令段（此后每班 UI 注入即明文转达新执行者），本增补留痕。
+- batch 16 在途（claim-1789734695-b16，开工 20:31）：其门一若仍派 k1 将遇额度
+  失败，按换源状态机自回落 k2（batch 7/12 先例）；心跳/收口回写板时可见本注记。
+- 恢复 k1 待用户另行通知（本注记不自动过期，用户明示恢复时由调度员再改指令）。
 
 ### batch 15 — 2026-09-18（执行者会话：第四波 F-GEOM-01-G3 band 三档绑定+跨族交互点登记，完成）
 - claim: claim-1789730608-b15｜开始 11:21:45Z（认领 11:23:28Z）｜收口 12:26:00Z｜勾选 18→19。
