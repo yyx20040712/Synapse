@@ -10,10 +10,10 @@
  * 依赖/WARN=toast 单源）在此装配，启动闸门 replayOnStart 由 main.tsx await。
  */
 import { useMemo } from 'react'
-import { api } from '../../api/client'
-import { showToast } from '../../shared/ui/toast-store'
-import { useReaderStore } from './state/reader.store'
-import type { ProgressFlusher } from './state/reader.store'
+import { api } from '../../../api/client'
+import { showToast } from '../../../shared/ui/toast-store'
+import { useReaderStore } from '../state/reader.store'
+import type { ProgressFlusher } from '../state/reader.store'
 import {
   chunkSeconds,
   createCompositeProgressFlusher,

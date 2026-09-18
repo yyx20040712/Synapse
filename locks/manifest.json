@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T13:03:53.6679743Z",
+    "generatedAt":  "2026-09-18T14:20:07.7955424Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -1071,11 +1071,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reading-time.test.ts",
-                      "sha256":  "a2e3ededefadfac25be8cc7b76fb605d99ff66a51f8daab5d6961307aecc39a0"
+                      "sha256":  "3320765abbb451b4e220e744108fefecbfd79535d56aca1c043aeeb0d8a2bbf2"
                   },
                   {
                       "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
-                      "sha256":  "bc7f220723e4d85800d1aafa9337c74acdcae399c7d69fde3bf161e02fb92868"
+                      "sha256":  "47b763c6302cd4d42b9789e95825b8d9dea363385ad593733d36c91b1ed497b9"
                   },
                   {
                       "path":  "tests/unit/renderer/release-affinity.test.ts",

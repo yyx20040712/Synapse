@@ -1,7 +1,7 @@
 /**
  * 阅读时长显示纯函数（P7E-05）——定义单源驻 renderer/shared（check-quality
  * 跨 feature 关卡指定的共享下沉位：library/PaperDetailPanel 与
- * reader/reading-time 双 feature 消费；reader/reading-time.ts re-export
+ * reader/time/reading-time 双 feature 消费；reader/time/reading-time.ts re-export
  * 转发=受锁测试 import 面零改）。
  */
 /** <60min「N 分钟」（按分钟取整=floor，宁少勿多）；≥60min「N 小时 M 分」 */

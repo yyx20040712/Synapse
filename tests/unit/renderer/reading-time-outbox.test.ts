@@ -7,12 +7,12 @@ import {
   OUTBOX_MAX_ATTEMPTS,
   type OutboxEntry,
   type OutboxStore
-} from '../../../src/renderer/features/reader/reading-time-outbox'
+} from '../../../src/renderer/features/reader/time/reading-time-outbox'
 import {
   createLocalStorageOutboxStore,
   OUTBOX_ENTRY_KEY_PREFIX,
   OUTBOX_META_KEY
-} from '../../../src/renderer/features/reader/reading-time-outbox-store'
+} from '../../../src/renderer/features/reader/time/reading-time-outbox-store'
 
 /**
  * P7X-02：reading-time-outbox 持久落盘队列锁定测试（终裁版设计书 §3 态空间

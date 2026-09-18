@@ -58,7 +58,7 @@ import { useEffect } from 'react'
 // formatReadingTime 定义驻 renderer/shared（quality 跨 feature 关卡指定的下沉
 // 位——PaperDetailPanel 直 import shared；此处 re-export 单源转发=受锁测试
 // import 面零改，定义唯一）
-export { formatReadingTime } from '../../shared/reading-time-format'
+export { formatReadingTime } from '../../../shared/reading-time-format'
 
 /** tick 间隔：15s（票面①——READING_TICK_MS 常量单源） */
 export const READING_TICK_MS = 15_000
