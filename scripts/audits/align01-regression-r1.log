@@ -1,0 +1,4 @@
+PASS R1 双源判定方向一致性 S1-断言弱化:FAIL/FAIL(期FAIL)✓ S2-干净样例:PASS/PASS(期PASS)✓ S3-占位残留:FAIL/FAIL(期FAIL)✓
+
+regression 汇总：1/1 过（项=R1）
+R1_EXIT=0
