@@ -44,15 +44,15 @@
  * - 组件 ≤250 行（两层拆 FragmentNotesList 守恒）
  */
 import { useEffect, useRef, useState } from 'react'
-import { ApiClientError } from '../../api/client'
-import { showToast } from '../../shared/ui/Toast'
-import { deriveSaveStatus, detectSaveFailed } from '../../shared/save-status'
+import { ApiClientError } from '../../../api/client'
+import { showToast } from '../../../shared/ui/Toast'
+import { deriveSaveStatus, detectSaveFailed } from '../../../shared/save-status'
 import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import type { Annotation } from '@shared/models/annotation'
-import { useNotesStore } from '../notes/notes.store'
+import { useNotesStore } from '../../notes/notes.store'
 import { AiNotesSection } from './AiNotesSection'
 import { FragmentNotesList } from './FragmentNotesList'
-import { useActiveTab } from './state/useActiveTab'
+import { useActiveTab } from '../state/useActiveTab'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const LOAD_FAILED = '笔记加载失败'

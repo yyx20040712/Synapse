@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T01:26:23+08:00
+- last_dispatch: 2026-09-19T02:52:22+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T19:05:00Z
+- heartbeat_utc: 2026-09-18T19:48:00Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 23
+- checked_done: 24
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -128,7 +128,7 @@
       check-quality:99 行（lineage→ai-note-style）对账到行号（门二 P1-3c））
 - [x] F-GEOM-01-G7（目录化 M4 interact/ 7 件 §3.4
       [locked-change][test-refactor]）
-- [ ] F-GEOM-01-G8（目录化 M5 panels/ 8 件 §3.4 [locked-change][test-refactor]；
+- [x] F-GEOM-01-G8（目录化 M5 panels/ 8 件 §3.4 [locked-change][test-refactor]；
       **开工前票面补字符串面预扫义务**——门一 W1-b/门二 P2-1：对迁移目标做
       readFileSync/字符串路径形态全扩展名预扫，命中行号写入票面受锁面清单；
       theme.test 对 G8 零命中（门二实测），config 面 check-quality:97
@@ -167,6 +167,77 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 20 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G8 目录化 M5 panels/ 8 文件迁移，完成）
+- claim: claim-1789757612-b20｜认领 2026-09-18T18:53:32Z｜收口 2026-09-18T19:48:00Z｜勾选 23→24。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/门审矩阵/
+  ORG-12 审包/health-scan/账本 v3 补记/换源状态机+审计兜底降级路径）；TDD=实现者六段简报内嵌
+  等价红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-debugging 不加载
+  （迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位面）。派发档位：主控=GLM5.3 max
+  （本会话）；实现者=ops-executor 绑定（GLM5.3flash $max）；门一=**kimi 双源额度耗尽→deepseek
+  审计兜底位外发承载**（ds-call-v2 --source deepseek，deepseek-v4-flash——ops-gate1-k2 绑定通道
+  连续两次 Provider authentication failed+外发 kimi-backup（zipoo）HTTP 403「5-hour usage limit」
+  双证在档 g8-gate1-quota403.log；k1=用户周额度封顶禁派——org-config 源链 deepseek 位明文
+  「审计兜底」，对实现者仍异构，**同源欠账（门一/门二同族 deepseek）如实登记**）；门二=
+  ops-adjudicator 绑定（deepseek-flash $max）。
+- **交付（零行为纯迁移）**：M5=panels/ 域迁移——OutlineAside(156)/OutlinePanel(183)/
+  OutlineThumb(77)/ReaderNotesPanel(207)/AiNotesSection(107)/AiNoteGroupList(197)/
+  AiNotesStatus(155)/FragmentNotesList(91) 八件 1173 行（wc 实测；设计书 §3.2 值 1181 系
+  无尾换行口径各 +1——G11 对账债登记，G5/G6/G7 同口径）迁 reader/panels/（git rename
+  8 对相似度 95-99%）；改写面=A 深度修正恰 21 行（OutlineAside 3+OutlinePanel 1+OutlineThumb
+  1+ReaderNotesPanel 5+AiNotesSection 4+AiNoteGroupList 1+AiNotesStatus 5+FragmentNotesList
+  1——域内互引 7 边零改写）+B src 消费 1（ReaderPageView:35）+C tests 5 行/4 件+D 跨特性 0
+  （lineage 命中系注释提名非 import）+E config 1（check-quality.mjs:97 键——票面「96-97 两
+  路径」实勘勘正=单行 :97，:96/:98/:99 系 G4/G6 已迁态）+F registry 随迁 6 对（status 零触碰；
+  OutlineThumb/AiNotesStatus/FragmentNotesList 三件无 file 锚）+G 字符串面零动作
+  （readFileSync 形态全仓 0 命中——板注预扫义务前置兑现，theme.test 对 G8 零命实证）。
+- **TDD 证据链**：基线 verify EXIT=0 锚（g8-verify-baseline.log：206 票 open 13/locks 358/
+  170 文件 1744 用例/指纹门 187·1789·5411·skip15）；变异红证 M1（ReaderPageView:35 回退旧径→
+  typecheck TS2307 EXIT=2→还原 diff 空→复绿）+M2（outline-aside.test:18 回退→模块解析红
+  EXIT=1→还原→复锁→复绿 4/4）全退出码变量法物理在档；中探针（C 面待改时点 EXIT=2 恰 5 错全
+  tests 面 src 面 0 错）；**构建产物哈希恒等**（index-D3egZtl2.js 1,392.72kB sha256 9c3b8b84…
+  3f2a+index-BfpEygSE.css 52.49kB dcace2e7…8a97d5——G5-G8 恒等链第四票延续）；§3.1 单向核验
+  panels→anchors 4 边+panels→state 10 边（探针 g8-s31-check 三面：出边 14/反向 0/残留 0）+
+  跨域出边 7（notes 1+api 2+shared 4——门一 W1 命名补全）。
+- **门审（降级承载实录+回炉 0）**：门一 deepseek 兜底位 **PASS_WITH_WARNINGS B0/W2/N5**——
+  逐 hunk 零行为断言+计数数学独立复算过；W1=报告「出边表（探针全表）」名不副实（漏跨域 7 边
+  命名）+反向域未含 notes/api/shared——主控处置=recon 入边全表（g8-recon.log 13 行，全仓
+  覆盖）即实体闭合+誊录以更正语句落本日志；W2=raw 证据未入隔离包——转门二实证清单（其有仓
+  读权限）；N1 vi.mock 盲区（主控即补 g8-n1-vimock.log：panels/ 形态全 tests 0 命中+4 件中
+  3 件零 vi.mock 销项）/N4 check-quality 他处旧径（fullscan2 活脚本域仅 :97 销项）/N2 wc -1
+  债/N3 探针入锁 358→359/N5 e2e 归 G11。门二 ops-adjudicator **GO P0=0/P1=0/P2=5/N=3**——
+  A-J 全表独立复算（亲 grep 亲读，未采信转述）+13 证据件物理在档逐一核 EXIT 标记+**残留五通道
+  独立闭合**（旧径/点径/别名/动态 import/vi.mock 全 0）+门一 W1/W2/N1-N5 处置七子项全裁
+  「充分」；P2 五条=mutation2.log 编码卫生（ripgrep 可读，G11 注记）/门一档尾栏人读 PW vs
+  机读 PASS 标签并存（实质 B0/W2/N5 一致，誊录以人读行为准）/gate1-diff.patch 不含 registry
+  hunks（附 B+门二独立闭合补偿，引用须知）/开工前遗留面（本收口一并处理）/build 基线侧无
+  字节级记录（同名+同显示列承载，G5-G8 链旁证）。
+- **机检终态**：收口终跑 verify 全链 **G8_CLOSEOUT_VERIFY_EXIT=0** 变量法物理在档
+  （g8-closeout-verify.log 末行，Node 24.20.0：open 13→12=恰 G8 翻 done+locks 359 一致
+  （log:87）+Test Files 170/Tests 1744（log:3837/:3838）+指纹门 187/1789/5411/skip15 零漂移
+  （log:27）+build 绿产物同名）；panels 回归定向 4 文件/41 用例绿（g8-panels-regression.log）；
+  e2e 不跑（零行为口径，义务归 G11——G1-G7 同裁）；**health-scan RED×0 WARN×0**
+  （g8-healthscan.log）；账本 58→62 行（外发岗 2 行自动落：kimi-backup exhaust+deepseek ok；
+  主控补记 executor+adjudicator 2 行，node JSON.stringify 临时 .cjs 用毕即删）。
+- 证据件入库（scripts/audits/，25 件 g8-*）：recon-edges/fullscan2/s31-check 三 .mjs+三 .log；
+  impl-brief/report；verify-baseline/impl-verify/closeout-verify 三 .log；mutation1+2 与
+  restore 四 .log；midprobe/n1-vimock/panels-regression/build-hash/quota403 六 .log；
+  gate1-brief/report/diff.patch；gate2-brief/report；healthscan.log——.log 系经 git add -f
+  入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**kimi 双源额度耗尽的门一降级路径首走**（绑定 k2 auth×2+外发 zipoo 403→
+  org-config deepseek「审计兜底」位外发承载=既定回退设计执行；同源欠账如实登记非假装审过
+  ——「源尽不记欠账假装审过」红旗的反面合规路径；Rulings 待用户见下）；②**cut -c 字节截断
+  撕 UTF-8**（registry 裁展首试 `cut -c1-150` 多字节截断出乱码——shell 四坑 byte-cut 族新
+  变体，改 sed 字段整段剥除闭合；heredoc 写中文审包本批过 UTF-8 校验零损伤但纪律仍守
+  Write 优先）；③**管道吞退出码再犯**（`grep|head; echo $?` 取 head 恒 0——N1 探针首跑
+  假绿，重定向法重取 EXIT=1 真值；batch 11 教训①同坑第二现，探针输出一律重定向落文件）。
+- Rulings 待用户（+1）：**kimi 链额度耗尽期间门一承载口径**——本批门一已按 org-config 审计
+  兜底位降级 deepseek 外发承载（对实现者异构成立、门一/门二同族 deepseek 欠账登记）；kimi
+  额度恢复（k2 5h 窗口重置/用户解除 k1 封顶）后是否补跑 G8 门一、以及 G9-G11 在恢复前的门一
+  承载口径（继续 deepseek 兜底 vs 等待窗口重置）=待用户裁决（1 项<2 不触发 HOLD，接力照常）。
+- 无进展计数：归零（23→24 有进展）。**下波=F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件
+  §3.4 [locked-change][test-refactor]——受锁面含字符串面预扫义务（板注已预列）+eslint:90-91
+  已在票面；大中票一火一票；开工前注意 kimi 额度窗口状态对门一承载的影响——见上 Ruling）。**
 
 ### batch 19 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G7 目录化 M4 interact/ 7 件迁移+RoT 工厂抽取，完成）
 - claim: claim-1789752460-b19｜认领 2026-09-18T17:27:40Z｜收口 2026-09-18T19:05:00Z｜勾选 22→23。

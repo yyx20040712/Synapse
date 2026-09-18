@@ -20,8 +20,8 @@ stubApi.notes.get = notesGet
 const notesSave = vi.fn()
 stubApi.notes.save = notesSave
 
-import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
-import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
+import { ReaderNotesPanel } from '../../../src/renderer/features/reader/panels/ReaderNotesPanel'
+import { FragmentNotesList } from '../../../src/renderer/features/reader/panels/FragmentNotesList'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 

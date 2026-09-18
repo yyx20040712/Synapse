@@ -45,7 +45,7 @@ vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', async (im
 })
 
 import { showToast } from '../../../src/renderer/shared/ui/Toast'
-import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
+import { AiNotesSection } from '../../../src/renderer/features/reader/panels/AiNotesSection'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useAiNotesStore } from '../../../src/renderer/features/reader/state/ai-notes.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'

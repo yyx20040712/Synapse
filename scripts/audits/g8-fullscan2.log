@@ -1,0 +1,261 @@
+=== G8 字符串面全扩展名预扫（非 import 形态=义务命中；import 形态=入边参照）===
+[tickets] tickets\registry.ts:110: (字符串/其他形态/OutlinePanel) { id: 'SR-RDR-08', file: 'src/renderer/features/reader/OutlinePanel.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '目录/缩略图侧栏' },
+[tickets] tickets\registry.ts:158: (字符串/其他形态/ReaderNotesPanel) { id: 'SR2-C-03', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '阅读器笔记面板（总评层 notes.store 
+[tickets] tickets\registry.ts:159: (字符串/其他形态/OutlineAside) { id: 'SR2-C-04', file: 'src/renderer/features/reader/OutlineAside.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '侧栏三栏宿主（目录/缩略图/笔记 tablist 上移+
+[tickets] tickets\registry.ts:159: (字符串/其他形态/OutlinePanel) { id: 'SR2-C-04', file: 'src/renderer/features/reader/OutlineAside.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '侧栏三栏宿主（目录/缩略图/笔记 tablist 上移+
+[tickets] tickets\registry.ts:184: (字符串/其他形态/AiNotesSection) { id: 'SR2-AI-08', file: 'src/renderer/features/reader/AiNotesSection.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '笔记面板 AI 面（role×question 分
+[tickets] tickets\registry.ts:212: (字符串/其他形态/OutlineAside) { id: 'SR2-LG-06', file: 'src/renderer/features/reader/anchors/open-paper-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '脉络跳转接笔记面板信号（b3:
+[tickets] tickets\registry.ts:221: (字符串/其他形态/OutlineAside) { id: 'R3-RDRSET', file: 'src/renderer/features/settings/SettingsSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '阅读器周边+设置页视觉（视觉役收官
+[tickets] tickets\registry.ts:221: (字符串/其他形态/ReaderNotesPanel) { id: 'R3-RDRSET', file: 'src/renderer/features/settings/SettingsSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '阅读器周边+设置页视觉（视觉役收官
+[tickets] tickets\registry.ts:222: (字符串/其他形态/AiNoteGroupList) { id: 'SR2-AI-11', file: 'src/renderer/features/reader/AiNoteGroupList.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记呈现轴转置（b3: P7-G；验收缺陷
+[tickets] tickets\registry.ts:223: (字符串/其他形态/AiNoteGroupList) { id: 'SR2-AI-12', file: 'src/renderer/features/reader/anchors/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记组头补原始命题（b3: P7
+[tickets] tickets\registry.ts:249: (字符串/其他形态/AiNotesSection) { id: 'F-SPLIT-01', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '组件贴线拆件合票（Kimi 体检 v2 P1-1 终裁立
+[tickets] tickets\registry.ts:249: (字符串/其他形态/AiNotesStatus) { id: 'F-SPLIT-01', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '组件贴线拆件合票（Kimi 体检 v2 P1-1 终裁立
+[tickets] tickets\registry.ts:299: (字符串/其他形态/OutlineAside) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/OutlinePanel) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/OutlineThumb) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/ReaderNotesPanel) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/AiNotesSection) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/AiNoteGroupList) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/AiNotesStatus) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[tickets] tickets\registry.ts:299: (字符串/其他形态/FragmentNotesList) { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设
+[活代码] src\renderer\shared\theme-reader.css:6: (字符串/其他形态/ReaderNotesPanel) tab+侧板节标。ReaderToolbar/TabBar/ReaderNotesPanel 消费；标注/AI/选区
+[活代码] src\renderer\shared\ui-constants.ts:9: (字符串/其他形态/AiNotesStatus) * - OP_FAILED：usePaperDetailActions / AiNotesStatus / ZcodeLinkSection /
+[活代码] src\renderer\shared\ui-constants.ts:13: (字符串/其他形态/AiNotesStatus) * - STATUS_POLL_MS：AiNotesStatus / ZcodeLinkSection（5s 门控轮询周期
+[活代码] src\renderer\features\library\PaperDetailPanel.tsx:23: (字符串/其他形态/ReaderNotesPanel) *   条目 [locked-change]；tab-dirty/ReaderNotesPanel→notes.store 条目保持——
+[活代码] src\renderer\features\reader\FragmentNotesList.tsx:2: (字符串/其他形态/FragmentNotesList) * FragmentNotesList —— 片段层列表（α 双层的片段面，纯展示+回调）。
+[活代码] src\renderer\features\reader\FragmentNotesList.tsx:28: (字符串/其他形态/FragmentNotesList) export function FragmentNotesList(props: {
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:2: (字符串/其他形态/OutlinePanel) * [SR-RDR-08] OutlinePanel —— 目录/缩略图面板（工单：done / weak；C-04 mode 化：
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:3: (字符串/其他形态/OutlineAside) * tablist 已上移 OutlineAside，本组件按 mode prop 单面渲染）
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:11: (字符串/其他形态/OutlinePanel) * - export function OutlinePanel(props: { pdfDoc: unknown;
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:23: (IMPORT形态/OutlineThumb) import { Thumbnail } from './OutlineThumb'
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:32: (字符串/其他形态/OutlineThumb) /** 缩略图窗口（规约：当前页 ±10）；渲染比例与子组件在 OutlineThumb */
+[活代码] src\renderer\features\reader\OutlinePanel.tsx:56: (字符串/其他形态/OutlinePanel) export function OutlinePanel(props: {
+[活代码] src\renderer\features\reader\AiNoteGroupList.tsx:3: (字符串/其他形态/AiNoteGroupList) * AiNoteGroupList —— AI 笔记分节列表（纯展示+单击定位上抛+组内三段折叠）。
+[活代码] src\renderer\features\reader\AiNoteGroupList.tsx:14: (字符串/其他形态/AiNotesSection) * 声明见 AiNotesSection 头注（AI-09 交付 data-ai-note-id 渲染节点+
+[活代码] src\renderer\features\reader\AiNoteGroupList.tsx:31: (字符串/其他形态/OutlineAside) * 拉锯。边界：面板未打开时不自动开面板（开面板归 OutlineAside/宿主既有
+[活代码] src\renderer\features\reader\AiNoteGroupList.tsx:127: (字符串/其他形态/AiNoteGroupList) export function AiNoteGroupList(props: {
+[活代码] src\renderer\features\reader\AiNoteGroupList.tsx:144: (字符串/其他形态/FragmentNotesList) // 高亮条目自动展开+滚动进视野（AI-09 单击反向同步——FragmentNotesList 同型；
+[活代码] src\renderer\features\reader\PagesOverlay.tsx:13: (字符串/其他形态/OutlinePanel) *     pdfDoc 是 OutlinePanel 数据源=布局职责）；
+[活代码] src\renderer\features\reader\AiAnnotationLayer.tsx:21: (字符串/其他形态/OutlineAside) *   →宿主经 reader.store.notifyAiNoteHighlight 信号→OutlineAside 切笔记 tab
+[活代码] src\renderer\features\reader\AiAnnotationLayer.tsx:214: (字符串/其他形态/OutlineAside) * 禁自取）+点击上抛经 reader.store 信号（notifyAiNoteHighlight→OutlineAside
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:3: (字符串/其他形态/AiNotesSection) * AiNotesSection —— 笔记面板 AI 面（分节+状态行+按钮，
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:7: (字符串/其他形态/ReaderNotesPanel) * - 并入 ReaderNotesPanel 下部分节（C-03 预留位）；面板 props 不动——本组件
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:10: (字符串/其他形态/AiNoteGroupList) *   组——呈现轴转置 2026-08-28 缺陷 F，AiNoteGroupList+ai-note-style 单源）
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:13: (字符串/其他形态/AiNotesStatus) * - 状态行+「AI 读文献」按钮块职责归 AiNotesStatus.tsx（STATUS_POLL_MS=5s
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:24: (字符串/其他形态/AiNotesSection) * - export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:27: (字符串/其他形态/ReaderNotesPanel) *   +AiNoteGroupList+AiNotesStatus+ReaderNotesPanel 挂载一行
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:27: (字符串/其他形态/AiNoteGroupList) *   +AiNoteGroupList+AiNotesStatus+ReaderNotesPanel 挂载一行
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:27: (字符串/其他形态/AiNotesStatus) *   +AiNoteGroupList+AiNotesStatus+ReaderNotesPanel 挂载一行
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:43: (字符串/其他形态/AiNotesStatus) *   连续失败 3 次显示离线提示行——随 AiNotesStatus；status.json 损坏上抛=
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:51: (IMPORT形态/AiNoteGroupList) import { AiNoteGroupList } from './AiNoteGroupList'
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:52: (IMPORT形态/AiNotesStatus) import { AiNotesStatus } from './AiNotesStatus'
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:61: (字符串/其他形态/AiNotesSection) export function AiNotesSection(props: { highlightAiNoteId?: string | null }): JSX.Element {
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:101: (字符串/其他形态/AiNotesStatus) <AiNotesStatus paperId={paperId} hasNotes={notes.length > 0} />
+[活代码] src\renderer\features\reader\AiNotesSection.tsx:103: (字符串/其他形态/AiNoteGroupList) <AiNoteGroupList notes={notes} onLocate={onLocateNote} highlightAiNoteId={highlightAiNoteId} />
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:3: (字符串/其他形态/AiNotesSection) * [F-SPLIT-01] AiNotesStatus —— AI 状态行+动作按钮件（自 AiNotesSection 拆出
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:3: (字符串/其他形态/AiNotesStatus) * [F-SPLIT-01] AiNotesStatus —— AI 状态行+动作按钮件（自 AiNotesSection 拆出
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:4: (字符串/其他形态/AiNotesSection) * 2026-09-05；迁移 AiNotesSection 头注状态行/按钮职责段，语句零改纯搬运——
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:8: (字符串/其他形态/AiNotesSection) * ── 行为层（原 AiNotesSection 状态面）──
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:21: (字符串/其他形态/AiNotesStatus) * - export function AiNotesStatus(props: { paperId: string; hasNotes: boolean
+[活代码] src\renderer\features\reader\AiNotesStatus.tsx:39: (字符串/其他形态/AiNotesStatus) export function AiNotesStatus(props: { paperId: string; hasNotes: boolean }): JSX.Element {
+[活代码] src\renderer\features\reader\OutlineAside.tsx:3: (字符串/其他形态/OutlineAside) * [SR2-C-04] OutlineAside —— 阅读器侧栏三栏宿主（工单：done / strong）
+[活代码] src\renderer\features\reader\OutlineAside.tsx:7: (字符串/其他形态/OutlinePanel) *   tablist 三项宿主在本组件（OutlinePanel 内部 tab 态+tablist 已摘除，改
+[活代码] src\renderer\features\reader\OutlineAside.tsx:12: (字符串/其他形态/OutlinePanel) *   | 任意 | outline/thumbs（OutlinePanel 常驻挂载仅 CSS 隐藏——目录树/滚动/
+[活代码] src\renderer\features\reader\OutlineAside.tsx:13: (字符串/其他形态/ReaderNotesPanel) *   |   | 懒加载状态跨切换全保留，W1） | notes（挂 ReaderNotesPanel——编辑态
+[活代码] src\renderer\features\reader\OutlineAside.tsx:18: (字符串/其他形态/ReaderNotesPanel) * - 笔记 tab 渲染 ReaderNotesPanel（C-03）：paperId/annotations 经 useActiveTab
+[活代码] src\renderer\features\reader\OutlineAside.tsx:26: (字符串/其他形态/OutlineAside) * - export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JSX.Element
+[活代码] src\renderer\features\reader\OutlineAside.tsx:32: (字符串/其他形态/OutlinePanel) * - 改动面：本文件（tablist 上移+三宿主）/OutlinePanel.tsx（tab 态+tablist
+[活代码] src\renderer\features\reader\OutlineAside.tsx:34: (字符串/其他形态/OutlineThumb) *   onNavigate——净负）/OutlineThumb.tsx 零改动
+[活代码] src\renderer\features\reader\OutlineAside.tsx:47: (IMPORT形态/OutlinePanel) import { OutlinePanel } from './OutlinePanel'
+[活代码] src\renderer\features\reader\OutlineAside.tsx:48: (IMPORT形态/ReaderNotesPanel) import { ReaderNotesPanel } from './ReaderNotesPanel'
+[活代码] src\renderer\features\reader\OutlineAside.tsx:56: (字符串/其他形态/OutlineAside) export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JSX.Element {
+[活代码] src\renderer\features\reader\OutlineAside.tsx:90: (字符串/其他形态/FragmentNotesList) // FragmentNotesList 消费 highlightAnnotationId 信号完成）
+[活代码] src\renderer\features\reader\OutlineAside.tsx:95: (字符串/其他形态/AiNotesSection) // AI 段单击反向同步（AI-09）：切笔记 tab（高亮滚动由 AiNotesSection 消费
+[活代码] src\renderer\features\reader\OutlineAside.tsx:96: (字符串/其他形态/AiNoteGroupList) // highlightAiNoteId 信号完成——AiNoteGroupList data-highlight）
+[活代码] src\renderer\features\reader\OutlineAside.tsx:139: (字符串/其他形态/OutlinePanel) {/* OutlinePanel 常驻挂载（notes 态仅 CSS 隐藏）——目录树/滚动/懒加载
+[活代码] src\renderer\features\reader\OutlineAside.tsx:141: (字符串/其他形态/ReaderNotesPanel) ReaderNotesPanel 编辑态驻 notes.store，按需挂载即走合并保护 */}
+[活代码] src\renderer\features\reader\OutlineAside.tsx:143: (字符串/其他形态/OutlinePanel) <OutlinePanel pdfDoc={pdfDoc} mode={tab === 'notes' ? 'outline' : tab} currentPage={currentPage} onNavigate={navigate} />
+[活代码] src\renderer\features\reader\OutlineAside.tsx:146: (字符串/其他形态/ReaderNotesPanel) <ReaderNotesPanel
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:3: (字符串/其他形态/ReaderNotesPanel) * [SR2-C-03] ReaderNotesPanel —— 阅读器笔记面板（α 双层，工单：done / strong）
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:13: (字符串/其他形态/FragmentNotesList) *   · 片段层：FragmentNotesList（sortByDocumentOrder=C-01 单源序；单击→
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:27: (字符串/其他形态/ReaderNotesPanel) * - export function ReaderNotesPanel(props: { annotations: Annotation[];
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:37: (字符串/其他形态/AiNotesSection) * - 预留：P7-G AI 面分节（AiNotesSection 并入本面板下部分节——骨架 §2 指针）
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:44: (字符串/其他形态/FragmentNotesList) * - 组件 ≤250 行（两层拆 FragmentNotesList 守恒）
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:53: (IMPORT形态/AiNotesSection) import { AiNotesSection } from './AiNotesSection'
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:54: (IMPORT形态/FragmentNotesList) import { FragmentNotesList } from './FragmentNotesList'
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:60: (字符串/其他形态/ReaderNotesPanel) export function ReaderNotesPanel(props: {
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:64: (字符串/其他形态/OutlineAside) /** AI 段单击反向同步高亮（AI-09——OutlineAside 分发，AiNotesSection 消费） */
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:64: (字符串/其他形态/AiNotesSection) /** AI 段单击反向同步高亮（AI-09——OutlineAside 分发，AiNotesSection 消费） */
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:199: (字符串/其他形态/FragmentNotesList) <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:201: (字符串/其他形态/AiNotesSection) {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
+[活代码] src\renderer\features\reader\ReaderNotesPanel.tsx:204: (字符串/其他形态/AiNotesSection) <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
+[活代码] src\renderer\features\reader\state\reader.store.ts:140: (字符串/其他形态/OutlineAside) /** AI 段单击反向同步信号（AI-09，C-05 同型）：OutlineAside 消费（切笔记
+[活代码] src\renderer\features\reader\state\reader.store.ts:171: (字符串/其他形态/OutlineAside) /** 标注单击→侧栏同步高亮信号（C-05）：OutlineAside 消费（切笔记 tab+滚动） */
+[活代码] src\renderer\features\reader\state\reader.store.ts:260: (字符串/其他形态/OutlineAside) // （重开同 id 回跳旧页 / OutlineAside 挂载即闪切 notes）。
+[活代码] src\renderer\features\reader\state\ai-notes.store.ts:12: (字符串/其他形态/AiNotesSection) * store 分发 props 消费——禁 09 双取（接缝双向锚定：本行+AiNotesSection 头注）。
+[活代码] src\renderer\features\reader\state\ai-notes-phase.ts:3: (字符串/其他形态/AiNotesSection) * [F-SPLIT-01] ai-notes-phase —— AI 笔记六态判定纯函数件（自 AiNotesSection
+[活代码] src\renderer\features\reader\state\ai-notes-phase.ts:4: (字符串/其他形态/AiNotesStatus) * 拆出 2026-09-05，经 AiNotesStatus 中转沉淀为纯域件——derivePhase 与六态表
+[活代码] src\renderer\features\reader\state\ai-notes-phase.ts:5: (字符串/其他形态/AiNotesSection) * 单源驻此，AiNotesStatus（呈现）/AiNotesSection（分节可见性）双消费）。
+[活代码] src\renderer\features\reader\state\ai-notes-phase.ts:5: (字符串/其他形态/AiNotesStatus) * 单源驻此，AiNotesStatus（呈现）/AiNotesSection（分节可见性）双消费）。
+[活代码] src\renderer\features\reader\state\ai-notes-phase.ts:26: (字符串/其他形态/AiNotesSection) /** 六态（原 AiNotesSection Phase——判定域单源） */
+[活代码] src\renderer\features\reader\state\PdfDocProvider.tsx:20: (字符串/其他形态/OutlinePanel) *   import type——OutlinePanel/OutlineThumb 自此取 PDFDocumentProxy/RenderTask）
+[活代码] src\renderer\features\reader\state\PdfDocProvider.tsx:20: (字符串/其他形态/OutlineThumb) *   import type——OutlinePanel/OutlineThumb 自此取 PDFDocumentProxy/RenderTask）
+[活代码] src\renderer\features\reader\state\PdfDocProvider.tsx:40: (字符串/其他形态/OutlineThumb) *  不 import pdfjs-dist，含 import type；RenderTask 供 OutlineThumb 等取消渲染） */
+[活代码] src\renderer\features\reader\ReaderPage.tsx:6: (字符串/其他形态/OutlinePanel) *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）——装配 JSX
+[活代码] src\renderer\features\reader\ReaderPage.tsx:85: (字符串/其他形态/OutlinePanel) // pdfjs 文档句柄（OutlinePanel 数据源）：经 PdfDocProvider onDocReady 上报，换文档即弃
+[活代码] src\renderer\features\reader\anchors\anchor-locate.ts:219: (字符串/其他形态/AiNoteGroupList) * 同属性值也会出现在 08 面板条目（AiNoteGroupList）上——优先取页面主区内的
+[活代码] src\renderer\features\reader\anchors\open-paper-anchor.ts:18: (字符串/其他形态/OutlineAside) * 有值时先发 notifyAiNoteHighlight（复用 AI-09 全套语义：OutlineAside 订阅
+[活代码] src\renderer\features\reader\anchors\ai-note-style.ts:6: (字符串/其他形态/AiNoteGroupList) * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
+[活代码] src\renderer\features\reader\ReaderPageView.tsx:9: (字符串/其他形态/OutlinePanel) *   SelectionLayer+ReaderToolbar+OutlinePanel 布局（侧栏可折叠）
+[活代码] src\renderer\features\reader\ReaderPageView.tsx:35: (IMPORT形态/OutlineAside) import { OutlineAside } from './OutlineAside'
+[活代码] src\renderer\features\reader\ReaderPageView.tsx:60: (字符串/其他形态/OutlinePanel) /** pdfjs 文档句柄（OutlinePanel 数据源） */
+[活代码] src\renderer\features\reader\ReaderPageView.tsx:144: (字符串/其他形态/OutlineAside) pane: <OutlineAside pdfDoc={pdfDoc} onCollapse={() => setOutlineOpen(false)} />,
+[活代码] src\renderer\features\lineage\LineageSideAiNotes.tsx:10: (字符串/其他形态/AiNoteGroupList) * 呈现轴转置 2026-08-28 缺陷 F，与 AiNoteGroupList 视觉一致）=**ai-note-style 单源
+[活代码] src\renderer\features\lineage\LineageSideAiNotes.tsx:13: (字符串/其他形态/AiNoteGroupList) * 本域重写（AiNoteGroupList 属 reader 域不可引——Rule of Three 第 2 次保持
+[活代码] src\renderer\features\lineage\LineageSidePanel.tsx:73: (字符串/其他形态/AiNotesSection) *   （AiNotesSection:200 同型）；「无锚」判定=quoteText 不足 2 字符
+[活代码] src\renderer\features\lineage\LineageSidePanel.tsx:78: (字符串/其他形态/AiNoteGroupList) *   分组逻辑在本域重写（Rule of Three 第 2 次保持重复——AiNoteGroupList
+[活代码] tests\unit\renderer\ai-note-collapse.test.tsx:3: (字符串/其他形态/AiNoteGroupList) * [F-N1] AiNoteGroupList —— 组内三段（一审/二审/裁决）可折叠测试（新增合约）。
+[活代码] tests\unit\renderer\ai-note-collapse.test.tsx:16: (IMPORT形态/AiNoteGroupList) import { AiNoteGroupList } from '../../../src/renderer/features/reader/AiNoteGroupList'
+[活代码] tests\unit\renderer\ai-note-collapse.test.tsx:44: (字符串/其他形态/AiNoteGroupList) root?.render(<AiNoteGroupList notes={notes} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\ai-note-collapse.test.tsx:138: (字符串/其他形态/AiNoteGroupList) root?.render(<AiNoteGroupList notes={notes} onLocate={() => undefined} highlightAiNoteId="a1" />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:3: (字符串/其他形态/AiNotesSection) * [SR2-AI-08] AiNotesSection —— 笔记面板 AI 面组件测试（锁定合约）。
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:48: (IMPORT形态/AiNotesSection) import { AiNotesSection } from '../../../src/renderer/features/reader/AiNotesSection'
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:141: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:152: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:163: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:171: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:181: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:191: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:201: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:208: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:235: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:279: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:293: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:309: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:325: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:342: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:354: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:366: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:386: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:431: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:444: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:463: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:488: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:501: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:508: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\ai-notes-section.test.tsx:527: (字符串/其他形态/AiNotesSection) mount(<AiNotesSection />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:3: (字符串/其他形态/ReaderNotesPanel) * [SR2-C-03] ReaderNotesPanel+FragmentNotesList —— α 双层阅读器面（测试：锁定合约）
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:3: (字符串/其他形态/FragmentNotesList) * [SR2-C-03] ReaderNotesPanel+FragmentNotesList —— α 双层阅读器面（测试：锁定合约）
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:23: (IMPORT形态/ReaderNotesPanel) import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:24: (IMPORT形态/FragmentNotesList) import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:84: (字符串/其他形态/ReaderNotesPanel) guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消费）', () => {
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:87: (字符串/其他形态/ReaderNotesPanel) mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:100: (字符串/其他形态/ReaderNotesPanel) mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:112: (字符串/其他形态/ReaderNotesPanel) mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:132: (字符串/其他形态/ReaderNotesPanel) mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:169: (字符串/其他形态/ReaderNotesPanel) mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:208: (字符串/其他形态/FragmentNotesList) guardedDescribe('SR2-C-03', 'FragmentNotesList —— 片段层（C-01 序消费）', () => {
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:213: (字符串/其他形态/FragmentNotesList) mount(<FragmentNotesList annotations={[a10, a2]} onLocate={onLocate} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:227: (字符串/其他形态/FragmentNotesList) mount(<FragmentNotesList annotations={[]} onLocate={() => undefined} />)
+[活代码] tests\unit\renderer\reader-notes-panel.test.tsx:232: (字符串/其他形态/FragmentNotesList) mount(<FragmentNotesList annotations={[a1, a2]} onLocate={() => undefined} highlightAnnotationId="a-2" />)
+[活代码] tests\unit\renderer\outline-aside.test.tsx:3: (字符串/其他形态/OutlineAside) * [SR2-C-04] OutlineAside —— 侧栏三栏宿主（测试：锁定合约）
+[活代码] tests\unit\renderer\outline-aside.test.tsx:5: (字符串/其他形态/ReaderNotesPanel) * 覆盖：三项 tablist 渲染与切换/选中记忆/笔记 tab 挂 ReaderNotesPanel/目录跳页
+[活代码] tests\unit\renderer\outline-aside.test.tsx:18: (IMPORT形态/OutlineAside) import { OutlineAside } from '../../../src/renderer/features/reader/OutlineAside'
+[活代码] tests\unit\renderer\outline-aside.test.tsx:91: (字符串/其他形态/OutlineAside) guardedDescribe('SR2-C-04', 'OutlineAside —— 三栏宿主', () => {
+[活代码] tests\unit\renderer\outline-aside.test.tsx:92: (字符串/其他形态/OutlinePanel) it('三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）', async () => {
+[活代码] tests\unit\renderer\outline-aside.test.tsx:92: (字符串/其他形态/ReaderNotesPanel) it('三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）', async () => {
+[活代码] tests\unit\renderer\outline-aside.test.tsx:94: (字符串/其他形态/OutlineAside) mount(<OutlineAside pdfDoc={doc} onCollapse={() => undefined} />)
+[活代码] tests\unit\renderer\outline-aside.test.tsx:108: (字符串/其他形态/OutlinePanel) // 笔记态：OutlinePanel 仍挂载（CSS 隐藏——目录树保留在 DOM，W1 锚）
+[活代码] tests\unit\renderer\outline-aside.test.tsx:119: (字符串/其他形态/OutlineAside) mount(<OutlineAside pdfDoc={fakeDoc()} onCollapse={() => undefined} />)
+[活代码] tests\unit\renderer\outline-aside.test.tsx:132: (字符串/其他形态/FragmentNotesList) it('片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)', async () => {
+[活代码] tests\unit\renderer\outline-aside.test.tsx:133: (字符串/其他形态/OutlineAside) mount(<OutlineAside pdfDoc={fakeDoc()} onCollapse={() => undefined} />)
+[活代码] tests\unit\renderer\outline-aside.test.tsx:147: (字符串/其他形态/OutlineAside) mount(<OutlineAside pdfDoc={null} onCollapse={() => undefined} />)
+[活代码] tests\unit\renderer\reader.store.test.ts:421: (字符串/其他形态/OutlineAside) //    消费→回跳旧页；noteHighlight 残留→OutlineAside 挂载即闪切 notes。 ──
+[活代码] tests\unit\renderer\reader.store.test.ts:449: (字符串/其他形态/OutlineAside) it('noteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）', async () => {
+[活代码] tests\e2e\ai-notes-section.spec.ts:50: (字符串/其他形态/ReaderNotesPanel) // 打开阅读器+笔记 tab（AI 面分节挂 ReaderNotesPanel 下部）
+[活脚本] scripts\test-surface.baseline.json:12434: (字符串/其他形态/OutlineAside) "key": "[\"OutlineAside —— 三栏宿主\",\"三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）\"]",
+[活脚本] scripts\test-surface.baseline.json:12434: (字符串/其他形态/OutlinePanel) "key": "[\"OutlineAside —— 三栏宿主\",\"三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）\"]",
+[活脚本] scripts\test-surface.baseline.json:12434: (字符串/其他形态/ReaderNotesPanel) "key": "[\"OutlineAside —— 三栏宿主\",\"三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）\"]",
+[活脚本] scripts\test-surface.baseline.json:12436: (字符串/其他形态/OutlineAside) "OutlineAside —— 三栏宿主"
+[活脚本] scripts\test-surface.baseline.json:12438: (字符串/其他形态/OutlinePanel) "title": "三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）",
+[活脚本] scripts\test-surface.baseline.json:12438: (字符串/其他形态/ReaderNotesPanel) "title": "三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）",
+[活脚本] scripts\test-surface.baseline.json:12452: (字符串/其他形态/OutlineAside) "key": "[\"OutlineAside —— 三栏宿主\",\"目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage\"]",
+[活脚本] scripts\test-surface.baseline.json:12454: (字符串/其他形态/OutlineAside) "OutlineAside —— 三栏宿主"
+[活脚本] scripts\test-surface.baseline.json:12465: (字符串/其他形态/OutlineAside) "key": "[\"OutlineAside —— 三栏宿主\",\"片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)\"]",
+[活脚本] scripts\test-surface.baseline.json:12465: (字符串/其他形态/FragmentNotesList) "key": "[\"OutlineAside —— 三栏宿主\",\"片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)\"]",
+[活脚本] scripts\test-surface.baseline.json:12467: (字符串/其他形态/OutlineAside) "OutlineAside —— 三栏宿主"
+[活脚本] scripts\test-surface.baseline.json:12469: (字符串/其他形态/FragmentNotesList) "title": "片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)",
+[活脚本] scripts\test-surface.baseline.json:12478: (字符串/其他形态/OutlineAside) "key": "[\"OutlineAside —— 三栏宿主\",\"空态：activeId=null 时笔记 tab 显示引导（不崩）\"]",
+[活脚本] scripts\test-surface.baseline.json:12480: (字符串/其他形态/OutlineAside) "OutlineAside —— 三栏宿主"
+[活脚本] scripts\test-surface.baseline.json:13954: (字符串/其他形态/ReaderNotesPanel) "key": "[\"ReaderNotesPanel —— 总评层（notes.store 消费）\",\"载入：api.notes.get → 标题/正文回填；pending=false 显示「已保存」\"]",
+[活脚本] scripts\test-surface.baseline.json:13956: (字符串/其他形态/ReaderNotesPanel) "ReaderNotesPanel —— 总评层（notes.store 消费）"
+[活脚本] scripts\test-surface.baseline.json:13968: (字符串/其他形态/ReaderNotesPanel) "key": "[\"ReaderNotesPanel —— 总评层（notes.store 消费）\",\"载入失败：toast+禁用输入+重试按钮可见（动作型失败，INV-02）\"]",
+[活脚本] scripts\test-surface.baseline.json:13970: (字符串/其他形态/ReaderNotesPanel) "ReaderNotesPanel —— 总评层（notes.store 消费）"
+[活脚本] scripts\test-surface.baseline.json:13981: (字符串/其他形态/ReaderNotesPanel) "key": "[\"ReaderNotesPanel —— 总评层（notes.store 消费）\",\"编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」\"]",
+[活脚本] scripts\test-surface.baseline.json:13983: (字符串/其他形态/ReaderNotesPanel) "ReaderNotesPanel —— 总评层（notes.store 消费）"
+[活脚本] scripts\test-surface.baseline.json:13997: (字符串/其他形态/ReaderNotesPanel) "key": "[\"ReaderNotesPanel —— 总评层（notes.store 消费）\",\"换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）\"]",
+[活脚本] scripts\test-surface.baseline.json:13999: (字符串/其他形态/ReaderNotesPanel) "ReaderNotesPanel —— 总评层（notes.store 消费）"
+[活脚本] scripts\test-surface.baseline.json:14010: (字符串/其他形态/ReaderNotesPanel) "key": "[\"ReaderNotesPanel —— 总评层（notes.store 消费）\",\"跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」\"]",
+[活脚本] scripts\test-surface.baseline.json:14012: (字符串/其他形态/ReaderNotesPanel) "ReaderNotesPanel —— 总评层（notes.store 消费）"
+[活脚本] scripts\test-surface.baseline.json:14024: (字符串/其他形态/FragmentNotesList) "key": "[\"FragmentNotesList —— 片段层（C-01 序消费）\",\"按文档序渲染（乱序入参重排）；单击条目回调 onLocate(id)\"]",
+[活脚本] scripts\test-surface.baseline.json:14026: (字符串/其他形态/FragmentNotesList) "FragmentNotesList —— 片段层（C-01 序消费）"
+[活脚本] scripts\test-surface.baseline.json:14037: (字符串/其他形态/FragmentNotesList) "key": "[\"FragmentNotesList —— 片段层（C-01 序消费）\",\"空态文案与高亮滚动（highlightAnnotationId 条目 scrollIntoView）\"]",
+[活脚本] scripts\test-surface.baseline.json:14039: (字符串/其他形态/FragmentNotesList) "FragmentNotesList —— 片段层（C-01 序消费）"
+[活脚本] scripts\test-surface.baseline.json:15461: (字符串/其他形态/OutlineAside) "key": "[\"F-ARCH1 closeTab 瞬态信号清理\",\"noteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）\"]",
+[活脚本] scripts\test-surface.baseline.json:15465: (字符串/其他形态/OutlineAside) "title": "noteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）",
+[活脚本] scripts\check-quality.mjs:79: (字符串/其他形态/ReaderNotesPanel) //    域其余文件引用 notes 仍是红线。SR2-C-03（2026-08-26）：ReaderNotesPanel 是
+[活脚本] scripts\check-quality.mjs:97: (字符串/其他形态/ReaderNotesPanel) ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
+[docs] docs\reports\2026-08-23_v2-blueprint-b1.md:37: (字符串/其他形态/OutlinePanel) | ④ | 笔记层级化 | annotations 已含完整锚定 quote/prefix/suffix/offsets/归一化rects/sortKey/comment（annotation.ts:30-48；001_init.sql:54-72）；notes=论文级独立 md 长笔记（note.ts:2；001_i
+[docs] docs\reports\2026-08-24_p7a-campaign.md:27: (字符串/其他形态/OutlineAside) - quality 组件行数上限：拦 ReaderPage 262>250（拆 OutlineAside）
+[docs] docs\reports\2026-08-24_chain-audit.md:42: (字符串/其他形态/OutlineAside) | 打开阅读 | open-paper-bus → App 切视图 → ReaderPage 装配 | open-paper-bus.ts:12-27（:15 闩锁）→ App.tsx:64-68 → ReaderPage.tsx:95-109（双路打开）/:158-208（PdfCanvas/TextLayer/Se
+[docs] docs\reports\2026-08-25_ai-ingest-lineage-skeleton.md:52: (字符串/其他形态/AiNotesSection) AiNotesSection.tsx        [ai:*] 分节（role 分组→question 条目，色边）
+[docs] docs\reports\2026-08-26_p7c-campaign.md:15: (字符串/其他形态/ReaderNotesPanel) | SR2-C-03 阅读器笔记面 | ff747d4 | save-status 下沉 shared（re-export 过渡→C-06 删壳）；ReaderNotesPanel（ADR-0008 五模块零改动）；per-paper 周期判定字典（B1 跨 paper 污染+W3 切回可见合并处置）；Fragment
+[docs] docs\reports\2026-08-26_p7c-campaign.md:15: (字符串/其他形态/FragmentNotesList) | SR2-C-03 阅读器笔记面 | ff747d4 | save-status 下沉 shared（re-export 过渡→C-06 删壳）；ReaderNotesPanel（ADR-0008 五模块零改动）；per-paper 周期判定字典（B1 跨 paper 污染+W3 切回可见合并处置）；Fragment
+[docs] docs\reports\2026-08-26_p7c-campaign.md:16: (字符串/其他形态/OutlineAside) | SR2-C-04 三栏宿主 | a2773d6 | tablist 上移 OutlineAside（坑③容器限定锚）；OutlinePanel mode 化；OutlinePanel 常驻保状态（W1：卸载重挂丢目录树/滚动）；ReaderPage props 削减 249→248 |
+[docs] docs\reports\2026-08-26_p7c-campaign.md:16: (字符串/其他形态/OutlinePanel) | SR2-C-04 三栏宿主 | a2773d6 | tablist 上移 OutlineAside（坑③容器限定锚）；OutlinePanel mode 化；OutlinePanel 常驻保状态（W1：卸载重挂丢目录树/滚动）；ReaderPage props 削减 249→248 |
+[docs] docs\reports\2026-08-27_ai-campaign.md:16: (字符串/其他形态/OutlinePanel) | SR2-AI-02 提取管线 | 102df65 | CorpusExtractor 四态+背压（每项 await ack）+cropBoxPixels 裁剪数学+**真 pdfjs 集成**（4.10 node 实测 getTextContent 多页）；ESLint pdfjs 白名单 INV-16 机器锚（l
+[docs] docs\reports\2026-08-27_ai-campaign.md:16: (字符串/其他形态/OutlineThumb) | SR2-AI-02 提取管线 | 102df65 | CorpusExtractor 四态+背压（每项 await ack）+cropBoxPixels 裁剪数学+**真 pdfjs 集成**（4.10 node 实测 getTextContent 多页）；ESLint pdfjs 白名单 INV-16 机器锚（l
+[docs] docs\reports\2026-08-27_ai-campaign-batch2.md:73: (字符串/其他形态/OutlineAside) 递增信号）：AI 段点击→OutlineAside 切笔记 tab→highlightAiNoteId 分发→08
+[docs] docs\prompts\2026-08-25_next-session-handoff.md:136: (字符串/其他形态/OutlineAside) 常态拦——拆分/注释压缩守恒（P7-A 拆 OutlineAside、TABS-02 拆 useActiveTab
+[docs] docs\prompts\2026-08-27_next-session-handoff-v6.md:101: (字符串/其他形态/AiNotesSection) | 五张票面（任务书） | src/main/services/ai_sensor/ai-sensor.service.ts / ai-notes-import.service.ts；src/renderer/features/reader/AiNotesSection.tsx / AiAnnotationLayer.
+[docs] docs\prompts\2026-08-27_next-session-handoff-v6.md:106: (字符串/其他形态/ReaderNotesPanel) | 08/09 消费面 | anchor-locate.ts（C-05）+annotation-anchor.ts（verifyQuote:130）+annotation-style.ts（单源先例）+ReaderNotesPanel.tsx（C-03 预留位） |
+[docs] docs\prompts\2026-08-27_next-session-handoff-v7.md:91: (字符串/其他形态/ReaderNotesPanel) | 08/09 消费面 | anchor-locate.ts/annotation-anchor.ts(annotation-style 同族)/ReaderNotesPanel C-03 预留位/**window.api.export_.requestAiRead** |
+[docs] docs\prompts\2026-08-27_next-session-handoff-v8.md:80: (字符串/其他形态/ReaderNotesPanel) | 08/09 消费面 | anchor-locate.ts/annotation-anchor.ts/ReaderNotesPanel C-03 预留位 |
+[docs] docs\prompts\2026-08-27_idle-handoff-v2.md:27: (字符串/其他形态/AiNotesSection) `src/renderer/features/reader/AiNotesSection.tsx`（08 笔记面板 AI 面——六态
+[docs] docs\prompts\2026-08-28_loop-handoff.md:136: (字符串/其他形态/OutlineAside) OutlineAside.tsx:58 组件本地态(默认 'outline'),AI-09 建的
+[docs] docs\prompts\2026-08-28_loop-handoff.md:148: (字符串/其他形态/AiNoteGroupList) - **取证**:现渲染=**role 优先**分组(AiNoteGroupList.tsx:18-22 groupNotes:
+[docs] docs\prompts\2026-08-28_retest3-handoff.md:68: (字符串/其他形态/AiNoteGroupList) 两消费位=AiNoteGroupList+`LineageSideAiNotes.tsx:89`。**七问原始命题完整
+[docs] docs\prompts\2026-08-28_retest3-handoff.md:108: (字符串/其他形态/AiNotesSection) AiNotesSection.tsx:195 对齐；当前行为等价、未来侧板聚合时防错位）。
+[docs] docs\prompts\2026-09-05_loop-handoff-v48-kimi-audit-batch.md:26: (字符串/其他形态/AiNotesSection) （PageColumn/AnnotationLayer/AiNotesSection/LineageBoard/ReaderPage）,头注职责
+[docs] docs\prompts\2026-09-05_loop-handoff-v49-clearing-split-css.md:13: (字符串/其他形态/AiNotesSection) | F-SPLIT-01 拆件 | b1b6990f52 | 五件贴线态解除：PageColumn 249→164[View72+LazyWindow83+Scroll66]/AnnotationLayer→151[Popups147,F-A8 编排零触]/AiNotesSection→107[Status158+ph
+[docs] docs\ROADMAP.md:248: (字符串/其他形态/OutlinePanel) > OutlinePanel/OutlineThumb 类型直连）；IPC 契约（corpusItem 通道+exportCorpus
+[docs] docs\ROADMAP.md:248: (字符串/其他形态/OutlineThumb) > OutlinePanel/OutlineThumb 类型直连）；IPC 契约（corpusItem 通道+exportCorpus
+[docs] docs\design\2026-08-28_visual-system.md:36: (字符串/其他形态/OutlineAside) - **R3-U3 阅读器周边**：Toolbar/TabBar/OutlineAside 纸面+玻璃浮层（PDF 区
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:230: (字符串/其他形态/OutlineAside) **panels/（8）**：OutlineAside(157)、OutlinePanel(184)、OutlineThumb(78)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:230: (字符串/其他形态/OutlinePanel) **panels/（8）**：OutlineAside(157)、OutlinePanel(184)、OutlineThumb(78)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:230: (字符串/其他形态/OutlineThumb) **panels/（8）**：OutlineAside(157)、OutlinePanel(184)、OutlineThumb(78)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:231: (字符串/其他形态/ReaderNotesPanel) ReaderNotesPanel(208)、AiNotesSection(108)、AiNoteGroupList(198)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:231: (字符串/其他形态/AiNotesSection) ReaderNotesPanel(208)、AiNotesSection(108)、AiNoteGroupList(198)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:231: (字符串/其他形态/AiNoteGroupList) ReaderNotesPanel(208)、AiNotesSection(108)、AiNoteGroupList(198)、
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:232: (字符串/其他形态/AiNotesStatus) AiNotesStatus(156)、FragmentNotesList(92)。
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:232: (字符串/其他形态/FragmentNotesList) AiNotesStatus(156)、FragmentNotesList(92)。
+[docs] docs\design\2026-09-18_f-geom01-unification-and-reader-subdomains.md:271: (字符串/其他形态/ReaderNotesPanel) | M5 | panels/ 8 文件 | notes/outline 系测试 import+check-quality.mjs:96-97（ReaderNotesPanel） | 全绿 |
+[docs] docs\handoff\relay.md:135: (字符串/其他形态/ReaderNotesPanel) ReaderNotesPanel 已在票面）
+[docs] docs\handoff\relay.md:247: (字符串/其他形态/OutlineAside) 8 件 §3.4 [locked-change][test-refactor]——OutlineAside/OutlinePanel/
+[docs] docs\handoff\relay.md:247: (字符串/其他形态/OutlinePanel) 8 件 §3.4 [locked-change][test-refactor]——OutlineAside/OutlinePanel/
+[docs] docs\handoff\relay.md:248: (字符串/其他形态/OutlineThumb) OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+[docs] docs\handoff\relay.md:248: (字符串/其他形态/ReaderNotesPanel) OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+[docs] docs\handoff\relay.md:248: (字符串/其他形态/AiNotesSection) OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+[docs] docs\handoff\relay.md:248: (字符串/其他形态/AiNoteGroupList) OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+[docs] docs\handoff\relay.md:248: (字符串/其他形态/AiNotesStatus) OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/
+[docs] docs\handoff\relay.md:249: (字符串/其他形态/FragmentNotesList) FragmentNotesList；受锁面=notes/outline 系测试 import+check-quality:97
+[docs] docs\handoff\relay.md:250: (字符串/其他形态/ReaderNotesPanel) ReaderNotesPanel 两路径+**字符串面预扫义务（板注已预列）**；大中票一火一票）。**
+[docs] docs\invariants.md:30: (字符串/其他形态/OutlinePanel) | INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfDocProvider.tsx/PdfPageCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 四文件（2026-08-28 SR2-F-01 随 PdfCanvas 拆分迁移——一拆二，类型
+[docs] docs\invariants.md:30: (字符串/其他形态/OutlineThumb) | INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfDocProvider.tsx/PdfPageCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 四文件（2026-08-28 SR2-F-01 随 PdfCanvas 拆分迁移——一拆二，类型
+[docs] docs\invariants.md:43: (字符串/其他形态/OutlineAside) | INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→P
+[docs] docs\invariants.md:48: (字符串/其他形态/AiNoteGroupList) | INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 comput
+[docs] docs\invariants.md:48: (字符串/其他形态/FragmentNotesList) | INV-34 | 程序滚动单容器收敛：程序滚动（翻页/页码跳转/恢复链与锚定闪烁链）只允许滚目标的**最近滚动祖先**（scrollIntoNearestScroller 差值法+显式夹取 [0, scrollHeight−clientHeight]；祖先判定=自 parentElement 向上首个 comput
+[根/其他] dist_new\win-unpacked\resources\app.asar:135229: (字符串/其他形态/OutlinePanel) function OutlinePanel(props) {
+[根/其他] dist_new\win-unpacked\resources\app.asar:157071: (字符串/其他形态/OutlinePanel) /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-0 flex-1 overflow-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsx(OutlinePanel, { pdfDoc
+--- 合计 259 行（tickets=20 活代码=155 活脚本=32 docs=50 根/其他=2）---

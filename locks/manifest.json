@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T18:38:06.6049507Z",
+    "generatedAt":  "2026-09-18T19:24:55.4742775Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -410,6 +410,18 @@
                       "sha256":  "84a44e19940343295fcf4cc1de4e7926a78de272d744ea3f61b10339078f255b"
                   },
                   {
+                      "path":  "scripts/audits/g8-fullscan2.mjs",
+                      "sha256":  "7e99d85cd9f284799b1a1b5ce3fca2c6f8918ab58823a35b889d7ff5601c39e4"
+                  },
+                  {
+                      "path":  "scripts/audits/g8-recon-edges.mjs",
+                      "sha256":  "b5d8ec1f196df9fc0f3769843350509c21f2046c06e4c8a4509adbc21fdb766c"
+                  },
+                  {
+                      "path":  "scripts/audits/g8-s31-check.mjs",
+                      "sha256":  "649ef4102fd25547c5e3382fd111d3962977d465fc5ded2aae1d205baa5a04de"
+                  },
+                  {
                       "path":  "scripts/audits/p7d01-visual-probe.mjs",
                       "sha256":  "683b0107b2e204b051748e4cea6af244a38cc26e96dc9948920500c9a4cc3db4"
                   },
@@ -471,7 +483,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "7a436638ca767c0de627ab43cba8b6a260500ff70463f16126251dd5181c106b"
+                      "sha256":  "2c8982038190ede18d7831cabfd69333a1da6d75b194aaf8a5aea71cf83cec18"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -879,11 +891,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-collapse.test.tsx",
-                      "sha256":  "a004f88e205809ead76e750ea1f5324d2d3981638b2c5d027b072bf7b8dc5a20"
+                      "sha256":  "e88a2fe651cf67a02f491ef9fc55cc617acd29647fe3faf234e9e08b4c4462b1"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-notes-section.test.tsx",
-                      "sha256":  "402b9226d680efeaaa497a04cfd64e8055fe7a55fe4026b43a3bd62a12fd38c7"
+                      "sha256":  "1c589a02131422ba1316d89f397b952f57affee34b2269c8708b894238fb1c0a"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-note-style.test.ts",
@@ -1035,7 +1047,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/outline-aside.test.tsx",
-                      "sha256":  "d7b41addf615c25193b7b5aa94e663fcc40d78f4cf7355a2bc067438bb105df0"
+                      "sha256":  "0a8c5974b765d8081775d3c1c4d63c88ea9b7842c023d1988ef23ca608db4877"
                   },
                   {
                       "path":  "tests/unit/renderer/page-column.test.tsx",
@@ -1083,7 +1095,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
-                      "sha256":  "ff58bbc94905943474eb1e1bd20ca8eda71610f86bfacf6cc78bee5fcfd07135"
+                      "sha256":  "602e385a2d5e4662d6dacbe4a741cc9b32aee9d6f3b697f4de5b879382551723"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
