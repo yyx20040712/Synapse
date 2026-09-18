@@ -1,0 +1,9 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+src/renderer/features/reader/ReaderPageView.tsx(41,32): error TS2307: Cannot find module './SelectionLayer' or its corresponding type declarations.
+src/renderer/features/reader/ReaderPageView.tsx(118,88): error TS7006: Parameter 'a' implicitly has an 'any' type.
+G7_MUTATION1_EXIT=2

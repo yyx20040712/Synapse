@@ -18,10 +18,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
 import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+import { mkItem, mkText, seedRegistry } from '../../utils/factories'
+import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
 import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation } from '@shared/models/annotation'
 
 
@@ -57,22 +57,6 @@ function mountPageFixture(itemsText: string): { page1: HTMLElement; textLayer: H
   rects.set(page1, { x: 500, y: 300, width: 612, height: 792 })
   rects.set(span, { x: 572, y: 500, width: 100, height: 10 })
   return { page1, textLayer, span }
-}
-
-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
-function mkItem(str: string, x: number, y: number): PdfTextItem {
-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
-}
-
-function mkText(items: PdfTextItem[]): PdfTextContent {
-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
-}
-
-/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
-function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
-  act(() => {
-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
-  })
 }
 
 function selectAllOf(span: HTMLElement): void {

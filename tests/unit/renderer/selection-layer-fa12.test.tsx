@@ -12,7 +12,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
 
 
 const saveMock = vi.fn()

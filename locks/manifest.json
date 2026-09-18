@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T15:19:45.9438007Z",
+    "generatedAt":  "2026-09-18T18:38:06.6049507Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -40,6 +40,10 @@
                   {
                       "path":  "scripts/audits/b18-claim.mjs",
                       "sha256":  "094d093050d864500c170dfb2f559eecc2271c23e48bae76248e28efbf496926"
+                  },
+                  {
+                      "path":  "scripts/audits/b19-claim.mjs",
+                      "sha256":  "51dff2c3f67b9f6229cde7eb36e7b94e30cab4ca78008e02f7a6999160d31a17"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
@@ -388,6 +392,22 @@
                   {
                       "path":  "scripts/audits/g6-rewrite.mjs",
                       "sha256":  "dda04cbd50ddb9160423395bc6e62e48d898934bbc70183c5e9e310c94198725"
+                  },
+                  {
+                      "path":  "scripts/audits/g7-fullscan2.mjs",
+                      "sha256":  "5011e0beda60a12cfabcae045bde81ee1e9ba5659f079cafde14f7ef0c74d68d"
+                  },
+                  {
+                      "path":  "scripts/audits/g7-oneway-check.mjs",
+                      "sha256":  "c52002c622200ce2c0431f03fe2c12c86cc99dd5754481f4742aaf9b310eb5a0"
+                  },
+                  {
+                      "path":  "scripts/audits/g7-recon.mjs",
+                      "sha256":  "66ee58e4533d1c47fb3b578de154a733b4278fb4d01940df9250a4d7d72c6cd2"
+                  },
+                  {
+                      "path":  "scripts/audits/g7-recon2.mjs",
+                      "sha256":  "84a44e19940343295fcf4cc1de4e7926a78de272d744ea3f61b10339078f255b"
                   },
                   {
                       "path":  "scripts/audits/p7d01-visual-probe.mjs",
@@ -919,7 +939,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
-                      "sha256":  "7ad21cf3c02baf8a9d3b6b1d1bbcb231d5b96e4a075dd5efc69d8b56145c5156"
+                      "sha256":  "8c815ef31ab6bb800f75e64a9ca64d77549d5452807955a412eb57ec04f0d56d"
                   },
                   {
                       "path":  "tests/unit/renderer/corpus-export.test.tsx",
@@ -1103,7 +1123,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/release-affinity.test.ts",
-                      "sha256":  "408d5dddd901394ed0d9e01d48ace739529faa7ca5c4b6129f084452e04a5f4f"
+                      "sha256":  "05ab4386ff99f4ac26ec87402cd8309c5ed7469c3b093ea8709196570ad0d7ff"
                   },
                   {
                       "path":  "tests/unit/renderer/scroll-converge.test.ts",
@@ -1115,23 +1135,23 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-evaluate.test.tsx",
-                      "sha256":  "3a49988d06c469db804475345abc949aab7b8e2ca8213cf7a9a832a34c686da3"
+                      "sha256":  "346be8db63a5efc5a71971d3271422de7bdc3e7adb4c591868c6a54f00f86a12"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-geometry.test.ts",
-                      "sha256":  "fc6905884c08bc3408e377975e807c94af79c94bcd11cfcc4d08d07f08b13fb6"
+                      "sha256":  "0747bb42a34690ce9fdecca1a68a2cb8360f216188e71a05c04a8dd4a9793111"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-item-chain.test.tsx",
-                      "sha256":  "baacd306e28788e202b3ca46e0de1181cdde612859a31b6f73ca7a1fa77c1768"
+                      "sha256":  "a6f5ec42acea0cba5248e4c50ada40ef829d73c6c6c1d9d5227a7596d1a9388d"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer.test.tsx",
-                      "sha256":  "59b728326dfa71347004dce8160644eedcb21c531b2183bca632056466970f9f"
+                      "sha256":  "aaf39185f62f2634d07c570381049bd336489c4a5c5daae143c87fcebe042204"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-layer-fa12.test.tsx",
-                      "sha256":  "5470c522c33b1e7f6e0762d870264bec55e666ee4b70f73866d52e821c06a12c"
+                      "sha256":  "a48f53cf247b4f732da61da0aa9d76f366a23c9480371df955e49809c023f99d"
                   },
                   {
                       "path":  "tests/unit/renderer/selection-mode.test.tsx",
@@ -1139,7 +1159,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/selection-paint.test.tsx",
-                      "sha256":  "c3b95cc14b10f9f93a210d668b0a9a6c7f9e433590caa9c5e2b75e04b7b2fb82"
+                      "sha256":  "0bfb007ee0b5973451e70c3492953d66a2e16dd8d8cf66d426906b87179e9f1e"
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
@@ -1179,7 +1199,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "51a41a4c0d3568bb3937fdd0587d77e632dac3da5f5155913e2baf86201ded7c"
+                      "sha256":  "c34d00595c94707d4a278149ff5c9cef72a2e8f1055e81c6c8662fd08c980179"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",
@@ -1367,7 +1387,7 @@
                   },
                   {
                       "path":  "tests/utils/factories.ts",
-                      "sha256":  "df055169ef2b69336d914f157714199a5d75528e47dc89fddc68b8dab3d6adab"
+                      "sha256":  "d4ee766297451e341d76b217f41dc590af21e0d47e97b3705aa0845d8c0f6dee"
                   },
                   {
                       "path":  "tests/utils/fixtures.ts",

@@ -19,13 +19,13 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
 import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+import { mkItem, mkText, seedRegistry } from '../../utils/factories'
 import {
   SelectionLayer,
   closestPageRoot,
   pageIndexOf
-} from '../../../src/renderer/features/reader/SelectionLayer'
+} from '../../../src/renderer/features/reader/interact/SelectionLayer'
 import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation } from '@shared/models/annotation'
 
 const saveMock = vi.fn()
@@ -75,24 +75,6 @@ const fireSelectionChange = (): void => {
   document.dispatchEvent(new Event('selectionchange'))
 }
 
-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10）
- *  ——[F-GEOM-01-G2 对账表 A] 页项桩三助手（crib selection-item-chain.test:63-76）：
- *  G2 保存门后回退态（item 链失败）不挂工具条，「工具条在场」用例需页项在位
- *  且对账通过（items 拼接==DOM 全文——fixture 页 2 文本 'page two gamma delta'） */
-function mkItem(str: string, x: number, y: number): PdfTextItem {
-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
-}
-
-function mkText(items: PdfTextItem[]): PdfTextContent {
-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
-}
-
-/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
-function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
-  act(() => {
-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
-  })
-}
 const fireMouseUp = (): void => {
   document.dispatchEvent(new MouseEvent('mouseup'))
 }

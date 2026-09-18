@@ -1,0 +1,483 @@
+diff --git a/src/renderer/features/reader/AnnotationEditor.tsx b/src/renderer/features/reader/AnnotationEditor.tsx
+index a65700db1e..7b2a9131f3 100644
+--- a/src/renderer/features/reader/AnnotationEditor.tsx
++++ b/src/renderer/features/reader/AnnotationEditor.tsx
+@@ -13,7 +13,7 @@
+ import { useEffect, useRef } from 'react'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
+-import { useAnnotationDraft } from './use-annotation-draft'
++import { useAnnotationDraft } from './interact/use-annotation-draft'
+ 
+ export function AnnotationEditor(props: {
+   annotation: Annotation
+diff --git a/src/renderer/features/reader/ReaderPageView.tsx b/src/renderer/features/reader/ReaderPageView.tsx
+index fdcdf1e850..96299d5034 100644
+--- a/src/renderer/features/reader/ReaderPageView.tsx
++++ b/src/renderer/features/reader/ReaderPageView.tsx
+@@ -38,7 +38,7 @@ import { TabBar } from './TabBar'
+ import { PdfDocProvider } from './state/PdfDocProvider'
+ import { PagesOverlay } from './PagesOverlay'
+ import { ReaderToolbar } from './ReaderToolbar'
+-import { SelectionLayer } from './SelectionLayer'
++import { SelectionLayer } from './interact/SelectionLayer'
+ import { useReaderStore } from './state/reader.store'
+ 
+ /** store 动作精确类型（setPage/setZoom/setColor/addAnnotation——单源 typeof 派生） */
+diff --git a/src/renderer/features/reader/interact/SelectionLayer.tsx b/src/renderer/features/reader/interact/SelectionLayer.tsx
+index 954bbdcae0..3ea4369aa2 100644
+--- a/src/renderer/features/reader/interact/SelectionLayer.tsx
++++ b/src/renderer/features/reader/interact/SelectionLayer.tsx
+@@ -61,15 +61,15 @@
+  */
+ import { useEffect, useRef, useState } from 'react'
+ import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
+-import { api, unwrap, ApiClientError } from '../../api/client'
+-import { showToast } from '../../shared/ui/Toast'
+-import { pushUndo } from './state/annotation-undo'
++import { api, unwrap, ApiClientError } from '../../../api/client'
++import { showToast } from '../../../shared/ui/Toast'
++import { pushUndo } from '../state/annotation-undo'
+ import { createEvaluate, type PaintSelection, type PendingSelection } from './selection-evaluate'
+ import { SelectionToolbar } from './SelectionToolbar'
+ import { SelectionPaint } from './selection-paint'
+ import { createVisualScheduler, closestPageRoot } from './selection-geometry'
+ import { releaseAffinity } from './release-affinity'
+-import { useReaderStore } from './state/reader.store'
++import { useReaderStore } from '../state/reader.store'
+ 
+ // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
+ export { closestPageRoot, pageIndexOf } from './selection-geometry'
+diff --git a/src/renderer/features/reader/interact/SelectionToolbar.tsx b/src/renderer/features/reader/interact/SelectionToolbar.tsx
+index 69c860e715..63f47c831b 100644
+--- a/src/renderer/features/reader/interact/SelectionToolbar.tsx
++++ b/src/renderer/features/reader/interact/SelectionToolbar.tsx
+@@ -14,7 +14,7 @@
+ import type { MutableRefObject } from 'react'
+ import type { AnnotationColor, AnnotationKind } from '@shared/models/annotation'
+ import { ANNOTATION_COLORS } from '@shared/constants'
+-import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
++import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
+ 
+ /** 工具条三种动作（kind→中文文案——按钮 map 单源） */
+ const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
+diff --git a/src/renderer/features/reader/interact/release-affinity.ts b/src/renderer/features/reader/interact/release-affinity.ts
+index 29ed3c1aba..2e93a9f2c5 100644
+--- a/src/renderer/features/reader/interact/release-affinity.ts
++++ b/src/renderer/features/reader/interact/release-affinity.ts
+@@ -77,8 +77,8 @@
+  *   backward 翻转兜底链；接线面=selection-layer-fa12.test.tsx[W4 dragged
+  *   门两态+触发态]）
+  */
+-import { collectSpans, type NodeSpan } from './anchors/annotation-anchor'
+-import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchors/anchor-blank-snap'
++import { collectSpans, type NodeSpan } from '../anchors/annotation-anchor'
++import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from '../anchors/anchor-blank-snap'
+ 
+ /** 浅探运动过冲余量（px）：紧间隙排版（实测段间 2.5px）下释放点距上一行盒底
+  *  2px 即为浅下探实态——纯距离判据会漏（头注申报）；4px=人类释放过冲量级
+diff --git a/src/renderer/features/reader/interact/selection-evaluate.ts b/src/renderer/features/reader/interact/selection-evaluate.ts
+index 3368fb5427..33405cd41b 100644
+--- a/src/renderer/features/reader/interact/selection-evaluate.ts
++++ b/src/renderer/features/reader/interact/selection-evaluate.ts
+@@ -68,15 +68,15 @@
+  *   （调度器直测——rAF 合帧去重/防抖保持/cancel）
+  */
+ import type { AnnotationRect } from '@shared/models/annotation'
+-import { showToast } from '../../shared/ui/Toast'
+-import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchors/anchor-serialize'
+-import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './anchors/annotation-anchor'
+-import { bandsForTextNodes, type RowBand } from './anchors/annotation-resolve'
+-import { calibrateBandsWithSpans } from './anchors/annotation-band-calibrate'
+-import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './anchors/pdf-item-geometry'
+-import type { ItemSelectionGeometry } from './anchors/pdf-item-geometry'
+-import { usePageItemsStore } from './anchors/page-items.store'
+-import { useReaderStore } from './state/reader.store'
++import { showToast } from '../../../shared/ui/Toast'
++import { probeTextLength, selectionToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
++import { findRangeAtOffset, fullTextOf, pixelBoxOf } from '../anchors/annotation-anchor'
++import { bandsForTextNodes, type RowBand } from '../anchors/annotation-resolve'
++import { calibrateBandsWithSpans } from '../anchors/annotation-band-calibrate'
++import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from '../anchors/pdf-item-geometry'
++import type { ItemSelectionGeometry } from '../anchors/pdf-item-geometry'
++import { usePageItemsStore } from '../anchors/page-items.store'
++import { useReaderStore } from '../state/reader.store'
+ import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
+ 
+ /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
+diff --git a/src/renderer/features/reader/interact/selection-paint.tsx b/src/renderer/features/reader/interact/selection-paint.tsx
+index 1633ddcb32..a43c8b2960 100644
+--- a/src/renderer/features/reader/interact/selection-paint.tsx
++++ b/src/renderer/features/reader/interact/selection-paint.tsx
+@@ -32,9 +32,9 @@
+ import { memo } from 'react'
+ import { createPortal } from 'react-dom'
+ import type { AnnotationRect } from '@shared/models/annotation'
+-import { matchBand, type RowBand } from './anchors/annotation-resolve'
+-import { bandVertical, clampedHorizontal } from './anchors/annotation-style'
+-import { PAGE_LAYER_Z } from './state/page-layer-z'
++import { matchBand, type RowBand } from '../anchors/annotation-resolve'
++import { bandVertical, clampedHorizontal } from '../anchors/annotation-style'
++import { PAGE_LAYER_Z } from '../state/page-layer-z'
+ 
+ /** 自绘并集层灰（F-A4：观感同修前 ::selection rgba(0 0 0 / 0.20)） */
+ const PAINT_BG = 'var(--reader-selection-paint)'
+diff --git a/tests/unit/renderer/band-calibration.test.tsx b/tests/unit/renderer/band-calibration.test.tsx
+index 026c0457f4..2d82698d22 100644
+--- a/tests/unit/renderer/band-calibration.test.tsx
++++ b/tests/unit/renderer/band-calibration.test.tsx
+@@ -27,7 +27,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
++import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ import { calibrateBandsWithSpans } from '../../../src/renderer/features/reader/anchors/annotation-band-calibrate'
+ import { matchBand, type RowBand } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
+ import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
+diff --git a/tests/unit/renderer/release-affinity.test.ts b/tests/unit/renderer/release-affinity.test.ts
+index 742c52fcdc..902b0a90aa 100644
+--- a/tests/unit/renderer/release-affinity.test.ts
++++ b/tests/unit/renderer/release-affinity.test.ts
+@@ -1,7 +1,7 @@
+ // @vitest-environment jsdom
+ import { afterEach, describe, expect, it } from 'vitest'
+ import { stubRectOf } from '../../utils/geometry'
+-import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
++import { releaseAffinity } from '../../../src/renderer/features/reader/interact/release-affinity'
+ import { selectionToAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+ import type { SelectionAnchor } from '../../../src/renderer/features/reader/anchors/anchor-serialize'
+ 
+diff --git a/tests/unit/renderer/selection-evaluate.test.tsx b/tests/unit/renderer/selection-evaluate.test.tsx
+index 864ec1fdf3..bd6c549100 100644
+--- a/tests/unit/renderer/selection-evaluate.test.tsx
++++ b/tests/unit/renderer/selection-evaluate.test.tsx
+@@ -28,10 +28,10 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
++import { mkItem, mkText, seedRegistry } from '../../utils/factories'
++import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ 
+ 
+ const saveMock = vi.fn()
+@@ -66,21 +66,6 @@ function mountPageFixture(no: string, itemsText: string): { page: HTMLElement; s
+   return { page, span }
+ }
+ 
+-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
+-function mkItem(str: string, x: number, y: number): PdfTextItem {
+-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+-}
+-
+-function mkText(items: PdfTextItem[]): PdfTextContent {
+-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+-}
+-
+-function seedRegistry(no: number, text: PdfTextContent): void {
+-  act(() => {
+-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate: 0, view: [0, 0, 612, 792] }, box: { w: 612, h: 792 } })
+-  })
+-}
+-
+ /** reader store zoom 写口（mid-drag zoom 差分形态共用——W1/同帧覆盖两 it 的判别轴） */
+ function setZoom(z: number): void {
+   act(() => {
+diff --git a/tests/unit/renderer/selection-geometry.test.ts b/tests/unit/renderer/selection-geometry.test.ts
+index f922b65d83..5c4421e63c 100644
+--- a/tests/unit/renderer/selection-geometry.test.ts
++++ b/tests/unit/renderer/selection-geometry.test.ts
+@@ -14,7 +14,7 @@
+  * 本仓实证：t=15 零回调/t=16 双回调）。
+  */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import { createVisualScheduler } from '../../../src/renderer/features/reader/selection-geometry'
++import { createVisualScheduler } from '../../../src/renderer/features/reader/interact/selection-geometry'
+ 
+ describe('F-A6-c createVisualScheduler —— rAF 对齐双路调度', () => {
+   beforeEach(() => {
+diff --git a/tests/unit/renderer/selection-item-chain.test.tsx b/tests/unit/renderer/selection-item-chain.test.tsx
+index 0b30368ccf..2de61e7aea 100644
+--- a/tests/unit/renderer/selection-item-chain.test.tsx
++++ b/tests/unit/renderer/selection-item-chain.test.tsx
+@@ -18,10 +18,10 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
+-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
++import { mkItem, mkText, seedRegistry } from '../../utils/factories'
++import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+ import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+ 
+@@ -59,22 +59,6 @@ function mountPageFixture(itemsText: string): { page1: HTMLElement; textLayer: H
+   return { page1, textLayer, span }
+ }
+ 
+-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
+-function mkItem(str: string, x: number, y: number): PdfTextItem {
+-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+-}
+-
+-function mkText(items: PdfTextItem[]): PdfTextContent {
+-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+-}
+-
+-/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+-function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+-  act(() => {
+-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
+-  })
+-}
+-
+ function selectAllOf(span: HTMLElement): void {
+   const sel = window.getSelection()
+   const range = document.createRange()
+diff --git a/tests/unit/renderer/selection-layer-fa12.test.tsx b/tests/unit/renderer/selection-layer-fa12.test.tsx
+index 453dba9753..c93c962d1b 100644
+--- a/tests/unit/renderer/selection-layer-fa12.test.tsx
++++ b/tests/unit/renderer/selection-layer-fa12.test.tsx
+@@ -12,7 +12,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { stubRectOf } from '../../utils/geometry'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
++import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ 
+ 
+ const saveMock = vi.fn()
+diff --git a/tests/unit/renderer/selection-layer.test.tsx b/tests/unit/renderer/selection-layer.test.tsx
+index db58ac371c..afd2f09cd0 100644
+--- a/tests/unit/renderer/selection-layer.test.tsx
++++ b/tests/unit/renderer/selection-layer.test.tsx
+@@ -19,13 +19,13 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
+ import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
++import { mkItem, mkText, seedRegistry } from '../../utils/factories'
+ import {
+   SelectionLayer,
+   closestPageRoot,
+   pageIndexOf
+-} from '../../../src/renderer/features/reader/SelectionLayer'
++} from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation } from '@shared/models/annotation'
+ 
+ const saveMock = vi.fn()
+@@ -75,24 +75,6 @@ const fireSelectionChange = (): void => {
+   document.dispatchEvent(new Event('selectionchange'))
+ }
+ 
+-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10）
+- *  ——[F-GEOM-01-G2 对账表 A] 页项桩三助手（crib selection-item-chain.test:63-76）：
+- *  G2 保存门后回退态（item 链失败）不挂工具条，「工具条在场」用例需页项在位
+- *  且对账通过（items 拼接==DOM 全文——fixture 页 2 文本 'page two gamma delta'） */
+-function mkItem(str: string, x: number, y: number): PdfTextItem {
+-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+-}
+-
+-function mkText(items: PdfTextItem[]): PdfTextContent {
+-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+-}
+-
+-/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+-function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+-  act(() => {
+-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
+-  })
+-}
+ const fireMouseUp = (): void => {
+   document.dispatchEvent(new MouseEvent('mouseup'))
+ }
+diff --git a/tests/unit/renderer/selection-paint.test.tsx b/tests/unit/renderer/selection-paint.test.tsx
+index 8a56cebf42..5f983b4e57 100644
+--- a/tests/unit/renderer/selection-paint.test.tsx
++++ b/tests/unit/renderer/selection-paint.test.tsx
+@@ -28,13 +28,13 @@ import {
+   stubRangeGBCR,
+   type StubBox
+ } from '../../utils/geometry'
+-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
++import { mkItem, mkText, seedRegistry } from '../../utils/factories'
++import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+ import { rectStyle } from '../../../src/renderer/features/reader/anchors/annotation-style'
+ import { bandFromMetrics } from '../../../src/renderer/features/reader/anchors/annotation-resolve'
+ import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
+ import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
+-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ 
+ 
+@@ -79,25 +79,6 @@ function selectRange(startNode: Node, startOff: number, endNode: Node, endOff: n
+   sel?.addRange(range)
+ }
+ 
+-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10）
+- *  ——[F-GEOM-01-G2 对账表 C] 页项桩三助手（crib selection-item-chain.test:63-76）：
+- *  G2 保存门后回退态不挂工具条，工具条/保存流用例需页项在位且对账通过
+- *  （items 拼接==DOM 全文——文本对 makePage 参数逐字对账） */
+-function mkItem(str: string, x: number, y: number): PdfTextItem {
+-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
+-}
+-
+-function mkText(items: PdfTextItem[]): PdfTextContent {
+-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
+-}
+-
+-/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
+-function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
+-  act(() => {
+-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
+-  })
+-}
+-
+ const fireSelectionChange = (): void => {
+   document.dispatchEvent(new Event('selectionchange'))
+ }
+diff --git a/tests/unit/renderer/theme.test.ts b/tests/unit/renderer/theme.test.ts
+index 6202d82c01..61557cce25 100644
+--- a/tests/unit/renderer/theme.test.ts
++++ b/tests/unit/renderer/theme.test.ts
+@@ -291,7 +291,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
+     '../../../src/renderer/shared/ui/Toast.tsx',
+     '../../../src/renderer/features/reader/AnnotationMenu.tsx',
+     '../../../src/renderer/features/reader/AnnotationEditor.tsx',
+-    '../../../src/renderer/features/reader/SelectionToolbar.tsx',
++    '../../../src/renderer/features/reader/interact/SelectionToolbar.tsx',
+     '../../../src/renderer/features/tags/TagLifecycleMenu.tsx',
+     '../../../src/renderer/features/lineage/LineageToolbar.tsx',
+     '../../../src/renderer/features/lineage/LineageNodeMenu.tsx',
+diff --git a/tests/utils/factories.ts b/tests/utils/factories.ts
+index c1a1996058..36d2b94434 100644
+--- a/tests/utils/factories.ts
++++ b/tests/utils/factories.ts
+@@ -11,17 +11,24 @@
+  *   +makeDemoDetail()（演示形=export/clip——作者双人/DOI/计数 2/演示时间戳）。
+  * - seedLineage：3 文件逐字同形（useLineageStore.setState 直植）→ 调用点
+  *   seed( 改名 seedLineage(。
++ * - mkItem/mkText/seedRegistry：各 ×4 → 单源（F-GEOM-01-G7 RoT 债销项=b14
++ *   门一 W1 登记；seedRegistry 统一收敛参数化超集形，selection-evaluate 原
++ *   两参固定版在默认参数下行为等价）。
+  *
+- * 边界：本件含 renderer store 值依赖（useLineageStore）——node 环境 db 域
+- * 测试禁 import 本件（用 fixtures.ts）；盒几何桩看 tests/utils/geometry.ts。
++ * 边界：本件含 renderer store 值依赖（useLineageStore/usePageItemsStore+act）
++ * ——node 环境 db 域测试禁 import 本件（用 fixtures.ts）；盒几何桩看
++ * tests/utils/geometry.ts。
+  * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更；C 面零变化指纹门。
+  * 受锁文件。[test-refactor][locked-change]
+  */
++import { act } from 'react'
+ import type { TabState } from '../../src/renderer/features/reader/state/reader.store'
+ import type { Annotation } from '../../src/shared/models/annotation'
+ import type { PaperDetail } from '../../src/shared/models/paper'
+ import type { LineageEdge, LineageNode } from '../../src/shared/models/lineage'
++import type { PdfTextContent, PdfTextItem } from '../../src/renderer/features/reader/anchors/geometry-types'
+ import { useLineageStore } from '../../src/renderer/features/lineage/lineage.store'
++import { usePageItemsStore } from '../../src/renderer/features/reader/anchors/page-items.store'
+ 
+ /** ready 态完整 tab（patch 覆盖——tab-bar 形基样） */
+ export function makeTab(id: string, patch: Partial<TabState> = {}): TabState {
+@@ -116,3 +123,19 @@ export function seedLineage(nodes: LineageNode[], edges: LineageEdge[] = []): vo
+     flushing: false
+   })
+ }
++
++/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
++export function mkItem(str: string, x: number, y: number): PdfTextItem {
++  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
++}
++
++export function mkText(items: PdfTextItem[]): PdfTextContent {
++  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
++}
++
++/** 注册表写入口（PagesOverlay handlePageRender 的等价载荷——页号 1 基） */
++export function seedRegistry(no: number, text: PdfTextContent, rotate = 0, view: [number, number, number, number] = [0, 0, 612, 792]): void {
++  act(() => {
++    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate, view }, box: { w: 612, h: 792 } })
++  })
++}
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index 4b8f3364b6..3b8a37426f 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -104,7 +104,7 @@ export const TICKETS: readonly Ticket[] = [
+ 
+   // ── renderer UI（weak）─────────────────────────────────────────
+   { id: 'SR-RDR-04', file: 'src/renderer/features/reader/ReaderPage.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '阅读器页面组装（多 tab）' },
+-  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '文本选择→定位器交互层' },
++  { id: 'SR-RDR-05', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '文本选择→定位器交互层' },
+   { id: 'SR-RDR-06', file: 'src/renderer/features/reader/AnnotationLayer.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '标注渲染与命中层' },
+   { id: 'SR-RDR-07', file: 'src/renderer/features/reader/ReaderToolbar.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '阅读器工具栏' },
+   { id: 'SR-RDR-08', file: 'src/renderer/features/reader/OutlinePanel.tsx', area: 'reader', owner: 'weak', status: 'done', summary: '目录/缩略图侧栏' },
+@@ -207,7 +207,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'SR2-F-04', file: 'tests/e2e/reader-scroll.spec.ts', area: 'e2e', owner: 'strong', status: 'done', summary: '缩放重定义与收官 e2e（b3: P7-F；注册文件=e2e 票 LG-05 先例；zoom 视口中心保持纯函数+fit-width 列宽基准+收官全链 spec——离屏回收/进度恢复/标注原位/键位/缩放锚/INV-01+ctrl+wheel 段迁移批 4+战役收官报告）——依赖 F-01/02/03 全部' },
+   { id: 'SR2-F-05', file: 'src/renderer/features/reader/state/scroll-converge.ts', area: 'reader', owner: 'strong', status: 'done', summary: '程序滚动单容器收敛（b3: P7-F；验收缺陷 A 修复——TabBar 被 scrollIntoView 祖先传播顶出视口；真泄漏面=viewport scrollingElement 门一/门二双核准；scrollIntoNearestScroller 最近滚动祖先差值法（start/center）替换 PageColumn 段⑤+anchor-locate flashElement 两处原生 scrollIntoView+ReaderPage 根两分支 overflow-hidden+Toolbar shrink-0；INV-34 登记禁祖先传播；e2e 窄视口 TabBar 恒可见回归锁 scrollingElement+main 双零断言）[locked-change]——票面 scripts/audits/sr2-f-05-brief.md；依赖 F-01~04（段⑤/flash 链既有形态）' },
+   { id: 'SR2-F-06', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '页间分隔与选区不透明（b3: P7-F；验收缺陷 B+C 视觉修复——B 页盒 var(--panel) 底+0 1px 4px rgba(0,0,0,.12) 阴影渲染/占位同底消色差跳动+gap 不动；C ::selection 半透明→不透明近似色（关键实证：Chromium 不解析 ::selection 的 color-mix 行 fallback 行才是生效行故两行都改 rgb(191 191 255)——门一探查快照+变异②双证据核准）+text-layer.css 头注偏离登记；e2e reader-text.spec 新 test 自守卫（B 页盒底色/阴影/与 --bg 可辨+C ::selection 无透明分量）；单测零触碰）[locked-change]——票面 scripts/audits/sr2-f-06-brief.md；依赖 F-01~05（PageColumn 排他）' },
+-  { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选自绘选区+AI 层去 multiply（b3: P7-F；复测缺陷 P1 修复——F-06 不透明 ::selection 遮 canvas 字形根因推翻：pdfjs 文本层 span color:transparent 字形在下层，半透明才透字，「压白底等效色」只对纯白底成立；B 案=::selection 置 transparent（两行同值死代码收敛单行）+SelectionLayer 按 anchor.rects 自绘 30% accent 半透明选区块（z:2/pointer-events:none/禁 multiply——单层单绘根除重叠 span 逐元素叠绘；247 行触 250 拆 SelectionRects/SelectionToolbar 两件 DOM 零变化）+AiAnnotationLayer 摘容器 multiply 保 opacity:0.45（与 AnnotationLayer 层间叠乘路径清零——AI-09 起既有机制）；门一 C 项层叠链源码级三判据全过+机制三断言锁回炉（e2e computed style mixBlendMode/pointerEvents/zIndex——F-06「审色值没审机制」教训同构残余堵口）；受锁 reader-text.spec F-06 小票 C 节守卫改写（transparent+自绘层+alpha∈(0,1)）+selection-layer.test 2 it）[locked-change]——票面 scripts/audits/sr2-f-07-brief.md；依赖 F-06（推翻其 C 案）+AI-09（层链既有）' },
++  { id: 'SR2-F-07', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选自绘选区+AI 层去 multiply（b3: P7-F；复测缺陷 P1 修复——F-06 不透明 ::selection 遮 canvas 字形根因推翻：pdfjs 文本层 span color:transparent 字形在下层，半透明才透字，「压白底等效色」只对纯白底成立；B 案=::selection 置 transparent（两行同值死代码收敛单行）+SelectionLayer 按 anchor.rects 自绘 30% accent 半透明选区块（z:2/pointer-events:none/禁 multiply——单层单绘根除重叠 span 逐元素叠绘；247 行触 250 拆 SelectionRects/SelectionToolbar 两件 DOM 零变化）+AiAnnotationLayer 摘容器 multiply 保 opacity:0.45（与 AnnotationLayer 层间叠乘路径清零——AI-09 起既有机制）；门一 C 项层叠链源码级三判据全过+机制三断言锁回炉（e2e computed style mixBlendMode/pointerEvents/zIndex——F-06「审色值没审机制」教训同构残余堵口）；受锁 reader-text.spec F-06 小票 C 节守卫改写（transparent+自绘层+alpha∈(0,1)）+selection-layer.test 2 it）[locked-change]——票面 scripts/audits/sr2-f-07-brief.md；依赖 F-06（推翻其 C 案）+AI-09（层链既有）' },
+   { id: 'SR2-ENR-03', file: 'src/renderer/features/library/PaperDetailPanel.tsx', area: 'library-ui', owner: 'strong', status: 'done', summary: '详情面板被引数透出（b3: ENR 域；验收缺陷 D 修复——UI 透出面缺位非 bug：数据链全通（迁移 005→detailById 装配→schema optional）唯独 renderer 零引用；「期刊」与「来源」间加一行 Row（citedByCount===undefined 空→Row 自动 —；零值显示 0）；新测试 paper-detail-cited.test.tsx 3 it always-active（124/缺省 —/零值 0 边界）；shared/models 零触碰）[locked-change]（新测试入锁 143→144）——票面 scripts/audits/sr2-enr-03-brief.md；依赖 ENR-01/02 数据面' },
+   { id: 'SR2-LG-06', file: 'src/renderer/features/reader/anchors/open-paper-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '脉络跳转接笔记面板信号（b3: P7-H；验收缺陷 E2 修复——跳转链完整且定位成功但 OutlineAside tab 本地态不切；anchor 分支 locateAnchor 之前 req.aiNoteId 有值先发 notifyAiNoteHighlight（AI-09 全套语义复用：持久 state 切 notes tab+列表滚动高亮，tab 未开早发不丢失挂载后补切）；无锚/裸锚路径零触碰；受锁 lineage-side-panel.test 加 2 it（notify 先于 locateAnchor——invocationCallOrder 三破坏形态全红）+stub 池扩 notifyAiNoteStub）[locked-change]——票面 scripts/audits/sr2-lg-06-brief.md；依赖 LG-04 接缝（bus 载荷 aiNoteId）+AI-09 信号' },
+   { id: 'SR2-LG-07', file: 'src/renderer/features/lineage/lineage-layout.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络布局非单调年份树修复+边 label 渲染（b3: P7-H；验收缺陷 E1 修复——兄弟约束仅共享年份层触发→年份-拓扑错位树（子比父早 119 年）offset 恒 0 全树退化单列；Frame 增根占位 rootLo/rootHi+兄弟约束增补 mergedRootHi+SIBLING_GAP−rootLo 下限（直接兄弟不论层必横向错开，深层不共享层仍可交错紧凑性保留）；M1 夹具四遍独立手推逐位吻合 {Brown=Reynolds=200,Cross=90,水锤史=310} 分叉可见；边 label 沿贝塞尔中点渲染（LineageEdges.tsx 拆件 61 行——Canvas 269 触 250 红线驱动；空串不渲染+data-edge-label 钩）+Board 摘预留声明；受锁 lineage-layout.test +3 it（M1 夹具/紧凑保持/跨夹具）+lineage-canvas.test 边 label it；auto-fit 观察项不做）[locked-change]——票面 scripts/audits/sr2-lg-07-brief.md；依赖 LG-02 布局件' },
+@@ -221,7 +221,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'R3-RDRSET', file: 'src/renderer/features/settings/SettingsSection.tsx', area: 'settings-ui', owner: 'strong', status: 'done', summary: '阅读器周边+设置页视觉（视觉役收官单元——设计定稿浓度表：阅读器=装饰浓度最低）：ReaderToolbar 玻璃浮层（panel-glass+blur10+金底缘——border-b 等高 1px 换 CSS 零占位，F-05 shrink-0/flex-wrap/py-2 几何零变）+ghost 控件+衬线页码；TabBar active 金 hairline 底缘（inset 零占位）；OutlineAside 金缘 tab+ReaderNotesPanel h4 金左缘条节标（阅读器侧板保持亮面——夜色只属脉络域）；SettingsPage 分节卡+金节标衬线+节间 DiamondRule 复用（SettingsSection.tsx 拆件，作用域 CSS 自持节）；红线零触碰机检实证（AiAnnotationLayer/AnnotationLayer/SelectionRects/scroll-converge/PageColumn/multiply/z-index 九名 grep 计数全 0——F-07 层叠链+F-05 滚动收敛面不动）。联审 PASS 无返工（reader-text.spec 107 断言五次全量从未红；e2e 间歇红三线证据裁定环境波动+backdrop-filter 边缘贡献留 W1 观察项——再现 ≥2 立案 A/B 摘 blur）。3 新 it；首红/变异/rework 日志落盘。verify 859 用例+e2e 25 passed×2）[locked-change]——票面 scripts/audits/r3-rdr-set-brief.md；依赖 R3-TH1 token+R3-LIB DiamondRule' },
+   { id: 'SR2-AI-11', file: 'src/renderer/features/reader/AiNoteGroupList.tsx', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记呈现轴转置（b3: P7-G；验收缺陷 F 修复——用户口径「问题一+一审:xxx。二审:xxx。裁决:xxx。」：groupNotes 按 AI_NOTE_QUESTIONS 单源序转置（{question,items}，空组剔除）+组头 QUESTION_LABEL 分色条+组内条目头 ROLE_LABEL 分段（QUESTION_LABEL 被顶替防冗余——门一核准贴口径，anchorPage/色点保留）；ROLE_LABEL 单源改值「一审/二审/裁决」（消费方两处=面板+脉络侧板——票面「三消费方」取证误差坐实，AiAnnotationLayer 仅消费 QUESTION_COLOR）；LineageSideAiNotes 同步转置不抽件（Rule of Three 维持）；shared 零触碰；受锁 3→5 扩容（门一核准必然红：lineage-side-panel.test+lineage.spec T4 接缝归责同步）；e2e ai-notes-section 2 test+lineage.spec T4 改写）[locked-change]——票面 scripts/audits/sr2-ai-11-brief.md；依赖 AI-08 分节件+AI-09 高亮' },
+   { id: 'SR2-AI-12', file: 'src/renderer/features/reader/anchors/ai-note-style.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AI 笔记组头补原始命题（b3: P7-G；复测缺陷 P2 修复——组头仅「第N问」短标签读者对不上号，七问原始命题仓内零存在唯一源=蓝图 §4.2 表：QUESTION_TEXT 映射新增（七值机器抽取 diff 证逐字誊自蓝图；类型 Record<Exclude<AiNoteQuestion,divergence>,string>——divergence 为角色节非七问成员保持短标签，Exclude=编译器强制两消费位分歧唯一形态）+两消费位组头拼「第N问：原始命题」（AiNoteGroupList h4+LineageSideAiNotes h5——跨域单源自动同达合 INV-11）；纯 renderer 呈现面零 IPC 零 shared；受锁必然红 5 处先行留证（ai-notes-section×3+lineage-side-panel:291+e2e 两 spec）+ai-note-style.test TEXT 键集非空新 it；联审 0B/3W/5N PASS——誊录逐字性联审独立机器重演 diff 空，W3 Q4~Q7 文案持续锁定缺口记遗留池（键集断言拦键漂移不拦值漂移））[locked-change]——票面 scripts/audits/sr2-ai-12-brief.md；依赖 AI-11 转置组头位' },
+-  { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选视觉反馈回退官方原生半透明（F1 修正役 R1 路线——ADR-0019；复测站 3「全面失败+0.5~5s 延迟」根修）：①text-layer.css ::selection/::-moz-selection 回官方 rgba(0 0 255 / 0.25)（逐字对照 pdfjs-dist pdf_viewer.css:678-685；br 两规则保持 transparent）；②删 SelectionRects.tsx 整件+SelectionLayer 摘 overlay 计算/渲染（P10 方案切换=删旧）；③视觉通道=原生 ::selection（拖选第一帧即反馈，零 JS 链路——取证：自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+拖选期死寂=根因双实锤，O(n) 遍历 0~0.6ms 假说证伪）；④工具条/保存/undo/Escape 零变；AnnotationLayer 单层 multiply+AI 层去 multiply（F-07 层间修复）保留；⑤受锁两文件第三次改写：e2e F-06 小票 C 节（官方半透明精确值+selection-rects 防回归 0 计数+L7 延迟预算 toolbar≤1.5s）+unit F-07a 改防回归守卫/F-07b 删——票面 scripts/audits/sr2-f-08-brief.md；取证 scripts/audits/f1-forensics.report.md；三屋：实现 1.95M tok/858 用例绿+门一 PASS 0B/4W/7N+门二 PASS 零回炉（W3=INV-37 登记）；依赖 ADR-0019 裁决' },
++  { id: 'SR2-F-08', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选视觉反馈回退官方原生半透明（F1 修正役 R1 路线——ADR-0019；复测站 3「全面失败+0.5~5s 延迟」根修）：①text-layer.css ::selection/::-moz-selection 回官方 rgba(0 0 255 / 0.25)（逐字对照 pdfjs-dist pdf_viewer.css:678-685；br 两规则保持 transparent）；②删 SelectionRects.tsx 整件+SelectionLayer 摘 overlay 计算/渲染（P10 方案切换=删旧）；③视觉通道=原生 ::selection（拖选第一帧即反馈，零 JS 链路——取证：自绘层 30% accent 合成 rgb(191,207,220) 近乎不可见+拖选期死寂=根因双实锤，O(n) 遍历 0~0.6ms 假说证伪）；④工具条/保存/undo/Escape 零变；AnnotationLayer 单层 multiply+AI 层去 multiply（F-07 层间修复）保留；⑤受锁两文件第三次改写：e2e F-06 小票 C 节（官方半透明精确值+selection-rects 防回归 0 计数+L7 延迟预算 toolbar≤1.5s）+unit F-07a 改防回归守卫/F-07b 删——票面 scripts/audits/sr2-f-08-brief.md；取证 scripts/audits/f1-forensics.report.md；三屋：实现 1.95M tok/858 用例绿+门一 PASS 0B/4W/7N+门二 PASS 零回炉（W3=INV-37 登记）；依赖 ADR-0019 裁决' },
+   { id: 'SR2-F-09', file: 'src/renderer/features/reader/text-layer.css', area: 'reader', owner: 'strong', status: 'done', summary: '划选选中色改灰（用户令 2026-08-29：仿 WPS——灰色选中/标注纯色；v5 核查=标注纯色+重合不加重已成立零改）：text-layer.css ::selection/::-moz-selection rgba(0 0 255 / 0.25)→rgba(0 0 0 / 0.30)（≈白纸 #B3B3B3）；受锁 e2e reader-text.spec F-06 小票 C 节精确值断言+测试名同步；INV-37/ADR-0019 补记（用户指令偏离官方值的显式登记）；压缩路径票（单值变更+守卫同步，主控直做——变异红证 sr2-f-09-mutation.raw.txt：css 改回蓝→F-06 小票红点精确锁值；verify 858+locks+e2e 25 passed 全绿；v5b 真机像素证=差分区 93.3% 中性灰/均值 rgb(151,154,155)）；核查档 scripts/audits/f1-out/f1-forensics5.json+v5 截图+执行记录 sr2-f-09-record.md' },
+   { id: 'R2-LG11', file: 'src/renderer/features/lineage/LineageNodeCard.tsx', area: 'lineage', owner: 'strong', status: 'done', summary: '脉络重制浅色严谨板（U2a=U2 修正役零 schema 先行单元——用户五决 2026-08-29 落地；R2-LG9 星象板方向否决后的修正延续=R2 系）：白卡+边框编码 A 线型×色阶（核心=accent 1.5 实线/普通=node-branch 1 实线/主题+综述=虚线 6-4；选中 +0.75）+foreignObject 题名换行 ≤3 行省略+title tooltip（LineageNodeCard:78 单行 text 根修）+nodeHeight 卡高单源（INV-38 三消费 1/2/3 行=64/82/100）+isSurvey/isCore 纯函数+综述布局右缘新列+综述关联边淡灰虚线 2-3（决3）+夜幕系脉络域摘除（.lineage-host 白底+LineageNightDecor 删+图例改写 LineageLegend 四项+工具条/适应视图/侧板三件白玻璃化+脉络衬线年份摘除=决5 连带）+BAND_LEFT 单源（B1 清账）；**isCore 出度口径修正（2026-08-29 真机复评裁决）**：初版「入度≥2」在 INV-27 树单父约束下数学恒假（合法图入度≤1 恒不触发；取证器 fixture 造双入边被 service 多父守卫拒=单测全绿≠真实数据形态可达的活证据）——「被引≥2 开宗立派」=≥2 继承者=出度≥2，主控压缩票直做（classify.ts+classify.test/visual.test 夹具同步+票面/INV-38 更正+变异红证 mutation-5.log 4 it 红）；受锁改写 lineage-canvas R2-LG9 块（拆 lineage-canvas-visual.test.tsx——max-lines 500）+lineage-layout 增两 describe+lineage-side-panel :311 夜化 it+新 lineage-classify.test（locks 163+取证器 r2-lg11-forensics.mjs 入锁=164）；e2e lineage.spec 零改（预裁兑现）；三屋：实现者 15.8M tok（875 用例精确命中 858−5+7+7+8）+门一 B0/W6/N9 PASS（6W 主控处置：W1/W2 申报、W3 主控补跑 mutation-4 GAP 精确值红、W4/W5/W6 遗留池）+门二 PASS 可直接收口；真机复评四线全过（wrapInBox/borderDiscernible/noRegression/surveyRight——取证档 scripts/audits/r2-lg11-out/ json+png；ABI 换绑 Windows 文件锁竞态=取证器 hash 校验防线+缓冲，环境怪癖常量化）；票面 scripts/audits/r2-lg11-brief.md+实现/门一/门二报告三份在档；裁决母本 docs/prompts/2026-08-29_loop-handoff-v3.md §2/§3' },
+   { id: 'R2-LG12', file: 'src/main/services/lineage/lineage.service.ts', area: 'lineage', owner: 'strong', status: 'done', summary: '综述多参考边数据面（U2b——用户裁决 2026-08-29「A. 完整多参考边」AskUserQuestion 在案）：lineageEdge 增 kind:tree|ref（出口必填/upsert 可选缺省 tree/service+importDraft 双写路径显式填；draft 协议零改）+迁移 006（ADD COLUMN kind TEXT NOT NULL DEFAULT tree——旧行幂等+migrate.test [1..5,6]）+service upsertEdge 受控豁免分支（ref 豁免多父且 tree 侧收窄 ref 入边不算 tree 父=对偶自洽/仍拒环=混合图 reachable/同端点对 tree+ref 互斥拒/from 双条件 paperId≠null+isSurveyTitle——判定上移 shared/models 单源+renderer re-export 消费面零改）+layout 净化段剔 ref 边（不计 dropped——有意分流）+渲染 ref=var(--survey-edge) 1.4 虚 2-3（直读 e.kind，优先级 ref>综述关联>推断>普通）+综述右键「添加参考连接」入口（pending-link mode 扩展 ref）+INV-27 修订登记（tree 单父原样/ref 受控豁免条款）；受锁面=shared models+ipc schemas+006 迁移+lineage-import/layout/visual 三测+6 测试工厂 kind 波及+e2e lineage.spec T5（综述幽灵行第四篇独立 fixture→右键→点已有 tree 父的甲=豁免面→ref path 精确断言→reload 持久+负锚非综述无菜单项）；三屋：实现者 10.0M tok（883 用例精确命中 875+service6+layout1+visual1+变异红证 4 档含 M2 混合环盲区拦截/M4 自环 reason 红点）+门一 B0/W2/N6（W1=check-tickets R2 系正则盲区建单时已知设计、W2=主控 diff 包 git add 失误门一补全）+门二 PASS 零回炉（W3 剪贴板复验落盘补跑 2.0s 过/N7 首红未落盘教训回流）；收口：verify exit=0（locks 165=164+006）+e2e 26/26 终态（T5 首跑即过+corpus 超时 2.5s 单跑复验=负载 flake+剪贴板 2.0s 复验）；票面 r2-lg12-brief.md+三报告+收口单在档' },
+@@ -239,7 +239,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'P7E-05', file: 'src/main/services/reader.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '阅读时长统计（P7-E 预留点清扫五票；Design=搭车 saveProgress 单通道（secondsDelta int 0..3600 optional——旧载荷零兼容）+008 迁移（预留写 002 勘误实落 008）+reading-time.ts 独立模块（deps 注入 crib scroll-progress）+复合 flusher（进度页+时长账单 invoke）+repo 原子累加（reading_seconds=reading_seconds+?）+ready×visible 双计时门+chunkSeconds 3600 分片单源三消费点；态空间 R1~R10+跨格锚（R3×R6/4000 分片/dispose 双 invoke/可见零头结转）+INV-57 登记（含注记面四件：R7 双 invoke/分片级部分丢失/无 24h 钳制/sec<0 不可达）；三屋全程=首轮 BLOCKED（票面×受锁 golden 双死结：migrate.test [1..7] 断言+10 件 PaperDetail 字面量）→主控 [locked-change] 12 件配套（migrate.test [1..8]+lineage-tags 7→8+10 字面量补字段——零断言语义弱化）→TDD 全流程（首红 5/1235→绿→M1~M4）→R1 主控亲验回炉（settle force 不检查 isVisible=hidden 段虚计）→R2 门一 BLOCKING 回炉（3600 上界×收尾口回吐结构冲突——invokeOne 分片+M6）→R3 门二 BLOCKING+WARN 回炉（dispose 尾账未分片同型漏点→chunkSeconds 单源三消费点+M7；settle 吸收/结转绑死→解耦+锚语义随裁决变更）；M2 变异载体失效转移 M5 实录（防线冗余实证）；门一 Kimi（kimi-backup，主源 504 换源）FAIL（1B+3N）→R2→复审 PASS；门二 deepseek 64k 档 FAIL（1B+1W）→R3→复审 PASS_WITH_WARNINGS（落盘静默=既有尽力而为规约归注记）；主控亲验=TagEditor key 修复（e2e tag-lifecycle 确定性红两次复跑+回退 Panel 对照实证=既有竞态被本票加行踩宽——挂接点 key={detail.id} 会话身份语义，挂错文献正确性缺陷非仅测试面）+R3 超回炉上限 ≤2 超额披露（门一/门二各贡献独立轮非同案缠讼，人类复核可否决）；实现者 GLM5.3 统一档五轮 30.4M tok；verify 146 文件 1255（+4 文件+24 用例）/locks 265（259+6：4 unit+1 e2e spec+1 sql）/e2e 38 全绿（37+1——主控亲验三跑）；票面 scripts/audits/p7e-05-brief.md+报告 p7e-05-impl.report.md+两门审档在案）' },
+   { id: 'P7E-06', file: 'src/renderer/features/tags/TagFilter.tsx', area: 'tags-ui', owner: 'strong', status: 'done', summary: '标签多选过滤（P7-E 预留点清扫六票；Design=AND 交集+切换删旧 tagId 加 tagIds（array min1 max20 optional 空数组 schema 拒收）+逐标签 EXISTS 循环参数绑定+chip toggle+INV-53 多选适配（消失 id 剔除非全清，顺序锚不变——INV-53 行内注记+预扫教训在档）；态空间 T1~T8 逐格锚+M1~M4 变异红证（M1 交集改 OR/M2 全清改反/M3 空数组不收敛/M4 toggle 只进不出）；受锁配套四件=[locked-change]（models/paper.ts 契约切换+repo:170 单选锚 tagIds:[t-1] 等价迁移+ui harness 多选形态 null→[] 等价载荷+tag-lifecycle.spec 插取消点击恢复换选序列——票面「e2e 零配套」预扫误判，实现者停手申报+快照铁证后主控裁决）；两项票外申报=tag-lifecycle 红（处置如上）+registry area 笔误（主控建单错误 renderer→tags-ui 修）；门一 Kimi（backup 源）PWW 零 BLOCKING（2W=waitForTimeout 先例同配方/预扫方法论缺口→INV-53 注记；3N 不阻塞——tagId 残留 grep 直证主控已补档）+门二 deepseek 64k PWW（2W=同 waitForTimeout/max(20) UI 无感知 UX 断层→后续票候选；1N btn! 风格）——零回炉双 PWW；实现者 GLM5.3 统一档两轮 6.76M tok；verify 148 文件 1265（+2 文件+10 用例）/locks 268（265+3）/e2e 39 全绿（38+1 新 spec——主控亲验）；票面+报告+两门审档在案）' },
+   { id: 'P7E-07', file: 'src/main/services/library.service.ts', area: 'service', owner: 'strong', status: 'done', summary: '智能排序（P7-E 预留点清扫七票末项=**P7-E 余序清空**；Design=枚举加值 cited_desc（向后兼容旧三值全保留——与 P7E-06 切换删旧对照）+COALESCE(cited_by_count,0) DESC 空值显式归零垫底（探针前置实录：DESC 下 NULL 默认垫底但 0-vs-NULL 相对序由引擎决定——删 COALESCE 变异 M1 真实红）+rowid 决胜+双 Record<LibrarySort> 类型强制闭环（M2 漏键 typecheck 红证）+SORT_LABEL『被引（高到低）』+:20 预留注记兑现（含「经新 repo 方法」→「ORDER_BY 映射扩展」勘误）；态空间 S1~S5 逐格锚+M1~M3 变异红证还原空；门一 Kimi（backup）PWW 零 BLOCKING+门二 deepseek 64k PWW——双 PWW 零回炉（2 NIT 双门同题：schema 入参直锚 parse({sort:cited_desc}) 缺位→下次合法触碰该测试件时补+报告行数自报 106 vs diff 实证 111 申报精度——计数须机器实测纪律再证）；e2e 零新 spec（单测全锚+下拉 Object.entries 驱动——双门接受论证）——主控亲验全量 39/39（首轮 1 failed=reader-text:872 F-ARCH4-M1 与本票零交集+定向复跑绿+复验全绿=非确定抖动第 1 现记录指纹不立案）；实现者 GLM5.3 统一档一轮 1.69M tok；verify 149 文件 1270（+1 文件+5 用例）/locks 269（268+1）；票面+报告+两门审档在案）' },
+-  { id: 'F-A6', file: 'src/renderer/features/reader/selection-paint.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选渲染错乱+拖选卡顿根治（用户实报 2026-09-03：某 PDF 选区灰块锯齿拼接/右侧溢出（图证在档）+选中延迟一卡一卡；五轮方案残留=F-A4 自绘并集层的 D1 rects evaluate 在异常 text-layer PDF 上错乱/D2 拖选期 200ms 防抖全量重算+portal 重渲染卡顿——历史 F-06/07/08/09/A4 五轮触发远超二次重构线，纪律=设计文档先行（态空间+两病根机理推演+方案对比）再实现；涉 ADR-0019 R3 修订；**a 取证票毕 2026-09-04**：f-a6-diag 三件（探针/库/页内采集器——五段探针+A/B 对照+tick 前测）+裁决表 f-a6-forensic-verdict.md（门一 Kimi PWW 回炉闭合+门二 deepseek PWW 4W2N 主控直裁落地，双档 §9-7/8）；核心裁定=**R-迁移为主修（阶段化决策门：阶段1 T1/T9 duckViewport 前置修复→阶段2 复跑 A/B 对照确认 S1/S2 消除→阶段3 主链迁移落地）**——真实库 46 页 T1/T9 零触发（合成 S1/S2 触发量化闭合：outside 5/8、平移 x+36.01/y−37.40）；真实样本甲乙同净（IoU 0.9996/0.9999）+mLR 对项盒结构性拆簇反证（211/151 vs 行真值 43/10）；用户实报重形态未复现（轻形态 3/39 行双块）——修复集以机理+合成证据裁定+验收条件随票流转（§5）；G2=偏离率≥5%（健康 0~0.12% vs 病理 25~62.5%，间隔≥200 倍）+右溢支占位+仅新增复现证据时启用；tick 基线=5Hz 步进实测（间隔 199.8~207.3ms）+每 tick gBCR≈101/gCS≈391（3882 页）；verify 149/1273/locks 272（269+脚本三件）全绿 [locked-change]；**b1 阶段 1+2 毕 2026-09-04**：T1/T9 前置修复（TextLayer duckViewport rotation/rawDims 真值化+rotatedContainerBox 容器旋转半边[pdf.mjs 4.10.38 源码级：span 恒未旋转用户空间百分比，页旋转由容器 CSS 变换承担——官方 pdf_viewer.css data-main-rotation 规则的内联等价]+PdfPageGeometry 第三参下钻[PdfPageCanvas→PageBox/PageColumn 纯类型扩→PagesOverlay→TextLayer geometry 必填无回退]）——**阶段 2 决策门过（门二终位 PASS+ENDORSE）**：s1rot outside 5/8→0/8+A_paint 1→3=行真值、s2crop 双向平移 36px→0.03/IoU 0.8213→0.9998、健康页块数逐位不变（1c2d IoU 0.9982=ENDORSE 度量精度改进）、tick 同量级；单测 text-layer.test 新 11 用例（duckViewport 直测+四旋转态+jsdom 语义级+transform-origin 锁）+变异红证 2；门一 Kimi PWW 2W3N 回炉闭合+门二 deepseek PASS 零 findings（档 f-a6b1-gate1/2）；裁决表 §10 决策门记录+两轮取证数据 f-a6-diag-out-a1/ 与 f-a6-diag-out/ 在档；verify 150/1285/locks 273 全绿亲验 [locked-change]；**b2 阶段 3 主链迁移毕 2026-09-04**：pdf-item-geometry.ts 新件（497 行——viewport transform 内联数学零 pdfjs import/rectsForOffsetRange+grapheme 细分[RTL/竖排/四角包围盒,取证 §9-4 缺口单测补]/基线分组并块/bandsFromItems C5 同源/selectionHealth G2[偏离率≥5%+右溢 2px 占位]+偏移表对账）+page-items.store.ts 单源注册表（pageTexts useState 整体迁入）+selection-evaluate.ts 拆件（evaluate 域迁出,四道守卫逐字保留,SelectionLayer 250 红线解除）+rects/bands 产链切项几何（save 落库同源=INV-58 前半）+DOM 量测降回退（三因 warn 不静默）+T2/T3 回退加固（聚类比较扩到全部簇,先红 2 后绿）+G2 active（拖选抑制+fromMouseUp toast——门一回炉对齐跨页形态）;第三轮取证 r3c：健康页 paint 逐位不变+IoU 全升（0.9996→0.9999/0.9982→1）+s1rot 零高伪迹构造性消除+tick gBCR 709→18/gCS 2734→685（通道生效）——两实现事故 r3a[项盒域差→G2 实战拦截]/r3b[mergeRects 终裁角度门]取证明证后修复;单测 22+6 用例+变异红证 6 组;门一 Kimi PWW 2W4N（W1 守卫用例=区间膨胀结构性惰性零改动/W2 toast 门/N1 归一化端点式——回炉闭合）+门二 deepseek PWW 2W2N 零 BLOCKING（seam_ruling:AnnotationLayer 重锚域=INV-58 票外边界,F-A6-c 开工条件排期同族化;输出经 reasoning 通道主控提取在档）;verify 152/1316/locks 275 全绿亲验 [locked-change]；**c D2 调度与快路径票毕 2026-09-04**：selection-geometry rAF 对齐（leading 首事件即排 ≤16ms+帧内合帧去重+settle 防抖 200ms 逐字+cancel 清双句柄,旧 200ms 节流整体删除）+快路径 evaluateVisual（四道守卫前置+G2 同门+轻量 probe 复刻+store 直读+itemSelectionGeometry 同族=INV-58 后半,回退三层[快→全量→DOM 量测]）+SelectionPaint memo+门二开工条件三件（clampScale 单源/pitch 极限守卫夹具[绿=防线在 hComparable,MUT4 红证]/AnnotationLayer seam 头注入档）;第四轮取证 r4:mutations 7→20 全跟随+间隔 200→59.5ms（dispatch 界,rAF 帧栅格量化 50/60 交替）+delta med 32.3→11.9ms+gCS 685→87（仅末尾 settle）+clientRects 8→1（快 tick 零——clientRects/gCS 链尽消,gBCR 绝对量上行披露在档）+D1 面逐位不变;S1b/S1c 改写 rAF 语义+新 selection-geometry.test 4 it（合帧去重锚）/selection-evaluate.test 4 it（快慢等价+同帧覆盖+跨页守卫+W1 cancel-before-evaluate 顺序锚[先红:删 cancel 恰红]）+变异红证 4+MUT2 重跑留档;门一 Kimi PWW 2W2N 回炉闭合（W1 过程发现=portal DOM 插入诱发原生 selectionchange→rAF 幂等重渲,定性生产无害[INV-58 等价性吸收]+预渲染隔离）+门二 deepseek **PASS 零 findings**（c 可收口+d 开工条件满足）;e2e reader-text 13/13 主动跑绿;verify 154/1325/locks 277 全绿亲验 [locked-change]；**d 收口票毕 2026-09-04**：e2e 两新小票[组合页=createRotatedCropPdf fixture（/Rotate 90×/CropBox [36 36 540 720]——b1 门一 N3 组合面缺口兑现）断言 span×canvas 包含度 ≥0.5（实测 1.000——门一回炉 W1 判据升级）+toolbar+块数=行真值 1+块 gBCR 不溢渲染页盒；拖选随动=连发 selectionchange 3 次×50ms 每轮+1 字符→300ms 窗 ≥2 次块变更（rAF e2e 级）]；断言红证 4（块数 1→2 恒红/随动判据翻转红/包含度方向翻转红[Received 1 vs ≤0.1]/右缘期望收紧红[Received 1116.11 vs ≤549.2]——文件备份法还原 diff 空）；live range 诱发链不锚 e2e（裁量：生产幂等无害+W1 it 组件级已锚+预渲染隔离在档）；全量 e2e 41/41 绿零 skip（39+2，F-ARCH4-M1 原:872 本轮绿=第 2 现未再现——观察清单：再 1 现即按 e2e 非确定失败立案线[同用例 2 次]立案）；INV-37 调度条款改写+拖选期弱化「所见≈所存」显式登记（用户裁决 2026-09-03）+F-A5 band 口径接缝修正+锚列扩容；INV-58 新登记（invariants.md:73——同几何族+C5 同源+适用域 selection 产链+AnnotationLayer 票外 seam+三层回退，已锚定 2026-09-04）；ADR-0019 R3 修订段落笔（已裁决 执行=F-A6 a/b1/b2/c，终态数字按裁决表 §10/§11/§12 校正）；门一 Kimi PWW 2W3N 回炉 W1 闭合+门二 deepseek PWW「五票在材料层面可宣告完成」（W2 立案回执=本提交 F-A7 兑现）；locks 277；verify 154/1325+e2e 41/41 全绿亲验 [locked-change]——**票外新发现移交 F-A7**：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn page.view 未旋转口径 vs canvas getViewport 旋转口径），页框与渲染盒错配；selection 几何链不受影响（块与 span 墨带贴合坐标证据在档），真实库全档 rotate=0 未显现）' },
++  { id: 'F-A6', file: 'src/renderer/features/reader/interact/selection-paint.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选渲染错乱+拖选卡顿根治（用户实报 2026-09-03：某 PDF 选区灰块锯齿拼接/右侧溢出（图证在档）+选中延迟一卡一卡；五轮方案残留=F-A4 自绘并集层的 D1 rects evaluate 在异常 text-layer PDF 上错乱/D2 拖选期 200ms 防抖全量重算+portal 重渲染卡顿——历史 F-06/07/08/09/A4 五轮触发远超二次重构线，纪律=设计文档先行（态空间+两病根机理推演+方案对比）再实现；涉 ADR-0019 R3 修订；**a 取证票毕 2026-09-04**：f-a6-diag 三件（探针/库/页内采集器——五段探针+A/B 对照+tick 前测）+裁决表 f-a6-forensic-verdict.md（门一 Kimi PWW 回炉闭合+门二 deepseek PWW 4W2N 主控直裁落地，双档 §9-7/8）；核心裁定=**R-迁移为主修（阶段化决策门：阶段1 T1/T9 duckViewport 前置修复→阶段2 复跑 A/B 对照确认 S1/S2 消除→阶段3 主链迁移落地）**——真实库 46 页 T1/T9 零触发（合成 S1/S2 触发量化闭合：outside 5/8、平移 x+36.01/y−37.40）；真实样本甲乙同净（IoU 0.9996/0.9999）+mLR 对项盒结构性拆簇反证（211/151 vs 行真值 43/10）；用户实报重形态未复现（轻形态 3/39 行双块）——修复集以机理+合成证据裁定+验收条件随票流转（§5）；G2=偏离率≥5%（健康 0~0.12% vs 病理 25~62.5%，间隔≥200 倍）+右溢支占位+仅新增复现证据时启用；tick 基线=5Hz 步进实测（间隔 199.8~207.3ms）+每 tick gBCR≈101/gCS≈391（3882 页）；verify 149/1273/locks 272（269+脚本三件）全绿 [locked-change]；**b1 阶段 1+2 毕 2026-09-04**：T1/T9 前置修复（TextLayer duckViewport rotation/rawDims 真值化+rotatedContainerBox 容器旋转半边[pdf.mjs 4.10.38 源码级：span 恒未旋转用户空间百分比，页旋转由容器 CSS 变换承担——官方 pdf_viewer.css data-main-rotation 规则的内联等价]+PdfPageGeometry 第三参下钻[PdfPageCanvas→PageBox/PageColumn 纯类型扩→PagesOverlay→TextLayer geometry 必填无回退]）——**阶段 2 决策门过（门二终位 PASS+ENDORSE）**：s1rot outside 5/8→0/8+A_paint 1→3=行真值、s2crop 双向平移 36px→0.03/IoU 0.8213→0.9998、健康页块数逐位不变（1c2d IoU 0.9982=ENDORSE 度量精度改进）、tick 同量级；单测 text-layer.test 新 11 用例（duckViewport 直测+四旋转态+jsdom 语义级+transform-origin 锁）+变异红证 2；门一 Kimi PWW 2W3N 回炉闭合+门二 deepseek PASS 零 findings（档 f-a6b1-gate1/2）；裁决表 §10 决策门记录+两轮取证数据 f-a6-diag-out-a1/ 与 f-a6-diag-out/ 在档；verify 150/1285/locks 273 全绿亲验 [locked-change]；**b2 阶段 3 主链迁移毕 2026-09-04**：pdf-item-geometry.ts 新件（497 行——viewport transform 内联数学零 pdfjs import/rectsForOffsetRange+grapheme 细分[RTL/竖排/四角包围盒,取证 §9-4 缺口单测补]/基线分组并块/bandsFromItems C5 同源/selectionHealth G2[偏离率≥5%+右溢 2px 占位]+偏移表对账）+page-items.store.ts 单源注册表（pageTexts useState 整体迁入）+selection-evaluate.ts 拆件（evaluate 域迁出,四道守卫逐字保留,SelectionLayer 250 红线解除）+rects/bands 产链切项几何（save 落库同源=INV-58 前半）+DOM 量测降回退（三因 warn 不静默）+T2/T3 回退加固（聚类比较扩到全部簇,先红 2 后绿）+G2 active（拖选抑制+fromMouseUp toast——门一回炉对齐跨页形态）;第三轮取证 r3c：健康页 paint 逐位不变+IoU 全升（0.9996→0.9999/0.9982→1）+s1rot 零高伪迹构造性消除+tick gBCR 709→18/gCS 2734→685（通道生效）——两实现事故 r3a[项盒域差→G2 实战拦截]/r3b[mergeRects 终裁角度门]取证明证后修复;单测 22+6 用例+变异红证 6 组;门一 Kimi PWW 2W4N（W1 守卫用例=区间膨胀结构性惰性零改动/W2 toast 门/N1 归一化端点式——回炉闭合）+门二 deepseek PWW 2W2N 零 BLOCKING（seam_ruling:AnnotationLayer 重锚域=INV-58 票外边界,F-A6-c 开工条件排期同族化;输出经 reasoning 通道主控提取在档）;verify 152/1316/locks 275 全绿亲验 [locked-change]；**c D2 调度与快路径票毕 2026-09-04**：selection-geometry rAF 对齐（leading 首事件即排 ≤16ms+帧内合帧去重+settle 防抖 200ms 逐字+cancel 清双句柄,旧 200ms 节流整体删除）+快路径 evaluateVisual（四道守卫前置+G2 同门+轻量 probe 复刻+store 直读+itemSelectionGeometry 同族=INV-58 后半,回退三层[快→全量→DOM 量测]）+SelectionPaint memo+门二开工条件三件（clampScale 单源/pitch 极限守卫夹具[绿=防线在 hComparable,MUT4 红证]/AnnotationLayer seam 头注入档）;第四轮取证 r4:mutations 7→20 全跟随+间隔 200→59.5ms（dispatch 界,rAF 帧栅格量化 50/60 交替）+delta med 32.3→11.9ms+gCS 685→87（仅末尾 settle）+clientRects 8→1（快 tick 零——clientRects/gCS 链尽消,gBCR 绝对量上行披露在档）+D1 面逐位不变;S1b/S1c 改写 rAF 语义+新 selection-geometry.test 4 it（合帧去重锚）/selection-evaluate.test 4 it（快慢等价+同帧覆盖+跨页守卫+W1 cancel-before-evaluate 顺序锚[先红:删 cancel 恰红]）+变异红证 4+MUT2 重跑留档;门一 Kimi PWW 2W2N 回炉闭合（W1 过程发现=portal DOM 插入诱发原生 selectionchange→rAF 幂等重渲,定性生产无害[INV-58 等价性吸收]+预渲染隔离）+门二 deepseek **PASS 零 findings**（c 可收口+d 开工条件满足）;e2e reader-text 13/13 主动跑绿;verify 154/1325/locks 277 全绿亲验 [locked-change]；**d 收口票毕 2026-09-04**：e2e 两新小票[组合页=createRotatedCropPdf fixture（/Rotate 90×/CropBox [36 36 540 720]——b1 门一 N3 组合面缺口兑现）断言 span×canvas 包含度 ≥0.5（实测 1.000——门一回炉 W1 判据升级）+toolbar+块数=行真值 1+块 gBCR 不溢渲染页盒；拖选随动=连发 selectionchange 3 次×50ms 每轮+1 字符→300ms 窗 ≥2 次块变更（rAF e2e 级）]；断言红证 4（块数 1→2 恒红/随动判据翻转红/包含度方向翻转红[Received 1 vs ≤0.1]/右缘期望收紧红[Received 1116.11 vs ≤549.2]——文件备份法还原 diff 空）；live range 诱发链不锚 e2e（裁量：生产幂等无害+W1 it 组件级已锚+预渲染隔离在档）；全量 e2e 41/41 绿零 skip（39+2，F-ARCH4-M1 原:872 本轮绿=第 2 现未再现——观察清单：再 1 现即按 e2e 非确定失败立案线[同用例 2 次]立案）；INV-37 调度条款改写+拖选期弱化「所见≈所存」显式登记（用户裁决 2026-09-03）+F-A5 band 口径接缝修正+锚列扩容；INV-58 新登记（invariants.md:73——同几何族+C5 同源+适用域 selection 产链+AnnotationLayer 票外 seam+三层回退，已锚定 2026-09-04）；ADR-0019 R3 修订段落笔（已裁决 执行=F-A6 a/b1/b2/c，终态数字按裁决表 §10/§11/§12 校正）；门一 Kimi PWW 2W3N 回炉 W1 闭合+门二 deepseek PWW「五票在材料层面可宣告完成」（W2 立案回执=本提交 F-A7 兑现）；locks 277；verify 154/1325+e2e 41/41 全绿亲验 [locked-change]——**票外新发现移交 F-A7**：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高（PageColumn page.view 未旋转口径 vs canvas getViewport 旋转口径），页框与渲染盒错配；selection 几何链不受影响（块与 span 墨带贴合坐标证据在档），真实库全档 rotate=0 未显现）' },
+   { id: 'F-A7', file: 'src/renderer/features/reader/PageColumn.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '旋转页占位盒宽高交换缺失（**毕 2026-09-04 三屋全链**）：/Rotate≠0 页 [data-page-box] 占位盒未随旋转交换宽高——PageColumn 页尺寸缓存单源用 page.view 未旋转口径 vs canvas getViewport 旋转口径，页框与渲染盒错配（页框/占位视觉错形）；selection 几何链不受影响（F-A6-d e2e 组合页块与 span 墨带贴合坐标证据在档）；真实库全档 rotate=0 未显现（低优先）；修法方向=页尺寸缓存/占位计算按 viewport 旋转口径取（与 b1 PdfPageGeometry 通道同源），e2e 复用 createRotatedCropPdf 断言页框与 canvas 盒一致；**实现**=PageColumn 段① pageSizes 构造改 viewport 旋转口径（rotate ?? 0 归一化 ((r%360)+360)%360 后 %180===90 交换宽高——与 b1 PdfPageGeometry 通道同源禁 getViewport 调用,mock 面零扩大）；pageSizes 语义=viewport 口径（PageBoxSize 注释声明,basisWidth/锚总高自动受益——rotate=90 单测含 onReady(792) 锚）；头注「不做：旋转页」澄清「手动旋转阅读」（/Rotate 元数据适配非旋转特性,接缝归责在案）；单测 4 it（90 交换 792×612/180 不交换/270 交换/-90 负值归一化——首红 3 红[180 修前绿=数学必然,变异 B 补证]）+变异红证×2（删交换分支 3 红/交换条件翻转 8 红=rotate=0 守卫面被保护）；e2e 新小票（占位盒×canvas 盒宽高差 ≤2px+方向断言宽>高;修前差=180×zoom≈293px 必红）+F-A6-d 参考系注释更新（F-A7 已修复态）；门一 Kimi K3 PWW 2W2N（W1 注释数字 293px 实测口径回炉闭合/W2 248 字符 push 行可读性债务=本票接受登记——**已知债务：PageColumn 压线 250 行上限+248 字符行,后续行增即拆件**）+门二 deepseek v4flash PASS 零 findings（独立复算+可宣告完成）；verify 154/1329/locks 277/e2e 42 零 skip 全绿亲验 [locked-change]' },
+   { id: 'F-A8', file: 'src/renderer/features/reader/anchors/annotation-resolve.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'AnnotationLayer 重锚域同族化（b2 门二 seam_ruling 排期项立案 2026-09-04;设计链三跳毕=Kimi K3 拟定[推荐 A+C1]→deepseek v4flash 对抗审核 ENDORSE_WITH_CHANGES[CR×4+CO×2]→GLM5.3 主控终裁[三处材料外假设源码验证毕]——终裁版设计书 docs/design/2026-09-04_f-seam-reanchor-design.md）：重锚主链迁项几何族（resolveAnnotationRectsItem=startOffset/endOffset+page-items.store 页项→reconcileItemsWithDom 对账→verifyQuoteItem[verifyQuote 打分核纯文本复刻——oracle 比对单测:同漂移 fixture 两函数校正结果逐位一致,主控已验证匹配核纯文本性 anchor-serialize.ts:50-100]→rectsForOffsetRange+bandsFromItems 同族同域）+DOM 量测链整体降回退层（resolveAnnotationRects 改名 …Dom 函数体零改=INV-47 数值面不动）;态空间 S0~S6（S6 病理页抑制格待门 1 取证——selectionHealth 跨产链复用=假设非事实,annotation 产链分离度不可复现则 S6 裁撤）+CR1 store 订阅重入（usePageItemsStore 现成 react 订阅形态——MutationObserver 只观察 DOM 面,store 晚到竞态 fixture 入测试面）;存量处置=C1 读时归并渐净（F-A4 先例,零迁移）;INV 登记=INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链]+INV-47 适用面收缩登记+新 INV-59[重锚同族配对令——主链消 R1,回退格 S3b/S5 显式持有跨族配对=已知边界]+INV-60[重锚显示覆盖登记——仅显示不回写+域标记运行时不入库];阶段门 0~3（门 0=verifyQuoteItem+oracle 单测/S1 reconcile 接线;门 1=新旧链同页双跑取证+G2 分离度复现;门 2=状态机上线+INV 登记同步;门 3=收口+回退层去留裁决）;CR3 旧文档命中风险主控裁决排除（store 纯页号索引+换文献 fileUrl 效应整表清空——源码事实在案）；**门 0 前置票毕 2026-09-04**：anchor-serialize locateQuote 纯文本核提取（verifyQuote 薄壳化行为零变+受锁基准 28 用例绿+空 quote 前置守卫触达面还原[N1]）+verifyQuoteItem（items 域对账——自持剔空串拼接与 buildItemOffsets 偏移表口径机械对账锁定[W2];TS6142 阻断自裁=结构最小面+Rule of Three 第 2 次,第 3 处上抽条件头注在案）+resolveAnnotationRectsItem 纯域版（S0~S3b:entry null→{}/逐条 verifyQuoteItem 校偏→itemSelectionGeometry 整管线产 {rects,bands}[W4 主控追认=裁决③导出面复用兑现]/scale 自 entry.box 反推[水平轴严格约除,垂直轴 ~1px 有界残差=W3 口径]/畸形 try 缺席）;oracle 三态（jsdom DOM×items 双跑逐位一致）+tie-break 正反+打分序+全表对账 16 用例（新件 anchor-item-verify.test.tsx）;变异红证 4（拼接序 7 红/权重 1 红/三态 1 红/tie-break 翻转双用例红）;门一 Kimi K3 PWW 4W2N（W1 tie-break 补/W2 机械锁定补/W3 措辞降级/N1 守卫——回炉一轮全闭合;W4 追认/N2 主控源码排除[viewportTransformFor:98 同式归一化]）+门二 deepseek v4flash PASS（2 NIT 表述级=verifyQuoteItem 入口短路对称性+注释状态机编号统一——**转门 1 票面顺带**）;tsconfig.node.json 无 jsx 配置债=观察项（实现者疑虑申报,单独立票候选）;verify 155/1345/locks 278 exit=0 亲验（门 1/2 开工条件就绪——门二终位结论）；**门 1 取证票毕 2026-09-04（决策门记录:判据 a 不过→回设计——门 1b 前置修立票）**：探针三件 f-a8-gate1-diag/lib/page.mjs（locks 281=278+3）+裁决表 f-a8-gate1-forensic-verdict.md;7 页×35 锚全落链（reconcile 7/7 真/relocate 全零——构造位即真位）;判据 a 不过（IoU1D≥0.99 占比 6/20 最差 0.6232——**新根因=ascent=0 声明字体 27% 项被 pdf-item-geometry.ts:217 Number.isFinite 直消费致项链行块膨胀 16px vs 真值 9.5px[DOM 链免疫=pdf.mjs #getAscent 三级兜底 DEFAULT_FONT_ASCENT=0.8 先例]**+grapheme 比例细分项内边界锚近似区间 0.8816~0.9745[结构性上限未定]+dy 域差 0.3~2.6px;1c2d 干净字体页 6/6 过=「可修缺陷+口径分层非路线错误」对照面）;判据 b 部分成立（s1rot 双向:项链 5/5 贴真值+DOM 2/5 失真;s2crop 单侧;p6 无分叉——病理标签未证实如实记录）;判据 c 弱式（健康 0/20 误伤+病理 2/15 检出——间隔 20~41x vs f-a6 ≥200x[pre-fix 形态];ascent-0 类 G2 盲区在档）;主控终裁三动作:①门 1b 前置修（ascent≤0→0.8 兜底——双重身份候选=F-A6-b2 漏网[待锚覆盖记录核验]+selection 链同族受益;staged 验收序=旧口径复跑验收修补→口径分层再落[门二 W2]）②判据 a 口径分层入设计书 ③S6 保留+盲区登记（s1rot=回退层失真拦截直证/s2crop=内容真越界拦截——分案列述[门二 W1]）;门一 Kimi K3 PWW 4W2N（W2 上限表述/W4 去预断/W1 配对错位计数转探针升级项/W3 阈值出处——全部主控直改落表）+门二 deepseek v4flash PWW 2W2N（W1 S6 归因分案/W2 staged 序+N3 §4-2 口径统一/N4 漏网去未证定性——全部落表）;探针调试三轮前两轮未分段留 raw=纪律备注（交接书教训行）;verify 155/1345/locks 281 exit=0 亲验；**门 1b 前置修票毕 2026-09-04（staged 第一步完结——修补有效+判据 a 分层口径过门+门 2 放行）**：pdf-item-geometry :218 ascent 兜底（Number.isFinite && >0 否则 0.8——缺省常量 DEFAULT_FONT_ASCENT 同源/链语义类比[W1 措辞纪律:非「先例对齐」,三级量测链退化形态未在档核实]）——selection+annotation 双链共同缺陷修复;新 it×2 先红（ascent:0 夹具盒顶=基线-0.8×fontH 92≠84）+变异红证（条件删 >0 红,备份还原 diff 空）;staged 复跑（修前档 -out-prefix/ 另存）:3882 top/multi 多行锚 0.62~0.76→≥0.9942+错对 6 锚 44 块→3 锚 22 块=ascent 因果面清零;bottom 2 锚修后 0.6820/0.6584 不动——回炉 W2 三层数据=**非 ascent 因果直接证据**（项级 Δtop=−0.8×fontH 全非零=修补生效+块级膨胀 16.1→10.4px 已消+x 向 dx/dw 全零——失守归双根因[页缘竖排边栏分段+参考文献上下标行分段=两链聚类语义差];原「逐位不变」推断作废但结论被更强证据取代）;单行 8 锚 0.8816~0.9745 逐位不变（grapheme 细分近似面）;健康集 6/20→10/20;**N4 翻案**：f-a6 C1 锚窗 [2079,4704) 含 66/250=26.4% ascent-0 项=采集面覆盖缺陷形态而未检出——**限定性勘误落 ADR-0019 R3 注记⑧**（「健康页逐位不变」在混合行形态下真实/「全健康」覆盖声明缩限;66 项矩形膨胀实测未补证前禁「假阴坐实」表述——实现者报告 §7 原文保留,以本注记为缩限声明[W3 跨文件纪律]）;受锁单测标题「先例」残留=主控裁豁免（语义无错,再动受锁件成本>收益）;门 0 两 NIT 顺带（verifyQuoteItem 入口空 quote 短路=触达面对称+注释 S0~S3b 统一）;判据 a 分层口径落设计书（L1 整行常规锚[健康集/干净行结构页口径] 10/10 ≥0.99 min 0.9919 中位 0.9946/L2 项内细分近似面 0.8816~0.9745/L3 异形态区 bottom 双根因直接证据/L4 旋转域 s1rot——关联 ADR-0019 /Rotate 另案）——门 2 放行判定基准;门一 Kimi K3 PWW 4W2N（W1 措辞/W2 项级 diff——回炉一轮:W2 结果=证据升级主控裁 BLOCKED 解除;W3 主控限定措辞/W4+N1 转第二步）+门二 deepseek v4flash PWW 4W2N（W1 L1 数字 min 0.9919 非 0.9942/W2 ADR 聚合句锚亚型化/W3 跨文件措辞/W4 s1rot 落 L4——全部主控直改落档;N1 轮次噪声口径/N2 档名索引=bottomdiff/mutation raw 在档收口声明）;**主控事故在档**：python io.open(path,"w",newline 参数错值) 在 ValueError 前已截断 ADR-0019（git checkout HEAD 恢复,零丢失——HEAD 版无未提交改动）——教训=destructive open 前全参数核对,与 git checkout 纪律同族记交接书;verify 155/1347/locks 281 exit=0 亲验（修后两轮+回炉后一轮）;selection e2e 16/16 绿；**门 2 主链切换票毕 2026-09-04（S0~S6 状态机上线——INV-58 扩域兑现）**：annotation-resolve-layered.ts 新件（228 行——Annotation 版 resolveAnnotationRectsLayered+AI 段版 resolveAiNotesLayered[S3b=不渲染语义]+domProductSuppressed S6 共享判定;依赖单向零环;resolve 每次现算不缓存随宿主 F-A1 节奏）+resolveAnnotationRects 改名 …Dom 函数体零改（S4 页级回退层——INV-47 数值面锚）+两组件接线（CR1 usePageItemsStore react 订阅重入+CR3 page 键取数+resolved source 域标记 item/dom 运行时不入库）+S1 接线对账 reconcileItemsWithDom+S6 病理抑制（unhealthy→Annotation 缺席回退存量/AI 段不渲染+warn 单源——**触发=项盒健康代理**[blocks clamp01 恒盒内,实由 boxes 越界触发——项盒健康而 DOM 链独立病理不拦,门 3 复核=W1 回炉补注]）；单测先红 8 用例+回炉 W4 AI 侧 CR1 竞态 fixture（12/12+M1 双组件证据=M1[Annotation] 与 M1 撇号变体[AI] 各红,变异还原 diff 空）+变异 M1/M2/M3 各 exit=1;INV 四条落册（INV-58 扩域[selection 产链+Annotation/AiAnnotation 重锚链——DOM 量测仅显式回退层+产物标域]/INV-47 适用面收缩[回退层行为面不变——受锁⑪锚定件间接保证,W5 措辞降层]/INV-59 重锚同族配对令[主链消 R1,S3b/S5 显式持有跨族配对=已知边界——**证据件 anchor-item-verify.test.tsx 随本提交补 add 兑现**=门二 W1 标注+门一 W3 硬前置 git ls-files 校验]/INV-60 重锚显示覆盖登记[仅显示不回写+source 域标记]）；全量 e2e 42/42（INV-51 标注面稳态口径绿,F-ARCH4-M1 零现）+探针复跑 7 页×5 锚与门 1 档**逐位相同 maxΔ=0.0000**（健康面接线零漂移铁证——S1 失败/S6 抑制路径由单测 S 格补=N2 证据边界明示）；门一 Kimi K3 PWW 5W2N 回炉一轮全闭合（W1/W4/W5/N1/N2;W2 box 口径差=门 3 观察期真机偏差分布记录/W3=收口硬校验）+门二 deepseek PWW 1W2N（W1=INV-59 证据件未入库时点禁称已锚定→本提交兑现+标注;N1 AnchorCache 头注旧措辞/N2 INV-58 S4 单一入口措辞 vs AI 段内联分支——**转门 3 票面顺带**）；**门 0 遗留 CI 隐患修复=本提交补 git add tests/unit/renderer/anchor-item-verify.test.tsx**（manifest 有 sha 无文件——门 0 收口 staged 清单遗漏实录,教训行 v46;提交前 git ls-files 硬校验）;verify 155/1357/locks 281 exit=0 亲验+回炉后一轮;**门 3 前置量化取证 F-A8-G3A 毕 2026-09-05**（主控自为+门一 Kimi 三轮复核定稿——bottom 双根因机制占比分解:非边栏区[参考文献/正文行块差]贡献 89.28%/89.14%[对称差口径 p2/p7],边栏带聚合块 10.72%/10.86% 少数派;报告 scripts/audits/f-a8-g3a-bottom-decomp.md[复算配方+未舍入精确值];开放项转门 3=边栏块来源机制[非竖排 span 已证否]/bottom 锚 rect 收集窗定义[p2 污染上界 11.2%/p7 零]/INV-60 显示覆盖语义[盒几何不可证留真机人审];设计书 §6 门 3 附记在案）;**门 3 收口 2026-09-09（真机引导测试——用户在场轮,测试脚本与四图证据 f-a9/f-a10/f-a11/f-ui01-img*.png 在档）**:观察期证据达成（DB mtime 09-09 07:21+当日标注 created 09-09 07:16,均晚于门 2 落地 09-04;WAL 干净关闭 checkpoint 归零=DB mtime 即证据）;三开放项处置=①边栏块来源机制:用户目检 real3882[=《2007-johannes-von-kries-and-the-history-of-water-hammer》]p2/p7 页缘=空无可见内容→**幽灵块/DOM 量测伪影结论**（非真实页缘文字——G3A 边栏带 10.7% 少数派贡献的机制定性）②rect 收集窗定义→转 F-A9 票面（同几何族一并核）③INV-60 显示覆盖语义:关标签重开标注/笔记原位=**人审 PASS**;测试另暴露四新缺陷全立案=F-A9[标注带垂直几何]/F-A10[划选段末 affinity]/F-A11[笔记保存反馈+撤回恢复]/F-UI-01[顶栏左簇垂直居中——用户已裁决];**F-A8 战役收官**（门 0~3 全链在档）' },
+   { id: 'P7D-01', file: 'src/renderer/shared/theme.css', area: 'ui-kit', owner: 'strong', status: 'done', summary: 'P7-D 玻璃 UX 战役首票：design token 先铺（用户裁决 2026-09-03 开工且优先级高；**方向已裁 2026-09-03 在场轮=「乙字号+甲其余」**；**批一毕 2026-09-04 三屋全链[提交随本注记]**：动效 32 处→--dur-press/tint/fast/base/lazy/rise/flow 七 token+间距 inline 12 处→tailwind class[lineage 域六文件,B1 形态] +层级弹层 z-{10,20,40,50}→--z-float/anchor-pop/pop-veil/pop 四 token 语义命名[12 class+theme.css 2 raw]——零视觉差三重铁证=探针 p7d01-visual-probe.mjs[主控工具入锁]基线双跑 DETERMINISM PASS+迁移后 [COMPARE] PASS[11 token 计算值精确匹配+8 态截图 sha256 逐字节相同+全 DOM 计算样式 transition/zIndex 逐键相同+compiledRules 11 utility 编译面断言];theme.test.ts 受锁扩展[TOKENS+11+负锚 21 三元组+层级/间距形态锁+ms 声明段锁——变异红证 6 次];门一 deepseek 兜底[Kimi 双源 8×504 耗尽换源实录——C 三盲区回炉一轮 W1/W2/W3 闭合]+门二 PASS 无条件[亲跑矩阵四数字命中];verify 155 文件/1398 用例/locks 282/e2e 42 exit=0 亲验;INV「design token 单源」延后批二一并登记=票面在档决策）;批二在场轮待：字号 12 值→语义刻度 5~6 档+mockup 多模态评审+5 个 .5 半值归并逐档用户裁（视觉票面条款全套=批二适用）;底数盘点在档 docs/design/2026-09-03_p7d01-token-candidates.md——字号轴债最重 29 处/12 值、动效 32 token/7 档、间距 97% tailwind、层级近零债；B5 切换器面板 125% 档反差（×1.248）用户裁决认可=可接受设计，统一缩放体系复核产出核查结论供档不预改;**批二毕 2026-09-08 三屋全链[提交随本注记]——P7-D 战役收官**：用户在场轮四问全落推荐案（裁决档 docs/design/2026-09-08_p7d01-b2-fontscale-ruling.md+mockup 六面板评审）——六档刻度 --fs-micro 10/caption 11/body 12/strong 13/title 14/display 17;13 处值变化（9.5×3/10.5×4/11.5×1/12.5×1/13.5×1/15×3）+17 处仅换载体+tailwind 156 处经 v4 @theme 重绑（--text-xs:var(--fs-body)/--text-sm:var(--fs-title)）零逐处改写;30 处硬编码替换+theme.test.ts 受锁扩展 93 新用例（TOKENS 六正锚+FS 负锚声明形态矩阵 84+tsx 形态 2+@theme 锁 1——先红 27 红）;INV-61 登记（字号单源——font-size 消费面禁字面量+@theme 重绑）;**§6.2 口径切换首用**：探针 COMPARE FAIL=预期红（8 态 DIFF）,定向验收三件套=像素差分带对位（变化带恰落预期组件区无意外区）+crop 目检 0 可见差+DOM 计算样式断言 13/13（六 token+变化组件+tailwind 重绑真机生效）;**回炉两轮（主控 E-3 清理时抓到第 14 处耦合族——门一/实现者均漏）**：edge-label 盒高族 8 处迁移（max-height 37.05→39/EDGE_LABEL_H/LH 12.35→13/±123.5→±130——字号 9.5→10 后 3 行 39px>37.05px 截断行为差）+估宽基准 9.5/4.75→10/5 随迁（防重叠碰撞盒语义,主控裁决非纯容差）;两自裁追认（负锚声明形态口径=px 纯文本计数被 padding/radius 污染结构性不可行/library-cards 三断言 token 化配套=F-CSS-01 再锚同型）;实现者 GLM5.3flash 三轮（首证 2.16M+回炉 1.84M+续命 0.97M）;门一 Kimi K3 PWW W4/N13（W 全处置:B-4 裁决档随提交/C-2C-3 负锚升级增强单候选/E-3 清毕+暴露耦合族）;门二 GLM5.3 同源欠账如实记 PASS 无条件（verify 1543 EXIT=0+DOM 断言 13/13 复跑+变异 --fs-body 恰 1 红还原空+耦合族唯一性扩大口径独立复核）;verify 156 文件/1543 用例/locks 286 exit=0 亲验' },
+@@ -254,7 +254,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'F-CSS-03', file: 'src/renderer/shared/theme.css', area: 'ui-kit', owner: 'strong', status: 'done', summary: '颜色 token 化战役+颜色负锚双关卡（F-LINT-01 终裁改向顺延票;**2026-09-09 用户双裁决:零视觉差口径[值原样 token 化,同值合并共享——语义收敛/alpha 档压缩不做,留候选池]+语义命名优先[一值一 token,名取主导用途,多用途值中性名——边界主控裁]**）;**收口 2026-09-10**:50 值=48 新 token（accent/border-gold/danger/panel 四 alpha 族+nav 系+close-red 三键+渐变端点+脉络/阅读器域色+shadow 三复合值）+2 既有 token 直接消费（#ffffff→--panel/#e4ded1→--border 不立第二源）驻 theme.css :root+theme.test.ts TOKENS 正锚 48 行（it.each 展开 +48 用例 1514→1562）;消费面迁移=8 CSS 件+12 tsx 件全 var() 载体+CSS 注释 6 行去字面量+PdfPageCanvas render 参数 rgba(255,255,255,0)→transparent（主控裁:透明非视觉色不立 token）;关卡=C-4（check-quality 行级 --name: 豁免+COLOR_RE）+B-5（eslint synapse/no-inline-color AST 面）+W3 哨兵（matchAll 计数>1 红）——COLOR_RE 双文件逐字一致+头注互指;test 8 红=受锁断言载体断裂（7 上轮遗留+1 裁决引入）主控 [locked-change] 亲改 6 测试件 12 改点（含 2 变异锚随迁保活 not.toBe(var(--edge-inferred))——不随迁则优先级翻转变异锚静默失效）;红证四支+变异三支 raw 在档+存量四关绿;**验收=八态像素差分 0 带+sha 逐字节相同+COMPARE PASS**（settings 首采瞬态差异 1 次复采零差=非确定不计案留指纹;SVG attr var() 真机面经三 lineage 态逐字节同实证）;门链=门一 Kimi 链 131K 包 504×6 耗尽→deepseek 兜底（B1 像素差分时序差已闭合/W1 B-5 常量对象盲区+W2 token 重复守卫+W4 双写哨兵备案 F-LINT-03/W3-W5 知悉）+门二 deepseek 放行收口有条件（同源欠账如实记——主控核实位补位 A10 先例）——必办三项（apply/verify raw/raw 归档）全毕;INV-11 颜色面升格已锚定;风险登记 4 项并入 F-LINT-03 候选（B-5 扩展面含 SVG attr/注释十进规避/消费点语义锚/双写哨兵+token 重复守卫）' },
+   { id: 'F-LINT-03', file: 'scripts/dup-constants.baseline.json', area: 'infra', owner: 'strong', status: 'done', summary: 'B-1 baseline 棘轮 8 组真命中收敛（F-LINT-02 立案候选 v51 起）;**收口 2026-09-10**:8 组全收敛=跨域三组驻新件 src/renderer/shared/ui-constants.ts（OP_FAILED 统一双名退役[7 消费点]+STATUS_POLL_MS+MENU_ITEM_STYLE 中性名）+同域五组驻域件（tags.store export TAG_OP_FAILED/pdf-item-geometry export COLUMN_GAP_*[annotation-anchor import——type-only 反向擦除无环]/annotation-style export ANNOTATION_BTN_CLASS[组件 as btn 别名——门一 W2 知悉]）;17 文件+新件 49+/139-值与文案一字不动（文案保真锚三断言直锁『操作失败』文本）;baseline entries 清空棘轮保留（空=全量生效新命中即红——B-1 终态）[locked-change];红证=收敛前后 lint:dup-constants 8→0 对照+变异两支（mut1 文案锚咬合/mut2 全量关卡咬合）;test 1562 零漂移+typecheck/quality/eslint exit=0;门链=门一 Kimi kimi-main 两轮（首轮 B1=新件 diff 缺席[主控 add -N 失误]+W4——补证轮当庭出示新件全文+四文件消费上下文[ApiClientError 兜底同构]+locks 收口序申明→B1/W3/W4 闭合 W1 转门二→放行附条件三项）+门二 deepseek 放行待收口（必核六项：apply/verify raw/尾注/正常 add/旧名 grep=0/证据落盘）——真异构门链本轮恢复（门一 Kimi 分片配方在档）;实现者异常项=unlock/lock 脚本集合不对称（lock 含 baseline 而 unlock 漏——单文件 chmod 绕行+缺陷另案候选）;不做面=门审备案四件后续票（B-5 扩展面/C-4 token 重复守卫/COLOR_RE 双写哨兵[已被 F-CSS-03 Kimi 补审 B-1 i 标志修复部分强化]/消费点语义锚+注释十进规范）' },
+   { id: 'F-A9', file: 'src/renderer/features/reader/AnnotationLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '标注带垂直几何缺陷（2026-09-09 F-A8 门 3 真机测试暴露——用户四图实据,f-a9-img1 灰预览带/f-a11-img3 下划线在档）:①划选预览带下移半行（img1:文字上半露出带外/下半截压带上——预览带 y 偏低约半行高）②underline 标注渲染为低位色带切字（img3:kind=underline 黄带贴基线穿字中部——应为主线盒下方细线;库内实证 09-09 07:16 标注 kind=underline/quote=前导空格 systematic literature review…/comment=我是奶龙 已落盘）;**诊断先行票**:根因候选=预览链与渲染链的矩形 y/高算式（ascent/基线/行盒高换算）;含 G3A 开放项② rect 收集窗定义一并核（f-a8-gate1-lib.mjs 窗口径[p2 y<0.78 污染上界 11.2%/p7 零]）;验收=夹具单测几何断言（带 y=行盒顶/高=行盒高;underline=基线下细线）+真机 DOM rect 断言+e2e 渲染真实文本+img1/img3 缺陷形态复测消' },
+-  { id: 'F-A10', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选段末空白 affinity 缺陷（2026-09-09 真机测试暴露——用户实据 f-a10-img2:鼠标放段末行尾空白处,选区把下一段整段/其左上角部分带上;用户表述模型=文字从左往右成行,行尾空白不应命中下一段首行）;数据指纹=当日标注 quote_text 前导空格（选区起点落在段首空白区）;**诊断先行票**:根因候选=text layer 行尾空白节点命中→caretRangeFromPoint/selection offset 解析的 affinity 归属（命中→offset→跨段 range 扩张点逐层定位）;验收=夹具:行尾空白坐标命中→range 终点=本行行尾（不下探下一段）+e2e 真实 PDF 行尾空白点选→预览带不跨段+img2 形态复测消' },
++  { id: 'F-A10', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选段末空白 affinity 缺陷（2026-09-09 真机测试暴露——用户实据 f-a10-img2:鼠标放段末行尾空白处,选区把下一段整段/其左上角部分带上;用户表述模型=文字从左往右成行,行尾空白不应命中下一段首行）;数据指纹=当日标注 quote_text 前导空格（选区起点落在段首空白区）;**诊断先行票**:根因候选=text layer 行尾空白节点命中→caretRangeFromPoint/selection offset 解析的 affinity 归属（命中→offset→跨段 range 扩张点逐层定位）;验收=夹具:行尾空白坐标命中→range 终点=本行行尾（不下探下一段）+e2e 真实 PDF 行尾空白点选→预览带不跨段+img2 形态复测消' },
+   { id: 'F-A11', file: 'src/renderer/features/reader/AnnotationEditor.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '笔记编辑 UX 双缺（2026-09-09 真机测试用户反馈原文:「添加笔记后关闭,保存选项未出现,也未找到撤回/恢复按钮」）;**取证定性=非丢数据**（当日 comment『我是奶龙』已落盘 annotations.comment——自动保存在位但零反馈）;缺项①保存状态反馈（输入停顿后『已保存』标记——用户不知已存即反馈缺失）②编辑器撤回/恢复按钮对（textarea 原生 Ctrl+Z 在而无按钮面——加 undo/redo 按钮,值栈或 execCommand 实现,禁新依赖）;验收=e2e/DOM:输入→停顿→已保存标记在场;undo 点击回退/redo 复原;关闭重开笔记在（回读）' },
+   { id: 'F-UI-01', file: 'src/renderer/shared/theme-shell.css', area: 'ui-kit', owner: 'strong', status: 'done', summary: '顶栏左簇垂直居中（2026-09-09 真机测试用户裁决原文:「左上角这两个东西往下移动一段距离使其在上边框的垂直距离上居中」——f-ui01-img4 实据:菱形图标+Synapse 文字[+右侧课题切换按钮同排]现偏贴顶）;改法=顶栏左簇在栏内垂直居中（现有布局选最小面:align-items:center 或等价 padding 校正）;验收=DOM 计算样式断言:簇中心与顶栏中心垂直差≤1px+全窗截图目检;用户已裁决=夜间零视觉决策面' },
+   { id: 'F-LINT-02', file: 'eslint.config.js', area: 'infra', owner: 'strong', status: 'done', summary: 'B-1 同值双常量 lint 机器化（F-LINT-01 终裁档 §2 扩展面头票——2026-09-09 用户裁决入批）:**设计链三跳强制**（跨文件聚合=架构问题——eslint 单文件 lint 隔离模型下 B-1 需独立聚合 pass 前置设计:Kimi 拟定三案[独立扫描脚本/eslint 复合 pass/AST 全域收集——含白名单边界:泛值 0/1/-1/空串/true/false+跨文件限定+常量名前缀规则]→deepseek 对抗审核→GLM5.3 终裁）;**设计期存量 dry-run 铁律前置**（⑤i 教训:设计书必须附存量统计输出——跨文件同值双常量实测清单,B-1 假阳面设计期即暴露）;终裁版实现+先红证（植入跨文件同值双常量反例→红→还原）+存量零误报+verify 全链;B-2 常量旁落清单/B-6 同名类型豁免/C-3 重复字面量 warn 随设计一并评估（合派或另立终裁定）;受锁面按终裁（eslint.config.js 或 check-quality）+[locked-change]' },
+@@ -263,7 +263,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'P7X-03', file: 'docs/reports/', area: 'infra', owner: 'strong', status: 'done', summary: 'B6 模态期最小化语义对证（AUDIT-B 留场场——用户裁决 2026-09-03 全立项；**对证成立=结案推演升文档实证，免实现**（票面预判兑现）：机制链=tab-dirty.ts:110 window.confirm→Chromium 原生 owned-modal（探针 enabled:false 直接观测）→MSDN About Dialog Boxes 系统级明文「owner 禁用至对话框销毁+不可激活」+Electron 文档「modal disables parent」+native_window_views.cc SetEnabled→EnableWindow 源注（issue #50068 purposely disabled）+SO 3777551 任务栏同语义实证——门审质疑三点（归因推演/任务栏外推/应用层抑制未排除）逐点销项；边界申报=SC_MINIMIZE 精确内部路径无逐行源注但 B6 结论依赖的行为面三层闭合）；报告 docs/reports/2026-09-03_p7x03-b6-modal-minimize-crosscheck.md；B6 结案（AUDIT-B 留场场项销项）+Electron 模态边缘行为族附注监控备忘不入案' },
+   { id: 'F-LOCK-01', file: 'scripts/unlock-protected.ps1', area: 'infra', owner: 'strong', status: 'done', summary: 'unlock/lock 脚本受锁集合不对称修复（F-LINT-03 实现者异常项——v57 §2-2 立案候选）：unlock 收集面漏 scripts/dup-constants.baseline.json（lock 与 check-locks.mjs 均含）——集合三处独立定义漂移实录（两次 chmod +w 绕行）;**收口 2026-09-10 三屋全链**：新件 get-protected-files.ps1（25 行 BOM+LF）驻单一 Get-ProtectedFiles（集合含 baseline.json 逐字迁移）+lock/unlock dot-source（57→42/26→14 行）+check-locks.mjs:25 注释改指共享件（门一 N3——头注互指双向闭合）;红证三支=prered（apply 311→unlock 310 差 1 实锤+baseline True 缺陷）/postred（unlock 312→False→apply→True→check 312 过）/mutation（共享件条目改名→unlock 311+True=单点生效证明→还原复绿）;门一 Kimi kimi-main 三轮（R1 B0/W2/N5 放行附条件→回炉 W1 死变量+N3[实现者子代理本环境不可续命——主控亲改两行,先例 F-CSS-03]+W2=审包 verify-tail 拼装乱序所致主控行号连续序当庭出示→R2 独立无 R1 记忆提三新破坏→R3 三件现状出示五项全销项无阻断+3 非阻断观察备案[mjs walk 排除面=R1 已审存量/排序口径差异=Map 比对非序敏感/解锁步静默 catch=存量语义可控]）;门二统一档[Agent 工具无 model 参数环境限制,同源欠账如实记]PASS 无条件（四清单+机器面亲跑:check-locks 312 一致/manifest 312 含新件+baseline 双在册/翻 done 推演不红/BOM 无 CR 无 FFFD 独立复算）;locks 311→312（新件入 scripts walk 面 delta 可解释）;verify 160 文件/1562 用例 exit=0 亲验两跑（回炉前后）;证据群 f-lock01-*.raw.txt+gate1 三轮回执与 prompt+diff 切片+gate2 全入库' },
+   { id: 'F-SNAP-01', file: 'src/renderer/features/reader/anchors/anchor-blank-snap.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'anchor-blank-snap 撞名常量语义化（v57 §2-8 观察候选——F-LINT-03 收口备案「局部同名不同值易埋雷」）：本件局部 COLUMN_GAP_MIN_PX=20/COLUMN_GAP_H_FACTOR=2.5 与 pdf-item-geometry export 的 COLUMN_GAP_H_FACTOR=1.5 同名不同值不同用途（DOM 量测侧 vs pdf item 侧）——读者/import 混引风险;**收口 2026-09-10 三屋全链（主控自为实现——先例 F-AUDIT-01）**：改名 BLANK_SNAP_GAP_MIN_PX/BLANK_SNAP_GAP_H_FACTOR（声明 2+消费 2 全替换）+注释三行重写（明示与 pdf-item-geometry 同族判据值域区分 2.5 vs 1.5+撞名收敛由来）;零行为差实证=test 16/16 零漂移（行为锚不锚名——tests 对新旧名均零命中）+typecheck 双 project+B-1 红层 0（**措辞更正[门一 W]：红层判据=同名+同值跨 ≥2 文件,与 export 无关——本票不入红层真因=2.5≠1.5 同名不同值,非「局部常量免 B-1」;两个非 export 同名同值 const 跨文件同样红**）+新名全库唯一 4 处仅本件+本件旧名余 1 处=注释指名 pdf-item-geometry 侧（那边名字不变）;门一 GLM 同源降级（§4.5 可省面=≤3 文件小批非受锁——A/B/C/D 全 N+1W 措辞）+门二统一档 PASS 无条件（亲跑矩阵:16/16/grep 唯一性/dup-constants 红层 0/diff 两文件/typecheck 补跑 exit=0）;verify 全链 exit=0 亲验' },
+-  { id: 'F-A12', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选释放点浅探 affinity 事件层重定向（F-A10 G2 遗留——v57 §2-3 立案候选）：G2=mouseup 浅下探时 caretRangeFromPoint 因释放 x 处上一行无文本把终点送下段 span 文本位 offset>0（img2 实据 end=1504）——与刻意深点 DOM 态零信号,锚定层不可辨（f-a10-impl.report §6.1）,须事件层手势几何;**收口 2026-09-10 三屋全链**：新件 release-affinity.ts（210 行纯函数——releaseAffinity(root,selection,upX,upY) 判定:upY<focus 盒顶+距上一行盒底≤max(距 focus 盒顶,SHALLOW_PROBE_MAX_PX=4 余量[实测驱动微调——段间间隙仅 2.5px 纯距离判据不触发,红证 red2 锁定]+upX>上一行最近栏组右缘+1px[W1 门一回炉——票面「释放 x 处上一行无文本」前提的编码化,nearestGroupOf 栏组域判别]+upY≥上一行盒带顶[W2 防御上界]→返回上一行行尾 DomBoundary）+SelectionLayer 接线（dragged 旗标门=程序化零触;setBaseAndExtent 锚定侧原样只改 focus;evaluate.full 同帧消费——事件时间线逐帧推演驻头注[门一事件类强制审项]）+anchor-blank-snap export 扩 5 几何面（boxOf/visualRows/columnGroups/rowEndOf/Box——几何单源零复制）;防误伤=词间空格行盒内恒零触+重定向后 C-1 翻转兜底回归网;**真机复测**=G2 focus=(Mohanty span,36=行尾)/end_offset=1465（修复前 1504）/paint 540.3<段顶 542.8 不跨段/落库 suffix=下段首/G1 回归 1465 不破;e2e 申报替代（浏览器 caret 下探非确定 1/4 次指纹+受锁 pdf-factory 扩权面——jsdom 实测几何复刻 17 用例+真机矩阵为证[前提未锁在档注明]）;门一 Kimi 两轮（R1 B0/W5/N4 放行——W1 域判别/W2 上界/W3 翻转用例/W4 接线三态锁回炉,R2 全 ADDRESSED 收口放行+R1 异式选组偏差/R2 栏间隙保守零变=主控亲核入档）+门二统一档 PASS 无条件（17/17 亲跑/316 一致/1579 对账/翻 done 推演）;INV-62 登记已锚定（事件层重定向判据+时间线）;实现者两轮（7.5M+5.6M tok——回炉轮连带修正:既有夹具 upX 严谨化 4 处+W4 漏桩被 verify 真退出码拦截后重刷证据）;locks 312→316;verify 162 文件/1579 用例 exit=0 亲验（实现者首跑 raw 缺 exit 标记=证据缺口主控亲跑补证）' },
++  { id: 'F-A12', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '划选释放点浅探 affinity 事件层重定向（F-A10 G2 遗留——v57 §2-3 立案候选）：G2=mouseup 浅下探时 caretRangeFromPoint 因释放 x 处上一行无文本把终点送下段 span 文本位 offset>0（img2 实据 end=1504）——与刻意深点 DOM 态零信号,锚定层不可辨（f-a10-impl.report §6.1）,须事件层手势几何;**收口 2026-09-10 三屋全链**：新件 release-affinity.ts（210 行纯函数——releaseAffinity(root,selection,upX,upY) 判定:upY<focus 盒顶+距上一行盒底≤max(距 focus 盒顶,SHALLOW_PROBE_MAX_PX=4 余量[实测驱动微调——段间间隙仅 2.5px 纯距离判据不触发,红证 red2 锁定]+upX>上一行最近栏组右缘+1px[W1 门一回炉——票面「释放 x 处上一行无文本」前提的编码化,nearestGroupOf 栏组域判别]+upY≥上一行盒带顶[W2 防御上界]→返回上一行行尾 DomBoundary）+SelectionLayer 接线（dragged 旗标门=程序化零触;setBaseAndExtent 锚定侧原样只改 focus;evaluate.full 同帧消费——事件时间线逐帧推演驻头注[门一事件类强制审项]）+anchor-blank-snap export 扩 5 几何面（boxOf/visualRows/columnGroups/rowEndOf/Box——几何单源零复制）;防误伤=词间空格行盒内恒零触+重定向后 C-1 翻转兜底回归网;**真机复测**=G2 focus=(Mohanty span,36=行尾)/end_offset=1465（修复前 1504）/paint 540.3<段顶 542.8 不跨段/落库 suffix=下段首/G1 回归 1465 不破;e2e 申报替代（浏览器 caret 下探非确定 1/4 次指纹+受锁 pdf-factory 扩权面——jsdom 实测几何复刻 17 用例+真机矩阵为证[前提未锁在档注明]）;门一 Kimi 两轮（R1 B0/W5/N4 放行——W1 域判别/W2 上界/W3 翻转用例/W4 接线三态锁回炉,R2 全 ADDRESSED 收口放行+R1 异式选组偏差/R2 栏间隙保守零变=主控亲核入档）+门二统一档 PASS 无条件（17/17 亲跑/316 一致/1579 对账/翻 done 推演）;INV-62 登记已锚定（事件层重定向判据+时间线）;实现者两轮（7.5M+5.6M tok——回炉轮连带修正:既有夹具 upX 严谨化 4 处+W4 漏桩被 verify 真退出码拦截后重刷证据）;locks 312→316;verify 162 文件/1579 用例 exit=0 亲验（实现者首跑 raw 缺 exit 标记=证据缺口主控亲跑补证）' },
+   { id: 'F-LINT-04', file: 'scripts/check-quality.mjs', area: 'infra', owner: 'strong', status: 'done', summary: '颜色关卡扩展战役 T1（**收口 2026-09-10 三屋全链**）=③COLOR_RE 单源化+⑦url 顺修+②⑥postcss 化（设计链三跳毕——Kimi 拟定 f-lint04-design-kimi.md→deepseek ENDORSE_WITH_CHANGES f-lint04-review-ds.md→GLM5.3 终裁 docs/design/2026-09-10_f-lint04-design-final.md;终裁前当场证伪=eslint.config.js ESM import OK/postcss 8.5.26 树内零新依赖/动态拼名 0/分号面 0/@theme var() 现状零同值）;**T1 范围（终裁 §2 表）**：①新件 scripts/color-re.mjs 驻 COLOR_RE 唯一字面量（禁 g/y 标志——RegExp 共享 lastIndex 污染禁令驻头注）+META_RE（哨兵用 hex 特征形态——第三副本闭合）②check-quality.mjs+eslint.config.js 两消费文件 import 化（双写面物理消失;import 失败 fail-closed 抛错禁 try/catch 回退内联）③哨兵=matchAll(META_RE) 扫两消费文件内联回退（哨兵行自身用 import 的 META_RE 执行不自咬）④⑦顺修=单源正则处 url() 剥离（url(#x)=id 引用非色值）⑤②⑥postcss 化=C-4 CSS 面整体迁 root.walkDecls（decl.prop 以 -- 开头=token 定义天然豁免——行级豁免/单行多声明/引号分号边界三题消解）+色值域 token 同值守卫（value 命中 COLOR_RE 的声明行同值对红——@theme var() 重绑天然出域）;**验收（终裁 §3）**：先红证五支（同值 token 植入红/minified 多声明红/url(#face) 不红+#face 裸写红/内联回退恰一条哨兵红+import 改名 fail-closed 红）+存量零误报（82 声明行等价+全 CSS 零新红）+W3/③注入式并存测试+verify 全链+[locked-change]+locks（check-quality/eslint.config 受锁改+新件诞生即锁）;不做面=终裁 §4 五项明示;T2（AST 扩展）/T4 前置（--warning token 化）/T4（var() 语义锚）=后续候选票（v58 §2）' },
+   { id: 'F-LINT-04-T2', file: 'eslint.config.js', area: 'infra', owner: 'strong', status: 'done', summary: '颜色关卡扩展战役 T2=①B-5 AST 扩展（v58 §2-1 候选——终裁 §2 表 T2 跳，设计链三跳已在 T1 档毕，本票纯实现跳零新设计）：synapse/no-inline-color rule（域=src/renderer/**/*.tsx 不变）扩两条 visitor 路径——(a) VariableDeclarator：init 递归 unwrap（TSAsExpression/TSSatisfiesExpression/Object.freeze CallExpression→arguments[0]，深度上限 4 防御）后两形态判定：ObjectExpression=逐属性判定（deepseek 硬伤①修正——弃「全 Literal 门」：混计算属性/引用值对象不豁免，逐 Property 判 value 为 string Literal 且 stripUrlFunctions 后命中 COLOR_RE 即报；key=Identifier 或 string Literal 均入判[kebab key 形态]；SpreadElement/嵌套对象/模板串/二元式=明示不检残留面与现行 style 面语义对称）+单值 Literal=命中即报（主控裁决扩展：终裁字面=ObjectExpression 色值表，单值常量同绕过通道对称闭合纳入——dry-run B=0 零负担）；(b) JSXAttribute 面扩：属性名域=fill|stroke|color 显式三词 ∪ /Color$ 后缀（camelCase 表 stopColor/floodColor/lightingColor=子集）∪ kebab 同族 stop-color|flood-color|lighting-color（JSX 可解析误用形态——R11 红证实证）→ value 为 string Literal 命中即报（[N2 回炉加码] 含 JSXExpressionContainer 包裹形态 fill={\x27#fff\x27} 同检）；域外属性名（data-x 等）不报。**前置 dry-run 毕（⑤i 口径）**：scripts/audits/f-lint04-t2-dryrun.mjs（eslint Linter API flat 模式+self-check 内证）——77 tsx（全 renderer）四面全 0+.ts 面补盘 0 → 域维持 tsx 不扩张。**收口 2026-09-10 三屋全链**：红证矩阵 R1-R14+NR1-NR5（R12 单对象双属性恰 2 error 逐属性全量证明/R13 container 包裹[改前探针 0 error=TDD 红]/R14 双层嵌套 unwrap）+preimpl 探针+变异三态（visitor 改名 R1 复绿/R8 独立仍红/还原复红）+存量 lint 全绿+dry-run 复跑 0；门一 Kimi kimi-main 两轮（R1 B0/W4/N7 放行附条件——W1 申报失实[门一独立抓到与主控自查吻合]/W2 COLOR_RE 状态性[主控亲证销项=i 标志无 g]/W3 深度 off-by-one/W4 raw 混杂[主控销项=拼包伪影原件纯净]→回炉轮 1 五项=W1 上提 create 级+W3 depth>=4+N2 主控加码+R12-R14 补证+报告更新→R2 定点复核指令 1-4 全 ADDRESSED+零新破坏+收口放行+两非阻断条件主控亲验销项[R12 原件双 error 行完整/345 行实测]）；门二统一档[环境无 model 参数欠账如实记]PASS 无条件（B0/W0/N2——四清单独立复算+机器面亲跑八项+TDD 链 13 件原件抽验；N-G2-1=dryrun.mjs sha 红因系主控回炉期亲改探针头注 kebab 误判修正——归属自证在案）；不做面：哨兵域窄维持入档（v58 §2-6/7）；.ts 面；嵌套对象表深度>1；命名色/十进制（终裁 §4 承袭）；Object[\x27freeze\x27] 计算属性/深度>4 截断=formally 注记残留面（门一 N3/N1③）；theme.test.ts 防漂移锁不加（T4 C-4c 上线后 R−D 锚反向护体——观察注记）' },
+   { id: 'F-LINT-04-T4PRE', file: 'src/renderer/shared/theme.css', area: 'infra', owner: 'strong', status: 'done', summary: '颜色关卡扩展战役 T4 前置=--warning token 化（v58 §2-2 候选/Kimi 设计书 2.4 裁决=红不豁免——fallback 悬空系 token 体系静默绕过通道+语义残缺）：TabBar.tsx:139 `var(--warning, orange)` 全仓唯一引用+--warning 零定义（fallback orange=事实渲染色）；处置=theme.css :root 状态色族（--danger/--ok 侧）补 `--warning: #ffa500`（**零视觉差——CSS 规范 orange=#ffa500=rgb(255,165,0) 计算值恒等，非视觉决策**）+TabBar.tsx:139 移除 fallback 改 `var(--warning)`（死代码即删）；前置已核：#ffa500 全库唯一零同值冲突（C-4 ② 同值守卫不触发）;**收口 2026-09-10 主控自为（F-SNAP-01 先例——≤3 文件非受锁小批）+门一 GLM 同源降级（§4.5 可省面）PASS 0B/0W/4N+门二统一档 PASS 无条件（机器面六件亲跑：R−D−W 探针 ∅/var(--warning 恰 1 处/ffa500 恰定义 1 处/quality+lint+typecheck 真 exit=0/翻 done 推演过）**；验收=T4 门槛对账探针 f-t4pre-rdw.mjs（R=94/D=109/W=2 改前差集恰 --warning 悬空 exit=1→改后 R−D−W=∅ D 恰+1 exit=0——T4 var() 语义锚上线门槛达成）+⑤f 真机豁免论证（计算值恒等+全库唯一引用点非布局值）+verify 全链 exit=0；theme.test.ts 防漂移锁不加（T4 C-4c 上线后 R−D 锚反向护体——T2 票已注记）；门一 4N 注记=注释 grep 双命中[代码口径成立]/T4 前值漂移无锁窗口[低风险]/探针 VAR_DEF 不剥注释[T4 迁驻时加固]/manifest CRLF 既有形态' },
+@@ -290,12 +290,12 @@ export const TICKETS: readonly Ticket[] = [
+   //    G2 受锁面最重（selection-layer.test
+   //    改写+豁免清单），大中票一火一票 ──
+   { id: 'F-GEOM-01-G1', file: 'src/renderer/features/reader/anchors/geometry-types.ts', area: 'reader', owner: 'strong', status: 'done', summary: 'M0 类型下沉切环（设计书 §3.3/§3.4；1/11）：新件=本 file（立案骨架，实现者领票时改写真身）落 PdfTextItem/PdfTextStyle/PdfTextContent/PdfPageGeometry（现驻 PdfPageCanvas.tsx:38-77）+PixelBox（annotation-anchor）+RowBand（annotation-resolve）+COLUMN_GAP_H_FACTOR/COLUMN_GAP_PAGE_RATIO（pdf-item-geometry——常量与类型同居 anchors 语义位）；PdfPageCanvas 保留 export type 再导出（受锁测试旧路径 import 零触——M0 无受锁面）；切断三处 type-only 环（pdf-item-geometry↔annotation-anchor/annotation-resolve/PdfPageCanvas）+两 store→PdfPageCanvas 边（page-items.store:37/reader-search.store:41 改 import 本件）+annotation-anchor 的 COLUMN_GAP 值 import 改向本件（anchors 域内最终无环）；红线=零文件移动（目录迁移归 G6）；验收=unit 全绿+typecheck+verify 全链（变异红证=删 PdfPageCanvas 再导出→旧路径 import type 在 tsc 关卡编译红——tsconfig.web.json include 含 tests/**/*.tsx 覆盖受锁测试→还原）【done 2026-09-18 batch 13：7 文件 +140/-110；三环+两 store 边切断终态全域核验；变异红证主证 TS2305×5+TS2459×27=32 错误行+副证 TS2724×3 双闭环；门一 PW B0W1N3（W1 计数勘误销）/门二 GO P0=0P1=0N=6；e2e 不跑=设计书 §3.4 M0 行口径（零运行时值变），父级 e2e 验收归 G11】' },
+-  { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/selection-evaluate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '保存链单源门+几何死面收敛（设计书 §2.4/§3.5——**战役唯一行为变更票**；2/11）：①保存门=evaluateCore itemChainFor 返 null 时 setPaint 照渲 DOM 回退形状（视觉连续，现状）+setPending(null)（原为 pending=DOM 形状 anchor）+warn 单源（复用 itemChainFor 诊断单源）——「所见≠所存时不给保存入口」（生产影响≈零：item 链失败三因健康页近零发生，主存活面=jsdom 测试环境）；②probeOffsetLen 收敛（selection-evaluate 复刻 anchor-serialize 私有 probeTextLength≈15 行→显式导出面+复刻删除）；③rectsFromRange 死导出面删除（src 零消费+受锁测试 1 用例≈25 行——死代码即删宪法条，候选项经双门裁）；受锁面先行对账义务（§2.4）=tests/unit/renderer/selection-layer.test.tsx 14 用例无 page-items 桩（grep 实测零命中）——立案时先出断言对账表（§5.2 风险 1），保存流用例补页项桩（tests/utils 工厂面 page-items.store 直改先例）+断言面按项族产物更新；指纹门 C 面变更走豁免清单条目（reason=设计书 §2.4+裁决链）+条目数 >10 呈主控复裁（§5.2 风险 2）；INV-58 修订（保存链条款+selection-evaluate:54 stale 自述重写）随本票；[locked-change][test-refactor]；验收=指纹门 C_after ⊇ C_before+锚定回归网+e2e 默认门【done 2026-09-18 batch 14：10 文件 +112/-88；对账表扩三文件实勘=selection-paint 6 例补桩+item-chain 回退①改写（TDD 红锚）+rectsFromRange 删例，豁免恰 2 条；首红/T3 悬空红/双变异红证（M1 保存门+M2 TS2459）全档；门一 PW B0W1N7（W1=RoT 第 4 份助手→后置 G7 随迁抽取）/门二 GWC P0=0P1=3（口径更正+收口三件全兑现）；vitest 170/1744+e2e 默认门 43/43+verify EXIT=0】' },
++  { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/interact/selection-evaluate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '保存链单源门+几何死面收敛（设计书 §2.4/§3.5——**战役唯一行为变更票**；2/11）：①保存门=evaluateCore itemChainFor 返 null 时 setPaint 照渲 DOM 回退形状（视觉连续，现状）+setPending(null)（原为 pending=DOM 形状 anchor）+warn 单源（复用 itemChainFor 诊断单源）——「所见≠所存时不给保存入口」（生产影响≈零：item 链失败三因健康页近零发生，主存活面=jsdom 测试环境）；②probeOffsetLen 收敛（selection-evaluate 复刻 anchor-serialize 私有 probeTextLength≈15 行→显式导出面+复刻删除）；③rectsFromRange 死导出面删除（src 零消费+受锁测试 1 用例≈25 行——死代码即删宪法条，候选项经双门裁）；受锁面先行对账义务（§2.4）=tests/unit/renderer/selection-layer.test.tsx 14 用例无 page-items 桩（grep 实测零命中）——立案时先出断言对账表（§5.2 风险 1），保存流用例补页项桩（tests/utils 工厂面 page-items.store 直改先例）+断言面按项族产物更新；指纹门 C 面变更走豁免清单条目（reason=设计书 §2.4+裁决链）+条目数 >10 呈主控复裁（§5.2 风险 2）；INV-58 修订（保存链条款+selection-evaluate:54 stale 自述重写）随本票；[locked-change][test-refactor]；验收=指纹门 C_after ⊇ C_before+锚定回归网+e2e 默认门【done 2026-09-18 batch 14：10 文件 +112/-88；对账表扩三文件实勘=selection-paint 6 例补桩+item-chain 回退①改写（TDD 红锚）+rectsFromRange 删例，豁免恰 2 条；首红/T3 悬空红/双变异红证（M1 保存门+M2 TS2459）全档；门一 PW B0W1N7（W1=RoT 第 4 份助手→后置 G7 随迁抽取）/门二 GWC P0=0P1=3（口径更正+收口三件全兑现）；vitest 170/1744+e2e 默认门 43/43+verify EXIT=0】' },
+   { id: 'F-GEOM-01-G3', file: 'docs/invariants.md', area: 'infra', owner: 'strong', status: 'done', summary: 'band 三档绑定+跨族交互点登记（设计书 §2.5/§2.6——纯登记面零行为变更；3/11）：新 INV（暂记 INV-68 号段，落册接续现尾号 67）=几何产链档位绑定——档1 项族 bandsFromItems=selection 快/全量主链+S2/S3a 唯一源/档2 bandsForTextNodes（DOM 节点口径）=S4（Annotation+AI 段）+selection 全量显示回退专用且产物不入库（rects 与 bands 同源——C5 精神）/档3 bandsNearRects（DOM 几何口径）=S3b 存量专用；禁跨档消费+禁新增第四推导；F-A9 calibrateBands=三档之上显示层校准不参与行归属（现状不变）；现状消费面经核已天然档位绑定（设计期 grep 逐一核对）——本票=事实升 INV 登记防未来漂移；跨族交互点登记（§2.6 表：#2 S6 项盒判定边界注/#3 S4 双族同屏显式档/#4 显示回退 transient 声明）+坐标域三处换算域声明头注（selection-geometry localScale/lineage-viewport rootToLocalScale/itemViewportOf）+INV-58 边界注（防 r3a 型域差事故重演）；#1 闭合/#5 头注消除归 G2 落款；INV 册受锁 unlock→改→apply 单链 [locked-change]【done 2026-09-18 batch 15：6 文件 +33/-18 终态（5 代码/登记件+manifest）；INV-68 落册 :84+INV-58 坐标域边界注+三处头注域声明+selection-paint/annotation-resolve 陈旧头注勘正（接缝归责——F-A5「三消费点」族 5 处清零，含门一 W1+门二 P2-1）；门一 PW B0W2N7（W1 同族残留勘正/W2 状态词改「未锚定」裁落）/门二 GWC P0=0P1=1P2=1（P1-1 行号锚实测修正 :237/:277/:302+P2-1 模块头注三处——均选菜单(a)收口前修复，净零行变化设计防锚再漂）；verify 三跑全 EXIT=0（终跑=open 18→17 恰 G3 翻 done+locks 338+test 170/1744+指纹门 187/1789/5411 零漂移）】' },
+   { id: 'F-GEOM-01-G4', file: 'src/renderer/features/reader/state/reader.store.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M1=state/ 域迁移（设计书 §3.2/§3.4；4/11）：10 文件迁 reader/state/——reader.store/tab-dirty/useActiveTab/annotation-undo/page-layer-z/ai-notes.store/ai-notes-phase/PdfDocProvider/CorpusExtractor/scroll-converge（scroll-converge 三消费方 anchor-locate/usePageColumnScroll/scroll-progress 置底避免 anchors→view 反向边——W7 处置；CorpusExtractor=终裁补列件）；受锁面随步同链 unlock→改→apply=CorpusExtractor 相关测试 import（corpus-extractor/corpus-export/pdf-factory）+eslint.config.js INV-16 块 PdfDocProvider/CorpusExtractor 两路径（四路径分步随迁首步）；域内单向核验=state 不依赖任何域（§3.1 置底）；翻 done 时 file 字段随迁改写 state/reader.store.ts（SR-RDR-02 先例）；验收=verify 全链；【收口 2026-09-18 batch16】受锁面实勘勘正=tests 30 件/41 行（票面 3 件系设计书 §3.4 起草漏计，pdf-factory 实为注释提名零 import 面）；实现者终验 tickets 红 18 行三类（9 路径不存在+4 占位+5 guardedDescribe 映射）全因 registry 随迁=主控后置面——九行落妥后 verify 全链 EXIT=0（g4-verify-master.log）；门一 PW B0W1N6（W1=报告 tests 括注枚举失实，勘误 :39）/门二 GWC P0=0P1=1P2=3N=6 全兑现（staging 名册 26 件实测校准+open 17→16+翻 done 前置本步）；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G5', file: 'src/renderer/features/reader/time/reading-time.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M2=time/ 域迁移（设计书 §3.4；5/11）：4 文件迁 reader/time/——reading-time/reading-time-setup/reading-time-outbox/reading-time-outbox-store；受锁面=reading-time 系测试 import 同链 unlock→改→apply；域间单向=time→state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G6', file: 'src/renderer/features/reader/anchors/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M3=anchors/ 域迁移（设计书 §3.4；6/11——受锁面最重迁移步）：13 存量+geometry-types（G1 产物）迁 reader/anchors/——pdf-item-geometry/annotation-anchor/annotation-merge/annotation-resolve/annotation-resolve-layered/annotation-band-calibrate/anchor-serialize/anchor-blank-snap/anchor-locate/page-items.store/open-paper-anchor/annotation-style/ai-note-style+geometry-types；受锁面=anchor-locate 跨特性消费 import 改向（lineage×2+open-paper-bus——§5.2 风险 3 一次改向+check-quality 跨域规则同步核）+锚定回归网 18 物理件 import（§5.1 名单 17 项中 selection-layer×2=selection-layer.test+selection-layer-fa12.test 双文件——tests/unit/renderer ls 实测=18；selection-evaluate/selection-layer×2/selection-item-chain/selection-geometry/selection-paint/selection-mode/annotation-anchor/annotation-layer/ai-annotation-layer/annotation-merge/anchor-blank-snap/anchor-item-verify/anchor-locate/band-calibration/pdf-item-geometry/pages-overlay/pdf-page-canvas）+pdf-factory（CorpusExtractor import）；验收=verify 全绿+锚定回归网专项跑；翻 done 时 file 随迁改写；[locked-change][test-refactor]' },
+-  { id: 'F-GEOM-01-G7', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M4=interact/ 域迁移（设计书 §3.4；7/11）：7 文件迁 reader/interact/——SelectionLayer/SelectionToolbar/selection-evaluate/selection-geometry/selection-paint/release-affinity/use-annotation-draft；受锁面=selection 系测试 import 同链（G2 已改写面随迁）；域间单向=interact→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链+selection 回归；[locked-change][test-refactor]' },
++  { id: 'F-GEOM-01-G7', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M4=interact/ 域迁移（设计书 §3.4；7/11）：7 文件迁 reader/interact/——SelectionLayer/SelectionToolbar/selection-evaluate/selection-geometry/selection-paint/release-affinity/use-annotation-draft；受锁面=selection 系测试 import 同链（G2 已改写面随迁）；域间单向=interact→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链+selection 回归；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M5=panels/ 域迁移（设计书 §3.4；8/11）：8 文件迁 reader/panels/——OutlineAside/OutlinePanel/OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/FragmentNotesList；受锁面=notes/outline 系测试 import+check-quality.mjs:96-97 两路径（ReaderNotesPanel）随步同链；域间单向=panels→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G9', file: 'src/renderer/features/reader/PdfPageCanvas.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M6a=view 渲染簇迁移（设计书 §3.4——W1 处置拆两步之一；9/11）：14 文件迁 reader/view/——PageColumn/PageBox/PagesOverlay/PdfPageCanvas/TextLayer/text-layer.css/page-column-geometry/usePageColumnScroll/usePageLazyWindow/scroll-progress/AnnotationLayer/AiAnnotationLayer/AnnotationPopups/ReaderPageView；受锁面=对应测试 import+eslint.config.js INV-16 块 PdfPageCanvas/TextLayer 两路径随迁（四路径分步随迁第 3/4 步）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G10', file: 'src/renderer/features/reader/ReaderPage.tsx', area: 'reader', owner: 'strong', status: 'open', summary: '目录化 M6b=view 工具/搜索/标注 UI 簇迁移（设计书 §3.4；10/11——四路径分步随迁收官步）：13 文件迁 reader/view/=ReaderPage/ReaderToolbar/TabBar/reader-shortcut-handlers/ReaderShortcuts/AnnotationEditor/AnnotationMenu/useReaderSearch/ReaderSearchBox/reader-search/reader-search.store/SearchHighlightLayer/PageColumnView（设计书 M6b 括注「ReaderPage 等」按 §3.2 总表 27=14+13 对账补全）；受锁面=App.tsx（ReaderPage import 改向）+剩余测试 import；翻 done 时 file 随迁改写；验收=verify 全链+e2e 默认门 43+指纹门（view 27 文件迁移收官全量对账）；[locked-change][test-refactor]' },

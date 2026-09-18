@@ -1,0 +1,128 @@
+=== A. 行数基线（设计书 §3.2 括号值 vs wc 实测）===
+SelectionLayer.tsx: design=238 wc=238 OK
+SelectionToolbar.tsx: design=78 wc=78 OK
+selection-evaluate.ts: design=326 wc=313 DEV
+selection-geometry.ts: design=142 wc=144 DEV
+selection-paint.tsx: design=85 wc=89 DEV
+release-affinity.ts: design=211 wc=211 OK
+use-annotation-draft.ts: design=193 wc=193 OK
+
+=== B. 入边（src+tests 引用 7 件的行，三形态）===
+src\renderer\features\reader\ReaderPageView.tsx:41: import { SelectionLayer } from './SelectionLayer'
+src\renderer\features\reader\AnnotationEditor.tsx:16: import { useAnnotationDraft } from './use-annotation-draft'
+tests\unit\renderer\selection-geometry.test.ts:17: import { createVisualScheduler } from '../../../src/renderer/features/reader/selection-geometry'
+tests\unit\renderer\release-affinity.test.ts:4: import { releaseAffinity } from '../../../src/renderer/features/reader/release-affinity'
+tests\unit\renderer\band-calibration.test.tsx:30: import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+tests\unit\renderer\selection-evaluate.test.tsx:31: import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+tests\unit\renderer\selection-layer-fa12.test.tsx:15: import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+tests\unit\renderer\selection-item-chain.test.tsx:21: import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+tests\unit\renderer\selection-paint.test.tsx:31: import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+tests\unit\renderer\selection-layer.test.tsx:26: } from '../../../src/renderer/features/reader/SelectionLayer'
+
+=== C. 出边（7 件 import 的相对/裸模块，判深度修正）===
+--- SelectionLayer.tsx
+:64: import { api, unwrap, ApiClientError } from '../../api/client'
+:65: import { showToast } from '../../shared/ui/Toast'
+:66: import { pushUndo } from './state/annotation-undo'
+:67: import { createEvaluate, type PaintSelection, type PendingSelection } from './selection-evaluate'
+:68: import { SelectionToolbar } from './SelectionToolbar'
+:69: import { SelectionPaint } from './selection-paint'
+:70: import { createVisualScheduler, closestPageRoot } from './selection-geometry'
+:71: import { releaseAffinity } from './release-affinity'
+:72: import { useReaderStore } from './state/reader.store'
+:75: export { closestPageRoot, pageIndexOf } from './selection-geometry'
+--- SelectionToolbar.tsx
+:17: import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
+--- selection-evaluate.ts
+:71: import { showToast } from '../../shared/ui/Toast'
+:72: import { probeTextLength, selectionToAnchor, type SelectionAnchor } from './anchors/anchor-serialize'
+:73: import { findRangeAtOffset, fullTextOf, pixelBoxOf } from './anchors/annotation-anchor'
+:74: import { bandsForTextNodes, type RowBand } from './anchors/annotation-resolve'
+:75: import { calibrateBandsWithSpans } from './anchors/annotation-band-calibrate'
+:76: import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from './anchors/pdf-item-geometry'
+:77: import type { ItemSelectionGeometry } from './anchors/pdf-item-geometry'
+:78: import { usePageItemsStore } from './anchors/page-items.store'
+:79: import { useReaderStore } from './state/reader.store'
+:80: import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
+--- selection-geometry.ts
+--- selection-paint.tsx
+:35: import { matchBand, type RowBand } from './anchors/annotation-resolve'
+:36: import { bandVertical, clampedHorizontal } from './anchors/annotation-style'
+:37: import { PAGE_LAYER_Z } from './state/page-layer-z'
+--- release-affinity.ts
+:80: import { collectSpans, type NodeSpan } from './anchors/annotation-anchor'
+:81: import { boxOf, columnGroups, rowEndOf, visualRows, type Box, type DomBoundary } from './anchors/anchor-blank-snap'
+--- use-annotation-draft.ts
+
+=== D. §3.1 单向核验预备：出边指向域（interact 允许→anchors/state；禁 panels/time/view）===
+SelectionLayer.tsx: ["state","interact内(./selection-evaluate)","interact内(./SelectionToolbar)","interact内(./selection-paint)","interact内(./selection-geometry)","interact内(./release-affinity)","state","interact内(./selection-geometry)"]
+SelectionToolbar.tsx: ["anchors"]
+selection-evaluate.ts: ["anchors","anchors","anchors","anchors","anchors","anchors","anchors","state","interact内(./selection-geometry)"]
+selection-geometry.ts: []
+selection-paint.tsx: ["anchors","anchors","state"]
+release-affinity.ts: ["anchors","anchors"]
+use-annotation-draft.ts: []
+
+=== E. tests selection 系文件（受锁面候选）===
+tests/unit/renderer/selection-geometry.test.ts
+tests/unit/renderer/selection-evaluate.test.tsx
+tests/unit/renderer/selection-layer-fa12.test.tsx
+tests/unit/renderer/selection-mode.test.tsx
+tests/unit/renderer/selection-item-chain.test.tsx
+tests/unit/renderer/selection-paint.test.tsx
+tests/unit/renderer/selection-layer.test.tsx
+
+=== F. eslint INV-16 块 ===
+eslint.config.js:71: // INV-16：pdfjs-dist 运行时 import 白名单四文件（PdfDocProvider/
+eslint.config.js:77: message: 'pdfjs-dist 只许白名单四文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
+eslint.config.js:85: // INV-16 白名单 override：四文件重申 renderer 全部禁令但不含 pdfjs 条目
+eslint.config.js:89: 'src/renderer/features/reader/state/PdfDocProvider.tsx',
+eslint.config.js:90: 'src/renderer/features/reader/PdfPageCanvas.tsx',
+eslint.config.js:91: 'src/renderer/features/reader/TextLayer.tsx',
+eslint.config.js:92: 'src/renderer/features/reader/state/CorpusExtractor.ts'
+
+=== G. check-quality.mjs 白名单 :90-105 ===
+check-quality.mjs:90: //    workspace.store 是课题切换弃改收口点（INV-35④ 显式防悬置写兑现——切课题
+check-quality.mjs:91: //    确认后 discardAll notes 悬置编辑，聚合职责即消费 notes.store），
+check-quality.mjs:92: //    workspaces 域其余文件引用 notes 仍是红线
+check-quality.mjs:93: const COMPOSITION_ROOT_ALLOW = new Map([
+check-quality.mjs:94:   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
+check-quality.mjs:95:   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
+check-quality.mjs:96:   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
+check-quality.mjs:97:   ['src/renderer/features/reader/ReaderNotesPanel.tsx', ['notes/notes.store']],
+check-quality.mjs:98:   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
+check-quality.mjs:99:   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
+check-quality.mjs:100:   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']]
+check-quality.mjs:101: ])
+check-quality.mjs:102: 
+check-quality.mjs:103: const featuresRoot = join(root, 'src', 'renderer', 'features')
+check-quality.mjs:104: for (const f of srcFiles.filter((p) => p.startsWith(featuresRoot))) {
+check-quality.mjs:105:   const relFromFile = relative(root, f).replaceAll('\\', '/')
+check-quality.mjs:106:   const allowed = COMPOSITION_ROOT_ALLOW.get(relFromFile) ?? []
+
+=== H. registry file 指向 7 件的票（全域随迁义务）===
+registry.ts:107: id=SR-RDR-05 :: { id: 'SR-RDR-05', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'weak', status: 'done
+registry.ts:210: id=SR2-F-07 :: { id: 'SR2-F-07', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'don
+registry.ts:224: id=SR2-F-08 :: { id: 'SR2-F-08', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'don
+registry.ts:242: id=F-A6 :: { id: 'F-A6', file: 'src/renderer/features/reader/selection-paint.tsx', area: 'reader', owner: 'strong', status: 'done',
+registry.ts:257: id=F-A10 :: { id: 'F-A10', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done',
+registry.ts:266: id=F-A12 :: { id: 'F-A12', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done',
+registry.ts:293: id=F-GEOM-01-G2 :: { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/selection-evaluate.ts', area: 'reader', owner: 'strong', statu
+registry.ts:298: id=F-GEOM-01-G7 :: { id: 'F-GEOM-01-G7', file: 'src/renderer/features/reader/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 
+
+=== I. e2e/其他字符串面引用（非 import 形态）===
+tests/e2e/reader-text.spec.ts:652: //    （视觉单通道=SelectionLayer 自绘并集层——native 逐 span 绘制在重叠
+tests/e2e/reader-text.spec.ts:911: * 帧对齐已由 selection-geometry.test C1/C2 锚定）。
+tests/e2e/reader-text.spec.ts:987: *   文本节点 offset>0——closestPageRoot 同页根、过 SelectionLayer 边界检查；
+tests/e2e/reader-text.spec.ts:995: * - 跨页拒绝由 SelectionLayer 的 closestPageRoot 边界检查承担（变异 A 单点
+
+=== J. RoT 债：mkItem/mkText/seedRegistry 出现面（batch 14 门一 W1 登记）===
+tests/unit/renderer/anchor-item-verify.test.tsx: mkItem
+tests/unit/renderer/pdf-item-geometry.test.tsx: mkItem
+tests/unit/renderer/selection-evaluate.test.tsx: mkItem,mkText,seedRegistry
+tests/unit/renderer/selection-item-chain.test.tsx: mkItem,mkText,seedRegistry
+tests/unit/renderer/selection-paint.test.tsx: mkItem,mkText,seedRegistry
+tests/unit/renderer/selection-layer.test.tsx: mkItem,mkText,seedRegistry
+
+RECON_DONE
+RECON_EXIT=0

@@ -28,10 +28,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubUnwrap, toastSpy } from '../../utils/api-client-mock'
 import { stubElementRects, stubRangeGBCR, type StubBox } from '../../utils/geometry'
-import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionLayer'
+import { mkItem, mkText, seedRegistry } from '../../utils/factories'
+import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
 import { usePageItemsStore } from '../../../src/renderer/features/reader/anchors/page-items.store'
 import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
-import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
 
 const saveMock = vi.fn()
@@ -64,21 +64,6 @@ function mountPageFixture(no: string, itemsText: string): { page: HTMLElement; s
   rects.set(page, { x: 500, y: 300, width: 612, height: 792 })
   rects.set(span, { x: 572, y: 500, width: 100, height: 10 })
   return { page, span }
-}
-
-/** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */
-function mkItem(str: string, x: number, y: number): PdfTextItem {
-  return { str, dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, x, y], fontName: 'g1', hasEOL: false }
-}
-
-function mkText(items: PdfTextItem[]): PdfTextContent {
-  return { items, styles: { g1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } }, lang: null }
-}
-
-function seedRegistry(no: number, text: PdfTextContent): void {
-  act(() => {
-    usePageItemsStore.getState().setEntry({ page: no, text, geometry: { rotate: 0, view: [0, 0, 612, 792] }, box: { w: 612, h: 792 } })
-  })
 }
 
 /** reader store zoom 写口（mid-drag zoom 差分形态共用——W1/同帧覆盖两 it 的判别轴） */

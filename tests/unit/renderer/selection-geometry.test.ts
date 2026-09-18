@@ -14,7 +14,7 @@
  * 本仓实证：t=15 零回调/t=16 双回调）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createVisualScheduler } from '../../../src/renderer/features/reader/selection-geometry'
+import { createVisualScheduler } from '../../../src/renderer/features/reader/interact/selection-geometry'
 
 describe('F-A6-c createVisualScheduler —— rAF 对齐双路调度', () => {
   beforeEach(() => {
