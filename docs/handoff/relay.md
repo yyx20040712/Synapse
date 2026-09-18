@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T03:48:46+08:00
+- last_dispatch: 2026-09-19T05:39:46+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T20:48:00Z
-- claim: claim-1789761018-b21
+- heartbeat_utc: 2026-09-18T22:10:00Z
+- claim: claim-1789764128-b22
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 25
+- checked_done: 26
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -136,7 +136,7 @@
 - [x] F-GEOM-01-G9（目录化 M6a view 渲染簇 14 件 §3.4
       [locked-change][test-refactor]；**同上字符串面预扫义务**——theme.test
       对 G9 零命中（门二实测），config 面 eslint:90-91 已在票面）
-- [ ] F-GEOM-01-G10（目录化 M6b view 工具簇 13 件 §3.4
+- [x] F-GEOM-01-G10（目录化 M6b view 工具簇 13 件 §3.4
       [locked-change][test-refactor]——eslint INV-16 四路径分步随迁收官；
       **票面受锁面预列恰 3 行字符串面（门二 P2-1 实测行号）**：
       theme.test.ts:292 AnnotationMenu.tsx/:293 AnnotationEditor.tsx/
@@ -168,7 +168,122 @@
 
 ## 批次日志（追加，勿改写）
 
-### batch 21 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G9 目录化 M6a view 渲染簇 14 文件迁移，完成）
+### batch 22 — 2026-09-19（执行者会话：第四波 F-GEOM-01-G10 目录化 M6b view 工具簇 13 文件迁移·view 域收官步，完成）
+- claim: claim-1789764128-b22｜认领 2026-09-18T20:42:08Z｜收口 2026-09-18T22:10:00Z｜勾选 25→26。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
+  门审矩阵/ORG-12 审包/health-scan/账本 v3 补记）；TDD=实现者六段简报内嵌等价
+  红绿闭环（基线锚+变异红证 M1/M2——零行为迁移票票面机制）；systematic-debugging
+  不加载（迁移修法=设计书 §3.4 定稿+派发前全边侦察前置，无排障定位面——e2e flake
+  处置走既有立案机制非排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=
+  ops-executor 绑定（GLM5.3flash $max）；门一=**ops-gate1-k2 绑定（kimi k3 $max，
+  zipoo——用户指令 2026-09-18 调度员转达 k1 封顶 k2 承载续，本班承载正常）**；
+  门二=ops-adjudicator 绑定（deepseek-flash $max，**两轮=终审+e2e 硬条件补充复核**）
+  ——门审均异构于实现者。
+- **交付（零行为纯迁移·view 域收官步）**：M6b=view 工具/搜索/标注 UI 簇——
+  AnnotationEditor(148)/AnnotationMenu(81)/PageColumnView(72)/ReaderPage(163)/
+  ReaderSearchBox(125)/ReaderShortcuts(123)/ReaderToolbar(232)/SearchHighlightLayer
+  (159)/TabBar(163)/reader-search.store(202)/reader-search(162)/reader-shortcut-
+  handlers(42)/useReaderSearch(104) 十三件 1776 行（wc 实测；13 件对设计书 §3.2
+  各 +1=无尾换行口径 Σ1789，G11 对账债同 G5-G9 惯例）迁 reader/view/（git rename
+  12 RM+1 R——ReaderSearchBox 100% 纯 R）；**迁毕 reader 根=纯目录六子域零文件
+  （收官核验）**。改写面=A 深度修正恰 33 行（anchors 5+interact 1+state 11+time 2
+  +shared 上跨 7+`./view/X` 域内化 7）+同根零改写 11 行=44 相对 import 全量闭合
+  （另有 @shared 别名 4 行位置无关）+B src 消费 1（App.tsx:7）+C view 域中间态边
+  闭合 6 行（G9 声明 6 边兑现：PageColumn:32/PagesOverlay:50/AnnotationPopups:35-
+  36/ReaderPageView:37+40 `../X`→`./X`）+D tests 21 行/14 件（import 18 行/13 件+
+  **theme.test 字符串面恰 3 行 :292/:293/:485——板注预列与侦察双吻合兑现**）+E config
+  零动作（eslint 四路径已全迁完 :89/:92=M1+:90/:91=M6a——票面「收官步」表述系
+  起草预期勘正在档）+F registry 8 行（7 旧票 file 随迁+G10 自身翻 done，主控
+  收口职责）。
+- **TDD 证据链**：基线 verify EXIT=0 锚（g10-verify-baseline.log：open 11/locks
+  366/170 文件 1744 用例/指纹门 187·1789·5411·skip15 零漂移）；中探针 EXIT=2 恰
+  18 错全 tests 面（13 件 1:1，src 面 0 错）；变异红证 M1（App.tsx:7 回退→TS2307
+  EXIT=2→cp 还原 diff 空→复绿）+M2（tab-bar.test:14 回退→vite 模块解析红 EXIT=1
+  →还原→复锁→12/12 复绿）全变量法物理在档；**构建产物哈希恒等第六票**（index-
+  D3egZtl2.js 1,392.72kB+index-BfpEygSE.css 52.49kB+pdf.worker 三产物 PRE=POST
+  同名同尺寸同 sha256——**且与 G2 e2e 43 全绿时点 bundle 同名同尺寸，e2e flake
+  因果排除承重证据**）；§3.1 单向核验（实现者 g10-oneway v2+门二全域独立复扫+
+  主控收官重扫三重）：reader 根驻留 0+反向边 0+view 域 `../X` 直指根件 0（中间
+  态边清零）+旧径五通道 0；出边 {anchors 19,state 29,panels 1,interact 2,time 2}
+  /intra 50/up 11 与 G9 终态增量逐项吻合。
+- **门审（回炉 0）**：门一 k2 **PASS_WITH_WARNINGS B0/W2/N5**——61/61 对逐 hunk
+  零行为断言+计数 A33/B1/C6/D21/61 总行/32 文件独立复算全中+theme 字符串面核验+
+  sed 精确名单包内内证（reader-double-page.test:360 既有 view/PageColumn 未被
+  误改）；W1=第 11 行同根不可见（主控 grep 实测销项 g10-w1w2-closure.log：逐件
+  计数和=44+物理定位 ReaderSearchBox:31——100% rename 无 hunk=盲区根因）/W2=
+  三项包外断言（W2a e2e 旧径亲扫 0 销项/W2b oneway 档随收口入库+门二亲扫/W2c
+  wc 1776 门二独立复算命中）。门二 ops-adjudicator **GO_WITH_CONDITIONS P0=0/
+  P1=1/P2=3/N=5**——25 条裁决表独立复算+13 log EXIT 标记亲读+收官四件全域复扫
+  （`from '../` 68 处全类别枚举）+锁链 364→367 复推+tickets 清红规则级推演+
+  收口序 H 预批；**P1-1=tickets 红行数转述失实**（实现者报告「恰 8 行」实为物理
+  16 行=8 文件不存在+5 占位引用+3 guardedDescribe 失配的同一 8 行 registry 陈旧
+  路径级联——8 行更新动作正确，收口以 16 行为准勘正，终跑后 16 行全清+open
+  11→10 落档）；P2-1 锁链步进勘正（364→365 b22-claim→366 g10-recon→367 g10-
+  oneway）/P2-2 探针谓词盲区注记归 G11/P2-3 行数口径 G11 债。
+- **e2e 专项（收口序③+门二补充复核）**：默认门套跑 **42/43 绿**+1 failed=
+  corpus-export.spec:157 F-SESS-01 重载格（60s test timeout，套跑 2.9m 偏慢同
+  设计书 §5.1 观测态）；定向复跑×2 同值满 60s 红（同 spec :31 全链用例历次恒绿）
+  ——**同用例 2 次触发宪法立案线**；放宽 --timeout=180000 定向 **2 passed 仅
+  6.8s**（:157 实耗 4.1s 未触任何预算=快样本证功能无硬断，**禁记因果**——门二
+  新条件①）；复跑 #4 默认 60s 再红（指纹=4 红 1 绿）。**门二补充复核裁决（新
+  事实补呈后）：「e2e 43 绿」按「42/43+1 例在册 flake（F-EXPORT-01 承接）」口径
+  视为满足，NO-GO 不成立**——理由=bundle 三产物 sha256 与 G2 43 绿时点恒等
+  （因果排除亲核）+flake-ledger 在册前置（count 4，resolution 已切 F-EXPORT-01
+  同场）+指纹合规（即刻归档）；三新条件全采纳：①快样本禁记因果 ②收口文档禁写
+  「43 绿」须记 42/43+在册 flake+四 rerun 归档+F-EXPORT-01 携指纹 ③「零进程
+  残留」无在档输出不作论据（以 bundle 恒等+spec 面无关承重）；**先例边界声明
+  凭=「在册 flake+bundle 恒等排除+承接票在排程」三条件同满足之特例，非「gate
+  红可放行」通例**。flake-ledger.json corpus-export 线 count 4→**5**+本批指纹
+  （同值=满 60s/序列位=全套 #4 定向 #2/4 红 1 绿/复跑绿不销项/「定向也红」
+  升级观察=时序敏感竞态嫌疑第二段再发起 streaming 起步）——**F-EXPORT-01 开工
+  须携本批指纹首查**（五 rerun 档 g10-e2e-*.log 全入库）。
+- **机检终态**：收口终跑 verify **G10_CLOSEOUT_VERIFY4_EXIT=0** 变量法物理在档
+  （g10-closeout-verify4.log，Node 24.20.0：open 11→10=恰 G10 翻 done+tickets
+  16 行全清+Test Files 170/Tests 1744 恒等+指纹门 187/1789/5411/skip15 零漂移+
+  build 绿产物同名）；**终跑四连红实录=主控收口探针三连自伤**（①g10-tickets-
+  flip.mjs 写完未即时入锁=locks:check 红——G4 教训①同族再犯；②flip 探针两处
+  未用变量（before/swapLine 起草废代码）=lint 红——G7 教训①同族再犯；③账本
+  临时件 g10-ledger-append.cjs.tmp.cjs 仓内驻留撞 eslint no-require-imports
+  =lint 红——移仓外 ~/.zcode 后绿；教训①见下）；registry 翻 done 单跑
+  FLIP_EXIT=0（FLIP_MOVED=8/RESIDUE=0/G10_DONE=true，恰 8 ins+8 del）；e2e
+  默认门=E2E_APP_EXIT=1（42/43+在册 flake 口径——门二复核认可，非「43 绿」）；
+  **health-scan RED×0 WARN×0**（g10-healthscan.log，账本 65→68 终态后跑——
+  G9 教训②序正确兑现）；账本 68 行（executor+门一 k2+门二两轮合一行，主控
+  补记仓外临时 .cjs 用毕即删）；锁链终态 **368**（364→365 b22-claim→366
+  g10-recon→367 g10-oneway→368 g10-tickets-flip——每步即时登记，manifest
+  与 verify4 同步）。
+- 证据件入库（scripts/audits/，39 件 g10-*/b22-*，提交前 ls 实测勘正——初写
+  41 系计数笔误）：b22-claim+recon+oneway+tickets-flip 四 .mjs+对应 .log
+  （w1w2-closure/closeout-rescan 系 bash 重定向产 .log 无 .mjs）；impl-brief/
+  impl-report；gate1-brief/report/diff.patch；gate2-brief/report（含补充裁决段）；
+  verify-baseline+closeout-verify×4 五 .log；midprobe/mutation1+restore/mutation2+
+  restore/build-hash/locks-oneway/gitmv-status/rewrite-d/final-status/impl-verify/
+  tickets-flip/healthscan .log；e2e 专项六 .log（appgate+e2e-build+corpus-rerun×4）
+  ——.log 系经 git add -f 入库（.gitignore *.log 拦截按 batch 8 教训③处置）。
+- 教训三条：①**主控收口段探针/临时件三连红**（flip 探针未即时入锁+未用变量
+  废代码+账本临时件仓内驻留撞 lint——三宗同根：**收口段新增一切脚本件须
+  「写前 lint 自查+写毕即时入锁+临时件一律置仓外」三动作同批**，G4/G7 教训
+  的收口段变体合并句）；②**e2e 定向复跑升级处置先例**（定向也红时禁硬凑
+  「复跑绿」——放宽预算取「功能无硬断」快样本证据+新事实补呈终审岗复核
+  硬条件口径，由门二更新裁决而非主控自裁放行；flake-ledger 指纹升级记录+
+  承接票开工携指纹义务落档）；③**tickets 红行数两视角**（registry 改动行数
+  8≠check-tickets 物理红行数 16——规则级联（文件不存在/占位引用/guardedDescribe
+  失配）使一行陈旧 file 产生多行红；「计数落笔前实测」的报告侧新变体：红行数
+  以工具物理输出为准）。
+- Rulings 待用户：无新增（e2e 口径经门二补充复核裁决闭合——特例边界声明凭
+  在档；票内自裁含票面 eslint 收官步勘正/中探针时点语义/探针 v1→v2 谓词收敛
+  等均经门一裁+门二复核；受锁面 21 行=[locked-change][test-refactor] 双尾注
+  权限内）。
+- 无进展计数：归零（25→26 有进展）。**下波=F-GEOM-01-G11（战役收官票：
+  头注扫尾+净删/交互点记账+验收门全跑（e2e 一键全跑 45+默认门 43）+INV 终册
+  +基线重冻结 [locked-change]；收官时定 INV 册历史 reader 路径引用口径（门二
+  P2-2）+G11 对账债清单（设计书 §3.2 行数 +1 口径×G5-G10 累计+§5.1 计数差+
+  PdfPageCanvas 146 vs 188+探针谓词盲区头注 P2-2 顺手补）；本票毕=父行
+  「F-GEOM-01 实现」+registry 母票同步翻 done；**e2e 全跑 45 含 corpus-export
+  flake 线——F-EXPORT-01 承接前的跑法口径（flake 例处置）开工时按门二特例
+  边界声明凭预演或呈报主控**；大中票一火一票。）**
+
+
 - claim: claim-1789761018-b21｜认领 2026-09-18T19:50:30Z｜收口 2026-09-18T20:48:00Z｜勾选 24→25。
   （本批窗口内两调度员事件：增补四=用户再删火+增补五=新会话换防新火 automation-4a8cb784——
   均声明在途 b21 不受影响，claim 全程未被动。）

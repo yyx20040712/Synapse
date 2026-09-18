@@ -29,7 +29,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
-import { PageColumnView } from '../PageColumnView'
+import { PageColumnView } from './PageColumnView'
 import {
   anchoredScrollTop,
   columnTotalHeightFor,

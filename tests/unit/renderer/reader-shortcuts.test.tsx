@@ -7,7 +7,7 @@ import {
   useReaderShortcuts,
   SCROLL_STEP_RATIO,
   type ReaderShortcutActions
-} from '../../../src/renderer/features/reader/ReaderShortcuts'
+} from '../../../src/renderer/features/reader/view/ReaderShortcuts'
 import { guardedDescribe } from '../../utils/guard'
 
 import { showToast } from '../../../src/renderer/shared/ui/Toast'

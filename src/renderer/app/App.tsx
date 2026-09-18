@@ -4,7 +4,7 @@
  */
 import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
-import { ReaderPage } from '../features/reader/ReaderPage'
+import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'

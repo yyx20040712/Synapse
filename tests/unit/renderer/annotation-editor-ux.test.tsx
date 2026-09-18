@@ -18,7 +18,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeAnnotation } from '../../utils/factories'
 import type { AnnotationRect } from '../../../src/shared/models/annotation'
-import { AnnotationEditor } from '../../../src/renderer/features/reader/AnnotationEditor'
+import { AnnotationEditor } from '../../../src/renderer/features/reader/view/AnnotationEditor'
 
 /** 完整形态最小标注（comment 可覆写——lastSaved 语义用例需非空初值） */
 const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }

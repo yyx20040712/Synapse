@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { expect, it, vi } from 'vitest'
 import { makeAnnotation } from '../../utils/factories'
 import type { AnnotationRect } from '../../../src/shared/models/annotation'
-import { AnnotationMenu } from '../../../src/renderer/features/reader/AnnotationMenu'
+import { AnnotationMenu } from '../../../src/renderer/features/reader/view/AnnotationMenu'
 import { guardedDescribe } from '../../utils/guard'
 
 /** 完整形态的最小标注（类型契约：接口层全字段） */

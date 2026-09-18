@@ -289,8 +289,8 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
   const POPUP_TSX = [
     '../../../src/renderer/shared/ui/Dialog.tsx',
     '../../../src/renderer/shared/ui/Toast.tsx',
-    '../../../src/renderer/features/reader/AnnotationMenu.tsx',
-    '../../../src/renderer/features/reader/AnnotationEditor.tsx',
+    '../../../src/renderer/features/reader/view/AnnotationMenu.tsx',
+    '../../../src/renderer/features/reader/view/AnnotationEditor.tsx',
     '../../../src/renderer/features/reader/interact/SelectionToolbar.tsx',
     '../../../src/renderer/features/tags/TagLifecycleMenu.tsx',
     '../../../src/renderer/features/lineage/LineageToolbar.tsx',
@@ -482,7 +482,7 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
     '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
     '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
     '../../../src/renderer/features/lineage/LineageSideTags.tsx',
-    '../../../src/renderer/features/reader/TabBar.tsx'
+    '../../../src/renderer/features/reader/view/TabBar.tsx'
   ]
     .map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
     .join('\n')

@@ -1,0 +1,521 @@
+diff --git a/src/renderer/app/App.tsx b/src/renderer/app/App.tsx
+index afbabc7931..ceee950a67 100644
+--- a/src/renderer/app/App.tsx
++++ b/src/renderer/app/App.tsx
+@@ -4,7 +4,7 @@
+  */
+ import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
+ import { LibraryPage } from '../features/library/LibraryPage'
+-import { ReaderPage } from '../features/reader/ReaderPage'
++import { ReaderPage } from '../features/reader/view/ReaderPage'
+ import { SettingsPage } from '../features/settings/SettingsPage'
+ import { LineagePage } from '../features/lineage/LineagePage'
+ import { ToastHost } from '../shared/ui/Toast'
+diff --git a/src/renderer/features/reader/AnnotationEditor.tsx b/src/renderer/features/reader/view/AnnotationEditor.tsx
+similarity index 97%
+rename from src/renderer/features/reader/AnnotationEditor.tsx
+rename to src/renderer/features/reader/view/AnnotationEditor.tsx
+index 7b2a9131f3..17ffb23807 100644
+--- a/src/renderer/features/reader/AnnotationEditor.tsx
++++ b/src/renderer/features/reader/view/AnnotationEditor.tsx
+@@ -12,8 +12,8 @@
+  */
+ import { useEffect, useRef } from 'react'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+-import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
+-import { useAnnotationDraft } from './interact/use-annotation-draft'
++import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
++import { useAnnotationDraft } from '../interact/use-annotation-draft'
+ 
+ export function AnnotationEditor(props: {
+   annotation: Annotation
+diff --git a/src/renderer/features/reader/AnnotationMenu.tsx b/src/renderer/features/reader/view/AnnotationMenu.tsx
+similarity index 98%
+rename from src/renderer/features/reader/AnnotationMenu.tsx
+rename to src/renderer/features/reader/view/AnnotationMenu.tsx
+index 502d18b92d..0961e44440 100644
+--- a/src/renderer/features/reader/AnnotationMenu.tsx
++++ b/src/renderer/features/reader/view/AnnotationMenu.tsx
+@@ -38,7 +38,7 @@
+  * - 禁止 any；组件 ≤250 行
+  */
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+-import { ANNOTATION_BTN_CLASS as btn } from './anchors/annotation-style'
++import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
+ 
+ export function AnnotationMenu(props: {
+   annotation: Annotation
+diff --git a/src/renderer/features/reader/view/AnnotationPopups.tsx b/src/renderer/features/reader/view/AnnotationPopups.tsx
+index b9eaa5076d..2514c0bb7d 100644
+--- a/src/renderer/features/reader/view/AnnotationPopups.tsx
++++ b/src/renderer/features/reader/view/AnnotationPopups.tsx
+@@ -32,8 +32,8 @@ import { useEffect, useRef } from 'react'
+ import { api, unwrap, ApiClientError } from '../../../api/client'
+ import { showToast } from '../../../shared/ui/Toast'
+ import { pushUndo } from '../state/annotation-undo'
+-import { AnnotationEditor } from '../AnnotationEditor'
+-import { AnnotationMenu } from '../AnnotationMenu'
++import { AnnotationEditor } from './AnnotationEditor'
++import { AnnotationMenu } from './AnnotationMenu'
+ import { useReaderStore } from '../state/reader.store'
+ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+ /** 意外异常（非 ApiClientError）时的兜底中文消息 */
+diff --git a/src/renderer/features/reader/view/PageColumn.tsx b/src/renderer/features/reader/view/PageColumn.tsx
+index 8da091abb6..33ea33bcaa 100644
+--- a/src/renderer/features/reader/view/PageColumn.tsx
++++ b/src/renderer/features/reader/view/PageColumn.tsx
+@@ -29,7 +29,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+ import type { RefObject } from 'react'
+ import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+ import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+-import { PageColumnView } from '../PageColumnView'
++import { PageColumnView } from './PageColumnView'
+ import {
+   anchoredScrollTop,
+   columnTotalHeightFor,
+diff --git a/src/renderer/features/reader/PageColumnView.tsx b/src/renderer/features/reader/view/PageColumnView.tsx
+similarity index 94%
+rename from src/renderer/features/reader/PageColumnView.tsx
+rename to src/renderer/features/reader/view/PageColumnView.tsx
+index 9eadee0b17..6212fe1692 100644
+--- a/src/renderer/features/reader/PageColumnView.tsx
++++ b/src/renderer/features/reader/view/PageColumnView.tsx
+@@ -21,10 +21,10 @@
+  *   onError(msg) }): JSX.Element（width=宿主 columnWidthFor 单源计算传入）
+  */
+ import type { MutableRefObject } from 'react'
+-import type { PDFDocumentProxy } from './state/PdfDocProvider'
+-import type { PdfPageGeometry, PdfTextContent } from './view/PdfPageCanvas'
+-import { PageBox } from './view/PageBox'
+-import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './view/page-column-geometry'
++import type { PDFDocumentProxy } from '../state/PdfDocProvider'
++import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
++import { PageBox } from './PageBox'
++import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './page-column-geometry'
+ 
+ export function PageColumnView(props: {
+   /** 宿主列根 ref（IO/段⑤程序滚动的 [data-page-box] 查询根——useRef 实返型） */
+diff --git a/src/renderer/features/reader/view/PagesOverlay.tsx b/src/renderer/features/reader/view/PagesOverlay.tsx
+index 807afc9873..2493ab4c3a 100644
+--- a/src/renderer/features/reader/view/PagesOverlay.tsx
++++ b/src/renderer/features/reader/view/PagesOverlay.tsx
+@@ -47,7 +47,7 @@ import type { Annotation } from '@shared/models/annotation'
+ import { AnnotationLayer } from './AnnotationLayer'
+ import { ReaderAiLayer } from './AiAnnotationLayer'
+ import { PageColumn, type PageScrollRequest } from './PageColumn'
+-import { SearchHighlightLayer } from '../SearchHighlightLayer'
++import { SearchHighlightLayer } from './SearchHighlightLayer'
+ import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+ import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+ import type { PageLayout } from './page-column-geometry'
+diff --git a/src/renderer/features/reader/ReaderPage.tsx b/src/renderer/features/reader/view/ReaderPage.tsx
+similarity index 95%
+rename from src/renderer/features/reader/ReaderPage.tsx
+rename to src/renderer/features/reader/view/ReaderPage.tsx
+index 3a6e2751a3..09390b9a47 100644
+--- a/src/renderer/features/reader/ReaderPage.tsx
++++ b/src/renderer/features/reader/view/ReaderPage.tsx
+@@ -45,18 +45,18 @@
+  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本+多页可见（最终裁判）
+  */
+ import { useEffect, useMemo, useRef, useState } from 'react'
+-import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
+-import { openFromBus } from './anchors/open-paper-anchor'
+-import type { PageScrollRequest } from './view/PageColumn'
++import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../../shared/open-paper-bus'
++import { openFromBus } from '../anchors/open-paper-anchor'
++import type { PageScrollRequest } from './PageColumn'
+ import { useReaderSearch } from './useReaderSearch'
+-import { useReaderStore } from './state/reader.store'
+-import { readActiveTab, useActiveTab } from './state/useActiveTab'
+-import { createReaderScrollProgress, useScrollProgressWiring } from './view/scroll-progress'
+-import { useReaderReadingTime } from './time/reading-time-setup'
+-import { useReadingTimeWiring } from './time/reading-time'
++import { useReaderStore } from '../state/reader.store'
++import { readActiveTab, useActiveTab } from '../state/useActiveTab'
++import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
++import { useReaderReadingTime } from '../time/reading-time-setup'
++import { useReadingTimeWiring } from '../time/reading-time'
+ import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
+-import { ReaderPageView } from './view/ReaderPageView'
+-import { showToast } from '../../shared/ui/Toast'
++import { ReaderPageView } from './ReaderPageView'
++import { showToast } from '../../../shared/ui/Toast'
+ 
+ export function ReaderPage(): JSX.Element {
+   // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）
+diff --git a/src/renderer/features/reader/view/ReaderPageView.tsx b/src/renderer/features/reader/view/ReaderPageView.tsx
+index 74d1c60082..67bac8223f 100644
+--- a/src/renderer/features/reader/view/ReaderPageView.tsx
++++ b/src/renderer/features/reader/view/ReaderPageView.tsx
+@@ -34,10 +34,10 @@ import type { PageLayout } from './page-column-geometry'
+ import type { createReaderScrollProgress } from './scroll-progress'
+ import { OutlineAside } from '../panels/OutlineAside'
+ import { SplitPane } from '../../../shared/ui/SplitPane'
+-import { TabBar } from '../TabBar'
++import { TabBar } from './TabBar'
+ import { PdfDocProvider } from '../state/PdfDocProvider'
+ import { PagesOverlay } from './PagesOverlay'
+-import { ReaderToolbar } from '../ReaderToolbar'
++import { ReaderToolbar } from './ReaderToolbar'
+ import { SelectionLayer } from '../interact/SelectionLayer'
+ import { useReaderStore } from '../state/reader.store'
+ 
+diff --git a/src/renderer/features/reader/ReaderSearchBox.tsx b/src/renderer/features/reader/view/ReaderSearchBox.tsx
+similarity index 100%
+rename from src/renderer/features/reader/ReaderSearchBox.tsx
+rename to src/renderer/features/reader/view/ReaderSearchBox.tsx
+diff --git a/src/renderer/features/reader/ReaderShortcuts.ts b/src/renderer/features/reader/view/ReaderShortcuts.ts
+similarity index 96%
+rename from src/renderer/features/reader/ReaderShortcuts.ts
+rename to src/renderer/features/reader/view/ReaderShortcuts.ts
+index 0fb1be0863..3fe157d793 100644
+--- a/src/renderer/features/reader/ReaderShortcuts.ts
++++ b/src/renderer/features/reader/view/ReaderShortcuts.ts
+@@ -43,9 +43,9 @@
+  * - 剪贴板失败 toast 即动作型反馈；禁止静默吞错；禁止 any；文件 ≤200 行
+  */
+ import { useEffect } from 'react'
+-import { registerKeymap, unregisterKeymap } from '../../shared/keymap'
+-import { showToast } from '../../shared/ui/Toast'
+-import type { KeyBinding } from '../../shared/keymap'
++import { registerKeymap, unregisterKeymap } from '../../../shared/keymap'
++import { showToast } from '../../../shared/ui/Toast'
++import type { KeyBinding } from '../../../shared/keymap'
+ 
+ /** 本 hook 在 keymap 的注册 id（唯一来源，卸载成对注销） */
+ const KEYMAP_ID = 'reader-shortcuts'
+diff --git a/src/renderer/features/reader/ReaderToolbar.tsx b/src/renderer/features/reader/view/ReaderToolbar.tsx
+similarity index 99%
+rename from src/renderer/features/reader/ReaderToolbar.tsx
+rename to src/renderer/features/reader/view/ReaderToolbar.tsx
+index 57eaed3d38..0e0be8bcb0 100644
+--- a/src/renderer/features/reader/ReaderToolbar.tsx
++++ b/src/renderer/features/reader/view/ReaderToolbar.tsx
+@@ -39,7 +39,7 @@ import { useEffect, useState } from 'react'
+ import type { ReactNode } from 'react'
+ import type { AnnotationColor } from '@shared/models/annotation'
+ import { ANNOTATION_COLORS } from '@shared/constants'
+-import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
++import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
+ 
+ /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
+  *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */
+diff --git a/src/renderer/features/reader/SearchHighlightLayer.tsx b/src/renderer/features/reader/view/SearchHighlightLayer.tsx
+similarity index 99%
+rename from src/renderer/features/reader/SearchHighlightLayer.tsx
+rename to src/renderer/features/reader/view/SearchHighlightLayer.tsx
+index 30456943b0..ae5d2a3613 100644
+--- a/src/renderer/features/reader/SearchHighlightLayer.tsx
++++ b/src/renderer/features/reader/view/SearchHighlightLayer.tsx
+@@ -37,7 +37,7 @@
+ import { useEffect, useRef, useState } from 'react'
+ import { spansForItems, toPageRelative } from './reader-search'
+ import { useReaderSearchStore } from './reader-search.store'
+-import { PAGE_LAYER_Z } from './state/page-layer-z'
++import { PAGE_LAYER_Z } from '../state/page-layer-z'
+ 
+ /** 高亮块（页内相对像素+active 标记） */
+ interface HighlightBox {
+diff --git a/src/renderer/features/reader/TabBar.tsx b/src/renderer/features/reader/view/TabBar.tsx
+similarity index 98%
+rename from src/renderer/features/reader/TabBar.tsx
+rename to src/renderer/features/reader/view/TabBar.tsx
+index 5712d66441..087a7f229b 100644
+--- a/src/renderer/features/reader/TabBar.tsx
++++ b/src/renderer/features/reader/view/TabBar.tsx
+@@ -38,9 +38,9 @@
+  */
+ import { useState } from 'react'
+ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+-import { useReaderStore } from './state/reader.store'
+-import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './state/tab-dirty'
+-import type { TabState } from './state/reader.store'
++import { useReaderStore } from '../state/reader.store'
++import { confirmCloseDirty, isTabDirty, useNotesDrafts } from '../state/tab-dirty'
++import type { TabState } from '../state/reader.store'
+ 
+ /** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
+  *  （防御位）；loading/error 态的占位文案 */
+diff --git a/src/renderer/features/reader/reader-search.store.ts b/src/renderer/features/reader/view/reader-search.store.ts
+similarity index 98%
+rename from src/renderer/features/reader/reader-search.store.ts
+rename to src/renderer/features/reader/view/reader-search.store.ts
+index 081f1db5fd..23f1c70304 100644
+--- a/src/renderer/features/reader/reader-search.store.ts
++++ b/src/renderer/features/reader/view/reader-search.store.ts
+@@ -38,8 +38,8 @@
+ import { create } from 'zustand'
+ import { asSearchDoc, buildPageText, findInText, toTextItems } from './reader-search'
+ import type { SearchItemRange } from './reader-search'
+-import type { PdfTextItem } from './anchors/geometry-types'
+-import { showToast } from '../../shared/ui/toast-store'
++import type { PdfTextItem } from '../anchors/geometry-types'
++import { showToast } from '../../../shared/ui/toast-store'
+ 
+ export type ReaderSearchStateName = 'idle' | 'open' | 'searching' | 'done'
+ 
+diff --git a/src/renderer/features/reader/reader-search.ts b/src/renderer/features/reader/view/reader-search.ts
+similarity index 99%
+rename from src/renderer/features/reader/reader-search.ts
+rename to src/renderer/features/reader/view/reader-search.ts
+index e41c34d56a..d741151b42 100644
+--- a/src/renderer/features/reader/reader-search.ts
++++ b/src/renderer/features/reader/view/reader-search.ts
+@@ -29,7 +29,7 @@
+  * - 零 DOM 副作用纯函数（spansForItems 只读查询）；已知边界（票面 §④）：
+  *   跨行匹配=行盒原样、RTL/竖排按 ltr、whitespace 不归一。
+  */
+-import type { PdfTextItem } from './view/PdfPageCanvas'
++import type { PdfTextItem } from './PdfPageCanvas'
+ 
+ /** 字符映射项：text 下标 → 所属文本项与项内偏移；-1/-1=换行哨兵 */
+ export interface CharMapEntry {
+diff --git a/src/renderer/features/reader/reader-shortcut-handlers.ts b/src/renderer/features/reader/view/reader-shortcut-handlers.ts
+similarity index 94%
+rename from src/renderer/features/reader/reader-shortcut-handlers.ts
+rename to src/renderer/features/reader/view/reader-shortcut-handlers.ts
+index c9c0e590cd..50407ebac0 100644
+--- a/src/renderer/features/reader/reader-shortcut-handlers.ts
++++ b/src/renderer/features/reader/view/reader-shortcut-handlers.ts
+@@ -15,8 +15,8 @@
+  */
+ import { useMemo } from 'react'
+ import type { RefObject } from 'react'
+-import { useReaderStore } from './state/reader.store'
+-import { readActiveTab } from './state/useActiveTab'
++import { useReaderStore } from '../state/reader.store'
++import { readActiveTab } from '../state/useActiveTab'
+ import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
+ import { ZOOM_STEP, round2 } from './ReaderToolbar'
+ 
+diff --git a/src/renderer/features/reader/useReaderSearch.tsx b/src/renderer/features/reader/view/useReaderSearch.tsx
+similarity index 95%
+rename from src/renderer/features/reader/useReaderSearch.tsx
+rename to src/renderer/features/reader/view/useReaderSearch.tsx
+index 734ce49388..fe34e42b11 100644
+--- a/src/renderer/features/reader/useReaderSearch.tsx
++++ b/src/renderer/features/reader/view/useReaderSearch.tsx
+@@ -28,9 +28,9 @@
+  */
+ import { useEffect } from 'react'
+ import type { ReactNode } from 'react'
+-import { registerKeymap, unregisterKeymap } from '../../shared/keymap'
+-import { readActiveTab } from './state/useActiveTab'
+-import { useReaderStore } from './state/reader.store'
++import { registerKeymap, unregisterKeymap } from '../../../shared/keymap'
++import { readActiveTab } from '../state/useActiveTab'
++import { useReaderStore } from '../state/reader.store'
+ import { ReaderSearchBox } from './ReaderSearchBox'
+ import { useReaderSearchStore } from './reader-search.store'
+ 
+diff --git a/tests/unit/renderer/annotation-editor-ux.test.tsx b/tests/unit/renderer/annotation-editor-ux.test.tsx
+index 645a404f28..d2fa3569c4 100644
+--- a/tests/unit/renderer/annotation-editor-ux.test.tsx
++++ b/tests/unit/renderer/annotation-editor-ux.test.tsx
+@@ -18,7 +18,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { makeAnnotation } from '../../utils/factories'
+ import type { AnnotationRect } from '../../../src/shared/models/annotation'
+-import { AnnotationEditor } from '../../../src/renderer/features/reader/AnnotationEditor'
++import { AnnotationEditor } from '../../../src/renderer/features/reader/view/AnnotationEditor'
+ 
+ /** 完整形态最小标注（comment 可覆写——lastSaved 语义用例需非空初值） */
+ const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
+diff --git a/tests/unit/renderer/annotation-menu.test.tsx b/tests/unit/renderer/annotation-menu.test.tsx
+index be2f07db27..db7b349a9e 100644
+--- a/tests/unit/renderer/annotation-menu.test.tsx
++++ b/tests/unit/renderer/annotation-menu.test.tsx
+@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
+ import { expect, it, vi } from 'vitest'
+ import { makeAnnotation } from '../../utils/factories'
+ import type { AnnotationRect } from '../../../src/shared/models/annotation'
+-import { AnnotationMenu } from '../../../src/renderer/features/reader/AnnotationMenu'
++import { AnnotationMenu } from '../../../src/renderer/features/reader/view/AnnotationMenu'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+ /** 完整形态的最小标注（类型契约：接口层全字段） */
+diff --git a/tests/unit/renderer/r3-rdr-set-visual.test.tsx b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+index 445daa5f5c..284512558d 100644
+--- a/tests/unit/renderer/r3-rdr-set-visual.test.tsx
++++ b/tests/unit/renderer/r3-rdr-set-visual.test.tsx
+@@ -27,8 +27,8 @@ vi.mock('../../../src/renderer/features/settings/ZcodeLinkSection', () => ({
+ }))
+ 
+ import { makeTab } from '../../utils/factories'
+-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+-import { TabBar } from '../../../src/renderer/features/reader/TabBar'
++import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
++import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
+ import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+diff --git a/tests/unit/renderer/reader-double-page.test.tsx b/tests/unit/renderer/reader-double-page.test.tsx
+index c668445733..33d642aa09 100644
+--- a/tests/unit/renderer/reader-double-page.test.tsx
++++ b/tests/unit/renderer/reader-double-page.test.tsx
+@@ -24,7 +24,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
+ import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
+ import { makeTab } from '../../utils/factories'
+ import { PageColumn } from '../../../src/renderer/features/reader/view/PageColumn'
+-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
++import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
+ import {
+   anchoredScrollTop,
+   columnTotalHeight,
+diff --git a/tests/unit/renderer/reader-page-open-race.test.tsx b/tests/unit/renderer/reader-page-open-race.test.tsx
+index 474037efb9..e8f7878335 100644
+--- a/tests/unit/renderer/reader-page-open-race.test.tsx
++++ b/tests/unit/renderer/reader-page-open-race.test.tsx
+@@ -40,7 +40,7 @@ vi.mock('../../../src/renderer/features/reader/view/PageColumn', () => ({
+   nearestPage: () => 0
+ }))
+ 
+-import { ReaderPage } from '../../../src/renderer/features/reader/ReaderPage'
++import { ReaderPage } from '../../../src/renderer/features/reader/view/ReaderPage'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { requestOpenPaperAnchored, takePendingOpenPaper } from '../../../src/renderer/shared/open-paper-bus'
+ 
+diff --git a/tests/unit/renderer/reader-search-text.test.tsx b/tests/unit/renderer/reader-search-text.test.tsx
+index c89bef6868..49e40fc78b 100644
+--- a/tests/unit/renderer/reader-search-text.test.tsx
++++ b/tests/unit/renderer/reader-search-text.test.tsx
+@@ -17,7 +17,7 @@ import {
+   spansForItems,
+   toPageRelative,
+   toTextItems
+-} from '../../../src/renderer/features/reader/reader-search'
++} from '../../../src/renderer/features/reader/view/reader-search'
+ import type { PdfTextItem } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
+ 
+ function item(str: string, hasEOL = false): PdfTextItem {
+diff --git a/tests/unit/renderer/reader-search-ui.test.tsx b/tests/unit/renderer/reader-search-ui.test.tsx
+index c763bb5f8e..16d06d30c4 100644
+--- a/tests/unit/renderer/reader-search-ui.test.tsx
++++ b/tests/unit/renderer/reader-search-ui.test.tsx
+@@ -14,13 +14,13 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import { defineRangeClientRects, domRect } from '../../utils/geometry'
+-import { ReaderSearchBox } from '../../../src/renderer/features/reader/ReaderSearchBox'
+-import { SearchHighlightLayer } from '../../../src/renderer/features/reader/SearchHighlightLayer'
+-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
++import { ReaderSearchBox } from '../../../src/renderer/features/reader/view/ReaderSearchBox'
++import { SearchHighlightLayer } from '../../../src/renderer/features/reader/view/SearchHighlightLayer'
++import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
+ import {
+   createReaderSearchInitialState,
+   useReaderSearchStore
+-} from '../../../src/renderer/features/reader/reader-search.store'
++} from '../../../src/renderer/features/reader/view/reader-search.store'
+ 
+ let root: Root | null = null
+ let host: HTMLDivElement | null = null
+diff --git a/tests/unit/renderer/reader-search-wiring.test.tsx b/tests/unit/renderer/reader-search-wiring.test.tsx
+index c7fef6c278..8be98b53e2 100644
+--- a/tests/unit/renderer/reader-search-wiring.test.tsx
++++ b/tests/unit/renderer/reader-search-wiring.test.tsx
+@@ -15,12 +15,12 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+ import { makeApiStub } from '../../utils/api-client-mock'
+ import { makeTab } from '../../utils/factories'
+-import { useReaderSearch } from '../../../src/renderer/features/reader/useReaderSearch'
++import { useReaderSearch } from '../../../src/renderer/features/reader/view/useReaderSearch'
+ import {
+   createReaderSearchInitialState,
+   useReaderSearchStore,
+   type SearchMatch
+-} from '../../../src/renderer/features/reader/reader-search.store'
++} from '../../../src/renderer/features/reader/view/reader-search.store'
+ import {
+   createReaderStoreInitialState,
+   useReaderStore
+diff --git a/tests/unit/renderer/reader-search.store.test.tsx b/tests/unit/renderer/reader-search.store.test.tsx
+index 1f51df134b..62002c25a2 100644
+--- a/tests/unit/renderer/reader-search.store.test.tsx
++++ b/tests/unit/renderer/reader-search.store.test.tsx
+@@ -10,7 +10,7 @@ import { toastStoreSpy as toastMock } from '../../utils/api-client-mock'
+ import {
+   createReaderSearchInitialState,
+   useReaderSearchStore
+-} from '../../../src/renderer/features/reader/reader-search.store'
++} from '../../../src/renderer/features/reader/view/reader-search.store'
+ 
+ /** 单页文本项数组（每段一个 item——组装夹具用） */
+ function pageOf(...strs: string[]): { items: unknown[] } {
+diff --git a/tests/unit/renderer/reader-shortcuts.test.tsx b/tests/unit/renderer/reader-shortcuts.test.tsx
+index 8f32406a34..d7784ea8e5 100644
+--- a/tests/unit/renderer/reader-shortcuts.test.tsx
++++ b/tests/unit/renderer/reader-shortcuts.test.tsx
+@@ -7,7 +7,7 @@ import {
+   useReaderShortcuts,
+   SCROLL_STEP_RATIO,
+   type ReaderShortcutActions
+-} from '../../../src/renderer/features/reader/ReaderShortcuts'
++} from '../../../src/renderer/features/reader/view/ReaderShortcuts'
+ import { guardedDescribe } from '../../utils/guard'
+ 
+ import { showToast } from '../../../src/renderer/shared/ui/Toast'
+diff --git a/tests/unit/renderer/selection-mode.test.tsx b/tests/unit/renderer/selection-mode.test.tsx
+index 29b97fa7e4..956f84ad93 100644
+--- a/tests/unit/renderer/selection-mode.test.tsx
++++ b/tests/unit/renderer/selection-mode.test.tsx
+@@ -25,7 +25,7 @@ import { makeTab } from '../../utils/factories'
+ makeApiStub({ reader: {} })
+ import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
+ import { AiAnnotationLayer } from '../../../src/renderer/features/reader/view/AiAnnotationLayer'
+-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
++import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
+ import {
+   createReaderStoreInitialState,
+   useReaderStore
+diff --git a/tests/unit/renderer/tab-bar.test.tsx b/tests/unit/renderer/tab-bar.test.tsx
+index 8d1bcddbd6..d3694b63cf 100644
+--- a/tests/unit/renderer/tab-bar.test.tsx
++++ b/tests/unit/renderer/tab-bar.test.tsx
+@@ -11,7 +11,7 @@ import { act } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import { makeTab } from '../../utils/factories'
+-import { TabBar } from '../../../src/renderer/features/reader/TabBar'
++import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
+ import type { TabState } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+diff --git a/tests/unit/renderer/tab-dirty.test.tsx b/tests/unit/renderer/tab-dirty.test.tsx
+index 5dcffad6fc..a4921d7bee 100644
+--- a/tests/unit/renderer/tab-dirty.test.tsx
++++ b/tests/unit/renderer/tab-dirty.test.tsx
+@@ -10,7 +10,7 @@ import { createRoot, type Root } from 'react-dom/client'
+ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+ import { makeTab } from '../../utils/factories'
+ import { isTabDirty, useTabDirtyAggregate, confirmCloseDirty } from '../../../src/renderer/features/reader/state/tab-dirty'
+-import { TabBar } from '../../../src/renderer/features/reader/TabBar'
++import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
+ import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
+ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+ import type { TabState } from '../../../src/renderer/features/reader/state/reader.store'
+diff --git a/tests/unit/renderer/theme.test.ts b/tests/unit/renderer/theme.test.ts
+index 61557cce25..da3fd8da19 100644
+--- a/tests/unit/renderer/theme.test.ts
++++ b/tests/unit/renderer/theme.test.ts
+@@ -289,8 +289,8 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
+   const POPUP_TSX = [
+     '../../../src/renderer/shared/ui/Dialog.tsx',
+     '../../../src/renderer/shared/ui/Toast.tsx',
+-    '../../../src/renderer/features/reader/AnnotationMenu.tsx',
+-    '../../../src/renderer/features/reader/AnnotationEditor.tsx',
++    '../../../src/renderer/features/reader/view/AnnotationMenu.tsx',
++    '../../../src/renderer/features/reader/view/AnnotationEditor.tsx',
+     '../../../src/renderer/features/reader/interact/SelectionToolbar.tsx',
+     '../../../src/renderer/features/tags/TagLifecycleMenu.tsx',
+     '../../../src/renderer/features/lineage/LineageToolbar.tsx',
+@@ -482,7 +482,7 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme
+     '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
+     '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
+     '../../../src/renderer/features/lineage/LineageSideTags.tsx',
+-    '../../../src/renderer/features/reader/TabBar.tsx'
++    '../../../src/renderer/features/reader/view/TabBar.tsx'
+   ]
+     .map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
+     .join('\n')

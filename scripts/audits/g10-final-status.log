@@ -1,0 +1,94 @@
+== g10 final state ==
+-- git status --
+warning: unable to find all commit-graph files
+ M docs/handoff/relay.md
+ M locks/manifest.json
+ M src/renderer/app/App.tsx
+RM src/renderer/features/reader/AnnotationEditor.tsx -> src/renderer/features/reader/view/AnnotationEditor.tsx
+RM src/renderer/features/reader/AnnotationMenu.tsx -> src/renderer/features/reader/view/AnnotationMenu.tsx
+ M src/renderer/features/reader/view/AnnotationPopups.tsx
+ M src/renderer/features/reader/view/PageColumn.tsx
+RM src/renderer/features/reader/PageColumnView.tsx -> src/renderer/features/reader/view/PageColumnView.tsx
+ M src/renderer/features/reader/view/PagesOverlay.tsx
+RM src/renderer/features/reader/ReaderPage.tsx -> src/renderer/features/reader/view/ReaderPage.tsx
+ M src/renderer/features/reader/view/ReaderPageView.tsx
+R  src/renderer/features/reader/ReaderSearchBox.tsx -> src/renderer/features/reader/view/ReaderSearchBox.tsx
+RM src/renderer/features/reader/ReaderShortcuts.ts -> src/renderer/features/reader/view/ReaderShortcuts.ts
+RM src/renderer/features/reader/ReaderToolbar.tsx -> src/renderer/features/reader/view/ReaderToolbar.tsx
+RM src/renderer/features/reader/SearchHighlightLayer.tsx -> src/renderer/features/reader/view/SearchHighlightLayer.tsx
+RM src/renderer/features/reader/TabBar.tsx -> src/renderer/features/reader/view/TabBar.tsx
+RM src/renderer/features/reader/reader-search.store.ts -> src/renderer/features/reader/view/reader-search.store.ts
+RM src/renderer/features/reader/reader-search.ts -> src/renderer/features/reader/view/reader-search.ts
+RM src/renderer/features/reader/reader-shortcut-handlers.ts -> src/renderer/features/reader/view/reader-shortcut-handlers.ts
+RM src/renderer/features/reader/useReaderSearch.tsx -> src/renderer/features/reader/view/useReaderSearch.tsx
+ M tests/unit/renderer/annotation-editor-ux.test.tsx
+ M tests/unit/renderer/annotation-menu.test.tsx
+ M tests/unit/renderer/r3-rdr-set-visual.test.tsx
+ M tests/unit/renderer/reader-double-page.test.tsx
+ M tests/unit/renderer/reader-page-open-race.test.tsx
+ M tests/unit/renderer/reader-search-text.test.tsx
+ M tests/unit/renderer/reader-search-ui.test.tsx
+ M tests/unit/renderer/reader-search-wiring.test.tsx
+ M tests/unit/renderer/reader-search.store.test.tsx
+ M tests/unit/renderer/reader-shortcuts.test.tsx
+ M tests/unit/renderer/selection-mode.test.tsx
+ M tests/unit/renderer/tab-bar.test.tsx
+ M tests/unit/renderer/tab-dirty.test.tsx
+ M tests/unit/renderer/theme.test.ts
+?? scripts/audits/b22-claim.mjs
+?? scripts/audits/g10-impl-brief.md
+?? scripts/audits/g10-oneway.mjs
+?? scripts/audits/g10-recon.mjs
+-- diff --stat --
+warning: in the working copy of 'locks/manifest.json', CRLF will be replaced by LF the next time Git touches it
+ docs/handoff/relay.md                              |  8 ++---
+ locks/manifest.json                                | 42 ++++++++++++++--------
+ src/renderer/app/App.tsx                           |  2 +-
+ .../features/reader/view/AnnotationEditor.tsx      |  4 +--
+ .../features/reader/view/AnnotationMenu.tsx        |  2 +-
+ .../features/reader/view/AnnotationPopups.tsx      |  4 +--
+ src/renderer/features/reader/view/PageColumn.tsx   |  2 +-
+ .../features/reader/view/PageColumnView.tsx        |  8 ++---
+ src/renderer/features/reader/view/PagesOverlay.tsx |  2 +-
+ src/renderer/features/reader/view/ReaderPage.tsx   | 20 +++++------
+ .../features/reader/view/ReaderPageView.tsx        |  4 +--
+ .../features/reader/view/ReaderShortcuts.ts        |  6 ++--
+ .../features/reader/view/ReaderToolbar.tsx         |  2 +-
+ .../features/reader/view/SearchHighlightLayer.tsx  |  2 +-
+ src/renderer/features/reader/view/TabBar.tsx       |  6 ++--
+ .../features/reader/view/reader-search.store.ts    |  4 +--
+ src/renderer/features/reader/view/reader-search.ts |  2 +-
+ .../reader/view/reader-shortcut-handlers.ts        |  4 +--
+ .../features/reader/view/useReaderSearch.tsx       |  6 ++--
+ tests/unit/renderer/annotation-editor-ux.test.tsx  |  2 +-
+ tests/unit/renderer/annotation-menu.test.tsx       |  2 +-
+ tests/unit/renderer/r3-rdr-set-visual.test.tsx     |  4 +--
+ tests/unit/renderer/reader-double-page.test.tsx    |  2 +-
+ tests/unit/renderer/reader-page-open-race.test.tsx |  2 +-
+ tests/unit/renderer/reader-search-text.test.tsx    |  2 +-
+ tests/unit/renderer/reader-search-ui.test.tsx      |  8 ++---
+ tests/unit/renderer/reader-search-wiring.test.tsx  |  4 +--
+ tests/unit/renderer/reader-search.store.test.tsx   |  2 +-
+ tests/unit/renderer/reader-shortcuts.test.tsx      |  2 +-
+ tests/unit/renderer/selection-mode.test.tsx        |  2 +-
+ tests/unit/renderer/tab-bar.test.tsx               |  2 +-
+ tests/unit/renderer/tab-dirty.test.tsx             |  2 +-
+ tests/unit/renderer/theme.test.ts                  |  6 ++--
+ 33 files changed, 92 insertions(+), 80 deletions(-)
+-- diff --stat (staged renames) --
+warning: unable to find all commit-graph files
+ src/renderer/features/reader/{ => view}/AnnotationEditor.tsx        | 0
+ src/renderer/features/reader/{ => view}/AnnotationMenu.tsx          | 0
+ src/renderer/features/reader/{ => view}/PageColumnView.tsx          | 0
+ src/renderer/features/reader/{ => view}/ReaderPage.tsx              | 0
+ src/renderer/features/reader/{ => view}/ReaderSearchBox.tsx         | 0
+ src/renderer/features/reader/{ => view}/ReaderShortcuts.ts          | 0
+ src/renderer/features/reader/{ => view}/ReaderToolbar.tsx           | 0
+ src/renderer/features/reader/{ => view}/SearchHighlightLayer.tsx    | 0
+ src/renderer/features/reader/{ => view}/TabBar.tsx                  | 0
+ src/renderer/features/reader/{ => view}/reader-search.store.ts      | 0
+ src/renderer/features/reader/{ => view}/reader-search.ts            | 0
+ src/renderer/features/reader/{ => view}/reader-shortcut-handlers.ts | 0
+ src/renderer/features/reader/{ => view}/useReaderSearch.tsx         | 0
+ 13 files changed, 0 insertions(+), 0 deletions(-)
+FINAL_STATUS_EXIT=0

@@ -39,7 +39,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
-import { COLOR_LABEL, COLOR_SWATCH } from './anchors/annotation-style'
+import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
 
 /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
  *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */

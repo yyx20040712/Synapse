@@ -45,18 +45,18 @@
  * - e2e：tests/e2e/reader-text.spec.ts 断言渲染文本+多页可见（最终裁判）
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
-import { openFromBus } from './anchors/open-paper-anchor'
-import type { PageScrollRequest } from './view/PageColumn'
+import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../../shared/open-paper-bus'
+import { openFromBus } from '../anchors/open-paper-anchor'
+import type { PageScrollRequest } from './PageColumn'
 import { useReaderSearch } from './useReaderSearch'
-import { useReaderStore } from './state/reader.store'
-import { readActiveTab, useActiveTab } from './state/useActiveTab'
-import { createReaderScrollProgress, useScrollProgressWiring } from './view/scroll-progress'
-import { useReaderReadingTime } from './time/reading-time-setup'
-import { useReadingTimeWiring } from './time/reading-time'
+import { useReaderStore } from '../state/reader.store'
+import { readActiveTab, useActiveTab } from '../state/useActiveTab'
+import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
+import { useReaderReadingTime } from '../time/reading-time-setup'
+import { useReadingTimeWiring } from '../time/reading-time'
 import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
-import { ReaderPageView } from './view/ReaderPageView'
-import { showToast } from '../../shared/ui/Toast'
+import { ReaderPageView } from './ReaderPageView'
+import { showToast } from '../../../shared/ui/Toast'
 
 export function ReaderPage(): JSX.Element {
   // per-tab 选择器（TABS-01）：取 active tab 对象（引用稳定——无关 tab 更新不重渲染）

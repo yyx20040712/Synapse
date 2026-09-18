@@ -10,7 +10,7 @@ import { toastStoreSpy as toastMock } from '../../utils/api-client-mock'
 import {
   createReaderSearchInitialState,
   useReaderSearchStore
-} from '../../../src/renderer/features/reader/reader-search.store'
+} from '../../../src/renderer/features/reader/view/reader-search.store'
 
 /** 单页文本项数组（每段一个 item——组装夹具用） */
 function pageOf(...strs: string[]): { items: unknown[] } {

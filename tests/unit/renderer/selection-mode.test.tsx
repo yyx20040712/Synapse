@@ -25,7 +25,7 @@ import { makeTab } from '../../utils/factories'
 makeApiStub({ reader: {} })
 import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
 import { AiAnnotationLayer } from '../../../src/renderer/features/reader/view/AiAnnotationLayer'
-import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
+import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
 import {
   createReaderStoreInitialState,
   useReaderStore
