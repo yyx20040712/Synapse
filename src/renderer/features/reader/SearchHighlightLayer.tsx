@@ -37,7 +37,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { spansForItems, toPageRelative } from './reader-search'
 import { useReaderSearchStore } from './reader-search.store'
-import { PAGE_LAYER_Z } from './page-layer-z'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
 
 /** 高亮块（页内相对像素+active 标记） */
 interface HighlightBox {

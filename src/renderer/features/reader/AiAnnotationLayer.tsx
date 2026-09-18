@@ -71,10 +71,10 @@ import { matchBand, type RowBand } from './annotation-resolve'
 import { resolveAiNotesLayered } from './annotation-resolve-layered'
 import { usePageItemsStore } from './page-items.store'
 import { bandVertical } from './annotation-style'
-import { PAGE_LAYER_Z } from './page-layer-z'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
 import { QUESTION_COLOR } from './ai-note-style'
-import { useAiNotesStore } from './ai-notes.store'
-import { useReaderStore } from './reader.store'
+import { useAiNotesStore } from './state/ai-notes.store'
+import { useReaderStore } from './state/reader.store'
 
 /** 重锚后的显示矩形（aiNoteId → rects；重锚失败不落项=该段零 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>

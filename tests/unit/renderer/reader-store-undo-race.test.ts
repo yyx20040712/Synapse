@@ -32,8 +32,8 @@ const annBase: Annotation = {
 async function loadStores(api: unknown) {
   vi.resetModules()
   vi.stubGlobal('window', { api })
-  const undoMod = await import('../../../src/renderer/features/reader/annotation-undo')
-  const storeMod = await import('../../../src/renderer/features/reader/reader.store')
+  const undoMod = await import('../../../src/renderer/features/reader/state/annotation-undo')
+  const storeMod = await import('../../../src/renderer/features/reader/state/reader.store')
   return { undoMod, storeMod }
 }
 

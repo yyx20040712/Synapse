@@ -25,7 +25,7 @@ function ann(id: string, paperId = 'p-1', comment = ''): Annotation {
 async function loadModule(api: unknown) {
   vi.resetModules()
   vi.stubGlobal('window', { api })
-  return await import('../../../src/renderer/features/reader/annotation-undo')
+  return await import('../../../src/renderer/features/reader/state/annotation-undo')
 }
 
 guardedDescribe('SR2-UNDO-01', 'annotation-undo —— 操作级撤销栈（三逆操作/深度截断/失败不弹栈/空栈/隔离）', () => {

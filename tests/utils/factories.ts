@@ -17,7 +17,7 @@
  * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更；C 面零变化指纹门。
  * 受锁文件。[test-refactor][locked-change]
  */
-import type { TabState } from '../../src/renderer/features/reader/reader.store'
+import type { TabState } from '../../src/renderer/features/reader/state/reader.store'
 import type { Annotation } from '../../src/shared/models/annotation'
 import type { PaperDetail } from '../../src/shared/models/paper'
 import type { LineageEdge, LineageNode } from '../../src/shared/models/lineage'

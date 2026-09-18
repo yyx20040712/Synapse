@@ -29,7 +29,7 @@ import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolb
 import {
   createReaderStoreInitialState,
   useReaderStore
-} from '../../../src/renderer/features/reader/reader.store'
+} from '../../../src/renderer/features/reader/state/reader.store'
 
 /** 归一化域矩形夹具 */
 function rect(x: number, y: number, w: number, h: number): AnnotationRect {

@@ -34,7 +34,7 @@ const mocks = vi.hoisted(() => ({
 mocks.showToast = toastSpy
 makeApiStub({ reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } })
 
-vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
   useReaderStore: {
     getState: () => ({
       updateAnnotation: mocks.storeUpdateAnnotation,
@@ -46,7 +46,7 @@ vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
   }
 }))
 
-vi.mock('../../../src/renderer/features/reader/annotation-undo', () => ({
+vi.mock('../../../src/renderer/features/reader/state/annotation-undo', () => ({
   pushUndo: mocks.pushUndo,
   undo: vi.fn(),
   clearStack: vi.fn(),

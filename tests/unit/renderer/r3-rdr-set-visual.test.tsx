@@ -30,7 +30,7 @@ import { makeTab } from '../../utils/factories'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/ReaderToolbar'
 import { TabBar } from '../../../src/renderer/features/reader/TabBar'
 import { SettingsPage } from '../../../src/renderer/features/settings/SettingsPage'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 // act() 环境声明（library-cards 同口径——免 React 警告刷屏）

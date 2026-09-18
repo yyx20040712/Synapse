@@ -42,7 +42,7 @@
  *   聚合或语义、成功重试清除 + 组件级灰点渲染与关闭确认（tab-bar.test.tsx 扩展）
  */
 import { useReaderStore } from './reader.store'
-import { useNotesStore } from '../notes/notes.store'
+import { useNotesStore } from '../../notes/notes.store'
 import { useShallow } from 'zustand/react/shallow'
 
 /** 两写面信号包（isTabDirty 的纯函数输入） */

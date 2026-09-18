@@ -29,7 +29,7 @@ const { extractorHandle, loadDocSentinel, holder } = vi.hoisted(() => ({
 
 // CorpusExtractor 模块桩：捕获生产组装 deps；handleEvent 转 Spy（提取器本体行为
 // 已由 corpus-extractor.test 锁定——本文件只锁「桥把它接进来」的接线面）
-vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
+vi.mock('../../../src/renderer/features/reader/state/CorpusExtractor', () => ({
   loadPdfDocument: loadDocSentinel,
   createCorpusExtractor: (deps: unknown) => {
     holder.deps = deps

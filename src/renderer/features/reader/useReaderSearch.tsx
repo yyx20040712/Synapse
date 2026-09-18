@@ -29,8 +29,8 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { registerKeymap, unregisterKeymap } from '../../shared/keymap'
-import { readActiveTab } from './useActiveTab'
-import { useReaderStore } from './reader.store'
+import { readActiveTab } from './state/useActiveTab'
+import { useReaderStore } from './state/reader.store'
 import { ReaderSearchBox } from './ReaderSearchBox'
 import { useReaderSearchStore } from './reader-search.store'
 

@@ -26,7 +26,7 @@ import type { RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { domRect } from '../../utils/geometry'
-import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/state/PdfDocProvider'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 
 /** 桩共享位（vi.hoisted——vi.mock 工厂与用例两侧同引用） */

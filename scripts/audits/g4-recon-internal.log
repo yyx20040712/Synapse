@@ -1,0 +1,31 @@
+
+=== reader.store.ts ===
+  ../../api/client
+  ../../shared/ui/toast-store
+  ./annotation-undo
+
+=== tab-dirty.ts ===
+  ../notes/notes.store
+  ./reader.store
+
+=== useActiveTab.ts ===
+  ./reader.store
+
+=== annotation-undo.ts ===
+  ../../api/client
+
+=== page-layer-z.ts ===
+
+=== ai-notes.store.ts ===
+  ../../api/client
+
+=== ai-notes-phase.ts ===
+
+=== PdfDocProvider.tsx ===
+
+=== CorpusExtractor.ts ===
+  ../../../shared/app-error
+  ../../../shared/ipc/schemas
+  ../../../shared/models/annotation
+
+=== scroll-converge.ts ===

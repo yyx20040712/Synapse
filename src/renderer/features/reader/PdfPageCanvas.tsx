@@ -29,7 +29,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { RenderingCancelledException, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
-import { PAGE_LAYER_Z } from './page-layer-z'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
 import { clampScale } from './pdf-item-geometry'
 import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from './geometry-types'
 

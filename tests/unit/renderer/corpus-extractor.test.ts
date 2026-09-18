@@ -8,7 +8,7 @@ import {
   type PdfjsPageLike,
   type RenderCanvas,
   settleLoadTask
-} from '../../../src/renderer/features/reader/CorpusExtractor'
+} from '../../../src/renderer/features/reader/state/CorpusExtractor'
 import {
   extractRequestEventSchema,
   type CorpusItemReq,

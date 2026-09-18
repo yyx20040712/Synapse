@@ -71,9 +71,9 @@
  *   而为/防御分支/事件契约三面/settleLoadTask 失败终接三径（F-R3）
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
-import type { Result } from '../../../shared/app-error'
-import type { CorpusItemReq, ExportCorpusEvent, ExtractRequestEvent } from '../../../shared/ipc/schemas'
-import type { AnnotationRect } from '../../../shared/models/annotation'
+import type { Result } from '../../../../shared/app-error'
+import type { CorpusItemReq, ExportCorpusEvent, ExtractRequestEvent } from '../../../../shared/ipc/schemas'
+import type { AnnotationRect } from '../../../../shared/models/annotation'
 
 /** 全页快照分辨率（v1=2.0——PDF 矢量可放大；变更=INTERFACE 版本号联动） */
 export const EXPORT_SNAPSHOT_SCALE = 2.0

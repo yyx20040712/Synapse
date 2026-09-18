@@ -13,7 +13,7 @@
 - poll_interval_min: 10
 - last_dispatch: 2026-09-18T20:30:44+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T12:31:35Z
+- heartbeat_utc: 2026-09-18T13:00:23Z
 - claim: claim-1789734695-b16
 - no_progress_count: 0
 - checked_total: 35

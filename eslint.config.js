@@ -86,10 +86,10 @@ export default tseslint.config(
     // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口；
     // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx）
     files: [
-      'src/renderer/features/reader/PdfDocProvider.tsx',
+      'src/renderer/features/reader/state/PdfDocProvider.tsx',
       'src/renderer/features/reader/PdfPageCanvas.tsx',
       'src/renderer/features/reader/TextLayer.tsx',
-      'src/renderer/features/reader/CorpusExtractor.ts'
+      'src/renderer/features/reader/state/CorpusExtractor.ts'
     ],
     rules: {
       'no-restricted-imports': [

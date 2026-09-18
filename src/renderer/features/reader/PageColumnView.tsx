@@ -21,7 +21,7 @@
  *   onError(msg) }): JSX.Element（width=宿主 columnWidthFor 单源计算传入）
  */
 import type { MutableRefObject } from 'react'
-import type { PDFDocumentProxy } from './PdfDocProvider'
+import type { PDFDocumentProxy } from './state/PdfDocProvider'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import { PageBox } from './PageBox'
 import { layoutRows, pageBoxWidth, type PageBoxSize, type PageLayout } from './page-column-geometry'

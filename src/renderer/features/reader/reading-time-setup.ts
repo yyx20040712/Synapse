@@ -12,8 +12,8 @@
 import { useMemo } from 'react'
 import { api } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
-import { useReaderStore } from './reader.store'
-import type { ProgressFlusher } from './reader.store'
+import { useReaderStore } from './state/reader.store'
+import type { ProgressFlusher } from './state/reader.store'
 import {
   chunkSeconds,
   createCompositeProgressFlusher,

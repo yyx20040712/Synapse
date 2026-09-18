@@ -22,7 +22,7 @@ stubApi.notes.save = notesSave
 
 import { ReaderNotesPanel } from '../../../src/renderer/features/reader/ReaderNotesPanel'
 import { FragmentNotesList } from '../../../src/renderer/features/reader/FragmentNotesList'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 function ann(id: string, page: number, off: number, kind: AnnotationKind, comment: string): Annotation {

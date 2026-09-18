@@ -1,0 +1,97 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 verify
+> npm run quality:check && npm run test-surface:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build
+
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：ZCODE_SKILL_NAME / AI_SENSOR_DIR_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
+dup-constants：扫描 224 文件 / 132 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用 / 无同值双常量新增
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test-surface:check
+> node scripts/check-test-surface.mjs check
+
+[test-surface] files: 183 base / 187 cur | cases: 1757 base / 1789 cur | assertions: 5334 base / 5411 cur | skipSites: 15 base / 15 cur
+[test-surface] NEW tests/e2e/corpus-export.spec.ts › F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成 (line 157, 3 assertions)
+[test-surface] NEW tests/unit/renderer/selection-item-chain.test.tsx › 回退①页项缺失：注册表空 → DOM 回退仅显示不入库（保存门 F-GEOM-01-G2）——paint=span 量测盒 top≈25.25% 视觉连续+工具条 null（无保存入口）+console.warn 不静默 (line 204, 5 assertions)
+[test-surface] NEW tests/unit/services/ai-notes-import.test.ts › F-AIN-01 中断注入零半删半插：首插中断零行+重灌中断旧数据完整（withTransaction 全有或全无） (line 211, 13 assertions)
+[test-surface] NEW tests/unit/services/ai-notes-import.test.ts › F-AIN-01 跨篇隔离：篇 A 重灌成功+篇 B 重灌中断→A 新数据落库+B 旧数据完整（事务边界=单篇非整批） (line 253, 9 assertions)
+[test-surface] NEW tests/unit/services/corpus.export.test.ts › F-SESS-01 streaming-abort：renderer 重载中止在途会话——单飞锁释放（IO_ERROR reject/无 manifest/再发起不 BUSY） (line 337, 5 assertions)
+[test-surface] NEW tests/unit/services/corpus.export.test.ts › F-SESS-01 abort 防御两格：idle 无在途会话=false；终局后迟到 abort=false (line 359, 2 assertions)
+[test-surface] NEW tests/unit/services/corpus.export.test.ts › F-SESS-01 advance 守卫：complete 已排队终局推进（deferOutcome 未跑）时 abort——悬挂推进不得终写 manifest (line 375, 3 assertions)
+[test-surface] NEW tests/unit/services/corpus.export.test.ts › F-SESS-01 abort 后迟到回传：旧 sessionId complete→INVALID_REQUEST（abort 不打开伪造终局面） (line 395, 3 assertions)
+[test-surface] NEW_FILE tests/unit/services/shared/atomic-write.test.ts（8 用例）
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › string 形态：UTF-8 落盘内容一致（中文无损坏） (line 35, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › bytes 形态：Uint8Array 直写（不被字符串化） (line 42, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › 终名存在且默认 tmp 不残留（固定名 tmp 形态） (line 51, 2 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › ensureDir：深目录父链不存在时自动创建 (line 59, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › ensureDir 缺省不开：深目录缺父链时失败（旧 workspace.fs/settings 裸调语义） (line 66, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › uniqueTmp：并发双写同一路径互不覆盖——终名完整内容其一且 tmp 零残留 (line 72, 4 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › cleanOnFail：写后 rename 失败（目录占位）时 tmp 被清除并上抛 (line 93, 2 assertions)
+[test-surface] NEW tests/unit/services/shared/atomic-write.test.ts › cleanOnFail 缺省不开：失败后 tmp 残留（开关语义对照面） (line 101, 2 assertions)
+[test-surface] NEW_FILE tests/unit/services/shared/domain-error.test.ts（6 用例）
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › 基类直构：name=DomainError，code 与 message 保留 (line 19, 3 assertions)
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › 子类 name 自动继承（无手写 this.name）：测试桩与 HttpFetchError 实物 (line 26, 2 assertions)
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › instanceof 链：子类 instanceof 基类与 Error，基类 instanceof Error (line 33, 3 assertions)
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › toAppError 按 code 折叠：合法码保留 code 与中文 message (line 40, 2 assertions)
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › toAppError 按 code 折叠：非法码回落 INTERNAL（鸭子类型不认类名） (line 46, 3 assertions)
+[test-surface] NEW tests/unit/services/shared/domain-error.test.ts › HttpFetchError 三参形态：status 字段保留且 code 仍可折叠 (line 54, 3 assertions)
+[test-surface] NEW_FILE tests/unit/services/shared/sanitize.test.ts（9 用例）
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：paper-42_ok → paper-42_ok (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：ABCxyz019 → ABCxyz019 (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：../etc/passwd → ___etc_passwd (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：..\crew → ___crew (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：a b	c
+d → a_b_c_d (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒：论文：2024 → ___2024 (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 消毒： →  (line 21, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 白名单字符全程保持（混合长串不变） (line 25, 1 assertions)
+[test-surface] NEW tests/unit/services/shared/sanitize.test.ts › 穿越向量逐段消毒：连续点与多斜杠不存活 (line 29, 2 assertions)
+[test-surface] NEW_FILE tests/unit/shared/app-file-url.test.ts（3 用例）
+[test-surface] NEW tests/unit/shared/app-file-url.test.ts › prefix 常量 = APP_FILE_SCHEME + "://"（与协议常量同源对账） (line 13, 2 assertions)
+[test-surface] NEW tests/unit/shared/app-file-url.test.ts › appFileUrl：prefix + paperId 拼接 (line 18, 1 assertions)
+[test-surface] NEW tests/unit/shared/app-file-url.test.ts › appFileUrl：结果以 prefix 起且去 prefix 后还原 id (line 22, 2 assertions)
+[test-surface] exemptions entries: 2 hits: 2 stale: 0
+[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 206 个；open 17（weak 可领 0，strong 17）
+tickets 检查未通过：
+  - 工单 SR-RDR-09 指向的文件不存在：src/renderer/features/reader/reader.store.ts
+  - 工单 SR2-TABS-01 指向的文件不存在：src/renderer/features/reader/reader.store.ts
+  - 工单 SR2-TABS-03 指向的文件不存在：src/renderer/features/reader/tab-dirty.ts
+  - 工单 SR2-UNDO-01 指向的文件不存在：src/renderer/features/reader/annotation-undo.ts
+  - 工单 SR2-AI-02 指向的文件不存在：src/renderer/features/reader/CorpusExtractor.ts
+  - 工单 SR2-F-05 指向的文件不存在：src/renderer/features/reader/scroll-converge.ts
+  - 工单 F-R2 指向的文件不存在：src/renderer/features/reader/scroll-converge.ts
+  - 工单 F-R3 指向的文件不存在：src/renderer/features/reader/CorpusExtractor.ts
+  - 工单 F-GEOM-01-G4 指向的文件不存在：src/renderer/features/reader/reader.store.ts
+  - src/renderer/features/reader/state/reader.store.ts: 引用了已完成工单 SR2-TABS-01 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/state/tab-dirty.ts: 引用了已完成工单 SR2-TABS-03 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/state/annotation-undo.ts: 引用了已完成工单 SR2-UNDO-01 的占位（该工单已 done，本文件应是独立实现）
+  - src/renderer/features/reader/state/CorpusExtractor.ts: 引用了已完成工单 SR2-AI-02 的占位（该工单已 done，本文件应是独立实现）
+  - tests/unit/renderer/annotation-undo.test.ts: guardedDescribe('SR2-UNDO-01') 与被测文件不符——测试未 import 该工单登记的 src/renderer/features/reader/annotation-undo.ts（挂错块的测试会随工单状态被静默 skip）
+  - tests/unit/renderer/corpus-extractor.test.ts: guardedDescribe('SR2-AI-02') 与被测文件不符——测试未 import 该工单登记的 src/renderer/features/reader/CorpusExtractor.ts（挂错块的测试会随工单状态被静默 skip）
+  - tests/unit/renderer/tab-dirty.test.tsx: guardedDescribe('SR2-TABS-03') 与被测文件不符——测试未 import 该工单登记的 src/renderer/features/reader/tab-dirty.ts（挂错块的测试会随工单状态被静默 skip）
+  - tests/unit/renderer/tab-dirty.test.tsx: guardedDescribe('SR2-TABS-03') 与被测文件不符——测试未 import 该工单登记的 src/renderer/features/reader/tab-dirty.ts（挂错块的测试会随工单状态被静默 skip）
+  - tests/unit/renderer/reader.store.test.ts: guardedDescribe('SR2-TABS-01') 与被测文件不符——测试未 import 该工单登记的 src/renderer/features/reader/reader.store.ts（挂错块的测试会随工单状态被静默 skip）
+G4_VERIFY_FINAL_EXIT=1

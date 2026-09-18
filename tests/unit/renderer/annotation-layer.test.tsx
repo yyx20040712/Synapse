@@ -16,7 +16,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import { stubElementRects, type StubBox } from '../../utils/geometry'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/page-items.store'
 import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
 

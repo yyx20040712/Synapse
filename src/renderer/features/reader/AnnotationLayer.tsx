@@ -44,8 +44,8 @@ import { resolveAnnotationRectsLayered } from './annotation-resolve-layered'
 import { usePageItemsStore } from './page-items.store'
 import { mergeRects } from './annotation-merge'
 import { rectStyle } from './annotation-style'
-import { PAGE_LAYER_Z } from './page-layer-z'
-import { useReaderStore } from './reader.store'
+import { PAGE_LAYER_Z } from './state/page-layer-z'
+import { useReaderStore } from './state/reader.store'
 import { AnnotationPopups, type PopupTarget } from './AnnotationPopups'
 
 /** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */

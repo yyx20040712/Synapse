@@ -41,7 +41,7 @@ const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub }
 
 // 消费方级用例：reader.store 仅需 getState().openPaper + notifyAiNoteHighlight
 // （open-paper-anchor 面——LG-06 起 anchor 分支亦发面板信号）
-vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
   useReaderStore: { getState: () => ({ openPaper: openPaperStub, notifyAiNoteHighlight: notifyAiNoteStub }) }
 }))
 vi.mock('../../../src/renderer/features/reader/anchor-locate', () => ({

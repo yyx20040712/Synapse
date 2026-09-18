@@ -38,9 +38,9 @@
  */
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { useReaderStore } from './reader.store'
-import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './tab-dirty'
-import type { TabState } from './reader.store'
+import { useReaderStore } from './state/reader.store'
+import { confirmCloseDirty, isTabDirty, useNotesDrafts } from './state/tab-dirty'
+import type { TabState } from './state/reader.store'
 
 /** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
  *  （防御位）；loading/error 态的占位文案 */

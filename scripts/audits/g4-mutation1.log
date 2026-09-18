@@ -1,0 +1,26 @@
+MUT1 BACKUP OK 20:58:59
+=== MUT1: typecheck on mutated (expect RED TS2307) ===
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+src/renderer/features/reader/TabBar.tsx(41,32): error TS2307: Cannot find module './reader.store' or its corresponding type declarations.
+src/renderer/features/reader/TabBar.tsx(54,33): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/renderer/features/reader/TabBar.tsx(55,36): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/renderer/features/reader/TabBar.tsx(56,32): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/renderer/features/reader/TabBar.tsx(57,39): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/renderer/features/reader/TabBar.tsx(58,36): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/renderer/features/reader/TabBar.tsx(94,19): error TS7006: Parameter 'id' implicitly has an 'any' type.
+MUT1_TYPECHECK_RED_EXIT=2
+MUT1_RESTORE_DIFF_EMPTY
+MUT1_BACKUP_REMOVED
+=== MUT1: typecheck re-run on restored (expect GREEN) ===
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json
+
+MUT1_TYPECHECK_GREEN_EXIT=0

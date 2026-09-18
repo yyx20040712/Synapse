@@ -1,0 +1,84 @@
+tests/unit/renderer/ai-annotation-layer.test.tsx:
+  :21 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+  :23 [page-layer-z] import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+  :29 [scroll-converge] vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+tests/unit/renderer/ai-notes-section.test.tsx:
+  :49 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+  :50 [ai-notes.store] import { useAiNotesStore } from '../../../src/renderer/features/reader/ai-notes.store'
+tests/unit/renderer/anchor-locate.test.ts:
+  :16 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+  :23 [scroll-converge] vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+tests/unit/renderer/annotation-layer.test.tsx:
+  :19 [page-layer-z] import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+tests/unit/renderer/annotation-popups-autosave.test.tsx:
+  :37 [reader.store] vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+  :49 [annotation-undo] vi.mock('../../../src/renderer/features/reader/annotation-undo', () => ({
+tests/unit/renderer/annotation-undo.test.ts:
+  :28 [annotation-undo] return await import('../../../src/renderer/features/reader/annotation-undo')
+tests/unit/renderer/app-quit-dirty.test.tsx:
+  :45 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/band-calibration.test.tsx:
+  :34 [reader.store] import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.st
+tests/unit/renderer/corpus-export.test.tsx:
+  :32 [CorpusExtractor] vi.mock('../../../src/renderer/features/reader/CorpusExtractor', () => ({
+tests/unit/renderer/corpus-extractor.test.ts:
+  :11 [CorpusExtractor] } from '../../../src/renderer/features/reader/CorpusExtractor'
+tests/unit/renderer/lineage-side-panel.test.tsx:
+  :44 [reader.store] vi.mock('../../../src/renderer/features/reader/reader.store', () => ({
+tests/unit/renderer/outline-aside.test.tsx:
+  :19 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/page-column.test.tsx:
+  :38 [scroll-converge] vi.mock('../../../src/renderer/features/reader/scroll-converge', () => ({
+tests/unit/renderer/pages-overlay.test.tsx:
+  :29 [PdfDocProvider] import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+tests/unit/renderer/pdf-page-canvas.test.tsx:
+  :22 [PdfDocProvider] import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/PdfDocProvider'
+  :25 [page-layer-z] import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+tests/unit/renderer/r3-rdr-set-visual.test.tsx:
+  :33 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/reader-double-page.test.tsx:
+  :40 [reader.store] } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/reader-notes-panel.test.tsx:
+  :25 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/reader-page-open-race.test.tsx:
+  :34 [PdfDocProvider] vi.mock('../../../src/renderer/features/reader/PdfDocProvider', () => ({
+  :44 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/reader-search-wiring.test.tsx:
+  :27 [reader.store] } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/reader-store-undo-race.test.ts:
+  :35 [annotation-undo] const undoMod = await import('../../../src/renderer/features/reader/annotation-undo')
+  :36 [reader.store] const storeMod = await import('../../../src/renderer/features/reader/reader.store')
+tests/unit/renderer/reader.store.test.ts:
+  :25 [reader.store] const mod = await import('../../../src/renderer/features/reader/reader.store')
+tests/unit/renderer/scroll-converge.test.ts:
+  :20 [scroll-converge] } from '../../../src/renderer/features/reader/scroll-converge'
+tests/unit/renderer/selection-evaluate.test.tsx:
+  :33 [reader.store] import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.st
+tests/unit/renderer/selection-item-chain.test.tsx:
+  :23 [reader.store] import { createReaderStoreInitialState, useReaderStore } from '../../../src/renderer/features/reader/reader.st
+tests/unit/renderer/selection-mode.test.tsx:
+  :32 [reader.store] } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/selection-paint.test.tsx:
+  :35 [page-layer-z] import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+tests/unit/renderer/tab-bar.test.tsx:
+  :15 [reader.store] import type { TabState } from '../../../src/renderer/features/reader/reader.store'
+  :16 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+tests/unit/renderer/tab-dirty.test.tsx:
+  :12 [tab-dirty] import { isTabDirty, useTabDirtyAggregate, confirmCloseDirty } from '../../../src/renderer/features/reader/tab
+  :14 [reader.store] import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+  :16 [reader.store] import type { TabState } from '../../../src/renderer/features/reader/reader.store'
+tests/utils/factories.ts:
+  :20 [reader.store] import type { TabState } from '../../src/renderer/features/reader/reader.store'
+
+=== SUMMARY ===
+test files touched=30 reference lines=41
+  reader.store: 23 lines
+  tab-dirty: 1 lines
+  useActiveTab: 0 lines
+  annotation-undo: 3 lines
+  page-layer-z: 4 lines
+  ai-notes.store: 1 lines
+  ai-notes-phase: 0 lines
+  PdfDocProvider: 3 lines
+  CorpusExtractor: 2 lines
+  scroll-converge: 4 lines

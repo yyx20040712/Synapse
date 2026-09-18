@@ -31,7 +31,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 
 makeApiStub({ reader: { open: vi.fn(), listAnnotations: vi.fn(), saveProgress: vi.fn() } })
 
-vi.mock('../../../src/renderer/features/reader/PdfDocProvider', () => ({
+vi.mock('../../../src/renderer/features/reader/state/PdfDocProvider', () => ({
   PdfDocProvider: () => null
 }))
 
@@ -41,7 +41,7 @@ vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
 }))
 
 import { ReaderPage } from '../../../src/renderer/features/reader/ReaderPage'
-import { useReaderStore } from '../../../src/renderer/features/reader/reader.store'
+import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { requestOpenPaperAnchored, takePendingOpenPaper } from '../../../src/renderer/shared/open-paper-bus'
 
 let root: Root | null = null

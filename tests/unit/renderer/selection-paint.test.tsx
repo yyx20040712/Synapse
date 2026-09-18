@@ -32,7 +32,7 @@ import { SelectionLayer } from '../../../src/renderer/features/reader/SelectionL
 import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
 import { rectStyle } from '../../../src/renderer/features/reader/annotation-style'
 import { bandFromMetrics } from '../../../src/renderer/features/reader/annotation-resolve'
-import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/page-layer-z'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 import { usePageItemsStore } from '../../../src/renderer/features/reader/page-items.store'
 import type { PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
