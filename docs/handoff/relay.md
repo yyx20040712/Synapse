@@ -12,11 +12,11 @@
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 5
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T01:09:14Z
-- claim: claim-1789689710-b9
+- heartbeat_utc: 2026-09-18T02:32:00Z
+- claim: claim-1789693931-b10
 - no_progress_count: 0
 - checked_total: 24
-- checked_done: 14
+- checked_done: 15
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -92,7 +92,7 @@
 
 ### 第四波·梯队三：既定战役（GEOM 战役大，设计链与实现分项）
 
-- [ ] F-DEDUP-01（服务层去重微扩版：DomainError/原子写/清洗+app-file URL 单源）
+- [x] F-DEDUP-01（服务层去重微扩版：DomainError/原子写/清洗+app-file URL 单源）
 - [ ] F-GEOM-01 设计链三跳（Kimi 拟定→deepseek 审核→GLM 终裁；设计书要件=
       态空间表+跨格序列+回落档语义裁决+六子域目录重组清单+净删行数记账+前史两
       条款承袭；定稿件独立提交）
@@ -121,6 +121,65 @@
 
 ## 批次日志（追加，勿改写）
 
+### batch 10 — 2026-09-18（执行者会话：第四波 F-DEDUP-01 服务层去重微扩，完成）
+- claim: claim-1789693931-b10｜开始 01:12:11Z｜收口 02:32:00Z｜勾选 14→15。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
+  派发/门审矩阵/health-scan/账本补记）；实现面=ops-executor 绑定子代理（TDD
+  红→绿→变异红证，两轮=实现+回炉 1）；systematic-debugging 不加载（票面修法
+  与收敛方案=主控预裁，无排障定位面）。派发档位：主控=GLM5.3 max（本会话）；
+  实现者=ops-executor 绑定（GLM5.3flash max）；门一=ops-gate1-k1 绑定
+  （kimi-main k3 max）；门二=ops-adjudicator 绑定（deepseek-flash max）——
+  门审均异构于实现者。
+- **交付（提交 2e3ff5327a）**：四收敛面全落+排除面恰好——①DomainError 基类
+  services/shared/domain-error.ts 单源（new.target.name 子类零样板；15 文件一行
+  继承=services 11+ipc 3+http 1；HttpFetchError 三参+status 特例；library
+  re-export 保 API；NotImplementedError 冻结契约/ApiClientError 异进程排除）；
+  ②原子写 atomicWriteFile 三开关收敛 4 文件 6 调用点（manifest 固定名态空间
+  契约+ai-notes-import 移动语义保持内联）；③sanitizePathToken 收敛 2 处
+  （safeFileName 展示名家族+db LIKE SQL 家族排除）；④app-file URL 单源
+  src/shared/app-file-url.ts 三处收编（corpus.export:250 硬编码消灭=微扩主
+  目标）。28 文件 +436/-220（修改面 20 文件 +112/-220 净删 108，numstat 实测）。
+  INV-66（内容写盘原子性单源，边界限定+排除面）+INV-67（AI 笔记回灌事务性
+  =batch 7 门二 P2-5 登记债销项；lineage 清面窗口随 F-SENSOR-01 场评估）入册。
+- **TDD 证据链**：首红全量 EXIT=1（恰 4 新件解析红，基线 166/1719 零偏差）→
+  全量绿 170 文件/1745 用例→build EXIT=0；变异红证 4 条（每模块 1，M3/M4 真
+  退出码=1，M1/M2 捕获瑕疵如实呈报以 vitest 摘要行为证）；还原 diff 空 ×4+
+  定向复跑 26/26 RESTORE_RERUN_EXIT=0；指纹门纯增 183→187/1757→1790/5334→
+  5417 豁免零（+33 归因=本票 26+batch 7 前票未基线化 7——门二 P2-1 更正口径）。
+- **门审**：门一 ops-gate1-k1 **PASS_WITH_WARNINGS B0W3N8**（代码面零缺陷；
+  三 W 报告层=计数失实/复绿无证/清单漏项）→回炉 1（SendMessage 续命原实现者，
+  仅报告+证据面）三 W 全闭（numstat 逐行重算/定向复跑补真证/注释清单 18/20
+  补全）；门二 ops-adjudicator **GO_WITH_CONDITIONS P0=0P1=1P2=5**——P1-1=
+  收口执行序（简报箭头序会留 invariants 滞后 manifest 提交树；正确序=unlock→
+  编辑前置→generate+apply→verify 终跑→单提交，**已按裁决行序兑现**）；P2 五
+  条全处置（P2-1 指纹归因更正/P2-2 账本 units=2+禁写已实测/P2-3 六调用点
+  措辞/P2-4 锁数对账——batch 9 旧值 334 系 manifest 删除前快照，本批 333→338
+  实测入档/P2-5 INV 措辞条件全采纳）。N2 压缩敏感性=主控产物实证闭环
+  （out/main/index.js 类名逐字存活+new.target.name 在）。
+- **机检终态**：verify 全链终跑 VERIFY_FINAL_EXIT=0（195 票 open 10→9+locks
+  338+test 170/1745+build——冻结终态上跑）；e2e 默认门 43/43 E2E_APP_EXIT=0
+  （corpus-export/workspaces 双被触面）；locks 链 unlock→generate→apply
+  333→338 与提交同步（5 新件：src/shared/app-file-url.ts+四新测试）；
+  **health-scan RED×0 WARN×0**；账本 28→32 行（executor 两轮+门一+门二，
+  绑定岗主控补记 v3 行——首写 heredoc 隔层 \\ 塌缩致 4 行非法 JSON 转义被
+  health-scan 拦截，node JSON.stringify 重写修复，修复器即删零驻留）。
+- 证据件入库（scripts/audits/，15 件）：dedup01-impl-{brief.md;report.md;
+  firstraw;green;verify;build;mutations;locks}.raw.txt 六件+dedup01-{gate1-
+  brief.md;gate1-diff.patch;gate1-report.md;gate2-brief.md;gate2-report.md;
+  e2e-appgate.raw.txt;verify-final.raw.txt}（门一报告=岗无写通道主控逐字归档；
+  门二同型）。
+- 教训两条：①**heredoc 隔层反斜杠塌缩**（账本补记 4 行 `\\` 被吞成 `\` →
+  非法 JSON 转义——宪法 shell 四坑第六变体：不止中文/正则/参数丢弃，**转义
+  字符本身也会被隔层吃掉**；补记类结构化写入一律 node 脚本 JSON.stringify，
+  禁 shell heredoc）；②**报告级数字的可信度分层**（门一 W1/门二 P2-1 两轮
+  拦截同一实现者：粗读印象数字进报告=回炉主源——权威口径=git diff --numstat
+  逐行+失败跑数字禁引的既有纪律延伸到「凡 ±对子必逐行复算」）。
+- Rulings 待用户：无新增（票内自裁 6 项经门一对抗拷问+门二复核闭合；INV-67
+  措辞按门二 P2-5 条件落册）。
+- 无进展计数：归零（14→15 有进展）。**第四波剩两项：F-GEOM-01 设计链三跳
+  （Kimi 拟定→deepseek 审→GLM 终裁，裁决 1 序=设计先于实现）随后 F-GEOM-01
+  实现——设计链票单火专注，下波=F-GEOM-01 设计链。**
+
 ### batch 9 增补 — 2026-09-18（用户在场裁决三项 Rulings，执行者会话兑现）
 - **用户裁决（原文口径）**：R1=a（维持裁决 1：F-GEOM-01 收口后两票分离实施
   A→B）；R2=a（**批准 ds-call v1→v2 切换**，附带欠账三条确认：技能侧 R4
@@ -139,7 +198,7 @@
   翻车一次，幸该结论当时已经门二逐项复核无污染；计数纪律的查询方法变体）。
 
 ### batch 9 — 2026-09-18（执行者会话：第三波 F-ALIGN-01 组织定版对齐，第三波清空，完成）
-- claim: claim-1789689710-b9｜开始 00:01:50Z｜收口 00:52:00Z｜勾选 13→14。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/
   regression R1~R10/账本核查/health-scan/预算机检）；systematic-debugging 不
   加载（制度+配置文书票，无缺陷排查面——R4 两子域为口径分析非排障）；
@@ -201,7 +260,7 @@
   F-GEOM-01 设计链随后（裁决 1 序：设计链三跳先于实现）。**
 
 ### batch 8 — 2026-09-18（执行者会话：第三波 F-ELE-01 Electron 升级预研，呈裁即停，完成）
-- claim: claim-1789687924-b8｜开始 23:32:04Z｜收口 00:12:00Z｜勾选 12→13。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/
   轻量双审/health-scan/源健康检查）；实现面=纯调研零代码——ops-executor
   不派（无 TDD 面）、systematic-debugging 不加载（无缺陷排查面）；门审=
@@ -254,7 +313,7 @@
   配置复合批单火专注）——下波建议 F-ALIGN-01 单火。**
 
 ### batch 7 — 2026-09-18（执行者会话：第三波梯队二前三票 F-SESS-01+F-AIN-01+F-DEP-01，完成 3 项）
-- claim: claim-1789682221-b7｜开始 21:57:01Z｜收口 23:53:00Z｜勾选 9→12。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
   派发/门审矩阵/health-scan/换源状态机）；实现面=ops-executor 绑定子代理（三票
   TDD 红→绿→变异红证）；systematic-debugging 不加载（三票均为票面修法已定的
@@ -298,7 +357,7 @@
   呈裁后本板即勾，实施属后续波次）。**
 
 ### batch 6 — 2026-09-18（执行者会话：F-TESTREF-W4 战役收官票，完成）
-- claim: claim-1789678894-b6｜开始 21:01:34Z｜收口 21:49:52Z｜勾选 8→9。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
   派发/门审矩阵/health-scan）；实现面=本会话直接实现（文档+机检+下沉迁移，
   W1A-C 先例）；TDD 技能不加载（理由：票面=台账/不变量登记+配方逐字下沉迁移，
@@ -377,7 +436,7 @@
   W2/W3/W4）全毕——第二波清空，下一波=第三波 F-SESS-01 起。**
 
 ### batch 5 — 2026-09-18（执行者会话：F-TESTREF-W3 src/shared 直接契约测试补齐，完成）
-- claim: claim-1789676496-b5｜开始 20:21:36Z｜收口 21:02:00Z｜勾选 7→8。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
   派发/health-scan）；实现面=本会话直接实现（纯增契约测试+机检+六源变异红证，
   W1A-C 先例）；TDD 技能不加载（理由：票面=对既有源补直接契约测试，先红后绿
@@ -438,7 +497,7 @@
 - 无进展计数：归零（7→8 有进展）。
 
 ### batch 4 — 2026-09-18（执行者会话：F-TESTREF-W1C e2e 脚手架单源＋W2 探针移出默认门，完成 2 项）
-- claim: claim-1789673784-b4｜开始 19:36:24Z｜收口 20:17:53Z｜勾选 5→7。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋
   派发/health-scan）；实现面=本会话直接实现（迁移+三重机检，W1A/W1B 先例）；
   systematic-debugging（用——lint 红定位与 shell 正则翻车处置）；TDD 技能不加载
@@ -481,7 +540,7 @@
 - 无进展计数：归零（5→7 有进展）。
 
 ### batch 3 — 2026-09-18（执行者会话：F-TESTREF-W1B 几何桩+局部工厂下沉，完成）
-- claim: claim-1789669600-b3｜开始 18:26:40Z｜收口 19:35:00Z｜勾选 4→5。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
   health-scan）；实现面=本会话直接实现（磨刀石验证+六批迁移+三重机检，W1A 先例），
   systematic-debugging（用——三次回炉定位）。其余工程技能与本票（tests/** 重构面）
@@ -533,7 +592,7 @@
 - 无进展计数：归零（4→5 有进展）。
 
 ### batch 2 — 2026-09-18（执行者会话：F-TESTREF-W1A mock 工厂下沉，完成）
-- claim: claim-1789666638-b2｜开始 17:37:18Z｜收口 18:24:12Z｜勾选 3→4。
+- claim: claim-1789693931-b10
 - 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/
   health-scan）；实现面=本会话直接实现（磨刀石验证+分批迁移+三重机检），systematic-
   debugging（用——两次回炉定位：toast-store 浅替换 App 级崩/顺序契约违反）；其余
@@ -610,7 +669,7 @@
   实测相悖，建议修订为「必须显式勾选」（技能文件在用户全局目录，调度员不改）。
 
 ### batch 1 — 2026-09-18（执行者会话：第一波·立案批，完成 3/3）
-- claim: claim-1789665003-b1｜开始 2026-09-17T17:10:03Z｜收口 17:31:09Z｜
+- claim: claim-1789693931-b10
   勾选 0→3（T0/T1/T2 全毕）。
 - 技能清点：batch-relay（用——本批点火协议）、ai-dev-org（用——组织主干/执行
   路由/收口 health-scan）；其余工程技能本批为 registry/骨架立案面（无业务实现、
