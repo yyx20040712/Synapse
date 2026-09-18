@@ -26,15 +26,16 @@
  * - export const usePageItemsStore（zustand——react 订阅渲染 + getState()
  *   事件时刻直读双形态单模块）；PageItemEntry 类型单源（原 PagesOverlay
  *  PageText 迁入，字段零变）
- * - 只 import 类型（PdfPageCanvas——INV-16 白名单不扩）；零 DOM/React 组件
- *   依赖；zustand 既有依赖零新增
+ * - 只 import 类型（geometry-types——纯类型件无 Canvas 组件边，
+ *   INV-16 白名单不扩——F-GEOM-01-G1 M0 切环）；零 DOM/React 组件依赖；
+ *   zustand 既有依赖零新增
  * - 单阅读器单实例前提（App 至多一个 PagesOverlay 挂载——多 tab 切换走
  *  fileUrl 清空重填，与原 useState 生命周期等价）
  * - tests/unit/renderer/pages-overlay.test.tsx（注册表行为锁——迁库后语义
  *  零变应全绿）+ selection-item-chain.test.tsx（通道接线面）
  */
 import { create } from 'zustand'
-import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
+import type { PdfPageGeometry, PdfTextContent } from './geometry-types'
 
 /** 页项条目（原 PagesOverlay.PageText 迁入——成对更新契约字段零变：
  *  页号 1 基 + 文本载荷 + 页几何 + 该页 canvas CSS 盒） */

@@ -26,7 +26,9 @@
  *   bandsForTextNodes（选区/引文自身的 textNodes——免疫 CSS 行盒整体偏移，
  *   真机实锤：小字号紧排文档行盒偏上 ~9px 使几何匹配错绑上一行）；存量
  *   rects 回退（重锚失败无节点可依）走几何口径 bandsNearRects 尽力而为。
- *   RowBand 增 x0/x1（行簇 span 实际端点——a 面自绘块水平界夹取源）。
+ *   RowBand 增 x0/x1（行簇 span 实际端点——a 面自绘块水平界夹取源）；
+ *   RowBand 真源=geometry-types（F-GEOM-01-G1 M0 切环，本件 type 再导出
+ *   保受锁测试旧路径 band-calibration.test:32）。
  * - normalizedLineHeight：textLayer span 的 computed font-size 中位数/
  *   textLayer 盒高（挂 B mergeRects 行高感知 lineH——存量 rects 读时归并
  *   同口径；量测退化→undefined 旧行为）。
@@ -50,21 +52,12 @@ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { verifyQuote, verifyQuoteItem } from './anchor-serialize'
 import { findRangeAtOffset, pixelBoxOf, type PixelBox } from './annotation-anchor'
 import { itemSelectionGeometry, type ItemViewport } from './pdf-item-geometry'
+import type { RowBand } from './geometry-types'
 import type { PageItemEntry } from './page-items.store'
 
-/** 行簇字形带（归一化域；center=带中心——渲染块匹配键；x0/x1=行簇 span
- *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测；
- *  calTop/calBottom [F-A9]=渲染时刻 textLayer span 盒实测校准值（方案 A
- *  ——annotation-band-calibrate 注入；缺省=无校准材料回退派生值） */
-export interface RowBand {
-  top: number
-  bottom: number
-  center: number
-  x0?: number
-  x1?: number
-  calTop?: number
-  calBottom?: number
-}
+// 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
+// import 本件零触（band-calibration.test:32 `import { matchBand, type RowBand }`）
+export type { RowBand }
 
 /** 重锚结果（id → { rects, bands, source }；缺项回退存量 rects 由消费方兜底）。
  *  source [F-A8 门2]=产物域标记（'item'=项几何主链 / 'dom'=S4 DOM 回退层）——

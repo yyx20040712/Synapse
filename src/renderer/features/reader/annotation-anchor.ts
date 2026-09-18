@@ -24,7 +24,9 @@
  *
  * ── 接口层 ──
  * - export interface DOMRange { rects: AnnotationRect[]; textNodes: Array<{ node: Text; offset: number }> }
- * - export interface NodeSpan/DomPoint/PixelBox（几何域类型——单一真相源）
+ * - export interface NodeSpan/DomPoint（几何域类型——驻本件单一真相源）；
+ *   PixelBox 真源=geometry-types（F-GEOM-01-G1 M0 切环，本件 type 再导出
+ *   保受锁测试旧路径 anchor-item-verify.test:30）
  * - export function findRangeAtOffset/rectsFromRange/mergeLineRects/estimateLinePitch，
  *   及几何原语公共面 collectSpans/fullTextOf/offsetToPoint/rectsBetweenPoints/pixelBoxOf
  *   （F-ARCH4 扩面——anchor-serialize 的合法消费面；全部纯/幂等，无 React 依赖）
@@ -34,9 +36,9 @@
  *   只经 anchor-serialize 间接调用；AnnotationLayer/AiAnnotationLayer 直调
  *   findRangeAtOffset（几何）+经 anchor-serialize 调 verifyQuote（校验）。
  *   几何原语公共面亦在本模块（F-ARCH4 起 anchor-serialize 消费此面——依赖
- *   单向 anchor-serialize→本模块→annotation-merge；[F-LINT-03] 本模块另值
- *   import pdf-item-geometry 的 COLUMN_GAP_*（其对 PixelBox 为 type-only
- *   import 编译期擦除——运行时单向，零值环）
+ *   单向 anchor-serialize→本模块→annotation-merge；[F-LINT-03→F-GEOM-01-G1]
+ *   COLUMN_GAP_* 两常量与 PixelBox 均自 geometry-types 单源 import（G1 切环
+ *   后本模块与 pdf-item-geometry 零边）
  *
  * ── 生命周期层 ──
  * - 性能约束：单页千级文本节点 <10ms；不做跨页标注（v1 负面清单）
@@ -48,7 +50,12 @@
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { mergeRects } from './annotation-merge'
-import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './pdf-item-geometry'
+import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './geometry-types'
+import type { PixelBox } from './geometry-types'
+
+// 类型再导出（真源=geometry-types——F-GEOM-01-G1 M0 切环）：受锁测试旧路径
+// import 本件零触（anchor-item-verify.test:30）
+export type { PixelBox }
 
 export interface DOMRange {
   rects: AnnotationRect[]
@@ -66,14 +73,6 @@ export interface NodeSpan {
 export interface DomPoint {
   node: Text
   offset: number
-}
-
-/** 像素矩形/基准盒（origin 为视口坐标，尺寸已做 ≥1 下限防除零） */
-export interface PixelBox {
-  x: number
-  y: number
-  w: number
-  h: number
 }
 
 /** 按文档序收集文本节点并累计全局偏移；零长度节点不参与（避免空命中项） */
