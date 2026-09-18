@@ -20,8 +20,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PDFDocumentProxy } from '../../../src/renderer/features/reader/state/PdfDocProvider'
-import { PdfPageCanvas } from '../../../src/renderer/features/reader/PdfPageCanvas'
-import { PageBox } from '../../../src/renderer/features/reader/PageBox'
+import { PdfPageCanvas } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
+import { PageBox } from '../../../src/renderer/features/reader/view/PageBox'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 
 /** render 调用参数探针（断言面） */

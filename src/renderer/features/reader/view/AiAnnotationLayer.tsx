@@ -67,14 +67,14 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { AnnotationRect } from '@shared/models/annotation'
-import { matchBand, type RowBand } from './anchors/annotation-resolve'
-import { resolveAiNotesLayered } from './anchors/annotation-resolve-layered'
-import { usePageItemsStore } from './anchors/page-items.store'
-import { bandVertical } from './anchors/annotation-style'
-import { PAGE_LAYER_Z } from './state/page-layer-z'
-import { QUESTION_COLOR } from './anchors/ai-note-style'
-import { useAiNotesStore } from './state/ai-notes.store'
-import { useReaderStore } from './state/reader.store'
+import { matchBand, type RowBand } from '../anchors/annotation-resolve'
+import { resolveAiNotesLayered } from '../anchors/annotation-resolve-layered'
+import { usePageItemsStore } from '../anchors/page-items.store'
+import { bandVertical } from '../anchors/annotation-style'
+import { PAGE_LAYER_Z } from '../state/page-layer-z'
+import { QUESTION_COLOR } from '../anchors/ai-note-style'
+import { useAiNotesStore } from '../state/ai-notes.store'
+import { useReaderStore } from '../state/reader.store'
 
 /** 重锚后的显示矩形（aiNoteId → rects；重锚失败不落项=该段零 rects） */
 type ResolvedRects = Record<string, AnnotationRect[]>

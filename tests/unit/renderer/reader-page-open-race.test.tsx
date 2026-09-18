@@ -35,7 +35,7 @@ vi.mock('../../../src/renderer/features/reader/state/PdfDocProvider', () => ({
   PdfDocProvider: () => null
 }))
 
-vi.mock('../../../src/renderer/features/reader/PageColumn', () => ({
+vi.mock('../../../src/renderer/features/reader/view/PageColumn', () => ({
   PageColumn: () => null,
   nearestPage: () => 0
 }))

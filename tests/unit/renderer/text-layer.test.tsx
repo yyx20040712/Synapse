@@ -37,8 +37,8 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { duckViewport, rotatedContainerBox, TextLayer } from '../../../src/renderer/features/reader/TextLayer'
-import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import { duckViewport, rotatedContainerBox, TextLayer } from '../../../src/renderer/features/reader/view/TextLayer'
+import type { PdfPageGeometry, PdfTextContent, PdfTextItem } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 // ── 纯数学域：duckViewport 直测（票面指定断言值） ──────────────────────────
 

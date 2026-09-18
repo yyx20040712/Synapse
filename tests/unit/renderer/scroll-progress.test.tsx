@@ -18,8 +18,8 @@ import {
   PROGRESS_DEBOUNCE_MS,
   type ScrollProgress,
   type ScrollProgressDeps
-} from '../../../src/renderer/features/reader/scroll-progress'
-import { nearestPage } from '../../../src/renderer/features/reader/page-column-geometry'
+} from '../../../src/renderer/features/reader/view/scroll-progress'
+import { nearestPage } from '../../../src/renderer/features/reader/view/page-column-geometry'
 
 /** 三页列几何（内容坐标）：页高 800、间隙 12——1 基页盒 [0,800]/[812,1612]/[1624,2424] */
 const BOXES = [

@@ -30,7 +30,7 @@ import { resolveAnnotationRectsItem } from '../../../src/renderer/features/reade
 import type { PixelBox } from '../../../src/renderer/features/reader/anchors/annotation-anchor'
 import { buildItemOffsets, itemSelectionGeometry, type ItemViewport } from '../../../src/renderer/features/reader/anchors/pdf-item-geometry'
 import type { PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
-import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 /** 横排样式（pdf-item-geometry.test 同款：ascent 0.8/descent −0.2） */
 const STYLE_H: PdfTextStyle = { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false }

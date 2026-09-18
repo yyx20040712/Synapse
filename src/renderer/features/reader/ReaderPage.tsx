@@ -47,15 +47,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OPEN_PAPER_EVENT, takePendingOpenPaper, type OpenPaperRequest } from '../../shared/open-paper-bus'
 import { openFromBus } from './anchors/open-paper-anchor'
-import type { PageScrollRequest } from './PageColumn'
+import type { PageScrollRequest } from './view/PageColumn'
 import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from './state/reader.store'
 import { readActiveTab, useActiveTab } from './state/useActiveTab'
-import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
+import { createReaderScrollProgress, useScrollProgressWiring } from './view/scroll-progress'
 import { useReaderReadingTime } from './time/reading-time-setup'
 import { useReadingTimeWiring } from './time/reading-time'
 import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
-import { ReaderPageView } from './ReaderPageView'
+import { ReaderPageView } from './view/ReaderPageView'
 import { showToast } from '../../shared/ui/Toast'
 
 export function ReaderPage(): JSX.Element {

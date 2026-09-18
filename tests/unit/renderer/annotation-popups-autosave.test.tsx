@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
 import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
 import { makeAnnotation } from '../../utils/factories'
-import { AnnotationPopups } from '../../../src/renderer/features/reader/AnnotationPopups'
+import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import { ApiClientError } from '../../../src/renderer/api/client'
 
 const mocks = vi.hoisted(() => ({

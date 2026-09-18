@@ -16,13 +16,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubElementRects, type StubBox } from '../../utils/geometry'
 import { makeTab } from '../../utils/factories'
 import type { AiNote } from '../../../src/shared/models/ai-note'
-import { AiAnnotationLayer } from '../../../src/renderer/features/reader/AiAnnotationLayer'
+import { AiAnnotationLayer } from '../../../src/renderer/features/reader/view/AiAnnotationLayer'
 import { locateAnchor } from '../../../src/renderer/features/reader/anchors/anchor-locate'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
-import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 // F-05：flashElement 滚动副作用替身（数学在 scroll-converge.test 锚定）
 const { scrollerMock } = vi.hoisted(() => ({ scrollerMock: vi.fn() }))

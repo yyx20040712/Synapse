@@ -1,0 +1,8 @@
+  EXT_SPEC: src/renderer/features/reader/view/AnnotationLayer.tsx -> .textLayer
+  EXT_SPEC: src/renderer/features/reader/view/AiAnnotationLayer.tsx -> .textLayer
+VIEW_OUT_EDGES={"anchors":14,"state":18,"panels":1,"interact":1,"time":0,"intra":26,"readerRoot":6,"upCross":4,"external":2}
+REVERSE_EDGES=0
+RESIDUE_FIVE_CHANNEL={"oldImport":0,"dotPath":0,"alias":0,"dynImport":0,"viMock":0}
+REGISTRY_OLD_PATH_COUNT=12 (owner=closeout)
+ONE_WAY_RESULT=PASS
+ONEWAY_EXIT=0

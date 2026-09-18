@@ -14,11 +14,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { stubElementRects, type StubBox } from '../../utils/geometry'
-import { AnnotationLayer } from '../../../src/renderer/features/reader/AnnotationLayer'
+import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 import { usePageItemsStore, type PageItemEntry } from '../../../src/renderer/features/reader/anchors/page-items.store'
-import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextItem, PdfTextStyle } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 makeApiStub({ reader: {} })
 

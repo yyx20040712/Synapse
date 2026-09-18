@@ -18,7 +18,7 @@ import {
   toPageRelative,
   toTextItems
 } from '../../../src/renderer/features/reader/reader-search'
-import type { PdfTextItem } from '../../../src/renderer/features/reader/PdfPageCanvas'
+import type { PdfTextItem } from '../../../src/renderer/features/reader/view/PdfPageCanvas'
 
 function item(str: string, hasEOL = false): PdfTextItem {
   return { str, hasEOL, dir: 'ltr', width: 10, height: 10, transform: [1, 0, 0, 1, 0, 0], fontName: 'F1' }
