@@ -18,14 +18,14 @@
  *   [字形顶, 基线+descender 尾]（归一化域）——rectStyle band 消费（顶贴
  *   字形顶缘底贴底缘）。无 canvas 2d/度量缺字段（jsdom）→ 空 bands，
  *   渲染回退 F-11 分数路径（缺省兼容）。
- * - [F-A5 a/b] band 单源三消费点：①自绘选区（SelectionLayer evaluate→
- *   SelectionPaint）②标注存量回退（AnnotationLayer 重锚失败路径）③AI 段
- *   （AiAnnotationLayer）经 **bandsNearRects**（rect 集→重叠 span 行簇带）
- *   消费同一 span→带核心（bandFromMetrics+同行近并）——与重锚路径同基准
- *   （票面 §1「行簇字形带推导单源」）。其中自绘选区/AI 段走**节点口径**
- *   bandsForTextNodes（选区/引文自身的 textNodes——免疫 CSS 行盒整体偏移，
- *   真机实锤：小字号紧排文档行盒偏上 ~9px 使几何匹配错绑上一行）；存量
- *   rects 回退（重锚失败无节点可依）走几何口径 bandsNearRects 尽力而为。
+ * - [F-A5 a/b] band 单源（[F-GEOM-01-G3] 档位勘正——现行口径 INV-68）：①自绘
+ *   选区=selection 产链（档1 bandsFromItems 主链/档2 bandsForTextNodes 显示
+ *   回退）②S4 段（Annotation+AI 经 annotation-resolve-layered）=档2
+ *   bandsForTextNodes③存量回退（AnnotationLayer S3b/S6）=档3 bandsNearRects
+ *   唯一消费——三档各自同源（C5），span→带核心=bandFromMetrics+同行近并。
+ *   节点口径免疫 CSS 行盒整体偏移（真机实锤：小字号紧排文档行盒偏上 ~9px
+ *   使几何匹配错绑上一行）；存量 rects 回退（重锚失败无节点可依）走几何
+ *   口径 bandsNearRects 尽力而为。
  *   RowBand 增 x0/x1（行簇 span 实际端点——a 面自绘块水平界夹取源）；
  *   RowBand 真源=geometry-types（F-GEOM-01-G1 M0 切环，本件 type 再导出
  *   保受锁测试旧路径 band-calibration.test:32）。
@@ -46,7 +46,7 @@
  *
  * ── 文化层 ──
  * - tests/unit/renderer/selection-paint.test.tsx（bandFromMetrics 纯几何+
- *   AnnotationLayer 挂 B 接线）+ F-A5 段（bandsNearRects 三消费点）。
+ *   AnnotationLayer 挂 B 接线）+ F-A5 段（band 历史段名——现行消费口径=INV-68 档位绑定）。
  */
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { verifyQuote, verifyQuoteItem } from './anchor-serialize'
@@ -228,7 +228,9 @@ export function bandsForTextNodes(nodes: Text[], base: PixelBox): RowBand[] {
   return bands
 }
 
-/** [F-A5] rect 集 → 行簇字形带（三消费点公共面：自绘选区/标注存量回退/AI 段）。
+/** [F-A5] rect 集 → 行簇字形带（[F-GEOM-01-G3] 勘正：现状唯一消费=AnnotationLayer
+ *  S3b/S6 存量回退（INV-68 档3）——F-A5 时代三消费点口径已随 F-A6 选区迁项几何族
+ *  过时）。
  *  只量测与任一 rect（归一化域→px 域）双向重叠的 span（gBCR 预筛——拖选节流
  *  周期内成本=选区行簇量级）；基准=textLayer 盒（rects 归一化同源）。
  *  无 canvas/无量测 span（jsdom）→ []（消费方回退原样/F-11 分数）。 */
@@ -374,7 +376,10 @@ export function resolveAnnotationRectsItem(
  *  box 反推 scale=Math.round 后 CSS 盒/跨度，与 clampScale(zoom) 真值差 <1px
  *  取整粒度——水平轴（宽）scale/base 严格约除消取整差；垂直轴依赖 box 宽高
  *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]）。
- *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费 */
+ *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费。
+ *  [F-GEOM-01-G3] 域归属：产物 viewport 只入项几何族数学
+ *  （itemSelectionGeometry/rectsForOffsetRange），禁直接混入 DOM 量测域
+ *  比较（r3a 型域差防线） */
 export function itemViewportOf(entry: PageItemEntry): ItemViewport {
   const [x0, y0, x1, y1] = entry.geometry.view
   const rot = ((entry.geometry.rotate % 360) + 360) % 360

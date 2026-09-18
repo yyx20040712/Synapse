@@ -76,6 +76,9 @@ export type Viewport = { tx: number; ty: number; k: number }
  * 自洽假设消除——门一 W-2）；缺省自读（既有调用/测试零变）。
  * 已知噪声：clientWidth 整数舍入（规范）→比值误差 ≈0.03%（实测 0.05%）
  * ——锚点/增量/fit 语义不可感，声明接受（票面 §0）。
+ * [F-GEOM-01-G3] 域归属：本件=lineage 域（INV-43 svg 坐标口径），跨域出
+ * reader 几何战役范围；reader 域 crib 不复用（selection-geometry localScale
+ * 头注既有 crib 声明互指成立）。
  */
 export function rootToLocalScale(el: Element, rect?: DOMRect): number {
   const rw = (rect ?? el.getBoundingClientRect()).width

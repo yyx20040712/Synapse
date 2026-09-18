@@ -1,0 +1,114 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index 1ad5ee0488..3673a92e65 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -70,7 +70,7 @@
+ | INV-55 | 页内搜索会话挂文档身份+代际守卫（P7E-03，2026-09-03 页内高亮搜索票）：①**会话生命周期挂 reader 视图文档身份**——reader-search.store 持 sessionFileUrl，装配面 useReaderSearch fileUrl 键效应调 bindDoc(fileUrl)：**变化即代际失效+全清**（换文档/换内容寻址身份），不变=no-op（同文档视图往返/重挂不清——会话保留为正确语义；门一 W1 回炉：实例级 ref 在重挂首跑 null 跳过=旧文档会话复活漏洞，记账入 store 根治）；②**在途搜索代际守卫**（INV-03 同族）——submit 每次自增 generation，逐页回传代际不符→作废终止；close/reset 同使代际失效；③**索引全文档/高亮仅渲染窗口**——搜索计数与窗口无关（确定性投影），高亮矩形=TextLayer DOM span 建 Range 取 clientRects（pdfjs 4.10 每文本项恰一 span 契约，数量不符→该页零高亮只计数=降级不崩）；④**active 居中记账单源**=store.lastCentered（matches 数组身份+activeIndex 比对）——跨层实例/跨懒渲染重挂生效，防实例重建隐式重获居中资格劫持用户滚动（门一 W2 回炉） | src/renderer/features/reader/reader-search.store.ts（bindDoc/sessionFileUrl/lastCentered/generation 头注）/useReaderSearch.tsx（fileUrl 键效应→bindDoc+keymap 'reader-search' 成对）/SearchHighlightLayer.tsx（居中记账读写 store+span 契约降级）/reader-search.ts（纯函数域头注）（P7E-03，2026-09-03 登记） | 单测（reader-search.store.test：bindDoc 变化/同值+代际守卫 S7+reset 序列；reader-search-wiring.test：fileUrl 变化/重挂不重置+keymap 注册注销成对 INV-14+pageTurner 条件；reader-search-ui.test：S11 MO 重算锚+层重挂不二次居中——M6 变异「摘 observer.observe」红证在档）+e2e（reader-search.spec 装配级全链：Ctrl+F→小写跨大小写命中→逐处跳页高亮→Esc 清零） | 已锚定（单测+wiring+e2e 级 P7E-03 本单） |
+ | INV-56 | 导出内容构建器单源+剪贴板写单口（P7E-04，2026-09-03 导出剪贴板票）：①**文件路径与剪贴板路径共用同一构建器**——export/clipboard 通道经 buildBibtex/buildCsv 直用（ipc 层 format 枚举分发），禁复制第二份序列化（题录格式漂移不可能——文件导出与剪贴板导出同源）；②**剪贴板写唯一口**=IpcDeps.clipboard 注入面（ipc 层经 deps 消费，bootstrap 装配 electron.clipboard——DB 派生内容全程 main 侧，renderer 只发 ids+format）；③**先构建后写**（构建失败零剪贴板副作用）；④无对话框→无 CANCELLED 分支（与文件导出 exportTo 的语义差异——失败面只有构建/写入两种）；已知还原项=clipboard 现为可选注入（受锁 makeIpcDeps 桩工厂禁改下的处置+handler 响亮守卫），下次合法触碰 tests/utils/ipc-deps.ts 的场次补必填+桩工厂同步 | src/main/ipc/export_.ts（exportClipboard+头注）/src/main/ipc/ipc-deps.ts（clipboard 注入面）/src/main/bootstrap.ts（electron.clipboard 装配）/src/shared/ipc/schemas.ts+api-surface.ts（clipboardReqSchema+通道）（P7E-04，2026-09-03 登记） | 单测（export-clipboard.test：bibtex/csv 委托逐参+count 回传+先构建后写「service 抛错→clipboard 零调用」+装配缺失响亮——M1/M2 变异红证在档）+renderer（paper-detail-clip.test：E1/E2/E4 busy 短路+toast 逐字——M3/M4 红证在档）+e2e（export-clipboard.spec：主进程 clipboard.readText 含 @+title——P7-A 读回先例+清场竞态防线） | 已锚定（单测+renderer+e2e 级 P7E-04 本单） |
+ | INV-57 | 阅读时长单口累加+分片上界（P7E-05，2026-09-03 阅读时长统计票）：①**reading_seconds 唯一写点**=papers.repo updateReadPage 第三参（原子 SQL 累加 reading_seconds=reading_seconds+?，禁 read-modify-write 两步）；②**时长账本唯一宿主**=reading-time.ts 模块 ledger（关 tab/closeAll/卸载三收尾口经复合 flusher 与进度账同批落库——漏一即丢账的结构性防线）；③**计时门=ready×visible 双条件**（输入级 idle 不做=v1 申报边界）；settle 吸收仅 visible（防 hidden 段虚计——R1 回炉）/结转不依赖可见性（可见零头实转不丢——门二 R3 裁决解耦）；④**单次 invoke 时长上界=3600×chunkSeconds 分片单源**（三消费点：invokeOne（R5/R6）+dispose 逐笔分片（R7）+setup onFlush 防御深度——>1h 回吐分片落账禁单笔超界，门一 R2+门二 R3 两轮收口）。注记面（P7X-02 落地更新 2026-09-04）：R7 卸载双 invoke 已并入 outbox 单队列（时长 onFlush+进度 sp.dispose 均 enqueue——页码两来源回退窗消除）；分片级失败=outbox 兜底（at-least-once,重复界 N×3600s/条——T5 计 attempts 拦停;P7X-02 落地）；localStorage 退化面=内存重试+强 WARN 申报；ledger 无 24h 钳制（「24 片/24h」=物理估算口径非逻辑封顶）；sec<0 入 chunkSeconds=不可达前置（settle Math.max(0) 保证） | src/main/db/repos/papers.repo.ts（updateReadPage 第三参）/src/renderer/features/reader/reading-time.ts（ledger/settle 吸收结转解耦/chunkSeconds 分片单源+PROGRESS_SECONDS_CHUNK=3600 与 schemas 同值对齐）/reading-time-setup.ts（复合 flusher 装配+onFlush 分片消费）/src/shared/ipc/schemas.ts（secondsDelta int 0..3600 optional）/src/main/db/migrations/008_reading_time.sql（P7E-05，2026-09-03 登记） | 单测（reading-time.test：R1~R7+R10 态空间+R3×R6 跨格（hidden 收尾零虚计）+R2 分片 4000→3600+400+R3 dispose 分片双 invoke+可见零头 hidden 结转——M5（settle 吸收门）/M6（invokeOne 分片）/M7（dispose 分片）变异红证在档，M2 载体失效转移 M5 实录；papers-reading-time.test：累加原子 30+45=75+R8 缺省 0+回读；migrate-reading-time.test：R9 新库/存量升级 user_version=8；reader-time.test：service 透传）+e2e（reader-reading-time.spec：存量库升级链+「阅读 0 分钟」显示面） | 已锚定（单测+e2e 级 P7E-05 本单） |
+-| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-item-geometry 项声明几何族：rectsForOffsetRange+基线分组 baselineGroupBlocks+bandsFromItems——b2 主链迁移/c 快路径接线），禁止第二几何口径（防松手同帧把旧错几何带回——deepseek 终位 WARN-3）；rect 与 bands 同由项几何+styles 派生（C5，禁项源 rect×DOM 量测 band 混用——matchBand 两口径混用=b 链错绑同构风险）；**适用域=selection 产链（evaluate→paint→pending.anchor.rects→save）+Annotation/AiAnnotation 重锚链（F-A8 门2 起项几何族=重锚主链）**；DOM 量测仅允许存在于显式回退层（resolveAnnotationRectsDom=S4 页级回退，**函数体零改**=INV-47 数值面锚）且产物必须标域（source:'dom'——INV-60）；**[F-GEOM-01-G2 保存门，2026-09-18] selection 全量评估 item 链失败（页项缺失/偏移对账失败/计算异常三因）＝仅显示不入库**：paint 照渲 DOM 回退形状（视觉连续）＋pending=null（不挂工具条＝无保存入口）——「所见≠所存时不给保存入口」，保存链落库 rects 恒为项族形状（原 pending=DOM 形状 anchor 可入库的接缝闭合，设计书 §2.4/§2.2 序列⑤）；诊断单源＝itemChainFor 三因 warn；**S6 名实（门一 W1 补注）：S6 触发=项盒健康代理——blocks 经 clamp01×base 构造恒落盒内，unhealthy 实由 boxes[项几何]越界触发，项盒健康而 DOM 链独立病理时 S6 不拦（门 3 随回退层去留复核）**；回退层允许（DOM 量测=快→全量→DOM 三层回退的末端，warn 不静默——三回退因：页项缺失/偏移对账失败/计算异常） | src/renderer/features/reader/selection-evaluate.ts（双路径单文件：快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威）+pdf-item-geometry.ts（项几何族单源：viewportTransformFor/rectsForOffsetRange/baselineGroupBlocks/bandsFromItems+G2 检测器阈值常量）+SelectionLayer.tsx 接线（evaluate 域拆出+paint 态承载）+page-items.store（zustand 单源注册表——页项/几何下钻通道）+**annotation-resolve-layered.ts（F-A8 门2：重锚三层编排器 S0~S6——AnnotationLayer/AiAnnotationLayer 共形消费）** | 单测（selection-evaluate.test：快慢等价 it——同夹具 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）+同帧覆盖 it——快路径帧落地后全量覆盖（mid-drag zoom 差分形态，终态=全量产物）+快路径跨页守卫 it+W1 mouseup 顺序锚；MUT3 快路径守卫(ii) 删除红证在档）+四轮取证 A/B 对照（scripts/audits/f-a6-forensic-verdict.md §11/§12——甲乙同链 shift ≤0.01px 按构造+D1 面逐位零回归）+**annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe（S0 缺席/S1 对账失败回退/S2 项几何产物/S3b 条目回退/S6 病理抑制/CR1 竞态 fixture/域标记——M1 删订阅/M2 删 S6/M3 主链换 DOM 变异红证在档）**；G2 保存门锚＝selection-item-chain.test 回退①改写（工具条 null——变异红证在档） | 已锚定（2026-09-04 F-A6；F-A8 门2 扩域同日） |
++| INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-item-geometry 项声明几何族：rectsForOffsetRange+基线分组 baselineGroupBlocks+bandsFromItems——b2 主链迁移/c 快路径接线），禁止第二几何口径（防松手同帧把旧错几何带回——deepseek 终位 WARN-3）；rect 与 bands 同由项几何+styles 派生（C5，禁项源 rect×DOM 量测 band 混用——matchBand 两口径混用=b 链错绑同构风险）；**适用域=selection 产链（evaluate→paint→pending.anchor.rects→save）+Annotation/AiAnnotation 重锚链（F-A8 门2 起项几何族=重锚主链）**；DOM 量测仅允许存在于显式回退层（resolveAnnotationRectsDom=S4 页级回退，**函数体零改**=INV-47 数值面锚）且产物必须标域（source:'dom'——INV-60）；**[F-GEOM-01-G2 保存门，2026-09-18] selection 全量评估 item 链失败（页项缺失/偏移对账失败/计算异常三因）＝仅显示不入库**：paint 照渲 DOM 回退形状（视觉连续）＋pending=null（不挂工具条＝无保存入口）——「所见≠所存时不给保存入口」，保存链落库 rects 恒为项族形状（原 pending=DOM 形状 anchor 可入库的接缝闭合，设计书 §2.4/§2.2 序列⑤）；诊断单源＝itemChainFor 三因 warn；**S6 名实（门一 W1 补注）：S6 触发=项盒健康代理——blocks 经 clamp01×base 构造恒落盒内，unhealthy 实由 boxes[项几何]越界触发，项盒健康而 DOM 链独立病理时 S6 不拦（门 3 随回退层去留复核）**；回退层允许（DOM 量测=快→全量→DOM 三层回退的末端，warn 不静默——三回退因：页项缺失/偏移对账失败/计算异常）；**[F-GEOM-01-G3 坐标域边界注，2026-09-18]** 坐标域三处换算的域归属——selection-geometry localScale=UI 布局域换算（非 PDF 几何域，不参与锚定/归一化数学）；lineage-viewport rootToLocalScale=lineage 域件（INV-43 svg 口径，跨域出 reader 几何战役范围）；annotation-resolve itemViewportOf=项族域内换算（entry 反推，产物 viewport 只入项几何族数学——精度带=门一 W3 口径既有，禁直接混入 DOM 量测域比较）；防 r3a 型域差事故重演（F-A6-b2 实现事故：viewport 产 textLayer 盒本地域 vs gBCR 绝对域混用，G2 检测器实战拦截——事故档 f-a6-diag-out-r3a 在案） | src/renderer/features/reader/selection-evaluate.ts（双路径单文件：快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威）+pdf-item-geometry.ts（项几何族单源：viewportTransformFor/rectsForOffsetRange/baselineGroupBlocks/bandsFromItems+G2 检测器阈值常量）+SelectionLayer.tsx 接线（evaluate 域拆出+paint 态承载）+page-items.store（zustand 单源注册表——页项/几何下钻通道）+**annotation-resolve-layered.ts（F-A8 门2：重锚三层编排器 S0~S6——AnnotationLayer/AiAnnotationLayer 共形消费）** | 单测（selection-evaluate.test：快慢等价 it——同夹具 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）+同帧覆盖 it——快路径帧落地后全量覆盖（mid-drag zoom 差分形态，终态=全量产物）+快路径跨页守卫 it+W1 mouseup 顺序锚；MUT3 快路径守卫(ii) 删除红证在档）+四轮取证 A/B 对照（scripts/audits/f-a6-forensic-verdict.md §11/§12——甲乙同链 shift ≤0.01px 按构造+D1 面逐位零回归）+**annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe（S0 缺席/S1 对账失败回退/S2 项几何产物/S3b 条目回退/S6 病理抑制/CR1 竞态 fixture/域标记——M1 删订阅/M2 删 S6/M3 主链换 DOM 变异红证在档）**；G2 保存门锚＝selection-item-chain.test 回退①改写（工具条 null——变异红证在档） | 已锚定（2026-09-04 F-A6；F-A8 门2 扩域同日） |
+ 
+ | INV-59 | 重锚同族配对令（F-A8 门2，2026-09-04 随主链切换落地登记）：标注/AI 段重锚产物 resolved.rects 与 resolved.bands 必须**同几何族**（项几何主链=rectsForOffsetRange 项盒+bandsFromItems 同源派生；S4 DOM 回退层=findRangeAtOffset 行盒+bandsForTextNodes 节点口径同源）——主链禁跨族配对（消 R1：正确 rects×失真 bands 互漂错绑）；跨族配对仅允许显式回退格且属登记边界：**S3b 条目回退**（存量 rects[库]×bandsNearRects[DOM 量测]——现状语义逐位保持）与 **S5/S6 页级回退**（DOM 产物或其抑制后的存量直显）；matchBand 阈值（\|Δcenter\|≤rect.h）仍在为跨格边界兜底 | src/renderer/features/reader/annotation-resolve.ts（ResolvedAnnotation 域内 rects/bands 成对产出+resolveAnnotationRectsItem 同族管线）+annotation-resolve-layered.ts（三层编排=同族配对的编排保证——主链产物 rect/band 同域，跨族仅在登记回退格） | 单测（annotation-layer.test F-A8 门2 describe：S2 项几何产物 rect/band 同族数值断言（块几何=band 几何同基线）+S3b/S6 回退格跨族配对=登记边界渲染断言；anchor-item-verify.test：resolveAnnotationRectsItem 产物与 itemSelectionGeometry 同参直调逐位一致（rects+bands 双断言）） | 已锚定（单测级 F-A8 门2 本单——证据件 anchor-item-verify.test.tsx 为门 0 遗留未跟踪件,随门 2 收口提交补 git add 后生效[门二 W1 标注]） |
+ | INV-60 | 重锚显示覆盖登记（F-A8 门2，2026-09-04 随主链切换落地登记）：重锚成功产物（项几何主链/S4 DOM 回退层）覆盖库值 rects **仅显示层、永不回写**（annotation.rects 库数据零迁移零触碰——重锚是渲染态推导非数据变更；INV-37 只覆盖拖选期不扩其文，本条另立）；产物域标记 source:'item'\|'dom' 随 resolved 运行时走（调试面=渲染块 data-source 属性+单测断言面；**不入库**=Annotation 模型锁面零触碰），渲染行为零差（色块样式不区分源） | src/renderer/features/reader/annotation-resolve.ts（ResolvedAnnotation.source 可选域）+AnnotationLayer.tsx/AiAnnotationLayer.tsx（data-source 调试属性）+annotation-resolve-layered.ts（markSource 唯一标域点） | 单测（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe：域标记断言（S0/S4='dom'/S2='item'/S3b·S6 抑制=无标记）+M3 主链换 DOM 变异→域标记断言红证在档；e2e reader-text「划选高亮后重开仍在原位」INV-51 稳态口径回归=显示覆盖不回写的端到端面） | 已锚定（单测级 F-A8 门2 本单；e2e 面随全量 reader-text 回归） |
+@@ -81,6 +81,7 @@
+ | INV-65 | 导出会话中止单源：renderer 重载/崩溃（main 存活）→bootstrap webContents 双事件（did-start-navigation 仅 isMainFrame+render-process-gone）→corpus.export 单例 abortActiveSession→failSession 同型处置（清 manifest.tmp+**同步**释放单飞锁（INV-18 扩展面——终局标记先于异步清理落盘，setImmediate 悬挂推进被 advance 终局守卫按会话对象身份拦截）+折叠 reject IO_ERROR）。**安全前提**：renderer 为纯组件态 SPA（无 pushState/hash/锚点 in-page 导航——App.tsx ViewId useState 形态），主帧导航事件语义等价于「renderer 生命周期重开」；未来引入 in-page 路由（hash 路由/history API）即触发本条复审（isMainFrame 过滤充分性重估） | F-SESS-01（2026-09-18 入册；宪法「新增跨模块行为不登记本册视同未完成」——门一 W1 处置）+src/main/services/export_/corpus.export.service.ts 头注态空间表 abort 行 | 单测锚（corpus.export.test 四用例：streaming-abort 释放单飞/防御两格/advance 守卫竞态窗/迟到回传 INVALID_REQUEST）+e2e 锚（corpus-export.spec renderer 重载格：streaming 中 reload→再发起全链完成）+变异红证双件（M1 删守卫 t3 红/M2 断接线 e2e 红） | 已锚定（F-SESS-01 落锚；render-process-gone 格接线由 typecheck+同通道单测覆盖——运行时崩溃注入红证欠账留档票内） |
+ | INV-66 | 受管**内容写盘**原子性单源：一切「同路径内容落盘」（JSON/字节覆写）走 services/shared/atomic-write 的 atomicWriteFile（tmp+rename 同卷原子；直写目标路径=半截文件可观测违例）。**边界（刻意限定）**：仅内容写盘——不覆盖协议流（corpus.export manifest 终写=固定名 manifest.tmp.json 态空间契约残留清理语义，保持内联）与移动语义（ai-notes-import rm+rename 归档挪位）；既有 6 调用点=file-store（uniqueTmp+cleanOnFail）/ai-sensor（ensureDir）/workspace.fs ×2/settings ×2；新增内容写盘点必须经本单源（新直写 writeFile 覆写目标=review 拦截位） | F-DEDUP-01（2026-09-18 入册；四副本收敛的单源承诺缺册=未定义行为）+src/main/services/shared/atomic-write.ts 头注 | 单测锚（tests/unit/services/shared/atomic-write.test.ts 8 用例：string/bytes 双形态/终名存在 tmp 零残留/ensureDir/uniqueTmp 并发各写手 tmp 独立（allSettled 口径——Windows 同目标并发 rename 平台竞态，单源真契约=tmp 独立不字节交错）/cleanOnFail）+变异红证（M2 删 rename→终名存在断言红）+调用方既有测试（file-store/ai-sensor/workspaces/settings 全绿=迁移行为等价） | 已锚定（F-DEDUP-01 落锚；RESTORE 标记为 echo 自声明的既有欠账同 batch 7 P2-1 族） |
+ | INV-67 | AI 笔记回灌事务性：ai-notes-import 回灌=deleteByPaper+重插**同包 withTransaction** 全有或全无（首插中断零行/重灌中断旧数据完整；跨篇隔离——lineage 导入同族同标准先例对齐）。**登记性质**：行为=2026-09-18 F-AIN-01 已落地，本条系 batch 7 门二 P2-5 遗留「lineage+回灌同族事务不变量批量补册窗口」的登记债销项（非 F-DEDUP-01 行为变更）；同族窗口未纳部分（lineage 清面重灌语义细目）随 F-SENSOR-01 场评估补册，防半窗遗漏 | F-AIN-01（行为落地）+F-DEDUP-01（2026-09-18 补册销项）+src/main/services/ai_sensor/ai-notes-import.service.ts 头注事务段 | 单测锚（tests/unit ai-notes-import a1 两相+跨篇隔离；lineage 同族既有事务测试）+变异红证（F-AIN-01 M1=IIFE 直调变异双红） | 已锚定（F-AIN-01 落地链 2026-09-18；本册登记滞后一日=F-DEDUP-01 场次窗口闭合） |
++| INV-68 | 几何产链 band 档位绑定（F-GEOM-01-G3，2026-09-18）：band 三推导各绑一档，**禁跨档消费+禁新增第四推导**——档1 项族 bandsFromItems（pdf-item-geometry.ts:366）=selection 快/全量主链（selection-evaluate.ts:130/207 经 itemSelectionGeometry:506）+S2/S3a（annotation-resolve resolveAnnotationRectsItem）唯一源；档2 bandsForTextNodes（annotation-resolve.ts:209，DOM 节点口径）=S4（annotation-resolve.ts:300 resolveAnnotationRectsDom——Annotation+AI 段经 annotation-resolve-layered 编排）+selection 全量显示回退（selection-evaluate.ts:296）专用且产物不入库（G2 保存门后 transient，rects 与 bands 同源=C5 精神）；档3 bandsNearRects（annotation-resolve.ts:235，DOM 几何口径）=S3b 存量专用（AnnotationLayer.tsx:98 唯一消费）；F-A9 calibrateBands（annotation-band-calibrate.ts:77）=三档之上显示层校准器（窗匹配+校准不参与行归属——现状不变）。跨族交互点终态收口（设计书 §2.6）：#3 S4 双族同屏=显式档（档2 落款）+同源 bands 绑定；#4 selection 显示回退=transient 显式声明「仅显示不入库」（selection-evaluate.ts:43/292 G2 已落——本条引用不重复登记）；#2 S6 项盒判定边界注=INV-58 既有「S6 名实（门一 W1 补注）」覆盖（引用，不重复登记）。**登记性质**：现状消费面经核已天然档位绑定——本条=事实升 INV 防未来漂移，非行为变更（设计书 §2.5 原话） | pdf-item-geometry.ts（bandsFromItems 档1 单源）+annotation-resolve.ts（档2 bandsForTextNodes/档3 bandsNearRects 驻件）+annotation-resolve-layered.ts（S0~S6 编排）+selection-evaluate.ts（档1 主链+档2 显示回退消费）+AnnotationLayer.tsx（档3 唯一消费） | 既有测试网（annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe S0~S6+selection 系列）——登记性质=事实升格，行为锚=既有测试（口径同 INV-67 登记债销项） | 已登记（防漂移性 INV，无独立红证面——机检锚=未来跨档消费走 review 拦截位，非 CI 负锚） |
+ 
+ ## 维护规则
+ 
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 70b8dd3a1f..d408c45c8d 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-18T05:46:12.0518881Z",
++    "generatedAt":  "2026-09-18T11:33:02.0662636Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -7,7 +7,7 @@
+                   },
+                   {
+                       "path":  "docs/invariants.md",
+-                      "sha256":  "887c63855202cd175a1a554297c1a3b4209581e0bbc08949bc863100a9e493ce"
++                      "sha256":  "ac9999b566cf838d8c7bdcd98db1351c65b600363c6d7ec809a41250af875054"
+                   },
+                   {
+                       "path":  "electron.vite.config.ts",
+diff --git a/src/renderer/features/lineage/lineage-viewport.ts b/src/renderer/features/lineage/lineage-viewport.ts
+index c8110fdde5..d8c0208cc2 100644
+--- a/src/renderer/features/lineage/lineage-viewport.ts
++++ b/src/renderer/features/lineage/lineage-viewport.ts
+@@ -76,6 +76,9 @@ export type Viewport = { tx: number; ty: number; k: number }
+  * 自洽假设消除——门一 W-2）；缺省自读（既有调用/测试零变）。
+  * 已知噪声：clientWidth 整数舍入（规范）→比值误差 ≈0.03%（实测 0.05%）
+  * ——锚点/增量/fit 语义不可感，声明接受（票面 §0）。
++ * [F-GEOM-01-G3] 域归属：本件=lineage 域（INV-43 svg 坐标口径），跨域出
++ * reader 几何战役范围；reader 域 crib 不复用（selection-geometry localScale
++ * 头注既有 crib 声明互指成立）。
+  */
+ export function rootToLocalScale(el: Element, rect?: DOMRect): number {
+   const rw = (rect ?? el.getBoundingClientRect()).width
+diff --git a/src/renderer/features/reader/annotation-resolve.ts b/src/renderer/features/reader/annotation-resolve.ts
+index 67ba5b0708..1f0bf79d3c 100644
+--- a/src/renderer/features/reader/annotation-resolve.ts
++++ b/src/renderer/features/reader/annotation-resolve.ts
+@@ -374,7 +374,10 @@ export function resolveAnnotationRectsItem(
+  *  box 反推 scale=Math.round 后 CSS 盒/跨度，与 clampScale(zoom) 真值差 <1px
+  *  取整粒度——水平轴（宽）scale/base 严格约除消取整差；垂直轴依赖 box 宽高
+  *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]）。
+- *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费 */
++ *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费。
++ *  [F-GEOM-01-G3] 域归属：产物 viewport 只入项几何族数学
++ *  （itemSelectionGeometry/rectsForOffsetRange），禁直接混入 DOM 量测域
++ *  比较（r3a 型域差防线） */
+ export function itemViewportOf(entry: PageItemEntry): ItemViewport {
+   const [x0, y0, x1, y1] = entry.geometry.view
+   const rot = ((entry.geometry.rotate % 360) + 360) % 360
+diff --git a/src/renderer/features/reader/selection-geometry.ts b/src/renderer/features/reader/selection-geometry.ts
+index 58af10d401..524b508ce0 100644
+--- a/src/renderer/features/reader/selection-geometry.ts
++++ b/src/renderer/features/reader/selection-geometry.ts
+@@ -58,7 +58,9 @@ export function pageIndexOf(root: HTMLElement): number | null {
+   return Number.isInteger(no) && no >= 1 ? no - 1 : null
+ }
+ 
+-/** 视口→挂载盒本地坐标比值（1/有效 zoom；量测退化→1 直通） */
++/** 视口→挂载盒本地坐标比值（1/有效 zoom；量测退化→1 直通）。
++ * [F-GEOM-01-G3] 域声明：本换算=UI 布局域（视口→挂载盒本地 px），非 PDF
++ * 几何域——不参与锚定/归一化数学（INV-58 坐标域边界注；r3a 型域差防线参照） */
+ export function localScale(el: Element, rect?: DOMRect): number {
+   const rw = (rect ?? el.getBoundingClientRect()).width
+   const cw = el.clientWidth
+diff --git a/src/renderer/features/reader/selection-paint.tsx b/src/renderer/features/reader/selection-paint.tsx
+index 42c151b500..0e592c753c 100644
+--- a/src/renderer/features/reader/selection-paint.tsx
++++ b/src/renderer/features/reader/selection-paint.tsx
+@@ -7,8 +7,10 @@
+  *   0.20×2≈0.36 加深缺陷根治）。
+  * - 色 rgba(0,0,0,0.20)：同修前观感（R2-F-10 灰 0.20 在案；白纸合成
+  *   ≈#CCCCCC 可辨）。
+- * - [F-A5 a 面] 块几何=行簇字形带单源（bandsNearRects 产 RowBand——与
+- *   标注/AI 三消费点同基准）：垂直=band（顶贴字形顶/底贴底缘——修前
++ * - [F-A5 a 面] 块几何=行簇字形带单源（[F-GEOM-01-G3] 勘正：RowBand 按
++ *   档绑定（INV-68）——selection 产链喂档1 bandsFromItems 校准版/档2
++ *   bandsForTextNodes 显示回退；band 匹配=matchBand，与标注层渲染同基准）：
++ *   垂直=band（顶贴字形顶/底贴底缘——修前
+  *   CSS 回退行盒在小字号文档上 1.5~2 倍行高、上下溢出约半行，真机基线
+  *   1.57~1.83× 在档）；水平=行簇 span 实际端点夹取（clampedHorizontal
+  *   ——修前行盒越出文字区）。band 缺席（jsdom/量测退化）→ 行盒原样
+@@ -46,7 +48,9 @@ export const SelectionPaint = memo(function SelectionPaint(props: {
+   root: HTMLElement
+   /** 归一化并集矩形（evaluate 管线产物——与保存 rects 同源） */
+   rects: AnnotationRect[]
+-  /** [F-A5] 行簇字形带（bandsNearRects 产物——缺省=行盒原样回退） */
++  /** 行簇字形带（[F-A5]——缺省=行盒原样回退）。[F-GEOM-01-G3] 档位勘正：
++   *  selection 产链实际喂入档1 校准版（calibrateBandsWithSpans(item.bands)）或
++   *  档2 显示回退产物；bandsNearRects=档3、真实消费仅 AnnotationLayer S3b（INV-68） */
+   bands?: RowBand[]
+ }): JSX.Element {
+   const { root, rects, bands } = props
