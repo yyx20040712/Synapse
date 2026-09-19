@@ -109,5 +109,8 @@
   管理员终端跑一次 `npm run dist` 重建缓存（先例同 2026-08-22）。另发现既有
   失配：installer-smoke.mjs APP_EXE 仍按旧 productName「Synapse Remake」找
   exe，与现 productName=Synapse 失配（R2-SH1 漏项，独立于本票）。
+  〔2026-09-20 回写：该漏项已经 R2-SH3 清偿——三常量+DEVELOPMENT.md:88
+  artifactName 勘误，票档在册；门二另发现无空格变体 UA 漏项
+  （http-client.ts SynapseRemake/0.1）呈报用户裁决立票。〕
 - 回退路径不变：钉版回 42.9.3 即回（v13 绑定在 42 下已实测可跑）。
 

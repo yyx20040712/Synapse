@@ -45,9 +45,9 @@ const TASKKILL_TIMEOUT_MS = 30_000 // taskkill spawnSync 上限
 const UNINSTALLER_TIMEOUT_MS = 30_000 // 卸载器 spawnSync 上限
 const REG_TIMEOUT_MS = 15_000 // reg query spawnSync 上限
 const REG_UNINSTALL_BASE = 'Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
-const REG_KEYS = ['io.github.yyx20040712.synapse', 'Synapse Remake'] // appId 与产品名，两个关键字都搜
-const APP_EXE = 'Synapse Remake.exe'
-const UNINSTALL_EXE = 'Uninstall Synapse Remake.exe'
+const REG_KEYS = ['io.github.yyx20040712.synapse', 'Synapse'] // appId 与产品名，两个关键字都搜；'Synapse'=旧键子串超集（防旧版残留漏抓），第三方同名软件装机会假阳性——FAIL 时人工甄别命中条目
+const APP_EXE = 'Synapse.exe'
+const UNINSTALL_EXE = 'Uninstall Synapse.exe'
 
 const keep = process.argv.includes('--keep')
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)))
