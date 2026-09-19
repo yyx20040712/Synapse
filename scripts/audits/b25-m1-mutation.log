@@ -1,0 +1,5 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+src/main/ipc/ai_sensor.ts(19,52): error TS2339: Property 'importAll' does not exist on type 'AiSensorService'.
+M1_MUTATION_EXIT=2
+TS2339_COUNT=1

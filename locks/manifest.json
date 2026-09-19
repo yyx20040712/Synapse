@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-18T23:19:07.4891167Z",
+    "generatedAt":  "2026-09-19T00:08:03.1994730Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -60,6 +60,18 @@
                   {
                       "path":  "scripts/audits/b24-tickets-flip.mjs",
                       "sha256":  "d09bdba7e494cb041bf46440d52ad48f033c09423c3f2bb6529e9bd572483cf2"
+                  },
+                  {
+                      "path":  "scripts/audits/b25-claim.mjs",
+                      "sha256":  "172df2c87177d9ccecc7309a3ebfbd10973bfbfe12c1ab09e089c49d932dc0aa"
+                  },
+                  {
+                      "path":  "scripts/audits/b25-tickets-flip.mjs",
+                      "sha256":  "c6d57ff00ea7fd1f9756017b44239d9272cf78b5d91fb37dd2ffdf89dfe4b673"
+                  },
+                  {
+                      "path":  "scripts/audits/b25-w1-closure.mjs",
+                      "sha256":  "9b88d55d355040820652ea9492cf53845d1cb9689a71ea62f827a0e6cdf25120"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
@@ -1475,7 +1487,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "afd9a443d24e5e7a7269b99d3f8b11d2f1716105debcd7459fdc1d4df7549350"
+                      "sha256":  "b9210d84ccf4dde6d3c7f5927044745a595a5f7409ca7d306178616698369b1f"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

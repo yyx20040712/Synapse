@@ -1,0 +1,18 @@
+== W1: 三服务件返回成员名交集 ==
+aiSensor members: 
+aiNotes members: 
+zcode members: 
+AB intersect: []
+AC intersect: []
+BC intersect: []
+W1_CLEAR= true
+
+== W2: readStatus 函数体 this 实证 ==
+0
+this_count_in_readStatus_body=0
+W2_NOTE=readStatus 体 283-304 行 this 命中数如上（observe 用 this.readStatus 是另一方法）
+
+== W3: 三工厂构造期副作用（顶层 await/进程调用） ==
+src/main/services/ai_sensor/ai-notes-import.service.ts:0
+src/main/services/ai_sensor/ai-sensor.service.ts:0
+src/main/services/ai_sensor/zcode-link.service.ts:1
