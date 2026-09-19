@@ -23,6 +23,7 @@
 | W-8 | INV-45 末行单盒真机面 | 真库无奇数页文献——末行右盒缺席的真机形态由单测 DOM 断言代锁 | reader-double-page.test ③ DOM 断言 | 观察（真库出现奇数页文献时真机面自然补齐） |
 | W-9 | ~~F-ARCH4-M1 root.contains 可达性~~ | **已核销（2026-09-02 AUDIT-C C-2②）**——e2e 三向对照+变异矩阵定性：root.contains=同页跨 textLayer 形态的**决定性防线**（变异 B 摘除→工具条出现即红）；真浏览器不塌缩跨界选区（E1 collapsed=false 锚）；跨页拒绝由 SelectionLayer 边界检查独担（变异 A 红） | — | 已核销 |
 | W-10 | SR2-AI-12 W3 七问文案值锁 | 键集断言拦键漂移不拦值漂移——文案值变化无锁 | ai-note-style 单源（结构防线） | 观察（文案改动时人工比对；lint 化随 INV-11 机器锚立项） |
+| W-11 | INV-56 已知还原项（P7E-04 剪贴板可选注入） | clipboard 现为可选注入（受锁桩工厂禁改下处置）——「补必填+桩工厂同步」还原项悬置于 INV-56 条文内无独立登记（survey ③#8 实录，b27 移交 F-PROC-01） | export-clipboard.test 装配缺失响亮守卫（现有） | 观察（下次合法触碰 tests/utils/ipc-deps.ts 的场次补必填+桩工厂同步——触碰即触发，届时核销本条） |
 
 ## 已核销
 
