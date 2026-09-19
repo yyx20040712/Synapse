@@ -1,5 +1,0 @@
-{
-  "verdict": "PASS",
-  "findings": [],
-  "summary": "三处回炉均落地且未见新缺陷：Esc 监听挂 document 并成对清理，busy 期所有关闭路径统一经 requestClose 门禁，W1 注释已改为 schema 前瞻守卫口径并保留事务编排真锚；W3/N1 新锚具备先红后绿证据且非恒真。受锁面 diff 仅追加三通道及对应 schema，未改动既有 API_SURFACE 条目，收口证据齐备。"
-}

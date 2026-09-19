@@ -372,13 +372,13 @@ console.log(
 for (const v of scanModelNames(root)) violations.push(`model-names: ${v}`)
 
 // 9) e2e 截图比对负锚（[F-TESTREF-W4] 2026-09-18 起，INV-64）——tests/e2e 下
-//    .ts/.tsx 出现 toHaveScreenshot 即红：像素 diff 限 scripts/audits 工具层
+//    .ts/.tsx 出现 toHaveScreenshot 即红：像素 diff 限 scripts/ 工具层
 //    （探针取证域，settings.png 先例），e2e「看见」类断言=计算样式+真实文本
 //    （INV-06 口径）。现存 0 处=既成事实升格受检不变量（2026-09-11 终裁
 //    §4-4 W4 行）。
 for (const f of walk(join(root, 'tests', 'e2e'), (p) => /\.(ts|tsx)$/.test(p))) {
   if (/\btoHaveScreenshot\b/.test(readFileSync(f, 'utf8'))) {
-    violations.push(`${relative(root, f)}: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/audits 工具层；e2e 断言=计算样式+文本）`)
+    violations.push(`${relative(root, f)}: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/ 工具层；e2e 断言=计算样式+文本）`)
   }
 }
 

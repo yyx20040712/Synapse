@@ -1,6 +1,0 @@
-WS default PAPERS [{"id":"a3c25d20","t":"2007-johannes-von-kries-and-the-history-of-water-h"},{"id":"e8eb5ee6","t":"How much X is in XAI: Responsible use of Explaina"},{"id":"a9390ef7","t":"Towards a smart water city: A comprehensive review"}]
-ROW {"kind":"underline","end_offset":1465,"suffix_text":"With regard to urban water infra","quote_tail":"ansfertechnologies (Mohanty et al., 2016).","created_at":"2026-09-10T00:53:57.468Z"}
-ROW {"kind":"underline","end_offset":1465,"suffix_text":"With regard to urban water infra","quote_tail":"ansfertechnologies (Mohanty et al., 2016).","created_at":"2026-09-10T00:53:56.081Z"}
-ROW {"kind":"underline","end_offset":5760,"suffix_text":".Fig. 2 gives a short overview o","quote_tail":"e pro-ceedings, and standards (see Fig. 1)","created_at":"2026-09-08T23:16:09.390Z"}
-WS ws-059434f6 PAPERS []
-QUERY_DONE

@@ -1,2 +1,0 @@
-[M2 red] ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
-[M2 red]       Tests  4 failed | 12 passed (16)

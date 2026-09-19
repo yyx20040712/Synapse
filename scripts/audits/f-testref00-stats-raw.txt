@@ -1,6 +1,0 @@
-[test-surface] stats {"fileCount":179,"caseCount":1623,"assertionCount":4979,"skipSiteCount":15,"ticketIdCount":57,"eachExpandedRows":160,"unresolvableCount":0}
-[test-surface] baseline 已写入 scripts/test-surface.baseline.json
-[test-surface] stats {"fileCount":179,"caseCount":1623,"assertionCount":4979,"skipSiteCount":15,"ticketIdCount":57,"eachExpandedRows":160,"unresolvableCount":0}
-==== [R1 回炉轮 1 stats 追加段 2026-09-12 01:36:39] ====
-[test-surface] stats {"fileCount":179,"caseCount":1623,"assertionCount":4979,"skipSiteCount":15,"conditionalSkipSiteCount":15,"hardSkipSiteCount":0,"ticketIdCount":57,"eachExpandedRows":160,"unresolvableCount":0}
-[test-surface] stats {"fileCount":179,"caseCount":1623,"assertionCount":4979,"skipSiteCount":15,"conditionalSkipSiteCount":15,"hardSkipSiteCount":0,"ticketIdCount":57,"eachExpandedRows":160,"unresolvableCount":0}

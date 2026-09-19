@@ -1,4 +1,0 @@
-[routing] run=20260918191324-l3k0j6p4 role=gate1-reviewer@fb86152e cfg=545b6843a147 尝试源 1/1: kimi-backup(kimi-k3)
-[routing] 全源尽(kimi-backup): HTTP 403: 5-hour usage limit（quota reset when current 5-hour window ends）——主控按「同源审计欠账」处置
-GATE1_DS_EXIT=2
-【绑定通道前置】ops-gate1-k2 Agent 派发连续两次 Provider authentication failed（2026-09-19 03:0x 本地）——同源同因定性

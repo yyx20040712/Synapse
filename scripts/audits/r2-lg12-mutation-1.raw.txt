@@ -1,8 +1,0 @@
-== M1 变异：ref 多父豁免分支删（守卫退化为 kind 无关全入边判定）==
--- 期望红：'ref 豁免多父' 用例（ref 加边被多父拒）
-[31m   [31m×[31m R2-LG12 参考边（kind=ref）upsertEdge 写守卫[2m > [22mref 豁免多父：to 已有 tree 父仍可挂 ref（tree 父保留不顶替）[90m 5[2mms[22m[31m[39m
-[31m     → 多父边拒绝：节点 8d5f24cc-1adc-4009-815a-8bb30ed18773 已有父节点 af3facd7-0b0b-42da-b42b-5c586765b2ee（树至多一父）[39m
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m27 passed[39m[22m[90m (28)[39m
-[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m
--- M1 还原后全绿确认+diff 空（上方 diff 无输出=字节级还原）

@@ -28,8 +28,14 @@ local-state-backup/
 # 本机环境残留（2026-08-28 遗留池处置：勿入库）
 dev-launch.cmd
 dist_new/
-scripts/audits/model-routing-log.jsonl
+# audits 证据面出库（2026-09-19 裁决 3 / F-STOR-01）：历史件已整体移仓外档案区
+# E:/zcode_md/synapse-archive/scripts-audits/（登记制——批次日志登记）；仓内仅存 README
+# 指针件。旧 model-routing-log.jsonl 与 *out* 两规则由本条全覆盖（F-AUDIT-01 历史口径
+# 见其票面注记）
+scripts/audits/*
+!scripts/audits/README.md
 
-# audits 探针数据目录不入库（F-AUDIT-01 口径 2026-09-05：证据件 raw/md/json 入库,
-# *out* 数据目录体积大可再生不入——目录形态尾斜杠,closeout 文件名免疫;已跟踪历史件不受影响）
-scripts/audits/*out*/
+# visual-diff-locate.mjs 缺省输出落点防护（F-TOOL-01 工具件随迁 scripts/ 根后 HERE 解析
+# 到本目录——门一 W1：防默认参数跑工具常态化产生未跟踪文件顶破「收口毕未跟踪面为零」）
+scripts/visual-diff-report.json
+scripts/visual-diff-crop.png

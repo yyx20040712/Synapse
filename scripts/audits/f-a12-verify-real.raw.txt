@@ -1,7 +1,0 @@
-USERDATA C:\Users\ADMINI~1\AppData\Local\Temp\synapse-a12verify-sPGnxG
-GEO {"last":{"text":"technologies (Mohanty et al., 2016).","top":532.3,"bottom":540.3,"left":1004.9,"right":1133.7},"next":{"text":"With regard to urban water infrastructur","top":542.8,"bottom":550.7,"left":1016.9,"right":1253.5},"firstPara":{"text":"Smart cities represent an innovative con","top":406.8,"bottom":414.8,"left":1016.9,"right":1256.1}}
-G1_SEL {"collapsed":false,"anchor":{"k":"text","t":"Smart cities represent an in","off":0},"focus":{"k":"el:DIV","cls":"textLayer","off":87},"len":427,"tail":" a key factor for the development of smart","head":"Smart cities represent an inno"}
-G1_PAINT_MAX_BOTTOM 540.3 PARA2_TOP 542.8
-G2_SEL {"collapsed":false,"anchor":{"k":"text","t":"Smart cities represent an in","off":0},"focus":{"k":"text","t":"technologies (Mohanty et al.","off":36},"len":877,"tail":"nsfer\ntechnologies (Mohanty et al., 2016).","head":"Smart cities represent an inno"}
-G2_PAINT_MAX_BOTTOM 540.3 PARA2_TOP 542.8
-PROBE_DONE

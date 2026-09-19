@@ -1,1 +1,0 @@
-{"verdict":"PASS","findings":[],"summary":"复核通过：受锁契约测试改动为基于 PRELOAD_HIDDEN_METHODS 的隐藏面纯减删，转发跳过同源消费且事件桥两用例无连带变更；回炉 W2 类型门、N1 节头、N2 八分支计数与 M5 变异红证均如实落地。全量 135 文件/1160 用例及 lint/typecheck/quality/tickets 全绿，门二收口就绪。"}

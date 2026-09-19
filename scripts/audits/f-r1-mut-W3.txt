@@ -1,4 +1,0 @@
-   × F-R1 双页 —— PageColumn 渲染面 > ③ 双页行 DOM：data-page-row 每行一个+行内页盒连续对 (1,2)(3,4)+末行单页；盒宽=自身页宽（左顶对齐口径） 22ms
-   × F-R1 双页 —— PageColumn 渲染面 > ⑦ 段⑥锚双页总高口径：zoom 1→2 程序修正 scrollTop 按行总高比值（2 行 3 页：1596→3180） 3ms
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
-      Tests  2 failed | 14 passed (16)

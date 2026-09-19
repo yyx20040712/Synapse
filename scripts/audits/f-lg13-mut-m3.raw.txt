@@ -1,4 +1,0 @@
- ❯ tests/unit/renderer/lineage-layout.test.ts (28 tests | 1 failed) 11ms
- FAIL  tests/unit/renderer/lineage-layout.test.ts > F-LG13 统一尺寸与紧凑间隙（nodeWidth/nodeHeight 恒定单源——用户令「方框都一样大小」） > 统一尺寸兄弟占位：中/长题名兄弟中心距恰 256=240+16（SIBLING_GAP 紧凑字面锚）
- Test Files  1 failed (1)
-      Tests  1 failed | 27 passed (28)

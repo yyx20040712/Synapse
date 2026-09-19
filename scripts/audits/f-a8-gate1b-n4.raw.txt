@@ -1,8 +1,0 @@
-Warning: UnknownErrorException: Unable to load font data at: file:///E:/class/智慧水务/Synapse_remake/node_modules/pdfjs-dist/standard_fonts/FoxitSerif.pfb
-== f-a6-diag-out c1 锚 [2079,4704) ia=248 ib=497 ==
-  覆盖项数=250 字体分布={"g_d0_f2":66,"g_d0_f1":146,"g_d0_f3":28,"g_d0_f5":10}
-  ascent<=0 字体命中=g_d0_f2(66项,ascent=0) 合计66项/250=26.4%
-== f-a6-diag-out-b2 c1 锚 [2079,4704) ia=248 ib=497 ==
-  覆盖项数=250 字体分布={"g_d0_f2":66,"g_d0_f1":146,"g_d0_f3":28,"g_d0_f5":10}
-  ascent<=0 字体命中=g_d0_f2(66项,ascent=0) 合计66项/250=26.4%
-exit=0

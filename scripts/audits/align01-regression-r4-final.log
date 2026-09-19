@@ -1,4 +1,0 @@
-PASS R4 流水:尾100行坏0行（含未知事件0）跳0行(旧版本)外来0行(他源channel标记) 事件分布={"switch":12,"attempt":75,"exhaust":6,"ok":7}；cfg哈希一致=true（流水 545b6843a147 vs live cfg:545b6843a147）；账本:尾26行坏0行（含未知事件0）跳25行(旧版本)外来0行(他源channel标记) 事件分布={"ok":1}
-
-regression 汇总：1/1 过（项=R4）
-R4FINAL_EXIT=0

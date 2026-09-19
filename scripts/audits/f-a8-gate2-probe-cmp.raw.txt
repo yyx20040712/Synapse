@@ -1,9 +1,0 @@
-pages: real3882-p2,real3882-p7,real1c2d-p4,real1c2d-p9,real1c2d-p6,s1rot-p1,s2crop-p1
-real3882-p2  iou1d g1[0.9968,0.6820,0.9978,0.8975,0.9074] g2[0.9968,0.6820,0.9978,0.8975,0.9074] maxd=0.0000 dyD=0.000 mispair 6->6 reconcile true/true
-real3882-p7  iou1d g1[0.9942,0.6584,0.9983,0.9745,0.9735] g2[0.9942,0.6584,0.9983,0.9745,0.9735] maxd=0.0000 dyD=0.000 mispair 16->16 reconcile true/true
-real1c2d-p4  iou1d g1[0.9922,0.9996,0.9958,0.8816,0.9197] g2[0.9922,0.9996,0.9958,0.8816,0.9197] maxd=0.0000 dyD=0.000 mispair 0->0 reconcile true/true
-real1c2d-p9  iou1d g1[0.9919,0.9998,0.9946,0.8956,0.9701] g2[0.9919,0.9998,0.9946,0.8956,0.9701] maxd=0.0000 dyD=0.000 mispair 0->0 reconcile true/true
-real1c2d-p6  iou1d g1[0.9981,0.9949,0.8663,0.9925,0.9734] g2[0.9981,0.9949,0.8663,0.9925,0.9734] maxd=0.0000 dyD=0.000 mispair 0->0 reconcile true/true
-s1rot-p1     iou1d g1[0.2473,0.7031,0.1335,0.7031,0.7031] g2[0.2473,0.7031,0.1335,0.7031,0.7031] maxd=0.0000 dyD=0.000 mispair 4->4 reconcile true/true
-s2crop-p1    iou1d g1[0.9999,0.9999,0.9532,0.9796,0.9938] g2[0.9999,0.9999,0.9532,0.9796,0.9938] maxd=0.0000 dyD=0.000 mispair 0->0 reconcile true/true
-notes g1: 0 g2: 0

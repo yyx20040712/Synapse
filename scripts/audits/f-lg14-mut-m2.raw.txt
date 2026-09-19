@@ -1,3 +1,0 @@
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
-[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/lineage-tags.test.ts[2m > [22mF-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）[2m > [22m含金量三元组：T1 映射+被引 42/未映射 venue+null/0=值非缺（判别 === null）
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (12)[39m

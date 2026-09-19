@@ -1,5 +1,0 @@
-  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：AI_SENSOR_DIR_NAME / ZCODE_SKILL_NAME）
-  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：UPDATE_FAILED / SAVE_FAILED）
-dup-constants：扫描 217 文件 / 132 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
-quality 检查未通过：
-  - 色值 token 同值守卫：--flint04-t1（src/renderer/shared/theme.css:157） = --flint04-t2（src/renderer/shared/theme.css:158） 同值 #123456——颜色 token 同值第二源，同值合并共享单 token（F-LINT-04 ②）

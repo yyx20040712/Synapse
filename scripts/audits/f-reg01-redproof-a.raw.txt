@@ -1,3 +1,0 @@
-工单统计：共 119 个；open 0（weak 可领 0，strong 0）
-tickets 检查通过：注册表与代码一致
-old_version_exit=0

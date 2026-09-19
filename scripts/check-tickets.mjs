@@ -162,7 +162,7 @@ for (const f of srcFiles) {
 const SELF_REL = relative(root, fileURLToPath(import.meta.url)).replaceAll('\\', '/')
 // DIR 形态豁免清单（门一 W-2 回炉）：目录票无文件内容可检，但任意目录放行
 // =逃逸口——限定到已盘点两票，新增 DIR 票须同步本清单（与白名单同机制）
-const DIR_FILE_EXEMPT = new Set(['F-AUDIT-01', 'P7X-03'])
+const DIR_FILE_EXEMPT = new Set(['F-AUDIT-01', 'P7X-03', 'F-STOR-01'])
 for (const t of tickets.filter((x) => x.status === 'done')) {
   if (t.file === SELF_REL) continue
   const p = join(root, t.file.replaceAll('/', '\\'))

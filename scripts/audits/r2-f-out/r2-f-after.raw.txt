@@ -1,2 +1,0 @@
-[f-after 14:15:20] drag {"x1":739,"y1":143,"x2":773,"y2":151}
-[f-after 14:15:21] 完成 {"selectionBg":"rgba(0, 0, 0, 0.2)","trim":[{"quote":"Placement ","dTopPx":-0.72,"dBottomPx":-0.24,"spanH":6.4,"annotH":6.9}],"dblclickSelectionText":{"collapsed":false,"len":1},"toolbarAfterDblclick":0,"dragSel":{"len":86,"collapsed":false},"toolbarAfterDrag":true}

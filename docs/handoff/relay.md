@@ -6,7 +6,7 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: READY
+- status: DONE
 - automation_id: automation-aa40bf0e-0483-4ecb-9698-7f0cd533fce0
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
@@ -14,15 +14,15 @@
 - poll_interval_min: 10
 - last_dispatch: 2026-09-19T11:19:21+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T09:52:50Z
+- heartbeat_utc: 2026-09-19T11:07:41Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 34
+- checked_done: 35
 - protocol_rev: 1
-- last_dispatch_utc: 2026-09-19T08:59:12Z
+- last_dispatch_utc: 2026-09-19T10:02:42Z
 - relay_started_utc: 2026-09-19T08:46:13Z
-- batch_count: 1
+- batch_count: 2
 - max_batches: 105
 - max_wall_hours: 158
 - hold_reason: -
@@ -180,7 +180,7 @@
       invariants.md 受锁 [locked-change]；ai-sensor 段随 F-SENSOR-01 终态回写）
 - [x] F-PROC-01（制度批：DoD 回写项/事故档回流段/治理指标+3/白名单冻结/M2 预防句/
       直调补记规则/裁决 14 入 methodology）
-- [ ] F-STOR-01（audits 出库归档+manifest 同步 [locked-change]+AGENTS 三桶口径①
+- [x] F-STOR-01（audits 出库归档+manifest 同步 [locked-change]+AGENTS 三桶口径①
       修订呈批+本机 52M 清理）
 
 > **P9 池（5 项）不入本板**——用户点单启项时按《裁决书》§3 P9 表立案并在此追加波次。
@@ -190,6 +190,18 @@
 > 2027-03-02；43 中间档不推荐照产研报告 §5）；实施前按裁决书 §6.6 复核矩阵时效。
 
 ## 批次日志（追加，勿改写）
+
+### batch 29 — 2026-09-19（执行者会话：第六波 F-STOR-01 存储批单票——**第六波毕/清单全勾**，完成）
+- claim: claim-1789812236606-b29｜认领 2026-09-19T10:03:56Z｜收口 2026-09-19T11:06:30Z｜勾选 34→35。
+- 开场三态：B 态变体——唯一脏面=调度员 last_dispatch_utc 原子写（10:02:42Z 本批发布笔，随本批收口提交）；HEAD=batch 28 提交 cef076c65a 正确。
+- 技能清点：batch-relay（用——认领收口）、ai-dev-org（用——组织主干/三屋派发/门审矩阵/ORG-12 审包/health-scan/账本补记）；TDD 不加载（存储批无新用例面——验证=verify 四档链+守卫行变异红证 M1+出库计数对账，b27/b28 文档批同口径）；verification-before-completion（用——verify 变量法亲验+EXIT 尾行入档）；systematic-debugging 不加载（文件归档+manifest 同步无排障面——dist_new 宿主锁处置走欠账登记非排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 未绑定形态（随宿主——2026-09-19 用户裁决，session:host-tier）；门一=ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 k1 周额度封顶禁派，k2 第五票连续正常承载）；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审对实现面（宿主 GLM5.3）均异构成立。
+- **交付（裁决 3 存储批，机械面全执行）**：①**audits 整体出库**——3639 件/1.86G（git 跟踪 2871 件/受锁 .mjs·ps1 141 件）robocopy /E /MOVE 0 失败移 `E:/zcode_md/synapse-archive/scripts-audits/`（du 源↔目标恒等 1900544KB；仓内目录留驻=README 指针件——registry F-AUDIT-01/F-STOR-01 两张 DIR 形锚存在性要求）；②**.gitignore 止血**——`scripts/audits/*` 全拦+README 例外（旧 model-routing-log.jsonl 与 `*out*` 两规则全覆盖）+visual-diff 缺省输出两行防护（门一 W1 修缮）；③**locks manifest 同步**——unlock→移→regenerate→apply 单链，**385→245**（=385−141+1 工具件随迁新径——门二独立复算五分类 193+14+20+9+9 精确闭合）；④活工具件 `visual-diff-locate.mjs`（F-TOOL-01/INV-64）随迁 `scripts/` 根（内容零改保 rename sha 恒等链——staging 时 `git diff --summary -M` R100 机器背书）+F-TOOL-01 锚随迁（G5 先例同型）；⑤check-tickets.mjs:165 DIR_FILE_EXEMPT+F-STOR-01（票面明载）+check-quality.mjs :375/:381 两处消息路径同步（「scripts/audits 工具层」→「scripts/ 工具层」）；⑥**AGENTS 三桶口径①修订呈批稿**=docs/design/2026-09-19_f-stor01-bucket1-revision-proposal.md（现行条文原文引用+拟改 v2 仓外档案区登记制四款+过渡态 bridging+衍生面清单六条+呈批三选一——**待用户裁决**）；⑦52M 清理——local-state-backup 45568KB 外移档案区毕；dist_new 删除**欠账**（宿主文件锁残留 app.asar 单文件 7168KB，Restart Manager 定位=宿主自身索引句柄——探针 b29-find-lock-probe.ps1 在档，收口重试仍锁持）；⑧registry F-STOR-01 翻 done+完成注记（含锁项实测 141 勘正立案估数 92）。
+- **门审（回炉 0）**：门一 k2 第五票 **PASS_WITH_WARNINGS B0/W1/N7**——W1=visual-diff-locate 随迁 HERE 语义漂移三分支（头注/:64/:293 旧径叙述+缺省输出落点失去防护+呈批稿未覆盖）；N1 立案 92 vs 实测 141/N2 TR_RE 措辞精度/N3 verify 档 EXIT 尾行习惯/N4 dist_new 措辞/N5-N7 登记。**主控三分法三修缮**（.gitignore 两行防护+呈批稿 §五.5 欠账登记+§一.4「删除欠账」+§五.3 精度改写）→postfix verify EXIT=0。门二 **GO_WITH_CONDITIONS P0=0/P1=2/P2=5/N=5 回炉 0**——manifest 245 强复算（五分类亲数）+141 双路径支撑+四档恒等链+呈批稿最小面独立复核；**P1-1 审档双缺→b29-gate1-report.md/b29-gate2-report.md 主控代落档（回执内联逐字落盘零改写）**；**P1-2「四档 EXIT 落尾」申报与实物不符**（echo 落主控控制台非 log 文件——如实认账，closeout verify 起 EXIT 尾行入档兑现）；P2-3 同族路径锚 4 处补登呈批稿 §五.6/P2-4 check-tickets:163 注释两票→三票欠账/P2-5 **终态判定勘正（全勾→DONE 而非 READY——协议字面优先）**/P2-6 staging 前 git status 全量落档/P2-7 dist_new 三处披露闭环——**全数兑现**；N-10 R100 核/其余登记。
+- **机检终态**：verify 五档链——基线 385 EXIT=0→实现者终验 EXIT=1（唯一红=F-TOOL-01 旧锚，锚改写归主控）→主控锚随迁后 pregate EXIT=0（245）→门一修缮后 postfix EXIT=0→翻票后 **closeout EXIT=0（EXIT 尾行入档）**：open 1（恰 F-STOR-01 翻 done——门二 C2 预判逐位兑现）/locks 245/指纹门 183·1768·5368·skip14 恒等/Test Files 167·Tests 1724/build 产物 index-DW6Z3WXp.js 1,388.14 kB 同名同尺寸（零 src 直证）；M1 变异红证（DIR_FILE_EXEMPT 去 F-AUDIT-01→EXIT=1 :172/:203 双检查点红→还原 diff 空）；e2e 不跑（零 src/测试行为面——门二 C3 四档恒等背书）；锁链 384→385（claim 探针即写即锁）→终态 245（audits 141 旧径全量出 manifest）。
+- **登记制首批**（证据件仓外不入库——呈批稿拟改条文 v2 首运转）：`E:/zcode_md/synapse-archive/scripts-audits/` 下 b29-verify-baseline/final/pregate/postfix/closeout 五 .log+b29-mutation1.log+b29-impl-report.md+b29-find-lock-probe.ps1+b29-gate1-report.md+b29-gate2-report.md+b29-claim.mjs/.log（claim 探针随迁移件入档）+档案区 README.md；本批仓内零证据件提交（.gitignore 全拦+登记制 bridging——呈批稿 §四）。
+- 教训三条：①**主控简报形态申报与实物不符**（「四档 EXIT 落尾在案」——echo 输出落主控控制台而非 log 文件，门二 grep 实物反证；b26 教训②「计数落笔前实测」的形态变体：**形态类申报（有无尾行/标记）同样要开档实测**，控制台回显≠档内实物）；②**收口终态判定落笔前重读协议判定式**（主控计划写「READY 最后一笔」，协议字面=全勾→DONE——门二 P2-5 拦截；终态/计数类动作以协议表为唯一权威，简报先例记忆不可靠）；③**rename 类票的路径语义面=独立审点**（门一 W1：内容零改保 sha 恒等链时，HERE 解析出的缺省输出落点失去原位置防护——随批补 .gitignore 防护+文本刷新欠账化是标准处置）。
+- Rulings 待用户：①**AGENTS 三桶口径①修订呈批**（呈批稿 §六三选一 a 批准/b 修改后批准/c 驳回——呈批材料=docs/design/2026-09-19_f-stor01-bucket1-revision-proposal.md 全文）；②Electron 实施窗 A/B 票（裁决 选项 a 已裁）**待立案入板**——本板清单已全勾按协议置 DONE，重启径=用户显式 /batch-relay 换防或手动会话直接按《裁决书》§6.6 复核后立案（板尾注已载）；③dist_new 欠账（宿主锁释放后补删——重启宿主后任意会话 `rm -rf dist_new` 即销）。衍生面欠账五条在呈批稿 §五（后续小票顺带）。
+- 无进展计数：归零（34→35 有进展）。**清单全勾（35/35）——第六波毕，本板执行清单 0 余量，按协议判定①置 DONE。**
 
 ### batch 28 — 2026-09-19（执行者会话：第六波 F-PROC-01 制度批单票，完成）
 - claim: claim-1789808431856-b28｜认领 2026-09-19T09:00:31Z｜收口 2026-09-19T09:52:50Z｜勾选 33→34。
@@ -1946,3 +1958,16 @@
   板（B4-2a），本板次班承接（第六波 F-PROC-01→F-STOR-01）。
 - 板上既有条款自动生效：门一审 k2 承载指令（板头执行指令原文照携）与 UI 开批通道
   经验沿用历任实测累积。
+
+### 增补十 — 2026-09-19T10:38:30Z（hub 停火：用户令删火）
+- 用户在 hub 调度会话下达删火令：全局轮转火 automation-aa40bf0e-0483-4ecb-9698-7f0cd533fce0
+  已 CronDelete（回执 deleted:true，CronList 空集复核）。本条为调度员尾部纯追加，
+  claim/状态字段未动；板头 automation_id 字段行保留旧值仅为历史审计指向。
+- 本火任内战果：b28（F-PROC-01 制度批）完成收口（勾选 33→34/35，batch_count=1）；
+  b29（F-STOR-01 存储批）在途（10:02:42Z 发布、claim-1789812236606-b29 认领中，
+  心跳刷新纪律未执行但会话活体在档）。
+- **在途 batch 29 不受影响——执行者独立于火，自行完成收口（翻票+提交+板回写
+  READY）**。收口后本板停于 READY 且无火接续——此为预期态非异常。恢复两径同规：
+  用户显式 /batch-relay 重布防（换防协议 hub 变体），或手动会话按本板清单领批。
+- 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令优先）。
+- 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入生效。
