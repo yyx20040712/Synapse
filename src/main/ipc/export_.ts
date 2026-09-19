@@ -78,7 +78,14 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
       format === 'bibtex'
         ? await deps.services.export_.buildBibtex(paperIds)
         : await deps.services.export_.buildCsv(paperIds)
-    deps.clipboard.writeText(content)
+    // F-ELE-03：Electron 44 起 writeText 返回 Promise——await 化，写失败
+    // console.error 留痕后重抛（错误仍经 IPC 折叠给 renderer，不静默吞）
+    try {
+      await deps.clipboard.writeText(content)
+    } catch (err) {
+      console.error('[export_.clipboard] 剪贴板写入失败', err)
+      throw err
+    }
     return { count: paperIds.length }
   }
 

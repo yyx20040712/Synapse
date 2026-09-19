@@ -69,7 +69,7 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（全绿才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：166 文件 1713 用例 / locks 334（工单 open 数随排程浮动，
+npm run verify        # 预期 exit 0：167 文件 1724 用例 / locks 244（工单 open 数随排程浮动，
                       # 以 tickets/registry.ts 实时为准）
 npm run build && npm run test:e2e   # 预期默认门 42/42（W2 起=app project 不含探针；一键全跑 44
                       # 用 test:e2e:all；e2e 不含在 verify 里，须单独跑）

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-19T13:43:35.5012628Z",
+    "generatedAt":  "2026-09-19T14:46:12.7204123Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -259,7 +259,7 @@
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
-                      "sha256":  "121d2a2e4cfd701b299397ebb60f0e303acc79b2cfcee056d90b84189844deeb"
+                      "sha256":  "434a4fd709cced8c82c027e282a5f27d7863858b00e81bb3ab10c5fbfa4e05e3"
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
@@ -379,7 +379,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/export-clipboard.test.ts",
-                      "sha256":  "136889a8614ef4ee6e1ef225f530a4fa19915775b0c571337afbd2617c11c436"
+                      "sha256":  "5a7fae67f38cec3612209633e5aa3f5f77898a96a31c8ea354b3bb31d394bb8e"
                   },
                   {
                       "path":  "tests/unit/ipc/import_.test.ts",

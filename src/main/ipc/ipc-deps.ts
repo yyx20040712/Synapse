@@ -23,6 +23,8 @@ export interface IpcDeps {
   controlWindow: (action: WindowControlAction) => { maximized: boolean }
   /** P7E-04 剪贴板写口（bootstrap 装配 electron.clipboard；测试桩零 electron）。
    *  可选=受锁 makeIpcDeps 桩工厂（tests/utils/ipc-deps.ts）零改——设必填即其
-   *  返回字面量类型红；装配缺失时 export_ handler 响亮抛错（接线缺陷不静默丢写） */
-  clipboard?: { writeText(text: string): void }
+   *  返回字面量类型红；装配缺失时 export_ handler 响亮抛错（接线缺陷不静默丢写）。
+   *  F-ELE-03：Electron 44 起 main 侧 clipboard.writeText Promise 化（W3C 对齐），
+   *  返回类型同步（注入面 electron.clipboard 结构仍兼容） */
+  clipboard?: { writeText(text: string): Promise<void> }
 }

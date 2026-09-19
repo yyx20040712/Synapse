@@ -78,3 +78,36 @@
   （tar -tzf 或 npm pack --dry-run），不能只查 GitHub release 资产**。
 - 本段仅升 better-sqlite3，Electron 42.9.3 不动（归 F-ELE-03 B 票）。
 
+## 执行记录（2026-09-19，F-ELE-03：Electron 42.9.3→44.4.3）
+
+- **升级内容**：electron 42.9.3→44.4.3（精确钉版，[dep-change]）。44 线当期最新
+  （Chromium M152.0.7977.130 / 内嵌 Node 24.21.0 / ABI 149；§6.6 复核 2026-09-19
+  当日 44.4.3 仍最新）。engines.node 同批收紧 >=20→>=22（主控预裁 W2——与
+  better-sqlite3 v13 engines 口径对齐）。
+- **breaking 适配**（产研 §3 核对面兑现，两项）：①clipboard main 侧 writeText
+  Promise 化（W3C 对齐）——IpcDeps 剪贴板写口返回类型 void→Promise<void>，
+  export_ 写点 await 化+失败 console.error 留痕后重抛（错误传播语义与 42 时代
+  等价，不静默吞）；注入面 bootstrap 零改动（结构兼容）。②dialog defaultPath
+  行为变化（43 起）——dialogs.ts 三 pick 补模块级 lastDir 内存态+defaultPath
+  传参，复刻 42 时代「记住上次目录」体感（主控预裁=内存态不持久化）。
+  ANGLE 静态链接面：pdf.js 渲染回归经 e2e 两条探针（划选高亮重开原位/多行
+  判别）断言级验证绿；像素级人工视检为欠账（见下）。
+- **验证链读数**：vitest 167 文件/1724 用例全绿 EXIT=0；e2e 双通道 42/42+44/44
+  全绿 EXIT=0——**@playwright/test 1.49 驱 Electron 44（M152）CDP 零兼容漂移**
+  （产研主风险变量消解，无需升级 @playwright/test）；指纹门
+  183·1768·5368·skip14 零漂移；locks 244。renderer 产物 index-DW6Z3WXp.js
+  1,388.14kB 与升级前同名同尺寸；main/preload 183.64kB/137.93kB（适配面微动）。
+- **typecheck 欠账（受锁测试面）**：export-clipboard.test.ts 桩以 void 返回
+  形状注入，与 Promise 化后接口静态不兼容（6 处 TS2345；运行时零碰撞——
+  vitest 全绿含该文件 6 用例）。处置=呈报主控裁决 [locked-change]（类型面
+  同步：注解+5 桩 async 化，逻辑零动），实现者无权自改受锁测试。
+- **dist/smoke 冒烟=环境阻塞如实呈报**（非 44 兼容信号）：electron-builder
+  25.1.8 已正常进到 packaging electron=44.4.3 段；死点一=旧 dist/win-unpacked
+  app.asar 被本机 zcode 宿主进程索引锁持（EBUSY，会话级自愈）；死点二=
+  winCodeSign 工具链缓存预置（2026-08-22 同型一次性预置）已蒸发，非管理员
+  shell 无 symlink 特权，解压恒红且重试哈希为随机临时名无法预置命中——修法=
+  管理员终端跑一次 `npm run dist` 重建缓存（先例同 2026-08-22）。另发现既有
+  失配：installer-smoke.mjs APP_EXE 仍按旧 productName「Synapse Remake」找
+  exe，与现 productName=Synapse 失配（R2-SH1 漏项，独立于本票）。
+- 回退路径不变：钉版回 42.9.3 即回（v13 绑定在 42 下已实测可跑）。
+

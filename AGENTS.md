@@ -230,7 +230,8 @@ development Model Selection+loop-engineering references/06）；**架构与
 
 ## 环境事实
 
-- Windows + Electron 42（42.9.3，2026-08-22 升级门执行，ABI 146）+ Node 24（**本地经
+- Windows + Electron 44（44.4.3，2026-09-19 F-ELE-03 升级，Chromium M152/内嵌
+  Node 24/ABI 149）+ Node 24（**本地经
   Volta 项目锁定**——package.json `volta` 字段 pin 24.20.0 随仓库走，clone 后新 shell
   自动生效；CI ci.yml node-version=24 同口径。2026-09-02 起 D:\nodejs 被他应用自动升到
   25.2.1——volta default=25.2.1 镜像系统现状，shim 在 PATH 首位拦截故其他应用零影响、
@@ -248,9 +249,9 @@ development Model Selection+loop-engineering references/06）；**架构与
   **Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
   用例结构性假红，node24 对照 11/11 绿实证）——check-quality 版本守卫已拦（非 24 即
   红；CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用）。
-  engines 仍 >=20，但 CI 用 20 会因 better-sqlite3 v13 engines node>=22 不满足
-  而红（v12 时代红因=缺 node-v115 预编译回退源码编译在 runner VS 18 失败——
-  首跑实证）——勿改回）
+  engines >=22（2026-09-19 F-ELE-03 随 better-sqlite3 v13 engines 口径收紧，
+  原 >=20），CI 用 20 会因 v13 engines node>=22 不满足而红（v12 时代红因=缺
+  node-v115 预编译回退源码编译在 runner VS 18 失败——首跑实证）——勿改回）
 - **升 Electron 前先查 prebuild 矩阵**（教训实证 2026-08-22）：Electron 43（ABI 148）
   在 better-sqlite3 12.11.1 上无 win32 预编译，而带 v148 的 12.11.2/12.12.0 只有
   GitHub release 未发 npm、v13.x 无任何 win 预编译——故落 42（v146 现成）。
