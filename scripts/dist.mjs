@@ -7,7 +7,8 @@
  * - 顺序编排且逐步非零退出（不吞错）：
  *   ① 设置 ELECTRON_BUILDER_BINARIES_MIRROR=npmmirror（NSIS/winCodeSign 工具链下载源），
  *      附带 ELECTRON_MIRROR 作 electronDist 失效兜底；SKIP_MIRROR=1 跳过（本地缓存已全时）；
- *   ② npm run build（内含 sqlite-abi use electron + electron-vite build，产出 out/ 三段）；
+ *   ② npm run build（electron-vite 三段构建，产出 out/——[F-ELE-02] v13 N-API
+ *      单绑定后无 ABI 切换环节）；
  *   ③ electron-builder --win nsis（读 electron-builder.yml）。
  * - spawn 子进程 stdio 继承，退出码透传。
  *

@@ -11,9 +11,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "postinstall": "install-electron && node scripts/sqlite-abi.mjs setup",
-    "dev": "node scripts/sqlite-abi.mjs use electron && electron-vite dev",
-    "build": "node scripts/sqlite-abi.mjs use electron && electron-vite build",
+    "postinstall": "install-electron",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
     "dist": "node scripts/dist.mjs",
     "smoke:installer": "node scripts/installer-smoke.mjs",
     "preview": "electron-vite preview",
@@ -23,7 +23,7 @@
     "test-surface:check": "node scripts/check-test-surface.mjs check",
     "test-surface:baseline": "node scripts/check-test-surface.mjs baseline",
     "test-surface:stats": "node scripts/check-test-surface.mjs stats",
-    "test": "node scripts/sqlite-abi.mjs use node && vitest run",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test --project=app",
     "test:e2e:all": "npm run build && playwright test --project=app --project=probe",
@@ -38,7 +38,7 @@
     "lint:model-names": "node scripts/check-model-names.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "12.11.1",
+    "better-sqlite3": "13.0.3",
     "pdfjs-dist": "4.10.38",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -67,7 +67,6 @@
     "vitest": "^2.1.8"
   },
   "allowScripts": {
-    "better-sqlite3@12.11.1": true,
     "esbuild@0.21.5": true
   },
   "volta": {

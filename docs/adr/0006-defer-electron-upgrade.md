@@ -55,3 +55,26 @@
   （electron-builder 25→26 属破坏性变更、esbuild dev-server、tar），留 Phase 6 决策。
 - Phase 6 打包前复核：版本仍在支持线（42 于 2026-10-20 出线，届时按同清单小步跟）。
 
+## 执行记录（2026-09-19，F-ELE-02：better-sqlite3 12.11.1→13.0.3 N-API 化）
+
+- **升级内容**：better-sqlite3 12.11.1→13.0.3（[dep-change]）。v13.0.0 起为 N-API
+  版本（node-addon-api），**同一份绑定跨 Node/Electron ABI 通用**（Node 24.20.0
+  ABI 137 / Electron 42.9.3 main ABI 146 双运行时实测加载+读写+FTS5+transaction+
+  pragma 全过——产研 docs/reports/2026-09-18_ele-upgrade-prestudy.md §1.3）。
+  SQLite 引擎 3.52.x→3.53.4。prebuilt 随 npm 包直发
+  （`node_modules/better-sqlite3/prebuilds/win32-x64.node`），npm 正常安装即得，
+  无 postinstall 下载步骤。
+- **双 ABI 机制退役**（方案切换=删除旧方案）：`scripts/sqlite-abi.mjs` 删除
+  （setup/use node/use electron 全链+abi-cache+ELECTRON_ABI_MAP 表整体退役），
+  package.json scripts 四处调用点摘除（postinstall/dev/build/test），`.npmrc`
+  的 better_sqlite3_binary_host_mirror 镜像行删除（prebuild-install 依赖随 v13
+  移除，镜像配置已失效）；`install-electron`（electron 包自带 bin）保留。
+  locks manifest 245→244。
+- **勘误上文 2026-08-22 执行记录的「v13.x 无任何 win 预编译」句**：该结论失准。
+  2026-08-22 时点调查只查了 GitHub release 资产（v13 起 GitHub 零二进制资产——
+  这一点属实），漏查 npm 包内 `prebuilds/` 新分发机制（v13.0.0 起 prebuilt
+  直接随 npm 包发布，prebuild-install 依赖移除）——2026-09-18 产研 §1.1/§1.2
+  反证。「prebuild 可用性确认」核查清单由此补一条：**数据源必须含 npm 包内容
+  （tar -tzf 或 npm pack --dry-run），不能只查 GitHub release 资产**。
+- 本段仅升 better-sqlite3，Electron 42.9.3 不动（归 F-ELE-03 B 票）。
+

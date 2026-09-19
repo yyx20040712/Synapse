@@ -1,9 +1,9 @@
 {
-    "generatedAt":  "2026-09-19T10:31:32.6634024Z",
+    "generatedAt":  "2026-09-19T13:43:35.5012628Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
-                      "sha256":  "4542553623950a7d208991876879a32504d9672ddefaf2c63f15727737faa924"
+                      "sha256":  "c9ddc2674542f89c3295a5c08ed0837b030cab2411aa06cd2e401acb5d728626"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -51,7 +51,7 @@
                   },
                   {
                       "path":  "scripts/dist.mjs",
-                      "sha256":  "4cdafec1ac639b005e6e9d418ff29ecfc68423aa49cd6c4d13742fed6599dc85"
+                      "sha256":  "fa2b3accbf7ac0fe2debc6eb09b93a6e58011c64f2192a0eb9492a42e52c21f5"
                   },
                   {
                       "path":  "scripts/dup-constants.baseline.json",
@@ -76,10 +76,6 @@
                   {
                       "path":  "scripts/new-ticket.ps1",
                       "sha256":  "fb71cafdfe07158dab58050e37083a1b401f2177654c7ccf80389508e2bb703e"
-                  },
-                  {
-                      "path":  "scripts/sqlite-abi.mjs",
-                      "sha256":  "e68baceb4d1aea5c007224af0025248760ed23f647d9d0809d5c1fefb48c7b5e"
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
@@ -231,7 +227,7 @@
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
-                      "sha256":  "cd4f668ad3943ed8f9f2c82c5ae13d3c44a668d0eae090021a35ba87abb703dc"
+                      "sha256":  "ee0d725021f2b55b26ea8b1c33dfe46ed004e91ec5f08fabf8fb4e570b581158"
                   },
                   {
                       "path":  "tests/e2e/export-clipboard.spec.ts",
@@ -259,7 +255,7 @@
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
-                      "sha256":  "ab6bdf1f48c0ba01c9d8817cedfc94664523aef9992351811bb0e458c3769db2"
+                      "sha256":  "82d531854f6e0db3db00ba0a4d254a5a5a80a109e6ed1871b337adfc885f9326"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",

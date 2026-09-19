@@ -10,7 +10,7 @@ npm run dev           # 开发模式（HMR）
 npm run test          # vitest（单测/契约/安全）
 npm run build         # electron-vite build（产物 out/）
 npm run test:e2e      # Playwright（先 build）
-npm run dist            # 打包 NSIS 安装包（镜像 env→electron 绑定→build→electron-builder，产物 dist/）
+npm run dist            # 打包 NSIS 安装包（镜像 env→build→electron-builder，产物 dist/；v13 N-API 单绑定后无 ABI 切换环节）
 npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断言→静默卸载（先 dist）
 ```
 
@@ -63,9 +63,9 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - 手动调试主进程（不进 dev、直接跑产物）：
   `SYNAPSE_USER_DATA=<临时目录> node_modules\electron\dist\electron.exe out\main\index.js`
   （bootstrap 失败会 console.error + 原生错误框）。
-- better-sqlite3 ABI 报错：它是 V8 直接绑定（Node/Electron 各需一份），由 `scripts/sqlite-abi.mjs` 自动切换（按当前运行时精确 ABI 选缓存，缺哪个会点名报错，如
-  `abi-cache 缺 electron-v146 绑定`）；若手动动过 `node_modules`，重跑 `npm ci`
-  （升级 better-sqlite3 版本时必须删 abi-cache，见 ADR-0007 §4）。
+- better-sqlite3 原生绑定报错：v13（N-API 版）单绑定跨 Node/Electron ABI 通用
+  （2026-09-19 F-ELE-02），无切换机制；绑定文件=prebuilds/win32-x64.node 随
+  npm 包直发，若手动动过 `node_modules`，重跑 `npm ci` 即可。
 - 中文乱码：统一 UTF-8；PowerShell 重定向用 `Out-File -Encoding utf8`；CI 有 mojibake 关卡兜底。
 
 ## 6. 数据位置与备份（用户需知）
@@ -86,7 +86,7 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 ## 7. 打包与分发（Phase 6 起）
 
 - `npm run dist` 产 `dist/Synapse-Remake-<version>-setup.exe`；scripts/dist.mjs 自动编排：
-  npmmirror 镜像 env（SKIP_MIRROR=1 跳过）→ sqlite-abi 切 electron 绑定 → 三段 build →
+  npmmirror 镜像 env（SKIP_MIRROR=1 跳过）→ 三段 build →
   electron-builder NSIS（electronDist 复用本地 node_modules/electron/dist，npmRebuild 关闭）。
 - **新机器首跑**：winCodeSign-2.6.0 含 darwin symlink，无管理员权限解压失败——一次性预置
   `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\winCodeSign-2.6.0`（操作细节见
