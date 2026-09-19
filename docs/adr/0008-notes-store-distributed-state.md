@@ -40,3 +40,17 @@ notes.store 有五个模块级编辑元数据结构：`pendingEdit`（未保存�
 
 - 维持现状；新增编辑元数据须沿用「模块级 Map/Set + NoteDraft 镜像同步点」形状。
 - 本 ADR 与 D2 性质测试（ADR-0009）共同构成该模块的行为防线。
+
+## 复审追认（2026-09-19，F-DOCGOV-01 文档补课批）
+
+- **触发线触碰事实**：「需要第六个编辑元数据维度」重审触发线已被触碰——
+  `discardGen`（2026-09-02 AUDIT-C A3 弃改收口票加入）使模块级结构数增至
+  六个（lastEditedAt/touchedFields/loadedOnce/pendingEdit/editSeq 五原件
+  +discardGen，2026-09-19 实测）。
+- **复审结论：维持已裁决形态（不触发重构）**。理由：discardGen 是弃改收口的
+  **代际守卫**（INV-50 in-flight 回调按代际作废——读方向防复活），不承载编辑
+  元数据语义（不是 pendingEdit 镜像维度、不参与 savedAt/edited 语义组合）；
+  「结构数 ≠ 元数据维度数」，正交坐标仍为五。
+- **触发线重述**：真正的**第六个编辑元数据维度**（参与 pending/touched/seq
+  语义组合的新坐标）出现，或五原件出现第二次生命周期缺陷——届时本 ADR 重审；
+  纯守卫性结构（代际/互斥类）新增不触发，但须随票在本节登记。

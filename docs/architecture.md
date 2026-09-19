@@ -9,6 +9,7 @@ Renderer (React SPA, sandbox, 无 Node)
    │ 只经 window.api（preload contextBridge 白名单）
 Main (Node)
    ipc/ 薄分发 ──→ services/ 业务用例 ──→ repos/ 数据访问 ──→ db/ (SQLite)
+   workspace-layout（数据目录解析）+ data-layer.container（可重建 facade——switch 热换，ADR-0018）
    file-store 受管文件   app-file:// 协议   http-client（host 白名单）
 shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结）
 ```
@@ -21,13 +22,9 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
   分不清 `shared/ipc` 契约与 `main/ipc` 层）
 - renderer 内 features 域之间禁止互相 import（共享下沉 `renderer/shared`），由 `check-quality.mjs` 扫描
 
-## 2. 数据流示例（导入一篇 PDF）
+## 2. 数据流示例
 
-1. renderer：`window.api.import_.fromDialog({})`（无任何路径）
-2. main ipc/import_：`dialog.pickPdfFiles()` → `services.import_.importFiles(paths)`
-3. service：`fileStore.storePdfFromPath`（sha256 去重 + 受管目录）→ `extractPdfMeta`（标题/DOI）→ `repos.papers.insert`
-4. 进度：service `onProgress` → bootstrap 注入的 `webContents.send('import/progress/event')`
-5. renderer 读 PDF：`api.reader.open` 返回 `app-file://<paperId>` → 协议在 main 侧查 file_ref、前缀校验后流式返回
+导入全链时序图见 §7.3（进程/路径/事务/事件边界一步到位）；阅读与标注锚定链见 §7.4。
 
 ## 3. 契约机制（防漂移的核心）
 
@@ -40,30 +37,66 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 - CSP 单真相源：策略只在 `src/main/security/csp.ts`，构建期 cspMetaPlugin 注入
   index.html meta（生产 file:// 下 meta 是实际防线），源码 html 禁止手写。
 - 契约文件受锁（sha256 对账），改动需 [locked-change]。
+- **通道名→HTTP 路由天然映射（L2 锁线）**：api-surface 通道名「域/方法」天然映射
+  `/api/域/方法`——Word/WPS 插件与服务端可共用同一命名（接线表即路由表，
+  插件侧零新命名面）。
 
 ## 4. 骨架期机制（工单填充模式）
 
 - 每个文件头部五层规约（行为/接口/架构/生命周期/文化）= 弱模型的自包含任务书。
-- 未完成实现 = `unimplementedObject(ticket)`（方法调用时抛）或 UI 占位（`data-ticket` 徽标）。
+- 未完成实现 = 占位桩（调用即抛，工单 done 即删——机制名与删除义务见 DEVELOPMENT §2）或 UI 占位（`data-ticket` 徽标）。
 - `tickets/registry.ts` 控制测试激活：`guardedDescribe(ticketId)` 在工单 open 时 skip，
   翻 done 即激活——main 恒绿、防"不实现就翻状态"；**未知工单号当场抛错**（防整组
   测试静默消失），tests 内只允许引用真实存在的工单号，且 guardedDescribe 的工单号
   必须与测试文件 import 的被测文件绑定（check-tickets 第 5 关，防挂错块永久 skip）。
-- 三道 CI 关卡：quality（占位/乱码/跨域引用 + 行数分级 repo≤300/组件≤250 + 分层
-  方向解析检查）、tickets（工单号一致性 + 绑定对账，**含 tests 目录扫描**）、locks
-  （sha256 对账，行尾由 `.gitattributes` 强制 LF）。
+- 防线清单起步于三道 CI 关卡，现已成长为一组（接线单源=package.json verify 链+ci.yml）：
+  - 本地 `npm run verify` 八段链：quality → test-surface（测试面指纹门，INV-63）
+    → tickets → locks → lint → typecheck → test → build。
+  - quality 多段：占位/乱码/跨域/行数分级 repo≤300·组件≤250/分层方向解析
+    +B-1 同值双常量棘轮+B-5 AST tsx inline 色+6c C-4c CSS var() 语义锚
+    +第 9 段 e2e 截图负锚（INV-64）。
+  - tickets：工单号一致性/绑定对账（含 tests 目录扫描）/B4 防线（规则 6 以
+    ROADMAP 退役页 `### P7-X：` 锚段集为 decidedScopes——退役页机器输入）。
+  - locks：受锁文件 sha256 对账（行尾由 `.gitattributes` 强制 LF；scripts 下
+    全部 .mjs/.ps1 自动入锁面）。
+  - 独立本地关卡：`npm run lint:model-names`（src 禁外部模型代号词表——**未串
+    verify/CI 链，收口自跑义务**，AGENTS 完成定义段）；CI 另有尾注检查
+    （[dep-change]/[locked-change]）、npm audit、[test-refactor] 范围闸。
 
-## 5. 关键设计决策
+## 5. 关键设计决策（ADR 索引——决策正文=`docs/adr/`：背景/候选/裁决/后果+随件修订记录）
 
-见 `docs/adr/`：AD-1 Electron 单语言；AD-2 pdf.js 库 API 路线（Phase 3 决策门已过：
-canvas+TextLayer+选择+DPR 13 项断言全绿）；AD-3 FTS5 触发器同步（trigram）；
-AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-6 Electron 升级门
-（已执行：42.9.3，prebuild 矩阵核查）；AD-7 已登记取舍与地雷。阶段编排见
-`docs/ROADMAP.md`。
+| 编号 | 主题 |
+| --- | --- |
+| 0001 | Electron 单语言（纯 TypeScript 全栈） |
+| 0002 | pdf.js 库 API 路线（非 embed/自绘替换——决策门 13 断言实证） |
+| 0003 | FTS5 触发器同步外部内容表（trigram） |
+| 0004 | 工单注册表与受锁机制（registry+locks） |
+| 0005 | 版本钉选向训练数据倾斜（弱模型适配——版本以 package.json 为单源） |
+| 0006 | Electron 升级门（已执行 42.9.3——prebuild 矩阵核查先行） |
+| 0007 | 已登记取舍与地雷（登记性地雷在册） |
+| 0008 | notes.store 五模块级结构维持分布式状态机（不坍缩） |
+| 0009 | 零依赖性质测试（固定种子手写攻击序列） |
+| 0010 | **永久空号**——预留「INV-11/07 lint 化评估」，后经 F-LINT-01/CSS-03/F-LINT-04 实装，编号不复用 |
+| 0011 | md 语料接口契约（导出五件套——幂等 sha 口径） |
+| 0012 | 引文图数据模型（自动引文网络图维持不做——与人工策展 lineage 不复用表） |
+| 0013 | 备份/恢复姿态（不做自动机制+手动指引） |
+| 0014 | lineage 图数据模型（人工策展时间树——DDL 演进注记见该件） |
+| 0015 | AI 笔记回灌与伴随进程文件协议（含 observe 通道追认） |
+| 0016 | 闲时会话预裁决表 |
+| 0017 | 三屋模式默认（IPC 通道名冻结） |
+| 0018 | 课题隔离=库级分目录（workspaces/<id>/ 一库一文件仓） |
+| 0019 | 划选反馈原生路线（自绘并集层，三轮修订） |
+| 0020 | 应用改名与 userData 目录迁移（四分支幂等迁移） |
+
+跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
 ## 6. 数据模型
 
-7 张表 + 3 个 FTS5（external content + 触发器）：papers / collections / paper_collections / tags / paper_tags / annotations / notes。标注定位器采用 W3C Web Annotation 思路（quote/prefix/suffix + startOffset/endOffset + rects + sortKey）。迁移只追加（`db/migrations/`，受锁）。
+10 张表 + 3 个 FTS5（external content+触发器）：papers/collections/paper_collections/
+tags/paper_tags/annotations/notes（001 基座七表）+ai_notes（003）+lineage_nodes/
+lineage_edges（004）；演进列 005~009（cited_by 缓存/lineage kind 列——
+UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02）。标注定位器=W3C Web Annotation
+思路（quote/prefix/suffix+startOffset/endOffset+rects+sortKey）。迁移只追加（受锁）。
 
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 
@@ -73,7 +106,7 @@ AD-4 工单/锁机制；AD-5 版本钉选（弱模型训练数据友好）；AD-
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅ Phase 1~5 全量实现<br/>features: library ✅ · reader ✅（含标注链） · notes ✅ · tags ✅ · settings ✅"]
+    UI["React SPA ✅ Phase 1~5 全量实现<br/>features: library ✅ · reader ✅（含标注链） · notes ✅ · tags ✅ · settings ✅ · lineage ✅ · workspaces ✅"]
     WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
@@ -95,6 +128,7 @@ flowchart TB
     AX["arXiv"]:::ext
     DLG["系统对话框（选 PDF / 保存）"]
     BRW["系统浏览器（openExternalGuarded）"]
+    ZC["zcode 伴随进程（tools/ai-sensor CLI——用户启动，应用永不 spawn，INV-21）"]:::ext
   end
 
   WA == "invoke(channel, req)" ==> REG
@@ -104,6 +138,7 @@ flowchart TB
   SVC == "webContents.send(import/progress)" ==> WA
   UI -- "app-file://paperId（无路径）" --> PROTO --> FSTORE
   M -.-> DLG & BRW
+  SVC -.->|"userData/ai-sensor/ 文件协议（ADR-0015/INV-26）"| ZC
   classDef ext fill:#eee,stroke:#999,stroke-dasharray: 5 5
 ```
 
@@ -122,7 +157,7 @@ flowchart LR
   MIG["db/migrations/*.sql（受锁）✅"] --> CONN
   FTS["db/fts.ts escapeFtsQuery ✅"] --> REPO2
   SEC["security/ csp + shell-guard ✅"] --> BOOT["bootstrap.ts 装配根 ✅"]
-  WIN["windows/ main-window ✅<br/>sandbox·contextIsolation·禁导航"] --> BOOT
+  WIN["windows/ main-window+window-state ✅<br/>sandbox·contextIsolation·禁导航<br/>窗口 bounds 记忆+屏幕夹取（SR-INFRA-10）"] --> BOOT
   BOOT --> IPC
   IPC -.->|类型| SURF
   SVC2 -.->|类型 ApiHandlers| SURF
@@ -226,19 +261,40 @@ flowchart TB
 
 ### 7.8 构建与 ABI 双轨（Windows 环境事实）
 
-```mermaid
-flowchart LR
-  subgraph NODE["vitest（Node ABI 137）"]
-    UT["单测/契约/安全"]
-  end
-  subgraph ELEC["electron-vite（Electron ABI 146）"]
-    BUILD2["main(CJS) + preload(cjs, zod 内联) + renderer(ESM+React)"]
-    E2E["Playwright _electron"]
-  end
-  ABI["scripts/sqlite-abi.mjs ✅（本轮修数值选版）<br/>abi-cache: node-v* + electron-v* 两份预编译"]
-  POST["postinstall: setup 抓双份"]
-  POST --> ABI
-  ABI -->|"use node（自校验 require）"| NODE
-  ABI -->|"use electron"| ELEC
-  NPMRC[".npmrc npmmirror 二进制镜像<br/>GitHub 优先 · 镜像兜底"] --> POST
-```
+双运行时（vitest=Node ABI 137 / electron-vite=Electron ABI 146）由
+`scripts/sqlite-abi.mjs` 按当前运行时精确选版（abi-cache 两份预编译；.npmrc
+npmmirror 镜像兜底）。完整环境事实（Volta/Node 24 锁定/Electron 42 无
+postinstall 等）=AGENTS.md「环境事实」单源，此处不复制。
+
+## 8. 域结构速览（2026-09-19 F-DOCGOV-01 补档——此前三大域未上图/未成节）
+
+### 8.1 lineage（发展脉络图）
+
+- 渲染域 `src/renderer/features/lineage/`（第四视图：Reingold-Tilford 零依赖
+  布局+SVG 画布 pan/zoom+侧板详情）；main 域 `services/lineage/`（树守卫两口：
+  草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`。
+- 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）；
+  边三 kind=tree/ref/manual 终态（INV-27）；自动引文网络图维持不做（ADR-0012
+  共存已裁决——对象不同、不复用表）。
+- 视口/布局/卡尺寸单源不变量=INV-36/38/41/43/44/48（指针，正文在 INV 册）。
+
+### 8.2 workspaces（课题隔离）
+
+- ADR-0018 库级分目录：`userData/workspaces/<课题 id>/` 各含 synapse.db+files/
+  （完全隔离——去重/FTS/备份天然按课题）；课题指针=userData/workspace.json。
+- main 装配=`workspace-layout.ts`（数据目录解析）+`data-layer.container.ts`
+  （可重建 facade：switch=关旧库→重建→热换，busy 串行守卫——INV-35 四联）。
+- **legacy-fresh 双态启动**：全新首启不建 workspaces/（库在 userData 根），二启
+  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=切换器
+  （dirty 确认→IPC switch→`location.reload()` 全新 stores）。
+
+### 8.3 ai-sensor（AI 伴随进程域）
+
+- ADR-0015 文件协议：`userData/ai-sensor/`（pending 任务/status.json 心跳/
+  corpus-ai 产物/archive 账本——INV-26 三联）；工具侧=`tools/ai-sensor/`
+  （companion.mjs+queue.mjs+SKILL.md——**应用永不 spawn**，INV-21）。
+- 服务三键终态（F-SENSOR-01）：`services/ai_sensor/` 三件 ↔ ServiceBundle 三键
+  平铺（ai_sensor/ai_notes_import/zcode_link）↔ `ipc/ai_sensor.ts` 七 handler
+  （3+2+2）；observe 通道（六态判定单源，SR2-AI-08）2026-09-19 追认入 ADR-0015。
+- 回灌事务性=INV-67（清面+重插单篇事务）；渲染消费=笔记面板 AI 面（七问分色
+  只读）+设置页 zcode 联动三档（纯 fs 检测+一键装技能）。

@@ -7,18 +7,18 @@
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
 - status: READY
-- automation_id: automation-4a8cb784-c14b-4941-89f3-ffe1b0cec6e5
+- automation_id: automation-2988ca0b-9af5-4ae0-a8ed-319602ec2ddf
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T08:20:24+08:00
+- last_dispatch: 2026-09-19T11:19:21+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T01:07:30Z
-- claim: claim-1789777255-b26（已收口 2026-09-19T09:07:30+08:00）
+- heartbeat_utc: 2026-09-19T04:30:00Z
+- claim: claim-1789787990-b27（已收口 2026-09-19T12:30:00+08:00）
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 32
+- checked_done: 33
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -155,7 +155,7 @@
 
 ### 第六波·梯队五：文档+制度+存储（DOCGOV 必须晚于 ALIGN，已在波次序保证）
 
-- [ ] F-DOCGOV-01（文档补课批+ROADMAP 退役两强制条款+多窗口 INV 登记，
+- [x] F-DOCGOV-01（文档补课批+ROADMAP 退役两强制条款+多窗口 INV 登记，
       invariants.md 受锁 [locked-change]；ai-sensor 段随 F-SENSOR-01 终态回写）
 - [ ] F-PROC-01（制度批：DoD 回写项/事故档回流段/治理指标+3/白名单冻结/M2 预防句/
       直调补记规则/裁决 14 入 methodology）
@@ -169,6 +169,18 @@
 > 2027-03-02；43 中间档不推荐照产研报告 §5）；实施前按裁决书 §6.6 复核矩阵时效。
 
 ## 批次日志（追加，勿改写）
+
+### batch 27 — 2026-09-19（执行者会话：第六波 F-DOCGOV-01 文档补课批单票——主控代执承载，完成）
+- claim: claim-1789787990-b27｜认领 2026-09-19T03:19:49Z｜收口 2026-09-19T04:30:00Z｜勾选 32→33。
+- 开场三态：B 态变体——唯一脏面=调度员 last_dispatch 原子写（11:19:21 本会话刚发布，预期态），随本批收口提交；HEAD=batch 26 增补三提交 e93076dadd 正确。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/门审矩阵/ORG-12 审包/health-scan/账本补记）；TDD=验证探针先行等价（M1 变异红证+M2 锚段探针——文档批无新用例面）；verification-before-completion（用——基线/终跑 verify 变量法亲验）；systematic-debugging 不加载（文档批无排障面——executor 派发失败处置走回炉三分法非排障面）。派发档位：主控=GLM5.3 max（本会话）；**实现者=ops-executor 绑定（GLM5.3flash）两派均败 model-not-found[account:bigmodel-individual-coding-plan/GLM-5.3]→主控代执（batch 26 增补三先例——e93076da 提交信息在案，b27-executor-dispatch-fail.log 双败证据）**；门一=ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 k1 封顶 k2 承载续，本班承载正常）；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审对实现面（主控代执=GLM5.3）均异构成立。
+- **交付（文档补课批，13 实质文件改+新 2，纯文档+src 恰 1 注释行——patch 13 diff 头 grep 实测）**：①architecture.md 244→**恰 300 行**（体检 A1~A6 全销：十实体表/ADR 索引表 0001~0020+0010 空号注记行/关卡清单重写含 model-names 如实标注未串链/§1 workspace 装配/§7.1 features 七域+zcode 伴随进程节点/§7.2 window-state+新增 §8 三域速览 8.1 lineage/8.2 workspaces 含 legacy-fresh 双态/8.3 ai-sensor 三键终态+observe 注记——压缩手段=§2/§7.8 指针化）；②**ROADMAP 退役一页纸 455→114 行（裁决 8 强制条款②方案 a 显式执行）**——P7 八锚段标题行 byte 级逐字保留（check-tickets.mjs:247 机器输入，src 76 文件 b3 头指针依赖）+退役声明+Phase 0~6 一行化+B3 裁决段保留（tab-dirty.ts 等注释提名依赖）+check-tickets 零触碰；③DEVELOPMENT §6 路径双重修正（Synapse\workspaces\<id>\+legacy-fresh+settings 三字段实测）；④README 导览 tools/+七域+退役标注+关卡口径句；⑤AGENTS 恰 2 处（安全禁令路径句补 INV-07 扩列滞后同步+DoD 增 model-names 行）；⑥ADR 五件=0005 选型表 42.9.3+复审追认/0008 复审追认（discardGen 触碰事实+维持结论「结构数≠维度数」+触发线重述）/0014 v1.2 DDL 交叉注记/0015 observe 通道追认/新 0020 改名迁移 ADR 化（43 行 wc——R2-SH1 2026-08-29 git 实查）；⑦invariants.md（受锁单链）=INV-18/65 声明处随迁 export-session-state.ts（batch 26 门二 N-1 承接）+新 INV-70（裁决 7 多窗口定性+附件性单例清单 zustand 11+toast-store+annotation-undo 实测枚举，状态「部分」诚实口径）+INV-02 三处行号刷新；⑧weak-anchor-register W-3/W-6/W-9 销项段迁移；⑨src ai-notes-import.service.ts:41-42「四通道委托」历史句改三键现行态（batch 25 N-3 承接——唯一 src 改动纯注释）；⑩DEV-SETUP .mimosa 备案；⑪悬空三件销账=ADR-0010 空号索引注记行处置/销项段修复/flake-ledger 八线核验（W4 已兑——b27-flake-ledger-verify.log 证据件）。
+- **机检链**：基线 verify EXIT=0（指纹门 183·1768·5368·skip14/open 4/locks 378/build 绿）→改动→退役后 check-tickets 单跑 EXIT=0→**M1 变异红证**（P7-H 标题降级→EXIT=1 恰 8 违规 SR2-LG 系→cp 还原 diff=退役态保持→复绿 EXIT=0，备份用毕即删）→**M2 锚段探针**（v1 缺 g flag TypeError 失败输出留档 v1-fail——fail-safe 非假绿；v2 纯绿：8 锚段⊇src 7 scope 实测提取无硬编码）→终跑 verify EXIT=0（指纹门零漂移+locks 379+open 4+**build 产物与基线同名同尺寸 index-DW6Z3WXp.js 1,388.14 kB=src 注释零 bundle 影响直证**）→翻票 FLIP_EXIT=0（v1 漏 join 自伤失败留档→v2 FLIP_MOVED=1/RESIDUE open 3；探针即写即锁）→**收口 verify1 EXIT=1 实录**=check-tickets 规则 3 碰撞（翻 done 后 file 锚 docs/architecture.md 含 `unimplementedObject` 机制名字面量——票 open 时不扫故前两轮 verify 不显形；措辞修复去字面量单源留 DEVELOPMENT §2，301→压回恰 300 行）→**closeout verify2 EXIT=0**（指纹门 183·1768·5368·skip14 零漂移+open 3+**locks 381 对账**[gate2 P1-3 兑现]+Test Files 167 全绿+build 产物同名）+quality 补跑绿；e2e 不跑（文档批零行为口径——门二 N-4 裁定成立）。锁链 378 claim→379 p7-anchors→380 tickets-flip→381 relay-move 每步即时登记。
+- **门审（回炉 0）**：门一 k2 第三票连续正常承载 **PASS_WITH_WARNINGS B0/W2/N12**——W1 归档计数三处失准（patch 13 头非 12/ADR-0020 wc 43 非 47/「14 改」口径混——主控代执场计数自查盲区实锤，三修：impl-report 订正+复核段留痕+dispatched 简报不回改）；W2 flake-ledger 已兑声明无证据（补件 b27-flake-ledger-verify.log）；N4 自裁-1 定性成立+主控三分法追认落档（N4 勘正注记：门一引句 INV-07 扩列日期 08-03 笔误以 INV 册勘正 09-03——归档者复核责）。门二 **GO_WITH_CONDITIONS P0=0/P1=3/P2=4/N=5 回炉 0**——**21 项独立复算全过**（门一 12 项「不确定」全销：INV-02 行号实码核/六结构/单例清单 11+2/migrations 9/ADR-0020 日期 reflog 核/batch 26 先例实质成立（哈希错位 feef686→e93076da 系主控 gate2 简报侧笔误 P2-2）/INV-07 扩列锚；W1 订正数字全中——Read=wc+1 末行换行口径四组实证 N-3）；P1 三条件收口全兑现（P1-1 staging 显式列件含 b27-claim.mjs+全 b27-* 件/P1-2 尾注恰 [locked-change] 单尾注 TR 禁用 ci.yml:140 核/P1-3 翻票锚行首定义形态+即写即锁+closeout verify 锁数对账）；P2 四条=行号 233-234→247（活档已订正+简报留批次日志勘正）/哈希错位/UNIQUE 措辞（**ADR-0014+§6+§8.1 三处已订正「004 既有约束原样不动」——交付本体勘正**）/单跑档补 EXIT 标记（已补）。
+- 教训三条：①**主控代执场的归档计数自查盲区**（三处笔误全出自主控之手——「计数落笔前实测」在自产简报/报告侧同样强制，代执≠豁免；门一 W1 拦截+门二 17 号复算数字全中=对抗链价值实证）；②**探针 v1 失败三例同族**（M2 缺 g flag/flip 漏 join——**探针写毕先本地 dry 跑再入锁**可省一轮 unlock 循环；三例 v1 失败输出均已留档——fail-safe 型失败非假绿）；③**done 票 file 锚含机制名词面量=翻票后才显形的规则 3 碰撞**（票 open 时规则 3 不扫 file 锚，两轮 verify 绿后翻票才红——文档票收口序应增「翻票前 grep 规则 3 模式于 file 锚」预检；收口 verify1 拦截=终跑必须在翻票后的时序证明）。
+- Rulings 待用户：无新增（票内自裁 7 条均经门一裁+门二逐条复核闭合——含自裁-1 AGENTS 宪法句补同步定性=已裁决现实滞后补同步非新制度+门二 N-2 结构性注记「主控同体追认」补偿=异构门审）。**第六波余两项：F-PROC-01（制度批——开工须携移交清单：survey 票面外悬空项/audit0 头部声明/INV-27 巨条形态评估，impl-report §6）→F-STOR-01（存储批）。**
+- 无进展计数：归零（32→33 有进展）。
+
 
 ### batch 26 增补三 — 2026-09-19 11:00（F-TIME-02 阅读时长功能移除执行毕——本会话手动领批三屋管道全程，完成）
 - 执行序（板停火态手动领批=增补二授权）：立案 feef686374→实现者 ops-executor（GLM5.3flash $max）→门一 k2→门二→收口提交。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定；门一=ops-gate1-k2 绑定（kimi k3 zipoo——连续第二票正常承载）；门二=ops-adjudicator 绑定（deepseek-flash $max）。
@@ -1850,3 +1862,25 @@
   会话按本板清单领批。
 - 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令优先）。
 - 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入指令生效。
+
+### 调度员增补七 — 2026-09-19T11:07:19+08:00（hub 换防：新调度会话接替，重布全局轮转火）
+- 旧火核查：CronList 空集——增补六删火对象 automation-4a8cb784-… 确认已亡，
+  无双火风险，零清场动作。
+- 深度设计门（换防重走）：过——`.zcode/org-ledger.jsonl` 活跃（mtime 09-19 10:56，
+  末笔=增补三收口账本行）、《裁决书》占位符 grep 零命中、执行清单机检 32 勾+3 开=35
+  与板头计数一致。
+- 板面处置：字段对照当前技能模板零缺失（无增行）；用户换防指令所记停火时态快照
+  「b26 在途」已过时——b26 早已自行收口（09:07:30），其后增补一/二/三三个手动批
+  至 11:00（F-TIME-02 功能移除执行毕，板外新票清单勾选不变 32/35），现板停于
+  READY——status/no_progress 均期望态零复位；claim 行带「已收口」注记系增补三后
+  静止收口笔迹（无在途执行者），留档不覆写；本条尾部纯追加；板头 automation_id
+  字段行已锚定替换为新火 id（锚定计数=1 守卫过；历史日志旧 id 存量不动）。
+- 新全局火=automation-2988ca0b-9af5-4ae0-a8ed-319602ec2ddf（新 hub 调度会话创建，
+  全局唯一 */10 轮转，服务本板+waterprint 板；首班 11:16 投递）。本板
+  last_dispatch=09-19T08:20:24 晚于姊妹板 05:49:54——首班有效火先轮 waterprint
+  板（B4-1），本板次班承接（第六波 F-DOCGOV-01→F-PROC-01→F-STOR-01）。
+- 板上既有条款自动生效：门一审备源 k2 承载直至用户另行通知（板头执行指令原文
+  照携）；UI 开批通道经验（Ctrl+N 先切回会话视图/「取消选择当前项目」清空再勾选
+  防反致解绑/调度侧 Edit 遇「文件已改」重读再落笔/主输入框 a11y 写入不生效须前台
+  激活后 app 级 strategy=event 真实键盘写入，前台被游戏全屏锁定连败 2-3 次即记
+  欠账退出勿硬抢）沿用历任实测累积。

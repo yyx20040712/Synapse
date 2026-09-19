@@ -1,0 +1,15 @@
+node:fs:2492
+    validateStringAfterArrayBufferView(data, 'data');
+    ^
+
+TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Array
+    at writeFileSync (node:fs:2492:5)
+    at file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-tickets-flip.mjs:21:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+
+Node.js v24.20.0
+FLIP_EXIT=1

@@ -1,0 +1,41 @@
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 verify
+> npm run quality:check && npm run test-surface:check && npm run tickets:check && npm run locks:check && npm run lint && npm run typecheck && npm run test && npm run build
+
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 quality:check
+> node scripts/check-quality.mjs
+
+  [warn] 异名同文案 'ai-sensor'（2 声明 / 2 文件：ZCODE_SKILL_NAME / AI_SENSOR_DIR_NAME）
+  [warn] 异名同文案 '标注保存失败'（2 声明 / 2 文件：SAVE_FAILED / UPDATE_FAILED）
+dup-constants：扫描 223 文件 / 130 声明——红层 0 组 baseline 待收敛（F-LINT-03 候选）、新增 0 组、warn 2 组（异名同文案不卡 CI）
+quality 检查通过：无占位标记 / 无乱码 / 无跨域引用 / 无同值双常量新增
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 test-surface:check
+> node scripts/check-test-surface.mjs check
+
+[test-surface] files: 183 base / 183 cur | cases: 1768 base / 1768 cur | assertions: 5368 base / 5368 cur | skipSites: 14 base / 14 cur
+[test-surface] exemptions entries: 17 hits: 0 stale: 17
+[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）
+npm warn Unknown env config "better-sqlite3-binary-host-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "electron-mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> synapse@0.1.0 tickets:check
+> node scripts/check-tickets.mjs
+
+工单统计：共 207 个；open 3（weak 可领 0，strong 3）
+tickets 检查未通过：
+  - F-DOCGOV-01 已 done，但文件仍含未实现占位：docs/architecture.md
+B27_CLOSEOUT_VERIFY_EXIT=1

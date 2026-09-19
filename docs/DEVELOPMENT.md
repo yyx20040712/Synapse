@@ -70,11 +70,17 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 
 ## 6. 数据位置与备份（用户需知）
 
-- 数据库：`%APPDATA%\Synapse Remake\synapse.db`（WAL 模式，运行时会伴生
-  `synapse.db-wal` / `synapse.db-shm` 侧车文件）。
-- 受管 PDF：`%APPDATA%\Synapse Remake\files\<sha 分桶>\<sha256>.pdf`（内容寻址，天然去重）。
-- 设置：`%APPDATA%\Synapse Remake\settings.json`（contactEmail / theme）。
-- **备份方法：完全退出应用后，整个 `%APPDATA%\Synapse Remake` 目录复制到安全位置。**
+- 数据目录：`%APPDATA%\Synapse\`（改名前旧目录 `Synapse Remake` 首启自动整体
+  迁移——ADR-0020；旧目录原样保留=天然备份）。
+- 数据库：`%APPDATA%\Synapse\workspaces\<课题 id>\synapse.db`（ADR-0018 库级
+  分目录，每课题一库；WAL 模式，运行时伴生 `synapse.db-wal`/`-shm` 侧车）。
+  全新安装首启为 legacy-fresh 态（库暂在 `Synapse\` 根），二次启动迁移入
+  `workspaces\default\`。
+- 受管 PDF：`…\Synapse\workspaces\<课题 id>\files\<sha 分桶>\<sha256>.pdf`
+  （内容寻址天然去重，随课题隔离）。
+- 设置与课题指针（应用级，不随课题切换）：`%APPDATA%\Synapse\settings.json`
+  （contactEmail / theme / uiScale）与 `workspace.json`（当前课题指针）。
+- **备份方法：完全退出应用后，整个 `%APPDATA%\Synapse` 目录复制到安全位置。**
   WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
 
 ## 7. 打包与分发（Phase 6 起）

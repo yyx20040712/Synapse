@@ -70,7 +70,7 @@
 ### 安全禁令（否定式，一条都不许碰）
 
 - 禁止 `nodeIntegration: true` / `webSecurity: false` / `sandbox: false` / `contextIsolation: false`
-- 禁止 renderer 引入任何 Node/Electron API 或绝对文件路径（路径只能来自 main 侧系统对话框）
+- 禁止 renderer 引入任何 Node/Electron API 或绝对文件路径（路径只能来自 main 侧系统对话框或拖拽 File 经 preload webUtils 解析——受信边界清单见 INV-07）
 - 禁止对未过 `shell-guard` 校验的 URL 调 `openExternal`
 - 禁止字符串拼接 SQL；一切语句 `db.prepare` 预编译 + 参数绑定；FTS 输入必须经 `escapeFtsQuery`
 - 禁止 `eval` / `new Function` / `unsafe-eval`（CSP 已封死）
@@ -79,6 +79,7 @@
 ### 完成定义（Definition of Done）
 
 - [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build，与 CI 同口径，不是 README 数字）
+- [ ] src 产物零外部模型代号（glm/deepseek/kimi 等词表）——门禁 `npm run lint:model-names`（本地手动关卡，未串 verify/CI 链，收口自跑）
 - [ ] `grep` 无 `TODO|FIXME|placeholder`（CI quality 关卡）
 - [ ] 无乱码：中文内容工具验证可读（CI mojibake 关卡）
 - [ ] `git diff --stat` 无范围蔓延

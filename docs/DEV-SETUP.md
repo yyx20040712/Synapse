@@ -13,6 +13,10 @@
 | 网络代理 | `127.0.0.1:7890`（若新机代理不同，替换下文所有出现处） | GitHub 直连不稳是既有事实 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
 
+> **本机残留备案**：仓库根 `.mimosa/`（finding-ledger/hook-state/history 等）系
+> zcode 宿主钩子的本机产物，非项目资产（.gitignore 已忽略）——审计/取证时勿误认；
+> 同类还有 `local-state-backup/`、`dist_new/` 等本机目录（存储批 F-STOR-01 处置面）。
+
 ## 2. 克隆与安装
 
 ```bash

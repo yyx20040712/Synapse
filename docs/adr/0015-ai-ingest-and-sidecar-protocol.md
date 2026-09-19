@@ -81,3 +81,14 @@
   zcode 联动（依赖 06 心跳协议）。
 - ai-module-plan §2.1 DDL 同步修订（question 列）。
 - 新不变量 INV-19/20/21 预登记 docs/invariants.md（未锚定，随工单锚定）。
+
+## 修订记录（2026-09-19 F-DOCGOV-01：§2 通道清单追认）
+
+> §2 当初承诺两通道（import+list）；ai_sensor 域现役 **7 通道**（单源=
+> `src/shared/ipc/api-surface.ts`）：requestAiRead/aiStatus（AI-06 协议两通道）、
+> importAll/listByPaper（本 ADR §2）、zcodeDetect/zcodeInstall（§4 联动两通道）、
+> **observe**（SR2-AI-08 实现期主控预裁新增——per-paper 四事实聚合六态判定
+> 单源，替代散落 UI 的状态推导）。其中 observe 此前无 ADR 条款对应——本节
+> 即追认补档（与头部 2026-08-27 双目录发现机制追认同型）；其余通道均有
+> 本 ADR 对应节。通道命名与域归属演进（F-SENSOR-01 三键平铺）见
+> architecture §8.3。

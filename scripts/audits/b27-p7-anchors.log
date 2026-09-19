@@ -1,0 +1,4 @@
+ROADMAP anchors (8): P7-A/P7-B/P7-F/P7-C/P7-G/P7-H/P7-D/P7-E
+src b3 header scopes (7): P7-A/P7-B/P7-C/P7-E/P7-F/P7-G/P7-H
+PASS: src b3 scopes ⊆ ROADMAP anchors（机器输入完整——退役页保锚段方案 a 兑现）
+M2_EXIT=0

@@ -3,8 +3,8 @@
 本地学术文献管理 + PDF 阅读标注桌面应用（「智慧水务」课程科研工具）。
 
 - 技术栈：Electron + TypeScript（单语言）+ React 18 + better-sqlite3(FTS5) + pdfjs-dist v4
-- 架构与流程：见 `docs/architecture.md`；AI 协作规则：见 `AGENTS.md`（先读它）
-- 测试与质量：`npm run verify` 一键全检；CI 六道关卡为准
+- 架构与流程：见 `docs/architecture.md`（含 lineage/workspaces/ai-sensor 域结构速览）；AI 协作规则：见 `AGENTS.md`（先读它）
+- 测试与质量：`npm run verify` 一键全检（八段链与 CI 同口径，关卡清单见 architecture §4）
 
 ## 常用命令
 
@@ -24,10 +24,12 @@
 src/shared      两进程共享契约（类型+zod，冻结）
 src/main        主进程：ipc → services → repos → db，含安全/协议/文件存储
 src/preload     contextBridge 白名单桥
-src/renderer    React SPA（features 按域组织）
+src/renderer    React SPA（features 按域组织：library/reader/notes/tags/settings/
+                lineage 发展脉络/workspaces 课题切换——课题数据分目录见 ADR-0018）
+tools/          ai-sensor 伴随进程 CLI（zcode 技能域——应用永不 spawn；自述见 tools/ai-sensor/README.md）
 tickets/        工单注册表（开发控制面）
 tests/          锁定的测试系统（e2e + 契约 + 安全 + 单测）
-docs/           architecture / security / DEVELOPMENT / ROADMAP / adr
+docs/           architecture / security / DEVELOPMENT / ROADMAP（已退役档案）/ adr
 ```
 
 测试数、覆盖率等一切数字以 CI 输出为准，本文档不写具体数字。
