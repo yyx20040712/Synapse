@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -20,8 +20,8 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * app.close() 强杀（LS 同步写已持久）→二轮启动：渲染先行+后台回放（回炉
  * W1）→有界 DB 轮询断言 last_read_page=1 落账（回炉 W3 同步点——终值=最后
  * 入队页码，队头 seq 序排空）。
- * 读库子进程=spawn -e（受锁件禁改，ABI 切换本地第二份，Rule of Three 保持
- * 重复）。
+ * 读库子进程=spawn -e（不经主进程 require 直读 sqlite 文件。[F-ELE-02] v13
+ * N-API 单绑定后 v12 换绑段已删，此处保留子进程读库形态）。
  * 激活条件：P7X-02 未 done skip（实现票收口由主控翻 registry 后 CI 首跑）。
  */
 const DEPS = ['P7X-02'] as const
@@ -36,45 +36,32 @@ function liveDbPath(userData: string): string {
   return existsSync(wsDb) ? wsDb : join(userData, 'synapse.db')
 }
 
-/** 子进程读 papers 行（node ABI——better-sqlite3 绑定切换照 e2e-env 形态） */
+/** 子进程读 papers 行（v13 N-API 单绑定——子进程直接 require，无需换绑） */
 async function readPaperRow(userData: string): Promise<{ p: number }> {
-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
-  const cacheDir = join(pkgDir, 'abi-cache')
-  const wanted = `node-v${process.versions.modules}`
-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
-  const electronBinding = await readFile(releaseBinding)
-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
-  try {
-    return await new Promise<{ p: number }>((resolve, reject) => {
-      const child = spawn(
-        process.execPath,
-        [
-          '-e',
-          'const D=require("better-sqlite3");const db=D(process.argv[1]);try{const r=db.prepare("SELECT last_read_page AS p FROM papers WHERE id=?").get(process.argv[2]);console.log(JSON.stringify(r))}finally{db.close()}',
-          liveDbPath(userData),
-          PAPER_ID
-        ],
-        { env: process.env }
-      )
-      let out = ''
-      child.stdout.on('data', (d) => {
-        out += String(d)
-      })
-      child.on('exit', (code) => {
-        if (code === 0) {
-          resolve(JSON.parse(out) as { p: number })
-        } else {
-          reject(new Error(`读库子进程退出码 ${code ?? 'null'}`))
-        }
-      })
-      child.on('error', reject)
+  return await new Promise<{ p: number }>((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [
+        '-e',
+        'const D=require("better-sqlite3");const db=D(process.argv[1]);try{const r=db.prepare("SELECT last_read_page AS p FROM papers WHERE id=?").get(process.argv[2]);console.log(JSON.stringify(r))}finally{db.close()}',
+        liveDbPath(userData),
+        PAPER_ID
+      ],
+      { env: process.env }
+    )
+    let out = ''
+    child.stdout.on('data', (d) => {
+      out += String(d)
     })
-  } finally {
-    await writeFile(releaseBinding, electronBinding)
-  }
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve(JSON.parse(out) as { p: number })
+      } else {
+        reject(new Error(`读库子进程退出码 ${code ?? 'null'}`))
+      }
+    })
+    child.on('error', reject)
+  })
 }
 
 /** 有界 DB 轮询（回炉 W3：W1 渲染先行后「导航可见即重放毕」前提失效——后台
