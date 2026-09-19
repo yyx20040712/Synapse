@@ -6,23 +6,23 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: READY
-- automation_id: automation-aa40bf0e-0483-4ecb-9698-7f0cd533fce0
+- status: DONE
+- automation_id: automation-3776af0e-7217-406a-802c-870cb88b6533
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - last_dispatch: 2026-09-19T11:19:21+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T11:07:41Z
+- heartbeat_utc: 2026-09-19T12:27:27.872Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 35
 - checked_done: 35
 - protocol_rev: 1
-- last_dispatch_utc: 2026-09-19T10:02:42Z
+- last_dispatch_utc: 2026-09-19T12:22:02Z
 - relay_started_utc: 2026-09-19T11:58:59Z
-- batch_count: 0
+- batch_count: 1
 - max_batches: 105
 - max_wall_hours: 158
 - hold_reason: -
@@ -190,6 +190,15 @@
 > 2027-03-02；43 中间档不推荐照产研报告 §5）；实施前按裁决书 §6.6 复核矩阵时效。
 
 ## 批次日志（追加，勿改写）
+### batch 30 — 2026-09-19（执行者会话：换防后首批空批——清单全勾复置 DONE（增补十一预判场景兑现），完成）
+- claim: claim-1789820667352-b30｜认领 2026-09-19T12:24:27Z｜收口 2026-09-19T12:25:32.935Z｜勾选 35→35（全勾态保持）。
+- 开场三态：B 态变体——脏面=增补十一换防复位笔（12:01:02Z 调度会话追加+字段复位）+调度员发布笔（last_dispatch_utc 12:22:02Z 本批发布，认领前落板），两者均随本批收口提交；HEAD=batch 29 增补一提交 3241c337f99 正确。
+- 技能清点：batch-relay（用——认领收口判定）、ai-dev-org（用——组织主干/执行路由；本批零 src 零票纯板面，无派发面——烤验表对抗位不命中）；TDD 不加载（纯板面批无测试面——b29 增补一同口径）；verification-before-completion（用——board 机检+grep 实测+claim/置位双回读）；systematic-debugging 不加载（无排障面）。
+- 执行面：清单全勾 grep 实测未勾 0/已勾 35（与板头 checked_total 35 一致）——**增补十一清单态知会预判场景兑现**（「新工作量立案前，首批执行者按收口判定①将复置 DONE+终报（一批次即回终态，预期行为非故障）」）。Electron A/B 票**不立案**依据=增补一 Ruling ②（待用户统一排期）+增补十一知会（待用户点单立案入板）+本批注入指令无点单信息——排程权在用户，执行者不自造工作量。
+- 机检：board check 置位前跑（RUNNING+claim≠- 态）0 fail；verify EXIT=0 零漂移（证据档仓外 b30-verify.log——3241c337f99 纯板面批同型先例）；收口置位原子写（DONE+claim→-+batch_count 0→1）回读确认。
+- Rulings 待用户：①Electron A/B 票点单（增补一 Ruling ② 排期待裁——A=better-sqlite3 v13 N-API 化先行→B=Electron 44；两票实施前均按《裁决书》§6.6 强制复核 prebuild 矩阵时效；点单径=用户直接指令或下一波换防指令附带）；②dist_new 欠账（增补一 Ruling ③ 已裁留待自然重启后补删——重启宿主后任意会话 rm -rf dist_new 销账，三处登记即终态口径）。
+- 无进展计数：保持 0（判定次序①全勾首中即断→DONE，判定④未评估——勾选 35→35 未增如实记档）。
+
 
 ### batch 29 — 2026-09-19（执行者会话：第六波 F-STOR-01 存储批单票——**第六波毕/清单全勾**，完成）
 - claim: claim-1789812236606-b29｜认领 2026-09-19T10:03:56Z｜收口 2026-09-19T11:06:30Z｜勾选 34→35。
@@ -1976,3 +1985,34 @@
   用户显式 /batch-relay 重布防（换防协议 hub 变体），或手动会话按本板清单领批。
 - 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令优先）。
 - 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入生效。
+
+### 增补十一 — 2026-09-19T12:01:02Z（hub 换防：新调度会话接替，重布全局轮转火）
+- 旧火核查：CronList 空集——用户点名旧火 automation-2988ca0b-…（调度员增补七
+  所布）与板头存量 automation-aa40bf0e-…（增补九所布、增补十删火在案）均已亡，
+  无双火风险，零清场动作；新火布防后 CronList 复核全局恰一条。
+- 深度设计门（换防重走；用户布防指令口径=门检以板内 plan 字段指向的《裁决书》/
+  自含清单为准）：过——《裁决书》占位符 grep 零命中、执行清单机检 35 勾+0 开=35
+  与板头计数一致、org-ledger.jsonl 活跃（mtime 09-19 19:09+08）；check-relay plan
+  子命令照跑 exit=1：MISSING_SECTION 系自含清单非 writing-plans 模板预期态，
+  2 处 PLACEHOLDER 命中（行 819/820）系 batch 16 增补三历史门检记录内 grep 词表
+  自引——批次日志区禁改写，非计划占位符（增补九同款口径）。
+- 换防复位（板不重建）：relay_started_utc 重锚 2026-09-19T11:58:59Z（熔断复位
+  留痕）；status DONE→READY（batch 29 全勾置 DONE 后用户显式换防重启）、
+  batch_count 2→0；claim/no_progress_count/hold_reason 均期望态零改写；protocol
+  段 rev1+rev1.1 增量条款在册（增补七/增补八所立），无需补齐；复位后 board 机检
+  0 fail（1 warn=冻结旧行 R3 预期）；板头 automation_id 字段行已锚定替换为新火
+  id（锚定计数=1 守卫过；历史日志旧 id 存量不动）。
+- **清单态知会（终报呈用户）**：本板执行清单 35/35 全勾（batch 29 第六波毕）——
+  新工作量立案前，首批执行者按收口判定①将复置 DONE+终报（一批次即回终态，预期
+  行为非故障）；板尾注 Electron 实施窗 A/B 票（用户已裁选项 a；实施前按《裁决书》
+  §6.6 复核矩阵时效）待用户点单立案入板后本板方有未勾余量。
+- 新全局火=automation-3776af0e-7217-406a-802c-870cb88b6533（新 hub 调度会话创建，
+  全局唯一 */10 轮转，服务本板+waterprint 板）。本板 last_dispatch_utc=09-19T10:02:42Z
+  晚于姊妹板 08:55:10Z——首班有效火先轮 waterprint 板，本板次之。
+- 板上既有条款自动生效：门一审 k2 承载指令（板头执行指令原文照携）与 UI 开批
+  通道经验沿用历任实测累积。
+- 板面技术注记：换防窗内本板文件被不明写入方重写一次（mtime 2026-09-19T12:02:22Z
+  实证；增补十末行「自动随注入指令生效」→「自动随注入生效」两字差，调度会话读取
+  快照在案）——非本调度会话所为；回读核验板头字段与本调度复位值（status/
+  relay_started_utc/batch_count/automation_id）完好无损。历史日志区两字差不回改
+  （追加勿改写纪律），如实记档备查。
