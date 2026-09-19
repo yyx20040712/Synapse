@@ -235,10 +235,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   // 时 abort 返回 false 空转，无害
   window.webContents.on('did-start-navigation', (details) => {
     if (!details.isMainFrame) return
-    void container.services.export_.abortActiveSession('渲染进程导航/重载，导出会话中止')
+    void container.services.corpus_export.abortActiveSession('渲染进程导航/重载，导出会话中止')
   })
   window.webContents.on('render-process-gone', (_event, details) => {
-    void container.services.export_.abortActiveSession(
+    void container.services.corpus_export.abortActiveSession(
       `渲染进程崩溃（${details.reason}），导出会话中止`
     )
   })

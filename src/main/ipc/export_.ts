@@ -83,7 +83,7 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
   }
 
   return {
-    corpusItem: (req) => deps.services.export_.corpusItem(req),
+    corpusItem: (req) => deps.services.corpus_export.corpusItem(req),
 
     corpusSession: async (req) => {
       // INV-07：目录只出自 main 侧系统对话框（C-02 exportTo 同型——dialog 在
@@ -92,7 +92,7 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
       if (dir === null) {
         throw new ExportIpcError('CANCELLED', '已取消选择导出目录')
       }
-      return deps.services.export_.exportCorpusSession({
+      return deps.services.corpus_export.exportCorpusSession({
         dir,
         paperIds: req.paperIds
       })

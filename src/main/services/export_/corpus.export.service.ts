@@ -1,142 +1,56 @@
 // b3: P7-G
 /**
- * [SR2-AI-03] corpus.export.service —— 五件套导出会话（工单：open / strong）
+ * [SR2-AI-03] corpus.export.service —— 五件套导出会话编排件（工单：F-EXPORT-01 拆件后形态）
  *
- * ── 行为层 ──
- * - 会话编排（状态机全表，母本=ai-plan-review §6；INV-18 随单锚定）。
- *   态空间定义：idle=无会话；preparing=清目录+写 corpus md；streaming=逐篇
- *   发 extract-request+消费回传落盘；finalizing=全部篇终局后 manifest 终写；
- *   done/failed=终态即会话对象销毁（不驻留——终态后新会话从 idle 起新对象）；
- *   interrupted=main/renderer 同死（进程/窗口退出）——**非驻留态**：Electron
- *   单进程组下 main 死则 renderer 同死，无 IPC 悬挂/按钮卡死面；重启后新会
- *   话从 idle 起，中断目录无 manifest=工具不可激活（重跑即修复）。main 内
- *   异常≠interrupted：折叠错误码 resolve（会话 failed），不悬挂 Promise。
- *   清空重建范围=corpus/fulltext/figures 三子目录内容+manifest.json+
- *   manifest.tmp（R8 裁决原文语义）——目录根用户其他文件不动；三子目录
- *   即导出产物域，用户的任意放置视为可清理（与 corpusSet 守卫的不对称
- *   合理：轻量通道无清空语义故拒绝污染，本通道会话开宗明义清空重建）。
- *   事件迁移表：
- *   | 当前态 | 事件 | 迁移 | 动作/守卫 |
- *   | --- | --- | --- | --- |
- *   | idle | export/corpus invoke | →preparing | 单飞守卫：已有会话→EXPORT_BUSY 拒绝（INV-18 单飞条款；消费方折叠分支=UI 提示，INV-13） |
- *   | idle | （目录既有残留） | preparing 内清空 | 删旧 manifest+清空重建 corpus/fulltext/figures（残留 tmp 文件同删——终局写 manifest.tmp 后中断的残留随下次会话清理） |
- *   | preparing | md 全写完 | →streaming | 逐篇发 extract-request（上一篇 complete/error 后才发下一篇——串行编排，renderer 侧无并发面） |
- *   | preparing | repo/装配/写盘异常 | →failed | 折叠错误 resolve；manifest 不写 |
- *   | streaming | 篇 complete | streaming | 篇计数+1；全部篇终局→finalizing |
- *   | streaming | 篇 error（文件缺失/损坏） | streaming | 该篇进 errors[]，会话继续（部分成功） |
- *   | streaming | chunk invoke 折叠错误 | →failed | 折叠错误 resolve；manifest 不写；重跑修复 |
- *   | streaming | 流式落盘写盘失败（回传成功但写 corpus/fulltext/figures 出错） | →failed | 同上处置（故障源与回传失败不同——日志区分）；manifest 不写 |
- *   | finalizing | manifest 终写完成 | →done | resolve {dir,fileCount,errorCount} |
- *   | finalizing | 写盘/rename 异常 | →failed | 折叠错误 resolve |
- *   | 任意在途（preparing/streaming/finalizing） | renderer 重载/崩溃（main 存活——webContents 主帧导航/render-process-gone） | →failed | abortActiveSession：清 manifest.tmp 残留+释放单飞锁+折叠 reject（IO_ERROR）；advance 守卫拦悬挂终写 manifest；重跑=清空重建（幂等） |
- *   | 任意 | 进程/窗口死 | →interrupted | 无 manifest=工具不可激活；无 IPC 悬挂（同死）；renderer 单死（main 存活）由 abort 行覆盖（原「main 死则 renderer 同死」语义保留） |
- *   跨格序列八行（实现测试须逐格闭合）：
- *   | 跨格序列 | 期望行为 |
- *   | --- | --- |
- *   | 正常全链 | preparing→streaming→finalizing→done；manifest 存在且 sha 全匹配 |
- *   | 篇失败（文件缺失/损坏） | 该篇进 errors[]，会话继续；done=部分成功，UI 呈现 errorCount |
- *   | chunk 回传失败（invoke 折叠错误） | 会话 failed；toast（INV-02）；manifest 不写；重跑修复 |
- *   | 中断（窗口关/进程退） | 无 manifest→工具不可激活；重跑=清空重建（幂等） |
- *   | renderer 重载（streaming 中） | 会话 failed：单飞锁即时释放，再发起不再 EXPORT_BUSY；无 manifest=工具不可激活；重跑=清空重建 |
- *   | 并发第二会话 | EXPORT_BUSY 拒绝+按钮 disabled |
- *   | 导出中用户导航离开设置页 | 流不中断（监听在 App 层）；完成/失败 toast 常驻可见 |
- *   | renderer 逐页回传 | 每页一 invoke，await ack 后发下一页（天然背压）——streaming 态内数据流机制（非状态迁移，载荷 schema 见 AI-02 接口层） |
- * - manifest 终局单写（R5/R8）：临时文件+rename 原子替换；会话开始删旧
- *   manifest+清空重建 corpus/fulltext/figures 三子目录；schema 含
- *   schemaVersion/exportedAt/papers[]{contentSha,fulltextSha,figures,
- *   exportedAt}+可选 errors[]{paperId,reason}（papers[] 只列成功篇）；
- *   「manifest 存在=导出完整就绪」=工具侧唯一激活判据；进度不走 manifest
- * - 幂等（R6，INV-17 随单锚定）：corpus md front-matter 不含 exportedAt
- *   （时间戳只进 manifest per-paper 条目）；contentSha/fulltextSha=文件字节
- *   sha256（node:crypto 先例）；**逐字节稳定的范围=产物文件**（corpus/
- *   fulltext/figures 及其 sha）——manifest 自身含 exportedAt 不参与逐字节
- *   断言（golden 区分：内容 golden+manifest 结构断言）
- * - 单飞（R9，迁移表 idle 行）：进行中拒第二会话=app-error 新码 EXPORT_BUSY
- *   [受锁新增]——INV-18 单飞条款锚定；消费方折叠分支=UI 提示（INV-13 语义
- *   ——折叠面消费方必须分支处理，AI-04 接线）
- * - 装配单源（R12 红线，置顶条款）：corpus md 装配只在 corpus.assemble.ts
- *   延展（[ai:*] 段=aiNotes 入参按 role→question 分组装配，语法不变）；本
- *   service 只做编排/落盘/sha/manifest——禁第二套 md 装配
- * - 通道判定（2026-08-27 开工裁决，交接书指定项）：C-02 既有 corpus/
- *   corpusSet 通道**保留**（单篇 md 快速导出+库页 md 集合，轻量面）；本单
- *   新增 export/corpus 通道=五件套全量会话（设置页「AI 语料导出」入口，
- *   AI-04）。判定依据：ADR-0011 v1.1 五件套是 AI 传感器全量基座（含
- *   fulltext/figures 提取，GB 级），与库页轻量 md 集合场景不同；两者共用
- *   corpus.assemble 装配纯函数（装配单源不破）——目录形态与会话语义分层，
- *   非双实现。**目录隔离条款**：两通道不得污染对方产物——五件套会话开始
- *   删旧 manifest+清空重建（迁移表 idle 行）；corpusSet 写入前置守卫=目标
- *   目录含 manifest.json 时拒绝（ExportDomainError 提示选空目录——防轻量
- *   md 覆盖 corpus/ 后工具按残留 manifest 误激活读新旧混合语料；守卫接线
- *   随本单交付，export.service.ts 非受锁）
- * - INTERFACE.md（interface-template.ts 静态单源，INV-11）：目录结构/
- *   front-matter 字段表/引文块语法/排序规则/页码基准（p.N 1 基——corpus.
- *   assemble 头注口径同源）/fulltext 页界 \f/figures 消费说明/版本承诺
- * - **实现裁决（2026-08-27，开工落地）**：①通道名=export/corpus-session
- *   （母本 §2.3 的 export/corpus 已被 C-02 单篇导出占用——更名避撞，交接书
- *   v3 预警兑现）②目录选择经 ipc 层系统对话框（C-02 exportTo 同型——
- *   dialogs 在 ipc 层；service 收已选 dir，单飞判定仍在本 service 单例）
- *   ③progress 事件走 exportCorpus 通道（sendEvent 注入——sendProgress
- *   同型先例，bootstrap 装配桶）
+ * [F-EXPORT-01] 拆件（用户裁决提前主动拆——docs/design/2026-09-18_complexity-
+ * governance-ruling.md 裁决 6/§3 梯队四）：状态机六态+会话对象管理外提=
+ * export-session-state.ts（**态空间迁移表母本在该件头注**，本头注只留指针）；
+ * 盘面 IO 纯函数外提=corpus.export.io.ts（无状态/无事件——INV-17 幂等 sha 口径+R5/R8
+ * 终局单写锚定在该件头注）；本件=纯编排：progress/extract-request 事件组包
+ * （出口单点 deps.sendEvent——事件不碰盘、盘面不发事件）+推进接线。
  *
- * ── 接口层 ──
- * - export function createCorpusExportService(deps): CorpusExportService
- * - exportCorpusSession({dir, paperIds?})：终局 resolve {dir,fileCount,errorCount}
- * - corpusItem(req)：AI-02 回传通道消费端（流式落盘+会话推进；载荷失配
- *   →INVALID_REQUEST 防御拒绝不扰动在途会话）
- * - abortActiveSession(reason)：renderer 重载/崩溃时中止在途会话（F-SESS-01；
- *   bootstrap webContents 事件接线消费，非 IPC 面——reject 消费方=已死 renderer
- *   收不到 Result）
- * - IPC [受锁]：export/corpus-session 通道（Req corpusSessionReqSchema/
- *   Res corpusSessionResSchema）；export/corpus-item（AI-02 建通道，本单
- *   main 侧消费流式落盘）；exportCorpus 事件发送器经 bootstrap 装配桶注入
+ * ── 编排面关注点（保留本件） ──
+ * - 装配单源（R12 红线，置顶条款）：corpus md 装配只在 corpus.assemble.ts 延展（[ai:*] 段
+ *   =aiNotes 入参按 role→question 分组装配，语法不变）；本 service 只做编排/推进/终写接线——禁第二套 md 装配。
+ * - 通道判定（2026-08-27 开工裁决）：C-02 既有 corpus/corpusSet 通道**保留**
+ *   （单篇 md 快速导出+库页 md 集合，轻量面）；五件套会话通道=export/corpus-
+ *   session（设置页「AI 语料导出」入口，AI-04；ADR-0011 v1.1 全量基座含
+ *   fulltext/figures 提取 GB 级——与轻量面场景不同；两通道共用 corpus.assemble
+ *   纯函数，装配单源不破非双实现）。**目录隔离条款**：五件套会话开始删旧
+ *   manifest+清空重建（态空间表 idle 行，io 件 cleanRebuild）；corpusSet 写入
+ *   前置守卫=目标目录含 manifest.json 时拒绝（ExportDomainError 提示选空目录
+ *   ——防轻量 md 覆盖后按残留 manifest 误激活混合语料）。
+ * - INTERFACE.md（interface-template.ts 静态单源，INV-11）：目录结构/front-matter
+ *   字段表/引文块语法/排序规则/页码基准（p.N 1 基——corpus.assemble 头注口径
+ *   同源）/fulltext 页界 \f/figures 消费说明/版本承诺——落盘在 io 件 cleanRebuild。
+ * - 实现裁决（2026-08-27）：①通道名=export/corpus-session（export/corpus 已被
+ *   C-02 单篇导出占用——更名避撞）②目录选择经 ipc 层系统对话框（C-02 exportTo
+ *   同型；service 收已选 dir，单飞判定在本 service 单例）③progress 事件走
+ *   exportCorpus 通道（sendEvent 注入，bootstrap 装配桶）。
  *
- * ── 架构层 ──
- * - main/services/export_ 域；依赖 repos（papers/annotations/notes/ai_notes
- *   ——corpus md 与 [ai:*] 段装配数据面）+corpus.assemble+file-store
- *   （app-file:// url 解析——提取请求 url 下发）+shell/dialogs（INV-07
- *   目录选择——路径只出自 main 对话框）。**fulltext/figures 数据面=导出时
- *   AI-02 对 PDF 源文件实时提取流式落盘**（无 fulltext 表/无缓存——唯一
- *   数据源=文件库 PDF 经 app-file:// 事件载荷下发）；exportCorpus 事件
- *   发送器=对 AI-02 的驱动通道（bootstrap 装配桶注入）
- *
- * ── 生命周期层 ──
- * - 预留：增量导出（manifest 字段位预留不实现）；figures 收窄（如仅标注页）
- *   =版本化修订（INTERFACE 版本号联动，ADR-0011 v1.1 第 5 条）
- * - 不做：取消 UI（v1）；md 回写 DB（投影只读——ADR-0011 存储分层）
- *
- * ── 文化层 ──
- * - 测试：tests/unit/services/corpus.export.test.ts [受锁新增]：夹具库→
- *   五件套 golden 逐字节+结构断言（ADR-0011 v1.1 验收口径：front-matter
- *   可解析/引文块数=DB 标注数/序=sortByDocumentOrder/contentSha 匹配/
- *   [ai:*] 段装配）+幂等重导逐字节稳定（范围=产物文件；manifest 结构断言
- *   另立）+状态机跨格序列（篇失败/chunk 失败/落盘失败/BUSY/中断恢复）+
- *   corpusSet 目录隔离守卫（目录含 manifest.json→拒绝）
- * - IPC 载荷量化预期：corpus-item 单条=页级（figure=页快照 base64 典型
- *   <2MB；逐页 invoke 即分块粒度——禁跨页聚合大 payload 整块，母本背压
- *   原文）
- * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
+ * ── 接口层（零改——受锁等价锁：tests/unit/services/corpus.export.test.ts 零触碰即绿；
+ *    三方法语义见下方 interface JSDoc）──
+ * - 架构：main/services/export_ 域；依赖 repos 装配数据面+file-store（app-file:// 解析）
+ *   +state/io 两件；fulltext/figures=AI-02 实时提取流式落盘（无缓存表）。
+ *   预留：增量导出/figures 收窄（版本化修订）；不做：取消 UI/md 回写 DB。
  */
-import { createHash } from 'node:crypto'
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { stat } from 'node:fs/promises'
 import { appFileUrl } from '../../../shared/app-file-url'
 import type {
-  CorpusItemReq,
-  CorpusSessionRes,
-  ExportCorpusEvent,
-  ExtractRequestEvent
+  CorpusItemReq, CorpusSessionRes, ExportCorpusEvent, ExtractRequestEvent
 } from '../../../shared/ipc/schemas'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
-import { DomainError } from '../shared/domain-error'
 import { sanitizePathToken } from '../shared/sanitize'
 import type { FileStore } from '../import_/file-store'
 import { assembleCorpusMd, orderAiNotes } from './corpus.assemble'
-import { INTERFACE_MD } from './interface-template'
-
-/** 会话层域错误（code 经 register toAppError 结构化保留——EXPORT_BUSY 等）；
- *  基类一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
-class SessionError extends DomainError {}
+import {
+  cleanRebuild, finalizeManifest, readCorpusSha, removeManifestTmp,
+  writeCorpusMd, writeFigure, writeFulltext, type CorpusManifest
+} from './corpus.export.io'
+import {
+  createExportSessionState, deferOutcome, SessionError, type ActiveSession
+} from './export-session-state'
 
 export interface CorpusExportDeps {
   repos: Repos
@@ -147,61 +61,18 @@ export interface CorpusExportDeps {
   now?: () => string
 }
 
-interface ManifestPaper {
-  paperId: string
-  file: string
-  title: string
-  contentSha: string
-  fulltextSha: string
-  figures: string[]
-  exportedAt: string
-  /** ENR-02 缓存快照自声明（可选）：与 citedByCount 成对出现成对省略
-   *  （无 count 则无时间戳——N-r2e）；contentSha 幂等以同缓存状态为前提 */
-  citedByCount?: number
-  citedByFetchedAt?: string
-}
-
-/** 在途会话态（单飞——工厂闭包唯一实例；终局即销毁不驻留） */
-interface ActiveSession {
-  sessionId: string
-  dir: string
-  queue: PaperDetail[]
-  current: { paperId: string; fulltext: string[]; figures: string[] } | null
-  papers: ManifestPaper[]
-  errors: Array<{ paperId: string; reason: string }>
-  done: number
-  total: number
-  resolve: (r: CorpusSessionRes) => void
-  reject: (e: SessionError) => void
-}
-
 export interface CorpusExportService {
   /** 五件套会话（目录经 ipc 层系统对话框已选——INV-07；终局 resolve） */
   exportCorpusSession(input: { dir: string; paperIds?: string[] }): Promise<CorpusSessionRes>
   /** renderer 回传消费端（AI-02 通道：流式落盘+会话推进） */
   corpusItem(req: CorpusItemReq): Promise<{ ok: true }>
-  /** renderer 重载/崩溃（main 存活）时中止在途会话（F-SESS-01——bootstrap 接线
-   *  webContents 事件消费；无在途会话返回 false 空转无害） */
+  /** renderer 重载/崩溃（main 存活）时中止在途会话（F-SESS-01——bootstrap 接线 webContents 事件消费；无在途会话返回 false 空转无害） */
   abortActiveSession(reason: string): Promise<boolean>
 }
 
-const MANIFEST_TMP = 'manifest.tmp.json'
-
 export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportService {
   const now = deps.now ?? (() => new Date().toISOString())
-  let session: ActiveSession | null = null
-
-  /** 会话开始清空重建（迁移表 idle 行）：三子目录+manifest 本体+tmp 残留；
-   *  目录根用户其他文件不动 */
-  async function cleanRebuild(dir: string): Promise<void> {
-    await rm(join(dir, 'manifest.json'), { force: true })
-    await rm(join(dir, MANIFEST_TMP), { force: true })
-    for (const sub of ['corpus', 'fulltext', 'figures']) {
-      await rm(join(dir, sub), { recursive: true, force: true })
-      await mkdir(join(dir, sub), { recursive: true })
-    }
-    await writeFile(join(dir, 'INTERFACE.md'), INTERFACE_MD, 'utf8')
-  }
+  const state = createExportSessionState()
 
   function sendProgress(s: ActiveSession, phase: 'preparing' | 'streaming' | 'finalizing'): void {
     deps.sendEvent({ type: 'progress', sessionId: s.sessionId, done: s.done, total: s.total, phase })
@@ -209,30 +80,28 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
 
   /** streaming→下一篇或 finalizing（advance——迁移表 streaming 行） */
   async function advance(s: ActiveSession): Promise<void> {
-    // 守卫：已终局（failed/aborted）会话的悬挂推进不得终写 manifest/resolve
-    // ——abortActiveSession 与 failSession 均先同步置空 session（终局标记）
-    if (session !== s) return
+    // 守卫：已终局（failed/aborted）会话的悬挂推进不得终写 manifest/resolve——abortActiveSession 与 failSession 均先同步置空会话引用（终局标记）
+    if (!state.isActive(s)) return
     const next = s.queue.shift()
     if (next !== undefined) {
       await startPaper(s, next)
       return
     }
-    // finalizing：manifest 终局单写（tmp+rename 原子替换）
+    // finalizing：manifest 终局单写（tmp+rename 原子替换——io 件）
     sendProgress(s, 'finalizing')
-    const manifest = {
+    const manifest: CorpusManifest = {
       schemaVersion: 1,
       exportedAt: now(),
       papers: s.papers,
       ...(s.errors.length > 0 ? { errors: s.errors } : {})
     }
-    await writeFile(join(s.dir, MANIFEST_TMP), JSON.stringify(manifest, null, 2), 'utf8')
-    await rename(join(s.dir, MANIFEST_TMP), join(s.dir, 'manifest.json'))
+    await finalizeManifest(s.dir, manifest)
     const res: CorpusSessionRes = {
       dir: s.dir,
       fileCount: s.papers.length,
       errorCount: s.errors.length
     }
-    session = null
+    state.markTerminal(s)
     s.resolve(res)
   }
 
@@ -251,8 +120,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     deps.sendEvent(req)
   }
 
-  /** 篇终局（complete 成功落账 / error 进 errors[]）→advance。
-   *  cur 由调用方同步摘牌传入（防回复-定时窗内重复终局 invoke 双推进）。 */
+  /** 篇终局（complete 成功落账 / error 进 errors[]）→advance；cur 由调用方同步摘牌传入（防回复-定时窗内重复终局 invoke 双推进）。 */
   async function finishPaper(
     s: ActiveSession,
     cur: { paperId: string; fulltext: string[]; figures: string[] },
@@ -265,13 +133,10 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
       await advance(s)
       return
     }
-    // fulltext 终写（页界 \f）+sha；contentSha 重读 corpus md 文件字节
+    // fulltext 终写（页界 \f）+sha；contentSha 重读 corpus md 文件字节（io 件）
     const fulltext = cur?.fulltext.join('\f') ?? ''
-    await writeFile(join(s.dir, 'fulltext', `${paperId}.txt`), fulltext, 'utf8')
-    const fulltextSha = createHash('sha256').update(fulltext, 'utf8').digest('hex')
-    const contentSha = createHash('sha256')
-      .update(await readFile(join(s.dir, 'corpus', `${paperId}.md`), 'utf8'), 'utf8')
-      .digest('hex')
+    const fulltextSha = await writeFulltext(s.dir, paperId, fulltext)
+    const contentSha = await readCorpusSha(s.dir, paperId)
     s.papers.push({
       paperId,
       file: `corpus/${paperId}.md`,
@@ -291,38 +156,35 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     await advance(s)
   }
 
-  /** 落盘/编排异常=会话 failed（manifest 不写；session 释放重跑修复） */
+  /** 落盘/编排异常=会话 failed（manifest 不写；会话引用释放重跑修复） */
   async function failSession(s: ActiveSession, message: string): Promise<void> {
-    // 防御（门一 N2 采纳）：悬挂的终局推进不得误清新会话单飞锁/二次 reject——
-    // 该不变量不依赖提取器串行协议成立
-    if (session !== s) return
-    // 单飞锁同步释放（终局标记先于异步清理）：已排队（setImmediate）的悬挂
-    // 终局推进在 check 阶段运行时 advance 守卫据此拦截——释放晚于该窗会竞态
-    // 终写 manifest；清理窗内新会话的 manifest.tmp 不受影响（新会话 cleanRebuild
-    // 自清残留，且其 finalizing 终写远晚于本 rm 完成）
-    session = null
-    await rm(join(s.dir, MANIFEST_TMP), { force: true }).catch(() => undefined)
+    // 防御（门一 N2 采纳）：悬挂的终局推进不得误清新会话单飞锁/二次 reject——不依赖提取器串行协议成立
+    if (!state.isActive(s)) return
+    // 单飞锁同步释放（终局标记先于异步清理）：已排队（setImmediate）的悬挂终局推进
+    // 在 check 阶段运行时 advance 守卫据此拦截——释放晚于该窗会竞态终写 manifest；
+    // 清理窗内新会话的 manifest.tmp 不受影响（新会话 cleanRebuild 自清残留，且其
+    // finalizing 终写远晚于本 rm 完成）
+    state.markTerminal(s)
+    await removeManifestTmp(s.dir)
     s.reject(new SessionError('IO_ERROR', message))
   }
 
-  /** 篇终局推进延后至本 invoke 回复之后（setImmediate=检查阶段，晚于回复的微任务
-   *  与 renderer 侧回复续体/extracting 复位）：complete 的处理器内同步发下一篇
-   *  extract-request 会让事件先于回复到达 renderer——提取器仍在途（extracting
-   *  未复位）按防御分支丢弃请求，串行链死锁（e2e 多篇序列实证 2026-08-27） */
-  function deferOutcome(s: ActiveSession, run: () => Promise<void>): void {
-    setImmediate(() => {
+  /** 篇终局推进延后接线：时序协议=state 件 deferOutcome（setImmediate——INV-18 补条）；失败
+   *  折叠处置链在此组装（failSession 归本件——state 件不吞错不碰会话对象，包装 run 接 catch 后与拆前逐句等价）。 */
+  function deferOutcomeFor(s: ActiveSession, run: () => Promise<void>): void {
+    deferOutcome(() =>
       run().catch((e) => {
         void failSession(s, `提取回传落盘失败：${e instanceof Error ? e.message : String(e)}`)
       })
-    })
+    )
   }
 
   return {
     async exportCorpusSession(input) {
-      if (session !== null) {
+      if (state.current() !== null) {
         throw new SessionError('EXPORT_BUSY', '导出会话进行中，请等待完成后再发起')
       }
-      // preparing：清空重建+逐篇装配 corpus md（失败篇进 errors[] 不进 streaming）
+      // preparing：清空重建+逐篇装配 corpus md（失败篇进 errors[] 不进 streaming）；
       // 显式传入去重（schema 只限 min/max 不限唯一——重复 id 会重复装配+manifest 重复条目）
       const ids = [...new Set(input.paperIds ?? deps.repos.papers.listAllIds())]
       let created!: ActiveSession
@@ -341,7 +203,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
         }
       })
       const active = created
-      session = active
+      state.begin(active)
       sendProgress(active, 'preparing')
       try {
         await cleanRebuild(input.dir)
@@ -353,8 +215,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
             active.done += 1
             continue
           }
-          // file_ref 全路径解析（PaperDetail.fileName 是基名——丢了 xx/yy/ 目录层，
-          // e2e 真环境实证基名 stat 必失败；协议层 fileRefById 同源单点）
+          // file_ref 全路径解析（fileName 是基名丢了目录层，e2e 实证基名 stat 必失败；fileRefById 同源单点）
           const fileRef = deps.repos.papers.fileRefById(id)
           const managedPath =
             fileRef !== null ? deps.fileStore.resolveManagedPath(fileRef) : null
@@ -375,7 +236,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
             annotations: deps.repos.annotations.listByPaper(id),
             aiNotes: orderAiNotes(deps.repos.aiNotes.listByPaper(id))
           })
-          await writeFile(join(input.dir, 'corpus', `${id}.md`), md, 'utf8')
+          await writeCorpusMd(input.dir, id, md)
           active.queue.push(detail)
         }
         await advance(active)
@@ -386,7 +247,7 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     },
 
     async corpusItem(req) {
-      const s = session
+      const s = state.current()
       // 防御：载荷失配（无会话/异会话/异篇）→INVALID_REQUEST（不扰动在途会话）
       if (
         s === null ||
@@ -401,26 +262,24 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
         if (req.kind === 'fulltext') {
           cur.fulltext.push(req.payload)
         } else if (req.kind === 'figure') {
-          const figDir = join(s.dir, 'figures', cur.paperId)
-          await mkdir(figDir, { recursive: true })
-          // renderer 载荷自由串不裸拼路径（路径穿越防御——消毒单源=
-          // services/shared/sanitize，F-DEDUP-01；C-02 safeId 同族）：
-          // id 由应用生成本可信，纵深防御防篡改载荷（annotationId 含 ../ 等）
+          // renderer 载荷自由串不裸拼路径（路径穿越防御——消毒单源=services/shared/sanitize，
+          // F-DEDUP-01；C-02 safeId 同族）：id 由应用生成本可信，纵深防御防篡改载荷（含 ../）
           const name =
             req.figure === 'anno'
               ? `anno-${sanitizePathToken(req.annotationId ?? 'unknown')}.png`
               : `page-${req.page}.png`
-          await writeFile(join(figDir, name), Buffer.from(req.payload, 'base64'))
-          cur.figures.push(`figures/${cur.paperId}/${name}`)
+          cur.figures.push(
+            await writeFigure(s.dir, cur.paperId, name, Buffer.from(req.payload, 'base64'))
+          )
         } else if (req.kind === 'complete') {
           const detail = deps.repos.papers.detailById(cur.paperId)
           if (detail === null) throw new SessionError('INTERNAL', '篇详情在会话中消失')
           // 同步摘牌（防窗内重复终局双推进）+延后推进（回复先于下一篇请求到达）
           s.current = null
-          deferOutcome(s, () => finishPaper(s, cur, { ok: true, detail }))
+          deferOutcomeFor(s, () => finishPaper(s, cur, { ok: true, detail }))
         } else {
           s.current = null
-          deferOutcome(s, () => finishPaper(s, cur, { ok: false, reason: req.reason }))
+          deferOutcomeFor(s, () => finishPaper(s, cur, { ok: false, reason: req.reason }))
         }
       } catch (e) {
         if (e instanceof SessionError && e.code === 'INVALID_REQUEST') throw e
@@ -431,9 +290,8 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
     },
 
     async abortActiveSession(reason: string) {
-      // 迁移表 abort 行：renderer 重载/崩溃（main 存活）→在途会话 failed
-      //（复用 failSession 同型处置——清 tmp+释放单飞锁+reject，无第二套清理）
-      const s = session
+      // 迁移表 abort 行：renderer 重载/崩溃（main 存活）→在途会话 failed（复用 failSession 同型处置——清 tmp+释放单飞锁+reject，无第二套清理）
+      const s = state.current()
       if (s === null) return false
       await failSession(s, reason)
       return true
