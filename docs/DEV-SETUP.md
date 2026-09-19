@@ -8,7 +8,7 @@
 
 | 项 | 要求 | 说明 |
 | --- | --- | --- |
-| Node | **24.x**（engines >=20 但 better-sqlite3 v12.11.1 需 node-v115 预编译，CI 用 20 会源码编译失败——勿改回） | **2026-09-02 起经 Volta 项目锁定**（根治「他应用自动升 D:\nodejs」两现实录 8-29/9-02，Node25 下 verify 11 红=webstorage 污染同指纹两现）：装 volta（`winget install Volta.Volta`）→ `volta install node@24.20.0` → `volta install node@25.2.1`（default=镜像系统现状，shim 拦 PATH 首位故其他应用零影响）→ 项目 pin 已随仓库（package.json `volta` 字段，clone 即生效）。核对：项目内 `node -v`=24.x、项目外=25.2.1；check-quality 版本守卫非 24 即红（CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1）。旧便携目录 `D:\nodejs24`（8-29 方案）退役保留备用 |
+| Node | **24.x**（better-sqlite3 v13 engines node>=22——Node 20 不满足必红，勿改回；v12 时代红因=缺 node-v115 预编译回退源码编译在 runner VS 18 失败，历史存档） | **2026-09-02 起经 Volta 项目锁定**（根治「他应用自动升 D:\nodejs」两现实录 8-29/9-02，Node25 下 verify 11 红=webstorage 污染同指纹两现）：装 volta（`winget install Volta.Volta`）→ `volta install node@24.20.0` → `volta install node@25.2.1`（default=镜像系统现状，shim 拦 PATH 首位故其他应用零影响）→ 项目 pin 已随仓库（package.json `volta` 字段，clone 即生效）。核对：项目内 `node -v`=24.x、项目外=25.2.1；check-quality 版本守卫非 24 即红（CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1）。旧便携目录 `D:\nodejs24`（8-29 方案）退役保留备用 |
 | git | 任意（系统 git / MinGit 均可） | 新机若用 MinGit 须按 §3 配 openssl |
 | 网络代理 | `127.0.0.1:7890`（若新机代理不同，替换下文所有出现处） | GitHub 直连不稳是既有事实 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
@@ -27,8 +27,8 @@ npm ci          # .npmrc 已入库（npmmirror 二进制镜像）；
                 # 首次 require 懒下载被前置到安装阶段，失败在此暴露
 ```
 
-- npm ci 会重建 better-sqlite3 **abi-cache 双 ABI 预编译**（node/electron 两份，
-  `scripts/sqlite-abi.mjs` 自动切换——npm scripts 已接线，无需手工）。
+- better-sqlite3 13.0.3（N-API 版）：prebuilt 随 npm 包直发（prebuilds/），
+  npm ci 即得、Node/Electron 双运行时无需任何切换步骤。
 - **禁止 `npm run dev` 之外的裸 electron 启动**；全部命令收敛=verify/dev/test:e2e。
 
 ## 3. git 本地配置（clone 后必做——不随仓库走）
@@ -75,8 +75,8 @@ npm run build && npm run test:e2e   # 预期默认门 42/42（W2 起=app project
                       # 用 test:e2e:all；e2e 不含在 verify 里，须单独跑）
 ```
 
-- 数字对不上：先看是否 Node 版本≠24 / sqlite-abi 未切换（`npm run test` 内含
-  切换，裸跑 npx vitest 会假红——宪法既有纪律）。
+- 数字对不上：先看是否 Node 版本≠24（裸跑 npx vitest 绕过版本守卫，
+  Node 25 下 jsdom 假红——宪法既有纪律）。
 - locks 报受锁文件被改：新机**禁动** `tests/**`、`src/shared/**`、migrations、
   CI/lint/构建/测试配置（sha256 对账，改须走 [locked-change] 流程）。
 - 真实库位置：`%APPDATA%\Synapse`（R2-SH1 重命名迁移后；旧 `Synapse Remake`

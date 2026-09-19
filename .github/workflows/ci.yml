@@ -23,10 +23,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Node 24（ABI 137）与本地开发一致：better-sqlite3 12.11.1 的预编译
-          # 资产只在 npmmirror 镜像上有 node-v137；Node 20（ABI 115）无预编译
-          # 会回退 node-gyp 源码编译并在 runner 的 VS 18 上失败（首跑实证）。
-          # Electron 运行时不受影响——e2e/build 用 electron-v146 绑定独立切换。
+          # Node 24（ABI 137）与本地开发/volta pin（24.20.0）同口径。
+          # [F-ELE-02] better-sqlite3 13.0.3 起 N-API 化：prebuilt 随 npm 包直发
+          # （prebuilds/，跨 Node/Electron ABI 通用，无需镜像与 postinstall 下载）；
+          # v13 engines node>=22——Node 20 不满足必红，勿改回（v12 时代红因=缺
+          # node-v115 预编译回退源码编译在 runner VS 18 失败，首跑实证）。
           node-version: 24
           cache: npm
 

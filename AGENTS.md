@@ -248,19 +248,27 @@ development Model Selection+loop-engineering references/06）；**架构与
   **Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
   用例结构性假红，node24 对照 11/11 绿实证）——check-quality 版本守卫已拦（非 24 即
   红；CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用）。
-  engines 仍 >=20，但 CI 用 20 会因 better-sqlite3 v12.11.1 缺 node-v115
-  预编译而源码编译失败——首跑实证，勿改回）
+  engines 仍 >=20，但 CI 用 20 会因 better-sqlite3 v13 engines node>=22 不满足
+  而红（v12 时代红因=缺 node-v115 预编译回退源码编译在 runner VS 18 失败——
+  首跑实证）——勿改回）
 - **升 Electron 前先查 prebuild 矩阵**（教训实证 2026-08-22）：Electron 43（ABI 148）
   在 better-sqlite3 12.11.1 上无 win32 预编译，而带 v148 的 12.11.2/12.12.0 只有
   GitHub release 未发 npm、v13.x 无任何 win 预编译——故落 42（v146 现成）。
-  版本→ABI 映射数据源：npm 包 `node-abi`（registry.npmmirror.com 可下）
+  版本→ABI 映射数据源：npm 包 `node-abi`（registry.npmmirror.com 可下）。
+  **勘误（2026-09-19，F-ELE-02）**：前句「v13.x 无任何 win 预编译」失准——当时
+  调查只查了 GitHub release 资产，漏查 npm 包内 `prebuilds/` 新分发机制（v13 起
+  prebuilt 随 npm 包直发）；v13.0.3 已于本仓落地。教训本体保留且加严：prebuild
+  核查数据源**必须含 npm 包内容**（tar -tzf / npm pack --dry-run），不能只查
+  GitHub release 资产
 - **Electron 42 起 npm 包无 postinstall**（41 尚有、42 移除，实证）：二进制改为首次
   require 时同步懒下载（卡在意想不到的位置）——postinstall 已显式串 `install-electron`
   （幂等，dist 在则秒过），把下载失败暴露在 npm install 阶段；bin 由 electron 包提供
 - 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
-  （electron + better-sqlite3），`scripts/sqlite-abi.mjs` 下载 GitHub 优先、镜像兜底
-- better-sqlite3 是 V8 直接绑定（随 Node/Electron ABI 变化，**不是** N-API 通用件）；
-  双 ABI 由 `scripts/sqlite-abi.mjs` 管理（abi-cache 两份预编译，npm scripts 自动切换）
+  （electron）
+- better-sqlite3 13.0.3 起为 N-API 版本（node-addon-api），同一份绑定跨
+  Node/Electron ABI 通用（2026-09-19 F-ELE-02 落地，SQLite 3.53.4；prebuilt 随
+  npm 包直发 prebuilds/win32-x64.node，npm 安装即得）；v12 时代的 V8 直接绑定
+  双 ABI 切换机制（scripts/sqlite-abi.mjs）已删除退役
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）
 - git 位置因设备而异（旧机曾用 `E:\class\智慧水务\tools\MinGit`——**新设备以
   docs/DEV-SETUP.md §3 配置为准**，路径占位符化 2026-08-27 设备迁移）；远端
