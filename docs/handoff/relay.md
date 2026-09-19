@@ -2086,3 +2086,54 @@
   新火 id（锚定计数=1 守卫过；历史日志旧 id 存量不动）。
 - 板上既有条款自动生效：门一 k2 承载指令（板头执行指令原文照携，增补十二留存）
   与 UI 开批通道经验沿用历任实测累积。
+
+### 增补十四 — 2026-09-19T23:27:14Z（ELE03 验收场销账——非接力批纯追加，板状态字段零改动）
+- 场次定位：Electron 44 升级验收+欠账清理场（用户在场轮），**非接力批**——板 DONE 37/37
+  未认领，claim/状态/计数字段零触碰；本条为批次日志区纯追加。开工记录（含技能清点）+
+  证据件登记制驻仓外档案区。门一 k2 随场指令在携；本场零三岗派发，账本零新行（如实）。
+- **A 段销账三件**：
+  - ② default_app.asar 42 残留治愈：npm install EXIT=0 但**实测不自愈**（electron/
+    install.js isInstalled() 以 dist/version+electron.exe 判真即秒退——b32「次会话
+    npm install 自愈」预判证伪，机制断言须读实现）；强制重提取链=rm dist+path.txt→
+    install.js（裸跑 fetch failed——须复原 npm_config_electron_mirror 才命中缓存键）→
+    extract-zip 仍红（先删后写语义撞宿主句柄）→终径=Win32 CopyFile CREATE_ALWAYS
+    原地截断重写（写共享在/删共享缺，实测）+全成员 unzip 补齐+path.txt 手补；终态
+    node_modules/electron/dist 与 v44.4.3 官方 zip **全清单逐件零失配**
+    （default_app.asar 111073(42 版)→110862(44 版)），install.js 复跑 exit 0
+    （幂等短路恢复，今后 npm install 不再重演失败）。
+  - ③ verify 基线：EXIT=0 零漂移——Test Files 167/Tests 1724/locks 244/指纹门
+    183·1768·5368·skip14/工单 open 1/renderer 产物 index-DW6Z3WXp.js 1,388.14kB
+    同名同尺寸（全数脚本实测，档 ele03-acc-verify.log）。
+  - ① dist_new 清理受阻欠账：清至仅剩 win-unpacked/resources/app.asar 一件——锁主
+    实测=**ZCode 宿主进程自身**（PID 34376，Restart Manager 取证，疑内嵌索引器）；
+    rm/文件重命名/目录改名/NT 层 POSIX 语义删除（FileDispositionInformationEx→
+    0xC0000043 共享违例）全拒；**宿主运行期不可删**，欠账携带（宿主关闭后手删即可）。
+- **根因新登记（本机结构性环境事实）**：宿主索引器对仓内 *.asar 持「读+写共享、
+  无删除共享」句柄（dist_new 旧产物/dist 旧产物/node_modules electron dist 三处
+  同因实测）——凡 electron-builder 清 staging 的 unlink 必撞。b32「dist/smoke
+  环境阻塞」欠账由此精确归因；**修法口径更新：管理员终端单独跑不够（特权移不了
+  他进程句柄），须先关闭 ZCode 宿主**。
+- **B 段（渲染人工视检）未完成，欠账原样**：dev 起后用户暂离未作答，应用已净停
+  （无孤儿进程）；像素级人工视检仍归用户在场轮（下会话 npm run dev 即起）。
+- **C 段（打包端到端）双因在档+用户裁决执行中**：① winCodeSign 解包 darwin 段
+  symlink 无特权红（非管理员；7za -snld 两链 libcrypto/libssl.dylib；重试每轮新
+  随机目录——缓存区 numeric 尝试目录实测现值 18）；② dist/win-unpacked/resources/
+  app.asar 被宿主句柄锁死（同上根因）。会话内仓外输出目录诊断跑（archive/
+  dist-ele03-acc）两跑均停于①（build 段正常）。用户裁决「按此执行」：本增补落档
+  提交后**关闭 ZCode→管理员终端 npm run dist→重开**，成功标志=dist/ 产出
+  Synapse-0.1.0-setup.exe；下会话补验产出+smoke:installer+增补十五。
+- **R2-SH1 预警（代码级已坐实、证据级待 smoke 实跑）**：installer-smoke.mjs:49-50
+  APP_EXE='Synapse Remake.exe'/UNINSTALL_EXE 同族 vs 现 productName=Synapse——
+  smoke 预期红；另 **dist/ 现存改名前旧包 Synapse-Remake-0.1.0-setup.exe**，
+  smoke 缺省取「最新 mtime *-setup.exe」存在假阳性命中旧包风险——补验时须
+  --installer 显式指向新包或先清旧件；立票修复（[locked-change] 单链+
+  DEVELOPMENT.md:88 勘误）归用户点单。
+- 可选呈报（归用户点单）：corpus-export e2e flake 线台账尾条 count 5（status=
+  unpursued；2026-09-19 第 5 观测定向复跑也红，时序敏感竞争嫌疑=streaming 起跑
+  再发起；F-EXPORT-01 开工须携本批指纹核查）是否立排查票。
+- 证据件登记（仓外 E:/zcode_md/synapse-archive/scripts-audits/，登记制）：
+  ele03-acc-opening.md、ele03-acc-install.log、ele03-acc-verify.log、
+  ele03-acc-dist.log、ele03-acc-dist-override.log、ele03-acc-dist-override2.log、
+  ele03-acc-find-locker.ps1、ele03-acc-posix-delete.ps1、ele03-acc-asar-heal.ps1。
+- 教训：①「机制断言先读实现再落笔」（自愈预判 vs isInstalled 源码两说）；②本机
+  asar 句柄族完整解法集=原地截断重写（内容修复）/关宿主（删除修复），按需选用。
