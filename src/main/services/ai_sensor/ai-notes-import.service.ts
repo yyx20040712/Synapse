@@ -38,7 +38,8 @@
  * - export interface AiNotesImportService { importAll(); listByPaper(paperId) }
  * - IPC 面：ai-notes/import + ai-notes/list 两通道，域归属=新立 ai_sensor 域
  *   （2026-08-27 用户裁决，ADR-0017）
- * - 交付面：ipc/ai_sensor.ts（域装配，四通道委托）+services/index.ts 装配
+ * - 交付面：ipc/ai_sensor.ts（ai_notes_import 键两通道委托——F-SENSOR-01 三键
+ *   平铺，原「四通道委托」系拆键前历史形态）+services/index.ts 三键装配
  *   +ai_notes.repo.ts 头注声明行修订
  *
  * ── 架构层 ──

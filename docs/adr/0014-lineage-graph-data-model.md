@@ -90,3 +90,14 @@ CREATE TABLE lineage_edges (
 3. **含金量摘要非 draft 面**：citedByCount/venueTier 来自 papers 增强缓存+
    venue-tier 受锁映射（ENR-01/02 交付），graph 通道 join 透出（渲染层零
    额外取数）——不进 draft 协议（草稿只承载人工策展语义字段）。
+
+## 修订记录 v1.2（2026-09-19 F-DOCGOV-01：DDL 交叉注记）
+
+> 上方「数据模型」段 DDL=**v1 初版决策快照**，非现行库结构全文。现行演进：
+> - `006_lineage_ref_edges.sql`：edges 加 `kind` 列（tree/ref/manual 三 kind
+>   终态——ref=R2-LG12 综述边豁免单父、manual=F-LG15 人工补父不限条数）；
+>   `UNIQUE(from_node, to_node)` 系 **004 既有约束原样不动**（006 未改）——
+>   同端点对唯一天然限定同 from+to 仅一种 kind（DDL 天然收口）；树约束仍在
+>   service 层非 DDL CHECK（本 ADR 原则维持）。
+> - 行为终态与跨格序列的单一真相源=**INV-27**（含三 kind 全景表）；DDL 现文
+>   =`src/main/db/migrations/004/006/007`。本文保留原始决策叙述不回改。

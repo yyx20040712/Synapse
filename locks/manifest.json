@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-19T02:52:24.4697440Z",
+    "generatedAt":  "2026-09-19T04:24:42.7677517Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "95e54b1b23ce402f48d75040f82b1eeaf0f85bb81e9aec871f4783732c163a14"
+                      "sha256":  "c1e83179443463fa6a7f24f029c01801f8413b5c88bf11a0111d945e4ac4c078"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -84,6 +84,22 @@
                   {
                       "path":  "scripts/audits/b26-time02-flip.mjs",
                       "sha256":  "8d1dc5876a7db4d756056a7270845757ee4e34d58084f2878919f4089faec027"
+                  },
+                  {
+                      "path":  "scripts/audits/b27-claim.mjs",
+                      "sha256":  "a4d55f3d8ca8a7c6817ebc75326cc46f0184b34ea50793d605957d5cb1986fb5"
+                  },
+                  {
+                      "path":  "scripts/audits/b27-p7-anchors.mjs",
+                      "sha256":  "8f372081c6780b187ecad7baea829b45fdc83c9c3a559526d658312cb763e9e3"
+                  },
+                  {
+                      "path":  "scripts/audits/b27-relay-move.mjs",
+                      "sha256":  "09ca6a5f3a61b980fbd560ea724aa2d878f10c3c0b442d0da1ee30aa7776ecbd"
+                  },
+                  {
+                      "path":  "scripts/audits/b27-tickets-flip.mjs",
+                      "sha256":  "344ef248324ee1370163a707fff0ecf8cf18d8ab657f841bead98de48cfe2b29"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",

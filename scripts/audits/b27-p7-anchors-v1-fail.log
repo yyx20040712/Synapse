@@ -1,0 +1,16 @@
+file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-p7-anchors.mjs:22
+    for (const m of header.matchAll(/^\/\/\s*b3:\s*(P7-[A-Z])\s*$/m)) b3Scopes.add(m[1])
+                           ^
+
+TypeError: String.prototype.matchAll called with a non-global RegExp argument
+    at String.matchAll (<anonymous>)
+    at walk (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-p7-anchors.mjs:22:28)
+    at walk (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-p7-anchors.mjs:17:38)
+    at walk (file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-p7-anchors.mjs:17:38)
+    at file:///E:/class/%E6%99%BA%E6%85%A7%E6%B0%B4%E5%8A%A1/Synapse_remake/scripts/audits/b27-p7-anchors.mjs:25:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.20.0
+M2_EXIT=1
