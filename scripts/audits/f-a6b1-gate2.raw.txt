@@ -1,1 +1,0 @@
-{"verdict":"PASS","endorsement":"1c2d IoU 追认=ENDORSE——0.9999→0.9982 仅发生在分数 view 页（[0,0,425.52,647.28]）且由旧 rawDims 的 CSS÷scale floor 逼近改为精确 view 所致，3882/s3base 全指标逐位不变、A 与未取整 B2 域仅差约 0.5px 右缘，故属度量精度改进而非劣化。","findings":[],"summary":"修复本体（duckViewport 真值化、rotatedContainerBox 官方变换等价、geometry 第三参通道及测试断言）可维持门一结论；门一 W1/W2/N1/N2/N3 五项回炉处置均已闭合且未引入新矛盾；1c2d 边际追认成立，故「过——阶段 3 放行」的决策门结论成立。"}

@@ -1,9 +1,0 @@
-npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-
-Running 1 test using 1 worker
-
-  ok 1 tests\e2e\reader-reading-time.spec.ts:65:1 › P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场 (3.3s)
-
-  1 passed (3.9s)
-exit=0

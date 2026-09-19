@@ -1,2 +1,0 @@
-⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
-      Tests  14 failed | 2 passed (16)

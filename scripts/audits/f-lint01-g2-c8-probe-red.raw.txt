@@ -1,6 +1,0 @@
-
-> synapse@0.1.0 quality:check
-> node scripts/check-quality.mjs
-
-quality 检查未通过：
-  - src/renderer/tmp-probe.css: CSS 字号字面量 1 处（单源=--fs-* token；样例：font-size: 12p）

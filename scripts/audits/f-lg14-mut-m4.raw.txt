@@ -1,4 +1,0 @@
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
-[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/lineage-tags.test.ts[2m > [22mF-LG14 导入落库（草稿带为主，导入即有）[2m > [22m同节点同名标签去重（主控裁决 7）：草稿 [a,a,b] 落库 [a,b]
-[31m[1m[7m FAIL [27m[22m[39m tests/unit/services/lineage-tags.test.ts[2m > [22mF-LG14 导入落库（草稿带为主，导入即有）[2m > [22mservice upsertNode 写面同守去重；tags null 二次 upsert 清面
-[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (12)[39m

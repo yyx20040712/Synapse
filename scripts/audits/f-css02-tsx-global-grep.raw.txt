@@ -1,6 +1,0 @@
-# F-CSS-02 tsx 全域评估（票面「同步升级评估」落点——grep 全部 src/**/*.tsx 不限四件）
-# 模式1: fontSize 数值字面量（现行 FS_TSX 锚同源形态）
-Wed Sep  9 03:21:11     2026
-mode1 exit=1 (1=零匹配)
-# 模式2: text-[数字] arbitrary 字号 class
-mode2 exit=1 (1=零匹配)

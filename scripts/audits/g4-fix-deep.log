@@ -1,9 +1,0 @@
-src/renderer/features/reader/state/reader.store.ts:84  '../../api/client' -> '../../../api/client'
-src/renderer/features/reader/state/reader.store.ts:87  '../../shared/ui/toast-store' -> '../../../shared/ui/toast-store'
-src/renderer/features/reader/state/annotation-undo.ts:61  '../../api/client' -> '../../../api/client'
-src/renderer/features/reader/state/ai-notes.store.ts:26  '../../api/client' -> '../../../api/client'
-src/renderer/features/reader/state/CorpusExtractor.ts:74  '../../../shared/app-error' -> '../../../../shared/app-error'
-src/renderer/features/reader/state/CorpusExtractor.ts:75  '../../../shared/ipc/schemas' -> '../../../../shared/ipc/schemas'
-src/renderer/features/reader/state/CorpusExtractor.ts:76  '../../../shared/models/annotation' -> '../../../../shared/models/annotation'
-src/renderer/features/reader/state/tab-dirty.ts:45  '../notes/notes.store' -> '../../notes/notes.store'
-=== DEEP FIX DONE: 8 lines (expected 8) ===

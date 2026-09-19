@@ -1,8 +1,0 @@
-npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-synapse@0.1.0 E:\class\智慧水务\Synapse_remake
-├── postcss@8.5.26
-└─┬ vite@5.4.21
-  └── postcss@8.5.26 deduped
-
-NPM_LS_EXIT=0

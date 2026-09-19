@@ -1,7 +1,0 @@
-{
-  "verdict": "PASS",
-  "findings": [
-    {"severity": "NIT", "file": "tests/unit/renderer/paper-detail-clip.test.tsx", "line_hint": "E6 写失败用例", "issue": "N1 修复引入的 console.error 在 E6 用例中真实触发（stub 返回 ok:false → unwrap 抛 ApiClientError → isClip 分支打 console），CI/本地测试输出会出现一条预期内错误日志噪音", "evidence": "usePaperDetailActions.ts catch 分支「console.error('[PaperDetailActions] 剪贴板导出失败', e)」+ 测试 E6「mockResolvedValue({ ok: false, error: ... })」", "suggestion": "E6 用例内 vi.spyOn(console, 'error').mockImplementation(() => {}) 收口（顺带可锚一条 console 调用断言，把 N1 观测点变成测试面），或在文件头注释说明该噪音为预期"}
-  ],
-  "summary": "三修定点复核全部 ADDRESSED：N1 console.error 已补（isClip 分支、格式符 [模块] 中文 惯例）、N2/N3 在 base→final 净差 diff 中自然消解（死导出与 C-06 票外叙述的增删相抵，终态只含票内增量，与自报及 142/1231 零用例变化一致）、W1/N4 按主控裁决登记/记档不修。新破坏扫描干净：api-surface Res count.min(1) 与 handler 回传 paperIds.length 契约自洽、schema min(1) 空选集第二道门有真实 INVALID_REQUEST 红锚、E5 先构建后写/E7 零 saveFile 断言均为实质锚非恒真、E4 busy 门 harness 直测设计诚实（注释明示裸按钮不带 disabled 的理由）。判 PASS。"
-}

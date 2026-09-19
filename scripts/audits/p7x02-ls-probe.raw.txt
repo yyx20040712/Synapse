@@ -1,4 +1,0 @@
-firstRun = {"writable":true,"readback":"p7x02-ls-1788538002447","origin":"file:","keys":1}
-afterRestart = {"persisted":"p7x02-ls-1788538002447","keys":1}
-VERDICT = "PASS——file:// localStorage 可写且跨重启持久（设计 B 案存储面成立）"
-exit=0

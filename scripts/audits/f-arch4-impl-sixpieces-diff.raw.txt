@@ -1,3 +1,0 @@
-=== 六件逐行等价 diff：拆分前 anchor 134-271 行 vs anchor-serialize.ts 48-185 行 ===
---- 命令：diff <(sed -n '134,271p' 备份) <(sed -n '48,185p' 新文件) ---
-DIFF_EXIT=0 (0=逐行原样，138 行六件含块间空行与注释完全一致)

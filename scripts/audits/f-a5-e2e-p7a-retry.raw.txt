@@ -1,9 +1,0 @@
-npm warn Unknown project config "better_sqlite3_binary_host_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-
-Running 2 tests using 1 worker
-
-  ok 1 tests\e2e\reader-text.spec.ts:522:1 › P7-A 交互：侧栏分隔条拖拽（SplitPane 集成） (1.8s)
-  ok 2 tests\e2e\reader-text.spec.ts:550:1 › P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成） (1.7s)
-
-  2 passed (4.0s)

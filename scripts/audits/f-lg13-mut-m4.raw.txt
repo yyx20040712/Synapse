@@ -1,3 +1,0 @@
- FAIL  tests/unit/renderer/lineage-canvas.test.tsx > F-LG13 题名滚轮归属（卡面 g 根原生 wheel 委托——题名溢出归滚动/未溢出归 zoom） > 题名溢出节点上滚轮→题名 scrollTop 恰增 deltaY+画布 zoom 被阻断；未溢出→zoom 正常
- FAIL  tests/unit/renderer/lineage-canvas-visual.test.tsx > R2-LG11 浅色严谨板（浅色宿主/白卡边框编码/foreignObject 换行/层带浅色/边三型/图例） > F-LG13 题名滚动区（U2a 改向）：长题名 HTML div 完整在 DOM（无 line-clamp）+overflowY auto+细滚动条+统一卡高 110+底行占位+title 全文 tooltip
-      Tests  2 failed | 30 passed (32)

@@ -1,7 +1,0 @@
-=== F-A11 门二轮回炉变异红证 3（W-A 修复面，cp 备份法）===
---- 变异 D：autosaveComment busyRef 守卫 if (busyRef.current) → if (false)（反向竞态用例应红：autosave 不再被 busy 挡）---
-[31m   [31m×[31m F-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22mW-A 竞态（反向）：手动保存在途 busy → autosave 到期被挡，store 终值=手动值[90m 7[2mms[22m[31m[39m
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
-[31m[1m[7m FAIL [27m[22m[39m tests/unit/renderer/annotation-popups-autosave.test.tsx[2m > [22mF-A11 接线 —— AnnotationPopups 自动保存（静默变体）[2m > [22mW-A 竞态（反向）：手动保存在途 busy → autosave 到期被挡，store 终值=手动值
---- 还原 D：diff 备份 ---
-RESTORE DIFF EMPTY（还原确认）
