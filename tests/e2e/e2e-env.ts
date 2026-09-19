@@ -8,7 +8,6 @@
  */
 import { _electron as electron, type ElectronApplication } from '@playwright/test'
 import { spawn } from 'node:child_process'
-import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 export function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
@@ -47,9 +46,9 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
 }
 
 /**
- * 种子落库（better-sqlite3 双 ABI 处理——reader-text.spec 头注存档同型）：
- * 备份 electron 绑定→子进程用 node ABI 落库→finally 还原（Windows 文件锁
- * 决定必须子进程）。
+ * 种子落库（子进程跑 seed-paper.mjs——Windows 文件锁决定不经主进程 require）。
+ * [F-ELE-02] better-sqlite3 13.0.3 起 N-API 单绑定跨 Node/Electron ABI 通用，
+ * v12 时代的 abi-cache 换绑段已删除（子进程直接 require 即可）。
  */
 export async function seedPaperRow(
   userData: string,
@@ -58,25 +57,12 @@ export async function seedPaperRow(
   title: string,
   id = 'e2e-seed-paper'
 ): Promise<void> {
-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
-  const cacheDir = join(pkgDir, 'abi-cache')
-  const wanted = `node-v${process.versions.modules}`
-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
-  const electronBinding = await readFile(releaseBinding)
-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
-  try {
-    await runSeedScript({
-      ...process.env,
-      SEED_DB: join(userData, 'synapse.db'),
-      SEED_FILE_REF: fileRef,
-      SEED_SHA: sha,
-      SEED_TITLE: title,
-      SEED_ID: id
-    } as NodeJS.ProcessEnv)
-  } finally {
-    await writeFile(releaseBinding, electronBinding)
-  }
+  await runSeedScript({
+    ...process.env,
+    SEED_DB: join(userData, 'synapse.db'),
+    SEED_FILE_REF: fileRef,
+    SEED_SHA: sha,
+    SEED_TITLE: title,
+    SEED_ID: id
+  } as NodeJS.ProcessEnv)
 }
