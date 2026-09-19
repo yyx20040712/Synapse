@@ -170,6 +170,14 @@
 
 ## 批次日志（追加，勿改写）
 
+### batch 26 增补二 — 2026-09-19 09:45（用户裁决：阅读时长功能移除——F-TIME-01 档位挂起项终结+F-TIME-02 立案）
+- **背景**：增补一 Ruling ② 用户对 F-TIME-01 降档暂缓后追问「为什么会有统计阅读时长的业务需求」→主控解释（功能面=PaperDetailPanel 一行显示+ROADMAP P7E-E 预留点清扫正向条目；复杂度系 outbox 搭车非需求本身）→用户条件裁决：「其他文献管理软件会统计阅读时长吗？如果没有的话，把这个无意义功能取消」。
+- **查证（WebSearch 双查）**：Zotero 无内置（官方论坛建议手动 read/unread 标签，计时需第三方插件 zotero_timer/WakaTime）；Mendeley/EndNote/ReadCube Papers 均无内置时长统计（聚焦管理/标注/引用）。**主流文献管理软件无一内置→条件成立，裁决生效=取消阅读时长功能。**
+- **边界（主控预裁）**：删计时器（reading-time.ts 本体）+落库链（reading_seconds 列走 009 DROP COLUMN 新增 migration——008 已合入不可改=CI 锁硬规则/papers.repo updateReadPage 第三参/schemas secondsDelta 载荷/shared PaperDetail.readingSeconds）+显示行（PaperDetailPanel「阅读」Row+reading-time-format.ts）；**页码进度链零触碰**（last_read_page=「上次读到哪页」，ReadCube 等确有此功能，保留）——**outbox 机制保留**（P7X-02 后为页码三收尾口通道「页码旁路消除」，仅删时长载荷：OutboxEntry.seconds 字段/enqueueReaderProgress 三参化二参/chunkSeconds/复合 flusher 退化页码单发）；reading-time-* 件名保留防改名面扩大（头注说明沿革）。
+- **F-TIME-01 档位裁决终结**：五档降档对象（时长链）不复存在——评估报告存档（docs/reports/2026-09-18_time-chain-prestudy.md），registry F-TIME-01 summary 追加终结注记；F-TIME-01 遗留 INV-57（时长账本唯一宿主）随 F-TIME-02 退役登记。
+- **立案**：F-TIME-02（阅读时长功能移除，open/strong，中票，[locked-change][test-refactor]——受锁面=shared 模型+schemas+migrations 新增+受锁测试删改 unit 6 件+e2e 2 件+fixtures 路过面+test-surface 指纹门收紧豁免 reason=本裁决 rulingLink）；执行=本会话手动领批（火已停，用户直接指令=有效开工授权），三屋管道照走。
+
+
 ### batch 26 增补一 — 2026-09-19 09:20（用户裁决三项落板——b26 收口后主控呈裁，AskUserQuestion 三问）
 - **Ruling ①（kimi 恢复补跑，batch 20 立/b24 b25 加实例）：销账不补跑（用户裁决）**——b20/b24/b25 三批 deepseek 兜底位门一结论接受，Ruling 闭合。依据=三批门二均独立复算未采信门一转述（b24 反证新增 P1-1=去相关工具面有效）+兜底位系 org-config 明文回退设计非降标+kimi 额度留后续票常态门一承载。历史立案行（batch 20/24/25 日志）保持原样勿改写，本段即闭合档。
 - **Ruling ②（F-TIME-01 降档档位，batch 24 呈裁）：用户暂缓（「我再想想」）——挂起待裁**。不阻塞接力（第六波照常）；实施票暂不立案，用户后裁任一档（0/1/2a/2b/3）时落档随批执行——呈裁材料=docs/reports/2026-09-18_time-chain-prestudy.md §5 全文常在。
