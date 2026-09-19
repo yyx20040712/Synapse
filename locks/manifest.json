@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-19T04:24:42.7677517Z",
+    "generatedAt":  "2026-09-19T09:53:11.6101516Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -100,6 +100,18 @@
                   {
                       "path":  "scripts/audits/b27-tickets-flip.mjs",
                       "sha256":  "344ef248324ee1370163a707fff0ecf8cf18d8ab657f841bead98de48cfe2b29"
+                  },
+                  {
+                      "path":  "scripts/audits/b28-claim.mjs",
+                      "sha256":  "c2c1d31886813ca871c819544a529f63e2f5f9dfb89a4f1add8f7921c98d10ae"
+                  },
+                  {
+                      "path":  "scripts/audits/b28-relay-closeout.mjs",
+                      "sha256":  "f05ae46e22f34a17c4aafccd980c90a4899cc2bba5f37443a7cc1a38f598f0f9"
+                  },
+                  {
+                      "path":  "scripts/audits/b28-tickets-flip.mjs",
+                      "sha256":  "d558c57d60fa5247289a2716978da66ee6b4871f598263dc2fce3ccfc47f7659"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
