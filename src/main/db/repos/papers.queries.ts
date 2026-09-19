@@ -3,7 +3,8 @@
  * 从 papers.repo 拆出的查询 SQL 常量+行形状+行映射（repo ≤300 行关卡配套，
  * 纯查询/映射无行为逻辑）；消费面=papers.repo 的 searchSummaries/
  * listSummariesByIds/detailById。ENR-01：DETAIL_SQL 三缓存列与
- * DetailRow 三字段在此维护；P7E-05：reading_seconds 同此（DETAIL_SQL 直读）。
+ * DetailRow 三字段在此维护。[F-TIME-02] reading_seconds 列已随 2026-09-19
+ * 用户裁决移除（009 DROP COLUMN——008 加列沿革见迁移件头注）。
  */
 import { escapeFtsQuery } from '../fts'
 import type {
@@ -41,7 +42,6 @@ export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, 
 export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
   p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
   p.cited_by_count, p.cited_by_fetched_at, p.cited_by_count_source,
-  p.reading_seconds,
   ${AGG_COLS.trim()}
   FROM papers p WHERE p.id = ?`
 
@@ -61,8 +61,6 @@ export interface DetailRow extends SummaryRow {
   cited_by_count: number | null
   cited_by_fetched_at: string | null
   cited_by_count_source: string | null
-  /** P7E-05 阅读时长秒数（008 迁移列 NOT NULL DEFAULT 0——读面恒有值） */
-  reading_seconds: number
 }
 
 /** LIKE 兜底转义：% _ 与转义符 \ 本身 */

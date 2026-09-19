@@ -45,10 +45,9 @@ export const paperDetailSchema = paperSummarySchema
     // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）
     citedByCount: z.number().int().optional(),
     citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
-    citedByCountSource: paperSourceSchema.optional(), // 命中的瀑布源
-    // P7E-05 阅读时长（008 迁移列 reading_seconds；detailById 直读——必填：
-    // NOT NULL DEFAULT 0 读面恒有值）
-    readingSeconds: z.number().int().min(0)
+    citedByCountSource: paperSourceSchema.optional() // 命中的瀑布源
+    // [F-TIME-02] 阅读时长字段 readingSeconds 已随 2026-09-19 用户裁决移除
+    // （列由 009 迁移 DROP；沿革=P7E-05 008 加列→F-TIME-02 009 删列）
   })
   .strict()
 export type PaperDetail = z.infer<typeof paperDetailSchema>

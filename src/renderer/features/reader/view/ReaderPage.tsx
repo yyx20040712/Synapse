@@ -31,9 +31,10 @@
  *   期望：切布局不丢位置）
  * - P7E-03 页内搜索装配：useReaderSearch（fileUrl 键效应清面板/ctrl+f/
  *   翻页联动注入/受控面板节点）→ ReaderToolbar searchBox slot
- * - P7E-05 阅读时长装配：useReaderReadingTime（时长账本+复合 flusher——
- *   进度页+时长账单通道合并）+useReadingTimeWiring（ready×active 计时门/
- *   visibilitychange/卸载 dispose）；装配块驻 reading-time.ts（组件行数关卡）
+ * - [F-TIME-02] 阅读时长功能移除（2026-09-19 用户裁决）后：进度落库=outbox
+ *   页码单通道（useReaderProgressOutbox 装配页码 flusher+spView dispose 尾账
+ *   改道——原时长账本/复合 flusher/计时门接线已随 reading-time.ts 删除）；
+ *   装配块驻 reading-time-setup.ts（组件行数关卡）
  * ── 接口层 ──
  * - export function ReaderPage(): JSX.Element
  * ── 架构层 ──
@@ -52,8 +53,7 @@ import { useReaderSearch } from './useReaderSearch'
 import { useReaderStore } from '../state/reader.store'
 import { readActiveTab, useActiveTab } from '../state/useActiveTab'
 import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
-import { useReaderReadingTime } from '../time/reading-time-setup'
-import { useReadingTimeWiring } from '../time/reading-time'
+import { useReaderProgressOutbox } from '../time/reading-time-setup'
 import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
 import { ReaderPageView } from './ReaderPageView'
 import { showToast } from '../../../shared/ui/Toast'
@@ -87,13 +87,11 @@ export function ReaderPage(): JSX.Element {
   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
   // F-03 滚动进度状态机（装配工厂闭包 scrollAreaRef；接线见 useScrollProgressWiring）
   const spProg = useMemo(() => createReaderScrollProgress(scrollAreaRef), [])
-  // P7E-05 时长账本+复合 flusher（装配块驻 reading-time.ts——组件行数关卡配套；
-  // 计时门接线 R3/R4/R7/R10+进度时长单通道合并 Design 裁决）；P7X-02 R7 并入：
-  // spView=dispose 尾账页码改道 outbox 的包装视图（其余面直通）——wiring 消费
-  // 包装视图，页码旁路消除（单队列 seq 序）
-  const { rt: rtTime, flusher: compositeFlusher, spView } = useReaderReadingTime(spProg)
-  useScrollProgressWiring(spView, fileUrl, paperId, columnScroll, compositeFlusher)
-  useReadingTimeWiring(rtTime, paperId, fileUrl !== null)
+  // 进度落库=outbox 页码单通道（[F-TIME-02] 时长移除后装配块驻
+  // reading-time-setup.ts——组件行数关卡配套）；spView=dispose 尾账页码改道
+  // outbox 的包装视图（其余面直通）——wiring 消费包装视图（单队列 seq 序）
+  const { flusher: pageFlusher, spView } = useReaderProgressOutbox(spProg)
+  useScrollProgressWiring(spView, fileUrl, paperId, columnScroll, pageFlusher)
   // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
   const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)
 

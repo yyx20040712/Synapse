@@ -1799,21 +1799,17 @@
           ]
         },
         {
-          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）\"]",
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段\"]",
           "describePath": [
             "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
           ],
-          "title": "saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）",
+          "title": "saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段",
           "markers": [],
           "line": 312,
           "assertions": [
-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 0 }).success).toBe(true)",
-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3600 }).success).toBe(true)",
             "expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)",
-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3601 }).success).toBe(false)",
-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: -1 }).success).toBe(false)",
-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 1.5 }).success).toBe(false)",
-            "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)"
+            "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)",
+            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 60 }).success).toBe(false)"
           ]
         },
         {
@@ -1823,7 +1819,7 @@
           ],
           "title": "importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）",
           "markers": [],
-          "line": 323,
+          "line": 321,
           "assertions": [
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(1) }).success).toBe(true)",
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(100) }).success).toBe(true)",
@@ -1839,7 +1835,7 @@
           ],
           "title": "exportSelection：paperIds 1/1000 过、0/1001 拒",
           "markers": [],
-          "line": 332,
+          "line": 330,
           "assertions": [
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1) }).success).toBe(true)",
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1000) }).success).toBe(true)",
@@ -1854,7 +1850,7 @@
           ],
           "title": "corpusSession：paperIds 缺省过（全库）、0 条/1001 条拒",
           "markers": [],
-          "line": 340,
+          "line": 338,
           "assertions": [
             "expect(S.corpusSessionReqSchema.safeParse({}).success).toBe(true)",
             "expect(S.corpusSessionReqSchema.safeParse({ paperIds: ['p1'] }).success).toBe(true)",
@@ -1869,7 +1865,7 @@
           ],
           "title": "标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界",
           "markers": [],
-          "line": 349,
+          "line": 347,
           "assertions": [
             "expect(S.tagNameReqSchema.safeParse({ name: '课' }).success).toBe(true)",
             "expect(S.tagNameReqSchema.safeParse({ name: '课'.repeat(50) }).success).toBe(true)",
@@ -1887,7 +1883,7 @@
           ],
           "title": "noteSave 标题界=NOTE_TITLE_MAX 常量接线：N 过、N+1 拒（INV-11 单一真相源）",
           "markers": [],
-          "line": 359,
+          "line": 357,
           "assertions": [
             "expect(S.NOTE_TITLE_MAX).toBe(200)",
             "expect(S.noteSaveReqSchema.safeParse({ paperId: 'p1', title: '题'.repeat(S.NOTE_TITLE_MAX), contentMd: '' }).success).toBe(true)",
@@ -1901,7 +1897,7 @@
           ],
           "title": "extractRequestEvent：annotations 上界 5000 过、5001 拒",
           "markers": [],
-          "line": 365,
+          "line": 363,
           "assertions": [
             "expect(S.extractRequestEventSchema.safeParse(payload(5000)).success).toBe(true)",
             "expect(S.extractRequestEventSchema.safeParse(payload(5001)).success).toBe(false)"
@@ -1914,7 +1910,7 @@
           ],
           "title": "openExternal：url 长度界 2048 过、2049/空串拒",
           "markers": [],
-          "line": 378,
+          "line": 376,
           "assertions": [
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2048) }).success).toBe(true)",
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2049) }).success).toBe(false)",
@@ -1928,7 +1924,7 @@
           ],
           "title": "corpusItem 判别联合：四 kind 各过；anno 缺 annotationId 拒、page 带 annotationId 拒（refine）；未知 kind 拒",
           "markers": [],
-          "line": 384,
+          "line": 382,
           "assertions": [
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'fulltext' }).success).toBe(true)",
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'figure', figure: 'page' }).success).toBe(true)",
@@ -1947,7 +1943,7 @@
           ],
           "title": "lineageImportRes 两臂互斥：ok:true 带 errors 拒、ok:false 缺 errors 拒、ok 非字面量拒",
           "markers": [],
-          "line": 400,
+          "line": 398,
           "assertions": [
             "expect(S.lineageImportResSchema.safeParse({ ok: true, nodeCount: 0, edgeCount: 0, errors: [] }).success).toBe(false)",
             "expect(S.lineageImportResSchema.safeParse({ ok: false }).success).toBe(false)",
@@ -1961,7 +1957,7 @@
           ],
           "title": "lineagePaperMetrics null 语义：citedByCount null/0 均过（0=值非缺）；venueTier 三档过、T9 拒",
           "markers": [],
-          "line": 406,
+          "line": 404,
           "assertions": [
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: 0, venueTier: null }).success).toBe(true)",
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T1' }).success).toBe(true)",
@@ -1976,7 +1972,7 @@
           ],
           "title": "嵌套模型层 strict 探针：rects/patch/failed/skipped/errors/annotations 元素与 paperMetrics 值去 strict 即红（首层探针覆盖不到的第二层）",
           "markers": [],
-          "line": 413,
+          "line": 411,
           "assertions": [
             "expect(S.saveAnnotationReqSchema.safeParse({ paperId: 'p1', annotation: { ...annotationInput, rects: [badRect] } }).success).toBe(false)",
             "expect(S.annotationListResSchema.safeParse([{ ...annotation, rects: [badRect] }]).success).toBe(false)",
@@ -1995,7 +1991,7 @@
           ],
           "title": "appSettings：缺省填充 theme=system/uiScale=small；非法 email/theme/uiScale 拒",
           "markers": [],
-          "line": 429,
+          "line": 427,
           "assertions": [
             "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'system', uiScale: 'small' })",
             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)",
@@ -2010,7 +2006,7 @@
           ],
           "title": "UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）",
           "markers": [],
-          "line": 440,
+          "line": 438,
           "assertions": [
             "expect(Object.keys(S.UI_SCALE).sort()).toEqual([...S.uiScaleSchema.options].sort())",
             "expect(S.UI_SCALE).toEqual({ small: 1, medium: 1.1, large: 1.25 })"
@@ -2023,7 +2019,7 @@
           ],
           "title": "windowControlAction 四动作枚举 pin（action 枚举只住此处——renderer 复用禁手写第二份）",
           "markers": [],
-          "line": 445,
+          "line": 443,
           "assertions": [
             "expect([...S.windowControlActionSchema.options]).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])",
             "expect(S.windowControlReqSchema.safeParse({ action: 'bogus' }).success).toBe(false)"
@@ -2036,7 +2032,7 @@
           ],
           "title": "trueAck/windowControlRes 拒 ok:false（literal(true) 单值域）",
           "markers": [],
-          "line": 450,
+          "line": 448,
           "assertions": [
             "expect(S.trueAckSchema.safeParse({ ok: false }).success).toBe(false)",
             "expect(S.windowControlResSchema.safeParse({ ok: false, maximized: true }).success).toBe(false)"
@@ -2049,7 +2045,7 @@
           ],
           "title": "netDiagItem latencyMs：-1（超时哨兵）过、-2 拒",
           "markers": [],
-          "line": 455,
+          "line": 453,
           "assertions": [
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -1 }).success).toBe(true)",
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -2 }).success).toBe(false)"
@@ -2062,7 +2058,7 @@
           ],
           "title": "内联枚举基数 pin：clipboard format 两值/zcodeLinkDetect state 五值/导入导出事件 phase 四与三值（新增枚举值须意识化更新）",
           "markers": [],
-          "line": 460,
+          "line": 458,
           "assertions": [
             "expect([...(S.clipboardReqSchema.shape.format.options)]).toEqual(['bibtex', 'csv'])",
             "expect([...(S.zcodeLinkDetectResSchema.shape.state.options)]).toEqual([ 'zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error' ])",
@@ -2077,7 +2073,7 @@
           ],
           "title": "zcodeLinkDetect 五态枚举探针：各态过、bogus 拒（四呈现态+error）",
           "markers": [],
-          "line": 473,
+          "line": 471,
           "assertions": [
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state, status: null, overwrite: false }).success, `态 ${state} 应合法`).toBe(true)",
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state: 'bogus', status: null, overwrite: false }).success).toBe(false)"
@@ -2090,7 +2086,7 @@
           ],
           "title": "id 类字段空串拒（paperId/annotationId/tagId/noteId/lineage id——min(1) 全位探针）",
           "markers": [],
-          "line": 480,
+          "line": 478,
           "assertions": [
             "expect(S.paperIdReqSchema.safeParse({ paperId: '' }).success).toBe(false)",
             "expect(S.annotationIdReqSchema.safeParse({ annotationId: '' }).success).toBe(false)",
@@ -2106,7 +2102,7 @@
           ],
           "title": "aiSensorStatusRes/noteGetRes 可空两形：null 与对象均过（null=status.json 不存在/无笔记的合法态）",
           "markers": [],
-          "line": 488,
+          "line": 486,
           "assertions": [
             "expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)",
             "expect(S.noteGetResSchema.safeParse(null).success).toBe(true)",
@@ -2401,27 +2397,6 @@
             "expect(win.locator('svg g[data-node-id]')).toHaveCount(4)",
             "expect(win.locator('svg path[data-edge-id][stroke=\"var(--survey-edge)\"]')).toHaveCount(1)",
             "expect(win.locator('svg path[data-edge-id][stroke=\"var(--node-branch)\"]')).toHaveCount(2)"
-          ]
-        }
-      ]
-    },
-    "tests/e2e/reader-reading-time.spec.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [
-        "test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)"
-      ],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场\"]",
-          "describePath": [],
-          "title": "P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场",
-          "markers": [],
-          "line": 65,
-          "assertions": [
-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByText('阅读', { exact: true })).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByText('0 分钟', { exact: true })).toBeVisible()"
           ]
         }
       ]
@@ -2876,13 +2851,12 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库\"]",
+          "key": "[\"P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）\"]",
           "describePath": [],
-          "title": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库",
+          "title": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）",
           "markers": [],
-          "line": 98,
+          "line": 100,
           "assertions": [
-            "expect(row.s).toBe(210)",
             "expect(row.p).toBe(1)"
           ]
         }
@@ -3511,31 +3485,48 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 008 reading_time（P7E-05 R9）\",\"新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）\"]",
           "describePath": [
-            "db/migrate —— 008 reading_time（P7E-05 R9）"
+            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0",
+          "title": "新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）",
           "markers": [],
-          "line": 11,
+          "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(8)",
-            "expect(readUserVersion(db)).toBe(8)",
-            "expect(row.reading_seconds).toBe(0)"
+            "expect(result.currentVersion).toBe(9)",
+            "expect(readUserVersion(db)).toBe(9)",
+            "expect(papersColumns(db)).not.toContain('reading_seconds')",
+            "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
         },
         {
-          "key": "[\"db/migrate —— 008 reading_time（P7E-05 R9）\",\"存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9\"]",
           "describePath": [
-            "db/migrate —— 008 reading_time（P7E-05 R9）"
+            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8",
+          "title": "存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9",
           "markers": [],
-          "line": 27,
+          "line": 32,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8])",
-            "expect(readUserVersion(db)).toBe(8)",
-            "expect(row.reading_seconds).toBe(0)"
+            "expect(papersColumns(db)).toContain('reading_seconds')",
+            "expect(result.appliedVersions).toEqual([9])",
+            "expect(readUserVersion(db)).toBe(9)",
+            "expect(papersColumns(db)).not.toContain('reading_seconds')"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在\"]",
+          "describePath": [
+            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
+          ],
+          "title": "存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在",
+          "markers": [],
+          "line": 44,
+          "assertions": [
+            "expect(result.appliedVersions).toEqual([8, 9])",
+            "expect(readUserVersion(db)).toBe(9)",
+            "expect(papersColumns(db)).not.toContain('reading_seconds')",
+            "expect(row).toEqual({ id: 'legacy-1', last_read_page: 0 })"
           ]
         }
       ]
@@ -3554,7 +3545,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -3634,51 +3625,6 @@
           "line": 92,
           "assertions": [
             "expect(db.prepare(`SELECT COUNT(*) c FROM annotations`).get()).toEqual({ c: 0 })"
-          ]
-        }
-      ]
-    },
-    "tests/unit/db/papers-reading-time.test.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"updateReadPage 第三参原子累加：两次 +30+45=75（非覆盖）\"]",
-          "describePath": [
-            "papers.repo —— reading_seconds（P7E-05）"
-          ],
-          "title": "updateReadPage 第三参原子累加：两次 +30+45=75（非覆盖）",
-          "markers": [],
-          "line": 41,
-          "assertions": [
-            "expect(r.last_read_page).toBe(5)",
-            "expect(r.reading_seconds).toBe(75)"
-          ]
-        },
-        {
-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"R8：第三参缺省=0——reading_seconds 不变（旧调用方兼容锚）\"]",
-          "describePath": [
-            "papers.repo —— reading_seconds（P7E-05）"
-          ],
-          "title": "R8：第三参缺省=0——reading_seconds 不变（旧调用方兼容锚）",
-          "markers": [],
-          "line": 53,
-          "assertions": [
-            "expect(r.reading_seconds).toBe(30)"
-          ]
-        },
-        {
-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"detailById 回读 readingSeconds（008 迁移列→PaperDetail 必填字段）\"]",
-          "describePath": [
-            "papers.repo —— reading_seconds（P7E-05）"
-          ],
-          "title": "detailById 回读 readingSeconds（008 迁移列→PaperDetail 必填字段）",
-          "markers": [],
-          "line": 63,
-          "assertions": [
-            "expect(repo.detailById('p-1')?.readingSeconds).toBe(0)",
-            "expect(repo.detailById('p-1')?.readingSeconds).toBe(30)"
           ]
         }
       ]
@@ -15523,7 +15469,7 @@
           ],
           "title": "T1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发",
           "markers": [],
-          "line": 102,
+          "line": 105,
           "assertions": [
             "expect(persisted?.state).toBe('pending')",
             "expect(persisted?.attempts).toBe(0)",
@@ -15537,7 +15483,7 @@
           ],
           "title": "T2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）",
           "markers": [],
-          "line": 112,
+          "line": 115,
           "assertions": [
             "expect(atSend?.state).toBe('in-flight')"
           ]
@@ -15549,14 +15495,14 @@
           ],
           "title": "T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发",
           "markers": [],
-          "line": 119,
+          "line": 122,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
-            "expect(h.sendCalls[0]?.secondsDelta).toBe(11)",
+            "expect(h.sendCalls[0]?.page).toBe(1)",
             "expect(h.sendCalls).toHaveLength(2)",
-            "expect(h.sendCalls[1]?.secondsDelta).toBe(22)",
+            "expect(h.sendCalls[1]?.page).toBe(2)",
             "expect(h.sendCalls).toHaveLength(3)",
-            "expect(h.sendCalls[2]?.secondsDelta).toBe(33)"
+            "expect(h.sendCalls[2]?.page).toBe(3)"
           ]
         },
         {
@@ -15566,7 +15512,7 @@
           ],
           "title": "T2 跨 paper 并行（CO-2）：一次 pump 双 paper 各派发一条",
           "markers": [],
-          "line": 136,
+          "line": 139,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(2)"
           ]
@@ -15578,7 +15524,7 @@
           ],
           "title": "T3：send resolve→立即 remove（无 tombstone）+链式派发同 paper 次条",
           "markers": [],
-          "line": 143,
+          "line": 146,
           "assertions": [
             "expect(h.entry('ob-1')).toBeUndefined()",
             "expect(h.sendCalls).toHaveLength(2)"
@@ -15591,14 +15537,14 @@
           ],
           "title": "T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）",
           "markers": [],
-          "line": 153,
+          "line": 156,
           "assertions": [
             "expect(e1?.state).toBe('pending')",
             "expect(e1?.attempts).toBe(1)",
             "expect(e1?.lastError).toBe('db busy')",
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(2)",
-            "expect(h.sendCalls[1]?.secondsDelta).toBe(11)"
+            "expect(h.sendCalls[1]?.page).toBe(1)"
           ]
         },
         {
@@ -15608,7 +15554,7 @@
           ],
           "title": "T4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）",
           "markers": [],
-          "line": 169,
+          "line": 172,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(2)",
@@ -15623,11 +15569,11 @@
           ],
           "title": "T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）",
           "markers": [],
-          "line": 186,
+          "line": 189,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(3)",
-            "expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)"
+            "expect(h.sendCalls.filter((c) => c.page === 1)).toHaveLength(2)"
           ]
         },
         {
@@ -15637,10 +15583,10 @@
           ],
           "title": "T5：启动恢复驻留 in-flight→attempts++ 后按未达重放",
           "markers": [],
-          "line": 198,
+          "line": 201,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
-            "expect(h.sendCalls[0]?.secondsDelta).toBe(90)",
+            "expect(h.sendCalls[0]?.page).toBe(4)",
             "expect(h.entry('ob-9')?.attempts).toBe(2)",
             "expect(h.entry('ob-9')).toBeUndefined()"
           ]
@@ -15652,7 +15598,7 @@
           ],
           "title": "T5×T6：恢复时 attempts≥N→死信+WARN（不重放）",
           "markers": [],
-          "line": 221,
+          "line": 223,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(0)",
             "expect(h.entry('ob-9')?.state).toBe('dead-letter')",
@@ -15667,7 +15613,7 @@
           ],
           "title": "T6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发",
           "markers": [],
-          "line": 240,
+          "line": 241,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(OUTBOX_MAX_ATTEMPTS)",
             "expect(h.entry('ob-1')?.state).toBe('dead-letter')",
@@ -15683,12 +15629,12 @@
           ],
           "title": "T6 死信=终态不阻塞同 paper 新 seq（CR-1：仅未决条目阻塞）",
           "markers": [],
-          "line": 256,
+          "line": 257,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.entry('ob-1')?.state).toBe('dead-letter')",
             "expect(h.sendCalls).toHaveLength(2)",
-            "expect(h.sendCalls[1]?.secondsDelta).toBe(22)"
+            "expect(h.sendCalls[1]?.page).toBe(2)"
           ]
         },
         {
@@ -15713,13 +15659,13 @@
           ],
           "title": "排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）",
           "markers": [],
-          "line": 298,
+          "line": 297,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
-            "expect(h.sendCalls[0]?.secondsDelta).toBe(120)",
+            "expect(h.sendCalls[0]?.page).toBe(2)",
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(2)",
-            "expect(h.sendCalls[1]?.secondsDelta).toBe(77)"
+            "expect(h.sendCalls[1]?.page).toBe(3)"
           ]
         },
         {
@@ -15729,12 +15675,12 @@
           ],
           "title": "排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发",
           "markers": [],
-          "line": 324,
+          "line": 322,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(2)",
-            "expect(h.sendCalls[1]?.secondsDelta).toBe(77)"
+            "expect(h.sendCalls[1]?.page).toBe(3)"
           ]
         },
         {
@@ -15744,7 +15690,7 @@
           ],
           "title": "replayOnStart 幂等：重复调用返回同一 promise；空 store 立即 resolve",
           "markers": [],
-          "line": 350,
+          "line": 347,
           "assertions": [
             "expect(p1).toBe(p2)"
           ]
@@ -15756,7 +15702,7 @@
           ],
           "title": "dispose 不变量④：停扫描但已发 invoke 回调仍更新 store",
           "markers": [],
-          "line": 358,
+          "line": 355,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.entry('ob-1')).toBeUndefined()",
@@ -15770,7 +15716,7 @@
           ],
           "title": "dispose 停退避计时器：reject 后 dispose→满期不再重试",
           "markers": [],
-          "line": 370,
+          "line": 367,
           "assertions": [
             "expect(h.sendCalls).toHaveLength(1)"
           ]
@@ -15782,9 +15728,9 @@
           ],
           "title": "enqueue 恒不抛：store put 抛错→退化内存重试+强 WARN",
           "markers": [],
-          "line": 380,
+          "line": 377,
           "assertions": [
-            "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
+            "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))).not.toThrow()",
             "expect(h.sendCalls).toHaveLength(1)",
             "expect(h.warns).toHaveLength(1)",
             "expect(h.warns[0]?.kind).toBe('error')"
@@ -15797,7 +15743,7 @@
           ],
           "title": "loadAll 抛错→空内存态启动+强 WARN（旧账不可达诚实申报）",
           "markers": [],
-          "line": 400,
+          "line": 397,
           "assertions": [
             "expect(h.warns).toHaveLength(1)",
             "expect(h.sendCalls).toHaveLength(1)"
@@ -15810,7 +15756,7 @@
           ],
           "title": "put/loadAll 往返+独立 key（禁整表 JSON 重写）+meta 首写",
           "markers": [],
-          "line": 448,
+          "line": 444,
           "assertions": [
             "expect(ls.length).toBe(3)",
             "expect(ls.getItem(OUTBOX_META_KEY)).toBe('{\"v\":1}')",
@@ -15825,7 +15771,7 @@
           ],
           "title": "update/remove：同 key 覆写/删除",
           "markers": [],
-          "line": 459,
+          "line": 455,
           "assertions": [
             "expect(store.loadAll()[0]?.state).toBe('in-flight')",
             "expect(store.loadAll()).toHaveLength(0)",
@@ -15839,12 +15785,26 @@
           ],
           "title": "损坏条目丢弃+onCorrupt+自清（key 移除）",
           "markers": [],
-          "line": 470,
+          "line": 466,
           "assertions": [
             "expect(store.loadAll()).toHaveLength(0)",
             "expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'bad')).toBeNull()",
             "expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'shapewrong')).toBeNull()",
             "expect(corrupt).toHaveLength(2)"
+          ]
+        },
+        {
+          "key": "[\"OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信息 key）\",\"F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略\"]",
+          "describePath": [
+            "OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信息 key）"
+          ],
+          "title": "F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略",
+          "markers": [],
+          "line": 482,
+          "assertions": [
+            "expect(loaded).toHaveLength(1)",
+            "expect(loaded[0]?.page).toBe(2)",
+            "expect(loaded[0]?.id).toBe('ob-old')"
           ]
         },
         {
@@ -15854,7 +15814,7 @@
           ],
           "title": "attempts 1..3 与上界夹取",
           "markers": [],
-          "line": 488,
+          "line": 508,
           "assertions": [
             "expect(backoffDelayMs(1)).toBe(1000)",
             "expect(backoffDelayMs(2)).toBe(2000)",
@@ -15862,235 +15822,6 @@
             "expect(backoffDelayMs(9)).toBe(256_000)",
             "expect(backoffDelayMs(10)).toBe(OUTBOX_BACKOFF_CAP_MS)",
             "expect(backoffDelayMs(99)).toBe(OUTBOX_BACKOFF_CAP_MS)"
-          ]
-        }
-      ]
-    },
-    "tests/unit/renderer/reading-time.test.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R1：ready+visible tick 3 次→ledger=45s；无 invoke（防抖归进度管线）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R1：ready+visible tick 3 次→ledger=45s；无 invoke（防抖归进度管线）",
-          "markers": [],
-          "line": 95,
-          "assertions": [
-            "expect(h.ledger('p-1')).toBe(45)",
-            "expect(h.flushed).toHaveLength(0)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零",
-          "markers": [],
-          "line": 105,
-          "assertions": [
-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 3, secondsDelta: 45 }])",
-            "expect(h.ledger('p-1')).toBe(0)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R3：visible→hidden→visible——hidden 段零累积（门关）；恢复后续算\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R3：visible→hidden→visible——hidden 段零累积（门关）；恢复后续算",
-          "markers": [],
-          "line": 116,
-          "assertions": [
-            "expect(h.ledger('p-1')).toBe(30)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R4：切 tab（A→B）A stop 账留存+B start；离开段不计任何账\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R4：切 tab（A→B）A stop 账留存+B start；离开段不计任何账",
-          "markers": [],
-          "line": 129,
-          "assertions": [
-            "expect(h.ledger('A')).toBe(45)",
-            "expect(h.ledger('B')).toBe(15)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）",
-          "markers": [],
-          "line": 144,
-          "assertions": [
-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 2, secondsDelta: 15 }])"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）",
-          "markers": [],
-          "line": 155,
-          "assertions": [
-            "expect(f.enqueued).toContainEqual({ paperId: 'p-sec', page: 9, secondsDelta: 30 })",
-            "expect(f.enqueued).toContainEqual({ paperId: 'p-page', page: 4, secondsDelta: 0 })",
-            "expect(f.enqueued).toContainEqual({ paperId: 'p-both', page: 9, secondsDelta: 15 })",
-            "expect(f.enqueued).toHaveLength(3)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）",
-          "markers": [],
-          "line": 172,
-          "assertions": [
-            "expect(h.flushed).toEqual([{ paperId: 'p-1', seconds: 30 }])",
-            "expect(h.flushed).toHaveLength(1)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R10：tab 未就绪（loading/error——start 缺席）零累积\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R10：tab 未就绪（loading/error——start 缺席）零累积",
-          "markers": [],
-          "line": 182,
-          "assertions": [
-            "expect(h.ledger('p-1')).toBe(0)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R3×R6 跨格：hidden 中 force 结算零吸收——collectAllAndZero/collectAndZero 仅含 visible 段\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R3×R6 跨格：hidden 中 force 结算零吸收——collectAllAndZero/collectAndZero 仅含 visible 段",
-          "markers": [],
-          "line": 188,
-          "assertions": [
-            "expect(h.rt.collectAllAndZero()).toEqual({ 'p-1': 30 })",
-            "expect(h.ledger('p-1')).toBe(0)",
-            "expect(h.rt.collectAndZero('p-1')).toBe(15)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零",
-          "markers": [],
-          "line": 206,
-          "assertions": [
-            "expect(f.enqueued).toEqual([ { paperId: 'p-1', page: 3, secondsDelta: 3_600 }, { paperId: 'p-1', page: 3, secondsDelta: 400 } ])",
-            "expect(h.ledger('p-1')).toBe(0)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "R7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）",
-          "markers": [],
-          "line": 220,
-          "assertions": [
-            "expect(h.flushed).toEqual([ { paperId: 'p-1', seconds: 3_600 }, { paperId: 'p-1', seconds: 400 } ])"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s",
-          "markers": [],
-          "line": 231,
-          "assertions": [
-            "expect(h.rt.collectAndZero('p-1')).toBe(20)",
-            "expect(h.ledger('p-1')).toBe(0)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"NIT1（门二修订语义）：hidden 中 stop 结转可见零头入 A 账（零头不丢）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "NIT1（门二修订语义）：hidden 中 stop 结转可见零头入 A 账（零头不丢）",
-          "markers": [],
-          "line": 242,
-          "assertions": [
-            "expect(h.ledger('A')).toBe(20)",
-            "expect(h.ledger('B')).toBe(15)"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）",
-          "markers": [],
-          "line": 257,
-          "assertions": [
-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 9, secondsDelta: 22 }])"
-          ]
-        },
-        {
-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"tick 常量=15s（票面：READING_TICK_MS）\"]",
-          "describePath": [
-            "reading-time 态空间跨格序列（R1~R7+R10）"
-          ],
-          "title": "tick 常量=15s（票面：READING_TICK_MS）",
-          "markers": [],
-          "line": 268,
-          "assertions": [
-            "expect(READING_TICK_MS).toBe(15_000)"
-          ]
-        },
-        {
-          "key": "[\"reading-time formatReadingTime 边界（纯函数）\",\"<60min 按分钟取整：0/59/60/61/125\"]",
-          "describePath": [
-            "reading-time formatReadingTime 边界（纯函数）"
-          ],
-          "title": "<60min 按分钟取整：0/59/60/61/125",
-          "markers": [],
-          "line": 274,
-          "assertions": [
-            "expect(formatReadingTime(0)).toBe('0 分钟')",
-            "expect(formatReadingTime(59)).toBe('0 分钟')",
-            "expect(formatReadingTime(60)).toBe('1 分钟')",
-            "expect(formatReadingTime(61)).toBe('1 分钟')",
-            "expect(formatReadingTime(125)).toBe('2 分钟')"
-          ]
-        },
-        {
-          "key": "[\"reading-time formatReadingTime 边界（纯函数）\",\"≥60min：N 小时 M 分\"]",
-          "describePath": [
-            "reading-time formatReadingTime 边界（纯函数）"
-          ],
-          "title": "≥60min：N 小时 M 分",
-          "markers": [],
-          "line": 282,
-          "assertions": [
-            "expect(formatReadingTime(3_600)).toBe('1 小时 0 分')",
-            "expect(formatReadingTime(3_661)).toBe('1 小时 1 分')",
-            "expect(formatReadingTime(4_525)).toBe('1 小时 15 分')"
           ]
         }
       ]
@@ -22178,7 +21909,7 @@
           ],
           "title": "golden 全量：固定夹具逐字节比对（front-matter+总评+片段+ai 段）",
           "markers": [],
-          "line": 93,
+          "line": 92,
           "assertions": [
             "expect(md).toBe( [ '---', 'schemaVersion: 1', \"paperId: 'p-1'\", \"title: 'Water Quality Model'\", \"authors: ['Wang', 'Li']\", 'year: 2024', \"venue: 'Water Research'\", \"doi: '10.1/x'\", \"source: 'local'\", \"citationKey: 'wang2024water'\", 'annotationCount: 2', 'noteCount: 1', '---', '# Water Quality Model', '', '## 总评', '', '**总评标题**', '', '这篇论文提出……', '', '## 片段', '', '> quote-a-a（p.1）', '', '> quote-a-b（p.2）', '', ` ${CORPUS_USER_PREFIX} 第二条批注`, '', ` ${corpusAiPrefix('deepseek')} 一阶读法摘要（p.1）`, '', '' ].join('\\n') )"
           ]
@@ -22190,7 +21921,7 @@
           ],
           "title": "ENR-02 有值形：citedByCount+venueTier 进 front-matter（noteCount 后逐行序）",
           "markers": [],
-          "line": 133,
+          "line": 132,
           "assertions": [
             "expect(i).toBeGreaterThan(-1)",
             "expect(fm[i + 1]).toBe('citedByCount: 12')",
@@ -22205,7 +21936,7 @@
           ],
           "title": "ENR-02 0 值边界：citedByCount=0 是合法缓存值照常装配（禁 falsy 判空）",
           "markers": [],
-          "line": 153,
+          "line": 152,
           "assertions": [
             "expect(md).toContain('citedByCount: 0')",
             "expect(md).not.toContain('venueTier')"
@@ -22218,7 +21949,7 @@
           ],
           "title": "ENR-02 缺省形：无缓存指标夹具 → 两字段整键省略（两形成对口径）",
           "markers": [],
-          "line": 169,
+          "line": 168,
           "assertions": [
             "expect(md).not.toContain('citedByCount')",
             "expect(md).not.toContain('venueTier')"
@@ -22231,7 +21962,7 @@
           ],
           "title": "幂等：同输入两次装配逐字节全等（INV-17 基线——无时间戳无随机）",
           "markers": [],
-          "line": 175,
+          "line": 174,
           "assertions": [
             "expect(assembleCorpusMd(fixture())).toBe(assembleCorpusMd(fixture()))"
           ]
@@ -22243,7 +21974,7 @@
           ],
           "title": "front-matter 无 exportedAt（ADR-0011 v1.1 修订 2——时间戳只进 manifest）",
           "markers": [],
-          "line": 179,
+          "line": 178,
           "assertions": [
             "expect(assembleCorpusMd(fixture())).not.toMatch(/exportedAt/)"
           ]
@@ -22255,7 +21986,7 @@
           ],
           "title": "结构断言：引文块数=DB 标注数；输出序=文档序（乱序入参按页重排）",
           "markers": [],
-          "line": 183,
+          "line": 182,
           "assertions": [
             "expect(quotes).toHaveLength(2)",
             "expect(md.indexOf('quote-a-a')).toBeLessThan(md.indexOf('quote-a-b'))"
@@ -22268,7 +21999,7 @@
           ],
           "title": "[user] 批注行：comment 空省略、非空缩进前缀行",
           "markers": [],
-          "line": 190,
+          "line": 189,
           "assertions": [
             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 第二条批注`)",
             "expect(md).not.toMatch(new RegExp(`quote-a-a（p\\\\.1）\\\\n\\\\n\\\\s*\\\\[user\\\\]`))"
@@ -22281,7 +22012,7 @@
           ],
           "title": "空集：无 note 无标注=仅 front-matter+标题（无总评/片段节）",
           "markers": [],
-          "line": 197,
+          "line": 196,
           "assertions": [
             "expect(md).toContain('---')",
             "expect(md).not.toContain('## 总评')",
@@ -22296,7 +22027,7 @@
           ],
           "title": "YAML 对抗面：换行归一空格（单行标量）+单引号翻倍+流指示符在引号内原样（deepseek B1 采纳/B2 证伪锚）",
           "markers": [],
-          "line": 205,
+          "line": 204,
           "assertions": [
             "expect(md).toContain(\"title: 'Ti''tle Second: #line'\")",
             "expect(md.split('\\n').filter((l) => l.startsWith('title:'))).toHaveLength(1)",
@@ -22310,7 +22041,7 @@
           ],
           "title": "正文多行续行：引文逐行 > 前缀+页码附末行；批注/AI 段逐行缩进（r2 W1 锚）",
           "markers": [],
-          "line": 222,
+          "line": 221,
           "assertions": [
             "expect(md).toContain('> 引文首行\\n> 引文次行（p.3）')",
             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 批注一\\n 批注二`)",
@@ -22324,7 +22055,7 @@
           ],
           "title": "buildCorpus：装配产物含 front-matter 与片段；NOT_FOUND 抛域错误",
           "markers": [],
-          "line": 255,
+          "line": 254,
           "assertions": [
             "expect(md).toContain('schemaVersion: 1')",
             "expect(missing.buildCorpus('p-x')).rejects.toThrow('文献不存在')"
@@ -22337,7 +22068,7 @@
           ],
           "title": "buildCorpusSet：单篇取数失败跳过收集 skipped，不中断全库",
           "markers": [],
-          "line": 264,
+          "line": 263,
           "assertions": [
             "expect(r.entries.map((e) => e.paperId)).toEqual(['p-1', 'p-3'])",
             "expect(r.skipped).toEqual([{ paperId: 'p-2', reason: '文献不存在：p-2' }])",
@@ -22351,7 +22082,7 @@
           ],
           "title": "writeCorpusSet：mkdir corpus/ 前置+逐篇写入+返回成功数",
           "markers": [],
-          "line": 277,
+          "line": 276,
           "assertions": [
             "expect(n).toBe(2)",
             "expect(await readdir(join(dir, 'corpus'))).toEqual(['p-1.md', 'p-2.md'])",
@@ -22365,7 +22096,7 @@
           ],
           "title": "corpus：构建→saveFile→writeToFile→{filePath,count:1}",
           "markers": [],
-          "line": 327,
+          "line": 326,
           "assertions": [
             "expect(r).toEqual({ filePath: 'C:/out/x.md', count: 1 })",
             "expect(wrote).toEqual(['C:/out/x.md'])"
@@ -22378,7 +22109,7 @@
           ],
           "title": "corpus 取消（saveFile null）→CANCELLED 错误",
           "markers": [],
-          "line": 334,
+          "line": 333,
           "assertions": [
             "expect(createExportIpc(deps as never).corpus({ paperId: 'p-1' })).rejects.toThrow('已取消')"
           ]
@@ -22390,7 +22121,7 @@
           ],
           "title": "corpusSet：全库→pickFolder→writeCorpusSet→count=2+skipped 回传+filePath 指 corpus/ 子目录",
           "markers": [],
-          "line": 339,
+          "line": 338,
           "assertions": [
             "expect(r).toEqual({ filePath: join('C:/out', 'corpus'), count: 2, skipped: [] })",
             "expect(setCalls).toHaveLength(1)",
@@ -22404,7 +22135,7 @@
           ],
           "title": "corpusSet 取消（pickFolder null）→CANCELLED；空库（entries 0）→NOT_FOUND",
           "markers": [],
-          "line": 347,
+          "line": 346,
           "assertions": [
             "expect( createExportIpc(cancelled.deps as never).corpusSet({}) ).rejects.toThrow('已取消')",
             "expect(createExportIpc(empty.deps as never).corpusSet({})).rejects.toThrow('没有可导出的文献')"
@@ -22417,7 +22148,7 @@
           ],
           "title": "三键全平：保持输入序（稳定排序），非 id 字典序",
           "markers": [],
-          "line": 381,
+          "line": 380,
           "assertions": [
             "expect(out.map((e) => e.content)).toEqual(['Q1: 第一条', 'Q1: 第二条'])"
           ]
@@ -22429,7 +22160,7 @@
           ],
           "title": "主键序：role→question→createdAt 逐级决胜（乱序入参重排）",
           "markers": [],
-          "line": 386,
+          "line": 385,
           "assertions": [
             "expect(out.map((e) => e.content)).toEqual([ 'Q1: 早戳', 'Q1: 晚戳', 'Q2: 一读Q2', 'Q3: 二读', 'divergence: 裁决' ])"
           ]
@@ -22702,7 +22433,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 101,
+          "line": 100,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -22715,7 +22446,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 118,
+          "line": 117,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -22727,7 +22458,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 138,
+          "line": 137,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -22740,7 +22471,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 156,
+          "line": 155,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -22753,7 +22484,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 179,
+          "line": 178,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -22765,7 +22496,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 191,
+          "line": 190,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -22777,7 +22508,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 215,
+          "line": 214,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -22791,7 +22522,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 242,
+          "line": 241,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -22815,7 +22546,7 @@
           ],
           "title": "buildBibtex：含 @article 头与 citation key",
           "markers": [],
-          "line": 46,
+          "line": 45,
           "assertions": [
             "expect(bib).toContain('@article{wang2024water')",
             "expect(bib).toContain('title = {Water Quality}')"
@@ -22828,7 +22559,7 @@
           ],
           "title": "buildCsv：BOM + 表头 + 字段引号转义",
           "markers": [],
-          "line": 53,
+          "line": 52,
           "assertions": [
             "expect(csv.charCodeAt(0)).toBe(0xfeff)",
             "expect(csv).toContain('Title,Authors,Year,Venue,DOI,AddedAt')",
@@ -22842,7 +22573,7 @@
           ],
           "title": "buildReport：不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 61,
+          "line": 60,
           "assertions": [
             "expect(svc.buildReport('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -22854,7 +22585,7 @@
           ],
           "title": "writeToFile：内容落盘 UTF-8；失败抛 IO_ERROR",
           "markers": [],
-          "line": 68,
+          "line": 67,
           "assertions": [
             "expect(await readFile(target, 'utf-8')).toBe('中文内容')",
             "expect(svc.writeToFile('Z:/不存在/盘符/x', 'x')).rejects.toMatchObject({ code: 'IO_ERROR' })"
@@ -23128,7 +22859,7 @@
           ],
           "title": "list 透传查询参数",
           "markers": [],
-          "line": 45,
+          "line": 44,
           "assertions": [
             "expect(seen).toMatchObject({ sort: 'year_desc', limit: 10 })"
           ]
@@ -23140,7 +22871,7 @@
           ],
           "title": "detail：不存在时抛带 code=NOT_FOUND 的错误",
           "markers": [],
-          "line": 66,
+          "line": 65,
           "assertions": [
             "expect(svc.detail({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -23152,7 +22883,7 @@
           ],
           "title": "detail：存在时透传",
           "markers": [],
-          "line": 71,
+          "line": 70,
           "assertions": [
             "expect(svc.detail({ paperId: 'p-1' })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -23164,7 +22895,7 @@
           ],
           "title": "updateMeta：repo 返回 null 视为 NOT_FOUND；空 patch 直接返回现状",
           "markers": [],
-          "line": 78,
+          "line": 77,
           "assertions": [
             "expect(svc.updateMeta({ paperId: 'p-1', patch: {} })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -23176,7 +22907,7 @@
           ],
           "title": "collections 透传",
           "markers": [],
-          "line": 85,
+          "line": 84,
           "assertions": [
             "expect(svc.collections({})).resolves.toHaveLength(1)"
           ]
@@ -23692,16 +23423,16 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"F-LG14 迁移 007（lineage_nodes.tags）\",\"版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）\"]",
+          "key": "[\"F-LG14 迁移 007（lineage_nodes.tags）\",\"版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）\"]",
           "describePath": [
             "F-LG14 迁移 007（lineage_nodes.tags）"
           ],
-          "title": "版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）",
+          "title": "版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）",
           "markers": [],
           "line": 61,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(8)"
+            "expect(readUserVersion(db)).toBe(9)"
           ]
         },
         {
@@ -23864,7 +23595,7 @@
           ],
           "title": "结构：标题/元信息/分页高亮/评论缩进/笔记节",
           "markers": [],
-          "line": 52,
+          "line": 51,
           "assertions": [
             "expect(md).toContain('# 智慧水务综述')",
             "expect(md).toContain('张三')",
@@ -23883,7 +23614,7 @@
           ],
           "title": "无笔记省略笔记节；超长高亮截断加 …",
           "markers": [],
-          "line": 70,
+          "line": 69,
           "assertions": [
             "expect(md).not.toContain('## 笔记')",
             "expect(md).toContain('…')",
@@ -23897,7 +23628,7 @@
           ],
           "title": "空标注也产出合法骨架",
           "markers": [],
-          "line": 78,
+          "line": 77,
           "assertions": [
             "expect(md).toContain('# 智慧水务综述')"
           ]
@@ -24238,35 +23969,6 @@
         }
       ]
     },
-    "tests/unit/services/reader-time.test.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"saveProgress 透传 secondsDelta 第三参到 updateReadPage（时长搭车单通道）\"]",
-          "describePath": [],
-          "title": "saveProgress 透传 secondsDelta 第三参到 updateReadPage（时长搭车单通道）",
-          "markers": [],
-          "line": 47,
-          "assertions": [
-            "expect( svc.saveProgress({ paperId: 'p-1', page: 5, secondsDelta: 45 }) ).resolves.toEqual({ ok: true })",
-            "expect(calls).toEqual([['p-1', 5, 45]])"
-          ]
-        },
-        {
-          "key": "[\"R8：secondsDelta 缺省→第三参 0（旧调用方零破坏）\"]",
-          "describePath": [],
-          "title": "R8：secondsDelta 缺省→第三参 0（旧调用方零破坏）",
-          "markers": [],
-          "line": 56,
-          "assertions": [
-            "expect(svc.saveProgress({ paperId: 'p-1', page: 2 })).resolves.toEqual({ ok: true })",
-            "expect(calls).toEqual([['p-1', 2, 0]])"
-          ]
-        }
-      ]
-    },
     "tests/unit/services/reader.service.test.ts": {
       "ticketIds": [
         "SR-SVC-02"
@@ -24281,7 +23983,7 @@
           ],
           "title": "open：fileUrl 组装 app-file://<id>，fileName 取 fileRef 末段，页码带回",
           "markers": [],
-          "line": 66,
+          "line": 65,
           "assertions": [
             "expect(r.fileUrl).toBe('app-file://p-1')",
             "expect(r.fileName).toBe('论文 v2 final.pdf')",
@@ -24295,7 +23997,7 @@
           ],
           "title": "open：不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 74,
+          "line": 73,
           "assertions": [
             "expect(svc.open({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -24307,7 +24009,7 @@
           ],
           "title": "saveAnnotation 转调 insert；update/delete/list 透传",
           "markers": [],
-          "line": 79,
+          "line": 78,
           "assertions": [
             "expect(svc.saveAnnotation({ paperId: 'p-1', annotation: input })).resolves.toMatchObject({ id: 'a-1' })",
             "expect(svc.listAnnotations({ paperId: 'p-1' })).resolves.toHaveLength(1)",
@@ -24320,7 +24022,7 @@
           "describePath": [],
           "title": "缺陷②：open 透传 title（detailById 的文献名直达 renderer）",
           "markers": [],
-          "line": 103,
+          "line": 102,
           "assertions": [
             "expect(r.title).toBe('t')"
           ]
@@ -26205,11 +25907,11 @@
     }
   },
   "stats": {
-    "fileCount": 187,
-    "caseCount": 1789,
-    "assertionCount": 5411,
-    "skipSiteCount": 15,
-    "conditionalSkipSiteCount": 15,
+    "fileCount": 183,
+    "caseCount": 1768,
+    "assertionCount": 5368,
+    "skipSiteCount": 14,
+    "conditionalSkipSiteCount": 14,
     "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
     "eachExpandedRows": 261,

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-19T01:07:00.9125742Z",
+    "generatedAt":  "2026-09-19T02:52:24.4697440Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "2a51396922e69444dd3877f5fc2927e2c38a1ac1fce28245a90df55f4e121690"
+                      "sha256":  "95e54b1b23ce402f48d75040f82b1eeaf0f85bb81e9aec871f4783732c163a14"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -80,6 +80,10 @@
                   {
                       "path":  "scripts/audits/b26-tickets-flip.mjs",
                       "sha256":  "99db58b5432e0737fbdd8a9dd5df9b1b09210f75363e77126de6eefc2751745e"
+                  },
+                  {
+                      "path":  "scripts/audits/b26-time02-flip.mjs",
+                      "sha256":  "8d1dc5876a7db4d756056a7270845757ee4e34d58084f2878919f4089faec027"
                   },
                   {
                       "path":  "scripts/audits/f1-forensics.mjs",
@@ -611,11 +615,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "3c13fa9f420b3c6479adab64223fa971adee53c0c8ca95ed15af5371812e21f5"
+                      "sha256":  "72fe85d81968cdd2397fcd37eb3c293cfa89e07ac44e8053c9d36a793bf9ed82"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "ac07e5493c001a3fa530c577860655cb6a84307534172390299a2a5bc7aa126b"
+                      "sha256":  "c1106a882f2eb886d8ed8422b936289f4ad8d7fc8082de6112baf4bb5f7c0522"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -658,6 +662,10 @@
                       "sha256":  "0b096f12238996ee0b6a3b29426dbc423576f5588e7ccd9d937200daa73b0fd9"
                   },
                   {
+                      "path":  "src/main/db/migrations/009_reading_time_drop.sql",
+                      "sha256":  "50afe52ecf65b39ef14b5a54813438373e9af66b5c8342a373080c9a529ca4ef"
+                  },
+                  {
                       "path":  "src/shared/annotation-order.ts",
                       "sha256":  "694d039513f1f94c3e5fe94d73540e274cdef87f13856df4f937a54cd8cbb8ab"
                   },
@@ -679,7 +687,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "8df9e6fbda30ccd5bb3db8cf79ddba1934c6b13f362245945d057b61734b3071"
+                      "sha256":  "3cb80b3a15b02dd22b8963b19330d90695cfc45a6bc0d2f9a417859e0044ff3a"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -703,7 +711,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "2c05ef33575c5de6879d212849ac7effb4f0b3a4fa4c6f2f6e4fa8dcd9b9f604"
+                      "sha256":  "312b85f988e3ce99a7168288f52f223e4f5911b2c4310e965d448f0451a15b35"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -739,7 +747,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "b44abb3c2059a985fe3e531ce1fe2ea24438b7f2afa07f0d05274938580ed9d2"
+                      "sha256":  "038e2cdbb7fe148844746c9175ec5324baec05bab8f18c3b0cb2fd933c62389e"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -766,10 +774,6 @@
                       "sha256":  "b25fa272d615d995842abc1ac199668d9d9e667e2fe31aa15ba329000cc7c612"
                   },
                   {
-                      "path":  "tests/e2e/reader-reading-time.spec.ts",
-                      "sha256":  "4a465dfcbc4dceaaf7f087febdc304ca4cb4db052b9a40bdf165aaf8c7830aa9"
-                  },
-                  {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
                       "sha256":  "f2636e369600095ee3fa2f5c856a1a76983bf0c883acd648aa2ab008618c2022"
                   },
@@ -783,7 +787,7 @@
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
-                      "sha256":  "c78670f5b7f9c53a08791528e9e3b828294f5362ec68f8b0ee03dd6fc8966521"
+                      "sha256":  "ab6bdf1f48c0ba01c9d8817cedfc94664523aef9992351811bb0e458c3769db2"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -843,15 +847,11 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "a87e3d0db473edbad1da758d145974d0377e80a92534181962865818ebc8b782"
+                      "sha256":  "4e18bfa82942e8c45f8c4373ba773a0c35009079e01361d1e83c86ab34ba0682"
                   },
                   {
                       "path":  "tests/unit/db/migrate-reading-time.test.ts",
-                      "sha256":  "083b9d69e8b47cfc02b842c1d9845ee703b3f7e52b03e62c209da83b643bbc66"
-                  },
-                  {
-                      "path":  "tests/unit/db/papers-reading-time.test.ts",
-                      "sha256":  "ef145100b7f62c89759103e6768252219eb6a915ae4d4c9960de48a753bc7cd8"
+                      "sha256":  "645a7a3af9f45ed23fa4b50b3d7ef193f6cced4431ee137dc43dce7e87180a12"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -1206,12 +1206,8 @@
                       "sha256":  "7681a26e96a22e75dd5fc99fe48639ccd33c3927e493e51581e64335a028eaf9"
                   },
                   {
-                      "path":  "tests/unit/renderer/reading-time.test.ts",
-                      "sha256":  "3320765abbb451b4e220e744108fefecbfd79535d56aca1c043aeeb0d8a2bbf2"
-                  },
-                  {
                       "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
-                      "sha256":  "47b763c6302cd4d42b9789e95825b8d9dea363385ad593733d36c91b1ed497b9"
+                      "sha256":  "cb9398545218a6996ce90462c00aad18ad9b533a35973e67e5220e153b60f5d2"
                   },
                   {
                       "path":  "tests/unit/renderer/release-affinity.test.ts",
@@ -1335,7 +1331,7 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
-                      "sha256":  "993a5c6f084b2ed63de63001afafd95988f5652f999d748e465123d8ebabab38"
+                      "sha256":  "94c5c7b34f796064011ce8108160877cd14c80fc71f1555eaa500e122b843c51"
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",
@@ -1343,11 +1339,11 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "a3956b3754da3804a66a87c4a57c85aebb26131bcb143708507f7be1146436af"
+                      "sha256":  "26f0ec475d61bd3a2e061eb12cef3568dd35eeb528b85fa0f4097bd7536c3353"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
-                      "sha256":  "7bffa25a66492ead0692ea80195cd54473eaeaad07106c8e4545344da8482d48"
+                      "sha256":  "057861c47b0e8dbf70a262dd7548b8cf1b56654b38c34edffe7055ddba79fe78"
                   },
                   {
                       "path":  "tests/unit/services/file-store.test.ts",
@@ -1359,7 +1355,7 @@
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
-                      "sha256":  "a52120eed09010e3f21eaf498f20887717fbb0261f6f959a1c6f9ea02c76423b"
+                      "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
@@ -1371,11 +1367,11 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "04a4366e324b138d356c08e3f258abf58a3c76c637bbf8e3d7d644812768952b"
+                      "sha256":  "59074f4c2e0804b84a538621af9608bca30e9df8ff2134e3cf1a93abacebf45b"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
-                      "sha256":  "dca43a6c13bda54a0fd9f7c795f4b5b2e8950634b2039784895b8eabbe281e26"
+                      "sha256":  "67bb1092b7dbb9d53a6f626d8b9c431cfea48ae266f5a4180ea27fc3802b4de1"
                   },
                   {
                       "path":  "tests/unit/services/notes.service.test.ts",
@@ -1399,11 +1395,7 @@
                   },
                   {
                       "path":  "tests/unit/services/reader.service.test.ts",
-                      "sha256":  "cfb3247305167520c35b9b786304d1811f1ad19727896f80f5cd9512a83be47d"
-                  },
-                  {
-                      "path":  "tests/unit/services/reader-time.test.ts",
-                      "sha256":  "00b6d6d37806d15f86c666fec405ebfe25a9a067a7e1444f422312023a4a656d"
+                      "sha256":  "5051cc12ca26cc6b87e4577bd1c24e169e2600c0a9c377597942575442d00b80"
                   },
                   {
                       "path":  "tests/unit/services/shared/atomic-write.test.ts",
@@ -1479,7 +1471,7 @@
                   },
                   {
                       "path":  "tests/utils/factories.ts",
-                      "sha256":  "d4ee766297451e341d76b217f41dc590af21e0d47e97b3705aa0845d8c0f6dee"
+                      "sha256":  "32d237e52e0da0212685cad7dbbbce536886a7e0829b7e7a21236416869c154b"
                   },
                   {
                       "path":  "tests/utils/fixtures.ts",

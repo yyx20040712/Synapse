@@ -36,7 +36,6 @@ import { useAsync } from '../../shared/hooks/useAsync'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { requestOpenPaper } from '../../shared/open-paper-bus'
-import { formatReadingTime } from '../../shared/reading-time-format'
 import { TagEditor } from '../tags/TagEditor'
 import { MetaEditDialog } from './MetaEditDialog'
 import { usePaperDetailActions } from './usePaperDetailActions'
@@ -160,7 +159,6 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
         <Row label="DOI">{detail.doi ?? ''}</Row>
         <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
-        <Row label="阅读">{formatReadingTime(detail.readingSeconds)}</Row>
       </div>
       {detail.abstract !== '' && (
         <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
