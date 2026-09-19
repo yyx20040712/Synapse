@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T07:30:05+08:00
+- last_dispatch: 2026-09-19T08:20:24+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T00:11:09Z
-- claim: claim-1789774291-b25（已收口 2026-09-19T08:11:09+08:00）
+- heartbeat_utc: 2026-09-19T01:07:30Z
+- claim: claim-1789777255-b26（已收口 2026-09-19T09:07:30+08:00）
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 31
+- checked_done: 32
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -151,7 +151,7 @@
 - [x] F-LAYER-01（settings 下沉；随票落 L1 锁线 [locked-change]）
 - [x] F-TIME-01（时长链瘦身评估，产出呈裁不实施）＋可同火收上项
 - [x] F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）
-- [ ] F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离）
+- [x] F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离）
 
 ### 第六波·梯队五：文档+制度+存储（DOCGOV 必须晚于 ALIGN，已在波次序保证）
 
@@ -167,6 +167,18 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 26 — 2026-09-19（执行者会话：第五波 F-EXPORT-01 corpus.export 拆件单票——**第五波毕**，完成）
+- claim: claim-1789777255-b26｜认领 2026-09-19T00:24:30Z｜收口 2026-09-19T01:07:30Z｜勾选 31→32。
+- 开场三态：B 态变体——脏面=调度员 last_dispatch 原子写两笔（07:30:05 发布后本会话迟认领约 50min>静默窗，00:20:24Z 下一班有效火再发布一笔=协议行为非故障，原子 claim 先到先得防双跑；随本批收口提交）；HEAD=batch 25 提交 5d85ffef6d 正确。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/门审矩阵/ORG-12 审包/health-scan/账本补记）、test-driven-development（用——行为重构票实现者六段简报内嵌红绿闭环+变异双红证）、verification-before-completion（用——终跑 verify 变量法亲验）；systematic-debugging 不加载（重构修法=票面定稿+主控侦察前置，无排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash $max）；门一=**ops-gate1-k2 绑定（kimi k3 $max，zipoo——用户指令 k1 封顶 k2 承载；b24/b25 auth 失败未再现=5h 窗重置实证）**；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审对实现者均异构成立。
+- **交付（行为等价重构，9 文件 +354/−252 净+102——门二三径复算）**：①export-session-state.ts 骨架→真身 132 行（六态 ExportSessionPhase+ActiveSession 外提+createExportSessionState 四口闭包 begin/current/isActive/markTerminal——markTerminal identity 复核经门二 B 项独立论证=更安全非弱化+deferOutcome setImmediate 时序+态空间迁移表 12 行+跨格序列 8 行逐字随迁）；②corpus.export.io.ts 新件 104 行（盘面 IO 纯函数群：cleanRebuild 六步同序/writeCorpusMd/writeFulltext/readCorpusSha/writeFigure/finalizeManifest tmp+rename/removeManifestTmp——sha 两口径逐字随迁 INV-17）；③corpus.export.service.ts 442→300 行瘦身编排件（工厂签名+CorpusExportDeps/CorpusExportService 公开面零改=受锁 519 行测试零触碰即绿等价锁；承重锚 R12/通道判定/INTERFACE.md/实现裁决全保留）；④桶键拆分（b25 明示承接）：services/index.ts export_ 交并拆 export_+corpus_export 两键平铺（局部量先行恰一构+直传，b25 三键同型）+ipc/export_.ts 恰 2 handler 迁键（corpusItem/corpusSession）+bootstrap :238/:241 恰 2 处 abort 迁键+tests/utils/ipc-deps.ts 1 行拆 2 行（unlock→改→即时 apply 单链）；零触碰=api-surface/schemas（IPC 通道名——ADR-0017）/ipc 其余 6 handler/preload/renderer/e2e specs。
+- **TDD 证据链**：基线锚 verify EXIT=0（open 5/locks 378/170·1744/指纹门 187·1789·5411·skip15）+定向 corpus.export.test 16/16（**主控简报误写 14 未实测——实现者机器计数勘正，下游拦截）**+ipc/export_.test 4/4 合跑 20/20+变异红证 M1（isActive 永真→F-SESS-01 advance 守卫用例红 EXIT=1 断言位 :389 manifest 存在性→cp 还原 diff 空→复绿 16/16）+M2（ipc corpusItem 键回退→tsc TS2339 :86,48 EXIT=2→还原复绿）全变量法物理在档。
+- **门审（回炉 0）**：门一 k2 **PASS B0/W2/N5**——逐 hunk 零行为断言+K1~K8 落地+自裁 8 准 1 基本准；W1 终态 verify/e2e+W2 ipc 测试兼容=包内不可证伪类→收口机检销项（终跑 verify EXIT=0+主控 K4 双证 grep：旧键残留清零+新键恰四处接线+renderer 三处命中系 window.api IPC 通道面非桶键面）；N1 简报 stat +250/−252 系 add -N 前口径（真实 +354/−252 净+102）/N2 基线 main 产物 181.83 非 181.89/N3「内容零删」失准（实删文化层两 bullet，承重锚全保留）/N4 manifest 措辞/N5 ExportSessionPhase 零值层消费。门二 **GO_WITH_CONDITIONS P0=0/P1=2/P2=3/N=3**——26/26 hunk 独立复算等价（勘正门一 25 总数笔误——其自身枚举合计即 26）+**B 项勘正门一 K1 论证**（「至 markTerminal 间无 await」为假：advance 终局守卫→await finalizeManifest→markTerminal 窗真实存在，abort 交错可达——identity 复核在该窗防误清新会话单飞锁=正确设计，结论仍立）+W2 直证闭合（受锁 ipc 4 用例=bibtex×2/report/csv 根本不经迁键 handler）+净+102 三径一致（前缀算术+hunk 头 Σ+文件尺寸账）；P1 两条件收口全兑现=P1-1 终态验证亲验（fresh verify EXIT=0+open 4+e2e 两用例绿+impl-verify 入 staged）/P1-2 flake 对照留档（:157 重载格 3.8s 绿=未触发在册 count 5 的 60s 超时指纹，台账零 diff 复跑绿不销项）；P2 三条=io 件无独立变异（登记未来补）/计数勘误归档（25→26+ipc 8→9 处+「双构造 Blocker」对旧码不成立——spread 单次求值）/门一 K1 理由勘正；N-1 **INV-18/65「声明处」指针 stale（状态机表/中止守卫落点已迁 export-session-state.ts）——归 F-DOCGOV-01 承接（下波开工须携），本收口不扩面**+N-2 ExportSessionPhase/MANIFEST_TMP 零外部消费登记+N-3 文档净损失清单（信息在他处单源）。
+- **机检终态**：翻票 FLIP_EXIT=0（FLIP_MOVED=1/RESIDUE=0/OPEN 5→4——探针锚定行首 `{ id: 'F-EXPORT-01'` 定义形态，b25 谓词教训兑现）；**终跑 verify B26_CLOSEOUT_VERIFY_EXIT=0**（open 4=恰 F-EXPORT-01 翻 done+locks 379 一致（378→379 flip 探针即时登记）+Test Files 170/Tests 1744+指纹门 187·1789·5411·skip15 零漂移+build 绿）；**e2e corpus-export.spec 2/2 纯绿 EXIT=0**（:31 全链 2.3s+:157 重载格 3.8s——G10 裁决义务 flake 台账首查已履行（count 5 指纹在手），未触发零新增）；**health-scan RED×0 WARN×0**（账本 79→82 终态后跑——序兑现）；账本 82 行=executor+gate1 k2+adjudicator 三行补记（findings 对象形，临时 .cjs 仓外用毕即删）。
+- 教训三条：①**claim 脚本 v1 正则构造自伤**（字符串→RegExp 手工转义只处理括号漏 `+`——时间戳 `09+08` 的 + 成量词致 replace 空操作，而 count 守卫用另一套完整转义正则=守卫假绿 count=1 但替换无效，板面一度半 claim 态（RUNNING+新心跳+旧 claim 行）；v2 逐行前缀替换修复——**字符串替换一律禁手工转义正则，用 split/map/join 或行前缀匹配**，同段代码两套转义标准=自伤面）；②**主控简报计数未实测**（「14 用例」凭印象落笔被实现者机器计数 16 勘正——「计数落笔前实测」的主控简报侧违例，与门一 N1 stat 口径差同族：简报侧数字必须与取证同一时点同一口径）；③调度员 last_dispatch 双写时序观察（发布后执行者迟认领>30min 静默窗→下一班有效火合法再发布——协议行为，原子 claim 先到先得兜底双会话竞态；后到会话见 RUNNING+新鲜心跳即让位，无副作用）。
+- Rulings 待用户：无新增（票内自裁含三件切分签名微调/SessionError 迁 state/io 函数面/markTerminal identity 复核/头注压缩口径等 9 条均经门一裁+门二逐条复核闭合；受锁面=ipc-deps.ts 1 行+manifest+b26-claim.mjs=单笔提交仅 [locked-change] 权限内——门二尾注预批：diff 含 src/** CI TR 范围闸白名单外禁加 [test-refactor]）。F-TIME-01 降档呈裁（batch 24）仍待用户，不阻塞。
+- 无进展计数：归零（31→32 有进展）。**第五波毕（LAYER/TIME/SENSOR/EXPORT 四票全勾）。下批=第六波三票：F-DOCGOV-01（文档补课批——**开工须携门二 N-1 交接项：INV-18/65 声明处指针 stale 随迁 export-session-state.ts 的 sync**+ai-sensor 段随 F-SENSOR-01 终态回写）→F-PROC-01（制度批）→F-STOR-01（audits 出库归档+本机 52M 清理）。**
 
 ### batch 25 — 2026-09-19（执行者会话：第五波 F-SENSOR-01 ai_sensor 域整理单票，完成）
 - claim: claim-1789774291-b25｜认领 2026-09-18T23:31:31Z｜收口 2026-09-19T00:11:09Z｜勾选 30→31。
@@ -1797,3 +1809,18 @@
   搜索勾选目标项目，防「勾选已选项反致解绑」；③调度侧 Edit 改板遇「文件已改」
   护栏系执行者并发写入，重读后再落笔。
 - 既有板上转达条款（门一审 k2 承载直至用户另行通知）照原文继续随注入指令生效。
+
+
+### 调度员增补六 — 2026-09-19T08:25:54+08:00（hub 停火：用户令删火）
+- 用户在 hub 调度会话下达删火令：全局轮转火 automation-4a8cb784-c14b-4941-89f3-
+  ffe1b0cec6e5 已 CronDelete（回执 deleted:true，CronList 空集复核）。本条为调度员
+  尾部纯追加，claim/状态字段未动；板头 automation_id 字段行保留旧值仅为历史审计指向。
+- 本火任内战果：b21（G9）/b22（G10）/b23（G11+母票——第四波 F-GEOM-01 战役全清）
+  /b24（F-LAYER-01+F-TIME-01 同火）/b25（F-SENSOR-01）五批完成（勾选 24→31/35），
+  F-EXPORT-01（b26）已于 08:20:24 发布。
+- **在途 batch 26（F-EXPORT-01）不受影响——执行者独立于火，自行完成收口（翻票+提交+
+  板回写 READY）**。收口后本板停于 READY 且无火接续——此为预期态非异常。恢复两径同规：
+  用户显式 /batch-relay 重布防（新 automation_id 回填本板，换防协议 hub 变体），或手动
+  会话按本板清单领批。
+- 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令优先）。
+- 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入指令生效。

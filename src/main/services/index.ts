@@ -81,7 +81,10 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  export_: ExportService & CorpusExportService
+  /** F-EXPORT-01 桶键平铺（拆交并拼盘——键名与服务件一一对齐；IPC 域归属/
+   *  通道名不动=ADR-0017 裁决保持） */
+  export_: ExportService
+  corpus_export: CorpusExportService
   /** F-SENSOR-01：ai_sensor 域三键平铺（拆交并拼盘——键名与服务件一一对齐；
    *  IPC 域归属/通道名不动=ADR-0017 裁决保持） */
   ai_sensor: AiSensorService
@@ -93,6 +96,11 @@ export interface ServiceBundle {
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
+  const corpusExport = createCorpusExportService({
+    repos: deps.repos,
+    fileStore: deps.fileStore,
+    sendEvent: deps.sendExportEvent ?? (() => undefined),
+  })
   return {
     library: createLibraryService({ repos: deps.repos }),
     reader: createReaderService({ repos: deps.repos }),
@@ -110,14 +118,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       providers: buildProviders(deps.http),
       contactEmail: deps.contactEmail
     }),
-    export_: {
-      ...createExportService({ repos: deps.repos }),
-      ...createCorpusExportService({
-        repos: deps.repos,
-        fileStore: deps.fileStore,
-        sendEvent: deps.sendExportEvent ?? (() => undefined),
-      })
-    },
+    export_: createExportService({ repos: deps.repos }),
+    corpus_export: corpusExport,
     ai_sensor: aiSensor,
     ai_notes_import: createAiNotesImportService({
       rootDir: deps.aiSensorRootDir,
