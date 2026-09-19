@@ -209,12 +209,19 @@ development Model Selection+loop-engineering references/06）；**架构与
 - staging 一律显式列文件（或先 `git status` 核对未跟踪面）——`git add -A <目录>`
   会扫入未跟踪残留（2026-08-26 scripts/audits 误扫实录）；提交后勿复打 log
   （工具已回显，超长 message 双倍上下文成本）。
-- **scripts/audits 留档三桶口径**（2026-09-05 F-AUDIT-01 终裁，此后常态）：
-  ①证据件（raw/md/json/patch/diff——含简报/报告/门审档/verify 与变异输出）
-  **随收口提交显式列入库**；②`*out*` 探针数据目录不入库——`.gitignore
-  ` `scripts/audits/*out*/` 目录形态已拦（尾斜杠目录匹配，closeout 文件名
-  免疫；已跟踪历史件不受影响）；③mutation backup 副本禁驻留（变异还原毕
-  即删——源文件 cp 副本留档=冗余面）。收口毕 `git status` 未跟踪面应为零。
+- **scripts/audits 留档口径 v2**（2026-09-19 裁决 3 出库归档后形态，F-STOR-01；
+  用户同日批准呈批稿 a 选项——呈批档=docs/design/2026-09-19_f-stor01-bucket1-
+  revision-proposal.md，前史三桶口径 2026-09-05 F-AUDIT-01 终裁见该档 §二）：
+  ①证据件（raw/md/json/patch/diff/log——含简报/报告/门审档/verify 与变异输出、
+  探针工具件）**写入仓外档案区 `E:/zcode_md/synapse-archive/scripts-audits/`，
+  不入库**；批次日志登记文件名清单（登记制）。仓内 `scripts/audits/` 仅存
+  README 指针件（`.gitignore` `scripts/audits/*` 全拦+README 例外）。
+  ②探针/工具件随证据件驻仓外档案区——check-locks walk 只认仓内
+  `scripts/**.mjs|.ps1`，仓外件不入 manifest（跨 clone 无失效面）；`scripts/`
+  根下新增工具件的受锁纪律不变（walk 自动覆盖）。
+  ③mutation backup 副本禁驻留（不变——变异还原毕即删）。
+  收口毕 `git status` 未跟踪面应为零（不变——证据件在仓外+目录内容已
+  ignore，自动成立）。
 - 中文一律 UTF-8；Windows 下写文件后验证可读。
 
 ### 明确不做（v1 负面清单——防止顺手实现）
