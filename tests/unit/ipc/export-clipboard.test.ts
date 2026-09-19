@@ -23,7 +23,7 @@ function makeExportService() {
 /** 组装 deps：clipboard 写口桩（零 electron）+dialogs.saveFile 间谍（E7 无对话框锚） */
 function makeDeps(
   exportService: ReturnType<typeof makeExportService>,
-  clipboard: { writeText: (text: string) => void }
+  clipboard: { writeText: (text: string) => Promise<void> }
 ) {
   const saveFile = vi.fn(async () => 'E:/out/x')
   const deps = {
@@ -39,7 +39,7 @@ function makeDeps(
 describe('ipc/export_.clipboard —— 先构建后写剪贴板（无对话框即无 CANCELLED）', () => {
   it('bibtex 分支：委托 buildBibtex 逐参+写剪贴板收构建内容+count 回传+零对话框', async () => {
     const exportService = makeExportService()
-    const clipboard = { writeText: vi.fn(() => undefined) }
+    const clipboard = { writeText: vi.fn(async () => undefined) }
     const { deps } = makeDeps(exportService, clipboard)
     const ipc = createExportIpc(deps)
     const r = await ipc.clipboard({ format: 'bibtex', paperIds: ['p-1', 'p-2'] })
@@ -51,7 +51,7 @@ describe('ipc/export_.clipboard —— 先构建后写剪贴板（无对话框�
 
   it('csv 分支：委托 buildCsv（buildBibtex 零调用），count=1', async () => {
     const exportService = makeExportService()
-    const clipboard = { writeText: vi.fn(() => undefined) }
+    const clipboard = { writeText: vi.fn(async () => undefined) }
     const { deps } = makeDeps(exportService, clipboard)
     const ipc = createExportIpc(deps)
     const r = await ipc.clipboard({ format: 'csv', paperIds: ['p-1'] })
@@ -64,7 +64,7 @@ describe('ipc/export_.clipboard —— 先构建后写剪贴板（无对话框�
   it('E5 先构建后写：service 抛错上抛且剪贴板零调用（零副作用）', async () => {
     const exportService = makeExportService()
     exportService.buildBibtex.mockRejectedValue(new Error('db 取数失败'))
-    const clipboard = { writeText: vi.fn(() => undefined) }
+    const clipboard = { writeText: vi.fn(async () => undefined) }
     const { deps } = makeDeps(exportService, clipboard)
     const ipc = createExportIpc(deps)
     await expect(ipc.clipboard({ format: 'bibtex', paperIds: ['p-1'] })).rejects.toThrow('db 取数失败')
@@ -81,7 +81,7 @@ describe('ipc/export_.clipboard —— 先构建后写剪贴板（无对话框�
 
   it('E7 无对话框：剪贴板路径全程零 saveFile 调用（与文件导出语义差异）', async () => {
     const exportService = makeExportService()
-    const clipboard = { writeText: vi.fn(() => undefined) }
+    const clipboard = { writeText: vi.fn(async () => undefined) }
     const { deps, saveFile } = makeDeps(exportService, clipboard)
     const ipc = createExportIpc(deps)
     await ipc.clipboard({ format: 'bibtex', paperIds: ['p-1'] })
@@ -90,7 +90,7 @@ describe('ipc/export_.clipboard —— 先构建后写剪贴板（无对话框�
 
   it('E3 schema 层空选集拒：paperIds=[] → INVALID_REQUEST（零 service 调用）', async () => {
     const exportService = makeExportService()
-    const clipboard = { writeText: vi.fn(() => undefined) }
+    const clipboard = { writeText: vi.fn(async () => undefined) }
     const { deps } = makeDeps(exportService, clipboard)
     const ipc = createExportIpc(deps)
     const handler = makeChannelHandler(

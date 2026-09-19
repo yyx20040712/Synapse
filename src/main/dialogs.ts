@@ -8,7 +8,15 @@
  * getter 在对话框实际弹出时才取窗口）。
  */
 import { dialog } from 'electron'
+import { dirname } from 'node:path'
 import type { BrowserWindow, OpenDialogOptions, SaveDialogOptions } from 'electron'
+
+/**
+ * 三 pick 共享的上次选择目录（F-ELE-03）：Electron 43 起 showOpenDialog 未传
+ * defaultPath 时默认开 Downloads 且不再记住上次目录——以模块级内存态复刻
+ * 42 时代的「记住上次目录」体感（主控预裁：内存态，跨会话不持久）。
+ */
+let lastDir: string | undefined
 
 export interface Dialogs {
   /** 选择一个或多个 PDF（取消返回 null） */
@@ -35,25 +43,36 @@ export function createElectronDialogs(getParent: () => BrowserWindow | null): Di
     pickPdfFiles: async () => {
       const r = await openWithParent({
         title: '选择要导入的 PDF',
+        defaultPath: lastDir,
         properties: ['openFile', 'multiSelections'],
         filters: [{ name: 'PDF 文档', extensions: ['pdf'] }]
       })
-      return r.canceled || r.filePaths.length === 0 ? null : r.filePaths
+      if (r.canceled || r.filePaths.length === 0) return null
+      lastDir = dirname(r.filePaths[0]!)
+      return r.filePaths
     },
     pickFolder: async () => {
       const r = await openWithParent({
         title: '选择要批量导入的文件夹',
+        defaultPath: lastDir,
         properties: ['openDirectory']
       })
-      return r.canceled ? null : (r.filePaths[0] ?? null)
+      if (r.canceled) return null
+      const dir = r.filePaths[0] ?? null
+      if (dir !== null) lastDir = dirname(dir)
+      return dir
     },
     pickJsonFile: async () => {
       const r = await openWithParent({
         title: '选择脉络图 JSON 草稿',
+        defaultPath: lastDir,
         properties: ['openFile'],
         filters: [{ name: 'JSON 文档', extensions: ['json'] }]
       })
-      return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]!
+      if (r.canceled || r.filePaths.length === 0) return null
+      const file = r.filePaths[0]!
+      lastDir = dirname(file)
+      return file
     },
     saveFile: async (defaultName, extFilters) => {
       const r = await saveWithParent({

@@ -263,9 +263,10 @@ flowchart TB
 
 better-sqlite3 13.0.3（N-API 版，2026-09-19 F-ELE-02）：同一份
 `prebuilds/win32-x64.node` 绑定跨 Node/Electron ABI 通用（vitest=Node
-ABI 137 / electron-vite=Electron ABI 146 双运行时无需切换）；v12 时代
+ABI 137 / electron-vite=Electron ABI 149——F-ELE-03 升 44 后，双运行时
+无需切换）；v12 时代
 双 ABI 切换机制（scripts/sqlite-abi.mjs+abi-cache）已删除退役。完整
-环境事实（Volta/Node 24 锁定/Electron 42 无 postinstall 等）=
+环境事实（Volta/Node 24 锁定/Electron 42 起无 postinstall 等）=
 AGENTS.md「环境事实」单源，此处不复制。
 
 ## 8. 域结构速览（2026-09-19 F-DOCGOV-01 补档——此前三大域未上图/未成节）
