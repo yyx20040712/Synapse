@@ -1,0 +1,18 @@
+== W1 v2：三服务接口方法名（类型面） ==
+aiSensor: requestRead,readStatus,hasPendingJob,productExists,archivedExists,observe
+aiNotes: importAll,listByPaper
+zcode: zcodeDetect,zcodeInstall
+aiSensor∩aiNotes: []
+aiSensor∩zcode: []
+aiNotes∩zcode: []
+W1_CLEAR=true（两两无交集=旧 spread 无撞名遮蔽语义，等价性成立）
+
+== W2：readStatus 体（:283-304）this 命中=0 ==
+W2_CLEAR=true（零 this=方法引用直传 this 绑定无关紧要，等价性成立）
+
+== W3：三件 process/timer 代码面命中 ==
+aiSensor: 零命中
+aiNotes: 零命中
+zcode: 零命中
+W3_CLEAR=true（三工厂=纯闭包定义零构造期副作用，构造序前移无行为影响）
+PROBE_EXIT=0

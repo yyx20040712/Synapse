@@ -81,14 +81,18 @@ export interface ServiceBundle {
   notes: ApiHandlers['notes']
   import_: ImportService
   enrich: EnrichServiceShape
-  /** AI-06/07：ai_sensor 域服务交并（2026-08-27 用户裁决——自 export_ 并域迁出） */
   export_: ExportService & CorpusExportService
-  ai_sensor: AiSensorService & AiNotesImportService & ZcodeLinkService
+  /** F-SENSOR-01：ai_sensor 域三键平铺（拆交并拼盘——键名与服务件一一对齐；
+   *  IPC 域归属/通道名不动=ADR-0017 裁决保持） */
+  ai_sensor: AiSensorService
+  ai_notes_import: AiNotesImportService
+  zcode_link: ZcodeLinkService
   /** LG-01 脉络图：service 四写方法全建（IPC 写通道注册归 LG-03） */
   lineage: LineageService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
+  const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
   return {
     library: createLibraryService({ repos: deps.repos }),
     reader: createReaderService({ repos: deps.repos }),
@@ -114,23 +118,18 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
         sendEvent: deps.sendExportEvent ?? (() => undefined),
       })
     },
-    ai_sensor: (() => {
-      const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
-      return {
-        ...aiSensor,
-        ...createAiNotesImportService({
-          rootDir: deps.aiSensorRootDir,
-          repo: deps.repos.aiNotes,
-          paperExists: (id) => deps.repos.papers.findById(id) !== null,
-          withTransaction: deps.repos.withTransaction // F-AIN-01 回灌事务（lineage 行同型）
-        }),
-        ...createZcodeLinkService({
-          zcodeBaseDir: deps.zcodeBaseDir,
-          templateDir: deps.templateDir,
-          readStatus: () => aiSensor.readStatus() // 06 单源消费（running 不双写）
-        })
-      }
-    })(),
+    ai_sensor: aiSensor,
+    ai_notes_import: createAiNotesImportService({
+      rootDir: deps.aiSensorRootDir,
+      repo: deps.repos.aiNotes,
+      paperExists: (id) => deps.repos.papers.findById(id) !== null,
+      withTransaction: deps.repos.withTransaction // F-AIN-01 回灌事务（lineage 行同型）
+    }),
+    zcode_link: createZcodeLinkService({
+      zcodeBaseDir: deps.zcodeBaseDir,
+      templateDir: deps.templateDir,
+      readStatus: aiSensor.readStatus // 06 单源消费（running 不双写）——F-SENSOR-01 显式注入
+    }),
     lineage: createLineageService({
       repo: deps.repos.lineage,
       paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型

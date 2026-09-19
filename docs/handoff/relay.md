@@ -12,13 +12,13 @@
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
-- last_dispatch: 2026-09-19T06:49:52+08:00
+- last_dispatch: 2026-09-19T07:30:05+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-18T23:46:00Z
-- claim: claim-1789771843-b24（已收口 2026-09-19T07:46:00）
+- heartbeat_utc: 2026-09-19T00:11:09Z
+- claim: claim-1789774291-b25（已收口 2026-09-19T08:11:09+08:00）
 - no_progress_count: 0
 - checked_total: 35
-- checked_done: 30
+- checked_done: 31
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
 
@@ -150,7 +150,7 @@
 
 - [x] F-LAYER-01（settings 下沉；随票落 L1 锁线 [locked-change]）
 - [x] F-TIME-01（时长链瘦身评估，产出呈裁不实施）＋可同火收上项
-- [ ] F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）
+- [x] F-SENSOR-01（ai_sensor 域整理，契约面 [locked-change]）
 - [ ] F-EXPORT-01（corpus.export 拆件：状态机外提+IO/事件分离）
 
 ### 第六波·梯队五：文档+制度+存储（DOCGOV 必须晚于 ALIGN，已在波次序保证）
@@ -167,6 +167,19 @@
 > Electron 实施窗：F-ELE-01 呈裁获准且 F-GEOM-01 收口后，作为新波次入板。
 
 ## 批次日志（追加，勿改写）
+
+### batch 25 — 2026-09-19（执行者会话：第五波 F-SENSOR-01 ai_sensor 域整理单票，完成）
+- claim: claim-1789774291-b25｜认领 2026-09-18T23:31:31Z｜收口 2026-09-19T00:11:09Z｜勾选 30→31。
+- 开场三态：B 态变体——唯一脏面=调度员 last_dispatch 原子写（06:49:52→07:30:05 恰一行，本批发布动作预期态），随本批收口提交；HEAD=batch 24 提交 6b47689625 正确。
+- 技能清点：batch-relay（用——火协议认领收口）、ai-dev-org（用——组织主干/三屋派发/门审矩阵/ORG-12 审包/health-scan/账本补记/换源状态机+审计兜底降级路径）；TDD=实现者六段简报内嵌等价红绿闭环（基线锚+变异红证 M1/M2——零行为重构票票面机制，无新用例：桶形状由类型系统守卫+单测三件直测工厂与桶解耦）；verification-before-completion（用——七关卡+终跑 verify 变量法亲验）；systematic-debugging 不加载（重构票无排障定位面——门一 k2 auth 失败处置走既有换源状态机非排障面）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 绑定（GLM5.3flash $max）；门一=**k2 绑定连续两次 Provider authentication failed（本批首两派）→外发 kimi-backup HTTP 403「5-hour usage limit」（run=20260918235225 实证）→归因 zipoo 5h 配额窗耗尽→deepseek 审计兜底位外发承载（deepseek-v4-flash run=20260918235238，b20/b24 先例第三现；k1=用户封顶禁派；门一/门二同族 deepseek 欠账如实登记）**；门二=ops-adjudicator 绑定（deepseek-flash $max）——门审对实现者均异构成立。
+- **交付（零行为装配重构，恰三件）**：①services/index.ts——ServiceBundle.ai_sensor 交并拼盘拆三键平铺（ai_sensor/ai_notes_import/zcode_link，键名与服务件一一对齐）+IIFE/三 spread 消解+`readStatus: aiSensor.readStatus` 方法引用直传（构造序显式：aiSensor 局部量先行恰一构）+AI-06/07 错位注释删除归位；export_ 交并保持不动（F-EXPORT-01 承接）。②ipc/ai_sensor.ts——七 handler 对号迁键（ai_sensor×3/ai_notes_import×2/zcode_link×2，+6/−4）+头注两句。③tests/utils/ipc-deps.ts——桩工厂单行拆三行（unlock→改→即时 apply 单链）。**主控预裁五条**（拆域被 ADR-0017 用户裁决排除——api-surface 明文「通道名不变」/对齐=桶键对齐非通道前缀/契约面 api-surface+schemas 零触碰——票面「若动」条件句不触发/方法引用直传 this 安全=readStatus 体零 this/e2e 真链验证/协议版本字段备选池候选不顺带——行为变更≠零行为重构归后续票）；零触碰：三服务件逻辑与路径/preload/renderer/bootstrap/registry/e2e specs。
+- **TDD 证据链**：基线锚 verify EXIT=0（170/1744）+七关卡全绿+变异红证 M1（ipc importAll 改回旧键→TS2339×1 对位→还原 diff 空）+M2（zcode_link 构造删 readStatus→TS2345 参数位+嵌套 TS2741 语义正文点名——实现者自裁勘正：简报预测首码 2741 实测 2345 参数位机制，未凑码号）+定向回归 3 文件/37 用例绿+终跑 verify FINAL_EXIT=0；**e2e 默认门 43/43 纯绿 EXIT=0（2.0m）——在册 flake corpus-export:157 未触发（3.9s 绿），flake-ledger 零新增**（P2-2 措辞口径：纯绿无需 G10 特例凭）；zcode-link.spec 6.0s 绿=readStatus 直传真装配链路运行级实证（门二 W2 强于探针论证）。
+- **门审（回炉 0）**：门一 deepseek 兜底 **PASS_WITH_WARNINGS B0/W4/N4**——W1 spread 撞名遮蔽/W2 this 绑定/W3 构造序=「包内不可证伪」三连 →主控机检测销项（b25-w1-closure 探针 v2：三服务接口面方法名两两交集∅+readStatus 体 :283-304 this=0+三件 process/timer 代码面零命中——v1 探针正则失配产空集假绿已弃用留档 b25-w123-closure.log）/W4 manifest=门二亲核；N1 diffstat 勘正（ipc/ai_sensor.ts 实 +6/−4；+5/−5 错误值出处=主控审包侧拷问点 5 非实现者报告——门二 F 项归属勘正）。门二 **GO_WITH_CONDITIONS P0=0/P1=4/P2=4/N=5 回炉 0**——A~H 全表独立复算（超探针深核：W1 运行面三返回体复读两两∅+消费面全仓恰 7 行+manifest 376 结构亲读）；**P1 四条件全兑现**：P1-1 提交尾注仅 [locked-change] 禁 [test-refactor]（CI 范围闸 TR_RE 白名单无 src/**——带尾注必红；b24 先例 ci.yml:117-119 尾注自愿制+拆两提交不可行=中间态 typecheck 红）/P1-2 收口序修正（flip→终跑 verify；账本→health-scan——本批照修正序执行）/P1-3 locks 重认证（终跑 verify 内「377 个受锁文件与 manifest 一致」——锁链 374→375 claim→376 w1-closure→377 flip 链式值）/P1-4 staging 显式列件（含 gate2 报告/v1 废档/flip 探针双版本档/.log add -f）。
+- **机检终态**：翻票 FLIP_EXIT=0（FLIP_MOVED=1/RESIDUE=0/OPEN_BEFORE=6→AFTER=5）；**终跑 verify B25_CLOSEOUT_VERIFY_EXIT=0**（open 5=恰 F-SENSOR-01 翻 done+locks 377 一致+Test Files 170/Tests 1744+指纹门 187·1789·5411·skip15 零漂移+build 绿产物恒等 index-D3egZtl2.js 1,392.72kB）；**health-scan RED×0 WARN×0**（账本 76→79 行终态后跑——序兑现）；账本 79 行=executor+gate1 外发+adjudicator 三行补记（403 exhaust 实录进 gate1 行 note；外发未带 --project 未自动落=主控补记全覆盖，临时 .cjs 仓外用毕即删，findings 对象形）。
+- **翻票探针谓词盲区新变体（v1→v2 在档）**：flip 探针 v1 残留判定 `includes('F-SENSOR-01')&&open` 过宽——误配 F-DOCGOV-01 行 summary 尾部「ai-sensor 段随 F-SENSOR-01 终态回写」文字提名（翻票本身已正确生效 FLIP_MOVED=1/delta=1）；v2 锚定 `{ id: 'F-SENSOR-01'` 行首票定义形态后 RESIDUE=0 纯绿。教训=**票 id 在他票 summary 中被文字提名是 registry 谓词的 nomination 噪声面——票行断言一律锚定 `{ id: '<ID>'` 行首定义形态**（G10 门二谓词盲区族的 registry 侧新成员）；v1 输出留档 b25-tickets-flip-v1.log（探针迭代证据链完整——G9 教训③义务）。
+- P2 四条勘正落笔（门二）：376→377 链式值口径（勿复述「恰三项」）；e2e 记录=纯绿不写特例凭（P2-2）；N1 归属=审包侧非实现者（P2-3 中性句）；变异 log 命令面与 UNLOCK/APPLY_EXIT 无独立档——以门链 log 兜底不复述独立证据（P2-4）。N 五条登记：N-3 ai-notes-import 头注「四通道委托」历史句归 F-DOCGOV-01 ai-sensor 段回写（registry:316 已载）；N-4 W1 探针 v2 正则仅识别 2 空格 name( 形态（箭头属性风格接口会漏——后续探针模板句）；N-2 收口板面已用真实时刻（本批兑现）。
+- Rulings 待用户：无新增独立项；**kimi 恢复补跑 Ruling（batch 20 立）新增 b25 实例**（k2 绑定 auth×2+外发 403 双证——zipoo 5h 窗耗尽，恢复后是否补跑门一由用户裁）。票内自裁（预裁五条/M2 码号勘正/注释删除落法/e2e 纯绿口径）均经门一裁+门二复核闭合。
+- 无进展计数：归零（30→31 有进展）。**第五波余一项。下批=F-EXPORT-01（corpus.export 拆件：导出会话状态机六态外提独立件+IO/事件协议分离——INV-17/18 幂等 sha/单飞语义不破+e2e corpus-export 全链不破；中票一火一票；**开工须携 flake 台账 corpus-export 线 count 5 指纹首查——门二 G10 裁决义务，五 rerun 档 batch 22 在库**）→第六波 F-DOCGOV-01/F-PROC-01/F-STOR-01。**
 
 ### batch 24 — 2026-09-19（执行者会话：第五波 F-LAYER-01+F-TIME-01 小票组同火，完成）
 - claim: claim-1789771843-b24｜认领 2026-09-18T22:50:43Z｜收口 2026-09-19T07:46:00｜勾选 28→30。

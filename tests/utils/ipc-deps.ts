@@ -27,6 +27,8 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       enrich: null as never,
       export_: null as never,
       ai_sensor: null as never,
+      ai_notes_import: null as never,
+      zcode_link: null as never,
       lineage: null as never,
       ...over.services
     },
