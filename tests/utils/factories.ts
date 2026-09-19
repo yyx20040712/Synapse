@@ -82,7 +82,6 @@ export function makeDetail(patch: Partial<PaperDetail> = {}): PaperDetail {
     annotationCount: 0,
     noteCount: 1,
     lastReadPage: 0,
-    readingSeconds: 0,
     addedAt: 't',
     abstract: '',
     arxivId: null,

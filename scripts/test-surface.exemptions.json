@@ -12,6 +12,96 @@
       "caseTitle": "rectsFromRange：返回归一化矩形（0..1）",
       "reason": "F-GEOM-01-G2 死面收敛③（设计书 §3.5 清单①）：rectsFromRange src 零消费，唯一直测面随导出删除（死代码即删，候选项经双门裁）",
       "rulingLink": "docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md#3.5"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：secondsDelta 载荷随 schemas 删除退役，专测改写为 strict 拒收负断言+page 负数拒保留",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/e2e/reading-time-replay.spec.ts",
+      "caseTitle": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：断言面收窄为页码重放承重半边（outbox 保留），标题随语义改写（reading_seconds 断言删）",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：008 加列→009 DROP COLUMN 双跳链改写（新库终态=列不存在，user_version=9）",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：008 加列→009 DROP COLUMN 双跳链改写（v7 存量路径=一次 migrate 双跳 [8,9]）",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：009 注册后新库终值 user_version=9，版本接续断言随上探（P7E-05 v8 上探同型先例）",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8])",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：009 reading_time_drop 注册后全量应用清单上探 [1..9]（P7E-05 v8 上探同型先例）",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(11)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(22)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[2]?.secondsDelta).toBe(33)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(11)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(90)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(120)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(77)",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
+      "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
+      "assertionText": "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
+      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：draft 铸造助手随载荷收窄四参化三参（id/paperId/page/seq）",
+      "rulingLink": "docs/handoff/relay.md"
     }
   ]
 }

@@ -1,10 +1,14 @@
 /**
- * [P7X-02] reading-time-outbox —— 阅读时长/进度落盘持久 outbox（终裁版设计书
+ * [P7X-02] reading-time-outbox —— 进度落盘持久 outbox（终裁版设计书
  * docs/design/2026-09-04_p7x02-reading-time-outbox.md 全量落地）。
+ * [F-TIME-02] 2026-09-19 用户裁决「阅读时长功能移除」：时长载荷（OutboxEntry
+ * .seconds 字段+send 第三参）已删，队列本体保留为页码通道；localStorage 存量
+ * 条目含旧 seconds 字段=回放时忽略（向后兼容——isEntry 不检多余键，见
+ * reading-time-outbox-store），回写时旧字段自然随条目淘汰。
  *
  * ── 行为层（态空间表逐格）──
  * | # | 迁移 | 触发 | 断言 |
- * | T1 | ∅→pending | enqueue（三收尾口：复合 flusher/onFlush 兜底/sp.dispose 页码） | 先同步落 store 后入调度（写前日志序）；seconds≤3600 由 chunkSeconds 单源保证 |
+ * | T1 | ∅→pending | enqueue（页码三收尾口：flusher flush/flushAll/spView dispose 尾账） | 先同步落 store 后入调度（写前日志序） |
  * | T2 | pending→in-flight | pump 取 per-paper 队头（最小 seq 未决条目） | 先持久化 in-flight 态再发 invoke（CO-3）；同 paper 至多一条 in-flight 且为队头（CR-1 队头阻塞）；跨 paper 并行（CO-2） |
  * | T3 | in-flight→done | send resolve | 立即 remove（无 tombstone） |
  * | T4 | in-flight→pending | send reject/同步抛错 | attempts++；指数退避（共享计时器，上界 5min）；队头保持不越序 |
@@ -13,12 +17,12 @@
  * | — | 排空闸门 | replayOnStart resolve 前 | 新 enqueue 只入队不派发（时间语义——回放期新条目不论 seq；回炉 W2） |
  *
  * 不变量（四条）：①store 任一时刻可序列化复原（同步写，每条目独立 key）；
- * ②单 paper 派发序=seq 严格升序（队头阻塞保证）；③outbox 永不回写 ledger
- * （时长账本唯一宿主仍=reading-time.ts ledger）；④dispose 停扫描不停已发
- * invoke 回调（进程未死→回调照常更新 store；进程死→下次启动 T5 接管）。
+ * ②单 paper 派发序=seq 严格升序（队头阻塞保证）；③outbox 永不回写账本
+ * （发送决意一经入队即冻结——页码在 enqueue 时点定死）；④dispose 停扫描不停
+ * 已发 invoke 回调（进程未死→回调照常更新 store；进程死→下次启动 T5 接管）。
  *
  * ── 接口层 ── 纯 TS 可单测：store/send/now/timers/onWarn 全注入（禁真
- * timer，reading-time.ts 同法）；id/seq/createdAt 由装配面唯一铸造（seq 全局
+ * timer）；id/seq/createdAt 由装配面唯一铸造（seq 全局
  * 续增单源→id=ob-<seq> 跨会话唯一），本模块只按 seq 定序不生成序。
  * localStorage 退化（设计 §7.5）：任一 store 操作抛错→内存重试+强 WARN
  * （F3/F5 失效面诚实申报）；适配器（每条目独立 key+损坏自清）拆驻
@@ -26,12 +30,11 @@
  * 共享退避=单闸门语义（任一失败后退避窗内全部派发暂停——CO-2 共享计时器
  * 的最简可测实现，自裁申报）。
  */
-/** 队列条目（设计 §3：跨重启持久的最小账目） */
+/** 队列条目（设计 §3：跨重启持久的最小账目；F-TIME-02 后=纯页码载荷） */
 export interface OutboxEntry {
   id: string
   paperId: string
   page?: number
-  seconds: number
   seq: number
   attempts: number
   state: 'pending' | 'in-flight' | 'dead-letter'
@@ -65,8 +68,8 @@ export interface OutboxTimers {
 
 export interface OutboxDeps {
   store: OutboxStore
-  /** 发送依赖（=装配面 saveProgress 原签名注入——单通道不变零新 IPC） */
-  send(paperId: string, page: number, secondsDelta: number): void | Promise<void>
+  /** 发送依赖（=装配面 saveProgress 页码载荷注入——单通道不变零新 IPC） */
+  send(paperId: string, page: number): void | Promise<void>
   now(): number
   timers: OutboxTimers
   /** WARN 单通道（装配接 toast：死信/退化=error，淘汰=info） */
@@ -215,7 +218,7 @@ export function createReadingTimeOutbox(deps: OutboxDeps): ReadingTimeOutbox {
       }
     }
     try {
-      void Promise.resolve(deps.send(e.paperId, e.page ?? 0, e.seconds)).then(
+      void Promise.resolve(deps.send(e.paperId, e.page ?? 0)).then(
         () => finish(true),
         (err: unknown) => finish(false, err)
       )

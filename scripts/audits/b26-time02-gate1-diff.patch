@@ -1,0 +1,3777 @@
+diff --git a/docs/invariants.md b/docs/invariants.md
+index c7e19bf842..523a410549 100644
+--- a/docs/invariants.md
++++ b/docs/invariants.md
+@@ -69,7 +69,7 @@
+ | INV-54 | 拖拽路径单源（P7E-02，2026-09-03 拖拽导入票）：①**File→path 解析唯一口**=preload webUtils 经 window.apiDrag.importDropped——路径字符串生命周期限 preload 堆内，renderer 全程零接触；②**fromPaths 通道对 renderer 隐藏**——PRELOAD_HIDDEN_METHODS 单源（const+PreloadApi Exclude 类型双消费），main 侧照常全量注册；被攻陷 renderer 即使拿到 window.api 也无法 invoke 任意路径串（合成 File 经 webUtils 解析得 ''=天然拒）；③**数量上限 100 双层门**（preload planDroppedImports MAX_DROP_FILES+importPathsReqSchema max 同值）；④**类型门**（W2 回炉）：File.type==='' 项剔除——目录项 type 恒 ''（目录可合法命名 *.pdf 击穿后缀滤）；已知残余=无注册类型的真实 PDF 被保守拒（提示语引导按钮导入，对话框路径无此限） | src/preload/drag-import.ts（planDroppedImports+MAX_DROP_FILES 头注）/src/preload/index.ts（buildDrag+隐藏面跳过）/src/shared/ipc/api-surface.ts（PRELOAD_HIDDEN_METHODS+PreloadDrag）/tests/contracts/preload-surface.test.ts（减集断言+apiDrag 形状）（P7E-02，2026-09-03 登记） | 单测（drag-import.test 八分支：'' 滤/类型门/后缀大小写/混合/数量门——M1/M5 变异红证在档+M4「删隐藏跳过」契约减集断言红）+契约测试（preload-surface）+e2e（import-drag.spec D2 装配级：合成 File→toast 真实文本） | 已锚定（单测+契约+e2e 级 P7E-02 本单；真实 OS 拖拽正向链=手动验收面申报） |
+ | INV-55 | 页内搜索会话挂文档身份+代际守卫（P7E-03，2026-09-03 页内高亮搜索票）：①**会话生命周期挂 reader 视图文档身份**——reader-search.store 持 sessionFileUrl，装配面 useReaderSearch fileUrl 键效应调 bindDoc(fileUrl)：**变化即代际失效+全清**（换文档/换内容寻址身份），不变=no-op（同文档视图往返/重挂不清——会话保留为正确语义；门一 W1 回炉：实例级 ref 在重挂首跑 null 跳过=旧文档会话复活漏洞，记账入 store 根治）；②**在途搜索代际守卫**（INV-03 同族）——submit 每次自增 generation，逐页回传代际不符→作废终止；close/reset 同使代际失效；③**索引全文档/高亮仅渲染窗口**——搜索计数与窗口无关（确定性投影），高亮矩形=TextLayer DOM span 建 Range 取 clientRects（pdfjs 4.10 每文本项恰一 span 契约，数量不符→该页零高亮只计数=降级不崩）；④**active 居中记账单源**=store.lastCentered（matches 数组身份+activeIndex 比对）——跨层实例/跨懒渲染重挂生效，防实例重建隐式重获居中资格劫持用户滚动（门一 W2 回炉） | src/renderer/features/reader/view/reader-search.store.ts（bindDoc/sessionFileUrl/lastCentered/generation 头注）/useReaderSearch.tsx（fileUrl 键效应→bindDoc+keymap 'reader-search' 成对）/SearchHighlightLayer.tsx（居中记账读写 store+span 契约降级）/reader-search.ts（纯函数域头注）（P7E-03，2026-09-03 登记） | 单测（reader-search.store.test：bindDoc 变化/同值+代际守卫 S7+reset 序列；reader-search-wiring.test：fileUrl 变化/重挂不重置+keymap 注册注销成对 INV-14+pageTurner 条件；reader-search-ui.test：S11 MO 重算锚+层重挂不二次居中——M6 变异「摘 observer.observe」红证在档）+e2e（reader-search.spec 装配级全链：Ctrl+F→小写跨大小写命中→逐处跳页高亮→Esc 清零） | 已锚定（单测+wiring+e2e 级 P7E-03 本单） |
+ | INV-56 | 导出内容构建器单源+剪贴板写单口（P7E-04，2026-09-03 导出剪贴板票）：①**文件路径与剪贴板路径共用同一构建器**——export/clipboard 通道经 buildBibtex/buildCsv 直用（ipc 层 format 枚举分发），禁复制第二份序列化（题录格式漂移不可能——文件导出与剪贴板导出同源）；②**剪贴板写唯一口**=IpcDeps.clipboard 注入面（ipc 层经 deps 消费，bootstrap 装配 electron.clipboard——DB 派生内容全程 main 侧，renderer 只发 ids+format）；③**先构建后写**（构建失败零剪贴板副作用）；④无对话框→无 CANCELLED 分支（与文件导出 exportTo 的语义差异——失败面只有构建/写入两种）；已知还原项=clipboard 现为可选注入（受锁 makeIpcDeps 桩工厂禁改下的处置+handler 响亮守卫），下次合法触碰 tests/utils/ipc-deps.ts 的场次补必填+桩工厂同步 | src/main/ipc/export_.ts（exportClipboard+头注）/src/main/ipc/ipc-deps.ts（clipboard 注入面）/src/main/bootstrap.ts（electron.clipboard 装配）/src/shared/ipc/schemas.ts+api-surface.ts（clipboardReqSchema+通道）（P7E-04，2026-09-03 登记） | 单测（export-clipboard.test：bibtex/csv 委托逐参+count 回传+先构建后写「service 抛错→clipboard 零调用」+装配缺失响亮——M1/M2 变异红证在档）+renderer（paper-detail-clip.test：E1/E2/E4 busy 短路+toast 逐字——M3/M4 红证在档）+e2e（export-clipboard.spec：主进程 clipboard.readText 含 @+title——P7-A 读回先例+清场竞态防线） | 已锚定（单测+renderer+e2e 级 P7E-04 本单） |
+-| INV-57 | 阅读时长单口累加+分片上界（P7E-05，2026-09-03 阅读时长统计票）：①**reading_seconds 唯一写点**=papers.repo updateReadPage 第三参（原子 SQL 累加 reading_seconds=reading_seconds+?，禁 read-modify-write 两步）；②**时长账本唯一宿主**=reading-time.ts 模块 ledger（关 tab/closeAll/卸载三收尾口经复合 flusher 与进度账同批落库——漏一即丢账的结构性防线）；③**计时门=ready×visible 双条件**（输入级 idle 不做=v1 申报边界）；settle 吸收仅 visible（防 hidden 段虚计——R1 回炉）/结转不依赖可见性（可见零头实转不丢——门二 R3 裁决解耦）；④**单次 invoke 时长上界=3600×chunkSeconds 分片单源**（三消费点：invokeOne（R5/R6）+dispose 逐笔分片（R7）+setup onFlush 防御深度——>1h 回吐分片落账禁单笔超界，门一 R2+门二 R3 两轮收口）。注记面（P7X-02 落地更新 2026-09-04）：R7 卸载双 invoke 已并入 outbox 单队列（时长 onFlush+进度 sp.dispose 均 enqueue——页码两来源回退窗消除）；分片级失败=outbox 兜底（at-least-once,重复界 N×3600s/条——T5 计 attempts 拦停;P7X-02 落地）；localStorage 退化面=内存重试+强 WARN 申报；ledger 无 24h 钳制（「24 片/24h」=物理估算口径非逻辑封顶）；sec<0 入 chunkSeconds=不可达前置（settle Math.max(0) 保证） | src/main/db/repos/papers.repo.ts（updateReadPage 第三参）/src/renderer/features/reader/time/reading-time.ts（ledger/settle 吸收结转解耦/chunkSeconds 分片单源+PROGRESS_SECONDS_CHUNK=3600 与 schemas 同值对齐）/reading-time-setup.ts（复合 flusher 装配+onFlush 分片消费）/src/shared/ipc/schemas.ts（secondsDelta int 0..3600 optional）/src/main/db/migrations/008_reading_time.sql（P7E-05，2026-09-03 登记） | 单测（reading-time.test：R1~R7+R10 态空间+R3×R6 跨格（hidden 收尾零虚计）+R2 分片 4000→3600+400+R3 dispose 分片双 invoke+可见零头 hidden 结转——M5（settle 吸收门）/M6（invokeOne 分片）/M7（dispose 分片）变异红证在档，M2 载体失效转移 M5 实录；papers-reading-time.test：累加原子 30+45=75+R8 缺省 0+回读；migrate-reading-time.test：R9 新库/存量升级 user_version=8；reader-time.test：service 透传）+e2e（reader-reading-time.spec：存量库升级链+「阅读 0 分钟」显示面） | 已锚定（单测+e2e 级 P7E-05 本单） |
++| INV-57 | **已退役（2026-09-19 F-TIME-02 用户裁决移除阅读时长功能——写点原子累加/账本唯一宿主/计时门/3600 分片四款全部随功能删除；008 加列由 009 DROP COLUMN 反转；outbox 机制保留为页码三收尾口通道，其不变量归 P7X-02 设计书承载）。以下原文历史留档：** 阅读时长单口累加+分片上界（P7E-05，2026-09-03 阅读时长统计票）：①**reading_seconds 唯一写点**=papers.repo updateReadPage 第三参（原子 SQL 累加 reading_seconds=reading_seconds+?，禁 read-modify-write 两步）；②**时长账本唯一宿主**=reading-time.ts 模块 ledger（关 tab/closeAll/卸载三收尾口经复合 flusher 与进度账同批落库——漏一即丢账的结构性防线）；③**计时门=ready×visible 双条件**（输入级 idle 不做=v1 申报边界）；settle 吸收仅 visible（防 hidden 段虚计——R1 回炉）/结转不依赖可见性（可见零头实转不丢——门二 R3 裁决解耦）；④**单次 invoke 时长上界=3600×chunkSeconds 分片单源**（三消费点：invokeOne（R5/R6）+dispose 逐笔分片（R7）+setup onFlush 防御深度——>1h 回吐分片落账禁单笔超界，门一 R2+门二 R3 两轮收口）。注记面（P7X-02 落地更新 2026-09-04）：R7 卸载双 invoke 已并入 outbox 单队列（时长 onFlush+进度 sp.dispose 均 enqueue——页码两来源回退窗消除）；分片级失败=outbox 兜底（at-least-once,重复界 N×3600s/条——T5 计 attempts 拦停;P7X-02 落地）；localStorage 退化面=内存重试+强 WARN 申报；ledger 无 24h 钳制（「24 片/24h」=物理估算口径非逻辑封顶）；sec<0 入 chunkSeconds=不可达前置（settle Math.max(0) 保证） | src/main/db/repos/papers.repo.ts（updateReadPage 第三参）/src/renderer/features/reader/time/reading-time.ts（ledger/settle 吸收结转解耦/chunkSeconds 分片单源+PROGRESS_SECONDS_CHUNK=3600 与 schemas 同值对齐）/reading-time-setup.ts（复合 flusher 装配+onFlush 分片消费）/src/shared/ipc/schemas.ts（secondsDelta int 0..3600 optional）/src/main/db/migrations/008_reading_time.sql（P7E-05，2026-09-03 登记） | 单测（reading-time.test：R1~R7+R10 态空间+R3×R6 跨格（hidden 收尾零虚计）+R2 分片 4000→3600+400+R3 dispose 分片双 invoke+可见零头 hidden 结转——M5（settle 吸收门）/M6（invokeOne 分片）/M7（dispose 分片）变异红证在档，M2 载体失效转移 M5 实录；papers-reading-time.test：累加原子 30+45=75+R8 缺省 0+回读；migrate-reading-time.test：R9 新库/存量升级 user_version=8；reader-time.test：service 透传）+e2e（reader-reading-time.spec：存量库升级链+「阅读 0 分钟」显示面） | 已锚定（单测+e2e 级 P7E-05 本单） |
+ | INV-58 | 拖选期视觉与保存 rects 同几何管线（F-A6，2026-09-04 随 c 票落地登记；**F-A8 门2 扩域**同日）：快路径（evaluateVisual）与全量（evaluateFull/settle）必须属**同一几何族**（pdf-item-geometry 项声明几何族：rectsForOffsetRange+基线分组 baselineGroupBlocks+bandsFromItems——b2 主链迁移/c 快路径接线），禁止第二几何口径（防松手同帧把旧错几何带回——deepseek 终位 WARN-3）；rect 与 bands 同由项几何+styles 派生（C5，禁项源 rect×DOM 量测 band 混用——matchBand 两口径混用=b 链错绑同构风险）；**适用域=selection 产链（evaluate→paint→pending.anchor.rects→save）+Annotation/AiAnnotation 重锚链（F-A8 门2 起项几何族=重锚主链）**；DOM 量测仅允许存在于显式回退层（resolveAnnotationRectsDom=S4 页级回退，**函数体零改**=INV-47 数值面锚）且产物必须标域（source:'dom'——INV-60）；**[F-GEOM-01-G2 保存门，2026-09-18] selection 全量评估 item 链失败（页项缺失/偏移对账失败/计算异常三因）＝仅显示不入库**：paint 照渲 DOM 回退形状（视觉连续）＋pending=null（不挂工具条＝无保存入口）——「所见≠所存时不给保存入口」，保存链落库 rects 恒为项族形状（原 pending=DOM 形状 anchor 可入库的接缝闭合，设计书 §2.4/§2.2 序列⑤）；诊断单源＝itemChainFor 三因 warn；**S6 名实（门一 W1 补注）：S6 触发=项盒健康代理——blocks 经 clamp01×base 构造恒落盒内，unhealthy 实由 boxes[项几何]越界触发，项盒健康而 DOM 链独立病理时 S6 不拦（门 3 随回退层去留复核）**；回退层允许（DOM 量测=快→全量→DOM 三层回退的末端，warn 不静默——三回退因：页项缺失/偏移对账失败/计算异常）；**[F-GEOM-01-G3 坐标域边界注，2026-09-18]** 坐标域三处换算的域归属——selection-geometry localScale=UI 布局域换算（非 PDF 几何域，不参与锚定/归一化数学）；lineage-viewport rootToLocalScale=lineage 域件（INV-43 svg 口径，跨域出 reader 几何战役范围）；annotation-resolve itemViewportOf=项族域内换算（entry 反推，产物 viewport 只入项几何族数学——精度带=门一 W3 口径既有，禁直接混入 DOM 量测域比较）；防 r3a 型域差事故重演（F-A6-b2 实现事故：viewport 产 textLayer 盒本地域 vs gBCR 绝对域混用，G2 检测器实战拦截——事故档 f-a6-diag-out-r3a 在案） | src/renderer/features/reader/interact/selection-evaluate.ts（双路径单文件：快=evaluateVisual 项几何直取/全量=evaluateFull 保存链权威）+anchors/pdf-item-geometry.ts（项几何族单源：viewportTransformFor/rectsForOffsetRange/baselineGroupBlocks/bandsFromItems+G2 检测器阈值常量）+interact/SelectionLayer.tsx 接线（evaluate 域拆出+paint 态承载）+anchors/page-items.store.ts（zustand 单源注册表——页项/几何下钻通道）+**anchors/annotation-resolve-layered.ts（F-A8 门2：重锚三层编排器 S0~S6——AnnotationLayer/AiAnnotationLayer 共形消费）** | 单测（selection-evaluate.test：快慢等价 it——同夹具 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）+同帧覆盖 it——快路径帧落地后全量覆盖（mid-drag zoom 差分形态，终态=全量产物）+快路径跨页守卫 it+W1 mouseup 顺序锚；MUT3 快路径守卫(ii) 删除红证在档）+四轮取证 A/B 对照（scripts/audits/f-a6-forensic-verdict.md §11/§12——甲乙同链 shift ≤0.01px 按构造+D1 面逐位零回归）+**annotation-layer.test/ai-annotation-layer.test F-A8 门2 describe（S0 缺席/S1 对账失败回退/S2 项几何产物/S3b 条目回退/S6 病理抑制/CR1 竞态 fixture/域标记——M1 删订阅/M2 删 S6/M3 主链换 DOM 变异红证在档）**；G2 保存门锚＝selection-item-chain.test 回退①改写（工具条 null——变异红证在档） | 已锚定（2026-09-04 F-A6；F-A8 门2 扩域同日） |
+ 
+ | INV-59 | 重锚同族配对令（F-A8 门2，2026-09-04 随主链切换落地登记）：标注/AI 段重锚产物 resolved.rects 与 resolved.bands 必须**同几何族**（项几何主链=rectsForOffsetRange 项盒+bandsFromItems 同源派生；S4 DOM 回退层=findRangeAtOffset 行盒+bandsForTextNodes 节点口径同源）——主链禁跨族配对（消 R1：正确 rects×失真 bands 互漂错绑）；跨族配对仅允许显式回退格且属登记边界：**S3b 条目回退**（存量 rects[库]×bandsNearRects[DOM 量测]——现状语义逐位保持）与 **S5/S6 页级回退**（DOM 产物或其抑制后的存量直显）；matchBand 阈值（\|Δcenter\|≤rect.h）仍在为跨格边界兜底 | src/renderer/features/reader/anchors/annotation-resolve.ts（ResolvedAnnotation 域内 rects/bands 成对产出+resolveAnnotationRectsItem 同族管线）+annotation-resolve-layered.ts（三层编排=同族配对的编排保证——主链产物 rect/band 同域，跨族仅在登记回退格） | 单测（annotation-layer.test F-A8 门2 describe：S2 项几何产物 rect/band 同族数值断言（块几何=band 几何同基线）+S3b/S6 回退格跨族配对=登记边界渲染断言；anchor-item-verify.test：resolveAnnotationRectsItem 产物与 itemSelectionGeometry 同参直调逐位一致（rects+bands 双断言）） | 已锚定（单测级 F-A8 门2 本单——证据件 anchor-item-verify.test.tsx 为门 0 遗留未跟踪件,随门 2 收口提交补 git add 后生效[门二 W1 标注]） |
+diff --git a/locks/manifest.json b/locks/manifest.json
+index 20ba9f102d..afde4c2c9a 100644
+--- a/locks/manifest.json
++++ b/locks/manifest.json
+@@ -1,5 +1,5 @@
+ {
+-    "generatedAt":  "2026-09-19T01:07:00.9125742Z",
++    "generatedAt":  "2026-09-19T02:00:49.8369541Z",
+     "files":  [
+                   {
+                       "path":  ".github/workflows/ci.yml",
+@@ -7,7 +7,7 @@
+                   },
+                   {
+                       "path":  "docs/invariants.md",
+-                      "sha256":  "2a51396922e69444dd3877f5fc2927e2c38a1ac1fce28245a90df55f4e121690"
++                      "sha256":  "36c60e924f8aab7122c85578b6d9a1e1ef6d1cf51a2b08a4a02fad33b2dd345a"
+                   },
+                   {
+                       "path":  "electron.vite.config.ts",
+@@ -611,11 +611,11 @@
+                   },
+                   {
+                       "path":  "scripts/test-surface.baseline.json",
+-                      "sha256":  "3c13fa9f420b3c6479adab64223fa971adee53c0c8ca95ed15af5371812e21f5"
++                      "sha256":  "72fe85d81968cdd2397fcd37eb3c293cfa89e07ac44e8053c9d36a793bf9ed82"
+                   },
+                   {
+                       "path":  "scripts/test-surface.exemptions.json",
+-                      "sha256":  "ac07e5493c001a3fa530c577860655cb6a84307534172390299a2a5bc7aa126b"
++                      "sha256":  "c1106a882f2eb886d8ed8422b936289f4ad8d7fc8082de6112baf4bb5f7c0522"
+                   },
+                   {
+                       "path":  "scripts/test-surface/extract.mjs",
+@@ -657,6 +657,10 @@
+                       "path":  "src/main/db/migrations/008_reading_time.sql",
+                       "sha256":  "0b096f12238996ee0b6a3b29426dbc423576f5588e7ccd9d937200daa73b0fd9"
+                   },
++                  {
++                      "path":  "src/main/db/migrations/009_reading_time_drop.sql",
++                      "sha256":  "50afe52ecf65b39ef14b5a54813438373e9af66b5c8342a373080c9a529ca4ef"
++                  },
+                   {
+                       "path":  "src/shared/annotation-order.ts",
+                       "sha256":  "694d039513f1f94c3e5fe94d73540e274cdef87f13856df4f937a54cd8cbb8ab"
+@@ -679,7 +683,7 @@
+                   },
+                   {
+                       "path":  "src/shared/ipc/schemas.ts",
+-                      "sha256":  "8df9e6fbda30ccd5bb3db8cf79ddba1934c6b13f362245945d057b61734b3071"
++                      "sha256":  "3cb80b3a15b02dd22b8963b19330d90695cfc45a6bc0d2f9a417859e0044ff3a"
+                   },
+                   {
+                       "path":  "src/shared/models/ai-note.ts",
+@@ -703,7 +707,7 @@
+                   },
+                   {
+                       "path":  "src/shared/models/paper.ts",
+-                      "sha256":  "2c05ef33575c5de6879d212849ac7effb4f0b3a4fa4c6f2f6e4fa8dcd9b9f604"
++                      "sha256":  "312b85f988e3ce99a7168288f52f223e4f5911b2c4310e965d448f0451a15b35"
+                   },
+                   {
+                       "path":  "src/shared/models/tag.ts",
+@@ -739,7 +743,7 @@
+                   },
+                   {
+                       "path":  "tests/contracts/schemas.test.ts",
+-                      "sha256":  "b44abb3c2059a985fe3e531ce1fe2ea24438b7f2afa07f0d05274938580ed9d2"
++                      "sha256":  "038e2cdbb7fe148844746c9175ec5324baec05bab8f18c3b0cb2fd933c62389e"
+                   },
+                   {
+                       "path":  "tests/e2e/ai-notes-section.spec.ts",
+@@ -765,10 +769,6 @@
+                       "path":  "tests/e2e/lineage.spec.ts",
+                       "sha256":  "b25fa272d615d995842abc1ac199668d9d9e667e2fe31aa15ba329000cc7c612"
+                   },
+-                  {
+-                      "path":  "tests/e2e/reader-reading-time.spec.ts",
+-                      "sha256":  "4a465dfcbc4dceaaf7f087febdc304ca4cb4db052b9a40bdf165aaf8c7830aa9"
+-                  },
+                   {
+                       "path":  "tests/e2e/reader-scroll.spec.ts",
+                       "sha256":  "f2636e369600095ee3fa2f5c856a1a76983bf0c883acd648aa2ab008618c2022"
+@@ -783,7 +783,7 @@
+                   },
+                   {
+                       "path":  "tests/e2e/reading-time-replay.spec.ts",
+-                      "sha256":  "c78670f5b7f9c53a08791528e9e3b828294f5362ec68f8b0ee03dd6fc8966521"
++                      "sha256":  "ab6bdf1f48c0ba01c9d8817cedfc94664523aef9992351811bb0e458c3769db2"
+                   },
+                   {
+                       "path":  "tests/e2e/seed-paper.mjs",
+@@ -843,15 +843,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/db/migrate.test.ts",
+-                      "sha256":  "a87e3d0db473edbad1da758d145974d0377e80a92534181962865818ebc8b782"
++                      "sha256":  "4e18bfa82942e8c45f8c4373ba773a0c35009079e01361d1e83c86ab34ba0682"
+                   },
+                   {
+                       "path":  "tests/unit/db/migrate-reading-time.test.ts",
+-                      "sha256":  "083b9d69e8b47cfc02b842c1d9845ee703b3f7e52b03e62c209da83b643bbc66"
+-                  },
+-                  {
+-                      "path":  "tests/unit/db/papers-reading-time.test.ts",
+-                      "sha256":  "ef145100b7f62c89759103e6768252219eb6a915ae4d4c9960de48a753bc7cd8"
++                      "sha256":  "645a7a3af9f45ed23fa4b50b3d7ef193f6cced4431ee137dc43dce7e87180a12"
+                   },
+                   {
+                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
+@@ -1205,13 +1201,9 @@
+                       "path":  "tests/unit/renderer/reader-store-undo-race.test.ts",
+                       "sha256":  "7681a26e96a22e75dd5fc99fe48639ccd33c3927e493e51581e64335a028eaf9"
+                   },
+-                  {
+-                      "path":  "tests/unit/renderer/reading-time.test.ts",
+-                      "sha256":  "3320765abbb451b4e220e744108fefecbfd79535d56aca1c043aeeb0d8a2bbf2"
+-                  },
+                   {
+                       "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
+-                      "sha256":  "47b763c6302cd4d42b9789e95825b8d9dea363385ad593733d36c91b1ed497b9"
++                      "sha256":  "cb9398545218a6996ce90462c00aad18ad9b533a35973e67e5220e153b60f5d2"
+                   },
+                   {
+                       "path":  "tests/unit/renderer/release-affinity.test.ts",
+@@ -1335,7 +1327,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.assemble.test.ts",
+-                      "sha256":  "993a5c6f084b2ed63de63001afafd95988f5652f999d748e465123d8ebabab38"
++                      "sha256":  "94c5c7b34f796064011ce8108160877cd14c80fc71f1555eaa500e122b843c51"
+                   },
+                   {
+                       "path":  "tests/unit/services/corpus.export.test.ts",
+@@ -1343,11 +1335,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/enrich.service.test.ts",
+-                      "sha256":  "a3956b3754da3804a66a87c4a57c85aebb26131bcb143708507f7be1146436af"
++                      "sha256":  "26f0ec475d61bd3a2e061eb12cef3568dd35eeb528b85fa0f4097bd7536c3353"
+                   },
+                   {
+                       "path":  "tests/unit/services/export.service.test.ts",
+-                      "sha256":  "7bffa25a66492ead0692ea80195cd54473eaeaad07106c8e4545344da8482d48"
++                      "sha256":  "057861c47b0e8dbf70a262dd7548b8cf1b56654b38c34edffe7055ddba79fe78"
+                   },
+                   {
+                       "path":  "tests/unit/services/file-store.test.ts",
+@@ -1359,7 +1351,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/library.service.test.ts",
+-                      "sha256":  "a52120eed09010e3f21eaf498f20887717fbb0261f6f959a1c6f9ea02c76423b"
++                      "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                   },
+                   {
+                       "path":  "tests/unit/services/lineage-import.test.ts",
+@@ -1371,11 +1363,11 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/lineage-tags.test.ts",
+-                      "sha256":  "04a4366e324b138d356c08e3f258abf58a3c76c637bbf8e3d7d644812768952b"
++                      "sha256":  "59074f4c2e0804b84a538621af9608bca30e9df8ff2134e3cf1a93abacebf45b"
+                   },
+                   {
+                       "path":  "tests/unit/services/markdown.report.test.ts",
+-                      "sha256":  "dca43a6c13bda54a0fd9f7c795f4b5b2e8950634b2039784895b8eabbe281e26"
++                      "sha256":  "67bb1092b7dbb9d53a6f626d8b9c431cfea48ae266f5a4180ea27fc3802b4de1"
+                   },
+                   {
+                       "path":  "tests/unit/services/notes.service.test.ts",
+@@ -1399,11 +1391,7 @@
+                   },
+                   {
+                       "path":  "tests/unit/services/reader.service.test.ts",
+-                      "sha256":  "cfb3247305167520c35b9b786304d1811f1ad19727896f80f5cd9512a83be47d"
+-                  },
+-                  {
+-                      "path":  "tests/unit/services/reader-time.test.ts",
+-                      "sha256":  "00b6d6d37806d15f86c666fec405ebfe25a9a067a7e1444f422312023a4a656d"
++                      "sha256":  "5051cc12ca26cc6b87e4577bd1c24e169e2600c0a9c377597942575442d00b80"
+                   },
+                   {
+                       "path":  "tests/unit/services/shared/atomic-write.test.ts",
+@@ -1479,7 +1467,7 @@
+                   },
+                   {
+                       "path":  "tests/utils/factories.ts",
+-                      "sha256":  "d4ee766297451e341d76b217f41dc590af21e0d47e97b3705aa0845d8c0f6dee"
++                      "sha256":  "32d237e52e0da0212685cad7dbbbce536886a7e0829b7e7a21236416869c154b"
+                   },
+                   {
+                       "path":  "tests/utils/fixtures.ts",
+diff --git a/scripts/test-surface.baseline.json b/scripts/test-surface.baseline.json
+index 594b1b35d9..f63fb82f0a 100644
+--- a/scripts/test-surface.baseline.json
++++ b/scripts/test-surface.baseline.json
+@@ -1799,21 +1799,17 @@
+           ]
+         },
+         {
+-          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）\"]",
++          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段\"]",
+           "describePath": [
+             "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+           ],
+-          "title": "saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）",
++          "title": "saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段",
+           "markers": [],
+           "line": 312,
+           "assertions": [
+-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 0 }).success).toBe(true)",
+-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3600 }).success).toBe(true)",
+             "expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)",
+-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3601 }).success).toBe(false)",
+-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: -1 }).success).toBe(false)",
+-            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 1.5 }).success).toBe(false)",
+-            "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)"
++            "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)",
++            "expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 60 }).success).toBe(false)"
+           ]
+         },
+         {
+@@ -1823,7 +1819,7 @@
+           ],
+           "title": "importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）",
+           "markers": [],
+-          "line": 323,
++          "line": 321,
+           "assertions": [
+             "expect(S.importPathsReqSchema.safeParse({ paths: paths(1) }).success).toBe(true)",
+             "expect(S.importPathsReqSchema.safeParse({ paths: paths(100) }).success).toBe(true)",
+@@ -1839,7 +1835,7 @@
+           ],
+           "title": "exportSelection：paperIds 1/1000 过、0/1001 拒",
+           "markers": [],
+-          "line": 332,
++          "line": 330,
+           "assertions": [
+             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1) }).success).toBe(true)",
+             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1000) }).success).toBe(true)",
+@@ -1854,7 +1850,7 @@
+           ],
+           "title": "corpusSession：paperIds 缺省过（全库）、0 条/1001 条拒",
+           "markers": [],
+-          "line": 340,
++          "line": 338,
+           "assertions": [
+             "expect(S.corpusSessionReqSchema.safeParse({}).success).toBe(true)",
+             "expect(S.corpusSessionReqSchema.safeParse({ paperIds: ['p1'] }).success).toBe(true)",
+@@ -1869,7 +1865,7 @@
+           ],
+           "title": "标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界",
+           "markers": [],
+-          "line": 349,
++          "line": 347,
+           "assertions": [
+             "expect(S.tagNameReqSchema.safeParse({ name: '课' }).success).toBe(true)",
+             "expect(S.tagNameReqSchema.safeParse({ name: '课'.repeat(50) }).success).toBe(true)",
+@@ -1887,7 +1883,7 @@
+           ],
+           "title": "noteSave 标题界=NOTE_TITLE_MAX 常量接线：N 过、N+1 拒（INV-11 单一真相源）",
+           "markers": [],
+-          "line": 359,
++          "line": 357,
+           "assertions": [
+             "expect(S.NOTE_TITLE_MAX).toBe(200)",
+             "expect(S.noteSaveReqSchema.safeParse({ paperId: 'p1', title: '题'.repeat(S.NOTE_TITLE_MAX), contentMd: '' }).success).toBe(true)",
+@@ -1901,7 +1897,7 @@
+           ],
+           "title": "extractRequestEvent：annotations 上界 5000 过、5001 拒",
+           "markers": [],
+-          "line": 365,
++          "line": 363,
+           "assertions": [
+             "expect(S.extractRequestEventSchema.safeParse(payload(5000)).success).toBe(true)",
+             "expect(S.extractRequestEventSchema.safeParse(payload(5001)).success).toBe(false)"
+@@ -1914,7 +1910,7 @@
+           ],
+           "title": "openExternal：url 长度界 2048 过、2049/空串拒",
+           "markers": [],
+-          "line": 378,
++          "line": 376,
+           "assertions": [
+             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2048) }).success).toBe(true)",
+             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2049) }).success).toBe(false)",
+@@ -1928,7 +1924,7 @@
+           ],
+           "title": "corpusItem 判别联合：四 kind 各过；anno 缺 annotationId 拒、page 带 annotationId 拒（refine）；未知 kind 拒",
+           "markers": [],
+-          "line": 384,
++          "line": 382,
+           "assertions": [
+             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'fulltext' }).success).toBe(true)",
+             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'figure', figure: 'page' }).success).toBe(true)",
+@@ -1947,7 +1943,7 @@
+           ],
+           "title": "lineageImportRes 两臂互斥：ok:true 带 errors 拒、ok:false 缺 errors 拒、ok 非字面量拒",
+           "markers": [],
+-          "line": 400,
++          "line": 398,
+           "assertions": [
+             "expect(S.lineageImportResSchema.safeParse({ ok: true, nodeCount: 0, edgeCount: 0, errors: [] }).success).toBe(false)",
+             "expect(S.lineageImportResSchema.safeParse({ ok: false }).success).toBe(false)",
+@@ -1961,7 +1957,7 @@
+           ],
+           "title": "lineagePaperMetrics null 语义：citedByCount null/0 均过（0=值非缺）；venueTier 三档过、T9 拒",
+           "markers": [],
+-          "line": 406,
++          "line": 404,
+           "assertions": [
+             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: 0, venueTier: null }).success).toBe(true)",
+             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T1' }).success).toBe(true)",
+@@ -1976,7 +1972,7 @@
+           ],
+           "title": "嵌套模型层 strict 探针：rects/patch/failed/skipped/errors/annotations 元素与 paperMetrics 值去 strict 即红（首层探针覆盖不到的第二层）",
+           "markers": [],
+-          "line": 413,
++          "line": 411,
+           "assertions": [
+             "expect(S.saveAnnotationReqSchema.safeParse({ paperId: 'p1', annotation: { ...annotationInput, rects: [badRect] } }).success).toBe(false)",
+             "expect(S.annotationListResSchema.safeParse([{ ...annotation, rects: [badRect] }]).success).toBe(false)",
+@@ -1995,7 +1991,7 @@
+           ],
+           "title": "appSettings：缺省填充 theme=system/uiScale=small；非法 email/theme/uiScale 拒",
+           "markers": [],
+-          "line": 429,
++          "line": 427,
+           "assertions": [
+             "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'system', uiScale: 'small' })",
+             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)",
+@@ -2010,7 +2006,7 @@
+           ],
+           "title": "UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）",
+           "markers": [],
+-          "line": 440,
++          "line": 438,
+           "assertions": [
+             "expect(Object.keys(S.UI_SCALE).sort()).toEqual([...S.uiScaleSchema.options].sort())",
+             "expect(S.UI_SCALE).toEqual({ small: 1, medium: 1.1, large: 1.25 })"
+@@ -2023,7 +2019,7 @@
+           ],
+           "title": "windowControlAction 四动作枚举 pin（action 枚举只住此处——renderer 复用禁手写第二份）",
+           "markers": [],
+-          "line": 445,
++          "line": 443,
+           "assertions": [
+             "expect([...S.windowControlActionSchema.options]).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])",
+             "expect(S.windowControlReqSchema.safeParse({ action: 'bogus' }).success).toBe(false)"
+@@ -2036,7 +2032,7 @@
+           ],
+           "title": "trueAck/windowControlRes 拒 ok:false（literal(true) 单值域）",
+           "markers": [],
+-          "line": 450,
++          "line": 448,
+           "assertions": [
+             "expect(S.trueAckSchema.safeParse({ ok: false }).success).toBe(false)",
+             "expect(S.windowControlResSchema.safeParse({ ok: false, maximized: true }).success).toBe(false)"
+@@ -2049,7 +2045,7 @@
+           ],
+           "title": "netDiagItem latencyMs：-1（超时哨兵）过、-2 拒",
+           "markers": [],
+-          "line": 455,
++          "line": 453,
+           "assertions": [
+             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -1 }).success).toBe(true)",
+             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -2 }).success).toBe(false)"
+@@ -2062,7 +2058,7 @@
+           ],
+           "title": "内联枚举基数 pin：clipboard format 两值/zcodeLinkDetect state 五值/导入导出事件 phase 四与三值（新增枚举值须意识化更新）",
+           "markers": [],
+-          "line": 460,
++          "line": 458,
+           "assertions": [
+             "expect([...(S.clipboardReqSchema.shape.format.options)]).toEqual(['bibtex', 'csv'])",
+             "expect([...(S.zcodeLinkDetectResSchema.shape.state.options)]).toEqual([ 'zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error' ])",
+@@ -2077,7 +2073,7 @@
+           ],
+           "title": "zcodeLinkDetect 五态枚举探针：各态过、bogus 拒（四呈现态+error）",
+           "markers": [],
+-          "line": 473,
++          "line": 471,
+           "assertions": [
+             "expect(S.zcodeLinkDetectResSchema.safeParse({ state, status: null, overwrite: false }).success, `态 ${state} 应合法`).toBe(true)",
+             "expect(S.zcodeLinkDetectResSchema.safeParse({ state: 'bogus', status: null, overwrite: false }).success).toBe(false)"
+@@ -2090,7 +2086,7 @@
+           ],
+           "title": "id 类字段空串拒（paperId/annotationId/tagId/noteId/lineage id——min(1) 全位探针）",
+           "markers": [],
+-          "line": 480,
++          "line": 478,
+           "assertions": [
+             "expect(S.paperIdReqSchema.safeParse({ paperId: '' }).success).toBe(false)",
+             "expect(S.annotationIdReqSchema.safeParse({ annotationId: '' }).success).toBe(false)",
+@@ -2106,7 +2102,7 @@
+           ],
+           "title": "aiSensorStatusRes/noteGetRes 可空两形：null 与对象均过（null=status.json 不存在/无笔记的合法态）",
+           "markers": [],
+-          "line": 488,
++          "line": 486,
+           "assertions": [
+             "expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)",
+             "expect(S.noteGetResSchema.safeParse(null).success).toBe(true)",
+@@ -2405,27 +2401,6 @@
+         }
+       ]
+     },
+-    "tests/e2e/reader-reading-time.spec.ts": {
+-      "ticketIds": [],
+-      "conditionalSkipSites": [
+-        "test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)"
+-      ],
+-      "hardSkipSites": [],
+-      "cases": [
+-        {
+-          "key": "[\"P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场\"]",
+-          "describePath": [],
+-          "title": "P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场",
+-          "markers": [],
+-          "line": 65,
+-          "assertions": [
+-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+-            "expect(win.getByText('阅读', { exact: true })).toBeVisible({ timeout: 20_000 })",
+-            "expect(win.getByText('0 分钟', { exact: true })).toBeVisible()"
+-          ]
+-        }
+-      ]
+-    },
+     "tests/e2e/reader-scroll.spec.ts": {
+       "ticketIds": [],
+       "conditionalSkipSites": [
+@@ -2876,13 +2851,12 @@
+       "hardSkipSites": [],
+       "cases": [
+         {
+-          "key": "[\"P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库\"]",
++          "key": "[\"P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）\"]",
+           "describePath": [],
+-          "title": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库",
++          "title": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）",
+           "markers": [],
+-          "line": 98,
++          "line": 100,
+           "assertions": [
+-            "expect(row.s).toBe(210)",
+             "expect(row.p).toBe(1)"
+           ]
+         }
+@@ -3511,31 +3485,48 @@
+       "hardSkipSites": [],
+       "cases": [
+         {
+-          "key": "[\"db/migrate —— 008 reading_time（P7E-05 R9）\",\"新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0\"]",
++          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）\"]",
+           "describePath": [
+-            "db/migrate —— 008 reading_time（P7E-05 R9）"
++            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
+           ],
+-          "title": "新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0",
++          "title": "新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）",
+           "markers": [],
+-          "line": 11,
++          "line": 18,
+           "assertions": [
+-            "expect(result.currentVersion).toBe(8)",
+-            "expect(readUserVersion(db)).toBe(8)",
+-            "expect(row.reading_seconds).toBe(0)"
++            "expect(result.currentVersion).toBe(9)",
++            "expect(readUserVersion(db)).toBe(9)",
++            "expect(papersColumns(db)).not.toContain('reading_seconds')",
++            "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
+           ]
+         },
+         {
+-          "key": "[\"db/migrate —— 008 reading_time（P7E-05 R9）\",\"存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8\"]",
++          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9\"]",
+           "describePath": [
+-            "db/migrate —— 008 reading_time（P7E-05 R9）"
++            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
+           ],
+-          "title": "存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8",
++          "title": "存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9",
+           "markers": [],
+-          "line": 27,
++          "line": 32,
+           "assertions": [
+-            "expect(result.appliedVersions).toEqual([8])",
+-            "expect(readUserVersion(db)).toBe(8)",
+-            "expect(row.reading_seconds).toBe(0)"
++            "expect(papersColumns(db)).toContain('reading_seconds')",
++            "expect(result.appliedVersions).toEqual([9])",
++            "expect(readUserVersion(db)).toBe(9)",
++            "expect(papersColumns(db)).not.toContain('reading_seconds')"
++          ]
++        },
++        {
++          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在\"]",
++          "describePath": [
++            "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
++          ],
++          "title": "存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在",
++          "markers": [],
++          "line": 44,
++          "assertions": [
++            "expect(result.appliedVersions).toEqual([8, 9])",
++            "expect(readUserVersion(db)).toBe(9)",
++            "expect(papersColumns(db)).not.toContain('reading_seconds')",
++            "expect(row).toEqual({ id: 'legacy-1', last_read_page: 0 })"
+           ]
+         }
+       ]
+@@ -3554,7 +3545,7 @@
+           "markers": [],
+           "line": 7,
+           "assertions": [
+-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8])",
++            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])",
+             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
+             "expect(readUserVersion(db)).toBe(result.currentVersion)"
+           ]
+@@ -3638,51 +3629,6 @@
+         }
+       ]
+     },
+-    "tests/unit/db/papers-reading-time.test.ts": {
+-      "ticketIds": [],
+-      "conditionalSkipSites": [],
+-      "hardSkipSites": [],
+-      "cases": [
+-        {
+-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"updateReadPage 第三参原子累加：两次 +30+45=75（非覆盖）\"]",
+-          "describePath": [
+-            "papers.repo —— reading_seconds（P7E-05）"
+-          ],
+-          "title": "updateReadPage 第三参原子累加：两次 +30+45=75（非覆盖）",
+-          "markers": [],
+-          "line": 41,
+-          "assertions": [
+-            "expect(r.last_read_page).toBe(5)",
+-            "expect(r.reading_seconds).toBe(75)"
+-          ]
+-        },
+-        {
+-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"R8：第三参缺省=0——reading_seconds 不变（旧调用方兼容锚）\"]",
+-          "describePath": [
+-            "papers.repo —— reading_seconds（P7E-05）"
+-          ],
+-          "title": "R8：第三参缺省=0——reading_seconds 不变（旧调用方兼容锚）",
+-          "markers": [],
+-          "line": 53,
+-          "assertions": [
+-            "expect(r.reading_seconds).toBe(30)"
+-          ]
+-        },
+-        {
+-          "key": "[\"papers.repo —— reading_seconds（P7E-05）\",\"detailById 回读 readingSeconds（008 迁移列→PaperDetail 必填字段）\"]",
+-          "describePath": [
+-            "papers.repo —— reading_seconds（P7E-05）"
+-          ],
+-          "title": "detailById 回读 readingSeconds（008 迁移列→PaperDetail 必填字段）",
+-          "markers": [],
+-          "line": 63,
+-          "assertions": [
+-            "expect(repo.detailById('p-1')?.readingSeconds).toBe(0)",
+-            "expect(repo.detailById('p-1')?.readingSeconds).toBe(30)"
+-          ]
+-        }
+-      ]
+-    },
+     "tests/unit/db/repos/ai_notes.repo.order.test.ts": {
+       "ticketIds": [],
+       "conditionalSkipSites": [],
+@@ -15523,7 +15469,7 @@
+           ],
+           "title": "T1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发",
+           "markers": [],
+-          "line": 102,
++          "line": 105,
+           "assertions": [
+             "expect(persisted?.state).toBe('pending')",
+             "expect(persisted?.attempts).toBe(0)",
+@@ -15537,7 +15483,7 @@
+           ],
+           "title": "T2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）",
+           "markers": [],
+-          "line": 112,
++          "line": 115,
+           "assertions": [
+             "expect(atSend?.state).toBe('in-flight')"
+           ]
+@@ -15549,14 +15495,14 @@
+           ],
+           "title": "T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发",
+           "markers": [],
+-          "line": 119,
++          "line": 122,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+-            "expect(h.sendCalls[0]?.secondsDelta).toBe(11)",
++            "expect(h.sendCalls[0]?.page).toBe(1)",
+             "expect(h.sendCalls).toHaveLength(2)",
+-            "expect(h.sendCalls[1]?.secondsDelta).toBe(22)",
++            "expect(h.sendCalls[1]?.page).toBe(2)",
+             "expect(h.sendCalls).toHaveLength(3)",
+-            "expect(h.sendCalls[2]?.secondsDelta).toBe(33)"
++            "expect(h.sendCalls[2]?.page).toBe(3)"
+           ]
+         },
+         {
+@@ -15566,7 +15512,7 @@
+           ],
+           "title": "T2 跨 paper 并行（CO-2）：一次 pump 双 paper 各派发一条",
+           "markers": [],
+-          "line": 136,
++          "line": 139,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(2)"
+           ]
+@@ -15578,7 +15524,7 @@
+           ],
+           "title": "T3：send resolve→立即 remove（无 tombstone）+链式派发同 paper 次条",
+           "markers": [],
+-          "line": 143,
++          "line": 146,
+           "assertions": [
+             "expect(h.entry('ob-1')).toBeUndefined()",
+             "expect(h.sendCalls).toHaveLength(2)"
+@@ -15591,14 +15537,14 @@
+           ],
+           "title": "T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）",
+           "markers": [],
+-          "line": 153,
++          "line": 156,
+           "assertions": [
+             "expect(e1?.state).toBe('pending')",
+             "expect(e1?.attempts).toBe(1)",
+             "expect(e1?.lastError).toBe('db busy')",
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(2)",
+-            "expect(h.sendCalls[1]?.secondsDelta).toBe(11)"
++            "expect(h.sendCalls[1]?.page).toBe(1)"
+           ]
+         },
+         {
+@@ -15608,7 +15554,7 @@
+           ],
+           "title": "T4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）",
+           "markers": [],
+-          "line": 169,
++          "line": 172,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(2)",
+@@ -15623,11 +15569,11 @@
+           ],
+           "title": "T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）",
+           "markers": [],
+-          "line": 186,
++          "line": 189,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(3)",
+-            "expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)"
++            "expect(h.sendCalls.filter((c) => c.page === 1)).toHaveLength(2)"
+           ]
+         },
+         {
+@@ -15637,10 +15583,10 @@
+           ],
+           "title": "T5：启动恢复驻留 in-flight→attempts++ 后按未达重放",
+           "markers": [],
+-          "line": 198,
++          "line": 201,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+-            "expect(h.sendCalls[0]?.secondsDelta).toBe(90)",
++            "expect(h.sendCalls[0]?.page).toBe(4)",
+             "expect(h.entry('ob-9')?.attempts).toBe(2)",
+             "expect(h.entry('ob-9')).toBeUndefined()"
+           ]
+@@ -15652,7 +15598,7 @@
+           ],
+           "title": "T5×T6：恢复时 attempts≥N→死信+WARN（不重放）",
+           "markers": [],
+-          "line": 221,
++          "line": 223,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(0)",
+             "expect(h.entry('ob-9')?.state).toBe('dead-letter')",
+@@ -15667,7 +15613,7 @@
+           ],
+           "title": "T6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发",
+           "markers": [],
+-          "line": 240,
++          "line": 241,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(OUTBOX_MAX_ATTEMPTS)",
+             "expect(h.entry('ob-1')?.state).toBe('dead-letter')",
+@@ -15683,12 +15629,12 @@
+           ],
+           "title": "T6 死信=终态不阻塞同 paper 新 seq（CR-1：仅未决条目阻塞）",
+           "markers": [],
+-          "line": 256,
++          "line": 257,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.entry('ob-1')?.state).toBe('dead-letter')",
+             "expect(h.sendCalls).toHaveLength(2)",
+-            "expect(h.sendCalls[1]?.secondsDelta).toBe(22)"
++            "expect(h.sendCalls[1]?.page).toBe(2)"
+           ]
+         },
+         {
+@@ -15713,13 +15659,13 @@
+           ],
+           "title": "排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）",
+           "markers": [],
+-          "line": 298,
++          "line": 297,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+-            "expect(h.sendCalls[0]?.secondsDelta).toBe(120)",
++            "expect(h.sendCalls[0]?.page).toBe(2)",
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(2)",
+-            "expect(h.sendCalls[1]?.secondsDelta).toBe(77)"
++            "expect(h.sendCalls[1]?.page).toBe(3)"
+           ]
+         },
+         {
+@@ -15729,12 +15675,12 @@
+           ],
+           "title": "排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发",
+           "markers": [],
+-          "line": 324,
++          "line": 322,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(2)",
+-            "expect(h.sendCalls[1]?.secondsDelta).toBe(77)"
++            "expect(h.sendCalls[1]?.page).toBe(3)"
+           ]
+         },
+         {
+@@ -15744,7 +15690,7 @@
+           ],
+           "title": "replayOnStart 幂等：重复调用返回同一 promise；空 store 立即 resolve",
+           "markers": [],
+-          "line": 350,
++          "line": 347,
+           "assertions": [
+             "expect(p1).toBe(p2)"
+           ]
+@@ -15756,7 +15702,7 @@
+           ],
+           "title": "dispose 不变量④：停扫描但已发 invoke 回调仍更新 store",
+           "markers": [],
+-          "line": 358,
++          "line": 355,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.entry('ob-1')).toBeUndefined()",
+@@ -15770,7 +15716,7 @@
+           ],
+           "title": "dispose 停退避计时器：reject 后 dispose→满期不再重试",
+           "markers": [],
+-          "line": 370,
++          "line": 367,
+           "assertions": [
+             "expect(h.sendCalls).toHaveLength(1)"
+           ]
+@@ -15782,9 +15728,9 @@
+           ],
+           "title": "enqueue 恒不抛：store put 抛错→退化内存重试+强 WARN",
+           "markers": [],
+-          "line": 380,
++          "line": 377,
+           "assertions": [
+-            "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
++            "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))).not.toThrow()",
+             "expect(h.sendCalls).toHaveLength(1)",
+             "expect(h.warns).toHaveLength(1)",
+             "expect(h.warns[0]?.kind).toBe('error')"
+@@ -15797,7 +15743,7 @@
+           ],
+           "title": "loadAll 抛错→空内存态启动+强 WARN（旧账不可达诚实申报）",
+           "markers": [],
+-          "line": 400,
++          "line": 397,
+           "assertions": [
+             "expect(h.warns).toHaveLength(1)",
+             "expect(h.sendCalls).toHaveLength(1)"
+@@ -15810,7 +15756,7 @@
+           ],
+           "title": "put/loadAll 往返+独立 key（禁整表 JSON 重写）+meta 首写",
+           "markers": [],
+-          "line": 448,
++          "line": 444,
+           "assertions": [
+             "expect(ls.length).toBe(3)",
+             "expect(ls.getItem(OUTBOX_META_KEY)).toBe('{\"v\":1}')",
+@@ -15825,7 +15771,7 @@
+           ],
+           "title": "update/remove：同 key 覆写/删除",
+           "markers": [],
+-          "line": 459,
++          "line": 455,
+           "assertions": [
+             "expect(store.loadAll()[0]?.state).toBe('in-flight')",
+             "expect(store.loadAll()).toHaveLength(0)",
+@@ -15839,7 +15785,7 @@
+           ],
+           "title": "损坏条目丢弃+onCorrupt+自清（key 移除）",
+           "markers": [],
+-          "line": 470,
++          "line": 466,
+           "assertions": [
+             "expect(store.loadAll()).toHaveLength(0)",
+             "expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'bad')).toBeNull()",
+@@ -15847,6 +15793,20 @@
+             "expect(corrupt).toHaveLength(2)"
+           ]
+         },
++        {
++          "key": "[\"OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信息 key）\",\"F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略\"]",
++          "describePath": [
++            "OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信息 key）"
++          ],
++          "title": "F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略",
++          "markers": [],
++          "line": 482,
++          "assertions": [
++            "expect(loaded).toHaveLength(1)",
++            "expect(loaded[0]?.page).toBe(2)",
++            "expect(loaded[0]?.id).toBe('ob-old')"
++          ]
++        },
+         {
+           "key": "[\"backoffDelayMs 纯函数（指数+5min 上界）\",\"attempts 1..3 与上界夹取\"]",
+           "describePath": [
+@@ -15854,7 +15814,7 @@
+           ],
+           "title": "attempts 1..3 与上界夹取",
+           "markers": [],
+-          "line": 488,
++          "line": 508,
+           "assertions": [
+             "expect(backoffDelayMs(1)).toBe(1000)",
+             "expect(backoffDelayMs(2)).toBe(2000)",
+@@ -15866,235 +15826,6 @@
+         }
+       ]
+     },
+-    "tests/unit/renderer/reading-time.test.ts": {
+-      "ticketIds": [],
+-      "conditionalSkipSites": [],
+-      "hardSkipSites": [],
+-      "cases": [
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R1：ready+visible tick 3 次→ledger=45s；无 invoke（防抖归进度管线）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R1：ready+visible tick 3 次→ledger=45s；无 invoke（防抖归进度管线）",
+-          "markers": [],
+-          "line": 95,
+-          "assertions": [
+-            "expect(h.ledger('p-1')).toBe(45)",
+-            "expect(h.flushed).toHaveLength(0)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零",
+-          "markers": [],
+-          "line": 105,
+-          "assertions": [
+-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 3, secondsDelta: 45 }])",
+-            "expect(h.ledger('p-1')).toBe(0)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R3：visible→hidden→visible——hidden 段零累积（门关）；恢复后续算\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R3：visible→hidden→visible——hidden 段零累积（门关）；恢复后续算",
+-          "markers": [],
+-          "line": 116,
+-          "assertions": [
+-            "expect(h.ledger('p-1')).toBe(30)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R4：切 tab（A→B）A stop 账留存+B start；离开段不计任何账\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R4：切 tab（A→B）A stop 账留存+B start；离开段不计任何账",
+-          "markers": [],
+-          "line": 129,
+-          "assertions": [
+-            "expect(h.ledger('A')).toBe(45)",
+-            "expect(h.ledger('B')).toBe(15)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）",
+-          "markers": [],
+-          "line": 144,
+-          "assertions": [
+-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 2, secondsDelta: 15 }])"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）",
+-          "markers": [],
+-          "line": 155,
+-          "assertions": [
+-            "expect(f.enqueued).toContainEqual({ paperId: 'p-sec', page: 9, secondsDelta: 30 })",
+-            "expect(f.enqueued).toContainEqual({ paperId: 'p-page', page: 4, secondsDelta: 0 })",
+-            "expect(f.enqueued).toContainEqual({ paperId: 'p-both', page: 9, secondsDelta: 15 })",
+-            "expect(f.enqueued).toHaveLength(3)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）",
+-          "markers": [],
+-          "line": 172,
+-          "assertions": [
+-            "expect(h.flushed).toEqual([{ paperId: 'p-1', seconds: 30 }])",
+-            "expect(h.flushed).toHaveLength(1)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R10：tab 未就绪（loading/error——start 缺席）零累积\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R10：tab 未就绪（loading/error——start 缺席）零累积",
+-          "markers": [],
+-          "line": 182,
+-          "assertions": [
+-            "expect(h.ledger('p-1')).toBe(0)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R3×R6 跨格：hidden 中 force 结算零吸收——collectAllAndZero/collectAndZero 仅含 visible 段\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R3×R6 跨格：hidden 中 force 结算零吸收——collectAllAndZero/collectAndZero 仅含 visible 段",
+-          "markers": [],
+-          "line": 188,
+-          "assertions": [
+-            "expect(h.rt.collectAllAndZero()).toEqual({ 'p-1': 30 })",
+-            "expect(h.ledger('p-1')).toBe(0)",
+-            "expect(h.rt.collectAndZero('p-1')).toBe(15)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零",
+-          "markers": [],
+-          "line": 206,
+-          "assertions": [
+-            "expect(f.enqueued).toEqual([ { paperId: 'p-1', page: 3, secondsDelta: 3_600 }, { paperId: 'p-1', page: 3, secondsDelta: 400 } ])",
+-            "expect(h.ledger('p-1')).toBe(0)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"R7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "R7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）",
+-          "markers": [],
+-          "line": 220,
+-          "assertions": [
+-            "expect(h.flushed).toEqual([ { paperId: 'p-1', seconds: 3_600 }, { paperId: 'p-1', seconds: 400 } ])"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s",
+-          "markers": [],
+-          "line": 231,
+-          "assertions": [
+-            "expect(h.rt.collectAndZero('p-1')).toBe(20)",
+-            "expect(h.ledger('p-1')).toBe(0)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"NIT1（门二修订语义）：hidden 中 stop 结转可见零头入 A 账（零头不丢）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "NIT1（门二修订语义）：hidden 中 stop 结转可见零头入 A 账（零头不丢）",
+-          "markers": [],
+-          "line": 242,
+-          "assertions": [
+-            "expect(h.ledger('A')).toBe(20)",
+-            "expect(h.ledger('B')).toBe(15)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）",
+-          "markers": [],
+-          "line": 257,
+-          "assertions": [
+-            "expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 9, secondsDelta: 22 }])"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time 态空间跨格序列（R1~R7+R10）\",\"tick 常量=15s（票面：READING_TICK_MS）\"]",
+-          "describePath": [
+-            "reading-time 态空间跨格序列（R1~R7+R10）"
+-          ],
+-          "title": "tick 常量=15s（票面：READING_TICK_MS）",
+-          "markers": [],
+-          "line": 268,
+-          "assertions": [
+-            "expect(READING_TICK_MS).toBe(15_000)"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time formatReadingTime 边界（纯函数）\",\"<60min 按分钟取整：0/59/60/61/125\"]",
+-          "describePath": [
+-            "reading-time formatReadingTime 边界（纯函数）"
+-          ],
+-          "title": "<60min 按分钟取整：0/59/60/61/125",
+-          "markers": [],
+-          "line": 274,
+-          "assertions": [
+-            "expect(formatReadingTime(0)).toBe('0 分钟')",
+-            "expect(formatReadingTime(59)).toBe('0 分钟')",
+-            "expect(formatReadingTime(60)).toBe('1 分钟')",
+-            "expect(formatReadingTime(61)).toBe('1 分钟')",
+-            "expect(formatReadingTime(125)).toBe('2 分钟')"
+-          ]
+-        },
+-        {
+-          "key": "[\"reading-time formatReadingTime 边界（纯函数）\",\"≥60min：N 小时 M 分\"]",
+-          "describePath": [
+-            "reading-time formatReadingTime 边界（纯函数）"
+-          ],
+-          "title": "≥60min：N 小时 M 分",
+-          "markers": [],
+-          "line": 282,
+-          "assertions": [
+-            "expect(formatReadingTime(3_600)).toBe('1 小时 0 分')",
+-            "expect(formatReadingTime(3_661)).toBe('1 小时 1 分')",
+-            "expect(formatReadingTime(4_525)).toBe('1 小时 15 分')"
+-          ]
+-        }
+-      ]
+-    },
+     "tests/unit/renderer/release-affinity.test.ts": {
+       "ticketIds": [],
+       "conditionalSkipSites": [],
+@@ -22178,7 +21909,7 @@
+           ],
+           "title": "golden 全量：固定夹具逐字节比对（front-matter+总评+片段+ai 段）",
+           "markers": [],
+-          "line": 93,
++          "line": 92,
+           "assertions": [
+             "expect(md).toBe( [ '---', 'schemaVersion: 1', \"paperId: 'p-1'\", \"title: 'Water Quality Model'\", \"authors: ['Wang', 'Li']\", 'year: 2024', \"venue: 'Water Research'\", \"doi: '10.1/x'\", \"source: 'local'\", \"citationKey: 'wang2024water'\", 'annotationCount: 2', 'noteCount: 1', '---', '# Water Quality Model', '', '## 总评', '', '**总评标题**', '', '这篇论文提出……', '', '## 片段', '', '> quote-a-a（p.1）', '', '> quote-a-b（p.2）', '', ` ${CORPUS_USER_PREFIX} 第二条批注`, '', ` ${corpusAiPrefix('deepseek')} 一阶读法摘要（p.1）`, '', '' ].join('\\n') )"
+           ]
+@@ -22190,7 +21921,7 @@
+           ],
+           "title": "ENR-02 有值形：citedByCount+venueTier 进 front-matter（noteCount 后逐行序）",
+           "markers": [],
+-          "line": 133,
++          "line": 132,
+           "assertions": [
+             "expect(i).toBeGreaterThan(-1)",
+             "expect(fm[i + 1]).toBe('citedByCount: 12')",
+@@ -22205,7 +21936,7 @@
+           ],
+           "title": "ENR-02 0 值边界：citedByCount=0 是合法缓存值照常装配（禁 falsy 判空）",
+           "markers": [],
+-          "line": 153,
++          "line": 152,
+           "assertions": [
+             "expect(md).toContain('citedByCount: 0')",
+             "expect(md).not.toContain('venueTier')"
+@@ -22218,7 +21949,7 @@
+           ],
+           "title": "ENR-02 缺省形：无缓存指标夹具 → 两字段整键省略（两形成对口径）",
+           "markers": [],
+-          "line": 169,
++          "line": 168,
+           "assertions": [
+             "expect(md).not.toContain('citedByCount')",
+             "expect(md).not.toContain('venueTier')"
+@@ -22231,7 +21962,7 @@
+           ],
+           "title": "幂等：同输入两次装配逐字节全等（INV-17 基线——无时间戳无随机）",
+           "markers": [],
+-          "line": 175,
++          "line": 174,
+           "assertions": [
+             "expect(assembleCorpusMd(fixture())).toBe(assembleCorpusMd(fixture()))"
+           ]
+@@ -22243,7 +21974,7 @@
+           ],
+           "title": "front-matter 无 exportedAt（ADR-0011 v1.1 修订 2——时间戳只进 manifest）",
+           "markers": [],
+-          "line": 179,
++          "line": 178,
+           "assertions": [
+             "expect(assembleCorpusMd(fixture())).not.toMatch(/exportedAt/)"
+           ]
+@@ -22255,7 +21986,7 @@
+           ],
+           "title": "结构断言：引文块数=DB 标注数；输出序=文档序（乱序入参按页重排）",
+           "markers": [],
+-          "line": 183,
++          "line": 182,
+           "assertions": [
+             "expect(quotes).toHaveLength(2)",
+             "expect(md.indexOf('quote-a-a')).toBeLessThan(md.indexOf('quote-a-b'))"
+@@ -22268,7 +21999,7 @@
+           ],
+           "title": "[user] 批注行：comment 空省略、非空缩进前缀行",
+           "markers": [],
+-          "line": 190,
++          "line": 189,
+           "assertions": [
+             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 第二条批注`)",
+             "expect(md).not.toMatch(new RegExp(`quote-a-a（p\\\\.1）\\\\n\\\\n\\\\s*\\\\[user\\\\]`))"
+@@ -22281,7 +22012,7 @@
+           ],
+           "title": "空集：无 note 无标注=仅 front-matter+标题（无总评/片段节）",
+           "markers": [],
+-          "line": 197,
++          "line": 196,
+           "assertions": [
+             "expect(md).toContain('---')",
+             "expect(md).not.toContain('## 总评')",
+@@ -22296,7 +22027,7 @@
+           ],
+           "title": "YAML 对抗面：换行归一空格（单行标量）+单引号翻倍+流指示符在引号内原样（deepseek B1 采纳/B2 证伪锚）",
+           "markers": [],
+-          "line": 205,
++          "line": 204,
+           "assertions": [
+             "expect(md).toContain(\"title: 'Ti''tle Second: #line'\")",
+             "expect(md.split('\\n').filter((l) => l.startsWith('title:'))).toHaveLength(1)",
+@@ -22310,7 +22041,7 @@
+           ],
+           "title": "正文多行续行：引文逐行 > 前缀+页码附末行；批注/AI 段逐行缩进（r2 W1 锚）",
+           "markers": [],
+-          "line": 222,
++          "line": 221,
+           "assertions": [
+             "expect(md).toContain('> 引文首行\\n> 引文次行（p.3）')",
+             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 批注一\\n 批注二`)",
+@@ -22324,7 +22055,7 @@
+           ],
+           "title": "buildCorpus：装配产物含 front-matter 与片段；NOT_FOUND 抛域错误",
+           "markers": [],
+-          "line": 255,
++          "line": 254,
+           "assertions": [
+             "expect(md).toContain('schemaVersion: 1')",
+             "expect(missing.buildCorpus('p-x')).rejects.toThrow('文献不存在')"
+@@ -22337,7 +22068,7 @@
+           ],
+           "title": "buildCorpusSet：单篇取数失败跳过收集 skipped，不中断全库",
+           "markers": [],
+-          "line": 264,
++          "line": 263,
+           "assertions": [
+             "expect(r.entries.map((e) => e.paperId)).toEqual(['p-1', 'p-3'])",
+             "expect(r.skipped).toEqual([{ paperId: 'p-2', reason: '文献不存在：p-2' }])",
+@@ -22351,7 +22082,7 @@
+           ],
+           "title": "writeCorpusSet：mkdir corpus/ 前置+逐篇写入+返回成功数",
+           "markers": [],
+-          "line": 277,
++          "line": 276,
+           "assertions": [
+             "expect(n).toBe(2)",
+             "expect(await readdir(join(dir, 'corpus'))).toEqual(['p-1.md', 'p-2.md'])",
+@@ -22365,7 +22096,7 @@
+           ],
+           "title": "corpus：构建→saveFile→writeToFile→{filePath,count:1}",
+           "markers": [],
+-          "line": 327,
++          "line": 326,
+           "assertions": [
+             "expect(r).toEqual({ filePath: 'C:/out/x.md', count: 1 })",
+             "expect(wrote).toEqual(['C:/out/x.md'])"
+@@ -22378,7 +22109,7 @@
+           ],
+           "title": "corpus 取消（saveFile null）→CANCELLED 错误",
+           "markers": [],
+-          "line": 334,
++          "line": 333,
+           "assertions": [
+             "expect(createExportIpc(deps as never).corpus({ paperId: 'p-1' })).rejects.toThrow('已取消')"
+           ]
+@@ -22390,7 +22121,7 @@
+           ],
+           "title": "corpusSet：全库→pickFolder→writeCorpusSet→count=2+skipped 回传+filePath 指 corpus/ 子目录",
+           "markers": [],
+-          "line": 339,
++          "line": 338,
+           "assertions": [
+             "expect(r).toEqual({ filePath: join('C:/out', 'corpus'), count: 2, skipped: [] })",
+             "expect(setCalls).toHaveLength(1)",
+@@ -22404,7 +22135,7 @@
+           ],
+           "title": "corpusSet 取消（pickFolder null）→CANCELLED；空库（entries 0）→NOT_FOUND",
+           "markers": [],
+-          "line": 347,
++          "line": 346,
+           "assertions": [
+             "expect( createExportIpc(cancelled.deps as never).corpusSet({}) ).rejects.toThrow('已取消')",
+             "expect(createExportIpc(empty.deps as never).corpusSet({})).rejects.toThrow('没有可导出的文献')"
+@@ -22417,7 +22148,7 @@
+           ],
+           "title": "三键全平：保持输入序（稳定排序），非 id 字典序",
+           "markers": [],
+-          "line": 381,
++          "line": 380,
+           "assertions": [
+             "expect(out.map((e) => e.content)).toEqual(['Q1: 第一条', 'Q1: 第二条'])"
+           ]
+@@ -22429,7 +22160,7 @@
+           ],
+           "title": "主键序：role→question→createdAt 逐级决胜（乱序入参重排）",
+           "markers": [],
+-          "line": 386,
++          "line": 385,
+           "assertions": [
+             "expect(out.map((e) => e.content)).toEqual([ 'Q1: 早戳', 'Q1: 晚戳', 'Q2: 一读Q2', 'Q3: 二读', 'divergence: 裁决' ])"
+           ]
+@@ -22702,7 +22433,7 @@
+           ],
+           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
+           "markers": [],
+-          "line": 101,
++          "line": 100,
+           "assertions": [
+             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
+             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
+@@ -22715,7 +22446,7 @@
+           ],
+           "title": "DOI 未命中 → OpenAlex 标题兜底",
+           "markers": [],
+-          "line": 118,
++          "line": 117,
+           "assertions": [
+             "expect(applied).toMatchObject({ source: 'openalex' })"
+           ]
+@@ -22727,7 +22458,7 @@
+           ],
+           "title": "全部未命中：enrich_status=failed，仍返回详情",
+           "markers": [],
+-          "line": 138,
++          "line": 137,
+           "assertions": [
+             "expect(r.enrichStatus).toBe('failed')",
+             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
+@@ -22740,7 +22471,7 @@
+           ],
+           "title": "上游抛错（网络）不向上传播：按 failed 回写",
+           "markers": [],
+-          "line": 156,
++          "line": 155,
+           "assertions": [
+             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
+             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
+@@ -22753,7 +22484,7 @@
+           ],
+           "title": "文献不存在抛 NOT_FOUND",
+           "markers": [],
+-          "line": 179,
++          "line": 178,
+           "assertions": [
+             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+           ]
+@@ -22765,7 +22496,7 @@
+           ],
+           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
+           "markers": [],
+-          "line": 191,
++          "line": 190,
+           "assertions": [
+             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
+           ]
+@@ -22777,7 +22508,7 @@
+           ],
+           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
+           "markers": [],
+-          "line": 215,
++          "line": 214,
+           "assertions": [
+             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
+             "expect(enrichStatus).toBe('failed')",
+@@ -22791,7 +22522,7 @@
+           ],
+           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
+           "markers": [],
+-          "line": 242,
++          "line": 241,
+           "assertions": [
+             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
+             "expect(source).toBe('arxiv')",
+@@ -22815,7 +22546,7 @@
+           ],
+           "title": "buildBibtex：含 @article 头与 citation key",
+           "markers": [],
+-          "line": 46,
++          "line": 45,
+           "assertions": [
+             "expect(bib).toContain('@article{wang2024water')",
+             "expect(bib).toContain('title = {Water Quality}')"
+@@ -22828,7 +22559,7 @@
+           ],
+           "title": "buildCsv：BOM + 表头 + 字段引号转义",
+           "markers": [],
+-          "line": 53,
++          "line": 52,
+           "assertions": [
+             "expect(csv.charCodeAt(0)).toBe(0xfeff)",
+             "expect(csv).toContain('Title,Authors,Year,Venue,DOI,AddedAt')",
+@@ -22842,7 +22573,7 @@
+           ],
+           "title": "buildReport：不存在抛 NOT_FOUND",
+           "markers": [],
+-          "line": 61,
++          "line": 60,
+           "assertions": [
+             "expect(svc.buildReport('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+           ]
+@@ -22854,7 +22585,7 @@
+           ],
+           "title": "writeToFile：内容落盘 UTF-8；失败抛 IO_ERROR",
+           "markers": [],
+-          "line": 68,
++          "line": 67,
+           "assertions": [
+             "expect(await readFile(target, 'utf-8')).toBe('中文内容')",
+             "expect(svc.writeToFile('Z:/不存在/盘符/x', 'x')).rejects.toMatchObject({ code: 'IO_ERROR' })"
+@@ -23128,7 +22859,7 @@
+           ],
+           "title": "list 透传查询参数",
+           "markers": [],
+-          "line": 45,
++          "line": 44,
+           "assertions": [
+             "expect(seen).toMatchObject({ sort: 'year_desc', limit: 10 })"
+           ]
+@@ -23140,7 +22871,7 @@
+           ],
+           "title": "detail：不存在时抛带 code=NOT_FOUND 的错误",
+           "markers": [],
+-          "line": 66,
++          "line": 65,
+           "assertions": [
+             "expect(svc.detail({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+           ]
+@@ -23152,7 +22883,7 @@
+           ],
+           "title": "detail：存在时透传",
+           "markers": [],
+-          "line": 71,
++          "line": 70,
+           "assertions": [
+             "expect(svc.detail({ paperId: 'p-1' })).resolves.toMatchObject({ id: 'p-1' })"
+           ]
+@@ -23164,7 +22895,7 @@
+           ],
+           "title": "updateMeta：repo 返回 null 视为 NOT_FOUND；空 patch 直接返回现状",
+           "markers": [],
+-          "line": 78,
++          "line": 77,
+           "assertions": [
+             "expect(svc.updateMeta({ paperId: 'p-1', patch: {} })).resolves.toMatchObject({ id: 'p-1' })"
+           ]
+@@ -23176,7 +22907,7 @@
+           ],
+           "title": "collections 透传",
+           "markers": [],
+-          "line": 85,
++          "line": 84,
+           "assertions": [
+             "expect(svc.collections({})).resolves.toHaveLength(1)"
+           ]
+@@ -23692,16 +23423,16 @@
+       "hardSkipSites": [],
+       "cases": [
+         {
+-          "key": "[\"F-LG14 迁移 007（lineage_nodes.tags）\",\"版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）\"]",
++          "key": "[\"F-LG14 迁移 007（lineage_nodes.tags）\",\"版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）\"]",
+           "describePath": [
+             "F-LG14 迁移 007（lineage_nodes.tags）"
+           ],
+-          "title": "版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）",
++          "title": "版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）",
+           "markers": [],
+           "line": 61,
+           "assertions": [
+             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
+-            "expect(readUserVersion(db)).toBe(8)"
++            "expect(readUserVersion(db)).toBe(9)"
+           ]
+         },
+         {
+@@ -23864,7 +23595,7 @@
+           ],
+           "title": "结构：标题/元信息/分页高亮/评论缩进/笔记节",
+           "markers": [],
+-          "line": 52,
++          "line": 51,
+           "assertions": [
+             "expect(md).toContain('# 智慧水务综述')",
+             "expect(md).toContain('张三')",
+@@ -23883,7 +23614,7 @@
+           ],
+           "title": "无笔记省略笔记节；超长高亮截断加 …",
+           "markers": [],
+-          "line": 70,
++          "line": 69,
+           "assertions": [
+             "expect(md).not.toContain('## 笔记')",
+             "expect(md).toContain('…')",
+@@ -23897,7 +23628,7 @@
+           ],
+           "title": "空标注也产出合法骨架",
+           "markers": [],
+-          "line": 78,
++          "line": 77,
+           "assertions": [
+             "expect(md).toContain('# 智慧水务综述')"
+           ]
+@@ -24238,35 +23969,6 @@
+         }
+       ]
+     },
+-    "tests/unit/services/reader-time.test.ts": {
+-      "ticketIds": [],
+-      "conditionalSkipSites": [],
+-      "hardSkipSites": [],
+-      "cases": [
+-        {
+-          "key": "[\"saveProgress 透传 secondsDelta 第三参到 updateReadPage（时长搭车单通道）\"]",
+-          "describePath": [],
+-          "title": "saveProgress 透传 secondsDelta 第三参到 updateReadPage（时长搭车单通道）",
+-          "markers": [],
+-          "line": 47,
+-          "assertions": [
+-            "expect( svc.saveProgress({ paperId: 'p-1', page: 5, secondsDelta: 45 }) ).resolves.toEqual({ ok: true })",
+-            "expect(calls).toEqual([['p-1', 5, 45]])"
+-          ]
+-        },
+-        {
+-          "key": "[\"R8：secondsDelta 缺省→第三参 0（旧调用方零破坏）\"]",
+-          "describePath": [],
+-          "title": "R8：secondsDelta 缺省→第三参 0（旧调用方零破坏）",
+-          "markers": [],
+-          "line": 56,
+-          "assertions": [
+-            "expect(svc.saveProgress({ paperId: 'p-1', page: 2 })).resolves.toEqual({ ok: true })",
+-            "expect(calls).toEqual([['p-1', 2, 0]])"
+-          ]
+-        }
+-      ]
+-    },
+     "tests/unit/services/reader.service.test.ts": {
+       "ticketIds": [
+         "SR-SVC-02"
+@@ -24281,7 +23983,7 @@
+           ],
+           "title": "open：fileUrl 组装 app-file://<id>，fileName 取 fileRef 末段，页码带回",
+           "markers": [],
+-          "line": 66,
++          "line": 65,
+           "assertions": [
+             "expect(r.fileUrl).toBe('app-file://p-1')",
+             "expect(r.fileName).toBe('论文 v2 final.pdf')",
+@@ -24295,7 +23997,7 @@
+           ],
+           "title": "open：不存在抛 NOT_FOUND",
+           "markers": [],
+-          "line": 74,
++          "line": 73,
+           "assertions": [
+             "expect(svc.open({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+           ]
+@@ -24307,7 +24009,7 @@
+           ],
+           "title": "saveAnnotation 转调 insert；update/delete/list 透传",
+           "markers": [],
+-          "line": 79,
++          "line": 78,
+           "assertions": [
+             "expect(svc.saveAnnotation({ paperId: 'p-1', annotation: input })).resolves.toMatchObject({ id: 'a-1' })",
+             "expect(svc.listAnnotations({ paperId: 'p-1' })).resolves.toHaveLength(1)",
+@@ -24320,7 +24022,7 @@
+           "describePath": [],
+           "title": "缺陷②：open 透传 title（detailById 的文献名直达 renderer）",
+           "markers": [],
+-          "line": 103,
++          "line": 102,
+           "assertions": [
+             "expect(r.title).toBe('t')"
+           ]
+@@ -26205,11 +25907,11 @@
+     }
+   },
+   "stats": {
+-    "fileCount": 187,
+-    "caseCount": 1789,
+-    "assertionCount": 5411,
+-    "skipSiteCount": 15,
+-    "conditionalSkipSiteCount": 15,
++    "fileCount": 183,
++    "caseCount": 1768,
++    "assertionCount": 5368,
++    "skipSiteCount": 14,
++    "conditionalSkipSiteCount": 14,
+     "hardSkipSiteCount": 0,
+     "ticketIdCount": 57,
+     "eachExpandedRows": 261,
+diff --git a/scripts/test-surface.exemptions.json b/scripts/test-surface.exemptions.json
+index 795236f549..f794e68913 100644
+--- a/scripts/test-surface.exemptions.json
++++ b/scripts/test-surface.exemptions.json
+@@ -12,6 +12,96 @@
+       "caseTitle": "rectsFromRange：返回归一化矩形（0..1）",
+       "reason": "F-GEOM-01-G2 死面收敛③（设计书 §3.5 清单①）：rectsFromRange src 零消费，唯一直测面随导出删除（死代码即删，候选项经双门裁）",
+       "rulingLink": "docs/design/2026-09-18_f-geom01-unification-and-reader-subdomains.md#3.5"
++    },
++    {
++      "file": "tests/contracts/schemas.test.ts",
++      "caseTitle": "saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：secondsDelta 载荷随 schemas 删除退役，专测改写为 strict 拒收负断言+page 负数拒保留",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/e2e/reading-time-replay.spec.ts",
++      "caseTitle": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：断言面收窄为页码重放承重半边（outbox 保留），标题随语义改写（reading_seconds 断言删）",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/db/migrate-reading-time.test.ts",
++      "caseTitle": "新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：008 加列→009 DROP COLUMN 双跳链改写（新库终态=列不存在，user_version=9）",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/db/migrate-reading-time.test.ts",
++      "caseTitle": "存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：008 加列→009 DROP COLUMN 双跳链改写（v7 存量路径=一次 migrate 双跳 [8,9]）",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/services/lineage-tags.test.ts",
++      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：009 注册后新库终值 user_version=9，版本接续断言随上探（P7E-05 v8 上探同型先例）",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/db/migrate.test.ts",
++      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8])",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：009 reading_time_drop 注册后全量应用清单上探 [1..9]（P7E-05 v8 上探同型先例）",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(11)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(22)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[2]?.secondsDelta).toBe(33)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(11)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(90)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[0]?.secondsDelta).toBe(120)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(h.sendCalls[1]?.secondsDelta).toBe(77)",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：send 载荷随 OutboxEntry 收窄为纯页码，断言面 secondsDelta→page 等值迁移",
++      "rulingLink": "docs/handoff/relay.md"
++    },
++    {
++      "file": "tests/unit/renderer/reading-time-outbox.test.ts",
++      "assertionText": "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
++      "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：draft 铸造助手随载荷收窄四参化三参（id/paperId/page/seq）",
++      "rulingLink": "docs/handoff/relay.md"
+     }
+   ]
+ }
+diff --git a/src/main/db/migrate.ts b/src/main/db/migrate.ts
+index 2b9b65f449..7842d7f4c9 100644
+--- a/src/main/db/migrate.ts
++++ b/src/main/db/migrate.ts
+@@ -16,6 +16,7 @@ import citedBySql from './migrations/005_cited_by.sql?raw'
+ import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
+ import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
+ import readingTimeSql from './migrations/008_reading_time.sql?raw'
++import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
+ 
+ export interface Migration {
+   version: number
+@@ -32,7 +33,10 @@ export const MIGRATIONS: readonly Migration[] = [
+   { version: 5, name: 'cited_by', sql: citedBySql },
+   { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql },
+   { version: 7, name: 'lineage_node_tags', sql: nodeTagsSql },
+-  { version: 8, name: 'reading_time', sql: readingTimeSql }
++  { version: 8, name: 'reading_time', sql: readingTimeSql },
++  // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长——008 加列→009 删列双跳
++  // （已合入迁移不可修改=CI 锁硬规则；新库 user_version 终值 9）
++  { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql }
+ ]
+ 
+ export interface MigrateResult {
+diff --git a/src/main/db/repos/papers.queries.ts b/src/main/db/repos/papers.queries.ts
+index fe77bc43fb..bcc1f5beaa 100644
+--- a/src/main/db/repos/papers.queries.ts
++++ b/src/main/db/repos/papers.queries.ts
+@@ -3,7 +3,8 @@
+  * 从 papers.repo 拆出的查询 SQL 常量+行形状+行映射（repo ≤300 行关卡配套，
+  * 纯查询/映射无行为逻辑）；消费面=papers.repo 的 searchSummaries/
+  * listSummariesByIds/detailById。ENR-01：DETAIL_SQL 三缓存列与
+- * DetailRow 三字段在此维护；P7E-05：reading_seconds 同此（DETAIL_SQL 直读）。
++ * DetailRow 三字段在此维护。[F-TIME-02] reading_seconds 列已随 2026-09-19
++ * 用户裁决移除（009 DROP COLUMN——008 加列沿革见迁移件头注）。
+  */
+ import { escapeFtsQuery } from '../fts'
+ import type {
+@@ -41,7 +42,6 @@ export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue,
+ export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
+   p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
+   p.cited_by_count, p.cited_by_fetched_at, p.cited_by_count_source,
+-  p.reading_seconds,
+   ${AGG_COLS.trim()}
+   FROM papers p WHERE p.id = ?`
+ 
+@@ -61,8 +61,6 @@ export interface DetailRow extends SummaryRow {
+   cited_by_count: number | null
+   cited_by_fetched_at: string | null
+   cited_by_count_source: string | null
+-  /** P7E-05 阅读时长秒数（008 迁移列 NOT NULL DEFAULT 0——读面恒有值） */
+-  reading_seconds: number
+ }
+ 
+ /** LIKE 兜底转义：% _ 与转义符 \ 本身 */
+diff --git a/src/main/db/repos/papers.repo.ts b/src/main/db/repos/papers.repo.ts
+index 3b59fd52aa..d7513c8a3b 100644
+--- a/src/main/db/repos/papers.repo.ts
++++ b/src/main/db/repos/papers.repo.ts
+@@ -94,9 +94,9 @@ export interface PapersRepo {
+     e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch },
+     citedBy?: CitedByWrite
+   ): PaperRow | null
+-  /** P7E-05：第三参=时长增量秒（原子累加 reading_seconds=reading_seconds+?——
+-   * INV-57 唯一写点，禁 read-modify-write 两步；缺省 0=旧调用方零破坏） */
+-  updateReadPage(id: string, page: number, secondsDelta?: number): void
++  /** 阅读进度页码落库（[F-TIME-02] 时长增量第三参已随 2026-09-19 用户裁决
++   * 移除——SQL 退回 SET last_read_page 单参） */
++  updateReadPage(id: string, page: number): void
+   searchSummaries(q: LibraryQuery): Paged<PaperSummary>
+   listSummariesByIds(ids: string[]): PaperSummary[]
+   listAllIds(): string[]
+@@ -198,10 +198,8 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+       }
+       return updateColumns(id, columns, values)
+     },
+-    updateReadPage(id, page, secondsDelta = 0) {
+-      stmt(
+-        'UPDATE papers SET last_read_page = ?, reading_seconds = reading_seconds + ? WHERE id = ?'
+-      ).run(page, secondsDelta, id)
++    updateReadPage(id, page) {
++      stmt('UPDATE papers SET last_read_page = ? WHERE id = ?').run(page, id)
+     },
+     searchSummaries(q) {
+       const { cond, params } = buildFilters(q)
+@@ -262,8 +260,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
+               citedByCountSource: r.cited_by_count_source as PaperDetail['citedByCountSource']
+             }
+           : {}),
+-        // P7E-05 阅读时长（008 列 NOT NULL DEFAULT 0——读面恒有值直读）
+-        readingSeconds: r.reading_seconds,
++        // [F-TIME-02] readingSeconds 透出已随 2026-09-19 用户裁决移除（009 删列）
+         tags,
+         collections
+       }
+diff --git a/src/main/services/reader.service.ts b/src/main/services/reader.service.ts
+index 667824f0b7..eecfec4e04 100644
+--- a/src/main/services/reader.service.ts
++++ b/src/main/services/reader.service.ts
+@@ -18,10 +18,9 @@
+  * - 只依赖 repos 桶
+  *
+  * ── 生命周期层 ──
+- * - P7E-05 已兑现：阅读时长统计——saveProgress 搭车 secondsDelta（可选，缺省
+- *   0）透传 updateReadPage 第三参原子累加（单通道单事务面，Design 裁决）。
+- *   勘误：原预留注记写「002 迁移加列」时 002 已被 indexes 占用，实际落位
+- *   =008_reading_time（已合入迁移不可修改=CI 锁硬规则，只能新增）
++ *   - [F-TIME-02] 阅读时长统计已随 2026-09-19 用户裁决移除（secondsDelta
++ *   搭车载荷+updateReadPage 第三参原子累加面同批删除；沿革=P7E-05 落地→
++ *   008 加列→009 DROP COLUMN 删列）
+  * - 不做：多设备同步进度
+  *
+  * ── 文化层 ──
+@@ -71,10 +70,9 @@ export function createReaderService(deps: { repos: Repos }): ApiHandlers['reader
+       return annotations.listByPaper(req.paperId)
+     },
+ 
+-    // 页码从 0 计，范围合法性已由上游 zod（int min 0）保证，此处薄转调；
+-    // secondsDelta 缺省 0（P7E-05 时长搭车——旧调用方零破坏）
++    // 页码从 0 计，范围合法性已由上游 zod（int min 0）保证，此处薄转调
+     async saveProgress(req) {
+-      papers.updateReadPage(req.paperId, req.page, req.secondsDelta ?? 0)
++      papers.updateReadPage(req.paperId, req.page)
+       return { ok: true as const }
+     }
+   }
+diff --git a/src/renderer/features/library/PaperDetailPanel.tsx b/src/renderer/features/library/PaperDetailPanel.tsx
+index 0d5982fca0..3c92de88b3 100644
+--- a/src/renderer/features/library/PaperDetailPanel.tsx
++++ b/src/renderer/features/library/PaperDetailPanel.tsx
+@@ -36,7 +36,6 @@ import { useAsync } from '../../shared/hooks/useAsync'
+ import { Button } from '../../shared/ui/Button'
+ import { DiamondRule } from '../../shared/ui/DiamondRule'
+ import { requestOpenPaper } from '../../shared/open-paper-bus'
+-import { formatReadingTime } from '../../shared/reading-time-format'
+ import { TagEditor } from '../tags/TagEditor'
+ import { MetaEditDialog } from './MetaEditDialog'
+ import { usePaperDetailActions } from './usePaperDetailActions'
+@@ -160,7 +159,6 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
+         <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
+         <Row label="DOI">{detail.doi ?? ''}</Row>
+         <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
+-        <Row label="阅读">{formatReadingTime(detail.readingSeconds)}</Row>
+       </div>
+       {detail.abstract !== '' && (
+         <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
+diff --git a/src/renderer/features/reader/time/reading-time-outbox-store.ts b/src/renderer/features/reader/time/reading-time-outbox-store.ts
+index f8cc957930..0034e2bca4 100644
+--- a/src/renderer/features/reader/time/reading-time-outbox-store.ts
++++ b/src/renderer/features/reader/time/reading-time-outbox-store.ts
+@@ -5,6 +5,9 @@
+  * CO-1：每条目独立 key+元信息 key（禁整表 JSON 重写——单条目写放大最小且
+  * 损坏隔离）；损坏条目丢弃+WARN+自清（key 移除防每次启动重复告警）。
+  * 纯注入（OutboxStorageLike——单测 mock/装配真 window.localStorage）。
++ * [F-TIME-02] 向后兼容：存量条目可能携带旧时长载荷 seconds 字段——形状校验
++ * 只核必备键不拒多余键（非 strict），读回对象多出的 seconds 被消费面忽略
++ * （dispatch 只取 paperId/page），条目一经 update/remove 即自然淘汰。
+  */
+ import type { OutboxEntry, OutboxStore } from './reading-time-outbox'
+ 
+@@ -21,12 +24,12 @@ export const OUTBOX_ENTRY_KEY_PREFIX = 'synapse.outbox.entry.'
+ export const OUTBOX_META_KEY = 'synapse.outbox.meta'
+ const OUTBOX_STATES: ReadonlyArray<OutboxEntry['state']> = ['pending', 'in-flight', 'dead-letter']
+ 
+-/** 条目形状校验（损坏=丢字段/坏 JSON/态名非法——一律按 corrupt 处理） */
++/** 条目形状校验（损坏=丢字段/坏 JSON/态名非法——一律按 corrupt 处理；
++ * 多余键（F-TIME-02 前旧条目的 seconds）非损坏=向后兼容忽略） */
+ const isEntry = (x: Partial<OutboxEntry>): x is OutboxEntry => {
+   return (
+     typeof x.id === 'string' &&
+     typeof x.paperId === 'string' &&
+-    typeof x.seconds === 'number' &&
+     typeof x.seq === 'number' &&
+     typeof x.attempts === 'number' &&
+     typeof x.state === 'string' &&
+diff --git a/src/renderer/features/reader/time/reading-time-outbox.ts b/src/renderer/features/reader/time/reading-time-outbox.ts
+index 4037be572a..09b41b5112 100644
+--- a/src/renderer/features/reader/time/reading-time-outbox.ts
++++ b/src/renderer/features/reader/time/reading-time-outbox.ts
+@@ -1,10 +1,14 @@
+ /**
+- * [P7X-02] reading-time-outbox —— 阅读时长/进度落盘持久 outbox（终裁版设计书
++ * [P7X-02] reading-time-outbox —— 进度落盘持久 outbox（终裁版设计书
+  * docs/design/2026-09-04_p7x02-reading-time-outbox.md 全量落地）。
++ * [F-TIME-02] 2026-09-19 用户裁决「阅读时长功能移除」：时长载荷（OutboxEntry
++ * .seconds 字段+send 第三参）已删，队列本体保留为页码通道；localStorage 存量
++ * 条目含旧 seconds 字段=回放时忽略（向后兼容——isEntry 不检多余键，见
++ * reading-time-outbox-store），回写时旧字段自然随条目淘汰。
+  *
+  * ── 行为层（态空间表逐格）──
+  * | # | 迁移 | 触发 | 断言 |
+- * | T1 | ∅→pending | enqueue（三收尾口：复合 flusher/onFlush 兜底/sp.dispose 页码） | 先同步落 store 后入调度（写前日志序）；seconds≤3600 由 chunkSeconds 单源保证 |
++ * | T1 | ∅→pending | enqueue（页码三收尾口：flusher flush/flushAll/spView dispose 尾账） | 先同步落 store 后入调度（写前日志序） |
+  * | T2 | pending→in-flight | pump 取 per-paper 队头（最小 seq 未决条目） | 先持久化 in-flight 态再发 invoke（CO-3）；同 paper 至多一条 in-flight 且为队头（CR-1 队头阻塞）；跨 paper 并行（CO-2） |
+  * | T3 | in-flight→done | send resolve | 立即 remove（无 tombstone） |
+  * | T4 | in-flight→pending | send reject/同步抛错 | attempts++；指数退避（共享计时器，上界 5min）；队头保持不越序 |
+@@ -13,12 +17,12 @@
+  * | — | 排空闸门 | replayOnStart resolve 前 | 新 enqueue 只入队不派发（时间语义——回放期新条目不论 seq；回炉 W2） |
+  *
+  * 不变量（四条）：①store 任一时刻可序列化复原（同步写，每条目独立 key）；
+- * ②单 paper 派发序=seq 严格升序（队头阻塞保证）；③outbox 永不回写 ledger
+- * （时长账本唯一宿主仍=reading-time.ts ledger）；④dispose 停扫描不停已发
+- * invoke 回调（进程未死→回调照常更新 store；进程死→下次启动 T5 接管）。
++ * ②单 paper 派发序=seq 严格升序（队头阻塞保证）；③outbox 永不回写账本
++ * （发送决意一经入队即冻结——页码在 enqueue 时点定死）；④dispose 停扫描不停
++ * 已发 invoke 回调（进程未死→回调照常更新 store；进程死→下次启动 T5 接管）。
+  *
+  * ── 接口层 ── 纯 TS 可单测：store/send/now/timers/onWarn 全注入（禁真
+- * timer，reading-time.ts 同法）；id/seq/createdAt 由装配面唯一铸造（seq 全局
++ * timer）；id/seq/createdAt 由装配面唯一铸造（seq 全局
+  * 续增单源→id=ob-<seq> 跨会话唯一），本模块只按 seq 定序不生成序。
+  * localStorage 退化（设计 §7.5）：任一 store 操作抛错→内存重试+强 WARN
+  * （F3/F5 失效面诚实申报）；适配器（每条目独立 key+损坏自清）拆驻
+@@ -26,12 +30,11 @@
+  * 共享退避=单闸门语义（任一失败后退避窗内全部派发暂停——CO-2 共享计时器
+  * 的最简可测实现，自裁申报）。
+  */
+-/** 队列条目（设计 §3：跨重启持久的最小账目） */
++/** 队列条目（设计 §3：跨重启持久的最小账目；F-TIME-02 后=纯页码载荷） */
+ export interface OutboxEntry {
+   id: string
+   paperId: string
+   page?: number
+-  seconds: number
+   seq: number
+   attempts: number
+   state: 'pending' | 'in-flight' | 'dead-letter'
+@@ -65,8 +68,8 @@ export interface OutboxTimers {
+ 
+ export interface OutboxDeps {
+   store: OutboxStore
+-  /** 发送依赖（=装配面 saveProgress 原签名注入——单通道不变零新 IPC） */
+-  send(paperId: string, page: number, secondsDelta: number): void | Promise<void>
++  /** 发送依赖（=装配面 saveProgress 页码载荷注入——单通道不变零新 IPC） */
++  send(paperId: string, page: number): void | Promise<void>
+   now(): number
+   timers: OutboxTimers
+   /** WARN 单通道（装配接 toast：死信/退化=error，淘汰=info） */
+@@ -215,7 +218,7 @@ export function createReadingTimeOutbox(deps: OutboxDeps): ReadingTimeOutbox {
+       }
+     }
+     try {
+-      void Promise.resolve(deps.send(e.paperId, e.page ?? 0, e.seconds)).then(
++      void Promise.resolve(deps.send(e.paperId, e.page ?? 0)).then(
+         () => finish(true),
+         (err: unknown) => finish(false, err)
+       )
+diff --git a/src/renderer/features/reader/time/reading-time-setup.ts b/src/renderer/features/reader/time/reading-time-setup.ts
+index fb25c37ba4..f2557bef0e 100644
+--- a/src/renderer/features/reader/time/reading-time-setup.ts
++++ b/src/renderer/features/reader/time/reading-time-setup.ts
+@@ -1,26 +1,24 @@
+ /**
+- * reading-time-setup —— P7E-05/P7X-02 ReaderPage 组合根装配 hook（拆自
+- * reading-time.ts：顶层 import api（window.api 模块级求值）会毒化 node 环境
+- * 纯模块单测——拆出后 reading-time.ts 零 window 依赖；scroll-progress 装配
+- * 工厂同型的细化形态）。装配块驻模块文件=组件 ≤250 行关卡配套（组件只持引用）。
++ * reading-time-setup —— ReaderPage 组合根装配件（[F-TIME-02] 时长移除后=outbox
++ * 页码通道装配件，件名保留防改名面扩大）。
+  *
+- * P7X-02 改道：三收尾口（复合 flusher invokeOne/onFlush 卸载兜底/sp.dispose
+- * 页码尾账）全部经 enqueueReaderProgress 入 outbox（R7 并入——页码旁路消除，
+- * seconds=0 合法载荷）；outbox 单例（真 localStorage/定时器/saveProgress 发送
+- * 依赖/WARN=toast 单源）在此装配，启动闸门 replayOnStart 由 main.tsx await。
++ * 沿革：P7E-05 阅读时长（计时器本体+复合 flusher）→P7X-02 outbox（时长/进度
++ * 持久队列）→2026-09-19 F-TIME-02 用户裁决「阅读时长功能移除」（查证
++ * Zotero/Mendeley/EndNote/ReadCube 均无内置时长统计）——reading-time.ts 计时器
++ * 本体与 reading-time-format.ts 显示件已整件删除；**outbox 机制保留**（P7X-02
++ * 后为页码三收尾口通道），仅删时长载荷（OutboxEntry.seconds 字段/
++ * enqueueReaderProgress 三参化二参/chunkSeconds 分片/复合 flusher 退化页码单发）。
++ *
++ * 现职责：outbox 单例装配（真 localStorage/定时器/saveProgress 发送依赖/WARN=
++ * toast 单源；启动闸门 replayOnStart 由 main.tsx await）+页码三收尾口共用入队口
++ * （store flusher 的 flush/flushAll+spView dispose 页码尾账改道——R7 页码半边
++ * 保留）。localStorage 存量条目含旧 seconds 字段=回放时忽略（向后兼容，见
++ * reading-time-outbox-store 头注）。
+  */
+ import { useMemo } from 'react'
+ import { api } from '../../../api/client'
+ import { showToast } from '../../../shared/ui/toast-store'
+-import { useReaderStore } from '../state/reader.store'
+ import type { ProgressFlusher } from '../state/reader.store'
+-import {
+-  chunkSeconds,
+-  createCompositeProgressFlusher,
+-  createReaderReadingTime,
+-  type ProgressAccountView,
+-  type ReadingTime
+-} from './reading-time'
+ import {
+   createReadingTimeOutbox,
+   type OutboxEntry,
+@@ -29,9 +27,13 @@ import {
+ } from './reading-time-outbox'
+ import { createLocalStorageOutboxStore } from './reading-time-outbox-store'
+ 
+-/** sp 的 dispose 消费面（最小结构——ScrollProgress 结构满足；禁 import
+- * scroll-progress 红线沿用 reading-time 约定，结构同型） */
+-export interface ReaderSpDisposeView extends ProgressAccountView {
++/** sp 的消费面（最小结构——ScrollProgress 结构满足；禁 import scroll-progress
++ * 红线沿用 P7E-05 约定，结构同型不引具体类型） */
++export interface ReaderSpDisposeView {
++  /** 取走该 tab 的待落页码（不落库——落库归 outbox 单通道） */
++  takePending(paperId: string): number | undefined
++  /** 待落账 pid 清单（dispose 排干遍历） */
++  pendingIds(): string[]
+   dispose(): void
+ }
+ 
+@@ -40,10 +42,6 @@ let outboxSingleton: ReadingTimeOutbox | null = null
+  * id=ob-<seq>，seq 唯一⇒id 跨会话唯一） */
+ let seqNext = 0
+ 
+-function currentPageOf(paperId: string): number {
+-  return useReaderStore.getState().tabs[paperId]?.page ?? 0
+-}
+-
+ /** outbox 单例装配（renderer 每会话一份；WARN=toast 单源；localStorage 适配
+  * 器损坏条目丢弃自清+toast） */
+ export function getReaderOutbox(): ReadingTimeOutbox {
+@@ -62,11 +60,9 @@ export function getReaderOutbox(): ReadingTimeOutbox {
+     seqNext = maxSeq
+     outboxSingleton = createReadingTimeOutbox({
+       store,
+-      // 发送依赖=saveProgress 原签名（单通道不变零新 IPC；resolve=DB 已提交）
+-      send: (paperId, page, secondsDelta) =>
+-        api.reader
+-          .saveProgress({ paperId, page, ...(secondsDelta > 0 ? { secondsDelta } : {}) })
+-          .then(() => undefined),
++      // 发送依赖=saveProgress 页码载荷（F-TIME-02 后无 secondsDelta——单通道
++      // 不变零新 IPC；resolve=DB 已提交）
++      send: (paperId, page) => api.reader.saveProgress({ paperId, page }).then(() => undefined),
+       now: () => Date.now(),
+       timers: {
+         setTimeout: (fn, ms) => setTimeout(fn, ms),
+@@ -80,47 +76,45 @@ export function getReaderOutbox(): ReadingTimeOutbox {
+   return outboxSingleton
+ }
+ 
+-/** T1 入队口（三收尾口共用——页码在 enqueue 时点定死，防重放期回退） */
+-export function enqueueReaderProgress(paperId: string, page: number, secondsDelta: number): void {
++/** 入队口（页码三收尾口共用——页码在 enqueue 时点定死，防重放期回退） */
++export function enqueueReaderProgress(paperId: string, page: number): void {
+   seqNext += 1
+   const draft: Omit<OutboxEntry, 'state' | 'attempts'> = {
+     id: `ob-${seqNext}`,
+     paperId,
+     page,
+-    seconds: secondsDelta,
+     seq: seqNext,
+     createdAt: Date.now()
+   }
+   getReaderOutbox().enqueue(draft)
+ }
+ 
+-/** 时长账本+复合 flusher+sp 包装视图一次构建：onFlush 兜底=dispose 尾账经
+- * outbox enqueue（R7 卸载收尾；分片单源消费——上游 dispose 已逐笔分片则
+- * 单笔≤3600 经 chunkSeconds 单片透传=防御深度）；每片恒>0=恒带 seconds */
+-export function useReaderReadingTime<T extends ReaderSpDisposeView>(sp: T): {
+-  rt: ReadingTime
++/** 页码收账 flusher+sp 包装视图一次构建（ReaderPage 组合根消费）：
++ * - flusher（ProgressFlusher 形态，store.closeTab/close 经注册口消费）：取走
++ *   sp 待落页码→outbox 入队；无待落页码=no-op（时长载荷已随 F-TIME-02 移除，
++ *   页码缺席即无账可落——旧复合 flusher 的 currentPageOf 兜底专服务于时长
++ *   搭车，随载荷一并退役）；
++ * - spView（R7 页码半边保留）：dispose 尾账页码改道 outbox——先经
++ *   pendingIds/takePending 排干再调原 dispose（其内部直发落库面随排干恒空转）；
++ *   其余面原样直通（spread 拷贝闭包，类型 T 保持） */
++export function useReaderProgressOutbox<T extends ReaderSpDisposeView>(sp: T): {
+   flusher: ProgressFlusher
+-  /** R7 并入（CR-3）：dispose 尾账页码改道 outbox（seconds=0 合法载荷）——
+-   * 先经 pendingIds/takePending 排干再调原 dispose（其内部直发落库面随排干
+-   * 恒空转）；其余面原样直通（spread 拷贝闭包，类型 T 保持） */
+   spView: T
+ } {
+-  const rt = useMemo(
+-    () =>
+-      createReaderReadingTime((paperId, seconds) => {
+-        for (const chunk of chunkSeconds(seconds)) {
+-          enqueueReaderProgress(paperId, currentPageOf(paperId), chunk)
++  const flusher = useMemo<ProgressFlusher>(
++    () => ({
++      flush(paperId) {
++        const page = sp.takePending(paperId)
++        if (page !== undefined) enqueueReaderProgress(paperId, page)
++      },
++      flushAll() {
++        for (const pid of sp.pendingIds()) {
++          const page = sp.takePending(pid)
++          if (page !== undefined) enqueueReaderProgress(pid, page)
+         }
+-      }),
+-    []
+-  )
+-  const flusher = useMemo(
+-    () =>
+-      createCompositeProgressFlusher(sp, rt, {
+-        enqueue: enqueueReaderProgress,
+-        currentPageOf
+-      }),
+-    [sp, rt]
++      }
++    }),
++    [sp]
+   )
+   const spView = useMemo(() => {
+     const view = {
+@@ -128,12 +122,12 @@ export function useReaderReadingTime<T extends ReaderSpDisposeView>(sp: T): {
+       dispose(): void {
+         for (const pid of sp.pendingIds()) {
+           const page = sp.takePending(pid)
+-          if (page !== undefined) enqueueReaderProgress(pid, page, 0)
++          if (page !== undefined) enqueueReaderProgress(pid, page)
+         }
+         sp.dispose()
+       }
+     }
+     return view as T
+   }, [sp])
+-  return { rt, flusher, spView }
++  return { flusher, spView }
+ }
+diff --git a/src/renderer/features/reader/time/reading-time.ts b/src/renderer/features/reader/time/reading-time.ts
+deleted file mode 100644
+index 9ca2ff5f3a..0000000000
+--- a/src/renderer/features/reader/time/reading-time.ts
++++ /dev/null
+@@ -1,303 +0,0 @@
+-/**
+- * [P7E-05] reading-time —— 阅读时长账本（工单：本票实现）。
+- *
+- * ── 行为层 ──
+- * - 计时门（可计时的充要条件）：active tab 就绪（status ready——装配面效应
+- *   只在 ready 调 start）且 document.visibilityState==='visible'（visibilitychange
+- *   暂停/恢复）；不做输入级 idle 检测（v1 边界：挂后台标签页不算、亮屏不看算
+- *   ——诚实申报，票面§4 已知边界①）。
+- * - 态空间（per-tab ledger Record<paperId,seconds> + 当前段 {currentPid,liveMs,
+- *   lastMark}）：
+- *   | 态 | 迁移 | 断言 |
+- *   | --- | --- | --- |
+- *   | 未计时 | start(pid)（ready×active） | 段起 lastMark=now，tick 循环起 |
+- *   | 计时中 | tick 到（门开）→整 tick 入 ledger | 不足 tick 留 liveMs（零头） |
+- *   | 计时中 | visibilitychange→hidden | 已计量零头留存，刻度推到当下（hidden 段零累积） |
+- *   | hidden | 恢复 visible | lastMark=恢复点起算（续算，零头续接） |
+- *   | 计时中 | stop()（切 tab/换文档） | 零头按实结转入 ledger（账留存——R4） |
+- *   | 任意 | collectAndZero(pid) | 返回并清零该 tab 账（不 invoke——页码未知，invoke 归复合 flusher） |
+- *   | 任意 | dispose() | 清 timer+尾账逐笔经 onFlush 上抛（R7 卸载收尾） |
+- * - 跨格序列 R1~R7+R10 见 tests/unit/renderer/reading-time.test.ts（票面§1 表）。
+- * - tick=READING_TICK_MS（15s）；不足 tick 的零头随 flush 按实结转（now 注入
+- *   差值计，floor 秒——宁少勿多）；节流下长间隔一次入账整段（都是可见段——
+- *   不可见段被 onVisibilityChange 刻度隔离）。
+- *
+- * ── 接口层 ──
+- * - createReadingTime(deps:{isVisible,now,timers,onFlush})——时间全注入（禁真
+- *   timer，scroll-progress 同法）；
+- * - createReaderReadingTime(onFlush)——装配工厂（真 Date.now/setInterval/
+- *   document.visibilityState）；
+- * - createCompositeProgressFlusher(sp,rt,deps)——装配面复合 flusher（进度页
+- *   +时长账一次 invoke=单通道单事务面，Design 裁决）；
+- * - useReadingTimeWiring——装配效应集（ready 效应 start/stop+visibilitychange
+- *   监听+卸载 dispose）；
+- * - formatReadingTime(seconds)——显示纯函数（<60min「N 分钟」按分钟取整；
+- *   ≥60min「N 小时 M 分」）单源导出（PaperDetailPanel 消费）。
+- *
+- * ── 架构层 ──
+- * - 与 scroll-progress 互不 import（票面§3 红线）——复合器消费 ProgressAccountView
+- *   结构类型（ScrollProgress 加 takePending/pendingIds 口后结构满足），装配面
+- *   ReaderPage 同时持两模块复合；依赖单向同惯例。
+- * - 落库经 outbox enqueue 搭车 saveProgress 通道（P7X-02：invokeOne 直发+
+- *   吞错改道持久队列 at-least-once，失败可恢复）——继承其完整生命周期钩子链
+- *   （防抖/关 tab/closeAll/卸载收尾），禁独立通道（两账本两通道=漏一即丢账）。
+- * - INV-57（收口主控登记）：时长账本唯一宿主=本模块 ledger；reading_seconds
+- *   唯一写点=papers.repo updateReadPage 第三参。
+- *
+- * ── 生命周期层 ──
+- * - 不做：输入级 idle 检测（v2 另立票）、跨设备时长合并（单机单库）。
+- *
+- * ── 文化层 ──
+- * - 测试：tests/unit/renderer/reading-time.test.ts（R1~R7+R10+零头结转+复合
+- *   flusher+formatReadingTime 边界，时间全注入）+reading-time-outbox.test
+- *   （P7X-02 队列态空间）；e2e reader-reading-time.spec（显示面+迁移升级链
+- *   冒烟）+reading-time-replay.spec（P7X-02 重启重放链）。
+- */
+-import { useEffect } from 'react'
+-
+-// formatReadingTime 定义驻 renderer/shared（quality 跨 feature 关卡指定的下沉
+-// 位——PaperDetailPanel 直 import shared；此处 re-export 单源转发=受锁测试
+-// import 面零改，定义唯一）
+-export { formatReadingTime } from '../../../shared/reading-time-format'
+-
+-/** tick 间隔：15s（票面①——READING_TICK_MS 常量单源） */
+-export const READING_TICK_MS = 15_000
+-
+-/** 注入定时器（禁真 timer——测试经 fake timers 驱动） */
+-export interface ReadingTimeTimers {
+-  setInterval(fn: () => void, ms: number): unknown
+-  clearInterval(handle: unknown): void
+-}
+-
+-export interface ReadingTimeDeps {
+-  /** 可见性门（装配注入 document.visibilityState==='visible'） */
+-  isVisible(): boolean
+-  now(): number
+-  timers: ReadingTimeTimers
+-  /** dispose 尾账上抛口（装配面接 saveProgress 兜底——R7） */
+-  onFlush(paperId: string, seconds: number): void
+-}
+-
+-export interface ReadingTime {
+-  /** active tab 就绪（装配面 ready 效应调用；换文档旧段零头先结转） */
+-  start(paperId: string): void
+-  /** 切 tab/换文档/失焦（零头按实结转留存 ledger——账不丢） */
+-  stop(): void
+-  /** visibilitychange 接线（hidden=刻度隔离零累积；visible=恢复点起算） */
+-  onVisibilityChange(): void
+-  /** flush 用：返回并清零该 tab 账（页码未知不 invoke——invoke 归复合 flusher） */
+-  collectAndZero(paperId: string): number
+-  /** flushAll 用：取走全账并清零 */
+-  collectAllAndZero(): Record<string, number>
+-  /** 观察口（测试/装配诊断）：该 tab 已入账秒数 */
+-  ledgerOf(paperId: string): number
+-  /** 清 timer+尾账逐笔 onFlush 上抛（卸载/切视图收尾） */
+-  dispose(): void
+-}
+-
+-export function createReadingTime(deps: ReadingTimeDeps): ReadingTime {
+-  const ledger: Record<string, number> = {}
+-  let currentPid: string | null = null
+-  /** 当前连续可见段内已计量未入账的毫秒（零头） */
+-  let liveMs = 0
+-  /** 上次计量刻度（ms——now 注入） */
+-  let lastMark = 0
+-  let handle: unknown = null
+-
+-  /** 段结算：**吸收**（liveMs += now-lastMark）仅 visible（R1 回炉——hidden
+-   *  段时长不得吸收，票面「挂后台标签页不算」全路径）；**结转**（liveMs 入
+-   *  ledger+清零，force 或 ≥tick 时）不依赖当前可见性（R3 回炉/门二 WARN
+-   *  解耦——hidden 前已计量的可见零头（<15s）随 force 结转入账不丢，票面
+-   *  「零头随 flush 按实结转/实转不丢」）；lastMark 无条件推进刻度。节流长
+-   *  间隔一段清（≥TICK 全入）。liveMs 生命周期终局=dispose/start 重置清零 */
+-  const settle = (force: boolean): void => {
+-    const now = deps.now()
+-    if (currentPid !== null && deps.isVisible()) {
+-      liveMs += Math.max(0, now - lastMark)
+-    }
+-    if (currentPid !== null && (force || liveMs >= READING_TICK_MS)) {
+-      ledger[currentPid] = (ledger[currentPid] ?? 0) + Math.floor(liveMs / 1000)
+-      liveMs = 0
+-    }
+-    lastMark = now
+-  }
+-
+-  /** tick：门关（无 active/不可见）零累积直接返回（刻度不动——hidden 段隔离
+-   *  由 onVisibilityChange 承担，此处防御冗余） */
+-  const tick = (): void => {
+-    if (currentPid === null || !deps.isVisible()) return
+-    settle(false)
+-  }
+-
+-  return {
+-    start(paperId) {
+-      if (currentPid !== null) settle(true) // 换文档：旧文档零头先结转（不丢）
+-      currentPid = paperId
+-      liveMs = 0
+-      lastMark = deps.now()
+-      if (handle === null) handle = deps.timers.setInterval(tick, READING_TICK_MS)
+-    },
+-
+-    stop() {
+-      if (currentPid !== null) settle(true) // 零头按实结转留存（R4 账留存）
+-      currentPid = null
+-      if (handle !== null) {
+-        deps.timers.clearInterval(handle)
+-        handle = null
+-      }
+-    },
+-
+-    onVisibilityChange() {
+-      if (deps.isVisible()) {
+-        // 恢复：从恢复点起算（liveMs 零头保留续算）
+-        lastMark = deps.now()
+-      } else {
+-        // 进入 hidden：已计量零头留存，刻度推到当下——hidden 段零累积
+-        if (currentPid !== null) liveMs += Math.max(0, deps.now() - lastMark)
+-        lastMark = deps.now()
+-      }
+-    },
+-
+-    collectAndZero(paperId) {
+-      if (currentPid === paperId) settle(true) // 当前段零头一并结转
+-      const sec = ledger[paperId] ?? 0
+-      delete ledger[paperId]
+-      return sec
+-    },
+-
+-    collectAllAndZero() {
+-      if (currentPid !== null) settle(true)
+-      const out = { ...ledger }
+-      for (const key of Object.keys(ledger)) delete ledger[key]
+-      return out
+-    },
+-
+-    ledgerOf(paperId) {
+-      return ledger[paperId] ?? 0
+-    },
+-
+-    dispose() {
+-      if (currentPid !== null) settle(true)
+-      currentPid = null
+-      if (handle !== null) {
+-        deps.timers.clearInterval(handle)
+-        handle = null
+-      }
+-      for (const paperId of Object.keys(ledger)) {
+-        const sec = ledger[paperId] ?? 0
+-        delete ledger[paperId]
+-        // R3 回炉/门二 BLOCKING：尾账逐笔分片 onFlush（>1h 账单笔>3600 会被
+-        // zod 拒+setup 吞错=静默丢账——分片单源 chunkSeconds）
+-        if (sec > 0) {
+-          for (const chunk of chunkSeconds(sec)) deps.onFlush(paperId, chunk)
+-        }
+-      }
+-    }
+-  }
+-}
+-
+-/** 进度账视图（结构类型——ScrollProgress 满足；互不 import 红线，票面§3） */
+-export interface ProgressAccountView {
+-  /** 取走该 tab 的待落页码（不落库——落库归复合 flusher 单通道） */
+-  takePending(paperId: string): number | undefined
+-  /** 待落账 pid 清单（flushAll 并集遍历） */
+-  pendingIds(): string[]
+-}
+-
+-export interface CompositeFlusherDeps {
+-  /** T1 入队口（装配注入 outbox enqueue 铸造闭包——发送依赖已移交 outbox
+-   *  单例（P7X-02），单通道不变零新 IPC；签名=原 saveProgress 直发同形） */
+-  enqueue(paperId: string, page: number, secondsDelta: number): void
+-  /** 页码缺席时该 tab 的当前页（store tab.page） */
+-  currentPageOf(paperId: string): number
+-}
+-
+-/** 单次 invoke 时长上界（=schemas.ts saveProgressReqSchema secondsDelta
+- *  max(3600)——「单次 invoke 上界」契约；受锁面禁动，此处同值分片对齐） */
+-export const PROGRESS_SECONDS_CHUNK = 3_600
+-
+-/** 时长分片纯函数（R3 回炉/门二 BLOCKING——分片单源，三消费点共用：
+- *  invokeOne（R5/R6 复合 flush）、dispose 逐笔 onFlush（R7 卸载）、setup 侧
+- *  onFlush 回调（防御深度——上游已分片则单片透传））：3600 整数片+尾片
+- *  （sec=0→[0]=单笔零片=旧载荷省略语义由装配层处理） */
+-export function chunkSeconds(sec: number): number[] {
+-  const chunks: number[] = []
+-  let rest = sec
+-  while (rest >= PROGRESS_SECONDS_CHUNK) {
+-    chunks.push(PROGRESS_SECONDS_CHUNK)
+-    rest -= PROGRESS_SECONDS_CHUNK
+-  }
+-  if (rest > 0 || chunks.length === 0) chunks.push(rest)
+-  return chunks
+-}
+-
+-/** 复合 flusher（装配面注册进 store.registerProgressFlusher——closeTab/close
+- *  消费）：进度页+时长账一次入队（sec>0||page 在场才入；两账皆空零条目）。
+- *  分片（R2 回炉/门一 BLOCKING）：时长账仅收尾口一次性回吐——连续阅读>1h 后
+- *  关 tab 回吐值>3600 会被 zod 拒收（吞错静默丢失击穿 INV-57）；故 sec>3600
+- *  拆 3600 整数片+尾片依次 enqueue（页码同一 pending page 重复写=
+- *  last_read_page set 幂等无害；物理上界 24 片/24h）。
+- *  直发改道（P7X-02）：invokeOne 原「直发+吞错」改 outbox.enqueue——页码在
+- *  enqueue 时点定死（重放期不取「当前页」防 last_read_page 回退），落盘
+- *  失败可恢复性由 outbox 态空间承载（at-least-once） */
+-export function createCompositeProgressFlusher(
+-  sp: ProgressAccountView,
+-  rt: ReadingTime,
+-  deps: CompositeFlusherDeps
+-): { flush(paperId: string): void; flushAll(): void } {
+-  const invokeOne = (paperId: string, page: number | undefined, sec: number): void => {
+-    if (page === undefined && sec <= 0) return
+-    const basePage = page ?? deps.currentPageOf(paperId)
+-    for (const chunk of chunkSeconds(sec)) deps.enqueue(paperId, basePage, chunk)
+-  }
+-  return {
+-    flush(paperId) {
+-      invokeOne(paperId, sp.takePending(paperId), rt.collectAndZero(paperId))
+-    },
+-    flushAll() {
+-      const rtAll = rt.collectAllAndZero()
+-      const pids = new Set([...Object.keys(rtAll), ...sp.pendingIds()])
+-      for (const pid of pids) invokeOne(pid, sp.takePending(pid), rtAll[pid] ?? 0)
+-    }
+-  }
+-}
+-
+-/** 装配工厂：真实 deps（Date.now/setInterval/document.visibilityState） */
+-export function createReaderReadingTime(
+-  onFlush: (paperId: string, seconds: number) => void
+-): ReadingTime {
+-  return createReadingTime({
+-    isVisible: () => document.visibilityState === 'visible',
+-    now: () => Date.now(),
+-    timers: {
+-      setInterval: (fn, ms) => setInterval(fn, ms),
+-      clearInterval: (h) => clearInterval(h as ReturnType<typeof setInterval>)
+-    },
+-    onFlush
+-  })
+-}
+-
+-/** 装配效应集（ReaderPage 组合根消费）：
+- * - ready 效应：paperId 就绪（ready×fileUrl 在场）start，否则 stop（R10：
+- *   loading/error 零累积；R4：切 tab stop→start 成对）；
+- * - visibilitychange 监听成对（hidden 暂停/visible 恢复——R3）；
+- * - 卸载：dispose 尾账经 onFlush 上抛（R7）。 */
+-export function useReadingTimeWiring(
+-  rt: ReadingTime,
+-  paperId: string | null,
+-  ready: boolean
+-): void {
+-  useEffect(() => {
+-    if (paperId !== null && ready) rt.start(paperId)
+-    else rt.stop()
+-    return () => rt.stop()
+-  }, [rt, paperId, ready])
+-  useEffect(() => {
+-    const onVis = (): void => rt.onVisibilityChange()
+-    document.addEventListener('visibilitychange', onVis)
+-    return () => {
+-      document.removeEventListener('visibilitychange', onVis)
+-      rt.dispose()
+-    }
+-  }, [rt])
+-}
+diff --git a/src/renderer/features/reader/view/ReaderPage.tsx b/src/renderer/features/reader/view/ReaderPage.tsx
+index 09390b9a47..12af01e51a 100644
+--- a/src/renderer/features/reader/view/ReaderPage.tsx
++++ b/src/renderer/features/reader/view/ReaderPage.tsx
+@@ -31,9 +31,10 @@
+  *   期望：切布局不丢位置）
+  * - P7E-03 页内搜索装配：useReaderSearch（fileUrl 键效应清面板/ctrl+f/
+  *   翻页联动注入/受控面板节点）→ ReaderToolbar searchBox slot
+- * - P7E-05 阅读时长装配：useReaderReadingTime（时长账本+复合 flusher——
+- *   进度页+时长账单通道合并）+useReadingTimeWiring（ready×active 计时门/
+- *   visibilitychange/卸载 dispose）；装配块驻 reading-time.ts（组件行数关卡）
++ * - [F-TIME-02] 阅读时长功能移除（2026-09-19 用户裁决）后：进度落库=outbox
++ *   页码单通道（useReaderProgressOutbox 装配页码 flusher+spView dispose 尾账
++ *   改道——原时长账本/复合 flusher/计时门接线已随 reading-time.ts 删除）；
++ *   装配块驻 reading-time-setup.ts（组件行数关卡）
+  * ── 接口层 ──
+  * - export function ReaderPage(): JSX.Element
+  * ── 架构层 ──
+@@ -52,8 +53,7 @@ import { useReaderSearch } from './useReaderSearch'
+ import { useReaderStore } from '../state/reader.store'
+ import { readActiveTab, useActiveTab } from '../state/useActiveTab'
+ import { createReaderScrollProgress, useScrollProgressWiring } from './scroll-progress'
+-import { useReaderReadingTime } from '../time/reading-time-setup'
+-import { useReadingTimeWiring } from '../time/reading-time'
++import { useReaderProgressOutbox } from '../time/reading-time-setup'
+ import { useReaderShortcutHandlers } from './reader-shortcut-handlers'
+ import { ReaderPageView } from './ReaderPageView'
+ import { showToast } from '../../../shared/ui/Toast'
+@@ -87,13 +87,11 @@ export function ReaderPage(): JSX.Element {
+   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
+   // F-03 滚动进度状态机（装配工厂闭包 scrollAreaRef；接线见 useScrollProgressWiring）
+   const spProg = useMemo(() => createReaderScrollProgress(scrollAreaRef), [])
+-  // P7E-05 时长账本+复合 flusher（装配块驻 reading-time.ts——组件行数关卡配套；
+-  // 计时门接线 R3/R4/R7/R10+进度时长单通道合并 Design 裁决）；P7X-02 R7 并入：
+-  // spView=dispose 尾账页码改道 outbox 的包装视图（其余面直通）——wiring 消费
+-  // 包装视图，页码旁路消除（单队列 seq 序）
+-  const { rt: rtTime, flusher: compositeFlusher, spView } = useReaderReadingTime(spProg)
+-  useScrollProgressWiring(spView, fileUrl, paperId, columnScroll, compositeFlusher)
+-  useReadingTimeWiring(rtTime, paperId, fileUrl !== null)
++  // 进度落库=outbox 页码单通道（[F-TIME-02] 时长移除后装配块驻
++  // reading-time-setup.ts——组件行数关卡配套）；spView=dispose 尾账页码改道
++  // outbox 的包装视图（其余面直通）——wiring 消费包装视图（单队列 seq 序）
++  const { flusher: pageFlusher, spView } = useReaderProgressOutbox(spProg)
++  useScrollProgressWiring(spView, fileUrl, paperId, columnScroll, pageFlusher)
+   // N4：SelectionLayer 挂载盒=内容级稳定包装盒（滚动不重挂→工具条不闪收）
+   const [selectionMount, setSelectionMount] = useState<HTMLDivElement | null>(null)
+ 
+diff --git a/src/renderer/shared/reading-time-format.ts b/src/renderer/shared/reading-time-format.ts
+deleted file mode 100644
+index f536719094..0000000000
+--- a/src/renderer/shared/reading-time-format.ts
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/**
+- * 阅读时长显示纯函数（P7E-05）——定义单源驻 renderer/shared（check-quality
+- * 跨 feature 关卡指定的共享下沉位：library/PaperDetailPanel 与
+- * reader/time/reading-time 双 feature 消费；reader/time/reading-time.ts re-export
+- * 转发=受锁测试 import 面零改）。
+- */
+-/** <60min「N 分钟」（按分钟取整=floor，宁少勿多）；≥60min「N 小时 M 分」 */
+-export function formatReadingTime(seconds: number): string {
+-  const totalMin = Math.floor(seconds / 60)
+-  if (totalMin < 60) return `${totalMin} 分钟`
+-  const hours = Math.floor(totalMin / 60)
+-  return `${hours} 小时 ${totalMin % 60} 分`
+-}
+diff --git a/src/shared/ipc/schemas.ts b/src/shared/ipc/schemas.ts
+index 0e8af6465d..e248157233 100644
+--- a/src/shared/ipc/schemas.ts
++++ b/src/shared/ipc/schemas.ts
+@@ -58,10 +58,10 @@ export const annotationListResSchema = z.array(annotationSchema)
+ export const saveProgressReqSchema = z
+   .object({
+     paperId: z.string().min(1),
+-    page: z.number().int().min(0),
+-    // P7E-05 阅读时长搭车（可选=旧载荷零兼容破坏；上限 3600=单次 flush
+-    // 上界防异常大值；缺省 0=reading_seconds 不动）
+-    secondsDelta: z.number().int().min(0).max(3600).optional()
++    page: z.number().int().min(0)
++    // [F-TIME-02] 阅读时长搭车载荷 secondsDelta 已随 2026-09-19 用户裁决移除
++    // （strict 拒未知字段=旧载荷客户端会被拒；renderer 面同批已改，无跨版本
++    // 混跑面——Electron 本地单机应用无服务端兼容义务）
+   })
+   .strict()
+ export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
+diff --git a/src/shared/models/paper.ts b/src/shared/models/paper.ts
+index 8307f879d7..4b1ebafd72 100644
+--- a/src/shared/models/paper.ts
++++ b/src/shared/models/paper.ts
+@@ -45,10 +45,9 @@ export const paperDetailSchema = paperSummarySchema
+     // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）
+     citedByCount: z.number().int().optional(),
+     citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
+-    citedByCountSource: paperSourceSchema.optional(), // 命中的瀑布源
+-    // P7E-05 阅读时长（008 迁移列 reading_seconds；detailById 直读——必填：
+-    // NOT NULL DEFAULT 0 读面恒有值）
+-    readingSeconds: z.number().int().min(0)
++    citedByCountSource: paperSourceSchema.optional() // 命中的瀑布源
++    // [F-TIME-02] 阅读时长字段 readingSeconds 已随 2026-09-19 用户裁决移除
++    // （列由 009 迁移 DROP；沿革=P7E-05 008 加列→F-TIME-02 009 删列）
+   })
+   .strict()
+ export type PaperDetail = z.infer<typeof paperDetailSchema>
+diff --git a/tests/contracts/schemas.test.ts b/tests/contracts/schemas.test.ts
+index 5346313fff..260aa08a50 100644
+--- a/tests/contracts/schemas.test.ts
++++ b/tests/contracts/schemas.test.ts
+@@ -98,7 +98,7 @@ const VALID: Record<string, unknown[]> = {
+   annotationListResSchema: [[annotation]],
+   saveProgressReqSchema: [
+     { paperId: 'p1', page: 0 },
+-    { paperId: 'p1', page: 3, secondsDelta: 60 }
++    { paperId: 'p1', page: 3 }
+   ],
+   trueAckSchema: [{ ok: true }],
+   importPathsReqSchema: [{ paths: ['C:/a.pdf'] }],
+@@ -309,15 +309,13 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
+     }
+   })
+ 
+-  it('saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）', () => {
++  it('saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段', () => {
+     const base = { paperId: 'p1', page: 0 }
+-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 0 }).success).toBe(true)
+-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3600 }).success).toBe(true)
+     expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)
+-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3601 }).success).toBe(false)
+-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: -1 }).success).toBe(false)
+-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 1.5 }).success).toBe(false)
+     expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)
++    // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长：secondsDelta 载荷退役=
++    // strict 命名约定拒收（本地单机应用无跨版本混跑面）
++    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 60 }).success).toBe(false)
+   })
+ 
+   it('importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）', () => {
+diff --git a/tests/e2e/reader-reading-time.spec.ts b/tests/e2e/reader-reading-time.spec.ts
+deleted file mode 100644
+index 00022f3633..0000000000
+--- a/tests/e2e/reader-reading-time.spec.ts
++++ /dev/null
+@@ -1,96 +0,0 @@
+-import { test, expect } from '@playwright/test'
+-import { copyFile, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+-import { mkdirSync, writeFileSync } from 'node:fs'
+-import { createHash } from 'node:crypto'
+-import { tmpdir } from 'node:os'
+-import { dirname, join } from 'node:path'
+-import { spawn } from 'node:child_process'
+-import { isTicketDone } from '../../tickets/registry'
+-import { createTinyPdf } from '../utils/pdf-factory'
+-import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+-
+-/**
+- * P7E-05 阅读时长 e2e（装配级显示面冒烟，1 综合用例）。
+- * 链：建库 v8→种子 1 篇真实 PDF→**降级 v7**（DROP COLUMN reading_seconds+
+- * user_version=7——存量库形态）→重启应用（migrate 补 008 加列，存量行补 0=
+- * 升级链不崩）→文献库选中→详情面板「阅读」行「0 分钟」在场（008→repo→
+- * PaperDetail→UI 全链，DEFAULT 0 直读）。时间流逝不加速不断言（票面申报：
+- * 计时面以注入 now 单测全锚，本 spec 只做显示面+迁移升级链冒烟）。
+- * 降级子进程=spawn -e（不落盘脚本；ABI 切换照 e2e-env.seedPaperRow 形态——
+- * 受锁件禁改，本地第二份，Rule of Three 保持重复）。
+- * 激活条件：库列表/详情面板链既有工单（本票面随实现原子生效）。
+- */
+-const DEPS = ['SR-LIB-01', 'SR-LIB-02', 'SR2-C-06'] as const
+-
+-test.setTimeout(120_000)
+-
+-/** 子进程把库降级为 v7 形（DROP COLUMN+PRAGMA user_version=7——存量库模拟） */
+-async function downgradeToV7(userData: string): Promise<void> {
+-  const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+-  const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+-  const cacheDir = join(pkgDir, 'abi-cache')
+-  const wanted = `node-v${process.versions.modules}`
+-  const dirs = (await readdir(cacheDir)).filter((d) => d.startsWith('node-v'))
+-  const pick = dirs.includes(wanted) ? wanted : (dirs.sort().at(-1) ?? '')
+-  if (!pick) throw new Error('abi-cache 缺 node 绑定——先跑 npm ci（postinstall 会 setup）')
+-  const electronBinding = await readFile(releaseBinding)
+-  await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+-  try {
+-    const sql = 'ALTER TABLE papers DROP COLUMN reading_seconds; PRAGMA user_version = 7;'
+-    await new Promise<void>((resolve, reject) => {
+-      const child = spawn(
+-        process.execPath,
+-        [
+-          '-e',
+-          'const D=require("better-sqlite3");const db=D(process.argv[1]);try{db.exec(process.argv[2])}finally{db.close()}',
+-          join(userData, 'synapse.db'),
+-          sql
+-        ],
+-        { env: process.env, stdio: 'inherit' }
+-      )
+-      child.on('exit', (code) => {
+-        if (code === 0) {
+-          resolve()
+-        } else {
+-          reject(new Error(`降级子进程退出码 ${code ?? 'null'}`))
+-        }
+-      })
+-      child.on('error', reject)
+-    })
+-  } finally {
+-    await writeFile(releaseBinding, electronBinding)
+-  }
+-}
+-
+-test('P7E-05 阅读时长：存量库升级链不崩+详情面板「阅读 0 分钟」在场', async () => {
+-  const pending = DEPS.filter((d) => !isTicketDone(d))
+-  test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
+-
+-  const title = '智慧水务 阅读时长 e2e 文献'
+-  const userData = await mkdtemp(join(tmpdir(), 'synapse-rt-'))
+-
+-  // 第一跳：让应用自己完成建库迁移（不 import src 内部模块——export-clipboard 同型）
+-  await bootstrapMigrations(userData)
+-
+-  // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
+-  const bytes = createTinyPdf(title)
+-  const sha = createHash('sha256').update(bytes).digest('hex')
+-  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+-  const abs = join(userData, 'files', ...fileRef.split('/'))
+-  mkdirSync(dirname(abs), { recursive: true })
+-  writeFileSync(abs, bytes)
+-  await seedPaperRow(userData, fileRef, sha, title, 'e2e-reading-time-paper')
+-
+-  // 降级 v7（存量库形态：无 reading_seconds 列+user_version=7）
+-  await downgradeToV7(userData)
+-
+-  // 重启：migrate 补 008（加列+存量行补 0）——升级链不崩=应用可进列表
+-  const app = await launch(userData)
+-  const win = await app.firstWindow()
+-  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+-  await win.getByText(title).first().click()
+-  // 显示面冒烟：meta 区「阅读」行「0 分钟」在场（DEFAULT 0 直读全链）
+-  await expect(win.getByText('阅读', { exact: true })).toBeVisible({ timeout: 20_000 })
+-  await expect(win.getByText('0 分钟', { exact: true })).toBeVisible()
+-  await app.close()
+-})
+diff --git a/tests/e2e/reading-time-replay.spec.ts b/tests/e2e/reading-time-replay.spec.ts
+index 5ff530ab34..35b2e780b0 100644
+--- a/tests/e2e/reading-time-replay.spec.ts
++++ b/tests/e2e/reading-time-replay.spec.ts
+@@ -10,15 +10,18 @@ import { createTinyPdf } from '../utils/pdf-factory'
+ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+ 
+ /**
+- * P7X-02 阅读时长 outbox 重启重放 e2e（SYNAPSE_USER_DATA 双 launch，1 综合用例）。
+- * 链：建库 v8→种子 1 篇真实 PDF→首轮 launch 后向 localStorage 注种崩溃/ack
+- * 未达残留（pending 120s+in-flight 90s——等价强杀前已落盘的 outbox 条目；
+- * p7x02-ls-probe 配方=evaluate 直写 LS；真实 enqueue 链由单测全锚）→app.close()
+- * 强杀（LS 同步写已持久）→二轮启动：渲染先行+后台回放（回炉 W1）→有界 DB
+- * 轮询断言 reading_seconds=210（120+90，队头 seq 序）+last_read_page 落账
+- * （回炉 W3 同步点）。
+- * 读库子进程=spawn -e（downgradeToV7 形态——ABI 切换本地第二份，Rule of
+- * Three 保持重复；受锁件禁改）。
++ * P7X-02 outbox 重启重放 e2e（SYNAPSE_USER_DATA 双 launch，1 综合用例）。
++ * [F-TIME-02] 2026-09-19 用户裁决移除阅读时长：断言面收窄为页码重放承重半边
++ * （outbox 机制保留=页码三收尾口通道）；注种条目保留旧时长载荷 seconds 字段
++ * =存量 localStorage 残留形态直证（回放忽略多余键不判损坏——升级路径兼容）。
++ * 链：建库 v9→种子 1 篇真实 PDF→首轮 launch 后向 localStorage 注种崩溃/ack
++ * 未达残留（pending 页 2+in-flight 页 1，等价强杀前已落盘的 outbox 条目；
++ * LS 键格式=outbox localStorage 适配器单源 CO-1 每条目独立 key+meta）→
++ * app.close() 强杀（LS 同步写已持久）→二轮启动：渲染先行+后台回放（回炉
++ * W1）→有界 DB 轮询断言 last_read_page=1 落账（回炉 W3 同步点——终值=最后
++ * 入队页码，队头 seq 序排空）。
++ * 读库子进程=spawn -e（受锁件禁改，ABI 切换本地第二份，Rule of Three 保持
++ * 重复）。
+  * 激活条件：P7X-02 未 done skip（实现票收口由主控翻 registry 后 CI 首跑）。
+  */
+ const DEPS = ['P7X-02'] as const
+@@ -34,7 +37,7 @@ function liveDbPath(userData: string): string {
+ }
+ 
+ /** 子进程读 papers 行（node ABI——better-sqlite3 绑定切换照 e2e-env 形态） */
+-async function readPaperRow(userData: string): Promise<{ s: number; p: number }> {
++async function readPaperRow(userData: string): Promise<{ p: number }> {
+   const pkgDir = join(process.cwd(), 'node_modules', 'better-sqlite3')
+   const releaseBinding = join(pkgDir, 'build', 'Release', 'better_sqlite3.node')
+   const cacheDir = join(pkgDir, 'abi-cache')
+@@ -45,12 +48,12 @@ async function readPaperRow(userData: string): Promise<{ s: number; p: number }>
+   const electronBinding = await readFile(releaseBinding)
+   await copyFile(join(cacheDir, pick, 'better_sqlite3.node'), releaseBinding)
+   try {
+-    return await new Promise<{ s: number; p: number }>((resolve, reject) => {
++    return await new Promise<{ p: number }>((resolve, reject) => {
+       const child = spawn(
+         process.execPath,
+         [
+           '-e',
+-          'const D=require("better-sqlite3");const db=D(process.argv[1]);try{const r=db.prepare("SELECT reading_seconds AS s, last_read_page AS p FROM papers WHERE id=?").get(process.argv[2]);console.log(JSON.stringify(r))}finally{db.close()}',
++          'const D=require("better-sqlite3");const db=D(process.argv[1]);try{const r=db.prepare("SELECT last_read_page AS p FROM papers WHERE id=?").get(process.argv[2]);console.log(JSON.stringify(r))}finally{db.close()}',
+           liveDbPath(userData),
+           PAPER_ID
+         ],
+@@ -62,7 +65,7 @@ async function readPaperRow(userData: string): Promise<{ s: number; p: number }>
+       })
+       child.on('exit', (code) => {
+         if (code === 0) {
+-          resolve(JSON.parse(out) as { s: number; p: number })
++          resolve(JSON.parse(out) as { p: number })
+         } else {
+           reject(new Error(`读库子进程退出码 ${code ?? 'null'}`))
+         }
+@@ -80,29 +83,28 @@ async function readPaperRow(userData: string): Promise<{ s: number; p: number }>
+  * 且无需为观察队列态在 production 面加探针口）。500ms 间隔有界重试。 */
+ async function pollReadingRow(
+   userData: string,
+-  wantS: number,
+   wantP: number,
+   timeoutMs: number
+-): Promise<{ s: number; p: number }> {
++): Promise<{ p: number }> {
+   const deadline = Date.now() + timeoutMs
+   for (;;) {
+     const row = await readPaperRow(userData)
+-    if (row.s === wantS && row.p === wantP) return row
++    if (row.p === wantP) return row
+     if (Date.now() > deadline) {
+-      throw new Error(`回放落库轮询超时：期望 {s:${wantS},p:${wantP}} 实得 ${JSON.stringify(row)}`)
++      throw new Error(`回放落库轮询超时：期望 {p:${wantP}} 实得 ${JSON.stringify(row)}`)
+     }
+     await new Promise((r) => setTimeout(r, 500))
+   }
+ }
+ 
+-test('P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库', async () => {
++test('P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）', async () => {
+   const pending = DEPS.filter((d) => !isTicketDone(d))
+   test.skip(pending.length > 0, `延期：工单未完成 [${pending.join(', ')}]`)
+ 
+   const title = '智慧水务 outbox 重放 e2e 文献'
+   const userData = await mkdtemp(join(tmpdir(), 'synapse-obx-'))
+ 
+-  // 第一跳：让应用自建库 v8（不 import src 内部模块——reader-reading-time 同型）
++  // 第一跳：让应用自建库 v9（不 import src 内部模块——升级链由 migrate.test 锚）
+   await bootstrapMigrations(userData)
+ 
+   // 种子：1 篇真实单页 PDF（sha 唯一约束——content-addressed files/ 布局）
+@@ -114,36 +116,36 @@ test('P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动
+   writeFileSync(abs, bytes)
+   await seedPaperRow(userData, fileRef, sha, title, PAPER_ID)
+ 
+-  // 首轮：注种崩溃/ack 未达残留（pending ob-1=120s+in-flight ob-2=90s——T5 面）
+-  // →强杀。LS 键格式=outbox localStorage 适配器单源（CO-1 每条目独立 key+meta）。
++  // 首轮：注种崩溃/ack 未达残留（pending ob-1 页 2+in-flight ob-2 页 1——T5 面；
++  // 条目保留旧 seconds 字段=F-TIME-02 前存量残留形态，回放须忽略不炸）→强杀。
+   const app1 = await launch(userData)
+   const w1 = await app1.firstWindow()
+   await w1.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
+   await w1.evaluate((paperId: string) => {
+-    const mk = (id: string, seq: number, state: string, attempts: number, seconds: number): string =>
++    const mk = (id: string, seq: number, state: string, attempts: number, page: number): string =>
+       JSON.stringify({
+         id,
+         paperId,
+-        page: 1,
+-        seconds,
++        page,
++        seconds: 120,
+         seq,
+         attempts,
+         state,
+         createdAt: 1_700_000_000_000 + seq
+       })
+     window.localStorage.setItem('synapse.outbox.meta', '{"v":1}')
+-    window.localStorage.setItem('synapse.outbox.entry.ob-1', mk('ob-1', 1, 'pending', 0, 120))
+-    window.localStorage.setItem('synapse.outbox.entry.ob-2', mk('ob-2', 2, 'in-flight', 1, 90))
++    window.localStorage.setItem('synapse.outbox.entry.ob-1', mk('ob-1', 1, 'pending', 0, 2))
++    window.localStorage.setItem('synapse.outbox.entry.ob-2', mk('ob-2', 2, 'in-flight', 1, 1))
+   }, PAPER_ID)
+   await app1.close()
+ 
+-  // 二轮：后台回放（回炉 W1 渲染先行）→有界 DB 轮询断言落库（回炉 W3）
++  // 二轮：后台回放（回炉 W1 渲染先行）→有界 DB 轮询断言落库（回炉 W3）——
++  // 队头 seq 序（ob-1 页 2→ob-2 页 1）排空后终值=最后条目页 1
+   const app2 = await launch(userData)
+   const w2 = await app2.firstWindow()
+   await w2.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })
+   await app2.close()
+ 
+-  const row = await pollReadingRow(userData, 210, 1, 20_000)
+-  expect(row.s).toBe(210)
++  const row = await pollReadingRow(userData, 1, 20_000)
+   expect(row.p).toBe(1)
+ })
+diff --git a/tests/unit/db/migrate-reading-time.test.ts b/tests/unit/db/migrate-reading-time.test.ts
+index 327b09b03b..8b7b2f26ab 100644
+--- a/tests/unit/db/migrate-reading-time.test.ts
++++ b/tests/unit/db/migrate-reading-time.test.ts
+@@ -3,42 +3,61 @@ import { openDatabase } from '../../../src/main/db/connection'
+ import { MIGRATIONS, migrate, readUserVersion } from '../../../src/main/db/migrate'
+ 
+ /**
+- * P7E-05 R9：008 reading_time 迁移锁定测试（新文件——migrate.test.ts 受锁零改）。
+- * 覆盖：新库全量到 8（列在位+DEFAULT 0）+存量 v7 库升级路径（仅应用 008、
+- * 存量行补 0、user_version=8）。always-active（不经 guardedDescribe）。
++ * P7E-05 R9/[F-TIME-02]：008 加列→009 删列双跳链锁定测试（新文件——
++ * migrate.test.ts 受锁面同批随版本上探）。覆盖：新库全量到 9（009 后
++ * reading_seconds 列不存在）+存量 v8 库升级路径（仅应用 009、user_version=9）+
++ * 存量 v7 库双跳路径（008 加列→009 删列，终态列不存在）。always-active
++ * （不经 guardedDescribe）。[F-TIME-02] 2026-09-19 用户裁决移除阅读时长。
+  */
+-describe('db/migrate —— 008 reading_time（P7E-05 R9）', () => {
+-  it('新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0', () => {
++/** papers 表列名清单（PRAGMA table_info） */
++function papersColumns(db: ReturnType<typeof openDatabase>): string[] {
++  return (db.prepare('PRAGMA table_info(papers)').all() as Array<{ name: string }>).map((c) => c.name)
++}
++
++describe('db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）', () => {
++  it('新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）', () => {
+     const db = openDatabase(':memory:')
+     const result = migrate(db)
+-    expect(result.currentVersion).toBe(8)
+-    expect(readUserVersion(db)).toBe(8)
++    expect(result.currentVersion).toBe(9)
++    expect(readUserVersion(db)).toBe(9)
++    expect(papersColumns(db)).not.toContain('reading_seconds')
+     db.prepare(
+       `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at)
+        VALUES ('p1', 'a/b/c.pdf', 'sha-1', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')`
+     ).run()
+-    const row = db.prepare('SELECT reading_seconds FROM papers WHERE id = ?').get('p1') as {
+-      reading_seconds: number
+-    }
+-    expect(row.reading_seconds).toBe(0)
++    expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })
++    db.close()
++  })
++
++  it('存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9', () => {
++    const db = openDatabase(':memory:')
++    // 构造存量 v8 库：只应用 1..8（migrations 参数注入=测试合法面，migrate() 契约）
++    migrate(db, MIGRATIONS.filter((m) => m.version <= 8))
++    expect(papersColumns(db)).toContain('reading_seconds')
++    const result = migrate(db)
++    expect(result.appliedVersions).toEqual([9])
++    expect(readUserVersion(db)).toBe(9)
++    expect(papersColumns(db)).not.toContain('reading_seconds')
+     db.close()
+   })
+ 
+-  it('存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8', () => {
++  it('存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在', () => {
+     const db = openDatabase(':memory:')
+-    // 构造存量库：只应用 1..7（migrations 参数注入=测试合法面，migrate() 契约）
+     migrate(db, MIGRATIONS.filter((m) => m.version <= 7))
+     db.prepare(
+       `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at)
+        VALUES ('legacy-1', 'x/y.pdf', 'sha-legacy', '2025-06-01T00:00:00Z', '2025-06-01T00:00:00Z')`
+     ).run()
+     const result = migrate(db)
+-    expect(result.appliedVersions).toEqual([8])
+-    expect(readUserVersion(db)).toBe(8)
+-    const row = db.prepare('SELECT reading_seconds FROM papers WHERE id = ?').get('legacy-1') as {
+-      reading_seconds: number
++    expect(result.appliedVersions).toEqual([8, 9])
++    expect(readUserVersion(db)).toBe(9)
++    expect(papersColumns(db)).not.toContain('reading_seconds')
++    // 存量行随双跳无损（其余列原样保留）
++    const row = db.prepare('SELECT id, last_read_page FROM papers WHERE id = ?').get('legacy-1') as {
++      id: string
++      last_read_page: number
+     }
+-    expect(row.reading_seconds).toBe(0)
++    expect(row).toEqual({ id: 'legacy-1', last_read_page: 0 })
+     db.close()
+   })
+ })
+diff --git a/tests/unit/db/migrate.test.ts b/tests/unit/db/migrate.test.ts
+index dcda1200d9..8ac029d4c1 100644
+--- a/tests/unit/db/migrate.test.ts
++++ b/tests/unit/db/migrate.test.ts
+@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
+   it('新库：全量应用，user_version = 最新版本', () => {
+     const db = openDatabase(':memory:')
+     const result = migrate(db)
+-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
++    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
+     expect(readUserVersion(db)).toBe(result.currentVersion)
+     db.close()
+diff --git a/tests/unit/db/papers-reading-time.test.ts b/tests/unit/db/papers-reading-time.test.ts
+deleted file mode 100644
+index ec02b45a6b..0000000000
+--- a/tests/unit/db/papers-reading-time.test.ts
++++ /dev/null
+@@ -1,69 +0,0 @@
+-import { beforeEach, describe, expect, it } from 'vitest'
+-import { createPapersRepo, type PaperRow } from '../../../src/main/db/repos/papers.repo'
+-import type { SqliteDb } from '../../../src/main/db/connection'
+-import { createTestDb } from '../../utils/fixtures'
+-
+-/**
+- * P7E-05：papers.repo reading_seconds 读写锁定测试（新文件——papers.repo.test
+- * 受锁零改）。覆盖：updateReadPage 第三参原子累加（两次 +30+45=75，非覆盖）+
+- * R8 缺省第三参=0（旧调用方兼容锚——reading_seconds 不变）+detailById 回读
+- * readingSeconds。always-active（不经 guardedDescribe）。
+- */
+-function row(over: Partial<PaperRow> = {}): PaperRow {
+-  return {
+-    id: over.id ?? 'p-1',
+-    file_ref: over.file_ref ?? 'ab/cd/aaa.pdf',
+-    sha256: over.sha256 ?? 'sha-aaa',
+-    title: over.title ?? '阅读时长测试文献',
+-    authors_json: over.authors_json ?? '["张三"]',
+-    year: over.year ?? 2025,
+-    venue: over.venue ?? '水利学报',
+-    doi: over.doi ?? null,
+-    arxiv_id: over.arxiv_id ?? null,
+-    abstract: over.abstract ?? '',
+-    source: over.source ?? 'local',
+-    enrich_status: over.enrich_status ?? 'pending',
+-    added_at: over.added_at ?? '2026-01-01T00:00:00Z',
+-    updated_at: over.updated_at ?? '2026-01-01T00:00:00Z',
+-    last_read_page: over.last_read_page ?? 0
+-  }
+-}
+-
+-describe('papers.repo —— reading_seconds（P7E-05）', () => {
+-  let db: SqliteDb
+-  let repo: ReturnType<typeof createPapersRepo>
+-
+-  beforeEach(() => {
+-    db = createTestDb()
+-    repo = createPapersRepo(db)
+-  })
+-
+-  it('updateReadPage 第三参原子累加：两次 +30+45=75（非覆盖）', () => {
+-    repo.insert(row())
+-    repo.updateReadPage('p-1', 3, 30)
+-    repo.updateReadPage('p-1', 5, 45)
+-    const r = db.prepare('SELECT last_read_page, reading_seconds FROM papers WHERE id = ?').get('p-1') as {
+-      last_read_page: number
+-      reading_seconds: number
+-    }
+-    expect(r.last_read_page).toBe(5)
+-    expect(r.reading_seconds).toBe(75)
+-  })
+-
+-  it('R8：第三参缺省=0——reading_seconds 不变（旧调用方兼容锚）', () => {
+-    repo.insert(row())
+-    repo.updateReadPage('p-1', 3, 30)
+-    repo.updateReadPage('p-1', 7)
+-    const r = db.prepare('SELECT reading_seconds FROM papers WHERE id = ?').get('p-1') as {
+-      reading_seconds: number
+-    }
+-    expect(r.reading_seconds).toBe(30)
+-  })
+-
+-  it('detailById 回读 readingSeconds（008 迁移列→PaperDetail 必填字段）', () => {
+-    repo.insert(row())
+-    expect(repo.detailById('p-1')?.readingSeconds).toBe(0)
+-    repo.updateReadPage('p-1', 3, 30)
+-    expect(repo.detailById('p-1')?.readingSeconds).toBe(30)
+-  })
+-})
+diff --git a/tests/unit/renderer/reading-time-outbox.test.ts b/tests/unit/renderer/reading-time-outbox.test.ts
+index 0cc6377b38..4f6d54c2f8 100644
+--- a/tests/unit/renderer/reading-time-outbox.test.ts
++++ b/tests/unit/renderer/reading-time-outbox.test.ts
+@@ -18,8 +18,11 @@ import {
+  * P7X-02：reading-time-outbox 持久落盘队列锁定测试（终裁版设计书 §3 态空间
+  * 逐格+§4 接口草图）。覆盖：T1~T6 迁移+排空闸门+队头阻塞越序拒绝+attempts
+  * 拦停+死信 50 上限+dispose 不变量④+localStorage 适配器（每条目独立 key）。
+- * 时间/定时器/store 全注入（禁真 timer——reading-time.test 同法）；
+- * always-active（三屋纪律不经 guardedDescribe）。
++ * [F-TIME-02] 2026-09-19 用户裁决移除阅读时长：载荷面随 OutboxEntry 收窄为
++ * 纯页码（seconds 字段/send 第三参断言面删，页码队列/at-least-once/replay
++ * 断言全保留+存量条目向后兼容用例）。
++ * 时间/定时器/store 全注入（禁真 timer）；always-active（三屋纪律不经
++ * guardedDescribe）。
+  */
+ 
+ /** 微任务冲刷（resolve→then→链式 pump 的多级微任务链走完） */
+@@ -44,7 +47,7 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
+   const store = opts.store ?? makeMapStore(opts.seed ?? [])
+   let nowMs = 0
+   const warns: Array<{ message: string; kind: 'info' | 'error' }> = []
+-  const sendCalls: Array<{ paperId: string; page: number; secondsDelta: number; statesAtSend: OutboxEntry[] }> = []
++  const sendCalls: Array<{ paperId: string; page: number; statesAtSend: OutboxEntry[] }> = []
+   const flight: Array<{ resolve(): void; reject(err: Error): void }> = []
+   /** send 时刻 store 快照（抛错 store 容错——退化面快照为空） */
+   const snapStore = (): OutboxEntry[] => {
+@@ -56,8 +59,8 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
+   }
+   const ob = createReadingTimeOutbox({
+     store,
+-    send: (paperId, page, secondsDelta) => {
+-      sendCalls.push({ paperId, page, secondsDelta, statesAtSend: snapStore() })
++    send: (paperId, page) => {
++      sendCalls.push({ paperId, page, statesAtSend: snapStore() })
+       return new Promise<void>((resolve, reject) => {
+         flight.push({ resolve, reject })
+       })
+@@ -84,8 +87,8 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
+     entry(id: string): OutboxEntry | undefined {
+       return store.loadAll().find((e) => e.id === id)
+     },
+-    draft(id: string, paperId: string, page: number | undefined, seconds: number, seq: number) {
+-      return { id, paperId, page, seconds, seq, createdAt: nowMs }
++    draft(id: string, paperId: string, page: number | undefined, seq: number) {
++      return { id, paperId, page, seq, createdAt: nowMs }
+     }
+   }
+ }
+@@ -101,8 +104,8 @@ afterEach(() => {
+ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）', () => {
+   it('T1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发', () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 45, 1))
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 4, 30, 2))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 1))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 4, 2))
+     const persisted = h.entry('ob-2')
+     expect(persisted?.state).toBe('pending')
+     expect(persisted?.attempts).toBe(0)
+@@ -111,39 +114,39 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('T2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）', () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 45, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 1))
+     const atSend = h.sendCalls[0]?.statesAtSend.find((e) => e.id === 'ob-1')
+     expect(atSend?.state).toBe('in-flight')
+   })
+ 
+   it('T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
+-    h.ob.enqueue(h.draft('ob-3', 'p-1', 3, 33, 3))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
++    h.ob.enqueue(h.draft('ob-3', 'p-1', 3, 3))
+     expect(h.sendCalls).toHaveLength(1)
+-    expect(h.sendCalls[0]?.secondsDelta).toBe(11)
++    expect(h.sendCalls[0]?.page).toBe(1)
+     h.flight[0]?.resolve()
+     await tick()
+     expect(h.sendCalls).toHaveLength(2)
+-    expect(h.sendCalls[1]?.secondsDelta).toBe(22)
++    expect(h.sendCalls[1]?.page).toBe(2)
+     h.flight[1]?.resolve()
+     await tick()
+     expect(h.sendCalls).toHaveLength(3)
+-    expect(h.sendCalls[2]?.secondsDelta).toBe(33)
++    expect(h.sendCalls[2]?.page).toBe(3)
+   })
+ 
+   it('T2 跨 paper 并行（CO-2）：一次 pump 双 paper 各派发一条', () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 11, 1))
+-    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 22, 2))
++    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 1))
++    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 2))
+     expect(h.sendCalls).toHaveLength(2)
+   })
+ 
+   it('T3：send resolve→立即 remove（无 tombstone）+链式派发同 paper 次条', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
+     h.flight[0]?.resolve()
+     await tick()
+     expect(h.entry('ob-1')).toBeUndefined()
+@@ -152,8 +155,8 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
+     h.flight[0]?.reject(new Error('db busy'))
+     await tick()
+     const e1 = h.entry('ob-1')
+@@ -163,12 +166,12 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     expect(h.sendCalls).toHaveLength(1)
+     h.advance(1000)
+     expect(h.sendCalls).toHaveLength(2)
+-    expect(h.sendCalls[1]?.secondsDelta).toBe(11)
++    expect(h.sendCalls[1]?.page).toBe(1)
+   })
+ 
+   it('T4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+     h.flight[0]?.reject(new Error('fail-1'))
+     await tick()
+     h.advance(999)
+@@ -185,14 +188,14 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 1))
+     h.flight[0]?.reject(new Error('fail'))
+     await tick()
+-    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 22, 2))
++    h.ob.enqueue(h.draft('ob-2', 'p-b', 2, 2))
+     expect(h.sendCalls).toHaveLength(1)
+     h.advance(1000)
+     expect(h.sendCalls).toHaveLength(3)
+-    expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)
++    expect(h.sendCalls.filter((c) => c.page === 1)).toHaveLength(2)
+   })
+ 
+   it('T5：启动恢复驻留 in-flight→attempts++ 后按未达重放', async () => {
+@@ -200,7 +203,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: 'ob-9',
+       paperId: 'p-1',
+       page: 4,
+-      seconds: 90,
+       seq: 9,
+       attempts: 1,
+       state: 'in-flight',
+@@ -210,7 +212,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     const p = h.ob.replayOnStart()
+     await tick()
+     expect(h.sendCalls).toHaveLength(1)
+-    expect(h.sendCalls[0]?.secondsDelta).toBe(90)
++    expect(h.sendCalls[0]?.page).toBe(4)
+     expect(h.entry('ob-9')?.attempts).toBe(2)
+     h.flight[0]?.resolve()
+     await tick()
+@@ -223,7 +225,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: 'ob-9',
+       paperId: 'p-1',
+       page: 4,
+-      seconds: 90,
+       seq: 9,
+       attempts: OUTBOX_MAX_ATTEMPTS - 1,
+       state: 'in-flight',
+@@ -239,7 +240,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('T6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+     for (let round = 1; round <= OUTBOX_MAX_ATTEMPTS; round++) {
+       h.flight[round - 1]?.reject(new Error(`fail-${round}`))
+       await tick()
+@@ -258,7 +259,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: 'ob-1',
+       paperId: 'p-1',
+       page: 1,
+-      seconds: 11,
+       seq: 1,
+       attempts: OUTBOX_MAX_ATTEMPTS - 1,
+       state: 'pending',
+@@ -270,9 +270,9 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     h.flight[0]?.reject(new Error('fatal'))
+     await tick()
+     expect(h.entry('ob-1')?.state).toBe('dead-letter')
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
+     expect(h.sendCalls).toHaveLength(2)
+-    expect(h.sendCalls[1]?.secondsDelta).toBe(22)
++    expect(h.sendCalls[1]?.page).toBe(2)
+   })
+ 
+   it('T6 死信留驻上限 50：超限逐最老淘汰+WARN（info）', async () => {
+@@ -280,7 +280,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: `ob-d${i}`,
+       paperId: 'p-1',
+       page: 1,
+-      seconds: 5,
+       seq: i + 1,
+       attempts: OUTBOX_MAX_ATTEMPTS,
+       state: 'dead-letter',
+@@ -300,7 +299,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: 'ob-1',
+       paperId: 'p-1',
+       page: 2,
+-      seconds: 120,
+       seq: 1,
+       attempts: 0,
+       state: 'pending',
+@@ -310,15 +308,15 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     const p = h.ob.replayOnStart()
+     await tick()
+     expect(h.sendCalls).toHaveLength(1)
+-    expect(h.sendCalls[0]?.secondsDelta).toBe(120)
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 3, 77, 2))
++    expect(h.sendCalls[0]?.page).toBe(2)
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 3, 2))
+     await tick()
+     expect(h.sendCalls).toHaveLength(1)
+     h.flight[0]?.resolve()
+     await tick()
+     await p
+     expect(h.sendCalls).toHaveLength(2)
+-    expect(h.sendCalls[1]?.secondsDelta).toBe(77)
++    expect(h.sendCalls[1]?.page).toBe(3)
+   })
+ 
+   it('排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发', async () => {
+@@ -326,7 +324,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       id: 'ob-old',
+       paperId: 'p-1',
+       page: 2,
+-      seconds: 120,
+       seq: 5,
+       attempts: 0,
+       state: 'pending',
+@@ -337,14 +334,14 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     await tick()
+     expect(h.sendCalls).toHaveLength(1)
+     // 新条目携带小 seq（seq 阈值语义会误放行——铸造单调被破坏的稳健性面）
+-    h.ob.enqueue(h.draft('ob-new', 'p-1', 3, 77, 1))
++    h.ob.enqueue(h.draft('ob-new', 'p-1', 3, 1))
+     await tick()
+     expect(h.sendCalls).toHaveLength(1)
+     h.flight[0]?.resolve()
+     await tick()
+     await p
+     expect(h.sendCalls).toHaveLength(2)
+-    expect(h.sendCalls[1]?.secondsDelta).toBe(77)
++    expect(h.sendCalls[1]?.page).toBe(3)
+   })
+ 
+   it('replayOnStart 幂等：重复调用返回同一 promise；空 store 立即 resolve', async () => {
+@@ -357,9 +354,9 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('dispose 不变量④：停扫描但已发 invoke 回调仍更新 store', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+     h.ob.dispose()
+-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
++    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
+     expect(h.sendCalls).toHaveLength(1)
+     h.flight[0]?.resolve()
+     await tick()
+@@ -369,7 +366,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+ 
+   it('dispose 停退避计时器：reject 后 dispose→满期不再重试', async () => {
+     const h = makeHarness()
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+     h.flight[0]?.reject(new Error('fail'))
+     await tick()
+     h.ob.dispose()
+@@ -391,7 +388,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+       }
+     }
+     const h = makeHarness({ store: throwing })
+-    expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()
++    expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))).not.toThrow()
+     expect(h.sendCalls).toHaveLength(1)
+     expect(h.warns).toHaveLength(1)
+     expect(h.warns[0]?.kind).toBe('error')
+@@ -409,7 +406,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
+     const h = makeHarness({ store: throwing })
+     await h.ob.replayOnStart()
+     expect(h.warns).toHaveLength(1)
+-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
++    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+     expect(h.sendCalls).toHaveLength(1)
+   })
+ })
+@@ -438,7 +435,6 @@ describe('OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信
+     id: 'ob-1',
+     paperId: 'p-1',
+     page: 3,
+-    seconds: 45,
+     seq: 1,
+     attempts: 0,
+     state: 'pending',
+@@ -482,6 +478,30 @@ describe('OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信
+     expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'shapewrong')).toBeNull()
+     expect(corrupt).toHaveLength(2)
+   })
++
++  it('F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略', () => {
++    const ls = makeLs()
++    const store = createLocalStorageOutboxStore(ls)
++    // F-TIME-02 前的 localStorage 残留形态（时长载荷 seconds 仍在——升级后
++    // 首次启动即遇：形状校验只核必备键，seconds 不再是损坏判据）
++    ls.setItem(
++      OUTBOX_ENTRY_KEY_PREFIX + 'ob-old',
++      JSON.stringify({
++        id: 'ob-old',
++        paperId: 'p-1',
++        page: 2,
++        seconds: 120,
++        seq: 1,
++        attempts: 0,
++        state: 'pending',
++        createdAt: 123
++      })
++    )
++    const loaded = store.loadAll()
++    expect(loaded).toHaveLength(1)
++    expect(loaded[0]?.page).toBe(2)
++    expect(loaded[0]?.id).toBe('ob-old')
++  })
+ })
+ 
+ describe('backoffDelayMs 纯函数（指数+5min 上界）', () => {
+diff --git a/tests/unit/renderer/reading-time.test.ts b/tests/unit/renderer/reading-time.test.ts
+deleted file mode 100644
+index 2508fad647..0000000000
+--- a/tests/unit/renderer/reading-time.test.ts
++++ /dev/null
+@@ -1,287 +0,0 @@
+-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import {
+-  createCompositeProgressFlusher,
+-  createReadingTime,
+-  formatReadingTime,
+-  READING_TICK_MS,
+-  type ReadingTime,
+-  type ReadingTimeDeps
+-} from '../../../src/renderer/features/reader/time/reading-time'
+-
+-/**
+- * P7E-05：reading-time 时长账本+复合 flusher 锁定测试。
+- * 覆盖：态空间跨格序列 R1~R7+R10（ready×visible 计时门/tick 累账/hidden 零
+- * 累积/切 tab stop-start/关 tab flush/关应用 flushAll/卸载 dispose 尾账/
+- * 未就绪零累积）+零头按实结转+复合 flusher 单通道合并语义+formatReadingTime
+- * 边界。时间全注入（now 可控+fake timers 经 deps.timers——禁真 timer，
+- * scroll-progress.test 同法）；always-active（不经 guardedDescribe）。
+- */
+-
+-/** 全注入测试台：时钟/可见性/onFlush 可操纵；advance 同步推 now 与 fake timer */
+-function makeHarness() {
+-  let nowMs = 0
+-  let visible = true
+-  const flushed: Array<{ paperId: string; seconds: number }> = []
+-  const deps: ReadingTimeDeps = {
+-    isVisible: () => visible,
+-    now: () => nowMs,
+-    timers: {
+-      setInterval: (fn, ms) => setInterval(fn, ms),
+-      clearInterval: (h) => clearInterval(h as ReturnType<typeof setInterval>)
+-    },
+-    onFlush: (paperId, seconds) => {
+-      flushed.push({ paperId, seconds })
+-    }
+-  }
+-  const rt: ReadingTime = createReadingTime(deps)
+-  return {
+-    rt,
+-    flushed,
+-    advance(ms: number): void {
+-      nowMs += ms
+-      vi.advanceTimersByTime(ms)
+-    },
+-    setVisible(v: boolean): void {
+-      visible = v
+-    },
+-    ledger(pid: string): number {
+-      return rt.ledgerOf(pid)
+-    }
+-  }
+-}
+-
+-/** 进度账视图桩（ScrollProgress 结构子集——takePending 取走不落库语义） */
+-function makeSpView(pending: Record<string, number>) {
+-  return {
+-    takePending: (pid: string): number | undefined => {
+-      const page = pending[pid]
+-      delete pending[pid]
+-      return page
+-    },
+-    pendingIds: (): string[] => Object.keys(pending)
+-  }
+-}
+-
+-/** 复合 flusher 测试台：enqueued 记录入队三元组（P7X-02 收尾口改道等价面：
+- * invoke 直发改 outbox.enqueue——载荷三元组同形，直发吞错语义移交队列态空间） */
+-function makeFlusher(
+-  pending: Record<string, number>,
+-  rt: ReadingTime,
+-  currentPage = 9
+-): {
+-  flush(paperId: string): void
+-  flushAll(): void
+-  enqueued: Array<{ paperId: string; page: number; secondsDelta: number }>
+-} {
+-  const enqueued: Array<{ paperId: string; page: number; secondsDelta: number }> = []
+-  const flusher = createCompositeProgressFlusher(makeSpView(pending), rt, {
+-    enqueue: (paperId, page, secondsDelta) => {
+-      enqueued.push({ paperId, page, secondsDelta })
+-    },
+-    currentPageOf: () => currentPage
+-  })
+-  return { ...flusher, enqueued }
+-}
+-
+-beforeEach(() => {
+-  vi.useFakeTimers()
+-})
+-
+-afterEach(() => {
+-  vi.useRealTimers()
+-})
+-
+-describe('reading-time 态空间跨格序列（R1~R7+R10）', () => {
+-  it('R1：ready+visible tick 3 次→ledger=45s；无 invoke（防抖归进度管线）', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(READING_TICK_MS)
+-    h.advance(READING_TICK_MS)
+-    h.advance(READING_TICK_MS)
+-    expect(h.ledger('p-1')).toBe(45)
+-    expect(h.flushed).toHaveLength(0)
+-  })
+-
+-  it('R2：R1 后复合 flush(pid)→单次 enqueue(pendingPage, 45)；ledger 清零', () => {
+-    const h = makeHarness()
+-    const pending: Record<string, number> = { 'p-1': 3 }
+-    const f = makeFlusher(pending, h.rt)
+-    h.rt.start('p-1')
+-    h.advance(45_000)
+-    f.flush('p-1')
+-    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 3, secondsDelta: 45 }])
+-    expect(h.ledger('p-1')).toBe(0)
+-  })
+-
+-  it('R3：visible→hidden→visible——hidden 段零累积（门关）；恢复后续算', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(READING_TICK_MS)
+-    h.setVisible(false)
+-    h.rt.onVisibilityChange()
+-    h.advance(60_000)
+-    h.setVisible(true)
+-    h.rt.onVisibilityChange()
+-    h.advance(READING_TICK_MS)
+-    expect(h.ledger('p-1')).toBe(30)
+-  })
+-
+-  it('R4：切 tab（A→B）A stop 账留存+B start；离开段不计任何账', () => {
+-    const h = makeHarness()
+-    h.rt.start('A')
+-    h.advance(30_000)
+-    h.rt.stop()
+-    h.advance(15_000)
+-    h.rt.start('B')
+-    h.advance(15_000)
+-    h.rt.stop()
+-    h.rt.start('A')
+-    h.advance(15_000)
+-    expect(h.ledger('A')).toBe(45)
+-    expect(h.ledger('B')).toBe(15)
+-  })
+-
+-  it('R5：关 tab flush(pid) 消费 sp 账——随后 flushAll 对该 pid 零二次入队（不双写）', () => {
+-    const h = makeHarness()
+-    const pending: Record<string, number> = { 'p-1': 2 }
+-    const f = makeFlusher(pending, h.rt)
+-    h.rt.start('p-1')
+-    h.advance(15_000)
+-    f.flush('p-1')
+-    f.flushAll()
+-    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 2, secondsDelta: 15 }])
+-  })
+-
+-  it('R6：flushAll 遍历全 ledger——纯时长/纯页码/双账三形（page 缺席取当前页）', () => {
+-    const h = makeHarness()
+-    const pending: Record<string, number> = { 'p-page': 4 }
+-    const f = makeFlusher(pending, h.rt, 9)
+-    h.rt.start('p-sec')
+-    h.advance(30_000)
+-    h.rt.stop()
+-    h.rt.start('p-both')
+-    h.advance(15_000)
+-    h.rt.stop()
+-    f.flushAll()
+-    expect(f.enqueued).toContainEqual({ paperId: 'p-sec', page: 9, secondsDelta: 30 })
+-    expect(f.enqueued).toContainEqual({ paperId: 'p-page', page: 4, secondsDelta: 0 })
+-    expect(f.enqueued).toContainEqual({ paperId: 'p-both', page: 9, secondsDelta: 15 })
+-    expect(f.enqueued).toHaveLength(3)
+-  })
+-
+-  it('R7：dispose 尾账 flush（onFlush 上抛装配面——卸载/切视图收尾）', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(30_000)
+-    h.rt.dispose()
+-    expect(h.flushed).toEqual([{ paperId: 'p-1', seconds: 30 }])
+-    h.advance(60_000)
+-    expect(h.flushed).toHaveLength(1)
+-  })
+-
+-  it('R10：tab 未就绪（loading/error——start 缺席）零累积', () => {
+-    const h = makeHarness()
+-    h.advance(60_000)
+-    expect(h.ledger('p-1')).toBe(0)
+-  })
+-
+-  it('R3×R6 跨格：hidden 中 force 结算零吸收——collectAllAndZero/collectAndZero 仅含 visible 段', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(30_000)
+-    h.setVisible(false)
+-    h.rt.onVisibilityChange()
+-    h.advance(60_000)
+-    expect(h.rt.collectAllAndZero()).toEqual({ 'p-1': 30 })
+-    expect(h.ledger('p-1')).toBe(0)
+-    h.setVisible(true)
+-    h.rt.onVisibilityChange()
+-    h.advance(15_000)
+-    h.setVisible(false)
+-    h.rt.onVisibilityChange()
+-    h.advance(30_000)
+-    expect(h.rt.collectAndZero('p-1')).toBe(15)
+-  })
+-
+-  it('R2 分片（门一 BLOCKING）：账 4000s→flush→两次入队（3600+400）+账清零', () => {
+-    const h = makeHarness()
+-    const pending: Record<string, number> = { 'p-1': 3 }
+-    const f = makeFlusher(pending, h.rt)
+-    h.rt.start('p-1')
+-    h.advance(4_000_000)
+-    f.flush('p-1')
+-    expect(f.enqueued).toEqual([
+-      { paperId: 'p-1', page: 3, secondsDelta: 3_600 },
+-      { paperId: 'p-1', page: 3, secondsDelta: 400 }
+-    ])
+-    expect(h.ledger('p-1')).toBe(0)
+-  })
+-
+-  it('R7 分片（门二 BLOCKING）：账 4000s→dispose→onFlush 两次（3600+400）', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(4_000_000)
+-    h.rt.dispose()
+-    expect(h.flushed).toEqual([
+-      { paperId: 'p-1', seconds: 3_600 },
+-      { paperId: 'p-1', seconds: 400 }
+-    ])
+-  })
+-
+-  it('零头结转（门二 WARN 解耦）：可见 5s 零头→hidden→collectAndZero 返回含 5s', () => {
+-    const h = makeHarness()
+-    h.rt.start('p-1')
+-    h.advance(15_000)
+-    h.advance(5_000)
+-    h.setVisible(false)
+-    h.rt.onVisibilityChange()
+-    expect(h.rt.collectAndZero('p-1')).toBe(20)
+-    expect(h.ledger('p-1')).toBe(0)
+-  })
+-
+-  it('NIT1（门二修订语义）：hidden 中 stop 结转可见零头入 A 账（零头不丢）', () => {
+-    const h = makeHarness()
+-    h.rt.start('A')
+-    h.advance(15_000)
+-    h.advance(5_000)
+-    h.setVisible(false)
+-    h.rt.onVisibilityChange()
+-    h.rt.stop()
+-    h.setVisible(true)
+-    h.rt.start('B')
+-    h.advance(15_000)
+-    expect(h.ledger('A')).toBe(20)
+-    expect(h.ledger('B')).toBe(15)
+-  })
+-
+-  it('零头按实结转：不足 tick 的零头随 flush 结转（now 差值计，floor 秒）', () => {
+-    const h = makeHarness()
+-    const pending: Record<string, number> = {}
+-    const f = makeFlusher(pending, h.rt)
+-    h.rt.start('p-1')
+-    h.advance(READING_TICK_MS)
+-    h.advance(7_000)
+-    f.flush('p-1')
+-    expect(f.enqueued).toEqual([{ paperId: 'p-1', page: 9, secondsDelta: 22 }])
+-  })
+-
+-  it('tick 常量=15s（票面：READING_TICK_MS）', () => {
+-    expect(READING_TICK_MS).toBe(15_000)
+-  })
+-})
+-
+-describe('reading-time formatReadingTime 边界（纯函数）', () => {
+-  it('<60min 按分钟取整：0/59/60/61/125', () => {
+-    expect(formatReadingTime(0)).toBe('0 分钟')
+-    expect(formatReadingTime(59)).toBe('0 分钟')
+-    expect(formatReadingTime(60)).toBe('1 分钟')
+-    expect(formatReadingTime(61)).toBe('1 分钟')
+-    expect(formatReadingTime(125)).toBe('2 分钟')
+-  })
+-
+-  it('≥60min：N 小时 M 分', () => {
+-    expect(formatReadingTime(3_600)).toBe('1 小时 0 分')
+-    expect(formatReadingTime(3_661)).toBe('1 小时 1 分')
+-    expect(formatReadingTime(4_525)).toBe('1 小时 15 分')
+-  })
+-})
+diff --git a/tests/unit/services/corpus.assemble.test.ts b/tests/unit/services/corpus.assemble.test.ts
+index 75cfea9e42..e423e077b3 100644
+--- a/tests/unit/services/corpus.assemble.test.ts
++++ b/tests/unit/services/corpus.assemble.test.ts
+@@ -38,7 +38,6 @@ const detail: PaperDetail = {
+   annotationCount: 2,
+   noteCount: 1,
+   lastReadPage: 0,
+-  readingSeconds: 0,
+   addedAt: '2026-01-01T00:00:00Z',
+   abstract: 'abs',
+   arxivId: null,
+diff --git a/tests/unit/services/enrich.service.test.ts b/tests/unit/services/enrich.service.test.ts
+index 451908fd20..f3cfc675a0 100644
+--- a/tests/unit/services/enrich.service.test.ts
++++ b/tests/unit/services/enrich.service.test.ts
+@@ -49,7 +49,6 @@ const detail: PaperDetail = {
+   annotationCount: 0,
+   noteCount: 0,
+   lastReadPage: 0,
+-  readingSeconds: 0,
+   addedAt: 't',
+   abstract: '',
+   arxivId: null,
+diff --git a/tests/unit/services/export.service.test.ts b/tests/unit/services/export.service.test.ts
+index 63a8ab2fb0..dbfecf5ca8 100644
+--- a/tests/unit/services/export.service.test.ts
++++ b/tests/unit/services/export.service.test.ts
+@@ -16,7 +16,6 @@ const detail: PaperDetail = {
+   annotationCount: 0,
+   noteCount: 0,
+   lastReadPage: 0,
+-  readingSeconds: 0,
+   addedAt: 't',
+   abstract: 'abs',
+   arxivId: null,
+diff --git a/tests/unit/services/library.service.test.ts b/tests/unit/services/library.service.test.ts
+index 9a45c16a3b..23d23538b2 100644
+--- a/tests/unit/services/library.service.test.ts
++++ b/tests/unit/services/library.service.test.ts
+@@ -28,7 +28,6 @@ const detail: PaperDetail = {
+   annotationCount: 0,
+   noteCount: 0,
+   lastReadPage: 0,
+-  readingSeconds: 0,
+   addedAt: 't',
+   abstract: '',
+   arxivId: null,
+diff --git a/tests/unit/services/lineage-tags.test.ts b/tests/unit/services/lineage-tags.test.ts
+index 8c82250123..e121b23e29 100644
+--- a/tests/unit/services/lineage-tags.test.ts
++++ b/tests/unit/services/lineage-tags.test.ts
+@@ -58,9 +58,9 @@ beforeEach(() => {
+ // ── 迁移 007：tags 列+存量兼容 ─────────────────────────────────
+ 
+ describe('F-LG14 迁移 007（lineage_nodes.tags）', () => {
+-  it('版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）', () => {
++  it('版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）', () => {
+     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
+-    expect(readUserVersion(db)).toBe(8)
++    expect(readUserVersion(db)).toBe(9)
+   })
+ 
+   it('tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）', () => {
+diff --git a/tests/unit/services/markdown.report.test.ts b/tests/unit/services/markdown.report.test.ts
+index 33a123e51b..fc96237083 100644
+--- a/tests/unit/services/markdown.report.test.ts
++++ b/tests/unit/services/markdown.report.test.ts
+@@ -16,7 +16,6 @@ const paper: PaperDetail = {
+   annotationCount: 2,
+   noteCount: 1,
+   lastReadPage: 3,
+-  readingSeconds: 0,
+   addedAt: '2026-01-01T00:00:00Z',
+   abstract: '',
+   arxivId: null,
+diff --git a/tests/unit/services/reader-time.test.ts b/tests/unit/services/reader-time.test.ts
+deleted file mode 100644
+index 1b854b0102..0000000000
+--- a/tests/unit/services/reader-time.test.ts
++++ /dev/null
+@@ -1,61 +0,0 @@
+-import { expect, it } from 'vitest'
+-import { createReaderService } from '../../../src/main/services/reader.service'
+-import type { Repos } from '../../../src/main/db/repos'
+-import type { PaperDetail } from '../../../src/shared/models/paper'
+-
+-/**
+- * P7E-05：reader.service saveProgress secondsDelta 透传锁定测试（新文件——
+- * reader.service.test 受锁零改）。覆盖：透传第三参到 updateReadPage+R8 缺省 0。
+- * always-active（不经 guardedDescribe）。
+- */
+-const detail: PaperDetail = {
+-  id: 'p-1',
+-  title: 't',
+-  authors: [],
+-  year: null,
+-  venue: '',
+-  doi: null,
+-  tagNames: [],
+-  collectionNames: [],
+-  annotationCount: 0,
+-  noteCount: 0,
+-  lastReadPage: 3,
+-  readingSeconds: 0,
+-  addedAt: 't',
+-  abstract: '',
+-  arxivId: null,
+-  source: 'local',
+-  enrichStatus: 'pending',
+-  fileUrl: 'app-file://p-1',
+-  fileName: '论文 v2 final.pdf',
+-  updatedAt: 't',
+-  tags: [],
+-  collections: []
+-}
+-
+-/** 桩 repos：宽松类型专供测试（repos 接口同步；updateReadPage 记参） */
+-function stubRepos(calls: Array<[string, number, number]>): Repos {
+-  const papers = {
+-    detailById: () => detail,
+-    updateReadPage: (id: string, page: number, secondsDelta: number): void => {
+-      calls.push([id, page, secondsDelta])
+-    }
+-  }
+-  return { papers, annotations: {} } as unknown as Repos
+-}
+-
+-it('saveProgress 透传 secondsDelta 第三参到 updateReadPage（时长搭车单通道）', async () => {
+-  const calls: Array<[string, number, number]> = []
+-  const svc = createReaderService({ repos: stubRepos(calls) })
+-  await expect(
+-    svc.saveProgress({ paperId: 'p-1', page: 5, secondsDelta: 45 })
+-  ).resolves.toEqual({ ok: true })
+-  expect(calls).toEqual([['p-1', 5, 45]])
+-})
+-
+-it('R8：secondsDelta 缺省→第三参 0（旧调用方零破坏）', async () => {
+-  const calls: Array<[string, number, number]> = []
+-  const svc = createReaderService({ repos: stubRepos(calls) })
+-  await expect(svc.saveProgress({ paperId: 'p-1', page: 2 })).resolves.toEqual({ ok: true })
+-  expect(calls).toEqual([['p-1', 2, 0]])
+-})
+diff --git a/tests/unit/services/reader.service.test.ts b/tests/unit/services/reader.service.test.ts
+index 53ca99e0ae..286f8cace5 100644
+--- a/tests/unit/services/reader.service.test.ts
++++ b/tests/unit/services/reader.service.test.ts
+@@ -17,7 +17,6 @@ const detail: PaperDetail = {
+   annotationCount: 0,
+   noteCount: 0,
+   lastReadPage: 3,
+-  readingSeconds: 0,
+   addedAt: 't',
+   abstract: '',
+   arxivId: null,
+diff --git a/tests/utils/factories.ts b/tests/utils/factories.ts
+index 36d2b94434..4630d3442c 100644
+--- a/tests/utils/factories.ts
++++ b/tests/utils/factories.ts
+@@ -82,7 +82,6 @@ export function makeDetail(patch: Partial<PaperDetail> = {}): PaperDetail {
+     annotationCount: 0,
+     noteCount: 1,
+     lastReadPage: 0,
+-    readingSeconds: 0,
+     addedAt: 't',
+     abstract: '',
+     arxivId: null,
+diff --git a/tickets/registry.ts b/tickets/registry.ts
+index ddc87095d4..7e8cce1c79 100644
+--- a/tickets/registry.ts
++++ b/tickets/registry.ts
+@@ -293,7 +293,7 @@ export const TICKETS: readonly Ticket[] = [
+   { id: 'F-GEOM-01-G2', file: 'src/renderer/features/reader/interact/selection-evaluate.ts', area: 'reader', owner: 'strong', status: 'done', summary: '保存链单源门+几何死面收敛（设计书 §2.4/§3.5——**战役唯一行为变更票**；2/11）：①保存门=evaluateCore itemChainFor 返 null 时 setPaint 照渲 DOM 回退形状（视觉连续，现状）+setPending(null)（原为 pending=DOM 形状 anchor）+warn 单源（复用 itemChainFor 诊断单源）——「所见≠所存时不给保存入口」（生产影响≈零：item 链失败三因健康页近零发生，主存活面=jsdom 测试环境）；②probeOffsetLen 收敛（selection-evaluate 复刻 anchor-serialize 私有 probeTextLength≈15 行→显式导出面+复刻删除）；③rectsFromRange 死导出面删除（src 零消费+受锁测试 1 用例≈25 行——死代码即删宪法条，候选项经双门裁）；受锁面先行对账义务（§2.4）=tests/unit/renderer/selection-layer.test.tsx 14 用例无 page-items 桩（grep 实测零命中）——立案时先出断言对账表（§5.2 风险 1），保存流用例补页项桩（tests/utils 工厂面 page-items.store 直改先例）+断言面按项族产物更新；指纹门 C 面变更走豁免清单条目（reason=设计书 §2.4+裁决链）+条目数 >10 呈主控复裁（§5.2 风险 2）；INV-58 修订（保存链条款+selection-evaluate:54 stale 自述重写）随本票；[locked-change][test-refactor]；验收=指纹门 C_after ⊇ C_before+锚定回归网+e2e 默认门【done 2026-09-18 batch 14：10 文件 +112/-88；对账表扩三文件实勘=selection-paint 6 例补桩+item-chain 回退①改写（TDD 红锚）+rectsFromRange 删例，豁免恰 2 条；首红/T3 悬空红/双变异红证（M1 保存门+M2 TS2459）全档；门一 PW B0W1N7（W1=RoT 第 4 份助手→后置 G7 随迁抽取）/门二 GWC P0=0P1=3（口径更正+收口三件全兑现）；vitest 170/1744+e2e 默认门 43/43+verify EXIT=0】' },
+   { id: 'F-GEOM-01-G3', file: 'docs/invariants.md', area: 'infra', owner: 'strong', status: 'done', summary: 'band 三档绑定+跨族交互点登记（设计书 §2.5/§2.6——纯登记面零行为变更；3/11）：新 INV（暂记 INV-68 号段，落册接续现尾号 67）=几何产链档位绑定——档1 项族 bandsFromItems=selection 快/全量主链+S2/S3a 唯一源/档2 bandsForTextNodes（DOM 节点口径）=S4（Annotation+AI 段）+selection 全量显示回退专用且产物不入库（rects 与 bands 同源——C5 精神）/档3 bandsNearRects（DOM 几何口径）=S3b 存量专用；禁跨档消费+禁新增第四推导；F-A9 calibrateBands=三档之上显示层校准不参与行归属（现状不变）；现状消费面经核已天然档位绑定（设计期 grep 逐一核对）——本票=事实升 INV 登记防未来漂移；跨族交互点登记（§2.6 表：#2 S6 项盒判定边界注/#3 S4 双族同屏显式档/#4 显示回退 transient 声明）+坐标域三处换算域声明头注（selection-geometry localScale/lineage-viewport rootToLocalScale/itemViewportOf）+INV-58 边界注（防 r3a 型域差事故重演）；#1 闭合/#5 头注消除归 G2 落款；INV 册受锁 unlock→改→apply 单链 [locked-change]【done 2026-09-18 batch 15：6 文件 +33/-18 终态（5 代码/登记件+manifest）；INV-68 落册 :84+INV-58 坐标域边界注+三处头注域声明+selection-paint/annotation-resolve 陈旧头注勘正（接缝归责——F-A5「三消费点」族 5 处清零，含门一 W1+门二 P2-1）；门一 PW B0W2N7（W1 同族残留勘正/W2 状态词改「未锚定」裁落）/门二 GWC P0=0P1=1P2=1（P1-1 行号锚实测修正 :237/:277/:302+P2-1 模块头注三处——均选菜单(a)收口前修复，净零行变化设计防锚再漂）；verify 三跑全 EXIT=0（终跑=open 18→17 恰 G3 翻 done+locks 338+test 170/1744+指纹门 187/1789/5411 零漂移）】' },
+   { id: 'F-GEOM-01-G4', file: 'src/renderer/features/reader/state/reader.store.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M1=state/ 域迁移（设计书 §3.2/§3.4；4/11）：10 文件迁 reader/state/——reader.store/tab-dirty/useActiveTab/annotation-undo/page-layer-z/ai-notes.store/ai-notes-phase/PdfDocProvider/CorpusExtractor/scroll-converge（scroll-converge 三消费方 anchor-locate/usePageColumnScroll/scroll-progress 置底避免 anchors→view 反向边——W7 处置；CorpusExtractor=终裁补列件）；受锁面随步同链 unlock→改→apply=CorpusExtractor 相关测试 import（corpus-extractor/corpus-export/pdf-factory）+eslint.config.js INV-16 块 PdfDocProvider/CorpusExtractor 两路径（四路径分步随迁首步）；域内单向核验=state 不依赖任何域（§3.1 置底）；翻 done 时 file 字段随迁改写 state/reader.store.ts（SR-RDR-02 先例）；验收=verify 全链；【收口 2026-09-18 batch16】受锁面实勘勘正=tests 30 件/41 行（票面 3 件系设计书 §3.4 起草漏计，pdf-factory 实为注释提名零 import 面）；实现者终验 tickets 红 18 行三类（9 路径不存在+4 占位+5 guardedDescribe 映射）全因 registry 随迁=主控后置面——九行落妥后 verify 全链 EXIT=0（g4-verify-master.log）；门一 PW B0W1N6（W1=报告 tests 括注枚举失实，勘误 :39）/门二 GWC P0=0P1=1P2=3N=6 全兑现（staging 名册 26 件实测校准+open 17→16+翻 done 前置本步）；[locked-change][test-refactor]' },
+-  { id: 'F-GEOM-01-G5', file: 'src/renderer/features/reader/time/reading-time.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M2=time/ 域迁移（设计书 §3.4；5/11）：4 文件迁 reader/time/——reading-time/reading-time-setup/reading-time-outbox/reading-time-outbox-store；受锁面=reading-time 系测试 import 同链 unlock→改→apply；域间单向=time→state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },
++  { id: 'F-GEOM-01-G5', file: 'src/renderer/features/reader/time/reading-time-outbox.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M2=time/ 域迁移（设计书 §3.4；5/11）：4 文件迁 reader/time/——reading-time/reading-time-setup/reading-time-outbox/reading-time-outbox-store；受锁面=reading-time 系测试 import 同链 unlock→改→apply；域间单向=time→state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]；【file 锚随迁 2026-09-19 F-TIME-02】原锚 reading-time.ts 已随时长功能移除整件删除——file 锚改指同域存留件 reading-time-outbox.ts（time/ 域本身存续，outbox 三件留驻）' },
+   { id: 'F-GEOM-01-G6', file: 'src/renderer/features/reader/anchors/annotation-anchor.ts', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M3=anchors/ 域迁移（设计书 §3.4；6/11——受锁面最重迁移步）：13 存量+geometry-types（G1 产物）迁 reader/anchors/——pdf-item-geometry/annotation-anchor/annotation-merge/annotation-resolve/annotation-resolve-layered/annotation-band-calibrate/anchor-serialize/anchor-blank-snap/anchor-locate/page-items.store/open-paper-anchor/annotation-style/ai-note-style+geometry-types；受锁面=anchor-locate 跨特性消费 import 改向（lineage×2+open-paper-bus——§5.2 风险 3 一次改向+check-quality 跨域规则同步核）+锚定回归网 18 物理件 import（§5.1 名单 17 项中 selection-layer×2=selection-layer.test+selection-layer-fa12.test 双文件——tests/unit/renderer ls 实测=18；selection-evaluate/selection-layer×2/selection-item-chain/selection-geometry/selection-paint/selection-mode/annotation-anchor/annotation-layer/ai-annotation-layer/annotation-merge/anchor-blank-snap/anchor-item-verify/anchor-locate/band-calibration/pdf-item-geometry/pages-overlay/pdf-page-canvas）+pdf-factory（CorpusExtractor import）；验收=verify 全绿+锚定回归网专项跑；翻 done 时 file 随迁改写；[locked-change][test-refactor]' },
+   { id: 'F-GEOM-01-G7', file: 'src/renderer/features/reader/interact/SelectionLayer.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M4=interact/ 域迁移（设计书 §3.4；7/11）：7 文件迁 reader/interact/——SelectionLayer/SelectionToolbar/selection-evaluate/selection-geometry/selection-paint/release-affinity/use-annotation-draft；受锁面=selection 系测试 import 同链（G2 已改写面随迁）；域间单向=interact→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链+selection 回归；[locked-change][test-refactor]（done 2026-09-19 batch 19：20 文件 +67/-112——7 迁移 rename 5RM+2R/A 深度修正 19 行/B 消费 2/C tests 9 件（8 路径+theme.test:294 readFileSync 字符串面裁准追加——recon 盲区第三现）/factories RoT 单源（selection 系 mkItem/mkText/seedRegistry ×4→1，b14 门一 W1 债销项）/registry 8 对随迁；§3.1 interact→anchors/state 出边 19+反向 0+旧径残留 0；M1 TS2307 EXIT=2+M2 模块解析红 EXIT=1 链在档；构建产物哈希恒等 index-D3egZtl2.js；门一 k2 PW B0/W1/N7+门二 GWC P0=0/P1=3/P2=3 全兑现）' },
+   { id: 'F-GEOM-01-G8', file: 'src/renderer/features/reader/panels/ReaderNotesPanel.tsx', area: 'reader', owner: 'strong', status: 'done', summary: '目录化 M5=panels/ 域迁移（设计书 §3.4；8/11）：8 文件迁 reader/panels/——OutlineAside/OutlinePanel/OutlineThumb/ReaderNotesPanel/AiNotesSection/AiNoteGroupList/AiNotesStatus/FragmentNotesList；受锁面=notes/outline 系测试 import+check-quality.mjs:96-97 两路径（ReaderNotesPanel）随步同链；域间单向=panels→anchors/state 核验（§3.1）；翻 done 时 file 随迁改写；验收=verify 全链；[locked-change][test-refactor]' },

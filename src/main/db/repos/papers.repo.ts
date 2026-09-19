@@ -94,9 +94,9 @@ export interface PapersRepo {
     e: { source: PaperSource; enrichStatus: EnrichStatus; patch: PaperMetaPatch },
     citedBy?: CitedByWrite
   ): PaperRow | null
-  /** P7E-05：第三参=时长增量秒（原子累加 reading_seconds=reading_seconds+?——
-   * INV-57 唯一写点，禁 read-modify-write 两步；缺省 0=旧调用方零破坏） */
-  updateReadPage(id: string, page: number, secondsDelta?: number): void
+  /** 阅读进度页码落库（[F-TIME-02] 时长增量第三参已随 2026-09-19 用户裁决
+   * 移除——SQL 退回 SET last_read_page 单参） */
+  updateReadPage(id: string, page: number): void
   searchSummaries(q: LibraryQuery): Paged<PaperSummary>
   listSummariesByIds(ids: string[]): PaperSummary[]
   listAllIds(): string[]
@@ -198,10 +198,8 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       }
       return updateColumns(id, columns, values)
     },
-    updateReadPage(id, page, secondsDelta = 0) {
-      stmt(
-        'UPDATE papers SET last_read_page = ?, reading_seconds = reading_seconds + ? WHERE id = ?'
-      ).run(page, secondsDelta, id)
+    updateReadPage(id, page) {
+      stmt('UPDATE papers SET last_read_page = ? WHERE id = ?').run(page, id)
     },
     searchSummaries(q) {
       const { cond, params } = buildFilters(q)
@@ -262,8 +260,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
               citedByCountSource: r.cited_by_count_source as PaperDetail['citedByCountSource']
             }
           : {}),
-        // P7E-05 阅读时长（008 列 NOT NULL DEFAULT 0——读面恒有值直读）
-        readingSeconds: r.reading_seconds,
+        // [F-TIME-02] readingSeconds 透出已随 2026-09-19 用户裁决移除（009 删列）
         tags,
         collections
       }

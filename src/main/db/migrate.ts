@@ -16,6 +16,7 @@ import citedBySql from './migrations/005_cited_by.sql?raw'
 import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
 import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
 import readingTimeSql from './migrations/008_reading_time.sql?raw'
+import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
 
 export interface Migration {
   version: number
@@ -32,7 +33,10 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 5, name: 'cited_by', sql: citedBySql },
   { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql },
   { version: 7, name: 'lineage_node_tags', sql: nodeTagsSql },
-  { version: 8, name: 'reading_time', sql: readingTimeSql }
+  { version: 8, name: 'reading_time', sql: readingTimeSql },
+  // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长——008 加列→009 删列双跳
+  // （已合入迁移不可修改=CI 锁硬规则；新库 user_version 终值 9）
+  { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql }
 ]
 
 export interface MigrateResult {

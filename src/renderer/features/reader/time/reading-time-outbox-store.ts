@@ -5,6 +5,9 @@
  * CO-1：每条目独立 key+元信息 key（禁整表 JSON 重写——单条目写放大最小且
  * 损坏隔离）；损坏条目丢弃+WARN+自清（key 移除防每次启动重复告警）。
  * 纯注入（OutboxStorageLike——单测 mock/装配真 window.localStorage）。
+ * [F-TIME-02] 向后兼容：存量条目可能携带旧时长载荷 seconds 字段——形状校验
+ * 只核必备键不拒多余键（非 strict），读回对象多出的 seconds 被消费面忽略
+ * （dispatch 只取 paperId/page），条目一经 update/remove 即自然淘汰。
  */
 import type { OutboxEntry, OutboxStore } from './reading-time-outbox'
 
@@ -21,12 +24,12 @@ export const OUTBOX_ENTRY_KEY_PREFIX = 'synapse.outbox.entry.'
 export const OUTBOX_META_KEY = 'synapse.outbox.meta'
 const OUTBOX_STATES: ReadonlyArray<OutboxEntry['state']> = ['pending', 'in-flight', 'dead-letter']
 
-/** 条目形状校验（损坏=丢字段/坏 JSON/态名非法——一律按 corrupt 处理） */
+/** 条目形状校验（损坏=丢字段/坏 JSON/态名非法——一律按 corrupt 处理；
+ * 多余键（F-TIME-02 前旧条目的 seconds）非损坏=向后兼容忽略） */
 const isEntry = (x: Partial<OutboxEntry>): x is OutboxEntry => {
   return (
     typeof x.id === 'string' &&
     typeof x.paperId === 'string' &&
-    typeof x.seconds === 'number' &&
     typeof x.seq === 'number' &&
     typeof x.attempts === 'number' &&
     typeof x.state === 'string' &&

@@ -98,7 +98,7 @@ const VALID: Record<string, unknown[]> = {
   annotationListResSchema: [[annotation]],
   saveProgressReqSchema: [
     { paperId: 'p1', page: 0 },
-    { paperId: 'p1', page: 3, secondsDelta: 60 }
+    { paperId: 'p1', page: 3 }
   ],
   trueAckSchema: [{ ok: true }],
   importPathsReqSchema: [{ paths: ['C:/a.pdf'] }],
@@ -309,15 +309,13 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     }
   })
 
-  it('saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）', () => {
+  it('saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段', () => {
     const base = { paperId: 'p1', page: 0 }
-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 0 }).success).toBe(true)
-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3600 }).success).toBe(true)
     expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)
-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 3601 }).success).toBe(false)
-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: -1 }).success).toBe(false)
-    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 1.5 }).success).toBe(false)
     expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)
+    // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长：secondsDelta 载荷退役=
+    // strict 命名约定拒收（本地单机应用无跨版本混跑面）
+    expect(S.saveProgressReqSchema.safeParse({ ...base, secondsDelta: 60 }).success).toBe(false)
   })
 
   it('importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）', () => {

@@ -1,0 +1,42 @@
+CHANGED tests/contracts/schemas.test.ts
+  GONE  「saveProgress：secondsDelta 三点界 0/3600 过、3601/-1/1.5 拒；page 负数拒；缺 secondsDelta 过（P7E-05 旧载荷兼容）」 asserts=7
+  ADDED 「saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段」 asserts=3
+REMOVED_FILE tests/e2e/reader-reading-time.spec.ts cases=1
+CHANGED tests/e2e/reading-time-replay.spec.ts
+  GONE  「P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库」 asserts=2
+  ADDED 「P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）」 asserts=1
+CHANGED tests/unit/db/migrate-reading-time.test.ts
+  GONE  「存量 v7 库升级：仅应用 008，存量行 reading_seconds 补 0，user_version=8」 asserts=3
+  GONE  「新库：全量应用到 8，papers.reading_seconds 列在位且 DEFAULT 0」 asserts=3
+  ADDED 「存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在」 asserts=4
+  ADDED 「存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9」 asserts=4
+  ADDED 「新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）」 asserts=4
+CHANGED tests/unit/db/migrate.test.ts
+  GONE  「新库：全量应用，user_version = 最新版本」 asserts=3
+  ADDED 「新库：全量应用，user_version = 最新版本」 asserts=3
+REMOVED_FILE tests/unit/db/papers-reading-time.test.ts cases=3
+CHANGED tests/unit/renderer/reading-time-outbox.test.ts
+  GONE  「T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发」 asserts=6
+  GONE  「T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）」 asserts=3
+  GONE  「T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）」 asserts=6
+  GONE  「T5：启动恢复驻留 in-flight→attempts++ 后按未达重放」 asserts=4
+  GONE  「T6 死信=终态不阻塞同 paper 新 seq（CR-1：仅未决条目阻塞）」 asserts=4
+  GONE  「enqueue 恒不抛：store put 抛错→退化内存重试+强 WARN」 asserts=4
+  GONE  「排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发」 asserts=4
+  GONE  「排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）」 asserts=5
+  ADDED 「F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略」 asserts=3
+  ADDED 「T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发」 asserts=6
+  ADDED 「T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）」 asserts=3
+  ADDED 「T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）」 asserts=6
+  ADDED 「T5：启动恢复驻留 in-flight→attempts++ 后按未达重放」 asserts=4
+  ADDED 「T6 死信=终态不阻塞同 paper 新 seq（CR-1：仅未决条目阻塞）」 asserts=4
+  ADDED 「enqueue 恒不抛：store put 抛错→退化内存重试+强 WARN」 asserts=4
+  ADDED 「排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发」 asserts=4
+  ADDED 「排空闸门：replayOnStart resolve 前新 enqueue 只入队不派发（seq 续增）」 asserts=5
+REMOVED_FILE tests/unit/renderer/reading-time.test.ts cases=17
+CHANGED tests/unit/services/lineage-tags.test.ts
+  GONE  「版本接续：MIGRATIONS 含 version 7 且 user_version=8（新库全量，008 落地后）」 asserts=2
+  ADDED 「版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）」 asserts=2
+REMOVED_FILE tests/unit/services/reader-time.test.ts cases=2
+cases before/after: 1789 / 1768
+asserts before/after: 5411 / 5368

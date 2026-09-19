@@ -18,8 +18,11 @@ import {
  * P7X-02：reading-time-outbox 持久落盘队列锁定测试（终裁版设计书 §3 态空间
  * 逐格+§4 接口草图）。覆盖：T1~T6 迁移+排空闸门+队头阻塞越序拒绝+attempts
  * 拦停+死信 50 上限+dispose 不变量④+localStorage 适配器（每条目独立 key）。
- * 时间/定时器/store 全注入（禁真 timer——reading-time.test 同法）；
- * always-active（三屋纪律不经 guardedDescribe）。
+ * [F-TIME-02] 2026-09-19 用户裁决移除阅读时长：载荷面随 OutboxEntry 收窄为
+ * 纯页码（seconds 字段/send 第三参断言面删，页码队列/at-least-once/replay
+ * 断言全保留+存量条目向后兼容用例）。
+ * 时间/定时器/store 全注入（禁真 timer）；always-active（三屋纪律不经
+ * guardedDescribe）。
  */
 
 /** 微任务冲刷（resolve→then→链式 pump 的多级微任务链走完） */
@@ -44,7 +47,7 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
   const store = opts.store ?? makeMapStore(opts.seed ?? [])
   let nowMs = 0
   const warns: Array<{ message: string; kind: 'info' | 'error' }> = []
-  const sendCalls: Array<{ paperId: string; page: number; secondsDelta: number; statesAtSend: OutboxEntry[] }> = []
+  const sendCalls: Array<{ paperId: string; page: number; statesAtSend: OutboxEntry[] }> = []
   const flight: Array<{ resolve(): void; reject(err: Error): void }> = []
   /** send 时刻 store 快照（抛错 store 容错——退化面快照为空） */
   const snapStore = (): OutboxEntry[] => {
@@ -56,8 +59,8 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
   }
   const ob = createReadingTimeOutbox({
     store,
-    send: (paperId, page, secondsDelta) => {
-      sendCalls.push({ paperId, page, secondsDelta, statesAtSend: snapStore() })
+    send: (paperId, page) => {
+      sendCalls.push({ paperId, page, statesAtSend: snapStore() })
       return new Promise<void>((resolve, reject) => {
         flight.push({ resolve, reject })
       })
@@ -84,8 +87,8 @@ function makeHarness(opts: { seed?: OutboxEntry[]; store?: OutboxStore } = {}) {
     entry(id: string): OutboxEntry | undefined {
       return store.loadAll().find((e) => e.id === id)
     },
-    draft(id: string, paperId: string, page: number | undefined, seconds: number, seq: number) {
-      return { id, paperId, page, seconds, seq, createdAt: nowMs }
+    draft(id: string, paperId: string, page: number | undefined, seq: number) {
+      return { id, paperId, page, seq, createdAt: nowMs }
     }
   }
 }
@@ -101,8 +104,8 @@ afterEach(() => {
 describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入）', () => {
   it('T1：enqueue 先落 store 为 pending（attempts=0）——队头阻塞时驻留不派发', () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 45, 1))
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 4, 30, 2))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 1))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 4, 2))
     const persisted = h.entry('ob-2')
     expect(persisted?.state).toBe('pending')
     expect(persisted?.attempts).toBe(0)
@@ -111,39 +114,39 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('T2（CO-3）：send 时刻 store 快照已持久化 in-flight（先持久化再发 invoke）', () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 45, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 3, 1))
     const atSend = h.sendCalls[0]?.statesAtSend.find((e) => e.id === 'ob-1')
     expect(atSend?.state).toBe('in-flight')
   })
 
   it('T2 队头阻塞（CR-1）：同 paper 仅队头 in-flight——seq2/3 不得越序派发', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
-    h.ob.enqueue(h.draft('ob-3', 'p-1', 3, 33, 3))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
+    h.ob.enqueue(h.draft('ob-3', 'p-1', 3, 3))
     expect(h.sendCalls).toHaveLength(1)
-    expect(h.sendCalls[0]?.secondsDelta).toBe(11)
+    expect(h.sendCalls[0]?.page).toBe(1)
     h.flight[0]?.resolve()
     await tick()
     expect(h.sendCalls).toHaveLength(2)
-    expect(h.sendCalls[1]?.secondsDelta).toBe(22)
+    expect(h.sendCalls[1]?.page).toBe(2)
     h.flight[1]?.resolve()
     await tick()
     expect(h.sendCalls).toHaveLength(3)
-    expect(h.sendCalls[2]?.secondsDelta).toBe(33)
+    expect(h.sendCalls[2]?.page).toBe(3)
   })
 
   it('T2 跨 paper 并行（CO-2）：一次 pump 双 paper 各派发一条', () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 11, 1))
-    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 22, 2))
+    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 1))
+    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 2))
     expect(h.sendCalls).toHaveLength(2)
   })
 
   it('T3：send resolve→立即 remove（无 tombstone）+链式派发同 paper 次条', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
     h.flight[0]?.resolve()
     await tick()
     expect(h.entry('ob-1')).toBeUndefined()
@@ -152,8 +155,8 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('T4：reject→attempts++/回 pending/lastError 记录+队头保持（新 seq 不越序）', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
     h.flight[0]?.reject(new Error('db busy'))
     await tick()
     const e1 = h.entry('ob-1')
@@ -163,12 +166,12 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     expect(h.sendCalls).toHaveLength(1)
     h.advance(1000)
     expect(h.sendCalls).toHaveLength(2)
-    expect(h.sendCalls[1]?.secondsDelta).toBe(11)
+    expect(h.sendCalls[1]?.page).toBe(1)
   })
 
   it('T4 指数退避（共享计时器）：1s→2s 序列（999ms 不重试/满期重试）', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
     h.flight[0]?.reject(new Error('fail-1'))
     await tick()
     h.advance(999)
@@ -185,14 +188,14 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('T4 共享退避闸门：任一失败后退避窗内新条目不派发（共享计时器自裁语义）', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-a', 1, 1))
     h.flight[0]?.reject(new Error('fail'))
     await tick()
-    h.ob.enqueue(h.draft('ob-2', 'p-b', 1, 22, 2))
+    h.ob.enqueue(h.draft('ob-2', 'p-b', 2, 2))
     expect(h.sendCalls).toHaveLength(1)
     h.advance(1000)
     expect(h.sendCalls).toHaveLength(3)
-    expect(h.sendCalls.filter((c) => c.secondsDelta === 11)).toHaveLength(2)
+    expect(h.sendCalls.filter((c) => c.page === 1)).toHaveLength(2)
   })
 
   it('T5：启动恢复驻留 in-flight→attempts++ 后按未达重放', async () => {
@@ -200,7 +203,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: 'ob-9',
       paperId: 'p-1',
       page: 4,
-      seconds: 90,
       seq: 9,
       attempts: 1,
       state: 'in-flight',
@@ -210,7 +212,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     const p = h.ob.replayOnStart()
     await tick()
     expect(h.sendCalls).toHaveLength(1)
-    expect(h.sendCalls[0]?.secondsDelta).toBe(90)
+    expect(h.sendCalls[0]?.page).toBe(4)
     expect(h.entry('ob-9')?.attempts).toBe(2)
     h.flight[0]?.resolve()
     await tick()
@@ -223,7 +225,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: 'ob-9',
       paperId: 'p-1',
       page: 4,
-      seconds: 90,
       seq: 9,
       attempts: OUTBOX_MAX_ATTEMPTS - 1,
       state: 'in-flight',
@@ -239,7 +240,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('T6：运行期反复失败 N=5 次→死信留驻+onWarn+不再派发', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
     for (let round = 1; round <= OUTBOX_MAX_ATTEMPTS; round++) {
       h.flight[round - 1]?.reject(new Error(`fail-${round}`))
       await tick()
@@ -258,7 +259,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: 'ob-1',
       paperId: 'p-1',
       page: 1,
-      seconds: 11,
       seq: 1,
       attempts: OUTBOX_MAX_ATTEMPTS - 1,
       state: 'pending',
@@ -270,9 +270,9 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     h.flight[0]?.reject(new Error('fatal'))
     await tick()
     expect(h.entry('ob-1')?.state).toBe('dead-letter')
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
     expect(h.sendCalls).toHaveLength(2)
-    expect(h.sendCalls[1]?.secondsDelta).toBe(22)
+    expect(h.sendCalls[1]?.page).toBe(2)
   })
 
   it('T6 死信留驻上限 50：超限逐最老淘汰+WARN（info）', async () => {
@@ -280,7 +280,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: `ob-d${i}`,
       paperId: 'p-1',
       page: 1,
-      seconds: 5,
       seq: i + 1,
       attempts: OUTBOX_MAX_ATTEMPTS,
       state: 'dead-letter',
@@ -300,7 +299,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: 'ob-1',
       paperId: 'p-1',
       page: 2,
-      seconds: 120,
       seq: 1,
       attempts: 0,
       state: 'pending',
@@ -310,15 +308,15 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     const p = h.ob.replayOnStart()
     await tick()
     expect(h.sendCalls).toHaveLength(1)
-    expect(h.sendCalls[0]?.secondsDelta).toBe(120)
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 3, 77, 2))
+    expect(h.sendCalls[0]?.page).toBe(2)
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 3, 2))
     await tick()
     expect(h.sendCalls).toHaveLength(1)
     h.flight[0]?.resolve()
     await tick()
     await p
     expect(h.sendCalls).toHaveLength(2)
-    expect(h.sendCalls[1]?.secondsDelta).toBe(77)
+    expect(h.sendCalls[1]?.page).toBe(3)
   })
 
   it('排空闸门时间语义（回炉 W2）：回放期新 enqueue 不论 seq 一律不派发；resolve 后派发', async () => {
@@ -326,7 +324,6 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       id: 'ob-old',
       paperId: 'p-1',
       page: 2,
-      seconds: 120,
       seq: 5,
       attempts: 0,
       state: 'pending',
@@ -337,14 +334,14 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     await tick()
     expect(h.sendCalls).toHaveLength(1)
     // 新条目携带小 seq（seq 阈值语义会误放行——铸造单调被破坏的稳健性面）
-    h.ob.enqueue(h.draft('ob-new', 'p-1', 3, 77, 1))
+    h.ob.enqueue(h.draft('ob-new', 'p-1', 3, 1))
     await tick()
     expect(h.sendCalls).toHaveLength(1)
     h.flight[0]?.resolve()
     await tick()
     await p
     expect(h.sendCalls).toHaveLength(2)
-    expect(h.sendCalls[1]?.secondsDelta).toBe(77)
+    expect(h.sendCalls[1]?.page).toBe(3)
   })
 
   it('replayOnStart 幂等：重复调用返回同一 promise；空 store 立即 resolve', async () => {
@@ -357,9 +354,9 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('dispose 不变量④：停扫描但已发 invoke 回调仍更新 store', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
     h.ob.dispose()
-    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 22, 2))
+    h.ob.enqueue(h.draft('ob-2', 'p-1', 2, 2))
     expect(h.sendCalls).toHaveLength(1)
     h.flight[0]?.resolve()
     await tick()
@@ -369,7 +366,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
 
   it('dispose 停退避计时器：reject 后 dispose→满期不再重试', async () => {
     const h = makeHarness()
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
     h.flight[0]?.reject(new Error('fail'))
     await tick()
     h.ob.dispose()
@@ -391,7 +388,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
       }
     }
     const h = makeHarness({ store: throwing })
-    expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()
+    expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))).not.toThrow()
     expect(h.sendCalls).toHaveLength(1)
     expect(h.warns).toHaveLength(1)
     expect(h.warns[0]?.kind).toBe('error')
@@ -409,7 +406,7 @@ describe('reading-time-outbox 态空间 T1~T6（时间/定时器/store 全注入
     const h = makeHarness({ store: throwing })
     await h.ob.replayOnStart()
     expect(h.warns).toHaveLength(1)
-    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))
+    h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 1))
     expect(h.sendCalls).toHaveLength(1)
   })
 })
@@ -438,7 +435,6 @@ describe('OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信�
     id: 'ob-1',
     paperId: 'p-1',
     page: 3,
-    seconds: 45,
     seq: 1,
     attempts: 0,
     state: 'pending',
@@ -481,6 +477,30 @@ describe('OutboxStore localStorage 适配器（CO-1 每条目独立 key+元信�
     expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'bad')).toBeNull()
     expect(ls.getItem(OUTBOX_ENTRY_KEY_PREFIX + 'shapewrong')).toBeNull()
     expect(corrupt).toHaveLength(2)
+  })
+
+  it('F-TIME-02 向后兼容：存量条目携带旧 seconds 字段→收载不判损坏，多余键随载荷退役被忽略', () => {
+    const ls = makeLs()
+    const store = createLocalStorageOutboxStore(ls)
+    // F-TIME-02 前的 localStorage 残留形态（时长载荷 seconds 仍在——升级后
+    // 首次启动即遇：形状校验只核必备键，seconds 不再是损坏判据）
+    ls.setItem(
+      OUTBOX_ENTRY_KEY_PREFIX + 'ob-old',
+      JSON.stringify({
+        id: 'ob-old',
+        paperId: 'p-1',
+        page: 2,
+        seconds: 120,
+        seq: 1,
+        attempts: 0,
+        state: 'pending',
+        createdAt: 123
+      })
+    )
+    const loaded = store.loadAll()
+    expect(loaded).toHaveLength(1)
+    expect(loaded[0]?.page).toBe(2)
+    expect(loaded[0]?.id).toBe('ob-old')
   })
 })
 
