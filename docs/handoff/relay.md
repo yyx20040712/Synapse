@@ -6,25 +6,25 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: READY
-- automation_id: automation-3776af0e-7217-406a-802c-870cb88b6533
+- status: DONE
+- automation_id: automation-9d069f57-4d51-4327-a9e2-27cad5d0352f
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
 - spec: docs/design/2026-09-18_complexity-governance-ruling.md
 - poll_interval_min: 10
 - last_dispatch: 2026-09-19T11:19:21+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T13:48:09.277Z
+- heartbeat_utc: 2026-09-19T15:17:46.149Z
 - claim: -
 - no_progress_count: 0
 - checked_total: 37
-- checked_done: 36
+- checked_done: 37
 - protocol_rev: 1
 - last_dispatch_utc: 2026-09-19T12:22:02Z
-- relay_started_utc: 2026-09-19T11:58:59Z
-- batch_count: 2
-- max_batches: 105
-- max_wall_hours: 158
+- relay_started_utc: 2026-09-19T14:24:01.889Z
+- batch_count: 1
+- max_batches: 111
+- max_wall_hours: 167
 - hold_reason: -
 
 ## protocol（角色自识别 + 最小兜底协议——技能不可加载时按此执行）
@@ -186,7 +186,7 @@
 ### 第七波·Electron 实施窗（用户点单 2026-09-19「立刻执行 Electron A/B 票」；已裁选项 a 两票分离 A→B，实施前 §6.6 矩阵时效强制复核）
 
 - [x] F-ELE-02（票 A：better-sqlite3 12.11.1→13.0.3 N-API 化 [dep-change]——sqlite-abi.mjs 双 ABI 机制退役+.npmrc 镜像行清理+ADR-0006/AGENTS/security.md 失准句勘误；低风险）
-- [ ] F-ELE-03（票 B：Electron 42.9.3→44.4.1 [dep-change]——clipboard 三点小改+dialog defaultPath 决策+Playwright 驱动兼容首验+e2e 双通道+渲染视检；中风险，前置 F-ELE-02）
+- [x] F-ELE-03（票 B：Electron 42.9.3→44.4.3 [dep-change]——clipboard 两点+dialog defaultPath 保体感+Playwright 驱动兼容首验+e2e 双通道+渲染视检；中风险，前置 F-ELE-02）【44.4.1→44.4.3 系 §6.6 复核钉版更新——b31 立案笔勘正，batch 32 收口笔兑现】
 > **P9 池（5 项）不入本板**——用户点单启项时按《裁决书》§3 P9 表立案并在此追加波次。
 > 备选池与触发线=《裁决书》§5（含前史池承袭）。
 > Electron 实施窗（**已裁 2026-09-19 用户选项 a**）：第六波后两票分离作为新波次入板
@@ -194,6 +194,18 @@
 > 2027-03-02；43 中间档不推荐照产研报告 §5）；实施前按裁决书 §6.6 复核矩阵时效。
 
 ## 批次日志（追加，勿改写）
+### batch 32 — 2026-09-19（执行者会话：F-ELE-03 票 B 全链——**第七波毕/清单全勾**，完成）
+- claim: claim-1789826267718-b32｜认领 2026-09-19T13:57:47Z｜收口 2026-09-19T15:17:46.149Z｜勾选 36→37。
+- 开场：用户直接指令续跑（「版本没发布」追问澄清=44.4.3 已发布可用，十月份发布的是 45——45.0.0-alpha.9 在册）→手动径立即认领（batch 31 移交决策由用户在场指令覆盖）。**批中途换防实录（增补十二/十三，14:24:01Z）**：用户在 hub 调度会话删旧火 3776af0e+重布新火 9d069f57（用户明示续跑）；换防复位 batch_count 2→0+relay_started_utc 重锚+max_batches 111/max_wall_hours 167 随 37 项清单重派生；**在途 b32 判活**（心跳 22min<30min 新鲜+工作树 M package.json 佐证）——status/claim/heartbeat 原样保留，本收口 batch_count 自复位后 0 起 +1（增补十三明示口径）。
+- 技能清点：batch-relay（用）、ai-dev-org（用——三屋/门审矩阵/health-scan/账本）；TDD=受锁 typecheck 面主控裁决直修+e2e 双通道等价闭环；verification-before-completion（用——verify 三档+audit+e2e EXIT 留档）。派发档位：主控=GLM5.3 max；实现者=ops-executor 随宿主（session:host-tier，1 轮+中途申报）；门一=ops-gate1-k2（zipoo k3 $max——第七票）；门二=ops-adjudicator（deepseek-flash $max）。
+- **F-ELE-03 交付（提交 42ff2a34bc8 代码面单笔+本收口笔 registry/板面）**：Electron 42.9.3→44.4.3（M152/内嵌 Node 24.21.0/ABI 149——dist/version 实物直证）+engines >=20→>=22（门一 W2 兑现；electron 包 >=22.12.0 差异 N 级登记，三重兜底在位）+clipboard 两点（Promise<void>+await/try-catch/重抛=42 时代响亮传播等价）+dialogs lastDir 内存态三 pick（dirname 语义门一 A1/门二 R13 双独立推演维持）+受锁两件单链（seed-paper 头注+export-clipboard.test 类型面 6 处——主控 [locked-change] 裁决直修，TS2345 六处全消）+electron-builder/AGENTS/security/ADR-0005/0006/DEV-SETUP/architecture §7.8 勘误回写（门一 W1/W4 承接全落地）。
+- **验证链**：vitest 167/1724 EXIT=0+e2e 双通道 42/42+44/44 EXIT=0（**@playwright/test 1.49 驱 M152 零兼容漂移——产研主变量消解**）+postfix verify EXIT=0（指纹门 183·1768·5368·skip14 零漂移/locks 244）+closeout verify EXIT=0（open 1=恰 F-ELE-03 翻 done，门二预判逐位兑现）+audit --omit=dev 0 漏洞（b32-ele03-audit-omitdev.log 补档——P2-2）+renderer 产物同名同尺寸 1,388.14kB（零涉升级直证）+二进制探针 modules 149。
+- **门审（回炉 0）**：门一 k2 第七票 **PASS_WITH_WARNINGS B0/W3/N8**——W1=architecture §7.8 ABI 146 失准（DoD 字面）→主控顺带修（146→149+版本无关化）；W2=dist/smoke 未端到端（环境阻塞——见欠账）；W3=像素级人工视检欠账（归用户在场轮）；N5=板面第七波行 44.4.1 陈旧→本收口笔勘正；N8=ADR 两切片门二补核通过。门二 **GO_WITH_CONDITIONS P0=0/P1=3/P2=3/N=8**——P1-1 欠账口径原样携带（禁全称句）/P1-2 勘正+翻票后终跑/P1-3 账本三行全兑现；P2-1 计数校正（6 处非 7 处——E6 桩 never 兼容零改）/P2-2 audit 补档/P2-3 绕行过程呈报注明；收口序预批（代码面单笔 [dep-change][locked-change] 禁挂 TR——尾注触发制）+翻票预判绿兑现；R1-R16 独立复算（default_app.asar 残留无害链/engines 三源/lastDir 边界/TR 白名单/翻票规则逐个）。
+- **欠账（门二 P1-1 口径原样携带）**：①W2=dist/smoke 未端到端——环境阻塞（宿主 EBUSY 锁+winCodeSign 无特权，档 b32-ele03-dist*.log；electron-builder 已进 packaging electron=44.4.3 段=44 打包面无兼容问题证据），**修法=用户管理员终端跑一次 npm run dist 重建缓存（2026-08-22 先例）**；②W3=pdf.js 渲染断言级双绿+两探针（z-r2e/z-wg1），**像素级人工视检欠账归用户在场轮**（dev 跑一眼即销）；③R2-SH1 installer-smoke productName 失配（Synapse Remake→Synapse，独立小票）；④本机 default_app.asar 残留 42 版内容（宿主会话锁——次会话 npm install 自愈，node_modules 不入库 CI 零涉）；⑤npm install 绕行重建无原始命令档（结果态经 dist/version 实物+e2e+verify 强证——门二 P2-3）。
+- 教训一条：**板面清单立案文本含版本号快照值时，§6.6 复核更新钉版须同笔勘正清单行**（b31 立案笔写 44.4.1 后 §6.6 复核更新 44.4.3 只改了 registry——板面清单行漏同步被门一 N5 拦截，本笔补正；同族=b31 教训「staging 列件对照 status」的清单面变体：一处事实两处落笔须同笔核对）。
+- Rulings 待用户：无新增（A/B 双票点单全兑现）。W-11 字面未触发记录：本票触碰 src/main/ipc/ipc-deps.ts 类型面与受锁 export-clipboard.test.ts，tests/utils/ipc-deps.ts 零触碰——还原项维持挂账（落地面已变 Promise<void>，门二 N-1）。证据件登记（仓外）：b32-claim/claim.log、b32-tc-locks×2、b32-ele03-* 19 件、b32-quality/locks-final/modelnames 三档、b32-healthscan.log。
+- 无进展计数：归零（36→37 有进展）。**清单全勾（37/37）——第七波毕+Electron 实施窗 A/B 双票全链完成，按协议判定①置 DONE。**
+
 ### batch 31 — 2026-09-19（执行者会话：用户点单 Electron A/B——第七波立案+F-ELE-02 票 A 全链完成，B 票移交下一批，完成）
 - claim: claim-1789821915677-b31｜认领 2026-09-19T12:45:15Z｜收口 2026-09-19T13:47:52.977Z｜勾选 35→36（F-ELE-02 勾；F-ELE-03 未勾移交）。
 - 开场：DONE 态板（batch 30 复置终态）+用户直接指令「立刻执行 Electron A/B 票点单」=增补一 Ruling ② 排期兑现+有效开工授权（batch 28 手动领批同规）——翻回 RUNNING+第七波两项入清单（checked_total 35→37）。
@@ -2034,3 +2046,43 @@
   快照在案）——非本调度会话所为；回读核验板头字段与本调度复位值（status/
   relay_started_utc/batch_count/automation_id）完好无损。历史日志区两字差不回改
   （追加勿改写纪律），如实记档备查。
+
+### 增补十二 — 2026-09-19T14:14:16Z（hub 停火：用户令删火）
+- 用户在 hub 调度会话下达删火令：全局轮转火 automation-3776af0e-7217-406a-802c-870cb88b6533
+  已 CronDelete（回执 deleted:true，CronList 空集复核）。本条为调度员尾部纯追加，
+  claim/状态字段未动；板头 automation_id 字段行保留旧值仅为历史审计指向。
+- 本火任内战果：b30 复置批（12:22:02Z 发布——全勾判定①复置 DONE 预测兑现）；其后
+  b31（A 票 better-sqlite3 v13，勾选 35→36/37）与现 b32（B 票 Electron 44）均为用户
+  手动径领批（两径同规）。
+- **在途 b32 不受影响——执行者独立于火，自行完成收口**。B 票毕则 37/37 全勾置 DONE
+  终态；否则置 READY 停于无火接续——预期态非异常。恢复两径同规：用户显式 /batch-relay
+  重布防（换防协议 hub 变体），或手动会话按本板清单领批。
+- 调度员会话自本增补起不再开批、不再补派（含执行者中途死亡亦不接管——停火令优先）。
+- 门一 k2 换源指令留存板面执行指令原文，重布防时自动随注入指令生效。
+
+### 增补十三 — 2026-09-19T14:24:01.889Z（hub 换防：新调度会话接替，重布全局轮转火）
+- 旧火核查：CronList 空集——用户点名旧火 automation-3776af0e-…（增补十一所布、
+  增补十二删火在案）已亡，零清场动作；新火布防后 CronList 复核全局恰一条。
+- 深度设计门（换防重走；口径=板内 plan 字段指向的《裁决书》/自含清单）：过——
+  《裁决书》占位符 grep 零命中、执行清单机检 36 勾+1 开=37 与板头计数一致、
+  org-ledger.jsonl 活跃（mtime 09-19 21:47+08）；check-relay plan 子命令照跑 exit=1：
+  MISSING_SECTION 系自含清单非 writing-plans 模板预期态，2 处 PLACEHOLDER 命中（行
+  851/852）系 batch 16 增补三历史门检记录 grep 词表自引（增补十一 819/820 同款口径，
+  b31 日志入板后行号下移），批次日志区禁改写非计划占位符。
+- 换防复位（板不重建）：relay_started_utc 重锚 2026-09-19T14:24:01.889Z（熔断复位留痕）；batch_count
+  2→0；熔断值随清单 37 项更新 max_batches 105→111、max_wall_hours 158→167（用户
+  布防指令明示派生值）；no_progress_count/hold_reason 期望态零改写；复位后 board
+  机检 0 fail（1 warn=冻结旧行 R3 预期）。
+- **在途 b32 处置（在途判活条款）**：换防时刻 14:20:13Z 实测 heartbeat_utc=
+  13:57:47.718Z 距今约 22min<30min 心跳新鲜——b32（B 票 F-ELE-03 Electron 44）
+  判活在途，status RUNNING/claim/heartbeat 三字段原样保留未动（工作树 M package.json
+  佐证 B 票进行中）；b32 收口按协议自处——batch_count 自复位后 0 起 +1，B 票毕 37/37
+  置 DONE 只终报禁删火，未毕置 READY 交火班续。熔断锚复位发生在在途批中途系本次
+  换防口径（用户明示续跑），b32 收口熔断判读以复位后现值为准。
+- 新全局火=automation-9d069f57-4d51-4327-a9e2-27cad5d0352f（新 hub 调度会话创建，全局唯一 */10 轮转，服务本板+
+  waterprint 板，首班 14:34Z）。本板 RUNNING 在途非轮转候选——首班有效火先轮
+  waterprint 板（其 next_batch=G-2 治理小批优先补开，调度员欠账行在册）；本板收口
+  READY 后按 last_dispatch_utc 最老序归轮。板头 automation_id 字段行已锚定替换为
+  新火 id（锚定计数=1 守卫过；历史日志旧 id 存量不动）。
+- 板上既有条款自动生效：门一 k2 承载指令（板头执行指令原文照携，增补十二留存）
+  与 UI 开批通道经验沿用历任实测累积。
