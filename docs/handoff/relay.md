@@ -6,7 +6,7 @@
 > 建板：2026-09-18 主控会话（用户指令「本会话不正式开工」——**板已备、火未布防**；
 > 点火入口=用户显式 `/batch-relay`，或手动会话直接按本板清单领批，两径同规）。
 
-- status: DONE
+- status: READY
 - automation_id: automation-3776af0e-7217-406a-802c-870cb88b6533
 - shared_fire: true
 - plan: docs/handoff/relay.md#执行清单（自含清单，收口 grep 本文件 `- [ ]` 计余量）
@@ -14,15 +14,15 @@
 - poll_interval_min: 10
 - last_dispatch: 2026-09-19T11:19:21+08:00
 - fire_budget_min: 120
-- heartbeat_utc: 2026-09-19T12:27:27.872Z
+- heartbeat_utc: 2026-09-19T13:48:09.277Z
 - claim: -
 - no_progress_count: 0
-- checked_total: 35
-- checked_done: 35
+- checked_total: 37
+- checked_done: 36
 - protocol_rev: 1
 - last_dispatch_utc: 2026-09-19T12:22:02Z
 - relay_started_utc: 2026-09-19T11:58:59Z
-- batch_count: 1
+- batch_count: 2
 - max_batches: 105
 - max_wall_hours: 158
 - hold_reason: -
@@ -183,6 +183,10 @@
 - [x] F-STOR-01（audits 出库归档+manifest 同步 [locked-change]+AGENTS 三桶口径①
       修订呈批+本机 52M 清理）
 
+### 第七波·Electron 实施窗（用户点单 2026-09-19「立刻执行 Electron A/B 票」；已裁选项 a 两票分离 A→B，实施前 §6.6 矩阵时效强制复核）
+
+- [x] F-ELE-02（票 A：better-sqlite3 12.11.1→13.0.3 N-API 化 [dep-change]——sqlite-abi.mjs 双 ABI 机制退役+.npmrc 镜像行清理+ADR-0006/AGENTS/security.md 失准句勘误；低风险）
+- [ ] F-ELE-03（票 B：Electron 42.9.3→44.4.1 [dep-change]——clipboard 三点小改+dialog defaultPath 决策+Playwright 驱动兼容首验+e2e 双通道+渲染视检；中风险，前置 F-ELE-02）
 > **P9 池（5 项）不入本板**——用户点单启项时按《裁决书》§3 P9 表立案并在此追加波次。
 > 备选池与触发线=《裁决书》§5（含前史池承袭）。
 > Electron 实施窗（**已裁 2026-09-19 用户选项 a**）：第六波后两票分离作为新波次入板
@@ -190,6 +194,20 @@
 > 2027-03-02；43 中间档不推荐照产研报告 §5）；实施前按裁决书 §6.6 复核矩阵时效。
 
 ## 批次日志（追加，勿改写）
+### batch 31 — 2026-09-19（执行者会话：用户点单 Electron A/B——第七波立案+F-ELE-02 票 A 全链完成，B 票移交下一批，完成）
+- claim: claim-1789821915677-b31｜认领 2026-09-19T12:45:15Z｜收口 2026-09-19T13:47:52.977Z｜勾选 35→36（F-ELE-02 勾；F-ELE-03 未勾移交）。
+- 开场：DONE 态板（batch 30 复置终态）+用户直接指令「立刻执行 Electron A/B 票点单」=增补一 Ruling ② 排期兑现+有效开工授权（batch 28 手动领批同规）——翻回 RUNNING+第七波两项入清单（checked_total 35→37）。
+- 技能清点：batch-relay（用）、ai-dev-org（用——三屋派发/门审矩阵/ORG-12 审包/health-scan/账本补记）；TDD=实现者内嵌 M1 变异红证（依赖机制票等价红绿闭环）；verification-before-completion（用——verify 五档链变量法+e2e 双通道 EXIT 留档）。派发档位：主控=GLM5.3 max（本会话）；实现者=ops-executor 未绑定随宿主（session:host-tier，回炉 1）；门一=ops-gate1-k2 绑定（zipoo k3 $max——用户指令 k1 封顶，第六票连续正常）；门二=ops-adjudicator 绑定（deepseek-flash $max）。
+- **§6.6 矩阵时效复核（裁决书强制条款，实施前跑）**：bsq 13.0.3 仍 npm 最新（engines node>=22）✓；Electron 44 线最新 44.4.3（超产研快照 44.4.1 两小版——**B 票钉版随复核更新 44.4.1→44.4.3**）；EOL 44=2027-03-02/42=2026-10-20 不变（endoflife.date 复核）。结论=路线维持 A→B。档仓外 b31-s66-*。
+- **立案**：F-ELE-02/F-ELE-03 入 registry（提交 b01ad031ea2）——A=bsq13 N-API 化/B=Electron 44.4.3（含 §6.6 复核更新）；file 锚=package.json（F-DEP-01 依赖票同型）。
+- **F-ELE-02 交付（票 A 全链，两笔提交 97118bfc275+0690e543551）**：①钉版 13.0.3+lockfile（prebuild-install 全树消失，prebuilds/win32-x64.node 随 npm 包直发）；②.npmrc 镜像行删；③sqlite-abi.mjs 双 ABI 机制整体退役（受锁单链 245→244）+scripts 四调用点摘除+allowScripts 旧键清；④tests/e2e 双文件 v12 换绑段删除（回炉 #1——受锁单链；修前 e2e 34+36 红全因 abi-cache ENOENT 结构性，修后 42/42+44/44 全绿）；⑤文档勘误十五处（ADR-0006 执行记录+勘误/AGENTS 四/architecture §7.8 回写/DEV-SETUP 三/DEVELOPMENT 三/README/ci.yml 注释/dist.mjs 头注受锁单链）。SQLite 3.52→3.53.4。
+- **门审（实现回炉 1/门审回炉 0）**：门一 k2 第六票 **PASS_WITH_WARNINGS B0/W4/N5**——W1 残留清单漏项/W2 engines 宽松/W3 architecture §7.8 互斥（DoD 字面）/W4 dist 通道验收句失真——主控三分法：W3+W1 前两处本票顺带修，余项落 F-ELE-03 票面承接（悬空消除）；门二 **GO_WITH_CONDITIONS P0=0/P1=2/P2=3/N=7**——P1-1 门二独立抽扫 6 处同族残留（DEV-SETUP:30-31,78-79/DEVELOPMENT:66-68,89/README:18/dist.mjs:10）主控顺带修+P1-2 staging 补 ci.yml（首列漏——门二预警命中）+P2-1 ADR 计数勘正（五处→四处）+P2-2 提交 1 中间态注记兑现+P2-3 措辞归 B 票；ADR-0006 不确定项销（文末追加+历史段未篡改亲核）；A1 v13 真加载四链论证独立推演成立。
+- **机检链**：M1 变异红证（prebuilds 移走→21 文件红 Cannot find module build/Release→还原复绿）+verify 五档恒等链 EXIT=0（实现/postfix/翻票后 closeout：167/1724/locks 244/指纹门 183·1768·5368·skip14 零漂移/renderer 产物 index-DW6Z3WXp.js 1,388.14kB 同名同尺寸=零 src 直证）+e2e 双通道 42/42+44/44 EXIT=0+冒烟探针 8/8（SQLite 3.53.4+绑定真身+FTS5 trigram+transaction 回滚）；TR 闸合规（提交 2 diff ⊆ tests/ 白名单实读 ci.yml:151；提交 1 不挂 TR）；翻票预检绿（file 锚 package.json 无机制名词面量——门二规则 3 预判兑现 closeout open 2）；health-scan RED×0 WARN×1（cfg 漂移=b28 既存面回显 W-1）；账本 93→96 三岗行 findings 对象形。
+- **B 票（F-ELE-03）移交**：火预算 120min 到点（12:45 认领+closeout 时点≈14:10）——B 票中风险 1~2 会话单元（Playwright 漂移主变量）续跑必挂半门审（不留半门审提交纪律），按火预算纪律「到点做完当前任务即收口」裁=本批收口 A 票、B 票随下一班火接力（本板 READY+静默窗已过，≤10min 发布延迟成本极低）；B 票开工要件全落 registry F-ELE-03 summary（44.4.3 钉版+clipboard 三点+dialog 决策+Playwright 首验+e2e 双通道+渲染视检+门一 W1/W2/W4 承接清单）=自包含。
+- 教训一条：**staging 显式列件仍漏 ci.yml**（门二 P1-2 预警命中——列件按记忆写而未对照 git status 全量逐行勾销；收口列件动作应=从 status 输出发 Copy 清单而非凭票面记忆重构）。
+- Rulings 待用户：无新增（点单已兑现 A；B 移交接力非裁决项）。证据件登记（仓外 E:/zcode_md/synapse-archive/scripts-audits/）：b31-claim/log-append/heartbeat 三 .mjs+.log、b31-s66-npmview-bsq/electron/eol 三档、b31-ele02-* 22 件（install/smoke/locks×6/m1×2/verify×2/e2e×2/r1-×5/gate1-diff/gate1-lockfile-head/postfix-verify/closeout-verify/p11-locks×2/git-status-prestage）、b31-healthscan.log、b31-ledger-append 用毕即删。
+- 无进展计数：归零（35→36 有进展）。判定⑤→READY（36/37，F-ELE-03 余一项）。
+
 ### batch 30 — 2026-09-19（执行者会话：换防后首批空批——清单全勾复置 DONE（增补十一预判场景兑现），完成）
 - claim: claim-1789820667352-b30｜认领 2026-09-19T12:24:27Z｜收口 2026-09-19T12:25:32.935Z｜勾选 35→35（全勾态保持）。
 - 开场三态：B 态变体——脏面=增补十一换防复位笔（12:01:02Z 调度会话追加+字段复位）+调度员发布笔（last_dispatch_utc 12:22:02Z 本批发布，认领前落板），两者均随本批收口提交；HEAD=batch 29 增补一提交 3241c337f99 正确。
