@@ -2146,3 +2146,35 @@
   换防（hub 变体）或手动径。板头 automation_id 字段行保留旧值仅为历史审计指向。
 - 本注与增补十四（Electron dist 收尾档）并行在册，互不覆盖；后续增补序照旧
   （增补十五占位预告仍归下会话补验条目）。
+
+### 增补十五 — 2026-09-20T00:52:17Z（ELE03 验收补验+R2-SH3/SH4 销账收官——v63 §2-5 十五/十六合并单条[同会话完成]；板状态字段零改动）
+- 场次承接：2026-09-20 验收场（增补十四）同日续轮——用户管理员窗口动作后
+  本会话续跑 v63 §2 补验序，非接力批纯追加口径不变。
+- **dist 端到端 ✅**：用户管理员终端 npm run dist 成功实录（winCodeSign-2.6.0
+  特权解包全过+EBUSY 未再现=锁随宿主关闭释放，增补十四根因归因闭环验证）；
+  dist/Synapse-0.1.0-setup.exe（133,865,872B）+blockmap 产出，
+  win-unpacked/Synapse.exe 在位。b32 W2 欠账销项。
+- **smoke 后验 ✅（R2-SH3 功能后验=门二条件 ii 兑现）**：--installer 显式指新包
+  （防旧包 Synapse-Remake-0.1.0-setup.exe 假阳性），EXIT=0 全绿——装得上
+  （Synapse.exe 在位=APP_EXE 命名实证）/起得来（8s 存活断言）/卸得掉（卸载器
+  名 Uninstall Synapse.exe 实证+HKCU/HKLM 注册表双清——'Synapse' 宽键本机
+  无第三方误中，R2-SH3 门一 W1 假阳性面未现）。
+- **dist_new 清零**：用户窗口未删、主控补删成功（宿主重开后索引器未再锁）
+  ——b29 残留欠账销项。
+- **B 段视检（用户在场轮，主面过+一项挂起）**：用户裁决原文「选中与标注趋于
+  完美，但还有一个问题后面要反馈给你」——核心像素面（pdf.js TextLayer 选中+
+  标注层）通过=44 ANGLE 静态链接像素面人工核验主面绿；一项待用户反馈问题
+  挂起（未描述；后续描述后按正常立案三屋处置，门一 k2）。dev 应用保留运行
+  供复现。
+- **R2-SH3/R2-SH4 双票销账**：三屋全链毕（53e74b9bc5b+8bb7bdef0b5/
+  d97a2571d94+cb2e26b2bd0；registry 双翻 done；账本 96→105 行）——R2-SH1
+  改名漏项家族清偿至仅剩 local-state.mjs:12-13 注释失真一条已知尾巴（受锁
+  [locked-change]，归下次触碰捎带或小票，v63 §2-6②）。
+- **交接与尾注**：v63 交接书在库（a169fe84aeb——本段排程/教训/环境滚动单源）；
+  他会话「hub 停火记」核史实一致后单独收录（a9a9bbf37ad）。
+- **可选呈报（归用户点单，未决）**：corpus-export e2e flake 排查票（台账
+  count 5 unpursued）；local-state 注释失真小票。
+- 证据件登记（仓外 E:/zcode_md/synapse-archive/scripts-audits/，登记制）：
+  ele03-acc-smoke.log、r2sh3-closeout-verify.log、r2sh4-closeout-verify2.log、
+  z-r2-sh4-verify.raw.txt、ele03-acc-commit-msg.txt、r2sh3-commit-msg.txt、
+  r2sh4-commit-msg.txt、v63-commit-msg.txt（另有验收场前段九件见增补十四）。
