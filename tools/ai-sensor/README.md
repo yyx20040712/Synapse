@@ -1,6 +1,6 @@
 # ai-sensor —— Synapse 的 zcode 工具侧传感器（SR2-AI-05）
 
-应用（Synapse Remake）负责导出 AI 语料五件套（设置 → AI 语料导出）；
+应用（Synapse）负责导出 AI 语料五件套（设置 → AI 语料导出）；
 本目录是**主动消费端**：在 zcode 会话内对导出语料做全库三读与梳理。
 应用侧零 LLM 出网、零 spawn——AI 工作只由用户在 zcode 侧启动（ADR-0015）。
 

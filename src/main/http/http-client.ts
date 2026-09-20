@@ -16,6 +16,9 @@ import { DomainError } from '../services/shared/domain-error'
 
 const zUnknown = z.unknown()
 
+/** 出网 User-Agent 产品标识（productName/version 对齐 package.json——R2-SH4 单源常量） */
+const USER_AGENT = 'Synapse/0.1.0'
+
 /** 响应体硬上限（防超大/恶意响应耗尽内存） */
 export const HTTP_MAX_RESPONSE_BYTES = 20 * 1024 * 1024
 
@@ -73,8 +76,8 @@ export async function fetchJson<T>(rawUrl: string, opts: HttpGetJsonOptions): Pr
   const timeoutMs = opts.timeoutMs ?? HTTP_TIMEOUT_MS
   const maxRetries = opts.maxRetries ?? HTTP_MAX_RETRIES
   const userAgent = opts.contactEmail
-    ? `SynapseRemake/0.1 (mailto:${opts.contactEmail})`
-    : 'SynapseRemake/0.1'
+    ? `${USER_AGENT} (mailto:${opts.contactEmail})`
+    : USER_AGENT
 
   let lastError: HttpFetchError = new HttpFetchError('NETWORK_ERROR', '未发起请求')
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -160,7 +163,7 @@ export async function fetchText(rawUrl: string, opts: HttpClientOptions): Promis
       const res = await doFetch(url.toString(), {
         signal: controller.signal,
         redirect: 'error',
-        headers: { 'User-Agent': 'SynapseRemake/0.1', Accept: 'text/xml, text/plain, */*' }
+        headers: { 'User-Agent': USER_AGENT, Accept: 'text/xml, text/plain, */*' }
       })
       if (res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) {
         lastError = new HttpFetchError(
