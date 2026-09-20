@@ -41,6 +41,10 @@
  * ── 文化层 ──
  * - 组件测试 tests/unit/renderer/outline-aside.test.tsx：三项切换/选中记忆/
  *   笔记 tab 挂载/目录跳页经 store/片段单击页级定位/空态
+ * - [F-UI-02 图标化] 三 tab 文字换 24×24 描边简笔画图标（D7，模块级常量
+ *   仿 NAV_ICONS 形态）+sr-only span 保文本（outline-aside:96 toEqual
+ *   精确数组+e2e getByRole tab name 断言双面不动）+title 悬停汉语+flex
+ *   居中；tab 样式（active=accent+金 hairline）与 aria/结构零变
  */
 import { useEffect, useState } from 'react'
 import { locateAnchor } from '../anchors/anchor-locate'
@@ -52,6 +56,29 @@ import { useActiveTab } from '../state/useActiveTab'
 type AsideTab = 'outline' | 'thumbs' | 'notes'
 
 const TAB_LABELS: Record<AsideTab, string> = { outline: '目录', thumbs: '缩略图', notes: '笔记' }
+
+/** F-UI-02 tab 图标（D7=24×24 单色描边；stroke 走 CSS 类 .rdr-aside-tabs
+ *  button svg——theme-reader.css，禁内联色/禁新依赖） */
+const TAB_ICONS: Record<AsideTab, JSX.Element> = {
+  outline: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 6h16M4 12h16M4 18h10" />
+    </svg>
+  ),
+  thumbs: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="7" height="7" rx="1" />
+      <rect x="13" y="4" width="7" height="7" rx="1" />
+      <rect x="4" y="13" width="7" height="7" rx="1" />
+      <rect x="13" y="13" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  notes: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M5 4h14v12l-4 4H5z M15 20v-4h4" />
+    </svg>
+  )
+}
 
 export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JSX.Element {
   const { pdfDoc, onCollapse } = props
@@ -105,14 +132,15 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
       style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
     >
       <div className="flex items-center border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex min-w-0 flex-1" role="tablist" aria-label="侧栏面板">
+        <div className="rdr-aside-tabs flex min-w-0 flex-1" role="tablist" aria-label="侧栏面板">
           {(Object.keys(TAB_LABELS) as AsideTab[]).map((id) => (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={tab === id}
-              className="flex-1 px-2 py-1 text-xs"
+              title={TAB_LABELS[id]}
+              className="flex flex-1 items-center justify-center gap-1 px-2 py-1 text-xs"
               // active=accent 文字+金 hairline 底缘（R3-RDR 皮肤票：亮面金铜
               // 替代满铺 accent 底——装饰浓度最低；aria/结构零变）
               style={
@@ -122,7 +150,8 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
               }
               onClick={() => setTab(id)}
             >
-              {TAB_LABELS[id]}
+              {TAB_ICONS[id]}
+              <span className="sr-only">{TAB_LABELS[id]}</span>
             </button>
           ))}
         </div>

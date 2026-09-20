@@ -34,12 +34,16 @@
  * - [R3-RDR 皮肤票] 玻璃浮层（.rdr-toolbar：panel-glass+blur10+金 hairline 底缘）
  *   +控件 ghost 变体+页码/缩放衬线数字（.rdr-num）；文档流位置/aria/testid
  *   零变（PDF 区装饰浓度最低原则）
+ * - [F-UI-02 图标化] 五文字控件换 toolbar-icons.tsx 图标+title 悬停汉语+
+ *   sr-only span 保文本（textContent/accessible name 双面，受锁断言不动）；
+ *   −/＋/100%/颜色点组不动；选择模式 background 常亮叠加+双页图标随态
  */
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
 import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
+import { ICON_FIT_WIDTH, ICON_NEXT, ICON_PAGE_DOUBLE, ICON_PAGE_SINGLE, ICON_PREV, ICON_SELECT } from './toolbar-icons'
 
 /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
  *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */
@@ -105,10 +109,12 @@ export function ReaderToolbar(props: {
         <button
           type="button"
           className={btn}
+          title="上一页"
           disabled={page <= 0}
           onClick={() => onNavigate(page - pageStep)}
         >
-          上一页
+          {ICON_PREV}
+          <span className="sr-only">上一页</span>
         </button>
         <input
           className="rdr-num w-12 rounded border px-1 py-0.5 text-center text-xs"
@@ -127,11 +133,13 @@ export function ReaderToolbar(props: {
         <button
           type="button"
           className={btn}
+          title="下一页"
           style={{ borderColor: 'var(--border)' }}
           disabled={totalPages > 0 && page >= totalPages - 1}
           onClick={() => onNavigate(page + pageStep)}
         >
-          下一页
+          {ICON_NEXT}
+          <span className="sr-only">下一页</span>
         </button>
       </div>
 
@@ -164,23 +172,26 @@ export function ReaderToolbar(props: {
           type="button"
           className={btn}
           disabled={onFitWidth === undefined}
-          title={onFitWidth === undefined ? '适应宽度待页面接线' : '按窗口宽度适配当前页'}
+          title={onFitWidth === undefined ? '适应宽度待页面接线' : '适应宽度（按窗口宽度适配当前页）'}
           onClick={() => onFitWidth?.()}
         >
-          适应宽度
+          {ICON_FIT_WIDTH}
+          <span className="sr-only">适应宽度</span>
         </button>
 
         {/* 双页开关（F-R1）：适应宽度之后（版面控制同组）；crib 选择模式按钮
-            先例（aria-pressed+选中态边框强调）；toggle 语义在装配面——只上抛 */}
+            先例（aria-pressed+选中态边框强调）；toggle 语义在装配面——只上抛。
+            F-UI-02：图标随 pageLayout 三元+title 随态（isMax 三元先例） */}
         <button
           type="button"
           className={btn}
           aria-pressed={pageLayout === 'double'}
-          title="两页并排阅读（翻页按对步进）"
+          title={pageLayout === 'double' ? '切换为单页阅读' : '切换为双页阅读（两页并排，翻页按对步进）'}
           style={{ borderColor: pageLayout === 'double' ? 'var(--accent)' : undefined }}
           onClick={() => props.onTogglePageLayout?.()}
         >
-          双页
+          {pageLayout === 'double' ? ICON_PAGE_DOUBLE : ICON_PAGE_SINGLE}
+          <span className="sr-only">双页</span>
         </button>
       </div>
 
@@ -203,16 +214,21 @@ export function ReaderToolbar(props: {
       </div>
 
       {/* 选择模式开关（F-A3/INV-42）：颜色组之后、搜索占位之前；选中态边框
-          强调（颜色点选中态同语言）；toggle 语义在装配面——本组件只上抛 */}
+          强调（颜色点选中态同语言）；toggle 语义在装配面——本组件只上抛。
+          F-UI-02：激活叠加 background 常亮（borderColor 断言保活）+图标化 */}
       <button
         type="button"
         className={btn}
         aria-pressed={selectionMode}
-        title="开启后可在标注块上直接划选文字，标注暂不可点击"
-        style={{ borderColor: selectionMode ? 'var(--accent)' : undefined }}
+        title="选择模式：开启后可在标注块上直接划选文字，标注暂不可点击"
+        style={{
+          borderColor: selectionMode ? 'var(--accent)' : undefined,
+          background: selectionMode ? 'var(--accent-soft)' : undefined
+        }}
         onClick={() => props.onToggleSelectionMode?.()}
       >
-        选择模式
+        {ICON_SELECT}
+        <span className="sr-only">选择模式</span>
       </button>
 
       {/* P7E-03 页内搜索面板 slot：生产装配面（ReaderPage 经 useReaderSearch）

@@ -32,6 +32,19 @@
   border-left: 3px solid var(--gold);
   padding-left: 8px;
 }
+/* F-UI-02 工具栏/侧栏 tab 图标基线（D7=24×24 单色描边，沿 theme-shell.css
+   .titlebar-btn svg 先例：stroke currentColor/fill none/统一线宽；图标常量
+   =toolbar-icons.tsx+OutlineAside.tsx TAB_ICONS，禁新依赖；按钮文本走
+   sr-only span——textContent/accessible name 双面保活受锁断言） */
+.rdr-toolbar button svg,
+.rdr-aside-tabs button svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
 
 /* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
    等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
