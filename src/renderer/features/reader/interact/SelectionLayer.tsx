@@ -64,7 +64,7 @@ import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models
 import { api, unwrap, ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
 import { pushUndo } from '../state/annotation-undo'
-import { createEvaluate, type PaintSelection, type PendingSelection } from './selection-evaluate'
+import { createEvaluate, clearAffinityShortcut, markAffinityShortcutFlushed, type PaintSelection, type PendingSelection } from './selection-evaluate'
 import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
 import { createVisualScheduler, closestPageRoot } from './selection-geometry'
@@ -121,6 +121,8 @@ export function SelectionLayer(props: {
     let downY = Number.NaN
     const onMouseDown = (e: MouseEvent): void => {
       ;[downX, downY] = [e.clientX, e.clientY]
+      // [F-RDR-01 B] 新拖选会话硬释放 S5 短路窗（释放条件②——TTL 到期为①兜底）
+      clearAffinityShortcut()
     }
 
     const onMouseUp = (e: MouseEvent): void => {
@@ -159,6 +161,10 @@ export function SelectionLayer(props: {
           }
         }
       }
+      // [F-RDR-01 B] S4 正确帧标记：full(true) 同帧渲染正确选区视觉后，其后
+      // 异步排队的 selectionchange→visual 在 TTL 窗内直接丢弃（S5 弹错源消除；
+      // 恒等写回时 full 亦画正确帧——mark 无条件调用，免缓存方案无 prevFocus）
+      markAffinityShortcutFlushed()
       evaluate.full(true)
     }
     const onKeyDown = (e: KeyboardEvent): void => {

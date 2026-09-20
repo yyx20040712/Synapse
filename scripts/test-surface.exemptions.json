@@ -102,6 +102,12 @@
       "assertionText": "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
       "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：draft 铸造助手随载荷收窄四参化三参（id/paperId/page/seq）",
       "rulingLink": "docs/handoff/relay.md"
+    },
+    {
+      "file": "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts",
+      "skipSiteText": "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)",
+      "reason": "F-RDR-01 设计定稿终裁修正 8 明文条款：探针有效帧 <10（headless rAF 节流漏检）重跑上限 3 次后 skip 记档不假绿——skip 位为票面强制行为（非收紧/删改既有面）",
+      "rulingLink": "docs/design/2026-09-20_f-rdr01-design-final.md"
     }
   ]
 }
