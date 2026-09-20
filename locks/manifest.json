@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-20T04:22:36.7344166Z",
+    "generatedAt":  "2026-09-20T10:08:58.5541261Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -286,6 +286,10 @@
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
                   },
                   {
+                      "path":  "tests/e2e/z-f-rdr02-repro-probe.spec.ts",
+                      "sha256":  "84df82ce1bba9ec6a1ea9e3dfb58f468ec3d43852d0276ce9f0f7c7a2aa199c9"
+                  },
+                  {
                       "path":  "tests/e2e/z-f-ui03-nav-geom-probe.spec.ts",
                       "sha256":  "e0936852bd9975d0bde63fa7540e75d0bf4b6515f53eba8d7b137ce6e6a8b326"
                   },
@@ -475,7 +479,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-editor-ux.test.tsx",
-                      "sha256":  "644fa76c4a25bb93dd53489a3339bb315819e6bafa60bb5d4a311e31ed32ac37"
+                      "sha256":  "e61720541a783c6517c763353549ddea66e56d4423d0891747985da5c1749b31"
                   },
                   {
                       "path":  "tests/unit/renderer/annotation-layer.test.tsx",

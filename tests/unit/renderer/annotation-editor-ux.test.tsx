@@ -424,3 +424,56 @@ describe('F-A11 ② 撤销/重做值栈 —— AnnotationEditor', () => {
     expect(ta.value).toBe('我是奶龙')
   })
 })
+
+/** 容器/按钮上派发 pointerdown（jsdom 无 PointerEvent 构造器——MouseEvent 同名
+ *  形态，split-pane.test ptrAct 先例；React 按事件类型名委托） */
+function ptrDown(target: Element): void {
+  act(() => {
+    target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
+  })
+}
+
+describe('F-RDR-02 IME 守卫 + 点击重聚焦 —— AnnotationEditor', () => {
+  it('组词期按键不消费（IME 守卫）：Escape 不关弹层、ctrl+z 不打断组词', () => {
+    const { onCancel } = renderEditor()
+    const ta = textarea()
+    // 组词前入栈 'a'（无守卫时 ctrl+z 会回退——红绿判别点）
+    typeInto(ta, 'a')
+    act(() => {
+      ta.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+    })
+    pressKey(ta, { key: 'Escape', isComposing: true })
+    expect(onCancel).not.toHaveBeenCalled()
+    const zEvt = new KeyboardEvent('keydown', {
+      key: 'z',
+      ctrlKey: true,
+      isComposing: true,
+      bubbles: true,
+      cancelable: true
+    })
+    act(() => {
+      ta.dispatchEvent(zEvt)
+    })
+    expect(zEvt.defaultPrevented).toBe(false)
+    expect(ta.value).toBe('a')
+  })
+
+  it('D6 点击弹层空白重聚焦输入框；点击按钮不抢焦', () => {
+    renderEditor()
+    const ta = textarea()
+    const editor = host!.querySelector('[data-testid="annotation-editor"]')!
+    act(() => {
+      ta.blur()
+    })
+    expect(document.activeElement).not.toBe(ta)
+    ptrDown(editor)
+    expect(document.activeElement).toBe(ta)
+    // 按钮有自己的交互：pointerdown 冒泡到容器也不抢焦（撤销钮先输一字使能）
+    typeInto(ta, 'a')
+    act(() => {
+      ta.blur()
+    })
+    ptrDown(undoBtn())
+    expect(document.activeElement).not.toBe(ta)
+  })
+})

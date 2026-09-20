@@ -37,6 +37,22 @@ export function AnnotationEditor(props: {
   return (
     <div
       data-testid="annotation-editor"
+      onPointerDown={(e) => {
+        // F-RDR-02 D6（回炉 1·门一 B1）：点击弹层空白处重聚焦输入框（失焦后点击
+        // 恢复光标——无害缓解）。preventDefault 必须：抑制随后 mousedown 的默认
+        // 聚焦（默认动作会把焦点抢到不可聚焦目标的祖先/body——jsdom 不实现该
+        // 动作族故单测面须真机探针双证 z-f-rdr02-repro-probe）；仅主键（右/中键
+        // 无重聚焦语义）；目标非 textarea 自身/非按钮（closest 深判——按钮含
+        // 图标子节点时 target 非 BUTTON）才抢焦点
+        if (e.button !== 0) {
+          return
+        }
+        const t = e.target as HTMLElement
+        if (t !== textareaRef.current && t.closest('button') === null) {
+          e.preventDefault()
+          textareaRef.current?.focus()
+        }
+      }}
       className="absolute z-(--z-anchor-pop) flex w-72 flex-col gap-2 rounded border p-2 text-xs"
       style={{
         // 左沿贴命中矩形并夹取，避免右侧溢出页根
@@ -61,6 +77,12 @@ export function AnnotationEditor(props: {
         onCompositionStart={draft.handleCompositionStart}
         onCompositionEnd={draft.handleCompositionEnd}
         onKeyDown={(e) => {
+          // F-RDR-02：IME 组词期按键（229/keyCode）不消费——Escape 不关弹层、ctrl+z
+          // 不打断组词（候选根因②；React onKeyDown 的 e.key 在组词期=Process/原键，
+          // 需以 nativeEvent.isComposing 判定——annotation-editor-ux IME 用例在档）
+          if (e.nativeEvent.isComposing) {
+            return
+          }
           if (e.key === 'Escape') {
             onCancel()
             return
