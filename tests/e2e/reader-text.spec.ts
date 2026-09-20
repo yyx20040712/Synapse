@@ -498,9 +498,11 @@ test('P7-A 交互：侧栏分隔条拖拽（SplitPane 集成）', async () => {
   // 方案切换=旧段删除；本测保留 SplitPane 拖拽面
 
   // 分隔条拖拽：pane 计算宽度随拖拽增大（SplitPane 指针会话 → 宽度状态 → 样式）
-  const pane = win.getByTestId('split-pane-pane')
+  // [F-UI-03/locked-change] 选择器收紧 main 容器：App 壳 nav 亦包 SplitPane（app-nav
+  // 在 main 外）——「页面唯一 SplitPane」假设随 F-UI-03 打破，本测语义恒=阅读器侧栏
+  const pane = win.locator('main [data-testid="split-pane-pane"]')
   const widthBefore = await pane.evaluate((el) => parseFloat(getComputedStyle(el).width))
-  const handleBox = await win.getByRole('separator').boundingBox()
+  const handleBox = await win.locator('main [role="separator"]').boundingBox()
   expect(handleBox).not.toBeNull()
   const hx = handleBox!.x + handleBox!.width / 2
   const hy = handleBox!.y + Math.min(handleBox!.height / 2, 200)

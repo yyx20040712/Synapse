@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { beforeEach, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SplitPane } from '../../../src/renderer/shared/ui/SplitPane'
 import { guardedDescribe } from '../../utils/guard'
 
@@ -226,5 +226,84 @@ guardedDescribe('SR2-UIK-01', 'SplitPane —— 可拖拽分隔条容器', () =>
     })
     expect(document.body.style.userSelect).toBe('')
     unmount()
+  })
+})
+
+// F-UI-03 新增面 always-active：三屋 strong 工单新测试不经 guardedDescribe
+// （AGENTS.md 工单工作流 K3 条款——open 状态下 guardedDescribe 整组 skip，
+// TDD 红/绿与「每个测试必须能失败一次」均不可达；自裁申报在档）
+describe('F-UI-03 SplitPane 折叠扩展——窄条折叠+受控折叠面', () => {
+  it('collapsedWidth：双击折叠到 64px 窄条（display 保留可见），aria-valuenow=64；再双击恢复原宽（宽度记忆）', () => {
+    const { host, unmount } = renderPane({ collapsible: true, collapsedWidth: 64 })
+    const h = handle(host)
+    expect(paneWidth(host)).toBe('220px')
+    act(() => {
+      h.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
+    })
+    const pane = host.querySelector('[data-testid="split-pane-pane"]') as HTMLElement
+    expect(paneWidth(host)).toBe('64px')
+    expect(pane.style.display).not.toBe('none')
+    expect(h.getAttribute('aria-valuenow')).toBe('64')
+    // 窄条折叠态拖拽/键盘仍不启动（现行为保留——折叠栏上调宽无意义）
+    ptrAct(h, 'pointerdown', 300)
+    expect(document.body.style.userSelect).toBe('')
+    act(() => {
+      h.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+      )
+    })
+    expect(paneWidth(host)).toBe('64px')
+    act(() => {
+      h.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
+    })
+    expect(paneWidth(host)).toBe('220px')
+    expect(pane.style.display).not.toBe('none')
+    unmount()
+  })
+
+  it('受控折叠：collapsed prop 驱动宽 64/原宽切换；双击手柄上报 onCollapsedChange(true) 且内部不自改', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const root = createRoot(host)
+    const onCollapsedChange = vi.fn()
+    const render = (collapsed: boolean): void => {
+      act(() => {
+        root.render(
+          <SplitPane
+            paneId="t1"
+            side="left"
+            defaultWidth={220}
+            min={120}
+            max={400}
+            collapsible
+            collapsedWidth={64}
+            collapsed={collapsed}
+            onCollapsedChange={onCollapsedChange}
+            children={{ pane: <div data-testid="pane-body">侧栏</div>, main: null }}
+          />
+        )
+      })
+    }
+    render(false)
+    expect(paneWidth(host)).toBe('220px')
+    // 双击=上报请求（受控模式内部不自行切换——外部未变 state，宽保持 220px）
+    act(() => {
+      handle(host).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
+    })
+    expect(onCollapsedChange).toHaveBeenCalledTimes(1)
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(true)
+    expect(paneWidth(host)).toBe('220px')
+    // 外部 state 驱动切换（受控真值面）
+    render(true)
+    expect(paneWidth(host)).toBe('64px')
+    expect(
+      (host.querySelector('[data-testid="split-pane-pane"]') as HTMLElement).style.display
+    ).not.toBe('none')
+    render(false)
+    expect(paneWidth(host)).toBe('220px')
+    act(() => {
+      root.unmount()
+    })
+    host.remove()
   })
 })

@@ -207,3 +207,34 @@ describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据�
     ).toBe('1.25')
   })
 })
+
+// F-UI-03 导航栏窄条折叠（always-active——三屋新测试不经 guardedDescribe）
+describe('F-UI-03 导航栏窄条折叠——收起钮+窄态类+label span（可访问名兼容）', () => {
+  it('收起钮 aria-label 随态换名；点击后 nav 挂 app-nav-collapsed；四入口 label span 在（navButton 文本查询不破）', async () => {
+    mount(<App />)
+    await flush()
+    for (const label of ['文献库', '阅读器', '设置', '脉络']) {
+      expect(navButton(label), `入口「${label}」按可见文本仍可查（span 包裹后 textContent 兼容）`).toBeDefined()
+    }
+    expect(document.querySelectorAll('.app-nav-label')).toHaveLength(4)
+    const toggle = document.querySelector('button[aria-label="收起导航栏"]') as HTMLButtonElement | null
+    expect(toggle, '收起钮在场（nav 首行）').not.toBeNull()
+    act(() => {
+      toggle!.click()
+    })
+    const expandBtn = document.querySelector('button[aria-label="展开导航栏"]') as HTMLButtonElement | null
+    expect(expandBtn, '收起后 aria-label 切换为「展开导航栏」（TitleBarControls 三元先例）').not.toBeNull()
+    expect(
+      document.querySelector('nav')!.classList.contains('app-nav-collapsed'),
+      'nav 挂窄态类 app-nav-collapsed'
+    ).toBe(true)
+    act(() => {
+      expandBtn!.click()
+    })
+    expect(document.querySelector('button[aria-label="收起导航栏"]'), '再点展开恢复收起钮名').not.toBeNull()
+    expect(
+      document.querySelector('nav')!.classList.contains('app-nav-collapsed'),
+      '展开后窄态类移除'
+    ).toBe(false)
+  })
+})
