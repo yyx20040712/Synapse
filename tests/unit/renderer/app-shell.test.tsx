@@ -160,6 +160,15 @@ describe('R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩
     expect(document.querySelectorAll('.app-nav-brand'), '品牌行整体迁顶栏——侧栏残留即红').toHaveLength(0)
     expect(document.querySelectorAll('.app-nav-name'), 'app-nav-name 类并入顶栏新类不再引用').toHaveLength(0)
   })
+
+  it('main 挂 .app-main 类（F-UI-04 D1=冷雾灰挂 main 挂载锁）', async () => {
+    mount(<App />)
+    await flush()
+    expect(
+      document.querySelector('main.app-main'),
+      'main 应带 .app-main 类（theme-shell.css .app-main 冷雾灰消费钩——类名被重构丢即红，封静默回归口）'
+    ).not.toBeNull()
+  })
 })
 
 describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据通道单点）', () => {

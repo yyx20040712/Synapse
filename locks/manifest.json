@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-19T23:41:05.7754595Z",
+    "generatedAt":  "2026-09-20T03:12:30.5032504Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -286,6 +286,10 @@
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
                   },
                   {
+                      "path":  "tests/e2e/z-f-ui04-vert-probe.spec.ts",
+                      "sha256":  "e65432abb460da0ab80554c45def29f542d8ba3f31ea17654ad9d115215d748f"
+                  },
+                  {
                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
                       "sha256":  "8ee85e53e219a16ae175f68815ce5d0d4283206bc01c68bdfb3e7758b64db339"
                   },
@@ -495,7 +499,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "1634cc7945107a99e0f63b3888103b98dc9f371ceaa414cf40e3ef3952a9c5a2"
+                      "sha256":  "e4a60bdfe2c3ed62ba7fe9b86e12e8695477e316658a1425be0b353b7688ed1f"
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
@@ -755,7 +759,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "8cc5c9a4e6fc5bee6a87a429027b1d40ba7e76013a004ee6c2e57109d5d656f0"
+                      "sha256":  "469b8e4f118d55f765efd565d80fac948bfaa79731ef7468d6949958ad296c86"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

@@ -5,8 +5,8 @@
    .app-nav::after/.app-nav-item-active::before 全在本域,同特异性下须源顺序
    在后方能压住常驻 animation 规则——留守首件 theme.css 会被后载的本件反压失效）。 */
 
-/* ══ App 壳顶栏身份区（R2-SH2 决4——ZCode 式）：白底横条（--panel+下边 1px
-   --border+高 56px）=logo+应用名+课题切换器+版本号右区；relative+z-index 防
+/* ══ App 壳顶栏身份区（R2-SH2 决4——ZCode 式）：冷雾灰横条（--surface-cool
+   [F-UI-04]+下边 1px --border+高 56px）=logo+应用名+课题切换器+版本号右区；relative+z-index 防
    切换器展开面板被 main 区盖板（面板在组件 flex-col 流内向下溢出绘制）══
    高度 44→56px（用户裁决 2026-08-31：按钮与 Synapse 标志下移——增高级；
    caption 三键 stretch 贯通自动随高，width:44 热区宽不动）══ */
@@ -21,7 +21,7 @@
   padding: 0 12px;
   position: relative;
   z-index: var(--z-float);
-  background: var(--panel);
+  background: var(--surface-cool);
   border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
@@ -34,6 +34,11 @@
   font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: 0.5px;
+  line-height: 1;
+  /* F-UI-04 P3 终值（用户裁决 2026-09-20「先对齐整行，后面再反馈调整」）：
+     像素探针 V3 实测墨迹中心 29.6 相对整行基线 27.6（logo 盒中心/v0.1/
+     切换器同线）低 2px——上移对齐；y 降部字体天性见 theme.test 注 */
+  transform: translateY(-2px);
   color: var(--text);
 }
 /* 切换器容器=面板绝对定位锚：relative 面板 top:100% 悬浮于按钮正下
@@ -48,6 +53,14 @@
 }
 .app-header .app-nav-ver {
   margin-left: auto;
+}
+
+/* F-UI-04（用户 2026-09-20 反馈 P4，D1=全局挂 main 外围）：主区统一冷雾灰——
+   App.tsx main 挂 .app-main 类，所有视图（含阅读器画布外围）统一；token 单源
+   --surface-cool（theme.css :root）；--bg/--panel 值不动；详情栏 .lib-detail-aside
+   保持纯白（D2）；body 背景与纸面丝纹不动（透传仅在 main 外可见） */
+.app-main {
+  background: var(--surface-cool);
 }
 
 /* ══ R2-SET1 界面缩放三档：--ui-scale 挂 documentElement（App effect 单点写，
@@ -216,6 +229,7 @@
 .app-nav-ver {
   font-size: var(--fs-micro);
   letter-spacing: 1px;
+  line-height: 1;
   color: var(--nav-ver-text);
   border: 1px solid var(--nav-ver-border);
   border-radius: 4px;

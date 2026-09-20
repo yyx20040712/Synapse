@@ -189,7 +189,7 @@ export function App(): JSX.Element {
             <span className="app-nav-txt">本地学术文献管理</span>
           </div>
         </nav>
-        <main className="min-w-0 flex-1 overflow-auto">
+        <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
             {view === 'library' && <LibraryPage />}
             {view === 'reader' && <ReaderPage />}
