@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-20T03:12:30.5032504Z",
+    "generatedAt":  "2026-09-20T04:02:51.8973774Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -251,7 +251,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "b08e7e66b02f5b6ad9e2fbda35a698c89e5fd83bdabf4c1d0c74c9392b3a1aed"
+                      "sha256":  "f9c5bbdabe3393154d24ea3dff210ae7af59205ea9ed79c013f8b071839445c2"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -284,6 +284,10 @@
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
+                  },
+                  {
+                      "path":  "tests/e2e/z-f-ui03-nav-geom-probe.spec.ts",
+                      "sha256":  "e0936852bd9975d0bde63fa7540e75d0bf4b6515f53eba8d7b137ce6e6a8b326"
                   },
                   {
                       "path":  "tests/e2e/z-f-ui04-vert-probe.spec.ts",
@@ -499,7 +503,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "e4a60bdfe2c3ed62ba7fe9b86e12e8695477e316658a1425be0b353b7688ed1f"
+                      "sha256":  "48b1fec1acd6112430ada4436bd5813925c96dfc094d372803800750e7d0c788"
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
@@ -727,7 +731,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
-                      "sha256":  "e520d2bf1a658bedfe0414e3f483a9acf28bce847dfa877b58e97101652a3a53"
+                      "sha256":  "e7ef5917f259eced00238765b774f5271881023eda7f14e41a9d1d05e64a5beb"
                   },
                   {
                       "path":  "tests/unit/renderer/tab-bar.test.tsx",
@@ -759,7 +763,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "469b8e4f118d55f765efd565d80fac948bfaa79731ef7468d6949958ad296c86"
+                      "sha256":  "bab66336c318ab443c035e8a41e806c0c9e4e08665a6175ad5500e56f9051c7a"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

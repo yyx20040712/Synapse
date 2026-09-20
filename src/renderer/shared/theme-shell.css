@@ -142,7 +142,12 @@
 /* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费；
    R2-SH2 品牌行迁顶栏后 nav 首行直接起导航项，foot 留侧栏）══ */
 .app-nav {
-  width: 184px;
+  /* F-UI-03：宽度归 SplitPane pane 容器管（拖拽档位 default 184·min 64·max
+     280）——nav 本体占满 pane 宽；flex:none 防内容行挤压；height:100%=满高
+     自备（pane 容器块级 div 无 flex stretch——门二 P1-1：渐变/金线/foot 钉底
+     前提；几何实证 z-f-ui03-nav-geom-probe） */
+  width: 100%;
+  height: 100%;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -164,6 +169,41 @@
   background-size: 100% 220%;
   animation: syn-pan-y 5s linear infinite;
 }
+/* F-UI-03 收起/展开钮：沿 .app-nav-item 交互语法（透明底/hover=--panel-a06
+   浸染/active 常规冷蓝——深色墨青底适配）；svg 与 nav 图标同描边规格（并列
+   selector，禁第二份等价规则） */
+.app-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 2px 4px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  color: var(--nav-item-text);
+  cursor: pointer;
+  transition: all var(--dur-base) ease;
+}
+.app-nav-item svg,
+.app-nav-toggle svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
+.app-nav-toggle:hover {
+  color: var(--nav-item-text-hover);
+  background: var(--panel-a06);
+}
+.app-nav-toggle:active {
+  color: var(--nav-item-text-press);
+  background: var(--accent-a35);
+}
 .app-nav-item {
   display: flex;
   align-items: center;
@@ -180,14 +220,6 @@
   cursor: pointer;
   position: relative;
   transition: all var(--dur-base) ease;
-}
-.app-nav-item svg {
-  width: 17px;
-  height: 17px;
-  flex: none;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.6;
 }
 .app-nav-item:hover {
   color: var(--nav-item-text-hover);
@@ -238,6 +270,33 @@
 .app-nav-txt {
   font-size: var(--fs-micro);
   color: var(--nav-foot-text);
+}
+
+/* ══ F-UI-03 窄条折叠态（nav 挂 .app-nav-collapsed——App 收起钮/双击手柄驱动；
+   D3=图标窄条 collapsedWidth 64、D5=尾行隐藏）══ */
+.app-nav-collapsed .app-nav-item {
+  justify-content: center;
+  padding: 10px 0;
+}
+.app-nav-collapsed .app-nav-toggle {
+  justify-content: center;
+  padding: 10px 0;
+}
+/* label 视觉隐藏=clip 手法（禁 display:none——Chromium 会把 display:none 文本
+   排除出 accessible name，破坏 e2e getByRole name 断言面；jsdom textContent
+   断言不受 CSS 影响——双面兼容） */
+.app-nav-collapsed .app-nav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* D5：窄态尾行「本地学术文献管理」隐藏（纯文案无 e2e name 断言面，
+   display:none 安全） */
+.app-nav-collapsed .app-nav-foot {
+  display: none;
 }
 
 /* ══ R2-UI1 无障碍守卫：系统「减少动态效果」时常驻渐变动画全关

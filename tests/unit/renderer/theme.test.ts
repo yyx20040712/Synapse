@@ -213,6 +213,13 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(shellCss, '.app-header-name 应含 translateY(-2px)（P3 对齐整行——用户裁决）').toMatch(
       /\.app-header-name\s*\{[^}]*transform:\s*translateY\(-2px\);/
     )
+    // [F-UI-03 门二 P1-1] nav 满高：SplitPane pane 容器为块级 div（非 flex
+    // stretch——nav 从 .app-content-row 直接子项迁入后丢失默认满高），渐变/
+    // 金线/foot 钉底（margin-top:auto）前提=height:100%；几何实证=
+    // z-f-ui03-nav-geom-probe.spec.ts（probe project）
+    expect(shellCss, '.app-nav 应含 height:100%（SplitPane 包裹后自备满高——门二 P1-1）').toMatch(
+      /\.app-nav\s*\{[^}]*height:\s*100%;/
+    )
   })
 })
 

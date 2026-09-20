@@ -18,6 +18,7 @@ import { WorkspaceSwitcher } from '../features/workspaces/WorkspaceSwitcher'
 import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { TitleBarControls } from './TitleBarControls'
+import { SplitPane } from '../shared/ui/SplitPane'
 
 type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
@@ -57,6 +58,19 @@ const NAV_ICONS: Record<ViewId, JSX.Element> = {
     </svg>
   )
 }
+
+/** F-UI-03 收起/展开双箭头（D7=24×24 viewBox 单色描边，沿 NAV_ICONS 形态，
+ *  禁新增依赖；aria-hidden——按钮名走 aria-label 三元，TitleBarControls 先例） */
+const ICON_NAV_COLLAPSE = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M11 5l-6 7 6 7M19 5l-6 7 6 7" />
+  </svg>
+)
+const ICON_NAV_EXPAND = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M13 5l6 7-6 7M5 5l6 7-6 7" />
+  </svg>
+)
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -100,6 +114,8 @@ class ErrorBoundary extends Component<
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
+  // F-UI-03：导航栏窄条折叠态（SplitPane 受控面；不持久化，会话默认展开）
+  const [navCollapsed, setNavCollapsed] = useState(false)
   // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
   // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
   // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
@@ -172,23 +188,49 @@ export function App(): JSX.Element {
           在行外结构性豁免（E5：caption 三键/顶栏保持系统观感）；PDF 页列在
           theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
       <div className="app-content-row flex min-h-0 flex-1">
-        {/* R3-TH1 墨青侧栏（.app-nav 系=theme-shell.css 誊录自 mockup）——R2-SH2
-            品牌行退役迁顶栏后，nav 首行直接起导航项 */}
-        <nav className="app-nav">
-          {NAV.map((item) => (
-            <button
-              key={item.id}
-              className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
-              onClick={() => setView(item.id)}
-            >
-              {NAV_ICONS[item.id]}
-              {item.label}
-            </button>
-          ))}
-          <div className="app-nav-foot">
-            <span className="app-nav-txt">本地学术文献管理</span>
-          </div>
-        </nav>
+        {/* F-UI-03：墨青侧栏边界可拖宽+窄条折叠（D4=184/64/280 档位）——
+            SplitPane main 槽 null（主内容外置，ReaderPageView 先例）；nav 宽度
+            归 pane 容器管；label 包 span.app-nav-label=窄态 clip 视觉隐藏（禁
+            display:none——Chromium 排除出 accessible name，e2e name 断言面破） */}
+        <SplitPane
+          paneId="app-nav"
+          side="left"
+          defaultWidth={184}
+          min={64}
+          max={280}
+          collapsible
+          collapsedWidth={64}
+          collapsed={navCollapsed}
+          onCollapsedChange={setNavCollapsed}
+          children={{
+            pane: (
+              <nav className={navCollapsed ? 'app-nav app-nav-collapsed' : 'app-nav'}>
+                <button
+                  type="button"
+                  className="app-nav-toggle"
+                  aria-label={navCollapsed ? '展开导航栏' : '收起导航栏'}
+                  onClick={() => setNavCollapsed((c) => !c)}
+                >
+                  {navCollapsed ? ICON_NAV_EXPAND : ICON_NAV_COLLAPSE}
+                </button>
+                {NAV.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
+                    onClick={() => setView(item.id)}
+                  >
+                    {NAV_ICONS[item.id]}
+                    <span className="app-nav-label">{item.label}</span>
+                  </button>
+                ))}
+                <div className="app-nav-foot">
+                  <span className="app-nav-txt">本地学术文献管理</span>
+                </div>
+              </nav>
+            ),
+            main: null
+          }}
+        />
         <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
             {view === 'library' && <LibraryPage />}
