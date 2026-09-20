@@ -36,12 +36,21 @@
  *   守卫盒——四零盒 null）/visualRows（中心聚类视觉行）/columnGroups（行内
  *   栏聚类）/rowEndOf（最近栏组行尾边界）+ export type Box；消费方=
  *   release-affinity（释放点浅探重定向——事件层判定，与锚定归一化互不替代）
+ * - [F-RDR-01] export markerAt/isBlankMarker 供 visual 边界吸附复用；行尾
+ *   语义唯一源 = rowEndOf，禁止第二套行尾实现。**导出面约束（终裁修正 12）：
+ *   仅供 visual 吸附通道（snapVisualBoundary→selection-evaluate.visual）
+ *   消费；锚定序列化侧继续走 snapBlankBoundary 门面，勿直引**（防 API 泛化）。
+ *   snapVisualBoundary（拖选期视觉边界末行下方吸附）=快路径专用——返回
+ *   {node,offset} 锚点不返回 Rect，行尾目标复用 rowEndOf，适配层零行尾几何
  *
  * ── 架构层 ──
  * - 依赖单向 anchor-serialize→本模块→annotation-anchor（几何原语公共面
  *   collectSpans——零环）；零 React/IPC 依赖，纯函数可单测
- * - 快路径（selection-evaluate.visual）不经本模块——拖选期瞬态带不归一化，
- *   mouseup/settle 全量同帧覆盖吸收（INV-58 已知边界同族）
+ * - [F-RDR-01 起] 快路径（selection-evaluate.visual）经 snapVisualBoundary
+ *   入本模块——仅末行下方边界的视觉吸附（行尾目标复用 rowEndOf，语义单源）；
+ *   全量归一化语义仍独属 snapBlankBoundary（锚定序列化面）。F-A6-c 时代的
+ *   「快路径不经本模块」表述随之作废（拖选期瞬态带吸附+S5 短路双闭环后，
+ *   mouseup/settle 全量同帧覆盖吸收语义保持）
  *
  * ── 生命周期层 ──
  * - 仅 mouseup/settle 时刻调用（非每帧）；单页千级文本节点 O(n log n)
@@ -79,8 +88,11 @@ const BLANK_SNAP_GAP_MIN_PX = 20
 const BLANK_SNAP_GAP_H_FACTOR = 2.5
 
 /** 空白标记：pdf.js 行 break（br）/空串项/纯空白项的渲染产物（textContent
- *  去空白后为空） */
-function isBlankMarker(el: Element | null): boolean {
+ *  去空白后为空）。
+ *  [F-RDR-01] 起导出——**仅供 visual 吸附通道（snapVisualBoundary）消费；
+ *  锚定序列化侧继续走 snapBlankBoundary 门面，勿直引**（终裁修正 12——防
+ *  API 泛化） */
+export function isBlankMarker(el: Element | null): boolean {
   if (el === null) {
     return false
   }
@@ -105,9 +117,12 @@ export function boxOf(el: Element | null): Box | null {
 /**
  * 边界命中的空白标记：文本位在纯空白 span 内→该 span；元素槽位紧邻（其后或
  * 其前，childNodes 索引=Range 元素槽位语义——防裸文本节点混入错位，C-3）空白
- * 标记→该标记；否则 null（普通文本位/普通槽位）
+ * 标记→该标记；否则 null（普通文本位/普通槽位）。
+ * [F-RDR-01] 起导出——**仅供 visual 吸附通道（snapVisualBoundary）消费；
+ * 锚定序列化侧继续走 snapBlankBoundary 门面，勿直引**（终裁修正 12——防
+ * API 泛化）
  */
-function markerAt(node: Node, offset: number): Element | null {
+export function markerAt(node: Node, offset: number): Element | null {
   if (node.nodeType === Node.TEXT_NODE) {
     const parent = node.parentElement
     return isBlankMarker(parent) ? parent : null
@@ -281,4 +296,77 @@ export function snapBlankBoundary(root: HTMLElement, node: Node, offset: number,
   const firstGroup = groups[0]
   const head = firstGroup?.reduce((m, r) => (r.box.left < m.box.left ? r : m))
   return head !== undefined ? { node: head.span.node, offset: 0 } : { node, offset }
+}
+
+/**
+ * [F-RDR-01] 拖选期视觉边界末行下方吸附（快路径专用）：拖选越过末行后浏览器
+ * 把边界送进末行下方的空白标记槽位，visual 快路径按原始边界算几何=视觉边界
+ * 跳跃（S3 缺陷）。命中「末行下方」→末行（标记最近栏组）行尾锚点；其余形态
+ * null=零吸附（调用方 fallback 原始边界——空守卫，禁非空断言）。
+ *
+ * 守卫序（任务书 A 路径）：
+ * 1. closest('.textLayer') 上溯（无深度常量）——非 textLayer 边界零吸附；
+ * 2. 空守卫：markerAt 探测 null / boxOf 无量测（jsdom 四零盒）→null；
+ * 3. 末行判定：标记中心越过**真实文本**末行盒底（空白标记不入行构造——否则
+ *    越末行的空白 span 自成末行，判据自吞失效）；页中标记（未越末行）→null
+ *    零吸附（页中归 mouseup 全量 snapBlankBoundary 语义面，F-A10 不动）；
+ * 4. 末行吸附=复用 rowEndOf（行尾语义唯一源——适配层仅类型转换/空值合并，
+ *    零行尾几何、零 DOM 位置比较）。
+ *
+ * [W-6 回炉·行源同一性] 末行判定的行构造与 rowEndOf 消费的行构造=**同一次
+ * 构造**（本函数内单一 items/rows 局部链：collectSpans+boxOf+visualRows——
+ * 与 snapBlankBoundary/release-affinity 同族导出原语，无第二套行构造）；与
+ * 锚定侧 nearestRow 的差异仅在**入集面**（本函数剔空白标记防判据自吞，
+ * nearestRow 全集入行服务最近行锚定）——判定面差异非行源分叉，行聚类/栏
+ * 聚类/行尾算法零分叉（visualRows/columnGroups/rowEndOf 单源）。
+ *
+ * side=调用侧标签（'anchor'=回拖起点/'focus'=前拖终点）：末行钳位双侧同
+ * 目标（行尾）——方向对称语义由 selection-evaluate 的 eff 边界文档序定序
+ * 承担，本参数固定 visual 吸附通道契约面（终裁修正 1 调用形）。
+ */
+export function snapVisualBoundary(
+  node: Node,
+  offset: number,
+  _side: 'anchor' | 'focus'
+): DomBoundary | null {
+  // 守卫 1：closest('.textLayer') 上溯（文本位=父 span 起/元素槽位=该元素起）
+  const host = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
+  const textLayer = (host?.closest('.textLayer') ?? null) as HTMLElement | null
+  if (textLayer === null) {
+    return null
+  }
+  // 守卫 2（空守卫）：边界未命中空白标记→null（调用方 fallback 原始边界）
+  const marker = markerAt(node, offset)
+  if (marker === null || !textLayer.contains(marker)) {
+    return null
+  }
+  const box = boxOf(marker)
+  if (box === null) {
+    return null
+  }
+  // 末行判定：真实文本（剔空白标记）行构造——visualRows 输出中心升序=阅读序，
+  // 末元素=最底真实文本行
+  const items: Array<{ span: NodeSpan; box: Box }> = []
+  for (const span of collectSpans(textLayer).spans) {
+    if (isBlankMarker(span.node.parentElement)) {
+      continue
+    }
+    const b = boxOf(span.node.parentElement)
+    if (b !== null) {
+      items.push({ span, box: b })
+    }
+  }
+  if (items.length === 0) {
+    return null
+  }
+  const rows = visualRows(items)
+  const lastRow = rows[rows.length - 1]!
+  const lastBottom = Math.max(...lastRow.map((r) => r.box.bottom))
+  // 守卫 3：未越末行（页中/行内标记）→null 零吸附
+  if ((box.top + box.bottom) / 2 <= lastBottom) {
+    return null
+  }
+  // 末行吸附：复用 rowEndOf（标记盒定向最近栏组行尾——br 盒 x 无横向语义
+  // 同 F-A10 处理；适配层零行尾几何）
+  return rowEndOf(lastRow, box)
 }

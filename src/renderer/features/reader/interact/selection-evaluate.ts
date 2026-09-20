@@ -57,6 +57,11 @@
  * - export function createEvaluate(ctx)：工厂返回 {visual, full} 双路径闭包
  *   （ctx=组件状态写口+挂载盒+文献 id——纯函数域件零 React 依赖）；
  *   PaintSelection/PendingSelection 类型随迁（SelectionLayer 消费）
+ * - [F-RDR-01 B] module-level 导出三函数 markAffinityShortcutFlushed/
+ *   shouldSkipVisual/clearAffinityShortcut（S5 短路窗——SelectionLayer mouseup
+ *   mark/mousedown clear 接线消费）+docOrderPair（eff 边界文档序定序纯函数
+ *   ——W-4 回炉单测消费面）；A 吸附经 anchor-blank-snap.
+ *   snapVisualBoundary（interact→anchors 方向既有）
  * - 依赖单向：本件→anchor-serialize/annotation-anchor/annotation-resolve/
  *   pdf-item-geometry/page-items.store/reader.store/selection-geometry（零环）
  * - probeTextLength 消费自 anchor-serialize 导出面单源（F-GEOM-01-G2 收敛，
@@ -73,6 +78,7 @@ import { probeTextLength, selectionToAnchor, type SelectionAnchor } from '../anc
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from '../anchors/annotation-anchor'
 import { bandsForTextNodes, type RowBand } from '../anchors/annotation-resolve'
 import { calibrateBandsWithSpans } from '../anchors/annotation-band-calibrate'
+import { snapVisualBoundary } from '../anchors/anchor-blank-snap'
 import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from '../anchors/pdf-item-geometry'
 import type { ItemSelectionGeometry } from '../anchors/pdf-item-geometry'
 import { usePageItemsStore } from '../anchors/page-items.store'
@@ -85,6 +91,63 @@ const CROSS_PAGE_HINT = '选区跨页，不支持创建标注'
 /** [F-A6-b2] G2 降级门拒绝提示（偏离率 ≥5%/右溢 >2px——异常 PDF 文本层几何；
  *  真实健康页 0~0.12% 永不触发，INV-02 禁静默） */
 const GEOMETRY_REJECT_HINT = '选区几何异常，无法创建标注'
+
+/** [F-RDR-01 B] S5 冗余重绘短路窗（毫秒）：mouseup 的 full(true) 已同帧渲染
+ *  正确帧（S4），其后异步排队的 selectionchange→visual 属同态冗余重绘——
+ *  visual 快路径对末行下方空白标记边界的几何差即「mouseup 后弹回闪烁」源。
+ *  TTL 窗=S4 帧保持期（经验值 100ms；R1 校准条款：探针实测 selectionchange
+ *  迟到 >100ms 时仅调本常量不动结构）。释放两径=TTL 到期兜底+mousedown 硬清 */
+const AFFINITY_SHORTCUT_TTL_MS = 100
+
+/** 短路基准时刻（null=窗口外/已清）。module-level：SelectionLayer→本件依赖
+ *  方向既有（头注接口层），无反向依赖 */
+let affinityFlushedAt: number | null = null
+
+/** [F-RDR-01 B] S4 正确帧落地标记：mouseup 写回后、full(true) 前调用（恒等
+ *  写回时 full 亦画正确帧——mark 无害，免缓存方案不设 prevFocus 快照） */
+export function markAffinityShortcutFlushed(): void {
+  affinityFlushedAt = performance.now()
+}
+
+/** [F-RDR-01 B] visual 入口短路判定：TTL 窗内（含 100ms 边界）→丢弃本次
+ *  冗余重绘（保留 S4 帧，零绘制零 setPaint） */
+export function shouldSkipVisual(): boolean {
+  return affinityFlushedAt !== null && performance.now() - affinityFlushedAt <= AFFINITY_SHORTCUT_TTL_MS
+}
+
+/** [F-RDR-01 B] 短路窗硬清：mousedown（新拖选会话）时刻释放 */
+export function clearAffinityShortcut(): void {
+  affinityFlushedAt = null
+}
+
+/** [F-RDR-01 A] eff 边界文档序定序：anchor/focus 无向（snapVisualBoundary 双侧
+ *  同钳位目标），而 probe 探测位 start/end 有向（文档序）——映回文档序
+ *  （无吸附时与 range.start/end 同源同值=行为零变）。[W-4 回炉③] 包含关系
+ *  （元素槽位边界 vs 其后代文本节点）compareDocumentPosition 只定节点树序
+ *  不定槽位（祖先恒「先于」后代，槽位实际可在后代之后）——该形态经
+ *  Range.compareBoundaryPoints 点对点精确比较；非包含态 FOLLOWING/PRECEDING
+ *  即文档序（规范语义），同节点按 offset。导出面=W-4 回炉单测消费
+ *  （纯函数域件，几何域函数导出同 selection-geometry 先例） */
+export function docOrderPair(
+  a: { node: Node; offset: number },
+  b: { node: Node; offset: number }
+): [{ node: Node; offset: number }, { node: Node; offset: number }] {
+  if (a.node === b.node) {
+    return a.offset <= b.offset ? [a, b] : [b, a]
+  }
+  const pos = a.node.compareDocumentPosition(b.node)
+  if ((pos & (Node.DOCUMENT_POSITION_CONTAINS | Node.DOCUMENT_POSITION_CONTAINED_BY)) === 0) {
+    return (pos & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 ? [a, b] : [b, a]
+  }
+  // 包含形态：节点树序不定槽位——Range 点对点比较（jsdom/Chromium 同语义）
+  const pa = document.createRange()
+  pa.setStart(a.node, a.offset)
+  pa.setEnd(a.node, a.offset)
+  const pb = document.createRange()
+  pb.setStart(b.node, b.offset)
+  pb.setEnd(b.node, b.offset)
+  return pa.compareBoundaryPoints(Range.START_TO_START, pb) <= 0 ? [a, b] : [b, a]
+}
 
 /** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects+F-A5 行簇字形带；清除=层卸载） */
 export interface PaintSelection {
@@ -160,8 +223,14 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
    *  page-items.store 直读→项几何→setPaint；失败（probe/页项/对账/计算/退化
    *  区间）回退=全量视觉评估（evaluateCore(false,true)——DOM 量测回退链在位，
    *  不动 pending）。守卫与 G2 命中均 setPaint(null)（跨页/G2 拖选期静默——
-   *  toast 门=fromMouseUp 属全量路，S5/G2 既有形态） */
+   *  toast 门=fromMouseUp 属全量路，S5/G2 既有形态）。
+   *  [F-RDR-01] 插桩序（终裁修正 1）：B 守卫在前（S5 短路——TTL 窗内直接
+   *  return 保留 S4 帧，零绘制）→四道守卫→A 吸附在后（末行下方 eff 边界
+   *  替换原始边界进几何计算） */
   function visual(): void {
+    // [F-RDR-01 B] S5 冗余重绘短路：TTL 窗（=S4 帧保持期）内直接丢弃——
+    // 窗内 A 不执行=设计意图（S4 正确帧无需重算）
+    if (shouldSkipVisual()) return
     const sel = window.getSelection()
     // 守卫 (i)：sel 空/rangeCount 0/坍缩
     if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
@@ -190,10 +259,18 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       setPaint(null)
       return
     }
+    // [F-RDR-01 A] 拖选期视觉边界末行下方吸附：eff 边界替换原始边界进几何计算
+    // （空守卫 fallback=原始边界——null ?? 合并；双侧同钳位目标，方向对称由
+    // docOrderPair 文档序定序承担）
+    const aSnap = snapVisualBoundary(sel.anchorNode!, sel.anchorOffset, 'anchor')
+    const fSnap = snapVisualBoundary(sel.focusNode!, sel.focusOffset, 'focus')
+    const effAnchor = aSnap ?? { node: sel.anchorNode!, offset: sel.anchorOffset }
+    const effFocus = fSnap ?? { node: sel.focusNode!, offset: sel.focusOffset }
+    const [startB, endB] = docOrderPair(effAnchor, effFocus)
     // 轻量偏移 probe（Range.toString ×2 O(页文本)——join/quote/prefix/suffix
     // 切片与 rectsBetweenPoints/medianFontSize 全量几何量测链全省）
-    const lead = probeTextLength(textLayer, range.startContainer, range.startOffset, 'start')
-    const tail = lead === null ? null : probeTextLength(textLayer, range.endContainer, range.endOffset, 'end')
+    const lead = probeTextLength(textLayer, startB.node, startB.offset, 'start')
+    const tail = lead === null ? null : probeTextLength(textLayer, endB.node, endB.offset, 'end')
     const entry = usePageItemsStore.getState().pages[pageNo + 1]
     let item: ItemSelectionGeometry | null = null
     if (lead !== null && tail !== null && entry !== undefined) {

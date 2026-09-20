@@ -2678,7 +2678,7 @@
           "describePath": [],
           "title": "P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成）",
           "markers": [],
-          "line": 516,
+          "line": 518,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2690,7 +2690,7 @@
           "describePath": [],
           "title": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久",
           "markers": [],
-          "line": 550,
+          "line": 552,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2713,7 +2713,7 @@
           "describePath": [],
           "title": "F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订）",
           "markers": [],
-          "line": 603,
+          "line": 605,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })",
@@ -2735,7 +2735,7 @@
           "describePath": [],
           "title": "F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（INV-A/B/C 装配级）",
           "markers": [],
-          "line": 690,
+          "line": 692,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_MULTILINE_TEXT[0]).first()).toBeVisible({ timeout: 20_000 })",
@@ -2757,7 +2757,7 @@
           "describePath": [],
           "title": "F-A6-d 组合页（/Rotate 90×/CropBox 非零原点）：文本层对齐墨带+划选块=行真值且不溢页盒（T1/T9 组合面 e2e 闭合）",
           "markers": [],
-          "line": 792,
+          "line": 794,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2779,7 +2779,7 @@
           "describePath": [],
           "title": "F-A7 旋转页（/Rotate 90）：占位盒与 canvas 渲染盒宽高一致（viewport 旋转口径）",
           "markers": [],
-          "line": 878,
+          "line": 880,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2794,7 +2794,7 @@
           "describePath": [],
           "title": "F-A6-d 拖选随动：连发 selectionchange（3 次×~50ms、每轮+1 字符）→300ms 内 selection-rects 子树 ≥2 次变更（rAF 对齐 e2e 级）",
           "markers": [],
-          "line": 915,
+          "line": 917,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2808,7 +2808,7 @@
           "describePath": [],
           "title": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
           "markers": [],
-          "line": 998,
+          "line": 1000,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText('P1A SMART WATER TEST DOC').first()).toBeVisible({ timeout: 20_000 })",
@@ -2828,7 +2828,7 @@
           "describePath": [],
           "title": "A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线",
           "markers": [],
-          "line": 1173,
+          "line": 1175,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2855,7 +2855,7 @@
           "describePath": [],
           "title": "P7X-02 outbox 重放：强杀残留（pending+in-flight）→二轮启动闸门排空落库（页码半边）",
           "markers": [],
-          "line": 100,
+          "line": 87,
           "assertions": [
             "expect(row.p).toBe(1)"
           ]
@@ -3045,6 +3045,92 @@
             "expect(win.getByRole('button', { name: '切换课题' })).toContainText('默认课题', { timeout: 20_000 })",
             "expect(win.getByText('智慧水务 e2e 课题文献')).toBeVisible({ timeout: 10_000 })"
           ]
+        }
+      ]
+    },
+    "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [
+        "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)"
+      ],
+      "cases": [
+        {
+          "key": "[\"F-RDR-01 末行下拖：自绘 y 序列无减序对+末帧=S4 吸附帧（±1px）\"]",
+          "describePath": [],
+          "title": "F-RDR-01 末行下拖：自绘 y 序列无减序对+末帧=S4 吸附帧（±1px）",
+          "markers": [],
+          "line": 104,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByText('MULTILINE ALPHA ROW').first()).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByText('MULTILINE GAMMA ROW').first()).toBeVisible({ timeout: 20_000 })",
+            "expect(s4Idx, 'S4 帧（mouseup 后首个有效帧）在场（findIndex 未命中=-1 红）').toBeGreaterThanOrEqual(0)",
+            "expect(valid.length - Math.max(s4Idx, 0), 'S4 后至少 1 个有效帧（post 序列非空）').toBeGreaterThan(0)",
+            "expect( post[i]!.y! - post[i - 1]!.y!, `S4 后帧 ${i - 1}→${i} y 减序：${post[i - 1]!.y}→${post[i]!.y}（弹回闪烁形态）` ).toBeGreaterThanOrEqual(-TOL)",
+            "expect(Math.abs(last.y! - s4.y!), `末帧 y=${last.y} ≠ S4 y=${s4.y}±1（弹回方向断言）`).toBeLessThanOrEqual(TOL)"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/z-f-rdr02-repro-probe.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-RDR-02 场景①③④：焦点丢失/弹层可见性/点击 event.target 取证\"]",
+          "describePath": [],
+          "title": "F-RDR-02 场景①③④：焦点丢失/弹层可见性/点击 event.target 取证",
+          "markers": [],
+          "line": 34,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(known).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByTestId('selection-toolbar')).toBeVisible()",
+            "expect(win.getByTestId('annotation-rect').first()).toBeVisible()",
+            "expect(editor).toBeVisible()",
+            "expect(rect, '编辑器 boundingBox 在场').not.toBeNull()",
+            "expect(rect.y + rect.height, `弹层应在视口内（bottom=${rect.y + rect.height} vs vh=${vp.height}）`).toBeLessThanOrEqual(vp.height)",
+            "expect(rect.y, `弹层 top 应 ≥0（top=${rect.y}）`).toBeGreaterThanOrEqual(0)",
+            "expect(activeAfterClick, '点击 textarea 后焦点应回到批注输入框（无拦截层）').toBe('批注内容')",
+            "expect(value, '焦点恢复后输入应进入 textarea（无吞键）').toBe('F-RDR-02 审计输入')",
+            "expect(blurred, '前置：点页面空白后焦点应已离开 textarea').not.toBe('批注内容')",
+            "expect(refocused, 'D6：完整指针序列点击弹层空白后焦点应回到批注输入框（B1 修复真机证）').toBe('批注内容')"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/z-f-ui03-nav-geom-probe.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-UI-03 nav 满高：nav 高=内容行高，foot 钉底\"]",
+          "describePath": [],
+          "title": "F-UI-03 nav 满高：nav 高=内容行高，foot 钉底",
+          "markers": [],
+          "line": 14,
+          "assertions": [
+            "expect(geom.navH, `nav 应满高（navH=${geom.navH} vs rowH=${geom.rowH}）`).toBeGreaterThanOrEqual(geom.rowH - 1)",
+            "expect( Math.abs(geom.footBottomGap - geom.navPadBottom), `foot 应钉内容盒底（gap=${geom.footBottomGap} vs paddingBottom=${geom.navPadBottom}——若 gap≫padding 则 nav 未满高/foot 未钉底）` ).toBeLessThanOrEqual(1)"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/z-f-ui04-vert-probe.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-UI-04 P3 顶栏墨迹垂直位置探针（亮度判定修订版）\"]",
+          "describePath": [],
+          "title": "F-UI-04 P3 顶栏墨迹垂直位置探针（亮度判定修订版）",
+          "markers": [],
+          "line": 37,
+          "assertions": []
         }
       ]
     },
@@ -7533,6 +7619,34 @@
             "expect(undoBtn().disabled).toBe(true)",
             "expect(ta.value).toBe('我是奶龙')"
           ]
+        },
+        {
+          "key": "[\"F-RDR-02 IME 守卫 + 点击重聚焦 —— AnnotationEditor\",\"组词期按键不消费（IME 守卫）：Escape 不关弹层、ctrl+z 不打断组词\"]",
+          "describePath": [
+            "F-RDR-02 IME 守卫 + 点击重聚焦 —— AnnotationEditor"
+          ],
+          "title": "组词期按键不消费（IME 守卫）：Escape 不关弹层、ctrl+z 不打断组词",
+          "markers": [],
+          "line": 437,
+          "assertions": [
+            "expect(onCancel).not.toHaveBeenCalled()",
+            "expect(zEvt.defaultPrevented).toBe(false)",
+            "expect(ta.value).toBe('a')"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-02 IME 守卫 + 点击重聚焦 —— AnnotationEditor\",\"D6 点击弹层空白重聚焦输入框；点击按钮不抢焦\"]",
+          "describePath": [
+            "F-RDR-02 IME 守卫 + 点击重聚焦 —— AnnotationEditor"
+          ],
+          "title": "D6 点击弹层空白重聚焦输入框；点击按钮不抢焦",
+          "markers": [],
+          "line": 461,
+          "assertions": [
+            "expect(document.activeElement).not.toBe(ta)",
+            "expect(document.activeElement).toBe(ta)",
+            "expect(document.activeElement).not.toBe(ta)"
+          ]
         }
       ]
     },
@@ -8393,13 +8507,25 @@
           ]
         },
         {
+          "key": "[\"R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）\",\"main 挂 .app-main 类（F-UI-04 D1=冷雾灰挂 main 挂载锁）\"]",
+          "describePath": [
+            "R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）"
+          ],
+          "title": "main 挂 .app-main 类（F-UI-04 D1=冷雾灰挂 main 挂载锁）",
+          "markers": [],
+          "line": 164,
+          "assertions": [
+            "expect( document.querySelector('main.app-main'), 'main 应带 .app-main 类（theme-shell.css .app-main 冷雾灰消费钩——类名被重构丢即红，封静默回归口）' ).not.toBeNull()"
+          ]
+        },
+        {
           "key": "[\"R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据通道单点）\",\"settings.uiScale=medium：挂载后 documentElement --ui-scale=1.1\"]",
           "describePath": [
             "R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据通道单点）"
           ],
           "title": "settings.uiScale=medium：挂载后 documentElement --ui-scale=1.1",
           "markers": [],
-          "line": 166,
+          "line": 175,
           "assertions": [
             "expect( document.documentElement.style.getPropertyValue('--ui-scale'), 'UI_SCALE.medium=1.1 经 App effect 写 documentElement' ).toBe('1.1')"
           ]
@@ -8411,10 +8537,28 @@
           ],
           "title": "默认 small=1；save({uiScale:large}) 落地后变量更新 1.25（变化沿）",
           "markers": [],
-          "line": 179,
+          "line": 188,
           "assertions": [
             "expect( document.documentElement.style.getPropertyValue('--ui-scale'), '默认档 small → 1' ).toBe('1')",
             "expect( document.documentElement.style.getPropertyValue('--ui-scale'), 'save 落地→store settings 替换→App 订阅重渲→变量更新 1.25' ).toBe('1.25')"
+          ]
+        },
+        {
+          "key": "[\"F-UI-03 导航栏窄条折叠——收起钮+窄态类+label span（可访问名兼容）\",\"收起钮 aria-label 随态换名；点击后 nav 挂 app-nav-collapsed；四入口 label span 在（navButton 文本查询不破）\"]",
+          "describePath": [
+            "F-UI-03 导航栏窄条折叠——收起钮+窄态类+label span（可访问名兼容）"
+          ],
+          "title": "收起钮 aria-label 随态换名；点击后 nav 挂 app-nav-collapsed；四入口 label span 在（navButton 文本查询不破）",
+          "markers": [],
+          "line": 213,
+          "assertions": [
+            "expect(navButton(label), `入口「${label}」按可见文本仍可查（span 包裹后 textContent 兼容）`).toBeDefined()",
+            "expect(document.querySelectorAll('.app-nav-label')).toHaveLength(4)",
+            "expect(toggle, '收起钮在场（nav 首行）').not.toBeNull()",
+            "expect(expandBtn, '收起后 aria-label 切换为「展开导航栏」（TitleBarControls 三元先例）').not.toBeNull()",
+            "expect( document.querySelector('nav')!.classList.contains('app-nav-collapsed'), 'nav 挂窄态类 app-nav-collapsed' ).toBe(true)",
+            "expect(document.querySelector('button[aria-label=\"收起导航栏\"]'), '再点展开恢复收起钮名').not.toBeNull()",
+            "expect( document.querySelector('nav')!.classList.contains('app-nav-collapsed'), '展开后窄态类移除' ).toBe(false)"
           ]
         }
       ]
@@ -15047,6 +15191,65 @@
         }
       ]
     },
+    "tests/unit/renderer/reader-toolbar-icons.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-UI-02 工具栏图标化 —— ReaderToolbar 面\",\"① 五个图标化控件各含 aria-hidden svg+textContent 恰=原文字（sr-only 保断言）\"]",
+          "describePath": [
+            "F-UI-02 工具栏图标化 —— ReaderToolbar 面"
+          ],
+          "title": "① 五个图标化控件各含 aria-hidden svg+textContent 恰=原文字（sr-only 保断言）",
+          "markers": [],
+          "line": 87,
+          "assertions": [
+            "expect(svg, `${label} 按钮应含 aria-hidden svg（图标本体）`).not.toBeNull()",
+            "expect(findBtn(sym).querySelector('svg'), `${sym} 应保持纯字符（无 svg）`).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-UI-02 工具栏图标化 —— ReaderToolbar 面\",\"② 双页图标随 pageLayout 三元切换：single=单矩形（1 rect）/double=双矩形（2 rect）\"]",
+          "describePath": [
+            "F-UI-02 工具栏图标化 —— ReaderToolbar 面"
+          ],
+          "title": "② 双页图标随 pageLayout 三元切换：single=单矩形（1 rect）/double=双矩形（2 rect）",
+          "markers": [],
+          "line": 108,
+          "assertions": [
+            "expect(findBtn('双页').querySelectorAll('svg rect').length).toBe(1)",
+            "expect(rects.length).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"F-UI-02 工具栏图标化 —— ReaderToolbar 面\",\"③ 选择模式激活=background var(--accent-soft) 常亮叠加 borderColor var(--accent)（双断言并立）\"]",
+          "describePath": [
+            "F-UI-02 工具栏图标化 —— ReaderToolbar 面"
+          ],
+          "title": "③ 选择模式激活=background var(--accent-soft) 常亮叠加 borderColor var(--accent)（双断言并立）",
+          "markers": [],
+          "line": 120,
+          "assertions": [
+            "expect(btn.style.background).toBe('var(--accent-soft)')",
+            "expect(btn.style.borderColor).toBe('var(--accent)')"
+          ]
+        },
+        {
+          "key": "[\"F-UI-02 侧栏 tab 图标化 —— OutlineAside 面\",\"④ 三 tab 各含 aria-hidden svg+textContent 恰=标签（outline-aside:96 精确数组兼容）\"]",
+          "describePath": [
+            "F-UI-02 侧栏 tab 图标化 —— OutlineAside 面"
+          ],
+          "title": "④ 三 tab 各含 aria-hidden svg+textContent 恰=标签（outline-aside:96 精确数组兼容）",
+          "markers": [],
+          "line": 129,
+          "assertions": [
+            "expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记'])",
+            "expect(t.querySelector('svg[aria-hidden=\"true\"]'), 'tab 应含 aria-hidden svg').not.toBeNull()"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/reader.store.test.ts": {
       "ticketIds": [
         "SR2-TABS-01"
@@ -17672,6 +17875,43 @@
             "expect(h.getAttribute('aria-label')).not.toBeNull()",
             "expect(document.body.style.userSelect).toBe('')"
           ]
+        },
+        {
+          "key": "[\"F-UI-03 SplitPane 折叠扩展——窄条折叠+受控折叠面\",\"collapsedWidth：双击折叠到 64px 窄条（display 保留可见），aria-valuenow=64；再双击恢复原宽（宽度记忆）\"]",
+          "describePath": [
+            "F-UI-03 SplitPane 折叠扩展——窄条折叠+受控折叠面"
+          ],
+          "title": "collapsedWidth：双击折叠到 64px 窄条（display 保留可见），aria-valuenow=64；再双击恢复原宽（宽度记忆）",
+          "markers": [],
+          "line": 236,
+          "assertions": [
+            "expect(paneWidth(host)).toBe('220px')",
+            "expect(paneWidth(host)).toBe('64px')",
+            "expect(pane.style.display).not.toBe('none')",
+            "expect(h.getAttribute('aria-valuenow')).toBe('64')",
+            "expect(document.body.style.userSelect).toBe('')",
+            "expect(paneWidth(host)).toBe('64px')",
+            "expect(paneWidth(host)).toBe('220px')",
+            "expect(pane.style.display).not.toBe('none')"
+          ]
+        },
+        {
+          "key": "[\"F-UI-03 SplitPane 折叠扩展——窄条折叠+受控折叠面\",\"受控折叠：collapsed prop 驱动宽 64/原宽切换；双击手柄上报 onCollapsedChange(true) 且内部不自改\"]",
+          "describePath": [
+            "F-UI-03 SplitPane 折叠扩展——窄条折叠+受控折叠面"
+          ],
+          "title": "受控折叠：collapsed prop 驱动宽 64/原宽切换；双击手柄上报 onCollapsedChange(true) 且内部不自改",
+          "markers": [],
+          "line": 264,
+          "assertions": [
+            "expect(paneWidth(host)).toBe('220px')",
+            "expect(onCollapsedChange).toHaveBeenCalledTimes(1)",
+            "expect(onCollapsedChange).toHaveBeenLastCalledWith(true)",
+            "expect(paneWidth(host)).toBe('220px')",
+            "expect(paneWidth(host)).toBe('64px')",
+            "expect( (host.querySelector('[data-testid=\"split-pane-pane\"]') as HTMLElement).style.display ).not.toBe('none')",
+            "expect(paneWidth(host)).toBe('220px')"
+          ]
         }
       ]
     },
@@ -18561,7 +18801,7 @@
           ],
           "title": "--bg 声明为设计定稿值 #f6f4ee",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18573,7 +18813,7 @@
           ],
           "title": "--panel 声明为设计定稿值 #ffffff",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18585,7 +18825,7 @@
           ],
           "title": "--panel-glass 声明为设计定稿值 rgba(255, 255, 255, 0.72)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18597,7 +18837,7 @@
           ],
           "title": "--border 声明为设计定稿值 #e4ded1",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18609,7 +18849,7 @@
           ],
           "title": "--border-gold 声明为设计定稿值 #c9a86a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18621,7 +18861,7 @@
           ],
           "title": "--text 声明为设计定稿值 #23262d",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18633,7 +18873,7 @@
           ],
           "title": "--text-dim 声明为设计定稿值 #6f7482",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18645,7 +18885,7 @@
           ],
           "title": "--accent 声明为设计定稿值 #2c5f8a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18657,7 +18897,7 @@
           ],
           "title": "--accent-soft 声明为设计定稿值 #dcebf5",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18669,7 +18909,7 @@
           ],
           "title": "--gold 声明为设计定稿值 #b8935a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18681,7 +18921,7 @@
           ],
           "title": "--gold-soft 声明为设计定稿值 rgba(207, 174, 114, 0.16)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18693,7 +18933,7 @@
           ],
           "title": "--gold-bright 声明为设计定稿值 #e3c98f",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18705,7 +18945,7 @@
           ],
           "title": "--gold-line 声明为设计定稿值 rgba(207, 174, 114, 0.1)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18717,7 +18957,7 @@
           ],
           "title": "--danger 声明为设计定稿值 #b3403a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18729,7 +18969,7 @@
           ],
           "title": "--ok 声明为设计定稿值 #3d7a50",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18741,7 +18981,7 @@
           ],
           "title": "--shadow-1 声明为设计定稿值 0 1px 2px rgba(35, 38, 45, 0.06)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18753,7 +18993,7 @@
           ],
           "title": "--shadow-2 声明为设计定稿值 0 4px 14px rgba(35, 38, 45, 0.09)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18765,7 +19005,7 @@
           ],
           "title": "--shadow-3 声明为设计定稿值 0 10px 34px rgba(35, 38, 45, 0.16)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18777,7 +19017,7 @@
           ],
           "title": "--radius-s 声明为设计定稿值 8px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18789,7 +19029,7 @@
           ],
           "title": "--radius-m 声明为设计定稿值 12px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18801,7 +19041,7 @@
           ],
           "title": "--radius-l 声明为设计定稿值 16px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18813,7 +19053,7 @@
           ],
           "title": "--font-display 声明为设计定稿值 Georgia, 'Times New Roman', 'Songti SC', SimSun, serif",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18825,7 +19065,7 @@
           ],
           "title": "--ink 声明为设计定稿值 #1b2333",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18837,7 +19077,7 @@
           ],
           "title": "--ink-hi 声明为设计定稿值 #232d44",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18849,7 +19089,7 @@
           ],
           "title": "--night-bg 声明为设计定稿值 #171e33",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18861,7 +19101,7 @@
           ],
           "title": "--night-bg2 声明为设计定稿值 #111728",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18873,7 +19113,7 @@
           ],
           "title": "--node-face 声明为设计定稿值 #222c4d",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18885,7 +19125,7 @@
           ],
           "title": "--node-face-hi 声明为设计定稿值 #2b3760",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18897,7 +19137,7 @@
           ],
           "title": "--band-line 声明为设计定稿值 rgba(207, 174, 114, 0.12)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18909,7 +19149,7 @@
           ],
           "title": "--star 声明为设计定稿值 rgba(222, 230, 255, 0.55)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18921,7 +19161,7 @@
           ],
           "title": "--text-on-night 声明为设计定稿值 #e9e6db",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18933,7 +19173,7 @@
           ],
           "title": "--text-mid 声明为设计定稿值 #c6cbdd",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18945,7 +19185,7 @@
           ],
           "title": "--text-dim-on-night 声明为设计定稿值 #97a0bb",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18957,7 +19197,7 @@
           ],
           "title": "--edge-glow 声明为设计定稿值 rgba(207, 174, 114, 0.4)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18969,7 +19209,7 @@
           ],
           "title": "--annotation-yellow 声明为设计定稿值 #fde047",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18981,7 +19221,7 @@
           ],
           "title": "--annotation-green 声明为设计定稿值 #86efac",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -18993,7 +19233,7 @@
           ],
           "title": "--annotation-blue 声明为设计定稿值 #93c5fd",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19005,7 +19245,7 @@
           ],
           "title": "--annotation-red 声明为设计定稿值 #fca5a5",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19017,7 +19257,7 @@
           ],
           "title": "--annotation-purple 声明为设计定稿值 #d8b4fe",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19029,7 +19269,7 @@
           ],
           "title": "--dur-press 声明为设计定稿值 0.08s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19041,7 +19281,7 @@
           ],
           "title": "--dur-tint 声明为设计定稿值 0.12s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19053,7 +19293,7 @@
           ],
           "title": "--dur-fast 声明为设计定稿值 0.14s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19065,7 +19305,7 @@
           ],
           "title": "--dur-base 声明为设计定稿值 0.18s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19077,7 +19317,7 @@
           ],
           "title": "--dur-lazy 声明为设计定稿值 0.2s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19089,7 +19329,7 @@
           ],
           "title": "--dur-rise 声明为设计定稿值 0.22s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19101,7 +19341,7 @@
           ],
           "title": "--dur-flow 声明为设计定稿值 0.3s",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19113,7 +19353,7 @@
           ],
           "title": "--z-float 声明为设计定稿值 10",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19125,7 +19365,7 @@
           ],
           "title": "--z-anchor-pop 声明为设计定稿值 20",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19137,7 +19377,7 @@
           ],
           "title": "--z-pop-veil 声明为设计定稿值 40",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19149,7 +19389,7 @@
           ],
           "title": "--z-pop 声明为设计定稿值 50",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19161,7 +19401,7 @@
           ],
           "title": "--fs-micro 声明为设计定稿值 10px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19173,7 +19413,7 @@
           ],
           "title": "--fs-caption 声明为设计定稿值 11px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19185,7 +19425,7 @@
           ],
           "title": "--fs-body 声明为设计定稿值 12px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19197,7 +19437,7 @@
           ],
           "title": "--fs-strong 声明为设计定稿值 13px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19209,7 +19449,7 @@
           ],
           "title": "--fs-title 声明为设计定稿值 14px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19221,7 +19461,7 @@
           ],
           "title": "--fs-display 声明为设计定稿值 17px",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19233,7 +19473,7 @@
           ],
           "title": "--accent-a10 声明为设计定稿值 rgba(44, 95, 138, 0.1)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19245,7 +19485,7 @@
           ],
           "title": "--accent-a12 声明为设计定稿值 rgba(44, 95, 138, 0.12)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19257,7 +19497,7 @@
           ],
           "title": "--accent-a15 声明为设计定稿值 rgba(44, 95, 138, 0.15)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19269,7 +19509,7 @@
           ],
           "title": "--accent-a20 声明为设计定稿值 rgba(44, 95, 138, 0.2)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19281,7 +19521,7 @@
           ],
           "title": "--accent-a22 声明为设计定稿值 rgba(44, 95, 138, 0.22)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19293,7 +19533,7 @@
           ],
           "title": "--accent-a35 声明为设计定稿值 rgba(44, 95, 138, 0.35)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19305,7 +19545,7 @@
           ],
           "title": "--accent-a45 声明为设计定稿值 rgba(44, 95, 138, 0.45)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19317,7 +19557,7 @@
           ],
           "title": "--accent-a55 声明为设计定稿值 rgba(44, 95, 138, 0.55)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19329,7 +19569,7 @@
           ],
           "title": "--border-gold-a15 声明为设计定稿值 rgba(201, 168, 106, 0.15)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19341,7 +19581,7 @@
           ],
           "title": "--border-gold-a28 声明为设计定稿值 rgba(201, 168, 106, 0.28)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19353,7 +19593,7 @@
           ],
           "title": "--border-gold-a45 声明为设计定稿值 rgba(201, 168, 106, 0.45)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19365,7 +19605,7 @@
           ],
           "title": "--border-gold-a50 声明为设计定稿值 rgba(201, 168, 106, 0.5)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19377,7 +19617,7 @@
           ],
           "title": "--gold-bright-a70 声明为设计定稿值 rgba(227, 201, 143, 0.7)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19389,7 +19629,7 @@
           ],
           "title": "--gold-press 声明为设计定稿值 rgba(207, 174, 114, 0.3)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19401,7 +19641,7 @@
           ],
           "title": "--danger-a08 声明为设计定稿值 rgba(179, 64, 58, 0.08)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19413,7 +19653,7 @@
           ],
           "title": "--danger-a12 声明为设计定稿值 rgba(179, 64, 58, 0.12)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19425,7 +19665,7 @@
           ],
           "title": "--danger-a25 声明为设计定稿值 rgba(179, 64, 58, 0.25)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19437,7 +19677,7 @@
           ],
           "title": "--panel-a06 声明为设计定稿值 rgba(255, 255, 255, 0.06)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19449,7 +19689,7 @@
           ],
           "title": "--panel-a07 声明为设计定稿值 rgba(255, 255, 255, 0.07)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19461,7 +19701,7 @@
           ],
           "title": "--panel-a35 声明为设计定稿值 rgba(255, 255, 255, 0.35)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19473,7 +19713,7 @@
           ],
           "title": "--panel-a88 声明为设计定稿值 rgba(255, 255, 255, 0.88)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19485,7 +19725,7 @@
           ],
           "title": "--panel-a90 声明为设计定稿值 rgba(255, 255, 255, 0.9)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19497,7 +19737,7 @@
           ],
           "title": "--panel-a92 声明为设计定稿值 rgba(255, 255, 255, 0.92)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19509,7 +19749,7 @@
           ],
           "title": "--close-red 声明为设计定稿值 #e81123",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19521,7 +19761,7 @@
           ],
           "title": "--close-red-press 声明为设计定稿值 #f1707a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19533,7 +19773,7 @@
           ],
           "title": "--nav-text 声明为设计定稿值 #cfd5e4",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19545,7 +19785,7 @@
           ],
           "title": "--nav-item-text 声明为设计定稿值 #aeb6ca",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19557,7 +19797,7 @@
           ],
           "title": "--nav-item-text-hover 声明为设计定稿值 #e6eaf4",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19569,7 +19809,7 @@
           ],
           "title": "--nav-item-text-press 声明为设计定稿值 #eaf1fa",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19581,7 +19821,7 @@
           ],
           "title": "--nav-item-text-current 声明为设计定稿值 #f3eddd",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19593,7 +19833,7 @@
           ],
           "title": "--nav-ver-text 声明为设计定稿值 #8d95ad",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19605,7 +19845,7 @@
           ],
           "title": "--nav-ver-border 声明为设计定稿值 rgba(141, 149, 173, 0.4)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19617,7 +19857,7 @@
           ],
           "title": "--nav-foot-text 声明为设计定稿值 #6d7590",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19629,7 +19869,7 @@
           ],
           "title": "--ink-deep 声明为设计定稿值 #171e2f",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19641,7 +19881,7 @@
           ],
           "title": "--ink-a18 声明为设计定稿值 rgba(27, 35, 51, 0.18)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19653,7 +19893,7 @@
           ],
           "title": "--accent-hi 声明为设计定稿值 #3a76ab",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19665,7 +19905,7 @@
           ],
           "title": "--accent-deep 声明为设计定稿值 #234a6d",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19677,7 +19917,7 @@
           ],
           "title": "--btn-press-tint 声明为设计定稿值 rgba(11, 26, 40, 0.45)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19689,7 +19929,7 @@
           ],
           "title": "--lib-paper-hi 声明为设计定稿值 #fffdf9",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19701,7 +19941,7 @@
           ],
           "title": "--lib-paper-lo 声明为设计定稿值 #fdfaf3",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19713,7 +19953,7 @@
           ],
           "title": "--edge-label-text 声明为设计定稿值 #6b7280",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19725,7 +19965,7 @@
           ],
           "title": "--edge-inferred 声明为设计定稿值 #8a94a6",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19737,7 +19977,7 @@
           ],
           "title": "--node-meta-border 声明为设计定稿值 #dfa84a",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19749,7 +19989,7 @@
           ],
           "title": "--note-border 声明为设计定稿值 rgba(151, 160, 187, 0.28)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19761,7 +20001,7 @@
           ],
           "title": "--reader-selection-paint 声明为设计定稿值 rgba(0, 0, 0, 0.2)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19773,7 +20013,7 @@
           ],
           "title": "--shadow-page 声明为设计定稿值 0 1px 4px rgba(0, 0, 0, 0.12)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19785,7 +20025,7 @@
           ],
           "title": "--shadow-pop-sm 声明为设计定稿值 0 2px 8px rgba(0, 0, 0, 0.15)",
           "markers": [],
-          "line": 171,
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19797,7 +20037,19 @@
           ],
           "title": "--shadow-pop-md 声明为设计定稿值 0 2px 12px rgba(0, 0, 0, 0.18)",
           "markers": [],
-          "line": 171,
+          "line": 176,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--surface-cool 声明为设计定稿值 #f0f2f5\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--surface-cool 声明为设计定稿值 #f0f2f5",
+          "markers": [],
+          "line": 176,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19809,11 +20061,28 @@
           ],
           "title": "body 视觉底换新 --bg 且保留 html/body/#root overflow 锁（Q1 不变量）",
           "markers": [],
-          "line": 175,
+          "line": 180,
           "assertions": [
             "expect(css).toContain('overflow: hidden')",
             "expect(css).toContain('background: var(--bg)')",
             "expect(css).toContain('repeating-linear-gradient(115deg')"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"F-UI-04 顶栏/主区冷雾灰+顶栏文字垂直居中（shell 皮肤住类形态锁）\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "F-UI-04 顶栏/主区冷雾灰+顶栏文字垂直居中（shell 皮肤住类形态锁）",
+          "markers": [],
+          "line": 188,
+          "assertions": [
+            "expect(shellCss, '.app-header 背景应换冷雾灰 token 载体（F-UI-04）').toMatch( /\\.app-header\\s*\\{[^}]*background:\\s*var\\(--surface-cool\\);/ )",
+            "expect(shellCss, '.app-main 规则应在场且背景=冷雾灰（D1 全局挂 main）').toMatch( /\\.app-main\\s*\\{[^}]*background:\\s*var\\(--surface-cool\\);/ )",
+            "expect(shellCss, '.app-header-name 应含 line-height:1（行盒收紧——F-UI-04 勘误：flex-center 下非墨迹位移手段）').toMatch( /\\.app-header-name\\s*\\{[^}]*line-height:\\s*1;/ )",
+            "expect(shellCss, '.app-nav-ver 应补 line-height:1').toMatch(/\\.app-nav-ver\\s*\\{[^}]*line-height:\\s*1;/)",
+            "expect(shellCss, '.app-header-name 应含 translateY(-2px)（P3 对齐整行——用户裁决）').toMatch( /\\.app-header-name\\s*\\{[^}]*transform:\\s*translateY\\(-2px\\);/ )",
+            "expect(shellCss, '.app-nav 应含 height:100%（SplitPane 包裹后自备满高——门二 P1-1）').toMatch( /\\.app-nav\\s*\\{[^}]*height:\\s*100%;/ )"
           ]
         },
         {
@@ -19823,7 +20092,7 @@
           ],
           "title": "primary 静态皮肤在类规则中（CTA：inset 金 hairline a45 + 6px 切角）",
           "markers": [],
-          "line": 193,
+          "line": 235,
           "assertions": [
             "expect(buttonsCss, '.syn-btn-primary 静态类应在场（theme-buttons.css）').toMatch(/\\.syn-btn-primary\\s*\\{/)",
             "expect(buttonsCss, 'inset 金 hairline a45（mockup CTA 静态值——F-CSS-03 token 载体）').toMatch( /\\.syn-btn-primary\\s*\\{[^}]*var\\(--border-gold-a45\\)/ )",
@@ -19837,7 +20106,7 @@
           ],
           "title": "primary hover 提亮 a45→a70 在类规则中",
           "markers": [],
-          "line": 203,
+          "line": 245,
           "assertions": [
             "expect(buttonsCss).toMatch(/\\.syn-btn-primary:not\\(:disabled\\):hover\\s*\\{[^}]*var\\(--gold-bright-a70\\)/)"
           ]
@@ -19849,7 +20118,7 @@
           ],
           "title": "ghost hover 金铜在类规则中",
           "markers": [],
-          "line": 207,
+          "line": 249,
           "assertions": [
             "expect(buttonsCss).toMatch(/\\.syn-btn-ghost:not\\(:disabled\\):hover\\s*\\{[^}]*var\\(--gold\\)/)"
           ]
@@ -19861,7 +20130,7 @@
           ],
           "title": "Button.tsx 不再以变体皮肤内联压类（B1 形态锁）",
           "markers": [],
-          "line": 211,
+          "line": 253,
           "assertions": [
             "expect(tsx, '静态皮肤必须住 theme.css 类（VARIANT_STYLE 内联=hover 静默失效，B1 教训）').not.toContain('VARIANT_STYLE')",
             "expect(tsx, 'boxShadow/clipPath 等皮肤声明不得回流 Button 内联').not.toContain('boxShadow:')",
@@ -19875,7 +20144,7 @@
           ],
           "title": ".app-content-row 缩放声明在场（--ui-scale 变量单源）",
           "markers": [],
-          "line": 229,
+          "line": 271,
           "assertions": [
             "expect(shellCss, '.app-content-row 类应在场（App 内容行——theme-shell.css）').toContain('.app-content-row')",
             "expect( shellCss, 'zoom 值必须经 --ui-scale 变量（非内联）——正则锚定声明形态防注释字样救活' ).toMatch(/\\.app-content-row\\s*\\{[^}]*zoom:\\s*var\\(--ui-scale,\\s*1\\);/)"
@@ -19888,7 +20157,7 @@
           ],
           "title": "[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）",
           "markers": [],
-          "line": 237,
+          "line": 279,
           "assertions": [
             "expect(shellCss, '页列属性选择器三态通配应在场').toContain('[data-page-column]')",
             "expect( shellCss, '补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明' ).toMatch(/\\[data-page-column\\]\\s*\\{[^}]*zoom:\\s*calc\\(1 \\/ var\\(--ui-scale,\\s*1\\)\\);/)"
@@ -19901,7 +20170,7 @@
           ],
           "title": "theme.css 不含 var(--font-display) 消费串与 --gold-night 定义（决5 清零+别名退役）",
           "markers": [],
-          "line": 255,
+          "line": 297,
           "assertions": [
             "expect( css, '衬线展示字消费应清零——五类回继承 UI 字体（token 定义保留，此处只锁消费串）' ).not.toContain('var(--font-display)')",
             "expect(css, '--gold-night: 定义不得复活（别名退役=死代码即删）').not.toContain('--gold-night:')",
@@ -19919,7 +20188,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19931,7 +20200,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19943,7 +20212,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19955,7 +20224,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19967,7 +20236,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19979,7 +20248,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -19991,7 +20260,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20003,7 +20272,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20015,7 +20284,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20027,7 +20296,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20039,7 +20308,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20051,7 +20320,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20063,7 +20332,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20075,7 +20344,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20087,7 +20356,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20099,7 +20368,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20111,7 +20380,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20123,7 +20392,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20135,7 +20404,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20147,7 +20416,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20159,7 +20428,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20171,7 +20440,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20183,7 +20452,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20195,7 +20464,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20207,7 +20476,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20219,7 +20488,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20231,7 +20500,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20243,7 +20512,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20255,7 +20524,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20267,7 +20536,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20279,7 +20548,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20291,7 +20560,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20303,7 +20572,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20315,7 +20584,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20327,7 +20596,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20339,7 +20608,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20351,7 +20620,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20363,7 +20632,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20375,7 +20644,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20387,7 +20656,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20399,7 +20668,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20411,7 +20680,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20423,7 +20692,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20435,7 +20704,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20447,7 +20716,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20459,7 +20728,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20471,7 +20740,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20483,7 +20752,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20495,7 +20764,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 366,
+          "line": 408,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20507,7 +20776,7 @@
           ],
           "title": "主题 CSS 禁 z-index 裸值四档（弹层 z 序收敛到 --z-* token——F-CSS-01 扩四皮肤件）",
           "markers": [],
-          "line": 370,
+          "line": 412,
           "assertions": [
             "expect(css).not.toMatch(/z-index:\\s*(10|20|40|50)\\b/)",
             "expect(shellCss).not.toMatch(/z-index:\\s*(10|20|40|50)\\b/)",
@@ -20523,7 +20792,7 @@
           ],
           "title": "弹层九 tsx 禁 z-(10|20|40|50) 裸值 class（v4 变量简写形态锁）",
           "markers": [],
-          "line": 378,
+          "line": 420,
           "assertions": [
             "expect(POPUP_TSX).not.toMatch(/\\bz-(10|20|40|50)\\b/)"
           ]
@@ -20535,7 +20804,7 @@
           ],
           "title": "弹层九 tsx 禁 z-[数字] arbitrary class（回炉 W2：弹层 z 必须消费 --z-* 变量）",
           "markers": [],
-          "line": 382,
+          "line": 424,
           "assertions": [
             "expect(POPUP_TSX).not.toMatch(/\\bz-\\[\\d+\\]/)"
           ]
@@ -20547,7 +20816,7 @@
           ],
           "title": "七 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3 全禁+F-CSS-01 扩四皮肤件）",
           "markers": [],
-          "line": 386,
+          "line": 428,
           "assertions": [
             "expect(css).not.toMatch(MS_DECL)",
             "expect(wsCss).not.toMatch(MS_DECL)",
@@ -20565,7 +20834,7 @@
           ],
           "title": "lineage 六件禁数值间距属性（inline 间距清扫到 tailwind class）",
           "markers": [],
-          "line": 402,
+          "line": 444,
           "assertions": [
             "expect(LINEAGE_SPACING_TSX).not.toMatch( /(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*['\"`]?[\\d-]/ )"
           ]
@@ -20577,7 +20846,7 @@
           ],
           "title": "lineage 六件禁数值间距属性——双引号/模板串形态单证（W1 鉴别锚）",
           "markers": [],
-          "line": 409,
+          "line": 451,
           "assertions": [
             "expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*\"[\\d-]/)",
             "expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*`[\\d-]/)"
@@ -20590,7 +20859,7 @@
           ],
           "title": "LineageNodeCard 间距 class 在场（pt-2/gap-1——防「全删不补」假绿）",
           "markers": [],
-          "line": 415,
+          "line": 457,
           "assertions": [
             "expect(card).toContain('className=\"pt-2\"')",
             "expect(card).toContain('className=\"gap-1\"')"
@@ -20603,7 +20872,7 @@
           ],
           "title": "LineageNodeMeta 间距 class 在场（px-1/gap-0.75/px-0.75/pl-1）",
           "markers": [],
-          "line": 421,
+          "line": 463,
           "assertions": [
             "expect(meta).toContain('className=\"px-1\"')",
             "expect(meta).toContain('className=\"gap-0.75 px-0.75\"')",
@@ -20617,7 +20886,7 @@
           ],
           "title": "侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）",
           "markers": [],
-          "line": 428,
+          "line": 470,
           "assertions": [
             "expect(tags).toContain('m-0 pl-1.5 font-medium')",
             "expect(tags).toContain('className=\"gap-0.75 px-1\"')",
@@ -20633,7 +20902,7 @@
           ],
           "title": "theme.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20645,7 +20914,7 @@
           ],
           "title": "theme-shell.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20657,7 +20926,7 @@
           ],
           "title": "theme-buttons.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20669,7 +20938,7 @@
           ],
           "title": "theme-reader.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20681,7 +20950,7 @@
           ],
           "title": "theme-lineage.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20693,7 +20962,7 @@
           ],
           "title": "library.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20705,7 +20974,7 @@
           ],
           "title": "workspace.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 490,
+          "line": 532,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -20717,7 +20986,7 @@
           ],
           "title": "四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）",
           "markers": [],
-          "line": 495,
+          "line": 537,
           "assertions": [
             "expect(FS_TSX, '票面明文形态：单引号数字开头').not.toContain(\"fontSize: '1\")",
             "expect(FS_TSX, '数值 fontSize 全形态（含无引号数字——SideTags fontSize: 11 形态）') .not.toMatch(/fontSize:\\s*['\"`]?\\d/)"
@@ -20730,7 +20999,7 @@
           ],
           "title": "四 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）",
           "markers": [],
-          "line": 501,
+          "line": 543,
           "assertions": [
             "expect(FS_TSX, '票面明文形态：text-[10 前缀').not.toContain('text-[10')",
             "expect(FS_TSX, '数字开头 arbitrary（# 开头色值不咬）').not.toMatch(/text-\\[\\d/)"
@@ -20743,7 +21012,7 @@
           ],
           "title": "@theme 重绑在场（tailwind text-xs/text-sm 并入 --fs-* 单源——漂移即红）",
           "markers": [],
-          "line": 506,
+          "line": 548,
           "assertions": [
             "expect(css).toContain('--text-xs: var(--fs-body)')",
             "expect(css).toContain('--text-sm: var(--fs-title)')"
@@ -20911,6 +21180,153 @@
           "assertions": [
             "expect(values.at(-1)).toBe('abc')",
             "expect(values).not.toContain('ab')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/visual-snap-shortcut.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）\",\"非 textLayer 边界→null（closest 上溯守卫——无深度常量）\"]",
+          "describePath": [
+            "F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）"
+          ],
+          "title": "非 textLayer 边界→null（closest 上溯守卫——无深度常量）",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(snapVisualBoundary(rootEl, 1, 'focus')).toBeNull()",
+            "expect(snapVisualBoundary(s1.firstChild!, 2, 'focus')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）\",\"探测空（文本位在非空白 span 内）→null+调用方 fallback 原始边界（空守卫——禁非空断言）\"]",
+          "describePath": [
+            "F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）"
+          ],
+          "title": "探测空（文本位在非空白 span 内）→null+调用方 fallback 原始边界（空守卫——禁非空断言）",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(snap).toBeNull()",
+            "expect(snap ?? { node: s1.firstChild!, offset: 2 }).toEqual({ node: s1.firstChild!, offset: 2 })"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）\",\"末行下方命中→吸附末行行尾，对拍 rowEndOf 一致（行尾语义唯一源；br 槽位+纯空白 span 文本位双形态）\"]",
+          "describePath": [
+            "F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）"
+          ],
+          "title": "末行下方命中→吸附末行行尾，对拍 rowEndOf 一致（行尾语义唯一源；br 槽位+纯空白 span 文本位双形态）",
+          "markers": [],
+          "line": 149,
+          "assertions": [
+            "expect(got).not.toBeNull()",
+            "expect(got!.node).toBe(s2.firstChild)",
+            "expect(got!.offset).toBe('CD second'.length)",
+            "expect(got).toEqual(rowEndOf(lastRow, boxOf(br3)!))",
+            "expect(got2).toEqual(rowEndOf(lastRow, boxOf(e4)!))"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）\",\"主路径（修正 11 守卫假路径回归锁）：textLayer 内+未越末行+探测非空→不吸附走原边界（页中标记归 mouseup 全量 snapBlankBoundary 语义面）\"]",
+          "describePath": [
+            "F-RDR-01 A 路径：snapVisualBoundary（末行下方视觉吸附）"
+          ],
+          "title": "主路径（修正 11 守卫假路径回归锁）：textLayer 内+未越末行+探测非空→不吸附走原边界（页中标记归 mouseup 全量 snapBlankBoundary 语义面）",
+          "markers": [],
+          "line": 169,
+          "assertions": [
+            "expect(snap).toBeNull()",
+            "expect(snap ?? { node: textLayer, offset: 1 }).toEqual({ node: textLayer, offset: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 B 路径：S5 短路（module-level TTL 窗）\",\"TTL 窗内（99ms/100ms 两点——<=100 边界含）→shouldSkipVisual 恒 true（S5 冗余重绘丢弃）\"]",
+          "describePath": [
+            "F-RDR-01 B 路径：S5 短路（module-level TTL 窗）"
+          ],
+          "title": "TTL 窗内（99ms/100ms 两点——<=100 边界含）→shouldSkipVisual 恒 true（S5 冗余重绘丢弃）",
+          "markers": [],
+          "line": 186,
+          "assertions": [
+            "expect(shouldSkipVisual()).toBe(true)",
+            "expect(shouldSkipVisual()).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 B 路径：S5 短路（module-level TTL 窗）\",\"TTL 过期（101ms）→shouldSkipVisual false（窗口兜底释放）\"]",
+          "describePath": [
+            "F-RDR-01 B 路径：S5 短路（module-level TTL 窗）"
+          ],
+          "title": "TTL 过期（101ms）→shouldSkipVisual false（窗口兜底释放）",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(shouldSkipVisual()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 B 路径：S5 短路（module-level TTL 窗）\",\"mousedown 清（SelectionLayer 接线态）：mark 后窗口内→真 mousedown→硬释放（新拖选会话）\"]",
+          "describePath": [
+            "F-RDR-01 B 路径：S5 短路（module-level TTL 窗）"
+          ],
+          "title": "mousedown 清（SelectionLayer 接线态）：mark 后窗口内→真 mousedown→硬释放（新拖选会话）",
+          "markers": [],
+          "line": 204,
+          "assertions": [
+            "expect(shouldSkipVisual()).toBe(true)",
+            "expect(shouldSkipVisual()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）\",\"纯反向（异节点：anchor 晚于 focus）→ docOrderPair 映回文档序 [早,晚]\"]",
+          "describePath": [
+            "F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）"
+          ],
+          "title": "纯反向（异节点：anchor 晚于 focus）→ docOrderPair 映回文档序 [早,晚]",
+          "markers": [],
+          "line": 247,
+          "assertions": [
+            "expect(st.node).toBe(s1.firstChild)",
+            "expect(st.offset).toBe(0)",
+            "expect(en.node).toBe(s2.firstChild)",
+            "expect(en.offset).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）\",\"包含形态（元素槽位边界 vs 其后代文本）→ 槽位语义精确比较非节点树序（W-4③修复判别锚）\"]",
+          "describePath": [
+            "F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）"
+          ],
+          "title": "包含形态（元素槽位边界 vs 其后代文本）→ 槽位语义精确比较非节点树序（W-4③修复判别锚）",
+          "markers": [],
+          "line": 261,
+          "assertions": [
+            "expect(st.node).toBe(s1.firstChild)",
+            "expect(st.offset).toBe(0)",
+            "expect(en.node).toBe(rootEl)",
+            "expect(en.offset).toBe(1)",
+            "expect(st2.node).toBe(rootEl)",
+            "expect(st2.offset).toBe(1)",
+            "expect(en2.node).toBe(s2.firstChild)",
+            "expect(en2.offset).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）\",\"visual 吸附路径反向选区（anchor=末行标记槽[晚]、focus=首行文本[早]）→ 快路径 probe 端点序正确+项几何产物\"]",
+          "describePath": [
+            "F-RDR-01 W-4 回炉：反向选区端点序（docOrderPair[门一回炉轮 1]）"
+          ],
+          "title": "visual 吸附路径反向选区（anchor=末行标记槽[晚]、focus=首行文本[早]）→ 快路径 probe 端点序正确+项几何产物",
+          "markers": [],
+          "line": 281,
+          "assertions": [
+            "expect(rect).not.toBeNull()",
+            "expect(parseFloat(rect!.style.top)).toBeCloseTo((84 / 792) * 100, 2)"
           ]
         }
       ]
@@ -25907,14 +26323,14 @@
     }
   },
   "stats": {
-    "fileCount": 183,
-    "caseCount": 1768,
-    "assertionCount": 5368,
-    "skipSiteCount": 14,
+    "fileCount": 189,
+    "caseCount": 1794,
+    "assertionCount": 5463,
+    "skipSiteCount": 15,
     "conditionalSkipSiteCount": 14,
-    "hardSkipSiteCount": 0,
+    "hardSkipSiteCount": 1,
     "ticketIdCount": 57,
-    "eachExpandedRows": 261,
+    "eachExpandedRows": 262,
     "unresolvableCount": 0
   }
 }

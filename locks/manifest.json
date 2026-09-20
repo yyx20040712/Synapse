@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-20T10:08:58.5541261Z",
+    "generatedAt":  "2026-09-20T12:09:50.2629396Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "72fe85d81968cdd2397fcd37eb3c293cfa89e07ac44e8053c9d36a793bf9ed82"
+                      "sha256":  "3535322c8595a76e4f50fc94d186b22894ed4e88957d449d3706b9aee6ebcd54"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "c1106a882f2eb886d8ed8422b936289f4ad8d7fc8082de6112baf4bb5f7c0522"
+                      "sha256":  "fb80654bb4e71763b3e6a50fadbf7b58f87cbca08cd39be55cb5edd6ee847ff4"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -284,6 +284,10 @@
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
+                  },
+                  {
+                      "path":  "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts",
+                      "sha256":  "c8087b348ffdaf3da25431f42855db1f060f4aaa53187f8f929a4eb90e82d290"
                   },
                   {
                       "path":  "tests/e2e/z-f-rdr02-repro-probe.spec.ts",
@@ -784,6 +788,10 @@
                   {
                       "path":  "tests/unit/renderer/useDebounce.test.tsx",
                       "sha256":  "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/visual-snap-shortcut.test.tsx",
+                      "sha256":  "411b3e79ec3da90641c6e3af8842020ed747ba2fd51cf8752ef8766184be25db"
                   },
                   {
                       "path":  "tests/unit/renderer/workspace.store.test.ts",
