@@ -22,6 +22,10 @@
   --bg: #f6f4ee;
   --panel: #ffffff;
   --panel-glass: rgba(255, 255, 255, 0.72);
+  /* 顶栏/主区背景冷雾灰（F-UI-04——用户 2026-09-20 反馈 P4 图四取样；D1=全局挂
+     main 外围统一冷雾灰，消费=theme-shell.css .app-header/.app-main；--panel/--bg
+     值不动；详情栏 .lib-detail-aside 保持纯白[D2]） */
+  --surface-cool: #f0f2f5;
   --border: #e4ded1;
   --border-gold: #c9a86a;
   --text: #23262d;

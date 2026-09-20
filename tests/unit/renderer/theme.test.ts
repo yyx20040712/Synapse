@@ -164,7 +164,12 @@ const TOKENS: Array<[string, string]> = [
   ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
   ['--shadow-page', '0 1px 4px rgba(0, 0, 0, 0.12)'],
   ['--shadow-pop-sm', '0 2px 8px rgba(0, 0, 0, 0.15)'],
-  ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)']
+  ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)'],
+  // ── F-UI-04 顶栏/主区背景冷雾灰（2026-09-20 用户反馈 P4——设计文档
+  //    2026-09-20_reader-ui-feedback-survey-and-plan.md §2.4/D1；消费面=
+  //    theme-shell.css .app-header/.app-main[App.tsx main 挂类]；--panel/
+  //    --bg 值不动[上方双正锚+e2e reader-text.spec 值锁在档]）──
+  ['--surface-cool', '#f0f2f5']
 ]
 
 describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
@@ -178,6 +183,36 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(css).toContain('overflow: hidden')
     expect(css).toContain('background: var(--bg)')
     expect(css).toContain('repeating-linear-gradient(115deg')
+  })
+
+  it('F-UI-04 顶栏/主区冷雾灰+顶栏文字垂直居中（shell 皮肤住类形态锁）', () => {
+    // 值面由 TOKENS --surface-cool 正锚独立锁定（值漂移即红），此处锁
+    // 「皮肤住类」形态（B1 先例）：D1=冷雾灰全局挂 main 外围（App.tsx
+    // main 消费 .app-main 类，禁内联色 eslint B-5）；D2=详情栏 .lib-detail-aside
+    // 保持纯白不在此锁面；line-height:1=行盒收紧（F-UI-04 勘误：侦察「墨迹
+    // 偏上」经像素探针 V3+截图判读证伪——实测偏下 2px，P3 修正载体=translateY）；
+    // .app-header 段 height 56px/-webkit-app-region
+    // 计数锁另驻 window-control.test/smoke.spec，不在此重复
+    expect(shellCss, '.app-header 背景应换冷雾灰 token 载体（F-UI-04）').toMatch(
+      /\.app-header\s*\{[^}]*background:\s*var\(--surface-cool\);/
+    )
+    expect(shellCss, '.app-main 规则应在场且背景=冷雾灰（D1 全局挂 main）').toMatch(
+      /\.app-main\s*\{[^}]*background:\s*var\(--surface-cool\);/
+    )
+    expect(shellCss, '.app-header-name 应含 line-height:1（行盒收紧——F-UI-04 勘误：flex-center 下非墨迹位移手段）').toMatch(
+      /\.app-header-name\s*\{[^}]*line-height:\s*1;/
+    )
+    expect(shellCss, '.app-nav-ver 应补 line-height:1').toMatch(/\.app-nav-ver\s*\{[^}]*line-height:\s*1;/)
+    // [F-UI-04] P3 translateY 微调已撤（回炉 2）：V1 探针 alpha 判定在不透明截图
+    // 上恒真退化为盒中心（-0.79/-0.82 实为盒量测误差）；V3 亮度判定+扩 clip
+    // 复测（含 y 降部）证 Synapse 墨迹中心相对 logo 金线 +2.4px 偏下——侦察
+    // 「偏上」叙事证伪，修正方向反转，终值呈用户裁决（零视觉决策承担）
+    // [F-UI-04 P3 终值] 用户裁决 2026-09-20「先对齐整行，后面我再反馈调整」：
+    // Synapse 墨迹中心 29.6→对齐整行基线 27.6（logo 盒中心/v0.1/切换器实测同
+    // 线）——translateY(-2px) 仅 .app-header-name（v0.1 实测 0 差齐平不动）
+    expect(shellCss, '.app-header-name 应含 translateY(-2px)（P3 对齐整行——用户裁决）').toMatch(
+      /\.app-header-name\s*\{[^}]*transform:\s*translateY\(-2px\);/
+    )
   })
 })
 
