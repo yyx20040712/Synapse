@@ -7,6 +7,39 @@
 > 证据基准：HEAD=50688c969ac（增补十五）；六张截图取证存档
 > E:/zcode_md/synapse-archive/scripts-audits/（ele03-visual 反馈件）。
 
+## 0. 架构约束与防连锁面（执行前置必读——「牵一发动全身」的防线）
+
+**权威单源指针**：docs/architecture.md（分层/实体/ADR 索引）+ AGENTS.md 硬规则 +
+docs/invariants.md（跨模块不变量册——改行为前查 INV）。本节只列本批直接相关的
+防连锁事实，不复述全架构。
+
+**三支柱速览**（本批每票都踩）：
+1. **分层单向+token 单源**：app 壳（App.tsx+theme-shell.css）→ features
+   （reader/library/…）→ shared/ui（通用件，无 feature 依赖）→ theme token
+   （theme.css :root+分域 css：theme-shell/-reader/-buttons/-lineage/library.css）。
+   CSS 非定义行禁颜色字面量（check-quality C-4）、var 必须有 :root 定义（C-4c）、
+   tsx 禁内联色（eslint B-5）——**一切换色/新色必须走 token，禁裸值**。
+2. **测试=锁定合约**：tests/** sha256 锁（locks/manifest 244 条）——任何断言改动
+   走 unlock→改→apply [locked-change] 单链；test-surface 指纹门基线
+   183·1768·5368·skip14，收紧/新增须豁免登记或基线重冻结。
+3. **z 序封闭**：阅读器页盒四层 z 封闭（page-layer-z.ts:20-29）+ 全局面板 z 表
+   （--z-anchor-pop 20/Dialog 50 等）——新增浮层控件先对表。
+
+**每票爆炸半径表**：
+
+| 票 | 触碰面 | 禁触面（红线） | 连锁敏感点 |
+| --- | --- | --- | --- |
+| F-UI-01 | theme.css(+1 token)/theme-shell.css(2 选择器+bg)/library.css 或 LibraryPage.tsx | **--panel/--bg 值禁改**（全域消费：卡片/弹层/页盒+e2e reader-text:641/:646 值锁+全域视觉漂移）；header 高度 56 禁动（smoke.spec:155）；theme-shell.css 的 -webkit-app-region 字样计数锁（window-control.test:185-193） | 新 token 须 theme.test TOKENS 正锚同笔；.lib-detail-aside/.lib-card 渐变与新底的视觉平衡（决策 D2） |
+| F-UI-03 | App.tsx/SplitPane.tsx/theme-shell.css（nav 窄态类） | SplitPane 既有 reader-outline 消费契约（11 用例锁）——**扩展必须向后兼容**（新 prop 缺省=旧行为零漂移）；app-shell.test 品牌行负锚（:157-161） | split-pane.test 新形态用例 TDD 先行；持久化键 paneId=app-nav 勿与 reader-outline 冲突；深色底上手柄可见性 |
+| F-UI-02 | ReaderToolbar.tsx/OutlineAside.tsx/theme-reader.css | 既有 aria-pressed+borderColor 断言**不得删**（叠加式强化，double-page:426-437/selection-mode:306-323）；颜色点组不动 | sr-only 手法保 textContent 断言（App.tsx:33 先例）；图标=内联 SVG 常量禁新依赖；--accent 族复用勿造新色 |
+| F-RDR-02 | AnnotationEditor.tsx（isComposing 守卫） | 值栈状态机 use-annotation-draft 16 用例锁面不动 | 守卫须过既有 IME 用例（annotation-editor-ux:115-378）；再聚焦策略涉交互语义（决策 D6） |
+| F-RDR-01 | selection 家族 5-6 文件 | **text-layer.css 禁改**（官方 pdf_viewer.css 逐字提取面，头注 :2-10）；**C3 200ms 值禁轻动**（受锁逐字 199/200ms，改动=行为语义变化须显式裁决）；::selection transparent 勿动（F-A4 自绘层根基） | 快慢等价断言（selection-evaluate:152）+marker 边界新夹具=指纹门收紧面（豁免/基线纪律）；设计先行走三段通道（拟定→审核→终裁） |
+
+**跨票连锁敏感清单**：--accent #2c5f8a 族消费点散布（focus/active 态语言多文件——
+新图标 active 态复用 token）；`reader-aside` testid 消费方跨 3 个 e2e spec
+（reader-text/ai-notes-section/lineage）；localStorage 键前缀 `synapse:splitpane:*`；
+R2-SH2/R3-TH1 的顶栏与墨青侧栏为既定设计案（本批在其上修补，不推翻）。
+
 ## 1. 问题总表
 
 | # | 现象（用户口径） | 根因落位 | 类型 | 建议票 | 优先级 |
@@ -33,11 +66,17 @@ use-annotation-draft.ts（值栈状态机）+AnnotationPopups.tsx（busy 接线�
 1. **焦点丢失→全局快捷键吞键**：焦点一旦离开 textarea，方向键/空格被
    ReaderShortcuts.ts:97-104 preventDefault 消费成滚动、ctrl+z 触发全局撤销——
    表象=「打字没反应」。autofocus 仅挂载时一次（AnnotationEditor.tsx:33-35），
-   无再聚焦机制。
+   无再聚焦机制。**〔2026-09-20 用户症状更正：「连输入光标都点不上」——与
+   本假设不吻合（若焦点被抢，点击输入框即可恢复光标）；更指向点击被拦截层
+   接走/弹层定位或挂载态异常。复现审计票升级：事件层取证（点击时
+   event.target 实际落点）入复现场景清单。〕**
 2. **IME 键穿越**：onKeyDown（:63-83）未查 `e.nativeEvent.isComposing`——组词期
    Escape/ctrl+z 类按键会关弹层/打断组词（偶发性质吻合）。
 3. **弹层定位溢出**：left 上限 55%+top calc（:43-44）——标注靠页底时弹层可能在
    视口内不可见处（体感「无法输入」实为看不见）。
+4. **（新增候选，随症状更正）点击拦截**：某透明层瞬时接走了 textarea 上的
+   pointer 事件（侦察静态排除常驻遮挡，但瞬时态——如选择模式切换瞬间的
+   useLayoutEffect 竞态/Toast 重排——需运行时取证）。
 
 **方案**：①确定性小修=onKeyDown 补 `isComposing` 守卫（几行，随 F-UI 批顺带或
 独立微票）；②复现审计=新会话按三候选场景各复现（点页面后打字/中文输入法组词期
@@ -171,6 +210,18 @@ pageLayout 三元切换。颜色点组不动（已是图形）。
 - 参考件：官方 viewer 的 endOfContent 机制（text-layer.css:103-116 现为死代码未接线）
   ——「拖出文本区底部」的官方补救思路可借鉴。
 
+**双路缘起注（2026-09-20 用户问「为什么会出现两条渲染路线」——汇报落档）**：
+selectionchange 在拖选中是高频事件（每帧级），若每次都跑全量语义管线（DOM 槽位
+探测归一化+锚定序列化+跨页 items 对账+G2 健康门），拖选会掉帧不跟手——故设计上
+把「视觉反馈」与「语义定稿」拆为两路：**快路径**（rAF ≤16ms，原始边界直取高亮
+几何，只求跟手）与**慢路径**（settle 200ms 防抖/mouseup 同步，跑完整管线产出
+保存用锚定与工具条）。快慢分工是乐观渲染+权威收敛的常见形态，且有受锁「快慢
+等价」断言（selection-evaluate.test:152）保证两路同产出。**缺陷正在等价性断言的
+夹具盲区**：空白标记槽位（DOM 序≠视觉序）恰好是两路设计上不同步的输入——快路径
+明确豁免归一化（anchor-blank-snap.ts:42-44 头注明文），设计假设「瞬态错一下没关系，
+松手/停顿后全量吸收」；成本考量是归一化需 DOM 查询不宜入帧。用户实测证明该边缘
+case（INV-58 在档「已知边界」）感知代价高，故立票。
+
 **涉及面（重受锁）**：SelectionLayer.tsx/selection-geometry.ts/selection-evaluate.ts/
 anchor-serialize.ts/anchor-blank-snap.ts/release-affinity.ts + selection-* 家族受锁测试
 （selection-geometry 4/selection-layer 12/fa12 3/release-affinity 14/anchor-blank-snap
@@ -200,6 +251,21 @@ verify EXIT=0 基线（167/1724/locks 244/指纹门 183·1768·5368·skip14/open
 2. P2 对象已更正为应用级 `.app-nav`（墨青侧栏本体=蓝；184px 固定无机制）——复核
    落位：App.tsx:177/theme-shell.css:131-139，并核 SplitPane 折叠语义扩展设计稿
    （窄条形态为新增能力，split-pane.test 新用例先行）；
-3. P1 三场景复现（焦点丢失打字/IME 组词期 Esc/页底标注弹层可见性）；
+3. P1 四场景复现（焦点丢失打字/IME 组词期 Esc/页底标注弹层可见性/**点击不上
+   光标时的事件层取证——console 记录 event.target 实际落点**）；
 4. P7 现象复现录证（空白区下拖时序，验 H1/H2 时间线）；
-5. 六图截图与本文档现象描述一致性核对（图档仓外 ele03-visual*）。
+5. 六图截图与本文档现象描述一致性核对（图档仓外 ele03-visual*）；
+6. §5 决策记录八项视为已裁——直接执行，不再重启决策（除实施默认值 D4 验收微调）。
+
+## 5. 决策记录（2026-09-20 用户在场轮八项已裁——执行会话零决策负债）
+
+| # | 决策点 | 用户裁决 | 执行要点 |
+| --- | --- | --- | --- |
+| D1 | 文献栏冷雾灰挂法 | **全局挂 main**（App.tsx:192） | 所有视图外围（含阅读器画布外围）统一冷雾灰；--bg token 值不动（body 值锁 e2e:646 保绿），灰走新 token 挂 main 层 |
+| D2 | 右侧详情栏连带 | **保持纯白**（--panel 不动） | 与新灰底形成层次对比 |
+| D3 | 导航栏收起形态 | **图标窄条**（collapsedWidth ≈64px） | SplitPane 扩展窄条折叠模式，收起后图标常驻可切视图 |
+| D4 | 宽度档位 | （随 D3 隐含）折叠宽 ≈64 / 拖拽 max 280 | 实施默认值，验收轮可微调 |
+| D5 | 窄条态尾行文案 | **隐藏** | 「本地学术文献管理」窄态不显示 |
+| D6 | 笔记弹窗失焦恢复 | 症状更正后**仍按推荐**（点击弹层任意处重聚焦） | 「连光标都点不上」≠焦点被抢（更正记录见 §2.1）；重聚焦为无害缓解，复现审计票升级+事件层取证入场景 |
+| D7 | 图标风格 | **沿用既有**（24×24 单色描边简笔画） | NAV_ICONS/TitleBarControls 同源，stroke=currentColor |
+| D8 | 选区修复路线 | **三段设计链**（Kimi 拟定→deepseek 审核→主控终裁→三屋实施） | 双路成因汇报已落 §2.6 缘起注 |
