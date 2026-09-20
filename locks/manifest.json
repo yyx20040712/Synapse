@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-20T04:02:51.8973774Z",
+    "generatedAt":  "2026-09-20T04:22:36.7344166Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -680,6 +680,10 @@
                   {
                       "path":  "tests/unit/renderer/reader-store-undo-race.test.ts",
                       "sha256":  "7681a26e96a22e75dd5fc99fe48639ccd33c3927e493e51581e64335a028eaf9"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-toolbar-icons.test.tsx",
+                      "sha256":  "df39d4d307255d7417bbe1720892b2913608911d2501ac8aa0adc55b15d25187"
                   },
                   {
                       "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
