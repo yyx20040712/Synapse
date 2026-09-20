@@ -12,7 +12,7 @@
 | # | 现象（用户口径） | 根因落位 | 类型 | 建议票 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
 | P1 | 笔记编辑器曾「无法输入笔记内容」（**复测已好，疑似偶发**） | 三候选路径排序见 §2.1 | 疑似缺陷 | F-RDR-02 | 中（先复现审计） |
-| P2 | 「蓝色边界」希望可拖动调距离+增加收起图标 | **拖宽已存在**（SplitPane）；蓝=手柄 focus 圈/输入框聚焦色；缺收起图标+collapsible 未启用 | 增强+现状澄清 | F-UI-03 | 高（缺口小体感大） |
+| P2 | **最左侧应用导航栏（墨青蓝侧栏）**边界可拖宽+增加收起图标（用户更正 2026-09-20：既有可拖宽的阅读器笔记栏不在此列） | `.app-nav` 宽度固定 184px 无调节机制；「蓝」=墨青渐变侧栏本体 | 增强 | F-UI-03 | 高 |
 | P3 | 上边栏文字下移一段居中 | 无 line-height→继承 preflight 1.5，墨迹重心偏上 | 缺陷（视觉） | F-UI-01 | 高（一行级修法） |
 | P4 | 上边栏背景白+文献栏背景白→改图四冷雾灰（≈#F0F2F5） | 现值 --panel #ffffff/--bg #f6f4ee；**无既有近似 token，需新增** | 增强 | F-UI-01 | 高 |
 | P5 | 工具栏文字→简笔画图标+悬停汉语；选择模式常亮；单页双页图标变化反馈 | 9 文字控件；active 态已有但弱（aria-pressed+边框） | 增强 | F-UI-02 | 高 |
@@ -47,31 +47,38 @@ use-annotation-draft.ts（值栈状态机）+AnnotationPopups.tsx（busy 接线�
 **涉及面**：AnnotationEditor.tsx（+受锁测试 annotation-editor-ux.test 16 用例、
 annotation-popups-autosave 4、e2e reader-text.spec:176-216 真机打字面）。
 
-### 2.2 P2 「蓝色边界」可拖宽+收起图标（F-UI-03）
+### 2.2 P2 最左侧应用导航栏边界可调+收起图标（F-UI-03）【2026-09-20 用户更正确正对象】
 
-**现状澄清（重要）**：该面板=阅读器左侧栏 OutlineAside（目录/缩略图/笔记三 tab，
-ReaderPageView.tsx:139-154 组装）。**宽度拖拽+持久化+键盘微调已存在**——
-`<SplitPane paneId="reader-outline" defaultWidth={224} min={160} max={480}>`
-（shared/ui/SplitPane.tsx：拖拽会话 :100-139、键盘 ±8px :141-153、localStorage 持久
-:52-97）。用户未发现=**手柄仅 4px 宽且无视觉提示**。
+**对象更正**：用户澄清「已有的侧栏拓宽是笔记栏（阅读器内 OutlineAside，SplitPane
+已支持），我说的是**最左侧蓝色侧栏**」——即应用级左侧导航栏。侦察初版误判为
+OutlineAside/focus 圈，作废；下为更正后落位。
 
-**「蓝色」归属（两候选，复核时确认）**：①手柄 `tabIndex={0}`（:170）点击聚焦后
-Chromium 默认蓝色 focus outline（全仓 outline:none 仅 .syn-input:focus）；②笔记
-tab 输入框聚焦 `.syn-input:focus { border-color: var(--accent) }`（theme-reader.css
-:56-60，--accent=#2c5f8a 蓝）。
+**现状**：`App.tsx:177` `<nav className="app-nav">`（nav 项=图标+文案的视图切换
+文献库/阅读器/脉络/设置 + 尾行「本地学术文献管理」）；`theme-shell.css:131-139`
+**`width: 184px` 固定**、flex:none、无任何调节/收起机制；「蓝色」真相=**墨青渐变
+侧栏本体**（`background: linear-gradient(180deg, var(--ink), var(--ink-deep))`，
+R3-TH1 墨青侧栏——App.tsx:175 注释在档），边界即其右缘与浅色内容区的接缝。
 
-**缺口与方案**：
-- SplitPane `collapsible` prop 已实现（双击折叠 :178-182）但 **ReaderPageView 未传**
-  →接线启用；
-- 手柄加**收起/展开图标**+加宽热区（视觉仍是细线，热区 ≥12px）；
-- focus 圈定制（消默认蓝 outline，换 token 化 focus 样式）；
-- 可发现性：手柄 title 已有（「拖拽调宽；双击折叠/展开」）+图标常显。
-- 现行「收起」文字按钮（OutlineAside.tsx:129-136）→图标化（并入 F-UI-02 手法）。
+**方案（复用+扩展 shared/ui/SplitPane）**：
+1. App.tsx 将 `<nav className="app-nav">` 包入
+   `<SplitPane paneId="app-nav" side="left" defaultWidth={184} min={?} max={?}>`
+   ——拖拽/键盘/持久化三件免费获得（SplitPane.tsx:100-153，通用件无 feature 依赖）；
+2. **SplitPane 扩展（本票主要工作量）**：现 collapsible 折叠语义不适配导航场景
+   ——需增加「窄条折叠」形态（如 `collapsedWidth` prop：折叠到仅图标宽度而非 0）；
+   窄态下 nav 项文案与尾行 `app-nav-txt` 的显隐（CSS 类切换）；
+3. **收起图标**：nav 头部/手柄上的折叠-展开切换按钮（双向）；
+4. 手柄视觉在深色墨青底上的适配（现有金渐隐线应可直用，focus 样式 token 化）。
 
-**涉及面**：ReaderPageView.tsx/SplitPane.tsx/OutlineAside.tsx/ReaderPage.tsx；
-受锁：split-pane.test（11 用例）、outline-aside.test（4）、e2e reader-text.spec
-:488-514（拖拽集成）/​:550-598、ai-notes-section.spec:53,186、lineage.spec:470
-（经 reader-aside testid 切 tab——改结构需复核）。
+**决策点（呈用户）**：①折叠形态=图标窄条（推荐——导航常驻可达）vs 完全隐藏+
+边缘浮出把手；②min/max 宽度档位（建议 min=折叠宽 ~64/max=280）；③窄态下尾行
+文案处置（隐藏 vs 悬停展开）。
+
+**涉及面**：App.tsx/SplitPane.tsx/theme-shell.css（nav 窄态类）；受锁：
+split-pane.test（11 用例+新形态用例）、app-shell.test（:126-128 按可访问名查询
+navButton+active 类——包层不破；:157-161 品牌行负锚不动）、theme.test（CSS 材质
+包含式断言——追加规则安全）；e2e 侧 nav 入口若按结构选择器需复核（smoke.spec
+:108 Synapse 可见等按名断言为主）。
+（旁注：阅读器笔记栏 OutlineAside 的既有拖宽+持久化维持现状，不属本票。）
 
 ### 2.3 P3 顶栏文字垂直居中（F-UI-01）
 
@@ -177,7 +184,7 @@ pdf_viewer.css 逐字提取面（头注 :2-10）——**禁改**，补救走自�
 | 序 | 票 | 面 | 量级 | 前置 |
 | --- | --- | --- | --- | --- |
 | 1 | F-UI-01 顶栏居中+背景灰（P3+P4） | 纯 CSS+1 新 token+2 处消费 | 小 | 决策点 2（文献栏挂法/详情栏连带）呈用户 |
-| 2 | F-UI-03 侧栏收起图标+collapsible+手柄可发现性+focus 圈（P2） | 3-4 文件 | 小中 | 「拖宽已存在」向用户澄清；蓝边界归属复核 |
+| 2 | F-UI-03 应用导航栏可调宽+窄条折叠+收起图标（P2，**对象经用户更正=.app-nav**） | 3 文件+SplitPane 扩展 | 中 | 决策点 3（折叠形态/宽度档/尾行处置）呈用户 |
 | 3 | F-UI-02 工具栏+标签页图标化+反馈强化（P5+P6） | 2-3 文件 | 中 | sr-only 手法（零测试改造路径） |
 | 4 | F-RDR-02 笔记输入三场景复现审计+isComposing 确定性小修（P1） | 1 文件+审计 | 小 | 复现结论决定深修立项否 |
 | 5 | F-RDR-01 选区闪烁修复（P7） | 5-6 文件+重受锁测试面 | 中大 | 设计决策（方案 A/B/组合）先行，建议 Kimi 拟定→deepseek 审核→主控终裁路线 |
@@ -190,7 +197,9 @@ verify EXIT=0 基线（167/1724/locks 244/指纹门 183·1768·5368·skip14/open
 
 1. 本文档根因逐项抽核（每项「文件:行」至少验一处）——侦察为只读子代理产物，
    承诺态非落地态；
-2. P2 蓝边界归属实测（点击手柄观察 focus 圈 vs 输入框聚焦色）；
+2. P2 对象已更正为应用级 `.app-nav`（墨青侧栏本体=蓝；184px 固定无机制）——复核
+   落位：App.tsx:177/theme-shell.css:131-139，并核 SplitPane 折叠语义扩展设计稿
+   （窄条形态为新增能力，split-pane.test 新用例先行）；
 3. P1 三场景复现（焦点丢失打字/IME 组词期 Esc/页底标注弹层可见性）；
 4. P7 现象复现录证（空白区下拖时序，验 H1/H2 时间线）；
 5. 六图截图与本文档现象描述一致性核对（图档仓外 ele03-visual*）。
