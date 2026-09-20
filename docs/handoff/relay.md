@@ -2178,3 +2178,36 @@
   ele03-acc-smoke.log、r2sh3-closeout-verify.log、r2sh4-closeout-verify2.log、
   z-r2-sh4-verify.raw.txt、ele03-acc-commit-msg.txt、r2sh3-commit-msg.txt、
   r2sh4-commit-msg.txt、v63-commit-msg.txt（另有验收场前段九件见增补十四）。
+
+### 增补十六 — 2026-09-20（阅读器 UI 反馈批五票全收口——v63 §2 板滚动；承接设计档
+docs/design/2026-09-20_reader-ui-feedback-survey-and-plan.md 八项已裁 D1~D8 零决策负债直执）
+
+- **五票五提交**（HEAD 链 420caec4f1a→f191bedcbae[**F-UI-04** 顶栏居中+冷雾灰——P3 侦察
+  「偏上」叙事证伪（像素探针 V1 alpha 退化→V3 亮度判定+用户截图多模态双通道=偏下
+  2.0px），终值 translateY(-2px)=用户在场裁决「先对齐整行」**P3 待复验**；探针件
+  z-f-ui04-vert-probe 常驻]→ce328c6e2b2[**F-UI-03** 导航栏拖宽+窄条折叠——SplitPane 三
+  prop 扩展零漂移+门二 P1-1 nav 满高修复[pane 块级无 stretch，jsdom/smoke 结构盲区]+
+  连带修 reader-text strict 歧义+几何探针 z-f-ui03]→c6a53885b27[**F-UI-02** 工具栏/tab
+  图标化——sr-only 双面保活零受锁改造+变异四支]→3a3515477ad[**F-RDR-02** 笔记输入
+  isComposing+D6 重聚焦——门一 B1 揭 pointerdown 假绿回炉 preventDefault+四场景复现
+  审计零复现不立深修票]→7e51192ac49[**F-RDR-01** 选区闪烁——D8 三段链两轮拟定两轮审+
+  主控终裁 12 修正定稿[A 末行吸附 rowEndOf 单源/B TTL 短路免缓存/docOrderPair 包含
+  形态真修]；门一三跳 FAIL→PASS+门二 C1 假绿通道独立发现全销；**移交用户 UAT=真实
+  PDF 全程拖选终证**（合成夹具 A/B 判别不可达申报）]；
+- **基线终态**：verify 169 文件/1746 用例/locks 250/指纹门新基线 **189·1794·5463·
+  skip15**（[test-refactor] 三轮重冻结+F-RDR-02 探针豁免 +1[skip 位 rulingLink=定稿
+  修正 8]）；e2e 默认门 42 恒定（probe project 6 件常驻像素/几何/行为探针通道）；
+  open 回落 1（F-TESTREF-S1 存量）；
+- **主控双失误在档**（f-rdr01-batch-record.md 教训段）：①翻票【毕】注记含代码字样
+  ASCII 引号语法错+注记写于 verify 后（顺序铁律违反——F-RDR-01 实现者拦截热修）；
+  ②F-RDR-01 门一审包缺 diff 全文（门一纪律拒签——实现批审包 diff 内联为硬要求）；
+  另 node -e 多行含引号脚本三踩假成功（shell 隔层坑——一律脚本文件）；
+- **移交/挂账**：P3 终值复验+图标观感+D4 档位微调+F-RDR-01 真实 PDF UAT=用户在场轮；
+  W-1 行数压线备案（nav-icons 拆件候选）；页底弹层可见性未证伪注记；W-2 mouseup
+  事件黑洞指纹（真机再现则立案）；TTL=100ms 真机校准条款（R1）；
+- 成本账本：五票三岗 15 行入 .zcode/org-ledger.jsonl（executor 5/gate1 5/gate2 5——
+  gate2 含联审代理位 1 行异构欠账注记）；
+- 证据件登记（仓外 scripts-audits/）：f-ui04-batch-record.md+f-ui04-final.diff/
+  f-ui03-batch-record.md/f-ui02-batch-record.md/f-rdr02-batch-record.md/
+  f-rdr01-batch-record.md+f-rdr01-{drafter-prompt,design-kimi,review-ds,
+  drafter-prompt-v2,design-kimi-v2,review2-prompt,review2-ds}.md。
