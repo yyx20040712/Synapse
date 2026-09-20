@@ -2137,3 +2137,12 @@
   ele03-acc-find-locker.ps1、ele03-acc-posix-delete.ps1、ele03-acc-asar-heal.ps1。
 - 教训：①「机制断言先读实现再落笔」（自愈预判 vs isInstalled 源码两说）；②本机
   asar 句柄族完整解法集=原地截断重写（内容修复）/关宿主（删除修复），按需选用。
+
+
+### hub 停火记 — 2026-09-19T23:29:09Z（用户令删火——不占增补序的调度员尾注）
+- 用户 2026-09-19T23:2XZ 下删火令（同期 WaterPrint 板增补十事故记档）：全局
+  轮转火 automation-9d069f57-…（本板板头字段行指向）已删——CronList 空集复核。
+  本板 DONE 终态维持（37/37 收官），无后续轮转；重启径=用户显式 /batch-relay
+  换防（hub 变体）或手动径。板头 automation_id 字段行保留旧值仅为历史审计指向。
+- 本注与增补十四（Electron dist 收尾档）并行在册，互不覆盖；后续增补序照旧
+  （增补十五占位预告仍归下会话补验条目）。
