@@ -1,4 +1,4 @@
-# Synapse Remake
+# Synapse
 
 本地学术文献管理 + PDF 阅读标注桌面应用（「智慧水务」课程科研工具）。
 
