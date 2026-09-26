@@ -49,7 +49,7 @@ import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createDataLayerContainer } from './data-layer.container'
 import { createImportGate } from './import-gate'
 import { migrateLegacyUserData } from './migrate-user-data'
-import { ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
+import { countPapersInDir, ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
 import { createWorkspaceService } from './services/workspaces/workspace.service'
 import { createIpcHandlers } from './ipc'
 import { registerIpc } from './ipc/register'
@@ -143,6 +143,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     userDataDir,
     importInFlight: importGate.inFlight,
     initWorkspaceDb,
+    // [T3-P2] 课题文献计数（main 根装配面——services 禁直连 db 的依赖倒置）
+    countPapers: countPapersInDir,
     closeCurrent: () => container.closeCurrent(),
     assembleInto: (dataDir) => container.assembleInto(dataDir)
   })

@@ -13,7 +13,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { DB_FILE_NAME } from '../shared/constants'
-import { openDatabase } from './db/connection'
+import { openDatabase, type SqliteDb } from './db/connection'
 import { migrate } from './db/migrate'
 import {
   DEFAULT_WS_ID,
@@ -40,6 +40,31 @@ export function initWorkspaceDb(wsDir: string): void {
   const db = openDatabase(join(wsDir, DB_FILE_NAME))
   try {
     migrate(db)
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * [T3-P2] 课题文献计数（读侧零副作用）：打开课题库 COUNT papers 后即关。
+ * 驻本件=main 根装配面（ESLint 分层：services 禁直连 db——workspace.service 经
+ * deps.countPapers 依赖倒置注入）；SQL 走 prepare 预编译（无参数面）。
+ * 读侧失败容忍（INV-35 降级不崩同族）：库缺失/打开失败/查询失败一律 0。
+ */
+export function countPapersInDir(wsDir: string): number {
+  const dbPath = join(wsDir, DB_FILE_NAME)
+  if (!existsSync(dbPath)) return 0
+  let db: SqliteDb
+  try {
+    db = openDatabase(dbPath)
+  } catch {
+    return 0
+  }
+  try {
+    const row = db.prepare('SELECT COUNT(*) AS n FROM papers').get() as { n: number }
+    return row.n
+  } catch {
+    return 0
   } finally {
     db.close()
   }

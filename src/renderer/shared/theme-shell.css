@@ -1,110 +1,160 @@
-/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——App 壳域皮肤：顶栏身份区（R2-SH2
-   决4）+课题切换器+界面缩放（R2-SET1）+caption 三键（R2-SH3）+侧栏 nav（R2-SH2）。
-   纯迁移值零改;import 序=theme.css 之后（壳→按钮→阅读器→脉络保原相对序）。
-   reduced-motion 无障碍守卫随域驻本件末尾（自裁申报：守卫目标
-   .app-nav::after/.app-nav-item-active::before 全在本域,同特异性下须源顺序
-   在后方能压住常驻 animation 规则——留守首件 theme.css 会被后载的本件反压失效）。 */
+/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——App 壳域皮肤。[T3-P2] 壳层改版
+   重写：38px 顶栏（wordmark 签名/居中 gsearch/caption 三键）+72px 窄轨
+   （.rail）+26px 状态条；F-UI-03 墨青 nav 全族退役（方案切换=删除旧方案，
+   含金线/渐变/foot/窄态/collapse 钮与随域 reduced-motion 守卫段）。
+   import 序=theme.css 之后（壳→按钮→阅读器→脉络保原相对序）。
+   值单源=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段
+   （L39-77）逐值誊录；真相源=docs/design/2026-09-26_theme-trio-final-design.md §1。 */
 
-/* ══ App 壳顶栏身份区（R2-SH2 决4——ZCode 式）：冷雾灰横条（--surface-cool
-   [F-UI-04]+下边 1px --border+高 56px）=logo+应用名+课题切换器+版本号右区；relative+z-index 防
-   切换器展开面板被 main 区盖板（面板在组件 flex-col 流内向下溢出绘制）══
-   高度 44→56px（用户裁决 2026-08-31：按钮与 Synapse 标志下移——增高级；
-   caption 三键 stretch 贯通自动随高，width:44 热区宽不动）══ */
-/* R2-SH3：整条=拖拽区（drag）——双击空白即 Windows 系统最大化/还原（drag 区
-   原生行为零代码）；交互件容器单独 no-drag（见 switcher/titlebar 两处） */
+/* ══ App 壳三行网格：38px 顶栏｜1fr 内容行（rail+main）｜26px 状态条 ══ */
+.app-shell {
+  display: grid;
+  grid-template-rows: 38px 1fr 26px;
+  height: 100%;
+}
+
+/* ══ 顶栏（mockup .topbar 语汇，类名保留 .app-header——smoke.spec/
+   window-control.test 的 header 选择器面最小伤害）：--panel-2 底+下边
+   1px --line；R2-SH3 整条=拖拽区（drag）——双击空白即系统最大化/还原；
+   wordmark/gsearch/caption 三处交互件容器单独 no-drag ══
+   高度 44→56（2026-08-31 增高令）→38px（2026-09-26 theme-trio final-design
+   §1 四轮裁决后规格——后者覆盖前者，裁决链注记） */
 .app-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex: none;
-  height: 56px;
-  padding: 0 12px;
+  height: 38px;
+  padding: 0 8px 0 18px;
   position: relative;
   z-index: var(--z-float);
-  background: var(--surface-cool);
-  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
-.app-header svg {
-  width: 22px;
-  height: 22px;
-  flex: none;
-}
-.app-header-name {
-  font-size: var(--fs-title);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  /* F-UI-04 P3 终值（用户裁决 2026-09-20「先对齐整行，后面再反馈调整」）：
-     像素探针 V3 实测墨迹中心 29.6 相对整行基线 27.6（logo 盒中心/v0.1/
-     切换器同线）低 2px——上移对齐；y 降部字体天性见 theme.test 注 */
-  transform: translateY(-2px);
-  color: var(--text);
-}
-/* 切换器容器=面板绝对定位锚：relative 面板 top:100% 悬浮于按钮正下
-   （脱离文档流——容器高度恒=按钮高，按钮在顶栏的垂直居中位恒定，
-   **展开/收起不再上移跳动**——用户实锤 2026-08-31：流内 max-height 方案
-   下面板展开把容器从按钮高撑到 56px，居中锚点随之上移，56px 顶栏时代
-   按钮跳 ~13.5px 贴无边框窗口顶；no-drag=触发钮与展开面板（溢出
-   header 盒侵入 main 区部分同为面板自身盒——不被 drag 吞点击） */
-.app-header-switcher {
-  position: relative;
+
+/* 艺术字签名（A15/D3）：Georgia 斜体，「a」用 accent 色；垂直居中 */
+.wordmark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 700;
+  font-size: var(--fs-signature);
+  letter-spacing: 2.5px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
   -webkit-app-region: no-drag;
 }
-.app-header .app-nav-ver {
-  margin-left: auto;
+.wordmark i {
+  font-style: italic;
+  color: var(--accent);
 }
 
-/* F-UI-04（用户 2026-09-20 反馈 P4，D1=全局挂 main 外围）：主区统一冷雾灰——
-   App.tsx main 挂 .app-main 类，所有视图（含阅读器画布外围）统一；token 单源
-   --surface-cool（theme.css :root）；--bg/--panel 值不动；详情栏 .lib-detail-aside
-   保持纯白（D2）；body 背景与纸面丝纹不动（透传仅在 main 外可见） */
-.app-main {
-  background: var(--surface-cool);
+/* 全局搜索（水平居中——绝对定位 left50% 平移，脱离 flex 流不受左右簇宽度
+   影响）：320px panel 底 line 描边 8px 圆角；v1 展示性（可聚焦可输入无
+   动作）；右缘 Ctrl K 键帽提示（mono） */
+.gsearch {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 11px;
+  width: 320px;
+  -webkit-app-region: no-drag;
+}
+.gsearch svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  stroke: var(--faint);
+  fill: none;
+  stroke-width: 1.7;
+}
+.gsearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  color: var(--ink);
+  outline: none;
+  padding: 0;
+}
+/* 提示语（mockup .ph 语汇）：受控空值显隐 span，绝对定位叠印输入位——
+   视觉=原生提示语观感；left 38=图标 13+gap 8+padding 11+圆角容差 */
+.gsearch .ph {
+  position: absolute;
+  left: 38px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--fs-caption);
+  color: var(--faint);
+  pointer-events: none;
+}
+.gsearch .k {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--faint);
 }
 
 /* ══ R2-SET1 界面缩放三档：--ui-scale 挂 documentElement（App effect 单点写，
    数值映射单源=shared/ipc/schemas UI_SCALE 1/1.1/1.25）。
-   内容行整行缩放（nav+main 文本面）；header 在行外结构性豁免（E5 裁决——
-   caption 三键/顶栏身份区保持系统观感，恒定不随档位变）；
+   内容行整行缩放（rail+main 文本面）；topbar/statusbar 在行外结构性豁免
+   （E5 裁决——caption 三键/顶栏保持系统观感，恒定不随档位变）；
    PDF 页列反向补偿恒视觉 1.0——探针实测（r2-set1-out-probe.json）：canvas
    跟随 ×1.1 位图拉伸模糊，zoom: calc(1 / var(--ui-scale, 1)) Chromium 接受且
    canvas 精确恢复 612×792 原始视觉+背衬匹配+textLayer 对位不受破坏（对位
    安全=两容器同缩放系内锚定）；补偿必须与缩放同变——单独 zoom:1 无效（相乘
    语义）；三态属性选择器通配（ready/loading/error）══ */
 .app-content-row {
+  display: flex;
+  min-height: 0;
   zoom: var(--ui-scale, 1);
 }
 [data-page-column] {
   zoom: calc(1 / var(--ui-scale, 1));
 }
 
-/* ══ R2-SH3 frameless caption 三键（bilibili 式）：贯通顶栏高的方形热区，
-   hover 浸染；close hover=系统红（--close-red）。皮肤住类（B1 教训：禁内联 style
-   承载交互态）；.titlebar-btn svg 覆写上方 .app-header svg 的 22px 默认
-   （同特异性源顺序在后胜）══ */
+/* T3-P2 主区外围底色：mockup .content=--bg（F-UI-04 冷雾灰消费退役——
+   --surface-cool 桥接仍在 theme.css，壳层消费位核删） */
+.app-main {
+  background: var(--bg);
+}
+
+/* ══ R2-SH3/T3-P2 caption 三键（TitleBarControls 皮肤化）：贯通顶栏高的
+   方形热区 42/42/52（close 宽 52），hover 浸染；close hover=系统红
+   （--close-red）白字；三键 window control IPC 动作不动。皮肤住类（B1
+   教训：禁内联 style 承载交互态）══ */
 .titlebar-controls {
   display: flex;
-  align-items: stretch;
-  /* header 的 center 对齐下容器自身贯通整条高（按钮 stretch 满高热区——
-     否则容器按内容(SVG 10px)收缩，真机取证 rect 实测高仅 10px 病灶） */
-  align-self: stretch;
-  flex: none;
-  /* -12 对冲上方 .app-header 的 padding: 0 12px（:86）——热区贴窗口右缘
-     贯通（bilibili 式）；两值数值联动，改 header padding 须同步改此值
-     （门一 C5） */
-  margin-right: -12px;
+  height: 100%;
+  /* 推到最右（gsearch 绝对定位脱离流——右区由本容器 margin-left:auto 占位）+
+     -8 对冲上方 .app-header 的 padding 右 8px（热区贴窗口右缘贯通）；两值
+     数值联动，改 header padding 须同步改此值（门一 C5） */
+  margin-left: auto;
+  margin-right: -8px;
   -webkit-app-region: no-drag;
 }
 .titlebar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
+  display: grid;
+  place-items: center;
+  width: 42px;
   align-self: stretch;
   border: 0;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--dim);
+  font-size: var(--fs-caption);
   cursor: pointer;
   padding: 0;
   transition:
@@ -127,185 +177,116 @@
   background: var(--accent-a20);
   color: var(--accent);
 }
+.titlebar-btn-close {
+  width: 52px;
+}
 /* close 红依赖与 .titlebar-btn:hover/:active 同特异性 (0,2,0) 下源顺序在
    后胜——勿在本块之后追加 .titlebar-btn:hover 变体，否则压掉 close 红
    （门一 C6） */
 .titlebar-btn-close:hover {
   background: var(--close-red);
-  color: var(--panel);
+  color: var(--close-red-ink);
 }
 .titlebar-btn-close:active {
   background: var(--close-red-press);
-  color: var(--panel);
+  color: var(--close-red-ink);
 }
 
-/* ══ App 壳侧栏（墨青 + 金——shell-library.html nav 段誊录，App.tsx 消费；
-   R2-SH2 品牌行迁顶栏后 nav 首行直接起导航项，foot 留侧栏）══ */
-.app-nav {
-  /* F-UI-03：宽度归 SplitPane pane 容器管（拖拽档位 default 184·min 64·max
-     280）——nav 本体占满 pane 宽；flex:none 防内容行挤压；height:100%=满高
-     自备（pane 容器块级 div 无 flex stretch——门二 P1-1：渐变/金线/foot 钉底
-     前提；几何实证 z-f-ui03-nav-geom-probe） */
-  width: 100%;
-  height: 100%;
+/* ══ T3-P2 B站式窄轨侧栏（72px，无 logo——A15）：课题→下载→gap→三视图→
+   （贴底）设置；图标上置 19px+10px 标签下置；hover=--line-soft；
+   active=accent 软胶囊（mockup L58-67 逐值）══ */
+.rail {
+  width: 72px;
   flex: none;
+  background: var(--panel-2);
   display: flex;
   flex-direction: column;
-  padding: 14px 10px;
-  position: relative;
-  color: var(--nav-text);
-  /* T3-P1 钉值——P2 窄轨退役同删：--ink 语义已翻转（亮面墨字色），
-     墨青渐变顶钉 --ink-legacy 防随族误伤 */
-  background: linear-gradient(180deg, var(--ink-legacy), var(--ink-deep));
-}
-/* 右缘金渐隐线（mockup nav::after 语法逐值誊录；R2-UI1 加 220% 纵向渐变
-   缓移——金线沿侧栏缘缓慢流淌，UI「活」感的常驻层（reduced-motion 关） */
-.app-nav::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, var(--border-gold-a50), transparent);
-  background-size: 100% 220%;
-  animation: syn-pan-y 5s linear infinite;
-}
-/* F-UI-03 收起/展开钮：沿 .app-nav-item 交互语法（透明底/hover=--panel-a06
-   浸染/active 常规冷蓝——深色墨青底适配）；svg 与 nav 图标同描边规格（并列
-   selector，禁第二份等价规则） */
-.app-nav-toggle {
-  display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  margin: 2px 4px;
+  padding: 14px 0 10px;
+  gap: 3px;
+}
+.rail-item {
+  width: 60px;
+  padding: 7px 0 6px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--dim);
+  position: relative;
+  cursor: pointer;
   border: 0;
   background: transparent;
-  border-radius: var(--radius-m);
   font-family: inherit;
-  color: var(--nav-item-text);
-  cursor: pointer;
-  transition: all var(--dur-base) ease;
 }
-.app-nav-item svg,
-.app-nav-toggle svg {
-  width: 17px;
-  height: 17px;
+.rail-item svg {
+  width: 19px;
+  height: 19px;
   flex: none;
   stroke: currentColor;
   fill: none;
-  stroke-width: 1.6;
+  stroke-width: 1.5;
 }
-.app-nav-toggle:hover {
-  color: var(--nav-item-text-hover);
-  background: var(--panel-a06);
-}
-.app-nav-toggle:active {
-  color: var(--nav-item-text-press);
-  background: var(--accent-a35);
-}
-.app-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin: 2px 4px;
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-m);
-  font-family: inherit;
-  font-size: var(--fs-strong);
-  color: var(--nav-item-text);
-  text-align: left;
-  cursor: pointer;
-  position: relative;
-  transition: all var(--dur-base) ease;
-}
-.app-nav-item:hover {
-  color: var(--nav-item-text-hover);
-  background: var(--panel-a06);
-}
-/* 按压反馈（R2-UI1 游戏钮语义）：冷蓝闪现+微缩——瞬态色变+形变双通道 */
-.app-nav-item:active {
-  color: var(--nav-item-text-press);
-  background: var(--accent-a35);
-  transform: scale(0.97);
-}
-/* active 态：金左缘条 + ink-hi 底 + inset 金 hairline（mockup .nav-item.active） */
-.app-nav-item-active {
-  color: var(--nav-item-text-current);
-  background: var(--ink-hi);
-  box-shadow: inset 0 0 0 1px var(--border-gold-a28);
-}
-.app-nav-item-active::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 9px;
-  bottom: 9px;
-  width: 3px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
-  /* R2-UI1：金条 300% 纵向缓移——选中态常驻微光（reduced-motion 关） */
-  background-size: 100% 300%;
-  animation: syn-pan-y 2.8s ease-in-out infinite;
-}
-.app-nav-foot {
-  margin-top: auto;
-  padding: 10px 8px 2px;
-  border-top: 1px solid var(--panel-a07);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.app-nav-ver {
+.rail-item .lb {
   font-size: var(--fs-micro);
-  letter-spacing: 1px;
-  line-height: 1;
-  color: var(--nav-ver-text);
-  border: 1px solid var(--nav-ver-border);
-  border-radius: 4px;
-  padding: 1px 6px;
-}
-.app-nav-txt {
-  font-size: var(--fs-micro);
-  color: var(--nav-foot-text);
-}
-
-/* ══ F-UI-03 窄条折叠态（nav 挂 .app-nav-collapsed——App 收起钮/双击手柄驱动；
-   D3=图标窄条 collapsedWidth 64、D5=尾行隐藏）══ */
-.app-nav-collapsed .app-nav-item {
-  justify-content: center;
-  padding: 10px 0;
-}
-.app-nav-collapsed .app-nav-toggle {
-  justify-content: center;
-  padding: 10px 0;
-}
-/* label 视觉隐藏=clip 手法（禁 display:none——Chromium 会把 display:none 文本
-   排除出 accessible name，破坏 e2e getByRole name 断言面；jsdom textContent
-   断言不受 CSS 影响——双面兼容） */
-.app-nav-collapsed .app-nav-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+  letter-spacing: 0.5px;
+  max-width: 100%;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* D5：窄态尾行「本地学术文献管理」隐藏（纯文案无 e2e name 断言面，
-   display:none 安全） */
-.app-nav-collapsed .app-nav-foot {
-  display: none;
+.rail-item:hover {
+  background: var(--line-soft);
+}
+.rail-item.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.rail-gap {
+  height: 12px;
+  flex: none;
+}
+.rail-foot {
+  margin-top: auto;
+}
+/* 课题色点（A10 联动）：当前课题色=索引轮转调色板（inline 动态值——Rail
+   注入，无 CSS 默认底色=死声明清除[门一 d1-N4/k1-N4：inline 恒在场，CSS
+   兜底永不生效]）；border 挖穿轨底色形成「点浮于图标角」观感 */
+.rail-ws-dot {
+  position: absolute;
+  top: 5px;
+  right: 11px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-2);
+  transition: background var(--dur-flow) ease;
 }
 
-/* ══ R2-UI1 无障碍守卫：系统「减少动态效果」时常驻渐变动画全关
-   （交互瞬态 transition 保留——按压反馈属操作确认非装饰动效）══ */
-@media (prefers-reduced-motion: reduce) {
-  .app-nav::after,
-  .app-nav-item-active::before {
-    animation: none;
-  }
+/* ══ T3-P2 状态条 26px（mockup L74-77）：--panel-2 底+上边 1px --line+等宽字；
+   .ok/.sig 色类预留在带（当前槽位未消费——enrich 待办槽信号通道探明后启用）；
+   仪表透明度三主题不变（不额外加透明度）══ */
+.app-statusbar {
+  flex: none;
+  background: var(--panel-2);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  color: var(--faint);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.app-statusbar .sep {
+  flex: 1;
+}
+.app-statusbar .ok {
+  color: var(--ok);
+}
+.app-statusbar .sig {
+  color: var(--signal);
 }

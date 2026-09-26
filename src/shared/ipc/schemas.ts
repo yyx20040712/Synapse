@@ -390,11 +390,14 @@ export const noteSaveReqSchema = z
 export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
 
 // ── workspaces（R1-WS1 课题域——ADR-0018 库级分目录；路径永不跨 IPC）────
+// [T3-P2] paperCount=课题文献计数（课题弹层「N 篇」+状态条数据源——一课题一库，
+// main 侧逐课题库 COUNT 注入 list 返回）
 export const workspaceItemSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
-    createdAt: z.string().min(1)
+    createdAt: z.string().min(1),
+    paperCount: z.number().int().min(0)
   })
   .strict()
 export type WorkspaceItem = z.infer<typeof workspaceItemSchema>

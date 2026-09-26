@@ -24,7 +24,7 @@ import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
-import { OP_FAILED } from '../../shared/ui-constants'
+import { OP_FAILED, THEME_LABEL } from '../../shared/ui-constants'
 import { useSettingsStore } from './settings.store'
 import { CorpusExportSection } from './CorpusExportSection'
 import { SettingsSection } from './SettingsSection'
@@ -33,12 +33,6 @@ import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
 
 const SAVE_OK = '设置已保存'
-
-const THEME_LABEL: Record<AppSettings['theme'], string> = {
-  light: '白天 · 精密仪表',
-  dark: '夜间 · 深灰',
-  sepia: '护眼 · 牛皮纸'
-}
 
 /** workspaceSection：课题管理节由 App 组合根注入（跨域经 App 编排——feature
  *  互引被 quality 门禁禁止，R1-WS2；dirty 聚合值随节由 App 一并注入） */

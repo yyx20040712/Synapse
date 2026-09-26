@@ -11,7 +11,7 @@
  *   options；autoHideMenuBar 保留同锚）
  * - 皮肤锁（theme.test.ts 同型 CSS 文本断言——变异④ no-drag 摘除的 vitest
  *   防线，主控预裁「computed 断言红即可，不跑 e2e」的轻量替代形态）：
- *   .app-header=drag / .app-header-switcher+.titlebar-controls=no-drag
+ *   .app-header=drag / .wordmark+.gsearch+.titlebar-controls=no-drag（T3-P2 起）
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -187,8 +187,8 @@ describe('windows/window-control —— drag/no-drag 皮肤锁（CSS 文本断�
     expect(dragCount).toBe(1)
   })
 
-  it('切换器容器与三键容器为 no-drag（两处，点击不被 drag 吞）', () => {
+  it('wordmark/gsearch/三键容器为 no-drag（三处，点击不被 drag 吞——T3-P2 顶栏改版：切换器容器随 WorkspaceSwitcher 退役，wordmark/gsearch 随入）', () => {
     const noDragCount = css.split('-webkit-app-region: no-drag').length - 1
-    expect(noDragCount).toBe(2)
+    expect(noDragCount).toBe(3)
   })
 })

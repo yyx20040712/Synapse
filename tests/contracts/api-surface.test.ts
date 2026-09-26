@@ -65,7 +65,9 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
     expect(API_SURFACE.workspaces.create.Req.safeParse({ name: '' }).success).toBe(false)
     expect(
       API_SURFACE.workspaces.list.Res.safeParse({
-        items: [{ id: 'default', name: '默认课题', createdAt: '2026-01-01T00:00:00.000Z' }],
+        items: [
+          { id: 'default', name: '默认课题', createdAt: '2026-01-01T00:00:00.000Z', paperCount: 0 }
+        ],
         currentId: 'default'
       }).success
     ).toBe(true)

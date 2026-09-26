@@ -1,137 +1,107 @@
-/* ══ R2-UI1 课题切换器皮肤（WorkspaceSwitcher 消费——B1 语义：静态皮肤
-   全住类规则，内联 style 只许留功能态（如错误色），否则 :hover/:active
-   挂类被内联恒压=静默失效）══
-   病灶史：R2-SH2 把切换器从墨青侧栏迁到白顶栏后，触发钮仍用夜面配色
-   （米白字 + 5% 白底 + borderColor 无 border 宽度类=边框不渲染）
-   ——白底贴米白字，用户实锤「几乎不可见」。本皮肤=亮面按钮语法：
-   冷色调（accent 墨青蓝）实边框 + 冷调流光渐变 + 按压反馈。token 走
-   theme.css :root 单源（--accent 透明度族=--accent-aNN 系，先例
-   金族）。 */
+/* ══ [T3-P2] 课题弹层皮肤（WsRailPopover 消费——.ws-pop 族；A10）。
+   前身=WorkspaceSwitcher 皮肤（ws-trigger/ws-panel/ws-field 族），随顶栏
+   切换器退役整体删除（方案切换=删除旧方案）；本件保留为 ws 域皮肤驻留地
+   （theme.test.ts P7D-01 计数锚的 wsCss 读取面）。
+   值单源=docs/design/mockups/2026-09-26_v2_theme-light.html L287-319
+   （.pop/.ws-pop/.ws-item/.foot-note）逐值誊录；字号经 --fs-* token 载体
+   （9.5/11.5 半值归并 10/11——P7D-01 批二刻度纪律，自裁申报）。══ */
 
-/* 触发钮：冷蓝实边框+白→冷蓝白渐变流光（syn-pan-x 往返，6s 缓拍） */
-.ws-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid var(--accent-a55);
-  border-radius: var(--radius-m);
-  background: linear-gradient(120deg, var(--panel) 0%, var(--accent-soft) 45%, var(--panel) 100%);
-  background-size: 220% 100%;
-  animation: syn-pan-x 6s ease-in-out infinite;
-  color: var(--text);
-  font-size: var(--fs-strong);
-  cursor: pointer;
-  box-shadow: var(--shadow-1);
-  transition:
-    border-color var(--dur-base) ease,
-    box-shadow var(--dur-base) ease,
-    transform var(--dur-press) ease,
-    filter var(--dur-tint) ease;
-}
-.ws-trigger:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-a12), var(--shadow-2);
-}
-/* 按压反馈（游戏钮语义）：下沉+微缩+内阴影——「按下去了」的实体读感 */
-.ws-trigger:active {
-  border-color: var(--accent);
-  filter: brightness(0.96);
-  transform: translateY(1px) scale(0.98);
-  box-shadow: inset 0 2px 4px var(--ink-a18);
-}
-.ws-trigger:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-.ws-caret {
-  color: var(--accent);
-  font-size: var(--fs-micro);
+/* 弹层主体：portal(document.body)+fixed 紧贴窄轨右上——门一 k1-W1/d1-W2 回炉：
+   脱离 .app-content-row zoom 行（fixed 在 zoom 祖先内坐标被缩，125% 档压轨），
+   left=rail 72px×--ui-scale+6px 间隙（App effect 单源变量）；top=58px
+   （topbar 38px 行外恒高+20px 间隙——mockup L754 观感语义）；
+   --panel 底 --line 描边 10px 圆角 --shadow-drag 浮起 */
+.ws-pop {
+  position: fixed;
+  left: calc(72px * var(--ui-scale, 1) + 6px);
+  top: 58px;
+  z-index: var(--z-pop);
+  width: 250px;
+  padding: 12px 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-drag);
+  font-size: var(--fs-caption);
+  color: var(--ink);
 }
 
-/* 下拉面板：亮面卡+冷蓝描边+shadow-3 浮层；入场 160ms 居中放大一圈渐显
-   （transform 不占布局——顶栏高度链零扰动，F-05 同口径）。原上浮
-   translateY(-4px) 在顶栏贴屏幕上缘时面板飘出可视区难看——改纯缩放
-   （origin=center 居中放大，用户裁决 2026-08-31 第二轮：top center 观察
-   为向右上展开，改 center） */
-.ws-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
+/* 失败面（d1-W1 回炉）：store error 契约的壳层兑现点——错误行+重试 */
+.ws-error {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 200px;
-  padding: 6px;
-  border: 1px solid var(--accent-a45);
-  border-radius: var(--radius-m);
-  background: var(--panel);
-  color: var(--text);
-  box-shadow: var(--shadow-3);
-  transform-origin: center;
-  animation: ws-pop 0.16s ease-out;
+  gap: 8px;
+  padding: 6px 2px 2px;
+  color: var(--dim);
+  font-size: var(--fs-body);
 }
-@keyframes ws-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.ws-retry {
+  align-self: flex-start;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-size: var(--fs-caption);
+}
+.ws-retry:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ws-pop h4 {
+  margin: 0 0 9px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--faint);
 }
 
-/* 面板条目：悬停冷蓝浸染；按压微缩（游戏钮语义同族） */
+/* 课题行：色点+全名（flex:1）+mono 篇数；hover=--line-soft；当前项 .on=
+   --accent-soft（色点背景=inline 动态值——索引轮转调色板注入） */
 .ws-item {
-  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 9px;
   border: 0;
-  border-radius: var(--radius-s);
+  border-radius: 8px;
   background: transparent;
-  color: var(--text);
-  font-size: var(--fs-body);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-caption);
   text-align: left;
   cursor: pointer;
-  transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    transform var(--dur-press) ease;
 }
 .ws-item:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--line-soft);
 }
-.ws-item:active {
-  background: var(--accent-a22);
-  color: var(--accent);
-  transform: scale(0.97);
-}
-/* 当前课题：冷蓝底+加粗（悬停态仍可辨——同底色叠加色变通道） */
-.ws-item-current {
+.ws-item.on {
   background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 600;
+}
+.ws-item .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.ws-item .nm {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-item .ct {
+  flex: none;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  color: var(--faint);
 }
 
-/* 新建课题输入：冷蓝描边字段，focus 冷蓝描边加浓 */
-.ws-field {
-  padding: 4px 8px;
-  border: 1px solid var(--accent-a45);
-  border-radius: var(--radius-s);
-  background: var(--panel);
-  color: var(--text);
-  font-size: var(--fs-body);
-}
-.ws-field:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-a15);
-}
-
-/* 无障碍守卫（theme.css 同族）：系统「减少动态效果」时流光与入场动画关 */
-@media (prefers-reduced-motion: reduce) {
-  .ws-trigger,
-  .ws-panel {
-    animation: none;
-  }
+/* 脚注：联动与隔离语义说明（mockup L319） */
+.ws-pop .foot-note {
+  margin-top: 8px;
+  font-size: var(--fs-micro);
+  color: var(--faint);
 }

@@ -23,7 +23,8 @@
    :root[data-theme='dark'|'sepia']=覆写族块（App.tsx effect 单点写
    documentElement.dataset.theme，不跟随系统 A6）；旧词表（--text/--border/
    --surface-cool 等）经 var() 桥接随族重解析。legacy 残留 token（金族、
-   --nav-* 阶梯、annotation 五色等）仍溯旧稿。（注：本注释内禁用星号后
+   annotation 五色等）仍溯旧稿；--nav-* 阶梯+--ink-deep/--ink-hi/--ink-legacy
+   已随 T3-P2 窄轨壳层退役删除。（注：本注释内禁用星号后
    接斜杠的写法——会把 CSS 注释提前终结） */
 :root {
   /* ── 亮面（白天族=裸 :root 值；T3-P1 六 token 换白天终值+桥接 var 形态）── */
@@ -77,9 +78,11 @@
   --fs-strong: 13px;   /* 强调（nav 主字/侧板标题系） */
   --fs-title: 14px;    /* 标题（详情标题/顶栏应用名,text-sm 同锚） */
   --fs-display: 17px;  /* 展示（卡片衬线年份） */
+  /* [T3-P2] 顶栏 wordmark 签名（档位增补——值源=theme-trio final-design §1
+     用户裁决 18px；INV-61 档位变更登记本册） */
+  --fs-signature: 18px;
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #1c2333;
-  --ink-hi: #232d44;
   /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
      --mono/--serif 三族同值只此一处定义，族块不重复）── */
   --panel-2: #fbfcfe;
@@ -100,9 +103,6 @@
   /* --paper 桥接 --panel（F-CSS-03 ② 同值合并——白天族两值同为白，族块各自覆写实值） */
   --paper: var(--panel);
   --paper-ink: #2a2f3c;
-  /* 墨青 nav 渐变顶钉值（T3-P1：--ink 语义已翻转为亮面墨字色，防误伤——
-     消费=theme-shell.css .app-nav 渐变；P2 窄轨退役同删） */
-  --ink-legacy: #1b2333;
   /* ── 夜面：脉络·命之座星象板（R2 消费预留，本单只定义不消费）── */
   --night-bg: #171e33;
   --night-bg2: #111728;
@@ -161,19 +161,13 @@
   --panel-a88: rgba(255, 255, 255, 0.88);
   --panel-a90: rgba(255, 255, 255, 0.9);
   --panel-a92: rgba(255, 255, 255, 0.92);
-  /* caption 三键（Windows 系统红）*/
+  /* caption 三键（Windows 系统红）。--close-red-ink=红底上的字色（纯白，
+     三族不变——Windows 系统观感语汇恒定，门一 d1-W6 回炉：原 var(--panel)
+     载体在暗/护眼族翻成深色=红底深字对比失守；与 --panel 白天族同值=语义
+     隔离合法共存——check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指）*/
   --close-red: #e81123;
   --close-red-press: #f1707a;
-  /* 侧栏 nav 墨青域（文本阶梯+结构色）*/
-  --nav-text: #cfd5e4;
-  --nav-item-text: #aeb6ca;
-  --nav-item-text-hover: #e6eaf4;
-  --nav-item-text-press: #eaf1fa;
-  --nav-item-text-current: #f3eddd;
-  --nav-ver-text: #8d95ad;
-  --nav-ver-border: rgba(141, 149, 173, 0.4);
-  --nav-foot-text: #6d7590;
-  --ink-deep: #171e2f;
+  --close-red-ink: #ffffff;
   --ink-a18: rgba(27, 35, 51, 0.18);
   /* syn-btn primary 渐变端点+按压内影色 */
   --accent-hi: #3a76ab;
