@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 C · 精密仪表 — Synapse 文献库设计稿</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #e2e4e9; font-family: 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif; color: #1c2333; padding: 28px 16px 48px; }
+  .spec { max-width: 1440px; margin: 0 auto 14px; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .spec h1 { font-size: 19px; letter-spacing: 1px; color: #141a28; font-weight: 700; }
+  .spec .thesis { font-size: 12.5px; color: #6b7280; }
+  .spec .swatches { display: flex; gap: 6px; margin-left: auto; }
+  .spec .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); }
+  #frame-wrap { max-width: 1440px; margin: 0 auto; }
+  #frame { width: 1440px; height: 900px; transform-origin: 0 0; border-radius: 10px; overflow: hidden; position: relative;
+    box-shadow: 0 18px 60px rgba(15,18,28,.3), 0 2px 8px rgba(15,18,28,.2); background: var(--bg); }
+  .notes { max-width: 1440px; margin: 16px auto 0; font-size: 12.5px; line-height: 1.9; color: #454b57;
+    background: rgba(255,255,255,.75); border: 1px solid #d3d6dd; border-radius: 8px; padding: 14px 18px; }
+  .notes b { color: #141a28; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  #frame {
+    --bg: #f4f6f9; --panel: #ffffff; --line: #e3e7ee; --line-soft: #edf0f5;
+    --ink: #1c2333; --ink-dim: #5d6577; --ink-faint: #9aa3b5;
+    --accent: #3a5bd9; --accent-soft: #eaeeFC; --signal: #f06030;
+    --mono: Consolas, 'Courier New', monospace;
+  }
+  .app { display: grid; grid-template-rows: 46px 1fr 26px; height: 100%; }
+
+  /* 顶栏 + 刻度尺 */
+  .topbar { background: #fbfcfe; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 8px 0 18px; gap: 14px; position: relative; }
+  .topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 5px; pointer-events: none; opacity: .8;
+    background: repeating-linear-gradient(90deg, transparent 0 19px, #c6cddd 19px 20px, transparent 20px 39px, #d9dfe9 39px 40px);
+    background-size: 200px 5px; }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand .dia { width: 14px; height: 14px; background: var(--accent); transform: rotate(45deg); border-radius: 2.5px; }
+  .brand .name { font-size: 14.5px; font-weight: 700; letter-spacing: 2.5px; }
+  .ws-chip { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-dim);
+    background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  .ws-chip .dia-s { width: 6px; height: 6px; background: var(--accent); transform: rotate(45deg); }
+  .topbar .spacer { flex: 1; }
+  .meter { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); display: flex; gap: 14px; }
+  .meter b { color: var(--ink-dim); font-weight: 600; }
+  .caption-btns { display: flex; height: 100%; }
+  .caption-btns div { width: 44px; display: grid; place-items: center; color: var(--ink-dim); font-size: 11px; }
+  .caption-btns .close { width: 54px; }
+  .caption-btns .close:hover { background: #e81123; color: #fff; }
+
+  .body-row { display: flex; min-height: 0; }
+  .nav { width: 196px; background: var(--panel); border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-cap { font-size: 10px; letter-spacing: 2px; color: var(--ink-faint); padding: 6px 12px 8px; }
+  .nav-item { position: relative; display: flex; align-items: center; gap: 11px; padding: 9px 12px; font-size: 13px; color: var(--ink-dim); border-radius: 8px; }
+  .nav-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .nav-item:hover { background: var(--line-soft); }
+  .nav-item.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--accent); }
+  .nav-count { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+  .nav-foot { margin-top: auto; padding: 12px; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); line-height: 2; }
+  .nav-foot b { color: var(--ink-dim); }
+
+  /* 文献库 */
+  .lib { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+  .filter-row { display: flex; align-items: center; gap: 10px; padding: 12px 18px; }
+  .search { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; width: 300px; box-shadow: 0 1px 2px rgba(20,26,40,.04); }
+  .search svg { width: 14px; height: 14px; stroke: var(--ink-faint); fill: none; stroke-width: 1.7; }
+  .search .ph { font-size: 12px; color: var(--ink-faint); }
+  .search .k { margin-left: auto; font-family: var(--mono); font-size: 9.5px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--ink-faint); }
+  .chips { display: flex; gap: 6px; align-items: center; }
+  .chip { font-size: 11.5px; padding: 4.5px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-dim); background: #fff; display: flex; gap: 6px; align-items: center; }
+  .chip .n { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); }
+  .chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .chip.on .n { color: var(--accent); }
+  .sort { margin-left: auto; font-size: 12px; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6.5px 12px; }
+  .density { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+  .density div { padding: 6.5px 9px; color: var(--ink-faint); font-size: 11px; }
+  .density div.on { color: var(--accent); background: var(--accent-soft); }
+
+  .cols { display: flex; align-items: center; gap: 14px; padding: 7px 18px 6px 52px; font-size: 10px; letter-spacing: 1.5px; color: var(--ink-faint); }
+  .cols .c-id { width: 46px; } .cols .c-title { flex: 1; } .cols .c-year { width: 46px; text-align: right; }
+  .cols .c-cite { width: 56px; text-align: right; } .cols .c-tier { width: 44px; text-align: center; }
+  .cols .c-tags { width: 190px; }
+
+  .list { flex: 1; overflow: hidden; padding: 0 12px 8px 12px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 10px 6px 10px 40px; border-radius: 9px; position: relative; background: transparent; transition: background .12s; }
+  .row + .row { margin-top: 2px; }
+  .row:hover { background: #fff; box-shadow: 0 1px 3px rgba(20,26,40,.07); }
+  .row:hover::before { content: ''; position: absolute; left: 18px; top: 12px; bottom: 12px; width: 2.5px; border-radius: 2px; background: var(--signal); }
+  .row.sel { background: #fff; box-shadow: inset 0 0 0 1.5px var(--accent), 0 2px 8px rgba(58,91,217,.14); }
+  .row.sel::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3.5px; border-radius: 3px; background: var(--accent); }
+  .r-id { width: 46px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .r-main { flex: 1; min-width: 0; }
+  .r-title { font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r-sub { font-size: 11px; color: var(--ink-faint); margin-top: 2px; display: flex; gap: 8px; align-items: baseline; }
+  .r-sub .j { font-style: italic; }
+  .r-year, .r-cite { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); text-align: right; font-variant-numeric: tabular-nums; }
+  .r-year { width: 46px; } .r-cite { width: 56px; }
+  .r-tier { width: 44px; text-align: center; }
+  .tier { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 5px; }
+  .tier.q1 { background: var(--accent); color: #fff; }
+  .tier.q2 { border: 1px solid var(--accent); color: var(--accent); }
+  .tier.q3 { border: 1px solid var(--line); color: var(--ink-faint); }
+  .tier.none { color: #c3c9d6; }
+  .r-tags { width: 190px; display: flex; gap: 4px; }
+  .t-mini { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--line-soft); color: var(--ink-dim); white-space: nowrap; }
+
+  /* 详情抽屉 = 规格表 */
+  .drawer { width: 316px; border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; }
+  .dr-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--line-soft); }
+  .dr-id { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); letter-spacing: 1px; display: flex; justify-content: space-between; }
+  .dr-title { font-size: 14px; line-height: 1.6; color: var(--ink); margin-top: 8px; font-weight: 600; }
+  .dr-metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line-soft); }
+  .dr-metrics div { padding: 10px 0 11px; text-align: center; }
+  .dr-metrics div + div { border-left: 1px dashed var(--line); }
+  .dr-metrics .v { font-family: var(--mono); font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dr-metrics .v.acc { color: var(--accent); }
+  .dr-metrics .l { font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
+  .dr-body { padding: 13px 18px; overflow: hidden; }
+  .fld { display: flex; justify-content: space-between; gap: 12px; padding: 6.5px 0; border-bottom: 1px dashed var(--line-soft); font-size: 12px; }
+  .fld .k { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); letter-spacing: 1px; padding-top: 1.5px; }
+  .fld .v { color: var(--ink-dim); text-align: right; max-width: 190px; }
+  .fld .v.link { color: var(--accent); }
+  .dr-sec { font-size: 10px; letter-spacing: 2px; color: var(--ink-faint); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .dr-sec::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+  .dr-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+  .tag.dim { background: var(--line-soft); color: var(--ink-dim); }
+  .dr-actions { margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--line-soft); display: flex; gap: 8px; }
+  .btn { font-size: 12px; border-radius: 8px; padding: 8px 14px; }
+  .btn.primary { background: var(--accent); color: #fff; flex: 1; text-align: center; box-shadow: 0 2px 6px rgba(58,91,217,.3); }
+  .btn.ghost { border: 1px solid var(--line); color: var(--ink-dim); }
+
+  /* 状态条 */
+  .statusbar { background: var(--panel); border-top: 1px solid var(--line); display: flex; align-items: center; padding: 0 18px; gap: 20px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+  .statusbar .sep { flex: 1; }
+  .statusbar .ok { color: #2e8b57; }
+  .statusbar .sig { color: var(--signal); }
+</style>
+</head>
+<body>
+
+<header class="spec">
+  <h1>方向 C · 精密仪表</h1>
+  <span class="thesis">文献库=测量数据集：冷灰白+靛蓝+信号橙点缀，刻度尺、等宽读数、游标线——高信息密度的「仪器面板」语汇。</span>
+  <div class="swatches">
+    <span class="sw" style="background:#f4f6f9"></span><span class="sw" style="background:#ffffff"></span>
+    <span class="sw" style="background:#1c2333"></span><span class="sw" style="background:#3a5bd9"></span>
+    <span class="sw" style="background:#f06030"></span><span class="sw" style="background:#e3e7ee"></span>
+  </div>
+</header>
+
+<div id="frame-wrap"><div id="frame">
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><div class="dia"></div><div class="name">Synapse</div></div>
+    <div class="ws-chip"><span class="dia-s"></span>智慧水务 · 供水管网漏损课题<span style="color:#9aa3b5;font-size:9px">▾</span></div>
+    <div class="spacer"></div>
+    <div class="meter"><span><b>FTS</b> 12ms</span><span><b>DB</b> 2.1 GB</span><span><b>索引</b> OK</span></div>
+    <div class="caption-btns"><div>—</div><div>▢</div><div class="close">✕</div></div>
+  </div>
+
+  <div class="body-row">
+    <div class="nav">
+      <div class="nav-cap">工 作 区</div>
+      <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>文献库<span class="nav-count">137</span></div>
+      <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/></svg>阅读器<span class="nav-count">2</span></div>
+      <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg>脉络<span class="nav-count">9</span></div>
+      <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>设置</div>
+      <div class="nav-foot"><b>课题</b> 智慧水务<br><b>文献</b> 137 · <b>笔记</b> 214<br><b>最后备份</b> 09-25</div>
+    </div>
+
+    <div class="lib">
+      <div class="filter-row">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><span class="ph">全文检索：漏损 定位…</span><span class="k">Ctrl K</span></div>
+        <div class="chips">
+          <div class="chip on">需求预测 <span class="n">×12</span></div>
+          <div class="chip">漏损控制 <span class="n">×8</span></div>
+          <div class="chip">水质模型 <span class="n">×5</span></div>
+          <div class="chip">数字孪生 <span class="n">×4</span></div>
+          <div class="chip">能耗优化 <span class="n">×3</span></div>
+        </div>
+        <div class="sort">年份 新→旧 ▾</div>
+        <div class="density"><div>≡</div><div class="on">≣</div></div>
+      </div>
+
+      <div class="cols">
+        <span class="c-id">编号</span><span class="c-title">题名 · 期刊</span><span class="c-year">年份</span>
+        <span class="c-cite">引用</span><span class="c-tier">档次</span><span class="c-tags">标签</span>
+      </div>
+
+      <div class="list">
+        <div class="row">
+          <span class="r-id">#018</span>
+          <div class="r-main"><div class="r-title">Physics-informed neural networks for water quality modeling</div>
+            <div class="r-sub"><span class="j">Expert Systems with Applications</span><span>2024</span></div></div>
+          <span class="r-year">2024</span><span class="r-cite">4</span>
+          <span class="r-tier"><span class="tier q1">Q1</span></span>
+          <span class="r-tags"><span class="t-mini">水质模型</span><span class="t-mini">PINN</span></span>
+        </div>
+        <div class="row sel">
+          <span class="r-id">#017</span>
+          <div class="r-main"><div class="r-title">基于图神经网络的城市供水管网漏损定位方法</div>
+            <div class="r-sub"><span class="j">中国给水排水</span><span>第 39 卷 · 张明远 等</span></div></div>
+          <span class="r-year">2023</span><span class="r-cite">17</span>
+          <span class="r-tier"><span class="tier q2">Q2</span></span>
+          <span class="r-tags"><span class="t-mini">漏损控制</span><span class="t-mini">GNN</span><span class="t-mini">SCADA</span></span>
+        </div>
+        <div class="row">
+          <span class="r-id">#016</span>
+          <div class="r-main"><div class="r-title">数字孪生流域框架下的智慧水务体系综述</div>
+            <div class="r-sub"><span class="j">水利学报</span><span>综述</span></div></div>
+          <span class="r-year">2023</span><span class="r-cite">31</span>
+          <span class="r-tier"><span class="tier q1">Q1</span></span>
+          <span class="r-tags"><span class="t-mini">数字孪生</span><span class="t-mini">综述</span></span>
+        </div>
+        <div class="row">
+          <span class="r-id">#014</span>
+          <div class="r-main"><div class="r-title">SCADA 数据驱动的二次供水泵组能耗优化</div>
+            <div class="r-sub"><span class="j">中国给水排水</span></div></div>
+          <span class="r-year">2022</span><span class="r-cite">11</span>
+          <span class="r-tier"><span class="tier q3">Q3</span></span>
+          <span class="r-tags"><span class="t-mini">能耗优化</span><span class="t-mini">SCADA</span></span>
+        </div>
+        <div class="row">
+          <span class="r-id">#013</span>
+          <div class="r-main"><div class="r-title">Deep learning for urban water demand forecasting: a review and outlook</div>
+            <div class="r-sub"><span class="j">Water Research</span></div></div>
+          <span class="r-year">2021</span><span class="r-cite">58</span>
+          <span class="r-tier"><span class="tier q1">Q1</span></span>
+          <span class="r-tags"><span class="t-mini">需求预测</span></span>
+        </div>
+        <div class="row">
+          <span class="r-id">#012</span>
+          <div class="r-main"><div class="r-title">时序卷积网络在管网水压预测中的比较研究</div>
+            <div class="r-sub"><span class="j">给水排水</span></div></div>
+          <span class="r-year">2020</span><span class="r-cite">23</span>
+          <span class="r-tier"><span class="tier none">—</span></span>
+          <span class="r-tags"><span class="t-mini">需求预测</span></span>
+        </div>
+        <div class="row">
+          <span class="r-id">#011</span>
+          <div class="r-main"><div class="r-title">城市供水管网水力模型的误差来源分析</div>
+            <div class="r-sub"><span class="j">给水排水</span></div></div>
+          <span class="r-year">2019</span><span class="r-cite">9</span>
+          <span class="r-tier"><span class="tier none">—</span></span>
+          <span class="r-tags"><span class="t-mini">水力模型</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer">
+      <div class="dr-head">
+        <div class="dr-id"><span>SYN-2023-017</span><span style="color:#2e8b57">● 已入库</span></div>
+        <div class="dr-title">基于图神经网络的城市供水管网漏损定位方法</div>
+      </div>
+      <div class="dr-metrics">
+        <div><div class="v acc">17</div><div class="l">引用</div></div>
+        <div><div class="v">6</div><div class="l">通读</div></div>
+        <div><div class="v">14</div><div class="l">标注</div></div>
+        <div><div class="v">9</div><div class="l">笔记</div></div>
+      </div>
+      <div class="dr-body">
+        <div class="fld"><span class="k">YEAR</span><span class="v">2023</span></div>
+        <div class="fld"><span class="k">VENUE</span><span class="v">中国给水排水 · 第 39 卷</span></div>
+        <div class="fld"><span class="k">AUTHORS</span><span class="v">张明远 · 李慧 · 王建国</span></div>
+        <div class="fld"><span class="k">DOI</span><span class="v link">10.19853/j.cnki…</span></div>
+        <div class="fld"><span class="k">ADDED</span><span class="v">2026-09-14 · 拖拽导入</span></div>
+        <div class="dr-sec">标 签</div>
+        <div class="dr-tags"><span class="tag">漏损控制</span><span class="tag">GNN</span><span class="tag dim">SCADA</span><span class="tag dim">待精读</span></div>
+        <div class="dr-sec">关 联</div>
+        <div class="fld"><span class="k">脉络</span><span class="v link">1 个节点 · 3 条连线</span></div>
+        <div class="fld"><span class="k">AI 评估</span><span class="v">2 条待读 · Q3 / Q5</span></div>
+      </div>
+      <div class="dr-actions">
+        <div class="btn primary">去阅读器 →</div>
+        <div class="btn ghost">BibTeX</div>
+        <div class="btn ghost">CSV</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>共 137 篇</span><span>筛选后 23</span><span>已选 1</span>
+    <span class="sep"></span>
+    <span class="ok">自动保存 · 2 秒前</span><span>FTS 查询 12ms</span><span class="sig">▲ 3 篇待 enrich</span>
+  </div>
+</div>
+</div></div>
+
+<footer class="notes">
+  <b>设计要点</b>　① 论点=「测量」：顶栏下缘刻度尺、行首等宽编号（#017 / SYN-2023-017 双编号体系）、tabular-nums 对齐的年份引用列、hover 行的信号橙「游标线」——把「文献库是数据集」的事实变成视觉个性。
+  　② 信息密度上限示范：一行承载 题名+期刊+卷期+作者 / 年份 / 引用 / 档次 / 标签 六路信息仍可扫读——靠列对齐与灰阶分层（墨/灰/浅灰三档），不靠加框。
+  　③ 右侧详情抽屉=「规格表」：字段行 k=等宽大写标签、v=右对齐值；顶部四格指标（引用/通读/标注/笔记）即本篇投入度读数——「关联：脉络 1 节点 3 连线 / AI 评估 2 条待读」是跨域入口。
+  　④ 状态透明：底部状态条（总数/筛选数/FTS 毫秒/自动保存/待办提示）+ 顶栏仪表（FTS/DB/索引）——商用软件的「仪表盘自信」。
+  　⑤ 新 token 族（冷灰白/靛蓝/信号橙），与现行暖色族并存需主题层改造；但布局/密度/规格表模式可独立于配色先行采用。
+</footer>
+
+<script>
+  const W = document.getElementById('frame-wrap'), F = document.getElementById('frame');
+  function fit() { const s = Math.min(1, (innerWidth - 32) / 1440); F.style.transform = 'scale(' + s + ')'; W.style.height = 900 * s + 'px'; W.style.width = 1440 * s + 'px'; }
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

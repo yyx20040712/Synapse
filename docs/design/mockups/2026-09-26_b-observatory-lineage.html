@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 B · 观测台 — Synapse 脉络图设计稿</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #dfe1e6; font-family: 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif; color: #23262d; padding: 28px 16px 48px; }
+  .spec { max-width: 1440px; margin: 0 auto 14px; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .spec h1 { font-family: Georgia, SimSun, serif; font-size: 20px; letter-spacing: 2px; color: #171e33; }
+  .spec .thesis { font-size: 12.5px; color: #6f7482; }
+  .spec .swatches { display: flex; gap: 6px; margin-left: auto; }
+  .spec .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); }
+  #frame-wrap { max-width: 1440px; margin: 0 auto; }
+  #frame { width: 1440px; height: 900px; transform-origin: 0 0; border-radius: 10px; overflow: hidden; position: relative;
+    box-shadow: 0 18px 60px rgba(10,12,20,.35), 0 2px 8px rgba(10,12,20,.25); background: var(--night-bg); }
+  .notes { max-width: 1440px; margin: 16px auto 0; font-size: 12.5px; line-height: 1.9; color: #4a4e58;
+    background: rgba(255,255,255,.72); border: 1px solid #d3d5da; border-radius: 8px; padding: 14px 18px; }
+  .notes b { color: #171e33; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  #frame {
+    --night-bg: #171e33; --night-bg2: #111728;
+    --node-face: #222c4d; --node-face-hi: #2b3760;
+    --band-line: rgba(207,174,114,.14);
+    --star: rgba(222,230,255,.6);
+    --text-on-night: #e9e6db; --text-mid: #c6cbdd; --text-dim: #97a0bb;
+    --gold: #cfae72; --gold-bright: #e3c98f; --edge-glow: rgba(207,174,114,.45);
+    --mono: Consolas, 'Courier New', monospace;
+    --serif: Georgia, SimSun, serif;
+  }
+
+  .app { display: grid; grid-template-rows: 46px 1fr; height: 100%; }
+  .topbar { background: #141a2d; border-bottom: 1px solid rgba(207,174,114,.16); display: flex; align-items: center; padding: 0 8px 0 18px; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand .dia { width: 15px; height: 15px; background: linear-gradient(135deg, var(--gold-bright), var(--gold)); transform: rotate(45deg); border-radius: 2px; box-shadow: 0 0 10px rgba(207,174,114,.5); }
+  .brand .name { font-family: var(--serif); font-size: 15px; letter-spacing: 3px; color: var(--text-on-night); }
+  .ws-chip { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-mid);
+    background: rgba(34,44,77,.7); border: 1px solid rgba(207,174,114,.22); border-radius: 6px; padding: 4px 10px; }
+  .ws-chip .dia-s { width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
+  .topbar .spacer { flex: 1; }
+  .obs-mode { font-size: 11px; color: var(--gold-bright); letter-spacing: 4px; font-family: var(--serif); }
+  .caption-btns { display: flex; height: 100%; }
+  .caption-btns div { width: 44px; display: grid; place-items: center; color: var(--text-dim); font-size: 11px; }
+  .caption-btns .close { width: 54px; }
+  .caption-btns .close:hover { background: #e81123; color: #fff; }
+
+  .body-row { display: flex; min-height: 0; }
+  .nav { width: 178px; background: var(--night-bg2); border-right: 1px solid rgba(207,174,114,.12); display: flex; flex-direction: column; padding: 18px 0 14px; }
+  .nav-item { position: relative; display: flex; align-items: center; gap: 11px; padding: 10px 20px; font-size: 13px; color: var(--text-dim); }
+  .nav-item svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.4; }
+  .nav-item.active { color: var(--gold-bright); background: linear-gradient(90deg, rgba(207,174,114,.12), transparent); }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; width: 3px; height: 34px; margin-top: -17px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border-radius: 0 2px 2px 0; }
+  .nav-foot { margin-top: auto; padding: 12px 20px 0; border-top: 1px solid rgba(151,160,187,.18); font-size: 10px; color: #6d7796; letter-spacing: 1px; }
+
+  .stage { flex: 1; position: relative; min-width: 0; overflow: hidden; }
+  .stage svg.sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* 浮动工具条 */
+  .float-bar { position: absolute; top: 14px; left: 16px; display: flex; gap: 4px; padding: 5px;
+    background: rgba(17,23,40,.78); border: 1px solid rgba(207,174,114,.2); border-radius: 10px; backdrop-filter: blur(8px);
+    box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .fb-btn { font-size: 12px; color: var(--text-mid); padding: 5px 12px; border-radius: 7px; display: flex; align-items: center; gap: 6px; }
+  .fb-btn:hover { background: rgba(207,174,114,.12); color: var(--text-on-night); }
+  .fb-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .fb-btn.primary { background: linear-gradient(135deg, rgba(227,201,143,.22), rgba(207,174,114,.1)); color: var(--gold-bright); border: 1px solid rgba(207,174,114,.3); }
+
+  /* 星等图例 */
+  .legend { position: absolute; left: 16px; bottom: 16px; padding: 10px 14px; border-radius: 10px;
+    background: rgba(17,23,40,.78); border: 1px solid rgba(207,174,114,.2); backdrop-filter: blur(8px); }
+  .legend .cap { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 7px; font-family: var(--serif); }
+  .lg-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-mid); padding: 2.5px 0; }
+  .lg-row .k { width: 16px; text-align: center; }
+
+  /* 缩放 */
+  .zoom { position: absolute; right: 336px; bottom: 16px; display: flex; align-items: center; gap: 2px;
+    background: rgba(17,23,40,.78); border: 1px solid rgba(207,174,114,.2); border-radius: 9px; padding: 4px; backdrop-filter: blur(8px); }
+  .zoom div { min-width: 26px; height: 24px; display: grid; place-items: center; color: var(--text-mid); font-size: 12px; border-radius: 6px; }
+  .zoom div:hover { background: rgba(207,174,114,.12); }
+  .zoom .num { font-family: var(--mono); font-size: 11px; color: var(--gold-bright); }
+
+  /* 观测检查面板（右侧浮动玻璃卡） */
+  .inspector { position: absolute; right: 16px; top: 14px; bottom: 16px; width: 300px; overflow: hidden;
+    background: rgba(23,30,51,.86); border: 1px solid rgba(207,174,114,.24); border-radius: 12px; backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0,0,0,.4); padding: 16px 16px 12px; display: flex; flex-direction: column; }
+  .insp-cap { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); font-family: var(--serif); display: flex; justify-content: space-between; }
+  .insp-title { font-size: 14.5px; color: var(--text-on-night); line-height: 1.55; margin: 9px 0 8px; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font-size: 10.5px; padding: 2.5px 8px; border-radius: 99px; }
+  .badge.core { color: #171e33; background: linear-gradient(135deg, var(--gold-bright), var(--gold)); font-weight: 600; }
+  .badge.plain { color: var(--text-mid); border: 1px solid rgba(151,160,187,.35); font-family: var(--mono); }
+  .idea-cap { font-size: 10px; letter-spacing: 2px; color: var(--gold); margin: 4px 0 5px; }
+  .idea { font-size: 12px; line-height: 1.85; color: var(--text-mid); text-align: justify;
+    border-left: 2px solid rgba(207,174,114,.5); padding-left: 10px; margin-bottom: 12px; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tag { font-size: 10.5px; color: var(--gold-bright); border: 1px solid rgba(207,174,114,.35); border-radius: 5px; padding: 2px 7px; background: rgba(207,174,114,.08); }
+  .sec-cap { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); margin: 2px 0 7px; font-family: var(--serif); display: flex; align-items: center; gap: 7px; }
+  .sec-cap::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(207,174,114,.3), transparent); }
+  .note-card { background: rgba(34,44,77,.55); border: 1px solid rgba(151,160,187,.2); border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; }
+  .note-card .q { font-size: 10px; color: var(--gold-bright); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .note-card .q .bar { width: 3px; height: 10px; border-radius: 2px; background: var(--gold); }
+  .note-card .q .bar.b { background: #7fa7e0; }
+  .note-card .txt { font-size: 11.5px; line-height: 1.7; color: var(--text-mid); }
+  .note-card .quote { font-size: 10.5px; color: var(--text-dim); margin-top: 5px; padding: 4px 7px; background: rgba(0,0,0,.22); border-radius: 5px; border-left: 2px solid rgba(151,160,187,.4); }
+  .insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid rgba(151,160,187,.18); font-size: 10.5px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .insp-foot .kbd { font-family: var(--mono); font-size: 9.5px; border: 1px solid rgba(151,160,187,.35); border-radius: 4px; padding: 1px 5px; }
+
+  .pulse { animation: pulse 3.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<header class="spec">
+  <h1>方向 B · 观测台（夜面）</h1>
+  <span class="thesis">激活现行 theme.css 已定义未消费的「脉络·星象板」夜面 token——脉络图即星图：核心文献=一等星，年份=黄道坐标带。夜间长时间伏案友好。</span>
+  <div class="swatches">
+    <span class="sw" style="background:#171e33"></span><span class="sw" style="background:#111728"></span>
+    <span class="sw" style="background:#222c4d"></span><span class="sw" style="background:#cfae72"></span>
+    <span class="sw" style="background:#e9e6db"></span><span class="sw" style="background:#97a0bb"></span>
+  </div>
+</header>
+
+<div id="frame-wrap"><div id="frame">
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="dia"></div><div class="name">Synapse</div></div>
+    <div class="ws-chip"><span class="dia-s"></span>智慧水务 · 供水管网漏损课题<span style="color:#6d7796;font-size:9px">▾</span></div>
+    <div class="spacer"></div>
+    <div class="obs-mode">NIGHT OBSERVATORY</div>
+    <div class="caption-btns"><div>—</div><div>▢</div><div class="close">✕</div></div>
+  </div>
+
+  <div class="body-row">
+    <div class="nav">
+      <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>文献库</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/></svg>阅读器</div>
+      <div class="nav-item active"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg>脉络</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>设置</div>
+      <div class="nav-foot">v0.1 · 夜面 R2</div>
+    </div>
+
+    <div class="stage">
+      <svg class="sky" viewBox="0 0 1262 854" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="neb" cx="72%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#1d2745"/><stop offset="55%" stop-color="#171e33"/><stop offset="100%" stop-color="#12182b"/>
+          </radialGradient>
+          <linearGradient id="edgeDim" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="rgba(151,160,187,.35)"/><stop offset="100%" stop-color="rgba(151,160,187,.18)"/>
+          </linearGradient>
+          <linearGradient id="edgeGold" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="rgba(227,201,143,.85)"/><stop offset="100%" stop-color="rgba(207,174,114,.4)"/>
+          </linearGradient>
+          <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowBig" x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur stdDeviation="6.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="1262" height="854" fill="url(#neb)"/>
+
+        <!-- 背景星野 -->
+        <g fill="rgba(222,230,255,.5)">
+          <circle cx="180" cy="120" r="1"/><circle cx="420" cy="70" r=".7"/><circle cx="640" cy="150" r="1.1"/>
+          <circle cx="860" cy="90" r=".8"/><circle cx="1020" cy="200" r="1"/><circle cx="1180" cy="140" r=".7"/>
+          <circle cx="90" cy="300" r=".8"/><circle cx="560" cy="260" r=".7"/><circle cx="760" cy="330" r="1"/>
+          <circle cx="980" cy="380" r=".8"/><circle cx="240" cy="420" r=".7"/><circle cx="1180" cy="520" r="1"/>
+          <circle cx="60" cy="620" r=".9"/><circle cx="720" cy="660" r=".7"/><circle cx="1060" cy="720" r=".9"/>
+          <circle cx="340" cy="760" r=".7"/><circle cx="880" cy="800" r=".8"/><circle cx="200" cy="820" r=".6"/>
+          <circle cx="600" cy="60" r=".6"/><circle cx="1240" cy="300" r=".8"/><circle cx="500" cy="520" r=".5"/>
+          <circle cx="1120" cy="620" r=".6"/><circle cx="400" cy="300" r=".5"/><circle cx="1000" cy="120" r=".6"/>
+        </g>
+
+        <!-- 黄道年份坐标带 -->
+        <g>
+          <g transform="translate(0,96)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2019</text></g>
+          <g transform="translate(0,224)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2020</text></g>
+          <g transform="translate(0,352)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2021</text></g>
+          <g transform="translate(0,480)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2022</text></g>
+          <g transform="translate(0,608)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2023</text></g>
+          <g transform="translate(0,736)"><line x1="34" y1="0" x2="936" y2="0" stroke="rgba(207,174,114,.13)" stroke-dasharray="1 6"/><rect x="28" y="-3.2" width="6.4" height="6.4" transform="rotate(45 31.2 0)" fill="rgba(207,174,114,.5)"/><text x="930" y="-9" text-anchor="end" font-family="Georgia, serif" font-size="13" fill="rgba(207,174,114,.75)">2024</text></g>
+        </g>
+
+        <!-- 星座连线：dim -->
+        <g fill="none" stroke="url(#edgeDim)" stroke-width="1.2">
+          <path d="M170,131 L204,224"/>
+          <path d="M212,294 L184,352"/>
+        </g>
+        <g fill="none" stroke="url(#edgeDim)" stroke-width="1.2" stroke-dasharray="5 4" opacity=".7">
+          <path d="M748,612 L486,610"/>
+        </g>
+        <!-- 选中星的连线：金流 -->
+        <g fill="none" stroke="url(#edgeGold)" stroke-width="1.7" filter="url(#glow)">
+          <path d="M184,354 L376,572"/>
+          <path d="M380,644 L700,702"/>
+        </g>
+        <g fill="none" stroke="rgba(207,174,114,.55)" stroke-width="1.4" stroke-dasharray="7 5" filter="url(#glow)">
+          <path d="M838,646 Q836,700 806,736"/>
+        </g>
+        <!-- 推断边（灰蓝虚线） -->
+        <g fill="none" stroke="rgba(151,160,187,.45)" stroke-width="1.1" stroke-dasharray="5 4">
+          <path d="M270,388 Q296,480 322,570"/>
+        </g>
+
+        <!-- ═ 星牌节点 ═ -->
+        <!-- 2019 根 -->
+        <g transform="translate(70,62)">
+          <rect width="200" height="68" rx="9" fill="#222c4d" stroke="rgba(151,160,187,.3)"/>
+          <circle cx="17" cy="17" r="3" fill="rgba(222,230,255,.65)" filter="url(#glow)"/>
+          <text x="32" y="21" font-size="11.5" fill="#e9e6db">管网水力模型误差来源分析</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#97a0bb">2019 · 给水排水 · 引 9</text>
+        </g>
+        <!-- 2020 核心（一等星） -->
+        <g transform="translate(110,190)">
+          <rect width="200" height="68" rx="9" fill="#252f52" stroke="rgba(207,174,114,.55)"/>
+          <circle cx="17" cy="17" r="4.6" fill="#e3c98f" filter="url(#glowBig)" class="pulse"/>
+          <text x="32" y="21" font-size="11.5" fill="#e9e6db" font-weight="600">时序卷积网络水压预测</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#cfae72">2020 · CORE ★1.0 · 引 23</text>
+        </g>
+        <!-- 2021 -->
+        <g transform="translate(80,318)">
+          <rect width="200" height="68" rx="9" fill="#222c4d" stroke="rgba(151,160,187,.3)"/>
+          <circle cx="17" cy="17" r="3.4" fill="rgba(222,230,255,.75)" filter="url(#glow)"/>
+          <text x="32" y="15" font-size="10.5" fill="#e9e6db">Deep learning for urban water</text>
+          <text x="32" y="29" font-size="10.5" fill="#e9e6db">demand forecasting</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#97a0bb">2021 · Water Res. · 引 58</text>
+        </g>
+        <!-- 2022 -->
+        <g transform="translate(436,446)">
+          <rect width="200" height="68" rx="9" fill="#222c4d" stroke="rgba(151,160,187,.3)"/>
+          <circle cx="17" cy="17" r="3" fill="rgba(222,230,255,.65)" filter="url(#glow)"/>
+          <text x="32" y="15" font-size="10.8" fill="#e9e6db">SCADA 数据驱动的二次供水</text>
+          <text x="32" y="29" font-size="10.8" fill="#e9e6db">泵组能耗优化</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#97a0bb">2022 · 中国给水排水 · 引 11</text>
+        </g>
+        <!-- 2023 选中 -->
+        <g transform="translate(280,574)">
+          <rect width="200" height="68" rx="9" fill="#2b3760" stroke="rgba(227,201,143,.95)" stroke-width="1.6" filter="url(#glow)"/>
+          <circle cx="17" cy="17" r="4.2" fill="#e3c98f" filter="url(#glowBig)"/>
+          <text x="32" y="15" font-size="10.8" fill="#f0ead8" font-weight="600">基于图神经网络的供水管网</text>
+          <text x="32" y="29" font-size="10.8" fill="#f0ead8" font-weight="600">漏损定位</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#e3c98f">2023 · 中国给水排水 · 引 17</text>
+          <rect x="-6" y="-6" width="212" height="80" rx="12" fill="none" stroke="rgba(227,201,143,.25)" stroke-dasharray="3 5"/>
+        </g>
+        <!-- 2023 主题分组（◇） -->
+        <g transform="translate(540,574)">
+          <rect width="176" height="68" rx="9" fill="rgba(34,44,77,.55)" stroke="rgba(151,160,187,.4)" stroke-dasharray="5 4"/>
+          <rect x="12" y="10.5" width="8" height="8" transform="rotate(45 16 14.5)" fill="none" stroke="#97a0bb" stroke-width="1.3"/>
+          <text x="30" y="21" font-size="11.5" fill="#c6cbdd">时序预测方法族</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#6d7796">THEME · 5 篇 · 2023</text>
+        </g>
+        <!-- 2023 综述（右列） -->
+        <g transform="translate(748,574)">
+          <rect width="184" height="68" rx="9" fill="rgba(34,44,77,.55)" stroke="rgba(151,160,187,.4)" stroke-dasharray="2 4"/>
+          <circle cx="17" cy="17" r="3" fill="rgba(222,230,255,.55)"/>
+          <text x="32" y="15" font-size="10.5" fill="#c6cbdd">数字孪生流域框架下的智慧</text>
+          <text x="32" y="29" font-size="10.5" fill="#c6cbdd">水务体系综述</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#97a0bb">2023 · 水利学报 · SURVEY</text>
+        </g>
+        <!-- 2024 -->
+        <g transform="translate(604,702)">
+          <rect width="200" height="68" rx="9" fill="#222c4d" stroke="rgba(151,160,187,.3)"/>
+          <circle cx="17" cy="17" r="3.4" fill="rgba(222,230,255,.75)" filter="url(#glow)"/>
+          <text x="32" y="15" font-size="10.5" fill="#e9e6db">Physics-informed NN for</text>
+          <text x="32" y="29" font-size="10.5" fill="#e9e6db">water quality modeling</text>
+          <text x="16" y="52" font-family="Consolas, monospace" font-size="9.5" fill="#97a0bb">2024 · ESWA · 引 4</text>
+        </g>
+
+        <!-- 边语义标签 -->
+        <g font-size="9.5" font-family="'Microsoft YaHei', sans-serif">
+          <rect x="140" y="160" width="34" height="16" rx="4" fill="rgba(17,23,40,.85)"/><text x="157" y="171.5" text-anchor="middle" fill="#97a0bb">继承</text>
+          <rect x="250" y="470" width="34" height="16" rx="4" fill="rgba(17,23,40,.85)"/><text x="267" y="481.5" text-anchor="middle" fill="#97a0bb">推断</text>
+          <rect x="752" y="676" width="46" height="16" rx="4" fill="rgba(17,23,40,.85)"/><text x="775" y="687.5" text-anchor="middle" fill="rgba(207,174,114,.8)">人工补线</text>
+        </g>
+      </svg>
+
+      <!-- 浮动工具条 -->
+      <div class="float-bar">
+        <div class="fb-btn primary"><svg viewBox="0 0 24 24"><path d="M12 4v12M6 12l6 6 6-6M5 20h14"/></svg>导入草稿</div>
+        <div class="fb-btn"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>适应视图</div>
+        <div class="fb-btn"><svg viewBox="0 0 24 24"><path d="M4 5h16M7 12h10M10 19h4"/></svg>按标签过滤</div>
+      </div>
+
+      <!-- 星等图例 -->
+      <div class="legend">
+        <div class="cap">星 等 图 例</div>
+        <div class="lg-row"><span class="k">★</span>一等星 · 核心文献（出度 ≥ 2）</div>
+        <div class="lg-row"><span class="k">✦</span>普通文献</div>
+        <div class="lg-row"><span class="k">◇</span>主题分组（阶段收纳）</div>
+        <div class="lg-row"><span class="k">┈</span>综述关联 · 人工补线 · <span style="opacity:.7">灰=推断</span></div>
+      </div>
+
+      <!-- 缩放 -->
+      <div class="zoom"><div>−</div><div class="num">63%</div><div>＋</div><div>⤢</div></div>
+
+      <!-- 检查面板 -->
+      <div class="inspector">
+        <div class="insp-cap"><span>观 测 检 查</span><span style="font-family:Georgia">W-2023-04</span></div>
+        <div class="insp-title">基于图神经网络的供水管网漏损定位</div>
+        <div class="badges">
+          <span class="badge core">★ 一等星 · 核心</span>
+          <span class="badge plain">2023</span><span class="badge plain">引 17</span><span class="badge plain">Q2</span>
+        </div>
+        <div class="idea-cap">核 心 想 法</div>
+        <div class="idea">把管网拓扑显式建模为图，用图注意力直接从压力残差学「漏损位置」，绕开水力模型误差的累积传播——模型标定不再是定位精度的前提。</div>
+        <div class="tags"><span class="tag">漏损控制</span><span class="tag">GNN</span><span class="tag">SCADA</span></div>
+        <div class="sec-cap">人 工 笔 记</div>
+        <div class="note-card"><div class="txt">与 2020 TCN 一脉相承：都是「绕开模型标定」路线，这里把序列换成拓扑。</div></div>
+        <div class="sec-cap">AI 评 估 笔 记</div>
+        <div class="note-card">
+          <div class="q"><span class="bar"></span>Q3 · 方法</div>
+          <div class="txt">多头注意力聚合邻域压力残差——证据支持「拓扑聚合」主张。</div>
+          <div class="quote">“以节点压力残差为输入特征，通过多头注意力机制聚合邻居节点信息”</div>
+        </div>
+        <div class="note-card">
+          <div class="q"><span class="bar b"></span>Q5 · 推理</div>
+          <div class="txt">Top-5 命中率与管径分布的关系未见消融，外推到多水源管网需谨慎。</div>
+        </div>
+        <div class="insp-foot"><span class="kbd">双击笔记</span>跳转原文锚点 · 只读评估，不自动改稿</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<footer class="notes">
+  <b>设计要点</b>　① 直接消费现行 theme.css 夜面 token 族（--night-bg/--node-face/--star/--edge-glow 均已定义未用）——本方向是「存量资产激活」而非新造调色板。
+  　② 签名元素=星等语义：核心文献=一等星（大光晕+脉动），普通=小星，主题=菱形空心，综述=虚线星牌；图例即「星等图例」。年份层带转译为黄道坐标（右缘年份+菱形刻度）。
+  　③ 选中语义：选中星的全部连线点亮为金流（入/出边高亮），其余边退暗——「看结构」的交互原型。
+  　④ 检查面板（浮玻璃卡）承载选中节点全部信息位：核心想法/标签/人工笔记/AI 评估笔记（对齐 ai-sensor 改造档的「只读评估」呈现），底部常驻「双击跳转锚点」提示。
+  　⑤ 语义差异保留现行三边编码（继承实线/综述虚线/人工补线琥珀虚线/推断灰蓝虚线），只换媒介气质。
+  　⑥ 商用价值：夜间长时间阅读/整理脉络的护眼场景 + 脉络图从「工具图」升格为「研究叙事」的展示感。
+</footer>
+
+<script>
+  const W = document.getElementById('frame-wrap'), F = document.getElementById('frame');
+  function fit() { const s = Math.min(1, (innerWidth - 32) / 1440); F.style.transform = 'scale(' + s + ')'; W.style.height = 900 * s + 'px'; W.style.width = 1440 * s + 'px'; }
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
