@@ -85,25 +85,24 @@ export function ReaderSearchBox(props: {
   }
 
   const countText = state === 'searching' ? '搜索中…' : matchCount === 0 ? '0/0' : `${activeIndex + 1}/${matchCount}`
-  const btn = 'syn-btn-ghost rounded border px-1.5 py-0.5 text-xs'
+  const btn = 'syn-btn-ghost rounded px-1.5 py-0.5 text-xs'
 
   return (
-    <div
-      data-testid="reader-search-box"
-      className="ml-auto flex items-center gap-1 rounded border px-2 py-0.5"
-      style={{ borderColor: 'var(--border)' }}
-    >
+    // [T3-P4] 搜索槽语汇=.rdr-search-slot（mockup .search-slot：ml-auto+panel
+    // 底+line 描边+7px 圆角+min-width 190px——theme-reader.css 单源）；计数=
+    // .rdr-search-count（accent+mono）；data-testid/输入/计数/三钮行为面零变
+    <div data-testid="reader-search-box" className="rdr-search-slot">
       <input
         ref={inputRef}
         data-testid="reader-search-input"
         className="w-32 rounded px-1 text-xs outline-none"
-        style={{ borderColor: 'var(--border)', background: 'var(--panel)', color: 'var(--text)' }}
+        style={{ background: 'transparent', color: 'var(--text)' }}
         aria-label="页内搜索"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={onKeydown}
       />
-      <span data-testid="reader-search-count" className="rdr-num text-xs" style={{ color: 'var(--text-dim)' }}>
+      <span data-testid="reader-search-count" className="rdr-search-count">
         {countText}
       </span>
       {state === 'done' && matchCount === 0 ? (

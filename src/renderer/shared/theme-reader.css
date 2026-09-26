@@ -1,45 +1,178 @@
-/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——阅读器周边域皮肤：R3-U3 工具条
-   玻璃浮层/active tab/等宽数字/侧板节标+R3-U4 设置分节卡与表单 focus。
-   纯迁移值零改;import 序=theme-buttons.css 之后。 */
+/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——阅读器周边域皮肤：工具栏/tab 条/
+   图标钮/等宽数字/侧板节标+R3-U4 设置分节卡与表单 focus。[T3-P4] 阅读器域
+   金族消费退役换 mockup .toolbar/.tabbar 语汇（值源=docs/design/mockups/
+   2026-09-26_v2_theme-light.html L141-166）；import 序=theme-buttons.css 之后。 */
 
-/* ══ R3-U3 阅读器周边皮肤（装饰浓度最低——PDF 区中性不变；玻璃浮层+纸面
-   tab+侧板节标。ReaderToolbar/TabBar/ReaderNotesPanel 消费；标注/AI/选区
-   层零触碰——F-07 层叠链红线）══ */
-.rdr-toolbar {
-  background: var(--panel-glass);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border-gold);
-  box-shadow: var(--shadow-1);
+/* ══ [T3-P4 §7 案 A 裁定] 夜间纸页反位=canvas filter 单点规则 ══
+   消费面=主渲染 canvas（PdfPageCanvas data-pdf-canvas）+缩略图 canvas
+   （OutlineThumb data-thumb-canvas——pdfjs 独立渲染源直挂）同体单声明；
+   值单源=theme.css --canvas-filter 三族（root/sepia=none、dark=invert(1)
+   hue-rotate(180deg)——黑墨带→白字+透明底透出 --paper 暗纸；透明底渲染
+   配方[ADR-0019 R2]零改；已知权衡=PDF 内嵌图片负片化，票面备案收口轮
+   升用户裁决）。禁散布第二消费点（r3p4-reader-skin.test 文本锁）。 */
+canvas[data-pdf-canvas],
+canvas[data-thumb-canvas] {
+  filter: var(--canvas-filter);
 }
-/* active tab=纸面底+inset 金 hairline 底缘（box-shadow inset 零占位——h-8
-   布局不变，F-05 滚动收敛面不扰动；旧 accent-soft 满铺退役） */
+
+/* ══ R3-U3+T3-P4 阅读器周边皮肤（金族退役：panel 底工具栏+line-soft 条 tab+
+   28px 图标钮。ReaderToolbar/TabBar/ReaderSearchBox/ReaderNotesPanel 消费；
+   标注/AI/选区层零触碰——F-07 层叠链红线）══ */
+/* 工具栏（mockup .toolbar L151：panel 底+line 下缘；无 glass 无 blur——金族
+   退役。padding/gap 由组件 tailwind 类承载） */
+.rdr-toolbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+/* 工具栏图标钮（mockup .tb-btn L152-154：28px 方格+7px 圆角+grid 居中+dim 字；
+   hover=line-soft；.on=accent-soft 底+accent 字+inset 1px accent ring——选中态
+   的 background/borderColor 内联串锁由 ReaderToolbar 保活[reader-toolbar-icons
+   受锁断言]，ring 住类承载） */
+.rdr-tool-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: var(--dim);
+}
+.rdr-tool-btn:not(:disabled):hover {
+  background: var(--line-soft);
+}
+.rdr-tool-btn.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+/* 门一回炉（d1-W1/k2-W1 双源共指）：on∩hover 交汇保 accent-soft——:not(:disabled)
+   参数计权使 hover 规则 (0,3,0) 恒压 .on (0,2,0)，与 mockup「源序 on 胜出」相反；
+   本条升特异性闭合（双页钮=实触发点，选择模式钮被内联 background 串锁护住） */
+.rdr-tool-btn.on:not(:disabled):hover {
+  background: var(--accent-soft);
+}
+/* −/＋/100% 文字符钮变体（方格语汇保形——width:auto/min-width:28px 弹宽不截字） */
+.rdr-tool-btn-text {
+  width: auto;
+  min-width: 28px;
+  padding: 0 6px;
+}
+/* 工具栏分隔线（mockup .tb-sep L157）+缩放读数（mockup .zoom-num L158：
+   42px 居中 tabular-nums） */
+.rdr-tb-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--line);
+  margin: 0 7px;
+}
+.rdr-zoom-num {
+  font-size: var(--fs-body);
+  color: var(--dim);
+  min-width: 42px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* tab 条（mockup .tabbar L142：line-soft 条底+line 下缘+34px+0 6px+gap 2px——
+   旧 h-8 border-r 序列退役） */
+.rdr-tabbar {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  background: var(--line-soft);
+  border-bottom: 1px solid var(--line);
+  padding: 0 6px;
+  gap: 2px;
+}
+/* tab 基形（mockup .tab L143-145：圆角顶 7px+透明边+下缘 none+margin-top 5px+
+   max-width 240px） */
+.rdr-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 14px;
+  font-size: var(--fs-body);
+  color: var(--dim);
+  border: 1px solid transparent;
+  border-radius: 7px 7px 0 0;
+  border-bottom: none;
+  margin-top: 5px;
+  max-width: 240px;
+}
+/* active tab（mockup .tab.active L146：panel 底+line 边+accent 2px 底缘——
+   底缘取 box-shadow inset 零占位手法[零占位先例沿用]，::after 伪元素 jsdom
+   不可断言故不取；金 hairline 退役） */
 .rdr-tab-active {
   background: var(--panel);
-  box-shadow: inset 0 -2px 0 0 var(--border-gold);
+  color: var(--ink);
+  border-color: var(--line);
+  box-shadow: inset 0 -2px 0 0 var(--accent);
 }
-/* 阅读器数字（页码/缩放）tabular-nums 等宽数字（R2-SH2 决5：衬线消费清零，
+/* dirty 灰点（mockup .dirty-dot L147：6px 圆+warn 族色——旧 ● 字符退役） */
+.rdr-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+  flex: none;
+}
+/* 关闭叉（mockup .tab .x：faint 色+3px 圆角；hover=token 承载 line-soft——
+   旧 tailwind hover:bg-black/10 硬编码退役） */
+.rdr-tab-close {
+  font-size: var(--fs-micro);
+  color: var(--faint);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.rdr-tab-close:not(:disabled):hover {
+  background: var(--line-soft);
+}
+/* 页内搜索槽（mockup .search-slot L160：ml-auto+panel 底+line 描边+7px 圆角+
+   190px——本应用槽内含输入+计数+三钮，恒宽截内容故取 min-width 弹性载体；
+   计数 .cnt=accent+mono→.rdr-search-count） */
+.rdr-search-slot {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px 10px;
+  min-width: 190px;
+}
+.rdr-search-count {
+  margin-left: auto;
+  font-size: var(--fs-micro);
+  color: var(--accent);
+  font-family: var(--mono);
+  /* 门一回炉（k2-W2③）：旧 .rdr-num 载体的 tabular-nums 随类摘除丢失——回植
+     （R2-SH2 决5 同规则：等宽数字不随载体迁移而丢） */
+  font-variant-numeric: tabular-nums;
+}
+/* 阅读器数字（页码）tabular-nums 等宽数字（R2-SH2 决5：衬线消费清零，
    回继承 UI 字体——同规则 font-variant-numeric 不动） */
 .rdr-num {
   font-variant-numeric: tabular-nums;
 }
-/* 阅读器侧板节标：h4 金左缘条（R2-SH2 决5：衬线消费清零；夜色只属脉络域——侧板保持亮面） */
+/* 阅读器侧板节标：h4 左缘条（[T3-P4] 金→accent；R2-SH2 决5：衬线消费清零；
+   夜色只属脉络域——侧板保持亮面；ReaderNotesPanel 消费同享） */
 .rdr-aside-h4 {
   margin: 0;
   font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--text);
-  border-left: 3px solid var(--gold);
+  border-left: 3px solid var(--accent);
   padding-left: 8px;
 }
 /* F-UI-02 工具栏/侧栏 tab 图标基线（D7=24×24 单色描边，沿 theme-shell.css
    .titlebar-btn svg 先例：stroke currentColor/fill none/统一线宽；图标常量
    =toolbar-icons.tsx+OutlineAside.tsx TAB_ICONS，禁新依赖；按钮文本走
-   sr-only span——textContent/accessible name 双面保活受锁断言） */
+   sr-only span——textContent/accessible name 双面保活受锁断言；
+   [T3-P4] 16px=mockup .tb-btn svg/.aside-tab svg 逐值） */
 .rdr-toolbar button svg,
 .rdr-aside-tabs button svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex: none;
   stroke: currentColor;
   fill: none;
