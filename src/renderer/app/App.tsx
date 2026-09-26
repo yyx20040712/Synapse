@@ -1,10 +1,10 @@
 /**
- * 应用骨架（infra，无工单）：顶栏身份区（R2-SH2 决4）+ 侧栏四入口 + 视图切换 + 错误边界。
- * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
- * [T3-P1] ErrorBoundary 拆 ./ErrorBoundary（组件 250 行防线——本件主题接线
- * +7 行压线，边界=独立职责拆件，行为零迁移）。
+ * 应用骨架（infra，无工单）：[T3-P2] 壳层改版——grid 38px/1fr/26px 三行
+ * （顶栏 wordmark 签名+居中 gsearch+caption 三键｜Rail 72px 窄轨+main｜状态条）
+ * +视图切换+错误边界。F-UI-03 折叠 nav 面已退役（方案切换=删除旧方案）。
+ * 各页面组件来自 features/*。[T3-P1] ErrorBoundary 拆 ./ErrorBoundary。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -12,73 +12,21 @@ import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
 import { useTabDirtyAggregate } from '../features/reader/state/tab-dirty'
-import { useLineageDirty } from '../features/lineage/lineage.store'
+import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 import { useSettingsStore } from '../features/settings/settings.store'
+import { useLibraryStore } from '../features/library/library.store'
 import { UI_SCALE } from '@shared/ipc/schemas'
-import { WorkspaceSwitcher } from '../features/workspaces/WorkspaceSwitcher'
 import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
+import { THEME_LABEL } from '../shared/ui-constants'
+import { Rail, type ViewId } from './Rail'
+import { StatusBar } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
-import { SplitPane } from '../shared/ui/SplitPane'
 import { ErrorBoundary } from './ErrorBoundary'
-
-type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
-
-const NAV: Array<{ id: ViewId; label: string }> = [
-  { id: 'library', label: '文献库' },
-  { id: 'reader', label: '阅读器' },
-  { id: 'settings', label: '设置' },
-  { id: 'lineage', label: '脉络' }
-]
-
-/**
- * nav 入口内联 SVG 图标（R3-TH1——mockup shell-library.html path 逐字誊录，
- * 禁新增依赖红线；aria-hidden 不污染 getByRole name=e2e 断言面）。
- */
-const NAV_ICONS: Record<ViewId, JSX.Element> = {
-  library: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M4 4h5v16H4zM12 4h5v16h-5z" />
-      <path d="M19 5.5l2 .9v13.2l-2 .9" />
-    </svg>
-  ),
-  reader: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 5c-2 0-3 1-4.5 1S5 5.5 5 5.5v13S6.5 18 7.5 18s2.5 1 4.5 1 3-1 4.5-1 2.5.5 2.5.5v-13S19 6 17.5 6 14 5 12 5z" />
-      <path d="M12 5v14" />
-    </svg>
-  ),
-  settings: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
-    </svg>
-  ),
-  lineage: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 3l2.2 4.8L19 9l-3.5 3.4.9 5-4.4-2.5L7.6 17.4l.9-5L5 9l4.8-1.2z" />
-    </svg>
-  )
-}
-
-/** F-UI-03 收起/展开双箭头（D7=24×24 viewBox 单色描边，沿 NAV_ICONS 形态，
- *  禁新增依赖；aria-hidden——按钮名走 aria-label 三元，TitleBarControls 先例） */
-const ICON_NAV_COLLAPSE = (
-  <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M11 5l-6 7 6 7M19 5l-6 7 6 7" />
-  </svg>
-)
-const ICON_NAV_EXPAND = (
-  <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M13 5l6 7-6 7M5 5l6 7-6 7" />
-  </svg>
-)
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
-  // F-UI-03：导航栏窄条折叠态（SplitPane 受控面；不持久化，会话默认展开）
-  const [navCollapsed, setNavCollapsed] = useState(false)
   // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
   // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
   // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
@@ -95,7 +43,7 @@ export function App(): JSX.Element {
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
   // R1-WS2：课题清单驻留（列表型失败在 store 内写 error，不抛——挂载安全）；
-  // dirty 聚合值经 props 注入切换器与设置面（禁跨域 store 互引，ADR-0018）
+  // dirty 聚合值经 props 注入 Rail 弹层与设置面（禁跨域 store 互引，ADR-0018）
   const wsLoad = useWorkspaceStore((s) => s.load)
   useEffect(() => {
     void wsLoad()
@@ -133,74 +81,67 @@ export function App(): JSX.Element {
     return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
   }, [])
 
+  // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
+  // 课题名/篇数=workspace items+currentId 推导；脉络计数=lineage nodes/edges；
+  // 已选=library selectedId 0/1；主题名=THEME_LABEL 单源（ui-constants）
+  const wsItems = useWorkspaceStore((s) => s.items)
+  const wsCurrentId = useWorkspaceStore((s) => s.currentId)
+  const wsCurrent = wsItems.find((w) => w.id === wsCurrentId)
+  const lineageNodes = useLineageStore((s) => s.nodes)
+  const lineageEdges = useLineageStore((s) => s.edges)
+  const selectedId = useLibraryStore((s) => s.selectedId)
+
+  // T3-P2 gsearch：全局 Ctrl+K 聚焦（keydown 挂 App 单点；preventDefault 防
+  // 浏览器默认；v1 展示性控件——可聚焦可输入，无后端动作；提示语=受控空值
+  // 显隐 span.ph（mockup .ph 语汇——票面「提示语『全局搜索』」的落地形态）
+  const gsearchRef = useRef<HTMLInputElement>(null)
+  const [gsearchText, setGsearchText] = useState('')
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent): void => {
+      if (ev.ctrlKey && (ev.key === 'k' || ev.key === 'K')) {
+        ev.preventDefault()
+        gsearchRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
-    <div className="flex h-full flex-col">
-      {/* R2-SH2 决4 顶栏身份区（ZCode 式）：logo+应用名「Synapse」（smoke.spec:22
-          getByText 断言面——迁顶栏后文本仍唯一在场）+课题切换器迁挂+版本号右区 */}
+    <div className="app-shell">
+      {/* T3-P2 顶栏 38px（mockup .topbar 语汇，类名保留 .app-header——smoke/
+          window-control 选择器面最小伤害）：wordmark 签名+gsearch 居中+caption
+          三键；整条 drag，三键/wordmark/gsearch=no-drag（皮肤住 theme-shell.css） */}
       <header className="app-header">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)" fill="none" stroke="var(--gold)" strokeWidth="1" />
-          <rect x="9.5" y="9.5" width="5" height="5" transform="rotate(45 12 12)" fill="var(--gold)" />
-        </svg>
-        <span className="app-header-name">Synapse</span>
-        {/* R1-WS2：课题切换器（R2-SH2 迁挂顶栏——纯容器迁挂，组件本体零改）：
-            dirty 聚合 props 注入，「管理」跳设置；wrapper 防展开面板撑高顶栏 */}
-        <div className="app-header-switcher">
-          <WorkspaceSwitcher dirty={quitDirty} onManage={() => setView('settings')} />
+        <span className="wordmark">Syn<i>a</i>pse</span>
+        <div className="gsearch">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M15.5 15.5L21 21" />
+          </svg>
+          <input
+            ref={gsearchRef}
+            type="text"
+            aria-label="全局搜索"
+            value={gsearchText}
+            onChange={(e) => setGsearchText(e.target.value)}
+          />
+          {gsearchText === '' && (
+            <span className="ph" aria-hidden="true">全局搜索</span>
+          )}
+          <span className="k" aria-hidden="true">Ctrl K</span>
         </div>
-        <span className="app-nav-ver">v0.1</span>
-        {/* R2-SH3：frameless 自绘 caption 三键（版本号 margin-left:auto 吸收
-            空隙，三键组排最右——bilibili 式；皮肤住 theme-shell.css） */}
+        {/* R2-SH3：frameless 自绘 caption 三键（42/42/52px 皮肤化——close 悬停
+            --close-red；IPC 三动作不动） */}
         <TitleBarControls />
       </header>
-      {/* min-h-0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
-          R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——header
-          在行外结构性豁免（E5：caption 三键/顶栏保持系统观感）；PDF 页列在
-          theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
-      <div className="app-content-row flex min-h-0 flex-1">
-        {/* F-UI-03：墨青侧栏边界可拖宽+窄条折叠（D4=184/64/280 档位）——
-            SplitPane main 槽 null（主内容外置，ReaderPageView 先例）；nav 宽度
-            归 pane 容器管；label 包 span.app-nav-label=窄态 clip 视觉隐藏（禁
-            display:none——Chromium 排除出 accessible name，e2e name 断言面破） */}
-        <SplitPane
-          paneId="app-nav"
-          side="left"
-          defaultWidth={184}
-          min={64}
-          max={280}
-          collapsible
-          collapsedWidth={64}
-          collapsed={navCollapsed}
-          onCollapsedChange={setNavCollapsed}
-          children={{
-            pane: (
-              <nav className={navCollapsed ? 'app-nav app-nav-collapsed' : 'app-nav'}>
-                <button
-                  type="button"
-                  className="app-nav-toggle"
-                  aria-label={navCollapsed ? '展开导航栏' : '收起导航栏'}
-                  onClick={() => setNavCollapsed((c) => !c)}
-                >
-                  {navCollapsed ? ICON_NAV_EXPAND : ICON_NAV_COLLAPSE}
-                </button>
-                {NAV.map((item) => (
-                  <button
-                    key={item.id}
-                    className={`app-nav-item${view === item.id ? ' app-nav-item-active' : ''}`}
-                    onClick={() => setView(item.id)}
-                  >
-                    {NAV_ICONS[item.id]}
-                    <span className="app-nav-label">{item.label}</span>
-                  </button>
-                ))}
-                <div className="app-nav-foot">
-                  <span className="app-nav-txt">本地学术文献管理</span>
-                </div>
-              </nav>
-            ),
-            main: null
-          }}
-        />
+      {/* min-height:0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
+          R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——rail+main
+          同入 zoom，topbar/statusbar 行外结构性豁免（E5：caption 三键/顶栏保持
+          系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
+      <div className="app-content-row">
+        {/* T3-P2：72px 窄轨（课题弹层 dirty 聚合值注入）；F-UI-03 折叠 nav 面退役 */}
+        <Rail view={view} onView={setView} dirty={quitDirty} />
         <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
             {view === 'library' && <LibraryPage />}
@@ -212,6 +153,17 @@ export function App(): JSX.Element {
           </ErrorBoundary>
         </main>
       </div>
+      {/* T3-P2 状态条 26px（等宽字仪表带——真文本槽位锁在 app-shell.test） */}
+      <footer className="app-statusbar">
+        <StatusBar
+          wsName={wsCurrent?.name ?? ''}
+          paperCount={wsCurrent?.paperCount ?? 0}
+          nodeCount={lineageNodes.length}
+          edgeCount={lineageEdges.length}
+          selectedCount={selectedId !== null ? 1 : 0}
+          themeLabel={THEME_LABEL[theme]}
+        />
+      </footer>
       <ToastHost />
     </div>
   )

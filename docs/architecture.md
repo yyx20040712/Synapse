@@ -276,6 +276,10 @@ AGENTS.md「环境事实」单源，此处不复制。
 - 渲染域 `src/renderer/features/lineage/`（第四视图：Reingold-Tilford 零依赖
   布局+SVG 画布 pan/zoom+侧板详情）；main 域 `services/lineage/`（树守卫两口：
   草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`。
+- [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
+  `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题弹层 `app/WsRailPopover.tsx`
+  A10 联动+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props 注入）；
+  F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器侧栏消费）。
 - 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）；
   边三 kind=tree/ref/manual 终态（INV-27）；自动引文网络图维持不做（ADR-0012
   共存已裁决——对象不同、不复用表）。
@@ -288,8 +292,11 @@ AGENTS.md「环境事实」单源，此处不复制。
 - main 装配=`workspace-layout.ts`（数据目录解析）+`data-layer.container.ts`
   （可重建 facade：switch=关旧库→重建→热换，busy 串行守卫——INV-35 四联）。
 - **legacy-fresh 双态启动**：全新首启不建 workspaces/（库在 userData 根），二启
-  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=切换器
-  （dirty 确认→IPC switch→`location.reload()` 全新 stores）。
+  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=课题弹层
+  （`app/WsRailPopover.tsx`，T3-P2 起取代顶栏切换器——dirty 确认→IPC switch→
+  `location.reload()` 全新 stores，联动不变量=INV-72）；list 每课题条目携
+  paperCount（main 根 `workspace-layout.countPapersInDir` 依赖倒置注入——
+  ADR-0018 一课题一库，逐课题库 COUNT 非单库 GROUP BY）。
 
 ### 8.3 ai-sensor（AI 伴随进程域）
 

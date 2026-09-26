@@ -34,7 +34,9 @@
  *
  * ── 接口层 ──
  * - list/create/rename/switch/currentName——IPC 面形状由 ApiHandlers['workspaces']
- *   接线表推导（bootstrap 组合注入，R1-WS1）；name 长度 1-40 由 schema 锁定
+ *   接线表推导（bootstrap 组合注入，R1-WS1）；name 长度 1-40 由 schema 锁定；
+ *   [T3-P2] list 每课题条目携 paperCount（deps.countPapers 注入——ADR-0018
+ *   一课题一库，计数=逐课题库 COUNT，非单库 GROUP BY）
  *
  * ── 架构层 ──
  * - 分层：ipc → services → fs（本文件只编排 workspace.fs 纯 fs 层；空库迁移经
@@ -79,6 +81,9 @@ export interface WorkspaceServiceDeps {
   /** import in-flight 判定（F-D4 A 面：bootstrap 注入 gate 计数>0——main 侧单源，
    *  renderer busy 不参与；true 时 create/rename/switch 拒绝，拒时零库副作用） */
   importInFlight: () => boolean
+  /** [T3-P2] 课题文献计数（依赖倒置——services 禁直连 db，main 根注入
+   *  workspace-layout.countPapersInDir；list 每课题条目 paperCount 数据源） */
+  countPapers: (wsDir: string) => number
 }
 
 /** 域错误载体（基类一行继承=services/shared/domain-error——F-DEDUP-01 单源） */
@@ -123,14 +128,15 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps) {
   return {
     async list(_req: unknown) {
       if (!existsSync(rootDir)) {
-        // L0：合成 default（不物化——读侧零副作用）
+        // L0：合成 default（不物化——读侧零副作用）；计数=遗留根库真值
         const mtime = (await stat(join(userDataDir, DB_FILE_NAME)).catch(() => null))?.mtime
         return {
           items: [
             {
               id: DEFAULT_WS_ID,
               name: DEFAULT_WS_NAME,
-              createdAt: mtime?.toISOString() ?? '1970-01-01T00:00:00.000Z'
+              createdAt: mtime?.toISOString() ?? '1970-01-01T00:00:00.000Z',
+              paperCount: deps.countPapers(userDataDir)
             }
           ],
           currentId: DEFAULT_WS_ID
@@ -138,7 +144,11 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps) {
       }
       const ids = await listWorkspaceIds(rootDir)
       const items = await Promise.all(
-        ids.map(async (id) => ({ id, ...(await readMeta(rootDir, id)) }))
+        ids.map(async (id) => ({
+          id,
+          ...(await readMeta(rootDir, id)),
+          paperCount: deps.countPapers(join(rootDir, id))
+        }))
       )
       items.sort((a, b) =>
         a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)

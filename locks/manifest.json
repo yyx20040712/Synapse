@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-26T15:00:11.1488731Z",
+    "generatedAt":  "2026-09-26T16:57:10.4339889Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "99134a366a887f74d3bc2fb7695143582c4080265d6764bb6915eecee7e825cc"
+                      "sha256":  "047b4b9f266c78b768c67e04fe59dfeb3afbba8d4a467f52cab9e3e1702a4f0e"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -35,7 +35,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "7f9de184a899ab30bdb68034a09ac5dec67627de56abf51318b37ac38c8edcf4"
+                      "sha256":  "6bd179d0c2f545ac88028758073ca0f5566786a6c604943dc76cac6219fdaee9"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "3535322c8595a76e4f50fc94d186b22894ed4e88957d449d3706b9aee6ebcd54"
+                      "sha256":  "5d20889222bb49fd9b0ba7b1915d0e3af6d36dfc58ebff9c4f414425161eeb4a"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "c28bb99b3683a5af732faf39dbe378b759c3a08ee6c51075d5da9cf79fe0743e"
+                      "sha256":  "88dbb004af43c208deec252cb5c4f8ada20f20477d87d2719fcddebcc52ce92b"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -155,7 +155,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "e4b1b1641e095a69e87c084330f60ed916cd1aff1b96815358c8bb5cba632a9c"
+                      "sha256":  "5f5295fc972c4066986273478e65e9ad8c649c728d452614e5dc97e19115bdb7"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -191,7 +191,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "e12d322d1d3a5622427e212849b776b979903808903656b2aa5fde89ac70d687"
+                      "sha256":  "1e6b2c59fe209726db2b462ddbffb50d8c2612267826745d0efa089d71f6fe3c"
                   },
                   {
                       "path":  "tests/contracts/api-surface-closure.test.ts",
@@ -215,7 +215,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "0d7196ee8057e30a278368aa44467f07f29d48e53697890888f0ba64199bb447"
+                      "sha256":  "0839c56d00b68f6365d605881b94987f02660c8bd828532fcd540e34f35da4ab"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -262,8 +262,12 @@
                       "sha256":  "434a4fd709cced8c82c027e282a5f27d7863858b00e81bb3ab10c5fbfa4e05e3"
                   },
                   {
+                      "path":  "tests/e2e/shell-rail.spec.ts",
+                      "sha256":  "1befbc5dc780eb68e72ad0b116c1e5d5f6eb51d2eb3e4a7e9939cb63514d16dc"
+                  },
+                  {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "e0e2b52b5371bc015f60655d656ffba4484e66ebf046ccadadff9a0b16263084"
+                      "sha256":  "64164ca5ccc0a22301ecd7ebeceb9c3a8462db4a370bcb21479a50998112f89f"
                   },
                   {
                       "path":  "tests/e2e/stable-rel.ts",
@@ -283,7 +287,7 @@
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
-                      "sha256":  "6e1966b7be9bfbef13f63c5576bf0ac489c9957fa0c26d9084fb3b456be5f0be"
+                      "sha256":  "afb6da710fe1158717fb826cf6437434709444474b5eae688a8fd3baf9708c8f"
                   },
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
@@ -296,14 +300,6 @@
                   {
                       "path":  "tests/e2e/z-f-rdr02-repro-probe.spec.ts",
                       "sha256":  "84df82ce1bba9ec6a1ea9e3dfb58f468ec3d43852d0276ce9f0f7c7a2aa199c9"
-                  },
-                  {
-                      "path":  "tests/e2e/z-f-ui03-nav-geom-probe.spec.ts",
-                      "sha256":  "e0936852bd9975d0bde63fa7540e75d0bf4b6515f53eba8d7b137ce6e6a8b326"
-                  },
-                  {
-                      "path":  "tests/e2e/z-f-ui04-vert-probe.spec.ts",
-                      "sha256":  "e65432abb460da0ab80554c45def29f542d8ba3f31ea17654ad9d115215d748f"
                   },
                   {
                       "path":  "tests/e2e/z-r2e-probe.spec.ts",
@@ -515,7 +511,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "bbd579beedad55e7aec889c89354023074557025d331f7b61fd2bd99d4fe50ee"
+                      "sha256":  "03acfaf09de40d1eaef25e6f268d883fa7320ab5aed77c206044526f3cb515e7"
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
@@ -747,7 +743,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
-                      "sha256":  "e7ef5917f259eced00238765b774f5271881023eda7f14e41a9d1d05e64a5beb"
+                      "sha256":  "e520d2bf1a658bedfe0414e3f483a9acf28bce847dfa877b58e97101652a3a53"
                   },
                   {
                       "path":  "tests/unit/renderer/tab-bar.test.tsx",
@@ -779,7 +775,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "1c9ee4553f43234cb4a280cdc18e4082b7cab86493040ac2ab7286e1812242c4"
+                      "sha256":  "2089edd945b4901f5564cf866e6af9a9c617bbe686d201e6a5af9eba0f05f9aa"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",
@@ -799,11 +795,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/workspace.store.test.ts",
-                      "sha256":  "5eff5bf6b454198f525d6839571f3440b3692a76676871b2151755c1a1c76229"
-                  },
-                  {
-                      "path":  "tests/unit/renderer/workspace-switcher.test.tsx",
-                      "sha256":  "c3056a2c0f0e04244c13b55a83822143067edd24de193d34e0106db851ed7da3"
+                      "sha256":  "b3f4ad88e343b3f1b712a06b2beb926691fd01fddf24cff536912ef8cb7e691b"
                   },
                   {
                       "path":  "tests/unit/renderer/zcode-link-section.test.tsx",
@@ -919,7 +911,7 @@
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",
-                      "sha256":  "7a58c2ec477dfed89b744b0cdf78e88897723f43436acf153f33b11a96d92950"
+                      "sha256":  "1b182e783c5f58003e171189cd927042841a577172fa7866ede424ea5f81f19c"
                   },
                   {
                       "path":  "tests/unit/services/zcode-link.service.test.ts",
@@ -955,7 +947,7 @@
                   },
                   {
                       "path":  "tests/unit/windows/window-control.test.ts",
-                      "sha256":  "2947939a02c91af8021bdedebbf794cf22a0b6ff3f152210abd325c6e099a2a9"
+                      "sha256":  "50aadd5845108d5c6d7347c1d065623700e555c37af8984fccab74f3ff2aa2b2"
                   },
                   {
                       "path":  "tests/unit/windows/window-state.test.ts",

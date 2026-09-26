@@ -78,7 +78,7 @@ const sensorStatus = {
   heartbeatAt: ISO,
   running: false
 }
-const wsItem = { id: 'ws1', name: '课题', createdAt: ISO }
+const wsItem = { id: 'ws1', name: '课题', createdAt: ISO, paperCount: 0 }
 const netDiagItem = { host: 'api.crossref.org', ok: true, latencyMs: -1 }
 
 // ── 合法夹具全集（键 ⟷ schemas.ts zod 导出一一对应——闭包对账面）────────

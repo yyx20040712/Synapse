@@ -12,15 +12,11 @@
  * - 持久化：宽度写 localStorage 键 'synapse:splitpane:<paneId>'（前缀对齐
  *   src/renderer/shared/open-paper-bus.ts:12 的 'synapse:open-paper' 命名先例）；
  *   载入时越界值或越界 defaultWidth 一律夹取/回退
- * - collapsible：双击手柄折叠/恢复 pane，折叠三态（F-UI-03 扩展）：
- *   | 态 | pane 宽 | display | aria-valuenow |
- *   | --- | --- | --- | --- |
- *   | 展开态（collapsed=false） | width（拖拽/键盘可调） | 可见 | round(width) |
- *   | 窄条折叠（true 且 collapsedWidth 传入） | collapsedWidth | 保留（窄条） | collapsedWidth |
- *   | 隐藏折叠（true 且未传——旧行为） | width（记忆） | none | 0 |
- *   两类折叠态拖拽/键盘均不启动；受控折叠面（F-UI-03）：collapsed 传入=外部
- *   state 驱动（双击只上报 onCollapsedChange 不自改）；不传=内部 useState 缺省（零漂移红线）；
- *   未定义组合「非受控+传回调」=上报+自改并行（回调作无害通知——门一 N5 声明）
+ * - collapsible：双击手柄折叠/恢复 pane（折叠=display:none 隐藏，宽度记忆）；
+ *   折叠态拖拽/键盘均不启动（隐藏栏上调宽无意义）。
+ *   [T3-P2] F-UI-03 折叠扩展三 prop（collapsedWidth/collapsed/
+ *   onCollapsedChange 受控窄条面）已随 App 壳 nav 退役删除——本体保留
+ *   （消费方=阅读器侧栏 collapsible 隐藏折叠面）
  * - 拖拽会话（INV-14 同族：监听与 body 样式副作用同源清理）：
  *   | 态 | 事件 | 迁移 |
  *   | --- | --- | --- |
@@ -32,8 +28,6 @@
  * ── 接口层 ──
  * - export function SplitPane(props: { paneId: string; side: 'left' | 'right';
  *     defaultWidth: number; min: number; max: number; collapsible?: boolean;
- *     collapsedWidth?: number; collapsed?: boolean;
- *     onCollapsedChange?: (collapsed: boolean) => void;
  *     children: { pane: ReactNode; main: ReactNode | null } }): JSX.Element
  *
  * ── 架构层 ──
@@ -88,28 +82,12 @@ export function SplitPane(props: {
   min: number
   max: number
   collapsible?: boolean
-  /** F-UI-03：折叠目标宽（px）——传入时折叠=可见窄条而非 display:none */
-  collapsedWidth?: number
-  /** F-UI-03：受控折叠真值（不传=非受控内部 useState——向后兼容红线） */
-  collapsed?: boolean
-  /** F-UI-03：折叠请求上报（受控模式双击手柄的唯一外沿） */
-  onCollapsedChange?: (collapsed: boolean) => void
   children: { pane: ReactNode; main: ReactNode | null }
 }): JSX.Element {
-  const {
-    paneId,
-    side,
-    defaultWidth,
-    min,
-    max,
-    collapsible = false,
-    collapsedWidth, collapsed: collapsedProp, onCollapsedChange,
-    children
-  } = props
+  const { paneId, side, defaultWidth, min, max, collapsible = false, children } = props
   const [width, setWidth] = useState(() => loadWidth(paneId, defaultWidth, min, max))
-  // 非受控折叠态（collapsedProp 传入时不驱动渲染——受控真值在外部 state）
-  const [internalCollapsed, setInternalCollapsed] = useState(false)
-  const collapsed = collapsedProp ?? internalCollapsed
+  // 折叠态（双击手柄 toggle——F-UI-03 受控面已退役，仅内部态）
+  const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
   /** 拖拽起点（屏幕 x + 起始宽）——dragging 期间非空 */
   const startRef = useRef<{ px: number; w: number } | null>(null)
@@ -178,12 +156,8 @@ export function SplitPane(props: {
     setWidth((w) => clamp(w + step))
   }
 
-  // 折叠三态（头注行为层表）：窄条折叠=collapsedWidth 可见宽；隐藏折叠=display:none 宽度记忆（旧行为）
-  const paneStyle = collapsed
-    ? collapsedWidth !== undefined
-      ? { width: `${collapsedWidth}px` }
-      : { width: `${width}px`, display: 'none' }
-    : { width: `${width}px` }
+  // 折叠=display:none 隐藏，宽度记忆（T3-P2 起单一折叠形态——F-UI-03 窄条面退役）
+  const paneStyle = collapsed ? { width: `${width}px`, display: 'none' } : { width: `${width}px` }
 
   const paneNode = (
     <div data-testid="split-pane-pane" className="h-full min-h-0 shrink-0 overflow-hidden" style={paneStyle}>
@@ -195,7 +169,7 @@ export function SplitPane(props: {
       role="separator"
       aria-orientation="vertical"
       aria-label="侧栏宽度"
-      aria-valuenow={collapsed ? (collapsedWidth ?? 0) : Math.round(width)}
+      aria-valuenow={collapsed ? 0 : Math.round(width)}
       aria-valuemin={min}
       aria-valuemax={max}
       tabIndex={0}
@@ -207,16 +181,7 @@ export function SplitPane(props: {
       onPointerDown={onHandleDown}
       onKeyDown={onHandleKey}
       onDoubleClick={() => {
-        if (collapsible) {
-          // F-UI-03 受控面：上报请求；非受控（collapsed prop 未传）才内部自改
-          const next = !collapsed
-          if (onCollapsedChange !== undefined) {
-            onCollapsedChange(next)
-          }
-          if (collapsedProp === undefined) {
-            setInternalCollapsed(next)
-          }
-        }
+        if (collapsible) setCollapsed((c) => !c)
       }}
     />
   )

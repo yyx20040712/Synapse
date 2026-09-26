@@ -204,6 +204,219 @@
       "assertionText": "expect(activeHl).toHaveCSS('background-color', 'rgb(220, 235, 245)')",
       "reason": "T3-P1 白天族 --accent-soft 值切换 #dcebf5→#eaeefc（final-design §0）：搜索 active 块底色=该 token 解析值，e2e 值锁随票同步（rgb 形态未被票面 grep 清单覆盖，全量 e2e 实跑发现）",
       "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/contracts/api-surface.test.ts",
+      "caseTitle": "workspaces 域（R1-WS1 扩容）：四通道在表 + create 名长 1-40 边界 + Res 形状",
+      "assertionText": "expect( API_SURFACE.workspaces.list.Res.safeParse({ items: [{ id: 'default', name: '默认课题', createdAt: '2026-01-01T00:00:00.000Z' }], currentId: 'default' }).success ).toBe(true)",
+      "reason": "T3-P2 workspaceItemSchema +paperCount（票面 §4——课题弹层「N 篇」数据源）：list Res 夹具补 paperCount 字段",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/smoke.spec.ts",
+      "assertionText": "expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })",
+      "reason": "T3-P2 壳层改版（final-design §1）：wordmark 签名（Syn<i>a</i>pse 拆分文本节点——getByText 改 .wordmark 定位）+header 高 56→38（裁决链：44→56[2026-08-31 增高令]→38[2026-09-26 final-design §1 后者覆盖]）+切换器容器 no-drag 面换 wordmark/gsearch+R2-SET1 rect 锚 .app-nav-item→.rail-item",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/smoke.spec.ts",
+      "caseTitle": "应用启动：侧栏三入口可见且可切换",
+      "assertionText": "expect(win.getByRole('button', { name: '文献库' })).toBeVisible()",
+      "reason": "T3-P2 壳层改版（final-design §1）：wordmark 签名（Syn<i>a</i>pse 拆分文本节点——getByText 改 .wordmark 定位）+header 高 56→38（裁决链：44→56[2026-08-31 增高令]→38[2026-09-26 final-design §1 后者覆盖]）+切换器容器 no-drag 面换 wordmark/gsearch+R2-SET1 rect 锚 .app-nav-item→.rail-item",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/smoke.spec.ts",
+      "caseTitle": "frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）",
+      "assertionText": "expect(regions.switcher, '切换器容器应为 no-drag').toBe('no-drag')",
+      "reason": "T3-P2 壳层改版（final-design §1）：wordmark 签名（Syn<i>a</i>pse 拆分文本节点——getByText 改 .wordmark 定位）+header 高 56→38（裁决链：44→56[2026-08-31 增高令]→38[2026-09-26 final-design §1 后者覆盖]）+切换器容器 no-drag 面换 wordmark/gsearch+R2-SET1 rect 锚 .app-nav-item→.rail-item",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/smoke.spec.ts",
+      "caseTitle": "R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 56（豁免锁——rect 断言非 computed）",
+      "reason": "T3-P2 壳层改版（final-design §1）：wordmark 签名（Syn<i>a</i>pse 拆分文本节点——getByText 改 .wordmark 定位）+header 高 56→38（裁决链：44→56[2026-08-31 增高令]→38[2026-09-26 final-design §1 后者覆盖]）+切换器容器 no-drag 面换 wordmark/gsearch+R2-SET1 rect 锚 .app-nav-item→.rail-item",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/workspaces.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '切换课题' })).toContainText('默认课题')",
+      "reason": "T3-P2 课题切换入口改版（A10）：顶栏 WorkspaceSwitcher 退役——新建课题走设置页课题管理节、切换走 rail 课题弹层；断言锚迁状态条课题名/篇数（reload 后自新联动验收面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/workspaces.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '切换课题' })).toContainText('课题 B', { timeout: 20_000 })",
+      "reason": "T3-P2 课题切换入口改版（A10）：顶栏 WorkspaceSwitcher 退役——新建课题走设置页课题管理节、切换走 rail 课题弹层；断言锚迁状态条课题名/篇数（reload 后自新联动验收面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/workspaces.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '切换课题' })).toContainText('默认课题', { timeout: 20_000 })",
+      "reason": "T3-P2 课题切换入口改版（A10）：顶栏 WorkspaceSwitcher 退役——新建课题走设置页课题管理节、切换走 rail 课题弹层；断言锚迁状态条课题名/篇数（reload 后自新联动验收面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "nav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "默认视图（文献库）带 active 态类，其余入口不带",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "侧栏品牌行退役（负锚）：app-nav-brand/app-nav-name 零残留",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "main 挂 .app-main 类（F-UI-04 D1=冷雾灰挂 main 挂载锁）",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "收起钮 aria-label 随态换名；点击后 nav 挂 app-nav-collapsed；四入口 label span 在（navButton 文本查询不破）",
+      "reason": "T3-P2 壳层改版（final-design §1）：38px 顶栏+72px 窄轨+课题弹层+状态条——旧 nav/F-UI-03/顶栏身份区断言面随旧壳整体退役重写（新 describe 六组在档）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/split-pane.test.tsx",
+      "caseTitle": "collapsedWidth：双击折叠到 64px 窄条（display 保留可见），aria-valuenow=64；再双击恢复原宽（宽度记忆）",
+      "reason": "T3-P2 F-UI-03 退役（票面 §8）：collapsedWidth/collapsed/onCollapsedChange 三 prop 随 App 壳 nav 折叠面删除——用例随之退役（回基线 11 用例面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/split-pane.test.tsx",
+      "caseTitle": "受控折叠：collapsed prop 驱动宽 64/原宽切换；双击手柄上报 onCollapsedChange(true) 且内部不自改",
+      "reason": "T3-P2 F-UI-03 退役（票面 §8）：collapsedWidth/collapsed/onCollapsedChange 三 prop 随 App 壳 nav 折叠面删除——用例随之退役（回基线 11 用例面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--ink-hi 声明为设计定稿值 #232d44",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-text 声明为设计定稿值 #cfd5e4",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-item-text 声明为设计定稿值 #aeb6ca",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-item-text-hover 声明为设计定稿值 #e6eaf4",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-item-text-press 声明为设计定稿值 #eaf1fa",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-item-text-current 声明为设计定稿值 #f3eddd",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-ver-text 声明为设计定稿值 #8d95ad",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-ver-border 声明为设计定稿值 rgba(141, 149, 173, 0.4)",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--nav-foot-text 声明为设计定稿值 #6d7590",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--ink-deep 声明为设计定稿值 #171e2f",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "F-UI-04 顶栏/主区冷雾灰+顶栏文字垂直居中（shell 皮肤住类形态锁）",
+      "reason": "T3-P2 死 token 清扫（票面 §7）：--nav-* 八 token+--ink-deep/--ink-hi 随墨青 nav 退役删除（消费核删后全仓零 var() 引用）；F-UI-04 形态锁随壳层改版重写为 T3-P2 壳层皮肤形态锁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/windows/window-control.test.ts",
+      "caseTitle": "切换器容器与三键容器为 no-drag（两处，点击不被 drag 吞）",
+      "reason": "T3-P2 顶栏改版：切换器容器随 WorkspaceSwitcher 退役——no-drag 面 2→3（wordmark+gsearch+三键），断言随面更新",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--ink-legacy 声明为设计定稿值 #1b2333",
+      "reason": "T3-P2 死 token 清扫（票面 §7）补登（门一 k1-B1 回炉项——首批 29 条漏登）：--ink-legacy 钉值 token 随墨青 nav 退役删除，T3-P1 票面明文预告「P2 窄轨退役时同删」，TOKENS 正锚随之退役",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "墨青 nav 渐变顶钉 --ink-legacy（门一 k1-W2：回退 var(--ink) 即 dark 族 nav 顶翻浅无红）",
+      "reason": "T3-P2 死 token 清扫（票面 §7）补登（门一 k1-B1 回炉项——首批 29 条漏登）：钉值专项 it（正负双锚）随 .app-nav 全族 CSS 退役删除——测量对象不复存在，防误伤锚位一并退役（T3-P1 票面预告兑现）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "dirty=true 且确认取消：confirm 弹切换文案，switch IPC 与 reload 均不被调",
+      "reason": "T3-P2 回炉 1（k1-N1）：dirty 取消路径补断言「弹层留展开态」（旧切换器语义继承）——断言面扩展非删改，基线旧指纹随之退役",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "assertionText": "expect(shellCss, '.app-statusbar 在场（26px 行——等宽字仪表带）').toMatch(/\\.app-statusbar\\s*\\{/)",
+      "reason": "T3-P2 回炉 1（d1-N5）：.app-statusbar 存在性锚强化为规则体三要素锁（--panel-2 底+--line 顶边+mono 字——原锚规则体清空仍绿）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/shell-rail.spec.ts",
+      "caseTitle": "T3-P2 课题弹层：开合+当前项 .on+点选后 reload 联动（状态条课题名/篇数自新）",
+      "reason": "T3-P2 回炉 1（k1-W2/d1-W4）：弹层用例补「触发钮 mousedown 自吞净关一次」真 Chromium 序列断言（jsdom click() 不派发 mousedown 的盲区闭合）——断言面扩展非删改",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "点击课题项开弹层：h4 标题+课题行（色点/全名/篇数）+当前项 .on；再点课题项/Escape/外点均关",
+      "reason": "T3-P2 回炉 1（d1-N-a 收口核点）：开合用例补「点选当前课题（.on 行）=幂等收口直接合上零 IPC」断言——pick 层幂等/取消分流（switchTo 同 id 与 dirty 取消同返 false 不可区分，故组件层显式分流）——断言面扩展非删改",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
     }
   ]
 }

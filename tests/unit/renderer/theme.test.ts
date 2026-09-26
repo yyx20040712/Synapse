@@ -76,7 +76,6 @@ const TOKENS: Array<[string, string]> = [
   ['--radius-l', '16px'],
   ['--font-display', "Georgia, 'Times New Roman', 'Songti SC', SimSun, serif"],
   ['--ink', '#1c2333'],
-  ['--ink-hi', '#232d44'],
   // ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 族块在下方
   //    describe 块内断言——防值串位到别的块）──
   ['--panel-2', '#fbfcfe'],
@@ -96,8 +95,6 @@ const TOKENS: Array<[string, string]> = [
   ['--shadow-drag', '0 12px 32px rgba(20, 26, 40, 0.22)'],
   ['--paper', 'var(--panel)'],
   ['--paper-ink', '#2a2f3c'],
-  // 墨青 nav 渐变顶钉值（旧 --ink 语义已翻转为亮面墨字色——防误伤）
-  ['--ink-legacy', '#1b2333'],
   // ── 夜面（lineage-constellation.html :root——R2 消费预留，本单只定义）──
   ['--night-bg', '#171e33'],
   ['--night-bg2', '#111728'],
@@ -135,6 +132,8 @@ const TOKENS: Array<[string, string]> = [
   ['--fs-strong', '13px'],
   ['--fs-title', '14px'],
   ['--fs-display', '17px'],
+  // [T3-P2] wordmark 签名档（theme-trio final-design §1 用户裁决 18px——INV-61 档位增补登记）
+  ['--fs-signature', '18px'],
   // ── F-CSS-03 颜色 token 化（2026-09-09 用户双裁决：零视觉差口径[值原样
   //    入库,同值合并共享]+语义命名优先[一值一 token,名取主导用途,多用途
   //    中性名]——50 值=48 新 token+2 既有 token 消费[#ffffff→--panel/
@@ -165,15 +164,8 @@ const TOKENS: Array<[string, string]> = [
   ['--panel-a92', 'rgba(255, 255, 255, 0.92)'],
   ['--close-red', '#e81123'],
   ['--close-red-press', '#f1707a'],
-  ['--nav-text', '#cfd5e4'],
-  ['--nav-item-text', '#aeb6ca'],
-  ['--nav-item-text-hover', '#e6eaf4'],
-  ['--nav-item-text-press', '#eaf1fa'],
-  ['--nav-item-text-current', '#f3eddd'],
-  ['--nav-ver-text', '#8d95ad'],
-  ['--nav-ver-border', 'rgba(141, 149, 173, 0.4)'],
-  ['--nav-foot-text', '#6d7590'],
-  ['--ink-deep', '#171e2f'],
+  // [回炉 1 d1-W6] 红底字色 token（三族不变——Windows 系统观感恒定）
+  ['--close-red-ink', '#ffffff'],
   ['--ink-a18', 'rgba(27, 35, 51, 0.18)'],
   ['--accent-hi', '#3a76ab'],
   ['--accent-deep', '#234a6d'],
@@ -210,41 +202,55 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(css).toContain('repeating-linear-gradient(115deg')
   })
 
-  it('F-UI-04 顶栏/主区冷雾灰+顶栏文字垂直居中（shell 皮肤住类形态锁）', () => {
-    // 值面由 TOKENS --surface-cool 正锚独立锁定（值漂移即红），此处锁
-    // 「皮肤住类」形态（B1 先例）：D1=冷雾灰全局挂 main 外围（App.tsx
-    // main 消费 .app-main 类，禁内联色 eslint B-5）；D2=详情栏 .lib-detail-aside
-    // 保持纯白不在此锁面；line-height:1=行盒收紧（F-UI-04 勘误：侦察「墨迹
-    // 偏上」经像素探针 V3+截图判读证伪——实测偏下 2px，P3 修正载体=translateY）；
-    // .app-header 段 height 56px/-webkit-app-region
-    // 计数锁另驻 window-control.test/smoke.spec，不在此重复
-    expect(shellCss, '.app-header 背景应换冷雾灰 token 载体（F-UI-04）').toMatch(
-      /\.app-header\s*\{[^}]*background:\s*var\(--surface-cool\);/
+  it('T3-P2 壳层皮肤形态锁：三行网格 38px/1fr/26px+顶栏 --panel-2+主区 var(--bg)', () => {
+    // [T3-P2] F-UI-04 冷雾灰形态锁随壳层改版退役（.app-main 背景改 mockup
+    // .content=--bg；--surface-cool 桥接仍在 theme.css 由 TOKENS 正锚锁值）；
+    // 此处锁新壳「皮肤住类」形态（B1 先例）：.app-shell 三行网格值+
+    // .app-header 38px/--panel-2+gsearch 居中载体+.app-main var(--bg)。
+    // 高度 44→56（2026-08-31 增高令）→38（2026-09-26 theme-trio final-design
+    // §1 四轮裁决后规格——后者覆盖前者，裁决链）
+    expect(shellCss, '.app-shell 三行网格 38px 1fr 26px（mockup .app）').toMatch(
+      /\.app-shell\s*\{[^}]*grid-template-rows:\s*38px 1fr 26px;/
     )
-    expect(shellCss, '.app-main 规则应在场且背景=冷雾灰（D1 全局挂 main）').toMatch(
-      /\.app-main\s*\{[^}]*background:\s*var\(--surface-cool\);/
+    expect(shellCss, '.app-header 高 38px+背景 --panel-2（mockup .topbar）').toMatch(
+      /\.app-header\s*\{[^}]*height:\s*38px;[^}]*background:\s*var\(--panel-2\);/
     )
-    expect(shellCss, '.app-header-name 应含 line-height:1（行盒收紧——F-UI-04 勘误：flex-center 下非墨迹位移手段）').toMatch(
-      /\.app-header-name\s*\{[^}]*line-height:\s*1;/
+    expect(shellCss, '.gsearch 居中载体（left50%+translateX）').toMatch(
+      /\.gsearch\s*\{[^}]*left:\s*50%;[^}]*transform:\s*translateX\(-50%\);/
     )
-    expect(shellCss, '.app-nav-ver 应补 line-height:1').toMatch(/\.app-nav-ver\s*\{[^}]*line-height:\s*1;/)
-    // [F-UI-04] P3 translateY 微调已撤（回炉 2）：V1 探针 alpha 判定在不透明截图
-    // 上恒真退化为盒中心（-0.79/-0.82 实为盒量测误差）；V3 亮度判定+扩 clip
-    // 复测（含 y 降部）证 Synapse 墨迹中心相对 logo 金线 +2.4px 偏下——侦察
-    // 「偏上」叙事证伪，修正方向反转，终值呈用户裁决（零视觉决策承担）
-    // [F-UI-04 P3 终值] 用户裁决 2026-09-20「先对齐整行，后面我再反馈调整」：
-    // Synapse 墨迹中心 29.6→对齐整行基线 27.6（logo 盒中心/v0.1/切换器实测同
-    // 线）——translateY(-2px) 仅 .app-header-name（v0.1 实测 0 差齐平不动）
-    expect(shellCss, '.app-header-name 应含 translateY(-2px)（P3 对齐整行——用户裁决）').toMatch(
-      /\.app-header-name\s*\{[^}]*transform:\s*translateY\(-2px\);/
+    expect(shellCss, '.app-main 规则应在场且背景=var(--bg)（mockup .content）').toMatch(
+      /\.app-main\s*\{[^}]*background:\s*var\(--bg\);/
     )
-    // [F-UI-03 门二 P1-1] nav 满高：SplitPane pane 容器为块级 div（非 flex
-    // stretch——nav 从 .app-content-row 直接子项迁入后丢失默认满高），渐变/
-    // 金线/foot 钉底（margin-top:auto）前提=height:100%；几何实证=
-    // z-f-ui03-nav-geom-probe.spec.ts（probe project）
-    expect(shellCss, '.app-nav 应含 height:100%（SplitPane 包裹后自备满高——门二 P1-1）').toMatch(
-      /\.app-nav\s*\{[^}]*height:\s*100%;/
+    expect(shellCss, '.rail 宽 72px+--panel-2 底（B站式窄轨）').toMatch(
+      /\.rail\s*\{[^}]*width:\s*72px;[^}]*background:\s*var\(--panel-2\);/
     )
+    // [回炉 1 d1-N5 强化] 状态条规则体锁（原存在性锚规则体清空仍绿）：
+    // --panel-2 底+--line 顶边+等宽字（mockup .statusbar 三要素——声明序不锚，
+    // 三声明各自在体即可）
+    expect(shellCss, '.app-statusbar 规则体=--panel-2 底+--line 顶边+mono 字').toMatch(
+      /\.app-statusbar\s*\{[^}]*background:\s*var\(--panel-2\);[^}]*border-top:\s*1px solid var\(--line\);[^}]*font-family:\s*var\(--mono\);/
+    )
+    // [回炉 1 d1-W6] close 红底字色=三族不变 token（var(--panel) 载体暗族翻深失守）
+    expect(shellCss, 'close hover 字色应走 --close-red-ink（非 --panel）').toMatch(
+      /\.titlebar-btn-close:hover\s*\{[^}]*color:\s*var\(--close-red-ink\);/
+    )
+    // 负锚：F-UI-03 nav 族类名零残留（方案切换=删除旧方案）
+    expect(shellCss, '.app-nav 族类名应随 F-UI-03 退役删除').not.toContain('.app-nav')
+    // [回炉 1 d1-N2] 退役 token 消费负锚（probe 已 grep 实证零——锁防回填）：
+    // --nav-* 族/--ink-deep/--ink-hi/--ink-legacy 均已随 T3-P2 删除，
+    // 全皮肤件 var() 消费回填即红（wsCss=本 it 局部读取——ws 域皮肤件）
+    const wsCssLocal = readFileSync(
+      fileURLToPath(
+        new URL('../../../src/renderer/features/workspaces/workspace.css', import.meta.url)
+      ),
+      'utf8'
+    )
+    const SKIN_CSS = [css, shellCss, buttonsCss, readerCss, lineageCss, libCss, wsCssLocal]
+    for (const skin of SKIN_CSS) {
+      expect(skin, '退役 token var() 消费回填即红（--nav-*/--ink-deep/--ink-hi/--ink-legacy）').not.toMatch(
+        /var\(--(nav-|ink-deep|ink-hi|ink-legacy)/
+      )
+    }
   })
 })
 
@@ -674,16 +680,6 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     )
     expect(app, 'App effect 应写 documentElement.dataset.theme（单点接线）').toContain(
       'dataset.theme ='
-    )
-  })
-
-  it('墨青 nav 渐变顶钉 --ink-legacy（门一 k1-W2：回退 var(--ink) 即 dark 族 nav 顶翻浅无红）', () => {
-    expect(shellCss, '.app-nav 渐变顶应钉 --ink-legacy（--ink 语义已翻转为族源墨字色）').toContain(
-      'var(--ink-legacy), var(--ink-deep)'
-    )
-    // 负锚：theme-shell 内 var(--ink) 裸名消费回填即红（var(--ink-legacy) 前缀不误咬——闭括号锚定）
-    expect(shellCss, 'theme-shell 禁 var(--ink) 裸名消费（钉值面唯一例外已迁 --ink-legacy）').not.toContain(
-      'var(--ink)'
     )
   })
 

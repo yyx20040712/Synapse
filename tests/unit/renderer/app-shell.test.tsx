@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 /**
- * [R3-TH1] App 壳渲染锁——nav 四入口 + active 态类 + SVG 图标 + 品牌/footer。
+ * [T3-P2] App 壳渲染锁——38px 顶栏（wordmark 签名+gsearch 居中+caption 三键）
+ * +72px 窄轨（课题/下载+四视图）+课题弹层联动+26px 状态条。
  *
- * 设计定稿（docs/design/2026-08-28_visual-system.md §2 R3-U1）：App 壳=
- * 墨青侧栏+金 active 左缘条+菱形品牌标+SVG 图标。本用例锁结构面（类名/
- * 图标存在/文案），视觉值面由 e2e 冒烟承载——两层合起来「视觉基建」改坏
- * 任何一层即红。mock 配方照 app-quit-dirty.test.tsx（App 组合根同型）。
+ * 设计真相源=docs/design/2026-09-26_theme-trio-final-design.md §1（应用壳全规格）
+ * +视觉基准=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段。
+ * 本用例锁结构面（类名/aria/文案/textContent），视觉值面由 theme.test.ts
+ * （CSS 文本锁）+e2e shell-rail.spec.ts（真 Chromium rect/computed）承载。
+ * mock 配方沿 app-quit-dirty.test.tsx（App 组合根同型）。
  *
- * e2e 断言面兼容性锚：nav 四项文案（'文献库' 等=smoke.spec/reader-text.spec
- * getByRole name 断言面）与品牌文本 'Synapse'（smoke.spec:22 getByText 断言面——
- * R2-SH1 改名同步：旧全名缩为单名；R2-SH2 决4 品牌行迁顶栏 header，文本
- * 仍唯一在场——getByText 断言面零改）。
+ * e2e 断言面兼容性锚：rail 四视图 aria-label（'文献库' 等=各 e2e getByRole
+ * name 断言面）与 wordmark 文本 'Synapse'（smoke.spec .wordmark 断言面）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -22,7 +22,7 @@ const stubApi = makeApiStub({
   library: { list: vi.fn() },
   settings: { get: vi.fn(), set: vi.fn() },
   system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
-  workspaces: { list: vi.fn() }
+  workspaces: { list: vi.fn(), switch: vi.fn() }
 })
 stubApiEvents({
   onExportCorpus: vi.fn(() => () => undefined),
@@ -60,6 +60,7 @@ beforeEach(() => {
   stubApi.system.setQuitDirty.mockReset()
   stubApi.system.windowControl.mockReset()
   stubApi.workspaces.list.mockReset()
+  stubApi.workspaces.switch.mockReset()
   // App 组合根与 TitleBarControls 直用 window.api/window.apiEvents（非
   // client 门面）——jsdom 下 stub（R2-SH3：windowControl+onWindowState）
   Object.defineProperty(window, 'api', {
@@ -76,17 +77,21 @@ beforeEach(() => {
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
   stubApi.settings.get.mockResolvedValue({
     ok: true,
-    data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'small' }
+    data: { contactEmail: 'a@b.c', theme: 'light', uiScale: 'small' }
   })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
   stubApi.workspaces.list.mockResolvedValue({
     ok: true,
     data: {
-      items: [{ id: 'w1', name: '默认课题', createdAt: '2026-08-28T00:00:00Z' }],
+      items: [
+        { id: 'w1', name: '默认课题', createdAt: '2026-08-28T00:00:00Z', paperCount: 3 },
+        { id: 'w2', name: '智慧水务水质模型课题', createdAt: '2026-08-29T00:00:00Z', paperCount: 7 }
+      ],
       currentId: 'w1'
     }
   })
+  stubApi.workspaces.switch.mockResolvedValue({ ok: true, data: { ok: true } })
 })
 
 afterEach(() => {
@@ -96,78 +101,336 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
+  // 模块级 store 跨 mount 存留：显式复位防跨测污染（lineage dirty 投影会
+  // 把 App 的 quitDirty 抬真——弹层 dirty 用例依赖该通道，反过来其他用例
+  // 需要复位回 saved）
 })
 
-/** nav 内按精确可见文本取按钮（Switcher 按钮'默认课题 ▾'等与入口名无碰撞） */
-function navButton(label: string): HTMLButtonElement | undefined {
-  const nav = document.querySelector('nav')
-  return Array.from(nav?.querySelectorAll('button') ?? []).find(
-    (b) => b.textContent?.trim() === label
-  )
+/** rail 内按 aria-label 取按钮（e2e getByRole name 断言面同源） */
+function railButton(label: string): HTMLButtonElement | null {
+  const rail = document.querySelector('nav.rail')
+  return Array.from(rail?.querySelectorAll('button') ?? []).find(
+    (b) => b.getAttribute('aria-label') === label
+  ) ?? null
 }
 
-describe('R3-TH1 App 壳——顶栏身份区+墨青侧栏结构锁（R2-SH2 扩面）', () => {
-  it('nav 四入口各带 aria-hidden SVG 图标，文案与 e2e 断言面一致', async () => {
+describe('T3-P2 App 壳——38px 顶栏+72px 窄轨结构锁', () => {
+  it('rail 七项：课题/下载/文献库/阅读器/脉络/设置六 button aria-label 齐备，各带内联 SVG 图标', async () => {
     mount(<App />)
     await flush()
-    for (const label of ['文献库', '阅读器', '设置', '脉络']) {
-      const btn = navButton(label)
-      expect(btn, `nav 应含入口按钮「${label}」`).toBeDefined()
+    for (const label of ['课题', '下载', '文献库', '阅读器', '脉络', '设置']) {
+      const btn = railButton(label)
+      expect(btn, `rail 应含 aria-label「${label}」的 button（e2e getByRole name 断言面）`).not.toBeNull()
       expect(
         btn!.querySelector('svg[aria-hidden="true"]'),
-        `入口「${label}」应含内联 SVG 图标（aria-hidden 不污染 accessible name——getByRole name 断言面）`
+        `rail 项「${label}」应含内联 SVG 图标（aria-hidden 不污染 accessible name）`
       ).not.toBeNull()
     }
+    // rail-gap 分隔与 rail-foot（设置贴底）结构在场
+    expect(document.querySelector('nav.rail .rail-gap'), 'rail-gap 分隔段在场').not.toBeNull()
+    expect(document.querySelector('nav.rail .rail-foot'), 'rail-foot（margin-top:auto 贴底段）在场').not.toBeNull()
   })
 
-  it('默认视图（文献库）带 active 态类，其余入口不带', async () => {
+  it('默认视图（文献库）带 active 类+aria-current=page；点击设置后随态迁移', async () => {
     mount(<App />)
     await flush()
-    expect(navButton('文献库')!.classList.contains('app-nav-item-active')).toBe(true)
-    expect(navButton('设置')!.classList.contains('app-nav-item-active')).toBe(false)
-    expect(navButton('脉络')!.classList.contains('app-nav-item-active')).toBe(false)
+    expect(railButton('文献库')!.classList.contains('active')).toBe(true)
+    expect(railButton('文献库')!.getAttribute('aria-current')).toBe('page')
+    expect(railButton('设置')!.classList.contains('active')).toBe(false)
+    expect(railButton('设置')!.getAttribute('aria-current')).toBe(null)
+    act(() => {
+      railButton('设置')!.click()
+    })
+    expect(railButton('设置')!.classList.contains('active'), '点击后设置项挂 active').toBe(true)
+    expect(railButton('设置')!.getAttribute('aria-current'), '当前视图项 aria-current=page').toBe('page')
+    expect(railButton('文献库')!.getAttribute('aria-current')).toBe(null)
   })
 
-  it('品牌名（Synapse）与版本号在顶栏 header 内，footer（本地学术文献管理）仍在侧栏', async () => {
+  it('课题项结构：色点 span.rail-ws-dot+短名 label（name 前 4 字符）；未选中课题时兜底「课题」', async () => {
+    mount(<App />)
+    await flush()
+    const btn = railButton('课题')!
+    expect(btn.querySelector('span.rail-ws-dot'), '课题项应含色点 span.rail-ws-dot').not.toBeNull()
+    expect(btn.querySelector('span.lb')!.textContent, '当前课题短名=name 前 4 字符').toBe('默认课题')
+    // 长名截断锚：切 currentId=w2 后短名=「智慧水务」
+    const { useWorkspaceStore } = await import('../../../src/renderer/features/workspaces/workspace.store')
+    act(() => {
+      useWorkspaceStore.setState({ currentId: 'w2' })
+    })
+    expect(railButton('课题')!.querySelector('span.lb')!.textContent, '长课题名截为前 4 字符（CSS ellipsis 兜底）').toBe('智慧水务')
+    act(() => {
+      useWorkspaceStore.setState({ currentId: '' })
+    })
+    expect(railButton('课题')!.querySelector('span.lb')!.textContent, '无当前课题兜底「课题」').toBe('课题')
+  })
+
+  it('顶栏：wordmark 签名（Syn+a+pse）+gsearch（提示语全局搜索+Ctrl K 键帽）+caption 三键', async () => {
     mount(<App />)
     await flush()
     const header = document.querySelector('header.app-header')
-    expect(header, '顶栏 header 在场（R2-SH2 决4——App 根最前）').not.toBeNull()
+    expect(header, '顶栏 header.app-header 在场（类名保留——smoke/window-control 选择器面）').not.toBeNull()
+    expect(header!.querySelector('.wordmark')!.textContent, 'wordmark 文本=Synapse（a 用 accent 色 i 标记）').toBe('Synapse')
+    const input = header!.querySelector<HTMLInputElement>('.gsearch input')
+    expect(input, 'gsearch 输入框在场（v1 展示性——可聚焦可输入无动作）').not.toBeNull()
     expect(
-      header!.textContent,
-      "品牌文本=smoke.spec:22 getByText('Synapse') 断言面——R2-SH2 品牌行迁顶栏"
-    ).toContain('Synapse')
-    expect(header!.textContent, '版本号随品牌行迁顶栏（预裁2：信息保留）').toContain('v0.1')
-    const nav = document.querySelector('nav')
-    expect(nav, 'nav 元素在场').not.toBeNull()
-    expect(nav!.textContent, 'footer 文案（票面 P2——foot 原样留侧栏）').toContain('本地学术文献管理')
+      header!.querySelector('.gsearch .ph')?.textContent,
+      '空值提示语 span.ph=「全局搜索」（mockup .ph 语汇）'
+    ).toBe('全局搜索')
+    expect(header!.querySelector('.gsearch .k')!.textContent, '右缘键帽提示 Ctrl K').toBe('Ctrl K')
+    expect(header!.querySelector('button[aria-label="最小化"]'), 'caption 三键（TitleBarControls）').not.toBeNull()
+    expect(header!.textContent, '版本号已退役出壳层（mockup 无位——观察项）').not.toContain('v0.1')
   })
 
-  it('顶栏身份区三件：logo svg+品牌名+课题切换器在 header 内（R2-SH2 决4）', async () => {
+  it('main 挂 .app-main 类（皮肤消费钩——类名被重构丢即红）', async () => {
     mount(<App />)
     await flush()
-    const header = document.querySelector('header.app-header')
-    expect(header, 'header 在场').not.toBeNull()
-    expect(header!.querySelector('svg'), 'logo svg 迁自 .app-nav-brand（资源不删）').not.toBeNull()
-    expect(header!.textContent, '应用名在 header 内').toContain('Synapse')
-    const switcher = header!.querySelector('button[aria-label="切换课题"]')
-    expect(switcher, 'WorkspaceSwitcher 迁挂 header（组件本体零改，props 原样）').not.toBeNull()
+    expect(document.querySelector('main.app-main')).not.toBeNull()
+  })
+})
+
+describe('T3-P2 课题弹层（A10）——开合+当前项标记+dirty 拦截', () => {
+  let reloadSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    // jsdom location.reload not implemented：整体替换（workspace.store.test 同型）
+    reloadSpy = vi.fn()
+    Object.defineProperty(window, 'location', { configurable: true, value: { reload: reloadSpy } })
   })
 
-  it('侧栏品牌行退役（负锚）：app-nav-brand/app-nav-name 零残留', async () => {
+  it('点击课题项开弹层：h4 标题+课题行（色点/全名/篇数）+当前项 .on；再点课题项/Escape/外点均关', async () => {
     mount(<App />)
     await flush()
-    expect(document.querySelectorAll('.app-nav-brand'), '品牌行整体迁顶栏——侧栏残留即红').toHaveLength(0)
-    expect(document.querySelectorAll('.app-nav-name'), 'app-nav-name 类并入顶栏新类不再引用').toHaveLength(0)
+    expect(document.querySelector('.ws-pop'), '初始关闭').toBeNull()
+    act(() => {
+      railButton('课题')!.click()
+    })
+    const pop = document.querySelector('.ws-pop')
+    expect(pop, '点击课题项弹出 .ws-pop（fixed 挂 rail 旁）').not.toBeNull()
+    expect(pop!.querySelector('h4')!.textContent).toBe('选 择 课 题')
+    const items = Array.from(pop!.querySelectorAll('.ws-item'))
+    expect(items).toHaveLength(2)
+    expect(items[0]!.textContent, '课题行=全名+篇数（N 篇）').toContain('默认课题')
+    expect(items[0]!.textContent).toContain('3 篇')
+    expect(items[0]!.querySelector('span.dot'), '课题行色点 span.dot 在场').not.toBeNull()
+    expect(items[0]!.classList.contains('on'), '当前课题行挂 .on').toBe(true)
+    expect(items[1]!.classList.contains('on')).toBe(false)
+    expect(pop!.querySelector('.foot-note')!.textContent).toContain('课题间数据完全隔离')
+    // Escape 关闭
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(document.querySelector('.ws-pop'), 'Escape 关闭弹层').toBeNull()
+    // 外点关闭（mousedown 在弹层与课题钮之外）
+    act(() => {
+      railButton('课题')!.click()
+    })
+    expect(document.querySelector('.ws-pop')).not.toBeNull()
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    expect(document.querySelector('.ws-pop'), '外点关闭弹层').toBeNull()
+    // 再点课题项=toggle 关闭
+    act(() => {
+      railButton('课题')!.click()
+    })
+    expect(document.querySelector('.ws-pop')).not.toBeNull()
+    act(() => {
+      railButton('课题')!.click()
+    })
+    expect(document.querySelector('.ws-pop'), '再点课题项合上（toggle）').toBeNull()
+    // [d1-N-a 回炉核点] 幂等收口：点选当前课题（.on 行）=确认语义直接合上零 IPC
+    act(() => {
+      railButton('课题')!.click()
+    })
+    stubApi.workspaces.switch.mockClear()
+    await act(async () => {
+      document
+        .querySelector('.ws-pop .ws-item.on')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    expect(stubApi.workspaces.switch, '幂等点选=零 IPC（pick 层分流）').not.toHaveBeenCalled()
+    expect(document.querySelector('.ws-pop'), '点选当前课题合上（幂等收口）').toBeNull()
   })
 
-  it('main 挂 .app-main 类（F-UI-04 D1=冷雾灰挂 main 挂载锁）', async () => {
+  it('点选其他课题：switchTo 走 IPC（含 id）并触发 reload（ADR-0018 联动语义）', async () => {
     mount(<App />)
     await flush()
+    act(() => {
+      railButton('课题')!.click()
+    })
+    const items = document.querySelectorAll('.ws-pop .ws-item')
+    await act(async () => {
+      items[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'w2' })
+    expect(reloadSpy, '切换成功即 reload（侧栏色点/短名/状态条课题名 reload 后自新）').toHaveBeenCalledTimes(1)
+  })
+
+  it('dirty=true 且确认取消：confirm 弹切换文案，switch IPC 与 reload 均不被调', async () => {
+    // dirty 聚合通道=lineage saveStatus≠saved（App 组合根单点——沿 useLineageDirty）
+    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
+    act(() => {
+      useLineageStore.setState({ saveStatus: 'error' })
+    })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    mount(<App />)
+    await flush()
+    act(() => {
+      railButton('课题')!.click()
+    })
+    const items = document.querySelectorAll('.ws-pop .ws-item')
+    await act(async () => {
+      items[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('切换课题将丢弃未保存')
+    expect(stubApi.workspaces.switch, '用户取消=零 IPC 零 reload（拦截即不切）').not.toHaveBeenCalled()
+    expect(reloadSpy).not.toHaveBeenCalled()
+    // [回炉 1 k1-N1] 取消路径留在展开态（旧顶栏切换器语义继承）——非成功
+    // 切换不无条件合上，用户可直接换选或 Esc
+    expect(document.querySelector('.ws-pop'), 'dirty 取消后弹层仍展开').not.toBeNull()
+    confirmSpy.mockRestore()
+    act(() => {
+      useLineageStore.setState({ saveStatus: 'saved' })
+    })
+  })
+
+  it('失败面（回炉 1 d1-W1）：store error 非空时弹层渲染错误行+重试，重试走 load', async () => {
+    const { useWorkspaceStore } = await import(
+      '../../../src/renderer/features/workspaces/workspace.store'
+    )
+    mount(<App />)
+    await flush()
+    act(() => {
+      useWorkspaceStore.setState({ error: '网络不可达' })
+    })
+    act(() => {
+      railButton('课题')!.click()
+    })
+    const pop = document.querySelector('.ws-pop')
+    expect(pop, 'error 态弹层仍在场（错误行取代清单）').not.toBeNull()
+    expect(pop!.textContent).toContain('课题列表加载失败：网络不可达')
+    const retry = pop!.querySelector<HTMLButtonElement>('button.ws-retry')
+    expect(retry, '重试按钮在场').not.toBeNull()
+    stubApi.workspaces.list.mockClear()
+    await act(async () => {
+      retry!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    expect(stubApi.workspaces.list, '重试=重跑 list load').toHaveBeenCalled()
+    act(() => {
+      useWorkspaceStore.setState({ error: null })
+    })
+  })
+
+  it('码点安全短名（回炉 1 d1-W5）：emoji 课题名前 4 码点截断，无孤立代理对', async () => {
+    const { useWorkspaceStore } = await import(
+      '../../../src/renderer/features/workspaces/workspace.store'
+    )
+    mount(<App />)
+    await flush()
+    act(() => {
+      useWorkspaceStore.setState({
+        items: [
+          { id: 'w9', name: '💧水质孪生课题', createdAt: '2026-09-01T00:00:00Z', paperCount: 1 }
+        ],
+        currentId: 'w9'
+      })
+    })
+    const label = railButton('课题')!.querySelector('.lb')!.textContent ?? ''
+    // Array.from 码点切：前 4 码点=💧+水+质+孪（UTF-16 slice 会截出孤立代理 U+D83D）
+    expect(label).toBe('💧水质孪')
+    expect(label, '无孤立代理对（渲染替换符防线）').not.toContain('\uFFFD')
+  })
+})
+
+describe('T3-P2 状态条——26px 真文本（课题名/篇数/脉络计数/已选/主题名）', () => {
+  it('默认态：课题 默认课题 · 3 篇｜脉络 0 节点 / 0 连线｜已选 0｜主题：白天 · 精密仪表', async () => {
+    mount(<App />)
+    await flush()
+    const bar = document.querySelector('footer.app-statusbar')
+    expect(bar, 'footer.app-statusbar 在场').not.toBeNull()
+    expect(bar!.textContent).toContain('课题 默认课题 · 3 篇')
+    expect(bar!.textContent).toContain('脉络 0 节点 / 0 连线')
+    expect(bar!.textContent).toContain('已选 0')
+    expect(bar!.textContent).toContain('主题：白天 · 精密仪表')
+    expect(bar!.querySelector('.sep'), '弹性分隔 .sep 在场').not.toBeNull()
+  })
+
+  it('计数随 store 变化沿：脉络 nodes/edges 与已选 1 反映到真文本', async () => {
+    mount(<App />)
+    await flush()
+    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
+    act(() => {
+      useLineageStore.setState({
+        nodes: [{ id: 'n1' }, { id: 'n2' }] as never,
+        edges: [{ id: 'e1' }] as never
+      })
+    })
+    const { useLibraryStore } = await import('../../../src/renderer/features/library/library.store')
+    act(() => {
+      useLibraryStore.setState({ selectedId: 'p1' })
+    })
+    await flush()
+    const bar = document.querySelector('footer.app-statusbar')!
+    expect(bar.textContent, '脉络计数=store nodes/edges 长度').toContain('脉络 2 节点 / 1 连线')
+    expect(bar.textContent, '已选=selectedId 0/1').toContain('已选 1')
+    act(() => {
+      useLineageStore.setState({ nodes: [], edges: [] })
+      useLibraryStore.setState({ selectedId: null })
+    })
+  })
+})
+
+describe('T3-P2 gsearch——全局 Ctrl K 聚焦（keydown 挂 App，preventDefault）', () => {
+  it('Ctrl+K：input 获得焦点且默认行为被拦截', async () => {
+    mount(<App />)
+    await flush()
+    const input = document.querySelector<HTMLInputElement>('.gsearch input')!
+    expect(document.activeElement).not.toBe(input)
+    const ev = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true })
+    const spy = vi.spyOn(ev, 'preventDefault')
+    act(() => {
+      window.dispatchEvent(ev)
+    })
+    expect(document.activeElement, '全局 Ctrl K 聚焦 gsearch 输入框').toBe(input)
+    expect(spy).toHaveBeenCalled()
+  })
+
+  it('提示语动态显隐（回炉 1 d1-N5）：空值显提示 span，输入后隐藏', async () => {
+    mount(<App />)
+    await flush()
+    const input = document.querySelector<HTMLInputElement>('.gsearch input')!
+    const ph = () => document.querySelector('.gsearch .ph')
+    expect(ph(), '空值时提示语在场').not.toBeNull()
+    // 受控输入：React onChange 经 native setter 驱动（jsdom 直接改 value+input 事件）
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, '管网')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(ph(), '有输入时提示语隐藏（受控显隐）').toBeNull()
+  })
+})
+
+describe('T3-P2 旧面负锚——F-UI-03/nav 族零残留（方案切换=删除旧方案）', () => {
+  it('.app-nav 全族/收起钮/SplitPane 手柄/切换器容器在壳层零残留', async () => {
+    mount(<App />)
+    await flush()
+    const stale = document.querySelectorAll(
+      '.app-nav, .app-nav-item, .app-nav-toggle, .app-nav-label, .app-nav-foot, .app-nav-collapsed, .app-nav-ver, .app-header-switcher, .app-nav-brand'
+    )
+    expect(Array.from(stale).map((e) => e.className), '旧 nav 族元素零残留').toEqual([])
+    expect(document.querySelector('button[aria-label="收起导航栏"]'), '收起钮退役').toBeNull()
+    expect(document.querySelector('button[aria-label="展开导航栏"]'), '展开钮退役').toBeNull()
     expect(
-      document.querySelector('main.app-main'),
-      'main 应带 .app-main 类（theme-shell.css .app-main 冷雾灰消费钩——类名被重构丢即红，封静默回归口）'
-    ).not.toBeNull()
+      document.querySelector('.app-content-row [role="separator"]'),
+      '壳层不再包 SplitPane（唯一 SplitPane=阅读器侧栏，在 main 内）'
+    ).toBeNull()
+    expect(document.querySelector('button[aria-label="切换课题"]'), 'WorkspaceSwitcher 顶栏用法退役').toBeNull()
   })
 })
 
@@ -175,7 +438,7 @@ describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据�
   it('settings.uiScale=medium：挂载后 documentElement --ui-scale=1.1', async () => {
     stubApi.settings.get.mockResolvedValue({
       ok: true,
-      data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'medium' }
+      data: { contactEmail: 'a@b.c', theme: 'light', uiScale: 'medium' }
     })
     mount(<App />)
     await flush()
@@ -194,7 +457,7 @@ describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据�
     ).toBe('1')
     stubApi.settings.set.mockResolvedValueOnce({
       ok: true,
-      data: { contactEmail: 'a@b.c', theme: 'system', uiScale: 'large' }
+      data: { contactEmail: 'a@b.c', theme: 'light', uiScale: 'large' }
     })
     const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
     await act(async () => {
@@ -205,37 +468,6 @@ describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据�
       document.documentElement.style.getPropertyValue('--ui-scale'),
       'save 落地→store settings 替换→App 订阅重渲→变量更新 1.25'
     ).toBe('1.25')
-  })
-})
-
-// F-UI-03 导航栏窄条折叠（always-active——三屋新测试不经 guardedDescribe）
-describe('F-UI-03 导航栏窄条折叠——收起钮+窄态类+label span（可访问名兼容）', () => {
-  it('收起钮 aria-label 随态换名；点击后 nav 挂 app-nav-collapsed；四入口 label span 在（navButton 文本查询不破）', async () => {
-    mount(<App />)
-    await flush()
-    for (const label of ['文献库', '阅读器', '设置', '脉络']) {
-      expect(navButton(label), `入口「${label}」按可见文本仍可查（span 包裹后 textContent 兼容）`).toBeDefined()
-    }
-    expect(document.querySelectorAll('.app-nav-label')).toHaveLength(4)
-    const toggle = document.querySelector('button[aria-label="收起导航栏"]') as HTMLButtonElement | null
-    expect(toggle, '收起钮在场（nav 首行）').not.toBeNull()
-    act(() => {
-      toggle!.click()
-    })
-    const expandBtn = document.querySelector('button[aria-label="展开导航栏"]') as HTMLButtonElement | null
-    expect(expandBtn, '收起后 aria-label 切换为「展开导航栏」（TitleBarControls 三元先例）').not.toBeNull()
-    expect(
-      document.querySelector('nav')!.classList.contains('app-nav-collapsed'),
-      'nav 挂窄态类 app-nav-collapsed'
-    ).toBe(true)
-    act(() => {
-      expandBtn!.click()
-    })
-    expect(document.querySelector('button[aria-label="收起导航栏"]'), '再点展开恢复收起钮名').not.toBeNull()
-    expect(
-      document.querySelector('nav')!.classList.contains('app-nav-collapsed'),
-      '展开后窄态类移除'
-    ).toBe(false)
   })
 })
 

@@ -14,8 +14,12 @@ test('应用启动：侧栏三入口可见且可切换', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-'))
   const app = await launch(userData)
   const win = await app.firstWindow()
-  await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
-  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  // [T3-P2] wordmark 签名（Syn<i>a</i>pse——i 拆分文本节点，getByText 不可靠，
+  // 锁 .wordmark 可见+textContent）
+  const wm = win.locator('.wordmark')
+  await expect(wm).toBeVisible()
+  expect(await wm.textContent()).toBe('Synapse')
   await expect(win.getByRole('button', { name: '阅读器' })).toBeVisible()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible()
 
@@ -105,26 +109,29 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke5-'))
   const app = await launch(userData)
   const win = await app.firstWindow()
-  await expect(win.getByText('Synapse')).toBeVisible({ timeout: 20_000 })
+  await expect(win.locator('.wordmark')).toBeVisible({ timeout: 20_000 })
 
   // 三键可见（role=button accessible name）
   await expect(win.getByRole('button', { name: '最小化' })).toBeVisible()
   await expect(win.getByRole('button', { name: '最大化' })).toBeVisible()
   await expect(win.getByRole('button', { name: '关闭' })).toBeVisible()
 
-  // drag/no-drag：整条 header=drag；切换器容器与三键容器=no-drag
+  // drag/no-drag：整条 header=drag；wordmark/gsearch/三键容器=no-drag
+  // [T3-P2] 切换器容器随 WorkspaceSwitcher 退役——no-drag 面换 wordmark+gsearch
   const regions = await win.evaluate(() => {
     const get = (sel: string): string =>
       getComputedStyle(document.querySelector(sel) as Element).getPropertyValue('-webkit-app-region')
     return {
       header: get('.app-header'),
       controls: get('.titlebar-controls'),
-      switcher: get('.app-header-switcher')
+      wordmark: get('.wordmark'),
+      gsearch: get('.gsearch')
     }
   })
   expect(regions.header, '.app-header 应为 drag').toBe('drag')
   expect(regions.controls, '三键容器应为 no-drag').toBe('no-drag')
-  expect(regions.switcher, '切换器容器应为 no-drag').toBe('no-drag')
+  expect(regions.wordmark, 'wordmark 应为 no-drag（签名区可交互/可选中）').toBe('no-drag')
+  expect(regions.gsearch, 'gsearch 应为 no-drag（输入框聚焦不被 drag 吞）').toBe('no-drag')
 
   // maximize-toggle 真行为：点「最大化」→ isMaximized true；按钮切「向下还原」→ 点回 false
   await win.getByRole('button', { name: '最大化' }).click()
@@ -140,7 +147,7 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
   await app.close()
 })
 
-test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px）+header 高恒 56（豁免锁——rect 断言非 computed）', async () => {
+test('R2-SET1 界面缩放：点「大 125%」→rail 首项 rect ×1.25（±2px）+header 高恒 38（豁免锁——rect 断言非 computed）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
   const app = await launch(userData)
   const win = await app.firstWindow()
@@ -149,22 +156,25 @@ test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px�
   // 基线（默认 small=100%）：nav 首项高+header 高——getBoundingClientRect
   // （computed fontSize 对 CSS zoom 无感，探针 r2-set1-out-probe.json 实测）
   const base = await win.evaluate(() => ({
-    navH: document.querySelector('.app-nav-item')!.getBoundingClientRect().height,
+    navH: document.querySelector('.rail-item')!.getBoundingClientRect().height,
     headerH: document.querySelector('header.app-header')!.getBoundingClientRect().height
   }))
-  expect(base.headerH, '基线 header 高=56（R2-SH2 锚；44→56 用户裁决 2026-08-31 增高令——断言随令）').toBe(56)
+  // [T3-P2] 高度裁决链：44→56（2026-08-31 增高令）→38（2026-09-26 theme-trio
+  // final-design §1 四轮裁决后规格——后者覆盖前者）
+  expect(base.headerH, '基线 header 高=38（T3-P2 壳层规格）').toBe(38)
 
   // 进设置→点「大 125%」→save 落地→store 替换→App 订阅→--ui-scale→内容行 zoom
   await win.getByRole('button', { name: '设置' }).click()
   await win.getByRole('button', { name: '大 125%' }).click()
   await expect(win.getByText('界面缩放已保存')).toBeVisible()
 
-  // nav 首项 ×1.25±2px（内容行缩放生效）；header 恒 56（结构性豁免）
+  // rail 首项 ×1.25±2px（内容行缩放生效——rail+main 同入 .app-content-row zoom）；
+  // header 恒 38（结构性豁免）
   await expect
     .poll(
       async () => {
         const navH = await win.evaluate(
-          () => document.querySelector('.app-nav-item')!.getBoundingClientRect().height
+          () => document.querySelector('.rail-item')!.getBoundingClientRect().height
         )
         return Math.abs(navH - base.navH * 1.25)
       },
@@ -174,7 +184,7 @@ test('R2-SET1 界面缩放：点「大 125%」→nav 首项 rect ×1.25（±2px�
   const headerAfter = await win.evaluate(
     () => document.querySelector('header.app-header')!.getBoundingClientRect().height
   )
-  expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(56)
+  expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(38)
 
   await app.close()
 })

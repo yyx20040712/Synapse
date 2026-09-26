@@ -15,7 +15,11 @@ import {
   WORKSPACES_DIR_NAME
 } from '../../../src/main/services/workspaces/workspace.fs'
 import { createWorkspaceService } from '../../../src/main/services/workspaces/workspace.service'
-import { ensureWorkspaceLayout, initWorkspaceDb } from '../../../src/main/workspace-layout'
+import {
+  countPapersInDir,
+  ensureWorkspaceLayout,
+  initWorkspaceDb
+} from '../../../src/main/workspace-layout'
 import { createDataLayerContainer } from '../../../src/main/data-layer.container'
 import { createImportGate } from '../../../src/main/import-gate'
 
@@ -104,6 +108,7 @@ async function l0Session(prefix: string, opts?: { importInFlight?: () => boolean
     userDataDir: u,
     importInFlight: opts?.importInFlight ?? (() => false),
     initWorkspaceDb,
+    countPapers: countPapersInDir,
     closeCurrent: () => {
       ref.db?.close()
       ref.db = null
@@ -198,6 +203,7 @@ describe('ensureWorkspaceLayout —— 遗留迁移/幂等/指针降级/全新�
       userDataDir: u,
       importInFlight: () => false,
       initWorkspaceDb,
+      countPapers: countPapersInDir,
       closeCurrent: () => undefined,
       assembleInto: async () => undefined
     })
@@ -236,6 +242,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
       userDataDir: u,
       importInFlight: () => false,
       initWorkspaceDb,
+      countPapers: countPapersInDir,
       closeCurrent: () => cur.close(),
       assembleInto: async (dir) => {
         cur = openMigrated(join(dir, 'synapse.db'))
@@ -278,6 +285,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
       userDataDir: u,
       importInFlight: () => false,
       initWorkspaceDb,
+      countPapers: countPapersInDir,
       closeCurrent: () => undefined,
       assembleInto: async () => undefined
     })
@@ -302,6 +310,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
       userDataDir: u,
       importInFlight: () => false,
       initWorkspaceDb,
+      countPapers: countPapersInDir,
       closeCurrent: () => cur.close(),
       assembleInto: async (dir) => {
         assembled.push(dir)
@@ -338,6 +347,7 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
       userDataDir: u,
       importInFlight: () => false,
       initWorkspaceDb,
+      countPapers: countPapersInDir,
       closeCurrent: () => {
         cur?.close()
         cur = null
@@ -451,6 +461,26 @@ describe('workspace.service —— list/create/rename/switch/currentName', () =>
     expect(assembledDirs()).toEqual([join(u, WORKSPACES_DIR_NAME, DEFAULT_WS_ID)])
     expect(await readPointer(u)).toEqual({ currentId: DEFAULT_WS_ID })
     cur.db?.close()
+  })
+
+  // [T3-P2] list 携 paperCount（课题弹层「N 篇」数据源——ADR-0018 一课题一库，
+  // 计数=逐课题库 COUNT，经 main 根 countPapersInDir 依赖倒置注入）
+  it('T3-P2 list 携 paperCount：default（含种子）=1，新建空课题=0', async () => {
+    const u = await mkUserData('synapse-ws-count-')
+    await seedLegacyLayout(u)
+    await ensureWorkspaceLayout(u)
+    const svc = createWorkspaceService({
+      userDataDir: u,
+      importInFlight: () => false,
+      initWorkspaceDb,
+      countPapers: countPapersInDir,
+      closeCurrent: () => undefined,
+      assembleInto: async () => undefined
+    })
+    const created = await svc.create({ name: '课题乙' })
+    const listed = await svc.list({})
+    expect(listed.items.find((i) => i.id === DEFAULT_WS_ID)?.paperCount).toBe(1)
+    expect(listed.items.find((i) => i.id === created.id)?.paperCount).toBe(0)
   })
 })
 

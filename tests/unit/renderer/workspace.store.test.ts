@@ -24,8 +24,8 @@ const stubApi = makeApiStub({
 import { useWorkspaceStore, selectCurrentName } from '../../../src/renderer/features/workspaces/workspace.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
-const WS_A = { id: 'a', name: '课题甲', createdAt: '2026-01-01T00:00:00.000Z' }
-const WS_B = { id: 'b', name: '课题乙', createdAt: '2026-01-02T00:00:00.000Z' }
+const WS_A = { id: 'a', name: '课题甲', createdAt: '2026-01-01T00:00:00.000Z', paperCount: 0 }
+const WS_B = { id: 'b', name: '课题乙', createdAt: '2026-01-02T00:00:00.000Z', paperCount: 0 }
 
 let reloadSpy: ReturnType<typeof vi.fn>
 

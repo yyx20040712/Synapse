@@ -252,8 +252,15 @@ for (const f of cssAll) {
 // .dark{--x:#fff} 主题切换合法重绑会假阳。聚合改 Map<归一值, Map<prop,
 // 声明[]>>（同名合并为一键），判定=同值且不同名键 ≥2 才红（红证
 // f-lint04-red6-samename.raw.txt：修前假阳实锤→修后绿+异名红证复跑不弱化）。
+// [T3-P2 回炉 1 d1-W6 豁免] 主题恒定 token 与族变 token 的**单族**同值=语义
+// 隔离合法共存（--close-red-ink 纯白三族恒定[Windows caption 红底白字观感]
+// vs --panel 白天族值恰白[暗/护眼族翻深]——合并共享即语义错绑，T3-P1 后
+// 该类假阳首次出现）。豁免面=命名 prop 白名单（聚集判定跳过，其余同值对
+// 仍红——通道同 DYNAMIC_TOKENS 先例：枚举单源+注释双向互指）。
+const SAME_VALUE_EXEMPT_PROPS = new Set(['--close-red-ink'])
 const tokenByNorm = new Map()
 for (const d of tokenColorDecls) {
+  if (SAME_VALUE_EXEMPT_PROPS.has(d.prop)) continue
   if (!tokenByNorm.has(d.norm)) tokenByNorm.set(d.norm, new Map())
   const byProp = tokenByNorm.get(d.norm)
   if (!byProp.has(d.prop)) byProp.set(d.prop, [])
