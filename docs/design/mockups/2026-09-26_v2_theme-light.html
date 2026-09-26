@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>v2r3 · 白天 · 精密仪表 — Synapse 全套设计稿</title>
+<style>
+  /* ══ 设计稿脚手架（非应用 UI）══ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #dfe2e8; font-family: 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif; color: #1c2333; padding: 24px 16px 44px; }
+  .spec { max-width: 1440px; margin: 0 auto 12px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .spec h1 { font-size: 19px; font-weight: 700; color: #141a28; }
+  .spec .thesis { font-size: 12.5px; color: #6b7280; }
+  .viewswitch { margin-left: auto; display: flex; gap: 4px; background: #fff; border: 1px solid #d3d6dd; border-radius: 9px; padding: 4px; }
+  .viewswitch button { font: inherit; font-size: 12.5px; border: none; background: none; padding: 5px 16px; border-radius: 6px; color: #5d6577; cursor: pointer; }
+  .viewswitch button.on { background: #3a5bd9; color: #fff; font-weight: 600; }
+  .spec .swatches { display: flex; gap: 5px; align-items: center; }
+  .spec .sw { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); }
+  #frame-wrap { max-width: 1440px; margin: 0 auto; }
+  #frame { width: 1440px; height: 900px; transform-origin: 0 0; border-radius: 10px; overflow: hidden; position: relative;
+    box-shadow: 0 18px 60px rgba(15,18,28,.3), 0 2px 8px rgba(15,18,28,.2); background: var(--bg); }
+  .notes { max-width: 1440px; margin: 14px auto 0; font-size: 12.5px; line-height: 1.9; color: #454b57;
+    background: rgba(255,255,255,.75); border: 1px solid #d3d6dd; border-radius: 8px; padding: 13px 17px; }
+  .notes b { color: #141a28; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ══ 主题 token：白天 · 精密仪表 ══ */
+  #frame {
+    --bg: #f4f6f9; --panel: #ffffff; --panel-2: #fbfcfe; --line: #e3e7ee; --line-soft: #edf0f5;
+    --ink: #1c2333; --dim: #5d6577; --faint: #9aa3b5;
+    --accent: #3a5bd9; --accent-soft: #eaeefc; --signal: #f06030; --ok: #2e8b57; --warn: #e8a33d;
+    --sub2: #0e9488; --mini-card: #e9edf4; --mini-card-line: #d6dce8;
+    --month-dash: rgba(58,91,217,.55);
+    --mono: Consolas, 'Courier New', monospace; --serif: Georgia, SimSun, serif;
+    --shadow-card: 0 1px 3px rgba(20,26,40,.08);
+    --shadow-drag: 0 12px 32px rgba(20,26,40,.22);
+    --paper: #ffffff; --paper-ink: #2a2f3c;
+  }
+
+  .app { display: grid; grid-template-rows: 38px 1fr 26px; height: 100%; }
+
+  /* ══ 顶栏：左=艺术字签名 / 中=全局搜索（水平居中）/ 右=caption ══ */
+  .topbar { background: var(--panel-2); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 8px 0 18px; gap: 12px; position: relative; }
+  .wordmark { font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 18px; letter-spacing: 2.5px; color: var(--ink); display: flex; align-items: center; }
+  .wordmark i { font-style: italic; color: var(--accent); }
+  .gsearch { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px; width: 320px; }
+  .gsearch svg { width: 13px; height: 13px; stroke: var(--faint); fill: none; stroke-width: 1.7; }
+  .gsearch .ph { font-size: 11.5px; color: var(--faint); }
+  .gsearch .k { margin-left: auto; font-family: var(--mono); font-size: 9.5px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--faint); }
+  .topbar .spacer { flex: 1; }
+  .caption-btns { display: flex; height: 100%; }
+  .caption-btns div { width: 42px; display: grid; place-items: center; color: var(--dim); font-size: 11px; }
+  .caption-btns .close { width: 52px; }
+  .caption-btns .close:hover { background: #e81123; color: #fff; }
+
+  .body-row { display: flex; min-height: 0; }
+
+  /* ══ B站式窄轨侧栏（72px，无顶部 logo）══ */
+  .rail { width: 72px; background: var(--panel-2); display: flex; flex-direction: column; align-items: center; padding: 14px 0 10px; gap: 3px; }
+  .rail-item { width: 60px; padding: 7px 0 6px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--dim); position: relative; cursor: pointer; }
+  .rail-item svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .rail-item .lb { font-size: 10px; letter-spacing: .5px; }
+  .rail-item:hover { background: var(--line-soft); }
+  .rail-item.active { color: var(--accent); background: var(--accent-soft); }
+  .rail-gap { height: 12px; }
+  .rail-ws-dot { position: absolute; top: 5px; right: 11px; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); border: 1.5px solid var(--panel-2); transition: background .3s; }
+  .rail-foot { margin-top: auto; }
+
+  .content { flex: 1; min-width: 0; position: relative; background: var(--bg); }
+  .view { position: absolute; inset: 0; display: none; }
+  .view.on { display: flex; flex-direction: column; }
+
+  /* ══ 状态条 ══ */
+  .statusbar { background: var(--panel-2); border-top: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; gap: 18px;
+    font-family: var(--mono); font-size: 10px; color: var(--faint); }
+  .statusbar .sep { flex: 1; }
+  .statusbar .ok { color: var(--ok); } .statusbar .sig { color: var(--signal); }
+
+  /* ════════ 视图一：文献库 ════════ */
+  .filter-row { display: flex; align-items: center; gap: 9px; padding: 12px 18px 10px; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; width: 290px; box-shadow: var(--shadow-card); }
+  .search svg { width: 14px; height: 14px; stroke: var(--faint); fill: none; stroke-width: 1.7; }
+  .search .ph { font-size: 12px; color: var(--faint); }
+  .chips { display: flex; gap: 6px; align-items: center; }
+  .chip { font-size: 11.5px; padding: 4.5px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); background: var(--panel); display: flex; gap: 6px; align-items: center; }
+  .chip .n { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+  .chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .chip.on .n { color: var(--accent); }
+  .sort { margin-left: auto; font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6.5px 12px; }
+  .lib-body { flex: 1; display: flex; min-height: 0; }
+  .cols { display: flex; align-items: center; gap: 14px; padding: 5px 18px 5px 52px; font-size: 10px; letter-spacing: 1.5px; color: var(--faint); }
+  .cols .c-id { width: 46px; } .cols .c-title { flex: 1; } .cols .c-year { width: 74px; text-align: right; }
+  .cols .c-cite { width: 52px; text-align: right; } .cols .c-tier { width: 42px; text-align: center; } .cols .c-tags { width: 180px; }
+  .list { flex: 1; overflow: hidden; padding: 0 12px 8px 12px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 10px 6px 10px 40px; border-radius: 9px; position: relative; background: transparent; transition: background .12s; }
+  .row + .row { margin-top: 2px; }
+  .row:hover { background: var(--panel); box-shadow: var(--shadow-card); }
+  .row:hover::before { content: ''; position: absolute; left: 18px; top: 12px; bottom: 12px; width: 2.5px; border-radius: 2px; background: var(--signal); }
+  .row.sel { background: var(--panel); box-shadow: inset 0 0 0 1.5px var(--accent), 0 2px 8px rgba(58,91,217,.14); }
+  .row.sel::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3.5px; border-radius: 3px; background: var(--accent); }
+  .r-id { width: 46px; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .r-main { flex: 1; min-width: 0; }
+  .r-title { font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r-sub { font-size: 11px; color: var(--faint); margin-top: 2px; display: flex; gap: 8px; align-items: baseline; }
+  .r-sub .j { font-style: italic; }
+  .r-year, .r-cite { font-family: var(--mono); font-size: 12px; color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+  .r-year { width: 74px; } .r-cite { width: 52px; }
+  .r-tier { width: 42px; text-align: center; }
+  .tier { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 5px; }
+  .tier.q1 { background: var(--accent); color: #fff; }
+  .tier.q2 { border: 1px solid var(--accent); color: var(--accent); }
+  .tier.q3 { border: 1px solid var(--line); color: var(--faint); }
+  .tier.none { color: #c3c9d6; }
+  .r-tags { width: 180px; display: flex; gap: 4px; }
+  .t-mini { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--line-soft); color: var(--dim); white-space: nowrap; }
+  .drawer { width: 316px; border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; }
+  .dr-head { padding: 15px 18px 11px; border-bottom: 1px solid var(--line-soft); }
+  .dr-id { font-family: var(--mono); font-size: 10.5px; color: var(--faint); letter-spacing: 1px; display: flex; justify-content: space-between; }
+  .dr-title { font-size: 14px; line-height: 1.6; color: var(--ink); margin-top: 8px; font-weight: 600; }
+  .dr-metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line-soft); }
+  .dr-metrics div { padding: 10px 0 11px; text-align: center; }
+  .dr-metrics div + div { border-left: 1px dashed var(--line); }
+  .dr-metrics .v { font-family: var(--mono); font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dr-metrics .v.acc { color: var(--accent); }
+  .dr-metrics .l { font-size: 10px; color: var(--faint); margin-top: 3px; }
+  .dr-body { padding: 12px 18px; overflow: hidden; flex: 1; }
+  .fld { display: flex; justify-content: space-between; gap: 12px; padding: 6.5px 0; border-bottom: 1px dashed var(--line-soft); font-size: 12px; }
+  .fld .k { font-family: var(--mono); font-size: 10.5px; color: var(--faint); letter-spacing: 1px; padding-top: 1.5px; }
+  .fld .v { color: var(--dim); text-align: right; max-width: 190px; }
+  .fld .v.link { color: var(--accent); }
+  .dr-sec { font-size: 10px; letter-spacing: 2px; color: var(--faint); margin: 13px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .dr-sec::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+  .dr-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+  .tag.dim { background: var(--line-soft); color: var(--dim); }
+  .dr-actions { padding: 13px 18px; border-top: 1px solid var(--line-soft); display: flex; gap: 8px; }
+  .btn { font-size: 12px; border-radius: 8px; padding: 8px 14px; }
+  .btn.primary { background: var(--accent); color: #fff; flex: 1; text-align: center; box-shadow: 0 2px 6px rgba(58,91,217,.3); }
+  .btn.ghost { border: 1px solid var(--line); color: var(--dim); }
+
+  /* ════════ 视图二：阅读器 ════════ */
+  .tabbar { display: flex; align-items: stretch; height: 34px; background: var(--line-soft); border-bottom: 1px solid var(--line); padding: 0 6px; gap: 2px; }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 14px; font-size: 12px; color: var(--dim);
+    border: 1px solid transparent; border-bottom: none; border-radius: 7px 7px 0 0; margin-top: 5px; max-width: 240px; }
+  .tab .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab .x { font-size: 10px; color: var(--faint); padding: 2px 4px; border-radius: 3px; }
+  .tab.active { background: var(--panel); color: var(--ink); border-color: var(--line); position: relative; }
+  .tab.active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--accent); }
+  .dirty-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  .tabbar .new-tab { align-self: center; margin-left: 4px; color: var(--faint); font-size: 14px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; }
+  .toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .tb-btn { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; color: var(--dim); }
+  .tb-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .tb-btn:hover { background: var(--line-soft); }
+  .tb-btn.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 7px; }
+  .zoom-num { font-size: 12px; color: var(--dim); min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
+  .color-dots { display: flex; gap: 6px; padding: 0 4px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.14); }
+  .dot.on { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .page-jump { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .page-jump input { width: 34px; height: 24px; text-align: center; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; color: var(--ink); background: var(--panel); }
+  .search-slot { margin-left: auto; display: flex; align-items: center; gap: 7px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; width: 190px; }
+  .search-slot .ph { font-size: 11px; color: var(--faint); }
+  .search-slot .cnt { margin-left: auto; font-size: 10px; color: var(--accent); font-family: var(--mono); }
+  .reader-body { flex: 1; display: flex; min-height: 0; }
+  .aside { width: 206px; border-right: 1px solid var(--line); background: var(--panel-2); display: flex; flex-direction: column; }
+  .aside-tabs { display: flex; padding: 8px 10px 0; gap: 2px; }
+  .aside-tab { flex: 1; display: grid; place-items: center; padding: 6px 0 8px; border-radius: 7px 7px 0 0; color: var(--faint); position: relative; }
+  .aside-tab svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.4; }
+  .aside-tab.on { color: var(--accent); background: var(--panel); }
+  .aside-tab.on::after { content: ''; position: absolute; bottom: 0; left: 14px; right: 14px; height: 2px; background: var(--accent); }
+  .outline { padding: 12px 8px; overflow: hidden; font-size: 12px; }
+  .ol-item { padding: 6px 10px; border-radius: 6px; color: var(--dim); display: flex; gap: 8px; align-items: baseline; }
+  .ol-item .n { font-family: var(--serif); color: var(--faint); font-size: 11px; min-width: 18px; text-align: right; }
+  .ol-item.l2 { padding-left: 26px; }
+  .ol-item.on { background: var(--accent-soft); color: var(--ink); }
+  .ol-item.on .n { color: var(--accent); }
+  .pages { flex: 1; overflow: hidden; background: var(--line-soft); display: flex; flex-direction: column; align-items: center; padding: 24px 0 0; }
+  .page { width: 600px; background: var(--paper); box-shadow: 0 1px 4px rgba(20,26,40,.12), 0 6px 22px rgba(20,26,40,.08); border-radius: 3px; position: relative; padding: 44px 56px 36px 56px; color: var(--paper-ink); }
+  .p-title { font-family: var(--serif); font-size: 18px; line-height: 1.5; text-align: center; margin-bottom: 6px; }
+  .p-authors { text-align: center; font-size: 11px; color: var(--dim); margin-bottom: 4px; }
+  .p-abstract { margin: 12px 0 0; padding: 10px 14px; background: var(--line-soft); border-left: 2px solid var(--accent); font-size: 12px; line-height: 1.9; color: var(--dim); text-align: justify; }
+  .p-h2 { font-family: var(--serif); font-size: 15px; margin: 20px 0 9px; display: flex; align-items: center; gap: 9px; }
+  .p-h2 .dia { width: 5px; height: 5px; background: var(--accent); transform: rotate(45deg); flex: none; }
+  .p-p { font-size: 12.6px; line-height: 2.0; color: #33363f; text-align: justify; margin-bottom: 4px; text-indent: 2em; }
+  .hl-y { background: linear-gradient(180deg, transparent 12%, rgba(253,224,71,.55) 12% 88%, transparent 88%); }
+  .hl-b { background: rgba(147,197,253,.38); border-radius: 2px; }
+  .pageno { text-align: center; font-size: 11px; color: var(--faint); margin-top: 22px; font-family: var(--serif); }
+  .anno-pop { position: absolute; left: 330px; top: 500px; width: 244px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 2px 8px rgba(20,26,40,.14), 0 10px 34px rgba(20,26,40,.16); padding: 10px; z-index: 30; }
+  .anno-pop .bar { display: flex; align-items: center; gap: 2px; margin-bottom: 7px; }
+  .anno-pop .bar .grow { flex: 1; }
+  .mini-btn { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: var(--dim); }
+  .mini-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .anno-pop textarea { width: 100%; height: 118px; resize: none; border: 1px solid var(--line); border-radius: 7px; padding: 8px 9px; font-size: 12px; line-height: 1.7; color: var(--ink); font-family: inherit; outline: none; background: var(--panel); }
+  .anno-pop textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .anno-pop .foot { display: flex; align-items: center; margin-top: 8px; gap: 8px; }
+  .save-state { font-size: 10px; color: var(--ok); display: flex; align-items: center; gap: 4px; }
+  .btn-save { margin-left: auto; font-size: 12px; color: #fff; background: var(--accent); padding: 4px 14px; border-radius: 7px; }
+
+  /* ════════ 视图三：脉络 · 年+月时间线（第三轮修订）════════ */
+  .lg-wrap { flex: 1; display: flex; min-height: 0; }
+  .timeline { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+  .lg-toolbar { position: sticky; top: 0; z-index: 12; display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .lg-btn { font-size: 12px; color: var(--panel); background: var(--accent); padding: 6px 14px; border-radius: 8px; box-shadow: 0 2px 6px rgba(58,91,217,.28); cursor: pointer; }
+  .lg-btn.ghost { background: var(--panel); color: var(--dim); border: 1px solid var(--line); box-shadow: none; }
+  .lg-btn.editing { background: var(--signal); box-shadow: 0 2px 6px rgba(240,96,48,.3); }
+  .lg-btn.linkbtn { display: none; }
+  .editing .lg-btn.linkbtn { display: block; }
+  .legend-chips { display: flex; gap: 9px; margin-left: 4px; font-size: 10.5px; color: var(--dim); align-items: center; }
+  .lc { display: flex; align-items: center; gap: 4px; }
+  .lc i { width: 20px; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
+  .lc.s2 i { border-top-color: var(--sub2); }
+  .lc.i2 i { border-top-style: dashed; }
+  .lc.i3 i { border-top: 2px dotted var(--faint); border-color: var(--faint); }
+  .lc.i4 i { border-top-style: dashed; border-color: var(--signal); }
+  .drag-hint { margin-left: auto; font-size: 10.5px; color: var(--accent); background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: 7px; padding: 4px 10px; }
+  .editing .drag-hint { color: var(--signal); border-color: var(--signal); background: rgba(240,96,48,.08); }
+
+  .tl-content { position: relative; padding: 18px 28px 46px 20px; }
+  .tl-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; transition: opacity .25s; }
+  .tl-svg.dimmed { opacity: .18; }
+  .edge-hit { pointer-events: none; stroke: transparent; stroke-width: 14; fill: none; }
+  .editing .edge-hit { pointer-events: stroke; cursor: pointer; }
+
+  .tl-year { margin-bottom: 38px; position: relative; z-index: 2; }
+  .tl-year-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .tl-year-num { font-family: var(--serif); font-size: 23px; color: var(--ink); letter-spacing: 1px; }
+  .tl-year-meta { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+  .tl-year-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  /* D1 月框右边框完全展开（统一满宽，整齐+便于调位）；D2 卡距横纵 20px（2×，逻辑线从空地穿行）*/
+  .tl-month { margin: 0 58px 26px 46px; position: relative; }
+  .month-frame { border: 1.6px dashed var(--month-dash); border-radius: 12px; padding: 15px 12px 12px; display: flex; flex-wrap: wrap; gap: 20px 20px; align-content: flex-start; min-height: 58px; position: relative; overflow: hidden; transition: height .38s cubic-bezier(.22,.9,.26,1), border-color .2s, background .2s; }
+  .month-frame.empty-frame { border-color: var(--line); }
+  .frame-hint { position: absolute; inset: 0; display: grid; place-items: center; font-size: 10.5px; color: var(--faint); }
+  .month-tag { position: absolute; top: -9px; left: 12px; z-index: 3; font-size: 10px; padding: 1.5px 9px; border-radius: 99px;
+    background: var(--panel); color: var(--accent); border: 1.6px dashed var(--month-dash); font-variant-numeric: tabular-nums; }
+  .tl-month.unknown .month-tag { color: var(--faint); border-color: var(--line); border-style: solid; }
+
+  /* 半尺寸深底小卡（A9）：104×~52；A2 交错=上下两行错位半卡（砖砌式，行2 右移防脉络线互相遮挡）*/
+  .tl-card { width: 104px; min-height: 52px; background: var(--mini-card); border: 1px solid var(--mini-card-line); border-radius: 8px;
+    padding: 5px 6px 4px; box-shadow: var(--shadow-card); cursor: grab; position: relative; z-index: 2; user-select: none; touch-action: none; transition: margin-left .25s cubic-bezier(.22,.9,.26,1); }
+  .tl-card.rowshift { margin-left: 62px; } /* 半卡 52 + 半隙 10（D2 间隙下砖砌对齐）*/
+  .tl-card:hover { border-color: var(--accent); }
+  .tl-card.sel { box-shadow: inset 0 0 0 1.6px var(--accent), 0 3px 10px rgba(58,91,217,.18); }
+  .tl-card.link-src { outline: 2.4px dashed var(--signal); outline-offset: 2px; }
+  .tl-card.dragging { position: fixed; z-index: 99; box-shadow: var(--shadow-drag); transform: rotate(2deg) scale(1.05); cursor: grabbing; pointer-events: none; }
+  .c-head { display: flex; align-items: center; gap: 3px; }
+  .c-no { font-family: var(--mono); font-size: 7.5px; color: var(--faint); }
+  .mb { font-size: 7.5px; padding: 0 3.5px; border-radius: 3px; margin-left: auto; line-height: 1.5; }
+  .mb.core { background: var(--accent); color: #fff; font-weight: 600; }
+  .mb.survey { color: var(--dim); border: 1px dashed var(--faint); }
+  .c-title { font-size: 9.3px; font-weight: 600; color: var(--ink); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .c-idea { font-size: 8.2px; color: var(--dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .c-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 7.5px; color: var(--faint); margin-top: 2.5px; }
+  .c-ym { display: none; position: absolute; top: -8px; right: -3px; font-family: var(--mono); font-size: 7.5px; background: var(--accent); color: #fff; padding: 1px 4px; border-radius: 4px; cursor: pointer; z-index: 6; }
+  .editing .c-ym { display: block; }
+  .editing .tl-card { outline: 1px dashed transparent; }
+  .editing .tl-card:hover { outline-color: var(--faint); }
+  /* B1 候选文献位槽（拖动时实时预览插入位）*/
+  .drag-placeholder { width: 104px; min-height: 52px; border: 1.8px dashed var(--accent); border-radius: 8px; background: var(--accent-soft); display: grid; place-items: center; font-size: 9px; color: var(--accent); letter-spacing: 3px; transition: opacity .2s; }
+
+  /* 脉络检查面板 */
+  .lg-inspector { width: 288px; border-left: 1px solid var(--line); background: var(--panel); padding: 16px 16px 12px; display: flex; flex-direction: column; overflow: hidden; }
+  .insp-cap { font-size: 10px; letter-spacing: 3px; color: var(--faint); font-family: var(--mono); display: flex; justify-content: space-between; }
+  .insp-title { font-size: 14px; color: var(--ink); line-height: 1.55; margin: 9px 0 8px; font-weight: 600; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font-size: 10.5px; padding: 2.5px 8px; border-radius: 99px; font-family: var(--mono); }
+  .badge.core { color: #fff; background: var(--accent); font-weight: 600; font-family: 'Microsoft YaHei', sans-serif; }
+  .badge.plain { color: var(--dim); border: 1px solid var(--line); }
+  .idea-cap { font-size: 10px; letter-spacing: 2px; color: var(--accent); margin: 4px 0 5px; }
+  .idea { font-size: 12px; line-height: 1.85; color: var(--dim); text-align: justify; border-left: 2px solid var(--accent); padding-left: 10px; margin-bottom: 12px; }
+  .sec-cap { font-size: 10px; letter-spacing: 3px; color: var(--faint); margin: 2px 0 7px; display: flex; align-items: center; gap: 7px; }
+  .sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+  .note-card { background: var(--line-soft); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; }
+  .note-card .q { font-size: 10px; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .note-card .q .bar { width: 3px; height: 10px; border-radius: 2px; background: var(--accent); }
+  .note-card .q .bar.b { background: var(--signal); }
+  .note-card .txt { font-size: 11.5px; line-height: 1.7; color: var(--dim); }
+  .note-card .quote { font-size: 10.5px; color: var(--faint); margin-top: 5px; padding: 4px 7px; background: var(--panel); border-radius: 5px; border-left: 2px solid var(--line); }
+  .insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: 10.5px; color: var(--faint); }
+  .tl-toast { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--ink); color: #fff; font-size: 12px; padding: 7px 16px; border-radius: 8px; opacity: 0; transition: all .3s; z-index: 60; pointer-events: none; max-width: 70%; }
+  .tl-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 弹层：线型选择器 / 月份选择 / 课题选择 */
+  .pop { position: fixed; z-index: 130; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-drag); padding: 12px 13px; display: none; width: 240px; font-size: 11.5px; color: var(--ink); }
+  .pop.on { display: block; }
+  .pop h4 { font-size: 11px; letter-spacing: 2px; color: var(--faint); margin-bottom: 9px; font-weight: 600; }
+  .pop .baserow { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .pop .bchip { font-size: 10.5px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line); color: var(--dim); cursor: pointer; }
+  .pop .bchip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .pop .subrow { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .pop .schip { display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+  .pop .schip.on { border-color: var(--accent); background: var(--accent-soft); }
+  .pop .schip i { width: 26px; border-top-width: 2.4px; }
+  .pop .schip .nm { flex: 1; }
+  .pop .acts { display: flex; gap: 6px; margin-top: 2px; }
+  .pop .pbtn { flex: 1; text-align: center; font-size: 11px; padding: 5px 0; border-radius: 7px; cursor: pointer; }
+  .pop .pbtn.pri { background: var(--accent); color: var(--panel); }
+  .pop .pbtn.sec { border: 1px solid var(--line); color: var(--dim); }
+  .pop .pbtn.dgr { border: 1px solid rgba(214,69,69,.5); color: #d64545; }
+  /* B2 线型选择器：点击展开分组 */
+  .acc { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
+  .acc-head { display: flex; align-items: center; gap: 7px; padding: 6px 9px; cursor: pointer; font-size: 11.5px; }
+  .acc-head .tri { font-size: 9px; color: var(--faint); width: 9px; }
+  .acc-head .cnt { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--faint); }
+  .acc-head.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .acc-body { padding: 6px 8px 8px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 5px; }
+  .acc-body .pbtn { margin-top: 2px; text-align: center; font-size: 10.5px; padding: 4px 0; }
+  .postpone { font-size: 9px; color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
+  .ws-pop { width: 250px; }
+  .ws-item { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 8px; cursor: pointer; }
+  .ws-item:hover { background: var(--line-soft); }
+  .ws-item.on { background: var(--accent-soft); }
+  .ws-item .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .ws-item .nm { flex: 1; }
+  .ws-item .ct { font-family: var(--mono); font-size: 9.5px; color: var(--faint); }
+  .pop .foot-note { font-size: 10px; color: var(--faint); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="spec">
+  <h1>v2r3 · 白天 · 精密仪表</h1>
+  <span class="thesis">第三轮：15 条裁决落稿——半尺寸深底小卡·横排交错 ｜ 连线上下/平级路由·CAD 线型 ｜ 编辑模式（改月/改线/连线）｜ 拖拽=月内调换 ｜ 顶栏艺术字+居中搜索</span>
+  <div class="viewswitch" id="viewswitch">
+    <button data-view="library">文献库</button><button data-view="reader">阅读器</button><button data-view="lineage" class="on">脉络</button>
+  </div>
+  <div class="swatches">
+    <span class="sw" style="background:#f4f6f9"></span><span class="sw" style="background:#e9edf4"></span>
+    <span class="sw" style="background:#1c2333"></span><span class="sw" style="background:#3a5bd9"></span>
+    <span class="sw" style="background:#0e9488"></span><span class="sw" style="background:#f06030"></span>
+  </div>
+</header>
+
+<div id="frame-wrap"><div id="frame">
+<div class="app">
+
+  <!-- 顶栏：艺术字签名（左·垂直居中）+ 全局搜索（水平居中）+ caption -->
+  <div class="topbar">
+    <div class="wordmark">Syn<i>a</i>pse</div>
+    <div class="gsearch"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><span class="ph">搜索文献、笔记、脉络节点…</span><span class="k">Ctrl K</span></div>
+    <div class="spacer"></div>
+    <div class="caption-btns"><div>—</div><div>▢</div><div class="close">✕</div></div>
+  </div>
+
+  <div class="body-row">
+    <!-- B站式窄轨侧栏（无 logo，自「课题」始）-->
+    <nav class="rail">
+      <div class="rail-item" id="rail-ws" title="切换课题">
+        <span class="rail-ws-dot" id="ws-dot"></span>
+        <svg viewBox="0 0 24 24" id="ws-icon"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg>
+        <span class="lb" id="ws-label">课题</span>
+      </div>
+      <div class="rail-item" id="rail-dl" title="文献搜索与下载引擎（规划中）">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg>
+        <span class="lb">下载</span>
+      </div>
+      <div class="rail-gap"></div>
+      <div class="rail-item" data-nav="library"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span class="lb">文献库</span></div>
+      <div class="rail-item" data-nav="reader"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span class="lb">阅读器</span></div>
+      <div class="rail-item active" data-nav="lineage"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span class="lb">脉络</span></div>
+      <div class="rail-item rail-foot" data-nav="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span class="lb">设置</span></div>
+    </nav>
+
+    <main class="content">
+
+      <!-- ══ 视图：文献库 ══ -->
+      <section class="view" id="view-library">
+        <div class="filter-row">
+          <div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><span class="ph">全文检索：漏损 定位…</span></div>
+          <div class="chips">
+            <div class="chip on">需求预测 <span class="n">×12</span></div>
+            <div class="chip">漏损控制 <span class="n">×8</span></div>
+            <div class="chip">水质模型 <span class="n">×5</span></div>
+            <div class="chip">数字孪生 <span class="n">×4</span></div>
+          </div>
+          <div class="sort">年份 新→旧 ▾</div>
+        </div>
+        <div class="lib-body">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div class="cols">
+              <span class="c-id">编号</span><span class="c-title">题名 · 期刊</span><span class="c-year">年月</span>
+              <span class="c-cite">引用</span><span class="c-tier">档次</span><span class="c-tags">标签</span>
+            </div>
+            <div class="list">
+              <div class="row"><span class="r-id">#018</span><div class="r-main"><div class="r-title">Physics-informed neural networks for water quality modeling</div><div class="r-sub"><span class="j">Expert Systems with Applications</span></div></div><span class="r-year">2024-03</span><span class="r-cite">4</span><span class="r-tier"><span class="tier q1">Q1</span></span><span class="r-tags"><span class="t-mini">水质模型</span><span class="t-mini">PINN</span></span></div>
+              <div class="row sel"><span class="r-id">#017</span><div class="r-main"><div class="r-title">基于图神经网络的城市供水管网漏损定位方法</div><div class="r-sub"><span class="j">中国给水排水</span><span>第 39 卷</span></div></div><span class="r-year">2023-06</span><span class="r-cite">17</span><span class="r-tier"><span class="tier q2">Q2</span></span><span class="r-tags"><span class="t-mini">漏损控制</span><span class="t-mini">GNN</span><span class="t-mini">SCADA</span></span></div>
+              <div class="row"><span class="r-id">#016</span><div class="r-main"><div class="r-title">数字孪生流域框架下的智慧水务体系综述</div><div class="r-sub"><span class="j">水利学报</span><span>综述</span></div></div><span class="r-year">2023-02</span><span class="r-cite">31</span><span class="r-tier"><span class="tier q1">Q1</span></span><span class="r-tags"><span class="t-mini">数字孪生</span><span class="t-mini">综述</span></span></div>
+              <div class="row"><span class="r-id">#015</span><div class="r-main"><div class="r-title">漏损控制标准 CJJ 92—2018 解读</div><div class="r-sub"><span class="j">给水排水</span><span>标准解读</span></div></div><span class="r-year">2022-??</span><span class="r-cite">3</span><span class="r-tier"><span class="tier none">—</span></span><span class="r-tags"><span class="t-mini">漏损控制</span></span></div>
+              <div class="row"><span class="r-id">#014</span><div class="r-main"><div class="r-title">SCADA 数据驱动的二次供水泵组能耗优化</div><div class="r-sub"><span class="j">中国给水排水</span></div></div><span class="r-year">2022-09</span><span class="r-cite">11</span><span class="r-tier"><span class="tier q3">Q3</span></span><span class="r-tags"><span class="t-mini">能耗优化</span><span class="t-mini">SCADA</span></span></div>
+              <div class="row"><span class="r-id">#013</span><div class="r-main"><div class="r-title">Deep learning for urban water demand forecasting: a review and outlook</div><div class="r-sub"><span class="j">Water Research</span></div></div><span class="r-year">2021-04</span><span class="r-cite">58</span><span class="r-tier"><span class="tier q1">Q1</span></span><span class="r-tags"><span class="t-mini">需求预测</span></span></div>
+              <div class="row"><span class="r-id">#012</span><div class="r-main"><div class="r-title">时序卷积网络在管网水压预测中的比较研究</div><div class="r-sub"><span class="j">给水排水</span></div></div><span class="r-year">2020-05</span><span class="r-cite">23</span><span class="r-tier"><span class="tier none">—</span></span><span class="r-tags"><span class="t-mini">需求预测</span></span></div>
+              <div class="row"><span class="r-id">#011</span><div class="r-main"><div class="r-title">城市供水管网水力模型的误差来源分析</div><div class="r-sub"><span class="j">给水排水</span></div></div><span class="r-year">2019-11</span><span class="r-cite">9</span><span class="r-tier"><span class="tier none">—</span></span><span class="r-tags"><span class="t-mini">水力模型</span></span></div>
+            </div>
+          </div>
+          <div class="drawer">
+            <div class="dr-head">
+              <div class="dr-id"><span>SYN-2023-017</span><span style="color:var(--ok)">● 已入库</span></div>
+              <div class="dr-title">基于图神经网络的城市供水管网漏损定位方法</div>
+            </div>
+            <div class="dr-metrics">
+              <div><div class="v acc">17</div><div class="l">引用</div></div>
+              <div><div class="v">6</div><div class="l">通读</div></div>
+              <div><div class="v">14</div><div class="l">标注</div></div>
+              <div><div class="v">9</div><div class="l">笔记</div></div>
+            </div>
+            <div class="dr-body">
+              <div class="fld"><span class="k">YEAR-MO</span><span class="v">2023-06（脉络框：2023 · 6 月）</span></div>
+              <div class="fld"><span class="k">VENUE</span><span class="v">中国给水排水 · 第 39 卷</span></div>
+              <div class="fld"><span class="k">DOI</span><span class="v link">10.19853/j.cnki…</span></div>
+              <div class="dr-sec">标 签</div>
+              <div class="dr-tags"><span class="tag">漏损控制</span><span class="tag">GNN</span><span class="tag dim">SCADA</span></div>
+              <div class="dr-sec">关 联</div>
+              <div class="fld"><span class="k">脉络</span><span class="v link">2023 年 6 月框 · 3 条连线</span></div>
+              <div class="fld"><span class="k">AI 评估</span><span class="v">2 条待读 · Q3 / Q5</span></div>
+            </div>
+            <div class="dr-actions"><div class="btn primary">去阅读器 →</div><div class="btn ghost">BibTeX</div><div class="btn ghost">CSV</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 视图：阅读器 ══ -->
+      <section class="view" id="view-reader">
+        <div class="tabbar">
+          <div class="tab active"><span class="t">基于图神经网络的城市供水管网漏损定位</span><span class="x">✕</span></div>
+          <div class="tab"><span class="t">数字孪生流域框架下的智慧水务体系综述</span><span class="dirty-dot"></span><span class="x">✕</span></div>
+          <div class="new-tab">＋</div>
+        </div>
+        <div class="toolbar">
+          <div class="page-jump"><input value="3">/ 14</div>
+          <div class="tb-btn"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+          <div class="tb-btn"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+          <div class="tb-sep"></div>
+          <div class="tb-btn"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/></svg></div>
+          <div class="zoom-num">112%</div>
+          <div class="tb-btn"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/></svg></div>
+          <div class="tb-sep"></div>
+          <div class="color-dots">
+            <div class="dot on" style="background:#fde047"></div><div class="dot" style="background:#86efac"></div>
+            <div class="dot" style="background:#93c5fd"></div><div class="dot" style="background:#fca5a5"></div>
+            <div class="dot" style="background:#d8b4fe"></div>
+          </div>
+          <div class="tb-sep"></div>
+          <div class="tb-btn on"><svg viewBox="0 0 24 24"><path d="M6 4l12 7.5-5.2 1.2L15.5 18l-2.6 1.3-2.7-5.4L6 16.5z"/></svg></div>
+          <div class="tb-btn"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="7" height="14" rx="1"/><rect x="13" y="5" width="7" height="14" rx="1"/></svg></div>
+          <div class="search-slot"><span class="ph">页内搜索</span><span class="cnt">7/23</span></div>
+        </div>
+        <div class="reader-body">
+          <div class="aside">
+            <div class="aside-tabs">
+              <div class="aside-tab on"><svg viewBox="0 0 24 24"><path d="M5 5h14M5 9h10M5 13h14M5 17h8"/></svg></div>
+              <div class="aside-tab"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="6" height="6" rx="1"/><rect x="13" y="5" width="6" height="6" rx="1"/><rect x="5" y="13" width="6" height="6" rx="1"/><rect x="13" y="13" width="6" height="6" rx="1"/></svg></div>
+              <div class="aside-tab"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg></div>
+            </div>
+            <div class="outline">
+              <div class="ol-item"><span class="n">0</span>摘要</div>
+              <div class="ol-item on"><span class="n">1</span>引言</div>
+              <div class="ol-item l2"><span class="n">1.1</span>研究背景</div>
+              <div class="ol-item l2"><span class="n">1.2</span>漏损控制现状</div>
+              <div class="ol-item"><span class="n">2</span>方法</div>
+              <div class="ol-item l2"><span class="n">2.1</span>管网图构建</div>
+              <div class="ol-item l2"><span class="n">2.2</span>图注意力模型</div>
+              <div class="ol-item"><span class="n">3</span>案例研究</div>
+              <div class="ol-item"><span class="n">4</span>结论</div>
+            </div>
+          </div>
+          <div class="pages">
+            <div class="page">
+              <div class="p-title">基于图神经网络的城市供水管网漏损定位方法</div>
+              <div class="p-authors">张明远　李慧　王建国　（同济大学；哈尔滨工业大学）</div>
+              <div class="p-abstract"><b>摘要：</b>针对城市供水管网漏损定位中监测点稀疏、水力模型误差累积的问题，提出一种融合图注意力网络与压力敏感度矩阵的漏损定位方法。将管网拓扑抽象为异构图，以节点压力残差为输入特征，通过多头注意力机制聚合邻居节点信息。<span class="hl-b">在华东某市 1 286 km 管网的真实 SCADA 数据上，Top-5 命中率达 87.4%</span>，较传统敏感度矩阵法提升 21.3 个百分点……</div>
+              <div class="p-h2"><span class="dia"></span>1　引言</div>
+              <div class="p-p">城市供水管网漏损不仅造成水资源与输药能耗的浪费，也显著抬高产销差率。根据《城市供水管网漏损控制及评定标准》（CJJ 92—2018），大中城市管网漏损率应控制在 10% 以内，而部分老城区实际漏损率长期高于该阈值。</div>
+              <div class="p-p">既有漏损定位研究多依赖水力模型反演：<span class="hl-y">模型精度对定位结果高度敏感，当管段摩阻系数标定偏差超过 15% 时，候选集排名出现系统性漂移。</span>近年来图神经网络在非欧拓扑数据上的表达能力强，为直接从监测数据学习「压力残差—漏损位置」映射提供了新路径……</div>
+              <div class="pageno">— 3 —</div>
+              <div class="anno-pop">
+                <div class="bar">
+                  <div class="dot" style="background:#fde047"></div><div class="grow"></div>
+                  <div class="mini-btn"><svg viewBox="0 0 24 24"><path d="M4 9h13l3 3-3 3H4zM10 6v12M7 6h6M7 18h6"/></svg></div>
+                  <div class="mini-btn"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M8 7l1 13h6l1-13"/></svg></div>
+                </div>
+                <textarea>15% 摩阻偏差 → 排名漂移：与 TCN 水压预测（2020-05）的误差传播结论对得上，可挂到脉络 2020 年 5 月框下作证据链。</textarea>
+                <div class="foot"><span class="save-state">● 已保存</span><span class="btn-save">保存</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 视图：脉络 · 年+月时间线（第三轮）══ -->
+      <section class="view on" id="view-lineage">
+        <div class="lg-wrap">
+          <div class="timeline" id="timeline">
+            <div class="lg-toolbar">
+              <div class="lg-btn ghost" id="edit-toggle">编辑脉络</div>
+              <div class="lg-btn ghost linkbtn" id="link-btn">新建连线</div>
+              <div class="lg-btn">导入草稿</div>
+              <div class="legend-chips">
+                <span class="lc"><i></i>继承·数据驱动</span>
+                <span class="lc s2"><i></i>继承·物理机理</span>
+                <span class="lc i2"><i></i>推断</span>
+                <span class="lc i3"><i></i>平级·综述</span>
+                <span class="lc i4"><i></i>平级·人工</span>
+              </div>
+              <div class="drag-hint" id="lg-hint">↕ 拖动＝月内调序（虚线槽＝候选文献位）</div>
+            </div>
+            <div class="tl-content" id="tl-content">
+              <svg class="tl-svg" id="tl-svg"></svg>
+
+              <div class="tl-year" data-year="2019">
+                <div class="tl-year-head"><span class="tl-year-num">2019</span><span class="tl-year-meta">1 篇</span></div>
+                <div class="tl-month" data-ym="2019-11">
+                  <span class="month-tag">11 月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w19a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2019-03</span></div>
+                      <div class="c-title">水力模型误差来源</div>
+                      <div class="c-idea">三类误差在节点压力上叠加各异</div>
+                      <div class="c-meta"><span>2019-11</span><span>引 9</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-year" data-year="2020">
+                <div class="tl-year-head"><span class="tl-year-num">2020</span><span class="tl-year-meta">2 篇</span></div>
+                <div class="tl-month" data-ym="2020-05">
+                  <span class="month-tag">5 月 · 2 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w20a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2020-01</span><span class="mb core">核</span></div>
+                      <div class="c-title">TCN 水压预测</div>
+                      <div class="c-idea">数据驱动绕开模型标定</div>
+                      <div class="c-meta"><span>2020-05</span><span>引 23</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w20b" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2020-02</span></div>
+                      <div class="c-title">LSTM 需水量预测</div>
+                      <div class="c-idea">序列模型进入需水量场景</div>
+                      <div class="c-meta"><span>2020-05</span><span>引 15</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-year" data-year="2021">
+                <div class="tl-year-head"><span class="tl-year-num">2021</span><span class="tl-year-meta">1 篇</span></div>
+                <div class="tl-month" data-ym="2021-04">
+                  <span class="month-tag">4 月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w21a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2021-02</span></div>
+                      <div class="c-title">DL 需水量预测综述</div>
+                      <div class="c-idea">LSTM/GRU/TCN 适用边界</div>
+                      <div class="c-meta"><span>2021-04</span><span>引 58</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-year" data-year="2022">
+                <div class="tl-year-head"><span class="tl-year-num">2022</span><span class="tl-year-meta">2 篇</span></div>
+                <div class="tl-month" data-ym="2022-09">
+                  <span class="month-tag">9 月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w22a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2022-05</span></div>
+                      <div class="c-title">泵组能耗优化</div>
+                      <div class="c-idea">SCADA 数据一次采集多用</div>
+                      <div class="c-meta"><span>2022-09</span><span>引 11</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tl-month unknown" data-ym="2022-00">
+                  <span class="month-tag">未定月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w22b" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2022-11</span></div>
+                      <div class="c-title">CJJ92 标准解读</div>
+                      <div class="c-idea">漏损率 10% 红线·分区计量</div>
+                      <div class="c-meta"><span>未定月</span><span>引 3</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-year" data-year="2023">
+                <div class="tl-year-head"><span class="tl-year-num">2023</span><span class="tl-year-meta">3 篇</span></div>
+                <div class="tl-month" data-ym="2023-02">
+                  <span class="month-tag">2 月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w23a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-01</span><span class="mb survey">综述</span></div>
+                      <div class="c-title">数字孪生综述</div>
+                      <div class="c-idea">方法谱系放进孪生总框架</div>
+                      <div class="c-meta"><span>2023-02</span><span>引 31</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tl-month" data-ym="2023-06">
+                  <span class="month-tag">6 月 · 2 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w23b" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-04</span><span class="mb core">核</span></div>
+                      <div class="c-title">GNN 漏损定位</div>
+                      <div class="c-idea">图注意力直学漏损位置</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 17</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23c" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-05</span></div>
+                      <div class="c-title">随机森林爆管预警</div>
+                      <div class="c-idea">特征工程路线的对照样本</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 6</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23d" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-06</span></div>
+                      <div class="c-title">KGCN 管网拓扑重建</div>
+                      <div class="c-idea">从监测数据反推未知管段</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 5</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23e" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-07</span></div>
+                      <div class="c-title">GA 管网改扩建优化</div>
+                      <div class="c-idea">遗传算法搜索扩建方案</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 8</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23f" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-08</span></div>
+                      <div class="c-title">水锤瞬变流分析</div>
+                      <div class="c-idea">瞬变信号反演摩阻系数</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 7</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23g" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-09</span></div>
+                      <div class="c-title">贝叶斯管网状态估计</div>
+                      <div class="c-idea">不确定性量化的状态估计</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 9</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23h" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-10</span></div>
+                      <div class="c-title">监测点布置优化</div>
+                      <div class="c-idea">信息熵准则选传感器位</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 6</span></div>
+                    </div>
+                    <div class="tl-card" data-id="w23i" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2023-11</span></div>
+                      <div class="c-title">GNN 可解释性方法</div>
+                      <div class="c-idea">注意力权重的物理解释</div>
+                      <div class="c-meta"><span>2023-06</span><span>引 3</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-year" data-year="2024">
+                <div class="tl-year-head"><span class="tl-year-num">2024</span><span class="tl-year-meta">1 篇</span></div>
+                <div class="tl-month" data-ym="2024-03">
+                  <span class="month-tag">3 月 · 1 篇</span>
+                  <div class="month-frame">
+                    <div class="tl-card" data-id="w24a" tabindex="0">
+                      <div class="c-head"><span class="c-no">W-2024-01</span></div>
+                      <div class="c-title">PINN 水质建模</div>
+                      <div class="c-idea">物理约束进损失函数</div>
+                      <div class="c-meta"><span>2024-03</span><span>引 4</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <aside class="lg-inspector" id="inspector">
+            <div class="insp-cap"><span>节点检查</span><span id="insp-no">W-2023-04</span></div>
+            <div class="insp-title" id="insp-title">基于图神经网络的城市供水管网漏损定位方法</div>
+            <div class="badges">
+              <span class="badge core" id="insp-core" style="display:inline-block">核心</span>
+              <span class="badge plain">2023-06</span><span class="badge plain">引 17</span><span class="badge plain">Q2</span>
+            </div>
+            <div class="idea-cap">核 心 想 法</div>
+            <div class="idea" id="insp-idea">把管网拓扑显式建模为图，用图注意力直接从压力残差学「漏损位置」，绕开水力模型误差的累积传播——模型标定不再是定位精度的前提。</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px"><span class="tag">漏损控制</span><span class="tag">GNN</span><span class="tag dim">SCADA</span></div>
+            <div class="sec-cap">人 工 笔 记</div>
+            <div class="note-card"><div class="txt">与 2020-05 TCN 一脉相承：都是「绕开模型标定」路线，序列换成拓扑。</div></div>
+            <div class="sec-cap">AI 评 估 笔 记<span class="postpone">后置</span></div>
+            <div class="note-card">
+              <div class="q"><span class="bar"></span>Q3 · 方法</div>
+              <div class="txt">多头注意力聚合邻域压力残差——支持「拓扑聚合」主张。</div>
+              <div class="quote">“以节点压力残差为输入特征，通过多头注意力机制聚合邻居节点信息”</div>
+            </div>
+            <div class="note-card"><div class="q"><span class="bar b"></span>Q5 · 推理</div><div class="txt">Top-5 命中率与管径分布的关系未见消融，外推多水源管网需谨慎。</div></div>
+            <div class="insp-foot">单击选中 · 拖动＝月内调序 · 编辑模式：改月 / 展开选线型 / 新建连线</div>
+          </aside>
+        </div>
+        <div class="tl-toast" id="tl-toast"></div>
+        <div class="pop" id="edge-pop"></div>
+        <div class="pop" id="month-pop"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="statusbar">
+    <span>课题 <span id="ws-status">智慧水务 · 供水管网漏损</span> · 137 篇</span><span>脉络 16 节点 / 8 连线</span><span>已选 1</span>
+    <span class="sep"></span>
+    <span class="ok">自动保存 · 2 秒前</span><span>主题：白天 · 精密仪表</span><span class="sig">▲ 3 篇待 enrich</span>
+  </div>
+</div>
+
+<div class="pop ws-pop" id="ws-pop"></div>
+</div></div>
+
+<footer class="notes">
+  <b>v2r3 设计要点（白天 · 精密仪表 · 第三轮 15 条裁决落稿）</b>
+  ① <b>顶栏（A15）</b>：取消菱形图标；最左 Synapse 艺术字签名（衬线斜体，垂直居中）；全局搜索水平居中；主题切换入口=设置页（A6，顶栏无钮）。
+  　② <b>侧栏（A10/A8）</b>：72px 窄轨无 logo；「课题」点击弹出课题列表——选中后图标色点与标签文字随之变为课题短名（试试点它）；「下载」=文献搜索与下载引擎占位（规划中，点击有提示）。
+  　③ <b>小卡与月框（A9/A2/D1/D2）</b>：104×52 半尺寸深底小卡（题名/核心想法/年月+引用三行）；<b>月框右边框统一满宽展开</b>（整齐+便于调位）；<b>卡距横纵 20px（2×）</b>给逻辑线留穿行空地；<b>交错=换行后行 2 右移 62px（砖砌式）</b>防脉络线互相遮挡（2023-06 八篇=7+1 两行示例）。
+  　④ <b>连线（A13/A11/B3）</b>：父子=上下连接（源卡底→目标卡顶）；平级=右侧水平弧；跨年被挡线=右缘绕行走廊；<b>所有连线自动检测并避开文献卡与月份标注</b>（垂直带被挡→改走绕行；入口压到月标注→右移入卡口）。
+  　⑤ <b>编辑模式（A3/B2）</b>：工具条「编辑脉络」→ 卡片亮出月标（点击选月份改月，飞行动画）／点连线弹<b>展开式线型选择器</b>（基础型分组▸子线型▸组内「＋新建线型」，CAD 式随时换）／「新建连线」=点源卡→点目标卡→选线型。
+  　⑥ <b>拖拽（A12/B1）</b>：拖动=本月份内重排——<b>虚线槽实时标出候选文献位</b>（两行交错间随指针穿行），松手飞入槽位；拖向他月=飞回+提示；改月走编辑模式月标。
+  　⑦ 时间线旧→新（A1）；空月框保留提示（A4）；月框间距加大 26px+38px 供走线（A11）。
+  　⑧ <b>范围（B4）</b>：定稿聚焦「自动化 + 人工笔记 + 人工绘制脉络」的人工链路与数据结构化（全部结构化、AI 易读）；AI 评估（检查面板已标「后置」）与下载引擎后续再制作/大改。
+</footer>
+
+<script>
+  /* ── 稿面视图切换 ── */
+  const VS = document.getElementById('viewswitch');
+  VS.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    VS.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + b.dataset.view));
+    document.querySelectorAll('.rail-item[data-nav]').forEach(r => r.classList.toggle('active', r.dataset.nav === b.dataset.view));
+    if (b.dataset.view === 'lineage') requestAnimationFrame(drawEdges);
+  });
+  document.querySelectorAll('.rail-item[data-nav]').forEach(r => r.addEventListener('click', () => {
+    const b = VS.querySelector('button[data-view="' + r.dataset.nav + '"]'); if (b) b.click();
+  }));
+
+  /* ── 课题切换（A10）：列表 → 图标色点+标签文字联动 ── */
+  const WSS = [
+    { name: '智慧水务 · 供水管网漏损', short: '漏损课题', color: 'var(--ok)', count: 137 },
+    { name: '智慧水务 · 水质模型', short: '水质课题', color: 'var(--accent)', count: 64 },
+    { name: '流域数字孪生', short: '孪生课题', color: 'var(--sub2)', count: 22 },
+  ];
+  let wsIdx = 0;
+  const wsPop = document.getElementById('ws-pop');
+  document.getElementById('rail-ws').addEventListener('click', (e) => {
+    e.stopPropagation();
+    wsPop.innerHTML = '<h4>选 择 课 题</h4>' + WSS.map((w, i) =>
+      `<div class="ws-item ${i === wsIdx ? 'on' : ''}" data-i="${i}"><span class="dot" style="background:${w.color}"></span><span class="nm">${w.name}</span><span class="ct">${w.count} 篇</span></div>`).join('')
+      + '<div class="foot-note">选中后侧栏图标与文字随之变化 · 课题间数据完全隔离</div>';
+    wsPop.classList.add('on');
+    wsPop.style.left = '78px'; wsPop.style.top = '58px'; /* 弹层在 #frame 内，本地坐标 */
+  });
+  wsPop.addEventListener('click', (e) => {
+    const it = e.target.closest('.ws-item'); if (!it) return;
+    wsIdx = +it.dataset.i; const w = WSS[wsIdx];
+    document.getElementById('ws-label').textContent = w.short;
+    document.getElementById('ws-dot').style.background = w.color;
+    document.getElementById('ws-status').textContent = w.name;
+    wsPop.classList.remove('on');
+    showToast('已切换课题：' + w.name + '（侧栏已更新）');
+  });
+  /* ── 下载（A8）：搜索引擎占位 ── */
+  document.getElementById('rail-dl').addEventListener('click', () => showToast('文献搜索与下载引擎 · 规划中（未实现）'));
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#ws-pop') && !e.target.closest('#rail-ws')) wsPop.classList.remove('on');
+    if (!e.target.closest('#edge-pop') && !e.target.closest('#tl-svg')) closePop(edgePop);
+    if (!e.target.closest('#month-pop') && !e.target.closest('.c-ym')) closePop(monthPop);
+  });
+
+  /* ── 脉络：卡片数据 ── */
+  const CARD_DATA = {
+    w19a: { no: 'W-2019-03', title: '城市供水管网水力模型的误差来源分析', core: false, idea: '摩阻标定、需水量分配与传感器漂移三类误差在节点压力上的叠加方式不同——定位方法必须知道误差从哪来。' },
+    w20a: { no: 'W-2020-01', title: '时序卷积网络在管网水压预测中的比较研究', core: true, idea: '纯数据驱动的时序路线可绕开水力模型标定，误差不随拓扑假设累积。' },
+    w20b: { no: 'W-2020-02', title: '基于 LSTM 的城市需水量预测', core: false, idea: '序列模型首次系统进入需水量预测场景，确立「数据驱动」分支的起点。' },
+    w21a: { no: 'W-2021-02', title: 'Deep learning for urban water demand forecasting', core: false, idea: '系统比较 LSTM/GRU/TCN 在需水量预测的适用条件与失效边界。' },
+    w22a: { no: 'W-2022-05', title: 'SCADA 数据驱动的二次供水泵组能耗优化', core: false, idea: '同一 SCADA 数据流可复用于能耗侧优化，数据资产一次采集多用。' },
+    w22b: { no: 'W-2022-11', title: '漏损控制与评定标准 CJJ 92—2018 解读', core: false, idea: '行业红线与考核口径：漏损率 10% 以内、分区计量基本单元。' },
+    w23a: { no: 'W-2023-01', title: '数字孪生流域框架下的智慧水务体系综述', core: false, idea: '把上述方法谱系放进数字孪生总框架定位。' },
+    w23b: { no: 'W-2023-04', title: '基于图神经网络的城市供水管网漏损定位方法', core: true, idea: '把管网拓扑显式建模为图，用图注意力直接从压力残差学「漏损位置」，绕开水力模型误差的累积传播——模型标定不再是定位精度的前提。' },
+    w23c: { no: 'W-2023-05', title: '基于随机森林的管网爆管预警', core: false, idea: '特征工程路线的对照样本：同月并行的方法分支。' },
+    w23d: { no: 'W-2023-06', title: '基于 KGCN 的管网拓扑重建', core: false, idea: '从少量监测数据反推未知管段连接关系，补全建模前提。' },
+    w23e: { no: 'W-2023-07', title: '遗传算法的管网改扩建方案优化', core: false, idea: '在拓扑不确定度下搜索鲁棒扩建方案。' },
+    w23f: { no: 'W-2023-08', title: '水锤瞬变流分析与摩阻反演', core: false, idea: '瞬变压力信号反演摩阻系数——误差来源分析的下游工具。' },
+    w23g: { no: 'W-2023-09', title: '贝叶斯管网状态估计', core: false, idea: '带不确定性量化的状态估计，衔接误差分析与定位。' },
+    w23h: { no: 'W-2023-10', title: '信息熵准则的监测点布置优化', core: false, idea: '以信息量最大化选择传感器位置——数据侧前提。' },
+    w23i: { no: 'W-2023-11', title: '图神经网络可解释性方法', core: false, idea: '注意力权重的物理解释——GNN 路线的可信性补强。' },
+    w24a: { no: 'W-2024-01', title: 'Physics-informed neural networks for water quality modeling', core: false, idea: '物理约束进损失函数——数据驱动与机理建模的和解路线。' },
+  };
+  const insp = { no: document.getElementById('insp-no'), title: document.getElementById('insp-title'), idea: document.getElementById('insp-idea'), core: document.getElementById('insp-core') };
+  function selectCard(card) {
+    document.querySelectorAll('.tl-card').forEach(c => c.classList.toggle('sel', c === card));
+    const d = CARD_DATA[card.dataset.id]; if (!d) return;
+    insp.no.textContent = d.no; insp.title.textContent = d.title; insp.idea.textContent = d.idea;
+    insp.core.style.display = d.core ? 'inline-block' : 'none';
+  }
+
+  /* ── 线型系统（A14 CAD 式）：基础型 × 子线型 ── */
+  const cssVar = (n) => getComputedStyle(document.getElementById('frame')).getPropertyValue(n).trim();
+  const LINETYPES = {
+    tree:     { name: '继承',     subs: [{ id: 't1', name: '数据驱动', color: cssVar('--accent'), dash: '', w: 1.7 }, { id: 't2', name: '物理机理', color: cssVar('--sub2'), dash: '', w: 1.7 }] },
+    inferred: { name: '推断',     subs: [{ id: 'i1', name: '默认', color: cssVar('--accent'), dash: '5 4', w: 1.5 }] },
+    ref:      { name: '综述关联', subs: [{ id: 'r1', name: '默认', color: cssVar('--faint'), dash: '2 4', w: 1.4 }] },
+    manual:   { name: '人工补线', subs: [{ id: 'm1', name: '待核线索', color: cssVar('--signal'), dash: '7 4', w: 1.5 }] },
+  };
+  const SUB_PALETTE = ['#8b5cf6', cssVar('--ok'), cssVar('--warn'), '#e879a9', '#0ea5e9'];
+  const SUB_DASHES = ['', '6 3', '2 3', '10 4 2 4'];
+  const EDGES = [
+    { f: 'w19a', t: 'w20a', b: 'tree', s: 't1', route: 'v' },
+    { f: 'w19a', t: 'w20b', b: 'tree', s: 't1', route: 'v' },
+    { f: 'w20a', t: 'w21a', b: 'tree', s: 't1', route: 'v' },
+    { f: 'w20a', t: 'w22a', b: 'inferred', s: 'i1', route: 'skip' },
+    { f: 'w21a', t: 'w23b', b: 'tree', s: 't1', route: 'skip' },
+    { f: 'w23b', t: 'w24a', b: 'tree', s: 't2', route: 'v' },
+    { f: 'w23a', t: 'w23b', b: 'ref', s: 'r1', route: 'arc' },
+    { f: 'w23a', t: 'w24a', b: 'manual', s: 'm1', route: 'arc' },
+  ];
+  const subOf = (e) => LINETYPES[e.b].subs.find(x => x.id === e.s) || LINETYPES[e.b].subs[0];
+
+  /* ── 连线绘制：v=上下 / skip=右绕行 / arc=平级弧（A13/A11）── */
+  const svg = document.getElementById('tl-svg');
+  const content = document.getElementById('tl-content');
+  function rel(el) { const c = el.getBoundingClientRect(), p = content.getBoundingClientRect(); return { l: c.left - p.left, r: c.right - p.left, t: c.top - p.top, b: c.bottom - p.top, cx: c.left - p.left + c.width / 2, cy: c.top - p.top + c.height / 2 }; }
+  function drawEdges() {
+    if (!document.getElementById('view-lineage').classList.contains('on')) return;
+    const H = content.scrollHeight, W = content.scrollWidth;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const corridor = W - 42;
+    /* B3 障碍物清单：全部文献卡 + 全部月份标注 */
+    const obs = [];
+    document.querySelectorAll('#tl-content .tl-card').forEach(c => { const r = rel(c); r.el = c; obs.push(r); });
+    document.querySelectorAll('#tl-content .month-tag').forEach(t => { const r = rel(t); r.el = t; obs.push(r); });
+    const hits = (x0, x1, y0, y1, skipEls) => obs.some(r =>
+      !skipEls.includes(r.el) && x1 > r.l - 4 && x0 < r.r + 4 && y1 > r.t - 4 && y0 < r.b + 4);
+    let out = '';
+    EDGES.forEach((e, i) => {
+      const fe = document.querySelector(`.tl-card[data-id="${e.f}"]`), te = document.querySelector(`.tl-card[data-id="${e.t}"]`);
+      if (!fe || !te) return;
+      const a = rel(fe), b = rel(te), s = subOf(e);
+      const tagEl = te.closest('.tl-month').querySelector('.month-tag');
+      /* 入口避让目标框的月份标注 */
+      let entryX = b.cx;
+      const tagR = rel(tagEl);
+      if (entryX > tagR.l - 6 && entryX < tagR.r + 6) entryX = Math.min(Math.max(tagR.r + 10, b.l + 14), b.r - 10);
+      const corridorPath = (bottomExit) => {
+        const r = 8, yIn = b.t - 16;
+        if (bottomExit) { /* 侧出口被同行右邻卡挡住 → 从源卡底部出，走框间空隙（B3）*/
+          const fr = rel(fe.closest('.month-frame'));
+          const gapY = fr.b + 12;
+          return `M ${a.cx} ${a.b + 2} L ${a.cx} ${gapY - r} Q ${a.cx} ${gapY} ${a.cx + r} ${gapY} L ${corridor - r} ${gapY} Q ${corridor} ${gapY} ${corridor} ${gapY + r} L ${corridor} ${yIn - r} Q ${corridor} ${yIn} ${corridor - r} ${yIn} L ${entryX + r} ${yIn} Q ${entryX} ${yIn} ${entryX} ${yIn + r} L ${entryX} ${b.t - 1}`;
+        }
+        const sy = a.cy;
+        return `M ${a.r + 1} ${sy} L ${corridor - r} ${sy} Q ${corridor} ${sy} ${corridor} ${sy + r} L ${corridor} ${yIn - r} Q ${corridor} ${yIn} ${corridor - r} ${yIn} L ${entryX + r} ${yIn} Q ${entryX} ${yIn} ${entryX} ${yIn + r} L ${entryX} ${b.t - 1}`;
+      };
+      /* 通行检测：垂直带 / 平级弧出入口+回程扫掠带 / 侧出口，被挡则降级（B3）*/
+      const vBlocked = hits(Math.min(a.cx, b.cx) - 7, Math.max(a.cx, b.cx) + 7, a.b, b.t, [fe, te, tagEl]);
+      const arcEntryBlocked = hits(b.r, corridor, b.cy - 5, b.cy + 5, [fe, te]);
+      const arcExitBlocked = hits(a.r, corridor, a.cy - 5, a.cy + 5, [fe, te]);
+      const arcSweepBlocked = hits(b.r, corridor, Math.min(a.cy, b.cy), Math.max(a.cy, b.cy), [fe, te]);
+      let d = '', fromSide = false;
+      if (e.route === 'v' && !vBlocked) {
+        const dy = b.t - a.b;
+        d = `M ${a.cx} ${a.b + 1} C ${a.cx} ${a.b + dy * .58}, ${entryX} ${b.t - dy * .42}, ${entryX} ${b.t - 1}`;
+      } else if (e.route === 'arc' && !arcEntryBlocked && !arcExitBlocked && !arcSweepBlocked) {
+        const bulge = corridor + 12;
+        d = `M ${a.r + 1} ${a.cy} C ${bulge} ${a.cy}, ${bulge} ${b.cy}, ${b.r + 1} ${b.cy}`;
+        fromSide = true;
+      } else {
+        d = corridorPath(arcExitBlocked);
+      }
+      const arrow = fromSide
+        ? `<path d="M ${b.r + 2} ${b.cy} l 7 -3.5 0 7 z" fill="${s.color}"/>`
+        : `<path d="M ${entryX} ${b.t - 1} l -3.5 -7 7 0 z" fill="${s.color}"/>`;
+      out += `<g class="edge-g" data-i="${i}"><path class="edge-main" d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" stroke-dasharray="${s.dash}" opacity=".9" stroke-linecap="round" stroke-linejoin="round"/>${arrow}<path class="edge-hit" d="${d}"/></g>`;
+    });
+    svg.innerHTML = out;
+  }
+  window.addEventListener('resize', drawEdges);
+
+  /* ── A2 行错位：按实际换行分组，第偶数行右移半卡（砖砌式，防脉络线遮挡）── */
+  function staggerRows() {
+    document.querySelectorAll('.month-frame').forEach(f => {
+      const cards = [...f.querySelectorAll('.tl-card')];
+      const rows = []; let last = null;
+      cards.forEach(c => { const t = c.offsetTop; if (t !== last) { rows.push([]); last = t; } rows[rows.length - 1].push(c); });
+      cards.forEach(c => c.classList.remove('rowshift'));
+      rows.forEach((row, ri) => { if (ri % 2 === 1) row.forEach(c => c.classList.add('rowshift')); });
+    });
+  }
+  /* ── 计数 / 月标 / 空框 ── */
+  function refreshCounts() {
+    document.querySelectorAll('.tl-month').forEach(m => {
+      const n = m.querySelectorAll('.tl-card').length;
+      m.querySelector('.month-tag').textContent = m.classList.contains('unknown') ? `未定月 · ${n} 篇` : `${parseInt(m.dataset.ym.slice(5), 10)} 月 · ${n} 篇`;
+      const frame = m.querySelector('.month-frame');
+      frame.classList.toggle('empty-frame', n === 0);
+      frame.querySelector('.frame-hint')?.remove();
+      if (n === 0) frame.insertAdjacentHTML('beforeend', '<div class="frame-hint">空 · 保留月框（改月可移入）</div>');
+    });
+    document.querySelectorAll('.tl-year').forEach(y => { y.querySelector('.tl-year-meta').textContent = `${y.querySelectorAll('.tl-card').length} 篇`; });
+    document.querySelectorAll('.tl-card').forEach(c => {
+      const m = c.closest('.tl-month').dataset.ym;
+      c.querySelector('.c-ym')?.remove();
+      const chip = document.createElement('span');
+      chip.className = 'c-ym'; chip.textContent = m.slice(5) === '00' ? '未定' : m.slice(0, 4) + '.' + m.slice(5);
+      chip.title = '点击修改所属月份（编辑模式）';
+      chip.addEventListener('click', (ev) => { ev.stopPropagation(); if (frame.classList.contains('editing')) openMonthPop(c, ev.clientX, ev.clientY); });
+      c.appendChild(chip);
+    });
+    staggerRows();
+  }
+  function animateFrames() {
+    document.querySelectorAll('.month-frame').forEach(f => {
+      const prev = f.offsetHeight; f.style.height = 'auto'; const next = f.offsetHeight;
+      if (Math.abs(prev - next) < 1) { f.style.height = ''; return; }
+      f.style.height = prev + 'px'; f.offsetHeight;
+      requestAnimationFrame(() => { f.style.height = next + 'px'; });
+      f.addEventListener('transitionend', function h() { f.style.height = ''; f.removeEventListener('transitionend', h); });
+    });
+  }
+
+  /* ── 拖拽（A12）：仅月内调换 ── */
+  const timeline = document.getElementById('timeline');
+  const frame = document.getElementById('frame');
+  const toast = document.getElementById('tl-toast');
+  let toastTimer, drag = null, justDragged = false, linkMode = 0, linkSrc = null;
+  function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2400); }
+  const scaleOf = () => frame.getBoundingClientRect().width / 1440;
+  const toLocal = (cx, cy) => { const fr = frame.getBoundingClientRect(), s = scaleOf(); return { x: (cx - fr.left) / s, y: (cy - fr.top) / s }; };
+  const monthOf = (c) => c.closest('.tl-month').dataset.ym;
+
+  timeline.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.tl-card');
+    if (!card || e.button !== 0 || linkMode || e.target.closest('.c-ym')) return;
+    const r = card.getBoundingClientRect();
+    drag = { card, srcYm: monthOf(card), frameEl: card.closest('.month-frame'), sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, moved: false, ph: null };
+    card.setPointerCapture(e.pointerId);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 5) return;
+      drag.moved = true; justDragged = true;
+      const c = drag.card, r = c.getBoundingClientRect(), loc = toLocal(r.left, r.top);
+      drag.ph = document.createElement('div'); drag.ph.className = 'drag-placeholder'; drag.ph.textContent = '置 入';
+      c.parentNode.insertBefore(drag.ph, c);
+      c.classList.add('dragging');
+      Object.assign(c.style, { left: loc.x + 'px', top: loc.y + 'px', width: r.width / scaleOf() + 'px' });
+      frame.appendChild(c);
+      svg.classList.add('dimmed');
+    }
+    const loc = toLocal(e.clientX, e.clientY);
+    Object.assign(drag.card.style, { left: (loc.x - drag.ox / scaleOf()) + 'px', top: (loc.y - drag.oy / scaleOf()) + 'px' });
+    /* B1 候选文献位：指针在本月框内时，虚线槽实时移动到插入位（两行交错间穿行）*/
+    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('.month-frame') === drag.frameEl;
+    drag.ph.style.opacity = over ? '' : '.35';
+    if (!over) return;
+    const cards = [...drag.frameEl.querySelectorAll('.tl-card')];
+    let idx = cards.length;
+    for (let i = 0; i < cards.length; i++) {
+      const cr = cards[i].getBoundingClientRect();
+      const sameRow = e.clientY > cr.top - cr.height * .8 && e.clientY < cr.bottom + cr.height * .8;
+      const before = sameRow ? e.clientX < cr.left + cr.width / 2 : e.clientY < cr.top + cr.height / 2;
+      if (before) { idx = i; break; }
+    }
+    drag.frameEl.insertBefore(drag.ph, idx < cards.length ? cards[idx] : null);
+  });
+  document.addEventListener('pointerup', (e) => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (!d.moved) { selectCard(d.card); return; }
+    svg.classList.remove('dimmed');
+    setTimeout(() => { justDragged = false; }, 50);
+    const overFrame = document.elementFromPoint(e.clientX, e.clientY)?.closest('.month-frame');
+    const cross = overFrame && overFrame !== d.frameEl;
+    settleCard(d.card, d.ph, null); /* 落入当前候选槽位 */
+    if (cross) showToast('不能跨月拖动——请进入编辑模式，点卡片月标修改月份');
+  });
+
+  function settleCard(card, ph, appendParent) {
+    const from = { l: card.style.left, t: card.style.top };
+    if (appendParent) { ph.remove(); appendParent.appendChild(card); }
+    else {
+      const parent = ph.parentNode, anchor = ph.nextSibling; /* 先取槽位父框——卡片此刻仍挂在 #frame */
+      ph.remove();
+      anchor ? parent.insertBefore(card, anchor) : parent.appendChild(card);
+    }
+    card.style.visibility = 'hidden'; card.classList.remove('dragging'); card.style.cssText = '';
+    const r = card.getBoundingClientRect(), loc = toLocal(r.left, r.top);
+    card.style.visibility = '';
+    card.style.cssText = `position:fixed;left:${from.l};top:${from.t};width:${r.width / scaleOf()}px;z-index:99;transition:left .32s cubic-bezier(.22,.9,.26,1),top .32s cubic-bezier(.22,.9,.26,1);box-shadow:var(--shadow-drag);`;
+    requestAnimationFrame(() => { card.style.left = loc.x + 'px'; card.style.top = loc.y + 'px'; });
+    card.addEventListener('transitionend', function h() { card.style.cssText = ''; card.removeEventListener('transitionend', h); refreshCounts(); animateFrames(); drawEdges(); });
+  }
+
+  /* ── 编辑模式（A3）：改月 / 线型 / 新建连线 ── */
+  const edgePop = document.getElementById('edge-pop');
+  const monthPop = document.getElementById('month-pop');
+  const closePop = (p) => p.classList.remove('on');
+  const editToggle = document.getElementById('edit-toggle');
+  editToggle.addEventListener('click', () => {
+    frame.classList.toggle('editing');
+    const on = frame.classList.contains('editing');
+    editToggle.textContent = on ? '完成编辑' : '编辑脉络';
+    editToggle.classList.toggle('editing', on);
+    document.getElementById('lg-hint').textContent = on
+      ? '编辑中：点连线改线型 · 点卡片月标改月 · 拖动＝月内调序'
+      : '↕ 拖动卡片＝月内调换位置（不可跨月）';
+    if (!on) { linkMode = 0; linkSrc?.classList.remove('link-src'); closePop(edgePop); closePop(monthPop); }
+    drawEdges();
+  });
+
+  /* 线型选择器（A14） */
+  let pickState = null;
+  svg.addEventListener('click', (e) => {
+    if (!frame.classList.contains('editing')) return;
+    const g = e.target.closest('.edge-g'); if (!g) return;
+    e.stopPropagation();
+    const i = +g.dataset.i, edge = EDGES[i], s = subOf(edge);
+    openEdgePop({ mode: 'edit', i, b: edge.b, s: edge.s }, e.clientX, e.clientY);
+  });
+  function openEdgePop(st, cx, cy) {
+    st.expBase = st.b; pickState = st;
+    renderEdgePop();
+    edgePop.classList.add('on');
+    /* 弹层属 #frame（transform 容器）——换算本地坐标并钳制在框内 */
+    const fr = frame.getBoundingClientRect(), s = scaleOf();
+    const lx = (cx - fr.left) / s, ly = (cy - fr.top) / s;
+    edgePop.style.left = Math.max(6, Math.min(lx - 125, 1440 - 258)) + 'px';
+    edgePop.style.top = Math.min(ly + 14, 900 - (edgePop.offsetHeight + 10)) + 'px';
+  }
+  function renderEdgePop() {
+    const st = pickState;
+    edgePop.innerHTML = `<h4>线 型${st.mode === 'create' ? ' · 新建连线' : ''}</h4>` +
+      Object.entries(LINETYPES).map(([k, v]) => {
+        const open = k === st.expBase;
+        const n = EDGES.filter(x => x.b === k).length;
+        return `<div class="acc"><div class="acc-head ${open ? 'on' : ''}" data-b="${k}"><span class="tri">${open ? '▾' : '▸'}</span>${v.name}<span class="cnt">${n} 条 · ${v.subs.length} 型</span></div>` +
+          (open ? `<div class="acc-body">` + v.subs.map(s =>
+            `<div class="schip ${st.b === k && s.id === st.s ? 'on' : ''}" data-b="${k}" data-s="${s.id}"><i style="border-top:${s.w}px ${s.dash === '2 4' ? 'dotted' : s.dash ? 'dashed' : 'solid'} ${s.color};"></i><span class="nm">${s.name}</span><span class="ct">${EDGES.filter(x => x.b === k && x.s === s.id).length}</span></div>`).join('') +
+            `<div class="pbtn sec" data-act="newsub">＋ 新建线型</div></div>` : ``) + `</div>`;
+      }).join('') +
+      `<div class="acts">${st.mode === 'create' ? '<div class="pbtn pri" data-act="create">创建连线</div>' : '<div class="pbtn dgr" data-act="del">移除连线</div>'}</div>
+      <div class="foot-note">B2 点击分组展开 → 选子线型（同组以颜色/线纹分方向，CAD 式随时换）</div>`;
+  }
+  edgePop.addEventListener('click', (e) => {
+    e.stopPropagation(); /* 防重渲染后 e.target 脱离 DOM 被全局关闭器误关 */
+    const head = e.target.closest('.acc-head'), sc = e.target.closest('.schip'), act = e.target.closest('.pbtn');
+    if (head) { pickState.expBase = head.dataset.b; renderEdgePop(); return; }
+    if (sc) {
+      pickState.b = sc.dataset.b; pickState.s = sc.dataset.s; renderEdgePop();
+      if (pickState.mode === 'edit') {
+        const ed = EDGES[pickState.i]; ed.b = pickState.b; ed.s = pickState.s; drawEdges();
+        showToast('线型已切换：' + LINETYPES[ed.b].name + ' · ' + subOf(ed).name);
+      }
+      return;
+    }
+    if (!act) return;
+    const a = act.dataset.act;
+    if (a === 'newsub') {
+      const base = LINETYPES[pickState.expBase], n = base.subs.length + 1;
+      base.subs.push({ id: pickState.expBase + '-x' + Date.now(), name: '线型 ' + n, color: SUB_PALETTE[(n - 2 + SUB_PALETTE.length) % SUB_PALETTE.length], dash: SUB_DASHES[n % SUB_DASHES.length], w: 1.7 });
+      pickState.b = pickState.expBase; pickState.s = base.subs[base.subs.length - 1].id;
+      renderEdgePop();
+      if (pickState.mode === 'edit') { const ed = EDGES[pickState.i]; ed.b = pickState.b; ed.s = pickState.s; drawEdges(); }
+      showToast('已新建子线型：' + base.name + ' · 线型 ' + n);
+    } else if (a === 'del') {
+      EDGES.splice(pickState.i, 1); drawEdges(); closePop(edgePop); showToast('连线已移除');
+    } else if (a === 'create') {
+      const fe = document.querySelector(`.tl-card[data-id="${pickState.f}"]`), te = document.querySelector(`.tl-card[data-id="${pickState.t}"]`);
+      const same = fe && te && fe.closest('.tl-month') === te.closest('.tl-month');
+      EDGES.push({ f: pickState.f, t: pickState.t, b: pickState.b, s: pickState.s, route: same ? 'arc' : 'v' });
+      drawEdges(); closePop(edgePop); showToast('连线已创建：' + LINETYPES[pickState.b].name + ' · ' + LINETYPES[pickState.b].subs.find(x => x.id === pickState.s).name);
+    }
+  });
+
+  /* 新建连线（源卡→目标卡→选线型） */
+  document.getElementById('link-btn').addEventListener('click', () => {
+    if (!frame.classList.contains('editing')) return;
+    linkMode = 1; showToast('新建连线：点击源卡片');
+  });
+  document.addEventListener('click', (e) => {
+    if (!linkMode) return;
+    const card = e.target.closest('.tl-card'); if (!card) return;
+    if (justDragged) return;
+    if (linkMode === 1) { linkSrc = card; card.classList.add('link-src'); linkMode = 2; showToast('再点击目标卡片'); }
+    else if (linkMode === 2 && card !== linkSrc) {
+      linkSrc.classList.remove('link-src');
+      openEdgePop({ mode: 'create', b: 'tree', s: 't1', f: linkSrc.dataset.id, t: card.dataset.id }, e.clientX, e.clientY);
+      linkMode = 0; linkSrc = null;
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    linkMode = 0; linkSrc?.classList.remove('link-src'); closePop(edgePop); closePop(monthPop); wsPop.classList.remove('on');
+  });
+
+  /* 改月弹层 */
+  function openMonthPop(card, cx, cy) {
+    const cur = monthOf(card);
+    monthPop.innerHTML = '<h4>移 动 到 月 份</h4>' + [...document.querySelectorAll('.tl-month')].map(m =>
+      `<div class="ws-item ${m.dataset.ym === cur ? 'on' : ''}" data-ym="${m.dataset.ym}"><span class="dot" style="background:${m.dataset.ym === cur ? 'var(--ok)' : 'var(--line)'}"></span><span class="nm">${m.classList.contains('unknown') ? '未定月' : m.dataset.ym.slice(0, 4) + ' 年 ' + parseInt(m.dataset.ym.slice(5), 10) + ' 月'}</span><span class="ct">${m.querySelectorAll('.tl-card').length} 篇</span></div>`).join('')
+      + '<div class="foot-note">移动带飞行动画 · 月份是数据字段（非拖拽语义）</div>';
+    monthPop.classList.add('on');
+    /* 本地坐标钳制（弹层属 #frame） */
+    const fr2 = frame.getBoundingClientRect(), s2 = scaleOf();
+    monthPop.style.left = Math.max(6, Math.min((cx - fr2.left) / s2, 1440 - 256)) + 'px';
+    monthPop.style.top = Math.min((cy - fr2.top) / s2 + 12, 900 - (monthPop.offsetHeight + 10)) + 'px';
+    monthPop._card = card;
+  }
+  monthPop.addEventListener('click', (e) => {
+    const it = e.target.closest('.ws-item'); if (!it || !monthPop._card) return;
+    const card = monthPop._card, ym = it.dataset.ym;
+    closePop(monthPop);
+    const targetFrame = document.querySelector(`.tl-month[data-ym="${ym}"] .month-frame`);
+    const ph = document.createElement('div'); ph.className = 'drag-placeholder';
+    card.parentNode.insertBefore(ph, card);
+    const r = card.getBoundingClientRect(), loc = toLocal(r.left, r.top);
+    card.classList.add('dragging');
+    Object.assign(card.style, { left: loc.x + 'px', top: loc.y + 'px', width: r.width / scaleOf() + 'px' });
+    frame.appendChild(card);
+    settleCard(card, ph, targetFrame);
+    showToast('已移至 ' + (ym.slice(5) === '00' ? '未定月' : ym.slice(0, 4) + ' 年 ' + parseInt(ym.slice(5), 10) + ' 月'));
+  });
+
+  /* 卡片点选（非拖拽时） */
+  document.addEventListener('click', (e) => {
+    if (justDragged || linkMode) return;
+    const card = e.target.closest('.tl-card');
+    if (card && !e.target.closest('.c-ym')) selectCard(card);
+  });
+
+  refreshCounts();
+  requestAnimationFrame(() => setTimeout(drawEdges, 60));
+</script>
+
+<script>
+  const W = document.getElementById('frame-wrap'), F = document.getElementById('frame');
+  function fit() { const s = Math.min(1, (innerWidth - 32) / 1440); F.style.transform = 'scale(' + s + ')'; W.style.height = 900 * s + 'px'; W.style.width = 1440 * s + 'px'; }
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
