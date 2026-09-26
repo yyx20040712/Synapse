@@ -1,8 +1,10 @@
 /**
  * 应用骨架（infra，无工单）：顶栏身份区（R2-SH2 决4）+ 侧栏四入口 + 视图切换 + 错误边界。
  * 各页面组件来自 features/*（多为工单占位，随工单完成替换）。
+ * [T3-P1] ErrorBoundary 拆 ./ErrorBoundary（组件 250 行防线——本件主题接线
+ * +7 行压线，边界=独立职责拆件，行为零迁移）。
  */
-import { Component, Fragment, type ErrorInfo, type ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -19,6 +21,7 @@ import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { TitleBarControls } from './TitleBarControls'
 import { SplitPane } from '../shared/ui/SplitPane'
+import { ErrorBoundary } from './ErrorBoundary'
 
 type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
@@ -72,46 +75,6 @@ const ICON_NAV_EXPAND = (
   </svg>
 )
 
-class ErrorBoundary extends Component<
-  { children: ReactNode },
-  { message: string | null; retry: number }
-> {
-  override state = { message: null as string | null, retry: 0 }
-
-  static getDerivedStateFromError(error: Error): { message: string } {
-    return { message: error.message }
-  }
-
-  override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[App] 渲染错误', error, info.componentStack)
-  }
-
-  override render(): ReactNode {
-    if (this.state.message !== null) {
-      return (
-        <div className="flex h-full items-center justify-center p-8">
-          <div className="max-w-md rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--danger)' }}>
-            <p className="mb-2 font-medium">页面出现错误</p>
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-              {this.state.message}
-            </p>
-            <button
-              className="mt-3 rounded px-3 py-1 text-xs text-white"
-              style={{ background: 'var(--accent)' }}
-              // 重试 = 清错误 + 递增 retry 作子树 key 强制重挂载：出错组件带着旧状态
-              // 重渲染大概率立刻再抛同一错误，remount 才是真正的"重试"
-              onClick={() => this.setState((s) => ({ message: null, retry: s.retry + 1 }))}
-            >
-              重试
-            </button>
-          </div>
-        </div>
-      )
-    }
-    return <Fragment key={this.state.retry}>{this.props.children}</Fragment>
-  }
-}
-
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
   // F-UI-03：导航栏窄条折叠态（SplitPane 受控面；不持久化，会话默认展开）
@@ -151,6 +114,13 @@ export function App(): JSX.Element {
   useEffect(() => {
     document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
   }, [uiScale])
+  // T3-P1 主题三族：data-theme 单点接线（documentElement.dataset.theme——
+  // theme.css :root[data-theme='dark'|'sepia'] 覆写族消费；未载入/缺省兜底
+  // light=appSettingsSchema default 同源；不跟随系统 A6）
+  const theme = useSettingsStore((s) => s.settings?.theme ?? 'light')
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
     window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)

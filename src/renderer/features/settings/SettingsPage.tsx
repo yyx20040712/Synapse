@@ -3,7 +3,8 @@
  *
  * ── 行为层 ──
  * - 表单：contactEmail（校验 email；说明"仅用于 CrossRef/OpenAlex 礼貌池标识"）
- * - 主题三选（light/dark/system；v1 仅存储，主题切换 v2 接线 theme.css 变量集）
+ * - 主题三选（light/dark/sepia；T3-P1 已接线——App.tsx effect 写 data-theme
+ *   切换 theme.css token 三族，保存后即时生效）
  * - 「网络诊断」按钮：settings.store.diagnose → 每行 host ✓ 延迟ms / ✗（安全 §6.4 披露）
  * - 「网络行为披露」静态说明区：列出 3 个白名单 host 与触发时机（仅手动增强/诊断）
  * - 数据目录：v1 不展示路径（避免暴露给 renderer），仅"数据保存在本机"文案
@@ -34,9 +35,9 @@ import type { AppSettings } from '@shared/ipc/schemas'
 const SAVE_OK = '设置已保存'
 
 const THEME_LABEL: Record<AppSettings['theme'], string> = {
-  light: '浅色',
-  dark: '深色',
-  system: '跟随系统'
+  light: '白天 · 精密仪表',
+  dark: '夜间 · 深灰',
+  sepia: '护眼 · 牛皮纸'
 }
 
 /** workspaceSection：课题管理节由 App 组合根注入（跨域经 App 编排——feature
@@ -50,7 +51,7 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
   const diagnose = useSettingsStore((s) => s.diagnose)
 
   const [email, setEmail] = useState('')
-  const [theme, setTheme] = useState<AppSettings['theme']>('system')
+  const [theme, setTheme] = useState<AppSettings['theme']>('light')
   const [diagnosing, setDiagnosing] = useState(false)
 
   // 载入后同步进表单（settings 到达晚于首帧）
@@ -141,7 +142,7 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
             ))}
           </select>
           <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            v1 仅存储偏好，界面切换随 v2 接线
+            切换即时生效（保存后应用）
           </span>
         </label>
         <div>

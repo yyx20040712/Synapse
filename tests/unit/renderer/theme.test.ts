@@ -50,22 +50,24 @@ const lineageCss = readFileSync(
 
 /** [token 声明, 期望值]——css 内应含 "<token>: <value>;"（含尾分号防 --gold 匹配到 --gold-soft 系前缀） */
 const TOKENS: Array<[string, string]> = [
-  // ── 亮面（shell-library.html :root）──
-  ['--bg', '#f6f4ee'],
+  // ── 亮面（shell-library.html :root；T3-P1 六 token 换白天族终值+桥接改 var()
+  //    形态——值源补 docs/design/2026-09-26_theme-trio-final-design.md §0
+  //    三族终值表，逐值誊录自 mockups/2026-09-26_v2_theme-light.html）──
+  ['--bg', '#f4f6f9'],
   ['--panel', '#ffffff'],
-  ['--panel-glass', 'rgba(255, 255, 255, 0.72)'],
-  ['--border', '#e4ded1'],
+  ['--panel-glass', 'var(--panel)'],
+  ['--border', 'var(--line)'],
   ['--border-gold', '#c9a86a'],
-  ['--text', '#23262d'],
-  ['--text-dim', '#6f7482'],
-  ['--accent', '#2c5f8a'],
-  ['--accent-soft', '#dcebf5'],
+  ['--text', 'var(--ink)'],
+  ['--text-dim', 'var(--dim)'],
+  ['--accent', '#3a5bd9'],
+  ['--accent-soft', '#eaeefc'],
   ['--gold', '#b8935a'],
   ['--gold-soft', 'rgba(207, 174, 114, 0.16)'],
   ['--gold-bright', '#e3c98f'],
   ['--gold-line', 'rgba(207, 174, 114, 0.1)'],
-  ['--danger', '#b3403a'],
-  ['--ok', '#3d7a50'],
+  ['--danger', 'var(--signal)'],
+  ['--ok', '#2e8b57'],
   ['--shadow-1', '0 1px 2px rgba(35, 38, 45, 0.06)'],
   ['--shadow-2', '0 4px 14px rgba(35, 38, 45, 0.09)'],
   ['--shadow-3', '0 10px 34px rgba(35, 38, 45, 0.16)'],
@@ -73,8 +75,29 @@ const TOKENS: Array<[string, string]> = [
   ['--radius-m', '12px'],
   ['--radius-l', '16px'],
   ['--font-display', "Georgia, 'Times New Roman', 'Songti SC', SimSun, serif"],
-  ['--ink', '#1b2333'],
+  ['--ink', '#1c2333'],
   ['--ink-hi', '#232d44'],
+  // ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 族块在下方
+  //    describe 块内断言——防值串位到别的块）──
+  ['--panel-2', '#fbfcfe'],
+  ['--line', '#e3e7ee'],
+  ['--line-soft', '#edf0f5'],
+  ['--dim', '#5d6577'],
+  ['--faint', '#9aa3b5'],
+  ['--signal', '#f06030'],
+  ['--warn', '#e8a33d'],
+  ['--sub2', '#0e9488'],
+  ['--mini-card', '#e9edf4'],
+  ['--mini-card-line', '#d6dce8'],
+  ['--month-dash', 'rgba(58, 91, 217, 0.55)'],
+  ['--mono', "Consolas, 'Courier New', monospace"],
+  ['--serif', 'Georgia, SimSun, serif'],
+  ['--shadow-card', '0 1px 3px rgba(20, 26, 40, 0.08)'],
+  ['--shadow-drag', '0 12px 32px rgba(20, 26, 40, 0.22)'],
+  ['--paper', 'var(--panel)'],
+  ['--paper-ink', '#2a2f3c'],
+  // 墨青 nav 渐变顶钉值（旧 --ink 语义已翻转为亮面墨字色——防误伤）
+  ['--ink-legacy', '#1b2333'],
   // ── 夜面（lineage-constellation.html :root——R2 消费预留，本单只定义）──
   ['--night-bg', '#171e33'],
   ['--night-bg2', '#111728'],
@@ -167,9 +190,11 @@ const TOKENS: Array<[string, string]> = [
   ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)'],
   // ── F-UI-04 顶栏/主区背景冷雾灰（2026-09-20 用户反馈 P4——设计文档
   //    2026-09-20_reader-ui-feedback-survey-and-plan.md §2.4/D1；消费面=
-  //    theme-shell.css .app-header/.app-main[App.tsx main 挂类]；--panel/
-  //    --bg 值不动[上方双正锚+e2e reader-text.spec 值锁在档]）──
-  ['--surface-cool', '#f0f2f5']
+  //    theme-shell.css .app-header/.app-main[App.tsx main 挂类]；T3-P1 起
+  //    --surface-cool 桥接 --panel-2 随族）──
+  ['--surface-cool', 'var(--panel-2)'],
+  // T3-P1 桥接补锚（门一 d1-W6/k1-N1：--warning 桥无正锚——族源 --warn 三族有锚，桥形态独立锁）
+  ['--warning', 'var(--warn)']
 ]
 
 describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
@@ -548,5 +573,130 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
   it('@theme 重绑在场（tailwind text-xs/text-sm 并入 --fs-* 单源——漂移即红）', () => {
     expect(css).toContain('--text-xs: var(--fs-body)')
     expect(css).toContain('--text-sm: var(--fs-title)')
+  })
+})
+
+describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () => {
+  /**
+   * 三主题 UI 战役首票（值源=docs/design/2026-09-26_theme-trio-final-design.md
+   * §0 三族终值表，逐值誊录自 mockups/2026-09-26_v2_theme-{dark,sepia}.html）。
+   * 机制=一套布局+theme.css token 三族：:root 白天族裸值+`:root[data-theme=...]`
+   * 覆写块，data-theme 挂 documentElement 由 App.tsx effect 单点写。
+   * 防串位：族值断言先按块选择器正则抽取块体再 toContain——值漂到别的族块
+   * （或只存 :root）即红；白天族值由上方 TOKENS 正锚锁定不在此重复。
+   */
+  /** 按 data-theme 块选择器抽取块体（[^}]* 到首个 } 即停——族块体内注释禁用 }
+   *  字符，否则截断致后续断言假红） */
+  const themeBlock = (name: 'dark' | 'sepia'): string => {
+    const m = css.match(new RegExp(`:root\\[data-theme='${name}'\\]\\s*\\{([^}]*)\\}`))
+    return m?.[1] ?? ''
+  }
+
+  const DARK_TOKENS: Array<[string, string]> = [
+    ['--bg', '#14161a'],
+    ['--panel', '#1d2026'],
+    ['--panel-2', '#181b20'],
+    ['--line', '#2c313a'],
+    ['--line-soft', '#23272e'],
+    ['--ink', '#e6e9ef'],
+    ['--dim', '#a6adba'],
+    ['--faint', '#6f7684'],
+    ['--accent', '#7b93f5'],
+    ['--accent-soft', 'rgba(123, 147, 245, 0.15)'],
+    ['--signal', '#ff7a45'],
+    ['--ok', '#4ade80'],
+    ['--warn', '#e8a33d'],
+    ['--sub2', '#2dd4bf'],
+    ['--mini-card', '#171a21'],
+    ['--mini-card-line', '#2e343f'],
+    ['--month-dash', 'rgba(123, 147, 245, 0.5)'],
+    ['--shadow-card', '0 1px 3px rgba(0, 0, 0, 0.4)'],
+    ['--shadow-drag', '0 14px 36px rgba(0, 0, 0, 0.6)'],
+    ['--paper', '#242830'],
+    ['--paper-ink', '#d8dbe2'],
+    // 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正
+    ['--panel-a35', 'transparent'],
+    ['--panel-a88', 'var(--panel)'],
+    ['--panel-a90', 'var(--panel)'],
+    ['--panel-a92', 'var(--panel)']
+  ]
+
+  const SEPIA_TOKENS: Array<[string, string]> = [
+    ['--bg', '#e8dcc2'],
+    ['--panel', '#fbf7ec'],
+    ['--panel-2', '#efe6d1'],
+    ['--line', '#d0c4a6'],
+    ['--line-soft', '#e5dcc6'],
+    ['--ink', '#2d2618'],
+    ['--dim', '#5c5244'],
+    ['--faint', '#8a7d63'],
+    ['--accent', '#31513f'],
+    ['--accent-soft', 'rgba(49, 81, 63, 0.1)'],
+    ['--signal', '#b3402f'],
+    ['--ok', '#3d6b4f'],
+    ['--warn', '#b06f1e'],
+    ['--sub2', '#8a6d3b'],
+    ['--mini-card', '#f0e8d2'],
+    ['--mini-card-line', 'var(--line)'],
+    ['--month-dash', 'rgba(49, 81, 63, 0.55)'],
+    ['--fang', "FangSong, 'STFangsong', 'Microsoft YaHei', serif"],
+    ['--kai', "KaiTi, 'STKaiti', 'Microsoft YaHei', serif"],
+    ['--shadow-card', '0 1px 3px rgba(90, 75, 40, 0.16)'],
+    ['--shadow-drag', '0 14px 36px rgba(90, 75, 40, 0.32)'],
+    ['--paper', '#f7efdc'],
+    ['--paper-ink', '#33291a'],
+    ['--panel-a35', 'transparent'],
+    ['--panel-a88', 'var(--panel)'],
+    ['--panel-a90', 'var(--panel)'],
+    ['--panel-a92', 'var(--panel)']
+  ]
+
+  it.each(DARK_TOKENS)('dark 族块内 %s 声明为 %s（块内断言防串位）', (token, value) => {
+    const block = themeBlock('dark')
+    expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')
+    expect(block, `dark 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
+  })
+
+  it.each(SEPIA_TOKENS)('sepia 族块内 %s 声明为 %s（块内断言防串位）', (token, value) => {
+    const block = themeBlock('sepia')
+    expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')
+    expect(block, `sepia 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
+  })
+
+  it('dark 块不含 --fang（sepia 独有字体族——防两族块互抄串值）', () => {
+    expect(themeBlock('dark')).not.toContain('--fang')
+  })
+
+  it('App.tsx 含 dataset.theme 接线锚（data-theme 单点=App effect）', () => {
+    const app = readFileSync(
+      fileURLToPath(new URL('../../../src/renderer/app/App.tsx', import.meta.url)),
+      'utf8'
+    )
+    expect(app, 'App effect 应写 documentElement.dataset.theme（单点接线）').toContain(
+      'dataset.theme ='
+    )
+  })
+
+  it('墨青 nav 渐变顶钉 --ink-legacy（门一 k1-W2：回退 var(--ink) 即 dark 族 nav 顶翻浅无红）', () => {
+    expect(shellCss, '.app-nav 渐变顶应钉 --ink-legacy（--ink 语义已翻转为族源墨字色）').toContain(
+      'var(--ink-legacy), var(--ink-deep)'
+    )
+    // 负锚：theme-shell 内 var(--ink) 裸名消费回填即红（var(--ink-legacy) 前缀不误咬——闭括号锚定）
+    expect(shellCss, 'theme-shell 禁 var(--ink) 裸名消费（钉值面唯一例外已迁 --ink-legacy）').not.toContain(
+      'var(--ink)'
+    )
+  })
+
+  it('SettingsPage 不含 system（枚举已退役——任何形态回填即红）', () => {
+    const page = readFileSync(
+      fileURLToPath(
+        new URL('../../../src/renderer/features/settings/SettingsPage.tsx', import.meta.url)
+      ),
+      'utf8'
+    )
+    // 定向负锚（门一 d1-W7 收窄：裸词锚误咬 window.api.system.* 合法字样——
+    // 两形态锁=引号串回填+对象键回填；M3 变异体 system: '跟随系统' 两形态均咬）
+    expect(page, 'theme system 已退役（T3-P1 A6）——引号串回填即红').not.toMatch(/['"]system['"]/)
+    expect(page, '对象键 system: 回填即红').not.toMatch(/system\s*:/)
   })
 })

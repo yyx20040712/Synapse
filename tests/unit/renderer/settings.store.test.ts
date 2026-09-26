@@ -30,7 +30,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
   it('save：发送补丁，成功后本地合并；saving 复位', async () => {
     const set = vi.fn(async () => ({
       ok: true as const,
-      data: { contactEmail: 'new@x.y', theme: 'system' as const }
+      data: { contactEmail: 'new@x.y', theme: 'light' as const }
     }))
     const useStore = await loadStore({ settings: { set } })
     await useStore.getState().save({ contactEmail: 'new@x.y' })
@@ -42,7 +42,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
   it('R2-SET1 save({uiScale}) 透传：set 收到的参数恰为补丁（Partial 通道不滤字段）', async () => {
     const set = vi.fn(async () => ({
       ok: true as const,
-      data: { contactEmail: 'a@b.c', theme: 'system' as const, uiScale: 'medium' as const }
+      data: { contactEmail: 'a@b.c', theme: 'light' as const, uiScale: 'medium' as const }
     }))
     const useStore = await loadStore({ settings: { set } })
     await useStore.getState().save({ uiScale: 'medium' })
@@ -59,7 +59,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const get = vi.fn().mockImplementationOnce(() => new Promise<SettingsOk>((r) => { resolveLoad = r }))
     const set = vi.fn(async () => ({
       ok: true as const,
-      data: { contactEmail: 'new@x.y', theme: 'system' as const }
+      data: { contactEmail: 'new@x.y', theme: 'light' as const }
     }))
     const useStore = await loadStore({ settings: { get, set } })
     const pLoad = useStore.getState().load() // 慢读悬挂（快照版本 n）
@@ -77,7 +77,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pSave = useStore.getState().save({ contactEmail: 'new@x.y' }) // 保存悬挂
     const pLoad = useStore.getState().load() // 在途保存期间派发的读
-    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system', uiScale: 'small' } })
+    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'light', uiScale: 'small' } })
     await pSave // 保存落地 S1（成功抬版本）
     resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small' } }) // 读旧态的后到响应
     await pLoad
@@ -96,7 +96,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     await pLoad
     // 瞬态：save 尚未落地，load 的旧读应用（版本未被无谓抬升作废）
     expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')
-    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'system', uiScale: 'small' } })
+    resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'light', uiScale: 'small' } })
     await pSave
     // 终态：save 落地无条件覆盖（新者恒为用户最新意图）
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
@@ -153,12 +153,12 @@ describe('F-SV settings.save 链式全序（并发写互斥）', () => {
     // save₁ 在途：save₂ 已进入但必须排队，不得发出第二个 invoke
     expect(set).toHaveBeenCalledTimes(1)
     expect(set).toHaveBeenCalledWith({ contactEmail: 'one@x.y' })
-    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'light' as const, uiScale: 'small' } })
     await flush()
     // save₁ settle 后 save₂ 恰补发一次，载荷为 save₂ 自身的补丁
     expect(set).toHaveBeenCalledTimes(2)
     expect(set).toHaveBeenNthCalledWith(2, { contactEmail: 'two@x.y' })
-    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'light' as const, uiScale: 'small' } })
     await Promise.all([pSave1, pSave2])
     // 落盘序=发出序：终态恒=最后一次意图（save₂ 的值）
     expect(useStore.getState().settings?.contactEmail).toBe('two@x.y')
@@ -185,7 +185,7 @@ describe('F-SV settings.save 链式全序（并发写互斥）', () => {
     // 的 toHaveBeenNthCalledWith 断言对偶，不靠终态隐含覆盖）
     expect(set).toHaveBeenCalledTimes(2)
     expect(set).toHaveBeenNthCalledWith(2, { contactEmail: 'two@x.y' })
-    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'light' as const, uiScale: 'small' } })
     await pSave2
     expect(useStore.getState().settings?.contactEmail).toBe('two@x.y')
     expect(useStore.getState().saving).toBe(false)
@@ -206,16 +206,16 @@ describe('F-SV settings.save 链式全序（并发写互斥）', () => {
     await flush()
     // 深度 3 排队：在途仍只 save₁ 一个 invoke
     expect(set).toHaveBeenCalledTimes(1)
-    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'light' as const, uiScale: 'small' } })
     await flush()
     // save₂ 补发；save₃ 仍排队（尾尾相接的中间格）
     expect(set).toHaveBeenCalledTimes(2)
-    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'light' as const, uiScale: 'small' } })
     await flush()
     // save₃ 补发——第二跳排队后续接（深度 2 用例未覆盖的路径）
     expect(set).toHaveBeenCalledTimes(3)
     expect(set).toHaveBeenNthCalledWith(3, { contactEmail: 'three@x.y' })
-    resolveSet3({ ok: true, data: { contactEmail: 'three@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet3({ ok: true, data: { contactEmail: 'three@x.y', theme: 'light' as const, uiScale: 'small' } })
     await Promise.all([pSave1, pSave2, pSave3])
     // 落盘序=发出序：终态恒=最后一次意图（save₃ 的值）
     expect(useStore.getState().settings?.contactEmail).toBe('three@x.y')
@@ -234,9 +234,9 @@ describe('F-SV settings.save 链式全序（并发写互斥）', () => {
     const pSave1 = useStore.getState().save({ contactEmail: 'one@x.y' })
     const pSave2 = useStore.getState().save({ contactEmail: 'two@x.y' })
     await flush()
-    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet1({ ok: true, data: { contactEmail: 'one@x.y', theme: 'light' as const, uiScale: 'small' } })
     await flush()
-    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'system' as const, uiScale: 'small' } })
+    resolveSet2({ ok: true, data: { contactEmail: 'two@x.y', theme: 'light' as const, uiScale: 'small' } })
     await Promise.all([pSave1, pSave2])
     unsubscribe()
     // 首帧即 true（save 进入立即置位）；false 仅出现在末尾一次（中途闪断=守卫窗）

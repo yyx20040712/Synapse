@@ -87,13 +87,14 @@ function walk(dir, filter, acc = []) {
 const violations = []
 
 // 0) 全工单号格式白名单（F-REG-01）：前缀全集=registry 165 票实测——SR/SR2/
-//    R1/R2/R3/F/C 系须至少一段后缀；P7 系显式枚举（裸形态仅 B7/P7A 两枚实存；
-//    门二 W-2 收紧：P7D/E/X 后缀系不可裸，新前缀免同步逃逸口已封）
-const ID_WHITELIST = /^((SR2?|R[123]|F|C)(-[A-Z0-9]+)+|P7A|(P7D|P7E|P7X)(-[A-Z0-9]+)+|B7)$/
+//    R1/R2/R3/F/C/T3 系须至少一段后缀；P7 系显式枚举（裸形态仅 B7/P7A 两枚实存；
+//    门二 W-2 收紧：P7D/E/X 后缀系不可裸，新前缀免同步逃逸口已封；T3=三主题
+//    UI+脉络时间线战役前缀 2026-09-26 T3-P1 起）
+const ID_WHITELIST = /^((SR2?|R[123]|F|C|T3)(-[A-Z0-9]+)+|P7A|(P7D|P7E|P7X)(-[A-Z0-9]+)+|B7)$/
 for (const t of tickets) {
   if (!ID_WHITELIST.test(t.id)) {
     violations.push(
-      `工单 ${t.id} 的 id 不在白名单（SR/SR2/R1~R3/F/C 带后缀；P7A/P7D/P7E/P7X；B7）——新前缀须同步 check-tickets.mjs ID_WHITELIST`
+      `工单 ${t.id} 的 id 不在白名单（SR/SR2/R1~R3/F/C/T3 带后缀；P7A/P7D/P7E/P7X；B7）——新前缀须同步 check-tickets.mjs ID_WHITELIST`
     )
   }
   // 门一 B-1 回炉：file 空串=existsSync(root) 恒真的全规则免疫通道，硬拦

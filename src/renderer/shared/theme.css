@@ -16,31 +16,39 @@
    值冲突裁决（票面 P1）：--gold 亮面值占用（夜面值别名 --gold-night
    已随 R2-SH2 决5 别名退役删除——LG10 结案：全仓消费=0，死代码即删）；
    --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
-   黄色精确断言锁死（预知必红则不制造红，预裁②口径）。 */
+   黄色精确断言锁死（预知必红则不制造红，预裁②口径）。
+   T3-P1 主题三族（2026-09-26）：三族值源 = docs/design/mockups/
+   2026-09-26_v2_theme-{light,dark,sepia}.html（终值表=docs/design/
+   2026-09-26_theme-trio-final-design.md §0）；:root=白天族裸值，
+   :root[data-theme='dark'|'sepia']=覆写族块（App.tsx effect 单点写
+   documentElement.dataset.theme，不跟随系统 A6）；旧词表（--text/--border/
+   --surface-cool 等）经 var() 桥接随族重解析。legacy 残留 token（金族、
+   --nav-* 阶梯、annotation 五色等）仍溯旧稿。（注：本注释内禁用星号后
+   接斜杠的写法——会把 CSS 注释提前终结） */
 :root {
-  /* ── 亮面：暖纸白 + 墨青 + 金铜（学术优雅系）── */
-  --bg: #f6f4ee;
+  /* ── 亮面（白天族=裸 :root 值；T3-P1 六 token 换白天终值+桥接 var 形态）── */
+  --bg: #f4f6f9;
   --panel: #ffffff;
-  --panel-glass: rgba(255, 255, 255, 0.72);
+  --panel-glass: var(--panel);
   /* 顶栏/主区背景冷雾灰（F-UI-04——用户 2026-09-20 反馈 P4 图四取样；D1=全局挂
-     main 外围统一冷雾灰，消费=theme-shell.css .app-header/.app-main；--panel/--bg
-     值不动；详情栏 .lib-detail-aside 保持纯白[D2]） */
-  --surface-cool: #f0f2f5;
-  --border: #e4ded1;
+     main 外围统一冷雾灰，消费=theme-shell.css .app-header/.app-main；T3-P1 起
+     --surface-cool 桥接 --panel-2 随族；详情栏 .lib-detail-aside 保持纯白[D2]） */
+  --surface-cool: var(--panel-2);
+  --border: var(--line);
   --border-gold: #c9a86a;
-  --text: #23262d;
-  --text-dim: #6f7482;
-  --accent: #2c5f8a;
-  --accent-soft: #dcebf5;
+  --text: var(--ink);
+  --text-dim: var(--dim);
+  --accent: #3a5bd9;
+  --accent-soft: #eaeefc;
   --gold: #b8935a;
   --gold-soft: rgba(207, 174, 114, 0.16);
   --gold-bright: #e3c98f;
   --gold-line: rgba(207, 174, 114, 0.1);
-  --danger: #b3403a;
-  --ok: #3d7a50;
-  /* [F-LINT-04-T4PRE] 警示状态色——TabBar dirty dot 事实色转正（原 var(--warning,
-     orange) fallback 悬空，T4 var() 语义锚前置清理；orange 关键字等值零视觉差） */
-  --warning: #ffa500;
+  --danger: var(--signal);
+  --ok: #2e8b57;
+  /* [F-LINT-04-T4PRE] 警示状态色（TabBar dirty dot）；T3-P1 桥接 --warn
+     随族（原橙色字面值退役——三族警示色族源化） */
+  --warning: var(--warn);
   --shadow-1: 0 1px 2px rgba(35, 38, 45, 0.06);
   --shadow-2: 0 4px 14px rgba(35, 38, 45, 0.09);
   --shadow-3: 0 10px 34px rgba(35, 38, 45, 0.16);
@@ -70,8 +78,31 @@
   --fs-title: 14px;    /* 标题（详情标题/顶栏应用名,text-sm 同锚） */
   --fs-display: 17px;  /* 展示（卡片衬线年份） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
-  --ink: #1b2333;
+  --ink: #1c2333;
   --ink-hi: #232d44;
+  /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
+     --mono/--serif 三族同值只此一处定义，族块不重复）── */
+  --panel-2: #fbfcfe;
+  --line: #e3e7ee;
+  --line-soft: #edf0f5;
+  --dim: #5d6577;
+  --faint: #9aa3b5;
+  --signal: #f06030;
+  --warn: #e8a33d;
+  --sub2: #0e9488;
+  --mini-card: #e9edf4;
+  --mini-card-line: #d6dce8;
+  --month-dash: rgba(58, 91, 217, 0.55);
+  --mono: Consolas, 'Courier New', monospace;
+  --serif: Georgia, SimSun, serif;
+  --shadow-card: 0 1px 3px rgba(20, 26, 40, 0.08);
+  --shadow-drag: 0 12px 32px rgba(20, 26, 40, 0.22);
+  /* --paper 桥接 --panel（F-CSS-03 ② 同值合并——白天族两值同为白，族块各自覆写实值） */
+  --paper: var(--panel);
+  --paper-ink: #2a2f3c;
+  /* 墨青 nav 渐变顶钉值（T3-P1：--ink 语义已翻转为亮面墨字色，防误伤——
+     消费=theme-shell.css .app-nav 渐变；P2 窄轨退役同删） */
+  --ink-legacy: #1b2333;
   /* ── 夜面：脉络·命之座星象板（R2 消费预留，本单只定义不消费）── */
   --night-bg: #171e33;
   --night-bg2: #111728;
@@ -161,6 +192,33 @@
   --shadow-page: 0 1px 4px rgba(0, 0, 0, 0.12);
   --shadow-pop-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-pop-md: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* ── T3-P1 夜间·深灰族（纸页反色 A7）——data-theme=dark 覆写 ── */
+:root[data-theme='dark'] {
+  --bg: #14161a; --panel: #1d2026; --panel-2: #181b20; --line: #2c313a; --line-soft: #23272e;
+  --ink: #e6e9ef; --dim: #a6adba; --faint: #6f7684;
+  --accent: #7b93f5; --accent-soft: rgba(123, 147, 245, 0.15); --signal: #ff7a45; --ok: #4ade80; --warn: #e8a33d;
+  --sub2: #2dd4bf; --mini-card: #171a21; --mini-card-line: #2e343f;
+  --month-dash: rgba(123, 147, 245, 0.5);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4); --shadow-drag: 0 14px 36px rgba(0, 0, 0, 0.6);
+  --paper: #242830; --paper-ink: #d8dbe2;
+  /* 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正 */
+  --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
+}
+
+/* ── T3-P1 护眼·牛皮纸族（档案语汇）——data-theme=sepia 覆写 ── */
+:root[data-theme='sepia'] {
+  --bg: #e8dcc2; --panel: #fbf7ec; --panel-2: #efe6d1; --line: #d0c4a6; --line-soft: #e5dcc6;
+  --ink: #2d2618; --dim: #5c5244; --faint: #8a7d63;
+  --accent: #31513f; --accent-soft: rgba(49, 81, 63, 0.1); --signal: #b3402f; --ok: #3d6b4f; --warn: #b06f1e;
+  --sub2: #8a6d3b; --mini-card: #f0e8d2; --mini-card-line: var(--line);
+  --month-dash: rgba(49, 81, 63, 0.55);
+  --fang: FangSong, 'STFangsong', 'Microsoft YaHei', serif;
+  --kai: KaiTi, 'STKaiti', 'Microsoft YaHei', serif;
+  --shadow-card: 0 1px 3px rgba(90, 75, 40, 0.16); --shadow-drag: 0 14px 36px rgba(90, 75, 40, 0.32);
+  --paper: #f7efdc; --paper-ink: #33291a;
+  --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
 
 html,

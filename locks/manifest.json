@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-20T12:09:50.2629396Z",
+    "generatedAt":  "2026-09-26T15:00:11.1488731Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c1e83179443463fa6a7f24f029c01801f8413b5c88bf11a0111d945e4ac4c078"
+                      "sha256":  "99134a366a887f74d3bc2fb7695143582c4080265d6764bb6915eecee7e825cc"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -43,7 +43,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "f4977086faefb0bcd09029c56a325cae4273adaedd1cd08c3bfeae22238dbb1b"
+                      "sha256":  "4d38de7981f2265ac170c9a032e9303a4333de5ffccf683f5463ca725a8ff218"
                   },
                   {
                       "path":  "scripts/color-re.mjs",
@@ -83,7 +83,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "fb80654bb4e71763b3e6a50fadbf7b58f87cbca08cd39be55cb5edd6ee847ff4"
+                      "sha256":  "c28bb99b3683a5af732faf39dbe378b759c3a08ee6c51075d5da9cf79fe0743e"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -155,7 +155,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "3cb80b3a15b02dd22b8963b19330d90695cfc45a6bc0d2f9a417859e0044ff3a"
+                      "sha256":  "e4b1b1641e095a69e87c084330f60ed916cd1aff1b96815358c8bb5cba632a9c"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -215,7 +215,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "038e2cdbb7fe148844746c9175ec5324baec05bab8f18c3b0cb2fd933c62389e"
+                      "sha256":  "0d7196ee8057e30a278368aa44467f07f29d48e53697890888f0ba64199bb447"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -247,11 +247,11 @@
                   },
                   {
                       "path":  "tests/e2e/reader-search.spec.ts",
-                      "sha256":  "6bae753e2cbf1232c6f2b950e367197ddf41469104cc78331118746647957a3a"
+                      "sha256":  "8b2fd47a392d7397be09094448533576acda3726ccded5e2785523f29ec67710"
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "f9c5bbdabe3393154d24ea3dff210ae7af59205ea9ed79c013f8b071839445c2"
+                      "sha256":  "22ce2c189abc1898d8246dd894b22685517a9956afaf116ea623928024267cf2"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -276,6 +276,10 @@
                   {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
                       "sha256":  "392303d026c315ef93bb4d92f52b29433758340312135a0de7bcd2883184e567"
+                  },
+                  {
+                      "path":  "tests/e2e/theme-trio.spec.ts",
+                      "sha256":  "a80b18cb27ac1f2dcbcec73208e6e576b2012ed1a892c54d4e9d1ced499a87b6"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
@@ -423,7 +427,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/settings.test.ts",
-                      "sha256":  "9566ac434115e63aa98d782dd900b7ad53fae0de3640f77c0f00b606376a2496"
+                      "sha256":  "9c408d602991831a53fc241c2c5fda7740db04885fd559cbc4ea0d845305ae91"
                   },
                   {
                       "path":  "tests/unit/ipc/system.test.ts",
@@ -511,7 +515,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "48b1fec1acd6112430ada4436bd5813925c96dfc094d372803800750e7d0c788"
+                      "sha256":  "bbd579beedad55e7aec889c89354023074557025d331f7b61fd2bd99d4fe50ee"
                   },
                   {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
@@ -739,7 +743,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
-                      "sha256":  "71c1df9db34227ecc70da1bb4e950185657a2b2469c4516e2d5e15979631b72d"
+                      "sha256":  "de7863cfd16264d1fff9b8579eaffd50f285c52a258bd178d5356c72503bb414"
                   },
                   {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
@@ -775,7 +779,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "bab66336c318ab443c035e8a41e806c0c9e4e08665a6175ad5500e56f9051c7a"
+                      "sha256":  "1c9ee4553f43234cb4a280cdc18e4082b7cab86493040ac2ab7286e1812242c4"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",

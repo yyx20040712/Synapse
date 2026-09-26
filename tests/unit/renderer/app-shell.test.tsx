@@ -238,3 +238,73 @@ describe('F-UI-03 导航栏窄条折叠——收起钮+窄态类+label span（�
     ).toBe(false)
   })
 })
+
+// T3-P1 主题三族接线（always-active——三屋新测试不经 guardedDescribe）：
+// 沿 R2-SET1 先例 mock settings store 通道，锁 data-theme 单点=App effect
+describe('T3-P1 主题接线——documentElement.dataset.theme 随 settings.theme（App effect 单点）', () => {
+  afterEach(() => {
+    // jsdom 全局态防跨测污染（documentElement 跨 mount 存留——显式清）
+    delete document.documentElement.dataset.theme
+  })
+
+  it('settings.theme=dark → data-theme=dark', async () => {
+    stubApi.settings.get.mockResolvedValue({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' }
+    })
+    mount(<App />)
+    await flush()
+    expect(
+      document.documentElement.dataset.theme,
+      'dark 档应写 documentElement data-theme=dark（theme.css 覆写族消费钩）'
+    ).toBe('dark')
+  })
+
+  it('settings.theme=sepia → data-theme=sepia', async () => {
+    stubApi.settings.get.mockResolvedValue({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'sepia', uiScale: 'small' }
+    })
+    mount(<App />)
+    await flush()
+    expect(document.documentElement.dataset.theme, 'sepia 档应写 data-theme=sepia').toBe('sepia')
+  })
+
+  it('settings 未载入（load 失败容忍）→ data-theme=light（?? 兜底档）', async () => {
+    // zustand 模块级 store 跨测存留：显式归零 settings 模拟「未载入」态
+    const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
+    act(() => {
+      useSettingsStore.setState({ settings: null })
+    })
+    stubApi.settings.get.mockRejectedValue(new Error('settings unreachable'))
+    mount(<App />)
+    await flush()
+    expect(
+      document.documentElement.dataset.theme,
+      '未载入应兜底 light（默认档——与 App ?? light 同源）'
+    ).toBe('light')
+  })
+
+  it('save({theme}) 落地后 attr 跟随（dark→sepia 变化沿）', async () => {
+    stubApi.settings.get.mockResolvedValue({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' }
+    })
+    mount(<App />)
+    await flush()
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    stubApi.settings.set.mockResolvedValueOnce({
+      ok: true,
+      data: { contactEmail: 'a@b.c', theme: 'sepia', uiScale: 'small' }
+    })
+    const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
+    await act(async () => {
+      await useSettingsStore.getState().save({ theme: 'sepia' })
+    })
+    await flush()
+    expect(
+      document.documentElement.dataset.theme,
+      'save 落地→store settings 替换→App 订阅重渲→attr 跟随 sepia'
+    ).toBe('sepia')
+  })
+})
