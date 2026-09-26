@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Synapse 前端视觉方向 · 四稿总览（2026-09-26）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif; color: #23262d;
+    background: #f0eee8; padding: 40px 24px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+  h1 { font-family: Georgia, SimSun, serif; font-size: 26px; letter-spacing: 3px; color: #1b2333; }
+  header .date { font-size: 12px; color: #8a8f9c; letter-spacing: 1px; }
+  .lede { font-size: 13.5px; line-height: 2; color: #4a4f5b; max-width: 860px; margin-bottom: 30px; text-align: justify; }
+  .lede b { color: #1b2333; }
+
+  .principles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 36px; }
+  .pr { background: #fff; border: 1px solid #e2ddd0; border-radius: 10px; padding: 13px 15px; }
+  .pr .no { font-family: Georgia, serif; font-size: 11px; color: #b8935a; letter-spacing: 2px; margin-bottom: 6px; }
+  .pr .t { font-size: 13px; font-weight: 600; color: #23262d; margin-bottom: 5px; }
+  .pr .d { font-size: 11.5px; line-height: 1.7; color: #6f7482; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: #fff; border: 1px solid #e2ddd0; border-radius: 12px; overflow: hidden;
+    transition: box-shadow .18s, transform .18s; display: flex; flex-direction: column; }
+  .card:hover { box-shadow: 0 10px 30px rgba(27,35,51,.13); transform: translateY(-2px); }
+  .preview { height: 168px; position: relative; overflow: hidden; }
+  .pv-a { background: linear-gradient(120deg, #f6f4ee 55%, #ffffff 55%); }
+  .pv-a::after { content: ''; position: absolute; left: 24px; right: 24px; top: 40px; bottom: 28px;
+    background: linear-gradient(135deg, #fffdf9, #fdfaf3); box-shadow: 0 3px 10px rgba(27,35,51,.12);
+    border-left: 2px solid #c9a86a; }
+  .pv-b { background: radial-gradient(ellipse at 70% 30%, #1d2745, #171e33 60%, #12182b); }
+  .pv-b::before { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 60%, rgba(227,201,143,.85) 0 2.5px, transparent 3px),
+      radial-gradient(circle at 45% 30%, rgba(222,230,255,.7) 0 1.8px, transparent 2.5px),
+      radial-gradient(circle at 62% 70%, rgba(222,230,255,.5) 0 1.5px, transparent 2px),
+      radial-gradient(circle at 78% 45%, rgba(227,201,143,.7) 0 2px, transparent 2.5px); }
+  .pv-b::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to top right, transparent 49.7%, rgba(207,174,114,.5) 49.7% 50.3%, transparent 50.3%),
+      linear-gradient(to bottom right, transparent 59.7%, rgba(151,160,187,.4) 59.7% 60.2%, transparent 60.2%); }
+  .pv-c { background: #f4f6f9; }
+  .pv-c::before { content: ''; position: absolute; left: 18px; right: 18px; top: 0; height: 6px;
+    background: repeating-linear-gradient(90deg, #c6cddd 0 1px, transparent 1px 20px); }
+  .pv-c::after { content: ''; position: absolute; left: 22px; right: 22px; top: 30px; bottom: 26px;
+    background: repeating-linear-gradient(180deg, #fff 0 17px, #eef1f6 17px 18px); border: 1px solid #e3e7ee; border-radius: 6px; }
+  .pv-d { background: repeating-linear-gradient(93deg, rgba(140,120,80,.05) 0 2px, transparent 2px 7px), #e6d9bd; }
+  .pv-d::after { content: ''; position: absolute; left: 26px; right: 26px; top: 34px; height: 60px;
+    background: #fbf7ec; border: 1px solid #cfc3a2; box-shadow: 0 3px 8px rgba(90,75,40,.18); transform: rotate(-1deg); }
+  .pv-d::before { content: '甲等'; position: absolute; right: 40px; top: 96px; font-size: 11px; color: rgba(179,64,47,.9);
+    border: 1.5px solid rgba(179,64,47,.8); padding: 1px 5px; transform: rotate(-8deg); z-index: 2; font-family: KaiTi, serif; }
+  .meta { padding: 15px 18px 16px; }
+  .meta .row1 { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .meta .dir { font-family: Georgia, SimSun, serif; font-size: 17px; letter-spacing: 1px; color: #1b2333; }
+  .meta .view { font-size: 10.5px; color: #fff; background: #1b2333; border-radius: 4px; padding: 2px 7px; letter-spacing: 1px; }
+  .meta .view.dark { background: #b8935a; }
+  .meta .thesis { font-size: 12px; line-height: 1.8; color: #5d6370; margin-bottom: 11px; text-align: justify; }
+  .tokens { display: flex; gap: 5px; margin-bottom: 12px; align-items: center; }
+  .tokens .sw { width: 20px; height: 20px; border-radius: 5px; border: 1px solid rgba(0,0,0,.1); }
+  .tokens .cost { margin-left: auto; font-size: 10.5px; color: #8a8f9c; }
+  .tokens .cost b { color: #3d7a50; } .tokens .cost b.mid { color: #b8935a; } .tokens .cost b.hi { color: #b3403a; }
+  .open { font-size: 12.5px; color: #2c5f8a; text-decoration: none; font-weight: 600; }
+  .open:hover { text-decoration: underline; }
+  .open .arrow { margin-left: 3px; }
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #ddd8ca; font-size: 11.5px; line-height: 2; color: #8a8f9c; max-width: 860px; }
+  footer b { color: #4a4f5b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Synapse 前端视觉方向 · 四稿</h1><span class="date">2026-09-26 · docs/design/mockups/</span></header>
+  <p class="lede">
+    本批四稿回答「商用级优秀前端应该长什么样」：<b>第一眼可扫读的层级、状态永远可见、键盘可达、克制的个性、性能上的即时感</b>——这些是地基，任何视觉方向都必须建在上面；
+    地基之上，一个产品只应该有<b>一个记得住的签名</b>。四个方向各押一个论点、共用同一批智慧水务真实内容，供挑选或组合（例如 C 的文献库密度 + B 的夜面脉络）。
+    每稿均为离线自包含 HTML，直接双击打开即可。
+  </p>
+
+  <div class="principles">
+    <div class="pr"><div class="no">Ⅰ</div><div class="t">内容是主角</div><div class="d">壳层（栏/钮/框）退后，纸面、题名、数据站前排；首屏即工作现场。</div></div>
+    <div class="pr"><div class="no">Ⅱ</div><div class="t">层级靠排版</div><div class="d">字体三轨制（衬线×黑体×等宽）+灰阶分层，而非到处加框加色块。</div></div>
+    <div class="pr"><div class="no">Ⅲ</div><div class="t">状态永远可见</div><div class="d">保存中/已保存/加载中/失败——用户任何时刻知道系统在干什么（本仓强项，保留强化）。</div></div>
+    <div class="pr"><div class="no">Ⅳ</div><div class="t">键盘与焦点</div><div class="d">列表/标签页/画布全键盘可达，焦点可见——单人重度工具的效率底线。</div></div>
+    <div class="pr"><div class="no">Ⅴ</div><div class="t">一个签名</div><div class="d">全应用只留一处记忆点（菱形/星等/刻度/骑缝章），其余保持安静。</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="preview pv-a"></div>
+      <div class="meta">
+        <div class="row1"><span class="dir">A · 宣纸书房</span><span class="view">阅读器</span></div>
+        <div class="thesis">现有「暖纸白·墨青·金铜」推熟为中文文献版式：装帧金线、宋体题字、纸面页列。品牌连续性最强。</div>
+        <div class="tokens">
+          <span class="sw" style="background:#f6f4ee"></span><span class="sw" style="background:#ffffff"></span>
+          <span class="sw" style="background:#1b2333"></span><span class="sw" style="background:#2c5f8a"></span>
+          <span class="sw" style="background:#b8935a"></span>
+          <span class="cost">改造成本 <b>低</b> · token 全沿用</span>
+        </div>
+        <a class="open" href="2026-09-26_a-study-reader.html">打开设计稿<span class="arrow">→</span></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="preview pv-b"></div>
+      <div class="meta">
+        <div class="row1"><span class="dir">B · 观测台</span><span class="view dark">脉络图 · 夜面</span></div>
+        <div class="thesis">激活仓内已定义未消费的「脉络星象板」夜面 token：核心文献=一等星，年份=黄道坐标带，选中星连线点亮金流。</div>
+        <div class="tokens">
+          <span class="sw" style="background:#171e33"></span><span class="sw" style="background:#222c4d"></span>
+          <span class="sw" style="background:#cfae72"></span><span class="sw" style="background:#e9e6db"></span>
+          <span class="sw" style="background:#97a0bb"></span>
+          <span class="cost">改造成本 <b class="mid">中</b> · 存量 token 激活</span>
+        </div>
+        <a class="open" href="2026-09-26_b-observatory-lineage.html">打开设计稿<span class="arrow">→</span></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="preview pv-c"></div>
+      <div class="meta">
+        <div class="row1"><span class="dir">C · 精密仪表</span><span class="view">文献库</span></div>
+        <div class="thesis">文献库=测量数据集：刻度尺、等宽读数、游标线、规格表抽屉——高密度高效率的仪器面板语汇。</div>
+        <div class="tokens">
+          <span class="sw" style="background:#f4f6f9"></span><span class="sw" style="background:#ffffff"></span>
+          <span class="sw" style="background:#1c2333"></span><span class="sw" style="background:#3a5bd9"></span>
+          <span class="sw" style="background:#f06030"></span>
+          <span class="cost">改造成本 <b class="mid">中</b> · 新 token 族</span>
+        </div>
+        <a class="open" href="2026-09-26_c-instrument-library.html">打开设计稿<span class="arrow">→</span></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="preview pv-d"></div>
+      <div class="meta">
+        <div class="row1"><span class="dir">D · 档案馆</span><span class="view">脉络图 · 仿物</span></div>
+        <div class="thesis">「人工策展」的字面呈现：牛皮纸画布上的索引卡、骑缝编目号、印泥章、铅笔连线——研究者的家谱卷宗。</div>
+        <div class="tokens">
+          <span class="sw" style="background:#e6d9bd"></span><span class="sw" style="background:#fbf7ec"></span>
+          <span class="sw" style="background:#31513f"></span><span class="sw" style="background:#b3402f"></span>
+          <span class="sw" style="background:#5f564a"></span>
+          <span class="cost">改造成本 <b class="hi">高</b> · 全新视觉语言</span>
+        </div>
+        <a class="open" href="2026-09-26_d-archive-lineage.html">打开设计稿<span class="arrow">→</span></a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <b>使用说明</b>　① 四稿可单选、也可组合（A 壳层 + C 文献库 + B 夜面脉络 = 「品牌壳·仪表库·星图脉络」三段式）。
+    ② 每稿文件内附设计注记（token/字体/签名/可迁移优先级），选定后按现行流程进入设计链与立票，token 终值仍走 mockup 单源惯例（theme.css 头注在案）。
+    ③ 脉络两稿（B/D）保留现行全部语义约束（tree/ref/manual 三边、核心出度≥2、综述启发、单父拒环 INV-27），仅换视觉媒介——大改语义请另行裁决（ADR-0014 v2 DAG 升版条件）。
+  </footer>
+</div>
+</body>
+</html>
