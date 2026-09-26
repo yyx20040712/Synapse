@@ -633,6 +633,36 @@
       "assertionText": "expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(0)",
       "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）——首轮迁移漏带参形态，e2e 首跑红后补迁",
       "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--shadow-page 声明为设计定稿值 0 1px 4px rgba(0, 0, 0, 0.12)",
+      "reason": "T3-P4 页影换 mockup .page 双层值（0 1px 4px rgba(20,26,40,.12), 0 6px 22px rgba(20,26,40,.08)——三稿同值恒定），值锁随改注链（it.each 标题含值故整例迁移）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/pdf-page-canvas.test.tsx",
+      "caseTitle": "PageBox 页内容容器：白纸承底层+isolation（层序比较域单页内封闭）",
+      "reason": "T3-P4 纸面三态：PageBox 承底层 var(--panel)→var(--paper)（P1 三族 token 首消费），断言载体随迁+标题「白纸承底层」→「纸面承底层 var(--paper)」（isolation 面不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
+      "caseTitle": "工具条根挂 rdr-toolbar 玻璃浮层类；theme-reader.css 值面=--panel-glass+blur10+金 hairline 底缘",
+      "reason": "T3-P4 chrome 换肤：.rdr-toolbar 金族退役换 mockup .toolbar 值面（panel 底+line 下缘，无 glass 无 blur），CSS 值锁随新语汇重写+金族负锚增补",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
+      "caseTitle": "active tab 挂 rdr-tab-active 类（非 active 不挂）；theme-reader.css 值面=纸面底+inset 金底缘",
+      "reason": "T3-P4 TabBar 重构：mockup .tabbar 语汇（line-soft 条+圆角顶 tab+active panel 底+line 边+inset accent 2px 底缘——金 hairline 退役），值锁随新语汇重写",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/reader-text.spec.ts",
+      "assertionText": "expect(visual.pageBg, 'B: 页盒背景=var(--panel) 不透明白').toBe('rgb(255, 255, 255)')",
+      "reason": "T3-P4 纸面三态：页盒底消费 var(--paper)（light=白桥接不变——断言值 rgb(255,255,255) 零变，仅消息文本 var(--panel)→var(--paper) 注释同步）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
     }
   ]
 }

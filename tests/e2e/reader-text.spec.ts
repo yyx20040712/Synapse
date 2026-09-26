@@ -638,9 +638,10 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自
       selectionBg: span === null ? 'missing' : getComputedStyle(span, '::selection').backgroundColor
     }
   })
-  // —— 缺陷 B：页盒=--panel 不透明白 + 柔和阴影（页缘在阅读区上视觉可辨的两要素；
-  //    渲染/占位同底消色差跳动——背景在页盒 div 上与渲染态无关）——
-  expect(visual.pageBg, 'B: 页盒背景=var(--panel) 不透明白').toBe('rgb(255, 255, 255)')
+  // —— 缺陷 B：页盒=--paper 不透明白 + 柔和阴影（页缘在阅读区上视觉可辨的两要素；
+  //    渲染/占位同底消色差跳动——背景在页盒 div 上与渲染态无关；[T3-P4] 页纸底
+  //    =--paper 随族，本断言=light 前提：--paper 桥接 var(--panel)=白不变）——
+  expect(visual.pageBg, 'B: 页盒背景=var(--paper)（light=白桥接）不透明白').toBe('rgb(255, 255, 255)')
   expect(visual.pageShadow, 'B: 页盒阴影非 none').not.toBe('none')
   // 阅读区视觉底：滚动容器自身透明、透出 body --bg（theme.css 单源声明面）
   expect(visual.scrollBg, 'B: 滚动容器透明（视觉底=body --bg）').toBe('rgba(0, 0, 0, 0)')

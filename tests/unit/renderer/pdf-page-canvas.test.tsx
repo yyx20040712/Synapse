@@ -9,8 +9,9 @@
  *   [F-CSS-03] 原字面 rgba(255,255,255,0) 等价改写为 CSS 关键字）；
  * - canvas 内联 z=PAGE_LAYER_Z.canvas 且 pointer-events:none（墨在色块上，
  *   事件穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
- * - PageBox 页内容容器（h-fit）白纸承底层+isolation（层序比较域单页内封闭，
- *   跨页不互扰；暗色主题下页纸仍白——PDF 纸面语义）。
+ * - PageBox 页内容容器（h-fit）纸承底层+isolation（层序比较域单页内封闭，
+ *   跨页不互扰；[T3-P4] 页纸底=--paper 随族——白天白/夜间暗纸/护眼奶油纸，
+ *   canvas 透明底承底层）。
  * - [F-A6-b1] onPageRender 第三参下钻页几何 {rotate,view}（T1/T9 修复通道：
  *   TextLayer duckViewport 的 rotation/rawDims 真值来源；判别值 90/CropBox
  *   [36,36,540,720] 防硬编码回退假绿）。
@@ -114,7 +115,7 @@ describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
     expect(renderReports[0]!.text).toEqual({ items: [], styles: {}, lang: null })
   })
 
-  it('PageBox 页内容容器：白纸承底层+isolation（层序比较域单页内封闭）', () => {
+  it('PageBox 页内容容器：纸面承底层 var(--paper)+isolation（层序比较域单页内封闭）', () => {
     act(() => {
       root!.render(
         <PageBox no={1} size={{ width: 600, height: 800 }} zoom={1} boxWidth={600} rendered={true}
@@ -124,9 +125,10 @@ describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
     const pageRoot = host!.querySelector<HTMLElement>('[data-page-root="1"]')
     expect(pageRoot).not.toBeNull()
     const sheet = pageRoot!.firstElementChild as HTMLElement
-    // [F-CSS-03] 断言载体随 token 化迁移：白纸承底层消费 --panel（值面由
-    // theme.test.ts 既有 token 正锚锁定）；var() 载体 jsdom 原样保留无归一
-    expect(sheet.style.background).toBe('var(--panel)')
+    // [T3-P4] 断言载体随纸面三态迁移：承底层消费 --paper（值面由 theme.test
+    // 三族 token 正锚锁定——light=var(--panel) 桥接白/dark=#242830/sepia=
+    // #f7efdc）；var() 载体 jsdom 原样保留无归一
+    expect(sheet.style.background).toBe('var(--paper)')
     expect(sheet.style.isolation).toBe('isolate')
   })
 })

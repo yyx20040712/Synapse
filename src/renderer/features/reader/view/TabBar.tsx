@@ -33,8 +33,11 @@
  * - 测试：tests/unit/renderer/tab-bar.test.tsx（受锁）：渲染序=order、
  *   激活高亮、点击 activate、关闭叉 closeTab、loading/error 态呈现、空态隐藏、
  *   role="tablist"/"tab" 语义、roving 键盘（左右+循环）
- * - [R3-RDR 皮肤票] active tab=纸面底+金 hairline 底缘（.rdr-tab-active）；
- *   role/aria/tabIndex/.truncate 结构零变（tab-bar.test 断言面）
+ * - [R3-RDR→T3-P4 皮肤票] tab 条=.rdr-tabbar（mockup .tabbar：line-soft 条+
+ *   圆角顶 tab）；active=panel 底+accent 2px 底缘（.rdr-tab-active）；dirty
+ *   灰点=6px 圆（.rdr-dirty-dot）；关闭叉 hover=token 承载（.rdr-tab-close
+ *   ——旧 hover:bg-black/10 硬编码退役）；role/aria/tabIndex/.truncate 结构
+ *   零变（tab-bar.test 断言面）
  */
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
@@ -87,8 +90,9 @@ export function TabBar(): JSX.Element | null {
     <div
       role="tablist"
       aria-label="打开的文献"
-      className="flex h-8 shrink-0 items-stretch gap-px overflow-x-auto border-b"
-      style={{ borderColor: 'var(--border)' }}
+      // [T3-P4] tab 条皮肤=.rdr-tabbar（mockup .tabbar：line-soft 条+34px——
+      // theme-reader.css 单源）；overflow-x 单行滚动（单行滚动即可——P8 预留注）
+      className="rdr-tabbar shrink-0 overflow-x-auto"
       onKeyDown={onKeyDown}
     >
       {order.map((id) => {
@@ -108,13 +112,10 @@ export function TabBar(): JSX.Element | null {
             aria-selected={active}
             tabIndex={id === rovingId ? 0 : -1}
             data-tab-id={id}
-            // active=纸面底+金 hairline 底缘（.rdr-tab-active——inset 零占位，
-            // h-8 布局零变；旧 accent-soft 满铺退役。R3-RDR 皮肤票）
-            className={`flex min-w-0 max-w-48 shrink-0 cursor-pointer items-center gap-1 border-r px-2 text-xs${active ? ' rdr-tab-active' : ''}`}
-            style={{
-              borderColor: 'var(--border)',
-              color: tab.status === 'error' ? 'var(--danger)' : 'var(--text)'
-            }}
+            // [T3-P4] tab 基形+active 态全住皮肤类（.rdr-tab/.rdr-tab-active——
+            // mockup .tab 语汇）；error 红字仍内联（条件色无类载体）
+            className={`rdr-tab min-w-0 shrink-0 cursor-pointer${active ? ' rdr-tab-active' : ''}`}
+            style={{ color: tab.status === 'error' ? 'var(--danger)' : undefined }}
             onClick={() => activateTab(id)}
             onFocus={() => setFocusedId(id)}
             onKeyDown={(ev) => {
@@ -135,19 +136,18 @@ export function TabBar(): JSX.Element | null {
                 title="有未保存修改"
                 aria-label="有未保存修改"
                 data-testid="tab-dirty-dot"
-                className="shrink-0 text-[length:var(--fs-micro)] leading-none"
-                style={{ color: 'var(--warning)' }}
-              >
-                ●
-              </span>
+                // [T3-P4] 6px 圆灰点（mockup .dirty-dot——旧 ● 字符退役）
+                className="rdr-dirty-dot"
+              />
             )}
             <span className="truncate">{title}</span>
             <button
               type="button"
               aria-label={`关闭 ${title}`}
               tabIndex={-1}
-              className="ml-1 shrink-0 rounded px-1 text-xs leading-none hover:bg-black/10"
-              style={{ color: 'var(--text-dim)' }}
+              // [T3-P4] 关闭叉语汇住皮肤类（.rdr-tab-close——hover=token 承载，
+              // 旧 hover:bg-black/10 硬编码退役）
+              className="rdr-tab-close ml-1 shrink-0 leading-none"
               onClick={(ev) => {
                 ev.stopPropagation()
                 if (confirmCloseDirty(id)) closeTab(id)

@@ -31,12 +31,14 @@
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 纯受控组件；页码显示为 1 基（store 内部 0 基，边界夹取由 store.setPage 兜底）
- * - [R3-RDR 皮肤票] 玻璃浮层（.rdr-toolbar：panel-glass+blur10+金 hairline 底缘）
- *   +控件 ghost 变体+页码/缩放衬线数字（.rdr-num）；文档流位置/aria/testid
- *   零变（PDF 区装饰浓度最低原则）
+ * - [R3-RDR→T3-P4 皮肤票] 工具栏=.rdr-toolbar（mockup .toolbar：panel 底+line
+ *   下缘——金族退役无 glass 无 blur）；控件=.rdr-tool-btn（28px 方格+hover
+ *   line-soft+.on=accent-soft+inset ring）；缩放读数=.rdr-zoom-num；分隔线
+ *   =.rdr-tb-sep；文档流位置/aria/testid 零变（PDF 区装饰浓度最低原则）
  * - [F-UI-02 图标化] 五文字控件换 toolbar-icons.tsx 图标+title 悬停汉语+
  *   sr-only span 保文本（textContent/accessible name 双面，受锁断言不动）；
- *   −/＋/100%/颜色点组不动；选择模式 background 常亮叠加+双页图标随态
+ *   −/＋/100%/颜色点组不动（保字符数字）；选择模式 background 常亮叠加+
+ *   双页图标随态（内联串锁[reader-toolbar-icons]保活，ring 住类承载）
  */
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -96,15 +98,16 @@ export function ReaderToolbar(props: {
     setPageInput(String(page + 1))
   }
 
-  // R3-U3 皮肤票：控件走 ghost 变体语言（theme-buttons.css .syn-btn-ghost
-  // ——Button 组件同款皮肤类；不经 Button 组件因其不带 title prop，「适应宽度」
-  // 禁用态 title 提示属交互面零变项，保留原生 button）
-  const btn = 'syn-btn-ghost rounded border px-2 py-0.5 text-xs disabled:opacity-50'
+  // [T3-P4] 工具栏钮语汇=.rdr-tool-btn（mockup .tb-btn：28px 方格+7px 圆角+
+  // hover line-soft+.on=accent-soft/inset ring——theme-reader.css 单源；旧
+  // syn-btn-ghost 变体退役）；−/＋/100% 文字符钮加 -text 变体（弹宽不截字）
+  const btn = 'rdr-tool-btn shrink-0 disabled:opacity-50'
+  const btnText = 'rdr-tool-btn rdr-tool-btn-text shrink-0 disabled:opacity-50'
 
   return (
-    // 玻璃浮层皮肤（--panel-glass+blur10+金 hairline 底缘——theme-reader.css 单源；
-    // 文档流位置零变：纯皮肤票，F-05 滚动收敛面不扰动）
-    <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-2 px-3 py-2 text-xs">
+    // [T3-P4] 工具栏皮肤=.rdr-toolbar（mockup .toolbar：panel 底+line 下缘——
+    // 金族退役；padding/gap 由组件承载）；文档流位置零变：纯皮肤票
+    <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-1 px-3.5 py-1.5 text-xs">
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -134,7 +137,6 @@ export function ReaderToolbar(props: {
           type="button"
           className={btn}
           title="下一页"
-          style={{ borderColor: 'var(--border)' }}
           disabled={totalPages > 0 && page >= totalPages - 1}
           onClick={() => onNavigate(page + pageStep)}
         >
@@ -143,31 +145,15 @@ export function ReaderToolbar(props: {
         </button>
       </div>
 
+      {/* [T3-P4] 分组分隔线（mockup .tb-sep——装饰性，aria-hidden） */}
+      <span className="rdr-tb-sep" aria-hidden="true" />
+
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className={btn}
-          onClick={() => onZoom(round2(zoom - ZOOM_STEP))}
-        >
-          −
-        </button>
-        <span data-testid="zoom-label" className="rdr-num w-10 text-center" style={{ color: 'var(--text-dim)' }}>
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          className={btn}
-          onClick={() => onZoom(round2(zoom + ZOOM_STEP))}
-        >
-          ＋
-        </button>
-        <button
-          type="button"
-          className={btn}
-          onClick={() => onZoom(1)}
-        >
-          100%
-        </button>
+        {/* −/＋/100% 保字符数字（符号信息性——票面明文），单行紧凑形态 */}
+        <button type="button" className={btnText} onClick={() => onZoom(round2(zoom - ZOOM_STEP))}>−</button>
+        <span data-testid="zoom-label" className="rdr-zoom-num">{Math.round(zoom * 100)}%</span>
+        <button type="button" className={btnText} onClick={() => onZoom(round2(zoom + ZOOM_STEP))}>＋</button>
+        <button type="button" className={btnText} onClick={() => onZoom(1)}>100%</button>
         <button
           type="button"
           className={btn}
@@ -181,10 +167,11 @@ export function ReaderToolbar(props: {
 
         {/* 双页开关（F-R1）：适应宽度之后（版面控制同组）；crib 选择模式按钮
             先例（aria-pressed+选中态边框强调）；toggle 语义在装配面——只上抛。
-            F-UI-02：图标随 pageLayout 三元+title 随态（isMax 三元先例） */}
+            F-UI-02：图标随 pageLayout 三元+title 随态（isMax 三元先例）；
+            [T3-P4] on 态=rdr-tool-btn on 类（ring 住类+borderColor 内联串保活） */}
         <button
           type="button"
-          className={btn}
+          className={`${btn}${pageLayout === 'double' ? ' on' : ''}`}
           aria-pressed={pageLayout === 'double'}
           title={pageLayout === 'double' ? '切换为单页阅读' : '切换为双页阅读（两页并排，翻页按对步进）'}
           style={{ borderColor: pageLayout === 'double' ? 'var(--accent)' : undefined }}
@@ -194,6 +181,8 @@ export function ReaderToolbar(props: {
           <span className="sr-only">双页</span>
         </button>
       </div>
+
+      <span className="rdr-tb-sep" aria-hidden="true" />
 
       <div className="flex items-center gap-1" role="group" aria-label="标注颜色">
         {ANNOTATION_COLORS.map((c) => (
@@ -213,12 +202,15 @@ export function ReaderToolbar(props: {
         ))}
       </div>
 
+      <span className="rdr-tb-sep" aria-hidden="true" />
+
       {/* 选择模式开关（F-A3/INV-42）：颜色组之后、搜索占位之前；选中态边框
           强调（颜色点选中态同语言）；toggle 语义在装配面——本组件只上抛。
-          F-UI-02：激活叠加 background 常亮（borderColor 断言保活）+图标化 */}
+          F-UI-02：激活叠加 background 常亮（borderColor/background 内联串锁
+          保活[reader-toolbar-icons]）+图标化；[T3-P4] on 类承载 inset ring */}
       <button
         type="button"
-        className={btn}
+        className={`${btn}${selectionMode ? ' on' : ''}`}
         aria-pressed={selectionMode}
         title="选择模式：开启后可在标注块上直接划选文字，标注暂不可点击"
         style={{

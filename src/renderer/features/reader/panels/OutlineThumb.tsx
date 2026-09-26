@@ -68,7 +68,10 @@ export function Thumbnail(props: {
       }}
       onClick={() => props.onNavigate(pageIndex)}
     >
-      <canvas ref={canvasRef} aria-label={`第 ${pageIndex + 1} 页缩略图`} />
+      {/* [T3-P4 案 A] data-thumb-canvas=夜间反位 filter 规则选择器锚（pdfjs
+          独立 canvas 渲染非 drawImage 复制——源直挂同规则，与 data-pdf-canvas
+          同体消费 var(--canvas-filter)，见 theme-reader.css） */}
+      <canvas ref={canvasRef} data-thumb-canvas="true" aria-label={`第 ${pageIndex + 1} 页缩略图`} />
       <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
         {pageIndex + 1}
       </span>

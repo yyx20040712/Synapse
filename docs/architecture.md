@@ -286,6 +286,11 @@ AGENTS.md「环境事实」单源，此处不复制。
   `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题弹层 `app/WsRailPopover.tsx`
   A10 联动+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props 注入）；
   F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器侧栏消费）。
+- [T3-P4] 阅读器视图（第二视图）随主题三族化：页纸底=--paper 单源（PageBox
+  页盒底+canvas 承底层双位消费——light 白桥接/dark 暗纸+canvas filter 反位
+  [案 A：--canvas-filter 三族+缩略图 canvas 同规则]/sepia 奶油纸，INV-74）；
+  工具栏/tab 条/侧栏节标金族消费退役换 mockup .toolbar/.tabbar 语汇
+  （theme-reader.css 单源）。
 - 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）；
   边三 kind=tree/ref/manual 终态（INV-27）；自动引文网络图维持不做（ADR-0012
   共存已裁决——对象不同、不复用表）。

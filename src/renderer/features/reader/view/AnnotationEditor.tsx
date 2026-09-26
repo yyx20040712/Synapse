@@ -71,7 +71,9 @@ export function AnnotationEditor(props: {
         rows={3}
         aria-label="批注内容"
         className="w-full resize-none rounded border p-1 text-xs"
-        style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+        // [T3-P4] 弹层随族归一：底 var(--bg)（app 全域底）→--panel-2（mockup
+        // .anno-pop textarea=panel 底系——悬浮面板底而非页面底）
+        style={{ borderColor: 'var(--border)', background: 'var(--panel-2)' }}
         value={comment}
         onChange={(e) => draft.applyEdit(e.target.value)}
         onCompositionStart={draft.handleCompositionStart}

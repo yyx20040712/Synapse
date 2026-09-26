@@ -123,6 +123,13 @@
      multiply 观感随之废止）。比较域=PageBox 页内容容器 isolation:isolate
      （单页封闭，跨页互扰不可能）；白纸承底层=该容器 background（暗色主题
      下页纸仍白=PDF 纸面语义）。
+     **（语义演进注记，T3-P4 2026-09-27：承底层/页盒底两处改消费 --paper
+     单源 token 随族——light=白桥接不变/dark=#242830 暗纸/sepia=#f7efdc
+     奶油纸；夜间墨带反色=canvas filter 单点 --canvas-filter
+     [invert(1) hue-rotate(180deg)]，透明底渲染配方与层序零改——INV-74。
+     §7 两案呈报裁决在案：案 B=pdf.js 渲染侧着色弃用——无原生 API（需逐页
+     getImageData 像素后处理，大页性能差+破坏 renderTask 生命周期），主控裁
+     案 A；本注记为登记性演进，非 R2 决策变更。）**
   3. **a/b 面 band 单源**：span→字形带核心（bandFromMetrics）单源驻
      annotation-resolve；**节点口径**（选区/AI 段/标注重锚各自的 textNodes→
      bandsForTextNodes——绑定不经几何匹配）+**几何兜底口径**（存量 rects

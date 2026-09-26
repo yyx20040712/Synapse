@@ -185,7 +185,14 @@ const TOKENS: Array<[string, string]> = [
   ['--node-meta-border', '#dfa84a'],
   ['--note-border', 'rgba(151, 160, 187, 0.28)'],
   ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
-  ['--shadow-page', '0 1px 4px rgba(0, 0, 0, 0.12)'],
+  // [T3-P4] --shadow-page 值锁随改注链：F-06 单层影→mockup .page 双层影
+  // （2026-09-26_v2_theme-light.html L191——三稿同值主题恒定，单 :root 不分族）
+  ['--shadow-page', '0 1px 4px rgba(20, 26, 40, 0.12), 0 6px 22px rgba(20, 26, 40, 0.08)'],
+  // [T3-P4 §7 案 A] 夜间纸页反色=CSS filter 挂 canvas 层：root=none（白天
+  // 不反色）；dark 族=invert(1) hue-rotate(180deg)（黑墨带→白字+--paper 暗纸
+  // 透出）；sepia=none。消费面=theme-reader.css canvas[data-pdf-canvas]+缩略图
+  // canvas 同规则（r3p4-reader-skin.test 文本锁）；族块值锚见 T3-P1 describe
+  ['--canvas-filter', 'none'],
   ['--shadow-pop-sm', '0 2px 8px rgba(0, 0, 0, 0.15)'],
   ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)'],
   // ── F-UI-04 顶栏/主区背景冷雾灰（2026-09-20 用户反馈 P4——设计文档
@@ -628,6 +635,8 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--shadow-drag', '0 14px 36px rgba(0, 0, 0, 0.6)'],
     ['--paper', '#242830'],
     ['--paper-ink', '#d8dbe2'],
+    // [T3-P4 §7 案 A 裁定] 夜间反位=canvas filter 单点 token（dark 族块独有）
+    ['--canvas-filter', 'invert(1) hue-rotate(180deg)'],
     // 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正
     ['--panel-a35', 'transparent'],
     ['--panel-a88', 'var(--panel)'],
@@ -659,6 +668,8 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--shadow-drag', '0 14px 36px rgba(90, 75, 40, 0.32)'],
     ['--paper', '#f7efdc'],
     ['--paper-ink', '#33291a'],
+    // [T3-P4] 护眼族不反色（奶油纸正读——:root 同值 none）
+    ['--canvas-filter', 'none'],
     ['--panel-a35', 'transparent'],
     ['--panel-a88', 'var(--panel)'],
     ['--panel-a90', 'var(--panel)'],

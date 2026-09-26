@@ -194,7 +194,15 @@
   --note-border: rgba(151, 160, 187, 0.28);
   /* 阅读器（划选自绘层灰+页盒/弹层影——影复合值沿 --shadow-* 词汇）*/
   --reader-selection-paint: rgba(0, 0, 0, 0.2);
-  --shadow-page: 0 1px 4px rgba(0, 0, 0, 0.12);
+  /* [T3-P4] 页影换 mockup .page 双层（2026-09-26_v2_theme-light.html L191——
+     三稿同值主题恒定，单 :root 不分族；F-06 单层影退役=值演进注链） */
+  --shadow-page: 0 1px 4px rgba(20, 26, 40, 0.12), 0 6px 22px rgba(20, 26, 40, 0.08);
+  /* [T3-P4 §7 案 A 裁定] 夜间纸页反位=CSS filter 单点 token：root=none（白天
+     不反色）；dark=invert(1) hue-rotate(180deg)；sepia=none。消费面=
+     theme-reader.css canvas[data-pdf-canvas]+缩略图 canvas 同规则（禁散布
+     第二消费点）；透明底渲染配方零改——黑墨带经 invert 成白字+透明底透出
+     --paper 暗纸；已知权衡=PDF 内嵌图片负片化（暗色阅读器通例，票面备案） */
+  --canvas-filter: none;
   --shadow-pop-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-pop-md: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
@@ -208,6 +216,8 @@
   --month-dash: rgba(123, 147, 245, 0.5);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4); --shadow-drag: 0 14px 36px rgba(0, 0, 0, 0.6);
   --paper: #242830; --paper-ink: #d8dbe2;
+  /* [T3-P4 §7 案 A] 夜间反位：canvas filter 单点（黑墨带→白字） */
+  --canvas-filter: invert(1) hue-rotate(180deg);
   /* 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正 */
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
@@ -223,6 +233,8 @@
   --kai: KaiTi, 'STKaiti', 'Microsoft YaHei', serif;
   --shadow-card: 0 1px 3px rgba(90, 75, 40, 0.16); --shadow-drag: 0 14px 36px rgba(90, 75, 40, 0.32);
   --paper: #f7efdc; --paper-ink: #33291a;
+  /* [T3-P4] 护眼族不反位（奶油纸正读） */
+  --canvas-filter: none;
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
 
