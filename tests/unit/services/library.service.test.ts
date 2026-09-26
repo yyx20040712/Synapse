@@ -13,7 +13,10 @@ function stubRepos(over: Record<string, unknown> = {}): Repos {
     listSummariesByIds: () => []
   }
   const collections = { list: () => [] }
-  return { papers, collections, ...over } as unknown as Repos
+  // [T3-P3] detail() 组合装配新增 lineage 只读对依赖（默认未命中——装配
+  // 专项断言住 library-detail-lineage.test.ts，此处桩仅保既有委托面可跑）
+  const lineage = { nodeByPaperId: () => null, edgeCountByNode: () => 0 }
+  return { papers, collections, lineage, ...over } as unknown as Repos
 }
 
 const detail: PaperDetail = {

@@ -134,6 +134,14 @@ const TOKENS: Array<[string, string]> = [
   ['--fs-display', '17px'],
   // [T3-P2] wordmark 签名档（theme-trio final-design §1 用户裁决 18px——INV-61 档位增补登记）
   ['--fs-signature', '18px'],
+  // ── [T3-P3] 文献库密度列表/规格表抽屉档位与恒定 token（mockup
+  //    2026-09-26_v2_theme-light.html L80-139 逐值——INV-61 档位增补登记；
+  //    --shadow-sel-glow/--shadow-cta/--accent-ink=三族恒定值）──
+  ['--fs-metric', '16px'],
+  ['--fs-nano', '9px'],
+  ['--shadow-sel-glow', '0 2px 8px rgba(58, 91, 217, 0.14)'],
+  ['--shadow-cta', '0 2px 6px rgba(58, 91, 217, 0.3)'],
+  ['--accent-ink', '#ffffff'],
   // ── F-CSS-03 颜色 token 化（2026-09-09 用户双裁决：零视觉差口径[值原样
   //    入库,同值合并共享]+语义命名优先[一值一 token,名取主导用途,多用途
   //    中性名]——50 值=48 新 token+2 既有 token 消费[#ffffff→--panel/

@@ -34,8 +34,9 @@ const AGG_COLS = `
   (SELECT COUNT(*) FROM annotations a WHERE a.paper_id = p.id) AS annotation_count,
   (SELECT COUNT(*) FROM notes n WHERE n.paper_id = p.id) AS note_count`
 
-/** 列表页 SELECT：一次往返带回全部聚合字段 */
-export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
+/** 列表页 SELECT：一次往返带回全部聚合字段（[T3-P3] +cited_by_count——密度
+ *  列表引用列，toSummary null→整键省略） */
+export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page, p.cited_by_count,
   ${AGG_COLS.trim()}
   FROM papers p`
 
@@ -45,13 +46,14 @@ export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, 
   ${AGG_COLS.trim()}
   FROM papers p WHERE p.id = ?`
 
-/** 聚合查询内部行形状（蛇形列 + 聚合别名） */
+/** 聚合查询内部行形状（蛇形列 + 聚合别名；[T3-P3] cited_by_count 可空缓存列） */
 export interface SummaryRow {
   id: string; title: string; authors_json: string
   year: number | null; venue: string; doi: string | null
   added_at: string; last_read_page: number
   tag_names: string | null; coll_names: string | null
   annotation_count: number; note_count: number
+  cited_by_count: number | null
 }
 
 export interface DetailRow extends SummaryRow {
@@ -68,7 +70,8 @@ function escapeLike(s: string): string {
   return s.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
 
-/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化） */
+/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化；
+ * [T3-P3] cited_by_count null→citedByCount 整键省略——detailById 同语义） */
 export function toSummary(r: SummaryRow): PaperSummary {
   return {
     id: r.id, title: r.title,
@@ -77,7 +80,8 @@ export function toSummary(r: SummaryRow): PaperSummary {
     tagNames: r.tag_names === null ? [] : r.tag_names.split('\u001f'),
     collectionNames: r.coll_names === null ? [] : r.coll_names.split('\u001f'),
     annotationCount: r.annotation_count, noteCount: r.note_count,
-    lastReadPage: r.last_read_page, addedAt: r.added_at
+    lastReadPage: r.last_read_page, addedAt: r.added_at,
+    ...(r.cited_by_count !== null ? { citedByCount: r.cited_by_count } : {})
   }
 }
 

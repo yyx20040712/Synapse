@@ -97,6 +97,12 @@ tags/paper_tags/annotations/notes（001 基座七表）+ai_notes（003）+lineag
 lineage_edges（004）；演进列 005~009（cited_by 缓存/lineage kind 列——
 UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02）。标注定位器=W3C Web Annotation
 思路（quote/prefix/suffix+startOffset/endOffset+rects+sortKey）。迁移只追加（受锁）。
+契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
+（ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）；
+paperDetailSchema +`lineage?: {year, month, edgeCount}`（service 层组合装配
+——library.service detail 按 paper_id 查 lineage_nodes/edges 双端计数，month
+恒 null=P5 落位后自新）；文献库视图随 T3-P3 改密度列表（六列结构 INV-73）
++316px 规格表抽屉，旧卡片网格族退役。
 
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 

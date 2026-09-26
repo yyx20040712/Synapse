@@ -2267,6 +2267,49 @@
         }
       ]
     },
+    "tests/e2e/library-density.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"文献库密度列表：六列表头+行六列真实文本+抽屉四格+选中态\"]",
+          "describePath": [],
+          "title": "文献库密度列表：六列表头+行六列真实文本+抽屉四格+选中态",
+          "markers": [],
+          "line": 15,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(cols).toBeVisible()",
+            "expect(cols.getByText(head, { exact: true })).toBeVisible()",
+            "expect(rowA).toBeVisible({ timeout: 10_000 })",
+            "expect(rowA.locator('.lib-r-id')).toHaveText('#002')",
+            "expect(rowA.locator('.lib-r-title')).toHaveText('T3P3 甲文献：管网漏损定位')",
+            "expect(rowA.locator('.lib-r-j')).toHaveText('Nature Water')",
+            "expect(rowA.locator('.lib-r-year')).toHaveText('2023')",
+            "expect(rowA.locator('.lib-r-cite')).toHaveText('17')",
+            "expect(rowA.locator('.lib-tier.t1')).toHaveText('T1')",
+            "expect(rowB).toBeVisible()",
+            "expect(rowB.locator('.lib-r-id')).toHaveText('#001')",
+            "expect(rowB.locator('.lib-r-year')).toHaveText('—')",
+            "expect(rowB.locator('.lib-r-cite')).toHaveText('—')",
+            "expect(rowB.locator('.lib-tier.none')).toHaveText('—')",
+            "expect(rowA).toHaveClass(/sel/)",
+            "expect(drawer).toBeVisible()",
+            "expect(metrics).toBeVisible()",
+            "expect(metrics.getByText('引用', { exact: true })).toBeVisible()",
+            "expect(metrics.locator('.lib-dr-v.acc')).toHaveText('17')",
+            "expect(metrics.getByText('通读', { exact: true })).toBeVisible()",
+            "expect(metrics.getByText('标注', { exact: true })).toBeVisible()",
+            "expect(metrics.getByText('笔记', { exact: true })).toBeVisible()",
+            "expect(drawer.locator('.lib-dr-id')).toContainText('e2e-t3p3')",
+            "expect(drawer.locator('.lib-dr-id')).toContainText('待增强')",
+            "expect(drawer.locator('.lib-fld', { hasText: 'VENUE' })).toContainText('Nature Water')",
+            "expect(drawer.getByText('未加入脉络')).toBeVisible()"
+          ]
+        }
+      ]
+    },
     "tests/e2e/lineage.spec.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [
@@ -3025,21 +3068,21 @@
           "describePath": [],
           "title": "标签多选过滤：两标签交集→取消一个→全清回全列表",
           "markers": [],
-          "line": 15,
+          "line": 16,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByLabel(`移除标签 ${name}`)).toBeVisible({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '多选A（2）' })).toBeVisible({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '多选B（1）' })).toBeVisible({ timeout: 10_000 })",
-            "expect(win.locator('.lib-card')).toHaveCount(1, { timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '多选A ×2' })).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '多选B ×1' })).toBeVisible({ timeout: 10_000 })",
+            "expect(win.locator('.lib-row')).toHaveCount(1, { timeout: 10_000 })",
             "expect(win.getByText('P7E06 甲文献').first()).toBeVisible()",
             "expect(win.getByText('P7E06 乙文献')).toHaveCount(0)",
             "expect(win.getByText('P7E06 丙文献')).toHaveCount(0)",
-            "expect(win.locator('.lib-card')).toHaveCount(2, { timeout: 10_000 })",
+            "expect(win.locator('.lib-row')).toHaveCount(2, { timeout: 10_000 })",
             "expect(win.getByText('P7E06 甲文献').first()).toBeVisible()",
             "expect(win.getByText('P7E06 乙文献').first()).toBeVisible()",
             "expect(win.getByText('P7E06 丙文献')).toHaveCount(0)",
-            "expect(win.locator('.lib-card')).toHaveCount(3, { timeout: 10_000 })",
+            "expect(win.locator('.lib-row')).toHaveCount(3, { timeout: 10_000 })",
             "expect(win.getByText(t).first()).toBeVisible({ timeout: 10_000 })"
           ]
         }
@@ -3055,31 +3098,31 @@
           "describePath": [],
           "title": "标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈）",
           "markers": [],
-          "line": 15,
+          "line": 16,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByLabel(`移除标签 ${name}`)).toBeVisible({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '水治（1）' })).toBeVisible({ timeout: 10_000 })",
-            "expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(1)",
+            "expect(win.getByRole('button', { name: '水治 ×1' })).toBeVisible({ timeout: 10_000 })",
+            "expect(rowA.locator('.lib-t-mini', { hasText: '水治' })).toHaveCount(1)",
             "expect(menu).toBeVisible()",
             "expect(renameInput).toHaveValue('水治')",
-            "expect(win.getByRole('button', { name: '水质监测（1）' })).toBeVisible({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '水治（1）' })).toHaveCount(0)",
-            "expect(rowA.locator('.lib-tag', { hasText: '水质监测' })).toHaveCount(1)",
-            "expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(0)",
+            "expect(win.getByRole('button', { name: '水质监测 ×1' })).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '水治 ×1' })).toHaveCount(0)",
+            "expect(rowA.locator('.lib-t-mini', { hasText: '水质监测' })).toHaveCount(1)",
+            "expect(rowA.locator('.lib-t-mini', { hasText: '水治' })).toHaveCount(0)",
             "expect(rowA).toBeVisible()",
             "expect(dialog).toBeHidden({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '核心（1）' })).toHaveCount(0, { timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '水质（2）' })).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '核心 ×1' })).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '水质 ×2' })).toBeVisible({ timeout: 10_000 })",
             "expect(win.getByText('正在加载文献列表…')).toBeHidden({ timeout: 10_000 })",
             "expect(win.getByText('P7E 丙文献')).toHaveCount(0)",
             "expect(rowA).toBeVisible()",
             "expect(dialog.getByText('将删除标签「水质」及其在 2 篇文献上的挂接')).toBeVisible()",
             "expect(dialog).toBeHidden({ timeout: 10_000 })",
-            "expect(win.getByRole('button', { name: '水质（2）' })).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '水质 ×2' })).toHaveCount(0, { timeout: 10_000 })",
             "expect(win.getByText(t).first()).toBeVisible({ timeout: 10_000 })",
-            "expect(rowA.locator('.lib-tag')).toHaveCount(1)",
-            "expect(rowA.locator('.lib-tag')).toHaveText('水质监测')"
+            "expect(rowA.locator('.lib-t-mini')).toHaveCount(1)",
+            "expect(rowA.locator('.lib-t-mini')).toHaveText('水质监测')"
           ]
         }
       ]
@@ -4498,6 +4541,21 @@
           ]
         },
         {
+          "key": "[\"papers.repo —— CRUD 与列表查询\",\"searchSummaries —— 搜索/筛选/排序/分页\",\"citedByCount 映射（T3-P3 列表行引用列）：缓存值透出；NULL 整键省略\"]",
+          "describePath": [
+            "papers.repo —— CRUD 与列表查询",
+            "searchSummaries —— 搜索/筛选/排序/分页"
+          ],
+          "title": "citedByCount 映射（T3-P3 列表行引用列）：缓存值透出；NULL 整键省略",
+          "markers": [],
+          "line": 170,
+          "assertions": [
+            "expect(r.items.find((i) => i.id === 'p-1')?.citedByCount).toBe(17)",
+            "expect(r.items.find((i) => i.id === 'p-2')?.citedByCount).toBeUndefined()",
+            "expect(r.items.find((i) => i.id === 'p-3')?.citedByCount).toBeUndefined()"
+          ]
+        },
+        {
           "key": "[\"papers.repo —— CRUD 与列表查询\",\"searchSummaries —— 搜索/筛选/排序/分页\",\"tagIds 过滤命中挂接文献（P7E-06 契约切换：单元素=单选语义等价）\"]",
           "describePath": [
             "papers.repo —— CRUD 与列表查询",
@@ -4505,7 +4563,7 @@
           ],
           "title": "tagIds 过滤命中挂接文献（P7E-06 契约切换：单元素=单选语义等价）",
           "markers": [],
-          "line": 170,
+          "line": 183,
           "assertions": [
             "expect(r.items.map((i) => i.id)).toEqual(['p-2'])"
           ]
@@ -4517,7 +4575,7 @@
           ],
           "title": "listSummariesByIds：保持入参顺序",
           "markers": [],
-          "line": 178,
+          "line": 191,
           "assertions": [
             "expect(r.map((i) => i.id)).toEqual(['p-2', 'p-1'])"
           ]
@@ -4529,7 +4587,7 @@
           ],
           "title": "detailById：聚合 tags/collections 明细与阅读字段",
           "markers": [],
-          "line": 185,
+          "line": 198,
           "assertions": [
             "expect(d?.tags).toEqual([{ id: 't-1', name: '必读' }])",
             "expect(d?.fileUrl).toBe('app-file://p-1')",
@@ -4545,7 +4603,7 @@
           ],
           "title": "citedBy 三列独立 SET 落库（与元数据列同 UPDATE，互不扰动）",
           "markers": [],
-          "line": 210,
+          "line": 223,
           "assertions": [
             "expect(r?.venue).toBe('Water Research')",
             "expect(r?.source).toBe('crossref')",
@@ -4561,7 +4619,7 @@
           ],
           "title": "不传 citedBy：三列保持 NULL；传 0 覆盖旧值（0 合法缓存值）；再不传则保留",
           "markers": [],
-          "line": 224,
+          "line": 237,
           "assertions": [
             "expect(noWrite?.cited_by_count).toBeNull()",
             "expect(noWrite?.cited_by_fetched_at).toBeNull()",
@@ -4579,7 +4637,7 @@
           ],
           "title": "detailById：有缓存三字段配对透出；无缓存字段省略（undefined）",
           "markers": [],
-          "line": 250,
+          "line": 263,
           "assertions": [
             "expect(d?.citedByCount).toBe(7)",
             "expect(d?.citedByFetchedAt).toBe('2026-02-03T00:00:00Z')",
@@ -4596,7 +4654,7 @@
           ],
           "title": "added_desc：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）",
           "markers": [],
-          "line": 291,
+          "line": 304,
           "assertions": [
             "expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])"
           ]
@@ -4608,7 +4666,7 @@
           ],
           "title": "year_desc：year+added_at 全平=插入序决胜（rowid DESC 第三键）",
           "markers": [],
-          "line": 297,
+          "line": 310,
           "assertions": [
             "expect(r.items.map((i) => i.id)).toEqual(['a-second', 'z-first'])"
           ]
@@ -4620,7 +4678,7 @@
           ],
           "title": "title_asc：同 title 平局=插入序决胜（rowid ASC 先插在前，非 id 字典序）",
           "markers": [],
-          "line": 303,
+          "line": 316,
           "assertions": [
             "expect(r.items.map((i) => i.id)).toEqual(['z-first', 'a-second'])"
           ]
@@ -4632,7 +4690,7 @@
           ],
           "title": "listAllIds：同 added_at 平局=插入序决胜（rowid DESC 后插在前，非 id 字典序）——INV-17 同库重导出稳定",
           "markers": [],
-          "line": 309,
+          "line": 322,
           "assertions": [
             "expect(repo.listAllIds()).toEqual(['a-second', 'z-first'])"
           ]
@@ -9861,62 +9919,306 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"R3-LIB 文献卡渲染（PaperList 卡片网格）\",\"卡根挂渐变材质类 lib-card，L 角饰元素×2（tl+br）在场\"]",
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"六列表头在场：.lib-cols 六格文本=编号/题名 · 期刊/年月/引用/档次/标签\"]",
           "describePath": [
-            "R3-LIB 文献卡渲染（PaperList 卡片网格）"
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
           ],
-          "title": "卡根挂渐变材质类 lib-card，L 角饰元素×2（tl+br）在场",
+          "title": "六列表头在场：.lib-cols 六格文本=编号/题名 · 期刊/年月/引用/档次/标签",
           "markers": [],
-          "line": 100,
+          "line": 103,
           "assertions": [
-            "expect(card.classList.contains('lib-card')).toBe(true)",
-            "expect(corners.length).toBe(2)",
-            "expect(card.querySelector('.lib-corner-tl')).not.toBeNull()",
-            "expect(card.querySelector('.lib-corner-br')).not.toBeNull()",
-            "expect(c.getAttribute('aria-hidden')).toBe('true')"
+            "expect(cols).not.toBeNull()",
+            "expect(cells.map((c) => c.textContent)).toEqual([ '编号', '题名 · 期刊', '年月', '引用', '档次', '标签' ])",
+            "expect(cols?.querySelector(`.${cls}`), `表头列类 ${cls}`).not.toBeNull()"
           ]
         },
         {
-          "key": "[\"R3-LIB 文献卡渲染（PaperList 卡片网格）\",\"空 venue：期刊元素不渲染；有值：venue 类在场（空隐藏契约）\"]",
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"行六路信息列：#001 序号（offset 起算）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N\"]",
           "describePath": [
-            "R3-LIB 文献卡渲染（PaperList 卡片网格）"
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
           ],
-          "title": "空 venue：期刊元素不渲染；有值：venue 类在场（空隐藏契约）",
+          "title": "行六路信息列：#001 序号（offset 起算）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N",
           "markers": [],
-          "line": 117,
+          "line": 124,
           "assertions": [
-            "expect(cards.length).toBe(2)",
-            "expect(withVenue?.textContent).toBe('Journal of Testing')",
-            "expect(cards[1]?.querySelector('.lib-card-venue')).toBeNull()"
+            "expect(row1.querySelector('.lib-r-id')?.textContent).toBe('#011')",
+            "expect(rowAt(1).querySelector('.lib-r-id')?.textContent).toBe('#012')",
+            "expect(row1.querySelector('.lib-r-title')?.textContent).toBe('论文 p1')",
+            "expect(row1.querySelector('.lib-r-j')?.textContent).toBe('Journal of Testing')",
+            "expect(row1.querySelector('.lib-r-year')?.textContent).toBe('2021')",
+            "expect(row1.querySelectorAll('.lib-t-mini').length).toBe(3)",
+            "expect(row1.querySelector('.lib-t-more')?.textContent).toBe('+2')"
           ]
         },
         {
-          "key": "[\"R3-LIB 文献卡渲染（PaperList 卡片网格）\",\"年份衬线类+题名两行截断类+标签胶囊类+meta tabular-nums 类在场\"]",
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」\"]",
           "describePath": [
-            "R3-LIB 文献卡渲染（PaperList 卡片网格）"
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
           ],
-          "title": "年份衬线类+题名两行截断类+标签胶囊类+meta tabular-nums 类在场",
+          "title": "空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」",
           "markers": [],
-          "line": 132,
+          "line": 147,
           "assertions": [
-            "expect(card.querySelector('.lib-card-year')?.textContent).toBe('2021')",
-            "expect(card.querySelector('.lib-card-title')?.textContent).toBe('论文 p1')",
-            "expect(card.querySelectorAll('.lib-tag').length).toBe(2)",
-            "expect(card.querySelector('.lib-card-meta')).not.toBeNull()"
+            "expect(rowAt(0).querySelector('.lib-r-j')).toBeNull()",
+            "expect(rowAt(1).querySelector('.lib-r-title')?.textContent).toBe('（无标题）')"
           ]
         },
         {
-          "key": "[\"R3-LIB 文献卡渲染（PaperList 卡片网格）\",\"交互零变：单击→onSelect(id)；双击→onOpen(id)；选中卡挂 lib-card-selected\"]",
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"缺值列：年份 null→「—」；引用 citedByCount 缺→「—」/有值→数字\"]",
           "describePath": [
-            "R3-LIB 文献卡渲染（PaperList 卡片网格）"
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
           ],
-          "title": "交互零变：单击→onSelect(id)；双击→onOpen(id)；选中卡挂 lib-card-selected",
+          "title": "缺值列：年份 null→「—」；引用 citedByCount 缺→「—」/有值→数字",
           "markers": [],
-          "line": 143,
+          "line": 159,
           "assertions": [
-            "expect(cards[1]?.classList.contains('lib-card-selected')).toBe(true)",
+            "expect(rowAt(0).querySelector('.lib-r-year')?.textContent).toBe('—')",
+            "expect(rowAt(0).querySelector('.lib-r-cite')?.textContent).toBe('—')",
+            "expect(rowAt(1).querySelector('.lib-r-cite')?.textContent).toBe('17')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"档次徽章四态：venueToTier 单源映射 T1/T2/T3/未命中「—」\"]",
+          "describePath": [
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
+          ],
+          "title": "档次徽章四态：venueToTier 单源映射 T1/T2/T3/未命中「—」",
+          "markers": [],
+          "line": 172,
+          "assertions": [
+            "expect(rowAt(0).querySelector('.lib-tier.t1')?.textContent).toBe('T1')",
+            "expect(rowAt(1).querySelector('.lib-tier.t2')?.textContent).toBe('T2')",
+            "expect(rowAt(2).querySelector('.lib-tier.t3')?.textContent).toBe('T3')",
+            "expect(rowAt(3).querySelector('.lib-tier.none')?.textContent).toBe('—')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类\"]",
+          "describePath": [
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
+          ],
+          "title": "交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类",
+          "markers": [],
+          "line": 191,
+          "assertions": [
+            "expect(rowAt(1).classList.contains('sel')).toBe(true)",
+            "expect(rowAt(0).classList.contains('sel')).toBe(false)",
             "expect(onSelect).toHaveBeenCalledWith('p1')",
             "expect(onOpen).toHaveBeenCalledWith('p1')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"listbox 键盘导航保活：容器 listbox+行 option/aria-selected；↓ 无选中落首行/Home/End\"]",
+          "describePath": [
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
+          ],
+          "title": "listbox 键盘导航保活：容器 listbox+行 option/aria-selected；↓ 无选中落首行/Home/End",
+          "markers": [],
+          "line": 214,
+          "assertions": [
+            "expect(listbox).not.toBeNull()",
+            "expect(listbox?.getAttribute('aria-label')).toBe('文献列表')",
+            "expect(host?.querySelectorAll('[role=\"option\"]').length).toBe(2)",
+            "expect(host?.querySelector('[role=\"option\"][aria-selected=\"true\"]')).toBeNull()",
+            "expect(onSelect).toHaveBeenCalledWith('p1')",
+            "expect(onSelect).toHaveBeenLastCalledWith('p2')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表渲染（PaperList 六列结构）\",\"空态文案保活：papers 空→「暂无文献」引导\"]",
+          "describePath": [
+            "T3-P3 密度列表渲染（PaperList 六列结构）"
+          ],
+          "title": "空态文案保活：papers 空→「暂无文献」引导",
+          "markers": [],
+          "line": 234,
+          "assertions": [
+            "expect(host?.textContent).toContain('暂无文献')",
+            "expect(host?.textContent).toContain('可拖入 PDF 导入，或调整筛选条件')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"表头列宽：46/flex1/74/52/42/180+gap 14px+10px letter-spacing 1.5px faint\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "表头列宽：46/flex1/74/52/42/180+gap 14px+10px letter-spacing 1.5px faint",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(css, 'c-id 46px').toMatch(/\\.lib-c-id\\s*\\{[^}]*width:\\s*46px/)",
+            "expect(css, 'c-title flex:1').toMatch(/\\.lib-c-title\\s*\\{[^}]*flex:\\s*1/)",
+            "expect(css, 'c-year 74px 右对齐').toMatch(/\\.lib-c-year\\s*\\{[^}]*width:\\s*74px;[^}]*text-align:\\s*right/)",
+            "expect(css, 'c-cite 52px 右对齐').toMatch(/\\.lib-c-cite\\s*\\{[^}]*width:\\s*52px;[^}]*text-align:\\s*right/)",
+            "expect(css, 'c-tier 42px 居中').toMatch(/\\.lib-c-tier\\s*\\{[^}]*width:\\s*42px;[^}]*text-align:\\s*center/)",
+            "expect(css, 'c-tags 180px').toMatch(/\\.lib-c-tags\\s*\\{[^}]*width:\\s*180px/)",
+            "expect(css, '.lib-cols gap 14px+letter-spacing 1.5px+faint').toMatch( /\\.lib-cols\\s*\\{[^}]*gap:\\s*14px;[^}]*letter-spacing:\\s*1\\.5px;[^}]*var\\(--faint\\)/ )"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"hover 皮肤：panel 底+shadow-card+信号橙游标线（2.5px left 18px top/bottom 12px 圆角 2px）\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "hover 皮肤：panel 底+shadow-card+信号橙游标线（2.5px left 18px top/bottom 12px 圆角 2px）",
+          "markers": [],
+          "line": 254,
+          "assertions": [
+            "expect(css).toMatch(/\\.lib-row:hover\\s*\\{[^}]*background:\\s*var\\(--panel\\);[^}]*var\\(--shadow-card\\)/)",
+            "expect(css, '游标线（mockup .row:hover::before 逐值）').toMatch( /\\.lib-row:hover::before\\s*\\{[^}]*left:\\s*18px;[^}]*top:\\s*12px;[^}]*bottom:\\s*12px;[^}]*width:\\s*2\\.5px;[^}]*border-radius:\\s*2px;[^}]*background:\\s*var\\(--signal\\)/ )"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"选中皮肤：sel=inset 1.5px accent 描边+左缘条 3.5px left0+外辉 token 单源\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "选中皮肤：sel=inset 1.5px accent 描边+左缘条 3.5px left0+外辉 token 单源",
+          "markers": [],
+          "line": 261,
+          "assertions": [
+            "expect(css).toMatch( /\\.lib-row\\.sel\\s*\\{[^}]*background:\\s*var\\(--panel\\);[^}]*inset 0 0 0 1\\.5px var\\(--accent\\), var\\(--shadow-sel-glow\\)/ )",
+            "expect(css, '左缘条（mockup .row.sel::before 逐值）').toMatch( /\\.lib-row\\.sel::before\\s*\\{[^}]*left:\\s*0;[^}]*top:\\s*10px;[^}]*bottom:\\s*10px;[^}]*width:\\s*3\\.5px;[^}]*background:\\s*var\\(--accent\\)/ )",
+            "expect(css.indexOf('.lib-row.sel')).toBeGreaterThan(css.indexOf('.lib-row:hover'))"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"列值排印：r-id mono caption/r-title strong nowrap ellipsis/r-year·cite mono body tabular-nums\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "列值排印：r-id mono caption/r-title strong nowrap ellipsis/r-year·cite mono body tabular-nums",
+          "markers": [],
+          "line": 272,
+          "assertions": [
+            "expect(css).toMatch(/\\.lib-r-id\\s*\\{[^}]*font-family:\\s*var\\(--mono\\);[^}]*font-size:\\s*var\\(--fs-caption\\)/)",
+            "expect(css).toMatch(/\\.lib-r-title\\s*\\{[^}]*font-size:\\s*var\\(--fs-strong\\);[^}]*text-overflow:\\s*ellipsis/)",
+            "expect(css).toMatch( /\\.lib-r-year,\\s*\\.lib-r-cite\\s*\\{[^}]*font-family:\\s*var\\(--mono\\);[^}]*font-size:\\s*var\\(--fs-body\\);[^}]*font-variant-numeric:\\s*tabular-nums/ )"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"档次徽章三态：t1=accent 底 accent-ink 字/t2=accent 描边/t3=line 描边 faint 字\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "档次徽章三态：t1=accent 底 accent-ink 字/t2=accent 描边/t3=line 描边 faint 字",
+          "markers": [],
+          "line": 280,
+          "assertions": [
+            "expect(css).toMatch(/\\.lib-tier\\.t1\\s*\\{[^}]*background:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent-ink\\)/)",
+            "expect(css).toMatch(/\\.lib-tier\\.t2\\s*\\{[^}]*border:\\s*1px solid var\\(--accent\\);[^}]*color:\\s*var\\(--accent\\)/)",
+            "expect(css).toMatch(/\\.lib-tier\\.t3\\s*\\{[^}]*border:\\s*1px solid var\\(--line\\);[^}]*color:\\s*var\\(--faint\\)/)",
+            "expect(css).toMatch(/\\.lib-tier\\.none\\s*\\{[^}]*color:\\s*var\\(--faint\\)/)"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"旧卡片族退役负锚（方案切换=删除旧方案）：网格/卡片/角饰/宝石位零残留\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "旧卡片族退役负锚（方案切换=删除旧方案）：网格/卡片/角饰/宝石位零残留",
+          "markers": [],
+          "line": 287,
+          "assertions": [
+            "expect(css).not.toContain('.lib-grid')",
+            "expect(css).not.toContain('.lib-card')",
+            "expect(css).not.toContain('.lib-corner')",
+            "expect(css).not.toContain('.lib-tag')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"筛选行语汇：search 290px+shadow-card；chip 99px 圆角+on 态 accent-soft；sort 8px 圆角\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "筛选行语汇：search 290px+shadow-card；chip 99px 圆角+on 态 accent-soft；sort 8px 圆角",
+          "markers": [],
+          "line": 294,
+          "assertions": [
+            "expect(css).toMatch(/\\.lib-search\\s*\\{[^}]*width:\\s*290px;[^}]*var\\(--shadow-card\\)/)",
+            "expect(css).toMatch(/\\.lib-chip\\s*\\{[^}]*border-radius:\\s*99px/)",
+            "expect(css).toMatch( /\\.lib-chip-on\\s*\\{[^}]*border-color:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent\\);[^}]*background:\\s*var\\(--accent-soft\\);[^}]*font-weight:\\s*600/ )",
+            "expect(css).toMatch(/\\.lib-sort\\s*\\{[^}]*border-radius:\\s*8px/)"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）\",\"门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中\"]",
+          "describePath": [
+            "T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）"
+          ],
+          "title": "门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中",
+          "markers": [],
+          "line": 303,
+          "assertions": [
+            "expect(css).toMatch(/\\.lib-sort-on\\s*\\{[^}]*border-color:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent\\)/)",
+            "expect(css).toMatch(/\\.lib-search:focus-within\\s*\\{[^}]*border-color:\\s*var\\(--accent\\)/)",
+            "expect(css).toMatch(/\\.lib-cols\\s*\\{[^}]*position:\\s*sticky;[^}]*top:\\s*0;[^}]*background:\\s*var\\(--bg\\)/)",
+            "expect(css, '定宽列表头列与行侧一致不收缩（d1-N5 回炉补全五格）').toMatch(/\\.lib-c-id\\s*\\{[^}]*width:\\s*46px;[^}]*flex:\\s*none/)",
+            "expect(css).toMatch(/\\.lib-c-year\\s*\\{[^}]*width:\\s*74px;[^}]*flex:\\s*none/)",
+            "expect(css).toMatch(/\\.lib-c-cite\\s*\\{[^}]*width:\\s*52px;[^}]*flex:\\s*none/)",
+            "expect(css).toMatch(/\\.lib-c-tier\\s*\\{[^}]*width:\\s*42px;[^}]*flex:\\s*none/)",
+            "expect(css).toMatch(/\\.lib-c-tags\\s*\\{[^}]*width:\\s*180px;[^}]*flex:\\s*none/)",
+            "expect(css).toMatch(/\\.lib-list \\[role='option'\\]\\s*\\{[^}]*scroll-margin-top:\\s*28px/)",
+            "expect(css).toMatch(/\\.lib-dr-empty\\s*\\{[^}]*align-items:\\s*center/)"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）\",\".lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）\"]",
+          "describePath": [
+            "T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）"
+          ],
+          "title": ".lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）",
+          "markers": [],
+          "line": 323,
+          "assertions": [
+            "expect(host?.querySelector('.lib-page')).not.toBeNull()",
+            "expect(host?.querySelector('.lib-body')).not.toBeNull()",
+            "expect(host?.querySelector('.lib-cols')).not.toBeNull()",
+            "expect(host?.querySelector('.lib-list')).not.toBeNull()",
+            "expect(host?.querySelector('.lib-list .lib-cols')).not.toBeNull()",
+            "expect(drawer).not.toBeNull()",
+            "expect(host?.querySelector('.lib-rule')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）\",\"d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）\"]",
+          "describePath": [
+            "T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）"
+          ],
+          "title": "d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）",
+          "markers": [],
+          "line": 337,
+          "assertions": [
+            "expect(host?.querySelector('.lib-cols')).toBeNull()",
+            "expect(host?.textContent).toContain('暂无文献')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）\",\"「导出语料集合」入口保活（C-02）\"]",
+          "describePath": [
+            "T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）"
+          ],
+          "title": "「导出语料集合」入口保活（C-02）",
+          "markers": [],
+          "line": 344,
+          "assertions": [
+            "expect(btn, '导出语料集合按钮应在场').toBeDefined()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）\",\"门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘\"]",
+          "describePath": [
+            "T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）"
+          ],
+          "title": "门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘",
+          "markers": [],
+          "line": 352,
+          "assertions": [
+            "expect(byCollection?.classList.contains('lib-sort-on')).toBe(true)",
+            "expect(byYear?.classList.contains('lib-sort-on')).toBe(true)",
+            "expect( host?.querySelector('select[aria-label=\"按集合筛选\"]')?.classList.contains('lib-sort-on') ).toBe(false)",
+            "expect( host?.querySelector('select[aria-label=\"按年份筛选\"]')?.classList.contains('lib-sort-on') ).toBe(false)",
+            "expect( host?.querySelector('select[aria-label=\"排序方式\"]')?.classList.contains('lib-sort-on') ).toBe(false)"
           ]
         },
         {
@@ -9926,67 +10228,12 @@
           ],
           "title": "DiamondRule 渲染：渐隐线×2+◆菱形+装饰 aria-hidden（渲染级存在性）",
           "markers": [],
-          "line": 170,
+          "line": 382,
           "assertions": [
             "expect(rule).not.toBeNull()",
             "expect(rule?.getAttribute('aria-hidden')).toBe('true')",
             "expect(rule?.querySelectorAll('.lib-rule-line').length).toBe(2)",
             "expect(rule?.querySelector('.lib-rule-gem')).not.toBeNull()"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 菱形分隔线（筛选区与列表之间）\",\"LibraryPage 组装：菱形分隔挂在筛选区之后、列表网格之前（页面级存在性）\"]",
-          "describePath": [
-            "R3-LIB 菱形分隔线（筛选区与列表之间）"
-          ],
-          "title": "LibraryPage 组装：菱形分隔挂在筛选区之后、列表网格之前（页面级存在性）",
-          "markers": [],
-          "line": 179,
-          "assertions": [
-            "expect(rule).not.toBeNull()",
-            "expect(grid).not.toBeNull()",
-            "expect(rule.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）\",\"卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）\"]",
-          "describePath": [
-            "R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）"
-          ],
-          "title": "卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）",
-          "markers": [],
-          "line": 192,
-          "assertions": [
-            "expect(css, '.lib-card 渐变（mockup .card 逐值）').toMatch(/\\.lib-card\\s*\\{[^}]*linear-gradient\\(168deg/)",
-            "expect(css, 'inset 顶高光').toMatch(/\\.lib-card\\s*\\{[^}]*inset 0 1px 0 var\\(--panel-a90\\)/)",
-            "expect(css, '背景裁到 padding-box（定稿注意事项②）').toMatch( /\\.lib-card\\s*\\{[^}]*background-clip: padding-box/ )"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）\",\"网格容器：repeat(auto-fill, minmax(340px, 1fr))\"]",
-          "describePath": [
-            "R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）"
-          ],
-          "title": "网格容器：repeat(auto-fill, minmax(340px, 1fr))",
-          "markers": [],
-          "line": 201,
-          "assertions": [
-            "expect(css).toMatch(/\\.lib-grid\\s*\\{[^}]*repeat\\(auto-fill, minmax\\(340px, 1fr\\)\\)/)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）\",\"hover 升档：金 hairline 描边+translateY(-1px)+shadow-2+角饰显形\"]",
-          "describePath": [
-            "R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）"
-          ],
-          "title": "hover 升档：金 hairline 描边+translateY(-1px)+shadow-2+角饰显形",
-          "markers": [],
-          "line": 205,
-          "assertions": [
-            "expect(css).toMatch(/\\.lib-card:hover\\s*\\{[^}]*var\\(--shadow-2\\)/)",
-            "expect(css).toMatch(/\\.lib-card:hover\\s*\\{[^}]*translateY\\(-1px\\)/)",
-            "expect(css).toMatch(/\\.lib-card:hover\\s*\\{[^}]*var\\(--border-gold\\)/)",
-            "expect(css, 'hover 角饰显形（金描边）').toMatch(/\\.lib-card:hover \\.lib-corner\\s*\\{[^}]*var\\(--gold\\)/)"
           ]
         },
         {
@@ -9996,93 +10243,11 @@
           ],
           "title": "菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）",
           "markers": [],
-          "line": 212,
+          "line": 393,
           "assertions": [
             "expect(cssTheme).toMatch(/\\.lib-rule-line\\s*\\{[^}]*min-width: 24px/)",
             "expect(cssTheme).toMatch(/\\.lib-rule-line\\s*\\{[^}]*flex: 1/)",
             "expect(cssTheme).toMatch(/\\.lib-rule-gem\\s*\\{[^}]*rotate\\(45deg\\)/)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 回炉一（门一 3B+3W）\",\"R3 空年份：year 槽渲染 9px 淡金 ◆（min-width 44px 对齐槽）；有年份无 ◆\"]",
-          "describePath": [
-            "R3-LIB 回炉一（门一 3B+3W）"
-          ],
-          "title": "R3 空年份：year 槽渲染 9px 淡金 ◆（min-width 44px 对齐槽）；有年份无 ◆",
-          "markers": [],
-          "line": 222,
-          "assertions": [
-            "expect(cards[0]?.querySelector('.lib-card-year-gem')).toBeNull()",
-            "expect(gem?.getAttribute('aria-hidden')).toBe('true')",
-            "expect(cards[1]?.querySelector('.lib-card-year')?.textContent).toBe('')",
-            "expect(css, '9px 淡金 ◆（gem 尺寸锁）').toMatch(/\\.lib-card-year-gem\\s*\\{[^}]*width: 9px/)",
-            "expect(css).toMatch(/\\.lib-card-year-gem\\s*\\{[^}]*rotate\\(45deg\\)/)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 回炉一（门一 3B+3W）\",\"R4 详情空态：.lib-detail-empty 复用 DiamondRule×2+文案逐字保留\"]",
-          "describePath": [
-            "R3-LIB 回炉一（门一 3B+3W）"
-          ],
-          "title": "R4 详情空态：.lib-detail-empty 复用 DiamondRule×2+文案逐字保留",
-          "markers": [],
-          "line": 239,
-          "assertions": [
-            "expect(empty).not.toBeNull()",
-            "expect(empty?.querySelectorAll('.lib-rule').length).toBe(2)",
-            "expect(host?.textContent).toContain('选中列表中的文献后显示详情')",
-            "expect(css, '空态居中').toMatch(/\\.lib-detail-empty\\s*\\{[^}]*align-items: center/)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 回炉一（门一 3B+3W）\",\"R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring a45+shadow-2+角饰常显（两档于 hover）\"]",
-          "describePath": [
-            "R3-LIB 回炉一（门一 3B+3W）"
-          ],
-          "title": "R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring a45+shadow-2+角饰常显（两档于 hover）",
-          "markers": [],
-          "line": 248,
-          "assertions": [
-            "expect(seg).toContain('border-color: var(--gold)')",
-            "expect(seg).toContain('inset 0 0 0 1px var(--border-gold-a45)')",
-            "expect(seg).toContain('var(--shadow-2)')",
-            "expect(seg, '选中段不得平色覆盖渐变（门一独立裁）').not.toMatch(/background: var\\(--accent-soft\\)/)",
-            "expect(css, '角饰常显').toMatch(/\\.lib-card-selected \\.lib-corner\\s*\\{[^}]*var\\(--gold\\)/)",
-            "expect(selectedAt).toBeGreaterThan(hoverAt)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 回炉一（门一 3B+3W）\",\"W2 chips active：有筛选值挂 lib-chip-on；排序不挂（视图非条件）\"]",
-          "describePath": [
-            "R3-LIB 回炉一（门一 3B+3W）"
-          ],
-          "title": "W2 chips active：有筛选值挂 lib-chip-on；排序不挂（视图非条件）",
-          "markers": [],
-          "line": 263,
-          "assertions": [
-            "expect(chips.length).toBe(4)",
-            "expect(chips[0]?.tagName).toBe('INPUT')",
-            "expect(chips[1]?.classList.contains('lib-chip-on')).toBe(true)",
-            "expect(chips[2]?.classList.contains('lib-chip-on')).toBe(true)",
-            "expect(chips[3]?.classList.contains('lib-chip-on')).toBe(false)",
-            "expect(css, 'on 态镜像 mockup .chip.on').toMatch( /\\.lib-chip-on\\s*\\{[^}]*var\\(--accent-soft\\)[^}]*\\}/ )",
-            "expect(css).toMatch(/\\.lib-chip-on\\s*\\{[^}]*border-color: var\\(--accent\\)/)"
-          ]
-        },
-        {
-          "key": "[\"R3-LIB 回炉一（门一 3B+3W）\",\"R1+R2 材质微调：dropzone 透明底落纸面；题名 fs-title/600、venue/meta fs-caption（批二 token 化,meta 10.5→11 裁决变化）\"]",
-          "describePath": [
-            "R3-LIB 回炉一（门一 3B+3W）"
-          ],
-          "title": "R1+R2 材质微调：dropzone 透明底落纸面；题名 fs-title/600、venue/meta fs-caption（批二 token 化,meta 10.5→11 裁决变化）",
-          "markers": [],
-          "line": 286,
-          "assertions": [
-            "expect(css).toMatch(/\\.lib-dropzone\\s*\\{[^}]*background: transparent/)",
-            "expect(css).toMatch(/\\.lib-card-title\\s*\\{[^}]*font-size: var\\(--fs-title\\)/)",
-            "expect(css).toMatch(/\\.lib-card-title\\s*\\{[^}]*font-weight: 600/)",
-            "expect(css).toMatch(/\\.lib-card-venue\\s*\\{[^}]*font-size: var\\(--fs-caption\\)/)",
-            "expect(css).toMatch(/\\.lib-card-meta\\s*\\{[^}]*font-size: var\\(--fs-caption\\)/)"
           ]
         },
         {
@@ -10092,7 +10257,7 @@
           ],
           "title": "W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）",
           "markers": [],
-          "line": 294,
+          "line": 403,
           "assertions": [
             "expect(cssTheme).toMatch(/\\.lib-rule-line-l\\s*\\{[^}]*linear-gradient\\(90deg, transparent, var\\(--border-gold\\)\\)/)",
             "expect(cssTheme).toMatch(/\\.lib-rule-line-r\\s*\\{[^}]*linear-gradient\\(90deg, var\\(--border-gold\\), transparent\\)/)",
@@ -13291,27 +13456,27 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）\",\"有值：citedByCount=124 → 「被引」行渲染「124」（真实文本断言）\"]",
+          "key": "[\"SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）\",\"有值：citedByCount=124 → 「引用」格渲染「124」（真实文本断言）\"]",
           "describePath": [
             "SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）"
           ],
-          "title": "有值：citedByCount=124 → 「被引」行渲染「124」（真实文本断言）",
+          "title": "有值：citedByCount=124 → 「引用」格渲染「124」（真实文本断言）",
           "markers": [],
-          "line": 65,
+          "line": 64,
           "assertions": [
-            "expect(rowValue('被引')).toBe('124')"
+            "expect(metricValue('引用')).toBe('124')"
           ]
         },
         {
-          "key": "[\"SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）\",\"缺省：无 citedByCount 字段 → 「被引」行渲染占位符（—）\"]",
+          "key": "[\"SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）\",\"缺省：无 citedByCount 字段 → 「引用」格渲染占位符（—）\"]",
           "describePath": [
             "SR2-ENR-03 PaperDetailPanel —— 被引数透出（always-active）"
           ],
-          "title": "缺省：无 citedByCount 字段 → 「被引」行渲染占位符（—）",
+          "title": "缺省：无 citedByCount 字段 → 「引用」格渲染占位符（—）",
           "markers": [],
-          "line": 70,
+          "line": 69,
           "assertions": [
-            "expect(rowValue('被引')).toBe('—')"
+            "expect(metricValue('引用')).toBe('—')"
           ]
         },
         {
@@ -13321,9 +13486,9 @@
           ],
           "title": "零值：citedByCount=0 → 渲染「0」而非占位符（=== undefined 判空边界）",
           "markers": [],
-          "line": 75,
+          "line": 74,
           "assertions": [
-            "expect(rowValue('被引')).toBe('0')"
+            "expect(metricValue('引用')).toBe('0')"
           ]
         }
       ]
@@ -13399,6 +13564,194 @@
             "expect(stubApi.enrich.fetch).toHaveBeenCalledWith({ paperId: 'paper-1' })",
             "expect(toastSpy).toHaveBeenCalledWith('元数据增强完成', 'success')",
             "expect(stubApi.library.detail).toHaveBeenCalledTimes(2)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/paper-detail-drawer.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-P3 规格表抽屉——四格指标真文本\",\"引用/通读/标注/笔记四格在场：引用=acc 色引用数；通读=lastReadPage+1+「页」小字\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——四格指标真文本"
+          ],
+          "title": "引用/通读/标注/笔记四格在场：引用=acc 色引用数；通读=lastReadPage+1+「页」小字",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect(metrics).not.toBeNull()",
+            "expect(metricValue('引用')).toBe('17')",
+            "expect(metricValue('通读')).toBe('6页')",
+            "expect(metricValue('标注')).toBe('14')",
+            "expect(metricValue('笔记')).toBe('9')",
+            "expect(accCell?.textContent).toBe('17')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——四格指标真文本\",\"引用缺省→「—」（undefined 判空——0 应渲染「0」）\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——四格指标真文本"
+          ],
+          "title": "引用缺省→「—」（undefined 判空——0 应渲染「0」）",
+          "markers": [],
+          "line": 103,
+          "assertions": [
+            "expect(metricValue('引用')).toBe('0')",
+            "expect(metricValue('引用')).toBe('—')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"YEAR-MO/VENUE/DOI 三键值行：DOI link 色；无脉络时 YEAR-MO 只显示年份\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "YEAR-MO/VENUE/DOI 三键值行：DOI link 色；无脉络时 YEAR-MO 只显示年份",
+          "markers": [],
+          "line": 115,
+          "assertions": [
+            "expect(fldValue('YEAR-MO')).toBe('2026')",
+            "expect(fldValue('VENUE')).toBe('Journal of Testing')",
+            "expect(fldValue('DOI')).toBe('10.1000/demo')",
+            "expect(fldRow('DOI')?.querySelector('.lib-fld-v.link')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"脉络命中：YEAR-MO 带脉络框括注+脉络行「年 · 月框 · N 条连线」link 色\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "脉络命中：YEAR-MO 带脉络框括注+脉络行「年 · 月框 · N 条连线」link 色",
+          "markers": [],
+          "line": 123,
+          "assertions": [
+            "expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023 年 · 6 月）')",
+            "expect(fldValue('脉络')).toBe('2023 年 · 6 月框 · 3 条连线')",
+            "expect(fldRow('脉络')?.querySelector('.lib-fld-v.link')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"脉络命中 month=null：「未定月框」措辞（P5 落位前月恒缺省）\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "脉络命中 month=null：「未定月框」措辞（P5 落位前月恒缺省）",
+          "markers": [],
+          "line": 132,
+          "assertions": [
+            "expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023 年 · 未定月）')",
+            "expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 1 条连线')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023 年 · 未定月）')",
+            "expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 2 条连线')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"脉络未命中：YEAR-MO 只年份+脉络行「未加入脉络」非 link 色\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "脉络未命中：YEAR-MO 只年份+脉络行「未加入脉络」非 link 色",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(fldValue('YEAR-MO')).toBe('2026')",
+            "expect(fldValue('脉络')).toBe('未加入脉络')",
+            "expect(fldRow('脉络')?.querySelector('.lib-fld-v.link')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"AI 评估行=「后置」虚线小徽章（禁假数据——固定占位文案）\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "AI 评估行=「后置」虚线小徽章（禁假数据——固定占位文案）",
+          "markers": [],
+          "line": 151,
+          "assertions": [
+            "expect(fldValue('AI 评估')).toBe('后置')",
+            "expect(fldRow('AI 评估')?.querySelector('.lib-postpone')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——键值行与关联行\",\"分节条在场：「标 签」「关 联」+TagEditor 驻留（新增标签输入框）\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——键值行与关联行"
+          ],
+          "title": "分节条在场：「标 签」「关 联」+TagEditor 驻留（新增标签输入框）",
+          "markers": [],
+          "line": 157,
+          "assertions": [
+            "expect(secs).toEqual(['标 签', '关 联'])",
+            "expect(host?.querySelector('input[aria-label=\"新增标签\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——头区状态点与动作面\",\"dr-head：短号（id 前 8 位+…；≤8 位整串）+状态点 done=「已入库」ok 色\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——头区状态点与动作面"
+          ],
+          "title": "dr-head：短号（id 前 8 位+…；≤8 位整串）+状态点 done=「已入库」ok 色",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(idRow).not.toBeNull()",
+            "expect(idRow?.textContent).toContain('paper-12…')",
+            "expect(status?.textContent).toContain('已入库')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——头区状态点与动作面\",\"状态点态映射：pending=「待增强」faint；failed=「增强失败」signal\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——头区状态点与动作面"
+          ],
+          "title": "状态点态映射：pending=「待增强」faint；failed=「增强失败」signal",
+          "markers": [],
+          "line": 175,
+          "assertions": [
+            "expect(host?.querySelector('.lib-dr-id')?.textContent).toContain('增强失败')",
+            "expect(host?.querySelector('.lib-dr-status-signal')).not.toBeNull()",
+            "expect(host?.querySelector('.lib-dr-id')?.textContent).toContain('待增强')",
+            "expect(host?.querySelector('.lib-dr-status-faint')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——头区状态点与动作面\",\"动作面九钮在场（文本逐字——受锁 export/clip/notes-off 断言面同源）+主钮 primary 类\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——头区状态点与动作面"
+          ],
+          "title": "动作面九钮在场（文本逐字——受锁 export/clip/notes-off 断言面同源）+主钮 primary 类",
+          "markers": [],
+          "line": 187,
+          "assertions": [
+            "expect(buttonByText(label), `动作钮在场：${label}`).toBeDefined()",
+            "expect(buttonByText('去阅读器写笔记')?.classList.contains('lib-dr-btn-primary')).toBe(true)",
+            "expect(buttonByText('编辑元数据')?.classList.contains('lib-dr-btn-ghost')).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 规格表抽屉——空态语义保活（R4 文案迁移）\",\"paperId=null：简文案居中（DiamondRule 库域退役）——文案逐字保留\"]",
+          "describePath": [
+            "T3-P3 规格表抽屉——空态语义保活（R4 文案迁移）"
+          ],
+          "title": "paperId=null：简文案居中（DiamondRule 库域退役）——文案逐字保留",
+          "markers": [],
+          "line": 208,
+          "assertions": [
+            "expect(empty).not.toBeNull()",
+            "expect(host?.textContent).toContain('选中列表中的文献后显示详情')"
           ]
         }
       ]
@@ -18469,15 +18822,15 @@
           ],
           "title": "T1/T2/T3 toggle 序列：进→并集→退出→全清，载荷=选中集演化且 aria-pressed 同步",
           "markers": [],
-          "line": 126,
+          "line": 128,
           "assertions": [
             "expect(onFilterChange).toHaveBeenLastCalledWith(['t-a'])",
             "expect(onFilterChange).toHaveBeenLastCalledWith(['t-a', 't-b'])",
-            "expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('true')",
-            "expect(buttonByText('机器学习（1）')?.getAttribute('aria-pressed')).toBe('true')",
+            "expect(buttonByText('水质 ×2')?.getAttribute('aria-pressed')).toBe('true')",
+            "expect(buttonByText('机器学习 ×1')?.getAttribute('aria-pressed')).toBe('true')",
             "expect(onFilterChange).toHaveBeenLastCalledWith(['t-b'])",
-            "expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('false')",
-            "expect(buttonByText('机器学习（1）')?.getAttribute('aria-pressed')).toBe('true')",
+            "expect(buttonByText('水质 ×2')?.getAttribute('aria-pressed')).toBe('false')",
+            "expect(buttonByText('机器学习 ×1')?.getAttribute('aria-pressed')).toBe('true')",
             "expect(onFilterChange).toHaveBeenLastCalledWith([])"
           ]
         },
@@ -18488,7 +18841,7 @@
           ],
           "title": "T5 删除选中集成员：onFilterChange(剔除后剩余) 先于 onMutated（顺序锚多选形态）",
           "markers": [],
-          "line": 154,
+          "line": 156,
           "assertions": [
             "expect(onFilterChange).toHaveBeenCalledTimes(1)",
             "expect(onFilterChange).toHaveBeenCalledWith(['t-y'])",
@@ -18505,7 +18858,7 @@
           ],
           "title": "T6 改名选中集成员（id 稳定）：筛选零动（onFilterChange 不调用），仅 onMutated",
           "markers": [],
-          "line": 181,
+          "line": 183,
           "assertions": [
             "expect(input, '重命名输入框在场').not.toBeNull()",
             "expect(onFilterChange).not.toHaveBeenCalled()",
@@ -18519,7 +18872,7 @@
           ],
           "title": "T7 合并源∈选中集：源剔除且目标不自动入选（载荷恰=剩余集，顺序锚保持）",
           "markers": [],
-          "line": 206,
+          "line": 208,
           "assertions": [
             "expect(onFilterChange).toHaveBeenCalledTimes(1)",
             "expect(onFilterChange).toHaveBeenCalledWith(['t-y'])",
@@ -18534,7 +18887,7 @@
           ],
           "title": "T3 装配级：点选→onChange({tagIds})；全清→onChange({tagIds: undefined})（空数组不进查询）",
           "markers": [],
-          "line": 233,
+          "line": 235,
           "assertions": [
             "expect(onChange).toHaveBeenLastCalledWith({ tagIds: ['t-a'] })",
             "expect(onChange).toHaveBeenLastCalledWith({ tagIds: undefined })"
@@ -18547,12 +18900,12 @@
           ],
           "title": "T8 上界拦截：20 选中点第 21 chip → toast 恰一次 + onFilterChange 零调用 + chip 保持未选",
           "markers": [],
-          "line": 253,
+          "line": 255,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledTimes(1)",
             "expect(toastSpy).toHaveBeenCalledWith('最多同时筛选 20 个标签', 'info')",
             "expect(onFilterChange).not.toHaveBeenCalled()",
-            "expect(buttonByText('标签21（0）')?.getAttribute('aria-pressed')).toBe('false')"
+            "expect(buttonByText('标签21 ×0')?.getAttribute('aria-pressed')).toBe('false')"
           ]
         },
         {
@@ -18562,7 +18915,7 @@
           ],
           "title": "T9 边界放行：19 选中点第 20 chip → onFilterChange 恰一次、载荷 20 项含新 id + 零 toast",
           "markers": [],
-          "line": 272,
+          "line": 274,
           "assertions": [
             "expect(onFilterChange).toHaveBeenCalledTimes(1)",
             "expect(payload).toHaveLength(20)",
@@ -18577,7 +18930,7 @@
           ],
           "title": "T10 上界移除锚（门二 R1）：20 选中点已选 chip → onFilterChange 恰一次、载荷 19 项不含该 id + 零 toast（守卫删 !active 变异的唯一杀手）",
           "markers": [],
-          "line": 291,
+          "line": 293,
           "assertions": [
             "expect(onFilterChange).toHaveBeenCalledTimes(1)",
             "expect(payload).toHaveLength(19)",
@@ -18599,7 +18952,7 @@
           ],
           "title": "S2 删除选中标签：先 onFilterChange(null) 清死 id 筛选，后 onMutated（invocationCallOrder 锚）",
           "markers": [],
-          "line": 103,
+          "line": 104,
           "assertions": [
             "expect(onFilterChange).toHaveBeenCalledTimes(1)",
             "expect(onFilterChange).toHaveBeenCalledWith([])",
@@ -18616,7 +18969,7 @@
           ],
           "title": "删除非选中标签：筛选不动（onFilterChange 零调用），仅 onMutated",
           "markers": [],
-          "line": 128,
+          "line": 129,
           "assertions": [
             "expect(onFilterChange).not.toHaveBeenCalled()",
             "expect(onMutated).toHaveBeenCalledTimes(1)"
@@ -18629,7 +18982,7 @@
           ],
           "title": "S3 合且源=选中：同 S2 顺序（源 id 已消失）；目标 chip 点选即确认",
           "markers": [],
-          "line": 145,
+          "line": 146,
           "assertions": [
             "expect(dialog(), '合并对话框在场').not.toBeNull()",
             "expect(stubApi.tags.merge).toHaveBeenCalledWith({ sourceId: 't-1', targetId: 't-2' })",
@@ -18647,7 +19000,7 @@
           ],
           "title": "S4 合且目标=选中：筛选不动（target id 稳定，仅计数增）",
           "markers": [],
-          "line": 169,
+          "line": 170,
           "assertions": [
             "expect(onFilterChange).not.toHaveBeenCalled()",
             "expect(onMutated).toHaveBeenCalledTimes(1)"
@@ -18660,7 +19013,7 @@
           ],
           "title": "S8 重命名对话框：预填现名；提交双击 busy 守卫防重复提交（rename 仅一次）",
           "markers": [],
-          "line": 186,
+          "line": 187,
           "assertions": [
             "expect(input, '重命名输入框在场').not.toBeNull()",
             "expect(input?.value, '预填现名').toBe('甲')",
@@ -18677,7 +19030,7 @@
           ],
           "title": "S9 tags.length===1 时菜单「合并到…」禁用（无其他目标）",
           "markers": [],
-          "line": 217,
+          "line": 218,
           "assertions": [
             "expect(mergeBtn, '菜单项在场').toBeDefined()",
             "expect(mergeBtn?.disabled, '单标签无合并目标——禁用').toBe(true)"
@@ -18690,7 +19043,7 @@
           ],
           "title": "W3：菜单开→按 Escape→菜单关闭（keydown 关闭契约，unmount 清理）",
           "markers": [],
-          "line": 226,
+          "line": 227,
           "assertions": [
             "expect(host?.querySelector('[data-testid=\"tag-menu\"]'), '菜单在场').not.toBeNull()",
             "expect(host?.querySelector('[data-testid=\"tag-menu\"]'), 'Escape 后菜单关闭').toBeNull()"
@@ -18703,7 +19056,7 @@
           ],
           "title": "N1：delete 提交飞行中取消被阻断（按钮禁用+Esc/遮罩 onClose no-op），resolve 成功后才关",
           "markers": [],
-          "line": 237,
+          "line": 238,
           "assertions": [
             "expect(buttonByText('取消', dialog()!)?.disabled, 'busy 期取消禁用').toBe(true)",
             "expect(dialog(), 'busy 中 Esc 不得关闭（对话框已关、变更随后生效=语义错位）').not.toBeNull()",
@@ -19016,7 +19369,7 @@
           ],
           "title": "--bg 声明为设计定稿值 #f4f6f9",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19028,7 +19381,7 @@
           ],
           "title": "--panel 声明为设计定稿值 #ffffff",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19040,7 +19393,7 @@
           ],
           "title": "--panel-glass 声明为设计定稿值 var(--panel)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19052,7 +19405,7 @@
           ],
           "title": "--border 声明为设计定稿值 var(--line)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19064,7 +19417,7 @@
           ],
           "title": "--border-gold 声明为设计定稿值 #c9a86a",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19076,7 +19429,7 @@
           ],
           "title": "--text 声明为设计定稿值 var(--ink)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19088,7 +19441,7 @@
           ],
           "title": "--text-dim 声明为设计定稿值 var(--dim)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19100,7 +19453,7 @@
           ],
           "title": "--accent 声明为设计定稿值 #3a5bd9",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19112,7 +19465,7 @@
           ],
           "title": "--accent-soft 声明为设计定稿值 #eaeefc",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19124,7 +19477,7 @@
           ],
           "title": "--gold 声明为设计定稿值 #b8935a",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19136,7 +19489,7 @@
           ],
           "title": "--gold-soft 声明为设计定稿值 rgba(207, 174, 114, 0.16)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19148,7 +19501,7 @@
           ],
           "title": "--gold-bright 声明为设计定稿值 #e3c98f",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19160,7 +19513,7 @@
           ],
           "title": "--gold-line 声明为设计定稿值 rgba(207, 174, 114, 0.1)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19172,7 +19525,7 @@
           ],
           "title": "--danger 声明为设计定稿值 var(--signal)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19184,7 +19537,7 @@
           ],
           "title": "--ok 声明为设计定稿值 #2e8b57",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19196,7 +19549,7 @@
           ],
           "title": "--shadow-1 声明为设计定稿值 0 1px 2px rgba(35, 38, 45, 0.06)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19208,7 +19561,7 @@
           ],
           "title": "--shadow-2 声明为设计定稿值 0 4px 14px rgba(35, 38, 45, 0.09)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19220,7 +19573,7 @@
           ],
           "title": "--shadow-3 声明为设计定稿值 0 10px 34px rgba(35, 38, 45, 0.16)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19232,7 +19585,7 @@
           ],
           "title": "--radius-s 声明为设计定稿值 8px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19244,7 +19597,7 @@
           ],
           "title": "--radius-m 声明为设计定稿值 12px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19256,7 +19609,7 @@
           ],
           "title": "--radius-l 声明为设计定稿值 16px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19268,7 +19621,7 @@
           ],
           "title": "--font-display 声明为设计定稿值 Georgia, 'Times New Roman', 'Songti SC', SimSun, serif",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19280,7 +19633,7 @@
           ],
           "title": "--ink 声明为设计定稿值 #1c2333",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19292,7 +19645,7 @@
           ],
           "title": "--panel-2 声明为设计定稿值 #fbfcfe",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19304,7 +19657,7 @@
           ],
           "title": "--line 声明为设计定稿值 #e3e7ee",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19316,7 +19669,7 @@
           ],
           "title": "--line-soft 声明为设计定稿值 #edf0f5",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19328,7 +19681,7 @@
           ],
           "title": "--dim 声明为设计定稿值 #5d6577",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19340,7 +19693,7 @@
           ],
           "title": "--faint 声明为设计定稿值 #9aa3b5",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19352,7 +19705,7 @@
           ],
           "title": "--signal 声明为设计定稿值 #f06030",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19364,7 +19717,7 @@
           ],
           "title": "--warn 声明为设计定稿值 #e8a33d",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19376,7 +19729,7 @@
           ],
           "title": "--sub2 声明为设计定稿值 #0e9488",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19388,7 +19741,7 @@
           ],
           "title": "--mini-card 声明为设计定稿值 #e9edf4",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19400,7 +19753,7 @@
           ],
           "title": "--mini-card-line 声明为设计定稿值 #d6dce8",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19412,7 +19765,7 @@
           ],
           "title": "--month-dash 声明为设计定稿值 rgba(58, 91, 217, 0.55)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19424,7 +19777,7 @@
           ],
           "title": "--mono 声明为设计定稿值 Consolas, 'Courier New', monospace",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19436,7 +19789,7 @@
           ],
           "title": "--serif 声明为设计定稿值 Georgia, SimSun, serif",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19448,7 +19801,7 @@
           ],
           "title": "--shadow-card 声明为设计定稿值 0 1px 3px rgba(20, 26, 40, 0.08)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19460,7 +19813,7 @@
           ],
           "title": "--shadow-drag 声明为设计定稿值 0 12px 32px rgba(20, 26, 40, 0.22)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19472,7 +19825,7 @@
           ],
           "title": "--paper 声明为设计定稿值 var(--panel)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19484,7 +19837,7 @@
           ],
           "title": "--paper-ink 声明为设计定稿值 #2a2f3c",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19496,7 +19849,7 @@
           ],
           "title": "--night-bg 声明为设计定稿值 #171e33",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19508,7 +19861,7 @@
           ],
           "title": "--night-bg2 声明为设计定稿值 #111728",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19520,7 +19873,7 @@
           ],
           "title": "--node-face 声明为设计定稿值 #222c4d",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19532,7 +19885,7 @@
           ],
           "title": "--node-face-hi 声明为设计定稿值 #2b3760",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19544,7 +19897,7 @@
           ],
           "title": "--band-line 声明为设计定稿值 rgba(207, 174, 114, 0.12)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19556,7 +19909,7 @@
           ],
           "title": "--star 声明为设计定稿值 rgba(222, 230, 255, 0.55)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19568,7 +19921,7 @@
           ],
           "title": "--text-on-night 声明为设计定稿值 #e9e6db",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19580,7 +19933,7 @@
           ],
           "title": "--text-mid 声明为设计定稿值 #c6cbdd",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19592,7 +19945,7 @@
           ],
           "title": "--text-dim-on-night 声明为设计定稿值 #97a0bb",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19604,7 +19957,7 @@
           ],
           "title": "--edge-glow 声明为设计定稿值 rgba(207, 174, 114, 0.4)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19616,7 +19969,7 @@
           ],
           "title": "--annotation-yellow 声明为设计定稿值 #fde047",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19628,7 +19981,7 @@
           ],
           "title": "--annotation-green 声明为设计定稿值 #86efac",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19640,7 +19993,7 @@
           ],
           "title": "--annotation-blue 声明为设计定稿值 #93c5fd",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19652,7 +20005,7 @@
           ],
           "title": "--annotation-red 声明为设计定稿值 #fca5a5",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19664,7 +20017,7 @@
           ],
           "title": "--annotation-purple 声明为设计定稿值 #d8b4fe",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19676,7 +20029,7 @@
           ],
           "title": "--dur-press 声明为设计定稿值 0.08s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19688,7 +20041,7 @@
           ],
           "title": "--dur-tint 声明为设计定稿值 0.12s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19700,7 +20053,7 @@
           ],
           "title": "--dur-fast 声明为设计定稿值 0.14s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19712,7 +20065,7 @@
           ],
           "title": "--dur-base 声明为设计定稿值 0.18s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19724,7 +20077,7 @@
           ],
           "title": "--dur-lazy 声明为设计定稿值 0.2s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19736,7 +20089,7 @@
           ],
           "title": "--dur-rise 声明为设计定稿值 0.22s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19748,7 +20101,7 @@
           ],
           "title": "--dur-flow 声明为设计定稿值 0.3s",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19760,7 +20113,7 @@
           ],
           "title": "--z-float 声明为设计定稿值 10",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19772,7 +20125,7 @@
           ],
           "title": "--z-anchor-pop 声明为设计定稿值 20",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19784,7 +20137,7 @@
           ],
           "title": "--z-pop-veil 声明为设计定稿值 40",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19796,7 +20149,7 @@
           ],
           "title": "--z-pop 声明为设计定稿值 50",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19808,7 +20161,7 @@
           ],
           "title": "--fs-micro 声明为设计定稿值 10px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19820,7 +20173,7 @@
           ],
           "title": "--fs-caption 声明为设计定稿值 11px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19832,7 +20185,7 @@
           ],
           "title": "--fs-body 声明为设计定稿值 12px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19844,7 +20197,7 @@
           ],
           "title": "--fs-strong 声明为设计定稿值 13px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19856,7 +20209,7 @@
           ],
           "title": "--fs-title 声明为设计定稿值 14px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19868,7 +20221,7 @@
           ],
           "title": "--fs-display 声明为设计定稿值 17px",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19880,7 +20233,67 @@
           ],
           "title": "--fs-signature 声明为设计定稿值 18px",
           "markers": [],
-          "line": 193,
+          "line": 201,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--fs-metric 声明为设计定稿值 16px\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--fs-metric 声明为设计定稿值 16px",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--fs-nano 声明为设计定稿值 9px\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--fs-nano 声明为设计定稿值 9px",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--shadow-sel-glow 声明为设计定稿值 0 2px 8px rgba(58, 91, 217, 0.14)\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--shadow-sel-glow 声明为设计定稿值 0 2px 8px rgba(58, 91, 217, 0.14)",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--shadow-cta 声明为设计定稿值 0 2px 6px rgba(58, 91, 217, 0.3)\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--shadow-cta 声明为设计定稿值 0 2px 6px rgba(58, 91, 217, 0.3)",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
+          ]
+        },
+        {
+          "key": "[\"R3-TH1 theme token 冒烟（mockup :root 防漂移锁）\",\"--accent-ink 声明为设计定稿值 #ffffff\"]",
+          "describePath": [
+            "R3-TH1 theme token 冒烟（mockup :root 防漂移锁）"
+          ],
+          "title": "--accent-ink 声明为设计定稿值 #ffffff",
+          "markers": [],
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19892,7 +20305,7 @@
           ],
           "title": "--accent-a10 声明为设计定稿值 rgba(44, 95, 138, 0.1)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19904,7 +20317,7 @@
           ],
           "title": "--accent-a12 声明为设计定稿值 rgba(44, 95, 138, 0.12)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19916,7 +20329,7 @@
           ],
           "title": "--accent-a15 声明为设计定稿值 rgba(44, 95, 138, 0.15)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19928,7 +20341,7 @@
           ],
           "title": "--accent-a20 声明为设计定稿值 rgba(44, 95, 138, 0.2)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19940,7 +20353,7 @@
           ],
           "title": "--accent-a22 声明为设计定稿值 rgba(44, 95, 138, 0.22)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19952,7 +20365,7 @@
           ],
           "title": "--accent-a35 声明为设计定稿值 rgba(44, 95, 138, 0.35)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19964,7 +20377,7 @@
           ],
           "title": "--accent-a45 声明为设计定稿值 rgba(44, 95, 138, 0.45)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19976,7 +20389,7 @@
           ],
           "title": "--accent-a55 声明为设计定稿值 rgba(44, 95, 138, 0.55)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -19988,7 +20401,7 @@
           ],
           "title": "--border-gold-a15 声明为设计定稿值 rgba(201, 168, 106, 0.15)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20000,7 +20413,7 @@
           ],
           "title": "--border-gold-a28 声明为设计定稿值 rgba(201, 168, 106, 0.28)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20012,7 +20425,7 @@
           ],
           "title": "--border-gold-a45 声明为设计定稿值 rgba(201, 168, 106, 0.45)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20024,7 +20437,7 @@
           ],
           "title": "--border-gold-a50 声明为设计定稿值 rgba(201, 168, 106, 0.5)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20036,7 +20449,7 @@
           ],
           "title": "--gold-bright-a70 声明为设计定稿值 rgba(227, 201, 143, 0.7)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20048,7 +20461,7 @@
           ],
           "title": "--gold-press 声明为设计定稿值 rgba(207, 174, 114, 0.3)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20060,7 +20473,7 @@
           ],
           "title": "--danger-a08 声明为设计定稿值 rgba(179, 64, 58, 0.08)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20072,7 +20485,7 @@
           ],
           "title": "--danger-a12 声明为设计定稿值 rgba(179, 64, 58, 0.12)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20084,7 +20497,7 @@
           ],
           "title": "--danger-a25 声明为设计定稿值 rgba(179, 64, 58, 0.25)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20096,7 +20509,7 @@
           ],
           "title": "--panel-a06 声明为设计定稿值 rgba(255, 255, 255, 0.06)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20108,7 +20521,7 @@
           ],
           "title": "--panel-a07 声明为设计定稿值 rgba(255, 255, 255, 0.07)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20120,7 +20533,7 @@
           ],
           "title": "--panel-a35 声明为设计定稿值 rgba(255, 255, 255, 0.35)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20132,7 +20545,7 @@
           ],
           "title": "--panel-a88 声明为设计定稿值 rgba(255, 255, 255, 0.88)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20144,7 +20557,7 @@
           ],
           "title": "--panel-a90 声明为设计定稿值 rgba(255, 255, 255, 0.9)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20156,7 +20569,7 @@
           ],
           "title": "--panel-a92 声明为设计定稿值 rgba(255, 255, 255, 0.92)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20168,7 +20581,7 @@
           ],
           "title": "--close-red 声明为设计定稿值 #e81123",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20180,7 +20593,7 @@
           ],
           "title": "--close-red-press 声明为设计定稿值 #f1707a",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20192,7 +20605,7 @@
           ],
           "title": "--close-red-ink 声明为设计定稿值 #ffffff",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20204,7 +20617,7 @@
           ],
           "title": "--ink-a18 声明为设计定稿值 rgba(27, 35, 51, 0.18)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20216,7 +20629,7 @@
           ],
           "title": "--accent-hi 声明为设计定稿值 #3a76ab",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20228,7 +20641,7 @@
           ],
           "title": "--accent-deep 声明为设计定稿值 #234a6d",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20240,7 +20653,7 @@
           ],
           "title": "--btn-press-tint 声明为设计定稿值 rgba(11, 26, 40, 0.45)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20252,7 +20665,7 @@
           ],
           "title": "--lib-paper-hi 声明为设计定稿值 #fffdf9",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20264,7 +20677,7 @@
           ],
           "title": "--lib-paper-lo 声明为设计定稿值 #fdfaf3",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20276,7 +20689,7 @@
           ],
           "title": "--edge-label-text 声明为设计定稿值 #6b7280",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20288,7 +20701,7 @@
           ],
           "title": "--edge-inferred 声明为设计定稿值 #8a94a6",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20300,7 +20713,7 @@
           ],
           "title": "--node-meta-border 声明为设计定稿值 #dfa84a",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20312,7 +20725,7 @@
           ],
           "title": "--note-border 声明为设计定稿值 rgba(151, 160, 187, 0.28)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20324,7 +20737,7 @@
           ],
           "title": "--reader-selection-paint 声明为设计定稿值 rgba(0, 0, 0, 0.2)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20336,7 +20749,7 @@
           ],
           "title": "--shadow-page 声明为设计定稿值 0 1px 4px rgba(0, 0, 0, 0.12)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20348,7 +20761,7 @@
           ],
           "title": "--shadow-pop-sm 声明为设计定稿值 0 2px 8px rgba(0, 0, 0, 0.15)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20360,7 +20773,7 @@
           ],
           "title": "--shadow-pop-md 声明为设计定稿值 0 2px 12px rgba(0, 0, 0, 0.18)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20372,7 +20785,7 @@
           ],
           "title": "--surface-cool 声明为设计定稿值 var(--panel-2)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20384,7 +20797,7 @@
           ],
           "title": "--warning 声明为设计定稿值 var(--warn)",
           "markers": [],
-          "line": 193,
+          "line": 201,
           "assertions": [
             "expect(css, `theme.css 应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
           ]
@@ -20396,7 +20809,7 @@
           ],
           "title": "body 视觉底换新 --bg 且保留 html/body/#root overflow 锁（Q1 不变量）",
           "markers": [],
-          "line": 197,
+          "line": 205,
           "assertions": [
             "expect(css).toContain('overflow: hidden')",
             "expect(css).toContain('background: var(--bg)')",
@@ -20410,7 +20823,7 @@
           ],
           "title": "T3-P2 壳层皮肤形态锁：三行网格 38px/1fr/26px+顶栏 --panel-2+主区 var(--bg)",
           "markers": [],
-          "line": 205,
+          "line": 213,
           "assertions": [
             "expect(shellCss, '.app-shell 三行网格 38px 1fr 26px（mockup .app）').toMatch( /\\.app-shell\\s*\\{[^}]*grid-template-rows:\\s*38px 1fr 26px;/ )",
             "expect(shellCss, '.app-header 高 38px+背景 --panel-2（mockup .topbar）').toMatch( /\\.app-header\\s*\\{[^}]*height:\\s*38px;[^}]*background:\\s*var\\(--panel-2\\);/ )",
@@ -20430,7 +20843,7 @@
           ],
           "title": "primary 静态皮肤在类规则中（CTA：inset 金 hairline a45 + 6px 切角）",
           "markers": [],
-          "line": 266,
+          "line": 274,
           "assertions": [
             "expect(buttonsCss, '.syn-btn-primary 静态类应在场（theme-buttons.css）').toMatch(/\\.syn-btn-primary\\s*\\{/)",
             "expect(buttonsCss, 'inset 金 hairline a45（mockup CTA 静态值——F-CSS-03 token 载体）').toMatch( /\\.syn-btn-primary\\s*\\{[^}]*var\\(--border-gold-a45\\)/ )",
@@ -20444,7 +20857,7 @@
           ],
           "title": "primary hover 提亮 a45→a70 在类规则中",
           "markers": [],
-          "line": 276,
+          "line": 284,
           "assertions": [
             "expect(buttonsCss).toMatch(/\\.syn-btn-primary:not\\(:disabled\\):hover\\s*\\{[^}]*var\\(--gold-bright-a70\\)/)"
           ]
@@ -20456,7 +20869,7 @@
           ],
           "title": "ghost hover 金铜在类规则中",
           "markers": [],
-          "line": 280,
+          "line": 288,
           "assertions": [
             "expect(buttonsCss).toMatch(/\\.syn-btn-ghost:not\\(:disabled\\):hover\\s*\\{[^}]*var\\(--gold\\)/)"
           ]
@@ -20468,7 +20881,7 @@
           ],
           "title": "Button.tsx 不再以变体皮肤内联压类（B1 形态锁）",
           "markers": [],
-          "line": 284,
+          "line": 292,
           "assertions": [
             "expect(tsx, '静态皮肤必须住 theme.css 类（VARIANT_STYLE 内联=hover 静默失效，B1 教训）').not.toContain('VARIANT_STYLE')",
             "expect(tsx, 'boxShadow/clipPath 等皮肤声明不得回流 Button 内联').not.toContain('boxShadow:')",
@@ -20482,7 +20895,7 @@
           ],
           "title": ".app-content-row 缩放声明在场（--ui-scale 变量单源）",
           "markers": [],
-          "line": 302,
+          "line": 310,
           "assertions": [
             "expect(shellCss, '.app-content-row 类应在场（App 内容行——theme-shell.css）').toContain('.app-content-row')",
             "expect( shellCss, 'zoom 值必须经 --ui-scale 变量（非内联）——正则锚定声明形态防注释字样救活' ).toMatch(/\\.app-content-row\\s*\\{[^}]*zoom:\\s*var\\(--ui-scale,\\s*1\\);/)"
@@ -20495,7 +20908,7 @@
           ],
           "title": "[data-page-column] 恒补偿声明在场（PDF 页列恒视觉 1.0）",
           "markers": [],
-          "line": 310,
+          "line": 318,
           "assertions": [
             "expect(shellCss, '页列属性选择器三态通配应在场').toContain('[data-page-column]')",
             "expect( shellCss, '补偿必须 calc(1 / var(--ui-scale, 1))——探针 Q2/Q4 实测形态，锚定声明' ).toMatch(/\\[data-page-column\\]\\s*\\{[^}]*zoom:\\s*calc\\(1 \\/ var\\(--ui-scale,\\s*1\\)\\);/)"
@@ -20508,7 +20921,7 @@
           ],
           "title": "theme.css 不含 var(--font-display) 消费串与 --gold-night 定义（决5 清零+别名退役）",
           "markers": [],
-          "line": 328,
+          "line": 336,
           "assertions": [
             "expect( css, '衬线展示字消费应清零——五类回继承 UI 字体（token 定义保留，此处只锁消费串）' ).not.toContain('var(--font-display)')",
             "expect(css, '--gold-night: 定义不得复活（别名退役=死代码即删）').not.toContain('--gold-night:')",
@@ -20526,7 +20939,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20538,7 +20951,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20550,7 +20963,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20562,7 +20975,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20574,7 +20987,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20586,7 +20999,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20598,7 +21011,7 @@
           ],
           "title": "duration 字面量 0.08s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20610,7 +21023,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20622,7 +21035,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20634,7 +21047,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20646,7 +21059,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20658,7 +21071,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20670,7 +21083,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20682,7 +21095,7 @@
           ],
           "title": "duration 字面量 0.12s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20694,7 +21107,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20706,7 +21119,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20718,7 +21131,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20730,7 +21143,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20742,7 +21155,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20754,7 +21167,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20766,7 +21179,7 @@
           ],
           "title": "duration 字面量 0.14s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20778,7 +21191,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20790,7 +21203,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20802,7 +21215,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20814,7 +21227,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20826,7 +21239,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20838,7 +21251,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20850,7 +21263,7 @@
           ],
           "title": "duration 字面量 0.18s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20862,7 +21275,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20874,7 +21287,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20886,7 +21299,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20898,7 +21311,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20910,7 +21323,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20922,7 +21335,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20934,7 +21347,7 @@
           ],
           "title": "duration 字面量 0.2s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20946,7 +21359,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20958,7 +21371,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20970,7 +21383,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20982,7 +21395,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -20994,7 +21407,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21006,7 +21419,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21018,7 +21431,7 @@
           ],
           "title": "duration 字面量 0.22s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21030,7 +21443,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:css⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21042,7 +21455,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:wsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21054,7 +21467,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:libCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21066,7 +21479,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:shellCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21078,7 +21491,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:buttonsCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21090,7 +21503,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:readerCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21102,7 +21515,7 @@
           ],
           "title": "duration 字面量 0.3s 消费后仅存 token 定义处（出现 ⟨nse:lineageCss⟩ 次）",
           "markers": [],
-          "line": 439,
+          "line": 447,
           "assertions": [
             "expect(countLiteral(text, literal)).toBe(expected)"
           ]
@@ -21114,7 +21527,7 @@
           ],
           "title": "主题 CSS 禁 z-index 裸值四档（弹层 z 序收敛到 --z-* token——F-CSS-01 扩四皮肤件）",
           "markers": [],
-          "line": 443,
+          "line": 451,
           "assertions": [
             "expect(css).not.toMatch(/z-index:\\s*(10|20|40|50)\\b/)",
             "expect(shellCss).not.toMatch(/z-index:\\s*(10|20|40|50)\\b/)",
@@ -21130,7 +21543,7 @@
           ],
           "title": "弹层九 tsx 禁 z-(10|20|40|50) 裸值 class（v4 变量简写形态锁）",
           "markers": [],
-          "line": 451,
+          "line": 459,
           "assertions": [
             "expect(POPUP_TSX).not.toMatch(/\\bz-(10|20|40|50)\\b/)"
           ]
@@ -21142,7 +21555,7 @@
           ],
           "title": "弹层九 tsx 禁 z-[数字] arbitrary class（回炉 W2：弹层 z 必须消费 --z-* 变量）",
           "markers": [],
-          "line": 455,
+          "line": 463,
           "assertions": [
             "expect(POPUP_TSX).not.toMatch(/\\bz-\\[\\d+\\]/)"
           ]
@@ -21154,7 +21567,7 @@
           ],
           "title": "七 CSS 禁 transition/animation 声明内 ms 时长（回炉 W3 全禁+F-CSS-01 扩四皮肤件）",
           "markers": [],
-          "line": 459,
+          "line": 467,
           "assertions": [
             "expect(css).not.toMatch(MS_DECL)",
             "expect(wsCss).not.toMatch(MS_DECL)",
@@ -21172,7 +21585,7 @@
           ],
           "title": "lineage 六件禁数值间距属性（inline 间距清扫到 tailwind class）",
           "markers": [],
-          "line": 475,
+          "line": 483,
           "assertions": [
             "expect(LINEAGE_SPACING_TSX).not.toMatch( /(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*['\"`]?[\\d-]/ )"
           ]
@@ -21184,7 +21597,7 @@
           ],
           "title": "lineage 六件禁数值间距属性——双引号/模板串形态单证（W1 鉴别锚）",
           "markers": [],
-          "line": 482,
+          "line": 490,
           "assertions": [
             "expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*\"[\\d-]/)",
             "expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\\s*`[\\d-]/)"
@@ -21197,7 +21610,7 @@
           ],
           "title": "LineageNodeCard 间距 class 在场（pt-2/gap-1——防「全删不补」假绿）",
           "markers": [],
-          "line": 488,
+          "line": 496,
           "assertions": [
             "expect(card).toContain('className=\"pt-2\"')",
             "expect(card).toContain('className=\"gap-1\"')"
@@ -21210,7 +21623,7 @@
           ],
           "title": "LineageNodeMeta 间距 class 在场（px-1/gap-0.75/px-0.75/pl-1）",
           "markers": [],
-          "line": 494,
+          "line": 502,
           "assertions": [
             "expect(meta).toContain('className=\"px-1\"')",
             "expect(meta).toContain('className=\"gap-0.75 px-0.75\"')",
@@ -21224,7 +21637,7 @@
           ],
           "title": "侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）",
           "markers": [],
-          "line": 501,
+          "line": 509,
           "assertions": [
             "expect(tags).toContain('m-0 pl-1.5 font-medium')",
             "expect(tags).toContain('className=\"gap-0.75 px-1\"')",
@@ -21240,7 +21653,7 @@
           ],
           "title": "theme.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21252,7 +21665,7 @@
           ],
           "title": "theme-shell.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21264,7 +21677,7 @@
           ],
           "title": "theme-buttons.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21276,7 +21689,7 @@
           ],
           "title": "theme-reader.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21288,7 +21701,7 @@
           ],
           "title": "theme-lineage.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21300,7 +21713,7 @@
           ],
           "title": "library.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21312,7 +21725,7 @@
           ],
           "title": "workspace.css 禁任意数字 font-size 声明（正则全域负锚——字号单源=--fs-* token）",
           "markers": [],
-          "line": 563,
+          "line": 571,
           "assertions": [
             "expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)"
           ]
@@ -21324,7 +21737,7 @@
           ],
           "title": "四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）",
           "markers": [],
-          "line": 568,
+          "line": 576,
           "assertions": [
             "expect(FS_TSX, '票面明文形态：单引号数字开头').not.toContain(\"fontSize: '1\")",
             "expect(FS_TSX, '数值 fontSize 全形态（含无引号数字——SideTags fontSize: 11 形态）') .not.toMatch(/fontSize:\\s*['\"`]?\\d/)"
@@ -21337,7 +21750,7 @@
           ],
           "title": "四 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）",
           "markers": [],
-          "line": 574,
+          "line": 582,
           "assertions": [
             "expect(FS_TSX, '票面明文形态：text-[10 前缀').not.toContain('text-[10')",
             "expect(FS_TSX, '数字开头 arbitrary（# 开头色值不咬）').not.toMatch(/text-\\[\\d/)"
@@ -21350,7 +21763,7 @@
           ],
           "title": "@theme 重绑在场（tailwind text-xs/text-sm 并入 --fs-* 单源——漂移即红）",
           "markers": [],
-          "line": 579,
+          "line": 587,
           "assertions": [
             "expect(css).toContain('--text-xs: var(--fs-body)')",
             "expect(css).toContain('--text-sm: var(--fs-title)')"
@@ -21363,7 +21776,7 @@
           ],
           "title": "dark 族块内 --bg 声明为 #14161a（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21376,7 +21789,7 @@
           ],
           "title": "dark 族块内 --panel 声明为 #1d2026（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21389,7 +21802,7 @@
           ],
           "title": "dark 族块内 --panel-2 声明为 #181b20（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21402,7 +21815,7 @@
           ],
           "title": "dark 族块内 --line 声明为 #2c313a（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21415,7 +21828,7 @@
           ],
           "title": "dark 族块内 --line-soft 声明为 #23272e（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21428,7 +21841,7 @@
           ],
           "title": "dark 族块内 --ink 声明为 #e6e9ef（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21441,7 +21854,7 @@
           ],
           "title": "dark 族块内 --dim 声明为 #a6adba（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21454,7 +21867,7 @@
           ],
           "title": "dark 族块内 --faint 声明为 #6f7684（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21467,7 +21880,7 @@
           ],
           "title": "dark 族块内 --accent 声明为 #7b93f5（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21480,7 +21893,7 @@
           ],
           "title": "dark 族块内 --accent-soft 声明为 rgba(123, 147, 245, 0.15)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21493,7 +21906,7 @@
           ],
           "title": "dark 族块内 --signal 声明为 #ff7a45（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21506,7 +21919,7 @@
           ],
           "title": "dark 族块内 --ok 声明为 #4ade80（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21519,7 +21932,7 @@
           ],
           "title": "dark 族块内 --warn 声明为 #e8a33d（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21532,7 +21945,7 @@
           ],
           "title": "dark 族块内 --sub2 声明为 #2dd4bf（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21545,7 +21958,7 @@
           ],
           "title": "dark 族块内 --mini-card 声明为 #171a21（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21558,7 +21971,7 @@
           ],
           "title": "dark 族块内 --mini-card-line 声明为 #2e343f（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21571,7 +21984,7 @@
           ],
           "title": "dark 族块内 --month-dash 声明为 rgba(123, 147, 245, 0.5)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21584,7 +21997,7 @@
           ],
           "title": "dark 族块内 --shadow-card 声明为 0 1px 3px rgba(0, 0, 0, 0.4)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21597,7 +22010,7 @@
           ],
           "title": "dark 族块内 --shadow-drag 声明为 0 14px 36px rgba(0, 0, 0, 0.6)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21610,7 +22023,7 @@
           ],
           "title": "dark 族块内 --paper 声明为 #242830（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21623,7 +22036,7 @@
           ],
           "title": "dark 族块内 --paper-ink 声明为 #d8dbe2（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21636,7 +22049,7 @@
           ],
           "title": "dark 族块内 --panel-a35 声明为 transparent（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21649,7 +22062,7 @@
           ],
           "title": "dark 族块内 --panel-a88 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21662,7 +22075,7 @@
           ],
           "title": "dark 族块内 --panel-a90 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21675,7 +22088,7 @@
           ],
           "title": "dark 族块内 --panel-a92 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 660,
+          "line": 668,
           "assertions": [
             "expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')",
             "expect(block, `dark 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21688,7 +22101,7 @@
           ],
           "title": "sepia 族块内 --bg 声明为 #e8dcc2（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21701,7 +22114,7 @@
           ],
           "title": "sepia 族块内 --panel 声明为 #fbf7ec（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21714,7 +22127,7 @@
           ],
           "title": "sepia 族块内 --panel-2 声明为 #efe6d1（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21727,7 +22140,7 @@
           ],
           "title": "sepia 族块内 --line 声明为 #d0c4a6（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21740,7 +22153,7 @@
           ],
           "title": "sepia 族块内 --line-soft 声明为 #e5dcc6（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21753,7 +22166,7 @@
           ],
           "title": "sepia 族块内 --ink 声明为 #2d2618（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21766,7 +22179,7 @@
           ],
           "title": "sepia 族块内 --dim 声明为 #5c5244（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21779,7 +22192,7 @@
           ],
           "title": "sepia 族块内 --faint 声明为 #8a7d63（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21792,7 +22205,7 @@
           ],
           "title": "sepia 族块内 --accent 声明为 #31513f（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21805,7 +22218,7 @@
           ],
           "title": "sepia 族块内 --accent-soft 声明为 rgba(49, 81, 63, 0.1)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21818,7 +22231,7 @@
           ],
           "title": "sepia 族块内 --signal 声明为 #b3402f（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21831,7 +22244,7 @@
           ],
           "title": "sepia 族块内 --ok 声明为 #3d6b4f（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21844,7 +22257,7 @@
           ],
           "title": "sepia 族块内 --warn 声明为 #b06f1e（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21857,7 +22270,7 @@
           ],
           "title": "sepia 族块内 --sub2 声明为 #8a6d3b（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21870,7 +22283,7 @@
           ],
           "title": "sepia 族块内 --mini-card 声明为 #f0e8d2（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21883,7 +22296,7 @@
           ],
           "title": "sepia 族块内 --mini-card-line 声明为 var(--line)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21896,7 +22309,7 @@
           ],
           "title": "sepia 族块内 --month-dash 声明为 rgba(49, 81, 63, 0.55)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21909,7 +22322,7 @@
           ],
           "title": "sepia 族块内 --fang 声明为 FangSong, 'STFangsong', 'Microsoft YaHei', serif（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21922,7 +22335,7 @@
           ],
           "title": "sepia 族块内 --kai 声明为 KaiTi, 'STKaiti', 'Microsoft YaHei', serif（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21935,7 +22348,7 @@
           ],
           "title": "sepia 族块内 --shadow-card 声明为 0 1px 3px rgba(90, 75, 40, 0.16)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21948,7 +22361,7 @@
           ],
           "title": "sepia 族块内 --shadow-drag 声明为 0 14px 36px rgba(90, 75, 40, 0.32)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21961,7 +22374,7 @@
           ],
           "title": "sepia 族块内 --paper 声明为 #f7efdc（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21974,7 +22387,7 @@
           ],
           "title": "sepia 族块内 --paper-ink 声明为 #33291a（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -21987,7 +22400,7 @@
           ],
           "title": "sepia 族块内 --panel-a35 声明为 transparent（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -22000,7 +22413,7 @@
           ],
           "title": "sepia 族块内 --panel-a88 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -22013,7 +22426,7 @@
           ],
           "title": "sepia 族块内 --panel-a90 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -22026,7 +22439,7 @@
           ],
           "title": "sepia 族块内 --panel-a92 声明为 var(--panel)（块内断言防串位）",
           "markers": [],
-          "line": 666,
+          "line": 674,
           "assertions": [
             "expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')",
             "expect(block, `sepia 族块应含 \"${token}: ${value};\"`).toContain(`${token}: ${value};`)"
@@ -22039,7 +22452,7 @@
           ],
           "title": "dark 块不含 --fang（sepia 独有字体族——防两族块互抄串值）",
           "markers": [],
-          "line": 672,
+          "line": 680,
           "assertions": [
             "expect(themeBlock('dark')).not.toContain('--fang')"
           ]
@@ -22051,7 +22464,7 @@
           ],
           "title": "App.tsx 含 dataset.theme 接线锚（data-theme 单点=App effect）",
           "markers": [],
-          "line": 676,
+          "line": 684,
           "assertions": [
             "expect(app, 'App effect 应写 documentElement.dataset.theme（单点接线）').toContain( 'dataset.theme =' )"
           ]
@@ -22063,7 +22476,7 @@
           ],
           "title": "SettingsPage 不含 system（枚举已退役——任何形态回填即红）",
           "markers": [],
-          "line": 686,
+          "line": 694,
           "assertions": [
             "expect(page, 'theme system 已退役（T3-P1 A6）——引号串回填即红').not.toMatch(/['\"]system['\"]/)",
             "expect(page, '对象键 system: 回填即红').not.toMatch(/system\\s*:/)"
@@ -24209,6 +24622,109 @@
         }
       ]
     },
+    "tests/unit/services/library-detail-lineage.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-P3 library.service detail——lineage 组合装配（service 级）\",\"命中：paper_id 节点透出 lineage={year, month 恒 null, edgeCount=双端计数}\"]",
+          "describePath": [
+            "T3-P3 library.service detail——lineage 组合装配（service 级）"
+          ],
+          "title": "命中：paper_id 节点透出 lineage={year, month 恒 null, edgeCount=双端计数}",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(d.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })",
+            "expect(nodeByPaperId).toHaveBeenCalledWith('p-1')",
+            "expect(edgeCountByNode).toHaveBeenCalledWith('n-1')"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 library.service detail——lineage 组合装配（service 级）\",\"未命中：无 paper_id 节点 → lineage 整键省略（\\\"lineage\\\" 不在对象上）\"]",
+          "describePath": [
+            "T3-P3 library.service detail——lineage 组合装配（service 级）"
+          ],
+          "title": "未命中：无 paper_id 节点 → lineage 整键省略（\"lineage\" 不在对象上）",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect('lineage' in d).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 library.service detail——lineage 组合装配（service 级）\",\"month 恒 null（P5 month 列落位前固定缺省——非节点数据透传）\"]",
+          "describePath": [
+            "T3-P3 library.service detail——lineage 组合装配（service 级）"
+          ],
+          "title": "month 恒 null（P5 month 列落位前固定缺省——非节点数据透传）",
+          "markers": [],
+          "line": 96,
+          "assertions": [
+            "expect(d.lineage?.month).toBeNull()",
+            "expect(d.lineage?.year).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通过）\",\"旧 summary 夹具（无 citedByCount）strict 解析通过；带值/非整数值分流\"]",
+          "describePath": [
+            "T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通过）"
+          ],
+          "title": "旧 summary 夹具（无 citedByCount）strict 解析通过；带值/非整数值分流",
+          "markers": [],
+          "line": 119,
+          "assertions": [
+            "expect(() => paperSummarySchema.parse(legacySummary)).not.toThrow()",
+            "expect(withCount.citedByCount).toBe(17)",
+            "expect(() => paperSummarySchema.parse({ ...legacySummary, citedByCount: 1.5 })).toThrow()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通过）\",\"旧 detail 夹具（无 lineage）strict 解析通过；lineage 形状严格（缺子键/未知子键均拒）\"]",
+          "describePath": [
+            "T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通过）"
+          ],
+          "title": "旧 detail 夹具（无 lineage）strict 解析通过；lineage 形状严格（缺子键/未知子键均拒）",
+          "markers": [],
+          "line": 141,
+          "assertions": [
+            "expect(() => paperDetailSchema.parse(legacy)).not.toThrow()",
+            "expect(withLineage.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })",
+            "expect(() => paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, edgeCount: 3 } }) ).toThrow()",
+            "expect(() => paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, month: null, edgeCount: 3, extra: 1 } }) ).toThrow()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真库）\",\"nodeByPaperId：命中回节点行；未命中回 null；paper_id 空值行不计\"]",
+          "describePath": [
+            "T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真库）"
+          ],
+          "title": "nodeByPaperId：命中回节点行；未命中回 null；paper_id 空值行不计",
+          "markers": [],
+          "line": 181,
+          "assertions": [
+            "expect(repo.nodeByPaperId('p-1')?.id).toBe(hit.id)",
+            "expect(repo.nodeByPaperId('ghost')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真库）\",\"edgeCountByNode：双端计数——from 命中与 to 命中各计一条，无关边不计\"]",
+          "describePath": [
+            "T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真库）"
+          ],
+          "title": "edgeCountByNode：双端计数——from 命中与 to 命中各计一条，无关边不计",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(repo.edgeCountByNode(a.id)).toBe(2)",
+            "expect(repo.edgeCountByNode(b.id)).toBe(2)",
+            "expect(repo.edgeCountByNode(c.id)).toBe(2)",
+            "expect(repo.edgeCountByNode('ghost')).toBe(0)"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/library.service.test.ts": {
       "ticketIds": [
         "SR-SVC-01"
@@ -24223,7 +24739,7 @@
           ],
           "title": "list 透传查询参数",
           "markers": [],
-          "line": 44,
+          "line": 47,
           "assertions": [
             "expect(seen).toMatchObject({ sort: 'year_desc', limit: 10 })"
           ]
@@ -24235,7 +24751,7 @@
           ],
           "title": "detail：不存在时抛带 code=NOT_FOUND 的错误",
           "markers": [],
-          "line": 65,
+          "line": 68,
           "assertions": [
             "expect(svc.detail({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -24247,7 +24763,7 @@
           ],
           "title": "detail：存在时透传",
           "markers": [],
-          "line": 70,
+          "line": 73,
           "assertions": [
             "expect(svc.detail({ paperId: 'p-1' })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -24259,7 +24775,7 @@
           ],
           "title": "updateMeta：repo 返回 null 视为 NOT_FOUND；空 patch 直接返回现状",
           "markers": [],
-          "line": 77,
+          "line": 80,
           "assertions": [
             "expect(svc.updateMeta({ paperId: 'p-1', patch: {} })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -24271,7 +24787,7 @@
           ],
           "title": "collections 透传",
           "markers": [],
-          "line": 84,
+          "line": 87,
           "assertions": [
             "expect(svc.collections({})).resolves.toHaveLength(1)"
           ]
@@ -27284,14 +27800,14 @@
     }
   },
   "stats": {
-    "fileCount": 188,
-    "caseCount": 1865,
-    "assertionCount": 5651,
+    "fileCount": 191,
+    "caseCount": 1899,
+    "assertionCount": 5773,
     "skipSiteCount": 15,
     "conditionalSkipSiteCount": 14,
     "hardSkipSiteCount": 1,
     "ticketIdCount": 57,
-    "eachExpandedRows": 324,
+    "eachExpandedRows": 329,
     "unresolvableCount": 0
   }
 }

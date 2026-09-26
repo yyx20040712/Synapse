@@ -49,20 +49,27 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
  * 种子落库（子进程跑 seed-paper.mjs——Windows 文件锁决定不经主进程 require）。
  * [F-ELE-02] better-sqlite3 13.0.3 起 N-API 单绑定跨 Node/Electron ABI 通用，
  * v12 时代的 abi-cache 换绑段已删除（子进程直接 require 即可）。
+ * [T3-P3] extra 可选列（year/venue/cited——密度列表六列断言面；缺省零改动）。
  */
 export async function seedPaperRow(
   userData: string,
   fileRef: string,
   sha: string,
   title: string,
-  id = 'e2e-seed-paper'
+  id = 'e2e-seed-paper',
+  extra: { year?: number; venue?: string; cited?: number } = {}
 ): Promise<void> {
+  const optionalEnv: Record<string, string> = {}
+  if (extra.year !== undefined) optionalEnv.SEED_YEAR = String(extra.year)
+  if (extra.venue !== undefined) optionalEnv.SEED_VENUE = extra.venue
+  if (extra.cited !== undefined) optionalEnv.SEED_CITED = String(extra.cited)
   await runSeedScript({
     ...process.env,
     SEED_DB: join(userData, 'synapse.db'),
     SEED_FILE_REF: fileRef,
     SEED_SHA: sha,
     SEED_TITLE: title,
-    SEED_ID: id
+    SEED_ID: id,
+    ...optionalEnv
   } as NodeJS.ProcessEnv)
 }

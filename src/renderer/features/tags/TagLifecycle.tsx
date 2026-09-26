@@ -150,7 +150,8 @@ export function TagMergeDialog(props: {
             disabled={guard.busy}
             onClick={() => void pick(t.id)}
           >
-            {t.name}（{t.paperCount}）
+            {t.name}{' '}
+            <span className="lib-chip-n">{`×${t.paperCount}`}</span>
           </button>
         ))}
       </div>

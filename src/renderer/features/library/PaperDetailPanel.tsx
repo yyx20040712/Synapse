@@ -1,70 +1,77 @@
 // b3: P7-C
 /**
- * [SR2-C-06] PaperDetailPanel —— 库侧笔记编辑面下线（工单：open / strong；
- * 历史工单 SR-LIB-04 产物承载——详情侧栏本体与导出/增强面维持）
+ * [SR2-C-06] PaperDetailPanel —— 规格表抽屉（T3-P3 渲染壳重制：316px
+ * .lib-drawer 语汇——数据面/动作面语义全保；库侧笔记编辑面维持下线态）
  *
  * ── 行为层 ──
- * - 「方案切换=删除旧方案」红线：α 双层笔记编辑面自库侧下线——移除 noteOpen
- *   state+「打开笔记」按钮+NotesPanel 挂载区+import（符号锚=noteOpen/NotesPanel
- *   两标识符）；编辑面唯一归阅读器侧栏（C-03/04 已就绪，C-06 排其后为此）
- * - 替代入口：按钮「去阅读器写笔记」→ requestOpenPaper(detail.id)
- *   （open-paper-bus.ts:17 同总线——App 切视图+ReaderPage 打开链既有零新增）
- * - P7E-04：动作清单=enrich/report/bibtex/corpus/doi（既有）+ bibtex-clip/
- *   csv-clip（复制 BibTeX/复制 CSV——runAction 分发+busy 态+toast 收口迁
- *   usePaperDetailActions hook，纯逻辑/表现分离；按钮驻本面板，props 面零变）
+ * - 头区：.lib-dr-id 行（左=短号 id 前 8 位+…，右=入库状态点「● 文案」——
+ *   enrich 态映射色：failed=signal「增强失败」/pending=faint「待增强」/
+ *   done=ok「已入库」/manual=ok「手动维护」[自裁：manual 沿 done 色档]）
+ *   +.lib-dr-title 14px/600/1.6 行高
+ * - 四格指标=DrMetrics 拆件（引用/通读/标注/笔记——真文本）
+ * - 键值行：YEAR-MO（年份+脉络框括注——lineage 命中时）/VENUE/DOI（link 色）
+ * - 「标 签」节=TagEditor 驻留（key=detail.id 重挂竞态守卫不动）；
+ *   「关 联」节=脉络行（lineage 命中=「年 · 月框 · N 条连线」link 色，
+ *   未命中=「未加入脉络」）+AI 评估行=「后置」虚线徽章（禁假数据）
+ * - 动作面九钮全保、按钮文本零改（受锁 paper-detail-export/clip/cited/
+ *   notes-off 断言面）：「去阅读器写笔记」=primary（flex-1），其余 ghost
+ * - 空态/加载态/错误行/「详情刷新失败」降级语义原样保面（DiamondRule 库域
+ *   退役——简文案居中，settings 域消费保留）
  *
  * ── 接口层 ──
  * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
  *
  * ── 架构层 ──
- * - 改动面：本文件（净减约 30 行）/notes/NotesPanel.tsx（**删除**——纯 UI 组件
- *   无其他消费方，save-status 纯函数已随 C-03 下沉 shared）/
- *   scripts/check-quality.mjs 白名单**删** `PaperDetailPanel → notes/NotesPanel`
- *   条目 [locked-change]；tab-dirty/ReaderNotesPanel→notes.store 条目保持——
- *   notes.store 留驻（五模块 ADR-0008+两消费方）
- * - 核对义务：paper-detail-export.test（受锁）mock 链核对（预期零触碰）；
- *   FTS 连续性=notes 写路径不变（既有 notes.store.test+FTS 用例回归锚）
+ * - 改动面：本文件+DrMetrics.tsx（拆件）/library.css（皮肤段）；
+ *   usePaperDetailActions hook 面零触碰（busy 门+toast 收口不动）
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - notes feature 剩 notes.store.ts；不做库侧只读笔记预览（B3 裁决 1）
- * - 验收：verify 全绿+[locked-change]+视检+翻 done 前移除根 data-ticket（4b）
+ * - notes feature 剩 notes.store.ts；编辑面唯一归阅读器侧栏（C-03/04）
+ * - 验收：paper-detail-export/clip/cited/notes-off 受锁面+paper-detail-drawer
+ *   新件全绿（tests/unit/renderer/）
  */
 import { useEffect, useState } from 'react'
-import type { PaperSource, EnrichStatus } from '@shared/models/paper'
+import type { EnrichStatus, PaperDetail } from '@shared/models/paper'
 import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
-import { Button } from '../../shared/ui/Button'
-import { DiamondRule } from '../../shared/ui/DiamondRule'
-import { requestOpenPaper } from '../../shared/open-paper-bus'
 import { TagEditor } from '../tags/TagEditor'
+import { DrActions } from './DrActions'
+import { DrMetrics } from './DrMetrics'
 import { MetaEditDialog } from './MetaEditDialog'
 import { usePaperDetailActions } from './usePaperDetailActions'
 
-const SOURCE_LABEL: Record<PaperSource, string> = {
-  local: '本地导入',
-  crossref: 'CrossRef',
-  openalex: 'OpenAlex',
-  arxiv: 'arXiv',
-  manual: '手动'
+/** 入库状态点：enrich 态映射（文案/色档——manual 沿 done 的 ok 色档） */
+const DR_STATUS: Record<EnrichStatus, { text: string; cls: string }> = {
+  pending: { text: '待增强', cls: 'lib-dr-status-faint' },
+  done: { text: '已入库', cls: 'lib-dr-status-ok' },
+  manual: { text: '手动维护', cls: 'lib-dr-status-ok' },
+  failed: { text: '增强失败', cls: 'lib-dr-status-signal' }
 }
 
-const ENRICH_LABEL: Record<EnrichStatus, string> = {
-  pending: '待增强',
-  done: '已增强',
-  failed: '增强失败',
-  manual: '手动维护'
+/** 短号：id 前 8 位+…（≤8 位整串——mono 规格表语汇） */
+function shortId(id: string): string {
+  return id.length > 8 ? `${id.slice(0, 8)}…` : id
 }
 
-/** 一行键值（label 固定宽，值可换行；serif=衬线大字值——年份/被引数行） */
-function Row(props: { label: string; serif?: boolean; children: string }): JSX.Element {
-  return (
-    <p className="flex gap-2 text-xs leading-5">
-      <span className="lib-detail-k w-14 shrink-0">{props.label}</span>
-      <span className={`min-w-0 break-words${props.serif === true ? ' lib-detail-v-serif' : ''}`}>
-        {props.children || '—'}
-      </span>
-    </p>
-  )
+/** 脉络框月措辞：null=「未定月」（P5 month 列落位前恒缺省） */
+function monthWord(month: number | null): string {
+  return month === null ? '未定月' : `${month} 月`
+}
+
+/** YEAR-MO 值：无脉络=年份单值；命中=「2023（脉络框：2023 年 · 6 月）」式 */
+function yearMoText(detail: PaperDetail): string {
+  const y = detail.year === null ? '—' : String(detail.year)
+  if (detail.lineage === undefined) return y
+  const ly = detail.lineage.year === null ? '未定年' : `${detail.lineage.year} 年`
+  return `${y}（脉络框：${ly} · ${monthWord(detail.lineage.month)}）`
+}
+
+/** 脉络行值：「2023 年 · 6 月框 · 3 条连线」式 */
+function lineageText(detail: PaperDetail): string {
+  const l = detail.lineage
+  if (l === undefined) return '未加入脉络'
+  const y = l.year === null ? '未定年' : `${l.year} 年`
+  return `${y} · ${monthWord(l.month)}框 · ${l.edgeCount} 条连线`
 }
 
 export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element {
@@ -94,14 +101,8 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   )
 
   if (paperId === null) {
-    // 回炉 R4：空态居中+菱形分隔夹持（文案逐字保留——e2e/断言面）
-    return (
-      <div className="lib-detail-empty p-6 text-xs" style={{ color: 'var(--text-dim)' }}>
-        <DiamondRule />
-        <p>选中列表中的文献后显示详情</p>
-        <DiamondRule />
-      </div>
-    )
+    // T3-P3：DiamondRule 库域退役——简文案居中（文案逐字保留）
+    return <div className="lib-dr-empty">选中列表中的文献后显示详情</div>
   }
   if (detail === null) {
     if (error !== null) {
@@ -130,8 +131,9 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
     )
   }
 
+  const status = DR_STATUS[detail.enrichStatus]
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="lib-dr">
       {error !== null && (
         <div
           className="flex items-center justify-between rounded border px-3 py-1 text-xs"
@@ -149,61 +151,58 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           </button>
         </div>
       )}
-      <h2 className="lib-detail-title">{detail.title}</h2>
-      <div className="flex flex-col gap-1">
-        <Row label="作者">{detail.authors.join('、')}</Row>
-        <Row label="年份" serif>{detail.year === null ? '' : String(detail.year)}</Row>
-        <Row label="期刊">{detail.venue}</Row>
-        <Row label="被引" serif>{detail.citedByCount === undefined ? '' : String(detail.citedByCount)}</Row>
-        <Row label="来源">{SOURCE_LABEL[detail.source]}</Row>
-        <Row label="增强">{ENRICH_LABEL[detail.enrichStatus]}</Row>
-        <Row label="DOI">{detail.doi ?? ''}</Row>
-        <Row label="统计">{`标注 ${detail.annotationCount} · 笔记 ${detail.noteCount} · 读至第 ${detail.lastReadPage + 1} 页`}</Row>
+      <div className="lib-dr-head">
+        <div className="lib-dr-id">
+          <span>{shortId(detail.id)}</span>
+          <span className={status.cls}>{`● ${status.text}`}</span>
+        </div>
+        <h2 className="lib-dr-title">{detail.title}</h2>
       </div>
-      {detail.abstract !== '' && (
-        <p className="lib-detail-abs line-clamp-6 text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
-          {detail.abstract}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-1">
-        <Button size="sm" onClick={() => setEditing(true)}>
-          编辑元数据
-        </Button>
-        <Button size="sm" onClick={() => requestOpenPaper(detail.id)}>
-          去阅读器写笔记
-        </Button>
-        <Button size="sm" loading={enriching} disabled={enrichStatusDone(detail.enrichStatus)} onClick={() => void runAction('enrich')}>
-          {enriching ? '增强中…' : '增强元数据'}
-        </Button>
-        <Button size="sm" loading={exporting} onClick={() => void runAction('report')}>
-          导出读书报告
-        </Button>
-        <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex')}>
-          导出 BibTeX
-        </Button>
-        <Button size="sm" loading={exporting} onClick={() => void runAction('bibtex-clip')}>
-          复制 BibTeX
-        </Button>
-        <Button size="sm" loading={exporting} onClick={() => void runAction('csv-clip')}>
-          复制 CSV
-        </Button>
-        <Button size="sm" loading={exporting} onClick={() => void runAction('corpus')}>
-          导出语料 md
-        </Button>
-        {detail.doi !== null && (
-          <Button size="sm" variant="ghost" onClick={() => void runAction('doi')}>
-            打开 DOI 页
-          </Button>
-        )}
+      <DrMetrics detail={detail} />
+      <div className="lib-dr-body">
+        <div className="lib-fld">
+          <span className="lib-fld-k">YEAR-MO</span>
+          <span className="lib-fld-v">{yearMoText(detail)}</span>
+        </div>
+        <div className="lib-fld">
+          <span className="lib-fld-k">VENUE</span>
+          <span className="lib-fld-v">{detail.venue === '' ? '—' : detail.venue}</span>
+        </div>
+        <div className="lib-fld">
+          <span className="lib-fld-k">DOI</span>
+          <span className={`lib-fld-v${detail.doi !== null ? ' link' : ''}`}>
+            {detail.doi ?? '—'}
+          </span>
+        </div>
+        <div className="lib-dr-sec">标 签</div>
+        {/* key=会话身份：切文献强制重挂——TagEditor 有状态（input/busy），换文献
+            延续旧实例会让 Enter 落进旧 detail 上下文窗口（tag-lifecycle e2e 实证） */}
+        <TagEditor
+          key={detail.id}
+          paperId={detail.id}
+          tags={detail.tags}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
+        <div className="lib-dr-sec">关 联</div>
+        <div className="lib-fld">
+          <span className="lib-fld-k">脉络</span>
+          <span className={`lib-fld-v${detail.lineage !== undefined ? ' link' : ''}`}>
+            {lineageText(detail)}
+          </span>
+        </div>
+        <div className="lib-fld">
+          <span className="lib-fld-k">AI 评估</span>
+          <span className="lib-fld-v">
+            <span className="lib-postpone">后置</span>
+          </span>
+        </div>
       </div>
-      {/* key=会话身份：切文献强制重挂——TagEditor 有状态（input/busy），换文献
-          延续旧实例会让 Enter 落进旧 detail 上下文窗口（tag-lifecycle e2e 实证：
-          P7E-05 加行放大的既有竞态——挂错文献的正确性缺陷非仅测试面） */}
-      <TagEditor
-        key={detail.id}
-        paperId={detail.id}
-        tags={detail.tags}
-        onChanged={() => setReloadKey((k) => k + 1)}
+      <DrActions
+        detail={detail}
+        enriching={enriching}
+        exporting={exporting}
+        onEdit={() => setEditing(true)}
+        runAction={(action) => void runAction(action)}
       />
       {editing && (
         <MetaEditDialog
@@ -219,9 +218,4 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       )}
     </div>
   )
-}
-
-/** 已增强且非失败的文献不再提供增强入口（重试请走 failed 态） */
-function enrichStatusDone(status: EnrichStatus): boolean {
-  return status === 'done' || status === 'manual'
 }

@@ -81,6 +81,17 @@
   /* [T3-P2] 顶栏 wordmark 签名（档位增补——值源=theme-trio final-design §1
      用户裁决 18px；INV-61 档位变更登记本册） */
   --fs-signature: 18px;
+  /* [T3-P3] 文献库密度列表/规格表抽屉（值源=mockups/2026-09-26_v2_theme-
+     light.html L80-139 逐值；INV-61 档位增补=--fs-metric/--fs-nano；其余三件
+     =三族恒定值[选中外辉/CTA 投影/accent 底字色白]——dark/sepia 结构 CSS
+     同值实证，族块不覆写） */
+  --fs-metric: 16px;   /* 指标读数（规格表抽屉四格值——mockup L123 .dr-metrics .v） */
+  --fs-nano: 9px;      /* 极微（后置章虚线徽标——值源=mockup L311 .postpone，脉络
+     检查面板后置章语汇同源，文献库抽屉随 T3-P3 先引） */
+  --shadow-sel-glow: 0 2px 8px rgba(58, 91, 217, 0.14); /* 选中行外辉（三族恒定） */
+  --shadow-cta: 0 2px 6px rgba(58, 91, 217, 0.3);       /* 抽屉主钮投影（三族恒定） */
+  --accent-ink: #ffffff; /* accent 底上的字色（三族恒定白——与 --close-red-ink
+     同值=语义隔离合法共存，check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #1c2333;
   /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；

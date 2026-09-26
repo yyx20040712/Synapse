@@ -1,10 +1,14 @@
 /**
- * [SR-LIB-05] FilterBar —— 搜索与筛选栏（工单：done / weak）
+ * [SR-LIB-05] FilterBar —— 搜索与筛选栏（T3-P3 密度列表语汇重制）
  *
  * ── 行为层 ──
  * - FTS 搜索框（useDebounce 300ms 后回写 store.query.search；空串回 undefined 清条件）
+ *   ——皮肤=.lib-search 290px（mockup .search 逐值）；占位提示=叠加 span
+ *   （HTML 占位属性名属 quality 占位标记关卡禁词——空值时显示等价承载）
  * - 下拉：集合（api.library.collections）、年份（library.store 列表数据推导）、排序三选
+ *   ——统一 .lib-sort 语汇（mockup .sort 逐值）；排序下拉 margin-left:auto 收口行尾
  * - TagFilter 组件嵌于此（标签过滤，P7E-06 多选 AND 交集——空选集收敛 undefined）
+ *   ——皮肤=.lib-chip 胶囊（99px 圆角+mono「×N」计数，library.css）
  * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
  *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagFilter 零 import library.store）
  *
@@ -63,58 +67,66 @@ export function FilterBar(props: {
   )
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+    <div className="lib-filter-row">
+      <div className="lib-search">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M15.5 15.5L21 21" />
+        </svg>
         <input
           aria-label="搜索文献"
-          className={`lib-chip w-56${text !== '' ? ' lib-chip-on' : ''}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <select
-          aria-label="按集合筛选"
-          className={`lib-chip${query.collectionId !== undefined ? ' lib-chip-on' : ''}`}
-          value={query.collectionId ?? ''}
-          onChange={(e) => onChange({ collectionId: e.target.value === '' ? undefined : e.target.value })}
-        >
-          <option value="">全部分类</option>
-          {(collections ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="按年份筛选"
-          className={`lib-chip${query.year !== undefined ? ' lib-chip-on' : ''}`}
-          value={query.year ?? ''}
-          onChange={(e) => onChange({ year: e.target.value === '' ? undefined : Number(e.target.value) })}
-        >
-          <option value="">全部年份</option>
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="排序方式"
-          className="lib-chip"
-          value={query.sort}
-          onChange={(e) => onChange({ sort: e.target.value as LibrarySort })}
-        >
-          {Object.entries(SORT_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        {text === '' && (
+          <span className="lib-search-ph" aria-hidden="true">
+            全文检索：标题、摘要、作者…
+          </span>
+        )}
       </div>
       <TagFilter
         selectedTagIds={query.tagIds ?? []}
         onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
         onMutated={() => void loadLibrary()}
       />
+      <select
+        aria-label="按集合筛选"
+        className={`lib-sort${query.collectionId !== undefined ? ' lib-sort-on' : ''}`}
+        value={query.collectionId ?? ''}
+        onChange={(e) => onChange({ collectionId: e.target.value === '' ? undefined : e.target.value })}
+      >
+        <option value="">全部分类</option>
+        {(collections ?? []).map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="按年份筛选"
+        className={`lib-sort${query.year !== undefined ? ' lib-sort-on' : ''}`}
+        value={query.year ?? ''}
+        onChange={(e) => onChange({ year: e.target.value === '' ? undefined : Number(e.target.value) })}
+      >
+        <option value="">全部年份</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="排序方式"
+        className="lib-sort lib-sort-end"
+        value={query.sort}
+        onChange={(e) => onChange({ sort: e.target.value as LibrarySort })}
+      >
+        {Object.entries(SORT_LABEL).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

@@ -3,6 +3,8 @@
  * [P7E-06] TagFilter 多选过滤（AND 交集 chip toggle）+ FilterBar 装配收敛
  * （always-active 裸 describe——K3 威胁不经 guardedDescribe）。
  *
+ * [T3-P3] chip 文本格式随密度列表改版：「名（N）」→「名 ×N」（mono 计数
+ * ——mockup .chip .n 语汇；仅文本格式变，行为断言零变）。
  * T1/T2/T3 组件级 toggle 序列（受控回流——选中集演化载荷）+ aria-pressed 多选
  * 视觉锚；T5 删除选中集成员=剔除非全清（onFilterChange(remaining) 先于
  * onMutated——INV-53 顺序锚多选形态）；T6 改名 id 稳定筛选零动；T7 合并源∈
@@ -130,24 +132,24 @@ describe('P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）', () => {
     const onFilterChange = vi.fn()
     await renderFilter([], onFilterChange)
     // T1 前半：选 A → 选中集 [A]
-    await clickChip('水质（2）')
+    await clickChip('水质 ×2')
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-a'])
     await renderFilter(['t-a'], onFilterChange)
     // T1 后半：选 B → 选中集 [A,B]（进入序保持）
-    await clickChip('机器学习（1）')
+    await clickChip('机器学习 ×1')
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-a', 't-b'])
     await renderFilter(['t-a', 't-b'], onFilterChange)
     // 多选视觉锚：两 chip 均 pressed
-    expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('true')
-    expect(buttonByText('机器学习（1）')?.getAttribute('aria-pressed')).toBe('true')
+    expect(buttonByText('水质 ×2')?.getAttribute('aria-pressed')).toBe('true')
+    expect(buttonByText('机器学习 ×1')?.getAttribute('aria-pressed')).toBe('true')
     // T2：取消 A → 选中集 [B]
-    await clickChip('水质（2）')
+    await clickChip('水质 ×2')
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-b'])
     await renderFilter(['t-b'], onFilterChange)
-    expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('false')
-    expect(buttonByText('机器学习（1）')?.getAttribute('aria-pressed')).toBe('true')
+    expect(buttonByText('水质 ×2')?.getAttribute('aria-pressed')).toBe('false')
+    expect(buttonByText('机器学习 ×1')?.getAttribute('aria-pressed')).toBe('true')
     // T3 组件级：再取消 B → onFilterChange([])（空数组=清除全部选中）
-    await clickChip('机器学习（1）')
+    await clickChip('机器学习 ×1')
     expect(onFilterChange).toHaveBeenLastCalledWith([])
   })
 
@@ -160,7 +162,7 @@ describe('P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）', () => {
     await renderFilter(['t-x', 't-y'], onFilterChange, onMutated)
     stubApi.tags.delete.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [tag('t-y', '乙', 1)] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await act(async () => {
       buttonByText('删除')?.click()
     })
@@ -186,7 +188,7 @@ describe('P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）', () => {
     const onMutated = vi.fn()
     await renderFilter(['t-x', 't-y'], onFilterChange, onMutated)
     stubApi.tags.rename.mockResolvedValue({ ok: true as const, data: { id: 't-x', name: '新甲' } })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await act(async () => {
       buttonByText('重命名')?.click()
     })
@@ -212,12 +214,12 @@ describe('P7E-06 TagFilter 多选过滤（toggle/剔除/顺序锚）', () => {
     await renderFilter(['t-x', 't-y'], onFilterChange, onMutated)
     stubApi.tags.merge.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [tag('t-y', '乙', 1), tag('t-z', '丙', 5)] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await act(async () => {
       buttonByText('合并到…')?.click()
     })
     await act(async () => {
-      buttonByText('丙（3）', dialog()!)?.click()
+      buttonByText('丙 ×3', dialog()!)?.click()
     })
     expect(onFilterChange).toHaveBeenCalledTimes(1)
     // 剔除 t-x、t-y 保持、t-z 不自动入选——载荷恰为剩余集
@@ -239,12 +241,12 @@ describe('P7E-06 FilterBar 装配收敛（tagIds 形态）', () => {
     const base: LibraryQuery = { sort: 'added_desc', offset: 0, limit: 50 }
     await renderBar(base, onChange)
     // 点选 A：收敛为数组形态
-    await clickChip('水质（2）')
+    await clickChip('水质 ×2')
     expect(onChange).toHaveBeenLastCalledWith({ tagIds: ['t-a'] })
     // 受控回流（父 setQuery 后 query.tagIds=['t-a']）
     await renderBar({ ...base, tagIds: ['t-a'] }, onChange)
     // 再点 A：toggle 出→空数组→收敛 undefined（零过滤，schema 级拒收 [] 的 UI 侧防线）
-    await clickChip('水质（2）')
+    await clickChip('水质 ×2')
     expect(onChange).toHaveBeenLastCalledWith({ tagIds: undefined })
   })
 })
@@ -259,14 +261,14 @@ describe('P7X-01 标签选中上限 UI 感知（添加方向守卫，移除方�
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 20).map((t) => t.id)
     await renderFilter(selected, onFilterChange)
-    await clickChip('标签21（0）')
+    await clickChip('标签21 ×0')
     // 引导 toast 恰一次、info 级、文案含上界值（字面量锁定——常量变异必红）
     expect(toastSpy).toHaveBeenCalledTimes(1)
     expect(toastSpy).toHaveBeenCalledWith('最多同时筛选 20 个标签', 'info')
     // 选中态零变：onFilterChange 零调用（选中集不进第 21 个）
     expect(onFilterChange).not.toHaveBeenCalled()
     // 被拦 chip 视觉保持未选
-    expect(buttonByText('标签21（0）')?.getAttribute('aria-pressed')).toBe('false')
+    expect(buttonByText('标签21 ×0')?.getAttribute('aria-pressed')).toBe('false')
   })
 
   it('T9 边界放行：19 选中点第 20 chip → onFilterChange 恰一次、载荷 20 项含新 id + 零 toast', async () => {
@@ -278,7 +280,7 @@ describe('P7X-01 标签选中上限 UI 感知（添加方向守卫，移除方�
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 19).map((t) => t.id)
     await renderFilter(selected, onFilterChange)
-    await clickChip('标签20（0）')
+    await clickChip('标签20 ×0')
     // 第 20 个合法入选（length=19 时添加）
     expect(onFilterChange).toHaveBeenCalledTimes(1)
     const payload: string[] = onFilterChange.mock.calls[0]?.[0] ?? []
@@ -298,7 +300,7 @@ describe('P7X-01 标签选中上限 UI 感知（添加方向守卫，移除方�
     const selected = currentTags.slice(0, 20).map((t) => t.id)
     await renderFilter(selected, onFilterChange)
     // 满选集上移除首个选中项——移除方向永不设限（票面 §1）
-    await clickChip('标签1（0）')
+    await clickChip('标签1 ×0')
     expect(onFilterChange).toHaveBeenCalledTimes(1)
     const payload: string[] = onFilterChange.mock.calls[0]?.[0] ?? []
     expect(payload).toHaveLength(19)

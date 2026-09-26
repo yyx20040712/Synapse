@@ -109,6 +109,11 @@ export interface LineageRepo {
   removeEdge(id: string): number
   /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态） */
   listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
+  /** [T3-P3] paper_id 命中节点只读查（detail 装配——应用层一文献一节点；
+   *  paper_id 无唯一约束，命中多条时 created_at,rowid 首条兜底；未命中 null） */
+  nodeByPaperId(paperId: string): LineageNode | null
+  /** [T3-P3] 节点度数只读查（双端计数——from/to 任一端命中均计一条） */
+  edgeCountByNode(nodeId: string): number
   /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
   clearGraph(): void
 }
@@ -193,6 +198,13 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
   const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
   const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
+  // [T3-P3] detail 装配只读对（预编译单语句——值全参数绑定）
+  const nodeByPaperIdStmt = db.prepare(
+    `SELECT * FROM lineage_nodes WHERE paper_id = ? ORDER BY created_at, rowid LIMIT 1`
+  )
+  const edgeCountByNodeStmt = db.prepare(
+    `SELECT COUNT(*) AS n FROM lineage_edges WHERE from_node = ? OR to_node = ?`
+  )
   const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
   const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
 
@@ -243,6 +255,16 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         nodes: (listNodesStmt.all() as LineageNodeRow[]).map(toNode),
         edges: (listEdgesStmt.all() as LineageEdgeRow[]).map(toEdge)
       }
+    },
+
+    nodeByPaperId(paperId: string): LineageNode | null {
+      const r = nodeByPaperIdStmt.get(paperId) as LineageNodeRow | undefined
+      return r === undefined ? null : toNode(r)
+    },
+
+    edgeCountByNode(nodeId: string): number {
+      const r = edgeCountByNodeStmt.get(nodeId, nodeId) as { n: number }
+      return r.n
     },
 
     clearGraph(): void {

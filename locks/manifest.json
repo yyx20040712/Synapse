@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-26T17:45:38.3074072Z",
+    "generatedAt":  "2026-09-26T19:20:40.1227632Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "047b4b9f266c78b768c67e04fe59dfeb3afbba8d4a467f52cab9e3e1702a4f0e"
+                      "sha256":  "21fcb0de8aa4f3a8d0c27f1432794eb7e094baa6e869cc17a64906555e2b598d"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -35,7 +35,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "6bd179d0c2f545ac88028758073ca0f5566786a6c604943dc76cac6219fdaee9"
+                      "sha256":  "3ca90442e16ffb4d427eb54015067856e81c457ab19b8dda765b633c9128fac5"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "5d20889222bb49fd9b0ba7b1915d0e3af6d36dfc58ebff9c4f414425161eeb4a"
+                      "sha256":  "7a3759995346f5560d1e9c1ad9145390646f1379928170a6b2846bf61ae8734f"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "88dbb004af43c208deec252cb5c4f8ada20f20477d87d2719fcddebcc52ce92b"
+                      "sha256":  "528ce6cd99f0376b97cb8fbf70ec9c41c5905275ab00d6f2eaef13708cbb9f4d"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -179,7 +179,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "312b85f988e3ce99a7168288f52f223e4f5911b2c4310e965d448f0451a15b35"
+                      "sha256":  "72274d4d1957597ed3cd42bc8f6d0dbe77c7a6894e20d37f801cfab436495bc5"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -227,7 +227,7 @@
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
-                      "sha256":  "ee0d725021f2b55b26ea8b1c33dfe46ed004e91ec5f08fabf8fb4e570b581158"
+                      "sha256":  "8f21f885da1d8d5b7144dc7dd2b84279924dafee5a1de19098bac063aa435fb7"
                   },
                   {
                       "path":  "tests/e2e/export-clipboard.spec.ts",
@@ -236,6 +236,10 @@
                   {
                       "path":  "tests/e2e/import-drag.spec.ts",
                       "sha256":  "25b087b2716cb689a446f2675c97c7496728419042e32df0a0dfb7fedfd4ee96"
+                  },
+                  {
+                      "path":  "tests/e2e/library-density.spec.ts",
+                      "sha256":  "f550355cdcc9eadf27c760ee1647bcca196ed9eaf37d2dd330275d364d4b949b"
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
@@ -259,7 +263,7 @@
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
-                      "sha256":  "434a4fd709cced8c82c027e282a5f27d7863858b00e81bb3ab10c5fbfa4e05e3"
+                      "sha256":  "11af1160729c6bf6ef65f1bccefca5067589821278a1d2b9119b9c594da8c4fa"
                   },
                   {
                       "path":  "tests/e2e/shell-rail.spec.ts",
@@ -275,11 +279,11 @@
                   },
                   {
                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
-                      "sha256":  "a44c2b35115b483d6a04603d6b4197c021c9c16cc8fd980fe4144a834b2f24dc"
+                      "sha256":  "12297818191f089675833fa05eef998d038e831a098dae85ceb7fb3643025e6c"
                   },
                   {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
-                      "sha256":  "392303d026c315ef93bb4d92f52b29433758340312135a0de7bcd2883184e567"
+                      "sha256":  "4b5f23ab78b4bf6db72b39f9423800ce284cc4ed4fe8d9915d4f7f49752c9469"
                   },
                   {
                       "path":  "tests/e2e/theme-trio.spec.ts",
@@ -363,7 +367,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "330051a81a35893082f2a408cc7544d4b1bc076d5923b3d32dbce9e145b3f05e"
+                      "sha256":  "6422366f4db6e6af2d929b02ab68f7bd18958aa9e333059dec33e402da3e2f2d"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers-cited-sort.test.ts",
@@ -547,7 +551,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "b607d7b3b6fcef559805bd9220ff46382f65783d555ad25049ac4e7b0a91f804"
+                      "sha256":  "295425d3c7f3bd3dd5bf811978368c874f5633df1ac9ae6568cee8cb9dce6f37"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
@@ -623,11 +627,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
-                      "sha256":  "fc55aae0b0b6d9761e5fc5cc329e775d91e9ee1d31881a6085fae8088465d9c9"
+                      "sha256":  "85cac0aa446c5c2577a206fb35f1974a71ce71cfbb02a45f76af3da7ce97f0ba"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-clip.test.tsx",
                       "sha256":  "f4a3021bc5e30ec7d9d8ab811c80c88c9986585f4b404084393daa72e74bf2d4"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/paper-detail-drawer.test.tsx",
+                      "sha256":  "46d2cc4702d01e14193660d32e40ded1b8ded62c1b81e8b9d9e6343c1898093c"
                   },
                   {
                       "path":  "tests/unit/renderer/paper-detail-export.test.tsx",
@@ -755,11 +763,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-filter-multi.test.tsx",
-                      "sha256":  "b677e0fea89d7ba1bb2715a0ae373be8ffb33617c988b05064334ce0a4ef1f23"
+                      "sha256":  "729c7ce7b9c897c6cf4ca4812b3e68cc570574b9e9e3299600ddea12b7cb6172"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
-                      "sha256":  "e375880c6841d2678278df74a4460359633c02e57a8eeed572ab40b911028f9e"
+                      "sha256":  "bfd7c7f39700ca350bbf26fad2ffbff255d6be7e11f1fa00b1932386ece4d67a"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
@@ -775,7 +783,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "2089edd945b4901f5564cf866e6af9a9c617bbe686d201e6a5af9eba0f05f9aa"
+                      "sha256":  "d1178c7d954a184df3e39966a0e9c2c645ff1d4cb9290f4dbc2b8894bd4d5a80"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",
@@ -843,7 +851,11 @@
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
-                      "sha256":  "af85e5456644e8e64112324b1629c8b2c8631917c6f797c74b0713730b907998"
+                      "sha256":  "3ca34da6b48e0aab6cffc25e4b1a9c41f172da43cd5b63df4b5c3bea734450fd"
+                  },
+                  {
+                      "path":  "tests/unit/services/library-detail-lineage.test.ts",
+                      "sha256":  "8b31fe64730f2aecdbf9e531f9ecb7be6ebb21ba34959738e7ead4ee3c587792"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
