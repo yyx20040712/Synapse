@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /**
  * [P7E-01] TagFilter 管理面（always-active）：chip 右键菜单+三对话框接线。
+ * [T3-P3] chip/目标钮文本格式随迁：「名（N）」→「名 ×N」（mono 计数——行为断言零变）。
  *
  * S2/S3：删除/合并源=选中标签时，onFilterChange(剔除后空集) 必须先于 onMutated()
  * （invocationCallOrder 锚——顺序反了=死标签 id 查询空列表窗）；S4：合并目标=
@@ -110,7 +111,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     await render(['t-1'], onFilterChange, onMutated)
     stubApi.tags.delete.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await click(buttonByText('删除'), '菜单·删除')
     await click(buttonByText('确认删除', dialog()!), '对话框·确认删除')
     expect(onFilterChange).toHaveBeenCalledTimes(1)
@@ -135,7 +136,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     await render(['t-2'], onFilterChange, onMutated)
     stubApi.tags.delete.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await click(buttonByText('删除'), '菜单·删除')
     await click(buttonByText('确认删除', dialog()!), '对话框·确认删除')
     expect(onFilterChange).not.toHaveBeenCalled()
@@ -152,10 +153,10 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     await render(['t-1'], onFilterChange, onMutated)
     stubApi.tags.merge.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await click(buttonByText('合并到…'), '菜单·合并到…')
     expect(dialog(), '合并对话框在场').not.toBeNull()
-    await click(buttonByText('乙（1）', dialog()!), '对话框·目标 chip 乙（1）')
+    await click(buttonByText('乙 ×1', dialog()!), '对话框·目标 chip 乙（1）')
     expect(stubApi.tags.merge).toHaveBeenCalledWith({ sourceId: 't-1', targetId: 't-2' })
     expect(onFilterChange).toHaveBeenCalledWith([])
     const filterOrder = onFilterChange.mock.invocationCallOrder[0]
@@ -176,9 +177,9 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     await render(['t-2'], onFilterChange, onMutated)
     stubApi.tags.merge.mockResolvedValue({ ok: true as const, data: { ok: true } })
     stubApi.tags.list.mockResolvedValue({ ok: true as const, data: [] })
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await click(buttonByText('合并到…'), '菜单·合并到…')
-    await click(buttonByText('乙（1）', dialog()!), '对话框·目标 chip 乙（1）')
+    await click(buttonByText('乙 ×1', dialog()!), '对话框·目标 chip 乙（1）')
     expect(onFilterChange).not.toHaveBeenCalled()
     expect(onMutated).toHaveBeenCalledTimes(1)
   })
@@ -192,7 +193,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     stubApi.tags.rename.mockImplementation(
       () => new Promise((r) => { resolveRename = r })
     )
-    await rightClick('甲（1）')
+    await rightClick('甲 ×1')
     await click(buttonByText('重命名'), '菜单·重命名')
     const input = dialog()?.querySelector('input') ?? null
     expect(input, '重命名输入框在场').not.toBeNull()
@@ -217,7 +218,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   it('S9 tags.length===1 时菜单「合并到…」禁用（无其他目标）', async () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
     await render([], vi.fn(), vi.fn())
-    await rightClick('甲（0）')
+    await rightClick('甲 ×0')
     const mergeBtn = buttonByText('合并到…')
     expect(mergeBtn, '菜单项在场').toBeDefined()
     expect(mergeBtn?.disabled, '单标签无合并目标——禁用').toBe(true)
@@ -226,7 +227,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   it('W3：菜单开→按 Escape→菜单关闭（keydown 关闭契约，unmount 清理）', async () => {
     currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
     await render([], vi.fn(), vi.fn())
-    await rightClick('甲（0）')
+    await rightClick('甲 ×0')
     expect(host?.querySelector('[data-testid="tag-menu"]'), '菜单在场').not.toBeNull()
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -241,7 +242,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     stubApi.tags.delete.mockImplementation(
       () => new Promise((r) => { resolveDelete = r })
     )
-    await rightClick('甲（2）')
+    await rightClick('甲 ×2')
     await click(buttonByText('删除'), '菜单·删除')
     await click(buttonByText('确认删除', dialog()!), '对话框·确认删除')
     // busy 飞行中：取消按钮禁用（与保存/确认 disabled 态对齐——N1）

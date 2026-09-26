@@ -1,17 +1,23 @@
 /**
- * [SR-LIB-02] PaperList —— 文献列表（工单：done / weak）
+ * [SR-LIB-02] PaperList —— 密度列表（T3-P3 卡片网格→六列密度行；行为面零变）
  *
  * ── 行为层 ──
  * - 渲染 PaperSummary 列表（上游 store 已按 query.limit 分页取数，本组件全量渲染当前页，v1 不引入虚拟滚动库）
+ * - 六列表头（.lib-cols：编号/题名 · 期刊/年月/引用/档次/标签——列宽与行列对齐，
+ *   INV-73 结构锁；驻 .lib-list 顶部 sticky——与行共享滚动容器内容盒，
+ *   滚动条出现/窄窗收缩两态表头行恒同位）+滚动列表体（.lib-list）；
+ *   行序号=index+offset+1（PaperRow 以 ordinal 消费——P5 catalog_no 落地后升级）
  * - 选中行高亮并通知 onSelect(id)（由上层接 store.selectPaper；高亮样式委托 PaperRow 的 selected）
  * - 键盘可达：容器为可聚焦 listbox，↑/↓ 移动选中、Home/End 跳首/末行、Enter/Space 在无选中时选中首行
  * - 选中变化后自动把选中行滚入可视区，保证键盘导航不脱离视野
- * - 空态：papers 为空时展示中文引导；loading/error 态由 LibraryPage 经 store 负责，非本组件职责
+ * - 空态：papers 为空时展示中文引导（表头随之隐去——空态即整区引导）；loading/error 态由 LibraryPage 经 store 负责，非本组件职责
  *
  * ── 接口层 ──
- * - export function PaperList(props: { papers: PaperSummary[]; selectedId: string | null;
- *     onSelect(id: string): void; onOpen?: (id: string) => void }): JSX.Element
- * - onOpen（阅读器接线时加入，可选）：双击打开阅读器；未传时降级为确认选中
+ * - export function PaperList(props: { papers: PaperSummary[]; offset?: number;
+ *     selectedId: string | null; onSelect(id: string): void;
+ *     onOpen?: (id: string) => void }): JSX.Element
+ * - offset=分页偏移（序号续页连续——缺省 0）；onOpen（可选）：双击打开阅读器；
+ *   未传时降级为确认选中
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 纯展示组件（无 store 依赖）；行内容渲染委托 PaperRow
@@ -44,11 +50,13 @@ function nextIndexForKey(key: string, currentIndex: number, lastIndex: number): 
 
 export function PaperList(props: {
   papers: PaperSummary[]
+  offset?: number
   selectedId: string | null
   onSelect: (id: string) => void
   onOpen?: (id: string) => void
 }): JSX.Element {
   const { papers, selectedId, onSelect, onOpen } = props
+  const offset = props.offset ?? 0
   const selectedRowRef = useRef<HTMLDivElement | null>(null)
 
   // 选中变化（含键盘移动）后把选中行滚进可视区；block:'nearest' 已在视野内时不产生滚动
@@ -84,29 +92,40 @@ export function PaperList(props: {
       role="listbox"
       aria-label="文献列表"
       tabIndex={0}
-      className="lib-grid h-full overflow-y-auto"
+      className="lib-listbox"
       onKeyDown={handleKeyDown}
     >
-      {papers.map((paper) => {
-        const selected = paper.id === selectedId
-        const handleActivate = () => onSelect(paper.id)
-        return (
-          <div
-            key={paper.id}
-            ref={selected ? selectedRowRef : undefined}
-            role="option"
-            aria-selected={selected}
-          >
-            <PaperRow
-              paper={paper}
-              selected={selected}
-              onClick={handleActivate}
-              // 双击打开：上层传入 onOpen 时接通阅读器，否则降级为确认选中
-              onOpen={onOpen === undefined ? handleActivate : () => onOpen(paper.id)}
-            />
-          </div>
-        )
-      })}
+      <div className="lib-list">
+        <div className="lib-cols" aria-hidden="true">
+          <span className="lib-c-id">编号</span>
+          <span className="lib-c-title">题名 · 期刊</span>
+          <span className="lib-c-year">年月</span>
+          <span className="lib-c-cite">引用</span>
+          <span className="lib-c-tier">档次</span>
+          <span className="lib-c-tags">标签</span>
+        </div>
+        {papers.map((paper, index) => {
+          const selected = paper.id === selectedId
+          const handleActivate = () => onSelect(paper.id)
+          return (
+            <div
+              key={paper.id}
+              ref={selected ? selectedRowRef : undefined}
+              role="option"
+              aria-selected={selected}
+            >
+              <PaperRow
+                paper={paper}
+                ordinal={index + offset + 1}
+                selected={selected}
+                onClick={handleActivate}
+                // 双击打开：上层传入 onOpen 时接通阅读器，否则降级为确认选中
+                onOpen={onOpen === undefined ? handleActivate : () => onOpen(paper.id)}
+              />
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

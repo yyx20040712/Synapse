@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 /**
- * [R3-LIB] 文献库视觉重制 —— 卡片网格+菱形分隔+空 venue 隐藏（渲染级断言）
- * + theme.css 材质文本锁（theme.test.ts 同口径：CSS 字面断言防漂移）。
+ * [T3-P3] 文献库密度列表 —— 结构锁（渲染级断言+library.css 逐值文本锁）。
+ * 值源=docs/design/mockups/2026-09-26_v2_theme-light.html L80-139
+ * （.filter-row/.cols/.row 六列/.tier/.t-mini 族），设计真相源=
+ * docs/design/2026-09-26_theme-trio-final-design.md §2 文献库段。
  *
- * 渲染面：PaperList→.lib-grid 卡片网格；卡根 .lib-card（渐变材质类钩）+
- * L 角饰 span×2；空 venue 条件渲染省略（mockup .venue:empty 的 DOM 等价）；
- * 单击选中/双击打开交互零变（按钮根元素契约）。页面组装面：LibraryPage 在
- * 筛选区与列表之间挂 DiamondRule（菱形语法：渐隐线×2+◆，装饰 aria-hidden）。
- * always-active 裸 describe（K3：不经 guardedDescribe 守卫）。
+ * 渲染面：PaperList→.lib-cols 六列表头+.lib-row 六路信息列（#序号三位零
+ * 填充/题名·期刊/年月/引用/档次四态徽章/标签前 3+折叠+N）；listbox 键盘
+ * 导航/单击选中/双击打开行为面零变。页面组装面：.lib-page/.lib-body/
+ * .lib-drawer 在场+DiamondRule 库域退役（settings 域消费保留）+
+ * 「导出语料集合」入口保活（C-02）。always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -25,9 +27,8 @@ const onImportProgressSpy = vi.fn(() => () => undefined)
 stubApiEvents({ onImportProgress: onImportProgressSpy })
 
 import { PaperList } from '../../../src/renderer/features/library/PaperList'
-import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
-import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
 import { FilterBar } from '../../../src/renderer/features/library/FilterBar'
+import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
 import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 
 // act() 环境声明（selection-layer/page-column 同口径——免 React 警告刷屏）
@@ -36,12 +37,12 @@ import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 // jsdom 环境 import.meta.url 是 http: 协议——CSS 文本读取走 cwd 相对路径
 // （theme.test.ts 的 URL 法仅 node 环境可用）。lib-* 规则住 feature 本地
 // library.css（theme.css 500 行上限拆分，由 LibraryPage 挂载导入）；
-// .lib-rule* 三段住 theme-buttons.css（回炉 W3 迁入共享语法位；F-CSS-01
-// 自 theme.css 二次拆件再锚）
+// .lib-rule* 三段住 theme-buttons.css（DiamondRule 语法位——T3-P3 起库域
+// 退役、settings 域消费保留，本件续锚防回漂）
 const css = readFileSync(join(process.cwd(), 'src/renderer/features/library/library.css'), 'utf8')
 const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-buttons.css'), 'utf8')
 
-/** 列表卡夹具：默认带年份/期刊/两标签（venue 空与 year 空由用例覆写） */
+/** 列表行夹具：默认带年份/期刊/两标签（venue/year/citedByCount 由用例覆写） */
 function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummary {
   return {
     id,
@@ -72,10 +73,12 @@ async function render(node: JSX.Element): Promise<void> {
   })
 }
 
-function firstCard(): HTMLElement {
-  const card = host?.querySelector('.lib-card')
-  if (!(card instanceof HTMLElement)) throw new Error('未找到 .lib-card 卡根')
-  return card
+/** 指定下标行根元素（.lib-row——密度行按钮根） */
+function rowAt(index: number): HTMLElement {
+  const rows = host?.querySelectorAll('.lib-row')
+  const row = rows?.[index]
+  if (!(row instanceof HTMLElement)) throw new Error(`未找到第 ${index} 行 .lib-row`)
+  return row
 }
 
 beforeEach(() => {
@@ -96,51 +99,96 @@ afterEach(async () => {
   host = null
 })
 
-describe('R3-LIB 文献卡渲染（PaperList 卡片网格）', () => {
-  it('卡根挂渐变材质类 lib-card，L 角饰元素×2（tl+br）在场', async () => {
-    const onSelect = vi.fn()
+describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
+  it('六列表头在场：.lib-cols 六格文本=编号/题名 · 期刊/年月/引用/档次/标签', async () => {
     await render(
-      <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={onSelect} />
+      <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />
     )
-    const card = firstCard()
-    expect(card.classList.contains('lib-card')).toBe(true)
-    const corners = card.querySelectorAll('.lib-corner')
-    expect(corners.length).toBe(2)
-    expect(card.querySelector('.lib-corner-tl')).not.toBeNull()
-    expect(card.querySelector('.lib-corner-br')).not.toBeNull()
-    // 装饰性角饰不参与可达性
-    for (const c of Array.from(corners)) {
-      expect(c.getAttribute('aria-hidden')).toBe('true')
+    const cols = host?.querySelector('.lib-cols')
+    expect(cols).not.toBeNull()
+    const cells = Array.from(cols?.querySelectorAll('span') ?? [])
+    expect(cells.map((c) => c.textContent)).toEqual([
+      '编号',
+      '题名 · 期刊',
+      '年月',
+      '引用',
+      '档次',
+      '标签'
+    ])
+    // 列头列宽类逐一在场（46/flex1/74/52/42/180 与行列对齐）
+    for (const cls of ['lib-c-id', 'lib-c-title', 'lib-c-year', 'lib-c-cite', 'lib-c-tier', 'lib-c-tags']) {
+      expect(cols?.querySelector(`.${cls}`), `表头列类 ${cls}`).not.toBeNull()
     }
   })
 
-  it('空 venue：期刊元素不渲染；有值：venue 类在场（空隐藏契约）', async () => {
+  it('行六路信息列：#001 序号（offset 起算）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N', async () => {
     await render(
       <PaperList
-        papers={[makeSummary('p1'), makeSummary('p2', { venue: '   ' })]}
+        papers={[
+          makeSummary('p1', { tagNames: ['甲', '乙', '丙', '丁', '戊'] }),
+          makeSummary('p2')
+        ]}
+        offset={10}
         selectedId={null}
         onSelect={() => undefined}
       />
     )
-    const cards = Array.from(host?.querySelectorAll('.lib-card') ?? [])
-    expect(cards.length).toBe(2)
-    const withVenue = cards[0]?.querySelector('.lib-card-venue')
-    expect(withVenue?.textContent).toBe('Journal of Testing')
-    expect(cards[1]?.querySelector('.lib-card-venue')).toBeNull()
+    const row1 = rowAt(0)
+    // 序号=index+offset+1 三位零填充（P5 catalog_no 落地后升级——票面备案）
+    expect(row1.querySelector('.lib-r-id')?.textContent).toBe('#011')
+    expect(rowAt(1).querySelector('.lib-r-id')?.textContent).toBe('#012')
+    expect(row1.querySelector('.lib-r-title')?.textContent).toBe('论文 p1')
+    expect(row1.querySelector('.lib-r-j')?.textContent).toBe('Journal of Testing')
+    expect(row1.querySelector('.lib-r-year')?.textContent).toBe('2021')
+    expect(row1.querySelectorAll('.lib-t-mini').length).toBe(3)
+    expect(row1.querySelector('.lib-t-more')?.textContent).toBe('+2')
   })
 
-  it('年份衬线类+题名两行截断类+标签胶囊类+meta tabular-nums 类在场', async () => {
+  it('空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」', async () => {
     await render(
-      <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />
+      <PaperList
+        papers={[makeSummary('p1', { venue: '   ' }), makeSummary('p2', { title: '  ' })]}
+        selectedId={null}
+        onSelect={() => undefined}
+      />
     )
-    const card = firstCard()
-    expect(card.querySelector('.lib-card-year')?.textContent).toBe('2021')
-    expect(card.querySelector('.lib-card-title')?.textContent).toBe('论文 p1')
-    expect(card.querySelectorAll('.lib-tag').length).toBe(2)
-    expect(card.querySelector('.lib-card-meta')).not.toBeNull()
+    expect(rowAt(0).querySelector('.lib-r-j')).toBeNull()
+    expect(rowAt(1).querySelector('.lib-r-title')?.textContent).toBe('（无标题）')
   })
 
-  it('交互零变：单击→onSelect(id)；双击→onOpen(id)；选中卡挂 lib-card-selected', async () => {
+  it('缺值列：年份 null→「—」；引用 citedByCount 缺→「—」/有值→数字', async () => {
+    await render(
+      <PaperList
+        papers={[makeSummary('p1', { year: null }), makeSummary('p2', { citedByCount: 17 })]}
+        selectedId={null}
+        onSelect={() => undefined}
+      />
+    )
+    expect(rowAt(0).querySelector('.lib-r-year')?.textContent).toBe('—')
+    expect(rowAt(0).querySelector('.lib-r-cite')?.textContent).toBe('—')
+    expect(rowAt(1).querySelector('.lib-r-cite')?.textContent).toBe('17')
+  })
+
+  it('档次徽章四态：venueToTier 单源映射 T1/T2/T3/未命中「—」', async () => {
+    await render(
+      <PaperList
+        papers={[
+          makeSummary('p1', { venue: 'Nature Water' }),
+          makeSummary('p2', { venue: 'Desalination' }),
+          makeSummary('p3', { venue: 'Water' }),
+          makeSummary('p4', { venue: '未知期刊' })
+        ]}
+        selectedId={null}
+        onSelect={() => undefined}
+      />
+    )
+    expect(rowAt(0).querySelector('.lib-tier.t1')?.textContent).toBe('T1')
+    expect(rowAt(1).querySelector('.lib-tier.t2')?.textContent).toBe('T2')
+    expect(rowAt(2).querySelector('.lib-tier.t3')?.textContent).toBe('T3')
+    expect(rowAt(3).querySelector('.lib-tier.none')?.textContent).toBe('—')
+  })
+
+  it('交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类', async () => {
     const onSelect = vi.fn()
     const onOpen = vi.fn()
     await render(
@@ -151,21 +199,185 @@ describe('R3-LIB 文献卡渲染（PaperList 卡片网格）', () => {
         onOpen={onOpen}
       />
     )
-    const cards = Array.from(host?.querySelectorAll('.lib-card') ?? [])
-    expect(cards[1]?.classList.contains('lib-card-selected')).toBe(true)
-    const target = cards[0]
-    if (!(target instanceof HTMLElement)) throw new Error('卡根缺失')
+    expect(rowAt(1).classList.contains('sel')).toBe(true)
+    expect(rowAt(0).classList.contains('sel')).toBe(false)
     act(() => {
-      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      rowAt(0).dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(onSelect).toHaveBeenCalledWith('p1')
     act(() => {
-      target.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      rowAt(0).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     })
     expect(onOpen).toHaveBeenCalledWith('p1')
   })
+
+  it('listbox 键盘导航保活：容器 listbox+行 option/aria-selected；↓ 无选中落首行/Home/End', async () => {
+    const onSelect = vi.fn()
+    await render(
+      <PaperList papers={[makeSummary('p1'), makeSummary('p2')]} selectedId={null} onSelect={onSelect} />
+    )
+    const listbox = host?.querySelector('[role="listbox"]')
+    expect(listbox).not.toBeNull()
+    expect(listbox?.getAttribute('aria-label')).toBe('文献列表')
+    expect(host?.querySelectorAll('[role="option"]').length).toBe(2)
+    expect(host?.querySelector('[role="option"][aria-selected="true"]')).toBeNull()
+    act(() => {
+      listbox?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    })
+    expect(onSelect).toHaveBeenCalledWith('p1')
+    act(() => {
+      listbox?.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    })
+    expect(onSelect).toHaveBeenLastCalledWith('p2')
+  })
+
+  it('空态文案保活：papers 空→「暂无文献」引导', async () => {
+    await render(<PaperList papers={[]} selectedId={null} onSelect={() => undefined} />)
+    expect(host?.textContent).toContain('暂无文献')
+    expect(host?.textContent).toContain('可拖入 PDF 导入，或调整筛选条件')
+  })
 })
 
+describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）', () => {
+  it('表头列宽：46/flex1/74/52/42/180+gap 14px+10px letter-spacing 1.5px faint', () => {
+    expect(css, 'c-id 46px').toMatch(/\.lib-c-id\s*\{[^}]*width:\s*46px/)
+    expect(css, 'c-title flex:1').toMatch(/\.lib-c-title\s*\{[^}]*flex:\s*1/)
+    expect(css, 'c-year 74px 右对齐').toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*text-align:\s*right/)
+    expect(css, 'c-cite 52px 右对齐').toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*text-align:\s*right/)
+    expect(css, 'c-tier 42px 居中').toMatch(/\.lib-c-tier\s*\{[^}]*width:\s*42px;[^}]*text-align:\s*center/)
+    expect(css, 'c-tags 180px').toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px/)
+    expect(css, '.lib-cols gap 14px+letter-spacing 1.5px+faint').toMatch(
+      /\.lib-cols\s*\{[^}]*gap:\s*14px;[^}]*letter-spacing:\s*1\.5px;[^}]*var\(--faint\)/
+    )
+  })
+
+  it('hover 皮肤：panel 底+shadow-card+信号橙游标线（2.5px left 18px top/bottom 12px 圆角 2px）', () => {
+    expect(css).toMatch(/\.lib-row:hover\s*\{[^}]*background:\s*var\(--panel\);[^}]*var\(--shadow-card\)/)
+    expect(css, '游标线（mockup .row:hover::before 逐值）').toMatch(
+      /\.lib-row:hover::before\s*\{[^}]*left:\s*18px;[^}]*top:\s*12px;[^}]*bottom:\s*12px;[^}]*width:\s*2\.5px;[^}]*border-radius:\s*2px;[^}]*background:\s*var\(--signal\)/
+    )
+  })
+
+  it('选中皮肤：sel=inset 1.5px accent 描边+左缘条 3.5px left0+外辉 token 单源', () => {
+    expect(css).toMatch(
+      /\.lib-row\.sel\s*\{[^}]*background:\s*var\(--panel\);[^}]*inset 0 0 0 1\.5px var\(--accent\), var\(--shadow-sel-glow\)/
+    )
+    expect(css, '左缘条（mockup .row.sel::before 逐值）').toMatch(
+      /\.lib-row\.sel::before\s*\{[^}]*left:\s*0;[^}]*top:\s*10px;[^}]*bottom:\s*10px;[^}]*width:\s*3\.5px;[^}]*background:\s*var\(--accent\)/
+    )
+    // sel 规则源序在 :hover 之后（同命中时选中态赢——层叠保证）
+    expect(css.indexOf('.lib-row.sel')).toBeGreaterThan(css.indexOf('.lib-row:hover'))
+  })
+
+  it('列值排印：r-id mono caption/r-title strong nowrap ellipsis/r-year·cite mono body tabular-nums', () => {
+    expect(css).toMatch(/\.lib-r-id\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-caption\)/)
+    expect(css).toMatch(/\.lib-r-title\s*\{[^}]*font-size:\s*var\(--fs-strong\);[^}]*text-overflow:\s*ellipsis/)
+    expect(css).toMatch(
+      /\.lib-r-year,\s*\.lib-r-cite\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-body\);[^}]*font-variant-numeric:\s*tabular-nums/
+    )
+  })
+
+  it('档次徽章三态：t1=accent 底 accent-ink 字/t2=accent 描边/t3=line 描边 faint 字', () => {
+    expect(css).toMatch(/\.lib-tier\.t1\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\)/)
+    expect(css).toMatch(/\.lib-tier\.t2\s*\{[^}]*border:\s*1px solid var\(--accent\);[^}]*color:\s*var\(--accent\)/)
+    expect(css).toMatch(/\.lib-tier\.t3\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*color:\s*var\(--faint\)/)
+    expect(css).toMatch(/\.lib-tier\.none\s*\{[^}]*color:\s*var\(--faint\)/)
+  })
+
+  it('旧卡片族退役负锚（方案切换=删除旧方案）：网格/卡片/角饰/宝石位零残留', () => {
+    expect(css).not.toContain('.lib-grid')
+    expect(css).not.toContain('.lib-card')
+    expect(css).not.toContain('.lib-corner')
+    expect(css).not.toContain('.lib-tag')
+  })
+
+  it('筛选行语汇：search 290px+shadow-card；chip 99px 圆角+on 态 accent-soft；sort 8px 圆角', () => {
+    expect(css).toMatch(/\.lib-search\s*\{[^}]*width:\s*290px;[^}]*var\(--shadow-card\)/)
+    expect(css).toMatch(/\.lib-chip\s*\{[^}]*border-radius:\s*99px/)
+    expect(css).toMatch(
+      /\.lib-chip-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\);[^}]*font-weight:\s*600/
+    )
+    expect(css).toMatch(/\.lib-sort\s*\{[^}]*border-radius:\s*8px/)
+  })
+
+  it('门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中', () => {
+    // d1-W1：集合/年份下拉筛选生效可见性（accent 描边+accent 字）
+    expect(css).toMatch(/\.lib-sort-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*color:\s*var\(--accent\)/)
+    // d1-W2：搜索框键盘焦点环（focus-within 承接 input outline:none）
+    expect(css).toMatch(/\.lib-search:focus-within\s*\{[^}]*border-color:\s*var\(--accent\)/)
+    // d1-W6/k1-N1：表头驻滚动容器 sticky（与行共享内容盒——滚动条/收缩两态同位）
+    expect(css).toMatch(/\.lib-cols\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*background:\s*var\(--bg\)/)
+    expect(css, '定宽列表头列与行侧一致不收缩（d1-N5 回炉补全五格）').toMatch(/\.lib-c-id\s*\{[^}]*width:\s*46px;[^}]*flex:\s*none/)
+    expect(css).toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*flex:\s*none/)
+    expect(css).toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*flex:\s*none/)
+    expect(css).toMatch(/\.lib-c-tier\s*\{[^}]*width:\s*42px;[^}]*flex:\s*none/)
+    expect(css).toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px;[^}]*flex:\s*none/)
+    // k1-N2：键盘导航行滚入预留 sticky 表头高度
+    expect(css).toMatch(/\.lib-list \[role='option'\]\s*\{[^}]*scroll-margin-top:\s*28px/)
+    // d1-W5：空态居中锁（旧 .lib-detail-empty 居中断言同强度后继）
+    expect(css).toMatch(/\.lib-dr-empty\s*\{[^}]*align-items:\s*center/)
+  })
+})
+
+describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', () => {
+  it('.lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）', async () => {
+    await render(<LibraryPage />)
+    expect(host?.querySelector('.lib-page')).not.toBeNull()
+    expect(host?.querySelector('.lib-body')).not.toBeNull()
+    expect(host?.querySelector('.lib-cols')).not.toBeNull()
+    expect(host?.querySelector('.lib-list')).not.toBeNull()
+    // d1 复审 N1 回炉：表头驻 .lib-list 内（sticky 吸附链的结构前提——回退兄弟位即红）
+    expect(host?.querySelector('.lib-list .lib-cols')).not.toBeNull()
+    const drawer = host?.querySelector('.lib-drawer')
+    expect(drawer).not.toBeNull()
+    // DiamondRule 退役：库域不再挂菱形分隔（settings 域消费保留在彼处）
+    expect(host?.querySelector('.lib-rule')).toBeNull()
+  })
+
+  it('d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）', async () => {
+    stubApi.library.list.mockResolvedValueOnce({ ok: true, data: { items: [], total: 0 } })
+    await render(<LibraryPage />)
+    expect(host?.querySelector('.lib-cols')).toBeNull()
+    expect(host?.textContent).toContain('暂无文献')
+  })
+
+  it('「导出语料集合」入口保活（C-02）', async () => {
+    await render(<LibraryPage />)
+    const btn = [...(host?.querySelectorAll('button') ?? [])].find(
+      (b) => b.textContent === '导出语料集合'
+    )
+    expect(btn, '导出语料集合按钮应在场').toBeDefined()
+  })
+
+  it('门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘', async () => {
+    const base = { sort: 'added_desc', offset: 0, limit: 50 } as const
+    await render(
+      <FilterBar
+        query={{ ...base, collectionId: 'c-1', year: 2024 }}
+        onChange={() => undefined}
+      />
+    )
+    const byCollection = host?.querySelector('select[aria-label="按集合筛选"]')
+    const byYear = host?.querySelector('select[aria-label="按年份筛选"]')
+    expect(byCollection?.classList.contains('lib-sort-on')).toBe(true)
+    expect(byYear?.classList.contains('lib-sort-on')).toBe(true)
+    await render(<FilterBar query={{ ...base }} onChange={() => undefined} />)
+    expect(
+      host?.querySelector('select[aria-label="按集合筛选"]')?.classList.contains('lib-sort-on')
+    ).toBe(false)
+    expect(
+      host?.querySelector('select[aria-label="按年份筛选"]')?.classList.contains('lib-sort-on')
+    ).toBe(false)
+    // d1 复审 W9：排序下拉=视图态非条件态，永不挂 on（旧「排序不挂」负锚豁免后回植）
+    expect(
+      host?.querySelector('select[aria-label="排序方式"]')?.classList.contains('lib-sort-on')
+    ).toBe(false)
+  })
+})
+
+// [T3-P3] 邻面保活三件：DiamondRule 库域退役（settings 域消费保留）后
+// 组件与 theme-buttons.css 语法位仍在——原 describe 归位续锚（describe 路径
+// 入指纹键，改名即断基线配对——test-surface 口径）
 describe('R3-LIB 菱形分隔线（筛选区与列表之间）', () => {
   it('DiamondRule 渲染：渐隐线×2+◆菱形+装饰 aria-hidden（渲染级存在性）', async () => {
     await render(<DiamondRule />)
@@ -175,40 +387,9 @@ describe('R3-LIB 菱形分隔线（筛选区与列表之间）', () => {
     expect(rule?.querySelectorAll('.lib-rule-line').length).toBe(2)
     expect(rule?.querySelector('.lib-rule-gem')).not.toBeNull()
   })
-
-  it('LibraryPage 组装：菱形分隔挂在筛选区之后、列表网格之前（页面级存在性）', async () => {
-    await render(<LibraryPage />)
-    const rule = host?.querySelector('.lib-rule') ?? null
-    const grid = host?.querySelector('.lib-grid') ?? null
-    expect(rule).not.toBeNull()
-    expect(grid).not.toBeNull()
-    if (rule === null || grid === null) throw new Error('unreachable')
-    // DOM 位置：rule 先于 grid（分隔语义=筛选区|列表）
-    expect(rule.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
 })
 
 describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）', () => {
-  it('卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）', () => {
-    expect(css, '.lib-card 渐变（mockup .card 逐值）').toMatch(/\.lib-card\s*\{[^}]*linear-gradient\(168deg/)
-    // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
-    expect(css, 'inset 顶高光').toMatch(/\.lib-card\s*\{[^}]*inset 0 1px 0 var\(--panel-a90\)/)
-    expect(css, '背景裁到 padding-box（定稿注意事项②）').toMatch(
-      /\.lib-card\s*\{[^}]*background-clip: padding-box/
-    )
-  })
-
-  it('网格容器：repeat(auto-fill, minmax(340px, 1fr))', () => {
-    expect(css).toMatch(/\.lib-grid\s*\{[^}]*repeat\(auto-fill, minmax\(340px, 1fr\)\)/)
-  })
-
-  it('hover 升档：金 hairline 描边+translateY(-1px)+shadow-2+角饰显形', () => {
-    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*var\(--shadow-2\)/)
-    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*translateY\(-1px\)/)
-    expect(css).toMatch(/\.lib-card:hover\s*\{[^}]*var\(--border-gold\)/)
-    expect(css, 'hover 角饰显形（金描边）').toMatch(/\.lib-card:hover \.lib-corner\s*\{[^}]*var\(--gold\)/)
-  })
-
   it('菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）', () => {
     // 回炉 W3：.lib-rule* 迁共享语法位（R3-U4 复用依赖;F-CSS-01 起住
     // theme-buttons.css）
@@ -219,78 +400,6 @@ describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 
 })
 
 describe('R3-LIB 回炉一（门一 3B+3W）', () => {
-  it('R3 空年份：year 槽渲染 9px 淡金 ◆（min-width 44px 对齐槽）；有年份无 ◆', async () => {
-    await render(
-      <PaperList
-        papers={[makeSummary('p1'), makeSummary('p2', { year: null })]}
-        selectedId={null}
-        onSelect={() => undefined}
-      />
-    )
-    const cards = Array.from(host?.querySelectorAll('.lib-card') ?? [])
-    expect(cards[0]?.querySelector('.lib-card-year-gem')).toBeNull()
-    const gem = cards[1]?.querySelector('.lib-card-year-gem')
-    expect(gem?.getAttribute('aria-hidden')).toBe('true')
-    expect(cards[1]?.querySelector('.lib-card-year')?.textContent).toBe('')
-    expect(css, '9px 淡金 ◆（gem 尺寸锁）').toMatch(/\.lib-card-year-gem\s*\{[^}]*width: 9px/)
-    expect(css).toMatch(/\.lib-card-year-gem\s*\{[^}]*rotate\(45deg\)/)
-  })
-
-  it('R4 详情空态：.lib-detail-empty 复用 DiamondRule×2+文案逐字保留', async () => {
-    await render(<PaperDetailPanel paperId={null} />)
-    const empty = host?.querySelector('.lib-detail-empty')
-    expect(empty).not.toBeNull()
-    expect(empty?.querySelectorAll('.lib-rule').length).toBe(2)
-    expect(host?.textContent).toContain('选中列表中的文献后显示详情')
-    expect(css, '空态居中').toMatch(/\.lib-detail-empty\s*\{[^}]*align-items: center/)
-  })
-
-  it('R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring a45+shadow-2+角饰常显（两档于 hover）', () => {
-    // 渐变保留=.lib-card-selected 段不声明 background（继承 .lib-card 渐变），
-    // 锁「不覆盖」形态：段内不得出现 background 覆盖声明
-    const seg = css.match(/\.lib-card-selected\s*\{[^}]*\}/)?.[0] ?? ''
-    expect(seg).toContain('border-color: var(--gold)')
-    expect(seg).toContain('inset 0 0 0 1px var(--border-gold-a45)')
-    expect(seg).toContain('var(--shadow-2)')
-    expect(seg, '选中段不得平色覆盖渐变（门一独立裁）').not.toMatch(/background: var\(--accent-soft\)/)
-    expect(css, '角饰常显').toMatch(/\.lib-card-selected \.lib-corner\s*\{[^}]*var\(--gold\)/)
-    // 选中段源序在 :hover 之后（叠加时 selected 赢——两档语义的层叠保证）
-    const hoverAt = css.indexOf('.lib-card:hover')
-    const selectedAt = css.indexOf('.lib-card-selected')
-    expect(selectedAt).toBeGreaterThan(hoverAt)
-  })
-
-  it('W2 chips active：有筛选值挂 lib-chip-on；排序不挂（视图非条件）', async () => {
-    await render(
-      <FilterBar
-        query={{ sort: 'added_desc', offset: 0, limit: 50, collectionId: 'c1', year: 2021 }}
-        onChange={() => undefined}
-      />
-    )
-    const chips = Array.from(host?.querySelectorAll('.lib-chip') ?? []) as HTMLElement[]
-    expect(chips.length).toBe(4)
-    expect(chips[0]?.tagName).toBe('INPUT')
-    expect(chips[1]?.classList.contains('lib-chip-on')).toBe(true)
-    expect(chips[2]?.classList.contains('lib-chip-on')).toBe(true)
-    expect(chips[3]?.classList.contains('lib-chip-on')).toBe(false)
-    expect(css, 'on 态镜像 mockup .chip.on').toMatch(
-      /\.lib-chip-on\s*\{[^}]*var\(--accent-soft\)[^}]*\}/
-    )
-    expect(css).toMatch(/\.lib-chip-on\s*\{[^}]*border-color: var\(--accent\)/)
-  })
-
-  // P7D-01 批二（token 化配套——实现者自裁申报）：字号断言载体字面量→
-  // var(--fs-*)（title 14/venue 11 值不变零视觉差；meta 10.5→11=caption 档
-  // 用户裁决变化面）——值面锚随迁 theme.test.ts TOKENS 六正锚+FS 负锚矩阵；
-  // 本断言强度不放宽（逐类逐属性 toMatch 同构）。
-  it('R1+R2 材质微调：dropzone 透明底落纸面；题名 fs-title/600、venue/meta fs-caption（批二 token 化,meta 10.5→11 裁决变化）', () => {
-    expect(css).toMatch(/\.lib-dropzone\s*\{[^}]*background: transparent/)
-    expect(css).toMatch(/\.lib-card-title\s*\{[^}]*font-size: var\(--fs-title\)/)
-    expect(css).toMatch(/\.lib-card-title\s*\{[^}]*font-weight: 600/)
-    expect(css).toMatch(/\.lib-card-venue\s*\{[^}]*font-size: var\(--fs-caption\)/)
-    expect(css).toMatch(/\.lib-card-meta\s*\{[^}]*font-size: var\(--fs-caption\)/)
-  })
-
   it('W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）', () => {
     expect(cssTheme).toMatch(/\.lib-rule-line-l\s*\{[^}]*linear-gradient\(90deg, transparent, var\(--border-gold\)\)/)
     expect(cssTheme).toMatch(/\.lib-rule-line-r\s*\{[^}]*linear-gradient\(90deg, var\(--border-gold\), transparent\)/)

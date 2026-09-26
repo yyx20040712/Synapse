@@ -2,7 +2,9 @@
  * [SR-TAG-02] TagFilter —— 标签筛选器（工单：done / weak + P7E-01 + P7E-06）
  *
  * ── 行为层 ──
- * - 多选 chip 列表（数据 tags.store：{id,name,paperCount}）
+ * - 多选 chip 列表（数据 tags.store：{id,name,paperCount}）；[T3-P3] 皮肤=
+ *   .lib-chip 胶囊（library.css——mockup .chip/.chip.on 逐值；计数 mono
+ *   「×N」格式，FilterBar 经组合根挂载 library.css 生效）
  * - P7X-01 上界守卫：添加方向且选中数 ≥ TAG_FILTER_MAX（@shared/models/paper
  *   同源）→ 零变更 + info toast「最多同时筛选 N 个标签」（N 常量插值）
  * - 选中态变化 → props.onFilterChange(ids)（P7E-06 多选 v2 已兑现——v1 单选
@@ -96,7 +98,7 @@ export function TagFilter(props: {
     )
   }
   return (
-    <div className="flex flex-wrap items-center gap-1" role="group" aria-label="标签筛选">
+    <div className="lib-chips" role="group" aria-label="标签筛选">
       {tags.map((t) => {
         const active = selectedTagIds.includes(t.id)
         return (
@@ -104,12 +106,7 @@ export function TagFilter(props: {
             key={t.id}
             type="button"
             aria-pressed={active}
-            className="rounded-full border px-2 py-0.5 text-xs"
-            style={{
-              borderColor: active ? 'var(--accent)' : 'var(--border)',
-              background: active ? 'var(--accent-soft)' : 'var(--panel)',
-              color: active ? 'var(--accent)' : 'var(--text)'
-            }}
+            className={`lib-chip${active ? ' lib-chip-on' : ''}`}
             onClick={() => {
               // P7X-01 上界守卫（添加方向；移除方向永不设限）：选中数已达
               // TAG_FILTER_MAX（与 schema 同源）→ 零变更 + info 级引导 toast
@@ -127,7 +124,8 @@ export function TagFilter(props: {
               setMenu({ tag: t, anchor: { x: e.clientX, y: e.clientY } })
             }}
           >
-            {t.name}（{t.paperCount}）
+            {t.name}{' '}
+            <span className="lib-chip-n">{`×${t.paperCount}`}</span>
           </button>
         )
       })}

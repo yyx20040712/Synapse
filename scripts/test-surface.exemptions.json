@@ -417,6 +417,222 @@
       "caseTitle": "点击课题项开弹层：h4 标题+课题行（色点/全名/篇数）+当前项 .on；再点课题项/Escape/外点均关",
       "reason": "T3-P2 回炉 1（d1-N-a 收口核点）：开合用例补「点选当前课题（.on 行）=幂等收口直接合上零 IPC」断言——pick 层幂等/取消分流（switchTo 同 id 与 dirty 取消同返 false 不可区分，故组件层显式分流）——断言面扩展非删改",
       "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#1（§1 应用壳）"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '多选A（2）' })).toBeVisible({ timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '多选B（1）' })).toBeVisible({ timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "assertionText": "expect(win.locator('.lib-card')).toHaveCount(1, { timeout: 10_000 })",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格退役为密度行，列表计数锚类名 .lib-card→.lib-row 随迁（计数断言语义不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "assertionText": "expect(win.locator('.lib-card')).toHaveCount(2, { timeout: 10_000 })",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格退役为密度行，列表计数锚类名 .lib-card→.lib-row 随迁（计数断言语义不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "assertionText": "expect(win.locator('.lib-card')).toHaveCount(3, { timeout: 10_000 })",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格退役为密度行，列表计数锚类名 .lib-card→.lib-row 随迁（计数断言语义不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '水治（1）' })).toBeVisible({ timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '水质监测（1）' })).toBeVisible({ timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '水治（1）' })).toHaveCount(0)",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '核心（1）' })).toHaveCount(0, { timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '水质（2）' })).toBeVisible({ timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '水质（2）' })).toHaveCount(0, { timeout: 10_000 })",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(rowA.locator('.lib-tag')).toHaveCount(1)",
+      "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(rowA.locator('.lib-tag')).toHaveText('水质监测')",
+      "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "卡根挂渐变材质类 lib-card，L 角饰元素×2（tl+br）在场",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "空 venue：期刊元素不渲染；有值：venue 类在场（空隐藏契约）",
+      "reason": "T3-P3 密度列表重写：同语义用例随新 DOM 结构改写（新标题驻本文件），旧标题形态退役",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "年份衬线类+题名两行截断类+标签胶囊类+meta tabular-nums 类在场",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "交互零变：单击→onSelect(id)；双击→onOpen(id)；选中卡挂 lib-card-selected",
+      "reason": "T3-P3 密度列表重写：同语义用例随新 DOM 结构改写（新标题驻本文件），旧标题形态退役",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "LibraryPage 组装：菱形分隔挂在筛选区之后、列表网格之前（页面级存在性）",
+      "reason": "T3-P3 DiamondRule 库域退役（票面明文；settings 域消费保留——渲染级与 theme-buttons.css 三断言已回植 library-cards.test.tsx 邻面保活 describe）；库域两消费点（LibraryPage/详情空态）断言随退役删除，空态文案迁移 .lib-dr-empty（paper-detail-drawer.test.tsx 新用例锚文案）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "卡片渐变材质：168° 渐变+inset 顶高光+background-clip:padding-box（亚像素缝隙锁）",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "网格容器：repeat(auto-fill, minmax(340px, 1fr))",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "hover 升档：金 hairline 描边+translateY(-1px)+shadow-2+角饰显形",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "R3 空年份：year 槽渲染 9px 淡金 ◆（min-width 44px 对齐槽）；有年份无 ◆",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "R4 详情空态：.lib-detail-empty 复用 DiamondRule×2+文案逐字保留",
+      "reason": "T3-P3 DiamondRule 库域退役（票面明文；settings 域消费保留——渲染级与 theme-buttons.css 三断言已回植 library-cards.test.tsx 邻面保活 describe）；库域两消费点（LibraryPage/详情空态）断言随退役删除，空态文案迁移 .lib-dr-empty（paper-detail-drawer.test.tsx 新用例锚文案）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "R5 选中卡材质：渐变不覆盖+金描边+inset 金 ring a45+shadow-2+角饰常显（两档于 hover）",
+      "reason": "T3-P3 方案切换=删除旧方案：卡片网格族退役为六列密度行（.lib-row），断言随结构面重写——同语义新用例驻 library-cards.test.tsx（六列结构/交互保活/缺值占位/CSS 逐值锁）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "W2 chips active：有筛选值挂 lib-chip-on；排序不挂（视图非条件）",
+      "reason": "T3-P3 密度列表重写：同语义用例随新 DOM 结构改写（新标题驻本文件），旧标题形态退役",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "R1+R2 材质微调：dropzone 透明底落纸面；题名 fs-title/600、venue/meta fs-caption（批二 token 化,meta 10.5→11 裁决变化）",
+      "reason": "T3-P3 重皮肤：dropzone 金框退役 --line 虚线族（票面）；题名/venue/meta 字号随密度行档位迁移，断言面随值面重写",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-cited.test.tsx",
+      "caseTitle": "有值：citedByCount=124 → 「被引」行渲染「124」（真实文本断言）",
+      "reason": "T3-P3 抽屉结构互斥（已按接缝归责呈报主控）：旧「被引」键值行（p>span×2）随 mockup 四格指标改版退役，三态断言迁移「引用」指标格（.lib-dr-m 值真文本）——断言强度不降，同宿主文件改写",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-cited.test.tsx",
+      "caseTitle": "缺省：无 citedByCount 字段 → 「被引」行渲染占位符（—）",
+      "reason": "T3-P3 抽屉结构互斥（已按接缝归责呈报主控）：旧「被引」键值行（p>span×2）随 mockup 四格指标改版退役，三态断言迁移「引用」指标格（.lib-dr-m 值真文本）——断言强度不降，同宿主文件改写",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-cited.test.tsx",
+      "caseTitle": "零值：citedByCount=0 → 渲染「0」而非占位符（=== undefined 判空边界）",
+      "reason": "T3-P3 抽屉结构互斥（已按接缝归责呈报主控）：旧「被引」键值行（p>span×2）随 mockup 四格指标改版退役，三态断言迁移「引用」指标格（.lib-dr-m 值真文本）——断言强度不降，同宿主文件改写",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "assertionText": "expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('true')",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "assertionText": "expect(buttonByText('机器学习（1）')?.getAttribute('aria-pressed')).toBe('true')",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "assertionText": "expect(buttonByText('水质（2）')?.getAttribute('aria-pressed')).toBe('false')",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "assertionText": "expect(buttonByText('标签21（0）')?.getAttribute('aria-pressed')).toBe('false')",
+      "reason": "T3-P3 密度列表改版：chip 文本「名（N）」→「名 ×N」（mono 计数——mockup .chip .n 语汇），断言文本随值面迁移，行为断言零变",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(1)",
+      "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）——首轮迁移漏带参形态，e2e 首跑红后补迁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(rowA.locator('.lib-tag', { hasText: '水质监测' })).toHaveCount(1)",
+      "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）——首轮迁移漏带参形态，e2e 首跑红后补迁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "assertionText": "expect(rowA.locator('.lib-tag', { hasText: '水治' })).toHaveCount(0)",
+      "reason": "T3-P3 密度行标签徽标类 .lib-tag→.lib-t-mini（mockup .t-mini 语汇），断言文本随类名迁移（真实文本断言语义不变）——首轮迁移漏带参形态，e2e 首跑红后补迁",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
     }
   ]
 }

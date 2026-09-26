@@ -24,7 +24,11 @@ export const paperSummarySchema = z
     annotationCount: z.number().int(),
     noteCount: z.number().int(),
     lastReadPage: z.number().int(),
-    addedAt: z.string() // ISO 8601
+    addedAt: z.string(), // ISO 8601
+    // [T3-P3] 密度列表引用列：ENR-01 含金量缓存快照下探列表行（LIST_SQL
+    // 扩列 cited_by_count，toSummary null→整键省略——与 detail 面同语义，
+    // 可选增量向后兼容，旧载荷解析不受影响）
+    citedByCount: z.number().int().optional()
   })
   .strict()
 export type PaperSummary = z.infer<typeof paperSummarySchema>
@@ -42,10 +46,21 @@ export const paperDetailSchema = paperSummarySchema
     tags: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
     collections: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
     // ENR-01 含金量缓存快照（可选字段——ADR-0011 演进规则；三字段由
-    // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）
-    citedByCount: z.number().int().optional(),
+    // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）。
+    // citedByCount 已随 T3-P3 上提到 summarySchema（列表/详情同列同语义）
     citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
-    citedByCountSource: paperSourceSchema.optional() // 命中的瀑布源
+    citedByCountSource: paperSourceSchema.optional(), // 命中的瀑布源
+    // [T3-P3] 跨域关联行（service 层组合装配——repo 单一职责不跨表）：
+    // paper_id 命中脉络节点则挂；month 恒 null=P5 month 列落位后自新
+    // （final-design §3——lineage v2 模型增量），未命中整键省略
+    lineage: z
+      .object({
+        year: z.number().int().nullable(),
+        month: z.number().int().nullable(),
+        edgeCount: z.number().int()
+      })
+      .strict()
+      .optional()
     // [F-TIME-02] 阅读时长字段 readingSeconds 已随 2026-09-19 用户裁决移除
     // （列由 009 迁移 DROP；沿革=P7E-05 008 加列→F-TIME-02 009 删列）
   })

@@ -257,7 +257,10 @@ for (const f of cssAll) {
 // vs --panel 白天族值恰白[暗/护眼族翻深]——合并共享即语义错绑，T3-P1 后
 // 该类假阳首次出现）。豁免面=命名 prop 白名单（聚集判定跳过，其余同值对
 // 仍红——通道同 DYNAMIC_TOKENS 先例：枚举单源+注释双向互指）。
-const SAME_VALUE_EXEMPT_PROPS = new Set(['--close-red-ink'])
+// [T3-P3 增补] --accent-ink 同族：accent 底字色纯白三族恒定（密度列表 T1
+// 徽章/抽屉主钮——mockup .tier.q1/.btn.primary），与 --panel 白天族同值=
+// 同语义隔离判例；theme.css --accent-ink 注释互指本常量。
+const SAME_VALUE_EXEMPT_PROPS = new Set(['--close-red-ink', '--accent-ink'])
 const tokenByNorm = new Map()
 for (const d of tokenColorDecls) {
   if (SAME_VALUE_EXEMPT_PROPS.has(d.prop)) continue

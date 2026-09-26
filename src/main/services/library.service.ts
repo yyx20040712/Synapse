@@ -4,7 +4,11 @@
  * ── 行为层 ──
  * - 列表：透传 LibraryQuery 到 papers.searchSummaries
  * - 详情：papers.detailById；不存在 → 抛 DomainError（code=NOT_FOUND，
- *   register 经 toAppError 识别 code 字段折叠为 AppError）
+ *   register 经 toAppError 识别 code 字段折叠为 AppError）；
+ *   [T3-P3] lineage 关联装配（service 层组合——repo 单一职责不跨表）：
+ *   lineage.repo 按 paper_id 查命中节点，命中则挂 lineage
+ *   {year, month: null, edgeCount}（month 恒 null=P5 month 列落位后自新，
+ *   见 final-design §3；edgeCount=双端计数），未命中整键省略
  * - 元数据编辑：papers.updateMeta（patch 空对象不落库、直接返回现状，
  *   避免无意义地刷新 updated_at）；repo 返回 null = 文献不存在 → NOT_FOUND
  * - 集合列表：collections.list()
@@ -49,7 +53,7 @@ function paperNotFound(paperId: string): DomainError {
 }
 
 export function createLibraryService(deps: { repos: Repos }): ApiHandlers['library'] {
-  const { papers, collections } = deps.repos
+  const { papers, collections, lineage } = deps.repos
 
   return {
     // 查询已在上游（ipc register）过 zod 校验并补全默认值，此处原样透传
@@ -60,7 +64,14 @@ export function createLibraryService(deps: { repos: Repos }): ApiHandlers['libra
     async detail(req) {
       const d = papers.detailById(req.paperId)
       if (d === null) throw paperNotFound(req.paperId)
-      return d
+      // [T3-P3] 跨域关联行装配：命中脉络节点才挂 lineage（month 恒 null——
+      // P5 落位前固定缺省；计数锚在节点 id 上非 paperId）
+      const node = lineage.nodeByPaperId(req.paperId)
+      if (node === null) return d
+      return {
+        ...d,
+        lineage: { year: node.year, month: null, edgeCount: lineage.edgeCountByNode(node.id) }
+      }
     },
 
     async updateMeta(req) {

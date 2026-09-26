@@ -167,6 +167,19 @@ guardedDescribe(
         expect(p1?.noteCount).toBe(1)
       })
 
+      it('citedByCount 映射（T3-P3 列表行引用列）：缓存值透出；NULL 整键省略', () => {
+        // p-1 写入含金量缓存 17（ENR-01 三列独立 SET 通道）；p-2/p-3 保持 NULL
+        repo.applyEnrichment(
+          'p-1',
+          { source: 'crossref', enrichStatus: 'done', patch: {} },
+          { count: 17, fetchedAt: '2026-01-01T00:00:00Z', source: 'crossref' }
+        )
+        const r = repo.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50 })
+        expect(r.items.find((i) => i.id === 'p-1')?.citedByCount).toBe(17)
+        expect(r.items.find((i) => i.id === 'p-2')?.citedByCount).toBeUndefined()
+        expect(r.items.find((i) => i.id === 'p-3')?.citedByCount).toBeUndefined()
+      })
+
       it('tagIds 过滤命中挂接文献（P7E-06 契约切换：单元素=单选语义等价）', () => {
         db.prepare(`INSERT INTO tags (id, name) VALUES ('t-1','必读')`).run()
         db.prepare(`INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-2','t-1')`).run()

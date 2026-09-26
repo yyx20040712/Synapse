@@ -1,40 +1,41 @@
 /**
- * [SR-LIB-03] PaperRow —— 文献卡（R3-LIB 行→卡重制；交互/文案契约不变）
+ * [SR-LIB-03] PaperRow —— 密度列表行（T3-P3 卡片→六列行重制；交互契约不变）
  *
  * ── 行为层 ──
- * - 一卡显示：衬线年份 + 题名（两行截断 min-height）/ 期刊斜体（空隐藏）/
- *   标签胶囊（前 3 个）/ meta 行（作者 · 标注 · 笔记，tabular-nums）
- * - 选中态样式；双击进入阅读器（onOpen 回调）
- * - L 角饰为纯装饰（aria-hidden，hover 金显形——样式在 library.css）
+ * - 六路信息列（mockup .row 逐值）：①编号=「#」+三位零填充序号（列表位置序
+ *   index+offset+1——P5 catalog_no 落地后升级真编号）②题名（nowrap ellipsis）
+ *   +副行期刊斜体（空隐藏）③年月（papers 无 month 字段——v1 年份单值，
+ *   null→「—」，P5 升级点备案）④引用=citedByCount（缺→「—」）⑤档次=
+ *   venueToTier(venue) 纯映射徽章（T1=accent 底白字/T2=accent 描边/
+ *   T3=line 描边 faint/未命中=「—」——src/shared/venue-tier.ts 单源）
+ *   ⑥标签=前 3 个 .lib-t-mini+「+N」折叠
+ * - 选中态挂 sel 类；双击进入阅读器（onOpen 回调）
  *
  * ── 接口层 ──
- * - export function PaperRow(props: { paper: PaperSummary; selected: boolean;
- *     onClick(): void; onOpen(): void }): JSX.Element
+ * - export function PaperRow(props: { paper: PaperSummary; ordinal: number;
+ *     selected: boolean; onClick(): void; onOpen(): void }): JSX.Element
+ * - ordinal=1 起算行序（PaperList 以 index+offset+1 注入）
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 纯展示；无网络无 store；皮肤=library.css .lib-card 系类（token 单源）
+ * - 纯展示；无网络无 store；皮肤=library.css .lib-row 系类（token 单源）
  */
 import type { PaperSummary } from '@shared/models/paper'
+import { venueToTier } from '@shared/venue-tier'
 
 /** 标签徽标最多展示个数，超出折叠为 +N */
 const MAX_TAG_BADGES = 3
 
-/** 作者摘要：首个作者 + et al.；无作者回退为「佚名」 */
-function formatAuthors(authors: readonly string[]): string {
-  const first = authors[0]?.trim() ?? ''
-  if (first === '') return '佚名'
-  return authors.length > 1 ? `${first} et al.` : first
-}
-
 export function PaperRow(props: {
   paper: PaperSummary
+  ordinal: number
   selected: boolean
   onClick: () => void
   onOpen: () => void
 }): JSX.Element {
-  const { paper, selected } = props
+  const { paper, selected, ordinal } = props
   const title = paper.title.trim() === '' ? '（无标题）' : paper.title
   const venue = paper.venue.trim()
+  const tier = venueToTier(venue)
   // 过滤空白标签名后截前 N 个；剩余数量折叠为 +N 徽标
   const tagNames = paper.tagNames.filter((name) => name.trim() !== '')
   const shownTags = tagNames.slice(0, MAX_TAG_BADGES)
@@ -47,37 +48,33 @@ export function PaperRow(props: {
       title={title}
       onClick={props.onClick}
       onDoubleClick={props.onOpen}
-      className={`lib-card block w-full select-none text-left${selected ? ' lib-card-selected' : ''}`}
+      className={`lib-row${selected ? ' sel' : ''}`}
     >
-      <span className="lib-corner lib-corner-tl" aria-hidden="true" />
-      <span className="lib-corner lib-corner-br" aria-hidden="true" />
-      <span className="lib-card-row1">
-        <span className="lib-card-year">
-          {paper.year === null ? (
-            <span className="lib-card-year-gem" aria-hidden="true" />
-          ) : (
-            paper.year
-          )}
-        </span>
-        <span className="lib-card-title" style={{ color: 'var(--text)' }}>
-          {title}
-        </span>
+      <span className="lib-r-id">{`#${String(ordinal).padStart(3, '0')}`}</span>
+      <span className="lib-r-main">
+        <span className="lib-r-title">{title}</span>
+        {venue !== '' && (
+          <span className="lib-r-sub">
+            <span className="lib-r-j">{venue}</span>
+          </span>
+        )}
       </span>
-      {venue !== '' && <span className="lib-card-venue">{venue}</span>}
-      {shownTags.length > 0 && (
-        <span className="lib-card-tags">
-          {shownTags.map((name) => (
-            <span key={name} className="lib-tag">
-              {name}
-            </span>
-          ))}
-          {hiddenTagCount > 0 && <span className="lib-card-tagmore">+{hiddenTagCount}</span>}
-        </span>
-      )}
-      <span className="lib-card-meta">
-        <span>{formatAuthors(paper.authors)}</span>
-        <span>{`标注 ${paper.annotationCount}`}</span>
-        <span>{`笔记 ${paper.noteCount}`}</span>
+      <span className="lib-r-year">{paper.year === null ? '—' : paper.year}</span>
+      <span className="lib-r-cite">{paper.citedByCount === undefined ? '—' : paper.citedByCount}</span>
+      <span className="lib-r-tier">
+        {tier === null ? (
+          <span className="lib-tier none">—</span>
+        ) : (
+          <span className={`lib-tier ${tier.toLowerCase()}`}>{tier}</span>
+        )}
+      </span>
+      <span className="lib-r-tags">
+        {shownTags.map((name) => (
+          <span key={name} className="lib-t-mini">
+            {name}
+          </span>
+        ))}
+        {hiddenTagCount > 0 && <span className="lib-t-more">{`+${hiddenTagCount}`}</span>}
       </span>
     </button>
   )
