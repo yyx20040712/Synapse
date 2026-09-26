@@ -154,7 +154,9 @@
   padding: 14px 10px;
   position: relative;
   color: var(--nav-text);
-  background: linear-gradient(180deg, var(--ink), var(--ink-deep));
+  /* T3-P1 钉值——P2 窄轨退役同删：--ink 语义已翻转（亮面墨字色），
+     墨青渐变顶钉 --ink-legacy 防随族误伤 */
+  background: linear-gradient(180deg, var(--ink-legacy), var(--ink-deep));
 }
 /* 右缘金渐隐线（mockup nav::after 语法逐值誊录；R2-UI1 加 220% 纵向渐变
    缓移——金线沿侧栏缘缓慢流淌，UI「活」感的常驻层（reduced-motion 关） */

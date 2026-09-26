@@ -424,10 +424,10 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     ).toBe(false)
   })
 
-  it('appSettings：缺省填充 theme=system/uiScale=small；非法 email/theme/uiScale 拒', () => {
+  it('appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）', () => {
     expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({
       contactEmail: 'user@example.com',
-      theme: 'system',
+      theme: 'light',
       uiScale: 'small'
     })
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)

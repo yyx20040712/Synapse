@@ -19,10 +19,10 @@ async function freshDeps(ping?: (host: string) => Promise<{ ok: boolean; latency
 }
 
 guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', () => {
-  it('get：无文件返回默认值（contactEmail 合法 email，theme=system）', async () => {
+  it('get：无文件返回默认值（contactEmail 合法 email，theme=light）', async () => {
     const ipc = createSettingsIpc(await freshDeps())
     const s = await ipc.get({})
-    expect(s.theme).toBe('system')
+    expect(s.theme).toBe('light')
     expect(s.contactEmail).toContain('@')
   })
 
@@ -38,7 +38,7 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
       fs.writeFile(join(deps.userDataDir, 'settings.json'), '{broken', 'utf-8')
     )
     const fallback = await ipc.get({})
-    expect(fallback.theme).toBe('system')
+    expect(fallback.theme).toBe('light')
   })
 
   it('写入文件为 UTF-8（中文主题值无乱码——原子写 tmp+rename）', async () => {
@@ -72,6 +72,21 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
     const reread = await ipc.get({})
     expect(reread.uiScale).toBe('large')
     expect(reread.theme).toBe('dark')
+  })
+
+  it('T3-P1 旧 settings.json theme=system：get 读侧平滑迁移为 light 且既有字段保全（迁移锁）', async () => {
+    const deps = await freshDeps()
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(
+      join(deps.userDataDir, 'settings.json'),
+      '{"contactEmail":"me@example.com","theme":"system","uiScale":"large"}',
+      'utf-8'
+    )
+    const ipc = createSettingsIpc(deps)
+    const s = await ipc.get({})
+    expect(s.theme, "存量 theme:'system' 应迁移为 'light'（枚举退役，A6 不跟随系统）").toBe('light')
+    expect(s.contactEmail, '迁移不得丢既有字段').toBe('me@example.com')
+    expect(s.uiScale, '迁移不得丢既有字段').toBe('large')
   })
 
   it('diagNetwork：对全部白名单 host 并发 ping', async () => {

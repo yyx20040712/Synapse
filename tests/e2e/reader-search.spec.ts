@@ -71,7 +71,8 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高�
   await expect(hlLayer).toHaveCSS('pointer-events', 'none')
   const activeHl = win.locator('[data-page-box="1"] [data-testid="search-hl"][data-active="true"]').first()
   await expect(activeHl).toBeVisible()
-  await expect(activeHl).toHaveCSS('background-color', 'rgb(220, 235, 245)')
+  // [T3-P1] --accent-soft 白天族值切换 #dcebf5→#eaeefc——[locked-change] 同步断言值
+  await expect(activeHl).toHaveCSS('background-color', 'rgb(234, 238, 252)')
   await expect(activeHl).toHaveCSS('outline-style', 'solid')
 
   // 几何防线：active 块与被匹配文本行盒垂直同带+水平覆盖过半（滚动平移不变量）

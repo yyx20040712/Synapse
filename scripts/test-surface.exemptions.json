@@ -108,6 +108,102 @@
       "skipSiteText": "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)",
       "reason": "F-RDR-01 设计定稿终裁修正 8 明文条款：探针有效帧 <10（headless rAF 节流漏检）重跑上限 3 次后 skip 记档不假绿——skip 位为票面强制行为（非收紧/删改既有面）",
       "rulingLink": "docs/design/2026-09-20_f-rdr01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--bg 声明为设计定稿值 #f6f4ee",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--panel-glass 声明为设计定稿值 rgba(255, 255, 255, 0.72)",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--border 声明为设计定稿值 #e4ded1",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--text 声明为设计定稿值 #23262d",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--text-dim 声明为设计定稿值 #6f7482",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--accent 声明为设计定稿值 #2c5f8a",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--accent-soft 声明为设计定稿值 #dcebf5",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--danger 声明为设计定稿值 #b3403a",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--ok 声明为设计定稿值 #3d7a50",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--ink 声明为设计定稿值 #1b2333",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "--surface-cool 声明为设计定稿值 #f0f2f5",
+      "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "appSettings：缺省填充 theme=system/uiScale=small；非法 email/theme/uiScale 拒",
+      "reason": "T3-P1 枚举退役 system（final-design §0/A6 不跟随系统）：schema default system→light，契约用例标题与期望值随契约同步",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/settings.test.ts",
+      "caseTitle": "get：无文件返回默认值（contactEmail 合法 email，theme=system）",
+      "reason": "T3-P1 DEFAULTS.theme system→light（final-design §0）：默认值用例标题随契约同步",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/settings.test.ts",
+      "assertionText": "expect(fallback.theme).toBe('system')",
+      "reason": "T3-P1 DEFAULTS.theme system→light（final-design §0）：损坏回退默认值断言随契约同步",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/e2e/reader-text.spec.ts",
+      "assertionText": "expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(246, 244, 238)')",
+      "reason": "T3-P1 白天族 --bg 值切换 #f6f4ee→#f4f6f9（final-design §0）：e2e 值锁同步（票面 §三.4 明文条件同步面）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
+    },
+    {
+      "file": "tests/e2e/reader-search.spec.ts",
+      "assertionText": "expect(activeHl).toHaveCSS('background-color', 'rgb(220, 235, 245)')",
+      "reason": "T3-P1 白天族 --accent-soft 值切换 #dcebf5→#eaeefc（final-design §0）：搜索 active 块底色=该 token 解析值，e2e 值锁随票同步（rgb 形态未被票面 grep 清单覆盖，全量 e2e 实跑发现）",
+      "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md"
     }
   ]
 }

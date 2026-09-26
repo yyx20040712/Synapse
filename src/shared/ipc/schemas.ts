@@ -430,7 +430,9 @@ export const UI_SCALE: Record<UiScale, number> = { small: 1, medium: 1.1, large:
 export const appSettingsSchema = z
   .object({
     contactEmail: z.string().email(), // 开放 API 礼貌池标识
-    theme: z.enum(['light', 'dark', 'system']).default('system'),
+    // T3-P1 主题三族：'system' 退役（A6 不跟随系统）——枚举 light/dark/sepia，
+    // 默认白天；存量 settings.json theme:'system' 由 settings.service 读侧迁移
+    theme: z.enum(['light', 'dark', 'sepia']).default('light'),
     uiScale: uiScaleSchema.default('small')
   })
   .strict()

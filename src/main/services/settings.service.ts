@@ -5,8 +5,11 @@
  * ── 行为层 ──
  * - settings.json 读写 + 网络诊断（文件域+网络诊断域，无 repos 依赖）
  * - get：读 {userDataDir}/settings.json；不存在/损坏/不合 schema → 返回默认
- *   { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
+ *   { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'light', uiScale: 'small' }
  *   （尽力写回文件）
+ * - T3-P1 读侧平滑迁移：JSON.parse 成功后、safeParse 前，raw.theme==='system'
+ *   改写为 'light'（'system' 枚举退役——A6 不跟随系统；存量 settings.json
+ *   兼容，contactEmail/uiScale 零丢失，仅 theme 单字段替换）
  * - set：原子写（单源=services/shared/atomic-write，F-DEDUP-01——先写 .tmp
  *   再 rename；req 已由 register 过 appSettingsSchema 校验）
  * - diagNetwork：对 shared/constants 的 ALLOWED_REMOTE_HOSTS 并发 deps.ping(host)，
@@ -47,7 +50,7 @@ import type { ApiHandlers } from '../../shared/ipc/api-surface'
 /** 网络诊断探活签名（与 IpcDeps.ping 同形——注入面即现成字段） */
 type PingFn = (host: string) => Promise<{ ok: boolean; latencyMs: number }>
 
-const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'system', uiScale: 'small' }
+const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'light', uiScale: 'small' }
 
 export function createSettingsService(deps: {
   userDataDir: string
@@ -59,7 +62,17 @@ export function createSettingsService(deps: {
   async function readSettings(): Promise<AppSettings> {
     try {
       const raw = await readFile(settingsPath, 'utf-8')
-      const parsed = appSettingsSchema.safeParse(JSON.parse(raw))
+      const parsedJson: unknown = JSON.parse(raw)
+      // T3-P1 读侧平滑迁移：'system' 已退役（A6）——单字段替换后再过 schema，
+      // 其余字段（contactEmail/uiScale）原样透传零丢失
+      if (
+        typeof parsedJson === 'object' &&
+        parsedJson !== null &&
+        (parsedJson as { theme?: unknown }).theme === 'system'
+      ) {
+        ;(parsedJson as { theme?: unknown }).theme = 'light'
+      }
+      const parsed = appSettingsSchema.safeParse(parsedJson)
       if (parsed.success) {
         return parsed.data
       }
