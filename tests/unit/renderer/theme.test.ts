@@ -142,6 +142,15 @@ const TOKENS: Array<[string, string]> = [
   ['--shadow-sel-glow', '0 2px 8px rgba(58, 91, 217, 0.14)'],
   ['--shadow-cta', '0 2px 6px rgba(58, 91, 217, 0.3)'],
   ['--accent-ink', '#ffffff'],
+  // ── [T3-P6] 脉络时间线小卡族档位与恒定 token（mockup
+  //    2026-09-26_v2_theme-light.html L203-262 逐值——INV-61 档位增补，
+  //    主控裁决 b/d 授权；10px 复用 --fs-micro 同值不另立）──
+  ['--fs-tl-year', '23px'],
+  ['--fs-tl-title', '9.3px'],
+  ['--fs-tl-idea', '8.2px'],
+  ['--fs-tl-meta', '7.5px'],
+  ['--fs-tl-hint', '10.5px'],
+  ['--shadow-tl-sel', '0 3px 10px rgba(58, 91, 217, 0.18)'],
   // ── F-CSS-03 颜色 token 化（2026-09-09 用户双裁决：零视觉差口径[值原样
   //    入库,同值合并共享]+语义命名优先[一值一 token,名取主导用途,多用途
   //    中性名]——50 值=48 新 token+2 既有 token 消费[#ffffff→--panel/
@@ -180,9 +189,10 @@ const TOKENS: Array<[string, string]> = [
   ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
   ['--lib-paper-hi', '#fffdf9'],
   ['--lib-paper-lo', '#fdfaf3'],
-  ['--edge-label-text', '#6b7280'],
+  // [T3-P6 回炉] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
+  // 组件退役删除（k1-W2/d1-N4）；--edge-inferred 全仓零消费保留=P7 连线
+  // 系统复用预设（final-design §2.4）
   ['--edge-inferred', '#8a94a6'],
-  ['--node-meta-border', '#dfa84a'],
   ['--note-border', 'rgba(151, 160, 187, 0.28)'],
   ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
   // [T3-P4] --shadow-page 值锁随改注链：F-06 单层影→mockup .page 双层影
@@ -387,16 +397,20 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
   ]
     .map(readSrc)
     .join('\n')
-  const LINEAGE_SPACING_TSX = [
-    '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
-    '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
+  // [T3-P6 主控裁决 b] LineageNodeCard/LineageNodeMeta 随 SVG 画布退役
+  // 删除——两源断言块自清单移除（lineage 六件→侧板四件）；[回炉 2 d1-N2]
+  // 时间线新件三枚纳入清单（间距负锚扩面）；路径数组独立变量=清单级负锚
+  // 载体（d1-N1：锁「清单不含退役路径」意图，join 后内容串无法承载）
+  const LINEAGE_SPACING_PATHS = [
     '../../../src/renderer/features/lineage/LineageSideAiNotes.tsx',
     '../../../src/renderer/features/lineage/LineageSideManualNote.tsx',
     '../../../src/renderer/features/lineage/LineageSidePanel.tsx',
-    '../../../src/renderer/features/lineage/LineageSideTags.tsx'
+    '../../../src/renderer/features/lineage/LineageSideTags.tsx',
+    '../../../src/renderer/features/lineage/LineageTimeline.tsx',
+    '../../../src/renderer/features/lineage/LineageTimelineCard.tsx',
+    '../../../src/renderer/features/lineage/lineage-timeline.ts'
   ]
-    .map(readSrc)
-    .join('\n')
+  const LINEAGE_SPACING_TSX = LINEAGE_SPACING_PATHS.map(readSrc).join('\n')
   const countLiteral = (text: string, literal: string): number =>
     (text.match(new RegExp(literal.replaceAll('.', '\\.'), 'g')) ?? []).length
   const DURATION_COUNTS: Array<[string, string, number]> = [
@@ -500,17 +514,15 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(LINEAGE_SPACING_TSX).not.toMatch(/(padding|margin|gap)(Top|Bottom|Left|Right)?:\s*`[\d-]/)
   })
 
-  it('LineageNodeCard 间距 class 在场（pt-2/gap-1——防「全删不补」假绿）', () => {
-    const card = readSrc('../../../src/renderer/features/lineage/LineageNodeCard.tsx')
-    expect(card).toContain('className="pt-2"')
-    expect(card).toContain('className="gap-1"')
-  })
-
-  it('LineageNodeMeta 间距 class 在场（px-1/gap-0.75/px-0.75/pl-1）', () => {
-    const meta = readSrc('../../../src/renderer/features/lineage/LineageNodeMeta.tsx')
-    expect(meta).toContain('className="px-1"')
-    expect(meta).toContain('className="gap-0.75 px-0.75"')
-    expect(meta).toContain('className="pl-1"')
+  it('退役组件双负锚：扫描清单不含退役路径+侧板/时间线族源码不引用退役组件名（T3-P6 主控裁决 b；回炉 2 d1-N1 双锁）', () => {
+    // 清单级（真锁「路径不得回填」意图——d1-N1：join 内容串锁不了清单漂移）
+    expect(
+      LINEAGE_SPACING_PATHS.some((p) => p.includes('LineageNodeCard') || p.includes('LineageNodeMeta')),
+      '退役组件路径不得回填扫描清单'
+    ).toBe(false)
+    // 源码级（侧板+时间线族源码不得提及退役组件——import 回漂即红）
+    expect(LINEAGE_SPACING_TSX).not.toContain('LineageNodeCard')
+    expect(LINEAGE_SPACING_TSX).not.toContain('LineageNodeMeta')
   })
 
   it('侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）', () => {
@@ -567,10 +579,12 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
    *  分号依赖；match 带 g 不受 lastIndex 跨用例污染） */
   const FS_DECL = /font-size:[^;{}]*[\d.]+\s*[a-z%]/gi
   const FS_TSX = [
-    '../../../src/renderer/features/lineage/LineageNodeMeta.tsx',
-    '../../../src/renderer/features/lineage/LineageNodeCard.tsx',
+    // [T3-P6 主控裁决 b] NodeMeta/NodeCard 随 SVG 画布退役移除（四件→两件）；
+    // [回炉 2 d1-N2] 时间线新件纳入（字号负锚扩面）
     '../../../src/renderer/features/lineage/LineageSideTags.tsx',
-    '../../../src/renderer/features/reader/view/TabBar.tsx'
+    '../../../src/renderer/features/reader/view/TabBar.tsx',
+    '../../../src/renderer/features/lineage/LineageTimeline.tsx',
+    '../../../src/renderer/features/lineage/LineageTimelineCard.tsx'
   ]
     .map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'))
     .join('\n')

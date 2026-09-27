@@ -3,10 +3,12 @@
  * [LG-03] LineageBoard —— 交互编辑面组件测试（锁定合约，always-active——
  * 不经 guardedDescribe）。
  *
- * 覆盖：拖拽落点→upsert-node x/y 载荷/单击选中 onSelectNode 上抛（04 侧板
- * 消费面预留）/加边全流程（源节点菜单「连线到…」+目标选取）/树拒绝三路径
+ * 覆盖：单击选中 onSelectNode 上抛（04 侧板消费面预留；[T3-P6] 拖拽 x/y
+ * 写面随拖拽退役——载荷保留断言由 core_idea 编辑 it 承载）/加边全流程（源
+ * 节点菜单「连线到…」+目标选取）/树拒绝三路径
  * toast（service reason 透传——守卫宿主=LG-01 service）/改父=删+加两调用/
- * 删节点/删除父连线/core_idea 编辑（x/y 保留防清覆盖）/保存失败指示+重试/
+ * 删节点/删除父连线/core_idea 编辑（x/y 保留防清覆盖）/保存失败指示+重试
+ * （[T3-P6] 写触发器=编辑 core_idea——drag 随拖拽退役，主控裁决 a）/
  * 加节点对话框两型（library.list 搜索选取 vs 主题 title）/组合根退出聚合
  * （lineage dirty→system/set-quit-dirty，INV-22 扩面）。
  */
@@ -91,22 +93,12 @@ const nodeEl = (id: string): Element => {
   return el
 }
 
-/** 拖拽会话：pointerdown(clientX/Y)→pointermove(+dx,+dy)→pointerup */
-function drag(el: Element, dx: number, dy: number): void {
-  act(() => {
-    el.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
-  })
-  act(() => {
-    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 100 + dx, clientY: 100 + dy }))
-  })
-  act(() => {
-    window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100 + dx, clientY: 100 + dy }))
-  })
-}
-
-/** 单击会话（位移 0——与拖拽按阈值区分） */
+/** [T3-P6] 拖拽会话已随 x/y 自由拖拽退役删除（Timeline 卡 onClick 语义）。
+ *  单击=派发 click 事件（主控裁决 a：触发手段适配新 DOM，断言意图保活） */
 function clickNode(el: Element): void {
-  drag(el, 0, 0)
+  act(() => {
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
 }
 
 /** 右键节点开菜单 */
@@ -116,6 +108,26 @@ function openMenu(id: string): void {
       new MouseEvent('contextmenu', { clientX: 200, clientY: 150, bubbles: true, cancelable: true })
     )
   })
+}
+
+/** [T3-P6 主控裁决 a] 写触发器=编辑 core_idea（既有 upsert-node 写通道——
+ *  drag 触发器随拖拽退役，保存态/聚合脏态断言语义迁移保活） */
+async function writeViaEditIdea(id: string): Promise<void> {
+  openMenu(id)
+  clickMenu('编辑核心想法')
+  const ta = q('[data-testid="core-idea-input"]') as HTMLTextAreaElement | null
+  if (ta === null) throw new Error('core_idea 输入未渲染')
+  act(() => {
+    typeInto(ta, '保存态触发想法')
+  })
+  const save = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
+    (b) => b.textContent === '保存'
+  )
+  if (save === undefined) throw new Error('保存按钮未渲染')
+  act(() => {
+    save.click()
+  })
+  await flush()
 }
 
 /** 点菜单项（按可见文本） */
@@ -179,24 +191,10 @@ afterEach(() => {
   host = null
 })
 
-describe('LineageBoard —— 拖拽/选中（JSON Canvas 覆盖语义）', () => {
-  it('拖拽落点→upsert-node x/y 载荷（原覆盖位+位移；其余字段保留）', async () => {
-    seedLineage([node('A', { ...OVL, title: '拖拽锚点', coreIdea: '想法' })])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    drag(nodeEl('A'), 60, 30)
-    await flush()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
-      id: 'A',
-      paperId: 'paper-A',
-      title: '拖拽锚点',
-      coreIdea: '想法',
-      year: 2020,
-      x: 560,
-      y: 430
-    })
-  })
-
-  it('单击=选中上抛（位移低于阈值不触发写）；onSelectNode 形态照票面（04 侧板消费面）', async () => {
+describe('LineageBoard —— 选中上抛（T3-P6 拖拽退役后）', () => {
+  // [T3-P6 主控裁决 a] 原「拖拽落点→upsert-node x/y 载荷」it 随 x/y 自由
+  // 拖拽退役删除（拖拽面退役同族）；载荷面 x/y 保留断言见 core_idea 编辑 it
+  it('单击=选中上抛（纯选中零写）；onSelectNode 形态照票面（04 侧板消费面）', async () => {
     const onSelect = vi.fn()
     seedLineage([node('A', OVL)])
     mount(<LineageBoard onSelectNode={onSelect} />)
@@ -302,8 +300,7 @@ describe('LineageBoard —— 保存态指示（autosave-first：无保存按钮
       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
     seedLineage([node('A', OVL)])
     mount(<LineageBoard onSelectNode={() => undefined} />)
-    drag(nodeEl('A'), 20, 10)
-    await flush()
+    await writeViaEditIdea('A')
     const bar = q('[data-testid="lineage-save-status"]')
     expect(bar?.textContent).toContain('保存失败')
     const retry = q('[data-testid="lineage-retry-save"]') as HTMLButtonElement | null
@@ -483,7 +480,8 @@ describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lin
       nav.click()
     })
     await flush()
-    drag(nodeEl('A'), 10, 10)
+    // [T3-P6 主控裁决 a] drag 触发器→编辑 core_idea 写通道（断言意图不变）
+    await writeViaEditIdea('A')
     await flush()
     const calls = stubApi.system.setQuitDirty.mock.calls
     expect(calls.length).toBeGreaterThanOrEqual(2) // false（初始）→true（失败）

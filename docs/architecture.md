@@ -287,8 +287,10 @@ AGENTS.md「环境事实」单源，此处不复制。
 
 ### 8.1 lineage（发展脉络图）
 
-- 渲染域 `src/renderer/features/lineage/`（第四视图：Reingold-Tilford 零依赖
-  布局+SVG 画布 pan/zoom+侧板详情）；main 域 `services/lineage/`（树守卫两口：
+- 渲染域 `src/renderer/features/lineage/`（第四视图：[T3-P6 起纵向「年+月」
+  时间线 DOM 布局=LineageTimeline 滚动容器+104×52 小卡——RT 树布局/SVG 画布
+  pan/zoom 整族退役，INV-78；连线视觉=P7 重建中间态] +侧板详情）；main 域
+  `services/lineage/`（树守卫两口：
   草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
   lineTypes 静态校验拆件）。
@@ -315,7 +317,7 @@ AGENTS.md「环境事实」单源，此处不复制。
   manifest 终写前落盘；装配单源 `export_/lineage.assemble.ts`——递归
   alphabetical 键序+schema_version 1，INV-77）；与 ai-sensor 域解耦边界=
   2026-09-20 survey 档 §9（lineage.json=AI 评估输入预置契约——互不吞并）。
-- 视口/布局/卡尺寸单源不变量=INV-36/38/41/43/44/48（指针，正文在 INV 册）。
+- 视口/布局/卡尺寸单源不变量=INV-36/38/41/43/44/48（指针，正文在 INV 册；其中 36/38/41/43/44 五条消费面随 T3-P6 SVG 画布退役进入退役态注记——时间线容器结构新单源=INV-78）。
 
 ### 8.2 workspaces（课题隔离）
 

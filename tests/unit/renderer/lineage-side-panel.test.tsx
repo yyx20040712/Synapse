@@ -133,14 +133,10 @@ function click(el: Element): void {
   })
 }
 
-/** 单击画布节点（pointer 会话位移 0——board 测试 clickNode 同型） */
+/** 单击时间线节点卡（[T3-P6 主控裁决 a] pointer 会话→click 派发——
+ *  Timeline 卡 onClick 语义适配，断言意图保活） */
 function clickNode(el: Element): void {
-  act(() => {
-    el.dispatchEvent(new MouseEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }))
-  })
-  act(() => {
-    window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100, clientY: 100 }))
-  })
+  click(el)
 }
 
 const JUMP = vi.fn()
@@ -461,11 +457,12 @@ async function mountPage(): Promise<void> {
   await flush()
 }
 
-it('Page 全链：单击节点→侧板挂载呈现节点+Canvas 选中视觉态兑现', async () => {
+it('Page 全链：单击节点→侧板挂载呈现节点+Timeline 选中视觉态兑现', async () => {
   await mountPage()
   expect(q('[data-testid="lineage-side-panel"]')?.textContent).toContain('节点A')
-  expect(q('[data-node-id="A"] rect')?.getAttribute('data-selected')).toBe('true')
-  expect(q('[data-node-id="T"] rect')?.getAttribute('data-selected')).toBe('false')
+  // [T3-P6 主控裁决 a] SVG rect[data-selected]→DOM 卡 .sel 类（选择器适配）
+  expect(q('[data-node-id="A"]')?.classList.contains('sel')).toBe(true)
+  expect(q('[data-node-id="T"]')?.classList.contains('sel')).toBe(false)
 })
 
 it('Page 全链：AI 条目双击→requestOpenPaperAnchored 锚载荷（0 基页）', async () => {

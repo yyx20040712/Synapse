@@ -37,8 +37,10 @@
  *   阻碍验证（skip 全组），自身激活由主控收口亲验+翻 done 时点保证
  *   （门二 W2 已裁亲验是唯一防线）。
  * - **用例组映射（裁决 1：八验收面合并为 4 个 playwright 场景句柄，
- *   每条验收面均有断言）**：T1=①导入渲染真实文本+②pan/zoom 后可
- *   断言；T2=③拖拽 reload 持久+⑧主题节点添加/编辑 core_idea reload
+ *   每条验收面均有断言）**：T1=①导入渲染真实文本+②滚动容器锚
+ *   （[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
+ *   T2=③时间线真文本 reload 持久（[T3-P6] 拖拽 x/y 持久随自由拖拽
+ *   退役——P8 槽位重排接缝）+⑧主题节点添加/编辑 core_idea reload
  *   持久（同一 launch 两轮 reload）；T3=④多父加边树拒绝 toast+⑦
  *   写通道 patch 失败→保存失败指示条→真聚合脏态→close 拦截两态
  *   （取消保持/确认 destroy）；T4=⑤侧板分节分色+⑥AI 条目双击跳
@@ -89,6 +91,12 @@ const THEME_IDEA = '主题节点的核心想法（e2e 持久锚）'
 /** R2-LG12 T5 第四篇：综述题名（isSurveyTitle 命中「综述」关键词；幽灵行） */
 const SURVEY_PAPER = { id: 'e2e-lg-survey', title: '领域综述：扩散模型全景（e2e）', year: 2021 } as const
 
+/** [T3-P6 回炉 T6] 砖砌锚两篇（幽灵行——draft schema paper_id 必填） */
+const BRICK_PAPERS = [
+  { id: 'e2e-lg-brick-a', title: '砖砌文献甲（e2e）' },
+  { id: 'e2e-lg-brick-b', title: '砖砌文献乙（e2e）' }
+] as const
+
 /** 草稿 fixture（树形：根→甲/乙——④的多父场景=对乙再加边被拒） */
 function draftJson(): string {
   return JSON.stringify({
@@ -119,15 +127,10 @@ function draftJsonWithSurvey(): string {
   })
 }
 
-/** 画布节点卡片 g（SVG）——按内含标题文本过滤 */
+/** 时间线节点小卡（DOM .tl-card）——按内含标题文本过滤
+ *  [T3-P6] SVG g[data-node-id]→.tl-card[data-node-id]（同名 id 接缝沿承） */
 function nodeG(win: Page, title: string) {
-  return win.locator('svg g[data-node-id]').filter({ hasText: title })
-}
-
-/** 解析节点 g 的 translate(x, y)（自动布局/覆盖位——持久断言用） */
-function parseTranslate(s: string | null): { x: number; y: number } | null {
-  const m = s?.match(/^translate\((-?[\d.]+), (-?[\d.]+)\)$/)
-  return m ? { x: Number(m[1]), y: Number(m[2]) } : null
+  return win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 }
 
 /** 建库迁移第一跳（reader-text 同型：不 import src 内部模块） */
@@ -199,10 +202,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
 
   /**
-   * T1=验收面①②：导入草稿→画布渲染真实文本（节点标题/年份——宪法
-   * e2e 红线）+空态先行+pan/zoom 交互后节点仍可断言。
+   * T1=验收面①②：导入草稿→时间线渲染真实文本（年份头/月标签/小卡
+   * 题名/骑缝号——宪法 e2e 红线）+空态先行+滚动容器锚（[T3-P6]
+   * pan/zoom 退役→scrollTo 后节点仍可断言）。
    */
-  test('T1 导入草稿→画布渲染真实文本→pan/zoom 后节点仍可断言', async () => {
+  test('T1 导入草稿→时间线渲染真实文本→滚动容器锚后节点仍可断言', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t1-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -218,64 +222,50 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 侧板空态（04 交付面顺带锚）
     await expect(win.getByTestId('lineage-side-panel')).toHaveText('单击节点查看详情')
 
-    // ①导入→画布真实文本（节点标题+卡片年份；年份层带为「YYYY 年」卡片为纯数字）
+    // ①导入→时间线真实文本（宪法 e2e 红线）：小卡题名+年份头纯数字
+    //   （mockup 形态——旧「YYYY 年」层带标签随 SVG 画布退役）+未定月
+    //   月标签+骑缝编号（INV-76——lineageOrder 全序 2020→2022→2023）
     await importDraftViaUi(app, win, fixturePath)
     await expect(win.getByText('脉络根文献')).toBeVisible()
-    await expect(win.getByText('2022', { exact: true })).toBeVisible()
-    await expect(win.getByText('2023', { exact: true })).toBeVisible()
-    await expect(win.getByText('2020 年')).toBeVisible() // 层带标签
-    // 边渲染（2 条父子连线 path）
-    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(2)
-    // F-LG13 统一卡尺寸（受锁改向：旧分档宽 180/260 断言面随用户令改统一）：
-    // 全节点 rect 宽高恒 240×110（属性级断言——k 无关；短/长题名同卡）
-    const rectSizes = await win.evaluate(() =>
-      Array.from(document.querySelectorAll('svg g[data-node-id] > rect')).map(
-        (r) => `${r.getAttribute('width')}x${r.getAttribute('height')}`
-      )
-    )
-    expect(rectSizes.length).toBe(3)
-    expect(new Set(rectSizes).size).toBe(1)
-    expect(rectSizes[0]).toBe('240x110')
+    expect(await win.locator('.tl-year-num').allTextContents()).toEqual(['2020', '2022', '2023'])
+    // 全体节点 month=null→各年未定月收纳框（月标签真文本；同年末位）
+    expect(await win.locator('.month-tag').allTextContents()).toEqual([
+      '未定月 · 1 篇',
+      '未定月 · 1 篇',
+      '未定月 · 1 篇'
+    ])
+    expect(await win.locator('.c-no').allTextContents()).toEqual(['#001', '#002', '#003'])
+    // 连线视觉渲染面已退役（P7 连线系统恢复视觉锚——票面备案中间态：
+    // 加边/改父等编辑数据操作面经 Board 菜单保活，T3/T5 承载）
 
-    // ②pan：空白（panbg）拖拽→视口 tx 偏移（起点取左下空白——右上角有
-    // 导入成功 toast 卡片盖在 svg 外层，pointerdown 落它会绕过 panbg；层带
-    // 横线在布局系 y=0/140/280，左下 y≈height-40 无线无标签）
-    const svg = win.getByTestId('lineage-canvas')
-    const box = await svg.boundingBox()
-    expect(box).not.toBeNull()
-    await win.mouse.move(box!.x + 30, box!.y + box!.height - 40)
-    await win.mouse.down()
-    await win.mouse.move(box!.x + 54, box!.y + box!.height - 24, { steps: 4 })
-    await win.mouse.up()
-    await expect
-      .poll(async () => {
-        const t = await win.locator('svg g[data-viewport]').getAttribute('transform')
-        return Number(t?.match(/^translate\((-?[\d.]+), /)?.[1] ?? '0')
-      })
-      .toBeGreaterThan(0)
-    // pan 后节点文本仍可断言（可见非 testid 空壳）
+    // ②滚动容器锚（pan/zoom INV-43/44 退役→滚动定位语义）：fixture 三
+    //   节点内容不满视口——先注入临时高度制造可滚面（evaluate 测试手段
+    //   非产品面，probe 先例），再验 scrollTop 真推进+首年份头滚出容器顶
+    //   （d1-W3 回炉：防「容器不可滚也绿」恒真面）+节点文本仍可断言
+    await win.locator('.tl-content').evaluate((el) => {
+      el.style.minHeight = '2000px'
+    })
+    const timeline = win.locator('.timeline')
+    const scrolledTop = await timeline.evaluate((el) => {
+      el.scrollTo(0, 300)
+      return el.scrollTop
+    })
+    expect(scrolledTop).toBeGreaterThan(0)
+    const firstYearBox = await win.locator('.tl-year').first().boundingBox()
+    const timelineBox = await timeline.boundingBox()
+    expect(firstYearBox!.y).toBeLessThan(timelineBox!.y)
     await expect(win.getByText('脉络甲文献')).toBeVisible()
-
-    // ②zoom：滚轮（鼠标锚点缩放）→scale 离开 1（wheel 钳制 [0.25,4]）
-    await win.mouse.wheel(0, -240)
-    await expect
-      .poll(async () => {
-        const t = await win.locator('svg g[data-viewport]').getAttribute('transform')
-        return Number(t?.match(/scale\(([\d.]+)\)$/)?.[1] ?? '1')
-      })
-      .toBeGreaterThan(1)
-    // zoom 后节点文本与连线仍可断言
     await expect(win.getByText('脉络乙文献')).toBeVisible()
-    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(2)
 
     await app.close()
   })
 
   /**
-   * T2=验收面③⑧：拖拽节点→reload→位置持久（JSON Canvas 覆盖语义）；
-   * 主题节点添加+编辑 core_idea→reload 持久。同一 launch 两轮 reload。
+   * T2=验收面③⑧：时间线真文本 reload 持久（[T3-P6 主控裁决] 拖拽 x/y
+   * 持久随自由拖拽退役——P8 槽位重排接缝；持久锚=年份头/月标签/小卡
+   * 题名）；主题节点添加+编辑 core_idea→reload 持久。同一 launch 两轮 reload。
    */
-  test('T2 拖拽位置 reload 持久+主题节点添加编辑 core_idea reload 持久', async () => {
+  test('T2 时间线真文本 reload 持久+主题节点添加编辑 core_idea reload 持久', async () => {
     test.slow() // 两轮 reload+四段写链
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t2-'))
     await firstHop(userData)
@@ -288,32 +278,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await importDraftViaUi(app, win, fixturePath)
 
-    // ③拖拽根节点 +120/+80 屏幕 px→布局位移=屏幕/k（R2-LG10 auto-fit 载入
-    //   后 k≠1——落点断言 scale-aware，[locked-change] 申报：原 k=1 假设随
-    //   auto-fit 必然红）→transform 到达落点=写回填证据
-    const rootG = nodeG(win, '脉络根文献')
-    const before = parseTranslate(await rootG.getAttribute('transform'))
-    expect(before).not.toBeNull()
-    const fitK = Number(
-      (await win.locator('svg g[data-viewport]').getAttribute('transform'))?.match(/scale\(([\d.]+)\)$/)?.[1] ?? '1'
-    )
-    const box = await rootG.boundingBox()
-    expect(box).not.toBeNull()
-    await win.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-    await win.mouse.down()
-    await win.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 80, { steps: 5 })
-    await win.mouse.up()
-    const target = { x: before!.x + 120 / fitK, y: before!.y + 80 / fitK }
-    await expect
-      .poll(async () => parseTranslate(await rootG.getAttribute('transform')))
-      .toEqual(expect.objectContaining({ x: expect.closeTo(target.x, 2), y: expect.closeTo(target.y, 2) }))
-
-    // reload→覆盖位持久（写已落地再 reload——无裸 sleep）
+    // ③[退役改写] 拖拽 x/y 持久段随自由拖拽退役（P8 槽位重排接缝）→
+    //   时间线真文本持久锚：reload→年份头/月标签/小卡题名仍在
     await reloadToLineage(win)
-    const after = parseTranslate(await nodeG(win, '脉络根文献').getAttribute('transform'))
-    expect(after).not.toBeNull()
-    expect(Math.abs(after!.x - target.x)).toBeLessThanOrEqual(2)
-    expect(Math.abs(after!.y - target.y)).toBeLessThanOrEqual(2)
+    expect(await win.locator('.tl-year-num').allTextContents()).toEqual(['2020', '2022', '2023'])
+    await expect(win.locator('.month-tag').first()).toHaveText('未定月 · 1 篇')
+    await expect(win.getByText('脉络根文献')).toBeVisible()
 
     // ⑧添加主题节点（阶段分组语义——虚线框 data-kind=theme）
     await win.getByTestId('lineage-add-node').click()
@@ -375,8 +345,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByText(/多父边拒绝：节点 .+ 已有父节点/)).toBeVisible({ timeout: 10_000 })
     // 拒绝型动作被丢弃不卡队列——保存态回 saved（无失败指示条）
     await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
-    // 图不变：仍 2 条边
-    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(2)
+    // 图数据不变锚：连线视觉面已退役（P7 恢复），守卫 toast 即 service 读
+    // 面证据（上行拒绝 reason 来自「乙已有父」的库内既有边）
 
     // ⑦ main 侧 patch 写通道 handler 抛错（系统型——票面 N8 注字面）
     await app.evaluate((electronMod) => {
@@ -394,14 +364,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       })
     })
 
-    // 拖拽根节点→写失败→error 保存态指示条+重试按钮（INV-04：失败不推进）
-    const rootG = nodeG(win, '脉络根文献')
-    const box = await rootG.boundingBox()
-    expect(box).not.toBeNull()
-    await win.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-    await win.mouse.down()
-    await win.mouse.move(box!.x + box!.width / 2 + 60, box!.y + box!.height / 2 + 40, { steps: 4 })
-    await win.mouse.up()
+    // 写失败触发=[T3-P6 适配] 拖拽退役→编辑 core_idea 写通道（同一
+    //   upsert-node 失败面：handler 已 patch 抛错→error 保存态）
+    await nodeG(win, '脉络根文献').click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
+    await win.getByTestId('core-idea-input').fill('写失败探针（e2e 桩）')
+    await win.getByRole('button', { name: '保存', exact: true }).click()
     const statusBar = win.getByTestId('lineage-save-status')
     await expect(statusBar).toBeVisible({ timeout: 10_000 })
     await expect(statusBar).toHaveText(/保存失败：/)
@@ -516,7 +484,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
     await expect(win.getByText('已绑定文献')).toBeVisible()
-    await expect(win.getByText('脉络甲的核心 idea（e2e）')).toBeVisible()
+    // [T3-P6 适配] core_idea 双渲染面（时间线卡 .c-idea+侧板）——getByText
+    // 严格模式双元素冲突，断言收窄到侧板（T2 lineage-side-idea 同锚）
+    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的核心 idea（e2e）')
     const aiSection = win.getByTestId('lineage-side-ai-notes')
     await expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })
     await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
@@ -548,11 +518,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
 
   /**
    * T5=R2-LG12 参考边全链（用户裁决 A）：综述节点右键「添加参考连接」（仅
-   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→ref 边淡灰虚线
-   * 渲染（stroke=var(--survey-edge) 1.4 虚线 2 3）→reload 持久+节点计数
-   * 不变+树形不变（2 条 tree 边保持原色原数）。
+   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→[T3-P6] ref 边
+   * 视觉渲染断言退役（P7 连线系统恢复视觉锚）→reload 数据持久锚=同端点
+   * 对重复添加被 service 守卫拒（真实中文 reason——读面证据=图内既有边）。
    */
-  test('T5 综述参考连接：右键添加 ref 边→淡灰虚线渲染→reload 持久+树形不变', async () => {
+  test('T5 综述参考连接：右键添加 ref 边→reload 数据持久（守卫面证）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg12-t5-'))
     await firstHop(userData)
@@ -583,19 +553,99 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
     await nodeG(win, '脉络甲文献').click()
 
-    // ref 边渲染：淡灰虚线（决3 单语义——与综述关联 tree 边同视觉）
-    const refPath = win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')
-    await expect(refPath).toHaveCount(1, { timeout: 10_000 })
-    await expect(refPath).toHaveAttribute('stroke-dasharray', '2 3')
-    await expect(refPath).toHaveAttribute('stroke-width', '1.4')
-    await expect(win.locator('svg path[data-edge-id]')).toHaveCount(3)
+    // [T3-P6] ref 边视觉断言退役（P7 连线系统恢复视觉锚）——写落地门=
+    // 会话内同端点对重复添加被 service 守卫拒（守卫读 DB=首写已落库证据；
+    // 真实中文 reason「该逻辑线已存在」）
+    await nodeG(win, SURVEY_PAPER.title).click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' }).click()
+    await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(win.getByText(/该逻辑线已存在（.+），重复边被拒绝/)).toBeVisible({ timeout: 10_000 })
 
-    // reload→ref 边持久+节点计数不变（data-viewport 卡片 4）+树形不变（2 tree 边）
+    // reload→ref 边数据持久锚：冷读后同守卫复证（图内既有边=持久证据）
     await reloadToLineage(win)
     await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
-    await expect(win.locator('svg g[data-node-id]')).toHaveCount(4)
-    await expect(win.locator('svg path[data-edge-id][stroke="var(--survey-edge)"]')).toHaveCount(1)
-    await expect(win.locator('svg path[data-edge-id][stroke="var(--node-branch)"]')).toHaveCount(2)
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 10_000 })
+    await nodeG(win, SURVEY_PAPER.title).click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '添加参考连接' }).click()
+    await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(win.getByText(/该逻辑线已存在（.+），重复边被拒绝/)).toBeVisible({ timeout: 10_000 })
+    // 拒绝型丢弃不卡队列——保存态回 saved
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
+
+    await app.close()
+  })
+
+  /**
+   * T6=[T3-P6 回炉 d1-W1/k1-W2] 砖砌行错位真机锚：默认视口一行容 ~9 卡不
+   * 换行（T1-T5 单卡每框=零判别力）——窄窗 720px（一行容 4 卡）+5 卡同月
+   * fixture→两行；断言 .rowshift 计数+margin-left 62px 实值+跨行 y 差
+   * （不动点迭代收敛后的稳定态证据；非收敛/乱序即红）。
+   */
+  test('T6 砖砌行错位：窄窗 5 卡同月→两行+偶行 rowshift 62px 实值+跨行 y 差', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 追加 2 篇幽灵行（draft schema paper_id 必填——主题节点不可经 draft 导入）
+    for (const p of BRICK_PAPERS) {
+      const sha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
+      const ref = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+      await seedPaperRow(userData, ref, sha, p.title, p.id)
+    }
+    // 5 卡同月（2020-05）：PAPERS 三篇改同年同月+砖砌两篇
+    const draft = JSON.stringify({
+      nodes: [
+        ...PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: 2020, month: 5, core_idea: '' })),
+        ...BRICK_PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: 2020, month: 5, core_idea: '' }))
+      ],
+      edges: []
+    })
+    const fixturePath = await writeFixture(draft)
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 720, height: 800 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })
+
+    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：5 个节点，0 条连线')
+    // 单月框 5 卡+月标签计数
+    const frame = win.locator('.month-frame').first()
+    expect(await frame.locator('.tl-card').count()).toBe(5)
+    await expect(win.getByText('5 月 · 5 篇')).toBeVisible()
+
+    // 砖砌：按实测分行断言（窄窗下侧板 288px 挤压月框内容区≈244px→每行
+    // 1 卡、5 行交替；行容量不钉死——以「unique offsetTop 升序=行号」推导
+    // 期望 shift 集合，与组件 rowsFromOffsetTops 同型[第 2 次重现，Rule of
+    // Three 前例]——LineageTimeline 头注互指）。[三过 d1-W2 加固] 几何量测
+    // 置于 margin 稳定态之后（过渡中期读几何=非确定红面）
+    const cards = frame.locator('.tl-card')
+    const shifted = frame.locator('.tl-card.rowshift')
+    // margin-left 62px：过渡动画 .25s 中读值为中间态——poll 至稳定态（同时
+    // 锁「transition 后真到位」的时间维度语义；几何断言随之稳定）
+    await expect
+      .poll(
+        async () => await shifted.first().evaluate((el) => getComputedStyle(el).marginLeft),
+        { timeout: 2000 }
+      )
+      .toBe('62px')
+    const ids = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
+    const ys = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).offsetTop))
+    const rowTops = [...new Set(ys)].sort((a, b) => a - b)
+    expect(rowTops.length).toBeGreaterThan(1) // 确证换行（≥2 行）——一行放得下则此锚红
+    // 集合等价（非计数等价——d1-W2：同尺寸异集合可绿）
+    const expectedShiftedIds = ids.filter((_, i) => rowTops.indexOf(ys[i]!) % 2 === 1)
+    const actualShiftedIds = (
+      await shifted.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
+    ).sort()
+    expect([...actualShiftedIds].sort()).toEqual([...expectedShiftedIds].sort())
+
+    // 跨行实证：rowshift 卡 y 严格大于首行卡（换行真发生——非同行右移）
+    const secondRowY = (await shifted.first().boundingBox())!.y
+    const firstRowY = (await cards.first().boundingBox())!.y
+    expect(secondRowY).toBeGreaterThan(firstRowY)
 
     await app.close()
   })

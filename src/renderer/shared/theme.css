@@ -92,6 +92,16 @@
   --shadow-cta: 0 2px 6px rgba(58, 91, 217, 0.3);       /* 抽屉主钮投影（三族恒定） */
   --accent-ink: #ffffff; /* accent 底上的字色（三族恒定白——与 --close-red-ink
      同值=语义隔离合法共存，check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指） */
+  /* [T3-P6] 脉络时间线小卡族（值源=mockups/2026-09-26_v2_theme-light.html
+     L203-262 逐值；INV-61 档位增补——主控裁决 d 授权；10px 月标签/年计数
+     复用 --fs-micro 同值不另立；主控裁决 e：shadow 命名独立 --shadow-tl-sel
+     不并入 --shadow-sel-glow[值异 .14/.18 语义隔离]） */
+  --fs-tl-year: 23px;   /* 年份头衬线数字（mockup .tl-year-num） */
+  --fs-tl-title: 9.3px; /* 小卡题名（.c-title） */
+  --fs-tl-idea: 8.2px;  /* 小卡核心想法（.c-idea） */
+  --fs-tl-meta: 7.5px;  /* 小卡骑缝号/徽章/年月引用行（.c-no/.mb/.c-meta） */
+  --fs-tl-hint: 10.5px; /* 空月框拖入提示（.frame-hint——P8 预留样式类） */
+  --shadow-tl-sel: 0 3px 10px rgba(58, 91, 217, 0.18); /* 时间线小卡选中外辉（三族恒定——mockup .tl-card.sel） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #1c2333;
   /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
@@ -125,8 +135,11 @@
   --text-mid: #c6cbdd;
   --text-dim-on-night: #97a0bb;
   --edge-glow: rgba(207, 174, 114, 0.4);
-  /* ── R2-LG11 浅色严谨板新增（脉络边框编码/综述关联边——决1/决3 逐值）── */
-  --node-branch: #b8c4d4;
+  /* ── R2-LG11 脉络边色族（决1/决3 逐值）——T3-P6 连线渲染退役后全仓零
+     消费保留：P7 连线系统复用预设（final-design §2.4 四基础型规格）；
+     --node-branch 随层带退役删除（k1-W2/d1-N4 回炉）——注：tree 实线色
+     未在本族预设（原消费即层带刻度非边色），P7 立连线票时按 §2.4 重定
+     token（d1-N3 口径注）── */
   --survey-edge: #c8cdd6;
   /* F-LG15 人工补父边（琥珀——与 tree 灰蓝实线/ref 淡灰点线三方色型双区分） */
   --manual-edge: #c07a2a;
@@ -187,10 +200,9 @@
   /* 文献库卡片纸渐变端点 */
   --lib-paper-hi: #fffdf9;
   --lib-paper-lo: #fdfaf3;
-  /* 脉络域（边标签/推断边/节点 meta 描边/note 卡描边）*/
-  --edge-label-text: #6b7280;
+  /* 脉络域（推断边=P7 复用预设[同上族保留]；node-meta/边标签色随 T3-P6
+     组件退役删除；note 卡描边=侧板活消费保留）*/
   --edge-inferred: #8a94a6;
-  --node-meta-border: #dfa84a;
   --note-border: rgba(151, 160, 187, 0.28);
   /* 阅读器（划选自绘层灰+页盒/弹层影——影复合值沿 --shadow-* 词汇）*/
   --reader-selection-paint: rgba(0, 0, 0, 0.2);

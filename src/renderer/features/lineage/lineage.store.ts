@@ -3,7 +3,7 @@
  * lineage.store —— 脉络图数据+读面/写面状态单源（store）。
  *
  * ── 数据单源接缝声明（双向锚定：本行+LineagePage 头注）──
- * lineage/graph 取数=本 store 单点；LineagePage/LineageCanvas/03 编辑层
+ * lineage/graph 取数=本 store 单点；LineagePage/LineageTimeline/03 编辑层
  * （LineageBoard）/04 侧板（LineageSidePanel）一律经本 store 分发消费——
  * **03/04 禁双取**（不得另行直连 window.api.lineage.graph 建第二取数点；
  * 04 的 ai_notes/list、notes/get 属不同数据域不在本约；03 添加对话框的
@@ -69,7 +69,10 @@ export interface LineageStore {
   /** 加节点两型：文献型（paperId 绑定+元数据默认）/主题型（阶段分组） */
   addPaperNode(paper: { id: string; title: string; year: number | null }): void
   addThemeNode(title: string): void
-  /** 拖拽落点→x/y 覆盖（JSON Canvas 模式；全字段载荷收口在此防半更新清字段） */
+  /** 拖拽落点→x/y 覆盖（JSON Canvas 模式；全字段载荷收口在此防半更新清字段）。
+   *  [T3-P6] moveNode UI 消费随 T3-P6 退役（P8 槽位重排重接或届时裁删——
+   *  主控裁决 e：x/y 数据面[DB 列/draft schema]未退役+store-write.test 直测
+   *  =非孤儿，保留） */
   moveNode(id: string, x: number, y: number): void
   editCoreIdea(id: string, coreIdea: string): void
   /** F-LG14 标签整组写入（增删 UI 语义化收口——全字段载荷含 tags，经既有
@@ -166,6 +169,19 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           ? s.edges.map((e) => (e.id === saved.id ? saved : e))
           : [...s.edges, saved]
       }))
+      // T3-P6 回炉（d1-W5）：P6 连线视觉退役至 P7 期间，新建边成功 toast=
+      // 唯一可见反馈（防「点了没反应」误读为失败；P7 连线恢复后留作成功
+      // 确认）；label 后编辑（id 在场）不 toast 防噪
+      if (action.input.id === undefined) {
+        showToast(
+          action.input.kind === 'ref'
+            ? '综述关联已保存'
+            : action.input.kind === 'manual'
+              ? '人工父线已保存'
+              : '父子连线已保存',
+          'success'
+        )
+      }
       return
     }
     await unwrap(api.lineage.removeEdge({ id: action.id }))

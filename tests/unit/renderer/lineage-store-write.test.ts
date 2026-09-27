@@ -47,8 +47,8 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   }
 }
 
-function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', sub: null, createdAt: 't', updatedAt: 't' }
+function edge(id: string, from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
+  return { id, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
 /** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */
@@ -224,12 +224,36 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'B', to: 'A', label: '' })
     expect(state().edges.map((e) => e.id)).toEqual(['e1', 'e2'])
+    // [T3-P6 回炉 d1-W5] 新建边成功 toast=P6 连线视觉退役至 P7 期间唯一
+    // 可见反馈（tree 默认文案）
+    expect(showToast).toHaveBeenCalledWith('父子连线已保存', 'success')
 
     stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
     state().removeEdge('e1')
     await settle()
     expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e1' })
     expect(state().edges.map((e) => e.id)).toEqual(['e2'])
+  })
+
+  it('新建边成功 toast 按 kind 分文案（ref/manual）；label 后编辑（id 在场）不 toast', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [edge('e1', 'A', 'B')] })
+    stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('e2', 'B', 'A') })
+    state().linkRefNodes('B', 'A')
+    await settle()
+    expect(showToast).toHaveBeenCalledWith('综述关联已保存', 'success')
+
+    vi.mocked(showToast).mockClear()
+    stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('e3', 'A', 'B', 'manual') })
+    state().linkManualParent('B', 'A')
+    await settle()
+    expect(showToast).toHaveBeenCalledWith('人工父线已保存', 'success')
+
+    // label 后编辑走 id 更新语义——成功不 toast（防噪）
+    vi.mocked(showToast).mockClear()
+    stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('e3', 'A', 'B', 'manual') })
+    state().editManualEdgeLabel('e3', '新标注')
+    await settle()
+    expect(showToast).not.toHaveBeenCalled()
   })
 
   it('N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边', async () => {

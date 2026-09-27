@@ -1,0 +1,458 @@
+// @vitest-environment jsdom
+/**
+ * [T3-P6] 脉络时间线 —— 分组/分行纯函数 + Timeline/Card 结构 + CSS 逐值文本锁。
+ * 值源=docs/design/mockups/2026-09-26_v2_theme-light.html L203-262（时间线段逐值
+ * 誊录——字号经 --fs-tl-* token 承载）；设计真相源=
+ * docs/design/2026-09-26_theme-trio-final-design.md §2 脉络段 1-3+§6 票 6。
+ *
+ * 分组契约 INV-75：graph.nodes=lineageOrder 全序，消费方不得重排——组内序=
+ * 传入序（分组器仅排分组键 year/month）。骑缝编号 INV-76 第四消费面：
+ * lineageCatalogNos 单源（Timeline useMemo 全图一次计算传卡，编号随全序
+ * 漂移=特性）。rowshift 砖砌行错位=0 起奇数索引行（简报 §一.7 预裁——
+ * mockup 注「行2 右移」1 起口径）。always-active 裸 describe（K3）。
+ */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+import { groupTimeline, rowsFromOffsetTops } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+
+// act() 环境声明（library-cards.test 同口径——免 React 警告刷屏）
+;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+
+// jsdom 环境 import.meta.url 是 http: 协议——CSS 文本读取走 cwd 相对路径
+// （library-cards.test 先例）
+const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8')
+
+function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
+  return {
+    id,
+    paperId: `paper-${id}`,
+    title: `节点${id}`,
+    coreIdea: '',
+    year: 2022,
+    x: null,
+    y: null,
+    month: null,
+    slot: null,
+    createdAt: 't',
+    updatedAt: 't',
+    ...patch
+  }
+}
+
+function edge(from: string, to: string): LineageEdge {
+  return {
+    id: `e-${from}-${to}`,
+    fromNode: from,
+    toNode: to,
+    label: '',
+    kind: 'tree',
+    sub: null,
+    createdAt: 't',
+    updatedAt: 't'
+  }
+}
+
+let root: Root | null = null
+let host: HTMLDivElement | null = null
+
+function mount(element: JSX.Element): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(element)
+  })
+}
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  host?.remove()
+  host = null
+})
+
+/** 指定节点小卡根元素（.tl-card[data-node-id]） */
+function cardOf(id: string): HTMLElement {
+  const el = host?.querySelector(`.tl-card[data-node-id="${id}"]`)
+  if (!(el instanceof HTMLElement)) throw new Error(`小卡未渲染：${id}`)
+  return el
+}
+
+describe('T3-P6 groupTimeline 纯函数（年月分组——INV-75 组内序=传入序）', () => {
+  it('乱序入参归位：year asc（null 末）→month asc（null 末=未定月收纳框同年末位）', () => {
+    const groups = groupTimeline([
+      node('C', { year: 2023, month: 1 }),
+      node('U', { year: 2022, month: null }),
+      node('B', { year: 2022, month: 9 }),
+      node('A', { year: 2022, month: 3 }),
+      node('N', { year: null, month: null })
+    ])
+    expect(groups.map((g) => g.year)).toEqual([2022, 2023, null])
+    expect(groups[0]!.months.map((m) => m.month)).toEqual([3, 9, null])
+    expect(groups[2]!.months.map((m) => m.month)).toEqual([null])
+  })
+
+  it('组内序保持：组内输出序=传入序（不按 slot/标题重排——分组器仅排分组键）', () => {
+    const groups = groupTimeline([
+      node('LATE', { year: 2022, month: 5, slot: 9 }),
+      node('EARLY', { year: 2022, month: 5, slot: 1 })
+    ])
+    expect(groups[0]!.months[0]!.nodes.map((n) => n.id)).toEqual(['LATE', 'EARLY'])
+  })
+
+  it('空输入→空分组', () => {
+    expect(groupTimeline([])).toEqual([])
+  })
+})
+
+describe('T3-P6 rowsFromOffsetTops 纯函数（砖砌分行——同行=offsetTop 相等）', () => {
+  it('相等值归同行：[0,0,52,0,52]→[0,0,1,0,1]', () => {
+    expect(rowsFromOffsetTops([0, 0, 52, 0, 52])).toEqual([0, 0, 1, 0, 1])
+  })
+
+  it('单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）', () => {
+    expect(rowsFromOffsetTops([0, 0, 0])).toEqual([0, 0, 0])
+  })
+
+  it('三行递进：[0,52,104]→[0,1,2]', () => {
+    expect(rowsFromOffsetTops([0, 52, 104])).toEqual([0, 1, 2])
+  })
+})
+
+describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
+  it('年份头纯数字（无「年」字——mockup 形态）+「N 篇」计数自分组结果派生', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9 }),
+          node('B', { year: 2022, month: 9 }),
+          node('C', { year: 2023, month: 1 })
+        ]}
+        edges={[]}
+      />
+    )
+    expect([...(host?.querySelectorAll('.tl-year-num') ?? [])].map((e) => e.textContent)).toEqual([
+      '2022',
+      '2023'
+    ])
+    expect([...(host?.querySelectorAll('.tl-year-meta') ?? [])].map((e) => e.textContent)).toEqual([
+      '2 篇',
+      '1 篇'
+    ])
+  })
+
+  it('null 年=「未知年份」三字文案（现有 e2e 锚保活——主控预裁）', () => {
+    mount(<LineageTimeline nodes={[node('N', { year: null, month: null })]} edges={[]} />)
+    expect(host?.querySelector('.tl-year-num')?.textContent).toBe('未知年份')
+  })
+
+  it('月标签「M 月 · N 篇」真文本；未定月「未定月 · N 篇」同年末位且仅月标签级变体', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9 }),
+          node('B', { year: 2022, month: 9 }),
+          node('U', { year: 2022, month: null })
+        ]}
+        edges={[]}
+      />
+    )
+    expect([...(host?.querySelectorAll('.month-tag') ?? [])].map((e) => e.textContent)).toEqual([
+      '9 月 · 2 篇',
+      '未定月 · 1 篇'
+    ])
+    // unknown 挂月容器（.tl-month.unknown）——框本体（.month-frame）不变体
+    const unknownMonth = host?.querySelector('.tl-month.unknown')
+    expect(unknownMonth).not.toBeNull()
+    expect(unknownMonth!.querySelector('.month-frame')!.classList.contains('unknown')).toBe(false)
+    // [T3-P6 回炉 d1-B1 防回漂] 月标签=.tl-month 直接子元素（与 .month-frame
+    // 兄弟，同 mockup DOM）——若移入 frame 内会被其 overflow:hidden 裁掉
+    // top:-9px 悬出段（首屏胶囊上半缺失）
+    for (const tag of host?.querySelectorAll('.month-tag') ?? []) {
+      expect(tag.parentElement!.classList.contains('tl-month')).toBe(true)
+      expect(tag.parentElement!.querySelector('.month-frame')).not.toBeNull()
+    }
+  })
+
+  it('空图空态文案保活：暂无脉络图——导入草稿或添加节点', () => {
+    mount(<LineageTimeline nodes={[]} edges={[]} />)
+    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
+    expect(host?.querySelectorAll('button').length).toBe(0)
+  })
+
+  it('骑缝编号 #NNN 三位零填充（lineageCatalogNos 单源：随 lineageOrder 全序，与组内传入序无关）', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('LATE', { year: 2022, month: 5, slot: 9 }),
+          node('EARLY', { year: 2022, month: 5, slot: 1 })
+        ]}
+        edges={[]}
+      />
+    )
+    // 组内序=传入序（LATE 先渲染）；编号=slot 全序（EARLY=#001/LATE=#002）
+    expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('#002')
+    expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#001')
+  })
+
+  it('小卡三行真文本：题名/核心想法（空串整行不渲染）/年月 YYYY-MM 补零与年单值/引用数与主题节点「—」', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9, title: '扩散模型起点', coreIdea: '去噪范式奠基' }),
+          node('B', { year: 2022, month: null, title: '无月文献', coreIdea: '' }),
+          node('T', { paperId: null, year: 2022, month: 9, title: '主题分组', coreIdea: '' }),
+          node('X', { year: null, month: null, title: '未知年文献' })
+        ]}
+        edges={[]}
+        paperMetrics={{
+          'paper-A': { citedByCount: 17, venueTier: 'T2' },
+          'paper-B': { citedByCount: null, venueTier: null }
+        }}
+      />
+    )
+    const a = cardOf('A')
+    expect(a.querySelector('.c-title')?.textContent).toBe('扩散模型起点')
+    expect(a.querySelector('.c-idea')?.textContent).toBe('去噪范式奠基')
+    // c-meta 两端：左=年月（YYYY-MM 补零）；右=引用数
+    expect([...a.querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022-09', '17'])
+    // month null→年单值；citedByCount null→「—」；空 core_idea→整行不渲染
+    const b = cardOf('B')
+    expect([...b.querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022', '—'])
+    expect(b.querySelector('.c-idea')).toBeNull()
+    // 主题节点（paperId null）：年月照常呈现（有值）+引用「—」（无 paperId 键）
+    expect([...cardOf('T').querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022-09', '—'])
+    // year null→年月「—」缺值占位（INV-73 库列同族口径）
+    expect([...cardOf('X').querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['—', '—'])
+  })
+
+  it('徽章真文本：核=isCore 出度≥2（预计算传卡）；综述=isSurveyTitle（虚线框）；主题节点无综述徽章', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('R', { year: 2022, month: 1, title: '开宗文献' }),
+          node('A', { year: 2022, month: 2, title: '继承甲' }),
+          node('B', { year: 2022, month: 3, title: '继承乙' }),
+          node('S', { year: 2022, month: 4, title: '领域综述：方法演进' }),
+          node('T', { paperId: null, year: 2022, month: 5, title: '综述主题分组' })
+        ]}
+        edges={[edge('R', 'A'), edge('R', 'B')]}
+      />
+    )
+    expect(cardOf('R').querySelector('.mb.core')?.textContent).toBe('核')
+    expect(cardOf('A').querySelector('.mb')).toBeNull()
+    expect(cardOf('S').querySelector('.mb.survey')?.textContent).toBe('综述')
+    expect(cardOf('T').querySelector('.mb')).toBeNull()
+  })
+
+  it('data-kind 三值沿承（NodeCard DOM 契约——theme/paper/survey；e2e 断言面）', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 1, title: '普通文献' }),
+          node('T', { paperId: null, year: 2022, month: 2, title: '主题分组' }),
+          node('S', { year: 2022, month: 3, title: '领域综述：方法演进' })
+        ]}
+        edges={[]}
+      />
+    )
+    expect(cardOf('A').getAttribute('data-kind')).toBe('paper')
+    expect(cardOf('T').getAttribute('data-kind')).toBe('theme')
+    expect(cardOf('S').getAttribute('data-kind')).toBe('survey')
+  })
+
+  it('sel 类挂选中卡（inset accent 环——CSS 面）', () => {
+    mount(
+      <LineageTimeline
+        nodes={[node('A', { year: 2022, month: 9 }), node('B', { year: 2022, month: 9 })]}
+        edges={[]}
+        selectedNodeId="B"
+      />
+    )
+    expect(cardOf('B').classList.contains('sel')).toBe(true)
+    expect(cardOf('A').classList.contains('sel')).toBe(false)
+  })
+
+  it('交互接缝：卡 click→onNodeClick(id)；contextmenu→onNodeContextMenu(id, 锚点)', () => {
+    const onClick = vi.fn()
+    const onMenu = vi.fn()
+    mount(<LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} onNodeClick={onClick} onNodeContextMenu={onMenu} />)
+    act(() => {
+      cardOf('A').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onClick).toHaveBeenCalledWith('A')
+    act(() => {
+      cardOf('A').dispatchEvent(
+        new MouseEvent('contextmenu', { clientX: 200, clientY: 150, bubbles: true, cancelable: true })
+      )
+    })
+    expect(onMenu).toHaveBeenCalledWith('A', { x: 200, y: 150 })
+  })
+
+  it('rowshift 挂接：注入 offsetTop 分行→0 起奇数索引行挂类（依赖=分组结果重算）', async () => {
+    const nodes = [
+      node('A', { year: 2022, month: 5 }),
+      node('B', { year: 2022, month: 5 }),
+      node('C', { year: 2022, month: 5 })
+    ]
+    mount(<LineageTimeline nodes={nodes} edges={[]} />)
+    // jsdom 无布局（offsetTop 恒 0）——defineProperty 定行（前三卡两行 0/0/52）
+    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 52]]
+    for (const [id, top] of tops) {
+      Object.defineProperty(cardOf(id), 'offsetTop', { get: () => top, configurable: true })
+    }
+    // 分组结果引用变化（同数据新引用——导入替换/写回填同型）→useLayoutEffect 重算
+    await act(async () => {
+      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
+    })
+    expect(cardOf('C').classList.contains('rowshift')).toBe(true)
+    expect(cardOf('A').classList.contains('rowshift')).toBe(false)
+    expect(cardOf('B').classList.contains('rowshift')).toBe(false)
+  })
+
+  it('不动点迭代（d1-W1 回炉）：shift 改变 offsetTop 后复测至收敛——两轮量测后稳定', async () => {
+    const nodes = [
+      node('A', { year: 2022, month: 5 }),
+      node('B', { year: 2022, month: 5 })
+    ]
+    mount(<LineageTimeline nodes={nodes} edges={[]} />)
+    // shift 敏感布局模拟：B 无 rowshift 时量得第二行（52）→挂 shift；挂后
+    // 仍 52（shift 保持行位——真实布局单调性同型）→集合稳定收敛
+    let bCalls = 0
+    Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
+    Object.defineProperty(cardOf('B'), 'offsetTop', {
+      get() {
+        bCalls++
+        return 52
+      },
+      configurable: true
+    })
+    await act(async () => {
+      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
+    })
+    expect(cardOf('B').classList.contains('rowshift')).toBe(true)
+    // 迭代真实发生：首轮量测（判定 shift）+次轮复测（确认稳定）≥2 次
+    expect(bCalls).toBeGreaterThanOrEqual(2)
+    // [三过加固] 测量冻结类收敛后移除（防泄漏=后续 shift 挂摘动画不被永冻）
+    const content = host?.querySelector('.tl-content')
+    expect(content?.classList.contains('tl-measure')).toBe(false)
+    // [裁决部 P1-3 source-text 锁] 冻结机制生效面：TSX 必须真挂/摘 .tl-measure
+    // （断言收敛后不残留锁不住 add/remove 本身——源码文本锁补位，删实现两行即红）
+    const timelineSrc = readFileSync(
+      join(process.cwd(), 'src/renderer/features/lineage/LineageTimeline.tsx'),
+      'utf8'
+    )
+    expect(timelineSrc).toContain("content.classList.add('tl-measure')")
+    expect(timelineSrc).toContain("content.classList.remove('tl-measure')")
+  })
+
+  it('不动点振荡守卫（k1-W2 回炉）：offsetTop 随 shift 翻转的对抗布局→8 轮上限强制停不崩', async () => {
+    const nodes = [
+      node('A', { year: 2022, month: 5 }),
+      node('B', { year: 2022, month: 5 })
+    ]
+    mount(<LineageTimeline nodes={nodes} edges={[]} />)
+    // 对抗布局（真实 CSS 不会出现——shift 增宽行数只增）：B 的行位随自身
+    // shift 翻转→每轮集合都变→无守卫则 React max-update 崩溃；守卫 8 轮停
+    Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
+    Object.defineProperty(cardOf('B'), 'offsetTop', {
+      get() {
+        const el = cardOf('B')
+        return el.classList.contains('rowshift') ? 0 : 52
+      },
+      configurable: true
+    })
+    // 到此未抛 Maximum update depth = 守卫生效（摘除守卫→此处红）
+    await act(async () => {
+      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
+    })
+    expect(cardOf('A')).not.toBeNull()
+  })
+})
+
+describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊录）', () => {
+  it('容器：.timeline overflow-y auto/overflow-x hidden；.tl-content padding 18px 28px 46px 20px', () => {
+    expect(css).toMatch(/\.timeline\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden/)
+    expect(css).toMatch(/\.tl-content\s*\{[^}]*padding:\s*18px 28px 46px 20px/)
+  })
+
+  it('年份头：.tl-year margin-bottom 38px；数字 serif+--fs-tl-year+--ink+letter-spacing 1px；meta mono faint；::after flex1 1px --line', () => {
+    expect(css).toMatch(/\.tl-year\s*\{[^}]*margin-bottom:\s*38px/)
+    expect(css).toMatch(
+      /\.tl-year-num\s*\{[^}]*font-family:\s*var\(--serif\);[^}]*font-size:\s*var\(--fs-tl-year\);[^}]*color:\s*var\(--ink\);[^}]*letter-spacing:\s*1px/
+    )
+    expect(css).toMatch(
+      /\.tl-year-meta\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-micro\);[^}]*color:\s*var\(--faint\)/
+    )
+    expect(css).toMatch(
+      /\.tl-year-head::after\s*\{[^}]*flex:\s*1;[^}]*height:\s*1px;[^}]*background:\s*var\(--line\)/
+    )
+  })
+
+  it('月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative（B1 定位基准——月标签 absolute top -9px 的 containing block，删则标签锚错祖先悬出段复发，k1 三过 W2 锁）；.month-frame 1.6px dashed --month-dash 圆角 12 padding 15px 12px 12px gap 20px 20px min-height 58px', () => {
+    expect(css).toMatch(/\.tl-month\s*\{[^}]*margin:\s*0 58px 26px 46px;[^}]*position:\s*relative/)
+    expect(css).toMatch(
+      /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*15px 12px 12px/
+    )
+    expect(css).toMatch(
+      /\.month-frame\s*\{[^}]*gap:\s*20px 20px;[^}]*align-content:\s*flex-start;[^}]*min-height:\s*58px/
+    )
+  })
+
+  it('月标签：.month-tag absolute top -9px left 12px 胶囊（panel 底 accent 字 dashed 边 tabular-nums）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
+    expect(css).toMatch(
+      /\.month-tag\s*\{[^}]*top:\s*-9px;[^}]*left:\s*12px;[^}]*border-radius:\s*99px;[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--accent\);[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*font-variant-numeric:\s*tabular-nums/
+    )
+    expect(css).toMatch(
+      /\.tl-month\.unknown \.month-tag\s*\{[^}]*color:\s*var\(--faint\);[^}]*border-color:\s*var\(--line\);[^}]*border-style:\s*solid/
+    )
+  })
+
+  it('预留样式类在场（A4 空月框+P8 拖入提示——票面备案无 DOM 消费）', () => {
+    expect(css).toMatch(/\.month-frame\.empty-frame\s*\{[^}]*border-color:\s*var\(--line\)/)
+    expect(css).toMatch(/\.frame-hint\s*\{[^}]*place-items:\s*center;[^}]*color:\s*var\(--faint\)/)
+  })
+
+  it('小卡：104×52 --mini-card 底 1px --mini-card-line 边 圆角 8 padding 5px 6px 4px shadow-card；hover=accent 边；sel=inset 1.6px accent+外辉 token', () => {
+    expect(css).toMatch(
+      /\.tl-card\s*\{[^}]*width:\s*104px;[^}]*min-height:\s*52px;[^}]*background:\s*var\(--mini-card\);[^}]*border:\s*1px solid var\(--mini-card-line\);[^}]*border-radius:\s*8px;[^}]*padding:\s*5px 6px 4px;[^}]*box-shadow:\s*var\(--shadow-card\)/
+    )
+    expect(css).toMatch(/\.tl-card:hover\s*\{[^}]*border-color:\s*var\(--accent\)/)
+    expect(css).toMatch(
+      /\.tl-card\.sel\s*\{[^}]*box-shadow:\s*inset 0 0 0 1\.6px var\(--accent\), var\(--shadow-tl-sel\)/
+    )
+  })
+
+  it('砖砌行错位：.rowshift margin-left 62px+margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡+测量冻结规则（三过加固）', () => {
+    expect(css).toMatch(/\.tl-card\.rowshift\s*\{[^}]*margin-left:\s*62px/)
+    expect(css).toMatch(/\.tl-card\s*\{[^}]*transition:\s*margin-left \.25s cubic-bezier\(\.22,\.9,\.26,1\)/)
+    // 测量冻结：迭代期间 .tl-measure 冻结过渡（量测恒为终态布局——d1-W1 三过）
+    expect(css).toMatch(/\.tl-content\.tl-measure \.tl-card\s*\{[^}]*transition:\s*none/)
+  })
+
+  it('c-* 微族：c-no mono --fs-tl-meta faint；mb.core accent 底 accent-ink 字 600；mb.survey dim 虚线框；c-title --fs-tl-title nowrap ellipsis；c-idea --fs-tl-idea；c-meta mono 两端', () => {
+    expect(css).toMatch(
+      /\.c-no\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\);[^}]*color:\s*var\(--faint\)/
+    )
+    expect(css).toMatch(
+      /\.mb\.core\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\);[^}]*font-weight:\s*600/
+    )
+    expect(css).toMatch(/\.mb\.survey\s*\{[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px dashed var\(--faint\)/)
+    expect(css).toMatch(
+      /\.c-title\s*\{[^}]*font-size:\s*var\(--fs-tl-title\);[^}]*font-weight:\s*600;[^}]*color:\s*var\(--ink\);[^}]*white-space:\s*nowrap;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis/
+    )
+    expect(css).toMatch(
+      /\.c-idea\s*\{[^}]*font-size:\s*var\(--fs-tl-idea\);[^}]*color:\s*var\(--dim\);[^}]*text-overflow:\s*ellipsis/
+    )
+    expect(css).toMatch(
+      /\.c-meta\s*\{[^}]*justify-content:\s*space-between;[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\)/
+    )
+  })
+})

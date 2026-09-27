@@ -4,8 +4,9 @@
  *
  * ── 行为层 ──
  * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父+改 core_idea）：
- *   **节点拖拽**=写 x/y 覆盖（JSON Canvas 模式——拖拽落点存库，重置
- *   自动布局=清空 x/y 的按钮动作）；**加节点**两型（从文献库添加=搜索选取
+ *   **[T3-P6] 节点拖拽=写 x/y 覆盖已退役**（JSON Canvas 模式随 SVG 画布
+ *   方案切换退役——P8 槽位重排接缝；store moveNode 保留待重接）；
+ *   **加节点**两型（从文献库添加=搜索选取
  *   paper 建节点（paperId 绑定+title/year 取元数据默认可改）/添加主题节点=
  *   纯手工 title——「阶段分组」语义）+core_idea 编辑=textarea（负面清单
  *   红线——md 只展示不渲染同族）的对话框装配职责归 LineageBoardDialogs.tsx
@@ -51,11 +52,12 @@
  *   （选择上抛=04 侧板消费面；本实现为 LG-03 交付）
  *
  * ── 架构层 ──
- * - renderer/features/lineage 域内聚（Board 编辑层与 Canvas 渲染层
+ * - renderer/features/lineage 域内聚（Board 编辑层与渲染宿主
  *   分文件——组件 ≤250 行红线拆分预案：节点菜单/添加节点对话框子
  *   组件化=LineageNodeMenu/LineageAddNodeDialog/LineageEditIdeaDialog
  *   三件+[F-SPLIT-01] 装配分组件 LineageBoardMenu/LineageBoardDialogs
- *   两件）；依赖 window.api 写四通道+02 交付（layout/canvas/store）；
+ *   两件；[T3-P6] 渲染宿主=LineageTimeline 时间线（Canvas/layout/
+ *   viewport 退役）；依赖 window.api 写四通道+02 交付（store）；
  *   禁直调 ipc/禁 Node API
  *
  * ── 生命周期层 ──
@@ -79,7 +81,7 @@
 import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
 import { importLineageDraft } from './lineage-import'
-import { LineageCanvas } from './LineageCanvas'
+import { LineageTimeline } from './LineageTimeline'
 import { LineageToolbar } from './LineageToolbar'
 import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
 import { LineageBoardDialogs } from './LineageBoardDialogs'
@@ -126,12 +128,14 @@ export function LineageBoard(props: {
         onRetrySave={() => store().retrySave()}
       />
 
-      <LineageCanvas
+      {/* [T3-P6] 换宿主：LineageCanvas[SVG 画布] 退役→LineageTimeline[年+月
+          时间线滚动容器]；onNodeDrag 接线随 x/y 自由拖拽退役拆除（store
+          moveNode 保留——P8 槽位重排重接，主控裁决 e） */}
+      <LineageTimeline
         nodes={nodes}
         edges={edges}
         paperMetrics={paperMetrics}
         selectedNodeId={props.selectedNodeId ?? null}
-        onNodeDrag={(id, x, y) => store().moveNode(id, x, y)}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={(id, anchor) => {
           const node = nodes.find((n) => n.id === id)

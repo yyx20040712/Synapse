@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 /**
  * [F-LG15] manual 边 UI —— 节点菜单「连接父文献…」+目标选择对话框+人工连线
- * 管理对话框（label 后编辑/删除）+store 写面+渲染虚线琥珀断言（新增锁定面）。
+ * 管理对话框（label 后编辑/删除）+store 写面（新增锁定面）。
  *
  * 覆盖：Board 全链（右键→连接父文献→搜索过滤+选取+逻辑线说明→保存=upsert-edge
  * kind='manual' 载荷）/取消零写/无 manual 边节点无「管理人工连线…」项/管理对话框
  * label 编辑保存=upsert-edge 带 id 更新载荷/删除=remove-edge/「删除父连线」仅针对
- * tree 边（manual 父不吞）/渲染 manual=琥珀虚线（色+线型双断言，与 tree 实线/
- * ref 淡灰点线三方可区分）+manual 优先于推断标记/图例第五项文本/store
- * linkManualParent·editManualEdgeLabel 载荷回填。
+ * tree 边（manual 父不吞）/store linkManualParent·editManualEdgeLabel 载荷回填。
+ * [T3-P6] 渲染面 its（manual 琥珀虚线色型/图例）随连线渲染退役删除——P7
+ * 连线系统恢复视觉锚（主控裁决 a）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -30,7 +30,6 @@ const stubApi = makeApiStub({
 })
 
 import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
-import { LineageCanvas } from '../../../src/renderer/features/lineage/LineageCanvas'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 
 function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
@@ -135,74 +134,9 @@ afterEach(() => {
   host = null
 })
 
-// ── 渲染断言：manual=琥珀虚线（与 tree 实线/ref 淡灰点线三方可区分） ──
-
-describe('F-LG15 manual 边渲染（LineageEdges 三方可区分）', () => {
-  it('manual 边：var(--manual-edge) 1.4 虚线 7 5（tree 实线/ref 点线 2 3/manual 长虚线 7 5 三方色型双区分）', () => {
-    const nodes = [
-      node('A', { year: 2020, title: '基础研究' }),
-      node('M', { year: 2019, title: '早期平行' }),
-      node('C', { year: 2021, title: '后续工作' })
-    ]
-    const edges = [
-      edge('e-tree', 'A', 'C', 'tree'),
-      edge('e-man', 'M', 'C', 'manual')
-    ]
-    mount(<LineageCanvas nodes={nodes} edges={edges} />)
-    const tree = q('[data-edge-id="e-tree"]')
-    const manual = q('[data-edge-id="e-man"]')
-    expect(manual?.getAttribute('stroke')).toBe('var(--manual-edge)')
-    expect(manual?.getAttribute('stroke-width')).toBe('1.4')
-    expect(manual?.getAttribute('stroke-dasharray')).toBe('7 5')
-    // 三方可区分锚：manual 色≠tree branch 实线≠ref survey-edge 点线
-    expect(tree?.getAttribute('stroke')).toBe('var(--node-branch)')
-    expect(tree?.getAttribute('stroke-dasharray')).toBeNull()
-    expect(manual?.getAttribute('stroke')).not.toBe('var(--node-branch)')
-    expect(manual?.getAttribute('stroke')).not.toBe('var(--survey-edge)')
-    expect(manual?.getAttribute('stroke-dasharray')).not.toBe('2 3')
-  })
-
-  it('manual 优先于推断标记：label 含「推断」的 manual 边仍 manual 色（人工标注语义>文本启发）', () => {
-    const nodes = [node('A', { year: 2020, title: '基础研究' }), node('C', { year: 2021, title: '后续工作' })]
-    const inferred: LineageEdge = { ...edge('e-infer', 'A', 'C', 'manual'), label: '谱系推断' }
-    mount(<LineageCanvas nodes={nodes} edges={[inferred]} />)
-    const p = q('[data-edge-id="e-infer"]')
-    expect(p?.getAttribute('stroke')).toBe('var(--manual-edge)')
-    // 变异红证锚：优先级翻转即染推断灰（[F-CSS-03] 载体随迁保活）
-    expect(p?.getAttribute('stroke')).not.toBe('var(--edge-inferred)')
-  })
-
-  it('manual 优先于综述启发（门一 W1）：端点为综述题名节点的 manual 边仍 manual 琥珀不被 surveyIds 吞色', () => {
-    // 综述作人工父是合理场景——surveyIds 标题启发吞色=用户「区分度」诉求丢失
-    const nodes = [
-      node('S', { year: 2019, title: '领域综述：方法演进' }),
-      node('C', { year: 2021, title: '后续工作' })
-    ]
-    const edges = [edge('e-ms', 'S', 'C', 'manual')]
-    mount(<LineageCanvas nodes={nodes} edges={edges} />)
-    const p = q('[data-edge-id="e-ms"]')
-    expect(p?.getAttribute('stroke')).toBe('var(--manual-edge)')
-    expect(p?.getAttribute('stroke-dasharray')).toBe('7 5')
-    expect(p?.getAttribute('stroke')).not.toBe('var(--survey-edge)') // 变异红证锚：启发优先即染综述灰
-    expect(p?.getAttribute('stroke-dasharray')).not.toBe('2 3')
-  })
-
-  it('manual 边 label 沿边渲染（data-edge-label——既有 edge-label 槽位消费面）', () => {
-    const nodes = [node('A', { year: 2020, title: '基础研究' }), node('C', { year: 2021, title: '后续工作' })]
-    const labeled: LineageEdge = { ...edge('e-label', 'A', 'C', 'manual'), label: '研究者补判' }
-    mount(<LineageCanvas nodes={nodes} edges={[labeled]} />)
-    const label = q('[data-edge-label="e-label"]')
-    expect(label?.textContent).toBe('研究者补判')
-  })
-
-  it('图例第五项「人工父连线」真实文本（四项既有锚语义不变——扩展非改向）', () => {
-    mount(<LineageCanvas nodes={[node('A')]} edges={[]} />)
-    const legend = q('[data-legend]')
-    expect(legend?.textContent).toContain('人工父连线')
-    expect(legend?.textContent).toContain('核心文献') // 既有四项保持
-    expect(legend?.querySelector('.lg-manual')).not.toBeNull()
-  })
-})
+// [T3-P6 主控裁决 a] 原「manual 边渲染」describe（LineageCanvas 挂载断言边
+// 色型/图例）随连线渲染退役删除——P7 连线系统恢复视觉锚（e2e T5 同注）；
+// manual 边数据操作面断言由下行 Board 全链/store 写面两 describe 承载。
 
 // ── Board 全链：连接父文献+管理人工连线 ────────────────────────
 

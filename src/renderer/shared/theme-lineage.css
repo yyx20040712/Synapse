@@ -1,59 +1,14 @@
-/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——脉络域皮肤：浅色严谨板全段
-   （R2-LG11 边型图例/工具条白玻璃/适应视图按钮/F-L1-C 边标签 C 变体/悬停滚动）。
-   纯迁移值零改;import 序=四皮肤件末位。 */
+/* [F-CSS-01] 自 theme.css 拆出 2026-09-05——脉络域皮肤。
+   [T3-P6] 全件重写 2026-09-27：SVG 画布族（.lineage-host/.lineage-legend/
+   .lineage-fit-btn/.lineage-edge-label）随 LineageCanvas/LineageLegend/
+   LineageEdges 退役删除（方案切换=删旧方案）；工具条族（.lineage-toolbar）
+   消费方 LineageToolbar 零动故保留；新增时间线族（.timeline/.tl-*）——
+   值源=docs/design/mockups/2026-09-26_v2_theme-light.html L203-262 逐值誊录，
+   字号经 --fs-tl-* token（FS_DECL 负锚禁字面量）、色值全 token、mockup
+   的 .2s 过渡=--dur-lazy 同值 token 化；暗/护眼族靠 token 自动随族
+   （--mini-card/--month-dash P1 已入库）。 */
 
-/* ══ 脉络·浅色严谨板（R2-LG11——白卡+细边框编码+浅色层带/工具条/图例；
-   夜幕 token 定义保留 :root 备暗色主题，脉络域样式消费清零——决5 同
-   精神；夜幕/星空/角饰/渐变样式块随 LineageNightDecor 删除而删）══ */
-.lineage-host {
-  position: relative;
-  overflow: hidden;
-  color: var(--text);
-  background: var(--bg);
-}
-/* 边型图例（四型——静态说明非交互件；浅色白卡圆角） */
-.lineage-legend {
-  position: absolute;
-  left: 96px;
-  bottom: 16px;
-  display: flex;
-  gap: 14px;
-  font-size: var(--fs-caption);
-  color: var(--text-dim);
-  background: var(--panel-a88);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  padding: 4px 12px;
-  backdrop-filter: blur(8px);
-  align-items: center;
-  pointer-events: none;
-}
-.lineage-legend-item {
-  display: inline-flex;
-  align-items: center;
-}
-.lineage-legend-item i {
-  display: inline-block;
-  width: 18px;
-  height: 0;
-  vertical-align: middle;
-  margin-right: 5px;
-  border-top: 1.5px solid var(--accent);
-}
-.lineage-legend-item i.lg-normal {
-  border-top: 1px solid var(--node-branch);
-}
-.lineage-legend-item i.lg-theme {
-  border-top: 1px dashed var(--node-branch);
-}
-.lineage-legend-item i.lg-survey {
-  border-top: 1.4px dashed var(--survey-edge);
-}
-/* F-LG15 人工补父边图例（琥珀长虚线——与渲染 stroke-dasharray 7 5 同型） */
-.lineage-legend-item i.lg-manual {
-  border-top: 1.4px dashed var(--manual-edge);
-}
-/* 脉络工具条白玻璃浮层（R2-LG11：blur+border+shadow-2） */
+/* ══ 脉络工具条（R2-LG11 白玻璃浮层——LineageToolbar 消费，T3-P6 零动保活）══ */
 .lineage-toolbar {
   display: flex;
   align-items: center;
@@ -83,58 +38,110 @@
   background: transparent;
   color: var(--text-dim);
 }
-/* R2-LG11 「适应视图」按钮（画布右下浮层——白玻璃同族；
-   auto-fit 显式复位唯一入口，见 LineageCanvas 头注状态机） */
-.lineage-fit-btn {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: var(--z-float);
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--panel-a88);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  font-size: var(--fs-body);
-  cursor: pointer;
-}
-.lineage-fit-btn:hover {
-  color: var(--text);
-  background: var(--accent-soft);
-}
-.lineage-toolbar > button:active,
-.lineage-fit-btn:active {
+.lineage-toolbar > button:active {
   transform: scale(0.95);
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-/* F-L1-C 边标签（变体 C 窄幅注释——2026-08-30 用户裁决案册定稿）：
-   foreignObject 内 HTML div 自然换行；10px 斜体灰阶（--edge-label-text）弱于节点
-   文字（图注层级）+白晕 text-shadow 四向 2px 截线（线从字后穿行被白晕
-   截断）；max-height 3 行×10×1.3=39+overflow hidden（真实溢出内容
-   承载滚动语义——非 line-clamp 省略）。悬停滚动交互态驻本类（B1 教训
-   禁内联）；FO 层 pointer-events none（内联静态属性），div auto 由本类
-   承载。 */
-.lineage-edge-label {
-  box-sizing: border-box;
-  width: 100%;
+/* ══ [T3-P6] 脉络时间线（纵向年+月 DOM 时间线——mockup L203-262 逐值）══ */
+/* 滚动容器（pan/zoom INV-43/44 退役→滚动定位语义）；height:100%=Board 块级
+   宿主直挂（mockup .lg-wrap flex 场景外补——申报） */
+.timeline {
+  flex: 1;
   height: 100%;
-  padding: 2px;
-  font-size: var(--fs-micro);
-  line-height: 1.3;
-  font-style: italic;
-  color: var(--edge-label-text);
-  text-align: center;
-  overflow-wrap: break-word;
-  max-height: 39px;
-  overflow: hidden;
-  text-shadow: 2px 0 var(--panel), -2px 0 var(--panel), 0 2px var(--panel), 0 -2px var(--panel);
-  pointer-events: auto;
-}
-/* 悬停滚动（用户保证②）：截断文字悬停可滚（scrollHeight 全文高度——
-   LineageEdges wheel 委托同步阻断画布 zoom） */
-.lineage-edge-label:hover {
   overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
 }
+.tl-content { position: relative; padding: 18px 28px 46px 20px; }
+/* 空图空态（文案常驻无死按钮——Canvas 空态语义沿承；类为本票新增申报） */
+.tl-empty { padding: 48px 0; text-align: center; color: var(--faint); font-size: var(--fs-body); }
+/* A11 年距 38px；年份头=衬线数字（纯数字无「年」字）+「N 篇」mono 计数+细线 */
+.tl-year { margin-bottom: 38px; position: relative; z-index: 2; }
+.tl-year-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.tl-year-num { font-family: var(--serif); font-size: var(--fs-tl-year); color: var(--ink); letter-spacing: 1px; }
+.tl-year-meta { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+.tl-year-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+/* 月框：margin 右 58px=P7 连线绕行走廊预留（final-design §2.1）+左 46px；框间距纵 26px */
+.tl-month { margin: 0 58px 26px 46px; position: relative; }
+/* D1 月框统一满宽右缘对齐；D2 卡距横纵 20px（2×——逻辑线从空地穿行）；
+   mockup 过渡 border-color/background .2s→var(--dur-lazy) 同值 token；
+   height .38s=P8 框高动画预留。口径注（d1-N5 回炉）：DURATION 负锚=
+   theme.test DURATION_COUNTS 特定字面量集（.08~.3s token 对应值）——
+   .25s/.38s 不在集内（mockup 专属过渡值）故保留字面量，非口径漏洞 */
+.month-frame {
+  border: 1.6px dashed var(--month-dash);
+  border-radius: 12px;
+  padding: 15px 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 20px;
+  align-content: flex-start;
+  min-height: 58px;
+  position: relative;
+  overflow: hidden;
+  transition: height .38s cubic-bezier(.22,.9,.26,1), border-color var(--dur-lazy), background var(--dur-lazy);
+}
+/* A4 空月框+P8 拖入提示形态预留（分组自 nodes 派生不造空框数据——票面
+   备案：样式类在场无 DOM 消费） */
+.month-frame.empty-frame { border-color: var(--line); }
+.frame-hint { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--fs-tl-hint); color: var(--faint); }
+/* 月标签胶囊（mockup L238：10px panel 底 accent 字 dashed 边 mono tabular-nums；
+   10px=--fs-micro 同值复用） */
+.month-tag {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  z-index: 3;
+  font-size: var(--fs-micro);
+  padding: 1.5px 9px;
+  border-radius: 99px;
+  background: var(--panel);
+  color: var(--accent);
+  border: 1.6px dashed var(--month-dash);
+  font-variant-numeric: tabular-nums;
+}
+/* 未定月=月标签级变体（mockup L239 实证：faint 字+--line 色实线边——
+   框本体不变体随 dashed --month-dash） */
+.tl-month.unknown .month-tag { color: var(--faint); border-color: var(--line); border-style: solid; }
+
+/* 半尺寸深底小卡（A9）：104×~52 三行；A2 砖砌行错位=rowshift 62px 右移
+   （半卡 52+半隙 10——0 起奇数索引行，主控裁决口径）；cursor=pointer
+   （拖拽退役后单击语义——mockup grab 值改判申报）；touch-action 摘除
+   （k1-N7 回炉：无拖拽时 none 阻断触摸滚动与 pointer 可供性矛盾——
+   P8 槽位重排重接拖拽时随需恢复） */
+.tl-card {
+  width: 104px;
+  min-height: 52px;
+  background: var(--mini-card);
+  border: 1px solid var(--mini-card-line);
+  border-radius: 8px;
+  padding: 5px 6px 4px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  user-select: none;
+  transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
+}
+.tl-card.rowshift { margin-left: 62px; }
+/* [T3-P6 三过 d1-W1 加固] 测量冻结：砖砌迭代期间冻结 margin-left 过渡——
+   过渡在场时同步量测读到的是起点布局，迭代退化为单轮+空确认且 shift 引起
+   的行容量变化永不复测（>8 卡同月场景行号偏差真实面）；收敛后类移除，
+   transition 恢复（服务 P8 拖拽位移动画——shift 挂摘本身无平滑=备案） */
+.tl-content.tl-measure .tl-card { transition: none; }
+.tl-card:hover { border-color: var(--accent); }
+/* sel=inset 1.6px accent 环+外辉（mockup 裸色值→--shadow-tl-sel token
+   承载——check-quality 色值字面量禁令，注释面同禁 ⑤ 裁决） */
+.tl-card.sel { box-shadow: inset 0 0 0 1.6px var(--accent), var(--shadow-tl-sel); }
+/* c-head=骑缝编号+徽章；编号「#NNN」mono；徽章 margin-left:auto 右贴 */
+.c-head { display: flex; align-items: center; gap: 3px; }
+.c-no { font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); }
+.mb { font-size: var(--fs-tl-meta); padding: 0 3.5px; border-radius: 3px; margin-left: auto; line-height: 1.5; }
+/* 「核」=accent 底白字（mockup 裸白色值→--accent-ink token——三族恒定白） */
+.mb.core { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.mb.survey { color: var(--dim); border: 1px dashed var(--faint); }
+.c-title { font-size: var(--fs-tl-title); font-weight: 600; color: var(--ink); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.c-idea { font-size: var(--fs-tl-idea); color: var(--dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.c-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); margin-top: 2.5px; }
