@@ -1,0 +1,322 @@
+/**
+ * [T3-P7A] lineage-routing 纯函数 12 例——D 表 §5.3 全量
+ * （docs/design/2026-09-27_t3p7-line-connection-design-final.md §5：
+ * 用例 2 断言 route='detour'（D-3）+用例 7 断言 tail 端点（D-4）为主控
+ * 终裁修订点；PAD 语义= d≤4 含边界（D-6）；车道容量 4 道+第 5 条 fallback
+ * （D-5）；确定性 100 次全等（§5.2 无随机/Date/三角函数））。
+ * 另附 lineage-palette 数据常量冒烟（D-17 hex=用户数据面——P7b 消费本票
+ * 入库，值形状先锁防漂移）。always-active 裸 describe（K3）。
+ */
+import { describe, expect, it, vi } from 'vitest'
+import type { EdgeGeomInput, LayoutSnapshot, Rect } from '../../../src/renderer/features/lineage/lineage-routing'
+import {
+  anchor,
+  arcPath,
+  checkArcEntry,
+  checkSweepBand,
+  checkVerticalBand,
+  defaultCorridor,
+  detourBottomPath,
+  detourPath,
+  laneIndex,
+  resolveLabelEntry,
+  routeAll,
+  routeEdge,
+  segHitsAny,
+  verticalPath
+} from '../../../src/renderer/features/lineage/lineage-routing'
+import { DASH_ROT, PALETTE } from '../../../src/renderer/features/lineage/lineage-palette'
+
+// ── 夹具工具（纯数据——contentW=800 ⇒ laneX(i)=800−58+10+9i=752+9i，D-5）──
+
+function rect(x: number, y: number, w: number, h: number): Rect {
+  return { x, y, w, h }
+}
+
+function makeSnap(partial: Partial<LayoutSnapshot> = {}): LayoutSnapshot {
+  const contentW = partial.contentW ?? 800
+  return {
+    cards: partial.cards ?? new Map<string, Rect>(),
+    labels: partial.labels ?? [],
+    frames: partial.frames ?? [],
+    contentW,
+    corridor: partial.corridor ?? defaultCorridor(contentW)
+  }
+}
+
+const CARD_W = 104
+const CARD_H = 52
+
+function geom(id: string, from: string, to: string, kind: EdgeGeomInput['kind']): EdgeGeomInput {
+  return { edgeId: id, sourceId: from, targetId: to, kind }
+}
+
+/** 同年双卡快照：A=源（100,100），B=目标（100,300），各驻同年 2022 月框 */
+function sameYearSnap(extra: { obstacles?: Array<[string, Rect]>; labels?: Rect[] } = {}): LayoutSnapshot {
+  return makeSnap({
+    cards: new Map<string, Rect>([
+      ['A', rect(100, 100, CARD_W, CARD_H)],
+      ['B', rect(100, 300, CARD_W, CARD_H)],
+      ...(extra.obstacles ?? [])
+    ]),
+    labels: extra.labels ?? [],
+    frames: [
+      { ...rect(90, 60, 600, 150), year: 2022 },
+      { ...rect(90, 260, 600, 150), year: 2022 }
+    ]
+  })
+}
+
+describe('T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）', () => {
+  it('1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）', () => {
+    const s = { x: 100, y: 100 }
+    const t = { x: 140, y: 178 }
+    // k=clamp(78/2,12,80)=39——控制点 (100,139)(140,139) 逐字锁
+    expect(verticalPath(s, t)).toBe('M 100 100 C 100 139 140 139 140 178')
+    // 三次贝塞尔 B(0.5)=(P0+3P1+3P2+P3)/8——y=(100+3·139+3·139+178)/8=139，
+    // 落入框间空隙带 [126,152]（dy 中点±13）
+    const midY = (100 + 3 * 139 + 3 * 139 + 178) / 8
+    expect(midY).toBeGreaterThanOrEqual(126)
+    expect(midY).toBeLessThanOrEqual(152)
+    // clamp 边界：dy=400→k=80（上钳）；dy=10→k=12（下钳）
+    expect(verticalPath({ x: 0, y: 0 }, { x: 0, y: 400 })).toBe('M 0 0 C 0 80 0 320 0 400')
+    expect(verticalPath({ x: 0, y: 0 }, { x: 0, y: 10 })).toBe('M 0 0 C 0 12 0 -2 0 10')
+  })
+
+  it('2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 200, CARD_W, CARD_H)],
+        ['B', rect(100, 20, CARD_W, CARD_H)]
+      ]),
+      frames: [
+        { ...rect(90, 180, 600, 120), year: 2022 },
+        { ...rect(90, 0, 600, 120), year: 2022 }
+      ]
+    })
+    const r = routeEdge(geom('e1', 'A', 'B', 'tree'), snap)
+    expect(r.route).toBe('detour')
+    // 源右缘 (204,226)→车道 752→目标右缘 (204,46) 直角折线逐字锁
+    expect(r.d).toBe('M 204 226 L 752 226 L 752 46 L 204 46')
+  })
+
+  it('3 checkVerticalBand：带内障碍 true／移出 false／PAD=4 边界（4 含边界命中、4.1 出界、3.9 命中——D-6）', () => {
+    const s = { x: 100, y: 100 }
+    const t = { x: 100, y: 200 }
+    // 带内且距曲线 0（相交）→ true
+    expect(checkVerticalBand(s, t, [rect(98, 140, 4, 20)])).toBe(true)
+    // 移出带（水平距 10）→ false
+    expect(checkVerticalBand(s, t, [rect(110, 140, 4, 20)])).toBe(false)
+    // 距线 x=100 恰 4（贴边）→ 膨胀后触界=命中（含边界）
+    expect(checkVerticalBand(s, t, [rect(104, 140, 4, 20)])).toBe(true)
+    // 距 4.1 → 出界
+    expect(checkVerticalBand(s, t, [rect(104.1, 140, 4, 20)])).toBe(false)
+    // 距 3.9 → 命中
+    expect(checkVerticalBand(s, t, [rect(103.9, 140, 4, 20)])).toBe(true)
+  })
+
+  it('4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom', () => {
+    const s = { x: 204, y: 126 }
+    // 同行右邻：y 覆盖 126、x 段 [204,752] 内 → 入口横道被挡
+    expect(checkArcEntry(s, 752, [rect(240, 100, CARD_W, CARD_H)])).toBe(true)
+    const snap = sameYearSnap({ obstacles: [['C', rect(240, 100, CARD_W, CARD_H)]] })
+    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    expect(r.route).toBe('detour-bottom')
+    // 底部出：s0=(152,152)→gapY=源框底 210 与下框顶 260 中线 235→车道 752→目标
+    expect(r.d).toBe('M 152 152 L 152 235 L 752 235 L 752 326 L 204 326')
+  })
+
+  it('5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY', () => {
+    const src = rect(100, 100, CARD_W, CARD_H)
+    const t = { x: 204, y: 326 }
+    const d = detourBottomPath(src, t, 752, 183)
+    expect(d).toBe('M 152 152 L 152 183 L 752 183 L 752 326 L 204 326')
+    // routeEdge 场景：A/B 同驻年内唯一框（=A 驻年内末框，无同年下框）→
+    // gapY=框底 60+320=380 再 +13=393（D-9 末框分支）；C 挡入口触发底部出
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', src],
+        ['B', rect(100, 300, CARD_W, CARD_H)],
+        ['C', rect(240, 100, CARD_W, CARD_H)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 320), year: 2022 }]
+    })
+    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    expect(r.route).toBe('detour-bottom')
+    expect(r.d).toContain('L 152 393')
+    expect(r.d).toContain('L 752 393')
+  })
+
+  it('6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）', () => {
+    const s = { x: 204, y: 126 }
+    const t = { x: 204, y: 326 }
+    // 标注横跨 lane0 x=752（膨胀带 [740,758]）
+    const label = rect(744, 200, 10, 8)
+    expect(checkSweepBand(s, t, 752, [label])).toBe(true)
+    expect(checkSweepBand(s, t, 761, [label])).toBe(false)
+    const snap = sameYearSnap({ labels: [label] })
+    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    expect(r.route).toBe('arc')
+    expect(r.lane).toBe(1)
+  })
+
+  it('7 resolveLabelEntry 纯函数直测（回炉 1 B-1 新语义——让行裁撤；调用面已被回程恒检蕴含——k1-③/d1-N2 终裁）：回程横道穿标注→null；未命中→entry=t+tail 空', () => {
+    const t = { x: 204, y: 326 }
+    // 标注横跨回程段 [204,752]×y=326 → 命中 → null
+    expect(resolveLabelEntry(t, 752, [rect(700, 320, 30, 12)])).toBeNull()
+    // 无标注 → {entry:t, tail:''}（无让行右移+无 tail 回穿段）
+    expect(resolveLabelEntry(t, 752, [])).toEqual({ entry: t, tail: '' })
+    // 标注在场但不压横道（y 不覆盖）→ 不命中
+    expect(resolveLabelEntry(t, 752, [rect(700, 100, 30, 12)])).toEqual({ entry: t, tail: '' })
+  })
+
+  it('15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback', () => {
+    // 正相位（回卷/升级正面证据）：走廊竖条只挡道 0 扫掠（x 膨胀带
+    // [745,760] 含 lane0=752 不含 lane1=761；y 带 [176,224] 不触入口 y=126
+    // 与回程 y=326——纯 C3 面）→道 0 升级道 1 成功
+    const snapPos = sameYearSnap({ obstacles: [['V0', rect(749, 180, 7, 40)]] })
+    const pos = routeEdge(geom('e1', 'A', 'B', 'ref'), snapPos)
+    expect(pos.route).toBe('arc')
+    expect(pos.lane).toBe(1)
+    // 负相位：横跨卡 X——y 覆盖 t.y=326、x 覆盖 [t.x, laneX(3)]——4 道回程段
+    // 全挡（无让行分支）→fallback+onWarn
+    const snapNeg = sameYearSnap({ obstacles: [['X', rect(240, 300, 500, 52)]] })
+    const onWarn = vi.fn()
+    const neg = routeEdge(geom('e1', 'A', 'B', 'ref'), snapNeg, onWarn)
+    expect(neg.route).toBe('fallback')
+    expect(onWarn).toHaveBeenCalledTimes(1)
+  })
+
+  it('16 C2.5 底部出双段检测（回炉 1 B-2）：源卡非末行竖段穿同列下方卡→bottomOut 不可行→fallback', () => {
+    // 单月框两行：A 上排（C 挡其右侧入口）+D 同列下排——竖段 (152,152)→gapY 穿 D
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(400, 500, CARD_W, CARD_H)],
+        ['C', rect(240, 100, CARD_W, CARD_H)],
+        ['D', rect(100, 200, CARD_W, CARD_H)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 500), year: 2022 }]
+    })
+    const onWarn = vi.fn()
+    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap, onWarn)
+    expect(r.route).toBe('fallback')
+    expect(onWarn).toHaveBeenCalledTimes(1)
+  })
+
+  it('8 laneIndex：乱序输入 → 输出与字典序排序位次一致（确定性）', () => {
+    const all = ['e2', 'e0', 'e3', 'e1']
+    expect(all.map((id) => laneIndex(id, all))).toEqual([2, 0, 3, 1])
+    expect(laneIndex('a', ['a', 'b'])).toBe(0)
+    expect(laneIndex('b', ['a', 'b'])).toBe(1)
+  })
+
+  it('9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)],
+        ['C', rect(100, 600, CARD_W, CARD_H)],
+        ['D', rect(100, 800, CARD_W, CARD_H)],
+        ['X', rect(240, 800, 500, 52)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 900), year: 2022 }]
+    })
+    // 相位一（循环占道锁）：5 条干净 A→B 边——e4 baseLane=4%4=0 回道 0
+    //（旧 rank≥4 直落 fallback 语义已废——>4 边不堆 fallback）
+    const clean = ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => geom(id, 'A', 'B', 'ref'))
+    const p1 = routeAll(clean, snap)
+    expect(p1.map((p) => p.route)).toEqual(['arc', 'arc', 'arc', 'arc', 'arc'])
+    expect(p1.map((p) => p.lane)).toEqual([0, 1, 2, 3, 0])
+    // 相位二（检测占用面）：e0..e3=A→B 干净占道；e4=C→D 回程横道被横跨卡 X 全道挡死
+    const edges = ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) =>
+      geom(id, id === 'e4' ? 'C' : 'A', id === 'e4' ? 'D' : 'B', 'ref')
+    )
+    const onWarn = vi.fn()
+    const paths = routeAll(edges, snap, onWarn)
+    const by = (id: string) => paths.find((p) => p.edgeId === id)!
+    expect([by('e0'), by('e1'), by('e2'), by('e3')].map((p) => p.lane)).toEqual([0, 1, 2, 3])
+    expect(by('e4').route).toBe('fallback')
+    expect(onWarn).toHaveBeenCalledTimes(1)
+    // 相位三（回炉 2 ①车道回卷）：baseLane≥1 的边在低序道空闲时占低序道——
+    // 6 边中 rank 5（baseLane=1）+走廊竖条障碍只挡道 1/2/3（x 膨胀带
+    // [753,787] 不含 lane0=752）→探测序 1→2→3 挡尽→回卷道 0 成功
+    const snap3 = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)],
+        ['V', rect(757, 180, 26, 140)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 150), year: 2022 }, { ...rect(90, 260, 600, 150), year: 2022 }]
+    })
+    const six = ['e0', 'e1', 'e2', 'e3', 'e4', 'e5'].map((id) => geom(id, 'A', 'B', 'ref'))
+    const p3 = routeAll(six, snap3)
+    const fifth = p3.find((p) => p.edgeId === 'e5')!
+    expect(fifth.route).toBe('arc')
+    expect(fifth.lane).toBe(0)
+  })
+
+  it('10 确定性：同输入 routeEdge 100 次输出全等（无随机/Date/三角函数）', () => {
+    const snap = sameYearSnap({ obstacles: [['C', rect(240, 100, CARD_W, CARD_H)]], labels: [rect(744, 200, 10, 8)] })
+    const e = geom('e1', 'A', 'B', 'ref')
+    const first = routeEdge(e, snap)
+    for (let i = 0; i < 100; i++) {
+      expect(routeEdge(e, snap)).toEqual(first)
+    }
+    expect(routeAll([e], snap)).toEqual([first])
+  })
+
+  it('11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 400, CARD_W, CARD_H)]
+      ]),
+      frames: [
+        { ...rect(90, 60, 600, 150), year: 2022 },
+        { ...rect(90, 360, 600, 150), year: 2023 }
+      ]
+    })
+    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    // 无遮挡夹具落 detour（detour-bottom=C2 被挡变体——干净几何不触发）
+    expect(['detour', 'detour-bottom']).toContain(r.route)
+    expect(r.route).toBe('detour')
+  })
+
+  it('12 segHitsAny PAD 语义钉死（D-6）：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中', () => {
+    const seg = [{ x: 0, y: 100 }, { x: 100, y: 100 }]
+    expect(segHitsAny(seg[0]!, seg[1]!, [rect(104, 92, 50, 16)])).toBe(true) // 水平距恰 4
+    expect(segHitsAny(seg[0]!, seg[1]!, [rect(104.1, 92, 50, 16)])).toBe(false)
+    expect(segHitsAny(seg[0]!, seg[1]!, [rect(103.9, 92, 50, 16)])).toBe(true)
+    // 垂直距对称面：竖段 x=100 距障碍左缘恰 4
+    const vseg = [{ x: 100, y: 100 }, { x: 100, y: 200 }]
+    expect(segHitsAny(vseg[0]!, vseg[1]!, [rect(104, 140, 4, 20)])).toBe(true)
+    expect(segHitsAny(vseg[0]!, vseg[1]!, [rect(104.1, 140, 4, 20)])).toBe(false)
+  })
+
+  it('13 anchor 三式（卡盒中点族——§2.1）', () => {
+    const r = rect(100, 200, 104, 52)
+    expect(anchor(r, 'top')).toEqual({ x: 152, y: 200 })
+    expect(anchor(r, 'bottom')).toEqual({ x: 152, y: 252 })
+    expect(anchor(r, 'right')).toEqual({ x: 204, y: 226 })
+  })
+
+  it('14 arcPath s.y==t.y 直线分支（D-14）+圆角主分支', () => {
+    // 同行：M s → L laneX,s.y → L t（无圆角）
+    expect(arcPath({ x: 204, y: 126 }, { x: 204, y: 126 }, 752)).toBe('M 204 126 L 752 126 L 204 126')
+    // 上行（t.y<s.y）：出弧/回程圆角 r=10 逐字锁
+    expect(arcPath({ x: 204, y: 326 }, { x: 204, y: 126 }, 752)).toBe(
+      'M 204 326 L 742 326 Q 752 326 752 316 L 752 136 Q 752 126 742 126 L 204 126'
+    )
+    // detourPath 直角折线（区别弧的圆角）
+    expect(detourPath({ x: 204, y: 126 }, { x: 204, y: 326 }, 752)).toBe('M 204 126 L 752 126 L 752 326 L 204 326')
+  })
+})
+
+describe('T3-P7A lineage-palette 数据常量冒烟（D-17 hex=用户数据面）', () => {
+  it('PALETTE 8 色 hex 形状+DASH_ROT 三线型轮转（P7b 新建线型消费）', () => {
+    expect(PALETTE.length).toBe(8)
+    for (const c of PALETTE) expect(c).toMatch(/^#[0-9a-f]{6}$/)
+    expect(DASH_ROT).toEqual(['', '6 3', '2 3'])
+  })
+})

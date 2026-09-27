@@ -24,12 +24,21 @@
  *   --month-dash——mockup L239）。
  */
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import type { LineageEdge, LineageNode, LineTypeGroup } from '@shared/models/lineage'
 import { lineageCatalogNos } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { isCore } from './lineage-classify'
 import { groupTimeline, rowsFromOffsetTops } from './lineage-timeline'
+import { EdgeOverlay } from './EdgeOverlay'
 import { LineageTimelineCard } from './LineageTimelineCard'
+
+/** [T3-P7A] 图例四基础型（D-18 映射序：accent 实/accent 虚/faint 点/signal 虚） */
+const LEGEND_ITEMS = [
+  { cls: 'lc', text: '继承' },
+  { cls: 'lc i2', text: '推断' },
+  { cls: 'lc i3', text: '综述关联' },
+  { cls: 'lc i4', text: '人工补线' }
+] as const
 
 /** 03 编辑层/04 侧板消费的节点交互回调（全可选——缺省即纯只读） */
 export interface TimelineCallbacks {
@@ -45,6 +54,8 @@ export function LineageTimeline(props: {
   selectedNodeId?: string | null
   /** F-LG14 含金量摘要表（键=paperId；Board 自 store 分发传入；缺省=空表） */
   paperMetrics?: Record<string, LineagePaperMetrics>
+  /** [T3-P7A] 线型组（EdgeOverlay sub 覆盖渲染消费——缺省=空表基础型渲染） */
+  lineTypes?: LineTypeGroup[]
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
   const paperMetrics = props.paperMetrics ?? {}
@@ -68,6 +79,10 @@ export function LineageTimeline(props: {
   const contentRef = useRef<HTMLDivElement | null>(null)
   const iterRef = useRef(0)
   const [shiftedIds, setShiftedIds] = useState<ReadonlySet<string>>(() => new Set())
+  // [T3-P7A 回炉 1 W1/W6] 连线层再触发信号：不动点收敛/守卫停的分支父组件
+  // 不再 setState（React 子 effect 先于父）——bump routeEpoch 显式通知
+  // EdgeOverlay 重算（tl-measure 移除与 bump 同 commit）
+  const [routeEpoch, setRouteEpoch] = useState(0)
   useLayoutEffect(() => {
     const content = contentRef.current
     if (content === null) return
@@ -93,6 +108,7 @@ export function LineageTimeline(props: {
     if (same || iterRef.current >= 8) {
       iterRef.current = 0
       content.classList.remove('tl-measure')
+      setRouteEpoch((v) => v + 1)
       return
     }
     iterRef.current++
@@ -110,6 +126,16 @@ export function LineageTimeline(props: {
   return (
     <div className="timeline" data-testid="lineage-timeline">
       <div className="tl-content" ref={contentRef}>
+        {/* [T3-P7A] 连线层子组件（D-22：shiftedIds/groups=重算触发——砖砌收敛
+            即快照采集终态；svg z 低于卡、测量冻结期 CSS 置 opacity:0） */}
+        <EdgeOverlay
+          nodes={nodes}
+          edges={edges}
+          lineTypes={props.lineTypes ?? []}
+          shiftedIds={shiftedIds}
+          groups={groups}
+          routeEpoch={routeEpoch}
+        />
         {groups.map((g) => {
           const yearCount = g.months.reduce((sum, m) => sum + m.nodes.length, 0)
           return (
@@ -160,6 +186,17 @@ export function LineageTimeline(props: {
             </section>
           )
         })}
+      </div>
+      {/* [T3-P7A 回炉 1 W7] 图例挂滚动容器 .timeline（视口级恒可见——内容盒
+          会随滚动移出；absolute right/bottom 对 .timeline 定位）。四基础型
+          真文本+线样预览 i（mockup L212-217 .lc 族誊录——D-18 映射序） */}
+      <div className="tl-legend">
+        {LEGEND_ITEMS.map((it) => (
+          <span className={it.cls} key={it.text}>
+            <i />
+            {it.text}
+          </span>
+        ))}
       </div>
     </div>
   )

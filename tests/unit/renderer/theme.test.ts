@@ -189,10 +189,10 @@ const TOKENS: Array<[string, string]> = [
   ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
   ['--lib-paper-hi', '#fffdf9'],
   ['--lib-paper-lo', '#fdfaf3'],
-  // [T3-P6 回炉] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
-  // 组件退役删除（k1-W2/d1-N4）；--edge-inferred 全仓零消费保留=P7 连线
-  // 系统复用预设（final-design §2.4）
-  ['--edge-inferred', '#8a94a6'],
+  // [T3-P6→P7A] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
+  // 组件退役删除（k1-W2/d1-N4）；--edge-inferred 预设随 T3-P7A 删除
+  // （D-18 终裁：连线渲染色=--accent/--faint/--signal 既有 token 直用
+  // 零新 token——P6 复用预设备案撤回，值锚移 theme-lineage.css 连线段）
   ['--note-border', 'rgba(151, 160, 187, 0.28)'],
   ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
   // [T3-P4] --shadow-page 值锁随改注链：F-06 单层影→mockup .page 双层影

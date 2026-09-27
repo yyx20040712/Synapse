@@ -289,7 +289,9 @@ AGENTS.md「环境事实」单源，此处不复制。
 
 - 渲染域 `src/renderer/features/lineage/`（第四视图：[T3-P6 起纵向「年+月」
   时间线 DOM 布局=LineageTimeline 滚动容器+104×52 小卡——RT 树布局/SVG 画布
-  pan/zoom 整族退役，INV-78；连线视觉=P7 重建中间态] +侧板详情）；main 域
+  pan/zoom 整族退役，INV-78；T3-P7A 连线层重建=EdgeOverlay[svg.tl-edges
+  子组件]+lineage-routing.ts 纯函数路由三式/四检避让降级链，INV-79——
+  编辑交互（线型选择器/新建连线/编辑模式）=P7b 域] +侧板详情）；main 域
   `services/lineage/`（树守卫两口：
   草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+

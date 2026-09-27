@@ -126,6 +126,58 @@
   transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
 }
 .tl-card.rowshift { margin-left: 62px; }
+
+/* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
+/* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
+   测量冻结期（.tl-measure 在场）opacity:0+--dur-tint 过渡防闪跳（D-8 一帧
+   语义：收敛后同帧快照+路由+显示） */
+.tl-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity var(--dur-tint);
+}
+.tl-content.tl-measure .tl-edges { opacity: 0; }
+/* 可见层：D-18 四基础型映射（mockup 图例 L212-217 实证——零新 token）：
+   tree=accent 实线/inferred=accent 虚线[INV-27 D-19：渲染面照画]/
+   ref=faint 点线/manual=signal 虚线；sub 覆盖=P5 数据 inline（组件层） */
+.tl-edge { fill: none; stroke-width: 1.6; }
+.tl-edge[data-kind='tree'] { stroke: var(--accent); }
+.tl-edge[data-kind='inferred'] { stroke: var(--accent); stroke-dasharray: 6 3; }
+.tl-edge[data-kind='ref'] { stroke: var(--faint); stroke-dasharray: 2 3; }
+.tl-edge[data-kind='manual'] { stroke: var(--signal); stroke-dasharray: 6 3; }
+/* 命中层：透明 stroke 8px（D-15<道宽 9 相邻道不重叠）；P7a 期
+   pointer-events:none——编辑交互（命中弹线型选择器）P7b 域开启 */
+.tl-edge-hit {
+  stroke: transparent;
+  stroke-width: 8;
+  fill: none;
+  pointer-events: none;
+}
+/* 图例（mockup .lc 族 L212-217 誊录——四基础型真文本；[回炉 1 W7] 挂滚动
+   容器 .timeline 视口级恒可见（内容盒随滚动移出——原内容盒位废弃）；纯指示
+   非交互 pointer-events:none；z 3=月标签层同级非交互件） */
+.tl-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 9px;
+  font-size: var(--fs-tl-hint);
+  color: var(--dim);
+  align-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+.lc { display: flex; align-items: center; gap: 4px; }
+.lc i { width: 20px; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
+.lc.i2 i { border-top-style: dashed; }
+.lc.i3 i { border-top: 2px dotted var(--faint); border-color: var(--faint); }
+.lc.i4 i { border-top-style: dashed; border-color: var(--signal); }
 /* [T3-P6 三过 d1-W1 加固] 测量冻结：砖砌迭代期间冻结 margin-left 过渡——
    过渡在场时同步量测读到的是起点布局，迭代退化为单轮+空确认且 shift 引起
    的行容量变化永不复测（>8 卡同月场景行号偏差真实面）；收敛后类移除，

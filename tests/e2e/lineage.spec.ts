@@ -235,8 +235,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       '未定月 · 1 篇'
     ])
     expect(await win.locator('.c-no').allTextContents()).toEqual(['#001', '#002', '#003'])
-    // 连线视觉渲染面已退役（P7 连线系统恢复视觉锚——票面备案中间态：
-    // 加边/改父等编辑数据操作面经 Board 菜单保活，T3/T5 承载）
+    // [T3-P7A] 连线出现锚（渲染恢复承诺兑现）：fixture 2 条树边（根→甲/乙，
+    // 跨年=绕行折线族）→ svg.tl-edges 可见 path ≥1；边端点在场校验=两路径
+    // 各自挂 data-edge-id（结构真渲染非空 svg）
+    const edgePaths = win.locator('svg.tl-edges path.tl-edge')
+    await expect(edgePaths.first()).toBeVisible({ timeout: 10_000 })
+    expect(await edgePaths.count()).toBeGreaterThanOrEqual(2)
+    expect(await win.locator('.tl-legend').textContent()).toContain('继承')
 
     // ②滚动容器锚（pan/zoom INV-43/44 退役→滚动定位语义）：fixture 三
     //   节点内容不满视口——先注入临时高度制造可滚面（evaluate 测试手段
@@ -245,6 +250,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.locator('.tl-content').evaluate((el) => {
       el.style.minHeight = '2000px'
     })
+    // [T3-P7A 回炉 1 W4] 滚动前基准：path 与卡 boundingBox y 差（内嵌内容
+    // 坐标随文档流零跟随的几何证据——滚动后差值恒定）
+    const rootCard = nodeG(win, '脉络根文献')
+    const yDiffOf = async (): Promise<number> => {
+      const pb = await edgePaths.first().boundingBox()
+      const cb = await rootCard.boundingBox()
+      return pb!.y - cb!.y
+    }
+    const yDiffBefore = await yDiffOf()
     const timeline = win.locator('.timeline')
     const scrolledTop = await timeline.evaluate((el) => {
       el.scrollTo(0, 300)
@@ -256,6 +270,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     expect(firstYearBox!.y).toBeLessThan(timelineBox!.y)
     await expect(win.getByText('脉络甲文献')).toBeVisible()
     await expect(win.getByText('脉络乙文献')).toBeVisible()
+    // [T3-P7A] 滚动后连线仍可断言（D-2 内嵌内容坐标随文档流——滚动零跟随）
+    await expect(edgePaths.first()).toBeVisible()
+    // [回炉 2 ④] 图例视口级恒可见锚（W7 修复验证面——挂 .timeline 随滚动区
+    // 视口定位，滚动后仍在场）
+    await expect(win.locator('.timeline .tl-legend')).toBeVisible()
+    // [回炉 1 W4] 滚动前后 y 差恒定（错位即红——路径与卡同文档流证据）
+    expect(await yDiffOf()).toBeCloseTo(yDiffBefore, 1)
 
     await app.close()
   })
@@ -518,9 +539,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
 
   /**
    * T5=R2-LG12 参考边全链（用户裁决 A）：综述节点右键「添加参考连接」（仅
-   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→[T3-P6] ref 边
-   * 视觉渲染断言退役（P7 连线系统恢复视觉锚）→reload 数据持久锚=同端点
-   * 对重复添加被 service 守卫拒（真实中文 reason——读面证据=图内既有边）。
+   * 综述文献节点呈现）→点目标文献（已有 tree 父=豁免面）→[T3-P7A] ref 边
+   * 点线视觉锚恢复（stroke-dasharray 非 none——INV-06 计算样式口径）→
+   * reload 数据持久锚=同端点对重复添加被 service 守卫拒（真实中文 reason
+   * ——读面证据=图内既有边）。
    */
   test('T5 综述参考连接：右键添加 ref 边→reload 数据持久（守卫面证）', async () => {
     test.slow()
@@ -553,7 +575,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
     await nodeG(win, '脉络甲文献').click()
 
-    // [T3-P6] ref 边视觉断言退役（P7 连线系统恢复视觉锚）——写落地门=
+    // [T3-P7A] ref 边视觉锚恢复（T3-P6 退役注记承诺兑现——D-18 点线映射）：
+    // store 写回填 edges→EdgeOverlay 重算→ref path 计算样式 stroke-dasharray
+    // 非 none（点线 2 3；基础型类样式=--faint 色——色纹双证取纹面，色面由
+    // theme-lineage.css 文本锁承载）
+    const refPath = win.locator('svg.tl-edges path.tl-edge[data-kind="ref"]')
+    await expect(refPath).toHaveCount(1, { timeout: 10_000 })
+    const refDash = await refPath.first().evaluate((el) => getComputedStyle(el).strokeDasharray)
+    expect(refDash).not.toBe('none')
+
+    // 写落地门=
     // 会话内同端点对重复添加被 service 守卫拒（守卫读 DB=首写已落库证据；
     // 真实中文 reason「该逻辑线已存在」）
     await nodeG(win, SURVEY_PAPER.title).click({ button: 'right' })

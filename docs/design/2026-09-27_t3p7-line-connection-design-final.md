@@ -12,7 +12,7 @@
 | D-1 | 载体=**SVG overlay**（方案 A） | 首跳稿论证成立，审无异议 |
 | D-2 | **B3 闭合**：滚动容器=.timeline（overflow-y auto）；.tl-content=内容盒**非滚动容器**；svg=`position:absolute; inset:0` 挂 .tl-content（覆盖全内容高=滚动内容高，随文档流滚动零跟随成本）。首跳稿「width/height=滚动尺寸」表述作废（inset:0 已含此义） | 仓库 theme-lineage.css 实测 |
 | D-3 | **B1 闭合**：dy≤0（非跨年、目标不在源下方）显式并入 **detour**（绕行折线）；降级链补「几何不适用」转移（routeEdge 首检 dy≤0 直进 detour，不经 C1）；用例 2 断言 route='detour' | 审 B1 |
-| D-4 | **B2 闭合**：C4 统一**水平段**表述——回程横道终点右移至标注右侧 (labelRight+PAD, t.y)，再水平延伸接入目标右缘 (t.x, t.y)（两段同 y，首跳稿「短竖段」笔误作废）；接口改 `resolveLabelEntry(t, laneX, labels): { entry: Pt; tail: string }`（tail=接入段 SVG path 后缀） | 审 B2 |
+| D-4 | **B2 闭合→P7A 门一审后修正**：~~让行右移+tail 接入~~**裁撤**（k1-B1：entry 落 PAD 膨胀边界恒命中+tail 必回穿标注——让行几何不闭合）→C4 改纯检测 （穿标注→null→车道升级；未命中→t）；调用面回炉 2 裁省（恒检全障碍严格蕴含——函数保留导出作直测面） | 审 B2+P7A 门一/回炉链终裁 |
 | D-5 | **W1**：车道=起偏 10+道宽 9+末偏 10=58 → **4 道**；laneX(i)=contentW−58+10+i×9，i∈[0,3]（edgeId 字典序） | 算术自洽 |
 | D-6 | **W2**：PAD 命中语义=**d≤PAD**（含边界） | 判定一致 |
 | D-7 | **W3**：routeEdge/routeAll 增可选 `onWarn?: (msg: string) => void`（缺省 noop——保持纯） | 签名自洽 |
@@ -55,7 +55,7 @@
 - C1 垂直带（外包带粗筛+贝塞尔 t=0.05 采样精判）→挡则降平级弧。
 - C2 弧入口横道（含同行右邻——天然覆盖侧出口被挡）→挡则 detourBottom。
 - C3 走廊竖段扫掠（含标注=防御面 D-13）→挡则车道 i+1（≤3）。
-- C4 回程横道穿目标月标注→水平右移让行（D-4：entry=标注右+PAD，tail 水平接入右缘锚）；仍挡→车道升级。
+- C4 回程横道穿目标月标注→车道升级（D-4 终态：让行机制裁撤——见决定表；回程横道恒检全障碍[卡∪标注]）。
 - 降级链单向不回溯；dy≤0 前置直进（D-3）；全道耗尽→fallback（laneX=contentW−6 贴边+全检采样+onWarn 不静默）。
 - **不变量：连线永不穿过文献卡与月份标注**（INV 级登记——实现票回写 invariants）。
 

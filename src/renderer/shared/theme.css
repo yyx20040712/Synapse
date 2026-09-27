@@ -135,14 +135,11 @@
   --text-mid: #c6cbdd;
   --text-dim-on-night: #97a0bb;
   --edge-glow: rgba(207, 174, 114, 0.4);
-  /* ── R2-LG11 脉络边色族（决1/决3 逐值）——T3-P6 连线渲染退役后全仓零
-     消费保留：P7 连线系统复用预设（final-design §2.4 四基础型规格）；
-     --node-branch 随层带退役删除（k1-W2/d1-N4 回炉）——注：tree 实线色
-     未在本族预设（原消费即层带刻度非边色），P7 立连线票时按 §2.4 重定
-     token（d1-N3 口径注）── */
-  --survey-edge: #c8cdd6;
-  /* F-LG15 人工补父边（琥珀——与 tree 灰蓝实线/ref 淡灰点线三方色型双区分） */
-  --manual-edge: #c07a2a;
+  /* [T3-P6→P7A 备案撤回注记] R2-LG11 脉络边色族预留 token
+     （--survey-edge/--manual-edge）随 T3-P7A 删除——P6「P7 复用预设」备案
+     落空（D-18 终裁：mockup 图例实证连线渲染色=--accent/--faint/--signal
+     既有 token 直用，零新 token——死代码即删；注链见 theme-lineage.css
+     连线段） */
   /* 标注调色板（与 ANNOTATION_COLORS 一一对应）：阅读器色板/标注层统一取色 */
   --annotation-yellow: #fde047;
   --annotation-green: #86efac;
@@ -200,9 +197,8 @@
   /* 文献库卡片纸渐变端点 */
   --lib-paper-hi: #fffdf9;
   --lib-paper-lo: #fdfaf3;
-  /* 脉络域（推断边=P7 复用预设[同上族保留]；node-meta/边标签色随 T3-P6
-     组件退役删除；note 卡描边=侧板活消费保留）*/
-  --edge-inferred: #8a94a6;
+  /* 脉络域（node-meta/边标签色随 T3-P6 组件退役删除；note 卡描边=侧板活
+     消费保留；--edge-inferred 预留随 T3-P7A 删除——D-18 备案撤回同上注）*/
   --note-border: rgba(151, 160, 187, 0.28);
   /* 阅读器（划选自绘层灰+页盒/弹层影——影复合值沿 --shadow-* 词汇）*/
   --reader-selection-paint: rgba(0, 0, 0, 0.2);

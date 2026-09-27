@@ -93,6 +93,8 @@ export function LineageBoard(props: {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
   const paperMetrics = useLineageStore((s) => s.paperMetrics)
+  // [T3-P7A] 线型组下发（EdgeOverlay sub 覆盖渲染消费——样式层不改坐标）
+  const lineTypes = useLineageStore((s) => s.lineTypes)
   const saveStatus = useLineageStore((s) => s.saveStatus)
   const lastWriteError = useLineageStore((s) => s.lastWriteError)
   const store = useLineageStore.getState
@@ -135,6 +137,7 @@ export function LineageBoard(props: {
         nodes={nodes}
         edges={edges}
         paperMetrics={paperMetrics}
+        lineTypes={lineTypes}
         selectedNodeId={props.selectedNodeId ?? null}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={(id, anchor) => {

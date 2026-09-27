@@ -37,7 +37,7 @@ import { create } from 'zustand'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
-import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '@shared/models/lineage'
+import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert, LineTypeGroup } from '@shared/models/lineage'
 
 export type LineageStatus = 'loading' | 'ready' | 'error'
 
@@ -56,6 +56,8 @@ export interface LineageStore {
   edges: LineageEdge[]
   /** F-LG14 含金量摘要（键=paperId，graph 单读随行；主题节点无键） */
   paperMetrics: Record<string, LineagePaperMetrics>
+  /** [T3-P7A] 线型组（graph 单读随行——恒四组；EdgeOverlay sub 覆盖渲染消费） */
+  lineTypes: LineTypeGroup[]
   status: LineageStatus
   error: string | null
   /** 写面保存态三态（≠saved 即脏——退出聚合输入） */
@@ -240,6 +242,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     nodes: [],
     edges: [],
     paperMetrics: {},
+    lineTypes: [],
     status: 'loading',
     error: null,
     saveStatus: 'saved',
@@ -263,6 +266,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           nodes: graph.nodes,
           edges: graph.edges,
           paperMetrics: graph.paperMetrics ?? {},
+          lineTypes: graph.lineTypes,
           status: 'ready',
           error: null
         })
