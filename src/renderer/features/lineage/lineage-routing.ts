@@ -167,13 +167,6 @@ export function checkSweepBand(s: Pt, t: Pt, laneX: number, obstacles: readonly 
   return sweepBlocked(laneX, Math.min(s.y, t.y), Math.max(s.y, t.y), obstacles)
 }
 
-/** C4 标注压口检测（回炉 1 B-1——让行几何不闭合已裁撤）：回程横道
- *  [laneX→t] 穿标注 → null（调用方车道升级）；未命中 → {entry:t, tail:''} */
-export function resolveLabelEntry(t: Pt, laneX: number, labels: readonly Rect[]): { entry: Pt; tail: string } | null {
-  const hit = labels.some((lab) => segHitsAny({ x: laneX, y: t.y }, t, [lab]))
-  return hit ? null : { entry: t, tail: '' }
-}
-
 // ── 编排（§3.2 降级链单向不回溯）──
 export function laneIndex(edgeId: string, all: readonly string[]): number {
   return [...all].sort().indexOf(edgeId)
@@ -263,7 +256,7 @@ function routeOne(e: EdgeGeomInput, snap: LayoutSnapshot, baseLane: number, onWa
     const yA = bottomOut ? gapY : s.y
     // 回程横道恒检（回炉 1 d1-B1+回炉 2 ③：含卡∪标注全障碍——严格蕴含
     // C4 标注压口[D-13 防御面——标注居左现状恒不命中]，命中即车道升级；
-    // resolveLabelEntry 调用面已裁省[主控终裁]，函数保留导出作直测面）
+    // [D-P7B-7] resolveLabelEntry 已随让行遗迹裁撤删除——零生产调用死代码）
     if (segHitsAny({ x: lx, y: t.y }, t, obstacles)) continue
     if (sweepBlocked(lx, Math.min(yA, t.y), Math.max(yA, t.y), obstacles)) continue // C3
     if (bottomOut) {

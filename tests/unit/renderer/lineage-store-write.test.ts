@@ -22,13 +22,14 @@ const stubApi = makeApiStub({
     upsertNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
-    removeEdge: vi.fn()
+    removeEdge: vi.fn(),
+    upsertLineTypes: vi.fn()
   }
 })
 
 import { showToast } from '../../../src/renderer/shared/ui/toast-store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
-import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+import type { LineageEdge, LineageNode, LineTypeGroup } from '../../../src/shared/models/lineage'
 
 function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   return {
@@ -51,6 +52,14 @@ function edge(id: string, from: string, to: string, kind: LineageEdge['kind'] = 
   return { id, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
+/** [T3-P7B] 恒四组空线型夹具（saveLineTypes 消费面） */
+const EMPTY_GROUPS: LineTypeGroup[] = [
+  { base: 'tree', subs: [] },
+  { base: 'inferred', subs: [] },
+  { base: 'ref', subs: [] },
+  { base: 'manual', subs: [] }
+]
+
 /** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */
 const serverNode = (n: LineageNode): LineageNode => ({ ...n, updatedAt: 'server' })
 
@@ -70,6 +79,7 @@ beforeEach(() => {
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
   stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.lineage.upsertLineTypes.mockResolvedValue({ ok: true, data: EMPTY_GROUPS })
   useLineageStore.setState({
     nodes: [],
     edges: [],
@@ -302,5 +312,199 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     // graph 旧读被丢弃（写进行中）——nodes 保持写回填面
     expect(state().nodes[0]?.coreIdea).toBe('编辑中')
     expect(state().status).toBe('ready')
+  })
+})
+
+describe('lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）', () => {
+  it('applyEdgeLine 全载荷：id+from/to/label 读现值+kind/sub 成对置（sub null=回退基础型）', async () => {
+    useLineageStore.setState({
+      nodes: [node('A'), node('B')],
+      edges: [edge('e1', 'A', 'B', 'ref')]
+    })
+    // 既有 label 读现值（全载荷防半更新清字段——沿 fullRowInput 惯例）
+    useLineageStore.setState({
+      edges: [{ ...edge('e1', 'A', 'B', 'ref'), label: '继承甲' }]
+    })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: true,
+      data: { ...edge('e1', 'A', 'B', 'manual'), label: '继承甲', sub: 't1' }
+    })
+    state().applyEdgeLine('e1', 'manual', 't1')
+    await settle()
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
+      id: 'e1',
+      from: 'A',
+      to: 'B',
+      label: '继承甲',
+      kind: 'manual',
+      sub: 't1'
+    })
+    // 回填：saved 行入 store（kind/sub 更新面）
+    expect(state().edges[0]?.kind).toBe('manual')
+    expect(state().edges[0]?.sub).toBe('t1')
+    // id 在场=更新语义不 toast（防噪——editManualEdgeLabel 同款）
+    expect(showToast).not.toHaveBeenCalled()
+
+    // sub null 合法=回退基础型（载荷显式 sub:null——服务端归一同义）
+    state().applyEdgeLine('e1', 'tree', null)
+    await settle()
+    expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({
+      id: 'e1',
+      from: 'A',
+      to: 'B',
+      label: '继承甲',
+      kind: 'tree',
+      sub: null
+    })
+  })
+
+  it('linkWithLine 新建四 kind（inferred 产生入口落位——INV-27 P7 备案兑现）+成功 toast 分文案', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B')] })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: true,
+      data: { ...edge('e2', 'A', 'B', 'inferred'), sub: 'i1' }
+    })
+    state().linkWithLine('A', 'B', 'inferred', 'i1')
+    await settle()
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
+      from: 'A',
+      to: 'B',
+      label: '',
+      kind: 'inferred',
+      sub: 'i1'
+    })
+    expect(state().edges.map((e) => e.kind)).toEqual(['inferred'])
+    expect(showToast).toHaveBeenCalledWith('推断连线已保存', 'success')
+
+    // kind 缺省面沿四 kind：manual+sub null（基础型）
+    stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('e3', 'B', 'A', 'manual') })
+    state().linkWithLine('B', 'A', 'manual', null)
+    await settle()
+    expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({
+      from: 'B',
+      to: 'A',
+      label: '',
+      kind: 'manual',
+      sub: null
+    })
+  })
+
+  it('linkWithLine CONFLICT（service 树守卫拒绝）：动作丢弃+toast reason+保存态回落 saved（沿 linkRefNodes 先例）', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B'), node('C')] })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: false,
+      error: { code: 'CONFLICT', message: '多父边拒绝：节点 B 已有父节点 A（树至多一父）' }
+    })
+    state().linkWithLine('C', 'B', 'inferred', null)
+    await settle()
+    expect(showToast).toHaveBeenCalledWith('多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error')
+    expect(state().queue.length).toBe(0)
+    expect(state().saveStatus).toBe('saved')
+    expect(state().edges.length).toBe(0)
+  })
+
+  it('saveLineTypes 新队列动作 upsert-line-types：整批写+成功 set lineTypes', async () => {
+    const groups: LineTypeGroup[] = [
+      { base: 'tree', subs: [{ id: 'tree-s1', name: '线型 1', color: '#3a5bd9', dash: '', w: 1.7 }] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
+    // 服务端回显=校验后恒四组枚举序（同组形状）
+    stubApi.lineage.upsertLineTypes.mockResolvedValue({ ok: true, data: groups })
+    state().saveLineTypes(groups)
+    await settle()
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith(groups)
+    expect(state().lineTypes).toEqual(groups)
+    expect(state().saveStatus).toBe('saved')
+  })
+
+  it('saveLineTypes sameTarget 同类合并（整批=单实体——flight 中排队合并最后写胜出）', async () => {
+    const g1: LineTypeGroup[] = [...EMPTY_GROUPS]
+    const g2: LineTypeGroup[] = [
+      { base: 'tree', subs: [{ id: 'tree-s1', name: '线型 1', color: '#3a5bd9', dash: '', w: 1.7 }] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
+    const g3: LineTypeGroup[] = [
+      { base: 'tree', subs: [{ id: 'tree-s1', name: '线型 1', color: '#3a5bd9', dash: '', w: 1.7 }, { id: 'tree-s2', name: '线型 2', color: '#0f8a6d', dash: '6 3', w: 1.7 }] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
+    // 首航悬挂（既有「连续编辑最后写胜出」it 同型探针）：g1 派发中 g2/g3 排队
+    let resolveFirst!: (v: { ok: true; data: LineTypeGroup[] }) => void
+    stubApi.lineage.upsertLineTypes
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
+      .mockImplementationOnce(async () => ({ ok: true, data: g3 }))
+    state().saveLineTypes(g1)
+    state().saveLineTypes(g2)
+    state().saveLineTypes(g3)
+    await settle()
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1) // g2 被合并未派发
+    resolveFirst({ ok: true, data: g1 })
+    await settle()
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenLastCalledWith(g3)
+    expect(state().lineTypes).toEqual(g3)
+  })
+
+  it('队列序保证 lineTypes 先于引用其的 edge（saveLineTypes→linkWithLine 串行派发序）', async () => {
+    const groups: LineTypeGroup[] = [
+      { base: 'tree', subs: [{ id: 'tree-s1', name: '线型 1', color: '#3a5bd9', dash: '', w: 1.7 }] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
+    stubApi.lineage.upsertLineTypes.mockResolvedValue({ ok: true, data: groups })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: true,
+      data: { ...edge('e2', 'A', 'B', 'tree'), sub: 'tree-s1' }
+    })
+    useLineageStore.setState({ nodes: [node('A'), node('B')] })
+    state().saveLineTypes(groups)
+    state().linkWithLine('A', 'B', 'tree', 'tree-s1')
+    await settle()
+    // 派发序：upsertLineTypes 先于 upsertEdge（FIFO——引用完整性写序）
+    const orderLt = stubApi.lineage.upsertLineTypes.mock.invocationCallOrder[0]
+    const orderEdge = stubApi.lineage.upsertEdge.mock.invocationCallOrder[0]
+    expect(orderLt).toBeDefined()
+    expect(orderEdge).toBeDefined()
+    expect(orderLt!).toBeLessThan(orderEdge!)
+    expect(state().saveStatus).toBe('saved')
+  })
+
+  it('flight 堆积面派发序=FIFO：三动作同驻队列时按入队序派发（LIFO 即红）', async () => {
+    // 首航悬挂（边 X in flight）→lineTypes/边 Y 相继入队（三动作同驻队列）
+    // ——释放后派发序=入队序：X→lineTypes→Y（引用完整性写序的堆积相位证据）
+    const groups: LineTypeGroup[] = [
+      { base: 'tree', subs: [{ id: 'tree-s1', name: '线型 1', color: '#3a5bd9', dash: '', w: 1.7 }] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
+    let resolveFirst!: (v: { ok: true; data: LineageEdge }) => void
+    stubApi.lineage.upsertEdge
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
+      .mockImplementation(async (req: { from: string }) =>
+        ({ ok: true, data: edge(`e-${req.from}`, req.from, 'B', 'tree') })
+      )
+    stubApi.lineage.upsertLineTypes.mockResolvedValue({ ok: true, data: groups })
+    useLineageStore.setState({ nodes: [node('A'), node('B'), node('C')] })
+    state().linkWithLine('A', 'B', 'tree', null) // X：in flight（悬挂）
+    state().saveLineTypes(groups) // 排队（入队序第 2）
+    state().linkWithLine('C', 'B', 'tree', 'tree-s1') // 排队（入队序第 3）
+    await settle()
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(1) // 仅 X 已派发
+    resolveFirst({ ok: true, data: edge('e-A', 'A', 'B', 'tree') })
+    await settle(12)
+    // FIFO：lineTypes 先于入队更晚的边 Y
+    const orderLt = stubApi.lineage.upsertLineTypes.mock.invocationCallOrder[0]
+    const orderY = stubApi.lineage.upsertEdge.mock.invocationCallOrder[1]
+    expect(orderLt).toBeDefined()
+    expect(orderY).toBeDefined()
+    expect(orderLt!).toBeLessThan(orderY!)
+    expect(state().saveStatus).toBe('saved')
   })
 })

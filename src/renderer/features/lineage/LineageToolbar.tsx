@@ -1,11 +1,16 @@
 // b3: P7-H
 /**
- * [F-LG14] LineageToolbar —— 脉络编辑工具条（LineageBoard 拆件——组件行数
- * 红线落点；行为面零变：添加节点/导入草稿入口+保存态指示（autosave-first
- * 无「保存」按钮）+error 态重试钮）。
+ * [T3-P7B] LineageToolbar —— 脉络工具条（换装 .lg-toolbar——mockup L204-219/
+ * L496-507 逐值；sticky 挂 .timeline 内=LineageTimeline 渲染树，Board 经
+ * props 下传既有回调）。
  *
- * R2-LG11 浅色白玻璃浮层（.lineage-toolbar——视觉皮肤级）。导入草稿动作体
- * =lineage-import.ts（Board 原接线保持）。
+ * - 「编辑脉络」ghost toggle（edit 态=「完成编辑」+.lg-btn.editing——D-P7B-1；
+ *   mode 单源驻 Timeline，本件纯受控）+「新建连线」.lg-btn.linkbtn
+ *   （display:none↔.editing 内 block——D-21 编辑模式内才显；DOM 恒在场）
+ *   +导入草稿 .lg-btn primary+添加节点 .lg-btn ghost（repo 特有 mockup 无位）。
+ * - 保存态/重试 chip 行尾（[P7-H] 既有语义零变——testid 全保活）；
+ *   drag-hint 右缘 chip 仅 edit 态渲染「编辑中：点连线改线型」（view 态
+ *   mockup 文案=月内调序预告系 P8 域能力，禁假 affordance 不渲染）。
  */
 import type { LineageSaveStatus } from './lineage.store'
 
@@ -15,23 +20,36 @@ export function LineageToolbar(props: {
   onAddNode(): void
   onImportDraft(): void
   onRetrySave(): void
+  /** [T3-P7B] 编辑模式态（Timeline 单源受控） */
+  editing: boolean
+  onToggleEdit(): void
+  /** 「新建连线」（edit 态才生效——composer 双闸） */
+  onNewLink(): void
 }): JSX.Element {
-  const { saveStatus, lastWriteError } = props
+  const { saveStatus, lastWriteError, editing } = props
   return (
-    <div className="lineage-toolbar absolute left-2 top-2 z-(--z-float)">
+    <div className="lg-toolbar">
       <button
         type="button"
-        data-testid="lineage-add-node"
-        onClick={props.onAddNode}
+        className={editing ? 'lg-btn ghost editing' : 'lg-btn ghost'}
+        data-testid="lineage-edit-toggle"
+        onClick={props.onToggleEdit}
       >
-        添加节点
+        {editing ? '完成编辑' : '编辑脉络'}
       </button>
       <button
         type="button"
-        data-testid="lineage-import"
-        onClick={props.onImportDraft}
+        className="lg-btn ghost linkbtn"
+        data-testid="lineage-link-btn"
+        onClick={props.onNewLink}
       >
+        新建连线
+      </button>
+      <button type="button" className="lg-btn" data-testid="lineage-import" onClick={props.onImportDraft}>
         导入草稿
+      </button>
+      <button type="button" className="lg-btn ghost" data-testid="lineage-add-node" onClick={props.onAddNode}>
+        添加节点
       </button>
       {saveStatus === 'saving' && (
         <span className="rounded px-2 py-1 text-xs" data-testid="lineage-save-status">
@@ -57,6 +75,7 @@ export function LineageToolbar(props: {
           </button>
         </span>
       )}
+      {editing && <span className="drag-hint">编辑中：点连线改线型</span>}
     </div>
   )
 }

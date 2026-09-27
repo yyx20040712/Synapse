@@ -6,43 +6,15 @@
    值源=docs/design/mockups/2026-09-26_v2_theme-light.html L203-262 逐值誊录，
    字号经 --fs-tl-* token（FS_DECL 负锚禁字面量）、色值全 token、mockup
    的 .2s 过渡=--dur-lazy 同值 token 化；暗/护眼族靠 token 自动随族
-   （--mini-card/--month-dash P1 已入库）。 */
-
-/* ══ 脉络工具条（R2-LG11 白玻璃浮层——LineageToolbar 消费，T3-P6 零动保活）══ */
-.lineage-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 12px;
-  background: var(--panel-a88);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-2);
-  font-size: var(--fs-strong);
-}
-.lineage-toolbar > button {
-  background: transparent;
-  border: 0;
-  color: var(--text-dim);
-  padding: 4px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: var(--fs-strong);
-}
-.lineage-toolbar > button:hover {
-  color: var(--text);
-  background: var(--accent-soft);
-}
-.lineage-toolbar > span {
-  background: transparent;
-  color: var(--text-dim);
-}
-.lineage-toolbar > button:active {
-  transform: scale(0.95);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
+   （--mini-card/--month-dash P1 已入库）。
+   [T3-P7B] 编辑交互族追加 2026-09-27（.lg- 段/.editing/.link-pick/.link-src/
+   .pop/.acc/.schip——值源=mockup L204-219/L247/L259-260/L287-311 逐值；
+   .lineage-toolbar 旧族随 LineageToolbar 换装退役删除（方案切换=删旧方案）。
+   （注释纪律：正文禁现「星斜杠」连写——提前终结注释会把后续规则吞进解析
+   恢复区吞掉 .timeline 规则——2026-09-27 P7B e2e 探针实证。）
+   字号零新 token（票面）=最近值映射：12px→--fs-body；11.5px/11px→--fs-body；
+   10.5px→--fs-tl-hint；10px/9px/9.5px→--fs-micro。阴影/编辑提示底/移除钮
+   色值=mockup 三稿同值主题恒定，经 theme.css [T3-P7B] token 承载。 */
 
 /* ══ [T3-P6] 脉络时间线（纵向年+月 DOM 时间线——mockup L203-262 逐值）══ */
 /* 滚动容器（pan/zoom INV-43/44 退役→滚动定位语义）；height:100%=Board 块级
@@ -197,3 +169,141 @@
 .c-title { font-size: var(--fs-tl-title); font-weight: 600; color: var(--ink); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .c-idea { font-size: var(--fs-tl-idea); color: var(--dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .c-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); margin-top: 2.5px; }
+
+/* ══ [T3-P7B] 编辑交互族（工具条换装+编辑态+线型弹层——mockup L204-219/L247/
+   L259-260/L287-311 逐值；字号/阴影 token 映射注记见文件头 [T3-P7B] 段）══ */
+/* 工具条：sticky 挂 .timeline 内（D-P7B-1——mockup L204-205：color-mix var(--bg)
+   86% 底+blur 8px+底边线；z 12 低于弹层 130） */
+.lg-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-body);
+}
+.lg-toolbar button { font-family: inherit; }
+.lg-btn {
+  font-size: var(--fs-body);
+  color: var(--accent-ink);
+  background: var(--accent);
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg-btn);
+}
+.lg-btn.ghost { background: var(--panel); color: var(--dim); border: 1px solid var(--line); box-shadow: none; }
+.lg-btn.editing { background: var(--signal); color: var(--accent-ink); box-shadow: var(--shadow-lg-edit); }
+.lg-btn.linkbtn { display: none; }
+.timeline.editing .lg-btn.linkbtn { display: block; }
+/* drag-hint 右缘 chip：仅 edit 态渲染（D-P7B-1——view 态 P8 能力禁假 affordance）；
+   值取 mockup .editing .drag-hint 变体（L219——signal 三稿同值 token 承载） */
+.drag-hint {
+  margin-left: auto;
+  font-size: var(--fs-tl-hint);
+  color: var(--signal);
+  background: var(--signal-a08);
+  border: 1px dashed var(--signal);
+  border-radius: 7px;
+  padding: 4px 10px;
+}
+
+/* 编辑态（.timeline.editing——mode 驻 Timeline 单源 INV-80）：
+   命中层双闸 CSS 面（P7a 基线 none→edit 开 stroke+pointer L225）；
+   卡 hover faint 轮廓（mockup L259-260） */
+.timeline.editing .tl-edge-hit { pointer-events: stroke; cursor: pointer; }
+.timeline.editing .tl-card { outline: 1px dashed transparent; }
+.timeline.editing .tl-card:hover { outline-color: var(--faint); }
+/* 拾取态（picker≠idle）：容器 crosshair+卡例外 pointer（D-P7B-2） */
+.timeline.link-pick { cursor: crosshair; }
+.timeline.link-pick .tl-card { cursor: pointer; }
+/* 拾取源高亮（mockup L247：2.4px dashed signal offset 2px）——[R1 回炉 1]
+   选择器 (0,4,0)：`.timeline.editing .tl-card` 基线 outline (0,3,0) 压栈
+   (0,2,0) 使高亮恒不可视（门一双审 B1 同中）；link-src 唯一相位在 edit 态
+   （picker 非 idle ⇒ mode=edit——composer 状态机保证），升级零语义损失 */
+.timeline.editing .tl-card.link-src { outline: 2.4px dashed var(--signal); outline-offset: 2px; }
+
+/* 线型弹层（mockup L287-296 .pop 族——position:fixed 挂视口不随滚动裁剪；
+   Timeline 渲染树内固定层，钳制公式在组件层 clampPopoverPos） */
+.pop {
+  position: fixed;
+  z-index: 130;
+  width: 240px;
+  border-radius: 10px;
+  box-shadow: var(--shadow-drag);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px 13px;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.pop button { font-family: inherit; }
+.pop h4 { font-size: var(--fs-body); letter-spacing: 2px; color: var(--faint); margin-bottom: 9px; font-weight: 600; }
+.acc { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
+.acc-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  cursor: pointer;
+  font-size: var(--fs-body);
+  background: transparent;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+.acc-head .tri { font-size: var(--fs-micro); color: var(--faint); width: 9px; }
+.acc-head .cnt { margin-left: auto; font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+.acc-head.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.acc-body { padding: 6px 8px 8px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 5px; }
+/* [R6① 回炉 1] 升 (0,3,0)：原 .acc-body .pbtn 与 .pop .pbtn 同特异性被
+   源序覆盖=死声明（组内小钮意图值 fs-tl-hint/4px 0 真正生效） */
+.pop .acc-body .pbtn { margin-top: 2px; font-size: var(--fs-tl-hint); padding: 4px 0; }
+.pop .schip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font-size: var(--fs-body);
+}
+.pop .schip.on { border-color: var(--accent); background: var(--accent-soft); }
+/* i 线样预览（mockup L296 width 26；inline 元素 width 不生效故补
+   inline-block——mockup 缺席项申报；[R6② 回炉 1] border-top-width 删：
+   chip i 恒挂组件 inline borderTop（linePreviewStyle）=该属性死声明） */
+.pop .schip i { width: 26px; display: inline-block; }
+.pop .schip .nm { flex: 1; }
+.pop .schip .ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+.pop .acts { display: flex; gap: 6px; margin-top: 2px; }
+.pop .pbtn { flex: 1; text-align: center; font-size: var(--fs-body); padding: 5px 0; border-radius: 7px; cursor: pointer; }
+.pop .pbtn.pri { background: var(--accent); color: var(--accent-ink); border: 0; }
+.pop .pbtn.sec { border: 1px solid var(--line); color: var(--dim); background: transparent; }
+.pop .pbtn.dgr { border: 1px solid var(--pop-danger-a50); color: var(--pop-danger); background: transparent; }
+.pop .foot-note { font-size: var(--fs-micro); color: var(--faint); margin-top: 8px; }
+/* 新建线型内联表单（D-P7B-4——名称+预览线+确定取消） */
+.newsub-form { display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
+.newsub-form input {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--bg);
+  outline: none;
+  font-family: inherit;
+}
+.newsub-form .newsub-preview { display: block; width: 100%; }
+.newsub-form .newsub-acts { display: flex; gap: 6px; }

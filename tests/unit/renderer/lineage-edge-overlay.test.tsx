@@ -208,6 +208,85 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     warn.mockRestore()
   })
 
+  // ── [T3-P7B] 同道错峰（D-P7B-8：lane≥0 路径按车道内 edgeId 字典序 i≥1
+  //    挂 opacity=max(0.6,1−0.15×i)——sub 覆盖 color/w 不动）──
+  it('同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 inline；13 边第 4 条触 0.6 下钳', () => {
+    // 5 条同端点边：jsdom 零 rect 下 routeAll 干净几何 → lanes=[0,1,2,3,0]
+    //（routing it 9 相位一同型）；e0/e4 同 lane0 → 字典序 [e0,e4] → e4 i=1
+    mountOverlay(
+      [node('A'), node('B')],
+      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B', 'ref'))
+    )
+    const of = (id: string): SVGPathElement | null =>
+      host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`) ?? null
+    expect(of('e0')?.style.opacity).toBe('') // i=0 无覆盖
+    expect(of('e4')?.style.opacity).toBe('0.85') // 1−0.15×1
+    expect(of('e1')?.style.opacity).toBe('') // 他道唯一边
+    // 13 边：lane0=[e00,e04,e08,e12] → i=3 → max(0.6,0.55)=0.6 下钳
+    const ids13 = Array.from({ length: 13 }, (_, i) => `e${String(i).padStart(2, '0')}`)
+    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B', 'ref')))
+    expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e12"]')?.style.opacity).toBe('0.6')
+    expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e08"]')?.style.opacity).toBe('0.7')
+  })
+
+  it('错峰与 sub 覆盖并存：sub inline（stroke/dash/w）+同道 i≥1 opacity 同挂', () => {
+    // 5 边字典序 [e0,e1,e4,e5,e9]→lanes [0,1,2,3,0]：e0/e9 同 lane0 →
+    // e9 i=1（opacity+sub 双挂）；e4 独占 lane2（sub 无 opacity）
+    mountOverlay(
+      [node('A'), node('B')],
+      [
+        edge('e0', 'A', 'B', 'tree', 't1'),
+        edge('e1', 'A', 'B', 'tree'),
+        edge('e4', 'A', 'B', 'tree', 't1'),
+        edge('e5', 'A', 'B', 'ref'),
+        edge('e9', 'A', 'B', 'tree', 't1')
+      ],
+      LINE_TYPES
+    )
+    const both = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e9"]')
+    expect(both?.style.opacity).toBe('0.85')
+    expect(both?.style.stroke).toBe('#123456') // sub 色（LINE_TYPES t1）不因错峰失挂
+    expect(both?.style.strokeWidth).toBe('2.5')
+    const solo = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e4"]')
+    expect(solo?.style.opacity).toBe('')
+    expect(solo?.style.stroke).toBe('#123456')
+  })
+
+  it('onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩', () => {
+    stubRaf()
+    host = document.createElement('div')
+    host.className = 'tl-content'
+    document.body.appendChild(host)
+    root = createRoot(host)
+    const onHit = vi.fn()
+    act(() => {
+      root?.render(
+        <EdgeOverlay
+          nodes={[node('A'), node('B')]}
+          edges={[edge('e1', 'A', 'B', 'tree')]}
+          lineTypes={[]}
+          shiftedIds={new Set()}
+          groups={[]}
+          routeEpoch={0}
+          onEdgeHitClick={onHit}
+        />
+      )
+    })
+    for (const n of [node('A'), node('B')]) {
+      const card = document.createElement('div')
+      card.className = 'tl-card'
+      card.dataset.nodeId = n.id
+      host.appendChild(card)
+    }
+    flushRafs()
+    const hit = host?.querySelector<SVGPathElement>('path.tl-edge-hit')
+    expect(hit).not.toBeNull()
+    act(() => {
+      hit?.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 33, clientY: 44 }))
+    })
+    expect(onHit).toHaveBeenCalledWith('e1', expect.objectContaining({ clientX: 33, clientY: 44 }))
+  })
+
   it('图例四项真文本挂滚动容器 .timeline（回炉 1 W7——mockup .lc 族誊录，D-18 四基础型）', () => {
     stubRaf()
     host = document.createElement('div')
@@ -242,5 +321,56 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(css).toMatch(/\.lc\s*\{[^}]*display:\s*flex;[^}]*gap:\s*4px/)
     expect(css).toMatch(/\.lc i\s*\{[^}]*width:\s*20px;[^}]*border-top:\s*2px solid var\(--accent\)/)
     expect(css).toMatch(/\.lc\.i3 i\s*\{[^}]*dotted var\(--faint\)/)
+  })
+
+  it('CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）', () => {
+    // 双闸 CSS 面：view 基线 none（上行既有锁）+edit 态开 stroke（M-pointer-events 变异锚）
+    expect(css).toMatch(/\.timeline\.editing \.tl-edge-hit\s*\{[^}]*pointer-events:\s*stroke;[^}]*cursor:\s*pointer/)
+    // link-pick：容器 crosshair+卡例外 pointer
+    expect(css).toMatch(/\.timeline\.link-pick\s*\{[^}]*cursor:\s*crosshair/)
+    expect(css).toMatch(/\.timeline\.link-pick \.tl-card\s*\{[^}]*cursor:\s*pointer/)
+    // 拾取源高亮（mockup L247：2.4px dashed signal offset 2px）——[R1] 选择器
+    // 升 (0,4,0)：`.timeline.editing .tl-card` 基线 outline (0,3,0) 压栈
+    // (0,2,0) 使高亮恒不可视（双审 B1 同中）——特异性实测锚在 e2e T8 computed
+    expect(css).toMatch(
+      /\.timeline\.editing \.tl-card\.link-src\s*\{[^}]*outline:\s*2\.4px dashed var\(--signal\);[^}]*outline-offset:\s*2px/
+    )
+    // [R6①] 意图值升特异性真正生效（原 .acc-body .pbtn 同特异性被 .pop .pbtn
+    // 源序覆盖=死声明）
+    expect(css).toMatch(/\.pop \.acc-body \.pbtn\s*\{[^}]*font-size:\s*var\(--fs-tl-hint\);[^}]*padding:\s*4px 0/)
+    // [R6②] .pop .schip i 的 border-top-width 恒被组件 inline borderTop 覆盖
+    // ——死属性已删（宽度面全权 inline=linePreviewStyle）
+    expect(css).toMatch(/\.pop \.schip i\s*\{[^}]*width:\s*26px;[^}]*display:\s*inline-block/)
+    expect(css).not.toMatch(/\.pop \.schip i\s*\{[^}]*border-top-width/)
+    // 编辑态卡 hover faint（mockup L259-260）
+    expect(css).toMatch(/\.timeline\.editing \.tl-card\s*\{[^}]*outline:\s*1px dashed transparent/)
+    expect(css).toMatch(/\.timeline\.editing \.tl-card:hover\s*\{[^}]*outline-color:\s*var\(--faint\)/)
+    // .lg-toolbar sticky（mockup L204-205 逐值——色值经 color-mix var(--bg) 承载）
+    expect(css).toMatch(/\.lg-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*z-index:\s*12;[^}]*padding:\s*10px 18px/)
+    // .lg-btn 主/ghost/editing/linkbtn 显隐（mockup L206-210——阴影=三稿同值 token 承载）
+    expect(css).toMatch(
+      /\.lg-btn\s*\{[^}]*color:\s*var\(--accent-ink\);[^}]*background:\s*var\(--accent\);[^}]*padding:\s*6px 14px;[^}]*border-radius:\s*8px;[^}]*box-shadow:\s*var\(--shadow-lg-btn\)/
+    )
+    expect(css).toMatch(
+      /\.lg-btn\.ghost\s*\{[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px solid var\(--line\);[^}]*box-shadow:\s*none/
+    )
+    expect(css).toMatch(/\.lg-btn\.editing\s*\{[^}]*background:\s*var\(--signal\);[^}]*box-shadow:\s*var\(--shadow-lg-edit\)/)
+    expect(css).toMatch(/\.lg-btn\.linkbtn\s*\{[^}]*display:\s*none/)
+    expect(css).toMatch(/\.timeline\.editing \.lg-btn\.linkbtn\s*\{[^}]*display:\s*block/)
+    // drag-hint 编辑态信号色（mockup L219——仅 edit 态渲染，值取 .editing 变体）
+    expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\)/)
+    expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--signal\)/)
+    // .pop 弹层（mockup L287 逐值——fixed 240px 挂视口）
+    expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)
+    expect(css).toMatch(/\.pop h4\s*\{[^}]*letter-spacing:\s*2px;[^}]*color:\s*var\(--faint\)/)
+    // .acc 手风琴（mockup L304-310）+schip chip i 预览（L294-296——[R6②]
+    // border-top-width 死属性已删，断言迁移至 R6 段）
+    expect(css).toMatch(/\.acc\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*border-radius:\s*8px;[^}]*overflow:\s*hidden/)
+    expect(css).toMatch(/\.acc-head\.on\s*\{[^}]*background:\s*var\(--accent-soft\);[^}]*color:\s*var\(--accent\)/)
+    expect(css).toMatch(/\.pop \.schip\.on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
+    // acts 三型（pri/sec/dgr——dgr=三稿同值 token 承载）
+    expect(css).toMatch(/\.pop \.pbtn\.pri\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\)/)
+    expect(css).toMatch(/\.pop \.pbtn\.dgr\s*\{[^}]*border:\s*1px solid var\(--pop-danger-a50\);[^}]*color:\s*var\(--pop-danger\)/)
+    expect(css).toMatch(/\.pop \.foot-note\s*\{[^}]*color:\s*var\(--faint\)/)
   })
 })

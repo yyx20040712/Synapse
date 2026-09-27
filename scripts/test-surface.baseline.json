@@ -2390,7 +2390,7 @@
           ],
           "title": "T3 多父加边树拒绝 toast+保存失败→脏态退出拦截两态",
           "markers": [],
-          "line": 346,
+          "line": 348,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByTestId('lineage-pending-link')).toBeVisible()",
@@ -2409,7 +2409,7 @@
           ],
           "title": "T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位",
           "markers": [],
-          "line": 440,
+          "line": 442,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2438,7 +2438,7 @@
           ],
           "title": "T5 综述参考连接：右键添加 ref 边→reload 数据持久（守卫面证）",
           "markers": [],
-          "line": 547,
+          "line": 549,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })",
@@ -2462,7 +2462,7 @@
           ],
           "title": "T6 砖砌行错位：窄窗 5 卡同月→两行+偶行 rowshift 62px 实值+跨行 y 差",
           "markers": [],
-          "line": 617,
+          "line": 619,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })",
@@ -2471,6 +2471,83 @@
             "expect(rowTops.length).toBeGreaterThan(1)",
             "expect([...actualShiftedIds].sort()).toEqual([...expectedShiftedIds].sort())",
             "expect(secondRowY).toBeGreaterThan(firstRowY)"
+          ]
+        },
+        {
+          "key": "[\"脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）\",\"T7 编辑线型全流：点边→新建线型→选 sub→reload 持久+sub 色+基础型回退\"]",
+          "describePath": [
+            "脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）"
+          ],
+          "title": "T7 编辑线型全流：点边→新建线型→选 sub→reload 持久+sub 色+基础型回退",
+          "markers": [],
+          "line": 694,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByTestId('lineage-edit-toggle')).toHaveText('完成编辑')",
+            "expect(win.locator('.timeline.editing')).toHaveCount(1)",
+            "expect(win.getByTestId('lineage-link-btn')).toBeVisible()",
+            "expect(win.getByTestId('edge-pop')).toBeVisible()",
+            "expect(win.getByTestId('edge-pop').locator('h4')).toHaveText('线 型')",
+            "expect(win.getByTestId('edge-pop').locator('.acc-head[data-base=\"tree\"] .cnt')).toHaveText('2 条 · 0 型')",
+            "expect(win.getByTestId('edge-pop-newsub-name')).toHaveValue('线型 1')",
+            "expect(win.getByText('已新建子线型：继承 · 线型 1')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('edge-pop')).toBeVisible()",
+            "expect(win.getByTestId('edge-pop').locator('.schip[data-sub=\"tree-s1\"]')).toHaveClass(/on/)",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0, { timeout: 10_000 })",
+            "expect(styled).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('edge-pop')).toBeVisible()",
+            "expect(win.getByText('线型已切换：继承 · 基础型')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0, { timeout: 10_000 })",
+            "expect(reverted).toBeVisible({ timeout: 10_000 })"
+          ]
+        },
+        {
+          "key": "[\"脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）\",\"T8 新建连线全流：拾取→自环/重复 toast→create→reload 持久+Esc 分支\"]",
+          "describePath": [
+            "脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）"
+          ],
+          "title": "T8 新建连线全流：拾取→自环/重复 toast→create→reload 持久+Esc 分支",
+          "markers": [],
+          "line": 769,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByText('新建连线：点击源卡片')).toBeVisible()",
+            "expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)",
+            "expect(win.locator('.timeline.link-pick')).toHaveCount(0)",
+            "expect(win.getByTestId('edge-pop')).toHaveCount(0)",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0)",
+            "expect(await edgeCount.count()).toBe(2)",
+            "expect(win.getByText('再点击目标卡片')).toBeVisible()",
+            "expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)",
+            "expect(win.getByText('不能与自身连线（自环）')).toBeVisible({ timeout: 10_000 })",
+            "expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)",
+            "expect(win.getByText('两节点间已存在连线')).toBeVisible({ timeout: 10_000 })",
+            "expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)",
+            "expect(win.getByTestId('edge-pop')).toBeVisible()",
+            "expect(win.getByTestId('edge-pop').locator('h4')).toHaveText('线 型 · 新建连线')",
+            "expect(nodeG(win, '脉络甲文献')).not.toHaveClass(/link-src/)",
+            "expect(win.getByText('父子连线已保存')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('edge-pop')).toHaveCount(0)",
+            "expect(edgeCount).toHaveCount(3, { timeout: 10_000 })",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0)",
+            "expect(edgeCount).toHaveCount(3, { timeout: 10_000 })"
+          ]
+        },
+        {
+          "key": "[\"脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）\",\"T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+卡/线 bbox 相对关系恒定\"]",
+          "describePath": [
+            "脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）"
+          ],
+          "title": "T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+卡/线 bbox 相对关系恒定",
+          "markers": [],
+          "line": 858,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(m2.laneX).toBeLessThan(m1.laneX)",
+            "expect(Math.abs(m1.laneX - m2.laneX - 280)).toBeLessThan(3)",
+            "expect(m2.laneX - m2.contentLeft - m2.contentW).toBeCloseTo(m1.laneX - m1.contentLeft - m1.contentW, 1)",
+            "expect(m2.relY).toBeCloseTo(m1.relY, 1)"
           ]
         }
       ]
@@ -10676,16 +10753,18 @@
           ]
         },
         {
-          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空图空态文案（导入/添加入口归 LG-03——本面仅文案不留死按钮）\"]",
+          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）\"]",
           "describePath": [
             "LineageTimeline —— 时间线宿主渲染"
           ],
-          "title": "空图空态文案（导入/添加入口归 LG-03——本面仅文案不留死按钮）",
+          "title": "空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）",
           "markers": [],
           "line": 119,
           "assertions": [
             "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')",
-            "expect(host?.querySelectorAll('button').length).toBe(0)"
+            "expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"lineage-import\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"edge-pop\"]')).toBeNull()"
           ]
         },
         {
@@ -10695,7 +10774,7 @@
           ],
           "title": "空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）",
           "markers": [],
-          "line": 125,
+          "line": 129,
           "assertions": [
             "expect(host?.textContent).toContain('暂无脉络图')",
             "expect(host?.textContent).toContain('扩散模型起点')",
@@ -10709,7 +10788,7 @@
           ],
           "title": "loading：挂载期呈加载文案，graph 取数一次",
           "markers": [],
-          "line": 138,
+          "line": 142,
           "assertions": [
             "expect(host?.textContent).toContain('正在加载脉络图')",
             "expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)",
@@ -10723,7 +10802,7 @@
           ],
           "title": "ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）",
           "markers": [],
-          "line": 146,
+          "line": 150,
           "assertions": [
             "expect(host?.textContent).toContain('扩散模型起点')",
             "expect(useLineageStore.getState().status).toBe('ready')"
@@ -10736,7 +10815,7 @@
           ],
           "title": "ready 空图：空态文案（列表型空非错误）",
           "markers": [],
-          "line": 155,
+          "line": 159,
           "assertions": [
             "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')"
           ]
@@ -10748,7 +10827,7 @@
           ],
           "title": "error：取数失败呈错误条+重试按钮；重试再取数成功恢复",
           "markers": [],
-          "line": 162,
+          "line": 166,
           "assertions": [
             "expect(host?.querySelector('[role=\"alert\"]')?.textContent).toContain('脉络图加载失败')",
             "expect(retry.textContent).toBe('重试')",
@@ -10763,7 +10842,7 @@
           ],
           "title": "store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）",
           "markers": [],
-          "line": 178,
+          "line": 182,
           "assertions": [
             "expect(useLineageStore.getState().nodes.length).toBe(3)",
             "expect(useLineageStore.getState().status).toBe('ready')"
@@ -10884,6 +10963,256 @@
         }
       ]
     },
+    "tests/unit/renderer/lineage-edge-composer.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"初始态：view[idle,closed]；view 态点命中层/新建连线=no-op（handler 闸+D-21）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "初始态：view[idle,closed]；view 态点命中层/新建连线=no-op（handler 闸+D-21）",
+          "markers": [],
+          "line": 97,
+          "assertions": [
+            "expect(api?.mode).toBe('view')",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.sourceId).toBeNull()",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.picker).toBe('idle')",
+            "expect(toastStoreSpy).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"toggle view→edit：归位零残留（picker/popover 均基线）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "toggle view→edit：归位零残留（picker/popover 均基线）",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(api?.mode).toBe('edit')",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"「新建连线」click：edit 态 idle→source+toast（.link-pick 态派生）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "「新建连线」click：edit 态 idle→source+toast（.link-pick 态派生）",
+          "markers": [],
+          "line": 120,
+          "assertions": [
+            "expect(api?.picker).toBe('source')",
+            "expect(api?.isPicking).toBe(true)",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('新建连线：点击源卡片', 'info')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"点卡 source→target：源卡 id 记录+toast「再点击目标卡片」+stopPropagation\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "点卡 source→target：源卡 id 记录+toast「再点击目标卡片」+stopPropagation",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(consumed).toBe(true)",
+            "expect(e.stopped()).toBe(true)",
+            "expect(api?.picker).toBe('target')",
+            "expect(api?.sourceId).toBe('A')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('再点击目标卡片', 'info')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"点卡 target 同卡=自环：toast+停在 target 态不回 idle（D-P7B-6）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "点卡 target 同卡=自环：toast+停在 target 态不回 idle（D-P7B-6）",
+          "markers": [],
+          "line": 143,
+          "assertions": [
+            "expect(consumed).toBe(true)",
+            "expect(api?.picker).toBe('target')",
+            "expect(api?.sourceId).toBe('A')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('不能与自身连线（自环）', 'error')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"点卡 target 同端点对无向已有边（任一方向）=重复：toast+停 target（正反两向各证）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "点卡 target 同端点对无向已有边（任一方向）=重复：toast+停 target（正反两向各证）",
+          "markers": [],
+          "line": 159,
+          "assertions": [
+            "expect(api?.picker).toBe('target')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('两节点间已存在连线', 'error')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.picker).toBe('target')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('两节点间已存在连线', 'error')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"点卡 target 合法：popover=create[picker 回 idle+源高亮摘除]+坐标透传+stopPropagation\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "点卡 target 合法：popover=create[picker 回 idle+源高亮摘除]+坐标透传+stopPropagation",
+          "markers": [],
+          "line": 180,
+          "assertions": [
+            "expect(consumed).toBe(true)",
+            "expect(e.stopped()).toBe(true)",
+            "expect(api?.popover).toEqual({ kind: 'create', from: 'A', to: 'B', cx: 320, cy: 240 })",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.sourceId).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"点 .tl-edge-hit：edit 态 idle→popover=edit[edgeId+坐标透传+stopPropagation]\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "点 .tl-edge-hit：edit 态 idle→popover=edit[edgeId+坐标透传+stopPropagation]",
+          "markers": [],
+          "line": 197,
+          "assertions": [
+            "expect(api?.popover).toEqual({ kind: 'edit', edgeId: 'e1', cx: 50, cy: 75 })",
+            "expect(e.stopped()).toBe(true)",
+            "expect(api?.picker).toBe('idle')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"popover 开时点卡/点边=no-op（与拾取互斥）：状态零迁移（换目标先关再点）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "popover 开时点卡/点边=no-op（与拾取互斥）：状态零迁移（换目标先关再点）",
+          "markers": [],
+          "line": 207,
+          "assertions": [
+            "expect(api?.popover).toEqual({ kind: 'edit', edgeId: 'e1', cx: 100, cy: 200 })",
+            "expect(consumed).toBe(true)",
+            "expect(api?.popover).toEqual({ kind: 'edit', edgeId: 'e1', cx: 100, cy: 200 })",
+            "expect(api?.picker).toBe('idle')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"popover→closed=外点：document click 弹层外→关；弹层内/svg 命中层点击不关（mockup L769 排除面）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "popover→closed=外点：document click 弹层外→关；弹层内/svg 命中层点击不关（mockup L769 排除面）",
+          "markers": [],
+          "line": 224,
+          "assertions": [
+            "expect(api?.popover).toEqual({ kind: 'edit', edgeId: 'e1', cx: 100, cy: 200 })",
+            "expect(api?.popover.kind).toBe('edit')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"Esc 优先序（popover＞picker；mode 不动）：popover 开→只关 popover；picker=target→摘回 idle\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "Esc 优先序（popover＞picker；mode 不动）：popover 开→只关 popover；picker=target→摘回 idle",
+          "markers": [],
+          "line": 247,
+          "assertions": [
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.mode).toBe('edit')",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.sourceId).toBeNull()",
+            "expect(api?.mode).toBe('edit')",
+            "expect(api?.mode).toBe('edit')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"toggle edit→view：强制归位（picker 摘+popover 关——mockup L1011）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "toggle edit→view：强制归位（picker 摘+popover 关——mockup L1011）",
+          "markers": [],
+          "line": 266,
+          "assertions": [
+            "expect(api?.mode).toBe('view')",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.sourceId).toBeNull()",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.mode).toBe('view')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"edit 态 picker=idle+popover=closed 的普通点卡=view 同语义（不消费——选中照常转发）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "edit 态 picker=idle+popover=closed 的普通点卡=view 同语义（不消费——选中照常转发）",
+          "markers": [],
+          "line": 283,
+          "assertions": [
+            "expect(consumed).toBe(false)",
+            "expect(e.stopped()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"[R4] popover=edit 开时点「新建连线」：显式关 popover→[source,closed]（互斥=状态机结构性不变式，非事件序兜底）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "[R4] popover=edit 开时点「新建连线」：显式关 popover→[source,closed]（互斥=状态机结构性不变式，非事件序兜底）",
+          "markers": [],
+          "line": 295,
+          "assertions": [
+            "expect(api?.popover.kind).toBe('edit')",
+            "expect(api?.picker).toBe('source')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('新建连线：点击源卡片', 'info')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"跨格序列：edit→popover=edit→toggle view 归位→再入 edit 仍[idle,closed]（退出归位零残留）\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "跨格序列：edit→popover=edit→toggle view 归位→再入 edit 仍[idle,closed]（退出归位零残留）",
+          "markers": [],
+          "line": 306,
+          "assertions": [
+            "expect(api?.mode).toBe('edit')",
+            "expect(api?.picker).toBe('idle')",
+            "expect(api?.popover).toEqual({ kind: 'closed' })",
+            "expect(api?.popover).toEqual({ kind: 'create', from: 'A', to: 'B', cx: 1, cy: 2 })"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B useEdgeComposer 状态机（迁移表全量）\",\"预检读面=渲染时 edges 快照：拾取中图上新增同端点对边（props 变化）后重复预检生效\"]",
+          "describePath": [
+            "T3-P7B useEdgeComposer 状态机（迁移表全量）"
+          ],
+          "title": "预检读面=渲染时 edges 快照：拾取中图上新增同端点对边（props 变化）后重复预检生效",
+          "markers": [],
+          "line": 322,
+          "assertions": [
+            "expect(api?.picker).toBe('target')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('两节点间已存在连线', 'error')"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/lineage-edge-overlay.test.tsx": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -10951,13 +11280,58 @@
           ]
         },
         {
+          "key": "[\"T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）\",\"同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 inline；13 边第 4 条触 0.6 下钳\"]",
+          "describePath": [
+            "T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）"
+          ],
+          "title": "同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 inline；13 边第 4 条触 0.6 下钳",
+          "markers": [],
+          "line": 213,
+          "assertions": [
+            "expect(of('e0')?.style.opacity).toBe('')",
+            "expect(of('e4')?.style.opacity).toBe('0.85')",
+            "expect(of('e1')?.style.opacity).toBe('')",
+            "expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id=\"e12\"]')?.style.opacity).toBe('0.6')",
+            "expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id=\"e08\"]')?.style.opacity).toBe('0.7')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）\",\"错峰与 sub 覆盖并存：sub inline（stroke/dash/w）+同道 i≥1 opacity 同挂\"]",
+          "describePath": [
+            "T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）"
+          ],
+          "title": "错峰与 sub 覆盖并存：sub inline（stroke/dash/w）+同道 i≥1 opacity 同挂",
+          "markers": [],
+          "line": 232,
+          "assertions": [
+            "expect(both?.style.opacity).toBe('0.85')",
+            "expect(both?.style.stroke).toBe('#123456')",
+            "expect(both?.style.strokeWidth).toBe('2.5')",
+            "expect(solo?.style.opacity).toBe('')",
+            "expect(solo?.style.stroke).toBe('#123456')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）\",\"onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩\"]",
+          "describePath": [
+            "T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）"
+          ],
+          "title": "onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩",
+          "markers": [],
+          "line": 255,
+          "assertions": [
+            "expect(hit).not.toBeNull()",
+            "expect(onHit).toHaveBeenCalledWith('e1', expect.objectContaining({ clientX: 33, clientY: 44 }))"
+          ]
+        },
+        {
           "key": "[\"T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）\",\"图例四项真文本挂滚动容器 .timeline（回炉 1 W7——mockup .lc 族誊录，D-18 四基础型）\"]",
           "describePath": [
             "T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）"
           ],
           "title": "图例四项真文本挂滚动容器 .timeline（回炉 1 W7——mockup .lc 族誊录，D-18 四基础型）",
           "markers": [],
-          "line": 211,
+          "line": 290,
           "assertions": [
             "expect(legend).not.toBeNull()",
             "expect(legend?.parentElement?.classList.contains('timeline')).toBe(true)",
@@ -10972,7 +11346,7 @@
           ],
           "title": "CSS 锁：svg z=1 低于卡 2+inset/overflow；测量期 opacity:0（--dur-tint 过渡）；四 kind 色/纹映射；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位",
           "markers": [],
-          "line": 230,
+          "line": 309,
           "assertions": [
             "expect(css).toMatch(/\\.tl-edges\\s*\\{[^}]*position:\\s*absolute;[^}]*inset:\\s*0;[^}]*overflow:\\s*visible;[^}]*z-index:\\s*1/)",
             "expect(css).toMatch(/\\.tl-content\\.tl-measure \\.tl-edges\\s*\\{[^}]*opacity:\\s*0/)",
@@ -10986,6 +11360,306 @@
             "expect(css).toMatch(/\\.lc\\s*\\{[^}]*display:\\s*flex;[^}]*gap:\\s*4px/)",
             "expect(css).toMatch(/\\.lc i\\s*\\{[^}]*width:\\s*20px;[^}]*border-top:\\s*2px solid var\\(--accent\\)/)",
             "expect(css).toMatch(/\\.lc\\.i3 i\\s*\\{[^}]*dotted var\\(--faint\\)/)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）\",\"CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）\"]",
+          "describePath": [
+            "T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）"
+          ],
+          "title": "CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）",
+          "markers": [],
+          "line": 326,
+          "assertions": [
+            "expect(css).toMatch(/\\.timeline\\.editing \\.tl-edge-hit\\s*\\{[^}]*pointer-events:\\s*stroke;[^}]*cursor:\\s*pointer/)",
+            "expect(css).toMatch(/\\.timeline\\.link-pick\\s*\\{[^}]*cursor:\\s*crosshair/)",
+            "expect(css).toMatch(/\\.timeline\\.link-pick \\.tl-card\\s*\\{[^}]*cursor:\\s*pointer/)",
+            "expect(css).toMatch( /\\.timeline\\.editing \\.tl-card\\.link-src\\s*\\{[^}]*outline:\\s*2\\.4px dashed var\\(--signal\\);[^}]*outline-offset:\\s*2px/ )",
+            "expect(css).toMatch(/\\.pop \\.acc-body \\.pbtn\\s*\\{[^}]*font-size:\\s*var\\(--fs-tl-hint\\);[^}]*padding:\\s*4px 0/)",
+            "expect(css).toMatch(/\\.pop \\.schip i\\s*\\{[^}]*width:\\s*26px;[^}]*display:\\s*inline-block/)",
+            "expect(css).not.toMatch(/\\.pop \\.schip i\\s*\\{[^}]*border-top-width/)",
+            "expect(css).toMatch(/\\.timeline\\.editing \\.tl-card\\s*\\{[^}]*outline:\\s*1px dashed transparent/)",
+            "expect(css).toMatch(/\\.timeline\\.editing \\.tl-card:hover\\s*\\{[^}]*outline-color:\\s*var\\(--faint\\)/)",
+            "expect(css).toMatch(/\\.lg-toolbar\\s*\\{[^}]*position:\\s*sticky;[^}]*top:\\s*0;[^}]*z-index:\\s*12;[^}]*padding:\\s*10px 18px/)",
+            "expect(css).toMatch( /\\.lg-btn\\s*\\{[^}]*color:\\s*var\\(--accent-ink\\);[^}]*background:\\s*var\\(--accent\\);[^}]*padding:\\s*6px 14px;[^}]*border-radius:\\s*8px;[^}]*box-shadow:\\s*var\\(--shadow-lg-btn\\)/ )",
+            "expect(css).toMatch( /\\.lg-btn\\.ghost\\s*\\{[^}]*background:\\s*var\\(--panel\\);[^}]*color:\\s*var\\(--dim\\);[^}]*border:\\s*1px solid var\\(--line\\);[^}]*box-shadow:\\s*none/ )",
+            "expect(css).toMatch(/\\.lg-btn\\.editing\\s*\\{[^}]*background:\\s*var\\(--signal\\);[^}]*box-shadow:\\s*var\\(--shadow-lg-edit\\)/)",
+            "expect(css).toMatch(/\\.lg-btn\\.linkbtn\\s*\\{[^}]*display:\\s*none/)",
+            "expect(css).toMatch(/\\.timeline\\.editing \\.lg-btn\\.linkbtn\\s*\\{[^}]*display:\\s*block/)",
+            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*margin-left:\\s*auto;[^}]*color:\\s*var\\(--signal\\);[^}]*background:\\s*var\\(--signal-a08\\)/)",
+            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*border:\\s*1px dashed var\\(--signal\\)/)",
+            "expect(css).toMatch(/\\.pop\\s*\\{[^}]*position:\\s*fixed;[^}]*z-index:\\s*130;[^}]*width:\\s*240px;[^}]*border-radius:\\s*10px;[^}]*box-shadow:\\s*var\\(--shadow-drag\\)/)",
+            "expect(css).toMatch(/\\.pop h4\\s*\\{[^}]*letter-spacing:\\s*2px;[^}]*color:\\s*var\\(--faint\\)/)",
+            "expect(css).toMatch(/\\.acc\\s*\\{[^}]*border:\\s*1px solid var\\(--line\\);[^}]*border-radius:\\s*8px;[^}]*overflow:\\s*hidden/)",
+            "expect(css).toMatch(/\\.acc-head\\.on\\s*\\{[^}]*background:\\s*var\\(--accent-soft\\);[^}]*color:\\s*var\\(--accent\\)/)",
+            "expect(css).toMatch(/\\.pop \\.schip\\.on\\s*\\{[^}]*border-color:\\s*var\\(--accent\\);[^}]*background:\\s*var\\(--accent-soft\\)/)",
+            "expect(css).toMatch(/\\.pop \\.pbtn\\.pri\\s*\\{[^}]*background:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent-ink\\)/)",
+            "expect(css).toMatch(/\\.pop \\.pbtn\\.dgr\\s*\\{[^}]*border:\\s*1px solid var\\(--pop-danger-a50\\);[^}]*color:\\s*var\\(--pop-danger\\)/)",
+            "expect(css).toMatch(/\\.pop \\.foot-note\\s*\\{[^}]*color:\\s*var\\(--faint\\)/)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-edge-popover.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 手风琴/计数/chip\",\"恒四组（lineTypes 失配组=空 subs 兜底）+单开手风琴（点组头展开唯一）+▸/▾\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 手风琴/计数/chip"
+          ],
+          "title": "恒四组（lineTypes 失配组=空 subs 兜底）+单开手风琴（点组头展开唯一）+▸/▾",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(heads.map((h) => h.getAttribute('data-base'))).toEqual(['tree', 'inferred', 'ref', 'manual'])",
+            "expect(q('.acc-head[data-base=\"tree\"]')?.querySelector('.tri')?.textContent).toBe('▾')",
+            "expect(q('.acc-body')).not.toBeNull()",
+            "expect(q('.acc-head[data-base=\"inferred\"]')?.querySelector('.tri')?.textContent).toBe('▾')",
+            "expect(q('.acc-head[data-base=\"tree\"]')?.querySelector('.tri')?.textContent).toBe('▸')",
+            "expect(host?.querySelectorAll('.acc-body').length).toBe(1)",
+            "expect(q('.acc-body')?.parentElement?.querySelector('.acc-head')?.getAttribute('data-base')).toBe('inferred')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 手风琴/计数/chip\",\"组内首 chip=基础型（sub=null——空组必需+可回退）：空组 body 恰基础型 chip+新建钮\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 手风琴/计数/chip"
+          ],
+          "title": "组内首 chip=基础型（sub=null——空组必需+可回退）：空组 body 恰基础型 chip+新建钮",
+          "markers": [],
+          "line": 127,
+          "assertions": [
+            "expect(chips.length).toBe(1)",
+            "expect(base.getAttribute('data-sub')).toBe('base')",
+            "expect(base.querySelector('.nm')?.textContent).toBe('基础型')",
+            "expect(body?.querySelector('[data-testid=\"edge-pop-newsub\"]')?.textContent).toContain('新建线型')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 手风琴/计数/chip\",\"计数派生 useMemo 单源：组头「N 条 · M 型」=edges/lineTypes 派生；chip ct=该 sub 边数（基础型=kind 匹配 sub null）\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 手风琴/计数/chip"
+          ],
+          "title": "计数派生 useMemo 单源：组头「N 条 · M 型」=edges/lineTypes 派生；chip ct=该 sub 边数（基础型=kind 匹配 sub null）",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(q('.acc-head[data-base=\"tree\"] .cnt')?.textContent).toBe('2 条 · 1 型')",
+            "expect(q('.acc-head[data-base=\"inferred\"] .cnt')?.textContent).toBe('1 条 · 0 型')",
+            "expect(q('.schip[data-sub=\"base\"] .ct')?.textContent).toBe('1')",
+            "expect(q('.schip[data-sub=\"t1\"] .ct')?.textContent).toBe('1')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 手风琴/计数/chip\",\"h4 标题：edit=「线 型」/create=「线 型 · 新建连线」；foot-note 文案\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 手风琴/计数/chip"
+          ],
+          "title": "h4 标题：edit=「线 型」/create=「线 型 · 新建连线」；foot-note 文案",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect(q('h4')?.textContent).toBe('线 型')",
+            "expect(q('.foot-note')?.textContent).toBe('B2 点击分组展开 → 选子线型')",
+            "expect(q('h4')?.textContent).toBe('线 型 · 新建连线')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— sub 选中与 acts\",\"edit 态 chip 点击=kind+sub 成对置即时应用（跨组换 kind）+toast+popover 保持开；基础型=sub null 回退\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— sub 选中与 acts"
+          ],
+          "title": "edit 态 chip 点击=kind+sub 成对置即时应用（跨组换 kind）+toast+popover 保持开；基础型=sub null 回退",
+          "markers": [],
+          "line": 167,
+          "assertions": [
+            "expect(cb.onApplyLine).toHaveBeenCalledWith('e1', 'inferred', 'i1')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith(`线型已切换：${BASE_NAMES.inferred} · 同源推断`, 'success')",
+            "expect(q('[data-testid=\"edge-pop\"]')).not.toBeNull()",
+            "expect(q('.schip[data-sub=\"i1\"]')?.classList.contains('on')).toBe(true)",
+            "expect(cb.onApplyLine).toHaveBeenLastCalledWith('e1', 'inferred', null)",
+            "expect(toastStoreSpy).toHaveBeenCalledWith(`线型已切换：${BASE_NAMES.inferred} · 基础型`, 'success')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— sub 选中与 acts\",\"create 态 chip=纯选择（不落写）；「创建连线」=onCreateLine(from,to,kind,sub)+onClose\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— sub 选中与 acts"
+          ],
+          "title": "create 态 chip=纯选择（不落写）；「创建连线」=onCreateLine(from,to,kind,sub)+onClose",
+          "markers": [],
+          "line": 190,
+          "assertions": [
+            "expect(cb.onApplyLine).not.toHaveBeenCalled()",
+            "expect(cb.onCreateLine).not.toHaveBeenCalled()",
+            "expect(cb.onCreateLine).toHaveBeenCalledWith('A', 'B', 'tree', 't1')",
+            "expect(cb.onClose).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— sub 选中与 acts\",\"edit 态「移除连线」=onRemoveLine(edgeId)+onClose；create 态无 del 钮（acts 互斥）\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— sub 选中与 acts"
+          ],
+          "title": "edit 态「移除连线」=onRemoveLine(edgeId)+onClose；create 态无 del 钮（acts 互斥）",
+          "markers": [],
+          "line": 200,
+          "assertions": [
+            "expect(q('[data-testid=\"edge-pop-act-del\"]')).not.toBeNull()",
+            "expect(q('[data-testid=\"edge-pop-act-create\"]')).toBeNull()",
+            "expect(cb.onRemoveLine).toHaveBeenCalledWith('e1')",
+            "expect(cb.onClose).toHaveBeenCalledTimes(1)",
+            "expect(q('[data-testid=\"edge-pop-act-del\"]')).toBeNull()",
+            "expect(q('[data-testid=\"edge-pop-act-create\"]')).not.toBeNull()",
+            "expect(cb2.onRemoveLine).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）\",\"nextSubId 确定性：无同前缀→-s1；最大 N+1（跳跃序号不复用最小空位）；非前缀 id 不计\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）"
+          ],
+          "title": "nextSubId 确定性：无同前缀→-s1；最大 N+1（跳跃序号不复用最小空位）；非前缀 id 不计",
+          "markers": [],
+          "line": 218,
+          "assertions": [
+            "expect(nextSubId('tree', [])).toBe('tree-s1')",
+            "expect(nextSubId('tree', [sub('tree-s1', 'a'), sub('tree-s3', 'b')])).toBe('tree-s4')",
+            "expect(nextSubId('tree', [sub('other', 'x'), sub('tree-s2', 'b')])).toBe('tree-s3')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）\",\"表单流：默认名「线型 N」+预览 PALETTE/DASH_ROT[subs.length] 轮转+确定=整批 saveLineTypes+edit 态自动选中即时应用+toast\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）"
+          ],
+          "title": "表单流：默认名「线型 N」+预览 PALETTE/DASH_ROT[subs.length] 轮转+确定=整批 saveLineTypes+edit 态自动选中即时应用+toast",
+          "markers": [],
+          "line": 224,
+          "assertions": [
+            "expect(nameInput?.value).toBe('线型 2')",
+            "expect(preview).not.toBeNull()",
+            "expect(preview?.style.borderTopColor).toBe('rgb(15, 138, 109)')",
+            "expect(preview?.style.borderTopStyle).toBe('dashed')",
+            "expect(preview?.style.borderTopWidth).toBe('1.7px')",
+            "expect(cb.onSaveLineTypes).not.toHaveBeenCalled()",
+            "expect(cb.onApplyLine).not.toHaveBeenCalled()",
+            "expect(cb.onSaveLineTypes).toHaveBeenCalledTimes(1)",
+            "expect(tree.subs.map((s) => s.id)).toEqual(['t1', 'tree-s1'])",
+            "expect(created.name).toBe('线型 2')",
+            "expect(created.color).toBe('#0f8a6d')",
+            "expect(created.dash).toBe('6 3')",
+            "expect(created.w).toBe(1.7)",
+            "expect(groups.map((g) => g.base)).toEqual(['tree', 'inferred', 'ref', 'manual'])",
+            "expect(cb.onApplyLine).toHaveBeenCalledWith('e1', 'tree', 'tree-s1')",
+            "expect(toastStoreSpy).toHaveBeenCalledWith(`已新建子线型：${BASE_NAMES.tree} · 线型 2`, 'success')",
+            "expect(nameInput).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）\",\"空名确定=回退默认名（不拒不空写）\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 新建线型内联表单（D-P7B-4/D-10）"
+          ],
+          "title": "空名确定=回退默认名（不拒不空写）",
+          "markers": [],
+          "line": 261,
+          "assertions": [
+            "expect(tree.subs[1]!.name).toBe('线型 2')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 位置钳制（mockup L1031-1034 语义）\",\"clampPopoverPos：left=clamp(6,cx−125,vw−258)/top=clamp(6,cy+14,vh−h−10)\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 位置钳制（mockup L1031-1034 语义）"
+          ],
+          "title": "clampPopoverPos：left=clamp(6,cx−125,vw−258)/top=clamp(6,cy+14,vh−h−10)",
+          "markers": [],
+          "line": 278,
+          "assertions": [
+            "expect(clampPopoverPos(400, 300, 1024, 768, 200)).toEqual({ left: 275, top: 314 })",
+            "expect(clampPopoverPos(0, 300, 1024, 768, 200)).toEqual({ left: 6, top: 314 })",
+            "expect(clampPopoverPos(2000, 300, 1024, 768, 200).left).toBe(1024 - 258)",
+            "expect(clampPopoverPos(400, 7000, 1024, 768, 200).top).toBe(768 - 200 - 10)",
+            "expect(clampPopoverPos(400, -50, 1024, 768, 200).top).toBe(6)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B EdgeTypePopover —— 位置钳制（mockup L1031-1034 语义）\",\"DOM 定位：根挂 position:fixed+style.left/top=钳制值；根 click stopPropagation（外点关闭排除面）\"]",
+          "describePath": [
+            "T3-P7B EdgeTypePopover —— 位置钳制（mockup L1031-1034 语义）"
+          ],
+          "title": "DOM 定位：根挂 position:fixed+style.left/top=钳制值；根 click stopPropagation（外点关闭排除面）",
+          "markers": [],
+          "line": 289,
+          "assertions": [
+            "expect(pop.style.left).toBe('275px')",
+            "expect(pop.style.top).toBe('314px')",
+            "expect(reached).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5\",\"[R2] 陈旧 edgeId 前置守卫：edges 查无该边→chip 点击不调 store+popover 自闭+toast（右键删边后弹层陈旧接缝）\"]",
+          "describePath": [
+            "T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5"
+          ],
+          "title": "[R2] 陈旧 edgeId 前置守卫：edges 查无该边→chip 点击不调 store+popover 自闭+toast（右键删边后弹层陈旧接缝）",
+          "markers": [],
+          "line": 338,
+          "assertions": [
+            "expect(cb.onApplyLine).not.toHaveBeenCalled()",
+            "expect(cb.onClose).toHaveBeenCalledTimes(1)",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('连线已移除', 'info')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5\",\"[R3] 钳制 effect deps 含 formOpen：表单展开增高后重钳（溢视口防）\"]",
+          "describePath": [
+            "T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5"
+          ],
+          "title": "[R3] 钳制 effect deps 含 formOpen：表单展开增高后重钳（溢视口防）",
+          "markers": [],
+          "line": 367,
+          "assertions": [
+            "expect(pop.style.top).toBe('658px')",
+            "expect(pop.style.top).toBe('258px')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5\",\"[R8] 表单开着边被删→确定：onApplyLine 零调用+onClose+toast（confirmNewSub 陈旧守卫）；saveLineTypes 写保留（合法入队不动）\"]",
+          "describePath": [
+            "T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5"
+          ],
+          "title": "[R8] 表单开着边被删→确定：onApplyLine 零调用+onClose+toast（confirmNewSub 陈旧守卫）；saveLineTypes 写保留（合法入队不动）",
+          "markers": [],
+          "line": 383,
+          "assertions": [
+            "expect(q('[data-testid=\"edge-pop-newsub-form\"]')).not.toBeNull()",
+            "expect(cb.onApplyLine).not.toHaveBeenCalled()",
+            "expect(cb.onSaveLineTypes).toHaveBeenCalledTimes(1)",
+            "expect(cb.onClose).toHaveBeenCalledTimes(1)",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('连线已移除', 'info')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5\",\"[R5] 新建线型窗口禁建：saving/error 态「＋新建线型/确定」disabled+title；saved 可建\"]",
+          "describePath": [
+            "T3-P7B 回炉 1 —— EdgeTypePopover R2/R3/R5"
+          ],
+          "title": "[R5] 新建线型窗口禁建：saving/error 态「＋新建线型/确定」disabled+title；saved 可建",
+          "markers": [],
+          "line": 415,
+          "assertions": [
+            "expect(newsubBtn.disabled).toBe(true)",
+            "expect(newsubBtn.title).toBe('等待上次保存完成')",
+            "expect((q('[data-testid=\"edge-pop-newsub\"]') as HTMLButtonElement).disabled).toBe(true)",
+            "expect(btn2.disabled).toBe(false)",
+            "expect((q('[data-testid=\"edge-pop-newsub-confirm\"]') as HTMLButtonElement).disabled).toBe(false)",
+            "expect((q('[data-testid=\"edge-pop-newsub-confirm\"]') as HTMLButtonElement).disabled).toBe(true)",
+            "expect((q('[data-testid=\"edge-pop-newsub-confirm\"]') as HTMLButtonElement).title).toBe('等待上次保存完成')"
           ]
         }
       ]
@@ -11120,13 +11794,13 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）",
           "markers": [],
-          "line": 71,
+          "line": 73,
           "assertions": [
             "expect(verticalPath(s, t)).toBe('M 100 100 C 100 139 140 139 140 178')",
             "expect(midY).toBeGreaterThanOrEqual(126)",
@@ -11136,26 +11810,26 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1",
           "markers": [],
-          "line": 86,
+          "line": 88,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.d).toBe('M 204 226 L 752 226 L 752 46 L 204 46')"
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"3 checkVerticalBand：带内障碍 true／移出 false／PAD=4 边界（4 含边界命中、4.1 出界、3.9 命中——D-6）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"3 checkVerticalBand：带内障碍 true／移出 false／PAD=4 边界（4 含边界命中、4.1 出界、3.9 命中——D-6）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "3 checkVerticalBand：带内障碍 true／移出 false／PAD=4 边界（4 含边界命中、4.1 出界、3.9 命中——D-6）",
           "markers": [],
-          "line": 103,
+          "line": 105,
           "assertions": [
             "expect(checkVerticalBand(s, t, [rect(98, 140, 4, 20)])).toBe(true)",
             "expect(checkVerticalBand(s, t, [rect(110, 140, 4, 20)])).toBe(false)",
@@ -11165,13 +11839,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom",
           "markers": [],
-          "line": 118,
+          "line": 120,
           "assertions": [
             "expect(checkArcEntry(s, 752, [rect(240, 100, CARD_W, CARD_H)])).toBe(true)",
             "expect(r.route).toBe('detour-bottom')",
@@ -11179,13 +11853,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY",
           "markers": [],
-          "line": 129,
+          "line": 131,
           "assertions": [
             "expect(d).toBe('M 152 152 L 152 183 L 752 183 L 752 326 L 204 326')",
             "expect(r.route).toBe('detour-bottom')",
@@ -11194,13 +11868,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）",
           "markers": [],
-          "line": 150,
+          "line": 152,
           "assertions": [
             "expect(checkSweepBand(s, t, 752, [label])).toBe(true)",
             "expect(checkSweepBand(s, t, 761, [label])).toBe(false)",
@@ -11209,27 +11883,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"7 resolveLabelEntry 纯函数直测（回炉 1 B-1 新语义——让行裁撤；调用面已被回程恒检蕴含——k1-③/d1-N2 终裁）：回程横道穿标注→null；未命中→entry=t+tail 空\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
-          ],
-          "title": "7 resolveLabelEntry 纯函数直测（回炉 1 B-1 新语义——让行裁撤；调用面已被回程恒检蕴含——k1-③/d1-N2 终裁）：回程横道穿标注→null；未命中→entry=t+tail 空",
-          "markers": [],
-          "line": 163,
-          "assertions": [
-            "expect(resolveLabelEntry(t, 752, [rect(700, 320, 30, 12)])).toBeNull()",
-            "expect(resolveLabelEntry(t, 752, [])).toEqual({ entry: t, tail: '' })",
-            "expect(resolveLabelEntry(t, 752, [rect(700, 100, 30, 12)])).toEqual({ entry: t, tail: '' })"
-          ]
-        },
-        {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback\"]",
-          "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback",
           "markers": [],
-          "line": 173,
+          "line": 165,
           "assertions": [
             "expect(pos.route).toBe('arc')",
             "expect(pos.lane).toBe(1)",
@@ -11238,26 +11898,26 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"16 C2.5 底部出双段检测（回炉 1 B-2）：源卡非末行竖段穿同列下方卡→bottomOut 不可行→fallback\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"16 C2.5 底部出双段检测（回炉 1 B-2）：源卡非末行竖段穿同列下方卡→bottomOut 不可行→fallback\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "16 C2.5 底部出双段检测（回炉 1 B-2）：源卡非末行竖段穿同列下方卡→bottomOut 不可行→fallback",
           "markers": [],
-          "line": 190,
+          "line": 182,
           "assertions": [
             "expect(r.route).toBe('fallback')",
             "expect(onWarn).toHaveBeenCalledTimes(1)"
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"8 laneIndex：乱序输入 → 输出与字典序排序位次一致（确定性）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"8 laneIndex：乱序输入 → 输出与字典序排序位次一致（确定性）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "8 laneIndex：乱序输入 → 输出与字典序排序位次一致（确定性）",
           "markers": [],
-          "line": 207,
+          "line": 199,
           "assertions": [
             "expect(all.map((id) => laneIndex(id, all))).toEqual([2, 0, 3, 1])",
             "expect(laneIndex('a', ['a', 'b'])).toBe(0)",
@@ -11265,13 +11925,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn",
           "markers": [],
-          "line": 214,
+          "line": 206,
           "assertions": [
             "expect(p1.map((p) => p.route)).toEqual(['arc', 'arc', 'arc', 'arc', 'arc'])",
             "expect(p1.map((p) => p.lane)).toEqual([0, 1, 2, 3, 0])",
@@ -11283,39 +11943,39 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"10 确定性：同输入 routeEdge 100 次输出全等（无随机/Date/三角函数）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"10 确定性：同输入 routeEdge 100 次输出全等（无随机/Date/三角函数）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "10 确定性：同输入 routeEdge 100 次输出全等（无随机/Date/三角函数）",
           "markers": [],
-          "line": 259,
+          "line": 251,
           "assertions": [
             "expect(routeEdge(e, snap)).toEqual(first)",
             "expect(routeAll([e], snap)).toEqual([first])"
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}",
           "markers": [],
-          "line": 269,
+          "line": 261,
           "assertions": [
             "expect(['detour', 'detour-bottom']).toContain(r.route)",
             "expect(r.route).toBe('detour')"
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"12 segHitsAny PAD 语义钉死（D-6）：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"12 segHitsAny PAD 语义钉死（D-6）：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "12 segHitsAny PAD 语义钉死（D-6）：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中",
           "markers": [],
-          "line": 286,
+          "line": 278,
           "assertions": [
             "expect(segHitsAny(seg[0]!, seg[1]!, [rect(104, 92, 50, 16)])).toBe(true)",
             "expect(segHitsAny(seg[0]!, seg[1]!, [rect(104.1, 92, 50, 16)])).toBe(false)",
@@ -11325,13 +11985,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"13 anchor 三式（卡盒中点族——§2.1）\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"13 anchor 三式（卡盒中点族——§2.1）\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "13 anchor 三式（卡盒中点族——§2.1）",
           "markers": [],
-          "line": 297,
+          "line": 289,
           "assertions": [
             "expect(anchor(r, 'top')).toEqual({ x: 152, y: 200 })",
             "expect(anchor(r, 'bottom')).toEqual({ x: 152, y: 252 })",
@@ -11339,13 +11999,13 @@
           ]
         },
         {
-          "key": "[\"T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）\",\"14 arcPath s.y==t.y 直线分支（D-14）+圆角主分支\"]",
+          "key": "[\"T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）\",\"14 arcPath s.y==t.y 直线分支（D-14）+圆角主分支\"]",
           "describePath": [
-            "T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）"
+            "T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）"
           ],
           "title": "14 arcPath s.y==t.y 直线分支（D-14）+圆角主分支",
           "markers": [],
-          "line": 304,
+          "line": 296,
           "assertions": [
             "expect(arcPath({ x: 204, y: 126 }, { x: 204, y: 126 }, 752)).toBe('M 204 126 L 752 126 L 204 126')",
             "expect(arcPath({ x: 204, y: 326 }, { x: 204, y: 126 }, 752)).toBe( 'M 204 326 L 742 326 Q 752 326 752 316 L 752 136 Q 752 126 742 126 L 204 126' )",
@@ -11359,7 +12019,7 @@
           ],
           "title": "PALETTE 8 色 hex 形状+DASH_ROT 三线型轮转（P7b 新建线型消费）",
           "markers": [],
-          "line": 317,
+          "line": 309,
           "assertions": [
             "expect(PALETTE.length).toBe(8)",
             "expect(c).toMatch(/^#[0-9a-f]{6}$/)",
@@ -11640,7 +12300,7 @@
           ],
           "title": "加节点两型载荷：文献型 paperId 绑定+元数据默认；主题型 paperId null",
           "markers": [],
-          "line": 86,
+          "line": 96,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ paperId: 'paper-X', title: '扩散模型', coreIdea: '', year: 2021, x: null, y: null })",
             "expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith({ paperId: null, title: '阶段二', coreIdea: '', year: null, x: null, y: null })",
@@ -11655,7 +12315,7 @@
           ],
           "title": "moveNode/editCoreIdea 全字段载荷：x/y 覆盖与 coreIdea 保留互不清空（防半更新丢字段）",
           "markers": [],
-          "line": 119,
+          "line": 129,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '锚点', coreIdea: '原想法', year: 2020, x: 560, y: 430 })",
             "expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith( expect.objectContaining({ id: 'A', coreIdea: '新想法', x: 560, y: 430, title: '锚点' }) )"
@@ -11668,7 +12328,7 @@
           ],
           "title": "连续编辑最后写胜出：flight 中同实体动作排队合并，仅最后值落发",
           "markers": [],
-          "line": 146,
+          "line": 156,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)",
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)",
@@ -11683,7 +12343,7 @@
           ],
           "title": "系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved",
           "markers": [],
-          "line": 170,
+          "line": 180,
           "assertions": [
             "expect(state().saveStatus).toBe('error')",
             "expect(state().lastWriteError).toBe('database is locked')",
@@ -11701,7 +12361,7 @@
           ],
           "title": "拒绝型（CONFLICT=service 树守卫中文 reason 透传）：动作丢弃+toast reason+保存态回落 saved",
           "markers": [],
-          "line": 189,
+          "line": 199,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith( '多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error' )",
             "expect(state().queue.length).toBe(0)",
@@ -11716,7 +12376,7 @@
           ],
           "title": "removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）",
           "markers": [],
-          "line": 205,
+          "line": 215,
           "assertions": [
             "expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })",
             "expect(state().nodes.map((n) => n.id)).toEqual(['B'])",
@@ -11730,7 +12390,7 @@
           ],
           "title": "upsertEdge/removeEdge 成功回填：新边追加、删边清除",
           "markers": [],
-          "line": 218,
+          "line": 228,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'B', to: 'A', label: '' })",
             "expect(state().edges.map((e) => e.id)).toEqual(['e1', 'e2'])",
@@ -11746,7 +12406,7 @@
           ],
           "title": "新建边成功 toast 按 kind 分文案（ref/manual）；label 后编辑（id 在场）不 toast",
           "markers": [],
-          "line": 238,
+          "line": 248,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith('综述关联已保存', 'success')",
             "expect(showToast).toHaveBeenCalledWith('人工父线已保存', 'success')",
@@ -11760,7 +12420,7 @@
           ],
           "title": "N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边",
           "markers": [],
-          "line": 259,
+          "line": 269,
           "assertions": [
             "expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })",
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })",
@@ -11780,10 +12440,116 @@
           ],
           "title": "load 互锁（stale-guard 写面同族）：写队列未清空时 graph 落地丢弃，不覆盖写回填",
           "markers": [],
-          "line": 287,
+          "line": 297,
           "assertions": [
             "expect(state().nodes[0]?.coreIdea).toBe('编辑中')",
             "expect(state().status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"applyEdgeLine 全载荷：id+from/to/label 读现值+kind/sub 成对置（sub null=回退基础型）\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "applyEdgeLine 全载荷：id+from/to/label 读现值+kind/sub 成对置（sub null=回退基础型）",
+          "markers": [],
+          "line": 319,
+          "assertions": [
+            "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', kind: 'manual', sub: 't1' })",
+            "expect(state().edges[0]?.kind).toBe('manual')",
+            "expect(state().edges[0]?.sub).toBe('t1')",
+            "expect(showToast).not.toHaveBeenCalled()",
+            "expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', kind: 'tree', sub: null })"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"linkWithLine 新建四 kind（inferred 产生入口落位——INV-27 P7 备案兑现）+成功 toast 分文案\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "linkWithLine 新建四 kind（inferred 产生入口落位——INV-27 P7 备案兑现）+成功 toast 分文案",
+          "markers": [],
+          "line": 361,
+          "assertions": [
+            "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'A', to: 'B', label: '', kind: 'inferred', sub: 'i1' })",
+            "expect(state().edges.map((e) => e.kind)).toEqual(['inferred'])",
+            "expect(showToast).toHaveBeenCalledWith('推断连线已保存', 'success')",
+            "expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({ from: 'B', to: 'A', label: '', kind: 'manual', sub: null })"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"linkWithLine CONFLICT（service 树守卫拒绝）：动作丢弃+toast reason+保存态回落 saved（沿 linkRefNodes 先例）\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "linkWithLine CONFLICT（service 树守卫拒绝）：动作丢弃+toast reason+保存态回落 saved（沿 linkRefNodes 先例）",
+          "markers": [],
+          "line": 392,
+          "assertions": [
+            "expect(showToast).toHaveBeenCalledWith('多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error')",
+            "expect(state().queue.length).toBe(0)",
+            "expect(state().saveStatus).toBe('saved')",
+            "expect(state().edges.length).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"saveLineTypes 新队列动作 upsert-line-types：整批写+成功 set lineTypes\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "saveLineTypes 新队列动作 upsert-line-types：整批写+成功 set lineTypes",
+          "markers": [],
+          "line": 406,
+          "assertions": [
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith(groups)",
+            "expect(state().lineTypes).toEqual(groups)",
+            "expect(state().saveStatus).toBe('saved')"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"saveLineTypes sameTarget 同类合并（整批=单实体——flight 中排队合并最后写胜出）\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "saveLineTypes sameTarget 同类合并（整批=单实体——flight 中排队合并最后写胜出）",
+          "markers": [],
+          "line": 422,
+          "assertions": [
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1)",
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)",
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenLastCalledWith(g3)",
+            "expect(state().lineTypes).toEqual(g3)"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"队列序保证 lineTypes 先于引用其的 edge（saveLineTypes→linkWithLine 串行派发序）\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "队列序保证 lineTypes 先于引用其的 edge（saveLineTypes→linkWithLine 串行派发序）",
+          "markers": [],
+          "line": 453,
+          "assertions": [
+            "expect(orderLt).toBeDefined()",
+            "expect(orderEdge).toBeDefined()",
+            "expect(orderLt!).toBeLessThan(orderEdge!)",
+            "expect(state().saveStatus).toBe('saved')"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）\",\"flight 堆积面派发序=FIFO：三动作同驻队列时按入队序派发（LIFO 即红）\"]",
+          "describePath": [
+            "lineage.store 写面 —— [T3-P7B] 线型编辑三 action（applyEdgeLine/linkWithLine/saveLineTypes）"
+          ],
+          "title": "flight 堆积面派发序=FIFO：三动作同驻队列时按入队序派发（LIFO 即红）",
+          "markers": [],
+          "line": 478,
+          "assertions": [
+            "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(1)",
+            "expect(orderLt).toBeDefined()",
+            "expect(orderY).toBeDefined()",
+            "expect(orderLt!).toBeLessThan(orderY!)",
+            "expect(state().saveStatus).toBe('saved')"
           ]
         }
       ]
@@ -11860,6 +12626,122 @@
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '节点A', coreIdea: '', year: 2020, x: 500, y: 400, tags: ['综述', '早期'] })",
             "expect(useLineageStore.getState().nodes[0]!.tags).toEqual(['综述', '早期'])",
             "expect(useLineageStore.getState().saveStatus).toBe('saved')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-timeline-edit.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
+          "markers": [],
+          "line": 118,
+          "assertions": [
+            "expect(bar.parentElement?.classList.contains('timeline')).toBe(true)",
+            "expect(toggle.textContent).toBe('编辑脉络')",
+            "expect(timeline.classList.contains('editing')).toBe(false)",
+            "expect(bar.querySelector('.drag-hint')).toBeNull()",
+            "expect(btn('lineage-link-btn').className).toContain('linkbtn')",
+            "expect(q('[data-testid=\"lineage-add-node\"]')).not.toBeNull()",
+            "expect(q('[data-testid=\"lineage-import\"]')).not.toBeNull()",
+            "expect(btn('lineage-edit-toggle').textContent).toBe('完成编辑')",
+            "expect(timeline.classList.contains('editing')).toBe(true)",
+            "expect(bar.querySelector('.drag-hint')?.textContent).toBe('编辑中：点连线改线型')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"新建连线全流：link-btn→源卡 .link-src→目标卡→popover=create→「创建连线」→linkWithLine+popover 关；拾取态点卡不转发选中\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "新建连线全流：link-btn→源卡 .link-src→目标卡→popover=create→「创建连线」→linkWithLine+popover 关；拾取态点卡不转发选中",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(toastStoreSpy).toHaveBeenCalledWith('新建连线：点击源卡片', 'info')",
+            "expect(req('.timeline').classList.contains('link-pick')).toBe(true)",
+            "expect(cardOf('A').classList.contains('link-src')).toBe(true)",
+            "expect(onClick).not.toHaveBeenCalled()",
+            "expect(q('[data-testid=\"edge-pop\"]')).not.toBeNull()",
+            "expect(req('[data-testid=\"edge-pop\"] h4').textContent).toBe('线 型 · 新建连线')",
+            "expect(cardOf('A').classList.contains('link-src')).toBe(false)",
+            "expect(actions.linkWithLine).toHaveBeenCalledWith('A', 'B', 'tree', null)",
+            "expect(q('[data-testid=\"edge-pop\"]')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"点命中层→popover=edit（edit 态双闸 handler 侧）；view 态点击零动作\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "点命中层→popover=edit（edit 态双闸 handler 侧）；view 态点击零动作",
+          "markers": [],
+          "line": 171,
+          "assertions": [
+            "expect(hit).not.toBeNull()",
+            "expect(q('[data-testid=\"edge-pop\"]')).toBeNull()",
+            "expect(req('[data-testid=\"edge-pop\"] h4').textContent).toBe('线 型')"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"退出编辑强制归位：拾取中 toggle off→link-src 摘+.editing/.link-pick 全摘\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "退出编辑强制归位：拾取中 toggle off→link-src 摘+.editing/.link-pick 全摘",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(cardOf('A').classList.contains('link-src')).toBe(true)",
+            "expect(timeline.classList.contains('editing')).toBe(false)",
+            "expect(timeline.classList.contains('link-pick')).toBe(false)",
+            "expect(cardOf('A').classList.contains('link-src')).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"Esc 拾取摘回（document keydown）：.link-pick 摘+.editing 保持\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "Esc 拾取摘回（document keydown）：.link-pick 摘+.editing 保持",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(timeline.classList.contains('link-pick')).toBe(false)",
+            "expect(timeline.classList.contains('editing')).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"popover=edit 态 acts 接线：移除连线→removeEdge+popover 关\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "popover=edit 态 acts 接线：移除连线→removeEdge+popover 关",
+          "markers": [],
+          "line": 238,
+          "assertions": [
+            "expect(actions.removeEdge).toHaveBeenCalledWith('e-A-B')",
+            "expect(q('[data-testid=\"edge-pop\"]')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）\",\"保存态指示 chips 随工具条迁移：saving/error 态 testid 在 .lg-toolbar 内保活\"]",
+          "describePath": [
+            "T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层挂载）"
+          ],
+          "title": "保存态指示 chips 随工具条迁移：saving/error 态 testid 在 .lg-toolbar 内保活",
+          "markers": [],
+          "line": 265,
+          "assertions": [
+            "expect(bar.querySelector('[data-testid=\"lineage-save-status\"]')?.textContent).toContain('保存失败')",
+            "expect(bar.querySelector('[data-testid=\"lineage-retry-save\"]')).not.toBeNull()"
           ]
         }
       ]
@@ -11985,16 +12867,18 @@
           ]
         },
         {
-          "key": "[\"T3-P6 LineageTimeline 结构渲染（真实文本）\",\"空图空态文案保活：暂无脉络图——导入草稿或添加节点\"]",
+          "key": "[\"T3-P6 LineageTimeline 结构渲染（真实文本）\",\"空图空态文案保活：暂无脉络图——导入草稿或添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留导入/添加引导，编辑死按钮零）\"]",
           "describePath": [
             "T3-P6 LineageTimeline 结构渲染（真实文本）"
           ],
-          "title": "空图空态文案保活：暂无脉络图——导入草稿或添加节点",
+          "title": "空图空态文案保活：暂无脉络图——导入草稿或添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留导入/添加引导，编辑死按钮零）",
           "markers": [],
           "line": 184,
           "assertions": [
             "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')",
-            "expect(host?.querySelectorAll('button').length).toBe(0)"
+            "expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"lineage-import\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"edge-pop\"]')).toBeNull()"
           ]
         },
         {
@@ -12004,7 +12888,7 @@
           ],
           "title": "骑缝编号 #NNN 三位零填充（lineageCatalogNos 单源：随 lineageOrder 全序，与组内传入序无关）",
           "markers": [],
-          "line": 190,
+          "line": 194,
           "assertions": [
             "expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('#002')",
             "expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#001')"
@@ -12017,7 +12901,7 @@
           ],
           "title": "小卡三行真文本：题名/核心想法（空串整行不渲染）/年月 YYYY-MM 补零与年单值/引用数与主题节点「—」",
           "markers": [],
-          "line": 205,
+          "line": 209,
           "assertions": [
             "expect(a.querySelector('.c-title')?.textContent).toBe('扩散模型起点')",
             "expect(a.querySelector('.c-idea')?.textContent).toBe('去噪范式奠基')",
@@ -12035,7 +12919,7 @@
           ],
           "title": "徽章真文本：核=isCore 出度≥2（预计算传卡）；综述=isSurveyTitle（虚线框）；主题节点无综述徽章",
           "markers": [],
-          "line": 236,
+          "line": 240,
           "assertions": [
             "expect(cardOf('R').querySelector('.mb.core')?.textContent).toBe('核')",
             "expect(cardOf('A').querySelector('.mb')).toBeNull()",
@@ -12050,7 +12934,7 @@
           ],
           "title": "data-kind 三值沿承（NodeCard DOM 契约——theme/paper/survey；e2e 断言面）",
           "markers": [],
-          "line": 255,
+          "line": 259,
           "assertions": [
             "expect(cardOf('A').getAttribute('data-kind')).toBe('paper')",
             "expect(cardOf('T').getAttribute('data-kind')).toBe('theme')",
@@ -12064,22 +12948,22 @@
           ],
           "title": "sel 类挂选中卡（inset accent 环——CSS 面）",
           "markers": [],
-          "line": 271,
+          "line": 275,
           "assertions": [
             "expect(cardOf('B').classList.contains('sel')).toBe(true)",
             "expect(cardOf('A').classList.contains('sel')).toBe(false)"
           ]
         },
         {
-          "key": "[\"T3-P6 LineageTimeline 结构渲染（真实文本）\",\"交互接缝：卡 click→onNodeClick(id)；contextmenu→onNodeContextMenu(id, 锚点)\"]",
+          "key": "[\"T3-P6 LineageTimeline 结构渲染（真实文本）\",\"交互接缝：卡 click→onNodeClick(id, ev)；contextmenu→onNodeContextMenu(id, 锚点)\"]",
           "describePath": [
             "T3-P6 LineageTimeline 结构渲染（真实文本）"
           ],
-          "title": "交互接缝：卡 click→onNodeClick(id)；contextmenu→onNodeContextMenu(id, 锚点)",
+          "title": "交互接缝：卡 click→onNodeClick(id, ev)；contextmenu→onNodeContextMenu(id, 锚点)",
           "markers": [],
-          "line": 283,
+          "line": 287,
           "assertions": [
-            "expect(onClick).toHaveBeenCalledWith('A')",
+            "expect(onClick).toHaveBeenCalledWith('A', expect.objectContaining({ clientX: expect.any(Number) }))",
             "expect(onMenu).toHaveBeenCalledWith('A', { x: 200, y: 150 })"
           ]
         },
@@ -12090,7 +12974,7 @@
           ],
           "title": "rowshift 挂接：注入 offsetTop 分行→0 起奇数索引行挂类（依赖=分组结果重算）",
           "markers": [],
-          "line": 299,
+          "line": 304,
           "assertions": [
             "expect(cardOf('C').classList.contains('rowshift')).toBe(true)",
             "expect(cardOf('A').classList.contains('rowshift')).toBe(false)",
@@ -12104,7 +12988,7 @@
           ],
           "title": "不动点迭代（d1-W1 回炉）：shift 改变 offsetTop 后复测至收敛——两轮量测后稳定",
           "markers": [],
-          "line": 320,
+          "line": 325,
           "assertions": [
             "expect(cardOf('B').classList.contains('rowshift')).toBe(true)",
             "expect(bCalls).toBeGreaterThanOrEqual(2)",
@@ -12120,7 +13004,7 @@
           ],
           "title": "不动点振荡守卫（k1-W2 回炉）：offsetTop 随 shift 翻转的对抗布局→8 轮上限强制停不崩",
           "markers": [],
-          "line": 356,
+          "line": 361,
           "assertions": [
             "expect(cardOf('A')).not.toBeNull()"
           ]
@@ -12132,7 +13016,7 @@
           ],
           "title": "容器：.timeline overflow-y auto/overflow-x hidden；.tl-content padding 18px 28px 46px 20px",
           "markers": [],
-          "line": 381,
+          "line": 386,
           "assertions": [
             "expect(css).toMatch(/\\.timeline\\s*\\{[^}]*overflow-y:\\s*auto;[^}]*overflow-x:\\s*hidden/)",
             "expect(css).toMatch(/\\.tl-content\\s*\\{[^}]*padding:\\s*18px 28px 46px 20px/)"
@@ -12145,7 +13029,7 @@
           ],
           "title": "年份头：.tl-year margin-bottom 38px；数字 serif+--fs-tl-year+--ink+letter-spacing 1px；meta mono faint；::after flex1 1px --line",
           "markers": [],
-          "line": 386,
+          "line": 391,
           "assertions": [
             "expect(css).toMatch(/\\.tl-year\\s*\\{[^}]*margin-bottom:\\s*38px/)",
             "expect(css).toMatch( /\\.tl-year-num\\s*\\{[^}]*font-family:\\s*var\\(--serif\\);[^}]*font-size:\\s*var\\(--fs-tl-year\\);[^}]*color:\\s*var\\(--ink\\);[^}]*letter-spacing:\\s*1px/ )",
@@ -12160,7 +13044,7 @@
           ],
           "title": "月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative（B1 定位基准——月标签 absolute top -9px 的 containing block，删则标签锚错祖先悬出段复发，k1 三过 W2 锁）；.month-frame 1.6px dashed --month-dash 圆角 12 padding 15px 12px 12px gap 20px 20px min-height 58px",
           "markers": [],
-          "line": 399,
+          "line": 404,
           "assertions": [
             "expect(css).toMatch(/\\.tl-month\\s*\\{[^}]*margin:\\s*0 58px 26px 46px;[^}]*position:\\s*relative/)",
             "expect(css).toMatch( /\\.month-frame\\s*\\{[^}]*border:\\s*1\\.6px dashed var\\(--month-dash\\);[^}]*border-radius:\\s*12px;[^}]*padding:\\s*15px 12px 12px/ )",
@@ -12174,7 +13058,7 @@
           ],
           "title": "月标签：.month-tag absolute top -9px left 12px 胶囊（panel 底 accent 字 dashed 边 tabular-nums）；未定月=月标签级变体（faint 字+--line 实线边）",
           "markers": [],
-          "line": 409,
+          "line": 414,
           "assertions": [
             "expect(css).toMatch( /\\.month-tag\\s*\\{[^}]*top:\\s*-9px;[^}]*left:\\s*12px;[^}]*border-radius:\\s*99px;[^}]*background:\\s*var\\(--panel\\);[^}]*color:\\s*var\\(--accent\\);[^}]*border:\\s*1\\.6px dashed var\\(--month-dash\\);[^}]*font-variant-numeric:\\s*tabular-nums/ )",
             "expect(css).toMatch( /\\.tl-month\\.unknown \\.month-tag\\s*\\{[^}]*color:\\s*var\\(--faint\\);[^}]*border-color:\\s*var\\(--line\\);[^}]*border-style:\\s*solid/ )"
@@ -12187,7 +13071,7 @@
           ],
           "title": "预留样式类在场（A4 空月框+P8 拖入提示——票面备案无 DOM 消费）",
           "markers": [],
-          "line": 418,
+          "line": 423,
           "assertions": [
             "expect(css).toMatch(/\\.month-frame\\.empty-frame\\s*\\{[^}]*border-color:\\s*var\\(--line\\)/)",
             "expect(css).toMatch(/\\.frame-hint\\s*\\{[^}]*place-items:\\s*center;[^}]*color:\\s*var\\(--faint\\)/)"
@@ -12200,7 +13084,7 @@
           ],
           "title": "小卡：104×52 --mini-card 底 1px --mini-card-line 边 圆角 8 padding 5px 6px 4px shadow-card；hover=accent 边；sel=inset 1.6px accent+外辉 token",
           "markers": [],
-          "line": 423,
+          "line": 428,
           "assertions": [
             "expect(css).toMatch( /\\.tl-card\\s*\\{[^}]*width:\\s*104px;[^}]*min-height:\\s*52px;[^}]*background:\\s*var\\(--mini-card\\);[^}]*border:\\s*1px solid var\\(--mini-card-line\\);[^}]*border-radius:\\s*8px;[^}]*padding:\\s*5px 6px 4px;[^}]*box-shadow:\\s*var\\(--shadow-card\\)/ )",
             "expect(css).toMatch(/\\.tl-card:hover\\s*\\{[^}]*border-color:\\s*var\\(--accent\\)/)",
@@ -12214,7 +13098,7 @@
           ],
           "title": "砖砌行错位：.rowshift margin-left 62px+margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡+测量冻结规则（三过加固）",
           "markers": [],
-          "line": 433,
+          "line": 438,
           "assertions": [
             "expect(css).toMatch(/\\.tl-card\\.rowshift\\s*\\{[^}]*margin-left:\\s*62px/)",
             "expect(css).toMatch(/\\.tl-card\\s*\\{[^}]*transition:\\s*margin-left \\.25s cubic-bezier\\(\\.22,\\.9,\\.26,1\\)/)",
@@ -12228,7 +13112,7 @@
           ],
           "title": "c-* 微族：c-no mono --fs-tl-meta faint；mb.core accent 底 accent-ink 字 600；mb.survey dim 虚线框；c-title --fs-tl-title nowrap ellipsis；c-idea --fs-tl-idea；c-meta mono 两端",
           "markers": [],
-          "line": 440,
+          "line": 445,
           "assertions": [
             "expect(css).toMatch( /\\.c-no\\s*\\{[^}]*font-family:\\s*var\\(--mono\\);[^}]*font-size:\\s*var\\(--fs-tl-meta\\);[^}]*color:\\s*var\\(--faint\\)/ )",
             "expect(css).toMatch( /\\.mb\\.core\\s*\\{[^}]*background:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent-ink\\);[^}]*font-weight:\\s*600/ )",
@@ -28523,9 +29407,9 @@
     }
   },
   "stats": {
-    "fileCount": 195,
-    "caseCount": 1946,
-    "assertionCount": 5939,
+    "fileCount": 198,
+    "caseCount": 1998,
+    "assertionCount": 6230,
     "skipSiteCount": 15,
     "conditionalSkipSiteCount": 14,
     "hardSkipSiteCount": 1,

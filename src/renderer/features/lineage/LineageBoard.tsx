@@ -82,7 +82,6 @@ import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
 import { importLineageDraft } from './lineage-import'
 import { LineageTimeline } from './LineageTimeline'
-import { LineageToolbar } from './LineageToolbar'
 import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
 import { LineageBoardDialogs } from './LineageBoardDialogs'
 
@@ -121,14 +120,8 @@ export function LineageBoard(props: {
 
   return (
     <div className="relative h-full">
-      {/* 工具条（F-LG14 拆件 LineageToolbar——行为面零变：添加/导入+保存态指示） */}
-      <LineageToolbar
-        saveStatus={saveStatus}
-        lastWriteError={lastWriteError}
-        onAddNode={() => setAddOpen(true)}
-        onImportDraft={importLineageDraft}
-        onRetrySave={() => store().retrySave()}
-      />
+      {/* [T3-P7B] 工具条移入 LineageTimeline 渲染树（.lg-toolbar sticky 挂
+          .timeline 内——D-P7B-1 换装）；既有回调+保存态经 props 下传零变 */}
 
       {/* [T3-P6] 换宿主：LineageCanvas[SVG 画布] 退役→LineageTimeline[年+月
           时间线滚动容器]；onNodeDrag 接线随 x/y 自由拖拽退役拆除（store
@@ -139,6 +132,19 @@ export function LineageBoard(props: {
         paperMetrics={paperMetrics}
         lineTypes={lineTypes}
         selectedNodeId={props.selectedNodeId ?? null}
+        toolbar={{
+          saveStatus,
+          lastWriteError,
+          onAddNode: () => setAddOpen(true),
+          onImportDraft: importLineageDraft,
+          onRetrySave: () => store().retrySave()
+        }}
+        actions={{
+          applyEdgeLine: (id, k, s) => store().applyEdgeLine(id, k, s),
+          linkWithLine: (f, t, k, s) => store().linkWithLine(f, t, k, s),
+          saveLineTypes: (g) => store().saveLineTypes(g),
+          removeEdge: (id) => store().removeEdge(id)
+        }}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={(id, anchor) => {
           const node = nodes.find((n) => n.id === id)

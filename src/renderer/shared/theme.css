@@ -102,6 +102,16 @@
   --fs-tl-meta: 7.5px;  /* 小卡骑缝号/徽章/年月引用行（.c-no/.mb/.c-meta） */
   --fs-tl-hint: 10.5px; /* 空月框拖入提示（.frame-hint——P8 预留样式类） */
   --shadow-tl-sel: 0 3px 10px rgba(58, 91, 217, 0.18); /* 时间线小卡选中外辉（三族恒定——mockup .tl-card.sel） */
+  /* [T3-P7B] 脉络工具条/弹层族（值源=mockups/2026-09-26_v2_theme-{light,dark,sepia}
+     .html 三稿同值实证 L206-219/L302——主题恒定硬编码注记；shadow 命名独立沿
+     --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；--signal-a08=mockup 直值
+     （三稿同值）不随族 --signal 漂移；零新 fs token=最近值映射见
+     theme-lineage.css [T3-P7B] 段注） */
+  --shadow-lg-btn: 0 2px 6px rgba(58, 91, 217, 0.28); /* .lg-btn 主钮投影（三族恒定——mockup L206 三稿同值） */
+  --shadow-lg-edit: 0 2px 6px rgba(240, 96, 48, 0.3); /* .lg-btn.editing 编辑态投影（三族恒定——mockup L208） */
+  --signal-a08: rgba(240, 96, 48, 0.08); /* drag-hint 编辑态底（三族恒定——mockup L219 直值） */
+  --pop-danger: #d64545; /* 线型弹层「移除连线」钮字色（三族恒定——mockup L302） */
+  --pop-danger-a50: rgba(214, 69, 69, 0.5); /* 同钮描边（三族恒定——mockup L302） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #1c2333;
   /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；

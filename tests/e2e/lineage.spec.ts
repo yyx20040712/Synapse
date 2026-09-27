@@ -320,7 +320,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'theme')
     await expect(win.getByText('主题节点无笔记')).toBeVisible()
 
-    // 右键→编辑核心想法→保存（自动保存落库）
+    // 右键→编辑核心想法→保存（自动保存落库）；[T3-P7B] 工具条入流后内容
+    // 下移——右键前滚卡至视口中心（fixed 菜单锚点防下缘溢出视口）
+    await themeG.evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await themeG.click({ button: 'right' })
     await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
     await win.getByTestId('core-idea-input').fill(THEME_IDEA)
@@ -677,6 +679,250 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const secondRowY = (await shifted.first().boundingBox())!.y
     const firstRowY = (await cards.first().boundingBox())!.y
     expect(secondRowY).toBeGreaterThan(firstRowY)
+
+    await app.close()
+  })
+
+  /**
+   * T7=[T3-P7B] 编辑线型全流：edit→点边（命中层）→popover→新建线型表单
+   * （D-10 轮转/D-P7B-4 确定性）→确定（saveLineTypes→自动选中 applyEdgeLine）
+   * →reload 持久+computed style sub 色（INV-06 计算样式口径）→基础型回退
+   * （D-P7B-3 sub=null）→reload 再证。
+   * 命中层点击=dispatchEvent 探针（真机命中层 stroke 8px 与卡 z 序叠放——
+   * 合成点击落点不稳定，坐标面已由单测承载；e2e 锁全流语义）。
+   */
+  test('T7 编辑线型全流：点边→新建线型→选 sub→reload 持久+sub 色+基础型回退', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t7-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    const fixturePath = await writeFixture()
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath)
+
+    // edit 态：toggle 文案+editing 类+linkbtn 显（D-21）
+    await win.getByTestId('lineage-edit-toggle').click()
+    await expect(win.getByTestId('lineage-edit-toggle')).toHaveText('完成编辑')
+    await expect(win.locator('.timeline.editing')).toHaveCount(1)
+    await expect(win.getByTestId('lineage-link-btn')).toBeVisible()
+
+    // 点边（命中层）→popover=edit（h4 无「新建连线」后缀）
+    const hit = win.locator('svg.tl-edges path.tl-edge-hit').first()
+    await hit.evaluate((el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 300, clientY: 300 })))
+    await expect(win.getByTestId('edge-pop')).toBeVisible()
+    await expect(win.getByTestId('edge-pop').locator('h4')).toHaveText('线 型')
+    // 恒四组手风琴+计数（P5 种子恒四组空 subs——「0 型」）
+    await expect(win.getByTestId('edge-pop').locator('.acc-head[data-base="tree"] .cnt')).toHaveText('2 条 · 0 型')
+
+    // 新建线型：默认名「线型 1」（空组 subs.length+1）→确定=整批写+自动选中
+    await win.getByTestId('edge-pop-newsub').click()
+    await expect(win.getByTestId('edge-pop-newsub-name')).toHaveValue('线型 1')
+    await win.getByTestId('edge-pop-newsub-confirm').click()
+    await expect(win.getByText('已新建子线型：继承 · 线型 1')).toBeVisible({ timeout: 10_000 })
+    // 弹层保持开+新 sub chip 自动选中（.on）
+    await expect(win.getByTestId('edge-pop')).toBeVisible()
+    await expect(win.getByTestId('edge-pop').locator('.schip[data-sub="tree-s1"]')).toHaveClass(/on/)
+    // 写完成（队列 lineTypes→edge 串行落库）后 reload
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0, { timeout: 10_000 })
+    await reloadToLineage(win)
+
+    // reload 持久：sub 应用面=computed stroke-width 1.7（PALETTE[0] 恰=--accent
+    // 同色 rgb(58,91,217) 无判别力——宽度面 1.7 vs 基础型 1.6 为判别锚）
+    const styled = win.locator('svg.tl-edges path.tl-edge').first()
+    await expect(styled).toBeVisible({ timeout: 10_000 })
+    await expect
+      .poll(async () => await styled.evaluate((el) => getComputedStyle(el).strokeWidth))
+      .toBe('1.7px')
+
+    // 基础型回退（D-P7B-3）：再入 edit→点同边→基础型 chip（sub=null）→回退
+    await win.getByTestId('lineage-edit-toggle').click()
+    await win
+      .locator('svg.tl-edges path.tl-edge-hit')
+      .first()
+      .evaluate((el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 300, clientY: 300 })))
+    await expect(win.getByTestId('edge-pop')).toBeVisible()
+    await win.getByTestId('edge-pop').locator('.schip[data-sub="base"]').click()
+    await expect(win.getByText('线型已切换：继承 · 基础型')).toBeVisible({ timeout: 10_000 })
+    await win.keyboard.press('Escape') // 关弹层（外点/Esc 通道同语义）
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0, { timeout: 10_000 })
+    await reloadToLineage(win)
+
+    // 回退持久：computed stroke-width 回落基础型 1.6（宽度判别锚——同上）
+    const reverted = win.locator('svg.tl-edges path.tl-edge').first()
+    await expect(reverted).toBeVisible({ timeout: 10_000 })
+    await expect
+      .poll(async () => await reverted.evaluate((el) => getComputedStyle(el).strokeWidth))
+      .toBe('1.6px')
+
+    await app.close()
+  })
+
+  /**
+   * T8=[T3-P7B] 新建连线全流：拾取两卡（link-src 高亮+拾取态点卡不转发选中）
+   * →自环/重复预检 toast（D-P7B-6 停 target 不回 idle）→create（linkWithLine）
+   * →reload 持久；Esc 分支：拾取中 Esc→picker 归位→点卡无连线动作。
+   */
+  test('T8 新建连线全流：拾取→自环/重复 toast→create→reload 持久+Esc 分支', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t8-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 综述版种子（T5 同族）：综述节点孤立无父=tree 边合法落点（根/甲/乙互连
+    // 全撞单父或环守卫——三节点版无合法 create 目标）
+    const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
+    const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
+    await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id)
+    const fixturePath = await writeFixture(draftJsonWithSurvey())
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：4 个节点，2 条连线')
+    await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
+    const edgeCount = win.locator('svg.tl-edges path.tl-edge')
+
+    // Esc 分支先行（拾取中 Esc→点卡无动作——票面 Esc 优先序 picker 面）
+    await win.getByTestId('lineage-edit-toggle').click()
+    await win.getByTestId('lineage-link-btn').click()
+    await expect(win.getByText('新建连线：点击源卡片')).toBeVisible()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)
+    await win.keyboard.press('Escape')
+    await expect(win.locator('.timeline.link-pick')).toHaveCount(0) // picker 归位
+    await nodeG(win, '脉络乙文献').click() // picker=idle——普通选中，零连线写
+    await expect(win.getByTestId('edge-pop')).toHaveCount(0)
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
+    expect(await edgeCount.count()).toBe(2)
+
+    // 正式全流：linkbtn→源=甲（.link-pick+link-src）
+    await win.getByTestId('lineage-link-btn').click()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(win.getByText('再点击目标卡片')).toBeVisible()
+    await expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)
+    // [R1·回炉 1] computed 判别断言（真机 Chromium）：源卡 outline-width∈[2,3]
+    // ——`.timeline.editing .tl-card` 基线 (0,3,0) 曾压栈 `.tl-card.link-src`
+    // (0,2,0) 致高亮恒不可视（文本在场≠计算样式生效——类名断言无判别力）。
+    // [R9·回炉 2] 容差域 [2,3]：DPR≈1.25 设备像素吸附使字面值漂移（首红
+    // 实收 0.8px=1px/1.25 吸附指纹——字面全等跨机可假红）；基线 1px×DPR
+    // 吸附值全域 ≈0.8/1.0 远低于 2——判别力保持
+    await expect
+      .poll(
+        async () => {
+          const v = await nodeG(win, '脉络甲文献').evaluate((el) => getComputedStyle(el).outlineWidth)
+          const n = parseFloat(v)
+          return n >= 2 && n <= 3
+        },
+        { timeout: 5_000 }
+      )
+      .toBe(true)
+    // 自环分支：再点甲→toast+停 target（不回 idle——高亮保持）
+    await nodeG(win, '脉络甲文献').click()
+    await expect(win.getByText('不能与自身连线（自环）')).toBeVisible({ timeout: 10_000 })
+    await expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)
+    // 重复分支：点根（既有 根→甲 任一方向）→toast+停 target
+    await nodeG(win, '脉络根文献').click()
+    await expect(win.getByText('两节点间已存在连线')).toBeVisible({ timeout: 10_000 })
+    await expect(nodeG(win, '脉络甲文献')).toHaveClass(/link-src/)
+    // 合法目标：综述（孤立无父——tree 边落点合法）→popover=create（源高亮摘除+h4 后缀）
+    await nodeG(win, SURVEY_PAPER.title).click()
+    await expect(win.getByTestId('edge-pop')).toBeVisible()
+    await expect(win.getByTestId('edge-pop').locator('h4')).toHaveText('线 型 · 新建连线')
+    await expect(nodeG(win, '脉络甲文献')).not.toHaveClass(/link-src/)
+    // 创建连线（kind=tree 基础型缺省）→成功 toast+弹层关
+    await win.getByTestId('edge-pop-act-create').click()
+    await expect(win.getByText('父子连线已保存')).toBeVisible({ timeout: 10_000 })
+    await expect(win.getByTestId('edge-pop')).toHaveCount(0)
+    // 图内即时+1（store 回填→EdgeOverlay 重算）
+    await expect(edgeCount).toHaveCount(3, { timeout: 10_000 })
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
+
+    // reload 持久：3 条边仍在
+    await reloadToLineage(win)
+    await expect(edgeCount).toHaveCount(3, { timeout: 10_000 })
+
+    await app.close()
+  })
+
+  /**
+   * T-P1b=[T3-P7A 裁决部条件首日兑现] resize 不错位真机直证：setViewportSize
+   * 两档（1280→1000）→ResizeObserver 重算→（a）车道 x 随 contentW 变化
+   * （跨年 detour 边 bbox 右缘=laneX，两档差=视口差）；（b）卡/线 bbox 相对
+   * 关系恒定（path bbox 右缘−contentW 偏移=−48+9×lane 两档全等——几何跟随
+   * 而非错位）；（c）线-卡 y 相对关系恒定（纵向布局零变化）。
+   */
+  test('T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+卡/线 bbox 相对关系恒定', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    const fixturePath = await writeFixture()
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath)
+
+    // 跨年树边（根→甲）恒走右侧走廊（detour）——bbox 右缘=laneX。
+    // 量测单 evaluate 原子取（viewport 坐标三值同拍——path bbox/content 左缘/
+    // 宽度混算坐标系即错位，P7B 首跑实证 off 含 content 左缘偏移）
+    const measure = async (): Promise<{ laneX: number; contentLeft: number; contentW: number; relY: number }> =>
+      win.evaluate(() => {
+        const path = document.querySelector('svg.tl-edges path.tl-edge') as SVGPathElement | null
+        const ct = document.querySelector('.tl-content') as HTMLElement | null
+        const card = document.querySelector('.tl-card') as HTMLElement | null
+        if (path === null || ct === null || card === null) {
+          return { laneX: -1, contentLeft: -1, contentW: -1, relY: 0 }
+        }
+        const pr = path.getBoundingClientRect()
+        const cr = ct.getBoundingClientRect()
+        const kr = card.getBoundingClientRect()
+        return {
+          laneX: pr.x + pr.width,
+          contentLeft: cr.left,
+          contentW: cr.width,
+          relY: pr.y - kr.y
+        }
+      })
+    // 稳定面：poll 至几何自洽（laneX−contentW−contentLeft=−48+9×lane ∈[−48,−21]
+    // ——走廊参数族；content 左缘为 viewport 偏移须同拍扣除）
+    await expect
+      .poll(async () => {
+        const m = await measure()
+        const off = m.laneX - m.contentLeft - m.contentW
+        return off >= -48.5 && off <= -20.5 && Math.abs((off + 48) % 9) < 0.5
+      })
+      .toBe(true)
+    const m1 = await measure()
+    // 第二档：收窄 280px——ResizeObserver+rAF 重算后车道左移同量。稳定面同
+    // 谓词再 poll（CSS 宽同步先变、rAF 重算晚帧——只 poll contentW 会取到
+    // 陈旧路径坐标，P7B 首跑实证 m2.laneX===m1.laneX 假绿面）
+    await win.setViewportSize({ width: 1000, height: 860 })
+    await expect
+      .poll(async () => {
+        const m = await measure()
+        const off = m.laneX - m.contentLeft - m.contentW
+        return (
+          m.contentW < m1.contentW - 200 &&
+          off >= -48.5 &&
+          off <= -20.5 &&
+          Math.abs((off + 48) % 9) < 0.5
+        )
+      })
+      .toBe(true)
+    const m2 = await measure()
+    // (a) 车道 x 随 contentW 变化（差值≈视口差）
+    expect(m2.laneX).toBeLessThan(m1.laneX)
+    expect(Math.abs(m1.laneX - m2.laneX - 280)).toBeLessThan(3)
+    // (b) 卡/线 bbox 相对关系恒定：laneX 对内容盒右缘偏移两档全等（走廊参数不变）
+    expect(m2.laneX - m2.contentLeft - m2.contentW).toBeCloseTo(m1.laneX - m1.contentLeft - m1.contentW, 1)
+    // (c) 纵向相对关系恒定（线-卡 y 差不变——错位即红）
+    expect(m2.relY).toBeCloseTo(m1.relY, 1)
 
     await app.close()
   })

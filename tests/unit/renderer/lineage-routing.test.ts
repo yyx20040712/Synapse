@@ -1,9 +1,12 @@
 /**
  * [T3-P7A] lineage-routing 纯函数 12 例——D 表 §5.3 全量
  * （docs/design/2026-09-27_t3p7-line-connection-design-final.md §5：
- * 用例 2 断言 route='detour'（D-3）+用例 7 断言 tail 端点（D-4）为主控
- * 终裁修订点；PAD 语义= d≤4 含边界（D-6）；车道容量 4 道+第 5 条 fallback
- * （D-5）；确定性 100 次全等（§5.2 无随机/Date/三角函数））。
+ * 用例 2 断言 route='detour'（D-3）为主控终裁修订点；PAD 语义= d≤4 含边界
+ * （D-6）；车道容量 4 道+第 5 条 fallback（D-5）；确定性 100 次全等
+ * （§5.2 无随机/Date/三角函数））。
+ * [T3-P7B/D-P7B-7] resolveLabelEntry 直测 it 7 随函数裁撤删除（P7A 备案
+ * 「P7b 定去留」主控终裁：D-4 让行机制裁撤后遗迹零生产调用，死代码即删；
+ * 计数=主 describe 15 it+palette 冒烟 1=文件 16）。
  * 另附 lineage-palette 数据常量冒烟（D-17 hex=用户数据面——P7b 消费本票
  * 入库，值形状先锁防漂移）。always-active 裸 describe（K3）。
  */
@@ -19,7 +22,6 @@ import {
   detourBottomPath,
   detourPath,
   laneIndex,
-  resolveLabelEntry,
   routeAll,
   routeEdge,
   segHitsAny,
@@ -67,7 +69,7 @@ function sameYearSnap(extra: { obstacles?: Array<[string, Rect]>; labels?: Rect[
   })
 }
 
-describe('T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it，palette 冒烟另 describe 1 例=文件 17）', () => {
+describe('T3-P7A/P7B lineage-routing 15 例（D 表 §5.3 全量+回炉 1/2 补——k1 计数口径：12 表+anchor/arc 2+回炉新增 15/16+改写 7/9=16 it；[D-P7B-7] resolveLabelEntry it 7 随函数裁撤=15，palette 冒烟另 describe 1 例=文件 16）', () => {
   it('1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）', () => {
     const s = { x: 100, y: 100 }
     const t = { x: 140, y: 178 }
@@ -158,16 +160,6 @@ describe('T3-P7A lineage-routing 16 例（D 表 §5.3 全量+回炉 1/2 补—�
     const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
     expect(r.route).toBe('arc')
     expect(r.lane).toBe(1)
-  })
-
-  it('7 resolveLabelEntry 纯函数直测（回炉 1 B-1 新语义——让行裁撤；调用面已被回程恒检蕴含——k1-③/d1-N2 终裁）：回程横道穿标注→null；未命中→entry=t+tail 空', () => {
-    const t = { x: 204, y: 326 }
-    // 标注横跨回程段 [204,752]×y=326 → 命中 → null
-    expect(resolveLabelEntry(t, 752, [rect(700, 320, 30, 12)])).toBeNull()
-    // 无标注 → {entry:t, tail:''}（无让行右移+无 tail 回穿段）
-    expect(resolveLabelEntry(t, 752, [])).toEqual({ entry: t, tail: '' })
-    // 标注在场但不压横道（y 不覆盖）→ 不命中
-    expect(resolveLabelEntry(t, 752, [rect(700, 100, 30, 12)])).toEqual({ entry: t, tail: '' })
   })
 
   it('15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback', () => {

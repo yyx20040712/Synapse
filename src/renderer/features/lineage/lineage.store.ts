@@ -50,6 +50,9 @@ type WriteAction =
   | { kind: 'remove-node'; id: string }
   | { kind: 'upsert-edge'; input: LineageEdgeUpsert; reparent?: boolean }
   | { kind: 'remove-edge'; id: string }
+  /** [T3-P7B] 图级线型整批替换（单实体——同类合并最后写胜出；FIFO 保证
+   *  lineTypes 先于引用其的 edge 写，引用完整性写序） */
+  | { kind: 'upsert-line-types'; input: LineTypeGroup[] }
 
 export interface LineageStore {
   nodes: LineageNode[]
@@ -89,6 +92,14 @@ export interface LineageStore {
   linkManualParent(childId: string, parentId: string, label?: string): void
   /** manual 边 label 后编辑（更新语义：id+端点+kind 保持——F-LG15） */
   editManualEdgeLabel(edgeId: string, label: string): void
+  /** [T3-P7B] 线型选择器应用：id 全载荷 upsert（from/to/label 读现值——
+   *  防半更新清字段；kind+sub 成对置，sub null=回退基础型） */
+  applyEdgeLine(edgeId: string, kind: LineageEdge['kind'], sub: string | null): void
+  /** [T3-P7B] 新建连线（四 kind 含 inferred——P5 备案 inferred 产生入口落位；
+   *  CONFLICT 拒绝型丢弃不卡队列+toast reason 沿 linkRefNodes 先例） */
+  linkWithLine(from: string, to: string, kind: LineageEdge['kind'], sub: string | null): void
+  /** [T3-P7B] 线型组整批写（恒四组强校验在 schema/service；成功 set lineTypes） */
+  saveLineTypes(groups: LineTypeGroup[]): void
   /** 改父=删旧边+加新边两调用（N5 语义；无旧边=仅加边） */
   reparentNode(nodeId: string, newParentId: string): void
   removeNode(id: string): void
@@ -111,6 +122,8 @@ function sameTarget(a: WriteAction, b: WriteAction): boolean {
   if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
     return a.input.fromNode === b.input.fromNode && a.input.toNode === b.input.toNode
   }
+  // [T3-P7B] 线型整批=单实体（图级配置）——同类恒合并
+  if (a.kind === 'upsert-line-types' && b.kind === 'upsert-line-types') return true
   return (a as { id: string }).id === (b as { id: string }).id
 }
 
@@ -161,6 +174,9 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           to: action.input.toNode,
           label: action.input.label,
           kind: action.input.kind,
+          // [T3-P7B] sub 透传（applyEdgeLine/linkWithLine 显式置——null=回退
+          // 基础型；既有调用点缺省键不进载荷，形状逐字节保持）
+          ...(action.input.sub !== undefined ? { sub: action.input.sub } : {}),
           // F-LG15 label 后编辑：id 提供经 IPC 更新（缺省键不进载荷——既有
           // 新建断言载荷形状逐字节保持）
           ...(action.input.id !== undefined ? { id: action.input.id } : {})
@@ -180,10 +196,18 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
             ? '综述关联已保存'
             : action.input.kind === 'manual'
               ? '人工父线已保存'
-              : '父子连线已保存',
+              : action.input.kind === 'inferred'
+                ? '推断连线已保存'
+                : '父子连线已保存',
           'success'
         )
       }
+      return
+    }
+    if (action.kind === 'upsert-line-types') {
+      // [T3-P7B] 整批替换（Res=校验后回显恒四组）——成功 set lineTypes
+      const saved = await unwrap(api.lineage.upsertLineTypes(action.input))
+      set({ lineTypes: saved })
       return
     }
     await unwrap(api.lineage.removeEdge({ id: action.id }))
@@ -329,6 +353,24 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         kind: 'upsert-edge',
         input: { id: e.id, fromNode: e.fromNode, toNode: e.toNode, label, kind: e.kind }
       })
+    },
+
+    applyEdgeLine(edgeId, kind, sub) {
+      const e = get().edges.find((x) => x.id === edgeId)
+      if (e === undefined) throw new Error(`边不在图中：${edgeId}`)
+      // id 全载荷：from/to/label 读现值（防半更新清字段）；kind+sub 成对置
+      enqueue({
+        kind: 'upsert-edge',
+        input: { id: e.id, fromNode: e.fromNode, toNode: e.toNode, label: e.label, kind, sub }
+      })
+    },
+
+    linkWithLine(from, to, kind, sub) {
+      enqueue({ kind: 'upsert-edge', input: { fromNode: from, toNode: to, label: '', kind, sub } })
+    },
+
+    saveLineTypes(groups) {
+      enqueue({ kind: 'upsert-line-types', input: groups })
     },
 
     reparentNode(nodeId, newParentId) {

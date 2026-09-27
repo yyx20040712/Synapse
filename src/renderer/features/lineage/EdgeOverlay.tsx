@@ -67,6 +67,9 @@ export function EdgeOverlay(props: {
   groups: TimelineYearGroup[]
   /** 回炉 1 W1/W6：父组件不动点收敛/守卫分支 bump——子 effect 再触发信号 */
   routeEpoch: number
+  /** [T3-P7B] 命中层点击（Timeline 接 composer——handler 闸与 CSS
+   *  pointer-events 双闸；React MouseEvent 结构兼容 ClickEventLike） */
+  onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [paths, setPaths] = useState<RoutedPath[]>([])
@@ -85,6 +88,23 @@ export function EdgeOverlay(props: {
   }, [props.nodes, props.edges])
   // 回炉 1 W5：paths 按.edgeId 配对（Map 查找替下标 zip）
   const edgeById = useMemo(() => new Map(live.edges.map((e) => [e.id, e] as const)), [live])
+  // [T3-P7B] 同道错峰（D-P7B-8）：lane≥0 路径按车道内 edgeId 字典序排名
+  // i≥1 → opacity=max(0.6,1−0.15×i)（同道重叠边视觉可分——纯渲染确定性微差；
+  // lane=-1[vertical/fallback] 不参与）
+  const laneRank = useMemo(() => {
+    const byLane = new Map<number, string[]>()
+    for (const p of paths) {
+      if (p.lane < 0) continue
+      const list = byLane.get(p.lane) ?? []
+      list.push(p.edgeId)
+      byLane.set(p.lane, list)
+    }
+    const rank = new Map<string, number>()
+    for (const ids of byLane.values()) {
+      ids.sort().forEach((id, i) => rank.set(id, i))
+    }
+    return rank
+  }, [paths])
 
   useLayoutEffect(() => {
     const content = svgRef.current?.parentElement
@@ -115,6 +135,8 @@ export function EdgeOverlay(props: {
       {paths.map((p) => {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null
+        const i = laneRank.get(p.edgeId)
+        const fade = i !== undefined && i >= 1 ? Math.max(0.6, 1 - 0.15 * i) : undefined
         return (
           <g key={p.edgeId}>
             <path
@@ -122,9 +144,14 @@ export function EdgeOverlay(props: {
               data-edge-id={p.edgeId}
               data-kind={e.kind}
               d={p.d}
-              style={subStyle(e, props.lineTypes)}
+              style={fade === undefined ? subStyle(e, props.lineTypes) : { ...subStyle(e, props.lineTypes), opacity: fade }}
             />
-            <path className="tl-edge-hit" data-edge-id={p.edgeId} d={p.d} />
+            <path
+              className="tl-edge-hit"
+              data-edge-id={p.edgeId}
+              d={p.d}
+              onClick={(e) => props.onEdgeHitClick?.(p.edgeId, e)}
+            />
           </g>
         )
       })}

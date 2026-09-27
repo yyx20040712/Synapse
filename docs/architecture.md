@@ -290,8 +290,14 @@ AGENTS.md「环境事实」单源，此处不复制。
 - 渲染域 `src/renderer/features/lineage/`（第四视图：[T3-P6 起纵向「年+月」
   时间线 DOM 布局=LineageTimeline 滚动容器+104×52 小卡——RT 树布局/SVG 画布
   pan/zoom 整族退役，INV-78；T3-P7A 连线层重建=EdgeOverlay[svg.tl-edges
-  子组件]+lineage-routing.ts 纯函数路由三式/四检避让降级链，INV-79——
-  编辑交互（线型选择器/新建连线/编辑模式）=P7b 域] +侧板详情）；main 域
+  子组件]+lineage-routing.ts 纯函数路由三式/四检避让降级链，INV-79；
+  T3-P7B 编辑交互=useEdgeComposer 状态机（mode 单源驻 Timeline，INV-80）
+  +EdgeTypePopover/EdgeNewSubForm/NewSubLauncher 线型弹层（恒四组手风琴+确定性 sub id+陈旧边自闭守卫[回炉 R2/R8]+新建线型飞行窗禁建 saveStatus saving/error 禁建[回炉 R5]）
+  +LineageToolbar 换装（.lg-toolbar sticky 挂 .timeline）+store 三 action
+  （applyEdgeLine/linkWithLine[inferred 产生入口落位]/saveLineTypes——
+  队列 FIFO 保证 lineTypes 先于引用其的 edge 写）+同道错峰；
+  TimelineYears/lineage-popover-shared 拆件=组件 250 行红线落点；
+  resolveLabelEntry 随 D-P7B-7 裁撤（零生产调用死代码删除）] +侧板详情）；main 域
   `services/lineage/`（树守卫两口：
   草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+

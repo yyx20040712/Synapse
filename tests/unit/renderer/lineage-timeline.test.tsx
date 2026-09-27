@@ -181,10 +181,14 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     }
   })
 
-  it('空图空态文案保活：暂无脉络图——导入草稿或添加节点', () => {
+  it('空图空态文案保活：暂无脉络图——导入草稿或添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留导入/添加引导，编辑死按钮零）', () => {
     mount(<LineageTimeline nodes={[]} edges={[]} />)
     expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
-    expect(host?.querySelectorAll('button').length).toBe(0)
+    // 工具条在空图在场（导入=空图 bootstrap 路径——e2e T1 消费面）；编辑面
+    // 死按钮零（view 态 linkbtn 隐藏+无弹层交互钮）
+    expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-import"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 
   it('骑缝编号 #NNN 三位零填充（lineageCatalogNos 单源：随 lineageOrder 全序，与组内传入序无关）', () => {
@@ -280,14 +284,15 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(cardOf('A').classList.contains('sel')).toBe(false)
   })
 
-  it('交互接缝：卡 click→onNodeClick(id)；contextmenu→onNodeContextMenu(id, 锚点)', () => {
+  it('交互接缝：卡 click→onNodeClick(id, ev)；contextmenu→onNodeContextMenu(id, 锚点)', () => {
     const onClick = vi.fn()
     const onMenu = vi.fn()
     mount(<LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} onNodeClick={onClick} onNodeContextMenu={onMenu} />)
     act(() => {
       cardOf('A').dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(onClick).toHaveBeenCalledWith('A')
+    // [T3-P7B] 事件透传（拾取定位面）——id+事件最小面
+    expect(onClick).toHaveBeenCalledWith('A', expect.objectContaining({ clientX: expect.any(Number) }))
     act(() => {
       cardOf('A').dispatchEvent(
         new MouseEvent('contextmenu', { clientX: 200, clientY: 150, bubbles: true, cancelable: true })
@@ -456,3 +461,4 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 })
+

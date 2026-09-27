@@ -42,6 +42,8 @@ export function LineageTimelineCard(props: {
   selected: boolean
   /** 砖砌行错位（0 起奇数索引行——Timeline 分行计算传入） */
   shift: boolean
+  /** [T3-P7B] 新建连线拾取源高亮（.link-src——composer target 相位） */
+  linkSrc: boolean
 } & TimelineCallbacks): JSX.Element {
   const n = props.node
   const survey = n.paperId !== null && isSurvey(n.title)
@@ -52,7 +54,12 @@ export function LineageTimelineCard(props: {
     props.metrics !== null && props.metrics.citedByCount !== null
       ? String(props.metrics.citedByCount)
       : '—'
-  const cls = ['tl-card', props.selected ? 'sel' : '', props.shift ? 'rowshift' : '']
+  const cls = [
+    'tl-card',
+    props.selected ? 'sel' : '',
+    props.shift ? 'rowshift' : '',
+    props.linkSrc ? 'link-src' : ''
+  ]
     .filter((c) => c !== '')
     .join(' ')
   return (
@@ -60,7 +67,7 @@ export function LineageTimelineCard(props: {
       className={cls}
       data-node-id={n.id}
       data-kind={kind}
-      onClick={() => props.onNodeClick?.(n.id)}
+      onClick={(e) => props.onNodeClick?.(n.id, e)}
       onContextMenu={(e) => {
         e.preventDefault()
         props.onNodeContextMenu?.(n.id, { x: e.clientX, y: e.clientY })

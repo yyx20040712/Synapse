@@ -116,10 +116,14 @@ describe('LineageTimeline —— 时间线宿主渲染', () => {
     expect(host?.querySelector('[data-node-id="B"]')).not.toBeNull()
   })
 
-  it('空图空态文案（导入/添加入口归 LG-03——本面仅文案不留死按钮）', () => {
+  it('空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）', () => {
     mount(<LineageTimeline nodes={[]} edges={[]} />)
     expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
-    expect(host?.querySelectorAll('button').length).toBe(0)
+    // [T3-P7B 修订] P6 期「零按钮」断言随工具条移入（D-P7B-1）失效——空图
+    // bootstrap 路径（导入）保活；编辑面死按钮（弹层交互钮）仍零
+    expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-import"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 
   it('空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）', () => {
