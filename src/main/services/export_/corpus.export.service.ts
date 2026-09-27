@@ -44,9 +44,10 @@ import type { Repos } from '../../db/repos'
 import { sanitizePathToken } from '../shared/sanitize'
 import type { FileStore } from '../import_/file-store'
 import { assembleCorpusMd, orderAiNotes } from './corpus.assemble'
+import { assembleLineageJson, type LineageAssembleInput } from './lineage.assemble'
 import {
   cleanRebuild, finalizeManifest, readCorpusSha, removeManifestTmp,
-  writeCorpusMd, writeFigure, writeFulltext, type CorpusManifest
+  writeCorpusMd, writeFigure, writeFulltext, writeLineageJson, type CorpusManifest
 } from './corpus.export.io'
 import {
   createExportSessionState, deferOutcome, SessionError, type ActiveSession
@@ -59,6 +60,10 @@ export interface CorpusExportDeps {
   sendEvent: (e: ExportCorpusEvent) => void
   /** 时间源（测试注入——manifest exportedAt/幂等不参与产物断言） */
   now?: () => string
+  /** [T3-P5] lineage.json 读通道（finalizing 阶段装配第六件套）。可选=受锁
+   *  corpus.export.test.ts 桩零改先例（ipc-deps clipboard 同款）：缺席=不写
+   *  lineage.json（生产装配恒注入——services/index 装配桶） */
+  lineage?: () => LineageAssembleInput
 }
 
 export interface CorpusExportService {
@@ -87,8 +92,13 @@ export function createCorpusExportService(deps: CorpusExportDeps): CorpusExportS
       await startPaper(s, next)
       return
     }
-    // finalizing：manifest 终局单写（tmp+rename 原子替换——io 件）
+    // finalizing：lineage.json 第六件套（T3-P5——manifest 终写前落盘，失败=
+    // 会话 failed 无 manifest；装配单源=lineage.assemble，本件只编排）+manifest
+    // 终局单写（tmp+rename 原子替换——io 件）
     sendProgress(s, 'finalizing')
+    if (deps.lineage !== undefined) {
+      await writeLineageJson(s.dir, assembleLineageJson(deps.lineage()))
+    }
     const manifest: CorpusManifest = {
       schemaVersion: 1,
       exportedAt: now(),

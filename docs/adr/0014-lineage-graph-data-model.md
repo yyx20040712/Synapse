@@ -101,3 +101,19 @@ CREATE TABLE lineage_edges (
 >   service 层非 DDL CHECK（本 ADR 原则维持）。
 > - 行为终态与跨格序列的单一真相源=**INV-27**（含三 kind 全景表）；DDL 现文
 >   =`src/main/db/migrations/004/006/007`。本文保留原始决策叙述不回改。
+
+## 修订记录 v1.3（2026-09-27 T3-P5：脉络数据层 v2）
+
+> **不触发 v2 DAG 升级**（本 ADR「存储=图 schema（v2 DAG 升级免迁移）」预留
+> 面核对结论）：仍树+旁挂边——kind 扩四值属行为面非存储面演进。现行演进：
+> - `010_lineage_v2.sql`：nodes 加 `month`（CHECK 1..12，NULL=未定月框）+
+>   `slot`（月内序实现层承载——窗口函数存量回填，D-P5-10「无显式字段」=
+>   无用户序号语义）两列；edges 加 `sub TEXT`（子线型样式引用——引用完整性
+>   守卫在 service 非 DDL，本 ADR「树约束在 service」原则同精神）；新表
+>   `lineage_graph_meta`（图级 KV——lineTypes 线型组 JSON 串）。
+> - kind 四值终态=tree/**inferred**（T3-P5 新枚举——同 tree 守卫单父+拒环，
+>   产生入口=P7 编辑器+后置 AI 域，枚举+守卫先行防退化）/ref/manual；draft
+>   导入协议 v1.2 仅加可选 `month`（缺省=NULL 未定月——旧草稿零破坏）。
+> - 行为终态与跨格序列单一真相源=**INV-27（T3-P5 四 kind 修订版）**；排序
+>   契约/编号/导出确定性=**INV-75/76/77**；DDL 现文
+>   =`src/main/db/migrations/004/006/007/010`。本文保留原始决策叙述不回改。

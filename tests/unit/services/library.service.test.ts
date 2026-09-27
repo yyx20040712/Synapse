@@ -14,8 +14,13 @@ function stubRepos(over: Record<string, unknown> = {}): Repos {
   }
   const collections = { list: () => [] }
   // [T3-P3] detail() 组合装配新增 lineage 只读对依赖（默认未命中——装配
-  // 专项断言住 library-detail-lineage.test.ts，此处桩仅保既有委托面可跑）
-  const lineage = { nodeByPaperId: () => null, edgeCountByNode: () => 0 }
+  // 专项断言住 library-detail-lineage.test.ts，此处桩仅保既有委托面可跑）；
+  // [T3-P5] list()/detail() 编号 join 增 listGraph 桩（空图=零挂键）
+  const lineage = {
+    nodeByPaperId: () => null,
+    edgeCountByNode: () => 0,
+    listGraph: () => ({ nodes: [], edges: [] })
+  }
   return { papers, collections, lineage, ...over } as unknown as Repos
 }
 

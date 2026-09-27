@@ -28,7 +28,20 @@ export const paperSummarySchema = z
     // [T3-P3] 密度列表引用列：ENR-01 含金量缓存快照下探列表行（LIST_SQL
     // 扩列 cited_by_count，toSummary null→整键省略——与 detail 面同语义，
     // 可选增量向后兼容，旧载荷解析不受影响）
-    citedByCount: z.number().int().optional()
+    citedByCount: z.number().int().optional(),
+    // [T3-P5] C5-a 脉络关联行（service 层 join 装配——listGraph 一次→
+    // lineageOrder→catalogNo map→当页行挂键）：入脉络=catalog_no 呈现时
+    // 确定性编号（INV-76——编号随全序漂移=呈现序语义特性）；未入脉络=
+    // 位置序兜底（renderer 消费）；可选增量向后兼容（citedByCount 先例同款，
+    // 旧载荷解析不受影响），month=null 未定月框照实
+    lineage: z
+      .object({
+        year: z.number().int().nullable(),
+        month: z.number().int().nullable(),
+        catalogNo: z.number().int()
+      })
+      .strict()
+      .optional()
   })
   .strict()
 export type PaperSummary = z.infer<typeof paperSummarySchema>
@@ -51,13 +64,15 @@ export const paperDetailSchema = paperSummarySchema
     citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
     citedByCountSource: paperSourceSchema.optional(), // 命中的瀑布源
     // [T3-P3] 跨域关联行（service 层组合装配——repo 单一职责不跨表）：
-    // paper_id 命中脉络节点则挂；month 恒 null=P5 month 列落位后自新
-    // （final-design §3——lineage v2 模型增量），未命中整键省略
+    // paper_id 命中脉络节点则挂；month=null=未定月框（[T3-P5] 真值透传——
+    // P3 时代「恒 null 固定缺省」已摘）；catalogNo=呈现时 lineageOrder 全序
+    // 编号（与列表行/PaperDetailPanel 短号同源——INV-76）；未命中整键省略
     lineage: z
       .object({
         year: z.number().int().nullable(),
         month: z.number().int().nullable(),
-        edgeCount: z.number().int()
+        edgeCount: z.number().int(),
+        catalogNo: z.number().int()
       })
       .strict()
       .optional()

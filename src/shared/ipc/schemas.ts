@@ -10,7 +10,13 @@ import { annotationSchema, annotationInputSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
 import { collectionSchema } from '../models/collection'
-import { lineageNodeSchema, lineageEdgeSchema, lineageEdgeKindSchema } from '../models/lineage'
+import {
+  lineageNodeSchema,
+  lineageEdgeSchema,
+  lineageEdgeKindSchema,
+  lineTypeGroupSchema,
+  lineTypeGroupsSchema
+} from '../models/lineage'
 
 /** 空请求（无参数通道） */
 export const voidReqSchema = z.object({}).strict()
@@ -297,12 +303,14 @@ export type LineagePaperMetrics = z.infer<typeof lineagePaperMetricsSchema>
 
 /** lineage/graph 响应：全图单读+含金量 join（库空=空数组/空表，合法态非错误；
  *  模型单源=shared/models/lineage——paperMetrics 键=paperId，主题节点不入表
- *  [F-LG14 载荷扩展：加字段向后兼容]） */
+ *  [F-LG14 载荷扩展：加字段向后兼容]。[T3-P5] nodes=lineageOrder 序（INV-75
+ *  读面唯一保证）+lineTypes 恒四组（base 枚举序——空组含空 subs） */
 export const lineageGraphResSchema = z
   .object({
     nodes: z.array(lineageNodeSchema),
     edges: z.array(lineageEdgeSchema),
-    paperMetrics: z.record(z.string(), lineagePaperMetricsSchema)
+    paperMetrics: z.record(z.string(), lineagePaperMetricsSchema),
+    lineTypes: z.array(lineTypeGroupSchema)
   })
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
@@ -311,7 +319,9 @@ export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
 /** lineage/upsert-node 请求：应用面 camelCase 输入（模型单源派生语义——id 缺省=新建；
  *  paperId 省略/null=主题节点；x/y 省略/null=自动布局（JSON Canvas 覆盖语义的反向清空）；
  *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段）；
- *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空） */
+ *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空）；
+ *  [T3-P5] month 省略/null=清月（全量语义同款）；slot 省略=service 归一
+ *  （D-I-1：新建组 max+1/同组更新保留/跨组落组末），显式提供（含 null）透写 */
 export const lineageUpsertNodeReqSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -321,7 +331,9 @@ export const lineageUpsertNodeReqSchema = z
     year: z.number().int().nullable(),
     x: z.number().nullable().optional(),
     y: z.number().nullable().optional(),
-    tags: z.array(z.string()).nullable().optional()
+    tags: z.array(z.string()).nullable().optional(),
+    month: z.number().int().min(1).max(12).nullable().optional(),
+    slot: z.number().int().min(0).nullable().optional()
   })
   .strict()
 export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
@@ -330,21 +342,30 @@ export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
 export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
 export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
 
-/** lineage/upsert-edge 请求：{from,to,label?,kind?,id?}（树守卫宿主=LG-01 service
- * upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
- * toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
- * F-LG15 不限条数，service 三 kind 守卫）；id 可选=F-LG15 label 后编辑更新
- * 语义（缺省=新建——既有新建载荷形状不变） */
+/** lineage/upsert-edge 请求：{from,to,label?,kind?,sub?,id?}（树守卫宿主=LG-01 service
+ *  upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
+ *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
+ *  F-LG15 不限条数，service 三 kind 守卫；T3-P5 inferred 同 tree 守卫）；
+ *  id 可选=F-LG15 label 后编辑更新语义（缺省=新建——既有新建载荷形状不变）；
+ *  [T3-P5] sub 可选缺省=null 基础默认样式（存在性+同基型守卫在 service） */
 export const lineageUpsertEdgeReqSchema = z
   .object({
     id: z.string().min(1).optional(),
     from: z.string().min(1),
     to: z.string().min(1),
     label: z.string().optional(),
-    kind: lineageEdgeKindSchema.optional()
+    kind: lineageEdgeKindSchema.optional(),
+    sub: z.string().nullable().optional()
   })
   .strict()
 export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
+
+/** [T3-P5] lineage/upsert-line-types 请求（图级整体替换——单通道原子写）：
+ *  恒四组强校验 schema 单源=models/lineage lineTypeGroupsSchema（D-I-4；
+ *  ipc/schemas 仅 re-export 派生，模型字段定义禁二次定义）；Res=同 schema
+ *  （校验后回显——service 回恒四组枚举序） */
+export const lineageUpsertLineTypesReqSchema = lineTypeGroupsSchema
+export type LineageUpsertLineTypesReq = z.infer<typeof lineageUpsertLineTypesReqSchema>
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
 /** 单篇语料导出（与 reportReq 同形：目标文献 id） */

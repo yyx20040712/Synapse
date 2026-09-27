@@ -58,6 +58,8 @@ const lineageNode = {
   x: null,
   y: null,
   tags: null,
+  month: null,
+  slot: null,
   createdAt: ISO,
   updatedAt: ISO
 }
@@ -67,6 +69,7 @@ const lineageEdge = {
   toNode: 'ln2',
   label: '',
   kind: 'tree' as const,
+  sub: null,
   createdAt: ISO,
   updatedAt: ISO
 }
@@ -145,16 +148,36 @@ const VALID: Record<string, unknown[]> = {
     { citedByCount: 3, venueTier: 'T2' }
   ],
   lineageGraphResSchema: [
-    { nodes: [lineageNode], edges: [lineageEdge], paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } } }
+    {
+      nodes: [lineageNode],
+      edges: [lineageEdge],
+      paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } },
+      lineTypes: [
+        { base: 'tree', subs: [{ id: 'lt1', name: '强继承', color: '#F2773A', dash: '', w: 2 }] },
+        { base: 'inferred', subs: [] },
+        { base: 'ref', subs: [] },
+        { base: 'manual', subs: [] }
+      ]
+    }
   ],
   lineageUpsertNodeReqSchema: [
     { title: '新节点', coreIdea: '', year: null },
-    { id: 'ln1', paperId: 'p1', title: 't', coreIdea: '', year: 2020, x: 1, y: 2, tags: ['a'] }
+    { id: 'ln1', paperId: 'p1', title: 't', coreIdea: '', year: 2020, x: 1, y: 2, tags: ['a'] },
+    { title: '带月', coreIdea: '', year: 2020, month: 6, slot: 1 }
   ],
   lineageIdReqSchema: [{ id: 'ln1' }],
   lineageUpsertEdgeReqSchema: [
     { from: 'a', to: 'b' },
-    { id: 'le1', from: 'a', to: 'b', label: 'L', kind: 'ref' }
+    { id: 'le1', from: 'a', to: 'b', label: 'L', kind: 'ref' },
+    { from: 'a', to: 'c', label: 'L', kind: 'manual', sub: 'lt1' }
+  ],
+  lineageUpsertLineTypesReqSchema: [
+    [
+      { base: 'tree', subs: [] },
+      { base: 'inferred', subs: [] },
+      { base: 'ref', subs: [] },
+      { base: 'manual', subs: [] }
+    ]
   ],
   corpusReqSchema: [{ paperId: 'p1' }],
   corpusSetReqSchema: [{}],
@@ -222,6 +245,7 @@ const SCHEMA_NAMES = [
   'lineageImportResSchema',
   'lineagePaperMetricsSchema',
   'lineageUpsertEdgeReqSchema',
+  'lineageUpsertLineTypesReqSchema',
   'lineageUpsertNodeReqSchema',
   'mergeTagReqSchema',
   'netDiagItemSchema',

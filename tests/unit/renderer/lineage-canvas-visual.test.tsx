@@ -27,13 +27,15 @@ function node(
     year: patch.year ?? null,
     x: patch.x ?? null,
     y: patch.y ?? null,
+    month: null,
+    slot: null,
     createdAt: 't',
     updatedAt: 't'
   }
 }
 
 function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
 /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */

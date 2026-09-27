@@ -188,6 +188,8 @@
 }
 /* 行内六列（编号/题名·期刊/年月/引用/档次/标签） */
 .lib-r-id { width: 46px; font-family: var(--mono); font-size: var(--fs-caption); color: var(--faint); flex: none; }
+/* T3-P5 入脉络 catalogNo 编号=accent 色与位置序 faint 区分（W-4 最小兑现；形态细节收口轮细调） */
+.lib-r-id.cat { color: var(--accent); }
 .lib-r-main { flex: 1; min-width: 0; }
 .lib-r-title {
   display: block;

@@ -127,7 +127,7 @@ describe('F-L1-C edge-label-layout —— 防重叠放置器', () => {
 
   it('fitViewport 第 5 参 labelBoxes：参与包围盒——被推出的标签不可消失在 fit 视野外', () => {
     const nodes: LineageNode[] = [
-      { id: 'A', paperId: 'p', title: '测名', coreIdea: '', year: 2020, x: null, y: null, createdAt: 't', updatedAt: 't' }
+      { id: 'A', paperId: 'p', title: '测名', coreIdea: '', year: 2020, x: null, y: null, month: null, slot: null, createdAt: 't', updatedAt: 't' }
     ]
     const layout: LayoutResult = { positions: new Map([['A', { x: 0, y: 0 }]]), layers: [] }
     // 手算（F-LG13 统一卡 NODE_W=240 半宽 120/高 110 半高 55/BAND_LEFT=-200；

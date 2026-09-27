@@ -17,6 +17,7 @@ import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
 import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
 import readingTimeSql from './migrations/008_reading_time.sql?raw'
 import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
+import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
 
 export interface Migration {
   version: number
@@ -35,8 +36,11 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 7, name: 'lineage_node_tags', sql: nodeTagsSql },
   { version: 8, name: 'reading_time', sql: readingTimeSql },
   // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长——008 加列→009 删列双跳
-  // （已合入迁移不可修改=CI 锁硬规则；新库 user_version 终值 9）
-  { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql }
+  // （已合入迁移不可修改=CI 锁硬规则）
+  { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql },
+  // [T3-P5] 脉络数据层 v2：month/slot/sub 列+lineage_graph_meta KV+slot 窗口
+  // 回填（新库 user_version 终值 10）
+  { version: 10, name: 'lineage_v2', sql: lineageV2Sql }
 ]
 
 export interface MigrateResult {

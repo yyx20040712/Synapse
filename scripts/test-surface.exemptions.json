@@ -663,6 +663,90 @@
       "assertionText": "expect(visual.pageBg, 'B: 页盒背景=var(--panel) 不透明白').toBe('rgb(255, 255, 255)')",
       "reason": "T3-P4 纸面三态：页盒底消费 var(--paper)（light=白桥接不变——断言值 rgb(255,255,255) 零变，仅消息文本 var(--panel)→var(--paper) 注释同步）",
       "rulingLink": "docs/design/2026-09-26_theme-trio-final-design.md#2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）",
+      "reason": "T3-P5 lineage 域 6→7 通道（upsertLineTypes 图级线型整体替换——D-P5-4）：通道数 pin 55→56，用例标题+断言随终态改写",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "新库：全量应用到 9，papers.reading_seconds 列已不存在（009 删列终态）",
+      "reason": "T3-P5 迁移 010 落地（lineage v2：month/slot/sub+meta KV）：新库全量终态 user_version 9→10，标题+断言随终态上探",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "存量 v8 库（008 已加列）升级：仅应用 009，列被删除，user_version=9",
+      "reason": "T3-P5 迁移 010 落地：v8 存量库升级面应用序 [9]→[9,10]，user_version=10，标题+断言随终态上探",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([8, 9])",
+      "reason": "T3-P5 迁移 010 落地：v7 双跳用例应用序 [8,9]→[8,9,10]",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(9)",
+      "reason": "T3-P5 迁移 010 落地：v7 双跳用例 user_version 9→10",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])",
+      "reason": "T3-P5 迁移 010 落地：新库全量应用清单 [1..9]→[1..10]",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "caseTitle": "脉络命中 month=null：「未定月框」措辞（P5 落位前月恒缺省）",
+      "reason": "T3-P5 month 列落位（C5-b）：null=未定月合法态非「落位前恒缺省」，标题措辞随语义改写（断言零变）",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#7"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "caseTitle": "命中：paper_id 节点透出 lineage={year, month 恒 null, edgeCount=双端计数}",
+      "reason": "T3-P5 C5 双升级：detail lineage 增 catalogNo+month 真值透传（摘「恒 null」固定缺省），标题+断言随新契约改写",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#6"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "caseTitle": "month 恒 null（P5 month 列落位前固定缺省——非节点数据透传）",
+      "reason": "T3-P5 month 真值透传：用例改写为真值+全序编号 catalogNo 断言（原「恒 null」语义退役）",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#6"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "assertionText": "expect(withLineage.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })",
+      "reason": "T3-P5 detail lineage 契约扩展：+catalogNo（呈现时编号 INV-76），toEqual 面随新契约改写",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#6"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "assertionText": "expect(() => paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, edgeCount: 3 } }) ).toThrow()",
+      "reason": "T3-P5 detail lineage 增 catalogNo 必填键：缺键拒收夹具随新契约补 catalogNo（原缺 month 面改写为缺 catalogNo 面）",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#6"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "assertionText": "expect(() => paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, month: null, edgeCount: 3, extra: 1 } }) ).toThrow()",
+      "reason": "T3-P5 strict 负锚随契约扩展补 catalogNo（未知子键拒收面不变）",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#6"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "assertionText": "expect(svc.graph()).toEqual({ nodes: [], edges: [], paperMetrics: {} })",
+      "reason": "T3-P5 graph 响应扩展 lineTypes 恒四组（D-I-4）：空图 toEqual 面随新契约补 lineTypes 四空组",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）",
+      "reason": "T3-P5 迁移 010 落地：版本接续 pin 9→10，标题+断言随终态上探",
+      "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
     }
   ]
 }

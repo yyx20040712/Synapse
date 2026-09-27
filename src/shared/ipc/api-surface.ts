@@ -81,13 +81,19 @@ export const API_SURFACE = {
   },
   // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
   // 写四通道（LG-03 交互编辑接线——树守卫宿主=service upsertEdge，IPC 零守卫透传）
+  // [T3-P5] 6→7 通道：upsertLineTypes 图级线型整体替换（D-P5-4 弃双通道 CRUD）
   lineage: {
     importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
     graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema },
     upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
     removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
     upsertEdge: { channel: 'lineage/upsert-edge', Req: S.lineageUpsertEdgeReqSchema, Res: lineageEdgeSchema },
-    removeEdge: { channel: 'lineage/remove-edge', Req: S.lineageIdReqSchema, Res: S.trueAckSchema }
+    removeEdge: { channel: 'lineage/remove-edge', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
+    upsertLineTypes: {
+      channel: 'lineage/upsert-line-types',
+      Req: S.lineageUpsertLineTypesReqSchema,
+      Res: S.lineageUpsertLineTypesReqSchema
+    }
   },
   tags: {
     list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },

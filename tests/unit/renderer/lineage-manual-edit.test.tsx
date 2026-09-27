@@ -42,6 +42,8 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     year: 2020,
     x: null,
     y: null,
+    month: null,
+    slot: null,
     createdAt: 't',
     updatedAt: 't',
     ...patch
@@ -49,7 +51,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
 const settle = async (turns = 6): Promise<void> => {

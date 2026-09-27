@@ -92,17 +92,25 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 
 ## 6. 数据模型
 
-10 张表 + 3 个 FTS5（external content+触发器）：papers/collections/paper_collections/
+11 张表 + 3 个 FTS5（external content+触发器）：papers/collections/paper_collections/
 tags/paper_tags/annotations/notes（001 基座七表）+ai_notes（003）+lineage_nodes/
-lineage_edges（004）；演进列 005~009（cited_by 缓存/lineage kind 列——
-UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02）。标注定位器=W3C Web Annotation
+lineage_edges（004）+lineage_graph_meta（010——图级 KV 配置：lineTypes 线型组
+JSON 串，updated_at 应用层写 ISO）；演进列 005~010（cited_by 缓存/lineage kind 列——
+UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02/
+lineage month+slot+sub——month CHECK 1..12、slot 窗口函数存量回填=T3-P5 脉络
+数据层 v2）。标注定位器=W3C Web Annotation
 思路（quote/prefix/suffix+startOffset/endOffset+rects+sortKey）。迁移只追加（受锁）。
 契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
 （ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）；
 paperDetailSchema +`lineage?: {year, month, edgeCount}`（service 层组合装配
 ——library.service detail 按 paper_id 查 lineage_nodes/edges 双端计数，month
-恒 null=P5 落位后自新）；文献库视图随 T3-P3 改密度列表（六列结构 INV-73）
-+316px 规格表抽屉，旧卡片网格族退役。
+恒 null=P5 落位后自新）；**T3-P5（2026-09-27）契约增量**：paperSummarySchema
++`lineage?: {year, month, catalogNo}`（list join 装配——INV-76 呈现序编号）+
+paperDetail.lineage +`catalogNo`（month 真值透传——P3 时代「恒 null」已摘）+
+lineage 域 kind 四值（tree/inferred/ref/manual——INV-27 修订版）+LineTypeGroup
+线型组+upsertLineTypes 第 7 通道（图级整体替换）+lineage.json 第六件套导出
+（INV-77）；文献库视图随 T3-P3 改密度列表（六列结构 INV-73——序号列/年月列
+双源级联随 T3-P5 兑现）+316px 规格表抽屉，旧卡片网格族退役。
 
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 
@@ -281,7 +289,9 @@ AGENTS.md「环境事实」单源，此处不复制。
 
 - 渲染域 `src/renderer/features/lineage/`（第四视图：Reingold-Tilford 零依赖
   布局+SVG 画布 pan/zoom+侧板详情）；main 域 `services/lineage/`（树守卫两口：
-  草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`。
+  草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
+  `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
+  lineTypes 静态校验拆件）。
 - [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
   `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题弹层 `app/WsRailPopover.tsx`
   A10 联动+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props 注入）；
@@ -291,9 +301,20 @@ AGENTS.md「环境事实」单源，此处不复制。
   [案 A：--canvas-filter 三族+缩略图 canvas 同规则]/sepia 奶油纸，INV-74）；
   工具栏/tab 条/侧栏节标金族消费退役换 mockup .toolbar/.tabbar 语汇
   （theme-reader.css 单源）。
-- 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）；
-  边三 kind=tree/ref/manual 终态（INV-27）；自动引文网络图维持不做（ADR-0012
-  共存已裁决——对象不同、不复用表）。
+- 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）
+  +010（T3-P5 脉络数据层 v2：month/slot/sub 三列+lineage_graph_meta KV
+  [lineTypes 线型组]+slot 窗口函数存量回填）；边四 kind=tree/inferred/ref/
+  manual（INV-27 T3-P5 修订版——inferred 同 tree 守卫先行防退化，产生入口
+  =P7 编辑器+后置 AI 域；sub=样式层引用完整性三守卫）；**排序契约=
+  lineageOrder 唯一纯函数**（shared/models/lineage.ts，三消费禁双实现——
+  graph 读面/lineage.json 导出/library C5 join，INV-75）；catalog_no=呈现时
+  确定性计算不落库（INV-76）；自动引文网络图维持不做（ADR-0012
+  共存已裁决——对象不同、不复用表；T3-P5 核对=不触发 ADR-0014 v2 DAG——
+  仍树+旁挂边，四 kind 行为面收在 INV-27 修订版）。
+- [T3-P5] AI 可读导出=corpus 会话第六件套 lineage.json（finalizing 阶段
+  manifest 终写前落盘；装配单源 `export_/lineage.assemble.ts`——递归
+  alphabetical 键序+schema_version 1，INV-77）；与 ai-sensor 域解耦边界=
+  2026-09-20 survey 档 §9（lineage.json=AI 评估输入预置契约——互不吞并）。
 - 视口/布局/卡尺寸单源不变量=INV-36/38/41/43/44/48（指针，正文在 INV 册）。
 
 ### 8.2 workspaces（课题隔离）

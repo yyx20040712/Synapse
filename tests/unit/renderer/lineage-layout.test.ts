@@ -35,6 +35,8 @@ function node(
     year: patch.year ?? null,
     x: patch.x ?? null,
     y: patch.y ?? null,
+    month: null,
+    slot: null,
     createdAt: 't',
     updatedAt: 't'
   }
@@ -42,7 +44,7 @@ function node(
 
 /** 边工厂（from=父（继承来源）→to=子（继承者）——service 契约同向；默认 tree） */
 function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
 afterEach(() => {

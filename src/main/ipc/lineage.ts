@@ -40,7 +40,11 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         year: req.year,
         x: req.x ?? null,
         y: req.y ?? null,
-        tags: req.tags ?? null // F-LG14：缺省归一 null=清空（paperId/x/y 同款）
+        tags: req.tags ?? null, // F-LG14：缺省归一 null=清空（paperId/x/y 同款）
+        // T3-P5：month/slot 原样透传（undefined=归一语义键——service 区分
+        // undefined=归一与 null=透写清面，IPC 层不做 ?? 折叠）
+        month: req.month,
+        slot: req.slot
       }),
     removeNode: async (req) => {
       deps.services.lineage.removeNode(req.id)
@@ -52,11 +56,15 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         fromNode: req.from,
         toNode: req.to,
         label: req.label ?? '',
-        kind: req.kind
+        kind: req.kind,
+        sub: req.sub // T3-P5：undefined/null 同归一 null=基础默认样式（service 守卫）
       }),
     removeEdge: async (req) => {
       deps.services.lineage.removeEdge(req.id)
       return { ok: true }
-    }
+    },
+    // T3-P5：图级线型整体替换（守卫全在 service——恒四组/id 唯一/被引用 sub
+    // 不得消失；Res=校验后回显）
+    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypes(req)
   }
 }

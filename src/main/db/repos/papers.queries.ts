@@ -70,9 +70,12 @@ function escapeLike(s: string): string {
   return s.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
 
-/** 聚合行 → PaperSummary（authors_json 解码、US 分隔串拆数组、驼峰化；
- * [T3-P3] cited_by_count null→citedByCount 整键省略——detailById 同语义） */
-export function toSummary(r: SummaryRow): PaperSummary {
+/** 聚合行 → 列表行（authors_json 解码、US 分隔串拆数组、驼峰化；
+ * [T3-P3] cited_by_count null→citedByCount 整键省略——detailById 同语义；
+ * [T3-P5] 返回面不含 lineage（DB 装配从无脉络 join——service 层组合挂键；
+ * Omit 非 PaperSummary：summary/detail 两 lineage 形状不同，宽标注会经
+ * detailById 的 spread 传染形状冲突） */
+export function toSummary(r: SummaryRow): Omit<PaperSummary, 'lineage'> {
   return {
     id: r.id, title: r.title,
     authors: JSON.parse(r.authors_json) as string[],

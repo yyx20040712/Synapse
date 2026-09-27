@@ -100,6 +100,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     repos: deps.repos,
     fileStore: deps.fileStore,
     sendEvent: deps.sendExportEvent ?? (() => undefined),
+    // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）
+    lineage: () => {
+      const g = deps.repos.lineage.listGraph()
+      return { nodes: g.nodes, edges: g.edges, lineTypes: deps.repos.lineage.getLineTypes() }
+    }
   })
   return {
     library: createLibraryService({ repos: deps.repos }),

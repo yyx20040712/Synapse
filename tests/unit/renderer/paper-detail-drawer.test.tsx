@@ -122,21 +122,21 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
 
   it('脉络命中：YEAR-MO 带脉络框括注+脉络行「年 · 月框 · N 条连线」link 色', async () => {
     await renderPanel(
-      makeDetail({ year: 2023, lineage: { year: 2023, month: 6, edgeCount: 3 } })
+      makeDetail({ year: 2023, lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
     )
     expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023 年 · 6 月）')
     expect(fldValue('脉络')).toBe('2023 年 · 6 月框 · 3 条连线')
     expect(fldRow('脉络')?.querySelector('.lib-fld-v.link')).not.toBeNull()
   })
 
-  it('脉络命中 month=null：「未定月框」措辞（P5 落位前月恒缺省）', async () => {
-    await renderPanel(makeDetail({ lineage: { year: 2023, month: null, edgeCount: 1 } }))
+  it('脉络命中 month=null：「未定月框」措辞（未定月=合法态）', async () => {
+    await renderPanel(makeDetail({ lineage: { year: 2023, month: null, edgeCount: 1, catalogNo: 1 } }))
     expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023 年 · 未定月）')
     expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 1 条连线')
   })
 
   it('组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注', async () => {
-    await renderPanel(makeDetail({ year: null, lineage: { year: 2023, month: null, edgeCount: 2 } }))
+    await renderPanel(makeDetail({ year: null, lineage: { year: 2023, month: null, edgeCount: 2, catalogNo: 1 } }))
     expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023 年 · 未定月）')
     expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 2 条连线')
   })

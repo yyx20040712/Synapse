@@ -26,6 +26,8 @@ function node(patch: Partial<LineageNode> = {}): LineageNode {
     year: 2018,
     x: null,
     y: null,
+    month: null,
+    slot: null,
     createdAt: 't',
     updatedAt: 't',
     ...patch

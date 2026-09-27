@@ -46,11 +46,13 @@ export interface CorpusManifest {
   errors?: Array<{ paperId: string; reason: string }>
 }
 
-/** 会话开始清空重建（迁移表 idle 行）：三子目录+manifest 本体+tmp 残留；
- *  目录根用户其他文件不动。三子目录即导出产物域，用户的任意放置视为可清理。 */
+/** 会话开始清空重建（迁移表 idle 行）：三子目录+manifest 本体+tmp 残留+第六件套
+ *  lineage.json 残留（T3-P5——产物域根件，与 manifest 同清理面）；目录根用户
+ *  其他文件不动。三子目录即导出产物域，用户的任意放置视为可清理。 */
 export async function cleanRebuild(dir: string): Promise<void> {
   await rm(join(dir, 'manifest.json'), { force: true })
   await rm(join(dir, MANIFEST_TMP), { force: true })
+  await rm(join(dir, 'lineage.json'), { force: true })
   for (const sub of ['corpus', 'fulltext', 'figures']) {
     await rm(join(dir, sub), { recursive: true, force: true })
     await mkdir(join(dir, sub), { recursive: true })
@@ -61,6 +63,12 @@ export async function cleanRebuild(dir: string): Promise<void> {
 /** corpus md 落盘（preparing 阶段——装配单源=corpus.assemble.ts，本件只写盘） */
 export async function writeCorpusMd(dir: string, paperId: string, md: string): Promise<void> {
   await writeFile(join(dir, 'corpus', `${paperId}.md`), md, 'utf8')
+}
+
+/** [T3-P5] lineage.json 终写（finalizing 阶段——装配单源=lineage.assemble.ts，
+ *  本件只写盘；utf8 无 BOM；确定性内容字节幂等） */
+export async function writeLineageJson(dir: string, json: string): Promise<void> {
+  await writeFile(join(dir, 'lineage.json'), json, 'utf8')
 }
 
 /** fulltext 终写（页界 \f）+返回内容 sha256（INV-17 幂等口径） */

@@ -2,13 +2,16 @@
  * [SR-SVC-01] library.service —— 文献库用例（工单：done）
  *
  * ── 行为层 ──
- * - 列表：透传 LibraryQuery 到 papers.searchSummaries
+ * - 列表：透传 LibraryQuery 到 papers.searchSummaries；[T3-P5] C5-a join
+ *   （listGraph 单次禁 N+1→lineageCatalogNos→当页入脉络行挂
+ *   lineage {year, month, catalogNo}，未入脉络整键省略）
  * - 详情：papers.detailById；不存在 → 抛 DomainError（code=NOT_FOUND，
  *   register 经 toAppError 识别 code 字段折叠为 AppError）；
  *   [T3-P3] lineage 关联装配（service 层组合——repo 单一职责不跨表）：
  *   lineage.repo 按 paper_id 查命中节点，命中则挂 lineage
- *   {year, month: null, edgeCount}（month 恒 null=P5 month 列落位后自新，
- *   见 final-design §3；edgeCount=双端计数），未命中整键省略
+ *   {year, month, edgeCount, catalogNo}（[T3-P5] month 真值透传+catalogNo
+ *   短号同源 INV-76——P3 时代「month 恒 null」已摘；edgeCount=双端计数），
+ *   未命中整键省略
  * - 元数据编辑：papers.updateMeta（patch 空对象不落库、直接返回现状，
  *   避免无意义地刷新 updated_at）；repo 返回 null = 文献不存在 → NOT_FOUND
  * - 集合列表：collections.list()
@@ -36,6 +39,7 @@
  * - 测试：tests/unit/services/library.service.test.ts（已锁定，repo 用内存桩）
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
+import { lineageCatalogNos } from '../../shared/models/lineage'
 import type { Repos } from '../db/repos'
 import { DomainError } from './shared/domain-error'
 
@@ -55,22 +59,49 @@ function paperNotFound(paperId: string): DomainError {
 export function createLibraryService(deps: { repos: Repos }): ApiHandlers['library'] {
   const { papers, collections, lineage } = deps.repos
 
+  /** [T3-P5] C5 脉络编号 map（lineageCatalogNos 单源——INV-76 呈现时确定性
+   *  1..N；与导出 lineage.json 同一计算禁双实现）。调用方自取 listGraph 单次 */
+  const catalogNosOf = (nodes: ReturnType<typeof lineage.listGraph>['nodes']): Map<string, number> =>
+    lineageCatalogNos(nodes)
+
   return {
-    // 查询已在上游（ipc register）过 zod 校验并补全默认值，此处原样透传
+    // 查询已在上游（ipc register）过 zod 校验并补全默认值，此处原样透传；
+    // [T3-P5] C5-a join：全图单读一次（禁 N+1）→catalogNo map→当页入脉络
+    // 行挂 lineage{year,month,catalogNo}，未入脉络整键省略（页外节点编号
+    // 仍占全序位——呈现序语义）
     async list(req) {
-      return papers.searchSummaries(req)
+      const page = papers.searchSummaries(req)
+      const g = lineage.listGraph()
+      const nos = catalogNosOf(g.nodes)
+      return {
+        ...page,
+        items: page.items.map((p) => {
+          const node = g.nodes.find((n) => n.paperId === p.id)
+          const catalogNo = node === undefined ? undefined : nos.get(node.id)
+          return node === undefined || catalogNo === undefined
+            ? p
+            : { ...p, lineage: { year: node.year, month: node.month, catalogNo } }
+        })
+      }
     },
 
     async detail(req) {
       const d = papers.detailById(req.paperId)
       if (d === null) throw paperNotFound(req.paperId)
-      // [T3-P3] 跨域关联行装配：命中脉络节点才挂 lineage（month 恒 null——
-      // P5 落位前固定缺省；计数锚在节点 id 上非 paperId）
+      // [T3-P3] 跨域关联行装配：命中脉络节点才挂 lineage；[T3-P5] month
+      // 真值透传（P3 时代恒 null 固定缺省已摘）+catalogNo 短号同源（D-I-3）
       const node = lineage.nodeByPaperId(req.paperId)
       if (node === null) return d
       return {
         ...d,
-        lineage: { year: node.year, month: null, edgeCount: lineage.edgeCountByNode(node.id) }
+        lineage: {
+          year: node.year,
+          month: node.month,
+          edgeCount: lineage.edgeCountByNode(node.id),
+          // 不可达断言：node 来自 nodeByPaperId，与 listGraph 同库同读，全图
+          // 编号必含——无 ?? 0 静默兜底（域外 #000 会把图不一致伪装成合法值）
+          catalogNo: catalogNosOf(lineage.listGraph().nodes).get(node.id)!
+        }
       }
     },
 

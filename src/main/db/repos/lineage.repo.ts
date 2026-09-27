@@ -92,105 +92,59 @@
 import { randomUUID } from 'node:crypto'
 import {
   dedupeLineageTags,
+  type LineTypeGroup,
   type LineageEdge,
   type LineageEdgeUpsert,
   type LineageNode,
   type LineageNodeUpsert
 } from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
+import { parseLineTypes, toEdge, toNode, type LineageEdgeRow, type LineageNodeRow } from './lineage.repo.rows'
 
 export interface LineageRepo {
-  /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新） */
+  /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新）。
+   *  [T3-P5] month/slot 列直写（归一在 service）；input.month/slot 缺省=NULL 落库 */
   upsertNode(input: LineageNodeUpsert): LineageNode
   /** 删节点；关联边由 DDL CASCADE 承担。返回删行数 */
   removeNode(id: string): number
-  /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service） */
+  /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service）。
+   *  [T3-P5] sub 列直写（input.sub 缺省=NULL=基础型默认样式） */
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
   removeEdge(id: string): number
-  /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态） */
+  /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态；
+   *  排序契约归 service 读面 lineageOrder——repo 不业务排序，主控预裁） */
   listGraph(): { nodes: LineageNode[]; edges: LineageEdge[] }
   /** [T3-P3] paper_id 命中节点只读查（detail 装配——应用层一文献一节点；
    *  paper_id 无唯一约束，命中多条时 created_at,rowid 首条兜底；未命中 null） */
   nodeByPaperId(paperId: string): LineageNode | null
   /** [T3-P3] 节点度数只读查（双端计数——from/to 任一端命中均计一条） */
   edgeCountByNode(nodeId: string): number
+  /** [T3-P5] 图级线型配置读（meta KV 'lineTypes' JSON+zod 校验+恒四组按
+   *  base 枚举序补齐——空配置=四空组；缺组补空组） */
+  getLineTypes(): LineTypeGroup[]
+  /** [T3-P5] 图级线型配置整体替换（单通道原子写——守卫在 service；updated_at
+   *  应用层刷新 ISO 值，弃 DDL DEFAULT） */
+  setLineTypes(groups: LineTypeGroup[]): void
   /** 替换式导入清面原语（先清边后清节点——导入器整批重灌，AI-01 deleteByPaper 对应物） */
   clearGraph(): void
 }
 
-/** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列 JSON 数组 TEXT，
- *  NULL=无标签（存量行零迁移兼容）） */
-interface LineageNodeRow {
-  id: string
-  paper_id: string | null
-  title: string
-  core_idea: string
-  year: number | null
-  x: number | null
-  y: number | null
-  tags: string | null
-  created_at: string
-  updated_at: string
-}
-
-/** lineage_edges 表行形状（列名原样，蛇形；kind=006 迁移列，旧行回填 'tree'） */
-interface LineageEdgeRow {
-  id: string
-  from_node: string
-  to_node: string
-  label: string
-  kind: string
-  created_at: string
-  updated_at: string
-}
-
-function toNode(row: LineageNodeRow): LineageNode {
-  return {
-    id: row.id,
-    paperId: row.paper_id,
-    title: row.title,
-    coreIdea: row.core_idea,
-    year: row.year,
-    x: row.x,
-    y: row.y,
-    // 007 列：NULL=无标签；JSON 数组直解（写入面单源 JSON.stringify——库内
-    // 非法 JSON 只能来自库外手改，读面原样上抛（禁静默吞错——graph error 态可见）
-    tags: row.tags === null ? null : (JSON.parse(row.tags) as string[]),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
-
-function toEdge(row: LineageEdgeRow): LineageEdge {
-  return {
-    id: row.id,
-    fromNode: row.from_node,
-    toNode: row.to_node,
-    label: row.label,
-    // F-LG15 三 kind 归一（enum 外库值归 tree——DB 无 CHECK，防线=zod 单源
-    // 写入口；此处仅读面归一）：ref/manual 原样，其余（含 006 迁移前语义）
-    // 归 tree
-    kind: row.kind === 'ref' ? 'ref' : row.kind === 'manual' ? 'manual' : 'tree',
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
-
 export function createLineageRepo(db: SqliteDb): LineageRepo {
   const upsertNodeStmt = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, created_at, updated_at)
-     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @now, @now)
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @month, @slot, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
        year = excluded.year, x = excluded.x, y = excluded.y, tags = excluded.tags,
-       updated_at = excluded.updated_at`
+       month = excluded.month, slot = excluded.slot, updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
-    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
-     VALUES (@id, @fromNode, @toNode, @label, @kind, @now, @now)
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        from_node = excluded.from_node, to_node = excluded.to_node,
-       label = excluded.label, kind = excluded.kind, updated_at = excluded.updated_at`
+       label = excluded.label, kind = excluded.kind, sub = excluded.sub,
+       updated_at = excluded.updated_at`
   )
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
@@ -207,6 +161,13 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   )
   const clearEdgesStmt = db.prepare(`DELETE FROM lineage_edges`)
   const clearNodesStmt = db.prepare(`DELETE FROM lineage_nodes`)
+  // [T3-P5] 图级线型配置 KV（010 迁移表——seed 空数组串）
+  const getMetaStmt = db.prepare(`SELECT value FROM lineage_graph_meta WHERE key = ?`)
+  const setLineTypesStmt = db.prepare(
+    `INSERT INTO lineage_graph_meta (key, value, updated_at)
+     VALUES ('lineTypes', @value, @now)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  )
 
   return {
     upsertNode(input: LineageNodeUpsert): LineageNode {
@@ -223,6 +184,9 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         // F-LG14 写边界单点：null/缺省=NULL（清空语义）；数组=去重后 JSON 落库
         // （dedupe 单源 shared/models——service upsert/导入/应用内增删全经此口）
         tags: input.tags == null ? null : JSON.stringify(dedupeLineageTags(input.tags)),
+        // T3-P5：缺省=NULL 落库（归一/守卫在 service——repo 薄）
+        month: input.month ?? null,
+        slot: input.slot ?? null,
         now
       })
       return toNode(nodeByIdStmt.get(id) as LineageNodeRow)
@@ -241,6 +205,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         toNode: input.toNode,
         label: input.label,
         kind: input.kind ?? 'tree',
+        sub: input.sub ?? null,
         now
       })
       return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)
@@ -265,6 +230,16 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
     edgeCountByNode(nodeId: string): number {
       const r = edgeCountByNodeStmt.get(nodeId, nodeId) as { n: number }
       return r.n
+    },
+
+    getLineTypes(): LineTypeGroup[] {
+      const row = getMetaStmt.get('lineTypes') as { value: string } | undefined
+      // 恒四组补齐在 parseLineTypes（rows 件单源——zod 校验+base 枚举序缺组补空）
+      return parseLineTypes(row === undefined ? '[]' : row.value)
+    },
+
+    setLineTypes(groups: LineTypeGroup[]): void {
+      setLineTypesStmt.run({ value: JSON.stringify(groups), now: new Date().toISOString() })
     },
 
     clearGraph(): void {

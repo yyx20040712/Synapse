@@ -132,6 +132,12 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   const status = DR_STATUS[detail.enrichStatus]
+  // T3-P5 D-I-3 短号同源：入脉络→「#」+三位零填充 catalogNo（与列表序号列/
+  // 导出 lineage.json 同一编号——INV-76）；未入脉络→id 前 8 位短号现状零动
+  const idBadge =
+    detail.lineage !== undefined
+      ? `#${String(detail.lineage.catalogNo).padStart(3, '0')}`
+      : shortId(detail.id)
   return (
     <div className="lib-dr">
       {error !== null && (
@@ -153,7 +159,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       )}
       <div className="lib-dr-head">
         <div className="lib-dr-id">
-          <span>{shortId(detail.id)}</span>
+          <span>{idBadge}</span>
           <span className={status.cls}>{`● ${status.text}`}</span>
         </div>
         <h2 className="lib-dr-title">{detail.title}</h2>

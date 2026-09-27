@@ -44,7 +44,8 @@ function makeDetail(): PaperDetail {
   }
 }
 
-/** 桩 repos：detail 固定回体+lineage 桩（T3-P3 组合通道） */
+/** 桩 repos：detail 固定回体+lineage 桩（T3-P3 组合通道；T3-P5 增 listGraph
+ *  编号 join 面——catalogNo 按全图 nodes 计算） */
 function stubRepos(lineage: unknown): Repos {
   const detail = makeDetail()
   return {
@@ -60,7 +61,7 @@ function stubRepos(lineage: unknown): Repos {
 }
 
 describe('T3-P3 library.service detail——lineage 组合装配（service 级）', () => {
-  it('命中：paper_id 节点透出 lineage={year, month 恒 null, edgeCount=双端计数}', async () => {
+  it('命中：paper_id 节点透出 lineage={year, month 真值, edgeCount=双端计数, catalogNo}', async () => {
     const node: LineageNode = {
       id: 'n-1',
       paperId: 'p-1',
@@ -70,16 +71,19 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       x: null,
       y: null,
       tags: null,
+      month: null,
+      slot: null,
       createdAt: 't',
       updatedAt: 't'
     }
     const nodeByPaperId = vi.fn(() => node)
     const edgeCountByNode = vi.fn(() => 3)
+    const listGraph = vi.fn(() => ({ nodes: [node], edges: [] }))
     const svc = createLibraryService({
-      repos: stubRepos({ nodeByPaperId, edgeCountByNode })
+      repos: stubRepos({ nodeByPaperId, edgeCountByNode, listGraph })
     })
     const d = await svc.detail({ paperId: 'p-1' })
-    expect(d.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })
+    expect(d.lineage).toEqual({ year: 2023, month: null, edgeCount: 3, catalogNo: 1 })
     expect(nodeByPaperId).toHaveBeenCalledWith('p-1')
     // 计数锚定在命中节点 id 上（非 paperId）
     expect(edgeCountByNode).toHaveBeenCalledWith('n-1')
@@ -87,13 +91,31 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
 
   it('未命中：无 paper_id 节点 → lineage 整键省略（"lineage" 不在对象上）', async () => {
     const svc = createLibraryService({
-      repos: stubRepos({ nodeByPaperId: () => null, edgeCountByNode: () => 0 })
+      repos: stubRepos({
+        nodeByPaperId: () => null,
+        edgeCountByNode: () => 0,
+        listGraph: () => ({ nodes: [], edges: [] })
+      })
     })
     const d = await svc.detail({ paperId: 'p-1' })
     expect('lineage' in d).toBe(false)
   })
 
-  it('month 恒 null（P5 month 列落位前固定缺省——非节点数据透传）', async () => {
+  it('month 真值透传（T3-P5 摘「恒 null」注释——节点数据直达）+全序编号 catalogNo', async () => {
+    const first: LineageNode = {
+      id: 'n-0',
+      paperId: 'p-9',
+      title: '前驱',
+      coreIdea: '',
+      year: 2022,
+      x: null,
+      y: null,
+      tags: null,
+      month: 1,
+      slot: 1,
+      createdAt: 't',
+      updatedAt: 't'
+    }
     const node: LineageNode = {
       id: 'n-2',
       paperId: 'p-1',
@@ -103,15 +125,22 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       x: null,
       y: null,
       tags: null,
+      month: 6,
+      slot: null,
       createdAt: 't',
       updatedAt: 't'
     }
     const svc = createLibraryService({
-      repos: stubRepos({ nodeByPaperId: () => node, edgeCountByNode: () => 0 })
+      repos: stubRepos({
+        nodeByPaperId: () => node,
+        edgeCountByNode: () => 0,
+        listGraph: () => ({ nodes: [first, node], edges: [] })
+      })
     })
     const d = await svc.detail({ paperId: 'p-1' })
-    expect(d.lineage?.month).toBeNull()
+    expect(d.lineage?.month).toBe(6)
     expect(d.lineage?.year).toBeNull()
+    expect(d.lineage?.catalogNo).toBe(2) // 2022 前驱在前，null 年组末
   })
 })
 
@@ -143,18 +172,22 @@ describe('T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通
     expect(() => paperDetailSchema.parse(legacy)).not.toThrow()
     const withLineage = paperDetailSchema.parse({
       ...legacy,
-      lineage: { year: 2023, month: null, edgeCount: 3 }
+      lineage: { year: 2023, month: null, edgeCount: 3, catalogNo: 7 }
     })
-    expect(withLineage.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })
+    expect(withLineage.lineage).toEqual({ year: 2023, month: null, edgeCount: 3, catalogNo: 7 })
+    // 缺 catalogNo（T3-P5 必填键）拒
+    expect(() =>
+      paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, month: null, edgeCount: 3 } })
+    ).toThrow()
     // 缺 month（必填键）拒
     expect(() =>
-      paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, edgeCount: 3 } })
+      paperDetailSchema.parse({ ...legacy, lineage: { year: 2023, edgeCount: 3, catalogNo: 7 } })
     ).toThrow()
     // 未知子键拒（门一 d1-W7 回炉补——strict() 真断言，非仅缺键）
     expect(() =>
       paperDetailSchema.parse({
         ...legacy,
-        lineage: { year: 2023, month: null, edgeCount: 3, extra: 1 }
+        lineage: { year: 2023, month: null, edgeCount: 3, catalogNo: 7, extra: 1 }
       })
     ).toThrow()
   })

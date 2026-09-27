@@ -23,13 +23,15 @@ function node(
     year: patch.year ?? null,
     x: patch.x ?? null,
     y: patch.y ?? null,
+    month: null,
+    slot: null,
     createdAt: 't',
     updatedAt: 't'
   }
 }
 
 function edge(from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
-  return { id: `e-${from}-${to}-${kind}`, fromNode: from, toNode: to, label: '', kind, createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}-${kind}`, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
 }
 
 afterEach(() => {
