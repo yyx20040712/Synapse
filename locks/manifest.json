@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-26T20:39:10.2855432Z",
+    "generatedAt":  "2026-09-27T01:32:39.2708477Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -39,7 +39,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "9d5f7d674a277e58820cdbe7b281ccc85e3e550ab1b627042687da663b91a770"
+                      "sha256":  "af2c1a625471d70a9e10d9f63043c4ab1bed7f47dbfc141f7fd4363bfcef94fe"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -944,6 +944,10 @@
                   {
                       "path":  "tests/unit/shared/venue-tier.test.ts",
                       "sha256":  "91e0029f97dfea447577a5787c9ab5aadd26d4cb88af398709111b72576ada47"
+                  },
+                  {
+                      "path":  "tests/unit/tools/check-test-surface.test.ts",
+                      "sha256":  "1cfd4b09f83221680032abe3b6cc892582a081580e7c3d4252c276bf0ebee8fc"
                   },
                   {
                       "path":  "tests/unit/tools/companion.test.ts",

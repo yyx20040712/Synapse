@@ -14,7 +14,12 @@
  *
  * exit code：0=通过（delta 绿）/ 1=契约违背或 UNRESOLVABLE / 2=基线缺失或损坏
  * （硬阻断禁自愈——显式执行 `npm run test-surface:baseline` 并全量审计 diff）/
- * 3=豁免清单 schema 非法。baseline 子命令仅显式调用（本脚本无任何红了重写分支）。
+ * 3=豁免清单 schema 非法 / 4=baseline 再生成对账失败（拒写——基线保持原内容；
+ * FILE_MISSING/ONLY_FORBIDDEN 类无豁免通道，人工裁决后删基线重跑=首装语义）。
+ * baseline 子命令仅显式调用（本脚本无任何红了重写分支）。
+ * [F-TESTREF-S2] baseline 再生成对账：写盘前先跑两轴（轴一=judge(old,cur)
+ * 退役面漏登豁免拦截；轴二=台账−快照差集，新增条目须本轮真实命中）——豁免快照
+ * （exemptionsSnapshot）随盘落；check 子命令判定语义零变。
  *
  * 用例闸=指纹闸蕴含（caseCount 单调不减是 ⊇ 的推论，delta 汇总行显式打印计数）。
  * [test-refactor][locked-change]
@@ -46,7 +51,16 @@ function loadBaseline(root) {
     if (fileCount < 1 || !parsed.stats || typeof parsed.stats !== 'object' || parsed.stats.fileCount !== fileCount || !(parsed.stats.caseCount >= 1)) {
       return { corrupt: true }
     }
-    return { files: parsed.files, stats: parsed.stats }
+    // exemptionsSnapshot（F-TESTREF-S2）两级校验（R1）：缺失=迁移首启；存在但非
+    // Array/元素非合法对象（null/非对象/缺 file）=快照损坏归 corrupt 语义（跳两轴修复
+    // 重写）——否则 null 元素在身份键取 e.file 会未捕获 TypeError 撞 UNRESOLVABLE 契约码 1
+    // （k1-N1 信任边界：元素仅校验到 file 键字符串级——正常路径元素源自本脚本
+    // structuredClone(已过 loadExemptions schema 校验的台账)，深校验冗余；手编注入
+    // 的畸形匹配键走 JSON.stringify 序列化（parse 产物无循环引用，无 throw 面））
+    const snap = parsed.exemptionsSnapshot
+    const snapOk = Array.isArray(snap) && snap.every((el) => el !== null && typeof el === 'object' && !Array.isArray(el) && typeof el.file === 'string')
+    if (snap !== undefined && !snapOk) return { files: parsed.files, stats: parsed.stats, snapshot: undefined, snapshotCorrupt: true }
+    return { files: parsed.files, stats: parsed.stats, snapshot: snapOk ? snap : undefined }
   } catch {
     return { corrupt: true }
   }
@@ -101,13 +115,48 @@ function fmtRelLine(file, line) {
   return line === undefined ? file : `${file}:${line}`
 }
 
-/** 主判定：返回 { failures:[], deltas:[], exemptHits:Set, statsLine }。
+/** 豁免条目身份键（F-TESTREF-S2 轴二多重集差）：file+匹配键（caseTitle/
+ * assertionText/skipSiteText 存在者）。reason/rulingLink=元数据非身份——注释性修订
+ * （改 reason/裁决链）同身份零 delta 放行；匹配目标变更=身份变→进 added 受拦 */
+function exemptionEntryKey(e) {
+  const m = { file: e.file }
+  if (e.caseTitle !== undefined) m.caseTitle = e.caseTitle
+  if (e.assertionText !== undefined) m.assertionText = e.assertionText
+  if (e.skipSiteText !== undefined) m.skipSiteText = e.skipSiteText
+  return JSON.stringify(Object.keys(m).sort().map((k) => [k, m[k]]))
+}
+
+/** 豁免多重集差：added=台账−快照（多登面）、removed=快照−台账（孤儿豁免，仅打印不拦） */
+function exemptionDiff(entries, snapshot) {
+  const snapC = new Map()
+  for (const s of snapshot) { const k = exemptionEntryKey(s); snapC.set(k, (snapC.get(k) ?? 0) + 1) }
+  const curC = new Map()
+  for (const e of entries) { const k = exemptionEntryKey(e); curC.set(k, (curC.get(k) ?? 0) + 1) }
+  const added = []
+  const removed = []
+  for (const e of entries) { const k = exemptionEntryKey(e); const n = snapC.get(k) ?? 0; if (n > 0) snapC.set(k, n - 1); else added.push(e) }
+  for (const s of snapshot) { const k = exemptionEntryKey(s); const n = curC.get(k) ?? 0; if (n > 0) curC.set(k, n - 1); else removed.push(s) }
+  return { added, removed }
+}
+
+/** 报告摘要（超长截断） */
+function summarize(text, max) {
+  return text.length > max ? `${text.slice(0, max)}…` : text
+}
+
+/** 主判定：返回 { failures:[], deltas:[], exemptHits:Set, statsLine, retiringFaces }。
  * exemptHitKeys 存**豁免条目对象**（Kimi 补审 N-1：按条目身份计——同条目多次
- * 命中只计一、一条跨 kind 命中不虚计；stale=零命中条目数）。 */
+ * 命中只计一、一条跨 kind 命中不虚计；stale=零命中条目数）。retiringFaces
+ * （F-TESTREF-S2 审计面）=豁免命中面逐条留档——仅报告用，判定语义零变。 */
 function judge(baseFiles, cur) {
   const failures = []
   const deltas = []
   const exemptHitKeys = new Set()
+  const retiringFaces = []
+  const recordFace = (kind, path, line, text, hit) => {
+    for (const h of hit) exemptHitKeys.add(h)
+    retiringFaces.push({ kind, path, line, text, entries: hit })
+  }
   const paths = [...new Set([...Object.keys(baseFiles), ...cur.keys()])].sort()
   let baseCaseTotal = 0
   let curCaseTotal = 0
@@ -132,16 +181,12 @@ function judge(baseFiles, cur) {
       curSkipTotal += c.conditionalSkipSites.length + c.hardSkipSites.length
       for (const cs of c.cases) curAssertTotal += cs.assertions.length
       // 新文件体内 skip 双桶亦=「新增」→红（B1 语义覆盖新文件场景——回炉轮
-      // 补面，保守向申报；豁免通道同款）
-      for (const text of c.conditionalSkipSites) {
-        if (exemptionHits(loadExemptionsCache, 'skipsite', path, { text }).length === 0) {
-          failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
-        }
-      }
-      for (const text of c.hardSkipSites) {
-        if (exemptionHits(loadExemptionsCache, 'skipsite', path, { text }).length === 0) {
-          failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
-        }
+      // 补面；豁免命中走 recordFace[F-TESTREF-S2 回炉：与两态分支同款——原三处
+      // 命中后零记录致轴二对新增豁免判零命中，拦死合规再生成]）
+      for (const text of [...c.conditionalSkipSites, ...c.hardSkipSites]) {
+        const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
+        if (hit.length > 0) recordFace('SKIPSITE_ADDED', path, undefined, text, hit)
+        else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
       }
       for (const cs of c.cases) {
         // Kimi 补审 B-1：新文件分支缺 only 判定=逃逸通道（新文件 it.only 走
@@ -150,8 +195,10 @@ function judge(baseFiles, cur) {
           failures.push({ kind: 'ONLY_FORBIDDEN', path, line: cs.line, text: cs.title })
           continue
         }
-        if (cs.markers.includes('skip') && exemptionHits(loadExemptionsCache, 'case', path, cs).length === 0) {
-          failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
+        if (cs.markers.includes('skip')) {
+          const hit = exemptionHits(loadExemptionsCache, 'case', path, cs)
+          if (hit.length > 0) recordFace('SKIP_ADDED', path, cs.line, cs.title, hit)
+          else failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
         } else {
           deltas.push(`NEW ${path} › ${cs.title} (line ${cs.line}, ${cs.assertions.length} assertions)`)
         }
@@ -184,7 +231,7 @@ function judge(baseFiles, cur) {
       const curN = cCond.get(text) ?? 0
       for (let i = 0; i < n - curN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
+        if (hit.length > 0) recordFace('SKIPSITE_REMOVED', path, undefined, text, hit)
         else failures.push({ kind: 'SKIPSITE_REMOVED', path, line: undefined, text })
       }
     }
@@ -192,7 +239,7 @@ function judge(baseFiles, cur) {
       const baseN = bCond.get(text) ?? 0
       for (let i = 0; i < n - baseN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
+        if (hit.length > 0) recordFace('SKIPSITE_ADDED', path, undefined, text, hit)
         else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
       }
     }
@@ -205,7 +252,7 @@ function judge(baseFiles, cur) {
       const curN = cHard.get(text) ?? 0
       for (let i = 0; i < n - curN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
+        if (hit.length > 0) recordFace('HARDSKIP_REMOVED', path, undefined, text, hit)
         else deltas.push(`ACTIVATED ${path} 「${text}」（hardSkipSite 删除）`)
       }
     }
@@ -213,7 +260,7 @@ function judge(baseFiles, cur) {
       const baseN = bHard.get(text) ?? 0
       for (let i = 0; i < n - baseN; i++) {
         const hit = exemptionHits(loadExemptionsCache, 'skipsite', path, { text })
-        if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
+        if (hit.length > 0) recordFace('SKIPSITE_ADDED', path, undefined, text, hit)
         else failures.push({ kind: 'SKIPSITE_ADDED', path, line: undefined, text })
       }
     }
@@ -251,7 +298,7 @@ function judge(baseFiles, cur) {
         // 基线签名无配对 → MISSING_CASE（先试豁免，再 MISSING_ASSERT 细化）
         const hit = exemptionHits(loadExemptionsCache, 'case', path, bcs)
         if (hit.length > 0) {
-          for (const h of hit) exemptHitKeys.add(h)
+          recordFace('MISSING_CASE', path, bcs.line, bcs.title, hit)
           continue
         }
         // MISSING_ASSERT 细化：当前同 key 存在 markers 同、断言为其子集的签名
@@ -269,7 +316,7 @@ function judge(baseFiles, cur) {
           if (missing.length > 0 && missing.length < bcs.assertions.length) {
             for (const a of missing) {
               const ahit = exemptionHits(loadExemptionsCache, 'assert', path, { assertionText: a, title: bcs.title })
-              if (ahit.length > 0) { for (const h of ahit) exemptHitKeys.add(h) }
+              if (ahit.length > 0) recordFace('MISSING_ASSERT', path, bcs.line, a, ahit)
               else failures.push({ kind: 'MISSING_ASSERT', path, line: bcs.line, text: a })
             }
             detailed = true
@@ -305,7 +352,7 @@ function judge(baseFiles, cur) {
         }
         if (cs.markers.includes('skip')) {
           const hit = exemptionHits(loadExemptionsCache, 'case', path, cs)
-          if (hit.length > 0) { for (const h of hit) exemptHitKeys.add(h) }
+          if (hit.length > 0) recordFace('SKIP_ADDED', path, cs.line, cs.title, hit)
           else failures.push({ kind: 'SKIP_ADDED', path, line: cs.line, text: cs.title })
           continue
         }
@@ -341,12 +388,12 @@ function judge(baseFiles, cur) {
 
   const statsLine = `files: ${Object.keys(baseFiles).length} base / ${cur.size} cur | cases: ${baseCaseTotal} base / ${curCaseTotal} cur` +
     ` | assertions: ${baseAssertTotal} base / ${curAssertTotal} cur | skipSites: ${baseSkipTotal} base / ${curSkipTotal} cur`
-  return { failures, deltas, exemptHitKeys, statsLine }
+  return { failures, deltas, exemptHitKeys, statsLine, retiringFaces }
 }
 
 let loadExemptionsCache = { entries: [] }
 
-function serializeBaseline(surfaces, extraStats) {
+function serializeBaseline(surfaces, extraStats, exemptionEntries = []) {
   const files = {}
   for (const [p, s] of [...surfaces.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     files[p] = {
@@ -363,7 +410,8 @@ function serializeBaseline(surfaces, extraStats) {
       }))
     }
   }
-  return JSON.stringify({ version: 1, files, stats: extraStats }, null, 2) + '\n'
+  // exemptionsSnapshot（F-TESTREF-S2）=当前豁免台账深拷贝（下轮再生成的轴二对账基准）
+  return JSON.stringify({ version: 1, files, stats: extraStats, exemptionsSnapshot: structuredClone(exemptionEntries) }, null, 2) + '\n'
 }
 
 function cmdStats(root) {
@@ -381,11 +429,57 @@ function cmdBaseline(root) {
   // W5（门一回炉）：UNRESOLVABLE 非空先阻断后写盘——禁写脏基线（surfaces 缺
   // 失该用例却落盘，后续 check 复用即静默脏基线）
   if (unresolvable.length > 0) die(1, `[test-surface] 基线生成期含 ${unresolvable.length} 处不可静态判定（exit 1，基线未写入——先改写为静态形态或裁决豁免）`)
-  writeFileSync(join(root, BASELINE_PATH), serializeBaseline(surfaces, stats), 'utf8')
-  console.log(`[test-surface] baseline 已写入 ${BASELINE_PATH}`)
-  console.log(`[test-surface] stats ${JSON.stringify(stats)}`)
+  // [F-TESTREF-S2] 再生成对账（先于写盘）：旧基线缺失/损坏=两轴跳过直接写（首装/
+  // 修复语义）；豁免快照损坏=轴一照跑（本体 files 可比对，漏登仍拒）+轴二跳（无快
+  // 照基准）+clean 后重写即修复；合法=轴一 judge(old,cur) 漏登拦截+轴二多登拦截，
+  // 任一轴失败 exit 4 拒写（基线保持原内容）——人肉对账升机检（T3-P2 实证立票）
+  // （主控加固批 d1-W4：快照单轴坏不得连带放弃轴一拒写面——真实漂移禁止被重写吞没）
+  loadExemptionsCache = loadExemptions(root)
+  const bl = loadBaseline(root)
+  const writeOut = () => {
+    writeFileSync(join(root, BASELINE_PATH), serializeBaseline(surfaces, stats, loadExemptionsCache.entries), 'utf8')
+    console.log(`[test-surface] baseline 已写入 ${BASELINE_PATH}（exemptionsSnapshot=${loadExemptionsCache.entries.length} 条）`)
+    console.log(`[test-surface] stats ${JSON.stringify(stats)}`)
+  }
+  if (bl.missing || bl.corrupt) {
+    console.log(`[test-surface] baseline 对账跳过：旧基线${bl.missing ? '缺失' : '损坏'}——${bl.missing ? '首装' : '修复'}语义，两轴均不跑`)
+    writeOut()
+    return
+  }
+  const { failures, retiringFaces, exemptHitKeys } = judge(bl.files, surfaces)
+  // 轴二基准：无快照字段（迁移首启）或快照损坏（loadBaseline 置 snapshot=undefined
+  // +snapshotCorrupt 标记）=轴二跳过，本轮写盘即落/修复快照
+  const skipAxis2 = bl.snapshot === undefined
+  const diff = skipAxis2 ? { added: [], removed: [] } : exemptionDiff(loadExemptionsCache.entries, bl.snapshot)
+  if (bl.snapshotCorrupt) console.error('[test-surface] baseline 对账：豁免快照损坏（形态非法）——轴二本轮跳过，轴一照跑；clean 后重写即修复快照')
+  else if (skipAxis2) console.log('[test-surface] baseline 对账：豁免快照初始化（旧基线无 exemptionsSnapshot 字段——轴二本轮跳过）')
+  for (const face of retiringFaces) {
+    console.log(`[test-surface] RETIRING ${face.kind} ${fmtRelLine(face.path, face.line)} 「${face.text}」← 豁免：${summarize(face.entries[0].reason, 60)}`)
+  }
+  let addedHit = 0
+  const zeroHit = []
+  for (const e of diff.added) {
+    const n = retiringFaces.filter((face) => face.entries.includes(e)).length
+    if (n > 0) addedHit++
+    else zeroHit.push(e)
+    console.log(`[test-surface] ADDED 豁免 ${e.file}「${summarize(e.caseTitle ?? e.assertionText ?? e.skipSiteText ?? '', 40)}」本轮命中 ${n} 处`)
+  }
+  for (const e of diff.removed) console.log(`[test-surface] REMOVED 豁免（孤儿——快照有台账无，不拦）${e.file}「${summarize(e.caseTitle ?? e.assertionText ?? e.skipSiteText ?? '', 40)}」`)
+  if (failures.length > 0 || zeroHit.length > 0) {
+    for (const f of failures) console.error(`[test-surface] FAIL ${f.kind} ${fmtRelLine(f.path, f.line)} 「${f.text}」`)
+    // 无豁免通道的 failure kind 全集=FILE_MISSING/TICKETS_MISSING/ONLY_FORBIDDEN
+    // （主控加固批 k1-W1：judge 内三者均不查豁免直落 failures——逐 kind 对照豁免
+    // 调用点核验；其余 kind 均有 exemptionHits 通道，登记指引有效）
+    const hardKinds = failures.filter((f) => f.kind === 'FILE_MISSING' || f.kind === 'TICKETS_MISSING' || f.kind === 'ONLY_FORBIDDEN').length
+    die(4, `[test-surface] baseline 对账失败（exit 4 拒写，基线保持原内容）：轴一漏登 ${failures.length} 处 + 轴二多登（零命中）${zeroHit.length} 处——退役/收紧面先登 scripts/test-surface.exemptions.json（reason+rulingLink），多登条目须本轮真实命中${hardKinds > 0 ? `；含删整测试文件/工单号消失/only 用例类契约违背 ${hardKinds} 处——无豁免通道，须人工裁决后删除旧基线文件显式重跑 baseline（首装语义重建）` : ''}`)
+  }
+  console.log(`[test-surface] baseline 对账通过：retiring ${retiringFaces.length}（豁免命中 ${exemptHitKeys.size}）added ${diff.added.length}（命中 ${addedHit}）removed ${diff.removed.length}`)
+  writeOut()
 }
 
+// cmdCheck（F-TESTREF-S2 隔离声明 k1-N3/d1-W2）：check 子命令只消费 loadBaseline
+// 的 files/stats——不读 snapshot/snapshotCorrupt 字段（豁免快照为 baseline 专用轴二
+// 基准；「本体合法仅快照坏」在 check 侧=完全正常通过，修复入口=显式 baseline 再生成）
 function cmdCheck(root) {
   const bl = loadBaseline(root)
   if (bl.missing || bl.corrupt) {
