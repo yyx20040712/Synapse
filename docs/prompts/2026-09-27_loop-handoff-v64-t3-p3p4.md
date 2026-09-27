@@ -37,11 +37,12 @@
 
 ## §3 悬挂事项（用户知悉/裁决口）
 
-- **【P2 级·推送期风险（裁决部独立发现）】** ci.yml 范围闸 TR_RE 白名单无 ^src/**：带 [test-refactor] 尾注且 diff 含 src 的提交推送必红。本地 main 领先 origin/main **284 笔**（origin=12f1a6f0 八月末），T3-P1/P2/P3 收口提交均双尾注+src diff——**下次 push 前须预扫+对存量违规笔 reword 去 [test-refactor]（rebase 改史需用户知悉裁决）**；T3-P4 已按裁 #25 用单尾注。
-- 收口轮视觉细调备案（用户「后面细调」在案）：暗族 accent-ink 对比度 2.6:1（mockup 既定值）/扫描页 PDF invert 纯黑/textarea 逐族值差/tab·aside 底缘内缩量/PDF 图片负片化——细项全列 t3p4-gate-reports/t3p4-batch-record.md C5 节。
+- ~~【P2 级·推送期风险】~~ **【已销项 2026-09-27 用户裁决「reword 后立即推送」】**：预扫实数=286 笔未推送/24 笔带 [test-refactor]/20 笔超白名单（不止 T3 三笔——贯穿测试重构战役期）；处置=备份分支 backup/pre-reword-2026-09-27+filter-branch msg-only 重写摘除 20 笔尾注（树零差实证 git diff backup..HEAD 为空；4 笔纯测试重构战役提交尾注保留；286 笔中 102 笔哈希重写）→**已推送 12f1a6f00d2..07ab25d9a6b**。**旧→新哈希映射档=仓外 reword-hash-mapping-2026-09-27.txt（票面/交接书旧哈希引用以该档换算）**；本地 backup 分支保留改前链。
+- 夜间扫描页 PDF invert 纯黑（#000 vs #242830）——**用户裁决 2026-09-27：挂收口轮细调**（真实使用带截图；contrast 软化方案在档）。
+- 收口轮视觉细调备案（用户「后面细调」在案）：暗族 accent-ink 对比度 2.6:1（mockup 既定值）/textarea 逐族值差/tab·aside 底缘内缩量/PDF 图片负片化——细项全列 t3p4-gate-reports/t3p4-batch-record.md C5 节。
 - 版本号显示位=用户未裁 open（T3-U1 票面）。
 - P3 档次列：VENUE_TIER_MAP 种子 5 条，真实库多数「—」——数据扩充属 D3-A 受锁常量修订制（用户拍板口径）。
 
 ## §4 开工三态指针
 
-HEAD=34aef60aa3f（P4 收口）。A 干净树=直接接 §2 首项；B 脏树=按票面补完门审；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。
+**HEAD=本档提交（reword 后链上；reword 前 P4 收口=映射档换算位）**。A 干净树=直接接 §2 首项；B 脏树=按票面补完门审；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**用户裁决 2026-09-27 三项在案：①推送期风险=reword+立即推送（已执行）；②夜间扫描页=挂收口轮细调；③本批后收段——下场按 §2 接续（F-TESTREF-S2 先行建议在案）。**
