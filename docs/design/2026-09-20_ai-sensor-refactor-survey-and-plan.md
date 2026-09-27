@@ -218,3 +218,31 @@ provider 抽象可通吃**，切换成本=baseURL+key+模型名。
 - 记忆框架：Letta「Benchmarking AI Agent Memory: Is a Filesystem All You Need?」
   （2025-08）；mem0 论文与 benchmark 页；vectorize.io「Mem0 vs Letta」；
   evermind.ai 对 Letta 自编辑记忆可靠性的批评。
+
+## 9. 与 T3-P5 脉络数据层的解耦声明（2026-09-27 立票前呈报）
+
+> 背景：T3 三主题战役 P5「脉络数据层」（2026-09-26_theme-trio-final-design.md §6 票 5）
+> 与本档（D1-D8 未裁、未立项）在 lineage 侧存在交叠。本节为立票前显式边界声明
+> （交接书 v64 §2.2.b 前置件），双方互不吞并。
+
+**归 P5（theme-trio 战役，先行实施）**：lineage v2 模型增量（Node+month /
+Edge+sub / Graph+lineTypes）、迁移 010、IPC/service 扩展、corpus 导出扩展
+lineage.json（AI 可读规格：确定性键序/snake_case/语义字段/schema 版本）、
+catalog_no 与 month 两处文献库消费升级（C5）。P5 零触碰 ai_sensor 域
+（7 通道/ai-notes-* 服务/AI 分节组件的存废不在其票面）。
+
+**归 ai-sensor 域（本档，D1-D8 裁决后立项）**：直连 LLM API 基础设施、评估
+业务（A 笔记评估+B 脉络分析）、§5 删除面与迁移清单全部内容。
+
+**三个交叠面的归属裁定**：
+
+1. **lineage.json 导出 ↔ B 脉络分析输入装配**：P5 定义的导出面即本档 §3.1-B
+   评估的输入预置契约（AI 易读规格由此单源）；ai-sensor 实施时直接消费该面
+   （文件或 repos 只读查询），不重定义装配 schema，不反向约束 P5 字段。
+2. **LineageSideAiNotes 组件（§1.2，挂 LineageSidePanel）**：T3-P6+ 渲染
+   重设计（时间线/检查面板）中该组件**保活迁移**，不做删除裁决——其去留
+   属本档 D4（ai_notes 历史数据）处置面；T3 各票检查面板的「AI 评估笔记
+   （后置章）」为占位保活，不预实现任何评估功能。
+3. **month/sub/lineTypes 新字段**：归 P5 数据层；本档 B 评估的输入描述
+   （nodes core_idea/edges kind/tags）在 P5 落地后自然扩展（装配基线=P5 后
+   schema），本档 §3.1 文本不随 P5 改写，实施票内对齐。
