@@ -314,6 +314,13 @@ AGENTS.md「环境事实」单源，此处不复制。
   `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题弹层 `app/WsRailPopover.tsx`
   A10 联动+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props 注入）；
   F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器侧栏消费）。
+  [T3-U1] 状态条自动保存槽=App 组合根 worst-of 聚合（tabDirty[保存失败残留
+  语义]∪lineage saveStatus→已保存/保存中…/保存失败三态真文本，null 无可写面
+  信号槽省略；失败挂 .sig=--signal 色）注入 StatusBar；FOUC 首帧兜底链=
+  bootstrap `readThemeSync`（settings.service 同步读，system→light 迁移同链）
+  →main-window loadURL 拼 query/loadFile {query}→`src/renderer/public/theme-boot.js`
+  同步外链脚本（CSP script-src self）首帧写 dataset.theme，App effect 仍=运行时
+  单点真源（两者值一致——INV-71 扩注；载入在途窗兜底=启动注入值）。
 - [T3-P4] 阅读器视图（第二视图）随主题三族化：页纸底=--paper 单源（PageBox
   页盒底+canvas 承底层双位消费——light 白桥接/dark 暗纸+canvas filter 反位
   [案 A：--canvas-filter 三族+缩略图 canvas 同规则]/sepia 奶油纸，INV-74）；

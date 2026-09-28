@@ -78,6 +78,35 @@ export function useTabDirtyAggregate(): boolean {
   return annoAny || tabIds.some((id) => noteByPaper[id]?.pending === true)
 }
 
+/** [T3-U1] 已打开 tab 数（响应式）——状态条自动保存槽的「可写面在场」判定
+ *  源（App 组合根聚合注入 StatusBar；与 useTabDirtyAggregate 同源订阅 order，
+ *  App 经本 reader 域 facade 取 tab 面，不直引 reader.store） */
+export function useTabOpenCount(): number {
+  return useReaderStore((s) => s.order.length)
+}
+
+/**
+ * [T3-U1 回炉 R2/W3 终裁] tab dirty 双源分档（响应式）——状态条自动保存槽
+ * 的语义拆分源（App 组合根消费；沿 useTabDirtyAggregate 同源订阅与同款
+ * notes 面扫描限定=reader.store 的 tab 键集内）：
+ * - annoDirty：annotations 面 api 失败残留（TabState.dirty——真失败）→error 档
+ * - notePending：notes 面 pendingEdit 镜像（edit 置 true/save 成功清/失败不动
+ *   =在途+失败混合，打字防抖窗常 true）→saving 档「保存中…」=未落库统称
+ * ——useTabDirtyAggregate（布尔或聚合，quitDirty/TabBar 消费面）零触碰。
+ */
+export interface TabDirtySignalPair {
+  annoDirty: boolean
+  notePending: boolean
+}
+
+export function useTabDirtySignals(): TabDirtySignalPair {
+  const tabIds = useReaderStore((s) => s.order)
+  const noteByPaper = useNotesStore((s) => s.noteByPaper)
+  const annoDirty = useReaderStore((s) => s.order.some((id) => s.tabs[id]?.dirty === true))
+  const notePending = tabIds.some((id) => noteByPaper[id]?.pending === true)
+  return { annoDirty, notePending }
+}
+
 /** notes 面草稿字典（pending 镜像）的响应式转手——TabBar 等消费方经本聚合器
  * 订阅（本模块是 reader 域唯一 notes.store 引用点，check-quality 白名单例外）。
  *  只投影 pending 布尔并 useShallow 比较：打字期的 contentMd 变化不触发

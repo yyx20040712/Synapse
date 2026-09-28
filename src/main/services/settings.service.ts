@@ -18,6 +18,11 @@
  * ── 接口层 ──
  * - export function createSettingsService(deps: { userDataDir: string;
  *   ping: PingFn }): Pick<ApiHandlers['settings'], 'get' | 'set' | 'diagNetwork'>
+ * - [T3-U1] export function readThemeSync(userDataDir): AppSettings['theme']
+ *   ——启动同步读主题档（bootstrap 在 createMainWindow 前调，附 ?theme= 参
+ *   供 renderer 首帧脚本消费——FOUC 首帧兜底）；与 readSettings 同链
+ *   （system→light 迁移+schema 校验），任一环节失败回退默认 light（禁抛），
+ *   不写回文件（与 get 的尽力写回不同——启动只读）
  * - 方案 B（主控侦察裁定）：不挂 ServiceBundle（settings 无 repos 依赖，
  *   挂桶需改受锁桩工厂=超票面）——构造点=ipc 工厂 createSettingsIpc 内，
  *   注入面=IpcDeps.userDataDir/ping 现成字段
@@ -25,7 +30,8 @@
  * ── 架构层 ──
  * - 可 import：node:fs/promises、node:path、shared/constants、
  *   shared/ipc/schemas、services/shared/atomic-write、
- *   shared/ipc/api-surface（type）
+ *   shared/ipc/api-surface（type）+node:fs（[T3-U1] readThemeSync 同步读——
+ *   FOUC 首帧兜底的启动路径读，架构面=文件域只读）
  * - 禁依赖 electron（L1 红线——core 可抽包，eslint services 块 group 强制）；
  *   禁上探 ipc 层（check-quality 按解析路径强制）
  * - 读写一律 UTF-8（教训 C4：中文乱码防线）；写回失败不阻断 get（默认值照常返回）
@@ -38,8 +44,11 @@
  * - 裁决书：docs/design/2026-09-18_complexity-governance-ruling.md
  *   裁决 6/§3 梯队四/§4 L1
  * - 测试：tests/unit/ipc/settings.test.ts（受锁零改——6 用例经 ipc 薄分发
- *   透传锁住本件全部公开行为）
+ *   透传锁住本件全部公开行为）+tests/unit/services/settings-theme-boot.test.ts
+ *   （[T3-U1 回炉 R4 补档] readThemeSync 同步读面 5 用例——合法档/system
+ *   迁移/缺文件/损坏/越枚举回退 light）
  */
+import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { appSettingsSchema, type AppSettings } from '../../shared/ipc/schemas'
@@ -52,6 +61,42 @@ type PingFn = (host: string) => Promise<{ ok: boolean; latencyMs: number }>
 
 const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'light', uiScale: 'small' }
 
+/**
+ * [T3-U1] 存量 'system' 主题档迁移（读侧单源——readSettings 与 readThemeSync
+ * 共用，行为与 T3-P1 内联版逐位一致）：'system' 枚举退役（A6），单字段替换
+ * 后再过 schema，其余字段（contactEmail/uiScale）原样透传零丢失。
+ */
+function migrateSystemTheme(parsedJson: unknown): void {
+  if (
+    typeof parsedJson === 'object' &&
+    parsedJson !== null &&
+    (parsedJson as { theme?: unknown }).theme === 'system'
+  ) {
+    ;(parsedJson as { theme?: unknown }).theme = 'light'
+  }
+}
+
+/**
+ * [T3-U1] 启动主题档同步读（FOUC 首帧兜底——bootstrap 在 createMainWindow
+ * 前调，值经 loadURL/loadFile 附 ?theme= 参给 renderer 首帧脚本）。与
+ * readSettings 同一解析链（system→light 迁移+schema 校验）；不存在/损坏/
+ * 不合 schema 一律回退默认 light 且禁抛（启动路径），不写回文件。
+ */
+export function readThemeSync(userDataDir: string): AppSettings['theme'] {
+  try {
+    const raw = readFileSync(join(userDataDir, SETTINGS_FILE_NAME), 'utf-8')
+    const parsedJson: unknown = JSON.parse(raw)
+    migrateSystemTheme(parsedJson)
+    const parsed = appSettingsSchema.safeParse(parsedJson)
+    if (parsed.success) {
+      return parsed.data.theme
+    }
+  } catch {
+    // 不存在/损坏：走默认
+  }
+  return DEFAULTS.theme
+}
+
 export function createSettingsService(deps: {
   userDataDir: string
   ping: PingFn
@@ -63,15 +108,7 @@ export function createSettingsService(deps: {
     try {
       const raw = await readFile(settingsPath, 'utf-8')
       const parsedJson: unknown = JSON.parse(raw)
-      // T3-P1 读侧平滑迁移：'system' 已退役（A6）——单字段替换后再过 schema，
-      // 其余字段（contactEmail/uiScale）原样透传零丢失
-      if (
-        typeof parsedJson === 'object' &&
-        parsedJson !== null &&
-        (parsedJson as { theme?: unknown }).theme === 'system'
-      ) {
-        ;(parsedJson as { theme?: unknown }).theme = 'light'
-      }
+      migrateSystemTheme(parsedJson)
       const parsed = appSettingsSchema.safeParse(parsedJson)
       if (parsed.success) {
         return parsed.data

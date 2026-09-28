@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-28T16:05:35.1891656Z",
+    "generatedAt":  "2026-09-28T17:16:39.5942207Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "2e699e48bf72accfbb76ea76502189cdbd11b75e2aa070a633843312727f14c1"
+                      "sha256":  "8bbaff5c54ec408f44e64f515af70555d865b086d34257abb7351bdfcde3f9a4"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -31,7 +31,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "6e84f81e1d916eb9c2accb40f288ca20ff0d4295b3217b3425afaa84f0839790"
+                      "sha256":  "842c64cecb666b755ecab1a4f7c1124a745d483f4eea02aa82a94d9dbff52923"
                   },
                   {
                       "path":  "scripts/check-model-names.mjs",
@@ -63,7 +63,7 @@
                   },
                   {
                       "path":  "scripts/get-protected-files.ps1",
-                      "sha256":  "5dfe98f810feb38e1e8ddc999af9a4738ba96d7e30146202885befd78d8f339b"
+                      "sha256":  "82b84fb33901092b4dccc703e6555648a02b39525f550c3029942260f2b04467"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
@@ -140,6 +140,14 @@
                   {
                       "path":  "src/main/db/migrations/010_lineage_v2.sql",
                       "sha256":  "2126ddcb0e02f04e192b056a00d1e4a39bf7294c7b6db189bd66253db640e87c"
+                  },
+                  {
+                      "path":  "src/renderer/app/StatusBar.tsx",
+                      "sha256":  "76c4932c917ea0958eaa3c4581d81e87cb3386d56933e40fbd91e1cd8b4ad92b"
+                  },
+                  {
+                      "path":  "src/renderer/public/theme-boot.js",
+                      "sha256":  "dd2e263edbed22eb1a5d79f00de957a6184ab142147f77ddf1a93012441ff732"
                   },
                   {
                       "path":  "src/shared/annotation-order.ts",
@@ -534,6 +542,10 @@
                       "sha256":  "03acfaf09de40d1eaef25e6f268d883fa7320ab5aed77c206044526f3cb515e7"
                   },
                   {
+                      "path":  "tests/unit/renderer/app-shell-t3u1.test.tsx",
+                      "sha256":  "71d05a19a4ceefd57f44b84ea7a200b3531296deeb51bd940be89da609e2cacd"
+                  },
+                  {
                       "path":  "tests/unit/renderer/band-calibration.test.tsx",
                       "sha256":  "004132be79ad7e718d49e2539700569ff41e70be15ffd916760207a35982b2d8"
                   },
@@ -822,6 +834,10 @@
                       "sha256":  "cdb558d881c7287e8c93d3c07d6cb0205e5e08d3e3dfe0e04be206c29ea6fa28"
                   },
                   {
+                      "path":  "tests/unit/renderer/theme-boot.test.ts",
+                      "sha256":  "cd1e777e2223e13b7e3963308db1febda30e56593b5f73e5df8eb78a8f9b324b"
+                  },
+                  {
                       "path":  "tests/unit/renderer/toast.test.tsx",
                       "sha256":  "29b9f24cca275dfa92a37e576592d25a0d5ad9f3e79eafb18b86c1464a5f242f"
                   },
@@ -950,6 +966,10 @@
                       "sha256":  "5051cc12ca26cc6b87e4577bd1c24e169e2600c0a9c377597942575442d00b80"
                   },
                   {
+                      "path":  "tests/unit/services/settings-theme-boot.test.ts",
+                      "sha256":  "d37d41125ff1f512ac4f678dde3232dd485acf359634b29af4a67f1e7aef7eaf"
+                  },
+                  {
                       "path":  "tests/unit/services/shared/atomic-write.test.ts",
                       "sha256":  "ab355273b860685893ad8b35b04b809de3f8025376a7cf03fb6c9d990364e144"
                   },
@@ -1010,6 +1030,10 @@
                       "sha256":  "e893bb075ac992a6cffa8d83043e9176292ce4de87e3a6d1aedcebfa63ca7220"
                   },
                   {
+                      "path":  "tests/unit/windows/main-window-theme.test.ts",
+                      "sha256":  "eb48173bc43a8f2e580e08eba69387f0387ed449b4abb227d619b2820216903e"
+                  },
+                  {
                       "path":  "tests/unit/windows/quit-dirty-guard.test.ts",
                       "sha256":  "69df8acb312b4eac4767b019c1615e62ea977811184ec56a17ea3ded6a6cb9a6"
                   },
@@ -1051,7 +1075,7 @@
                   },
                   {
                       "path":  "tickets/archive/README.md",
-                      "sha256":  "03a521e76c05adfa1736cfb08ea446cab38da3984ad93c85bd2af1413c5d783d"
+                      "sha256":  "6599f78b3c1731b08b0370ab7c4caac5d5d96984ec76db69b97dfd469a1ea03c"
                   },
                   {
                       "path":  "tsconfig.json",

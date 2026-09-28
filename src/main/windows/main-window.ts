@@ -58,7 +58,7 @@
  *   titleBarStyle/drag-no-drag 皮肤锁）
  */
 import type { BrowserWindow, HandlerDetails, WebPreferences } from 'electron'
-import type { WindowControlAction } from '../../shared/ipc/schemas'
+import type { AppSettings, WindowControlAction } from '../../shared/ipc/schemas'
 
 export const WINDOW_SECURITY_FLAGS = {
   sandbox: true,
@@ -78,6 +78,10 @@ export interface MainWindowLoad {
   /** preload 脚本绝对路径（沙箱桥，必须 CJS——沙箱渲染器不支持 ESM preload） */
   preloadScript: string
   isDev: boolean
+  /** [T3-U1] FOUC 首帧兜底：启动主题档（bootstrap 经 settings.service
+   *  readThemeSync 同步读）——loadURL 拼 query / loadFile {query} 选项承载，
+   *  renderer 首帧脚本（public/theme-boot.js）消费；缺省=零附参（旧调用面兼容） */
+  startupTheme?: AppSettings['theme']
 }
 
 export function windowOpenPolicy(): { action: 'deny' } {
@@ -148,10 +152,18 @@ export function createMainWindow(
   // 未挂载时 Electron 默认全部授予；handler 挂在 session 上）
   win.webContents.session.setPermissionRequestHandler(permissionPolicy())
 
+  // [T3-U1] FOUC 首帧兜底：theme 参随初始加载附上（双分支双形态——loadURL
+  // 拼 searchParams / loadFile 走 {query} 选项[Electron 44 实测口径]）；
+  // renderer 首帧脚本读参写 documentElement.dataset.theme（首帧前生效）
   if (load.devServerUrl) {
-    void win.loadURL(load.devServerUrl)
+    const url = new URL(load.devServerUrl)
+    if (load.startupTheme !== undefined) url.searchParams.set('theme', load.startupTheme)
+    void win.loadURL(url.toString())
   } else {
-    void win.loadFile(load.entryFile)
+    void win.loadFile(
+      load.entryFile,
+      load.startupTheme === undefined ? undefined : { query: { theme: load.startupTheme } }
+    )
   }
 
   return win

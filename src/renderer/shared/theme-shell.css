@@ -265,7 +265,8 @@
 }
 
 /* ══ T3-P2 状态条 26px（mockup L74-77）：--panel-2 底+上边 1px --line+等宽字；
-   .ok/.sig 色类预留在带（当前槽位未消费——enrich 待办槽信号通道探明后启用）；
+   .sig=保存失败槽消费（[T3-U1] 自动保存槽 error 档——--signal 色）；
+   .ok 色类仍预留（enrich 待办槽信号通道探明后启用）；
    仪表透明度三主题不变（不额外加透明度）══ */
 .app-statusbar {
   flex: none;

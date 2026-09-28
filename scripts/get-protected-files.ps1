@@ -11,6 +11,10 @@ function Get-ProtectedFiles {
   $files += Get-ChildItem -Path (Join-Path $root 'tests') -Recurse -File
   $files += Get-ChildItem -Path (Join-Path $root 'src/shared') -Recurse -File
   $files += Get-ChildItem -Path (Join-Path $root 'src/main/db/migrations') -Recurse -File
+  # [T3-U1] renderer/public 静态面整目录入锁（theme-boot.js 首帧注入脚本——
+  # FOUC 防线件；与 check-locks.mjs protectedFiles() 对齐；目录暂缺零项）
+  $publicDir = Join-Path $root 'src/renderer/public'
+  if (Test-Path $publicDir) { $files += Get-ChildItem -Path $publicDir -Recurse -File }
   $files += Get-ChildItem -Path $root -Recurse -File -Include *.test.ts, *.test.tsx |
     Where-Object { $_.FullName -notmatch '\\node_modules\\|\\out\\|\\dist\\|\\coverage\\' }
   foreach ($cfg in @('docs/invariants.md', 'vitest.config.ts', 'eslint.config.js', '.github/workflows/ci.yml',
@@ -20,7 +24,8 @@ function Get-ProtectedFiles {
       'scripts/test-surface.baseline.json',
       'scripts/test-surface.exemptions.json',
       'tickets/archive/README.md',
-      'docs/defense-lifecycle.md')) {
+      'docs/defense-lifecycle.md',
+      'src/renderer/app/StatusBar.tsx')) { # [T3-U1] 状态条哑件单件入锁（自动保存槽真文本契约面）
     $p = Join-Path $root $cfg
     if (Test-Path $p) { $files += Get-Item $p }
   }

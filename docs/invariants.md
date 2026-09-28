@@ -78,7 +78,7 @@
 | INV-68 | 几何产链 band 档位绑定：band 三推导各绑一档，禁跨档消费+禁新增第四推导 | src/renderer/features/reader/anchors/pdf-item-geometry.ts, annotation-resolve.ts | 既有测试网（登记性质=事实升格，无独立红证面） | 未锚定（防线=review 拦截位，非 CI 负锚） |
 | INV-69 | 阅读进度页码 outbox 通道：页码唯一落库通道（唯一入队口+重启重放恢复；时长功能移除后载荷收缩为页码单载荷） | src/renderer/features/reader/time/reading-time-setup.ts, reading-time-outbox.ts, src/main/services/reader.service.ts | e2e reading-time-replay.spec（重启重放 DB 直断言）+unit outbox.test | 已锚定（F-TIME-02 补登；锚=既有测试面） |
 | INV-70 | 单窗口单例是架构前提：OS 级多窗口=永久负面清单；渲染层模块级单例因此合法（附件性单例清单随票补登） | 用户裁决 2026-08-23+2026-09-19 裁决 7, 本册 | main 单实例锁代码锚（requestSingleInstanceLock）+架构评审 | 部分（单实例锁=代码级防线；附件清单=声明性快照） |
-| INV-71 | 主题 token 三族单源机制：token 终值单一来源=三 mockup 稿；旧词表桥接段同元素级联随族覆写；schema 枚举 [light,dark,sepia] 默认 light | src/renderer/shared/theme.css, src/renderer/app/App.tsx, src/main/services/settings.service.ts, src/shared/ipc/schemas.ts | theme.test.ts（TOKENS 正锚+三族块内断言）+App 接线锚+负锚 | 已锚定（T3-P1——unit+e2e 双层） |
+| INV-71 | 主题 token 三族单源机制：token 终值单一来源=三 mockup 稿；旧词表桥接段同元素级联随族覆写；schema 枚举 [light,dark,sepia] 默认 light；[T3-U1] 启动注入=首帧兜底（main 同步读 settings 附 theme query→theme-boot.js 首帧写 dataset.theme），App effect=运行时单点真源——两者值一致（载入在途窗不回退） | src/renderer/shared/theme.css, src/renderer/app/App.tsx, src/renderer/public/theme-boot.js, src/main/services/settings.service.ts, src/main/windows/main-window.ts, src/shared/ipc/schemas.ts | theme.test.ts（TOKENS 正锚+三族块内断言）+App 接线锚+负锚+[T3-U1] theme-boot.test（三值/非法/缺参零写+经典脚本负锚+**index.html 引用面静态锁[head 段内]与 bootstrap 传参链静态锚——回炉 R1，删标签/断链即红**）+app-shell-t3u1.test FOUC 在途窗不回退格+main-window-theme/settings-theme-boot 附参与同步读锁 | 已锚定（T3-P1——unit+e2e 双层；T3-U1 启动注入扩注） |
 
 ## 维护规则
 

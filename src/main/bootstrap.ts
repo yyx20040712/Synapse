@@ -44,6 +44,7 @@ import { migrate } from './db/migrate'
 import { createRepos } from './db/repos'
 import { createFileStore } from './services/import_/file-store'
 import { createServices } from './services'
+import { readThemeSync } from './services/settings.service'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createDataLayerContainer } from './data-layer.container'
@@ -205,13 +206,19 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   Menu.setApplicationMenu(null)
   const bounds: WindowBounds = await loadBounds(userDataDir)
   const workArea = screen.getPrimaryDisplay().workArea
+  // [T3-U1] FOUC 首帧兜底：启动同步读主题档（settings.service 读侧迁移
+  // 单源——system→light）附 loadURL/loadFile theme query；renderer 首帧
+  // 脚本（public/theme-boot.js）写 documentElement.dataset.theme（首帧前
+  // 生效）。运行时单点真源仍=App effect（两者值一致——INV-71）
+  const startupTheme = readThemeSync(userDataDir)
   const window = createMainWindow(
     BrowserWindow,
     {
       devServerUrl,
       entryFile: join(__dirname, '../renderer/index.html'),
       preloadScript: join(__dirname, '../preload/index.cjs'),
-      isDev
+      isDev,
+      startupTheme
     },
     {
       x: bounds.x,

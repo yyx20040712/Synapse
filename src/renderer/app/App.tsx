@@ -11,19 +11,45 @@ import { SettingsPage } from '../features/settings/SettingsPage'
 import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
-import { useTabDirtyAggregate } from '../features/reader/state/tab-dirty'
+import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 import { useSettingsStore } from '../features/settings/settings.store'
 import { useLibraryStore } from '../features/library/library.store'
-import { UI_SCALE } from '@shared/ipc/schemas'
+import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
 import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { THEME_LABEL } from '../shared/ui-constants'
 import { Rail, type ViewId } from './Rail'
-import { StatusBar } from './StatusBar'
+import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
 import { ErrorBoundary } from './ErrorBoundary'
+
+/** [T3-U1] dataset.theme 合法档校验（启动注入值消费位——非法/缺省=undefined
+ *  走 ?? light 原兜底；三值枚举与 appSettingsSchema 同源） */
+function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
+  return value === 'light' || value === 'dark' || value === 'sepia' ? value : undefined
+}
+
+/**
+ * [T3-U1] 状态条自动保存槽 worst-of 聚合（纯函数——票面②：tab 双源分档 ∪
+ * lineage saveStatus →三态真文本；null=无可写面信号槽省略）。序=
+ * error > saving > saved。[回炉 R2/W3 终裁分档] annoDirty（annotations 面
+ * api 失败残留——真失败）→error 档；notePending（notes 面 pendingEdit
+ * 镜像=在途+失败混合，打字防抖窗常 true）→saving 档「保存中…」=未落库
+ * 统称（打字期禁红色假警报）；有已打开 tab（标注/笔记可写面）且全干净=
+ * saved；无 tab 且 lineage 空闲=null（禁假数据——不显「已保存」造作信号）。
+ */
+function autosaveWorstOf(
+  annoDirty: boolean,
+  notePending: boolean,
+  lineage: 'saved' | 'saving' | 'error',
+  openTabs: number
+): AutosaveStatus {
+  if (annoDirty || lineage === 'error') return 'error'
+  if (notePending || lineage === 'saving') return 'saving'
+  return openTabs > 0 ? 'saved' : null
+}
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
@@ -39,6 +65,15 @@ export function App(): JSX.Element {
   const tabDirty = useTabDirtyAggregate()
   const lineageDirty = useLineageDirty()
   const quitDirty = tabDirty || lineageDirty
+  // [T3-U1 回炉 R2/W3 终裁] 状态条自动保存槽聚合（沿上方 dirty 聚合同源信号
+  // 族扩 worst-of）：tab 双源分档（annoDirty→error/notePending→saving——
+  // useTabDirtySignals facade）∪ lineage saveStatus 三态 →三态真文本注入
+  // StatusBar（null=无可写面信号槽省略——纯函数见文件头）。quitDirty 链
+  // （上方 useTabDirtyAggregate 或聚合）零触碰——TABS-04 行为面不动
+  const tabOpenCount = useTabOpenCount()
+  const { annoDirty, notePending } = useTabDirtySignals()
+  const lineageSave = useLineageStore((s) => s.saveStatus)
+  const autosave = autosaveWorstOf(annoDirty, notePending, lineageSave, tabOpenCount)
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
@@ -64,8 +99,12 @@ export function App(): JSX.Element {
   }, [uiScale])
   // T3-P1 主题三族：data-theme 单点接线（documentElement.dataset.theme——
   // theme.css :root[data-theme='dark'|'sepia'] 覆写族消费；未载入/缺省兜底
-  // light=appSettingsSchema default 同源；不跟随系统 A6）
-  const theme = useSettingsStore((s) => s.settings?.theme ?? 'light')
+  // light=appSettingsSchema default 同源；不跟随系统 A6）。
+  // [T3-U1] FOUC 首帧兜底消费位：settings 未载入（load 在途/失败容忍窗）的
+  // 过渡档=启动注入值（theme-boot.js 首帧写 dataset.theme——值源同为
+  // settings.json，INV-71「两者值一致」）；无注入值回退 light（原 ?? 兜底）
+  const bootThemeRef = useRef(normalizeTheme(document.documentElement.dataset.theme))
+  const theme = useSettingsStore((s) => s.settings?.theme ?? bootThemeRef.current ?? 'light')
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
@@ -162,6 +201,7 @@ export function App(): JSX.Element {
           edgeCount={lineageEdges.length}
           selectedCount={selectedId !== null ? 1 : 0}
           themeLabel={THEME_LABEL[theme]}
+          autosave={autosave}
         />
       </footer>
       <ToastHost />

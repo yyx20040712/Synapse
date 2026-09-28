@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- [T3-U1] FOUC 首帧兜底：同步外链脚本（CSP script-src self——禁内联）读
+         main 附上的 ?theme= 参写 documentElement.dataset.theme（首帧前生效）；
+         运行时单点真源仍=App effect（两者值一致——INV-71）。 -->
+    <script src="./theme-boot.js"></script>
     <!-- CSP 由构建期注入（electron.vite.config.ts 的 cspMetaPlugin，来源 src/main/security/csp.ts）。
          此处禁止手写 meta——双份维护必然漂移（tests/security/csp-meta.test.ts 强制）。 -->
     <title>Synapse</title>

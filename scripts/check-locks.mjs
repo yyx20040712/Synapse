@@ -28,6 +28,12 @@ function protectedFiles() {
     ...walk(join(root, 'tests'), () => true),
     ...walk(join(root, 'src', 'shared'), () => true),
     ...walk(join(root, 'src', 'main', 'db', 'migrations'), () => true),
+    // [T3-U1] renderer/public 静态面整目录入锁（theme-boot.js 首帧注入脚本——
+    // FOUC 防线件，篡改须 [locked-change] 人类审查位；目录暂缺时 walk 零项）
+    ...walk(join(root, 'src', 'renderer', 'public'), () => true),
+    // [T3-U1] 状态条哑件单件入锁（票面「StatusBar/新脚本件入锁」——自动保存
+    // 槽真文本契约面）
+    join(root, 'src', 'renderer', 'app', 'StatusBar.tsx'),
     ...walk(root, (p) => /\.test\.tsx?$/.test(p)),
     join(root, 'docs', 'invariants.md'),
     join(root, 'vitest.config.ts'),
