@@ -236,3 +236,4 @@ F-CONSOL-03｜测试资产清出——探针 spec 四件+scripts/audits 残留�
 C-A4｜CI 口径对齐——指纹门入 CI+DoD 措辞勘正（ci.yml 增步 fail-fast；CI run 36372251379 首绿验收）
 F-GOV-01｜治理减容役收官——registry summary 瘦身归档+INV 三元组+防线登记册+宪法条款+日落规则
 F-CI-01｜CI npm ci 红修复——better-sqlite3 缺省编译动作按包禁用（allowScripts deny；npm ci 触发 node-gyp 缺省编译根因链实证）
+T3-P8｜交互收口——战役收官票（六源：拖拽重排/改月飞行/检查面板重皮肤/shift 过渡/飞行脱节 mockup 原样/drag-hint 双文案；回炉 R1-R8）
