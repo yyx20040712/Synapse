@@ -68,6 +68,9 @@ jobs:
       - name: 单测 + 契约 + 覆盖率（vitest）
         run: npm run test -- --coverage
 
+      - name: 指纹门（test-surface 契约对账——fail-fast）
+        run: node scripts/check-test-surface.mjs check
+
       - name: 构建（electron-vite build）
         run: npm run build
 

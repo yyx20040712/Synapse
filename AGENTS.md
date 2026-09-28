@@ -78,7 +78,7 @@
 
 ### 完成定义（Definition of Done）
 
-- [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build，与 CI 同口径，不是 README 数字）
+- [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build——verify⊇CI：另含指纹门；model-names=收口手动关卡未串 verify/CI，不是 README 数字）
 - [ ] src 产物零外部模型代号（glm/deepseek/kimi 等词表）——门禁 `npm run lint:model-names`（本地手动关卡，未串 verify/CI 链，收口自跑）
 - [ ] `grep` 无 `TODO|FIXME|placeholder`（CI quality 关卡）
 - [ ] 无乱码：中文内容工具验证可读（CI mojibake 关卡）
