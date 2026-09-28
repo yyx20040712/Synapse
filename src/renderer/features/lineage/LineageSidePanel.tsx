@@ -86,6 +86,7 @@
 import type { CSSProperties } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { LineageNode } from '@shared/models/lineage'
+import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideManualNote } from './LineageSideManualNote'
 import { LineageSideTags } from './LineageSideTags'
@@ -105,15 +106,20 @@ const SIDE_GLASS: CSSProperties = {
   boxShadow: 'var(--shadow-2)'
 }
 
-/** 分组 h4（核心 idea）accent 左缘条（R2-LG11 浅色板） */
-const H4_ACCENT: CSSProperties = {
-  color: 'var(--text-dim)',
-  borderLeft: '3px solid var(--accent)'
-}
+/** 分组 h4（核心 idea）accent 左缘条（R2-LG11 浅色板）——[T3-P8] 重皮肤后
+ *  idea 标题改 .idea-cap 载体（accent 字色——h4 计数/ accent 锚锁面保活），
+ *  本常量的左缘条形态随旧标题退役删除 */
 
 /** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
 function hasAnchor(n: AiNote): boolean {
   return n.quoteText.length >= 2 || n.anchorPage !== null
+}
+
+/** [T3-P8] 年月徽章文本（YYYY-MM 补零/null 退化——卡面 yearMonthLabel 同式
+ *  第 2 次重复，Rule of Three 保持） */
+function ymBadge(n: LineageNode): string {
+  if (n.year === null) return '—'
+  return n.month === null ? String(n.year) : `${n.year}-${String(n.month).padStart(2, '0')}`
 }
 
 export function LineageSidePanel(props: {
@@ -131,6 +137,12 @@ export function LineageSidePanel(props: {
   /** F-LG14 标签整组写入上抛（Page 编排→lineage.store.setNodeTags——既有
    *  upsert 通道；缺省不呈现标签编辑区=纯只读消费面兼容） */
   onSetTags?: (nodeId: string, tags: string[]) => void
+  /** [T3-P8] 骑缝编号（INV-76——Page 经 lineageCatalogNos 单源分发；缺省不呈现） */
+  catalogNo?: number | null
+  /** [T3-P8] 核心档徽章（isCore 预计算传入——Page 分发；缺省不呈现） */
+  core?: boolean
+  /** [T3-P8] 含金量摘要（引/T 档徽章——Page 查表分发；缺省=两徽章退化） */
+  metrics?: LineagePaperMetrics | null
 }): JSX.Element {
   const { node } = props
   if (node === null) {
@@ -160,6 +172,12 @@ export function LineageSidePanel(props: {
     props.onJumpToPaper({ paperId: n.paperId, anchor, aiNoteId: n.id })
   }
 
+  // [T3-P8] 徽章行：核心/年月/引用/T 档（mockup L678-681——Q2 档字样按数据
+  // 模型 T1/T2/T3 呈现；theme 节点无 metrics 键→T 档徽章不呈现，申报）
+  const metrics = props.metrics ?? null
+  const citedBadge = metrics !== null && metrics.citedByCount !== null ? `引 ${metrics.citedByCount}` : '引 —'
+  const tierBadge = node.paperId !== null ? (metrics?.venueTier ?? '未定') : null
+
   return (
     <div
 
@@ -168,17 +186,25 @@ export function LineageSidePanel(props: {
       style={SIDE_GLASS}
     >
       <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
-        <h3 className="m-0 text-sm font-medium" style={{ color: 'var(--text)' }}>
-          {node.title}
-        </h3>
+        <div className="insp-cap">
+          <span>节点检查</span>
+          {props.catalogNo != null && <span>#{String(props.catalogNo).padStart(3, '0')}</span>}
+        </div>
+        <div className="insp-title">{node.title}</div>
+        <div className="badges">
+          {props.core === true && <span className="badge core">核心</span>}
+          <span className="badge plain">{ymBadge(node)}</span>
+          <span className="badge plain">{citedBadge}</span>
+          {tierBadge !== null && <span className="badge plain">{tierBadge}</span>}
+        </div>
         <p className="m-0" style={{ color: 'var(--text-dim)' }}>
           {node.year === null ? '未知年份' : `${node.year} 年`}
           {node.paperId !== null && <span className="ml-1 rounded border px-1" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}>已绑定文献</span>}
         </p>
       </section>
       <section data-testid="lineage-side-idea">
-        <h4 className="m-0 pl-1.5 font-medium" style={H4_ACCENT}>核心 idea</h4>
-        <p className="m-0 whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
+        <h4 className="idea-cap m-0 pl-1.5" style={{ color: 'var(--accent)' }}>核 心 想 法</h4>
+        <p className="idea m-0" style={{ color: 'var(--text)' }}>
           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
         </p>
       </section>
@@ -189,8 +215,15 @@ export function LineageSidePanel(props: {
         <>
           <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />
           <LineageSideManualNote paperId={node.paperId} />
+          {/* [T3-P8] AI 评估后置章占位（B4 范围裁决——不渲染任何假数据；与
+              上方 AI 阅读笔记分节命名区分） */}
+          <div className="sec-cap" data-testid="lineage-side-postpone">
+            AI 评 估 笔 记<span className="postpone">后置</span>
+          </div>
+          <p className="m-0" style={{ color: 'var(--text-dim)' }}>评估功能后置——当前版本不生成 AI 评估内容</p>
         </>
       )}
+      <div className="insp-foot">单击选中 · 拖动＝月内调序 · 编辑模式：改月 / 展开选线型 / 新建连线</div>
     </div>
   )
 }

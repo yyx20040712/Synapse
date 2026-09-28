@@ -748,6 +748,36 @@
       "assertionText": "expect(received).toEqual([{ phase: 'extracting', done: 1, total: 3 }])",
       "reason": "SR-IPC-10 主控裁决 A 案（2026-09-28）：旧断言样例 {phase,done,total} 系 F-D4（sessionId 强制+current 字段）前陈旧形态——旧纯透传不校验故绿；preload 接收侧 safeParse 兜底落地后样例按 importProgressEventSchema 合法载荷勘正（用例名与桥形态检查意图不变，新断言入 C_after 超集）",
       "rulingLink": "docs/design/2026-09-28_gov-batch-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）",
+      "reason": "T3-P8 源⑥ drag-hint 双态（D-P7B-1 兑现）：base 变体自 edit-only 改全时 accent（mockup L218）+edit 态 signal 变体（L219）——两条单变体锁改双变体（新增第三条锁）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "moveNode/editCoreIdea 全字段载荷：x/y 覆盖与 coreIdea 保留互不清空（防半更新丢字段）",
+      "reason": "T3-P8 fullRowInput 补 month/slot（防半更新清月——service normalizeMonthSlot 按 month 缺省=null 全量语义清月，P8 改月面激活的潜伏缺陷修复）；期望载荷补两 null 字段，语义零变仅锁新全字段形状",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "caseTitle": "Board 全链：右键→「添加标签…」→对话框输入→保存=upsert-node 全量载荷含 tags 合并",
+      "reason": "同上 T3-P8 fullRowInput 补 month/slot：期望载荷补两 null 字段（夹具本就 null，语义零变）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "caseTitle": "store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）",
+      "reason": "同上 T3-P8 fullRowInput 补 month/slot：期望载荷补两 null 字段（夹具本就 null，语义零变）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
+      "reason": "T3-P8 源⑥ drag-hint 双态：view 态 null 断言（注释明言「P8 能力禁假 affordance 不渲染」=有意留给 P8 翻面）改双文案断言；edit 态文案扩全句（mockup L507/L1010-1013 逐字）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
     }
   ]
 }

@@ -28,17 +28,11 @@ import { isCore } from './lineage-classify'
 import { groupTimeline, rowsFromOffsetTops } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
 import { EdgeTypePopover } from './EdgeTypePopover'
-import { TimelineYears } from './TimelineYears'
+import { TimelineLegend, TimelineYears } from './TimelineYears'
 import { LineageToolbar } from './LineageToolbar'
 import { useEdgeComposer, type ClickEventLike } from './useEdgeComposer'
-
-/** [T3-P7A] 图例四基础型（D-18 映射序：accent 实/accent 虚/faint 点/signal 虚） */
-const LEGEND_ITEMS = [
-  { cls: 'lc', text: '继承' },
-  { cls: 'lc i2', text: '推断' },
-  { cls: 'lc i3', text: '综述关联' },
-  { cls: 'lc i4', text: '人工补线' }
-] as const
+import { useCardDrag } from './useCardDrag'
+import { MonthPop } from './MonthPop'
 
 /** [T3-P7B] 03 编辑层/04 侧板消费的节点交互回调（全可选——缺省即纯只读） */
 export interface TimelineCallbacks {
@@ -46,6 +40,11 @@ export interface TimelineCallbacks {
   onNodeClick?: (nodeId: string, ev: ClickEventLike) => void
   /** 右键节点开菜单（03 节点菜单锚点） */
   onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
+  /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
+   *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报） */
+  onReorderMonthSlots?: (nodeIds: string[]) => void
+  /** [T3-P8] 改月写路径（month+year 载荷、slot 键缺省=服务端组变尾部） */
+  onMoveNodeMonth?: (nodeId: string, year: number | null, month: number | null) => void
 }
 
 /** [T3-P7B] 工具条 props（Board 下传——P7-H 既有行为面零变） */
@@ -97,9 +96,30 @@ export function LineageTimeline(props: {
   const [shiftedIds, setShiftedIds] = useState<ReadonlySet<string>>(() => new Set())
   // [T3-P7A 回炉 1 W1/W6] 连线层再触发信号（收敛/守卫停分支 bump routeEpoch）
   const [routeEpoch, setRouteEpoch] = useState(0)
+
+  // [T3-P8] 槽位拖拽+改月状态机（编排本体驻 hook——Timeline 增量红线）
+  const drag = useCardDrag({
+    nodes,
+    groups,
+    isEditing: composer.isEditing,
+    isPicking: composer.isPicking,
+    popOpen: composer.popover.kind !== 'closed',
+    contentRef,
+    onReorderMonthSlots: props.onReorderMonthSlots,
+    onMoveNodeMonth: props.onMoveNodeMonth,
+    onRouteRecalc: () => setRouteEpoch((v) => v + 1)
+  })
   useLayoutEffect(() => {
     const content = contentRef.current
     if (content === null) return
+    // [T3-P8+R2] dragging/settle 两期跳过冻结迭代：a) dragging 期拖卡 inline
+    // fixed（尾挂）的视口系 offsetTop 混入 rowsFromOffsetTops 会误挂 rowshift
+    // （探针 t=0 cls='tl-card rowshift' 实证）+其 margin-left 62px 掺入后续
+    // FLIP target（R1 偏移同源）；b) settle 期 .tl-measure 的 transition:none
+    // 取消飞行过渡（transitionend 永不触发=落定写丢失）。settle→idle 时
+    // phase 入 deps 重跑，冻结量测在终态布局上补齐（pending 期卡未 fixed
+    // 保留量测）。
+    if (drag.phase === 'dragging' || drag.phase === 'settle') return
     content.classList.add('tl-measure')
     const next = new Set<string>()
     for (const frame of Array.from(content.querySelectorAll('.month-frame'))) {
@@ -126,7 +146,7 @@ export function LineageTimeline(props: {
     }
     iterRef.current++
     setShiftedIds(next)
-  }, [groups, shiftedIds])
+  }, [drag.renderGroups, drag.phase, shiftedIds])
 
   const timelineCls = [
     'timeline',
@@ -137,6 +157,7 @@ export function LineageTimeline(props: {
     .join(' ')
 
   const handleCardClick = (nodeId: string, ev: ClickEventLike): void => {
+    if (drag.consumeClickSuppress()) return // [T3-P8] 拖后 click 抑制（一次性）
     if (composer.handleCardClick(nodeId, ev)) return // 拾取/弹层语义消费——不转发选中
     props.onNodeClick?.(nodeId, ev)
   }
@@ -168,33 +189,40 @@ export function LineageTimeline(props: {
             edges={edges}
             lineTypes={lineTypes}
             shiftedIds={shiftedIds}
-            groups={groups}
+            groups={drag.renderGroups}
             routeEpoch={routeEpoch}
+            dimmed={drag.phase === 'dragging'}
             onEdgeHitClick={(edgeId, ev) => composer.handleEdgeHitClick(edgeId, ev)}
           />
           <TimelineYears
-            groups={groups}
+            groups={drag.renderGroups}
             catalogNos={catalogNos}
             coreIds={coreIds}
             paperMetrics={paperMetrics}
             selectedNodeId={props.selectedNodeId ?? null}
             shiftedIds={shiftedIds}
             linkSourceId={composer.picker === 'target' ? composer.sourceId : null}
+            dragSlot={drag.slot}
+            registerFrame={drag.registerFrame}
+            flashKey={drag.flashKey}
             onCardClick={handleCardClick}
+            onCardPointerDown={drag.handleCardPointerDown}
+            onYmClick={drag.handleYmClick}
             onNodeContextMenu={props.onNodeContextMenu}
           />
         </div>
       )}
       {/* [T3-P7A 回炉 1 W7] 图例挂滚动容器 .timeline（视口级恒可见）；非空图才渲染 */}
-      {nodes.length > 0 && (
-        <div className="tl-legend">
-          {LEGEND_ITEMS.map((it) => (
-            <span className={it.cls} key={it.text}>
-              <i />
-              {it.text}
-            </span>
-          ))}
-        </div>
+      {nodes.length > 0 && <TimelineLegend />}
+      {/* [T3-P8] 改月弹层（position:fixed——沿 popover-shared 钳制） */}
+      {drag.monthPop !== null && (
+        <MonthPop
+          cx={drag.monthPop.cx}
+          cy={drag.monthPop.cy}
+          current={{ year: drag.monthPop.year, month: drag.monthPop.month }}
+          months={drag.monthPopMonths}
+          onPick={drag.pickMonth}
+        />
       )}
       {/* [T3-P7B] 线型弹层（position:fixed——.timeline 滚动容器不裁剪） */}
       {pop.kind !== 'closed' && (

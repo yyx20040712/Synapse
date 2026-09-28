@@ -150,6 +150,8 @@ export function LineageBoard(props: {
           const node = nodes.find((n) => n.id === id)
           if (node !== undefined) setMenu({ node, anchor })
         }}
+        onReorderMonthSlots={(ids) => store().reorderMonthSlots(ids)}
+        onMoveNodeMonth={(id, year, month) => store().moveNodeMonth(id, year, month)}
       />
 
       {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink 与各

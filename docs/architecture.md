@@ -297,7 +297,15 @@ AGENTS.md「环境事实」单源，此处不复制。
   （applyEdgeLine/linkWithLine[inferred 产生入口落位]/saveLineTypes——
   队列 FIFO 保证 lineTypes 先于引用其的 edge 写）+同道错峰；
   TimelineYears/lineage-popover-shared 拆件=组件 250 行红线落点；
-  resolveLabelEntry 随 D-P7B-7 裁撤（零生产调用死代码删除）] +侧板详情）；main 域
+  resolveLabelEntry 随 D-P7B-7 裁撤（零生产调用死代码删除）；
+  T3-P8 交互收口=useCardDrag 拖拽/改月状态机 hook（pointerdown 5px 阈值
+  +drag-slot 候选槽+settle FLIP 飞行 transitionend 清场——flight
+  后置目标值双 rAF：React 迁组重建节点无 before-change style，同步改值不启
+  过渡）+MonthPop 改月弹层（沿 popover-shared 钳制）+store
+  reorderMonthSlots/moveNodeMonth 两写 action（slot 全序透写/组变 slot
+  缺省归服务端 max+1；写回填后 nodes=lineageOrder 全序——INV-75 消费面
+  扩）+SidePanel 重皮肤（insp-cap/徽章行/AI 评估后置章占位）+drag-hint
+  双态（INV-83：拖拽互斥/跨月拒绝/飞行脱节 dimmed 已知限制）] +侧板详情）；main 域
   `services/lineage/`（树守卫两口：
   草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+

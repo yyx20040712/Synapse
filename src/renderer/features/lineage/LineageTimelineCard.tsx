@@ -20,6 +20,7 @@
  *   错位（Timeline 分行计算传入——0 起奇数索引行）。
  * - data-node-id=e2e/测试结构锚（Canvas g[data-node-id] 同名接缝沿承）。
  */
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { isSurvey } from './lineage-classify'
@@ -44,6 +45,12 @@ export function LineageTimelineCard(props: {
   shift: boolean
   /** [T3-P7B] 新建连线拾取源高亮（.link-src——composer target 相位） */
   linkSrc: boolean
+  /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
+  dragging?: boolean
+  /** [T3-P8] 卡 pointerdown（useCardDrag 拖拽会话入口——5px 阈值内=选中链） */
+  onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
+  /** [T3-P8] 月标 .c-ym 点击（edit 态改月弹层入口；CSS 显隐+handler 双闸） */
+  onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
 } & TimelineCallbacks): JSX.Element {
   const n = props.node
   const survey = n.paperId !== null && isSurvey(n.title)
@@ -58,7 +65,8 @@ export function LineageTimelineCard(props: {
     'tl-card',
     props.selected ? 'sel' : '',
     props.shift ? 'rowshift' : '',
-    props.linkSrc ? 'link-src' : ''
+    props.linkSrc ? 'link-src' : '',
+    props.dragging === true ? 'dragging' : ''
   ]
     .filter((c) => c !== '')
     .join(' ')
@@ -67,6 +75,7 @@ export function LineageTimelineCard(props: {
       className={cls}
       data-node-id={n.id}
       data-kind={kind}
+      onPointerDown={(e) => props.onCardPointerDown?.(n.id, e)}
       onClick={(e) => props.onNodeClick?.(n.id, e)}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -86,6 +95,19 @@ export function LineageTimelineCard(props: {
         <span>{yearMonthLabel(n)}</span>
         <span>{cited}</span>
       </div>
+      {/* [T3-P8] 月标（mockup L257-258：absolute accent chip——display:none↔
+          .editing block；文案「YYYY.M」/未定月形「未 定」；点击=改月弹层） */}
+      <span
+        className="c-ym"
+        data-testid="card-ym"
+        title="点击修改所属月份（编辑模式）"
+        onClick={(e) => {
+          e.stopPropagation()
+          props.onYmClick?.(n.id, e)
+        }}
+      >
+        {n.year === null || n.month === null ? '未 定' : `${n.year}.${n.month}`}
+      </span>
     </article>
   )
 }

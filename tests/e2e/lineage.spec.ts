@@ -926,4 +926,167 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
 
     await app.close()
   })
+
+  /**
+   * T9=[T3-P8] 拖拽调序全流：view 态（mockup pointerdown 无 mode 门槛）
+   * pointerdown 5px 阈值激活→占位槽「置 入」在场→月内移位→松手 settle→
+   * DOM 序=新序（store 回填重排）→reload 持久（INV-75 slot 全序）→跨月
+   * 拒绝 toast+落当前槽。几何断言经 win.mouse 原生指针链。
+   */
+  test('T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+view 态可拖', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t9-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 同月双卡（2020-05：根+甲）+他月单卡（2020-06：乙）——月内重排与跨月面
+    const draft = JSON.stringify({
+      nodes: PAPERS.map((p) => ({
+        paper_id: p.id,
+        title: p.title,
+        year: 2020,
+        month: p.id === 'e2e-lg-b' ? 6 : 5,
+        core_idea: ''
+      })),
+      edges: []
+    })
+    const fixturePath = await writeFixture(draft)
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：3 个节点，0 条连线')
+
+    // data-node-id=节点行 UUID（非 paperId）——断言载体=卡内标题映射序
+    const frameTitles = async (i: number): Promise<string[]> =>
+      await win.locator('.month-frame').nth(i).locator('.tl-card').evaluateAll(
+        (els, titles) =>
+          els.map((e) => titles.find((t) => (e.textContent ?? '').includes(t)) ?? ''),
+        ['脉络根文献', '脉络甲文献', '脉络乙文献']
+      )
+    const cardBox = async (title: string) => {
+      const b = await nodeG(win, title).boundingBox()
+      if (b === null) throw new Error(`卡不可见：${title}`)
+      return b
+    }
+    // view 态（默认）可拖：甲→根左半（指针 x=根中心−30px）→插位=根前
+    const rootBox = await cardBox('脉络根文献')
+    const aBox = await cardBox('脉络甲文献')
+    await win.mouse.move(aBox.x + aBox.width / 2, aBox.y + aBox.height / 2)
+    await win.mouse.down()
+    // 过 5px 阈值激活+占位槽在场（B1 候选文献位）
+    await win.mouse.move(rootBox.x + rootBox.width * 0.25, rootBox.y + rootBox.height / 2, { steps: 6 })
+    await expect(win.locator('.drag-slot')).toHaveText('置 入', { timeout: 5_000 })
+    await win.mouse.up()
+    // settle .32s+写落定→DOM 序=新序（甲前根后——store lineageOrder 回填重排）
+    await expect
+      .poll(async () => await frameTitles(0), { timeout: 10_000 })
+      .toEqual(['脉络甲文献', '脉络根文献'])
+    // settle 清场信号：拖卡 inline 样式清空=transitionend finish（写已排队）
+    // ——后续拖拽的 pointerdown 不落 settle 期（忽略面竞态防御）
+    await expect
+      .poll(
+        async () =>
+          await nodeG(win, '脉络甲文献').evaluate(
+            (el) => el.getAttribute('style') === null || el.getAttribute('style') === ''
+          ),
+        { timeout: 10_000 }
+      )
+      .toBe(true)
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
+
+    // 跨月拒绝：拖乙（2020-06 框）落 2020-05 框→toast+落当前槽（乙仍在原框）
+    const bBox = await cardBox('脉络乙文献')
+    const aBox2 = await cardBox('脉络甲文献')
+    await win.mouse.move(bBox.x + bBox.width / 2, bBox.y + bBox.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(aBox2.x + aBox2.width / 2, aBox2.y + aBox2.height / 2, { steps: 6 })
+    await win.mouse.up()
+    await expect(
+      win.getByText('不能跨月拖动——请进入编辑模式，点卡片月标修改月份')
+    ).toBeVisible({ timeout: 10_000 })
+    await expect
+      .poll(async () => await frameTitles(1), { timeout: 10_000 })
+      .toEqual(['脉络乙文献'])
+
+    // reload 持久：slot 全序=新序（甲 slot0/根 slot1）
+    await reloadToLineage(win)
+    await expect
+      .poll(async () => await frameTitles(0), { timeout: 10_000 })
+      .toEqual(['脉络甲文献', '脉络根文献'])
+
+    await app.close()
+  })
+
+  /**
+   * T10=[T3-P8] 改月全流：edit→月标 .c-ym→month-pop（月份列表+篇数）→选月
+   * →toast 已移至+飞行落位→reload 持久 slot 尾部（服务端组变 max+1 归一）。
+   */
+  test('T10 改月全流：edit→月标→month-pop→选月→toast+reload 持久 slot 尾部', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t10-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    const draft = JSON.stringify({
+      nodes: PAPERS.map((p) => ({
+        paper_id: p.id,
+        title: p.title,
+        year: 2020,
+        month: p.id === 'e2e-lg-b' ? 6 : 5,
+        core_idea: ''
+      })),
+      edges: []
+    })
+    const fixturePath = await writeFixture(draft)
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：3 个节点，0 条连线')
+
+    // edit 态：甲卡月标「2020.5」在场（CSS display:none↔block）→点击开弹层
+    await win.getByTestId('lineage-edit-toggle').click()
+    const ym = nodeG(win, '脉络甲文献').locator('.c-ym')
+    await expect(ym).toHaveText('2020.5')
+    await ym.click()
+    const pop = win.getByTestId('month-pop')
+    await expect(pop).toBeVisible()
+    await expect(pop.locator('h4')).toHaveText('移 动 到 月 份')
+    await expect(pop.locator('.ws-item .nm').first()).toHaveText('2020 年 5 月')
+    await expect(pop.locator('.ws-item .ct').first()).toHaveText('2 篇')
+    // 当前月 on 态（dot ok 色）
+    await expect(pop.locator('.ws-item.on').first()).toHaveText(/2020 年 5 月/)
+    // 选 2020-06：toast+飞行落位（预演→settle→写落定真迁）
+    await pop.locator('.ws-item[data-ym="2020|6"]').click()
+    await expect(win.getByText('已移至 2020 年 6 月')).toBeVisible({ timeout: 10_000 })
+    await expect(pop).toHaveCount(0)
+    // data-node-id=UUID——标题映射序（同 T9）
+    const frameTitles = async (i: number): Promise<string[]> =>
+      await win.locator('.month-frame').nth(i).locator('.tl-card').evaluateAll(
+        (els, titles) =>
+          els.map((e) => titles.find((t) => (e.textContent ?? '').includes(t)) ?? ''),
+        ['脉络根文献', '脉络甲文献', '脉络乙文献']
+      )
+    await expect
+      .poll(async () => await frameTitles(1), { timeout: 10_000 })
+      .toEqual(['脉络乙文献', '脉络甲文献']) // slot 尾部（乙前甲后）
+    // 月标签计数随组迁移（5 月 1 篇/6 月 2 篇）——预演面即时
+    await expect(win.getByText('5 月 · 1 篇')).toBeVisible()
+    await expect(win.getByText('6 月 · 2 篇')).toBeVisible()
+    // 数据落定信号：.flash 高亮驻留至 store 回填对齐（预演清除=写已完成）
+    // ——reload 前必等（飞行 .32s+写错峰；preview 面早于此，裸 reload 丢写）
+    await expect(win.locator('.month-frame.flash')).toHaveCount(0, { timeout: 10_000 })
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0)
+
+    // reload 持久：甲仍在 2020-06 尾部（服务端组变 max+1 归一+lineageOrder）
+    await reloadToLineage(win)
+    await expect
+      .poll(async () => await frameTitles(1), { timeout: 10_000 })
+      .toEqual(['脉络乙文献', '脉络甲文献'])
+
+    await app.close()
+  })
 })

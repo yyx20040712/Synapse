@@ -60,3 +60,58 @@ export function rowsFromOffsetTops(tops: readonly number[]): number[] {
   const rowIndex = new Map(distinct.map((v, i) => [v, i]))
   return tops.map((v) => rowIndex.get(v)!)
 }
+
+/** [T3-P8] 月组框稳定键（year|month——拖拽源框/占位槽/改月目标组/框高亮共用） */
+export function frameKeyOf(year: number | null, month: number | null): string {
+  return `${String(year)}|${String(month)}`
+}
+
+/**
+ * [T3-P8] 改月视觉预演：nodeId 自原组移出、落目标 (year,month) 组尾部（纯
+ * 函数——真实槽位由服务端 normalizeMonthSlot 组变 max+1 承担；本函数仅
+ * settle 飞行期的渲染序，写落定后 store 重排自然接管）。目标组不存在=
+ * 原样返回（防御面——月列表自 groups 派生，正常流恒存在）。空组（移出后
+ * 零节点）整月收纳框移除（分组自 nodes 派生的同构语义）。
+ */
+export function applyMovePreview(
+  groups: readonly TimelineYearGroup[],
+  nodeId: string,
+  targetYear: number | null,
+  targetMonth: number | null
+): TimelineYearGroup[] {
+  // 纯 for 循环（非闭包 map 回调）——命中变量窄化在直系作用域内成立
+  let hitNode: LineageNode | null = null
+  const stripped: TimelineYearGroup[] = []
+  for (const g of groups) {
+    const months: TimelineMonthGroup[] = []
+    for (const m of g.months) {
+      const hit = m.nodes.find((n) => n.id === nodeId)
+      if (hit === undefined) {
+        months.push(m)
+        continue
+      }
+      hitNode = hit
+      const rest = m.nodes.filter((n) => n.id !== nodeId)
+      if (rest.length > 0) months.push({ month: m.month, nodes: rest })
+    }
+    stripped.push({ ...g, months })
+  }
+  if (hitNode === null) return [...groups]
+  const moved = hitNode
+  const target = frameKeyOf(targetYear, targetMonth)
+  let placed = false
+  const out: TimelineYearGroup[] = []
+  for (const g of stripped) {
+    const months: TimelineMonthGroup[] = []
+    for (const m of g.months) {
+      if (frameKeyOf(g.year, m.month) !== target) {
+        months.push(m)
+        continue
+      }
+      placed = true
+      months.push({ ...m, nodes: [...m.nodes, moved] })
+    }
+    out.push({ ...g, months })
+  }
+  return placed ? out : [...groups]
+}

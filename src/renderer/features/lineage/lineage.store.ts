@@ -37,6 +37,7 @@ import { create } from 'zustand'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
+import { lineageOrder } from '@shared/models/lineage'
 import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert, LineTypeGroup } from '@shared/models/lineage'
 
 export type LineageStatus = 'loading' | 'ready' | 'error'
@@ -44,9 +45,25 @@ export type LineageStatus = 'loading' | 'ready' | 'error'
 /** 保存态三态（ADR-0014 保存语义对齐标注/笔记——INV-04 同型不新立号） */
 export type LineageSaveStatus = 'saved' | 'saving' | 'error'
 
+/**
+ * [T3-P8 R3] 既有节点更新=lazy 载荷：enqueue 只存 id+差异（patch=字段覆盖/
+ * override=槽位·改月语义轴），applyAction 执行时点 fullRowInput(最新行)合成
+ * ——写窗内先行落地的变更自然并入，enqueue 时点旧快照不再静默回写
+ * （跨格：改月排队↔同节点字段写/槽位写互吞或互回旧值）。
+ */
+export interface LazyNodeUpsert {
+  kind: 'upsert-node'
+  id: string
+  patch: Partial<Pick<LineageNodeUpsert, 'coreIdea' | 'tags' | 'x' | 'y'>>
+  /** 语义轴整替（后到胜出）：{slot}=月内序透写；{year,month}=改月（合成时
+   *  slot 键缺省——服务端组变 max+1 尾部既有分支） */
+  override?: { slot: number } | { year: number | null; month: number | null }
+}
+
 /** 写动作（排队单元；reparent 的加边动作带标记——N5 部分失败 toast 前缀） */
 type WriteAction =
-  | { kind: 'upsert-node'; input: LineageNodeUpsert; reparent?: boolean }
+  | { kind: 'upsert-node'; input: LineageNodeUpsert }
+  | LazyNodeUpsert
   | { kind: 'remove-node'; id: string }
   | { kind: 'upsert-edge'; input: LineageEdgeUpsert; reparent?: boolean }
   | { kind: 'remove-edge'; id: string }
@@ -79,6 +96,13 @@ export interface LineageStore {
    *  主控裁决 e：x/y 数据面[DB 列/draft schema]未退役+store-write.test 直测
    *  =非孤儿，保留） */
   moveNode(id: string, x: number, y: number): void
+  /** [T3-P8] 月组槽位全序重排：按传入序 slot=0..n-1 逐节点透写排队
+   *  （normalizeMonthSlot slot 透写分支既有——零 service 改）；settle 落定后
+   *  调用（无乐观写——P7B R5 同族：飞行窗禁写，失败=error+toast+重试） */
+  reorderMonthSlots(nodeIds: string[]): void
+  /** [T3-P8] 改月：month+year 全字段载荷、slot 键缺省——服务端组变分支
+   *  （新组 max+1 落尾部）归一，月组内槽位不在此写 */
+  moveNodeMonth(id: string, year: number | null, month: number | null): void
   editCoreIdea(id: string, coreIdea: string): void
   /** F-LG14 标签整组写入（增删 UI 语义化收口——全字段载荷含 tags，经既有
    *  upsert 通道即时持久化；去重单源在 main repo 写边界） */
@@ -117,7 +141,10 @@ export function useLineageDirty(): boolean {
 function sameTarget(a: WriteAction, b: WriteAction): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'upsert-node' && b.kind === 'upsert-node') {
-    return a.input.id !== undefined && a.input.id === b.input.id
+    // [R3] 新建（input 无 id）不合并；更新 lazy（id 型）按 id 判等
+    const idA = 'input' in a ? a.input.id : a.id
+    const idB = 'input' in b ? b.input.id : b.id
+    return idA !== undefined && idA === idB
   }
   if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
     return a.input.fromNode === b.input.fromNode && a.input.toNode === b.input.toNode
@@ -139,22 +166,72 @@ function writeFailToast(action: WriteAction, message: string): void {
 export const useLineageStore = create<LineageStore>()((set, get) => {
   // 请求序号 stale-guard：新 load 取代旧 load 后，旧响应（成功/失败）丢弃
   let seq = 0
+  /** [R3] flush 派发中动作引用：enqueue 融合面排除（flight 项已发不融合） */
+  let inflight: WriteAction | null = null
+
+  /** [R3] lazy 同实体融合：patch 字段级合并（不同字段共存——全字段语义在
+   *  lazy 世界的正确翻译；同字段后值胜）；override 整替（语义轴互斥：改月时
+   *  slot 必缺省，与槽位透写融合会钉旧组位）。已知边界（[T3-P8] 门二裁决部
+   *  C4 主控终裁=后到整替胜出可接受）：改月（override={year,month}）写窗内
+   *  同节点再入 reorderMonthSlots（override={slot}）→月迁移被整替丢弃、月回
+   *  旧值——窗口=写队列排空（毫秒级）且操作序列反直觉（弹层刚关即拖同组卡）
+   *  非正常路径；toast 已发与回跳的可见矛盾=B5 候选优化面（预演驻留同构
+   *  movePreview），不强制 */
+  const fuseLazy = (a: LazyNodeUpsert, b: LazyNodeUpsert): LazyNodeUpsert => ({
+    kind: 'upsert-node',
+    id: b.id,
+    patch: { ...a.patch, ...b.patch },
+    override: b.override ?? a.override
+  })
+
+  const isLazyUpsert = (x: WriteAction): x is LazyNodeUpsert =>
+    x.kind === 'upsert-node' && !('input' in x)
 
   const enqueue = (action: WriteAction): void => {
-    set((s) => ({
-      queue: [...s.queue.filter((x) => !sameTarget(x, action)), action],
-      saveStatus: 'saving'
-    }))
+    set((s) => {
+      let queue: WriteAction[]
+      if (isLazyUpsert(action)) {
+        // [R3] 融合仅限**未派发**队列项：flight 中动作（inflight）已带旧意图
+        // 发出，融合它=首发+融合重发双落（跨格实测 calls 翻倍）；flight 项
+        // 保留原位，后来者独立排队——lazy 派发时点合成读最新行，串行落地
+        // 终值仍=各轴最新意图（最后写胜出按轴成立）
+        let hit = false
+        queue = s.queue.map((x) => {
+          if (x === inflight || !isLazyUpsert(x) || !sameTarget(x, action)) return x
+          hit = true
+          return fuseLazy(x, action)
+        })
+        if (!hit) queue = [...s.queue, action]
+      } else {
+        queue = [...s.queue.filter((x) => x !== inflight && !sameTarget(x, action)), action]
+      }
+      return { queue, saveStatus: 'saving' }
+    })
     void flush()
+  }
+
+  /** [R3] lazy 载荷执行时点合成：fullRowInput 读当前 store 行（写窗内先行
+   *  落地的字段/月/槽自然并入）+patch 覆盖+override 语义轴 */
+  const lazyInput = (a: LazyNodeUpsert): LineageNodeUpsert => {
+    const patched: LineageNodeUpsert = { ...fullRowInput(nodeOf(a.id)), ...a.patch }
+    if (a.override === undefined) return patched
+    if ('slot' in a.override) return { ...patched, slot: a.override.slot }
+    const { slot: _omit, ...rest } = patched // 改月=slot 键缺省（组变尾部归一）
+    return { ...rest, ...a.override }
   }
 
   const applyAction = async (action: WriteAction): Promise<void> => {
     if (action.kind === 'upsert-node') {
-      const saved = await unwrap(api.lineage.upsertNode(action.input))
+      const input = 'input' in action ? action.input : lazyInput(action)
+      const saved = await unwrap(api.lineage.upsertNode(input))
+      // [T3-P8] 回填后按 lineageOrder 重排（INV-75 消费面扩——store 数组序=
+      // 渲染序单源：slot/月写落定后 Timeline 组内序随新全序，消费方零重排）
       set((s) => ({
-        nodes: s.nodes.some((n) => n.id === saved.id)
-          ? s.nodes.map((n) => (n.id === saved.id ? saved : n))
-          : [...s.nodes, saved]
+        nodes: lineageOrder(
+          s.nodes.some((n) => n.id === saved.id)
+            ? s.nodes.map((n) => (n.id === saved.id ? saved : n))
+            : [...s.nodes, saved]
+        )
       }))
       return
     }
@@ -220,6 +297,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     set({ flushing: true, saveStatus: 'saving' })
     while (get().queue.length > 0) {
       const action = get().queue[0]!
+      inflight = action // [R3] 派发中标记：enqueue 融合面排除（见 enqueue 注）
       try {
         await applyAction(action)
         // 按动作身份出队（非 slice(1)：flight 期间同实体动作可能被合并替换，
@@ -235,10 +313,12 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         }
         // 系统型：动作保留（不丢），error 态+重试（INV-04：失败不推进保存态）
         const message = e instanceof Error ? e.message : String(e)
+        inflight = null
         set({ saveStatus: 'error', lastWriteError: message, flushing: false })
         writeFailToast(action, message)
         return
       }
+      inflight = null
     }
     set({ saveStatus: 'saved', lastWriteError: null, flushing: false })
   }
@@ -249,14 +329,18 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     return n
   }
 
-  /** 既有节点→整行 upsert 载荷（全字段防半更新清字段；F-LG14 tags 条件展开：
-   *  null/缺省不进键——载荷形状与既有调用点逐字节保持，tags 在场才随行） */
+  /** 既有节点→整行 upsert 载荷（全字段防半更新清字段；[T3-P8] month/slot
+   *  补全——service normalizeMonthSlot 按「month 缺省=null 全量语义」归一，
+   *  缺月即清月（P8 改月面激活的潜伏缺陷：改月后编辑想法/标签会清月跳组）；
+   *  F-LG14 tags 条件展开：null/缺省不进键——tags 在场才随行） */
   const fullRowInput = (n: LineageNode): LineageNodeUpsert => ({
     id: n.id,
     paperId: n.paperId,
     title: n.title,
     coreIdea: n.coreIdea,
     year: n.year,
+    month: n.month,
+    slot: n.slot,
     x: n.x,
     y: n.y,
     ...(n.tags != null ? { tags: n.tags } : {})
@@ -315,19 +399,33 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     },
 
     moveNode(id, x, y) {
-      const n = nodeOf(id)
-      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), x, y } })
+      nodeOf(id)
+      enqueue({ kind: 'upsert-node', id, patch: { x, y } })
+    },
+
+    reorderMonthSlots(nodeIds) {
+      // 月组全序重写：传入序即槽位序（0..n-1 透写）；同实体 lazy 融合
+      nodeIds.forEach((id, slot) => {
+        nodeOf(id)
+        enqueue({ kind: 'upsert-node', id, patch: {}, override: { slot } })
+      })
+    },
+
+    moveNodeMonth(id, year, month) {
+      nodeOf(id)
+      // override={year,month}：合成时 slot 键缺省（服务端组变 max+1——D-I-1）
+      enqueue({ kind: 'upsert-node', id, patch: {}, override: { year, month } })
     },
 
     editCoreIdea(id, coreIdea) {
-      const n = nodeOf(id)
-      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), coreIdea } })
+      nodeOf(id)
+      enqueue({ kind: 'upsert-node', id, patch: { coreIdea } })
     },
 
     setNodeTags(id, tags) {
-      const n = nodeOf(id)
-      // 空组归一缺省键（null 语义）——载荷形状与「清空标签」一致
-      enqueue({ kind: 'upsert-node', input: { ...fullRowInput(n), ...(tags.length > 0 ? { tags } : {}) } })
+      nodeOf(id)
+      // 空组=patch 无 tags 键（合成缺省→null 语义，「清空标签」一致）
+      enqueue({ kind: 'upsert-node', id, patch: tags.length > 0 ? { tags } : {} })
     },
 
     linkNodes(from, to, label = '') {

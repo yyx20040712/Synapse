@@ -123,7 +123,7 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层�
     const toggle = btn('lineage-edit-toggle')
     expect(toggle.textContent).toBe('编辑脉络')
     expect(timeline.classList.contains('editing')).toBe(false)
-    expect(bar.querySelector('.drag-hint')).toBeNull() // view 态禁假 affordance
+    expect(bar.querySelector('.drag-hint')?.textContent).toBe('↕ 拖动＝月内调序（虚线槽＝候选文献位）') // [T3-P8] view 态双文案（mockup L507）
     expect(btn('lineage-link-btn').className).toContain('linkbtn') // DOM 在场（CSS 显隐 D-21）
     expect(q('[data-testid="lineage-add-node"]')).not.toBeNull()
     expect(q('[data-testid="lineage-import"]')).not.toBeNull()
@@ -132,7 +132,7 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层�
     })
     expect(btn('lineage-edit-toggle').textContent).toBe('完成编辑')
     expect(timeline.classList.contains('editing')).toBe(true)
-    expect(bar.querySelector('.drag-hint')?.textContent).toBe('编辑中：点连线改线型')
+    expect(bar.querySelector('.drag-hint')?.textContent).toBe('编辑中：点连线改线型 · 点卡片月标改月 · 拖动＝月内调序') // [T3-P8] 全句（mockup L1010）
   })
 
   it('新建连线全流：link-btn→源卡 .link-src→目标卡→popover=create→「创建连线」→linkWithLine+popover 关；拾取态点卡不转发选中', () => {

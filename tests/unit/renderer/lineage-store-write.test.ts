@@ -136,12 +136,16 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     )
     state().moveNode('A', 560, 430)
     await settle()
+    // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变
+    //  仅锁新全字段形状；详 lineage-store-reorder.test 同族用例）
     expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
       id: 'A',
       paperId: 'paper-A',
       title: '锚点',
       coreIdea: '原想法',
       year: 2020,
+      month: null,
+      slot: null,
       x: 560,
       y: 430
     })

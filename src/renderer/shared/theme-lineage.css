@@ -79,10 +79,10 @@
 .tl-month.unknown .month-tag { color: var(--faint); border-color: var(--line); border-style: solid; }
 
 /* 半尺寸深底小卡（A9）：104×~52 三行；A2 砖砌行错位=rowshift 62px 右移
-   （半卡 52+半隙 10——0 起奇数索引行，主控裁决口径）；cursor=pointer
-   （拖拽退役后单击语义——mockup grab 值改判申报）；touch-action 摘除
-   （k1-N7 回炉：无拖拽时 none 阻断触摸滚动与 pointer 可供性矛盾——
-   P8 槽位重排重接拖拽时随需恢复） */
+   （半卡 52+半隙 10——0 起奇数索引行，主控裁决口径）；[T3-P8] cursor 复位
+   grab+touch-action none（mockup L243 逐值——拖拽重接随需恢复，k1-N7
+   回炉注兑现）；margin-left 过渡=常态 shift 挂摘平滑（源④——测量期
+   .tl-measure 规则恒优先，特异性 (0,3,0)>(0,1,0)） */
 .tl-card {
   width: 104px;
   min-height: 52px;
@@ -91,13 +91,62 @@
   border-radius: 8px;
   padding: 5px 6px 4px;
   box-shadow: var(--shadow-card);
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
   position: relative;
   z-index: 2;
   user-select: none;
   transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
 }
 .tl-card.rowshift { margin-left: 62px; }
+/* [T3-P8] 拖起态（mockup L248 逐值：fixed 离流+z99+拖起阴影+微倾放
+   大+grabbing+pointer-events none=settle 期重触发忽略的 CSS 同义面） */
+.tl-card.dragging {
+  position: fixed;
+  z-index: 99;
+  box-shadow: var(--shadow-drag);
+  transform: rotate(2deg) scale(1.05);
+  cursor: grabbing;
+  pointer-events: none;
+}
+/* [T3-P8] 候选文献位虚线槽（B1——mockup L262 逐值：104×52 dashed accent
+   accent-soft 底「置 入」letter-spacing 3px；opacity .2s 过渡+框外 .faded
+   .35 淡化；9px→--fs-micro 同值映射） */
+.drag-slot {
+  width: 104px;
+  min-height: 52px;
+  border: 1.8px dashed var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-micro);
+  color: var(--accent);
+  letter-spacing: 3px;
+  transition: opacity .2s;
+}
+.drag-slot.faded { opacity: .35; }
+/* [T3-P8] 月标 chip（mockup L257-258 逐值：absolute top -8px right -3px
+   mono accent 底白字「YYYY.M」/未定月形；display:none↔.editing block；
+   裸白→--accent-ink 三族恒定白 token） */
+.c-ym {
+  display: none;
+  position: absolute;
+  top: -8px;
+  right: -3px;
+  font-family: var(--mono);
+  font-size: var(--fs-tl-meta);
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 6;
+}
+.timeline.editing .c-ym { display: block; }
+/* [T3-P8] 改月飞行目标框高亮（框高亮动画——month-frame 既有
+   border-color/background 过渡承载进出淡变） */
+.month-frame.flash { border-color: var(--accent); background: var(--accent-soft); }
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
@@ -202,16 +251,22 @@
 .lg-btn.editing { background: var(--signal); color: var(--accent-ink); box-shadow: var(--shadow-lg-edit); }
 .lg-btn.linkbtn { display: none; }
 .timeline.editing .lg-btn.linkbtn { display: block; }
-/* drag-hint 右缘 chip：仅 edit 态渲染（D-P7B-1——view 态 P8 能力禁假 affordance）；
-   值取 mockup .editing .drag-hint 变体（L219——signal 三稿同值 token 承载） */
+/* drag-hint 右缘 chip：[T3-P8] 双态全时渲染（D-P7B-1 兑现）——base=view
+   态 accent 变体（mockup L218）+edit 态 signal 变体（L219——三稿同值
+   token 承载） */
 .drag-hint {
   margin-left: auto;
   font-size: var(--fs-tl-hint);
-  color: var(--signal);
-  background: var(--signal-a08);
-  border: 1px dashed var(--signal);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px dashed var(--accent);
   border-radius: 7px;
   padding: 4px 10px;
+}
+.timeline.editing .drag-hint {
+  color: var(--signal);
+  background: var(--signal-a08);
+  border-color: var(--signal);
 }
 
 /* 编辑态（.timeline.editing——mode 驻 Timeline 单源 INV-80）：
@@ -307,3 +362,77 @@
 }
 .newsub-form .newsub-preview { display: block; width: 100%; }
 .newsub-form .newsub-acts { display: flex; gap: 6px; }
+
+/* ══ [T3-P8] 拖拽连线层淡化+改月弹层+检查面板族（mockup L223/L312-318/
+   L264-281 逐值；字号 token 映射：14px→--fs-title/12px→--fs-body/11.5px→
+   --fs-body/10.5px→--fs-tl-hint/10px·9.5px→--fs-micro/9px→--fs-nano）══ */
+/* 拖起 dimmed（mockup .tl-svg.dimmed opacity .18——飞行脱节已知限制掩盖面） */
+.tl-edges.dimmed { opacity: .18; }
+
+/* 改月弹层月份行（mockup .ws-item 族 L313-318——workspace.css 同源值，
+   本域驻留副本：ws 皮肤仅 WsRailPopover 挂载期在场，lineage 视图不保证） */
+.month-pop .ws-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: var(--fs-body);
+  font-family: inherit;
+}
+.month-pop .ws-item:hover { background: var(--line-soft); }
+.month-pop .ws-item.on { background: var(--accent-soft); }
+.month-pop .ws-item .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.month-pop .ws-item .nm { flex: 1; }
+.month-pop .ws-item .ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+
+/* 检查面板（mockup .lg-inspector 族 L264-281——重皮肤结构性改造：既有
+   testid/数据面/行为面全保活，容器仍驻 LineageSidePanel 玻璃底） */
+.insp-cap {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-micro);
+  letter-spacing: 3px;
+  color: var(--faint);
+  font-family: var(--mono);
+}
+.insp-title {
+  font-size: var(--fs-title);
+  color: var(--ink);
+  line-height: 1.55;
+  margin: 9px 0 8px;
+  font-weight: 600;
+}
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.badge { font-size: var(--fs-tl-hint); padding: 2.5px 8px; border-radius: 99px; font-family: var(--mono); }
+.badge.core { color: var(--accent-ink); background: var(--accent); font-weight: 600; }
+.badge.plain { color: var(--dim); border: 1px solid var(--line); }
+.idea-cap { font-size: var(--fs-micro); letter-spacing: 2px; color: var(--accent); margin: 4px 0 5px; }
+.idea {
+  font-size: var(--fs-body);
+  line-height: 1.85;
+  color: var(--dim);
+  text-align: justify;
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+.sec-cap {
+  font-size: var(--fs-micro);
+  letter-spacing: 3px;
+  color: var(--faint);
+  margin: 2px 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+/* 后置章虚线徽标（mockup L311——--fs-nano 值源；library.css .lib-postpone 同族） */
+.postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
+.insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }

@@ -357,9 +357,10 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(css).toMatch(/\.lg-btn\.editing\s*\{[^}]*background:\s*var\(--signal\);[^}]*box-shadow:\s*var\(--shadow-lg-edit\)/)
     expect(css).toMatch(/\.lg-btn\.linkbtn\s*\{[^}]*display:\s*none/)
     expect(css).toMatch(/\.timeline\.editing \.lg-btn\.linkbtn\s*\{[^}]*display:\s*block/)
-    // drag-hint 编辑态信号色（mockup L219——仅 edit 态渲染，值取 .editing 变体）
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\)/)
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--signal\)/)
+    // drag-hint 双态（[T3-P8] D-P7B-1 兑现——mockup L218 base accent+L219 edit signal）
+    expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
+    expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--accent\)/)
+    expect(css).toMatch(/\.timeline\.editing \.drag-hint\s*\{[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\);[^}]*border-color:\s*var\(--signal\)/)
     // .pop 弹层（mockup L287 逐值——fixed 240px 挂视口）
     expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)
     expect(css).toMatch(/\.pop h4\s*\{[^}]*letter-spacing:\s*2px;[^}]*color:\s*var\(--faint\)/)

@@ -21,11 +21,13 @@
  *   payload 面 number|null vs 总线 optional）。阅读器消费侧=open-paper-
  *   anchor.ts（接缝三方头注锚定：本页+SidePanel+open-paper-bus）。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { lineageCatalogNos } from '@shared/models/lineage'
 import { useLineageStore } from './lineage.store'
 import { LineageBoard } from './LineageBoard'
 import { LineageSidePanel } from './LineageSidePanel'
+import { isCore } from './lineage-classify'
 
 export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
@@ -34,6 +36,16 @@ export function LineagePage(): JSX.Element {
   // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
+  // [T3-P8] 侧板徽章分发单源：骑缝编号（INV-76 全图一次）+核心档+含金量摘要
+  const nodes = useLineageStore((s) => s.nodes)
+  const edges = useLineageStore((s) => s.edges)
+  const paperMetrics = useLineageStore((s) => s.paperMetrics)
+  const catalogNos = useMemo(() => lineageCatalogNos(nodes), [nodes])
+  const selCore = selectedNode !== null && isCore(selectedNode, edges)
+  const selMetrics =
+    selectedNode !== null && selectedNode.paperId !== null
+      ? (paperMetrics[selectedNode.paperId] ?? null)
+      : null
 
   useEffect(() => {
     void load()
@@ -95,6 +107,9 @@ export function LineagePage(): JSX.Element {
           node={selectedNode}
           onJumpToPaper={handleJumpToPaper}
           onSetTags={(id, tags) => useLineageStore.getState().setNodeTags(id, tags)}
+          catalogNo={selectedNodeId !== null ? (catalogNos.get(selectedNodeId) ?? null) : null}
+          core={selCore}
+          metrics={selMetrics}
         />
       </aside>
     </div>

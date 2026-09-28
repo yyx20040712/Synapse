@@ -151,12 +151,15 @@ it('Board 全链：右键→「添加标签…」→对话框输入→保存=ups
     save?.click()
   })
   await settle()
+  // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变）
   expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
     id: 'A',
     paperId: 'paper-A',
     title: '锚点',
     coreIdea: '想法',
     year: 2019,
+    month: null,
+    slot: null,
     x: null,
     y: null,
     tags: ['综述', '早期']
@@ -255,12 +258,15 @@ it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新�
   )
   useLineageStore.getState().setNodeTags('A', ['综述', '早期'])
   await settle()
+  // [T3-P8] 同上：全字段载荷补 month/slot
   expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
     id: 'A',
     paperId: 'paper-A',
     title: '节点A',
     coreIdea: '',
     year: 2020,
+    month: null,
+    slot: null,
     x: 500,
     y: 400,
     tags: ['综述', '早期']

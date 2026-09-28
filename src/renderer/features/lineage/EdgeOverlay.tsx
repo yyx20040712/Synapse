@@ -67,6 +67,9 @@ export function EdgeOverlay(props: {
   groups: TimelineYearGroup[]
   /** 回炉 1 W1/W6：父组件不动点收敛/守卫分支 bump——子 effect 再触发信号 */
   routeEpoch: number
+  /** [T3-P8] 拖起态连线层淡化（mockup .dimmed opacity .18——飞行脱节已知
+   *  限制的掩盖面：拖起+settle transitionend 单次重算，不帧随动） */
+  dimmed?: boolean
   /** [T3-P7B] 命中层点击（Timeline 接 composer——handler 闸与 CSS
    *  pointer-events 双闸；React MouseEvent 结构兼容 ClickEventLike） */
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
@@ -131,7 +134,11 @@ export function EdgeOverlay(props: {
   }, [live, props.shiftedIds, props.groups, props.routeEpoch])
 
   return (
-    <svg className="tl-edges" ref={svgRef} data-testid="tl-edges">
+    <svg
+      className={props.dimmed === true ? 'tl-edges dimmed' : 'tl-edges'}
+      ref={svgRef}
+      data-testid="tl-edges"
+    >
       {paths.map((p) => {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null

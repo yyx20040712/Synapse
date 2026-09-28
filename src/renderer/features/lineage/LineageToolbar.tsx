@@ -9,8 +9,8 @@
  *   （display:none↔.editing 内 block——D-21 编辑模式内才显；DOM 恒在场）
  *   +导入草稿 .lg-btn primary+添加节点 .lg-btn ghost（repo 特有 mockup 无位）。
  * - 保存态/重试 chip 行尾（[P7-H] 既有语义零变——testid 全保活）；
- *   drag-hint 右缘 chip 仅 edit 态渲染「编辑中：点连线改线型」（view 态
- *   mockup 文案=月内调序预告系 P8 域能力，禁假 affordance 不渲染）。
+ *   [T3-P8] drag-hint 双态全时渲染（D-P7B-1 兑现——mockup L507/L1010-1013
+ *   逐字）：view「↕ 拖动＝月内调序（虚线槽＝候选文献位）」/edit 全句。
  */
 import type { LineageSaveStatus } from './lineage.store'
 
@@ -75,7 +75,15 @@ export function LineageToolbar(props: {
           </button>
         </span>
       )}
-      {editing && <span className="drag-hint">编辑中：点连线改线型</span>}
+      {editing ? (
+        <span className="drag-hint" data-testid="drag-hint">
+          编辑中：点连线改线型 · 点卡片月标改月 · 拖动＝月内调序
+        </span>
+      ) : (
+        <span className="drag-hint" data-testid="drag-hint">
+          ↕ 拖动＝月内调序（虚线槽＝候选文献位）
+        </span>
+      )}
     </div>
   )
 }
