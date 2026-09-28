@@ -4,6 +4,8 @@
 > P7 设计真相源=docs/design/2026-09-27_t3p7-line-connection-design-final.md（§4 线型系统 UI 本票全兑现）。
 > 本场=v68 会话续段：T3-P7B 立案+实现三屋全链（回炉 2）+门二 GO_WITH_CONDITIONS+收口。
 > v68 用户裁决「新任务下一会话开工」已履行（本会话=P7B 专段）。
+> **2026-09-28 次段滚动**：C-A4 收口第二段（push+CI 首推）→三连红→插队票 F-CI-01
+> （CI npm ci 红修复）→CI 首绿（08-27 以来第一次）→C-A4+F-CI-01 双翻票收口。
 
 ## §0 额度与预算预警
 
@@ -14,7 +16,15 @@
   （DPR 吸附教训）——已回流教训档 §十三；②B 级根因再证 v68 §4 判断（设计/简报层数字
   会照抄进产物——C2 popover 15 笔误源头=主控回炉简报，简报数字也须实测落笔）；
   ③回炉 2 小批免独立审（P7A 先例）实测可行——文书勘正类处置主控亲验成本远低于独立审。
-- 下一会话/次项：C-A4 CI 口径对齐（治理五票批序 2——首推 CI 实跑=验收窗口）。
+- **次段消耗（账本 3 行）**：orchestrator（F-CI-01 立案+根因诊断+fixture A/B+实现+三轮
+  verify 亲验+提交推送+双翻票）+ops-gate1-k1 两轮（24.6k+29.6k tokens，纯内联零 Read）。
+  R5 单点配置批=k1 单审+主控亲验（k1 认定不升级双审——失败成本=CI 继续红无增量损失）。
+- **次段教训三条（§5 详）**：①`cmd | tee` 管道退出码污染（tee 恒 0→if 判定假阳性
+  「PUSH OK」——v68 教训④同族扩记：if/循环判定禁接裸管道）；②bash 控制台回显中文
+  乱码≠文件损坏（文件层编码判定只认 node 替换符计数/Read 工具——坑②变体，曾诱发
+  误删好行一次，git diff 恒等还原）；③「本地绿≠CI 绿」新形态：install/ci 形态行为差
+  +lifecycle PATH .bin 顶替 npm 自带 node-gyp（INV-81+F-CI-01 票面在案）。
+- 下一会话/次项：SR-SEC-01 ACAO 通配收束（治理五票批序 3）。
 
 ## §1 批次完成情况（段间衔接基线——对不上禁提交）
 
@@ -25,9 +35,10 @@
 | locks manifest | **257**（260−4 探针+1 新指针件 z-probes-ARCHIVED.md 自动入锁） |
 | 豁免台账 | **123 条**（F-CONSOL-03 孤儿豁免 F-RDR-01 skipSite 单条移除；全 stale=跨票累积观察项移交 F-GOV-01） |
 | 指纹门基线 | **194 文件/1994 用例/6175 断言/skipSite12/snapshot123**（F-CONSOL-03 删基线显式重跑——票面「零影响」失实勘正在案：四探针原在基线内[55 断言/skipSite3]；diff 审计 ADDED0/REMOVED4/CHANGED0） |
-| 战役进度 | P1-P7B✓；**治理五票批：F-CONSOL-03✓（本段）**，次项=C-A4；T3-U1 挂账批；open 面=8 |
-| 提交 | F-CONSOL-03 收口（test(assets)，[locked-change] 单尾注；4D+4M+1A 共 9 路径单笔；范围闸 tr-count=0） |
-| 证据仓外档 | F-CONSOL-03/（impl+probe 报告+k1/d1 两轮+裁决部四门审档+raw 40+件+开工记录） |
+| 战役进度 | P1-P7B✓；治理五票批：F-CONSOL-03✓+**C-A4✓（次段收口）**；**插队票 F-CI-01✓（次段当日闭环）**；T3-U1 挂账批；**open 面=7**（实测 openTickets：F-TESTREF-S1/S3+F-CONSOL-02+SR-SEC-01+SR-IPC-10+F-GOV-01+T3-U1——P8 未立案不在册） |
+| 提交 | F-CONSOL-03 收口（test(assets)）；C-A4 实现笔 c484f330578；F-CI-01 实现笔 318cd79c521[dep-change][locked-change]+翻票笔 5f738f3afd7[locked-change]；C-A4 翻票笔 841969ba61e |
+| **CI 状态** | **run 36372251379 success=2026-08-27 以来首绿**（绿头=318cd79c521；npm ci 步过+指纹门步真实执行绿+lock-change-guard 绿+e2e 51 passed 2.6m；此前三连红 36369814511/36364274452/36329103053 均=F-CI-01 域 npm ci 断因） |
+| 证据仓外档 | F-CONSOL-03/（impl+probe 报告+k1/d1 两轮+裁决部四门审档+raw 40+件+开工记录）；**C-A4/（31-push～36 取证链+fixture 实验场）；F-CI-01/（impl 报告+k1 两轮档+raw 15 件）** |
 
 本段门链实录（B 级根因与教训在档）：
 1. **首审双 FAIL——B-1 双席独立同中**：`.tl-card.link-src`(0,2,0) 被编辑态基线
@@ -45,6 +56,22 @@
    /简报侧 6226 vs 实测 6230（主控误差）/tinypool 瞬态一轮复跑两轮全绿（低于 e2e
    非确定立案线——指纹登记：EXIT=1+用例全绿+ProcessWorker.initialize）。
 
+**次段门链实录（2026-09-28 下午段——C-A4 收口第二段+F-CI-01 插队票）**：
+1. **push 处方生效**：URL 级代理键同键名覆盖直连 push 一次成功（ab485272acc..45619a7ba76）；
+   F-CI-01 笔 push 直连间歇（1 次 reset+6 次连不上）第 7 次成功——**直连 push 需重试韧性**。
+2. **CI 三连红取证**：首推 run 36369814511 失败步=npm ci（非 C-A4 指纹门步——根本没执行到）；
+   前两笔历史 run 同步红+末绿=08-27 → 判=环境级断因非票面所致。
+3. **根因诊断（fixture A/B 全实证）**：npm 11.19 对「binding.gyp+无 install 脚本」包在
+   npm ci 形态触发缺省 node-gyp rebuild（npm install 形态不触发=本地一个月无感分叉）→
+   lifecycle PATH 解析项目 .bin 的 node-gyp@9.4.1（@electron/rebuild←electron-builder 传递）
+   → 无法解析 runner VS 18 → npm ci 红。fixture 复刻链：触发实证（debug log info run
+   code 0）+deny 后跳过实证（897ms 零编译零 info run）+require prebuilds 功能绿。
+4. **F-CI-01 门链**：R5 单点配置批=k1 两轮（首轮 PWW B0W3N3+delta 复审 PASS B0W0N2，
+   纯内联零 Read；W1 allowScripts CI 零实证史→首绿销项/W2 全树 binding.gyp 静态枚举恰
+   1 命中+不采全量重装[代理已死毁绿态树风险不对称]/W3 INV-81 随票登记）。
+5. **CI 首绿**：run 36372251379 success（5m10s+e2e 51 passed）——C-A4 C2 锚与 F-CI-01
+   终验收同 run 兑现；双翻票收口（5f738f3afd7+841969ba61e）。
+
 ## §2 执行序（下一批次——新会话开工）
 
 > **2026-09-28 治理加固五票批并入**（用户裁决「全部立案+完整规划链+并入下批」；
@@ -58,16 +85,18 @@
    ①票面「指纹门零影响」系设计层存量假设失实（⑤i 纪律当场证伪——主控前置实测拦截，
    实现改走删基线显式重跑）；②门一 d1 席代理档隔离墙**禁 Read**——门一简报禁授权
    Read，审包必须全内联（首轮 FAIL 系检材不合规，重派补正后过线）。
-2. **C-A4 CI 口径对齐（实现笔毕 2026-09-28，收口第二段 pending 网络）**：三屋链全毕
-   [实现+双审 PWW（两席纯内联零 Read——F-CONSOL-03 教训固化）+probe 8/8+裁决部
-   GWC（C1-C5）]，实现笔=c484f330578（ci.yml+AGENTS.md+manifest 三件 6+/3−，
-   [locked-change]，**驻本地未推送——push 双断[代理 7890+直连均 FAIL]**）。
-   **次会话/网络恢复后首动作序列**：①`git -c http.https://github.com.proxy= -c
-   http.proxy= push origin main`（URL 级代理键须同键名覆盖——本日实证）；②盯 CI
-   首跑绿（新步「指纹门」真实执行+lock-change-guard 绿=C2 终验收锚）；③绿后
-   收口笔=registry 翻 C-A4→done+summary 尾注[C3 次登记：W1 表述修正建议随记]
-   +交接书滚动（[locked-change] 惯例尾注）；红则按行尾/路径环境差排查不翻票。
-   W1 登记主位=本档 §3。
+2. **C-A4 CI 口径对齐✓（2026-09-28 次段收口）**：三屋链全毕+**CI run 36372251379 首绿
+   =C2 终验收锚兑现**（绿头=318cd79c521；本票指纹门步真实执行绿+lock-change-guard 绿；
+   注记：实现笔 c484f330578 首推三连红系 F-CI-01 域环境断因，非本票 diff 所致）。
+   C1-C5 全兑现；W1 表述修正建议随记入翻票 summary（主登记位=本档 §3，触发点=
+   F-GOV-01 立案核或微票）；实现笔=c484f330578+翻票笔=841969ba61e。
+2a. **F-CI-01 CI npm ci 红修复✓（2026-09-28 次段插队票当日闭环——非五票批新票）**：
+   package.json allowScripts deny better-sqlite3（npm 11.19 install-scripts 审批机制）+
+   INV-81 登记。根因=npm ci 缺省 node-gyp rebuild→项目 .bin 的 node-gyp@9.4.1 无法解析
+   runner VS 18；修复=deny 跳过零产物需求的编译动作（v13 自带 prebuilds）。门链=k1 两轮
+   （PWW B0W3N3→delta PASS B0W0N2，R5 单点配置批定档）；verify 三跑 EXIT=0；**终验收=
+   CI 首绿同 run**；实现笔=318cd79c521[dep-change][locked-change]+翻票笔=5f738f3afd7；
+   证据=仓外 F-CI-01/。**本票为 CI 验收链路解锁票——后续票 CI 验收依赖已修复**。
 3. **SR-SEC-01 ACAO 通配收束**（双审）：Origin 白名单回显+取证步前置+
    resolveAcao 五分支单测+伪造 Origin e2e 断言。
 4. **SR-IPC-10 契约缺口双修**（双审）：workspaces type-test 双证[禁宽型标注]+
@@ -88,6 +117,10 @@
 
 ## §3 悬挂事项（用户知悉/裁决口）
 
+- **push 直连间歇性经验（次段实证）**：处方命令（URL 级代理键同键名覆盖=直连）非一次
+  必成——次段两 push：首 push 一次成功、F-CI-01 笔 1 reset+6 连不上后第 7 次成功。
+  **push 失败=重试（建议 ≥8 次退避 25s）非换法**；代理 7890 口本段全死（connection
+  refused）勿走代理路径；gh API（api.github.com）同间歇——盯 CI 命令须带重试包裹。
 - **C-A4 W1 表述修正登记（裁决部 C3 主登记位）**：AGENTS.md DoD 行「verify⊇CI：另含
   指纹门」子句被 C-A4 自身 ci.yml 落地即两侧收敛（D-8 成文锚定前态）+严格集合读法
   方向存疑（落地后 CI 关卡集实为 verify 链超集——CI 另含 e2e/审计）。触发点=下次
@@ -119,15 +152,16 @@
 
 ## §4 开工三态指针
 
-**HEAD=本档提交**。A 干净树=直接接 §2 首项（**C-A4 收口第二段**——网络恢复后：
-push[URL 级代理键覆盖法]→盯 CI 首跑绿[新步真实执行]→绿后翻票+滚动收口笔；序列
-详见 §2 项 2）；B 脏树=先重跑 git status 核实树态再判（v66 §1-1
-教训）；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**本场无新用户
-裁决；v64 三裁决+v68 收段指令沿用。收口提交尾注面=[locked-change] 单尾注
-（v66 §4/P5-P7B 先例）；push 前预扫=实读范围闸代码+本地模拟（P7B 实证 tr-count=0
-流程——仅 [test-refactor] 提交触发，本战役全单尾注面零触发）；机检命令禁裸管道
-接 &&（v68 教训④沿用）；简报内数字也须实测落笔（本段 C2 教训——主控简报数字
-会被实现者照抄进产物与 INV）**。
+**HEAD=本档提交**。A 干净树=直接接 §2 首项（**SR-SEC-01 ACAO 通配收束**——治理五票
+批序 3，双审[k1+d1 两席纯内联零 Read 审包]；实现首步=Origin 取证步前置[真实 PDF 链路
+dev+prod 双态打印实际 Origin 串]）；B 脏树=先重跑 git status 核实树态再判（v66 §1-1
+教训）；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**本场无新用户裁决；
+v64 三裁决+v68 收段指令沿用。收口提交尾注面=[locked-change] 单尾注（v66 §4/P5-P7B
+先例；触 package 件时叠 [dep-change]——F-CI-01 先例双尾注）**；push 处方=URL 级代理键
+同键名覆盖直连+**失败重试 ≥8 次**（§3 经验——直连间歇本日实证）；机检命令禁裸管道
+接 &&、**禁 if/循环判定接 `cmd | tee`（tee 恒 0 假阳性——次段 PUSH OK 误判实录）**；
+**bash 控制台回显中文乱码≠文件损坏——文件层编码判定只认 node 替换符计数/Read 工具**
+（坑②变体，次段误删好行实录）；简报内数字也须实测落笔（v69 段 C2 教训沿用）。
 
 ## §5 教训档回流状态行（裁决 9 固定段）
 
@@ -141,3 +175,10 @@ push[URL 级代理键覆盖法]→盯 CI 首跑绿[新步真实执行]→绿后�
   ②门一简报对 d1 席禁授权 Read（其代理档隔离墙）——审包全内联纪律（ai-dev-org
   ORG-12 红旗「给门一的包里含任何仓库访问信息」的宿主子代理形态）。两条均已
   落本档 §2/§3，并入教训档由下次触及同族时随批回流。
+- **次段新增三条（2026-09-28 下午段）**：①`cmd | tee` 管道退出码污染——if/循环判定
+  接裸管道取 tee 恒 0 退出码产「PUSH OK」假阳性（v68 教训④「禁裸管道接 &&」同族
+  扩记：判定面一律先取真实 rc）；②bash 控制台回显中文乱码≠文件损坏——文件层编码
+  判定只认 node 替换符计数/Read 工具（坑②变体；次段曾据此误删好行，git diff 恒等
+  还原+Edit 通道重写闭环）；③「本地绿≠CI 绿」新形态=install/ci 形态行为差+lifecycle
+  PATH .bin 顶替 npm 自带工具链（F-CI-01 全案在档+INV-81 锚定）。三条均已落本档
+  §0/§3/§4，并入教训档由下次触及同族时随批回流。
