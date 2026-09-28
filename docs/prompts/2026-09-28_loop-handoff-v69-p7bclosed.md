@@ -58,8 +58,16 @@
    ①票面「指纹门零影响」系设计层存量假设失实（⑤i 纪律当场证伪——主控前置实测拦截，
    实现改走删基线显式重跑）；②门一 d1 席代理档隔离墙**禁 Read**——门一简报禁授权
    Read，审包必须全内联（首轮 FAIL 系检材不合规，重派补正后过线）。
-2. **C-A4 CI 口径对齐**（双审）：指纹门入 CI fail-fast+DoD 勘正[verify⊇CI]+
-   model-names 留手动；首推实跑=验收。
+2. **C-A4 CI 口径对齐（实现笔毕 2026-09-28，收口第二段 pending 网络）**：三屋链全毕
+   [实现+双审 PWW（两席纯内联零 Read——F-CONSOL-03 教训固化）+probe 8/8+裁决部
+   GWC（C1-C5）]，实现笔=c484f330578（ci.yml+AGENTS.md+manifest 三件 6+/3−，
+   [locked-change]，**驻本地未推送——push 双断[代理 7890+直连均 FAIL]**）。
+   **次会话/网络恢复后首动作序列**：①`git -c http.https://github.com.proxy= -c
+   http.proxy= push origin main`（URL 级代理键须同键名覆盖——本日实证）；②盯 CI
+   首跑绿（新步「指纹门」真实执行+lock-change-guard 绿=C2 终验收锚）；③绿后
+   收口笔=registry 翻 C-A4→done+summary 尾注[C3 次登记：W1 表述修正建议随记]
+   +交接书滚动（[locked-change] 惯例尾注）；红则按行尾/路径环境差排查不翻票。
+   W1 登记主位=本档 §3。
 3. **SR-SEC-01 ACAO 通配收束**（双审）：Origin 白名单回显+取证步前置+
    resolveAcao 五分支单测+伪造 Origin e2e 断言。
 4. **SR-IPC-10 契约缺口双修**（双审）：workspaces type-test 双证[禁宽型标注]+
@@ -80,6 +88,11 @@
 
 ## §3 悬挂事项（用户知悉/裁决口）
 
+- **C-A4 W1 表述修正登记（裁决部 C3 主登记位）**：AGENTS.md DoD 行「verify⊇CI：另含
+  指纹门」子句被 C-A4 自身 ci.yml 落地即两侧收敛（D-8 成文锚定前态）+严格集合读法
+  方向存疑（落地后 CI 关卡集实为 verify 链超集——CI 另含 e2e/审计）。触发点=下次
+  触及 AGENTS.md DoD 行/verify-CI 口径的票（F-GOV-01 立案时核或独立微票）；修正方向
+  =「指纹门 verify/CI 两侧同含」类精确化+「不是 README 数字」挂靠点微调（k1-N4）。
 - **P7-B flake 指纹登记（F-CONSOL-03 门二 V2 首现，C4 兑现——落本档非 flake-ledger
   以免扩票面 diff）**：reader-text.spec.ts:221 P7-B 收官三序列
   `getByText('P7BA-MARK')` 10s 超时 not-found；串行第 41 位；复跑同用例 2.6s 绿；
@@ -106,9 +119,9 @@
 
 ## §4 开工三态指针
 
-**HEAD=本档提交**。A 干净树=直接接 §2 首项（**C-A4 CI 口径对齐**——ci.yml 指纹门
-增步 fail-fast+AGENTS.md DoD 行勘正+model-names 留手动；验收=**首推 CI 实跑**——
-push 后盯 Actions 首跑绿）；B 脏树=先重跑 git status 核实树态再判（v66 §1-1
+**HEAD=本档提交**。A 干净树=直接接 §2 首项（**C-A4 收口第二段**——网络恢复后：
+push[URL 级代理键覆盖法]→盯 CI 首跑绿[新步真实执行]→绿后翻票+滚动收口笔；序列
+详见 §2 项 2）；B 脏树=先重跑 git status 核实树态再判（v66 §1-1
 教训）；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**本场无新用户
 裁决；v64 三裁决+v68 收段指令沿用。收口提交尾注面=[locked-change] 单尾注
 （v66 §4/P5-P7B 先例）；push 前预扫=实读范围闸代码+本地模拟（P7B 实证 tr-count=0
