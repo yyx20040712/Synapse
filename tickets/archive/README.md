@@ -234,4 +234,5 @@ SR-SEC-01｜安全加固——app-file:// ACAO 通配收束（Origin 白名单�
 SR-IPC-10｜契约缺口双修——workspaces 编译期保证重建+事件面 zod 兜底（type-test 双证+preload safeParse 丢帧）
 F-CONSOL-03｜测试资产清出——探针 spec 四件+scripts/audits 残留六件归档仓外（F-TESTREF-W2.file 勘正+基线再生成）
 C-A4｜CI 口径对齐——指纹门入 CI+DoD 措辞勘正（ci.yml 增步 fail-fast；CI run 36372251379 首绿验收）
+F-GOV-01｜治理减容役收官——registry summary 瘦身归档+INV 三元组+防线登记册+宪法条款+日落规则
 F-CI-01｜CI npm ci 红修复——better-sqlite3 缺省编译动作按包禁用（allowScripts deny；npm ci 触发 node-gyp 缺省编译根因链实证）
