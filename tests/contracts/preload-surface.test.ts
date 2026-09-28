@@ -96,8 +96,13 @@ describe('contracts/preload-surface —— 运行时暴露面与接线表一致'
 
     expect(mocks.on).toHaveBeenCalledTimes(1)
     expect(mocks.on).toHaveBeenCalledWith(EVENT_CHANNELS.importProgress, expect.any(Function))
-    fire?.({ phase: 'extracting', done: 1, total: 3 })
-    expect(received).toEqual([{ phase: 'extracting', done: 1, total: 3 }])
+    // [SR-IPC-10 主控裁决 A 案] 样例载荷勘正：旧样例 {phase,done,total} 系 F-D4
+    // （sessionId 强制）前的陈旧形态，旧纯透传不校验故绿；接收侧 safeParse 兜底落地
+    // 后按 importProgressEventSchema 合法载荷取样（用例意图=桥形态检查，名不变）。
+    fire?.({ phase: 'extracting', current: 1, total: 3, fileName: 'demo.pdf', sessionId: 'sess-1' })
+    expect(received).toEqual([
+      { phase: 'extracting', current: 1, total: 3, fileName: 'demo.pdf', sessionId: 'sess-1' }
+    ])
 
     off()
     expect(mocks.removeListener).toHaveBeenCalledWith(

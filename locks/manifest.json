@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-28T03:58:16.7514182Z",
+    "generatedAt":  "2026-09-28T05:10:11.8804515Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "5c8593e05911fa19d78e8174809702dfdb5d44624903341847dca397c4110125"
+                      "sha256":  "4be50d4abd513dd5597a5b98d9ece4022d7c1bd4bc8131dfdb9db574c89b5799"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -83,7 +83,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "1efb38e10bbc7d864815ea2b283a35c93fcc2ab7be432cd01527dfc3ca06dcd7"
+                      "sha256":  "806261871819bd3db054e17a8fd53cf97a92c9e639de4dbcd9b53dbff5c38280"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -158,6 +158,10 @@
                       "sha256":  "1206e4c79dbea7b2c2e2a83ee794f9fe9633dbd8ad14b36d01f8f9845c25e476"
                   },
                   {
+                      "path":  "src/shared/ipc/events.schemas.ts",
+                      "sha256":  "11587d9d897b97284a360a55b73262b21218b36f9f2a3bfb75d6ec65e8952c15"
+                  },
+                  {
                       "path":  "src/shared/ipc/schemas.ts",
                       "sha256":  "02f6d4c134ad51f6b6e778b2510fbac3706b51dfc14a47fb17b5c63f5b019fe7"
                   },
@@ -215,7 +219,7 @@
                   },
                   {
                       "path":  "tests/contracts/preload-surface.test.ts",
-                      "sha256":  "93c94c9085c5437444482406e0647c96492ec393840129a62cadf19fdfbdeab9"
+                      "sha256":  "36fb2584b2fb7bf37f08df0d3eba9442bbbbc4b6ffb72bdc532b23e328578b62"
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
@@ -318,6 +322,10 @@
                       "sha256":  "f3fe060606b0ccf2dbf9f6f26181e447cf6ea52de96e99454a69c9e46d74652f"
                   },
                   {
+                      "path":  "tests/types/api-assembly.type-test.ts",
+                      "sha256":  "9ce168bf0034ff6c05c8e027930074d6f089e0823e889c96f42602fdc78e3419"
+                  },
+                  {
                       "path":  "tests/unit/db/connection.test.ts",
                       "sha256":  "3827179e3e05ebaad507df1020ad08a99c40b48df82a4c21a5780ee4320ee53e"
                   },
@@ -382,6 +390,10 @@
                       "sha256":  "4e3b8c5d463cd4036117daeb5ed2d787a06be8fece393be270602a2956d1c897"
                   },
                   {
+                      "path":  "tests/unit/events-schemas.test.ts",
+                      "sha256":  "bd6665ef9050316722cb5a4b4f040e67b667d9efde5cb844da8e69fc4413c51f"
+                  },
+                  {
                       "path":  "tests/unit/http/http-client.test.ts",
                       "sha256":  "30fe63b746ca3021a1fec24d85e77672c810a46ecebd49334bf6e01292821245"
                   },
@@ -444,6 +456,10 @@
                   {
                       "path":  "tests/unit/preload/drag-import.test.ts",
                       "sha256":  "f22424ff168e8621f3899ca93e7f3b6f6df9c12aafc4f961734ce83a7b06ee65"
+                  },
+                  {
+                      "path":  "tests/unit/preload-events-guard.test.ts",
+                      "sha256":  "a716e9c56e635b0b1401f9f7c7d1395d1b58b6eae8757027482f6dcca61be05c"
                   },
                   {
                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",

@@ -741,6 +741,13 @@
       "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）",
       "reason": "T3-P5 迁移 010 落地：版本接续 pin 9→10，标题+断言随终态上探",
       "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/contracts/preload-surface.test.ts",
+      "caseTitle": "事件桥：订阅接线表事件通道并透传 payload，退订函数移除同一监听",
+      "assertionText": "expect(received).toEqual([{ phase: 'extracting', done: 1, total: 3 }])",
+      "reason": "SR-IPC-10 主控裁决 A 案（2026-09-28）：旧断言样例 {phase,done,total} 系 F-D4（sessionId 强制+current 字段）前陈旧形态——旧纯透传不校验故绿；preload 接收侧 safeParse 兜底落地后样例按 importProgressEventSchema 合法载荷勘正（用例名与桥形态检查意图不变，新断言入 C_after 超集）",
+      "rulingLink": "docs/design/2026-09-28_gov-batch-design-final.md#2"
     }
   ]
 }

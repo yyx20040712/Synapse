@@ -22,6 +22,11 @@ import type {
   ImportResult,
   WindowStateEvent
 } from '../shared/ipc/schemas'
+import {
+  exportCorpusEventSchema,
+  importProgressEventSchema,
+  windowStateEventSchema
+} from '../shared/ipc/events.schemas'
 import { err, type Result } from '../shared/app-error'
 import { planDroppedImports } from './drag-import'
 
@@ -57,21 +62,64 @@ function buildDrag(): PreloadDrag {
   }
 }
 
-/** 事件订阅（main→renderer 单向推送），返回退订函数；形状来自 PreloadEvents（单一真相源） */
-function buildEvents(): PreloadEvents {
+/**
+ * 守卫消费的 schema 结构面（safeParse 结果的最小 duck 形状——免依赖 zod
+ * 内部导出名与泛型变型；warn 消费面=issues）
+ */
+type EventGuardSchema<T> = {
+  safeParse(
+    data: unknown
+  ): { success: true; data: T } | { success: false; error: { issues: unknown[] } }
+}
+
+/**
+ * 事件帧接收侧守卫（D-GOV-4）：事件面 preload 侧兜底——main=
+ * 受信生产者不重复校验（镜像入侧单向纪律，零改 main 发送点），接收侧
+ * safeParse 失败 = console.warn + 丢弃该帧、订阅存活（三事件均通知/进度类，
+ * 丢帧=陈旧一拍自愈；事件流不因单帧死亡——listener 不摘除不抛出）。
+ */
+function guardedEventForwarder<T>(
+  channel: string,
+  schema: EventGuardSchema<T>,
+  cb: (e: T) => void
+): (event: IpcRendererEvent, payload: unknown) => void {
+  return (_event, payload) => {
+    const parsed = schema.safeParse(payload)
+    if (!parsed.success) {
+      console.warn(
+        `[apiEvents] ${channel} 事件帧校验失败，丢弃该帧（订阅保持存活）`,
+        parsed.error.issues
+      )
+      return
+    }
+    cb(parsed.data)
+  }
+}
+
+/**
+ * 事件订阅（main→renderer 单向推送），返回退订函数；形状来自 PreloadEvents
+ * （单一真相源）。三 listener 经 guardedEventForwarder 接收侧兜底。
+ * 导出=测试消费（tests/unit/preload-events-guard.test.ts mock electron 直测；
+ * cjs bundle 多挂一个 exports 属性无运行时影响）。
+ */
+export function buildEvents(): PreloadEvents {
   return {
     onImportProgress(cb: (e: ImportProgressEvent) => void): () => void {
-      const listener = (_e: IpcRendererEvent, payload: ImportProgressEvent): void => cb(payload)
+      const listener = guardedEventForwarder(
+        EVENT_CHANNELS.importProgress,
+        importProgressEventSchema,
+        cb
+      )
       ipcRenderer.on(EVENT_CHANNELS.importProgress, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.importProgress, listener)
     },
     onExportCorpus(cb: (e: ExportCorpusEvent) => void): () => void {
-      const listener = (_e: IpcRendererEvent, payload: ExportCorpusEvent): void => cb(payload)
+      const listener = guardedEventForwarder(EVENT_CHANNELS.exportCorpus, exportCorpusEventSchema, cb)
       ipcRenderer.on(EVENT_CHANNELS.exportCorpus, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.exportCorpus, listener)
     },
     onWindowState(cb: (e: WindowStateEvent) => void): () => void {
-      const listener = (_e: IpcRendererEvent, payload: WindowStateEvent): void => cb(payload)
+      const listener = guardedEventForwarder(EVENT_CHANNELS.windowState, windowStateEventSchema, cb)
       ipcRenderer.on(EVENT_CHANNELS.windowState, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.windowState, listener)
     }

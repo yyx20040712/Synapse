@@ -73,6 +73,19 @@ export interface BootstrapContext {
   shutdown: () => void
 }
 
+/**
+ * IPC 装配完整性探针：bootstrap 组合注入 workspaces 域后的完整
+ * 装配体类型——全推断零宽型标注（ReturnType 链，禁手工成员声明）。双层闭合
+ * R1-WS1 代价申报（ApiHandlers 对 ComposedHandlerDomains 可选 = 漏组合不再
+ * 编译期拦截）：①registerIpc 调用点以本类型标注装配对象——漏组合 workspaces
+ * = 调用点编译红；②tests/types/api-assembly.type-test.ts 以本类型对账
+ * Required<ApiHandlers>——缺域/域形状漂移 = 测试编译红。零运行时探针对象
+ * （纯 type 导出）。
+ */
+export type IpcAssemblyProbe = ReturnType<typeof createIpcHandlers> & {
+  workspaces: ReturnType<typeof createWorkspaceService>
+}
+
 export async function bootstrap(app: App): Promise<BootstrapContext> {
   const override = process.env.SYNAPSE_USER_DATA
   if (override) app.setPath('userData', override)
@@ -156,7 +169,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     (paperId) => container.papersFileRef(paperId),
     container.fileStore // 稳定 facade：switch 热换后协议读当前课题 files/
   )
-  registerIpc({
+  // 装配对象具名化并标注 IpcAssemblyProbe（全推断类型）——漏组合
+  // workspaces 在此编译期拦截（probe 头注双层闭合第①层；对象具名非新建，
+  // 装配对象本身即原内联字面量）
+  const ipcHandlers: IpcAssemblyProbe = {
     // workspaces 域由 bootstrap 组合注入（ComposedHandlerDomains——
     // ipc/index.ts+register.ts 零改动主控裁决；registerIpc 仍按接线表全量注册）
     ...createIpcHandlers({
@@ -177,7 +193,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       clipboard
     }),
     workspaces: workspaceService
-  })
+  }
+  registerIpc(ipcHandlers)
   applyCsp(session.defaultSession)
 
   // ── 主窗口 ──

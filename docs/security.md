@@ -17,6 +17,7 @@
 ## 3. IPC 与注入防护（机检：契约/单测）
 
 - 通道全显式注册；请求 zod `.strict()` 校验（未知字段拒绝——历史教训：不许删类型保护）
+- 校验方向单向：invoke 面（renderer→main）=main 侧入侧校验单点；事件推送面（main→renderer 三事件）反向=preload 接收侧 safeParse 兜底（`events.schemas.ts` 单口，schema 本体单源 schemas.ts，与 PreloadEvents 类型邻近防漂移）——main 受信生产者不重复校验（防线不增殖）；畸形帧 console.warn+丢弃该帧、订阅存活（SR-IPC-10/INV-82，D-GOV-4：三事件均通知/进度类，丢帧=陈旧一拍自愈）
 - SQL 全预编译参数化；FTS 输入经 `escapeFtsQuery`（注入向量集在 tests/unit/db/fts.test.ts）
 - renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）
 - 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`）
