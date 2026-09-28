@@ -30,13 +30,13 @@
 
 | 项 | 终值（脚本实测） |
 | --- | --- |
-| verify | **177 件 / 1954 用例** EXIT=0（SR-SEC-01 +11 unit 后；closure 树亲验 17 号档 exit=0） |
-| e2e | app **52 用例**（SR-SEC-01 新增 1：reader-text「app-file 真实链路 fetch 完整性」） |
-| 指纹门 | **194 文件 / 2006 用例 / 6201 断言 / skipSite12 / snapshot123**（基线 194/1994/6175/12 不动，cur 超集方向——NEW=unit 11+e2e 1） |
-| 战役进度 | P1-P7B✓；治理五票批：F-CONSOL-03✓+C-A4✓+**SR-SEC-01✓（2026-09-28 次段二收口 d716f08e95f）**；插队票 F-CI-01✓；T3-U1 挂账批；**open 面=6**（F-TESTREF-S1/S3+F-CONSOL-02+SR-IPC-10+F-GOV-01+T3-U1） |
-| 提交 | F-CONSOL-03 收口；C-A4 实现笔 c484f330578+翻票 841969ba61e；F-CI-01 实现笔 318cd79c521+翻票 5f738f3afd7；滚动 2642dad55fa；**SR-SEC-01 收口笔 d716f08e95f** |
-| locks manifest | **257**（260−4 探针+1 新指针件 z-probes-ARCHIVED.md 自动入锁） |
-| 豁免台账 | **123 条**（F-CONSOL-03 孤儿豁免 F-RDR-01 skipSite 单条移除；全 stale=跨票累积观察项移交 F-GOV-01） |
+| verify | **179 件 / 1978 用例** EXIT=0（SR-IPC-10 +2 件/+24 例后；closure 树亲验 18 号档 exit=0——含 A 案豁免+票号清理后终态） |
+| e2e | app **52 用例**（SR-IPC-10 零增量） |
+| 指纹门 | **194 文件（cur 196）/ 2030 用例 / 6241 断言 / skipSite12**（冻结基线 194/1994/6175/12；累计增量=SR-SEC-01 +12 例/26 断言+SR-IPC-10 +24 例/40 断言——裁决部逐条复算全过） |
+| locks manifest | **261**（generate 收 4 新受锁件：events.schemas+type-test+两 unit 测试） |
+| 豁免台账 | **124 条**（A 案 +1：preload-surface 陈旧断言豁免 hits=1；全 stale=123 跨票观察项移交 F-GOV-01；**台账 124 vs baseline 快照 123 失配窗口**——check 不读快照轴风险有界，显式基线再生成时对账） |
+| 战役进度 | P1-P7B✓；治理五票批：F-CONSOL-03✓+C-A4✓+SR-SEC-01✓+**SR-IPC-10✓（次段三收口 035da2f6556）**——**四票毕仅余 F-GOV-01**；插队票 F-CI-01✓；T3-U1 挂账批；**open 面=5**（F-TESTREF-S1/S3+F-CONSOL-02+F-GOV-01+T3-U1） |
+| 提交 | …（前链略）…；SR-SEC-01 收口 d716f08e95f+滚动 db9cc156b0f；**SR-IPC-10 收口 035da2f6556** |
 | **CI 状态** | **run 36372251379 success=2026-08-27 以来首绿**（绿头=318cd79c521；npm ci 步过+指纹门步真实执行绿+lock-change-guard 绿+e2e 51 passed 2.6m；此前三连红 36369814511/36364274452/36329103053 均=F-CI-01 域 npm ci 断因） |
 | 证据仓外档 | F-CONSOL-03/（impl+probe 报告+k1/d1 两轮+裁决部四门审档+raw 40+件+开工记录）；**C-A4/（31-push～36 取证链+fixture 实验场）；F-CI-01/（impl 报告+k1 两轮档+raw 15 件）** |
 
@@ -104,8 +104,12 @@
    原样落地=休眠防线（INV-07 已登记激活前提）；白名单语义全向攻击推演无逃逸。
    基线滚动：verify 177/1954·e2e 52·指纹门 cur 2006/6201（超集）。W1（休眠面落
    INV-07）已修；C3 勘误（分项行数/用例计数）登记 16 号批次日志。
-4. **SR-IPC-10 契约缺口双修**（双审）：workspaces type-test 双证[禁宽型标注]+
-   三事件 preload 侧 zod 兜底。
+4. **SR-IPC-10 契约缺口双修✓（2026-09-28 次段三收口 035da2f6556）**：三屋全链毕
+   [实现九自裁+门一 k1 PWW B0W5N6/d1 PWW B0W3N8 零 B 双席+probe 7/7+裁决部 GWC
+   P0=0 C1-C4 全兑现]。A 案处置链在档（陈旧样例勘正+豁免 1 条——指纹门真实拦截
+   证据）；收口增处=src 注释五处票号清理（done 票号非自身文件引用触 check-tickets
+   占位规则——**教训：src 注释禁带非自身工单号**）。基线滚动：verify 179/1978·
+   locks 261·exemptions 124。
 5. **F-GOV-01 治理减容役**（双审+抽查链亲验；两单元两提交）：registry/INV
    存量瘦身+归档[check-tickets 三约束]+防线生命周期登记+治理面退出条件宪法
    条款+日落规则；验证面=抽查 5 票三段链+KB 对照。
@@ -122,6 +126,16 @@
 
 ## §3 悬挂事项（用户知悉/裁决口）
 
+- **SR-IPC-10 终帧残余登记（裁决部 C2）**：safeParse 丢弃仅畸形帧；**畸形 done 帧被
+  丢弃=进度条停留、无自愈路径**（「陈旧一拍自愈」对终帧不成立）——可信生产者
+  （同仓同版本 main=受信）下不可达，登记为防御面边界。
+- **SR-IPC-10 快照失配窗口（裁决部 C3）**：豁免台账 124 vs baseline exemptionsSnapshot
+  123（A 案 +1 后未再生成基线——check 不读快照轴=风险有界）——**F-GOV-01 立案核
+  或下次显式 baseline 再生成时对账**（再生成前核该条仍真实命中，当前 hits=1 成立）。
+- **SR-IPC-10 完备性锚 backlog（裁决部 C4，F-TESTREF 系候选）**：新增第 4 事件通道
+  =接线表+events.schemas 两处对齐，**无测试因此变红**（无 Record<keyof
+  PreloadEvents> exhaustiveness 锚）；P2 备录=main-window.ts L274 windowState send
+  形参内联结构→改引 shared WindowStateEvent（类型单源缝隙）。
 - **SR-SEC-01 设计层回写备案（k1-N5，裁决部 C2 兑现）**：本票取证证伪设计前提
   （Origin 可观测假设）——威胁模型已从「现行威胁修复」实测转为「透传形态变化时
   既位防线」（休眠+激活前提已登记 INV-07）。ADR/设计文档层面回写超本票范围——
@@ -162,9 +176,9 @@
 
 ## §4 开工三态指针
 
-**HEAD=本档提交**。A 干净树=直接接 §2 首项（**SR-IPC-10 契约缺口双修**——治理五票
-批序 4，双审[k1+d1 两席纯内联零 Read 审包]；type-test 双证[禁宽型标注]+三事件 preload
-侧 zod 兜底）。B 脏树=先重跑 git status 核实树态再判（v66 §1-1
+**HEAD=本档提交**。A 干净树=直接接 §2 首项（**F-GOV-01 治理减容役**——治理五票
+批序 5 收官，双审+抽查链亲验；两单元两提交[D-GOV-15 不拆票]；W1 表述修正核=
+本票立案时触发点）。B 脏树=先重跑 git status 核实树态再判（v66 §1-1
 教训）；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**本场无新用户裁决；
 v64 三裁决+v68 收段指令沿用。收口提交尾注面=[locked-change] 单尾注（v66 §4/P5-P7B
 先例；触 package 件时叠 [dep-change]——F-CI-01 先例双尾注）**；push 处方=URL 级代理键
