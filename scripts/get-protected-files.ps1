@@ -18,7 +18,8 @@ function Get-ProtectedFiles {
       'tsconfig.json', 'tsconfig.node.json', 'tsconfig.web.json',
       'scripts/dup-constants.baseline.json',
       'scripts/test-surface.baseline.json',
-      'scripts/test-surface.exemptions.json')) {
+      'scripts/test-surface.exemptions.json',
+      'tickets/archive/README.md')) {
     $p = Join-Path $root $cfg
     if (Test-Path $p) { $files += Get-Item $p }
   }

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-28T05:10:11.8804515Z",
+    "generatedAt":  "2026-09-28T09:46:40.6103933Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "4be50d4abd513dd5597a5b98d9ece4022d7c1bd4bc8131dfdb9db574c89b5799"
+                      "sha256":  "f4b7d67caede665c3793df4699bd097f2651d02bbc46e5741f27a7721f94ce76"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -27,7 +27,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "0e463f528df3f78f5049afc4b50f7b77cfeb0b50f3de91d78890a749b4ae4be4"
+                      "sha256":  "18e1fd080cb4ea50e2513c161c7e5ff81daf56b00c554aec9357862d89929957"
                   },
                   {
                       "path":  "scripts/check-model-names.mjs",
@@ -43,7 +43,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "4d38de7981f2265ac170c9a032e9303a4333de5ffccf683f5463ca725a8ff218"
+                      "sha256":  "4dd7a7d1c0cd8ef622d4c84a34dc112880c578a22bcdc9c2ae93411fe6107885"
                   },
                   {
                       "path":  "scripts/color-re.mjs",
@@ -59,7 +59,7 @@
                   },
                   {
                       "path":  "scripts/get-protected-files.ps1",
-                      "sha256":  "fb57e53bfcae7c288d51f0b004c5942c5ff900e627383274a93039f7dffaf480"
+                      "sha256":  "d2b7cace29af3e8826bf5391c9bf2bd0e7712b394a85dc5066fafd02f779cde5"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
@@ -1028,6 +1028,10 @@
                   {
                       "path":  "tests/utils/pdf-factory.ts",
                       "sha256":  "ae2e5e9c6ea4e7acd9f9a27fb9d66684f586873d7957de96544b37946bec20fb"
+                  },
+                  {
+                      "path":  "tickets/archive/README.md",
+                      "sha256":  "4dbfd7e02ef3341bbaf1639d1773966c049748b60676ade3ab381da76662180a"
                   },
                   {
                       "path":  "tsconfig.json",

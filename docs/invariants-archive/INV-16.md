@@ -1,0 +1,5 @@
+# INV-16 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-16 | pdfjs-dist 运行时 import 白名单单源：仅许 PdfDocProvider.tsx/PdfPageCanvas.tsx/TextLayer.tsx/CorpusExtractor.ts 四文件（2026-08-28 SR2-F-01 随 PdfCanvas 拆分迁移——一拆二，类型再导出单点随之迁移：PDFDocumentProxy/RenderTask 走 PdfDocProvider、PdfTextContent 族走 PdfPageCanvas；白名单变更=改 ESLint 规则+[locked-change]，禁第五处直连） | 本册+eslint.config.js no-restricted-imports（2026-08-25 计划审查 R1 定稿；2026-08-28 F-01 白名单迁移同步） | ESLint 强制（no-restricted-imports——renderer 主块禁 pdfjs-dist+白名单文件 override 块重申其余禁令；2026-08-27 SR2-AI-02 实证防线：lint 拦截 OutlinePanel/OutlineThumb 漏扫的类型直连；2026-08-28 F-01 迁移后连通拆分两新文件） | 已锚定（2026-08-27 SR2-AI-02；2026-08-28 SR2-F-01 白名单迁移。**已知边界**：ESLint no-restricted-imports 对 dynamic import() 的检查依版本而异——非白名单文件的动态直连可能不拦，该缺口由架构评审面覆盖，机器锚以 static import 为准。worker 资产单份：PdfDocProvider 与 CorpusExtractor 消费同一 vite ?url 模块（pdfjs-dist/build/pdf.worker.min.mjs?url）——构建产物同 URL，无第二份 worker 资产；子路径+?url 变体的拦截经探针实测覆盖） |

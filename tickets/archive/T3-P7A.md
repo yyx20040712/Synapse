@@ -1,0 +1,13 @@
+# T3-P7A 票面归档（F-GOV-01）
+
+- id: T3-P7A
+- file: src/renderer/features/lineage/LineageBoard.tsx
+- area: lineage
+- owner: strong
+- status: done
+
+## summary 原文
+
+连线系统·路由+线型渲染（theme-trio 战役票 7a；**设计真相源=docs/design/2026-09-27_t3p7-line-connection-design-final.md——D-P7-1..22 终裁决定表全兑现，实现以 D 表为源**；三段链档=仓外 t3p7-design/）：行为层=①渲染架构[D-1/D-2/D-22]=SVG overlay（.tl-content 内 svg.tl-edges absolute inset:0 overflow:visible z 低于卡+每边两 path[可见 tl-edge+透明命中 tl-edge-hit stroke:8px pointer-events:stroke]）；坐标=内容坐标（elRect−contentRect）滚动零跟随；EdgeOverlay=**LineageTimeline 子组件**（props=nodes/edges/lineTypes/shiftedIds/groups——shiftedIds 稳定即 P6 砖砌终态=重算触发[零事件总线]+ResizeObserver.tl-content+edges/groups 引用变化三触发 rAF 合并；.tl-measure 测量期 svg opacity:0 120ms 过渡防闪跳）；buildSnapshot(contentEl) 唯一不纯点驻 hook 层（routing 零 DOM import）；②路由三式[D 表 §2]=垂直式贝塞尔（tree/inferred 初路由，k=clamp(dy/2,12,80)，**dy≤0 前置直进 detour[D-3]**）+平级弧（ref/manual，车道 laneX(i)=contentW−58+10+i×9 i∈[0,3] edgeId 字典序[D-5]，s.y==t.y 直线分支[D-14]）+绕行折线（跨年直进；底部出变体 detourBottomPath gapY=源月框底与下月框顶空隙中线[D-9]）；③避让四检+降级链[D 表 §3]=障碍全卡∪月标注 rect（不含源/目标）膨胀 PAD=4 命中 d≤PAD[D-6]；C1 垂直带（外包带粗筛+贝塞尔 t=0.05 采样精判）→C2 弧入口横道（含同行右邻）→C3 走廊扫掠（含标注=防御面恒不命中注明[D-13]）→C4 标注让行（**水平段**右移 entry=标注右+PAD+tail 水平接入右缘锚[D-4 resolveLabelEntry 返回{entry,tail}]）；降级链单向不回溯+全道耗尽 fallback（laneX=contentW−6+全检采样+onWarn[D-7 可选 callback 缺省 noop]不静默）；**不变量：连线永不穿过文献卡与月份标注**（新 INV 登记）；④基础型渲染映射[D-18/D-19 mockup 图例 L212-217 实证]=tree{var(--accent) 实线}/inferred{var(--accent) 虚线[INV-27 备案兑现]}/ref{var(--faint) 点线}/manual{var(--signal) 虚线}——**零新 token**；sub 覆盖={subs.color,dash,w}（P5 数据纯消费）；⑤P6 预留三 token（--survey-edge/--manual-edge/--edge-inferred）预期落空随本票删除（死代码即删+P6 备案撤回注记）+e2e T5 视觉锚恢复（ref 点线渲染断言回植）+图例随线型重建（mockup .lc 族四项）；接口层=lineage-routing.ts 新件（≤300 行[D-16]，导出=Pt/Rect/EdgeKind/RouteTag/LayoutSnapshot/EdgeGeomInput/RoutedPath 类型+anchor/verticalPath/arcPath/detourPath/detourBottomPath+checkVerticalBand/checkArcEntry/checkSweepBand/resolveLabelEntry+laneIndex/routeEdge(e,snap,onWarn?)/routeAll——确定性=车道字典序/降级单向/无随机 Date 三角函数）+EdgeOverlay.tsx ≤250+lineage-palette.ts（PALETTE/DASH_ROT 用户数据常量[D-17 hex 数据面 check-quality 豁免登记]——P7b 消费本票入库）；架构层=受锁面=[renderer lineage 域+theme-lineage.css 连线/图例段+theme.test token 删三+对应测试件]——尾注=[locked-change] 单尾注（src/tests 混合面范围闸必红 v66 §4）；INV 回写=新增 INV-连线避让（四检+降级+永不穿卡）+INV-27 inferred 渲染形态定案回写+INV-41 维持退役态注记核对+architecture §8.1；生命周期层=TDD 先红后绿（lineage-routing.test 12 例[D 表 §5——用例 2 断言 route=detour+用例 7 断言 tail 端点]+变异四支[采样摘除/PAD 翻转/降级序翻转/字典序摘除]）+遮挡夹具四检各触发一次验收+e2e（T5 视觉锚恢复+滚动/resize 不错位锚）+verify 全绿+测试面删改走人工删基线路径或豁免台账；文化层=零新依赖/零出网/零 schema 改（渲染层纯消费）/值单源=design-final D 表+mockup 图例/几何确定性禁随机/P8 负债登记（飞行中连线脱节重算——design §7）
+
+> 归档于 F-GOV-01（2026-09-28）；registry 主表已瘦身为结论句+本件指针

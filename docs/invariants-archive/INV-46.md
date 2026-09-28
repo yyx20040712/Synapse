@@ -1,0 +1,5 @@
+# INV-46 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-46 | 页内层序=背景板不变量（F-A5/ADR-0019 R2，2026-08-31 用户「背景板」令）：阅读器每页覆盖层的绘制序恒 **标注/AI 色块 < PDF canvas 墨带 < 自绘选区层**（textLayer 官方 z0 透明纯手势面）——实现为单源常量 `page-layer-z.PAGE_LAYER_Z`（text:0/colorBlocks:1/canvas:2/selectionPaint:3），色块混合 normal（multiply 全数摘除——F-07 荧光笔语义废止），canvas 以 `background:'rgba(255,255,255,0)'` 透明底渲染且 `pointer-events:none`（墨带恒为最高「字」——色块内文字像素纯黑不被染；标注 rect 点击/文本划选手势经明纸穿透零回归）；比较域=PageBox 页内容容器 `isolation:isolate`+白纸承底层（暗色主题页纸仍白）。弹层（菜单/编辑器 z-20/工具条 z-10）为页盒兄弟位天然高于本域 | src/renderer/features/reader/state/page-layer-z.ts（常量单源）+PdfPageCanvas.tsx（透明底+canvas 样式）+PageBox.tsx（isolate+白纸）+AnnotationLayer/AiAnnotationLayer.tsx（z=colorBlocks+multiply 摘除）+selection-paint.tsx（z=selectionPaint）+TextLayer.tsx（z 同值显式化） | unit（pdf-page-canvas.test：透明底参数+canvas 样式+白纸/isolate；selection-paint.test c1/c2：自绘 z 最上+常量序；annotation-layer/ai-annotation-layer.test：层 z=colorBlocks+multiply 缺席——M5 变异红证在档）+e2e（reader-text.spec 两程 mix-blend normal+z=1）+真机（f-a5-verify-after.json c/z-order×2+c/text-pure-black 块内最暗核=0） | 已锚定（单测+e2e+真机像素级 2026-08-31 F-A5） |

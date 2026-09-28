@@ -1,0 +1,5 @@
+# INV-56 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-56 | 导出内容构建器单源+剪贴板写单口（P7E-04，2026-09-03 导出剪贴板票）：①**文件路径与剪贴板路径共用同一构建器**——export/clipboard 通道经 buildBibtex/buildCsv 直用（ipc 层 format 枚举分发），禁复制第二份序列化（题录格式漂移不可能——文件导出与剪贴板导出同源）；②**剪贴板写唯一口**=IpcDeps.clipboard 注入面（ipc 层经 deps 消费，bootstrap 装配 electron.clipboard——DB 派生内容全程 main 侧，renderer 只发 ids+format）；③**先构建后写**（构建失败零剪贴板副作用）；④无对话框→无 CANCELLED 分支（与文件导出 exportTo 的语义差异——失败面只有构建/写入两种）；已知还原项=clipboard 现为可选注入（受锁 makeIpcDeps 桩工厂禁改下的处置+handler 响亮守卫），下次合法触碰 tests/utils/ipc-deps.ts 的场次补必填+桩工厂同步 | src/main/ipc/export_.ts（exportClipboard+头注）/src/main/ipc/ipc-deps.ts（clipboard 注入面）/src/main/bootstrap.ts（electron.clipboard 装配）/src/shared/ipc/schemas.ts+api-surface.ts（clipboardReqSchema+通道）（P7E-04，2026-09-03 登记） | 单测（export-clipboard.test：bibtex/csv 委托逐参+count 回传+先构建后写「service 抛错→clipboard 零调用」+装配缺失响亮——M1/M2 变异红证在档）+renderer（paper-detail-clip.test：E1/E2/E4 busy 短路+toast 逐字——M3/M4 红证在档）+e2e（export-clipboard.spec：主进程 clipboard.readText 含 @+title——P7-A 读回先例+清场竞态防线） | 已锚定（单测+renderer+e2e 级 P7E-04 本单） |

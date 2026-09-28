@@ -1,0 +1,5 @@
+# INV-29 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-29 | 程序跳页与滚动同步双源区分：reader.store setPage(id,page,opts) 第三参 {scroll?:'to'\|'none'} 默认 'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=ReaderPage→PageColumn scrollToPage 单口：夹取→目标页盒顶对齐视口顶）；'none'=滚动位置回写语义（页码本就从滚动位置算出）——**只落账不 bump 信号、不触发程序滚动**（防「程序跳页↔滚动回写」回弹死循环）；迟发信号按 paperId 过滤（回写竞 tab 切换防御）；**tab 关闭即失效**（F-ARCH1 2026-08-30 增补：closeOne 清属被关 tab 的 scrollRequest+无条件清瞬态 noteHighlight/aiNoteHighlight——残留信号不得被新 tab 生命周期消费，防「跳页→滚→关→重开同 id」回跳旧页/OutlineAside 挂载闪切 notes；锚=reader.store.test F-ARCH1 块 3 用例） | reader.store setPage 签注+PageColumn 段⑤（SR2-F-01，2026-08-28 登记；P7-F 票面门一 B1 裁决的落地机制——F-03 回写消费 {scroll:'none'}；实现者原误编 INV-27 撞号，F-01 门一 W1 处置重编 INV-29） | 单测跨格锚：reader.store.test（'none' 不 bump 信号/默认 bump+seq 续增/夹取正交三用例）+page-column.test（scrollRequest→scrollIntoNearestScroller(页盒,'start')——F-05 单容器收敛后口径；早于就绪到达→就绪后补滚） | 已锚定（单测级 2026-08-28 SR2-F-01；装配级回写序列随 F-03） |

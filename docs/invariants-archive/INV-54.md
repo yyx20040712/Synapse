@@ -1,0 +1,5 @@
+# INV-54 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-54 | 拖拽路径单源（P7E-02，2026-09-03 拖拽导入票）：①**File→path 解析唯一口**=preload webUtils 经 window.apiDrag.importDropped——路径字符串生命周期限 preload 堆内，renderer 全程零接触；②**fromPaths 通道对 renderer 隐藏**——PRELOAD_HIDDEN_METHODS 单源（const+PreloadApi Exclude 类型双消费），main 侧照常全量注册；被攻陷 renderer 即使拿到 window.api 也无法 invoke 任意路径串（合成 File 经 webUtils 解析得 ''=天然拒）；③**数量上限 100 双层门**（preload planDroppedImports MAX_DROP_FILES+importPathsReqSchema max 同值）；④**类型门**（W2 回炉）：File.type==='' 项剔除——目录项 type 恒 ''（目录可合法命名 *.pdf 击穿后缀滤）；已知残余=无注册类型的真实 PDF 被保守拒（提示语引导按钮导入，对话框路径无此限） | src/preload/drag-import.ts（planDroppedImports+MAX_DROP_FILES 头注）/src/preload/index.ts（buildDrag+隐藏面跳过）/src/shared/ipc/api-surface.ts（PRELOAD_HIDDEN_METHODS+PreloadDrag）/tests/contracts/preload-surface.test.ts（减集断言+apiDrag 形状）（P7E-02，2026-09-03 登记） | 单测（drag-import.test 八分支：'' 滤/类型门/后缀大小写/混合/数量门——M1/M5 变异红证在档+M4「删隐藏跳过」契约减集断言红）+契约测试（preload-surface）+e2e（import-drag.spec D2 装配级：合成 File→toast 真实文本） | 已锚定（单测+契约+e2e 级 P7E-02 本单；真实 OS 拖拽正向链=手动验收面申报） |

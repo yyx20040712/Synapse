@@ -1,0 +1,13 @@
+# SR-IPC-10 票面归档（F-GOV-01）
+
+- id: SR-IPC-10
+- file: src/shared/ipc/api-surface.ts
+- area: ipc
+- owner: strong
+- status: done
+
+## summary 原文
+
+契约缺口双修——workspaces 编译期保证重建+事件面 zod 兜底（外部审视 S-2；真相源=design-final §2 D-GOV-3/4/18/19——R1-WS1 史实主控核实=装配容器化[ADR-0018 架构本体]仍成立→走 type-test 不收回 createIpcHandlers）：行为层=①workspaces 域装配完整性 type-test **双证形态**（正向：const _full: Required<ApiHandlers> = 装配体导出——**必须挂推断字面类型禁显式宽型标注**[宽型下 typeof 恒为声明型=断言空转，审 B3]；装配体无导出点则新增零运行时类型探针导出；负向：ts-expectError 证缺域对象赋 Required 必编译失败——证明类型系统真拦）；②三事件（importProgress/exportCorpus/windowState）preload 接收侧 safeParse——失败=console.warn+丢弃该帧订阅存活（**分档论证 D-GOV-4**：三事件均通知/进度类[windowState=标题栏按钮陈旧一拍自愈/import·export=进度条陈旧，done 帧属正常载荷不经丢弃路径]；丢弃仅畸形帧触发=可信生产者下永不路径防御——事件流不因单帧死亡）；接口层=新 src/shared/ipc/events.schemas.ts（三事件 zod schema 与 PreloadEvents 类型邻近防漂移）+type-test 落 tests/types/api-assembly.type-test.ts（**tsconfig.node.json include 含 tests/**/*.ts=typecheck 覆盖实证 D-GOV-19②**；文件名不入 vitest include 模式=只编译不执行）；架构层=受锁面=[api-surface.ts+bootstrap.ts+preload/index.ts+events.schemas.ts 新件+type-test 新件]——[locked-change] 单尾注+unlock/apply 全流程（审 N14 补齐）；main 发送侧不重复校验（镜像入侧单向纪律：main=受信生产者，双端校验=防线增殖）；生命周期=TDD 先红（type-test 以 ts-expectError 反向自证+schema 三件正反例）+变异红证（schema 摘除/preload 校验摘除）+verify 全绿；文化层=文档同步「zod=入侧单向+事件面 preload 侧兜底」（文档+实校验双落地非仅澄清）；收口 2026-09-28：三屋全链毕——实现=ops-executor 九自裁全申报（TDD 红 tsc EXIT=2+vitest EXIT=1→绿；四支变异红证 M1 schema 摘除 3 红/M2 校验摘除 4 红/M3 探针摘 workspaces type-test 红/M3b 调用点漏传 bootstrap 红，全 cp 还原 diff 空；**执行中卡点上报**：preload-surface.test L86 陈旧样例[F-D4 前 {phase,done,total} 形态，旧透传不校验故绿]受锁不自改→**主控裁决 A 案**=样例勘正合法载荷+指纹门 MISSING_ASSERT 豁免 1 条[123→124，reason=A 案全文+rulingLink=design-final#2——指纹门真实拦截在档 15 号 EXIT=1→豁免后绿，用例名不变断言 4→4 判别力由守卫 10 例加严接管]）；门一=k1 PWW B0W5N6+d1 PWW B0W3N8 双席纯内联零 Read（零 B；主控八项 W/N 处置：探针链非空转[注解返回 :ApiHandlers 函数体完备性编译强制+Required 转换拦可选域+probe 复核摘指令 TS2322 真红]/数字链闭[2030=1994+12 前批+24 本批·6241=6175+26+40·196=194+2]/strict 剥离面=多余字段帧响亮丢弃非静默/发送侧 z.infer 绑定[windowState 例外=结构同形 P2-b 备录]）；门二 probe 7/7（verify 独立重跑 EXIT=0[179 件/1978 例+指纹门 194/196·1994→2030·6175→6241 超集+exemptions 124/hits 1+locks 261]+e2e 52 passed+type-test 双向复核[摘 @ts-expect-error→TS2322 红/摘正向行→仍绿=纯编译形态证]+守卫变异 4 红还原绿+树态 7M+4 新零残留+编码 FFFD=0）；裁决部 GO_WITH_CONDITIONS[P0=0/回炉 0/C1-C4]——C1=本收口笔[locked-change]11 件+翻票/C2 终帧残余登记（交接书 §3：畸形 done 帧丢弃=进度条停留无自愈，可信生产者下不可达）/C3 快照失配窗口登记（台账 124 vs 快照 123——check 不读快照轴风险有界，F-GOV-01 立案核）/C4 完备性锚 backlog（第 4 事件无红锚——F-TESTREF 系候选）；数字链裁决部独立复算全过（1978=1954+24/261=257+4/108+/13− 逐文件加和核 ✓）；diff 面=7 改+4 新（bootstrap 19+/2−+preload 53+/5−+exemptions 7+/0+manifest 20+/4−+invariants 1+/0+security 1+/0+preload-surface 7+/2−+四新件 353 行）；文档锚=INV-82+security.md §3；ADR 无触及申报（ADR-0018 零语义变更）；证据=仓外 SR-IPC-10/（impl 报告+两席摘要+probe 20 件+diff-inline 273 行）
+
+> 归档于 F-GOV-01（2026-09-28）；registry 主表已瘦身为结论句+本件指针

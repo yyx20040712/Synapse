@@ -45,6 +45,9 @@ function protectedFiles() {
     // 若不受锁=门对削弱静默放行（sha256 对账拦截）——与 ps1 侧 Get-ProtectedFiles 对齐
     join(root, 'scripts', 'test-surface.baseline.json'),
     join(root, 'scripts', 'test-surface.exemptions.json'),
+    // [F-GOV-01] tickets/archive README 索引件单件入锁（D-11）：manifest=活跃契约面清单，
+    // archive 正文件不入锁（天然不在 walk 面，完整性由 git 提交保证）
+    join(root, 'tickets', 'archive', 'README.md'),
     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
   ].filter((p) => existsSync(p))
   return [...new Set(files)].sort()

@@ -1,0 +1,5 @@
+# INV-45 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-45 | 阅读器双页几何不变量（F-R1，2026-08-31）：pageLayout（per-tab 可选字段+?? 'single' 兜底）下——**列宽=最宽完整行**（双页行宽=左+右+PAGE_GAP_PX，行内 gap 不随 zoom——与 INV-33 盒间距常量同源；**末行孤页不计列宽**，故末行右盒缺席渲染行宽恒=左盒宽无跳变）；**行高=max(左右页高)**；**切布局不重跑 getPage 管线**（尺寸缓存单源复用，仅重派生行+重报 onReady 新口径 basisWidth）且**不丢位置**（onReady 链经 spProg.onColumnReady 恢复链滚回当前页）；**fitWidth 分母=onReady 上报的布局口径 basisWidth**（双页=行宽 scale=1）；双页翻页步进=2（pageStep 缺省 1=单页零变）；scroll-progress 回写/懒渲染回收/INV-29/30/33 语义全保持（nearestPage 行内两盒同 top 零特判） | page-column-geometry.ts（layoutRows/rowWidth/columnWidthFor/columnTotalHeightFor 单源）+PageColumn.tsx 头注 [F-R1] 段（F-R1，2026-08-31 登记） | 单测（reader-double-page.test ①~⑦ always-active 16 用例：store 生命周期/几何纯函数/行 DOM+末行单盒专项/管道不重跑（getPage 计数）/工具栏 pageStep/fitWidth 分母/锚总高口径——M1~M5+W3 六变异红证）+真机取证（f-r1-out/f-r1-verify.json 17/17：行宽公式 595+595+12/fitWidth 全列口径 133%≈(1625−24)/1202/翻面 +2 行盒顶 Δtop=0/往返位置保持同源锚 |Δ|=0+basis 269%→133%/roots 上界 10） | 已锚定（单测+真机级 2026-08-31 F-R1 三屋+回炉 2；弱锚备案：真库无奇数页文献——末行单盒真机面由单测③ DOM 断言代锁（E 走双盒分支）/e2e 双页覆盖未入票（备案后续）/布局切换 IO 重挂窗口期瞬时渲染膨胀（roots 上界锁，无跳顶实证） |

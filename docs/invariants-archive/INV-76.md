@@ -1,0 +1,5 @@
+# INV-76 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-76 | catalog_no 呈现时确定性编号（T3-P5，2026-09-27；design-final §6/D-P5-6）：按 lineageOrder 全序确定性计算 1..N，**不落库不作业务主键**（零迁移零写放大纯函数 lineageCatalogNos——单源居 shared/models/lineage.ts）；同图状态同序列；**编号随全序漂移=特性非缺陷**（呈现序语义，与时间线/导出一致）；三消费面同源禁双实现=文献库列表序号列（入脉络行 catalogNo+cat 类 accent 区分，未入脉络=位置序兜底）+抽屉 .lib-dr-id 短号（入脉络 #NNN，未入脉络=id 前 8 位现状）+lineage.json catalog_no 字段；list join=listGraph 单次（禁 N+1） **[T3-P6 扩面 2026-09-27]**：第四消费面=脉络时间线小卡骑缝编号（LineageTimeline useMemo 全图一次计算传卡禁每卡重算——.c-no「#NNN」三位零填充；INV-78） | src/shared/models/lineage.ts（lineageCatalogNos）+src/main/services/library.service.ts（list/detail join）+src/renderer/features/library/PaperRow.tsx/PaperDetailPanel.tsx+src/renderer/features/lineage/LineageTimeline.tsx（第四消费面=T3-P6 小卡骑缝号） | 单测（library-lineage-c5.test：list 挂键/未入脉络省略/分页页外占序；library-lineage-display.test：序号列双源+cat 类+短号同源；lineage-assemble.test：catalog_no 与全序一致） | 已锚定（单测级 T3-P5） |

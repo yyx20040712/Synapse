@@ -27,6 +27,13 @@ const tickets = []
 // 均在 summary 字段前、字段序稳定），行级提取天然免疫 summary 内行内自平衡
 // 花括号——旧块级 objRe 的 [^{}] 在 summary 含 {...} 时提前截断（7 票曾静默
 // 漏检），且其 SR2?- 前缀限定使 F/P/R/B/C 系票整体脱检
+// summary 三约束（F-GOV-01，D-12）：瘦身后 done 票 summary 保持物理单行+字段序
+// 不变（id,file,area,owner,status,summary）+summary 内禁 id: ' 与 status: 'open|done'
+// 字面量——下方对账哨兵对 registry.ts 全文计数（五字段自身字面量计入），summary 内
+// 出现任一形态即计数失衡 exit 1；单引号串内裸换行由 tsc 拦（tsconfig.node.json 含
+// tickets/**）；已知边界=反引号模板串多行形态三关不拦（probe 实证，纪律声明面）；
+// 已瘦身票 summary=结论句+tickets/archive/<票号>.md 指针，再触及该票内容时改
+// archive 件而非扩 summary（零改脚本逻辑，纯输入侧约束声明）
 for (const line of registry.split('\n')) {
   const m = /^\s*\{ id: '([^']+)', file: '([^']*)'/.exec(line)
   if (!m) continue

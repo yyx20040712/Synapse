@@ -1,0 +1,5 @@
+# INV-65 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-65 | 导出会话中止单源：renderer 重载/崩溃（main 存活）→bootstrap webContents 双事件（did-start-navigation 仅 isMainFrame+render-process-gone）→corpus.export 单例 abortActiveSession→failSession 同型处置（清 manifest.tmp+**同步**释放单飞锁（INV-18 扩展面——终局标记先于异步清理落盘，setImmediate 悬挂推进被 advance 终局守卫按会话对象身份拦截）+折叠 reject IO_ERROR）。**安全前提**：renderer 为纯组件态 SPA（无 pushState/hash/锚点 in-page 导航——App.tsx ViewId useState 形态），主帧导航事件语义等价于「renderer 生命周期重开」；未来引入 in-page 路由（hash 路由/history API）即触发本条复审（isMainFrame 过滤充分性重估） | F-SESS-01（2026-09-18 入册；宪法「新增跨模块行为不登记本册视同未完成」——门一 W1 处置）+src/main/services/export_/export-session-state.ts 态空间表 abort 行（F-EXPORT-01 拆件后宿主——2026-09-19 F-DOCGOV-01 指针随迁；bootstrap 双事件接线仍在 corpus.export.service.ts） | 单测锚（corpus.export.test 四用例：streaming-abort 释放单飞/防御两格/advance 守卫竞态窗/迟到回传 INVALID_REQUEST）+e2e 锚（corpus-export.spec renderer 重载格：streaming 中 reload→再发起全链完成）+变异红证双件（M1 删守卫 t3 红/M2 断接线 e2e 红） | 已锚定（F-SESS-01 落锚；render-process-gone 格接线由 typecheck+同通道单测覆盖——运行时崩溃注入红证欠账留档票内） |

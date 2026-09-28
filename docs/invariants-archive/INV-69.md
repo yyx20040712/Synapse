@@ -1,0 +1,5 @@
+# INV-69 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——主表现行最小三元组见 docs/invariants.md；下为本行归档时原文整行（论证/演进史/同族变体/取证注记均在原文内）。
+
+> | INV-69 | 阅读进度页码 outbox 通道（F-TIME-02 补登 2026-09-19——门一 W4 处置：时长功能移除后 outbox 机制存续为页码唯一落库通道，跨时间×跨模块行为须册内登记；沿革=P7X-02 建队（时长+页码双载荷）→F-TIME-02 载荷收缩为页码单载荷，队列本体/生命周期钩子链零改）：①**唯一入队口**=reading-time-setup.ts enqueueReaderProgress（id=ob-<seq>，seq 启动自 store 存量 max 续——跨会话唯一）；三收尾口（flusher invokeOne/onFlush 卸载兜底/sp.dispose 页码尾账）全经此口（页码在 enqueue 时点定死，防重放期回退）；②**落库单通道**=saveProgress（IPC）→reader.service→papers.repo updateReadPage 单参 SET last_read_page（F-TIME-02 后无第三参）；禁并行直发通道（旁路=丢账面）；③**at-least-once+队头阻塞派发序**（replay=main.tsx `void replayOnStart()` 后台回放——渲染先行，排空闸门由模块内 replaying 位承载；attempts 上限拦停+WARN toast 单源）；④**存量条目向后兼容**=旧 seconds 键非必备键，dispatch 显式取 paperId/page（未知键透传忽略至条目 remove 自然淘汰——localStorage 物理驻留无害） | src/renderer/features/reader/time/reading-time-setup.ts（装配+入队口）/reading-time-outbox.ts（队列本体）/src/main/services/reader.service.ts（saveProgress 落库） | e2e 真链（reading-time-replay.spec：重启重放→last_read_page DB 直断言）+unit（reading-time-outbox.test 队列态空间/兼容用例） | 已锚定（F-TIME-02 补登——锚=既有测试面，本条为登记性补登非行为变更） |

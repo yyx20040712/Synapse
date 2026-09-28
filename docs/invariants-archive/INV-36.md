@@ -1,0 +1,5 @@
+# INV-36 原行归档（F-GOV-01）
+
+> 迁移注记：F-GOV-01（2026-09-28）主表瘦身迁此——本行为已退役不变量，已随本票移出主表（索引=docs/invariants-archive/RETIRED.md）；下为本行归档时原文整行。
+
+> | INV-36 | 脉络节点宽度单源（F-LG13 修订 2026-08-31，用户令「方框都一样大小」）：nodeWidth(title) **恒返 NODE_W=240**（签名兼容保留——R2-LG10 三档 180/220/260 语义随令删除，题名长短不再影响占位宽；题名过长由卡内题名区滚动承载 INV-38）——布局占位（lineage-layout place 半宽）/卡面渲染（LineageNodeCard rect）/auto-fit 包围盒（fitViewport+edge-label-layout 节点盒）三消费点同一纯函数，禁任一处手写卡宽；**auto-fit 抢占门**：panbg pointerdown/滚轮 zoom 置 userInteracted 后 nodes 变化不重置视口，「适应视图」按钮（lineage-fit-view）=复位唯一入口；data-viewport transform 串格式 `translate(x, y) scale(k)` 为 e2e 解析契约（逐字符保持） **[T3-P6 退役态 2026-09-27]**：nodeWidth/统一卡几何消费面（layout/Canvas/NodeCard/viewport）随 SVG 画布方案切换整族退役删除；卡几何新单源=104×52（.tl-card 驻 theme-lineage.css，INV-78） | [T3-P6 已退役] lineage-layout.ts nodeWidth+lineage-viewport.ts useViewportController 状态机头注（R2-LG10 2026-08-29 登记；F-LG13 2026-08-31 修订——统一尺寸） | [T3-P6 已退役] 单测（lineage-layout.test F-LG13 统一宽字面锚 it+兄弟占位 256 恰值 it；lineage-canvas.test 统一 rect 宽 240 it——含 jsdom 量测桩）+e2e（lineage.spec T1 全节点 rect 240x110 单值断言——属性级 k 无关） | 已锚定（单测级 F-LG13 本单；e2e 面随主控收口）；**[T3-P6 退役] 锚定面随组件退役删除——本行转历史档案** |
