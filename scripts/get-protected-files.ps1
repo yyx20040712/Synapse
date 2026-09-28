@@ -19,7 +19,8 @@ function Get-ProtectedFiles {
       'scripts/dup-constants.baseline.json',
       'scripts/test-surface.baseline.json',
       'scripts/test-surface.exemptions.json',
-      'tickets/archive/README.md')) {
+      'tickets/archive/README.md',
+      'docs/defense-lifecycle.md')) {
     $p = Join-Path $root $cfg
     if (Test-Path $p) { $files += Get-Item $p }
   }

@@ -78,8 +78,8 @@
 
 ### 完成定义（Definition of Done）
 
-- [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build——verify⊇CI：另含指纹门；model-names=收口手动关卡未串 verify/CI，不是 README 数字）
-- [ ] src 产物零外部模型代号（glm/deepseek/kimi 等词表）——门禁 `npm run lint:model-names`（本地手动关卡，未串 verify/CI 链，收口自跑）
+- [ ] `npm run verify` 全绿（quality + tickets + locks + lint + typecheck + test + build；指纹门 verify/CI 两侧同含[C-A4 起]——CI 另含 e2e 与 lock-change-guard/[dep-change] 尾注/test-refactor 范围闸/npm audit 等守卫步；model-names 的 src 代号负锚已内联 quality 段随 verify/CI 跑[2026-09-16 起]，独立脚本=收口手动快跑入口，README 数字非此口径）
+- [ ] src 产物零外部模型代号（glm/deepseek/kimi 等词表）——门禁 `npm run lint:model-names`（扫描面单源=check-model-names.mjs；src 负锚自 2026-09-16 起经 quality 段随 verify/CI 跑——独立 npm 脚本为收口手动快跑入口）
 - [ ] `grep` 无 `TODO|FIXME|placeholder`（CI quality 关卡）
 - [ ] 无乱码：中文内容工具验证可读（CI mojibake 关卡）
 - [ ] `git diff --stat` 无范围蔓延
@@ -137,6 +137,14 @@ development Model Selection+loop-engineering references/06）；**架构与
 5. 卡住了就停，报告卡点；**不许删检查、不许放宽断言、不许引入新依赖**。
 6. 测试红了先怀疑自己的实现；确认是测试/契约问题 → 停下报告。
 7. **[test-refactor] 测试重构战役票**：动 tests/** 须双尾注 `[locked-change][test-refactor]`——CI 范围闸机检 diff 路径白名单（src/** 红）、verify 的 `test-surface:check` 机检契约面 C_after ⊇ C_before；有意收紧/删改先取主控裁决再落 `scripts/test-surface.exemptions.json` 豁免（reason+rulingLink）；战役毕基线再生成走 `npm run test-surface:baseline`+全量 diff 审计（设计定稿=docs/design/2026-09-11_f-testref00-design-final.md）。
+
+### 治理面生命周期（F-GOV-01，2026-09-28）
+
+- 新增治理面（机检脚本/强制文档字段/CI 关卡）立案时必须附**退出条件与评审触发器**并登记
+  `docs/defense-lifecycle.md`——无退出条件者不予立票。
+- 防线撤/并一律主控裁决；登记表「拦截实绩」栏空≠撤除理由（D-GOV-16）。
+- done 票 summary 日落：收口满 3 批（判据见登记册规则区）后由收口主控瘦身为
+  结论句+archive 指针（存量已随本票单元一消化 229/229——沿革见登记册，规则管增量）。
 
 ### 闲时连续开发（无人值守场，2026-09-03 立制）
 

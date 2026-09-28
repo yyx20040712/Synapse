@@ -48,6 +48,9 @@ function protectedFiles() {
     // [F-GOV-01] tickets/archive README 索引件单件入锁（D-11）：manifest=活跃契约面清单，
     // archive 正文件不入锁（天然不在 walk 面，完整性由 git 提交保证）
     join(root, 'tickets', 'archive', 'README.md'),
+    // [F-GOV-01] 防线生命周期登记册单件入锁（单元二）：活跃治理机制件（同 README 逻辑——
+    // 撤/并判据与拦截实绩属活跃契约面，篡改须 [locked-change] 人类审查位）
+    join(root, 'docs', 'defense-lifecycle.md'),
     ...walk(join(root, 'scripts'), (p) => p.endsWith('.mjs') || p.endsWith('.ps1'))
   ].filter((p) => existsSync(p))
   return [...new Set(files)].sort()

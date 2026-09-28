@@ -1,9 +1,13 @@
 {
-    "generatedAt":  "2026-09-28T09:46:40.6103933Z",
+    "generatedAt":  "2026-09-28T10:46:49.6890011Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
                       "sha256":  "65f17d5ca51603ea80d29bd06bd6b4e5aab4294fd8cd7307ad0f10c0df91ebe7"
+                  },
+                  {
+                      "path":  "docs/defense-lifecycle.md",
+                      "sha256":  "3febd0dcdeb198f1932d523d923bcc5f86f96d2b5fbdbd70878ad6f0fe1cdbe7"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -27,7 +31,7 @@
                   },
                   {
                       "path":  "scripts/check-locks.mjs",
-                      "sha256":  "18e1fd080cb4ea50e2513c161c7e5ff81daf56b00c554aec9357862d89929957"
+                      "sha256":  "6e84f81e1d916eb9c2accb40f288ca20ff0d4295b3217b3425afaa84f0839790"
                   },
                   {
                       "path":  "scripts/check-model-names.mjs",
@@ -59,7 +63,7 @@
                   },
                   {
                       "path":  "scripts/get-protected-files.ps1",
-                      "sha256":  "d2b7cace29af3e8826bf5391c9bf2bd0e7712b394a85dc5066fafd02f779cde5"
+                      "sha256":  "5dfe98f810feb38e1e8ddc999af9a4738ba96d7e30146202885befd78d8f339b"
                   },
                   {
                       "path":  "scripts/installer-smoke.mjs",
