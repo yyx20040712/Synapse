@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-27T15:11:18.3247396Z",
+    "generatedAt":  "2026-09-28T00:55:27.5116169Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -79,11 +79,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "758f21cfa6884cc62ff6a0483e2c2ed4078b6ecce84e5eab1f4f7b44d8f07d44"
+                      "sha256":  "988dee688fc7ca2d32766f1f30414ef7ccc66e3aa097869ec34151b11526cf0a"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "0a9ea52188b1703a2a3775ea0804e45f3be2ed4ba34635377849b7e287295e31"
+                      "sha256":  "1efb38e10bbc7d864815ea2b283a35c93fcc2ab7be432cd01527dfc3ca06dcd7"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -302,20 +302,8 @@
                       "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
                   },
                   {
-                      "path":  "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts",
-                      "sha256":  "c8087b348ffdaf3da25431f42855db1f060f4aaa53187f8f929a4eb90e82d290"
-                  },
-                  {
-                      "path":  "tests/e2e/z-f-rdr02-repro-probe.spec.ts",
-                      "sha256":  "84df82ce1bba9ec6a1ea9e3dfb58f468ec3d43852d0276ce9f0f7c7a2aa199c9"
-                  },
-                  {
-                      "path":  "tests/e2e/z-r2e-probe.spec.ts",
-                      "sha256":  "8ee85e53e219a16ae175f68815ce5d0d4283206bc01c68bdfb3e7758b64db339"
-                  },
-                  {
-                      "path":  "tests/e2e/z-wg1-probe.spec.ts",
-                      "sha256":  "676354d1ebebff75a295413479f436e2984b3d6a08d6d91fb0cdaf49bc96ef98"
+                      "path":  "tests/e2e/z-probes-ARCHIVED.md",
+                      "sha256":  "be4df3f9ef46bb36bfee60de0559f986a7a3527c113d7db3d901ec435eee977e"
                   },
                   {
                       "path":  "tests/security/csp-meta.test.ts",

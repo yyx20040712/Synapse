@@ -3312,131 +3312,6 @@
         }
       ]
     },
-    "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [
-        "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)"
-      ],
-      "cases": [
-        {
-          "key": "[\"F-RDR-01 末行下拖：自绘 y 序列无减序对+末帧=S4 吸附帧（±1px）\"]",
-          "describePath": [],
-          "title": "F-RDR-01 末行下拖：自绘 y 序列无减序对+末帧=S4 吸附帧（±1px）",
-          "markers": [],
-          "line": 104,
-          "assertions": [
-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByText('MULTILINE ALPHA ROW').first()).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByText('MULTILINE GAMMA ROW').first()).toBeVisible({ timeout: 20_000 })",
-            "expect(s4Idx, 'S4 帧（mouseup 后首个有效帧）在场（findIndex 未命中=-1 红）').toBeGreaterThanOrEqual(0)",
-            "expect(valid.length - Math.max(s4Idx, 0), 'S4 后至少 1 个有效帧（post 序列非空）').toBeGreaterThan(0)",
-            "expect( post[i]!.y! - post[i - 1]!.y!, `S4 后帧 ${i - 1}→${i} y 减序：${post[i - 1]!.y}→${post[i]!.y}（弹回闪烁形态）` ).toBeGreaterThanOrEqual(-TOL)",
-            "expect(Math.abs(last.y! - s4.y!), `末帧 y=${last.y} ≠ S4 y=${s4.y}±1（弹回方向断言）`).toBeLessThanOrEqual(TOL)"
-          ]
-        }
-      ]
-    },
-    "tests/e2e/z-f-rdr02-repro-probe.spec.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"F-RDR-02 场景①③④：焦点丢失/弹层可见性/点击 event.target 取证\"]",
-          "describePath": [],
-          "title": "F-RDR-02 场景①③④：焦点丢失/弹层可见性/点击 event.target 取证",
-          "markers": [],
-          "line": 34,
-          "assertions": [
-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(known).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByTestId('selection-toolbar')).toBeVisible()",
-            "expect(win.getByTestId('annotation-rect').first()).toBeVisible()",
-            "expect(editor).toBeVisible()",
-            "expect(rect, '编辑器 boundingBox 在场').not.toBeNull()",
-            "expect(rect.y + rect.height, `弹层应在视口内（bottom=${rect.y + rect.height} vs vh=${vp.height}）`).toBeLessThanOrEqual(vp.height)",
-            "expect(rect.y, `弹层 top 应 ≥0（top=${rect.y}）`).toBeGreaterThanOrEqual(0)",
-            "expect(activeAfterClick, '点击 textarea 后焦点应回到批注输入框（无拦截层）').toBe('批注内容')",
-            "expect(value, '焦点恢复后输入应进入 textarea（无吞键）').toBe('F-RDR-02 审计输入')",
-            "expect(blurred, '前置：点页面空白后焦点应已离开 textarea').not.toBe('批注内容')",
-            "expect(refocused, 'D6：完整指针序列点击弹层空白后焦点应回到批注输入框（B1 修复真机证）').toBe('批注内容')"
-          ]
-        }
-      ]
-    },
-    "tests/e2e/z-r2e-probe.spec.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [
-        "test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)"
-      ],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"F-R2e 探针：划选高亮重开原位——仪表指纹矩阵\"]",
-          "describePath": [],
-          "title": "F-R2e 探针：划选高亮重开原位——仪表指纹矩阵",
-          "markers": [],
-          "line": 268,
-          "assertions": [
-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(known).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByTestId('selection-toolbar')).toBeVisible()",
-            "expect(rect.first()).toBeVisible()",
-            "expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')",
-            "expect(rect).toHaveCount(1)",
-            "expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(win2.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })",
-            "expect(rect2.first()).toBeVisible({ timeout: 10_000 })",
-            "expect(rect2).toHaveCount(1)",
-            "expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')",
-            "expect(box1).not.toBeNull()",
-            "expect(page1).not.toBeNull()",
-            "expect(box2).not.toBeNull()",
-            "expect(page2).not.toBeNull()",
-            "expect(Math.abs(rel1.x - rel2.x)).toBeLessThanOrEqual(2)",
-            "expect(Math.abs(rel1.y - rel2.y)).toBeLessThanOrEqual(2)",
-            "expect(Math.abs(box1!.width - box2!.width)).toBeLessThanOrEqual(2)",
-            "expect(Math.abs(box1!.height - box2!.height)).toBeLessThanOrEqual(2)"
-          ]
-        }
-      ]
-    },
-    "tests/e2e/z-wg1-probe.spec.ts": {
-      "ticketIds": [],
-      "conditionalSkipSites": [
-        "test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)"
-      ],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"W-G1 多行判别探针：跨 3 行划选高亮重开原位——中间轮指纹\"]",
-          "describePath": [],
-          "title": "W-G1 多行判别探针：跨 3 行划选高亮重开原位——中间轮指纹",
-          "markers": [],
-          "line": 218,
-          "assertions": [
-            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByText(PDF_MULTILINE_TEXT[0]).first()).toBeVisible({ timeout: 20_000 })",
-            "expect(win.getByTestId('selection-toolbar')).toBeVisible()",
-            "expect(rects1.first()).toBeVisible()",
-            "expect(rects1).toHaveCount(3)",
-            "expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
-            "expect(win2.getByText(PDF_MULTILINE_TEXT[0]).first()).toBeVisible({ timeout: 20_000 })",
-            "expect(rects2.first()).toBeVisible({ timeout: 10_000 })",
-            "expect(rects2).toHaveCount(3)",
-            "expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')",
-            "expect(box1).not.toBeNull()",
-            "expect(box2).not.toBeNull()",
-            "expect(page1).not.toBeNull()",
-            "expect(page2).not.toBeNull()",
-            "expect(Math.abs(tearDy)).toBeLessThanOrEqual(2)",
-            "expect(Math.abs(d.dy), `rect[${d.i}] dy`).toBeLessThanOrEqual(2)",
-            "expect(Math.abs(d.dh), `rect[${d.i}] dh`).toBeLessThanOrEqual(2)"
-          ]
-        }
-      ]
-    },
     "tests/e2e/zcode-link.spec.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [
@@ -29407,12 +29282,12 @@
     }
   },
   "stats": {
-    "fileCount": 198,
-    "caseCount": 1998,
-    "assertionCount": 6230,
-    "skipSiteCount": 15,
-    "conditionalSkipSiteCount": 14,
-    "hardSkipSiteCount": 1,
+    "fileCount": 194,
+    "caseCount": 1994,
+    "assertionCount": 6175,
+    "skipSiteCount": 12,
+    "conditionalSkipSiteCount": 12,
+    "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
     "eachExpandedRows": 336,
     "unresolvableCount": 0
@@ -29519,12 +29394,6 @@
       "assertionText": "expect(() => h.ob.enqueue(h.draft('ob-1', 'p-1', 1, 11, 1))).not.toThrow()",
       "reason": "F-TIME-02 用户裁决功能移除（2026-09-19 relay.md batch 26 增补二）：draft 铸造助手随载荷收窄四参化三参（id/paperId/page/seq）",
       "rulingLink": "docs/handoff/relay.md"
-    },
-    {
-      "file": "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts",
-      "skipSiteText": "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)",
-      "reason": "F-RDR-01 设计定稿终裁修正 8 明文条款：探针有效帧 <10（headless rAF 节流漏检）重跑上限 3 次后 skip 记档不假绿——skip 位为票面强制行为（非收紧/删改既有面）",
-      "rulingLink": "docs/design/2026-09-20_f-rdr01-design-final.md"
     },
     {
       "file": "tests/unit/renderer/theme.test.ts",

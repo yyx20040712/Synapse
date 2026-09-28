@@ -104,12 +104,6 @@
       "rulingLink": "docs/handoff/relay.md"
     },
     {
-      "file": "tests/e2e/z-f-rdr-01-affinity-probe.spec.ts",
-      "skipSiteText": "test.skip(true, `有效帧不足（3 次尝试=${JSON.stringify(frameCounts)}）——headless rAF 节流环境漏检，记档不假绿（修正 8）`)",
-      "reason": "F-RDR-01 设计定稿终裁修正 8 明文条款：探针有效帧 <10（headless rAF 节流漏检）重跑上限 3 次后 skip 记档不假绿——skip 位为票面强制行为（非收紧/删改既有面）",
-      "rulingLink": "docs/design/2026-09-20_f-rdr01-design-final.md"
-    },
-    {
       "file": "tests/unit/renderer/theme.test.ts",
       "caseTitle": "--bg 声明为设计定稿值 #f6f4ee",
       "reason": "T3-P1 主题三族首票（排程真相源 docs/design/2026-09-26_theme-trio-final-design.md §0/§6）：token 三族值源切换，防漂移锁 TOKENS 值断言随设计终值表逐值同步（旧值断言退役）",
