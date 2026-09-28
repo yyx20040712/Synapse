@@ -30,13 +30,13 @@
 
 | 项 | 终值（脚本实测） |
 | --- | --- |
-| verify | **177 件 / 1943 用例** EXIT=0（F-CONSOL-03 后不变——探针系 playwright 件非 vitest 面；收口树亲验 verify-closure.raw.txt exit=0） |
-| e2e | app **51 用例**（probe project 空集完全静默——门二 V2 实证）；test:e2e:all 首跑 50+1 flake（P7-B 已知型第 1 现，指纹见 §3——低于立案线） |
+| verify | **177 件 / 1954 用例** EXIT=0（SR-SEC-01 +11 unit 后；closure 树亲验 17 号档 exit=0） |
+| e2e | app **52 用例**（SR-SEC-01 新增 1：reader-text「app-file 真实链路 fetch 完整性」） |
+| 指纹门 | **194 文件 / 2006 用例 / 6201 断言 / skipSite12 / snapshot123**（基线 194/1994/6175/12 不动，cur 超集方向——NEW=unit 11+e2e 1） |
+| 战役进度 | P1-P7B✓；治理五票批：F-CONSOL-03✓+C-A4✓+**SR-SEC-01✓（2026-09-28 次段二收口 d716f08e95f）**；插队票 F-CI-01✓；T3-U1 挂账批；**open 面=6**（F-TESTREF-S1/S3+F-CONSOL-02+SR-IPC-10+F-GOV-01+T3-U1） |
+| 提交 | F-CONSOL-03 收口；C-A4 实现笔 c484f330578+翻票 841969ba61e；F-CI-01 实现笔 318cd79c521+翻票 5f738f3afd7；滚动 2642dad55fa；**SR-SEC-01 收口笔 d716f08e95f** |
 | locks manifest | **257**（260−4 探针+1 新指针件 z-probes-ARCHIVED.md 自动入锁） |
 | 豁免台账 | **123 条**（F-CONSOL-03 孤儿豁免 F-RDR-01 skipSite 单条移除；全 stale=跨票累积观察项移交 F-GOV-01） |
-| 指纹门基线 | **194 文件/1994 用例/6175 断言/skipSite12/snapshot123**（F-CONSOL-03 删基线显式重跑——票面「零影响」失实勘正在案：四探针原在基线内[55 断言/skipSite3]；diff 审计 ADDED0/REMOVED4/CHANGED0） |
-| 战役进度 | P1-P7B✓；治理五票批：F-CONSOL-03✓+**C-A4✓（次段收口）**；**插队票 F-CI-01✓（次段当日闭环）**；T3-U1 挂账批；**open 面=7**（实测 openTickets：F-TESTREF-S1/S3+F-CONSOL-02+SR-SEC-01+SR-IPC-10+F-GOV-01+T3-U1——P8 未立案不在册） |
-| 提交 | F-CONSOL-03 收口（test(assets)）；C-A4 实现笔 c484f330578；F-CI-01 实现笔 318cd79c521[dep-change][locked-change]+翻票笔 5f738f3afd7[locked-change]；C-A4 翻票笔 841969ba61e |
 | **CI 状态** | **run 36372251379 success=2026-08-27 以来首绿**（绿头=318cd79c521；npm ci 步过+指纹门步真实执行绿+lock-change-guard 绿+e2e 51 passed 2.6m；此前三连红 36369814511/36364274452/36329103053 均=F-CI-01 域 npm ci 断因） |
 | 证据仓外档 | F-CONSOL-03/（impl+probe 报告+k1/d1 两轮+裁决部四门审档+raw 40+件+开工记录）；**C-A4/（31-push～36 取证链+fixture 实验场）；F-CI-01/（impl 报告+k1 两轮档+raw 15 件）** |
 
@@ -97,8 +97,13 @@
    （PWW B0W3N3→delta PASS B0W0N2，R5 单点配置批定档）；verify 三跑 EXIT=0；**终验收=
    CI 首绿同 run**；实现笔=318cd79c521[dep-change][locked-change]+翻票笔=5f738f3afd7；
    证据=仓外 F-CI-01/。**本票为 CI 验收链路解锁票——后续票 CI 验收依赖已修复**。
-3. **SR-SEC-01 ACAO 通配收束**（双审）：Origin 白名单回显+取证步前置+
-   resolveAcao 五分支单测+伪造 Origin e2e 断言。
+3. **SR-SEC-01 ACAO 通配收束✓（2026-09-28 次段二收口 d716f08e95f）**：三屋全链毕
+   [实现六自裁+门一 k1 PASS B0W0N5/d1 PWW B0W2N6 纯内联+probe 6/6+裁决部 GWC P0=0
+   C1-C4 全兑现]。**取证重大发现：Origin 头 protocol.handle 层恒不可观测**（Electron
+   剥离 forbidden headers，dev+prod 双态实测）——设计前提实测推翻在案，实现按终裁
+   原样落地=休眠防线（INV-07 已登记激活前提）；白名单语义全向攻击推演无逃逸。
+   基线滚动：verify 177/1954·e2e 52·指纹门 cur 2006/6201（超集）。W1（休眠面落
+   INV-07）已修；C3 勘误（分项行数/用例计数）登记 16 号批次日志。
 4. **SR-IPC-10 契约缺口双修**（双审）：workspaces type-test 双证[禁宽型标注]+
    三事件 preload 侧 zod 兜底。
 5. **F-GOV-01 治理减容役**（双审+抽查链亲验；两单元两提交）：registry/INV
@@ -117,6 +122,11 @@
 
 ## §3 悬挂事项（用户知悉/裁决口）
 
+- **SR-SEC-01 设计层回写备案（k1-N5，裁决部 C2 兑现）**：本票取证证伪设计前提
+  （Origin 可观测假设）——威胁模型已从「现行威胁修复」实测转为「透传形态变化时
+  既位防线」（休眠+激活前提已登记 INV-07）。ADR/设计文档层面回写超本票范围——
+  候选挂点=F-GOV-01 立案核或下次触及 security 文档的票（docs/security.md §3 与
+  app-file 段核对时顺带）。
 - **push 直连间歇性经验（次段实证）**：处方命令（URL 级代理键同键名覆盖=直连）非一次
   必成——次段两 push：首 push 一次成功、F-CI-01 笔 1 reset+6 连不上后第 7 次成功。
   **push 失败=重试（建议 ≥8 次退避 25s）非换法**；代理 7890 口本段全死（connection
@@ -152,9 +162,9 @@
 
 ## §4 开工三态指针
 
-**HEAD=本档提交**。A 干净树=直接接 §2 首项（**SR-SEC-01 ACAO 通配收束**——治理五票
-批序 3，双审[k1+d1 两席纯内联零 Read 审包]；实现首步=Origin 取证步前置[真实 PDF 链路
-dev+prod 双态打印实际 Origin 串]）；B 脏树=先重跑 git status 核实树态再判（v66 §1-1
+**HEAD=本档提交**。A 干净树=直接接 §2 首项（**SR-IPC-10 契约缺口双修**——治理五票
+批序 4，双审[k1+d1 两席纯内联零 Read 审包]；type-test 双证[禁宽型标注]+三事件 preload
+侧 zod 兜底）。B 脏树=先重跑 git status 核实树态再判（v66 §1-1
 教训）；C 非交接提交=查门审在档。技能清点先行（宪法开工纪律）。**本场无新用户裁决；
 v64 三裁决+v68 收段指令沿用。收口提交尾注面=[locked-change] 单尾注（v66 §4/P5-P7B
 先例；触 package 件时叠 [dep-change]——F-CI-01 先例双尾注）**；push 处方=URL 级代理键
