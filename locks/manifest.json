@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-28T03:12:07.9560871Z",
+    "generatedAt":  "2026-09-28T03:58:16.7514182Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "1068f1524c3408d6a9757d26ad53cd4a78a3920036887392b4f76468e2156025"
+                      "sha256":  "5c8593e05911fa19d78e8174809702dfdb5d44624903341847dca397c4110125"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -259,7 +259,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "d00a97cd085fb76bde0d432ffc19c919459143329622c3685a78d02bef365756"
+                      "sha256":  "d0c6caf80e918d54bcf62bec7f097541f2955834670601550bc8ff11e167758c"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -447,7 +447,7 @@
                   },
                   {
                       "path":  "tests/unit/protocol/app-file.protocol.test.ts",
-                      "sha256":  "4901c067e5e86a71ca43eaa6c34c4ef1f4bc31995031cd692b6d1b928e5cba3d"
+                      "sha256":  "df72a4ee0937da0d8b720831c711e9266e8d93b1fc236414fd5856d7c9c45e4d"
                   },
                   {
                       "path":  "tests/unit/renderer/ai-annotation-layer.test.tsx",

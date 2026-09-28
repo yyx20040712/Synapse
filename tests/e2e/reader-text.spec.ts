@@ -96,6 +96,35 @@ test('打开文献后页列渲染出多页文本（连续滚动逐页可见+INV-
   await app.close()
 })
 
+/**
+ * [SR-SEC-01] app-file:// CORS 面 e2e 锚（always-active——协议/DB/受管文件为
+ * infra 级依赖，无阅读器渲染门）。断言形态随取证自裁（档=仓外
+ * scripts-audits/SR-SEC-01/05-07）：Electron protocol.handle 不透传 Origin 头
+ * （prod file:// 与 dev http://localhost 双态同形——handler 恒走「无头=不加
+ * ACAO」分支），且页侧跨源读 ACAO 头被过滤——「读回显值」断言在该层不可达，
+ * 锚定为真实链路完整性：页内自发 fetch 受管协议 200+可读 Content-Length。
+ * 若实现回退为「未命中即 403」（design-final 明确拒绝形态）或协议层改动破坏
+ * loadingTask 链路，此处红；白名单分支正/负形态由 unit 层伪造 Request 锚定
+ * （tests/unit/protocol/app-file.protocol.test.ts）。
+ */
+test('app-file 真实链路 fetch 完整性：无 Origin=静默不加 ACAO（非 403），受管 PDF 可读（SR-SEC-01）', async () => {
+  const title = '智慧水务 e2e SR-SEC-01 CORS 文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  const corsProbe = await win.evaluate(async () => {
+    try {
+      const r = await fetch('app-file://e2e-seed-paper')
+      return { ok: r.status === 200, len: r.headers.get('content-length') }
+    } catch (e) {
+      return { ok: false, len: null, err: String(e) }
+    }
+  })
+  expect(corsProbe.ok, `app-file 真实链路 fetch 必须通（未命中=静默不加头，非 403）：${JSON.stringify(corsProbe)}`).toBe(true)
+  expect(Number(corsProbe.len), '受管 PDF 字节长度可读（CSP connect-src app-file: 在场）').toBeGreaterThan(0)
+  await app.close()
+})
+
 test('划选高亮后重开仍在原位；批注编辑与删除可用', async () => {
   skipIfPending(F02_DEPS)
   // 受管文件 + 种子落库 + 二次启动（seedAndLaunch 共用配方；标题带"标注链"区分）
