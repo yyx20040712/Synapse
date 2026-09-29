@@ -11237,138 +11237,6 @@
         }
       ]
     },
-    "tests/unit/renderer/lineage-canvas.test.tsx": {
-      "ticketIds": [],
-      "conditionalSkipSites": [],
-      "hardSkipSites": [],
-      "cases": [
-        {
-          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"节点文本真实渲染（年份头纯数字/月标签/卡题名——「渲染出真实文本」红线）\"]",
-          "describePath": [
-            "LineageTimeline —— 时间线宿主渲染"
-          ],
-          "title": "节点文本真实渲染（年份头纯数字/月标签/卡题名——「渲染出真实文本」红线）",
-          "markers": [],
-          "line": 96,
-          "assertions": [
-            "expect([...(host?.querySelectorAll('.tl-year-num') ?? [])].map((e) => e.textContent)).toEqual([ '2020', '2021', '2022' ])",
-            "expect(host?.textContent).toContain('扩散模型起点')",
-            "expect(host?.textContent).toContain('主题分组')",
-            "expect(host?.textContent).toContain('最新进展')",
-            "expect(host?.textContent).toContain('未定月 · 1 篇')"
-          ]
-        },
-        {
-          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"data-node-id 结构锚：各卡挂 id（e2e/Board 测试同名接缝沿承）\"]",
-          "describePath": [
-            "LineageTimeline —— 时间线宿主渲染"
-          ],
-          "title": "data-node-id 结构锚：各卡挂 id（e2e/Board 测试同名接缝沿承）",
-          "markers": [],
-          "line": 112,
-          "assertions": [
-            "expect(host?.querySelectorAll('[data-node-id]').length).toBe(3)",
-            "expect(host?.querySelector('[data-node-id=\"B\"]')).not.toBeNull()"
-          ]
-        },
-        {
-          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）\"]",
-          "describePath": [
-            "LineageTimeline —— 时间线宿主渲染"
-          ],
-          "title": "空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）",
-          "markers": [],
-          "line": 119,
-          "assertions": [
-            "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')",
-            "expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()",
-            "expect(host?.querySelector('[data-testid=\"lineage-import\"]')).not.toBeNull()",
-            "expect(host?.querySelector('[data-testid=\"edge-pop\"]')).toBeNull()"
-          ]
-        },
-        {
-          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）\"]",
-          "describePath": [
-            "LineageTimeline —— 时间线宿主渲染"
-          ],
-          "title": "空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）",
-          "markers": [],
-          "line": 129,
-          "assertions": [
-            "expect(host?.textContent).toContain('暂无脉络图')",
-            "expect(host?.textContent).toContain('扩散模型起点')",
-            "expect(host?.querySelectorAll('[data-node-id]').length).toBe(3)"
-          ]
-        },
-        {
-          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"loading：挂载期呈加载文案，graph 取数一次\"]",
-          "describePath": [
-            "LineagePage —— 取数三态（lineage.store 数据单源）"
-          ],
-          "title": "loading：挂载期呈加载文案，graph 取数一次",
-          "markers": [],
-          "line": 142,
-          "assertions": [
-            "expect(host?.textContent).toContain('正在加载脉络图')",
-            "expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)",
-            "expect(stubApi.lineage.graph).toHaveBeenCalledWith({})"
-          ]
-        },
-        {
-          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）\"]",
-          "describePath": [
-            "LineagePage —— 取数三态（lineage.store 数据单源）"
-          ],
-          "title": "ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）",
-          "markers": [],
-          "line": 150,
-          "assertions": [
-            "expect(host?.textContent).toContain('扩散模型起点')",
-            "expect(useLineageStore.getState().status).toBe('ready')"
-          ]
-        },
-        {
-          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"ready 空图：空态文案（列表型空非错误）\"]",
-          "describePath": [
-            "LineagePage —— 取数三态（lineage.store 数据单源）"
-          ],
-          "title": "ready 空图：空态文案（列表型空非错误）",
-          "markers": [],
-          "line": 159,
-          "assertions": [
-            "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')"
-          ]
-        },
-        {
-          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"error：取数失败呈错误条+重试按钮；重试再取数成功恢复\"]",
-          "describePath": [
-            "LineagePage —— 取数三态（lineage.store 数据单源）"
-          ],
-          "title": "error：取数失败呈错误条+重试按钮；重试再取数成功恢复",
-          "markers": [],
-          "line": 166,
-          "assertions": [
-            "expect(host?.querySelector('[role=\"alert\"]')?.textContent).toContain('脉络图加载失败')",
-            "expect(retry.textContent).toBe('重试')",
-            "expect(host?.textContent).toContain('扩散模型起点')",
-            "expect(stubApi.lineage.graph).toHaveBeenCalledTimes(2)"
-          ]
-        },
-        {
-          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）\"]",
-          "describePath": [
-            "LineagePage —— 取数三态（lineage.store 数据单源）"
-          ],
-          "title": "store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）",
-          "markers": [],
-          "line": 182,
-          "assertions": [
-            "expect(useLineageStore.getState().nodes.length).toBe(3)",
-            "expect(useLineageStore.getState().status).toBe('ready')"
-          ]
-        }
-      ]
-    },
     "tests/unit/renderer/lineage-card-drag.test.tsx": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -13561,13 +13429,48 @@
           ]
         },
         {
+          "key": "[\"lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）\",\"[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved\"]",
+          "describePath": [
+            "lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）"
+          ],
+          "title": "[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved",
+          "markers": [],
+          "line": 219,
+          "assertions": [
+            "expect(state().saveStatus).toBe('error')",
+            "expect(state().lastWriteError).toBe('database is locked')",
+            "expect(state().queue.length).toBe(1)",
+            "expect(state().lineTypes).toEqual(loaded)",
+            "expect(showToast).toHaveBeenCalledWith('database is locked', 'error')",
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)",
+            "expect(state().saveStatus).toBe('saved')",
+            "expect(state().lineTypes).toEqual(EMPTY_GROUPS)"
+          ]
+        },
+        {
+          "key": "[\"lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）\",\"[F-CONSOL-05] saveLineTypes 拒绝型（CONFLICT=service 校验 reason 透传）：动作丢弃+toast reason+回落 saved（P7B 备案补；回炉=断言面补宽——lineTypes 保持预置值+恰一次调用）\"]",
+          "describePath": [
+            "lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）"
+          ],
+          "title": "[F-CONSOL-05] saveLineTypes 拒绝型（CONFLICT=service 校验 reason 透传）：动作丢弃+toast reason+回落 saved（P7B 备案补；回炉=断言面补宽——lineTypes 保持预置值+恰一次调用）",
+          "markers": [],
+          "line": 240,
+          "assertions": [
+            "expect(showToast).toHaveBeenCalledWith('线型组校验拒绝：base 越界', 'error')",
+            "expect(state().queue.length).toBe(0)",
+            "expect(state().saveStatus).toBe('saved')",
+            "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1)",
+            "expect(state().lineTypes).toEqual(loaded)"
+          ]
+        },
+        {
           "key": "[\"lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）\",\"removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）\"]",
           "describePath": [
             "lineage.store 写面 —— 保存态三态+排队（INV-04 同型：失败不推进 savedAt）"
           ],
           "title": "removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）",
           "markers": [],
-          "line": 219,
+          "line": 258,
           "assertions": [
             "expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })",
             "expect(state().nodes.map((n) => n.id)).toEqual(['B'])",
@@ -13581,7 +13484,7 @@
           ],
           "title": "upsertEdge/removeEdge 成功回填：新边追加、删边清除",
           "markers": [],
-          "line": 232,
+          "line": 271,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'B', to: 'A', label: '' })",
             "expect(state().edges.map((e) => e.id)).toEqual(['e1', 'e2'])",
@@ -13597,7 +13500,7 @@
           ],
           "title": "新建边成功 toast 按 kind 分文案（ref/manual）；label 后编辑（id 在场）不 toast",
           "markers": [],
-          "line": 252,
+          "line": 291,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith('综述关联已保存', 'success')",
             "expect(showToast).toHaveBeenCalledWith('人工父线已保存', 'success')",
@@ -13611,7 +13514,7 @@
           ],
           "title": "N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边",
           "markers": [],
-          "line": 273,
+          "line": 312,
           "assertions": [
             "expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })",
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })",
@@ -13631,7 +13534,7 @@
           ],
           "title": "load 互锁（stale-guard 写面同族）：写队列未清空时 graph 落地丢弃，不覆盖写回填",
           "markers": [],
-          "line": 301,
+          "line": 340,
           "assertions": [
             "expect(state().nodes[0]?.coreIdea).toBe('编辑中')",
             "expect(state().status).toBe('ready')"
@@ -13644,7 +13547,7 @@
           ],
           "title": "applyEdgeLine 全载荷：id+from/to/label 读现值+kind/sub 成对置（sub null=回退基础型）",
           "markers": [],
-          "line": 323,
+          "line": 362,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', kind: 'manual', sub: 't1' })",
             "expect(state().edges[0]?.kind).toBe('manual')",
@@ -13660,7 +13563,7 @@
           ],
           "title": "linkWithLine 新建四 kind（inferred 产生入口落位——INV-27 P7 备案兑现）+成功 toast 分文案",
           "markers": [],
-          "line": 365,
+          "line": 404,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'A', to: 'B', label: '', kind: 'inferred', sub: 'i1' })",
             "expect(state().edges.map((e) => e.kind)).toEqual(['inferred'])",
@@ -13675,7 +13578,7 @@
           ],
           "title": "linkWithLine CONFLICT（service 树守卫拒绝）：动作丢弃+toast reason+保存态回落 saved（沿 linkRefNodes 先例）",
           "markers": [],
-          "line": 396,
+          "line": 435,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith('多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error')",
             "expect(state().queue.length).toBe(0)",
@@ -13690,7 +13593,7 @@
           ],
           "title": "saveLineTypes 新队列动作 upsert-line-types：整批写+成功 set lineTypes",
           "markers": [],
-          "line": 410,
+          "line": 449,
           "assertions": [
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith(groups)",
             "expect(state().lineTypes).toEqual(groups)",
@@ -13704,7 +13607,7 @@
           ],
           "title": "saveLineTypes sameTarget 同类合并（整批=单实体——flight 中排队合并最后写胜出）",
           "markers": [],
-          "line": 426,
+          "line": 465,
           "assertions": [
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1)",
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)",
@@ -13719,7 +13622,7 @@
           ],
           "title": "队列序保证 lineTypes 先于引用其的 edge（saveLineTypes→linkWithLine 串行派发序）",
           "markers": [],
-          "line": 457,
+          "line": 496,
           "assertions": [
             "expect(orderLt).toBeDefined()",
             "expect(orderEdge).toBeDefined()",
@@ -13734,7 +13637,7 @@
           ],
           "title": "flight 堆积面派发序=FIFO：三动作同驻队列时按入队序派发（LIFO 即红）",
           "markers": [],
-          "line": 482,
+          "line": 521,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(1)",
             "expect(orderLt).toBeDefined()",
@@ -13933,6 +13836,138 @@
           "assertions": [
             "expect(bar.querySelector('[data-testid=\"lineage-save-status\"]')?.textContent).toContain('保存失败')",
             "expect(bar.querySelector('[data-testid=\"lineage-retry-save\"]')).not.toBeNull()"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-timeline-page.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"节点文本真实渲染（年份头纯数字/月标签/卡题名——「渲染出真实文本」红线）\"]",
+          "describePath": [
+            "LineageTimeline —— 时间线宿主渲染"
+          ],
+          "title": "节点文本真实渲染（年份头纯数字/月标签/卡题名——「渲染出真实文本」红线）",
+          "markers": [],
+          "line": 98,
+          "assertions": [
+            "expect([...(host?.querySelectorAll('.tl-year-num') ?? [])].map((e) => e.textContent)).toEqual([ '2020', '2021', '2022' ])",
+            "expect(host?.textContent).toContain('扩散模型起点')",
+            "expect(host?.textContent).toContain('主题分组')",
+            "expect(host?.textContent).toContain('最新进展')",
+            "expect(host?.textContent).toContain('未定月 · 1 篇')"
+          ]
+        },
+        {
+          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"data-node-id 结构锚：各卡挂 id（e2e/Board 测试同名接缝沿承）\"]",
+          "describePath": [
+            "LineageTimeline —— 时间线宿主渲染"
+          ],
+          "title": "data-node-id 结构锚：各卡挂 id（e2e/Board 测试同名接缝沿承）",
+          "markers": [],
+          "line": 114,
+          "assertions": [
+            "expect(host?.querySelectorAll('[data-node-id]').length).toBe(3)",
+            "expect(host?.querySelector('[data-node-id=\"B\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）\"]",
+          "describePath": [
+            "LineageTimeline —— 时间线宿主渲染"
+          ],
+          "title": "空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）",
+          "markers": [],
+          "line": 121,
+          "assertions": [
+            "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')",
+            "expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"lineage-import\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"edge-pop\"]')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"LineageTimeline —— 时间线宿主渲染\",\"空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）\"]",
+          "describePath": [
+            "LineageTimeline —— 时间线宿主渲染"
+          ],
+          "title": "空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）",
+          "markers": [],
+          "line": 131,
+          "assertions": [
+            "expect(host?.textContent).toContain('暂无脉络图')",
+            "expect(host?.textContent).toContain('扩散模型起点')",
+            "expect(host?.querySelectorAll('[data-node-id]').length).toBe(3)"
+          ]
+        },
+        {
+          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"loading：挂载期呈加载文案，graph 取数一次\"]",
+          "describePath": [
+            "LineagePage —— 取数三态（lineage.store 数据单源）"
+          ],
+          "title": "loading：挂载期呈加载文案，graph 取数一次",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(host?.textContent).toContain('正在加载脉络图')",
+            "expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)",
+            "expect(stubApi.lineage.graph).toHaveBeenCalledWith({})"
+          ]
+        },
+        {
+          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）\"]",
+          "describePath": [
+            "LineagePage —— 取数三态（lineage.store 数据单源）"
+          ],
+          "title": "ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）",
+          "markers": [],
+          "line": 152,
+          "assertions": [
+            "expect(host?.textContent).toContain('扩散模型起点')",
+            "expect(useLineageStore.getState().status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"ready 空图：空态文案（列表型空非错误）\"]",
+          "describePath": [
+            "LineagePage —— 取数三态（lineage.store 数据单源）"
+          ],
+          "title": "ready 空图：空态文案（列表型空非错误）",
+          "markers": [],
+          "line": 161,
+          "assertions": [
+            "expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')"
+          ]
+        },
+        {
+          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"error：取数失败呈错误条+重试按钮；重试再取数成功恢复\"]",
+          "describePath": [
+            "LineagePage —— 取数三态（lineage.store 数据单源）"
+          ],
+          "title": "error：取数失败呈错误条+重试按钮；重试再取数成功恢复",
+          "markers": [],
+          "line": 168,
+          "assertions": [
+            "expect(host?.querySelector('[role=\"alert\"]')?.textContent).toContain('脉络图加载失败')",
+            "expect(retry.textContent).toBe('重试')",
+            "expect(host?.textContent).toContain('扩散模型起点')",
+            "expect(stubApi.lineage.graph).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"LineagePage —— 取数三态（lineage.store 数据单源）\",\"store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）\"]",
+          "describePath": [
+            "LineagePage —— 取数三态（lineage.store 数据单源）"
+          ],
+          "title": "store 数据缓存：Page 卸载后 nodes/edges 驻留（03/04 消费面免二次取数）",
+          "markers": [],
+          "line": 184,
+          "assertions": [
+            "expect(useLineageStore.getState().nodes.length).toBe(3)",
+            "expect(useLineageStore.getState().status).toBe('ready')"
           ]
         }
       ]
@@ -21299,7 +21334,9 @@
           "assertions": [
             "expect(html, '外链引用在场（删标签=FOUC 静默回归——本断言即拦）').toContain('./theme-boot.js')",
             "expect(head, '<head> 段在场').not.toBeNull()",
-            "expect(head![0], '引用必须驻 head（body 尾=首帧已过，兜底失效）').toContain('./theme-boot.js')"
+            "expect(head![0], '引用必须驻 head（body 尾=首帧已过，兜底失效）').toContain('./theme-boot.js')",
+            "expect(tag, 'theme-boot script 标签形态在场（精确标签锚）').not.toBeNull()",
+            "expect(tag![0], '同步执行语义：禁 defer/async/nomodule 属性与 type=module（含大小写与无引号形态）') .not.toMatch(/\\b(defer|async|nomodule)\\b|\\btype\\s*=\\s*[\"']?module[\"']?/i)"
           ]
         },
         {
@@ -21309,7 +21346,7 @@
           ],
           "title": "接缝二：bootstrap 源文含 readThemeSync 调用+startupTheme 透传锚（传参链静态锚）",
           "markers": [],
-          "line": 81,
+          "line": 91,
           "assertions": [
             "expect(bootstrapSrc, 'readThemeSync 调用在场（摘除=main 恒零附参）').toMatch(/readThemeSync\\(/)",
             "expect(bootstrapSrc, 'startupTheme 透传在场（摘除=loadURL/loadFile 无 theme query）').toContain('startupTheme')"
@@ -30053,6 +30090,138 @@
         }
       ]
     },
+    "tests/unit/tools/check-test-surface-hardening.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T1 台账 entries 含 null 元素 → 受控 exit 3（非裸崩溃）+元素索引与摘要点名\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T1 台账 entries 含 null 元素 → 受控 exit 3（非裸崩溃）+元素索引与摘要点名",
+          "markers": [],
+          "line": 129,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(3)",
+            "expect(r.stderr).toContain('entries[0]')",
+            "expect(r.stderr).toContain('须为对象')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T2 台账 entries 含字符串元素 → 受控 exit 3（元素索引+JSON 摘要）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T2 台账 entries 含字符串元素 → 受控 exit 3（元素索引+JSON 摘要）",
+          "markers": [],
+          "line": 143,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(3)",
+            "expect(r.stderr).toContain('entries[0]')",
+            "expect(r.stderr).toContain('非对象字符串探针')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T3 FILE 条目（file+fileScope:true+reason+rulingLink 齐全）+拼错键 caseTitel → exit 3 点名未知键+合法键全集\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T3 FILE 条目（file+fileScope:true+reason+rulingLink 齐全）+拼错键 caseTitel → exit 3 点名未知键+合法键全集",
+          "markers": [],
+          "line": 157,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(3)",
+            "expect(r.stderr).toContain('未知键')",
+            "expect(r.stderr).toContain('caseTitel')",
+            "expect(r.stderr).toContain('caseTitle')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T4 matcher 条目带拼错键（无 fileScope）→ exit 3 点名未知键（对照既有泛文案不点名）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T4 matcher 条目带拼错键（无 fileScope）→ exit 3 点名未知键（对照既有泛文案不点名）",
+          "markers": [],
+          "line": 172,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(3)",
+            "expect(r.stderr).toContain('未知键')",
+            "expect(r.stderr).toContain('caseTitel')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T5 快照元素 fileScope:\\\"true\\\" 字符串 → baseline 轴二跳过（快照损坏字样+重写修复）；check 侧照常通过（不读快照）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T5 快照元素 fileScope:\"true\" 字符串 → baseline 轴二跳过（快照损坏字样+重写修复）；check 侧照常通过（不读快照）",
+          "markers": [],
+          "line": 191,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(0)",
+            "expect(r.stderr).toContain('快照损坏')",
+            "expect(repairedSnap[0]!.fileScope).toBe(true)",
+            "expect(rc.code).toBe(0)",
+            "expect(rc.stdout).toContain('检查通过')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T6 假基线登一文件+磁盘放置同名非白名单后缀文件（foo.helper.ts）→ check exit 1+SCAN_MISSING（指向抽取器/白名单排查）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T6 假基线登一文件+磁盘放置同名非白名单后缀文件（foo.helper.ts）→ check exit 1+SCAN_MISSING（指向抽取器/白名单排查）",
+          "markers": [],
+          "line": 213,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(1)",
+            "expect(r.stderr).toContain('SCAN_MISSING')",
+            "expect(r.stderr).toContain('白名单')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T8 畸形快照（fileScope:\\\"true\\\"）→ 直接 check exit 0——「check 不读快照」契约锁（门一双席同中 W1 回炉帧：不跑 baseline 修复，check 只消费 files/stats）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T8 畸形快照（fileScope:\"true\"）→ 直接 check exit 0——「check 不读快照」契约锁（门一双席同中 W1 回炉帧：不跑 baseline 修复，check 只消费 files/stats）",
+          "markers": [],
+          "line": 231,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(rc.code).toBe(0)",
+            "expect(rc.stdout).toContain('检查通过')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）\",\"T7 对照：基线登文件+磁盘真删 → 既有 FILE_MISSING exit 1；登 FILE 豁免后转绿（豁免通道不破坏）\"]",
+          "describePath": [
+            "F-TESTREF-S4 指纹门防御面加固（台账/快照/FILE_MISSING 三面）"
+          ],
+          "title": "T7 对照：基线登文件+磁盘真删 → 既有 FILE_MISSING exit 1；登 FILE 豁免后转绿（豁免通道不破坏）",
+          "markers": [],
+          "line": 247,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect((await f.readBaselineJson()).files[EXTRA_REL]).toBeDefined()",
+            "expect(r1.code).toBe(1)",
+            "expect(r1.stderr).toContain('FILE_MISSING')",
+            "expect(r1.stderr).not.toContain('FAIL SCAN_MISSING')",
+            "expect(r2.code).toBe(0)",
+            "expect(r2.stdout).toContain('检查通过')"
+          ]
+        }
+      ]
+    },
     "tests/unit/tools/check-test-surface.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -30959,9 +31128,9 @@
     }
   },
   "stats": {
-    "fileCount": 205,
-    "caseCount": 2110,
-    "assertionCount": 6501,
+    "fileCount": 206,
+    "caseCount": 2120,
+    "assertionCount": 6553,
     "skipSiteCount": 12,
     "conditionalSkipSiteCount": 12,
     "hardSkipSiteCount": 0,
@@ -31747,6 +31916,18 @@
       "caseTitle": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
       "reason": "T3-P8 源⑥ drag-hint 双态：view 态 null 断言（注释明言「P8 能力禁假 affordance 不渲染」=有意留给 P8 翻面）改双文案断言；edit 态文案扩全句（mockup L507/L1010-1013 逐字）",
       "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-canvas.test.tsx",
+      "fileScope": true,
+      "reason": "F-CONSOL-04 文件名对齐内容：Canvas 断言面已随 T3-P6 SVG 方案退役、内容改写为 Timeline/Page 测试但文件名残留 canvas（v67 起备案），改名后旧基线键退役（内容零改动，断言意图 T3-P6 已迁移）",
+      "rulingLink": "docs/prompts/2026-09-29_loop-handoff-v76-s1verified.md §2 候选票"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "reason": "F-CONSOL-05 负锚补强：接缝一用例增 module/defer/async 负锚断言（断言集 3→5（原 3 断言保留+新增精确标签锚与同步执行负锚 2 断言——纯超集非削弱；回炉正则强化不改断言数），T3-U1 备案 P2 兑现）——旧签名退役留档，用例本体在位增强非删除，新签名走 NEW delta",
+      "rulingLink": "tickets/archive/F-CONSOL-05.md"
     }
   ]
 }
