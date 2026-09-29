@@ -821,7 +821,7 @@
           "assertions": [
             "expect(mocks.on).toHaveBeenCalledTimes(1)",
             "expect(mocks.on).toHaveBeenCalledWith(EVENT_CHANNELS.importProgress, expect.any(Function))",
-            "expect(received).toEqual([{ phase: 'extracting', done: 1, total: 3 }])",
+            "expect(received).toEqual([ { phase: 'extracting', current: 1, total: 3, fileName: 'demo.pdf', sessionId: 'sess-1' } ])",
             "expect(mocks.removeListener).toHaveBeenCalledWith( EVENT_CHANNELS.importProgress, expect.any(Function) )"
           ]
         },
@@ -832,7 +832,7 @@
           ],
           "title": "事件桥 onWindowState：订阅 windowState 通道透传 payload，退订移除同一监听（R2-SH3 增量）",
           "markers": [],
-          "line": 109,
+          "line": 114,
           "assertions": [
             "expect(mocks.on).toHaveBeenCalledTimes(1)",
             "expect(mocks.on).toHaveBeenCalledWith(EVENT_CHANNELS.windowState, expect.any(Function))",
@@ -2549,6 +2549,45 @@
             "expect(m2.laneX - m2.contentLeft - m2.contentW).toBeCloseTo(m1.laneX - m1.contentLeft - m1.contentW, 1)",
             "expect(m2.relY).toBeCloseTo(m1.relY, 1)"
           ]
+        },
+        {
+          "key": "[\"脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）\",\"T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+view 态可拖\"]",
+          "describePath": [
+            "脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）"
+          ],
+          "title": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+view 态可拖",
+          "markers": [],
+          "line": 936,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.locator('.drag-slot')).toHaveText('置 入', { timeout: 5_000 })",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0)",
+            "expect( win.getByText('不能跨月拖动——请进入编辑模式，点卡片月标修改月份') ).toBeVisible({ timeout: 10_000 })"
+          ]
+        },
+        {
+          "key": "[\"脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）\",\"T10 改月全流：edit→月标→month-pop→选月→toast+reload 持久 slot 尾部\"]",
+          "describePath": [
+            "脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）"
+          ],
+          "title": "T10 改月全流：edit→月标→month-pop→选月→toast+reload 持久 slot 尾部",
+          "markers": [],
+          "line": 1026,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(ym).toHaveText('2020.5')",
+            "expect(pop).toBeVisible()",
+            "expect(pop.locator('h4')).toHaveText('移 动 到 月 份')",
+            "expect(pop.locator('.ws-item .nm').first()).toHaveText('2020 年 5 月')",
+            "expect(pop.locator('.ws-item .ct').first()).toHaveText('2 篇')",
+            "expect(pop.locator('.ws-item.on').first()).toHaveText(/2020 年 5 月/)",
+            "expect(win.getByText('已移至 2020 年 6 月')).toBeVisible({ timeout: 10_000 })",
+            "expect(pop).toHaveCount(0)",
+            "expect(win.getByText('5 月 · 1 篇')).toBeVisible()",
+            "expect(win.getByText('6 月 · 2 篇')).toBeVisible()",
+            "expect(win.locator('.month-frame.flash')).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.getByTestId('lineage-save-status')).toHaveCount(0)"
+          ]
         }
       ]
     },
@@ -2683,11 +2722,23 @@
           ]
         },
         {
+          "key": "[\"app-file 真实链路 fetch 完整性：无 Origin=静默不加 ACAO（非 403），受管 PDF 可读（SR-SEC-01）\"]",
+          "describePath": [],
+          "title": "app-file 真实链路 fetch 完整性：无 Origin=静默不加 ACAO（非 403），受管 PDF 可读（SR-SEC-01）",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(corsProbe.ok, `app-file 真实链路 fetch 必须通（未命中=静默不加头，非 403）：${JSON.stringify(corsProbe)}`).toBe(true)",
+            "expect(Number(corsProbe.len), '受管 PDF 字节长度可读（CSP connect-src app-file: 在场）').toBeGreaterThan(0)"
+          ]
+        },
+        {
           "key": "[\"划选高亮后重开仍在原位；批注编辑与删除可用\"]",
           "describePath": [],
           "title": "划选高亮后重开仍在原位；批注编辑与删除可用",
           "markers": [],
-          "line": 99,
+          "line": 128,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2719,7 +2770,7 @@
           "describePath": [],
           "title": "F-A11 笔记编辑：自动保存已保存标记+撤销重做+关闭重开回读",
           "markers": [],
-          "line": 176,
+          "line": 205,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2739,7 +2790,7 @@
           "describePath": [],
           "title": "P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截",
           "markers": [],
-          "line": 221,
+          "line": 250,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 20_000 })",
@@ -2759,7 +2810,7 @@
           "describePath": [],
           "title": "F-03 批 3：滚动进度回写恢复+键位滚动步+选区工具条滚动不闪收",
           "markers": [],
-          "line": 324,
+          "line": 353,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })",
@@ -2781,7 +2832,7 @@
           "describePath": [],
           "title": "划选下划线后渲染为行盒下沿 2px 实条（INV-06 感知断言）",
           "markers": [],
-          "line": 429,
+          "line": 458,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2801,7 +2852,7 @@
           "describePath": [],
           "title": "划选备注后渲染为整行色块（note kind 渲染存在性，INV-06）",
           "markers": [],
-          "line": 461,
+          "line": 490,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2816,7 +2867,7 @@
           "describePath": [],
           "title": "P7-A 交互：侧栏分隔条拖拽（SplitPane 集成）",
           "markers": [],
-          "line": 488,
+          "line": 517,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2829,7 +2880,7 @@
           "describePath": [],
           "title": "P7-A 复制：ctrl+c 将文本层选区写入系统剪贴板（ReaderShortcuts 剪贴板集成）",
           "markers": [],
-          "line": 518,
+          "line": 547,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2841,7 +2892,7 @@
           "describePath": [],
           "title": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久",
           "markers": [],
-          "line": 552,
+          "line": 581,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2864,7 +2915,7 @@
           "describePath": [],
           "title": "F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自绘并集层（F-A4/ADR-0019 R1 修订）",
           "markers": [],
-          "line": 605,
+          "line": 634,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })",
@@ -2886,7 +2937,7 @@
           "describePath": [],
           "title": "F-A1 多行划选归并：块=行、零宽 0、行块两两垂直分离（INV-A/B/C 装配级）",
           "markers": [],
-          "line": 693,
+          "line": 722,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_MULTILINE_TEXT[0]).first()).toBeVisible({ timeout: 20_000 })",
@@ -2908,7 +2959,7 @@
           "describePath": [],
           "title": "F-A6-d 组合页（/Rotate 90×/CropBox 非零原点）：文本层对齐墨带+划选块=行真值且不溢页盒（T1/T9 组合面 e2e 闭合）",
           "markers": [],
-          "line": 795,
+          "line": 824,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2930,7 +2981,7 @@
           "describePath": [],
           "title": "F-A7 旋转页（/Rotate 90）：占位盒与 canvas 渲染盒宽高一致（viewport 旋转口径）",
           "markers": [],
-          "line": 881,
+          "line": 910,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_ROTATED_CROP_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -2945,7 +2996,7 @@
           "describePath": [],
           "title": "F-A6-d 拖选随动：连发 selectionchange（3 次×~50ms、每轮+1 字符）→300ms 内 selection-rects 子树 ≥2 次变更（rAF 对齐 e2e 级）",
           "markers": [],
-          "line": 918,
+          "line": 947,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(known).toBeVisible({ timeout: 20_000 })",
@@ -2959,7 +3010,7 @@
           "describePath": [],
           "title": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
           "markers": [],
-          "line": 1001,
+          "line": 1030,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText('P1A SMART WATER TEST DOC').first()).toBeVisible({ timeout: 20_000 })",
@@ -2979,7 +3030,7 @@
           "describePath": [],
           "title": "A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线",
           "markers": [],
-          "line": 1176,
+          "line": 1205,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })",
@@ -4921,6 +4972,185 @@
         }
       ]
     },
+    "tests/unit/events-schemas.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"importProgressEventSchema\",\"正例：合法进度帧 parse 成功且数据保真\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "正例：合法进度帧 parse 成功且数据保真",
+          "markers": [],
+          "line": 48,
+          "assertions": [
+            "expect(r.success).toBe(true)",
+            "expect(r.data).toEqual(validImportProgress)"
+          ]
+        },
+        {
+          "key": "[\"importProgressEventSchema\",\"正例：done 终帧（正常载荷）通过\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "正例：done 终帧（正常载荷）通过",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect(r.success).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"importProgressEventSchema\",\"反例：缺 sessionId 拒（迟到帧跨会话过滤锚点不可缺）\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "反例：缺 sessionId 拒（迟到帧跨会话过滤锚点不可缺）",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(importProgressEventSchema.safeParse(bad).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"importProgressEventSchema\",\"反例：phase 枚举外拒\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "反例：phase 枚举外拒",
+          "markers": [],
+          "line": 68,
+          "assertions": [
+            "expect(importProgressEventSchema.safeParse({ ...validImportProgress, phase: 'idle' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"importProgressEventSchema\",\"反例：负数 current 拒（int min(0)）\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "反例：负数 current 拒（int min(0)）",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(importProgressEventSchema.safeParse({ ...validImportProgress, current: -1 }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"importProgressEventSchema\",\"反例：未知字段拒（strict）\"]",
+          "describePath": [
+            "importProgressEventSchema"
+          ],
+          "title": "反例：未知字段拒（strict）",
+          "markers": [],
+          "line": 76,
+          "assertions": [
+            "expect(importProgressEventSchema.safeParse({ ...validImportProgress, extra: 1 }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"exportCorpusEventSchema（判别联合）\",\"正例：extract-request 分支通过且数据保真\"]",
+          "describePath": [
+            "exportCorpusEventSchema（判别联合）"
+          ],
+          "title": "正例：extract-request 分支通过且数据保真",
+          "markers": [],
+          "line": 82,
+          "assertions": [
+            "expect(r.success).toBe(true)",
+            "expect(r.data).toEqual(validExtractRequest)"
+          ]
+        },
+        {
+          "key": "[\"exportCorpusEventSchema（判别联合）\",\"正例：progress 分支通过且数据保真\"]",
+          "describePath": [
+            "exportCorpusEventSchema（判别联合）"
+          ],
+          "title": "正例：progress 分支通过且数据保真",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect(r.success).toBe(true)",
+            "expect(r.data).toEqual(validExportProgress)"
+          ]
+        },
+        {
+          "key": "[\"exportCorpusEventSchema（判别联合）\",\"反例：判别键外值拒（type 不在两分支 literal 内）\"]",
+          "describePath": [
+            "exportCorpusEventSchema（判别联合）"
+          ],
+          "title": "反例：判别键外值拒（type 不在两分支 literal 内）",
+          "markers": [],
+          "line": 94,
+          "assertions": [
+            "expect(exportCorpusEventSchema.safeParse({ ...validExportProgress, type: 'unknown' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"exportCorpusEventSchema（判别联合）\",\"反例：extract-request 缺 url 拒\"]",
+          "describePath": [
+            "exportCorpusEventSchema（判别联合）"
+          ],
+          "title": "反例：extract-request 缺 url 拒",
+          "markers": [],
+          "line": 98,
+          "assertions": [
+            "expect(exportCorpusEventSchema.safeParse(bad).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"exportCorpusEventSchema（判别联合）\",\"反例：progress 缺 sessionId 拒\"]",
+          "describePath": [
+            "exportCorpusEventSchema（判别联合）"
+          ],
+          "title": "反例：progress 缺 sessionId 拒",
+          "markers": [],
+          "line": 103,
+          "assertions": [
+            "expect(exportCorpusEventSchema.safeParse(bad).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"windowStateEventSchema\",\"正例：合法状态帧 parse 成功\"]",
+          "describePath": [
+            "windowStateEventSchema"
+          ],
+          "title": "正例：合法状态帧 parse 成功",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(windowStateEventSchema.safeParse({ maximized: true }).success).toBe(true)",
+            "expect(windowStateEventSchema.safeParse({ maximized: false }).success).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"windowStateEventSchema\",\"反例：非布尔值拒\"]",
+          "describePath": [
+            "windowStateEventSchema"
+          ],
+          "title": "反例：非布尔值拒",
+          "markers": [],
+          "line": 115,
+          "assertions": [
+            "expect(windowStateEventSchema.safeParse({ maximized: 'yes' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"windowStateEventSchema\",\"反例：未知字段拒（strict）\"]",
+          "describePath": [
+            "windowStateEventSchema"
+          ],
+          "title": "反例：未知字段拒（strict）",
+          "markers": [],
+          "line": 119,
+          "assertions": [
+            "expect(windowStateEventSchema.safeParse({ maximized: true, extra: 1 }).success).toBe(false)"
+          ]
+        }
+      ]
+    },
     "tests/unit/http/http-client.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -5757,6 +5987,145 @@
         }
       ]
     },
+    "tests/unit/preload-events-guard.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"onImportProgress 守卫\",\"合法帧透传 cb（等值载荷）\"]",
+          "describePath": [
+            "onImportProgress 守卫"
+          ],
+          "title": "合法帧透传 cb（等值载荷）",
+          "markers": [],
+          "line": 70,
+          "assertions": [
+            "expect(cb).toHaveBeenCalledTimes(1)",
+            "expect(cb).toHaveBeenCalledWith(validImportProgress)",
+            "expect(warnSpy).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"onImportProgress 守卫\",\"畸形帧丢帧（cb 不调）且订阅存活（不退订）+ console.warn\"]",
+          "describePath": [
+            "onImportProgress 守卫"
+          ],
+          "title": "畸形帧丢帧（cb 不调）且订阅存活（不退订）+ console.warn",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(cb).not.toHaveBeenCalled()",
+            "expect(removeListenerMock).not.toHaveBeenCalled()",
+            "expect(warnSpy).toHaveBeenCalledTimes(1)",
+            "expect(String(warnSpy.mock.calls[0]?.[0])).toContain(EVENT_CHANNELS.importProgress)"
+          ]
+        },
+        {
+          "key": "[\"onImportProgress 守卫\",\"退订摘除同一 listener\"]",
+          "describePath": [
+            "onImportProgress 守卫"
+          ],
+          "title": "退订摘除同一 listener",
+          "markers": [],
+          "line": 90,
+          "assertions": [
+            "expect(removeListenerMock).toHaveBeenCalledWith(EVENT_CHANNELS.importProgress, listener)"
+          ]
+        },
+        {
+          "key": "[\"onExportCorpus 守卫\",\"合法帧透传 cb（progress 分支）\"]",
+          "describePath": [
+            "onExportCorpus 守卫"
+          ],
+          "title": "合法帧透传 cb（progress 分支）",
+          "markers": [],
+          "line": 100,
+          "assertions": [
+            "expect(cb).toHaveBeenCalledTimes(1)",
+            "expect(cb).toHaveBeenCalledWith(validExportProgress)"
+          ]
+        },
+        {
+          "key": "[\"onExportCorpus 守卫\",\"畸形帧丢帧且订阅存活（判别键外值）\"]",
+          "describePath": [
+            "onExportCorpus 守卫"
+          ],
+          "title": "畸形帧丢帧且订阅存活（判别键外值）",
+          "markers": [],
+          "line": 108,
+          "assertions": [
+            "expect(cb).not.toHaveBeenCalled()",
+            "expect(removeListenerMock).not.toHaveBeenCalled()",
+            "expect(warnSpy).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"onExportCorpus 守卫\",\"退订摘除同一 listener\"]",
+          "describePath": [
+            "onExportCorpus 守卫"
+          ],
+          "title": "退订摘除同一 listener",
+          "markers": [],
+          "line": 117,
+          "assertions": [
+            "expect(removeListenerMock).toHaveBeenCalledWith(EVENT_CHANNELS.exportCorpus, listener)"
+          ]
+        },
+        {
+          "key": "[\"onWindowState 守卫\",\"合法帧透传 cb\"]",
+          "describePath": [
+            "onWindowState 守卫"
+          ],
+          "title": "合法帧透传 cb",
+          "markers": [],
+          "line": 127,
+          "assertions": [
+            "expect(cb).toHaveBeenCalledTimes(1)",
+            "expect(cb).toHaveBeenCalledWith({ maximized: true })"
+          ]
+        },
+        {
+          "key": "[\"onWindowState 守卫\",\"畸形帧丢帧且订阅存活（非布尔值）\"]",
+          "describePath": [
+            "onWindowState 守卫"
+          ],
+          "title": "畸形帧丢帧且订阅存活（非布尔值）",
+          "markers": [],
+          "line": 135,
+          "assertions": [
+            "expect(cb).not.toHaveBeenCalled()",
+            "expect(removeListenerMock).not.toHaveBeenCalled()",
+            "expect(warnSpy).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"onWindowState 守卫\",\"畸形帧后合法帧仍可达（订阅真存活——非一次性）\"]",
+          "describePath": [
+            "onWindowState 守卫"
+          ],
+          "title": "畸形帧后合法帧仍可达（订阅真存活——非一次性）",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(cb).toHaveBeenCalledTimes(1)",
+            "expect(cb).toHaveBeenCalledWith({ maximized: false })"
+          ]
+        },
+        {
+          "key": "[\"onWindowState 守卫\",\"退订摘除同一 listener\"]",
+          "describePath": [
+            "onWindowState 守卫"
+          ],
+          "title": "退订摘除同一 listener",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect(removeListenerMock).toHaveBeenCalledWith(EVENT_CHANNELS.windowState, listener)"
+          ]
+        }
+      ]
+    },
     "tests/unit/preload/drag-import.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -5913,7 +6282,7 @@
           ],
           "title": "合法：app-file://<uuid> 解析出 paperId",
           "markers": [],
-          "line": 8,
+          "line": 14,
           "assertions": [
             "expect(parseAppFileUrl(`${APP_FILE_SCHEME}://a1b2c3d4-e5f6-7890-abcd-ef0123456789`)).toBe( 'a1b2c3d4-e5f6-7890-abcd-ef0123456789' )"
           ]
@@ -5925,7 +6294,7 @@
           ],
           "title": "合法：简单 id（短哈希）",
           "markers": [],
-          "line": 14,
+          "line": 20,
           "assertions": [
             "expect(parseAppFileUrl('app-file://paper01')).toBe('paper01')"
           ]
@@ -5937,7 +6306,7 @@
           ],
           "title": "攻击向量全部返回 null（含带路径/查询/片段的 URL）",
           "markers": [],
-          "line": 18,
+          "line": 24,
           "assertions": [
             "expect(parseAppFileUrl(evil), `应拒绝：${evil}`).toBeNull()",
             "expect(parseAppFileUrl('app-file://paper01/')).toBe('paper01')"
@@ -5950,10 +6319,154 @@
           ],
           "title": "超长 id（>64）拒绝",
           "markers": [],
-          "line": 37,
+          "line": 43,
           "assertions": [
             "expect(parseAppFileUrl(`app-file://${'a'.repeat(65)}`)).toBeNull()",
             "expect(parseAppFileUrl(`app-file://${'a'.repeat(64)}`)).toBe('a'.repeat(64))"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"白名单命中：回显原值（dev origin 全串）\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "白名单命中：回显原值（dev origin 全串）",
+          "markers": [],
+          "line": 55,
+          "assertions": [
+            "expect(resolveAcao('http://localhost:5173')).toBe('http://localhost:5173')",
+            "expect(resolveAcao('https://127.0.0.1:3000')).toBe('https://127.0.0.1:3000')"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"未命中：undefined（=不带 ACAO 头静默，非 403）\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "未命中：undefined（=不带 ACAO 头静默，非 403）",
+          "markers": [],
+          "line": 60,
+          "assertions": [
+            "expect(resolveAcao('https://evil.example')).toBeUndefined()",
+            "expect(resolveAcao('http://evil.example:5173')).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"无 Origin 头（headers.get 返回 null）：undefined（非 CORS 请求不加头）\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "无 Origin 头（headers.get 返回 null）：undefined（非 CORS 请求不加头）",
+          "markers": [],
+          "line": 65,
+          "assertions": [
+            "expect(resolveAcao(null)).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"字面 'null'（file:// 页 CORS Origin 恒此值）：命中白名单回显\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "字面 'null'（file:// 页 CORS Origin 恒此值）：命中白名单回显",
+          "markers": [],
+          "line": 69,
+          "assertions": [
+            "expect(resolveAcao('null')).toBe('null')"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"dev hostname 解析命中：URL 解析取 hostname 精确等值（端口无关）\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "dev hostname 解析命中：URL 解析取 hostname 精确等值（端口无关）",
+          "markers": [],
+          "line": 73,
+          "assertions": [
+            "expect(resolveAcao('http://localhost:5173')).toBe('http://localhost:5173')",
+            "expect(resolveAcao('http://localhost')).toBe('http://localhost')"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）\",\"负例：localhost.evil.com 的 hostname 不等值必 undefined（禁子串/后缀匹配）\"]",
+          "describePath": [
+            "protocol/app-file —— resolveAcao（SR-SEC-01 白名单纯函数）"
+          ],
+          "title": "负例：localhost.evil.com 的 hostname 不等值必 undefined（禁子串/后缀匹配）",
+          "markers": [],
+          "line": 78,
+          "assertions": [
+            "expect(resolveAcao('http://localhost.evil.com')).toBeUndefined()",
+            "expect(resolveAcao('http://localhost.evil.com:5173')).toBeUndefined()",
+            "expect(resolveAcao('http://127.0.0.1.evil.com')).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— handler ACAO 接线（SR-SEC-01）\",\"伪造 Origin（白名单外）：成功响应不带 ACAO 头（静默，非 403）\"]",
+          "describePath": [
+            "protocol/app-file —— handler ACAO 接线（SR-SEC-01）"
+          ],
+          "title": "伪造 Origin（白名单外）：成功响应不带 ACAO 头（静默，非 403）",
+          "markers": [],
+          "line": 129,
+          "assertions": [
+            "expect(res.status).toBe(200)",
+            "expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— handler ACAO 接线（SR-SEC-01）\",\"白名单 Origin（dev）：成功响应 ACAO=回显原值\"]",
+          "describePath": [
+            "protocol/app-file —— handler ACAO 接线（SR-SEC-01）"
+          ],
+          "title": "白名单 Origin（dev）：成功响应 ACAO=回显原值",
+          "markers": [],
+          "line": 139,
+          "assertions": [
+            "expect(res.status).toBe(200)",
+            "expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173')"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— handler ACAO 接线（SR-SEC-01）\",\"字面 'null'（file:// 页真实形态）：成功响应 ACAO='null'（回显）\"]",
+          "describePath": [
+            "protocol/app-file —— handler ACAO 接线（SR-SEC-01）"
+          ],
+          "title": "字面 'null'（file:// 页真实形态）：成功响应 ACAO='null'（回显）",
+          "markers": [],
+          "line": 149,
+          "assertions": [
+            "expect(res.status).toBe(200)",
+            "expect(res.headers.get('Access-Control-Allow-Origin')).toBe('null')"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— handler ACAO 接线（SR-SEC-01）\",\"无 Origin 头：成功响应不带 ACAO 头（非 CORS 请求）\"]",
+          "describePath": [
+            "protocol/app-file —— handler ACAO 接线（SR-SEC-01）"
+          ],
+          "title": "无 Origin 头：成功响应不带 ACAO 头（非 CORS 请求）",
+          "markers": [],
+          "line": 157,
+          "assertions": [
+            "expect(res.status).toBe(200)",
+            "expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"protocol/app-file —— handler ACAO 接线（SR-SEC-01）\",\"errorResponse 面同接线：伪造 Origin 的 404 不带 ACAO；字面 null 的 404 回显\"]",
+          "describePath": [
+            "protocol/app-file —— handler ACAO 接线（SR-SEC-01）"
+          ],
+          "title": "errorResponse 面同接线：伪造 Origin 的 404 不带 ACAO；字面 null 的 404 回显",
+          "markers": [],
+          "line": 165,
+          "assertions": [
+            "expect(evil.status).toBe(404)",
+            "expect(evil.headers.get('Access-Control-Allow-Origin')).toBeNull()",
+            "expect(fileOrigin.status).toBe(404)",
+            "expect(fileOrigin.headers.get('Access-Control-Allow-Origin')).toBe('null')"
           ]
         }
       ]
@@ -8644,6 +9157,137 @@
         }
       ]
     },
+    "tests/unit/renderer/app-shell-t3u1.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"saved 格：tab 在场全干净（lineage saved）→「自动保存 · 已保存」\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "saved 格：tab 在场全干净（lineage saved）→「自动保存 · 已保存」",
+          "markers": [],
+          "line": 132,
+          "assertions": [
+            "expect(bar.textContent, '可写面在场且干净=已保存（真文本——无时间戳）').toContain('自动保存 · 已保存')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"saving 格：lineage saveStatus=saving →「自动保存 · 保存中…」\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "saving 格：lineage saveStatus=saving →「自动保存 · 保存中…」",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(bar.textContent, 'lineage 写面在飞=保存中…').toContain('自动保存 · 保存中…')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"error 格（lineage）：saveStatus=error →「自动保存 · 保存失败」且槽挂 .sig（--signal 色）\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "error 格（lineage）：saveStatus=error →「自动保存 · 保存失败」且槽挂 .sig（--signal 色）",
+          "markers": [],
+          "line": 152,
+          "assertions": [
+            "expect(slot?.textContent, 'lineage 写失败=保存失败').toContain('自动保存 · 保存失败')",
+            "expect(slot?.classList.contains('sig'), '失败档挂 .sig（--signal 色——theme-shell.css 类）').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"error 格（tabDirty）：TabState.dirty（标注失败残留）压过 lineage saved →「自动保存 · 保存失败」\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "error 格（tabDirty）：TabState.dirty（标注失败残留）压过 lineage saved →「自动保存 · 保存失败」",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(bar.textContent, 'tabDirty（保存失败残留语义）=worst-of 最重档').toContain('自动保存 · 保存失败')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"saving 格（notes pending，W3 终裁分档）：pending=在途+失败混合（edit 置 true/save 成功清/失败不动——打字防抖窗常 true）→「保存中…」非假警报\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "saving 格（notes pending，W3 终裁分档）：pending=在途+失败混合（edit 置 true/save 成功清/失败不动——打字防抖窗常 true）→「保存中…」非假警报",
+          "markers": [],
+          "line": 174,
+          "assertions": [
+            "expect(bar.textContent, '未落库统称=保存中…（打字期不得显红色保存失败）').toContain('自动保存 · 保存中…')",
+            "expect(bar.textContent, 'pending 非失败残留——禁 error 假警报（W3 双席同中警告）').not.toContain('保存失败')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"worst-of 跨格：annoDirty(error) 压过 notePending+lineage saving →「保存失败」（error 最重）\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "worst-of 跨格：annoDirty(error) 压过 notePending+lineage saving →「保存失败」（error 最重）",
+          "markers": [],
+          "line": 187,
+          "assertions": [
+            "expect(bar.textContent, 'annotations 失败残留压在途/防抖面（worst-of 序 error > saving > saved）').toContain('自动保存 · 保存失败')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"null 格：无 tab 且 lineage 空闲（saved）→ 槽整体省略（无可写面信号，禁假数据）\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "null 格：无 tab 且 lineage 空闲（saved）→ 槽整体省略（无可写面信号，禁假数据）",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(bar.textContent, '无可写面信号=槽省略（不显「已保存」造作信号）').not.toContain('自动保存')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）\",\"lineage 独立信号格（无 tab）：saving/error 仍显槽（lineage 写面自持信号源）\"]",
+          "describePath": [
+            "T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）"
+          ],
+          "title": "lineage 独立信号格（无 tab）：saving/error 仍显槽（lineage 写面自持信号源）",
+          "markers": [],
+          "line": 208,
+          "assertions": [
+            "expect(bar.textContent, '无 tab 但 lineage 在飞=保存中…').toContain('自动保存 · 保存中…')",
+            "expect(bar.textContent, '无 tab 但 lineage 失败=保存失败').toContain('自动保存 · 保存失败')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点真源\",\"挂载前 attr=dark（启动注入）+settings 同值：载入在途窗不回退，载入后保持 dark\"]",
+          "describePath": [
+            "T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点真源"
+          ],
+          "title": "挂载前 attr=dark（启动注入）+settings 同值：载入在途窗不回退，载入后保持 dark",
+          "markers": [],
+          "line": 229,
+          "assertions": [
+            "expect( document.documentElement.dataset.theme, '载入在途窗不得用兜底档覆写启动注入值（dark→light→dark=残余闪烁）' ).toBe('dark')",
+            "expect(document.documentElement.dataset.theme, '载入后与 settings 一致（INV-71 两者值一致）').toBe('dark')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点真源\",\"注入值与 settings 漂移（light→dark）→ App effect 收口为 settings 值（运行时单点真源）\"]",
+          "describePath": [
+            "T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点真源"
+          ],
+          "title": "注入值与 settings 漂移（light→dark）→ App effect 收口为 settings 值（运行时单点真源）",
+          "markers": [],
+          "line": 254,
+          "assertions": [
+            "expect( document.documentElement.dataset.theme, '载入后 dataset.theme=settings 值（effect 单点收口——启动注入仅首帧兜底）' ).toBe('dark')"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/app-shell.test.tsx": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -10725,6 +11369,323 @@
         }
       ]
     },
+    "tests/unit/renderer/lineage-card-drag.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）\",\"frameKeyOf：year|month 序列化含 null 形\"]",
+          "describePath": [
+            "[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）"
+          ],
+          "title": "frameKeyOf：year|month 序列化含 null 形",
+          "markers": [],
+          "line": 124,
+          "assertions": [
+            "expect(frameKeyOf(2022, 9)).toBe('2022|9')",
+            "expect(frameKeyOf(null, null)).toBe('null|null')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）\",\"applyMovePreview：移出原组+落目标组尾部；空组收纳框移除\"]",
+          "describePath": [
+            "[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）"
+          ],
+          "title": "applyMovePreview：移出原组+落目标组尾部；空组收纳框移除",
+          "markers": [],
+          "line": 129,
+          "assertions": [
+            "expect(oct.nodes.map((n) => n.id)).toEqual(['C', 'A'])",
+            "expect(sep?.nodes.map((n) => n.id)).toEqual(['B'])",
+            "expect(out2[0]!.months.map((m) => m.month)).toEqual([10])",
+            "expect(out2[0]!.months[0]!.nodes.map((n) => n.id)).toEqual(['C', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）\",\"applyMovePreview：目标组不存在=原样返回（防御面）；nodeId 缺席=原样\"]",
+          "describePath": [
+            "[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）"
+          ],
+          "title": "applyMovePreview：目标组不存在=原样返回（防御面）；nodeId 缺席=原样",
+          "markers": [],
+          "line": 147,
+          "assertions": [
+            "expect(applyMovePreview(groups, 'A', 2030, 1)).toEqual(groups)",
+            "expect(applyMovePreview(groups, 'Z', 2022, 9)).toEqual(groups)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）\",\"insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位\"]",
+          "describePath": [
+            "[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）"
+          ],
+          "title": "insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位",
+          "markers": [],
+          "line": 153,
+          "assertions": [
+            "expect(insertIndexFromRects(rects, 190, 20)).toBe(2)",
+            "expect(insertIndexFromRects(rects, 10, 20)).toBe(0)",
+            "expect(insertIndexFromRects(rects, 260, 100)).toBe(2)",
+            "expect(insertIndexFromRects(rects, 310, 100)).toBe(3)",
+            "expect(insertIndexFromRects([], 100, 100)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"阈值未过=单击选中既有链：pointerdown+3px 移动+up→无占位槽无重排；click 照常选中\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "阈值未过=单击选中既有链：pointerdown+3px 移动+up→无占位槽无重排；click 照常选中",
+          "markers": [],
+          "line": 173,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(onNodeClick).toHaveBeenCalledWith('A', expect.anything())"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"过 5px 阈值激活：占位槽「置 入」在场+拖卡 .dragging+连线层 dimmed（view 态可拖）\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "过 5px 阈值激活：占位槽「置 入」在场+拖卡 .dragging+连线层 dimmed（view 态可拖）",
+          "markers": [],
+          "line": 184,
+          "assertions": [
+            "expect(ph.textContent).toBe('置 入')",
+            "expect(cardOf('A').classList.contains('dragging')).toBe(true)",
+            "expect(req('.tl-edges').classList.contains('dimmed')).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"拾取互斥（picker≠idle 禁拖——拾取优先）：linkbtn 拾取中 pointerdown 不激活拖拽\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "拾取互斥（picker≠idle 禁拖——拾取优先）：linkbtn 拾取中 pointerdown 不激活拖拽",
+          "markers": [],
+          "line": 194,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"popover 开禁拖：线型弹层开时 pointerdown 不激活\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "popover 开禁拖：线型弹层开时 pointerdown 不激活",
+          "markers": [],
+          "line": 209,
+          "assertions": [
+            "expect(q('[data-testid=\"edge-pop\"]')).not.toBeNull()",
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"月内槽位实时移位（同行判卡左半）+框外槽淡化 .35\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "月内槽位实时移位（同行判卡左半）+框外槽淡化 .35",
+          "markers": [],
+          "line": 227,
+          "assertions": [
+            "expect(ph.classList.contains('faded')).toBe(false)",
+            "expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)",
+            "expect(ph.previousElementSibling?.isEqualNode(cardOf('B'))).toBe(true)",
+            "expect(ph.classList.contains('faded')).toBe(true)",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"跨行判上半：第二行卡上半指针→插其前（mockup L955-964 同式）\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "跨行判上半：第二行卡上半指针→插其前（mockup L955-964 同式）",
+          "markers": [],
+          "line": 252,
+          "assertions": [
+            "expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"松手 settle：占位槽撤+DOM 序=新序+.32s left/top 过渡在场；transitionend→清场+重排写+dimmed 摘\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "松手 settle：占位槽撤+DOM 序=新序+.32s left/top 过渡在场；transitionend→清场+重排写+dimmed 摘",
+          "markers": [],
+          "line": 268,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(order).toEqual(['B', 'C', 'A'])",
+            "expect(card.style.transition).toContain('left .32s cubic-bezier(.22,.9,.26,1)')",
+            "expect(card.style.transition).toContain('top .32s cubic-bezier(.22,.9,.26,1)')",
+            "expect(req('.tl-edges').classList.contains('dimmed')).toBe(false)",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])",
+            "expect(card.style.position).toBe('')",
+            "expect(card.classList.contains('dragging')).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"settle 期再 pointerdown=忽略（不二次激活）\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "settle 期再 pointerdown=忽略（不二次激活）",
+          "markers": [],
+          "line": 292,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).toHaveBeenCalledTimes(1)",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"序未变松手=零写（拖回原位不产生空写批）\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "序未变松手=零写（拖回原位不产生空写批）",
+          "markers": [],
+          "line": 311,
+          "assertions": [
+            "expect(reorder).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"跨月拒绝：落点他月框=toast 文案+落当前槽（源月序写不受染）\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "跨月拒绝：落点他月框=toast 文案+落当前槽（源月序写不受染）",
+          "markers": [],
+          "line": 324,
+          "assertions": [
+            "expect(toastStoreSpy).toHaveBeenCalledWith('不能跨月拖动——请进入编辑模式，点卡片月标修改月份', 'error')",
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"拖后 click 抑制（一次性）：拖拽松手后的 click 不转发选中；此后正常 click 恢复\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "拖后 click 抑制（一次性）：拖拽松手后的 click 不转发选中；此后正常 click 恢复",
+          "markers": [],
+          "line": 343,
+          "assertions": [
+            "expect(onNodeClick).not.toHaveBeenCalled()",
+            "expect(onNodeClick).toHaveBeenCalledWith('B', expect.anything())"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）\",\"拖拽无 Esc 取消：mid-drag Esc 零动作，松手恒落当前槽\"]",
+          "describePath": [
+            "[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）"
+          ],
+          "title": "拖拽无 Esc 取消：mid-drag Esc 零动作，松手恒落当前槽",
+          "markers": [],
+          "line": 359,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R1 零位移分支干净：settle 量测前清 inline 四键（flow 态量 target）→松手即终态无残留（序不变=零写）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R1 零位移分支干净：settle 量测前清 inline 四键（flow 态量 target）→松手即终态无残留（序不变=零写）",
+          "markers": [],
+          "line": 378,
+          "assertions": [
+            "expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)",
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(onNodeClick).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂 rowshift 即红——主控探针 t=0 实证形态）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂 rowshift 即红——主控探针 t=0 实证形态）",
+          "markers": [],
+          "line": 394,
+          "assertions": [
+            "expect(cardOf('A').classList.contains('dragging')).toBe(true)",
+            "expect(cardOf('A').classList.contains('rowshift')).toBe(false)",
+            "expect(req('.tl-content').classList.contains('tl-measure')).toBe(false)",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R4 transitionend 兜底：定时器 ~600ms 同径 finish（无事件也落定清场+写）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R4 transitionend 兜底：定时器 ~600ms 同径 finish（无事件也落定清场+写）",
+          "markers": [],
+          "line": 415,
+          "assertions": [
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(reorder).toHaveBeenCalledTimes(1)",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A'])",
+            "expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R5 pointercancel 同径：系统取消=落当前候选槽（与松手同式清场）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R5 pointercancel 同径：系统取消=落当前候选槽（与松手同式清场）",
+          "markers": [],
+          "line": 438,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(reorder).toHaveBeenCalledWith(['B', 'A'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R6 click 抑制无残留：拖后未消费的抑制随新会话清零（下一真单击恢复转发）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R6 click 抑制无残留：拖后未消费的抑制随新会话清零（下一真单击恢复转发）",
+          "markers": [],
+          "line": 455,
+          "assertions": [
+            "expect(onNodeClick).toHaveBeenCalledWith('B', expect.anything())"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"R7 月标互斥：拾取中（picker≠idle）点 .c-ym 不开改月弹层\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "R7 月标互斥：拾取中（picker≠idle）点 .c-ym 不开改月弹层",
+          "markers": [],
+          "line": 474,
+          "assertions": [
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/lineage-classify.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -11261,8 +12222,9 @@
             "expect(css).toMatch(/\\.lg-btn\\.editing\\s*\\{[^}]*background:\\s*var\\(--signal\\);[^}]*box-shadow:\\s*var\\(--shadow-lg-edit\\)/)",
             "expect(css).toMatch(/\\.lg-btn\\.linkbtn\\s*\\{[^}]*display:\\s*none/)",
             "expect(css).toMatch(/\\.timeline\\.editing \\.lg-btn\\.linkbtn\\s*\\{[^}]*display:\\s*block/)",
-            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*margin-left:\\s*auto;[^}]*color:\\s*var\\(--signal\\);[^}]*background:\\s*var\\(--signal-a08\\)/)",
-            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*border:\\s*1px dashed var\\(--signal\\)/)",
+            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*margin-left:\\s*auto;[^}]*color:\\s*var\\(--accent\\);[^}]*background:\\s*var\\(--accent-soft\\)/)",
+            "expect(css).toMatch(/\\.drag-hint\\s*\\{[^}]*border:\\s*1px dashed var\\(--accent\\)/)",
+            "expect(css).toMatch(/\\.timeline\\.editing \\.drag-hint\\s*\\{[^}]*color:\\s*var\\(--signal\\);[^}]*background:\\s*var\\(--signal-a08\\);[^}]*border-color:\\s*var\\(--signal\\)/)",
             "expect(css).toMatch(/\\.pop\\s*\\{[^}]*position:\\s*fixed;[^}]*z-index:\\s*130;[^}]*width:\\s*240px;[^}]*border-radius:\\s*10px;[^}]*box-shadow:\\s*var\\(--shadow-drag\\)/)",
             "expect(css).toMatch(/\\.pop h4\\s*\\{[^}]*letter-spacing:\\s*2px;[^}]*color:\\s*var\\(--faint\\)/)",
             "expect(css).toMatch(/\\.acc\\s*\\{[^}]*border:\\s*1px solid var\\(--line\\);[^}]*border-radius:\\s*8px;[^}]*overflow:\\s*hidden/)",
@@ -11659,6 +12621,125 @@
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e-man1', from: 'P1', to: 'B', label: '新说明', kind: 'manual' })",
             "expect(useLineageStore.getState().edges[0]!.label).toBe('新说明')",
             "expect(useLineageStore.getState().edges).toHaveLength(1)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-month-pop.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[T3-P8] MonthPop 弹层结构（mockup L1101-1128 逐值）\",\"h4/ws-item 行（月份名+篇数计数）/当前月 on 态 dot ok 色/foot-note 文案\"]",
+          "describePath": [
+            "[T3-P8] MonthPop 弹层结构（mockup L1101-1128 逐值）"
+          ],
+          "title": "h4/ws-item 行（月份名+篇数计数）/当前月 on 态 dot ok 色/foot-note 文案",
+          "markers": [],
+          "line": 109,
+          "assertions": [
+            "expect(pop.querySelector('h4')?.textContent).toBe('移 动 到 月 份')",
+            "expect(items.length).toBe(3)",
+            "expect(items[0]!.classList.contains('on')).toBe(true)",
+            "expect(items[1]!.classList.contains('on')).toBe(false)",
+            "expect(items[0]!.querySelector('.nm')?.textContent).toBe('2022 年 9 月')",
+            "expect(items[1]!.querySelector('.nm')?.textContent).toBe('2022 年 10 月')",
+            "expect(items[2]!.querySelector('.nm')?.textContent).toBe('未定月')",
+            "expect([...pop.querySelectorAll('.ct')].map((e) => e.textContent)).toEqual(['2 篇', '1 篇', '3 篇'])",
+            "expect(items[0]!.querySelector('.dot')?.getAttribute('style')).toContain('var(--ok)')",
+            "expect(items[1]!.querySelector('.dot')?.getAttribute('style')).toContain('var(--line)')",
+            "expect(pop.querySelector('.foot-note')?.textContent).toBe( '移动带飞行动画 · 月份是数据字段（非拖拽语义）' )"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] MonthPop 弹层结构（mockup L1101-1128 逐值）\",\"视口钳制（clampPopoverPos 单源接线）：右下角锚不溢出视口\"]",
+          "describePath": [
+            "[T3-P8] MonthPop 弹层结构（mockup L1101-1128 逐值）"
+          ],
+          "title": "视口钳制（clampPopoverPos 单源接线）：右下角锚不溢出视口",
+          "markers": [],
+          "line": 145,
+          "assertions": [
+            "expect(Number.parseFloat(pop.style.left)).toBeLessThanOrEqual(window.innerWidth - 250)",
+            "expect(Number.parseFloat(pop.style.top)).toBeLessThanOrEqual(window.innerHeight - 10)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）\",\"ym 点击 edit 态开弹层（当前月=本卡月组 on 态）；view 态点击无动作\"]",
+          "describePath": [
+            "[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）"
+          ],
+          "title": "ym 点击 edit 态开弹层（当前月=本卡月组 on 态）；view 态点击无动作",
+          "markers": [],
+          "line": 167,
+          "assertions": [
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()",
+            "expect([...pop.querySelectorAll('.ws-item')].length).toBe(2)",
+            "expect(pop.querySelector('.ws-item.on .nm')?.textContent).toBe('2022 年 9 月')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）\",\"选月全流：pop 关+toast 已移至+卡预演入目标框尾+目标框 .flash+FLIP 过渡；transitionend→onMoveNodeMonth 载荷\"]",
+          "describePath": [
+            "[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）"
+          ],
+          "title": "选月全流：pop 关+toast 已移至+卡预演入目标框尾+目标框 .flash+FLIP 过渡；transitionend→onMoveNodeMonth 载荷",
+          "markers": [],
+          "line": 180,
+          "assertions": [
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('已移至 2022 年 10 月', 'success')",
+            "expect(frames[1]!.contains(cardOf('A'))).toBe(true)",
+            "expect(frames[1]!.classList.contains('flash')).toBe(true)",
+            "expect(frames[0]!.contains(cardOf('B'))).toBe(true)",
+            "expect(card.style.transition).toContain('left .32s cubic-bezier(.22,.9,.26,1)')",
+            "expect(moveMonth).not.toHaveBeenCalled()",
+            "expect(moveMonth).toHaveBeenCalledWith('A', 2022, 10)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）\",\"同月选择=no-op：pop 关+零写零 toast 飞行\"]",
+          "describePath": [
+            "[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）"
+          ],
+          "title": "同月选择=no-op：pop 关+零写零 toast 飞行",
+          "markers": [],
+          "line": 203,
+          "assertions": [
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()",
+            "expect(moveMonth).not.toHaveBeenCalled()",
+            "expect(toastStoreSpy).not.toHaveBeenCalled()",
+            "expect(q('.month-frame.flash')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）\",\"Esc 关/外点关；点弹层内与点 .c-ym 不关\"]",
+          "describePath": [
+            "[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）"
+          ],
+          "title": "Esc 关/外点关；点弹层内与点 .c-ym 不关",
+          "markers": [],
+          "line": 216,
+          "assertions": [
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()",
+            "expect(q('[data-testid=\"month-pop\"]')).toBeNull()",
+            "expect(q('[data-testid=\"month-pop\"]')).not.toBeNull()",
+            "expect(q('[data-testid=\"month-pop\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）\",\"改月飞行期禁拖：settle 未清场前 pointerdown 不激活拖拽\"]",
+          "describePath": [
+            "[T3-P8] 改月全链（edit 态月标→弹层→选月→飞行→写）"
+          ],
+          "title": "改月飞行期禁拖：settle 未清场前 pointerdown 不激活拖拽",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(q('.drag-slot')).toBeNull()",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(moveMonth).toHaveBeenCalledWith('A', 2022, 10)"
           ]
         }
       ]
@@ -12163,6 +13244,241 @@
         }
       ]
     },
+    "tests/unit/renderer/lineage-side-reskin.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）\",\"insp-cap「节点检查」+骑缝编号 #NNN（catalogNo 分发）；缺省不呈现编号\"]",
+          "describePath": [
+            "[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）"
+          ],
+          "title": "insp-cap「节点检查」+骑缝编号 #NNN（catalogNo 分发）；缺省不呈现编号",
+          "markers": [],
+          "line": 78,
+          "assertions": [
+            "expect(cap?.textContent).toContain('节点检查')",
+            "expect(cap?.textContent).toContain('#004')",
+            "expect(q('.insp-title')?.textContent).toBe('节点A')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）\",\"徽章行：核心（core=true）/年月 YYYY-MM 补零/引 N/T 档；null 退化「引 —」「未定」\"]",
+          "describePath": [
+            "[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）"
+          ],
+          "title": "徽章行：核心（core=true）/年月 YYYY-MM 补零/引 N/T 档；null 退化「引 —」「未定」",
+          "markers": [],
+          "line": 95,
+          "assertions": [
+            "expect(badges).toEqual(['核心', '2023-06', '引 17', 'T2'])",
+            "expect(q('.badge.core')?.classList.contains('core')).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）\",\"年月退化：month null→年单值；metrics null→引 —/未定；theme 节点无 T 档徽章\"]",
+          "describePath": [
+            "[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）"
+          ],
+          "title": "年月退化：month null→年单值；metrics null→引 —/未定；theme 节点无 T 档徽章",
+          "markers": [],
+          "line": 111,
+          "assertions": [
+            "expect(badges).toEqual(['2023', '引 —', '未定'])",
+            "expect(themeBadges).toEqual(['2023-06', '引 —'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）\",\"idea-cap「核 心 想 法」+idea 内容；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行\"]",
+          "describePath": [
+            "[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）"
+          ],
+          "title": "idea-cap「核 心 想 法」+idea 内容；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(q('[data-testid=\"lineage-side-idea\"] .idea-cap')?.textContent).toBe('核 心 想 法')",
+            "expect(q('.idea')?.textContent).toBe('把管网拓扑显式建模为图')",
+            "expect(postpone?.textContent).toContain('AI 评 估 笔 记')",
+            "expect(postpone?.querySelector('.postpone')?.textContent).toBe('后置')",
+            "expect(host?.textContent).toContain('评估功能后置——当前版本不生成 AI 评估内容')",
+            "expect(host?.querySelectorAll('.note-card').length).toBe(0)",
+            "expect(q('.insp-foot')?.textContent).toBe( '单击选中 · 拖动＝月内调序 · 编辑模式：改月 / 展开选线型 / 新建连线' )"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）\",\"既有 testid 面全保活：meta/idea/ai-notes/manual-note；主题节点空态零变+无后置章\"]",
+          "describePath": [
+            "[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）"
+          ],
+          "title": "既有 testid 面全保活：meta/idea/ai-notes/manual-note；主题节点空态零变+无后置章",
+          "markers": [],
+          "line": 162,
+          "assertions": [
+            "expect(q(`[data-testid=\"${tid}\"]`)).not.toBeNull()",
+            "expect(q('[data-testid=\"lineage-side-meta\"]')?.getAttribute('data-binding')).toBe('paper')",
+            "expect(host?.textContent).toContain('主题节点无笔记')",
+            "expect(q('[data-testid=\"lineage-side-postpone\"]')).toBeNull()",
+            "expect(q('[data-testid=\"lineage-side-meta\"]')?.getAttribute('data-binding')).toBe('theme')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-store-reorder.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）\",\"按传入序 slot=0..n-1：三节点全字段载荷逐个排队，month 保留不清\"]",
+          "describePath": [
+            "[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）"
+          ],
+          "title": "按传入序 slot=0..n-1：三节点全字段载荷逐个排队，month 保留不清",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect(calls.length).toBe(3)",
+            "expect(calls.map((c) => [c.id ?? null, c.slot ?? null])).toEqual([ ['C', 0], ['A', 1], ['B', 2] ])",
+            "expect(c.month).toBe(9)",
+            "expect(c.title).toBe(`节点${c.id}`)",
+            "expect(c.year).toBe(2022)",
+            "expect(state().saveStatus).toBe('saved')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）\",\"同道错峰 FIFO：飞行中的编辑写先落，重排批按入队序后发\"]",
+          "describePath": [
+            "[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）"
+          ],
+          "title": "同道错峰 FIFO：飞行中的编辑写先落，重排批按入队序后发",
+          "markers": [],
+          "line": 114,
+          "assertions": [
+            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)",
+            "expect(payloads().map((c) => [c.id, c.slot ?? null])).toEqual([ ['A', 0], ['B', 0], ['A', 1] ])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）\",\"写失败=error 保存态+队首保留+toast；retry 后恢复 saved（无乐观写）\"]",
+          "describePath": [
+            "[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支）"
+          ],
+          "title": "写失败=error 保存态+队首保留+toast；retry 后恢复 saved（无乐观写）",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(state().saveStatus).toBe('error')",
+            "expect(state().queue.length).toBeGreaterThan(0)",
+            "expect(state().saveStatus).toBe('saved')",
+            "expect(state().queue.length).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组变 max+1）\",\"载荷含目标 year/month 且 slot 键缺省（归一归服务端）；全字段随行\"]",
+          "describePath": [
+            "[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组变 max+1）"
+          ],
+          "title": "载荷含目标 year/month 且 slot 键缺省（归一归服务端）；全字段随行",
+          "markers": [],
+          "line": 161,
+          "assertions": [
+            "expect(req.year).toBe(2023)",
+            "expect(req.month).toBe(1)",
+            "expect(Object.prototype.hasOwnProperty.call(req, 'slot')).toBe(false)",
+            "expect(req.title).toBe('节点A')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组变 max+1）\",\"未定月目标：month=null 载荷（未定月框收纳）\"]",
+          "describePath": [
+            "[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组变 max+1）"
+          ],
+          "title": "未定月目标：month=null 载荷（未定月框收纳）",
+          "markers": [],
+          "line": 174,
+          "assertions": [
+            "expect(payloads()[0]!.month).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）\",\"editCoreIdea/editTags 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁）\"]",
+          "describePath": [
+            "[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）"
+          ],
+          "title": "editCoreIdea/editTags 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁）",
+          "markers": [],
+          "line": 185,
+          "assertions": [
+            "expect(req.month).toBe(6)",
+            "expect(req.slot).toBe(3)",
+            "expect(req.coreIdea).toBe('新想法')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）\",\"回填后 nodes 数组=lineageOrder 全序：重排写落定后渲染序随新 slot（消费方不得重排的单源兑现）\"]",
+          "describePath": [
+            "[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）"
+          ],
+          "title": "回填后 nodes 数组=lineageOrder 全序：重排写落定后渲染序随新 slot（消费方不得重排的单源兑现）",
+          "markers": [],
+          "line": 197,
+          "assertions": [
+            "expect(state().nodes.map((n) => n.id)).toEqual(['B', 'A'])",
+            "expect(state().saveStatus).toBe('saved')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）\",\"跨格：改月排队→同节点 setNodeTags→落库终值 month=新月+tags 新值（同实体融合派发，载荷合成读执行时点最新行）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）"
+          ],
+          "title": "跨格：改月排队→同节点 setNodeTags→落库终值 month=新月+tags 新值（同实体融合派发，载荷合成读执行时点最新行）",
+          "markers": [],
+          "line": 213,
+          "assertions": [
+            "expect(calls.length).toBe(2)",
+            "expect(last.year).toBe(2023)",
+            "expect(last.month).toBe(1)",
+            "expect(last.slot).toBe(0)",
+            "expect(last.tags).toEqual(['新标签'])",
+            "expect(state().nodes[0]!.month).toBe(1)",
+            "expect(state().nodes[0]!.tags).toEqual(['新标签'])",
+            "expect(state().saveStatus).toBe('saved')"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）\",\"跨格反序：setNodeTags 先排队→改月后排队 lazy 合成并入先行字段写（终值双对）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）"
+          ],
+          "title": "跨格反序：setNodeTags 先排队→改月后排队 lazy 合成并入先行字段写（终值双对）",
+          "markers": [],
+          "line": 239,
+          "assertions": [
+            "expect(calls.length).toBe(2)",
+            "expect(calls[1]!.month).toBe(1)",
+            "expect(calls[1]!.tags).toEqual(['早期'])",
+            "expect(state().nodes[0]!.month).toBe(1)",
+            "expect(state().nodes[0]!.tags).toEqual(['早期'])"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）\",\"reorder 写窗内同节点改月：lazy 融合派发序=改月后落（月对）+slot 透写不被吞\"]",
+          "describePath": [
+            "[T3-P8 回炉] R3 —— upsert-node lazy 载荷（写窗快照不回写旧值）"
+          ],
+          "title": "reorder 写窗内同节点改月：lazy 融合派发序=改月后落（月对）+slot 透写不被吞",
+          "markers": [],
+          "line": 257,
+          "assertions": [
+            "expect(calls).toEqual([ ['B', 9, 0], ['A', 1, null] // A 融合派发：month 新+slot 缺省（改月整替槽位语义） ])",
+            "expect(state().nodes.map((n) => n.id)).toEqual(['B', 'A'])"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/lineage-store-write.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -12192,7 +13508,7 @@
           "markers": [],
           "line": 129,
           "assertions": [
-            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '锚点', coreIdea: '原想法', year: 2020, x: 560, y: 430 })",
+            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '锚点', coreIdea: '原想法', year: 2020, month: null, slot: null, x: 560, y: 430 })",
             "expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith( expect.objectContaining({ id: 'A', coreIdea: '新想法', x: 560, y: 430, title: '锚点' }) )"
           ]
         },
@@ -12203,7 +13519,7 @@
           ],
           "title": "连续编辑最后写胜出：flight 中同实体动作排队合并，仅最后值落发",
           "markers": [],
-          "line": 156,
+          "line": 160,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)",
             "expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)",
@@ -12218,7 +13534,7 @@
           ],
           "title": "系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved",
           "markers": [],
-          "line": 180,
+          "line": 184,
           "assertions": [
             "expect(state().saveStatus).toBe('error')",
             "expect(state().lastWriteError).toBe('database is locked')",
@@ -12236,7 +13552,7 @@
           ],
           "title": "拒绝型（CONFLICT=service 树守卫中文 reason 透传）：动作丢弃+toast reason+保存态回落 saved",
           "markers": [],
-          "line": 199,
+          "line": 203,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith( '多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error' )",
             "expect(state().queue.length).toBe(0)",
@@ -12251,7 +13567,7 @@
           ],
           "title": "removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）",
           "markers": [],
-          "line": 215,
+          "line": 219,
           "assertions": [
             "expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })",
             "expect(state().nodes.map((n) => n.id)).toEqual(['B'])",
@@ -12265,7 +13581,7 @@
           ],
           "title": "upsertEdge/removeEdge 成功回填：新边追加、删边清除",
           "markers": [],
-          "line": 228,
+          "line": 232,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'B', to: 'A', label: '' })",
             "expect(state().edges.map((e) => e.id)).toEqual(['e1', 'e2'])",
@@ -12281,7 +13597,7 @@
           ],
           "title": "新建边成功 toast 按 kind 分文案（ref/manual）；label 后编辑（id 在场）不 toast",
           "markers": [],
-          "line": 248,
+          "line": 252,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith('综述关联已保存', 'success')",
             "expect(showToast).toHaveBeenCalledWith('人工父线已保存', 'success')",
@@ -12295,7 +13611,7 @@
           ],
           "title": "N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边",
           "markers": [],
-          "line": 269,
+          "line": 273,
           "assertions": [
             "expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })",
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })",
@@ -12315,7 +13631,7 @@
           ],
           "title": "load 互锁（stale-guard 写面同族）：写队列未清空时 graph 落地丢弃，不覆盖写回填",
           "markers": [],
-          "line": 297,
+          "line": 301,
           "assertions": [
             "expect(state().nodes[0]?.coreIdea).toBe('编辑中')",
             "expect(state().status).toBe('ready')"
@@ -12328,7 +13644,7 @@
           ],
           "title": "applyEdgeLine 全载荷：id+from/to/label 读现值+kind/sub 成对置（sub null=回退基础型）",
           "markers": [],
-          "line": 319,
+          "line": 323,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', kind: 'manual', sub: 't1' })",
             "expect(state().edges[0]?.kind).toBe('manual')",
@@ -12344,7 +13660,7 @@
           ],
           "title": "linkWithLine 新建四 kind（inferred 产生入口落位——INV-27 P7 备案兑现）+成功 toast 分文案",
           "markers": [],
-          "line": 361,
+          "line": 365,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'A', to: 'B', label: '', kind: 'inferred', sub: 'i1' })",
             "expect(state().edges.map((e) => e.kind)).toEqual(['inferred'])",
@@ -12359,7 +13675,7 @@
           ],
           "title": "linkWithLine CONFLICT（service 树守卫拒绝）：动作丢弃+toast reason+保存态回落 saved（沿 linkRefNodes 先例）",
           "markers": [],
-          "line": 392,
+          "line": 396,
           "assertions": [
             "expect(showToast).toHaveBeenCalledWith('多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error')",
             "expect(state().queue.length).toBe(0)",
@@ -12374,7 +13690,7 @@
           ],
           "title": "saveLineTypes 新队列动作 upsert-line-types：整批写+成功 set lineTypes",
           "markers": [],
-          "line": 406,
+          "line": 410,
           "assertions": [
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith(groups)",
             "expect(state().lineTypes).toEqual(groups)",
@@ -12388,7 +13704,7 @@
           ],
           "title": "saveLineTypes sameTarget 同类合并（整批=单实体——flight 中排队合并最后写胜出）",
           "markers": [],
-          "line": 422,
+          "line": 426,
           "assertions": [
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1)",
             "expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)",
@@ -12403,7 +13719,7 @@
           ],
           "title": "队列序保证 lineTypes 先于引用其的 edge（saveLineTypes→linkWithLine 串行派发序）",
           "markers": [],
-          "line": 453,
+          "line": 457,
           "assertions": [
             "expect(orderLt).toBeDefined()",
             "expect(orderEdge).toBeDefined()",
@@ -12418,7 +13734,7 @@
           ],
           "title": "flight 堆积面派发序=FIFO：三动作同驻队列时按入队序派发（LIFO 即红）",
           "markers": [],
-          "line": 478,
+          "line": 482,
           "assertions": [
             "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(1)",
             "expect(orderLt).toBeDefined()",
@@ -12442,7 +13758,7 @@
           "line": 134,
           "assertions": [
             "expect(input).not.toBeNull()",
-            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '锚点', coreIdea: '想法', year: 2019, x: null, y: null, tags: ['综述', '早期'] })",
+            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '锚点', coreIdea: '想法', year: 2019, month: null, slot: null, x: null, y: null, tags: ['综述', '早期'] })",
             "expect(useLineageStore.getState().nodes[0]!.tags).toEqual(['综述', '早期'])"
           ]
         },
@@ -12451,7 +13767,7 @@
           "describePath": [],
           "title": "对话框取消=零写；主题节点同样有「添加标签…」入口",
           "markers": [],
-          "line": 168,
+          "line": 171,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()",
             "expect(q('[data-testid=\"lineage-tag-input\"]')).toBeNull()"
@@ -12462,7 +13778,7 @@
           "describePath": [],
           "title": "空标签名不派发（按钮禁用或提交短路——空串标签不入库）",
           "markers": [],
-          "line": 184,
+          "line": 187,
           "assertions": [
             "expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()"
           ]
@@ -12472,7 +13788,7 @@
           "describePath": [],
           "title": "侧板标签区：chips 渲染+移除上抛（剩余数组）；输入添加上抛（合并数组）",
           "markers": [],
-          "line": 201,
+          "line": 204,
           "assertions": [
             "expect(chips.length).toBe(2)",
             "expect(chips[0]!.textContent).toContain('综述')",
@@ -12486,7 +13802,7 @@
           "describePath": [],
           "title": "侧板同名标签短路：已存在标签再添加不派发（同节点同名去重面板面）",
           "markers": [],
-          "line": 231,
+          "line": 234,
           "assertions": [
             "expect(onSetTags).not.toHaveBeenCalled()"
           ]
@@ -12496,9 +13812,9 @@
           "describePath": [],
           "title": "store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）",
           "markers": [],
-          "line": 251,
+          "line": 254,
           "assertions": [
-            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '节点A', coreIdea: '', year: 2020, x: 500, y: 400, tags: ['综述', '早期'] })",
+            "expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({ id: 'A', paperId: 'paper-A', title: '节点A', coreIdea: '', year: 2020, month: null, slot: null, x: 500, y: 400, tags: ['综述', '早期'] })",
             "expect(useLineageStore.getState().nodes[0]!.tags).toEqual(['综述', '早期'])",
             "expect(useLineageStore.getState().saveStatus).toBe('saved')"
           ]
@@ -12522,13 +13838,13 @@
             "expect(bar.parentElement?.classList.contains('timeline')).toBe(true)",
             "expect(toggle.textContent).toBe('编辑脉络')",
             "expect(timeline.classList.contains('editing')).toBe(false)",
-            "expect(bar.querySelector('.drag-hint')).toBeNull()",
+            "expect(bar.querySelector('.drag-hint')?.textContent).toBe('↕ 拖动＝月内调序（虚线槽＝候选文献位）')",
             "expect(btn('lineage-link-btn').className).toContain('linkbtn')",
             "expect(q('[data-testid=\"lineage-add-node\"]')).not.toBeNull()",
             "expect(q('[data-testid=\"lineage-import\"]')).not.toBeNull()",
             "expect(btn('lineage-edit-toggle').textContent).toBe('完成编辑')",
             "expect(timeline.classList.contains('editing')).toBe(true)",
-            "expect(bar.querySelector('.drag-hint')?.textContent).toBe('编辑中：点连线改线型')"
+            "expect(bar.querySelector('.drag-hint')?.textContent).toBe('编辑中：点连线改线型 · 点卡片月标改月 · 拖动＝月内调序')"
           ]
         },
         {
@@ -19895,6 +21211,112 @@
         }
       ]
     },
+    "tests/unit/renderer/theme-boot.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"?theme=dark → dataset.theme=dark\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "?theme=dark → dataset.theme=dark",
+          "markers": [],
+          "line": 31,
+          "assertions": [
+            "expect(document.documentElement.dataset.theme).toBe('dark')"
+          ]
+        },
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"?theme=sepia → dataset.theme=sepia\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "?theme=sepia → dataset.theme=sepia",
+          "markers": [],
+          "line": 36,
+          "assertions": [
+            "expect(document.documentElement.dataset.theme).toBe('sepia')"
+          ]
+        },
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"[回炉 R3] ?theme=light → dataset.theme=light（三值正例闭合——INV-71「三值」措辞）\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "[回炉 R3] ?theme=light → dataset.theme=light（三值正例闭合——INV-71「三值」措辞）",
+          "markers": [],
+          "line": 41,
+          "assertions": [
+            "expect(document.documentElement.dataset.theme, 'light 注入=显式写 attr（非仅 dark/sepia）').toBe('light')"
+          ]
+        },
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"非法值（neon）→ 零写（不写 attr——App effect 兜底，禁伪造档）\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "非法值（neon）→ 零写（不写 attr——App effect 兜底，禁伪造档）",
+          "markers": [],
+          "line": 46,
+          "assertions": [
+            "expect(document.documentElement.dataset.theme).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"无参 → 零写\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "无参 → 零写",
+          "markers": [],
+          "line": 51,
+          "assertions": [
+            "expect(document.documentElement.dataset.theme).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"renderer/public/theme-boot —— T3-U1 FOUC 首帧注入\",\"脚本体=同步经典脚本（非 module——首帧前执行语义）：源码零 import/export\"]",
+          "describePath": [
+            "renderer/public/theme-boot —— T3-U1 FOUC 首帧注入"
+          ],
+          "title": "脚本体=同步经典脚本（非 module——首帧前执行语义）：源码零 import/export",
+          "markers": [],
+          "line": 56,
+          "assertions": [
+            "expect(src, '禁 import/export（module defer——首帧兜底失效，FOUC 防线破）').not.toMatch(/(^|\\n)\\s*(import|export)\\b/)"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 FOUC 装配接缝静态锁（回炉 R1）\",\"接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）\"]",
+          "describePath": [
+            "T3-U1 FOUC 装配接缝静态锁（回炉 R1）"
+          ],
+          "title": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+          "markers": [],
+          "line": 73,
+          "assertions": [
+            "expect(html, '外链引用在场（删标签=FOUC 静默回归——本断言即拦）').toContain('./theme-boot.js')",
+            "expect(head, '<head> 段在场').not.toBeNull()",
+            "expect(head![0], '引用必须驻 head（body 尾=首帧已过，兜底失效）').toContain('./theme-boot.js')"
+          ]
+        },
+        {
+          "key": "[\"T3-U1 FOUC 装配接缝静态锁（回炉 R1）\",\"接缝二：bootstrap 源文含 readThemeSync 调用+startupTheme 透传锚（传参链静态锚）\"]",
+          "describePath": [
+            "T3-U1 FOUC 装配接缝静态锁（回炉 R1）"
+          ],
+          "title": "接缝二：bootstrap 源文含 readThemeSync 调用+startupTheme 透传锚（传参链静态锚）",
+          "markers": [],
+          "line": 81,
+          "assertions": [
+            "expect(bootstrapSrc, 'readThemeSync 调用在场（摘除=main 恒零附参）').toMatch(/readThemeSync\\(/)",
+            "expect(bootstrapSrc, 'startupTheme 透传在场（摘除=loadURL/loadFile 无 theme query）').toContain('startupTheme')"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/theme.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -27151,6 +28573,73 @@
         }
       ]
     },
+    "tests/unit/services/settings-theme-boot.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"services/settings —— T3-U1 readThemeSync 启动主题档同步读\",\"theme=dark → dark（合法档透传）\"]",
+          "describePath": [
+            "services/settings —— T3-U1 readThemeSync 启动主题档同步读"
+          ],
+          "title": "theme=dark → dark（合法档透传）",
+          "markers": [],
+          "line": 28,
+          "assertions": [
+            "expect(readThemeSync(dir)).toBe('dark')"
+          ]
+        },
+        {
+          "key": "[\"services/settings —— T3-U1 readThemeSync 启动主题档同步读\",\"存量 'system' → 迁移 light（读侧单源——与 get 同链同判）\"]",
+          "describePath": [
+            "services/settings —— T3-U1 readThemeSync 启动主题档同步读"
+          ],
+          "title": "存量 'system' → 迁移 light（读侧单源——与 get 同链同判）",
+          "markers": [],
+          "line": 33,
+          "assertions": [
+            "expect(readThemeSync(dir), \"system 枚举退役（A6）——读侧平滑迁 light\").toBe('light')"
+          ]
+        },
+        {
+          "key": "[\"services/settings —— T3-U1 readThemeSync 启动主题档同步读\",\"文件不存在 → 默认 light（禁抛——启动路径）\"]",
+          "describePath": [
+            "services/settings —— T3-U1 readThemeSync 启动主题档同步读"
+          ],
+          "title": "文件不存在 → 默认 light（禁抛——启动路径）",
+          "markers": [],
+          "line": 38,
+          "assertions": [
+            "expect(readThemeSync(await freshDir())).toBe('light')"
+          ]
+        },
+        {
+          "key": "[\"services/settings —— T3-U1 readThemeSync 启动主题档同步读\",\"损坏 JSON → 默认 light（禁抛）\"]",
+          "describePath": [
+            "services/settings —— T3-U1 readThemeSync 启动主题档同步读"
+          ],
+          "title": "损坏 JSON → 默认 light（禁抛）",
+          "markers": [],
+          "line": 42,
+          "assertions": [
+            "expect(readThemeSync(dir)).toBe('light')"
+          ]
+        },
+        {
+          "key": "[\"services/settings —— T3-U1 readThemeSync 启动主题档同步读\",\"不合 schema（theme 越枚举）→ 默认 light\"]",
+          "describePath": [
+            "services/settings —— T3-U1 readThemeSync 启动主题档同步读"
+          ],
+          "title": "不合 schema（theme 越枚举）→ 默认 light",
+          "markers": [],
+          "line": 47,
+          "assertions": [
+            "expect(readThemeSync(dir), 'schema 拒绝整档 → 默认档主题位（不半取字段）').toBe('light')"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/shared/atomic-write.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -28421,6 +29910,149 @@
         }
       ]
     },
+    "tests/unit/tools/check-test-surface-file.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T1 删整文件+登 FILE 级豁免 → baseline exit 0+RETIRING FILE_MISSING+新基线无该文件+快照含该条目\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T1 删整文件+登 FILE 级豁免 → baseline exit 0+RETIRING FILE_MISSING+新基线无该文件+快照含该条目",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect((await f.readBaselineJson()).files[EXTRA_REL]).toBeDefined()",
+            "expect(r.code).toBe(0)",
+            "expect(r.stdout).toContain('RETIRING FILE_MISSING')",
+            "expect(bl.files[EXTRA_REL]).toBeUndefined()",
+            "expect(bl.files[DEMO_FILE]).toBeDefined()",
+            "expect(bl.exemptionsSnapshot).toEqual([entry])"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T2 负向：删整文件不登豁免 → baseline exit 4+FAIL FILE_MISSING+基线逐字节不变（拒写实证）\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T2 负向：删整文件不登豁免 → baseline exit 4+FAIL FILE_MISSING+基线逐字节不变（拒写实证）",
+          "markers": [],
+          "line": 147,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(4)",
+            "expect(r.stderr).toContain('FILE_MISSING')",
+            "expect(`${r.stdout}${r.stderr}`).toContain(EXTRA_REL)",
+            "expect(await f.readBaselineFile()).toBe(before)"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T3 check 子命令侧：未登 → exit 1+FILE_MISSING；登 FILE 级豁免 → exit 0（日常 verify 消费面）\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T3 check 子命令侧：未登 → exit 1+FILE_MISSING；登 FILE 级豁免 → exit 0（日常 verify 消费面）",
+          "markers": [],
+          "line": 164,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r1.code).toBe(1)",
+            "expect(r1.stderr).toContain('FILE_MISSING')",
+            "expect(await f.readBaselineFile()).toBe(before)",
+            "expect(r2.code).toBe(0)",
+            "expect(r2.stdout).toContain('检查通过')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T4 schema 两形态互斥：FILE 形态合法装载；fileScope 非布尔/与 matcher 并存/零 matcher 无哨兵 → exit 3\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T4 schema 两形态互斥：FILE 形态合法装载；fileScope 非布尔/与 matcher 并存/零 matcher 无哨兵 → exit 3",
+          "markers": [],
+          "line": 184,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(ra.code).toBe(0)",
+            "expect(rb.code).toBe(3)",
+            "expect(rb.stderr).toContain('豁免条目 schema 非法')",
+            "expect(rc.code).toBe(3)",
+            "expect(rc.stderr).toContain('豁免条目 schema 非法')",
+            "expect(rd.code).toBe(3)",
+            "expect(rd.stderr).toContain('豁免条目 schema 非法')"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T5 轴二多登：登 FILE 条目但文件未删 → exit 4 零命中拦截+「多登」+基线不变\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T5 轴二多登：登 FILE 条目但文件未删 → exit 4 零命中拦截+「多登」+基线不变",
+          "markers": [],
+          "line": 212,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(4)",
+            "expect(r.stdout).toContain('命中 0')",
+            "expect(r.stderr).toContain('多登')",
+            "expect(await f.readBaselineFile()).toBe(before)"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T6 轴二身份：快照含 FILE 条目+台账删该条（文件保持删除态）→ exit 0+REMOVED 打印不拦+新快照无它\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T6 轴二身份：快照含 FILE 条目+台账删该条（文件保持删除态）→ exit 0+REMOVED 打印不拦+新快照无它",
+          "markers": [],
+          "line": 228,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect((await f.readBaselineJson()).exemptionsSnapshot).toEqual([fileExemption(EXTRA_REL)])",
+            "expect(r.code).toBe(0)",
+            "expect(r.stdout).toContain('REMOVED')",
+            "expect((await f.readBaselineJson()).exemptionsSnapshot).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T7 [R1·d1-W3] 同文件 FILE 条目+matcher 条目并存：matcher 退役单用例+FILE 退役整文件——两身份不撞协同（exit 0+双 RETIRING）\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T7 [R1·d1-W3] 同文件 FILE 条目+matcher 条目并存：matcher 退役单用例+FILE 退役整文件——两身份不撞协同（exit 0+双 RETIRING）",
+          "markers": [],
+          "line": 248,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(0)",
+            "expect(r.stdout).toContain('RETIRING FILE_MISSING')",
+            "expect(r.stdout).toContain('RETIRING MISSING_CASE')",
+            "expect(bl.files[EXTRA_REL]).toBeUndefined()",
+            "expect(Object.keys(bl.files)).toEqual([DEMO_FILE])",
+            "expect(bl.exemptionsSnapshot).toEqual([matcherEntry, fileEntry])"
+          ]
+        },
+        {
+          "key": "[\"F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）\",\"T8 [R1·d1-W3] 重复 FILE 条目（同身份双条）+真实删除 → 命中路径多重集计数：exit 0+快照含双条\"]",
+          "describePath": [
+            "F-TESTREF-S3 FILE 级豁免通道（删整测试文件的机检出路）"
+          ],
+          "title": "T8 [R1·d1-W3] 重复 FILE 条目（同身份双条）+真实删除 → 命中路径多重集计数：exit 0+快照含双条",
+          "markers": [],
+          "line": 276,
+          "assertions": [
+            "expect((await cli(f.root)).code).toBe(0)",
+            "expect(r.code).toBe(0)",
+            "expect(r.stdout).toContain('RETIRING FILE_MISSING')",
+            "expect((await f.readBaselineJson()).exemptionsSnapshot).toEqual(dup)"
+          ]
+        }
+      ]
+    },
     "tests/unit/tools/check-test-surface.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -28948,6 +30580,51 @@
         }
       ]
     },
+    "tests/unit/windows/main-window-theme.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"windows/main-window —— T3-U1 FOUC 启动 theme query 双分支\",\"dev 分支：loadURL 的 URL 附 theme=dark（searchParams 拼参）\"]",
+          "describePath": [
+            "windows/main-window —— T3-U1 FOUC 启动 theme query 双分支"
+          ],
+          "title": "dev 分支：loadURL 的 URL 附 theme=dark（searchParams 拼参）",
+          "markers": [],
+          "line": 42,
+          "assertions": [
+            "expect(url, 'loadURL 收到附参 URL').toContain('theme=dark')",
+            "expect(new URL(url).searchParams.get('theme'), 'theme 参可被 ?theme= 解析（脚本消费口径）').toBe('dark')"
+          ]
+        },
+        {
+          "key": "[\"windows/main-window —— T3-U1 FOUC 启动 theme query 双分支\",\"生产分支：loadFile 以 { query } 选项承载 theme=sepia（Electron 44 loadFile options）\"]",
+          "describePath": [
+            "windows/main-window —— T3-U1 FOUC 启动 theme query 双分支"
+          ],
+          "title": "生产分支：loadFile 以 { query } 选项承载 theme=sepia（Electron 44 loadFile options）",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect(loadFile).toHaveBeenCalledWith('out/renderer/index.html', { query: { theme: 'sepia' } })"
+          ]
+        },
+        {
+          "key": "[\"windows/main-window —— T3-U1 FOUC 启动 theme query 双分支\",\"startupTheme 缺省=零附参（loadURL 原样 / loadFile 无 query 选项——旧调用面兼容）\"]",
+          "describePath": [
+            "windows/main-window —— T3-U1 FOUC 启动 theme query 双分支"
+          ],
+          "title": "startupTheme 缺省=零附参（loadURL 原样 / loadFile 无 query 选项——旧调用面兼容）",
+          "markers": [],
+          "line": 60,
+          "assertions": [
+            "expect(String(dev.loadURL.mock.calls[0]?.[0]), '无 theme=回显原 URL').toBe('http://localhost:5173/')",
+            "expect(prod.loadFile).toHaveBeenCalledWith('out/renderer/index.html', undefined)"
+          ]
+        }
+      ]
+    },
     "tests/unit/windows/quit-dirty-guard.test.ts": {
       "ticketIds": [
         "SR2-TABS-04"
@@ -29282,9 +30959,9 @@
     }
   },
   "stats": {
-    "fileCount": 194,
-    "caseCount": 1994,
-    "assertionCount": 6175,
+    "fileCount": 205,
+    "caseCount": 2110,
+    "assertionCount": 6501,
     "skipSiteCount": 12,
     "conditionalSkipSiteCount": 12,
     "hardSkipSiteCount": 0,
@@ -30033,6 +31710,43 @@
       "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=9（新库全量，009 落地后）",
       "reason": "T3-P5 迁移 010 落地：版本接续 pin 9→10，标题+断言随终态上探",
       "rulingLink": "docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md#2"
+    },
+    {
+      "file": "tests/contracts/preload-surface.test.ts",
+      "caseTitle": "事件桥：订阅接线表事件通道并透传 payload，退订函数移除同一监听",
+      "assertionText": "expect(received).toEqual([{ phase: 'extracting', done: 1, total: 3 }])",
+      "reason": "SR-IPC-10 主控裁决 A 案（2026-09-28）：旧断言样例 {phase,done,total} 系 F-D4（sessionId 强制+current 字段）前陈旧形态——旧纯透传不校验故绿；preload 接收侧 safeParse 兜底落地后样例按 importProgressEventSchema 合法载荷勘正（用例名与桥形态检查意图不变，新断言入 C_after 超集）",
+      "rulingLink": "docs/design/2026-09-28_gov-batch-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）",
+      "reason": "T3-P8 源⑥ drag-hint 双态（D-P7B-1 兑现）：base 变体自 edit-only 改全时 accent（mockup L218）+edit 态 signal 变体（L219）——两条单变体锁改双变体（新增第三条锁）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "moveNode/editCoreIdea 全字段载荷：x/y 覆盖与 coreIdea 保留互不清空（防半更新丢字段）",
+      "reason": "T3-P8 fullRowInput 补 month/slot（防半更新清月——service normalizeMonthSlot 按 month 缺省=null 全量语义清月，P8 改月面激活的潜伏缺陷修复）；期望载荷补两 null 字段，语义零变仅锁新全字段形状",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "caseTitle": "Board 全链：右键→「添加标签…」→对话框输入→保存=upsert-node 全量载荷含 tags 合并",
+      "reason": "同上 T3-P8 fullRowInput 补 month/slot：期望载荷补两 null 字段（夹具本就 null，语义零变）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "caseTitle": "store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）",
+      "reason": "同上 T3-P8 fullRowInput 补 month/slot：期望载荷补两 null 字段（夹具本就 null，语义零变）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
+      "reason": "T3-P8 源⑥ drag-hint 双态：view 态 null 断言（注释明言「P8 能力禁假 affordance 不渲染」=有意留给 P8 翻面）改双文案断言；edit 态文案扩全句（mockup L507/L1010-1013 逐字）",
+      "rulingLink": "tickets/registry.ts（T3-P8 行）"
     }
   ]
 }
