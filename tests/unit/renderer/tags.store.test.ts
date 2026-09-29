@@ -31,7 +31,7 @@ guardedDescribe('SR-TAG-03', 'tags.store —— 刷新', () => {
   it('refresh 失败：保留旧数据且不抛（错误由 toast 层处理）', async () => {
     const list = vi.fn(async () => ({ ok: false as const, error: { code: 'DB_ERROR', message: 'x' } }))
     const useStore = await loadStore({ tags: { list } })
-    useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 0 }] })
+    useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 0, color: null }] })
     await useStore.getState().refresh()
     expect(useStore.getState().tags[0]?.name).toBe('旧')
   })

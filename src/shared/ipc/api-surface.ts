@@ -104,7 +104,9 @@ export const API_SURFACE = {
     // P7E-01 标签生命周期三通道（register/preload 泛型全通道遍历零改）
     rename: { channel: 'tags/rename', Req: S.renameTagReqSchema, Res: tagSchema },
     merge: { channel: 'tags/merge', Req: S.mergeTagReqSchema, Res: S.trueAckSchema },
-    delete: { channel: 'tags/delete', Req: S.tagIdReqSchema, Res: S.trueAckSchema }
+    delete: { channel: 'tags/delete', Req: S.tagIdReqSchema, Res: S.trueAckSchema },
+    // [F-TAGS-01] 标签颜色（单通道：hex|null=恢复默认；Res=更新后 Tag）
+    setColor: { channel: 'tags/set-color', Req: S.tagSetColorReqSchema, Res: tagSchema }
   },
   notes: {
     get: { channel: 'notes/get', Req: S.paperIdReqSchema, Res: S.noteGetResSchema },

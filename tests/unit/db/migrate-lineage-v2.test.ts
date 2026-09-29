@@ -27,10 +27,10 @@ function seedV9Node(
 }
 
 describe('db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）', () => {
-  it('新库：全量应用到 10，lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列', () => {
+  it('新库：全量应用到 10（011 起=11 终值，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(10)
+    expect(result.currentVersion).toBe(11)
     const nodeCols = (db.prepare('PRAGMA table_info(lineage_nodes)').all() as Array<{ name: string }>).map(
       (c) => c.name
     )
@@ -43,13 +43,13 @@ describe('db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填�
     db.close()
   })
 
-  it('存量 v9 库升级：仅应用 010，user_version=10；存量行 month NULL 合法（不回溯校验）', () => {
+  it('存量 v9 库升级：应用 010+011（F-TAGS-01 起），user_version=11；存量行 month NULL 合法（不回溯校验）', () => {
     const db = openDatabase(':memory:')
     migrate(db, MIGRATIONS.filter((m) => m.version <= 9))
     seedV9Node(db, 'legacy-1', 2019, '2026-01-01T00:00:00.000Z')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([10])
-    expect(readUserVersion(db)).toBe(10)
+    expect(result.appliedVersions).toEqual([10, 11])
+    expect(readUserVersion(db)).toBe(11)
     const row = db.prepare('SELECT month, slot FROM lineage_nodes WHERE id = ?').get('legacy-1') as {
       month: number | null
       slot: number | null

@@ -137,3 +137,51 @@ describe('F-UI-02 侧栏 tab 图标化 —— OutlineAside 面', () => {
     }
   })
 })
+
+describe('F-TAGS-01 R6 —— 页码输入 IME 守卫（文本输入 Enter 提交面排查承接）', () => {
+  it('组词期 Enter（isComposing=true）不跳页；非组合态 Enter 恢复提交', () => {
+    const onNavigate = vi.fn()
+    mount(<ReaderToolbar {...toolbarProps({ page: 0, totalPages: 10, onNavigate })} />)
+    const input = host!.querySelector('input[aria-label="跳转到页"]') as HTMLInputElement
+    expect(input, '页码输入框在场').not.toBeNull()
+    const typeInto = (text: string): void => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, text)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    act(() => {
+      typeInto('5')
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: true })
+      )
+    })
+    expect(onNavigate, '组词期回车不跳页').not.toHaveBeenCalled()
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: false })
+      )
+    })
+    expect(onNavigate).toHaveBeenCalledWith(4)
+  })
+
+  it('组词期 blur 不跳页；compositionend 后 blur 恢复提交（回炉 R1——blur 提交面同守卫，d1-N3）', () => {
+    const onNavigate = vi.fn()
+    mount(<ReaderToolbar {...toolbarProps({ page: 0, totalPages: 10, onNavigate })} />)
+    const input = host!.querySelector('input[aria-label="跳转到页"]') as HTMLInputElement
+    expect(input, '页码输入框在场').not.toBeNull()
+    const typeInto = (text: string): void => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, text)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    act(() => {
+      typeInto('5')
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(onNavigate, '组词中失焦不提交').not.toHaveBeenCalled()
+    act(() => {
+      input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(onNavigate, '组词完成后失焦恢复提交').toHaveBeenCalledWith(4)
+  })
+})

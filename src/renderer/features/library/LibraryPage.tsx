@@ -23,7 +23,7 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - 布局：左列表右详情；测试见 tests/e2e/library-density.spec.ts
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { FilterBar } from './FilterBar'
 import { ImportDropZone } from './ImportDropZone'
@@ -43,6 +43,11 @@ export function LibraryPage(): JSX.Element {
   const setQuery = useLibraryStore((s) => s.setQuery)
   const selectPaper = useLibraryStore((s) => s.selectPaper)
   const openPaper = useLibraryStore((s) => s.openPaper)
+  // [F-TAGS-01] 标签颜色映射（tags 域数据经 TagFilter→FilterBar 上抛——
+  // 跨域白名单墙下的合规通道；下发 PaperRow 徽标着色，INV-86 三面之三）
+  const [tagColorByName, setTagColorByName] = useState<ReadonlyMap<string, string | null>>(
+    () => new Map()
+  )
 
   // 挂载即拉取（useAsync 是显式 run 语义，故在 effect 中手动触发一次）
   const { run } = useAsync(load, [load])
@@ -53,7 +58,7 @@ export function LibraryPage(): JSX.Element {
   return (
     <div className="lib-page">
       <ImportDropZone onImported={() => void load()} />
-      <FilterBar query={query} onChange={setQuery} />
+      <FilterBar query={query} onChange={setQuery} onTagColorMap={setTagColorByName} />
       {error !== null && (
         <div
           className="mx-[18px] mb-2 flex items-center justify-between rounded border px-3 py-2 text-xs"
@@ -84,6 +89,7 @@ export function LibraryPage(): JSX.Element {
             selectedId={selectedId}
             onSelect={selectPaper}
             onOpen={openPaper}
+            tagColorByName={tagColorByName}
           />
         </div>
         <aside className="lib-drawer">

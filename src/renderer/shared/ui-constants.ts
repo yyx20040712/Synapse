@@ -37,3 +37,18 @@ export const THEME_LABEL: Record<AppSettings['theme'], string> = {
   dark: '夜间 · 深灰',
   sepia: '护眼 · 牛皮纸'
 }
+
+/**
+ * [F-TAGS-01] 标签着色三面单源（INV-86：TagFilter chip / TagEditor chip /
+ * PaperRow 徽标——三面同源消费，禁各面自写 hex 拼接）。
+ * color 非空 → 背景 hex+22 / 边框 1px solid hex+66（8 位 hex alpha 后缀，
+ * 零 color-mix 依赖）；null → undefined（消费面保持现状默认——accent-soft
+ * 或类皮肤零变）。数据域用户身份色（非主题 token，见 shared/constants
+ * TAG_COLOR_PRESETS 注），INV-11 不适用。
+ */
+export function tagColorStyle(
+  color: string | null
+): { background: string; border: string } | undefined {
+  if (color === null) return undefined
+  return { background: `${color}22`, border: `1px solid ${color}66` }
+}

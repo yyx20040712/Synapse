@@ -17,9 +17,9 @@ function stubRepos(over: Record<string, unknown> = {}): Repos {
 
 guardedDescribe('SR-SVC-09', 'tags.service —— 薄透传', () => {
   it('list 透传 listWithCounts', async () => {
-    const repos = stubRepos({ listWithCounts: () => [{ id: 't', name: '必读', paperCount: 2 }] })
+    const repos = stubRepos({ listWithCounts: () => [{ id: 't', name: '必读', paperCount: 2, color: null }] })
     const svc = createTagsService({ repos })
-    await expect(svc.list({})).resolves.toEqual([{ id: 't', name: '必读', paperCount: 2 }])
+    await expect(svc.list({})).resolves.toEqual([{ id: 't', name: '必读', paperCount: 2, color: null }])
   })
 
   it('upsert 去空格后转调 repo', async () => {

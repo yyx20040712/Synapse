@@ -274,3 +274,55 @@ it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新�
   expect(useLineageStore.getState().nodes[0]!.tags).toEqual(['综述', '早期'])
   expect(useLineageStore.getState().saveStatus).toBe('saved')
 })
+
+// ── F-TAGS-01 R6：文本输入 Enter 提交面 isComposing 守卫（同类面排查承接） ──
+
+it('F-TAGS-01 对话框输入 IME 组词期 Enter（isComposing=true）不派发保存', async () => {
+  seedLineage([node('A', { tags: ['综述'] })])
+  mount(<LineageBoard onSelectNode={() => undefined} />)
+  openMenu('A')
+  clickMenu('添加标签…')
+  const input = q('[data-testid="lineage-tag-input"]') as HTMLInputElement | null
+  expect(input).not.toBeNull()
+  act(() => {
+    typeInto(input!, '组词中')
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: true })
+    )
+  })
+  await settle()
+  expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+  // 非组合态回车恢复提交语义（同一输入框守卫不误伤正常路）
+  act(() => {
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: false })
+    )
+  })
+  await settle()
+  expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
+})
+
+it('F-TAGS-01 侧板标签输入 IME 组词期 Enter（isComposing=true）不派发', async () => {
+  const onSetTags = vi.fn()
+  mount(
+    <LineageSidePanel node={node('A', { tags: ['综述'] })} onJumpToPaper={() => undefined} onSetTags={onSetTags} />
+  )
+  const input = q('[data-testid="lineage-side-panel"] [data-testid="lineage-tag-input"]') as HTMLInputElement | null
+  expect(input).not.toBeNull()
+  act(() => {
+    typeInto(input!, '组词中')
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: true })
+    )
+  })
+  expect(onSetTags).not.toHaveBeenCalled()
+  // 非组合态 Enter 恢复提交（k1-N2b 半锚补全——同一输入框守卫不误伤正常路，
+  // 对话框面同款正例对照）
+  act(() => {
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: false })
+    )
+  })
+  await settle()
+  expect(onSetTags).toHaveBeenCalledTimes(1)
+})

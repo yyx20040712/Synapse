@@ -42,10 +42,11 @@
 import type { Tag } from '../../../shared/models/tag'
 import type { SqliteDb } from '../connection'
 
-/** tags 表行形状（仅 id + name，见 001_init.sql） */
+/** tags 表行形状（id + name + color——011 起含颜色身份列，可空） */
 interface TagRow {
   id: string
   name: string
+  color: string | null
 }
 
 /** listWithCounts 的聚合行：COUNT 输出列以别名 paper_count 返回 */
@@ -68,6 +69,8 @@ export interface TagsRepo {
   findByName(name: string): Tag | undefined
   /** P7E-01：改名（UPDATE…WHERE id=?；返回 changes>0——同名幂等时可能为 0，非错） */
   renameTag(id: string, name: string): boolean
+  /** [F-TAGS-01]：颜色身份（hex|null=恢复默认；返回 changes>0——存在性预检归 service） */
+  setColor(id: string, color: string | null): boolean
   /** P7E-01：合并（三步事务：迁挂接→清源挂接→删源标签行；双挂由 OR IGNORE 吸收） */
   mergeTags(sourceId: string, targetId: string): void
   /** P7E-01：删除（两步事务：清挂接→删标签行） */
@@ -79,13 +82,13 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
     'INSERT INTO tags (id, name) VALUES (?, ?) ON CONFLICT (name) DO NOTHING'
   )
   const tagByName = db.prepare<[string], TagRow>(
-    'SELECT id, name FROM tags WHERE name = ?'
+    'SELECT id, name, color FROM tags WHERE name = ?'
   )
   const tagsWithCounts = db.prepare<[], TagCountRow>(
-    `SELECT t.id, t.name, COUNT(pt.paper_id) AS paper_count
+    `SELECT t.id, t.name, t.color, COUNT(pt.paper_id) AS paper_count
        FROM tags t
        LEFT JOIN paper_tags pt ON pt.tag_id = t.id
-      GROUP BY t.id, t.name
+      GROUP BY t.id, t.name, t.color
       ORDER BY paper_count DESC, t.name ASC`
   )
   const attachTag = db.prepare<[string, string]>(
@@ -103,6 +106,8 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
   )
   // ── P7E-01 生命周期语句 ──
   const renameTagStmt = db.prepare<[string, string]>('UPDATE tags SET name = ? WHERE id = ?')
+  // [F-TAGS-01] 颜色身份（hex 小写正规化在 service；null=恢复默认）
+  const setColorStmt = db.prepare<[string | null, string]>('UPDATE tags SET color = ? WHERE id = ?')
   // 迁移参数序=(target, source)：SELECT 列位在前（目标），WHERE 在后（源）
   const migrateAttachments = db.prepare<[string, string]>(
     `INSERT OR IGNORE INTO paper_tags (paper_id, tag_id)
@@ -130,7 +135,7 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
         // 不可达分支：DO NOTHING 后 name 必有对应行（新插入或同名既有）
         throw new Error(`tags.repo.upsertByName：按名回读失败（name=${name}）`)
       }
-      return { id: row.id, name: row.name }
+      return { id: row.id, name: row.name, color: row.color }
     },
 
     listWithCounts(): Array<Tag & { paperCount: number }> {
@@ -138,6 +143,7 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
       return tagsWithCounts.all().map((row) => ({
         id: row.id,
         name: row.name,
+        color: row.color,
         paperCount: row.paper_count
       }))
     },
@@ -161,6 +167,10 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
 
     renameTag(id: string, name: string): boolean {
       return renameTagStmt.run(name, id).changes > 0
+    },
+
+    setColor(id: string, color: string | null): boolean {
+      return setColorStmt.run(color, id).changes > 0
     },
 
     mergeTags(sourceId: string, targetId: string): void {

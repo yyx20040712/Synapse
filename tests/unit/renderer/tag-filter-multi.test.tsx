@@ -39,7 +39,8 @@ let host: HTMLDivElement | null = null
 let currentTags: TagWithCount[] = []
 
 function tag(id: string, name: string, paperCount: number): TagWithCount {
-  return { id, name, paperCount }
+  // [F-TAGS-01] color 必携可空（wire 真相）——本文件夹具全默认色
+  return { id, name, paperCount, color: null }
 }
 
 /** 首次挂载建 host/root；后续调用=同 root 受控重渲染（选中集回流） */

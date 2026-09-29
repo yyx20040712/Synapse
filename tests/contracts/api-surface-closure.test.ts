@@ -27,17 +27,18 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
   ['settings', ['diagNetwork', 'get', 'set']],
   ['system', ['openExternal', 'setQuitDirty', 'windowControl']],
-  ['tags', ['attach', 'delete', 'detach', 'list', 'merge', 'rename', 'upsert']],
+  ['tags', ['attach', 'delete', 'detach', 'list', 'merge', 'rename', 'setColor', 'upsert']],
   ['workspaces', ['create', 'list', 'rename', 'switch']]
 ]
 
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(55)（F-LIBUI-01
-// 起 55 通道：export_ 域 corpusSet 退役——用户 D4 裁决 2026-09-29；此前
-// T3-P5 起 56=lineage 域 6→7 加 upsertLineTypes）
+// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(56)（F-TAGS-01
+// 起 56 通道：tags 域加 setColor 标签颜色单通道；此前 F-LIBUI-01 起 55=
+// export_ 域 corpusSet 退役——用户 D4 裁决 2026-09-29；T3-P5 起 56=lineage
+// 域 6→7 加 upsertLineTypes）
 describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）', () => {
-    expect(allChannels().length).toBe(55)
+  it('通道总数=56（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）', () => {
+    expect(allChannels().length).toBe(56)
   })
 
   it('域枚举 pin：恰 12 域', () => {

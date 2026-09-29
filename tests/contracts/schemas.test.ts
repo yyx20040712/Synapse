@@ -180,13 +180,17 @@ const VALID: Record<string, unknown[]> = {
     ]
   ],
   corpusReqSchema: [{ paperId: 'p1' }],
-  tagWithCountSchema: [{ id: 't1', name: '标签', paperCount: 0 }],
+  tagWithCountSchema: [
+    { id: 't1', name: '标签', paperCount: 0, color: null },
+    { id: 't2', name: '彩标', paperCount: 3, color: '#0ea5e9' }
+  ],
   tagNameReqSchema: [{ name: '标签' }],
   attachTagReqSchema: [{ paperId: 'p1', tagId: 't1' }],
   detachTagReqSchema: [{ paperId: 'p1', tagId: 't1' }],
   tagIdReqSchema: [{ tagId: 't1' }],
   renameTagReqSchema: [{ tagId: 't1', name: '新名' }],
   mergeTagReqSchema: [{ sourceId: 't1', targetId: 't2' }],
+  tagSetColorReqSchema: [{ tagId: 't1', color: '#e11d48' }, { tagId: 't1', color: null }],
   noteGetResSchema: [null, note],
   noteSaveReqSchema: [{ paperId: 'p1', title: '', contentMd: '' }],
   noteIdReqSchema: [{ noteId: 'n1' }],
@@ -261,6 +265,7 @@ const SCHEMA_NAMES = [
   'setQuitDirtyReqSchema',
   'tagIdReqSchema',
   'tagNameReqSchema',
+  'tagSetColorReqSchema',
   'tagWithCountSchema',
   'trueAckSchema',
   'uiScaleSchema',
@@ -506,5 +511,17 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)
     expect(S.noteGetResSchema.safeParse(null).success).toBe(true)
     expect(S.noteGetResSchema.safeParse(undefined).success).toBe(false)
+  })
+
+  it('tagSetColorReqSchema color 负例：大写/短位/缺 # 拒，null=恢复默认合法（d1-N5——hex 契约负向锁）', () => {
+    for (const bad of ['#E11D48', '#e11d4', 'e11d48', '#e11d48g', '#e11d4800', 42, '', ' #e11d48']) {
+      expect(
+        S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: bad }).success,
+        `非法 color ${JSON.stringify(bad)} 应拒`
+      ).toBe(false)
+    }
+    expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1' }).success, '缺 color 键应拒（required 非 optional——宽松化正则防）').toBe(false)
+    expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: null }).success).toBe(true)
+    expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: '#0ea5e9' }).success).toBe(true)
   })
 })

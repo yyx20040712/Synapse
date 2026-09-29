@@ -28,6 +28,8 @@ export function createTagsIpc(deps: IpcDeps): ApiHandlers['tags'] {
     detach: (req) => deps.services.tags.detach(req),
     rename: (req) => deps.services.tags.rename(req),
     merge: (req) => deps.services.tags.merge(req),
-    delete: (req) => deps.services.tags.delete(req)
+    delete: (req) => deps.services.tags.delete(req),
+    // [F-TAGS-01] 标签颜色（纯委托同型——一行转调）
+    setColor: (req) => deps.services.tags.setColor(req)
   }
 }

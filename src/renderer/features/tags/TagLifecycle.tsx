@@ -18,8 +18,9 @@ import { useTagsStore, type TagWithCount } from './tags.store'
  * busy 守卫（ref 同步检查防同批双击——S8；setBusy 只管按钮禁用态渲染）。
  * requestClose=关闭守卫（N1）：mutation 飞行中 no-op——取消/遮罩/✕/Esc 全
  * 关闭路径统一过此门（Dialog 的 onClose 收包装后的回调）。
+ * [F-TAGS-01] 导出供 TagColorDialog 同构复用（域内单源）。
  */
-function useBusyGuard(): {
+export function useBusyGuard(): {
   busy: boolean
   begin(): boolean
   end(): void
@@ -84,6 +85,9 @@ export function TagRenameDialog(props: {
         disabled={guard.busy}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
+          // [F-TAGS-01 R6] IME 组词确认回车不提交（TagEditor 三路提交同守卫
+          // ——同类面排查承接，只加守卫不扩散三路化）
+          if (e.nativeEvent.isComposing) return
           if (e.key === 'Enter') void save()
         }}
       />

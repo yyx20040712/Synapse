@@ -1151,6 +1151,89 @@
       "caseTitle": "文献库密度列表：六列表头+行六列真实文本+抽屉四格+选中态",
       "reason": "F-LIBUI-01 ④⑤⑥⑧ e2e 断言面随语义改写（用户反馈 §0-5/# 前缀、§0-6b/档次列、§0-7b/关联节退役+grid 计算样式锚）——标题随之改名，用例本体保留（NEW 侧在档）",
       "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "caseTitle": "新库：全量应用到 10，lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "caseTitle": "存量 v9 库升级：仅应用 010，user_version=10；存量行 month NULL 合法（不回溯校验）",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "新库：全量应用到 10（009 删列终态+010 后续），papers.reading_seconds 列已不存在",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "存量 v8 库（008 已加列）升级：仅应用 009 与 010，列被删除，user_version=10",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在",
+      "assertionText": "expect(result.appliedVersions).toEqual([8, 9, 10])",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "caseTitle": "存量 v7 库双跳：008 加列→009 删列一次 migrate 到位，终态列不存在",
+      "assertionText": "expect(readUserVersion(db)).toBe(10)",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "新库：全量应用，user_version = 最新版本",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/db/repos/tags-lifecycle.repo.test.ts",
+      "caseTitle": "findByName：命中返回 {id,name}；未命中 undefined",
+      "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
+    },
+    {
+      "file": "tests/unit/renderer/tags-lifecycle.store.test.ts",
+      "caseTitle": "renameTag 成功：返回 {ok:true} 且链式 refresh（list spy 被调、tags 更新）",
+      "assertionText": "expect(useStore.getState().tags).toEqual([{ id: 't-1', name: '新名', paperCount: 1 }])",
+      "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=10（新库全量，010 落地后）",
+      "reason": "F-TAGS-01 迁移 011（tags.color）落地——新库 user_version 终值 10→11，迁移链 pin 断言随终态改写（用例本体保留，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R1"
+    },
+    {
+      "file": "tests/unit/services/tags-lifecycle.service.test.ts",
+      "caseTitle": "与自身现名相同 → 幂等成功返回该 Tag（changes=0 亦非错）",
+      "assertionText": "expect(svc.rename({ tagId: 't-1', name: '甲' })).resolves.toEqual({ id: 't-1', name: '甲' })",
+      "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
+    },
+    {
+      "file": "tests/unit/services/tags-lifecycle.service.test.ts",
+      "caseTitle": "成功路径：trim 后透传 repo，返回更新后 Tag",
+      "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
+    },
+    {
+      "file": "tests/unit/services/tags.service.test.ts",
+      "caseTitle": "list 透传 listWithCounts",
+      "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
     }
   ]
 }

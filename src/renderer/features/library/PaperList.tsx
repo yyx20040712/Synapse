@@ -55,6 +55,8 @@ export function PaperList(props: {
   selectedId: string | null
   onSelect: (id: string) => void
   onOpen?: (id: string) => void
+  /** [F-TAGS-01] name→color 映射（LibraryPage 注入——PaperRow 徽标着色） */
+  tagColorByName?: ReadonlyMap<string, string | null>
 }): JSX.Element {
   const { papers, selectedId, onSelect, onOpen } = props
   const offset = props.offset ?? 0
@@ -121,6 +123,7 @@ export function PaperList(props: {
                 onClick={handleActivate}
                 // 双击打开：上层传入 onOpen 时接通阅读器，否则降级为确认选中
                 onOpen={onOpen === undefined ? handleActivate : () => onOpen(paper.id)}
+                tagColorByName={props.tagColorByName}
               />
             </div>
           )

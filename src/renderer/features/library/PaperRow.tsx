@@ -23,6 +23,7 @@
  * - 纯展示；无网络无 store；皮肤=library.css .lib-row 系类（token 单源）
  */
 import type { PaperSummary } from '@shared/models/paper'
+import { tagColorStyle } from '../../shared/ui-constants'
 
 /** 标签徽标最多展示个数，超出折叠为 +N */
 const MAX_TAG_BADGES = 3
@@ -42,6 +43,8 @@ export function PaperRow(props: {
   selected: boolean
   onClick: () => void
   onOpen: () => void
+  /** [F-TAGS-01] name→color 映射（缺省/未命中=默认态徽标，INV-86 三面之三） */
+  tagColorByName?: ReadonlyMap<string, string | null>
 }): JSX.Element {
   const { paper, selected } = props
   // 序号=入脉络 catalogNo（P5 呈现序）；未入脉络=位置序 ordinal 兜底。
@@ -78,7 +81,13 @@ export function PaperRow(props: {
       <span className="lib-r-cite">{paper.citedByCount === undefined ? '—' : paper.citedByCount}</span>
       <span className="lib-r-tags">
         {shownTags.map((name) => (
-          <span key={name} className="lib-t-mini">
+          <span
+            key={name}
+            className="lib-t-mini"
+            // [F-TAGS-01] 徽标着色：映射命中→背景/边框（tagColorStyle 单源）；
+            // 未命中/缺省=现状类皮肤零变（纯展示查表——数据经 props 注入）
+            style={tagColorStyle(props.tagColorByName?.get(name) ?? null)}
+          >
             {name}
           </span>
         ))}

@@ -11,6 +11,8 @@
  *   ——皮肤=.lib-chip 胶囊（99px 圆角+mono「×N」计数，library.css）
  * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
  *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagFilter 零 import library.store）
+ * - [F-TAGS-01] onTagColorMap 透传（TagFilter 颜色映射→LibraryPage 态→
+ *   PaperRow 徽标着色——tags 域数据经组合根逐级下发的合规通道）
  *
  * ── 接口层 ──
  * - export function FilterBar(props: { query: LibraryQuery;
@@ -40,6 +42,8 @@ const SORT_LABEL: Record<LibrarySort, string> = {
 export function FilterBar(props: {
   query: LibraryQuery
   onChange: (patch: Partial<LibraryQuery>) => void
+  /** [F-TAGS-01] 标签颜色映射上抛（TagFilter 透传——组合根接力） */
+  onTagColorMap?: (map: ReadonlyMap<string, string | null>) => void
 }): JSX.Element {
   const { query, onChange } = props
   const papers = useLibraryStore((s) => s.papers)
@@ -88,6 +92,7 @@ export function FilterBar(props: {
         selectedTagIds={query.tagIds ?? []}
         onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
         onMutated={() => void loadLibrary()}
+        onColorMapChange={props.onTagColorMap}
       />
       <select
         aria-label="按集合筛选"

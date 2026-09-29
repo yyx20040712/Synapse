@@ -146,6 +146,27 @@ describe('T3-P3 密度列表渲染（PaperList 五列结构）', () => {
     expect(row1.querySelector('.lib-t-more')?.textContent).toBe('+2')
   })
 
+  it('F-TAGS-01 徽标着色（INV-86 三面之三）：tagColorByName 命中=背景 hex22/边框 1px solid hex66；未命中=现状无 inline', async () => {
+    await render(
+      <PaperList
+        papers={[makeSummary('p1')]}
+        selectedId={null}
+        onSelect={() => undefined}
+        tagColorByName={new Map([['水锤史', '#e11d48']])}
+      />
+    )
+    const badges = rowAt(0).querySelectorAll<HTMLElement>('.lib-t-mini')
+    expect(badges[0]!.textContent).toBe('水锤史')
+    // jsdom 将 hex+alpha 归一 rgba——三元组锚（#e11d48 → 225, 29, 72）
+    expect(badges[0]!.style.background, '命中名→着色').toContain('225, 29, 72')
+    expect(badges[0]!.style.border).toContain('225, 29, 72')
+    // alpha/边框形态锁（R2 d1-W7——三面同源失败锚：防退化自写无 alpha 内联仍绿）
+    expect(badges[0]!.style.background).toMatch(/rgba\(225, 29, 72, 0\.13/)
+    expect(badges[0]!.style.border).toMatch(/rgba\(225, 29, 72, 0\.4\)/)
+    expect(badges[0]!.style.border).toContain('1px solid')
+    expect(badges[1]!.style.background, '未命中名→现状零变').toBe('')
+  })
+
   it('空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」', async () => {
     await render(
       <PaperList

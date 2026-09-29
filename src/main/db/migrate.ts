@@ -18,6 +18,7 @@ import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
 import readingTimeSql from './migrations/008_reading_time.sql?raw'
 import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
 import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
+import tagsColorSql from './migrations/011_tags_color.sql?raw'
 
 export interface Migration {
   version: number
@@ -39,8 +40,11 @@ export const MIGRATIONS: readonly Migration[] = [
   // （已合入迁移不可修改=CI 锁硬规则）
   { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql },
   // [T3-P5] 脉络数据层 v2：month/slot/sub 列+lineage_graph_meta KV+slot 窗口
-  // 回填（新库 user_version 终值 10）
-  { version: 10, name: 'lineage_v2', sql: lineageV2Sql }
+  // 回填（010 落地时新库终值 10——现行链尾随 011 演进，k1-W1 勘正）
+  { version: 10, name: 'lineage_v2', sql: lineageV2Sql },
+  // [F-TAGS-01] 标签颜色：tags.color TEXT 可空无默认（NULL=存量默认 accent；
+  // 新库 user_version 终值 11）
+  { version: 11, name: 'tags_color', sql: tagsColorSql }
 ]
 
 export interface MigrateResult {

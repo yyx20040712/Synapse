@@ -10,9 +10,10 @@
  * - 选中态变化 → props.onFilterChange(ids)（P7E-06 多选 v2 已兑现——v1 单选
  *   预留注记（TagFilter.tsx:6「多选 v2」）本票落地；AND 交集语义在 SQL 层
  *   （buildFilters 逐标签 EXISTS），空数组=清除全部选中）
- * - 管理面（P7E-01）：chip 右键 → 菜单（重命名/合并到…/删除）→ 三对话框
- *   （TagLifecycle 拆件承载）；变更成功经 onMutated 上抛（FilterBar 注入
- *   library load——跨域互引红线合规路径，白名单既有）
+ * - 管理面（P7E-01）：chip 右键 → 菜单（重命名/合并到…/颜色…[F-TAGS-01]/
+ *   删除）→ 四对话框（TagLifecycle 拆件+TagColorDialog 承载）；变更成功经
+ *   onMutated 上抛（FilterBar 注入 library load——跨域互引红线合规路径，
+ *   白名单既有）；[F-TAGS-01] chip 着色（INV-86 三面之一）
  *
  * ── 接口层 ──
  * - export function TagFilter(props: { selectedTagIds: string[];
@@ -35,9 +36,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { TAG_FILTER_MAX } from '@shared/models/paper'
 import { showToast } from '../../shared/ui/Toast'
+import { tagColorStyle } from '../../shared/ui-constants'
 import { useTagsStore, type TagWithCount } from './tags.store'
 import { TagLifecycleMenu } from './TagLifecycleMenu'
 import { TagRenameDialog, TagMergeDialog, TagDeleteDialog } from './TagLifecycle'
+import { TagColorDialog } from './TagColorDialog'
 
 /** 管理面局部态：右键锚点菜单 / 打开中的对话框（同时刻至多一个） */
 interface MenuState {
@@ -45,7 +48,7 @@ interface MenuState {
   anchor: { x: number; y: number }
 }
 interface DialogState {
-  kind: 'rename' | 'merge' | 'delete'
+  kind: 'rename' | 'merge' | 'delete' | 'color'
   tag: TagWithCount
 }
 
@@ -53,8 +56,14 @@ export function TagFilter(props: {
   selectedTagIds: string[]
   onFilterChange: (ids: string[]) => void
   onMutated?: () => void
+  /** [F-TAGS-01] name→color 映射上抛（PaperRow 徽标着色数据通道——组合根
+   *  FilterBar→LibraryPage→PaperList 逐级下发；跨域墙下 tags.store 数据的
+   *  唯一合法出口，本组件为 tags 域数据宿主）。**回调须稳定引用**（R2——
+   *  d1'-N5：effect deps 含本回调，inline 箭头会致 Map 重建→父 setState 连环
+   *  重渲染；现役接线=LibraryPage useState setter 天然稳定） */
+  onColorMapChange?: (map: ReadonlyMap<string, string | null>) => void
 }): JSX.Element {
-  const { selectedTagIds, onFilterChange, onMutated } = props
+  const { selectedTagIds, onFilterChange, onMutated, onColorMapChange } = props
   const tags = useTagsStore((s) => s.tags)
   const refresh = useTagsStore((s) => s.refresh)
   const listError = useTagsStore((s) => s.error)
@@ -76,6 +85,12 @@ export function TagFilter(props: {
       }
     }
   }, [listError])
+
+  // [F-TAGS-01] 颜色映射上抛：tags 变化（refresh/生命周期链式自愈）即重建
+  // name→color（tags.name UNIQUE——名字键良定义）
+  useEffect(() => {
+    onColorMapChange?.(new Map(tags.map((t) => [t.name, t.color])))
+  }, [tags, onColorMapChange])
 
   /**
    * 生命周期变更成功上抛（S2/S3/S4/S5 顺序契约）：disappearedId=null（rename）
@@ -101,12 +116,16 @@ export function TagFilter(props: {
     <div className="lib-chips" role="group" aria-label="标签筛选">
       {tags.map((t) => {
         const active = selectedTagIds.includes(t.id)
+        // [F-TAGS-01] 着色（INV-86）：color 非空→inline 背景/边框（选中态
+        // 文字色与字重仍由 .lib-chip-on 承载）；null→类皮肤现状零变
+        const colorStyle = tagColorStyle(t.color)
         return (
           <button
             key={t.id}
             type="button"
             aria-pressed={active}
             className={`lib-chip${active ? ' lib-chip-on' : ''}`}
+            style={colorStyle}
             onClick={() => {
               // P7X-01 上界守卫（添加方向；移除方向永不设限）：选中数已达
               // TAG_FILTER_MAX（与 schema 同源）→ 零变更 + info 级引导 toast
@@ -144,6 +163,10 @@ export function TagFilter(props: {
             setDialog({ kind: 'merge', tag })
             setMenu(null)
           }}
+          onColor={(tag) => {
+            setDialog({ kind: 'color', tag })
+            setMenu(null)
+          }}
           onDelete={(tag) => {
             setDialog({ kind: 'delete', tag })
             setMenu(null)
@@ -170,6 +193,14 @@ export function TagFilter(props: {
       )}
       {dialog?.kind === 'delete' && (
         <TagDeleteDialog
+          key={dialog.tag.id}
+          tag={dialog.tag}
+          onClose={() => setDialog(null)}
+          onMutated={handleMutated}
+        />
+      )}
+      {dialog?.kind === 'color' && (
+        <TagColorDialog
           key={dialog.tag.id}
           tag={dialog.tag}
           onClose={() => setDialog(null)}

@@ -50,6 +50,8 @@ export interface TagsStore {
   renameTag(tagId: string, name: string): Promise<TagsMutationResult>
   mergeTags(sourceId: string, targetId: string): Promise<TagsMutationResult>
   deleteTag(tagId: string): Promise<TagsMutationResult>
+  /** [F-TAGS-01] 颜色身份（hex|null=恢复默认）——mutate 壳同型 */
+  setTagColor(tagId: string, color: string | null): Promise<TagsMutationResult>
 }
 
 export const useTagsStore = create<TagsStore>()((set, get) => {
@@ -100,6 +102,7 @@ export const useTagsStore = create<TagsStore>()((set, get) => {
 
     renameTag: (tagId, name) => mutate(() => unwrap(api.tags.rename({ tagId, name }))),
     mergeTags: (sourceId, targetId) => mutate(() => unwrap(api.tags.merge({ sourceId, targetId }))),
-    deleteTag: (tagId) => mutate(() => unwrap(api.tags.delete({ tagId })))
+    deleteTag: (tagId) => mutate(() => unwrap(api.tags.delete({ tagId }))),
+    setTagColor: (tagId, color) => mutate(() => unwrap(api.tags.setColor({ tagId, color })))
   }
 })

@@ -40,7 +40,7 @@
  *   −/＋/100%/颜色点组不动（保字符数字）；选择模式 background 常亮叠加+
  *   双页图标随态（内联串锁[reader-toolbar-icons]保活，ring 住类承载）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
@@ -81,7 +81,10 @@ export function ReaderToolbar(props: {
   const pageLayout = props.pageLayout ?? 'single'
   const pageStep = props.pageStep ?? 1
   const [pageInput, setPageInput] = useState(String(page + 1))
-
+  // [F-TAGS-01 回炉 R1/R2] 组词态镜像：blur 与 Enter 同守卫（d1-N3）。数字面
+  // 只守卫不补提交（与 TagEditor 不对称=主控裁：页码非用户署名数据、无污染面；
+  // 组词被失焦打断=静默丢弃，回显由外部翻页 useEffect 自愈）
+  const pageComposingRef = useRef(false)
   // 外部翻页（键盘/目录跳转/越界自愈）同步回输入框
   useEffect(() => {
     setPageInput(String(page + 1))
@@ -125,8 +128,14 @@ export function ReaderToolbar(props: {
           value={pageInput}
           aria-label="跳转到页"
           onChange={(e) => setPageInput(e.target.value)}
-          onBlur={commitPage}
+          onCompositionStart={() => { pageComposingRef.current = true }}
+          onCompositionEnd={() => { pageComposingRef.current = false }}
+          onBlur={() => {
+            if (pageComposingRef.current) return
+            commitPage()
+          }}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return
             if (e.key === 'Enter') commitPage()
           }}
         />

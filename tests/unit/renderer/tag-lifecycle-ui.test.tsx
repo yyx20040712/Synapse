@@ -103,8 +103,8 @@ afterEach(async () => {
 describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   it('S2 删除选中标签：先 onFilterChange(null) 清死 id 筛选，后 onMutated（invocationCallOrder 锚）', async () => {
     currentTags = [
-      { id: 't-1', name: '甲', paperCount: 2 },
-      { id: 't-2', name: '乙', paperCount: 1 }
+      { id: 't-1', name: '甲', paperCount: 2, color: null },
+      { id: 't-2', name: '乙', paperCount: 1, color: null }
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
@@ -128,8 +128,8 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('删除非选中标签：筛选不动（onFilterChange 零调用），仅 onMutated', async () => {
     currentTags = [
-      { id: 't-1', name: '甲', paperCount: 2 },
-      { id: 't-2', name: '乙', paperCount: 1 }
+      { id: 't-1', name: '甲', paperCount: 2, color: null },
+      { id: 't-2', name: '乙', paperCount: 1, color: null }
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
@@ -145,8 +145,8 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('S3 合且源=选中：同 S2 顺序（源 id 已消失）；目标 chip 点选即确认', async () => {
     currentTags = [
-      { id: 't-1', name: '甲', paperCount: 2 },
-      { id: 't-2', name: '乙', paperCount: 1 }
+      { id: 't-1', name: '甲', paperCount: 2, color: null },
+      { id: 't-2', name: '乙', paperCount: 1, color: null }
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
@@ -169,8 +169,8 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
 
   it('S4 合且目标=选中：筛选不动（target id 稳定，仅计数增）', async () => {
     currentTags = [
-      { id: 't-1', name: '甲', paperCount: 2 },
-      { id: 't-2', name: '乙', paperCount: 1 }
+      { id: 't-1', name: '甲', paperCount: 2, color: null },
+      { id: 't-2', name: '乙', paperCount: 1, color: null }
     ]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
@@ -185,7 +185,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   })
 
   it('S8 重命名对话框：预填现名；提交双击 busy 守卫防重复提交（rename 仅一次）', async () => {
-    currentTags = [{ id: 't-1', name: '甲', paperCount: 1 }]
+    currentTags = [{ id: 't-1', name: '甲', paperCount: 1, color: null }]
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
     await render([], onFilterChange, onMutated)
@@ -208,7 +208,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
     expect(stubApi.tags.rename).toHaveBeenCalledTimes(1)
     expect(stubApi.tags.rename).toHaveBeenCalledWith({ tagId: 't-1', name: '乙' })
     await act(async () => {
-      resolveRename({ ok: true, data: { id: 't-1', name: '乙' } })
+      resolveRename({ ok: true, data: { id: 't-1', name: '乙', color: null } })
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(onMutated).toHaveBeenCalledTimes(1)
@@ -216,7 +216,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   })
 
   it('S9 tags.length===1 时菜单「合并到…」禁用（无其他目标）', async () => {
-    currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
+    currentTags = [{ id: 't-1', name: '甲', paperCount: 0, color: null }]
     await render([], vi.fn(), vi.fn())
     await rightClick('甲 ×0')
     const mergeBtn = buttonByText('合并到…')
@@ -225,7 +225,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   })
 
   it('W3：菜单开→按 Escape→菜单关闭（keydown 关闭契约，unmount 清理）', async () => {
-    currentTags = [{ id: 't-1', name: '甲', paperCount: 0 }]
+    currentTags = [{ id: 't-1', name: '甲', paperCount: 0, color: null }]
     await render([], vi.fn(), vi.fn())
     await rightClick('甲 ×0')
     expect(host?.querySelector('[data-testid="tag-menu"]'), '菜单在场').not.toBeNull()
@@ -236,7 +236,7 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
   })
 
   it('N1：delete 提交飞行中取消被阻断（按钮禁用+Esc/遮罩 onClose no-op），resolve 成功后才关', async () => {
-    currentTags = [{ id: 't-1', name: '甲', paperCount: 2 }]
+    currentTags = [{ id: 't-1', name: '甲', paperCount: 2, color: null }]
     await render([], vi.fn(), vi.fn())
     let resolveDelete!: (v: unknown) => void
     stubApi.tags.delete.mockImplementation(
@@ -258,5 +258,22 @@ describe('P7E-01 TagFilter —— 标签生命周期管理面', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(dialog(), 'resolve 成功后对话框关闭').toBeNull()
+  })
+
+  it('F-TAGS-01 R6：重命名输入 IME 组词期 Enter（isComposing=true）不提交', async () => {
+    currentTags = [{ id: 't-1', name: '甲', paperCount: 1, color: null }]
+    await render([], vi.fn(), vi.fn())
+    await rightClick('甲 ×1')
+    await click(buttonByText('重命名'), '菜单·重命名')
+    const input = dialog()?.querySelector('input') ?? null
+    expect(input, '重命名输入框在场').not.toBeNull()
+    await setType(input!, '组词中')
+    await act(async () => {
+      input!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: true })
+      )
+    })
+    expect(stubApi.tags.rename).not.toHaveBeenCalled()
+    expect(dialog(), '组词期 Enter 不关对话框').not.toBeNull()
   })
 })

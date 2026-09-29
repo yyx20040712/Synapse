@@ -12,6 +12,9 @@
  *   merge：自身→INVALID_REQUEST；源/目标任一不存在→NOT_FOUND（先源后目标，
  *   消息带标签 id）；成功转调 repo 三步事务
  *   delete：不存在→NOT_FOUND；成功转调 repo 两步事务
+ * - setColor（F-TAGS-01）：小写正规化→格式校验 INVALID_REQUEST→存在性
+ *   NOT_FOUND（rename/delete 同序）→repo setColor；null=恢复默认直通；
+ *   返回更新后 Tag（color 必携）
  *
  * ── 接口层 ──
  * - export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags']
@@ -71,7 +74,9 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
         // zod min(1) 拦不住纯空格——service 防御（票面校验序第 1 步）
         throw new TagsDomainError('INVALID_REQUEST', '标签名不能为空')
       }
-      if (!tags.listWithCounts().some((t) => t.id === req.tagId)) {
+      // [F-TAGS-01] find 取代 some：rename 不改 color，回传携带预检行的现色
+      const existing = tags.listWithCounts().find((t) => t.id === req.tagId)
+      if (existing === undefined) {
         throw new TagsDomainError('NOT_FOUND', '标签不存在')
       }
       const clash = tags.findByName(name)
@@ -81,7 +86,7 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
       }
       tags.renameTag(req.tagId, name)
       // 冲突已排除：同名行只能是自身——直接构造更新后 Tag（幂等路径亦成立）
-      return { id: req.tagId, name }
+      return { id: req.tagId, name, color: existing.color }
     },
 
     async merge(req) {
@@ -105,6 +110,22 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
       }
       tags.deleteTag(req.tagId)
       return { ok: true as const }
+    },
+
+    // [F-TAGS-01] 颜色身份：正规化（小写化——IPC 面 zod 已限小写 pattern，
+    // 直调防御同口径）→ 格式校验 → 存在性预检（rename/delete 同序）→ 落库；
+    // null=恢复默认直通。返回更新后 Tag（wire 真相=color 必携）
+    async setColor(req) {
+      const color = req.color === null ? null : req.color.toLowerCase()
+      if (color !== null && !/^#[0-9a-f]{6}$/.test(color)) {
+        throw new TagsDomainError('INVALID_REQUEST', '标签颜色格式不正确')
+      }
+      const existing = tags.listWithCounts().find((t) => t.id === req.tagId)
+      if (existing === undefined) {
+        throw new TagsDomainError('NOT_FOUND', '标签不存在')
+      }
+      tags.setColor(req.tagId, color)
+      return { id: existing.id, name: existing.name, color }
     }
   }
 }

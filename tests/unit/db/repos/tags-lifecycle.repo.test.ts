@@ -32,9 +32,9 @@ describe('P7E-01 tags.repo —— 生命周期（rename/merge/delete）', () => 
     repo = createTagsRepo(db)
   })
 
-  it('findByName：命中返回 {id,name}；未命中 undefined', () => {
+  it('findByName：命中返回 {id,name,color}；未命中 undefined', () => {
     const tag = repo.upsertByName('必读')
-    expect(repo.findByName('必读')).toEqual({ id: tag.id, name: '必读' })
+    expect(repo.findByName('必读')).toEqual({ id: tag.id, name: '必读', color: null })
     expect(repo.findByName('不存在')).toBeUndefined()
   })
 

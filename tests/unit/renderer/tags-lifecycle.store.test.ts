@@ -16,7 +16,9 @@ async function loadStore(api: unknown) {
   return mod.useTagsStore
 }
 
-const okList = (tags: Array<{ id: string; name: string; paperCount: number }>) => ({
+const okList = (
+  tags: Array<{ id: string; name: string; paperCount: number; color: string | null }>
+) => ({
   ok: true as const,
   data: tags
 })
@@ -27,14 +29,14 @@ beforeEach(() => {
 
 describe('P7E-01 tags.store —— 命令型动作', () => {
   it('renameTag 成功：返回 {ok:true} 且链式 refresh（list spy 被调、tags 更新）', async () => {
-    const list = vi.fn().mockResolvedValue(okList([{ id: 't-1', name: '新名', paperCount: 1 }]))
-    const rename = vi.fn().mockResolvedValue({ ok: true as const, data: { id: 't-1', name: '新名' } })
+    const list = vi.fn().mockResolvedValue(okList([{ id: 't-1', name: '新名', paperCount: 1, color: null }]))
+    const rename = vi.fn().mockResolvedValue({ ok: true as const, data: { id: 't-1', name: '新名', color: null } })
     const useStore = await loadStore({ tags: { list, rename } })
     const r = await useStore.getState().renameTag('t-1', '新名')
     expect(r).toEqual({ ok: true })
     expect(rename).toHaveBeenCalledWith({ tagId: 't-1', name: '新名' })
     expect(list).toHaveBeenCalledTimes(1) // 成功后链式 refresh（M3 变异锚）
-    expect(useStore.getState().tags).toEqual([{ id: 't-1', name: '新名', paperCount: 1 }])
+    expect(useStore.getState().tags).toEqual([{ id: 't-1', name: '新名', paperCount: 1, color: null }])
   })
 
   it('mergeTags/deleteTag 成功：同样链式 refresh + {ok:true}（逐参断言）', async () => {
@@ -55,7 +57,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
       .fn()
       .mockResolvedValue({ ok: false as const, error: { code: 'CONFLICT', message: '标签名已被占用' } })
     const useStore = await loadStore({ tags: { list, rename } })
-    useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 1 }] })
+    useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 1, color: null }] })
     const r = await useStore.getState().renameTag('t-1', '占用名')
     expect(r.ok).toBe(false)
     if (!r.ok) {
@@ -87,7 +89,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     const list = vi
       .fn()
       .mockImplementationOnce(() => new Promise((r) => { resolveOld = r }))
-      .mockImplementationOnce(async () => okList([{ id: 't-9', name: '最新', paperCount: 2 }]))
+      .mockImplementationOnce(async () => okList([{ id: 't-9', name: '最新', paperCount: 2, color: null }]))
     const useStore = await loadStore({ tags: { list, rename } })
     const mutating = useStore.getState().renameTag('t-1', 'x') // 挂起中（不占 seq）
     const concurrent = useStore.getState().refresh() // 并发 refresh（seq=2，响应将迟到）
@@ -97,5 +99,32 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     await concurrent.catch(() => undefined)
     expect(useStore.getState().tags[0]?.name).toBe('最新') // 只认最新 seq 的结果
     expect(useStore.getState().error).toBeNull() // 迟到旧失败被 loadSeq 丢弃（不触发误导 toast）
+  })
+
+  it('F-TAGS-01 setTagColor 成功：setColor 逐参+链式 refresh（tags 面更新 color）', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValue(okList([{ id: 't-1', name: '甲', paperCount: 1, color: '#e11d48' }]))
+    const setColor = vi
+      .fn()
+      .mockResolvedValue({ ok: true as const, data: { id: 't-1', name: '甲', color: '#e11d48' } })
+    const useStore = await loadStore({ tags: { list, setColor } })
+    const r = await useStore.getState().setTagColor('t-1', '#e11d48')
+    expect(r).toEqual({ ok: true })
+    expect(setColor).toHaveBeenCalledWith({ tagId: 't-1', color: '#e11d48' })
+    expect(list).toHaveBeenCalledTimes(1) // 成功后链式 refresh
+    expect(useStore.getState().tags[0]?.color).toBe('#e11d48')
+  })
+
+  it('F-TAGS-01 setTagColor NOT_FOUND：{ok:false}+自愈 refresh（S7 同构——列表陈旧）', async () => {
+    const list = vi.fn().mockResolvedValue(okList([]))
+    const setColor = vi
+      .fn()
+      .mockResolvedValue({ ok: false as const, error: { code: 'NOT_FOUND', message: '标签不存在' } })
+    const useStore = await loadStore({ tags: { list, setColor } })
+    const r = await useStore.getState().setTagColor('t-gone', null)
+    expect(r.ok).toBe(false)
+    expect(setColor).toHaveBeenCalledWith({ tagId: 't-gone', color: null })
+    expect(list).toHaveBeenCalledTimes(1) // 自愈 refresh
   })
 })

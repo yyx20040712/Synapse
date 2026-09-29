@@ -12,8 +12,8 @@ import type { Repos } from '../../../src/main/db/repos'
 
 function stubRepos(over: Record<string, unknown> = {}): Repos {
   const tags = {
-    listWithCounts: vi.fn(() => [{ id: 't-1', name: '甲', paperCount: 1 }]),
-    upsertByName: vi.fn((name: string) => ({ id: 't-1', name })),
+    listWithCounts: vi.fn(() => [{ id: 't-1', name: '甲', paperCount: 1, color: null }]),
+    upsertByName: vi.fn((name: string) => ({ id: 't-1', name, color: null })),
     attach: vi.fn(),
     detach: vi.fn(),
     namesByPaper: vi.fn(() => []),
@@ -21,6 +21,7 @@ function stubRepos(over: Record<string, unknown> = {}): Repos {
     renameTag: vi.fn(() => true),
     mergeTags: vi.fn(),
     deleteTag: vi.fn(),
+    setColor: vi.fn(() => true),
     ...over
   }
   return { tags } as unknown as Repos
@@ -58,23 +59,23 @@ describe('P7E-01 tags.service —— rename 校验序', () => {
   })
 
   it('与其他标签同名 → CONFLICT「标签名已被占用」（不自动合并——数据语义变更须显式走 merge）', async () => {
-    const repos = stubRepos({ findByName: vi.fn(() => ({ id: 't-2', name: '甲' })) })
+    const repos = stubRepos({ findByName: vi.fn(() => ({ id: 't-2', name: '甲', color: null })) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.rename({ tagId: 't-1', name: '甲' }), 'CONFLICT', '标签名已被占用')
     expect(repos.tags.renameTag).not.toHaveBeenCalled()
   })
 
   it('与自身现名相同 → 幂等成功返回该 Tag（changes=0 亦非错）', async () => {
-    const repos = stubRepos({ findByName: vi.fn(() => ({ id: 't-1', name: '甲' })) })
+    const repos = stubRepos({ findByName: vi.fn(() => ({ id: 't-1', name: '甲', color: null })) })
     const svc = createTagsService({ repos })
-    await expect(svc.rename({ tagId: 't-1', name: '甲' })).resolves.toEqual({ id: 't-1', name: '甲' })
+    await expect(svc.rename({ tagId: 't-1', name: '甲' })).resolves.toEqual({ id: 't-1', name: '甲', color: null })
     expect(repos.tags.renameTag).toHaveBeenCalledWith('t-1', '甲')
   })
 
-  it('成功路径：trim 后透传 repo，返回更新后 Tag', async () => {
+  it('成功路径：trim 后透传 repo，返回更新后 Tag（color 随行）', async () => {
     const repos = stubRepos()
     const svc = createTagsService({ repos })
-    await expect(svc.rename({ tagId: 't-1', name: '  新名 ' })).resolves.toEqual({ id: 't-1', name: '新名' })
+    await expect(svc.rename({ tagId: 't-1', name: '  新名 ' })).resolves.toEqual({ id: 't-1', name: '新名', color: null })
     expect(repos.tags.renameTag).toHaveBeenCalledWith('t-1', '新名')
   })
 })
@@ -88,7 +89,7 @@ describe('P7E-01 tags.service —— merge 校验序', () => {
   })
 
   it('源不存在 → NOT_FOUND 且消息带源 id（先 source 后 target）', async () => {
-    const repos = stubRepos({ listWithCounts: vi.fn(() => [{ id: 't-2', name: '乙', paperCount: 0 }]) })
+    const repos = stubRepos({ listWithCounts: vi.fn(() => [{ id: 't-2', name: '乙', paperCount: 0, color: null }]) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.merge({ sourceId: 't-x', targetId: 't-2' }), 'NOT_FOUND', 't-x')
     expect(repos.tags.mergeTags).not.toHaveBeenCalled()
@@ -104,8 +105,8 @@ describe('P7E-01 tags.service —— merge 校验序', () => {
   it('成功 → { ok: true }；mergeTags(source, target) 逐参', async () => {
     const repos = stubRepos({
       listWithCounts: vi.fn(() => [
-        { id: 't-1', name: '甲', paperCount: 1 },
-        { id: 't-2', name: '乙', paperCount: 2 }
+        { id: 't-1', name: '甲', paperCount: 1, color: null },
+        { id: 't-2', name: '乙', paperCount: 2, color: null }
       ])
     })
     const svc = createTagsService({ repos })

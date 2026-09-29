@@ -2,7 +2,8 @@
 /**
  * [P7E-01] TagLifecycleMenu —— 标签右键菜单（TagFilter 子组件，LineageNodeMenu
  * 同型）。行为：fixed 定位于右键锚点；菜单项=重命名/合并到…（tags.length===1
- * 无其他目标时禁用——S9）/删除。透明遮罩点击关闭 + Esc 关闭（keydown 挂
+ * 无其他目标时禁用——S9）/颜色…（F-TAGS-01 取色器入口）/删除。透明遮罩点击
+ * 关闭 + Esc 关闭（keydown 挂
  * document，unmount 清理——门一 W3 回炉：菜单轻量面键盘关闭自持，不依赖
  * Dialog 域）。所有动作只上抛回调——对话框宿主与写路径在 TagFilter。
  */
@@ -18,6 +19,8 @@ export function TagLifecycleMenu(props: {
   onClose(): void
   onRename(tag: TagWithCount): void
   onMerge(tag: TagWithCount): void
+  /** [F-TAGS-01] 颜色…（TagColorDialog 入口——宿主在 TagFilter） */
+  onColor(tag: TagWithCount): void
   onDelete(tag: TagWithCount): void
 }): JSX.Element {
   const { tag, anchor } = props
@@ -65,6 +68,15 @@ export function TagLifecycleMenu(props: {
           onClick={() => props.onMerge(tag)}
         >
           合并到…
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className={MENU_ITEM_STYLE}
+          style={{ color: 'var(--text)' }}
+          onClick={() => props.onColor(tag)}
+        >
+          颜色…
         </button>
         <button
           type="button"

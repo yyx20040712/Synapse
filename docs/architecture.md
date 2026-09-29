@@ -95,10 +95,11 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 11 张表 + 3 个 FTS5（external content+触发器）：papers/collections/paper_collections/
 tags/paper_tags/annotations/notes（001 基座七表）+ai_notes（003）+lineage_nodes/
 lineage_edges（004）+lineage_graph_meta（010——图级 KV 配置：lineTypes 线型组
-JSON 串，updated_at 应用层写 ISO）；演进列 005~010（cited_by 缓存/lineage kind 列——
+JSON 串，updated_at 应用层写 ISO）；演进列 005~011（cited_by 缓存/lineage kind 列——
 UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02/
 lineage month+slot+sub——month CHECK 1..12、slot 窗口函数存量回填=T3-P5 脉络
-数据层 v2）。标注定位器=W3C Web Annotation
+数据层 v2/tags.color TEXT 可空——011=F-TAGS-01 标签颜色身份：#rrggbb 六位
+小写 hex 或 NULL=存量默认 accent，三面渲染单源 INV-86）。标注定位器=W3C Web Annotation
 思路（quote/prefix/suffix+startOffset/endOffset+rects+sortKey）。迁移只追加（受锁）。
 契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
 （ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）；

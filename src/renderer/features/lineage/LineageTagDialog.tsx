@@ -34,6 +34,9 @@ export function LineageTagDialog(props: {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
+          // [F-TAGS-01 R6] IME 组词确认回车不提交（TagEditor 三路提交同守卫
+          // ——同类面排查承接，只加守卫不扩散三路化）
+          if (e.nativeEvent.isComposing) return
           if (e.key === 'Enter') save()
         }}
         aria-label="标签名（同节点同名自动去重）"

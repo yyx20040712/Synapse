@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T16:31:32.4453000Z",
+    "generatedAt":  "2026-09-29T18:33:40.6309773Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "d712749e577c82f1dea2a7373c01abc909ffc8551eef64acd0f7f7c5b261982b"
+                      "sha256":  "e1e317f6de7ba38e195fc63106e10776df09d3811cebad8dcc691b88c9121776"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "d0668a713fbc03b84a4d343d65986a9c283d9f099c842d69161b85a14d3435ba"
+                      "sha256":  "281b89e234c723b5222768509eb5de09e237657f555e19499e6fbbd86d6484b0"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -142,6 +142,10 @@
                       "sha256":  "2126ddcb0e02f04e192b056a00d1e4a39bf7294c7b6db189bd66253db640e87c"
                   },
                   {
+                      "path":  "src/main/db/migrations/011_tags_color.sql",
+                      "sha256":  "1d2a5deab5c142f55cd9a2dde97ea26857dc3bec3969b06cce62604059508b50"
+                  },
+                  {
                       "path":  "src/renderer/app/StatusBar.tsx",
                       "sha256":  "76c4932c917ea0958eaa3c4581d81e87cb3386d56933e40fbd91e1cd8b4ad92b"
                   },
@@ -163,11 +167,11 @@
                   },
                   {
                       "path":  "src/shared/constants.ts",
-                      "sha256":  "751e6749f5ef3d09742d9c05cc6a08edb948e2069eed3f9df07b35a73c89b881"
+                      "sha256":  "4414763a9ecfd0cbd81390a49033d3e1304d89c7d2ef991e90bbf1610f31d145"
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "7ffc0afcb6a6e6b49e85dca8444c148e855c07ac8bcdd8c3da7d2cc00f72435b"
+                      "sha256":  "26b56464c9a7cc49d11201e7773831733e13b222c08f37fb90812446a8bb6d9a"
                   },
                   {
                       "path":  "src/shared/ipc/events.schemas.ts",
@@ -175,7 +179,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "256fe9d14edda29f96202777c3f5d778647bb36fd9dca515dfdf9ec6077c7ce0"
+                      "sha256":  "f60dbcbcec602f1478d38ab37ddc2292fa43da530f6990a5923d32689f8cbad6"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -203,7 +207,7 @@
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
-                      "sha256":  "7d5f9fd435a4c7bd815d646e94bbdef442e4b557a23bbfeeb952a12d5bf44572"
+                      "sha256":  "bc80df291ae7fde51b3e7737804833170535f5fda6df11fb45f18d94ae5db354"
                   },
                   {
                       "path":  "src/shared/venue-tier.ts",
@@ -215,7 +219,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface-closure.test.ts",
-                      "sha256":  "735120fb4c081e833a7d204bcbdb0eb2d401e4d2c8e4a596d1b3cd2c259203e6"
+                      "sha256":  "005f756bdd8892d6dcfe5b69b2ddc578367bebc32ec5ac5871bef842ae8d5073"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -235,7 +239,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "927ec2aa211014146669049bd25230c9d844e07927c31d3029892e1c5543b356"
+                      "sha256":  "aadd68b1eb55057e8c3e3ba3c037c1d58c22fb2b122887a7e1faa096b4663085"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -302,6 +306,10 @@
                       "sha256":  "12297818191f089675833fa05eef998d038e831a098dae85ceb7fb3643025e6c"
                   },
                   {
+                      "path":  "tests/e2e/tag-input-paths.spec.ts",
+                      "sha256":  "a5f7c00975962206c9e1b1532d8e00566af1b906cd6de4a83309d5ed056b0480"
+                  },
+                  {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
                       "sha256":  "4b5f23ab78b4bf6db72b39f9423800ce284cc4ed4fe8d9915d4f7f49752c9469"
                   },
@@ -347,15 +355,15 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "0c3be04959d901dce6c1e4e92601033a1ade0769866b2938d5f550f7fde3d898"
+                      "sha256":  "bafd22d39cb2232dc5a1a3c824052592adbab7806731bbdf0f3157943726ad2d"
                   },
                   {
                       "path":  "tests/unit/db/migrate-lineage-v2.test.ts",
-                      "sha256":  "22939654cf21199ada62cf2c7a8ebc62b695e96448ae66149dafc4a01596edca"
+                      "sha256":  "64c125068dea6192ea766a1c0f5e15b0d89cfe1177f0133a311b50b100843a49"
                   },
                   {
                       "path":  "tests/unit/db/migrate-reading-time.test.ts",
-                      "sha256":  "2ff1f3dc88e298cfd759f61fd80427138012405c16a7a211528b102d6dc04570"
+                      "sha256":  "fbdd385fe698548702b55f061d157cfad6db0e7640bee2fd7f7f8ff717e88f62"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -398,8 +406,12 @@
                       "sha256":  "a6cff2d4b021d9b1c742805a121fba50c6b77b0a6b5d5c56aa410b01bb446799"
                   },
                   {
+                      "path":  "tests/unit/db/repos/tags-color.repo.test.ts",
+                      "sha256":  "e4138f73a1389b997ddf0fdf482b87b93487d48d2a4ba2889a4a756724e4f921"
+                  },
+                  {
                       "path":  "tests/unit/db/repos/tags-lifecycle.repo.test.ts",
-                      "sha256":  "4e3b8c5d463cd4036117daeb5ed2d787a06be8fece393be270602a2956d1c897"
+                      "sha256":  "fb28bd4f45e7000329e3aabb41d3e367b27055ea209de36394afdc8830a747c9"
                   },
                   {
                       "path":  "tests/unit/events-schemas.test.ts",
@@ -575,7 +587,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "95518116af0df30a45f8702aa9638d8ca1f03e77dd8946d23d8bc486eb61fd7f"
+                      "sha256":  "ae729c46999abc4600d9e374a680b712727a44f5c39977adee7baceb8e43264d"
                   },
                   {
                       "path":  "tests/unit/renderer/library-lineage-display.test.tsx",
@@ -635,7 +647,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-tag-edit.test.tsx",
-                      "sha256":  "170272640d0b6ee8be2a47c15f3431430b9743dcd7abc2a78e02d89003be3f1e"
+                      "sha256":  "e4556de68472120378d00fda83c573fc5e58e3718254cdb162c4cf6e9b74233a"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline.test.tsx",
@@ -747,7 +759,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-toolbar-icons.test.tsx",
-                      "sha256":  "df39d4d307255d7417bbe1720892b2913608911d2501ac8aa0adc55b15d25187"
+                      "sha256":  "feae8ff283bbf75791f7ef8c2978a948664bf8cc16d794c7ada4b0522602ae2c"
                   },
                   {
                       "path":  "tests/unit/renderer/reading-time-outbox.test.ts",
@@ -810,20 +822,28 @@
                       "sha256":  "875ab35f65c129583b2d870f5958ab5a2694da349a422d7b42c7e21306c25a3f"
                   },
                   {
+                      "path":  "tests/unit/renderer/tag-color-dialog.test.tsx",
+                      "sha256":  "72f85eab566f44bb937ae60e8b309887a0c49375d66ed99b6a3fd1c2e914767a"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/tag-editor.test.tsx",
+                      "sha256":  "9abe6360f424ca34c76e1b10c58a5b61fc701fed2a3cd0c1cf1ba25114635699"
+                  },
+                  {
                       "path":  "tests/unit/renderer/tag-filter-multi.test.tsx",
-                      "sha256":  "729c7ce7b9c897c6cf4ca4812b3e68cc570574b9e9e3299600ddea12b7cb6172"
+                      "sha256":  "36435dccc337872c3b1c859796b020c67d5700fc834768768ad4ece8385b7374"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
-                      "sha256":  "bfd7c7f39700ca350bbf26fad2ffbff255d6be7e11f1fa00b1932386ece4d67a"
+                      "sha256":  "2fdce2f61671a08fbf54f81e2ee5a9cee105c0e3f9ea0b4e178a7a0bc5487a58"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
-                      "sha256":  "9263b53845dcb2c0eec51a6501541f3671ff3757c666f27bd623f2631b9d4c00"
+                      "sha256":  "3d970456f40717ec5829a0fdcee9a267e765c85465e4111d5c221451a1d2535f"
                   },
                   {
                       "path":  "tests/unit/renderer/tags-lifecycle.store.test.ts",
-                      "sha256":  "69537424f40c087470d34384323c58db9603726219145f0bc9ceb133aa69209a"
+                      "sha256":  "89ba2f204bc9d9962dbf09b041309d97bc10e4526f642781e34d7b8b63bc152a"
                   },
                   {
                       "path":  "tests/unit/renderer/text-layer.test.tsx",
@@ -927,7 +947,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "6457d62e07e06485e2fb615e503d6fcfc519b12be4eac85806220be36e6f018c"
+                      "sha256":  "cffaea996a6a6b1d0c91c0a9cbcd0ce5621194ef7f99a2a3588cbd67842d8724"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-model.test.ts",
@@ -983,11 +1003,15 @@
                   },
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
-                      "sha256":  "00ef2d23f6db6aa262e6346fae821b99c67ef3b75e42dd0643681608f83be68d"
+                      "sha256":  "6de6ca4a106714a725833215b9ebe78947913359e51cd6de00fb46c194df4681"
+                  },
+                  {
+                      "path":  "tests/unit/services/tags-color.service.test.ts",
+                      "sha256":  "a882d1788da54efb5917f954fd61f699d1f851c99c305cd986f281b49efa042b"
                   },
                   {
                       "path":  "tests/unit/services/tags-lifecycle.service.test.ts",
-                      "sha256":  "1d3af3505a1fd1c1ec4d7af94a68f9114beb8dfa541ce20fae7cd3c4156c32c7"
+                      "sha256":  "f6bd634b9f426062c9dc08a60ddba7ed6b04b3aafe876069fa7ced1dd91b08d9"
                   },
                   {
                       "path":  "tests/unit/services/tags-upsert-guard.test.ts",

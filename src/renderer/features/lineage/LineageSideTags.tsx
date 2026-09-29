@@ -70,6 +70,8 @@ export function LineageSideTags(props: {
           aria-label="新标签名"
           onChange={(e) => setTagInput(e.target.value)}
           onKeyDown={(e) => {
+            // [F-TAGS-01 R6] IME 组词确认回车不提交（同类面排查承接）
+            if (e.nativeEvent.isComposing) return
             if (e.key === 'Enter') addTag()
           }}
         />

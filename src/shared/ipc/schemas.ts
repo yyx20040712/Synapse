@@ -8,7 +8,7 @@ import { annotationRectSchema } from '../models/annotation'
 import { paperSummarySchema, pagedSchema, paperMetaPatchSchema } from '../models/paper'
 import { annotationSchema, annotationInputSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
-import { tagSchema } from '../models/tag'
+import { tagSchema, tagColorSchema } from '../models/tag'
 import { collectionSchema } from '../models/collection'
 import {
   lineageNodeSchema,
@@ -385,6 +385,11 @@ export const renameTagReqSchema = z
 /** P7E-01 merge（source===target 的业务拒绝在 service——zod 表达不了跨字段） */
 export const mergeTagReqSchema = z
   .object({ sourceId: z.string().min(1), targetId: z.string().min(1) })
+  .strict()
+/** [F-TAGS-01] setColor（color=六位小写 hex 或 null=恢复默认——schema 单源
+ *  models/tag tagColorSchema；小写正规化防御在 service 同口径不双标） */
+export const tagSetColorReqSchema = z
+  .object({ tagId: z.string().min(1), color: tagColorSchema })
   .strict()
 
 // ── notes ───────────────────────────────────────────────────────
