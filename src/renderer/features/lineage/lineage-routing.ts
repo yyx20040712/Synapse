@@ -5,14 +5,15 @@
  * EdgeOverlay hook 层=唯一不纯点，本件可脱离 DOM 单测）。
  *
  * 确定性红线（§5.2）：无随机/无 Date/无三角函数——全部加减乘除；车道=
- * edgeId 字典序（D-5）、降级链单向不回溯（§3.2）、采样步长/车道参数=
- * 本文件头常量。四检 PAD=4 命中语义 d≤PAD 含边界（D-6）。
+ * edgeId 字典序（D-5）、降级链单向不回溯（§3.2；[F-ROUTE-01] 五级=
+ * vertical 直连→gap 空隙通道→arc→detour/detour-bottom→fallback）、
+ * 采样步长/车道参数=本文件头常量。五检 PAD=4 命中语义 d≤PAD 含边界（D-6）。
  */
 // ── 类型（§5 接口全集——EdgeKind 四值=shared lineageEdgeKindSchema，无 survey）──
 export interface Pt { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 export type EdgeKind = 'tree' | 'inferred' | 'ref' | 'manual'
-export type RouteTag = 'vertical' | 'arc' | 'detour' | 'detour-bottom' | 'fallback'
+export type RouteTag = 'vertical' | 'gap' | 'arc' | 'detour' | 'detour-bottom' | 'fallback'
 /** 月框（year 承载跨年直进判定 §2.3；D-9 空隙中线推导输入） */
 export interface MonthFrame extends Rect { year: number | null }
 export interface Corridor { left: number; laneW: number; laneCount: number }
@@ -39,6 +40,10 @@ const LANE_W = 9
 const LANE_COUNT = 4 // 4 道容量（D-5 算术自洽）
 const FALLBACK_INSET = 6 // 全道耗尽 laneX=contentW−6 贴边
 const GAP_FALLBACK = 13 // 年内末框 gapY=框底+13（D-9）
+// [F-ROUTE-01] gap 空隙通道（2026-09-29 用户裁决：线从文献块之间的空隙
+// 穿过，不从大右侧绕）：未获 vertical 的边（kind 无限制）先试月框相邻间隙
+// 中线穿过——候选=每框「其下方间隙」值（离源底最近优先），四点三段直角
+// 折线三段全检避让（同 detour 直角风格），候选耗尽落走廊流
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v))
 const fmt = (n: number): string => `${Math.round(n * 10) / 10}`
@@ -52,9 +57,10 @@ export function defaultCorridor(contentW: number): Corridor {
 }
 
 // ── 锚点与路径生成（§2）──
-export function anchor(r: Rect, side: 'top' | 'bottom' | 'right'): Pt {
+export function anchor(r: Rect, side: 'top' | 'bottom' | 'left' | 'right'): Pt {
   if (side === 'top') return { x: r.x + r.w / 2, y: r.y }
   if (side === 'bottom') return { x: r.x + r.w / 2, y: r.y + r.h }
+  if (side === 'left') return { x: r.x, y: r.y + r.h / 2 }
   return { x: r.x + r.w, y: r.y + r.h / 2 }
 }
 
@@ -187,6 +193,31 @@ function gapBelow(src: Rect, snap: LayoutSnapshot): number {
   return (frame.y + frame.h + next.y) / 2
 }
 
+/** [F-ROUTE-01] gapY 候选集：全部月框「其下方间隙」值（gapBelow 同式推广
+ * ——同年相邻框中线/年内末框框底+13），去重后按 |gapY−srcBottomY| 升序
+ * （离源底最近优先；frames 空=零候选=跳过 gap 层） */
+function gapCandidates(snap: LayoutSnapshot, srcBottomY: number): number[] {
+  const ys: number[] = []
+  for (const f of snap.frames) {
+    const next = snap.frames.find((o) => o !== f && o.year === f.year && o.y >= f.y + f.h)
+    ys.push(next === undefined ? f.y + f.h + GAP_FALLBACK : (f.y + f.h + next.y) / 2)
+  }
+  return [...new Set(ys)].sort((a, b) => Math.abs(a - srcBottomY) - Math.abs(b - srcBottomY))
+}
+
+/** [F-ROUTE-01 回炉 R1] gap-h 水平直连路径：源/目标近侧锚点单段直线（同排
+ * 或近距块间空隙穿行——不绕右侧走廊） */
+function gapHPath(s: Pt, t: Pt): string {
+  return `M ${fmt(s.x)} ${fmt(s.y)} L ${fmt(t.x)} ${fmt(t.y)}`
+}
+
+/** [F-ROUTE-01] gap-v 单候选路径：四点三段直角折线（同 detour 直角风格）——
+ * 源近侧锚竖出至 gapY→横穿至 t.x→竖进目标近侧锚（k1-B1 修正：双侧近侧锚
+ * +候选限定两卡 y 带之间带——进出段结构性不穿源/目标卡本体） */
+function gapPath(s: Pt, t: Pt, gapY: number): string {
+  return `M ${fmt(s.x)} ${fmt(s.y)} L ${fmt(s.x)} ${fmt(gapY)} L ${fmt(t.x)} ${fmt(gapY)} L ${fmt(t.x)} ${fmt(t.y)}`
+}
+
 function fallbackPath(
   e: EdgeGeomInput,
   s: Pt,
@@ -228,6 +259,39 @@ function routeOne(e: EdgeGeomInput, snap: LayoutSnapshot, baseLane: number, onWa
   const dy = tTop.y - sTop.y
   if (verticalFirst && !crossYear && dy > 0 && !checkVerticalBand(sTop, tTop, obstacles)) {
     return { edgeId: e.edgeId, d: verticalPath(sTop, tTop), route: 'vertical', lane: -1 }
+  }
+  // [F-ROUTE-01 回炉 R1] gap 空隙通道两层（k1-B1 修正设计 v2）：
+  // gap-h 水平直连——源/目标近侧锚（右→左或左→右）单段直线，不穿卡即用
+  // （平级/近距块间空隙穿行，替代走廊平级弧的右侧大绕）；
+  // gap-v 垂直通道——候选限定「两卡 y 带之间带」[上卡底,下卡顶]（带重叠=空
+  // =跳过），双侧近侧锚（g 在卡上方→顶锚/下方→底锚）——进出段结构性不穿
+  // 源/目标卡（B1 场景消灭：同列向上边=源顶出→之间带间隙→目标底进）。
+  // 三段全检避让，候选耗尽落走廊流
+  const srcCx = src.x + src.w / 2
+  const tgtCx = tgt.x + tgt.w / 2
+  // gap-h 适用收紧：源/目标 x 带完全分离（横向留隙>2·PAD）——同列/横向重叠
+  // 卡的近侧锚直线会贴穿源卡角出发（锚点在卡缘+斜向=出发段入卡内），禁走
+  const hClear = src.x + src.w + 2 * PAD < tgt.x || tgt.x + tgt.w + 2 * PAD < src.x
+  if (hClear) {
+    const sh: Pt = tgtCx > srcCx ? anchor(src, 'right') : anchor(src, 'left')
+    const th: Pt = tgtCx > srcCx ? anchor(tgt, 'left') : anchor(tgt, 'right')
+    if (sh.x !== th.x && !segHitsAny(sh, th, obstacles)) {
+      return { edgeId: e.edgeId, d: gapHPath(sh, th), route: 'gap', lane: -1 }
+    }
+  }
+  const bandLo = Math.min(src.y + src.h, tgt.y + tgt.h) // 上卡底
+  const bandHi = Math.max(src.y, tgt.y) // 下卡顶
+  for (const g of gapCandidates(snap, sTop.y)) {
+    if (g < bandLo || g > bandHi) continue // 之间带外（两卡 y 带重叠时 bandLo>bandHi 恒跳过）
+    const s0 = g <= src.y ? anchor(src, 'top') : anchor(src, 'bottom')
+    const t0 = g <= tgt.y ? anchor(tgt, 'top') : anchor(tgt, 'bottom')
+    const segs: Array<[Pt, Pt]> = [
+      [s0, { x: s0.x, y: g }],
+      [{ x: s0.x, y: g }, { x: t0.x, y: g }],
+      [{ x: t0.x, y: g }, t0]
+    ]
+    if (segs.some(([a, b]) => segHitsAny(a, b, obstacles))) continue
+    return { edgeId: e.edgeId, d: gapPath(s0, t0, g), route: 'gap', lane: -1 }
   }
   // 走廊流：arc/detour/detour-bottom/fallback（dy≤0 前置直进 detour=D-3——
   // dy 概念仅 tree/inferred 垂直式候选；ref/manual 初路由 arc 无 dy 判定）

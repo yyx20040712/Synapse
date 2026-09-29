@@ -790,6 +790,94 @@
       "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
       "reason": "F-CONSOL-05 负锚补强：接缝一用例增 module/defer/async 负锚断言（断言集 3→5（原 3 断言保留+新增精确标签锚与同步执行负锚 2 断言——纯超集非削弱；回炉正则强化不改断言数），T3-U1 备案 P2 兑现）——旧签名退役留档，用例本体在位增强非删除，新签名走 NEW delta",
       "rulingLink": "tickets/archive/F-CONSOL-05.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom",
+      "assertionText": "expect(r.route).toBe('detour-bottom')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "4 checkArcEntry：源右侧同行紧邻卡挡侧出口 → true 且 routeEdge 降 detour-bottom",
+      "assertionText": "expect(r.d).toBe('M 152 152 L 152 235 L 752 235 L 752 326 L 204 326')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY",
+      "assertionText": "expect(r.route).toBe('detour-bottom')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "5 detourBottomPath：源月框为年内末框（无同年下框）gapY=框底+13（D-9），横道 y 精确等于 gapY",
+      "assertionText": "expect(r.d).toContain('L 752 393')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）",
+      "assertionText": "expect(r.route).toBe('arc')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "6 checkSweepBand：走廊竖段途标注 → true；车道 i+1 后 false（routeEdge lane=1 route=arc）",
+      "assertionText": "expect(r.lane).toBe(1)",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "15 回程恒检（回炉 1 d1-B1）双相位（回炉 2 ⑤ d1-N3 补正面）：部分挡→车道 1 探测成功 arc；全挡→fallback",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn",
+      "assertionText": "expect(by('e4').route).toBe('fallback')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn",
+      "assertionText": "expect(onWarn).toHaveBeenCalledTimes(1)",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn",
+      "assertionText": "expect(fifth.route).toBe('arc')",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "9 routeAll 车道循环占道（回炉 1 W3）：baseLane=rank%4——5 条干净边第 5 条循环回道 0；四道全被检测占用才 fallback+onWarn",
+      "assertionText": "expect(fifth.lane).toBe(0)",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}",
+      "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
+      "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
     }
   ]
 }

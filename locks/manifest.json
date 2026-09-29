@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T07:28:38.5952895Z",
+    "generatedAt":  "2026-09-29T09:11:25.5813349Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "24ec528b6184caacd93c02d4a237c1c029a5fb00b4cb06cf4e84b3dcc7d29193"
+                      "sha256":  "2954111d66311b8a45b2ec24bb327441936738d972cf43192c06f61259c7ec6c"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "684358115db44da2d46dd0bb315394bf01fd9b3f8fba4bd8c2f386cd77306e33"
+                      "sha256":  "faf928de545002d69664cc750a91ce7656fccbf93d559637cdcc797881ac6740"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -615,7 +615,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
-                      "sha256":  "681e0c3b0bda89e246e0d7cca70e8fd4536d5a498625861b977797cfd0621705"
+                      "sha256":  "7133a7d10f39fcfccd29fde7f72765ddaa7ffdfadbbc68480683a8f0914b24eb"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
@@ -631,7 +631,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
-                      "sha256":  "995e7316a1ca7732065f8820860c739a0d89b379797fe967b3f9e782abad92d3"
+                      "sha256":  "94053a172e5ebcf438b86a858d7736ef9533402b12280ff7ad7a88677940c4c4"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-tag-edit.test.tsx",
