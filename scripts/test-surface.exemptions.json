@@ -778,6 +778,12 @@
       "caseTitle": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
       "reason": "T3-P8 源⑥ drag-hint 双态：view 态 null 断言（注释明言「P8 能力禁假 affordance 不渲染」=有意留给 P8 翻面）改双文案断言；edit 态文案扩全句（mockup L507/L1010-1013 逐字）",
       "rulingLink": "tickets/registry.ts（T3-P8 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-canvas.test.tsx",
+      "fileScope": true,
+      "reason": "F-CONSOL-04 文件名对齐内容：Canvas 断言面已随 T3-P6 SVG 方案退役、内容改写为 Timeline/Page 测试但文件名残留 canvas（v67 起备案），改名后旧基线键退役（内容零改动，断言意图 T3-P6 已迁移）",
+      "rulingLink": "docs/prompts/2026-09-29_loop-handoff-v76-s1verified.md §2 候选票"
     }
   ]
 }

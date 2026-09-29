@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T03:49:00.9712333Z",
+    "generatedAt":  "2026-09-29T04:03:14.2015177Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "f6bc481007add5231967c457d15d5d779e5fee4a741b21d4a51c0f1cf7b75136"
+                      "sha256":  "c4ce08a8616d904c9b4678053db1e1d4472e0138ed0c82710389be699376ae25"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -586,10 +586,6 @@
                       "sha256":  "57567e70cf839a667888b9a2edcad04c829dc5b88b7d8ef5de2485ce3acc73c0"
                   },
                   {
-                      "path":  "tests/unit/renderer/lineage-canvas.test.tsx",
-                      "sha256":  "f01eb4f0a343c16a4e95fd6fdfcf85c3fe991564164b70d4386b2e6e5ed605e0"
-                  },
-                  {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
                       "sha256":  "2403d09e182a78f87921306a05ab867610ce1143f4f15f9f9aade633429a6ce6"
                   },
@@ -648,6 +644,10 @@
                   {
                       "path":  "tests/unit/renderer/lineage-timeline-edit.test.tsx",
                       "sha256":  "a54c140313e0bc0d64c1794d77ab4a9c9ba55af97e7b47ec059b223b48c1dd80"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-timeline-page.test.tsx",
+                      "sha256":  "2b922640a58453a274afc3c2010c9552e749cb09bfdbc35a2182b9b2e9628b4d"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",

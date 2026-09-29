@@ -3,7 +3,9 @@
  * [T3-P6] LineageTimeline / LineagePage —— 时间线宿主+脉络视图组件测试
  * （[LG-02] lineage-canvas.test 改写件——Canvas 断言面[pan/zoom/INV-14/
  * auto-fit/边标签/统一卡尺寸/题名滚轮]随 SVG 画布方案退役删除，主控裁决：
- * 断言意图迁移=Timeline 宿主真实文本+Page 三态/store 缓存面保活迁移）。
+ * 断言意图迁移=Timeline 宿主真实文本+Page 三态/store 缓存面保活迁移。
+ * [F-CONSOL-04] 文件名对齐=canvas 改写后残留名退役，改名
+ * lineage-canvas.test.tsx→本件——内容零改动，旧键走 FILE 级豁免通道。
  *
  * 覆盖：时间线真实文本渲染（年份头纯数字/月标签/卡题名——「渲染出真实
  * 文本」红线）/data-node-id 结构锚（e2e/Board 测试同名接缝）/空图空态
