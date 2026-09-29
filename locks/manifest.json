@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T06:54:27.7663366Z",
+    "generatedAt":  "2026-09-29T07:28:38.5952895Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",
-                      "sha256":  "9fdfdf9376b8e558b459545eee90cb6a787654d1e7217a6d62f8de0ef5ea27a1"
+                      "sha256":  "4c841d8c5b1f78464bbc2548787eccd7478c03079774578952c510473c7805d3"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -1024,6 +1024,10 @@
                   {
                       "path":  "tests/unit/tools/check-test-surface-hardening.test.ts",
                       "sha256":  "ee8067ad0cd67e328805201333de893983167a3c08568b88b8461eb6004377e4"
+                  },
+                  {
+                      "path":  "tests/unit/tools/check-tickets.test.ts",
+                      "sha256":  "12fa28844d2824286d3fba78454f4d458ee887d98045e7dc25c299eec82ca73b"
                   },
                   {
                       "path":  "tests/unit/tools/companion.test.ts",
