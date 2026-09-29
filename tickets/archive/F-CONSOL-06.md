@@ -56,6 +56,13 @@ reason+rulingLink）→129（7a0baa6e282 台账清理票基线再生成时冻结
 **终验**：verify EXIT=0 全绿（含新基线下 check 零 delta+locks:check 275 同步）；
 树态 4 路径零蔓延；临时审计件用毕即删（k1-W2 以本档可复算规格固化补档）。
 
+**勘正（F-CONSOL-08，同场）**：上文「verify EXIT=0」系**管道假绿**——尾验命令
+`npm run verify | grep | head; echo $?` 退出码取自 head 非 verify，真值=红（tickets
+段规则 3 误报：本票为首个 file 指向 test-surface.baseline.json 的 done 票，基线
+快照镜像历史用例标题含占位桩调用词面被误判占位残留）。本票提交 535417675a2 为
+带红提交（指纹门/locks/test/build 段实绿，红面仅 tickets 误报段）。修复与根因链
+归 F-CONSOL-08。
+
 **门一 k1 单审**：PASS_WITH_CONDITIONS（B0/W2/N6）——W1 台账归因+快照写路径
 （上文处置毕）；W2 临时件留档（可复算规格固化毕）；N1 line 仅诊断面（本档上文
 **粗体**登记）/N2 两用例 8+5 拆分（毕）/N3 下次窗口同会话双跑 baseline 证字节

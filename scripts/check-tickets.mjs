@@ -171,6 +171,9 @@ const SELF_REL = relative(root, fileURLToPath(import.meta.url)).replaceAll('\\',
 // DIR 形态豁免清单（门一 W-2 回炉）：目录票无文件内容可检，但任意目录放行
 // =逃逸口——限定到已盘点两票，新增 DIR 票须同步本清单（与白名单同机制）
 const DIR_FILE_EXEMPT = new Set(['F-AUDIT-01', 'P7X-03', 'F-STOR-01'])
+// [F-CONSOL-08 回炉] 非代码后缀 file 的内容扫描跳过清单（可见性 note——门一
+// 双席同中 W：静默 continue=新逃逸面零观测；defense-lifecycle 重评触发器的机检信号）
+const skippedNonCode = []
 for (const t of tickets.filter((x) => x.status === 'done')) {
   if (t.file === SELF_REL) continue
   const p = join(root, t.file.replaceAll('/', '\\'))
@@ -181,6 +184,12 @@ for (const t of tickets.filter((x) => x.status === 'done')) {
     }
     continue
   }
+  // [F-CONSOL-08] 占位桩是代码调用形态——非代码后缀（数据快照 json 等）内的
+  // 同名字样是测试标题/断言的镜像非声明（首个 file 指向 test-surface.baseline.
+  // json 的 done 票实测误报：快照镜像历史用例标题字样），跳过内容扫描。
+  // DIR/存在性/豁免清单检查（上方）不受此后缀门影响；本 continue 仅豁免本循环
+  // 的内容扫描——未来在本循环 readFileSync 后追加的第二检查不受此门保护
+  if (!/\.(ts|tsx|mjs)$/.test(t.file)) { skippedNonCode.push(t.file); continue }
   const content = readFileSync(p, 'utf-8')
   if (/unimplementedObject|NotImplementedError\(/.test(content)) {
     violations.push(`${t.id} 已 done，但文件仍含未实现占位：${t.file}`)
@@ -212,6 +221,9 @@ for (const t of tickets.filter((x) => x.status === 'done')) {
     }
     continue
   }
+  // [F-CONSOL-08] 同规则 3：骨架标记是代码形态，数据快照 json 内的同名字样
+  // 是断言文本镜像非骨架残留——非代码后缀跳过内容扫描（note 见规则 3 收集）
+  if (!/\.(ts|tsx|mjs)$/.test(t.file)) continue
   const content = readFileSync(p, 'utf-8')
   if (content.includes(`data-ticket="${t.id}"`)) {
     violations.push(`${t.id} 已 done，但文件仍含自身 data-ticket 骨架占位：${t.file}`)
@@ -281,6 +293,11 @@ for (const t of tickets) {
 const openCount = tickets.filter((t) => t.status === 'open').length
 const openWeak = tickets.filter((t) => t.status === 'open' && t.owner === 'weak').length
 console.log(`工单统计：共 ${tickets.length} 个；open ${openCount}（weak 可领 ${openWeak}，strong ${openCount - openWeak}）`)
+// [F-CONSOL-08 回炉] 非代码后缀跳过清单可见化（非红——defense-lifecycle 重评
+// 触发器=清单出现新后缀类型/新跳过票时核对是否需占位语义检查）
+if (skippedNonCode.length > 0) {
+  console.log(`内容扫描跳过（非代码后缀 file）${skippedNonCode.length} 票：${[...new Set(skippedNonCode)].join('、')}`)
+}
 
 if (violations.length > 0) {
   console.error('tickets 检查未通过：')

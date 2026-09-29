@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T06:30:56.0722143Z",
+    "generatedAt":  "2026-09-29T06:54:27.7663366Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",
-                      "sha256":  "3febd0dcdeb198f1932d523d923bcc5f86f96d2b5fbdbd70878ad6f0fe1cdbe7"
+                      "sha256":  "9fdfdf9376b8e558b459545eee90cb6a787654d1e7217a6d62f8de0ef5ea27a1"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -47,7 +47,7 @@
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
-                      "sha256":  "4dd7a7d1c0cd8ef622d4c84a34dc112880c578a22bcdc9c2ae93411fe6107885"
+                      "sha256":  "62ba3f8f38d811b91eb520a4b0c362d818a490f5f8e435e17e3df2119a4a6a62"
                   },
                   {
                       "path":  "scripts/color-re.mjs",

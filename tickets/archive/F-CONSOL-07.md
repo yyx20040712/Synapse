@@ -19,3 +19,8 @@ TB:84 注释勘正微票（2026-09-29 v77 交接场立案——F-CONSOL-05 遗�
 - N3 包外不可核验项（查重/时序）由 verify 全绿+树态佐证，自述一致无反证。
 
 **终态基线**：verify EXIT=0（189 件/2066 用例不变）；指纹门 check EXIT=0（206/2120/6553/12 零 delta）；locks 275；台账 131 零触碰。
+
+**勘正（F-CONSOL-08，同场）**：上文「verify EXIT=0」同 F-CONSOL-06 系管道假绿
+（`| grep | head; echo $?` 退出码取自 head），真值=红（F-CONSOL-06 done 行+
+baseline.json 的 tickets 段误报，与本票改动无关——本票 diff 面注释/registry/manifest
+各段实绿）。本票提交 c193c2aa460 为带红提交。修复与根因链归 F-CONSOL-08。
