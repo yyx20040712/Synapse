@@ -216,6 +216,24 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     expect(state().edges.length).toBe(0) // 边未落库未回填
   })
 
+  it('[F-CONSOL-10] CONFLICT 多条目续跑（k1-W2 承）：首条丢弃后次条继续派发落库——排空回 saved=数据一致（INV-84 队列面）', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B'), node('C'), node('D')], edges: [] })
+    stubApi.lineage.upsertEdge
+      .mockResolvedValueOnce({ ok: false, error: { code: 'CONFLICT', message: '多父边拒绝：节点 B 已有父节点 A（树至多一父）' } })
+      .mockResolvedValueOnce({ ok: true, data: edge('e-d-a', 'D', 'A') })
+    state().linkNodes('C', 'B') // 首条：CONFLICT 丢弃（不同实体独立排队不融合）
+    state().linkNodes('D', 'A') // 次条：续跑派发成功
+    // settle(10)（>默认 6）：两条串行动作各两级 await+flush 启动级——双动作序列需更多微任务节拍
+    await settle(10)
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(2) // 续跑实证：次条仍被派发未被首条拒绝拖停
+    expect(state().queue.length).toBe(0)
+    expect(state().saveStatus).toBe('saved') // 排空回 saved——INV-84：本地=服务器一致（次条已落库）
+    expect(state().edges).toEqual([edge('e-d-a', 'D', 'A')]) // 次条成功回填（首条未落库不回填）
+    expect(showToast).toHaveBeenCalledWith(
+      '多父边拒绝：节点 B 已有父节点 A（树至多一父）', 'error'
+    ) // 首条拒绝意图的提示面（排空≠意图保全——仅 toast 瞬时）
+  })
+
   it('[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved', async () => {
     // 预置已加载值（区分「失败不回填」与「初始 [] 恒真」——弱断言防御）
     const loaded: LineTypeGroup[] = [{ base: 'tree', subs: [{ id: 'sub-x', name: '既有子线', color: '#111111', dash: '', w: 2 }] }, ...EMPTY_GROUPS.slice(1)]
