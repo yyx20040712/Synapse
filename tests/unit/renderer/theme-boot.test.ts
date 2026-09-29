@@ -76,6 +76,16 @@ describe('T3-U1 FOUC 装配接缝静态锁（回炉 R1）', () => {
     const head = html.match(/<head>[\s\S]*?<\/head>/)
     expect(head, '<head> 段在场').not.toBeNull()
     expect(head![0], '引用必须驻 head（body 尾=首帧已过，兜底失效）').toContain('./theme-boot.js')
+    // [F-CONSOL-05] module/defer/async 负锚（T3-U1 备案 P2 一行补强；回炉=门一
+    // 双席同中 W1 正则强化）：同步执行语义=首帧兜底前提——defer/async/nomodule
+    // 属性或 type=module（模块默认 defer）任一都使脚本不执行/推迟到首帧后，兜底
+    // 静默失效而「引用在场+驻 head」双锚不红。i 旗标=HTML 属性名大小写不敏感；
+    // ["']?=无引号合法形态；nomodule=直接不执行（比 defer 更重）；\btype=防
+    // data-type 类子串误报。静态锚=tripwire 最小锁面非完备保证（U1 R1 定性）。
+    const tag = head![0].match(/<script\b[^>]*theme-boot\.js[^>]*>/)
+    expect(tag, 'theme-boot script 标签形态在场（精确标签锚）').not.toBeNull()
+    expect(tag![0], '同步执行语义：禁 defer/async/nomodule 属性与 type=module（含大小写与无引号形态）')
+      .not.toMatch(/\b(defer|async|nomodule)\b|\btype\s*=\s*["']?module["']?/i)
   })
 
   it('接缝二：bootstrap 源文含 readThemeSync 调用+startupTheme 透传锚（传参链静态锚）', () => {

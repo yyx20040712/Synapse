@@ -216,6 +216,45 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     expect(state().edges.length).toBe(0) // 边未落库未回填
   })
 
+  it('[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved', async () => {
+    // 预置已加载值（区分「失败不回填」与「初始 [] 恒真」——弱断言防御）
+    const loaded: LineTypeGroup[] = [{ base: 'tree', subs: [{ id: 'sub-x', name: '既有子线', color: '#111111', dash: '', w: 2 }] }, ...EMPTY_GROUPS.slice(1)]
+    useLineageStore.setState({ lineTypes: loaded })
+    stubApi.lineage.upsertLineTypes
+      .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: 'database is locked' } })
+      .mockResolvedValueOnce({ ok: true, data: EMPTY_GROUPS })
+    state().saveLineTypes(EMPTY_GROUPS)
+    await settle()
+    expect(state().saveStatus).toBe('error') // 线型失败≠saved——INV-04 同型
+    expect(state().lastWriteError).toBe('database is locked')
+    expect(state().queue.length).toBe(1) // 整批动作保留不丢
+    expect(state().lineTypes).toEqual(loaded) // 失败不回填（旧值保持，不被未落库新值污染）
+    expect(showToast).toHaveBeenCalledWith('database is locked', 'error')
+    state().retrySave()
+    await settle()
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)
+    expect(state().saveStatus).toBe('saved')
+    expect(state().lineTypes).toEqual(EMPTY_GROUPS) // 成功回填
+  })
+
+  it('[F-CONSOL-05] saveLineTypes 拒绝型（CONFLICT=service 校验 reason 透传）：动作丢弃+toast reason+回落 saved（P7B 备案补；回炉=断言面补宽——lineTypes 保持预置值+恰一次调用）', async () => {
+    // 预置已加载值：CONFLICT 丢弃后数据面不回填不污染（与系统型用例同款弱断言防御）
+    const loaded: LineTypeGroup[] = [{ base: 'tree', subs: [{ id: 'sub-y', name: '既有子线乙', color: '#222222', dash: '', w: 2 }] }, ...EMPTY_GROUPS.slice(1)]
+    useLineageStore.setState({ lineTypes: loaded })
+    stubApi.lineage.upsertLineTypes.mockResolvedValue({
+      ok: false,
+      error: { code: 'CONFLICT', message: '线型组校验拒绝：base 越界' }
+    })
+    state().saveLineTypes(EMPTY_GROUPS)
+    await settle()
+    expect(showToast).toHaveBeenCalledWith('线型组校验拒绝：base 越界', 'error')
+    expect(state().queue.length).toBe(0) // 拒绝型丢弃不卡队头
+    expect(state().saveStatus).toBe('saved') // 无待保存内容——脏态不误报
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1) // 一次即弃（无隐式重试）
+    expect(state().lineTypes).toEqual(loaded) // 拒绝丢弃不回填（预置保持）
+  })
+
+
   it('removeNode 回填级联：节点与其悬空边一并清除（DDL CASCADE 的 store 镜像）', async () => {
     useLineageStore.setState({
       nodes: [node('A'), node('B')],

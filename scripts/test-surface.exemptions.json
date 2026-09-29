@@ -784,6 +784,12 @@
       "fileScope": true,
       "reason": "F-CONSOL-04 文件名对齐内容：Canvas 断言面已随 T3-P6 SVG 方案退役、内容改写为 Timeline/Page 测试但文件名残留 canvas（v67 起备案），改名后旧基线键退役（内容零改动，断言意图 T3-P6 已迁移）",
       "rulingLink": "docs/prompts/2026-09-29_loop-handoff-v76-s1verified.md §2 候选票"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "reason": "F-CONSOL-05 负锚补强：接缝一用例增 module/defer/async 负锚断言（断言集 3→5（原 3 断言保留+新增精确标签锚与同步执行负锚 2 断言——纯超集非削弱；回炉正则强化不改断言数），T3-U1 备案 P2 兑现）——旧签名退役留档，用例本体在位增强非删除，新签名走 NEW delta",
+      "rulingLink": "tickets/archive/F-CONSOL-05.md"
     }
   ]
 }
