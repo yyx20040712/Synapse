@@ -13,9 +13,10 @@ import { collectionSchema } from '../models/collection'
 import {
   lineageNodeSchema,
   lineageEdgeSchema,
-  lineageEdgeKindSchema,
   lineTypeGroupSchema,
-  lineTypeGroupsSchema
+  lineTypeGroupsSchema,
+  lineageNodeUpsertSchema,
+  lineageEdgeUpsertSchema
 } from '../models/lineage'
 
 /** 空请求（无参数通道） */
@@ -321,19 +322,14 @@ export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
  *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段）；
  *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空）；
  *  [T3-P5] month 省略/null=清月（全量语义同款）；slot 省略=service 归一
- *  （D-I-1：新建组 max+1/同组更新保留/跨组落组末），显式提供（含 null）透写 */
-export const lineageUpsertNodeReqSchema = z
-  .object({
-    id: z.string().min(1).optional(),
+ *  （D-I-1：新建组 max+1/同组更新保留/跨组落组末），显式提供（含 null）透写。
+ *  [F-CONSOL-02] 本 schema=models lineageNodeUpsertSchema 派生；差异字段仅
+ *  （node：paperId/x/y 可整体省略——ipc 宽面）——规则单源 models */
+export const lineageUpsertNodeReqSchema = lineageNodeUpsertSchema
+  .extend({
     paperId: z.string().min(1).nullable().optional(),
-    title: z.string().min(1),
-    coreIdea: z.string(),
-    year: z.number().int().nullable(),
     x: z.number().nullable().optional(),
-    y: z.number().nullable().optional(),
-    tags: z.array(z.string()).nullable().optional(),
-    month: z.number().int().min(1).max(12).nullable().optional(),
-    slot: z.number().int().min(0).nullable().optional()
+    y: z.number().nullable().optional()
   })
   .strict()
 export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
@@ -347,15 +343,15 @@ export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
  *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
  *  F-LG15 不限条数，service 三 kind 守卫；T3-P5 inferred 同 tree 守卫）；
  *  id 可选=F-LG15 label 后编辑更新语义（缺省=新建——既有新建载荷形状不变）；
- *  [T3-P5] sub 可选缺省=null 基础默认样式（存在性+同基型守卫在 service） */
-export const lineageUpsertEdgeReqSchema = z
-  .object({
-    id: z.string().min(1).optional(),
+ *  [T3-P5] sub 可选缺省=null 基础默认样式（存在性+同基型守卫在 service）。
+ *  [F-CONSOL-02] 本 schema=models lineageEdgeUpsertSchema 派生；差异字段仅
+ *  （edge：from/to 键名+label 可选）——规则单源 models */
+export const lineageUpsertEdgeReqSchema = lineageEdgeUpsertSchema
+  .omit({ fromNode: true, toNode: true })
+  .extend({
     from: z.string().min(1),
     to: z.string().min(1),
-    label: z.string().optional(),
-    kind: lineageEdgeKindSchema.optional(),
-    sub: z.string().nullable().optional()
+    label: z.string().optional()
   })
   .strict()
 export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>

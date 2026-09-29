@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-28T17:16:39.5942207Z",
+    "generatedAt":  "2026-09-29T00:27:48.0138024Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "8bbaff5c54ec408f44e64f515af70555d865b086d34257abb7351bdfcde3f9a4"
+                      "sha256":  "24ec528b6184caacd93c02d4a237c1c029a5fb00b4cb06cf4e84b3dcc7d29193"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -175,7 +175,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "02f6d4c134ad51f6b6e778b2510fbac3706b51dfc14a47fb17b5c63f5b019fe7"
+                      "sha256":  "77241b1eed5c63530b8bb63f31b33af3289f81bf085f69d2072a7d14e4e087f2"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -191,7 +191,7 @@
                   },
                   {
                       "path":  "src/shared/models/lineage.ts",
-                      "sha256":  "43480f5b30e8def4f4d35c3fdbd31374146c7250a64a966ca90543311344e6b8"
+                      "sha256":  "e622a1331ce3843de0e0a9ae3e146d3cc4c5e8c2a68db3f8d44ef0e76299be0b"
                   },
                   {
                       "path":  "src/shared/models/note.ts",
@@ -1075,7 +1075,7 @@
                   },
                   {
                       "path":  "tickets/archive/README.md",
-                      "sha256":  "6599f78b3c1731b08b0370ab7c4caac5d5d96984ec76db69b97dfd469a1ea03c"
+                      "sha256":  "1f2bb061c22057693cc9b02fb61a2d496dfaa702a09db4bdb44b2e27ccf80873"
                   },
                   {
                       "path":  "tsconfig.json",

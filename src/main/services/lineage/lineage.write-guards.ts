@@ -10,7 +10,13 @@
  *   全图唯一）；第三段（被现存边引用的 sub 不得消失）依赖运行时图状态，
  *   留守卫宿主 lineage.service（INV-27 修订守卫宿主=service 写面）。
  */
-import { LINE_TYPE_BASE_ORDER, type LineTypeGroup, type LineageNode, type LineageNodeUpsert } from '../../../shared/models/lineage'
+import {
+  LINE_TYPE_BASE_ORDER,
+  LINE_TYPE_GROUPS_REQUIRED_REASON,
+  type LineTypeGroup,
+  type LineageNode,
+  type LineageNodeUpsert
+} from '../../../shared/models/lineage'
 
 /**
  * [T3-P5] month/slot 归一（主控预裁 D-I-1）：
@@ -48,7 +54,7 @@ export function checkLineTypeGroups(
   ) {
     return {
       ok: false,
-      reason: '线型配置必须恰含 tree/inferred/ref/manual 四组各一（空组含空 subs 列表）'
+      reason: LINE_TYPE_GROUPS_REQUIRED_REASON
     }
   }
   const seenCount = new Map<string, number>()

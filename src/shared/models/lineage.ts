@@ -238,6 +238,9 @@ export const lineTypeGroupSchema = z
   .strict()
 export type LineTypeGroup = z.infer<typeof lineTypeGroupSchema>
 
+/** 恒四组拒绝文案单源（F-CONSOL-02/k1-N2）：schema refine 与 write-guards reason 双侧消费，禁两处字面量 */
+export const LINE_TYPE_GROUPS_REQUIRED_REASON = '线型配置必须恰含 tree/inferred/ref/manual 四组各一（空组含空 subs 列表）'
+
 /** [T3-P5] upsertLineTypes 请求面强校验：恒四组（base 集合恰=四枚举值各一
  *  ——主控预裁 D-I-4；空组含 subs:[] 合法）。子线型 id 全图唯一与被引用
  *  sub 不得消失=service 写面守卫（运行时图状态相关，非 schema 面） */
@@ -251,7 +254,7 @@ export const lineTypeGroupsSchema = z
         LINE_TYPE_BASE_ORDER.every((b) => bases.includes(b))
       )
     },
-    { message: '线型配置必须恰含 tree/inferred/ref/manual 四组各一（空组含空 subs 列表）' }
+    { message: LINE_TYPE_GROUPS_REQUIRED_REASON }
   )
 export type LineTypeGroups = z.infer<typeof lineTypeGroupsSchema>
 
