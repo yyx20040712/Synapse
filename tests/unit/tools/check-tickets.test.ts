@@ -17,7 +17,7 @@
 import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -48,6 +48,12 @@ async function cli(root: string): Promise<CliResult> {
  * fixture 内容外多一种存在形态；词面管理纪律=代称拼接）
  */
 const STUB_TOKEN = ['unimplemented', 'Object'].join('')
+/** [F-CONSOL-12] 第二占位桩调用词面（同 STUB_TOKEN 代称拼接纪律——本文件属 tests/ 扫描域） */
+const ERR_TOKEN = ['NotImplemented', 'Error'].join('')
+/** [F-CONSOL-12] fixture SR 系票号字面量（tests 域内裸引用=非调用形态，合法） */
+const SR_DONE = 'SR-TEST-01'
+const SR_OPEN = 'SR-TEST-02'
+const SR_MISSING = 'SR-XX-99'
 
 interface FixtureTicket {
   id: string
@@ -69,8 +75,13 @@ afterAll(async () => {
   for (const r of roots) await rm(r, { recursive: true, force: true, maxRetries: 3 })
 })
 
-async function makeFixture(tickets: FixtureTicket[], files: Record<string, string>): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'ct-probe-'))
+async function makeFixture(
+  tickets: FixtureTicket[],
+  files: Record<string, string>,
+  // base：fixture 根基目录（默认 tmpdir；T17 需与脚本同盘——跨盘 relative 退化绝对路径）
+  base = tmpdir()
+): Promise<string> {
+  const root = await mkdtemp(join(base, 'ct-probe-'))
   roots.push(root)
   await mkdir(join(root, 'tickets'), { recursive: true })
   await mkdir(join(root, 'src'), { recursive: true })
@@ -183,5 +194,146 @@ describe('[F-CONSOL-09] check-tickets CLI 探针（F-CONSOL-08 修复面行为�
     const r = await cli(root)
     expect(r.code).toBe(0)
     expect(r.stdout).toContain('内容扫描跳过（非代码后缀 file）1 票：snap2.json')
+  })
+})
+
+describe('[F-CONSOL-12] check-tickets CLI 探针（规则 2 双分支+DIR/SELF 豁免面行为锁）', () => {
+  /** 占位桩调用形态构造（代称注入——本文件真仓扫描域内零调用词面出现） */
+  const stubCall = (id: string) => `export const s = ${STUB_TOKEN}('${id}')`
+  const errThrow = (id: string) => `throw new ${ERR_TOKEN}('${id}')`
+
+  it('T8 规则 2 src 分支：src 引用不存在的 SR 票号 → EXIT=1 引用了不存在的工单号', async () => {
+    const root = await makeFixture(
+      [{ id: 'F-TEST-01', file: 'snap.json', status: 'done' }],
+      { 'snap.json': '{"cases":[]}', 'src/ref.ts': `// 历史占位引用：${SR_MISSING}` }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain(`src/ref.ts: 引用了不存在的工单号 ${SR_MISSING}`)
+  })
+
+  it('T9 规则 2 src 分支：src 引用 done 票号（非该票自身 file）→ EXIT=1 引用了已完成工单', async () => {
+    const root = await makeFixture(
+      [{ id: SR_DONE, file: 'snap.json', status: 'done' }],
+      { 'snap.json': '{"cases":[]}', 'src/ref.ts': `// 占位残留：${SR_DONE}` }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain(`src/ref.ts: 引用了已完成工单 ${SR_DONE} 的占位`)
+  })
+
+  it('T10 规则 2 src 分支：src 引用 open 票号=未完成合法占位 → EXIT=0', async () => {
+    // [回炉 d1-W1] 票 file 独立于被扫文件（open-code.ts 驻根仅过规则 1 存在性，
+    // 不入 src/tests 扫描域）——status 守卫（open 不红）从此可证伪：摘除该守卫
+    // 则本用例红（open 跨文件引用被误报）
+    const root = await makeFixture(
+      [{ id: SR_OPEN, file: 'open-code.ts', status: 'open' }],
+      { 'open-code.ts': 'export const b = 2', 'src/ref.ts': `export const TAG = '${SR_OPEN}' // 跨文件未完成占位` }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('tickets 检查通过')
+  })
+
+  it('T18 [回炉补] 规则 2 src 分支：done 票自身 file 内自引用 → EXIT=0（t.file===rel 自身豁免绿——self 守卫可证伪位）', async () => {
+    const root = await makeFixture(
+      [{ id: SR_DONE, file: 'src/self.ts', status: 'done' }],
+      { 'src/self.ts': `export const SELF_TAG = '${SR_DONE}' // 自身票面内引用（自身豁免面）` }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('tickets 检查通过')
+  })
+
+  it('T11 规则 2 tests 分支：占位桩调用引用不存在的票号 → EXIT=1', async () => {
+    const root = await makeFixture(
+      [{ id: 'F-TEST-01', file: 'snap.json', status: 'done' }],
+      { 'snap.json': '{"cases":[]}', 'tests/stub-call.ts': stubCall(SR_MISSING) }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain(`tests/stub-call.ts: 占位桩引用了不存在的工单号 ${SR_MISSING}`)
+  })
+
+  it('T12 规则 2 tests 分支：占位桩调用引用 done 票号 → EXIT=1 样例应改非工单号字符串', async () => {
+    const root = await makeFixture(
+      [{ id: SR_DONE, file: 'snap.json', status: 'done' }],
+      { 'snap.json': '{"cases":[]}', 'tests/stub-call.ts': stubCall(SR_DONE) }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain(`tests/stub-call.ts: 占位桩引用已完成工单 ${SR_DONE}`)
+  })
+
+  it('T12b [回炉补] 规则 2 tests 分支：第二调用词形引用 done 票号 → EXIT=1（正则 NotImplementedError 备选的失败能力锁）', async () => {
+    const root = await makeFixture(
+      [{ id: SR_DONE, file: 'snap.json', status: 'done' }],
+      { 'snap.json': '{"cases":[]}', 'tests/stub-call.ts': errThrow(SR_DONE) }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain(`tests/stub-call.ts: 占位桩引用已完成工单 ${SR_DONE}`)
+  })
+
+  it('T13 规则 2 tests 分支：占位桩调用引用 open 票号 → EXIT=0（第二调用词形）', async () => {
+    const root = await makeFixture(
+      [{ id: SR_OPEN, file: 'open-code.ts', status: 'open' }],
+      { 'open-code.ts': 'export const b = 2', 'tests/stub-call.ts': errThrow(SR_OPEN) }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('tickets 检查通过')
+  })
+
+  it('T14 规则 2 tests 分支：裸注释引用 done 票号（非调用形态）→ EXIT=0', async () => {
+    const root = await makeFixture(
+      [{ id: SR_DONE, file: 'snap.json', status: 'done' }],
+      {
+        'snap.json': '{"cases":[]}',
+        'tests/bare-ref.ts': `// 裸注释参考 ${SR_DONE} 旧实现（规则 2 tests 只扫调用形态）`,
+      }
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+  })
+
+  it('T15 DIR 豁免清单：done 票 file 指向目录且 id 不在清单 → EXIT=1 不在 DIR_FILE_EXEMPT', async () => {
+    const root = await makeFixture([{ id: 'F-DIRTEST-9', file: 'docs/bucket', status: 'done' }], {})
+    await mkdir(join(root, 'docs', 'bucket'), { recursive: true })
+    const r = await cli(root)
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain('F-DIRTEST-9 的 file 指向目录 docs/bucket——不在 DIR_FILE_EXEMPT')
+  })
+
+  it('T16 DIR 豁免清单：id=F-AUDIT-01（清单内）目录形态票 → EXIT=0', async () => {
+    const root = await makeFixture([{ id: 'F-AUDIT-01', file: 'docs/audit-bucket', status: 'done' }], {})
+    await mkdir(join(root, 'docs', 'audit-bucket'), { recursive: true })
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('tickets 检查通过')
+  })
+
+  it('T17 SELF_REL 自身豁免：done 票 file=本脚本自身 → 内容扫描跳过 EXIT=0', async () => {
+    // 机制链（门二 B-7 结构性必然的可锁化证明）：脚本源码含占位检测词字面量
+    // （规则 3 正则本体+注释），对自身运行内容扫描必自匹配假红——SELF_REL 豁免
+    // （file===SELF_REL continue）是校验器自举前提。fixture 根须与脚本同盘：
+    // tmpdir（C 盘）与脚本（E 盘）跨盘时 relative 退化绝对路径、经 join 拼根后
+    // 存在性必红——故 base=仓父目录（仓外，不污工作树）；同盘 relative 产 ".."
+    // 段路径，join 词法归一化后 existsSync 命中真实脚本路径。
+    // [回炉 d1-N4a 依赖声明] 本用例证伪力依赖脚本源码含占位检测词字面量（现状=
+    // 规则 3 正则本体+注释在档）——脚本重构若移除该字面量则本用例退化为恒真，
+    // 重写 check-tickets 时须重评估本锁面。
+    const base = dirname(dirname(dirname(SCRIPT)))
+    const root = await makeFixture([{ id: 'F-TEST-01', file: 'snap.json', status: 'done' }], {}, base)
+    // SELF_REL 同式计算（relative(fixtureRoot, 脚本绝对路径)→POSIX 斜杠）注入
+    const selfRel = relative(root, SCRIPT).replaceAll('\\', '/')
+    await writeFile(
+      join(root, 'tickets', 'registry.ts'),
+      registryOf([{ id: 'F-TEST-01', file: selfRel, status: 'done' }]),
+      'utf-8'
+    )
+    const r = await cli(root)
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('tickets 检查通过')
   })
 })
