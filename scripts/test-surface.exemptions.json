@@ -786,12 +786,6 @@
       "rulingLink": "docs/prompts/2026-09-29_loop-handoff-v76-s1verified.md §2 候选票"
     },
     {
-      "file": "tests/unit/renderer/theme-boot.test.ts",
-      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
-      "reason": "F-CONSOL-05 负锚补强：接缝一用例增 module/defer/async 负锚断言（断言集 3→5（原 3 断言保留+新增精确标签锚与同步执行负锚 2 断言——纯超集非削弱；回炉正则强化不改断言数），T3-U1 备案 P2 兑现）——旧签名退役留档，用例本体在位增强非删除，新签名走 NEW delta",
-      "rulingLink": "tickets/archive/F-CONSOL-05.md"
-    },
-    {
       "file": "tests/unit/renderer/lineage-routing.test.ts",
       "caseTitle": "2 dy≤0 前置直进 detour（D-3）：目标在源上方（同年）→ route=detour 不经 C1",
       "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
@@ -878,6 +872,69 @@
       "caseTitle": "11 跨年边直进绕行折线（§2.3）：跨年 ref 边 route∈{detour,detour-bottom}",
       "reason": "F-ROUTE-01 连线走线方向修正（2026-09-29 用户裁决：线从文献块之间的空隙穿过，不从大右侧绕）——gap 空隙通道路由插入降级链第二位，既有用例 route 值断言随新链序正当变更（arc/detour→gap），旧签名退役",
       "rulingLink": "tickets/registry.ts（F-ROUTE-01 行）"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "assertionText": "expect(html, '外链引用在场（删标签=FOUC 静默回归——本断言即拦）').toContain('./theme-boot.js')",
+      "reason": "F-CONSOL-11 断言结构化升级（P3-1）旧签名退役①/5：raw toContain 锚随 DOMParser 元素级解析整组退役（F-CONSOL-05 备案「属性结构化解析」兑现——tag 边界元素级/属性名小写归一/data-* 诱饵假阳性面消灭；type 值域子串匹配含前缀/尾空白族=门一 B-1 回炉），语义等强/加强非行为变更，用例标题不变；本组 5 条=F-CONSOL-05 case 级宽豁免退役后的逐条精确补登（门一 W-1 处置）",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "assertionText": "expect(head, '<head> 段在场').not.toBeNull()",
+      "reason": "F-CONSOL-11 断言结构化升级（P3-1）旧签名退役②/5：head 段正则提取锚随 DOMParser 元素级解析退役（doc.head 恒在+script 收纳域即 head——覆盖等强），语义等强/加强非行为变更；F-CONSOL-05 case 级宽豁免退役后逐条精确补登（门一 W-1 处置）",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "assertionText": "expect(head![0], '引用必须驻 head（body 尾=首帧已过，兜底失效）').toContain('./theme-boot.js')",
+      "reason": "F-CONSOL-11 断言结构化升级（P3-1）旧签名退役③/5：head 段内子串锚随 DOMParser 元素级解析退役（查询域=doc.head=结构性驻 head 锚，等强），语义等强/加强非行为变更；F-CONSOL-05 case 级宽豁免退役后逐条精确补登（门一 W-1 处置）",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "assertionText": "expect(tag, 'theme-boot script 标签形态在场（精确标签锚）').not.toBeNull()",
+      "reason": "F-CONSOL-11 断言结构化升级（P3-1）旧签名退役④/5：标签正则锚随 DOMParser 元素级解析退役（src 属性精确等值 find 替代——tag 边界元素级非子串），语义等强/加强非行为变更；F-CONSOL-05 case 级宽豁免退役后逐条精确补登（门一 W-1 处置）",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/theme-boot.test.ts",
+      "caseTitle": "接缝一：index.html 含 ./theme-boot.js 外链引用且位于 <head> 段内（首帧语义）",
+      "assertionText": "expect(tag![0], '同步执行语义：禁 defer/async/nomodule 属性与 type=module（含大小写与无引号形态）') .not.toMatch(/\\b(defer|async|nomodule)\\b|\\btype\\s*=\\s*[\"']?module[\"']?/i)",
+      "reason": "F-CONSOL-11 断言结构化升级（P3-1）旧签名退役⑤/5：负锚正则随 DOMParser 属性级解析退役（hasAttribute 三属性+type 值域子串匹配——大小写/无引号/尾空白/前缀族全覆盖且 data-* 诱饵不进比对），语义等强/加强非行为变更；F-CONSOL-05 case 级宽豁免退役后逐条精确补登（门一 W-1 处置）",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved",
+      "assertionText": "expect(state().lastWriteError).toBe('database is locked')",
+      "reason": "F-CONSOL-11 断言结构化升级——语义等强/加强非行为变更：显示轨英文字面收编 DB_LOCKED.message 单源（lastWriteError 断言经 const 引用，改串不破断言语义），行为轨（saveStatus/队列/retry）断言不动",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved",
+      "assertionText": "expect(showToast).toHaveBeenCalledWith('database is locked', 'error')",
+      "reason": "F-CONSOL-11 断言结构化升级——语义等强/加强非行为变更：显示轨英文字面收编 DB_LOCKED.message 单源（toast 断言经 const 引用，改串不破断言语义），行为轨（saveStatus/队列/retry）断言不动",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved",
+      "assertionText": "expect(state().lastWriteError).toBe('database is locked')",
+      "reason": "F-CONSOL-11 断言结构化升级——语义等强/加强非行为变更：显示轨英文字面收编 DB_LOCKED.message 单源（lastWriteError 断言经 const 引用，改串不破断言语义），行为轨（saveStatus/队列/retry）断言不动",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "[F-CONSOL-05] saveLineTypes 系统型失败专测（P7B 备案补）：error 态+toast+upsert-line-types 队列保留；retry 重发恢复 saved",
+      "assertionText": "expect(showToast).toHaveBeenCalledWith('database is locked', 'error')",
+      "reason": "F-CONSOL-11 断言结构化升级——语义等强/加强非行为变更：显示轨英文字面收编 DB_LOCKED.message 单源（toast 断言经 const 引用，改串不破断言语义），行为轨（saveStatus/队列/retry）断言不动",
+      "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
     }
   ]
 }

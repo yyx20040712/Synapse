@@ -60,6 +60,10 @@ const EMPTY_GROUPS: LineTypeGroup[] = [
   { base: 'manual', subs: [] }
 ]
 
+/** [F-CONSOL-11 P3-2] 系统型失败 fixture 单源——双轨锚：code 驱行为轨（saveStatus/队列/retry），
+ * message 经 const 驱显示轨（lastWriteError/toast）——英文字面非载荷，改串不破断言语义 */
+const DB_LOCKED = { code: 'DB_ERROR', message: 'database is locked' } as const
+
 /** 落库后回传的服务器行（updatedAt 刷新面不参与断言，同形即可） */
 const serverNode = (n: LineageNode): LineageNode => ({ ...n, updatedAt: 'server' })
 
@@ -184,14 +188,14 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
   it('系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 saved', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
     stubApi.lineage.upsertNode
-      .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: 'database is locked' } })
+      .mockResolvedValueOnce({ ok: false, error: { ...DB_LOCKED } })
       .mockResolvedValueOnce({ ok: true, data: serverNode(node('A', { x: 11, y: 22 })) })
     state().moveNode('A', 11, 22)
     await settle()
     expect(state().saveStatus).toBe('error') // 失败≠saved——INV-04 同型不推进
-    expect(state().lastWriteError).toBe('database is locked')
+    expect(state().lastWriteError).toBe(DB_LOCKED.message)
     expect(state().queue.length).toBe(1) // 动作保留不丢
-    expect(showToast).toHaveBeenCalledWith('database is locked', 'error')
+    expect(showToast).toHaveBeenCalledWith(DB_LOCKED.message, 'error')
     // retry → 重发 → 成功恢复
     state().retrySave()
     await settle()
@@ -239,15 +243,15 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
     const loaded: LineTypeGroup[] = [{ base: 'tree', subs: [{ id: 'sub-x', name: '既有子线', color: '#111111', dash: '', w: 2 }] }, ...EMPTY_GROUPS.slice(1)]
     useLineageStore.setState({ lineTypes: loaded })
     stubApi.lineage.upsertLineTypes
-      .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: 'database is locked' } })
+      .mockResolvedValueOnce({ ok: false, error: { ...DB_LOCKED } })
       .mockResolvedValueOnce({ ok: true, data: EMPTY_GROUPS })
     state().saveLineTypes(EMPTY_GROUPS)
     await settle()
     expect(state().saveStatus).toBe('error') // 线型失败≠saved——INV-04 同型
-    expect(state().lastWriteError).toBe('database is locked')
+    expect(state().lastWriteError).toBe(DB_LOCKED.message)
     expect(state().queue.length).toBe(1) // 整批动作保留不丢
     expect(state().lineTypes).toEqual(loaded) // 失败不回填（旧值保持，不被未落库新值污染）
-    expect(showToast).toHaveBeenCalledWith('database is locked', 'error')
+    expect(showToast).toHaveBeenCalledWith(DB_LOCKED.message, 'error')
     state().retrySave()
     await settle()
     expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(2)

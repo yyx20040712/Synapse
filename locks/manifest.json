@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T09:41:47.2495238Z",
+    "generatedAt":  "2026-09-29T10:53:11.3464120Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "faf928de545002d69664cc750a91ce7656fccbf93d559637cdcc797881ac6740"
+                      "sha256":  "842f6f8c9d921da690eeb789b3c9497aa3c7bf5d11f6b7fe7c96374095109ff6"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -631,7 +631,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
-                      "sha256":  "94053a172e5ebcf438b86a858d7736ef9533402b12280ff7ad7a88677940c4c4"
+                      "sha256":  "24dca108f8e80ee34496c9c1bea3aa3e38938c014f1fd328afa3acfe04cbace3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-tag-edit.test.tsx",
@@ -835,7 +835,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme-boot.test.ts",
-                      "sha256":  "7d22540667f7093b68b8001445c31bd15c3dd67bcaf5d7e87f1169b7062ae13c"
+                      "sha256":  "12109b15ccb9849e85ac20e158e78499891811b68549750521522a79566fb03b"
                   },
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",
