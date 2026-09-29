@@ -26,7 +26,6 @@ import {
 } from '../../../src/main/services/export_/corpus.export.service'
 import { createRepos, type Repos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
-import { lineageCatalogNos } from '../../../src/shared/models/lineage'
 import type { ExtractRequestEvent, ExportCorpusEvent } from '../../../src/shared/ipc/schemas'
 import type { LineageEdge, LineageNode, LineTypeGroup } from '../../../src/shared/models/lineage'
 
@@ -38,15 +37,15 @@ function nodes(): LineageNode[] {
   return [
     {
       id: 'nB', paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null,
-      tags: null, month: 3, slot: 2, createdAt: ISO_A, updatedAt: 't'
+      tags: null, month: 3, slot: 2, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
       id: 'nA', paperId: 'p-1', title: '甲', coreIdea: 'A 思想', year: 2021, x: 5, y: 6,
-      tags: ['t1'], month: 3, slot: 1, createdAt: ISO_A, updatedAt: 't'
+      tags: ['t1'], month: 3, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
       id: 'nC', paperId: null, title: '丙', coreIdea: '', year: null, x: null, y: null,
-      tags: null, month: null, slot: 1, createdAt: ISO_A, updatedAt: 't'
+      tags: null, month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     }
   ]
 }
@@ -81,7 +80,16 @@ function lineTypes(): LineTypeGroup[] {
 }
 
 function input(): LineageAssembleInput {
-  return { nodes: nodes(), edges: edges(), lineTypes: lineTypes() }
+  // [F-FOLDER-01] pubNo map（库级编号样例——装配直取透传）
+  return {
+    nodes: nodes(),
+    edges: edges(),
+    lineTypes: lineTypes(),
+    pubNos: new Map([
+      ['p-1', 7],
+      ['p-2', 9]
+    ])
+  }
 }
 
 /** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序） */
@@ -145,11 +153,11 @@ const GOLDEN = `{
   ],
   "nodes": [
     {
-      "catalog_no": 1,
       "core_idea": "A 思想",
       "month": 3,
       "node_id": "nA",
       "paper_id": "p-1",
+      "pub_no": 7,
       "tags": [
         "t1"
       ],
@@ -157,27 +165,27 @@ const GOLDEN = `{
       "year": 2021
     },
     {
-      "catalog_no": 2,
       "core_idea": "",
       "month": 3,
       "node_id": "nB",
       "paper_id": "p-2",
+      "pub_no": 9,
       "tags": null,
       "title": "乙",
       "year": 2021
     },
     {
-      "catalog_no": 3,
       "core_idea": "",
       "month": null,
       "node_id": "nC",
       "paper_id": null,
+      "pub_no": null,
       "tags": null,
       "title": "丙",
       "year": null
     }
   ],
-  "schema_version": 1
+  "schema_version": 2
 }
 `
 
@@ -190,7 +198,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     expect(assembleLineageJson(input())).toBe(assembleLineageJson(input()))
   })
 
-  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 catalog_no<…<year；subs color<dash<id<name<w', () => {
+  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 core_idea<…<year（pub_no 位）；subs color<dash<id<name<w', () => {
     const text = assembleLineageJson(input())
     const topKeys = [...Object.keys(JSON.parse(text))]
     expect(topKeys).toEqual(['edges', 'line_types', 'nodes', 'schema_version'])
@@ -198,7 +206,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     const parsed = JSON.parse(text) as Record<string, unknown>
     const firstNode = (parsed.nodes as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstNode)).toEqual([
-      'catalog_no', 'core_idea', 'month', 'node_id', 'paper_id', 'tags', 'title', 'year'
+      'core_idea', 'month', 'node_id', 'paper_id', 'pub_no', 'tags', 'title', 'year'
     ])
     const firstEdge = (parsed.edges as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstEdge)).toEqual([
@@ -212,21 +220,20 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     expect(Object.keys(firstSub)).toEqual(['color', 'dash', 'id', 'name', 'w'])
   })
 
-  it('catalog_no 与 lineageOrder 全序一致（同源 lineageCatalogNos——禁双实现）+不含 x/y/slot', () => {
+  it('pub_no=入参 pubNos 同源直取（INV-92 库级编号）；主题节点 null；不含 x/y/slot', () => {
     const parsed = JSON.parse(assembleLineageJson(input())) as {
       nodes: Array<Record<string, unknown>>
     }
-    const expectNos = lineageCatalogNos(nodes())
-    expect(parsed.nodes.map((n) => n.catalog_no)).toEqual([1, 2, 3])
+    // [F-FOLDER-01] catalog_no 退役→pub_no（库级编号直取——图序编号双实现禁令随退役消解）
+    expect(parsed.nodes.map((n) => n.pub_no)).toEqual([7, 9, null])
     for (const n of parsed.nodes) {
-      expect(n.catalog_no).toBe(expectNos.get(n.node_id as string))
       expect('x' in n).toBe(false)
       expect('y' in n).toBe(false)
       expect('slot' in n).toBe(false)
     }
   })
 
-  it('空图：nodes/edges 空数组+line_types 恒四组（空配置面）+schema_version=1', () => {
+  it('空图：nodes/edges 空数组+line_types 恒四组（空配置面）+schema_version=2（[F-FOLDER-01] 序列化变更递增）', () => {
     const parsed = JSON.parse(
       assembleLineageJson({
         nodes: [],
@@ -242,7 +249,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     expect(parsed.nodes).toEqual([])
     expect(parsed.edges).toEqual([])
     expect(parsed.line_types).toHaveLength(4)
-    expect(parsed.schema_version).toBe(1)
+    expect(parsed.schema_version).toBe(2)
   })
 })
 
@@ -273,7 +280,11 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
             lineage: () => ({
               nodes: repos.lineage.listGraph().nodes,
               edges: repos.lineage.listGraph().edges,
-              lineTypes: repos.lineage.getLineTypes()
+              lineTypes: repos.lineage.getLineTypes(),
+              // [F-FOLDER-01] pubNos 装配（services/index 生产接线同源——pub_no 字段）
+              pubNos: new Map(repos.papers.pubNoByIds(
+                repos.lineage.listGraph().nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
+              ).map((r) => [r.paperId, r.pubNo]))
             })
           }
         : {})
@@ -319,7 +330,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
     await done
   }
 
-  it('finalizing 写 lineage.json：字节=assembleLineageJson（含 catalog_no）；UTF-8 无 BOM', async () => {
+  it('finalizing 写 lineage.json：字节=assembleLineageJson（含 pub_no）；UTF-8 无 BOM', async () => {
     const h = await makeHarness(true)
     try {
       await seed(h)
@@ -331,11 +342,16 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       const expectText = assembleLineageJson({
         nodes: g.nodes,
         edges: g.edges,
-        lineTypes: h.repos.lineage.getLineTypes()
+        lineTypes: h.repos.lineage.getLineTypes(),
+        pubNos: new Map(
+          h.repos.papers
+            .pubNoByIds(g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : [])))
+            .map((r) => [r.paperId, r.pubNo])
+        )
       })
       expect(text).toBe(expectText)
-      expect((JSON.parse(text) as { nodes: Array<{ catalog_no: number; paper_id: string }> }).nodes).toEqual([
-        { catalog_no: 1, core_idea: '核心', month: 3, node_id: expect.any(String), paper_id: 'p-1', tags: null, title: '文献甲', year: 2021 }
+      expect((JSON.parse(text) as { nodes: Array<{ pub_no: number; paper_id: string }> }).nodes).toEqual([
+        { core_idea: '核心', month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, tags: null, title: '文献甲', year: 2021 }
       ])
     } finally {
       await h.dispose()

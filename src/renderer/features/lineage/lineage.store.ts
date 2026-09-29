@@ -80,6 +80,9 @@ export interface LineageStore {
   edges: LineageEdge[]
   /** F-LG14 含金量摘要（键=paperId，graph 单读随行；主题节点无键） */
   paperMetrics: Record<string, LineagePaperMetrics>
+  /** [F-FOLDER-01] pubNo 表（键=paperId——INV-92 库级派生编号，graph 单读随行；
+   *  图内节点号与库号同源单一真相源（catalogNo 退役接替）；主题节点无键） */
+  pubNos: Record<string, number>
   /** [T3-P7A] 线型组（graph 单读随行——恒四组；EdgeOverlay sub 覆盖渲染消费） */
   lineTypes: LineTypeGroup[]
   status: LineageStatus
@@ -354,6 +357,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     nodes: [],
     edges: [],
     paperMetrics: {},
+    pubNos: {},
     lineTypes: [],
     status: 'loading',
     error: null,
@@ -378,6 +382,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           nodes: graph.nodes,
           edges: graph.edges,
           paperMetrics: graph.paperMetrics ?? {},
+          pubNos: graph.pubNos ?? {},
           lineTypes: graph.lineTypes,
           status: 'ready',
           error: null

@@ -32,13 +32,16 @@
  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
  */
 import { appFileUrl } from '../../../shared/app-file-url'
+import { MAIN_GRAPH_ID } from '../../../shared/models/lineage'
 import type Database from 'better-sqlite3'
 import type { SqliteDb } from '../connection'
 import {
   buildFilters,
   DETAIL_SQL,
+  folderIdOfQuery,
   LIST_SQL,
   ORDER_BY,
+  pubNoByIdsQuery,
   toSummary,
   type DetailRow,
   type SummaryRow
@@ -105,6 +108,14 @@ export interface PapersRepo {
   /** F-LG14 含金量摘要批量查证（venue+cited_by_count；graph 通道 join 单源——
    *  批量 in-query 单语句禁 N+1，listSummariesByIds 同型；空 ids=空数组） */
   listMetricsByIds(ids: string[]): Array<{ paperId: string; venue: string; citedByCount: number | null }>
+  /** [F-FOLDER-01] 文件夹归属直写（单归属；null=移出未归档）。未命中返回 null */
+  setFolderId(id: string, folderId: string | null): PaperRow | null
+  /** [F-FOLDER-01] 归属纯读（INV-88 判别源；null=未归档/未命中） */
+  folderIdOf(id: string): string | null
+  /** [F-FOLDER-01] 归属确保（INV-88 落笔）：未归档→写主图（入图即归档）回读；已归档→现值 */
+  ensureFolderAssigned(id: string): string
+  /** [F-FOLDER-01] pubNo 批查（库级窗口——graph 通道 pubNos 装配源；空 ids=空数组） */
+  pubNoByIds(ids: string[]): Array<{ paperId: string; pubNo: number }>
 }
 
 /** 预编译语句类型（显式给 unknown[]：ReturnType 推导会被条件类型解析成单参语句） */
@@ -121,17 +132,19 @@ const INSERT_SQL = `INSERT INTO papers (${COLS}) VALUES (${COLS.split(', ').map(
  *  导入面 PaperRow 不构造三列，DB 默认 NULL） */
 const SELECT_COLS = `${COLS}, cited_by_count, cited_by_fetched_at, cited_by_count_source`
 
-/** PaperMetaPatch 字段 → 表列名（authors 在仓储边界序列化为 authors_json） */
+/** PaperMetaPatch→表列名（authors 序列化为 authors_json）。[F-FOLDER-01]
+ *  +impact_factor；patch.month 不在此——papers 无此列（落位=service 写节点） */
 const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
   title: 'title',
   authors: 'authors_json',
   year: 'year',
   venue: 'venue',
   doi: 'doi',
-  abstract: 'abstract'
+  abstract: 'abstract',
+  impactFactor: 'impact_factor'
 }
 
-/** meta 补丁 → 列名/绑定值（authors 数组在此序列化；未提供的字段不进 SET） */
+/** meta 补丁→列名/绑定值（authors 在此序列化；未提供字段不进 SET） */
 function patchFragments(patch: PaperMetaPatch): { columns: string[]; values: unknown[] } {
   const columns: string[] = []
   const values: unknown[] = []
@@ -143,9 +156,8 @@ function patchFragments(patch: PaperMetaPatch): { columns: string[]; values: unk
   }
   return { columns, values }
 }
-
 export function createPapersRepo(db: SqliteDb): PapersRepo {
-  // 语句缓存（SQL 文本 → 预编译语句）：过滤/补丁的组合只编译一次，重复调用零成本
+  // 语句缓存（SQL 文本→预编译语句：过滤/补丁组合只编译一次）
   const cache = new Map<string, Stmt>()
   const stmt = (sql: string): Stmt => {
     const hit = cache.get(sql)
@@ -157,6 +169,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
 
   const findById = (id: string): PaperRow | null =>
     (stmt(`SELECT ${SELECT_COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
+
 
   /** 按给定列更新（列名来自白名单）并同步 updated_at；未命中返回 null */
   const updateColumns = (id: string, columns: string[], values: unknown[]): PaperRow | null => {
@@ -228,17 +241,32 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       const marks = ids.map(() => '?').join(', ')
       const rows = stmt(
         `SELECT id, venue, cited_by_count FROM papers WHERE id IN (${marks})`
-      ).all(...ids) as Array<{ id: string; venue: string; cited_by_count: number | null }>
+      ).all(...ids) as { id: string; venue: string; cited_by_count: number | null }[]
       return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count }))
+    },
+    // [F-FOLDER-01] 单归属直写（moveFolder 第 1 步；updated_at 语义同 meta 写）
+    setFolderId(id, folderId) {
+      return updateColumns(id, ['folder_id'], [folderId])
+    },
+    folderIdOf(id) {
+      return folderIdOfQuery(id, stmt) // queries 件单源（回炉 R1 拆件）
+    },
+    // INV-88 统一规则落笔（回炉码 1）：未归档→主图（MAIN_GRAPH_ID 单源锚）
+    ensureFolderAssigned(id) {
+      const current = folderIdOfQuery(id, stmt)
+      if (current !== null) return current
+      updateColumns(id, ['folder_id'], [MAIN_GRAPH_ID])
+      return MAIN_GRAPH_ID
+    },
+    // [F-FOLDER-01] pubNo 批查=queries 件单源（B3 不改编号；N7 结构注记在件）
+    pubNoByIds(ids) {
+      return pubNoByIdsQuery(ids, stmt)
     },
     detailById(id) {
       const r = stmt(DETAIL_SQL).get(id) as DetailRow | undefined
       if (r === undefined) return null
       const tags = stmt(
         'SELECT t.id AS id, t.name AS name FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = ? ORDER BY t.name'
-      ).all(id) as { id: string; name: string }[]
-      const collections = stmt(
-        'SELECT c.id AS id, c.name AS name FROM paper_collections pc JOIN collections c ON c.id = pc.collection_id WHERE pc.paper_id = ? ORDER BY c.name'
       ).all(id) as { id: string; name: string }[]
       const slashPos = r.file_ref.lastIndexOf('/') + 1 // -1+1=0：无斜杠时取整串
       return {
@@ -261,9 +289,10 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
               citedByCountSource: r.cited_by_count_source as PaperDetail['citedByCountSource']
             }
           : {}),
-        // [F-TIME-02] readingSeconds 透出已随 2026-09-19 用户裁决移除（009 删列）
-        tags,
-        collections
+        // [F-TIME-02] readingSeconds 透出已随 2026-09-19 用户裁决移除（009 删列）；
+        // [F-FOLDER-01] collections 明细已随 paper_collections 退役删除（归属=
+        // summary.folderId 单值）
+        tags
       }
     }
   }

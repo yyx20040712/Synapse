@@ -91,6 +91,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import {
+  MAIN_GRAPH_ID,
   dedupeLineageTags,
   type LineTypeGroup,
   type LineageEdge,
@@ -103,10 +104,17 @@ import { parseLineTypes, toEdge, toNode, type LineageEdgeRow, type LineageNodeRo
 
 export interface LineageRepo {
   /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新）。
-   *  [T3-P5] month/slot 列直写（归一在 service）；input.month/slot 缺省=NULL 落库 */
+   *  [T3-P5] month/slot 列直写（归一在 service）；input.month/slot 缺省=NULL 落库。
+   *  [F-FOLDER-01] folder_id 列直写——**写边界兜底单源**：input.folderId 缺省
+   *  → MAIN_GRAPH_ID（design-final 修订二：SQLite ADD COLUMN 静态禁 REFERENCES+
+   *  非空 DEFAULT，NOT NULL DEFAULT 安全网自 DDL 移此——服务层恒显式，兜底=
+   *  安全网；主控追认补强①锚定） */
   upsertNode(input: LineageNodeUpsert): LineageNode
   /** 删节点；关联边由 DDL CASCADE 承担。返回删行数 */
   removeNode(id: string): number
+  /** [F-FOLDER-01] 按文献删节点（移出→未归档事务序 W2 第 2 步——paper_id 唯一
+   *  由 INV-89 部分唯一索引保证单行）；返回删行数（0=无节点=移出幂等分支） */
+  removeNodeByPaperId(paperId: string): number
   /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service）。
    *  [T3-P5] sub 列直写（input.sub 缺省=NULL=基础型默认样式） */
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
@@ -131,12 +139,13 @@ export interface LineageRepo {
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
   const upsertNodeStmt = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, created_at, updated_at)
-     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @month, @slot, @now, @now)
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @month, @slot, @folderId, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
        year = excluded.year, x = excluded.x, y = excluded.y, tags = excluded.tags,
-       month = excluded.month, slot = excluded.slot, updated_at = excluded.updated_at`
+       month = excluded.month, slot = excluded.slot, folder_id = excluded.folder_id,
+       updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
     `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, created_at, updated_at)
@@ -149,6 +158,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
   const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
+  const removeNodeByPaperStmt = db.prepare(`DELETE FROM lineage_nodes WHERE paper_id = ?`)
   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
   const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
   const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
@@ -187,6 +197,9 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         // T3-P5：缺省=NULL 落库（归一/守卫在 service——repo 薄）
         month: input.month ?? null,
         slot: input.slot ?? null,
+        // F-FOLDER-01 写边界兜底（修订二——安全网自 NOT NULL DEFAULT 移此）：
+        // 缺省=主图；service 恒显式（更新语义的「保持现图」解析在 service）
+        folderId: input.folderId ?? MAIN_GRAPH_ID,
         now
       })
       return toNode(nodeByIdStmt.get(id) as LineageNodeRow)
@@ -194,6 +207,10 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
 
     removeNode(id: string): number {
       return removeNodeStmt.run(id).changes
+    },
+
+    removeNodeByPaperId(paperId: string): number {
+      return removeNodeByPaperStmt.run(paperId).changes
     },
 
     upsertEdge(input: LineageEdgeUpsert): LineageEdge {

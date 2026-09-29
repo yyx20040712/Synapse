@@ -28,6 +28,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     y: null,
     month: 9,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't',
     ...patch

@@ -302,16 +302,24 @@ export const lineagePaperMetricsSchema = z
   .strict()
 export type LineagePaperMetrics = z.infer<typeof lineagePaperMetricsSchema>
 
+/** [F-FOLDER-01] lineage/graph 请求：folderId 缺省=全图并集（既有行为零变）；
+ *  提供=只取该图节点/边子图（图切换器数据源——W4 改写面） */
+export const lineageGraphReqSchema = z.object({ folderId: z.string().min(1).optional() }).strict()
+export type LineageGraphReq = z.infer<typeof lineageGraphReqSchema>
+
 /** lineage/graph 响应：全图单读+含金量 join（库空=空数组/空表，合法态非错误；
  *  模型单源=shared/models/lineage——paperMetrics 键=paperId，主题节点不入表
  *  [F-LG14 载荷扩展：加字段向后兼容]。[T3-P5] nodes=lineageOrder 序（INV-75
- *  读面唯一保证）+lineTypes 恒四组（base 枚举序——空组含空 subs） */
+ *  读面唯一保证）+lineTypes 恒四组（base 枚举序——空组含空 subs）。
+ *  [F-FOLDER-01] +pubNos（键=paperId，值=库级派生编号 INV-92——图内节点号
+ *  与库号同源单一真相源，catalogNo 退役接替；主题节点无键） */
 export const lineageGraphResSchema = z
   .object({
     nodes: z.array(lineageNodeSchema),
     edges: z.array(lineageEdgeSchema),
     paperMetrics: z.record(z.string(), lineagePaperMetricsSchema),
-    lineTypes: z.array(lineTypeGroupSchema)
+    lineTypes: z.array(lineTypeGroupSchema),
+    pubNos: z.record(z.string(), z.number().int())
   })
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
@@ -462,11 +470,33 @@ export const netDiagItemSchema = z
   .strict()
 export const netDiagResSchema = z.array(netDiagItemSchema)
 
+// ── folders（[F-FOLDER-01] 文件夹域——models/folder 单源；通道四条+papers 移动）──
+export {
+  folderSchema,
+  folderCreateReqSchema,
+  folderRenameReqSchema,
+  folderDeleteReqSchema,
+  paperMoveReqSchema
+} from '../models/folder'
+
+// ── folders.changed / lineage.changed 事件（[F-FOLDER-01] main→renderer 单向；
+//    载荷=空对象——纯失效通知（renderer 重拉 folders.list/lineage.graph），
+//    不携带数据防双真相）──────────────────────────────────────────
+export const foldersChangedEventSchema = z.object({}).strict()
+export type FoldersChangedEvent = z.infer<typeof foldersChangedEventSchema>
+export const lineageChangedEventSchema = z.object({}).strict()
+export type LineageChangedEvent = z.infer<typeof lineageChangedEventSchema>
+
 // ── system（外链经守卫后由系统浏览器打开）──────────────────────────
 export const openExternalReqSchema = z.object({ url: z.string().min(1).max(2048) }).strict()
 
-/** 退出拦截 dirty 上报（TABS-04：renderer 聚合信号变化沿 push 到 main 缓存） */
-export const setQuitDirtyReqSchema = z.object({ dirty: z.boolean() }).strict()
+/** 退出拦截 dirty 上报（TABS-04：renderer 聚合信号变化沿 push 到 main 缓存）。
+ *  [F-FOLDER-01] +lineagePending（可选缺省=false——旧载荷零破坏）：renderer
+ *  脉络写队列 pending 信号（INV-91 S1 队列闸单源——folders/papers.move 写
+ *  与 lineage autosave 队列 pending 单点互斥的 main 侧判定源） */
+export const setQuitDirtyReqSchema = z
+  .object({ dirty: z.boolean(), lineagePending: z.boolean().optional() })
+  .strict()
 
 // ── system window-control（R2-SH3 frameless 标题栏：action 枚举只住此处——
 //    renderer 经 api-surface 类型推导复用，禁手写第二份）────────────────

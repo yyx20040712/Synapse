@@ -13,7 +13,8 @@ const detail: PaperDetail = {
   venue: '',
   doi: null,
   tagNames: [],
-  collectionNames: [],
+  folderId: null,
+  impactFactor: null,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 3,
@@ -25,8 +26,7 @@ const detail: PaperDetail = {
   fileUrl: 'app-file://p-1',
   fileName: '论文 v2 final.pdf',
   updatedAt: 't',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 const ann: Annotation = {

@@ -19,6 +19,11 @@ export interface IpcDeps {
   ping: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   /** TABS-04 退出拦截：renderer dirty 上报落点（main-window 模块缓存） */
   setQuitDirty: (dirty: boolean) => void
+  /** [F-FOLDER-01] INV-91 S1 队列闸：renderer 脉络写队列 pending 上报落点。
+   *  [回炉码 7/k1-W9] 必填化——原「可选+受锁桩工厂零改」理由已被同 diff
+   *  桩工厂随迁证伪（makeIpcDeps 已提供该键）；装配缺失=typecheck 红（bootstrap
+   *  装配契约锚）+system.test 调用面锚 */
+  setLineagePending: (pending: boolean) => void
   /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
   controlWindow: (action: WindowControlAction) => { maximized: boolean }
   /** P7E-04 剪贴板写口（bootstrap 装配 electron.clipboard；测试桩零 electron）。

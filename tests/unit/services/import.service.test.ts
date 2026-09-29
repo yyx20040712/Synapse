@@ -10,6 +10,8 @@ import { createTinyPdf, PDF_KNOWN_TEXT } from '../../utils/pdf-factory'
 import { guardedDescribe } from '../../utils/guard'
 import { createTestDb } from '../../utils/fixtures'
 import { createCollectionsRepo } from '../../../src/main/db/repos/collections.repo'
+import { createFoldersRepo } from '../../../src/main/db/repos/folders.repo'
+import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 
 const dirs: string[] = []
 afterAll(async () => {
@@ -29,14 +31,21 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
       ).run(row.id, row.file_ref, row.sha256, row.title, row.added_at, row.updated_at)
     },
     findBySha256: (sha: string) =>
-      (db.prepare(`SELECT id FROM papers WHERE sha256=?`).get(sha) as { id: string } | undefined) ?? null
+      (db.prepare(`SELECT id FROM papers WHERE sha256=?`).get(sha) as { id: string } | undefined) ?? null,
+    // [F-FOLDER-01] 单归属直写（真实 SQL——folder 归属事务面同源）
+    setFolderId: (id: string, folderId: string | null) => {
+      db.prepare('UPDATE papers SET folder_id=? WHERE id=?').run(folderId, id)
+      return null
+    }
   }
   return {
     papers: papers as unknown as Repos['papers'],
     collections: createCollectionsRepo(db),
+    folders: createFoldersRepo(db), // [F-FOLDER-01]
     annotations: {} as Repos['annotations'],
     aiNotes: {} as Repos['aiNotes'],
-    lineage: {} as Repos['lineage'],
+    // [回炉码 2] 挂接建节点走真 lineage repo（listGraph/upsertNode——真库）
+    lineage: createLineageRepo(db),
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
@@ -137,10 +146,47 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     })
     const result = await svc.importFolder(storeDir)
     expect(result.imported).toHaveLength(2)
-    const inCollection = result.imported.find((p) => p.collectionNames.includes('第二时代'))
+    // [F-FOLDER-01] 单归属：一级子目录名→folderId（M2M collectionNames 退役）
+    const inCollection = result.imported.find((p) => p.folderId !== null)
     expect(inCollection).toBeTruthy()
-    const rootPaper = result.imported.find((p) => p.collectionNames.length === 0)
+    const rootPaper = result.imported.find((p) => p.folderId === null)
     expect(rootPaper).toBeTruthy()
+  })
+
+  it('[回炉码 2] 挂接即自动入图：一级子目录文献→节点落其文件夹（folder=归属）+year 取元数据+month=null 缺省组+slot 组末；根文件不建节点', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'node-'))
+    dirs.push(storeDir)
+    const { mkdir, writeFile } = await import('node:fs/promises')
+    await mkdir(join(storeDir, '合集'), { recursive: true })
+    await writeFile(join(storeDir, 'root.pdf'), createTinyPdf())
+    await writeFile(join(storeDir, '合集', 'in.pdf'), createTinyPdf(PDF_KNOWN_TEXT + '2'))
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
+      extractMeta: async (bytes: Uint8Array) => ({
+        title: '节点文献',
+        authors: [],
+        year: 2024,
+        doi: null,
+        arxivId: null,
+        _: bytes
+      })
+    })
+    const result = await svc.importFolder(storeDir)
+    expect(result.imported).toHaveLength(2)
+    const rows = db
+      .prepare('SELECT n.paper_id, n.title, n.year, n.month, n.slot, n.folder_id, p.folder_id AS paper_folder FROM lineage_nodes n JOIN papers p ON p.id=n.paper_id')
+      .all() as Array<{ paper_id: string; title: string; year: number | null; month: number | null; slot: number | null; folder_id: string; paper_folder: string }>
+    expect(rows).toHaveLength(1) // 根文件零节点（矩阵「导入→全部」行）
+    const node = rows[0]!
+    expect(node.paper_id).toBe(result.imported.find((x) => x.folderId !== null)!.id)
+    expect(node.title).toBe('节点文献')
+    expect(node.year).toBe(2024)
+    expect(node.month).toBeNull()
+    expect(node.slot).toBe(1)
+    expect(node.folder_id).toBe(node.paper_folder) // INV-88 统一规则：节点=文献归属
   })
 
   it('挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）', async () => {
@@ -151,11 +197,16 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     await mkdir(join(storeDir, '合集'), { recursive: true })
     await writeFile(join(storeDir, '合集', 'a.pdf'), createTinyPdf())
 
-    // 模拟第二条写入语句失败（SQLITE_BUSY/IO 类）：attach 抛错
-    const realCollections = createCollectionsRepo(db)
+    // 模拟第二条写入语句失败（SQLITE_BUSY/IO 类）：folder 归属写抛错
+    // （[F-FOLDER-01] attach 退役——事务回滚语义同一验证面）
     const brokenRepos: Repos = {
       ...makeRepos(db),
-      collections: { ...realCollections, attach: () => { throw new Error('模拟：挂接失败') } }
+      papers: {
+        ...makeRepos(db).papers,
+        setFolderId: () => {
+          throw new Error('模拟：挂接失败')
+        }
+      } as unknown as Repos['papers']
     }
     const defaults = { title: '', authors: [], year: null, doi: null, arxivId: null }
     const failed = createImportService({

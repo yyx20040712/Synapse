@@ -30,7 +30,7 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
       }
       return deps.services.lineage.importFromFile(file)
     },
-    graph: async () => deps.services.lineage.graph(),
+    graph: async (req) => deps.services.lineage.graph(req.folderId),
     upsertNode: async (req) =>
       deps.services.lineage.upsertNode({
         id: req.id,
@@ -42,9 +42,12 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         y: req.y ?? null,
         tags: req.tags ?? null, // F-LG14：缺省归一 null=清空（paperId/x/y 同款）
         // T3-P5：month/slot 原样透传（undefined=归一语义键——service 区分
-        // undefined=归一与 null=透写清面，IPC 层不做 ?? 折叠）
+        // undefined=归一与 null=透写清面，IPC 层不做 ?? 折叠）；
+        // [F-FOLDER-01] folderId 原样透传（undefined=保持现图/新建落主图——
+        // service 解析；显式提供=跨图移动，幽灵值 service 拒）
         month: req.month,
-        slot: req.slot
+        slot: req.slot,
+        folderId: req.folderId
       }),
     removeNode: async (req) => {
       deps.services.lineage.removeNode(req.id)

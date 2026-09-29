@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
+import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
 import type { SqliteDb } from '../../../src/main/db/connection'
 import { createTestDb } from '../../utils/fixtures'
 import {
@@ -51,6 +52,9 @@ beforeEach(() => {
   svc = createLineageService({
     repo,
     paperExists,
+    // [回炉码 1] INV-88 统一规则装配（真库——folderIdOf/ensureFolderAssigned 直连）
+    paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
+    ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
     withTransaction: (fn) => db.transaction(fn)()
   })
 })
@@ -250,7 +254,9 @@ it('空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语
       { base: 'inferred', subs: [] },
       { base: 'ref', subs: [] },
       { base: 'manual', subs: [] }
-    ]
+    ],
+    // [F-FOLDER-01] pubNos 表（库级编号——catalogNo 退役接替；空图=空表）
+    pubNos: {}
   })
 })
 
@@ -394,7 +400,11 @@ describe('R2-LG12 参考边（kind=ref）upsertEdge 写守卫', () => {
 
   it('ref 仍拒环：tree+ref 混合环夹具（路径穿既有 ref 边）→ 中文 reason+库不变', () => {
     const { s, a } = seedRefNodes()
-    const s2 = repo.upsertNode({ paperId: 'p-3', title: '另一篇综述', coreIdea: '', year: 2019, x: null, y: null }).id
+    // [F-FOLDER-01] 坑 a 根治（INV-89 部分唯一索引）：p-3 已占——补种 p-4 后用之
+    db.prepare(
+      'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+    ).run('p-4', 'a.pdf', 'sha-p4', 't', 't')
+    const s2 = repo.upsertNode({ paperId: 'p-4', title: '另一篇综述', coreIdea: '', year: 2019, x: null, y: null }).id
     const x = repo.upsertNode({ paperId: null, title: '阶段X', coreIdea: '', year: 2019, x: null, y: null }).id
     svc.upsertEdge({ fromNode: a, toNode: s2, label: '' })
     svc.upsertEdge({ fromNode: x, toNode: s, label: '' })
@@ -434,3 +444,44 @@ it('importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法�
   const r = await svc.importFromFile(goodPath)
   expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
 })
+
+describe('F-FOLDER-01·回炉码 1 INV-88 统一规则——draft 重灌节点图归属（禁写死主图）', () => {
+  it('已归档文献（folder_id=f-x）：draft 节点落其文件夹；未归档文献：先写主图（入图即归档）再落主图', () => {
+    const db = createTestDb()
+    for (const id of ['p-1', 'p-2', 'p-3']) {
+      db.prepare(
+        'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(id, 'a.pdf', `s-${id}`, 't', 't')
+    }
+    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-x', '夹', 0)").run()
+    db.prepare("UPDATE papers SET folder_id='f-x' WHERE id='p-1'").run()
+    const repo2 = createLineageRepo(db)
+    const svc2 = createLineageService({
+      repo: repo2,
+      paperExists: (id) => id === 'p-1' || id === 'p-2' || id === 'p-3',
+      paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
+      ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
+      withTransaction: (fn) => db.transaction(fn)()
+    })
+    const r = svc2.importDraft({
+      nodes: [
+        { paper_id: 'p-1', title: '已归档', year: 2024, core_idea: '' },
+        { paper_id: 'p-2', title: '未归档', year: 2023, core_idea: '' }
+      ],
+      edges: []
+    })
+    expect(r.ok).toBe(true)
+    const folders = db
+      .prepare('SELECT paper_id, folder_id FROM lineage_nodes ORDER BY paper_id')
+      .all() as Array<{ paper_id: string; folder_id: string }>
+    expect(folders).toEqual([
+      { paper_id: 'p-1', folder_id: 'f-x' }, // 已归档→其文件夹（非主图——禁写死锚）
+      { paper_id: 'p-2', folder_id: '__main__' } // 未归档→主图
+    ])
+    // 入图即归档落笔：p-2 papers.folder_id 被写主图（p-1 原值不动）
+    const paperRepo = createPapersRepo(db)
+    expect(paperRepo.folderIdOf('p-2')).toBe('__main__')
+    expect(paperRepo.folderIdOf('p-1')).toBe('f-x')
+  })
+})
+

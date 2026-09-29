@@ -51,21 +51,22 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
   await expect(cols.locator('.lib-c-tier')).toHaveCount(0)
 
   // —— 甲行（全值）：真实题名+期刊副行+年份+引用数（档次徽章已退役）——
-  // 序号锚：两种子同 added_at 平局→rowid DESC 决胜（乙后插=首行 001，甲 002；
-  // # 前缀已删 F-LIBUI-01 ⑧）
+  // 序号锚：[F-FOLDER-01 收口亲修] INV-92 pubNo=库级全序派生（year ASC,
+  // month ASC NULLS LAST, added_at ASC——PUBNO_ORDER 单源）替旧 catalogNo
+  // 图序：甲 year=2023 在前=001，乙缺年 NULLS LAST 殿后=002（probe 实测恒定）
   const rowA = win.locator('.lib-row', { hasText: 'T3P3 甲文献' })
   await expect(rowA).toBeVisible({ timeout: 10_000 })
-  await expect(rowA.locator('.lib-r-id')).toHaveText('002')
+  await expect(rowA.locator('.lib-r-id')).toHaveText('001')
   await expect(rowA.locator('.lib-r-title')).toHaveText('T3P3 甲文献：管网漏损定位')
   await expect(rowA.locator('.lib-r-j')).toHaveText('Nature Water')
   await expect(rowA.locator('.lib-r-year')).toHaveText('2023')
   await expect(rowA.locator('.lib-r-cite')).toHaveText('17')
   await expect(rowA.locator('.lib-tier')).toHaveCount(0)
 
-  // —— 乙行（缺值对照）：rowid 决胜首行+年月/引用两占位「—」 ——
+  // —— 乙行（缺值对照）：缺年 NULLS LAST 殿后=002+年月/引用两占位「—」 ——
   const rowB = win.locator('.lib-row', { hasText: 'T3P3 乙文献' })
   await expect(rowB).toBeVisible()
-  await expect(rowB.locator('.lib-r-id')).toHaveText('001')
+  await expect(rowB.locator('.lib-r-id')).toHaveText('002')
   await expect(rowB.locator('.lib-r-year')).toHaveText('—')
   await expect(rowB.locator('.lib-r-cite')).toHaveText('—')
 

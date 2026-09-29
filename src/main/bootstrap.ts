@@ -63,7 +63,9 @@ import {
   createMainWindow,
   handleCloseWithQuitGuard,
   getQuitDirty,
-  setQuitDirty
+  setQuitDirty,
+  setLineagePending,
+  getLineagePending
 } from './windows/main-window'
 import {
   clampBounds,
@@ -139,6 +141,19 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
             win.webContents.send(EVENT_CHANNELS.exportCorpus, e)
           }
         },
+        // [F-FOLDER-01] INV-91 S1 队列闸判定源（main-window 缓存读——renderer
+        // useLineageDirty 经 setQuitDirty 载荷 push）+ 双失效通知事件出口
+        lineagePending: getLineagePending,
+        sendFoldersChanged: () => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send(EVENT_CHANNELS.foldersChanged, {})
+          }
+        },
+        sendLineageChanged: () => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send(EVENT_CHANNELS.lineageChanged, {})
+          }
+        },
         // AI-06：伴随进程协议根（userData/ai-sensor——应用管目录，companion 消费；
         // ADR-0018：协议根保持全局，corpus 导出自当前库天然按课题）
         aiSensorRootDir: join(userDataDir, AI_SENSOR_DIR_NAME),
@@ -193,6 +208,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       userDataDir,
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
       setQuitDirty,
+      setLineagePending,
       // R2-SH3：闭包直引下方 const window（TDZ 不可能触发——IPC 调用来自
       // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
       controlWindow: (action) => controlWindow(window, action),

@@ -32,6 +32,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     y: null,
     month: 6,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't',
     ...patch
@@ -75,11 +76,11 @@ afterEach(() => {
 })
 
 describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）', () => {
-  it('insp-cap「节点检查」+骑缝编号 #NNN（catalogNo 分发）；缺省不呈现编号', async () => {
+  it('insp-cap「节点检查」+骑缝编号 #NNN（[F-FOLDER-01] pubNo 分发——catalogNo 退役）；缺省不呈现编号', async () => {
     mount(
       <LineageSidePanel
         node={node('A')}
-        catalogNo={4}
+        pubNo={4}
         core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
@@ -96,7 +97,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     mount(
       <LineageSidePanel
         node={node('A', { month: 6 })}
-        catalogNo={1}
+        pubNo={1}
         core={true}
         metrics={{ citedByCount: 17, venueTier: 'T2' }}
         onJumpToPaper={vi.fn()}
@@ -112,7 +113,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     mount(
       <LineageSidePanel
         node={node('A', { month: null })}
-        catalogNo={1}
+        pubNo={1}
         core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
@@ -124,7 +125,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     mount(
       <LineageSidePanel
         node={node('T', { paperId: null })}
-        catalogNo={2}
+        pubNo={2}
         core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
@@ -139,7 +140,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     mount(
       <LineageSidePanel
         node={node('A', { coreIdea: '把管网拓扑显式建模为图' })}
-        catalogNo={1}
+        pubNo={1}
         core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}

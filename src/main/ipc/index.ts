@@ -16,6 +16,8 @@ import { createAiSensorIpc } from './ai_sensor'
 import { createLineageIpc } from './lineage'
 import { createSettingsIpc } from './settings'
 import { createSystemIpc } from './system'
+import { createFoldersIpc } from './folders'
+import { createPapersIpc } from './papers'
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
   return {
@@ -29,6 +31,8 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     ai_sensor: createAiSensorIpc(deps),
     lineage: createLineageIpc(deps),
     settings: createSettingsIpc(deps),
-    system: createSystemIpc(deps)
+    system: createSystemIpc(deps),
+    folders: createFoldersIpc(deps),
+    papers: createPapersIpc(deps)
   }
 }

@@ -21,8 +21,7 @@
  * - 空图空态文案保活；工具条空图在场（导入=bootstrap 路径）。
  */
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { LineageEdge, LineageEdgeKind, LineageNode, LineTypeGroup } from '@shared/models/lineage'
-import { lineageCatalogNos } from '@shared/models/lineage'
+import { nodePubNoMap, type LineageEdge, type LineageEdgeKind, type LineageNode, type LineTypeGroup } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { isCore } from './lineage-classify'
 import { groupTimeline, rowsFromOffsetTops } from './lineage-timeline'
@@ -70,6 +69,9 @@ export function LineageTimeline(props: {
   selectedNodeId?: string | null
   /** F-LG14 含金量摘要表（键=paperId；Board 自 store 分发传入；缺省=空表） */
   paperMetrics?: Record<string, LineagePaperMetrics>
+  /** [F-FOLDER-01] pubNo 表（键=paperId；INV-92 库级派生——图内节点号与库号
+   *  同源单一真相源；Board 自 store 分发传入；缺省=空表） */
+  pubNos?: Record<string, number>
   /** [T3-P7A] 线型组（EdgeOverlay sub 覆盖渲染+P7B 弹层消费——缺省=空表） */
   lineTypes?: LineTypeGroup[]
   /** [T3-P7B] 工具条（缺省=saved 静默态） */
@@ -79,13 +81,11 @@ export function LineageTimeline(props: {
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
   const paperMetrics = props.paperMetrics ?? {}
+  const pubNos = props.pubNos ?? {}
   const lineTypes = props.lineTypes ?? []
   const groups = useMemo(() => groupTimeline(nodes), [nodes])
-  const catalogNos = useMemo(() => lineageCatalogNos(nodes), [nodes])
-  const coreIds = useMemo(
-    () => new Map(nodes.map((n) => [n.id, isCore(n, edges)])),
-    [nodes, edges]
-  )
+  const pubNoByNode = useMemo(() => nodePubNoMap(nodes, pubNos), [nodes, pubNos])
+  const coreIds = useMemo(() => new Map(nodes.map((n) => [n.id, isCore(n, edges)])), [nodes, edges])
 
   // [T3-P7B] 连线编辑状态机（mode 单源驻此——P8 共用面）
   const composer = useEdgeComposer(edges)
@@ -196,7 +196,7 @@ export function LineageTimeline(props: {
           />
           <TimelineYears
             groups={drag.renderGroups}
-            catalogNos={catalogNos}
+            pubNos={pubNoByNode}
             coreIds={coreIds}
             paperMetrics={paperMetrics}
             selectedNodeId={props.selectedNodeId ?? null}

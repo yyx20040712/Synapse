@@ -95,10 +95,16 @@ export function FilterBar(props: {
         onColorMapChange={props.onTagColorMap}
       />
       <select
-        aria-label="按集合筛选"
-        className={`lib-sort${query.collectionId !== undefined ? ' lib-sort-on' : ''}`}
-        value={query.collectionId ?? ''}
-        onChange={(e) => onChange({ collectionId: e.target.value === '' ? undefined : e.target.value })}
+        aria-label="按文件夹筛选"
+        className={`lib-sort${query.folderScope !== undefined ? ' lib-sort-on' : ''}`}
+        value={query.folderScope?.kind === 'folder' ? query.folderScope.folderId : ''}
+        onChange={(e) =>
+          onChange({
+            // [F-FOLDER-01] paper_collections 退役——下拉过滤改 folderScope 判别
+            // 联合（folder 态）；文件夹区 UI 全量重制=F-FOLDER-02 票面
+            folderScope: e.target.value === '' ? undefined : { kind: 'folder', folderId: e.target.value }
+          })
+        }
       >
         <option value="">全部分类</option>
         {(collections ?? []).map((c) => (

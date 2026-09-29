@@ -54,7 +54,8 @@ function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummar
     venue: 'Journal of Testing',
     doi: null,
     tagNames: ['水锤史', '雷诺数'],
-    collectionNames: [],
+    folderId: null,
+    impactFactor: null,
     annotationCount: 6,
     noteCount: 22,
     lastReadPage: 0,
@@ -376,17 +377,17 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
     const base = { sort: 'added_desc', offset: 0, limit: 50 } as const
     await render(
       <FilterBar
-        query={{ ...base, collectionId: 'c-1', year: 2024 }}
+        query={{ ...base, folderScope: { kind: 'folder', folderId: 'c-1' }, year: 2024 }}
         onChange={() => undefined}
       />
     )
-    const byCollection = host?.querySelector('select[aria-label="按集合筛选"]')
+    const byCollection = host?.querySelector('select[aria-label="按文件夹筛选"]')
     const byYear = host?.querySelector('select[aria-label="按年份筛选"]')
     expect(byCollection?.classList.contains('lib-sort-on')).toBe(true)
     expect(byYear?.classList.contains('lib-sort-on')).toBe(true)
     await render(<FilterBar query={{ ...base }} onChange={() => undefined} />)
     expect(
-      host?.querySelector('select[aria-label="按集合筛选"]')?.classList.contains('lib-sort-on')
+      host?.querySelector('select[aria-label="按文件夹筛选"]')?.classList.contains('lib-sort-on')
     ).toBe(false)
     expect(
       host?.querySelector('select[aria-label="按年份筛选"]')?.classList.contains('lib-sort-on')

@@ -87,31 +87,36 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0018 | 课题隔离=库级分目录（workspaces/<id>/ 一库一文件仓） |
 | 0019 | 划选反馈原生路线（自绘并集层，三轮修订） |
 | 0020 | 应用改名与 userData 目录迁移（四分支幂等迁移） |
+| 0021 | 文件夹单归属×脉络图绑定（F-FOLDER-01——图=文件夹投影/paper_collections 退役） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
 ## 6. 数据模型
 
-11 张表 + 3 个 FTS5（external content+触发器）：papers/collections/paper_collections/
-tags/paper_tags/annotations/notes（001 基座七表）+ai_notes（003）+lineage_nodes/
-lineage_edges（004）+lineage_graph_meta（010——图级 KV 配置：lineTypes 线型组
-JSON 串，updated_at 应用层写 ISO）；演进列 005~011（cited_by 缓存/lineage kind 列——
-UNIQUE(from,to)=004 既有/lineage tags/reading_seconds 加→删反转 F-TIME-02/
-lineage month+slot+sub——month CHECK 1..12、slot 窗口函数存量回填=T3-P5 脉络
-数据层 v2/tags.color TEXT 可空——011=F-TAGS-01 标签颜色身份：#rrggbb 六位
-小写 hex 或 NULL=存量默认 accent，三面渲染单源 INV-86）。标注定位器=W3C Web Annotation
-思路（quote/prefix/suffix+startOffset/endOffset+rects+sortKey）。迁移只追加（受锁）。
+10 张表 + 3 个 FTS5（external content+触发器——[回炉码 11] paper_collections
+DROP 后 10 张）：papers/collections/tags/
+paper_tags/annotations/notes（001 基座——**paper_collections 已随 [F-FOLDER-01]
+012 迁移退役 DROP**：collections 语义升级=文献单归属文件夹，M2M 挂接面退役）
++ai_notes（003）+lineage_nodes/lineage_edges（004）+lineage_graph_meta（010
+——图级 KV 配置：lineTypes 线型组 JSON 串，updated_at 应用层写 ISO）；演进列
+005~012（cited_by 缓存/lineage kind 列——UNIQUE(from,to)=004 既有/lineage
+tags/reading_seconds 加→删反转 F-TIME-02/lineage month+slot+sub——month CHECK
+1..12、slot 窗口函数存量回填=T3-P5 脉络数据层 v2/tags.color TEXT 可空——011=
+F-TAGS-01 标签颜色身份/papers.folder_id+impact_factor+lineage_nodes.folder_id
++idx_lineage_paper 部分唯一索引+回填+paper_collections DROP——012=F-FOLDER-01
+文件夹×图绑定，INV-88~93+ADR-0021）。标注定位器=W3C Web Annotation 思路
+（quote/prefix/suffix+startOffset/endOffset+rects/sortKey）。迁移只追加（受锁）。
 契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
-（ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）；
-paperDetailSchema +`lineage?: {year, month, edgeCount}`（service 层组合装配
-——library.service detail 按 paper_id 查 lineage_nodes/edges 双端计数，month
-恒 null=P5 落位后自新）；**T3-P5（2026-09-27）契约增量**：paperSummarySchema
-+`lineage?: {year, month, catalogNo}`（list join 装配——INV-76 呈现序编号）+
-paperDetail.lineage +`catalogNo`（month 真值透传——P3 时代「恒 null」已摘）+
-lineage 域 kind 四值（tree/inferred/ref/manual——INV-27 修订版）+LineTypeGroup
-线型组+upsertLineTypes 第 7 通道（图级整体替换）+lineage.json 第六件套导出
-（INV-77）；文献库视图随 T3-P3 改密度列表（六列结构 INV-73——序号列/年月列
-双源级联随 T3-P5 兑现）+316px 规格表抽屉，旧卡片网格族退役。
+（ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）。
+[F-FOLDER-01]（2026-09-30）契约批改：paperSummary +`folderId`（可空）+
+`impactFactor`（可空）+`pubNo?`（INV-92 库级派生编号——catalogNo 退役零残留，
+单一真相源=papers.queries PUBNO_ORDER 窗口）；paperDetail.lineage 收缩=
+{year,month,edgeCount}；collections 明细键退役（归属=folderId 单值）；
+libraryQuery +folderScope 判别联合（all/unfiled/folder——W5，collectionId 过滤
+随 M2M 退役删）；metadata.patch +month/impactFactor；folders 域四通道+
+papers/move-folder（56→61 通道）+folders.changed/lineage.changed 双事件+
+lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
++lineagePending（INV-91 S1 队列闸）。
 
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 

@@ -3,7 +3,7 @@
  *
  * ── 行为层 ──
  * - 五路信息列（mockup .row 逐值；F-LIBUI-01 档次列退役+序号 # 前缀删）：
- *   ①编号=入脉络（paper.lineage 存在）→三位零填充 catalogNo（T3-P5 C5-a
+ *   ①编号=pubNo 库级派生（[F-FOLDER-01] INV-92——catalogNo 退役；T3-P5 C5-a
  *   呈现序——编号随全序漂移=特性；视觉前缀区分最小兑现=cat 类 accent 色，
  *   形态细节收口轮细调备案；pubNo 派生重排=F-FOLDER-01 票）/未入脉络→
  *   三位零填充位置序 ordinal=index+offset+1 兜底②题名（nowrap
@@ -51,7 +51,9 @@ export function PaperRow(props: {
   // 视觉前缀区分最小兑现（W-4/P2-5）：入脉络行挂 cat 类=accent 色与位置序
   // faint 色区分（design §6「视觉前缀区分」——形态细节收口轮细调备案）
   const li = paper.lineage
-  const ordinal = li !== undefined ? li.catalogNo : props.ordinal
+  // [F-FOLDER-01] 序号=pubNo（INV-92 库级派生——catalogNo 退役同源接替）；
+  // 无窗口语境行（导入结果）回落位置序 ordinal 兜底
+  const ordinal = paper.pubNo ?? props.ordinal
   const title = paper.title.trim() === '' ? '（无标题）' : paper.title
   const venue = paper.venue.trim()
   // 过滤空白标签名后截前 N 个；剩余数量折叠为 +N 徽标

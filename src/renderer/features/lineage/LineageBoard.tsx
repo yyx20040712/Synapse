@@ -92,6 +92,8 @@ export function LineageBoard(props: {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
   const paperMetrics = useLineageStore((s) => s.paperMetrics)
+  // [F-FOLDER-01] pubNo 表下发（节点号=库级同源——Timeline 经此单源传入）
+  const pubNos = useLineageStore((s) => s.pubNos)
   // [T3-P7A] 线型组下发（EdgeOverlay sub 覆盖渲染消费——样式层不改坐标）
   const lineTypes = useLineageStore((s) => s.lineTypes)
   const saveStatus = useLineageStore((s) => s.saveStatus)
@@ -130,6 +132,7 @@ export function LineageBoard(props: {
         nodes={nodes}
         edges={edges}
         paperMetrics={paperMetrics}
+        pubNos={pubNos}
         lineTypes={lineTypes}
         selectedNodeId={props.selectedNodeId ?? null}
         toolbar={{

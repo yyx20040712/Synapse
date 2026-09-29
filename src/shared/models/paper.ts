@@ -20,25 +20,31 @@ export const paperSummarySchema = z
     venue: z.string(),
     doi: z.string().nullable(),
     tagNames: z.array(z.string()),
-    collectionNames: z.array(z.string()),
     annotationCount: z.number().int(),
     noteCount: z.number().int(),
     lastReadPage: z.number().int(),
     addedAt: z.string(), // ISO 8601
+    // [F-FOLDER-01] 文件夹单归属（迁移 012 papers.folder_id；null=未归档——
+    // 与「未加入脉络」正交，INV-93）。collectionNames 随 paper_collections
+    // 退役删除（方案切换=删除旧方案）
+    folderId: z.string().nullable(),
+    // [F-FOLDER-01] D1 影响因子（手动填写——papers.impact_factor REAL 可空）
+    impactFactor: z.number().nullable(),
+    // [F-FOLDER-01] pubNo=库级全序派生编号（ROW_NUMBER OVER ORDER BY
+    // year/month/added_at——LIST_SQL 窗口列，INV-92 不落库；catalogNo 退役
+    // 单一真相源=本字段。可选增量=导入结果行等无窗口语境可省略）
+    pubNo: z.number().int().optional(),
     // [T3-P3] 密度列表引用列：ENR-01 含金量缓存快照下探列表行（LIST_SQL
     // 扩列 cited_by_count，toSummary null→整键省略——与 detail 面同语义，
     // 可选增量向后兼容，旧载荷解析不受影响）
     citedByCount: z.number().int().optional(),
-    // [T3-P5] C5-a 脉络关联行（service 层 join 装配——listGraph 一次→
-    // lineageOrder→catalogNo map→当页行挂键）：入脉络=catalog_no 呈现时
-    // 确定性编号（INV-76——编号随全序漂移=呈现序语义特性）；未入脉络=
-    // 位置序兜底（renderer 消费）；可选增量向后兼容（citedByCount 先例同款，
-    // 旧载荷解析不受影响），month=null 未定月框照实
+    // [F-FOLDER-01] 脉络关联行收缩：节点 year/month（LIST_SQL LEFT JOIN
+    // lineage_nodes 单源——INV-89 保证每文献至多一节点）；catalogNo 已随
+    // pubNo 单源化退役（零残留断言在档）；未入脉络整键省略
     lineage: z
       .object({
         year: z.number().int().nullable(),
-        month: z.number().int().nullable(),
-        catalogNo: z.number().int()
+        month: z.number().int().nullable()
       })
       .strict()
       .optional()
@@ -57,22 +63,20 @@ export const paperDetailSchema = paperSummarySchema
     fileName: z.string(),
     updatedAt: z.string(),
     tags: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
-    collections: z.array(z.object({ id: z.string(), name: z.string() }).strict()),
     // ENR-01 含金量缓存快照（可选字段——ADR-0011 演进规则；三字段由
     // detailById 配对透出，无缓存时省略；ENR-02 装配数据通道）。
     // citedByCount 已随 T3-P3 上提到 summarySchema（列表/详情同列同语义）
     citedByFetchedAt: z.string().optional(), // ISO 8601（缓存抓取时间）
     citedByCountSource: paperSourceSchema.optional(), // 命中的瀑布源
     // [T3-P3] 跨域关联行（service 层组合装配——repo 单一职责不跨表）：
-    // paper_id 命中脉络节点则挂；month=null=未定月框（[T3-P5] 真值透传——
-    // P3 时代「恒 null 固定缺省」已摘）；catalogNo=呈现时 lineageOrder 全序
-    // 编号（与列表行/PaperDetailPanel 短号同源——INV-76）；未命中整键省略
+    // paper_id 命中脉络节点则挂；month=null=未定月框（[T3-P5] 真值透传）；
+    // [F-FOLDER-01] catalogNo 已随 pubNo 单源化退役（编号=summary.pubNo，
+    // INV-92）；未命中整键省略
     lineage: z
       .object({
         year: z.number().int().nullable(),
         month: z.number().int().nullable(),
-        edgeCount: z.number().int(),
-        catalogNo: z.number().int()
+        edgeCount: z.number().int()
       })
       .strict()
       .optional()
@@ -82,7 +86,10 @@ export const paperDetailSchema = paperSummarySchema
   .strict()
 export type PaperDetail = z.infer<typeof paperDetailSchema>
 
-/** 人工编辑元数据：仅这些字段允许 update-meta 修改 */
+/** 人工编辑元数据：仅这些字段允许 update-meta 修改。
+ *  [F-FOLDER-01] +month（节点月框——papers 表无 month 列，落位=service 层
+ *  同事务写 lineage_nodes.month，未入脉络文献 patch.month 无落点照实忽略）
+ *  +impactFactor（papers.impact_factor——D1 手动字段）。 */
 export const paperMetaPatchSchema = z
   .object({
     title: z.string().min(1).optional(),
@@ -90,7 +97,9 @@ export const paperMetaPatchSchema = z
     year: z.number().int().nullable().optional(),
     venue: z.string().optional(),
     doi: z.string().nullable().optional(),
-    abstract: z.string().optional()
+    abstract: z.string().optional(),
+    month: z.number().int().min(1).max(12).nullable().optional(),
+    impactFactor: z.number().nullable().optional()
   })
   .strict()
 export type PaperMetaPatch = z.infer<typeof paperMetaPatchSchema>
@@ -112,7 +121,15 @@ export const libraryQuerySchema = z
     // 单选=单元素特例，UI 面完全覆盖）；空选集由 UI 层收敛 undefined，空数组
     // schema 级拒收=防歧义；上界经 TAG_FILTER_MAX 同源（UI 消费同源——P7X-01）
     tagIds: z.array(z.string().min(1)).min(1).max(TAG_FILTER_MAX).optional(),
-    collectionId: z.string().optional(),
+    // [F-FOLDER-01] collectionId 过滤随 paper_collections 退役删除；接替=
+    // folderScope 判别联合（W5 终裁——三态显式，禁裸 nullable 二义；缺省=全部）
+    folderScope: z
+      .discriminatedUnion('kind', [
+        z.object({ kind: z.literal('all') }).strict(),
+        z.object({ kind: z.literal('unfiled') }).strict(),
+        z.object({ kind: z.literal('folder'), folderId: z.string().min(1) }).strict()
+      ])
+      .optional(),
     year: z.number().int().optional(),
     sort: librarySortSchema.default('added_desc'),
     offset: z.number().int().min(0).default(0),
@@ -120,6 +137,10 @@ export const libraryQuerySchema = z
   })
   .strict()
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
+
+/** [F-FOLDER-01] folderScope 判别联合独立导出（W5——folder DTO 面共用；
+ *  定义单源=libraryQuerySchema 内联字面，此处仅 re-export 防双写） */
+export type FolderScope = NonNullable<LibraryQuery['folderScope']>
 
 /** 通用分页形状 */
 export const pagedSchema = <T extends z.ZodTypeAny>(item: T) =>

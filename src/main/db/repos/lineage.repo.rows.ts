@@ -6,6 +6,7 @@
 import { z } from 'zod'
 import {
   LINE_TYPE_BASE_ORDER,
+  MAIN_GRAPH_ID,
   lineTypeGroupSchema,
   type LineTypeGroup,
   type LineageEdge,
@@ -14,7 +15,10 @@ import {
 
 /** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列 JSON 数组 TEXT，
  *  NULL=无标签（存量行零迁移兼容）；month/slot=010 迁移列——month NULL=未定
- *  月框（CHECK 1..12 在 DDL）、slot NULL=防御面兜底（迁移回填/service 新写恒有序）） */
+ *  月框（CHECK 1..12 在 DDL）、slot NULL=防御面兜底（迁移回填/service 新写恒
+ *  有序）；folder_id=012 迁移列——DDL 可空（design-final 修订二：SQLite ADD
+ *  COLUMN 静态禁 REFERENCES+非空 DEFAULT——NOT NULL DEFAULT 安全网移 repo 读
+ *  写边界），toNode 归一非空见映射注 */
 export interface LineageNodeRow {
   id: string
   paper_id: string | null
@@ -26,6 +30,7 @@ export interface LineageNodeRow {
   tags: string | null
   month: number | null
   slot: number | null
+  folder_id: string | null
   created_at: string
   updated_at: string
 }
@@ -57,6 +62,10 @@ export function toNode(row: LineageNodeRow): LineageNode {
     tags: row.tags === null ? null : (JSON.parse(row.tags) as string[]),
     month: row.month,
     slot: row.slot,
+    // 012 列读边界归一：DDL 可空（修订二）+迁移回填+写边界兜底三重封闭后
+    // NULL 只能来自库外手改——归一主图（节点 DTO 契约恒非空，与写边界
+    // upsertNode 兜底同源安全网）
+    folderId: row.folder_id ?? MAIN_GRAPH_ID,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

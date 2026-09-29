@@ -22,18 +22,13 @@ guardedDescribe('SR-DB-05', 'collections.repo —— 集合 upsert/挂接', () =
     expect(b.position).toBe(0)
   })
 
-  it('list 按 position 升序', () => {
-    repo.upsertByName('第三时代', 1)
-    repo.upsertByName('第二时代', 0)
-    repo.upsertByName('第五时代', 2)
-    expect(repo.list().map((c) => c.name)).toEqual(['第二时代', '第三时代', '第五时代'])
+  it('list 按 position 升序（[F-FOLDER-01] 迁移 012 后新库恒含主图 position=0——首行恒主图）', () => {
+    repo.upsertByName('第三时代', 2)
+    repo.upsertByName('第二时代', 1)
+    repo.upsertByName('第五时代', 3)
+    expect(repo.list().map((c) => c.name)).toEqual(['主图', '第二时代', '第三时代', '第五时代'])
   })
 
-  it('attach 幂等；namesByPaper 返回挂接集合名', () => {
-    const c = repo.upsertByName('第二时代', 0)
-    repo.attach('p-1', c.id)
-    expect(() => repo.attach('p-1', c.id)).not.toThrow()
-    expect(repo.namesByPaper('p-1')).toEqual(['第二时代'])
-    expect(repo.namesByPaper('ghost')).toEqual([])
-  })
+  // [回炉码 9] findById 用例随方法删除（本票新增面零基线残留——无需豁免；
+  // attach/namesByPaper 退役豁免在档 scripts/test-surface.exemptions.json）
 })

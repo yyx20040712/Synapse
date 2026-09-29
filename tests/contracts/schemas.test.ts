@@ -41,7 +41,9 @@ const paperSummary = {
   venue: 'Nature Water',
   doi: '10.1/x',
   tagNames: [],
-  collectionNames: [],
+  // [F-FOLDER-01] collectionNames 退役——folderId/impactFactor 必携（可空）
+  folderId: null,
+  impactFactor: null,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
@@ -60,6 +62,7 @@ const lineageNode = {
   tags: null,
   month: null,
   slot: null,
+  folderId: '__main__', // [F-FOLDER-01] 节点图归属必填
   createdAt: ISO,
   updatedAt: ISO
 }
@@ -87,6 +90,18 @@ const netDiagItem = { host: 'api.crossref.org', ok: true, latencyMs: -1 }
 // ── 合法夹具全集（键 ⟷ schemas.ts zod 导出一一对应——闭包对账面）────────
 const VALID: Record<string, unknown[]> = {
   voidReqSchema: [{}],
+  // [F-FOLDER-01] 文件夹域+双事件+图读入参
+  folderSchema: [{ id: 'f1', name: '图一', position: 0, paperCount: 0 }],
+  folderCreateReqSchema: [{ name: '图一' }],
+  folderRenameReqSchema: [{ id: 'f1', name: '新名' }],
+  folderDeleteReqSchema: [{ id: 'f1' }],
+  paperMoveReqSchema: [
+    { paperId: 'p1', toFolderId: 'f1' },
+    { paperId: 'p1', toFolderId: null }
+  ],
+  foldersChangedEventSchema: [{}],
+  lineageChangedEventSchema: [{}],
+  lineageGraphReqSchema: [{}, { folderId: 'f1' }],
   libraryListResSchema: [{ items: [paperSummary], total: 1 }],
   paperIdReqSchema: [{ paperId: 'p1' }],
   updateMetaReqSchema: [
@@ -151,6 +166,7 @@ const VALID: Record<string, unknown[]> = {
     {
       nodes: [lineageNode],
       edges: [lineageEdge],
+      pubNos: { p1: 3 }, // [F-FOLDER-01] 库级编号表（键=paperId）
       paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } },
       lineTypes: [
         { base: 'tree', subs: [{ id: 'lt1', name: '强继承', color: '#F2773A', dash: '', w: 2 }] },
@@ -233,6 +249,11 @@ const SCHEMA_NAMES = [
   'detachTagReqSchema',
   'enrichReqSchema',
   'exportProgressEventSchema',
+  'folderCreateReqSchema',
+  'folderDeleteReqSchema',
+  'folderRenameReqSchema',
+  'folderSchema',
+  'foldersChangedEventSchema',
   'exportResSchema',
   'exportSelectionReqSchema',
   'extractRequestEventSchema',
@@ -240,6 +261,8 @@ const SCHEMA_NAMES = [
   'importProgressEventSchema',
   'importResultSchema',
   'libraryListResSchema',
+  'lineageChangedEventSchema',
+  'lineageGraphReqSchema',
   'lineageGraphResSchema',
   'lineageIdReqSchema',
   'lineageImportResSchema',
@@ -256,6 +279,7 @@ const SCHEMA_NAMES = [
   'observeResSchema',
   'openExternalReqSchema',
   'paperIdReqSchema',
+  'paperMoveReqSchema',
   'readerOpenResSchema',
   'renameTagReqSchema',
   'reportReqSchema',

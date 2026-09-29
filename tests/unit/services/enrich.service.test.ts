@@ -45,7 +45,8 @@ const detail: PaperDetail = {
   venue: '',
   doi: null,
   tagNames: [],
-  collectionNames: [],
+  folderId: null,
+  impactFactor: null,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
@@ -57,8 +58,7 @@ const detail: PaperDetail = {
   fileUrl: 'app-file://p-1',
   fileName: 'x.pdf',
   updatedAt: 't',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): Repos {
@@ -75,6 +75,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
     collections: {} as Repos['collections'],
+    folders: {} as Repos['folders'], // [F-FOLDER-01] 文件夹域（面外桩）
     // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
     withTransaction: <T>(fn: () => T): T => fn()
   }

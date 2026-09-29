@@ -130,11 +130,14 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   const status = DR_STATUS[detail.enrichStatus]
-  // T3-P5 D-I-3 短号同源：入脉络→「#」+三位零填充 catalogNo（与列表序号列/
-  // 导出 lineage.json 同一编号——INV-76）；未入脉络→id 前 8 位短号现状零动
+  // [F-FOLDER-01] 短号同源：入脉络→「#」+三位零填充 pubNo（INV-92 库级派生
+  // ——与列表序号列/导出 lineage.json pub_no 同一编号源）；未入脉络→id 前 8
+  // 位短号现状零动（编号呈现面细化=F-FOLDER-02 票面）
   const idBadge =
     detail.lineage !== undefined
-      ? `#${String(detail.lineage.catalogNo).padStart(3, '0')}`
+      ? // ?? 0=防御注记（回炉 N5）：pubNo 由 DETAIL_SQL 窗口恒携（detailById
+        // 单源装配），lineage 在场蕴含 pubNo 在场——0 兜底为不可达路径防崩
+        `#${String(detail.pubNo ?? 0).padStart(3, '0')}`
       : shortId(detail.id)
   return (
     <div className="lib-dr">

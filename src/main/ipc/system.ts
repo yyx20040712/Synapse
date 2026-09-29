@@ -40,6 +40,10 @@ export function createSystemIpc(deps: IpcDeps): ApiHandlers['system'] {
     },
     async setQuitDirty(req) {
       deps.setQuitDirty(req.dirty)
+      // [F-FOLDER-01] INV-91：脉络写队列 pending 信号同载荷上报（缺省 false=
+      // 旧载荷兼容）。[回炉码 7] 必填直调（无可选链——装配缺失=调用即红，
+      // typecheck+system.test 双锚）
+      deps.setLineagePending(req.lineagePending ?? false)
       return { ok: true as const }
     },
     async windowControl(req) {

@@ -26,6 +26,7 @@ function node(
     y: null,
     month: null,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't'
   }

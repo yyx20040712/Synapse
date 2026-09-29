@@ -74,6 +74,8 @@ beforeEach(() => {
   svc = createLineageService({
     repo,
     paperExists,
+    paperFolderOf: () => null, // [回炉码 1] 统一规则桩（未归档语义——文件夹域用例在 move-paper 件）
+    ensurePaperFolder: () => '__main__',
     withTransaction: (fn) => db.transaction(fn)()
   })
 })

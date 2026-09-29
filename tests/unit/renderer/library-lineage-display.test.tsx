@@ -35,7 +35,8 @@ function makeSummary(patch: Partial<PaperSummary> = {}): PaperSummary {
     venue: 'Journal of Testing',
     doi: null,
     tagNames: [],
-    collectionNames: [],
+    folderId: null,
+    impactFactor: null,
     annotationCount: 0,
     noteCount: 0,
     lastReadPage: 0,
@@ -74,10 +75,10 @@ afterEach(async () => {
   detailHost = null
 })
 
-describe('T3-P5 PaperRow 序号列（入脉络=catalogNo+cat 类 accent 区分；未入脉络=位置序现状零动）', () => {
-  it('入脉络：三位零填充 catalogNo（ordinal 被忽略；# 前缀已删 F-LIBUI-01 ⑧）+lib-r-id.cat 类挂载；未入脉络：ordinal 位置序现状零动且无 cat 类', async () => {
+describe('T3-P5/[F-FOLDER-01] PaperRow 序号列（pubNo 库级编号+cat 类 accent 区分；未入脉络=位置序兜底现状零动）', () => {
+  it('入脉络：三位零填充 pubNo（ordinal 被忽略；# 前缀已删 F-LIBUI-01 ⑧）+lib-r-id.cat 类挂载；未入脉络：ordinal 位置序兜底且无 cat 类', async () => {
     const inLineage = makeSummary({
-      lineage: { year: 2021, month: 3, catalogNo: 7 }
+      pubNo: 7, lineage: { year: 2021, month: 3 }
     })
     const row = await renderRow(inLineage, 42)
     expect(row.querySelector('.lib-r-id')?.textContent).toBe('007')
@@ -91,15 +92,15 @@ describe('T3-P5 PaperRow 序号列（入脉络=catalogNo+cat 类 accent 区分�
 
 describe('T3-P5 PaperRow 年月列级联（D-I-2 三态）', () => {
   it('lineage 命中且 year/month 齐→YYYY-MM 补零（lineage.year 为准）', async () => {
-    const row = await renderRow(makeSummary({ lineage: { year: 2021, month: 3, catalogNo: 1 } }), 1)
+    const row = await renderRow(makeSummary({ pubNo: 1, lineage: { year: 2021, month: 3 } }), 1)
     expect(row.querySelector('.lib-r-year')?.textContent).toBe('2021-03')
   })
 
   it('lineage 命中但 month=null→paper.year 单值；lineage.year=null 同（任一 null 单值）', async () => {
-    const r1 = await renderRow(makeSummary({ lineage: { year: 2021, month: null, catalogNo: 1 } }), 1)
+    const r1 = await renderRow(makeSummary({ pubNo: 1, lineage: { year: 2021, month: null } }), 1)
     expect(r1.querySelector('.lib-r-year')?.textContent).toBe('2024') // paper.year
     const r2 = await renderRow(
-      makeSummary({ year: 1999, lineage: { year: null, month: 5, catalogNo: 2 } }),
+      makeSummary({ year: 1999, pubNo: 2, lineage: { year: null, month: 5 } }),
       1
     )
     expect(r2.querySelector('.lib-r-year')?.textContent).toBe('1999')
@@ -144,9 +145,9 @@ describe('T3-P5 PaperDetailPanel 短号同源（D-I-3）', () => {
     vi.clearAllMocks()
   })
 
-  it('入脉络：短号=#三位零填充 catalogNo（id 短号被替换）', async () => {
+  it('入脉络：短号=#三位零填充 pubNo（id 短号被替换——[F-FOLDER-01] 编号源=summary.pubNo）', async () => {
     await renderPanel(
-      makeDetail({ id: 'paper-1234567890', lineage: { year: 2021, month: 3, edgeCount: 2, catalogNo: 12 } })
+      makeDetail({ id: 'paper-1234567890', pubNo: 12, lineage: { year: 2021, month: 3, edgeCount: 2 } })
     )
     expect(drIdText()).toContain('#012')
     expect(drIdText()).not.toContain('paper-12')
@@ -159,7 +160,7 @@ describe('T3-P5 PaperDetailPanel 短号同源（D-I-3）', () => {
 
   it('抽屉文案 T3-P3 预渲染零动：lineage 命中 month 真值到达即正确（年月行；脉络行已随关联节退役 F-LIBUI-01 ⑤）', async () => {
     await renderPanel(
-      makeDetail({ year: 2023, lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
+      makeDetail({ year: 2023, pubNo: 1, lineage: { year: 2023, month: 6, edgeCount: 3 } })
     )
     const flds = Array.from(detailHost?.querySelectorAll('.lib-fld') ?? []).map((row) => ({
       k: row.querySelector('.lib-fld-k')?.textContent ?? '',

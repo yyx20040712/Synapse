@@ -38,6 +38,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     y: null,
     month: null,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't',
     ...patch
@@ -191,7 +192,9 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 
-  it('骑缝编号 #NNN 三位零填充（lineageCatalogNos 单源：随 lineageOrder 全序，与组内传入序无关）', () => {
+  it('骑缝编号 #NNN 三位零填充（[F-FOLDER-01] pubNos 单源：库级编号经 props 传入，与组内传入序无关）', () => {
+    // [F-FOLDER-01] catalogNo（图序编号）退役——节点号=该文献 pubNo（INV-92 库级
+    // 派生，Board 自 store pubNos 分发）；样例值随意但彼此相异以锁呈现序
     mount(
       <LineageTimeline
         nodes={[
@@ -199,11 +202,12 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
           node('EARLY', { year: 2022, month: 5, slot: 1 })
         ]}
         edges={[]}
+        pubNos={{ 'paper-LATE': 12, 'paper-EARLY': 7 }}
       />
     )
-    // 组内序=传入序（LATE 先渲染）；编号=slot 全序（EARLY=#001/LATE=#002）
-    expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('#002')
-    expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#001')
+    // 编号=pubNo 值直取（非组内序）；主题节点无键=0 不呈现编号语义
+    expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('#012')
+    expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#007')
   })
 
   it('小卡三行真文本：题名/核心想法（空串整行不渲染）/年月 YYYY-MM 补零与年单值/引用数与主题节点「—」', () => {

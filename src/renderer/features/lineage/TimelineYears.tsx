@@ -44,8 +44,9 @@ export function TimelineLegend(): JSX.Element {
 
 export function TimelineYears(props: {
   groups: TimelineYearGroup[]
-  /** INV-76 编号单源（Timeline useMemo 全图一次） */
-  catalogNos: Map<string, number>
+  /** [F-FOLDER-01] 节点号单源（Timeline useMemo 一次——值=该文献 pubNo，
+  *  INV-92 库级同源；主题节点=0） */
+  pubNos: Map<string, number>
   /** 核心档预计算（classify.isCore 单源） */
   coreIds: Map<string, boolean>
   paperMetrics: Record<string, LineagePaperMetrics>
@@ -63,13 +64,13 @@ export function TimelineYears(props: {
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
   onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {
-  const { groups, catalogNos, coreIds, paperMetrics } = props
+  const { groups, pubNos, coreIds, paperMetrics } = props
   const slot = props.dragSlot ?? null
   const renderCard = (n: LineageNode, dragging: boolean): JSX.Element => (
     <LineageTimelineCard
       key={n.id}
       node={n}
-      no={catalogNos.get(n.id) ?? 0}
+      no={pubNos.get(n.id) ?? 0}
       core={coreIds.get(n.id) === true}
       metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
       selected={props.selectedNodeId === n.id}

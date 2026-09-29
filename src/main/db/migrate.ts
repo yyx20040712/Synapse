@@ -19,6 +19,7 @@ import readingTimeSql from './migrations/008_reading_time.sql?raw'
 import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
 import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
 import tagsColorSql from './migrations/011_tags_color.sql?raw'
+import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
 
 export interface Migration {
   version: number
@@ -44,7 +45,12 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 10, name: 'lineage_v2', sql: lineageV2Sql },
   // [F-TAGS-01] 标签颜色：tags.color TEXT 可空无默认（NULL=存量默认 accent；
   // 新库 user_version 终值 11）
-  { version: 11, name: 'tags_color', sql: tagsColorSql }
+  { version: 11, name: 'tags_color', sql: tagsColorSql },
+  // [F-FOLDER-01] 文件夹×脉络图绑定：papers.folder_id（单归属）+impact_factor
+  // +lineage_nodes.folder_id（修订二：可空列+迁移回填+repo 写边界兜底——SQLite
+  // ADD COLUMN 静态禁 REFERENCES+非空 DEFAULT）+坑 a 存量去重+部分唯一索引
+  // +回填+paper_collections 退役（design-final 修订二——新库 user_version 终值 12）
+  { version: 12, name: 'folders_graphs', sql: foldersGraphsSql }
 ]
 
 export interface MigrateResult {

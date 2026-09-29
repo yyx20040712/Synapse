@@ -32,7 +32,8 @@ const detail: PaperDetail = {
   venue: 'Water Research',
   doi: '10.1/x',
   tagNames: [],
-  collectionNames: [],
+  folderId: null,
+  impactFactor: null,
   annotationCount: 2,
   noteCount: 1,
   lastReadPage: 0,
@@ -44,8 +45,7 @@ const detail: PaperDetail = {
   fileUrl: 'app-file://p-1',
   fileName: 'a.pdf',
   updatedAt: '2026-01-02T00:00:00Z',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 function ann(id: string, page: number, off: number, comment: string): Annotation {

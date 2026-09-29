@@ -30,7 +30,7 @@
  * lineage-manual-edges.test.ts（manual 面）[受锁新增]（always-active）。
  */
 import { readFile } from 'node:fs/promises'
-import { isSurveyTitle, lineageDraftSchema, lineageOrder } from '../../../shared/models/lineage'
+import { MAIN_GRAPH_ID, isSurveyTitle, lineageDraftSchema, lineageOrder } from '../../../shared/models/lineage'
 import type {
   LineTypeGroup,
   LineageEdge,
@@ -75,12 +75,16 @@ export interface LineageService {
   upsertLineTypes(groups: LineageGroupInput): LineTypeGroup[]
   /** 全图单读+含金量 join（F-LG14：paperMetrics 键=paperId，主题节点不入表；
    *  批量单语句禁 N+1——主控裁决）。[T3-P5] nodes=lineageOrder 序（INV-75
-   *  读面唯一保证——消费方不得重排）+lineTypes 恒四组（meta KV 读出） */
-  graph(): {
+   *  读面唯一保证——消费方不得重排）+lineTypes 恒四组（meta KV 读出）。
+   *  [F-FOLDER-01] folderId 提供=只取该图节点/边子图（W4 改写面——图切换器
+   *  数据源；边=双端点均入图才保留）+pubNos（库级派生编号 INV-92——图内
+   *  节点号与库号同源单一真相源；主题节点无键） */
+  graph(folderId?: string): {
     nodes: LineageNode[]
     edges: LineageEdge[]
     paperMetrics: Record<string, LineagePaperMetrics>
     lineTypes: LineTypeGroup[]
+    pubNos: Record<string, number>
   }
 }
 
@@ -101,6 +105,12 @@ export interface LineageServiceDeps {
   >
   /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
   paperExists: (paperId: string) => boolean
+  /** [F-FOLDER-01·回炉码 1] INV-88 统一规则判别源：文献归属纯读（无副作用；
+   *  装配层接 repos.papers.folderIdOf——显式 folderId≠归属拒的前置读） */
+  paperFolderOf: (paperId: string) => string | null
+  /** [F-FOLDER-01·回炉码 1] INV-88 统一规则落笔：未归档→写主图（入图即归档）
+   *  并返回 '__main__'；已归档→原样返回（装配层接 repos.papers.ensureFolderAssigned） */
+  ensurePaperFolder: (paperId: string) => string
   /** 事务边界（repos.withTransaction 注入——清面+重灌原子性） */
   withTransaction: <T>(fn: () => T) => T
   /** papers 含金量摘要批量查证（F-LG14——装配层接 repos.papers.listMetricsByIds；
@@ -110,6 +120,13 @@ export interface LineageServiceDeps {
     venue: string
     citedByCount: number | null
   }>
+  /** [F-FOLDER-01] 文件夹存在性查证（幽灵 folderId 拦截——装配层接
+   *  repos.folders.findById !== null；可选缺省=恒真（既有单测装配兼容——
+   *  paperMetrics 同款先例），生产装配恒传真实现） */
+  folderExists?: (folderId: string) => boolean
+  /** [F-FOLDER-01] pubNo 批查（INV-92 库级派生——graph 通道 pubNos 装配；
+   *  可选缺省=空面，生产装配接 repos.papers.pubNoByIds） */
+  pubNos?: (paperIds: string[]) => Array<{ paperId: string; pubNo: number }>
 }
 
 /**
@@ -258,6 +275,45 @@ function reachable(
  * 「被现存边引用的 sub 不得消失」仍在本文件 upsertLineTypes）。
  */
 export function createLineageService(deps: LineageServiceDeps): LineageService {
+  /** [R2——k1'-W3] upsertNode 原体（withTransaction 内执行——见 upsertNode 注） */
+  function upsertNodeInner(input: LineageNodeUpsert): LineageNode {
+    if (input.paperId !== null && !deps.paperExists(input.paperId)) {
+      throw new LineageDomainError('CONFLICT', `文献不存在（幽灵 paperId）：${input.paperId}`)
+    }
+    const nodes = deps.repo.listGraph().nodes
+    const existing = input.id !== undefined ? nodes.find((n) => n.id === input.id) : undefined
+    // [F-FOLDER-01·回炉码 1] INV-88 统一规则（文献节点两分支全覆盖）：节点
+    // folder=该文献 papers.folder_id；未归档→先写主图（入图即归档——矩阵
+    // 「导入→当前文件夹」同族语义）。显式 folderId≠归属拒（回炉码 3——不
+    // 隐式移动；CONFLICT 拒绝型，队列按 INV-84 丢弃）。主题节点（paperId
+    // null）无文献归属面：缺省=保持现图/新建落主图+显式值存在性校验。
+    let folderId: string
+    if (input.paperId !== null) {
+      const current = deps.paperFolderOf(input.paperId)
+      const effective = current ?? MAIN_GRAPH_ID
+      if (input.folderId !== undefined && input.folderId !== effective) {
+        throw new LineageDomainError(
+          'CONFLICT',
+          `文献不在该文件夹——用移动文献操作（文献现属 ${effective}，请求落 ${input.folderId}）`
+        )
+      }
+      if (current === null) deps.ensurePaperFolder(input.paperId)
+      folderId = effective
+    } else {
+      folderId = input.folderId ?? existing?.folderId ?? MAIN_GRAPH_ID
+      if (
+        input.folderId !== undefined &&
+        deps.folderExists !== undefined &&
+        !deps.folderExists(folderId)
+      ) {
+        throw new LineageDomainError('CONFLICT', `文件夹不存在（幽灵 folderId）：${folderId}`)
+      }
+    }
+    // T3-P5 month/slot 归一（D-I-1）——全图读一次算组内 max（单用户本地图量级）
+    const { month, slot } = normalizeMonthSlot({ ...input, folderId }, nodes)
+    return deps.repo.upsertNode({ ...input, folderId, month, slot })
+  }
+
   return {
     importDraft(raw: unknown): LineageImportResult {
       const errors = validateDraft(raw, deps.paperExists)
@@ -284,7 +340,11 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
             y: null,
             tags: n.tags ?? null, // F-LG14：草稿带为主（可选缺省=无标签）
             month,
-            slot
+            slot,
+            // [F-FOLDER-01·回炉码 1] INV-88 统一规则：节点 folder=该文献归属
+            // （ensurePaperFolder 逐文献解析——未归档先写主图=入图即归档）；
+            // 禁写死主图（回炉禁令）
+            folderId: deps.ensurePaperFolder(n.paper_id)
           })
           paperToNode.set(n.paper_id, node.id)
           nodeCount++
@@ -325,12 +385,10 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
     },
 
     upsertNode(input: LineageNodeUpsert): LineageNode {
-      if (input.paperId !== null && !deps.paperExists(input.paperId)) {
-        throw new LineageDomainError('CONFLICT', `文献不存在（幽灵 paperId）：${input.paperId}`)
-      }
-      // T3-P5 month/slot 归一（D-I-1）——全图读一次算组内 max（单用户本地图量级）
-      const { month, slot } = normalizeMonthSlot(input, deps.repo.listGraph().nodes)
-      return deps.repo.upsertNode({ ...input, month, slot })
+      // [R2——k1'-W3] ensurePaperFolder（归档写）与节点 upsert 包 withTransaction
+      // 原子：裸 INSERT 抛（如坑 a 索引 UNIQUE 违例）时无「已归档未建节点」残留
+      // ——与 import/moveFolder 两路事务对称（ensurePaperFolder 单源驻 papers.repo）
+      return deps.withTransaction(() => upsertNodeInner(input))
     },
 
     removeNode(id: string): number {
@@ -353,13 +411,24 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (!nodeIds.has(input.toNode)) {
         throw new LineageDomainError('CONFLICT', `目标节点不存在：${input.toNode}`)
       }
+      // [F-FOLDER-01 INV-90] 跨图边守卫（边属图=端点所在图派生——零冗余零漂移
+      // 面的代价=服务层护栏；ERR_CROSS_GRAPH_EDGE 以 CONFLICT 码+中文 reason
+      // 承载：AppErrorCode 封闭枚举纪律（新增码需 ADR+[locked-change]）+
+      // INV-84 拒绝型语义（renderer 队列按 CONFLICT 丢弃动作——重试永不成功型）
+      const fromNode = graph.nodes.find((n) => n.id === input.fromNode)!
+      const toNode = graph.nodes.find((n) => n.id === input.toNode)!
+      if (fromNode.folderId !== toNode.folderId) {
+        throw new LineageDomainError(
+          'CONFLICT',
+          `跨图边拒绝（ERR_CROSS_GRAPH_EDGE）：两端节点分属不同文件夹的脉络图（${fromNode.folderId} / ${toNode.folderId}）——请先移动文献到同一文件夹`
+        )
+      }
       // ref 限定（R2-LG12 §1）：from 必须是综述文献节点（菜单项级限定+service
       // 双守——isSurveyTitle 单源 shared/models；paperId null 主题节点同拒）。
       // manual 无 from 限定（F-LG15 守卫票面清单：豁免单父/拒环/同端点对互斥/
       // draft 不收——「仅允许人工」由 UI 入口+draft 拒收承载，非 from 属性限定）
       if (kind === 'ref') {
-        const from = graph.nodes.find((n) => n.id === input.fromNode)!
-        if (from.paperId === null || !isSurveyTitle(from.title)) {
+        if (fromNode.paperId === null || !isSurveyTitle(fromNode.title)) {
           throw new LineageDomainError('CONFLICT', '参考边只能由综述节点发出')
         }
       }
@@ -472,17 +541,27 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       return deps.repo.getLineTypes() // 校验后回显（恒四组 base 枚举序——与 graph 同序）
     },
 
-    graph(): {
+    graph(folderId?: string): {
       nodes: LineageNode[]
       edges: LineageEdge[]
       paperMetrics: Record<string, LineagePaperMetrics>
       lineTypes: LineTypeGroup[]
+      pubNos: Record<string, number>
     } {
       const g = deps.repo.listGraph()
+      // [F-FOLDER-01] 子图过滤（W4）：folderId 提供=节点按图归属过滤+边=双端点
+      // 均入图才保留（跨图边本不该存在——INV-90 服务层护栏；过滤语义=该图子图）
+      const scopedNodes =
+        folderId === undefined ? g.nodes : g.nodes.filter((n) => n.folderId === folderId)
+      const scopedNodeIds = new Set(scopedNodes.map((n) => n.id))
+      const scopedEdges =
+        folderId === undefined
+          ? g.edges
+          : g.edges.filter((e) => scopedNodeIds.has(e.fromNode) && scopedNodeIds.has(e.toNode))
       // F-LG14 含金量 join：文献节点 paperId 一次收集→批量单语句查证（禁 N+1
       // 逐节点调用——主控裁决）→venueTier 映射（venueToTier 单源）收口在此。
       // 主题节点（paperId null）无含金量面不入表。
-      const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
+      const paperIds = scopedNodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
       const rows = deps.paperMetrics?.(paperIds) ?? []
       const paperMetrics: Record<string, LineagePaperMetrics> = {}
       for (const r of rows) {
@@ -491,13 +570,21 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           venueTier: venueToTier(r.venue)
         }
       }
+      // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口单源=pubNoByIds——与 LIST_SQL
+      // 同序同值；主题节点无键）
+      const pubNoRows = deps.pubNos?.(paperIds) ?? []
+      const pubNos: Record<string, number> = {}
+      for (const r of pubNoRows) {
+        pubNos[r.paperId] = r.pubNo
+      }
       // T3-P5 INV-75：nodes=排序契约序（唯一纯函数 lineageOrder 单源——消费方
       // 不得重排）；lineTypes=恒四组（repo 补齐+枚举序）
       return {
-        nodes: lineageOrder(g.nodes),
-        edges: g.edges,
+        nodes: lineageOrder(scopedNodes),
+        edges: scopedEdges,
         paperMetrics,
-        lineTypes: deps.repo.getLineTypes()
+        lineTypes: deps.repo.getLineTypes(),
+        pubNos
       }
     }
   }

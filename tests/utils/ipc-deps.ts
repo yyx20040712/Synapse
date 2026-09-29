@@ -13,6 +13,7 @@ export interface IpcDepsOverrides {
   ping?: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
   userDataDir?: string
   setQuitDirty?: (dirty: boolean) => void
+  setLineagePending?: (pending: boolean) => void // 桩恒供值（IpcDeps 侧已必填——本覆盖键保持可选语义）
   controlWindow?: IpcDeps['controlWindow']
 }
 
@@ -31,6 +32,8 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       ai_notes_import: null as never,
       zcode_link: null as never,
       lineage: null as never,
+      folders: null as never,
+      papers: null as never,
       ...over.services
     },
     dialogs: {
@@ -47,6 +50,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
     userDataDir: over.userDataDir ?? 'C:/synapse-test-user-data',
     ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 })),
     setQuitDirty: over.setQuitDirty ?? (() => {}),
+    setLineagePending: over.setLineagePending ?? (() => {}),
     controlWindow: over.controlWindow ?? ((_action) => ({ maximized: false }))
   }
 }

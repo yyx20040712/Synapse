@@ -110,9 +110,14 @@ export function App(): JSX.Element {
     document.documentElement.dataset.theme = theme
   }, [theme])
   useEffect(() => {
-    // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）
-    window.api.system.setQuitDirty({ dirty: quitDirty }).catch(() => undefined)
-  }, [quitDirty])
+    // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）。
+    // [F-FOLDER-01] INV-91 S1 队列闸：lineagePending（脉络写队列 pending 独立
+    // 信号——folders/papers.move/updateMeta 写入口互斥判定源）随同载荷上报，
+    // 依赖列并入 lineageDirty（两信号各自变化沿都触发重报）
+    window.api.system
+      .setQuitDirty({ dirty: quitDirty, lineagePending: lineageDirty })
+      .catch(() => undefined)
+  }, [quitDirty, lineageDirty])
 
   // "打开文献"请求：切到阅读器 tab（请求本体的补读/监听在 ReaderPage，见 open-paper-bus）
   useEffect(() => {

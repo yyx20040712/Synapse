@@ -12,7 +12,8 @@ const paper: PaperDetail = {
   venue: '水利学报',
   doi: '10.1000/demo',
   tagNames: [],
-  collectionNames: [],
+  folderId: null,
+  impactFactor: null,
   annotationCount: 2,
   noteCount: 1,
   lastReadPage: 3,
@@ -24,8 +25,7 @@ const paper: PaperDetail = {
   fileUrl: 'app-file://p-1',
   fileName: 'demo.pdf',
   updatedAt: '2026-01-01T00:00:00Z',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 function ann(page: number, start: number, quote: string, comment = ''): Annotation {

@@ -1258,6 +1258,215 @@
       "caseTitle": "码点安全短名（回炉 1 d1-W5）：emoji 课题名前 4 码点截断，无孤立代理对",
       "reason": "F-WS-02 弹层 describe 改组课题管理视图页 describe：用例本体保留（标题/断言零改），describe 路径随 WsRailPopover 退役改写",
       "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-WS-02/brief-executor-r0.md#R4+主控 2026-09-30 批准（收口序裁定案 c 回示）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域枚举 pin：恰 12 域",
+      "reason": "F-FOLDER-01 通道面随迁（design-final §2.1/W4）：61 通道/14 域/5 事件终态——pin 锚数字随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
+      "reason": "F-FOLDER-01 通道面随迁（design-final §2.1/W4）：61 通道/14 域/5 事件终态——pin 锚数字随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道三枚举 pin；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
+      "reason": "F-FOLDER-01 通道面随迁（design-final §2.1/W4）：61 通道/14 域/5 事件终态——pin 锚数字随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道值 pin：三通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
+      "reason": "F-FOLDER-01 通道面随迁（design-final §2.1/W4）：61 通道/14 域/5 事件终态——pin 锚数字随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
+      "reason": "F-FOLDER-01 通道面随迁（design-final §2.1/W4）：61 通道/14 域/5 事件终态——pin 锚数字随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "002 索引在位：按集合过滤与 added_at 排序不再全表扫",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "迁移产物包含全部核心表与 FTS 表（schema golden）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/repos/collections.repo.test.ts",
+      "caseTitle": "list 按 position 升序",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：新库恒含主图（迁移 012 (1) 插入）——list 期望面随迁",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/repos/collections.repo.test.ts",
+      "caseTitle": "attach 幂等；namesByPaper 返回挂接集合名",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/repos/papers.repo.test.ts",
+      "caseTitle": "汇总字段：tagNames/collectionNames/annotationCount/noteCount 聚合",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/db/repos/papers.repo.test.ts",
+      "caseTitle": "detailById：聚合 tags/collections 明细与阅读字段",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "骑缝编号 #NNN 三位零填充（lineageCatalogNos 单源：随 lineageOrder 全序，与组内传入序无关）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "caseTitle": "命中：paper_id 节点透出 lineage={year, month 真值, edgeCount=双端计数, catalogNo}",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "caseTitle": "month 真值透传（T3-P5 摘「恒 null」注释——节点数据直达）+全序编号 catalogNo",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-detail-lineage.test.ts",
+      "caseTitle": "旧 detail 夹具（无 lineage）strict 解析通过；lineage 形状严格（缺子键/未知子键均拒）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-lineage-c5.test.ts",
+      "caseTitle": "入脉络行挂 lineage{year,month,catalogNo}=lineageCatalogNos 同源；未入脉络整键省略",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-lineage-c5.test.ts",
+      "caseTitle": "当页外脉络节点不误挂（分页面——仅当页行 join）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-lineage-c5.test.ts",
+      "caseTitle": "node.month 真值透传+catalogNo 编号；lineage 形={year,month,edgeCount,catalogNo}",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/library-lineage-c5.test.ts",
+      "caseTitle": "未命中整键省略（既有语义零动）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚（该用例在改锚文件内保留同名承接——标题精简）",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-assemble.test.ts",
+      "caseTitle": "递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 catalog_no<…<year；subs color<dash<id<name<w",
+      "reason": "F-FOLDER-01 序列化变更（INV-77 自则）：lineage.json schema_version 2——catalog_no→pub_no",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-assemble.test.ts",
+      "caseTitle": "catalog_no 与 lineageOrder 全序一致（同源 lineageCatalogNos——禁双实现）+不含 x/y/slot",
+      "reason": "F-FOLDER-01 序列化变更（INV-77 自则）：lineage.json schema_version 2——catalog_no→pub_no",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-assemble.test.ts",
+      "caseTitle": "空图：nodes/edges 空数组+line_types 恒四组（空配置面）+schema_version=1",
+      "reason": "F-FOLDER-01 序列化变更（INV-77 自则）：lineage.json schema_version 2——catalog_no→pub_no",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-assemble.test.ts",
+      "caseTitle": "finalizing 写 lineage.json：字节=assembleLineageJson（含 catalog_no）；UTF-8 无 BOM",
+      "reason": "F-FOLDER-01 序列化变更（INV-77 自则）：lineage.json schema_version 2——catalog_no→pub_no",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-model.test.ts",
+      "caseTitle": "按 lineageOrder 全序编号 1..N（id→序号 Map）；同输入同输出",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2/§6）：catalogNo 全仓退役（INV-92 pubNo 接替）——图序编号用例随语义消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/app-quit-dirty.test.tsx",
+      "caseTitle": "tab dirty false→true 翻转（notes pending 沿）无 fewer-hooks 错位且 dirty 仍上报",
+      "assertionText": "expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true })",
+      "reason": "F-FOLDER-01 S1 队列闸（INV-91）：set-quit-dirty 载荷 +lineagePending——上报形状断言随扩",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）",
+      "assertionText": "expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true })",
+      "reason": "F-FOLDER-01 S1 队列闸（INV-91）：set-quit-dirty 载荷 +lineagePending——上报形状断言随扩",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘",
+      "assertionText": "expect( host?.querySelector('select[aria-label=\"按集合筛选\"]')?.classList.contains('lib-sort-on') ).toBe(false)",
+      "reason": "F-FOLDER-01 主控终裁（design-final §1）：paper_collections M2M 退役（012 DROP）——挂接/明细断言面随 DDL 消亡改锚",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语义）",
+      "assertionText": "expect(svc.graph()).toEqual({ nodes: [], edges: [], paperMetrics: {}, lineTypes: [ { base: 'tree', subs: [] }, { base: 'inferred', subs: [] }, { base: 'ref', subs: [] }, { base: 'manual', subs: [] } ] })",
+      "reason": "F-FOLDER-01 graph 响应扩 pubNos（design-final §2.1 改写面）——toEqual 整形断言随扩",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-side-reskin.test.tsx",
+      "caseTitle": "insp-cap「节点检查」+骑缝编号 #NNN（catalogNo 分发）；缺省不呈现编号",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2.2/INV-92）：catalogNo→pubNo 编号源切换——呈现面用例标题随语义刷新",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-lineage-display.test.tsx",
+      "caseTitle": "T3-P5 PaperRow 序号列（入脉络=catalogNo+cat 类 accent 区分；未入脉络=位置序现状零动）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2.2/INV-92）：catalogNo→pubNo 编号源切换——呈现面用例标题随语义刷新",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-lineage-display.test.tsx",
+      "caseTitle": "入脉络：三位零填充 catalogNo（ordinal 被忽略；# 前缀已删 F-LIBUI-01 ⑧）+lib-r-id.cat 类挂载；未入脉络：ordinal 位置序现状零动且无 cat 类",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2.2/INV-92）：catalogNo→pubNo 编号源切换——呈现面用例标题随语义刷新",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-lineage-display.test.tsx",
+      "caseTitle": "入脉络：短号=#三位零填充 catalogNo（id 短号被替换）",
+      "reason": "F-FOLDER-01 主控终裁（design-final §2.2/INV-92）：catalogNo→pubNo 编号源切换——呈现面用例标题随语义刷新",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/folders-move-paper.test.ts",
+      "caseTitle": "移动 F1→F2（节点在场）：folder_id+节点图归属改写；slot 不重排（W3——year/month 不变）；跨图边清理+同图边保留+双广播",
+      "reason": "F-FOLDER-01 回炉 R1（门一双席回执 d1-W3/码 6）：moveFolder 移入分支 slot 由 W3 透写改为目标图组 max+1 归一（INV-75 同图内唯一）——标题随语义刷新",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/e2e/smoke.spec.ts",
+      "caseTitle": "真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ app-file:// fetch 不被 CSP 拦截",
+      "assertionText": "expect(state.collections.data).toEqual([])",
+      "reason": "F-FOLDER-01 票 1 收口亲修：012 起空库 collections 恒含主图 __main__ 初始行（INV-93 存量脉络承载锚）——断言随语义随迁（toEqual([])→toHaveLength(1)+name=主图），用例本体保留 NEW 侧在档",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
     }
   ]
 }

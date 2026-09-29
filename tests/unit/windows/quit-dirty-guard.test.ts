@@ -91,5 +91,17 @@ guardedDescribe(
       await expect(ipc.setQuitDirty({ dirty: false })).resolves.toEqual({ ok: true })
       expect(seen).toEqual([true, false])
     })
+
+    it('[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）——IpcDeps 必填直调（缺失即红）', async () => {
+      const seenPending: boolean[] = []
+      const ipc = createSystemIpc(
+        makeIpcDeps({ setLineagePending: (v) => void seenPending.push(v) })
+      )
+      await expect(
+        ipc.setQuitDirty({ dirty: true, lineagePending: true })
+      ).resolves.toEqual({ ok: true })
+      await expect(ipc.setQuitDirty({ dirty: false })).resolves.toEqual({ ok: true })
+      expect(seenPending).toEqual([true, false]) // 显式 true→true；缺省→false
+    })
   }
 )

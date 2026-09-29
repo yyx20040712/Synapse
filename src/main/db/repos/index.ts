@@ -10,6 +10,7 @@ import { createAiNotesRepo, type AiNotesRepo } from './ai_notes.repo'
 import { createLineageRepo, type LineageRepo } from './lineage.repo'
 import { createTagsRepo, type TagsRepo } from './tags.repo'
 import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
+import { createFoldersRepo, type FoldersRepo } from './folders.repo'
 
 export interface Repos {
   papers: PapersRepo
@@ -19,6 +20,9 @@ export interface Repos {
   lineage: LineageRepo
   tags: TagsRepo
   collections: CollectionsRepo
+  /** [F-FOLDER-01] 文件夹域 CRUD（collections 表新面——与 collections.repo
+   *  同表分置，方法零交叠） */
+  folders: FoldersRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */
@@ -34,8 +38,9 @@ export function createRepos(db: SqliteDb): Repos {
     lineage: createLineageRepo(db),
     tags: createTagsRepo(db),
     collections: createCollectionsRepo(db),
+    folders: createFoldersRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
 
-export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, LineageRepo, TagsRepo, CollectionsRepo }
+export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, LineageRepo, TagsRepo, CollectionsRepo, FoldersRepo }

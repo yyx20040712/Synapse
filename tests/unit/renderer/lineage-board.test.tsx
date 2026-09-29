@@ -52,6 +52,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     y: null,
     month: null,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't',
     ...patch
@@ -485,6 +486,7 @@ describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lin
     await flush()
     const calls = stubApi.system.setQuitDirty.mock.calls
     expect(calls.length).toBeGreaterThanOrEqual(2) // false（初始）→true（失败）
-    expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true })
+    // [F-FOLDER-01] INV-91 S1 队列闸：lineage 保存失败=队列 pending → lineagePending=true
+    expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true, lineagePending: true })
   })
 })

@@ -1,9 +1,9 @@
 /**
- * 事件面 zod 校验单口——main→renderer 三事件（importProgress/
- * exportCorpus/windowState）载荷 schema 集合，供 preload 接收侧 safeParse
- * 兜底消费；与 api-surface.ts 的 PreloadEvents 类型同目录邻近防漂移——
- * 新增事件通道 = 接线表 EVENT_CHANNELS + 本件两处对齐，preload 兜底不漏
- * 新通道。
+ * 事件面 zod 校验单口——main→renderer 五事件（importProgress/
+ * exportCorpus/windowState+foldersChanged/lineageChanged）载荷 schema 集合，
+ * 供 preload 接收侧 safeParse 兜底消费；与 api-surface.ts 的 PreloadEvents
+ * 类型同目录邻近防漂移——新增事件通道 = 接线表 EVENT_CHANNELS + 本件两处
+ * 对齐，preload 兜底不漏新通道。
  *
  * 单源纪律：schema 本体定义处 = ./schemas（与 invoke 面入侧校验同源件），
  * 本件仅做 re-export 与判别联合组装，禁在此手写第二份等价定义（类型单一
@@ -22,10 +22,12 @@ import {
   extractRequestEventSchema,
   exportProgressEventSchema,
   importProgressEventSchema,
-  windowStateEventSchema
+  windowStateEventSchema,
+  foldersChangedEventSchema,
+  lineageChangedEventSchema
 } from './schemas'
 
-export { importProgressEventSchema, windowStateEventSchema }
+export { importProgressEventSchema, windowStateEventSchema, foldersChangedEventSchema, lineageChangedEventSchema }
 
 /**
  * exportCorpus 事件载荷（判别键 type：'extract-request' | 'progress'）——

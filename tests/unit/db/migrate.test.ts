@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
   it('新库：全量应用，user_version = 最新版本', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
     expect(readUserVersion(db)).toBe(result.currentVersion)
     db.close()
@@ -31,12 +31,12 @@ describe('db/migrate —— 迁移执行器', () => {
     db.close()
   })
 
-  it('002 索引在位：按集合过滤与 added_at 排序不再全表扫', () => {
+  it('002 索引在位：added_at 排序不再全表扫（[F-FOLDER-01] 集合过滤索引随 paper_collections 退役连带消亡）', () => {
     const db = createTestDb()
     const indexes = (
       db.prepare("SELECT name FROM sqlite_master WHERE type='index'").all() as Array<{ name: string }>
     ).map((r) => r.name)
-    expect(indexes).toContain('idx_paper_collections_collection')
+    expect(indexes).not.toContain('idx_paper_collections_collection')
     expect(indexes).toContain('idx_papers_added_at')
     db.close()
   })
@@ -60,7 +60,6 @@ describe('db/migrate —— 迁移执行器', () => {
       'collections',
       'notes',
       'notes_fts',
-      'paper_collections',
       'paper_tags',
       'papers',
       'papers_fts',
@@ -68,6 +67,8 @@ describe('db/migrate —— 迁移执行器', () => {
     ]) {
       expect(tables, `缺表：${expected}`).toContain(expected)
     }
+    // [F-FOLDER-01] paper_collections M2M 退役（012 DROP——单归属化）
+    expect(tables).not.toContain('paper_collections')
     db.close()
   })
 

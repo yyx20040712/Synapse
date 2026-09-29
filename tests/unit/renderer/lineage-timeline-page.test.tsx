@@ -40,6 +40,7 @@ function node(
     y: patch.y ?? null,
     month: patch.month ?? null,
     slot: null,
+    folderId: '__main__',
     createdAt: 't',
     updatedAt: 't'
   }

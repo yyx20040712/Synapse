@@ -15,15 +15,17 @@ import * as S from '../../src/shared/ipc/schemas'
  * 执法对象，pin 即变更审计锚。新测试 always-active。
  */
 
-/** 12 域方法集 pin（it.each 展开 + 与运行时对账双消费） */
+/** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道） */
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
   ['enrich', ['fetch']],
   ['export_', ['bibtex', 'clipboard', 'corpus', 'corpusItem', 'corpusSession', 'csv', 'report']],
+  ['folders', ['create', 'delete', 'list', 'rename']],
   ['import_', ['fromDialog', 'fromFolder', 'fromPaths']],
   ['library', ['collections', 'detail', 'list', 'updateMeta']],
   ['lineage', ['graph', 'importDraft', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes', 'upsertNode']],
   ['notes', ['get', 'remove', 'save']],
+  ['papers', ['moveFolder']],
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
   ['settings', ['diagNetwork', 'get', 'set']],
   ['system', ['openExternal', 'setQuitDirty', 'windowControl']],
@@ -32,18 +34,17 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 ]
 
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(56)（F-TAGS-01
-// 起 56 通道：tags 域加 setColor 标签颜色单通道；此前 F-LIBUI-01 起 55=
-// export_ 域 corpusSet 退役——用户 D4 裁决 2026-09-29；T3-P5 起 56=lineage
-// 域 6→7 加 upsertLineTypes）
+// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(61)（[F-FOLDER-01]
+// 起 61 通道：+folders 四通道+papers/move-folder 单通道；此前 F-TAGS-01 起
+// 56=tags 域 setColor——lineage/upsert-node 既有通道载荷 +folderId 属改写非新增）
 describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=56（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）', () => {
-    expect(allChannels().length).toBe(56)
+  it('通道总数=61（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-FOLDER-01] 56→61）', () => {
+    expect(allChannels().length).toBe(61)
   })
 
-  it('域枚举 pin：恰 12 域', () => {
+  it('域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）', () => {
     expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())
-    expect(DOMAIN_PINS).toHaveLength(12)
+    expect(DOMAIN_PINS).toHaveLength(14)
   })
 
   it.each(DOMAIN_PINS)('域 %s 方法集 pin', (domain, methods) => {
@@ -57,10 +58,12 @@ describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pi
       'ai-sensor',
       'enrich',
       'export',
+      'folders',
       'import',
       'library',
       'lineage',
       'notes',
+      'papers',
       'reader',
       'settings',
       'system',
@@ -88,8 +91,14 @@ describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pi
     }
   })
 
-  it('事件通道三枚举 pin；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）', () => {
-    expect(Object.keys(EVENT_CHANNELS).sort()).toEqual(['exportCorpus', 'importProgress', 'windowState'])
+  it('事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）', () => {
+    expect(Object.keys(EVENT_CHANNELS).sort()).toEqual([
+      'exportCorpus',
+      'foldersChanged',
+      'importProgress',
+      'lineageChanged',
+      'windowState'
+    ])
     const eventChannels = Object.values(EVENT_CHANNELS)
     for (const ch of eventChannels) {
       expect(ch.endsWith('/event'), `事件通道 ${ch} 应带 /event 后缀（单向推送命名约定）`).toBe(true)
@@ -105,11 +114,13 @@ describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pi
     ])
   })
 
-  it('事件通道值 pin：三通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）', () => {
+  it('事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）', () => {
     expect({ ...EVENT_CHANNELS }).toEqual({
       importProgress: 'import/progress/event',
       exportCorpus: 'export/corpus/event',
-      windowState: 'system/window-state/event'
+      windowState: 'system/window-state/event',
+      foldersChanged: 'folders/changed/event',
+      lineageChanged: 'lineage/changed/event'
     })
   })
 
@@ -117,6 +128,8 @@ describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pi
     expect(typeof S.importProgressEventSchema.safeParse).toBe('function')
     expect(typeof S.exportProgressEventSchema.safeParse).toBe('function')
     expect(typeof S.windowStateEventSchema.safeParse).toBe('function')
+    expect(typeof S.foldersChangedEventSchema.safeParse).toBe('function')
+    expect(typeof S.lineageChangedEventSchema.safeParse).toBe('function')
   })
 
   it('组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）', () => {

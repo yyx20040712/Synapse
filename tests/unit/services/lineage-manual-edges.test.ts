@@ -30,6 +30,8 @@ beforeEach(() => {
   svc = createLineageService({
     repo,
     paperExists: (id) => ['p-1', 'p-2', 'p-3', 'p-4'].includes(id),
+    paperFolderOf: () => null, // [回炉码 1] 统一规则桩（未归档语义）
+    ensurePaperFolder: () => '__main__',
     withTransaction: (fn) => db.transaction(fn)()
   })
 })

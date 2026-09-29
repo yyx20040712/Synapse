@@ -11,33 +11,30 @@
  * - 对象键序=**递归 alphabetical**（唯一规则不做语义分块——消费方 diff 稳定）
  * - nodes=lineageOrder 序（§4 排序契约唯一纯函数单源消费）/edges=(created_at,id)
  *   行序/line_types=base 枚举序（tree,inferred,ref,manual）后 subs 按 id 升序
- * - snake_case 键+2 空格缩进+UTF-8 无 BOM+末尾换行；schema_version=1 起版
- *   （序列化变更必须递增版本并更新快照测试）
- * - 字段：nodes{catalog_no,core_idea,month,node_id,paper_id,tags,title,year}
+ * - snake_case 键+2 空格缩进+UTF-8 无 BOM+末尾换行；schema_version=2 起版
+ *   （[F-FOLDER-01] 序列化变更递增：catalog_no→pub_no——图内节点号与库号
+ *   同源 INV-92 单一真相源；序列化变更必须递增版本并更新快照测试）
+ * - 字段：nodes{core_idea,month,node_id,paper_id,pub_no,tags,title,year}
  *   ——**不含 x/y UI 态与 slot**（slot=内部承载列，消费方不需要）；edges
  *   {created_at,edge_id,from,label,line_type{base,sub},to}；line_types{base,
  *   subs[{color,dash,id,name,w}]}；paper_id=null 纯主题节点照实导出 null；
  *   paperMetrics 不入（corpus 域 join 数据避双真相）
- * - catalog_no=呈现时按 lineageOrder 全序确定性计算 1..N（§6 终案——不落库；
- *   lineageCatalogNos 单源，与文献库 C5 消费同一计算，禁双实现）
+ * - pub_no=库级派生编号（INV-92——入参 pubNos 单源 map，与 LIST_SQL 同窗口
+ *   同值；纯主题节点无文献键=null）
  * - 幂等：同输入逐字节稳定（无时间戳/无随机/序全由单源比较器与入参决定）
  *
  * 架构：main services/export_ 纯函数——零 IO、零 Electron、零出网；import
- * 仅 shared/models/lineage（排序契约+编号单源）。
+ * 仅 shared/models/lineage（排序契约单源）。
  */
-import {
-  LINE_TYPE_BASE_ORDER,
-  lineageCatalogNos,
-  lineageOrder,
-  type LineTypeGroup,
-  type LineageEdge,
-  type LineageNode
-} from '../../../shared/models/lineage'
+import { LINE_TYPE_BASE_ORDER, lineageOrder, type LineTypeGroup, type LineageEdge, type LineageNode } from '../../../shared/models/lineage'
 
 export interface LineageAssembleInput {
   nodes: readonly LineageNode[]
   edges: readonly LineageEdge[]
   lineTypes: readonly LineTypeGroup[]
+  /** [F-FOLDER-01] pubNo map（键=paperId——corpus.export.service 经
+   *  repos.papers.pubNoByIds 装配；缺省=空 map→全 null（装配缺失面如实导出） */
+  pubNos?: ReadonlyMap<string, number>
 }
 
 /** 递归 alphabetical 键序（唯一键序规则——数组序保持，对象键重排） */
@@ -80,9 +77,9 @@ function orderedLineTypes(groups: readonly LineTypeGroup[]): Array<{ base: strin
 
 export function assembleLineageJson(input: LineageAssembleInput): string {
   const ordered = lineageOrder(input.nodes)
-  const catalogNos = lineageCatalogNos(input.nodes)
+  const pubNos = input.pubNos ?? new Map<string, number>()
   const payload = sortKeysDeep({
-    schema_version: 1,
+    schema_version: 2,
     nodes: ordered.map((n) => ({
       node_id: n.id,
       paper_id: n.paperId,
@@ -91,7 +88,7 @@ export function assembleLineageJson(input: LineageAssembleInput): string {
       year: n.year,
       month: n.month,
       tags: n.tags ?? null,
-      catalog_no: catalogNos.get(n.id)
+      pub_no: n.paperId !== null ? (pubNos.get(n.paperId) ?? null) : null
     })),
     edges: orderedEdges(input.edges).map((e) => ({
       edge_id: e.id,

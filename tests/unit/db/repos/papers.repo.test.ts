@@ -146,11 +146,12 @@ guardedDescribe(
         ).toBe('Water Quality Model')
       })
 
-      it('汇总字段：tagNames/collectionNames/annotationCount/noteCount 聚合', () => {
+      it('汇总字段：tagNames/folderId/pubNo/annotationCount/noteCount 聚合（[F-FOLDER-01] collectionNames 退役）', () => {
         db.prepare(`INSERT INTO tags (id, name) VALUES ('t-1','必读')`).run()
         db.prepare(`INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-1','t-1')`).run()
         db.prepare(`INSERT INTO collections (id, name, position) VALUES ('c-1','第二时代',0)`).run()
-        db.prepare(`INSERT INTO paper_collections (paper_id, collection_id) VALUES ('p-1','c-1')`).run()
+        // [F-FOLDER-01] paper_collections 退役——单归属直写 folder_id
+        db.prepare(`UPDATE papers SET folder_id='c-1' WHERE id='p-1'`).run()
         db.prepare(
           `INSERT INTO annotations (id, paper_id, page, kind, sort_key, created_at, updated_at)
            VALUES ('a-1','p-1',0,'highlight','0000:01','t','t')`
@@ -162,7 +163,9 @@ guardedDescribe(
         const r = repo.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50 })
         const p1 = r.items.find((i) => i.id === 'p-1')
         expect(p1?.tagNames).toEqual(['必读'])
-        expect(p1?.collectionNames).toEqual(['第二时代'])
+        expect(p1?.folderId).toBe('c-1')
+        expect(p1?.impactFactor).toBeNull()
+        expect(p1?.pubNo).toBe(2) // 库级序：p-2(2023)=1→p-1(2025 早)=2→p-3(2025 晚)=3
         expect(p1?.annotationCount).toBe(1)
         expect(p1?.noteCount).toBe(1)
       })
@@ -195,7 +198,7 @@ guardedDescribe(
       expect(r.map((i) => i.id)).toEqual(['p-2', 'p-1'])
     })
 
-    it('detailById：聚合 tags/collections 明细与阅读字段', () => {
+    it('detailById：聚合 tags 明细与阅读字段（[F-FOLDER-01] collections 明细随 M2M 退役——归属=summary.folderId）', () => {
       repo.insert(row())
       db.prepare(`INSERT INTO tags (id, name) VALUES ('t-1','必读')`).run()
       db.prepare(`INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-1','t-1')`).run()

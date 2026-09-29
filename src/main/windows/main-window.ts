@@ -180,6 +180,20 @@ export function setQuitDirty(dirty: boolean): void {
   quitDirtyCached = dirty
 }
 
+/** [F-FOLDER-01] INV-91 S1 队列闸判定缓存：renderer 脉络写队列 pending 信号
+ *  （沿 setQuitDirty push 模式同型——folders/papers.move/updateMeta 写入口
+ *  经 services deps.lineagePending 消费本缓存读；getLineagePending 判定源） */
+let lineagePendingCached = false
+
+/** IPC 上报落点（system.setQuitDirty 载荷 lineagePending 字段 → 此处） */
+export function setLineagePending(pending: boolean): void {
+  lineagePendingCached = pending
+}
+
+export function getLineagePending(): boolean {
+  return lineagePendingCached
+}
+
 export function getQuitDirty(): boolean {
   return quitDirtyCached
 }

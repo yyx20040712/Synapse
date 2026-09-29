@@ -128,18 +128,18 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
 
   it('脉络命中：YEAR-MO 带脉络框括注（关联节已退役 F-LIBUI-01——YEAR-MO 脉络框联动保留）', async () => {
     await renderPanel(
-      makeDetail({ year: 2023, lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
+      makeDetail({ year: 2023, pubNo: 1, lineage: { year: 2023, month: 6, edgeCount: 3 } })
     )
     expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023 年 · 6 月）')
   })
 
   it('脉络命中 month=null：「未定月框」措辞（未定月=合法态）', async () => {
-    await renderPanel(makeDetail({ lineage: { year: 2023, month: null, edgeCount: 1, catalogNo: 1 } }))
+    await renderPanel(makeDetail({ pubNo: 1, lineage: { year: 2023, month: null, edgeCount: 1 } }))
     expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023 年 · 未定月）')
   })
 
   it('组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注', async () => {
-    await renderPanel(makeDetail({ year: null, lineage: { year: 2023, month: null, edgeCount: 2, catalogNo: 1 } }))
+    await renderPanel(makeDetail({ year: null, pubNo: 1, lineage: { year: 2023, month: null, edgeCount: 2 } }))
     expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023 年 · 未定月）')
   })
 
@@ -150,7 +150,7 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
 
   it('F-LIBUI-01 ⑤ 关联节退役负锚：无「关 联」分节/脉络行/AI 评估行/后置徽章（节位留待 F-FOLDER-01 文件夹行回归）', async () => {
     await renderPanel(
-      makeDetail({ lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
+      makeDetail({ pubNo: 1, lineage: { year: 2023, month: 6, edgeCount: 3 } })
     )
     const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((s) => s.textContent)
     expect(secs).toEqual(['标 签'])

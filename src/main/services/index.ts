@@ -16,7 +16,8 @@ import {
   type CorpusExportService
 } from './export_/corpus.export.service'
 import { extractPdfMeta } from './import_/pdf-meta.extract'
-import { createLibraryService } from './library.service'
+import { createLibraryService, createPapersService } from './library.service'
+import { createFoldersService } from './folders.service'
 import { createReaderService } from './reader.service'
 import { createTagsService } from './tags.service'
 import { createNotesService } from './notes.service'
@@ -62,6 +63,14 @@ export interface ServiceDeps {
   sendProgress?: (e: ImportProgressEvent) => void
   /** AI 语料导出会话事件出口（main→renderer 单向——extract-request/progress） */
   sendExportEvent?: (e: ExportCorpusEvent) => void
+  /** [F-FOLDER-01] INV-91 S1 队列闸判定源（renderer 脉络写队列 pending——
+   *  bootstrap 注入 main-window lineagePending 缓存读；folders/papers.move/
+   *  updateMeta 写入口拒绝） */
+  lineagePending?: () => boolean
+  /** [F-FOLDER-01] folders.changed 事件出口（main→renderer 失效通知） */
+  sendFoldersChanged?: () => void
+  /** [F-FOLDER-01] lineage.changed 事件出口（图结构级联变通知） */
+  sendLineageChanged?: () => void
   /** AI 伴随进程协议根（=userData/ai-sensor——bootstrap 解析注入，AI-06） */
   aiSensorRootDir: string
   /** zcode 基目录（prod=os.homedir()——AI-10 detect/install 目标父；bootstrap 注入） */
@@ -92,22 +101,42 @@ export interface ServiceBundle {
   zcode_link: ZcodeLinkService
   /** LG-01 脉络图：service 四写方法全建（IPC 写通道注册归 LG-03） */
   lineage: LineageService
+  /** [F-FOLDER-01] folders 域（CRUD 编排+事件广播+S1 闸） */
+  folders: ApiHandlers['folders']
+  /** [F-FOLDER-01] papers 域（move-folder 移动/移出事务序——§3.4+W2） */
+  papers: ApiHandlers['papers']
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
+  // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）
+  const folderDeps = {
+    repos: deps.repos,
+    lineagePending: deps.lineagePending ?? (() => false),
+    sendFoldersChanged: deps.sendFoldersChanged ?? (() => undefined),
+    sendLineageChanged: deps.sendLineageChanged ?? (() => undefined)
+  }
   const corpusExport = createCorpusExportService({
     repos: deps.repos,
     fileStore: deps.fileStore,
     sendEvent: deps.sendExportEvent ?? (() => undefined),
-    // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）
+    // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）；
+    // [F-FOLDER-01] +pubNos map（INV-92 库级派生编号——pub_no 字段数据源）
     lineage: () => {
       const g = deps.repos.lineage.listGraph()
-      return { nodes: g.nodes, edges: g.edges, lineTypes: deps.repos.lineage.getLineTypes() }
+      const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
+      return {
+        nodes: g.nodes,
+        edges: g.edges,
+        lineTypes: deps.repos.lineage.getLineTypes(),
+        pubNos: new Map(deps.repos.papers.pubNoByIds(paperIds).map((r) => [r.paperId, r.pubNo]))
+      }
     }
   })
   return {
-    library: createLibraryService({ repos: deps.repos }),
+    library: createLibraryService(folderDeps),
+    papers: createPapersService(folderDeps),
+    folders: createFoldersService(folderDeps),
     reader: createReaderService({ repos: deps.repos }),
     tags: createTagsService({ repos: deps.repos }),
     notes: createNotesService({ repos: deps.repos }),
@@ -140,8 +169,15 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     lineage: createLineageService({
       repo: deps.repos.lineage,
       paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型
+      // [回炉码 1] INV-88 统一规则判别源+落笔（papers.repo 单源）
+      paperFolderOf: (id) => deps.repos.papers.folderIdOf(id),
+      ensurePaperFolder: (id) => deps.repos.papers.ensureFolderAssigned(id),
       withTransaction: deps.repos.withTransaction, // 清面+重灌原子边界
-      paperMetrics: (ids) => deps.repos.papers.listMetricsByIds(ids) // F-LG14 含金量 join 单源
+      paperMetrics: (ids) => deps.repos.papers.listMetricsByIds(ids), // F-LG14 含金量 join 单源
+      // [F-FOLDER-01] 幽灵 folderId 拦截（folders.repo 存在性——生产真实现）
+      folderExists: (id) => deps.repos.folders.findById(id) !== null,
+      // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口——pubNoByIds 单源）
+      pubNos: (ids) => deps.repos.papers.pubNoByIds(ids)
     })
   }
 }

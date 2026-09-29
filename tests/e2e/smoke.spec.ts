@@ -92,7 +92,10 @@ test('真实 IPC invoke 全链路（ipcMain→zod→service→repo→sqlite）+ 
   expect(state.list.data?.total).toBe(0)
   expect(state.list.data?.items).toEqual([])
   expect(state.collections.ok, 'library/collections 全链路 invoke 应 ok').toBe(true)
-  expect(state.collections.data).toEqual([])
+  // [F-FOLDER-01 收口亲修] 012 起空库不再空集合：主图 '__main__' 无条件初始
+  // 插入（存量脉络承载锚 INV-93）——恰 1 条且名='主图'
+  expect(state.collections.data).toHaveLength(1)
+  expect(state.collections.data?.[0]).toMatchObject({ name: '主图' })
 
   // CSP 回归防线：connect-src 必须放行 app-file:（阅读器 pdf.js 取数通道）。
   // 被拦截时 fetch 抛 TypeError；放行时空库对未知 id 走协议层语义返回 404。

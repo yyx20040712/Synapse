@@ -18,13 +18,17 @@ import {
 } from '../shared/ipc/api-surface'
 import type {
   ExportCorpusEvent,
+  FoldersChangedEvent,
   ImportProgressEvent,
   ImportResult,
+  LineageChangedEvent,
   WindowStateEvent
 } from '../shared/ipc/schemas'
 import {
   exportCorpusEventSchema,
   importProgressEventSchema,
+  foldersChangedEventSchema,
+  lineageChangedEventSchema,
   windowStateEventSchema
 } from '../shared/ipc/events.schemas'
 import { err, type Result } from '../shared/app-error'
@@ -122,6 +126,25 @@ export function buildEvents(): PreloadEvents {
       const listener = guardedEventForwarder(EVENT_CHANNELS.windowState, windowStateEventSchema, cb)
       ipcRenderer.on(EVENT_CHANNELS.windowState, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.windowState, listener)
+    },
+    // [F-FOLDER-01] 双失效通知（空载荷——订阅方重拉 folders.list/lineage.graph）
+    onFoldersChanged(cb: (e: FoldersChangedEvent) => void): () => void {
+      const listener = guardedEventForwarder(
+        EVENT_CHANNELS.foldersChanged,
+        foldersChangedEventSchema,
+        cb
+      )
+      ipcRenderer.on(EVENT_CHANNELS.foldersChanged, listener)
+      return () => ipcRenderer.removeListener(EVENT_CHANNELS.foldersChanged, listener)
+    },
+    onLineageChanged(cb: (e: LineageChangedEvent) => void): () => void {
+      const listener = guardedEventForwarder(
+        EVENT_CHANNELS.lineageChanged,
+        lineageChangedEventSchema,
+        cb
+      )
+      ipcRenderer.on(EVENT_CHANNELS.lineageChanged, listener)
+      return () => ipcRenderer.removeListener(EVENT_CHANNELS.lineageChanged, listener)
     }
   }
 }

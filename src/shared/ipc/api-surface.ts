@@ -16,6 +16,7 @@ import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
 import { aiNoteSchema } from '../models/ai-note'
 import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
+import { folderSchema } from '../models/folder'
 import * as S from './schemas'
 
 export interface Endpoint {
@@ -83,9 +84,11 @@ export const API_SURFACE = {
   // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
   // 写四通道（LG-03 交互编辑接线——树守卫宿主=service upsertEdge，IPC 零守卫透传）
   // [T3-P5] 6→7 通道：upsertLineTypes 图级线型整体替换（D-P5-4 弃双通道 CRUD）
+  // [F-FOLDER-01] graph 入参 +folderId（图切换器子图读——W4 改写面）；
+  // upsertNode 载荷 +folderId（节点 DTO/models 侧扩——本表仅随 Res schema 变）
   lineage: {
     importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
-    graph: { channel: 'lineage/graph', Req: S.voidReqSchema, Res: S.lineageGraphResSchema },
+    graph: { channel: 'lineage/graph', Req: S.lineageGraphReqSchema, Res: S.lineageGraphResSchema },
     upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
     removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
     upsertEdge: { channel: 'lineage/upsert-edge', Req: S.lineageUpsertEdgeReqSchema, Res: lineageEdgeSchema },
@@ -131,6 +134,20 @@ export const API_SURFACE = {
     create: { channel: 'workspaces/create', Req: S.workspaceCreateReqSchema, Res: S.workspaceCreateResSchema },
     rename: { channel: 'workspaces/rename', Req: S.workspaceRenameReqSchema, Res: S.trueAckSchema },
     switch: { channel: 'workspaces/switch', Req: S.workspaceSwitchReqSchema, Res: S.trueAckSchema }
+  },
+  // folders 域（[F-FOLDER-01] 文件夹×脉络图绑定——design-final §2.1）：四通道。
+  // kebab-case 命名门先例=tags/set-color；CRUD 编排+事件广播在 folders.service
+  folders: {
+    list: { channel: 'folders/list', Req: S.voidReqSchema, Res: z.array(folderSchema) },
+    create: { channel: 'folders/create', Req: S.folderCreateReqSchema, Res: folderSchema },
+    rename: { channel: 'folders/rename', Req: S.folderRenameReqSchema, Res: S.trueAckSchema },
+    delete: { channel: 'folders/delete', Req: S.folderDeleteReqSchema, Res: S.trueAckSchema }
+  },
+  // papers 域（[F-FOLDER-01] 单通道起步）：move-folder 移动/移出事务序在
+  // library.service（§3.4+W2 终裁）——域归属 papers（通道名 papers/*，
+  // 与 library 元数据域分域）
+  papers: {
+    moveFolder: { channel: 'papers/move-folder', Req: S.paperMoveReqSchema, Res: S.trueAckSchema }
   }
 } satisfies Record<string, Record<string, Endpoint>>
 
@@ -139,7 +156,12 @@ export const EVENT_CHANNELS = {
   importProgress: 'import/progress/event',
   exportCorpus: 'export/corpus/event',
   // R2-SH3：maximize 状态推送（图标态单源=main 侧事件沿）
-  windowState: 'system/window-state/event'
+  windowState: 'system/window-state/event',
+  // [F-FOLDER-01] 双失效通知（空载荷——renderer 重拉 folders.list/lineage.graph，
+  // 不携带数据防双真相；folders CRUD+papers.move 广播 folders.changed，
+  // 图结构变更（移动/删图级联）加播 lineage.changed——S3/S4 联动数据源）
+  foldersChanged: 'folders/changed/event',
+  lineageChanged: 'lineage/changed/event'
 } as const
 
 /** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
@@ -147,6 +169,8 @@ export type PreloadEvents = {
   onImportProgress(cb: (e: S.ImportProgressEvent) => void): () => void
   onExportCorpus(cb: (e: S.ExportCorpusEvent) => void): () => void
   onWindowState(cb: (e: S.WindowStateEvent) => void): () => void
+  onFoldersChanged(cb: (e: S.FoldersChangedEvent) => void): () => void
+  onLineageChanged(cb: (e: S.LineageChangedEvent) => void): () => void
 }
 
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────

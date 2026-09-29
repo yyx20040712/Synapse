@@ -18,14 +18,34 @@ import { z } from 'zod'
 // ── 排序契约与呈现编号（T3-P5 唯一纯函数——读面/导出/C5 三处消费禁双实现）──
 
 /**
+ * [F-FOLDER-01] 节点→pubNo 视图 map（键=节点 id；值=该文献库级编号——主题节点
+ * 无文献键=0 不呈现编号语义）。消费=LineageTimeline（TimelineYears 单次传入）。
+ */
+export function nodePubNoMap(
+  nodes: readonly LineageNode[],
+  pubNos: Readonly<Record<string, number>>
+): Map<string, number> {
+  return new Map(nodes.map((n) => [n.id, n.paperId !== null ? (pubNos[n.paperId] ?? 0) : 0]))
+}
+
+/**
+ * [F-FOLDER-01] 主图文件夹 id 锚（迁移 012 字面量 '__main__'——存量单图承载；
+ * repo 写边界兜底默认与服务层显式值共用单源；design-final 修订二：NOT NULL
+ * DEFAULT 安全网自 DDL 移至 repo 写边界，见 lineage.repo upsertNode）。
+ */
+export const MAIN_GRAPH_ID = '__main__'
+
+/**
  * lineageOrder(nodes)：脉络全序排序键（INV-75；design-final §4）=
  * `year IS NULL, year ASC, month IS NULL, month ASC, slot IS NULL,
  * slot ASC, created_at ASC, id ASC`（null 组末+行序 tiebreak 兜底——
  * 防御面：service 新写恒赋 slot、迁移回填后存量行有序，null/slot 平局
  * 只在库外手改数据时出现）。
  * 单源消费三处（W-5 禁双实现）：lineage.service graph 读面（消费方不得
- * 重排）、lineage.json 导出装配（export_/lineage.assemble）、library.service
- * C5 join（catalogNo map）。纯函数：不改输入、返回新数组。
+ * 重排）、lineage.json 导出装配（export_/lineage.assemble）、
+ * lineage.store 写回填（T3-P8 消费面）。纯函数：不改输入、返回新数组。
+ * [F-FOLDER-01] 编号职责移交：原 catalogNo 呈现编号（lineageCatalogNos）
+ * 已随 pubNo 库级派生（INV-92）退役删除——图内节点号与库号同源=pubNo。
  */
 export function lineageOrder(nodes: readonly LineageNode[]): LineageNode[] {
   const nullLast = (v: number | null, o: number | null): number => {
@@ -44,18 +64,6 @@ export function lineageOrder(nodes: readonly LineageNode[]): LineageNode[] {
     if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1
     return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
   })
-}
-
-/**
- * lineageCatalogNos(nodes)：呈现时确定性编号（INV-76；design-final §6）——
- * 按 lineageOrder 全序计算 1..N，不落库不作业务主键；同图状态同序列。
- * 单源消费：lineage.json 导出（catalog_no）+library.service C5（list 挂键/
- * detail 短号）——两处经本函数与 lineageOrder 同序，禁各自 indexOf 重算。
- */
-export function lineageCatalogNos(nodes: readonly LineageNode[]): Map<string, number> {
-  const m = new Map<string, number>()
-  lineageOrder(nodes).forEach((n, i) => m.set(n.id, i + 1))
-  return m
 }
 
 // ── 综述题名判定（单一真相源，R2-LG12 §2 上移）────────────────────
@@ -159,6 +167,9 @@ export const lineageNodeSchema = z
     title: z.string().min(1),
     coreIdea: z.string(),
     year: z.number().int().nullable(),
+    /** [F-FOLDER-01] 节点图归属（=文件夹 id，1:1 绑定——迁移 012 列；
+     *  读面恒非空：repo 写边界兜底 '__main__'+迁移回填封闭） */
+    folderId: z.string().min(1),
     /** 手工位置覆盖（JSON Canvas 模式）；null=自动布局（LG-02 消费） */
     x: z.number().nullable(),
     y: z.number().nullable(),
@@ -261,12 +272,16 @@ export type LineTypeGroups = z.infer<typeof lineTypeGroupsSchema>
 /** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留）。
  *  边 kind 可选缺省 'tree'（R2-LG12——service 写路径显式填默认，不赖 DB DEFAULT）。
  *  [T3-P5] month/slot/sub 可选（缺省语义=undefined——归一/守卫在 service：
- *  month=input.month ?? null（全量语义同 tags/x/y 清空惯例）；slot 缺省走
- *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型） */
+ *  month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例）；slot 缺省走
+ *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型）。
+ *  [F-FOLDER-01] folderId 可选：undefined=新建落主图（repo 写边界兜底）/
+ *  更新保持现图（service 解析既有值——W3：图归属变更不重排 slot 当 year/month
+ *  不变）；显式提供（含跨图移动）经 service 存在性校验后透写。 */
 export const lineageNodeUpsertSchema = lineageNodeSchema
   .omit({ createdAt: true, updatedAt: true })
   .extend({
     id: z.string().min(1).optional(),
+    folderId: z.string().min(1).optional(),
     month: z.number().int().min(1).max(12).nullable().optional(),
     slot: z.number().int().min(0).nullable().optional()
   })

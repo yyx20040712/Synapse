@@ -48,6 +48,8 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       lineage: unimplementedObject('SAMPLE-IPC', 'x'),
       settings: unimplementedObject('SAMPLE-IPC', 'x'),
       system: unimplementedObject('SAMPLE-IPC', 'x'),
+      folders: unimplementedObject('SAMPLE-IPC', 'x'),
+      papers: unimplementedObject('SAMPLE-IPC', 'x'),
       workspaces: unimplementedObject<NonNullable<ApiHandlers['workspaces']>>('SAMPLE-IPC', 'x')
     }
     expect(() => handlers.library.list).toThrow(NotImplementedError)

@@ -20,7 +20,7 @@ import {
   lineageEdgeSchema,
   lineageNodeSchema,
   lineageOrder,
-  lineageCatalogNos,
+  MAIN_GRAPH_ID,
   type LineageNode
 } from '../../../src/shared/models/lineage'
 
@@ -36,6 +36,7 @@ function node(patch: Partial<LineageNode> & { id: string }): LineageNode {
     tags: null,
     month: null,
     slot: null,
+    folderId: MAIN_GRAPH_ID,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: 't',
     ...patch
@@ -61,6 +62,7 @@ describe('T3-P5 LineageNode month/slot（zod 边界）', () => {
     x: null,
     y: null,
     tags: null,
+    folderId: '__main__', // [F-FOLDER-01] 必填图归属
     createdAt: 't',
     updatedAt: 't'
   }
@@ -196,18 +198,14 @@ describe('T3-P5 lineageOrder 排序契约（唯一纯函数）', () => {
   })
 })
 
-describe('T3-P5 lineageCatalogNos（呈现时确定性编号 1..N）', () => {
-  it('按 lineageOrder 全序编号 1..N（id→序号 Map）；同输入同输出', () => {
-    const nodes = [
-      node({ id: 'b', year: 2021, month: 1, slot: 1 }),
-      node({ id: 'a', year: 2020, month: 1, slot: 1 }),
-      node({ id: 'c', year: 2022, month: null, slot: null })
-    ]
-    const m = lineageCatalogNos(nodes)
-    expect(m.get('a')).toBe(1)
-    expect(m.get('b')).toBe(2)
-    expect(m.get('c')).toBe(3)
-    expect([...m.values()].sort((x, y) => x - y)).toEqual([1, 2, 3])
-    expect(lineageCatalogNos(nodes)).toEqual(m)
+describe('F-FOLDER-01 节点图归属 folderId（catalogNo 呈现编号退役——编号职责移交 pubNo/INV-92）', () => {
+  it('folderId 必填非空：缺失拒、空串拒、合法值过；MAIN_GRAPH_ID 主图锚=__main__', () => {
+    expect(() => {
+      const { folderId: _omit, ...rest } = node({ id: 'n-1' })
+      return lineageNodeSchema.parse(rest)
+    }).toThrow()
+    expect(lineageNodeSchema.safeParse({ ...node({ id: 'n-1' }), folderId: '' }).success).toBe(false)
+    expect(lineageNodeSchema.safeParse({ ...node({ id: 'n-1' }), folderId: 'f-1' }).success).toBe(true)
+    expect(MAIN_GRAPH_ID).toBe('__main__')
   })
 })

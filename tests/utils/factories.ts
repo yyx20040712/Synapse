@@ -78,7 +78,8 @@ export function makeDetail(patch: Partial<PaperDetail> = {}): PaperDetail {
     venue: 'Journal of Testing',
     doi: null,
     tagNames: [],
-    collectionNames: [],
+    folderId: null,
+    impactFactor: null,
     annotationCount: 0,
     noteCount: 1,
     lastReadPage: 0,
@@ -91,7 +92,6 @@ export function makeDetail(patch: Partial<PaperDetail> = {}): PaperDetail {
     fileName: 'a.pdf',
     updatedAt: 't',
     tags: [],
-    collections: [],
     ...patch
   }
 }

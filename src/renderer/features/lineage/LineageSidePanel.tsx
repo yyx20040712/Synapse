@@ -137,8 +137,9 @@ export function LineageSidePanel(props: {
   /** F-LG14 标签整组写入上抛（Page 编排→lineage.store.setNodeTags——既有
    *  upsert 通道；缺省不呈现标签编辑区=纯只读消费面兼容） */
   onSetTags?: (nodeId: string, tags: string[]) => void
-  /** [T3-P8] 骑缝编号（INV-76——Page 经 lineageCatalogNos 单源分发；缺省不呈现） */
-  catalogNo?: number | null
+  /** [F-FOLDER-01] 骑缝编号（INV-92 pubNo 库级同源——Page 自 store pubNos
+   *  分发；缺省不呈现） */
+  pubNo?: number | null
   /** [T3-P8] 核心档徽章（isCore 预计算传入——Page 分发；缺省不呈现） */
   core?: boolean
   /** [T3-P8] 含金量摘要（引/T 档徽章——Page 查表分发；缺省=两徽章退化） */
@@ -188,7 +189,7 @@ export function LineageSidePanel(props: {
       <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
         <div className="insp-cap">
           <span>节点检查</span>
-          {props.catalogNo != null && <span>#{String(props.catalogNo).padStart(3, '0')}</span>}
+          {props.pubNo != null && <span>#{String(props.pubNo).padStart(3, '0')}</span>}
         </div>
         <div className="insp-title">{node.title}</div>
         <div className="badges">

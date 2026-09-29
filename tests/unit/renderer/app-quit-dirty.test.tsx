@@ -121,7 +121,8 @@ describe('App 组合根 —— hook 链稳定性（P7-C 崩溃回归锁）', () 
       // 行为面：或聚合语义不因修复漂移——dirty=true 仍上报 main
       const calls = stubApi.system.setQuitDirty.mock.calls
       expect(calls.length).toBeGreaterThanOrEqual(2)
-      expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true })
+      // [F-FOLDER-01] INV-91：同载荷加报 lineagePending（tab dirty 沿=恒 false）
+      expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true, lineagePending: false })
       // dev 探针：hook 错位必出 dev 警告（生产 build 无警告直接崩——组件级
       // 用例只能经 dev 探针锁住同一缺陷）
       const fewer = errSpy.mock.calls.filter((a) => String(a[0]).includes('Rendered fewer hooks'))

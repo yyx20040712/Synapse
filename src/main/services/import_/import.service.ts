@@ -48,6 +48,7 @@ import type { Collection } from '../../../shared/models/collection'
 import type { PaperSummary } from '../../../shared/models/paper'
 import type { PaperRow, Repos } from '../../db/repos'
 import { DomainError } from '../shared/domain-error'
+import { normalizeMonthSlot } from '../lineage/lineage.write-guards'
 import type { FileStore } from './file-store'
 import type { PdfMetaExtraction } from './pdf-meta.extract'
 
@@ -107,8 +108,9 @@ export function createImportService(deps: {
    * 单文件流水线：拷贝（含 sha256）→ 查重 → 抽取 → 入库 → 挂集合。
    * 任一步抛错（非 PDF / 读源失败等）都折叠成 failed，不中断整批。
    *
-   * 写入顺序：insert 在前、attach 在后（paper_collections 有 papers(id) 外键）。
-   * 两条写入包在 repos.withTransaction 里——attach 失败（SQLITE_BUSY/IO 等）时
+   * 写入顺序：insert 在前、folder 归属在后（[F-FOLDER-01] paper_collections
+   * 退役——文件夹导入的一级子目录名→collections 行→papers.folder_id 单归属）。
+   * 两条写入包在 repos.withTransaction 里——归属写失败（SQLITE_BUSY/IO 等）时
    * insert 一并回滚：没有事务时"失败"的文献已入库且 sha 被判重占用，永远无法重导。
    */
   async function importOne(
@@ -150,10 +152,30 @@ export function createImportService(deps: {
       const collection = entry.collection
       repos.withTransaction(() => {
         repos.papers.insert(row)
-        if (collection !== null) repos.collections.attach(row.id, collection.id)
+        // [F-FOLDER-01] 单归属直写（M2M attach 退役——一级子目录名→folder）+
+        // [回炉码 2/k1-W4] 挂接即自动入图（矩阵「导入→当前文件夹」行兑现）：
+        // 节点 folder=papers.folder_id（setFolderId 先行——INV-88 统一规则同源）；
+        // year 取抽取元数据、month 无源=null 缺省归未定年月组（W6 漏格）、
+        // slot=目标图组现行 max+1（normalizeMonthSlot 新建分支单源）；根文件
+        // （无文件夹）不建节点（矩阵「导入→全部」行——零自动图语义）
+        if (collection !== null) {
+          repos.papers.setFolderId(row.id, collection.id)
+          const seed = {
+            paperId: row.id,
+            title: row.title.trim() === '' ? '（无标题）' : row.title,
+            coreIdea: '',
+            year: meta.year,
+            x: null,
+            y: null,
+            tags: null,
+            month: null,
+            folderId: collection.id
+          }
+          const { month, slot } = normalizeMonthSlot(seed, repos.lineage.listGraph().nodes)
+          repos.lineage.upsertNode({ ...seed, month, slot })
+        }
       })
-      const collectionNames: string[] = collection !== null ? [collection.name] : []
-      return { kind: 'imported', summary: toSummary(row, meta.authors, collectionNames) }
+      return { kind: 'imported', summary: toSummary(row, meta.authors, collection?.id ?? null) }
     } catch (e) {
       // FileStoreError（UNSUPPORTED_FILE/IO_ERROR）的 message 已是中文；兜底防空串
       const reason = e instanceof Error && e.message !== '' ? e.message : `导入失败：${fileName}`
@@ -289,8 +311,10 @@ function titleOf(extracted: string, fileName: string): string {
   return t !== '' ? t : fileName.replace(/\.pdf$/i, '')
 }
 
-/** 刚插入的行 → 列表页摘要（新文献无标签/标注/笔记；集合名来自本次挂接） */
-function toSummary(row: PaperRow, authors: string[], collectionNames: string[]): PaperSummary {
+/** 刚插入的行 → 列表页摘要（新文献无标签/标注/笔记；[F-FOLDER-01] 归属=
+ * folderId（单归属——导入落点文件夹；null=未归档），impactFactor 新建恒 null，
+ * pubNo 无窗口语境省略——可选增量字段） */
+function toSummary(row: PaperRow, authors: string[], folderId: string | null): PaperSummary {
   return {
     id: row.id,
     title: row.title,
@@ -299,10 +323,11 @@ function toSummary(row: PaperRow, authors: string[], collectionNames: string[]):
     venue: row.venue,
     doi: row.doi,
     tagNames: [],
-    collectionNames,
     annotationCount: 0,
     noteCount: 0,
     lastReadPage: row.last_read_page,
-    addedAt: row.added_at
+    addedAt: row.added_at,
+    folderId,
+    impactFactor: null
   }
 }

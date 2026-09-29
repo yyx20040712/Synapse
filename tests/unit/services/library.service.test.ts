@@ -32,7 +32,8 @@ const detail: PaperDetail = {
   venue: '',
   doi: null,
   tagNames: [],
-  collectionNames: [],
+  folderId: null,
+  impactFactor: null,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
@@ -44,8 +45,7 @@ const detail: PaperDetail = {
   fileUrl: 'app-file://p-1',
   fileName: 'a.pdf',
   updatedAt: 't',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 guardedDescribe('SR-SVC-01', 'library.service —— 委托与 NOT_FOUND', () => {
