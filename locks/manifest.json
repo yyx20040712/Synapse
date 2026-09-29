@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T01:15:07.2670647Z",
+    "generatedAt":  "2026-09-29T03:49:00.9712333Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -43,7 +43,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "d5b78b36b1cc5c83dbdd7a6b472cbbbb318b58ba386425b5b201fcb82af2039b"
+                      "sha256":  "80bfcca188b633e02ba42c2257d5e14f98371c8a3c85d6c2fe15f73638904031"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -1020,6 +1020,10 @@
                   {
                       "path":  "tests/unit/tools/check-test-surface-file.test.ts",
                       "sha256":  "94e9b4ef268e2b9792b95152498f3c573ba223014262f0e6ceaac97163e0d718"
+                  },
+                  {
+                      "path":  "tests/unit/tools/check-test-surface-hardening.test.ts",
+                      "sha256":  "ee8067ad0cd67e328805201333de893983167a3c08568b88b8461eb6004377e4"
                   },
                   {
                       "path":  "tests/unit/tools/companion.test.ts",
