@@ -7,8 +7,8 @@
  *
  * 消费清单：
  * - OP_FAILED：usePaperDetailActions / AiNotesStatus / ZcodeLinkSection /
- *   SettingsPage / UiScaleSection / WorkspaceSection / rail-shared（T3-P2
- *   起——WorkspaceSwitcher 随顶栏用法退役）
+ *   SettingsPage / UiScaleSection / WorkspacesPage（[F-WS-02] WorkspaceSection
+ *   与 rail-shared 两消费面随课题管理面迁移/弹层退役删除）
  *   （意外异常[非 ApiClientError]时的兜底中文消息——toast error 载体；
  *   ACTION_FAILED 旧名退役，统一 OP_FAILED）
  * - STATUS_POLL_MS：AiNotesStatus / ZcodeLinkSection（5s 门控轮询周期

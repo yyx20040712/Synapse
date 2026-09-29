@@ -26,6 +26,11 @@ async function switchTheme(win: Page, label: string): Promise<void> {
 }
 test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保存后 data-theme+body 真实渲染色三族实测；收尾恢复白天', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-theme-trio-'))
+  // [F-WS-02] 种子破引导态（设置钮在引导态禁用——smoke.spec 同配方；
+  // 主题初态断言不受种子影响：settings.json 仍全新=DEFAULTS light）
+  await bootstrapMigrations(userData)
+  const sha = 'd'.repeat(64)
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, '主题三族种子文献')
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })

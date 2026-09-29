@@ -21,6 +21,8 @@
  *
  * ── 接口层 ──
  * - export const useWorkspaceStore / selectCurrentName（当前课题名推导 helper）
+ * - [F-WS-02] isGuideState / selectDisplayWsName / WS_GUIDE_LABEL（默认课题
+ *   引导态判定与显示名推导——INV-87；rail 标签/状态条消费）
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
@@ -36,6 +38,7 @@
 import { create } from 'zustand'
 import { api, ApiClientError, unwrap } from '../../api/client'
 import type { WorkspaceItem } from '@shared/ipc/schemas'
+import { DEFAULT_WS_ID, DEFAULT_WS_NAME } from '@shared/constants'
 import { useNotesStore } from '../notes/notes.store'
 
 /** dirty 确认文案（沿用 main-window 退出守卫「说明+确认？」风格） */
@@ -68,6 +71,31 @@ export function createWorkspaceStoreInitialState() {
 /** 当前课题名（items+currentId 推导——L0 态 list 合成 default 亦走同一路径） */
 export function selectCurrentName(s: Pick<WorkspaceStore, 'items' | 'currentId'>): string {
   return s.items.find((w) => w.id === s.currentId)?.name ?? ''
+}
+
+// ── [F-WS-02] 默认课题引导态（INV-87——D2 批语「默认课题显示为待选择」）──
+/** 引导态显示名（三条件成立时的课题名显示位取值；管理页卡片显示实名不受
+ *  此影响——本页外显示位=rail 标签/状态条） */
+export const WS_GUIDE_LABEL = '待选择'
+
+/** 引导态三条件判定（纯推导无独立存储）：当前课题=default ∧ paperCount=0
+ *  ∧ name=默认名单源常量（DEFAULT_WS_NAME——shared/constants）。任一打破
+ *  即升格实名显示（改名/导入计数/切非 default 三路，升格后可逆回——用户
+ *  把 default 改回默认名且 0 篇即回引导态，按三条件字面诚实判定）。 */
+export function isGuideState(s: Pick<WorkspaceStore, 'items' | 'currentId'>): boolean {
+  const cur = s.items.find((w) => w.id === s.currentId)
+  return (
+    cur !== undefined &&
+    cur.id === DEFAULT_WS_ID &&
+    cur.paperCount === 0 &&
+    cur.name === DEFAULT_WS_NAME
+  )
+}
+
+/** 课题名显示位推导（rail 标签/状态条消费）：引导态=待选择，否则当前实名；
+ *  无当前课题=空串（调用方各自兜底） */
+export function selectDisplayWsName(s: Pick<WorkspaceStore, 'items' | 'currentId'>): string {
+  return isGuideState(s) ? WS_GUIDE_LABEL : selectCurrentName(s)
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {

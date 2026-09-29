@@ -56,3 +56,16 @@ export const TAG_COLOR_NONE_DISPLAY = '#9aa4b2'
 
 /** 列表分页上限（防弱模型一次拉全表） */
 export const MAX_PAGE_SIZE = 200
+
+/**
+ * [F-WS-02] 默认课题身份常量（提炼自 services/workspaces/workspace.fs.ts——
+ * R4 主控裁决 2026-09-30 批准：renderer 引导态判定（INV-87 三条件之
+ * id=default ∧ name=默认名）消费，TAG_COLOR_PRESETS 同居先例。fs 侧
+ * re-export 维持既有消费面（workspace-layout/service/测试零改）。注意：
+ * 仅身份件跨进程共享——路径件（WORKSPACES_DIR_NAME/POINTER_FILE_NAME）
+ * 仍住 fs 域文件，renderer 不见路径。
+ */
+/** 迁移目标/全新安装的缺省课题 id */
+export const DEFAULT_WS_ID = 'default'
+/** 缺省课题显示名（meta.json 缺失/L0 合成时；引导态判据=名未改） */
+export const DEFAULT_WS_NAME = '默认课题'

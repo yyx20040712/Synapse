@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { launch } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * zcode 联动 e2e（SR2-AI-10，受锁 [locked-change]）。
@@ -23,6 +23,10 @@ test('zcode 联动：未发现→装 zcode→技能未装→一键装技能→fs
 
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ai10-'))
   const fakeHome = await mkdtemp(join(tmpdir(), 'zcode-home-'))
+  // [F-WS-02] 种子破引导态（设置钮在引导态禁用——smoke.spec 同配方）
+  await bootstrapMigrations(userData)
+  const sha = 'c'.repeat(64)
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, 'zcode 联动种子文献')
 
   const app = await launch(userData, { SYNAPSE_ZCODE_HOME: fakeHome })
   const win = await app.firstWindow()

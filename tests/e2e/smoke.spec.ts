@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cspHeaderValue } from '../../src/main/security/csp'
 import { API_SURFACE } from '../../src/shared/ipc/api-surface'
-import { launch } from './e2e-env'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * 冒烟 e2e（骨架期即激活）：应用能启动、三入口导航、内容区渲染。
@@ -12,6 +12,11 @@ import { launch } from './e2e-env'
  */
 test('应用启动：侧栏三入口可见且可切换', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-'))
+  // [F-WS-02] 种子破引导态：fresh 启动=default+0 篇+默认名→rail 下方全禁用
+  // （设置钮不可点=「可切换」断言空转——workspaces.spec 同配方）
+  await bootstrapMigrations(userData)
+  const sha = 'a'.repeat(64)
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, 'smoke 种子文献')
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
@@ -149,6 +154,10 @@ test('frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正
 
 test('R2-SET1 界面缩放：点「大 125%」→rail 首项 rect ×1.25（±2px）+header 高恒 38（豁免锁——rect 断言非 computed）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-smoke-set1-'))
+  // [F-WS-02] 种子破引导态（设置钮在引导态禁用——测 1 同配方）
+  await bootstrapMigrations(userData)
+  const sha = 'b'.repeat(64)
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, 'smoke 缩放种子文献')
   const app = await launch(userData)
   const win = await app.firstWindow()
   await win.getByRole('button', { name: '文献库' }).waitFor({ timeout: 20_000 })

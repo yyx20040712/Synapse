@@ -73,6 +73,15 @@
       "status": "unpursued",
       "first_seen": "2026-08-27",
       "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）；2026-09-18 第 4 观测（GEOM 设计链批，scripts/audits/geom01-e2e-corpus-rerun.raw.txt 指纹档）——立案线（2 次）早已越过，立案排查归后续批（建议与 F-EXPORT-01 拆件票同场）；2026-09-19 第 5 观测定向复跑也红（升级观察：从套跑红定向绿到定向也红+快样本绿——时序敏感竞态嫌疑=第二段再发起 streaming 起步，复跑绿不销项），四 rerun 档=scripts/audits/g10-e2e-{appgate,corpus-rerun,corpus-rerun2,corpus-rerun3,corpus-rerun4}.log，F-EXPORT-01 开工须携本批指纹首查"
+    },
+    {
+      "spec": "tests/e2e/reader-scroll.spec.ts",
+      "case": "收官全链（P3 划选步骤）",
+      "count": 1,
+      "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log",
+      "status": "observing",
+      "first_seen": "2026-09-30",
+      "resolution": "观察中（第 2 现即立案——charter §1.4 立案线；F-WS-02 probe M2 首跑观测，executor 同套件基线 55/55 绿在档）"
     }
   ]
 }

@@ -17,8 +17,8 @@ import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvent
 import { useSettingsStore } from '../features/settings/settings.store'
 import { useLibraryStore } from '../features/library/library.store'
 import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
-import { WorkspaceSection } from '../features/workspaces/WorkspaceSection'
-import { useWorkspaceStore } from '../features/workspaces/workspace.store'
+import { WorkspacesPage } from '../features/workspaces/WorkspacesPage'
+import { selectDisplayWsName, isGuideState, useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { THEME_LABEL } from '../shared/ui-constants'
 import { Rail, type ViewId } from './Rail'
 import { StatusBar, type AutosaveStatus } from './StatusBar'
@@ -78,7 +78,8 @@ export function App(): JSX.Element {
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
   // R1-WS2：课题清单驻留（列表型失败在 store 内写 error，不抛——挂载安全）；
-  // dirty 聚合值经 props 注入 Rail 弹层与设置面（禁跨域 store 互引，ADR-0018）
+  // [F-WS-02] dirty 聚合值直注 WorkspacesPage（弹层/设置节退役——禁跨域
+  // store 互引，ADR-0018）
   const wsLoad = useWorkspaceStore((s) => s.load)
   useEffect(() => {
     void wsLoad()
@@ -122,13 +123,27 @@ export function App(): JSX.Element {
 
   // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
   // 课题名/篇数=workspace items+currentId 推导；脉络计数=lineage nodes/edges；
-  // 已选=library selectedId 0/1；主题名=THEME_LABEL 单源（ui-constants）
+  // 已选=library selectedId 0/1；主题名=THEME_LABEL 单源（ui-constants）。
+  // [F-WS-02] 课题名显示位=selectDisplayWsName（引导态=待选择——INV-87）
   const wsItems = useWorkspaceStore((s) => s.items)
   const wsCurrentId = useWorkspaceStore((s) => s.currentId)
   const wsCurrent = wsItems.find((w) => w.id === wsCurrentId)
+  const wsDisplayName = selectDisplayWsName({ items: wsItems, currentId: wsCurrentId })
+  const wsGuide = isGuideState({ items: wsItems, currentId: wsCurrentId })
   const lineageNodes = useLineageStore((s) => s.nodes)
   const lineageEdges = useLineageStore((s) => s.edges)
   const selectedId = useLibraryStore((s) => s.selectedId)
+
+  // [F-WS-02] 导入升格桥（D2「导入过文献即升格」）：默认课题内导入落地
+  // （library total 0→N——LibraryPage onImported→library.load 链终态信号）
+  // →组合根重拉课题清单 → paperCount>0 打破引导态第三条件 → rail 解禁。
+  // 仅引导态窗口内重拉（窗口外计数刷新语义仍归 reload——既有行为不动）；
+  // 重拉失败=items 不变禁用保持，错误契约经管理页错误行+重试恢复（k1-N2
+  // 边界在档——桥自身不 toast 不重试，恢复面归 store error 既有契约）
+  const libTotal = useLibraryStore((s) => s.total)
+  useEffect(() => {
+    if (wsGuide && libTotal > 0) void wsLoad()
+  }, [wsGuide, libTotal, wsLoad])
 
   // T3-P2 gsearch：全局 Ctrl+K 聚焦（keydown 挂 App 单点；preventDefault 防
   // 浏览器默认；v1 展示性控件——可聚焦可输入，无后端动作；提示语=受控空值
@@ -179,23 +194,22 @@ export function App(): JSX.Element {
           同入 zoom，topbar/statusbar 行外结构性豁免（E5：caption 三键/顶栏保持
           系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
       <div className="app-content-row">
-        {/* T3-P2：72px 窄轨（课题弹层 dirty 聚合值注入）；F-UI-03 折叠 nav 面退役 */}
-        <Rail view={view} onView={setView} dirty={quitDirty} />
+        {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役） */}
+        <Rail view={view} onView={setView} />
         <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
             {view === 'library' && <LibraryPage />}
             {view === 'reader' && <ReaderPage />}
-            {view === 'settings' && (
-              <SettingsPage workspaceSection={<WorkspaceSection dirty={quitDirty} />} />
-            )}
+            {view === 'settings' && <SettingsPage />}
             {view === 'lineage' && <LineagePage />}
+            {view === 'workspaces' && <WorkspacesPage dirty={quitDirty} />}
           </ErrorBoundary>
         </main>
       </div>
       {/* T3-P2 状态条 26px（等宽字仪表带——真文本槽位锁在 app-shell.test） */}
       <footer className="app-statusbar">
         <StatusBar
-          wsName={wsCurrent?.name ?? ''}
+          wsName={wsDisplayName}
           paperCount={wsCurrent?.paperCount ?? 0}
           nodeCount={lineageNodes.length}
           edgeCount={lineageEdges.length}

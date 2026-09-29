@@ -1234,6 +1234,30 @@
       "caseTitle": "list 透传 listWithCounts",
       "reason": "F-TAGS-01 tagSchema 扩 color 必携可空（wire 真相=repo SELECT 恒携带）——Tag 形夹具/断言随契约扩 color 字段（断言更强非收紧）",
       "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-TAGS-01/brief-executor-r0.md#R2"
+    },
+    {
+      "file": "tests/e2e/workspaces.spec.ts",
+      "caseTitle": "课题切换：新建课题 B 后库/脉络整体切换，切回后文献在场",
+      "reason": "F-WS-02 课题管理独立页：弹层 WsRailPopover 退役——切换/新建/改名入口统一迁管理页（设置页课题管理节同批退役），用例本体随链路改写保留 NEW 侧在档（标题随改名就地生效语义扩写）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-WS-02/brief-executor-r0.md#R4+主控 2026-09-30 批准（收口序裁定案 c 回示）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "点选其他课题：switchTo 走 IPC（含 id）并触发 reload（ADR-0018 联动语义）",
+      "reason": "F-WS-02 弹层退役承接：断言面自 .ws-pop 弹层迁管理页 .ws-card（标题随「页内点选其他课题卡」语义改写，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-WS-02/brief-executor-r0.md#R4+主控 2026-09-30 批准（收口序裁定案 c 回示）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "失败面（回炉 1 d1-W1）：store error 非空时弹层渲染错误行+重试，重试走 load",
+      "reason": "F-WS-02 弹层退役承接：store error 契约壳层兑现点由弹层迁管理页（d1-W1 回炉语义随迁，NEW 侧在档）",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-WS-02/brief-executor-r0.md#R4+主控 2026-09-30 批准（收口序裁定案 c 回示）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "码点安全短名（回炉 1 d1-W5）：emoji 课题名前 4 码点截断，无孤立代理对",
+      "reason": "F-WS-02 弹层 describe 改组课题管理视图页 describe：用例本体保留（标题/断言零改），describe 路径随 WsRailPopover 退役改写",
+      "rulingLink": "E:/zcode_md/synapse-archive/scripts-audits/F-WS-02/brief-executor-r0.md#R4+主控 2026-09-30 批准（收口序裁定案 c 回示）"
     }
   ]
 }

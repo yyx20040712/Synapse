@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T18:33:40.6309773Z",
+    "generatedAt":  "2026-09-29T20:15:11.7311479Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "e1e317f6de7ba38e195fc63106e10776df09d3811cebad8dcc691b88c9121776"
+                      "sha256":  "cd161567d3da150b440d2f6abf1458ff80fcdda27372e1b0168c7333a95fd47d"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "281b89e234c723b5222768509eb5de09e237657f555e19499e6fbbd86d6484b0"
+                      "sha256":  "eabbd2de8bc0367c9249c861ab494d4efa0c9b858eb3112762d29552c9627b43"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -167,7 +167,7 @@
                   },
                   {
                       "path":  "src/shared/constants.ts",
-                      "sha256":  "4414763a9ecfd0cbd81390a49033d3e1304d89c7d2ef991e90bbf1610f31d145"
+                      "sha256":  "87585511dd33ed5119d93661fb198bfe3144d2f28ff40df1ace91b0c447df1b0"
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
@@ -291,11 +291,11 @@
                   },
                   {
                       "path":  "tests/e2e/shell-rail.spec.ts",
-                      "sha256":  "7a8631b6374c04a2903ea92192056125ffbb81f5a2e41ed539774559ceb0f0d3"
+                      "sha256":  "0a1da03c9f24ea765fcc05d2a47d072d1f867c7dc9a024b69728302793d19c6c"
                   },
                   {
                       "path":  "tests/e2e/smoke.spec.ts",
-                      "sha256":  "64164ca5ccc0a22301ecd7ebeceb9c3a8462db4a370bcb21479a50998112f89f"
+                      "sha256":  "551b3833e8639c7346ebef51fd3bdb72734bf2002938266920a291ee87ee4482"
                   },
                   {
                       "path":  "tests/e2e/stable-rel.ts",
@@ -315,15 +315,15 @@
                   },
                   {
                       "path":  "tests/e2e/theme-trio.spec.ts",
-                      "sha256":  "e7ece0f11e6aad416ef03a9ad961b4c4a57a49a2559b2b5121573d9bceb1e97b"
+                      "sha256":  "8700c2c0fb2388a960e20540bdca8d37c8a64900895c0a380d96938992e36ed7"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
-                      "sha256":  "afb6da710fe1158717fb826cf6437434709444474b5eae688a8fd3baf9708c8f"
+                      "sha256":  "9efd4188e8fcc69cda50b4a2333aa115b72199794cbb32c1792f0c5cfe2eb9b8"
                   },
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
-                      "sha256":  "8bcbba52dff4d73a54526864b3b0e993ee423bad773bd1dbd53d4c695aca48b6"
+                      "sha256":  "614d62958afb2bc1aeff19f29f7d0efb445e7dd1499952216985211c6c4580fc"
                   },
                   {
                       "path":  "tests/e2e/z-probes-ARCHIVED.md",
@@ -551,7 +551,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "9c9a3547ff1d88a3fe6dfafbc513dcf74c27782df537887230ba6084cfd0ab79"
+                      "sha256":  "5f29de2815b576a8c6ccd21f042461d1c725554e10b5d7599aa80cc325761d22"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell-t3u1.test.tsx",
@@ -875,7 +875,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/workspace.store.test.ts",
-                      "sha256":  "b3f4ad88e343b3f1b712a06b2beb926691fd01fddf24cff536912ef8cb7e691b"
+                      "sha256":  "d5d4ce6f5d4d6a3f6225acb872447939b56bdd701de82450c28608d9021f2e43"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/workspaces-page.test.tsx",
+                      "sha256":  "2cc122c50eeca79666de4c2d138a782af2dfaac8689006b03fc2f32b17ca35b9"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ws-guide-state.test.tsx",
+                      "sha256":  "06e6ca141012dcb66746ba90f6fadc27035b669d17c28477fa5707f4564bb2a0"
                   },
                   {
                       "path":  "tests/unit/renderer/zcode-link-section.test.tsx",

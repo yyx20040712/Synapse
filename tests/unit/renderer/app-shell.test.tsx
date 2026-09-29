@@ -189,7 +189,7 @@ describe('T3-P2 App 壳——38px 顶栏+72px 窄轨结构锁', () => {
   })
 })
 
-describe('T3-P2 课题弹层（A10）——开合+当前项标记+dirty 拦截', () => {
+describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹层退役承接）', () => {
   let reloadSpy: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -198,75 +198,57 @@ describe('T3-P2 课题弹层（A10）——开合+当前项标记+dirty 拦截',
     Object.defineProperty(window, 'location', { configurable: true, value: { reload: reloadSpy } })
   })
 
-  it('点击课题项开弹层：h4 标题+课题行（色点/全名/篇数）+当前项 .on；再点课题项/Escape/外点均关', async () => {
+  it('点击课题项路由 workspaces 视图：main 内 .ws-page 在场+课题钮 active/aria-current；弹层零残留；点文献库切回', async () => {
     mount(<App />)
     await flush()
-    expect(document.querySelector('.ws-pop'), '初始关闭').toBeNull()
+    expect(document.querySelector('.ws-pop'), '课题弹层已退役（F-WS-02 方案切换=删除旧方案）').toBeNull()
+    expect(document.querySelector('main .ws-page'), '初始（文献库视图）无课题管理页').toBeNull()
     act(() => {
       railButton('课题')!.click()
     })
-    const pop = document.querySelector('.ws-pop')
-    expect(pop, '点击课题项弹出 .ws-pop（fixed 挂 rail 旁）').not.toBeNull()
-    expect(pop!.querySelector('h4')!.textContent).toBe('选 择 课 题')
-    const items = Array.from(pop!.querySelectorAll('.ws-item'))
-    expect(items).toHaveLength(2)
-    expect(items[0]!.textContent, '课题行=全名+篇数（N 篇）').toContain('默认课题')
-    expect(items[0]!.textContent).toContain('3 篇')
-    expect(items[0]!.querySelector('span.dot'), '课题行色点 span.dot 在场').not.toBeNull()
-    expect(items[0]!.classList.contains('on'), '当前课题行挂 .on').toBe(true)
-    expect(items[1]!.classList.contains('on')).toBe(false)
-    expect(pop!.querySelector('.foot-note')!.textContent).toContain('课题间数据完全隔离')
-    // Escape 关闭
+    const page = document.querySelector('main .ws-page')
+    expect(page, '点击课题钮=路由 workspaces 视图页（非弹层）').not.toBeNull()
+    const cards = page!.querySelectorAll('.ws-card')
+    expect(cards, '课题卡片列表渲染（两张卡）').toHaveLength(2)
+    expect(cards[1]!.textContent, '卡片=实名+篇数').toContain('智慧水务水质模型课题')
+    expect(cards[1]!.textContent).toContain('7 篇')
+    expect(railButton('课题')!.classList.contains('active'), '课题钮挂 active（视图路由钮）').toBe(true)
+    expect(railButton('课题')!.getAttribute('aria-current'), '课题钮 aria-current=page').toBe('page')
     act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      railButton('文献库')!.click()
     })
-    expect(document.querySelector('.ws-pop'), 'Escape 关闭弹层').toBeNull()
-    // 外点关闭（mousedown 在弹层与课题钮之外）
-    act(() => {
-      railButton('课题')!.click()
-    })
-    expect(document.querySelector('.ws-pop')).not.toBeNull()
-    act(() => {
-      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    })
-    expect(document.querySelector('.ws-pop'), '外点关闭弹层').toBeNull()
-    // 再点课题项=toggle 关闭
+    expect(document.querySelector('main .ws-page'), '点文献库切回（视图切换机制内）').toBeNull()
+  })
+
+  it('页内点选其他课题卡：switchTo 走 IPC（含 id）并触发 reload（ADR-0018 联动语义维持）', async () => {
+    mount(<App />)
+    await flush()
     act(() => {
       railButton('课题')!.click()
     })
-    expect(document.querySelector('.ws-pop')).not.toBeNull()
-    act(() => {
-      railButton('课题')!.click()
+    const cards = document.querySelectorAll('main .ws-card')
+    await act(async () => {
+      cards[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(document.querySelector('.ws-pop'), '再点课题项合上（toggle）').toBeNull()
-    // [d1-N-a 回炉核点] 幂等收口：点选当前课题（.on 行）=确认语义直接合上零 IPC
+    await flush()
+    expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'w2' })
+    expect(reloadSpy, '切换成功即 reload（侧栏短名/状态条课题名 reload 后自新）').toHaveBeenCalledTimes(1)
+  })
+
+  it('页内点选当前课题卡：幂等零 IPC 零 reload（确认语义不空切）', async () => {
+    mount(<App />)
+    await flush()
     act(() => {
       railButton('课题')!.click()
     })
     stubApi.workspaces.switch.mockClear()
+    const current = document.querySelector('main .ws-card.on')!
     await act(async () => {
-      document
-        .querySelector('.ws-pop .ws-item.on')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      current.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     await flush()
     expect(stubApi.workspaces.switch, '幂等点选=零 IPC（pick 层分流）').not.toHaveBeenCalled()
-    expect(document.querySelector('.ws-pop'), '点选当前课题合上（幂等收口）').toBeNull()
-  })
-
-  it('点选其他课题：switchTo 走 IPC（含 id）并触发 reload（ADR-0018 联动语义）', async () => {
-    mount(<App />)
-    await flush()
-    act(() => {
-      railButton('课题')!.click()
-    })
-    const items = document.querySelectorAll('.ws-pop .ws-item')
-    await act(async () => {
-      items[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    await flush()
-    expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'w2' })
-    expect(reloadSpy, '切换成功即 reload（侧栏色点/短名/状态条课题名 reload 后自新）').toHaveBeenCalledTimes(1)
+    expect(reloadSpy).not.toHaveBeenCalled()
   })
 
   it('dirty=true 且确认取消：confirm 弹切换文案，switch IPC 与 reload 均不被调', async () => {
@@ -281,40 +263,38 @@ describe('T3-P2 课题弹层（A10）——开合+当前项标记+dirty 拦截',
     act(() => {
       railButton('课题')!.click()
     })
-    const items = document.querySelectorAll('.ws-pop .ws-item')
+    const cards = document.querySelectorAll('main .ws-card')
     await act(async () => {
-      items[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      cards[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     await flush()
     expect(confirmSpy).toHaveBeenCalledTimes(1)
     expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('切换课题将丢弃未保存')
     expect(stubApi.workspaces.switch, '用户取消=零 IPC 零 reload（拦截即不切）').not.toHaveBeenCalled()
     expect(reloadSpy).not.toHaveBeenCalled()
-    // [回炉 1 k1-N1] 取消路径留在展开态（旧顶栏切换器语义继承）——非成功
-    // 切换不无条件合上，用户可直接换选或 Esc
-    expect(document.querySelector('.ws-pop'), 'dirty 取消后弹层仍展开').not.toBeNull()
+    expect(document.querySelector('main .ws-page'), 'dirty 取消后留在本页（可换选）').not.toBeNull()
     confirmSpy.mockRestore()
     act(() => {
       useLineageStore.setState({ saveStatus: 'saved' })
     })
   })
 
-  it('失败面（回炉 1 d1-W1）：store error 非空时弹层渲染错误行+重试，重试走 load', async () => {
+  it('失败面：store error 非空时页内渲染错误行+重试，重试走 load（弹层退役后本页=error 契约唯一壳层兑现点）', async () => {
     const { useWorkspaceStore } = await import(
       '../../../src/renderer/features/workspaces/workspace.store'
     )
     mount(<App />)
     await flush()
     act(() => {
-      useWorkspaceStore.setState({ error: '网络不可达' })
-    })
-    act(() => {
       railButton('课题')!.click()
     })
-    const pop = document.querySelector('.ws-pop')
-    expect(pop, 'error 态弹层仍在场（错误行取代清单）').not.toBeNull()
-    expect(pop!.textContent).toContain('课题列表加载失败：网络不可达')
-    const retry = pop!.querySelector<HTMLButtonElement>('button.ws-retry')
+    act(() => {
+      useWorkspaceStore.setState({ error: '网络不可达' })
+    })
+    const errRow = document.querySelector('main .ws-error')
+    expect(errRow, 'error 态页内错误行在场').not.toBeNull()
+    expect(errRow!.textContent).toContain('课题列表加载失败：网络不可达')
+    const retry = errRow!.querySelector<HTMLButtonElement>('button.ws-retry')
     expect(retry, '重试按钮在场').not.toBeNull()
     stubApi.workspaces.list.mockClear()
     await act(async () => {

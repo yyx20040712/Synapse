@@ -12,8 +12,12 @@
  *   断点后重启时「遗留 db 在且 default 库不在」条件仍真 → 续迁完成，不产生孤儿库。
  *
  * ── 接口层 ──
- * - 常量（WORKSPACES_DIR_NAME/POINTER_FILE_NAME/DEFAULT_WS_ID/DEFAULT_WS_NAME）
- *   只住本域文件——禁入 shared/constants.ts（renderer 不见路径，避免无谓受锁扩容）。
+ * - 常量分层（[F-WS-02] 2026-09-30 主控 R4 裁决改写——原「四常量只住本域
+ *   文件」声明随 DEFAULT_WS_ID/DEFAULT_WS_NAME 提炼 shared 而修订）：
+ *   路径件（WORKSPACES_DIR_NAME/POINTER_FILE_NAME）只住本域文件——renderer
+ *   不见路径；身份件（DEFAULT_WS_ID/DEFAULT_WS_NAME）提炼
+ *   src/shared/constants.ts 单源（renderer 引导态判定 INV-87 消费），本文件
+ *   re-export 维持既有消费面（workspace-layout/service/测试零改）。
  *
  * ── 架构层 ──
  * - 只 import node:fs/node:path/node:crypto 与 services/shared/atomic-write
@@ -31,17 +35,21 @@ import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rename, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { DB_FILE_NAME, MANAGED_FILES_DIR } from '../../../shared/constants'
+import {
+  DB_FILE_NAME,
+  DEFAULT_WS_ID,
+  DEFAULT_WS_NAME,
+  MANAGED_FILES_DIR
+} from '../../../shared/constants'
 import { atomicWriteFile } from '../shared/atomic-write'
 
 /** 课题目录集根目录名（userData 下） */
 export const WORKSPACES_DIR_NAME = 'workspaces'
 /** 当前课题指针文件名（userData 下，库外——ADR-0018 字面） */
 export const POINTER_FILE_NAME = 'workspace.json'
-/** 迁移目标/全新安装的缺省课题 id */
-export const DEFAULT_WS_ID = 'default'
-/** 缺省课题显示名（meta.json 缺失/L0 合成时） */
-export const DEFAULT_WS_NAME = '默认课题'
+// [F-WS-02] 身份常量 re-export（定义单源=shared/constants——见接口层注）：
+// 维持 workspace-layout/service/测试的既有 import 路径零改
+export { DEFAULT_WS_ID, DEFAULT_WS_NAME }
 
 export interface WorkspaceMeta {
   name: string

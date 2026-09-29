@@ -312,9 +312,11 @@ AGENTS.md「环境事实」单源，此处不复制。
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
   lineTypes 静态校验拆件）。
 - [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
-  `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题弹层 `app/WsRailPopover.tsx`
-  A10 联动+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props 注入）；
-  F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器侧栏消费）。
+  `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题钮 [F-WS-02] 起路由
+  workspaces 管理页（弹层 `app/WsRailPopover.tsx` 已退役——方案切换=删除
+  旧方案）+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props
+  注入）；F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器
+  侧栏消费）。
   [T3-U1] 状态条自动保存槽=App 组合根 worst-of 聚合（tabDirty[保存失败残留
   语义]∪lineage saveStatus→已保存/保存中…/保存失败三态真文本，null 无可写面
   信号槽省略；失败挂 .sig=--signal 色）注入 StatusBar；FOUC 首帧兜底链=
@@ -350,9 +352,15 @@ AGENTS.md「环境事实」单源，此处不复制。
 - main 装配=`workspace-layout.ts`（数据目录解析）+`data-layer.container.ts`
   （可重建 facade：switch=关旧库→重建→热换，busy 串行守卫——INV-35 四联）。
 - **legacy-fresh 双态启动**：全新首启不建 workspaces/（库在 userData 根），二启
-  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=课题弹层
-  （`app/WsRailPopover.tsx`，T3-P2 起取代顶栏切换器——dirty 确认→IPC switch→
-  `location.reload()` 全新 stores，联动不变量=INV-72）；list 每课题条目携
+  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=[F-WS-02]
+  workspaces 管理页（`features/workspaces/WorkspacesPage.tsx`，课题钮路由入
+  页——卡片列表/新建/行内改名/点卡切换；dirty 确认→IPC switch→
+  `location.reload()` 全新 stores 维持 ADR-0018，联动不变量=INV-72；弹层与
+  设置页课题管理节同批退役）；默认课题身份常量提炼 shared/constants
+  （fs re-export 维持消费面）。**默认课题引导态**（INV-87，D2 批语）：三条件
+  （id=default∧0 篇∧默认名）成立=rail 课题钮以下全禁用浅色+课题名显示位
+  「待选择」，课题钮路由管理页引导新建；升格三路=改名/导入计数（App 组合根
+  桥：引导态∧library total>0→重拉清单）/切非 default；list 每课题条目携
   paperCount（main 根 `workspace-layout.countPapersInDir` 依赖倒置注入——
   ADR-0018 一课题一库，逐课题库 COUNT 非单库 GROUP BY）。
 

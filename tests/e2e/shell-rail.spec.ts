@@ -8,13 +8,19 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * [T3-P2] 壳层改版 e2e（always-active）：真 Chromium 断言——
  * ①rail 七项渲染（真实文本可见）；②顶栏 wordmark/38px 高+gsearch（提示语
  * +Ctrl K 全局聚焦）；③下载 toast 文案（A8 占位）；④状态条真实文本（课题名/
- * 主题名）；⑤课题弹层开→当前项 .on→点选后 reload 联动（新课题名在状态条+
- * paperCount COUNT 实测）。
+ * 主题名）。[F-WS-02] 弹层开合断言随 WsRailPopover 退役改写——课题钮=路由
+ * workspaces 管理页；测 2 重写为引导态（INV-87）e2e：待选择+全钮禁用→
+ * 管理页新建课题→解禁升格（状态条课题名自新）。
  * 视觉基准=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段；
  * 真相源=docs/design/2026-09-26_theme-trio-final-design.md §1。
  */
 test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K+下载 toast+状态条真文本', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-shell-rail-'))
+  // [F-WS-02] 种子破引导态：fresh 启动=default+0 篇+默认名→rail 下方全禁用
+  // （下载 toast 等常态断言需 paperCount>0——workspaces.spec 同配方）
+  await bootstrapMigrations(userData)
+  const sha = 'f'.repeat(64)
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, '壳层种子文献')
   const app = await launch(userData)
   const win = await app.firstWindow()
 
@@ -63,75 +69,61 @@ test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K
   await win.keyboard.press('Control+K')
   await expect(win.locator('.gsearch input')).toBeFocused()
 
-  // 下载占位 toast（A8——mockup L766 逐字）
+  // 下载占位 toast（A8——mockup L766 逐字；种子后引导态不成立→下载钮可用）
   await win.getByRole('button', { name: '下载', exact: true }).click()
   await expect(win.getByText('文献搜索与下载引擎 · 规划中（未实现）')).toBeVisible()
 
-  // 状态条真实文本（课题名+主题名——THEME_LABEL 单源）
-  await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 0 篇')
+  // 状态条真实文本（课题名+主题名——THEME_LABEL 单源；种子后 paperCount=1）
+  await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇')
   await expect(win.locator('.app-statusbar')).toContainText('脉络 0 节点 / 0 连线')
   await expect(win.locator('.app-statusbar')).toContainText('主题：白天 · 精密仪表')
 
   await app.close()
 })
 
-test('T3-P2 课题弹层：开合+当前项 .on+点选后 reload 联动（状态条课题名/篇数自新）', async () => {
+test('F-WS-02 引导态：fresh 启动待选择+全钮禁用→管理页新建课题后解禁（状态条课题名自新）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-shell-ws-'))
-  await bootstrapMigrations(userData)
-  const sha = 'f'.repeat(64)
-  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, '弹层联动种子文献')
-
+  // 不种子：fresh 启动=L0 合成 default（0 篇+默认名）→引导态三条件全成立
   const app = await launch(userData)
   const win = await app.firstWindow()
-  await expect(win.locator('.rail-ws .lb')).toHaveText('默认课题', { timeout: 20_000 })
-  await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇')
 
-  // 开弹层：h4 标题+课题行（色点/全名/篇数）+当前项 .on
-  await win.getByRole('button', { name: '课题', exact: true }).click()
-  const pop = win.locator('.ws-pop')
-  await expect(pop).toBeVisible()
-  await expect(pop.getByRole('heading', { name: '选 择 课 题' })).toBeVisible()
-  const current = pop.locator('.ws-item', { hasText: '默认课题' })
-  await expect(current).toBeVisible()
-  await expect(current).toHaveClass(/\bon\b/)
-  await expect(current).toContainText('1 篇')
-  await expect(current.locator('.dot')).toBeVisible()
+  // 引导态锚①：课题名显示位=「待选择」（D2 批语——不显示默认课题字样）
+  await expect(win.locator('.rail-ws .lb')).toHaveText('待选择', { timeout: 20_000 })
+  await expect(win.locator('.app-statusbar')).toContainText('课题 待选择 · 0 篇')
+  // 锚②：课题钮以下五钮全禁用（真 Chromium disabled 态），课题钮恒可用
+  for (const label of ['下载', '文献库', '阅读器', '脉络', '设置']) {
+    await expect(
+      win.getByRole('button', { name: label, exact: true }),
+      `引导态 rail「${label}」禁用（D2 下方按钮全禁用）`
+    ).toBeDisabled()
+  }
+  // 锚②b：禁用浅色皮肤计算样式锚（R1——d1-W3：删 .rail-item:disabled 块即红）
+  await expect(
+    win.getByRole('button', { name: '文献库', exact: true })
+  ).toHaveCSS('opacity', '0.5')
+  await expect(win.getByRole('button', { name: '课题', exact: true })).toBeEnabled()
 
-  // 外点关闭+重开
-  await win.locator('main').click({ position: { x: 400, y: 200 } })
-  await expect(pop).toBeHidden()
+  // 锚③：点课题钮=路由管理页——引导提示行在场（课题图标进管理页引导新建），
+  // 卡片仍显实名默认课题（管理面=实体管理位，不受待选择显示影响）
   await win.getByRole('button', { name: '课题', exact: true }).click()
-  await expect(pop).toBeVisible()
-  await win.keyboard.press('Escape')
-  await expect(pop).toBeHidden()
+  const page = win.locator('.ws-page')
+  await expect(page).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.ws-guide')).toBeVisible()
+  await expect(page.locator('.ws-card', { hasText: '默认课题' })).toContainText('0 篇')
 
-  // [回炉 1 k1-W2/d1-W4] 触发钮 mousedown 自吞净关一次锁：弹层开着时点课题钮
-  // =mousedown 被自吞（不触发外点关）+click toggle——净效果恰关一次。
-  // 若自吞守卫被摘：mousedown 先外点关、click 再 toggle 开——弹层回到展开，
-  // 断言 toBeHidden 即红（真 Chromium mousedown 序列，jsdom click() 不派发）
-  await win.getByRole('button', { name: '课题', exact: true }).click()
-  await expect(pop).toBeVisible()
-  await win.getByRole('button', { name: '课题', exact: true }).click()
-  await expect(pop, '触发钮点击=净关一次（自吞守卫在位）').toBeHidden()
-
-  // 新建课题 B（设置页课题管理节——dirty=false 无确认直切→reload）
-  await win.getByRole('button', { name: '设置', exact: true }).click()
-  await win.getByLabel('新课题名称').fill('水质模型课题')
-  await win.getByRole('button', { name: '创建并切换' }).click()
+  // 锚④：页内新建课题 B（升格三路之切换路——创建即切→reload）→解禁+实名
+  await page.getByLabel('新课题名称').fill('水质模型课题')
+  await page.getByRole('button', { name: '创建并切换' }).click()
   await expect(win.locator('.app-statusbar')).toContainText('课题 水质模型课题 · 0 篇', {
     timeout: 20_000
   })
   await expect(win.locator('.rail-ws .lb')).toHaveText('水质模型', { timeout: 20_000 })
-
-  // 弹层切回默认课题：当前项 .on 已随 reload 自新（=水质模型课题行），
-  // 点默认课题行→reload→状态条课题名/篇数自新（A10 联动+COUNT 实测）
-  await win.getByRole('button', { name: '课题', exact: true }).click()
-  await expect(pop.locator('.ws-item', { hasText: '水质模型课题' })).toHaveClass(/\bon\b/)
-  await pop.locator('.ws-item', { hasText: '默认课题' }).click()
-  await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇', {
-    timeout: 20_000
-  })
-  await expect(win.locator('.rail-ws .lb')).toHaveText('默认课题', { timeout: 20_000 })
+  for (const label of ['下载', '文献库', '阅读器', '脉络', '设置']) {
+    await expect(
+      win.getByRole('button', { name: label, exact: true }),
+      `升格后 rail「${label}」解禁`
+    ).toBeEnabled()
+  }
 
   await app.close()
 })

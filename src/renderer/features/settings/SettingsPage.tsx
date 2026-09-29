@@ -18,7 +18,7 @@
  *   皮肤住 theme.css——自持节 section 根同吃）；表单控件 focus=accent 描边+
  *   gold-soft 底（.syn-input）；内联节壳拆 SettingsSection（180 行消化上限）
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
 import { Button } from '../../shared/ui/Button'
@@ -34,9 +34,9 @@ import type { AppSettings } from '@shared/ipc/schemas'
 
 const SAVE_OK = '设置已保存'
 
-/** workspaceSection：课题管理节由 App 组合根注入（跨域经 App 编排——feature
- *  互引被 quality 门禁禁止，R1-WS2；dirty 聚合值随节由 App 一并注入） */
-export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Element {
+/** [F-WS-02] workspaceSection 注入面随课题管理节退役删除（新管理面=
+ *  workspaces 视图页 WorkspacesPage——App 直注 dirty；设置页回到零 props） */
+export function SettingsPage(): JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const saving = useSettingsStore((s) => s.saving)
   const diag = useSettingsStore((s) => s.diag)
@@ -187,10 +187,6 @@ export function SettingsPage(props: { workspaceSection?: ReactNode }): JSX.Eleme
           </table>
         )}
       </SettingsSection>
-
-      {/* R1-WS2：课题管理节（App 组合根注入——见 props 注释） */}
-      <DiamondRule />
-      {props.workspaceSection}
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
       <DiamondRule />

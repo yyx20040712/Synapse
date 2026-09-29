@@ -1,32 +1,44 @@
-/* ══ [T3-P2] 课题弹层皮肤（WsRailPopover 消费——.ws-pop 族；A10）。
-   前身=WorkspaceSwitcher 皮肤（ws-trigger/ws-panel/ws-field 族），随顶栏
-   切换器退役整体删除（方案切换=删除旧方案）；本件保留为 ws 域皮肤驻留地
-   （theme.test.ts P7D-01 计数锚的 wsCss 读取面）。
-   值单源=docs/design/mockups/2026-09-26_v2_theme-light.html L287-319
-   （.pop/.ws-pop/.ws-item/.foot-note）逐值誊录；字号经 --fs-* token 载体
-   （9.5/11.5 半值归并 10/11——P7D-01 批二刻度纪律，自裁申报）。══ */
+/* ══ [F-WS-02] 课题管理页皮肤（WorkspacesPage 消费——.ws-page 族）。
+   前身两代=WorkspaceSwitcher 皮肤（顶栏切换器）→课题弹层 .ws-pop 族
+   （WsRailPopover），均随各自方案退役整体删除（方案切换=删除旧方案）；
+   本件保留为 ws 域皮肤驻留地（theme.test.ts P7D-01 计数锚的 wsCss
+   读取面）。色经 --* token（禁字面量）、字号经 --fs-* token、零
+   transition（时长 token 归 theme.css 单源）。══ */
 
-/* 弹层主体：portal(document.body)+fixed 紧贴窄轨右上——门一 k1-W1/d1-W2 回炉：
-   脱离 .app-content-row zoom 行（fixed 在 zoom 祖先内坐标被缩，125% 档压轨），
-   left=rail 72px×--ui-scale+6px 间隙（App effect 单源变量）；top=58px
-   （topbar 38px 行外恒高+20px 间隙——mockup L754 观感语义）；
-   --panel 底 --line 描边 10px 圆角 --shadow-drag 浮起 */
-.ws-pop {
-  position: fixed;
-  left: calc(72px * var(--ui-scale, 1) + 6px);
-  top: 58px;
-  z-index: var(--z-pop);
-  width: 250px;
-  padding: 12px 13px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--shadow-drag);
-  font-size: var(--fs-caption);
+/* 页容器：main 内滚动流内的纵向布局（页面骨架仿 LibraryPage 形态） */
+.ws-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 720px;
+  padding: 18px 20px;
+}
+.ws-page h2 {
+  margin: 0;
+  font-size: var(--fs-body);
   color: var(--ink);
 }
+.ws-page .ws-sub {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+  color: var(--dim);
+}
 
-/* 失败面（d1-W1 回炉）：store error 契约的壳层兑现点——错误行+重试 */
+/* 引导态提示行（INV-87 三条件成立时渲染——D2：课题图标进管理页引导新建；
+   accent 软底+虚线边=可行动的引导信号非错误） */
+.ws-guide {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+  color: var(--accent);
+}
+
+/* 失败面（弹层语义随迁——store error 契约的壳层兑现点）：错误行+重试 */
 .ws-error {
   display: flex;
   flex-direction: column;
@@ -48,60 +60,118 @@
   border-color: var(--accent);
   color: var(--accent);
 }
-.ws-pop h4 {
-  margin: 0 0 9px;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: var(--faint);
-}
 
-/* 课题行：色点+全名（flex:1）+mono 篇数；hover=--line-soft；当前项 .on=
-   --accent-soft（色点背景=inline 动态值——索引轮转调色板注入） */
-.ws-item {
+/* 卡片列表：一课题一卡（.ws-row=卡+重命名钮同排）；当前项 .on=accent 软底 */
+.ws-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ws-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+.ws-card {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 8px 9px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
   color: var(--ink);
   font-family: inherit;
   font-size: var(--fs-caption);
   text-align: left;
   cursor: pointer;
 }
-.ws-item:hover {
-  background: var(--line-soft);
+.ws-card:hover {
+  border-color: var(--accent);
 }
-.ws-item.on {
+.ws-card.on {
   background: var(--accent-soft);
+  border-color: var(--accent);
 }
-.ws-item .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+/* 色标片（WS_DOT_PALETTE 索引轮转注入 inline 动态值——色彩身份单源） */
+.ws-card .chip {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
   flex: none;
 }
-.ws-item .nm {
+.ws-card .nm {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ws-item .ct {
+.ws-card .ct {
   flex: none;
   font-family: var(--mono);
   font-size: var(--fs-micro);
   color: var(--faint);
 }
+.ws-rename {
+  flex: none;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+.ws-rename:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
-/* 脚注：联动与隔离语义说明（mockup L319） */
-.ws-pop .foot-note {
-  margin-top: 8px;
-  font-size: var(--fs-micro);
-  color: var(--faint);
+/* 行内改名编辑器+新建行（同一输入皮肤——border/底/圆角逐值同 .ws-retry 族） */
+.ws-edit,
+.ws-new-row {
+  display: flex;
+  gap: 6px;
+}
+.ws-edit input,
+.ws-new-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+}
+.ws-rename-ok,
+.ws-create {
+  flex: none;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--panel);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+.ws-rename-cancel {
+  flex: none;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  cursor: pointer;
 }

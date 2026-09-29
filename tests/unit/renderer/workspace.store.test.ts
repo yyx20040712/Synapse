@@ -21,7 +21,13 @@ const stubApi = makeApiStub({
   }
 })
 
-import { useWorkspaceStore, selectCurrentName } from '../../../src/renderer/features/workspaces/workspace.store'
+import {
+  useWorkspaceStore,
+  selectCurrentName,
+  isGuideState,
+  selectDisplayWsName,
+  WS_GUIDE_LABEL
+} from '../../../src/renderer/features/workspaces/workspace.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 
 const WS_A = { id: 'a', name: '课题甲', createdAt: '2026-01-01T00:00:00.000Z', paperCount: 0 }
@@ -148,5 +154,67 @@ describe('workspace.store switchTo 弃改收口（A3/INV-35④）', () => {
     useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
     await useWorkspaceStore.getState().switchTo('b', { dirty: false })
     expect(reloadSpy).toHaveBeenCalledTimes(2)
+  })
+})
+
+// ── [F-WS-02] 默认课题引导态判定与升格（INV-87，always-active——文末追加）──
+// 三条件（D2 批后定稿）：id=default ∧ paperCount=0 ∧ name=默认名单源常量
+// （DEFAULT_WS_NAME——single source 从 main/fs 提炼 shared/constants）。
+// 任一打破即升格实名；跨格序列=改名在途（清单未变禁用保持）/导入路（计数
+// 经清单刷新）/切换路（currentId≠default）。
+describe('workspace.store 引导态判定 isGuideState 与显示名 selectDisplayWsName（F-WS-02）', () => {
+  /** 引导态形状：default+0 篇+默认名 */
+  const GUIDE_DEFAULT = {
+    id: 'default',
+    name: '默认课题',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    paperCount: 0
+  }
+
+  it('三条件全格：default∧0 篇∧默认名=引导态；任一打破（改名/计数>0/非 default/无当前课题）即非引导态', () => {
+    const st = (items: typeof WS_A[], currentId: string) => ({ items, currentId })
+    expect(isGuideState(st([GUIDE_DEFAULT], 'default')), '三条件全成立=引导态').toBe(true)
+    expect(isGuideState(st([{ ...GUIDE_DEFAULT, name: '我的课题' }], 'default')), '改名打破').toBe(false)
+    expect(isGuideState(st([{ ...GUIDE_DEFAULT, paperCount: 1 }], 'default')), '导入计数打破').toBe(false)
+    expect(isGuideState(st([GUIDE_DEFAULT, WS_B], 'b')), 'currentId≠default 打破').toBe(false)
+    expect(isGuideState(st([GUIDE_DEFAULT, WS_B], '')), '无当前课题（兜底态）非引导态').toBe(false)
+    expect(isGuideState(st([], 'default')), '空清单非引导态（防御格）').toBe(false)
+  })
+
+  it('显示名推导：引导态=待选择（WS_GUIDE_LABEL 单源）；升格后=实名；无当前课题=空串', () => {
+    expect(selectDisplayWsName({ items: [GUIDE_DEFAULT], currentId: 'default' }), '引导态显示位=待选择').toBe(
+      WS_GUIDE_LABEL
+    )
+    expect(
+      selectDisplayWsName({ items: [{ ...GUIDE_DEFAULT, name: '我的课题' }], currentId: 'default' }),
+      '升格后=实名'
+    ).toBe('我的课题')
+    expect(
+      selectDisplayWsName({ items: [{ ...GUIDE_DEFAULT, paperCount: 2 }], currentId: 'default' }),
+      '计数升格（名未改）=实名（默认课题）'
+    ).toBe('默认课题')
+    expect(selectDisplayWsName({ items: [GUIDE_DEFAULT], currentId: '' }), '无当前课题=空串').toBe('')
+  })
+
+  it('升格迁移序（跨格）：改名在途（清单未变）引导态保持，落定即升格；导入路/切换路同构收口', async () => {
+    // 跨格格 1：改名在途——rename IPC 未决期间 items 仍默认名（禁用态保持）
+    let resolveRename: (v: { ok: true }) => void = () => undefined
+    stubApi.workspaces.rename.mockImplementation(
+      () => new Promise((res) => (resolveRename = res))
+    )
+    useWorkspaceStore.setState({ items: [GUIDE_DEFAULT, WS_B], currentId: 'default' })
+    const pending = useWorkspaceStore.getState().rename('default', '我的课题')
+    await Promise.resolve()
+    expect(isGuideState(useWorkspaceStore.getState()), '改名在途（清单未变）引导态保持').toBe(true)
+    resolveRename({ ok: true })
+    await pending
+    expect(isGuideState(useWorkspaceStore.getState()), '改名落定即升格').toBe(false)
+    expect(useWorkspaceStore.getState().items[0]?.name, '清单即时改名（侧栏同源）').toBe('我的课题')
+    // 跨格格 2（导入路）：计数经清单刷新——items 换为 paperCount>0 即升格
+    useWorkspaceStore.setState({ items: [{ ...GUIDE_DEFAULT, paperCount: 2 }], currentId: 'default' })
+    expect(isGuideState(useWorkspaceStore.getState()), '导入落地（计数>0）升格').toBe(false)
+    // 跨格格 3（切换路）：currentId 指向非 default 即升格（reload 后清单同构）
+    useWorkspaceStore.setState({ items: [GUIDE_DEFAULT, WS_B], currentId: 'b' })
+    expect(isGuideState(useWorkspaceStore.getState()), '切非 default 升格').toBe(false)
   })
 })

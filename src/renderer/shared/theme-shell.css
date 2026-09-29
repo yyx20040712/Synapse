@@ -244,6 +244,16 @@
   color: var(--accent);
   background: var(--accent-soft);
 }
+/* ══ [F-WS-02] 引导态浅色禁用（D2 批语：默认课题三条件[INV-87]未破时
+   课题钮以下全禁用）：disabled 属性+降权浅色；hover 归零防残影；课题钮
+   自身不挂 disabled=引导出路恒可达 ══ */
+.rail-item:disabled,
+.rail-item:disabled:hover {
+  color: var(--faint);
+  background: transparent;
+  cursor: default;
+  opacity: 0.5;
+}
 .rail-foot {
   margin-top: auto;
 }
