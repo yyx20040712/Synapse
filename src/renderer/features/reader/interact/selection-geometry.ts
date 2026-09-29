@@ -10,7 +10,8 @@
  *   zoom）/el.gBCR.width（根框视觉 px，含全部祖先 zoom 复合）——任意嵌套
  *   zoom（.app-content-row 的 ui-scale 等）自动复合，零 CSS 类耦合（不查
  *   挂载点类名——改挂载点/加档不破）。思想 crib lineage-viewport
- *   rootToLocalScale（F-L2/INV-43），reader 域新写不复用跨域 import
+ *   rootToLocalScale（F-L2/INV-43——源模块已随 T3-P6 SVG 画布方案退役
+ *   删除，此处为历史设计指针），reader 域新写不复用跨域 import
  *   （票面 §0c 裁决）。任一量测 ≤0（未挂载/不可量测——jsdom 桩面
  *   clientWidth 恒 0）→1（防御：退化直通，不产生除零/NaN）。
  * - toolbarViewportPos：工具条视口域定位（票面 §1c）——选区上方 TOOLBAR_ABOVE
