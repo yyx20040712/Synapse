@@ -3,9 +3,9 @@
  *
  * ── 行为层 ──
  * - 九动作全保、按钮文本零改（受锁 paper-detail-export/clip/cited/notes-off
- *   断言面）：「去阅读器写笔记」=primary（accent 底白字 flex-1——经
- *   open-paper-bus 切阅读器），其余八钮=ghost 语汇（line 描边 dim 字 8px 圆
- *   角，可换行）；DOI 钮仅在有 DOI 时在场（既有条件渲染不变）
+ *   断言面）：「去阅读器写笔记」=primary（accent 底白字——F-LIBUI-01 ⑥ 起
+ *   首行跨两列，经 open-paper-bus 切阅读器），其余八钮=ghost 语汇（line 描边
+ *   dim 字 8px 圆角）；DOI 钮仅在有 DOI 时在场（既有条件渲染不变）
  * - busy 门语义沿 hook（usePaperDetailActions）：enrich 独占 enriching、
  *   三导出（报告/BibTeX/语料 md）+两复制共享 exporting——组件面只挂 disabled
  *
@@ -15,7 +15,8 @@
  *     runAction(action: PaperDetailAction): void }): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 纯表现（动作逻辑全驻 hook）；皮肤=library.css .lib-dr-btn 族（mockup .btn）
+ * - 纯表现（动作逻辑全驻 hook）；皮肤=library.css .lib-dr-btn 族（mockup .btn；
+ *   布局=.lib-dr-actions 两列 grid——F-LIBUI-01 ⑥，primary 首行跨两列）
  */
 import type { PaperDetail } from '@shared/models/paper'
 import type { PaperDetailAction } from './usePaperDetailActions'

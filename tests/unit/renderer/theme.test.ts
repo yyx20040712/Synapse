@@ -277,6 +277,14 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
       )
     }
   })
+
+  it('F-LIBUI-01 rail 退役负锚：.rail-gap 楔子与 .rail-ws-dot 色点规则零残留（全栏 3px 等距）', () => {
+    // 用户反馈 §0-2：下载↔文献库间 12px 空 div 退役（全栏归 .rail gap 3px
+    // 等距）；§0-1a：课题色点退役（色标身份移入课题管理页=F-WS-02；
+    // WS_DOT_PALETTE 由弹层消费暂留——F-WS-02 退役时同删）
+    expect(shellCss, '.rail-gap 规则已删').not.toContain('.rail-gap')
+    expect(shellCss, '.rail-ws-dot 规则已删').not.toContain('.rail-ws-dot')
+  })
 })
 
 describe('R3-TH1 回炉 B1——Button 皮肤类防线（内联恒压类选择器缺陷锁）', () => {

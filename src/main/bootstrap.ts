@@ -65,7 +65,13 @@ import {
   getQuitDirty,
   setQuitDirty
 } from './windows/main-window'
-import { loadBounds, saveBounds, boundsToPersist, type WindowBounds } from './windows/window-state'
+import {
+  clampBounds,
+  loadBounds,
+  saveBounds,
+  boundsToPersist,
+  type WindowBounds
+} from './windows/window-state'
 import { fetchJson, fetchText, pingHost } from './http/http-client'
 import { EVENT_CHANNELS } from '../shared/ipc/api-surface'
 
@@ -206,6 +212,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   Menu.setApplicationMenu(null)
   const bounds: WindowBounds = await loadBounds(userDataDir)
   const workArea = screen.getPrimaryDisplay().workArea
+  // F-LIBUI-01 ⑦：恢复 bounds 对 workArea 全维（x/y+宽高）钳制——原只钳
+  // 宽高、x/y 原样透传，持久化坐标偏下时窗口底边沉入任务栏
+  const clamped = clampBounds(bounds, workArea)
   // [T3-U1] FOUC 首帧兜底：启动同步读主题档（settings.service 读侧迁移
   // 单源——system→light）附 loadURL/loadFile theme query；renderer 首帧
   // 脚本（public/theme-boot.js）写 documentElement.dataset.theme（首帧前
@@ -221,10 +230,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       startupTheme
     },
     {
-      x: bounds.x,
-      y: bounds.y,
-      width: Math.min(bounds.width, workArea.width),
-      height: Math.min(bounds.height, workArea.height)
+      x: clamped.x,
+      y: clamped.y,
+      width: clamped.width,
+      height: clamped.height
     }
   )
   window.on('close', () => {

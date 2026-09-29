@@ -97,25 +97,13 @@
 /* 筛选生效态（门一 d1-W1 回炉补——集合/年份下拉选中即亮，退役的旧
    .lib-chip-on 可见性语义在此恢复：accent 描边+accent 字） */
 .lib-sort-on { border-color: var(--accent); color: var(--accent); }
-/* 「导出语料集合」入口（C-02——独立行右置，ghost 同语汇） */
-.lib-export-btn {
-  font-size: var(--fs-body);
-  color: var(--dim);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: 8px;
-  padding: 6.5px 12px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.lib-export-btn:disabled { opacity: 0.6; cursor: default; }
-
 /* ── 页体与密度列表（mockup .lib-body/.cols/.list/.row 逐值）── */
 .lib-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .lib-body { flex: 1; display: flex; min-height: 0; }
 .lib-main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
 .lib-listbox { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-/* 六列表头（列宽 46/flex1/74/52/42/180+gap 14px 与行内列对齐——INV-73；
+/* 五列表头（列宽 46/flex1/74/52/180+gap 14px 与行内列对齐——INV-73；档次
+   42px 列 F-LIBUI-01 退役；
    驻 .lib-list 顶部 sticky——与行共享滚动容器内容盒：滚动条出现/窄窗收缩
    两态表头行恒同位（门一 d1-W6+k1-N1 回炉改，原 .lib-list 外兄弟位易漂移）；
    padding 相应改为容器内相对值 40/6px（原兄弟位 52/18px=12px 容器 padding 补差）；
@@ -141,7 +129,6 @@
 .lib-c-title { flex: 1; }
 .lib-c-year { width: 74px; text-align: right; flex: none; }
 .lib-c-cite { width: 52px; text-align: right; flex: none; }
-.lib-c-tier { width: 42px; text-align: center; flex: none; }
 .lib-c-tags { width: 180px; flex: none; }
 .lib-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 12px 8px; }
 /* 密度行：hover=panel 底+shadow-card+信号橙游标线；sel=inset 1.5px accent
@@ -186,7 +173,7 @@
   border-radius: 3px;
   background: var(--accent);
 }
-/* 行内六列（编号/题名·期刊/年月/引用/档次/标签） */
+/* 行内五列（编号/题名·期刊/年月/引用/标签——档次列 F-LIBUI-01 退役） */
 .lib-r-id { width: 46px; font-family: var(--mono); font-size: var(--fs-caption); color: var(--faint); flex: none; }
 /* T3-P5 入脉络 catalogNo 编号=accent 色与位置序 faint 区分（W-4 最小兑现；形态细节收口轮细调） */
 .lib-r-id.cat { color: var(--accent); }
@@ -211,15 +198,6 @@
 }
 .lib-r-year { width: 74px; }
 .lib-r-cite { width: 52px; }
-.lib-r-tier { width: 42px; text-align: center; flex: none; }
-.lib-tier { font-family: var(--mono); font-size: var(--fs-micro); padding: 2px 7px; border-radius: 5px; }
-.lib-tier.t1 { background: var(--accent); color: var(--accent-ink); }
-.lib-tier.t2 { border: 1px solid var(--accent); color: var(--accent); }
-.lib-tier.t3 { border: 1px solid var(--line); color: var(--faint); }
-/* 未命中档「—」：mockup L113 .tier.none 的亮族专属浅灰字面（硬编码禁令下
-   不落字面）——取 var(--faint) token 近似承载（申报：门一 k1-W2/d1-N1，
-   三族随族正确性优先于亮族色差半档；替代值全文见 docs/invariants.md INV-73） */
-.lib-tier.none { color: var(--faint); }
 .lib-r-tags { width: 180px; display: flex; gap: 4px; overflow: hidden; flex: none; }
 .lib-t-mini {
   font-size: var(--fs-micro);
@@ -293,7 +271,8 @@
 }
 .lib-fld-v { color: var(--dim); text-align: right; max-width: 190px; overflow-wrap: anywhere; }
 .lib-fld-v.link { color: var(--accent); }
-/* 分节条（「标 签」「关 联」——右侧 flex 延伸 hairline） */
+/* 分节条（「标 签」——右侧 flex 延伸 hairline；「关 联」节 F-LIBUI-01 退役，
+   节位留待 F-FOLDER-01 文件夹行回归） */
 .lib-dr-sec {
   font-size: var(--fs-micro);
   letter-spacing: 2px;
@@ -304,10 +283,15 @@
   gap: 8px;
 }
 .lib-dr-sec::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
-/* 后置章虚线小徽章（AI 评估——禁假数据，固定占位文案） */
-.lib-postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 1px 6px; }
-/* 动作区（顶线 line-soft 分隔；primary=accent 底白字 flex-1，ghost=line 描边） */
-.lib-dr-actions { padding: 13px 18px; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: 8px; }
+/* 动作区（顶线 line-soft 分隔；F-LIBUI-01 ⑥ 两列 grid——flex-wrap 退役，
+   钮间 8px 量级沿用；primary=accent 底白字跨两列首行，ghost=line 描边） */
+.lib-dr-actions {
+  padding: 13px 18px;
+  border-top: 1px solid var(--line-soft);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
 .lib-dr-btn {
   font-family: inherit;
   font-size: var(--fs-body);
@@ -320,7 +304,7 @@
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
-  flex: 1;
+  grid-column: 1 / -1;
   text-align: center;
   box-shadow: var(--shadow-cta);
 }

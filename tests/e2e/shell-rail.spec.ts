@@ -33,6 +33,21 @@ test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K
     await expect(win.getByRole('button', { name: label, exact: true })).toBeVisible()
   }
 
+  // —— F-LIBUI-01 ①② rail 全栏 3px 等距（真 Chromium 计算样式锚——⑤h③）：
+  // rail-gap 12px 楔子与课题色点 span 均退役（.rail 容器 gap 单源承载间距）——
+  const railGeom = await win.evaluate(() => {
+    const rail = document.querySelector('nav.rail')!
+    const cs = getComputedStyle(rail)
+    return {
+      gap: cs.rowGap,
+      gapDivs: rail.querySelectorAll('.rail-gap').length,
+      dots: rail.querySelectorAll('.rail-ws-dot').length
+    }
+  })
+  expect(railGeom.gap, '全栏 3px 等距（.rail gap 单源）').toBe('3px')
+  expect(railGeom.gapDivs, 'rail-gap 楔子已退役').toBe(0)
+  expect(railGeom.dots, '课题色点已退役（F-WS-02 回归管理页）').toBe(0)
+
   // 顶栏：wordmark 签名+38px 高（裁决链：44→56[2026-08-31 增高令]→38
   // [2026-09-26 theme-trio final-design §1——后者覆盖前者]）
   const wm = win.locator('.wordmark')

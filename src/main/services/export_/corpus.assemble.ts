@@ -44,7 +44,7 @@
  * ── 架构层 ──
  * - main services/export_/ 纯函数：零 IO、零 Electron、零出网；import
  *   @shared/annotation-order + bibtex.serializer.makeCitationKey + shared 模型
- * - 消费方：export.service buildCorpus/buildCorpusSet（本单）；P7-G 会话延展
+ * - 消费方：export.service buildCorpus（本单；corpusSet 已随 F-LIBUI-01 ⑨ D4 退役）；P7-G 会话延展
  *
  * ── 生命周期层 ──
  * - 不做：manifest.json/INTERFACE.md/fulltext/figures（P7-G 五件套会话——

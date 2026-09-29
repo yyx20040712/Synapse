@@ -180,8 +180,6 @@ const VALID: Record<string, unknown[]> = {
     ]
   ],
   corpusReqSchema: [{ paperId: 'p1' }],
-  corpusSetReqSchema: [{}],
-  corpusSetResSchema: [{ filePath: 'C:/corpus.md', count: 1, skipped: [{ paperId: 'p2', reason: '无文件' }] }],
   tagWithCountSchema: [{ id: 't1', name: '标签', paperCount: 0 }],
   tagNameReqSchema: [{ name: '标签' }],
   attachTagReqSchema: [{ paperId: 'p1', tagId: 't1' }],
@@ -228,8 +226,6 @@ const SCHEMA_NAMES = [
   'corpusReqSchema',
   'corpusSessionReqSchema',
   'corpusSessionResSchema',
-  'corpusSetReqSchema',
-  'corpusSetResSchema',
   'detachTagReqSchema',
   'enrichReqSchema',
   'exportProgressEventSchema',
@@ -438,7 +434,6 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     expect(S.annotationListResSchema.safeParse([{ ...annotation, rects: [badRect] }]).success).toBe(false)
     expect(S.updateMetaReqSchema.safeParse({ paperId: 'p1', patch: { title: 't', __nestedProbe: 1 } }).success).toBe(false)
     expect(S.importResultSchema.safeParse({ imported: [], duplicates: [], failed: [{ fileName: 'f', reason: 'r', __nestedProbe: 1 }] }).success).toBe(false)
-    expect(S.corpusSetResSchema.safeParse({ filePath: 'x', count: 1, skipped: [{ paperId: 'p', reason: 'r', __nestedProbe: 1 }] }).success).toBe(false)
     expect(S.aiNotesImportResSchema.safeParse({ imported: [], skipped: [], errors: [{ paperId: 'p', reason: 'r', __nestedProbe: 1 }] }).success).toBe(false)
     expect(
       S.extractRequestEventSchema.safeParse({ type: 'extract-request', sessionId: 's', paperId: 'p', url: 'u', annotations: [{ id: 'a', rects: [], __nestedProbe: 1 }] }).success

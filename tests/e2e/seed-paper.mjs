@@ -9,7 +9,7 @@
  * 数据经环境变量传入（SEED_DB/SEED_FILE_REF/SEED_SHA/SEED_TITLE，不经 shell）；
  * SQL 一律 prepare 预编译 + 参数绑定。SEED_ID 可选（多篇种子场景——P7-B 三序列；
  * 缺省 'e2e-seed-paper' 保持既有单篇调用零改动）。[T3-P3] SEED_YEAR/SEED_VENUE/
- * SEED_CITED 可选列（密度列表六列断言面——缺省不进 INSERT 保持既有调用零改动）。
+ * SEED_CITED 可选列（密度列表断言面[五列=F-LIBUI-01 ④ 档次列退役]——缺省不进 INSERT 保持既有调用零改动）。
  */
 import Database from 'better-sqlite3'
 

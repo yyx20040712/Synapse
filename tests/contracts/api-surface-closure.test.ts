@@ -19,7 +19,7 @@ import * as S from '../../src/shared/ipc/schemas'
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
   ['enrich', ['fetch']],
-  ['export_', ['bibtex', 'clipboard', 'corpus', 'corpusItem', 'corpusSession', 'corpusSet', 'csv', 'report']],
+  ['export_', ['bibtex', 'clipboard', 'corpus', 'corpusItem', 'corpusSession', 'csv', 'report']],
   ['import_', ['fromDialog', 'fromFolder', 'fromPaths']],
   ['library', ['collections', 'detail', 'list', 'updateMeta']],
   ['lineage', ['graph', 'importDraft', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes', 'upsertNode']],
@@ -32,11 +32,12 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 ]
 
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(56)（T3-P5 起
-// 56 通道：lineage 域 6→7 加 upsertLineTypes）
+// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(55)（F-LIBUI-01
+// 起 55 通道：export_ 域 corpusSet 退役——用户 D4 裁决 2026-09-29；此前
+// T3-P5 起 56=lineage 域 6→7 加 upsertLineTypes）
 describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=56（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）', () => {
-    expect(allChannels().length).toBe(56)
+  it('通道总数=55（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）', () => {
+    expect(allChannels().length).toBe(55)
   })
 
   it('域枚举 pin：恰 12 域', () => {

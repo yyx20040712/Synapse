@@ -63,7 +63,8 @@ export const API_SURFACE = {
     },
     report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
-    corpusSet: { channel: 'export/corpus-set', Req: S.corpusSetReqSchema, Res: S.corpusSetResSchema },
+    // [F-LIBUI-01 ⑨] corpusSet（export/corpus-set）通道退役（用户 D4 裁决
+    // 2026-09-29）——通道三方收窄（本表+schemas+preload 泛型桥自动收窄）
     corpusItem: { channel: 'export/corpus-item', Req: S.corpusItemReqSchema, Res: S.trueAckSchema },
     corpusSession: { channel: 'export/corpus-session', Req: S.corpusSessionReqSchema, Res: S.corpusSessionResSchema }
   },

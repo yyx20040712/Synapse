@@ -2,14 +2,16 @@
 /**
  * [T3-P3] 文献库密度列表 —— 结构锁（渲染级断言+library.css 逐值文本锁）。
  * 值源=docs/design/mockups/2026-09-26_v2_theme-light.html L80-139
- * （.filter-row/.cols/.row 六列/.tier/.t-mini 族），设计真相源=
+ * （.filter-row/.cols/.row 五列/.t-mini 族——.tier 族随档次列 F-LIBUI-01 退役），设计真相源=
  * docs/design/2026-09-26_theme-trio-final-design.md §2 文献库段。
  *
- * 渲染面：PaperList→.lib-cols 六列表头+.lib-row 六路信息列（#序号三位零
- * 填充/题名·期刊/年月/引用/档次四态徽章/标签前 3+折叠+N）；listbox 键盘
+ * 渲染面：PaperList→.lib-cols 五列表头+.lib-row 五路信息列（序号三位零
+ * 填充/题名·期刊/年月/引用/标签前 3+折叠+N——档次列 F-LIBUI-01 退役、
+ * 序号 # 前缀 F-LIBUI-01 删）；listbox 键盘
  * 导航/单击选中/双击打开行为面零变。页面组装面：.lib-page/.lib-body/
  * .lib-drawer 在场+DiamondRule 库域退役（settings 域消费保留）+
- * 「导出语料集合」入口保活（C-02）。always-active 裸 describe（K3）。
+ * corpusSet「导出语料集合」入口退役负锚（F-LIBUI-01 ⑨，D4 裁决）+
+ * DrActions 两列 grid CSS 锁（F-LIBUI-01 ⑥）。always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -99,8 +101,8 @@ afterEach(async () => {
   host = null
 })
 
-describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
-  it('六列表头在场：.lib-cols 六格文本=编号/题名 · 期刊/年月/引用/档次/标签', async () => {
+describe('T3-P3 密度列表渲染（PaperList 五列结构）', () => {
+  it('五列表头在场：.lib-cols 五格文本=编号/题名 · 期刊/年月/引用/标签（档次列 F-LIBUI-01 退役）', async () => {
     await render(
       <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />
     )
@@ -112,16 +114,16 @@ describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
       '题名 · 期刊',
       '年月',
       '引用',
-      '档次',
       '标签'
     ])
-    // 列头列宽类逐一在场（46/flex1/74/52/42/180 与行列对齐）
-    for (const cls of ['lib-c-id', 'lib-c-title', 'lib-c-year', 'lib-c-cite', 'lib-c-tier', 'lib-c-tags']) {
+    // 列头列宽类逐一在场（46/flex1/74/52/180 与行列对齐）
+    for (const cls of ['lib-c-id', 'lib-c-title', 'lib-c-year', 'lib-c-cite', 'lib-c-tags']) {
       expect(cols?.querySelector(`.${cls}`), `表头列类 ${cls}`).not.toBeNull()
     }
+    expect(cols?.querySelector('.lib-c-tier'), '档次列头已退役（F-LIBUI-01 ④）').toBeNull()
   })
 
-  it('行六路信息列：#001 序号（offset 起算）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N', async () => {
+  it('行五路信息列：001 序号（offset 起算，# 前缀已删 F-LIBUI-01）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N', async () => {
     await render(
       <PaperList
         papers={[
@@ -134,9 +136,9 @@ describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
       />
     )
     const row1 = rowAt(0)
-    // 序号=index+offset+1 三位零填充（P5 catalog_no 落地后升级——票面备案）
-    expect(row1.querySelector('.lib-r-id')?.textContent).toBe('#011')
-    expect(rowAt(1).querySelector('.lib-r-id')?.textContent).toBe('#012')
+    // 序号=index+offset+1 三位零填充、无 # 前缀（pubNo 派生重排=F-FOLDER-01 票）
+    expect(row1.querySelector('.lib-r-id')?.textContent).toBe('011')
+    expect(rowAt(1).querySelector('.lib-r-id')?.textContent).toBe('012')
     expect(row1.querySelector('.lib-r-title')?.textContent).toBe('论文 p1')
     expect(row1.querySelector('.lib-r-j')?.textContent).toBe('Journal of Testing')
     expect(row1.querySelector('.lib-r-year')?.textContent).toBe('2021')
@@ -169,23 +171,17 @@ describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
     expect(rowAt(1).querySelector('.lib-r-cite')?.textContent).toBe('17')
   })
 
-  it('档次徽章四态：venueToTier 单源映射 T1/T2/T3/未命中「—」', async () => {
+  it('F-LIBUI-01 ④ 档次列退役负锚：行内无 .lib-r-tier/.lib-tier 元素（venueToTier 库保留——lineage join 与 corpus manifest 两消费点不触）', async () => {
     await render(
       <PaperList
-        papers={[
-          makeSummary('p1', { venue: 'Nature Water' }),
-          makeSummary('p2', { venue: 'Desalination' }),
-          makeSummary('p3', { venue: 'Water' }),
-          makeSummary('p4', { venue: '未知期刊' })
-        ]}
+        papers={[makeSummary('p1', { venue: 'Nature Water' })]}
         selectedId={null}
         onSelect={() => undefined}
       />
     )
-    expect(rowAt(0).querySelector('.lib-tier.t1')?.textContent).toBe('T1')
-    expect(rowAt(1).querySelector('.lib-tier.t2')?.textContent).toBe('T2')
-    expect(rowAt(2).querySelector('.lib-tier.t3')?.textContent).toBe('T3')
-    expect(rowAt(3).querySelector('.lib-tier.none')?.textContent).toBe('—')
+    expect(rowAt(0).querySelector('.lib-r-tier'), '档次单元格已退役').toBeNull()
+    expect(rowAt(0).querySelector('.lib-tier'), '档次徽章已退役（T1 命中 venue 也不渲染）').toBeNull()
+    expect(rowAt(0).querySelector('.lib-r-id')?.textContent, '序号列零变（001 三位零填充无 #）').toBe('001')
   })
 
   it('交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类', async () => {
@@ -239,12 +235,11 @@ describe('T3-P3 密度列表渲染（PaperList 六列结构）', () => {
 })
 
 describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊录）', () => {
-  it('表头列宽：46/flex1/74/52/42/180+gap 14px+10px letter-spacing 1.5px faint', () => {
+  it('表头列宽：46/flex1/74/52/180+gap 14px+10px letter-spacing 1.5px faint（档次 42px 列 F-LIBUI-01 退役）', () => {
     expect(css, 'c-id 46px').toMatch(/\.lib-c-id\s*\{[^}]*width:\s*46px/)
     expect(css, 'c-title flex:1').toMatch(/\.lib-c-title\s*\{[^}]*flex:\s*1/)
     expect(css, 'c-year 74px 右对齐').toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*text-align:\s*right/)
     expect(css, 'c-cite 52px 右对齐').toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*text-align:\s*right/)
-    expect(css, 'c-tier 42px 居中').toMatch(/\.lib-c-tier\s*\{[^}]*width:\s*42px;[^}]*text-align:\s*center/)
     expect(css, 'c-tags 180px').toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px/)
     expect(css, '.lib-cols gap 14px+letter-spacing 1.5px+faint').toMatch(
       /\.lib-cols\s*\{[^}]*gap:\s*14px;[^}]*letter-spacing:\s*1\.5px;[^}]*var\(--faint\)/
@@ -277,11 +272,19 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     )
   })
 
-  it('档次徽章三态：t1=accent 底 accent-ink 字/t2=accent 描边/t3=line 描边 faint 字', () => {
-    expect(css).toMatch(/\.lib-tier\.t1\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\)/)
-    expect(css).toMatch(/\.lib-tier\.t2\s*\{[^}]*border:\s*1px solid var\(--accent\);[^}]*color:\s*var\(--accent\)/)
-    expect(css).toMatch(/\.lib-tier\.t3\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*color:\s*var\(--faint\)/)
-    expect(css).toMatch(/\.lib-tier\.none\s*\{[^}]*color:\s*var\(--faint\)/)
+  it('F-LIBUI-01 ④⑤⑨ 退役负锚（方案切换=删除旧方案）：tier 列族/后置徽章/集合导出钮 CSS 零残留', () => {
+    expect(css, '表头档次列宽类已删').not.toContain('.lib-c-tier')
+    expect(css, '行内档次单元格类已删').not.toContain('.lib-r-tier')
+    expect(css, '档次徽章族已删（含 t1/t2/t3/none）').not.toContain('.lib-tier')
+    expect(css, 'AI 评估后置徽章类已删（行随关联节退役）').not.toContain('.lib-postpone')
+    expect(css, '「导出语料集合」按钮类已删（corpusSet 退役）').not.toContain('.lib-export-btn')
+  })
+
+  it('F-LIBUI-01 ⑥ 动作区两列 grid：.lib-dr-actions repeat(2,1fr)+gap 8px；primary 首行跨两列', () => {
+    expect(css, 'actions 容器 grid 化（flex-wrap 退役）').toMatch(/\.lib-dr-actions\s*\{[^}]*display:\s*grid/)
+    expect(css, '两列等宽轨道').toMatch(/\.lib-dr-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*1fr\)/)
+    expect(css, '钮间 8px 量级沿用').toMatch(/\.lib-dr-actions\s*\{[^}]*gap:\s*8px/)
+    expect(css, 'primary 跨两列（首行整行）').toMatch(/\.lib-dr-btn-primary\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/)
   })
 
   it('旧卡片族退役负锚（方案切换=删除旧方案）：网格/卡片/角饰/宝石位零残留', () => {
@@ -310,7 +313,6 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     expect(css, '定宽列表头列与行侧一致不收缩（d1-N5 回炉补全五格）').toMatch(/\.lib-c-id\s*\{[^}]*width:\s*46px;[^}]*flex:\s*none/)
     expect(css).toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*flex:\s*none/)
     expect(css).toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*flex:\s*none/)
-    expect(css).toMatch(/\.lib-c-tier\s*\{[^}]*width:\s*42px;[^}]*flex:\s*none/)
     expect(css).toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px;[^}]*flex:\s*none/)
     // k1-N2：键盘导航行滚入预留 sticky 表头高度
     expect(css).toMatch(/\.lib-list \[role='option'\]\s*\{[^}]*scroll-margin-top:\s*28px/)
@@ -341,12 +343,12 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
     expect(host?.textContent).toContain('暂无文献')
   })
 
-  it('「导出语料集合」入口保活（C-02）', async () => {
+  it('F-LIBUI-01 ⑨ corpusSet 退役负锚：「导出语料集合」按钮不在场（D4 裁决——设置页 corpusSession 五件套零触碰）', async () => {
     await render(<LibraryPage />)
     const btn = [...(host?.querySelectorAll('button') ?? [])].find(
       (b) => b.textContent === '导出语料集合'
     )
-    expect(btn, '导出语料集合按钮应在场').toBeDefined()
+    expect(btn, '导出语料集合按钮已退役（通道三方收窄）').toBeUndefined()
   })
 
   it('门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘', async () => {

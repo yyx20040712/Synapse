@@ -8,7 +8,6 @@ import {
   createCorpusExportService,
   type CorpusExportDeps
 } from '../../../src/main/services/export_/corpus.export.service'
-import { createExportService } from '../../../src/main/services/export_/export.service'
 import { INTERFACE_MD } from '../../../src/main/services/export_/interface-template'
 import { assembleCorpusMd, orderAiNotes } from '../../../src/main/services/export_/corpus.assemble'
 import { createRepos, type Repos } from '../../../src/main/db/repos'
@@ -482,20 +481,8 @@ guardedDescribe('SR2-AI-03', 'corpus.export.service —— 五件套导出会话
     }
   })
 
-  it('目录隔离守卫：corpusSet 目标目录含 manifest.json→拒绝（防轻量导出污染五件套目录）', async () => {
-    const h = await makeHarness()
-    try {
-      await seedPaper(h, 'p-1', '守卫篇')
-      await writeFile(join(h.dir, 'manifest.json'), '{}', 'utf8')
-      const exportSvc = createExportService({ repos: h.repos })
-      const entries = [{ paperId: 'p-1', content: 'md' }]
-      await expect(exportSvc.writeCorpusSet(h.dir, entries)).rejects.toMatchObject({
-        code: 'CONFLICT'
-      })
-    } finally {
-      await h.dispose()
-    }
-  })
+  // [F-LIBUI-01 ⑨] corpusSet 目标目录隔离守卫用例已随 writeCorpusSet 退役删除
+  // （用户 D4 裁决 2026-09-29——豁免台账在档；corpusSession 五件套面零触碰）
 
   it('orderAiNotes：role→question→createdAt 分组序（first-read Q1 在 second-read Q1 前；divergence 殿后）', async () => {
     const h = await makeHarness()

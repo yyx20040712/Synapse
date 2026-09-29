@@ -192,9 +192,10 @@
   color: var(--close-red-ink);
 }
 
-/* ══ T3-P2 B站式窄轨侧栏（72px，无 logo——A15）：课题→下载→gap→三视图→
+/* ══ T3-P2 B站式窄轨侧栏（72px，无 logo——A15）：课题→下载→三视图→
    （贴底）设置；图标上置 19px+10px 标签下置；hover=--line-soft；
-   active=accent 软胶囊（mockup L58-67 逐值）══ */
+   active=accent 软胶囊（mockup L58-67 逐值）。F-LIBUI-01：rail-gap 12px
+   楔子与 rail-ws-dot 色点退役——全栏 gap 3px 等距（用户反馈 §0-2/§0-1a）══ */
 .rail {
   width: 72px;
   flex: none;
@@ -243,25 +244,8 @@
   color: var(--accent);
   background: var(--accent-soft);
 }
-.rail-gap {
-  height: 12px;
-  flex: none;
-}
 .rail-foot {
   margin-top: auto;
-}
-/* 课题色点（A10 联动）：当前课题色=索引轮转调色板（inline 动态值——Rail
-   注入，无 CSS 默认底色=死声明清除[门一 d1-N4/k1-N4：inline 恒在场，CSS
-   兜底永不生效]）；border 挖穿轨底色形成「点浮于图标角」观感 */
-.rail-ws-dot {
-  position: absolute;
-  top: 5px;
-  right: 11px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 1.5px solid var(--panel-2);
-  transition: background var(--dur-flow) ease;
 }
 
 /* ══ T3-P2 状态条 26px（mockup L74-77）：--panel-2 底+上边 1px --line+等宽字；

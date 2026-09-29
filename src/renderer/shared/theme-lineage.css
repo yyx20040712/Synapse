@@ -433,6 +433,6 @@
   gap: 7px;
 }
 .sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
-/* 后置章虚线徽标（mockup L311——--fs-nano 值源；library.css .lib-postpone 同族） */
+/* 后置章虚线徽标（mockup L311——--fs-nano 值源；原 library.css .lib-postpone 同族——该侧已随 F-LIBUI-01 ⑤ 退役，本侧脉络检查面板自用） */
 .postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
 .insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }

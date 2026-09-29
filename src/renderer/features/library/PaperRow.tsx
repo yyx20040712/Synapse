@@ -1,16 +1,17 @@
 /**
- * [SR-LIB-03] PaperRow —— 密度列表行（T3-P3 卡片→六列行重制；交互契约不变）
+ * [SR-LIB-03] PaperRow —— 密度列表行（T3-P3 卡片→密度行重制；交互契约不变）
  *
  * ── 行为层 ──
- * - 六路信息列（mockup .row 逐值）：①编号=入脉络（paper.lineage 存在）→
- *   「#」+三位零填充 catalogNo（T3-P5 C5-a 呈现序——编号随全序漂移=特性；
- *   视觉前缀区分最小兑现=cat 类 accent 色，形态细节收口轮细调备案）/未入脉络
- *   →「#」+三位零填充位置序 ordinal=index+offset+1 兜底②题名（nowrap
+ * - 五路信息列（mockup .row 逐值；F-LIBUI-01 档次列退役+序号 # 前缀删）：
+ *   ①编号=入脉络（paper.lineage 存在）→三位零填充 catalogNo（T3-P5 C5-a
+ *   呈现序——编号随全序漂移=特性；视觉前缀区分最小兑现=cat 类 accent 色，
+ *   形态细节收口轮细调备案；pubNo 派生重排=F-FOLDER-01 票）/未入脉络→
+ *   三位零填充位置序 ordinal=index+offset+1 兜底②题名（nowrap
  *   ellipsis）+副行期刊斜体（空隐藏）③年月（T3-P5 D-I-2 级联：lineage 命中
  *   且 node.year/month 齐→YYYY-MM 补零；任一 null→paper.year 单值，null→
- *   「—」）④引用=citedByCount（缺→「—」）⑤档次=venueToTier(venue) 纯映射
- *   徽章（T1=accent 底白字/T2=accent 描边/T3=line 描边 faint/未命中=「—」
- *   ——src/shared/venue-tier.ts 单源）⑥标签=前 3 个 .lib-t-mini+「+N」折叠
+ *   「—」）④引用=citedByCount（缺→「—」）⑤标签=前 3 个 .lib-t-mini+「+N」
+ *   折叠。（档次=venueToTier(venue) 徽章已随列退役——venue-tier.ts 单源库
+ *   保留，lineage 含金量 join 与 corpus manifest 两消费点不触）
  * - 选中态挂 sel 类；双击进入阅读器（onOpen 回调）
  *
  * ── 接口层 ──
@@ -22,7 +23,6 @@
  * - 纯展示；无网络无 store；皮肤=library.css .lib-row 系类（token 单源）
  */
 import type { PaperSummary } from '@shared/models/paper'
-import { venueToTier } from '@shared/venue-tier'
 
 /** 标签徽标最多展示个数，超出折叠为 +N */
 const MAX_TAG_BADGES = 3
@@ -51,7 +51,6 @@ export function PaperRow(props: {
   const ordinal = li !== undefined ? li.catalogNo : props.ordinal
   const title = paper.title.trim() === '' ? '（无标题）' : paper.title
   const venue = paper.venue.trim()
-  const tier = venueToTier(venue)
   // 过滤空白标签名后截前 N 个；剩余数量折叠为 +N 徽标
   const tagNames = paper.tagNames.filter((name) => name.trim() !== '')
   const shownTags = tagNames.slice(0, MAX_TAG_BADGES)
@@ -66,7 +65,7 @@ export function PaperRow(props: {
       onDoubleClick={props.onOpen}
       className={`lib-row${selected ? ' sel' : ''}`}
     >
-      <span className={`lib-r-id${li !== undefined ? ' cat' : ''}`}>{`#${String(ordinal).padStart(3, '0')}`}</span>
+      <span className={`lib-r-id${li !== undefined ? ' cat' : ''}`}>{String(ordinal).padStart(3, '0')}</span>
       <span className="lib-r-main">
         <span className="lib-r-title">{title}</span>
         {venue !== '' && (
@@ -77,13 +76,6 @@ export function PaperRow(props: {
       </span>
       <span className="lib-r-year">{yearMonthText(paper)}</span>
       <span className="lib-r-cite">{paper.citedByCount === undefined ? '—' : paper.citedByCount}</span>
-      <span className="lib-r-tier">
-        {tier === null ? (
-          <span className="lib-tier none">—</span>
-        ) : (
-          <span className={`lib-tier ${tier.toLowerCase()}`}>{tier}</span>
-        )}
-      </span>
       <span className="lib-r-tags">
         {shownTags.map((name) => (
           <span key={name} className="lib-t-mini">

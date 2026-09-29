@@ -126,8 +126,9 @@ describe('T3-P2 App 壳——38px 顶栏+72px 窄轨结构锁', () => {
         `rail 项「${label}」应含内联 SVG 图标（aria-hidden 不污染 accessible name）`
       ).not.toBeNull()
     }
-    // rail-gap 分隔与 rail-foot（设置贴底）结构在场
-    expect(document.querySelector('nav.rail .rail-gap'), 'rail-gap 分隔段在场').not.toBeNull()
+    // F-LIBUI-01 ①：rail-gap 12px 楔子退役（下载↔文献库归 3px 等距）；
+    // rail-foot（设置贴底）结构仍在场
+    expect(document.querySelector('nav.rail .rail-gap'), 'rail-gap 分隔段已退役').toBeNull()
     expect(document.querySelector('nav.rail .rail-foot'), 'rail-foot（margin-top:auto 贴底段）在场').not.toBeNull()
   })
 
@@ -146,11 +147,11 @@ describe('T3-P2 App 壳——38px 顶栏+72px 窄轨结构锁', () => {
     expect(railButton('文献库')!.getAttribute('aria-current')).toBe(null)
   })
 
-  it('课题项结构：色点 span.rail-ws-dot+短名 label（name 前 4 字符）；未选中课题时兜底「课题」', async () => {
+  it('课题项结构：短名 label（name 前 4 字符；色点已退役 F-LIBUI-01）；未选中课题时兜底「课题」', async () => {
     mount(<App />)
     await flush()
     const btn = railButton('课题')!
-    expect(btn.querySelector('span.rail-ws-dot'), '课题项应含色点 span.rail-ws-dot').not.toBeNull()
+    expect(btn.querySelector('span.rail-ws-dot'), '课题项色点 span.rail-ws-dot 已退役（色标身份移入课题管理页=F-WS-02）').toBeNull()
     expect(btn.querySelector('span.lb')!.textContent, '当前课题短名=name 前 4 字符').toBe('默认课题')
     // 长名截断锚：切 currentId=w2 后短名=「智慧水务」
     const { useWorkspaceStore } = await import('../../../src/renderer/features/workspaces/workspace.store')

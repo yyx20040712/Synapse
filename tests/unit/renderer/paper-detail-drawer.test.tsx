@@ -4,9 +4,10 @@
  * 语义全保；视觉基准=mockups/2026-09-26_v2_theme-light.html L98-139 逐值）。
  *
  * 覆盖：四格指标真文本（引用/通读/标注/笔记——lastReadPage+1 读数）+
- * fld 键值行（YEAR-MO 脉络框联动/VENUE/DOI link 色）+关联行两态（lineage
- * 命中=年月框+连线数 link 色；未命中=「未加入脉络」）+AI 评估后置章虚线
- * 徽章（禁假数据）+状态点 enrich 态映射色+动作面九钮在场（受锁
+ * fld 键值行（YEAR-MO 脉络框联动/VENUE/DOI link 色）+「关 联」节退役负锚
+ * （脉络行+AI 评估行 F-LIBUI-01 删；节位留待 F-FOLDER-01 文件夹行回归）+
+ * 标签挂接联动列表刷新（F-LIBUI-01 ③——FilterBar onMutated 同链）+
+ * 状态点 enrich 态映射色+动作面九钮在场（受锁
  * export/clip/notes-off 文本面同源）。always-active 裸 describe（K3）。
  */
 import { act } from 'react'
@@ -17,10 +18,11 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import { makeDetail } from '../../utils/factories'
 
 const stubApi = makeApiStub({
-  library: { detail: vi.fn() },
+  library: { detail: vi.fn(), list: vi.fn() },
   enrich: { fetch: vi.fn() },
   export_: { report: vi.fn(), bibtex: vi.fn(), corpus: vi.fn(), clipboard: vi.fn() },
-  system: { openExternal: vi.fn() }
+  system: { openExternal: vi.fn() },
+  tags: { list: vi.fn(), upsert: vi.fn(), attach: vi.fn() }
 })
 
 import { PaperDetailPanel } from '../../../src/renderer/features/library/PaperDetailPanel'
@@ -73,6 +75,10 @@ function buttonByText(text: string): HTMLButtonElement | undefined {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  stubApi.tags.list.mockResolvedValue({ ok: true, data: [] })
+  stubApi.tags.upsert.mockResolvedValue({ ok: true, data: { id: 't-9', name: '水质' } })
+  stubApi.tags.attach.mockResolvedValue({ ok: true, data: { ok: true } })
+  stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
 })
 
 afterEach(async () => {
@@ -120,45 +126,68 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
     expect(fldRow('DOI')?.querySelector('.lib-fld-v.link')).not.toBeNull()
   })
 
-  it('脉络命中：YEAR-MO 带脉络框括注+脉络行「年 · 月框 · N 条连线」link 色', async () => {
+  it('脉络命中：YEAR-MO 带脉络框括注（关联节已退役 F-LIBUI-01——YEAR-MO 脉络框联动保留）', async () => {
     await renderPanel(
       makeDetail({ year: 2023, lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
     )
     expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023 年 · 6 月）')
-    expect(fldValue('脉络')).toBe('2023 年 · 6 月框 · 3 条连线')
-    expect(fldRow('脉络')?.querySelector('.lib-fld-v.link')).not.toBeNull()
   })
 
   it('脉络命中 month=null：「未定月框」措辞（未定月=合法态）', async () => {
     await renderPanel(makeDetail({ lineage: { year: 2023, month: null, edgeCount: 1, catalogNo: 1 } }))
     expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023 年 · 未定月）')
-    expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 1 条连线')
   })
 
   it('组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注', async () => {
     await renderPanel(makeDetail({ year: null, lineage: { year: 2023, month: null, edgeCount: 2, catalogNo: 1 } }))
     expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023 年 · 未定月）')
-    expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 2 条连线')
   })
 
-  it('脉络未命中：YEAR-MO 只年份+脉络行「未加入脉络」非 link 色', async () => {
+  it('脉络未命中：YEAR-MO 只年份（关联节退役后无脉络行）', async () => {
     await renderPanel(makeDetail())
     expect(fldValue('YEAR-MO')).toBe('2026')
-    expect(fldValue('脉络')).toBe('未加入脉络')
-    expect(fldRow('脉络')?.querySelector('.lib-fld-v.link')).toBeNull()
   })
 
-  it('AI 评估行=「后置」虚线小徽章（禁假数据——固定占位文案）', async () => {
-    await renderPanel(makeDetail())
-    expect(fldValue('AI 评估')).toBe('后置')
-    expect(fldRow('AI 评估')?.querySelector('.lib-postpone')).not.toBeNull()
+  it('F-LIBUI-01 ⑤ 关联节退役负锚：无「关 联」分节/脉络行/AI 评估行/后置徽章（节位留待 F-FOLDER-01 文件夹行回归）', async () => {
+    await renderPanel(
+      makeDetail({ lineage: { year: 2023, month: 6, edgeCount: 3, catalogNo: 1 } })
+    )
+    const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((s) => s.textContent)
+    expect(secs).toEqual(['标 签'])
+    expect(fldValue('脉络'), '脉络行已退役').toBeNull()
+    expect(fldValue('AI 评估'), 'AI 评估行已退役').toBeNull()
+    expect(host?.querySelector('.lib-postpone'), '后置徽章已退役').toBeNull()
   })
 
-  it('分节条在场：「标 签」「关 联」+TagEditor 驻留（新增标签输入框）', async () => {
+  it('分节条在场：「标 签」+TagEditor 驻留（新增标签输入框）；「关 联」节已退役（F-LIBUI-01）', async () => {
     await renderPanel(makeDetail())
     const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((s) => s.textContent)
-    expect(secs).toEqual(['标 签', '关 联'])
+    expect(secs).toEqual(['标 签'])
     expect(host?.querySelector('input[aria-label="新增标签"]')).not.toBeNull()
+  })
+
+  it('F-LIBUI-01 ③ 标签挂接联动列表刷新：TagEditor onChanged 除重拉详情外触发 library.store.load（表格标签列不滞旧）', async () => {
+    await renderPanel(makeDetail())
+    stubApi.library.list.mockClear()
+    const input = host?.querySelector<HTMLInputElement>('input[aria-label="新增标签"]')
+    expect(input).not.toBeNull()
+    const tagInput = input as HTMLInputElement
+    // 受控输入经 native setter 驱动（jsdom 直接改 value+input 事件——app-shell 先例）
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(tagInput, '水质')
+      tagInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    for (let i = 0; i < 4; i += 1) {
+      await act(async () => {
+        await Promise.resolve()
+      })
+    }
+    // 挂接成功→onChanged→library.store.load（FilterBar onMutated 同一条刷新链）
+    expect(stubApi.library.list, '标签挂接后列表 load 重跑').toHaveBeenCalled()
   })
 })
 

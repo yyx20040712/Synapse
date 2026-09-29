@@ -27,17 +27,17 @@
  * - 剪贴板导出（P7E-04 兑现原「v2 预留：ipc 加通道」注记）：ipc 层
  *   export/clipboard 通道——构建复用本层 buildBibtex/buildCsv（单源，INV-56），
  *   写剪贴板经 deps.clipboard 注入驻 ipc 层（UI 胶水语义），本层零新增方法
+ * - [F-LIBUI-01 ⑨] buildCorpusSet/writeCorpusSet 已随 corpusSet 通道退役
+ *   删除（用户 D4 裁决 2026-09-29）；全库语料走设置页 corpusSession 五件套
+ *   （corpus.export.service——零触碰）
  *
  * ── 文化层 ──
  * - 测试：tests/unit/services/export.service.test.ts（已锁定，repos 桩）
  */
-import { existsSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { writeFile } from 'node:fs/promises'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
 import { DomainError } from '../shared/domain-error'
-import { sanitizePathToken } from '../shared/sanitize'
 import {
   makeCitationKey,
   serializeBibtex,
@@ -50,27 +50,12 @@ import { buildReadingReport } from './markdown.report'
  *  一行继承=services/shared/domain-error（F-DEDUP-01 单源） */
 class ExportDomainError extends DomainError {}
 
-export interface CorpusSetEntry {
-  paperId: string
-  content: string
-}
-
-export interface CorpusSetResult {
-  entries: CorpusSetEntry[]
-  /** 单篇取数失败清单（不中断全库——消费方 toast 承载可见性，INV-02） */
-  skipped: Array<{ paperId: string; reason: string }>
-}
-
 export interface ExportService {
   buildBibtex(paperIds: string[]): Promise<string>
   buildCsv(paperIds: string[]): Promise<string>
   buildReport(paperId: string): Promise<string>
   /** 单篇 corpus md（C-02：装配纯函数单源=corpus.assemble.ts——R12 条款） */
   buildCorpus(paperId: string): Promise<string>
-  /** 全库语料（listAllIds 逐篇；失败篇入 skipped 不中断） */
-  buildCorpusSet(): Promise<CorpusSetResult>
-  /** 集合落盘：mkdir corpus/ 前置+逐篇写 <dir>/corpus/<paperId>.md，返回成功数 */
-  writeCorpusSet(dir: string, entries: CorpusSetEntry[]): Promise<number>
   writeToFile(path: string, content: string): Promise<void>
 }
 
@@ -147,70 +132,6 @@ export function createExportService(deps: { repos: Repos }): ExportService {
         note: notes.findByPaper(paperId),
         annotations: annotations.listByPaper(paperId)
       })
-    },
-
-    async buildCorpusSet() {
-      const entries: CorpusSetEntry[] = []
-      const skipped: Array<{ paperId: string; reason: string }> = []
-      const ids = papers.listAllIds()
-      for (let i = 0; i < ids.length; i += 1) {
-        const id = ids[i]
-        if (id === undefined) continue
-        // 每 25 篇让出事件循环（better-sqlite3 同步取数+装配，大库不卡 main）
-        if (i > 0 && i % 25 === 0) {
-          await new Promise<void>((resolve) => setImmediate(resolve))
-        }
-        try {
-          const detail = papers.detailById(id)
-          if (detail === null) {
-            throw new ExportDomainError('NOT_FOUND', `文献不存在：${id}`)
-          }
-          entries.push({
-            paperId: id,
-            content: assembleCorpusMd({
-              paper: detail,
-              note: notes.findByPaper(id),
-              annotations: annotations.listByPaper(id)
-            })
-          })
-        } catch (e) {
-          // 仅业务性跳过（NOT_FOUND）入 skipped；程序缺陷（转义/类型等意外异常）
-          // 上抛失败可见——不把 bug 静默折叠成「跳过」
-          if (e instanceof ExportDomainError) {
-            skipped.push({ paperId: id, reason: e.message })
-          } else {
-            throw e
-          }
-        }
-      }
-      return { entries, skipped }
-    },
-
-    async writeCorpusSet(dir, entries) {
-      // 目录隔离守卫（AI-03 通道判定条款）：目标目录含五件套 manifest 时拒绝
-      // ——防轻量 md 覆盖 corpus/ 后工具按残留 manifest 误激活读新旧混合语料
-      if (existsSync(join(dir, 'manifest.json'))) {
-        throw new ExportDomainError(
-          'CONFLICT',
-          '目标目录已是五件套导出目录（含 manifest.json）——请选择其他目录，避免覆盖 AI 语料基座'
-        )
-      }
-      const corpusDir = join(dir, 'corpus')
-      try {
-        await mkdir(corpusDir, { recursive: true })
-        for (const e of entries) {
-          // paperId 消毒单源=services/shared/sanitize（F-DEDUP-01；id 由
-          // import.service 生成本可信——纵深防御，异常 id 不越出 corpus 目录）
-          const safeId = sanitizePathToken(e.paperId)
-          await writeFile(join(corpusDir, `${safeId}.md`), e.content, 'utf8')
-        }
-      } catch (e) {
-        throw new ExportDomainError(
-          'IO_ERROR',
-          `语料导出写盘失败（已写入的部分文件保留，重跑导出将覆盖）：${e instanceof Error ? e.message : String(e)}`
-        )
-      }
-      return entries.length
     },
 
     async writeToFile(path, content) {

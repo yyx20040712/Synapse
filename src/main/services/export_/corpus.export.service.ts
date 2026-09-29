@@ -12,14 +12,15 @@
  * ── 编排面关注点（保留本件） ──
  * - 装配单源（R12 红线，置顶条款）：corpus md 装配只在 corpus.assemble.ts 延展（[ai:*] 段
  *   =aiNotes 入参按 role→question 分组装配，语法不变）；本 service 只做编排/推进/终写接线——禁第二套 md 装配。
- * - 通道判定（2026-08-27 开工裁决）：C-02 既有 corpus/corpusSet 通道**保留**
- *   （单篇 md 快速导出+库页 md 集合，轻量面）；五件套会话通道=export/corpus-
- *   session（设置页「AI 语料导出」入口，AI-04；ADR-0011 v1.1 全量基座含
- *   fulltext/figures 提取 GB 级——与轻量面场景不同；两通道共用 corpus.assemble
- *   纯函数，装配单源不破非双实现）。**目录隔离条款**：五件套会话开始删旧
- *   manifest+清空重建（态空间表 idle 行，io 件 cleanRebuild）；corpusSet 写入
- *   前置守卫=目标目录含 manifest.json 时拒绝（ExportDomainError 提示选空目录
- *   ——防轻量 md 覆盖后按残留 manifest 误激活混合语料）。
+ * - 通道判定（2026-08-27 开工裁决；F-LIBUI-01 ⑨ 勘正）：C-02 轻量面
+ *   原 corpus/corpusSet 两通道，corpusSet（库页 md 集合）已于 2026-09-29
+ *   随用户 D4 裁决整体退役——现仅存 corpus 单篇 md 快速导出；五件套会话
+ *   通道=export/corpus-session（设置页「AI 语料导出」入口，AI-04；
+ *   ADR-0011 v1.1 全量基座含 fulltext/figures 提取 GB 级——与轻量面场景
+ *   不同；两通道共用 corpus.assemble 纯函数，装配单源不破非双实现）。
+ *   **目录隔离条款**：五件套会话开始删旧 manifest+清空重建（态空间表
+ *   idle 行，io 件 cleanRebuild）。（原 corpusSet 写入前置守卫=目标目录含
+ *   manifest.json 拒绝——已随通道退役，历史裁决见 git 史。）
  * - INTERFACE.md（interface-template.ts 静态单源，INV-11）：目录结构/front-matter
  *   字段表/引文块语法/排序规则/页码基准（p.N 1 基——corpus.assemble 头注口径
  *   同源）/fulltext 页界 \f/figures 消费说明/版本承诺——落盘在 io 件 cleanRebuild。

@@ -3,17 +3,14 @@
  *
  * ── 行为层 ──
  * - 组装文献库主视图（.lib-page 容器）：ImportDropZone → 筛选行（FilterBar）
- *   →「导出语料集合」独立行 → error 行 → .lib-body（左=表头+密度列表
- *   flex-1，右=316px 规格表抽屉）
+ *   → error 行 → .lib-body（左=表头+密度列表 flex-1，右=316px 规格表抽屉）
  * - 数据经 library.store（列表状态/筛选/选中）；页面自身无数据逻辑
  * - 挂载时拉取列表（useAsync + library.store.load()）；列表序号续页传
  *   query.offset（PaperRow ordinal 消费）
- * - 「导出语料集合」入口（C-02）：全库 corpus md 目录导出——api.export_.corpusSet，
- *   成功 toast 含篇数与目录，取数失败篇以「跳过 M 篇」附注（INV-02）；
- *   按钮独立行右置（.lib-export-btn ghost 同语汇——裁量申报：并入筛选行会
- *   挤占标签胶囊弹性段，独立行保筛选行 mockup 单行语汇）
  * - [T3-P3] DiamondRule 库域退役（旧菱形分隔两消费点摘除——settings 域
  *   消费保留，组件本体留存）
+ * - [F-LIBUI-01 ⑨] corpusSet「导出语料集合」入口整体退役（用户 D4 裁决
+ *   2026-09-29：IPC 通道三方收窄；设置页 corpusSession 五件套零触碰）
  *
  * ── 接口层 ──
  * - export function LibraryPage(): JSX.Element
@@ -26,10 +23,8 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - 布局：左列表右详情；测试见 tests/e2e/library-density.spec.ts
  */
-import { useEffect, useState } from 'react'
-import { api, unwrap, ApiClientError } from '../../api/client'
+import { useEffect } from 'react'
 import { useAsync } from '../../shared/hooks/useAsync'
-import { showToast } from '../../shared/ui/Toast'
 import { FilterBar } from './FilterBar'
 import { ImportDropZone } from './ImportDropZone'
 import { PaperDetailPanel } from './PaperDetailPanel'
@@ -48,7 +43,6 @@ export function LibraryPage(): JSX.Element {
   const setQuery = useLibraryStore((s) => s.setQuery)
   const selectPaper = useLibraryStore((s) => s.selectPaper)
   const openPaper = useLibraryStore((s) => s.openPaper)
-  const [exportingSet, setExportingSet] = useState(false)
 
   // 挂载即拉取（useAsync 是显式 run 语义，故在 effect 中手动触发一次）
   const { run } = useAsync(load, [load])
@@ -56,35 +50,10 @@ export function LibraryPage(): JSX.Element {
     void run()
   }, [run])
 
-  /** 全库语料导出（动作型：失败/取消 toast——CANCELLED 也是用户可见反馈） */
-  const exportCorpusSet = (): void => {
-    if (exportingSet) return
-    setExportingSet(true)
-    unwrap(api.export_.corpusSet({}))
-      .then((r) => {
-        const skippedNote = r.skipped.length > 0 ? `（跳过 ${r.skipped.length} 篇）` : ''
-        showToast(`已导出 ${r.count} 篇语料：${r.filePath}${skippedNote}`, 'success')
-      })
-      .catch((e: unknown) => {
-        showToast(e instanceof ApiClientError ? e.message : '导出语料失败', 'error')
-      })
-      .finally(() => setExportingSet(false))
-  }
-
   return (
     <div className="lib-page">
       <ImportDropZone onImported={() => void load()} />
       <FilterBar query={query} onChange={setQuery} />
-      <div className="flex justify-end px-[18px]">
-        <button
-          type="button"
-          className="lib-export-btn"
-          disabled={exportingSet}
-          onClick={exportCorpusSet}
-        >
-          {exportingSet ? '语料导出中…' : '导出语料集合'}
-        </button>
-      </div>
       {error !== null && (
         <div
           className="mx-[18px] mb-2 flex items-center justify-between rounded border px-3 py-2 text-xs"

@@ -935,6 +935,222 @@
       "assertionText": "expect(showToast).toHaveBeenCalledWith('database is locked', 'error')",
       "reason": "F-CONSOL-11 断言结构化升级——语义等强/加强非行为变更：显示轨英文字面收编 DB_LOCKED.message 单源（toast 断言经 const 引用，改串不破断言语义），行为轨（saveStatus/队列/retry）断言不动",
       "rulingLink": "tickets/registry.ts（F-CONSOL-11 行）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=56（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]）",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "corpusSetReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "corpusSetResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "assertionText": "expect(S.corpusSetResSchema.safeParse({ filePath: 'x', count: 1, skipped: [{ paperId: 'p', reason: 'r', __nestedProbe: 1 }] }).success).toBe(false)",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "「导出语料集合」入口保活（C-02）",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "buildCorpusSet：单篇取数失败跳过收集 skipped，不中断全库",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "writeCorpusSet：mkdir corpus/ 前置+逐篇写入+返回成功数",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "corpusSet：全库→pickFolder→writeCorpusSet→count=2+skipped 回传+filePath 指 corpus/ 子目录",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "corpusSet 取消（pickFolder null）→CANCELLED；空库（entries 0）→NOT_FOUND",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.export.test.ts",
+      "caseTitle": "目录隔离守卫：corpusSet 目标目录含 manifest.json→拒绝（防轻量导出污染五件套目录）",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——库页按钮/IPC 通道/service 两方法/契约面整体出清（设置页 corpusSession 五件套零触碰）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "buildCorpus：装配产物含 front-matter 与片段；NOT_FOUND 抛域错误",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——组名随退役改写（describe 改名致 key 迁移；用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "corpus：构建→saveFile→writeToFile→{filePath,count:1}",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——组名随退役改写（describe 改名致 key 迁移；用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "corpus 取消（saveFile null）→CANCELLED 错误",
+      "reason": "F-LIBUI-01 corpusSet 通道退役，用户 D4 裁决 2026-09-29——组名随退役改写（describe 改名致 key 迁移；用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "六列表头在场：.lib-cols 六格文本=编号/题名 · 期刊/年月/引用/档次/标签",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b「取消档次列」，D4 同批）——venue-tier 单源库保留（lineage join+corpus manifest 两消费点不触），列渲染/断言面随列删除，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "行六路信息列：#001 序号（offset 起算）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N",
+      "reason": "F-LIBUI-01 ④⑧ 档次列退役+序号 # 前缀删（用户反馈 §0-6b/§0-5，D4 同批）——标题与断言值随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "档次徽章四态：venueToTier 单源映射 T1/T2/T3/未命中「—」",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b「取消档次列」，D4 同批）——venue-tier 单源库保留（lineage join+corpus manifest 两消费点不触），列渲染/断言面随列删除，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "档次徽章三态：t1=accent 底 accent-ink 字/t2=accent 描边/t3=line 描边 faint 字",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b「取消档次列」，D4 同批）——venue-tier 单源库保留（lineage join+corpus manifest 两消费点不触），列渲染/断言面随列删除，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "assertionText": "expect(css).toMatch(/\\.lib-c-tier\\s*\\{[^}]*width:\\s*42px;[^}]*flex:\\s*none/)",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b「取消档次列」，D4 同批）——venue-tier 单源库保留（lineage join+corpus manifest 两消费点不触），列渲染/断言面随列删除，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "表头列宽：46/flex1/74/52/42/180+gap 14px+10px letter-spacing 1.5px faint",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b「取消档次列」，D4 同批）——venue-tier 单源库保留（lineage join+corpus manifest 两消费点不触），列渲染/断言面随列删除，标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b）——组名「六列→五列」随语义改写致 key 迁移（用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "缺值列：年份 null→「—」；引用 citedByCount 缺→「—」/有值→数字",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b）——组名「六列→五列」随语义改写致 key 迁移（用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b）——组名「六列→五列」随语义改写致 key 迁移（用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "listbox 键盘导航保活：容器 listbox+行 option/aria-selected；↓ 无选中落首行/Home/End",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b）——组名「六列→五列」随语义改写致 key 迁移（用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "空态文案保活：papers 空→「暂无文献」引导",
+      "reason": "F-LIBUI-01 ④ 档次列退役（用户反馈 §0-6b）——组名「六列→五列」随语义改写致 key 迁移（用例本体保留，NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-lineage-display.test.tsx",
+      "caseTitle": "入脉络：#三位零填充 catalogNo（ordinal 被忽略）+lib-r-id.cat 类挂载；未入脉络：ordinal 位置序现状零动且无 cat 类",
+      "reason": "F-LIBUI-01 ⑧ 序号 # 前缀删（用户反馈 §0-5；pubNo 派生重排=F-FOLDER-01 票）——断言值与标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "caseTitle": "脉络命中：YEAR-MO 带脉络框括注+脉络行「年 · 月框 · N 条连线」link 色",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "assertionText": "expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 1 条连线')",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "assertionText": "expect(fldValue('脉络')).toBe('2023 年 · 未定月框 · 2 条连线')",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "caseTitle": "脉络未命中：YEAR-MO 只年份+脉络行「未加入脉络」非 link 色",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "caseTitle": "AI 评估行=「后置」虚线小徽章（禁假数据——固定占位文案）",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/paper-detail-drawer.test.tsx",
+      "caseTitle": "分节条在场：「标 签」「关 联」+TagEditor 驻留（新增标签输入框）",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/library-lineage-display.test.tsx",
+      "caseTitle": "抽屉文案 T3-P3 预渲染零动：lineage 命中 month 真值到达即正确（脉络行/年月行）",
+      "reason": "F-LIBUI-01 ⑤ 关联节退役（用户反馈 §0-7b：脉络行+AI 评估行删；节位留待 F-FOLDER-01 文件夹行回归）——断言面随行删除/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "assertionText": "expect(document.querySelector('nav.rail .rail-gap'), 'rail-gap 分隔段在场').not.toBeNull()",
+      "reason": "F-LIBUI-01 ①② rail-gap 12px 楔子与课题色点退役（用户反馈 §0-2/§0-1a；色标移课题管理页=F-WS-02）——断言翻转/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "caseTitle": "课题项结构：色点 span.rail-ws-dot+短名 label（name 前 4 字符）；未选中课题时兜底「课题」",
+      "reason": "F-LIBUI-01 ①② rail-gap 12px 楔子与课题色点退役（用户反馈 §0-2/§0-1a；色标移课题管理页=F-WS-02）——断言翻转/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/e2e/shell-rail.spec.ts",
+      "caseTitle": "T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K+下载 toast+状态条真文本",
+      "reason": "F-LIBUI-01 ①② rail-gap 12px 楔子与课题色点退役（用户反馈 §0-2/§0-1a；色标移课题管理页=F-WS-02）——断言翻转/标题随新语义改写",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
+    },
+    {
+      "file": "tests/e2e/library-density.spec.ts",
+      "caseTitle": "文献库密度列表：六列表头+行六列真实文本+抽屉四格+选中态",
+      "reason": "F-LIBUI-01 ④⑤⑥⑧ e2e 断言面随语义改写（用户反馈 §0-5/# 前缀、§0-6b/档次列、§0-7b/关联节退役+grid 计算样式锚）——标题随之改名，用例本体保留（NEW 侧在档）",
+      "rulingLink": "docs/design/2026-09-29_library-folders-binding-feedback-survey-and-plan.md"
     }
   ]
 }

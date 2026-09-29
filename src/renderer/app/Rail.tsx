@@ -3,12 +3,13 @@
  *
  * ── 行为层 ──
  * - 七项：课题（点击弹课题弹层——A10 联动入口）→下载（占位 toast——A8 规划中）
- *   →rail-gap 12px 分隔→文献库/阅读器/脉络（视图切换，active 态）
- *   →rail-foot（margin-top:auto 贴底）→设置
+ *   →文献库/阅读器/脉络（视图切换，active 态——F-LIBUI-01 rail-gap 12px
+ *   楔子退役，全栏 .rail gap 3px 等距）→rail-foot（margin-top:auto 贴底）→设置
  * - 视图四项接 App view 态：active 类+aria-current="page"（当前视图单选）
- * - 课题项=色点 span.rail-ws-dot（当前课题在 items 内的索引→6 色 token 轮转
- *   调色板）+短名 label（name 前 4 字符，无当前课题兜底「课题」）；弹层开合
- *   态本件自持（WsRailPopover），dirty 聚合值经 props 注入（App 编排先例）
+ * - 课题项=短名 label（name 前 4 字符，无当前课题兜底「课题」）——色点
+ *   span.rail-ws-dot 已退役 F-LIBUI-01（用户反馈 §0-1a：色标身份移入课题
+ *   管理页=F-WS-02；WS_DOT_PALETTE 由弹层消费暂留，F-WS-02 退役时同删）；
+ *   弹层开合态本件自持（WsRailPopover），dirty 聚合值经 props 注入（App 编排先例）
  * - 切课题联动语义=ADR-0018 reload：switchTo 成功即整页 reload，色点/短名/
  *   状态条课题名 reload 后自新（跨格序列锁=app-shell.test 弹层 describe）
  *
@@ -31,7 +32,7 @@ import { useState } from 'react'
 import { showToast } from '../shared/ui/Toast'
 import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { WsRailPopover } from './WsRailPopover'
-import { DL_TOAST_TEXT, WS_DOT_PALETTE } from './rail-shared'
+import { DL_TOAST_TEXT } from './rail-shared'
 
 export type ViewId = 'library' | 'reader' | 'lineage' | 'settings'
 
@@ -109,7 +110,6 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void; dirty: 
   const [open, setOpen] = useState(false)
 
   const currentIdx = items.findIndex((w) => w.id === currentId)
-  const dotColor = currentIdx >= 0 ? (WS_DOT_PALETTE[currentIdx % WS_DOT_PALETTE.length] as string) : 'var(--faint)'
   const shortName = currentIdx >= 0 ? shortNameOf(items[currentIdx]?.name ?? '') : '课题'
 
   return (
@@ -123,7 +123,6 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void; dirty: 
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="rail-ws-dot" style={{ background: dotColor }} aria-hidden="true" />
           {ICON_WS}
           <span className="lb">{shortName}</span>
         </button>
@@ -137,7 +136,6 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void; dirty: 
           {ICON_DL}
           <span className="lb">下载</span>
         </button>
-        <div className="rail-gap" aria-hidden="true" />
         {VIEWS.map((item) => (
           <button
             key={item.id}

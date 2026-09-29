@@ -2,14 +2,12 @@
  * [SR2-C-02] corpus.assemble —— corpus md 装配纯函数+导出通道（测试：锁定合约）
  *
  * 覆盖四层：装配纯函数（golden/幂等/结构断言/序=[C-01] 比较器序/前缀语义）/
- * export.service（buildCorpus NOT_FOUND/buildCorpusSet skipped 语义/writeCorpusSet
- * 落盘）/ipc corpus·corpusSet（取消=CANCELLED/全库写盘/空库 NOT_FOUND）。
+ * export.service（buildCorpus NOT_FOUND——buildCorpusSet/writeCorpusSet 已随
+ * corpusSet 通道退役删除 F-LIBUI-01，用户 D4 裁决 2026-09-29）/ipc corpus
+ * （取消=CANCELLED；corpusSet 通道同批退役）。
  * ADR-0011 v1.1 验收口径的机器锚（front-matter 无 exportedAt/幂等逐字节）。
  */
 import { describe, expect, it } from 'vitest'
-import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import {
   assembleCorpusMd,
   CORPUS_USER_PREFIX,
@@ -238,8 +236,7 @@ function stubRepos(over?: { detail?: PaperDetail | null; anns?: Annotation[]; no
   return {
     papers: {
       listSummariesByIds: () => [],
-      detailById: () => over?.detail === undefined ? detail : over.detail,
-      listAllIds: () => ['p-1', 'p-2', 'p-3']
+      detailById: () => over?.detail === undefined ? detail : over.detail
     },
     annotations: {
       listByPaper: () => over?.anns ?? []
@@ -248,7 +245,7 @@ function stubRepos(over?: { detail?: PaperDetail | null; anns?: Annotation[]; no
   } as unknown as Repos
 }
 
-guardedDescribe('SR2-C-02', 'export.service —— buildCorpus/buildCorpusSet/writeCorpusSet', () => {
+guardedDescribe('SR2-C-02', 'export.service —— buildCorpus（corpusSet 族 F-LIBUI-01 退役）', () => {
   const svc = () => createExportService({ repos: stubRepos() })
 
   it('buildCorpus：装配产物含 front-matter 与片段；NOT_FOUND 抛域错误', async () => {
@@ -259,70 +256,29 @@ guardedDescribe('SR2-C-02', 'export.service —— buildCorpus/buildCorpusSet/wr
     })
     await expect(missing.buildCorpus('p-x')).rejects.toThrow('文献不存在')
   })
-
-  it('buildCorpusSet：单篇取数失败跳过收集 skipped，不中断全库', async () => {
-    let calls = 0
-    const repos = stubRepos()
-    ;(repos.papers as { detailById: (id: string) => PaperDetail | null }).detailById = (id: string) => {
-      calls += 1
-      return id === 'p-2' ? null : detail
-    }
-    const r = await createExportService({ repos }).buildCorpusSet()
-    expect(r.entries.map((e) => e.paperId)).toEqual(['p-1', 'p-3'])
-    expect(r.skipped).toEqual([{ paperId: 'p-2', reason: '文献不存在：p-2' }])
-    expect(calls).toBe(3)
-  })
-
-  it('writeCorpusSet：mkdir corpus/ 前置+逐篇写入+返回成功数', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'synapse-c02-'))
-    try {
-      const n = await svc().writeCorpusSet(dir, [
-        { paperId: 'p-1', content: 'md-1' },
-        { paperId: 'p-2', content: 'md-2' }
-      ])
-      expect(n).toBe(2)
-      expect(await readdir(join(dir, 'corpus'))).toEqual(['p-1.md', 'p-2.md'])
-      expect(await readFile(join(dir, 'corpus', 'p-1.md'), 'utf8')).toBe('md-1')
-    } finally {
-      await rm(dir, { recursive: true, force: true })
-    }
-  })
 })
 
-/** ipc stub：dialogs 与 services 桩（corpus/corpusSet 通道契约） */
-function stubDeps(over?: { folder?: string | null; savePath?: string | null }) {
+/** ipc stub：dialogs 与 services 桩（corpus 单篇通道契约——corpusSet 退役 F-LIBUI-01） */
+function stubDeps(over?: { savePath?: string | null }) {
   const wrote: string[] = []
-  const setCalls: { dir: string; entries: unknown[] }[] = []
   const deps = {
     dialogs: {
-      saveFile: async () => over?.savePath === undefined ? 'C:/out/x.md' : over.savePath,
-      pickFolder: async () => over?.folder === undefined ? 'C:/out' : over.folder
+      saveFile: async () => over?.savePath === undefined ? 'C:/out/x.md' : over.savePath
     },
     services: {
       library: { detail: async () => ({ title: 'Water Quality Model' }) },
       export_: {
         buildCorpus: async () => 'md-content',
-        buildCorpusSet: async () => ({
-          entries: [
-            { paperId: 'p-1', content: 'md-1' },
-            { paperId: 'p-2', content: 'md-2' }
-          ],
-          skipped: [] as { paperId: string; reason: string }[]
-        }),
-        writeCorpusSet: async (dir: string, entries: unknown[]) => {
-          setCalls.push({ dir, entries })
-          return (entries as unknown[]).length
-        },
         writeToFile: async (p: string) => {
           wrote.push(p)
         }
       }
     }
   }
-  return { deps, wrote, setCalls }
+  return { deps, wrote }
 }
 
-guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus·corpusSet 通道', () => {
+guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus 通道（corpusSet F-LIBUI-01 退役）', () => {
   it('corpus：构建→saveFile→writeToFile→{filePath,count:1}', async () => {
     const { deps, wrote } = stubDeps()
     const r = await createExportIpc(deps as never).corpus({ paperId: 'p-1' })
@@ -333,25 +289,6 @@ guardedDescribe('SR2-C-02', 'ipc/export_ —— corpus·corpusSet 通道', () =>
   it('corpus 取消（saveFile null）→CANCELLED 错误', async () => {
     const { deps } = stubDeps({ savePath: null })
     await expect(createExportIpc(deps as never).corpus({ paperId: 'p-1' })).rejects.toThrow('已取消')
-  })
-
-  it('corpusSet：全库→pickFolder→writeCorpusSet→count=2+skipped 回传+filePath 指 corpus/ 子目录', async () => {
-    const { deps, setCalls } = stubDeps()
-    const r = await createExportIpc(deps as never).corpusSet({})
-    expect(r).toEqual({ filePath: join('C:/out', 'corpus'), count: 2, skipped: [] })
-    expect(setCalls).toHaveLength(1)
-    expect(setCalls[0]?.dir).toBe('C:/out')
-  })
-
-  it('corpusSet 取消（pickFolder null）→CANCELLED；空库（entries 0）→NOT_FOUND', async () => {
-    const cancelled = stubDeps({ folder: null })
-    await expect(
-      createExportIpc(cancelled.deps as never).corpusSet({})
-    ).rejects.toThrow('已取消')
-    const empty = stubDeps()
-    ;(empty.deps.services.export_ as { buildCorpusSet: () => Promise<unknown> }).buildCorpusSet =
-      async () => ({ entries: [], skipped: [] })
-    await expect(createExportIpc(empty.deps as never).corpusSet({})).rejects.toThrow('没有可导出的文献')
   })
 })
 

@@ -17,18 +17,27 @@ export interface WindowBounds {
 export const DEFAULT_BOUNDS: WindowBounds = { width: 1280, height: 800 }
 
 export interface ScreenArea {
+  /** 可见区原点（F-LIBUI-01：任务栏在左/上时 workArea.x/y≠0——缺省 0 兼容
+   *  只传宽高的旧调用面；bootstrap 以 screen.workArea 全形接线） */
+  x?: number
+  y?: number
   width: number
   height: number
 }
 
-/** 把 bounds 夹取进屏幕（防窗口跑出可视区——多显示器拔掉后常见） */
+/** 把 bounds 夹取进屏幕（防窗口跑出可视区——多显示器拔掉后常见）。
+ *  [F-LIBUI-01 ⑦] 原点感知：area 带原点时 x/y 下限取原点（任务栏在左/上时
+ *  可见区不从 0 起——纯 0 下限会漏钳）；bootstrap 启动恢复接本函数对
+ *  workArea 全维（x/y+宽高）钳制，根治窗口底边沉入任务栏（x/y 原样透传） */
 export function clampBounds(bounds: WindowBounds, screen: ScreenArea): WindowBounds {
   const width = Math.max(640, Math.min(bounds.width, screen.width))
   const height = Math.max(480, Math.min(bounds.height, screen.height))
+  const ox = screen.x ?? 0
+  const oy = screen.y ?? 0
   const x =
-    bounds.x === undefined ? undefined : Math.max(0, Math.min(bounds.x, screen.width - width))
+    bounds.x === undefined ? undefined : Math.max(ox, Math.min(bounds.x, ox + screen.width - width))
   const y =
-    bounds.y === undefined ? undefined : Math.max(0, Math.min(bounds.y, screen.height - height))
+    bounds.y === undefined ? undefined : Math.max(oy, Math.min(bounds.y, oy + screen.height - height))
   return { x, y, width, height }
 }
 

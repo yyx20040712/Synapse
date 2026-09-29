@@ -1,11 +1,12 @@
 /**
- * [SR-LIB-02] PaperList —— 密度列表（T3-P3 卡片网格→六列密度行；行为面零变）
+ * [SR-LIB-02] PaperList —— 密度列表（T3-P3 卡片网格→列式密度行；五列=F-LIBUI-01 ④ 档次列退役；行为面零变）
  *
  * ── 行为层 ──
  * - 渲染 PaperSummary 列表（上游 store 已按 query.limit 分页取数，本组件全量渲染当前页，v1 不引入虚拟滚动库）
- * - 六列表头（.lib-cols：编号/题名 · 期刊/年月/引用/档次/标签——列宽与行列对齐，
- *   INV-73 结构锁；驻 .lib-list 顶部 sticky——与行共享滚动容器内容盒，
- *   滚动条出现/窄窗收缩两态表头行恒同位）+滚动列表体（.lib-list）；
+ * - 五列表头（.lib-cols：编号/题名 · 期刊/年月/引用/标签——列宽与行列对齐，
+ *   INV-73 结构锁；F-LIBUI-01 档次列退役；驻 .lib-list 顶部 sticky——与行
+ *   共享滚动容器内容盒，滚动条出现/窄窗收缩两态表头行恒同位）+滚动列表体
+ *   （.lib-list）；
  *   行序号=index+offset+1（PaperRow 以 ordinal 消费——P5 catalog_no 落地后升级）
  * - 选中行高亮并通知 onSelect(id)（由上层接 store.selectPaper；高亮样式委托 PaperRow 的 selected）
  * - 键盘可达：容器为可聚焦 listbox，↑/↓ 移动选中、Home/End 跳首/末行、Enter/Space 在无选中时选中首行
@@ -101,7 +102,6 @@ export function PaperList(props: {
           <span className="lib-c-title">题名 · 期刊</span>
           <span className="lib-c-year">年月</span>
           <span className="lib-c-cite">引用</span>
-          <span className="lib-c-tier">档次</span>
           <span className="lib-c-tags">标签</span>
         </div>
         {papers.map((paper, index) => {
