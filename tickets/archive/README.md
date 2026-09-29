@@ -239,3 +239,4 @@ F-CI-01｜CI npm ci 红修复——better-sqlite3 缺省编译动作按包禁用
 T3-P8｜交互收口——战役收官票（六源：拖拽重排/改月飞行/检查面板重皮肤/shift 过渡/飞行脱节 mockup 原样/drag-hint 双文案；回炉 R1-R8）
 T3-U1｜UAT 反馈批——保存语义可见性+FOUC 补漏（自动保存槽三态[分档]+theme-boot 首帧兜底链）
 F-CONSOL-02｜P5 遗留单源化收敛三件套——两 IPC schema 手写→models 派生+文案常量单源+INV 册表修复（回炉 R1 三空行）
+F-TESTREF-S3｜FILE 级豁免通道——删整测试文件的机检出路（fileScope 哨兵+轴一/轴二双接入+结构性隔离 R1+姊妹件 T1-T8）

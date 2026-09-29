@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T00:27:48.0138024Z",
+    "generatedAt":  "2026-09-29T01:08:41.1704108Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -43,7 +43,7 @@
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
-                      "sha256":  "af2c1a625471d70a9e10d9f63043c4ab1bed7f47dbfc141f7fd4363bfcef94fe"
+                      "sha256":  "d5b78b36b1cc5c83dbdd7a6b472cbbbb318b58ba386425b5b201fcb82af2039b"
                   },
                   {
                       "path":  "scripts/check-tickets.mjs",
@@ -1018,6 +1018,10 @@
                       "sha256":  "1cfd4b09f83221680032abe3b6cc892582a081580e7c3d4252c276bf0ebee8fc"
                   },
                   {
+                      "path":  "tests/unit/tools/check-test-surface-file.test.ts",
+                      "sha256":  "94e9b4ef268e2b9792b95152498f3c573ba223014262f0e6ceaac97163e0d718"
+                  },
+                  {
                       "path":  "tests/unit/tools/companion.test.ts",
                       "sha256":  "e1692e6f4c22fa41b353213665b06f158daf7fa1d0f0afba067112191d15d0ab"
                   },
@@ -1075,7 +1079,7 @@
                   },
                   {
                       "path":  "tickets/archive/README.md",
-                      "sha256":  "1f2bb061c22057693cc9b02fb61a2d496dfaa702a09db4bdb44b2e27ccf80873"
+                      "sha256":  "87293906ab8b9b8ce20dc4e291856b66f781d3a6990e8c705df1cf148d2ac4a7"
                   },
                   {
                       "path":  "tsconfig.json",

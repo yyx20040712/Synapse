@@ -15,11 +15,15 @@
  * exit code：0=通过（delta 绿）/ 1=契约违背或 UNRESOLVABLE / 2=基线缺失或损坏
  * （硬阻断禁自愈——显式执行 `npm run test-surface:baseline` 并全量审计 diff）/
  * 3=豁免清单 schema 非法 / 4=baseline 再生成对账失败（拒写——基线保持原内容；
- * FILE_MISSING/ONLY_FORBIDDEN 类无豁免通道，人工裁决后删基线重跑=首装语义）。
+ * TICKETS_MISSING/ONLY_FORBIDDEN 类无豁免通道，人工裁决后删基线重跑=首装语义）。
  * baseline 子命令仅显式调用（本脚本无任何红了重写分支）。
  * [F-TESTREF-S2] baseline 再生成对账：写盘前先跑两轴（轴一=judge(old,cur)
  * 退役面漏登豁免拦截；轴二=台账−快照差集，新增条目须本轮真实命中）——豁免快照
  * （exemptionsSnapshot）随盘落；check 子命令判定语义零变。
+ * [F-TESTREF-S3] FILE 级豁免通道：删整测试文件登 {file, fileScope:true,
+ * reason, rulingLink}（显式哨兵、零 matcher 键、与 matcher 形态互斥）——轴一
+ * FILE_MISSING 命中豁免即退役留档；轴二身份键含 fileScope，经既有
+ * structuredClone 自然入快照（version 1 向后兼容零破）。
  *
  * 用例闸=指纹闸蕴含（caseCount 单调不减是 ⊇ 的推论，delta 汇总行显式打印计数）。
  * [test-refactor][locked-change]
@@ -82,8 +86,18 @@ function loadExemptions(root) {
   }
   for (const e of parsed.entries) {
     const hasMatcher = e.caseTitle !== undefined || e.assertionText !== undefined || e.skipSiteText !== undefined
-    if (typeof e.file !== 'string' || e.file === '' || !hasMatcher || typeof e.reason !== 'string' || e.reason === '' || typeof e.rulingLink !== 'string' || e.rulingLink === '') {
-      die(3, `[test-surface] 豁免条目 schema 非法（须含 file+匹配键 caseTitle/assertionText/skipSiteText 至少其一+非空 reason+rulingLink）：${JSON.stringify(e)}`)
+    const fileOk = typeof e.file === 'string' && e.file !== ''
+    const metaOk = typeof e.reason === 'string' && e.reason !== '' && typeof e.rulingLink === 'string' && e.rulingLink !== ''
+    // [F-TESTREF-S3] 两类互斥形态：matcher 形态（file+匹配键≥1）或 FILE 级形态
+    // （file+fileScope===true 且零 matcher 键）——显式哨兵防 matcher 键拼错静默
+    // 升级为整文件豁免（整文件契约全弃=最大杀伤面）；fileScope 存在但非 true、
+    // 或与任一 matcher 键并存均 schema 拒（exit 3）。
+    if (e.fileScope !== undefined) {
+      if (e.fileScope !== true || hasMatcher || !fileOk || !metaOk) {
+        die(3, `[test-surface] 豁免条目 schema 非法（FILE 级形态须为 file+fileScope:true+非空 reason+rulingLink，且不得与 caseTitle/assertionText/skipSiteText 匹配键并存；fileScope 仅接受布尔 true）：${JSON.stringify(e)}`)
+      }
+    } else if (!fileOk || !hasMatcher || !metaOk) {
+      die(3, `[test-surface] 豁免条目 schema 非法（须含 file+匹配键 caseTitle/assertionText/skipSiteText 至少其一+非空 reason+rulingLink；删整测试文件类=FILE 级形态 file+fileScope:true）：${JSON.stringify(e)}`)
     }
   }
   return { entries: parsed.entries }
@@ -99,11 +113,21 @@ function countMultiset(items) {
   return m
 }
 
-/** 豁免匹配（N2 从宽：file 精确+匹配键精确；同 title 重复用例=已知限制，条目宜附细键） */
+/** 豁免匹配（N2 从宽：file 精确+匹配键精确；同 title 重复用例=已知限制，条目宜附细键。
+ * [F-TESTREF-S3] kind='file'：FILE 级条目（fileScope:true）命中即整文件豁免
+ * （file 已前置精确匹配；无 payload 面）。[R1·门一双席同中 W1] FILE 条目结构性
+ * 隔离：短路后续 matcher 分支——防 payload 匹配字段 undefined 时
+ * undefined===undefined 及兜底从宽把 FILE 条目误捞为 case/assert 级命中（现无
+ * 活路径——调用方 payload 恒真实字符串，防御面加固；守卫非活路径故无 CLI 红证
+ * 面，协同/多重集语义由姊妹件 T7/T8 锁）。 */
 function exemptionHits(exemptions, kind, file, payload) {
   const hits = []
   for (const e of exemptions.entries) {
     if (e.file !== file) continue
+    if (e.fileScope === true) {
+      if (kind === 'file') hits.push(e)
+      continue
+    }
     if (kind === 'case' && e.caseTitle === payload.title && (e.assertionText === undefined || payload.assertions.includes(e.assertionText))) hits.push(e)
     if (kind === 'assert' && e.assertionText === payload.assertionText && (e.caseTitle === undefined || e.caseTitle === payload.title)) hits.push(e)
     if (kind === 'skipsite' && e.skipSiteText === payload.text) hits.push(e)
@@ -117,9 +141,12 @@ function fmtRelLine(file, line) {
 
 /** 豁免条目身份键（F-TESTREF-S2 轴二多重集差）：file+匹配键（caseTitle/
  * assertionText/skipSiteText 存在者）。reason/rulingLink=元数据非身份——注释性修订
- * （改 reason/裁决链）同身份零 delta 放行；匹配目标变更=身份变→进 added 受拦 */
+ * （改 reason/裁决链）同身份零 delta 放行；匹配目标变更=身份变→进 added 受拦。
+ * [F-TESTREF-S3] FILE 条目身份={file, fileScope:true}（哨兵键计入身份——与
+ * matcher 条目天然不撞，后者恒含 matcher 键）；多重集差语义零变。 */
 function exemptionEntryKey(e) {
   const m = { file: e.file }
+  if (e.fileScope !== undefined) m.fileScope = e.fileScope
   if (e.caseTitle !== undefined) m.caseTitle = e.caseTitle
   if (e.assertionText !== undefined) m.assertionText = e.assertionText
   if (e.skipSiteText !== undefined) m.skipSiteText = e.skipSiteText
@@ -169,7 +196,12 @@ function judge(baseFiles, cur) {
     const b = baseFiles[path]
     const c = cur.get(path)
     if (b && !c) {
-      failures.push({ kind: 'FILE_MISSING', path, line: undefined, text: path })
+      // [F-TESTREF-S3] FILE_MISSING 豁免通道：删整测试文件登 FILE 级条目
+      // （fileScope:true）→ 命中走 recordFace 留档（轴二命中面）；未登照旧红。
+      // 既有 baseCaseTotal 等累计逻辑保持（stats 口径零变）。
+      const hit = exemptionHits(loadExemptionsCache, 'file', path, {})
+      if (hit.length > 0) recordFace('FILE_MISSING', path, undefined, path, hit)
+      else failures.push({ kind: 'FILE_MISSING', path, line: undefined, text: path })
       baseCaseTotal += b.cases.length
       baseSkipTotal += b.conditionalSkipSites.length + b.hardSkipSites.length
       for (const cs of b.cases) baseAssertTotal += cs.assertions.length
@@ -467,11 +499,12 @@ function cmdBaseline(root) {
   for (const e of diff.removed) console.log(`[test-surface] REMOVED 豁免（孤儿——快照有台账无，不拦）${e.file}「${summarize(e.caseTitle ?? e.assertionText ?? e.skipSiteText ?? '', 40)}」`)
   if (failures.length > 0 || zeroHit.length > 0) {
     for (const f of failures) console.error(`[test-surface] FAIL ${f.kind} ${fmtRelLine(f.path, f.line)} 「${f.text}」`)
-    // 无豁免通道的 failure kind 全集=FILE_MISSING/TICKETS_MISSING/ONLY_FORBIDDEN
-    // （主控加固批 k1-W1：judge 内三者均不查豁免直落 failures——逐 kind 对照豁免
-    // 调用点核验；其余 kind 均有 exemptionHits 通道，登记指引有效）
-    const hardKinds = failures.filter((f) => f.kind === 'FILE_MISSING' || f.kind === 'TICKETS_MISSING' || f.kind === 'ONLY_FORBIDDEN').length
-    die(4, `[test-surface] baseline 对账失败（exit 4 拒写，基线保持原内容）：轴一漏登 ${failures.length} 处 + 轴二多登（零命中）${zeroHit.length} 处——退役/收紧面先登 scripts/test-surface.exemptions.json（reason+rulingLink），多登条目须本轮真实命中${hardKinds > 0 ? `；含删整测试文件/工单号消失/only 用例类契约违背 ${hardKinds} 处——无豁免通道，须人工裁决后删除旧基线文件显式重跑 baseline（首装语义重建）` : ''}`)
+    // 无豁免通道的 failure kind 全集=TICKETS_MISSING/ONLY_FORBIDDEN（主控加固批
+    // k1-W1 原列三者——F-TESTREF-S3 起 FILE_MISSING 增 FILE 级豁免通道，judge 内
+    // 先查豁免未中才落 failures；TICKETS_MISSING/ONLY_FORBIDDEN 恒不查豁免直落
+    // failures——逐 kind 对照豁免调用点核验；其余 kind 均有 exemptionHits 通道）
+    const hardKinds = failures.filter((f) => f.kind === 'TICKETS_MISSING' || f.kind === 'ONLY_FORBIDDEN').length
+    die(4, `[test-surface] baseline 对账失败（exit 4 拒写，基线保持原内容）：轴一漏登 ${failures.length} 处 + 轴二多登（零命中）${zeroHit.length} 处——退役/收紧面先登 scripts/test-surface.exemptions.json（reason+rulingLink；删整测试文件类=FILE 级条目 file+fileScope:true），多登条目须本轮真实命中${hardKinds > 0 ? `；含工单号消失/only 用例类契约违背 ${hardKinds} 处——无豁免通道，须人工裁决后删除旧基线文件显式重跑 baseline（首装语义重建）` : ''}`)
   }
   console.log(`[test-surface] baseline 对账通过：retiring ${retiringFaces.length}（豁免命中 ${exemptHitKeys.size}）added ${diff.added.length}（命中 ${addedHit}）removed ${diff.removed.length}`)
   writeOut()
@@ -498,7 +531,7 @@ function cmdCheck(root) {
   }
   if (failures.length > 0) {
     for (const f of failures) console.error(`[test-surface] FAIL ${f.kind} ${fmtRelLine(f.path, f.line)} 「${f.text}」`)
-    die(1, `[test-surface] 检查未通过：${failures.length} 处契约违背（hint: 若为有意收紧/删改，先取主控裁决，再落 scripts/test-surface.exemptions.json 豁免通道 reason+rulingLink）`)
+    die(1, `[test-surface] 检查未通过：${failures.length} 处契约违背（hint: 若为有意收紧/删改，先取主控裁决，再落 scripts/test-surface.exemptions.json 豁免通道 reason+rulingLink；删整测试文件类=FILE 级条目 file+fileScope:true）`)
   }
   console.log('[test-surface] 检查通过：C_after ⊇ C_before（指纹门绿）')
 }
