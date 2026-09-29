@@ -81,7 +81,10 @@ describe('T3-U1 FOUC 装配接缝静态锁（回炉 R1）', () => {
     // 属性或 type=module（模块默认 defer）任一都使脚本不执行/推迟到首帧后，兜底
     // 静默失效而「引用在场+驻 head」双锚不红。i 旗标=HTML 属性名大小写不敏感；
     // ["']?=无引号合法形态；nomodule=直接不执行（比 defer 更重）；\btype=防
-    // data-type 类子串误报。静态锚=tripwire 最小锁面非完备保证（U1 R1 定性）。
+    // 字母接缀子串（xtype= 类——字母间无词边界不成立），不防连字符前缀：
+    // data-type=module 中 \b 于连字符后恒成立仍可误中负锚（已知假阳性面，
+    // 升级方向=属性结构化解析——F-CONSOL-05 遗留备案）。静态锚=tripwire
+    // 最小锁面非完备保证（U1 R1 定性）。
     const tag = head![0].match(/<script\b[^>]*theme-boot\.js[^>]*>/)
     expect(tag, 'theme-boot script 标签形态在场（精确标签锚）').not.toBeNull()
     expect(tag![0], '同步执行语义：禁 defer/async/nomodule 属性与 type=module（含大小写与无引号形态）')
