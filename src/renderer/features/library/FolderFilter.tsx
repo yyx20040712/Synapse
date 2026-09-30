@@ -9,7 +9,9 @@
  *   各文件夹（{kind:'folder',folderId}，含 paperCount 徽标）；单选语义
  *   （点按即置态；全部文献=清除面）
  * - 行内操作：文件夹 chip 右键→菜单（重命名/删除——TagLifecycleMenu 同型
- *   fixed 锚点+遮罩关闭）；删除走 FolderDeleteDialog（C 项）
+ *   fixed 锚点+遮罩关闭）；删除先经 lineage.graph 静默判据（F-DELCONF-01①：
+ *   空图直删不弹窗，有节点/连线才走 FolderDeleteDialog 保护弹窗，预检失败
+ *   fail-closed 不删不弹）
  * - 新建：行尾「+ 新建文件夹」chip→内联输入；Enter 提交（isComposing 守卫）
  *   /Esc 取消；重名 CONFLICT 域错误中文 toast
  * - 联动：folders.changed→重拉 folders.list+library 重载（onMutated）+
@@ -34,6 +36,7 @@ import { useImportBusyStore } from '../../shared/import-busy.store'
 import { showToast } from '../../shared/ui/Toast'
 import { FolderRenameDialog, FolderDeleteDialog } from './FolderDialogs'
 import { FolderMenu } from './FolderMenu'
+import { useFolderDeleteFlow } from './useFolderDelete'
 
 /** 意外异常兜底中文 */
 const FOLDER_CREATE_FAILED = '新建文件夹失败'
@@ -59,6 +62,15 @@ export function FolderFilter(props: {
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [creating, setCreating] = useState(false)
+  // F-DELCONF-01① 删除流拆件（组件 250 行红线）：静默判据/分流/收口在
+  // useFolderDelete——空图直删，有资产经 onHasAssets 挂 FolderDeleteDialog
+  const { requestDelete, handleDeleted } = useFolderDeleteFlow({
+    scope: query.folderScope,
+    onChange,
+    onMutated,
+    reload: loadFolders,
+    onHasAssets: (f) => setDialog({ kind: 'delete', folder: f })
+  })
 
   useEffect(() => {
     void loadFolders()
@@ -193,8 +205,8 @@ export function FolderFilter(props: {
             setMenu(null)
           }}
           onDelete={(f) => {
-            setDialog({ kind: 'delete', folder: f })
             setMenu(null)
+            void requestDelete(f)
           }}
         />
       )}
@@ -215,14 +227,7 @@ export function FolderFilter(props: {
           key={dialog.folder.id}
           folder={dialog.folder}
           onClose={() => setDialog(null)}
-          onDone={(deletedId) => {
-            void loadFolders()
-            // 被删文件夹=当前筛选态→回退全部文献（死 folderId 空列表窗防御）
-            if (scope?.kind === 'folder' && scope.folderId === deletedId) {
-              onChange({ folderScope: undefined })
-            }
-            onMutated()
-          }}
+          onDone={handleDeleted}
         />
       )}
     </div>

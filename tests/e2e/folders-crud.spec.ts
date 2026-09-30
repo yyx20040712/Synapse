@@ -6,9 +6,10 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [F-FOLDER-02·A/C] folders-crud e2e —— 文件夹区 chip 全链（design §4.1/§4.3）：
- * 新建（chip+×N 计数）/重名域错误中文 toast/右键菜单改名/删除确认弹窗（N2
- * 终裁文案逐字——nodeCount/edgeCount 经 lineage.graph 派生+paperCount 载荷）
- * +S3 改名后脉络页图名联动（图名=文件夹名单一真相源）。
+ * 新建（chip+×N 计数）/重名域错误中文 toast/右键菜单改名/删除（F-DELCONF-01
+ * 静默判据双路径：空图直删无弹窗+有资产保护弹窗 N2 终裁文案逐字——
+ * nodeCount/edgeCount 经 lineage.graph 派生+paperCount 载荷）+S3 改名后
+ * 脉络页图名联动（图名=文件夹名单一真相源）。
  * 断言全部锚真实渲染文本（宪法 e2e 纪律）。
  */
 
@@ -58,15 +59,39 @@ test('folders-crud：新建/重名 toast/改名（S3 脉络页标题联动）/�
   await expect(win.getByTestId('lineage-graph-title')).toHaveText('脉络图：改名后的图')
   // 空图提示（「该文件夹无脉络图」文案族——新图零节点）
   await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+  // [F-DELCONF-01] 造资产：给「改名后的图」加 1 主题节点（脉络页产品路径
+  // 「添加节点·主题型」——lineage-topic-node.spec 同型；主题节点 folderId=
+  // 当前图随选（INV-88：文献节点 folder=文献归属恒落主图，不走此路）。T4b
+  // 弹窗路径需有资产（静默判据下空图不弹窗）。主题节点不动 paper 归属→
+  // 计数=1 节点/0 连线/0 篇文献
+  await win.getByTestId('lineage-add-node').click()
+  await win.getByTestId('add-node-mode-theme').click()
+  await win.getByLabel('主题名称（阶段分组）').fill('crud 资产节点')
+  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
+  await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: 'crud 资产节点' })).toBeVisible({
+    timeout: 10_000
+  })
 
-  // T4 删除：确认弹窗 N2 终裁文案逐字（空图计数=0/0/0）+危险色按钮执行
   await win.getByRole('button', { name: '文献库' }).click()
+
+  // T4a 静默直删（F-DELCONF-01①）：空图文件夹（0 节点 0 连线）→点删除即
+  // 直删，不弹确认窗（保护资产=脉络图唯一，无资产则不跳）
+  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByLabel('新文件夹名').fill('速删验证图')
+  await win.getByLabel('新文件夹名').press('Enter')
+  await expect(folderChip('速删验证图')).toBeVisible({ timeout: 10_000 })
+  await folderChip('速删验证图').click({ button: 'right' })
+  await win.getByRole('menuitem', { name: '删除' }).click()
+  await expect(win.getByRole('dialog')).toHaveCount(0)
+  await expect(folderChip('速删验证图')).toHaveCount(0, { timeout: 10_000 })
+
+  // T4b 有资产弹窗：确认弹窗 N2 终裁文案逐字（计数=1/0/0）+危险色按钮执行
   await folderChip('改名后的图').click({ button: 'right' })
   await win.getByRole('menuitem', { name: '删除' }).click()
   const dialog = win.getByRole('dialog')
   await expect(dialog).toContainText('删除文件夹「改名后的图」？')
   await expect(dialog).toContainText(
-    '该文件夹的脉络图将一并删除（0 个节点及 0 条连线不可恢复）；其中 0 篇文献不会被删除，将移至「未归档」。'
+    '该文件夹的脉络图将一并删除（1 个节点及 0 条连线不可恢复）；其中 0 篇文献不会被删除，将移至「未归档」。'
   )
   await dialog.getByRole('button', { name: '删除文件夹' }).click()
   await expect(folderChip('改名后的图')).toHaveCount(0, { timeout: 10_000 })

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T11:26:23.2893686Z",
+    "generatedAt":  "2026-09-30T11:53:17.4966637Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -267,7 +267,7 @@
                   },
                   {
                       "path":  "tests/e2e/folders-crud.spec.ts",
-                      "sha256":  "18599bbe1d0e9d51627a565a61998f48bb81cc6dc0a79c05930c41bca57d885f"
+                      "sha256":  "2766b8817f247ab6a22610dc2d829d497f2a653b7e2ac6e19d12dbd165089f75"
                   },
                   {
                       "path":  "tests/e2e/import-drag.spec.ts",
@@ -611,7 +611,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/folder-filter.test.tsx",
-                      "sha256":  "d886e4b859d97b8a08867957599c7d9d4db2aa5ac9d64f39307f3a1cebc64b00"
+                      "sha256":  "3272922ef1bec4f67600423d0496f6c5137420b334c648f67cf243d053286bc5"
                   },
                   {
                       "path":  "tests/unit/renderer/import-drag-ui.test.tsx",

@@ -274,6 +274,12 @@ describe('F-FOLDER-02·C FolderDeleteDialog（design §4.3+N2 终裁文案）', 
 
   it('确认删除：folders.delete({id})→刷新+onMutated；选中文件夹被删→筛选回退全部', async () => {
     await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    // 有资产环境（F-DELCONF-01 前置：菜单点击即查 graph——本用例=有资产弹窗
+    // 确认路径回归，graph 须非空图）
+    stubApi.lineage.graph.mockResolvedValue({
+      ok: true,
+      data: { nodes: [{ id: 'a' }], edges: [], paperMetrics: {}, lineTypes: [], pubNos: {} }
+    })
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
     foldersNow = [folder('__main__', '主图', 3)]
     rightClick(chip('调研计划'))
@@ -289,6 +295,69 @@ describe('F-FOLDER-02·C FolderDeleteDialog（design §4.3+N2 终裁文案）', 
     expect(lastPatch).toEqual({ folderScope: undefined })
     expect(mutatedCalls).toBeGreaterThan(0)
     expect(chip('调研计划')).toBeUndefined()
+  })
+})
+
+describe('F-DELCONF-01 删除静默判据（①空图直删/有资产弹窗/fail-closed）', () => {
+  it('静默直删：空图（nodes=[] ∧ edges=[]）→不弹 Dialog+folders.delete+graph 预检+回退联动（paperCount 不参与——非零亦直删）', async () => {
+    // paperCount=7（非零）：文献仅移未归档可寻回，不构成保护资产
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 7)]
+    await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    foldersNow = [folder('__main__', '主图', 2)]
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(host?.querySelector('[role="dialog"]')).toBeNull()
+    expect(stubApi.lineage.graph).toHaveBeenCalledWith({ folderId: 'f-1' })
+    expect(stubApi.folders.delete).toHaveBeenCalledTimes(1)
+    expect(stubApi.folders.delete).toHaveBeenCalledWith({ id: 'f-1' })
+    expect(lastPatch).toEqual({ folderScope: undefined })
+    expect(mutatedCalls).toBeGreaterThan(0)
+    expect(chip('调研计划')).toBeUndefined()
+    expect(toastSpy).not.toHaveBeenCalled()
+  })
+
+  it('有资产弹窗照弹（负锚）：edgeCount>0→Dialog 挂载+不静默删', async () => {
+    await render(BASE_QUERY)
+    stubApi.lineage.graph.mockResolvedValue({
+      ok: true,
+      data: {
+        nodes: [],
+        edges: [{ id: 'e1' }],
+        paperMetrics: {},
+        lineTypes: [],
+        pubNos: {}
+      }
+    })
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(host?.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(stubApi.folders.delete).not.toHaveBeenCalled()
+  })
+
+  it('fail-closed：graph 预检失败→不删不弹+error toast（域错误透传/意外兜底）', async () => {
+    await render(BASE_QUERY)
+    stubApi.lineage.graph.mockResolvedValue({
+      ok: false,
+      error: { code: 'INTERNAL', message: '脉络图暂不可用' }
+    })
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(host?.querySelector('[role="dialog"]')).toBeNull()
+    expect(stubApi.folders.delete).not.toHaveBeenCalled()
+    expect(toastSpy).toHaveBeenCalledWith('脉络图暂不可用', 'error')
+    // 意外异常（非 ApiClientError）→兜底文案
+    stubApi.lineage.graph.mockReset()
+    stubApi.lineage.graph.mockRejectedValue(new Error('network down'))
+    rightClick(chip('主图'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(host?.querySelector('[role="dialog"]')).toBeNull()
+    expect(stubApi.folders.delete).not.toHaveBeenCalled()
+    expect(toastSpy).toHaveBeenCalledWith('无法确认文件夹脉络图，已取消删除', 'error')
   })
 })
 
