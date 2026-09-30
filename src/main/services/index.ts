@@ -172,7 +172,7 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       // [回炉码 1] INV-88 统一规则判别源+落笔（papers.repo 单源）
       paperFolderOf: (id) => deps.repos.papers.folderIdOf(id),
       ensurePaperFolder: (id) => deps.repos.papers.ensureFolderAssigned(id),
-      withTransaction: deps.repos.withTransaction, // 清面+重灌原子边界
+      withTransaction: deps.repos.withTransaction, // upsertNode 归档+落库原子边界（[F-BAKRET-01] 草稿清面重灌旧语义退役）
       paperMetrics: (ids) => deps.repos.papers.listMetricsByIds(ids), // F-LG14 含金量 join 单源
       // [F-FOLDER-01] 幽灵 folderId 拦截（folders.repo 存在性——生产真实现）
       folderExists: (id) => deps.repos.folders.findById(id) !== null,

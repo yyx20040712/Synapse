@@ -8,7 +8,8 @@
  * 重命名/删除；③新建（Enter+isComposing 守卫；重名 CONFLICT 域错误中文
  * toast）；④删除弹窗文案逐字（nodeCount/edgeCount=renderer 经 lineage.graph
  * 派生+paperCount=folders.list 载荷）+危险色按钮；⑤删除选中文件夹→筛选回退
- * 全部文献；⑥S2=导入 busy 态 chip 禁用。
+ * 全部文献；⑥S2=导入 busy 态 chip 禁用；⑦[F-DELCONF-01 回炉 W1/W2] 在途
+ * 删除异目标 info 告知/同目标静默早退/删除在途切走筛选→落定不清（现值判定）。
  * always-active（不经 guardedDescribe——K3 威胁结构性缺位）。
  */
 import { act } from 'react'
@@ -358,6 +359,74 @@ describe('F-DELCONF-01 删除静默判据（①空图直删/有资产弹窗/fail
     expect(host?.querySelector('[role="dialog"]')).toBeNull()
     expect(stubApi.folders.delete).not.toHaveBeenCalled()
     expect(toastSpy).toHaveBeenCalledWith('无法确认文件夹脉络图，已取消删除', 'error')
+  })
+})
+
+describe('F-DELCONF-01 回炉 W1/W2（门一对抗批——在途异目标反馈+落定现值判定）', () => {
+  /** 在途窗构造：graph 预检挂起（resolveGraph 手动放行）——W1/W2 时序面公共段 */
+  function hangGraph(): (v: unknown) => void {
+    let resolveGraph!: (v: unknown) => void
+    stubApi.lineage.graph.mockImplementation(
+      () => new Promise((res) => { resolveGraph = res })
+    )
+    return (v: unknown) => resolveGraph(v)
+  }
+  const EMPTY_GRAPH = {
+    ok: true,
+    data: { nodes: [], edges: [], paperMetrics: {}, lineTypes: [], pubNos: {} }
+  }
+
+  it('W1：在途删除异目标→info toast 轻量告知+第二目标不执行（graph 预检都不发——hook 级串行语义保留）', async () => {
+    const resolveGraph = hangGraph()
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    await render(BASE_QUERY)
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    // 在途窗内右键删除另一目标（主图）
+    rightClick(chip('主图'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(toastSpy).toHaveBeenCalledWith('上一次删除仍在进行，请稍候', 'info')
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1) // 第二目标零预检
+    // 第一目标照常落定（不被第二请求干扰）
+    resolveGraph(EMPTY_GRAPH)
+    await settle()
+    expect(stubApi.folders.delete).toHaveBeenCalledTimes(1)
+    expect(stubApi.folders.delete).toHaveBeenCalledWith({ id: 'f-1' })
+  })
+
+  it('W1：同目标重复删除→静默早退（防双击面语义保留——无 toast+仅一次预检/删除）', async () => {
+    const resolveGraph = hangGraph()
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    await render(BASE_QUERY)
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
+    expect(toastSpy).not.toHaveBeenCalled() // 同 id 静默（异 id 才 info）
+    resolveGraph(EMPTY_GRAPH)
+    await settle()
+    expect(stubApi.folders.delete).toHaveBeenCalledTimes(1)
+  })
+
+  it('W2：删除在途用户切走筛选→落定后筛选不被清（仅当仍指向被删文件夹才回退）', async () => {
+    const resolveGraph = hangGraph()
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    rightClick(chip('调研计划'))
+    await click(buttonByText('删除'))
+    await settle()
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
+    // 在途窗内用户切换筛选到另一文件夹（受控 props 换新 scope——render 即重渲染）
+    await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-9' } })
+    resolveGraph(EMPTY_GRAPH)
+    await settle()
+    expect(stubApi.folders.delete).toHaveBeenCalledWith({ id: 'f-1' })
+    expect(lastPatch).toBeNull() // 已切走→不清筛选（旧闭包行为=误回退全部必红）
+    expect(mutatedCalls).toBeGreaterThan(0)
   })
 })
 

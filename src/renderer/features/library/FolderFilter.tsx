@@ -63,9 +63,14 @@ export function FolderFilter(props: {
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [creating, setCreating] = useState(false)
   // F-DELCONF-01① 删除流拆件（组件 250 行红线）：静默判据/分流/收口在
-  // useFolderDelete——空图直删，有资产经 onHasAssets 挂 FolderDeleteDialog
+  // useFolderDelete——空图直删，有资产经 onHasAssets 挂 FolderDeleteDialog。
+  // [W2 回炉] 筛选态现值注入：本组件受控（props query=store 投影单源），
+  // 每渲染同步 scopeRef——删除落定时 hook 经 getScope() 读最新筛选态判定
+  // 回退，消除旧闭包误清（在途切筛选后落定不再把新筛选踢回「全部」）
+  const scopeRef = useRef(query.folderScope)
+  scopeRef.current = query.folderScope
   const { requestDelete, handleDeleted } = useFolderDeleteFlow({
-    scope: query.folderScope,
+    getScope: () => scopeRef.current,
     onChange,
     onMutated,
     reload: loadFolders,

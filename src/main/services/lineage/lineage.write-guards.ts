@@ -63,6 +63,10 @@ export function nextSlotInGroup(
  *   语义——同组撞值防护）；新建（无既有行）显式 slot=主权透写、缺省=组末
  *   max+1（「落组末」语义——D-P5-10 跨月移动组键全面化）。
  *   papers.move-folder 移入分支按回炉码 6 显式走 nextSlotInGroup，不经本函数。
+ *   [k1-N3 回炉 2026-09-30，门一] 上段安全性由注释声明→升机锚：existing
+ *   在场 ∧ folderId 变 ∧ input.slot===undefined → throw（编程错误面，Error
+ *   而非 DomainError——契约违反非业务拒绝；跨图保留原 slot 会静默撞 INV-75
+ *   组内唯一，fail-fast 优于静默落库）。
  */
 export function normalizeMonthSlot(
   input: LineageNodeUpsert,
@@ -71,6 +75,13 @@ export function normalizeMonthSlot(
   const month = input.month ?? null
   const existing = input.id !== undefined ? nodes.find((n) => n.id === input.id) : undefined
   const folder = input.folderId ?? existing?.folderId ?? MAIN_GRAPH_ID
+  if (
+    existing !== undefined &&
+    folder !== existing.folderId &&
+    input.slot === undefined
+  ) {
+    throw new Error('folderId 变化必须显式 slot——moveFolder 编排契约')
+  }
   if (existing === undefined) {
     return {
       month,

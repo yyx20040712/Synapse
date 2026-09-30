@@ -12,20 +12,30 @@
  *   FolderDeleteDialog（现状保护弹窗）
  * - fail-closed：lineage.graph 预检失败（含超时/异常）→不删不弹，动作型
  *   error toast（域错误 ApiClientError.message 透传+意外异常中文兜底）
- * - busy：双异步（预检+删除）全程 ref 守卫防同批双击（useBusyGuard pending
- *   ref 同型——菜单点击即关，无持续 busy 挂载面故不持 state）
+ * - busy（W1 回炉 2026-09-30，门一）：双异步（预检+删除）全程 ref 守卫防
+ *   同批双击（useBusyGuard pending ref 同型——菜单点击即关，无持续 busy
+ *   挂载面故不持 state）；ref 记**在途 folderId** 而非布尔——同 id 再点=
+ *   防双击面静默早退（原语义保留）；异 id 在途=info toast 轻量告知
+ *   （「上一次删除仍在进行」——INV-02 动作型反馈同族：菜单已关零反馈易
+ *   误读已执行）+不执行（hook 级串行语义保留，不引入并发删除）；全部
+ *   出口复位 null
  * - 成功收口 handleDeleted（FolderDeleteDialog onDone 同一语义：reload+
- *   被删文件夹=当前筛选态→回退全部+onMutated）
+ *   被删文件夹=当前筛选态→回退全部+onMutated）；W2 回炉（门一）：判定不
+ *   再用渲染期闭包 scope（在途窗内用户切筛选后落定，旧闭包会把新筛选误
+ *   踢回「全部」）——经 getScope() 读**最新筛选态**（宿主 ref 同步注入），
+ *   仅当仍指向被删文件夹才回退；两路径（静默/弹窗确认 onDone）同缝同修
  *
  * ── 接口层 ──
  * - export function useFolderDeleteFlow(props): {
  *     requestDelete(folder: Folder): Promise<void>
  *     handleDeleted(deletedId: string): void
  *   }
+ * - props.getScope(): 现值筛选态读取器（FolderFilter 侧 scopeRef 每渲染
+ *   同步注入——受控 props 即 store 投影，见 FolderFilter W2 注）
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 写路径=api 直调（unwrap+toast——folders 域无 store 先例同族）；scope
- *   闭包捕获与 FolderDeleteDialog onDone 同型（挂载时捕获当次筛选态）
+ * - 写路径=api 直调（unwrap+toast——folders 域无 store 先例同族）；筛选
+ *   态读取经回调注入（hook 不持 store 依赖，受控组件 props 单源）
  */
 import { useRef } from 'react'
 import type { Folder } from '@shared/models/folder'
@@ -38,41 +48,51 @@ const FOLDER_PRECHECK_FAILED = '无法确认文件夹脉络图，已取消删除
 /** 静默删除失败兜底（FolderDialogs FOLDER_WRITE_FAILED 同范式异串——彼件
  * 零改，同名同值跨文件触发 dup-constants 红层故语义收紧为删除面文案） */
 const FOLDER_DELETE_FAILED = '删除文件夹失败'
+/** W1：在途删除异目标早退告知（动作型 info——同 id 静默，异 id 才告知） */
+const FOLDER_DELETE_IN_FLIGHT = '上一次删除仍在进行，请稍候'
 
 export function useFolderDeleteFlow(props: {
-  scope: LibraryQuery['folderScope']
+  getScope(): LibraryQuery['folderScope']
   onChange(patch: Partial<LibraryQuery>): void
   onMutated(): void
   reload(): Promise<void>
   /** 有保护资产→宿主挂 FolderDeleteDialog */
   onHasAssets(folder: Folder): void
 }): { requestDelete(folder: Folder): Promise<void>; handleDeleted(deletedId: string): void } {
-  const { scope, onChange, onMutated, reload, onHasAssets } = props
-  const deletingRef = useRef(false)
+  const { getScope, onChange, onMutated, reload, onHasAssets } = props
+  /** 在途 folderId（null=空闲）——W1：区分同/异目标早退语义 */
+  const deletingIdRef = useRef<string | null>(null)
 
   /** 删除成功收口（弹窗确认路径与静默路径同一语义） */
   function handleDeleted(deletedId: string): void {
     void reload()
-    if (scope?.kind === 'folder' && scope.folderId === deletedId) {
+    // W2：现值判定（非渲染期闭包）——仅当最新筛选仍指向被删文件夹才回退
+    const scopeNow = getScope()
+    if (scopeNow?.kind === 'folder' && scopeNow.folderId === deletedId) {
       onChange({ folderScope: undefined })
     }
     onMutated()
   }
 
   async function requestDelete(folder: Folder): Promise<void> {
-    if (deletingRef.current) return
-    deletingRef.current = true
+    if (deletingIdRef.current !== null) {
+      if (deletingIdRef.current !== folder.id) {
+        showToast(FOLDER_DELETE_IN_FLIGHT, 'info')
+      }
+      return
+    }
+    deletingIdRef.current = folder.id
     let silent: boolean
     try {
       const graph = await unwrap(api.lineage.graph({ folderId: folder.id }))
       silent = graph.nodes.length === 0 && graph.edges.length === 0
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : FOLDER_PRECHECK_FAILED, 'error')
-      deletingRef.current = false
+      deletingIdRef.current = null
       return
     }
     if (!silent) {
-      deletingRef.current = false
+      deletingIdRef.current = null
       onHasAssets(folder)
       return
     }
@@ -80,10 +100,10 @@ export function useFolderDeleteFlow(props: {
       await unwrap(api.folders.delete({ id: folder.id }))
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : FOLDER_DELETE_FAILED, 'error')
-      deletingRef.current = false
+      deletingIdRef.current = null
       return
     }
-    deletingRef.current = false
+    deletingIdRef.current = null
     handleDeleted(folder.id)
   }
 

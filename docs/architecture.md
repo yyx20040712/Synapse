@@ -314,8 +314,8 @@ AGENTS.md「环境事实」单源，此处不复制。
   缺省归服务端 max+1；写回填后 nodes=lineageOrder 全序——INV-75 消费面
   扩）+SidePanel 重皮肤（insp-cap/徽章行/AI 评估后置章占位）+drag-hint
   双态（INV-83：拖拽互斥/跨月拒绝/飞行脱节 dimmed 已知限制）] +侧板详情）；main 域
-  `services/lineage/`（树守卫两口：
-  草稿导入校验+upsertEdge 运行时）+`repos/lineage.repo`（+T3-P5 行映射拆件
+  `services/lineage/`（树守卫单口=upsertEdge 运行时——草稿导入校验口随
+  F-BAKRET-01 退役 2026-09-30）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
   lineTypes 静态校验拆件）。
 - [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx

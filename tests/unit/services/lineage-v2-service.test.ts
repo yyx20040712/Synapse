@@ -343,13 +343,16 @@ describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 
     expect(r).toEqual({ month: 3, slot: 9 }) // 显式主权值透写（不归一覆盖）
   })
 
-  it('folderId 变+year/month 不变+缺省 slot→保留原值（不归一）', () => {
+  it('folderId 变+缺省 slot→throw（k1-N3 防御机锚——编程错误面，原静默保留行为废止）', () => {
+    // 门一回炉 k1-N3：sameGroup 去 folderId 面后，「改图不传 slot」不再静默
+    // 保留原 slot（跨图保留会撞 INV-75 组内唯一）——未来新调用方违契约即红
     const existing = { ...seedNode({ id: 'kg-k', year: 2020, month: 3, slot: 2 }), folderId: 'f-a' }
-    const r = normalizeMonthSlot(
-      { ...upsertBase, id: existing.id, year: 2020, month: 3, folderId: 'f-b' },
-      [existing]
-    )
-    expect(r).toEqual({ month: 3, slot: 2 }) // 同组保留分支（folderId 不参与判定）
+    expect(() =>
+      normalizeMonthSlot(
+        { ...upsertBase, id: existing.id, year: 2020, month: 3, folderId: 'f-b' },
+        [existing]
+      )
+    ).toThrow(/folderId 变化必须显式 slot/)
   })
 
   it('year 变（folderId 同图）→组变归一目标组 max+1', () => {

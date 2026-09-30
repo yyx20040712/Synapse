@@ -8,16 +8,27 @@
  * [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按 paper_id
  * 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 则写为节点 folder
- * （镜像 ensurePaperFolder 入图即归档语义）。幽灵边种子（导出面 INV-77 兜底
- * 测试用）=edges 两端 paper 分属不同文件夹——脚本无守卫直写（存量数据模拟）。
- * 时序契约：须在 app 首次 launch 前调用——app 内 folders.create 等会触发
- * workspaces 物化迁库（ADR-0018 L0→L1，根 synapse.db 移入 workspaces/<id>/），
- * 关窗后根库不存在。
+ * （镜像 ensurePaperFolder 入图即归档语义）。幽灵边种子（edges 两端 paper 分属
+ * 不同文件夹——存量数据模拟）的跨图过滤单测覆盖=tests/unit/services/
+ * lineage-assemble.test.ts；本脚本当前无 e2e 幽灵边用例（d1-N6 勘正：头注
+ * 原「导出面 INV-77 兜底测试用」高报了本脚本的覆盖面）。
+ * 时序契约（d1-N3 勘正：原「须在 app 首次 launch 前调用」与既有用法矛盾
+ * ——实际用法=firstHop 建库之后、主 launch 之前；精确契约如下）：须在下一
+ * 次（触发 workspaces 物化迁库的）launch 前调用，且其间禁 workspaces 域
+ * create/rename/switch 类物化动作（legacy 首启不迁库，二次启动才搬入
+ * ——workspace.service 状态机跨格序列②；种子直写 userData 根 synapse.db，
+ * 迁库后根库不存在）。
+ * fail-fast（d1-N1）：连接即开 foreign_keys=ON（connection.ts DB_PRAGMAS
+ * 同源面）——幽灵 folderId/paperId 种子在 INSERT 即报错，优于静默落库。
+ * slot 缺省补号（d1-N2）：n.slot 缺省时按 (folderId,year,month) 组内序自动
+ * 补号（与 service nextSlotInGroup 归一同构——写入前内存计数组内 max+1，
+ * DB 存量组先行读入底数）；显式传值（含 null）照用并回填组内 max。
  */
 import { randomUUID } from 'node:crypto'
 import Database from 'better-sqlite3'
 
 const db = new Database(process.env.SEED_DB)
+db.pragma('foreign_keys = ON')
 try {
   const payload = JSON.parse(process.env.SEED_LINEAGE_JSON ?? '{"nodes":[],"edges":[]}')
   const base = Date.parse('2026-01-01T00:00:00.000Z')
@@ -26,6 +37,16 @@ try {
   const insFolder = db.prepare('INSERT INTO collections (id, name, position) VALUES (?, ?, ?)')
   for (const f of payload.folders ?? []) {
     insFolder.run(f.id, f.name, f.position ?? 0)
+  }
+  // d1-N2：组内 slot 底数（DB 存量先行读入——多次 seed 增量不撞号）
+  const slotMax = new Map()
+  const groupKey = (folderId, year, month) => `${folderId}|${year}|${month}`
+  for (const row of db
+    .prepare(
+      'SELECT folder_id, year, month, MAX(slot) AS m FROM lineage_nodes GROUP BY folder_id, year, month'
+    )
+    .iterate()) {
+    slotMax.set(groupKey(row.folder_id, row.year, row.month), row.m ?? 0)
   }
   const insNode = db.prepare(
     `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at)
@@ -36,6 +57,19 @@ try {
   )
   for (const n of payload.nodes ?? []) {
     const folderId = n.folderId ?? '__main__'
+    const month = n.month ?? null
+    const key = groupKey(folderId, n.year ?? null, month)
+    // d1-N2：缺省补号（组内 max+1）；显式传值（含 null）照用——两者均回填
+    // 组内 max，保证后续缺省节点不与显式值撞号（INV-75 组内唯一同构）
+    let slot
+    if (n.slot !== undefined) {
+      slot = n.slot
+    } else {
+      slot = (slotMax.get(key) ?? 0) + 1
+    }
+    if (slot !== null && slot > (slotMax.get(key) ?? 0)) {
+      slotMax.set(key, slot)
+    }
     const t = stamp()
     insNode.run(
       randomUUID(),
@@ -43,8 +77,8 @@ try {
       n.title,
       n.coreIdea ?? '',
       n.year ?? null,
-      n.month ?? null,
-      n.slot ?? null,
+      month,
+      slot,
       folderId,
       t,
       t

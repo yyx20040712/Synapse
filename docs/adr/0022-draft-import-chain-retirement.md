@@ -44,8 +44,9 @@
 - IPC 通道 61→60（lineage/import 退役）；契约 pin/域方法集随迁
   （[locked-change]）。
 - 脉络图种子入口收敛为三路（UI 添加/挂接导入/moveFolder）；draft zod
-  schema（shared/models/lineage.ts）保留为文件协议历史定义面（测试仍
-  锁定其 strict 语义），不再有 src 消费方。
+  schema（shared/models/lineage.ts）**已随主控终裁同步删除**（2026-09-30
+  收口增补——src 零消费方=死代码即删；assemble 导出面 INV-77 golden 独立
+  锁定无共享 schema；其直测用例同步退役，test-surface 豁免在档）。
 - 库中幽灵边自本票起不可经产品路径产生（INV-90+导入链双堵）——存量
   数据防御由 graph() 子图过滤+导出面 INV-77 过滤兜底承载。
 - e2e 种子链改述：脉络图种子=e2e-env.seedLineageGraph（子进程直写库，

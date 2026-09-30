@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T11:53:17.4966637Z",
+    "generatedAt":  "2026-09-30T12:40:53.6196399Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "5552b98904f0541cc3c9fc6068b923b8536322cbaf6a4631e51aec9c71427956"
+                      "sha256":  "20c161491c48f446915a463b48c706ab5770195e2c350c59933a740d990f75e8"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -315,7 +315,7 @@
                   },
                   {
                       "path":  "tests/e2e/seed-lineage.mjs",
-                      "sha256":  "12765a556399c5799373d503be355e240b1bf87d7f50a7a16ba23fa2f73b7d5c"
+                      "sha256":  "005ae2306d9f60b05534b7961b678ee5ff6a24dd5fe412ce50c04d60d650bd7e"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -611,7 +611,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/folder-filter.test.tsx",
-                      "sha256":  "3272922ef1bec4f67600423d0496f6c5137420b334c648f67cf243d053286bc5"
+                      "sha256":  "502828b2e6047a69c15d628175ea879fd3aea709c2c3d980a54542871f4bacaa"
                   },
                   {
                       "path":  "tests/unit/renderer/import-drag-ui.test.tsx",
@@ -1027,7 +1027,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-service.test.ts",
-                      "sha256":  "22631bf333b42eea80813f1c41ac40d1c20b3a587ce794f6ff7ac5a8ecbdad01"
+                      "sha256":  "66e99fbb6d7bc0353c741a26a565731e101e4257345a7e5725dbf912e5a1af44"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
