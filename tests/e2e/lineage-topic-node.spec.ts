@@ -1,18 +1,20 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createTinyPdf } from '../utils/pdf-factory'
-import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 
 /**
  * [F-FOLDER-02·F/S4/G④] lineage-topic-node e2e —— 图绑定三面：
  * ①主题节点 folderId=当前图（design §5 矩阵「主题节点」行——store.addThemeNode
  * 显式携键）；②S4 删除当前图→脉络页回退主图+「该文件夹无脉络图」空态；
- * ③G④ 多图 draft 导入→跨图边跳过（节点保留/连线计数归零）+导出 lineage.json
- * 零跨图边（C2 主控终裁——导入面根治+导出面存量兜底双锚）。
+ * ③G④ 存量幽灵边（跨图边）→graph 子图过滤+导出 lineage.json 零跨图边
+ * （C2 主控终裁 2026-09-30——[F-BAKRET-01] 导入链退役后：幽灵边改由
+ * seedLineageGraph 直写库模拟存量数据（产品路径 INV-90 已不可产生），
+ * 导出面 INV-77 过滤兜底锚保活；git 历史导入面根治锚=548dfda~95d40c2）。
  * 断言锚真实渲染文本。测试 1/2 零真实文献场景需壳层种子破引导态（INV-87——
  * default 课题+0 篇 rail 全禁用；幽灵行不入图=图断言不受扰）。
  */
@@ -122,7 +124,7 @@ async function stubOpenDialog(app: ElectronApplication, paths: string[]): Promis
   }, paths)
 }
 
-test('G④：多图 draft 导入→跨图边跳过（节点保留/连线归零）+导出 lineage.json 零跨图边', async () => {
+test('G④：存量幽灵边（直写库种子）→graph 子图过滤+导出 lineage.json 零跨图边（INV-77 兜底）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-g4-'))
   const exportDir = await mkdtemp(join(tmpdir(), 'synapse-ff02-g4-out-'))
   await bootstrapMigrations(userData)
@@ -130,63 +132,33 @@ test('G④：多图 draft 导入→跨图边跳过（节点保留/连线归零�
   const GP2 = { id: 'e2e-g4-2', title: '主图文献', year: 2023 }
   await seedRealPaper(userData, GP1.id, GP1.title, GP1.year)
   await seedRealPaper(userData, GP2.id, GP2.title, GP2.year)
+  // [F-BAKRET-01] 全预置直写库（app 内 folders.create 会触发 workspaces 物化
+  // 迁库——ADR-0018 L0→L1 根库移入 workspaces/，种子须在首启前落根库）：
+  // 文件夹行+两节点（GP1=夹内图/GP2=主图）+幽灵边（跨图——产品路径 INV-90
+  // 已不可产生，存量数据模拟）一体的 seedLineageGraph 载荷
+  await seedLineageGraph(userData, {
+    folders: [{ id: 'f-g4', name: '跨图夹', position: 1 }],
+    nodes: [
+      { paperId: GP1.id, title: GP1.title, year: GP1.year, coreIdea: '', folderId: 'f-g4' },
+      { paperId: GP2.id, title: GP2.title, year: GP2.year, coreIdea: '' }
+    ],
+    edges: [{ from: GP1.id, to: GP2.id, label: '跨图连线' }]
+  })
+
+  // 单 launch：并集视角（缺省）幽灵边在场（graph() 无 folderId=不过滤——
+  // 防御依赖导出面过滤而非读面隐藏）
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-
-  // 归属分裂：GP1→文件夹 F（节点自动建）；GP2 未归档（节点落主图）
-  const fid = await win.evaluate(async () => {
-    const r = await window.api.folders.create({ name: '跨图夹' })
-    return r.ok ? r.data.id : ''
-  })
-  expect(fid).not.toBe('')
-  expect(
-    await win.evaluate(
-      async (x: { pid: string; fid: string }) =>
-        (await window.api.papers.moveFolder({ paperId: x.pid, toFolderId: x.fid })).ok,
-      { pid: GP1.id, fid }
-    )
-  ).toBe(true)
-  expect(
-    await win.evaluate(
-      async (p: { id: string; title: string; year: number }) =>
-        (
-          await window.api.lineage.upsertNode({
-            paperId: p.id,
-            title: p.title,
-            coreIdea: '',
-            year: p.year,
-            x: null,
-            y: null
-          })
-        ).ok,
-      GP2
-    )
-  ).toBe(true)
-
-  // 多图 draft（GP1→GP2 跨图边）：真实导入链（dialog 桩+confirm 自动接受）
-  const draftPath = join(userData, 'cross-graph-draft.json')
-  await writeFile(
-    draftPath,
-    JSON.stringify({
-      nodes: [
-        { paper_id: GP1.id, title: GP1.title, year: GP1.year, core_idea: '' },
-        { paper_id: GP2.id, title: GP2.title, year: GP2.year, core_idea: '' }
-      ],
-      edges: [{ from_paper_id: GP1.id, to_paper_id: GP2.id, label: '跨图连线' }]
-    }),
-    'utf8'
-  )
-  await stubOpenDialog(app, [draftPath])
-  win.on('dialog', (d) => {
-    void d.accept()
-  })
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByTestId('lineage-import').click()
-  // 跨图边跳过：2 节点全保留+0 条连线落库（成功计数 toast 真文本）
-  await expect(win.getByText('已导入脉络图：2 个节点，0 条连线')).toBeVisible({ timeout: 15_000 })
   await expect(nodeCard(win, GP1.title)).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, GP2.title)).toBeVisible({ timeout: 10_000 })
+  await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 10_000 })
+
+  // graph() 子图过滤兜底：切「跨图夹」视角——GP2（主图节点）不可见
+  await win.getByLabel('脉络图切换').selectOption({ label: '跨图夹' })
+  await expect(nodeCard(win, GP1.title)).toBeVisible({ timeout: 10_000 })
+  await expect(nodeCard(win, GP2.title)).toHaveCount(0)
 
   // 导出面兜底（C2 ②）：语料导出→lineage.json 零跨图边（edges 空数组）
   await stubOpenDialog(app, [exportDir])

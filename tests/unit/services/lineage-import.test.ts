@@ -1,43 +1,22 @@
 /**
- * [LG-01] lineage 数据基座+草稿导入器（锁定合约）。
- * 覆盖面：repo 六方法真库夹具（upsert 往返/级联链/UNIQUE 拒/清面/空图合法）/
- * 导入三段校验（zod 行级中文 reason/幽灵 paperId/树三拒——多父/环/自环——
- * 外加悬空边/重复节点/重复边拒绝）/全有或全无（失败库不动/成功替换重灌）/
- * 空 draft=空图合法/validateDraft 纯函数性质/upsertEdge 运行时守卫三拒绝
- * （W1 宿主用例）+重复边中文收口/importFromFile 损坏 JSON 上抛。
+ * [LG-01] lineage 数据基座（锁定合约；文件名沿承历史）。
+ * [F-BAKRET-01] 草稿导入链用例（三段校验/全有或全无/文件读入/C2 跨图跳过/
+ * INV-88 draft 重灌归属）随导入链退役删除（用户裁决 2026-09-30——ADR-0022）。
+ * 保留覆盖面：repo 方法真库夹具（upsert 往返/级联链/UNIQUE 拒/空图合法）/
+ * upsertEdge 运行时守卫（W1 宿主用例：自环/多父/成环三拒绝+重复边中文收口+
+ * 节点不存在拒）/upsertNode 幽灵 paperId 拒/R2-LG12 参考边（kind=ref）写守卫。
  * repo 交互=真库夹具（AI-01 测试同型）；always-active（ADR-0017 裁决 3）。
  */
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
 import type { SqliteDb } from '../../../src/main/db/connection'
 import { createTestDb } from '../../utils/fixtures'
-import {
-  createLineageService,
-  validateDraft
-} from '../../../src/main/services/lineage/lineage.service'
-
-/** draft 合法形状（snake_case 文件面，ADR-0014 §裁决） */
-function draft(patches: {
-  nodes?: Array<Record<string, unknown>>
-  edges?: Array<Record<string, unknown>>
-}): unknown {
-  return {
-    nodes: patches.nodes ?? [
-      { paper_id: 'p-1', title: '起源文献', year: 2018, core_idea: '源头思想' },
-      { paper_id: 'p-2', title: '继承文献', year: 2021, core_idea: '延伸' }
-    ],
-    edges: patches.edges ?? [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '主要继承' }]
-  }
-}
+import { createLineageService } from '../../../src/main/services/lineage/lineage.service'
 
 let db: SqliteDb
 let repo: ReturnType<typeof createLineageRepo>
 let svc: ReturnType<typeof createLineageService>
-let tmpRoot: string
 const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id === 'p-3'
 
 beforeEach(() => {
@@ -48,7 +27,6 @@ beforeEach(() => {
     ).run(id, 'a.pdf', `s-${id}`, 't', 't')
   }
   repo = createLineageRepo(db)
-  tmpRoot = '' // 按需在 importFromFile 用例中创建
   svc = createLineageService({
     repo,
     paperExists,
@@ -59,11 +37,7 @@ beforeEach(() => {
   })
 })
 
-afterEach(async () => {
-  if (tmpRoot !== '') await rm(tmpRoot, { recursive: true, force: true })
-})
-
-// ── repo 六方法（真库夹具）──────────────────────────────────────
+// ── repo 方法（真库夹具）────────────────────────────────────────
 
 it('upsertNode：新建全字段往返（paperId/year 可空面）+同 id 二次 upsert 更新不换 created_at', () => {
   const n1 = repo.upsertNode({
@@ -114,14 +88,6 @@ it('upsertEdge：UNIQUE(from,to) 拒同端点第二条（DDL 收口）；listGra
   expect(() => repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '二' })).toThrow()
 })
 
-it('clearGraph：清面重灌原语（先清边后清节点，两表全空）', () => {
-  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
-  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
-  repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
-  repo.clearGraph()
-  expect(repo.listGraph()).toEqual({ nodes: [], edges: [] })
-})
-
 it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () => {
   const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
   const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
@@ -130,183 +96,6 @@ it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () 
   const g = repo.listGraph()
   expect(g.nodes.map((n) => n.paperId)).toEqual(['p-2'])
   expect(g.edges).toEqual([])
-})
-
-// ── service：导入三段校验+全有或全无 ───────────────────────────
-
-it('合法 draft 全过：{ok:true,nodeCount,edgeCount}，graph 反映内容（x/y=自动布局 null）', () => {
-  const r = svc.importDraft(draft({}))
-  // [F-FOLDER-02·C2] ok 载荷 +skippedCrossGraphEdges（同图边场景=0）
-  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-  const g = svc.graph()
-  expect(g.nodes.map((n) => n.paperId).sort()).toEqual(['p-1', 'p-2'])
-  expect(g.nodes.every((n) => n.x === null && n.y === null)).toBe(true)
-  expect(g.edges).toHaveLength(1)
-  expect(g.edges[0]).toMatchObject({ label: '主要继承' })
-})
-
-it('替换重灌：二导新 draft 后旧图清空（整批替换语义）', () => {
-  svc.importDraft(draft({}))
-  svc.importDraft(
-    draft({
-      nodes: [{ paper_id: 'p-3', title: '新起点', year: 2024, core_idea: '新' }],
-      edges: []
-    })
-  )
-  const g = svc.graph()
-  expect(g.nodes.map((n) => n.paperId)).toEqual(['p-3'])
-  expect(g.edges).toEqual([])
-})
-
-it('幽灵 paperId 拦截：行级 errors+库不动（全有或全无）', () => {
-  svc.importDraft(draft({})) // 先有旧图
-  const r = svc.importDraft(
-    draft({
-      nodes: [{ paper_id: 'ghost-9', title: '幽灵', year: 2020, core_idea: '' }],
-      edges: []
-    })
-  )
-  expect(r.ok).toBe(false)
-  if (!r.ok) {
-    expect(r.errors[0]!.path).toBe('nodes.0.paper_id')
-    expect(r.errors[0]!.reason).toContain('ghost-9')
-  }
-  expect(svc.graph().nodes).toHaveLength(2) // 旧图保持
-})
-
-it('多父边拒绝：同一 to 两条入边 → errors 含多父 reason', () => {
-  const r = svc.importDraft(
-    draft({
-      nodes: [
-        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' },
-        { paper_id: 'p-3', title: 'c', year: 2020, core_idea: '' }
-      ],
-      edges: [
-        { from_paper_id: 'p-1', to_paper_id: 'p-3', label: '' },
-        { from_paper_id: 'p-2', to_paper_id: 'p-3', label: '' }
-      ]
-    })
-  )
-  expect(r.ok).toBe(false)
-  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('多父'))).toBe(true)
-  expect(svc.graph().nodes).toEqual([])
-})
-
-it('成环拒绝：A→B→C→A 第三边触发环 errors；库不动', () => {
-  const r = svc.importDraft(
-    draft({
-      nodes: [
-        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' },
-        { paper_id: 'p-3', title: 'c', year: 2020, core_idea: '' }
-      ],
-      edges: [
-        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: '' },
-        { from_paper_id: 'p-2', to_paper_id: 'p-3', label: '' },
-        { from_paper_id: 'p-3', to_paper_id: 'p-1', label: '回边' }
-      ]
-    })
-  )
-  expect(r.ok).toBe(false)
-  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('环'))).toBe(true)
-  expect(svc.graph().edges).toEqual([])
-})
-
-it('自环拒绝：from==to 边 → errors 含自环 reason', () => {
-  const r = svc.importDraft(
-    draft({
-      nodes: [{ paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' }],
-      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-1', label: '' }]
-    })
-  )
-  expect(r.ok).toBe(false)
-  if (!r.ok) expect(r.errors.some((e) => e.reason.includes('自环'))).toBe(true)
-})
-
-it('zod 行级中文 reason：title 缺失 → nodes.0.title 路径+中文；nodes 缺失 → 顶层路径', () => {
-  const r = svc.importDraft({
-    nodes: [{ paper_id: 'p-1', year: 2018, core_idea: '' }],
-    edges: []
-  })
-  expect(r.ok).toBe(false)
-  if (!r.ok) {
-    const hit = r.errors.find((e) => e.path === 'nodes.0.title')
-    expect(hit).toBeDefined()
-    expect(hit!.reason).toMatch(/title/)
-  }
-  const r2 = svc.importDraft({ edges: [] })
-  expect(r2.ok).toBe(false)
-  if (!r2.ok) expect(r2.errors.some((e) => e.path === 'nodes')).toBe(true)
-})
-
-it('空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语义）', () => {
-  svc.importDraft(draft({}))
-  const r = svc.importDraft({ nodes: [], edges: [] })
-  expect(r).toEqual({ ok: true, nodeCount: 0, edgeCount: 0, skippedCrossGraphEdges: 0 })
-  // F-LG14 graph 载荷扩展（paperMetrics——契约扩展非放宽）：空图=空表合法态；
-  // T3-P5 lineTypes 恒四组（meta 空配置=四空组）
-  expect(svc.graph()).toEqual({
-    nodes: [],
-    edges: [],
-    paperMetrics: {},
-    lineTypes: [
-      { base: 'tree', subs: [] },
-      { base: 'inferred', subs: [] },
-      { base: 'ref', subs: [] },
-      { base: 'manual', subs: [] }
-    ],
-    // [F-FOLDER-01] pubNos 表（库级编号——catalogNo 退役接替；空图=空表）
-    pubNos: {}
-  })
-})
-
-it('悬空边拒绝：边引用不在节点清单的文献 → errors', () => {
-  const r = svc.importDraft(
-    draft({
-      nodes: [{ paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' }],
-      edges: [{ from_paper_id: 'p-2', to_paper_id: 'p-1', label: '' }]
-    })
-  )
-  expect(r.ok).toBe(false)
-  if (!r.ok) expect(r.errors.some((e) => e.path === 'edges.0.from_paper_id')).toBe(true)
-})
-
-it('重复节点拒绝：同 paper_id 出现两次 → errors；重复边拒绝：同 from→to 两次', () => {
-  const dupNode = svc.importDraft({
-    nodes: [
-      { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
-      { paper_id: 'p-1', title: 'a2', year: 2019, core_idea: '' }
-    ],
-    edges: []
-  })
-  expect(dupNode.ok).toBe(false)
-  if (!dupNode.ok) expect(dupNode.errors.some((e) => e.reason.includes('重复节点'))).toBe(true)
-  const dupEdge = svc.importDraft(
-    draft({
-      nodes: [
-        { paper_id: 'p-1', title: 'a', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: 'b', year: 2019, core_idea: '' }
-      ],
-      edges: [
-        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: 'x' },
-        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: 'y' }
-      ]
-    })
-  )
-  expect(dupEdge.ok).toBe(false)
-  if (!dupEdge.ok) expect(dupEdge.errors.some((e) => e.reason.includes('重复边'))).toBe(true)
-})
-
-it('validateDraft 纯函数性质：同输入同输出（两次调用 deepEqual）', () => {
-  const input = draft({})
-  expect(validateDraft(input, paperExists)).toEqual([])
-  const bad = {
-    nodes: [{ paper_id: 'ghost-1', title: 'g', year: null, core_idea: '' }],
-    edges: [{ from_paper_id: 'ghost-1', to_paper_id: 'ghost-1', label: '' }]
-  }
-  expect(validateDraft(bad, paperExists)).toEqual(validateDraft(bad, paperExists))
-  expect(validateDraft(bad, paperExists).length).toBeGreaterThan(0)
 })
 
 // ── service：upsertEdge 运行时守卫（W1 宿主——三拒绝路径） ──────
@@ -419,11 +208,21 @@ describe('R2-LG12 参考边（kind=ref）upsertEdge 写守卫', () => {
     svc.upsertEdge({ fromNode: s, toNode: b, label: '' })
     expect(svc.graph().edges[0]!.kind).toBe('tree')
     expect(() => svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'ref' })).toThrow('互斥')
-    repo.clearGraph()
-    const n2 = seedRefNodes()
-    svc.upsertEdge({ fromNode: n2.s, toNode: n2.b, label: '', kind: 'ref' })
-    expect(() => svc.upsertEdge({ fromNode: n2.s, toNode: n2.b, label: '' })).toThrow('互斥')
-    expect(svc.graph().edges).toHaveLength(1)
+    // [F-BAKRET-01] 清面原语退役——后半改用新 paper 对（p-4/p-5 中插种子；
+    // INV-89 部分唯一索引下 p-1..p-3 不可二次建节点）
+    for (const [id, sha] of [
+      ['p-4', 'sha-p4b'],
+      ['p-5', 'sha-p5']
+    ] as const) {
+      db.prepare(
+        'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(id, 'a.pdf', sha, 't', 't')
+    }
+    const s2 = repo.upsertNode({ paperId: 'p-4', title: '又一篇综述', coreIdea: '', year: 2019, x: null, y: null }).id
+    const b2 = repo.upsertNode({ paperId: 'p-5', title: '研究丙', coreIdea: '', year: 2022, x: null, y: null }).id
+    svc.upsertEdge({ fromNode: s2, toNode: b2, label: '', kind: 'ref' })
+    expect(() => svc.upsertEdge({ fromNode: s2, toNode: b2, label: '' })).toThrow('互斥')
+    expect(svc.graph().edges).toHaveLength(2)
   })
 
   it('ref 自环拒：from==to → 中文 reason+库不变', () => {
@@ -432,99 +231,3 @@ describe('R2-LG12 参考边（kind=ref）upsertEdge 写守卫', () => {
     expect(svc.graph().edges).toEqual([])
   })
 })
-
-// ── service：importFromFile（IO 面） ────────────────────────────
-
-it('importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法文件导入成功', async () => {
-  tmpRoot = await mkdtemp(join(tmpdir(), 'lineage-import-'))
-  const badPath = join(tmpRoot, 'bad.json')
-  await writeFile(badPath, '{not-json', 'utf8')
-  await expect(svc.importFromFile(badPath)).rejects.toThrow('损坏')
-  const goodPath = join(tmpRoot, 'good.json')
-  await writeFile(goodPath, JSON.stringify(draft({})), 'utf8')
-  const r = await svc.importFromFile(goodPath)
-  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-})
-
-describe('F-FOLDER-02·C2 主控终裁——importDraft 跨图边跳过不写+计数（存量幽灵边根除）', () => {
-  /** 多图夹具：p-1/p-3 归 f-x，p-2 未归档（导入时落主图 __main__）；movePapers=false=仅建夹不移动 */
-  function seedMultiGraph(movePapers = true): ReturnType<typeof createLineageService> {
-    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-x', '夹', 0)").run()
-    if (movePapers) db.prepare("UPDATE papers SET folder_id='f-x' WHERE id IN ('p-1', 'p-3')").run()
-    return createLineageService({
-      repo,
-      paperExists,
-      paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
-      ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
-      withTransaction: (fn) => db.transaction(fn)()
-    })
-  }
-
-  it('多图 draft：跨图边跳过不写+计数；同图边照写；节点全部保留（拒收整批=不可用）', () => {
-    const svc2 = seedMultiGraph()
-    const r = svc2.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '夹内甲', year: 2024, core_idea: '' },
-        { paper_id: 'p-2', title: '未归档乙', year: 2023, core_idea: '' },
-        { paper_id: 'p-3', title: '夹内丙', year: 2022, core_idea: '' }
-      ],
-      edges: [
-        { from_paper_id: 'p-1', to_paper_id: 'p-3', label: '同图边' },
-        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: '跨图边' }
-      ]
-    })
-    expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 1, skippedCrossGraphEdges: 1 })
-    // 图事实：三节点全保留；唯一边=同图边（跨图边零落库——不再产生幽灵边）
-    const g = svc2.graph()
-    expect(g.nodes).toHaveLength(3)
-    expect(g.edges).toHaveLength(1)
-    expect(g.edges[0]).toMatchObject({ label: '同图边' })
-  })
-
-  it('单图 draft（文献全未归档→主图，他文件夹在场不干扰）：skippedCrossGraphEdges=0', () => {
-    const svc2 = seedMultiGraph(false)
-    const r = svc2.importDraft(draft({}))
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-  })
-})
-
-describe('F-FOLDER-01·回炉码 1 INV-88 统一规则——draft 重灌节点图归属（禁写死主图）', () => {
-  it('已归档文献（folder_id=f-x）：draft 节点落其文件夹；未归档文献：先写主图（入图即归档）再落主图', () => {
-    const db = createTestDb()
-    for (const id of ['p-1', 'p-2', 'p-3']) {
-      db.prepare(
-        'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-      ).run(id, 'a.pdf', `s-${id}`, 't', 't')
-    }
-    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-x', '夹', 0)").run()
-    db.prepare("UPDATE papers SET folder_id='f-x' WHERE id='p-1'").run()
-    const repo2 = createLineageRepo(db)
-    const svc2 = createLineageService({
-      repo: repo2,
-      paperExists: (id) => id === 'p-1' || id === 'p-2' || id === 'p-3',
-      paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
-      ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
-      withTransaction: (fn) => db.transaction(fn)()
-    })
-    const r = svc2.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '已归档', year: 2024, core_idea: '' },
-        { paper_id: 'p-2', title: '未归档', year: 2023, core_idea: '' }
-      ],
-      edges: []
-    })
-    expect(r.ok).toBe(true)
-    const folders = db
-      .prepare('SELECT paper_id, folder_id FROM lineage_nodes ORDER BY paper_id')
-      .all() as Array<{ paper_id: string; folder_id: string }>
-    expect(folders).toEqual([
-      { paper_id: 'p-1', folder_id: 'f-x' }, // 已归档→其文件夹（非主图——禁写死锚）
-      { paper_id: 'p-2', folder_id: '__main__' } // 未归档→主图
-    ])
-    // 入图即归档落笔：p-2 papers.folder_id 被写主图（p-1 原值不动）
-    const paperRepo = createPapersRepo(db)
-    expect(paperRepo.folderIdOf('p-2')).toBe('__main__')
-    expect(paperRepo.folderIdOf('p-1')).toBe('f-x')
-  })
-})
-

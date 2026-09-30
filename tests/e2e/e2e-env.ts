@@ -46,6 +46,59 @@ function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
 }
 
 /**
+ * [F-BAKRET-01] lineage 图种子（子进程跑 seed-lineage.mjs——seedPaperRow 同型；
+ * 草稿导入链退役后的脉络图种子基建）。payload 经 SEED_LINEAGE_JSON 环境变量
+ * 传入；edges 的 from/to=paperId。幽灵边（两端 paper 分属不同文件夹的边）
+ * 可直写——导出面 INV-77 过滤兜底的存量数据模拟。
+ */
+export interface LineageSeedNode {
+  paperId: string
+  title: string
+  year: number | null
+  month?: number | null
+  slot?: number | null
+  coreIdea?: string
+  folderId?: string
+}
+export interface LineageSeedEdge {
+  from: string
+  to: string
+  label?: string
+  kind?: 'tree' | 'inferred' | 'ref' | 'manual'
+}
+export async function seedLineageGraph(
+  userData: string,
+  payload: {
+    folders?: Array<{ id: string; name: string; position?: number }>
+    nodes?: LineageSeedNode[]
+    edges?: LineageSeedEdge[]
+  }
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [join(process.cwd(), 'tests', 'e2e', 'seed-lineage.mjs')],
+      {
+        env: {
+          ...process.env,
+          SEED_DB: join(userData, 'synapse.db'),
+          SEED_LINEAGE_JSON: JSON.stringify(payload)
+        } as NodeJS.ProcessEnv,
+        stdio: 'inherit'
+      }
+    )
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`seed-lineage.mjs 退出码 ${code ?? 'null'}`))
+      }
+    })
+    child.on('error', reject)
+  })
+}
+
+/**
  * 种子落库（子进程跑 seed-paper.mjs——Windows 文件锁决定不经主进程 require）。
  * [F-ELE-02] better-sqlite3 13.0.3 起 N-API 单绑定跨 Node/Electron ABI 通用，
  * v12 时代的 abi-cache 换绑段已删除（子进程直接 require 即可）。

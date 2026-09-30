@@ -1,12 +1,13 @@
 /**
- * [F-LG15] manual 边（人工第二父文献连线）—— service 写守卫+draft 协议拒绝面
+ * [F-LG15] manual 边（人工第二父文献连线）—— service 写守卫
  * （新增锁定面，真库夹具——lineage-import.test 同型）。
  *
  * 覆盖：manual 落库往返/豁免单父+不限条数（两 manual 同子通过——用户裁决
  * 台账）/拒环双向（经 tree 父链+经 manual 父链——环检测图=tree+ref+manual
  * 全部边）/同端点对三方互斥（tree·ref·manual 任一先行后续其他 kind 拒）/
- * draft 协议不收 manual（edge 带 kind 字段=strict 拒；合法导入边恒 tree）/
  * manual 自环拒/label 后编辑（id 更新语义——created_at 保留 kind 保持）。
+ * [F-BAKRET-01] draft 协议拒绝面 describe 随草稿导入链退役删除（用户裁决
+ * 2026-09-30——ADR-0022；draft schema strict 面由 lineage-tags schema 直测承载）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -102,22 +103,32 @@ describe('F-LG15 manual 边 upsertEdge 写守卫', () => {
       expect(() => svc.upsertEdge({ fromNode: a, toNode: b, label: '', kind: 'manual' })).toThrow('互斥')
       expect(svc.graph().edges).toHaveLength(1)
     }
-    // manual → tree
-    repo.clearGraph()
-    {
-      const { a, b } = seedNodes()
-      svc.upsertEdge({ fromNode: a, toNode: b, label: '', kind: 'manual' })
-      expect(() => svc.upsertEdge({ fromNode: a, toNode: b, label: '', kind: 'tree' })).toThrow('互斥')
-      expect(svc.graph().edges).toHaveLength(1)
+    // manual → tree（[F-BAKRET-01] 清面原语退役——第二/三块改用新 paper 对
+    // p-5/p-6+综述 p-7/目标 p-8，INV-89 部分唯一索引下不可复用已建节点的 paper）
+    for (const [id, sha] of [
+      ['p-5', 'sha-p5'],
+      ['p-6', 'sha-p6'],
+      ['p-7', 'sha-p7'],
+      ['p-8', 'sha-p8']
+    ] as const) {
+      db.prepare(
+        'INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(id, 'a.pdf', sha, 't', 't')
     }
-    // ref → manual
-    repo.clearGraph()
     {
-      const s = repo.upsertNode({ paperId: 'p-1', title: '领域综述回顾', coreIdea: '', year: 2020, x: null, y: null }).id
-      const b = repo.upsertNode({ paperId: 'p-2', title: '研究工作', coreIdea: '', year: 2021, x: null, y: null }).id
+      const c = repo.upsertNode({ paperId: 'p-5', title: '另一起源', coreIdea: '', year: 2019, x: null, y: null }).id
+      const d = repo.upsertNode({ paperId: 'p-6', title: '另一继承', coreIdea: '', year: 2021, x: null, y: null }).id
+      svc.upsertEdge({ fromNode: c, toNode: d, label: '', kind: 'manual' })
+      expect(() => svc.upsertEdge({ fromNode: c, toNode: d, label: '', kind: 'tree' })).toThrow('互斥')
+      expect(svc.graph().edges).toHaveLength(2)
+    }
+    // ref → manual（from 须综述题名——isSurveyTitle 单源）
+    {
+      const s = repo.upsertNode({ paperId: 'p-7', title: '领域综述回顾', coreIdea: '', year: 2020, x: null, y: null }).id
+      const b = repo.upsertNode({ paperId: 'p-8', title: '研究工作', coreIdea: '', year: 2021, x: null, y: null }).id
       svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'ref' })
       expect(() => svc.upsertEdge({ fromNode: s, toNode: b, label: '', kind: 'manual' })).toThrow('互斥')
-      expect(svc.graph().edges).toHaveLength(1)
+      expect(svc.graph().edges).toHaveLength(3)
     }
   })
 
@@ -136,36 +147,5 @@ describe('F-LG15 manual 边 upsertEdge 写守卫', () => {
     expect(updated.kind).toBe('manual')
     expect(updated.label).toBe('再判：修正的逻辑线')
     expect(svc.graph().edges).toHaveLength(1) // 更新非新建
-  })
-})
-
-describe('F-LG15 draft 导入协议不收 manual', () => {
-  it('draft edge 带 kind 字段 → strict 拒（行级 errors+库不动）', () => {
-    const r = svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: 'a', year: 2019, core_idea: '' },
-        { paper_id: 'p-2', title: 'b', year: 2021, core_idea: '' }
-      ],
-      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '', kind: 'manual' }]
-    })
-    expect(r.ok).toBe(false)
-    // strict 的 unrecognized key 错误锚定在边对象级（path=edges.0）——reason
-    // 含键名 kind（draft edge schema 无 kind 字段=tree 语义，F-LG15 不收）
-    if (!r.ok) {
-      expect(r.errors.some((e) => e.path.startsWith('edges.0') && /kind/i.test(e.reason))).toBe(true)
-    }
-    expect(svc.graph().nodes).toEqual([])
-  })
-
-  it('合法 draft 导入边恒 tree（draft 协议=树语义，manual 仅应用内手工创建）', () => {
-    const r = svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: 'a', year: 2019, core_idea: '' },
-        { paper_id: 'p-2', title: 'b', year: 2021, core_idea: '' }
-      ],
-      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '主要继承' }]
-    })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-    expect(svc.graph().edges.every((e) => e.kind === 'tree')).toBe(true)
   })
 })

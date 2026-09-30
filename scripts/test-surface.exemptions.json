@@ -1509,6 +1509,300 @@
       "caseTitle": "主题型：title 输入→paperId null 节点",
       "reason": "F-FOLDER-02·B design §5 矩阵「主题节点」行：主题节点 folderId=当前图——store.addThemeNode 显式携键（缺省=主图 __main__），Board 装配级载荷断言随语义加严（单断言签名整体变体）",
       "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "lineageImportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "lineageImportRes 两臂互斥：ok:true 带 errors 拒、ok:false 缺 errors 拒、ok 非字面量拒",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T1 导入草稿→时间线渲染真实文本→滚动容器锚后节点仍可断言",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T2 时间线真文本 reload 持久+主题节点添加编辑 core_idea reload 持久",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T3 多父加边树拒绝 toast+保存失败→脏态退出拦截两态",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T5 综述参考连接：右键添加 ref 边→reload 数据持久（守卫面证）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T6 砖砌行错位：窄窗 5 卡同月→两行+偶行 rowshift 62px 实值+跨行 y 差",
+      "assertionText": "expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T7 编辑线型全流：点边→新建线型→选 sub→reload 持久+sub 色+基础型回退",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T8 新建连线全流：拾取→自环/重复 toast→create→reload 持久+Esc 分支",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+卡/线 bbox 相对关系恒定",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+view 态可拖",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T10 改月全流：edit→月标→month-pop→选月→toast+reload 持久 slot 尾部",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "确认接受→lineage/import 调用+成功计数 toast+graph 刷新（store 重取）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "confirm 取消→不调 import 通道（无操作）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "校验失败=errors 清单 toast（汇总计数+首条 path/reason 真实文本）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-page.test.tsx",
+      "caseTitle": "空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-page.test.tsx",
+      "caseTitle": "ready 空图：空态文案（列表型空非错误）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "空图空态文案保活：暂无脉络图——导入草稿或添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留导入/添加引导，编辑死按钮零）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "clearGraph：清面重灌原语（先清边后清节点，两表全空）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "合法 draft 全过：{ok:true,nodeCount,edgeCount}，graph 反映内容（x/y=自动布局 null）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "替换重灌：二导新 draft 后旧图清空（整批替换语义）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "幽灵 paperId 拦截：行级 errors+库不动（全有或全无）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "多父边拒绝：同一 to 两条入边 → errors 含多父 reason",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "成环拒绝：A→B→C→A 第三边触发环 errors；库不动",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "自环拒绝：from==to 边 → errors 含自环 reason",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "zod 行级中文 reason：title 缺失 → nodes.0.title 路径+中文；nodes 缺失 → 顶层路径",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "悬空边拒绝：边引用不在节点清单的文献 → errors",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "重复节点拒绝：同 paper_id 出现两次 → errors；重复边拒绝：同 from→to 两次",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "validateDraft 纯函数性质：同输入同输出（两次调用 deepEqual）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "同端点对 tree+ref 互斥：tree 在先 ref 后拒、ref 在先 tree 后拒（互斥 reason）",
+      "assertionText": "expect(() => svc.upsertEdge({ fromNode: n2.s, toNode: n2.b, label: '' })).toThrow('互斥')",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "同端点对 tree+ref 互斥：tree 在先 ref 后拒、ref 在先 tree 后拒（互斥 reason）",
+      "assertionText": "expect(svc.graph().edges).toHaveLength(1)",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法文件导入成功",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "caseTitle": "同端点对三方互斥：tree 在先 manual 后拒；manual 在先 tree 后拒；ref 在先 manual 后拒（互斥 reason）",
+      "assertionText": "expect(() => svc.upsertEdge({ fromNode: a, toNode: b, label: '', kind: 'tree' })).toThrow('互斥')",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "caseTitle": "同端点对三方互斥：tree 在先 manual 后拒；manual 在先 tree 后拒；ref 在先 manual 后拒（互斥 reason）",
+      "assertionText": "expect(svc.graph().edges).toHaveLength(1)",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "caseTitle": "同端点对三方互斥：tree 在先 manual 后拒；manual 在先 tree 后拒；ref 在先 manual 后拒（互斥 reason）",
+      "assertionText": "expect(svc.graph().edges).toHaveLength(1)",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "caseTitle": "draft edge 带 kind 字段 → strict 拒（行级 errors+库不动）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "caseTitle": "合法 draft 导入边恒 tree（draft 协议=树语义，manual 仅应用内手工创建）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "合法 tags 通过；缺省省略（旧版草稿零破坏——v1 加可选字段=向后兼容）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "非数组拒绝：nodes.0.tags 行级中文 reason 含「数组」",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "元素非字符串拒绝：nodes.0.tags.0 行级中文 reason 含「标签」",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "空串元素拒绝：行级 reason 含「空」",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "draft tags 落库：graph 节点 tags 数组往返；无 tags 节点=null",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "同节点同名标签去重（主控裁决 7）：草稿 [a,a,b] 落库 [a,b]",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "service upsertNode 写面同守去重；tags null 二次 upsert 清面",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "draft 导入恒 tree：草稿边无 kind 面，导入后 kind 全 tree（inferred 不收）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "month 透传+缺省 null；同组按草稿序 slot=1..k；kind 恒 tree",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+用户裁决 2026-09-30：导入链用例/断言随实现删除或随种子链改述（保留面断言零削弱）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-model.test.ts",
+      "caseTitle": "旧草稿（无 month）零破坏；month 透传 6；null 显式过",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+主控终裁 2026-09-30：lineageDraftSchema 单源随导入链删除（src 零消费方=死代码即删；executor 自裁 7 呈报主控裁决通过）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-model.test.ts",
+      "caseTitle": "month 越界拒（0/13）；未知字段仍 strict 拒（其余字段未放松）",
+      "reason": "F-BAKRET-01 草稿导入链语义退役+主控终裁 2026-09-30：lineageDraftSchema 单源随导入链删除（src 零消费方=死代码即删；executor 自裁 7 呈报主控裁决通过）",
+      "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
     }
   ]
 }

@@ -3,78 +3,65 @@
  * [SR2-LG-05] 脉络图 e2e 全链（工单：open / strong——实现时展开）
  *
  * ── 行为层（验收面，蓝图 N3+ROADMAP P7-H 验收行）──
- * - 全链用例组（fixture lineage JSON 种子→脉络视图）：①导入草稿→
- *   画布渲染**真实文本**（节点标题/年份可见——宪法 e2e 纪律）；②
- *   pan/zoom 交互后节点仍可断言；③拖拽节点→重启（reload）→位置
- *   持久（JSON Canvas 覆盖语义）；④加边树拒绝 toast（多父场景真实
+ * - 全链用例组：①脉络页 UI 添加文献节点→
+ *   画布渲染**真实文本**（节点标题/年份可见——宪法 e2e 纪律；[F-BAKRET-01]
+ *   原导入草稿链随退役改述，用户裁决 2026-09-30——ADR-0022）；②
+ *   滚动容器锚（[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
+ *   ③时间线真文本 reload 持久；④加边树拒绝 toast（多父场景真实
  *   文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目双击→阅读器
  *   打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
  *   自动保存失败路径→退出拦截弹窗（聚合面）——**mock 实现路径注
  *   （门一 N8）：contextIsolation 下 renderer 不可 mock contextBridge；
- *   须 electronApp.evaluate 在 main 侧 patch 写通道 handler（AI-04
- *   桩 showOpenDialog 同族先例），禁静默降级删用例**；⑧主题节点
- *   添加+编辑 core_idea→reload 持久
+ *   须 electronApp.evaluate 在 main 侧 patch 写通道 handler，禁静默降级
+ *   删用例**；⑧主题节点添加+编辑 core_idea→reload 持久
  * - 环境：SYNAPSE_USER_DATA 隔离（e2e-env 既有机制——08/10 同型）；
- *   导入 fixture=磁盘 JSON 落地+dialog mock（main 侧 evaluate 桩
- *   showOpenDialog——⑦同族）
+ *   [F-BAKRET-01] 种子链=launch 前子进程直写库（e2e-env.seedLineageGraph
+ *   ——seedPaperRow 同型基建）+T1 用真实产品路径（脉络页「添加节点」/
+ *   右键「连线到…」——行为规约种子三路之路①）
  *
  * ── 文化层 ──
  * - **e2e 原生守卫（双条件，门一 W2 处置）**：skip=自身工单未 done
- *   **或**依赖组（SR2-LG-01~04）任一未 done（corpus-export.spec.ts:90
- *   依赖守卫先例+自身条件——guardedDescribe 是 vitest 机制无 e2e 面）。
- *   翻 done 时占位 test 必须已被全链用例替换——**防作弊闭合=主控
- *   收口亲验**（翻 registry 前核对占位恒真 test 已删、spec 为真实
- *   用例；机器面不拦恒真占位，亲验是本单唯一防线，不以「K3 同效」
- *   自居）
- * - **受锁流程（门一 W3）**：本文件已入 locks manifest——实现替换
- *   占位必经 locks:unlock→批内改→locks:apply+[locked-change] 尾注
- *   提交（manifest 与提交同步）
+ *   **或**依赖组（SR2-LG-01~04）任一未 done。翻 done 时占位 test
+ *   必须已被全链用例替换——**防作弊闭合=主控收口亲验**。
+ * - **受锁流程（门一 W3）**：本文件已入 locks manifest——改动必经
+ *   locks:unlock→批内改→locks:apply+[locked-change] 尾注提交。
  * - 完成后：npm run verify 绿 → 人工审查 git diff → 翻 registry
  *
- * ── 实现注（LG-05 交付，主控简报六段裁决落点）──
- * - **守卫修订（主控裁定 5，票面文字级修订自裁申报）**：skip 条件
- *   从「依赖组∪自身」收敛为**仅依赖组**——自身条件在实现完成后反而
- *   阻碍验证（skip 全组），自身激活由主控收口亲验+翻 done 时点保证
- *   （门二 W2 已裁亲验是唯一防线）。
- * - **用例组映射（裁决 1：八验收面合并为 4 个 playwright 场景句柄，
- *   每条验收面均有断言）**：T1=①导入渲染真实文本+②滚动容器锚
- *   （[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
- *   T2=③时间线真文本 reload 持久（[T3-P6] 拖拽 x/y 持久随自由拖拽
- *   退役——P8 槽位重排接缝）+⑧主题节点添加/编辑 core_idea reload
- *   持久（同一 launch 两轮 reload）；T3=④多父加边树拒绝 toast+⑦
- *   写通道 patch 失败→保存失败指示条→真聚合脏态→close 拦截两态
- *   （取消保持/确认 destroy）；T4=⑤侧板分节分色+⑥AI 条目双击跳
- *   阅读器+锚定位（data-ai-note-id 可见性——票面二选一选项之可见
- *   性侧；locate-flash 类不作硬断言：flashAiNote 对未渲染 rect 静默
- *   return 无重试，AI 层异步渲染竞态下硬断言会 flake）。
- * - **种子链（裁决 2 最小面）**：papers 三篇经 e2e-env.seedPaperRow
- *   （甲=真实 PDF 供⑥跳转与⑤产物重锚；根/乙=幽灵行——脉络不打开
- *   它们，validateDraft 只查 papers 行存在）；AI 笔记走 08 先例预置
- *   链（corpus-ai 产物 fs 直写+status.json 空闲心跳→真 07 导入器 UI
- *   导入→真 DB）——零新种子脚本零受锁基建改动。
- * - **dialog mock（N8 路径）**：app.evaluate 覆写 electron.dialog.
- *   showOpenDialog（corpus-export.spec.ts:132 同族——dialogs.ts
- *   pickJsonFile 调用点动态读该属性，覆写即生效）；confirm=win.on
- *   ('dialog') 自动接受（zcode-link.spec.ts:45 同型）。
- * - **⑦ mock**：app.evaluate 于 main 侧 ipcMain.removeHandler+
- *   handle 重注册 'lineage/upsert-node' 抛错（写通道 handler patch
- *   ——票面 N8 注字面）；退出拦截走**真聚合链**（store error 态→
- *   useLineageDirty→App effect setQuitDirty→main 缓存→close→
- *   showMessageBox 桩两态），close/断言形态=reader-text.spec.ts:285
- *   退出拦截先例同型。
- * - **写落地证据**：拖拽/编辑后 poll 节点 transform 到达落点（store
- *   回填在 await unwrap 之后——transform 更新即写已成功）再 reload，
- *   不用裸 sleep。
+ * ── 实现注（LG-05 交付，主控简报六段裁决落点；[F-BAKRET-01] 种子链改述）──
+ * - **守卫修订（主控裁定 5）**：skip 条件从「依赖组∪自身」收敛为**仅依赖组**。
+ * - **用例组映射（裁决 1）**：T1=①UI 添加文献节点渲染真实文本+②滚动容器锚；
+ *   T2=③时间线真文本 reload 持久+⑧主题节点添加/编辑 core_idea reload
+ *   持久（同一 launch 两轮 reload）；T3=④多父加边树拒绝 toast+⑦写通道
+ *   patch 失败→保存失败指示条→真聚合脏态→close 拦截两态；T4=⑤侧板
+ *   分节分色+⑥AI 条目双击跳阅读器+锚定位。
+ * - **种子链（[F-BAKRET-01] 改述）**：papers 经 e2e-env.seedPaperRow
+ *   （甲=真实 PDF 供⑥跳转与⑤产物重锚；根/乙=幽灵行+year 元数据）；
+ *   T1 走脉络页 UI 添加节点+右键连线（产品路径①——空态文案锚随链保活）；
+ *   T2-T10/T-P1b=launch 前 seedLineageGraph 直写库（month/slot/综述形态
+ *   由种子载荷精确控制——UI 链无法表达的月组场景）。AI 笔记走 08 先例
+ *   预置链不变。
+ * - **⑦ mock**：app.evaluate 于 main 侧 ipcMain.removeHandler+handle 重注册
+ *   'lineage/upsert-node' 抛错；退出拦截走**真聚合链**，close/断言形态=
+ *   reader-text.spec.ts:285 退出拦截先例同型。
+ * - **写落地证据**：编辑后 poll 落点/序到位（store 回填在 await unwrap
+ *   之后）再 reload，不用裸 sleep。
  */
-import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
-import { mkdtemp, writeFile } from 'node:fs/promises'
 import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
-import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+import {
+  bootstrapMigrations,
+  launch,
+  seedLineageGraph,
+  seedPaperRow,
+  type LineageSeedEdge,
+  type LineageSeedNode
+} from './e2e-env'
 
 /** 守卫=仅依赖组（主控裁定 5：自身条件收敛，见文件头实现注） */
 const DEPS = ['SR2-LG-01', 'SR2-LG-02', 'SR2-LG-03', 'SR2-LG-04'] as const
@@ -91,40 +78,40 @@ const THEME_IDEA = '主题节点的核心想法（e2e 持久锚）'
 /** R2-LG12 T5 第四篇：综述题名（isSurveyTitle 命中「综述」关键词；幽灵行） */
 const SURVEY_PAPER = { id: 'e2e-lg-survey', title: '领域综述：扩散模型全景（e2e）', year: 2021 } as const
 
-/** [T3-P6 回炉 T6] 砖砌锚两篇（幽灵行——draft schema paper_id 必填） */
+/** [T3-P6 回炉 T6] 砖砌锚两篇（幽灵行——月组种子载荷直写） */
 const BRICK_PAPERS = [
   { id: 'e2e-lg-brick-a', title: '砖砌文献甲（e2e）' },
   { id: 'e2e-lg-brick-b', title: '砖砌文献乙（e2e）' }
 ] as const
 
-/** 草稿 fixture（树形：根→甲/乙——④的多父场景=对乙再加边被拒） */
-function draftJson(): string {
-  return JSON.stringify({
+/** 种子载荷：标准树（根→甲/乙——④的多父场景=对乙再加边被拒） */
+function chainSeed(): { nodes: LineageSeedNode[]; edges: LineageSeedEdge[] } {
+  return {
     nodes: PAPERS.map((p) => ({
-      paper_id: p.id,
+      paperId: p.id,
       title: p.title,
       year: p.year,
-      core_idea: p.id === 'e2e-lg-a' ? '脉络甲的核心 idea（e2e）' : ''
+      coreIdea: p.id === 'e2e-lg-a' ? '脉络甲的核心 idea（e2e）' : ''
     })),
     edges: [
-      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-a', label: '继承甲' },
-      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-b', label: '' }
+      { from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' },
+      { from: 'e2e-lg-root', to: 'e2e-lg-b', label: '' }
     ]
-  })
+  }
 }
 
-/** T5 草稿 fixture：同树+孤立综述节点（4 节点 2 树边——综述右列由 isSurvey 判定） */
-function draftJsonWithSurvey(): string {
-  return JSON.stringify({
+/** 种子载荷：同树+孤立综述节点（4 节点 2 树边——综述右列由 isSurvey 判定） */
+function surveySeed(): { nodes: LineageSeedNode[]; edges: LineageSeedEdge[] } {
+  return {
     nodes: [
-      ...PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: p.year, core_idea: '' })),
-      { paper_id: SURVEY_PAPER.id, title: SURVEY_PAPER.title, year: SURVEY_PAPER.year, core_idea: '' }
+      ...PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: p.year, coreIdea: '' })),
+      { paperId: SURVEY_PAPER.id, title: SURVEY_PAPER.title, year: SURVEY_PAPER.year, coreIdea: '' }
     ],
     edges: [
-      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-a', label: '继承甲' },
-      { from_paper_id: 'e2e-lg-root', to_paper_id: 'e2e-lg-b', label: '' }
+      { from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' },
+      { from: 'e2e-lg-root', to: 'e2e-lg-b', label: '' }
     ]
-  })
+  }
 }
 
 /** 时间线节点小卡（DOM .tl-card）——按内含标题文本过滤
@@ -138,13 +125,13 @@ async function firstHop(userData: string): Promise<void> {
   await bootstrapMigrations(userData)
 }
 
-/** 种子三篇（甲真实 PDF；根/乙幽灵行——脉络 graph 不读其文件） */
+/** 种子三篇（甲真实 PDF+year 元数据——T1 UI 添加节点取元数据；根/乙幽灵行） */
 async function seedLineagePapers(userData: string): Promise<void> {
   for (const p of PAPERS) {
     if (!p.real) {
       const ghostSha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
       const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
-      await seedPaperRow(userData, ghostRef, ghostSha, p.title, p.id)
+      await seedPaperRow(userData, ghostRef, ghostSha, p.title, p.id, { year: p.year })
       continue
     }
     const bytes = createTinyPdf(`${p.title} ${PDF_KNOWN_TEXT}`)
@@ -153,40 +140,41 @@ async function seedLineagePapers(userData: string): Promise<void> {
     const abs = join(userData, 'files', ...fileRef.split('/'))
     mkdirSync(dirname(abs), { recursive: true })
     writeFileSync(abs, bytes)
-    await seedPaperRow(userData, fileRef, sha, p.title, p.id)
+    await seedPaperRow(userData, fileRef, sha, p.title, p.id, { year: p.year })
   }
 }
 
-/** 落 fixture JSON 到磁盘 tmp（dialog 桩返回该路径；T5 传综述版内容） */
-async function writeFixture(content: string = draftJson()): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'synapse-lg05-draft-'))
-  const file = join(dir, 'lineage-draft.json')
-  await writeFile(file, content, 'utf8')
-  return file
-}
-
-/** 导入链（N8 dialog 桩+confirm 自动接受+真实 toast/画布断言；T5 传 4 节点摘要） */
-async function importDraftViaUi(
-  app: ElectronApplication,
-  win: Page,
-  fixturePath: string,
-  expectSummary: string = '已导入脉络图：3 个节点，2 条连线'
-): Promise<void> {
-  await app.evaluate((electronMod, dir) => {
-    ;(
-      electronMod.dialog as unknown as {
-        showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
-      }
-    ).showOpenDialog = async () => ({ canceled: false, filePaths: [dir] })
-  }, fixturePath)
-  win.on('dialog', (d) => {
-    void d.accept()
+/** 综述幽灵行种子（T5/T8——surveySeed 载荷的 papers 前置） */
+async function seedSurveyPaper(userData: string): Promise<void> {
+  const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
+  const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
+  await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id, {
+    year: SURVEY_PAPER.year
   })
-  await win.getByTestId('lineage-import').click()
-  await expect(win.getByText(expectSummary)).toBeVisible({ timeout: 10_000 })
-  for (const p of PAPERS) {
-    await expect(nodeG(win, p.title)).toBeVisible({ timeout: 10_000 })
-  }
+}
+
+/**
+ * [F-BAKRET-01] T1 产品路径种子链：脉络页「添加节点」文献型（搜索选取→
+ * 添加）——行为规约种子三路之路①（title/year 取 papers 元数据）。
+ */
+async function addPaperNodeViaUi(win: Page, title: string): Promise<void> {
+  await win.getByTestId('lineage-add-node').click()
+  await win.getByTestId('add-node-search').fill(title)
+  const item = win.getByRole('dialog').locator('li button').filter({ hasText: title }).first()
+  await expect(item).toBeVisible({ timeout: 10_000 })
+  await item.click()
+  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
+  await expect(nodeG(win, title)).toBeVisible({ timeout: 10_000 })
+}
+
+/** [F-BAKRET-01] T1 产品路径连线链：右键源卡「连线到…」→点目标卡 */
+async function linkNodesViaUi(win: Page, fromTitle: string, toTitle: string): Promise<void> {
+  const from = nodeG(win, fromTitle)
+  await from.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await from.click({ button: 'right' })
+  await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '连线到…' }).click()
+  await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
+  await nodeG(win, toTitle).click()
 }
 
 /** reload 后回脉络视图并等画布 ready（store 模块随 reload 重置→重 load） */
@@ -202,45 +190,40 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
 
   /**
-   * T1=验收面①②：导入草稿→时间线渲染真实文本（年份头/月标签/小卡
-   * 题名/骑缝号——宪法 e2e 红线）+空态先行+滚动容器锚（[T3-P6]
-   * pan/zoom 退役→scrollTo 后节点仍可断言）。
+   * T1=验收面①②：脉络页 UI 添加文献节点→时间线渲染真实文本（年份头/月
+   * 标签/小卡题名/骑缝号——宪法 e2e 红线；[F-BAKRET-01] 原导入链改述为
+   * 添加节点产品路径）+空态先行+滚动容器锚。
    */
-  test('T1 导入草稿→时间线渲染真实文本→滚动容器锚后节点仍可断言', async () => {
+  test('T1 UI 添加文献节点→时间线渲染真实文本→滚动容器锚后节点仍可断言', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t1-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-    // 空图空态文案（真实文本）
+    // 空图空态文案（真实文本——[F-BAKRET-01] 随导入退役改述）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })
+    await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
     // 侧板空态（04 交付面顺带锚）
     await expect(win.getByTestId('lineage-side-panel')).toHaveText('单击节点查看详情')
 
-    // ①导入→时间线真实文本（宪法 e2e 红线）：小卡题名+年份头纯数字
-    //   （mockup 形态——旧「YYYY 年」层带标签随 SVG 画布退役）+未定月
-    //   月标签+骑缝编号（INV-76——lineageOrder 全序 2020→2022→2023）
-    await importDraftViaUi(app, win, fixturePath)
+    // ①UI 添加三节点（产品路径①）+两树边（根→甲/乙，跨年=绕行折线族）——
+    //   卡片/连线即时渲染（store 写回填）；骑缝号 .c-no=graph 通道 pubNos
+    //   派生表（INV-92），UI 增量写不重取整图——编号断言置于段末 reload 后
+    //   （冷读全图载荷——与原导入链「导入后 store 重取」等价数据面）
+    for (const p of PAPERS) {
+      await addPaperNodeViaUi(win, p.title)
+    }
+    await linkNodesViaUi(win, '脉络根文献', '脉络甲文献')
+    await linkNodesViaUi(win, '脉络根文献', '脉络乙文献')
     await expect(win.getByText('脉络根文献')).toBeVisible()
-    expect(await win.locator('.tl-year-num').allTextContents()).toEqual(['2020', '2022', '2023'])
-    // 全体节点 month=null→各年未定月收纳框（月标签真文本；同年末位）
-    expect(await win.locator('.month-tag').allTextContents()).toEqual([
-      '未定月 · 1 篇',
-      '未定月 · 1 篇',
-      '未定月 · 1 篇'
-    ])
-    expect(await win.locator('.c-no').allTextContents()).toEqual(['#001', '#002', '#003'])
-    // [T3-P7A] 连线出现锚（渲染恢复承诺兑现）：fixture 2 条树边（根→甲/乙，
+    // [T3-P7A] 连线出现锚（渲染恢复承诺兑现）：2 条树边（根→甲/乙，
     // 跨年=绕行折线族）→ svg.tl-edges 可见 path ≥1；边端点在场校验=两路径
     // 各自挂 data-edge-id（结构真渲染非空 svg）
     const edgePaths = win.locator('svg.tl-edges path.tl-edge')
-    await expect(edgePaths.first()).toBeVisible({ timeout: 10_000 })
-    expect(await edgePaths.count()).toBeGreaterThanOrEqual(2)
+    await expect(edgePaths).toHaveCount(2, { timeout: 10_000 })
     expect(await win.locator('.tl-legend').textContent()).toContain('继承')
 
     // ②滚动容器锚（pan/zoom INV-43/44 退役→滚动定位语义）：fixture 三
@@ -278,6 +261,18 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // [回炉 1 W4] 滚动前后 y 差恒定（错位即红——路径与卡同文档流证据）
     expect(await yDiffOf()).toBeCloseTo(yDiffBefore, 1)
 
+    // reload 冷读全图载荷→时间线真实文本三锚（宪法 e2e 红线）：年份头纯数字
+    // （mockup 形态）+未定月月标签+骑缝编号（INV-92 pubNos——lineageOrder
+    // 全序 2020→2022→2023）
+    await reloadToLineage(win)
+    expect(await win.locator('.tl-year-num').allTextContents()).toEqual(['2020', '2022', '2023'])
+    expect(await win.locator('.month-tag').allTextContents()).toEqual([
+      '未定月 · 1 篇',
+      '未定月 · 1 篇',
+      '未定月 · 1 篇'
+    ])
+    expect(await win.locator('.c-no').allTextContents()).toEqual(['#001', '#002', '#003'])
+
     await app.close()
   })
 
@@ -291,13 +286,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t2-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
+    await seedLineageGraph(userData, chainSeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath)
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // ③[退役改写] 拖拽 x/y 持久段随自由拖拽退役（P8 槽位重排接缝）→
     //   时间线真文本持久锚：reload→年份头/月标签/小卡题名仍在
@@ -350,13 +345,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t3-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
+    await seedLineageGraph(userData, chainSeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath)
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // ④根→乙 已有边；右键甲「连线到…」→点乙→乙第二父被拒（INV-27 运行时守卫）
     const aG = nodeG(win, '脉络甲文献')
@@ -449,7 +444,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const sensorRoot = join(userData, 'ai-sensor')
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
+    await seedLineageGraph(userData, chainSeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
@@ -499,9 +494,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '导入 AI 笔记' }).click()
     await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
 
-    // 回脉络→导入草稿→单击甲节点
+    // 回脉络→单击甲节点（[F-BAKRET-01] 图已种子——无导入动作）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath)
     await nodeG(win, '脉络甲文献').click()
 
     // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
@@ -551,17 +545,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg12-t5-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    // 第四篇=综述（幽灵行同 seedLineagePapers 分支——脉络不打开其文件）
-    const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
-    const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
-    await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id)
-    const fixturePath = await writeFixture(draftJsonWithSurvey())
+    await seedSurveyPaper(userData)
+    await seedLineageGraph(userData, surveySeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：4 个节点，2 条连线')
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
 
     // 菜单项级限定负锚：非综述节点（甲）菜单不呈现「添加参考连接」
@@ -620,30 +611,28 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    // 追加 2 篇幽灵行（draft schema paper_id 必填——主题节点不可经 draft 导入）
+    // 追加 2 篇幽灵行（月组种子载荷直写）
     for (const p of BRICK_PAPERS) {
       const sha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
       const ref = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
       await seedPaperRow(userData, ref, sha, p.title, p.id)
     }
-    // 5 卡同月（2020-05）：PAPERS 三篇改同年同月+砖砌两篇
-    const draft = JSON.stringify({
+    // 5 卡同月（2020-05）：PAPERS 三篇改同年同月+砖砌两篇（slot=种子序）
+    await seedLineageGraph(userData, {
       nodes: [
-        ...PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: 2020, month: 5, core_idea: '' })),
-        ...BRICK_PAPERS.map((p) => ({ paper_id: p.id, title: p.title, year: 2020, month: 5, core_idea: '' }))
+        ...PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5, coreIdea: '' })),
+        ...BRICK_PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5, coreIdea: '' }))
       ],
       edges: []
     })
-    const fixturePath = await writeFixture(draft)
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.setViewportSize({ width: 720, height: 800 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
-    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：5 个节点，0 条连线')
     // 单月框 5 卡+月标签计数
     const frame = win.locator('.month-frame').first()
     expect(await frame.locator('.tl-card').count()).toBe(5)
@@ -696,13 +685,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t7-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
+    await seedLineageGraph(userData, chainSeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath)
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // edit 态：toggle 文案+editing 类+linkbtn 显（D-21）
     await win.getByTestId('lineage-edit-toggle').click()
@@ -771,18 +760,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t8-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
+    await seedSurveyPaper(userData)
     // 综述版种子（T5 同族）：综述节点孤立无父=tree 边合法落点（根/甲/乙互连
     // 全撞单父或环守卫——三节点版无合法 create 目标）
-    const ghostSha = createHash('sha256').update(`lg-ghost-${SURVEY_PAPER.id}`).digest('hex')
-    const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
-    await seedPaperRow(userData, ghostRef, ghostSha, SURVEY_PAPER.title, SURVEY_PAPER.id)
-    const fixturePath = await writeFixture(draftJsonWithSurvey())
+    await seedLineageGraph(userData, surveySeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：4 个节点，2 条连线')
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await expect(nodeG(win, SURVEY_PAPER.title)).toBeVisible({ timeout: 10_000 })
     const edgeCount = win.locator('svg.tl-edges path.tl-edge')
 
@@ -859,14 +846,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const fixturePath = await writeFixture()
+    await seedLineageGraph(userData, chainSeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath)
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // 跨年树边（根→甲）恒走右侧走廊（detour）——bbox 右缘=laneX。
     // 量测单 evaluate 原子取（viewport 坐标三值同拍——path bbox/content 左缘/
@@ -939,24 +926,22 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await firstHop(userData)
     await seedLineagePapers(userData)
     // 同月双卡（2020-05：根+甲）+他月单卡（2020-06：乙）——月内重排与跨月面
-    const draft = JSON.stringify({
-      nodes: PAPERS.map((p) => ({
-        paper_id: p.id,
-        title: p.title,
-        year: 2020,
-        month: p.id === 'e2e-lg-b' ? 6 : 5,
-        core_idea: ''
-      })),
+    // （slot 显式=INV-75 组内全序——null 末序会颠倒 reload 后组内呈现）
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
+      ],
       edges: []
     })
-    const fixturePath = await writeFixture(draft)
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：3 个节点，0 条连线')
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // data-node-id=节点行 UUID（非 paperId）——断言载体=卡内标题映射序
     const frameTitles = async (i: number): Promise<string[]> =>
@@ -1028,24 +1013,23 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t10-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    const draft = JSON.stringify({
-      nodes: PAPERS.map((p) => ({
-        paper_id: p.id,
-        title: p.title,
-        year: 2020,
-        month: p.id === 'e2e-lg-b' ? 6 : 5,
-        core_idea: ''
-      })),
+    // 同月双卡+他月单卡（T9 同族——slot 显式=INV-75 组内全序，改月后 reload
+    // 组内序=服务端 max+1 归一可锚）
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
+      ],
       edges: []
     })
-    const fixturePath = await writeFixture(draft)
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await importDraftViaUi(app, win, fixturePath, '已导入脉络图：3 个节点，0 条连线')
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // edit 态：甲卡月标「2020.5」在场（CSS display:none↔block）→点击开弹层
     await win.getByTestId('lineage-edit-toggle').click()

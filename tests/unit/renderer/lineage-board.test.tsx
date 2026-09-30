@@ -25,8 +25,7 @@ const stubApi = makeApiStub({
     upsertNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
-    removeEdge: vi.fn(),
-    importDraft: vi.fn()
+    removeEdge: vi.fn()
   },
   // [F-FOLDER-02·B] 图切换器静态参考数据面（App 级挂载经 LineagePage 消费）
   folders: { list: vi.fn() },
@@ -179,10 +178,6 @@ beforeEach(() => {
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
   stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
-  stubApi.lineage.importDraft.mockResolvedValue({
-    ok: true,
-    data: { ok: true, nodeCount: 0, edgeCount: 0 }
-  })
   stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
   stubApi.system.setQuitDirty.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.system.windowControl.mockResolvedValue({ ok: true, data: { ok: true, maximized: false } })
@@ -401,69 +396,6 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
       y: null,
       folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
     })
-  })
-})
-
-describe('LineageBoard —— 导入草稿入口（LG-01 覆盖式语义条款兑现，回炉 1 轮裁决①）', () => {
-  it('确认接受→lineage/import 调用+成功计数 toast+graph 刷新（store 重取）', async () => {
-    const spy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    stubApi.lineage.importDraft.mockResolvedValue({
-      ok: true,
-      data: { ok: true, nodeCount: 3, edgeCount: 2 }
-    })
-    stubApi.lineage.graph.mockClear()
-    seedLineage([])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    expect(stubApi.lineage.graph).not.toHaveBeenCalled() // Board 挂载不自动取数
-    act(() => {
-      (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
-    })
-    await flush()
-    expect(spy).toHaveBeenCalledWith('导入将替换现有脉络图')
-    expect(stubApi.lineage.importDraft).toHaveBeenCalledWith({})
-    expect(showToast).toHaveBeenCalledWith('已导入脉络图：3 个节点，2 条连线', 'success')
-    expect(stubApi.lineage.graph).toHaveBeenCalledWith({}) // 成功后刷新
-    spy.mockRestore()
-  })
-
-  it('confirm 取消→不调 import 通道（无操作）', async () => {
-    const spy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    seedLineage([])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
-    })
-    await flush()
-    expect(stubApi.lineage.importDraft).not.toHaveBeenCalled()
-    expect(stubApi.lineage.graph).not.toHaveBeenCalled()
-    spy.mockRestore()
-  })
-
-  it('校验失败=errors 清单 toast（汇总计数+首条 path/reason 真实文本）', async () => {
-    const spy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    stubApi.lineage.importDraft.mockResolvedValue({
-      ok: true,
-      data: {
-        ok: false,
-        errors: [
-          { path: 'nodes.0.paper_id', reason: '文献不存在（幽灵 paperId）：p-404' },
-          { path: 'edges.1.to_paper_id', reason: '多父边：文献 b 已有父节点 a（树至多一父）' }
-        ]
-      }
-    })
-    stubApi.lineage.graph.mockClear()
-    seedLineage([])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      (q('[data-testid="lineage-import"]') as HTMLButtonElement).click()
-    })
-    await flush()
-    expect(showToast).toHaveBeenCalledWith(
-      '草稿校验失败（共 2 处）：nodes.0.paper_id 文献不存在（幽灵 paperId）：p-404',
-      'error'
-    )
-    expect(stubApi.lineage.graph).not.toHaveBeenCalled() // 校验失败库未动不刷新
-    spy.mockRestore()
   })
 })
 

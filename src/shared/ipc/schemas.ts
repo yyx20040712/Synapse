@@ -276,28 +276,8 @@ export type ZcodeLinkDetectRes = z.infer<typeof zcodeLinkDetectResSchema>
 export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().min(1) }).strict()
 export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
 
-// ── lineage（LG-01 脉络图：草稿导入+全图读——dialog 在 ipc 层 INV-07）────
-/** lineage/import 响应：判别联合（全有或全无——校验任一失败库不动，errors 行级中文）；
- * [F-FOLDER-02 C2] ok 分支 +skippedCrossGraphEdges（跨图边跳过计数——多图草稿
- * 正常形态下跨图边不写入，renderer toast 告知；主控终裁 2026-09-30） */
-export const lineageImportResSchema = z.union([
-  z
-    .object({
-      ok: z.literal(true),
-      nodeCount: z.number().int().min(0),
-      edgeCount: z.number().int().min(0),
-      skippedCrossGraphEdges: z.number().int().min(0)
-    })
-    .strict(),
-  z
-    .object({
-      ok: z.literal(false),
-      errors: z.array(z.object({ path: z.string(), reason: z.string() }).strict())
-    })
-    .strict()
-])
-export type LineageImportRes = z.infer<typeof lineageImportResSchema>
-
+// ── lineage（LG-01 脉络图：全图读——[F-BAKRET-01] lineage/import 草稿导入
+//    响应 schema 随导入链退役删除，用户裁决 2026-09-30）────────────────────
 /** F-LG14 含金量摘要（lineage/graph 逐文献节点）：citedByCount null=从未抓到
  *  （渲染「引 —」）；venueTier null=未映射（渲染「未定」）；0=值非缺（判别 === null）。
  *  venueTier 值域=VenueTier 三档（映射单源 shared/venue-tier.ts，受锁常量零改） */

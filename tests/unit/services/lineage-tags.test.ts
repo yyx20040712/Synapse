@@ -1,12 +1,12 @@
 /**
- * [F-LG14] lineage 节点标签存储+draft 协议扩展+graph 含金量 join（新增锁定合约面）。
+ * [F-LG14] lineage 节点标签存储+graph 含金量 join（新增锁定合约面）。
  *
- * 覆盖：迁移 007（tags 列在场/版本接续/存量行 NULL=无标签零迁移兼容）/draft tags
- * 校验（合法通过/缺省省略=旧版草稿零破坏/非数组行级中文/元素非字符串/空串元素）/
- * 导入落库+同节点同名标签去重（主控裁决 7）/repo upsert tags 往返（null 清面）/
- * service upsert 写面去重/graph 含金量 join（批量单语句禁 N+1——spy 计数锚；
- * venueTier 映射单源 venue-tier.ts；cited null 判别；0=值非缺；未映射 venue=
- * null；主题节点不入表；空图合法空表）。
+ * 覆盖：迁移 007（tags 列在场/版本接续/存量行 NULL=无标签零迁移兼容）/
+ * repo upsert tags 往返（null 清面）/service upsert 写面去重/graph 含金量
+ * join（批量单语句禁 N+1——spy 计数锚；venueTier 映射单源 venue-tier.ts；
+ * cited null 判别；0=值非缺；未映射 venue=null；主题节点不入表；空图合法
+ * 空表）。draft tags 校验面已随导入链退役删除（[F-BAKRET-01] 2026-09-30，
+ * ADR-0022——schema 单源 lineageDraftSchema 同步删除）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,10 +14,7 @@ import type { SqliteDb } from '../../../src/main/db/connection'
 import { MIGRATIONS, readUserVersion } from '../../../src/main/db/migrate'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
-import {
-  createLineageService,
-  validateDraft
-} from '../../../src/main/services/lineage/lineage.service'
+import { createLineageService } from '../../../src/main/services/lineage/lineage.service'
 import { createTestDb } from '../../utils/fixtures'
 
 const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id === 'p-3'
@@ -81,59 +78,9 @@ describe('F-LG14 迁移 007（lineage_nodes.tags）', () => {
   })
 })
 
-// ── draft 协议扩展：tags 可选字段 ───────────────────────────────
+// ── 写面落库+去重（[F-BAKRET-01] 导入面用例退役，upsert 写面保） ──
 
-describe('F-LG14 draft tags 校验（zod 行级中文）', () => {
-  const base = { paper_id: 'p-1', title: '起源', year: 2018, core_idea: '源头' }
-
-  it('合法 tags 通过；缺省省略（旧版草稿零破坏——v1 加可选字段=向后兼容）', () => {
-    expect(validateDraft({ nodes: [{ ...base, tags: ['综述', '早期'] }], edges: [] }, paperExists)).toEqual([])
-    expect(validateDraft({ nodes: [{ ...base }], edges: [] }, paperExists)).toEqual([])
-  })
-
-  it('非数组拒绝：nodes.0.tags 行级中文 reason 含「数组」', () => {
-    const r = validateDraft({ nodes: [{ ...base, tags: '综述' }], edges: [] }, paperExists)
-    const hit = r.find((e) => e.path === 'nodes.0.tags')
-    expect(hit).toBeDefined()
-    expect(hit!.reason).toContain('数组')
-  })
-
-  it('元素非字符串拒绝：nodes.0.tags.0 行级中文 reason 含「标签」', () => {
-    const r = validateDraft({ nodes: [{ ...base, tags: [5] }], edges: [] }, paperExists)
-    expect(r.some((e) => e.path === 'nodes.0.tags.0' && e.reason.includes('标签'))).toBe(true)
-  })
-
-  it('空串元素拒绝：行级 reason 含「空」', () => {
-    const r = validateDraft({ nodes: [{ ...base, tags: [''] }], edges: [] }, paperExists)
-    expect(r.some((e) => e.path === 'nodes.0.tags.0' && e.reason.includes('空'))).toBe(true)
-  })
-})
-
-// ── 导入落库+去重 ──────────────────────────────────────────────
-
-describe('F-LG14 导入落库（草稿带为主，导入即有）', () => {
-  it('draft tags 落库：graph 节点 tags 数组往返；无 tags 节点=null', () => {
-    const r = svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '甲', year: 2018, core_idea: '', tags: ['综述', '早期'] },
-        { paper_id: 'p-2', title: '乙', year: 2021, core_idea: '' }
-      ],
-      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '继承' }]
-    })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-    const g = svc.graph()
-    expect(g.nodes.find((n) => n.paperId === 'p-1')?.tags).toEqual(['综述', '早期'])
-    expect(g.nodes.find((n) => n.paperId === 'p-2')?.tags).toBeNull()
-  })
-
-  it('同节点同名标签去重（主控裁决 7）：草稿 [a,a,b] 落库 [a,b]', () => {
-    svc.importDraft({
-      nodes: [{ paper_id: 'p-1', title: '甲', year: 2018, core_idea: '', tags: ['a', 'a', 'b'] }],
-      edges: []
-    })
-    expect(svc.graph().nodes[0]!.tags).toEqual(['a', 'b'])
-  })
-
+describe('F-LG14 写面落库（service upsertNode）', () => {
   it('service upsertNode 写面同守去重；tags null 二次 upsert 清面', () => {
     const n = svc.upsertNode({
       paperId: 'p-1',
@@ -163,13 +110,8 @@ describe('F-LG14 导入落库（草稿带为主，导入即有）', () => {
 
 describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', () => {
   it('批量单语句：graph() 单次调用 paperMetrics 一次且传全量文献 id（禁 N+1 主控裁决）', () => {
-    svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '甲', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: '乙', year: 2021, core_idea: '' }
-      ],
-      edges: []
-    })
+    svc.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
+    svc.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
     metricsSpy.mockClear()
     const g = svc.graph()
     expect(metricsSpy).toHaveBeenCalledTimes(1)
@@ -178,14 +120,9 @@ describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', ()
   })
 
   it('含金量三元组：T1 映射+被引 42/未映射 venue+null/0=值非缺（判别 === null）', () => {
-    svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '甲', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: '乙', year: 2021, core_idea: '' },
-        { paper_id: 'p-3', title: '丙', year: 2022, core_idea: '' }
-      ],
-      edges: []
-    })
+    svc.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
+    svc.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
+    svc.upsertNode({ paperId: 'p-3', title: '丙', coreIdea: '', year: 2022, x: null, y: null })
     const g = svc.graph()
     expect(g.paperMetrics['p-1']).toEqual({ citedByCount: 42, venueTier: 'T1' })
     expect(g.paperMetrics['p-2']).toEqual({ citedByCount: null, venueTier: null })

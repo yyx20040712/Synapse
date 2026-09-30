@@ -100,7 +100,7 @@ test('仅入文献库：导入成功零脉络节点（无节点行——design �
 
   // 脉络页全部图（并集）：零该文献节点行
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(win.getByText('暂无脉络图——导入草稿或添加节点')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, '仅入库论文')).toHaveCount(0)
 
   await app.close()

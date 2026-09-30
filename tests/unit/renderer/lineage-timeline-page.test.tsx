@@ -128,13 +128,15 @@ describe('LineageTimeline —— 时间线宿主渲染', () => {
     expect(host?.querySelector('[data-node-id="B"]')).not.toBeNull()
   })
 
-  it('空图空态文案（[T3-P7B] 工具条随票移入 .timeline——导入/添加引导在场、编辑死按钮零）', () => {
+  it('空图空态文案（[T3-P7B] 工具条随票移入 .timeline——添加引导在场、编辑死按钮零）', () => {
     mount(<LineageTimeline nodes={[]} edges={[]} />)
-    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
+    expect(host?.textContent).toContain('暂无脉络图——添加节点')
     // [T3-P7B 修订] P6 期「零按钮」断言随工具条移入（D-P7B-1）失效——空图
-    // bootstrap 路径（导入）保活；编辑面死按钮（弹层交互钮）仍零
+    // bootstrap 路径（添加节点）保活；编辑面死按钮（弹层交互钮）仍零；
+    // [F-BAKRET-01] 导入按钮随草稿导入链退役——零残留负锚（在场即红）
     expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
-    expect(host?.querySelector('[data-testid="lineage-import"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-add-node"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-import"]')).toBeNull()
     expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 
@@ -172,7 +174,7 @@ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () =
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
     mount(<LineagePage />)
     await flush()
-    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
+    expect(host?.textContent).toContain('暂无脉络图——添加节点')
   })
 
   it('error：取数失败呈错误条+重试按钮；重试再取数成功恢复', async () => {

@@ -88,6 +88,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0019 | 划选反馈原生路线（自绘并集层，三轮修订） |
 | 0020 | 应用改名与 userData 目录迁移（四分支幂等迁移） |
 | 0021 | 文件夹单归属×脉络图绑定（F-FOLDER-01——图=文件夹投影/paper_collections 退役） |
+| 0022 | 草稿导入链退役（F-BAKRET-01——备份归未来服务端多实体导出/git 历史即资产） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -114,7 +115,8 @@ F-TAGS-01 标签颜色身份/papers.folder_id+impact_factor+lineage_nodes.folder
 {year,month,edgeCount}；collections 明细键退役（归属=folderId 单值）；
 libraryQuery +folderScope 判别联合（all/unfiled/folder——W5，collectionId 过滤
 随 M2M 退役删）；metadata.patch +month/impactFactor；folders 域四通道+
-papers/move-folder（56→61 通道）+folders.changed/lineage.changed 双事件+
+papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage/import
+草稿导入通道随导入链退役删除——ADR-0022）+folders.changed/lineage.changed 双事件+
 lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
 +lineagePending（INV-91 S1 队列闸）。
 

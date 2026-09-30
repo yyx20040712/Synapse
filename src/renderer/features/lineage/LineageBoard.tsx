@@ -72,15 +72,12 @@
  * - 实现注（LG-03 交付）：写路径/保存态/dirty 全收口 lineage.store
  *   （Board 只编排交互与呈现）；树拒绝 toast 由 store flush 按
  *   CONFLICT 折叠码分支（守卫宿主=service——reason 透传链=
- *   LineageDomainError→toAppError→ApiClientError.code）；导入草稿入口
- *   =工具栏按钮（回炉 1 轮主控裁决①——LG-01 票面「确认对话框『导入将
- *   替换现有脉络图』」条款兑现，动作体拆 lineage-import.ts——组件行数
- *   红线拆分预案落点：confirm→lineage/import→成功计数 toast+graph
- *   刷新；校验失败=汇总计数+首条明细 toast；取消=轻量反馈无操作）
+ *   LineageDomainError→toAppError→ApiClientError.code）；[F-BAKRET-01]
+ *   导入草稿入口（动作件）随草稿导入链退役删除
+ *   （用户裁决 2026-09-30——ADR-0022）
  */
 import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
-import { importLineageDraft } from './lineage-import'
 import { LineageTimeline } from './LineageTimeline'
 import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
 import { LineageBoardDialogs } from './LineageBoardDialogs'
@@ -139,7 +136,6 @@ export function LineageBoard(props: {
           saveStatus,
           lastWriteError,
           onAddNode: () => setAddOpen(true),
-          onImportDraft: importLineageDraft,
           onRetrySave: () => store().retrySave()
         }}
         actions={{

@@ -182,13 +182,15 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     }
   })
 
-  it('空图空态文案保活：暂无脉络图——导入草稿或添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留导入/添加引导，编辑死按钮零）', () => {
+  it('空图空态文案保活：暂无脉络图——添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留添加引导，编辑死按钮零）', () => {
     mount(<LineageTimeline nodes={[]} edges={[]} />)
-    expect(host?.textContent).toContain('暂无脉络图——导入草稿或添加节点')
-    // 工具条在空图在场（导入=空图 bootstrap 路径——e2e T1 消费面）；编辑面
-    // 死按钮零（view 态 linkbtn 隐藏+无弹层交互钮）
+    expect(host?.textContent).toContain('暂无脉络图——添加节点')
+    // 工具条在空图在场（添加节点=空图 bootstrap 路径——e2e T1 消费面）；编辑面
+    // 死按钮零（view 态 linkbtn 隐藏+无弹层交互钮）；[F-BAKRET-01] 导入按钮
+    // 随草稿导入链退役——零残留负锚（在场即红）
     expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
-    expect(host?.querySelector('[data-testid="lineage-import"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-add-node"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-import"]')).toBeNull()
     expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 

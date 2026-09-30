@@ -39,7 +39,6 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
     dialogs: {
       pickPdfFiles: async () => null,
       pickFolder: async () => null,
-      pickJsonFile: async () => null,
       saveFile: async () => null,
       ...over.dialogs
     },

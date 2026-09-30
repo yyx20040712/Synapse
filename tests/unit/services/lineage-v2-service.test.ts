@@ -7,8 +7,9 @@
  * upsertLineTypes 恒四组校验+subs.id 全图唯一+校验后回显（恒四组序）/
  * slot 归一三分支（新建组 max+1/同组更新保留原 slot/跨组更新落组末）+
  * slot 显式透写+month 缺省=null/inferred 同 tree 单父守卫（双向）+拒环/
- * draft 恒 tree（inferred 不收）/importDraft month 透传+slot 逐节点 max+1/
  * graph lineTypes 恒四组（meta 空配置=空组）+nodes=lineageOrder 序。
+ * [F-BAKRET-01] 草稿导入用例（draft 恒 tree/importDraft v1.2）随导入链退役
+ * 删除（用户裁决 2026-09-30——ADR-0022）。
  * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §3/§4。
  * always-active（不经 guardedDescribe）。
  */
@@ -223,7 +224,7 @@ describe('T3-P5 inferred 边守卫（同 tree：单父+拒环）', () => {
     expect(() =>
       svc.upsertEdge({ fromNode: c.id, toNode: b.id, label: '', kind: 'inferred' })
     ).toThrow('多父')
-    repo.clearGraph()
+    // [F-BAKRET-01] 清面原语退役——第二半改用新节点对（a2/b2/c2 与 a/b/c 不冲突）
     const a2 = seedNode({ id: 'a2', year: 2020 })
     const b2 = seedNode({ id: 'b2', year: 2021 })
     const c2 = seedNode({ id: 'c2', year: 2022 })
@@ -252,18 +253,6 @@ describe('T3-P5 inferred 边守卫（同 tree：单父+拒环）', () => {
     expect(r.kind).toBe('ref')
     const m1 = svc.upsertEdge({ fromNode: a.id, toNode: b.id, label: '', kind: 'manual' })
     expect(m1.kind).toBe('manual')
-  })
-
-  it('draft 导入恒 tree：草稿边无 kind 面，导入后 kind 全 tree（inferred 不收）', () => {
-    const r = svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '甲', year: 2018, core_idea: '' },
-        { paper_id: 'p-2', title: '乙', year: 2021, core_idea: '' }
-      ],
-      edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '继承' }]
-    })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
-    expect(svc.graph().edges.every((e) => e.kind === 'tree' && e.sub === null)).toBe(true)
   })
 })
 
@@ -327,30 +316,6 @@ describe('T3-P5 upsertNode month/slot 归一（主控预裁 D-I-1）', () => {
     db.prepare("UPDATE lineage_nodes SET folder_id='f-a' WHERE id='f5-n2'").run()
     const u2 = svc.upsertNode({ id: moved2.id, paperId: null, title: '跨图二', coreIdea: '', year: 2020, x: null, y: null, month: 3, folderId: 'f-b' })
     expect(u2.slot).toBe(7) // f-b 组现行 max=6（u1 归一结果）→ +1（缺省原值 2 被归一覆盖）
-  })
-})
-
-// ── importDraft：month 透传+slot 归一 ──────────────────────────
-
-describe('T3-P5 importDraft v1.2（month=n.month ?? null；slot 逐节点 max+1）', () => {
-  it('month 透传+缺省 null；同组按草稿序 slot=1..k；kind 恒 tree', () => {
-    const r = svc.importDraft({
-      nodes: [
-        { paper_id: 'p-1', title: '甲', year: 2020, core_idea: '', month: 3 },
-        { paper_id: 'p-2', title: '乙', year: 2020, core_idea: '' },
-        { paper_id: 'p-3', title: '丙', year: 2021, core_idea: '', month: 3 }
-      ],
-      edges: []
-    })
-    expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 0, skippedCrossGraphEdges: 0 })
-    const g = svc.graph()
-    const byPaper = new Map(g.nodes.map((n) => [n.paperId, n]))
-    expect(byPaper.get('p-1')!.month).toBe(3)
-    expect(byPaper.get('p-1')!.slot).toBe(1)
-    expect(byPaper.get('p-2')!.month).toBeNull()
-    expect(byPaper.get('p-2')!.slot).toBe(1)
-    expect(byPaper.get('p-3')!.month).toBe(3)
-    expect(byPaper.get('p-3')!.slot).toBe(1)
   })
 })
 

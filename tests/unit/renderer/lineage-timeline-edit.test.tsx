@@ -65,12 +65,11 @@ const req = (sel: string): Element => {
 const btn = (testid: string): HTMLButtonElement => req(`[data-testid="${testid}"]`) as HTMLButtonElement
 const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`) as HTMLElement
 
-/** 工具条 props 桩（Board 下传面） */
+/** 工具条 props 桩（Board 下传面；[F-BAKRET-01] 导入回调随导入链退役删） */
 const toolbarProps = () => ({
   saveStatus: 'saved' as const,
   lastWriteError: null,
   onAddNode: vi.fn(),
-  onImportDraft: vi.fn(),
   onRetrySave: vi.fn()
 })
 
@@ -127,7 +126,8 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装/composer/弹层�
     expect(bar.querySelector('.drag-hint')?.textContent).toBe('↕ 拖动＝月内调序（虚线槽＝候选文献位）') // [T3-P8] view 态双文案（mockup L507）
     expect(btn('lineage-link-btn').className).toContain('linkbtn') // DOM 在场（CSS 显隐 D-21）
     expect(q('[data-testid="lineage-add-node"]')).not.toBeNull()
-    expect(q('[data-testid="lineage-import"]')).not.toBeNull()
+    // [F-BAKRET-01] 导入按钮随草稿导入链退役——零残留负锚（在场即红）
+    expect(q('[data-testid="lineage-import"]')).toBeNull()
     act(() => {
       toggle.click()
     })

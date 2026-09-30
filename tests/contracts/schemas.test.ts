@@ -154,11 +154,6 @@ const VALID: Record<string, unknown[]> = {
     { state: 'error', status: sensorStatus, overwrite: true, reason: '读取失败' }
   ],
   zcodeLinkInstallResSchema: [{ fileCount: 3 }],
-  lineageImportResSchema: [
-    // [F-FOLDER-02 C2] ok 分支 +skippedCrossGraphEdges 必填（主控 R1 随语义迁移）
-    { ok: true, nodeCount: 1, edgeCount: 0, skippedCrossGraphEdges: 0 },
-    { ok: false, errors: [{ path: 'nodes[0]', reason: 'title 不能为空' }] }
-  ],
   lineagePaperMetricsSchema: [
     { citedByCount: null, venueTier: null },
     { citedByCount: 3, venueTier: 'T2' }
@@ -266,7 +261,6 @@ const SCHEMA_NAMES = [
   'lineageGraphReqSchema',
   'lineageGraphResSchema',
   'lineageIdReqSchema',
-  'lineageImportResSchema',
   'lineagePaperMetricsSchema',
   'lineageUpsertEdgeReqSchema',
   'lineageUpsertLineTypesReqSchema',
@@ -443,12 +437,6 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
       S.corpusItemReqSchema.safeParse({ ...base, kind: 'figure', figure: 'page', annotationId: 'a1' }).success
     ).toBe(false)
     expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'bogus' }).success).toBe(false)
-  })
-
-  it('lineageImportRes 两臂互斥：ok:true 带 errors 拒、ok:false 缺 errors 拒、ok 非字面量拒', () => {
-    expect(S.lineageImportResSchema.safeParse({ ok: true, nodeCount: 0, edgeCount: 0, errors: [] }).success).toBe(false)
-    expect(S.lineageImportResSchema.safeParse({ ok: false }).success).toBe(false)
-    expect(S.lineageImportResSchema.safeParse({ ok: 'yes', nodeCount: 0, edgeCount: 0 }).success).toBe(false)
   })
 
   it('lineagePaperMetrics null 语义：citedByCount null/0 均过（0=值非缺）；venueTier 三档过、T9 拒', () => {

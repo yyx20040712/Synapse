@@ -81,13 +81,13 @@ export const API_SURFACE = {
     zcodeDetect: { channel: 'zcode-link/detect', Req: S.voidReqSchema, Res: S.zcodeLinkDetectResSchema },
     zcodeInstall: { channel: 'zcode-link/install', Req: S.voidReqSchema, Res: S.zcodeLinkInstallResSchema }
   },
-  // lineage 域（LG-01 立域，ADR-0014）：草稿导入（dialog 在 ipc 层 INV-07）+全图读；
-  // 写四通道（LG-03 交互编辑接线——树守卫宿主=service upsertEdge，IPC 零守卫透传）
+  // lineage 域（LG-01 立域，ADR-0014）：全图读+写四通道（LG-03 交互编辑接线
+  // ——树守卫宿主=service upsertEdge，IPC 零守卫透传）
   // [T3-P5] 6→7 通道：upsertLineTypes 图级线型整体替换（D-P5-4 弃双通道 CRUD）
   // [F-FOLDER-01] graph 入参 +folderId（图切换器子图读——W4 改写面）；
   // upsertNode 载荷 +folderId（节点 DTO/models 侧扩——本表仅随 Res schema 变）
+  // [F-BAKRET-01] 7→6 通道：lineage/import 草稿导入退役（用户裁决 2026-09-30）
   lineage: {
-    importDraft: { channel: 'lineage/import', Req: S.voidReqSchema, Res: S.lineageImportResSchema },
     graph: { channel: 'lineage/graph', Req: S.lineageGraphReqSchema, Res: S.lineageGraphResSchema },
     upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
     removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },

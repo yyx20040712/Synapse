@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T03:47:19.1319903Z",
+    "generatedAt":  "2026-09-30T11:14:04.1382647Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "9f4602bf573b7935e41085498859ed1dd9e500c107b75d6c5b5d8f5456f8aac4"
+                      "sha256":  "c435eefe7f3cbb98bd39c711098d484f471422ea087655e44e1e8b6f2fef001d"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "1d2dd56c37ddf8019ff50facaa5501ada6957400efe2c44b617bc4a6cd810caf"
+                      "sha256":  "8f9ac92c2596aad8df20f9632b0dda35c7c540086aa25d45ac8ae0027a2b3361"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -115,7 +115,7 @@
                   },
                   {
                       "path":  "src/main/db/migrations/004_lineage.sql",
-                      "sha256":  "a60fa92b2fcb327f66840ab5ac510252dffae6435d298dd3261ca2dd4fca15d2"
+                      "sha256":  "f8b57b3a4f9d40401ebc90ec666c46b2b135ab47d9da67f9854961571fda05b5"
                   },
                   {
                       "path":  "src/main/db/migrations/005_cited_by.sql",
@@ -175,7 +175,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "6eef392e81bbf2e9e0c40c2b73c2dd71f7395f8caf4e8907e006a850076cd63d"
+                      "sha256":  "563cc81b54cd5964de619d80cd51b9221bd488d6bcfd30856cd89040d696fea1"
                   },
                   {
                       "path":  "src/shared/ipc/events.schemas.ts",
@@ -183,7 +183,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "bc5fbf200be127296616c014e17d49599fe79e986be3e01eb3ce47b48c5fd846"
+                      "sha256":  "6296a674c8666d14872b71ba101cdbf06e45e2e8d208be2475db6eb5086562f2"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -203,7 +203,7 @@
                   },
                   {
                       "path":  "src/shared/models/lineage.ts",
-                      "sha256":  "7b3e77a1c91927724ff68dc2223ef13a8289d7d7b2ff7a1ab9b36f89c451f42d"
+                      "sha256":  "8d7b8eede6f6399d50dc662bc7bdebd18c739e6472ffdcc06829a45f601f2f79"
                   },
                   {
                       "path":  "src/shared/models/note.ts",
@@ -227,7 +227,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface-closure.test.ts",
-                      "sha256":  "c840b577d74eb707dec37e35111579e91800bcb77684750a5eb1736104520ded"
+                      "sha256":  "011e8d43433a28a51a7df293d299172740a2df7f6ac73fddb61f29652ac4f2b0"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -247,7 +247,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "b3d32a1c2286e2499710b6b7e9f39cef3e063b7b79a45a1f91d42d19d7be1cdc"
+                      "sha256":  "2a4187ff07d6ad4f00c9f0532e4dd7924f9c134776036e7fbff31e4387cfd9e1"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -259,7 +259,7 @@
                   },
                   {
                       "path":  "tests/e2e/e2e-env.ts",
-                      "sha256":  "c4a840ef5fb2bfb6f3277b80209212f284bc7d0688a2ebead3e4a026a10c6ca8"
+                      "sha256":  "7e3e77243a410fb620a219c9d2d1e1b82f772cdd3c45ae880eec53d0a0cc1729"
                   },
                   {
                       "path":  "tests/e2e/export-clipboard.spec.ts",
@@ -275,7 +275,7 @@
                   },
                   {
                       "path":  "tests/e2e/import-to-folder.spec.ts",
-                      "sha256":  "1732ae78094b817e75ac0156046086d9017cacafc9c2c0e0472c43402c465d91"
+                      "sha256":  "5cb2980262b7596a8dafd7bd3f36389b1af19df79c22ab2e05b7f9354981c96d"
                   },
                   {
                       "path":  "tests/e2e/library-density.spec.ts",
@@ -283,11 +283,11 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "cc19c7dd6a30dc231d60b8d6a12e2670cc3b21573e8da9885cb3fc9844157e84"
+                      "sha256":  "5fcca8a51c1b3f2f0190ca5fe7370cd2ae438318619b60fa3a15309897f6fccc"
                   },
                   {
                       "path":  "tests/e2e/lineage-topic-node.spec.ts",
-                      "sha256":  "443b51923a176c78a36871e200cadd8727db451b5dc062722e7d92f6d309d565"
+                      "sha256":  "7c6e38e85386d84acf27631f2a642cb14042f8d595b20eb7f82527b010a00ed9"
                   },
                   {
                       "path":  "tests/e2e/meta-year-month.spec.ts",
@@ -312,6 +312,10 @@
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
                       "sha256":  "82d531854f6e0db3db00ba0a4d254a5a5a80a109e6ed1871b337adfc885f9326"
+                  },
+                  {
+                      "path":  "tests/e2e/seed-lineage.mjs",
+                      "sha256":  "12765a556399c5799373d503be355e240b1bf87d7f50a7a16ba23fa2f73b7d5c"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -347,7 +351,7 @@
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
-                      "sha256":  "9efd4188e8fcc69cda50b4a2333aa115b72199794cbb32c1792f0c5cfe2eb9b8"
+                      "sha256":  "05c37dc5c4f7c4e02cf634373959f9dc39ca7a225f9e6f3f4c7127f4d18dcf96"
                   },
                   {
                       "path":  "tests/e2e/zcode-link.spec.ts",
@@ -579,7 +583,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-quit-dirty.test.tsx",
-                      "sha256":  "0cdbca00cff9522f92b928f3f896dabf4ca322cb03466c45e61560f1cb7bf89b"
+                      "sha256":  "63f25c26263bed5d0b4b4f704e83babe19b756300e819b561ae685ccd8a52e9d"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
@@ -639,7 +643,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
-                      "sha256":  "9dcce11e78907f5c90cccd5605118997d742737d7f50da48fe263f7817d4b04a"
+                      "sha256":  "e14e49a7cdfbc4227cb561265bd5a5756286748db0d30c9fddaf5d95784be325"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
@@ -699,15 +703,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline.test.tsx",
-                      "sha256":  "95c9565e8cdf3e8756d83e8a045f938f4ac595c4420eeece4b7969536068d4d1"
+                      "sha256":  "399b863191cf38d60dc4f347f048358e47ac8bce68dc662f849b481636068231"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline-edit.test.tsx",
-                      "sha256":  "f3fa98a2fd9a4edb8a1ec00cbb75df4b44298ce5d677334b0f78580c51a0b90b"
+                      "sha256":  "42ff42454c876cc28a7dc236e90a6cb1ce9c8df6f5afda1bbdb5a57e2e0c8038"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline-page.test.tsx",
-                      "sha256":  "a324850858b58cb13e7be1171244a4c4d796a6f13a5bfa06eef3d39b8ef327fe"
+                      "sha256":  "d672b82852082844dba7ff53d3a167f3d4f7f6bd11917aa50ea130d7cab76a5a"
                   },
                   {
                       "path":  "tests/unit/renderer/meta-edit-dialog.test.tsx",
@@ -1007,23 +1011,23 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
-                      "sha256":  "05079da7fd5bb264665aa36a53c70a349c5cdc3d326e12561d32696a0c20ca84"
+                      "sha256":  "17cb99a9529e92828f7de3362a15d1cad183e7c8cc1cdf82def4c2e8e6ff3381"
                   },
                   {
                       "path":  "tests/unit/services/lineage-manual-edges.test.ts",
-                      "sha256":  "2062033ba3d199c9dd7b1fbed7cb9f7784ad01dd38ffeb4262e8a8c6e3fbe9a3"
+                      "sha256":  "3ab9f46fa4ae66c773450c492507d830c83e9c099c4491462991fc75f8551c93"
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "1d1ae5c974c01a588e6d2ff042b96b3abfdfb69f552618e0536c820906b983f1"
+                      "sha256":  "6ae62725362c2d00380351c774aa8b20f9e2cdd74f342221afbb3ef994776eba"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-model.test.ts",
-                      "sha256":  "b57bd4e2ac2dd877b935644d2077cf7c86e9e1c1fcf66eae61106fa201c5c1f4"
+                      "sha256":  "7bb139726bb3cad521e2ac31d6db06148c25a8836418f9b1c280c58537dc9a40"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-service.test.ts",
-                      "sha256":  "5730d05140462f56588a66c0f7fb3f20de175b04cb56bbc985bfaf87836b40d0"
+                      "sha256":  "b04c240902a5877bc0d96a6e431106363e1918c89706f68ebbd598dc4d605c21"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
@@ -1171,7 +1175,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "48f2079466f46eb3ae4c4d5b130cfb6f99608384b4e810fb83dadeb059ec1e5b"
+                      "sha256":  "964b4d220f6adefc4ec82331b360d097b5271da1ba4712093f9eb7d933c59d88"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

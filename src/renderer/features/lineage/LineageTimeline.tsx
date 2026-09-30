@@ -18,7 +18,8 @@
  *   双闸）；拾取态点卡不转发 onNodeClick 选中；工具条（LineageToolbar
  *   换装 .lg-toolbar sticky）自本票移入渲染树——toolbar/actions props 经
  *   Board 下传（本件不触 store——纯 props 编排可直测）。
- * - 空图空态文案保活；工具条空图在场（导入=bootstrap 路径）。
+ * - 空图空态文案保活；工具条空图在场（添加节点=空图 bootstrap 路径；
+ *   [F-BAKRET-01] 导入入口随草稿导入链退役删除——用户裁决 2026-09-30）。
  */
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageEdgeKind, type LineageNode, type LineTypeGroup } from '@shared/models/lineage'
@@ -51,7 +52,6 @@ export interface TimelineToolbarProps {
   saveStatus: 'saved' | 'saving' | 'error'
   lastWriteError: string | null
   onAddNode(): void
-  onImportDraft(): void
   onRetrySave(): void
 }
 
@@ -171,15 +171,14 @@ export function LineageTimeline(props: {
         saveStatus={props.toolbar?.saveStatus ?? 'saved'}
         lastWriteError={props.toolbar?.lastWriteError ?? null}
         onAddNode={() => props.toolbar?.onAddNode()}
-        onImportDraft={() => props.toolbar?.onImportDraft()}
         onRetrySave={() => props.toolbar?.onRetrySave()}
         editing={composer.isEditing}
         onToggleEdit={composer.toggleEdit}
         onNewLink={composer.startLinkPick}
       />
       {nodes.length === 0 ? (
-        // 空态不短路滚动容器结构+工具条在场（导入=空图 bootstrap 路径）
-        <div className="tl-empty">暂无脉络图——导入草稿或添加节点</div>
+        // 空态不短路滚动容器结构+工具条在场（添加节点=空图 bootstrap 路径）
+        <div className="tl-empty">暂无脉络图——添加节点</div>
       ) : (
         <div className="tl-content" ref={contentRef}>
           {/* [T3-P7A] 连线层子组件（D-22）+[T3-P7B] 命中层点击接 composer

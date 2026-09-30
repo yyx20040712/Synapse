@@ -30,8 +30,7 @@ const stubApi = makeApiStub({
     upsertNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
-    removeEdge: vi.fn(),
-    importDraft: vi.fn()
+    removeEdge: vi.fn()
   },
   library: { list: vi.fn() },
   system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }

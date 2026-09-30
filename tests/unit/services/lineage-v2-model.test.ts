@@ -3,10 +3,11 @@
  *
  * 覆盖：kind 四值枚举（inferred 先行——P5 无产生入口防退化）/LineageNode
  * month 边界（0/13 拒、1/12 过、null=未定月）/slot（负拒、0 过、null 兜底）/
- * LineageEdge sub（string|null）/draft v1.2（旧草稿零破坏+month 透传+越界拒）/
- * LineTypeSub·LineTypeGroup 形状（空串 dash=实线、w positive、空 id 拒）/
- * 恒四组强校验 schema（base 集合恰四枚举各一）/lineageOrder 排序契约
- * （乱序插入归位+null 组末三态+行序 tiebreak）+lineageCatalogNos 全序编号。
+ * LineageEdge sub（string|null）/LineTypeSub·LineTypeGroup 形状（空串 dash=
+ * 实线、w positive、空 id 拒）/恒四组强校验 schema（base 集合恰四枚举各一）/
+ * lineageOrder 排序契约（乱序插入归位+null 组末三态+行序 tiebreak）+
+ * lineageCatalogNos 全序编号（draft v1.2 面已随导入链退役删除——
+ * [F-BAKRET-01] 2026-09-30，ADR-0022）。
  * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §1/§4。
  * always-active（不经 guardedDescribe）。
  */
@@ -15,7 +16,6 @@ import {
   LINE_TYPE_BASE_ORDER,
   lineTypeGroupSchema,
   lineTypeGroupsSchema,
-  lineageDraftNodeSchema,
   lineageEdgeKindSchema,
   lineageEdgeSchema,
   lineageNodeSchema,
@@ -101,27 +101,6 @@ describe('T3-P5 LineageEdge sub（string|null 必填键）', () => {
     expect(lineageEdgeSchema.safeParse({ ...base, sub: null }).success).toBe(true)
     expect(lineageEdgeSchema.safeParse(base).success).toBe(false)
     expect(lineageEdgeSchema.safeParse({ ...base, sub: 5 }).success).toBe(false)
-  })
-})
-
-describe('T3-P5 draft v1.2（仅 month optional 新增）', () => {
-  const base = { paper_id: 'p-1', title: '起源', year: 2018, core_idea: '源头' }
-
-  it('旧草稿（无 month）零破坏；month 透传 6；null 显式过', () => {
-    expect(lineageDraftNodeSchema.safeParse(base).success).toBe(true)
-    const parsed = lineageDraftNodeSchema.parse({ ...base, month: 6 })
-    expect(parsed.month).toBe(6)
-    expect(lineageDraftNodeSchema.parse({ ...base, month: null }).month).toBeNull()
-  })
-
-  it('month 越界拒（0/13）；未知字段仍 strict 拒（其余字段未放松）', () => {
-    // 判别锚：合法 month 必须过（旧 schema strict 未知键拒——本断言红即未落 month）
-    expect(lineageDraftNodeSchema.safeParse({ ...base, month: 6 }).success).toBe(true)
-    expect(lineageDraftNodeSchema.safeParse({ ...base, month: 0 }).success).toBe(false)
-    expect(lineageDraftNodeSchema.safeParse({ ...base, month: 13 }).success).toBe(false)
-    // B-1 回退锚：title 必填、core_idea 必填面不动
-    expect(lineageDraftNodeSchema.safeParse({ ...base, title: '' }).success).toBe(false)
-    expect(lineageDraftNodeSchema.safeParse({ paper_id: 'p-1', year: 2018, core_idea: '' }).success).toBe(false)
   })
 })
 

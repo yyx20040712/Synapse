@@ -7,7 +7,8 @@
  * - 「编辑脉络」ghost toggle（edit 态=「完成编辑」+.lg-btn.editing——D-P7B-1；
  *   mode 单源驻 Timeline，本件纯受控）+「新建连线」.lg-btn.linkbtn
  *   （display:none↔.editing 内 block——D-21 编辑模式内才显；DOM 恒在场）
- *   +导入草稿 .lg-btn primary+添加节点 .lg-btn ghost（repo 特有 mockup 无位）。
+ *   +添加节点 .lg-btn ghost（repo 特有 mockup 无位）。[F-BAKRET-01]
+ *   「导入草稿」按钮随草稿导入链退役删除（用户裁决 2026-09-30）。
  * - 保存态/重试 chip 行尾（[P7-H] 既有语义零变——testid 全保活）；
  *   [T3-P8] drag-hint 双态全时渲染（D-P7B-1 兑现——mockup L507/L1010-1013
  *   逐字）：view「↕ 拖动＝月内调序（虚线槽＝候选文献位）」/edit 全句。
@@ -18,7 +19,6 @@ export function LineageToolbar(props: {
   saveStatus: LineageSaveStatus
   lastWriteError: string | null
   onAddNode(): void
-  onImportDraft(): void
   onRetrySave(): void
   /** [T3-P7B] 编辑模式态（Timeline 单源受控） */
   editing: boolean
@@ -44,9 +44,6 @@ export function LineageToolbar(props: {
         onClick={props.onNewLink}
       >
         新建连线
-      </button>
-      <button type="button" className="lg-btn" data-testid="lineage-import" onClick={props.onImportDraft}>
-        导入草稿
       </button>
       <button type="button" className="lg-btn ghost" data-testid="lineage-add-node" onClick={props.onAddNode}>
         添加节点

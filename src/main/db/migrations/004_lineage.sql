@@ -7,7 +7,8 @@
 -- - x/y 手工位置覆盖（JSON Canvas 模式，obsidian 先例）；NULL=自动布局（LG-02）
 -- - 级联：paper 删→节点 CASCADE→边随节点级联（DDL 链承担）；节点删→边 CASCADE
 -- - UNIQUE(from_node,to_node)：重复边 DDL 收口（应用层前置守卫中文 reason）
--- - v1 生产者=草稿导入器（service importDraft 替换式重灌）；消费者=listGraph
+-- - v1 生产者曾含草稿导入器（service 替换式重灌——[F-BAKRET-01] 2026-09-30
+--   随草稿导入链退役删除，ADR-0022）；消费者=listGraph
 --   （LG-02 布局+LG-03 编辑）
 CREATE TABLE lineage_nodes (
   id         TEXT PRIMARY KEY,            -- uuid

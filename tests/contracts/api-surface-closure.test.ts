@@ -15,7 +15,8 @@ import * as S from '../../src/shared/ipc/schemas'
  * 执法对象，pin 即变更审计锚。新测试 always-active。
  */
 
-/** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道） */
+/** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道；
+ *  [F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法） */
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
   ['enrich', ['fetch']],
@@ -23,7 +24,7 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['folders', ['create', 'delete', 'list', 'rename']],
   ['import_', ['fromDialog', 'fromFolder', 'fromPaths']],
   ['library', ['collections', 'detail', 'list', 'updateMeta']],
-  ['lineage', ['graph', 'importDraft', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes', 'upsertNode']],
+  ['lineage', ['graph', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes', 'upsertNode']],
   ['notes', ['get', 'remove', 'save']],
   ['papers', ['moveFolder']],
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
@@ -34,12 +35,12 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 ]
 
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(61)（[F-FOLDER-01]
-// 起 61 通道：+folders 四通道+papers/move-folder 单通道；此前 F-TAGS-01 起
-// 56=tags 域 setColor——lineage/upsert-node 既有通道载荷 +folderId 属改写非新增）
+// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(60)（[F-BAKRET-01]
+// 61→60：lineage/import 退役——用户裁决 2026-09-30；此前 [F-FOLDER-01]
+// 56→61：+folders 四通道+papers/move-folder 单通道）
 describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=61（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-FOLDER-01] 56→61）', () => {
-    expect(allChannels().length).toBe(61)
+  it('通道总数=60（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-BAKRET-01] 61→60：lineage/import 退役）', () => {
+    expect(allChannels().length).toBe(60)
   })
 
   it('域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）', () => {

@@ -1,17 +1,16 @@
 /**
- * 脉络图（lineage）模型 —— lineage_nodes/lineage_edges 表与 draft 导入协议的
- * 跨进程单源契约（LG-01 交付面，已锁定）。
+ * 脉络图（lineage）模型 —— lineage_nodes/lineage_edges 表的跨进程单源契约
+ * （LG-01 交付面，已锁定）。
  *
- * 两套 schema 分开命名（主控裁决 3）：
- * - draft*（snake_case 文件面）：lineage JSON 草稿导入协议（ADR-0014 §裁决——
- *   梳理智能体产物经文件协议导入，ADR-0015 同精神）。v1 draft 仅文献节点
- *   （纯主题节点=应用内手工创建，LG-03，不进 draft 协议）。行级中文错误消息
- *   （required_error/invalid_type_error）=zod 层校验面单源。
+ * schema 命名（主控裁决 3，[F-BAKRET-01] draft 面退役后仅存应用面）：
  * - 应用面（camelCase）：DB 行 schema（lineageNode/lineageEdge）与 upsert 输入面
  *   （id 缺省=新建 randomUUID；提供=更新，created_at 首插保留）。
+ * - draft*（snake_case 文件面）草稿导入协议已随导入链退役删除（2026-09-30，
+ *   ADR-0022——备份域归未来服务端多实体导出；lineage.json 导出面=assemble
+ *   golden 锁定，与 draft 协议无共享 schema）。
  * 接缝锚定（INV-11）：DDL 真相=迁移 004（UNIQUE(from_node,to_node) 收口）；
  * 树单父约束（无多父/无环/无自环）不在 DDL——service 层不变量 INV-27，
- * 守卫宿主=services/lineage/lineage.service（导入校验+upsertEdge 运行时双口）。
+ * 守卫宿主=services/lineage/lineage.service（upsertEdge 运行时口）。
  */
 import { z } from 'zod'
 
@@ -81,81 +80,6 @@ export function isSurveyTitle(title: string): boolean {
   const lower = title.toLowerCase()
   return SURVEY_KEYWORDS.some((kw) => lower.includes(kw))
 }
-
-// ── draft 导入协议（snake_case 文件面，ADR-0014 字面） ─────────────
-
-export const lineageDraftNodeSchema = z
-  .object({
-    paper_id: z
-      .string({ required_error: 'paper_id 缺失', invalid_type_error: 'paper_id 应为字符串' })
-      .min(1, 'paper_id 不能为空'),
-    title: z
-      .string({ required_error: 'title 缺失', invalid_type_error: 'title 应为字符串' })
-      .min(1, 'title 不能为空'),
-    year: z
-      .number({ required_error: 'year 缺失', invalid_type_error: 'year 应为数字' })
-      .int('year 应为整数')
-      .nullable(),
-    core_idea: z.string({
-      required_error: 'core_idea 缺失',
-      invalid_type_error: 'core_idea 应为字符串'
-    }),
-    /** F-LG14 可选标签（口径=草稿带为主，导入即有；缺省省略=旧版草稿零破坏
-     *  ——ADR-0014 修订记录 v1.1：v1 加可选字段=向后兼容）。元素=非空字符串
-     *  （空串标签无语义拒收）；同节点同名标签去重=repo 写边界单源
-     *  dedupeLineageTags（本文件导出）。 */
-    tags: z
-      .array(
-        z.string({ invalid_type_error: '标签应为字符串' }).min(1, '标签不能为空字符串'),
-        { invalid_type_error: 'tags 应为数组' }
-      )
-      .optional(),
-    /** [T3-P5] 导入协议 v1.2 仅新增 month（缺省=null 未定月——design-final
-     *  §1/D-P5-8：其余字段 optional 化=越权契约放松，弃）。标题/核心思想必填
-     *  面零动。 */
-    month: z
-      .number({ invalid_type_error: 'month 应为数字' })
-      .int('month 应为整数')
-      .min(1, 'month 应在 1..12')
-      .max(12, 'month 应在 1..12')
-      .nullable()
-      .optional()
-  })
-  .strict()
-export type LineageDraftNode = z.infer<typeof lineageDraftNodeSchema>
-
-export const lineageDraftEdgeSchema = z
-  .object({
-    from_paper_id: z
-      .string({
-        required_error: 'from_paper_id 缺失',
-        invalid_type_error: 'from_paper_id 应为字符串'
-      })
-      .min(1, 'from_paper_id 不能为空'),
-    to_paper_id: z
-      .string({
-        required_error: 'to_paper_id 缺失',
-        invalid_type_error: 'to_paper_id 应为字符串'
-      })
-      .min(1, 'to_paper_id 不能为空'),
-    label: z.string({ required_error: 'label 缺失', invalid_type_error: 'label 应为字符串' })
-  })
-  .strict()
-export type LineageDraftEdge = z.infer<typeof lineageDraftEdgeSchema>
-
-export const lineageDraftSchema = z
-  .object({
-    nodes: z.array(lineageDraftNodeSchema, {
-      required_error: 'nodes 缺失',
-      invalid_type_error: 'nodes 应为数组'
-    }),
-    edges: z.array(lineageDraftEdgeSchema, {
-      required_error: 'edges 缺失',
-      invalid_type_error: 'edges 应为数组'
-    })
-  })
-  .strict()
-export type LineageDraft = z.infer<typeof lineageDraftSchema>
 
 // ── 应用面（camelCase——DB 行与写入口输入） ────────────────────────
 

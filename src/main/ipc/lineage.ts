@@ -1,12 +1,9 @@
 /**
- * ipc/lineage —— 脉络图域装配（LG-01：草稿导入+全图读两通道；LG-03：写四通道接线）。
+ * ipc/lineage —— 脉络图域装配（LG-01：全图读通道；LG-03：写四通道接线）。
  *
  * 薄分发（SR-IPC-* 同型）：业务在 services/lineage/lineage.service。
- * INV-07：草稿文件路径只出自 main 侧系统对话框（dialogs.pickJsonFile——
- * 本单在 Dialogs 依赖对象上新增，pickPdfFiles 单选同型；corpusSession
- * C-02「ipc 层选、service 收已选路径」同序）。用户取消→CANCELLED 域错误
- * （register 经 toAppError 折叠）；校验失败不是错误——ImportResult 判别
- * 联合原样回传（消费方分支呈现 errors 清单，INV-13 折叠约定）。
+ * [F-BAKRET-01] 草稿导入通道（lineage/import+main 侧 JSON 对话框）随导入链
+ * 退役删除（用户裁决 2026-09-30——ADR-0022）。
  * 写四通道（LG-03）：Req→service 入参的缺省归一（paperId/x/y 省略=null=
  * 主题节点/自动布局；label 省略=''）；树守卫全部在 service（INV-27 守卫
  * 宿主——IPC 零守卫），拒绝经 LineageDomainError（CONFLICT）由 toAppError
@@ -14,22 +11,10 @@
  * 保留重试）。
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
-import { DomainError } from '../services/shared/domain-error'
 import type { IpcDeps } from './ipc-deps'
-
-/** 域错误载体（shared/domain-error 基类一行继承——F-DEDUP-01 单源；
- *  .CancelledError 子类无必要） */
-class LineageIpcError extends DomainError {}
 
 export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
   return {
-    importDraft: async () => {
-      const file = await deps.dialogs.pickJsonFile()
-      if (file === null) {
-        throw new LineageIpcError('CANCELLED', '已取消选择草稿文件')
-      }
-      return deps.services.lineage.importFromFile(file)
-    },
     graph: async (req) => deps.services.lineage.graph(req.folderId),
     upsertNode: async (req) =>
       deps.services.lineage.upsertNode({
