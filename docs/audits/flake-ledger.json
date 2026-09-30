@@ -77,11 +77,11 @@
     {
       "spec": "tests/e2e/reader-scroll.spec.ts",
       "case": "收官全链（P3 划选步骤）",
-      "count": 1,
-      "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log",
-      "status": "observing",
+      "count": 5,
+      "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log。2026-09-30「脉络图前小票」批 4 现增量（executor-2 场×2→executor-3 场×1→回炉批 0→probe 场×1，各场单 spec 复跑恒绿=非确定性确认；批次三票+回炉面零 reader 域引用=非本批引入；probe 指纹档=仓外 f-prebatch-probe-progress.md）——与「列宽基准」条目同测试同位置相邻段（:176 同行两变体：本条 selectText 脱附/彼条 annotation-rect 等待超时）＝同族「负载下元素脱附」两变体，F-FLAKE-02 修复票范围须并含（裁决部 C1/C2）",
+      "status": "filed",
       "first_seen": "2026-09-30",
-      "resolution": "观察中（第 2 现即立案——charter §1.4 立案线；F-WS-02 probe M2 首跑观测，executor 同套件基线 55/55 绿在档）"
+      "resolution": "立案（5 现>charter 立案线 2 现之两倍——复跑绿不销项；裁决部 C1 2026-09-30 升格 filed 并入 F-FLAKE-02 修复票范围=selectText 脱附变体显式入排查清单；F-FLAKE-02 不得再顺延=该测试两变体合计 ≥9 现）"
     },
     {
       "spec": "tests/e2e/reader-scroll.spec.ts",
