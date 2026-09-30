@@ -262,7 +262,7 @@ describe('T3-P5 inferred 边守卫（同 tree：单父+拒环）', () => {
       ],
       edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '继承' }]
     })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
+    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
     expect(svc.graph().edges.every((e) => e.kind === 'tree' && e.sub === null)).toBe(true)
   })
 })
@@ -308,6 +308,26 @@ describe('T3-P5 upsertNode month/slot 归一（主控预裁 D-I-1）', () => {
     const u = svc.upsertNode({ id: n.id, paperId: 'p-1', title: '显式', coreIdea: '', year: 2020, x: null, y: null, month: 6, slot: null })
     expect(u.slot).toBeNull()
   })
+
+  it('[F-FOLDER-02 F5] 跨图改图（folderId 变、year/month 不变）slot 归一目标组 max+1——W3 终裁（显式/缺省两路均不透写不保留）', () => {
+    // 主题节点（paperId null）显式跨图改图=F5 可达路径（文献节点 folderId≠归属被 INV-88 拒）
+    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-a','图甲',1)").run()
+    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-b','图乙',2)").run()
+    const moved = seedNode({ id: 'f5-n', year: 2020, month: 3, slot: 1 })
+    db.prepare("UPDATE lineage_nodes SET folder_id='f-a' WHERE id='f5-n'").run()
+    seedNode({ id: 'f5-occ', year: 2020, month: 3, slot: 5 })
+    db.prepare("UPDATE lineage_nodes SET folder_id='f-b' WHERE id='f5-occ'").run()
+    // 显式 slot 路（renderer 编辑面恒携 slot）：原实现透写 9——目标组撞值面（INV-75 同图唯一击穿）
+    const u = svc.upsertNode({ id: moved.id, paperId: null, title: '跨图', coreIdea: '', year: 2020, x: null, y: null, month: 3, slot: 9, folderId: 'f-b' })
+    expect(u.folderId).toBe('f-b')
+    expect(u.slot).toBe(6) // 目标组 (f-b,2020,3) max=5 → +1（显式 9 被归一覆盖）
+    // 缺省 slot 路（第二节点仍留 f-a 组——u1 已把 moved 落入 f-b，其再 upsert 属同组保留，
+    // 不足证缺省跨图面）：原实现保留 existing.slot——同撞值面
+    const moved2 = seedNode({ id: 'f5-n2', year: 2020, month: 3, slot: 2 })
+    db.prepare("UPDATE lineage_nodes SET folder_id='f-a' WHERE id='f5-n2'").run()
+    const u2 = svc.upsertNode({ id: moved2.id, paperId: null, title: '跨图二', coreIdea: '', year: 2020, x: null, y: null, month: 3, folderId: 'f-b' })
+    expect(u2.slot).toBe(7) // f-b 组现行 max=6（u1 归一结果）→ +1（缺省原值 2 被归一覆盖）
+  })
 })
 
 // ── importDraft：month 透传+slot 归一 ──────────────────────────
@@ -322,7 +342,7 @@ describe('T3-P5 importDraft v1.2（month=n.month ?? null；slot 逐节点 max+1�
       ],
       edges: []
     })
-    expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 0 })
+    expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 0, skippedCrossGraphEdges: 0 })
     const g = svc.graph()
     const byPaper = new Map(g.nodes.map((n) => [n.paperId, n]))
     expect(byPaper.get('p-1')!.month).toBe(3)

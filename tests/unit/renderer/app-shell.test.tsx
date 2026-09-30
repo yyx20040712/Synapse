@@ -22,11 +22,17 @@ const stubApi = makeApiStub({
   library: { list: vi.fn() },
   settings: { get: vi.fn(), set: vi.fn() },
   system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
-  workspaces: { list: vi.fn(), switch: vi.fn() }
+  workspaces: { list: vi.fn(), switch: vi.fn() },
+  // [F-FOLDER-02·A/B] FolderFilter（文献库页）+图切换器（脉络页）文件夹域面
+  folders: { list: vi.fn() },
+  papers: { moveFolder: vi.fn() }
 })
 stubApiEvents({
   onExportCorpus: vi.fn(() => () => undefined),
-  onImportProgress: vi.fn(() => () => undefined)
+  onImportProgress: vi.fn(() => () => undefined),
+  // [F-FOLDER-02·A/B] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
+  // 订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
 })
 
 import { App } from '../../../src/renderer/app/App'

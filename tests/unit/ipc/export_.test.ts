@@ -20,7 +20,6 @@ const detail = {
   venue: '',
   doi: null,
   tagNames: [],
-  collectionNames: [],
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
@@ -32,8 +31,7 @@ const detail = {
   fileUrl: '',
   fileName: '',
   updatedAt: '',
-  tags: [],
-  collections: []
+  tags: []
 }
 
 guardedDescribe('SR-IPC-07', 'ipc/export_ —— 构建内容→对话框→写文件', () => {

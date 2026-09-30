@@ -28,12 +28,17 @@ const stubApi = makeApiStub({
     removeEdge: vi.fn(),
     importDraft: vi.fn()
   },
+  // [F-FOLDER-02·B] 图切换器静态参考数据面（App 级挂载经 LineagePage 消费）
+  folders: { list: vi.fn() },
   library: { list: vi.fn() },
   system: { setQuitDirty: vi.fn(), windowControl: vi.fn() }
 })
 stubApiEvents({
   onExportCorpus: vi.fn(() => () => undefined),
-  onImportProgress: vi.fn(() => () => undefined)
+  onImportProgress: vi.fn(() => () => undefined),
+  // [F-FOLDER-02·B] folders.changed 订阅面（S3/S4——mock 代理未覆盖键透传
+  // undefined，切换器订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
 })
 
 import { showToast } from '../../../src/renderer/shared/ui/toast-store'
@@ -393,7 +398,8 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
       coreIdea: '',
       year: null,
       x: null,
-      y: null
+      y: null,
+      folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
     })
   })
 })

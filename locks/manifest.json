@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T00:42:41.8655111Z",
+    "generatedAt":  "2026-09-30T03:47:19.1319903Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "f238b734f031f5e993bb77b6d0c5b5bc3267c4e150828104187a2b55a1aadc0e"
+                      "sha256":  "1d2dd56c37ddf8019ff50facaa5501ada6957400efe2c44b617bc4a6cd810caf"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -183,7 +183,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "a5d76f2baeb00f8f7d68c65b1ffad6999583c499e73c659d0154f04598295e19"
+                      "sha256":  "bc5fbf200be127296616c014e17d49599fe79e986be3e01eb3ce47b48c5fd846"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -247,7 +247,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "be05793a7508fa77663e56b0baf5473402a26d4e63aebfd5f7a687d69347aa57"
+                      "sha256":  "b3d32a1c2286e2499710b6b7e9f39cef3e063b7b79a45a1f91d42d19d7be1cdc"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -266,8 +266,16 @@
                       "sha256":  "b3c828594818d4bbb38e750b4d87dc92dfc87eb3e3f6c01fdb8420f3f78cf981"
                   },
                   {
+                      "path":  "tests/e2e/folders-crud.spec.ts",
+                      "sha256":  "18599bbe1d0e9d51627a565a61998f48bb81cc6dc0a79c05930c41bca57d885f"
+                  },
+                  {
                       "path":  "tests/e2e/import-drag.spec.ts",
                       "sha256":  "25b087b2716cb689a446f2675c97c7496728419042e32df0a0dfb7fedfd4ee96"
+                  },
+                  {
+                      "path":  "tests/e2e/import-to-folder.spec.ts",
+                      "sha256":  "1732ae78094b817e75ac0156046086d9017cacafc9c2c0e0472c43402c465d91"
                   },
                   {
                       "path":  "tests/e2e/library-density.spec.ts",
@@ -276,6 +284,18 @@
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
                       "sha256":  "cc19c7dd6a30dc231d60b8d6a12e2670cc3b21573e8da9885cb3fc9844157e84"
+                  },
+                  {
+                      "path":  "tests/e2e/lineage-topic-node.spec.ts",
+                      "sha256":  "443b51923a176c78a36871e200cadd8727db451b5dc062722e7d92f6d309d565"
+                  },
+                  {
+                      "path":  "tests/e2e/meta-year-month.spec.ts",
+                      "sha256":  "f920233cf1dc23053cf2f6f59e15482730e1cbbd330b9e3c5491e959219d87b8"
+                  },
+                  {
+                      "path":  "tests/e2e/move-paper.spec.ts",
+                      "sha256":  "a6e728e231217e1df5a7d06e143a36bbcd025ff1984e1448ec67716304b1954b"
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
@@ -439,7 +459,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/export_.test.ts",
-                      "sha256":  "c597bea516178d88ad3e4c13c331fcc0693e29f1df451298e6e11267fb1deeeb"
+                      "sha256":  "4da387f60b3c63d0080a2cb16cec613849b8c0e659da501cf19f7c96c544743a"
                   },
                   {
                       "path":  "tests/unit/ipc/export-clipboard.test.ts",
@@ -563,7 +583,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "5f29de2815b576a8c6ccd21f042461d1c725554e10b5d7599aa80cc325761d22"
+                      "sha256":  "436cdccb9f3fa853d8a848d4684e3556189288ee1536efe13ccc614e48c03430"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell-t3u1.test.tsx",
@@ -582,12 +602,24 @@
                       "sha256":  "cd3103ffaf1473738335a24485f188f1350bf4925019027eaed905addd96ced2"
                   },
                   {
+                      "path":  "tests/unit/renderer/dialog-esc-compose.test.tsx",
+                      "sha256":  "07b564bcb8a03b38327f855698aeee6016caec08b494d5b0f4964c0de21a8480"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/folder-filter.test.tsx",
+                      "sha256":  "d886e4b859d97b8a08867957599c7d9d4db2aa5ac9d64f39307f3a1cebc64b00"
+                  },
+                  {
                       "path":  "tests/unit/renderer/import-drag-ui.test.tsx",
-                      "sha256":  "ec0f2a33e4e84c14d135bf7028e68d50d25fa03968353ce0c6460ce9e0b0f205"
+                      "sha256":  "11f366a18d68dddb738fe3c61fb5e030368c608b4363bfa89c8ea8b1f41bdf21"
                   },
                   {
                       "path":  "tests/unit/renderer/import-dropzone.test.tsx",
-                      "sha256":  "ced69bd2c0e049bad12bacf24363fa8f41f27d0825ce8c7fde61ac21d10b1213"
+                      "sha256":  "f7edc530be7d8f3280a2636d582e8256044b4a62172da2233c2bfac11793460c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/import-to-folder.test.tsx",
+                      "sha256":  "31d3a18da0612f9976c596ab6287501f04a60f29f7412e4ade7ac23726df7242"
                   },
                   {
                       "path":  "tests/unit/renderer/keymap.test.ts",
@@ -599,7 +631,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "c6fa364e6a64d5c281879fdfbb7739f872cf7e540308df71aa1561f349cdd885"
+                      "sha256":  "bced4f13ba8a0c9f09eab74e80c3a748d6b4c7f290c01d093cdbca53ff8f6481"
                   },
                   {
                       "path":  "tests/unit/renderer/library-lineage-display.test.tsx",
@@ -607,7 +639,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
-                      "sha256":  "c40a61f30cad4fc7243324a829bae25298aed4f6c466b4b2e05e9c122d708878"
+                      "sha256":  "9dcce11e78907f5c90cccd5605118997d742737d7f50da48fe263f7817d4b04a"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
@@ -630,6 +662,10 @@
                       "sha256":  "56c1febda8e16dd4ce1e102a7a31ff677ce9d2dfe22491aaf1f9a6b1bcb01421"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-graph-switcher.test.tsx",
+                      "sha256":  "622a7af9a5ab5a77a75402390e8eac81c800078f452fc6e1c15c83d3f1567143"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-manual-edit.test.tsx",
                       "sha256":  "7bd1556cb5a9aec4cf1e6a37113fd627bb032633a41ef3fa5a4df4d81e4ed9c9"
                   },
@@ -643,7 +679,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "b2c0233ca98867cd3118a8e7bab4bf7bf4a9218ea06c36f0ec68099f5a10eaa1"
+                      "sha256":  "dcc324a4367ec5dfb7c527040ff5720431fd47eba747089e80c7e872793882cb"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-reskin.test.tsx",
@@ -655,7 +691,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-store-write.test.ts",
-                      "sha256":  "2e9eded9684a6155fd4926b52a08af9b2b07cc229f14386fe2394b45dbb3d6bc"
+                      "sha256":  "031f934dec974f60381e92b949d0b0ccae1200db0e18b9222ca6ad2ca454474f"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-tag-edit.test.tsx",
@@ -671,7 +707,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline-page.test.tsx",
-                      "sha256":  "a21317372af6529141f75117f172e3c77c8610956312f6cd6f329fd3c02bb4cd"
+                      "sha256":  "a324850858b58cb13e7be1171244a4c4d796a6f13a5bfa06eef3d39b8ef327fe"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/meta-edit-dialog.test.tsx",
+                      "sha256":  "dcb2b5912f59c861bb265edba715f5b22e02bd1ddf5a9a35139d2fad5b5f4c69"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
@@ -843,7 +883,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-filter-multi.test.tsx",
-                      "sha256":  "36435dccc337872c3b1c859796b020c67d5700fc834768768ad4ece8385b7374"
+                      "sha256":  "558caafed2e01cfbed93be41e07fcbf95ae81b7125693afc11d95125463cfa9e"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
@@ -963,19 +1003,19 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-assemble.test.ts",
-                      "sha256":  "fc2f7983b856df7b74f3ac2e0cfb54fa738457470434fee74a2562e658049b3c"
+                      "sha256":  "52a7f00f435885e8b397b38bf55d839f80366bf30166a6d8a9fa04e35cfc93b4"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
-                      "sha256":  "54894fe926028f6f755980b8c9dcc2f4195abb93bc210ef465462bd32e3a5dcd"
+                      "sha256":  "05079da7fd5bb264665aa36a53c70a349c5cdc3d326e12561d32696a0c20ca84"
                   },
                   {
                       "path":  "tests/unit/services/lineage-manual-edges.test.ts",
-                      "sha256":  "059001f7943f66192afb77b1a0d9581c4ea87744d8b749fc2749974dd25dc7f9"
+                      "sha256":  "2062033ba3d199c9dd7b1fbed7cb9f7784ad01dd38ffeb4262e8a8c6e3fbe9a3"
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "ab99c25e8a753bd509a8548a3321d1d507ce6d547ab7ed8dbe2c69cf28c7867f"
+                      "sha256":  "1d1ae5c974c01a588e6d2ff042b96b3abfdfb69f552618e0536c820906b983f1"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-model.test.ts",
@@ -983,7 +1023,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-service.test.ts",
-                      "sha256":  "78e20b643ffcfb0b4560ba2242f00b3bdc6f18c29acfa112d547aaf305c7e558"
+                      "sha256":  "5730d05140462f56588a66c0f7fb3f20de175b04cb56bbc985bfaf87836b40d0"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",

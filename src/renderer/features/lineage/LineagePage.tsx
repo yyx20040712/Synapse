@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
 import { useLineageStore } from './lineage.store'
 import { LineageBoard } from './LineageBoard'
+import { LineageGraphSwitcher } from './LineageGraphSwitcher'
 import { LineageSidePanel } from './LineageSidePanel'
 import { isCore } from './lineage-classify'
 
@@ -32,6 +33,9 @@ export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
   const error = useLineageStore((s) => s.error)
   const load = useLineageStore((s) => s.load)
+  // [F-FOLDER-02·B] 图作用域+节点计数（S4 空态提示消费面——页首图切换器挂载）
+  const folderId = useLineageStore((s) => s.folderId)
+  const nodeCount = useLineageStore((s) => s.nodes.length)
   // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
@@ -95,26 +99,39 @@ export function LineagePage(): JSX.Element {
     )
   }
   return (
-    <div className="flex h-full gap-1 p-1">
-      <div className="min-w-0 flex-1">
-        <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+    <div className="flex h-full flex-col">
+      {/* [F-FOLDER-02·B] 页首图切换器（S2 busy 禁切/S3 改名联动/S4 删除回退
+          全在切换器内承接）+空图提示：folder 选中且子图空=「该文件夹无脉络图」
+          （区别于时间线通用空态——含「未选中文件夹」语境） */}
+      <div className="flex items-center gap-3 px-2 pt-2">
+        <LineageGraphSwitcher />
+        {folderId !== undefined && nodeCount === 0 && (
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
+            该文件夹无脉络图
+          </span>
+        )}
       </div>
-      {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
-          尺寸直通（接线零动，纯容器样式归并） */}
-      <aside className="w-72 shrink-0 overflow-hidden">
-        <LineageSidePanel
-          node={selectedNode}
-          onJumpToPaper={handleJumpToPaper}
-          onSetTags={(id, tags) => useLineageStore.getState().setNodeTags(id, tags)}
-          pubNo={
-            selectedNode !== null && selectedNode.paperId !== null
-              ? (pubNos[selectedNode.paperId] ?? null)
-              : null
-          }
-          core={selCore}
-          metrics={selMetrics}
-        />
-      </aside>
+      <div className="flex min-h-0 flex-1 gap-1 p-1">
+        <div className="min-w-0 flex-1">
+          <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+        </div>
+        {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
+            尺寸直通（接线零动，纯容器样式归并） */}
+        <aside className="w-72 shrink-0 overflow-hidden">
+          <LineageSidePanel
+            node={selectedNode}
+            onJumpToPaper={handleJumpToPaper}
+            onSetTags={(id, tags) => useLineageStore.getState().setNodeTags(id, tags)}
+            pubNo={
+              selectedNode !== null && selectedNode.paperId !== null
+                ? (pubNos[selectedNode.paperId] ?? null)
+                : null
+            }
+            core={selCore}
+            metrics={selMetrics}
+          />
+        </aside>
+      </div>
     </div>
   )
 }

@@ -165,7 +165,7 @@ describe('F-LG15 draft 导入协议不收 manual', () => {
       ],
       edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '主要继承' }]
     })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
+    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
     expect(svc.graph().edges.every((e) => e.kind === 'tree')).toBe(true)
   })
 })

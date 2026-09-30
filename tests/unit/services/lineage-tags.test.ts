@@ -120,7 +120,7 @@ describe('F-LG14 导入落库（草稿带为主，导入即有）', () => {
       ],
       edges: [{ from_paper_id: 'p-1', to_paper_id: 'p-2', label: '继承' }]
     })
-    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
+    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
     const g = svc.graph()
     expect(g.nodes.find((n) => n.paperId === 'p-1')?.tags).toEqual(['综述', '早期'])
     expect(g.nodes.find((n) => n.paperId === 'p-2')?.tags).toBeNull()

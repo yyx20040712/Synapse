@@ -277,10 +277,17 @@ export const zcodeLinkInstallResSchema = z.object({ fileCount: z.number().int().
 export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
 
 // ── lineage（LG-01 脉络图：草稿导入+全图读——dialog 在 ipc 层 INV-07）────
-/** lineage/import 响应：判别联合（全有或全无——校验任一失败库不动，errors 行级中文） */
+/** lineage/import 响应：判别联合（全有或全无——校验任一失败库不动，errors 行级中文）；
+ * [F-FOLDER-02 C2] ok 分支 +skippedCrossGraphEdges（跨图边跳过计数——多图草稿
+ * 正常形态下跨图边不写入，renderer toast 告知；主控终裁 2026-09-30） */
 export const lineageImportResSchema = z.union([
   z
-    .object({ ok: z.literal(true), nodeCount: z.number().int().min(0), edgeCount: z.number().int().min(0) })
+    .object({
+      ok: z.literal(true),
+      nodeCount: z.number().int().min(0),
+      edgeCount: z.number().int().min(0),
+      skippedCrossGraphEdges: z.number().int().min(0)
+    })
     .strict(),
   z
     .object({

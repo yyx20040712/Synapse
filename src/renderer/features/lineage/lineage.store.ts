@@ -41,7 +41,7 @@ import { create } from 'zustand'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
-import { lineageOrder } from '@shared/models/lineage'
+import { lineageOrder, MAIN_GRAPH_ID } from '@shared/models/lineage'
 import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert, LineTypeGroup } from '@shared/models/lineage'
 
 export type LineageStatus = 'loading' | 'ready' | 'error'
@@ -87,6 +87,9 @@ export interface LineageStore {
   lineTypes: LineTypeGroup[]
   status: LineageStatus
   error: string | null
+  /** [F-FOLDER-02·B] 当前图作用域：undefined=全图并集（lineage.graph 缺省语义
+   *  同源）；消费面=load 载荷+主题节点当前图（addThemeNode）+图切换器 */
+  folderId: string | undefined
   /** 写面保存态三态（≠saved 即脏——退出聚合输入） */
   saveStatus: LineageSaveStatus
   /** 最近一次系统型写失败消息（error 态指示条呈现；成功清空） */
@@ -95,6 +98,8 @@ export interface LineageStore {
   queue: WriteAction[]
   flushing: boolean
   load(): Promise<void>
+  /** [F-FOLDER-02·B] 切图（undefined=回全图并集）：置态+重取（图切换器写路径） */
+  setFolder(folderId: string | undefined): void
   /** 加节点两型：文献型（paperId 绑定+元数据默认）/主题型（阶段分组） */
   addPaperNode(paper: { id: string; title: string; year: number | null }): void
   addThemeNode(title: string): void
@@ -361,6 +366,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     lineTypes: [],
     status: 'loading',
     error: null,
+    folderId: undefined,
     saveStatus: 'saved',
     lastWriteError: null,
     queue: [],
@@ -370,7 +376,12 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       const s = ++seq
       set({ status: 'loading', error: null })
       try {
-        const graph = await unwrap(api.lineage.graph({}))
+        // [F-FOLDER-02·B] 图作用域载荷：undefined=全图并集（{} 载荷——既有
+        // 行为零变）；folderId 提供=该图子图（W4 改写面）
+        const scope = get().folderId
+        const graph = await unwrap(
+          scope === undefined ? api.lineage.graph({}) : api.lineage.graph({ folderId: scope })
+        )
         // 旧响应晚到丢弃；写队列未清空同样丢弃（写回填面为准——写读互锁）。
         // 丢弃时回置 ready：写进行中说明有数据面（error 态无 Board 无写），
         // 不回置会卡 loading 至下次挂载
@@ -393,6 +404,13 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       }
     },
 
+    setFolder(folderId) {
+      // [F-FOLDER-02·B] 置态+重取（不做同值守卫=切换器语义单一——切图恒重取
+      // 最新子图；load 有 stale-guard，重复重取无害）
+      set({ folderId })
+      void get().load()
+    },
+
     addPaperNode(paper) {
       enqueue({
         kind: 'upsert-node',
@@ -401,9 +419,20 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     },
 
     addThemeNode(title) {
+      // [F-FOLDER-02·B] 主题节点 folderId=当前图（design §5 矩阵「主题节点」行）：
+      // 缺省（全图并集视角）落主图——显式携键（service 面同值缺省可省，此处
+      // 显式=载荷语义自证）；文献节点不走此路（INV-88：folder=文献归属）
       enqueue({
         kind: 'upsert-node',
-        input: { paperId: null, title, coreIdea: '', year: null, x: null, y: null }
+        input: {
+          paperId: null,
+          title,
+          coreIdea: '',
+          year: null,
+          x: null,
+          y: null,
+          folderId: get().folderId ?? MAIN_GRAPH_ID
+        }
       })
     },
 

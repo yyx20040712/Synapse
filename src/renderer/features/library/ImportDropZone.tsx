@@ -16,10 +16,15 @@
  *   残余窗（照 corpus-export.store 注释同口径）：新会话 start 后首事件前——
  *   旧事件须跨越终局+用户点击两层，理论窗
  * - 完成后 toast 汇总（成功 n/重复 m/失败 k）并经 onImported 通知父级刷新 library.store
+ *   [F-FOLDER-02·E]「导入到」选择器（拆件 ImportTargetSelect）：目标=当前文件夹
+ *   →导入成功后逐 imported 论文 papers.moveFolder 挂接（移动语义自动入图——
+ *   最简合规路径，主进程 import 面零触碰）；仅入文献库→零挂接（无节点行）；
+ *   busy 全程置 import-busy store（S2 消费源——文件夹区/图切换器禁切）
  * - 取消（空结果）静默
  *
  * ── 接口层 ──
- * - export function ImportDropZone(props: { onImported(): void }): JSX.Element
+ * - export function ImportDropZone(props: { onImported(): void;
+ *     targetFolderId?: string | null }): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 路径合法来源=main 侧系统对话框 + 拖拽 File 经 preload webUtils 解析
@@ -31,9 +36,12 @@ import type { DragEvent } from 'react'
 import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
 import type { Result } from '@shared/app-error'
 import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
+import { useAsync } from '../../shared/hooks/useAsync'
+import { useImportBusyStore } from '../../shared/import-busy.store'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
 import type { ToastKind } from '../../shared/ui/Toast'
+import { ImportTargetSelect } from './ImportTargetSelect'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const IMPORT_FAILED = '导入失败'
@@ -83,11 +91,35 @@ function reportImportResult(result: ImportResult, onImported: () => void): void 
   if (result.imported.length > 0) onImported()
 }
 
-export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
+export function ImportDropZone(props: {
+  onImported: () => void
+  /** [F-FOLDER-02·E] folder 筛选态文件夹 id（null=无筛选——「导入到」默认口径：
+   *  无筛选=仅入文献库；folder 态=该文件夹）；缺省 null */
+  targetFolderId?: string | null
+}): JSX.Element {
   const { onImported } = props
+  const targetFolderId = props.targetFolderId ?? null
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<ImportProgressEvent | null>(null)
   const [dragging, setDragging] = useState(false)
+  // [F-FOLDER-02·E] 导入目标（''=仅入文献库）：默认随 folder 筛选态联动重置
+  // （主控细化口径——筛选切走即换默认，用户显式选择只活到下次筛选变化）
+  const [target, setTarget] = useState('')
+  useEffect(() => setTarget(targetFolderId ?? ''), [targetFolderId])
+  // 文件夹名解析（folders.list 自取静态参考数据——计数非本面语义，仅取名）：
+  // targetFolderId 变化（本页筛选切换/新建后选中）+folders.changed（他页变更）
+  // 双触发重取——挂载单取会漏掉挂载后新建的文件夹名
+  const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
+  useEffect(() => {
+    void loadFolders()
+  }, [loadFolders, targetFolderId])
+  useEffect(
+    () => apiEvents.onFoldersChanged(() => void loadFolders()),
+    [loadFolders]
+  )
+  const targetName = folders?.find((f) => f.id === targetFolderId)?.name
+  // busy 全局信号（S2 消费源——文件夹区/图切换器禁切）
+  const setImportBusy = useImportBusyStore((s) => s.setBusy)
   // busy 镜像（订阅回调读旧闭包问题——state 与 ref 双写，F-D4）
   const busyRef = useRef(false)
   // 会话身份锚点：本会话首个进度事件建立；runImport 入口重置（F-D4）
@@ -111,9 +143,27 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
     sessionRef.current = null
     busyRef.current = true
     setBusy(true)
+    setImportBusy(true)
     setProgress(null)
     try {
       const result = await unwrap(call())
+      // [F-FOLDER-02·E] 目标=当前文件夹→逐 imported 论文移动挂接（moveFolder
+      // 移动语义：未归档→folder 自动建节点——「导入到文件夹=节点自动建」）；
+      // 失败逐篇 toast 继续（S1 闸拒绝等场景——文献已入库，归属失败可见）
+      if (result.imported.length > 0 && target !== '') {
+        for (const p of result.imported) {
+          try {
+            await unwrap(api.papers.moveFolder({ paperId: p.id, toFolderId: target }))
+          } catch (e) {
+            showToast(
+              e instanceof ApiClientError
+                ? `文献已入库但移入文件夹失败：${e.message}`
+                : '文献已入库但移入文件夹失败',
+              'error'
+            )
+          }
+        }
+      }
       reportImportResult(result, onImported)
     } catch (e) {
       // unwrap 已把 IPC 错误折叠为带中文 message 的 ApiClientError
@@ -122,6 +172,7 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
     } finally {
       busyRef.current = false
       setBusy(false)
+      setImportBusy(false)
       setProgress(null)
     }
   }
@@ -161,7 +212,7 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
       <p className="text-sm" style={{ color: dragging ? 'var(--accent)' : 'var(--text-dim)' }}>
         {dragging ? DROP_HINT : '将 PDF 拖到此处，或使用按钮导入'}
       </p>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant="primary"
           disabled={busy}
@@ -176,6 +227,16 @@ export function ImportDropZone(props: { onImported: () => void }): JSX.Element {
         >
           导入文件夹
         </Button>
+        {/* [F-FOLDER-02·E]「导入到」选择器（拆件 ImportTargetSelect——组件 250
+            行红线；与导入按钮同行=零垂直增量，dropzone 高度变化会挤压详情抽屉
+            可视高——tag-input e2e 实证） */}
+        <ImportTargetSelect
+          value={target}
+          folderId={targetFolderId}
+          folderName={targetName}
+          disabled={busy}
+          onChange={setTarget}
+        />
       </div>
       {busy && (
         <p role="status" className="text-xs" style={{ color: 'var(--text-dim)' }}>

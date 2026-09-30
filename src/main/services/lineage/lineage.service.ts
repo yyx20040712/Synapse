@@ -49,9 +49,13 @@ export interface DraftIssue {
   reason: string
 }
 
-/** 导入 Result：判别联合（全有或全无——两态互斥） */
+/** 导入 Result：判别联合（全有或全无——两态互斥）。
+ *  [F-FOLDER-02·C2 主控终裁 2026-09-30] ok 分支 +skippedCrossGraphEdges：
+ *  跨图边（端点 folder_id 不同）跳过不写的计数——多图草稿是 INV-88 语义下
+ *  正常形态，拒收整批会破坏可用性；跳过=边信息弃、节点保留（renderer 消费
+ *  面提示待 shared Res schema 扩字段后接线——契约缺口已呈报主控）。 */
 export type LineageImportResult =
-  | { ok: true; nodeCount: number; edgeCount: number }
+  | { ok: true; nodeCount: number; edgeCount: number; skippedCrossGraphEdges: number }
   | { ok: false; errors: DraftIssue[] }
 
 /** F-LG14 含金量摘要（graph 通道逐文献节点载荷；venueTier 映射单源=
@@ -322,6 +326,9 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       return deps.withTransaction(() => {
         deps.repo.clearGraph() // 整批替换语义（清面重灌）
         const paperToNode = new Map<string, string>()
+        // [F-FOLDER-02·C2] paperId→folderId（边跨图判定的单源——与节点写入
+        // 同一次 ensurePaperFolder 解析结果，不二次读库）
+        const paperFolder = new Map<string, string>()
         // T3-P5 slot 逐节点归一（clearGraph 后组内 max 只来自本循环已写节点——
         // 内存计数等价 D-I-1 新建分支，省逐节点全图重读）
         const nextSlot = new Map<string, number>()
@@ -331,6 +338,11 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           const key = `${String(n.year)}|${String(month)}`
           const slot = (nextSlot.get(key) ?? 0) + 1
           nextSlot.set(key, slot)
+          // [F-FOLDER-01·回炉码 1] INV-88 统一规则：节点 folder=该文献归属
+          // （ensurePaperFolder 逐文献解析——未归档先写主图=入图即归档）；
+          // 禁写死主图（回炉禁令）
+          const folderId = deps.ensurePaperFolder(n.paper_id)
+          paperFolder.set(n.paper_id, folderId)
           const node = deps.repo.upsertNode({
             paperId: n.paper_id,
             title: n.title,
@@ -341,16 +353,23 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
             tags: n.tags ?? null, // F-LG14：草稿带为主（可选缺省=无标签）
             month,
             slot,
-            // [F-FOLDER-01·回炉码 1] INV-88 统一规则：节点 folder=该文献归属
-            // （ensurePaperFolder 逐文献解析——未归档先写主图=入图即归档）；
-            // 禁写死主图（回炉禁令）
-            folderId: deps.ensurePaperFolder(n.paper_id)
+            folderId
           })
           paperToNode.set(n.paper_id, node.id)
           nodeCount++
         }
         let edgeCount = 0
+        let skippedCrossGraphEdges = 0
         for (const e of draft.edges) {
+          // [F-FOLDER-02·C2 主控终裁 2026-09-30] 跨图边（端点 folder_id 不同）
+          // 跳过不写+计数：旧路径直调 repo.upsertEdge 绕过 INV-90 守卫=幽灵边
+          // 来源；多图草稿是 INV-88 语义下正常形态（拒收整批破坏可用性），
+          // 跳过=边信息弃、节点保留——与 service upsertEdge 守卫（ERR_CROSS_
+          // GRAPH_EDGE 拒单边）语义配套：导入面=整批语境取跳过，单边写面=拒绝
+          if (paperFolder.get(e.from_paper_id) !== paperFolder.get(e.to_paper_id)) {
+            skippedCrossGraphEdges++
+            continue
+          }
           deps.repo.upsertEdge({
             fromNode: paperToNode.get(e.from_paper_id)!,
             toNode: paperToNode.get(e.to_paper_id)!,
@@ -360,7 +379,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           })
           edgeCount++
         }
-        return { ok: true, nodeCount, edgeCount }
+        return { ok: true, nodeCount, edgeCount, skippedCrossGraphEdges }
       })
     },
 

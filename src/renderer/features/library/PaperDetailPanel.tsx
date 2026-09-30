@@ -173,7 +173,13 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         </div>
         <div className="lib-fld">
           <span className="lib-fld-k">VENUE</span>
-          <span className="lib-fld-v">{detail.venue === '' ? '—' : detail.venue}</span>
+          <span className="lib-fld-v">
+            {detail.venue === '' ? '—' : detail.venue}
+            {/* [F-FOLDER-02·D] IF 灰字随期刊名显示（D1 手动字段——色档与主值分离） */}
+            {detail.impactFactor !== null && (
+              <span style={{ color: 'var(--text-dim)' }}>{` · IF ${detail.impactFactor}`}</span>
+            )}
+          </span>
         </div>
         <div className="lib-fld">
           <span className="lib-fld-k">DOI</span>
@@ -211,6 +217,10 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           onSaved={() => {
             setEditing(false)
             setReloadKey((k) => k + 1)
+            // [F-FOLDER-02·D] F-LIBUI-01 备案缺口修：改题名/期刊等后表格滞旧——
+            // onSaved 链统一走 library.list 失效重取（TagEditor onChanged 同一条
+            // 刷新链，不造第二套通道）
+            void loadLibrary()
           }}
         />
       )}

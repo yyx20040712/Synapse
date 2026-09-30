@@ -78,6 +78,14 @@ function orderedLineTypes(groups: readonly LineTypeGroup[]): Array<{ base: strin
 export function assembleLineageJson(input: LineageAssembleInput): string {
   const ordered = lineageOrder(input.nodes)
   const pubNos = input.pubNos ?? new Map<string, number>()
+  // [F-FOLDER-02·C2 主控终裁 2026-09-30] 导出面跨图边过滤兜底：端点 folderId
+  // 不同的边不携出（存量幽灵边——导入面跳过已根治增量，此处兜住迁移前存量；
+  // INV-90=边两端同图，携出即再把幽灵边灌回图）。装配单源条款下过滤落本
+  // 函数（服务/别处不得另写第二套过滤）。
+  const folderOf = new Map(input.nodes.map((n) => [n.id, n.folderId]))
+  const sameGraphEdges = input.edges.filter(
+    (e) => folderOf.get(e.fromNode) === folderOf.get(e.toNode)
+  )
   const payload = sortKeysDeep({
     schema_version: 2,
     nodes: ordered.map((n) => ({
@@ -90,7 +98,7 @@ export function assembleLineageJson(input: LineageAssembleInput): string {
       tags: n.tags ?? null,
       pub_no: n.paperId !== null ? (pubNos.get(n.paperId) ?? null) : null
     })),
-    edges: orderedEdges(input.edges).map((e) => ({
+    edges: orderedEdges(sameGraphEdges).map((e) => ({
       edge_id: e.id,
       from: e.fromNode,
       to: e.toNode,

@@ -17,9 +17,18 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import { makeApiStub } from '../../utils/api-client-mock'
+import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
-const stubApi = makeApiStub({ lineage: { graph: vi.fn() } })
+const stubApi = makeApiStub({
+  lineage: { graph: vi.fn() },
+  // [F-FOLDER-02·B] LineagePage 页首图切换器文件夹域面
+  folders: { list: vi.fn() }
+})
+stubApiEvents({
+  // [F-FOLDER-02·B] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
+  // 切换器订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
+})
 
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'

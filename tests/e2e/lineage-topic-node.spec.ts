@@ -1,0 +1,205 @@
+import { test, expect, type ElectronApplication, type Page } from '@playwright/test'
+import { createHash } from 'node:crypto'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { createTinyPdf } from '../utils/pdf-factory'
+import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+
+/**
+ * [F-FOLDER-02·F/S4/G④] lineage-topic-node e2e —— 图绑定三面：
+ * ①主题节点 folderId=当前图（design §5 矩阵「主题节点」行——store.addThemeNode
+ * 显式携键）；②S4 删除当前图→脉络页回退主图+「该文件夹无脉络图」空态；
+ * ③G④ 多图 draft 导入→跨图边跳过（节点保留/连线计数归零）+导出 lineage.json
+ * 零跨图边（C2 主控终裁——导入面根治+导出面存量兜底双锚）。
+ * 断言锚真实渲染文本。测试 1/2 零真实文献场景需壳层种子破引导态（INV-87——
+ * default 课题+0 篇 rail 全禁用；幽灵行不入图=图断言不受扰）。
+ */
+
+const nodeCard = (win: Page, title: string) =>
+  win.locator('.tl-card[data-node-id]').filter({ hasText: title })
+
+test('主题节点 folderId=当前图：F 图添加→主图不可见→并集可见（reload 持久）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-topic-'))
+  await bootstrapMigrations(userData)
+  await seedPaperRow(userData, 'a.pdf', 'sha-topic-guide', '主题种子文献', 'e2e-topic-guide')
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  // 建文件夹「主题图」（真实通道）
+  const fid = await win.evaluate(async () => {
+    const r = await window.api.folders.create({ name: '主题图' })
+    return r.ok ? r.data.id : ''
+  })
+  expect(fid).not.toBe('')
+
+  // 切到主题图→添加主题节点（工具条→主题型→添加）
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await win.getByLabel('脉络图切换').selectOption({ label: '主题图' })
+  await win.getByTestId('lineage-add-node').click()
+  await win.getByTestId('add-node-mode-theme').click()
+  await win.getByLabel('主题名称（阶段分组）').fill('阶段一分组')
+  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
+  await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
+
+  // 主图视角不可见（folderId=当前图——非主图落地）+空图提示在场
+  await win.getByLabel('脉络图切换').selectOption({ label: '主图' })
+  await expect(nodeCard(win, '阶段一分组')).toHaveCount(0)
+  await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+
+  // 并集视角可见（子图过滤语义）；reload 后持久（真写盘非乐观渲染）
+  await win.getByLabel('脉络图切换').selectOption({ label: '全部图（并集）' })
+  await expect(nodeCard(win, '阶段一分组')).toBeVisible()
+  await win.reload()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
+
+  await app.close()
+})
+
+test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主图+空态文案', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-s4-'))
+  await bootstrapMigrations(userData)
+  await seedPaperRow(userData, 'a.pdf', 'sha-s4-guide', 'S4 种子文献', 'e2e-s4-guide')
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  // 建文件夹 F 并在其中建图（主题节点=图非空锚）
+  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByLabel('新文件夹名').fill('即将删除的图')
+  await win.getByLabel('新文件夹名').press('Enter')
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await win.getByLabel('脉络图切换').selectOption({ label: '即将删除的图' })
+  await win.getByTestId('lineage-add-node').click()
+  await win.getByTestId('add-node-mode-theme').click()
+  await win.getByLabel('主题名称（阶段分组）').fill('将随图删除的节点')
+  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
+  await expect(nodeCard(win, '将随图删除的节点')).toBeVisible({ timeout: 10_000 })
+
+  // 库页删除该文件夹（确认弹窗执行）
+  await win.getByRole('button', { name: '文献库' }).click()
+  await win.locator('button[aria-pressed]').filter({ hasText: '即将删除的图' }).click({ button: 'right' })
+  await win.getByRole('menuitem', { name: '删除' }).click()
+  await win.getByRole('dialog').getByRole('button', { name: '删除文件夹' }).click()
+
+  // 脉络页：当前图失效→回退主图（__main__ 恒在场）+主图空态文案
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(win.getByTestId('lineage-graph-title')).toHaveText('脉络图：主图', { timeout: 10_000 })
+  await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+  await expect(nodeCard(win, '将随图删除的节点')).toHaveCount(0)
+
+  await app.close()
+})
+
+/** 真实 PDF 落受管存储位+papers 行（导出链需要文件在盘——corpus-export 同型） */
+async function seedRealPaper(
+  userData: string,
+  id: string,
+  title: string,
+  year: number
+): Promise<void> {
+  const bytes = createTinyPdf(title)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, title, id, { year })
+}
+
+/** main 侧对话框桩（corpus-export.spec:73 同族——路径只出自 main 对话框） */
+async function stubOpenDialog(app: ElectronApplication, paths: string[]): Promise<void> {
+  await app.evaluate((electronMod, fixed) => {
+    ;(
+      electronMod.dialog as unknown as {
+        showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+      }
+    ).showOpenDialog = async () => ({ canceled: false, filePaths: fixed })
+  }, paths)
+}
+
+test('G④：多图 draft 导入→跨图边跳过（节点保留/连线归零）+导出 lineage.json 零跨图边', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-g4-'))
+  const exportDir = await mkdtemp(join(tmpdir(), 'synapse-ff02-g4-out-'))
+  await bootstrapMigrations(userData)
+  const GP1 = { id: 'e2e-g4-1', title: '夹内图文献', year: 2024 }
+  const GP2 = { id: 'e2e-g4-2', title: '主图文献', year: 2023 }
+  await seedRealPaper(userData, GP1.id, GP1.title, GP1.year)
+  await seedRealPaper(userData, GP2.id, GP2.title, GP2.year)
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  // 归属分裂：GP1→文件夹 F（节点自动建）；GP2 未归档（节点落主图）
+  const fid = await win.evaluate(async () => {
+    const r = await window.api.folders.create({ name: '跨图夹' })
+    return r.ok ? r.data.id : ''
+  })
+  expect(fid).not.toBe('')
+  expect(
+    await win.evaluate(
+      async (x: { pid: string; fid: string }) =>
+        (await window.api.papers.moveFolder({ paperId: x.pid, toFolderId: x.fid })).ok,
+      { pid: GP1.id, fid }
+    )
+  ).toBe(true)
+  expect(
+    await win.evaluate(
+      async (p: { id: string; title: string; year: number }) =>
+        (
+          await window.api.lineage.upsertNode({
+            paperId: p.id,
+            title: p.title,
+            coreIdea: '',
+            year: p.year,
+            x: null,
+            y: null
+          })
+        ).ok,
+      GP2
+    )
+  ).toBe(true)
+
+  // 多图 draft（GP1→GP2 跨图边）：真实导入链（dialog 桩+confirm 自动接受）
+  const draftPath = join(userData, 'cross-graph-draft.json')
+  await writeFile(
+    draftPath,
+    JSON.stringify({
+      nodes: [
+        { paper_id: GP1.id, title: GP1.title, year: GP1.year, core_idea: '' },
+        { paper_id: GP2.id, title: GP2.title, year: GP2.year, core_idea: '' }
+      ],
+      edges: [{ from_paper_id: GP1.id, to_paper_id: GP2.id, label: '跨图连线' }]
+    }),
+    'utf8'
+  )
+  await stubOpenDialog(app, [draftPath])
+  win.on('dialog', (d) => {
+    void d.accept()
+  })
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await win.getByTestId('lineage-import').click()
+  // 跨图边跳过：2 节点全保留+0 条连线落库（成功计数 toast 真文本）
+  await expect(win.getByText('已导入脉络图：2 个节点，0 条连线')).toBeVisible({ timeout: 15_000 })
+  await expect(nodeCard(win, GP1.title)).toBeVisible({ timeout: 10_000 })
+  await expect(nodeCard(win, GP2.title)).toBeVisible({ timeout: 10_000 })
+
+  // 导出面兜底（C2 ②）：语料导出→lineage.json 零跨图边（edges 空数组）
+  await stubOpenDialog(app, [exportDir])
+  await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '导出语料' }).click()
+  await expect(win.getByText('语料导出完成：2 篇', { exact: false })).toBeVisible({
+    timeout: 120_000
+  })
+  const lineageJson = JSON.parse(
+    await (await import('node:fs/promises')).readFile(join(exportDir, 'lineage.json'), 'utf8')
+  ) as { edges: unknown[]; nodes: unknown[] }
+  expect(lineageJson.nodes).toHaveLength(2)
+  expect(lineageJson.edges).toEqual([])
+
+  await app.close()
+})

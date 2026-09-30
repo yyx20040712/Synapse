@@ -21,7 +21,9 @@ export function importLineageDraft(): void {
   unwrap(api.lineage.importDraft({}))
     .then((res) => {
       if (res.ok) {
-        showToast(`已导入脉络图：${res.nodeCount} 个节点，${res.edgeCount} 条连线`, 'success')
+        // [F-FOLDER-02 C2] 跨图边跳过计数追加告知（多图草稿正常形态——跳过=边弃节点留）
+        const skipped = res.skippedCrossGraphEdges > 0 ? `（${res.skippedCrossGraphEdges} 条跨图连线已跳过）` : ''
+        showToast(`已导入脉络图：${res.nodeCount} 个节点，${res.edgeCount} 条连线${skipped}`, 'success')
         void useLineageStore.getState().load()
         return
       }

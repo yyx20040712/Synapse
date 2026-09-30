@@ -82,6 +82,15 @@
       "status": "observing",
       "first_seen": "2026-09-30",
       "resolution": "观察中（第 2 现即立案——charter §1.4 立案线；F-WS-02 probe M2 首跑观测，executor 同套件基线 55/55 绿在档）"
+    },
+    {
+      "spec": "tests/e2e/reader-scroll.spec.ts",
+      "case": "列宽基准-标注原位抽验-离屏回收-进度恢复",
+      "count": 4,
+      "fingerprint": "同值=全量套件负载下 :176 getByTestId(annotation-rect) 等待超时（负载型 timeout；F-FOLDER-02 executor 场 2 现+主控 R1 场 2 现，四现同指纹；隔离复跑恒绿 2.8s+第三轮全量 64/64 绿——非确定性确认）；序列位置=全量套件尾部段长用例",
+      "status": "filed",
+      "first_seen": "2026-09-30",
+      "resolution": "立案（4 现>charter 立案线 2 现之两倍——复跑绿不销项；裁决部 C1）。排期=修复票 F-FLAKE-02（负载型超时排查：单用例超时窗 vs 套件负载、CI 与本地并行度差、annotation-rect 渲染等待策略）——v89 §2 排程。本票 F-FOLDER-02 零 reader 域触碰=非本票引入（executor/主控两场独立实证）"
     }
   ]
 }

@@ -1467,6 +1467,48 @@
       "assertionText": "expect(state.collections.data).toEqual([])",
       "reason": "F-FOLDER-01 票 1 收口亲修：012 起空库 collections 恒含主图 __main__ 初始行（INV-93 存量脉络承载锚）——断言随语义随迁（toEqual([])→toHaveLength(1)+name=主图），用例本体保留 NEW 侧在档",
       "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "assertionText": "expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })",
+      "reason": "F-FOLDER-02·C2 主控终裁 2026-09-30：importDraft ok 载荷 +skippedCrossGraphEdges（跨图边跳过计数）——断言随契约扩展加严（toEqual 增键非削弱）",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-manual-edges.test.ts",
+      "assertionText": "expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })",
+      "reason": "F-FOLDER-02·C2 主控终裁 2026-09-30：importDraft ok 载荷 +skippedCrossGraphEdges——断言随契约扩展加严",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "assertionText": "expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })",
+      "reason": "F-FOLDER-02·C2 主控终裁 2026-09-30：importDraft ok 载荷 +skippedCrossGraphEdges——断言随契约扩展加严",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "assertionText": "expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })",
+      "reason": "F-FOLDER-02·C2 主控终裁 2026-09-30：importDraft ok 载荷 +skippedCrossGraphEdges——断言随契约扩展加严",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "assertionText": "expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 0 })",
+      "reason": "F-FOLDER-02·C2 主控终裁 2026-09-30：importDraft ok 载荷 +skippedCrossGraphEdges——断言随契约扩展加严",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "assertionText": "expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith({ paperId: null, title: '阶段二', coreIdea: '', year: null, x: null, y: null })",
+      "reason": "F-FOLDER-02·B design §5 矩阵「主题节点」行：主题节点 folderId=当前图——store.addThemeNode 显式携键（缺省=主图 __main__），载荷断言随语义加严",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "主题型：title 输入→paperId null 节点",
+      "reason": "F-FOLDER-02·B design §5 矩阵「主题节点」行：主题节点 folderId=当前图——store.addThemeNode 显式携键（缺省=主图 __main__），Board 装配级载荷断言随语义加严（单断言签名整体变体）",
+      "rulingLink": "docs/design/2026-09-30_ffolder01-design-final.md"
     }
   ]
 }

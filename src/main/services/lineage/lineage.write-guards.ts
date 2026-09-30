@@ -45,26 +45,39 @@ export function nextSlotInGroup(
 }
 
 /**
- * [T3-P5] month/slot 归一（主控预裁 D-I-1；[F-FOLDER-01] 图域感知修订）：
+ * [T3-P5] month/slot 归一（主控预裁 D-I-1；[F-FOLDER-01] 图域感知修订；
+ * [F-FOLDER-02 F5] 组键三面化——W3 终裁对齐）：
  * - month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例——缺省=清月）
- * - slot：input.slot!==undefined→透写（含 null 清面）；缺省→新建=目标图
- *   (folderId,year,month) 组 max(slot)+1；更新且 (year,month) 不变=保留原
- *   slot（**图归属变更不触发重排**——W3；注意：papers.move-folder 移入分支
- *   按回炉码 6 显式走 nextSlotInGroup 落组末，不经本函数）；更新且组变
- *   （year/month 任一变，或新建落他图）=目标图新组 max+1（「落组末」语义
- *   ——D-P5-10 跨月移动）
+ * - 组键=(folderId,year,month) 三面。同组=显式 slot 调用方主权透写（含 null
+ *   清面）/缺省保留原值；**跨组（folderId/year/month 任一变）=归一目标组
+ *   max(slot)+1**（W3 终裁原文「节点已存在且跨图移入→slot=目标组 max+1 归一
+ *   （旧句『不重排 slot』废止——R2 回炉勘正，同组撞值防护）」——R1 主控亲执
+ *   勘正：原实现透写/保留两分支均不比较 folderId，跨图改图 slot 撞 INV-75）；
+ *   新建（无既有行）显式 slot=主权透写、缺省=组末 max+1（「落组末」语义
+ *   ——D-P5-10 跨月移动组键全面化）。papers.move-folder 移入分支按回炉码 6
+ *   显式走 nextSlotInGroup，不经本函数。
  */
 export function normalizeMonthSlot(
   input: LineageNodeUpsert,
   nodes: readonly LineageNode[]
 ): { month: number | null; slot: number | null } {
   const month = input.month ?? null
-  if (input.slot !== undefined) return { month, slot: input.slot }
   const existing = input.id !== undefined ? nodes.find((n) => n.id === input.id) : undefined
-  if (existing !== undefined && existing.year === input.year && existing.month === month) {
-    return { month, slot: existing.slot }
-  }
   const folder = input.folderId ?? existing?.folderId ?? MAIN_GRAPH_ID
+  if (existing === undefined) {
+    return {
+      month,
+      slot:
+        input.slot !== undefined
+          ? input.slot
+          : nextSlotInGroup(nodes, folder, input.year, month)
+    }
+  }
+  const sameGroup =
+    existing.folderId === folder && existing.year === input.year && existing.month === month
+  if (sameGroup) {
+    return { month, slot: input.slot !== undefined ? input.slot : existing.slot }
+  }
   return { month, slot: nextSlotInGroup(nodes, folder, input.year, month) }
 }
 

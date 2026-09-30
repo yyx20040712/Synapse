@@ -25,11 +25,16 @@ import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },
-  lineage: { graph: vi.fn() }
+  lineage: { graph: vi.fn() },
+  // [F-FOLDER-02·B] LineagePage 页首图切换器文件夹域面
+  folders: { list: vi.fn() }
 })
 stubApiEvents({
   onExportCorpus: vi.fn(() => () => undefined),
-  onImportProgress: vi.fn(() => () => undefined)
+  onImportProgress: vi.fn(() => () => undefined),
+  // [F-FOLDER-02·B] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
+  // 切换器订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
 })
 
 const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({

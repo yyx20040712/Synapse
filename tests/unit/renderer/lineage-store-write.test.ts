@@ -93,7 +93,43 @@ beforeEach(() => {
     saveStatus: 'saved',
     lastWriteError: null,
     queue: [],
-    flushing: false
+    flushing: false,
+    // [F-FOLDER-02·B] 图作用域跨用例清零（folderId=undefined=全图并集）
+    folderId: undefined
+  })
+})
+
+describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷与主题节点当前图', () => {
+  it('load 缺省=全图并集（{} 载荷——既有行为零变）；setFolder(f) 后 load 携 {folderId}', async () => {
+    await state().load()
+    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({})
+    state().setFolder('f-x')
+    await settle()
+    expect(useLineageStore.getState().folderId).toBe('f-x')
+    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-x' })
+    // 回全部图：setFolder(undefined) → {} 载荷
+    state().setFolder(undefined)
+    await settle()
+    expect(useLineageStore.getState().folderId).toBeUndefined()
+    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({})
+  })
+
+  it('主题节点 folderId=当前图：folderId=f-x 时 addThemeNode 载荷携 folderId（缺省=主图）', async () => {
+    stubApi.lineage.upsertNode.mockImplementation(async (req: { title: string }) =>
+      ({ ok: true, data: serverNode(node('N3', { title: req.title, paperId: null })) })
+    )
+    useLineageStore.setState({ folderId: 'f-x' })
+    state().addThemeNode('阶段分组')
+    await settle()
+    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith({
+      paperId: null,
+      title: '阶段分组',
+      coreIdea: '',
+      year: null,
+      x: null,
+      y: null,
+      folderId: 'f-x'
+    })
   })
 })
 
@@ -124,7 +160,8 @@ describe('lineage.store 写面 —— 保存态三态+排队（INV-04 同型：�
       coreIdea: '',
       year: null,
       x: null,
-      y: null
+      y: null,
+      folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
     })
     // 回填：upsert 成功回传行入 store（nodes 追加）
     expect(state().nodes.map((n) => n.title)).toEqual(['扩散模型', '阶段二'])

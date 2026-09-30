@@ -16,11 +16,19 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
+import { makeApiStub, stubApiEvents, toastSpy } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
   library: { collections: vi.fn() },
-  tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() }
+  tags: { list: vi.fn(), rename: vi.fn(), merge: vi.fn(), delete: vi.fn() },
+  // [F-FOLDER-02·A] FilterBar 经 FolderFilter 挂载的文件夹域面
+  folders: { list: vi.fn() },
+  lineage: { graph: vi.fn() }
+})
+stubApiEvents({
+  // [F-FOLDER-02·A] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
+  // FolderFilter 订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
 })
 
 import { TagFilter } from '../../../src/renderer/features/tags/TagFilter'

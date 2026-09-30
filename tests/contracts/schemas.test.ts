@@ -155,7 +155,8 @@ const VALID: Record<string, unknown[]> = {
   ],
   zcodeLinkInstallResSchema: [{ fileCount: 3 }],
   lineageImportResSchema: [
-    { ok: true, nodeCount: 1, edgeCount: 0 },
+    // [F-FOLDER-02 C2] ok 分支 +skippedCrossGraphEdges 必填（主控 R1 随语义迁移）
+    { ok: true, nodeCount: 1, edgeCount: 0, skippedCrossGraphEdges: 0 },
     { ok: false, errors: [{ path: 'nodes[0]', reason: 'title 不能为空' }] }
   ],
   lineagePaperMetricsSchema: [

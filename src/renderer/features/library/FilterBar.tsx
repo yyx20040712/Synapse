@@ -5,8 +5,11 @@
  * - FTS 搜索框（useDebounce 300ms 后回写 store.query.search；空串回 undefined 清条件）
  *   ——皮肤=.lib-search 290px（mockup .search 逐值）；占位提示=叠加 span
  *   （HTML 占位属性名属 quality 占位标记关卡禁词——空值时显示等价承载）
- * - 下拉：集合（api.library.collections）、年份（library.store 列表数据推导）、排序三选
- *   ——统一 .lib-sort 语汇（mockup .sort 逐值）；排序下拉 margin-left:auto 收口行尾
+ * - 下拉：年份（library.store 列表数据推导）、排序三选——统一 .lib-sort 语汇
+ *   （mockup .sort 逐值）；排序下拉 margin-left:auto 收口行尾。
+ *   [F-FOLDER-02·A]「按文件夹筛选」集合下拉退役删除（方案切换=删除旧方案
+ *   ——paper_collections 退役后 collections 通道失去筛选语义）；接替=
+ *   FolderFilter chip 文件夹区（folderScope 判别联合三态+行内 CRUD+新建）
  * - TagFilter 组件嵌于此（标签过滤，P7E-06 多选 AND 交集——空选集收敛 undefined）
  *   ——皮肤=.lib-chip 胶囊（99px 圆角+mono「×N」计数，library.css）
  * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
@@ -19,17 +22,17 @@
  *     onChange(patch: Partial<LibraryQuery>): void }): JSX.Element
  *
  * ── 架构层 ──
- * - 受控组件；集合列表属静态参考数据故自取（useAsync），其余数据全部来自 props/store
+ * - 受控组件；文件夹/标签参考数据由子组件自取（useAsync 静态参考数据先例），
+ *   其余数据全部来自 props/store
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 搜索首帧不回写（初值即 query.search，防挂载重复 load）；空选项值 '' 统一映射 undefined
  */
 import { useEffect, useState } from 'react'
 import type { LibraryQuery, LibrarySort } from '@shared/models/paper'
-import { api, unwrap } from '../../api/client'
-import { useAsync } from '../../shared/hooks/useAsync'
 import { useDebounce } from '../../shared/hooks/useDebounce'
 import { useLibraryStore } from './library.store'
+import { FolderFilter } from './FolderFilter'
 import { TagFilter } from '../tags/TagFilter'
 
 const SORT_LABEL: Record<LibrarySort, string> = {
@@ -50,13 +53,6 @@ export function FilterBar(props: {
   const loadLibrary = useLibraryStore((s) => s.load)
   const [text, setText] = useState(query.search ?? '')
   const debounced = useDebounce(text, 300)
-  const { data: collections, run: loadCollections } = useAsync(
-    () => unwrap(api.library.collections({})),
-    []
-  )
-  useEffect(() => {
-    void loadCollections()
-  }, [loadCollections])
 
   // 防抖搜索回写：初值即 query.search（首帧相等不回写，防挂载重复 load）
   useEffect(() => {
@@ -94,25 +90,9 @@ export function FilterBar(props: {
         onMutated={() => void loadLibrary()}
         onColorMapChange={props.onTagColorMap}
       />
-      <select
-        aria-label="按文件夹筛选"
-        className={`lib-sort${query.folderScope !== undefined ? ' lib-sort-on' : ''}`}
-        value={query.folderScope?.kind === 'folder' ? query.folderScope.folderId : ''}
-        onChange={(e) =>
-          onChange({
-            // [F-FOLDER-01] paper_collections 退役——下拉过滤改 folderScope 判别
-            // 联合（folder 态）；文件夹区 UI 全量重制=F-FOLDER-02 票面
-            folderScope: e.target.value === '' ? undefined : { kind: 'folder', folderId: e.target.value }
-          })
-        }
-      >
-        <option value="">全部分类</option>
-        {(collections ?? []).map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+      {/* [F-FOLDER-02·A] 文件夹区（重制件——旧集合下拉退役删除）：
+          onMutated=library 重载（计数/列表联动，TagFilter onMutated 同链） */}
+      <FolderFilter query={query} onChange={onChange} onMutated={() => void loadLibrary()} />
       <select
         aria-label="按年份筛选"
         className={`lib-sort${query.year !== undefined ? ' lib-sort-on' : ''}`}

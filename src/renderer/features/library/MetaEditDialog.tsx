@@ -15,7 +15,7 @@ import { showToast } from '../../shared/ui/Toast'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const SAVE_FAILED = '元数据保存失败'
 
-/** 表单形状：authors 用分隔符字符串承载，year/doi 空串代表 null */
+/** 表单形状：authors 用分隔符字符串承载，year/month/doi/impactFactor 空串代表 null */
 interface MetaForm {
   title: string
   authors: string
@@ -23,6 +23,11 @@ interface MetaForm {
   venue: string
   doi: string
   abstract: string
+  /** [F-FOLDER-02·D] 节点月框（1-12；空=未定月）——落位=service 层同事务写
+   *  lineage_nodes.month（paperMetaPatch 契约已含，本票补 renderer 入口） */
+  month: string
+  /** [F-FOLDER-02·D] 影响因子（D1 手动字段——papers.impact_factor REAL） */
+  impactFactor: string
 }
 
 function formOf(d: PaperDetail): MetaForm {
@@ -32,11 +37,13 @@ function formOf(d: PaperDetail): MetaForm {
     year: d.year === null ? '' : String(d.year),
     venue: d.venue,
     doi: d.doi === null ? '' : d.doi,
-    abstract: d.abstract
+    abstract: d.abstract,
+    month: d.lineage?.month == null ? '' : String(d.lineage.month),
+    impactFactor: d.impactFactor === null ? '' : String(d.impactFactor)
   }
 }
 
-/** 表单 → 相对原详情的变更补丁（空 diff 返回空对象，调用方免发请求）；年份合法性由调用方先行校验 */
+/** 表单 → 相对原详情的变更补丁（空 diff 返回空对象，调用方免发请求）；年份/月份/IF 合法性由调用方先行校验 */
 function diffPatch(form: MetaForm, d: PaperDetail): PaperMetaPatch {
   const patch: PaperMetaPatch = {}
   if (form.title.trim() !== d.title) patch.title = form.title.trim()
@@ -49,6 +56,11 @@ function diffPatch(form: MetaForm, d: PaperDetail): PaperMetaPatch {
   const doi = form.doi.trim() === '' ? null : form.doi.trim()
   if (doi !== d.doi) patch.doi = doi
   if (form.abstract !== d.abstract) patch.abstract = form.abstract
+  // [F-FOLDER-02·D] 月框基线=detail.lineage.month（未入脉络=无基线=null 语义）
+  const month = form.month.trim() === '' ? null : Number.parseInt(form.month, 10)
+  if (month !== (d.lineage?.month ?? null)) patch.month = month
+  const ifNum = form.impactFactor.trim() === '' ? null : Number(form.impactFactor)
+  if (ifNum !== d.impactFactor) patch.impactFactor = ifNum
   return patch
 }
 
@@ -98,6 +110,17 @@ export function MetaEditDialog(props: {
       showToast('年份需为数字', 'info')
       return
     }
+    // [F-FOLDER-02·D] 月框（1-12 整数）与 IF（数字）同序当场拦截
+    const monthText = form.month.trim()
+    if (monthText !== '' && !/^(1[0-2]|[1-9])$/.test(monthText)) {
+      showToast('月份需为 1-12 的整数', 'info')
+      return
+    }
+    const ifText = form.impactFactor.trim()
+    if (ifText !== '' && (Number.isNaN(Number(ifText)) || !Number.isFinite(Number(ifText)))) {
+      showToast('影响因子需为数字', 'info')
+      return
+    }
     const patch = diffPatch(form, detail)
     if (Object.keys(patch).length === 0) {
       onClose()
@@ -134,7 +157,9 @@ export function MetaEditDialog(props: {
         {field('title', '标题', 'input')}
         {field('authors', '作者（逗号/顿号分隔）', 'input')}
         {field('year', '年份（留空=未知）', 'input')}
+        {field('month', '月份（1-12，留空=未定月）', 'input')}
         {field('venue', '期刊/会议', 'input')}
+        {field('impactFactor', '影响因子（留空=无）', 'input')}
         {field('doi', 'DOI（留空=无）', 'input')}
         {field('abstract', '摘要', 'textarea')}
       </div>

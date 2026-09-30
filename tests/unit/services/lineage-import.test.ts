@@ -136,7 +136,8 @@ it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () 
 
 it('合法 draft 全过：{ok:true,nodeCount,edgeCount}，graph 反映内容（x/y=自动布局 null）', () => {
   const r = svc.importDraft(draft({}))
-  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
+  // [F-FOLDER-02·C2] ok 载荷 +skippedCrossGraphEdges（同图边场景=0）
+  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
   const g = svc.graph()
   expect(g.nodes.map((n) => n.paperId).sort()).toEqual(['p-1', 'p-2'])
   expect(g.nodes.every((n) => n.x === null && n.y === null)).toBe(true)
@@ -242,7 +243,7 @@ it('zod 行级中文 reason：title 缺失 → nodes.0.title 路径+中文；nod
 it('空 draft=空图合法：{ok:true,nodeCount:0,edgeCount:0}（清面重灌语义）', () => {
   svc.importDraft(draft({}))
   const r = svc.importDraft({ nodes: [], edges: [] })
-  expect(r).toEqual({ ok: true, nodeCount: 0, edgeCount: 0 })
+  expect(r).toEqual({ ok: true, nodeCount: 0, edgeCount: 0, skippedCrossGraphEdges: 0 })
   // F-LG14 graph 载荷扩展（paperMetrics——契约扩展非放宽）：空图=空表合法态；
   // T3-P5 lineTypes 恒四组（meta 空配置=四空组）
   expect(svc.graph()).toEqual({
@@ -442,7 +443,49 @@ it('importFromFile：损坏 JSON 动作型上抛（中文含路径）；合法�
   const goodPath = join(tmpRoot, 'good.json')
   await writeFile(goodPath, JSON.stringify(draft({})), 'utf8')
   const r = await svc.importFromFile(goodPath)
-  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1 })
+  expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
+})
+
+describe('F-FOLDER-02·C2 主控终裁——importDraft 跨图边跳过不写+计数（存量幽灵边根除）', () => {
+  /** 多图夹具：p-1/p-3 归 f-x，p-2 未归档（导入时落主图 __main__）；movePapers=false=仅建夹不移动 */
+  function seedMultiGraph(movePapers = true): ReturnType<typeof createLineageService> {
+    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-x', '夹', 0)").run()
+    if (movePapers) db.prepare("UPDATE papers SET folder_id='f-x' WHERE id IN ('p-1', 'p-3')").run()
+    return createLineageService({
+      repo,
+      paperExists,
+      paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
+      ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
+      withTransaction: (fn) => db.transaction(fn)()
+    })
+  }
+
+  it('多图 draft：跨图边跳过不写+计数；同图边照写；节点全部保留（拒收整批=不可用）', () => {
+    const svc2 = seedMultiGraph()
+    const r = svc2.importDraft({
+      nodes: [
+        { paper_id: 'p-1', title: '夹内甲', year: 2024, core_idea: '' },
+        { paper_id: 'p-2', title: '未归档乙', year: 2023, core_idea: '' },
+        { paper_id: 'p-3', title: '夹内丙', year: 2022, core_idea: '' }
+      ],
+      edges: [
+        { from_paper_id: 'p-1', to_paper_id: 'p-3', label: '同图边' },
+        { from_paper_id: 'p-1', to_paper_id: 'p-2', label: '跨图边' }
+      ]
+    })
+    expect(r).toEqual({ ok: true, nodeCount: 3, edgeCount: 1, skippedCrossGraphEdges: 1 })
+    // 图事实：三节点全保留；唯一边=同图边（跨图边零落库——不再产生幽灵边）
+    const g = svc2.graph()
+    expect(g.nodes).toHaveLength(3)
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]).toMatchObject({ label: '同图边' })
+  })
+
+  it('单图 draft（文献全未归档→主图，他文件夹在场不干扰）：skippedCrossGraphEdges=0', () => {
+    const svc2 = seedMultiGraph(false)
+    const r = svc2.importDraft(draft({}))
+    expect(r).toEqual({ ok: true, nodeCount: 2, edgeCount: 1, skippedCrossGraphEdges: 0 })
+  })
 })
 
 describe('F-FOLDER-01·回炉码 1 INV-88 统一规则——draft 重灌节点图归属（禁写死主图）', () => {

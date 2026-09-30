@@ -251,6 +251,44 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     expect(parsed.line_types).toHaveLength(4)
     expect(parsed.schema_version).toBe(2)
   })
+
+  it('[F-FOLDER-02·C2] 跨图边过滤兜底：端点 folderId 不同的存量幽灵边不携出（同图边保留）', () => {
+    const parsed = JSON.parse(
+      assembleLineageJson({
+        nodes: [
+          {
+            id: 'nA', paperId: 'p-1', title: '主图甲', coreIdea: '', year: 2021, x: null, y: null,
+            tags: null, month: 1, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+          },
+          {
+            id: 'nC', paperId: null, title: '主图主题', coreIdea: '', year: null, x: null, y: null,
+            tags: null, month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+          },
+          {
+            id: 'nD', paperId: 'p-2', title: '他图乙', coreIdea: '', year: 2022, x: null, y: null,
+            tags: null, month: 2, slot: 1, folderId: 'f-x', createdAt: ISO_A, updatedAt: 't'
+          }
+        ],
+        edges: [
+          {
+            id: 'e-same', fromNode: 'nA', toNode: 'nC', label: '同图', kind: 'tree', sub: null,
+            createdAt: ISO_A, updatedAt: 't'
+          },
+          {
+            id: 'e-cross', fromNode: 'nA', toNode: 'nD', label: '跨图幽灵', kind: 'tree', sub: null,
+            createdAt: ISO_B, updatedAt: 't'
+          }
+        ],
+        lineTypes: [
+          { base: 'tree', subs: [] },
+          { base: 'inferred', subs: [] },
+          { base: 'ref', subs: [] },
+          { base: 'manual', subs: [] }
+        ]
+      })
+    ) as { edges: Array<{ edge_id: string }> }
+    expect(parsed.edges.map((e) => e.edge_id)).toEqual(['e-same'])
+  })
 })
 
 describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通道）', () => {

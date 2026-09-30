@@ -57,7 +57,14 @@ export function LibraryPage(): JSX.Element {
 
   return (
     <div className="lib-page">
-      <ImportDropZone onImported={() => void load()} />
+      {/* [F-FOLDER-02·E] folder 筛选态文件夹 id 下发（「导入到」默认口径——
+          无筛选=null=仅入文献库） */}
+      <ImportDropZone
+        onImported={() => void load()}
+        targetFolderId={
+          query.folderScope?.kind === 'folder' ? query.folderScope.folderId : null
+        }
+      />
       <FilterBar query={query} onChange={setQuery} onTagColorMap={setTagColorByName} />
       {error !== null && (
         <div

@@ -29,6 +29,10 @@ export function Dialog(props: {
       return
     }
     const onKeyDown = (e: KeyboardEvent): void => {
+      // [F-FOLDER-02·T1 复审 P2-T1] IME 组词期 Esc=取消候选词非关闭意图——
+      // 不关对话框（AnnotationEditor.tsx:82-91 同型守卫；此处为 document 原生
+      // 监听，直接读 isComposing）
+      if (e.isComposing) return
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKeyDown)

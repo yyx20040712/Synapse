@@ -17,7 +17,12 @@ import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({ import_: { fromDialog: vi.fn(), fromFolder: vi.fn() } })
 const onImportProgressSpy = vi.fn()
 const offSpy = vi.fn()
-stubApiEvents({ onImportProgress: onImportProgressSpy })
+stubApiEvents({
+  onImportProgress: onImportProgressSpy,
+  // [F-FOLDER-02·E] folders.changed 订阅面（「导入到」名解析重取——mock 代理
+  // 未覆盖键透传 undefined，订阅直调即抛；生产面 preload 恒在场）
+  onFoldersChanged: vi.fn(() => () => undefined)
+})
 const holder = { cb: null as ((e: ImportProgressEvent) => void) | null }
 
 import { ImportDropZone } from '../../../src/renderer/features/library/ImportDropZone'
