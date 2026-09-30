@@ -318,6 +318,9 @@ export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
  *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空）；
  *  [T3-P5] month 省略/null=清月（全量语义同款）；slot 省略=service 归一
  *  （D-I-1：新建组 max+1/同组更新保留/跨组落组末），显式提供（含 null）透写。
+ *  [F-LGCLN-01] folderId=仅主题节点新建落图值（当前图——幽灵值 service 拒）；
+ *  更新场景与文献节点忽略/拒绝（文献≠归属仍 CONFLICT——INV-88；显式跨图
+ *  移动语义退役——用户裁决 2026-09-30）。
  *  [F-CONSOL-02] 本 schema=models lineageNodeUpsertSchema 派生；差异字段仅
  *  （node：paperId/x/y 可整体省略——ipc 宽面）——规则单源 models */
 export const lineageUpsertNodeReqSchema = lineageNodeUpsertSchema

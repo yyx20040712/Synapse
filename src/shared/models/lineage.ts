@@ -200,7 +200,13 @@ export type LineTypeGroups = z.infer<typeof lineTypeGroupsSchema>
  *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型）。
  *  [F-FOLDER-01] folderId 可选：undefined=新建落主图（repo 写边界兜底）/
  *  更新保持现图（service 解析既有值——W3：图归属变更不重排 slot 当 year/month
- *  不变）；显式提供（含跨图移动）经 service 存在性校验后透写。 */
+ *  不变）；显式提供（含跨图移动）经 service 存在性校验后透写【该显式跨图
+ *  语义已随下段 LGCLN 收窄退役——历史句保留备溯】。
+ *  [F-LGCLN-01 2026-09-30] 语义收窄（显式跨图路径退役——用户裁决「选图时对
+ *  论文卡片已失焦，交互上不可构成=冗余逻辑删掉」）：folderId=**仅主题节点
+ *  新建落图值**（当前图，幽灵值 service 拒）；更新场景被忽略（existing 在场
+ *  恒现图——禁搬图）；文献节点显式值仅=归属合法（≠归属仍 CONFLICT——INV-88
+ *  主句不动，节点跨图唯一合法路径=papers.moveFolder 文献随迁）。 */
 export const lineageNodeUpsertSchema = lineageNodeSchema
   .omit({ createdAt: true, updatedAt: true })
   .extend({

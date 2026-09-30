@@ -11,6 +11,10 @@
  *   无全局唯一义务）；year/month 不变且**同图**时 slot 保留；文献节点跨图移
  *   入不走本函数（papers.move-folder 移入分支按回炉码 6 显式走 nextSlotInGroup
  *   落组末——旧句「图归属单独变更不重排 slot」已废止，见 INV-75 R2 勘正）。
+ *   [F-LGCLN-01 2026-09-30] 上段三面组域随显式跨图路径退役简化回 (year,
+ *   month) 两面（service 主题分支禁搬图——existing 在场恒现图；folderId 相对
+ *   existing 的变化唯一合法路径=moveFolder 在场分支恒显式传 slot，主权值
+ *   透传即正确——历史 W3/R2 语义句保留备溯，现行态以函数注为准）。
  * - checkLineTypeGroups：upsertLineTypes 前两段静态校验（恒四组各一+subs.id
  *   全图唯一）；第三段（被现存边引用的 sub 不得消失）依赖运行时图状态，
  *   留守卫宿主 lineage.service（INV-27 修订守卫宿主=service 写面）。
@@ -46,16 +50,19 @@ export function nextSlotInGroup(
 
 /**
  * [T3-P5] month/slot 归一（主控预裁 D-I-1；[F-FOLDER-01] 图域感知修订；
- * [F-FOLDER-02 F5] 组键三面化——W3 终裁对齐）：
+ * [F-FOLDER-02 F5] 组键三面化——W3 终裁对齐；[F-LGCLN-01 2026-09-30]
+ * 显式跨图路径退役后简化回两面）：
  * - month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例——缺省=清月）
- * - 组键=(folderId,year,month) 三面。同组=显式 slot 调用方主权透写（含 null
- *   清面）/缺省保留原值；**跨组（folderId/year/month 任一变）=归一目标组
- *   max(slot)+1**（W3 终裁原文「节点已存在且跨图移入→slot=目标组 max+1 归一
- *   （旧句『不重排 slot』废止——R2 回炉勘正，同组撞值防护）」——R1 主控亲执
- *   勘正：原实现透写/保留两分支均不比较 folderId，跨图改图 slot 撞 INV-75）；
- *   新建（无既有行）显式 slot=主权透写、缺省=组末 max+1（「落组末」语义
- *   ——D-P5-10 跨月移动组键全面化）。papers.move-folder 移入分支按回炉码 6
- *   显式走 nextSlotInGroup，不经本函数。
+ * - 组键=(year,month) 两面（F5 三面化的 folderId 面随 [F-LGCLN-01] 删除——
+ *   upsertNode 主题分支禁搬图后，service 内 folderId 相对 existing 的变化
+ *   唯一合法路径=papers.moveFolder 在场分支，该路径**恒显式传 slot**（调用
+ *   方主权值 nextSlotInGroup 已算）→sameGroup 命中→slot=input.slot 透传
+ *   正确；不传 slot 的 folderId 变化不存在——安全性由「禁搬+恒显式 slot」
+ *   两前提合取保证）。同组=显式 slot 调用方主权透写（含 null 清面）/缺省
+ *   保留原值；跨组（year/month 任一变）=归一目标组 max(slot)+1（W3 终裁
+ *   语义——同组撞值防护）；新建（无既有行）显式 slot=主权透写、缺省=组末
+ *   max+1（「落组末」语义——D-P5-10 跨月移动组键全面化）。
+ *   papers.move-folder 移入分支按回炉码 6 显式走 nextSlotInGroup，不经本函数。
  */
 export function normalizeMonthSlot(
   input: LineageNodeUpsert,
@@ -73,8 +80,10 @@ export function normalizeMonthSlot(
           : nextSlotInGroup(nodes, folder, input.year, month)
     }
   }
-  const sameGroup =
-    existing.folderId === folder && existing.year === input.year && existing.month === month
+  // [F-LGCLN-01] sameGroup 判定去 folderId 面（组键两面化）：跨图分支消失，
+  // 组变归一仅剩 year/month 面+moveFolder 路径（该路径 folderId 虽变但恒显式
+  // 传 slot——主权值透传，归一面由调用方 nextSlotInGroup 先行承担）
+  const sameGroup = existing.year === input.year && existing.month === month
   if (sameGroup) {
     return { month, slot: input.slot !== undefined ? input.slot : existing.slot }
   }

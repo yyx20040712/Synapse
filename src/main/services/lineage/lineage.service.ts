@@ -160,7 +160,12 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
     // folder=该文献 papers.folder_id；未归档→先写主图（入图即归档——矩阵
     // 「导入→当前文件夹」同族语义）。显式 folderId≠归属拒（回炉码 3——不
     // 隐式移动；CONFLICT 拒绝型，队列按 INV-84 丢弃）。主题节点（paperId
-    // null）无文献归属面：缺省=保持现图/新建落主图+显式值存在性校验。
+    // null）无文献归属面：新建=input.folderId 落当前图（显式值存在性校验）
+    // +缺省落主图；[F-LGCLN-01] 更新场景**禁搬图**——existing 在场恒现图
+    // （显式 folderId 被忽略，优先级反转：existing ?? input ?? 主图）。显式
+    // 跨图移动语义已随交互不可构成面退役（用户裁决 2026-09-30：选图时对
+    // 论文卡片已失焦=冗余逻辑）；节点跨图唯一合法路径=papers.moveFolder
+    // （INV-88 主句——文献随迁触发，见 library.service moveFolder）。
     let folderId: string
     if (input.paperId !== null) {
       const current = deps.paperFolderOf(input.paperId)
@@ -174,7 +179,10 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (current === null) deps.ensurePaperFolder(input.paperId)
       folderId = effective
     } else {
-      folderId = input.folderId ?? existing?.folderId ?? MAIN_GRAPH_ID
+      // [F-LGCLN-01] existing 优先（在场恒现图=禁搬图）；新建=input.folderId
+      // ?? 主图（IPC folderId 唯一合法语义=主题节点新建落图值）。幽灵
+      // folderExists 校验保留（新建落图值存在性——本件 folderExists 桩侧）
+      folderId = existing?.folderId ?? input.folderId ?? MAIN_GRAPH_ID
       if (
         input.folderId !== undefined &&
         deps.folderExists !== undefined &&

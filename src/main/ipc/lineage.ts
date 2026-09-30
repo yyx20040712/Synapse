@@ -29,7 +29,9 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         // T3-P5：month/slot 原样透传（undefined=归一语义键——service 区分
         // undefined=归一与 null=透写清面，IPC 层不做 ?? 折叠）；
         // [F-FOLDER-01] folderId 原样透传（undefined=保持现图/新建落主图——
-        // service 解析；显式提供=跨图移动，幽灵值 service 拒）
+        // service 解析）。[F-LGCLN-01] 语义收窄：folderId=仅主题节点新建落图
+        // 值（当前图）；更新场景与文献节点忽略/拒绝（文献≠归属仍 CONFLICT
+        // ——INV-88；幽灵值 service 拒）
         month: req.month,
         slot: req.slot,
         folderId: req.folderId

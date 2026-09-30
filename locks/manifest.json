@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T11:14:04.1382647Z",
+    "generatedAt":  "2026-09-30T11:26:23.2893686Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c435eefe7f3cbb98bd39c711098d484f471422ea087655e44e1e8b6f2fef001d"
+                      "sha256":  "5552b98904f0541cc3c9fc6068b923b8536322cbaf6a4631e51aec9c71427956"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -183,7 +183,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "6296a674c8666d14872b71ba101cdbf06e45e2e8d208be2475db6eb5086562f2"
+                      "sha256":  "39c0dfec753aa8aa7762dd28b92320a50f66774110808ce9a0d9dbb21c7b0a7d"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -203,7 +203,7 @@
                   },
                   {
                       "path":  "src/shared/models/lineage.ts",
-                      "sha256":  "8d7b8eede6f6399d50dc662bc7bdebd18c739e6472ffdcc06829a45f601f2f79"
+                      "sha256":  "ba0f11f89a3a02ab083bc00edb6918ab14ef0dc3785231e1c034e3e09140c6cc"
                   },
                   {
                       "path":  "src/shared/models/note.ts",
@@ -1027,7 +1027,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-service.test.ts",
-                      "sha256":  "b04c240902a5877bc0d96a6e431106363e1918c89706f68ebbd598dc4d605c21"
+                      "sha256":  "22631bf333b42eea80813f1c41ac40d1c20b3a587ce794f6ff7ac5a8ecbdad01"
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
