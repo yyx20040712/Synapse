@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-29T23:39:47.5517850Z",
+    "generatedAt":  "2026-09-30T00:42:41.8655111Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -147,7 +147,7 @@
                   },
                   {
                       "path":  "src/main/db/migrations/012_folders_graphs.sql",
-                      "sha256":  "113180fb3d3701ab086f015ace9abe429bc731fe131ddb539fc19b853fdb2870"
+                      "sha256":  "a12acbf09e97188492b6d609bdff9bf45ab038044a22d4c9dbdda01770922425"
                   },
                   {
                       "path":  "src/renderer/app/StatusBar.tsx",
@@ -367,7 +367,7 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate-folders-graphs.test.ts",
-                      "sha256":  "f7a5d3379f03e8c0970bcbe1c8bd5b9750531e8fff49e809f3523d7ab21fbf2f"
+                      "sha256":  "7e059a97b4d7a1f67eb25ab710489b2776a8a19df93fdd25249566c890f8f14c"
                   },
                   {
                       "path":  "tests/unit/db/migrate-lineage-v2.test.ts",

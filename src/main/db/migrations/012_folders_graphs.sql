@@ -2,7 +2,27 @@
 -- [F-FOLDER-01] 文件夹×脉络图绑定（design-final §1 修正稿逐字基准——
 -- docs/design/2026-09-30_ffolder01-design-final.md）
 -- (1) 主图文件夹：先退让同名，再插入（id 锚 '__main__'——终裁 B2）
-UPDATE collections SET name = name || ' (主图)' WHERE name = '主图' AND id <> '__main__';
+--     [F-MIGR-01] P1-1 修复（用户 2026-09-30 裁决案 a——v87 §3，单用户未分发
+--     论证下改 012 本体）：原直拼退让 `name || ' (主图)'` 在存量库同时存在
+--     「主图」与「主图 (主图)」两行时产出第二个「主图 (主图)」撞
+--     collections.name UNIQUE（001_init.sql）→012 事务回滚→库永远无法升级。
+--     修法=冲突探测式唯一名：首选「主图 (主图)」，被占则依次「主图 (主图) 2」
+--     「主图 (主图) 3」…直至不撞（递归 CTE 探测，序号上界 999 防极端构造；
+--     999 全被占时 pick 空→SET NULL→NOT NULL 违例炸迁移=fail-closed 兜底）。
+--     占用探测覆盖全部在场行（含 id='__main__' 异常残留行）；name UNIQUE 保证
+--     被退让行至多一行（其原名'主图'不在候选域，无自占问题）。
+WITH RECURSIVE
+seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 999),
+cand(idx, label) AS (
+  SELECT n, CASE WHEN n = 1 THEN '主图 (主图)' ELSE '主图 (主图) ' || n END FROM seq
+),
+pick(label) AS (
+  SELECT label FROM cand
+  WHERE NOT EXISTS (SELECT 1 FROM collections c WHERE c.name = cand.label)
+  ORDER BY idx LIMIT 1
+)
+UPDATE collections SET name = (SELECT label FROM pick)
+WHERE name = '主图' AND id <> '__main__';
 INSERT INTO collections(id, name, position)
   SELECT '__main__', '主图', COALESCE(MAX(position), -1) + 1 FROM collections WHERE true
   ON CONFLICT(id) DO NOTHING;

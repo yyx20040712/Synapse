@@ -228,6 +228,100 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
     db.close()
   })
 
+  it('[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 12', () => {
+    const db = openV11()
+    seedCollection(db, 'c-legacy', '主图', 0)
+    seedCollection(db, 'c-squatter', '主图 (主图)', 1)
+    seedPaper(db, 'p-g')
+    // 修复前：直拼退让产出第二个「主图 (主图)」撞 collections.name UNIQUE → 迁移炸
+    expect(() => migrate(db)).not.toThrow()
+    const retreated = db.prepare('SELECT name FROM collections WHERE id = ?').get('c-legacy') as {
+      name: string
+    }
+    expect(retreated.name).toBe('主图 (主图) 2')
+    // 占位行不动（只退让同名行，squatter 原名保留）
+    const squatter = db.prepare('SELECT name FROM collections WHERE id = ?').get('c-squatter') as {
+      name: string
+    }
+    expect(squatter.name).toBe('主图 (主图)')
+    const mainRow = db.prepare("SELECT name FROM collections WHERE id = '__main__'").get() as {
+      name: string
+    }
+    expect(mainRow.name).toBe('主图')
+    expect(readUserVersion(db)).toBe(12)
+    db.close()
+  })
+
+  it('[F-MIGR-01 B·三重冲突形态] 预置 主图+主图 (主图)+主图 (主图) 2 → 退让名=主图 (主图) 3（递进锚）', () => {
+    const db = openV11()
+    seedCollection(db, 'c-legacy', '主图', 0)
+    seedCollection(db, 'c-squatter-1', '主图 (主图)', 1)
+    seedCollection(db, 'c-squatter-2', '主图 (主图) 2', 2)
+    seedPaper(db, 'p-h')
+    expect(() => migrate(db)).not.toThrow()
+    const retreated = db.prepare('SELECT name FROM collections WHERE id = ?').get('c-legacy') as {
+      name: string
+    }
+    expect(retreated.name).toBe('主图 (主图) 3')
+    // [R1·d1-N3/k1-N1] 两占位行不动（退让只动同名行——「不误动他行」性质在本形态显式锚）
+    for (const [sid, sname] of [
+      ['c-squatter-1', '主图 (主图)'],
+      ['c-squatter-2', '主图 (主图) 2'],
+    ] as const) {
+      const row = db.prepare('SELECT name FROM collections WHERE id = ?').get(sid) as { name: string }
+      expect(row.name).toBe(sname)
+    }
+    expect(readUserVersion(db)).toBe(12)
+    db.close()
+  })
+
+  it('[F-MIGR-01 C·__main__ 残留占名] 预置 id=__main__ 且 name=主图 (主图) + legacy 主图 → 退让避开首选名得 主图 (主图) 2；__main__ 残留行 DO NOTHING 原样', () => {
+    const db = openV11()
+    seedCollection(db, 'c-legacy', '主图', 0)
+    // 幂等锚形态变体：残留 __main__ 行恰好占用首选退让名（探测须覆盖全部在场行，含 id=__main__）
+    seedCollection(db, '__main__', '主图 (主图)', 1)
+    seedPaper(db, 'p-i')
+    expect(() => migrate(db)).not.toThrow()
+    const retreated = db.prepare('SELECT name FROM collections WHERE id = ?').get('c-legacy') as {
+      name: string
+    }
+    expect(retreated.name).toBe('主图 (主图) 2')
+    // __main__ 残留行原样保留（INSERT ON CONFLICT DO NOTHING 不覆盖名）
+    const residue = db.prepare("SELECT name FROM collections WHERE id = '__main__'").get() as {
+      name: string
+    }
+    expect(residue.name).toBe('主图 (主图)')
+    expect(readUserVersion(db)).toBe(12)
+    db.close()
+  })
+
+  it('[F-MIGR-01 D·999 全占 fail-closed 终态] 候选域 999 名全被蹲占 → 迁移炸（NOT NULL 违例）且事务整体回滚（user_version 停 11、退让行原名不动）', () => {
+    const db = openV11()
+    const seedAll = db.transaction(() => {
+      seedCollection(db, 'c-legacy', '主图', 0)
+      // 蹲占全部 999 个候选名（n=1 无后缀 + n≥2 带序号——与 012 cand 域字面同构）
+      seedCollection(db, 'c-sq-1', '主图 (主图)', 1)
+      for (let n = 2; n <= 999; n++) {
+        db.prepare('INSERT INTO collections (id, name, position) VALUES (?, ?, ?)').run(
+          `c-sq-${n}`,
+          `主图 (主图) ${n}`,
+          n
+        )
+      }
+      seedPaper(db, 'p-j')
+    })
+    seedAll()
+    // fail-closed：pick 空 → SET NULL → NOT NULL 违例（非静默错数据；与修复前 UNIQUE 回滚同构终态）
+    expect(() => migrate(db)).toThrow(/NOT NULL constraint failed/)
+    // 事务整体回滚=零部分状态：版本停在 11，退让行原名未变
+    expect(readUserVersion(db)).toBe(11)
+    const retreated = db.prepare('SELECT name FROM collections WHERE id = ?').get('c-legacy') as {
+      name: string
+    }
+    expect(retreated.name).toBe('主图')
+    db.close()
+  })
+
   it('[回炉码 5] 存量同 paper_id 重复节点去重：保最新一行（rowid 最大=插入序最新），余删——部分唯一索引前置', () => {
     const db = openV11()
     seedPaper(db, 'p-dup')
