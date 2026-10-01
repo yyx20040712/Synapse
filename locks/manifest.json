@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-01T00:16:44.5306939Z",
+    "generatedAt":  "2026-10-01T01:08:27.5214155Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",
-                      "sha256":  "4c841d8c5b1f78464bbc2548787eccd7478c03079774578952c510473c7805d3"
+                      "sha256":  "30dcf91bcb9f8d09ac69ab39bbb39d152e706b2b3552178fb5da0fdde4714bd4"
                   },
                   {
                       "path":  "docs/invariants.md",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
-                      "sha256":  "b6a4b383bb3afac084756b5c0c00b706a0eb6502ff2778eaaef8e15d61d478a2"
+                      "sha256":  "f5e6d0dd24a20be6a50863943090d1003b933d0cd5190889a9e3345e29c2dadc"
                   },
                   {
                       "path":  "tests/e2e/reader-search.spec.ts",

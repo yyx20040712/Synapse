@@ -179,6 +179,11 @@ test.describe('reader-scroll —— F-04 收官', () => {
     // 原语选型：waitForFunction 而非 expect.poll——本门是时序同步锚非新增行为
     // 断言，受锁用例契约面（test-surface 断言多重集）零变；语义等强（轮询至真
     // +超时即红）。仓外探针证据=F-FLAKE-02/probe-f-flake02-timeline.mjs。
+    // [门一 k1-W1 补强] 门的证明力边界：容器宽在 setEntry commit 时翻转，而二次
+    // replaceChildren 在 commit 之后的被动 effect 里执行——门通过瞬间旧 span 仍
+    // 可能在位且注定被灭。真实安全源=「门+下方 evaluate/visible 等待（宏任务
+    // FIFO 迫使 effect flush 先行）+locator 行动时重解析命中终态 span」的组合；
+    // 门后不可越级直取 selectText（删/重排下方等待=flake 回归）。
     await win.waitForFunction(
       ({ no, tol }) => {
         const scroller = document.querySelector('[data-page-column="ready"]')?.closest('.overflow-auto') as HTMLElement | null
@@ -198,9 +203,11 @@ test.describe('reader-scroll —— F-04 收官', () => {
 
     // ── 五、标注原位兼容抽验：fit 后当前页划选高亮——色块渲染在所属页盒内 ──
     const known3 = win.getByText(`P3 ${PDF_KNOWN_TEXT}`).first()
-    // [F-FLAKE-02] action 前稳定锚定：贴操作滚动对齐+重查可见（settle 门后此查
-    // 落在终态文本层上，划选不再命中将灭的旧 span）。waitFor('visible')=
-    // toBeVisible 底层实现同语义同步原语（契约面零变）。
+    // [F-FLAKE-02] action 前稳定锚定：贴操作滚动对齐+重查可见——与 settle 门
+    // 组合把划选推出 Δ=0 贴行窗（探针 4/5 脱附仅发生于 Δ=0；门+多次协议往返
+    // 后 Δ≥15ms 段 7/7 健康）。注意 waitFor('visible') 对旧 span 同样为真
+    // （门一 d1-W1 勘注：非判别性断言，安全源=组合时序而非此查本身）。
+    // waitFor('visible')=toBeVisible 底层实现同语义同步原语（契约面零变）。
     await known3.scrollIntoViewIfNeeded()
     await known3.waitFor({ state: 'visible' })
     await known3.selectText()

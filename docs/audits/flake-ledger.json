@@ -79,18 +79,18 @@
       "case": "收官全链（P3 划选步骤）",
       "count": 5,
       "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log。2026-09-30「脉络图前小票」批 4 现增量（executor-2 场×2→executor-3 场×1→回炉批 0→probe 场×1，各场单 spec 复跑恒绿=非确定性确认；批次三票+回炉面零 reader 域引用=非本批引入；probe 指纹档=仓外 f-prebatch-probe-progress.md）——与「列宽基准」条目同测试同位置相邻段（:176 同行两变体：本条 selectText 脱附/彼条 annotation-rect 等待超时）＝同族「负载下元素脱附」两变体，F-FLAKE-02 修复票范围须并含（裁决部 C1/C2）",
-      "status": "filed",
+      "status": "fix-landed",
       "first_seen": "2026-09-30",
-      "resolution": "立案（5 现>charter 立案线 2 现之两倍——复跑绿不销项；裁决部 C1 2026-09-30 升格 filed 并入 F-FLAKE-02 修复票范围=selectText 脱附变体显式入排查清单；F-FLAKE-02 不得再顺延=该测试两变体合计 ≥9 现）"
+      "resolution": "fix-landed（台账首例新值——语义自描述：修复已落地、观察窗未期的中间态，非 resolved）。已修 F-FLAKE-02 2026-10-01：根因=fit-width 后 TextLayer 双段重建（zoom React 同步下钻一次 replaceChildren+渲染管线 setEntry 二次，两窗间旧 span 必灭——SelectionLayer 契约「文本层重建→选区清」，非虚拟化回收）；修复=fit 后渲染管线 settle 门（waitForFunction：canvas+textLayer 容器宽[仅 setEntry 后更新]贴合 fit 终宽 ±2）+划选前稳定锚定（scrollIntoViewIfNeeded+waitFor visible——组合安全源，非判别性断言）。证据=仓外 F-FLAKE-02/（探针时间线：Δ=0 贴行 4/5 脱附/Δ≥15ms 7/7 健康+全量 e2e 终形态 3 轮 64/64 零复现[+初版形态 3 轮附加]+probe 门可达性变异红证 tol 0.01 超时）。**观察窗条款（裁决部终裁）**：N=3 场跨批次全量 e2e（每场 ≥1 次 64/64，CI 可并入计数）零复现→转 resolved（收口主控顺带核）；**同指纹再现 1 次（含 Δ=0 脱附指纹即直接归因）→回 filed 并启动结构性封闭评估**（候选序：①测试侧 span 连续两帧稳定标尺[低风险直改]②应用侧 settle 信号/文本层单次重建消窗[行为改动走设计链+查 INV 登记面]）——收紧阈值=再现 1 次即升级（不适用常规 2 现线；机制依据=产品侧重建窗口客观存在，测试协议仅将其推出操作窗，门=必要非充分锚——门一 k1-W1/d1-W1 双审共认）。count 保留历史值 5 不清零"
     },
     {
       "spec": "tests/e2e/reader-scroll.spec.ts",
       "case": "列宽基准-标注原位抽验-离屏回收-进度恢复",
       "count": 4,
       "fingerprint": "同值=全量套件负载下 :176 getByTestId(annotation-rect) 等待超时（负载型 timeout；F-FOLDER-02 executor 场 2 现+主控 R1 场 2 现，四现同指纹；隔离复跑恒绿 2.8s+第三轮全量 64/64 绿——非确定性确认）；序列位置=全量套件尾部段长用例",
-      "status": "filed",
+      "status": "fix-landed",
       "first_seen": "2026-09-30",
-      "resolution": "立案（4 现>charter 立案线 2 现之两倍——复跑绿不销项；裁决部 C1）。排期=修复票 F-FLAKE-02（负载型超时排查：单用例超时窗 vs 套件负载、CI 与本地并行度差、annotation-rect 渲染等待策略）——v89 §2 排程。本票 F-FOLDER-02 零 reader 域触碰=非本票引入（executor/主控两场独立实证）"
+      "resolution": "fix-landed（语义自描述=修复已落地、观察窗未期的中间态，非 resolved——台账首例新值）。已修 F-FLAKE-02 2026-10-01：本变体与「收官全链（P3 划选步骤）」条目**同根因**（fit-width 后 TextLayer 双段重建——selectText 成功后选区被后续重建摧毁→工具条收→标注不落地→annotation-rect 超时；SelectionLayer 契约摧毁链）**同一修复**（settle 门+划选前稳定锚定）。观察窗/复发升级条款与该条目同（N=3 场全量零复现转 resolved；同指纹再现 1 次回 filed 启动结构性封闭评估）。count 保留历史值 4 不清零；两条目不合并（保计数粒度）。证据=仓外 F-FLAKE-02/"
     }
   ]
 }
