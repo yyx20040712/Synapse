@@ -32,6 +32,7 @@ import {
   type EditPolyline
 } from './edge-edit'
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
+import { runDocDragSession } from './edge-drag-session'
 import { useLineageStore } from './lineage.store'
 import { contentScale, toContentPt } from './timeline-zoom'
 import type { EdgeMenuTarget } from './EdgeMenu'
@@ -372,7 +373,8 @@ export function useEdgeEdit(args: {
     [store, polylineOf, nearestSegment, stateRef, cardsRef]
   )
 
-  // ── 拖拽会话基建（document 级 move/up+中断 abort）──────────────────
+  // ── 拖拽会话基建（document 级 move/up+中断 abort——[回炉轮 2 拆件
+  // edge-drag-session.runDocDragSession：use-edge-edit ≤500 行红线]）─────
   const ptHook = useRef<(x: number, y: number) => Pt>(() => ({ x: 0, y: 0 }))
   const setPointConverter = useCallback((fn: (clientX: number, clientY: number) => Pt): void => {
     ptHook.current = fn
@@ -381,28 +383,12 @@ export function useEdgeEdit(args: {
     if (!enabledRef.current) return
     setMenu({ kind: 'canvas', x, y })
   }, [])
+  /** 中断收尾（[RR2] pointercancel/blur 同路——§2.5 定案中断=不成立） */
+  const abortDrag = useCallback((): void => {
+    setState((s) => (s.phase === 'selected' ? s : { phase: 'idle' }))
+  }, [])
   const runDragSession = (onMove: (ev: PointerEvent | MouseEvent) => void, onUp: () => void): void => {
-    const move = (ev: PointerEvent | MouseEvent): void => onMove(ev)
-    const up = (): void => {
-      cleanup()
-      onUp()
-    }
-    const abort = (): void => {
-      cleanup()
-      setState((s) => (s.phase === 'selected' ? s : { phase: 'idle' }))
-    }
-    const cleanup = (): void => {
-      document.removeEventListener('pointermove', move)
-      document.removeEventListener('pointerup', up)
-      // [RR2] pointercancel=abort（§2.5 定案中断=不成立——原接 up 使取消态
-      // workVia 落库+reconnect 换端提交；useDrawLine 先例同型）
-      document.removeEventListener('pointercancel', abort)
-      window.removeEventListener('blur', abort)
-    }
-    document.addEventListener('pointermove', move)
-    document.addEventListener('pointerup', up)
-    document.addEventListener('pointercancel', abort)
-    window.addEventListener('blur', abort)
+    runDocDragSession({ onMove, onUp, onAbort: abortDrag })
   }
 
   // Esc/点空白：selected/dragging 收尾+菜单关闭；切模式=态清空（W-5）
