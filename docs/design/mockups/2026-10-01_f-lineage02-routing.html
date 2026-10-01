@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>F-LINEAGE-02 走线方案比选样本（呈裁）</title>
+<style>
+  /* ── 视觉令牌：誊自应用 theme.css（样本=复刻真应用脉络页观感，
+     用户只裁「走线形态」这一个变量——卡片/框/字号与线色不参与比选）── */
+  :root {
+    --accent: #3a5bd9; --signal: #f06030; --ink: #1c2333; --dim: #5d6577;
+    --faint: #9aa3b5; --line: #e3e7ee; --mini-card: #e9edf4;
+    --mini-card-line: #d6dce8; --month-dash: rgba(58, 91, 217, 0.55);
+    --mono: Consolas, 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #eef1f6; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: var(--ink); padding: 28px 0 60px; }
+  .page { width: 760px; margin: 0 auto; }
+  header.intro { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; margin-bottom: 22px; }
+  header.intro h1 { font-size: 17px; margin-bottom: 8px; }
+  header.intro p { font-size: 12px; color: var(--dim); line-height: 1.7; }
+  header.intro .hint { color: var(--signal); font-weight: 600; }
+  section.scheme { margin-bottom: 26px; }
+  .scheme-head { display: flex; align-items: baseline; gap: 10px; padding: 0 2px 8px; flex-wrap: wrap; }
+  .scheme-head .tag { font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 6px; padding: 2px 9px; }
+  .scheme-head h2 { font-size: 15px; }
+  .scheme-head .sub { font-size: 11.5px; color: var(--dim); }
+  .panel { position: relative; background: #f7f9fc; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .panel-label { position: absolute; top: 8px; left: 12px; z-index: 6; font-size: 10.5px; color: var(--faint); font-family: var(--mono); }
+  /* ── 画布（复刻 .tl-content 几何；月标注已按 D-L2-2 移入框内 padding 顶）── */
+  .canvas { position: relative; }
+  .canvas svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; pointer-events: none; }
+  .canvas .edge { fill: none; stroke-width: 1.6; }
+  .canvas .edge.solid { stroke: var(--accent); }
+  .canvas .edge.dashed { stroke: var(--signal); stroke-dasharray: 6 3; }
+  .year-head { position: absolute; z-index: 3; display: flex; align-items: baseline; gap: 7px; }
+  .year-head .num { font-size: 13px; font-weight: 700; color: var(--ink); font-family: var(--mono); }
+  .month-frame { position: absolute; z-index: 2; border: 1.6px dashed var(--month-dash); border-radius: 12px; background: rgba(58, 91, 217, 0.03); }
+  .month-tag { position: absolute; z-index: 5; font-size: 8.5px; color: var(--accent); background: rgba(233, 237, 244, 0.92); border: 1px solid rgba(58, 91, 217, 0.35); border-radius: 7px; padding: 1px 7px; line-height: 1.5; }
+  .card { position: absolute; z-index: 4; width: 104px; min-height: 52px; background: var(--mini-card); border: 1px solid var(--mini-card-line); border-radius: 8px; padding: 5px 6px 4px; box-shadow: 0 1px 3px rgba(20, 26, 40, 0.08); }
+  .card .c-head { display: flex; align-items: center; gap: 3px; }
+  .card .c-no { font-family: var(--mono); font-size: 7.5px; color: var(--faint); }
+  .card .mb { font-size: 7.5px; padding: 0 3.5px; border-radius: 3px; margin-left: auto; line-height: 1.5; }
+  .card .mb.core { background: var(--accent); color: #fff; font-weight: 600; }
+  .card .c-title { font-size: 9.3px; font-weight: 600; color: var(--ink); line-height: 1.35; margin-top: 1px; }
+  /* ── 锚点示意小节 ── */
+  .anchor-demo { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 22px; padding: 14px 18px 12px; }
+  .anchor-demo h2 { font-size: 13px; margin-bottom: 4px; }
+  .anchor-demo p { font-size: 11.5px; color: var(--dim); line-height: 1.7; }
+  .anchor-demo .stage { position: relative; height: 170px; margin-top: 10px; }
+  .anchor-demo .anchor-dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--signal); transform: translate(-50%, -50%); z-index: 5; }
+  .anchor-demo .chan-h { position: absolute; left: 0; right: 0; border-top: 1.5px dashed rgba(240, 96, 48, 0.5); z-index: 1; }
+  .anchor-demo .chan-v { position: absolute; top: 0; bottom: 0; border-left: 1.5px dashed rgba(240, 96, 48, 0.5); z-index: 1; }
+  .anchor-demo .chan-note { position: absolute; font-size: 9px; color: var(--signal); font-family: var(--mono); }
+  footer.note { font-size: 11.5px; color: var(--dim); line-height: 1.8; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 20px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="intro">
+    <h1>脉络图走线方案比选（F-LINEAGE-02 ①·呈裁样本）</h1>
+    <p>三案共用同一布局场景（月框宽度自适应＋框间瀑布错位 64px；卡行内等距＋行间砖墙交错 62px；卡 104×52）与同一组连线——
+    <b>唯一变量=走线形态</b>。每案两幕：基础场景（12 条连线覆盖典型拓扑）与压力场景（20 条连线，看共道避让与抗拥挤）。</p>
+    <p class="hint">请只看「线的走法」：拐角处理、进出卡的方式、通道选择、多线共道的排布。卡片配色与线色（蓝实线/橙虚线）为既有视觉，不参与比选。配套文档=docs/design/2026-10-01_f-lineage02-routing-options.md。</p>
+  </header>
+
+  <div class="anchor-demo">
+    <h2>几何底座（三案共用——已裁定项）</h2>
+    <p>每卡 <b>12 锚点</b>（每边 3 等距：¼/½/¾ 位，橙点），连线自动吸附最近锚点；线走<b>卡缝/行隙/框间空隙通道</b>（橙虚线=通道中线示意），永不穿卡与月标注；折线为主干，拐弯处与靠近起止点位置曲线化。月标注随布局改版移入月框内顶缘（框间带净空）。</p>
+    <div class="stage" id="anchor-stage"></div>
+  </div>
+
+  <footer class="note" id="footnote">
+    <b>呈裁说明</b>：三案均为「折线主干＋曲线化」范式内的实现分化（该范式与布局/锚点均为既定裁决）。回复例：「方案乙」/「甲，拐角再大一点」/「甲的端点＋丙的拐角」——可组合微调（拐角半径/端点形态可跨案组合）。不回复默认=方案甲（实现最轻且为丙的基座）。
+  </footer>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   F-LINEAGE-02 走线样本引擎
+   底座常量=仓库 theme-lineage.css 实测；布局=用户 2026-10-01 裁定形态。
+   三案路由器=案册 §2 的忠实迷你实现（几何语义同构，非生产代码）。
+   ════════════════════════════════════════════════════════════════ */
+const CARD_W = 104, CARD_H = 52, GAP = 20;
+const PAD_T = 18, PAD_S = 12, PAD_B = 12;   // 月框 padding（顶 18=标注移入预算 D-L2-2）
+const ROW_SHIFT = 62;                        // 砖墙奇数行右移（现行值保持）
+const FRAME_GAP_Y = 26;                      // 框间垂距（框间通道带）
+const WATERFALL_X = 64;                      // 框间瀑布错位量（推荐值·随裁可调）
+const YEAR_HEAD_H = 30;
+const CANVAS_PAD = { l: 30, t: 10, r: 30, b: 26 };
+const PAD_OBS = 4;
+
+/* ── 场景数据（伪文献·智慧水务域）── */
+const SCENARIO = [
+  { year: 2023, frames: [
+    { month: 3, rows: [ ['A1','A2','A3'], ['A4'] ] },
+    { month: 6, rows: [ ['B1','B2','B3'] ] },
+    { month: 9, rows: [ ['C1','C2','C3'] ] },
+  ]},
+  { year: 2024, frames: [
+    { month: 2, rows: [ ['D1','D2'], ['D3','D4'] ] },
+    { month: 5, rows: [ ['E1','E2'] ] },
+  ]},
+];
+const CARDS = {
+  A1: { no: '#021', core: true,  t: '城市供水管网漏损定位研究' },
+  A2: { no: '#022', core: false, t: '基于压力监测的爆管识别' },
+  A3: { no: '#023', core: false, t: '管网水力模型校准方法' },
+  A4: { no: '#024', core: false, t: 'DMA 分区计量优化' },
+  B1: { no: '#025', core: false, t: '传感器布局优化配置' },
+  B2: { no: '#026', core: false, t: '管网余氯衰减模拟' },
+  B3: { no: '#027', core: false, t: '智能水表数据清洗' },
+  C1: { no: '#028', core: false, t: '供水系统韧性评估' },
+  C2: { no: '#029', core: false, t: '泵站调度节能优化' },
+  C3: { no: '#030', core: false, t: '水质异常检测模型' },
+  D1: { no: '#031', core: true,  t: '深度学习需水预测' },
+  D2: { no: '#032', core: false, t: '管道破损风险评级' },
+  D3: { no: '#033', core: false, t: '二次供水水质保障' },
+  D4: { no: '#034', core: false, t: '数字孪生管网框架' },
+  E1: { no: '#035', core: true,  t: '综合漏损控制策略' },
+  E2: { no: '#036', core: false, t: '管网资产管理系统' },
+};
+const EDGES_BASE = [
+  { id: 'e01', a: 'A2', b: 'A3', s: 'solid'  },
+  { id: 'e02', a: 'A1', b: 'A4', s: 'solid'  },
+  { id: 'e03', a: 'A3', b: 'B1', s: 'dashed' },
+  { id: 'e04', a: 'A1', b: 'C1', s: 'solid'  },
+  { id: 'e05', a: 'B2', b: 'C2', s: 'dashed' },
+  { id: 'e06', a: 'C3', b: 'D1', s: 'solid'  },
+  { id: 'e07', a: 'B1', b: 'A2', s: 'dashed' },
+  { id: 'e08', a: 'A2', b: 'B2', s: 'solid'  },
+  { id: 'e09', a: 'A2', b: 'B3', s: 'solid'  },
+  { id: 'e10', a: 'D1', b: 'E1', s: 'dashed' },
+  { id: 'e11', a: 'C1', b: 'E1', s: 'solid'  },
+  { id: 'e12', a: 'D3', b: 'D4', s: 'dashed' },
+];
+const EDGES_EXTRA = [
+  { id: 'p13', a: 'A3', b: 'B2', s: 'solid'  },
+  { id: 'p14', a: 'A3', b: 'B3', s: 'dashed' },
+  { id: 'p15', a: 'B3', b: 'C1', s: 'solid'  },
+  { id: 'p16', a: 'B1', b: 'C3', s: 'solid'  },
+  { id: 'p17', a: 'C1', b: 'D2', s: 'dashed' },
+  { id: 'p18', a: 'C2', b: 'D1', s: 'dashed' },
+  { id: 'p19', a: 'D2', b: 'E2', s: 'solid'  },
+  { id: 'p20', a: 'A4', b: 'C3', s: 'dashed' },
+];
+
+/* ── 布局引擎：瀑布框×砖墙行 → 绝对几何（含障碍面：标注/年头）── */
+function buildLayout() {
+  const cards = new Map(), frames = [], labels = [], yearHeads = [];
+  let x = CANVAS_PAD.l, y = CANVAS_PAD.t, wf = 0;
+  for (const yr of SCENARIO) {
+    y += YEAR_HEAD_H;
+    for (const fr of yr.frames) {
+      const rowW = fr.rows.map((r, ri) => (ri % 2 === 1 ? ROW_SHIFT : 0) + r.length * CARD_W + (r.length - 1) * GAP);
+      const contentW = Math.max(...rowW);
+      const contentH = fr.rows.length * CARD_H + (fr.rows.length - 1) * GAP;
+      const f = { x: x + wf, y, w: contentW + 2 * PAD_S, h: contentH + PAD_T + PAD_B, year: yr.year, month: fr.month, rows: fr.rows };
+      frames.push(f);
+      labels.push({ x: f.x + 12, y: f.y + 1.5, w: 72, h: 15, frame: f });
+      if (!yearHeads.some((h) => h.year === yr.year)) {
+        yearHeads.push({ year: yr.year, x: f.x - 8, y: f.y - YEAR_HEAD_H + 4, w: 80, h: 22 });
+      }
+      fr.rows.forEach((row, ri) => {
+        const shift = ri % 2 === 1 ? ROW_SHIFT : 0;
+        row.forEach((key, ci) => {
+          cards.set(key, { x: f.x + PAD_S + shift + ci * (CARD_W + GAP), y: f.y + PAD_T + ri * (CARD_H + GAP), w: CARD_W, h: CARD_H, frame: f, row: ri });
+        });
+      });
+      y = f.y + f.h + FRAME_GAP_Y;
+      wf += WATERFALL_X;
+    }
+  }
+  const maxR = Math.max(...frames.map((f) => f.x + f.w));
+  const L = { cards, frames, labels, yearHeads, W: maxR + CANVAS_PAD.r, H: y - FRAME_GAP_Y + CANVAS_PAD.b };
+  L.hBands = buildHBands(L);
+  return L;
+}
+
+/* H 通道带（行隙/框间/画布上下缘）：{y, x1, x2, year} */
+function buildHBands(L) {
+  const bands = [];
+  for (const f of L.frames) {
+    if (f.rows.length > 1) {
+      for (let ri = 0; ri < f.rows.length - 1; ri++) {
+        const yTop = f.y + PAD_T + (ri + 1) * CARD_H + ri * GAP;
+        bands.push({ y: yTop + GAP / 2, x1: f.x - 8, x2: f.x + f.w + 8, kind: 'rowgap' });
+      }
+    }
+  }
+  for (let i = 0; i + 1 < L.frames.length; i++) {
+    const a = L.frames[i], b = L.frames[i + 1];
+    const y = a.year === b.year ? (a.y + a.h + b.y) / 2 : a.y + a.h + 13; // 跨年带上移避年头
+    bands.push({ y, x1: 2, x2: L.W - 2, kind: 'framegap' });
+  }
+  bands.push({ y: 6, x1: 2, x2: L.W - 2, kind: 'canvas' });
+  bands.push({ y: L.H - 8, x1: 2, x2: L.W - 2, kind: 'canvas' });
+  return bands;
+}
+
+/* ── 几何原语 ── */
+const fmt = (n) => Math.round(n * 10) / 10;
+function segHitsRect(p1, p2, r) {
+  let t0 = 0, t1 = 1;
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const E = [[-dx, p1.x - r.x], [dx, r.x + r.w - p1.x], [-dy, p1.y - r.y], [dy, r.y + r.h - p1.y]];
+  for (const [den, num] of E) {
+    if (den === 0) { if (num < 0) return false; continue; }
+    const q = num / den;
+    if (den < 0) { if (q > t1) return false; if (q > t0) t0 = q; }
+    else { if (q < t0) return false; if (q < t1) t1 = q; }
+  }
+  return true;
+}
+function segClear(p1, p2, obs) {
+  return !obs.some((o) => segHitsRect(p1, p2, { x: o.x - PAD_OBS, y: o.y - PAD_OBS, w: o.w + 2 * PAD_OBS, h: o.h + 2 * PAD_OBS }));
+}
+function polyClear(pts, obs) {
+  for (let i = 1; i < pts.length; i++) if (!segClear(pts[i - 1], pts[i], obs)) return false;
+  return true;
+}
+function obstaclesOf(L, excludeKeys) {
+  const obs = [];
+  for (const [k, c] of L.cards) if (!excludeKeys.includes(k)) obs.push(c);
+  obs.push(...L.labels, ...L.yearHeads);
+  return obs;
+}
+const anchorSides = (c) => {
+  const xs = [c.x + c.w * 0.25, c.x + c.w * 0.5, c.x + c.w * 0.75];
+  const ys = [c.y + c.h * 0.25, c.y + c.h * 0.5, c.y + c.h * 0.75];
+  return {
+    top: xs.map((x) => ({ x, y: c.y })), bottom: xs.map((x) => ({ x, y: c.y + c.h })),
+    left: ys.map((y) => ({ x: c.x, y })), right: ys.map((y) => ({ x: c.x + c.w, y })),
+  };
+};
+/** 自动锚点（案册 §1.3：主向定边+投影最近定序，并列取小序）——返回 12 锚全族+首选 */
+function autoAnchors(sc, tc) {
+  const dx = (tc.x + tc.w / 2) - (sc.x + sc.w / 2), dy = (tc.y + tc.h / 2) - (sc.y + sc.h / 2);
+  const horiz = Math.abs(dx) >= Math.abs(dy);
+  const S = anchorSides(sc), T = anchorSides(tc);
+  const pick = (list, want, axis) => {
+    let best = 0;
+    for (let i = 1; i < 3; i++) {
+      const d = Math.abs(list[i][axis] - want), b = Math.abs(list[best][axis] - want);
+      if (d < b - 0.001 || (Math.abs(d - b) <= 0.001 && false)) best = i;
+    }
+    return best;
+  };
+  let sSide, tSide, sk, tk;
+  if (horiz) {
+    sSide = dx > 0 ? 'right' : 'left'; tSide = dx > 0 ? 'left' : 'right';
+    sk = pick(S[sSide], tc.y + tc.h / 2, 'y'); tk = pick(T[tSide], sc.y + sc.h / 2, 'y');
+  } else {
+    sSide = dy > 0 ? 'bottom' : 'top'; tSide = dy > 0 ? 'top' : 'bottom';
+    sk = pick(S[sSide], tc.x + tc.w / 2, 'x'); tk = pick(T[tSide], sc.x + sc.w / 2, 'x');
+  }
+  return { S, T, sSide, tSide, sk, tk, s: S[sSide][sk], t: T[tSide][tk] };
+}
+/** 锚点序候选（投影最近优先，其余按近远） */
+function kOrder(sideList, want, axis) {
+  return [0, 1, 2].sort((a, b) => Math.abs(sideList[a][axis] - want) - Math.abs(sideList[b][axis] - want));
+}
+
+/* ── 通道带候选（A/B/C 共用骨架语料）── */
+function bandsBetween(L, yFrom, yTo) {
+  const lo = Math.min(yFrom, yTo), hi = Math.max(yFrom, yTo);
+  return L.hBands.filter((b) => b.y > lo + 2 && b.y < hi - 2).sort((a, b) => Math.abs(a.y - yFrom) - Math.abs(b.y - yFrom));
+}
+/** 竖直下/上穿行时的 x 候选：目标 x → 所穿行列缝中线（按距离序） */
+function dropXCandidates(L, x1, y1, y2, desiredX) {
+  const xs = [desiredX];
+  const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+  for (const [k, c] of L.cards) {
+    if (c.y + c.h <= lo || c.y >= hi) continue;
+    // 同行相邻卡列缝：与该卡同行卡排序后取右侧缝
+    const row = [...L.cards.values()].filter((o) => o.frame === c.frame && o.row === c.row).sort((a, b) => a.x - b.x);
+    for (let i = 0; i + 1 < row.length; i++) xs.push((row[i].x + row[i].w + row[i + 1].x) / 2);
+  }
+  return [...new Set(xs.map((v) => Math.round(v)))].sort((a, b) => Math.abs(a - desiredX) - Math.abs(b - desiredX));
+}
+
+/* ════════ 方案甲：贪心链+统一小圆角 r=6+垂直短桩 ════════ */
+function skeletonA(e, L) {
+  const sc = L.cards.get(e.a), tc = L.cards.get(e.b);
+  const obs = obstaclesOf(L, [e.a, e.b]);
+  const A = autoAnchors(sc, tc);
+  // ① 对齐直连
+  if (Math.abs(A.s.x - A.t.x) < 0.6 || Math.abs(A.s.y - A.t.y) < 0.6) {
+    const pts = [A.s, A.t];
+    if (polyClear(pts, obs)) return pts;
+  }
+  // ② 近侧水平直连（x 带分离）
+  if (sc.x + sc.w + 2 * PAD_OBS < tc.x || tc.x + tc.w + 2 * PAD_OBS < sc.x) {
+    const s2 = anchorSides(sc)[A.sSide][A.sk], t2 = anchorSides(tc)[A.tSide][A.tk];
+    const pts = Math.abs(s2.y - t2.y) < 0.6 ? [s2, t2] : [s2, { x: t2.x, y: s2.y }, t2];
+    if (polyClear(pts, obs)) return pts;
+  }
+  // ③ 带路由：带近远序 × 锚点序 × V 变体（直落）；失败再试侧出+列缝变体
+  const down = A.t.y > A.s.y;
+  const sEdgeY = down ? sc.y + sc.h : sc.y;
+  const tEdgeY = down ? tc.y : tc.y + tc.h;
+  const S = anchorSides(sc), T = anchorSides(tc);
+  const sSideMain = down ? 'bottom' : 'top', tSideMain = down ? 'top' : 'bottom';
+  const sOrds = kOrder(S[sSideMain], down ? tc.x + tc.w / 2 : tc.x + tc.w / 2, 'x');
+  const tOrds = kOrder(T[tSideMain], sc.x + sc.w / 2, 'x');
+  for (const band of bandsBetween(L, sEdgeY, tEdgeY)) {
+    for (const sk of sOrds) {
+      for (const tk of tOrds) {
+        const sa = S[sSideMain][sk], ta = T[tSideMain][tk];
+        const pts = Math.abs(sa.x - ta.x) < 0.6
+          ? [sa, { x: sa.x, y: band.y }, ta]
+          : [sa, { x: sa.x, y: band.y }, { x: ta.x, y: band.y }, ta];
+        if (polyClear(pts, obs)) return pts;
+      }
+    }
+    // 侧出变体：源侧锚→列缝→带→目标（源直落被挡时）
+    const sSideH = (tc.x + tc.w / 2) >= (sc.x + sc.w / 2) ? 'right' : 'left';
+    for (const sk of kOrder(S[sSideH], tc.y + tc.h / 2, 'y')) {
+      const sa = S[sSideH][sk];
+      for (const xt of dropXCandidates(L, sa.y, sa.y, band.y, sa.x)) {
+        for (const tk of tOrds) {
+          const ta = T[tSideMain][tk];
+          const pts = [sa, { x: xt, y: sa.y }, { x: xt, y: band.y }, { x: ta.x, y: band.y }, ta];
+          if (polyClear(pts, obs)) return pts;
+        }
+      }
+    }
+  }
+  // ④ 面带兜底（全局面带 contentW−58 内 4 道；本场景预期不触发）
+  const laneX = L.W - 58 + 10 + 9 * (e.id.charCodeAt(e.id.length - 1) % 4);
+  const s4 = anchorSides(sc)['right'][1], t4 = anchorSides(tc)['right'][1];
+  const pts = [s4, { x: laneX, y: s4.y }, { x: laneX, y: t4.y }, t4];
+  window.__EDGE_VIOLATIONS.push(e.id + ':A-corridor');
+  return pts;
+}
+
+/* ── 曲化公共件：拐角 Q 圆角（控制点=原拐点）── */
+function roundPath(pts, r, opts = {}) {
+  const T = 2; // 最小直段保留
+  let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
+  const n = pts.length;
+  for (let i = 1; i < n - 1; i++) {
+    const p = pts[i], a = pts[i - 1], b = pts[i + 1];
+    const u = { x: Math.sign(p.x - a.x), y: Math.sign(p.y - a.y) };
+    const v = { x: Math.sign(b.x - p.x), y: Math.sign(b.y - p.y) };
+    if (u.x === v.x && u.y === v.y) continue; // 共线顶点剔除（D-L2-14）
+    const segIn = Math.abs(p.x - a.x) + Math.abs(p.y - a.y);
+    const segOut = Math.abs(b.x - p.x) + Math.abs(b.y - p.y);
+    const ri = Math.max(0, Math.min(r, (segIn - T) / 2, (segOut - T) / 2));
+    if (ri < 1) { d += ` L ${fmt(p.x)} ${fmt(p.y)}`; continue; }
+    const Ai = { x: p.x - u.x * ri, y: p.y - u.y * ri };
+    const Bi = { x: p.x + v.x * ri, y: p.y + v.y * ri };
+    d += ` L ${fmt(Ai.x)} ${fmt(Ai.y)} Q ${fmt(p.x)} ${fmt(p.y)} ${fmt(Bi.x)} ${fmt(Bi.y)}`;
+  }
+  d += ` L ${fmt(pts[n - 1].x)} ${fmt(pts[n - 1].y)}`;
+  return d;
+}
+
+/* ════════ 方案乙：通道图（方向态 Dijkstra）+车道+端点 S 滑入 r=8 ════════ */
+function buildChannelGraph(L) {
+  // V 通道：逐行列缝中线（跨行 ±12 延伸）+画布左右缘
+  const vChans = [];
+  for (const f of L.frames) {
+    f.rows.forEach((row, ri) => {
+      const rowCards = row.map((k) => L.cards.get(k)).sort((a, b) => a.x - b.x);
+      for (let i = 0; i + 1 < rowCards.length; i++) {
+        vChans.push({ x: (rowCards[i].x + rowCards[i].w + rowCards[i + 1].x) / 2, y1: f.y + PAD_T + ri * (CARD_H + GAP) - 12, y2: f.y + PAD_T + ri * (CARD_H + GAP) + CARD_H + 12 });
+      }
+    });
+  }
+  vChans.push({ x: 6, y1: 0, y2: L.H }, { x: L.W - 6, y1: 0, y2: L.H });
+  // 通道延伸至可达带：列缝沿 x 向上/下逐带延伸（遇卡/标注/年头障碍即停）
+  const chanObs = [...L.cards.values()].concat(L.labels, L.yearHeads);
+  const bandYs = L.hBands.map((b) => b.y).sort((a, b) => a - b);
+  for (const v of vChans) {
+    let go = true;
+    while (go) {
+      go = false;
+      for (const by of bandYs) {
+        if (by > v.y2 + 0.6 && by - v.y2 < 200 && segClear({ x: v.x, y: v.y2 }, { x: v.x, y: by }, chanObs)) { v.y2 = by; go = true; break; }
+        if (by < v.y1 - 0.6 && v.y1 - by < 200 && segClear({ x: v.x, y: v.y1 }, { x: v.x, y: by }, chanObs)) { v.y1 = by; go = true; break; }
+      }
+    }
+  }
+  // 节点=H∩V 交点
+  const nodes = [];
+  const nodeAt = (x, y) => nodes.find((n) => Math.abs(n.x - x) < 0.6 && Math.abs(n.y - y) < 0.6);
+  for (const h of L.hBands) for (const v of vChans) {
+    if (v.x >= h.x1 && v.x <= h.x2 && h.y >= v.y1 - 0.6 && h.y <= v.y2 + 0.6) {
+      if (!nodeAt(v.x, h.y)) nodes.push({ x: v.x, y: h.y });
+    }
+  }
+  // 邻接：同通道相邻节点（沿 H/沿 V）
+  const adj = nodes.map(() => []);
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const a = nodes[i], b = nodes[j];
+    if (Math.abs(a.y - b.y) < 0.6 || Math.abs(a.x - b.x) < 0.6) {
+      const len = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+      if (len < 260) { adj[i].push({ to: j, len }); adj[j].push({ to: i, len }); }
+    }
+  }
+  const clone = () => ({ nodes: nodes.map((n) => ({ ...n })), adj: adj.map((a) => a.map((e) => ({ ...e }))) });
+  /** 进站端子：挂到同通道线（|Δy|<0.6=H 线 / |Δx|<0.6=V 线）上 ≤260px 的全部节点 */
+  const addTerminal = (G, pt) => {
+    const idx = G.nodes.length;
+    G.nodes.push({ ...pt });
+    G.adj.push([]);
+    for (let j = 0; j < idx; j++) {
+      const n = G.nodes[j];
+      const sameLine = Math.abs(n.y - pt.y) < 0.6 || Math.abs(n.x - pt.x) < 0.6;
+      const len = Math.abs(n.x - pt.x) + Math.abs(n.y - pt.y);
+      if (sameLine && len > 0 && len < 260) { G.adj[idx].push({ to: j, len }); G.adj[j].push({ to: idx, len }); }
+    }
+    return idx;
+  };
+  return { nodes, adj, vChans, clone, addTerminal };
+}
+function nearestStation(L, G, anchor, normal) {
+  // 锚点沿外法线投至最近可用通道线（H 带或 V 缝，距 8~70 内）
+  let best = null;
+  if (normal.y !== 0) {
+    for (const h of L.hBands) {
+      const x = anchor.x;
+      if (x >= h.x1 && x <= h.x2 && (h.y - anchor.y) * normal.y > 4 && Math.abs(h.y - anchor.y) < 70) {
+        const d = Math.abs(h.y - anchor.y);
+        if (!best || d < best.d) best = { d, pt: { x, y: h.y } };
+      }
+    }
+  } else {
+    for (const v of G.vChans) {
+      const y = anchor.y;
+      if (y >= v.y1 && y <= v.y2 && (v.x - anchor.x) * normal.x > 4 && Math.abs(v.x - anchor.x) < 70) {
+        const d = Math.abs(v.x - anchor.x);
+        if (!best || d < best.d) best = { d, pt: { x: v.x, y } };
+      }
+    }
+  }
+  return best ? best.pt : null;
+}
+function dijkstraPath(G, sIdx, tIdx) {
+  // 状态=(节点,入向 0-3)；弯罚 40；并列取 (cost, 序列字典序) 小者
+  const N = G.nodes.length;
+  const key = (n, dir) => n * 4 + dir;
+  const dist = new Map(), prev = new Map();
+  const dirsOf = (from, to) => {
+    const a = G.nodes[from], b = G.nodes[to];
+    if (b.y < a.y) return 0; if (b.x > a.x) return 1; if (b.y > a.y) return 2; return 3;
+  };
+  const pq = [];
+  for (let d = 0; d < 4; d++) { dist.set(key(sIdx, d), 0); pq.push({ k: key(sIdx, d), c: 0 }); }
+  while (pq.length) {
+    pq.sort((a, b) => a.c - b.c || a.k - b.k);
+    const cur = pq.shift();
+    if (cur.c > (dist.get(cur.k) ?? Infinity)) continue;
+    const n = Math.floor(cur.k / 4), dir = cur.k % 4;
+    if (n === tIdx) {
+      const path = [];
+      let k = cur.k;
+      while (k !== undefined) { path.unshift(Math.floor(k / 4)); k = prev.get(k); }
+      return path.map((i) => G.nodes[i]);
+    }
+    for (const e of G.adj[n]) {
+      const nd = dirsOf(n, e.to);
+      const turn = n !== sIdx && nd !== dir ? 40 : 0;
+      const nc = cur.c + e.len + turn;
+      const nk = key(e.to, nd);
+      if (nc < (dist.get(nk) ?? Infinity) - 0.001) { dist.set(nk, nc); prev.set(nk, cur.k); pq.push({ k: nk, c: nc }); }
+    }
+  }
+  return null;
+}
+function skeletonB(e, L, G) {
+  const sc = L.cards.get(e.a), tc = L.cards.get(e.b);
+  const obs = obstaclesOf(L, [e.a, e.b]);
+  const A = autoAnchors(sc, tc);
+  const normals = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+  const tries = [];
+  const S = anchorSides(sc), T = anchorSides(tc);
+  // 锚点候选：主边 3 序 ×对边 3 序（投影近优先）
+  const sList = [], tList = [];
+  if (Math.abs((tc.x + tc.w / 2) - (sc.x + sc.w / 2)) >= Math.abs((tc.y + tc.h / 2) - (sc.y + sc.h / 2))) {
+    const sSide = (tc.x + tc.w / 2) > (sc.x + sc.w / 2) ? 'right' : 'left';
+    const tSide = sSide === 'right' ? 'left' : 'right';
+    sList.push(...kOrder(S[sSide], tc.y + tc.h / 2, 'y').map((k) => [sSide, k]));
+    tList.push(...kOrder(T[tSide], sc.y + sc.h / 2, 'y').map((k) => [tSide, k]));
+  } else {
+    const sSide = (tc.y + tc.h / 2) > (sc.y + sc.h / 2) ? 'bottom' : 'top';
+    const tSide = sSide === 'bottom' ? 'top' : 'bottom';
+    sList.push(...kOrder(S[sSide], tc.x + tc.w / 2, 'x').map((k) => [sSide, k]));
+    tList.push(...kOrder(T[tSide], sc.x + sc.w / 2, 'x').map((k) => [tSide, k]));
+  }
+  sList.push(['bottom', 1], ['top', 1], ['right', 1], ['left', 1]);
+  tList.push(['top', 1], ['bottom', 1], ['left', 1], ['right', 1]);
+  for (const [ss, sk] of sList) {
+    const anchor = S[ss][sk];
+    const st = nearestStation(L, G, anchor, normals[ss]);
+    if (!st) continue;
+    if (!segClear(anchor, st, obs)) continue;
+    for (const [ts, tk] of tList) {
+      const anchor2 = T[ts][tk];
+      const st2 = nearestStation(L, G, anchor2, normals[ts]);
+      if (!st2) continue;
+      if (!segClear(anchor2, st2, obs)) continue;
+      // 每边克隆图+两端子（进站点≠H∩V 交点——端子挂同线邻接）
+      const GE = G.clone();
+      const sIdx = G.addTerminal(GE, st);
+      const tIdx = G.addTerminal(GE, st2);
+      if (tIdx === sIdx) continue;
+      const mid = dijkstraPath(GE, sIdx, tIdx);
+      if (!mid || mid.length > 10) continue;
+      const pts = [anchor, ...mid, anchor2];
+      if (polyClear(pts, obs)) return pts;
+    }
+  }
+  window.__EDGE_VIOLATIONS.push(e.id + ':B-nopath');
+  return [A.s, A.t];
+}
+/** 乙案端点 S 滑入：首/末段换 C 贝塞尔（柄 h≤28 沿轴向，两端对称）+中段圆角 */
+function sEntryPath(pts, r) {
+  const n = pts.length;
+  if (n < 3) return `M ${fmt(pts[0].x)} ${fmt(pts[0].y)} L ${fmt(pts[n - 1].x)} ${fmt(pts[n - 1].y)}`;
+  const sCurve = (a, v1, v2) => {
+    // a=锚点，v1=首拐点，v2=v1 后一点（定出拐点出向）
+    const d1 = { x: Math.sign(v1.x - a.x), y: Math.sign(v1.y - a.y) };
+    const d2 = { x: Math.sign(v2.x - v1.x), y: Math.sign(v2.y - v1.y) };
+    const h = Math.min(28, (Math.abs(v1.x - a.x) + Math.abs(v1.y - a.y)) / 2);
+    if (h < 3 || (d1.x === d2.x && d1.y === d2.y)) return `L ${fmt(v1.x)} ${fmt(v1.y)}`;
+    const c1 = { x: a.x + d1.x * h, y: a.y + d1.y * h };
+    const c2 = { x: v1.x - d2.x * h, y: v1.y - d2.y * h };
+    return `C ${fmt(c1.x)} ${fmt(c1.y)} ${fmt(c2.x)} ${fmt(c2.y)} ${fmt(v1.x)} ${fmt(v1.y)}`;
+  };
+  // 首段 S（锚点→首拐点）+ 中段圆角 + 末段 S（末拐点→锚点）
+  const bends = [];
+  for (let i = 1; i < n - 1; i++) {
+    const p = pts[i], a = pts[i - 1], b = pts[i + 1];
+    const u = { x: Math.sign(p.x - a.x), y: Math.sign(p.y - a.y) };
+    const v = { x: Math.sign(b.x - p.x), y: Math.sign(b.y - p.y) };
+    if (u.x === v.x && u.y === v.y) continue;
+    bends.push({ i, p, u, v });
+  }
+  if (bends.length === 0) return `M ${fmt(pts[0].x)} ${fmt(pts[0].y)} L ${fmt(pts[n - 1].x)} ${fmt(pts[n - 1].y)}`;
+  const b0 = bends[0], bz = bends[bends.length - 1];
+  const after0 = b0.i + 1 < n ? pts[b0.i + 1] : pts[n - 1];
+  const beforeZ = bz.i - 1 >= 0 ? pts[bz.i - 1] : pts[0];
+  let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)} `;
+  d += sCurve(pts[0], b0.p, after0) + ' ';
+  for (let bi = 0; bi < bends.length; bi++) {
+    const b = bends[bi];
+    const prev = bi === 0 ? b0.p : bends[bi - 1].p;
+    const next = bi === bends.length - 1 ? bz.p : bends[bi + 1].p;
+    if (bi === bends.length - 1) break; // 末拐点交给末段 S
+    const segIn = Math.abs(b.p.x - prev.x) + Math.abs(b.p.y - prev.y);
+    const segOut = Math.abs(next.x - b.p.x) + Math.abs(next.y - b.p.y);
+    const ri = Math.max(0, Math.min(r, (segIn - 2) / 2, (segOut - 2) / 2));
+    if (ri < 1) { d += `L ${fmt(b.p.x)} ${fmt(b.p.y)} `; continue; }
+    d += `L ${fmt(b.p.x - b.u.x * ri)} ${fmt(b.p.y - b.u.y * ri)} Q ${fmt(b.p.x)} ${fmt(b.p.y)} ${fmt(b.p.x + b.v.x * ri)} ${fmt(b.p.y + b.v.y * ri)} `;
+  }
+  // 末段：中段末点 → 末拐点（若与首拐点不同需补直段）→ 末拐点 S 入锚点
+  if (bz !== b0) d += `L ${fmt(beforeZ.x)} ${fmt(beforeZ.y)} `; // 到末拐点前一点（中段圆角已处理到近旁）
+  const dExit = { x: Math.sign(bz.p.x - beforeZ.x), y: Math.sign(bz.p.y - beforeZ.y) };
+  const dEnd = { x: Math.sign(pts[n - 1].x - bz.p.x), y: Math.sign(pts[n - 1].y - bz.p.y) };
+  const hEnd = Math.min(28, (Math.abs(pts[n - 1].x - bz.p.x) + Math.abs(pts[n - 1].y - bz.p.y)) / 2);
+  if (hEnd < 3 || (dExit.x === dEnd.x && dExit.y === dEnd.y)) d += `L ${fmt(bz.p.x)} ${fmt(bz.p.y)} `;
+  else {
+    const c1 = { x: bz.p.x - dExit.x * hEnd, y: bz.p.y - dExit.y * hEnd };
+    const c2 = { x: pts[n - 1].x - dEnd.x * hEnd, y: pts[n - 1].y - dEnd.y * hEnd };
+    d += `L ${fmt(bz.p.x - dExit.x * Math.min(r, hEnd))} ${fmt(bz.p.y - dExit.y * Math.min(r, hEnd))} `;
+    d += `C ${fmt(c1.x)} ${fmt(c1.y)} ${fmt(c2.x)} ${fmt(c2.y)} ${fmt(pts[n - 1].x)} ${fmt(pts[n - 1].y)}`;
+  }
+  return d;
+}
+
+/* ════════ 方案丙：甲骨架+相邻弯合并大弧（M=20）+斜向滑入 r=10 ════════ */
+function mergePath(pts, r, M = 20) {
+  const n = pts.length;
+  // 顶点分类：内部拐点（非共线）
+  const bends = [];
+  for (let i = 1; i < n - 1; i++) {
+    const p = pts[i], a = pts[i - 1], b = pts[i + 1];
+    const u = { x: Math.sign(p.x - a.x), y: Math.sign(p.y - a.y) };
+    const v = { x: Math.sign(b.x - p.x), y: Math.sign(b.y - p.y) };
+    if (u.x === v.x && u.y === v.y) continue;
+    bends.push({ i, p, u, v });
+  }
+  // 相邻弯合并标记（中段 < M 且合并区 < 80；中段短者先）
+  const merged = new Set();
+  const pairs = [];
+  for (let bi = 0; bi + 1 < bends.length; bi++) {
+    const b1 = bends[bi], b2 = bends[bi + 1];
+    if (b2.i !== b1.i + 1) continue;
+    const mid = Math.abs(b2.p.x - b1.p.x) + Math.abs(b2.p.y - b1.p.y);
+    if (mid < M) pairs.push({ bi, mid });
+  }
+  pairs.sort((a, b) => a.mid - b.mid);
+  for (const pr of pairs) {
+    if (merged.has(pr.bi) || merged.has(pr.bi + 1)) continue;
+    merged.add(pr.bi); merged.add(pr.bi + 1);
+  }
+  // 输出：L 直段 + Q 独立圆角 + C 合并弧（控制点=两原拐点）
+  let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
+  let i = 1;
+  const cutLen = (p, dir, rr) => rr;
+  while (i < n - 1) {
+    const bIdx = bends.findIndex((b) => b.i === i);
+    if (bIdx >= 0 && merged.has(bIdx) && merged.has(bIdx + 1) && bends[bIdx + 1].i === i + 1) {
+      const b1 = bends[bIdx], b2 = bends[bIdx + 1];
+      const ri = Math.min(r, (Math.abs(b1.p.x - pts[i - 1].x) + Math.abs(b1.p.y - pts[i - 1].y) - 2) / 2);
+      const rj = Math.min(r, (Math.abs(pts[i + 2].x - b2.p.x) + Math.abs(pts[i + 2].y - b2.p.y) - 2) / 2);
+      const A1 = { x: b1.p.x - b1.u.x * ri, y: b1.p.y - b1.u.y * ri };
+      const B2 = { x: b2.p.x + b2.v.x * rj, y: b2.p.y + b2.v.y * rj };
+      d += ` L ${fmt(A1.x)} ${fmt(A1.y)} C ${fmt(b1.p.x)} ${fmt(b1.p.y)} ${fmt(b2.p.x)} ${fmt(b2.p.y)} ${fmt(B2.x)} ${fmt(B2.y)}`;
+      i += 2;
+      continue;
+    }
+    if (bIdx >= 0) {
+      const b = bends[bIdx];
+      const segIn = Math.abs(b.p.x - pts[i - 1].x) + Math.abs(b.p.y - pts[i - 1].y);
+      const segOut = Math.abs(pts[i + 1].x - b.p.x) + Math.abs(pts[i + 1].y - b.p.y);
+      const ri = Math.max(0, Math.min(r, (segIn - 2) / 2, (segOut - 2) / 2));
+      if (ri < 1) d += ` L ${fmt(b.p.x)} ${fmt(b.p.y)}`;
+      else d += ` L ${fmt(b.p.x - b.u.x * ri)} ${fmt(b.p.y - b.u.y * ri)} Q ${fmt(b.p.x)} ${fmt(b.p.y)} ${fmt(b.p.x + b.v.x * ri)} ${fmt(b.p.y + b.v.y * ri)}`;
+    }
+    i += 1;
+  }
+  d += ` L ${fmt(pts[n - 1].x)} ${fmt(pts[n - 1].y)}`;
+  return d;
+}
+
+/* ── 车道偏移：共道横段按 edgeId 字典序 ±偏移（D-L2 公共件；道距按带档=框间/画布 9、行隙 6）── */
+function applyLaneOffsets(edges, skeletons, L) {
+  const runs = []; // {edgeId, y, x1, x2, i0,i1}
+  skeletons.forEach((pts, ei) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (Math.abs(pts[i].y - pts[i - 1].y) < 0.6 && Math.abs(pts[i].x - pts[i - 1].x) > 24) {
+        runs.push({ ei, y: Math.round(pts[i].y), x1: Math.min(pts[i].x, pts[i - 1].x), x2: Math.max(pts[i].x, pts[i - 1].x) });
+      }
+    }
+  });
+  const groups = [];
+  for (const r of runs) {
+    let g = groups.find((g) => Math.abs(g.y - r.y) < 3 && r.x1 < g.x2 - 6 && r.x2 > g.x1 + 6);
+    if (!g) { g = { y: r.y, x1: r.x1, x2: r.x2, items: [] }; groups.push(g); }
+    g.items.push(r); g.x1 = Math.min(g.x1, r.x1); g.x2 = Math.max(g.x2, r.x2);
+  }
+  for (const g of groups) {
+    if (g.items.length < 2) continue;
+    const band = L.hBands.find((b) => Math.abs(b.y - g.y) < 3);
+    const laneH = band && (band.kind === 'framegap' || band.kind === 'canvas') ? 9 : 6;
+    g.items.sort((a, b) => edges[a.ei].id.localeCompare(edges[b.ei].id));
+    const k = g.items.length;
+    g.items.forEach((r, i) => {
+      const off = (i - (k - 1) / 2) * laneH;
+      if (off === 0) return;
+      const pts = skeletons[r.ei];
+      for (let j = 0; j < pts.length; j++) if (Math.abs(Math.round(pts[j].y) - g.y) < 3) pts[j].y += off;
+    });
+  }
+}
+
+/* ── 卡片/框渲染（复刻应用观感）── */
+function renderScene(host, L) {
+  const canvas = document.createElement('div');
+  canvas.className = 'canvas';
+  canvas.style.width = L.W + 'px';
+  canvas.style.height = L.H + 'px';
+  const seenYears = new Set();
+  for (const f of L.frames) {
+    if (!seenYears.has(f.year)) {
+      seenYears.add(f.year);
+      const yh = document.createElement('div');
+      yh.className = 'year-head';
+      yh.style.left = (f.x - 4) + 'px'; yh.style.top = (f.y - YEAR_HEAD_H + 4) + 'px';
+      yh.innerHTML = `<span class="num">${f.year}</span>`;
+      canvas.appendChild(yh);
+    }
+    const mf = document.createElement('div');
+    mf.className = 'month-frame';
+    mf.style.cssText = `left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px`;
+    canvas.appendChild(mf);
+    const tag = document.createElement('span');
+    tag.className = 'month-tag';
+    tag.style.cssText = `left:${f.x + 12}px;top:${f.y + 1.5}px`;
+    tag.textContent = `${f.month} 月 · ${f.rows.flat().length} 篇`;
+    canvas.appendChild(tag);
+  }
+  for (const [key, c] of L.cards) {
+    const meta = CARDS[key];
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.style.cssText = `left:${c.x}px;top:${c.y}px`;
+    el.innerHTML = `<div class="c-head"><span class="c-no">${meta.no}</span>${meta.core ? '<span class="mb core">核</span>' : ''}</div><div class="c-title">${meta.t}</div>`;
+    canvas.appendChild(el);
+  }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'edges');
+  canvas.appendChild(svg);
+  host.appendChild(canvas);
+  return svg;
+}
+
+/* ════════ 三案路由器注册（案册 §2 对应）════════ */
+const ROUTERS = {
+  A: { name: '方案甲 · 规整折线', desc: '贪心链+统一小圆角 r6+垂直短桩——工程图纸感', r: 6, build: (edges, L) => edges.map((e) => skeletonA(e, L)) },
+  B: { name: '方案乙 · 通道干线', desc: '通道图线束+车道分道+端点 S 滑入 r8——地铁图感', r: 8, build: (edges, L) => { const G = buildChannelGraph(L); return edges.map((e) => skeletonB(e, L, G)); } },
+  C: { name: '方案丙 · 流线合并', desc: '甲骨架+相邻弯合并大弧 M20+斜向滑入 r10——手写流线感', r: 10, build: (edges, L) => edges.map((e) => skeletonA(e, L)) },
+};
+function pathsToD(sid, skeletons) {
+  const R = ROUTERS[sid];
+  return skeletons.map((pts) => (sid === 'A' ? roundPath(pts, R.r) : sid === 'B' ? sEntryPath(pts, R.r) : mergePath(pts, R.r)));
+}
+
+/* ── 方案区块渲染 ── */
+function renderSchemes() {
+  const footnote = document.getElementById('footnote');
+  for (const [sid, R] of Object.entries(ROUTERS)) {
+    const sec = document.createElement('section');
+    sec.className = 'scheme';
+    sec.innerHTML = `<div class="scheme-head"><span class="tag">${sid}</span><h2>${R.name}</h2><span class="sub">${R.desc}</span></div>`;
+    const scenes = [
+      { label: 'scene-1 · 基础（12 边）', edges: EDGES_BASE },
+      { label: 'scene-2 · 压力（20 边·共道拥挤）', edges: EDGES_BASE.concat(EDGES_EXTRA) },
+    ];
+    for (const sc of scenes) {
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      const pl = document.createElement('span');
+      pl.className = 'panel-label'; pl.textContent = sc.label;
+      panel.appendChild(pl);
+      const L = buildLayout();
+      const svg = renderScene(panel, L);
+      const skeletons = R.build(sc.edges, L);
+      applyLaneOffsets(sc.edges, skeletons, L);
+      const ds = pathsToD(sid, skeletons);
+      sc.edges.forEach((e, i) => {
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('class', 'edge ' + e.s);
+        p.setAttribute('d', ds[i]);
+        svg.appendChild(p);
+      });
+      panel.dataset.edgeCount = String(ds.length);
+      sec.appendChild(panel);
+    }
+    footnote.parentElement.insertBefore(sec, footnote);
+  }
+}
+
+/* ── 锚点+通道示意（几何底座小节）── */
+function renderAnchorDemo() {
+  const stage = document.getElementById('anchor-stage');
+  const cards = [{ x: 40, y: 55 }, { x: 164, y: 55 }, { x: 102, y: 127 }];
+  let html = cards.map((g) => `<div class="card" style="left:${g.x}px;top:${g.y}px;position:absolute"><div class="c-head"><span class="c-no">#02${cards.indexOf(g) + 1}</span>${g.x === 40 ? '<span class="mb core">核</span>' : ''}</div><div class="c-title">${['城市供水管网漏损定位研究', '基于压力监测的爆管识别', 'DMA 分区计量优化'][cards.indexOf(g)]}</div></div>`).join('');
+  for (const g of cards) {
+    for (const fx of [0.25, 0.5, 0.75]) {
+      html += `<span class="anchor-dot" style="left:${g.x + CARD_W * fx}px;top:${g.y}px"></span>`;
+      html += `<span class="anchor-dot" style="left:${g.x + CARD_W * fx}px;top:${g.y + CARD_H}px"></span>`;
+    }
+    for (const fy of [0.25, 0.5, 0.75]) {
+      html += `<span class="anchor-dot" style="left:${g.x}px;top:${g.y + CARD_H * fy}px"></span>`;
+      html += `<span class="anchor-dot" style="left:${g.x + CARD_W}px;top:${g.y + CARD_H * fy}px"></span>`;
+    }
+  }
+  const rowGapY = 55 + CARD_H + GAP / 2;
+  html += `<div class="chan-h" style="top:${rowGapY}px;left:24px;right:24px"></div><span class="chan-note" style="left:26px;top:${rowGapY - 13}px">行间隙横通道（中线）</span>`;
+  const colGapX = 40 + CARD_W + GAP / 2;
+  html += `<div class="chan-v" style="left:${colGapX}px;top:44px;height:60px"></div><span class="chan-note" style="left:${colGapX + 6}px;top:38px">卡缝竖通道</span>`;
+  const brickX = 102 + CARD_W / 2;
+  html += `<div class="chan-v" style="left:${brickX}px;top:118px;height:30px;opacity:.55"></div><span class="chan-note" style="left:${brickX + 6}px;top:150px">砖墙错位＝缝隙不对齐→折线让通道（zigzag）</span>`;
+  stage.innerHTML = html;
+}
+
+window.__EDGE_VIOLATIONS = [];
+renderAnchorDemo();
+renderSchemes();
+</script>
+</body>
+</html>
