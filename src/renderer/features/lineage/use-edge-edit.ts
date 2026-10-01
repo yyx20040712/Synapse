@@ -113,6 +113,8 @@ export function useEdgeEdit(args: {
   stateRef.current = state
   const menuRef = useRef(menu)
   menuRef.current = menu
+  /** [RR7] transient 菜单开前选中（null=idle）——关闭撤瞬态高亮时恢复 */
+  const priorSelRef = useRef<string | null>(null)
 
   const store = useLineageStore.getState
   const enabledRef = useRef(args.enabled)
@@ -154,9 +156,17 @@ export function useEdgeEdit(args: {
     const m = menuRef.current
     setMenu(null)
     // 右键线身来源（瞬选：按下即高亮）随菜单关闭撤销；[回炉 R19 来源标记]
-    // 左键选中/顶点菜单来源=选中先于菜单在场，关闭保 selected
-    if (m !== null && m.kind === 'edge' && m.transient === true && stateRef.current.phase === 'selected') {
-      setState({ phase: 'idle' })
+    // 左键选中/顶点菜单来源=选中先于菜单在场，关闭保 selected。
+    // [RR7] 撤瞬态高亮仅当选中仍是瞬态目标：恢复菜单开前选中（prior——
+    // 先在选中不随关闭清空）；菜单开着点另一线=换选落定（不撤）。函数式
+    // updater 取队列后最新态（外点关菜单与换选 setState 同批——直读
+    // stateRef 恒见换选前旧态误撤）
+    if (m !== null && m.kind === 'edge' && m.transient === true) {
+      setState((s) => {
+        if (s.phase !== 'selected' || s.edgeId !== m.edgeId) return s
+        const prior = priorSelRef.current
+        return prior === null ? { phase: 'idle' } : { phase: 'selected', edgeId: prior }
+      })
     }
   }, [])
 
@@ -192,15 +202,17 @@ export function useEdgeEdit(args: {
   )
 
   /** 右键 pointerdown（button=2）瞬态高亮=瞬选（mockup §3.6 二轮批复④）；
-   *  transient=true=瞬选来源标记（closeMenu 撤高亮——[回炉 R19]） */
+   *  transient=true=瞬选来源标记（closeMenu 撤高亮——[回炉 R19]）；
+   *  [RR7] 开菜单记录 priorSelected（关闭撤瞬态高亮但保先在选中） */
   const onEdgeHitDown = useCallback(
     (edgeId: string, _pt: Pt, button: number, clientX: number, clientY: number): void => {
       if (!enabledRef.current || button !== 2) return
+      priorSelRef.current = stateRef.current.phase === 'selected' ? stateRef.current.edgeId : null
       select(edgeId)
       const e = store().edges.find((x) => x.id === edgeId)
       setMenu({ kind: 'edge', edgeId, label: e?.label ?? '', x: clientX, y: clientY, transient: true })
     },
-    [select, store, enabledRef]
+    [select, store, enabledRef, stateRef]
   )
 
   const onVertexContext = useCallback((idx: number, clientX: number, clientY: number): void => {

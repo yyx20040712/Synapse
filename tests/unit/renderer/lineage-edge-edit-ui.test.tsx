@@ -266,6 +266,46 @@ describe('U5 端点重连统一（回炉 R11——空 via 归一/物化/L 重正
     expect(host!.querySelector('path.tl-edge.selected')?.getAttribute('data-edge-id')).toBe('e2')
   })
 
+  it('[RR7] 瞬选菜单关闭保既有选中：先左键选中 e1→右键 e2 开 transient 菜单→Esc 关闭=e1 选中恢复（非撤空）', () => {
+    const nodes = [node('A'), node('B')]
+    const edges = [edge('e1', 'A', 'B', [{ x: 200, y: 66 }]), edge('e2', 'A', 'B', [{ x: 260, y: 40 }])]
+    useLineageStore.setState({ nodes, edges, saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
+    mount(nodes, edges)
+    const frame = host!.querySelector('.month-frame') as HTMLElement
+    stubRect(frame, 0, 0, 800, 200)
+    stubRect(host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement, 12, 30)
+    stubRect(host!.querySelector('.tl-card[data-node-id="B"]') as HTMLElement, 412, 30)
+    flushRafs()
+    click(hitOf('e1'))
+    expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull() // e1 先在选中
+    rc(hitOf('e2'), 30, 30) // 右键 e2=瞬选+transient 菜单
+    expect(document.querySelector('[data-testid="edge-menu"]')).not.toBeNull()
+    expect(host!.querySelector('path.tl-edge.selected')?.getAttribute('data-edge-id')).toBe('e2') // 瞬态高亮=e2
+    act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })) })
+    expect(document.querySelector('[data-testid="edge-menu"]')).toBeNull()
+    // 关闭撤瞬态高亮但保先在选中（原实现撤为 idle=既有选中被清）
+    expect(host!.querySelector('path.tl-edge.selected')?.getAttribute('data-edge-id')).toBe('e1')
+    expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
+  })
+
+  it('[RR7] 菜单开着左键点另一线=换选：transient 菜单外点 e2→e2 选中+菜单关（不被 closeMenu 撤空）', () => {
+    const nodes = [node('A'), node('B')]
+    const edges = [edge('e1', 'A', 'B', [{ x: 200, y: 66 }]), edge('e2', 'A', 'B', [{ x: 260, y: 40 }])]
+    useLineageStore.setState({ nodes, edges, saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
+    mount(nodes, edges)
+    const frame = host!.querySelector('.month-frame') as HTMLElement
+    stubRect(frame, 0, 0, 800, 200)
+    stubRect(host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement, 12, 30)
+    stubRect(host!.querySelector('.tl-card[data-node-id="B"]') as HTMLElement, 412, 30)
+    flushRafs()
+    rc(hitOf('e1'), 30, 30) // 右键 e1=瞬选（prior=null）+菜单开
+    expect(document.querySelector('[data-testid="edge-menu"]')).not.toBeNull()
+    click(hitOf('e2')) // 菜单开着左键点另一线=换选
+    expect(document.querySelector('[data-testid="edge-menu"]')).toBeNull() // 菜单随外点关闭
+    expect(host!.querySelector('path.tl-edge.selected')?.getAttribute('data-edge-id')).toBe('e2') // 换选落定（原 closeMenu 撤为 idle）
+    expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
+  })
+
   it('R11② manual 线跨卡换端：reconnectEdge+L 重正交（新拐点落地）', () => {
     layout([{ x: 200, y: 66 }], true)
     click(hitOf('e1'))
