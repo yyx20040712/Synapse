@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>F-LGRAPH-01 编辑器 mockup（呈裁）</title>
+<style>
+  /* ── 视觉令牌：誊自应用 theme.css（与 F-LINEAGE-02 样本同源——观感复刻
+     既有应用，本批变量=编辑器交互形态，非新视觉语言）── */
+  :root {
+    --accent: #3a5bd9; --accent-soft: rgba(58, 91, 217, 0.10); --accent-ink: #fff;
+    --signal: #f06030; --warn: #d9382b;
+    --ink: #1c2333; --dim: #5d6577; --faint: #9aa3b5;
+    --line: #e3e7ee; --panel: #ffffff; --page-bg: #eef1f6;
+    --mini-card: #e9edf4; --mini-card-line: #d6dce8;
+    --month-dash: rgba(58, 91, 217, 0.55);
+    --serif: Georgia, 'Times New Roman', serif;
+    --mono: Consolas, 'Courier New', monospace;
+    /* 线色板 P-5（6 色拟） */
+    --lc-1: #3a5bd9; --lc-2: #f06030; --lc-3: #2e9e5b; --lc-4: #8250df; --lc-5: #8a94a8; --lc-6: #c2417f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--page-bg); font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: var(--ink); padding: 28px 0 60px; }
+  .page { width: 1200px; margin: 0 auto; }
+  header.intro { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; margin-bottom: 22px; }
+  header.intro h1 { font-size: 17px; margin-bottom: 8px; }
+  header.intro p { font-size: 12px; color: var(--dim); line-height: 1.75; }
+  header.intro .hint { color: var(--signal); font-weight: 600; }
+  section.scene { margin-bottom: 28px; }
+  .scene-head { display: flex; align-items: baseline; gap: 10px; padding: 0 2px 8px; flex-wrap: wrap; }
+  .scene-head .tag { font-family: var(--mono); font-size: 14px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 6px; padding: 2px 9px; }
+  .scene-head h2 { font-size: 15px; }
+  .scene-head .sub { font-size: 11.5px; color: var(--dim); }
+  .panel { position: relative; background: #f7f9fc; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+
+  /* ══ 应用视口框架（S1）══ */
+  .appframe { width: 1160px; height: 640px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 10px rgba(20,26,40,.06); }
+  .topbar { height: 46px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--line); background: #fbfcfe; z-index: 30; }
+  /* 模式分段控件 */
+  .modes { display: flex; border: 1.4px solid var(--accent); border-radius: 8px; overflow: hidden; }
+  .modes .m { display: flex; align-items: center; gap: 5px; font-size: 12px; padding: 5px 13px; cursor: pointer; color: var(--accent); background: #fff; }
+  .modes .m + .m { border-left: 1.4px solid var(--accent); }
+  .modes .m.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .modes .m svg { width: 13px; height: 13px; }
+  /* 工具组（edit 专属） */
+  .tools { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+  .tools .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+  .tbtn { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; border: 1px solid transparent; color: var(--dim); position: relative; }
+  .tbtn svg { width: 16px; height: 16px; }
+  .tbtn:hover { background: var(--accent-soft); }
+  .tbtn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .tbtn.off { opacity: .38; pointer-events: none; filter: grayscale(1); }
+  .tbtn .dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
+  .name-input { width: 132px; height: 28px; border: 1px solid var(--line); border-radius: 7px; font-size: 11.5px; padding: 0 9px; color: var(--ink); background: #fff; display: flex; align-items: center; }
+  .name-input.ph { color: var(--faint); }
+  .graphname { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .focus-chip { font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 2px 10px; font-weight: 600; }
+
+  /* ══ 导航窗格 ══ */
+  .navpane { width: 208px; flex: none; border-right: 1px solid var(--line); background: #fbfcfe; display: flex; flex-direction: column; z-index: 20; }
+  .navpane.collapsed { width: 40px; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 8px; background: #fbfcfe; }
+  .nav-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px 7px; font-size: 12px; font-weight: 700; color: var(--dim); }
+  .collapse-btn { width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--line); background: #fff; color: var(--faint); display: grid; place-items: center; font-size: 10px; cursor: pointer; }
+  .graphsel { position: relative; margin: 2px 10px 8px; }
+  .graphsel .selbox { height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; display: flex; align-items: center; gap: 7px; padding: 0 9px; font-size: 11.5px; cursor: pointer; }
+  .graphsel .selbox .fold { margin-left: auto; color: var(--faint); font-size: 9px; }
+  .graphsel .droplist { position: absolute; top: 33px; left: 0; right: 0; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(20,26,40,.13); z-index: 40; overflow: hidden; }
+  .droplist .opt { display: flex; align-items: center; gap: 7px; padding: 6.5px 10px; font-size: 11.5px; cursor: pointer; }
+  .droplist .opt .fic { width: 13px; height: 13px; border-radius: 3px; flex: none; }
+  .droplist .opt:hover { background: var(--accent-soft); }
+  .droplist .opt.cur { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-idx { padding: 4px 10px 12px; overflow: auto; }
+  .nav-idx .yr { display: flex; align-items: baseline; gap: 7px; margin: 9px 0 3px; }
+  .nav-idx .yr .n { font-family: var(--serif); font-size: 14px; letter-spacing: 1px; }
+  .nav-idx .yr::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .nav-idx .mo { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--dim); padding: 3px 4px 3px 10px; border-radius: 6px; cursor: pointer; position: relative; }
+  .nav-idx .mo:hover { background: var(--accent-soft); }
+  .nav-idx .mo.cur { color: var(--accent); font-weight: 700; }
+  .nav-idx .mo.cur::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 2px; background: var(--accent); }
+  .nav-idx .mo .cnt { margin-left: auto; font-size: 9.5px; color: var(--faint); }
+
+  /* ══ 画布 ══ */
+  .stage { flex: 1; position: relative; overflow: hidden; background: linear-gradient(180deg, #ffffff, #f7f9fc); }
+  .tl-content { position: absolute; inset: 0; padding: 16px 24px 30px 18px; overflow: hidden; }
+  .tl-year-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; position: relative; z-index: 3; }
+  .tl-year-num { font-family: var(--serif); font-size: 19px; letter-spacing: 1px; }
+  .tl-year-meta { font-family: var(--mono); font-size: 9.5px; color: var(--faint); }
+  .tl-year-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .month-frame { position: relative; border: 1.6px dashed var(--month-dash); border-radius: 12px; background: rgba(58, 91, 217, 0.03); margin: 0 58px 22px 46px; padding: 20px 12px 12px; }
+  .month-tag { position: absolute; top: 5px; left: 12px; z-index: 5; font-size: 8.5px; color: var(--accent); background: rgba(233, 237, 244, 0.92); border: 1px solid rgba(58, 91, 217, 0.35); border-radius: 7px; padding: 1px 7px; line-height: 1.5; }
+  .frame-note { position: absolute; top: 5px; right: 12px; font-size: 8.5px; color: var(--faint); z-index: 5; }
+
+  /* ══ 四层新卡（104×138——票⑦/P-7 默认）══ */
+  .card { position: absolute; width: 104px; height: 138px; background: var(--mini-card); border: 1px solid var(--mini-card-line); border-radius: 8px; padding: 5px 6px 4px; box-shadow: 0 1px 3px rgba(20, 26, 40, 0.08); z-index: 4; }
+  .card.sel { border-color: var(--accent); box-shadow: 0 0 0 1.6px var(--accent), 0 1px 3px rgba(20,26,40,.08); }
+  .card.lit { border-color: var(--accent); box-shadow: 0 0 0 1.6px var(--accent), 0 1px 3px rgba(20,26,40,.08); }
+  .card.dimc { opacity: 0.3; }
+  .card.dragging { position: absolute; z-index: 99; box-shadow: 0 10px 22px rgba(20,26,40,.22); transform: rotate(2deg) scale(1.05); cursor: grabbing; }
+  .l1-marks { height: 20px; display: flex; align-items: center; gap: 4px; }
+  .star { width: 15px; height: 15px; cursor: pointer; display: grid; place-items: center; }
+  .star svg { width: 13px; height: 13px; }
+  .core-chip { font-size: 7.5px; padding: 0 3.5px; border-radius: 3px; margin-left: auto; line-height: 1.5; background: var(--accent); color: #fff; font-weight: 600; }
+  .core-chip.ghost { background: transparent; border: 1px solid var(--mini-card-line); color: var(--faint); }
+  .l2-tags { height: 16px; display: flex; align-items: center; gap: 5px; font-size: 7.5px; color: var(--dim); margin-top: 1px; }
+  .tagchip { display: inline-flex; align-items: center; gap: 2.5px; background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: 0.5px 4px; line-height: 1.5; }
+  .tagchip .td { width: 5px; height: 5px; border-radius: 50%; }
+  .tagchip.more { border-style: dashed; color: var(--faint); }
+  .l3-title { font-size: 9.3px; font-weight: 600; line-height: 1.4; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .l4-journal { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 14px; display: flex; align-items: center; justify-content: space-between; font-size: 8.5px; }
+  .l4-journal .jname { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62px; }
+  .l4-journal .ifv { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+
+  /* ══ 连线与编辑态 ══ */
+  svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
+  svg.edges.hit { pointer-events: auto; }
+  .edge { fill: none; stroke-width: 1.6; }
+  .edge.hovered { stroke-width: 2.6; opacity: 0.65; }
+  .edge.selected { stroke-width: 2.2; }
+  .edge.warnseg { stroke: var(--warn); stroke-width: 3.2; opacity: .8; stroke-dasharray: 1 3; stroke-linecap: round; }
+  .handle-v { fill: #fff; stroke: var(--accent); stroke-width: 1.4; }
+  .handle-v.snap { fill: var(--accent); }
+  .handle-e { fill: #fff; stroke: var(--signal); stroke-width: 1.4; }
+  .anchor-dot { fill: var(--signal); opacity: .85; }
+  .snap-line { stroke: var(--signal); stroke-width: 1; stroke-dasharray: 4 3; opacity: .8; }
+  .edge-label { font-size: 8.5px; font-family: var(--mono); fill: var(--dim); }
+
+  /* ══ 右键菜单 ══ */
+  .ctxmenu { position: absolute; min-width: 128px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 22px rgba(20,26,40,.16); z-index: 50; padding: 3px; }
+  .ctxmenu .mi { font-size: 11px; padding: 5px 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .ctxmenu .mi:hover { background: var(--accent-soft); color: var(--accent); }
+  .ctxmenu .mi.danger:hover { background: rgba(217,56,43,.08); color: var(--warn); }
+  .ctxmenu .mi .k { margin-left: auto; font-size: 9px; color: var(--faint); font-family: var(--mono); }
+  .ctxmenu .mdiv { height: 1px; background: var(--line); margin: 3px 6px; }
+  .ctxmenu .mtitle { font-size: 9px; color: var(--faint); padding: 3px 10px 1px; }
+
+  /* ══ 候选槽（S6）══ */
+  .drag-slot { position: absolute; width: 104px; height: 138px; border: 1.8px dashed var(--accent); border-radius: 8px; background: var(--accent-soft); display: grid; place-items: center; font-size: 9px; color: var(--accent); letter-spacing: 3px; z-index: 4; }
+  .drag-slot.faded { opacity: 0.35; }
+  .slot-ghost { position: absolute; width: 104px; height: 138px; border: 1.5px dashed var(--mini-card-line); border-radius: 8px; z-index: 2; }
+
+  /* ══ 指示/注记 ══ */
+  .zoom-chip { position: absolute; right: 14px; bottom: 12px; z-index: 26; display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); box-shadow: 0 2px 8px rgba(20,26,40,.08); }
+  .callout { position: absolute; z-index: 27; font-size: 10px; color: var(--signal); line-height: 1.5; background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(240, 96, 48, 0.25); border-radius: 6px; padding: 3px 6px; }
+  .callout b { font-weight: 700; }
+  .callout .arrow { position: absolute; color: var(--signal); font-size: 13px; }
+  .badge { position: absolute; z-index: 28; font-size: 9.5px; font-family: var(--mono); color: #fff; background: var(--signal); border-radius: 99px; padding: 1.5px 8px; }
+  .cursor-hand { position: absolute; z-index: 60; width: 22px; height: 22px; }
+  .pan-arrows { position: absolute; z-index: 26; color: var(--faint); font-size: 20px; }
+
+  /* S7 层标注 */
+  .layer-rule { position: absolute; left: -8px; right: -8px; border-top: 1px dashed var(--signal); opacity: .5; z-index: 9; }
+  .layer-tag { position: absolute; font-size: 9px; color: var(--signal); white-space: nowrap; z-index: 9; }
+
+  footer.note { font-size: 11.5px; color: var(--dim); line-height: 1.8; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 20px; }
+  .duo { display: flex; gap: 14px; }
+  .duo .panel { flex: 1; }
+  .strip { position: relative; background: #fbfcfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="intro">
+    <h1>脉络图编辑器 mockup（F-LGRAPH-01·呈裁样本）</h1>
+    <p>八幕覆盖票面①-⑧交互域：<b>S1 页面框架全景（编辑模式）</b>｜S2 三模式对比+聚焦 dim｜S3 导航窗格两态｜S4 线型体系（manual 单基型）｜S5 工具组细节｜S6 拖拽分屏｜S7 卡片四层｜S8 手动调线编辑态。走线形态=方案甲（已定案，不参与本批比选）；卡片/框/配色=既有视觉延续。</p>
+    <p class="hint">请裁决交互形态：模式栏/窗格/工具组/卡片四层/拖拽手感/调线手柄与菜单——配套文档=docs/design/2026-10-01_f-lgraph01-editor-mockup.md §5 十个呈裁点（不回复默认项成立）。</p>
+  </header>
+
+  <!-- ════ S1 框架全景（编辑模式）════ -->
+  <section class="scene" id="s1">
+    <div class="scene-head">
+      <span class="tag">S1</span><h2>页面框架全景——编辑模式</h2>
+      <span class="sub">顶栏=三模式+工具组｜左=导航窗格（可收起）｜画布=月框+四层新卡+甲案走线+选中线编辑态</span>
+    </div>
+    <div class="appframe">
+      <div class="topbar">
+        <div class="modes">
+          <span class="m on"><svg viewBox="0 0 16 16"><path d="M2 14 L11 14 M2 14 L2 5 M11 14 L11 8 M2 5 L4 5 M4 5 L4 8 M4 8 L6.5 8 M6.5 8 L6.5 5 M6.5 5 L9 5 M9 5 L9 8 M9 8 L11 8 M12.5 3.5 l1.8 3 -3.6 0 z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>编辑</span>
+          <span class="m"><svg viewBox="0 0 16 16"><path d="M3 9.5 C3 6 5.5 4.5 7 5.5 L9 7 C10.5 8 12 7.5 12.8 6 M3 9.5 L3 11.5 M3 9.5 C3 10.5 3.6 11 4.5 11 L7 11 C9 11 10 12 9.5 13.5 L13 13.5 C14.5 13.5 15 12 14.5 10.5 L13 7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>浏览</span>
+          <span class="m"><svg viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.2 L8 3 M8 13 L8 14.8 M1.2 8 L3 8 M13 8 L14.8 8 M3.2 3.2 L4.3 4.3 M11.7 11.7 L12.8 12.8 M12.8 3.2 L11.7 4.3 M4.3 11.7 L3.2 12.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>聚焦</span>
+        </div>
+        <div class="tools">
+          <span class="tbtn" title="保存（未保存变更）">
+            <svg viewBox="0 0 16 16"><path d="M2.5 2.5 h8 l3 3 v8 h-11 z M5 2.5 v3.5 h4.5 v-3.5 M4.5 13.5 v-4 h7 v4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            <span class="dot"></span>
+          </span>
+          <span class="sep"></span>
+          <span class="tbtn" title="选择拖拽"><svg viewBox="0 0 16 16"><path d="M5 13.5 L3.2 8.2 C2.9 7.3 4.1 6.8 4.6 7.6 L5.8 9.5 L5.8 3.2 a1 1 0 0 1 2 0 L7.8 7 L10.8 7.4 C11.8 7.6 12.4 8.4 12.2 9.4 L11.5 12.2 C11.3 13.1 10.5 13.7 9.6 13.6 L7 13.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tbtn on" title="实线（画线工具）"><svg viewBox="0 0 16 16"><path d="M2 11.5 C5 4 11 13 14 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+          <span class="tbtn" title="虚线（画线工具）"><svg viewBox="0 0 16 16"><path d="M2 11.5 C5 4 11 13 14 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="3 2.4"/></svg></span>
+          <span class="sep"></span>
+          <span class="tbtn" title="线色"><span style="width:13px;height:13px;border-radius:4px;background:var(--lc-1);display:block"></span></span>
+          <span class="name-input">主供水线</span>
+          <span class="sep"></span>
+          <span class="tbtn" title="撤销 Ctrl+Z"><svg viewBox="0 0 16 16"><path d="M6 3 L2.5 6.5 L6 10 M2.5 6.5 H9.5 C12 6.5 13.5 8 13.5 10.5 C13.5 12.5 12 13.5 10 13.5 H6.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tbtn off" title="重做 Ctrl+Y"><svg viewBox="0 0 16 16"><path d="M10 3 L13.5 6.5 L10 10 M13.5 6.5 H6.5 C4 6.5 2.5 8 2.5 10.5 C2.5 12.5 4 13.5 6 13.5 H9.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <span class="graphname">图：智慧水务 · 漏损专题</span>
+      </div>
+      <div style="display:flex;flex:1;min-height:0">
+        <div class="navpane">
+          <div class="nav-head">导航 <span class="collapse-btn" title="收起窗格">«</span></div>
+          <div class="graphsel">
+            <div class="selbox"><span style="width:13px;height:13px;border-radius:3px;background:var(--lc-1);display:inline-block"></span>智慧水务 · 漏损专题<span class="fold">▾</span></div>
+          </div>
+          <div class="nav-idx">
+            <div class="yr"><span class="n">2023</span></div>
+            <div class="mo">03 <span class="cnt">3 篇</span></div>
+            <div class="mo cur">06 <span class="cnt">3 篇</span></div>
+            <div class="mo">09 <span class="cnt">3 篇</span></div>
+            <div class="yr"><span class="n">2024</span></div>
+            <div class="mo">01 <span class="cnt">2 篇</span></div>
+          </div>
+        </div>
+        <div class="stage" id="s1-stage">
+          <div class="tl-content" id="s1-canvas"></div>
+          <div class="zoom-chip">100% ▾</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      注记：①<b>模式栏三态互斥</b>——编辑=工具组展开（本幕）；浏览=小手平移画布；聚焦=单击卡 toggle（S2 呈样）。②<b>ctrl+滚轮缩放</b>三模式通用（右下角角标联动，50%–200%）。③<b>双击卡=跳阅读器</b>已开 tab。④月标注已移入框内顶缘（F-LINEAGE-02 定案）。⑤选中线=「主供水线」（命名框联动——S5/S8 呈样）。
+    </div>
+  </section>
+
+  <!-- ════ S2 三模式对比+聚焦 dim ════ -->
+  <section class="scene" id="s2">
+    <div class="scene-head">
+      <span class="tag">S2</span><h2>三模式对比——聚焦 dim 视觉</h2>
+      <span class="sub">同一场景三态：编辑（工具组+手柄）｜浏览（平移+滚轮）｜聚焦（两卡聚焦，照亮集=accent 边框，其余 dim 0.25 非隐藏）</span>
+    </div>
+    <div class="duo" style="flex-direction:row" id="s2-wrap"></div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      聚焦规则：单击卡=toggle 加入/移出（<b>允许多卡</b>）；照亮集=聚焦卡+上下游传递闭包；<b>点空白不取消</b>（退出=点「浏览」或再点「聚焦」——模式级退出，focusSet 清空）；切图清空。dim 元素 hover 临时回升 0.6 可读探查。
+    </div>
+  </section>
+
+  <!-- ════ S3 导航窗格两态 ════ -->
+  <section class="scene" id="s3">
+    <div class="scene-head">
+      <span class="tag">S3</span><h2>导航窗格——展开（下拉打开态）× 收起</h2>
+      <span class="sub">Word 导航窗格式：图/文件夹下拉兼任切换（每图只显示自身——并集切换器退役）+ 时间线索引点击滚动定位</span>
+    </div>
+    <div class="duo">
+      <div class="panel" style="height:400px">
+        <div class="navpane" style="width:100%;border-right:none">
+          <div class="nav-head">导航 <span class="collapse-btn">«</span></div>
+          <div class="graphsel">
+            <div class="selbox"><span style="width:13px;height:13px;border-radius:3px;background:var(--lc-1)"></span>智慧水务 · 漏损专题<span class="fold">▴</span></div>
+            <div class="droplist">
+              <div class="opt cur"><span class="fic" style="background:var(--lc-1)"></span>智慧水务 · 漏损专题</div>
+              <div class="opt"><span class="fic" style="background:var(--lc-3)"></span>压力监测 · 爆管识别</div>
+              <div class="opt"><span class="fic" style="background:var(--lc-4)"></span>水质净化 · 膜工艺</div>
+              <div class="opt"><span class="fic" style="background:var(--lc-6)"></span>供水调度 · AI 综述</div>
+              <div class="mdiv" style="height:1px;background:var(--line);margin:3px 6px"></div>
+              <div class="opt"><span class="fic" style="background:var(--faint)"></span>主图（未选文件夹缺省）</div>
+            </div>
+          </div>
+          <div class="nav-idx">
+            <div class="yr"><span class="n">2023</span></div>
+            <div class="mo">03 <span class="cnt">3 篇</span></div>
+            <div class="mo cur">06 <span class="cnt">3 篇</span></div>
+            <div class="mo">09 <span class="cnt">3 篇</span></div>
+            <div class="yr"><span class="n">2024</span></div>
+            <div class="mo">01 <span class="cnt">2 篇</span></div>
+          </div>
+        </div>
+        <div class="callout" style="left:238px;top:60px;width:180px"><b>图/文件夹下拉</b>：当前图+列表=库页文件夹平铺（主图恒在列）。缺省图=库页文件夹上下文同步。</div>
+        <div class="callout" style="left:238px;top:196px;width:180px"><b>时间线索引</b>：年>月两级，点击=滚动定位到月框；当前视口月=左侧 accent 指示条。</div>
+      </div>
+      <div class="panel" style="height:400px">
+        <div class="navpane collapsed" style="height:100%">
+          <span class="collapse-btn" title="展开窗格">»</span>
+          <span style="writing-mode:vertical-rl;font-size:10px;color:var(--faint);letter-spacing:2px;margin-top:10px">导航窗格</span>
+        </div>
+        <div class="callout" style="left:80px;top:60px;width:190px"><b>收起态</b>=40px 窄条（仅展开钮）；画布区回收 168px 宽。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ S4 线型体系 ════ -->
+  <section class="scene" id="s4">
+    <div class="scene-head">
+      <span class="tag">S4</span><h2>线型体系——manual 单基型 + 视觉线型</h2>
+      <span class="sub">基型收敛：全部连线=manual（「都是人工线」·AI 不生成线）；线型=纯视觉（实/虚 × 色 × 命名）；ref 综述参考边体系退役</span>
+    </div>
+    <div class="strip" id="s4-strip"></div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      <b>退役面</b>：R2-LG12 综述限定语义 / isSurveyTitle 消费面 / ref 守卫分支 / lineTypes 恒四组——随改版破坏性清理（测试数据可清授权 v95 §2-1）。新边缺省名=<b>「待命名」</b>（选中线→命名框改名）。
+    </div>
+  </section>
+
+  <!-- ════ S5 工具组细节 ════ -->
+  <section class="scene" id="s5">
+    <div class="scene-head">
+      <span class="tag">S5</span><h2>编辑工具组——保存亮暗 × 颜色下拉 × 命名 × 悬停高亮</h2>
+      <span class="sub">仅编辑模式可见；保存=Word 式（未保存亮+角点/保存后变暗禁用）；保存粒度=会话暂存+点保存批量落库（v97-3）</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="strip" style="padding:12px 18px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:9px">① 保存两态 + 命名框两态</div>
+        <div class="topbar" style="height:42px;border:1px solid var(--line);border-radius:9px;background:#fff;margin-bottom:10px">
+          <div class="tools" style="margin-left:0">
+            <span class="tbtn" title="未保存——可点"><svg viewBox="0 0 16 16"><path d="M2.5 2.5 h8 l3 3 v8 h-11 z M5 2.5 v3.5 h4.5 v-3.5 M4.5 13.5 v-4 h7 v4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span class="dot"></span></span>
+            <span class="name-input">主供水线</span>
+            <span style="font-size:10.5px;color:var(--signal);font-family:var(--mono)">← dirty：亮+角点，可点</span>
+          </div>
+        </div>
+        <div class="topbar" style="height:42px;border:1px solid var(--line);border-radius:9px;background:#fff">
+          <div class="tools" style="margin-left:0">
+            <span class="tbtn off" title="已保存——禁用"><svg viewBox="0 0 16 16"><path d="M2.5 2.5 h8 l3 3 v8 h-11 z M5 2.5 v3.5 h4.5 v-3.5 M4.5 13.5 v-4 h7 v4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>
+            <span class="name-input ph">选择线条命名</span>
+            <span style="font-size:10.5px;color:var(--faint);font-family:var(--mono)">← clean：变暗禁用；未选线=占位灰字</span>
+          </div>
+        </div>
+      </div>
+      <div class="duo">
+        <div class="strip">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:9px">② 线色下拉（打开态）——当前画线工具色 / 选中线改色</div>
+          <div style="display:inline-block;position:relative">
+            <span class="tbtn on" style="width:38px;height:32px"><span style="width:16px;height:16px;border-radius:5px;background:var(--lc-3);display:block"></span></span>
+            <div class="droplist" style="position:static;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:8px;width:150px;margin-top:6px">
+              <span class="tbtn" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-1);display:block"></span></span>
+              <span class="tbtn" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-2);display:block"></span></span>
+              <span class="tbtn on" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-3);display:block"></span></span>
+              <span class="tbtn" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-4);display:block"></span></span>
+              <span class="tbtn" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-5);display:block"></span></span>
+              <span class="tbtn" style="width:34px;height:30px"><span style="width:17px;height:17px;border-radius:5px;background:var(--lc-6);display:block"></span></span>
+            </div>
+          </div>
+          <div style="font-size:10.5px;color:var(--faint);margin-top:8px;font-family:var(--mono)">色板 6 色（P-5 呈裁）</div>
+        </div>
+        <div class="strip" id="s5-hover"></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      保存点击=暂存批量落库（IPC 合并写）→ clean+撤销栈<b>基线重置</b>（保存后不可撤回保存前——Word 式）+保存钮变暗。命名=回车/失焦提交（一命名=一编辑单元=一撤销步）。
+    </div>
+  </section>
+
+  <!-- ════ S6 拖拽分屏 ════ -->
+  <section class="scene" id="s6">
+    <div class="scene-head">
+      <span class="tag">S6</span><h2>拖拽卡片——类手机拖 app 分屏</h2>
+      <span class="sub">候选占位（虚线槽实时预览）+ 拖到底缘月框自动下拉 + 限本月物理域（跨月无候选+回弹，无 toast——INV-83 子句退役）</span>
+    </div>
+    <div class="duo" id="s6-wrap"></div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      拖起态=微倾 2°+放大 1.05+拖起阴影（现行 `.dragging` 保留）；最近空位槽=实态（accent-soft 底「置入」）、其余候选=faded 0.35；<b>松手落最近实态槽</b>；拖出本月框=槽全 faded+松手回弹原位（物理域约束，不弹 toast）。换月=月标 chip 改月路径保留（现行 c-ym）。
+    </div>
+  </section>
+
+  <!-- ════ S7 卡片四层 ════ -->
+  <section class="scene" id="s7">
+    <div class="scene-head">
+      <span class="tag">S7</span><h2>卡片信息重设计——竖向 3:4 四层</h2>
+      <span class="sub">现行 104×52 → 新 104×138（宽不动=布局零扰动，P-7 默认）；标记区（星标 F-STAR-01）→标签行→文献名→期刊+IF</span>
+    </div>
+    <div class="strip" style="height:340px" id="s7-strip"></div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      星标（P-6 拟）：浏览/聚焦模式点星标=toggle（即时落库——非编辑暂存面）；编辑模式点星标区=选中卡（防画线误触）。<b>双击卡=跳阅读器</b>已开 tab（三模式通用）。标签行=域化标签（与文献库对齐——F-TAGS-02 联动），最多 2+溢出 <b>+N</b>。无 IF=省略 IF 值。
+    </div>
+  </section>
+
+  <!-- ════ S8 手动调线编辑态 ════ -->
+  <section class="scene" id="s8">
+    <div class="scene-head">
+      <span class="tag">S8</span><h2>手动调线编辑态——PPT 式调节点位</h2>
+      <span class="sub">选中线手柄集（方=via 顶点/圆=端点重连）｜拖顶点轴跟随联动｜磁吸 ±6｜右键菜单两处｜双击段加点｜穿卡警示（P-9 默认=警示放行）</span>
+    </div>
+    <div class="duo" id="s8-wrap"></div>
+    <div style="font-size:11px;color:var(--dim);padding:7px 4px 0;line-height:1.7">
+      撤销单元=<b>单次拖放</b>（pointerdown→up 含联动子步+磁吸落点=一单元）；加点/删点/重置/端点重连/命名/改色=各一单元；<b>保存=撤销栈基线重置</b>。自动线（无 via）选中后拖段或加点=首个 via 落位转 manual-override；「重置走线」=清空 via 回自动。穿卡警示=拖动+选中态渲染零持久化（口径 PAD=4——F-LINEAGE-02 design-final §2.3-8）。
+    </div>
+  </section>
+
+  <footer class="note">
+    <b>呈裁说明</b>：本批=编辑器交互形态（走线几何/数据模型/编辑代数已由 F-LINEAGE-02 design-final 定案，本样本零变更）。十个呈裁点（P-1..P-10）见配套文档 §5——回复例：「P-7 用 88 宽」「聚焦边框不要」「其余默认」。不回复=全默认项成立，升级 design-final 转实施拆批（文档 §4：F-LINEAGE-02 ①a 先行→F-LGRAPH-01 实施①框架/②编辑器）。
+  </footer>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   F-LGRAPH-01 编辑器 mockup 引擎
+   令牌/几何=theme-lineage.css 实测誊录+F-LINEAGE-02 样本同源；
+   走线=甲案形态静态点列+r6 圆角化（几何已定案，非本批变量）。
+   ════════════════════════════════════════════════════════════════ */
+const CARD_W = 104, CARD_H = 138;
+const svgNS = 'http://www.w3.org/2000/svg';
+
+/* ── 四层新卡 DOM（数据驱动）── */
+const PAPERS = {
+  n1: { no: 'P01', star: true, core: true, tags: [['漏损', 'var(--lc-1)'], ['管网红', 'var(--lc-4)']], title: '城市供水管网漏损定位与分区研究', journal: 'Water Res.', ifv: 'IF 11.4' },
+  n2: { no: 'P02', star: false, core: false, tags: [['压力监测', 'var(--lc-3)']], title: '基于压力监测的爆管实时识别方法', journal: 'J. Hydro.', ifv: 'IF 6.1' },
+  n3: { no: 'P03', star: false, core: false, tags: [['DMA 计量', 'var(--lc-2)'], ['夜间流量', 'var(--lc-6)'], '+2'], title: 'DMA 分区计量夜间最小流量优化', journal: 'Urban W. J.', ifv: '' },
+  n4: { no: 'P04', star: true, core: false, tags: [['水力模型', 'var(--lc-4)']], title: '管网水力模型校准的贝叶斯方法', journal: 'AWRA', ifv: 'IF 3.2' },
+  n5: { no: 'P05', star: false, core: true, tags: [['传感网', 'var(--lc-3)'], ['IoT', 'var(--lc-5)']], title: '低功耗传感网络在漏损监测中的部署', journal: 'Sensors', ifv: 'IF 3.9' },
+  n6: { no: 'P06', star: false, core: false, tags: [['AI 综述', 'var(--lc-6)']], title: '深度学习在供水管网状态估计综述', journal: 'AWM', ifv: 'IF 8.8' },
+};
+const starSvg = (on) => on
+  ? '<svg viewBox="0 0 14 14"><path d="M7 1.2 L8.7 4.9 L12.7 5.3 L9.7 8 L10.6 12 L7 9.8 L3.4 12 L4.3 8 L1.3 5.3 L5.3 4.9 Z" fill="var(--accent)"/></svg>'
+  : '<svg viewBox="0 0 14 14"><path d="M3 2 h8 v9.5 l-4 -2.4 l-4 2.4 Z" fill="none" stroke="var(--faint)" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.6 4.2 h4.8 M4.6 6 h3.2" stroke="var(--faint)" stroke-width=".8" stroke-linecap="round"/></svg>';
+function cardHtml(id, extra = '') {
+  const p = PAPERS[id];
+  const tags = p.tags.map(t => t[0].startsWith('+') ? `<span class="tagchip more">${t[0]}</span>` : `<span class="tagchip"><span class="td" style="background:${t[1]}"></span>${t[0]}</span>`).join('');
+  return `<div class="card ${extra}" data-card="${id}">
+    <div class="l1-marks"><span class="star" title="星标">${starSvg(p.star)}</span>${p.core ? '<span class="core-chip">核</span>' : '<span class="core-chip ghost">&nbsp;</span>'}</div>
+    <div class="l2-tags">${tags}</div>
+    <div class="l3-title">${p.title}</div>
+    <div class="l4-journal"><span class="jname">${p.journal}</span><span class="ifv">${p.ifv}</span></div>
+  </div>`;
+}
+
+/* ── r6 圆角化（甲案视觉——定案形态）── */
+function roundedPath(pts, r = 6) {
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p = pts[i], a = pts[i - 1], b = pts[i + 1];
+    const da = Math.hypot(p.x - a.x, p.y - a.y), db = Math.hypot(b.x - p.x, b.y - p.y);
+    const ra = Math.min(r, da / 2), rb = Math.min(r, db / 2);
+    const pa = { x: p.x + (a.x - p.x) / (da || 1) * ra, y: p.y + (a.y - p.y) / (da || 1) * ra };
+    const pb = { x: p.x + (b.x - p.x) / (db || 1) * rb, y: p.y + (b.y - p.y) / (db || 1) * rb };
+    d += ` L ${pa.x} ${pa.y} Q ${p.x} ${p.y} ${pb.x} ${pb.y}`;
+  }
+  const e = pts[pts.length - 1];
+  d += ` L ${e.x} ${e.y}`;
+  return d;
+}
+function edgeEl(svg, pts, cls, color) {
+  const el = document.createElementNS(svgNS, 'path');
+  el.setAttribute('d', roundedPath(pts));
+  el.setAttribute('class', 'edge ' + (cls || ''));
+  el.setAttribute('stroke', color || 'var(--lc-1)');
+  svg.appendChild(el);
+  return el;
+}
+function handleV(svg, x, y, snap) {
+  const r = document.createElementNS(svgNS, 'rect');
+  r.setAttribute('x', x - 4); r.setAttribute('y', y - 4);
+  r.setAttribute('width', 8); r.setAttribute('height', 8);
+  r.setAttribute('rx', 1.5);
+  r.setAttribute('class', 'handle-v' + (snap ? ' snap' : ''));
+  svg.appendChild(r);
+}
+function handleE(svg, x, y) {
+  const c = document.createElementNS(svgNS, 'circle');
+  c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 4.5);
+  c.setAttribute('class', 'handle-e');
+  svg.appendChild(c);
+}
+function makeSvg(host) {
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class', 'edges');
+  host.appendChild(svg);
+  return svg;
+}
+
+/* ════ S1 画布（编辑模式全景）════ */
+(function s1() {
+  const host = document.getElementById('s1-canvas');
+  /* 年头 + 两月框（月标注入框内顶缘——定案） */
+  host.innerHTML = `
+    <div class="tl-year-head" style="margin-left:46px;margin-right:58px"><span class="tl-year-num">2023</span><span class="tl-year-meta">8 篇 · 6 线</span></div>
+    <div class="month-frame" id="s1-f1" style="height:338px"><span class="month-tag">2023.03</span><span class="frame-note">月框满宽 · 行瀑布错位（F-LINEAGE-02 定案）</span></div>
+    <div class="month-frame" id="s1-f2" style="height:190px"><span class="month-tag">2023.06</span></div>`;
+  const f1 = document.getElementById('s1-f1'), f2 = document.getElementById('s1-f2');
+  /* 框 1：两行卡（第二行瀑布右移 62） */
+  const pos = (fx, fy) => ({ x: 46 + 12 + fx, y: f1.offsetTop + 20 + fy });
+  const place = (frame, id, dx, dy, extra) => {
+    const el = document.createElement('div');
+    el.innerHTML = cardHtml(id, extra);
+    const c = el.firstElementChild;
+    c.style.left = dx + 'px'; c.style.top = dy + 'px';
+    frame.appendChild(c);
+    return c;
+  };
+  place(f1, 'n1', 0, 0); place(f1, 'n2', 124, 0); place(f1, 'n3', 248, 0);
+  place(f1, 'n4', 62, 158, 'sel'); place(f1, 'n5', 186, 158);
+  place(f2, 'n6', 62, 0);
+  /* 卡绝对坐标（画布系） */
+  const A = { x: 46 + 12 + 52, y: f1.offsetTop + 20 + 138 };            // n1 底中
+  const B = { x: 46 + 12 + 124 + 52, y: f1.offsetTop + 20 + 158 + 4 };  // n2→? 不用
+  const C = { x: 46 + 12 + 62 + 26, y: f1.offsetTop + 20 + 158 };       // n4 顶¼
+  const D = { x: 46 + 12 + 186 + 78, y: f1.offsetTop + 20 + 158 };      // n5 顶¾
+  const E = { x: 46 + 12 + 248 + 26, y: f1.offsetTop + 20 };            // n3 顶¼
+  const F2 = { x: 46 + 12 + 62 + 52, y: f1.offsetTop + 20 + 158 + 138 };// n4 底中
+  const G = { x: 46 + 12 + 62 + 52, y: f2.offsetTop + 20 };             // n6 顶中
+  const svg = makeSvg(host);
+  /* 甲案线（静态点列——形态已定案） */
+  edgeEl(svg, [A, { x: A.x, y: C.y - 14 }, { x: C.x, y: C.y - 14 }, { x: C.x, y: C.y }], '', 'var(--lc-1)');
+  edgeEl(svg, [{ x: D.x, y: f1.offsetTop + 20 }, { x: D.x, y: D.y - 14 }, { x: D.x + 40, y: D.y - 14 }], 'dashed-line', 'var(--lc-2)').setAttribute('stroke-dasharray', '6 3');
+  edgeEl(svg, [F2, { x: F2.x, y: F2.y + 13 }, { x: G.x, y: F2.y + 13 }, { x: G.x, y: G.y }], '', 'var(--lc-1)');
+  /* 选中线「主供水线」：n3 顶¼ → n5 顶¾ 走框间带（手动 override+手柄集） */
+  const sel = [
+    { x: E.x, y: E.y }, { x: E.x, y: E.y - 26 },
+    { x: D.x, y: E.y - 26 }, { x: D.x, y: D.y - 14 }, { x: D.x + 26, y: D.y - 14 },
+  ];
+  const selE = edgeEl(svg, sel, 'selected', 'var(--lc-1)');
+  /* 线名 label */
+  const lb = document.createElementNS(svgNS, 'text');
+  lb.setAttribute('x', (E.x + D.x) / 2 - 18); lb.setAttribute('y', E.y - 32);
+  lb.setAttribute('class', 'edge-label'); lb.textContent = '主供水线';
+  svg.appendChild(lb);
+  /* 手柄集：via 方柄 + 端点圆柄 */
+  sel.slice(1, -1).forEach(p => handleV(svg, p.x, p.y));
+  handleE(svg, sel[0].x, sel[0].y); handleE(svg, sel[sel.length - 1].x, sel[sel.length - 1].y);
+  /* 线身右键菜单（呈样浮层） */
+  const menu = document.createElement('div');
+  menu.className = 'ctxmenu';
+  menu.style.left = (sel[1].x + 90) + 'px'; menu.style.top = (sel[1].y - 4) + 'px';
+  menu.innerHTML = `<div class="mtitle">线「主供水线」</div><div class="mi">命名<span class="k">F2</span></div><div class="mi">线形与颜色</div><div class="mdiv"></div><div class="mi">重置走线</div><div class="mi danger">删除连线<span class="k">Del</span></div>`;
+  host.appendChild(menu);
+  /* 注记 callout */
+  const co = (x, y, w, html) => { const d = document.createElement('div'); d.className = 'callout'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.width = w + 'px'; d.innerHTML = html; host.appendChild(d); };
+  co(660, f1.offsetTop + 30, 168, '<b>选中线</b>：加粗 2.2+手柄集（方=via 顶点/圆=端点重连——S8 呈样）');
+  co(660, f1.offsetTop + 236, 168, '<b>选中卡</b>=accent 描边（编辑模式点选）');
+})();
+
+/* ════ S2 三模式 ════ */
+(function s2() {
+  const wrap = document.getElementById('s2-wrap');
+  const mkPanel = (title, sub) => {
+    const p = document.createElement('div');
+    p.className = 'panel';
+    p.style.height = '320px';
+    p.innerHTML = `<div class="topbar" style="height:38px;border-bottom:1px solid var(--line)">${''}</div><div class="stagew" style="position:absolute;top:38px;left:0;right:0;bottom:0"></div>`;
+    return p;
+  };
+  const modesBar = (active, withTools) => {
+    const mm = ['编辑', '浏览', '聚焦'];
+    return `<div class="modes" style="transform:scale(.92);transform-origin:left center">${mm.map(m => `<span class="m ${m === active ? 'on' : ''}">${m}</span>`).join('')}</div>`;
+  };
+  /* —— 编辑面板 —— */
+  const p1 = mkPanel(); wrap.appendChild(p1);
+  p1.querySelector('.topbar').innerHTML = modesBar('编辑') + `<div class="tools" style="transform:scale(.9);transform-origin:left center"><span class="tbtn off"><svg viewBox="0 0 16 16"><path d="M2.5 2.5 h8 l3 3 v8 h-11 z M4.5 13.5 v-4 h7 v4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span><span class="sep"></span><span class="tbtn"><svg viewBox="0 0 16 16"><path d="M2 11.5 C5 4 11 13 14 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span></div><span style="font-size:9.5px;color:var(--faint);margin-left:auto">工具组展开 · 拖卡/画线/调线</span>`;
+  let st = p1.querySelector('.stagew');
+  st.innerHTML = `<div class="month-frame" style="margin:16px 14px;height:170px;position:absolute;left:0;right:0"><span class="month-tag">2023.03</span><div id="s2a"></div></div>`;
+  let hh = st.querySelector('#s2a'); hh.style.position = 'relative';
+  const c1 = document.createElement('div'); c1.innerHTML = cardHtml('n1', 'sel'); const e1 = c1.firstElementChild; e1.style.cssText = 'position:absolute;left:14px;top:16px'; hh.appendChild(e1);
+  const c2 = document.createElement('div'); c2.innerHTML = cardHtml('n2'); const e2 = c2.firstElementChild; e2.style.cssText = 'position:absolute;left:142px;top:16px'; hh.appendChild(e2);
+  const svg1 = makeSvg(st);
+  edgeEl(svg1, [{ x: 66, y: 58 }, { x: 66, y: 92 }, { x: 194, y: 92 }, { x: 194, y: 58 }], 'selected', 'var(--lc-1)');
+  selHandles(svg1);
+  function selHandles(svg) { handleV(svg, 66, 92); handleV(svg, 194, 92); handleE(svg, 66, 58); handleE(svg, 194, 58); }
+  /* —— 浏览面板 —— */
+  const p2 = mkPanel(); wrap.appendChild(p2);
+  p2.querySelector('.topbar').innerHTML = modesBar('浏览') + `<span style="font-size:9.5px;color:var(--faint);margin-left:auto">小手平移画布 · 滚轮纵向 · 工具组隐藏</span>`;
+  st = p2.querySelector('.stagew');
+  st.innerHTML = `<div class="month-frame" style="margin:16px 14px;height:170px;position:absolute;left:0;right:0;opacity:.9"><span class="month-tag">2023.03</span><div id="s2b"></div></div>`;
+  hh = st.querySelector('#s2b'); hh.style.position = 'relative';
+  const c3 = document.createElement('div'); c3.innerHTML = cardHtml('n4'); const e3 = c3.firstElementChild; e3.style.cssText = 'position:absolute;left:14px;top:16px'; hh.appendChild(e3);
+  const c4 = document.createElement('div'); c4.innerHTML = cardHtml('n5'); const e4 = c4.firstElementChild; e4.style.cssText = 'position:absolute;left:142px;top:16px'; hh.appendChild(e4);
+  const svg2 = makeSvg(st);
+  edgeEl(svg2, [{ x: 66, y: 58 }, { x: 66, y: 92 }, { x: 194, y: 92 }, { x: 194, y: 58 }], '', 'var(--lc-1)');
+  st.insertAdjacentHTML('beforeend',
+    `<span class="pan-arrows" style="left:44%;top:40px">⇅</span><span class="pan-arrows" style="left:56%;top:150px">⇒</span>
+     <svg class="cursor-hand" style="left:47%;top:88px" viewBox="0 0 22 22"><path d="M7 19 L4.6 12.4 C4.3 11.4 5.6 10.9 6.1 11.8 L7.6 14.3 L7.6 4.8 a1.2 1.2 0 0 1 2.4 0 L10 10.4 L13.6 10.9 C14.7 11.1 15.4 12 15.2 13.1 L14.5 16.4 C14.3 17.5 13.4 18.2 12.3 18.1 L9.4 17.8" fill="#fff" stroke="#1c2333" stroke-width="1.1" stroke-linejoin="round"/></svg>`);
+  /* —— 聚焦面板 —— */
+  const p3 = mkPanel(); wrap.appendChild(p3);
+  p3.querySelector('.topbar').innerHTML = modesBar('聚焦') + `<span class="focus-chip" style="margin-left:10px">聚焦 2</span><span style="font-size:9.5px;color:var(--faint);margin-left:auto">单击卡 toggle · 点空白不取消</span>`;
+  st = p3.querySelector('.stagew');
+  st.innerHTML = `<div class="month-frame" style="margin:16px 14px;height:170px;position:absolute;left:0;right:0"><span class="month-tag">2023.03</span><div id="s2c"></div></div>`;
+  hh = st.querySelector('#s2c'); hh.style.position = 'relative';
+  /* n1（聚焦卡·lit）+n2（下游·lit）+n3（无关·dim）；线 1-2 lit、3 dim */
+  const c5 = document.createElement('div'); c5.innerHTML = cardHtml('n1', 'lit'); const e5 = c5.firstElementChild; e5.style.cssText = 'position:absolute;left:14px;top:16px'; hh.appendChild(e5);
+  const c6 = document.createElement('div'); c6.innerHTML = cardHtml('n2', 'lit'); const e6 = c6.firstElementChild; e6.style.cssText = 'position:absolute;left:142px;top:16px'; hh.appendChild(e6);
+  const c7 = document.createElement('div'); c7.innerHTML = cardHtml('n3', 'dimc'); const e7 = c7.firstElementChild; e7.style.cssText = 'position:absolute;left:270px;top:16px'; hh.appendChild(e7);
+  const svg3 = makeSvg(st);
+  const lit1 = edgeEl(svg3, [{ x: 66, y: 58 }, { x: 66, y: 92 }, { x: 194, y: 92 }, { x: 194, y: 58 }], '', 'var(--lc-1)');
+  const dime = edgeEl(svg3, [{ x: 194, y: 154 }, { x: 194, y: 176 }, { x: 322, y: 176 }, { x: 322, y: 154 }], '', 'var(--lc-2)');
+  dime.style.opacity = '.3'; dime.setAttribute('stroke-dasharray', '6 3');
+  e7.style.opacity = '.3'; /* n3 dim */
+  st.insertAdjacentHTML('beforeend', `<div class="badge" style="left:150px;top:2px">★ 聚焦</div><div class="badge" style="left:278px;top:2px;opacity:.35">dim 0.3</div>`);
+})();
+
+/* ════ S4 线型体系 ════ */
+(function s4() {
+  const strip = document.getElementById('s4-strip');
+  const colors = ['var(--lc-1)', 'var(--lc-2)', 'var(--lc-3)', 'var(--lc-4)', 'var(--lc-5)', 'var(--lc-6)'];
+  const cn = ['蓝', '橙', '绿', '紫', '灰', '洋红'];
+  let rows = '';
+  [['—', 'solid', '实线（语义连线·主用）'], ['╌', 'dashed', '虚线（弱关联/待核）']].forEach(([ic, cls, desc]) => {
+    rows += `<div style="display:flex;align-items:center;gap:14px;margin:7px 0">
+      <span style="font-family:var(--mono);font-size:14px;width:16px;color:var(--dim)">${ic}</span>
+      <span style="font-size:11.5px;width:150px;color:var(--dim)">${desc}</span>
+      <div style="display:flex;gap:16px;flex:1">${colors.map((c, i) => `<svg width="86" height="18" viewBox="0 0 86 18"><path d="M4 13 C22 3 60 15 82 6" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" ${cls === 'dashed' ? 'stroke-dasharray="5 3.5"' : ''}/></svg>`).join('')}</div>
+    </div>`;
+  });
+  rows += `<div style="display:flex;gap:16px;margin-left:180px">${cn.map((n, i) => `<span style="font-size:9.5px;color:var(--faint);width:86px;text-align:center">${n}</span>`).join('')}</div>`;
+  strip.innerHTML = rows + `
+    <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line)">
+      <span style="font-size:11px;color:var(--dim)">线名（hover/选中显示于线旁 label）：</span>
+      <span class="edge-label" style="font-size:10px;position:static">主供水线</span>
+      <span class="edge-label" style="font-size:10px;position:static;color:var(--faint)">待命名</span>
+      <span style="font-size:10px;color:var(--faint)">← 新边缺省名（灰斜视待处理）</span>
+    </div>`;
+})();
+
+/* ════ S5 悬停高亮 ════ */
+(function s5() {
+  const strip = document.getElementById('s5-hover');
+  strip.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-bottom:9px">③ 连线悬停高亮——同色淡化放大（多线交叉视觉聚焦）</div>
+    <div style="position:relative;height:118px" id="s5-hover-stage"></div>`;
+  const host = strip.querySelector('#s5-hover-stage');
+  for (const [id, top] of [['n1', 8], ['n2', 62]]) {
+    const d = document.createElement('div');
+    d.innerHTML = cardHtml(id);
+    const c = d.firstElementChild;
+    c.style.left = '8px'; c.style.top = top + 'px';
+    c.style.transform = 'scale(.62)'; c.style.transformOrigin = 'top left';
+    host.appendChild(c);
+  }
+  const svg = makeSvg(host);
+  /* 两交叉线：hover 态（放大淡化）vs 常态 */
+  edgeEl(svg, [{ x: 14, y: 20 }, { x: 14, y: 52 }, { x: 130, y: 52 }, { x: 130, y: 84 }], 'hovered', 'var(--lc-1)');
+  const lb = document.createElementNS(svgNS, 'text'); lb.setAttribute('x', 52); lb.setAttribute('y', 46); lb.setAttribute('class', 'edge-label'); lb.textContent = '主供水线'; svg.appendChild(lb);
+  edgeEl(svg, [{ x: 14, y: 84 }, { x: 14, y: 104 }, { x: 190, y: 104 }, { x: 190, y: 20 }], '', 'var(--lc-1)');
+  const e2 = edgeEl(svg, [{ x: 14, y: 100 }, { x: 60, y: 100 }, { x: 60, y: 26 }, { x: 190, y: 26 }], '', 'var(--lc-4)');
+  e2.setAttribute('stroke-dasharray', '6 3');
+  host.insertAdjacentHTML('beforeend', `<div class="callout" style="left:206px;top:16px;width:130px">hover=宽 2.6+透明 0.55+线名浮现；非 hover 线保持常态</div>`);
+})();
+
+/* ════ S6 拖拽分屏 ════ */
+(function s6() {
+  const wrap = document.getElementById('s6-wrap');
+  const mk = (title, sub) => {
+    const d = document.createElement('div');
+    d.className = 'panel'; d.style.height = '300px';
+    d.innerHTML = `<div style="position:absolute;top:8px;left:12px;z-index:8;font-size:11px;font-weight:700;color:var(--dim)">${title}</div><div style="position:absolute;top:24px;left:12px;z-index:8;font-size:9.5px;color:var(--faint);width:190px;line-height:1.5">${sub}</div><div class="s6host" style="position:absolute;inset:0"></div>`;
+    wrap.appendChild(d);
+    return d.querySelector('.s6host');
+  };
+  const frameAt = (host, top, h) => {
+    const f = document.createElement('div');
+    f.className = 'month-frame';
+    f.style.cssText = `position:absolute;left:26px;right:26px;top:${top}px;height:${h}px`;
+    f.innerHTML = '<span class="month-tag">2023.06</span>';
+    host.appendChild(f);
+    return f;
+  };
+  /* ① 拖起态 */
+  const h1 = mk('① 拖起', '微倾 2°+放大 1.05+拖起阴影；原位留虚线ghost');
+  const f1 = frameAt(h1, 40, 220);
+  f1.insertAdjacentHTML('beforeend', `<div class="slot-ghost" style="left:14px;top:22px"></div>`);
+  { const d = document.createElement('div'); d.innerHTML = cardHtml('n3', 'dragging'); const c = d.firstElementChild; c.style.left = '120px'; c.style.top = '78px'; f1.appendChild(c); }
+  /* ② 候选占位 */
+  const h2 = mk('② 候选占位（实时预览）', '最近空位=实态「置入」；其余候选=faded 0.35');
+  const f2 = frameAt(h2, 40, 220);
+  f2.insertAdjacentHTML('beforeend', `<div class="drag-slot" style="left:14px;top:22px">置入</div><div class="drag-slot faded" style="left:138px;top:22px">置入</div>`);
+  { const d = document.createElement('div'); d.innerHTML = cardHtml('n3', 'dragging'); const c = d.firstElementChild; c.style.left = '60px'; c.style.top = '70px'; c.style.transform = 'rotate(2deg) scale(.9)'; f2.appendChild(c); }
+  /* ③ 底缘自动下拉 */
+  const h3 = mk('③ 拖到底缘=月框自动下拉', '框高动画(.38s)腾出新行空位；跨月=物理域(无候选+回弹)');
+  const f3 = frameAt(h3, 40, 224);
+  for (const [id, x] of [['n4', 14], ['n5', 138]]) { const d = document.createElement('div'); d.innerHTML = cardHtml(id); const c = d.firstElementChild; c.style.left = x + 'px'; c.style.top = '22px'; f3.appendChild(c); }
+  f3.insertAdjacentHTML('beforeend', `<div class="drag-slot" style="left:62px;top:168px">置入</div>`);
+  const arr = document.createElementNS(svgNS, 'svg');
+  arr.setAttribute('style', 'position:absolute;left:118px;top:120px;width:40px;height:64px;overflow:visible;z-index:8');
+  arr.innerHTML = `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="3.5" refY="5" orient="auto"><path d="M0 6 L3.5 0 L7 6 Z" fill="var(--signal)"/></marker></defs><line x1="20" y1="6" x2="20" y2="52" stroke="var(--signal)" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ah)"/>`;
+  h3.appendChild(arr);
+  h3.insertAdjacentHTML('beforeend', `<div class="callout" style="left:168px;top:150px;width:150px">拖过底缘 → 框下拉+新行槽位</div>`);
+})();
+
+/* ════ S7 卡片四层 ════ */
+(function s7() {
+  const strip = document.getElementById('s7-strip');
+  strip.innerHTML = `
+    <div style="display:flex;gap:44px;padding:8px 10px">
+      <div style="position:relative;padding-top:6px">
+        <div style="font-size:10.5px;color:var(--faint);margin-bottom:8px;font-family:var(--mono)">现行 104×52（对照）</div>
+        <div style="position:relative;width:104px;height:52px;background:var(--mini-card);border:1px solid var(--mini-card-line);border-radius:8px;padding:5px 6px 4px">
+          <div style="display:flex"><span style="font-family:var(--mono);font-size:7.5px;color:var(--faint)">P01</span><span style="font-size:7.5px;padding:0 3.5px;border-radius:3px;margin-left:auto;background:var(--accent);color:#fff;font-weight:600">核</span></div>
+          <div style="font-size:9.3px;font-weight:600;line-height:1.35;margin-top:2px">城市供水管网漏损定位与分区研究</div>
+        </div>
+      </div>
+      <div style="position:relative;width:104px;margin-left:12px">
+        <div style="font-size:10.5px;color:var(--accent);margin:6px 0 8px;font-family:var(--mono);font-weight:700">新 104×138（3:4 · P-7 默认）</div>
+        <div style="position:relative" id="s7card">${cardHtml('n1')}</div>
+        <div class="layer-rule" style="top:65px"></div><div class="layer-tag" style="top:61px;left:116px">L1 标记区 20px（星标 toggle 两态+核 chip）</div>
+        <div class="layer-rule" style="top:82px"></div><div class="layer-tag" style="top:90px;left:116px">L2 标签行 16px（域化标签 · F-TAGS-02 联动 · 2+溢出+N）</div>
+        <div class="layer-tag" style="top:126px;left:116px">L3 文献名（弹性 2-3 行 · 9.3px 截断）</div>
+        <div class="layer-rule" style="top:160px"></div><div class="layer-tag" style="top:164px;left:116px">L4 期刊+IF 14px（无 IF=省略）</div>
+      </div>
+      <div style="margin-left:170px;padding-top:36px">
+        <div style="font-size:10.5px;color:var(--faint);margin-bottom:10px;font-family:var(--mono)">星标两态（F-STAR-01 承接）</div>
+        <div style="display:flex;gap:18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:9px;padding:12px 16px;width:220px">
+          <span style="display:grid;place-items:center;gap:4px"><span class="star">${starSvg(false)}</span><span style="font-size:9px;color:var(--faint)">未标记=书页线框</span></span>
+          <span style="display:grid;place-items:center;gap:4px"><span class="star">${starSvg(true)}</span><span style="font-size:9px;color:var(--accent)">已标记=实心星</span></span>
+        </div>
+        <div style="font-size:9.5px;color:var(--faint);margin-top:9px;width:220px;line-height:1.6">双击卡身=跳阅读器已开 tab（三模式通用）</div>
+      </div>
+    </div>`;
+})();
+
+/* ════ S8 手动调线编辑态 ════ */
+(function s8() {
+  const wrap = document.getElementById('s8-wrap');
+  /* —— 左：拖顶点前后对照+磁吸+警示 —— */
+  const left = document.createElement('div');
+  left.className = 'panel'; left.style.height = '430px';
+  left.innerHTML = `<div style="position:absolute;top:8px;left:12px;z-index:8;font-size:11px;font-weight:700;color:var(--dim)">拖顶点——轴跟随联动（前后对照）</div><div style="position:absolute;top:24px;left:12px;z-index:8;font-size:9.5px;color:var(--faint);width:230px;line-height:1.5">被拖点落点 P：入段竖直⇒前邻.x←P.x；出段水平⇒后邻.y←P.y（逐段独立判定——design-final §2.3-1）</div><div class="s8host" style="position:absolute;inset:0"></div>`;
+  wrap.appendChild(left);
+  const host = left.querySelector('.s8host');
+  const f = document.createElement('div');
+  f.className = 'month-frame';
+  f.style.cssText = 'position:absolute;left:20px;right:20px;top:48px;height:360px';
+  f.innerHTML = '<span class="month-tag">2023.03</span>';
+  host.appendChild(f);
+  const put = (id, x, y, extra) => { const d = document.createElement('div'); d.innerHTML = cardHtml(id, extra); const c = d.firstElementChild; c.style.left = x + 'px'; c.style.top = y + 'px'; f.appendChild(c); };
+  put('n1', 14, 26); put('n2', 150, 26); put('n5', 82, 196);
+  const svg = makeSvg(host);
+  /* 前（虚影）→后（实线+手柄）：via 两拐点被右拖 */
+  const before = [{ x: 66, y: 164 + 22 }, { x: 66, y: 196 }, { x: 134, y: 196 }, { x: 134, y: 164 + 22 + 0 }];
+  const b = edgeEl(svg, [{ x: 66, y: 186 }, { x: 66, y: 216 }, { x: 134, y: 216 }, { x: 134, y: 186 }], '', 'var(--lc-1)');
+  b.setAttribute('opacity', '.3'); b.setAttribute('stroke-width', '2'); b.setAttribute('stroke-dasharray', '3 3');
+  /* 后：顶点右移 52 → 联动 */
+  const after = [{ x: 66, y: 186 }, { x: 66, y: 216 }, { x: 118, y: 216 }, { x: 118, y: 200 }, { x: 186, y: 200 }, { x: 186, y: 186 }];
+  edgeEl(svg, after, 'selected', 'var(--lc-1)');
+  after.slice(1, -1).forEach((p, i) => handleV(svg, p.x, p.y, i === 1));
+  handleE(svg, after[0].x, after[0].y); handleE(svg, after[after.length - 1].x, after[after.length - 1].y);
+  /* 磁吸：横通道中线瞬显 */
+  const snapLn = document.createElementNS(svgNS, 'line');
+  snapLn.setAttribute('x1', 24); snapLn.setAttribute('y1', 200); snapLn.setAttribute('x2', 340); snapLn.setAttribute('y2', 200);
+  snapLn.setAttribute('class', 'snap-line'); svg.appendChild(snapLn);
+  const t1 = document.createElementNS(svgNS, 'text'); t1.setAttribute('x', 240); t1.setAttribute('y', 195); t1.setAttribute('font-size', '8.5'); t1.setAttribute('fill', 'var(--signal)'); t1.textContent = '磁吸：横通道中线 ±6（先横后竖取近）'; svg.appendChild(t1);
+  const t2 = document.createElementNS(svgNS, 'text'); t2.setAttribute('x', 128); t2.setAttribute('y', 240); t2.setAttribute('font-size', '8.5'); t2.setAttribute('fill', 'var(--faint)'); t2.textContent = '虚影=拖前形态'; svg.appendChild(t2);
+  /* —— 右：右键菜单两处+穿卡警示 —— */
+  const right = document.createElement('div');
+  right.className = 'panel'; right.style.height = '430px';
+  right.innerHTML = `<div style="position:absolute;top:8px;left:12px;z-index:8;font-size:11px;font-weight:700;color:var(--dim)">右键菜单 ×2 + 穿卡警示</div><div class="s8host2" style="position:absolute;inset:0"></div>`;
+  wrap.appendChild(right);
+  const h2 = right.querySelector('.s8host2');
+  const g = document.createElement('div');
+  g.className = 'month-frame'; g.style.cssText = 'position:absolute;left:20px;right:20px;top:36px;height:180px';
+  g.innerHTML = '<span class="month-tag">2023.06</span>';
+  h2.appendChild(g);
+  const put2 = (id, x, y) => { const d = document.createElement('div'); d.innerHTML = cardHtml(id); const c = d.firstElementChild; c.style.left = x + 'px'; c.style.top = y + 'px'; g.appendChild(c); };
+  put2('n6', 14, 24); put2('n4', 150, 24);
+  const svg2 = makeSvg(h2);
+  /* 手动线穿 n6 卡（警示叠加——选中态渲染） */
+  const pathPts = [{ x: 40, y: 24 + 138 }, { x: 40, y: 210 }, { x: 96, y: 210 }, { x: 96, y: 70 }];
+  edgeEl(svg2, pathPts, 'selected', 'var(--lc-1)');
+  /* 穿卡段警示层（叠底线+两端警示圆点） */
+  edgeEl(svg2, [{ x: 96, y: 120 }, { x: 96, y: 70 }], 'warnseg', 'var(--warn)');
+  for (const py of [120, 70]) {
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', 96); dot.setAttribute('cy', py); dot.setAttribute('r', 3);
+    dot.setAttribute('fill', 'var(--warn)'); svg2.appendChild(dot);
+  }
+  pathPts.slice(1, -1).forEach(p => handleV(svg2, p.x, p.y));
+  handleE(svg2, pathPts[0].x, pathPts[0].y); handleE(svg2, pathPts[3].x, pathPts[3].y);
+  const tw = document.createElementNS(svgNS, 'text'); tw.setAttribute('x', 104); tw.setAttribute('y', 104); tw.setAttribute('font-size', '8.5'); tw.setAttribute('fill', 'var(--warn)'); tw.textContent = '穿卡警示（仅拖动+选中态·零持久化）'; svg2.appendChild(tw);
+  /* 菜单一：顶点右键 */
+  const m1 = document.createElement('div');
+  m1.className = 'ctxmenu'; m1.style.left = '30px'; m1.style.top = '250px'; m1.style.zIndex = '40';
+  m1.innerHTML = `<div class="mtitle">顶点（方柄）右键</div><div class="mi">删除顶点<span class="k">Del</span></div><div style="font-size:9px;color:var(--faint);padding:2px 10px 4px;line-height:1.5">共线中点=直删；真拐点=邻点 L 形重连（入轴保持）</div><div class="mdiv"></div><div class="mi">重置走线（清空 via 回自动）</div>`;
+  h2.appendChild(m1);
+  /* 菜单二：线身右键（复用 S1 形态+加点注记） */
+  const m2 = document.createElement('div');
+  m2.className = 'ctxmenu'; m2.style.right = '24px'; m2.style.top = '250px'; m2.style.left = 'auto'; m2.style.zIndex = '40';
+  m2.innerHTML = `<div class="mtitle">线身右键 / 双击段</div><div class="mi">命名<span class="k">F2</span></div><div class="mi">线形与颜色</div><div class="mi">添加顶点<span class="k">双击段</span></div><div class="mdiv"></div><div class="mi danger">删除连线<span class="k">Del</span></div>`;
+  h2.appendChild(m2);
+  /* 端点重连注记 */
+  h2.insertAdjacentHTML('beforeend', `<div class="callout" style="right:16px;top:52px;width:120px">端点=圆柄：拖=换锚/换卡（via 保留+首末段 L 重正交）</div>`);
+})();
+
+/* ── 探针钩子：供仓外断言脚本消费 ── */
+window.__MOCKUP__ = { cardCount: () => document.querySelectorAll('.card').length };
+</script>
+</body>
+</html>
