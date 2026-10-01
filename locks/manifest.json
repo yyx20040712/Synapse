@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-09-30T12:40:53.6196399Z",
+    "generatedAt":  "2026-10-01T00:16:44.5306939Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-scroll.spec.ts",
-                      "sha256":  "f2636e369600095ee3fa2f5c856a1a76983bf0c883acd648aa2ab008618c2022"
+                      "sha256":  "b6a4b383bb3afac084756b5c0c00b706a0eb6502ff2778eaaef8e15d61d478a2"
                   },
                   {
                       "path":  "tests/e2e/reader-search.spec.ts",

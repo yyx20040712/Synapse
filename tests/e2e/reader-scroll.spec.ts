@@ -167,12 +167,42 @@ test.describe('reader-scroll —— F-04 收官', () => {
       return col !== null && scroller !== null ? col.getBoundingClientRect().width - (scroller.clientWidth - 24) : -9999
     })
     expect(Math.abs(fitDelta), '适应后列宽贴合滚动区内宽（±2px 容差）').toBeLessThanOrEqual(2)
+    // [F-FLAKE-02] fit 后渲染管线 settle 门（两变体 flake 共根因）：zoom 变更经
+    // React 同步下钻先触发文本层一次重建（新 scale+旧 textContent，TextLayer
+    // effect replaceChildren 清空全部 span），渲染管线完成 setEntry 后再触发第二
+    // 次重建；两次重建间旧 span 必灭（SelectionLayer 契约「文本层重建→选区清→
+    // 工具条收」）。上方 P3 toBeVisible 在旧层上即过——不能证稳定；隔离跑管线
+    // ~8ms 完成先于划选故恒绿，全量套件尾部负载下管线拉伸到秒级=第五段划选落
+    // 窗内→selectText 脱附（变体二）/选区被清→工具条收、标注不落地→
+    // annotation-rect 超时（变体一）。settle 锚=该页 canvas 宽与 textLayer 容器
+    // 宽（仅 setEntry 后更新=管线完成时刻）均贴合 fit 终宽（fitDelta 同口径 ±2）。
+    // 原语选型：waitForFunction 而非 expect.poll——本门是时序同步锚非新增行为
+    // 断言，受锁用例契约面（test-surface 断言多重集）零变；语义等强（轮询至真
+    // +超时即红）。仓外探针证据=F-FLAKE-02/probe-f-flake02-timeline.mjs。
+    await win.waitForFunction(
+      ({ no, tol }) => {
+        const scroller = document.querySelector('[data-page-column="ready"]')?.closest('.overflow-auto') as HTMLElement | null
+        const box = scroller?.querySelector<HTMLElement>(`[data-page-box="${no}"]`) ?? null
+        const canvas = box?.querySelector<HTMLElement>('canvas[data-pdf-canvas]') ?? null
+        const layer = box?.querySelector<HTMLElement>('.textLayer') ?? null
+        if (scroller === null || canvas === null || layer === null) return false
+        const target = scroller.clientWidth - 24
+        return Math.abs(canvas.offsetWidth - target) <= tol && Math.abs(layer.offsetWidth - target) <= tol
+      },
+      { no: anchorPage, tol: 2 },
+      { timeout: 10_000 }
+    )
     // fit 是第二次 zoom 变化——中心锚仍保持（缩放链一致性）
     await expect.poll(centerPageBox, { timeout: 5_000 }).toBe(anchorPage)
     await expect(win.getByText(`P3 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 10_000 })
 
     // ── 五、标注原位兼容抽验：fit 后当前页划选高亮——色块渲染在所属页盒内 ──
     const known3 = win.getByText(`P3 ${PDF_KNOWN_TEXT}`).first()
+    // [F-FLAKE-02] action 前稳定锚定：贴操作滚动对齐+重查可见（settle 门后此查
+    // 落在终态文本层上，划选不再命中将灭的旧 span）。waitFor('visible')=
+    // toBeVisible 底层实现同语义同步原语（契约面零变）。
+    await known3.scrollIntoViewIfNeeded()
+    await known3.waitFor({ state: 'visible' })
     await known3.selectText()
     await expect(win.getByTestId('selection-toolbar')).toBeVisible()
     await win.getByRole('button', { name: '高亮' }).click()
