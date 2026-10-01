@@ -513,6 +513,35 @@ describe('U5 菜单面收尾（回炉 R19/R14——视口钳制/来源标记/自
     docKey('Escape')
   })
 
+  it('[RR9] 确定钮 onMouseDown preventDefault（INV-85④——防点击夺焦触发组词 blur 补提交双径）；组词期点确定=no-op 零写', () => {
+    layout([{ x: 200, y: 66 }])
+    rc(hitOf('e1'), 30, 30)
+    const renameItem = [...menuEl().querySelectorAll('[role="menuitem"]')].find((b) => b.textContent === '命名')!
+    act(() => { renameItem.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const input = document.querySelector('[data-testid="edge-rename-input"]') as HTMLInputElement
+    const confirmBtn = [...menuEl().querySelectorAll('button')].find((b) => b.textContent === '确定')!
+    // ④ 结构锚：mousedown 可取消且被取消（jsdom 不模拟 mousedown 夺焦——
+    // 浏览器行为经 preventDefault 承载）
+    const ev = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+    act(() => {
+      confirmBtn.dispatchEvent(ev)
+    })
+    expect(ev.defaultPrevented).toBe(true)
+    // 组词期点确定=no-op（②守卫沿承——composingRef 拒提交）
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '组词中')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+    })
+    const before = useLineageStore.getState().undoStack.length
+    act(() => {
+      confirmBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    })
+    expect(useLineageStore.getState().undoStack.length).toBe(before) // 零写
+    expect(useLineageStore.getState().edges[0]?.label).toBe('线e1')
+    docKey('Escape')
+  })
+
   it('[RR1] 画布空白菜单两路可达：未选中右键空白=「画布 ● 空白」菜单渲染+添加节点项', () => {
     layout([{ x: 200, y: 66 }])
     const blank = host!.querySelector('[data-testid="edge-canvas-ctx"]') as HTMLElement

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-01T23:41:27.1240254Z",
+    "generatedAt":  "2026-10-01T23:43:09.7226598Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -687,7 +687,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-edit-ui.test.tsx",
-                      "sha256":  "68230573a12e60e29720ee996f3e3f2844ff7fa1aa73118e6b7fb4d89ebf0c07"
+                      "sha256":  "5a4609e9c9d05b068596f02f43f579768608078b5a6c15cf0f1aae03c8cde8c3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-overlay.test.tsx",
