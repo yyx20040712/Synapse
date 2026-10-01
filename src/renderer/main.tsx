@@ -10,6 +10,7 @@ import './shared/theme-shell.css'
 import './shared/theme-buttons.css'
 import './shared/theme-reader.css'
 import './shared/theme-lineage.css'
+import './shared/theme-lineage-nav.css'
 
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('找不到 #root 挂载点')

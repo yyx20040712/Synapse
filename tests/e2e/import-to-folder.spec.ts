@@ -74,7 +74,9 @@ test('导入到当前文件夹：真实 PDF 导入→moveFolder 挂接→脉络�
 
   // 脉络页：该文件夹图含新节点（节点自动建——moveFolder 移入分支）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByLabel('脉络图切换').selectOption({ label: '调研计划' })
+  // [F-LGRAPH-01①U4] 顶栏并集切换器退役——图切换=导航窗格下拉
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '调研计划' }).click()
   await expect(nodeCard(win, '自动入图论文')).toBeVisible({ timeout: 10_000 })
 
   await app.close()
@@ -87,6 +89,15 @@ test('仅入文献库：导入成功零脉络节点（无节点行——design �
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
+  // [回炉 RR1-b] fixture 先建一文件夹（同 spec 首用例先例）——全域遍历 ≥2 图
+  // （否则 folders 仅主图，逐图遍历名实不符）
+  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByLabel('新文件夹名').fill('目标夹乙')
+  await win.getByLabel('新文件夹名').press('Enter')
+  await expect(
+    win.locator('button[aria-pressed]').filter({ hasText: '目标夹乙' })
+  ).toBeVisible({ timeout: 10_000 })
+
   // 无 folder 筛选态：默认=仅入文献库（无节点）
   const target = win.getByLabel('导入到')
   const selectedLabel = await target.evaluate(
@@ -98,10 +109,28 @@ test('仅入文献库：导入成功零脉络节点（无节点行——design �
   await win.getByRole('button', { name: '导入 PDF 文件', exact: true }).click()
   await expect(win.getByText('仅入库论文')).toBeVisible({ timeout: 30_000 })
 
-  // 脉络页全部图（并集）：零该文献节点行
+  // 脉络页缺省图（库页无文件夹筛选→主图——F-LGRAPH-01①U4 并集退役）：零该文献节点行
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, '仅入库论文')).toHaveCount(0)
+  // [回炉 R3] 并集退役后主图视角漏检非主图误建——全域负锚：遍历导航窗格
+  // 全部图逐一切换，逐图断言零该文献节点（并集视角退役的等强度补偿）
+  await win.getByTestId('lineage-nav-graph').click()
+  const graphOptions = await win.getByTestId('lineage-nav-graph-menu').getByRole('option').all()
+  expect(graphOptions.length).toBeGreaterThanOrEqual(2) // [RR1-b] 主图+目标夹乙两图起
+  for (const opt of graphOptions) {
+    await opt.click()
+    // [回炉 RR1-a] 落定信号先行：切图=loading（整页替换，空态文案离场）→ready
+    // 后空态文案回场——两相位消除「断言打在 loading/旧图 DOM」假绿窗
+    await expect(win.getByText('正在加载脉络图…')).toBeVisible({ timeout: 3_000 }).catch(() => {
+      // 快机 loading 窗可能已错过——由下行消失相位兜底（文案本就不在场）
+    })
+    await expect(win.getByText('正在加载脉络图…')).toHaveCount(0, { timeout: 10_000 })
+    await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 }) // ready 落定锚
+    await expect(win.getByTestId('lineage-save-status')).toHaveCount(0, { timeout: 10_000 })
+    await expect(nodeCard(win, '仅入库论文')).toHaveCount(0)
+    await win.getByTestId('lineage-nav-graph').click()
+  }
 
   await app.close()
 })
@@ -126,7 +155,7 @@ test('S2：导入进行中禁切文件夹与图（busy 全局信号→chip/切�
   await win.getByRole('button', { name: '导入 PDF 文件', exact: true }).click()
 
   // busy 窗口内：文件夹 chip 禁切（导入中切换会被拒——S2）。跨页消费面
-  // （脉络页图切换器同 busy 禁切）=单测承载（lineage-graph-switcher S2 用例
+  // （脉络页图下拉同 busy 禁切）=单测承载（nav-graph-picker S2 用例
   // ——e2e 跨页导航与 busy 窗口存在结构性竞态，不锚不稳定断言）
   await expect(chip).toBeDisabled({ timeout: 30_000 })
   await expect(win.locator('button[aria-pressed]').filter({ hasText: '全部文献' })).toBeDisabled()

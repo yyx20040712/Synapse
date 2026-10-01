@@ -61,6 +61,8 @@ export function TimelineYears(props: {
   registerFrame?: (key: string, el: HTMLDivElement | null) => void
   /** [T3-P8] 改月飞行目标框高亮（.flash——框高亮动画） */
   flashKey?: string | null
+  /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框） */
+  focusIds?: ReadonlySet<string>
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
   onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
@@ -75,6 +77,7 @@ export function TimelineYears(props: {
       core={coreIds.get(n.id) === true}
       metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
       selected={props.selectedNodeId === n.id}
+      focused={props.focusIds?.has(n.id) === true}
       offset={props.offsets.get(n.id) ?? 0}
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
@@ -138,6 +141,7 @@ export function TimelineYears(props: {
                       标签整体在框内=overflow:hidden 无裁切面） */}
                   <div
                     className={frameCls}
+                    data-frame-key={key}
                     ref={(el) => {
                       props.registerFrame?.(key, el)
                     }}

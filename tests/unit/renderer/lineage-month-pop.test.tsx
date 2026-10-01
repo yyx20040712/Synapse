@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toastStoreSpy } from '../../utils/api-client-mock'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { MonthPop } from '../../../src/renderer/features/lineage/MonthPop'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -44,7 +45,6 @@ const req = (sel: string): Element => {
   return el
 }
 const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`) as HTMLElement
-const btn = (testid: string): HTMLButtonElement => req(`[data-testid="${testid}"]`) as HTMLButtonElement
 const ymOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"] .c-ym`) as HTMLElement
 
 const moveMonth = vi.fn()
@@ -69,7 +69,7 @@ function mount(nodes: LineageNode[]): void {
 /** edit 态下开某卡的改月弹层 */
 function openPop(id: string, x = 300, y = 200): void {
   act(() => {
-    btn('lineage-edit-toggle').click()
+    useLineageViewStore.getState().setMode('edit')
   })
   act(() => {
     ymOf(id).dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }))
@@ -94,6 +94,8 @@ beforeEach(() => {
   toastStoreSpy.mockClear()
   moveMonth.mockClear()
   reorder.mockClear()
+  // [F-LGRAPH-01①U3] 模式态单源复位（P-1 缺省 browse）
+  useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
 })
 
 afterEach(() => {

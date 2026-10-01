@@ -388,12 +388,12 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(content?.classList.contains('tl-measure')).toBe(false)
     // [裁决部 P1-3 source-text 锁] 冻结机制生效面：TSX 必须真挂/摘 .tl-measure
     // （断言收敛后不残留锁不住 add/remove 本身——源码文本锁补位，删实现两行即红）
-    const timelineSrc = readFileSync(
-      join(process.cwd(), 'src/renderer/features/lineage/LineageTimeline.tsx'),
+    const waterfallSrc = readFileSync(
+      join(process.cwd(), 'src/renderer/features/lineage/timeline-waterfall.ts'),
       'utf8'
     )
-    expect(timelineSrc).toContain("content.classList.add('tl-measure')")
-    expect(timelineSrc).toContain("content.classList.remove('tl-measure')")
+    expect(waterfallSrc).toContain("content.classList.add('tl-measure')")
+    expect(waterfallSrc).toContain("content.classList.remove('tl-measure')")
   })
 
   it('不动点振荡守卫（k1-W2 回炉）：offsetTop 随 shift 翻转的对抗布局→8 轮上限强制停不崩', async () => {

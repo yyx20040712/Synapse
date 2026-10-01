@@ -1,0 +1,180 @@
+/* [F-LGRAPH-01①] 模式栏+导航窗格样式域（自 theme-lineage.css 拆出
+   2026-10-01：CSS 文件 450 行上限——脉络域样式分域拆件；本件=U3 模式栏
+   +U4 导航窗格+U5 三模式行为闸三段）*/
+/* [F-LGRAPH-01①U3] 模式栏（mockup §3.1）：三键 segmented——当前态 accent
+   底白字（.on）；聚焦计数角标=accent-soft chip；图名=mono 小字右挂 */
+
+.lg-modebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lg-mode-seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.lg-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.lg-mode + .lg-mode { border-left: 1px solid var(--line); }
+.lg-mode svg { width: 13px; height: 13px; }
+.lg-mode.on { background: var(--accent); color: var(--accent-ink); }
+.lg-focus-count {
+  font-size: var(--fs-tl-hint);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 2px 9px;
+}
+.lg-graph-name {
+  font-size: var(--fs-tl-hint);
+  color: var(--dim);
+  letter-spacing: 0.02em;
+}
+
+/* [F-LGRAPH-01①U4] 左侧导航窗格（Word 导航窗格式——mockup §3.2）：宽 208
+   缺省/右缘手柄拖动调宽 160–320（hover accent+ew-resize）/收起态 40px 窄条 */
+.lineage-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+}
+.lineage-nav.collapsed { align-items: center; padding-top: 8px; }
+.nav-expand-btn, .nav-collapse-btn {
+  font-family: inherit;
+  font-size: var(--fs-strong);
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.nav-expand-btn:hover, .nav-collapse-btn:hover { color: var(--accent); border-color: var(--accent); }
+.nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+.nav-title { font-size: var(--fs-tl-hint); color: var(--dim); letter-spacing: 0.06em; }
+/* 图/文件夹下拉（窗格顶）：当前图名+▾；展开=文件夹平铺列表 */
+.nav-graph { position: relative; padding: 0 10px 6px; }
+.nav-graph-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.nav-graph-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.nav-graph-btn .caret { color: var(--dim); font-size: var(--fs-micro); }
+.nav-graph-menu {
+  position: absolute;
+  top: 100%;
+  left: 10px;
+  right: 10px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg-btn);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.nav-graph-item {
+  font-family: inherit;
+  font-size: var(--fs-body);
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.nav-graph-item:last-child { border-bottom: 0; }
+.nav-graph-item:hover { background: var(--accent-soft); }
+.nav-graph-item.on { color: var(--accent); font-weight: 600; }
+/* 时间线索引：年（衬线数字）>月（两位数）两级；当前月=accent 指示条 .on */
+.nav-index { flex: 1; overflow-y: auto; padding: 4px 10px 14px; }
+.nav-year-btn {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  font-family: inherit;
+  background: transparent;
+  border: 0;
+  padding: 6px 2px 2px;
+  cursor: pointer;
+}
+.nav-year-num { font-family: Georgia, 'Times New Roman', serif; font-size: var(--fs-strong); color: var(--ink); }
+.nav-year-meta { font-size: var(--fs-micro); color: var(--dim); }
+.nav-months { display: flex; flex-direction: column; margin-left: 8px; border-left: 1px solid var(--line); }
+.nav-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: var(--fs-tl-hint);
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-radius: 0 6px 6px 0;
+  padding: 3px 6px 3px 10px;
+  cursor: pointer;
+}
+.nav-month:hover { color: var(--accent); }
+.nav-month.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
+}
+.nav-month .ct { font-size: var(--fs-micro); color: var(--dim); }
+.nav-index-empty { padding: 18px 4px; font-size: var(--fs-tl-hint); color: var(--dim); }
+/* 右缘调宽手柄：hover accent+ew-resize（P-17：160–320——钳制在 store/prefs 双面） */
+.nav-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: ew-resize;
+}
+.nav-resize-handle:hover { background: var(--accent); }
+
+/* [F-LGRAPH-01①U5] 三模式画布行为闸：browse/focus 平移小手（grab/grabbing
+   ——.mode-browse/.mode-focus 基态 grab+.panning 中 grabbing；edit 不平移）
+   +P-8 聚焦视觉=仅被点卡 accent 边框（多卡独立标记） */
+.timeline.mode-browse, .timeline.mode-focus { cursor: grab; }
+.timeline.panning { cursor: grabbing; } /* [R13] 同特异性(0,2,0)靠源序胜 mode-*（无 !important） */
+.timeline.panning .tl-card { cursor: grabbing; }
+.tl-card.focused { outline: 2px solid var(--accent); outline-offset: 1px; }

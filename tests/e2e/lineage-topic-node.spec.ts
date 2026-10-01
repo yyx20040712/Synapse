@@ -22,7 +22,7 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 const nodeCard = (win: Page, title: string) =>
   win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 
-test('主题节点 folderId=当前图：F 图添加→主图不可见→并集可见（reload 持久）', async () => {
+test('主题节点 folderId=当前图：F 图添加→主图不可见→图域隔离（reload 持久）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-topic-'))
   await bootstrapMigrations(userData)
   await seedPaperRow(userData, 'a.pdf', 'sha-topic-guide', '主题种子文献', 'e2e-topic-guide')
@@ -37,26 +37,32 @@ test('主题节点 folderId=当前图：F 图添加→主图不可见→并集�
   })
   expect(fid).not.toBe('')
 
-  // 切到主题图→添加主题节点（工具条→主题型→添加）
+  // 切到主题图→添加主题节点（工具条→主题型→添加）——[F-LGRAPH-01①] 图切换
+  // 经导航窗格下拉（role=listbox option；并集切换器 select 退役）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByLabel('脉络图切换').selectOption({ label: '主题图' })
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主题图' }).click()
   await win.getByTestId('lineage-add-node').click()
   await win.getByTestId('add-node-mode-theme').click()
   await win.getByLabel('主题名称（阶段分组）').fill('阶段一分组')
   await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
   await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
 
-  // 主图视角不可见（folderId=当前图——非主图落地）+空图提示在场
-  await win.getByLabel('脉络图切换').selectOption({ label: '主图' })
+  // 图域隔离：主图视角不可见（folderId=当前图——非主图落地）+空图提示在场
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主图' }).click()
   await expect(nodeCard(win, '阶段一分组')).toHaveCount(0)
-  await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+  // [F-LGRAPH-01①] 主图空图=画布内通用空态（「该文件夹无脉络图」仅子图）
+  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
 
-  // 并集视角可见（子图过滤语义）；reload 后持久（真写盘非乐观渲染）
-  await win.getByLabel('脉络图切换').selectOption({ label: '全部图（并集）' })
-  await expect(nodeCard(win, '阶段一分组')).toBeVisible()
+  // reload 持久（真写盘非乐观渲染）：缺省图回主图（folderScope 未选）仍不可见
   await win.reload()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(nodeCard(win, '阶段一分组')).toHaveCount(0)
+  // 切回主题图=节点在场（写盘真持久）
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主题图' }).click()
   await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
 
   await app.close()
@@ -75,7 +81,8 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await win.getByLabel('新文件夹名').fill('即将删除的图')
   await win.getByLabel('新文件夹名').press('Enter')
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByLabel('脉络图切换').selectOption({ label: '即将删除的图' })
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '即将删除的图' }).click()
   await win.getByTestId('lineage-add-node').click()
   await win.getByTestId('add-node-mode-theme').click()
   await win.getByLabel('主题名称（阶段分组）').fill('将随图删除的节点')
@@ -89,9 +96,11 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await win.getByRole('dialog').getByRole('button', { name: '删除文件夹' }).click()
 
   // 脉络页：当前图失效→回退主图（__main__ 恒在场）+主图空态文案
+  // [F-LGRAPH-01①] 主图空图走画布内通用空态（「该文件夹无脉络图」仅子图）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(win.getByTestId('lineage-graph-title')).toHaveText('脉络图：主图', { timeout: 10_000 })
-  await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+  await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图', { timeout: 10_000 })
+  await expect(win.getByText('该文件夹无脉络图')).toHaveCount(0)
+  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, '将随图删除的节点')).toHaveCount(0)
 
   await app.close()
@@ -145,20 +154,22 @@ test('G④：存量幽灵边（直写库种子）→graph 子图过滤+导出 li
     edges: [{ from: GP1.id, to: GP2.id, label: '跨图连线' }]
   })
 
-  // 单 launch：并集视角（缺省）幽灵边在场（graph() 无 folderId=不过滤——
-  // 防御依赖导出面过滤而非读面隐藏）
+  // 单 launch：缺省主图视角——GP2（主图节点）在场；GP1（夹内图）子图过滤
+  // 不可见（[F-LGRAPH-01①] 并集读面退役，graph() 恒显式 folderId 过滤）
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(nodeCard(win, GP1.title)).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, GP2.title)).toBeVisible({ timeout: 10_000 })
-  await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 10_000 })
+  await expect(nodeCard(win, GP1.title)).toHaveCount(0)
 
-  // graph() 子图过滤兜底：切「跨图夹」视角——GP2（主图节点）不可见
-  await win.getByLabel('脉络图切换').selectOption({ label: '跨图夹' })
+  // graph() 子图过滤双向：切「跨图夹」视角——GP1 在场+GP2（主图节点）不可见
+  // +幽灵边两端点不全在场→读面滤除（INV-77 兜底重心=导出面过滤，下段承载）
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '跨图夹' }).click()
   await expect(nodeCard(win, GP1.title)).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, GP2.title)).toHaveCount(0)
+  await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(0)
 
   // 导出面兜底（C2 ②）：语料导出→lineage.json 零跨图边（edges 空数组）
   await stubOpenDialog(app, [exportDir])

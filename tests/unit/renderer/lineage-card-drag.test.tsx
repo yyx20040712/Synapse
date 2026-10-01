@@ -2,7 +2,9 @@
 /**
  * [T3-P8] useCardDrag 拖拽状态机测试（锁定合约，always-active）。
  * 态空间（宪法前置）：drag∈{idle,pending(<5px),dragging,settle}×mode∈{view,edit}
- * ×composer{picker,popover,monthPop}——picker≠idle 禁拖（拾取优先）/popover·
+ * ×composer{picker,popover,monthPop}——[F-LGRAPH-01①U5] 拖卡=edit 专属
+ * （三模式闸——browse/focus pointerdown 即拒，闸面=lineage-mode-canvas.test）
+ * /picker≠idle 禁拖（拾取优先）/popover·
  * monthPop 开禁拖/拖拽无 Esc 取消（松手恒落当前槽）/settle 期再 pointerdown
  * =忽略/阈值未过=单击选中既有链。跨格序列与几何槽位（同行左半/跨行上半/
  * 框外淡化）+纯函数 insertIndexFromRects/frameKeyOf/applyMovePreview 直测。
@@ -17,6 +19,7 @@ import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { insertIndexFromRects } from '../../../src/renderer/features/lineage/useCardDrag'
 import { applyMovePreview, frameKeyOf, groupTimeline } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -68,6 +71,9 @@ function mount(nodes: LineageNode[]): void {
       />
     )
   })
+  // [F-LGRAPH-01①U5] 拖卡=edit 专属（browse/focus pointerdown 即拒）——本组
+  // 既有拖拽用例按新语义统一 edit 态驱动（拖拽行为本体零变）
+  enterEdit()
 }
 
 const pDown = (el: Element, x: number, y: number): void => {
@@ -109,7 +115,16 @@ beforeEach(() => {
   reorder.mockClear()
   moveMonth.mockClear()
   onNodeClick.mockClear()
+  // [F-LGRAPH-01①U3] 模式态单源复位（P-1 缺省 browse——composer 受控注入面）
+  useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
 })
+
+/** 进编辑模式（三模式栏写路径等价——「编辑脉络」toggle 已随 U3 退役） */
+const enterEdit = (): void => {
+  act(() => {
+    useLineageViewStore.getState().setMode('edit')
+  })
+}
 
 afterEach(() => {
   act(() => {
@@ -170,7 +185,7 @@ describe('[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromR
   })
 })
 
-describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
+describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——三模式闸后既有用例 edit 态驱动）', () => {
   it('阈值未过=单击选中既有链：pointerdown+3px 移动+up→无占位槽无重排；click 照常选中', () => {
     mount([node('A'), node('B')])
     pDown(cardOf('A'), 150, 200)
@@ -194,9 +209,7 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
 
   it('拾取互斥（picker≠idle 禁拖——拾取优先）：linkbtn 拾取中 pointerdown 不激活拖拽', () => {
     mount([node('A'), node('B')])
-    act(() => {
-      btn('lineage-edit-toggle').click()
-    })
+    enterEdit()
     act(() => {
       btn('lineage-link-btn').click()
     })
@@ -209,9 +222,7 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
 
   it('popover 开禁拖：线型弹层开时 pointerdown 不激活', () => {
     mount([node('A'), node('B')])
-    act(() => {
-      btn('lineage-edit-toggle').click()
-    })
+    enterEdit()
     act(() => {
       btn('lineage-link-btn').click()
     })
@@ -530,9 +541,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
 
   it('R7 月标互斥：拾取中（picker≠idle）点 .c-ym 不开改月弹层', () => {
     mount([node('A'), node('B')])
-    act(() => {
-      btn('lineage-edit-toggle').click()
-    })
+    enterEdit()
     act(() => {
       btn('lineage-link-btn').click()
     })

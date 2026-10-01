@@ -1947,6 +1947,246 @@
       "caseTitle": "单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）",
       "reason": "F-LINEAGE-02 回炉 R10/d1-N3 语义词面清理：rowsFromOffsetTops describe 标题「砖砌分行」→「瀑布分行基元」（.rowshift 语义已随布局改版退役）——内含用例指纹随容器改题漂移，断言零变（行为锁不动）",
       "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "初始态：view[idle,closed]；view 态点命中层/新建连线=no-op（handler 闸+D-21）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "toggle view→edit：归位零残留（picker/popover 均基线）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "「新建连线」click：edit 态 idle→source+toast（.link-pick 态派生）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "点卡 source→target：源卡 id 记录+toast「再点击目标卡片」+stopPropagation",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "点卡 target 同卡=自环：toast+停在 target 态不回 idle（D-P7B-6）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "点卡 target 同端点对无向已有边（任一方向）=重复：toast+停 target（正反两向各证）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "点卡 target 合法：popover=create[picker 回 idle+源高亮摘除]+坐标透传+stopPropagation",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "点 .tl-edge-hit：edit 态 idle→popover=edit[edgeId+坐标透传+stopPropagation]",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "popover 开时点卡/点边=no-op（与拾取互斥）：状态零迁移（换目标先关再点）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "popover→closed=外点：document click 弹层外→关；弹层内/svg 命中层点击不关（mockup L769 排除面）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "Esc 优先序（popover＞picker；mode 不动）：popover 开→只关 popover；picker=target→摘回 idle",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "toggle edit→view：强制归位（picker 摘+popover 关——mockup L1011）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "edit 态 picker=idle+popover=closed 的普通点卡=view 同语义（不消费——选中照常转发）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "[R4] popover=edit 开时点「新建连线」：显式关 popover→[source,closed]（互斥=状态机结构性不变式，非事件序兜底）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "跨格序列：edit→popover=edit→toggle view 归位→再入 edit 仍[idle,closed]（退出归位零残留）",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-composer.test.tsx",
+      "caseTitle": "预检读面=渲染时 edges 快照：拾取中图上新增同端点对边（props 变化）后重复预检生效",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "新建连线全流：link-btn→源卡 .link-src→目标卡→popover=create→「创建连线」→linkWithLine+popover 关；拾取态点卡不转发选中",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "点命中层→popover=edit（edit 态双闸 handler 侧）；view 态点击零动作",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "退出编辑强制归位：拾取中 toggle off→link-src 摘+.editing/.link-pick 全摘",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "Esc 拾取摘回（document keydown）：.link-pick 摘+.editing 保持",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "popover=edit 态 acts 接线：移除连线→removeEdge+popover 关",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "保存态指示 chips 随工具条迁移：saving/error 态 testid 在 .lg-toolbar 内保活",
+      "reason": "F-LGRAPH-01①U3 编辑 toggle 退役（退役清单行 2——三模式栏替代）：mode/toggleEdit 内部态退役=受控 editing 注入，用例标题随新语义改写（断言面等价迁移）【回炉 R9 核注 2026-10-01：本条已 stale——U3 交付时该用例标题未改未触发 MISSING，豁免未命中；保留备查（无用例删改，无契约缺口）】",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-page.test.tsx",
+      "caseTitle": "loading：挂载期呈加载文案，graph 取数一次",
+      "reason": "F-LGRAPH-01①U4 并集退役：store.folderId 恒有值（主图兜底）+load 载荷恒显式 {folderId}——用例标题与载荷断言随契约更新（{} 缺省语义退役）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-graph-switcher.test.tsx",
+      "fileScope": true,
+      "reason": "F-LGRAPH-01①U4 LineageGraphSwitcher.tsx 删除（替代面=LineageNavPane 图/文件夹下拉——行为测试面随迁改写）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(timelineSrc).toContain(\"content.classList.add('tl-measure')\")",
+      "reason": "F-LGRAPH-01①U5 瀑布错位机制拆件（LineageTimeline 组件 250 行红线）：tl-measure 冻结挂/摘源码锚随机制迁移至 timeline-waterfall.ts（断言值同形改读新文件——机制锁不变）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(timelineSrc).toContain(\"content.classList.remove('tl-measure')\")",
+      "reason": "F-LGRAPH-01①U5 瀑布错位机制拆件（LineageTimeline 组件 250 行红线）：tl-measure 冻结挂/摘源码锚随机制迁移至 timeline-waterfall.ts（断言值同形改读新文件——机制锁不变）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "阈值未过=单击选中既有链：pointerdown+3px 移动+up→无占位槽无重排；click 照常选中",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "过 5px 阈值激活：占位槽「置 入」在场+拖卡 .dragging+连线层 dimmed（view 态可拖）",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "拾取互斥（picker≠idle 禁拖——拾取优先）：linkbtn 拾取中 pointerdown 不激活拖拽",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "popover 开禁拖：线型弹层开时 pointerdown 不激活",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "月内槽位实时移位（同行判卡左半）+框外槽淡化 .35",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行判上半：第二行卡上半指针→插其前（mockup L955-964 同式）",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "松手 settle：占位槽撤+DOM 序=新序+.32s left/top 过渡在场；transitionend→清场+重排写+dimmed 摘",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "settle 期再 pointerdown=忽略（不二次激活）",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "序未变松手=零写（拖回原位不产生空写批）",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨月拒绝：落点他月框=toast 文案+落当前槽（源月序写不受染）",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "拖后 click 抑制（一次性）：拖拽松手后的 click 不转发选中；此后正常 click 恢复",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "拖拽无 Esc 取消：mid-drag Esc 零动作，松手恒落当前槽",
+      "reason": "F-LGRAPH-01①U5 回炉 R8：describe 组题随三模式闸语义改写（「view+edit 双态无 mode 门槛」退役→拖卡=edit 专属），组内用例断言零改（仅组名前缀变化）",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline-edit.test.tsx",
+      "caseTitle": "工具条换装：.lg-toolbar 挂 .timeline 内；toggle 文案 编辑脉络↔完成编辑+.editing/.link-pick 类；drag-hint 仅 edit 态；既有三控件 testid 保活",
+      "reason": "F-LGRAPH-01①U3 受控化改题（编辑 toggle 退役清单行 2）：toggle 文案断言随三模式栏替代删除+toggle 负锚补充【回炉 RR2 补登——前轮 found 守卫被同题历史条目短路，报告失实认领】",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "load 缺省=全图并集（{} 载荷——既有行为零变）；setFolder(f) 后 load 携 {folderId}",
+      "reason": "F-LGRAPH-01①U4 恒显式改题：并集退役 folderId 恒有值（主图兜底）+load 载荷恒显式 {folderId}——用例标题与断言随契约更新【回炉 RR2 补登——前轮 found 守卫短路失实认领】",
+      "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md#3"
     }
   ]
 }

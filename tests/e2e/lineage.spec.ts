@@ -698,9 +698,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
-    // edit 态：toggle 文案+editing 类+linkbtn 显（D-21）
-    await win.getByTestId('lineage-edit-toggle').click()
-    await expect(win.getByTestId('lineage-edit-toggle')).toHaveText('完成编辑')
+    // edit 态：模式栏编辑键（[F-LGRAPH-01①U3] 编辑 toggle 退役——三模式栏
+    // 替代）+editing 类+linkbtn 显（D-21）
+    await win.getByTestId('lineage-mode-edit').click()
+    await expect(win.getByTestId('lineage-mode-edit')).toHaveClass(/on/)
     await expect(win.locator('.timeline.editing')).toHaveCount(1)
     await expect(win.getByTestId('lineage-link-btn')).toBeVisible()
 
@@ -733,7 +734,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .toBe('1.7px')
 
     // 基础型回退（D-P7B-3）：再入 edit→点同边→基础型 chip（sub=null）→回退
-    await win.getByTestId('lineage-edit-toggle').click()
+    await win.getByTestId('lineage-mode-edit').click()
     await win
       .locator('svg.tl-edges path.tl-edge-hit')
       .first()
@@ -779,7 +780,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const edgeCount = win.locator('svg.tl-edges path.tl-edge')
 
     // Esc 分支先行（拾取中 Esc→点卡无动作——票面 Esc 优先序 picker 面）
-    await win.getByTestId('lineage-edit-toggle').click()
+    await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-link-btn').click()
     await expect(win.getByText('新建连线：点击源卡片')).toBeVisible()
     await nodeG(win, '脉络甲文献').click()
@@ -924,12 +925,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T9=[T3-P8] 拖拽调序全流：view 态（mockup pointerdown 无 mode 门槛）
-   * pointerdown 5px 阈值激活→占位槽「置 入」在场→月内移位→松手 settle→
-   * DOM 序=新序（store 回填重排）→reload 持久（INV-75 slot 全序）→跨月
-   * 拒绝 toast+落当前槽。几何断言经 win.mouse 原生指针链。
+   * T9=[T3-P8] 拖拽调序全流：edit 态驱动（[F-LGRAPH-01①] 三模式闸——拖卡=
+   * edit 专属，browse 默认态被闸拒）pointerdown 5px 阈值激活→占位槽「置 入」
+   * 在场→月内移位→松手 settle→DOM 序=新序（store 回填重排）→reload 持久
+   * （INV-75 slot 全序）→跨月拒绝 toast+落当前槽。几何断言经 win.mouse
+   * 原生指针链。
    */
-  test('T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+view 态可拖', async () => {
+  test('T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+跨月拒绝 toast+edit 态驱动', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t9-'))
     await firstHop(userData)
@@ -951,6 +953,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    // [F-LGRAPH-01①] 拖卡=edit 专属（三模式闸）——进编辑模式再拖
+    await win.getByTestId('lineage-mode-edit').click()
 
     // data-node-id=节点行 UUID（非 paperId）——断言载体=卡内标题映射序
     const frameTitles = async (i: number): Promise<string[]> =>
@@ -964,7 +968,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       if (b === null) throw new Error(`卡不可见：${title}`)
       return b
     }
-    // view 态（默认）可拖：甲→根左半（指针 x=根中心−30px）→插位=根前
+    // edit 态驱动：甲→根左半（指针 x=根中心−30px）→插位=根前
     const rootBox = await cardBox('脉络根文献')
     const aBox = await cardBox('脉络甲文献')
     await win.mouse.move(aBox.x + aBox.width / 2, aBox.y + aBox.height / 2)
@@ -1041,7 +1045,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
     // edit 态：甲卡月标「2020.5」在场（CSS display:none↔block）→点击开弹层
-    await win.getByTestId('lineage-edit-toggle').click()
+    await win.getByTestId('lineage-mode-edit').click()
     const ym = nodeG(win, '脉络甲文献').locator('.c-ym')
     await expect(ym).toHaveText('2020.5')
     await ym.click()

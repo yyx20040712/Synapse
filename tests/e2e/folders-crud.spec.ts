@@ -52,11 +52,13 @@ test('folders-crud：新建/重名 toast/改名（S3 脉络页标题联动）/�
   await expect(folderChip('改名后的图')).toBeVisible({ timeout: 10_000 })
   await expect(folderChip('调研计划')).toHaveCount(0)
 
-  // S3 脉络页联动：切换器选项 1:1 文件夹名+标题真文本跟随（图名单一真相源）
+  // S3 脉络页联动：nav 下拉选项 1:1 文件夹名+图名真文本跟随（图名单一真相源；
+  // [F-LGRAPH-01①] 并集退役+缺省图=库页 folderScope 未选→主图兜底+图名去前缀）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(win.getByTestId('lineage-graph-title')).toHaveText('脉络图：全部图（并集）')
-  await win.getByLabel('脉络图切换').selectOption({ label: '改名后的图' })
-  await expect(win.getByTestId('lineage-graph-title')).toHaveText('脉络图：改名后的图')
+  await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图')
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '改名后的图' }).click()
+  await expect(win.getByTestId('lineage-graph-title')).toHaveText('改名后的图')
   // 空图提示（「该文件夹无脉络图」文案族——新图零节点）
   await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
   // [F-DELCONF-01] 造资产：给「改名后的图」加 1 主题节点（脉络页产品路径

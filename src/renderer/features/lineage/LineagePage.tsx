@@ -4,28 +4,31 @@
  *
  * 行为：挂载经 lineage.store.load() 取数（lineage/graph 单点——接缝
  * 双向锚定：本行+lineage.store 头注；03 编辑层/04 侧板同经 store 消费
- * **禁双取**）；三态呈现（门一 N6）：loading=加载文案/error=错误条+
- * 重试按钮（列表型瞬态，INV-02）/ready=LineageBoard（03 编辑层包裹
- * 02 画布——空图空态在画布内）。
+ * **禁双取**）；三态呈现（门一 N6）：loading/error/ready（空图空态在画布内）。
  * 编排（LG-03 接入）：selectedNodeId 驻本页 state——Board 的 onSelectNode
- * 上抛落此（04 侧板 LineageSidePanel 消费面预留——本单空消费，props
- * 形态照票面）；无侧板布局（04 编排扩）。
+ * 上抛落此（04 侧板 LineageSidePanel 消费）。
  *
- * ── LG-04 编排扩（侧板+跳转链）──
- * - 侧板布局：Board（flex-1）+右侧 LineageSidePanel 固定宽 aside；节点
- *   数据源=本页经 lineage.store 查找分发（selectedNodeId→nodes.find——
- *   store 数据消费合法非双取，03 预留出口兑现）。
- * - 跳转编排：SidePanel.onJumpToPaper 上抛→**总线发送单点在本页**
- *   （板不直发 bus——可测性+分层）：requestOpenPaperAnchored（open-paper-
- *   bus 载荷扩，主控裁决路径 A）；anchor null→undefined 归一（票面
- *   payload 面 number|null vs 总线 optional）。阅读器消费侧=open-paper-
- *   anchor.ts（接缝三方头注锚定：本页+SidePanel+open-paper-bus）。
+ * ── F-LGRAPH-01①U4 编排重构（顶栏并集切换器退役行 1）──
+ * - 顶栏=LineageModeBar（三模式分段+图名 mono 小字——图名=folders 单源经
+ *   NavGraphPicker 上抛 folders 派生）；左侧=LineageNavPane（Word 导航窗格
+ *   兼任图/文件夹切换——S2/S3/S4 语义迁驻）。
+ * - 缺省图=库页文件夹上下文同步（mockup §3.2：进哪个文件夹开哪张图；
+ *   未选=主图——挂载时读 library.store query.folderScope，接缝双向锚定
+ *   两 store 头注：lineage.store+library.store）。
+ * - 「该文件夹无脉络图」空态提示保留（顶栏紧邻模式栏——executor 定位申报）。
+ * - 跳转接缝三方头注锚定（回炉 R10 回锚）：本页+LineageSidePanel+open-paper-
+ *   bus（阅读器消费侧=open-paper-anchor.ts）——SidePanel/bus 两头注仍指本页，
+ *   本页头注随 U4 重写曾失锚，本行恢复三方互指闭环。
  */
 import { useEffect, useState } from 'react'
+import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
 import { LineageBoard } from './LineageBoard'
-import { LineageGraphSwitcher } from './LineageGraphSwitcher'
+import { LineageModeBar } from './LineageModeBar'
+import { LineageNavPane } from './LineageNavPane'
+import type { NavFolder } from './nav-graph-picker'
 import { LineageSidePanel } from './LineageSidePanel'
 import { isCore } from './lineage-classify'
 
@@ -33,9 +36,10 @@ export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
   const error = useLineageStore((s) => s.error)
   const load = useLineageStore((s) => s.load)
-  // [F-FOLDER-02·B] 图作用域+节点计数（S4 空态提示消费面——页首图切换器挂载）
+  // [F-LGRAPH-01①U4] 图作用域+节点计数（空态提示消费面）+folders 图名链
   const folderId = useLineageStore((s) => s.folderId)
   const nodeCount = useLineageStore((s) => s.nodes.length)
+  const [folders, setFolders] = useState<NavFolder[] | null>(null)
   // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
@@ -51,8 +55,13 @@ export function LineagePage(): JSX.Element {
       : null
 
   useEffect(() => {
-    void load()
-  }, [load])
+    // 缺省图=库页文件夹上下文同步（进哪个文件夹开哪张图；未选=主图）——
+    // setFolder 内含重取（挂载取数单点）；图名兜底=主图（folders 未落定期）
+    const scope = useLibraryStore.getState().query.folderScope
+    useLineageStore.getState().setFolder(
+      scope?.kind === 'folder' ? scope.folderId : MAIN_GRAPH_ID
+    )
+  }, [])
 
   /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一） */
   const handleJumpToPaper = (payload: {
@@ -98,20 +107,22 @@ export function LineagePage(): JSX.Element {
       </div>
     )
   }
+  const graphName = folders?.find((f) => f.id === folderId)?.name ?? '主图'
   return (
     <div className="flex h-full flex-col">
-      {/* [F-FOLDER-02·B] 页首图切换器（S2 busy 禁切/S3 改名联动/S4 删除回退
-          全在切换器内承接）+空图提示：folder 选中且子图空=「该文件夹无脉络图」
-          （区别于时间线通用空态——含「未选中文件夹」语境） */}
+      {/* [F-LGRAPH-01①U4] 顶栏=模式栏（图名随 folders 单源）+空图提示：folder
+          选中且子图空=「该文件夹无脉络图」（区别于时间线通用空态——含
+          「未选中文件夹」语境；主图空图不提示——bootstrap 添加节点路径） */}
       <div className="flex items-center gap-3 px-2 pt-2">
-        <LineageGraphSwitcher />
-        {folderId !== undefined && nodeCount === 0 && (
+        <LineageModeBar graphName={graphName} />
+        {folderId !== MAIN_GRAPH_ID && nodeCount === 0 && (
           <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
             该文件夹无脉络图
           </span>
         )}
       </div>
       <div className="flex min-h-0 flex-1 gap-1 p-1">
+        <LineageNavPane onFoldersChange={setFolders} />
         <div className="min-w-0 flex-1">
           <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
         </div>

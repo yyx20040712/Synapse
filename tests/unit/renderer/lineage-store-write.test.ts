@@ -94,24 +94,20 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
-    // [F-FOLDER-02·B] 图作用域跨用例清零（folderId=undefined=全图并集）
-    folderId: undefined
+    // [F-LGRAPH-01①U4] 图作用域跨用例复位（folderId 恒有值——主图兜底）
+    folderId: '__main__'
   })
 })
 
 describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷与主题节点当前图', () => {
-  it('load 缺省=全图并集（{} 载荷——既有行为零变）；setFolder(f) 后 load 携 {folderId}', async () => {
+  it('[F-LGRAPH-01①U4] folderId 恒有值（并集退役——主图兜底）：初值主图+load 恒显式 {folderId} 载荷；setFolder 切图重取', async () => {
+    expect(useLineageStore.getState().folderId).toBe('__main__')
     await state().load()
-    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({})
+    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: '__main__' }) // 恒显式（{} 缺省语义退役）
     state().setFolder('f-x')
     await settle()
     expect(useLineageStore.getState().folderId).toBe('f-x')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-x' })
-    // 回全部图：setFolder(undefined) → {} 载荷
-    state().setFolder(undefined)
-    await settle()
-    expect(useLineageStore.getState().folderId).toBeUndefined()
-    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({})
   })
 
   it('主题节点 folderId=当前图：folderId=f-x 时 addThemeNode 载荷携 folderId（缺省=主图）', async () => {

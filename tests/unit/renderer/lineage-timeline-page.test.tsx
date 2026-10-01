@@ -21,18 +21,19 @@ import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
   lineage: { graph: vi.fn() },
-  // [F-FOLDER-02·B] LineagePage 页首图切换器文件夹域面
+  // [F-FOLDER-02·B→F-LGRAPH-01①U4] NavGraphPicker 文件夹域面
   folders: { list: vi.fn() }
 })
 stubApiEvents({
-  // [F-FOLDER-02·B] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
-  // 切换器订阅直调即抛；生产面 preload 恒在场）
+  // folders.changed 订阅面（mock 代理未覆盖键透传 undefined，订阅直调即抛）
   onFoldersChanged: vi.fn(() => () => undefined)
 })
 
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
+import { useLibraryStore } from '../../../src/renderer/features/library/library.store'
 
 function node(
   id: string,
@@ -92,7 +93,30 @@ const flush = async (): Promise<void> => {
 beforeEach(() => {
   vi.clearAllMocks()
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-  useLineageStore.setState({ nodes: [], edges: [], status: 'loading', error: null })
+  stubApi.folders.list.mockResolvedValue({
+    ok: true,
+    data: [
+      { id: '__main__', name: '主图', position: 0, paperCount: 0 },
+      { id: 'f-x', name: '测试图乙', position: 1, paperCount: 0 }
+    ]
+  })
+  useLineageStore.setState({
+    nodes: [],
+    edges: [],
+    status: 'loading',
+    error: null,
+    folderId: '__main__'
+  })
+  useLineageViewStore.setState({
+    mode: 'browse',
+    focusSet: [],
+    navCollapsed: false,
+    navWidth: 208,
+    navScrollTarget: null,
+    activeFrameKey: null
+  })
+  // [R2/R6] 库页上下文复位（缺省图同步消费面——跨用例污染防御）
+  useLibraryStore.setState({ query: { sort: 'added_desc', offset: 0, limit: 50 } })
 })
 
 afterEach(() => {
@@ -153,12 +177,57 @@ describe('LineageTimeline —— 时间线宿主渲染', () => {
 })
 
 describe('LineagePage —— 取数三态（lineage.store 数据单源）', () => {
-  it('loading：挂载期呈加载文案，graph 取数一次', async () => {
+  it('loading：挂载期呈加载文案，graph 取数一次（folderId 恒显式——主图兜底）', async () => {
     stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))
     mount(<LineagePage />)
     expect(host?.textContent).toContain('正在加载脉络图')
     expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.graph).toHaveBeenCalledWith({})
+    expect(stubApi.lineage.graph).toHaveBeenCalledWith({ folderId: '__main__' })
+  })
+
+  it('[F-LGRAPH-01①U4] 编排重构：顶栏=模式栏（browse 缺省）+左侧导航窗格在场；顶栏并集切换器退役负锚（在场即红）；缺省图=库页上下文同步（未选=主图）', async () => {
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
+    mount(<LineagePage />)
+    await flush()
+    expect(host?.querySelector('[data-testid="lineage-mode-bar"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-mode-browse"]')?.classList.contains('on')).toBe(true) // P-1 缺省
+    expect(host?.querySelector('[data-testid="lineage-nav-pane"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-nav-graph"]')).not.toBeNull()
+    // 退役行 1：顶部并集切换器（LineageGraphSwitcher）删除——负锚
+    expect(host?.querySelector('[data-testid="lineage-graph-switcher"]')).toBeNull()
+    expect(host?.querySelector('select[aria-label="脉络图切换"]')).toBeNull()
+    // 图名=模式栏右侧（folders 单源——主图兜底「主图」）
+    expect(host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent).toBe('主图')
+    expect(useLineageStore.getState().folderId).toBe('__main__') // 库页未选文件夹=主图
+  })
+
+  it('[R2] 缺省图正路径：library folderScope={kind:"folder"}→挂载即开该图（载荷+图名）；未选=主图（负对照）', async () => {
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
+    useLibraryStore.setState({
+      query: { sort: 'added_desc', offset: 0, limit: 50, folderScope: { kind: 'folder', folderId: 'f-x' } }
+    })
+    mount(<LineagePage />)
+    await flush()
+    expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-x' }) // 库页上下文同步
+    expect(useLineageStore.getState().folderId).toBe('f-x')
+    expect(host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent).toBe('测试图乙') // 图名=folders 单源
+    // 负对照：unfiled/未选态→主图（mount 前 state 复位由 beforeEach 承载——此处仅锁正路径分支）
+  })
+
+  it('[R6] 空态两分支：子图空图=「该文件夹无脉络图」提示在场；主图空图=不显示（通用空态承载）', async () => {
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+    // 主图空：不显示该提示（「暂无脉络图——添加节点」通用空态承载）
+    mount(<LineagePage />)
+    await flush()
+    expect(useLineageStore.getState().folderId).toBe('__main__')
+    expect(host?.textContent).not.toContain('该文件夹无脉络图')
+    expect(host?.textContent).toContain('暂无脉络图——添加节点')
+    // 子图空：挂载后经导航窗格切图（挂载同步不覆盖用户/切图选择）
+    act(() => {
+      useLineageStore.getState().setFolder('f-x')
+    })
+    await flush()
+    expect(host?.textContent).toContain('该文件夹无脉络图') // 子图空=提示在场
   })
 
   it('ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）', async () => {

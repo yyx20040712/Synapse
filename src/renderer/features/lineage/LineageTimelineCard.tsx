@@ -49,6 +49,8 @@ export function LineageTimelineCard(props: {
   linkSrc: boolean
   /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
   dragging?: boolean
+  /** [F-LGRAPH-01①U5] P-8 聚焦视觉：仅被点卡 accent 边框（多卡独立标记） */
+  focused?: boolean
   /** [T3-P8] 卡 pointerdown（useCardDrag 拖拽会话入口——5px 阈值内=选中链） */
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
   /** [T3-P8] 月标 .c-ym 点击（edit 态改月弹层入口；CSS 显隐+handler 双闸） */
@@ -67,7 +69,8 @@ export function LineageTimelineCard(props: {
     'tl-card',
     props.selected ? 'sel' : '',
     props.linkSrc ? 'link-src' : '',
-    props.dragging === true ? 'dragging' : ''
+    props.dragging === true ? 'dragging' : '',
+    props.focused === true ? 'focused' : ''
   ]
     .filter((c) => c !== '')
     .join(' ')

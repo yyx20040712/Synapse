@@ -3,30 +3,26 @@
  * [T3-P6] LineageTimeline —— 脉络纵向「年+月」时间线滚动容器宿主
  * （LineageCanvas[SVG 画布] 退役后的渲染层宿主——方案切换=删旧方案）。
  *
- * - 分组=lineage-timeline.ts groupTimeline 纯函数（year asc null 末→month
- *   asc null 末；组内序=传入序=graph.nodes lineageOrder 全序——INV-75 消费
- *   方不得重排）；计数均自分组结果派生（禁第二实现）。骑缝编号=shared
- *   lineageCatalogNos 单源（INV-76）+「核」徽章=isCore 预计算 Map+「综述」
- *   =isSurveyTitle（shared 单源）。年/月/卡渲染体=TimelineYears 拆件
- *   （[T3-P7B] 组件 250 行红线）。
- * - 瀑布错位（[F-LINEAGE-02 裁决 2/P-15]：(R×82)mod148 inline margin-left）：
- *   useLayoutEffect 不动点迭代+测量冻结（.tl-measure——d1-W1 三过加固；
- *   iterRef 上限 8=振荡守卫 k1-W2）。
+ * - 分组=lineage-timeline.ts groupTimeline 纯函数（INV-75 消费方不得重排；
+ *   骑缝编号/核徽章=shared 单源）。年/月/卡渲染体=TimelineYears 拆件。
+ * - 瀑布错位（P-15：(R×82)mod148）——机制本体=timeline-waterfall.ts 拆件。
  * - [T3-P7B] 编辑交互编排（useEdgeComposer 状态机+工具条换装+弹层挂载）：
- *   .timeline 挂 .editing（mode）/.link-pick（picker≠idle）；mode 态
- *   「view|edit」useState 驻本组件（composer hook 承载）=P8 共用面单源；
+ *   .timeline 挂 .editing（mode）/.link-pick（picker≠idle）；[F-LGRAPH-01①U3]
+ *   模式态单源=lineage-view.store（三模式栏写路径——composer 受控注入
+ *   editing=mode==='edit'，内部 view|edit useState 退役随编辑 toggle 退役）；
  *   命中层点击=EdgeOverlay onEdgeHitClick→composer（与 CSS pointer-events
  *   双闸）；拾取态点卡不转发 onNodeClick 选中；工具条（LineageToolbar
  *   换装 .lg-toolbar sticky）自本票移入渲染树——toolbar/actions props 经
- *   Board 下传（本件不触 store——纯 props 编排可直测）。
+ *   Board 下传（本件触 store 仅限 renderer 本地 UI 态 lineage-view.store
+ *   ——数据域仍纯 props 编排可直测）。
  * - 空图空态文案保活；工具条空图在场（添加节点=空图 bootstrap 路径；
  *   [F-BAKRET-01] 导入入口随草稿导入链退役删除——用户裁决 2026-09-30）。
  */
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageEdgeKind, type LineageNode, type LineTypeGroup } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { isCore } from './lineage-classify'
-import { collectWaterfallFrameRows, groupTimeline, waterfallOffsets } from './lineage-timeline'
+import { groupTimeline } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
 import { EdgeTypePopover } from './EdgeTypePopover'
 import { TimelineLegend, TimelineYears } from './TimelineYears'
@@ -34,6 +30,10 @@ import { LineageToolbar } from './LineageToolbar'
 import { useEdgeComposer, type ClickEventLike } from './useEdgeComposer'
 import { useCardDrag } from './useCardDrag'
 import { MonthPop } from './MonthPop'
+import { useLineageViewStore } from './lineage-view.store'
+import { useTimelineNavSync } from './timeline-nav-sync'
+import { useWaterfallOffsets } from './timeline-waterfall'
+import { useTimelinePan } from './timeline-pan'
 
 /** [T3-P7B] 03 编辑层/04 侧板消费的节点交互回调（全可选——缺省即纯只读） */
 export interface TimelineCallbacks {
@@ -88,16 +88,19 @@ export function LineageTimeline(props: {
   const pubNoByNode = useMemo(() => nodePubNoMap(nodes, pubNos), [nodes, pubNos])
   const coreIds = useMemo(() => new Map(nodes.map((n) => [n.id, isCore(n, edges)])), [nodes, edges])
 
-  // [T3-P7B] 连线编辑状态机（mode 单源驻此——P8 共用面）
-  const composer = useEdgeComposer(edges)
+  // [F-LGRAPH-01①U3] 模式态单源=lineage-view.store（三模式栏 LineageModeBar
+  // 写路径）；composer 受控化：editing=mode==='edit' 注入（内部 mode 态退役）
+  const viewMode = useLineageViewStore((s) => s.mode)
+  // P-8 聚焦集（selector 取稳定数组引用——派生 Set 经 memo 防新引用死循环）
+  const focusSet = useLineageViewStore((s) => s.focusSet)
+  const focusIds = useMemo(() => new Set(focusSet), [focusSet])
+  const composer = useEdgeComposer(edges, { editing: viewMode === 'edit' })
 
-  // 瀑布错位（P-15：82 步/148 节距/年内复位）：不动点迭代+测量冻结（d1-W1
-  // 三过加固沿承；iterRef 上限 8=k1-W2）；错位量>0 的卡入表（inline margin-left）
+  // 滚动容器 ref 两面：content=.tl-content（瀑布量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
-  const iterRef = useRef(0)
-  const [offsets, setOffsets] = useState<ReadonlyMap<string, number>>(() => new Map())
-  // [T3-P7A 回炉 1 W1/W6] 连线层再触发信号（收敛/守卫停分支 bump routeEpoch）
-  const [routeEpoch, setRouteEpoch] = useState(0)
+  const timelineRef = useRef<HTMLDivElement | null>(null)
+  // 拖拽清场→瀑布 routeEpoch 前置接线（hook 初始化序约束——ref 晚绑定）
+  const bumpRouteRef = useRef<() => void>(() => undefined)
 
   // [T3-P8] 槽位拖拽+改月状态机（编排本体驻 hook——Timeline 增量红线）
   const drag = useCardDrag({
@@ -109,48 +112,37 @@ export function LineageTimeline(props: {
     contentRef,
     onReorderMonthSlots: props.onReorderMonthSlots,
     onMoveNodeMonth: props.onMoveNodeMonth,
-    onRouteRecalc: () => setRouteEpoch((v) => v + 1)
+    onRouteRecalc: () => bumpRouteRef.current()
   })
-  useLayoutEffect(() => {
-    const content = contentRef.current
-    if (content === null) return
-    // [T3-P8+R2] dragging/settle 两期跳过冻结迭代：a) dragging 期拖卡 inline
-    // fixed（尾挂）的视口系 offsetTop 混入 rowsFromOffsetTops 会误挂行错位
-    // （探针 t=0 cls='tl-card rowshift' 实证——[F-LINEAGE-02 ①a] .rowshift
-    // 交替已退役改瀑布递增，此句系 T3-P8 沿革事故记录）+其行错位 margin
-    // 掺入后续 FLIP target（R1 偏移同源）；b) settle 期 .tl-measure 的
-    // transition:none 取消飞行过渡（transitionend 永不触发=落定写丢失）。
-    // settle→idle 时 phase 入 deps 重跑，冻结量测在终态布局上补齐（pending
-    // 期卡未 fixed 保留量测）。
-    if (drag.phase === 'dragging' || drag.phase === 'settle') return
-    content.classList.add('tl-measure')
-    const next = waterfallOffsets(collectWaterfallFrameRows(content))
-    let same = next.size === offsets.size
-    if (same) {
-      for (const [id, off] of next) {
-        if (offsets.get(id) !== off) {
-          same = false
-          break
-        }
-      }
-    }
-    if (same || iterRef.current >= 8) {
-      iterRef.current = 0
-      content.classList.remove('tl-measure')
-      setRouteEpoch((v) => v + 1)
-      return
-    }
-    iterRef.current++
-    setOffsets(next)
-  }, [drag.renderGroups, drag.phase, offsets])
+  // 瀑布错位不动点迭代（P-15：机制本体=timeline-waterfall.ts 拆件——组件
+  // 250 行红线；冻结跳过/收敛 bump 细节见该件头注）
+  const waterfall = useWaterfallOffsets({
+    contentRef,
+    recomputeKey: drag.renderGroups,
+    dragPhase: drag.phase
+  })
+  const { offsets, routeEpoch } = waterfall
+  bumpRouteRef.current = waterfall.bumpRoute
+  // [F-LGRAPH-01①U4] 导航窗格联动：索引点击定位+当前月上报（重算键=渲染组）
+  useTimelineNavSync(timelineRef, drag.renderGroups)
+  // [F-LGRAPH-01①U5] 平移小手：browse/focus 拖空白=滚动跟随（edit 不平移）
+  const pan = useTimelinePan({
+    enabled: viewMode === 'browse' || viewMode === 'focus',
+    scrollerRef: timelineRef
+  })
 
   // EdgeOverlay 再触发信号（错位量>0 的卡集——引用稳定；[回炉 R10/d1-N3]
   // 局部语义名 offsetIds——EdgeOverlay prop 名 shiftedIds 遗留（改名波及
   // overlay 测试 4+ 处超 3 文件预算，申报）
   const offsetIds = useMemo(() => new Set(offsets.keys()), [offsets])
 
+  // [U5] 模式类：仅 browse/focus 挂（CSS 光标域消费）；edit 态由 .editing 承载
+  //（[回炉 R13] mode-edit 零消费类清理——挂类即须有 CSS 消费）
+  const modeCls = viewMode === 'browse' || viewMode === 'focus' ? `mode-${viewMode}` : ''
   const timelineCls = [
     'timeline',
+    modeCls,
+    pan.panning ? 'panning' : '', // [U5] 平移中 grabbing
     composer.isEditing ? 'editing' : '',
     composer.isPicking ? 'link-pick' : ''
   ]
@@ -160,21 +152,29 @@ export function LineageTimeline(props: {
   const handleCardClick = (nodeId: string, ev: ClickEventLike): void => {
     if (drag.consumeClickSuppress()) return // [T3-P8] 拖后 click 抑制（一次性）
     if (composer.handleCardClick(nodeId, ev)) return // 拾取/弹层语义消费——不转发选中
+    // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
+    // 照常转发——toggle 与详情面板联动并行不冲突）
+    if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
     props.onNodeClick?.(nodeId, ev)
   }
 
   const pop = composer.popover
 
   return (
-    <div className={timelineCls} data-testid="lineage-timeline">
-      {/* [T3-P7B] 工具条换装（.lg-toolbar sticky 挂 .timeline 内——D-P7B-1） */}
+    <div
+      className={timelineCls}
+      data-testid="lineage-timeline"
+      ref={timelineRef}
+      onPointerDown={pan.onPointerDown}
+    >
+      {/* [T3-P7B] 工具条换装（.lg-toolbar sticky 挂 .timeline 内——D-P7B-1）；
+          [F-LGRAPH-01①U3] 编辑 toggle 退役——editing 受控（view.store 单源） */}
       <LineageToolbar
         saveStatus={props.toolbar?.saveStatus ?? 'saved'}
         lastWriteError={props.toolbar?.lastWriteError ?? null}
         onAddNode={() => props.toolbar?.onAddNode()}
         onRetrySave={() => props.toolbar?.onRetrySave()}
-        editing={composer.isEditing}
-        onToggleEdit={composer.toggleEdit}
+        mode={viewMode}
         onNewLink={composer.startLinkPick}
       />
       {nodes.length === 0 ? (
@@ -200,6 +200,7 @@ export function LineageTimeline(props: {
             coreIds={coreIds}
             paperMetrics={paperMetrics}
             selectedNodeId={props.selectedNodeId ?? null}
+            focusIds={focusIds}
             offsets={offsets}
             linkSourceId={composer.picker === 'target' ? composer.sourceId : null}
             dragSlot={drag.slot}

@@ -18,6 +18,9 @@
  * - 错误契约（全 store 统一）：列表型动作（load 等，持续展示型）失败不抛、保留旧数据，
  *   写 error 字段供内联展示；动作型动作（openPaper/save/diagnose 等，单次触发型）
  *   失败上抛（unwrap 的 ApiClientError），由调用组件 catch 后 toast
+ * - [F-LGRAPH-01①U4] query.folderScope 跨域只读消费面：脉络页缺省图=库页
+ *   文件夹上下文同步（kind='folder' 用其 folderId，否则主图——接缝双向锚定
+ *   本头注+lineage.store 头注；本 store 对该消费零感知零耦合）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/library.store.test.ts（已锁定，api 桩）

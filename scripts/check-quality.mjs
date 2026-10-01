@@ -90,6 +90,10 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 //    workspace.store 是课题切换弃改收口点（INV-35④ 显式防悬置写兑现——切课题
 //    确认后 discardAll notes 悬置编辑，聚合职责即消费 notes.store），
 //    workspaces 域其余文件引用 notes 仍是红线
+// F-LGRAPH-01①U4（2026-10-01）：LineagePage 挂载时读 library.store
+// query.folderScope 一次（缺省图=库页文件夹上下文同步——mockup §3.2 明文；
+// 接缝双向锚定两 store 头注），聚合消费单点受控例外，lineage 域其余文件
+// 引用 library 仍是红线。
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
@@ -97,7 +101,8 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/reader/panels/ReaderNotesPanel.tsx', ['notes/notes.store']],
   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
-  ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']]
+  ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
+  ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')

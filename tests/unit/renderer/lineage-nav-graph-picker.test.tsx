@@ -1,12 +1,9 @@
 // @vitest-environment jsdom
 /**
- * [F-FOLDER-02·B] LineageGraphSwitcher —— 脉络页图切换器（design §4.2）。
- *
- * 覆盖：①下拉=全部图（并集）+folders.list 1:1 选项+标题「脉络图：{名}」真文本；
- * ②切换=setFolder+graph({folderId}) 重取；③S3=folders.changed→列表与标题联动
- * 刷新（改名跟随）；④S4=当前图文件夹消失→回退主图（__main__ 恒在场）+
- * graph 重取；⑤S2=导入 busy 态下拉禁用。
- * always-active（不经 guardedDescribe——K3 威胁结构性缺位）。
+ * [F-LGRAPH-01①U4] NavGraphPicker —— 导航窗格图/文件夹下拉（自
+ * LineageGraphSwitcher 迁移改写：S2 导入 busy 禁切/S3 folders.changed 联动/
+ * S4 当前图删除回退主图——三语义行为面零变；**并集首项退役**：每图只显示
+ * 自身，主图恒在列，切换恒 folderId 载荷）。always-active（不经 guardedDescribe）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -46,7 +43,7 @@ stubApiEvents({
   }
 })
 
-import { LineageGraphSwitcher } from '../../../src/renderer/features/lineage/LineageGraphSwitcher'
+import { NavGraphPicker } from '../../../src/renderer/features/lineage/nav-graph-picker'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useImportBusyStore } from '../../../src/renderer/shared/import-busy.store'
 
@@ -63,28 +60,41 @@ async function settle(turns = 6): Promise<void> {
   }
 }
 
-async function renderSwitcher(): Promise<void> {
+async function renderPicker(): Promise<void> {
   await act(async () => {
-    root?.render(<LineageGraphSwitcher />)
+    root?.render(<NavGraphPicker />)
   })
   await settle()
 }
 
-function select(): HTMLSelectElement {
-  const el = host?.querySelector('select[aria-label="脉络图切换"]')
-  expect(el, '切换器下拉在场').toBeDefined()
-  return el as HTMLSelectElement
+const q = (sel: string): Element | null => host?.querySelector(sel) ?? null
+const req = (sel: string): Element => {
+  const el = q(sel)
+  if (el === null) throw new Error(`元素未渲染：${sel}`)
+  return el
 }
 
-function optionLabels(sel: HTMLSelectElement): string[] {
-  return Array.from(sel.querySelectorAll('option')).map((o) => o.textContent ?? '')
-}
-
-function setSelectValue(sel: HTMLSelectElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+/** 展开下拉（T5 点一下开） */
+const openMenu = (): void => {
   act(() => {
-    setter.call(sel, value)
-    sel.dispatchEvent(new Event('change', { bubbles: true }))
+    req('[data-testid="lineage-nav-graph"]').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+  })
+}
+
+/** 菜单行名列表 */
+const optionLabels = (): string[] =>
+  Array.from(q('[data-testid="lineage-nav-graph-menu"]')?.querySelectorAll('button') ?? []).map(
+    (b) => b.textContent ?? ''
+  )
+
+/** 选中行（data-folder-id 驱动） */
+const pickFolder = (id: string): void => {
+  act(() => {
+    req(`[data-testid="lineage-nav-graph-menu"] [data-folder-id="${id}"]`).dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
   })
 }
 
@@ -106,7 +116,8 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
-    folderId: undefined
+    // [F-LGRAPH-01①U4] folderId 恒有值（主图兜底）
+    folderId: '__main__'
   })
   useImportBusyStore.getState().setBusy(false)
   host = document.createElement('div')
@@ -123,43 +134,45 @@ afterEach(() => {
   host = null
 })
 
-describe('F-FOLDER-02·B LineageGraphSwitcher', () => {
-  it('下拉面=全部图（并集）+folders 1:1；标题真文本「脉络图：全部图（并集）」', async () => {
-    await renderSwitcher()
-    const sel = select()
-    expect(optionLabels(sel)).toEqual(['全部图（并集）', '主图', '调研计划'])
-    const title = host?.querySelector('[data-testid="lineage-graph-title"]')
-    expect(title?.textContent).toBe('脉络图：全部图（并集）')
+describe('F-LGRAPH-01①U4 NavGraphPicker（图/文件夹下拉——并集退役）', () => {
+  it('下拉面=folders 平铺（主图恒在列+每图只显示自身）；并集首项退役负锚；当前图名真文本', async () => {
+    await renderPicker()
+    openMenu()
+    expect(optionLabels()).toEqual(['主图', '调研计划']) // 1:1 folders（无「全部图（并集）」行）
+    expect(optionLabels()).not.toContain('全部图（并集）') // 并集退役负锚（在场即红）
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('主图') // 当前图名（缺省主图）
   })
 
-  it('切换=setFolder+graph({folderId}) 重取；标题跟随图名', async () => {
-    await renderSwitcher()
-    setSelectValue(select(), 'f-1')
+  it('切换=setFolder+graph({folderId}) 重取；按钮图名跟随；收起列表', async () => {
+    await renderPicker()
+    openMenu()
+    pickFolder('f-1')
     await settle()
     expect(useLineageStore.getState().folderId).toBe('f-1')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-1' })
-    expect(
-      host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent
-    ).toBe('脉络图：调研计划')
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('调研计划')
+    expect(q('[data-testid="lineage-nav-graph-menu"]')).toBeNull() // 选行后收起（T5/T6）
   })
 
-  it('S3：folders.changed→列表与标题联动刷新（改名跟随——图名=文件夹名单一真相源）', async () => {
-    await renderSwitcher()
-    setSelectValue(select(), 'f-1')
+  it('S3：folders.changed→列表与图名联动刷新（改名跟随——图名=文件夹名单一真相源）', async () => {
+    await renderPicker()
+    openMenu()
+    pickFolder('f-1')
     await settle()
     foldersNow = [folder('__main__', '主图', 2), folder('f-1', '改名后的图')]
     await act(async () => {
       fireFoldersChanged()
     })
     await settle()
-    const title = host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent
-    expect(title).toBe('脉络图：改名后的图')
-    expect(optionLabels(select())).toContain('改名后的图')
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('改名后的图')
+    openMenu()
+    expect(optionLabels()).toContain('改名后的图')
   })
 
   it('S4：当前图文件夹消失（删除级联）→回退主图+graph 重取（__main__ 恒在场不可删）', async () => {
-    await renderSwitcher()
-    setSelectValue(select(), 'f-1')
+    await renderPicker()
+    openMenu()
+    pickFolder('f-1')
     await settle()
     stubApi.lineage.graph.mockClear()
     foldersNow = [folder('__main__', '主图', 3)] // f-1 被删除
@@ -168,31 +181,28 @@ describe('F-FOLDER-02·B LineageGraphSwitcher', () => {
     })
     await settle()
     expect(useLineageStore.getState().folderId).toBe('__main__')
-    expect(
-      host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent
-    ).toBe('脉络图：主图')
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('主图')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: '__main__' })
   })
 
   it('S4 挂载路径：store 残留 stale folderId（他页已删该文件夹）→首拉落定即回退主图', async () => {
-    // 删除 UI 在库页——脉络页不在场是 S4 常态路径（store 驻留跨挂载）
     useLineageStore.setState({ folderId: 'f-1' })
     foldersNow = [folder('__main__', '主图', 3)] // f-1 已被删
     stubApi.lineage.graph.mockClear()
-    await renderSwitcher()
+    await renderPicker()
     expect(useLineageStore.getState().folderId).toBe('__main__')
-    expect(
-      host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent
-    ).toBe('脉络图：主图')
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('主图')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: '__main__' })
   })
 
-  it('S2：导入 busy 态下拉禁用（禁切图）', async () => {
-    await renderSwitcher()
+  it('S2：导入 busy 态下拉禁切（按钮 disabled）', async () => {
+    await renderPicker()
     act(() => {
       useImportBusyStore.getState().setBusy(true)
     })
     await settle()
-    expect(select().disabled).toBe(true)
+    expect(
+      (req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement).disabled
+    ).toBe(true)
   })
 })

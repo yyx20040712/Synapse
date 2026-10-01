@@ -9,7 +9,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { clampPopoverPos } from './lineage-popover-shared'
 import { moveTargetLabel } from './useCardDrag'
-import type { MonthOption } from './useCardDrag'
+import type { MonthOption } from './useMonthPop'
 
 export function MonthPop(props: {
   /** 开层锚点（视口坐标） */

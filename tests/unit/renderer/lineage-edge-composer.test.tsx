@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 /**
  * [T3-P7B] useEdgeComposer 状态机直测——票面②迁移表全量兑现（宪法状态纪律：
- * mode×picker×popover 三轴态空间逐格+跨格序列）。
+ * editing×picker×popover 三轴态空间逐格+跨格序列）。
+ * [F-LGRAPH-01①U3] 受控化改写：mode/toggleEdit 退役——editing 经 opts 注入
+ * （rerender 切换驱动，替代原 toggleEdit；下降沿强制归位语义保持）。
  *
- * 合法态=view[idle,closed]+edit[idle|source|target,closed]+
- * edit[idle,edit|create]（popover 开必 picker=idle——互斥）。
+ * 合法态=false[idle,closed]+true[idle|source|target,closed]+
+ * true[idle,edit|create]（popover 开必 picker=idle——互斥）。
  * UI 预检（D-P7B-6）：自环/同端点对无向查重→toast 停在 target 态不回 idle；
- * Esc 优先序=popover 先关＞picker 摘回 idle（mode 不动）；退出编辑强制归位。
+ * Esc 优先序=popover 先关＞picker 摘回 idle（editing 不动）；退出编辑强制归位。
  * 驱动纪律：一用户动作一 act（api 经 Probe render 期重赋值——同 act 连调两
  * 方法=陈旧闭包，非真实事件序）。always-active 裸 describe（K3）。
  */
@@ -37,20 +39,29 @@ function ev(x = 100, y = 200): ClickEventLike & { stopped: () => boolean } {
 let root: Root | null = null
 let host: HTMLDivElement | null = null
 let api: EdgeComposerApi | null = null
+let curEdges: LineageEdge[] = []
 
 /** 渲染探针组件：hook 返回值捕获到 api（render 期赋值——act 内同步可见） */
-function mountComp(edges: LineageEdge[]): void {
+function mountComp(edges: LineageEdge[], editing = false): void {
+  curEdges = edges
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
-    root?.render(<Probe edges={edges} />)
+    root?.render(<Probe edges={edges} editing={editing} />)
   })
 }
 
-function Probe(props: { edges: LineageEdge[] }): null {
-  api = useEdgeComposer(props.edges)
+function Probe(props: { edges: LineageEdge[]; editing: boolean }): null {
+  api = useEdgeComposer(props.edges, { editing: props.editing })
   return null
+}
+
+/** 受控 editing 切换（rerender 驱动——三模式栏写路径的等价事件序） */
+function setEditing(editing: boolean): void {
+  act(() => {
+    root?.render(<Probe edges={curEdges} editing={editing} />)
+  })
 }
 
 /** 一用户动作一 act（act 后 api 已刷新——闭包不陈旧） */
@@ -75,7 +86,7 @@ function pressEsc(): void {
 
 /** 便捷链：入编辑态并启动拾取（逐步——真实事件序） */
 function enterEditAndPick(): void {
-  step(() => api!.toggleEdit())
+  setEditing(true)
   step(() => api!.startLinkPick())
 }
 
@@ -91,28 +102,29 @@ afterEach(() => {
   host?.remove()
   host = null
   api = null
+  curEdges = []
 })
 
-describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
-  it('初始态：view[idle,closed]；view 态点命中层/新建连线=no-op（handler 闸+D-21）', () => {
+describe('T3-P7B useEdgeComposer 状态机（迁移表全量——U3 受控化）', () => {
+  it('初始态：false[idle,closed]；非编辑态点命中层/新建连线=no-op（handler 闸+D-21）', () => {
     mountComp([edge('e1', 'A', 'B')])
-    expect(api?.mode).toBe('view')
+    expect(api?.isEditing).toBe(false)
     expect(api?.picker).toBe('idle')
     expect(api?.sourceId).toBeNull()
     expect(api?.popover).toEqual({ kind: 'closed' })
-    // view 态点命中层=双闸 handler 侧 no-op（CSS 闸之外的第二闸）
+    // 非编辑态点命中层=双闸 handler 侧 no-op（CSS 闸之外的第二闸）
     step(() => api!.handleEdgeHitClick('e1', ev()))
     expect(api?.popover).toEqual({ kind: 'closed' })
-    // view 态「新建连线」不启动（编辑模式内才显/才生效——D-21）
+    // 非编辑态「新建连线」不启动（编辑模式内才显/才生效——D-21）
     step(() => api!.startLinkPick())
     expect(api?.picker).toBe('idle')
     expect(toastStoreSpy).not.toHaveBeenCalled()
   })
 
-  it('toggle view→edit：归位零残留（picker/popover 均基线）', () => {
+  it('editing false→true：受控进入（归位零残留——picker/popover 均基线）', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
-    expect(api?.mode).toBe('edit')
+    setEditing(true)
+    expect(api?.isEditing).toBe(true)
     expect(api?.picker).toBe('idle')
     expect(api?.popover).toEqual({ kind: 'closed' })
   })
@@ -196,7 +208,7 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
 
   it('点 .tl-edge-hit：edit 态 idle→popover=edit[edgeId+坐标透传+stopPropagation]', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     const e = ev(50, 75)
     step(() => api!.handleEdgeHitClick('e1', e))
     expect(api?.popover).toEqual({ kind: 'edit', edgeId: 'e1', cx: 50, cy: 75 })
@@ -206,7 +218,7 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
 
   it('popover 开时点卡/点边=no-op（与拾取互斥）：状态零迁移（换目标先关再点）', () => {
     mountComp([edge('e1', 'A', 'B'), edge('e2', 'B', 'C')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
     // 点另一条边=no-op（popover 不换目标——票面迁移表）
     step(() => api!.handleEdgeHitClick('e2', ev()))
@@ -223,7 +235,7 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
 
   it('popover→closed=外点：document click 弹层外→关；弹层内/svg 命中层点击不关（mockup L769 排除面）', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
     // 弹层内点击：不关（排除 [data-testid="edge-pop"]）
     const pop = document.createElement('div')
@@ -244,45 +256,45 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
     svg.remove()
   })
 
-  it('Esc 优先序（popover＞picker；mode 不动）：popover 开→只关 popover；picker=target→摘回 idle', () => {
+  it('Esc 优先序（popover＞picker；editing 不动）：popover 开→只关 popover；picker=target→摘回 idle', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
     pressEsc()
     expect(api?.popover).toEqual({ kind: 'closed' })
-    expect(api?.mode).toBe('edit')
-    // 拾取中 Esc：picker→idle+源高亮摘除（mode 不动）
+    expect(api?.isEditing).toBe(true)
+    // 拾取中 Esc：picker→idle+源高亮摘除（editing 不动）
     step(() => api!.startLinkPick())
     step(() => api!.handleCardClick('A', ev()))
     pressEsc()
     expect(api?.picker).toBe('idle')
     expect(api?.sourceId).toBeNull()
-    expect(api?.mode).toBe('edit')
+    expect(api?.isEditing).toBe(true)
     // 全闲时 Esc：no-op
     pressEsc()
-    expect(api?.mode).toBe('edit')
+    expect(api?.isEditing).toBe(true)
   })
 
-  it('toggle edit→view：强制归位（picker 摘+popover 关——mockup L1011）', () => {
+  it('editing true→false：强制归位（picker 摘+popover 关——mockup L1011 受控下降沿）', () => {
     mountComp([edge('e1', 'A', 'B')])
     enterEditAndPick()
     step(() => api!.handleCardClick('A', ev()))
-    step(() => api!.toggleEdit())
-    expect(api?.mode).toBe('view')
+    setEditing(false)
+    expect(api?.isEditing).toBe(false)
     expect(api?.picker).toBe('idle')
     expect(api?.sourceId).toBeNull()
     expect(api?.popover).toEqual({ kind: 'closed' })
     // popover 开着的归位相位
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
-    step(() => api!.toggleEdit())
-    expect(api?.mode).toBe('view')
+    setEditing(false)
+    expect(api?.isEditing).toBe(false)
     expect(api?.popover).toEqual({ kind: 'closed' })
   })
 
   it('edit 态 picker=idle+popover=closed 的普通点卡=view 同语义（不消费——选中照常转发）', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     const e = ev()
     let consumed = true
     step(() => {
@@ -294,7 +306,7 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
 
   it('[R4] popover=edit 开时点「新建连线」：显式关 popover→[source,closed]（互斥=状态机结构性不变式，非事件序兜底）', () => {
     mountComp([edge('e1', 'A', 'B')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
     expect(api?.popover.kind).toBe('edit')
     step(() => api!.startLinkPick())
@@ -303,16 +315,16 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
     expect(toastStoreSpy).toHaveBeenCalledWith('新建连线：点击源卡片', 'info')
   })
 
-  it('跨格序列：edit→popover=edit→toggle view 归位→再入 edit 仍[idle,closed]（退出归位零残留）', () => {
+  it('跨格序列：edit→popover=edit→受控退出归位→再入 edit 仍[idle,closed]（退出归位零残留）', () => {
     mountComp([edge('e1', 'A', 'C')])
-    step(() => api!.toggleEdit())
+    setEditing(true)
     step(() => api!.handleEdgeHitClick('e1', ev()))
-    step(() => api!.toggleEdit())
-    step(() => api!.toggleEdit())
-    expect(api?.mode).toBe('edit')
+    setEditing(false)
+    setEditing(true)
+    expect(api?.isEditing).toBe(true)
     expect(api?.picker).toBe('idle')
     expect(api?.popover).toEqual({ kind: 'closed' })
-    // 再入后拾取/弹层照常可用（无残留锁死；mode 已 edit——只重启拾取）
+    // 再入后拾取/弹层照常可用（无残留锁死；editing 已 true——只重启拾取）
     step(() => api!.startLinkPick())
     step(() => api!.handleCardClick('A', ev()))
     step(() => api!.handleCardClick('B', ev(1, 2)))
@@ -324,9 +336,8 @@ describe('T3-P7B useEdgeComposer 状态机（迁移表全量）', () => {
     enterEditAndPick()
     step(() => api!.handleCardClick('A', ev()))
     // edges 引用变化（store 写回填同型）→ 重渲染后预检消费新边集
-    act(() => {
-      root?.render(<Probe edges={[edge('e1', 'A', 'B', 'manual')]} />)
-    })
+    curEdges = [edge('e1', 'A', 'B', 'manual')]
+    setEditing(true)
     step(() => api!.handleCardClick('B', ev()))
     expect(api?.picker).toBe('target') // 重复预检拦下——不进 create
     expect(toastStoreSpy).toHaveBeenCalledWith('两节点间已存在连线', 'error')

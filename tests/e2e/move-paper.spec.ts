@@ -114,12 +114,15 @@ test('移动 F1→F2 边清理+移出→未归档节点删+S1 队列闸拒绝', 
     'e2e-mp-b',
     'e2e-mp-c'
   ])
-  // 渲染面：夹一图=A 独卡；夹二图=B/C 双卡（真实文本）
+  // 渲染面：夹一图=A 独卡；夹二图=B/C 双卡（真实文本）——[F-LGRAPH-01①]
+  // 图切换经导航窗格下拉（并集切换器 select 退役）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByLabel('脉络图切换').selectOption({ label: '文件夹一' })
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '文件夹一' }).click()
   await expect(nodeCard(win, '移动甲文献')).toBeVisible({ timeout: 10_000 })
   await expect(nodeCard(win, '移动乙文献')).toHaveCount(0)
-  await win.getByLabel('脉络图切换').selectOption({ label: '文件夹二' })
+  await win.getByTestId('lineage-nav-graph').click()
+  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '文件夹二' }).click()
   await expect(nodeCard(win, '移动乙文献')).toBeVisible({ timeout: 10_000 })
 
   // ③移出→未归档：B 节点删（边随 CASCADE 灭）+库页未归档态行可见
