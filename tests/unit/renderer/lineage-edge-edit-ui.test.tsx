@@ -502,3 +502,57 @@ describe('U5 菜单面收尾（回炉 R19/R14——视口钳制/来源标记/自
     docKey('Escape')
   })
 })
+
+describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermove 数学命中扫描）', () => {
+  /** d 属性最长段中点（jsdom 零布局——几何由 d 值单源推导） */
+  const longestSegMid = (d: string): { x: number; y: number } => {
+    const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+    const pts: Array<{ x: number; y: number }> = []
+    for (let i = 0; i + 1 < nums.length; i += 2) pts.push({ x: nums[i]!, y: nums[i + 1]! })
+    let best = { x: 0, y: 0 }
+    let bestLen = -1
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const len = Math.hypot(pts[i + 1]!.x - pts[i]!.x, pts[i + 1]!.y - pts[i]!.y)
+      if (len > bestLen) {
+        bestLen = len
+        best = { x: (pts[i]!.x + pts[i + 1]!.x) / 2, y: (pts[i]!.y + pts[i + 1]!.y) / 2 }
+      }
+    }
+    return best
+  }
+  const docMove = (x: number, y: number): void => {
+    act(() => { document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: x, clientY: y })) })
+  }
+
+  it('focus dim：线挂 .dim；hover 命中线挂 .hovered（回升类）+移开即撤', () => {
+    layout([{ x: 200, y: 66 }])
+    act(() => {
+      useLineageViewStore.setState({ mode: 'focus', focusSet: ['A'] })
+    })
+    const vis = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(vis.classList.contains('dim')).toBe(true) // 全部线 dim（P-18）
+    expect(host!.querySelector('.tl-edges')?.classList.contains('dimmed-focus')).toBe(true) // 态标记沿承
+    const mid = longestSegMid(hitOf('e1').getAttribute('d') ?? '')
+    docMove(mid.x, mid.y) // 指针落线身（数学命中——pointer-events 零变更不抢卡点击）
+    const hovered = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(hovered.classList.contains('hovered')).toBe(true) // 命中线挂回升类
+    expect(hovered.classList.contains('dim')).toBe(true) // dim+hovered 并挂（CSS 0.6 回升承载）
+    docMove(700, 500) // 移开
+    const cleared = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(cleared.classList.contains('hovered')).toBe(false)
+    expect(cleared.classList.contains('dim')).toBe(true)
+  })
+
+  it('focus 空集=无 dim 无 hover 挂类（dim 激活闸——hover 扫描不激活）', () => {
+    layout([{ x: 200, y: 66 }])
+    act(() => {
+      useLineageViewStore.setState({ mode: 'focus', focusSet: [] })
+    })
+    const vis = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(vis.classList.contains('dim')).toBe(false)
+    const mid = longestSegMid(hitOf('e1').getAttribute('d') ?? '')
+    docMove(mid.x, mid.y)
+    const after = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(after.classList.contains('hovered')).toBe(false) // 空集=非 dim 态零 hover 面
+  })
+})

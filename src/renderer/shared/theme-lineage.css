@@ -103,10 +103,11 @@
   user-select: none;
   transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
 }
-/* [T3-P8] 拖起态（mockup L248 逐值：fixed 离流+z99+拖起阴影+微倾放
-   大+grabbing+pointer-events none=settle 期重触发忽略的 CSS 同义面） */
+/* [T3-P8] 拖起态（mockup L248 逐值：离流+z99+拖起阴影+微倾放大+grabbing+
+   pointer-events none=settle 期重触发忽略的 CSS 同义面）；[②U7] 定位=
+   absolute 驻 .tl-content（transform 祖先劫持 fixed 包含块——内容坐标域） */
 .tl-card.dragging {
-  position: fixed;
+  position: absolute;
   z-index: 99;
   box-shadow: var(--shadow-drag);
   transform: rotate(2deg) scale(1.05);
@@ -151,11 +152,18 @@
 /* [T3-P8] 改月飞行目标框高亮（框高亮动画——month-frame 既有
    border-color/background 过渡承载进出淡变） */
 .month-frame.flash { border-color: var(--accent); background: var(--accent-soft); }
+/* [F-LGRAPH-01②U6] 框底缘下拉：拖过底缘=padding-bottom 增高腾新行（height
+   auto 不可插值——padding 变化承载 .38s 同曲线下拉动画；mockup §3.5 承载面
+   申报：现行 height .38s 过渡字段保留不拆） */
+.month-frame.stretch { padding-bottom: 94px; }
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
    测量冻结期（.tl-measure 在场）opacity:0+--dur-tint 过渡防闪跳（D-8 一帧
    语义：收敛后同帧快照+路由+显示） */
+/* [②U5 勘误] 可见层根 pointer-events:none 恢复（命中交互全移 .tl-edge-hits
+   层——.tl-year z-index:2 整段压住 z1 命中层=e2e 探针实证的真实浏览器缺陷，
+   单层 svg 的 z 序与命中可达性冲突，拆双层） */
 .tl-edges {
   position: absolute;
   inset: 0;
@@ -167,14 +175,13 @@
   transition: opacity var(--dur-tint);
 }
 .tl-content.tl-measure .tl-edges { opacity: 0; }
-/* 可见层：D-18 四基础型映射（mockup 图例 L212-217 实证——零新 token）：
-   tree=accent 实线/inferred=accent 虚线[INV-27 D-19：渲染面照画]/
-   ref=faint 点线/manual=signal 虚线；sub 覆盖=P5 数据 inline（组件层） */
-.tl-edge { fill: none; stroke-width: 1.6; }
-.tl-edge[data-kind='tree'] { stroke: var(--accent); }
-.tl-edge[data-kind='inferred'] { stroke: var(--accent); stroke-dasharray: 6 3; }
-.tl-edge[data-kind='ref'] { stroke: var(--faint); stroke-dasharray: 2 3; }
-.tl-edge[data-kind='manual'] { stroke: var(--signal); stroke-dasharray: 6 3; }
+/* 可见层 [F-LGRAPH-01②U8]：色/纹=边内联 dashed/color（组件层 inline——
+   A3 视觉字段直渲染）；基线宽 1.6+悬停高亮（mockup §3.3 票面④ v95-6B：
+   hover 线=同色淡化放大——宽 1.6→2.6+opacity 0.65，CSS 面）。
+   [回炉 R2] 可见层 pointer-events:none 使 :hover 恒不触发（死样式）——
+   改命中层 pointerover/out 联动同键类 .hovered（值不变；组件面 EdgeOverlay） */
+.tl-edge { fill: none; stroke-width: 1.6; pointer-events: none; }
+.tl-edge.hovered { stroke-width: 2.6; opacity: 0.65; }
 /* 命中层：透明 stroke 8px（D-15<道宽 9 相邻道不重叠）；P7a 期
    pointer-events:none——编辑交互（命中弹线型选择器）P7b 域开启 */
 .tl-edge-hit {
@@ -183,6 +190,19 @@
   fill: none;
   pointer-events: none;
 }
+/* [②U5] 命中层 svg：z4=年段 z2/卡 z2 之上（.tl-year z-index:2 整段压住 z1
+   单层=e2e 探针实证的真实浏览器命中缺陷——拆双层：可见层 z1 恒线下、命中层
+   z4 恒可达；根 none+路径逐形状开启（.edge-handle 恒 all） */
+.tl-edge-hits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 4;
+  pointer-events: none;
+}
+.tl-edge-hits .edge-handle { pointer-events: all; }
 /* 图例（mockup .lc 族 L212-217 誊录——四基础型真文本；[回炉 1 W7] 挂滚动
    容器 .timeline 视口级恒可见（内容盒随滚动移出——原内容盒位废弃）；纯指示
    非交互 pointer-events:none；z 3=月标签层同级非交互件） */
@@ -213,17 +233,6 @@
 /* sel=inset 1.6px accent 环+外辉（mockup 裸色值→--shadow-tl-sel token
    承载——check-quality 色值字面量禁令，注释面同禁 ⑤ 裁决） */
 .tl-card.sel { box-shadow: inset 0 0 0 1.6px var(--accent), var(--shadow-tl-sel); }
-/* c-head=骑缝编号+徽章；编号「#NNN」mono；徽章 margin-left:auto 右贴 */
-.c-head { display: flex; align-items: center; gap: 3px; }
-.c-no { font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); }
-.mb { font-size: var(--fs-tl-meta); padding: 0 3.5px; border-radius: 3px; margin-left: auto; line-height: 1.5; }
-/* 「核」=accent 底白字（mockup 裸白色值→--accent-ink token——三族恒定白） */
-.mb.core { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.mb.survey { color: var(--dim); border: 1px dashed var(--faint); }
-.c-title { font-size: var(--fs-tl-title); font-weight: 600; color: var(--ink); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.c-idea { font-size: var(--fs-tl-idea); color: var(--dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.c-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); margin-top: 2.5px; }
-
 /* ══ [T3-P7B] 编辑交互族（工具条换装+编辑态+线型弹层——mockup L204-219/L247/
    L259-260/L287-311 逐值；字号/阴影 token 映射注记见文件头 [T3-P7B] 段）══ */
 /* 工具条：sticky 挂 .timeline 内（D-P7B-1——mockup L204-205：color-mix var(--bg)
@@ -254,11 +263,10 @@
 }
 .lg-btn.ghost { background: var(--panel); color: var(--dim); border: 1px solid var(--line); box-shadow: none; }
 .lg-btn.editing { background: var(--signal); color: var(--accent-ink); box-shadow: var(--shadow-lg-edit); }
-.lg-btn.linkbtn { display: none; }
-.timeline.editing .lg-btn.linkbtn { display: block; }
 /* drag-hint 右缘 chip：[T3-P8] 双态全时渲染（D-P7B-1 兑现）——base=view
    态 accent 变体（mockup L218）+edit 态 signal 变体（L219——三稿同值
    token 承载） */
+
 .drag-hint {
   margin-left: auto;
   font-size: var(--fs-tl-hint);
@@ -373,6 +381,34 @@
    --fs-body/10.5px→--fs-tl-hint/10px·9.5px→--fs-micro/9px→--fs-nano）══ */
 /* 拖起 dimmed（mockup .tl-svg.dimmed opacity .18——飞行脱节已知限制掩盖面） */
 .tl-edges.dimmed { opacity: .18; }
+/* [F-LGRAPH-01②U7/P-12/P-18] 聚焦 dim：非聚焦卡 0.3（hover 临时回升 0.6——
+   可读探查）；全部线 0.3+hover 回升 0.6（[RR5] P-12/P-18 定案含线——原
+   root opacity 乘法族阻断单线回升[父 .3×子 .6=.18 反更暗]，线 dim 移驻
+   逐径类 .dim 承载；根类 dimmed-focus 保留=聚焦 dim 态标记[e2e/单测锚]
+   +逐径过渡承载[hover 回升/dim 进出平滑]） */
+.tl-card.dim { opacity: .3; }
+.tl-card.dim:hover { opacity: .6; }
+.tl-edges.dimmed-focus .tl-edge { transition: opacity var(--dur-tint); }
+.tl-edge.dim { opacity: .3; }
+.tl-edge.dim.hovered { opacity: .6; }
+/* [②U7/P-4] 缩放：spacer 绝对定位撑滚动域（.timeline relative——滚动含
+   绝对后代溢出；不约束 content 布局防互撑环）；角标右下图例上位堆叠 */
+.tl-zoom-spacer { position: absolute; left: 0; top: 0; pointer-events: none; }
+.zoom-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 44px;
+  z-index: 3;
+  font-family: var(--mono);
+  font-size: var(--fs-tl-meta);
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.zoom-badge:hover { border-color: var(--accent); color: var(--accent); }
 
 /* 改月弹层月份行（mockup .ws-item 族 L313-318——workspace.css 同源值，
    本域驻留副本：ws 皮肤仅 WsRailPopover 挂载期在场，lineage 视图不保证） */
@@ -397,47 +433,3 @@
 .month-pop .ws-item .nm { flex: 1; }
 .month-pop .ws-item .ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
 
-/* 检查面板（mockup .lg-inspector 族 L264-281——重皮肤结构性改造：既有
-   testid/数据面/行为面全保活，容器仍驻 LineageSidePanel 玻璃底） */
-.insp-cap {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--fs-micro);
-  letter-spacing: 3px;
-  color: var(--faint);
-  font-family: var(--mono);
-}
-.insp-title {
-  font-size: var(--fs-title);
-  color: var(--ink);
-  line-height: 1.55;
-  margin: 9px 0 8px;
-  font-weight: 600;
-}
-.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.badge { font-size: var(--fs-tl-hint); padding: 2.5px 8px; border-radius: 99px; font-family: var(--mono); }
-.badge.core { color: var(--accent-ink); background: var(--accent); font-weight: 600; }
-.badge.plain { color: var(--dim); border: 1px solid var(--line); }
-.idea-cap { font-size: var(--fs-micro); letter-spacing: 2px; color: var(--accent); margin: 4px 0 5px; }
-.idea {
-  font-size: var(--fs-body);
-  line-height: 1.85;
-  color: var(--dim);
-  text-align: justify;
-  border-left: 2px solid var(--accent);
-  padding-left: 10px;
-  margin-bottom: 12px;
-}
-.sec-cap {
-  font-size: var(--fs-micro);
-  letter-spacing: 3px;
-  color: var(--faint);
-  margin: 2px 0 7px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
-/* 后置章虚线徽标（mockup L311——--fs-nano 值源；原 library.css .lib-postpone 同族——该侧已随 F-LIBUI-01 ⑤ 退役，本侧脉络检查面板自用） */
-.postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
-.insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }

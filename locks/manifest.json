@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-01T23:29:12.9295409Z",
+    "generatedAt":  "2026-10-01T23:32:52.3260508Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -687,7 +687,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-edit-ui.test.tsx",
-                      "sha256":  "e38099b2f5a5cd1d8d79ec6124504950254f14ba4e63762d5d82cb5666857442"
+                      "sha256":  "e43148e0b146bb901f798920f3e9579ee20339853363d8e38ed844922f49aa9f"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-overlay.test.tsx",
@@ -779,7 +779,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-zoom-dim.test.tsx",
-                      "sha256":  "6a510d2ea1daae6e6ed071fd9a7441d20147fd692e09f01025177ff93eba1194"
+                      "sha256":  "e343543b5b17bfcb5047f9ebeefa7cf8cfefc497b73422d25b9e062af44d9544"
                   },
                   {
                       "path":  "tests/unit/renderer/meta-edit-dialog.test.tsx",

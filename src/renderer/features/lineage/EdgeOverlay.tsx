@@ -14,7 +14,7 @@
  * - routeAll 降级 onWarn=console.warn（回炉 1 W2/k1-N5——生产不静默）；
  *   paths 按 edgeId Map 配对渲染（回炉 1 W5——禁下标 zip）。
  */
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
@@ -49,8 +49,14 @@ export function EdgeOverlay(props: {
   const [paths, setPaths] = useState<RoutedPath[]>([])
   // [回炉 R2] 悬停高亮=命中层驱动：可见层 pointer-events:none 使 :hover 恒
   // 不触发（死样式）——命中层 pointerover/out 联动可见层同键类 .hovered
-  //（视觉值不变 v95-6B：宽 2.6+opacity .65 CSS 承载）
+  //（视觉值不变 v95-6B：宽 2.6+opacity .65 CSS 承载）；[RR5] focus 态经
+  // hoverScan（document pointermove 数学命中）同驱动
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
+  const handleHoverChange = useCallback(
+    (id: string, entering: boolean): void => setHoveredEdgeId((cur) => (entering ? id : cur === id ? null : cur)),
+    []
+  )
+  const focused = props.focusDim === true
   // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
   const pathsRef = useRef<RoutedPath[]>([])
   pathsRef.current = paths
@@ -145,14 +151,26 @@ export function EdgeOverlay(props: {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null
         const i = laneRank.get(p.edgeId)
-        const fade = i !== undefined && i >= 1 ? Math.max(0.6, 1 - 0.15 * i) : undefined
+        // [RR5] focus dim 态错峰 inline 让位（P-18 全部线 dim 单值——inline
+        // fade 会压 CSS .dim 类；非 focus 错峰沿承）
+        const fade = !focused && i !== undefined && i >= 1 ? Math.max(0.6, 1 - 0.15 * i) : undefined
         const selected = edit.state.phase !== 'idle' && edit.state.edgeId === p.edgeId
-        const hovered = props.editEnabled === true && hoveredEdgeId === p.edgeId && !selected
+        // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）
+        const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focused)
         const visual = fade === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity: fade }
+        const cls = selected
+          ? 'tl-edge selected'
+          : hovered
+            ? focused
+              ? 'tl-edge dim hovered'
+              : 'tl-edge hovered'
+            : focused
+              ? 'tl-edge dim'
+              : 'tl-edge'
         return (
           <g key={p.edgeId}>
             <path
-              className={hovered ? 'tl-edge hovered' : selected ? 'tl-edge selected' : 'tl-edge'}
+              className={cls}
               data-edge-id={p.edgeId}
               data-dashed={e.dashed ? '1' : '0'}
               d={p.d}
@@ -172,9 +190,8 @@ export function EdgeOverlay(props: {
       edit={edit}
       hostRef={svgRef}
       onEdgeHitClick={props.onEdgeHitClick}
-      onHoverChange={(id, entering) =>
-        setHoveredEdgeId((cur) => (entering ? id : cur === id ? null : cur))
-      }
+      onHoverChange={handleHoverChange}
+      hoverScan={focused}
     />
     {/* [②U5] 画布空白菜单（右键空白=无对象高亮——mockup §3.6） */}
     {props.editEnabled === true && (
