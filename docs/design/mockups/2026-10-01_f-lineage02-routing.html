@@ -58,14 +58,14 @@
 <div class="page">
   <header class="intro">
     <h1>脉络图走线方案比选（F-LINEAGE-02 ①·呈裁样本）</h1>
-    <p>三案共用同一布局场景（月框宽度自适应＋框间瀑布错位 64px；卡行内等距＋行间砖墙交错 62px；卡 104×52）与同一组连线——
+    <p>三案共用同一布局场景（<b>月框规制不变=满宽纵排不错位[用户 2026-10-01 更正]</b>；卡片行内等距+行间瀑布式递增错位 62px/行·年内连续新年复位；卡 104×52）与同一组连线——
     <b>唯一变量=走线形态</b>。每案两幕：基础场景（12 条连线覆盖典型拓扑）与压力场景（20 条连线，看共道避让与抗拥挤）。</p>
     <p class="hint">请只看「线的走法」：拐角处理、进出卡的方式、通道选择、多线共道的排布。卡片配色与线色（蓝实线/橙虚线）为既有视觉，不参与比选。配套文档=docs/design/2026-10-01_f-lineage02-routing-options.md。</p>
   </header>
 
   <div class="anchor-demo">
     <h2>几何底座（三案共用——已裁定项）</h2>
-    <p>每卡 <b>12 锚点</b>（每边 3 等距：¼/½/¾ 位，橙点），连线自动吸附最近锚点；线走<b>卡缝/行隙/框间空隙通道</b>（橙虚线=通道中线示意），永不穿卡与月标注；折线为主干，拐弯处与靠近起止点位置曲线化。月标注随布局改版移入月框内顶缘（框间带净空）。</p>
+    <p>每卡 <b>12 锚点</b>（每边 3 等距：¼/½/¾ 位，橙点），连线自动吸附最近锚点；线走<b>卡缝/行隙/框间空隙通道</b>（橙虚线=通道中线示意），永不穿卡与月标注；折线为主干，拐弯处与靠近起止点位置曲线化。<b>月框满宽不动，瀑布错位在卡片行</b>（下一行整体右移一格=给折线让通道）。月标注随布局改版移入月框内顶缘（框间带净空）。</p>
     <div class="stage" id="anchor-stage"></div>
   </div>
 
@@ -77,14 +77,16 @@
 <script>
 /* ════════════════════════════════════════════════════════════════
    F-LINEAGE-02 走线样本引擎
-   底座常量=仓库 theme-lineage.css 实测；布局=用户 2026-10-01 裁定形态。
+   底座常量=仓库 theme-lineage.css 实测；布局=用户 2026-10-01 裁定+同日
+   更正（图 2 黄框指认：月框规制不变满宽，瀑布错位归卡片行）。
    三案路由器=案册 §2 的忠实迷你实现（几何语义同构，非生产代码）。
    ════════════════════════════════════════════════════════════════ */
 const CARD_W = 104, CARD_H = 52, GAP = 20;
 const PAD_T = 18, PAD_S = 12, PAD_B = 12;   // 月框 padding（顶 18=标注移入预算 D-L2-2）
-const ROW_SHIFT = 62;                        // 砖墙奇数行右移（现行值保持）
+const ROW_CASCADE = 62;                      // 卡片行间瀑布式递增错位/行（年内连续、新年复位——用户 2026-10-01 更正：错位归卡片行，月框规制不变；方向/步长随裁可调）
 const FRAME_GAP_Y = 26;                      // 框间垂距（框间通道带）
-const WATERFALL_X = 64;                      // 框间瀑布错位量（推荐值·随裁可调）
+const CORRIDOR_R = 58;                       // 右侧走廊预留（现行值保持——面带兜底）
+const CONTENT_W = 720;                       // 内容区宽（月框满宽——用户更正：框规制不变）
 const YEAR_HEAD_H = 30;
 const CANVAS_PAD = { l: 30, t: 10, r: 30, b: 26 };
 const PAD_OBS = 4;
@@ -144,34 +146,35 @@ const EDGES_EXTRA = [
   { id: 'p20', a: 'A4', b: 'C3', s: 'dashed' },
 ];
 
-/* ── 布局引擎：瀑布框×砖墙行 → 绝对几何（含障碍面：标注/年头）── */
+/* ── 布局引擎：满宽月框×行间瀑布错位卡片 → 绝对几何（含障碍面：标注/年头）── */
 function buildLayout() {
   const cards = new Map(), frames = [], labels = [], yearHeads = [];
-  let x = CANVAS_PAD.l, y = CANVAS_PAD.t, wf = 0;
+  let y = CANVAS_PAD.t;
+  // 用户 2026-10-01 更正（图 2 黄框指认）：月框规制不变（满宽、纵排、框间零错位）；
+  // 瀑布式错位归卡片行——逐行递增 +62/行，年内连续、新年复位（步长/方向随裁可调）
+  const fW = CONTENT_W - CANVAS_PAD.l - CORRIDOR_R;
   for (const yr of SCENARIO) {
     y += YEAR_HEAD_H;
+    let rowSeq = 0;
     for (const fr of yr.frames) {
-      const rowW = fr.rows.map((r, ri) => (ri % 2 === 1 ? ROW_SHIFT : 0) + r.length * CARD_W + (r.length - 1) * GAP);
-      const contentW = Math.max(...rowW);
       const contentH = fr.rows.length * CARD_H + (fr.rows.length - 1) * GAP;
-      const f = { x: x + wf, y, w: contentW + 2 * PAD_S, h: contentH + PAD_T + PAD_B, year: yr.year, month: fr.month, rows: fr.rows };
+      const f = { x: CANVAS_PAD.l, y, w: fW, h: contentH + PAD_T + PAD_B, year: yr.year, month: fr.month, rows: fr.rows };
       frames.push(f);
       labels.push({ x: f.x + 12, y: f.y + 1.5, w: 72, h: 15, frame: f });
       if (!yearHeads.some((h) => h.year === yr.year)) {
         yearHeads.push({ year: yr.year, x: f.x - 8, y: f.y - YEAR_HEAD_H + 4, w: 80, h: 22 });
       }
       fr.rows.forEach((row, ri) => {
-        const shift = ri % 2 === 1 ? ROW_SHIFT : 0;
+        const shift = (rowSeq + ri) * ROW_CASCADE;
         row.forEach((key, ci) => {
           cards.set(key, { x: f.x + PAD_S + shift + ci * (CARD_W + GAP), y: f.y + PAD_T + ri * (CARD_H + GAP), w: CARD_W, h: CARD_H, frame: f, row: ri });
         });
       });
       y = f.y + f.h + FRAME_GAP_Y;
-      wf += WATERFALL_X;
+      rowSeq += fr.rows.length;
     }
   }
-  const maxR = Math.max(...frames.map((f) => f.x + f.w));
-  const L = { cards, frames, labels, yearHeads, W: maxR + CANVAS_PAD.r, H: y - FRAME_GAP_Y + CANVAS_PAD.b };
+  const L = { cards, frames, labels, yearHeads, W: CONTENT_W, H: y - FRAME_GAP_Y + CANVAS_PAD.b };
   L.hBands = buildHBands(L);
   return L;
 }
@@ -763,7 +766,7 @@ function renderAnchorDemo() {
   const colGapX = 40 + CARD_W + GAP / 2;
   html += `<div class="chan-v" style="left:${colGapX}px;top:44px;height:60px"></div><span class="chan-note" style="left:${colGapX + 6}px;top:38px">卡缝竖通道</span>`;
   const brickX = 102 + CARD_W / 2;
-  html += `<div class="chan-v" style="left:${brickX}px;top:118px;height:30px;opacity:.55"></div><span class="chan-note" style="left:${brickX + 6}px;top:150px">砖墙错位＝缝隙不对齐→折线让通道（zigzag）</span>`;
+  html += `<div class="chan-v" style="left:${brickX}px;top:118px;height:30px;opacity:.55"></div><span class="chan-note" style="left:${brickX + 6}px;top:150px">行间瀑布错位＝下一行右移、缝隙不对齐→折线让通道（zigzag）</span>`;
   stage.innerHTML = html;
 }
 
