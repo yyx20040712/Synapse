@@ -60,7 +60,13 @@ export function EdgeOverlay(props: {
   // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
   const pathsRef = useRef<RoutedPath[]>([])
   pathsRef.current = paths
-  const edit = useEdgeEdit({ enabled: props.editEnabled === true, pathsRef, hostRef: svgRef })
+  // [RR8] 调线域重采集键（布局/路由变化信号——卡 rect/换算器刷新闸；状态
+  // only 渲染[拖拽 move/悬停]不重采集）
+  const editRecomputeKey = useMemo(
+    () => [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths] as const,
+    [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths]
+  )
+  const edit = useEdgeEdit({ enabled: props.editEnabled === true, pathsRef, hostRef: svgRef, recomputeKey: editRecomputeKey })
   // 端点在场的边才路由（写过渡态悬空边不渲染——nodes=防御消费面）
   const live = useMemo(() => {
     const ids = new Set(props.nodes.map((n) => n.id))

@@ -65,6 +65,9 @@ export function useEdgeEdit(args: {
   pathsRef: React.MutableRefObject<RoutedPath[]>
   /** 宿主元素（svg——parentElement=.tl-content；卡 rect 采集+坐标换算锚） */
   hostRef: React.RefObject<SVGSVGElement | null>
+  /** [RR8] 卡 rect/换算器重采集键（布局/路由变化信号——deps 收敛：原无 deps
+   *  逐渲染采集，拖拽会话期每次 move 重查全卡 rect） */
+  recomputeKey: unknown
 }): {
   state: EdgeEditState
   menu: EdgeMenuTarget | null
@@ -97,6 +100,8 @@ export function useEdgeEdit(args: {
   const [state, setState] = useState<EdgeEditState>({ phase: 'idle' })
   const [menu, setMenu] = useState<EdgeMenuTarget | null>(null)
   // [②U5] 内容坐标卡 rect（锚/磁吸/穿卡判定源）+视口→内容换算器（host 承载）
+  // [RR8] deps 收敛：采集键=布局/路由变化（原无 deps 逐渲染采集——会话期
+  // 每次 move 重查全卡 rect）；换算器 z 走默认参判定时点取值（缩放后不滞留）
   const cardsRef = useRef<Array<{ nodeId: string; rect: Rect }>>([])
   useEffect(() => {
     const content = args.hostRef.current?.parentElement
@@ -107,8 +112,8 @@ export function useEdgeEdit(args: {
       const r = el.getBoundingClientRect()
       return { nodeId: el.dataset.nodeId ?? '', rect: { x: (r.left - base.left) / z, y: (r.top - base.top) / z, w: r.width / z, h: r.height / z } }
     })
-    setPointConverter((cx, cy) => toContentPt(base, cx, cy, z))
-  })
+    setPointConverter((cx, cy) => toContentPt(base, cx, cy))
+  }, [args.hostRef, args.recomputeKey])
   const stateRef = useRef(state)
   stateRef.current = state
   const menuRef = useRef(menu)
@@ -433,11 +438,14 @@ export function useEdgeEdit(args: {
   }, [args.enabled])
 
   // 边消失（删除/切图）=selected 态失效防御
+  // [RR8] 响应式订阅（原 deps getState().edges 渲染期直读=静态 props 挂载下
+  // 边删除不触发重渲染——选中悬挂；订阅后 store 写即时驱动）
   const selId = state.phase === 'idle' ? null : state.edgeId
+  const storeEdges = useLineageStore((s) => s.edges)
   useEffect(() => {
     if (selId === null) return
-    if (!useLineageStore.getState().edges.some((e) => e.id === selId)) setState({ phase: 'idle' })
-  }, [selId, useLineageStore.getState().edges])
+    if (!storeEdges.some((e) => e.id === selId)) setState({ phase: 'idle' })
+  }, [selId, storeEdges])
 
   // 穿卡警示命中段（selected/dragging 态渲染——零持久化）
   const warnSegs =

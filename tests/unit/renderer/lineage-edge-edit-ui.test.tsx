@@ -596,3 +596,45 @@ describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermo
     expect(after.classList.contains('hovered')).toBe(false) // 空集=非 dim 态零 hover 面
   })
 })
+
+describe('U5 [RR8] effect deps 收敛+edges 响应式订阅（回炉轮 2）', () => {
+  it('边消失=selected 失效防御响应化：选中 e1→store.removeEdge→选中态即时撤（手柄消）', () => {
+    layout([{ x: 200, y: 66 }])
+    click(hitOf('e1'))
+    expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
+    act(() => {
+      useLineageStore.getState().removeEdge('e1')
+    })
+    // [RR8] 原 deps getState().edges 直读=静态 props 挂载下删除不触发（悬挂选中）
+    expect(host!.querySelector('[data-testid="edge-handles"]')).toBeNull()
+  })
+
+  it('拖拽会话期零 rect 重采集：vertex 拖动三次 move 期间卡 gBCR 零调用（原无 deps 逐渲染采集）', () => {
+    layout([{ x: 200, y: 66 }])
+    click(hitOf('e1'))
+    // 计数包装（不依赖 spy 内部形态——defineProperty 包住既有 stub 值）
+    const cardA = host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement
+    const inner = cardA.getBoundingClientRect.bind(cardA)
+    let calls = 0
+    Object.defineProperty(cardA, 'getBoundingClientRect', {
+      configurable: true,
+      value: (): DOMRect => {
+        calls += 1
+        return inner() as DOMRect
+      }
+    })
+    const handle = host!.querySelector('[data-testid="edge-handle-vertex"]') as HTMLElement
+    act(() => {
+      handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 200, clientY: 66 }))
+    })
+    for (const [x, y] of [[220, 80], [240, 100], [260, 120]] as const) {
+      act(() => {
+        document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: x, clientY: y }))
+      })
+    }
+    expect(calls).toBe(0) // 会话期渲染不再重采集（采集键=布局变化）
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 260, clientY: 120 }))
+    })
+  })
+})

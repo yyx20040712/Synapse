@@ -163,4 +163,23 @@ describe('U7 画布缩放（P-4/T9）', () => {
     expect(useLineageViewStore.getState().zoom).toBe(1)
     expect((host?.querySelector('[data-testid="zoom-badge"]') as HTMLElement).textContent).toContain('100%')
   })
+
+  it('[RR8] 量测 effect deps 收敛：zoom-only 再渲染零重测（offsetWidth 零读——原无 deps 逐渲染量测+RO 重建）', () => {
+    mount(
+      <LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} />
+    )
+    const content = host?.querySelector('.tl-content') as HTMLElement
+    let reads = 0
+    Object.defineProperty(content, 'offsetWidth', {
+      configurable: true,
+      get: () => {
+        reads += 1
+        return 500
+      }
+    })
+    act(() => {
+      useLineageViewStore.setState({ zoom: 1.2 })
+    })
+    expect(reads).toBe(0) // 非布局键渲染不重量测（自然尺寸缩放不变——RO/重算键承载）
+  })
 })
