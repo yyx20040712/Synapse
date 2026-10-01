@@ -24,6 +24,7 @@ void stubApi
 
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { edgeVisualOpacity } from '../../../src/renderer/features/lineage/edge-overlay-geom'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 
@@ -626,7 +627,7 @@ describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermo
   })
 })
 
-describe('U5 [RR8] effect deps 收敛+edges 响应式订阅（回炉轮 2）', () => {
+describe('U5 [RR8/RR10] effect deps 收敛+edges 响应式订阅+hover 回升 inline（回炉轮 2）', () => {
   it('边消失=selected 失效防御响应化：选中 e1→store.removeEdge→选中态即时撤（手柄消）', () => {
     layout([{ x: 200, y: 66 }])
     click(hitOf('e1'))
@@ -636,6 +637,41 @@ describe('U5 [RR8] effect deps 收敛+edges 响应式订阅（回炉轮 2）', (
     })
     // [RR8] 原 deps getState().edges 直读=静态 props 挂载下删除不触发（悬挂选中）
     expect(host!.querySelector('[data-testid="edge-handles"]')).toBeNull()
+  })
+
+  it('[RR10] hover 回升并入 inline：hover=inline opacity 0.65（原仅 CSS 类承载）+撤 hover 回基线', () => {
+    const nodes = [node('A'), node('B')]
+    const edges = [edge('e1', 'A', 'B', [{ x: 200, y: 66 }]), edge('e2', 'A', 'B', [{ x: 260, y: 40 }])]
+    useLineageStore.setState({ nodes, edges, saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
+    mount(nodes, edges)
+    const frame = host!.querySelector('.month-frame') as HTMLElement
+    stubRect(frame, 0, 0, 800, 200)
+    stubRect(host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement, 12, 30)
+    stubRect(host!.querySelector('.tl-card[data-node-id="B"]') as HTMLElement, 412, 30)
+    flushRafs()
+    const before = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(before.style.opacity).toBe('') // 基线=零 inline（CSS 域）
+    act(() => {
+      hitOf('e1').dispatchEvent(new MouseEvent('pointerover', { bubbles: true }))
+    })
+    const hovered = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(hovered.classList.contains('hovered')).toBe(true)
+    expect(hovered.style.opacity).toBe('0.65') // [RR10] 回升值并入 inline
+    act(() => {
+      hitOf('e1').dispatchEvent(new MouseEvent('pointerout', { bubbles: true }))
+    })
+    const restored = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
+    expect(restored.style.opacity).toBe('') // 撤 hover 回 CSS 基线
+  })
+
+  it('[RR10] 错峰×hover 组合单源（纯函数——fade 边 hover 回升不被 inline fade 压制）', () => {
+    // inline fade 压 CSS .hovered opacity（原死样式缺陷本体）——组合经纯函数锚定
+    expect(edgeVisualOpacity({ fade: 0.85, hovered: true, focusDim: false })).toBe(0.65)
+    expect(edgeVisualOpacity({ fade: 0.85, hovered: false, focusDim: false })).toBe(0.85)
+    expect(edgeVisualOpacity({ hovered: false, focusDim: false })).toBeUndefined()
+    expect(edgeVisualOpacity({ hovered: true, focusDim: false })).toBe(0.65)
+    // focus dim 态=undefined（dim/hover 回升由 .dim/.dim.hovered 类承载——RR5）
+    expect(edgeVisualOpacity({ fade: 0.85, hovered: true, focusDim: true })).toBeUndefined()
   })
 
   it('拖拽会话期零 rect 重采集：vertex 拖动三次 move 期间卡 gBCR 零调用（原无 deps 逐渲染采集）', () => {

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 /**
- * [T3-P7A] EdgeOverlay 结构测试——D-1/D-2/D-18/D-22+回炉 1（W1/W5/W6/W7）。
+ * [T3-P7A] EdgeOverlay 结构测试——D-1/D-2/D-22+回炉 1（W1/W5/W6/W7）。
+ * [F-LGRAPH-01②U8] 视觉字段内联重整：sub 覆盖→dashed/color inline 直渲染
+ * （A3）；data-kind DOM 退役（data-dashed 软标记）+悬停高亮 CSS 锁（U2）。
  * jsdom 无布局（getBoundingClientRect 恒 0）——路径 d 断言=非空形态锁
  * （几何正确性由 lineage-routing.test 经注入 snapshot 直测 routeAll 输出
  * 承载，本件锁结构/属性/样式映射/再触发/CSS 文本）。always-active 裸
@@ -11,7 +13,7 @@ import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { LineageEdge, LineageNode, LineTypeGroup } from '../../../src/shared/models/lineage'
+import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import type { TimelineYearGroup } from '../../../src/renderer/features/lineage/lineage-timeline'
 import { EdgeOverlay } from '../../../src/renderer/features/lineage/EdgeOverlay'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
@@ -28,16 +30,16 @@ function node(id: string): LineageNode {
   }
 }
 
-function edge(id: string, from: string, to: string, kind: LineageEdge['kind'], sub: string | null = null, via?: Array<{ x: number; y: number }>): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind, sub, ...(via !== undefined ? { via } : {}), createdAt: 't', updatedAt: 't' }
+function edge(
+  id: string,
+  from: string,
+  to: string,
+  dashed = false,
+  color = '#3a5bd9',
+  via?: Array<{ x: number; y: number }>
+): LineageEdge {
+  return { id, fromNode: from, toNode: to, label: '', dashed, color, ...(via !== undefined ? { via } : {}), createdAt: 't', updatedAt: 't' }
 }
-
-const LINE_TYPES: LineTypeGroup[] = [
-  { base: 'tree', subs: [{ id: 't1', name: '数据驱动', color: '#123456', dash: '5 4', w: 2.5 }] },
-  { base: 'inferred', subs: [] },
-  { base: 'ref', subs: [] },
-  { base: 'manual', subs: [] }
-]
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -55,7 +57,6 @@ function stubRaf(): void {
 function mountOverlay(
   nodes: LineageNode[],
   edges: LineageEdge[],
-  lineTypes: LineTypeGroup[] = [],
   routeEpoch = 0,
   contentW = 0
 ): void {
@@ -77,7 +78,6 @@ function mountOverlay(
       <EdgeOverlay
         nodes={nodes}
         edges={edges}
-        lineTypes={lineTypes}
         shiftedIds={new Set()}
         groups={[]}
         routeEpoch={routeEpoch}
@@ -110,12 +110,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
-  it('svg.tl-edges 挂载；每边两 path（tl-edge 可见+tl-edge-hit 命中）+data-edge-id/data-kind；d 非空', () => {
+describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', () => {
+  it('svg.tl-edges 挂载；每边两 path（tl-edge 可见+tl-edge-hit 命中）+data-edge-id/data-dashed；d 非空', () => {
     mountOverlay(
       [node('A'), node('B'), node('S')],
-      [edge('e1', 'A', 'B', 'tree'), edge('e2', 'S', 'A', 'ref')],
-      LINE_TYPES
+      [edge('e1', 'A', 'B'), edge('e2', 'S', 'A', true, '#c07a2a')]
     )
     const svg = host?.querySelector('svg.tl-edges')
     expect(svg).not.toBeNull()
@@ -124,8 +123,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     const hits = host?.querySelectorAll('path.tl-edge-hit') ?? []
     expect(visible.length).toBe(2)
     expect(hits.length).toBe(2)
-    const kinds = [...visible].map((p) => p.getAttribute('data-kind'))
-    expect(kinds).toEqual(['tree', 'ref'])
+    const dashed = [...visible].map((p) => p.getAttribute('data-dashed'))
+    expect(dashed).toEqual(['0', '1'])
     expect(visible[0]?.getAttribute('data-edge-id')).toBe('e1')
     for (const p of visible) expect(p.getAttribute('d')?.length ?? 0).toBeGreaterThan(0)
     // 命中层与可见层同 d（同一 RoutedPath 双 path 承载）
@@ -134,24 +133,22 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     for (const p of hits) expect(p.getAttribute('d')).toBe(dOf(p.getAttribute('data-edge-id') ?? ''))
   })
 
-  it('sub 样式覆盖（P5 数据纯消费 D-18）：edge.sub 命中→inline stroke/dash/width；基础边无 inline', () => {
+  it('[F-LGRAPH-01②U8] 视觉字段内联（A3）：dashed/color inline 直渲染（stroke/strokeDasharray）', () => {
     mountOverlay(
       [node('A'), node('B')],
-      [edge('e1', 'A', 'B', 'tree', 't1'), edge('e2', 'B', 'A', 'manual')],
-      LINE_TYPES
+      [edge('e1', 'A', 'B', true, '#c07a2a'), edge('e2', 'B', 'A')]
     )
-    const styled = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e1"]')
-    expect(styled?.style.stroke).toBe('#123456')
-    expect(styled?.style.strokeDasharray).toBe('5 4')
-    expect(styled?.style.strokeWidth).toBe('2.5')
-    // 基础型（sub=null）走类样式——零 inline 覆盖
-    const base = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e2"]')
-    expect(base?.style.stroke).toBe('')
+    const dashedPath = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e1"]')
+    expect(dashedPath?.style.stroke).toBe('#c07a2a')
+    expect(dashedPath?.style.strokeDasharray).toBe('6 3')
+    const solid = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e2"]')
+    expect(solid?.style.stroke).toBe('#3a5bd9')
+    expect(solid?.style.strokeDasharray).toBe('none')
   })
 
   it('routeEpoch 再触发（回炉 1 W1/W6）：几何变更后 epoch bump→rAF 内重路由（d 变）；epoch 不变不重算', () => {
     const nodes = [node('A'), node('B')]
-    const edges = [edge('e1', 'A', 'B', 'tree')]
+    const edges = [edge('e1', 'A', 'B')]
     // 稳定引用（inline new Set()/[] 每渲染新引用会使 deps 恒变——掩盖
     // routeEpoch 缺席=变异红证失效；epoch 触发面必须隔离为唯一变量）
     const shifted = new Set<string>()
@@ -162,7 +159,6 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
           <EdgeOverlay
             nodes={nodes}
             edges={edges}
-            lineTypes={[]}
             shiftedIds={shifted}
             groups={groups}
             routeEpoch={epoch}
@@ -209,8 +205,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     // 两卡同位（零 rect）+第三卡 S 挡走廊→某边落 fallback 触发 warn
     mountOverlay(
       [node('A'), node('B'), node('S')],
-      [edge('e1', 'A', 'B', 'ref'), edge('e2', 'A', 'S', 'ref')],
-      []
+      [edge('e1', 'A', 'B'), edge('e2', 'A', 'S')]
     )
     expect(warn).toHaveBeenCalled()
     expect(warn.mock.calls.some(([m]) => String(m).includes('lineage-routing'))).toBe(true)
@@ -218,14 +213,13 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
   })
 
   // ── [T3-P7B] 同道错峰（D-P7B-8：lane≥0 路径按车道内 edgeId 字典序 i≥1
-  //    挂 opacity=max(0.6,1−0.15×i)——sub 覆盖 color/w 不动）──
-  it('同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 inline；13 边第 4 条触 0.6 下钳', () => {
+  //    挂 opacity=max(0.6,1−0.15×i)——视觉 inline 色不动）──
+  it('同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 opacity 覆盖；13 边第 4 条触 0.6 下钳', () => {
     // 5 条同端点边：jsdom 零 rect 下 routeAll 干净几何 → lanes=[0,1,2,3,0]
     //（routing it 9 相位一同型）；e0/e4 同 lane0 → 字典序 [e0,e4] → e4 i=1
     mountOverlay(
       [node('A'), node('B')],
-      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B', 'ref')),
-      [],
+      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B')),
       0,
       800
     )
@@ -236,43 +230,42 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(of('e1')?.style.opacity).toBe('') // 他道唯一边
     // 13 边：lane0=[e00,e04,e08,e12] → i=3 → max(0.6,0.55)=0.6 下钳
     const ids13 = Array.from({ length: 13 }, (_, i) => `e${String(i).padStart(2, '0')}`)
-    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B', 'ref')), [], 0, 800)
+    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B')), 0, 800)
     expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e12"]')?.style.opacity).toBe('0.6')
     expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e08"]')?.style.opacity).toBe('0.7')
   })
 
-  it('错峰与 sub 覆盖并存：sub inline（stroke/dash/w）+同道 i≥1 opacity 同挂', () => {
+  it('错峰与视觉 inline 并存：同道 i≥1 opacity 与 inline stroke 同挂', () => {
     // 5 边字典序 [e0,e1,e4,e5,e9]→lanes [0,1,2,3,0]：e0/e9 同 lane0 →
-    // e9 i=1（opacity+sub 双挂）；e4 独占 lane2（sub 无 opacity）
+    // e9 i=1（opacity+色同挂）；e4 独占 lane2（色无 opacity）
     mountOverlay(
       [node('A'), node('B')],
       [
-        edge('e0', 'A', 'B', 'tree', 't1'),
-        edge('e1', 'A', 'B', 'tree'),
-        edge('e4', 'A', 'B', 'tree', 't1'),
-        edge('e5', 'A', 'B', 'ref'),
-        edge('e9', 'A', 'B', 'tree', 't1')
+        edge('e0', 'A', 'B', true, '#c07a2a'),
+        edge('e1', 'A', 'B'),
+        edge('e4', 'A', 'B', true, '#c07a2a'),
+        edge('e5', 'A', 'B'),
+        edge('e9', 'A', 'B', true, '#c07a2a')
       ],
-      LINE_TYPES,
       0,
       800
     )
     const both = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e9"]')
     expect(both?.style.opacity).toBe('0.85')
-    expect(both?.style.stroke).toBe('#123456') // sub 色（LINE_TYPES t1）不因错峰失挂
-    expect(both?.style.strokeWidth).toBe('2.5')
+    expect(both?.style.stroke).toBe('#c07a2a') // inline 色不因错峰失挂
+    expect(both?.style.strokeDasharray).toBe('6 3')
     const solo = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e4"]')
     expect(solo?.style.opacity).toBe('')
-    expect(solo?.style.stroke).toBe('#123456')
+    expect(solo?.style.stroke).toBe('#c07a2a')
   })
 
   it('[F-LINEAGE-02] manual-override：via 在场→path 在场+DOM 末位（自动边保序在前——W-4 命中优先级）；via 边不参与同道错峰', () => {
     mountOverlay(
       [node('A'), node('B')],
       [
-        edge('e0', 'A', 'B', 'manual'),
-        edge('e1', 'A', 'B', 'manual', null, [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
-        edge('e2', 'B', 'A', 'manual')
+        edge('e0', 'A', 'B'),
+        edge('e1', 'A', 'B', false, '#3a5bd9', [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
+        edge('e2', 'B', 'A')
       ]
     )
     const visible = [...(host?.querySelectorAll('path.tl-edge') ?? [])]
@@ -298,8 +291,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
       root?.render(
         <EdgeOverlay
           nodes={[node('A'), node('B')]}
-          edges={[edge('e1', 'A', 'B', 'tree')]}
-          lineTypes={[]}
+          edges={[edge('e1', 'A', 'B')]}
           shiftedIds={new Set()}
           groups={[]}
           routeEpoch={0}
@@ -322,13 +314,66 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(onHit).toHaveBeenCalledWith('e1', expect.objectContaining({ clientX: 33, clientY: 44 }))
   })
 
-  it('图例四项真文本挂滚动容器 .timeline（回炉 1 W7——mockup .lc 族誊录，D-18 四基础型）', () => {
+  it('[回炉 R2] 悬停高亮=命中层驱动同键类：pointerover 命中层→可见层挂 .hovered；pointerout 撤；非 edit 不挂', () => {
+    // 交互面：.tl-edge pointer-events:none 恒不可 hover——由命中层
+    // .tl-edge-hit 的 pointerover/out 联动可见层同键类（edit 态）
+    stubRaf()
+    host = document.createElement('div')
+    host.className = 'tl-content'
+    document.body.appendChild(host)
+    root = createRoot(host)
+    const renderAt = (edit: boolean): void => {
+      act(() => {
+        root?.render(
+          <EdgeOverlay
+            nodes={[node('A'), node('B')]}
+            edges={[edge('e1', 'A', 'B'), edge('e2', 'B', 'A')]}
+            shiftedIds={new Set()}
+            groups={[]}
+            routeEpoch={0}
+            editEnabled={edit}
+          />
+        )
+      })
+    }
+    renderAt(true)
+    for (const n of [node('A'), node('B')]) {
+      const card = document.createElement('div')
+      card.className = 'tl-card'
+      card.dataset.nodeId = n.id
+      host.appendChild(card)
+    }
+    flushRafs()
+    const hit = host?.querySelector<SVGElement>('path.tl-edge-hit[data-edge-id="e1"]')
+    const vis = host?.querySelector<SVGElement>('path.tl-edge[data-edge-id="e1"]')
+    expect(hit).not.toBeNull()
+    expect(vis?.classList.contains('hovered')).toBe(false) // 基线无类
+    act(() => {
+      hit?.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }))
+    })
+    expect(vis?.classList.contains('hovered')).toBe(true) // 可见层联动挂类
+    act(() => {
+      hit?.dispatchEvent(new MouseEvent('pointerout', { bubbles: true }))
+    })
+    expect(vis?.classList.contains('hovered')).toBe(false) // 移出撤类
+    // 非 edit：命中层零交互（hover 面不挂）
+    renderAt(false)
+    flushRafs()
+    const hit2 = host?.querySelector<SVGElement>('path.tl-edge-hit[data-edge-id="e1"]')
+    act(() => {
+      hit2?.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }))
+    })
+    const vis2 = host?.querySelector<SVGElement>('path.tl-edge[data-edge-id="e1"]')
+    expect(vis2?.classList.contains('hovered')).toBe(false)
+  })
+
+  it('图例两型真文本挂滚动容器 .timeline（U8 重整：实线/虚线）', () => {
     stubRaf()
     host = document.createElement('div')
     document.body.appendChild(host)
     root = createRoot(host)
     act(() => {
-      root?.render(<LineageTimeline nodes={[node('A'), node('B')]} edges={[edge('e1', 'A', 'B', 'tree')]} />)
+      root?.render(<LineageTimeline nodes={[node('A'), node('B')]} edges={[edge('e1', 'A', 'B')]} />)
     })
     flushRafs()
     const timeline = host?.querySelector('.timeline')
@@ -337,36 +382,39 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     // 图例=.timeline 直接子元素（与 .tl-content 兄弟——视口级恒可见）
     expect(legend?.parentElement?.classList.contains('timeline')).toBe(true)
     const items = [...(legend?.querySelectorAll('.lc') ?? [])]
-    expect(items.map((e) => e.textContent)).toEqual(['继承', '推断', '综述关联', '人工补线'])
+    expect(items.map((e) => e.textContent)).toEqual(['实线', '虚线'])
     expect(items.every((e) => e.querySelector('i') !== null)).toBe(true)
   })
 
-  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；测量期 opacity:0（--dur-tint 过渡）；四 kind 色/纹映射；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位', () => {
+  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；测量期 opacity:0（--dur-tint 过渡）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位', () => {
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow:\s*visible;[^}]*z-index:\s*1/)
     expect(css).toMatch(/\.tl-content\.tl-measure \.tl-edges\s*\{[^}]*opacity:\s*0/)
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*transition:\s*opacity var\(--dur-tint\)/)
-    expect(css).toMatch(/\.tl-edge\[data-kind='tree'\]\s*\{[^}]*stroke:\s*var\(--accent\);[^}]*\}/)
-    expect(css).toMatch(/\.tl-edge\[data-kind='inferred'\]\s*\{[^}]*stroke:\s*var\(--accent\);[^}]*stroke-dasharray:\s*6 3/)
-    expect(css).toMatch(/\.tl-edge\[data-kind='ref'\]\s*\{[^}]*stroke:\s*var\(--faint\);[^}]*stroke-dasharray:\s*2 3/)
-    expect(css).toMatch(/\.tl-edge\[data-kind='manual'\]\s*\{[^}]*stroke:\s*var\(--signal\);[^}]*stroke-dasharray:\s*6 3/)
+    // [F-LGRAPH-01②U8] 四 kind 色 selector 退役负锚（视觉=inline dashed/color）
+    expect(css).not.toMatch(/\.tl-edge\[data-kind/)
     expect(css).toMatch(/\.tl-edge-hit\s*\{[^}]*stroke-width:\s*8;[^}]*pointer-events:\s*none/)
     // [回炉 1 W7] 图例挂 .timeline 视口级（right/bottom 12 对滚动容器定位）
     expect(css).toMatch(/\.tl-legend\s*\{[^}]*position:\s*absolute;[^}]*right:\s*12px;[^}]*bottom:\s*12px;[^}]*pointer-events:\s*none/)
-    // 图例 .lc 族（mockup L212-217 誊录——i 元素 20px 线样预览）
+    // 图例 .lc 族（i 元素 20px 线样预览）
     expect(css).toMatch(/\.lc\s*\{[^}]*display:\s*flex;[^}]*gap:\s*4px/)
     expect(css).toMatch(/\.lc i\s*\{[^}]*width:\s*20px;[^}]*border-top:\s*2px solid var\(--accent\)/)
-    expect(css).toMatch(/\.lc\.i3 i\s*\{[^}]*dotted var\(--faint\)/)
+    expect(css).toMatch(/\.lc\.i2 i\s*\{[^}]*border-top-style:\s*dashed/)
   })
 
-  it('CSS 锁 [T3-P7B]：编辑态双闸（CSS 面）+link-pick/link-src+.lg-*/.pop/.acc/.schip 族（theme-lineage.css——mockup L204-219/L247/L259-260/L287-311）', () => {
+  it('CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+link-src+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B）', () => {
     // 双闸 CSS 面：view 基线 none（上行既有锁）+edit 态开 stroke（M-pointer-events 变异锚）
     expect(css).toMatch(/\.timeline\.editing \.tl-edge-hit\s*\{[^}]*pointer-events:\s*stroke;[^}]*cursor:\s*pointer/)
-    // link-pick：容器 crosshair+卡例外 pointer
-    expect(css).toMatch(/\.timeline\.link-pick\s*\{[^}]*cursor:\s*crosshair/)
-    expect(css).toMatch(/\.timeline\.link-pick \.tl-card\s*\{[^}]*cursor:\s*pointer/)
-    // 拾取源高亮（mockup L247：2.4px dashed signal offset 2px）——[R1] 选择器
-    // 升 (0,4,0)：`.timeline.editing .tl-card` 基线 outline (0,3,0) 压栈
-    // (0,2,0) 使高亮恒不可视（双审 B1 同中）——特异性实测锚在 e2e T8 computed
+    // 悬停高亮：hover 线=宽 1.6→2.6+opacity 0.65（mockup §3.3）。
+    // [回炉 R2] 可见层 pointer-events:none 使 :hover 恒不触发（死样式）——
+    // 改命中层驱动同键类 .hovered；负锚锁死样式不再回潮。
+    // [RR10] opacity 0.65 单源=inline（edgeVisualOpacity——错峰边 inline
+    // fade 压 CSS 类使回升死样式）；CSS 仅承宽 2.6（组合锚=纯函数测试）
+    expect(css).toMatch(/\.tl-edge\s*\{[^}]*stroke-width:\s*1\.6/)
+    expect(css).toMatch(/\.tl-edge\.hovered\s*\{[^}]*stroke-width:\s*2\.6;\s*\}/)
+    expect(css).not.toMatch(/\.tl-edge:hover/)
+    // [F-LGRAPH-01②U8] linkbtn 退役负锚（「新建连线」按钮删除——画线工具替代）
+    expect(css).not.toMatch(/linkbtn/)
+    // 拾取源高亮（画线/拖拽源标记沿用 .link-src——U3 画线 dragging 源卡高亮复用）
     expect(css).toMatch(
       /\.timeline\.editing \.tl-card\.link-src\s*\{[^}]*outline:\s*2\.4px dashed var\(--signal\);[^}]*outline-offset:\s*2px/
     )
@@ -374,7 +422,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     // 源序覆盖=死声明）
     expect(css).toMatch(/\.pop \.acc-body \.pbtn\s*\{[^}]*font-size:\s*var\(--fs-tl-hint\);[^}]*padding:\s*4px 0/)
     // [R6②] .pop .schip i 的 border-top-width 恒被组件 inline borderTop 覆盖
-    // ——死属性已删（宽度面全权 inline=linePreviewStyle）
+    // ——死属性已删（宽度面全权 inline）
     expect(css).toMatch(/\.pop \.schip i\s*\{[^}]*width:\s*26px;[^}]*display:\s*inline-block/)
     expect(css).not.toMatch(/\.pop \.schip i\s*\{[^}]*border-top-width/)
     // 编辑态卡 hover faint（mockup L259-260）
@@ -382,21 +430,18 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(css).toMatch(/\.timeline\.editing \.tl-card:hover\s*\{[^}]*outline-color:\s*var\(--faint\)/)
     // .lg-toolbar sticky（mockup L204-205 逐值——色值经 color-mix var(--bg) 承载）
     expect(css).toMatch(/\.lg-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*z-index:\s*12;[^}]*padding:\s*10px 18px/)
-    // .lg-btn 主/ghost/editing/linkbtn 显隐（mockup L206-210——阴影=三稿同值 token 承载）
+    // .lg-btn 主/ghost（mockup L206-210——阴影=三稿同值 token 承载）
     expect(css).toMatch(
       /\.lg-btn\s*\{[^}]*color:\s*var\(--accent-ink\);[^}]*background:\s*var\(--accent\);[^}]*padding:\s*6px 14px;[^}]*border-radius:\s*8px;[^}]*box-shadow:\s*var\(--shadow-lg-btn\)/
     )
     expect(css).toMatch(
       /\.lg-btn\.ghost\s*\{[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px solid var\(--line\);[^}]*box-shadow:\s*none/
     )
-    expect(css).toMatch(/\.lg-btn\.editing\s*\{[^}]*background:\s*var\(--signal\);[^}]*box-shadow:\s*var\(--shadow-lg-edit\)/)
-    expect(css).toMatch(/\.lg-btn\.linkbtn\s*\{[^}]*display:\s*none/)
-    expect(css).toMatch(/\.timeline\.editing \.lg-btn\.linkbtn\s*\{[^}]*display:\s*block/)
     // drag-hint 双态（[T3-P8] D-P7B-1 兑现——mockup L218 base accent+L219 edit signal）
     expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
     expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--accent\)/)
     expect(css).toMatch(/\.timeline\.editing \.drag-hint\s*\{[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\);[^}]*border-color:\s*var\(--signal\)/)
-    // .pop 弹层（mockup L287 逐值——fixed 240px 挂视口）
+    // .pop 弹层（mockup L287 逐值——fixed 240px 挂视口；MonthPop 沿用基础面）
     expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)
     expect(css).toMatch(/\.pop h4\s*\{[^}]*letter-spacing:\s*2px;[^}]*color:\s*var\(--faint\)/)
     // .acc 手风琴（mockup L304-310）+schip chip i 预览（L294-296——[R6②]

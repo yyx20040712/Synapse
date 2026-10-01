@@ -19,7 +19,7 @@ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
 import { routeAll } from './lineage-routing'
-import { buildSnapshot, edgeVisualStyle } from './edge-overlay-geom'
+import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle } from './edge-overlay-geom'
 import { useEdgeEdit } from './use-edge-edit'
 import { EdgeHitLayer } from './EdgeHitLayer'
 import { EdgeMenuHost } from './EdgeMenuHost'
@@ -163,7 +163,10 @@ export function EdgeOverlay(props: {
         const selected = edit.state.phase !== 'idle' && edit.state.edgeId === p.edgeId
         // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）
         const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focused)
-        const visual = fade === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity: fade }
+        // [RR10] hovered 回升 0.65 并入 inline（错峰边 fade 压 CSS 类=死样式
+        // 根治——单源 edge-overlay-geom edgeVisualOpacity；focus dim 态恒类承载）
+        const opacity = edgeVisualOpacity({ fade, hovered, focusDim: focused })
+        const visual = opacity === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity }
         const cls = selected
           ? 'tl-edge selected'
           : hovered

@@ -177,11 +177,13 @@
 .tl-content.tl-measure .tl-edges { opacity: 0; }
 /* 可见层 [F-LGRAPH-01②U8]：色/纹=边内联 dashed/color（组件层 inline——
    A3 视觉字段直渲染）；基线宽 1.6+悬停高亮（mockup §3.3 票面④ v95-6B：
-   hover 线=同色淡化放大——宽 1.6→2.6+opacity 0.65，CSS 面）。
+   hover 线=同色淡化放大——宽 1.6→2.6+opacity 0.65）。
    [回炉 R2] 可见层 pointer-events:none 使 :hover 恒不触发（死样式）——
-   改命中层 pointerover/out 联动同键类 .hovered（值不变；组件面 EdgeOverlay） */
+   改命中层 pointerover/out 联动同键类 .hovered（组件面 EdgeOverlay）。
+   [RR10] opacity 段退役=inline 单源（edgeVisualOpacity——错峰边 inline
+   fade 压 CSS 类使 hover 回升死样式；CSS 仅承宽 2.6） */
 .tl-edge { fill: none; stroke-width: 1.6; pointer-events: none; }
-.tl-edge.hovered { stroke-width: 2.6; opacity: 0.65; }
+.tl-edge.hovered { stroke-width: 2.6; }
 /* 命中层：透明 stroke 8px（D-15<道宽 9 相邻道不重叠）；P7a 期
    pointer-events:none——编辑交互（命中弹线型选择器）P7b 域开启 */
 .tl-edge-hit {
