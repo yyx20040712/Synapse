@@ -324,6 +324,43 @@ describe('U5 端点重连统一（回炉 R11——空 via 归一/物化/L 重正
     expect(useLineageStore.getState().undoStack.length).toBe(0)
     expect(useLineageStore.getState().queue).toHaveLength(0)
   })
+
+  it('[RR2] 拖顶点 pointercancel=abort：via 回拖前定态+零写零入栈（§2.5 中断=不成立）', () => {
+    layout([{ x: 200, y: 66 }])
+    click(hitOf('e1'))
+    const handle = host!.querySelector('[data-testid="edge-handle-vertex"]') as HTMLElement
+    act(() => {
+      handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 200, clientY: 66 }))
+    })
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 260, clientY: 120 }))
+    })
+    // pointercancel=中断（原接 up=提交——workVia 落库缺陷）
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true }))
+    })
+    const s = useLineageStore.getState()
+    expect(s.edges[0]?.via).toEqual([{ x: 200, y: 66 }]) // via 回拖前定态
+    expect(s.undoStack).toHaveLength(0) // 不入撤销栈
+    expect(s.queue).toHaveLength(0)
+    expect(s.saveStatus).toBe('clean')
+    expect(host!.querySelector('[data-testid="edge-handles"]')).toBeNull() // abort=idle 收尾
+  })
+
+  it('[RR2] reconnect pointercancel=abort：端点回原锚零写入（不提交换端）', () => {
+    layout([{ x: 200, y: 66 }], true)
+    click(hitOf('e1'))
+    act(() => { endHandle('to').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 })) })
+    docMove(612, 266) // 拖至 C 锚（预览态）
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true }))
+    })
+    const e = useLineageStore.getState().edges.find((x) => x.id === 'e1')!
+    expect(e.toNode).toBe('B') // 端点回原锚
+    expect(e.via).toEqual([{ x: 200, y: 66 }])
+    expect(useLineageStore.getState().undoStack.length).toBe(0)
+    expect(useLineageStore.getState().queue).toHaveLength(0)
+  })
 })
 
 describe('U5 菜单面收尾（回炉 R19/R14——视口钳制/来源标记/自动线重置 no-op/portal）', () => {
