@@ -9,8 +9,9 @@
  *   lineageCatalogNos 单源（INV-76）+「核」徽章=isCore 预计算 Map+「综述」
  *   =isSurveyTitle（shared 单源）。年/月/卡渲染体=TimelineYears 拆件
  *   （[T3-P7B] 组件 250 行红线）。
- * - rowshift 砖砌行错位（A2/D2）：useLayoutEffect 不动点迭代+测量冻结
- *   （.tl-measure——d1-W1 三过加固；iterRef 上限 8=振荡守卫 k1-W2）。
+ * - 瀑布错位（[F-LINEAGE-02 裁决 2/P-15]：(R×82)mod148 inline margin-left）：
+ *   useLayoutEffect 不动点迭代+测量冻结（.tl-measure——d1-W1 三过加固；
+ *   iterRef 上限 8=振荡守卫 k1-W2）。
  * - [T3-P7B] 编辑交互编排（useEdgeComposer 状态机+工具条换装+弹层挂载）：
  *   .timeline 挂 .editing（mode）/.link-pick（picker≠idle）；mode 态
  *   「view|edit」useState 驻本组件（composer hook 承载）=P8 共用面单源；
@@ -25,7 +26,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageEdgeKind, type LineageNode, type LineTypeGroup } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { isCore } from './lineage-classify'
-import { groupTimeline, rowsFromOffsetTops } from './lineage-timeline'
+import { collectWaterfallFrameRows, groupTimeline, waterfallOffsets } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
 import { EdgeTypePopover } from './EdgeTypePopover'
 import { TimelineLegend, TimelineYears } from './TimelineYears'
@@ -90,10 +91,11 @@ export function LineageTimeline(props: {
   // [T3-P7B] 连线编辑状态机（mode 单源驻此——P8 共用面）
   const composer = useEdgeComposer(edges)
 
-  // 砖砌行错位：不动点迭代+测量冻结（d1-W1 三过加固；iterRef 上限 8=k1-W2）
+  // 瀑布错位（P-15：82 步/148 节距/年内复位）：不动点迭代+测量冻结（d1-W1
+  // 三过加固沿承；iterRef 上限 8=k1-W2）；错位量>0 的卡入表（inline margin-left）
   const contentRef = useRef<HTMLDivElement | null>(null)
   const iterRef = useRef(0)
-  const [shiftedIds, setShiftedIds] = useState<ReadonlySet<string>>(() => new Set())
+  const [offsets, setOffsets] = useState<ReadonlyMap<string, number>>(() => new Map())
   // [T3-P7A 回炉 1 W1/W6] 连线层再触发信号（收敛/守卫停分支 bump routeEpoch）
   const [routeEpoch, setRouteEpoch] = useState(0)
 
@@ -113,26 +115,20 @@ export function LineageTimeline(props: {
     const content = contentRef.current
     if (content === null) return
     // [T3-P8+R2] dragging/settle 两期跳过冻结迭代：a) dragging 期拖卡 inline
-    // fixed（尾挂）的视口系 offsetTop 混入 rowsFromOffsetTops 会误挂 rowshift
-    // （探针 t=0 cls='tl-card rowshift' 实证）+其 margin-left 62px 掺入后续
-    // FLIP target（R1 偏移同源）；b) settle 期 .tl-measure 的 transition:none
-    // 取消飞行过渡（transitionend 永不触发=落定写丢失）。settle→idle 时
-    // phase 入 deps 重跑，冻结量测在终态布局上补齐（pending 期卡未 fixed
-    // 保留量测）。
+    // fixed（尾挂）的视口系 offsetTop 混入 rowsFromOffsetTops 会误挂行错位
+    // （探针 t=0 cls='tl-card rowshift' 实证——[F-LINEAGE-02 ①a] .rowshift
+    // 交替已退役改瀑布递增，此句系 T3-P8 沿革事故记录）+其行错位 margin
+    // 掺入后续 FLIP target（R1 偏移同源）；b) settle 期 .tl-measure 的
+    // transition:none 取消飞行过渡（transitionend 永不触发=落定写丢失）。
+    // settle→idle 时 phase 入 deps 重跑，冻结量测在终态布局上补齐（pending
+    // 期卡未 fixed 保留量测）。
     if (drag.phase === 'dragging' || drag.phase === 'settle') return
     content.classList.add('tl-measure')
-    const next = new Set<string>()
-    for (const frame of Array.from(content.querySelectorAll('.month-frame'))) {
-      const cards = Array.from(frame.querySelectorAll<HTMLElement>('[data-node-id]'))
-      const rows = rowsFromOffsetTops(cards.map((c) => c.offsetTop))
-      cards.forEach((card, i) => {
-        if (rows[i]! % 2 === 1) next.add(card.dataset.nodeId ?? '')
-      })
-    }
-    let same = next.size === shiftedIds.size
+    const next = waterfallOffsets(collectWaterfallFrameRows(content))
+    let same = next.size === offsets.size
     if (same) {
-      for (const id of next) {
-        if (!shiftedIds.has(id)) {
+      for (const [id, off] of next) {
+        if (offsets.get(id) !== off) {
           same = false
           break
         }
@@ -145,8 +141,13 @@ export function LineageTimeline(props: {
       return
     }
     iterRef.current++
-    setShiftedIds(next)
-  }, [drag.renderGroups, drag.phase, shiftedIds])
+    setOffsets(next)
+  }, [drag.renderGroups, drag.phase, offsets])
+
+  // EdgeOverlay 再触发信号（错位量>0 的卡集——引用稳定；[回炉 R10/d1-N3]
+  // 局部语义名 offsetIds——EdgeOverlay prop 名 shiftedIds 遗留（改名波及
+  // overlay 测试 4+ 处超 3 文件预算，申报）
+  const offsetIds = useMemo(() => new Set(offsets.keys()), [offsets])
 
   const timelineCls = [
     'timeline',
@@ -187,7 +188,7 @@ export function LineageTimeline(props: {
             nodes={nodes}
             edges={edges}
             lineTypes={lineTypes}
-            shiftedIds={shiftedIds}
+            shiftedIds={offsetIds}
             groups={drag.renderGroups}
             routeEpoch={routeEpoch}
             dimmed={drag.phase === 'dragging'}
@@ -199,7 +200,7 @@ export function LineageTimeline(props: {
             coreIds={coreIds}
             paperMetrics={paperMetrics}
             selectedNodeId={props.selectedNodeId ?? null}
-            shiftedIds={shiftedIds}
+            offsets={offsets}
             linkSourceId={composer.picker === 'target' ? composer.sourceId : null}
             dragSlot={drag.slot}
             registerFrame={drag.registerFrame}

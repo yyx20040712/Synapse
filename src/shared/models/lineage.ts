@@ -144,11 +144,55 @@ export const lineageEdgeSchema = z
     /** [T3-P5] 子线型 id（lineTypes 引用）；null=基础型默认样式（样式层，
      *  不参与结构守卫——引用完整性守卫在 service 写面） */
     sub: z.string().nullable(),
+    /** [F-LINEAGE-02] 手动调线中间路点（内容坐标，有序——design-final §2.1）。
+     *  缺省=省略字段（undefined）**不产出 []**（N-1：空数组与缺省同义=自动
+     *  路由，diff/脏检测零噪声）；端点不进 via（④=schema 形状面：点仅 x/y
+     *  数值，fromNode/toNode 承载端点卡）；不变量 ①②③校验单源=
+     *  validateLineageVia（service 写面调用，违者 INVALID_REQUEST） */
+    via: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
     createdAt: z.string(),
     updatedAt: z.string()
   })
   .strict()
 export type LineageEdge = z.infer<typeof lineageEdgeSchema>
+
+/** [F-LINEAGE-02] via 路点形状（schema 内联同形——toEdge 读面/编辑器写面共用） */
+export interface LineageViaPoint {
+  x: number
+  y: number
+}
+
+/**
+ * [F-LINEAGE-02 ①a] via 序列化校验纯函数（design-final §2.1 不变量 ①②③——
+ * service upsertEdge 写面调用，违者 INVALID_REQUEST）：
+ * - ① 相邻段轴对齐（via 链内相邻路点 x 或 y 相等——整条折线含端点锚的恒
+ *   正交由编辑代数保证（§2.3 L 重建），序列化时点可检面=via 链内部）；
+ * - ② 无重合点（相邻路点距 ≥1px，含边界）；
+ * - ③ via.length≥1 才构成 manual-override（=0/缺省即自动路由——空数组过检，
+ *   归一为缺省语义在 repo 写边界：NULL 落库）。
+ * 返回 null=过检；字符串=中文拒绝 reason。
+ */
+export function validateLineageVia(via: readonly LineageViaPoint[]): string | null {
+  for (const p of via) {
+    // [回炉 R6/k1-N5] 有限数钳：Infinity/NaN 轴对齐恒真/距离恒假——单独拦
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
+      return `via 路点坐标必须为有限数（(${String(p.x)},${String(p.y)})——k1-N5 畸形 d 防线）`
+    }
+  }
+  for (let i = 1; i < via.length; i++) {
+    const a = via[i - 1]!
+    const b = via[i]!
+    if (a.x !== b.x && a.y !== b.y) {
+      return `via 折线必须横平竖直（第 ${i} 段斜向：(${a.x},${a.y})→(${b.x},${b.y})——正交不变量 ①）`
+    }
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    if (dx * dx + dy * dy < 1) {
+      return `via 相邻路点距离不足 1px（第 ${i} 对：(${a.x},${a.y})→(${b.x},${b.y})——无重合点不变量 ②）`
+    }
+  }
+  return null
+}
 
 /** [T3-P5] 子线型（图级样式配置——lineage_graph_meta KV JSON 承载） */
 export const lineTypeSubSchema = z

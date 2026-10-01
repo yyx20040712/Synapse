@@ -1,0 +1,11 @@
+-- 013_lineage_edge_via：脉络边手动调线路点列（F-LINEAGE-02 ①a，
+-- docs/design/2026-10-01_f-lineage02-routing-design-final.md §2.1）
+-- 设计口径：
+-- - via=JSON 数组 TEXT（{x,y} 内容坐标路点 JSON.stringify 落库；应用面
+--   Array<{x,y}>|undefined——缺省=省略字段不产出 []，N-1 序列化口径）
+-- - 缺省 NULL=自动路由（存量库零迁移兼容——无数据搬迁；先例=007 tags JSON 列）
+-- - 不变量校验（①正交②无重合点③≥1 才 manual-override）=service 写面
+--   validateLineageVia 单源（INV-27「树约束在 service 不在 DDL」同精神——
+--   纯数据面列）；读面容错（非法 JSON/形状→undefined 不炸 graph 读）
+-- - 端点不进 via（④）：from_node/to_node 承载端点卡，锚点=运行时 12 锚派生
+ALTER TABLE lineage_edges ADD COLUMN via TEXT;

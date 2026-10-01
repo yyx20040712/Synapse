@@ -111,12 +111,17 @@ interface DragSession {
   ghost: { x: number; y: number }
   insertIdx: number
   overFrame: boolean
+  /** [回炉 R1] 拖前 React inline marginLeft（瀑布错位）——fixed 期压 0 防双计，
+   *  清场恢复（React style diff 不重写未变值——须自恢复非赖重渲染） */
+  marginLeft0: string
 }
 
 interface FlightJob {
   nodeId: string
   fromX: number
   fromY: number
+  /** [回炉 R1] flow 态测量前恢复/fixed 期压 0/清场恢复（三点同值） */
+  marginLeft0: string
   finish: () => void
 }
 
@@ -201,10 +206,20 @@ export function useCardDrag(args: {
         if (card !== null) {
           const r = card.getBoundingClientRect()
           s.ghost = { x: r.left, y: r.top }
+          s.marginLeft0 = card.style.marginLeft
           card.style.position = 'fixed'
           card.style.left = `${r.left}px`
           card.style.top = `${r.top}px`
           card.style.width = `${r.width}px`
+          // [回炉 R1/B-1] fixed 盒 left 定位 margin edge——React inline 错位
+          // 仍在则 border box 再偏 +offset（拖起瞬跳/拖动恒偏）；压 0 后
+          // left=视觉 rect.left（无双计）
+          card.style.marginLeft = '0'
+          // [回炉 R8/d1-B1] 同步禁断过渡：基类 margin-left .25s 在场且压 0
+          // 发生于 .dragging 类挂载前（setPhase 异步）——不禁断则 82→0 启动
+          // 0.25s 过渡=拖起 +82px 滑移；此后 settle 段 SETTLE_TRANSITION
+          //（只含 left/top）接管，清场 transition='' 回类值
+          card.style.transition = 'none'
         }
         setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true })
         setPhase('dragging')
@@ -251,6 +266,7 @@ export function useCardDrag(args: {
         nodeId: s.nodeId,
         fromX: s.ghost.x,
         fromY: s.ghost.y,
+        marginLeft0: s.marginLeft0,
         finish: () => {
           setPhase('idle')
           setSlot(null)
@@ -287,17 +303,21 @@ export function useCardDrag(args: {
       job.finish()
       return
     }
-    // [R1] target 必须在 flow 态测量：dragging 期残留的 inline fixed（position/
-    // left/top/width）与 rowshift 的 margin-left 会掺入 getBoundingClientRect
-    // （探针实证飞行终点偏 62px+清场后瞬跳）——先清四键+强制回流再量；
-    // 零位移分支因此天然干净（已清再判，无 inline 永久残留）
+    // [R1/回炉 R1] target 必须在 flow 态测量：dragging 期残留的 inline fixed
+    // （position/left/top/width）先清+强制回流再量；[回炉 R1] 瀑布错位 inline
+    // marginLeft 拖起时已压 0——flow 态测量前**恢复**（终态布局含错位，飞行
+    // 目标=错位位）；零位移分支因此天然干净（已清再判，无残留）
     card.style.position = ''
     card.style.left = ''
     card.style.top = ''
     card.style.width = ''
+    card.style.marginLeft = job.marginLeft0
     void card.offsetWidth
     const target = card.getBoundingClientRect()
     if (Math.hypot(target.left - job.fromX, target.top - job.fromY) < 0.5) {
+      // [回炉 R8] 零位移径不过 flight 分支——激活期禁断的 inline transition
+      // 就地清空回类值（不残留则错位变化重排动画永冻+零位移残留断言红）
+      card.style.transition = ''
       job.finish() // 零位移（纯几何判定）——不过渡直接落定
       return
     }
@@ -305,6 +325,8 @@ export function useCardDrag(args: {
     card.style.left = `${job.fromX}px`
     card.style.top = `${job.fromY}px`
     card.style.width = `${target.width}px`
+    // [回炉 R1] fixed 期压 0（left=margin edge——双计防线同拖起面）
+    card.style.marginLeft = '0'
     card.style.zIndex = '99'
     card.style.boxShadow = 'var(--shadow-drag)'
     card.style.transition = SETTLE_TRANSITION
@@ -331,6 +353,15 @@ export function useCardDrag(args: {
       card.style.left = ''
       card.style.top = ''
       card.style.width = ''
+      // [回炉 R1] 清场扩五键：marginLeft 恢复错位基线（React style diff 不
+      // 重写未变值——自恢复非赖重渲染；跨行落位的新错位由不动点迭代后
+      // setOffsets 重渲染接管）。[回炉轮 2 主控亲执] 恢复与清 transition 间
+      // 强制回流分隔（零位移径同范式）：否则两变更同落一个样式重算周期，
+      // after-change transition=类值（.tl-card margin-left .25s 在场）→0→82
+      // 计算值变化照启过渡=清场 −offset 瞬跳滑回；回流时 inline transition
+      // 仍=SETTLE_TRANSITION（不含 margin-left）→恢复在禁断语境下固化。
+      card.style.marginLeft = job.marginLeft0
+      void card.offsetWidth
       card.style.zIndex = ''
       card.style.boxShadow = ''
       card.style.transition = ''
@@ -430,7 +461,8 @@ export function useCardDrag(args: {
       moved: false,
       ghost: { x: r.left, y: r.top },
       insertIdx: srcIds.indexOf(nodeId),
-      overFrame: true
+      overFrame: true,
+      marginLeft0: ''
     }
     try {
       cardEl.setPointerCapture(ev.pointerId)
@@ -457,7 +489,11 @@ export function useCardDrag(args: {
     const n = nodes.find((x) => x.id === pop.nodeId)
     if (n === undefined) return
     if (n.year === year && n.month === month) return // 同月=no-op 零写（申报）
-    const from = findCard(n.id)?.getBoundingClientRect()
+    const fromCard = findCard(n.id)
+    const from = fromCard?.getBoundingClientRect()
+    // [回炉 R8③] 改月飞行同式禁断（settle re-fix 压 0 面的类过渡防线——
+    /// settle effect 内 SETTLE_TRANSITION 接管+清场回类值）
+    if (fromCard !== null && fromCard !== undefined) fromCard.style.transition = 'none'
     showToast(`已移至 ${moveTargetLabel(year, month)}`, 'success')
     setMovePreview({ nodeId: n.id, year, month })
     setFlashKey(frameKeyOf(year, month))
@@ -465,6 +501,7 @@ export function useCardDrag(args: {
       nodeId: n.id,
       fromX: from?.left ?? 0,
       fromY: from?.top ?? 0,
+      marginLeft0: findCard(n.id)?.style.marginLeft ?? '',
       finish: () => {
         setPhase('idle')
         setSlot(null)

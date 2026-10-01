@@ -25,6 +25,7 @@ import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
 import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
 import tagsColorSql from './migrations/011_tags_color.sql?raw'
 import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
+import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
 
 export interface Migration {
   version: number
@@ -55,7 +56,10 @@ export const MIGRATIONS: readonly Migration[] = [
   // +lineage_nodes.folder_id（修订二：可空列+迁移回填+repo 写边界兜底——SQLite
   // ADD COLUMN 静态禁 REFERENCES+非空 DEFAULT）+坑 a 存量去重+部分唯一索引
   // +回填+paper_collections 退役（design-final 修订二——新库 user_version 终值 12）
-  { version: 12, name: 'folders_graphs', sql: foldersGraphsSql }
+  { version: 12, name: 'folders_graphs', sql: foldersGraphsSql },
+  // [F-LINEAGE-02 ①a] 手动调线路点：lineage_edges.via JSON TEXT（缺省 NULL=
+  // 自动路由；不变量校验在 service 写面——新库 user_version 终值 13）
+  { version: 13, name: 'lineage_edge_via', sql: lineageEdgeViaSql }
 ]
 
 export interface MigrateResult {

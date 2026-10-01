@@ -83,7 +83,7 @@ const fireEnd = (el: Element): void => {
 }
 
 /** 几何定值（飞行分支必需——jsdom 零位移会走「直接落定」无动画捷径） */
-function stubRect(el: Element, x: number, y: number, w = 104, h = 52): void {
+function stubRect(el: Element, x: number, y: number, w = 128, h = 72): void {
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
     left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y,
     toJSON: () => ({})

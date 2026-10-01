@@ -28,8 +28,8 @@ function node(id: string): LineageNode {
   }
 }
 
-function edge(id: string, from: string, to: string, kind: LineageEdge['kind'], sub: string | null = null): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind, sub, createdAt: 't', updatedAt: 't' }
+function edge(id: string, from: string, to: string, kind: LineageEdge['kind'], sub: string | null = null, via?: Array<{ x: number; y: number }>): LineageEdge {
+  return { id, fromNode: from, toNode: to, label: '', kind, sub, ...(via !== undefined ? { via } : {}), createdAt: 't', updatedAt: 't' }
 }
 
 const LINE_TYPES: LineTypeGroup[] = [
@@ -56,12 +56,21 @@ function mountOverlay(
   nodes: LineageNode[],
   edges: LineageEdge[],
   lineTypes: LineTypeGroup[] = [],
-  routeEpoch = 0
+  routeEpoch = 0,
+  contentW = 0
 ): void {
   stubRaf()
   host = document.createElement('div')
   host.className = 'tl-content'
   document.body.appendChild(host)
+  if (contentW > 0) {
+    // [回炉 R3] 车道例需真机向走廊（contentW>0——走廊在卡右侧）：jsdom 零盒
+    // 下 contentW=0 使 laneX 落左侧，右锚外法线桩反向→中段回穿原点必落
+    // fallback（真机几何恒 contentW>卡 x 无此形态——夹具面补真，非实现缺陷）
+    vi.spyOn(host, 'getBoundingClientRect').mockReturnValue({
+      x: 0, y: 0, left: 0, top: 0, right: contentW, bottom: 0, width: contentW, height: 0, toJSON: () => ({})
+    } as DOMRect)
+  }
   root = createRoot(host)
   act(() => {
     root?.render(
@@ -215,7 +224,10 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     //（routing it 9 相位一同型）；e0/e4 同 lane0 → 字典序 [e0,e4] → e4 i=1
     mountOverlay(
       [node('A'), node('B')],
-      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B', 'ref'))
+      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B', 'ref')),
+      [],
+      0,
+      800
     )
     const of = (id: string): SVGPathElement | null =>
       host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`) ?? null
@@ -224,7 +236,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     expect(of('e1')?.style.opacity).toBe('') // 他道唯一边
     // 13 边：lane0=[e00,e04,e08,e12] → i=3 → max(0.6,0.55)=0.6 下钳
     const ids13 = Array.from({ length: 13 }, (_, i) => `e${String(i).padStart(2, '0')}`)
-    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B', 'ref')))
+    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B', 'ref')), [], 0, 800)
     expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e12"]')?.style.opacity).toBe('0.6')
     expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e08"]')?.style.opacity).toBe('0.7')
   })
@@ -241,7 +253,9 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
         edge('e5', 'A', 'B', 'ref'),
         edge('e9', 'A', 'B', 'tree', 't1')
       ],
-      LINE_TYPES
+      LINE_TYPES,
+      0,
+      800
     )
     const both = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e9"]')
     expect(both?.style.opacity).toBe('0.85')
@@ -250,6 +264,27 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-18/D-22）', () => {
     const solo = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e4"]')
     expect(solo?.style.opacity).toBe('')
     expect(solo?.style.stroke).toBe('#123456')
+  })
+
+  it('[F-LINEAGE-02] manual-override：via 在场→path 在场+DOM 末位（自动边保序在前——W-4 命中优先级）；via 边不参与同道错峰', () => {
+    mountOverlay(
+      [node('A'), node('B')],
+      [
+        edge('e0', 'A', 'B', 'manual'),
+        edge('e1', 'A', 'B', 'manual', null, [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
+        edge('e2', 'B', 'A', 'manual')
+      ]
+    )
+    const visible = [...(host?.querySelectorAll('path.tl-edge') ?? [])]
+    expect(visible.length).toBe(3)
+    expect(visible.map((p) => p.getAttribute('data-edge-id'))).toEqual(['e0', 'e2', 'e1'])
+    const manualPath = visible[2]!
+    expect(manualPath.getAttribute('d')?.length ?? 0).toBeGreaterThan(0)
+    // 命中层同序（manual 的 hit 层亦末位——命中恒最上）
+    const hits = [...(host?.querySelectorAll('path.tl-edge-hit') ?? [])]
+    expect(hits.map((p) => p.getAttribute('data-edge-id'))).toEqual(['e0', 'e2', 'e1'])
+    // via 边 lane=−1：同道错峰零参与（e0/e2 jsdom 零 rect 下各占道，manual 无 opacity）
+    expect((manualPath as SVGPathElement).style.opacity).toBe('')
   })
 
   it('onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩', () => {

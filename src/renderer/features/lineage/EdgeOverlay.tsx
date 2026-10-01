@@ -10,8 +10,9 @@
  * - buildSnapshot(contentEl)=本组件唯一不纯点（D-2 内容坐标 elRect−
  *   contentRect；.month-tag 入 labels、.month-frame+year 入 frames）——
  *   路由层 lineage-routing 零 DOM import。
- * - 重算触发 rAF 合并（D-22+回炉 1 W1/W6）：shiftedIds/groups（P6 砖砌
- *   收敛=终态信号）+ResizeObserver(.tl-content)+edges/nodes 引用变化
+ * - 重算触发 rAF 合并（D-22+回炉 1 W1/W6）：shiftedIds/groups（P6 行错位
+ *   收敛=终态信号——[F-LINEAGE-02] 瀑布错位集）+ResizeObserver(.tl-content)
+ *   +edges/nodes 引用变化
  *   +**routeEpoch**（LineageTimeline 不动点收敛/守卫分支 bump——React 子
  *   effect 先于父：收敛轮父组件不再 setState，子组件需显式再触发）；
  *   测量冻结期（.tl-measure 在场）不采集——CSS 同帧置 opacity:0
@@ -85,15 +86,27 @@ export function EdgeOverlay(props: {
       sourceId: e.fromNode,
       targetId: e.toNode,
       kind: e.kind,
-      subId: e.sub ?? undefined
+      subId: e.sub ?? undefined,
+      // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不参与
+      // 车道分组与避让链——lane=−1 天然不入 laneRank）
+      via: e.via
     }))
     return { edges, inputs }
   }, [props.nodes, props.edges])
   // 回炉 1 W5：paths 按.edgeId 配对（Map 查找替下标 zip）
   const edgeById = useMemo(() => new Map(live.edges.map((e) => [e.id, e] as const)), [live])
+  // [F-LINEAGE-02 裁决 6/W-4] manual 边渲染序排 DOM 末位（同层组内稳定分区
+  // ——自动边保序在前）：命中层恒最上，手动横段与自动边同带重叠时选中/拖拽
+  // 恒先命中手动边
+  const orderedPaths = useMemo(() => {
+    const auto: RoutedPath[] = []
+    const manual: RoutedPath[] = []
+    for (const p of paths) (p.route === 'manual-override' ? manual : auto).push(p)
+    return [...auto, ...manual]
+  }, [paths])
   // [T3-P7B] 同道错峰（D-P7B-8）：lane≥0 路径按车道内 edgeId 字典序排名
   // i≥1 → opacity=max(0.6,1−0.15×i)（同道重叠边视觉可分——纯渲染确定性微差；
-  // lane=-1[vertical/fallback] 不参与）
+  // lane=-1[direct/h-slip/band/fallback/manual-override——甲链非走廊态] 不参与）
   const laneRank = useMemo(() => {
     const byLane = new Map<number, string[]>()
     for (const p of paths) {
@@ -139,7 +152,7 @@ export function EdgeOverlay(props: {
       ref={svgRef}
       data-testid="tl-edges"
     >
-      {paths.map((p) => {
+      {orderedPaths.map((p) => {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null
         const i = laneRank.get(p.edgeId)

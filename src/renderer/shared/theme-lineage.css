@@ -45,7 +45,8 @@
 .month-frame {
   border: 1.6px dashed var(--month-dash);
   border-radius: 12px;
-  padding: 15px 12px 12px;
+  /* [F-LINEAGE-02 D-L2-2] 顶 15→18：月标自框外悬浮移入框内顶 padding 承载 */
+  padding: 18px 12px 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 20px 20px;
@@ -63,7 +64,9 @@
    10px=--fs-micro 同值复用） */
 .month-tag {
   position: absolute;
-  top: -9px;
+  /* [F-LINEAGE-02 裁决 7] 注入 .month-frame 内首位（D-L2-2：框间 26px 带全宽
+     净空——INV-79 标注仍属障碍集）；absolute 不占 flex 槽，0.5px 内让框顶边线 */
+  top: 0.5px;
   left: 12px;
   z-index: 3;
   font-size: var(--fs-micro);
@@ -78,14 +81,16 @@
    框本体不变体随 dashed --month-dash） */
 .tl-month.unknown .month-tag { color: var(--faint); border-color: var(--line); border-style: solid; }
 
-/* 半尺寸深底小卡（A9）：104×~52 三行；A2 砖砌行错位=rowshift 62px 右移
-   （半卡 52+半隙 10——0 起奇数索引行，主控裁决口径）；[T3-P8] cursor 复位
+/* 深底小卡（A9→[F-LINEAGE-02 ①a/P-15] 128×72 基准）；行间瀑布式递增错位
+   =inline margin-left（waterfallOffsets：步 82/节距 148/年内复位——
+   .rowshift 62px 类已退役）；[T3-P8] cursor 复位
    grab+touch-action none（mockup L243 逐值——拖拽重接随需恢复，k1-N7
    回炉注兑现）；margin-left 过渡=常态 shift 挂摘平滑（源④——测量期
    .tl-measure 规则恒优先，特异性 (0,3,0)>(0,1,0)） */
 .tl-card {
-  width: 104px;
-  min-height: 52px;
+  /* [F-LINEAGE-02 ①a/P-15] 基准卡 128×72（卡内部三层结构归 F-LGRAPH-01 ②） */
+  width: 128px;
+  min-height: 72px;
   background: var(--mini-card);
   border: 1px solid var(--mini-card-line);
   border-radius: 8px;
@@ -98,7 +103,6 @@
   user-select: none;
   transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
 }
-.tl-card.rowshift { margin-left: 62px; }
 /* [T3-P8] 拖起态（mockup L248 逐值：fixed 离流+z99+拖起阴影+微倾放
    大+grabbing+pointer-events none=settle 期重触发忽略的 CSS 同义面） */
 .tl-card.dragging {
@@ -109,12 +113,12 @@
   cursor: grabbing;
   pointer-events: none;
 }
-/* [T3-P8] 候选文献位虚线槽（B1——mockup L262 逐值：104×52 dashed accent
+/* [T3-P8] 候选文献位虚线槽（B1——[F-LINEAGE-02 ①a] 128×72 dashed accent
    accent-soft 底「置 入」letter-spacing 3px；opacity .2s 过渡+框外 .faded
    .35 淡化；9px→--fs-micro 同值映射） */
 .drag-slot {
-  width: 104px;
-  min-height: 52px;
+  width: 128px;
+  min-height: 72px;
   border: 1.8px dashed var(--accent);
   border-radius: 8px;
   background: var(--accent-soft);
@@ -199,10 +203,11 @@
 .lc.i2 i { border-top-style: dashed; }
 .lc.i3 i { border-top: 2px dotted var(--faint); border-color: var(--faint); }
 .lc.i4 i { border-top-style: dashed; border-color: var(--signal); }
-/* [T3-P6 三过 d1-W1 加固] 测量冻结：砖砌迭代期间冻结 margin-left 过渡——
-   过渡在场时同步量测读到的是起点布局，迭代退化为单轮+空确认且 shift 引起
-   的行容量变化永不复测（>8 卡同月场景行号偏差真实面）；收敛后类移除，
-   transition 恢复（服务 P8 拖拽位移动画——shift 挂摘本身无平滑=备案） */
+/* [T3-P6 三过 d1-W1 加固] 测量冻结：瀑布错位迭代期间冻结 margin-left 过渡
+   （[F-LINEAGE-02 ①a] 砖砌→瀑布沿革）——过渡在场时同步量测读到的是起点
+   布局，迭代退化为单轮+空确认且错位引起的行容量变化永不复测（>8 卡同月
+   场景行号偏差真实面）；收敛后类移除，transition 恢复（服务 P8 拖拽位移
+   动画——错位变化本身无平滑=备案） */
 .tl-content.tl-measure .tl-card { transition: none; }
 .tl-card:hover { border-color: var(--accent); }
 /* sel=inset 1.6px accent 环+外辉（mockup 裸色值→--shadow-tl-sel token

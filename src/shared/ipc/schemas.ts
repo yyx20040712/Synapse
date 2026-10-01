@@ -336,12 +336,14 @@ export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
 export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
 export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
 
-/** lineage/upsert-edge 请求：{from,to,label?,kind?,sub?,id?}（树守卫宿主=LG-01 service
+/** lineage/upsert-edge 请求：{from,to,label?,kind?,sub?,id?,via?}（树守卫宿主=LG-01 service
  *  upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
  *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
  *  F-LG15 不限条数，service 三 kind 守卫；T3-P5 inferred 同 tree 守卫）；
  *  id 可选=F-LG15 label 后编辑更新语义（缺省=新建——既有新建载荷形状不变）；
  *  [T3-P5] sub 可选缺省=null 基础默认样式（存在性+同基型守卫在 service）。
+ *  [F-LINEAGE-02] via 可选=手动调线路点（缺省不进载荷；不变量 ①②③校验在
+ *  service 写面 validateLineageVia）。
  *  [F-CONSOL-02] 本 schema=models lineageEdgeUpsertSchema 派生；差异字段仅
  *  （edge：from/to 键名+label 可选）——规则单源 models */
 export const lineageUpsertEdgeReqSchema = lineageEdgeUpsertSchema

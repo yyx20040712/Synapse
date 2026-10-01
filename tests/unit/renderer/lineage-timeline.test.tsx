@@ -17,7 +17,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import { groupTimeline, rowsFromOffsetTops } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { groupTimeline, rowsFromOffsetTops, waterfallOffsets } from '../../../src/renderer/features/lineage/lineage-timeline'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 
 // act() 环境声明（library-cards.test 同口径——免 React 警告刷屏）
@@ -113,17 +113,48 @@ describe('T3-P6 groupTimeline 纯函数（年月分组——INV-75 组内序=传
   })
 })
 
-describe('T3-P6 rowsFromOffsetTops 纯函数（砖砌分行——同行=offsetTop 相等）', () => {
-  it('相等值归同行：[0,0,52,0,52]→[0,0,1,0,1]', () => {
-    expect(rowsFromOffsetTops([0, 0, 52, 0, 52])).toEqual([0, 0, 1, 0, 1])
+describe('T3-P6 rowsFromOffsetTops 纯函数（瀑布分行基元——同行=offsetTop 相等；[F-LINEAGE-02] 消费方=waterfallOffsets）', () => {
+  it('相等值归同行：[0,0,72,0,72]→[0,0,1,0,1]（行距 92=卡高 72+隙 20——夹具随批迁移）', () => {
+    expect(rowsFromOffsetTops([0, 0, 72, 0, 72])).toEqual([0, 0, 1, 0, 1])
   })
 
   it('单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）', () => {
     expect(rowsFromOffsetTops([0, 0, 0])).toEqual([0, 0, 0])
   })
 
-  it('三行递进：[0,52,104]→[0,1,2]', () => {
-    expect(rowsFromOffsetTops([0, 52, 104])).toEqual([0, 1, 2])
+  it('三行递进：[0,72,144]→[0,1,2]', () => {
+    expect(rowsFromOffsetTops([0, 72, 144])).toEqual([0, 1, 2])
+  })
+})
+
+
+describe('F-LINEAGE-02 waterfallOffsets 纯函数（P-15：步 82=卡高 72+半隙 10；节距 148=卡宽 128+隙 20；年内跨月框接续、新年复位）', () => {
+  it('同年两框接续计数：框0 两行+框1 一行 → R=0/1/2 → 偏移 0/82/16（mod 148 不对齐缝隙）', () => {
+    const off = waterfallOffsets([
+      { year: 2022, rows: [['A', 0], ['B', 1]] },
+      { year: 2022, rows: [['C', 0]] }
+    ])
+    expect(off.get('A')).toBeUndefined()
+    expect(off.get('B')).toBe(82)
+    expect(off.get('C')).toBe(16)
+  })
+
+  it('新年复位：异年框 R 从 0 起（offset 0 不入表——错位量>0 才挂）', () => {
+    const off = waterfallOffsets([
+      { year: 2022, rows: [['A', 0], ['B', 1]] },
+      { year: 2023, rows: [['C', 0], ['D', 1]] }
+    ])
+    expect(off.get('C')).toBeUndefined()
+    expect(off.get('D')).toBe(82)
+  })
+
+  it('深行错位序列：R=1..4 → 82/16/98/32（82·R mod 148 手推）', () => {
+    const off = waterfallOffsets([{ year: 2022, rows: [['a', 0], ['b', 1], ['c', 2], ['d', 3], ['e', 4]] }])
+    expect(off.get('a')).toBeUndefined()
+    expect(off.get('b')).toBe(82)
+    expect(off.get('c')).toBe(16)
+    expect(off.get('d')).toBe(98)
+    expect(off.get('e')).toBe(32)
   })
 })
 
@@ -173,12 +204,12 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     const unknownMonth = host?.querySelector('.tl-month.unknown')
     expect(unknownMonth).not.toBeNull()
     expect(unknownMonth!.querySelector('.month-frame')!.classList.contains('unknown')).toBe(false)
-    // [T3-P6 回炉 d1-B1 防回漂] 月标签=.tl-month 直接子元素（与 .month-frame
-    // 兄弟，同 mockup DOM）——若移入 frame 内会被其 overflow:hidden 裁掉
-    // top:-9px 悬出段（首屏胶囊上半缺失）
+    // [F-LINEAGE-02 裁决 7] 月标注入框内首位（D-L2-2：框外悬浮堵死框间通道
+    // ——移入后框内顶 padding 18 承载，absolute 定位不占 flex 槽；标签整体
+    // 在框内=overflow:hidden 无裁切面，d1-B1 悬出段顾虑随布局改版消灭）
     for (const tag of host?.querySelectorAll('.month-tag') ?? []) {
-      expect(tag.parentElement!.classList.contains('tl-month')).toBe(true)
-      expect(tag.parentElement!.querySelector('.month-frame')).not.toBeNull()
+      expect(tag.parentElement!.classList.contains('month-frame')).toBe(true)
+      expect(tag.parentElement!.firstElementChild === tag).toBe(true)
     }
   })
 
@@ -307,15 +338,15 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(onMenu).toHaveBeenCalledWith('A', { x: 200, y: 150 })
   })
 
-  it('rowshift 挂接：注入 offsetTop 分行→0 起奇数索引行挂类（依赖=分组结果重算）', async () => {
+  it('瀑布错位挂接：注入 offsetTop 分行→次行卡 inline margin-left=82px（R=1；错位量>0 才挂——依赖=分组结果重算）', async () => {
     const nodes = [
       node('A', { year: 2022, month: 5 }),
       node('B', { year: 2022, month: 5 }),
       node('C', { year: 2022, month: 5 })
     ]
     mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // jsdom 无布局（offsetTop 恒 0）——defineProperty 定行（前三卡两行 0/0/52）
-    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 52]]
+    // jsdom 无布局（offsetTop 恒 0）——defineProperty 定行（前三卡两行 0/0/72）
+    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 72]]
     for (const [id, top] of tops) {
       Object.defineProperty(cardOf(id), 'offsetTop', { get: () => top, configurable: true })
     }
@@ -323,9 +354,10 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     await act(async () => {
       root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
     })
-    expect(cardOf('C').classList.contains('rowshift')).toBe(true)
-    expect(cardOf('A').classList.contains('rowshift')).toBe(false)
-    expect(cardOf('B').classList.contains('rowshift')).toBe(false)
+    expect(cardOf('C').style.marginLeft).toBe('82px')
+    expect(cardOf('A').style.marginLeft).toBe('')
+    expect(cardOf('B').style.marginLeft).toBe('')
+    expect(cardOf('C').classList.contains('rowshift')).toBe(false)
   })
 
   it('不动点迭代（d1-W1 回炉）：shift 改变 offsetTop 后复测至收敛——两轮量测后稳定', async () => {
@@ -334,21 +366,21 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
       node('B', { year: 2022, month: 5 })
     ]
     mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // shift 敏感布局模拟：B 无 rowshift 时量得第二行（52）→挂 shift；挂后
-    // 仍 52（shift 保持行位——真实布局单调性同型）→集合稳定收敛
+    // 错位敏感布局模拟：B 无错位时量得第二行（72）→挂错位 82px；挂后
+    // 仍 72（错位保持行位——真实布局单调性同型）→集合稳定收敛
     let bCalls = 0
     Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
     Object.defineProperty(cardOf('B'), 'offsetTop', {
       get() {
         bCalls++
-        return 52
+        return 72
       },
       configurable: true
     })
     await act(async () => {
       root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
     })
-    expect(cardOf('B').classList.contains('rowshift')).toBe(true)
+    expect(cardOf('B').style.marginLeft).toBe('82px')
     // 迭代真实发生：首轮量测（判定 shift）+次轮复测（确认稳定）≥2 次
     expect(bCalls).toBeGreaterThanOrEqual(2)
     // [三过加固] 测量冻结类收敛后移除（防泄漏=后续 shift 挂摘动画不被永冻）
@@ -370,13 +402,13 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
       node('B', { year: 2022, month: 5 })
     ]
     mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // 对抗布局（真实 CSS 不会出现——shift 增宽行数只增）：B 的行位随自身
-    // shift 翻转→每轮集合都变→无守卫则 React max-update 崩溃；守卫 8 轮停
+    // 对抗布局（真实 CSS 不会出现——错位增宽行数只增）：B 的行位随自身
+    // 错位翻转→每轮集合都变→无守卫则 React max-update 崩溃；守卫 8 轮停
     Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
     Object.defineProperty(cardOf('B'), 'offsetTop', {
       get() {
         const el = cardOf('B')
-        return el.classList.contains('rowshift') ? 0 : 52
+        return el.style.marginLeft === '' ? 72 : 0
       },
       configurable: true
     })
@@ -407,19 +439,19 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 
-  it('月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative（B1 定位基准——月标签 absolute top -9px 的 containing block，删则标签锚错祖先悬出段复发，k1 三过 W2 锁）；.month-frame 1.6px dashed --month-dash 圆角 12 padding 15px 12px 12px gap 20px 20px min-height 58px', () => {
+  it('月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 18px 12px 12px（[F-LINEAGE-02 D-L2-2] 顶 15→18 承载框内月标） gap 20px 20px min-height 58px', () => {
     expect(css).toMatch(/\.tl-month\s*\{[^}]*margin:\s*0 58px 26px 46px;[^}]*position:\s*relative/)
     expect(css).toMatch(
-      /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*15px 12px 12px/
+      /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*18px 12px 12px/
     )
     expect(css).toMatch(
       /\.month-frame\s*\{[^}]*gap:\s*20px 20px;[^}]*align-content:\s*flex-start;[^}]*min-height:\s*58px/
     )
   })
 
-  it('月标签：.month-tag absolute top -9px left 12px 胶囊（panel 底 accent 字 dashed 边 tabular-nums）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
+  it('月标签（[F-LINEAGE-02 裁决 7] 注入框内首位）：.month-tag absolute top 0.5px left 12px 胶囊（框内顶 padding 18 承载——框间 26px 带全宽净空 D-L2-2）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
     expect(css).toMatch(
-      /\.month-tag\s*\{[^}]*top:\s*-9px;[^}]*left:\s*12px;[^}]*border-radius:\s*99px;[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--accent\);[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*font-variant-numeric:\s*tabular-nums/
+      /\.month-tag\s*\{[^}]*top:\s*0\.5px;[^}]*left:\s*12px;[^}]*border-radius:\s*99px;[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--accent\);[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*font-variant-numeric:\s*tabular-nums/
     )
     expect(css).toMatch(
       /\.tl-month\.unknown \.month-tag\s*\{[^}]*color:\s*var\(--faint\);[^}]*border-color:\s*var\(--line\);[^}]*border-style:\s*solid/
@@ -431,9 +463,9 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     expect(css).toMatch(/\.frame-hint\s*\{[^}]*place-items:\s*center;[^}]*color:\s*var\(--faint\)/)
   })
 
-  it('小卡：104×52 --mini-card 底 1px --mini-card-line 边 圆角 8 padding 5px 6px 4px shadow-card；hover=accent 边；sel=inset 1.6px accent+外辉 token', () => {
+  it('小卡：128×72（P-15 ①a 基准卡——卡内部三层结构归 F-LGRAPH-01 ②，本批仅几何） --mini-card 底 1px --mini-card-line 边 圆角 8 padding 5px 6px 4px shadow-card；hover=accent 边；sel=inset 1.6px accent+外辉 token', () => {
     expect(css).toMatch(
-      /\.tl-card\s*\{[^}]*width:\s*104px;[^}]*min-height:\s*52px;[^}]*background:\s*var\(--mini-card\);[^}]*border:\s*1px solid var\(--mini-card-line\);[^}]*border-radius:\s*8px;[^}]*padding:\s*5px 6px 4px;[^}]*box-shadow:\s*var\(--shadow-card\)/
+      /\.tl-card\s*\{[^}]*width:\s*128px;[^}]*min-height:\s*72px;[^}]*background:\s*var\(--mini-card\);[^}]*border:\s*1px solid var\(--mini-card-line\);[^}]*border-radius:\s*8px;[^}]*padding:\s*5px 6px 4px;[^}]*box-shadow:\s*var\(--shadow-card\)/
     )
     expect(css).toMatch(/\.tl-card:hover\s*\{[^}]*border-color:\s*var\(--accent\)/)
     expect(css).toMatch(
@@ -441,8 +473,9 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 
-  it('砖砌行错位：.rowshift margin-left 62px+margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡+测量冻结规则（三过加固）', () => {
-    expect(css).toMatch(/\.tl-card\.rowshift\s*\{[^}]*margin-left:\s*62px/)
+  it('瀑布错位（P-15：.rowshift 类与 62px 整体退役——错位=inline margin-left 按卡传）：margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡保留+测量冻结规则（三过加固）+零 rowshift 残留负锚', () => {
+    expect(css).not.toMatch(/\.tl-card\.rowshift/)
+    expect(css).not.toMatch(/margin-left:\s*62px/)
     expect(css).toMatch(/\.tl-card\s*\{[^}]*transition:\s*margin-left \.25s cubic-bezier\(\.22,\.9,\.26,1\)/)
     // 测量冻结：迭代期间 .tl-measure 冻结过渡（量测恒为终态布局——d1-W1 三过）
     expect(css).toMatch(/\.tl-content\.tl-measure \.tl-card\s*\{[^}]*transition:\s*none/)

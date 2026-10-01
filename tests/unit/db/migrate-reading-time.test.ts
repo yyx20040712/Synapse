@@ -15,11 +15,11 @@ function papersColumns(db: ReturnType<typeof openDatabase>): string[] {
 }
 
 describe('db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）', () => {
-  it('新库：全量应用到 10（[F-FOLDER-01] 012 起=12 终值，009 删列终态断言面不变），papers.reading_seconds 列已不存在', () => {
+  it('新库：全量应用到 10（[F-LINEAGE-02] 013 起=13 终值，009 删列终态断言面不变），papers.reading_seconds 列已不存在', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(12)
-    expect(readUserVersion(db)).toBe(12)
+    expect(result.currentVersion).toBe(13)
+    expect(readUserVersion(db)).toBe(13)
     expect(papersColumns(db)).not.toContain('reading_seconds')
     db.prepare(
       `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at)
@@ -29,14 +29,14 @@ describe('db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-0
     db.close()
   })
 
-  it('存量 v8 库（008 已加列）升级：应用 009+010+011+012（[F-FOLDER-01] 起），列被删除，user_version=12', () => {
+  it('存量 v8 库（008 已加列）升级：应用 009+010+011+012+013（[F-FOLDER-01]/[F-LINEAGE-02] 起），列被删除，user_version=13', () => {
     const db = openDatabase(':memory:')
     // 构造存量 v8 库：只应用 1..8（migrations 参数注入=测试合法面，migrate() 契约）
     migrate(db, MIGRATIONS.filter((m) => m.version <= 8))
     expect(papersColumns(db)).toContain('reading_seconds')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([9, 10, 11, 12])
-    expect(readUserVersion(db)).toBe(12)
+    expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13])
+    expect(readUserVersion(db)).toBe(13)
     expect(papersColumns(db)).not.toContain('reading_seconds')
     db.close()
   })
@@ -49,8 +49,8 @@ describe('db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-0
        VALUES ('legacy-1', 'x/y.pdf', 'sha-legacy', '2025-06-01T00:00:00Z', '2025-06-01T00:00:00Z')`
     ).run()
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12])
-    expect(readUserVersion(db)).toBe(12)
+    expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13])
+    expect(readUserVersion(db)).toBe(13)
     expect(papersColumns(db)).not.toContain('reading_seconds')
     // 存量行随双跳无损（其余列原样保留）
     const row = db.prepare('SELECT id, last_read_page FROM papers WHERE id = ?').get('legacy-1') as {

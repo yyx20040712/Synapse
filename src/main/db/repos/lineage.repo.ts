@@ -132,12 +132,12 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
-    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, created_at, updated_at)
-     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @now, @now)
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @via, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        from_node = excluded.from_node, to_node = excluded.to_node,
        label = excluded.label, kind = excluded.kind, sub = excluded.sub,
-       updated_at = excluded.updated_at`
+       via = excluded.via, updated_at = excluded.updated_at`
   )
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
@@ -205,6 +205,9 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         label: input.label,
         kind: input.kind ?? 'tree',
         sub: input.sub ?? null,
+        // [F-LINEAGE-02] 序列化口径 N-1：undefined/空数组→NULL（缺省=自动路由
+        // 不产出 []——diff/脏检测零噪声）；不变量校验在 service 写面（repo 薄）
+        via: input.via != null && input.via.length > 0 ? JSON.stringify(input.via) : null,
         now
       })
       return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)

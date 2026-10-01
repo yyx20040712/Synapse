@@ -25,7 +25,7 @@
  * lineage-v2-service.test.ts（T3-P5 四 kind/sub 守卫/slot 归一/graph 读面）+
  * lineage-manual-edges.test.ts（manual 面）[受锁新增]（always-active）。
  */
-import { MAIN_GRAPH_ID, isSurveyTitle, lineageOrder } from '../../../shared/models/lineage'
+import { MAIN_GRAPH_ID, isSurveyTitle, lineageOrder, validateLineageVia } from '../../../shared/models/lineage'
 import type {
   LineTypeGroup,
   LineageEdge,
@@ -216,6 +216,18 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (input.fromNode === input.toNode) {
         throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
       }
+      // [F-LINEAGE-02 ①a] via 不变量 ①②③序列化校验（design-final §2.1——
+      // validateLineageVia 单源驻 shared；违者 INVALID_REQUEST 请求面拒绝
+      // （语义=载荷非法非业务规则）。store 面按系统型保留重试（flush 仅
+      // CONFLICT 丢弃——INVALID_REQUEST 走 error 队首保留；d1-W5 勘正：
+      // 理论上该载荷重试永不成功，F-LGRAPH-01 ②编辑器接入时兑现校验前置
+      // 再评估是否扩丢弃码集——不扩面留档）
+      if (input.via !== undefined) {
+        const viaReason = validateLineageVia(input.via)
+        if (viaReason !== null) {
+          throw new LineageDomainError('INVALID_REQUEST', `边 via 路点非法：${viaReason}`)
+        }
+      }
       const graph = deps.repo.listGraph()
       const nodeIds = new Set(graph.nodes.map((n) => n.id))
       if (!nodeIds.has(input.fromNode)) {
@@ -307,7 +319,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           )
         }
       }
-      return deps.repo.upsertEdge({ ...input, kind, sub: input.sub ?? null })
+      return deps.repo.upsertEdge({ ...input, kind, sub: input.sub ?? null, via: input.via })
     },
 
     removeEdge(id: string): number {

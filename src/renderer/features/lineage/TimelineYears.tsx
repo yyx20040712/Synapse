@@ -2,8 +2,8 @@
 // b3: T3-P8
 /**
  * [T3-P7B] TimelineYears —— 年/月/卡渲染体（LineageTimeline 拆件——组件
- * 250 行红线；纯展示：分组遍历+编号/核徽章/选中/砖砌/拾取源高亮全经 props，
- * 交互回调沿 TimelineCallbacks 透传）。
+ * 250 行红线；纯展示：分组遍历+编号/核徽章/选中/瀑布错位/拾取源高亮全经
+ *  props，交互回调沿 TimelineCallbacks 透传）。
  * [T3-P8] 槽位拖拽渲染：dragSlot 在场时源月组按「其余卡+拖卡@insertIdx」
  * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡尾挂 .dragging
  * fixed 离流+框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
@@ -51,7 +51,8 @@ export function TimelineYears(props: {
   coreIds: Map<string, boolean>
   paperMetrics: Record<string, LineagePaperMetrics>
   selectedNodeId: string | null
-  shiftedIds: ReadonlySet<string>
+  /** [F-LINEAGE-02] 瀑布错位表（nodeId→margin-left px；缺席=无错位） */
+  offsets: ReadonlyMap<string, number>
   /** [T3-P7B] 拾取源卡高亮（composer target 相位） */
   linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
@@ -74,7 +75,7 @@ export function TimelineYears(props: {
       core={coreIds.get(n.id) === true}
       metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
       selected={props.selectedNodeId === n.id}
-      shift={props.shiftedIds.has(n.id)}
+      offset={props.offsets.get(n.id) ?? 0}
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
@@ -132,18 +133,20 @@ export function TimelineYears(props: {
                   className={m.month === null ? 'tl-month unknown' : 'tl-month'}
                   key={m.month === null ? 'null' : String(m.month)}
                 >
-                  {/* 月标签与月框=兄弟（d1-B1 回炉：框 overflow:hidden 裁悬出段） */}
-                  <span className="month-tag">
-                    {m.month === null
-                      ? `未定月 · ${m.nodes.length} 篇`
-                      : `${m.month} 月 · ${m.nodes.length} 篇`}
-                  </span>
+                  {/* [F-LINEAGE-02 裁决 7/D-L2-2] 月标注入框内首位（框外悬浮
+                      堵死框间通道——absolute 不占 flex 槽，顶 padding 18 承载；
+                      标签整体在框内=overflow:hidden 无裁切面） */}
                   <div
                     className={frameCls}
                     ref={(el) => {
                       props.registerFrame?.(key, el)
                     }}
                   >
+                    <span className="month-tag">
+                      {m.month === null
+                        ? `未定月 · ${m.nodes.length} 篇`
+                        : `${m.month} 月 · ${m.nodes.length} 篇`}
+                    </span>
                     {kids}
                   </div>
                 </div>

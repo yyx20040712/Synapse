@@ -1,7 +1,8 @@
 // b3: T3-P6
 /**
- * [T3-P6] LineageTimelineCard —— 时间线文献小卡（104×52 三行结构；mockup
- * v2 light L246-261 逐值——皮肤住 theme-lineage.css .tl-card/.c-* 族）。
+ * [T3-P6] LineageTimelineCard —— 时间线文献小卡（[F-LINEAGE-02 ①a] 几何
+ * 改版 128×72（原 104×52）；卡内三层 UI 结构归 F-LGRAPH-01 ②——皮肤住
+ * theme-lineage.css .tl-card/.c-* 族）。
  *
  * - 三行结构：c-head（骑缝编号 .c-no=「#NNN」三位零填充——catalog_no
  *   INV-76，Timeline 经 lineageCatalogNos 单源传入禁每卡重算+徽章 .mb：
@@ -16,8 +17,8 @@
  *   主题节点 paperId null→「—」（metrics 形状=LineagePaperMetrics——
  *   Timeline 查表传入，卡内不触 store）。
  * - 交互：onClick 上抛 onNodeClick / onContextMenu 上抛锚点（03 节点菜单）；
- *   sel=inset 1.6px accent 环+hover=accent 边（CSS 面）；rowshift=砖砌行
- *   错位（Timeline 分行计算传入——0 起奇数索引行）。
+ *   sel=inset 1.6px accent 环+hover=accent 边（CSS 面）；瀑布错位=offset
+ *   px（Timeline waterfallOffsets 计算传入——inline margin-left 承载）。
  * - data-node-id=e2e/测试结构锚（Canvas g[data-node-id] 同名接缝沿承）。
  */
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
@@ -41,8 +42,9 @@ export function LineageTimelineCard(props: {
   /** 含金量摘要（按 paperId 查表传入；null=主题节点/缺席→引用「—」） */
   metrics: LineagePaperMetrics | null
   selected: boolean
-  /** 砖砌行错位（0 起奇数索引行——Timeline 分行计算传入） */
-  shift: boolean
+  /** [F-LINEAGE-02] 瀑布错位量 px（0=无错位——waterfallOffsets 传入；P-15：
+   *  步 82/节距 148/年内复位——inline margin-left 承载） */
+  offset: number
   /** [T3-P7B] 新建连线拾取源高亮（.link-src——composer target 相位） */
   linkSrc: boolean
   /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
@@ -64,15 +66,17 @@ export function LineageTimelineCard(props: {
   const cls = [
     'tl-card',
     props.selected ? 'sel' : '',
-    props.shift ? 'rowshift' : '',
     props.linkSrc ? 'link-src' : '',
     props.dragging === true ? 'dragging' : ''
   ]
     .filter((c) => c !== '')
     .join(' ')
+  // 瀑布错位=按卡 inline（裁决 2 实现自裁：inline style 直传——.rowshift 类退役）
+  const style = props.offset > 0 ? { marginLeft: `${props.offset}px` } : undefined
   return (
     <article
       className={cls}
+      style={style}
       data-node-id={n.id}
       data-kind={kind}
       onPointerDown={(e) => props.onCardPointerDown?.(n.id, e)}

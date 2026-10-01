@@ -48,7 +48,8 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         toNode: req.to,
         label: req.label ?? '',
         kind: req.kind,
-        sub: req.sub // T3-P5：undefined/null 同归一 null=基础默认样式（service 守卫）
+        sub: req.sub, // T3-P5：undefined/null 同归一 null=基础默认样式（service 守卫）
+        via: req.via // [F-LINEAGE-02] 手动调线路点透传（不变量校验在 service）
       }),
     removeEdge: async (req) => {
       deps.services.lineage.removeEdge(req.id)

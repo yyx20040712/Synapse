@@ -1803,6 +1803,150 @@
       "caseTitle": "month 越界拒（0/13）；未知字段仍 strict 拒（其余字段未放松）",
       "reason": "F-BAKRET-01 草稿导入链语义退役+主控终裁 2026-09-30：lineageDraftSchema 单源随导入链删除（src 零消费方=死代码即删；executor 自裁 7 呈报主控裁决通过）",
       "rulingLink": "docs/prompts/2026-09-30_loop-handoff-v90-visit-feedback-intake.md §2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "1 verticalPath：dy=78 控制柄 k=39；贝塞尔中点落入空隙带（dy/2 对称中点）",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "3 checkVerticalBand：带内障碍 true／移出 false／PAD=4 边界（4 含边界命中、4.1 出界、3.9 命中——D-6）",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "16 C2.5 底部出双段检测（回炉 1 B-2）：源卡非末行竖段穿同列下方卡→bottomOut 不可行→fallback",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "8 laneIndex：乱序输入 → 输出与字典序排序位次一致（确定性）",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "10 确定性：同输入 routeEdge 100 次输出全等（无随机/Date/三角函数）",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "12 segHitsAny PAD 语义钉死（D-6）：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "13 anchor 三式（卡盒中点族——§2.1）",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "14 arcPath s.y==t.y 直线分支（D-14）+圆角主分支",
+      "reason": "F-LINEAGE-02 ①a 甲链走线器重写（用户裁方案甲+手动调线）：旧五级链（vertical 贝塞尔/arc/detour/gap 族）整体退役删除（方案切换=删旧，宪法 E5/B3；测试数据可清授权 v95 §2-1）——本批 lineage-routing.test.ts 重写为甲链例集（六态+曲化复检+车道+manual-override+确定性，PAD=4 命中语义与 laneIndex/确定性由新例同语义承接）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "assertionText": "expect(insertIndexFromRects(rects, 190, 20)).toBe(2)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "assertionText": "expect(insertIndexFromRects(rects, 260, 100)).toBe(2)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "assertionText": "expect(insertIndexFromRects(rects, 310, 100)).toBe(3)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "assertionText": "expect(insertIndexFromRects([], 100, 100)).toBe(0)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂 rowshift 即红——主控探针 t=0 实证形态）",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "相等值归同行：[0,0,52,0,52]→[0,0,1,0,1]",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "三行递进：[0,52,104]→[0,1,2]",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(tag.parentElement!.classList.contains('tl-month')).toBe(true)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(tag.parentElement!.querySelector('.month-frame')).not.toBeNull()",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "rowshift 挂接：注入 offsetTop 分行→0 起奇数索引行挂类（依赖=分组结果重算）",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(cardOf('B').classList.contains('rowshift')).toBe(true)",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative（B1 定位基准——月标签 absolute top -9px 的 containing block，删则标签锚错祖先悬出段复发，k1 三过 W2 锁）；.month-frame 1.6px dashed --month-dash 圆角 12 padding 15px 12px 12px gap 20px 20px min-height 58px",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "月标签：.month-tag absolute top -9px left 12px 胶囊（panel 底 accent 字 dashed 边 tabular-nums）；未定月=月标签级变体（faint 字+--line 实线边）",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "小卡：104×52 --mini-card 底 1px --mini-card-line 边 圆角 8 padding 5px 6px 4px shadow-card；hover=accent 边；sel=inset 1.6px accent+外辉 token",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "砖砌行错位：.rowshift margin-left 62px+margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡+测量冻结规则（三过加固）",
+      "reason": "F-LINEAGE-02 ①a 布局改版（用户裁 P-15：基准卡 104×52→128×72+瀑布错位 82/节距 148 替代 .rowshift 62px 交替+月标注入框内 padding 顶 18——D-L2-2/P-15/裁决 2/裁决 7）：几何断言/标题随夹具迁移（104/52/62/124/72 字面量族→128/72/82/148/92），rowshift 类断言→inline margin-left 断言，月标 DOM 兄弟→框内首位",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）",
+      "reason": "F-LINEAGE-02 回炉 R10/d1-N3 语义词面清理：rowsFromOffsetTops describe 标题「砖砌分行」→「瀑布分行基元」（.rowshift 语义已随布局改版退役）——内含用例指纹随容器改题漂移，断言零变（行为锁不动）",
+      "rulingLink": "docs/design/2026-10-01_f-lineage02-routing-design-final.md"
     }
   ]
 }

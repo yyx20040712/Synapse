@@ -266,6 +266,9 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           // [T3-P7B] sub 透传（applyEdgeLine/linkWithLine 显式置——null=回退
           // 基础型；既有调用点缺省键不进载荷，形状逐字节保持）
           ...(action.input.sub !== undefined ? { sub: action.input.sub } : {}),
+          // [F-LINEAGE-02] via 透传（手动调线编辑动作置——缺省键不进载荷；
+          // 既有 upsertEdge 载荷形状自然扩展零新 action）
+          ...(action.input.via !== undefined ? { via: action.input.via } : {}),
           // F-LG15 label 后编辑：id 提供经 IPC 更新（缺省键不进载荷——既有
           // 新建断言载荷形状逐字节保持）
           ...(action.input.id !== undefined ? { id: action.input.id } : {})

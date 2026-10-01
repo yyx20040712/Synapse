@@ -10,7 +10,8 @@ import {
   lineTypeGroupSchema,
   type LineTypeGroup,
   type LineageEdge,
-  type LineageNode
+  type LineageNode,
+  type LineageViaPoint
 } from '../../../shared/models/lineage'
 
 /** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列 JSON 数组 TEXT，
@@ -36,7 +37,8 @@ export interface LineageNodeRow {
 }
 
 /** lineage_edges 表行形状（列名原样，蛇形；kind=006 迁移列，旧行回填 'tree'；
- *  sub=010 迁移列——NULL=基础型默认样式） */
+ *  sub=010 迁移列——NULL=基础型默认样式；via=013 迁移列——NULL=自动路由
+ *  （F-LINEAGE-02：JSON 数组 TEXT，读面容错见 toEdge） */
 export interface LineageEdgeRow {
   id: string
   from_node: string
@@ -44,8 +46,31 @@ export interface LineageEdgeRow {
   label: string
   kind: string
   sub: string | null
+  via: string | null
   created_at: string
   updated_at: string
+}
+
+/** [F-LINEAGE-02] via 列读面容错解析（design-final §2.1）：NULL/非法 JSON/
+ *  非法形状（非数组/元素非 {x,y} 数值）→ undefined（自动路由语义，不炸
+ *  graph 读——tags 列「禁静默吞错」口径的例外面：via 属渲染派生数据非
+ *  用户内容，损坏降级优于整图读失败） */
+function parseViaTolerant(raw: string | null): LineageViaPoint[] | undefined {
+  if (raw === null) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return undefined
+    const pts: LineageViaPoint[] = []
+    for (const p of parsed) {
+      if (typeof p !== 'object' || p === null) return undefined
+      const { x, y } = p as { x?: unknown; y?: unknown }
+      if (typeof x !== 'number' || typeof y !== 'number') return undefined
+      pts.push({ x, y })
+    }
+    return pts
+  } catch {
+    return undefined
+  }
 }
 
 export function toNode(row: LineageNodeRow): LineageNode {
@@ -89,6 +114,7 @@ export function toEdge(row: LineageEdgeRow): LineageEdge {
             ? 'inferred'
             : 'tree',
     sub: row.sub,
+    via: parseViaTolerant(row.via),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

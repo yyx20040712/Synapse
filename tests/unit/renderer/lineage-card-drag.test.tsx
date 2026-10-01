@@ -97,7 +97,7 @@ const click = (el: Element): void => {
 }
 
 /** 几何定值（jsdom 零布局——getBoundingClientRect spy 单源） */
-function stubRect(el: Element, x: number, y: number, w = 104, h = 52): void {
+function stubRect(el: Element, x: number, y: number, w = 128, h = 72): void {
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
     left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y,
     toJSON: () => ({})
@@ -153,20 +153,20 @@ describe('[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromR
 
   it('insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位', () => {
     const rects = [
-      { left: 0, top: 0, width: 104, height: 52 },
-      { left: 124, top: 0, width: 104, height: 52 },
-      { left: 248, top: 72, width: 104, height: 52 }
+      { left: 0, top: 0, width: 128, height: 72 },
+      { left: 148, top: 0, width: 128, height: 72 },
+      { left: 296, top: 92, width: 128, height: 72 }
     ]
-    // 第二卡右半（x=190 > 124+52=176 中心）→ 其后（含跨入行 2 上半带的卡前）
-    expect(insertIndexFromRects(rects, 190, 20)).toBe(2)
-    // 首卡左半（x=10 < 0+52）→ 首位
+    // 第二卡右半（x=230 > 148+64=212 中心）→ 其后（含跨入行 2 上半带的卡前）
+    expect(insertIndexFromRects(rects, 230, 20)).toBe(2)
+    // 首卡左半（x=10 < 0+64）→ 首位
     expect(insertIndexFromRects(rects, 10, 20)).toBe(0)
-    // 跨行带（y=100 脱行 0 带 [−41.6,93.6]）：第三卡左半（x=260 < 248+52）→ 其前
-    expect(insertIndexFromRects(rects, 260, 100)).toBe(2)
+    // 跨行带（y=140 脱行 0 带 [−57.6,129.6]）：第三卡左半（x=330 < 296+64）→ 其前
+    expect(insertIndexFromRects(rects, 330, 140)).toBe(2)
     // 跨行带第三卡右半 → 末位
-    expect(insertIndexFromRects(rects, 310, 100)).toBe(3)
+    expect(insertIndexFromRects(rects, 380, 140)).toBe(3)
     // 空列表 → 0
-    expect(insertIndexFromRects([], 100, 100)).toBe(0)
+    expect(insertIndexFromRects([], 140, 140)).toBe(0)
   })
 })
 
@@ -229,15 +229,15 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
     mount([node('A'), node('B'), node('C')])
     const f = req('.month-frame')
     stubRect(f, 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
-    stubRect(cardOf('C'), 260, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
+    stubRect(cardOf('C'), 308, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
     let ph = req('.drag-slot')
     expect(ph.classList.contains('faded')).toBe(false) // 框内不淡化
-    // 指针落 B 右半（x=200 > 136+52=188 中心）→ 插位=B 后 C 前
-    pMove(200, 40)
+    // 指针落 B 右半（x=240 > 160+64=224 中心）→ 插位=B 后 C 前
+    pMove(240, 40)
     ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     expect(ph.previousElementSibling?.isEqualNode(cardOf('B'))).toBe(true)
@@ -254,11 +254,11 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
     mount([node('A'), node('B'), node('C')])
     const f = req('.month-frame')
     stubRect(f, 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 12, 87)
-    stubRect(cardOf('C'), 136, 87)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 12, 110)
+    stubRect(cardOf('C'), 160, 110)
     pDown(cardOf('A'), 60, 40)
-    pMove(150, 100) // 跨行带（y=100 脱行 0 带）：C 左半（150 < 136+52）→ 插 C 前
+    pMove(150, 130) // 跨行带（y=130 脱行 0 带 [−39.6,147.6]）：C 左半（150 < 160+64）→ 插 C 前
     const ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     pUp(150, 100)
@@ -269,13 +269,13 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
   it('松手 settle：占位槽撤+DOM 序=新序+.32s left/top 过渡在场；transitionend→清场+重排写+dimmed 摘', () => {
     mount([node('A'), node('B'), node('C')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
-    stubRect(cardOf('C'), 260, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
+    stubRect(cardOf('C'), 308, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(350, 40) // 末位（350 > 260+52=312 → C 后=组末）
-    pUp(350, 40)
+    pMove(460, 40) // 末位（460 > 308+128=436 → C 后=组末）
+    pUp(460, 40)
     expect(q('.drag-slot')).toBeNull()
     const order = [...req('.month-frame').querySelectorAll('.tl-card')].map((c) => (c as HTMLElement).dataset.nodeId)
     expect(order).toEqual(['B', 'C', 'A'])
@@ -293,12 +293,12 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
   it('settle 期再 pointerdown=忽略（不二次激活）', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40) // B 右半 → 末位
-    pUp(200, 40)
+    pMove(240, 40) // B 右半 → 末位
+    pUp(240, 40)
     // settle 飞行中（transitionend 未派发）：新 pointerdown+move 零动作
     pDown(cardOf('B'), 150, 200)
     pMove(170, 220)
@@ -312,8 +312,8 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
   it('序未变松手=零写（拖回原位不产生空写批）', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
     pMove(10, 40) // 插回首位（B 左半）
@@ -327,11 +327,11 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
     const frames = [...host!.querySelectorAll('.month-frame')]
     stubRect(frames[0]!, 0, 0, 600, 200)
     stubRect(frames[1]!, 0, 300, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40) // 框内变序：B 右半 → [B,A]
+    pMove(240, 40) // 框内变序：B 右半 → [B,A]
     pMove(300, 400) // 落他月框（跨月拒绝面）
     pUp(300, 400)
     expect(toastStoreSpy).toHaveBeenCalledWith('不能跨月拖动——请进入编辑模式，点卡片月标修改月份', 'error')
@@ -344,12 +344,12 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
   it('拖后 click 抑制（一次性）：拖拽松手后的 click 不转发选中；此后正常 click 恢复', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40)
-    pUp(200, 40)
+    pMove(240, 40)
+    pUp(240, 40)
     click(cardOf('A'))
     expect(onNodeClick).not.toHaveBeenCalled()
     fireEnd(cardOf('A'))
@@ -360,12 +360,12 @@ describe('[T3-P8] 拖拽状态机（view+edit 双态无 mode 门槛）', () => {
   it('拖拽无 Esc 取消：mid-drag Esc 零动作，松手恒落当前槽', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40)
-    pUp(200, 40)
+    pMove(240, 40)
+    pUp(240, 40)
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
@@ -392,23 +392,23 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(onNodeClick).not.toHaveBeenCalled()
   })
 
-  it('R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂 rowshift 即红——主控探针 t=0 实证形态）', () => {
+  it('R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂瀑布错位即红——主控探针 t=0 实证形态）', () => {
     mount([node('A'), node('B'), node('C')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
-    stubRect(cardOf('C'), 260, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
+    stubRect(cardOf('C'), 308, 18)
     pDown(cardOf('A'), 60, 40)
-    // 拖卡 fixed 后视口系 offsetTop=999（异行）——dragging 帧若量测必挂 rowshift
+    // 拖卡 fixed 后视口系 offsetTop=999（异行）——dragging 帧若量测必挂错位 inline
     const spyTop = vi.spyOn(cardOf('A'), 'offsetTop', 'get')
     spyTop.mockReturnValue(999)
     pMove(66, 44)
     expect(cardOf('A').classList.contains('dragging')).toBe(true)
-    expect(cardOf('A').classList.contains('rowshift')).toBe(false) // 误挂即红
+    expect(cardOf('A').style.marginLeft).toBe('0px') // 误挂即红（错位=inline margin-left；[回炉 R1] dragging 期恒压 0px）
     expect(req('.tl-content').classList.contains('tl-measure')).toBe(false)
     spyTop.mockRestore()
-    pMove(350, 40) // 组末（>260+52=312）
-    pUp(350, 40)
+    pMove(460, 40) // 组末（>308+128=436）
+    pUp(460, 40)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
   })
@@ -418,12 +418,12 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     try {
       mount([node('A'), node('B')])
       stubRect(req('.month-frame'), 0, 0, 600, 200)
-      stubRect(cardOf('A'), 12, 15)
-      stubRect(cardOf('B'), 136, 15)
+      stubRect(cardOf('A'), 12, 18)
+      stubRect(cardOf('B'), 160, 18)
       pDown(cardOf('A'), 60, 40)
       pMove(66, 44)
-      pMove(200, 40)
-      pUp(200, 40)
+      pMove(240, 40)
+      pUp(240, 40)
       expect(reorder).not.toHaveBeenCalled() // settle 落定（事件/兜底）后才写
       act(() => {
         vi.advanceTimersByTime(650)
@@ -439,11 +439,11 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
   it('R5 pointercancel 同径：系统取消=落当前候选槽（与松手同式清场）', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40)
+    pMove(240, 40)
     act(() => {
       document.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true, clientX: 200, clientY: 40 }))
     })
@@ -456,12 +456,12 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
   it('R6 click 抑制无残留：拖后未消费的抑制随新会话清零（下一真单击恢复转发）', () => {
     mount([node('A'), node('B')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 15)
-    stubRect(cardOf('B'), 136, 15)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(200, 40)
-    pUp(200, 40)
+    pMove(240, 40)
+    pUp(240, 40)
     // 拖后 click 未落在卡上（suppress 残留 true）——不派发 click
     fireEnd(cardOf('A'))
     // 新会话（B 未拖松手）清残留 → 随后真单击 B 转发选中
@@ -470,6 +470,62 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     pUp(193, 41)
     click(cardOf('B'))
     expect(onNodeClick).toHaveBeenCalledWith('B', expect.anything())
+  })
+
+  it('[回炉 R1] 瀑布错位卡拖拽无双计：dragging 期 marginLeft 压 0（fixed 盒 left=视觉位）+settle 清场恢复 82px', async () => {
+    const nodes = [node('A'), node('B'), node('C')]
+    mount(nodes)
+    // 注入分行（C=次行 72）→瀑布错位 C=82px（inline margin-left）
+    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 72]]
+    for (const [id, top] of tops) {
+      Object.defineProperty(cardOf(id), 'offsetTop', { get: () => top, configurable: true })
+    }
+    await act(async () => {
+      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
+    })
+    expect(cardOf('C').style.marginLeft).toBe('82px')
+    stubRect(req('.month-frame'), 0, 0, 600, 200)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 160, 18)
+    stubRect(cardOf('C'), 94, 110)
+    // [回炉 R9-W1+d1-r2-W2] 测量恢复记录仪：C 卡 gBCR 调用时刻的 inline
+    // marginLeft 采样。判别面=pUp 后切片——激活读 rect 样本（'82px'，压 0
+    // 前自然序列）不锁测量恢复；settle 测量 gBCR 时刻采样才是锁点：
+    // 测量前恢复被撤回则 pUp 后切片恒 '0px' 即红
+    const marginAtRect: string[] = []
+    const cRect = cardOf('C').getBoundingClientRect
+    vi.spyOn(cardOf('C'), 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      marginAtRect.push(this.style.marginLeft)
+      return cRect.call(this)
+    })
+    pDown(cardOf('C'), 140, 140)
+    pMove(146, 144)
+    // 切片起点取激活块 gBCR 之后（激活读 rect 在 pointerMove 阈值判定内
+    // ——pDown 时零采样；起点取早则激活样本 '82px' 混入切片恒真）
+    const settleSamplesStart = marginAtRect.length
+    // dragging：fixed 盒 border box=left（marginLeft 压 0px——无双计）。
+    // left=指针派生 ghost：ox=140−94=46 → 146−46=100；双计形态=同 left 而
+    // margin 恒 82px（border box 再偏 +82 → 视觉落 182）
+    expect(cardOf('C').style.position).toBe('fixed')
+    expect(cardOf('C').style.marginLeft).toBe('0px')
+    expect(cardOf('C').style.left).toBe('100px')
+    // [回炉 R8/d1-B1] 激活同步禁断：基类 margin-left .25s 过渡在场则压 0
+    // 即启 +82px 滑移——inline transition='none' 先于类过渡接管（settle 段
+    // SETTLE_TRANSITION 只含 left/top）
+    expect(cardOf('C').style.transition).toBe('none')
+    pUp(146, 144)
+    // settle 期：re-fix 压 0（R9-W1~321 面）+飞行过渡=SETTLE_TRANSITION
+    //（不含 margin-left——margin 恢复/压 0 天然无过渡）
+    expect(cardOf('C').style.marginLeft).toBe('0px')
+    expect(cardOf('C').style.transition).toBe('left .32s cubic-bezier(.22,.9,.26,1), top .32s cubic-bezier(.22,.9,.26,1)')
+    // settle 测量前恢复被记录仪捕获（R9-W1 面）——pUp 后切片判别（d1-r2-W2）
+    expect(marginAtRect.slice(settleSamplesStart)).toContain('82px')
+    fireEnd(cardOf('C'))
+    // settle 清场：React inline offset 恢复（82px）——错位终态不丢；inline
+    // transition 清空回类值（错位变化重排平滑动画不永冻——第六键面）
+    expect(cardOf('C').style.marginLeft).toBe('82px')
+    expect(cardOf('C').style.position).toBe('')
+    expect(cardOf('C').style.transition).toBe('')
   })
 
   it('R7 月标互斥：拾取中（picker≠idle）点 .c-ym 不开改月弹层', () => {

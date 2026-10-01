@@ -602,12 +602,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T6=[T3-P6 回炉 d1-W1/k1-W2] 砖砌行错位真机锚：默认视口一行容 ~9 卡不
-   * 换行（T1-T5 单卡每框=零判别力）——窄窗 720px（一行容 4 卡）+5 卡同月
-   * fixture→两行；断言 .rowshift 计数+margin-left 62px 实值+跨行 y 差
+   * T6=[F-LINEAGE-02 ①a/P-15] 瀑布错位真机锚（.rowshift 62px 交替退役）：
+   * 默认视口一行容多卡不换行（T1-T5 单卡每框=零判别力）——窄窗 720px
+   * （侧板 288px 挤压月框内容区≈244px→每行 1 卡）+5 卡同月 fixture→5 行；
+   * 断言各卡 inline margin-left 实值=(R×82) mod 148（R=行号 0..4→
+   * [无,82,16,98,32]——手推独立期望）+跨行 y 递增+零 rowshift 残留
    * （不动点迭代收敛后的稳定态证据；非收敛/乱序即红）。
    */
-  test('T6 砖砌行错位：窄窗 5 卡同月→两行+偶行 rowshift 62px 实值+跨行 y 差', async () => {
+  test('T6 瀑布错位：窄窗 5 卡同月→五行+margin-left=(R×82)mod148 实值+零 rowshift', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -638,36 +640,39 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     expect(await frame.locator('.tl-card').count()).toBe(5)
     await expect(win.getByText('5 月 · 5 篇')).toBeVisible()
 
-    // 砖砌：按实测分行断言（窄窗下侧板 288px 挤压月框内容区≈244px→每行
-    // 1 卡、5 行交替；行容量不钉死——以「unique offsetTop 升序=行号」推导
-    // 期望 shift 集合，与组件 rowsFromOffsetTops 同型[第 2 次重现，Rule of
-    // Three 前例]——LineageTimeline 头注互指）。[三过 d1-W2 加固] 几何量测
-    // 置于 margin 稳定态之后（过渡中期读几何=非确定红面）
+    // 瀑布：按实测分行断言（窄窗下侧板 288px 挤压月框内容区≈244px→每行
+    // 1 卡、5 行；行容量不钉死——以「unique offsetTop 升序=行号」推导期望
+    // 错位集，与组件 rowsFromOffsetTops+waterfallOffsets 同型）。[三过
+    // d1-W2 加固] 几何量测置于 margin 稳定态之后（过渡中期读几何=非确定红面）
     const cards = frame.locator('.tl-card')
-    const shifted = frame.locator('.tl-card.rowshift')
-    // margin-left 62px：过渡动画 .25s 中读值为中间态——poll 至稳定态（同时
-    // 锁「transition 后真到位」的时间维度语义；几何断言随之稳定）
-    await expect
-      .poll(
-        async () => await shifted.first().evaluate((el) => getComputedStyle(el).marginLeft),
-        { timeout: 2000 }
-      )
-      .toBe('62px')
     const ids = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
     const ys = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).offsetTop))
     const rowTops = [...new Set(ys)].sort((a, b) => a - b)
     expect(rowTops.length).toBeGreaterThan(1) // 确证换行（≥2 行）——一行放得下则此锚红
-    // 集合等价（非计数等价——d1-W2：同尺寸异集合可绿）
-    const expectedShiftedIds = ids.filter((_, i) => rowTops.indexOf(ys[i]!) % 2 === 1)
-    const actualShiftedIds = (
-      await shifted.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
-    ).sort()
-    expect([...actualShiftedIds].sort()).toEqual([...expectedShiftedIds].sort())
-
-    // 跨行实证：rowshift 卡 y 严格大于首行卡（换行真发生——非同行右移）
-    const secondRowY = (await shifted.first().boundingBox())!.y
+    // 期望=offset(R)=(R×82) mod 148 手推（R=年内连续行号：0/1/2/3/4→
+    // 0/82/16/98/32；R=0 无 inline）
+    const expected = new Map(ids.map((id, i) => [id, `${(rowTops.indexOf(ys[i]!) * 82) % 148}px`]))
+    // margin-left：过渡动画 .25s 中读值为中间态——poll 至稳定态（同时锁
+    // 「transition 后真到位」的时间维度语义；几何断言随之稳定）
+    await expect
+      .poll(
+        async () =>
+          await cards.evaluateAll(
+            (els, pairs) => {
+              const want = new Map(pairs)
+              return els.filter((e) => getComputedStyle(e).marginLeft === (want.get((e as HTMLElement).dataset.nodeId ?? '') ?? '0px')).length
+            },
+            [...expected.entries()]
+          ),
+        { timeout: 3000 }
+      )
+      .toBe(5)
+    // 零 rowshift 残留负锚（类退役——在场即红）
+    expect(await frame.locator('.tl-card.rowshift').count()).toBe(0)
+    // 跨行实证：末行卡 y 严格大于首行卡（换行真发生——非同行右移）
+    const lastRowY = (await cards.nth(ids.length - 1).boundingBox())!.y
     const firstRowY = (await cards.first().boundingBox())!.y
-    expect(secondRowY).toBeGreaterThan(firstRowY)
+    expect(lastRowY).toBeGreaterThan(firstRowY)
 
     await app.close()
   })
@@ -836,13 +841,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T-P1b=[T3-P7A 裁决部条件首日兑现] resize 不错位真机直证：setViewportSize
-   * 两档（1280→1000）→ResizeObserver 重算→（a）车道 x 随 contentW 变化
-   * （跨年 detour 边 bbox 右缘=laneX，两档差=视口差）；（b）卡/线 bbox 相对
-   * 关系恒定（path bbox 右缘−contentW 偏移=−48+9×lane 两档全等——几何跟随
-   * 而非错位）；（c）线-卡 y 相对关系恒定（纵向布局零变化）。
+   * T-P1b=[T3-P7A 裁决部首日兑现；回炉 R4 走廊断言复锚] resize 不错位真机
+   * 直证：setViewportSize 两档（1280→1000）→ResizeObserver 重算→（a）车道
+   * x 随 contentW 变化（首树边根→甲实态=corridor——回炉探针实证 laneX=
+   * contentW−48+9×lane：月标注入框后终落竖段受阻，跨年边落走廊；两档差=
+   * 视口差）；（b）线-卡 y 相对关系恒定（纵向布局零变化）。
+   * [回炉 R4] 首版收窄时弱化 poll 丢陈旧路径守卫（收窄后 path 未重算即量=
+   * 假不动）——走廊参数族谓词既是断言面也是 stale 守卫，原式恢复。
    */
-  test('T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+卡/线 bbox 相对关系恒定', async () => {
+  test('T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+线-卡 y 相对关系恒定', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -855,7 +862,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
-    // 跨年树边（根→甲）恒走右侧走廊（detour）——bbox 右缘=laneX。
+    // 首条树边（根→甲）实态=corridor（回炉探针实证：横臂至 laneX=
+    // contentW−48+9×lane——月标入框阻终落竖段所致）——bbox 右缘=laneX。
     // 量测单 evaluate 原子取（viewport 坐标三值同拍——path bbox/content 左缘/
     // 宽度混算坐标系即错位，P7B 首跑实证 off 含 content 左缘偏移）
     const measure = async (): Promise<{ laneX: number; contentLeft: number; contentW: number; relY: number }> =>
@@ -888,7 +896,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const m1 = await measure()
     // 第二档：收窄 280px——ResizeObserver+rAF 重算后车道左移同量。稳定面同
     // 谓词再 poll（CSS 宽同步先变、rAF 重算晚帧——只 poll contentW 会取到
-    // 陈旧路径坐标，P7B 首跑实证 m2.laneX===m1.laneX 假绿面）
+    // 陈旧路径坐标，P7B 首跑实证 m2.laneX===m1.laneX 假绿面——[回炉 R4] 该
+    // 谓词即陈旧路径守卫，弱化即翻车实证）
     await win.setViewportSize({ width: 1000, height: 860 })
     await expect
       .poll(async () => {
