@@ -742,6 +742,80 @@ function renderSchemes() {
       panel.dataset.edgeCount = String(ds.length);
       sec.appendChild(panel);
     }
+    // [甲定案·编辑态示意幕] PPT 式调节点位：其余线淡化、e11 选中示手柄+拖动前后对照
+    if (sid === 'A') {
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      const pl = document.createElement('span');
+      pl.className = 'panel-label';
+      pl.textContent = 'scene-3 · 编辑态示意（选中线=白方块顶点手柄·虚线=拖动前·PPT 式操作）';
+      panel.appendChild(pl);
+      const L = buildLayout();
+      const svg = renderScene(panel, L);
+      const edges = EDGES_BASE;
+      const skeletons = R.build(edges, L);
+      applyLaneOffsets(edges, skeletons, L);
+      const ds = pathsToD('A', skeletons);
+      edges.forEach((e, i) => {
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('class', 'edge ' + e.s);
+        if (e.id !== 'e11') p.setAttribute('opacity', '0.28');
+        p.setAttribute('d', ds[i]);
+        svg.appendChild(p);
+      });
+      const idx = edges.findIndex((e) => e.id === 'e11');
+      const pts = skeletons[idx].map((q) => ({ ...q }));
+      // 拖动演示：第 2 顶点沿带右移 +46（邻段联动保持横平竖直——横段伸缩）
+      const MOVED = 46;
+      const ghost = pts.map((q, i) => (i === 2 ? { x: q.x + MOVED, y: q.y } : { ...q }));
+      const gp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      gp.setAttribute('d', roundPath(pts, 6));
+      gp.setAttribute('class', 'edge solid');
+      gp.setAttribute('opacity', '0.45');
+      gp.setAttribute('stroke-dasharray', '3 3');
+      svg.appendChild(gp);
+      const np = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      np.setAttribute('d', roundPath(ghost, 6));
+      np.setAttribute('class', 'edge solid');
+      np.setAttribute('stroke-width', '2.2');
+      svg.appendChild(np);
+      // 顶点手柄：新位=白方块（中间顶点）、端点=白圆（锚点端）
+      for (let i = 0; i < ghost.length; i++) {
+        const q = ghost[i];
+        const isEnd = i === 0 || i === ghost.length - 1;
+        const h = document.createElementNS('http://www.w3.org/2000/svg', isEnd ? 'circle' : 'rect');
+        if (isEnd) {
+          h.setAttribute('cx', q.x); h.setAttribute('cy', q.y); h.setAttribute('r', 3.2);
+        } else {
+          h.setAttribute('x', q.x - 3.2); h.setAttribute('y', q.y - 3.2);
+          h.setAttribute('width', 6.4); h.setAttribute('height', 6.4);
+        }
+        h.setAttribute('fill', '#fff');
+        h.setAttribute('stroke', isEnd ? '#f06030' : '#3a5bd9');
+        h.setAttribute('stroke-width', '1.4');
+        svg.appendChild(h);
+      }
+      // 拖动指示箭头 + 注记
+      const v0 = pts[2], v1 = ghost[2];
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      arrow.setAttribute('x1', v0.x); arrow.setAttribute('y1', v0.y);
+      arrow.setAttribute('x2', v1.x); arrow.setAttribute('y2', v1.y);
+      arrow.setAttribute('stroke', '#f06030'); arrow.setAttribute('stroke-width', '1.2');
+      arrow.setAttribute('stroke-dasharray', '2 2');
+      svg.appendChild(arrow);
+      const note = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      note.setAttribute('x', v1.x + 8); note.setAttribute('y', v1.y - 6);
+      note.setAttribute('font-size', '9'); note.setAttribute('fill', '#f06030');
+      note.textContent = '拖顶点：邻段联动保持横平竖直';
+      svg.appendChild(note);
+      const note2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      note2.setAttribute('x', ghost[0].x - 4); note2.setAttribute('y', ghost[0].y + 22);
+      note2.setAttribute('font-size', '9'); note2.setAttribute('fill', '#5d6577');
+      note2.textContent = '双击段=加点｜顶点右键=删点｜线右键=重置走线｜端点(圆)=重连换锚';
+      svg.appendChild(note2);
+      panel.dataset.edgeCount = String(ds.length);
+      sec.appendChild(panel);
+    }
     footnote.parentElement.insertBefore(sec, footnote);
   }
 }
