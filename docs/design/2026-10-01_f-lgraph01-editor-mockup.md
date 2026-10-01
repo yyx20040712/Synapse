@@ -1,6 +1,10 @@
 # F-LGRAPH-01 编辑器 mockup 设计文档——交互域规格+状态机（2026-10-01 呈裁·一轮批复修订版）
 
-> **状态：呈裁（用户裁决后升级 design-final 转实施）。** 前置已满足：
+> **状态：已定案（历史档，2026-10-01 升级收拢——正文零改动）。定案
+> 真相源=docs/design/2026-10-01_f-lgraph01-editor-design-final.md
+> （P-1..P-20 全表生效+T1..T12 定案；本档 §2/§3 现行版被其全文有效
+> 并入，「呈裁点/拟推」语气一律按其 §1 终值表读作定案，冲突处以
+> design-final 为准）。** 前置已满足：
 > F-LINEAGE-02 ① 走线 design-final 定案（方案甲+手动调线——
 > docs/design/2026-10-01_f-lineage02-routing-design-final.md）。
 > **单源指针纪律**：走线几何/via 数据模型/编辑代数=F-LINEAGE-02
